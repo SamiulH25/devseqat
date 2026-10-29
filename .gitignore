@@ -1,0 +1,15 @@
+# Build output
+bin/
+obj/
+Content/obj/
+Content/bin/
+
+# dotnet / IDE user state
+*.user
+*.suo
+.vs/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
