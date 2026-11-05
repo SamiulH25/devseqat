@@ -16,6 +16,7 @@ dotnet run -- --selftest   # headless: formation math + 3 full battles must reso
 You need .NET SDK 10 (`net10.0`). On Ubuntu 24.04 `apt-get install dotnet-sdk-10.0` works (no Microsoft feed needed).
 The game needs no art files: sprites, terrain and the font are all generated in code. Troops come from `Data/troops.json`.
 **Design language:** see [`docs/DESIGN.md`](docs/DESIGN.md) (art direction, unit painting rules, heraldry, tiers, UI tokens).
+**Roadmap:** see [`docs/ROADMAP.md`](docs/ROADMAP.md) (what comes next, in what order, and why).
 **Campaign:** see [`docs/CAMPAIGN.md`](docs/CAMPAIGN.md) (map, companies, XP and upgrades, economy, AI, battle hand-off; "As built" at the end).
 
 The game opens on a **title screen**: New Campaign, Continue (latest save), Quick Battle (one random battle), Quit.
