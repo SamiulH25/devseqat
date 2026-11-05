@@ -1,0 +1,41 @@
+# Build, self-test and package Ironfield (docs/ROADMAP.md A2).
+# Every push and pull request: build and run the headless self-test on Linux.
+# Pushes also publish self-contained builds for Windows, Linux and macOS as downloadable artifacts (no .NET SDK needed to play).
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Build
+        run: dotnet build -c Release
+      - name: Self-test (headless)
+        run: dotnet run -c Release --no-build -- --selftest
+
+  package:
+    needs: test
+    if: github.event_name != 'pull_request'
+    strategy:
+      matrix:
+        rid: [win-x64, linux-x64, osx-x64, osx-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Publish ${{ matrix.rid }}
+        run: dotnet publish -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=false -o out/Ironfield-${{ matrix.rid }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Ironfield-${{ matrix.rid }}
+          path: out/Ironfield-${{ matrix.rid }}

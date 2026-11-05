@@ -79,7 +79,7 @@ public sealed class CampaignState
     public double Hours;
     public ulong Rng;
     public float Gold, LastWeekBalance, TruceUntil;
-    public bool AtWar = true;
+    public bool AtWar = true, Ironman, GameOver;
     public CaptainState Captain = new();
     public List<Party> Parties = new();
     public List<Settlement> Settlements = new();
@@ -101,16 +101,31 @@ public sealed class CampaignState
     public static string SaveDir => Environment.GetEnvironmentVariable("IRONFIELD_SAVES") is { Length: > 0 } d ? d
         : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Ironfield", "saves");
 
+    /// Write to a temporary file first and keep the previous save as .bak, so a crash mid-save never loses a campaign.
     public void Save(string slot)
     {
         Directory.CreateDirectory(SaveDir);
-        File.WriteAllText(Path.Combine(SaveDir, slot + ".json"), Serialize());
+        string p = Path.Combine(SaveDir, slot + ".json"), tmp = p + ".tmp";
+        File.WriteAllText(tmp, Serialize());
+        if (File.Exists(p)) File.Copy(p, p + ".bak", true);
+        File.Move(tmp, p, true);
     }
+
+    /// True after Load had to fall back to the .bak file.
+    public static bool RestoredFromBackup;
 
     public static CampaignState? Load(string slot)
     {
         var p = Path.Combine(SaveDir, slot + ".json");
-        return File.Exists(p) ? Deserialize(File.ReadAllText(p)) : null;
+        RestoredFromBackup = false;
+        if (!File.Exists(p)) return null;
+        try { return Deserialize(File.ReadAllText(p)); }
+        catch (Exception e) when (File.Exists(p + ".bak"))
+        {
+            Console.WriteLine($"save {slot} unreadable ({e.Message}); restoring the backup");
+            RestoredFromBackup = true;
+            return Deserialize(File.ReadAllText(p + ".bak"));
+        }
     }
 
     public static bool Exists(string slot) => File.Exists(Path.Combine(SaveDir, slot + ".json"));

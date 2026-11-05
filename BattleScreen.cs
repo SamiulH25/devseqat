@@ -4,33 +4,32 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Ironfield;
 
-/// Rendering, camera and input around a headless Battle. Two views with an eased camera blend between them:
+/// The battle screen: rendering, camera and input around a headless Battle. Two views with an eased camera blend between them:
 /// field (third person, you fight) and command (free orbit camera, time slowed, you direct squads).
-/// The world (terrain, foliage, sky) is 3D geometry from World; units are 2D sprite puppets.
-public sealed class BattleGame : Game
+/// The world (terrain, foliage, sky) is 3D geometry from World; units are 2D sprite puppets. Hosted by ScreenHost.
+sealed class BattleScreen
 {
+    readonly ScreenHost host;
+    GraphicsDevice GraphicsDevice => host.GraphicsDevice;
+    bool IsActive => host.IsActive;
+    bool IsMouseVisible { set => host.IsMouseVisible = value; }
+    void Exit() => host.Exit();
+    SpriteBatch sb => host.Sb;
+    Art art => host.Art;
+    PixelFont font => host.Font;
+    Controls ctl => host.Ctl;
+    Shading? shading => host.Shading;
+    Quality quality { get => host.Quality; set => host.Quality = value; }
+
     const float CommandTimeScale = 0.25f, BlendTime = 0.45f, DoubleClick = 0.35f;
     static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30);
 
-    SpriteBatch sb = null!;
-    Art art = null!;
-    PixelFont font = null!;
     Puppet puppet = null!;
     Hud hud = null!;
     World world = null!;
-    readonly Controls ctl = Controls.Load();
     AlphaTestEffect spriteFx = null!;
-    Shading? shading;                          // GLSL pipeline (null if it could not be created)
-    enum Mode { Title, Map, Battle }
-    Mode mode = Mode.Title;
-    Campaign? campaign;
-    MapScreen map = null!;
-    Ui titleUi = null!;
     BattleSetup? campaignBattle;               // the battle in progress came from the campaign map
-    bool deploying, titleClick;
-    readonly string? campaignShots = Environment.GetEnvironmentVariable("IRONFIELD_CAMPAIGN_SHOTS") is { Length: > 0 } cs ? cs : null;
-    int cStage;
-    Quality quality = Quality.High;
+    bool deploying;
     Vector3 focusPoint;                        // what the camera looks at (the shadow map is centred here)
     BasicEffect shadowFx = null!, lineFx = null!;
     Battle battle = null!;
@@ -59,27 +58,21 @@ public sealed class BattleGame : Game
     string? pendingShot;
     bool shotWheel, hudHidden;
 
-    public BattleGame()
-    {
-        new GraphicsDeviceManager(this)
-        {
-            PreferredBackBufferWidth = 1280, PreferredBackBufferHeight = 720,
-            GraphicsProfile = GraphicsProfile.HiDef,
-        };
-        Window.AllowUserResizing = true;
-        Window.Title = "Ironfield - battle prototype";
-    }
+    public BattleScreen(ScreenHost host) { this.host = host; }
 
-    protected override void LoadContent()
+    /// Called when a campaign battle is over and its result should go back to the map.
+    public Action<BattleResult>? OnCampaignBattleOver;
+    public Action? OnTitle;
+    public Battle Battle => battle;
+    public bool InCampaign => campaignBattle != null;
+    public string? PendingShot { get => pendingShot; set => pendingShot = value; }
+    public bool HasShots => shotDir != null;
+
+    Ui tipUi = null!;
+
+    public void Load()
     {
-        sb = new SpriteBatch(GraphicsDevice);
-        art = new Art(GraphicsDevice);
-        if (Environment.GetEnvironmentVariable("IRONFIELD_DUMP_ATLAS") is { Length: > 0 } atlasPath)
-        {
-            using var file = File.Create(atlasPath); // debug: inspect the generated sprite sheet
-            art.Atlas.SaveAsPng(file, art.Atlas.Width, art.Atlas.Height);
-        }
-        font = new PixelFont(GraphicsDevice);
+        tipUi = new Ui(sb, art, font);
         puppet = new Puppet(art, sprites);
         hud = new Hud(sb, art, font);
         spriteFx = new AlphaTestEffect(GraphicsDevice)
@@ -89,38 +82,14 @@ public sealed class BattleGame : Game
         };
         shadowFx = new BasicEffect(GraphicsDevice) { TextureEnabled = true, Texture = art.Shadow };
         lineFx = new BasicEffect(GraphicsDevice) { VertexColorEnabled = true };
-        if (Environment.GetEnvironmentVariable("IRONFIELD_QUALITY") is { Length: > 0 } q && Enum.TryParse<Quality>(q, true, out var qv)) quality = qv;
-        try { shading = new Shading(GraphicsDevice); }
-        catch (Exception e) { Console.WriteLine("shaders unavailable: " + e.Message); quality = Quality.Low; }
         NewBattle();
-        map = new MapScreen(GraphicsDevice, sb, art, font, shading, ctl) { OnBattle = StartCampaignBattle, OnTitle = () => mode = Mode.Title };
-        titleUi = new Ui(sb, art, font);
-        if (shotDir != null) mode = Mode.Battle;
-        if (campaignShots != null) StartCampaign(3);
     }
 
-    // ---------- title and campaign ----------
+    // ---------- campaign hand-off ----------
 
-    void StartCampaign(int seed)
+    /// A battle handed over by the campaign map: it opens in the deployment phase.
+    public void BeginCampaign(BattleSetup s)
     {
-        campaign = Campaign.New(seed);
-        map.Open(campaign);
-        mode = Mode.Map;
-    }
-
-    void ContinueCampaign()
-    {
-        string? latest = new[] { "autosave", "quicksave" }.Where(CampaignState.Exists)
-            .OrderByDescending(n => File.GetLastWriteTimeUtc(Path.Combine(CampaignState.SaveDir, n + ".json"))).FirstOrDefault();
-        if (latest == null || CampaignState.Load(latest) is not CampaignState s) return;
-        campaign = new Campaign(s);
-        map.Open(campaign);
-        mode = Mode.Map;
-    }
-
-    void StartCampaignBattle(BattleSetup s)
-    {
-        campaign!.S.Save("autosave");
         campaignBattle = s;
         battle = new Battle(s.Seed, s.Player, s.Enemy, s.Options);
         SetWorld();
@@ -128,81 +97,36 @@ public sealed class BattleGame : Game
         yaw = MathHelper.PiOver2;
         pitch = 0.3f;
         paused = menuOpen = helpOpen = wheelOpen = false;
-        deploying = true;
-        mode = Mode.Battle;
-        SetCommand(true);
-        blend = 1;
+        StartDeployment();
         battle.Log($"Battle against {s.EnemyName}: {s.Options.Ground?.Name.ToLowerInvariant() ?? "open"} ground.");
         if (!s.Options.Scouted) battle.Log("No scouts: you cannot see their ranks until the fight starts.");
     }
 
+    public void StartDeployment()
+    {
+        deploying = true;
+        SetCommand(true);
+        blend = 1;
+    }
+
+    /// Debug staging for the host's campaign screenshots.
+    public void StageCommandView(Vector2 focus, float camPitch2, float zoom2, bool startFight)
+    {
+        if (startFight) deploying = false;
+        SetCommand(true);
+        blend = 1;
+        camFocus = focus; camPitch = camPitch2; zoom = zoom2;
+    }
+
     void FinishCampaignBattle()
     {
-        campaign!.FinishBattle(battle.Result(), campaignBattle!);
+        var r = battle.Result();
         campaignBattle = null;
         deploying = false;
-        mode = Mode.Map;
-        map.ShowResults();
+        OnCampaignBattleOver?.Invoke(r);
     }
 
-    void DrawTitle()
-    {
-        var gd = GraphicsDevice;
-        gd.Clear(new Color(18, 20, 26));
-        titleUi.Begin(gd.Viewport, ms.Position, titleClick);
-        titleClick = false;
-        var u = titleUi;
-        u.Rect(new Rectangle(0, u.H / 2 - u.U(150), u.W, u.U(4)), Style.Accent * 0.5f);
-        u.TextC("IRONFIELD", u.W / 2f, u.H / 2f - u.U(130), Style.Accent, 8);
-        u.TextC("A CAPTAIN'S WAR", u.W / 2f, u.H / 2f - u.U(60), Style.Dim, 2);
-        int y = u.H / 2 - u.U(20), w = u.U(280);
-        Rectangle B() { var r = new Rectangle((u.W - w) / 2, y, w, u.U(34)); y += u.U(42); return r; }
-        if (u.Button(B(), "NEW CAMPAIGN")) StartCampaign(Environment.TickCount & 0xFFFF);
-        if (u.Button(B(), "CONTINUE", CampaignState.Exists("autosave") || CampaignState.Exists("quicksave"))) ContinueCampaign();
-        if (u.Button(B(), "QUICK BATTLE")) { NewBattle(); mode = Mode.Battle; deploying = true; SetCommand(true); blend = 1; }
-        if (u.Button(B(), "QUIT")) Exit();
-        u.TextC("F2 GRAPHICS QUALITY", u.W / 2f, u.H - u.U(30), Style.Dim * 0.7f, 1);
-        u.End();
-    }
-
-    /// Debug: IRONFIELD_CAMPAIGN_SHOTS=/dir walks through the campaign screens, saving a PNG of each, then quits.
-    void CampaignShots()
-    {
-        var c = campaign!;
-        if (shotFrames < 20 || pendingShot != null) return;
-        void Shot(string name) { pendingShot = name; shotFrames = 0; cStage++; }
-        switch (cStage)
-        {
-            case 0: map.Stage("map"); Shot("campaign-map"); break;
-            case 1: map.Stage("close"); Shot("campaign-close"); break;
-            case 2: c.Player.Companies[0].Xp = 70; c.Captain.Renown = 120; map.Stage("party"); Shot("campaign-party"); break;
-            case 3: map.Stage("upgrade"); Shot("campaign-upgrade"); break;
-            case 4: map.Stage("settlement"); Shot("campaign-town"); break;
-            case 5:
-            {
-                var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
-                bandit.Pos = c.Player.Pos + new Vector2(2, 0);
-                c.Encounter = bandit;
-                map.Stage("encounter"); Shot("campaign-encounter"); break;
-            }
-            case 6: c.AutoResolveEncounter(); map.Stage("results"); Shot("campaign-results"); break;
-            case 7:
-            {
-                map.Stage("map");
-                var lord = c.S.Parties.First(p => p.Kind == PartyKind.Lord && p.Faction == 1);
-                lord.Pos = c.Player.Pos + new Vector2(2, 0);
-                c.Encounter = lord;
-                StartCampaignBattle(c.PrepareBattle(lord));
-                cStage++; shotFrames = 0; break;
-            }
-            case 8: Shot("campaign-deploy"); break;
-            case 9: deploying = false; cStage++; break;
-            case 10 when battle.Time > 7: SetCommand(true); blend = 1; camFocus = battle.Centroid(0); camPitch = 0.8f; zoom = 50; Shot("campaign-battle"); break;
-            case 11: Exit(); break;
-        }
-    }
-
-    void NewBattle()
+    public void NewBattle()
     {
         // Stand-in for the campaign map: both armies arrive with companies upgraded to some level (1-4).
         int seed = shotDir != null ? 7 : Environment.TickCount;
@@ -210,7 +134,8 @@ public sealed class BattleGame : Game
         var levels = (Environment.GetEnvironmentVariable("IRONFIELD_LEVELS") ?? (shotDir != null ? "4,3" : "")).Split(',');
         int mine = int.TryParse(levels[0], out var l0) ? l0 : rng.Next(1, 5);
         int theirs = levels.Length > 1 && int.TryParse(levels[1], out var l1) ? l1 : Math.Clamp(mine + rng.Next(-1, 2), 1, 4);
-        battle = new Battle(seed, Armies.Random(rng, Math.Clamp(mine, 1, 4), 0), Armies.Random(rng, Math.Clamp(theirs, 1, 4), 1));
+        battle = new Battle(seed, Armies.Random(rng, Math.Clamp(mine, 1, 4), 0), Armies.Random(rng, Math.Clamp(theirs, 1, 4), 1),
+            new BattleOptions { EnemyDamage = Settings.Current.EnemyDamage });
         SetWorld();
         battle.Log($"Your company (level {mine}) faces a level {theirs} host.");
         foreach (var p in ctl.Problems) battle.Log(p);
@@ -242,29 +167,17 @@ public sealed class BattleGame : Game
     bool LmbPressed => ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released;
     bool LmbReleased => ms.LeftButton == ButtonState.Released && pms.LeftButton == ButtonState.Pressed;
 
-    protected override void Update(GameTime gameTime)
+    /// One frame of the battle (the host has already updated the controls).
+    public void Update(float dt)
     {
         pkb = kb; pms = ms;
         kb = Keyboard.GetState(); ms = Mouse.GetState();
-        ctl.Update(kb, ms);
-        float dt = MathF.Min((float)gameTime.ElapsedGameTime.TotalSeconds, 1 / 30f);
         realTime += dt;
-        if (ctl.Pressed(Act.Graphics) && mode != Mode.Battle) quality = shading == null ? Quality.Low : (Quality)(((int)quality + 1) % 3);
-        if (mode == Mode.Title)
-        {
-            IsMouseVisible = true;
-            if (LmbPressed) titleClick = true;
-            base.Update(gameTime);
-            return;
-        }
-        if (mode == Mode.Map)
-        {
-            IsMouseVisible = true;
-            map.Update(dt, IsActive);
-            if (campaignShots != null) { shotFrames++; CampaignShots(); }
-            base.Update(gameTime);
-            return;
-        }
+        if (Pressed(Keys.Enter) && Tips.Active) Tips.Dismiss();
+        else if (LmbPressed && Tips.Active && command && tipUi.Blocks(ms.Position)) Tips.Dismiss();
+        if (deploying) Tips.Show("deploy", "Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press Space (or START BATTLE) to begin.");
+        else if (!command && battle.Player.Active) Tips.Show("field", "Field view: you fight. On horseback W/S rein, A/D turn, Shift gallops. On foot WASD.\nMove the mouse to choose a swing direction, LMB to attack, RMB to block (match the red mark to parry).\nTab: command view. Hold MMB or Z: the order wheel.");
+        else if (command && !deploying) Tips.Show("command", "Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. Tab returns to your body: you inspire the men near you.");
 
         if (ctl.Pressed(Act.Menu)) { if (helpOpen) helpOpen = false; else if (battle.Winner < 0) menuOpen = !menuOpen; skipMouse = true; }
         if (ctl.Pressed(Act.Help)) { helpOpen = !helpOpen; skipMouse = true; }
@@ -288,11 +201,6 @@ public sealed class BattleGame : Game
                 battle.Log("The battle begins!");
             }
             else if (ctl.Pressed(Act.Pause)) paused = !paused;
-            if (ctl.Pressed(Act.Graphics))
-            {
-                quality = shading == null ? Quality.Low : (Quality)(((int)quality + 1) % 3);
-                battle.Log("Graphics: " + quality switch { Quality.High => "high (shadows, post)", Quality.Medium => "medium (no shadows)", _ => "low (basic)" });
-            }
             OrderKeys();
             if (command) CommandControls(dt); else FieldControls();
         }
@@ -300,13 +208,41 @@ public sealed class BattleGame : Game
         battle.Commanding = command;
 
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
-        if (scale > 0) battle.Update(dt * scale);
+        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); }
+        Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
         if (shotDir != null) { shotFrames++; ShotScript(); }
-        if (campaignShots != null) { shotFrames++; CampaignShots(); }
         UpdateCamera();
-        base.Update(gameTime);
+    }
+
+    /// Battle sound cues, heard from the camera.
+    void PlaySounds()
+    {
+        var audio = host.Audio;
+        if (audio == null || !audio.Enabled) return;
+        var right = Matrix.Invert(view).Right;
+        foreach (var (cue, p) in battle.Sounds)
+            audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, cue is Cue.Shout or Cue.Horn or Cue.Rout ? 160 : 70);
+    }
+
+    /// Ambient beds and music: galloping and melee din by how much is near the camera; drums once the fighting starts.
+    void Soundscape()
+    {
+        var audio = host.Audio;
+        if (audio == null) return;
+        var ear = new Vector2(focusPoint.X, focusPoint.Z);
+        float range = 25 + 30 * blend;
+        int horses = 0, fighting = 0;
+        foreach (var u in battle.Units)
+        {
+            if (!u.Active || Vector2.DistanceSquared(u.Pos, ear) > range * range) continue;
+            if (u.Mounted && MathF.Abs(u.Speed) > 5) horses++;
+            if (u.Action is UnitAction.Windup or UnitAction.Recover && u.Type.Ammo == 0) fighting++;
+        }
+        bool quiet = paused || menuOpen || deploying;
+        audio.Beds(0.7f, quiet ? 0 : MathF.Min(1, horses / 5f), quiet ? 0 : MathF.Min(1, fighting / 14f));
+        audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Map : MusicTrack.Battle);
     }
 
     /// Hand the HUD everything it shows, and lay it out (also used for clicks).
@@ -333,8 +269,9 @@ public sealed class BattleGame : Game
             case MenuItem.NewBattle: NewBattle(); break;
             case MenuItem.Quit: Exit(); break;
             case MenuItem.Withdraw: battle.Withdraw(); menuOpen = false; break;
+            case MenuItem.Settings: host.OpenSettings(); break;
             case MenuItem.Continue: FinishCampaignBattle(); break;
-            case MenuItem.Title: menuOpen = false; mode = Mode.Title; break;
+            case MenuItem.Title: menuOpen = false; OnTitle?.Invoke(); break;
         }
     }
 
@@ -738,26 +675,9 @@ public sealed class BattleGame : Game
 
     // ---------- drawing ----------
 
-    protected override void Draw(GameTime gameTime)
+    public void Draw()
     {
         var gd = GraphicsDevice;
-        if (mode != Mode.Battle)
-        {
-            if (mode == Mode.Title) DrawTitle();
-            else
-            {
-                try { map.Draw(quality); }
-                catch (Exception e) when (quality != Quality.Low)
-                {
-                    Console.WriteLine("shader pipeline failed on the map, falling back: " + e);
-                    gd.SetRenderTarget(null);
-                    quality = Quality.Low;
-                }
-            }
-            CaptureShot();
-            base.Draw(gameTime);
-            return;
-        }
         EaseFacings();
         bool shaded = quality != Quality.Low && shading != null;
         if (shaded)
@@ -783,26 +703,12 @@ public sealed class BattleGame : Game
             DrawLines();
         }
         SyncHud();
-        if (!hudHidden) hud.Draw();
-
-        CaptureShot();
-        base.Draw(gameTime);
-    }
-
-    void CaptureShot()
-    {
-        var gd = GraphicsDevice;
-        var dir = shotDir ?? campaignShots;
-        if (pendingShot != null && dir != null)
+        if (!hudHidden)
         {
-            int w = gd.PresentationParameters.BackBufferWidth, h = gd.PresentationParameters.BackBufferHeight;
-            var data = new Color[w * h];
-            gd.GetBackBufferData(data);
-            using var tex = new Texture2D(gd, w, h);
-            tex.SetData(data);
-            using var file = File.Create(Path.Combine(dir, pendingShot + ".png"));
-            tex.SaveAsPng(file, w, h);
-            pendingShot = null;
+            hud.Draw();
+            tipUi.Begin(gd.Viewport, ms.Position, false);
+            Tips.Draw(tipUi, tipUi.U(124));
+            tipUi.End();
         }
     }
 
@@ -837,7 +743,7 @@ public sealed class BattleGame : Game
         sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
         DrawSpritesShaded(sh.Sprite, "Sprite");
         DrawLines();
-        sh.PostToScreen(fxaa: true);
+        sh.PostToScreen(fxaa: Settings.Current.Fxaa);
     }
 
     void DrawBlobs(float alpha)

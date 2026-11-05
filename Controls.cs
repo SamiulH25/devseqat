@@ -15,6 +15,10 @@ public enum Act
     Charge, Follow, FormHere, HoldPosition, Advance, FallBack, Spacing, FireAtWill, SelectAll,
     // general
     CommandView, Pause, Menu, Help, Graphics,
+    // campaign map
+    PartyScreen, Speed1, Speed2, Speed3, FollowParty, QuickSave, QuickLoad,
+    // battle (later additions)
+    Formation, Bash, SwapWeapon,
 }
 
 public enum MouseButton { Left, Right, Middle, X1, X2 }
@@ -84,6 +88,9 @@ public sealed class Controls
         [Act.SelectAll] = new[] { "0", "TILDE" },
         [Act.CommandView] = new[] { "Tab" }, [Act.Pause] = new[] { "Space" }, [Act.Menu] = new[] { "ESC" }, [Act.Help] = new[] { "F1" },
         [Act.Graphics] = new[] { "F2" },
+        [Act.PartyScreen] = new[] { "P" }, [Act.Speed1] = new[] { "1" }, [Act.Speed2] = new[] { "2" }, [Act.Speed3] = new[] { "3" },
+        [Act.FollowParty] = new[] { "F" }, [Act.QuickSave] = new[] { "F5" }, [Act.QuickLoad] = new[] { "F9" },
+        [Act.Formation] = new[] { "J" }, [Act.Bash] = new[] { "CTRL" }, [Act.SwapWeapon] = new[] { "N" },
     };
 
     public static readonly Dictionary<Act, string> Labels = new()
@@ -96,6 +103,9 @@ public sealed class Controls
         [Act.Advance] = "ADVANCE", [Act.FallBack] = "FALL BACK", [Act.Spacing] = "LOOSE / TIGHT", [Act.FireAtWill] = "FIRE AT WILL / HOLD",
         [Act.SelectAll] = "SELECT ALL",
         [Act.CommandView] = "COMMAND VIEW", [Act.Pause] = "PAUSE", [Act.Menu] = "MENU", [Act.Help] = "CONTROLS", [Act.Graphics] = "GRAPHICS QUALITY",
+        [Act.PartyScreen] = "PARTY SCREEN (MAP)", [Act.Speed1] = "SPEED X1 (MAP)", [Act.Speed2] = "SPEED X3 (MAP)", [Act.Speed3] = "SPEED X8 (MAP)",
+        [Act.FollowParty] = "FOLLOW YOUR PARTY (MAP)", [Act.QuickSave] = "QUICK SAVE", [Act.QuickLoad] = "QUICK LOAD",
+        [Act.Formation] = "CYCLE FORMATION", [Act.Bash] = "SHIELD BASH / KICK", [Act.SwapWeapon] = "SWAP WEAPON (ON FOOT)",
     };
 
     public Controls()
@@ -103,9 +113,37 @@ public sealed class Controls
         foreach (var (act, keys) in Defaults) Binds[act] = keys.Select(k => Bind.Parse(k)!.Value).ToList();
     }
 
+    /// Where the settings screen writes your bindings (the user's Ironfield folder).
+    public static string UserFile => Path.Combine(Settings.Folder, FileName);
+
+    public void SaveUser()
+    {
+        Directory.CreateDirectory(Settings.Folder);
+        var binds = new System.Text.Json.Nodes.JsonObject();
+        foreach (var (act, list) in Binds) binds[act.ToString()] = new System.Text.Json.Nodes.JsonArray(list.Select(b => (System.Text.Json.Nodes.JsonNode)System.Text.Json.Nodes.JsonValue.Create(b.ToString())!).ToArray());
+        var root = new System.Text.Json.Nodes.JsonObject { ["MouseSensitivity"] = Sensitivity, ["InvertMouseY"] = InvertY, ["Bindings"] = binds };
+        File.WriteAllText(UserFile, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    public void ResetDefaults()
+    {
+        foreach (var (act, keys) in Defaults) Binds[act] = keys.Select(k => Bind.Parse(k)!.Value).ToList();
+        Sensitivity = 1;
+        InvertY = false;
+    }
+
+    /// The first key or mouse button pressed this frame (for rebinding).
+    public Bind? AnyPressed()
+    {
+        foreach (var k in kb.GetPressedKeys()) if (!pkb.IsKeyDown(k)) return new Bind(k, null);
+        foreach (MouseButton b in Enum.GetValues<MouseButton>())
+            if (IsDown(new Bind(null, b), kb, ms) && !IsDown(new Bind(null, b), pkb, pms)) return new Bind(null, b);
+        return null;
+    }
+
     public static string? FindFile()
     {
-        foreach (var dir in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
+        foreach (var dir in new[] { Settings.Folder, Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
         {
             var p = Path.Combine(dir, FileName);
             if (File.Exists(p)) return p;

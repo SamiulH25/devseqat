@@ -6,7 +6,7 @@ namespace Ironfield;
 /// Orders the player can give, from hotkeys, the order wheel or the command-view buttons.
 public enum Cmd { Charge, Advance, FormHere, Spacing, FallBack, FireAtWill, Hold, Follow }
 
-public enum MenuItem { Resume, Controls, NewBattle, Quit, Withdraw, Continue, Title }
+public enum MenuItem { Resume, Controls, NewBattle, Quit, Withdraw, Continue, Title, Settings }
 
 /// All 2D interface: unit cards, player panel, balance of power, minimap, event feed, crosshair, order wheel,
 /// command buttons, squad banners and the menu / controls / result overlays. Layout is in 720p units times `Ui`.
@@ -63,7 +63,7 @@ sealed class Hud
     {
         W = vp.Width;
         H = vp.Height;
-        Ui = Math.Max(1, (int)MathF.Round(H / 720f));
+        Ui = Settings.UiFor(H);
         cards.Clear(); buttons.Clear(); menu.Clear();
 
         var mine = Mine;
@@ -84,7 +84,7 @@ sealed class Hud
         }
 
         var items = ShowResult ? (InCampaign ? new[] { MenuItem.Continue } : new[] { MenuItem.NewBattle, MenuItem.Title })
-            : MenuOpen ? (InCampaign ? new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Withdraw } : new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.NewBattle, MenuItem.Title })
+            : MenuOpen ? (InCampaign ? new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.Withdraw } : new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.NewBattle, MenuItem.Title })
             : Array.Empty<MenuItem>();
         start = Deploying ? new Rectangle(W / 2 - U(130), U(96), U(260), U(30)) : Rectangle.Empty;
         int mw = U(220), mh = U(30), top = ShowResult ? H / 2 + U(70) : H / 2 - items.Length * (mh + U(8)) / 2 + U(10);
@@ -484,7 +484,7 @@ sealed class Hud
             Rect(r, hover ? Gold * 0.35f : Color.White * 0.06f);
             Frame(r, hover ? Gold : Edge, U(1));
             TextC(m switch { MenuItem.Resume => "RESUME", MenuItem.Controls => "CONTROLS", MenuItem.NewBattle => "NEW BATTLE", MenuItem.Withdraw => "WITHDRAW",
-                    MenuItem.Continue => "CONTINUE", MenuItem.Title => "QUIT TO TITLE", _ => "QUIT" },
+                    MenuItem.Continue => "CONTINUE", MenuItem.Title => "QUIT TO TITLE", MenuItem.Settings => "SETTINGS", _ => "QUIT" },
                 r.X + r.Width / 2f, r.Y + U(8), Color.White);
         }
     }

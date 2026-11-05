@@ -15,12 +15,15 @@ sealed class Ui
     bool click;
     List<Rectangle> blockers = new(), last = new();
 
+    /// Every button click calls this (the host plays a click).
+    public static Action? OnClick;
+
     public Ui(SpriteBatch sb, Art art, PixelFont font) { Sb = sb; this.art = art; this.font = font; }
 
     public void Begin(Viewport vp, Point mouse, bool clicked)
     {
         W = vp.Width; H = vp.Height;
-        S = Math.Max(1, (int)MathF.Round(H / 720f));
+        S = Settings.UiFor(H);
         Mouse = mouse;
         click = clicked;
         blockers = new List<Rectangle>();
@@ -88,7 +91,9 @@ sealed class Ui
         if (note == "") TextC(label, r.X + r.Width / 2f, ty, c, scale);
         else { Text(label, r.X + U(6), ty, c, scale); TextR(note, r.Right - U(6), r.Y + (r.Height - 7 * S) / 2f, Style.Dim, 1); }
         Block(r);
-        return enabled && Clicked(r);
+        bool hit = enabled && Clicked(r);
+        if (hit) OnClick?.Invoke();
+        return hit;
     }
 
     public void Portrait(UnitType t, Rectangle box) => Hud.Portrait(Sb, art, t, box, S);

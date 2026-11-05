@@ -8,11 +8,14 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
-    public Action? OnTitle;
+    public Action? OnTitle, OnSettings;
+
+    /// Ironman campaigns keep one save; others quick-save.
+    void Save() { C.S.Save(C.S.Ironman ? "autosave" : "quicksave"); C.Log("Saved."); }
 
     readonly GraphicsDevice gd;
     readonly Art art;
@@ -68,7 +71,13 @@ sealed class MapScreen
         lastWeek = (int)(c.S.Hours / 168);
     }
 
-    public void ShowResults() { panel = PanelKind.Results; speed = 0; }
+    public void ShowResults()
+    {
+        panel = PanelKind.Results;
+        speed = 0;
+        if (C.Report is { Won: true }) AudioEngine.Current?.Play(Cue.Coin);
+        Tips.Show("results", "After a battle, wounded men heal over the following days (faster resting in a town).\nCompanies that fought gained XP: the bar under each card fills toward the next upgrade.");
+    }
 
     bool Pressed(Keys k) => kb.IsKeyDown(k) && !pkb.IsKeyDown(k);
 
@@ -80,32 +89,46 @@ sealed class MapScreen
         kb = Keyboard.GetState(); ms = Mouse.GetState();
         time += dt;
         if (ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released) pendingClick = true;
+        if (Pressed(Keys.Enter)) Tips.Dismiss();
+        Tips.Show("welcome", "Welcome, captain. Click the map to march; click a town or village to enter it.\nBrigands are close by: click their banner to ride at them, or let them come to you.\nWASD pans, the wheel zooms, Space pauses. P opens your company.");
+        if (C.Player.Companies.Any(Rules.UpgradeReady))
+            Tips.Show("upgrade", "A company has the XP to upgrade (gold bar, UPGRADE READY).\nOpen the party screen (P) or a town's training yard, and choose its next troops.");
+        if (Rules.PerkPoints(C.Captain) > 0) Tips.Show("perk", "Your renown has earned a perk. Take it in the party screen (P).");
+        if (C.Day >= 7) Tips.Show("upkeep", "Upkeep is paid each week (the bar at the top). Your contract pays most of it;\nloot, ransoms and bounties pay the rest. Unpaid men desert.");
 
         if (panel == PanelKind.None)
         {
-            if (Pressed(Keys.Escape)) { panel = PanelKind.Menu; return; }
-            if (Pressed(Keys.P)) { panel = PanelKind.Party; return; }
-            if (Pressed(Keys.Space)) speed = speed == 0 ? 1 : 0;
-            if (Pressed(Keys.D1)) speed = 1;
-            if (Pressed(Keys.D2)) speed = 3;
-            if (Pressed(Keys.D3)) speed = 8;
-            if (Pressed(Keys.F)) follow = true;
-            if (Pressed(Keys.F5)) { C.S.Save("quicksave"); C.Log("Saved."); }
-            if (Pressed(Keys.F9) && CampaignState.Load("quicksave") is CampaignState loaded) { Open(new Campaign(loaded)); C.Log("Loaded."); }
+            if (ctl.Pressed(Act.Menu)) { panel = PanelKind.Menu; return; }
+            if (ctl.Pressed(Act.PartyScreen)) { panel = PanelKind.Party; return; }
+            if (ctl.Pressed(Act.Pause)) speed = speed == 0 ? 1 : 0;
+            if (ctl.Pressed(Act.Speed1)) speed = 1;
+            if (ctl.Pressed(Act.Speed2)) speed = 3;
+            if (ctl.Pressed(Act.Speed3)) speed = 8;
+            if (ctl.Pressed(Act.FollowParty)) follow = true;
+            if (ctl.Pressed(Act.QuickSave)) Save();
+            if (ctl.Pressed(Act.QuickLoad) && !C.S.Ironman && CampaignState.Load("quicksave") is CampaignState loaded) { Open(new Campaign(loaded)); C.Log("Loaded."); }
             Camera(dt, active);
             if (active && pendingClick && !ui.Blocks(ms.Position)) { pendingClick = false; ClickWorld(Ground(ms.Position)); }
             if (speed > 0) C.Tick(dt / Balance.Get().HourSeconds * speed);
-            if (C.Encounter != null) { panel = PanelKind.Encounter; note = ""; }
+            if (C.Encounter != null)
+            {
+                panel = PanelKind.Encounter; note = "";
+                Tips.Show("encounter", "An encounter. ATTACK to fight the battle yourself, AUTO-RESOLVE to let your sergeants do it,\nRETREAT to escape (a rearguard pays), or pay brigands to go away.");
+            }
             else if (C.Arrived is Settlement s)
             {
                 C.Arrived = null;
                 if (C.Refuses(s)) C.Log($"{s.Name} bars its gates to you.");
-                else { at = s; tab = s.Kind == SettlementKind.Village ? "RECRUIT" : s.Kind == SettlementKind.Castle ? "REST" : "TRAIN"; panel = PanelKind.Settlement; note = ""; }
+                else
+                {
+                    at = s; tab = s.Kind == SettlementKind.Village ? "RECRUIT" : s.Kind == SettlementKind.Castle ? "REST" : "TRAIN"; panel = PanelKind.Settlement; note = "";
+                    Tips.Show("settlement", "Villages give recruits (levies). Towns train companies that have the XP, sell horses and gear,\nhire out mercenary companies, and pay contracts. Resting in a town heals the wounded faster.");
+                }
             }
             int week = (int)(C.S.Hours / 168);
             if (week != lastWeek) { lastWeek = week; C.S.Save("autosave"); }
         }
-        else if (Pressed(Keys.Escape) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade)
+        else if (ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade)
             panel = panel == PanelKind.Upgrade ? PanelKind.Party : PanelKind.None;
         if (follow) focus = Vector2.Lerp(focus, C.Player.Pos, MathF.Min(1, dt * 4));
     }
@@ -204,7 +227,7 @@ sealed class MapScreen
             sh.Setup(sh.Sprite, view * proj, eye, time, shadows, 1.2f);
             DrawSprites(sh.Sprite, "Sprite");
             DrawLines();
-            sh.PostToScreen(true);
+            sh.PostToScreen(Settings.Current.Fxaa);
             sh.Fog = fog;
         }
         else
@@ -324,6 +347,7 @@ sealed class MapScreen
         CaptainPanel();
         Cards();
         if (panel == PanelKind.None) { Tooltip(); Hints(); }
+        Tips.Draw(ui, ui.U(130));
         switch (panel)
         {
             case PanelKind.Encounter: EncounterPanel(); break;
@@ -332,6 +356,7 @@ sealed class MapScreen
             case PanelKind.Upgrade: UpgradePanel(); break;
             case PanelKind.Results: ResultsPanel(); break;
             case PanelKind.Menu: MenuPanel(); break;
+            case PanelKind.GameOver: GameOverPanel(); break;
         }
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
@@ -585,9 +610,9 @@ sealed class MapScreen
         {
             SettlementKind.Village => new[] { "RECRUIT", "REST" },
             SettlementKind.Castle => new[] { "REST", "CONTRACT" },
-            _ => new[] { "TRAIN", "MERCENARIES", "MARKET", "REST", "CONTRACT" },
+            _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "MARKET", "REST", "CONTRACT" },
         };
-        int tw = ui.U(128), tx = r.X + (r.Width - tabs.Length * (tw + ui.U(6))) / 2;
+        int tw = ui.U(118), tx = r.X + (r.Width - tabs.Length * (tw + ui.U(6))) / 2;
         for (int i = 0; i < tabs.Length; i++)
             if (ui.Button(new Rectangle(tx + i * (tw + ui.U(6)), r.Y + ui.U(56), tw, ui.U(24)), tabs[i], true, "", tab == tabs[i])) { tab = tabs[i]; note = ""; }
         var body = new Rectangle(r.X + ui.U(24), r.Y + ui.U(92), r.Width - ui.U(48), r.Height - ui.U(160));
@@ -792,17 +817,33 @@ sealed class MapScreen
         y += ui.U(22);
         if (rep.Captain == LeaderFate.Wounded) ui.Text("YOU ARE WOUNDED: FOR A FEW DAYS YOU COMMAND FROM THE REAR.", x, y, Style.Warn, 1);
         if (rep.Captain == LeaderFate.Captured) ui.Text("YOU WERE TAKEN AND RANSOMED (30% OF YOUR GOLD).", x, y, Style.Bad, 1);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CONTINUE")) { panel = PanelKind.None; C.Report = null; }
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CONTINUE"))
+        { panel = C.S.GameOver ? PanelKind.GameOver : PanelKind.None; C.Report = null; }
+    }
+
+    /// Ironman: the captain was taken and executed. The campaign (and its save) ends here.
+    void GameOverPanel()
+    {
+        var r = Modal(560, 260, "YOUR WAR IS OVER", Style.Bad);
+        ui.TextC($"YOU LED YOUR COMPANY FOR {C.Day} DAYS AND WON {C.Captain.Renown:0} RENOWN.", r.X + r.Width / 2f, r.Y + ui.U(70), Style.Text, 1);
+        ui.TextC("THE ENEMY DID NOT RANSOM YOU.", r.X + r.Width / 2f, r.Y + ui.U(90), Style.Dim, 1);
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(50), ui.U(220), ui.U(32)), "TO THE TITLE"))
+        {
+            var p = Path.Combine(CampaignState.SaveDir, "autosave.json");
+            if (File.Exists(p)) File.Delete(p);
+            OnTitle?.Invoke();
+        }
     }
 
     void MenuPanel()
     {
-        var r = Modal(300, 270, "PAUSED");
+        var r = Modal(300, 310, "PAUSED");
         int y = r.Y + ui.U(54);
         Rectangle B() { var b = new Rectangle(r.X + ui.U(40), y, r.Width - ui.U(80), ui.U(30)); y += ui.U(38); return b; }
         if (ui.Button(B(), "RESUME")) panel = PanelKind.None;
-        if (ui.Button(B(), "SAVE (F5)")) { C.S.Save("quicksave"); C.Log("Saved."); panel = PanelKind.None; }
-        if (ui.Button(B(), "LOAD (F9)", CampaignState.Exists("quicksave")) && CampaignState.Load("quicksave") is CampaignState s) Open(new Campaign(s));
+        if (ui.Button(B(), $"SAVE ({ctl.Name(Act.QuickSave)})")) { Save(); panel = PanelKind.None; }
+        if (ui.Button(B(), $"LOAD ({ctl.Name(Act.QuickLoad)})", !C.S.Ironman && CampaignState.Exists("quicksave")) && CampaignState.Load("quicksave") is CampaignState s) Open(new Campaign(s));
+        if (ui.Button(B(), "SETTINGS")) OnSettings?.Invoke();
         if (ui.Button(B(), "QUIT TO TITLE")) { C.S.Save("autosave"); OnTitle?.Invoke(); }
     }
 

@@ -18,7 +18,8 @@ public sealed class Squad
     public float Pressure;                        // recent flank/rear hits; drains morale, decays over time
     public int Kills;                             // enemies this company has killed (campaign XP)
     public readonly int[] KillsByTier = new int[5]; // kills by the victim's tier (0 = leaders)
-    public Company? Company;                      // the campaign company this squad fights for (null in scenarios)
+    public Company? Company;
+    public bool RoutSounded;                      // the rout horn has blown for this company                      // the campaign company this squad fights for (null in scenarios)
 
     public Squad(string name, int team) { Name = name; Team = team; }
 

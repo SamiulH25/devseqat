@@ -24,6 +24,9 @@ public sealed class Battle
 {
     public const float MapRadius = 95, Gravity = 9.8f, ArrowSpeed = 28, RallyRadius = 15;
     public readonly BattleOptions Options;
+    /// Sound cues from the last Update (the screen plays them; headless runs ignore them).
+    public readonly List<(Cue Cue, Vector2 Pos)> Sounds = new();
+    void Sound(Cue c, Vector2 at) { if (Sounds.Count < 64) Sounds.Add((c, at)); }
     const float LanceFrom = 1.0f, LanceTip = 2.7f, BraceExtra = 0.8f;
 
     public readonly List<Unit> Units = new();
@@ -161,6 +164,7 @@ public sealed class Battle
 
     public void Update(float dt)
     {
+        Sounds.Clear();
         Time += dt;
         RallyCooldown = MathF.Max(0, RallyCooldown - dt);
         UpdateCentroids();
@@ -216,6 +220,7 @@ public sealed class Battle
         int n = 0;
         foreach (var u in s.Units) if (u.Active && !u.Routing) n++;
         s.Alive = n;
+        if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); }
         int i = 0;
         foreach (var u in s.Units) if (u.Active && !u.Routing) { u.Slot = s.Slot(i++, n); }
     }
@@ -533,6 +538,7 @@ public sealed class Battle
             if (u.Active && u.Team == p.Team && !u.IsPlayer && Vector2.DistanceSquared(u.Pos, p.Pos) < RallyRadius * RallyRadius)
                 u.Morale = MathF.Min(100, u.Morale + (u.Routing ? Options.RallyBonus + 20 : Options.RallyBonus));
         Log("Rally! Hold the line!");
+        Sound(Cue.Horn, p.Pos);
     }
 
     void TickAction(Unit u, float dt)
@@ -614,6 +620,7 @@ public sealed class Battle
     /// One blow (melee, arrow or lance) from a at t: horse hits, blocks and parries, then damage multipliers.
     internal void Hit(Unit a, Unit t, float dmg, bool ranged, bool lance = false)
     {
+        if (a.Team == 1) dmg *= Options.EnemyDamage;
         // Arrows and spears often take the horse instead of the rider.
         if (t.Mounted && rng.NextSingle() < (ranged ? 0.45f : a.Type.Class == UnitClass.Skirmisher ? 0.5f : 0.15f))
         {
@@ -633,9 +640,11 @@ public sealed class Battle
                     Stagger(a, 0.9f);
                     t.Stamina = MathF.Max(0, t.Stamina - 2);
                     PlayerHit = ("PARRY!", Time);
+                    Sound(Cue.Clash, t.Pos);
                     return;
                 }
                 t.Stamina -= ranged ? 4 : dmg * (lance ? 1.2f : 0.8f); // a shield stops any direction, at a stamina cost
+                Sound(Cue.Block, t.Pos);
                 if (t.Stamina <= 0) { t.Stamina = 0; Stagger(t, 0.8f); Log("Guard broken!"); }
                 else if (!ranged && !lance) Stagger(a, 0.35f);
                 return;
@@ -653,6 +662,7 @@ public sealed class Battle
                 t.Action = UnitAction.Block;
                 t.ActionTimer = 0.35f;
                 if (a.IsPlayer) PlayerHit = ("BLOCKED", Time);
+                Sound(t.Type.HasShield ? Cue.Block : Cue.Clash, t.Pos);
                 return;
             }
         }
@@ -663,6 +673,7 @@ public sealed class Battle
         float mult = (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted : 1);
         if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0);
+        Sound(ranged ? Cue.ArrowHit : t.Type.Armor >= 8 ? Cue.Clash : Cue.Hit, t.Pos);
         if (a.IsPlayer)
         {
             var text = $"{real:0} DMG";
@@ -742,6 +753,7 @@ public sealed class Battle
     void Shoot(Unit u, Unit t)
     {
         u.Ammo--;
+        Sound(Cue.Bow, u.Pos);
         u.Cooldown = u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f;
         u.Action = UnitAction.Recover; // shows the release pose
         u.ActionTimer = 0.25f;
@@ -851,6 +863,7 @@ public sealed class Battle
         float closing = Vector2.Dot(r.Vel - f.Vel, n);
         if (f.ImpactCd > 0 || closing < 4) return;
         f.ImpactCd = 0.8f;
+        Sound(Cue.Impact, f.Pos);
         r.Contact = true;
         if (Braced(f) && Vector2.Dot(-n, f.Dir) > 0.4f)
         {
@@ -991,6 +1004,7 @@ public sealed class Battle
                 charged[team] = true;
                 foreach (var s in inf.Concat(spears)) s.Order = Order.Charge;
                 Log(team == 1 ? "The enemy line charges!" : "Your line charges!");
+                Sound(Cue.Shout, front);
             }
         }
         else foreach (var s in inf.Concat(spears)) s.Order = Order.Charge; // late arrivals join the charge

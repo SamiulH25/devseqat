@@ -19,6 +19,8 @@ public sealed class BattleOptions
     public TerrainParams? Ground;
     /// Heraldry palette per team (Style.Sides index): your colours and theirs (3 = bandits).
     public int[] Palette = { 0, 1 };
+    /// Difficulty: the enemy's blows are multiplied by this.
+    public float EnemyDamage = 1;
 }
 
 public enum LeaderFate { Unhurt, Wounded, Captured, Slain }

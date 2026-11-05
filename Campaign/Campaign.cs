@@ -32,7 +32,7 @@ public sealed class Campaign
 
     public static Campaign New(int seed)
     {
-        var s = new CampaignState { Seed = seed, Gold = B.StartGold };
+        var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman };
         s.Captain.Renown = B.StartRenown;
         var map = WorldMap.Generate(seed);
         s.Provinces = map.Provinces;
@@ -54,6 +54,10 @@ public sealed class Campaign
         for (int f = 0; f < 2; f++)
             for (int i = 0; i < B.LordsPerFaction; i++) c.SpawnLord(f);
         for (int i = 0; i < 3; i++) c.SpawnBandits();
+        // The guided first fight: a weak band close by, coming for you.
+        var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
+        first.Companies.Add(c.NewCompany("levies", "infantry", 9, 0));
+        s.Parties.Add(first);
         c.Log($"You sign on with the {FactionNames[0]} as a free captain. Their steward pays 85% of your upkeep each week.");
         c.Log("Levies upgrade after a battle or two: visit a town's training yard.");
         return c;
@@ -268,7 +272,12 @@ public sealed class Campaign
         }
         if (r.Captain is LeaderFate.Wounded or LeaderFate.Captured)
             Captain.WoundedUntil = (float)S.Hours + 24 * rng.Range(3, 5);
-        if (r.Captain == LeaderFate.Captured || (!won && Player.Men == 0))
+        if (r.Captain == LeaderFate.Captured && S.Ironman)
+        {
+            S.GameOver = true;
+            Log("You are taken, and your captors will not ransom you. Your war is over.");
+        }
+        else if (r.Captain == LeaderFate.Captured || (!won && Player.Men == 0))
         {
             S.Gold *= 0.7f;
             var refuge = S.Settlements.Where(t => t.Kind == SettlementKind.Town && !Refuses(t)).OrderBy(t => Vector2.Distance(t.Pos, Player.Pos)).First();
@@ -311,6 +320,7 @@ public sealed class Campaign
             Scouted = scouts || Captain.Perks.Contains(Perk.Tactician),
             PlayerType = Rules.CaptainType(Captain),
             PlayerMount = Rules.CaptainMount(Captain),
+            EnemyDamage = Settings.Current.EnemyDamage,
             Ground = Map.BattleGround(Player.Pos),
             Palette = new[] { Math.Max(0, Captain.Contract), enemy.Kind == PartyKind.Bandit ? 3 : Math.Max(0, enemy.Faction) },
         };
@@ -626,7 +636,7 @@ public sealed class Campaign
     void Refit(Party p, Settlement home)
     {
         if (p.Companies.Count == 0) p.Companies.Add(NewCompany("levies", "infantry", 12, 0)); // the lord's household, raised again
-        foreach (var v in S.Settlements.Where(v => v.Province == home.Province && v.Kind == SettlementKind.Village))
+        foreach (var v in S.Settlements.Where(v => v.Province == home.Province))
         {
             int n = Math.Min(v.Recruits, (int)(p.Gold / 10));
             if (n <= 0) continue;
@@ -674,8 +684,8 @@ public sealed class Campaign
 
     void Daily()
     {
-        foreach (var v in S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.ThreatUntil <= S.Hours))
-            v.Recruits = Math.Min(B.VillageRecruitsMax, v.Recruits + 1);
+        foreach (var v in S.Settlements.Where(v => v.ThreatUntil <= S.Hours))
+            v.Recruits = v.Kind == SettlementKind.Village ? Math.Min(B.VillageRecruitsMax, v.Recruits + 1) : Math.Min(12, v.Recruits + 2); // towns and castles raise levies too
         foreach (var p in S.Parties.Where(p => !p.Down))
         {
             bool town = InTown(p);
@@ -744,7 +754,7 @@ public sealed class Campaign
             if (p == Player)
             {
                 if (Captain.Perks.Contains(Perk.Quartermaster)) upkeep *= 0.9f;
-                float pay = Captain.Contract >= 0 ? upkeep * B.ContractPay : 0;
+                float pay = Captain.Contract >= 0 ? upkeep * B.ContractPay * Settings.Current.PayFactor : 0;
                 S.LastWeekBalance = pay - upkeep;
                 S.Gold += S.LastWeekBalance;
                 if (S.Gold < 0)
