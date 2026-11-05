@@ -11,13 +11,15 @@ public sealed class Squad
     public readonly int Team;
     public readonly List<Unit> Units = new();
     public Order Order = Order.Hold;
+    public Squad? Target;                          // Charge at this squad (null = nearest enemy)
     public Vector2 Anchor, Front = Vector2.UnitY; // Anchor = centre of the front rank
     public int Columns = 8, StartCount, Alive;    // Alive = active and not routing, refreshed each tick
-    public bool Loose;
+    public bool Loose, Cavalry;
+    public float Pressure;                        // recent flank/rear hits; drains morale, decays over time
 
     public Squad(string name, int team) { Name = name; Team = team; }
 
-    public float Spacing => Loose ? 2.6f : 1.3f;
+    public float Spacing => Cavalry ? (Loose ? 4.5f : 3.0f) : Loose ? 2.6f : 1.3f;
 
     public Vector2 Slot(int i, int count)
     {
@@ -39,6 +41,7 @@ public sealed class Squad
     public void SetLine(Vector2 a, Vector2 b, Vector2 toward)
     {
         Order = Order.Hold;
+        Target = null;
         var center = (a + b) / 2;
         float width = Vector2.Distance(a, b);
         Anchor = center;
@@ -60,5 +63,6 @@ public sealed class Squad
         int rows = (Alive + cols - 1) / cols;
         Anchor = Centroid() + Front * (rows - 1) * Spacing / 2;
         Order = Order.Hold;
+        Target = null;
     }
 }

@@ -25,11 +25,13 @@ public sealed class Art
     static readonly Color Ink = new(22, 20, 26), Wood = new(124, 84, 44);
 
     // . clear  M team colour  D team dark  S skin  K ink  H hair  T metal  W wood  B boot  P plume  C cord  R blood
+    // N horse coat  E mane / tail
     static Color Map(char ch, (Color Main, Color Dark) pal) => ch switch
     {
         'M' => pal.Main, 'D' => pal.Dark, 'S' => new(232, 190, 150), 'K' => Ink, 'H' => new(92, 60, 36),
         'T' => new(178, 184, 196), 'W' => Wood, 'B' => new(58, 40, 26), 'P' => new(240, 240, 240),
-        'C' => new(225, 225, 215), 'R' => new(130, 20, 20), _ => Color.Transparent,
+        'C' => new(225, 225, 215), 'R' => new(130, 20, 20), 'N' => new(124, 84, 52), 'E' => new(52, 34, 24),
+        _ => Color.Transparent,
     };
 
     static readonly Dictionary<string, string[]> Sprites = new()
@@ -61,9 +63,33 @@ public sealed class Art
         ["shield"] = new[] { ".DDDDDD.", "DMMMMMMD", "DMMMMMMD", "DMMTTMMD", "DMMTTMMD", "DMMMMMMD", "DMMMMMMD", ".DMMMMD.", "..DMMD..", "...DD..." },
         ["quiver"] = new[] { "T.T", "WWW", "WWW", "WWW", "WWW", "WWW", "WWW" },
         ["blood"] = new[] { ".RRRR.", "RRRRRR", ".RRR.." },
+        ["lance"] = new[] { ".T.", ".T.", "TTT", ".TM", ".WM", ".WM", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.",
+            ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", ".W.", "TTT", ".W.", ".W.", ".W.", ".W.", ".W.", ".W." },
+
+        // Horse parts. "Long" parts run left (rear joint) to right (front joint) with their top edge up;
+        // axial legs and tail have their top row at the far (hoof / tip) end.
+        ["hbody"] = new[]
+        {
+            "..NNNNNNNWWWWNNNNNNN..",
+            ".NNNNNNNWWWWWWNNNNNNN.",
+            "NNNNNNNNNMMMMNNNNNNNNN",
+            "NNNNNNNNNMMMMNNNNNNNNN",
+            "MMMMMMMMMMMMMMMMMMMMMM",
+            "MDMDMDMDMDMDMDMDMDMDMD",
+            "NNNNNNNNNNNNNNNNNNNNNN",
+            ".NNNNNNNNNNNNNNNNNNNN.",
+            "..NNNNN........NNNNN..",
+        },
+        ["hneck"] = new[] { "EEEEEEEEE", "NNNNNNNNN", "NNNNNNNNN", "NNNNNNNNN", ".NNNNNNN." },
+        ["hhead"] = new[] { "EKNNNN..", "NNNKNNNN", "NNNNNNNN", ".NNNNNNK" },
+        ["hchest"] = new[] { ".NNNNNN.", "NNNNNNNN", "NNNNNNNN", "MMMMMMMM", "MDMDMDMD", "NNNNNNNN", ".NNNNNN." },
+        ["hrump"] = new[] { ".NNNNNN.", "NNNEENNN", "NNNEENNN", "MMMEEMMM", "MDMEEDMD", "NNNEENNN", ".NN..NN." },
+        ["hface"] = new[] { "E..E", "NNNN", "KNNK", "NNNN", "NNNN", ".NN." },
+        ["hleg"] = new[] { "KK", "NN", "NN", "NN", "NN", "NN", "NN", "NN", "NN", "NN", "NN", "NN" },
+        ["htail"] = new[] { "E.", "EE", "EE", "EE", "EE", "EE", "EE", "EE" },
     };
 
-    const int AW = 256, AH = 256;
+    const int AW = 512, AH = 256;
     const int FW = 16, FH = 24; // prop painting area
     readonly Color[] px = new Color[AW * AH];
     readonly Dictionary<string, Rectangle> rects = new();
