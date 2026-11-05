@@ -3,11 +3,29 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// The campaign world's geography (docs/CAMPAIGN.md 3): provinces, settlements, roads and terrain, all generated from a seed.
-/// Map units: the world spans +-256 (1 unit = 0.75 km). The same seed always gives the same map, so saves store only the seed
+/// Map units: the ground spans +-TerrainHalf (1 unit = 0.75 km). The same seed always gives the same map, so saves store only the seed
 /// plus what changes (ownership, recruits, parties).
 public sealed class WorldMap
 {
-    public const float Extent = 196; // where provinces live; mountains fill the rim out to the terrain's edge (256)
+    /// Where provinces live; mountains fill the rim out to the terrain's edge (TerrainHalf).
+    public const float Extent = 392;
+    /// Half the side of the ground: the provinces, plus a rim of mountains to close the world in (about 590 km across).
+    public const float TerrainHalf = 448;
+    /// Ground vertex spacing on the campaign map (coarser than a battlefield's 2.5 m). Small (pre-enlargement) maps keep the
+    /// finer grid they were drawn with.
+    public const float Step = 4f, LegacyStep = 2.5f;
+    /// The mountain rim between the provinces' extent and the edge of the ground.
+    const float Rim = TerrainHalf - Extent;
+    /// The extent campaigns generated before the map was enlarged used; saves keep their own map (CampaignState.MapExtent).
+    public const float LegacyExtent = 196;
+    /// How far apart provinces stand on the legacy map. A bigger world spreads them by (extent/196)^0.3, which lands
+    /// the full map on about Provinces of them: more provinces, and more ground between them, without every road
+    /// becoming a day's march.
+    public const float ProvinceSpacing = 66;
+    /// Roughly how many provinces the enlarged map packs in, and how many the original map had (the baseline every
+    /// balance number that scales with the world is quoted against).
+    public const int ProvinceCount = 60;
+    public const int LegacyProvinces = 26;
     public static readonly string[] Kinds = { "Meadow", "Farmland", "Forest", "Hills" };
 
     public readonly int Seed;
@@ -18,25 +36,41 @@ public sealed class WorldMap
     public readonly List<River> Rivers = new();
     /// 0-3: spring to winter. The ground's colours follow it (set before BuildTerrain).
     public int Season;
+    /// The extent this map was generated with (provinces live within it; mountains close the world beyond).
+    public float ExtentUsed = Extent;
+    /// How big this map is against the one the balance numbers were tuned on (WorldMap.LegacyProvinces provinces).
+    /// Parties and events that should keep pace with the size of the world scale with this, so the balance numbers stay
+    /// legible against the original map and a bigger map is not emptier or duller than the small one was.
+    public float ProvinceScale => MathF.Max(0.1f, Provinces.Count / (float)LegacyProvinces);
+    /// How far apart this map's places stand against the original map's (1 = the same). Distances that mean "the next
+    /// village" or "a short ride" scale with this, so a lord on a big map still finds things to do nearby.
+    public float Spread => MathF.Pow(MathF.Max(0.05f, ExtentUsed / LegacyExtent), 0.3f);
+    /// Half the side of this map's ground: the provinces, plus the mountain rim (an old save keeps the small world it had).
+    public float GroundHalf => ExtentUsed + Rim;
     readonly List<(Vector2 C, float R, float H)> hills = new();
 
     WorldMap(int seed) { Seed = seed; }
 
-    public static WorldMap Generate(int seed)
+    /// The map a fresh campaign uses. `extent` is half the side the provinces may use (Extent for new campaigns,
+    /// LegacyExtent for saves made before the map grew), so a save keeps the geography it was played on.
+    public static WorldMap Generate(int seed, float extent = Extent)
     {
-        var m = new WorldMap(seed);
+        var m = new WorldMap(seed) { ExtentUsed = extent };
         var rng = new Random(seed);
         var names = Names.Get();
         var places = names.Places.OrderBy(_ => rng.Next()).ToList();
         int nameAt = 0;
         string Place() => places[nameAt++ % places.Count];
+        // Everything below is measured in "spans": 1 = the map before it grew (196), so a bigger world scales with it.
+        float span = extent / LegacyExtent;
+        float spacing = ProvinceSpacing * MathF.Pow(span, 0.3f);
 
         // Provinces: well-spaced random centres.
         var centres = new List<Vector2>();
-        for (int tries = 0; tries < 4000 && centres.Count < 26; tries++)
+        for (int tries = 0; tries < 60000 && centres.Count < 400; tries++)
         {
-            var p = new Vector2(rng.NextSingle() * 2 - 1, rng.NextSingle() * 2 - 1) * Extent * 0.92f;
-            if (centres.All(c => Vector2.Distance(c, p) > 66)) centres.Add(p);
+            var p = new Vector2(rng.NextSingle() * 2 - 1, rng.NextSingle() * 2 - 1) * extent * 0.92f;
+            if (centres.All(c => Vector2.Distance(c, p) > spacing)) centres.Add(p);
         }
         // The north (low z) is the Northmarch; south of it, west is the Azure Crown and east the Crimson Compact.
         var north = centres.OrderBy(c => c.Y).Take(centres.Count * 3 / 10).ToHashSet();
@@ -44,7 +78,7 @@ public sealed class WorldMap
         foreach (var (c, i) in centres.OrderBy(c => c.X).Select((c, i) => (c, i)))
         {
             int kind = rng.NextSingle() switch { < 0.35f => 0, < 0.6f => 1, < 0.85f => 2, _ => 3 };
-            if (MathF.Max(MathF.Abs(c.X), MathF.Abs(c.Y)) > Extent * 0.75f && rng.Next(2) == 0) kind = 3; // hills toward the rim
+            if (MathF.Max(MathF.Abs(c.X), MathF.Abs(c.Y)) > extent * 0.75f && rng.Next(2) == 0) kind = 3; // hills toward the rim
             if (north.Contains(c) && kind == 1) kind = 2; // the north is forest, not farmland
             int faction = north.Contains(c) ? 2 : south.IndexOf(c) < south.Count / 2 ? 0 : 1;
             m.Provinces.Add(new Province { Id = i, Name = Place(), Kind = Kinds[kind], Center = c, Faction = faction });
@@ -52,7 +86,7 @@ public sealed class WorldMap
         // Neighbours: each province links to its nearest few; roads follow the links.
         foreach (var p in m.Provinces)
             foreach (var q in m.Provinces.Where(q => q != p).OrderBy(q => Vector2.Distance(p.Center, q.Center)).Take(3))
-                if (Vector2.Distance(p.Center, q.Center) < 160)
+                if (Vector2.Distance(p.Center, q.Center) < 160 * span)
                 {
                     if (!p.Neighbors.Contains(q.Id)) p.Neighbors.Add(q.Id);
                     if (!q.Neighbors.Contains(p.Id)) q.Neighbors.Add(p.Id);
@@ -72,11 +106,11 @@ public sealed class WorldMap
             m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Name = p.Name, Pos = p.Center,
                 Kind = town ? SettlementKind.Town : SettlementKind.Castle });
             int villages = 2 + rng.Next(2);
-            for (int v = 0, tries = 0; v < villages && tries < 50; tries++)
+            for (int v = 0, tries = 0; v < villages && tries < 200; tries++)
             {
-                float a = rng.NextSingle() * MathF.Tau, d = 16 + rng.NextSingle() * 16;
+                float a = rng.NextSingle() * MathF.Tau, d = (16 + rng.NextSingle() * 16) * span;
                 var pos = p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
-                if (m.Settlements.Any(s => Vector2.Distance(s.Pos, pos) < 12) || MathF.Abs(pos.X) > Extent || MathF.Abs(pos.Y) > Extent) continue;
+                if (m.Settlements.Any(s => Vector2.Distance(s.Pos, pos) < 12 * span) || MathF.Abs(pos.X) > extent || MathF.Abs(pos.Y) > extent) continue;
                 m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Name = Place(), Pos = pos, Kind = SettlementKind.Village });
                 m.Roads.Add((p.Center, pos));
                 v++;
@@ -86,17 +120,17 @@ public sealed class WorldMap
         for (int k = 0; k < 2; k++)
         {
             bool northSouth = k == 0;
-            float off = (rng.NextSingle() - 0.5f) * Extent * 0.8f, ph = rng.NextSingle() * MathF.Tau;
+            float off = (rng.NextSingle() - 0.5f) * extent * 0.8f, ph = rng.NextSingle() * MathF.Tau;
             var pts = new List<Vector2>();
-            for (float s = -Extent - 20; s <= Extent + 20; s += 4)
+            for (float s = -extent - 20; s <= extent + 20; s += 4)
             {
-                float w = off + MathF.Sin(s * 0.018f + ph) * 26 + MathF.Sin(s * 0.047f + ph * 2) * 9;
+                float w = off + MathF.Sin(s * (0.018f / span) + ph) * 26 * span + MathF.Sin(s * (0.047f / span) + ph * 2) * 9 * span;
                 var p = northSouth ? new Vector2(w, s) : new Vector2(s, w);
                 foreach (var st in m.Settlements)
                 {
                     var away = p - st.Pos;
                     float d = away.Length();
-                    if (d < 9) p = st.Pos + (d > 0.01f ? away / d : Vector2.UnitX) * 9;
+                    if (d < 9 * span) p = st.Pos + (d > 0.01f ? away / d : Vector2.UnitX) * 9 * span;
                 }
                 pts.Add(p);
             }
@@ -111,8 +145,8 @@ public sealed class WorldMap
         foreach (var p in m.Provinces.Where(p => p.Kind == "Hills"))
             for (int i = 0; i < 3; i++)
             {
-                float a = rng.NextSingle() * MathF.Tau, d = 10 + rng.NextSingle() * 30;
-                m.hills.Add((p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d, 16 + rng.NextSingle() * 14, 5 + rng.NextSingle() * 5));
+                float a = rng.NextSingle() * MathF.Tau, d = (10 + rng.NextSingle() * 30) * span;
+                m.hills.Add((p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d, (16 + rng.NextSingle() * 14) * span, 5 + rng.NextSingle() * 5));
             }
         return m;
     }
@@ -174,7 +208,7 @@ public sealed class WorldMap
             if (d < 1) h += hh * (1 - d * d) * (1 - d * d);
         }
         float edge = MathF.Max(MathF.Abs(x), MathF.Abs(z));
-        float t = Math.Clamp((edge - (Extent - 10)) / (256 - Extent + 10), 0, 1);
+        float t = Math.Clamp((edge - (ExtentUsed - 10)) / (GroundHalf - ExtentUsed + 10), 0, 1);
         h += t * t * (3 - 2 * t) * (24 + 10 * Terrain.Noise(x * 0.02f, z * 0.02f, Seed + 2)); // mountains close the world
         foreach (var r in Rivers)
         {
@@ -220,35 +254,42 @@ public sealed class WorldMap
     {
         var rng = new Random(Seed + 7);
         var foliage = new List<Foliage>();
+        float span = ExtentUsed / LegacyExtent;
         foreach (var s in Settlements)
             foliage.Add(new Foliage(s.Kind switch { SettlementKind.Town => FoliageKind.Town, SettlementKind.Castle => FoliageKind.Castle, _ => FoliageKind.Village },
                 s.Pos, s.Kind == SettlementKind.Village ? 1.6f : 2.1f, 0, s.Id * 31 + Seed));
-        bool Clear(Vector2 p) => Settlements.All(s => Vector2.Distance(s.Pos, p) > 9) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && MathF.Abs(p.X) < 250 && MathF.Abs(p.Y) < 250;
+        float half = GroundHalf - 6;
+        bool Clear(Vector2 p) => Settlements.All(s => Vector2.Distance(s.Pos, p) > 9 * span) && RoadDist(p) > 2.5f && RiverDist(p) > 3
+            && MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half;
         foreach (var p in Provinces)
         {
-            int trees = p.Kind switch { "Forest" => 90, "Hills" => 26, "Farmland" => 6, _ => 14 };
-            float radius = p.Kind == "Forest" ? 48 : 60;
+            // Woods scale with the ground they stand on (area), so the bigger map stays as wooded as the old one. Trees grow
+            // a little larger too, so a whole-map view reads as woodland without holding four times the geometry.
+            float grow = MathF.Sqrt(span);
+            int trees = (int)(p.Kind switch { "Forest" => 90, "Hills" => 26, "Farmland" => 6, _ => 14 } * span * span * 1.4f);
+            float radius = (p.Kind == "Forest" ? 48 : 60) * span;
             for (int i = 0; i < trees; i++)
             {
                 float a = rng.NextSingle() * MathF.Tau, d = MathF.Sqrt(rng.NextSingle()) * radius;
                 var pos = p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
                 if (!Clear(pos) || ProvinceAt(pos) != p) continue;
                 bool pine = p.Kind == "Hills" || rng.NextSingle() < 0.25f;
-                foliage.Add(new Foliage(pine ? FoliageKind.Pine : FoliageKind.Broadleaf, pos, 2.2f + rng.NextSingle() * 1.2f, 0, rng.Next()));
+                foliage.Add(new Foliage(pine ? FoliageKind.Pine : FoliageKind.Broadleaf, pos, (2.2f + rng.NextSingle() * 1.2f) * grow, 0, rng.Next()));
             }
             if (p.Kind == "Farmland")
                 for (int i = 0; i < 24; i++) // hedgerows
                 {
-                    var pos = p.Center + new Vector2(rng.NextSingle() * 2 - 1, rng.NextSingle() * 2 - 1) * 45;
-                    if (Clear(pos)) foliage.Add(new Foliage(FoliageKind.Bush, pos, 2 + rng.NextSingle(), 0, rng.Next()));
+                    var pos = p.Center + new Vector2(rng.NextSingle() * 2 - 1, rng.NextSingle() * 2 - 1) * 45 * span;
+                    if (Clear(pos)) foliage.Add(new Foliage(FoliageKind.Bush, pos, (2 + rng.NextSingle()) * grow, 0, rng.Next()));
                 }
         }
         for (int i = 0; i < 260; i++) // pines on the mountain rim
         {
-            var pos = new Vector2(rng.NextSingle() * 500 - 250, rng.NextSingle() * 500 - 250);
-            if (MathF.Max(MathF.Abs(pos.X), MathF.Abs(pos.Y)) < Extent - 4) continue;
+            float rimHalf = GroundHalf - 4;
+            var pos = new Vector2(rng.NextSingle() * 2 * rimHalf - rimHalf, rng.NextSingle() * 2 * rimHalf - rimHalf);
+            if (MathF.Max(MathF.Abs(pos.X), MathF.Abs(pos.Y)) < ExtentUsed - 4) continue;
             foliage.Add(new Foliage(FoliageKind.Pine, pos, 2.4f + rng.NextSingle(), 0, rng.Next()));
         }
-        return new Terrain(Seed, Height, RoadDist, foliage, Tint, Rivers);
+        return new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers);
     }
 }

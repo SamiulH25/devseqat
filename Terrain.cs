@@ -85,16 +85,20 @@ public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, floa
 /// Heights are sampled per triangle exactly as the rendered mesh is split, so units stand on the drawn ground.
 public sealed class Terrain
 {
-    public const float Half = 256, Step = 2.5f;
-    public const int N = 205; // vertices per side = 2 * Half / Step + 1
-    const float Cell = 8;
-    const int Buckets = (int)(2 * Half / Cell);
+    /// A battlefield: +-256 m of ground on 2.5 m vertices. The campaign map is much bigger and coarser (WorldMap.WorldShape).
+    public const float BattleHalf = 256, BattleStep = 2.5f;
+    public const int BattleN = 205; // vertices per side = 2 * BattleHalf / BattleStep + 1
+    const float Cell = 8;           // the obstacle grid's cell size
 
     public readonly int Seed;
     public readonly bool IsFlat;
     public readonly List<Foliage> Foliage = new();
-    readonly float[] grid = new float[N * N];
-    readonly List<int>[] buckets = new List<int>[Buckets * Buckets];
+    /// The ground's size: half its side, the spacing of its vertices, and the vertices per side (2 * Half / Step + 1).
+    public readonly float Half, Step;
+    public readonly int N;
+    readonly float[] grid;
+    readonly List<int>[] buckets;
+    readonly int bucketSide;
     readonly List<(Vector2 C, float R, float H)> hills = new();
     readonly float roadZ, roadPhase, roadAmp;
     public readonly TerrainParams Params = TerrainParams.Meadow;
@@ -106,6 +110,8 @@ public sealed class Terrain
     /// Grass tufts and the minimap's reach (the campaign map has no grass and a wider overview).
     public readonly bool Grass = true;
     public readonly float MinimapRange = 110;
+    /// How many metres one minimap texel covers (the renderer sizes the image from this).
+    public const float MinimapMetresPerTexel = 2f;
 
     /// The town wall in an assault (null in field battles).
     public readonly SiegeWall? Wall;
@@ -128,10 +134,17 @@ public sealed class Terrain
     public Terrain(int seed, TerrainParams p, SiegeWall? wall = null) : this(seed, false, p, wall) { }
 
     /// A campaign map: heights, roads, foliage and settlements all given; no grass, overview covers everything.
-    public Terrain(int seed, Func<float, float, float> height, Func<Vector2, float> roadDist, IEnumerable<Foliage> foliage, Func<Vector2, Vector3, Vector3>? tint, IEnumerable<River>? rivers = null)
+    /// `extent` is half the side of the ground (WorldMap.Extent); `step` its vertex spacing.
+    public Terrain(int seed, float extent, float step, Func<float, float, float> height, Func<Vector2, float> roadDist, IEnumerable<Foliage> foliage, Func<Vector2, Vector3, Vector3>? tint, IEnumerable<River>? rivers = null)
     {
         if (rivers != null) Rivers.AddRange(rivers);
         Seed = seed;
+        Half = extent;
+        Step = step;
+        N = (int)MathF.Round(2 * Half / Step) + 1;
+        bucketSide = Math.Max(1, (int)(2 * Half / Cell));
+        grid = new float[N * N];
+        buckets = new List<int>[bucketSide * bucketSide];
         customHeight = height;
         customRoad = roadDist;
         Tint = tint;
@@ -151,6 +164,12 @@ public sealed class Terrain
         Params = wall != null ? p with { Road = false } : p;
         Wall = wall;
         p = Params;
+        Half = BattleHalf;
+        Step = BattleStep;
+        N = BattleN;
+        bucketSide = Math.Max(1, (int)(2 * Half / Cell));
+        grid = new float[N * N];
+        buckets = new List<int>[bucketSide * bucketSide];
         if (p.River && wall == null) Rivers.Add(River.Across(new Random(seed + 5)));
         for (int i = 0; i < buckets.Length; i++) buckets[i] = new List<int>();
         if (flat) return;
@@ -244,8 +263,8 @@ public sealed class Terrain
 
     int BucketOf(Vector2 p)
     {
-        int x = Math.Clamp((int)((p.X + Half) / Cell), 0, Buckets - 1), z = Math.Clamp((int)((p.Y + Half) / Cell), 0, Buckets - 1);
-        return z * Buckets + x;
+        int x = Math.Clamp((int)((p.X + Half) / Cell), 0, bucketSide - 1), z = Math.Clamp((int)((p.Y + Half) / Cell), 0, bucketSide - 1);
+        return z * bucketSide + x;
     }
 
     /// A prop placed after generation (the battle's supply wagons).
@@ -264,8 +283,8 @@ public sealed class Terrain
         for (int z = bz - 1; z <= bz + 1; z++)
             for (int x = bx - 1; x <= bx + 1; x++)
             {
-                if (x < 0 || z < 0 || x >= Buckets || z >= Buckets) continue;
-                foreach (int i in buckets[z * Buckets + x])
+                if (x < 0 || z < 0 || x >= bucketSide || z >= bucketSide) continue;
+                foreach (int i in buckets[z * bucketSide + x])
                     if (Vector2.Distance(Foliage[i].Pos, p) < Foliage[i].Radius + within) return true;
             }
         return false;
@@ -280,8 +299,8 @@ public sealed class Terrain
         for (int z = bz - 1; z <= bz + 1; z++)
             for (int x = bx - 1; x <= bx + 1; x++)
             {
-                if (x < 0 || z < 0 || x >= Buckets || z >= Buckets) continue;
-                foreach (int i in buckets[z * Buckets + x])
+                if (x < 0 || z < 0 || x >= bucketSide || z >= bucketSide) continue;
+                foreach (int i in buckets[z * bucketSide + x])
                 {
                     var f = Foliage[i];
                     float rr = f.Radius + r;

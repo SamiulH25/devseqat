@@ -130,38 +130,38 @@ public static class Armies
     {
         new[]
         {
-            ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard" }, 24),
-            ("archers", new[] { "bowmen", "bowmen", "longbowmen", "crossbowmen" }, 16),
-            ("spears", new[] { "levies", "spearrunners", "pikemen", "pikemen" }, 12),
-            ("horse", new[] { "outriders", "lancers", "lancers", "knights" }, 10),
+            ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries", "immortals" }, 24),
+            ("archers", new[] { "bowmen", "bowmen", "longbowmen", "crossbowmen", "heavy_arbalests", "guild_sharpshooters", "grand_arbalests" }, 16),
+            ("spears", new[] { "levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx", "imperial_pikemen" }, 12),
+            ("horse", new[] { "outriders", "lancers", "lancers", "knights", "banner_knights", "paladin_knights", "grail_knights" }, 10),
         },
         new[]
         {
-            ("infantry", new[] { "clansmen", "axemen", "huscarls", "huscarls" }, 24),
-            ("archers", new[] { "bowmen", "bowmen", "longbowmen", "longbowmen" }, 16),
-            ("spears", new[] { "clansmen", "spearrunners", "spearrunners", "pikemen" }, 12),
-            ("horse", new[] { "outriders", "horse_archers", "horse_archers", "lancers" }, 10),
+            ("infantry", new[] { "clansmen", "axemen", "huscarls", "varangians", "einherjar", "thane_champions", "high_king_chosen" }, 24),
+            ("archers", new[] { "bowmen", "bowmen", "rangers", "woodland_stalkers", "shadow_hunters", "highland_marksmen", "sky_piercers" }, 16),
+            ("spears", new[] { "clansmen", "spearrunners", "billmen", "halberdiers", "heavy_halberdiers", "royal_halberdiers", "sovereign_halberdiers" }, 12),
+            ("horse", new[] { "outriders", "horse_archers", "horse_archers", "nomad_bows", "steppe_marksmen", "khan_guard", "golden_horde_masters" }, 10),
         },
     };
 
     public static int CultureOf(int faction) => faction == 2 ? 1 : 0;
 
-    /// The troop a faction's line fields at a tier (1-4).
-    public static string LineTroop(string role, int tier, int faction) => Cultures[CultureOf(faction)].First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 4) - 1];
+    /// The troop a faction's line fields at a tier (1-7).
+    public static string LineTroop(string role, int tier, int faction) => Cultures[CultureOf(faction)].First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 7) - 1];
 
     static readonly (string Role, string[] ByTier, int Base)[] Lines =
     {
-        ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard" }, 24),
-        ("archers", new[] { "bowmen", "bowmen", "longbowmen", "longbowmen" }, 16),
-        ("spears", new[] { "levies", "spearrunners", "pikemen", "pikemen" }, 12),
-        ("horse", new[] { "outriders", "lancers", "lancers", "knights" }, 10),
+        ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries", "immortals" }, 24),
+        ("archers", new[] { "bowmen", "bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen", "sovereign_longbowmen" }, 16),
+        ("spears", new[] { "levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx", "imperial_pikemen" }, 12),
+        ("horse", new[] { "outriders", "lancers", "lancers", "knights", "banner_knights", "paladin_knights", "grail_knights" }, 10),
     };
 
     static int Count(int baseCount, string troop, bool enemy)
     {
         var t = Troops.Get(troop);
-        float k = t.Tier switch { 1 => 1.25f, 2 => 1f, 3 => 0.85f, _ => 0.7f };
-        return Math.Max(4, (int)MathF.Round(baseCount * k * (enemy ? 1.15f : 1)));
+        float k = t.Tier switch { 1 => 1.25f, 2 => 1f, 3 => 0.85f, 4 => 0.7f, 5 => 0.65f, 6 => 0.6f, _ => 0.55f };
+        return Math.Max(4, (int)MathF.Round(baseCount * k * (enemy ? 1.05f : 1)));
     }
 
     /// The prototype's standard army (level 2: Shieldmen, Bowmen, Spearrunners, Lancers).
@@ -170,15 +170,15 @@ public static class Armies
     /// A campaign-like army: each line's tier is the level, give or take one (companies are upgraded unevenly).
     public static ArmySpec Random(Random rng, int level, int team)
     {
-        var tiers = Lines.Select(_ => Math.Clamp(level + (rng.NextSingle() < 0.35f ? (rng.Next(2) == 0 ? -1 : 1) : 0), 1, 4)).ToArray();
+        var tiers = Lines.Select(_ => Math.Clamp(level + (rng.NextSingle() < 0.35f ? (rng.Next(2) == 0 ? -1 : 1) : 0), 1, 7)).ToArray();
         return Make(team == 1 ? "Crimson host" : "Azure company", level, tiers, team == 1);
     }
 
     static ArmySpec Make(string name, int level, int[] tiers, bool enemy) =>
         new(name, level, Lines.Select((l, i) => new Company(l.ByTier[tiers[i] - 1], Count(l.Base, l.ByTier[tiers[i] - 1], enemy), l.Role)).ToList());
 
-    /// The troop a line fields at a tier (1-4).
-    public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 4) - 1];
+    /// The troop a line fields at a tier (1-7).
+    public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 7) - 1];
 
     public static string RoleOf(Company c) => c.Role is { Length: > 0 } r ? r : Troops.Get(c.Troop).Class switch
     {

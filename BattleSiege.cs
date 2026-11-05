@@ -139,15 +139,17 @@ public sealed partial class Battle
     }
 
     /// The attackers' general (headless runs): archers stand off and shoot at the wall, foot storm the ladders and the gate,
-    /// horse waits for the gate.
+    /// horse waits for the gate. Bowmen only stand off while there is something to shoot at: once the wall's garrison is
+    /// all behind the wall (or dead) and the gate still holds, nothing can be hit from the field, so they storm with the rest.
     void SiegeAttack()
     {
         var w = Wall!;
+        bool foesInTheOpen = Units.Any(u => u.Team == 1 && u.Active && !u.Routing && !SiegeWall.Inside(u.Pos));
         foreach (var s in SquadsOf(0))
         {
             if (s.Company == null || s.Alive == 0 || !(Options.AutoPlayer || s.AiControlled)) continue;
             bool archers = s.Units.Any(u => u.Active && u.Ammo > 0);
-            if (archers)
+            if (archers && foesInTheOpen)
             {
                 s.Order = Order.Hold;
                 s.Front = Vector2.UnitY;

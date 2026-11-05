@@ -33,13 +33,13 @@ public static class Rules
     public static int Cap(string troop, string role)
     {
         int baseSize = role switch { "archers" => 16, "spears" => 12, "horse" => 10, _ => 24 };
-        float k = Troops.Get(troop).Tier switch { 1 => 1.25f, 2 => 1f, 3 => 0.85f, _ => 0.7f };
+        float k = Troops.Get(troop).Tier switch { 1 => 1.25f, 2 => 1f, 3 => 0.85f, 4 => 0.7f, 5 => 0.65f, 6 => 0.6f, _ => 0.55f };
         return (int)MathF.Round(baseSize * k);
     }
 
     public static float Strength(UnitType t, int men)
     {
-        float cls = t.Class switch { UnitClass.Cavalry => 1.6f, UnitClass.Archer => 0.9f, _ => 1f };
+        float cls = t.Class switch { UnitClass.Cavalry => 1.35f, UnitClass.Archer => 0.9f, _ => 1f };
         return men * (t.MaxHp + 5 * t.Armor + 2 * t.Damage) * cls / 100f;
     }
 
@@ -134,9 +134,21 @@ public static class Rules
 
     public static Mount CaptainMount(CaptainState c) => Troops.Mount(c.HorseTier switch { 2 => "destrier", 1 => "warhorse", _ => "courser" });
 
-    public static int CompanySlots(CaptainState c) => Math.Min(9, (int)(B.CompanySlotsBase + c.Renown / B.CompanySlotRenown));
+    public static int CompanySlots(CaptainState c) => Math.Clamp((int)B.CompanySlotsBase, 1, 10);
     public static int MenLimit(CaptainState c) => (int)(B.MenBase + c.Renown / B.MenRenownDivisor);
     public static int PerkPoints(CaptainState c) => (int)(c.Renown / B.PerkEvery) - c.Perks.Count;
+
+    /// The next rung of the renown ladder, for the panel: what it buys and the renown that pays for it.
+    /// You may field up to 10 companies at any time; renown raises the men cap and earns perk points.
+    public static (string What, float At) NextRenownUnlock(CaptainState c)
+    {
+        var options = new List<(string, float)>();
+        float menAt = (MenLimit(c) + 1 - B.MenBase) * B.MenRenownDivisor;
+        options.Add(($"MEN CAP {MenLimit(c) + 1}", menAt));
+        float perkAt = (int)(c.Renown / B.PerkEvery + 1) * B.PerkEvery;
+        options.Add(("A PERK", perkAt));
+        return options.OrderBy(o => o.Item2).First();
+    }
 
     public static readonly Dictionary<Perk, string> PerkText = new()
     {
@@ -172,7 +184,7 @@ public static class Rules
                 int fallen = Math.Min(c.Men, (int)MathF.Round(totalLoss * (c.Men / (float)c.Type.Tier) / MathF.Max(1, weight)));
                 int fled = team == winner ? 0 : (int)((c.Men - fallen) * 0.15f);
                 kills[1 - team] += fallen;
-                list.Add(new CompanyResult(team, c.Id, c.Men, c.Men - fallen - fled, fled, fallen, 0, new int[5], true));
+                list.Add(new CompanyResult(team, c.Id, c.Men, c.Men - fallen - fled, fled, fallen, 0, new int[8], true));
             }
         }
         // Kills go to each side's companies by strength, as victims of the enemy's average tier.
@@ -188,8 +200,8 @@ public static class Rules
                 if (r.Team != team) continue;
                 var c = side.SelectMany(p => p.Companies).First(c => c.Id == r.Id);
                 int k = (int)MathF.Round(kills[team] * Strength(c) / MathF.Max(1, total));
-                var byTier = new int[5];
-                byTier[Math.Clamp(foeTier, 1, 4)] = k;
+                var byTier = new int[8];
+                byTier[Math.Clamp(foeTier, 1, 7)] = k;
                 list[i] = r with { Kills = k, KillsByTier = byTier };
             }
         }

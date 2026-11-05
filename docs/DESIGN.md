@@ -147,7 +147,26 @@ The campaign uses the same world language: low-poly 3D land under the same sun a
 card, with an **upgrade** affordance that shows the next troops in the tree (portraits and tier numerals) and the XP and cost from
 `troops.json`. Settlements are simple faceted 3D models in the world palette.
 
-## 7. Adding content
+## 7. Balance rules (battle)
+
+These are the working numbers that keep a battle winnable and cavalry from being an auto-win. They live as named constants in
+`Battle.cs` (`RoutAt`, `RallyAt`, `MountedMeleeReach`) so the sim, the HUD and the tests cannot drift apart.
+
+- **Routs are recoverable, not terminal.** A company breaks at 12 morale and rallies above 32, and a routing man gains morale
+  once he is clear of the enemy (26 m). A man who has broken twice stays broken, so battles still resolve. The HUD's WAVERING
+  warning uses `RallyAt`, so a company is never shown as steady while it is about to run.
+- **A general heartens his whole army.** The captain who stands behind his line kept a permanent aura the player lost entirely
+  in command view. A living general now gives every man +1.5 morale/s (+3 routing); being inside the aura adds more.
+- **Reach is the counter to horses.** A troop's `reach` is its lance or pike. A rider's ordinary melee blow is capped at
+  `MountedMeleeReach` (1.9 m), about a footman's, so a stalled charge is not free damage. Spears brace in any tight formation
+  (`CanBrace`), not only on Hold, which the AI abandons the moment the lines meet.
+- **The charge is a moment, not a state.** A couched lance is `10 + 4.2 x closing speed`, tramples `2.6 x closing`, horses
+  lose more speed pushing through formed bodies, and the AI's cycle charge spends longer withdrawn. Arrows take the horse 55%
+  of the time, where a footman's blade does 18%.
+- **Fair rosters.** `Armies` builds the enemy host only 5% larger than yours at the same level, and `--balance` reports the
+  win rate of even fights, so a systematic bias shows up as a number instead of a feeling.
+
+## 8. Adding content
 
 - **A troop:** add an entry to `Data/troops.json` (stats, tier, `upgradesTo`, look). The self-test checks the tree and that
   every look part has sprites.

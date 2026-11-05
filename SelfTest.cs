@@ -16,6 +16,7 @@ public static class SelfTest
         Check(s.Front.Y < -0.99f, "drawn line flips to face a target behind it");
 
         Charge();
+        CavalryBalance();
         Flanks();
         Parry();
         HorseDown();
@@ -27,6 +28,7 @@ public static class SelfTest
         CampaignMap();
         CampaignPersistence();
         CampaignRun();
+        Progression();
         Economy();
         Bridge();
         Calibration();
@@ -99,6 +101,47 @@ public static class SelfTest
         Run(b, 3);
         Check(!l.Mounted || l.HorseHp < UnitType.Lancer.Mount!.Hp, "a braced spear catches the horse");
         Check(spear.Active, "the braced spearman survives the charge");
+    }
+
+    /// Balance guards: a horse is not a free win, and a broken company can come back instead of always dissolving.
+    static void CavalryBalance()
+    {
+        // A rider's reach in a standing fight is a man's reach, not its lance's: foot can hit back.
+        Check(Battle.MountedMeleeReach < UnitType.Lancer.Reach && Battle.MountedMeleeReach >= UnitType.Shieldman.Reach,
+            $"a rider reaches as far as a footman, not as far as its lance ({Battle.MountedMeleeReach})");
+
+        // The same charge costs the horse more against a set shield wall than against loose ranks.
+        float HorseLoss(Formation f)
+        {
+            var b = Battle.Empty(40);
+            var foot = b.AddSquad(0, UnitType.Shieldman, 12, new(0, 0), 6, Vector2.UnitY);
+            foot.Formation = f;
+            var horse = b.AddSquad(1, Troops.Get("knights"), 5, new(0, 24), 5, -Vector2.UnitY);
+            horse.Order = Order.Charge;
+            float before = horse.Units.Sum(u => u.HorseHp);
+            Run(b, 20);
+            return before - horse.Units.Sum(u => u.Active ? u.HorseHp : 0);
+        }
+        float wall = HorseLoss(Formation.ShieldWall), open = HorseLoss(Formation.Loose);
+        Console.WriteLine($"knights into a shield wall lose {wall:0} horse hp, into loose ranks {open:0}");
+        Check(wall > open, $"a set shield wall hurts the horse more than loose ranks ({wall:0} vs {open:0})");
+
+        // Morale: a broken man's nerve returns once he is clear of the fight, but a man who breaks twice is done.
+        var m = Battle.Empty(50);
+        var squad = m.AddSquad(0, UnitType.Shieldman, 1, new(0, 0), 1, Vector2.UnitY);
+        m.AddSquad(1, UnitType.Shieldman, 1, new(0, 20), 1, -Vector2.UnitY);
+        var man = squad.Units[0];
+        man.Pos = new Vector2(0, -40); // clear of the enemy, with room before the map's edge
+        man.Routing = true;
+        man.Routs = 1;
+        man.Morale = 20;
+        Run(m, 10);
+        Check(!man.Routing && man.Morale > Battle.RallyAt, $"a broken man comes back once he is clear ({man.Morale:0})");
+        man.Routing = true;
+        man.Routs = 2;
+        man.Morale = 5;
+        Run(m, 2);
+        Check(man.Routing, "a man who breaks twice stays broken");
     }
 
     /// Blows from behind land harder than blows from the side.
@@ -294,7 +337,7 @@ public static class SelfTest
     static void Ground()
     {
         var t = new Terrain(42);
-        Check(MathF.Abs(t.Height(new Vector2(-Terrain.Half + 10 * Terrain.Step, -Terrain.Half + 7 * Terrain.Step)) - t.GridHeight(10, 7)) < 1e-4f,
+        Check(MathF.Abs(t.Height(new Vector2(-Terrain.BattleHalf + 10 * Terrain.BattleStep, -Terrain.BattleHalf + 7 * Terrain.BattleStep)) - t.GridHeight(10, 7)) < 1e-4f,
             "height samples the mesh vertices exactly");
         for (float x = -200; x <= 200; x += 7)
             for (float z = -200; z <= 200; z += 7)
@@ -333,11 +376,21 @@ public static class SelfTest
     {
         Check(!Troops.Validate().Any(), "troops.json validates: " + string.Join("; ", Troops.Validate()));
         var levies = Troops.Get("levies");
-        Check(levies.Tier == 1 && levies.UpgradesTo.Length >= 3, "levies branch into several lines");
+        var clansmen = Troops.Get("clansmen");
+        Check(levies.Tier == 1 && levies.UpgradesTo.Length >= 4, "levies branch into several lines");
+        Check(clansmen.Tier == 1 && clansmen.UpgradesTo.Length >= 4, "clansmen branch into several lines");
         foreach (var t in Troops.All)
+        {
+            Check(t.UpgradesTo.Length == 0 || t.UpgradeXp > 0, $"{t.Name} has upgradeXp when it upgrades");
             foreach (var next in t.UpgradesTo.Select(Troops.Get))
                 Check(next.MaxHp + next.Armor * 5 + next.Damage > t.MaxHp + t.Armor * 5 + t.Damage, $"{t.Name} -> {next.Name} is an upgrade");
-        Check(Troops.Tree("levies").Any(t => t.Tier == 4), "the tree reaches tier IV");
+        }
+        for (int tier = 1; tier <= 7; tier++)
+        {
+            Check(Troops.Tree("levies").Any(t => t.Tier == tier), $"levies tree reaches tier {Style.Numerals[tier]}");
+            Check(Troops.Tree("clansmen").Any(t => t.Tier == tier), $"clansmen tree reaches tier {Style.Numerals[tier]}");
+        }
+        Check(Troops.All.Count(t => !t.Leader) >= 80, $"massive 7-tier troop tree ({Troops.All.Count(t => !t.Leader)} troops)");
         var reachable = Troops.Tree("levies").Concat(Troops.Tree("clansmen")).Select(t => t.Id).ToHashSet();
         Check(Troops.All.Where(t => !t.Leader).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
     }
@@ -412,14 +465,29 @@ public static class SelfTest
 
     static void CampaignMap()
     {
+        var legacy = WorldMap.Generate(11, WorldMap.LegacyExtent);
+        var lm = legacy.BuildTerrain();
+        Console.WriteLine($"legacy map: {lm.N} vertices, {lm.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine)} trees");
         var m = WorldMap.Generate(11);
-        Check(m.Provinces.Count >= 18, $"enough provinces ({m.Provinces.Count})");
+        Check(m.Provinces.Count >= 50, $"a big map: enough provinces ({m.Provinces.Count})");
+        Check(m.Provinces.Count is >= WorldMap.ProvinceCount - 8 and <= WorldMap.ProvinceCount + 8,
+            $"about {WorldMap.ProvinceCount} provinces on the enlarged map ({m.Provinces.Count})");
+        Check(m.ExtentUsed >= WorldMap.Extent && m.Settlements.Max(s => MathF.Abs(s.Pos.X)) > WorldMap.LegacyExtent,
+            "the map is bigger than the old one, not just denser");
         for (int f = 0; f < 3; f++) Check(m.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town), $"faction {f} has towns");
         var seen = new HashSet<int> { 0 };
         var todo = new Queue<int>(new[] { 0 });
         while (todo.Count > 0) foreach (int n in m.Provinces[todo.Dequeue()].Neighbors) if (seen.Add(n)) todo.Enqueue(n);
         Check(seen.Count == m.Provinces.Count, "every province is reachable by road");
         Check(m.Settlements.Count(s => s.Kind == SettlementKind.Village) >= m.Provinces.Count * 2 - 4, "provinces have villages");
+        // The ground is drawn at a coarser grid than a battlefield, and covers the whole world plus its mountain rim.
+        var terrain = m.BuildTerrain();
+        Check(terrain.Half >= m.GroundHalf - 1 && terrain.N > 200 && terrain.N < 400, $"the map's ground is drawn ({terrain.N} vertices a side)");
+        int trees = terrain.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine);
+        Console.WriteLine($"map ground: {terrain.N} vertices a side over +-{terrain.Half:0} m, {trees} trees, {terrain.Foliage.Count} props");
+        Check(trees > 400, $"the big map is wooded ({trees} trees)");
+        // Distances that mean "nearby" scale with the map, so a lord is not forever riding between provinces.
+        Check(m.Spread > 1.1f && m.ProvinceScale > 1.5f, $"the map is bigger ({m.Spread:0.0}x the spread, {m.ProvinceScale:0.0}x the provinces)");
     }
 
     static void CampaignPersistence()
@@ -458,6 +526,45 @@ public static class SelfTest
             + $"ready {lords.SelectMany(l => l.Companies).Count(Rules.UpgradeReady)}, tiers {string.Join(",", lords.SelectMany(l => l.Companies).GroupBy(co => co.Type.Tier).OrderBy(g => g.Key).Select(g => $"{g.Key}:{g.Count()}"))}, "
             + $"tasks {string.Join(",", lords.GroupBy(l => l.Task).Select(g => $"{g.Key}:{g.Count()}"))}, treasury {c.S.Factions[0].Treasury:0}/{c.S.Factions[1].Treasury:0}");
         Check(upgraded > 0, "lords upgrade their companies too");
+        // The world must not grind itself to nothing: bandits keep coming, and lords stay in the field at a usable size.
+        int bandits = c.S.Parties.Count(p => p.Kind == PartyKind.Bandit);
+        float lordMen = (float)lords.Average(l => l.Men);
+        // How crowded the roads are: a party should not have to ride for days to meet anyone on a map this size.
+        float nearestBandit = c.S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down).Select(p => Vector2.Distance(p.Pos, c.Player.Pos)).DefaultIfEmpty(999).Min();
+        int near10 = c.S.Parties.Count(p => !p.Down && p != c.Player && p.Kind != PartyKind.Player && Vector2.Distance(p.Pos, c.Player.Pos) < 60);
+        Console.WriteLine($"pressure: bandits {bandits}, ai battles {c.AiBattles}, lord men avg {lordMen:0}, nearest bandit {nearestBandit:0}, parties within 60: {near10}, "
+            + $"chests {string.Join("/", c.S.Factions.Select(f => f.Treasury.ToString("0")))}");
+        Check(bandits >= 8, "brigands keep appearing (the map stays dangerous)");
+        Check(c.AiBattles >= 40, "lords and brigands fight each other without you");
+        Check(lordMen >= 18, "lords rebuild their companies instead of dying broke");
+        Check(c.S.Factions.All(f => f.Treasury > 100), "a faction keeps a war chest to raise new lords");
+    }
+
+    /// Progression is legible: the next step names a real action, and renown's ladder is monotonic.
+    static void Progression()
+    {
+        var c = Campaign.New(91);
+        var (text, where) = c.NextStep();
+        Check(text.Length > 0 && where.Length > 0, "a new campaign suggests a next step");
+        Console.WriteLine($"progression: stage {c.Stage}, next \"{text}\" -> {where}");
+        // You can have up to 10 companies right away; renown increases the total troop count (men cap) and perks.
+        Check(Rules.CompanySlots(new CaptainState { Renown = 0 }) == 10, "max 10 companies available without renown gating");
+        Check(Rules.MenLimit(new CaptainState { Renown = 200 }) > Rules.MenLimit(new CaptainState { Renown = 0 }), "renown increases total troop count");
+        // Renown unlocks come in order and never go backwards as renown rises.
+        float last = -1;
+        for (float renown = 0; renown <= 900; renown += 10)
+        {
+            c.Captain.Renown = renown;
+            var (_, at) = Rules.NextRenownUnlock(c.Captain);
+            Check(at >= renown || Rules.PerkPoints(c.Captain) >= 0, "the next unlock is always ahead");
+            Check(at >= last - 0.01f, $"the unlock ladder does not go backwards (at {renown})");
+            last = at;
+        }
+        // A ready company must be the thing the game points at.
+        c.Captain.Renown = 50;
+        var co = c.Player.Companies[0];
+        co.Xp = co.Type.UpgradeXp + 1;
+        Check(c.NextStep().Where == "TRAIN", "a ready company points at the training yard");
     }
 
     /// A level-2 army on contract, sitting still, stays solvent for 8 weeks.
@@ -566,10 +673,14 @@ public static class SelfTest
         c.Player.Companies.Clear();
         foreach (var t in new[] { "men_at_arms", "men_at_arms", "longbowmen", "pikemen" }) c.Player.Companies.Add(c.NewCompany(t, Armies.RoleOf(new Company(t, 1)), Rules.Cap(t, "infantry"), 0));
         c.Player.Pos = castle.Pos + new Vector2(3, 0);
-        foreach (var p in c.S.Parties.Where(p => p != c.Player && Vector2.Distance(p.Pos, castle.Pos) < 12)) p.Pos += new Vector2(40, 40);
+        // Clear the ground around the castle first: on a big map neighbours and reinforcements stand much further out than
+        // the old test's 12, and an encounter would cut the night's rest short before the ladders are built.
+        float clear = 30 * c.Map.Spread;
+        foreach (var p in c.S.Parties.Where(p => p != c.Player && Vector2.Distance(p.Pos, castle.Pos) < clear)) p.Pos += Vector2.Normalize(p.Pos - castle.Pos + new Vector2(0.01f, 0)) * clear;
         Check(c.CanBesiege(castle, out string why), "you can besiege an enemy castle: " + why);
         c.Besiege(castle);
-        c.Rest(13);
+        for (int h = 0; h < 13 && c.Encounter == null; h++) c.Rest(1);
+        c.Encounter = null;
         Check(c.LaddersIn(castle) == 0 && c.Besieging == castle, "ladders are built overnight");
         c.Encounter = null;
         c.AutoResolveAssault(castle);
@@ -613,14 +724,22 @@ public static class SelfTest
     static void Migration()
     {
         var c = Campaign.New(71);
-        var json = c.S.Serialize().Replace("\"Version\": 2", "\"Version\": 1").Replace("\"AtWar\": null", "\"AtWar\": false").Replace("\"TruceUntil\": 0,", "\"TruceUntil\": 1000,");
+        // A version-1 save as v1 wrote it: one war, no Northmarch, and no map extent (v3 added it).
+        string json = c.S.Serialize()
+            .Replace($"\"Version\": {CampaignState.CurrentVersion}", "\"Version\": 1")
+            .Replace("\"AtWar\": null", "\"AtWar\": false")
+            .Replace("\"TruceUntil\": 0,", "\"TruceUntil\": 1000,")
+            .Replace($"\"MapExtent\": {WorldMap.Extent},", "");
         var s = CampaignState.Deserialize(json);
         Check(s.Version == CampaignState.CurrentVersion && s.Wars.Count == 1 && !s.Wars[0].Active, "a v1 save migrates its war to the new format");
+        Check(MathF.Abs(s.MapExtent - WorldMap.LegacyExtent) < 1f, "an old save keeps the small map it was played on");
         var m = new Campaign(s);
         m.Player.Cooldown = 1e6f; // nobody may stop the clock
         for (int h = 0; h < 48; h++) { m.Tick(1); m.Encounter = null; m.Arrived = null; }
-        Console.WriteLine($"migrated: day {m.Day}, wars {string.Join(" ", m.S.Wars.Select(w => $"{w.A}-{w.B}:{w.Active}:{w.TruceUntil}"))}");
+        Console.WriteLine($"migrated: day {m.Day}, wars {string.Join(" ", m.S.Wars.Select(w => $"{w.A}-{w.B}:{w.Active}:{w.TruceUntil}"))}, "
+            + $"map {m.Map.Provinces.Count} provinces over +-{m.Map.ExtentUsed:0}");
         Check(m.Day >= 2 && m.FactionsAtWar(0, 1) == false, "a migrated campaign runs, its truce intact");
+        Check(m.Map.Provinces.Count <= WorldMap.LegacyProvinces + 4, "and its old map, not a new one");
     }
 
     /// A recorded battle with player orders and input, saved to JSON and played back, ends exactly the same.

@@ -199,31 +199,34 @@ sealed class World : IDisposable
 
     (VertexBuffer, IndexBuffer, int) BuildTerrain()
     {
-        const int n = Terrain.N;
+        int n = t.N;
         var v = new VertexPNCT[n * n];
         for (int z = 0; z < n; z++)
             for (int x = 0; x < n; x++)
             {
-                var p = new Vector2(-Terrain.Half + x * Terrain.Step, -Terrain.Half + z * Terrain.Step);
+                var p = new Vector2(-t.Half + x * t.Step, -t.Half + z * t.Step);
                 float hl = t.GridHeight(Math.Max(0, x - 1), z), hr = t.GridHeight(Math.Min(n - 1, x + 1), z);
                 float hd = t.GridHeight(x, Math.Max(0, z - 1)), hu = t.GridHeight(x, Math.Min(n - 1, z + 1));
-                var normal = Vector3.Normalize(new Vector3(hl - hr, 2 * Terrain.Step, hd - hu));
+                var normal = Vector3.Normalize(new Vector3(hl - hr, 2 * t.Step, hd - hu));
                 v[z * n + x] = new VertexPNCT(new Vector3(p.X, t.GridHeight(x, z), p.Y), normal, new Color(GroundColor(p)), p / 4);
             }
-        var idx = new ushort[(n - 1) * (n - 1) * 6];
+        // A big map needs 32-bit indices (the campaign map has far more than 65536 vertices).
+        bool wide = v.Length > ushort.MaxValue;
+        var idx = new int[(n - 1) * (n - 1) * 6];
         int k = 0;
         for (int z = 0; z < n - 1; z++)
             for (int x = 0; x < n - 1; x++)
             {
                 // Split along (x+1, z)-(x, z+1), matching Terrain.Height.
-                ushort a = (ushort)(z * n + x), b = (ushort)(a + 1), c = (ushort)(a + n), d = (ushort)(a + n + 1);
+                int a = z * n + x, b = a + 1, c = a + n, d = a + n + 1;
                 idx[k++] = a; idx[k++] = b; idx[k++] = c;
                 idx[k++] = d; idx[k++] = c; idx[k++] = b;
             }
         var vb = new VertexBuffer(gd, VertexPNCT.Decl, v.Length, BufferUsage.WriteOnly);
         vb.SetData(v);
-        var ib = new IndexBuffer(gd, IndexElementSize.SixteenBits, idx.Length, BufferUsage.WriteOnly);
-        ib.SetData(idx);
+        var ib = new IndexBuffer(gd, wide ? IndexElementSize.ThirtyTwoBits : IndexElementSize.SixteenBits, idx.Length, BufferUsage.WriteOnly);
+        if (wide) ib.SetData(idx);
+        else ib.SetData(idx.Select(i => (ushort)i).ToArray());
         return (vb, ib, idx.Length / 3);
     }
 
@@ -241,7 +244,9 @@ sealed class World : IDisposable
 
     Texture2D BuildMinimap()
     {
-        const int S = 128;
+        // One texel every couple of metres on a battlefield, coarser on the campaign map (it covers hundreds of metres).
+        float metresPerTexel = t.MinimapRange > 256 ? 4f : Terrain.MinimapMetresPerTexel;
+        int S = Math.Clamp((int)MathF.Round(2 * t.MinimapRange / metresPerTexel), 128, 512);
         var data = new Color[S * S];
         for (int y = 0; y < S; y++)
             for (int x = 0; x < S; x++)

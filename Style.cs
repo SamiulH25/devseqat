@@ -71,5 +71,5 @@ public static class Style
     /// Type scale for the 5x7 pixel font (times the UI scale): captions, body, headings, titles.
     public const int Caption = 1, Body = 2, Heading = 3, Title = 5;
 
-    public static readonly string[] Numerals = { "", "I", "II", "III", "IV", "V" };
+    public static readonly string[] Numerals = { "", "I", "II", "III", "IV", "V", "VI", "VII" };
 }

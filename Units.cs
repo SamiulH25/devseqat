@@ -82,6 +82,7 @@ public sealed class Unit
     public float BlockStart; // when the player raised the guard (parries need fresh timing)
     public Unit? Target;
     public bool Dead, Fled, Routing;
+    public int Routs;        // how many times this man has broken (a second rout is final)
     public float DiedAt;     // battle time of death (the fall is animated)
     public int StuckArrows;  // arrows caught in the shield (drawn)
     public int Index;        // place in Battle.Units (the spatial grid orders pairs by it)

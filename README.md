@@ -56,11 +56,16 @@ that will not last. Brigands roam between them all.
   retreat (a rearguard pays), or pay brigands off. Esc in a campaign battle lets you **withdraw**.
 - **Results:** the fallen split into killed and wounded (heavier armour survives more often). Then come XP, loot, ransom, bounty, renown and captured horses.
   If you fall you are wounded, and command from the rear for a few days; if your army also loses, you are captured and ransomed.
-- **The world runs without you.** Lords recruit, refit, upgrade (same rules and prices), patrol, hunt, flee and muster hosts. Villages get threatened,
-  the war score moves, the losing side sues for a 30-day truce, and the war resumes when it ends. Upkeep is weekly, a contract pays 85% of it,
-  and unpaid men desert.
-- **Renown** raises your company and men limits and buys perks (Bannerman, War Cry, Tactician, Quartermaster, Surgeon, Drillmaster,
-  Horsemaster, Iron Will), each of which changes the battles. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
+- **The world runs without you.** Lords recruit, refit, upgrade (same rules and prices), patrol, hunt, flee and muster hosts, and
+  march for the front rather than idling at home, so realms fight each other whether or not you are there. Brigands are very
+  common — around 190 bands on the enlarged map, spawning in several a day — and grow with the campaign: a late band is a real
+  fight, not loot. Villages get threatened, the war score moves,
+  the losing side sues for a 30-day truce, and the war resumes when it ends. Upkeep is weekly, a contract pays 85% of it, and unpaid men desert.
+- **Progression is spelled out.** The captain panel shows your **stage** (Mercenary Band → Lord of War) and one clear **next step**
+  — upgrade that ready company, take the perk, see a steward for work, buy food — and arriving in a town opens the tab that step
+  names. You can field up to **10 companies** right away; **Renown** raises your total troop count (men limit) and buys perks (Bannerman, War Cry, Tactician, Quartermaster, Surgeon, Drillmaster,
+  Horsemaster, Iron Will), each of which changes the battles; a bar under the captain panel shows what the next rung buys and how
+  far off it is, and the results screen repeats it after every battle. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
 
 ## Controls
 
@@ -97,13 +102,15 @@ whistles for the nearest loose horse of your side. **Esc** opens the menu (resum
 
 The core tension: **you are strongest as a leader when you are in the fight, but you can only control the fight from above.**
 
-- **Leadership aura:** your troops within 12 m gain morale (routing ones recover faster). The aura is OFF in command view.
+- **Leadership aura:** your troops within 12 m gain morale (routing ones recover faster). The aura is OFF in command view, but a living
+  general still heartens his whole army a little (so the enemy captain's aura behind his line is no longer a free permanent edge).
 - **Command view** slows time to x0.25 and gives RTS-style control, but your body stands idle and vulnerable.
 - **Rally (R):** costs 30 stamina, 12 s cooldown. It gives +25 morale to allies within 15 m (+45 to routing ones, which usually brings them back).
 - **Heroics:** your kills give nearby allies more morale than ordinary kills.
-- **Leaders matter:** if you or the enemy captain dies, every unit on that side loses 25 morale. The enemy captain (red ring in command view) stays just behind his line, so killing him is a real tactical goal.
+- **Leaders matter:** if you or the enemy captain dies, every unit on that side loses 16 morale. The enemy captain (red ring in command view) stays just behind his line, so killing him is a real tactical goal.
 - **If you fall,** the battle continues and you command from afar at normal speed, without an aura.
-- **Morale and routing:** below 15 morale a unit routs and flees off the map (radius 95). It rallies again above 45. A side loses when it has no active, non-routing units.
+- **Morale and routing:** below 12 morale a unit routs and flees off the map (radius 95). It rallies again above 32, and a man who has
+  broken twice stays broken. A side loses when it has no active, non-routing units.
 - **Melee:** windup, strike, recover. Hits interrupt windups. AI units block hits from the front by chance (Shieldmen 55%). A player block staggers the attacker; if stamina runs out, the guard breaks. Player swings cleave up to 3 targets.
 - **Archers** shoot ballistic arrows that lead the target. They fire only when settled in formation, or on Charge. Loose spacing (V) reduces arrow hits, because hits are physical and not rolled.
 
@@ -113,38 +120,41 @@ Cavalry comes in three tiers: **Outriders** (coursers), **Lancers** (warhorses) 
 the player rides a courser.
 - **Momentum:** a horse has a heading and a speed. It accelerates, brakes and turns at limited rates (turning gets wider as it speeds up),
   so a charge needs room. AI riders steer toward a wished velocity (`Battle.Steer`); the player steers directly.
-- **Speed bonus (Mount & Blade):** every melee blow gets `+6%` per m/s of closing speed above 2 m/s (shown under the crosshair as `+N% SPEED`).
+- **Speed bonus (Mount & Blade):** every melee blow gets `+5%` per m/s of closing speed above 2 m/s (shown under the crosshair as `+N% SPEED`).
 - **Couched lance:** above 6 m/s a lance can be lowered (AI does it on a charge, the player presses Q). Anything that the point
-  (1.0-2.7 m ahead of the horse) touches is hit for `14 + 6 x closing speed`, then the lance comes up. It drops again when the rider slows.
+  (1.0-2.7 m ahead of the horse) touches is hit for `10 + 4.2 x closing speed`, then the lance comes up. It drops again when the rider slows.
+  A rider's ordinary blow in the melee reaches only as far as a footman's blade (1.9 m), so a stalled charge is not a free win.
 - **Trample:** a horse running into an enemy footman at over 4 m/s knocks him down (stagger) and hurts him; every body slows the horse,
   and tight shield walls slow it more. The shock costs nearby friends morale.
 - **Bracing (Total War):** spearmen, and shieldmen holding a tight formation, stand still and set their points when horses come.
-  A braced spear reaches further than a couched lance and hits the horse hard (`7 x` closing speed for spears), stopping the charge.
+  A braced spear reaches further than a couched lance and hits the horse hard (`8 x` closing speed for spears), stopping the charge.
   Spearrunners also deal x1.8 damage to anything mounted. Arrows and spears often hit the horse instead of the rider.
 - **Horses die:** a slain horse throws its rider (stagger, damage). Riders whose horse dies fight on foot. A killed rider leaves a loose horse.
-- **Cycle charge (AI):** Charge → ride through the target → Withdraw (ride out ~3 s) → turn → Charge again. A rider that bogs down
-  in a crowd (slow, near the target for 1.2 s) fights in place for 4 s and then pulls out. Cavalry on Hold counter-charge enemies within 15 m.
+- **Cycle charge (AI):** Charge → ride through the target → Withdraw (ride out ~4 s) → turn → Charge again. A rider that bogs down
+  in a crowd (slow, near the target for 1.2 s) fights in place for 5 s and then pulls out. Cavalry on Hold counter-charge enemies within 15 m.
 - **Enemy horse:** waits wide on the far flank, then hunts the softest squad (archers first) when the lines meet or after 35 s.
 
 ## Design: troops, tiers and armies (campaign-ready)
 
-- **Troops are data** (`Data/troops.json`, loaded by `Troops.cs`): stats, class, tier (I-IV), the troops each one
+- **Troops are data** (`Data/troops.json`, loaded by `Troops.cs`): stats, class, tier (I-VII), the troops each one
   **upgrades to**, campaign cost and upgrade XP, its horse, and its **look** (head, body, legs, feet, hands, shield, weapon,
   tabard, plume, cape). The self-test checks the tree: links exist, every upgrade raises the tier and is a better soldier,
-  and every troop can be reached from Levies.
-- **The tree:** Levies branch into Shieldmen -> Men-at-Arms -> Ironguard, Spearrunners -> Pikemen (reach 3 m, x2.3 vs horse),
-  Bowmen -> Longbowmen (range 42 m), and Outriders -> Lancers -> Knights.
+  and every troop can be reached from Levies or Clansmen.
+- **The tree:** 88 troops across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact (`levies`) and Northmarch (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a
   role stand side by side), and the enemy general commands any mix.
 - Until the campaign exists, each **new battle** rolls an army level (1-4) per side, and each line lands one tier up or down at random,
   as if companies had been upgraded unevenly. Elite companies are smaller. Override with `IRONFIELD_LEVELS=4,2`.
+  The enemy's host is only 5% larger than yours at the same level, so a battle is won by what you do, not by the roster.
 - Better troops look better (see the tier table in `docs/DESIGN.md`), and unit cards show the tier numeral.
 
 ## Design: terrain and the 3D world
 
 The world is 3D; only the units (and horses) are 2D sprite puppets.
-- **Terrain** (`Terrain.cs`, part of the headless sim): a 512 m heightmap on a 2.5 m grid. Gentle value-noise rolls (calmer in the middle),
+- **Terrain** (`Terrain.cs`, part of the headless sim): a 512 m heightmap on a 2.5 m grid for a battlefield, and a much larger one
+  for the campaign map (+-448 m on a coarser 4 m grid; the grid size is per-instance, and the mesh switches to 32-bit indices past
+  65k vertices). Gentle value-noise rolls (calmer in the middle),
   3-5 random hills, a rim of high ground framing the valley, and a dirt road winding between the armies. It is seeded per battle.
   `Height()` interpolates on the same triangles the mesh draws, so units stand exactly on the ground you see.
 - **It matters in the fight:** uphill is slower and downhill quicker (`Battle.SlopeFactor`, x0.55-1.15); striking from higher ground deals
@@ -267,7 +277,8 @@ For hand-made art later, put PNGs into the atlas under the same keys (`part.vari
 - `AttackDir` is named from the attacker's side; the defender must block `Dirs.Mirror(swing)`. The HUD shows incoming blows already mirrored.
 - Separation is mass-weighted (horse 6, man 1) with radii 1.0 / 0.375 m; horse-vs-footman overlaps are where trample `Impact` happens.
 - `Battle.Empty(seed)` builds a scenario field (two leaders far apart) for the self-test; `AddSquad`, `Hit` and `HitHorse` are reachable from it.
-- With an idle player, the AI enemy (bigger than yours at the same level) wins the self-test battles in about 30 s. The balance assumes the player fights and commands.
+- With an idle player, the AI enemy (slightly larger than yours at the same level) can still win the self-test battles, because the balance
+  assumes you fight and command. With both sides on the AI (`--balance`), armies of the same level should come out near even.
 
 ## Graphics: verified setups
 

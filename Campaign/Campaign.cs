@@ -15,16 +15,26 @@ public sealed partial class Campaign
     public Party? Encounter;
     public Settlement? Arrived;
     public BattleReport? Report;
+    /// How many fights the world has resolved without you (lord against lord, bandits against lords): campaign telemetry.
+    public int AiBattles;
 
     public Party Player => S.Parties[0];
     public CaptainState Captain => S.Captain;
     public int Day => (int)(S.Hours / 24) + 1;
     public static readonly string[] FactionNames = { "Azure Crown", "Crimson Compact", "Northmarch" };
+    /// Party and event caps for the balance numbers scaled by how much world there is (a bigger map raises more lords and
+    /// brigands). The numbers in Data/campaign.json are quoted against the original 26-province map.
+    float ProvinceScale => Map.ProvinceScale;
+    /// Lords spread thinner than brigands: a realm with four times the ground raises about twice the armies, not four
+    /// times (village recruits are the bottleneck, and a crowd of lords starves all of them).
+    public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale);
+    public int BanditsWanted => (int)MathF.Round(B.BanditsMax * ProvinceScale);
+    int BanditSpawnsWanted => Math.Max(1, (int)MathF.Round(B.BanditSpawnsPerDay * ProvinceScale));
 
     public Campaign(CampaignState state)
     {
         S = state;
-        Map = WorldMap.Generate(state.Seed);
+        Map = WorldMap.Generate(state.Seed, state.MapExtent);
         rng = new Rng(state);
         // The map's settlement models follow the save (a v1 save was generated before the Northmarch had its capital).
         for (int i = 0; i < Math.Min(Map.Settlements.Count, S.Settlements.Count); i++) Map.Settlements[i].Kind = S.Settlements[i].Kind;
@@ -34,9 +44,9 @@ public sealed partial class Campaign
 
     public static Campaign New(int seed)
     {
-        var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman };
+        var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent };
         s.Captain.Renown = B.StartRenown;
-        var map = WorldMap.Generate(seed);
+        var map = WorldMap.Generate(seed, s.MapExtent);
         s.Provinces = map.Provinces;
         s.Settlements = map.Settlements;
         int factions = s.Provinces.Max(p => p.Faction) + 1;
@@ -63,8 +73,9 @@ public sealed partial class Campaign
             c.RaiseGarrison(v);
         }
         for (int f = 0; f < factions; f++)
-            for (int i = 0; i < B.LordsPerFaction; i++) c.SpawnLord(f);
-        for (int i = 0; i < 3; i++) c.SpawnBandits();
+            for (int i = 0; i < c.LordsWanted; i++) c.SpawnLord(f);
+        // Open with a map's worth of brigands, not three: the roads are dangerous from the first day.
+        for (int i = 0; i < c.BanditsWanted / 3; i++) c.SpawnBandits();
         // The guided first fight: a weak band close by, coming for you.
         var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
         first.Companies.Add(c.NewCompany("levies", "infantry", 9, 0));
@@ -170,32 +181,59 @@ public sealed partial class Campaign
                 if (p.Kind == PartyKind.Player && p.GoalSettlement >= 0) { Arrived = SettlementById(p.GoalSettlement); p.GoalSettlement = -1; }
             }
             else p.Pos += d / dist * step;
-            p.Pos = Vector2.Clamp(p.Pos, new Vector2(-WorldMap.Extent), new Vector2(WorldMap.Extent));
+            p.Pos = Vector2.Clamp(p.Pos, new Vector2(-Map.ExtentUsed), new Vector2(Map.ExtentUsed));
         }
     }
 
     void Encounters()
     {
-        for (int i = 0; i < S.Parties.Count; i++)
-            for (int j = i + 1; j < S.Parties.Count; j++)
-            {
-                var a = S.Parties[i];
-                var b = S.Parties[j];
-                if (a.Cooldown > 0 || b.Cooldown > 0 || !Hostile(a, b) || Vector2.Distance(a.Pos, b.Pos) > B.EncounterRadius) continue;
-                if (a.Kind == PartyKind.Player || b.Kind == PartyKind.Player)
+        // 190 parties and more on the big map: a uniform grid keeps this from being an O(n^2) sweep every tick.
+        // A cell is larger than either clash radius, so checking the 3x3 neighbourhood finds every pair that can meet.
+        const float Cell = 16f;
+        var cells = new Dictionary<(int, int), List<Party>>(S.Parties.Count * 2);
+        foreach (var p in S.Parties)
+        {
+            if (p.Down) continue;
+            var key = ((int)MathF.Floor(p.Pos.X / Cell), (int)MathF.Floor(p.Pos.Y / Cell));
+            if (!cells.TryGetValue(key, out var list)) cells[key] = list = new List<Party>(2);
+            list.Add(p);
+        }
+        foreach (var (key, here) in cells)
+            for (int dx = -1; dx <= 1; dx++)
+                for (int dy = -1; dy <= 1; dy++)
                 {
-                    Encounter = a.Kind == PartyKind.Player ? b : a;
-                    Player.Moving = false;
-                    Player.ChaseId = -1;
-                    return;
+                    if (!cells.TryGetValue((key.Item1 + dx, key.Item2 + dy), out var there)) continue;
+                    foreach (var a in here)
+                        foreach (var b in there)
+                        {
+                            Clash(a, b);
+                            if (Encounter != null) return;
+                        }
                 }
-                var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, false);
-                var winner = r.Winner == 0 ? a : b;
-                var loser = r.Winner == 0 ? b : a;
-                Apply(r, new[] { a }, new[] { b }, "");
-                if (winner.Kind == PartyKind.Lord || loser.Kind == PartyKind.Lord)
-                    Log($"{winner.Name} defeats {loser.Name} near {Map.ProvinceAt(loser.Pos).Name}.");
-            }
+    }
+
+    /// Resolve a meeting between two parties (an AI fight happens at once; a fight with you opens the encounter panel).
+    void Clash(Party a, Party b)
+    {
+        if (a == b || a.Cooldown > 0 || b.Cooldown > 0 || !Hostile(a, b)) return;
+        bool playerInvolved = a.Kind == PartyKind.Player || b.Kind == PartyKind.Player;
+        // AI parties are a little slower to close than the player is, so the field is not one long chain of fights.
+        float radius = playerInvolved ? B.EncounterRadius : B.AiClashRadius;
+        if (Vector2.DistanceSquared(a.Pos, b.Pos) > radius * radius) return;
+        if (playerInvolved)
+        {
+            Encounter = a.Kind == PartyKind.Player ? b : a;
+            Player.Moving = false;
+            Player.ChaseId = -1;
+            return;
+        }
+        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, false);
+        var winner = r.Winner == 0 ? a : b;
+        var loser = r.Winner == 0 ? b : a;
+        AiBattles++;
+        Apply(r, new[] { a }, new[] { b }, "");
+        if (winner.Kind == PartyKind.Lord || loser.Kind == PartyKind.Lord)
+            Log($"{winner.Name} defeats {loser.Name} near {Map.ProvinceAt(loser.Pos).Name}.");
     }
 
     // ---------- applying a battle ----------
@@ -438,7 +476,7 @@ public sealed partial class Campaign
         var into = Player.Companies.FirstOrDefault(c => c.Troop == levy && c.Men + n <= Rules.Cap(levy, Rules.RoleOf(c)));
         if (into == null)
         {
-            if (Player.Companies.Count >= Slots) return "NO FREE COMPANY (RENOWN RAISES THE LIMIT)";
+            if (Player.Companies.Count >= Slots) return "MAX 10 COMPANIES";
             Player.Companies.Add(into = NewCompany(levy, "infantry", 0, 0));
         }
         Rules.AddMen(into, n);
@@ -572,10 +610,10 @@ public sealed partial class Campaign
             Name = "Lord " + rng.Pick(n.Lords) + " " + rng.Pick(n.Epithets), Gold = 400, Tier = 1 + rng.Next(2),
         };
         lord.Goal = lord.Pos;
-        int tier = Math.Clamp(1 + rng.Next(2) + Day / 40, 1, 4);
+        int tier = Math.Clamp(1 + rng.Next(2) + Day / 30, 1, 7);
         foreach (var role in new[] { "infantry", "archers", rng.Next(2) == 0 ? "spears" : "horse" })
         {
-            string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, 4), faction);
+            string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, 7), faction);
             lord.Companies.Add(NewCompany(troop, role, (int)(Rules.Cap(troop, role) * rng.Range(0.7f, 1f)), 0));
         }
         S.Parties.Add(lord);
@@ -586,13 +624,19 @@ public sealed partial class Campaign
         var villages = S.Settlements.Where(v => v.Kind == SettlementKind.Village).ToList();
         var at = rng.Pick(villages);
         var n = Names.Get();
+        // Bands grow as the campaign does, so brigandry stays a threat instead of becoming free loot for a growing company.
+        int tier = Math.Clamp(1 + Day / (int)MathF.Max(1, B.BanditTierPerDays), 1, 5);
+        int men = B.BanditBandMin + rng.Next(Math.Max(1, B.BanditBandMax - B.BanditBandMin)) + Day / (int)MathF.Max(1, B.BanditGrowPerDays);
+        string foot = Armies.LineTroop("infantry", tier, rng.Next(3));
         var band = new Party
         {
-            Id = S.NextId++, Kind = PartyKind.Bandit, Name = rng.Pick(n.Bandits), Pos = at.Pos + new Vector2(rng.Range(-14, 14), rng.Range(-14, 14)), Tier = 1,
+            Id = S.NextId++, Kind = PartyKind.Bandit, Name = rng.Pick(n.Bandits), Tier = tier,
         };
+        band.Pos = at.Pos + new Vector2(rng.Range(-14, 14), rng.Range(-14, 14)) * Map.Spread;
         band.Goal = band.Pos;
-        band.Companies.Add(NewCompany("levies", "infantry", rng.Next(10, 22), 0));
-        if (rng.Chance(0.6f)) band.Companies.Add(NewCompany(rng.Chance(0.6f) ? "bowmen" : "outriders", rng.Chance(0.6f) ? "archers" : "horse", rng.Next(5, 10), 0));
+        band.Companies.Add(NewCompany(foot, "infantry", men, 0));
+        if (rng.Chance(0.6f))
+            band.Companies.Add(NewCompany(Armies.LineTroop(rng.Chance(0.6f) ? "archers" : "horse", tier, rng.Next(3)), rng.Chance(0.6f) ? "archers" : "horse", rng.Next(5, 10) + Day / 20, 0));
         foreach (var c in band.Companies) if (c.Troop == "outriders") c.Role = "horse"; else if (c.Troop == "bowmen") c.Role = "archers";
         S.Parties.Add(band);
     }
@@ -604,7 +648,7 @@ public sealed partial class Campaign
         for (int i = 0; i < offers; i++)
         {
             string role = rng.Pick(new[] { "infantry", "archers", "spears", "horse" });
-            int tier = rng.Chance(Math.Min(0.7f, Day / 60f + 0.2f)) ? 3 : 2;
+            int tier = Math.Clamp(2 + Day / 40 + (rng.Chance(0.35f) ? 1 : 0), 2, 6);
             string troop = Armies.LineTroop(role, tier, t.Faction);
             var m = NewCompany(troop, role, (int)(Rules.Cap(troop, role) * rng.Range(0.6f, 0.9f)), 0);
             m.Xp = rng.Range(0, Math.Max(1, m.Type.UpgradeXp) * 0.5f);
@@ -643,8 +687,9 @@ public sealed partial class Campaign
         float me = Rules.Strength(p);
         var hostiles = Visible(p, B.Vision).Where(q => Hostile(p, q)).ToList();
         var threat = hostiles.Where(q => Rules.Strength(q) > me * 1.3f && Vector2.Distance(q.Pos, p.Pos) < 25).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault();
-        // Go home to refit only when it can be paid for: recruits, or an upgrade that is ready.
-        bool needsRefit = (p.Men < 45 || p.Companies.Count < 3) && p.Gold >= 150
+        // Go home to refit when the company is thin, or to spend an upgrade it can already pay for. Refit buys what the
+        // purse allows and the faction treasury covers the rest, so a lord who has lost men goes home even when it is poor.
+        bool needsRefit = p.Men < 45 || p.Companies.Count < 3
             || p.Companies.Any(c => Rules.UpgradeReady(c) && p.Gold >= Rules.UpgradeCost(c, c.Type.UpgradesTo[0], p.Horses));
         if (threat != null)
         {
@@ -660,9 +705,9 @@ public sealed partial class Campaign
         else if (needsRefit || p.Task == "refit")
         {
             p.Task = "refit"; p.ChaseId = -1; p.Goal = home.Pos; p.Moving = true;
-            if (Vector2.Distance(p.Pos, home.Pos) < 2) { Refit(p, home); p.Task = "rest"; p.TaskUntil = (float)S.Hours + 12; }
+            if (Vector2.Distance(p.Pos, home.Pos) < 2 * Map.Spread) { Refit(p, home); p.Task = "rest"; p.TaskUntil = (float)S.Hours + 12; }
         }
-        else if (hostiles.Where(q => Rules.Strength(q) < me * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.1f : 0.85f))
+        else if (hostiles.Where(q => Rules.Strength(q) < me * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f))
                      .OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
         {
             p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 6;
@@ -671,12 +716,14 @@ public sealed partial class Campaign
         {
             p.Task = "patrol"; p.ChaseId = -1;
             var prov = p.PatrolProvince >= 0 ? S.Provinces[p.PatrolProvince] : S.Provinces[home.Province];
-            p.Goal = prov.Center + new Vector2(rng.Range(-20, 20), rng.Range(-20, 20));
+            // A lord with no enemy in sight marches for the front rather than idling around home, so armies meet on their own.
+            if (AtWarWithAnyone(p.Faction) && rng.Chance(B.LordAggression) && EnemyProvinceNear(prov, p.Faction) is Province front) prov = front;
+            p.Goal = prov.Center + new Vector2(rng.Range(-20, 20), rng.Range(-20, 20)) * Map.Spread;
             p.Moving = true;
             p.TaskUntil = (float)S.Hours + 10;
             // A lord in an enemy province threatens its villages (they stop giving recruits for a week).
             if (FactionsAtWar(p.Faction, prov.Faction))
-                foreach (var v in S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.Province == prov.Id && Vector2.Distance(v.Pos, p.Pos) < 12 && v.ThreatUntil < S.Hours))
+                foreach (var v in S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.Province == prov.Id && Vector2.Distance(v.Pos, p.Pos) < 12 * Map.Spread && v.ThreatUntil < S.Hours))
                 {
                     v.ThreatUntil = (float)S.Hours + 7 * 24;
                     v.Recruits = 0;
@@ -686,21 +733,45 @@ public sealed partial class Campaign
         }
     }
 
-    /// At home: recruit levies, upgrade companies that are ready, by the same rules and prices as yours.
+    /// The nearest province held by a faction `f` is at war with, reachable through `from` (or `from` itself when it is enemy ground).
+    Province? EnemyProvinceNear(Province from, int f)
+    {
+        if (FactionsAtWar(f, from.Faction) && from.Faction >= 0) return from;
+        var enemy = S.Provinces.Where(p => FactionsAtWar(f, p.Faction) && p.Neighbors.Contains(from.Id)).OrderBy(p => Vector2.Distance(p.Center, from.Center)).FirstOrDefault();
+        if (enemy != null) return enemy;
+        // Two hops out, so a lord behind its own border still finds a front to march to.
+        return S.Provinces.Where(p => FactionsAtWar(f, p.Faction) && p.Neighbors.Any(n => S.Provinces[n].Neighbors.Contains(from.Id)))
+            .OrderBy(p => Vector2.Distance(p.Center, from.Center)).FirstOrDefault();
+    }
+
+    /// At home: recruit levies, upgrade companies that are ready, by the same rules and prices as yours. A lord who cannot
+    /// pay draws on his faction's war chest, up to a share of it per visit, so a beaten lord rebuilds instead of dying broke
+    /// while the chest still has money to raise new lords.
     void Refit(Party p, Settlement home)
     {
+        var fs = S.Factions[Math.Max(0, p.Faction)];
+        // A beaten lord may draw on the war chest, but only his share of it: half the chest is split between the realm's
+        // lords, so a run of refits costs the realm at most half of what it holds and it can still raise new lords (600).
+        int lordsOfFaction = Math.Max(1, S.Parties.Count(q => q.Kind == PartyKind.Lord && q.Faction == p.Faction));
+        float share = MathF.Min(250 * Map.ProvinceScale, fs.Treasury * 0.5f / lordsOfFaction);
+        float budget = Math.Clamp(share, 0, 250 * Map.ProvinceScale);
         string levy = RecruitTroop(p.Faction);
         if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", 12, 0)); // the lord's household, raised again
         foreach (var v in S.Settlements.Where(v => v.Province == home.Province))
         {
-            int n = Math.Min(v.Recruits, (int)(p.Gold / 10));
+            int affordable = (int)((p.Gold + budget) / 10);
+            int n = Math.Min(v.Recruits, Math.Max(0, affordable));
             if (n <= 0) continue;
             var into = p.Companies.FirstOrDefault(c => c.Troop == levy && c.Men + n <= Rules.Cap(levy, Rules.RoleOf(c)));
             if (into == null && p.Companies.Count < 5) p.Companies.Add(into = NewCompany(levy, rng.Pick(new[] { "infantry", "spears", "archers" }), 0, 0));
             if (into == null) break;
             Rules.AddMen(into, n);
             v.Recruits -= n;
-            p.Gold -= n * 10;
+            int bill = n * 10;
+            int fromChest = Math.Min(bill, (int)budget);
+            fs.Treasury -= fromChest;
+            budget -= fromChest;
+            p.Gold -= bill - fromChest;
         }
         foreach (var c in p.Companies.Where(Rules.UpgradeReady).ToList())
         {
@@ -708,21 +779,26 @@ public sealed partial class Campaign
             string to = c.Type.Tier == 1 ? Armies.LineTroop(Rules.RoleOf(c), 2, p.Faction) : options[rng.Next(options.Length)];
             if (!options.Contains(to)) to = options[0];
             int cost = Rules.UpgradeCost(c, to, p.Horses);
-            if (p.Gold < cost) continue;
-            p.Gold -= cost;
+            int fromChest = Math.Min(cost, (int)budget);
+            if (p.Gold + fromChest < cost) continue;
+            fs.Treasury -= fromChest;
+            budget -= fromChest;
+            p.Gold -= cost - fromChest;
             p.Horses -= Rules.Upgrade(c, to, p.Horses);
         }
-        if (p.Companies.Count > 0) p.Tier = Math.Clamp((int)MathF.Round((float)p.Companies.Average(c => c.Type.Tier)), 1, 4);
+        if (p.Companies.Count > 0) p.Tier = Math.Clamp((int)MathF.Round((float)p.Companies.Average(c => c.Type.Tier)), 1, 7);
     }
 
     void BanditThink(Party p)
     {
         float me = Rules.Strength(p);
         var near = Visible(p, 25).Where(q => Hostile(p, q)).ToList();
-        if (near.FirstOrDefault(q => Rules.Strength(q) > me * 1.2f) is Party threat)
+        // Brigands are opportunists, not soldiers: they run from anything near their own weight and only fall on a
+        // clearly weaker party. With many more bands on the big map they would otherwise grind the lords to nothing.
+        if (near.FirstOrDefault(q => Rules.Strength(q) > me * 1.05f) is Party threat)
         {
             var away = p.Pos - threat.Pos;
-            p.Goal = p.Pos + (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 20;
+            p.Goal = p.Pos + (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 20 * Map.Spread;
             p.ChaseId = -1; p.Moving = true; p.TaskUntil = (float)S.Hours + 2;
         }
         else if (near.Where(q => Rules.Strength(q) < me * 0.9f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
@@ -732,7 +808,7 @@ public sealed partial class Campaign
         else
         {
             p.ChaseId = -1;
-            p.Goal = p.Pos + new Vector2(rng.Range(-25, 25), rng.Range(-25, 25));
+            p.Goal = p.Pos + new Vector2(rng.Range(-25, 25), rng.Range(-25, 25)) * Map.Spread;
             p.Moving = true; p.TaskUntil = (float)S.Hours + 8;
         }
     }
@@ -759,7 +835,10 @@ public sealed partial class Campaign
         EatDaily();
         FactionAI();
         SiegesDaily();
-        if (S.Parties.Count(p => p.Kind == PartyKind.Bandit) < B.BanditsMax && rng.Chance(0.5f)) SpawnBandits();
+        // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous.
+        for (int n = 0; n < BanditSpawnsWanted; n++)
+            if (S.Parties.Count(p => p.Kind == PartyKind.Bandit && !p.Down) >= BanditsWanted || !rng.Chance(B.BanditSpawnChance)) break;
+            else SpawnBandits();
         // A realm that holds close to half the seats unites the others against it: their truces with it end, and they make peace.
         int seats = S.Settlements.Count(s => s.Kind != SettlementKind.Village);
         for (int f = 0; f < S.Factions.Count && S.Factions.Count > 2; f++)
@@ -806,14 +885,20 @@ public sealed partial class Campaign
             float income = S.Settlements.Where(t => t.Faction == f && t.Owner != Player.Id).Sum(Income);
             fs.Treasury += income / 7;
             var lords = S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).ToList();
-            if (lords.Count < B.LordsPerFaction && fs.Treasury >= 600) { SpawnLord(f); fs.Treasury -= 600; }
+            // A realm raises lords with the ground it holds: more provinces, more armies, but never more than the seats (and
+            // their villages' recruits) can actually pay for, or the chest is bled dry fielding companies that starve.
+            int seatsHeld = S.Settlements.Count(s => s.Faction == f && s.Kind != SettlementKind.Village && s.Owner != Player.Id);
+            int affordable = Math.Max(1, seatsHeld * 2 + 2);
+            int wanted = Math.Min(LordsWanted, affordable);
+            // Keep a reserve in the chest before a new lord is raised, so a run of defeats does not leave the realm broke.
+            if (lords.Count < wanted && fs.Treasury >= 600 + 400) { SpawnLord(f); fs.Treasury -= 600; }
             var front = S.Provinces.Where(p => p.Faction == f && p.Neighbors.Any(n => FactionsAtWar(f, S.Provinces[n].Faction))).ToList();
             var enemyFront = S.Provinces.Where(p => FactionsAtWar(f, p.Faction) && p.Neighbors.Any(n => S.Provinces[n].Faction == f)).ToList();
             var idle = lords.Where(l => !l.Down && l.Task == "patrol").ToList();
-            if (idle.Count >= 3 && enemyFront.Count > 0 && rng.Chance(0.2f))
+            if (idle.Count >= 2 && enemyFront.Count > 0 && rng.Chance(0.35f))
             {
                 var target = rng.Pick(enemyFront);
-                foreach (var l in idle.Take(4)) { l.PatrolProvince = target.Id; l.TaskUntil = 0; }
+                foreach (var l in idle.Take(5)) { l.PatrolProvince = target.Id; l.TaskUntil = 0; }
                 Log($"The {FactionNames[f]} musters a host against {target.Name}.");
             }
             else
