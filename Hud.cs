@@ -527,7 +527,7 @@ sealed class Hud
                 ("FOCUS SQUAD", "DOUBLE-CLICK CARD"),
             }),
             ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.FireAtWill, Act.SelectAll,
-                    Act.CommandView, Act.Pause, Act.Menu, Act.Help }
+                    Act.CommandView, Act.Pause, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Prepend(("SELECT SQUAD", "1-9")).ToArray()),
         };

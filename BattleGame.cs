@@ -20,6 +20,9 @@ public sealed class BattleGame : Game
     World world = null!;
     readonly Controls ctl = Controls.Load();
     AlphaTestEffect spriteFx = null!;
+    Shading? shading;                          // GLSL pipeline (null if it could not be created)
+    Quality quality = Quality.High;
+    Vector3 focusPoint;                        // what the camera looks at (the shadow map is centred here)
     BasicEffect shadowFx = null!, lineFx = null!;
     Battle battle = null!;
     readonly HashSet<Squad> selected = new();
@@ -77,6 +80,9 @@ public sealed class BattleGame : Game
         };
         shadowFx = new BasicEffect(GraphicsDevice) { TextureEnabled = true, Texture = art.Shadow };
         lineFx = new BasicEffect(GraphicsDevice) { VertexColorEnabled = true };
+        if (Environment.GetEnvironmentVariable("IRONFIELD_QUALITY") is { Length: > 0 } q && Enum.TryParse<Quality>(q, true, out var qv)) quality = qv;
+        try { shading = new Shading(GraphicsDevice); }
+        catch (Exception e) { Console.WriteLine("shaders unavailable: " + e.Message); quality = Quality.Low; }
         NewBattle();
     }
 
@@ -145,6 +151,11 @@ public sealed class BattleGame : Game
             if (!alive && !command) SetCommand(true);
             else if (alive && ctl.Pressed(Act.CommandView)) SetCommand(!command);
             if (ctl.Pressed(Act.Pause)) paused = !paused;
+            if (ctl.Pressed(Act.Graphics))
+            {
+                quality = shading == null ? Quality.Low : (Quality)(((int)quality + 1) % 3);
+                battle.Log("Graphics: " + quality switch { Quality.High => "high (shadows, post)", Quality.Medium => "medium (no shadows)", _ => "low (basic)" });
+            }
             OrderKeys();
             if (command) CommandControls(dt); else FieldControls();
         }
@@ -573,6 +584,7 @@ public sealed class BattleGame : Game
         float pt = MathHelper.Lerp(pitch, camPitch, k), dist = MathHelper.Lerp(fieldDist + (mounted ? 1.5f : 0), zoom, k);
         var look = new Vector3(MathF.Cos(y) * MathF.Cos(pt), -MathF.Sin(pt), MathF.Sin(y) * MathF.Cos(pt));
         eye = focus - look * dist;
+        focusPoint = focus;
         eye.Y = MathF.Max(eye.Y, t.Height(new Vector2(eye.X, eye.Z)) + 0.5f); // never under the ground
         proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(MathHelper.Lerp(62, 45, k)), GraphicsDevice.Viewport.AspectRatio, 0.2f, 700);
         view = Matrix.CreateLookAt(eye, focus, Vector3.Up);
@@ -585,11 +597,30 @@ public sealed class BattleGame : Game
     protected override void Draw(GameTime gameTime)
     {
         var gd = GraphicsDevice;
-        gd.Clear(World.Horizon);
-        world.Draw(view, proj, eye);
-        DrawShadows();
-        DrawSprites();
-        DrawLines();
+        EaseFacings();
+        bool shaded = quality != Quality.Low && shading != null;
+        if (shaded)
+        {
+            try { DrawShaded(shading!); }
+            catch (Exception e)
+            {
+                // A driver that rejects the GLSL: fall back to the fixed-function path for good.
+                Console.WriteLine("shader pipeline failed, falling back: " + e);
+                gd.SetRenderTarget(null);
+                quality = Quality.Low;
+                battle.Log("Shaders unavailable: basic graphics.");
+                shaded = false;
+            }
+        }
+        if (!shaded)
+        {
+            gd.Clear(World.Horizon);
+            world.Draw(view, proj, eye);
+            DrawBlobs(1);
+            BuildSprites(view, false);
+            DrawSpritesBasic();
+            DrawLines();
+        }
         SyncHud();
         if (!hudHidden) hud.Draw();
 
@@ -607,7 +638,41 @@ public sealed class BattleGame : Game
         base.Draw(gameTime);
     }
 
-    void DrawShadows()
+    /// The shader path: sun shadow map, then the scene into an off-screen target, then the post pass to the screen.
+    void DrawShaded(Shading sh)
+    {
+        var gd = GraphicsDevice;
+        bool shadows = quality == Quality.High;
+        if (shadows)
+        {
+            // Cover what the camera sees: about 90 m around you in the field, more as the command camera zooms out.
+            float k = MathHelper.SmoothStep(0, 1, blend);
+            sh.AimSun(focusPoint, MathHelper.Lerp(90, Math.Clamp(zoom * 2.6f, 70, 260), k));
+            gd.Textures[1] = null;
+            gd.SetRenderTarget(sh.ShadowMap);
+            gd.Clear(Color.White);
+            gd.DepthStencilState = DepthStencilState.Default;
+            gd.RasterizerState = RasterizerState.CullNone;
+            gd.BlendState = BlendState.Opaque;
+            world.DrawShadowCasters(sh, realTime);
+            BuildSprites(sh.LightView, true); // puppets turned to face the sun, so shadows have their silhouette
+            sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, realTime, false, 0);
+            sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
+            DrawSpritesShaded(sh.Sprite, "SpriteShadow");
+        }
+        gd.Textures[1] = null;
+        gd.SetRenderTarget(sh.Scene());
+        gd.Clear(World.Horizon);
+        world.DrawShaded(sh, view, proj, eye, realTime, shadows);
+        DrawBlobs(shadows ? 0.4f : 1); // with real shadows the blobs only add contact darkening
+        BuildSprites(view, false);
+        sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
+        DrawSpritesShaded(sh.Sprite, "Sprite");
+        DrawLines();
+        sh.PostToScreen(fxaa: true);
+    }
+
+    void DrawBlobs(float alpha)
     {
         shadows.N = 0;
         var t = battle.Terrain;
@@ -629,38 +694,65 @@ public sealed class BattleGame : Game
         gd.BlendState = BlendState.AlphaBlend;
         gd.DepthStencilState = DepthStencilState.DepthRead;
         gd.SamplerStates[0] = SamplerState.LinearClamp;
+        shadowFx.Alpha = alpha;
         shadowFx.View = view; shadowFx.Projection = proj;
         shadowFx.CurrentTechnique.Passes[0].Apply();
         gd.DrawUserPrimitives(PrimitiveType.TriangleList, shadows.A, 0, shadows.N / 3);
     }
 
-    void DrawSprites()
+    /// Ease every drawn facing toward the real one, once per frame, so turning is a smooth sweep.
+    void EaseFacings()
+    {
+        float turn = MathF.Min(1, frameDt * 12);
+        foreach (var u in battle.Units)
+        {
+            u.ViewFacing += MathHelper.WrapAngle(u.Facing - u.ViewFacing) * turn;
+            u.ViewHeading += MathHelper.WrapAngle(u.Heading - u.ViewHeading) * turn;
+        }
+    }
+
+    /// Build every puppet's quads, billboarded toward the camera of `viewer` (the player's camera or the sun).
+    void BuildSprites(Matrix viewer, bool forSun)
     {
         var t = battle.Terrain;
-        float turn = MathF.Min(1, frameDt * 12);
         sprites.N = 0;
-        puppet.Begin(view);
+        puppet.Begin(viewer);
         var eye2 = new Vector2(eye.X, eye.Z);
         foreach (var u in battle.Units)
         {
-            // Ease the drawn facing so turning is a smooth sweep.
-            u.ViewFacing += MathHelper.WrapAngle(u.Facing - u.ViewFacing) * turn;
-            u.ViewHeading += MathHelper.WrapAngle(u.Heading - u.ViewHeading) * turn;
-            if (!u.IsPlayer && u.Team == 0 && blend < 0.5f && Vector2.DistanceSquared(u.Pos, eye2) < 6 * 6) continue; // friends don't fill the lens
+            if (!forSun && !u.IsPlayer && u.Team == 0 && blend < 0.5f && Vector2.DistanceSquared(u.Pos, eye2) < 6 * 6) continue; // friends don't fill the lens
             puppet.Draw(u, t.Height(u.Pos));
         }
         foreach (var h in battle.LooseHorses) puppet.DrawLooseHorse(h, t.Height(h.Pos));
         foreach (var h in battle.DeadHorses) puppet.DrawDeadHorse(h, t.Height(h.Pos));
-        if (sprites.N == 0) return;
+    }
 
+    void SpriteStates()
+    {
         var gd = GraphicsDevice;
         gd.BlendState = BlendState.Opaque;
         gd.DepthStencilState = DepthStencilState.Default;
         gd.RasterizerState = RasterizerState.CullNone;
-        gd.SamplerStates[0] = SamplerState.PointClamp;
+    }
+
+    void DrawSpritesBasic()
+    {
+        if (sprites.N == 0) return;
+        SpriteStates();
+        GraphicsDevice.SamplerStates[0] = SamplerState.PointClamp;
         spriteFx.View = view; spriteFx.Projection = proj;
         spriteFx.CurrentTechnique.Passes[0].Apply();
-        gd.DrawUserPrimitives(PrimitiveType.TriangleList, sprites.A, 0, sprites.N / 3);
+        GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, sprites.A, 0, sprites.N / 3);
+    }
+
+    void DrawSpritesShaded(Effect fx, string technique)
+    {
+        if (sprites.N == 0) return;
+        SpriteStates();
+        fx.Parameters["Atlas"].SetValue(art.Atlas);
+        fx.CurrentTechnique = fx.Techniques[technique];
+        fx.CurrentTechnique.Passes[0].Apply();
+        GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, sprites.A, 0, sprites.N / 3);
     }
 
     void Line(Vector3 a, Vector3 b, Color c) { lines.Add(new(a, c)); lines.Add(new(b, c)); }

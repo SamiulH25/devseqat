@@ -104,6 +104,56 @@ sealed class World : IDisposable
             gd.DrawPrimitives(PrimitiveType.TriangleList, s * 3, Math.Min(Chunk, foliageTris - s));
     }
 
+    /// Shaded path: sky shader, then lit and shadowed terrain and foliage (see Shaders/world.glsl, sky.glsl).
+    public void DrawShaded(Shading sh, Matrix view, Matrix proj, Vector3 camPos, float time, bool shadows)
+    {
+        gd.RasterizerState = RasterizerState.CullNone;
+        gd.BlendState = BlendState.Opaque;
+
+        gd.DepthStencilState = DepthStencilState.None;
+        var sky = sh.Sky.Parameters;
+        sky["ViewProj"].SetValue(Matrix.CreateTranslation(camPos) * view * proj);
+        sky["SunDir"].SetValue(SunDir);
+        sky["SunColor"].SetValue(Shading.SunColor);
+        sky["Horizon"].SetValue(Horizon.ToVector3());
+        sky["Zenith"].SetValue(Zenith.ToVector3());
+        sky["Time"].SetValue(time);
+        sh.Sky.CurrentTechnique.Passes[0].Apply();
+        gd.SetVertexBuffer(skyVb);
+        gd.DrawPrimitives(PrimitiveType.TriangleList, 0, skyTris);
+
+        gd.DepthStencilState = DepthStencilState.Default;
+        var fx = sh.World;
+        sh.Setup(fx, view * proj, camPos, time, shadows, 0.15f + sh.ShadowTexelMetres);
+        fx.Parameters["Detail"].SetValue(detail);
+        DrawGeometry(fx, "Terrain", "Foliage");
+    }
+
+    /// Terrain and foliage into the sun's shadow map (hills and trees cast shadows).
+    public void DrawShadowCasters(Shading sh, float time)
+    {
+        var fx = sh.World;
+        sh.Setup(fx, Matrix.Identity, sh.LightEye, time, false, 0);
+        fx.Parameters["ShadowMap"].SetValue((Texture2D?)null);
+        fx.Parameters["Detail"].SetValue(detail);
+        DrawGeometry(fx, "TerrainShadow", "FoliageShadow");
+    }
+
+    void DrawGeometry(Effect fx, string terrain, string foliage)
+    {
+        fx.CurrentTechnique = fx.Techniques[terrain];
+        fx.CurrentTechnique.Passes[0].Apply();
+        gd.SetVertexBuffer(terrainVb);
+        gd.Indices = terrainIb;
+        for (int s = 0; s < terrainTris; s += Chunk)
+            gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, s * 3, Math.Min(Chunk, terrainTris - s));
+        fx.CurrentTechnique = fx.Techniques[foliage];
+        fx.CurrentTechnique.Passes[0].Apply();
+        gd.SetVertexBuffer(foliageVb);
+        for (int s = 0; s < foliageTris; s += Chunk)
+            gd.DrawPrimitives(PrimitiveType.TriangleList, s * 3, Math.Min(Chunk, foliageTris - s));
+    }
+
     public void Dispose()
     {
         terrainVb.Dispose(); terrainIb.Dispose(); foliageVb.Dispose(); skyVb.Dispose();
@@ -264,7 +314,9 @@ sealed class World : IDisposable
     static void Broadleaf(Mesh m, Vector3 b, float s, Random r)
     {
         float th = (2.0f + r.NextSingle() * 1.0f) * s;
+        m.Tag = Vector2.Zero;
         m.Frustum(b - Vector3.Up * 0.4f, b + Vector3.Up * th, 0.27f * s, 0.16f * s, 6, Jitter(new Color(96, 70, 46), r, 0.1f), r);
+        m.Tag = new Vector2(0.35f, 1);
         var leaf = Color.Lerp(new Color(58, 104, 46), new Color(92, 132, 56), r.NextSingle());
         m.Blob(b + new Vector3(0, th + 1.1f * s, 0), new Vector3(1.9f, 1.55f, 1.9f) * s, leaf, r, 0.18f);
         int extra = 1 + r.Next(2);
@@ -278,7 +330,9 @@ sealed class World : IDisposable
 
     static void Pine(Mesh m, Vector3 b, float s, Random r)
     {
+        m.Tag = Vector2.Zero;
         m.Frustum(b - Vector3.Up * 0.4f, b + Vector3.Up * 1.8f * s, 0.22f * s, 0.12f * s, 6, Jitter(new Color(90, 64, 42), r, 0.1f), r);
+        m.Tag = new Vector2(0.25f, 0.7f);
         var needles = Color.Lerp(new Color(34, 78, 50), new Color(52, 98, 58), r.NextSingle());
         int tiers = 4;
         for (int i = 0; i < tiers; i++)
@@ -291,6 +345,7 @@ sealed class World : IDisposable
     static void Bush(Mesh m, Vector3 b, float s, Random r)
     {
         var leaf = Color.Lerp(new Color(52, 98, 44), new Color(86, 122, 52), r.NextSingle());
+        m.Tag = new Vector2(0.2f, 1);
         m.Blob(b + Vector3.Up * 0.3f * s, new Vector3(0.95f, 0.7f, 0.95f) * s, leaf, r, 0.22f);
         if (r.Next(2) == 0)
             m.Blob(b + new Vector3(0.6f * s, 0.2f * s, 0.2f * s), new Vector3(0.6f, 0.5f, 0.6f) * s, Jitter(leaf, r, 0.1f), r, 0.2f);
@@ -299,6 +354,7 @@ sealed class World : IDisposable
     static void Rock(Mesh m, Vector3 b, float s, Random r)
     {
         var stone = Jitter(new Color(128, 126, 122), r, 0.12f);
+        m.Tag = Vector2.Zero;
         m.Blob(b + Vector3.Up * 0.12f * s, new Vector3(1.0f, 0.62f, 0.85f) * s, stone, r, 0.28f);
     }
 
@@ -329,8 +385,8 @@ sealed class World : IDisposable
                 var top = b + Vector3.Up * (0.3f + r.NextSingle() * 0.15f);
                 var col = flowers[r.Next(flowers.Length)];
                 float f = 0.06f;
-                m.TriUp(top + new Vector3(-f, 0, 0), top + new Vector3(f, 0, 0), top + new Vector3(0, f, 0), col, col, col);
-                m.TriUp(top + new Vector3(0, 0, -f), top + new Vector3(0, 0, f), top + new Vector3(0, f, 0), col, col, col);
+                m.TriUp(top + new Vector3(-f, 0, 0), top + new Vector3(f, 0, 0), top + new Vector3(0, f, 0), col, col, col, 0.9f);
+                m.TriUp(top + new Vector3(0, 0, -f), top + new Vector3(0, 0, f), top + new Vector3(0, f, 0), col, col, col, 0.9f);
             }
         }
     }
@@ -339,6 +395,7 @@ sealed class World : IDisposable
     sealed class Mesh
     {
         public readonly List<VertexPNCT> V = new();
+        public Vector2 Tag; // goes in the UV of foliage: (wind sway, leafiness) for the world shader
         static readonly (Vector3[] P, int[] F) Sphere = Icosphere();
 
         /// A triangle with its own face normal, flipped to point away from `center` (so closed shapes light from outside).
@@ -347,13 +404,14 @@ sealed class World : IDisposable
             var n = Vector3.Cross(b - a, c - a);
             if (n.LengthSquared() < 1e-12f) n = Vector3.Up; else n.Normalize();
             if (Vector3.Dot(n, (a + b + c) / 3 - center) < 0) n = -n;
-            V.Add(new(a, n, col, Vector2.Zero)); V.Add(new(b, n, col, Vector2.Zero)); V.Add(new(c, n, col, Vector2.Zero));
+            V.Add(new(a, n, col, Tag)); V.Add(new(b, n, col, Tag)); V.Add(new(c, n, col, Tag));
         }
 
         /// A triangle lit as if facing up (grass blades look the same from both sides).
-        public void TriUp(Vector3 a, Vector3 b, Vector3 c, Color ca, Color cb, Color cc)
+        /// Rooted at a and b (no sway), free at c (sways `tipSway`): grass blades and flowers.
+        public void TriUp(Vector3 a, Vector3 b, Vector3 c, Color ca, Color cb, Color cc, float tipSway = 1)
         {
-            V.Add(new(a, Vector3.Up, ca, Vector2.Zero)); V.Add(new(b, Vector3.Up, cb, Vector2.Zero)); V.Add(new(c, Vector3.Up, cc, Vector2.Zero));
+            V.Add(new(a, Vector3.Up, ca, new Vector2(0, 1))); V.Add(new(b, Vector3.Up, cb, new Vector2(0, 1))); V.Add(new(c, Vector3.Up, cc, new Vector2(tipSway, 1)));
         }
 
         /// A tapered prism from a to b (r1 = 0 makes a cone).

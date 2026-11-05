@@ -19,6 +19,8 @@ The game needs no art files: sprites, terrain and the font are all generated in 
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
 To render a few staged camera shots as PNGs and quit (works headless with `xvfb-run -a dotnet run`), set `IRONFIELD_SHOTS=/some/dir`.
 `dotnet run -- --write-controls` writes `controls.json` with the default bindings.
+Graphics quality: **F2** cycles High (shaders, sun shadows, post) / Medium (no shadows) / Low (fixed-function); `IRONFIELD_QUALITY=Low` picks one at start.
+Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, no Wine): see "Shaders" below.
 
 ## Controls
 
@@ -109,6 +111,29 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   The deployment ground (`Terrain.Core`) is kept clear of anything solid.
 - **Sky:** a gradient dome; fog fades the world into the horizon colour.
 
+## Shaders
+
+The renderer runs on custom GLSL shaders (`Shaders/*.glsl`), turned into MonoGame effects **at runtime** by `GlslEffect.cs`.
+MonoGame's own effect compiler (MGFXC) needs Wine on Linux and macOS. But a DesktopGL compiled effect (MGFX, profile 0) simply carries GLSL text,
+so `GlslEffect` writes that binary itself (layout as read by MonoGame 3.8.6's `Effect`/`Shader`). The rules for a shader file:
+- One file for both stages. The builder prepends `#version 120`, then `#define VERTEX` or `#define FRAGMENT`, the technique's own
+  defines (e.g. `FOLIAGE`, `SHADOW`), one `uniform vec4 U[n]` holding all parameters, and a `#define` per parameter
+  (matrices become `mat4(...)` columns, so write `pos * ViewProj` like HLSL). Samplers are fragment-only.
+- Vertex shaders end with `FIXUP_POSITION` (MonoGame's GL `posFixup` y-flip for render targets, and D3D 0..1 depth to GL clip).
+- Anything sampled from a render target is upside down on GL, so use `uv.y = 0.5 - 0.5 * ndc.y`.
+- Parameters are set by name from C# (`effect.Parameters["SunDir"].SetValue(...)`). Sampler states travel with the effect.
+
+The pipeline (`Shading.cs`, driven from `BattleGame.DrawShaded`):
+1. **Sun shadow map:** a 2048² R32F target. An orthographic sun camera is aimed at what you look at (90 m in the field, more as the
+   command camera zooms out) and snapped to texels so shadows do not shimmer. Terrain, foliage and units cast shadows. Units
+   are rebuilt as puppets **facing the sun** for this pass, so a horse's shadow has legs.
+2. **Scene into an off-screen target:** the sky (gradient, sun disc and glow, drifting fbm clouds), terrain and foliage (per-pixel
+   sun and hemispheric sky light, 3x3 PCF shadows, wind on grass and leaves, backlit leaves glow, distance and height fog), contact blobs,
+   lit and shadowed unit sprites, then arrows and markers.
+3. **Post:** FXAA (the game runs without MSAA), a gentle colour grade with split toning (warm highlights, cool shadows), and a vignette.
+
+If a driver rejects the GLSL, the game logs it and **falls back to the fixed-function path** (Low) instead of failing.
+
 ## Design: interface
 
 - Bottom centre: **unit cards** (portrait made from the unit's own sprites, count, strength and morale bars, order tag, state above:
@@ -137,7 +162,10 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
 | `Style.cs` | Design tokens: side heraldry, materials, horse coats, sprite light and density, UI colours, grid, type scale. |
 | `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles. |
 | `BattleGame.cs` | MonoGame `Game`: input, the blended third-person/command camera, terrain picking, orders, the render passes. |
-| `World.cs` | 3D world renderer: lit terrain mesh, procedural low-poly foliage and grass, sky dome, minimap image. |
+| `World.cs` | 3D world: terrain mesh, procedural low-poly foliage and grass (tagged with wind sway and leafiness), sky dome, minimap image; shaded and fixed-function draw paths. |
+| `Shading.cs` | The shader pipeline: effects, sun shadow map, scene target, post pass, light and grade values, quality levels. |
+| `GlslEffect.cs` | Builds MonoGame effects from GLSL at runtime (writes the DesktopGL MGFX format), no shader compiler needed. |
+| `Shaders/` | `world.glsl` (terrain, foliage), `sprite.glsl` (units), `sky.glsl`, `post.glsl`, `common.glsl` (shadow and fog helpers). |
 | `Hud.cs` | The whole 2D interface, its layout and hit-testing (cards, buttons, minimap clicks, menus). |
 | `Controls.cs` | Rebindable actions, defaults, `controls.json` loading and key names for the HUD. |
 | `Puppet.cs` | Draws each unit as a puppet of part sprites on a 3D skeleton, with continuous poses from its action state; horses too. |
@@ -177,7 +205,8 @@ For hand-made art later, put PNGs into the atlas under the same keys (`part.vari
   **puppets made of per-part pixel-art sprites** (the current version).
 - Mouse look warps the cursor to the window centre (`Mouse.SetPosition`). If a platform refuses warps, switch to SDL relative mouse mode.
 - Battle sim stays free of MonoGame graphics, so it runs headless in tests. Keep it that way (terrain and foliage placement included).
-- The game asks for the `HiDef` profile (big static meshes). Multisampling is off: asking for it made context creation fail on Mesa/Xvfb.
+- The game asks for the `HiDef` profile (big static meshes, float render targets). Multisampling is off: asking for it made context creation fail on
+  Mesa/Xvfb, so FXAA in the post pass smooths the edges instead.
 - In field view, friendly soldiers within 6 m of the camera are not drawn, so your own ranks never fill the lens.
 - `Battle.Empty` uses `Terrain.Flat()` (no hills, no trees), so mechanic tests are not affected by the map.
 - Team 0 = player side and squads 1-3 in `Squads` order. `Squad.Alive` is refreshed each tick by `UpdateSquad`.

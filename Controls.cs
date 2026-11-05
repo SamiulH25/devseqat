@@ -14,7 +14,7 @@ public enum Act
     // orders (both views)
     Charge, Follow, FormHere, HoldPosition, Advance, FallBack, Spacing, FireAtWill, SelectAll,
     // general
-    CommandView, Pause, Menu, Help,
+    CommandView, Pause, Menu, Help, Graphics,
 }
 
 public enum MouseButton { Left, Right, Middle, X1, X2 }
@@ -83,6 +83,7 @@ public sealed class Controls
         [Act.Advance] = new[] { "T" }, [Act.FallBack] = new[] { "B" }, [Act.Spacing] = new[] { "V" }, [Act.FireAtWill] = new[] { "X" },
         [Act.SelectAll] = new[] { "0", "TILDE" },
         [Act.CommandView] = new[] { "Tab" }, [Act.Pause] = new[] { "Space" }, [Act.Menu] = new[] { "ESC" }, [Act.Help] = new[] { "F1" },
+        [Act.Graphics] = new[] { "F2" },
     };
 
     public static readonly Dictionary<Act, string> Labels = new()
@@ -94,7 +95,7 @@ public sealed class Controls
         [Act.Charge] = "CHARGE", [Act.Follow] = "FOLLOW ME", [Act.FormHere] = "FORM LINE ON ME", [Act.HoldPosition] = "HOLD POSITION",
         [Act.Advance] = "ADVANCE", [Act.FallBack] = "FALL BACK", [Act.Spacing] = "LOOSE / TIGHT", [Act.FireAtWill] = "FIRE AT WILL / HOLD",
         [Act.SelectAll] = "SELECT ALL",
-        [Act.CommandView] = "COMMAND VIEW", [Act.Pause] = "PAUSE", [Act.Menu] = "MENU", [Act.Help] = "CONTROLS",
+        [Act.CommandView] = "COMMAND VIEW", [Act.Pause] = "PAUSE", [Act.Menu] = "MENU", [Act.Help] = "CONTROLS", [Act.Graphics] = "GRAPHICS QUALITY",
     };
 
     public Controls()

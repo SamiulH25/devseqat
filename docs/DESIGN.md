@@ -20,11 +20,19 @@ campaign map. The tokens it names live in code in `Style.cs`. When this document
 
 - **Shape:** low-poly and faceted. Spheres are once-subdivided icosahedra with jittered radii, trunks are 6-sided prisms,
   pines are stacked 9-sided cones. There are no textures on props: colour comes from vertex colour and lighting only.
-- **Light:** one sun (`World.SunDir`, from the upper left, behind the viewer at the start) plus cool ambient light.
-  Unit sprites are shaded as if lit by the same sun (`Style.SpriteLight`).
+- **Light:** one warm sun (`World.SunDir`, high at about 53 degrees, ahead and to the right of your starting view) plus a cool sky and a
+  warm ground bounce (hemispheric ambient). Unit sprites carry their own painted top-left shading (`Style.SpriteLight`). In game,
+  the scene's sun and sky light set their overall brightness, so a man walking into a wood's shadow darkens.
+- **Shadows:** everything casts real sun shadows (terrain, trees, soldiers and horses), softened with a 3x3 filter.
+  Soft blob shadows stay under every unit as contact darkening.
 - **Palette:** muted and natural. Meadow greens, drier yellow-greens on high ground, earth browns on slopes and the road,
   and stone greys. Saturated colour is reserved for heraldry (units, banners) so the armies pop against the land.
-- **Atmosphere:** a gradient sky dome (pale horizon to deep zenith), and fog that fades distance into the horizon colour.
+- **Atmosphere:** a gradient sky dome (pale horizon to deep zenith) with a sun disc, a soft glow and slow drifting clouds; fog that
+  fades distance into the horizon colour, thinner on high ground and warmer toward the sun.
+- **Life:** grass and leaves sway in one wind (waves across the field plus slow gusts); leaves glow when lit from behind.
+  Nothing else in the world moves.
+- **Grade:** a gentle final grade. Saturation stays just under neutral so heraldry outshouts the land, the contrast is slightly lifted,
+  highlights are split-toned warm and shadows cool (the same rule as the sprite ramps), with a light vignette. Values live in `Shading.cs`.
 - **Readable ground:** the deployment ground is kept open. Woods frame the flanks and cue cavalry routes. The road is a
   strong line that orients you.
 
