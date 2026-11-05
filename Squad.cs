@@ -29,6 +29,9 @@ public sealed class Squad
     public float Pressure;                        // recent flank/rear hits; drains morale, decays over time
     public int Kills;                             // enemies this company has killed (campaign XP)
     public readonly int[] KillsByTier = new int[8]; // kills by the victim's tier (0 = leaders, 1-7 = troop tiers)
+    public int HorseKills;                        // mounted enemies killed (the Horse-breakers honour)
+    /// The pace the company keeps in formation: its slowest man's (a mixed company marches together).
+    public float MarchSpeed = float.MaxValue;
     public Company? Company;
     public bool RoutSounded;                      // the rout horn has blown for this company
     public bool AiControlled;                     // an allied lord's company: the AI general leads it, not you

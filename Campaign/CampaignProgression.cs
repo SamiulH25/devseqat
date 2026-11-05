@@ -28,12 +28,12 @@ public sealed partial class Campaign
         if (S.Hours < cap.WoundedUntil) return ("YOU ARE WOUNDED: LET IT PASS OR REST IN A TOWN", "REST");
         // 2. A perk or a company upgrade is ready: the core of the game's progress.
         if (Rules.PerkPoints(cap) > 0) return ("A PERK IS READY: TAKE IT IN YOUR PARTY (P)", "PARTY");
-        if (Player.Companies.FirstOrDefault(Rules.UpgradeReady) is CompanyRecord ready)
+        if (MostReady() is var (rc, rs))
         {
-            int cost = Rules.UpgradeCost(ready, ready.Type.UpgradesTo[0], Player.Horses);
-            return (InTown(Player)
-                ? ($"{ready.Name.ToUpperInvariant()} IS READY: TRAIN IT HERE ({cost} CROWNS)", "TRAIN")
-                : ($"{ready.Name.ToUpperInvariant()} IS READY: TAKE IT TO A TOWN ({cost} CROWNS)", "TRAIN"));
+            int n = rs.Ready;
+            string men = n == 1 ? "1 MAN" : $"{n} MEN";
+            string ready = $"{men} OF {rc.Name.ToUpperInvariant()} READY ({rs.Type.Name.ToUpperInvariant()})";
+            return (CanTrainHere(Player) ? ($"{ready}: PROMOTE THEM HERE", "TRAIN") : ($"{ready}: TAKE THEM TO A TOWN", "TRAIN"));
         }
         // 3. Room in the party for more men or another company (up to 10 companies).
         if (RoomForMen >= 8 && Player.Companies.Count < Slots && InTown(Player))
@@ -47,14 +47,19 @@ public sealed partial class Campaign
         return ($"FIGHT ON: {at - cap.Renown:0} MORE RENOWN BUYS {what}", "PARTY");
     }
 
-    /// Upgrades the party could make now if it were in a town with the gold: one choice per ready company, the cheapest branch.
-    public IEnumerable<(CompanyRecord Company, string To)> PromotionChoices() =>
-        Player.Companies.Where(Rules.UpgradeReady)
-            .Select(co => (co, co.Type.UpgradesTo.OrderBy(t => Rules.UpgradeCost(co, t, Player.Horses)).First()));
+    /// Promotions the party could make if it were in a town: every ready stack, with its cheapest branch.
+    public IEnumerable<(CompanyRecord Company, TroopStack Stack, string To)> PromotionChoices() =>
+        Player.Companies.SelectMany(co => co.Stacks.Where(s => s.Ready > 0).Select(s => (co, s,
+            s.Type.UpgradesTo.OrderBy(t => Rules.PromoteCost(s.Troop, t, Player.Horses > 0)).First())));
 
-    /// Could this upgrade be paid for, setting aside where you are (for deciding whether to ride to a town)?
-    public bool CanUpgradeIgnoringPlace(CompanyRecord co, string to) =>
-        Rules.CanUpgrade(co, to, S.Gold, Player.Horses, true, true, out _, out _);
+    /// How many of a stack's ready men could be promoted with `gold`, setting aside where you are.
+    public int PromotableAnywhere(CompanyRecord co, TroopStack s, string to, float gold, out int cost)
+    {
+        var p = Player;
+        // Promotable checks the place through CanTrainHere; for a dry run from the field count as if in a town.
+        int n = Promotable(p, co, s, to, s.Ready, gold, out cost, out _, ignorePlace: true);
+        return n;
+    }
 
     /// A campaign-seeded random number in [0, max), for headless helpers that must stay deterministic.
     public float Rand(float max) => rng.Float() * max;

@@ -36,6 +36,7 @@ sealed class TitleScreen
         if (ui.Button(B(), "QUICK BATTLE")) host.QuickBattle();
         if (ui.Button(B(), "SETTINGS")) host.OpenSettings();
         if (ui.Button(B(), "QUIT")) host.Exit();
+        if (host.TitleNote != "") ui.TextC(host.TitleNote, ui.W / 2f, y + ui.U(8), Style.Warn, 1);
         ui.TextC("F2 GRAPHICS QUALITY", ui.W / 2f, ui.H - ui.U(30), Style.Dim * 0.7f, 1);
         ui.End();
     }

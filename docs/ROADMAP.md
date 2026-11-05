@@ -194,3 +194,19 @@ All of A-E is in. Where the build differs from the table above:
   runs it for 30 weeks per seed and writes `balance/pacing.csv` and `balance/pacing_weekly.csv`. First numbers (3 seeds): Sworn Company
   on days 18-32, Battle-Hardened on day 84 in one seed of three, 15-42 battles in 211 days. A company wiped out away from battle now
   regroups ten men at the nearest friendly town (before, it was left with no companies). `--selftest PilotTrace` prints a pilot's run.
+- F1: `CompanyRecord` holds `Stacks` (troop, men, wounded, XP pool capped at `upgradeXp x men`); a company's places come from its role
+  (foot 24, bows 16, spears 12, horse 10) and each man takes his tier's weight (I 0.8 ... VII 1.6). `Campaign/Companies.cs` promotes by
+  the man: each spends `upgradeXp` from his stack's pool and the difference in troop price (plus a horse into cavalry, bought on the spot
+  when the party has none) and moves to his new troop's stack, in the same company if it fits and has room, else the first company of
+  his role with room, else a new company. The AI uses the same rule (`PromoteAll`). Battles get a `Mix` per company and spawn one squad
+  of mixed men (largest stack first, marching at its slowest man); results come back per stack (`StackResult`) and wounds, captures,
+  fled men and pool XP are applied per stack. Companies carry a culture, home, banner charge (a baked flag per side and charge, carried
+  in battle), a ledger of the last 8 fights and up to 3 honours from `Data/campaign.json` `Honours` (defaults built in). The party screen
+  shows stacks as chips (tier, men, pool bar, N READY); a chip opens the promotion picker (1 / 5 / all per branch, with cost and the
+  reason when it cannot) with MOVE and SPLIT for the stack. Saves are version 4; older ones are refused with a message on the title
+  screen and on quickload. Deviations from the spec: raw tier I recruits fit any foot company (so levies can drill in a spear or bow
+  company until promoted); Stormers gives assault morale only (ladder speed is not modelled); mixing cultures costs 5 cohesion at once
+  rather than over a week. Balance: AI recruits now fill only green (tier I) companies, a lord's promotions come from his own purse unless
+  he came home beaten, and a war chest keeps a 300-crown floor when paying lords (without these the 120-day run bled one realm's chest
+  to zero). Pacing (3 seeds, 211 days): Sworn Company on days 9-200, Battle-Hardened on day 78 in one seed; the pilot still bleeds men to
+  unpaid upkeep between fights in two seeds, as before F1 (to fix with the pacing work).

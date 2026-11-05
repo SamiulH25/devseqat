@@ -87,6 +87,8 @@ public sealed class SpriteSheet
         Add($"cape{s}", Cape());
         Add($"blood{s}", Blood());
         Add($"flag{s}", Flag());
+        // Company banners (F1): the side's field with each company's own charge.
+        foreach (var e in Enum.GetValues<Emblem>()) { var keep = charge; charge = e; Add($"flag.{(int)e}{s}", Flag()); charge = keep; }
         var white = new Canvas(4, 4);
         white.Area((_, _) => true, Mat.Flat(Color.White));
         Add($"white{s}", white);

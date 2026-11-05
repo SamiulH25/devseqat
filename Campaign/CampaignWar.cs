@@ -22,9 +22,10 @@ public sealed partial class Campaign
     {
         int room = Rules.MenLimit(Captain) - Player.Men - Player.Wounded;
         if (room <= 0) return "PARTY IS FULL";
-        int n = Math.Min(g.Count, Math.Min(room, Rules.Cap(g.Troop, Armies.RoleOf(new Company(g.Troop, 1)))));
+        string role = Rules.TroopRole(g.Troop);
+        int n = Math.Min(g.Count, Math.Min(room, Rules.CapOf(g.Troop, role)));
         if (Player.Companies.Count >= Rules.CompanySlots(Captain)) return "NO FREE COMPANY";
-        var c = NewCompany(g.Troop, Armies.RoleOf(new Company(g.Troop, n)), n, 0);
+        var c = NewCompany(g.Troop, role, n, 0);
         c.Cohesion = 0;
         c.Name = "Turncoat " + c.Name.Split(' ').Last();
         Player.Companies.Add(c);
@@ -179,7 +180,8 @@ public sealed partial class Campaign
         foreach (var c in Player.Companies)
         {
             c.Cohesion = MathF.Max(0, c.Cohesion - 5);
-            c.Men -= (int)MathF.Ceiling(c.Men * 0.03f);
+            c.RemoveFit((int)MathF.Ceiling(c.Men * 0.03f), true);
+            c.Prune();
         }
         Player.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
         Log("Your men are starving. Buy food in a town or village.");

@@ -114,10 +114,18 @@ public static class Troops
 /// A company in an army: what the campaign map hands to a battle. Role ("infantry", "archers", "spears", "horse")
 /// decides where it deploys and how the AI uses it; empty = from the troop class.
 /// Id and Name tie it to the campaign's CompanyRecord (0 = a one-off battle); Morale is its starting morale.
-public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false)
+/// Troop is the company's face (its largest stack) and Count its total; Mix lists every stack (troop, men) when the company
+/// holds more than one troop type (CAMPAIGN_OVERHAUL.md 2.3). RoutBonus and VsMounted come from its honours.
+public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,
+    StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1)
 {
     public bool Has(string trait) => Traits?.Contains(trait) == true;
+    /// The men to spawn, largest stack first (so a squad's first man is its majority troop).
+    public IEnumerable<StackSpec> Stacks => Mix is { Length: > 0 } m ? m.Where(x => x.Count > 0).OrderByDescending(x => x.Count) : new[] { new StackSpec(Troop, Count) };
 }
+
+/// One troop type's men in a battle company.
+public sealed record StackSpec(string Troop, int Count);
 
 public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Companies);
 

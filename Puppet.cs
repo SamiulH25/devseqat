@@ -330,7 +330,7 @@ sealed class Puppet
     }
 
     /// A company banner: a pole rising behind the bearer, the flag at its head turned to the camera.
-    public void Banner(Vector2 pos, float ground, int palette, float wave)
+    public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1)
     {
         var foot = new Vector3(pos.X, ground, pos.Y);
         var top = foot + Vector3.Up * 3.3f;
@@ -340,7 +340,7 @@ sealed class Puppet
         var white = art["white/0"];
         Quad(foot - side * 0.03f, foot + side * 0.03f, top - side * 0.03f, top + side * 0.03f, white, false);
         tint = Color.White;
-        var flag = art["flag/" + palette];
+        var flag = art[(charge >= 0 ? $"flag.{charge}/" : "flag/") + palette];
         float w = flag.Width * Art.Px * 1.6f, h = flag.Height * Art.Px * 1.6f, sag = MathF.Sin(wave) * 0.05f;
         var tl = top - Vector3.Up * 0.05f;
         Quad(tl - Vector3.Up * h, tl + side * w - Vector3.Up * (h + sag), tl, tl + side * w + Vector3.Up * sag, flag, false);

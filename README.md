@@ -40,8 +40,11 @@ that will not last. Brigands roam between them all.
 - **Map:** click to march, click a town or village to enter it, and click a party to chase it. P opens the party screen, Space pauses,
   1-3 set the speed (x1, x3, x8), F follows you, F5 saves, F9 loads, and Esc opens the menu. The camera works as in command view (WASD, Q/E, wheel,
   middle-drag), and the overview (top right) jumps the camera. Hover anything for details.
-- **Companies persist.** They keep a name, men, wounded, XP, cohesion and history. They gain XP in battle and from drill, and upgrade along
-  `troops.json` in a town's training yard (Levies choose a line; cavalry needs horses). New recruits dilute XP.
+- **Companies persist.** A company is a banner of one role (foot, spears, bows or horse) holding **stacks** of troops, each with its own
+  XP pool. Men are **promoted one at a time** along `troops.json` in a town's training yard: click a stack in the party screen and promote
+  1, 5 or every ready man into any branch. A man promoted out of the company's role joins a company of his new role, or founds one.
+  A mixed company fights as one squad. Companies keep an origin, a banner, a ledger of their last fights and up to three **honours**
+  (Unbroken, Horse-breakers, Old Hands, Stormers, Bloodied) that change how they fight. Saves from before this (version 3 and older) are refused.
 - **Towns:** train, hire mercenaries, buy horses, food and your own gear (plate, great helm, warhorse, destrier), rest to heal, sell prisoners
   and ransom lords, sign or end contracts, and take work from the steward's board (hunt a lord, clear brigands, guard a village, scout a town,
   take a castle). **Villages:** recruit (levies, or clansmen in the north), buy or forage food. **Castles:** rest, prisoners and contracts.
@@ -62,7 +65,7 @@ that will not last. Brigands roam between them all.
   fight, not loot. Villages get threatened, the war score moves,
   the losing side sues for a 30-day truce, and the war resumes when it ends. Upkeep is weekly, a contract pays 85% of it, and unpaid men desert.
 - **Progression is spelled out.** The captain panel shows your **stage** (Mercenary Band → Lord of War) and one clear **next step**
-  — upgrade that ready company, take the perk, see a steward for work, buy food — and arriving in a town opens the tab that step
+  — promote your ready men, take the perk, see a steward for work, buy food — and arriving in a town opens the tab that step
   names. You can field up to **10 companies** right away; **Renown** raises your total troop count (men limit) and buys perks (Bannerman, War Cry, Tactician, Quartermaster, Surgeon, Drillmaster,
   Horsemaster, Iron Will), each of which changes the battles; a bar under the captain panel shows what the next rung buys and how
   far off it is, and the results screen repeats it after every battle. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
@@ -222,7 +225,7 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 | `BattleGrid.cs` | The spatial grid: near-neighbour queries for separation, targeting, morale and arrows. |
 | `Replay.cs` | Battle recording and exact playback (`--replay`). `GpuReport.cs`: `--gpu-report`. `Sky.cs`: light by hour and weather. |
 | `World.cs` | 3D world: terrain mesh, procedural low-poly foliage and grass (tagged with wind sway and leafiness), sky dome, minimap image; shaded and fixed-function draw paths. |
-| `Campaign/` | The headless campaign: `CampaignState` (save data and migration, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, XP, upgrades, auto-resolve, battle bridge), `Campaign` (time, movement, encounters, AI, economy, your actions), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs), `CampaignProgression` (the career stage and the next step), `Pilot` (a scripted stand-in captain for headless pacing runs). |
+| `Campaign/` | The headless campaign: `CampaignState` (save data and its version check, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, stacks, places, auto-resolve, battle bridge), `Companies` (stacks, promotion by the man, honours, ledger), `Campaign` (time, movement, encounters, AI, economy, your actions), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs), `CampaignProgression` (the career stage and the next step), `Pilot` (a scripted stand-in captain for headless pacing runs). |
 | `MapScreen.cs` | The campaign map: 3D world, banner-bearer parties, map HUD and every campaign panel. `Ui.cs`: the immediate-mode panel kit. |
 | `BattleTypes.cs` | `BattleOptions` (perks, gear, wounds, palettes, ground, size cap), `BattleResult` / `CompanyResult` for the campaign. |
 | `Shading.cs` | The shader pipeline: effects, sun shadow map, scene target, post pass, light and grade values, quality levels. |

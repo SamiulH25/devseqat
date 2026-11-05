@@ -63,8 +63,8 @@ public sealed partial class Campaign
         var player = new Party { Id = s.NextId++, Kind = PartyKind.Player, Name = "Your company", Faction = 0, Pos = capital.Pos + new Vector2(2, 0), Tier = 2 };
         player.Goal = player.Pos;
         s.Parties.Add(player);
-        player.Companies.Add(c.NewCompany("levies", "infantry", 24, 0));
-        player.Companies.Add(c.NewCompany("levies", "spears", 16, 0));
+        player.Companies.Add(c.NewCompany("levies", "infantry", 24, 0, capital));
+        player.Companies.Add(c.NewCompany("levies", "spears", 15, 0, capital));
         foreach (var v in s.Settlements)
         {
             v.Recruits = v.Kind == SettlementKind.Village ? 4 + c.rng.Next(5) : 0;
@@ -84,9 +84,6 @@ public sealed partial class Campaign
         c.Log("Levies upgrade after a battle or two: visit a town's training yard.");
         return c;
     }
-
-    public CompanyRecord NewCompany(string troop, string role, int men, float xp) =>
-        WithOfficer(new() { Id = S.NextId++, Troop = troop, Role = role, Men = men, Xp = xp, Name = Rules.CompanyName(rng, role) });
 
     public void Log(string text)
     {
@@ -239,7 +236,7 @@ public sealed partial class Campaign
     // ---------- applying a battle ----------
 
     /// Apply a battle's result to the campaign (played or auto-resolved). Returns the report for the results screen.
-    public BattleReport Apply(BattleResult r, IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, string enemyName)
+    public BattleReport Apply(BattleResult r, IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, string enemyName, bool siegeBattle = false)
     {
         var lookup = new Dictionary<int, (Party P, CompanyRecord C, int Team)>();
         foreach (var p in side0) foreach (var c in p.Companies) lookup[c.Id] = (p, c, 0);
@@ -258,34 +255,49 @@ public sealed partial class Campaign
             var (p, c, team) = e;
             bool teamWon = r.Winner == team;
             int menBefore = c.Men;
-            float pw = B.WoundBase + c.Type.Armor / B.WoundArmor + (p == Player && Captain.Perks.Contains(Perk.Surgeon) ? 0.1f : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
-            pw = Math.Clamp(pw, B.WoundMin, B.WoundMax);
-            int wounded = (int)MathF.Round(cr.Fallen * pw), killed = cr.Fallen - wounded;
-            int captured = teamWon ? 0 : (int)MathF.Round(wounded * B.CaptureChance);
-            wounded -= captured;
-            int fledBack = teamWon ? cr.Fled : (int)MathF.Round(cr.Fled * B.FledReturnOnDefeat);
-            int standing = cr.Deployed ? cr.Standing : menBefore;
-            c.Men = Math.Clamp(standing + fledBack, 0, menBefore);
-            c.Wounded += wounded;
-            float xp = 0;
+            float surgeon = (p == Player && Captain.Perks.Contains(Perk.Surgeon) ? 0.1f : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
+            int killedAll = 0, woundedAll = 0, capturedAll = 0, fledLostAll = 0;
+            // Casualties come off each stack by its own armour (2.3); a battle without a breakdown counts as the company's face.
+            var parts = cr.Stacks ?? new[] { new StackResult(c.Troop, cr.Start, cr.Standing, cr.Fled, cr.Fallen) };
+            foreach (var sr in parts)
+            {
+                var st = c.Stacks.FirstOrDefault(x => x.Troop == sr.Troop);
+                if (st == null) continue;
+                int stBefore = st.Men;
+                float pw = Math.Clamp(B.WoundBase + st.Type.Armor / B.WoundArmor + surgeon, B.WoundMin, B.WoundMax);
+                int wounded = (int)MathF.Round(sr.Fallen * pw), killed = sr.Fallen - wounded;
+                int captured = teamWon ? 0 : (int)MathF.Round(wounded * B.CaptureChance);
+                wounded -= captured;
+                int fledBack = teamWon ? sr.Fled : (int)MathF.Round(sr.Fled * B.FledReturnOnDefeat);
+                int standing = cr.Deployed ? sr.Standing : stBefore;
+                int after = Math.Clamp(standing + fledBack, 0, stBefore);
+                if (after < stBefore) st.Take(stBefore - after);
+                st.Wounded += wounded;
+                killedAll += killed; woundedAll += wounded; capturedAll += captured; fledLostAll += sr.Fled - fledBack;
+                if (playerIn && team != playerTeam && won)
+                {
+                    loot += (sr.Fallen + sr.Fled) * st.Type.Cost * B.LootRate;
+                    TakePrisoners(st.Troop, captured); // held, not ransomed at once (B3)
+                }
+            }
+            // XP into each stack's pool: participation per surviving man, and the company's kill XP split by men (2.2).
+            float xpPerMan = 0;
             if (cr.Deployed && c.Men > 0)
             {
                 float killXp = 0;
                 for (int t = 0; t < cr.KillsByTier.Length; t++) killXp += cr.KillsByTier[t] * Math.Max(1, t) * B.XpPerKillTier;
-                xp = B.XpParticipation * (teamWon ? B.XpVictory : 1) + killXp / c.Men;
-                c.Xp += xp;
+                xpPerMan = B.XpParticipation * (teamWon ? B.XpVictory : 1) + killXp / c.Men;
+                int men = c.Men;
+                foreach (var st in c.Stacks) st.AddXp(st.Men * (B.XpParticipation * (teamWon ? B.XpVictory : 1)) + killXp * st.Men / men);
             }
             if (cr.Deployed) { c.Battles++; c.Kills += cr.Kills; }
             float lostFrac = menBefore > 0 ? (menBefore - c.Men) / (float)menBefore : 0;
             c.Cohesion = Math.Clamp(c.Cohesion + (teamWon ? 5 : -5) - lostFrac * 10, 0, 30);
             if (cr.Deployed) OfficerAfterBattle(c, teamWon, lostFrac);
-            if (playerIn && team != playerTeam && won)
-            {
-                loot += (cr.Fallen + cr.Fled) * c.Type.Cost * B.LootRate;
-                TakePrisoners(c.Troop, captured); // held, not ransomed at once (B3)
-            }
-            if (playerIn) reports.Add(new CompanyReport(c.Id, c.Name, c.Troop, team == playerTeam ? 0 : 1, menBefore, c.Men, killed, wounded, captured,
-                cr.Fled - fledBack, xp, Rules.UpgradeReady(c), cr.Deployed));
+            Chronicle(c, cr, teamWon, menBefore - c.Men, team == 0 ? side1.FirstOrDefault()?.Name ?? "" : side0.FirstOrDefault()?.Name ?? "", siegeBattle, p);
+            if (playerIn) reports.Add(new CompanyReport(c.Id, c.Name, c.Troop, team == playerTeam ? 0 : 1, menBefore, c.Men, killedAll, woundedAll, capturedAll,
+                fledLostAll, xpPerMan, Rules.UpgradeReady(c), cr.Deployed));
+            c.Prune();
         }
         foreach (var p in side0.Concat(side1)) p.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
 
@@ -355,7 +367,7 @@ public sealed partial class Campaign
             var refuge = S.Settlements.Where(t => t.Kind == SettlementKind.Town && !Refuses(t)).OrderBy(t => Vector2.Distance(t.Pos, Player.Pos)).First();
             Player.Pos = refuge.Pos + new Vector2(5, 0);
             Player.Moving = false;
-            if (Player.Men == 0 && Player.Wounded == 0) Player.Companies.Add(NewCompany("levies", "infantry", 10, 0));
+            if (Player.Men == 0 && Player.Wounded == 0) Player.Companies.Add(NewCompany(RecruitTroop(Math.Max(0, Captain.Contract)), "infantry", 10, 0, refuge));
             Log($"You are taken, and ransomed. Your men regroup at {refuge.Name}.");
         }
         Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses };
@@ -403,7 +415,7 @@ public sealed partial class Campaign
     public BattleReport FinishBattle(BattleResult r, BattleSetup setup)
     {
         Encounter = null;
-        var report = Apply(r, setup.Side0, setup.Side1, setup.EnemyName);
+        var report = Apply(r, setup.Side0, setup.Side1, setup.EnemyName, setup.SiegeOf >= 0);
         if (setup.SiegeOf >= 0) AfterAssault(S.Settlements[setup.SiegeOf], r.Winner == 0);
         return Report ?? report;
     }
@@ -432,7 +444,8 @@ public sealed partial class Campaign
         if (rear != null)
         {
             int lost = Math.Max(1, (int)(rear.Men * rng.Range(0.1f, 0.25f)));
-            rear.Men -= lost;
+            rear.RemoveFit(lost, false);
+            rear.Prune();
             Log($"You escape. {rear.Name} lose {lost} men covering the retreat.");
         }
         var away = Player.Pos - e.Pos;
@@ -473,19 +486,33 @@ public sealed partial class Campaign
         int cost = n * Troops.Get(levy).Cost;
         if (S.Gold < cost) return $"NEEDS {cost} CROWNS";
         if (n > RoomForMen) return "PARTY IS FULL (RENOWN RAISES THE LIMIT)";
-        var into = Player.Companies.FirstOrDefault(c => c.Troop == levy && c.Men + n <= Rules.Cap(levy, Rules.RoleOf(c)));
-        if (into == null)
+        // Fill foot companies with room (raw recruits drill with any foot company), then raise new ones.
+        int left = n;
+        foreach (var co in Player.Companies.Where(co => Rules.Fits(co, levy)).OrderByDescending(co => co.Stacks.Any(x => x.Troop == levy)).ToList())
         {
-            if (Player.Companies.Count >= Slots) return "MAX 10 COMPANIES";
-            Player.Companies.Add(into = NewCompany(levy, "infantry", 0, 0));
+            int k = Math.Min(left, Rules.Room(co, levy));
+            if (k <= 0) continue;
+            Enlist(co, levy, k, s);
+            left -= k;
+            if (left == 0) break;
         }
-        Rules.AddMen(into, n);
-        s.Recruits -= n;
-        S.Gold -= cost;
+        while (left > 0)
+        {
+            if (Player.Companies.Count >= Slots) break;
+            var co = NewCompany(levy, "infantry", 0, 0, s);
+            Player.Companies.Add(co);
+            int k = Math.Min(left, Rules.Room(co, levy));
+            Enlist(co, levy, k, s);
+            left -= k;
+        }
+        int took = n - left;
+        if (took == 0) return $"MAX {Slots} COMPANIES, ALL FULL";
+        s.Recruits -= took;
+        S.Gold -= took * Troops.Get(levy).Cost;
         return null;
     }
 
-    public int MercenaryPrice(CompanyRecord m) => (int)(m.Men * m.Type.Cost * B.MercMarkup);
+    public int MercenaryPrice(CompanyRecord m) => (int)(m.Stacks.Sum(x => x.Men * x.Type.Cost) * B.MercMarkup);
 
     public string? Hire(Settlement s, CompanyRecord m)
     {
@@ -533,29 +560,29 @@ public sealed partial class Campaign
         return null;
     }
 
-    public bool CanUpgrade(CompanyRecord c, string to, out int cost, out string reason) =>
-        Rules.CanUpgrade(c, to, S.Gold, Player.Horses, InTown(Player), Captain.Perks.Contains(Perk.Drillmaster), out cost, out reason);
-
-    public string? Upgrade(CompanyRecord c, string to)
-    {
-        if (!CanUpgrade(c, to, out int cost, out string reason)) return reason;
-        S.Gold -= cost;
-        Player.Horses -= Rules.Upgrade(c, to, Player.Horses);
-        Log($"{c.Name} are now {c.Type.Name}.");
-        return null;
-    }
-
     public void Merge(CompanyRecord a, CompanyRecord b) { Rules.Merge(a, b); Player.Companies.Remove(b); }
 
+    /// Split a company in two: half of every stack goes to the new company (with its share of each pool).
     public string? Split(CompanyRecord c)
     {
         if (Player.Companies.Count >= Slots) return "NO FREE COMPANY";
         if (c.Men < 2) return "TOO FEW MEN";
-        int half = c.Men / 2;
-        var n = NewCompany(c.Troop, Rules.RoleOf(c), half, c.Xp);
-        n.Cohesion = c.Cohesion;
+        var n = NewCompany(c.Troop, Rules.RoleOf(c), 0, 0);
+        n.Stacks.Clear();
+        n.Cohesion = c.Cohesion; n.Culture = c.Culture; n.Home = c.Home;
         n.Name = c.Name + " II";
-        c.Men -= half;
+        foreach (var st in c.Stacks.ToList())
+        {
+            int half = st.Men / 2;
+            if (half <= 0) continue;
+            float xp = st.Xp * half / st.Men;
+            st.Take(half);
+            var t = n.Stack(st.Troop);
+            t.Men = half;
+            t.Xp = Math.Clamp(xp, 0, t.PoolCap);
+        }
+        if (n.Men == 0) return "TOO FEW MEN";
+        c.Prune();
         Player.Companies.Insert(Player.Companies.IndexOf(c) + 1, n);
         return null;
     }
@@ -614,7 +641,7 @@ public sealed partial class Campaign
         foreach (var role in new[] { "infantry", "archers", rng.Next(2) == 0 ? "spears" : "horse" })
         {
             string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, 7), faction);
-            lord.Companies.Add(NewCompany(troop, role, (int)(Rules.Cap(troop, role) * rng.Range(0.7f, 1f)), 0));
+            lord.Companies.Add(NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.7f, 1f)), 0, home));
         }
         S.Parties.Add(lord);
     }
@@ -637,7 +664,7 @@ public sealed partial class Campaign
         band.Companies.Add(NewCompany(foot, "infantry", men, 0));
         if (rng.Chance(0.6f))
             band.Companies.Add(NewCompany(Armies.LineTroop(rng.Chance(0.6f) ? "archers" : "horse", tier, rng.Next(3)), rng.Chance(0.6f) ? "archers" : "horse", rng.Next(5, 10) + Day / 20, 0));
-        foreach (var c in band.Companies) if (c.Troop == "outriders") c.Role = "horse"; else if (c.Troop == "bowmen") c.Role = "archers";
+        foreach (var c in band.Companies) c.Role = Rules.TroopRole(c.Troop) is "horse" or "archers" ? Rules.TroopRole(c.Troop) : c.Role;
         S.Parties.Add(band);
     }
 
@@ -650,8 +677,8 @@ public sealed partial class Campaign
             string role = rng.Pick(new[] { "infantry", "archers", "spears", "horse" });
             int tier = Math.Clamp(2 + Day / 40 + (rng.Chance(0.35f) ? 1 : 0), 2, 6);
             string troop = Armies.LineTroop(role, tier, t.Faction);
-            var m = NewCompany(troop, role, (int)(Rules.Cap(troop, role) * rng.Range(0.6f, 0.9f)), 0);
-            m.Xp = rng.Range(0, Math.Max(1, m.Type.UpgradeXp) * 0.5f);
+            var m = NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.6f, 0.9f)), 0, t);
+            m.Stacks[0].AddXp(rng.Range(0, Math.Max(1, m.Type.UpgradeXp) * 0.5f) * m.Men);
             m.Name = Rules.CompanyName(rng, role);
             t.Mercenaries.Add(m);
         }
@@ -667,7 +694,7 @@ public sealed partial class Campaign
                 if (p.Kind == PartyKind.Lord && S.Hours >= p.DownUntil)
                 {
                     p.Down = false;
-                    if (p.Men < 10) p.Companies.Add(NewCompany(RecruitTroop(p.Faction), "infantry", 20, 0));
+                    if (p.Men < 10) p.Companies.Add(NewCompany(RecruitTroop(p.Faction), "infantry", 20, 0, SettlementById(p.HomeId)));
                     p.Task = "refit";
                 }
                 continue;
@@ -690,7 +717,7 @@ public sealed partial class Campaign
         // Go home to refit when the company is thin, or to spend an upgrade it can already pay for. Refit buys what the
         // purse allows and the faction treasury covers the rest, so a lord who has lost men goes home even when it is poor.
         bool needsRefit = p.Men < 45 || p.Companies.Count < 3
-            || p.Companies.Any(c => Rules.UpgradeReady(c) && p.Gold >= Rules.UpgradeCost(c, c.Type.UpgradesTo[0], p.Horses));
+            || p.Companies.Sum(c => c.Ready) >= 6 && p.Gold >= 150;
         if (threat != null)
         {
             if (p.SiegeTarget >= 0) Log($"{p.Name} abandons the siege of {SettlementById(p.SiegeTarget).Name}.");
@@ -756,16 +783,19 @@ public sealed partial class Campaign
         float share = MathF.Min(250 * Map.ProvinceScale, fs.Treasury * 0.5f / lordsOfFaction);
         float budget = Math.Clamp(share, 0, 250 * Map.ProvinceScale);
         string levy = RecruitTroop(p.Faction);
-        if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", 12, 0)); // the lord's household, raised again
+        if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", 12, 0, home)); // the lord's household, raised again
         foreach (var v in S.Settlements.Where(v => v.Province == home.Province))
         {
             int affordable = (int)((p.Gold + budget) / 10);
             int n = Math.Min(v.Recruits, Math.Max(0, affordable));
             if (n <= 0) continue;
-            var into = p.Companies.FirstOrDefault(c => c.Troop == levy && c.Men + n <= Rules.Cap(levy, Rules.RoleOf(c)));
-            if (into == null && p.Companies.Count < 5) p.Companies.Add(into = NewCompany(levy, rng.Pick(new[] { "infantry", "spears", "archers" }), 0, 0));
+            // Recruits fill the green companies; a lord keeps his veterans' companies for promoted men.
+            var into = p.Companies.Where(c => c.Type.Tier <= 1 && Rules.Room(c, levy) > 0).OrderByDescending(c => Rules.Room(c, levy)).FirstOrDefault();
+            if (into == null && p.Companies.Count < 5) p.Companies.Add(into = NewCompany(levy, rng.Pick(new[] { "infantry", "spears", "archers" }), 0, 0, v));
             if (into == null) break;
-            Rules.AddMen(into, n);
+            n = Math.Min(n, Rules.Room(into, levy));
+            if (n <= 0) break;
+            Enlist(into, levy, n, v);
             v.Recruits -= n;
             int bill = n * 10;
             int fromChest = Math.Min(bill, (int)budget);
@@ -773,19 +803,10 @@ public sealed partial class Campaign
             budget -= fromChest;
             p.Gold -= bill - fromChest;
         }
-        foreach (var c in p.Companies.Where(Rules.UpgradeReady).ToList())
-        {
-            var options = c.Type.UpgradesTo;
-            string to = c.Type.Tier == 1 ? Armies.LineTroop(Rules.RoleOf(c), 2, p.Faction) : options[rng.Next(options.Length)];
-            if (!options.Contains(to)) to = options[0];
-            int cost = Rules.UpgradeCost(c, to, p.Horses);
-            int fromChest = Math.Min(cost, (int)budget);
-            if (p.Gold + fromChest < cost) continue;
-            fs.Treasury -= fromChest;
-            budget -= fromChest;
-            p.Gold -= cost - fromChest;
-            p.Horses -= Rules.Upgrade(c, to, p.Horses);
-        }
+        // Promotions come from the lord's own purse; the chest only tops up a lord who came home beaten (thin), or a run of
+        // refits for a few ready men would bleed the realm dry.
+        if (p.Men >= 45 && p.Companies.Count >= 3) budget = 0;
+        PromoteAll(p, ref budget);
         if (p.Companies.Count > 0) p.Tier = Math.Clamp((int)MathF.Round((float)p.Companies.Average(c => c.Type.Tier)), 1, 7);
     }
 
@@ -822,14 +843,19 @@ public sealed partial class Campaign
             bool town = InTown(p);
             foreach (var c in p.Companies)
             {
-                if (c.Wounded > 0)
+                foreach (var st in c.Stacks)
                 {
-                    int heal = Math.Min(c.Wounded, Math.Max(1, (int)MathF.Round(c.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1))));
-                    c.Wounded -= heal;
-                    c.Men += heal;
+                    if (st.Wounded > 0)
+                    {
+                        int heal = Math.Min(st.Wounded, Math.Max(1, (int)MathF.Round(st.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1))));
+                        st.Wounded -= heal;
+                        st.Men += heal;
+                    }
+                    // Daily drill: per fit man, into each pool (Old Hands drill harder).
+                    if (p.Kind != PartyKind.Bandit && st.Men > 0)
+                        st.AddXp(st.Men * ((town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0)) * Honours.Of(c).DrillMul);
                 }
                 if (town && c.Cohesion < 20) c.Cohesion = MathF.Min(20, c.Cohesion + 1);
-                if (p.Kind != PartyKind.Bandit && c.Men > 0) c.Xp += (town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0); // daily drill
             }
         }
         EatDaily();
@@ -942,7 +968,8 @@ public sealed partial class Campaign
                 var fs = S.Factions[p.Faction];
                 int lordCount = Math.Max(1, S.Parties.Count(q => q.Kind == PartyKind.Lord && q.Faction == p.Faction));
                 float wage = upkeep * B.LordWage + fs.Treasury * 0.02f / lordCount; // pay, plus a share of the war chest
-                if (fs.Treasury < wage) wage = MathF.Max(0, fs.Treasury);
+                // The chest keeps a floor: a realm that cannot pay its lords sees them thin out, not go bankrupt.
+                wage = MathF.Min(wage, MathF.Max(0, fs.Treasury - 300));
                 fs.Treasury -= wage;
                 p.Gold += wage - upkeep;
                 if (p.Gold < 0) { p.Gold = 0; Desert(p); }
@@ -961,7 +988,8 @@ public sealed partial class Campaign
     {
         foreach (var c in p.Companies)
         {
-            c.Men -= (int)MathF.Ceiling(c.Men * 0.05f);
+            c.RemoveFit((int)MathF.Ceiling(c.Men * 0.05f), true); // the lowest tiers leave first
+            c.Prune();
             c.Cohesion = MathF.Max(0, c.Cohesion - 10);
         }
         p.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);

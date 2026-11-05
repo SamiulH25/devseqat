@@ -94,6 +94,9 @@ wood count and distance, and road on or off. Today's `Terrain(seed)` becomes `Me
 ## 4. Parties and companies
 
 ### 4.1 Company (the persistent unit)
+
+> **Superseded by F1** ([`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md) section 2): a company now holds stacks of troops with an XP
+> pool each, and men are promoted one at a time. The text below describes the pre-overhaul whole-company model.
 The battle's `Company(Troop, Count, Role)` becomes the battle-time view of a persistent **CompanyRecord**:
 
 | Field | Meaning |
@@ -193,6 +196,9 @@ Applying the result (`Campaign.Apply`):
 ---
 
 ## 6. Progression: XP and upgrades
+
+> **Superseded by F1** ([`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md) section 2): a company now holds stacks of troops with an XP
+> pool each, and men are promoted one at a time. The text below describes the pre-overhaul whole-company model.
 
 ### 6.1 Experience
 Per battle, for each company that took the field:

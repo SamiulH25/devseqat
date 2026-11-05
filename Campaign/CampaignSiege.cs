@@ -28,7 +28,7 @@ public sealed partial class Campaign
         {
             if (s.Garrison.Any(c => Rules.RoleOf(c) == role)) continue;
             string troop = Armies.LineTroop(role, tier, s.Faction);
-            s.Garrison.Add(NewCompany(troop, role, Math.Max(4, (int)(Rules.Cap(troop, role) * fill)), 0));
+            s.Garrison.Add(NewCompany(troop, role, Math.Max(4, (int)(Rules.CapOf(troop, role) * fill)), 0, s));
         }
     }
 
@@ -46,15 +46,15 @@ public sealed partial class Campaign
     {
         foreach (var s in S.Settlements.Where(s => s.Kind != SettlementKind.Village && !s.Besieged))
         {
-            foreach (var c in s.Garrison) { c.Men += c.Wounded; c.Wounded = 0; }
+            foreach (var st in s.Garrison.SelectMany(c => c.Stacks)) { st.Men += st.Wounded; st.Wounded = 0; }
             var fs = S.Factions[s.Faction];
             RaiseGarrison(s, 0.4f);
             foreach (var c in s.Garrison.Where(c => c.Type.Tier <= 5))
             {
-                int want = (int)(Rules.Cap(c.Troop, Rules.RoleOf(c)) * 0.8f) - c.Men;
-                int n = Math.Min(want, (int)(fs.Treasury / 20));
+                int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * 0.8f) - c.Men;
+                int n = Math.Min(Math.Min(want, Rules.Room(c, c.Troop)), (int)(fs.Treasury / 20));
                 if (n <= 0) continue;
-                Rules.AddMen(c, n);
+                Rules.AddMen(c, c.Troop, n);
                 fs.Treasury -= n * 20;
             }
             s.Supplies = MathF.Min(30, s.Supplies + 7);
@@ -232,7 +232,7 @@ public sealed partial class Campaign
             if (s.Supplies <= 0)
             {
                 s.Supplies = 0;
-                foreach (var c in s.Garrison) c.Men -= (int)MathF.Ceiling(c.Men * 0.1f);
+                foreach (var c in s.Garrison) { c.RemoveFit((int)MathF.Ceiling(c.Men * 0.1f), true); c.Prune(); }
                 s.Garrison.RemoveAll(c => c.Men + c.Wounded <= 0);
             }
             int f = besiegers[0] == Player ? Captain.Contract : besiegers[0].Faction;

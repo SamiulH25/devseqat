@@ -40,7 +40,9 @@ public static class SelfTest
         Generals();
         Rivers();
         CampaignWar();
-        Migration();
+        RefuseOldSave();
+        Stacks();
+        StackBattle();
         ReplayExact();
 
         for (int seed = 1; seed <= 3; seed++)
@@ -422,6 +424,8 @@ public static class SelfTest
                     Check(sheet.Rects.ContainsKey($"{k}/{p}"), $"sprite {k}/{p} for {t.Name}");
         foreach (var k in new[] { "hbody", "hneck", "hhead", "hchest", "hrump", "hface", "hleg", "htail" })
             Check(sheet.Rects.ContainsKey(k + "/n"), $"horse coat sprite {k}");
+        foreach (var e in Enum.GetValues<Emblem>())
+            for (int p = 0; p < Style.Sides.Length; p++) Check(sheet.Rects.ContainsKey($"flag.{(int)e}/{p}"), $"company banner flag.{(int)e}/{p}");
         var torso = sheet.Rects["torso.mail.f/0"];
         Check(MathF.Abs((torso.Height - 2) * Style.Px - 0.675f) < 0.05f, "a torso keeps its size in metres");
         Check(sheet.Rects.Values.Any(r => r.Height > 90), "polearms are painted at full length");
@@ -515,15 +519,17 @@ public static class SelfTest
             foreach (var co in p.Companies)
             {
                 Check(co.Men >= 0 && co.Wounded >= 0, "no negative men");
-                Check(Troops.All.Any(t => t.Id == co.Troop), "troop ids stay valid");
+                Check(co.Stacks.All(st => Troops.All.Any(t => t.Id == st.Troop) && st.Men >= 0 && st.Wounded >= 0), "troop ids stay valid");
+                Check(co.Stacks.All(st => st.Xp <= st.PoolCap + 1e-3f && st.Xp >= 0), $"{co.Name}: no pool over its cap");
+                Check(co.Stacks.All(st => Rules.Fits(co, st.Troop)), $"{co.Name}: every stack fits its company's role");
             }
         Check(c.S.Gold >= 0 && c.S.Factions.All(f => f.Treasury > -1), "no negative purses");
         Check(c.S.Parties.Count(p => p.Kind == PartyKind.Lord) >= 8, "lords keep the field");
         int upgraded = c.S.Parties.Where(p => p.Kind == PartyKind.Lord).SelectMany(p => p.Companies).Count(co => co.Type.Tier >= 3);
         Console.WriteLine($"campaign: day {c.Day}, {c.S.Parties.Count} parties, {upgraded} lord companies at tier III+, your battles {battles}, war score {string.Join("/", c.S.Factions.Select(f => f.WarScore.ToString("0")))}, wars {c.S.Wars.Count(w => w.Active)}");
         var lords = c.S.Parties.Where(p => p.Kind == PartyKind.Lord).ToList();
-        Console.WriteLine($"lords: gold avg {lords.Average(l => l.Gold):0}, max company xp {lords.SelectMany(l => l.Companies).Max(co => co.Xp):0}, "
-            + $"ready {lords.SelectMany(l => l.Companies).Count(Rules.UpgradeReady)}, tiers {string.Join(",", lords.SelectMany(l => l.Companies).GroupBy(co => co.Type.Tier).OrderBy(g => g.Key).Select(g => $"{g.Key}:{g.Count()}"))}, "
+        Console.WriteLine($"lords: gold avg {lords.Average(l => l.Gold):0}, max pool xp {lords.SelectMany(l => l.Companies).SelectMany(co => co.Stacks).Max(st => st.Xp):0}, "
+            + $"ready men {lords.SelectMany(l => l.Companies).Sum(co => co.Ready)}, tiers {string.Join(",", lords.SelectMany(l => l.Companies).GroupBy(co => co.Type.Tier).OrderBy(g => g.Key).Select(g => $"{g.Key}:{g.Count()}"))}, "
             + $"tasks {string.Join(",", lords.GroupBy(l => l.Task).Select(g => $"{g.Key}:{g.Count()}"))}, treasury {c.S.Factions[0].Treasury:0}/{c.S.Factions[1].Treasury:0}");
         Check(upgraded > 0, "lords upgrade their companies too");
         // The world must not grind itself to nothing: bandits keep coming, and lords stay in the field at a usable size.
@@ -563,8 +569,8 @@ public static class SelfTest
         // A ready company must be the thing the game points at.
         c.Captain.Renown = 50;
         var co = c.Player.Companies[0];
-        co.Xp = co.Type.UpgradeXp + 1;
-        Check(c.NextStep().Where == "TRAIN", "a ready company points at the training yard");
+        co.Main!.Xp = co.Main.Type.UpgradeXp + 1;
+        Check(c.NextStep().Where == "TRAIN", "a ready man points at the training yard");
     }
 
     /// A level-2 army on contract, sitting still, stays solvent for 8 weeks.
@@ -613,7 +619,7 @@ public static class SelfTest
             a1 = a1 with { Companies = a1.Companies.Select(co => co with { Count = (int)(co.Count * (0.7f + 0.1f * (i % 6))) }).ToList() };
             var b = new Battle(200 + i, Ids(a0, 1000), Ids(a1, 2000), new BattleOptions { AutoPlayer = true, PlayerWounded = true });
             for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
-            Party P(ArmySpec a) { var p = new Party(); foreach (var co in a.Companies) p.Companies.Add(new CompanyRecord { Id = co.Id, Troop = co.Troop, Men = co.Count }); return p; }
+            Party P(ArmySpec a) { var p = new Party(); foreach (var co in a.Companies) { var r = new CompanyRecord { Id = co.Id, Role = co.Role }; foreach (var st in co.Stacks) r.Stack(st.Troop).Men += st.Count; p.Companies.Add(r); } return p; }
             float s0 = Rules.Strength(P(a0)), s1 = Rules.Strength(P(a1));
             int predicted = s0 >= s1 ? 0 : 1;
             n++;
@@ -671,7 +677,7 @@ public static class SelfTest
         // Your own siege, on paper: a strong company takes a castle and holds it as a fief.
         var castle = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction == 1).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
         c.Player.Companies.Clear();
-        foreach (var t in new[] { "men_at_arms", "men_at_arms", "longbowmen", "pikemen" }) c.Player.Companies.Add(c.NewCompany(t, Armies.RoleOf(new Company(t, 1)), Rules.Cap(t, "infantry"), 0));
+        foreach (var t in new[] { "men_at_arms", "men_at_arms", "longbowmen", "pikemen" }) c.Player.Companies.Add(c.NewCompany(t, Rules.TroopRole(t), Rules.CapOf(t, Rules.TroopRole(t)), 0));
         c.Player.Pos = castle.Pos + new Vector2(3, 0);
         // Clear the ground around the castle first: on a big map neighbours and reinforcements stand much further out than
         // the old test's 12, and an encounter would cut the night's rest short before the ladders are built.
@@ -720,26 +726,107 @@ public static class SelfTest
         Check(captures > 0, "the lords take towns and castles from each other");
     }
 
-    /// A version-1 save (one war, no Northmarch) loads as version 2.
-    static void Migration()
+    /// A save from before the overhaul (version 3 or older) is refused with a clear message, not half-loaded (F1).
+    static void RefuseOldSave()
     {
         var c = Campaign.New(71);
-        // A version-1 save as v1 wrote it: one war, no Northmarch, and no map extent (v3 added it).
-        string json = c.S.Serialize()
-            .Replace($"\"Version\": {CampaignState.CurrentVersion}", "\"Version\": 1")
-            .Replace("\"AtWar\": null", "\"AtWar\": false")
-            .Replace("\"TruceUntil\": 0,", "\"TruceUntil\": 1000,")
-            .Replace($"\"MapExtent\": {WorldMap.Extent},", "");
-        var s = CampaignState.Deserialize(json);
-        Check(s.Version == CampaignState.CurrentVersion && s.Wars.Count == 1 && !s.Wars[0].Active, "a v1 save migrates its war to the new format");
-        Check(MathF.Abs(s.MapExtent - WorldMap.LegacyExtent) < 1f, "an old save keeps the small map it was played on");
-        var m = new Campaign(s);
-        m.Player.Cooldown = 1e6f; // nobody may stop the clock
-        for (int h = 0; h < 48; h++) { m.Tick(1); m.Encounter = null; m.Arrived = null; }
-        Console.WriteLine($"migrated: day {m.Day}, wars {string.Join(" ", m.S.Wars.Select(w => $"{w.A}-{w.B}:{w.Active}:{w.TruceUntil}"))}, "
-            + $"map {m.Map.Provinces.Count} provinces over +-{m.Map.ExtentUsed:0}");
-        Check(m.Day >= 2 && m.FactionsAtWar(0, 1) == false, "a migrated campaign runs, its truce intact");
-        Check(m.Map.Provinces.Count <= WorldMap.LegacyProvinces + 4, "and its old map, not a new one");
+        string json = c.S.Serialize().Replace($"\"Version\": {CampaignState.CurrentVersion}", "\"Version\": 3");
+        string? error = null;
+        try { CampaignState.Deserialize(json); } catch (Exception e) { error = e.Message; }
+        Check(error == CampaignState.TooOld, "a pre-overhaul save is refused: " + (error ?? "it loaded"));
+        Check(CampaignState.Deserialize(c.S.Serialize()).Version == CampaignState.CurrentVersion, "a current save still loads");
+        // From disk, as the title screen's CONTINUE does: no crash, no half-load, and a message to show.
+        string dir = Path.Combine(Path.GetTempPath(), "ironfield-selftest-" + Environment.ProcessId);
+        string? was = Environment.GetEnvironmentVariable("IRONFIELD_SAVES");
+        Environment.SetEnvironmentVariable("IRONFIELD_SAVES", dir);
+        try
+        {
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(Path.Combine(dir, "old.json"), json);
+            File.WriteAllText(Path.Combine(dir, "old.json.bak"), json);
+            Check(CampaignState.Load("old") == null && CampaignState.LoadError == CampaignState.TooOld, "loading an old save from disk returns nothing, with the reason");
+            c.S.Save("new");
+            Check(CampaignState.Load("new") != null && CampaignState.LoadError == null, "a new save loads from disk");
+        }
+        finally { Environment.SetEnvironmentVariable("IRONFIELD_SAVES", was); Directory.Delete(dir, true); }
+    }
+
+    /// Troop stacks and promotion by the man (F1): a promotion moves exactly one man and spends exactly his XP; out-of-role
+    /// promotions go to a company of the new role; pools never exceed their cap.
+    static void Stacks()
+    {
+        var c = Campaign.New(81);
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t));
+        c.Player.Pos = town.Pos;
+        Check(c.InTown(c.Player), "the test party stands in a town");
+        c.S.Gold = 2000;
+        var co = c.Player.Companies.First(k => Rules.RoleOf(k) == "infantry");
+        var lev = co.Stack("levies");
+        int men = lev.Men, companies = c.Player.Companies.Count;
+        lev.AddXp(1e6f);
+        Check(MathF.Abs(lev.Xp - lev.PoolCap) < 1e-3f && lev.Ready == men, "a pool fills to its cap and no further");
+        float pool = lev.Xp, gold = c.S.Gold;
+        Check(c.Promote(co, lev, "shieldmen", 1) == null, "one levy can be promoted in a town");
+        Check(lev.Men == men - 1 && co.Stack("shieldmen").Men == 1, "a promotion moves exactly one man");
+        Check(MathF.Abs(pool - lev.Xp - lev.Type.UpgradeXp) < 1e-3f || lev.Xp <= lev.PoolCap, "and spends his upgradeXp from the pool");
+        Check(MathF.Abs(gold - c.S.Gold - Rules.PromoteCost("levies", "shieldmen", false)) < 1e-3f, "and costs the difference in troop price");
+        Check(c.Promote(co, lev, "shieldmen", 4) == null && co.Stack("shieldmen").Men == 5, "five levies are shieldmen now");
+        Check(c.Promote(co, lev, "bowmen", 2) == null, "two levies can become bowmen");
+        var bows = c.Player.Companies.FirstOrDefault(k => Rules.RoleOf(k) == "archers");
+        Check(bows != null && bows.Stack("bowmen").Men == 2 && !co.Stacks.Any(st => st.Troop == "bowmen"), "bowmen go to a bow company (raised for them)");
+        Check(c.Player.Companies.Count == companies + 1, "only one company is raised for them");
+        Check(co.Men == men - 2 && co.Stacks.Count == 2, "the foot company holds levies and shieldmen");
+        Check(co.Stacks.All(st => st.Xp <= st.PoolCap + 1e-3f), "pools stay under their caps after promotion");
+        // Promotion needs a town; out in the field it is refused with a reason.
+        c.Player.Pos = town.Pos + new Vector2(40, 40);
+        Check(c.Promote(co, lev, "shieldmen", 1) == "NEEDS A TOWN", "promotion out in the field is refused");
+        // Moving and splitting stacks.
+        Check(c.SplitStack(co, co.Stack("shieldmen"), 2) == null && co.Stack("shieldmen").Men == 3, "a stack can be split into a new company");
+        var split = c.Player.Companies.First(k => k.Name.EndsWith(" II"));
+        Check(c.MoveStack(split, split.Stacks[0], co) == null && co.Stack("shieldmen").Men == 5 && !c.Player.Companies.Contains(split), "and moved back");
+        // Drill a fortnight: pools fill but never pass their caps.
+        c.Player.Cooldown = 1e6f;
+        for (int h = 0; h < 14 * 24; h++) { c.Tick(1); c.Encounter = null; c.Arrived = null; c.Player.Food = 20; }
+        Check(c.Player.Companies.SelectMany(k => k.Stacks).All(st => st.Xp <= st.PoolCap + 1e-3f), "drill never overfills a pool");
+        Console.WriteLine($"stacks: {string.Join("; ", c.Player.Companies.Select(k => $"{k.Name} [{string.Join(", ", k.Stacks.Select(st => $"{st.Men} {st.Troop} {st.Ready}r"))}]"))}");
+        // The save keeps the stacks.
+        var back = CampaignState.Deserialize(c.S.Serialize());
+        var co2 = back.Parties.First(p => p.Kind == PartyKind.Player).Companies.First(k => k.Id == co.Id);
+        Check(co2.Stacks.Count == co.Stacks.Count && co2.Stacks.Sum(st => st.Men) == co.Men && MathF.Abs(co2.Stacks.Sum(st => st.Xp) - co.Stacks.Sum(st => st.Xp)) < 1e-2f, "stacks and pools survive a save");
+    }
+
+    /// A mixed company fights as one squad and gets its casualties back per stack (F1).
+    static void StackBattle()
+    {
+        var c = Campaign.New(82);
+        c.Player.Pos = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t)).Pos;
+        c.S.Gold = 2000;
+        var co = c.Player.Companies.First(k => Rules.RoleOf(k) == "infantry");
+        co.Stack("levies").AddXp(1e6f);
+        c.Promote(co, co.Stack("levies"), "shieldmen", 5);
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
+        bandit.Pos = c.Player.Pos;
+        c.Encounter = bandit;
+        var setup = c.PrepareBattle(bandit);
+        setup.Options.AutoPlayer = true;
+        setup.Options.PlayerWounded = true;
+        var spec = setup.Player.Companies.First(k => k.Id == co.Id);
+        Check(spec.Mix != null && spec.Mix.Length == 2, "the battle gets both stacks of the company");
+        var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+        var squads = b.Squads.Where(q => q.Company?.Id == co.Id).ToList();
+        Check(squads.Count == 1, "a mixed company is one squad");
+        Check(squads[0].Units.Select(u => u.Type.Id).Distinct().Count() == 2, "of two kinds of men");
+        for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+        var result = b.Result();
+        var cr = result.Companies.First(r => r.Id == co.Id);
+        Check(cr.Stacks != null && cr.Stacks.Count == 2 && cr.Stacks.Sum(st => st.Start) == cr.Start, "its result comes back per stack");
+        Check(cr.Stacks!.All(st => st.Start == st.Standing + st.Fled + st.Fallen), "every man of every stack is accounted for");
+        int before = co.Men + co.Wounded;
+        var report = c.FinishBattle(result, setup);
+        var line = report.Companies.First(r => r.Name == co.Name);
+        Check(line.MenBefore == line.MenAfter + line.Killed + line.Wounded + line.Captured + line.FledLost, "the report accounts for every man");
+        Check(co.Ledger.Count == 1 && co.Battles >= 1, "the company's ledger records the fight");
+        Console.WriteLine($"stack battle: {(report.Won ? "won" : "lost")}, {co.Name} {before} -> {co.Men}+{co.Wounded}W [{string.Join(", ", cr.Stacks.Select(st => $"{st.Troop} {st.Start}->{st.Standing}"))}]");
     }
 
     /// A recorded battle with player orders and input, saved to JSON and played back, ends exactly the same.

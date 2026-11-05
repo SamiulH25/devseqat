@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework;
 
 namespace Ironfield;
@@ -10,17 +11,119 @@ public enum SettlementKind { Village, Town, Castle }
 public enum PartyKind { Player, Lord, Bandit, Garrison }
 public enum Perk { Bannerman, WarCry, Tactician, Quartermaster, Surgeon, Drillmaster, Horsemaster, IronWill }
 
-/// A persistent company (docs/CAMPAIGN.md 4.1). Xp is the average per fit man.
+/// A persistent company (CAMPAIGN_OVERHAUL.md 2): a banner with a role, a history and an officer, holding troop stacks of any
+/// troops that fit its role. The company's face (portrait, name in battle) is its largest stack.
 public sealed class CompanyRecord
 {
-    public int Id, Men, Wounded, Battles, Kills;
-    public string Name = "", Troop = "", Role = "";
-    public float Xp, Cohesion = 10;
+    public int Id, Battles, Kills;
+    public string Name = "", Role = "";
+    public float Cohesion = 10;
     /// The company's sergeant (B5): a name and up to three traits; "" = none yet.
     public string Officer = "";
     public List<string> Traits = new();
+    public List<TroopStack> Stacks = new();
+    /// Where the company was raised (2.4): its culture and home settlement.
+    public string Culture = "", Home = "";
+    /// The charge on its banner (an Emblem); the field is the colour of the side it fights for.
+    public int Banner;
+    /// Veteran honours earned by its history (at most three), and the counters that earn them.
+    public List<string> Honours = new();
+    public int HorseKills, Assaults, SinceRout;
+    /// Its last battles, newest last (at most LedgerSize).
+    public List<LedgerEntry> Ledger = new();
+    public const int LedgerSize = 8;
 
-    public UnitType Type => Troops.Get(Troop);
+    [JsonIgnore] public int Men => Stacks.Sum(s => s.Men);
+    [JsonIgnore] public int Wounded => Stacks.Sum(s => s.Wounded);
+    /// The largest stack (ties go to the higher tier): the company's portrait and battle name.
+    [JsonIgnore] public TroopStack? Main => Stacks.Count == 0 ? null : Stacks.OrderByDescending(s => s.Men + s.Wounded).ThenByDescending(s => s.Type.Tier).First();
+    [JsonIgnore] public string Troop => Main?.Troop ?? "levies";
+    [JsonIgnore] public UnitType Type => Troops.Get(Troop);
+    /// Men ready for promotion in all stacks together.
+    [JsonIgnore] public int Ready => Stacks.Sum(s => s.Ready);
+
+    /// The stack of this troop, created empty if the company has none yet.
+    public TroopStack Stack(string troop)
+    {
+        var s = Stacks.FirstOrDefault(x => x.Troop == troop);
+        if (s == null) Stacks.Add(s = new TroopStack { Troop = troop });
+        return s;
+    }
+
+    public void Prune() => Stacks.RemoveAll(s => s.Men + s.Wounded <= 0);
+
+    /// Take up to n fit men out of the company: lowest tiers first (deserters, the rearguard's dead), or spread across the stacks
+    /// by size. Their share of each stack's XP pool goes with them. Returns how many were taken from each troop.
+    public List<(string Troop, int Men)> RemoveFit(int n, bool lowestFirst)
+    {
+        var taken = new List<(string, int)>();
+        n = Math.Min(n, Men);
+        if (n <= 0) return taken;
+        if (lowestFirst)
+            foreach (var s in Stacks.OrderBy(s => s.Type.Tier).ToList())
+            {
+                int k = Math.Min(n, s.Men);
+                if (k <= 0) continue;
+                s.Take(k);
+                taken.Add((s.Troop, k));
+                n -= k;
+                if (n == 0) break;
+            }
+        else
+        {
+            int total = Men, left = n;
+            foreach (var s in Stacks.OrderByDescending(s => s.Men).ToList())
+            {
+                int k = Math.Min(s.Men, Math.Min(left, (int)MathF.Ceiling(n * s.Men / (float)total)));
+                if (k <= 0) continue;
+                s.Take(k);
+                taken.Add((s.Troop, k));
+                left -= k;
+            }
+            for (; left > 0 && Men > 0; left--) // rounding: take the rest one by one from the biggest stacks
+            {
+                var s = Stacks.Where(x => x.Men > 0).OrderByDescending(x => x.Men).First();
+                s.Take(1);
+                taken.Add((s.Troop, 1));
+            }
+        }
+        return taken;
+    }
+}
+
+/// One troop type in a company (2.1): its fit men, its wounded, and the XP pool they share. The pool is a total, not a per-man
+/// average: recruits add men, not XP, so refilling a veteran stack does not dilute it; a promotion spends one man's upgradeXp.
+public sealed class TroopStack
+{
+    public string Troop = "";
+    public int Men, Wounded;
+    public float Xp;
+
+    [JsonIgnore] public UnitType Type => Troops.Get(Troop);
+    /// The most XP the pool may hold: what its fit men could spend.
+    [JsonIgnore] public float PoolCap => Type.UpgradeXp > 0 && Type.UpgradesTo.Length > 0 ? Type.UpgradeXp * Men : 0;
+    /// Men the pool could promote now (ignoring gold and place).
+    [JsonIgnore] public int Ready => PoolCap <= 0 ? 0 : Math.Min(Men, (int)(Xp / Type.UpgradeXp + 1e-4f));
+
+    public void AddXp(float xp) => Xp = Math.Clamp(Xp + xp, 0, PoolCap);
+
+    /// Remove k fit men and their share of the pool.
+    public void Take(int k)
+    {
+        k = Math.Min(k, Men);
+        if (k <= 0) return;
+        Xp -= Men > 0 ? Xp * k / Men : 0;
+        Men -= k;
+        Xp = Math.Clamp(Xp, 0, PoolCap);
+    }
+}
+
+/// One line of a company's ledger (2.4).
+public sealed class LedgerEntry
+{
+    public int Day, Lost, Kills;
+    public string Foe = "";
+    public bool Won;
 }
 
 /// Captured men held by a party (B3).
@@ -111,15 +214,16 @@ public sealed class LogEntry
 
 public sealed class CampaignState
 {
-    public const int CurrentVersion = 3;
+    /// Version 4 is the campaign overhaul (troop stacks and everything after): older saves are refused, not migrated.
+    public const int CurrentVersion = 4;
+    public const string TooOld = "this save is from before the campaign overhaul and cannot be loaded";
     public int Version = CurrentVersion, Seed, NextId = 1, UnpaidWeeks;
     /// How far the provinces of this save's map reach (WorldMap.Extent for new campaigns; older saves have their own).
-    public float MapExtent = WorldMap.LegacyExtent;
+    public float MapExtent = WorldMap.Extent;
     public double Hours;
     public ulong Rng;
-    public float Gold, LastWeekBalance, TruceUntil;
+    public float Gold, LastWeekBalance;
     public bool Ironman, GameOver;
-    public bool? AtWar;                         // version 1 only (one war); read by Migrate
     public List<War> Wars = new();
     public CaptainState Captain = new();
     public List<Party> Parties = new();
@@ -136,29 +240,14 @@ public sealed class CampaignState
 
     public static CampaignState Deserialize(string json)
     {
-        var s = JsonSerializer.Deserialize<CampaignState>(json, Json) ?? throw new InvalidDataException("empty save");
-        if (s.Version > CurrentVersion || s.Version < 1) throw new InvalidDataException($"save version {s.Version} is not supported (this build reads 1-{CurrentVersion})");
-        s.Migrate();
-        return s;
-    }
-
-    /// Bring an older save up to this version (roadmap E2). Each step upgrades one version.
-    public void Migrate()
-    {
-        if (Version == 1)
+        // Read the version on its own first: an old save's shape no longer matches these classes.
+        using (var doc = JsonDocument.Parse(json))
         {
-            // v1 had one war between the first two factions; v2 keeps a war per pair (and the Northmarch only in new campaigns).
-            Wars = new List<War> { new() { A = 0, B = 1, Active = AtWar ?? true, TruceUntil = TruceUntil, ScoreA = Factions.ElementAtOrDefault(0)?.WarScore ?? 0, ScoreB = Factions.ElementAtOrDefault(1)?.WarScore ?? 0 } };
-            AtWar = null;
-            Version = 2;
+            int v = doc.RootElement.TryGetProperty("Version", out var ve) && ve.TryGetInt32(out int vi) ? vi : 0;
+            if (v < CurrentVersion) throw new InvalidDataException(TooOld);
+            if (v > CurrentVersion) throw new InvalidDataException($"save version {v} is newer than this build reads ({CurrentVersion})");
         }
-        if (Version == 2)
-        {
-            // v3 doubled the campaign map. A v2 campaign was played on the small one, so it keeps that geography
-            // (its provinces and settlements are in the save anyway; this keeps the ground under them the same).
-            MapExtent = WorldMap.LegacyExtent;
-            Version = 3;
-        }
+        return JsonSerializer.Deserialize<CampaignState>(json, Json) ?? throw new InvalidDataException("empty save");
     }
 
     public static string SaveDir => Environment.GetEnvironmentVariable("IRONFIELD_SAVES") is { Length: > 0 } d ? d
@@ -177,17 +266,28 @@ public sealed class CampaignState
     /// True after Load had to fall back to the .bak file.
     public static bool RestoredFromBackup;
 
+    /// Why the last Load returned null for a save that exists (an old or unreadable file), for the screens to show.
+    public static string? LoadError;
+
     public static CampaignState? Load(string slot)
     {
         var p = Path.Combine(SaveDir, slot + ".json");
         RestoredFromBackup = false;
+        LoadError = null;
         if (!File.Exists(p)) return null;
         try { return Deserialize(File.ReadAllText(p)); }
-        catch (Exception e) when (File.Exists(p + ".bak"))
+        catch (Exception e)
         {
-            Console.WriteLine($"save {slot} unreadable ({e.Message}); restoring the backup");
-            RestoredFromBackup = true;
-            return Deserialize(File.ReadAllText(p + ".bak"));
+            // A save from before the overhaul is refused outright (no migration, by design); a damaged one falls back to its backup.
+            if (e.Message != TooOld && File.Exists(p + ".bak"))
+            {
+                Console.WriteLine($"save {slot} unreadable ({e.Message}); restoring the backup");
+                try { var back = Deserialize(File.ReadAllText(p + ".bak")); RestoredFromBackup = true; return back; }
+                catch (Exception e2) { e = e2; }
+            }
+            LoadError = e.Message;
+            Console.WriteLine($"save {slot} not loaded: {e.Message}");
+            return null;
         }
     }
 
@@ -219,6 +319,8 @@ public sealed class Rng
 /// Campaign balance numbers (Data/campaign.json overrides these defaults).
 public sealed class Balance
 {
+    /// Veteran honours (F1); the built-in defaults when empty.
+    public List<HonourDef> Honours = new();
     public float HourSeconds = 0.5f, FootSpeed = 5.5f, HorseSpeed = 9, RoadBonus = 1.3f, Vision = 55, EncounterRadius = 3.5f, JoinRadius = 10;
     /// How much closer two AI parties must be before they fight (the player's own encounters use EncounterRadius).
     public float AiClashRadius = 5.5f;

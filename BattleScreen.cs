@@ -898,7 +898,7 @@ sealed class BattleScreen
             var bearer = s.Units.FirstOrDefault(u => u.Active && !u.Routing);
             if (bearer == null) continue;
             var at = bearer.Pos - bearer.Dir * 0.35f + new Vector2(-bearer.Dir.Y, bearer.Dir.X) * 0.25f;
-            puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count);
+            puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner);
         }
         if (!forSun)
             foreach (var m in motes) puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);

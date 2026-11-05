@@ -55,7 +55,12 @@ public sealed record Weather(float Hour = 13, float Rain = 0, float Fog = 0, boo
 public enum LeaderFate { Unhurt, Wounded, Captured, Slain }
 
 /// One company's battle: Standing at the end, Fled (ran, alive), Fallen (killed or wounded: the campaign decides which).
-public sealed record CompanyResult(int Team, int Id, int Start, int Standing, int Fled, int Fallen, int Kills, int[] KillsByTier, bool Deployed);
+/// Stacks breaks the same counts down by troop type, so the campaign takes casualties off the right stack (CAMPAIGN_OVERHAUL.md 2.3).
+public sealed record CompanyResult(int Team, int Id, int Start, int Standing, int Fled, int Fallen, int Kills, int[] KillsByTier, bool Deployed,
+    IReadOnlyList<StackResult>? Stacks = null, int HorseKills = 0, bool Routed = false);
+
+/// One troop type's part of a company's battle.
+public sealed record StackResult(string Troop, int Start, int Standing, int Fled, int Fallen);
 
 /// What a battle hands back to the campaign. Winner: 0 you, 1 the enemy (also when you withdraw).
 public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<CompanyResult> Companies, LeaderFate Captain, LeaderFate EnemyLeader, int HorsesTaken);

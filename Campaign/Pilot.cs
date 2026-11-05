@@ -102,14 +102,18 @@ public sealed class Pilot
     float Reserve => Me.Companies.Sum(Rules.Upkeep) * (c.Captain.Contract >= 0 ? 1 - B.ContractPay : 1) * 4 + 60;
 
     /// Promotions the purse can pay for while keeping a reserve for upkeep.
-    IEnumerable<(CompanyRecord Company, string To)> Affordable() =>
-        c.PromotionChoices().Where(p => c.CanUpgradeIgnoringPlace(p.Company, p.To) && c.S.Gold - Rules.UpgradeCost(p.Company, p.To, Me.Horses) >= Reserve);
+    IEnumerable<(CompanyRecord Company, TroopStack Stack, string To)> Affordable() =>
+        c.PromotionChoices().Where(p => c.PromotableAnywhere(p.Company, p.Stack, p.To, c.S.Gold - Reserve, out _) > 0);
 
-    /// Spend ready promotions, cheapest first, keeping a reserve for upkeep.
+    /// Spend ready promotions, keeping a reserve for upkeep.
     void Promote()
     {
-        foreach (var (co, to) in Affordable().ToList())
-            if (c.CanUpgrade(co, to, out int cost, out _) && c.S.Gold - cost >= Reserve) c.Upgrade(co, to);
+        foreach (var (co, st, to) in Affordable().ToList())
+        {
+            if (!co.Stacks.Contains(st)) continue;
+            int n = c.Promotable(Me, co, st, to, st.Ready, c.S.Gold - Reserve, out _, out _);
+            if (n > 0) c.Promote(co, st, to, n);
+        }
     }
 
     void Think()

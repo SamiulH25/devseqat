@@ -97,13 +97,18 @@ sealed class ScreenHost : Game
         mode = Mode.Map;
     }
 
+    /// A message for the title screen (why a save would not load).
+    public string TitleNote = "";
+
     public bool CanContinue => CampaignState.Exists("autosave") || CampaignState.Exists("quicksave");
 
     public void ContinueCampaign()
     {
         string? latest = new[] { "autosave", "quicksave" }.Where(CampaignState.Exists)
             .OrderByDescending(n => File.GetLastWriteTimeUtc(Path.Combine(CampaignState.SaveDir, n + ".json"))).FirstOrDefault();
-        if (latest == null || CampaignState.Load(latest) is not CampaignState s) return;
+        if (latest == null) return;
+        if (CampaignState.Load(latest) is not CampaignState s) { TitleNote = (CampaignState.LoadError ?? "the save could not be read").ToUpperInvariant(); return; }
+        TitleNote = "";
         campaign = new Campaign(s);
         map.Open(campaign);
         mode = Mode.Map;
@@ -216,7 +221,7 @@ sealed class ScreenHost : Game
         {
             case 0: map.Stage("map"); Shot("campaign-map"); break;
             case 1: map.Stage("close"); Shot("campaign-close"); break;
-            case 2: c.Player.Companies[0].Xp = 70; c.Captain.Renown = 120; map.Stage("party"); Shot("campaign-party"); break;
+            case 2: { var st0 = c.Player.Companies[0].Main!; st0.Xp = st0.PoolCap * 0.6f; } c.Captain.Renown = 120; map.Stage("party"); Shot("campaign-party"); break;
             case 3: map.Stage("upgrade"); Shot("campaign-upgrade"); break;
             case 4: map.Stage("settlement"); Shot("campaign-town"); break;
             case 5:
@@ -250,7 +255,7 @@ sealed class ScreenHost : Game
             case 12:
             {
                 var castle = c.S.Settlements.Where(s => s.Kind != SettlementKind.Village && c.FactionsAtWar(c.Captain.Contract, s.Faction)).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
-                foreach (var co in c.Player.Companies) co.Men = Math.Max(co.Men, 20);
+                foreach (var co in c.Player.Companies) co.Main!.Men = Math.Max(co.Main!.Men, 20);
                 c.Player.Pos = castle.Pos + new Vector2(4, 0);
                 c.Besiege(castle);
                 castle.SiegeSince -= 13;

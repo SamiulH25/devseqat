@@ -36,6 +36,8 @@ sealed class MapScreen
     PanelKind panel;
     Settlement? at;
     CompanyRecord? upgrading, renaming;
+    /// The stack the promotion picker is for (in `upgrading`).
+    TroopStack? upStack;
     string renameText = "";
     string tab = "RECRUIT", note = "";
     int speed = 1, lastWeek = -1;
@@ -99,7 +101,7 @@ sealed class MapScreen
         if (Pressed(Keys.Enter)) Tips.Dismiss();
         Tips.Show("welcome", "Welcome, captain. Click the map to march; click a town or village to enter it.\nBrigands are close by: click their banner to ride at them, or let them come to you.\nWASD pans, the wheel zooms, Space pauses. P opens your company.");
         if (C.Player.Companies.Any(Rules.UpgradeReady))
-            Tips.Show("upgrade", "A company has the XP to upgrade (gold bar, UPGRADE READY).\nOpen the party screen (P) or a town's training yard, and choose its next troops.");
+            Tips.Show("upgrade", "Some of your men have the XP for promotion (gold bar, N READY).\nOpen the party screen (P) in a town, click a troop stack, and choose how many to promote and into what.");
         if (Rules.PerkPoints(C.Captain) > 0) Tips.Show("perk", "Your renown has earned a perk. Take it in the party screen (P).");
         if (C.Captain.Renown >= 80) Tips.Show("renown", "Renown is your standing: each victory adds to it. It raises your men cap\nand earns perks. The bar under the captain panel shows the next thing it buys.");
         if (C.Player.Companies.Count >= Rules.CompanySlots(C.Captain)) Tips.Show("slots", "You have reached the maximum of 10 companies. Merge or disband a company to form a new one.");
@@ -115,7 +117,11 @@ sealed class MapScreen
             if (ctl.Pressed(Act.Speed3)) speed = 8;
             if (ctl.Pressed(Act.FollowParty)) follow = true;
             if (ctl.Pressed(Act.QuickSave)) Save();
-            if (ctl.Pressed(Act.QuickLoad) && !C.S.Ironman && CampaignState.Load("quicksave") is CampaignState loaded) { Open(new Campaign(loaded)); C.Log("Loaded."); }
+            if (ctl.Pressed(Act.QuickLoad) && !C.S.Ironman)
+            {
+                if (CampaignState.Load("quicksave") is CampaignState loaded) { Open(new Campaign(loaded)); C.Log("Loaded."); }
+                else if (CampaignState.LoadError is string err) C.Log("Quicksave not loaded: " + err + ".");
+            }
             Camera(dt, active);
             if (active && pendingClick && !ui.Blocks(ms.Position)) { pendingClick = false; ClickWorld(Ground(ms.Position)); }
             if (speed > 0) C.Tick(dt / Balance.Get().HourSeconds * speed);
@@ -595,19 +601,34 @@ sealed class MapScreen
 
     void Card(CompanyRecord c, Rectangle r, int index)
     {
-        bool ready = Rules.UpgradeReady(c);
-        ui.Panel(r, ready ? Style.Accent : Style.PanelEdge, ready ? 2 : 1);
+        int ready = c.Ready;
+        var main = c.Main;
+        ui.Panel(r, ready > 0 ? Style.Accent : Style.PanelEdge, ready > 0 ? 2 : 1);
         ui.Text($"{index}", r.X + ui.U(5), r.Y + ui.U(5), Style.Dim, 1);
         ui.Text(Style.Numerals[Math.Clamp(c.Type.Tier, 0, 7)], r.X + ui.U(5), r.Y + ui.U(16), Style.Accent, 1);
         ui.Portrait(c.Type, new Rectangle(r.X + ui.U(20), r.Y + ui.U(4), r.Width - ui.U(40), ui.U(44)));
         string name = c.Name.ToUpperInvariant();
         ui.TextC(name.Length > 15 ? name[..15] : name, r.X + r.Width / 2f, r.Y + ui.U(50), Style.Text, 1);
-        ui.TextC(c.Type.Name.ToUpperInvariant(), r.X + r.Width / 2f, r.Y + ui.U(60), Style.Dim, 1);
+        ui.TextC(c.Stacks.Count > 1 ? $"{c.Type.Name.ToUpperInvariant()} +{c.Stacks.Count - 1}" : c.Type.Name.ToUpperInvariant(), r.X + r.Width / 2f, r.Y + ui.U(60), Style.Dim, 1);
         ui.TextC(c.Wounded > 0 ? $"{c.Men}+{c.Wounded}W" : $"{c.Men}", r.X + r.Width / 2f, r.Y + ui.U(71), Style.Text);
-        float need = c.Type.UpgradeXp;
-        ui.Bar(new Rectangle(r.X + ui.U(6), r.Y + ui.U(90), r.Width - ui.U(12), ui.U(4)), need > 0 ? c.Xp / need : 1, ready ? Style.Accent : Style.Friendly);
-        ui.Bar(new Rectangle(r.X + ui.U(6), r.Y + ui.U(97), r.Width - ui.U(12), ui.U(3)), c.Cohesion / 30f, Style.Ok);
-        if (ready) ui.TextC("UPGRADE READY", r.X + r.Width / 2f, r.Y - ui.U(11), Style.Accent, 1);
+        TierStrip(c, new Rectangle(r.X + ui.U(6), r.Y + ui.U(86), r.Width - ui.U(12), ui.U(3)));
+        float cap = c.Stacks.Sum(x => x.PoolCap), pool = c.Stacks.Sum(x => x.Xp);
+        ui.Bar(new Rectangle(r.X + ui.U(6), r.Y + ui.U(91), r.Width - ui.U(12), ui.U(4)), cap > 0 ? pool / cap : 1, ready > 0 ? Style.Accent : Style.Friendly);
+        ui.Bar(new Rectangle(r.X + ui.U(6), r.Y + ui.U(98), r.Width - ui.U(12), ui.U(3)), c.Cohesion / 30f, Style.Ok);
+        if (ready > 0) ui.TextC($"{ready} READY", r.X + r.Width / 2f, r.Y - ui.U(11), Style.Accent, 1);
+    }
+
+    /// A strip split by the company's men per tier, darker to brighter, so a mixed company reads at a glance.
+    void TierStrip(CompanyRecord c, Rectangle r)
+    {
+        int total = Math.Max(1, c.Men + c.Wounded), x = r.X;
+        foreach (var st in c.Stacks.OrderBy(t => t.Type.Tier))
+        {
+            int w = (int)MathF.Round(r.Width * (st.Men + st.Wounded) / (float)total);
+            if (w <= 0) continue;
+            ui.Rect(new Rectangle(x, r.Y, Math.Min(w, r.Right - x), r.Height), Color.Lerp(Style.Dim, Style.Accent, (st.Type.Tier - 1) / 6f));
+            x += w;
+        }
     }
 
     void Hints()
@@ -747,7 +768,7 @@ sealed class MapScreen
                 {
                     ui.Portrait(m.Type, new Rectangle(body.X, y, ui.U(56), ui.U(54)));
                     ui.Text(m.Name.ToUpperInvariant(), body.X + ui.U(66), y + ui.U(4), Style.Text);
-                    ui.Text($"{m.Men} {m.Type.Name.ToUpperInvariant()}, TIER {Style.Numerals[m.Type.Tier]}, {m.Xp:0} XP", body.X + ui.U(66), y + ui.U(24), Style.Dim, 1);
+                    ui.Text(string.Join(", ", m.Stacks.Select(st => $"{st.Men} {st.Type.Name.ToUpperInvariant()} {Style.Numerals[st.Type.Tier]}")) + (m.Honours.Count > 0 ? "  HONOURS: " + string.Join(", ", m.Honours.Select(h => Honours.Get(h)?.Name.ToUpperInvariant() ?? h)) : ""), body.X + ui.U(66), y + ui.U(24), Style.Dim, 1);
                     int price = C.MercenaryPrice(m);
                     if (ui.Button(new Rectangle(body.Right - ui.U(190), y + ui.U(10), ui.U(190), ui.U(30)), "HIRE", C.S.Gold >= price, $"{price} CROWNS"))
                         note = C.Hire(s, m) ?? "HIRED";
@@ -758,7 +779,7 @@ sealed class MapScreen
             case "MARKET":
             {
                 ui.Text($"HORSES: {s.Horses} FOR SALE AT {C.HorsePrice} CROWNS. YOU HAVE {C.Player.Horses}.", body.X, body.Y, Style.Text);
-                ui.Text("COMPANIES THAT BECOME CAVALRY NEED ONE HORSE PER MAN (OR PAY FOR THEM WHEN UPGRADING).", body.X, body.Y + ui.U(20), Style.Dim, 1);
+                ui.Text("MEN PROMOTED INTO CAVALRY NEED A HORSE EACH (OR PAY FOR ONE WHEN PROMOTED).", body.X, body.Y + ui.U(20), Style.Dim, 1);
                 if (ui.Button(new Rectangle(body.X, body.Y + ui.U(40), ui.U(150), ui.U(28)), "BUY 1", s.Horses > 0)) note = C.BuyHorses(s, 1) ?? "BOUGHT";
                 if (ui.Button(new Rectangle(body.X + ui.U(160), body.Y + ui.U(40), ui.U(150), ui.U(28)), "BUY 5", s.Horses > 0)) note = C.BuyHorses(s, 5) ?? "BOUGHT";
                 ui.Text("YOUR GEAR", body.X, body.Y + ui.U(92), Style.Accent);
@@ -773,15 +794,15 @@ sealed class MapScreen
             }
             case "TRAIN":
             {
-                ui.Text("COMPANIES WITH ENOUGH XP CAN BE TRAINED UP THEIR LINE HERE.", body.X, body.Y, Style.Dim, 1);
+                ui.Text("MEN WITH ENOUGH XP CAN BE PROMOTED UP THEIR LINE HERE, ONE BY ONE OR ALL AT ONCE.", body.X, body.Y, Style.Dim, 1);
                 int y = body.Y + ui.U(18);
-                foreach (var c in C.Player.Companies.ToList())
+                foreach (var (c, st) in C.Player.Companies.SelectMany(c => c.Stacks.Select(st => (c, st))).OrderByDescending(x => x.st.Ready).ToList())
                 {
-                    ui.Portrait(c.Type, new Rectangle(body.X, y, ui.U(40), ui.U(38)));
-                    ui.Text($"{c.Name.ToUpperInvariant()}: {c.Men} {c.Type.Name.ToUpperInvariant()}", body.X + ui.U(48), y + ui.U(4), Style.Text, 1);
-                    ui.Text(c.Type.UpgradesTo.Length == 0 ? "AT THE TOP OF ITS LINE" : $"XP {c.Xp:0} / {c.Type.UpgradeXp}", body.X + ui.U(48), y + ui.U(18), Rules.UpgradeReady(c) ? Style.Accent : Style.Dim, 1);
-                    if (c.Type.UpgradesTo.Length > 0 && ui.Button(new Rectangle(body.Right - ui.U(160), y + ui.U(4), ui.U(160), ui.U(28)), "UPGRADE...", true))
-                    { upgrading = c; panel = PanelKind.Upgrade; note = ""; }
+                    ui.Portrait(st.Type, new Rectangle(body.X, y, ui.U(40), ui.U(38)));
+                    ui.Text($"{c.Name.ToUpperInvariant()}: {st.Men} {st.Type.Name.ToUpperInvariant()} {Style.Numerals[st.Type.Tier]}", body.X + ui.U(48), y + ui.U(4), Style.Text, 1);
+                    ui.Text(st.Type.UpgradesTo.Length == 0 ? "AT THE TOP OF ITS LINE" : $"{st.Ready} READY   POOL {st.Xp:0} / {st.PoolCap:0} XP ({st.Type.UpgradeXp} A MAN)", body.X + ui.U(48), y + ui.U(18), st.Ready > 0 ? Style.Accent : Style.Dim, 1);
+                    if (st.Type.UpgradesTo.Length > 0 && ui.Button(new Rectangle(body.Right - ui.U(160), y + ui.U(4), ui.U(160), ui.U(28)), "PROMOTE...", st.Ready > 0))
+                    { upgrading = c; upStack = st; panel = PanelKind.Upgrade; note = ""; }
                     y += ui.U(42);
                     if (y > body.Bottom - ui.U(30)) break;
                 }
@@ -895,39 +916,49 @@ sealed class MapScreen
     {
         var list = C.Player.Companies;
         int rh = list.Count > 8 ? 42 : 46, rstep = list.Count > 8 ? 45 : 50;
-        var r = Modal(980, list.Count > 8 ? 610 : 560, "YOUR COMPANY");
+        var r = Modal(1000, list.Count > 8 ? 610 : 560, "YOUR COMPANY");
         int x = r.X + ui.U(20), y = r.Y + ui.U(46);
         foreach (var c in list.ToList())
         {
             var row = new Rectangle(x, y, ui.U(660), ui.U(rh));
             ui.Rect(row, Color.White * 0.04f);
             ui.Portrait(c.Type, new Rectangle(row.X + ui.U(4), row.Y + ui.U(2), ui.U(44), ui.U(rh - 4)));
-            var nameBox = new Rectangle(row.X + ui.U(52), row.Y + ui.U(3), ui.U(200), ui.U(12));
+            var nameBox = new Rectangle(row.X + ui.U(52), row.Y + ui.U(3), ui.U(150), ui.U(12));
             if (renaming == c) { ui.Rect(nameBox, Style.Accent * 0.25f); ui.Text(renameText + (time % 1 < 0.5f ? "_" : ""), row.X + ui.U(54), row.Y + ui.U(5), Style.Accent, 1); }
             else ui.Text(c.Name.ToUpperInvariant(), row.X + ui.U(54), row.Y + ui.U(5), Style.Text, 1);
             if (renaming == null && ui.Clicked(nameBox)) { renaming = c; renameText = c.Name.ToUpperInvariant(); Ui.Typed.Clear(); }
             if (ui.Hover(nameBox) && renaming == null) note = "CLICK TO RENAME (ENTER KEEPS IT)";
-            ui.Text($"{c.Type.Name.ToUpperInvariant()} {Style.Numerals[Math.Clamp(c.Type.Tier, 0, 7)]}", row.X + ui.U(54), row.Y + ui.U(17), Style.Accent, 1);
-            if (c.Officer != "")
+            var info = new Rectangle(row.X + ui.U(52), row.Y + ui.U(15), ui.U(150), ui.U(rh - 16));
+            string role = Rules.RoleOf(c).ToUpperInvariant();
+            ui.Text($"{role}{(c.Officer != "" ? "  " + c.Officer.ToUpperInvariant() : "")}", row.X + ui.U(54), row.Y + ui.U(17), Style.Accent, 1);
+            ui.Text($"{c.Men}{(c.Wounded > 0 ? $"+{c.Wounded}W" : "")} MEN  {Rules.Places(c):0}/{Rules.Cap(Rules.RoleOf(c)):0} PLACES", row.X + ui.U(54), row.Y + ui.U(29), Style.Dim, 1);
+            ui.Rect(new Rectangle(row.X + ui.U(186), row.Y + ui.U(5), ui.U(10), ui.U(8)), Style.Friendly);
+            for (int h = 0; h < c.Honours.Count; h++) ui.Rect(new Rectangle(row.X + ui.U(186) - (h + 1) * ui.U(8), row.Y + ui.U(17), ui.U(5), ui.U(5)), Style.Accent);
+            if (ui.Hover(info)) note = CompanyNote(c);
+            ui.Bar(new Rectangle(row.X + ui.U(54), row.Y + ui.U(rh - 6), ui.U(140), ui.U(3)), c.Cohesion / 30f, Style.Ok);
+            // The troop stacks: click one for its promotion and moves.
+            int sx = row.X + ui.U(206), sw = ui.U(76);
+            foreach (var st in c.Stacks.OrderByDescending(t => t.Type.Tier).Take(4).ToList())
             {
-                var off = new Rectangle(row.X + ui.U(170), row.Y + ui.U(16), ui.U(84), ui.U(10));
-                ui.Text(c.Officer.ToUpperInvariant() + (c.Traits.Count > 0 ? $" ({c.Traits.Count})" : ""), off.X, off.Y + 1, Style.Dim, 1);
-                if (ui.Hover(off)) note = c.Traits.Count == 0 ? $"{c.Officer.ToUpperInvariant()}: NO TRAITS YET (WON BATTLES MAY GIVE THEM)"
-                    : $"{c.Officer.ToUpperInvariant()}: " + string.Join(", ", c.Traits.Select(t => $"{t.ToUpperInvariant()} - {Campaign.TraitText[t]}"));
+                var chip = new Rectangle(sx, row.Y + ui.U(2), sw, ui.U(rh - 4));
+                bool sel = upStack == st;
+                ui.Panel(chip, st.Ready > 0 ? Style.Accent : sel ? Style.Text : Style.PanelEdge, st.Ready > 0 || sel ? 2 : 1);
+                ui.Text($"{Style.Numerals[st.Type.Tier]} {st.Men}{(st.Wounded > 0 ? $"+{st.Wounded}" : "")}", chip.X + ui.U(4), chip.Y + ui.U(4), Style.Text, 1);
+                string tn = st.Type.Name.ToUpperInvariant();
+                ui.Text(tn.Length > 11 ? tn[..11] : tn, chip.X + ui.U(4), chip.Y + ui.U(15), Style.Dim, 1);
+                ui.Bar(new Rectangle(chip.X + ui.U(4), chip.Y + ui.U(27), sw - ui.U(8), ui.U(3)), st.PoolCap > 0 ? st.Xp / st.PoolCap : 1, st.Ready > 0 ? Style.Accent : Style.Friendly);
+                if (st.Ready > 0) ui.Text($"{st.Ready} READY", chip.X + ui.U(4), chip.Y + ui.U(32), Style.Accent, 1);
+                if (ui.Hover(chip)) note = $"{st.Men} {tn}: POOL {st.Xp:0}/{st.PoolCap:0} XP, {st.Type.UpgradeXp} XP A MAN. CLICK TO PROMOTE, MOVE OR SPLIT.";
+                if (ui.Clicked(chip)) { upgrading = c; upStack = st; panel = PanelKind.Upgrade; note = ""; }
+                sx += sw + ui.U(3);
             }
-            ui.Text($"{c.Men}{(c.Wounded > 0 ? $"+{c.Wounded}W" : "")}/{Rules.Cap(c.Troop, Rules.RoleOf(c))}  {c.Battles} BATTLES {c.Kills} KILLS", row.X + ui.U(54), row.Y + ui.U(29), Style.Dim, 1);
-            float need = c.Type.UpgradeXp;
-            ui.Text("XP", row.X + ui.U(262), row.Y + ui.U(8), Style.Dim, 1);
-            ui.Bar(new Rectangle(row.X + ui.U(282), row.Y + ui.U(9), ui.U(100), ui.U(5)), need > 0 ? c.Xp / need : 1, Rules.UpgradeReady(c) ? Style.Accent : Style.Friendly);
-            ui.Text("COH", row.X + ui.U(256), row.Y + ui.U(24), Style.Dim, 1);
-            ui.Bar(new Rectangle(row.X + ui.U(282), row.Y + ui.U(25), ui.U(100), ui.U(5)), c.Cohesion / 30f, Style.Ok);
-            int bx = row.X + ui.U(392), bw = ui.U(62), bh = ui.U(18);
+            if (c.Stacks.Count > 4) ui.Text($"+{c.Stacks.Count - 4}", sx, row.Y + ui.U(16), Style.Dim, 1);
+            int bx = row.X + ui.U(530), bw = ui.U(62), bh = ui.U(18);
             if (ui.Button(new Rectangle(bx, row.Y + ui.U(2), bw, bh), "UP", list.IndexOf(c) > 0)) C.MoveUp(c);
             if (ui.Button(new Rectangle(bx + bw + 4, row.Y + ui.U(2), bw, bh), "SPLIT", c.Men >= 2)) note = C.Split(c) ?? "";
             var mate = list.FirstOrDefault(o => Rules.CanMerge(c, o));
-            if (ui.Button(new Rectangle(bx + 2 * (bw + 4), row.Y + ui.U(2), bw, bh), "MERGE", mate != null)) C.Merge(c, mate!);
-            if (ui.Button(new Rectangle(bx, row.Y + ui.U(22), bw * 2 + 4, bh), "UPGRADE...", c.Type.UpgradesTo.Length > 0)) { upgrading = c; panel = PanelKind.Upgrade; note = ""; }
-            if (ui.Button(new Rectangle(bx + 2 * (bw + 4), row.Y + ui.U(22), bw, bh), "DISBAND", list.Count > 1)) C.Disband(c);
+            if (ui.Button(new Rectangle(bx, row.Y + ui.U(22), bw, bh), "MERGE", mate != null)) C.Merge(c, mate!);
+            if (ui.Button(new Rectangle(bx + bw + 4, row.Y + ui.U(22), bw, bh), "DISBAND", list.Count > 1)) C.Disband(c);
             y += ui.U(rstep);
         }
         // The captain and perks.
@@ -1032,24 +1063,41 @@ sealed class MapScreen
         if (ui.Button(Bt(3), besieging ? "LIFT SIEGE" : "LEAVE")) { if (besieging) C.LiftSiege(); panel = PanelKind.None; }
     }
 
+    /// A company's story for the party screen: origin, honours, and its last fights.
+    static string CompanyNote(CompanyRecord c)
+    {
+        var parts = new List<string>();
+        parts.Add(c.Home != "" ? $"RAISED IN {c.Home.ToUpperInvariant()} ({c.Culture.ToUpperInvariant()})" : "NO HOME");
+        parts.Add($"{c.Battles} BATTLES, {c.Kills} KILLS");
+        if (c.Honours.Count > 0) parts.Add("HONOURS: " + string.Join(", ", c.Honours.Select(h => Honours.Get(h) is HonourDef d ? $"{d.Name.ToUpperInvariant()} ({d.Text.ToUpperInvariant()})" : h)));
+        if (c.Traits.Count > 0) parts.Add($"{c.Officer.ToUpperInvariant()}: " + string.Join(", ", c.Traits.Select(t => t.ToUpperInvariant())));
+        if (c.Ledger.Count > 0) parts.Add("LAST: " + string.Join("; ", c.Ledger.TakeLast(3).Reverse().Select(l => $"DAY {l.Day} {(l.Won ? "WON" : "LOST")} VS {l.Foe.ToUpperInvariant()}, {l.Kills} KILLS, {l.Lost} LOST")));
+        return string.Join(". ", parts);
+    }
+
+    /// The promotion picker for one troop stack (2.2): each branch with what it costs to promote 1, 5 or every ready man,
+    /// and the reason when it cannot; plus moving or splitting the stack.
     void UpgradePanel()
     {
         var c = upgrading!;
-        var options = c.Type.UpgradesTo;
-        var r = Modal(Math.Max(860, options.Length * 190 + 60), 440, "UPGRADE " + c.Name.ToUpperInvariant());
-        ui.TextC($"{c.Men + c.Wounded} {c.Type.Name.ToUpperInvariant()}, XP {c.Xp:0} / {c.Type.UpgradeXp}. THE WHOLE COMPANY CHANGES; XP STARTS AGAIN.",
+        var st = upStack;
+        if (st == null || !c.Stacks.Contains(st) || !C.Player.Companies.Contains(c)) { panel = PanelKind.Party; upStack = null; return; }
+        var options = st.Type.UpgradesTo;
+        var r = Modal(Math.Max(860, options.Length * 190 + 60), 470, $"{st.Type.Name.ToUpperInvariant()} OF {c.Name.ToUpperInvariant()}");
+        ui.TextC($"{st.Men} FIT, {st.Wounded} WOUNDED. POOL {st.Xp:0} / {st.PoolCap:0} XP: {st.Ready} READY ({st.Type.UpgradeXp} XP A MAN). EACH MAN PROMOTED SPENDS HIS SHARE.",
             r.X + r.Width / 2f, r.Y + ui.U(44), Style.Dim, 1);
-        int cw = options.Length >= 5 ? ui.U(176) : ui.U(190), gap = ui.U(10), x = r.X + (r.Width - options.Length * cw - (options.Length - 1) * gap) / 2, y = r.Y + ui.U(66);
+        if (options.Length == 0) ui.TextC("THESE MEN ARE AT THE TOP OF THEIR LINE.", r.X + r.Width / 2f, r.Y + ui.U(120), Style.Text);
+        int cw = options.Length >= 5 ? ui.U(176) : ui.U(190), gap = ui.U(10), x = r.X + (r.Width - options.Length * cw - (options.Length - 1) * gap) / 2, y = r.Y + ui.U(62);
         foreach (var to in options)
         {
             var t = Troops.Get(to);
-            var card = new Rectangle(x, y, cw, ui.U(290));
-            bool ok = C.CanUpgrade(c, to, out int cost, out string reason);
-            ui.Panel(card, ok ? Style.Accent : Style.PanelEdge, ok ? 2 : 1);
+            var card = new Rectangle(x, y, cw, ui.U(300));
+            int one = C.Promotable(C.Player, c, st, to, 1, C.S.Gold, out int cost1, out string reason);
+            ui.Panel(card, one > 0 ? Style.Accent : Style.PanelEdge, one > 0 ? 2 : 1);
             ui.Portrait(t, new Rectangle(card.X + ui.U(40), card.Y + ui.U(8), cw - ui.U(80), ui.U(70)));
             ui.TextC(t.Name.ToUpperInvariant(), card.X + cw / 2f, card.Y + ui.U(86), Style.Text, t.Name.Length > 16 ? 1 : 2);
             ui.TextC($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]}  {t.Class.ToString().ToUpperInvariant()}", card.X + cw / 2f, card.Y + ui.U(106), Style.Accent, 1);
-            int sy = card.Y + ui.U(124);
+            int sy = card.Y + ui.U(122);
             foreach (var (label, value) in new[] { ("HEALTH", $"{t.MaxHp:0}"), ("ARMOUR", $"{t.Armor:0}"), ("DAMAGE", $"{t.Damage:0}"), ("REACH", $"{t.Reach:0.0} M"),
                          t.Range > 0 ? ("RANGE", $"{t.Range:0} M") : ("SPEED", $"{t.Speed:0.0}"), ("HORSE", t.Mount?.Name.ToUpperInvariant() ?? "-") })
             {
@@ -1057,12 +1105,37 @@ sealed class MapScreen
                 ui.TextR(value, card.Right - ui.U(14), sy, Style.Text, 1);
                 sy += ui.U(14);
             }
-            ui.TextC($"{cost} CROWNS", card.X + cw / 2f, card.Bottom - ui.U(64), ok ? Style.Text : Style.Dim);
-            if (!ok) ui.TextC(reason, card.X + cw / 2f, card.Bottom - ui.U(44), Style.Warn, 1);
-            if (ui.Button(new Rectangle(card.X + ui.U(14), card.Bottom - ui.U(32), cw - ui.U(28), ui.U(24)), "UPGRADE", ok)) { note = C.Upgrade(c, to) ?? ""; panel = PanelKind.Party; }
+            if (Rules.TroopRole(to) != Rules.RoleOf(c)) ui.TextC($"JOINS A {Rules.TroopRole(to).ToUpperInvariant()} COMPANY", card.X + cw / 2f, card.Y + ui.U(210), Style.Warn, 1);
+            ui.TextC(one > 0 ? $"{cost1} CROWNS A MAN" : reason, card.X + cw / 2f, card.Y + ui.U(226), one > 0 ? Style.Text : Style.Warn, 1);
+            int bw = (cw - ui.U(28) - 2 * ui.U(4)) / 3, by = card.Bottom - ui.U(56);
+            int b = 0;
+            foreach (var (label, want) in new[] { ("1", 1), ("5", 5), ("ALL", st.Ready) })
+            {
+                int n = C.Promotable(C.Player, c, st, to, want, C.S.Gold, out int cost, out _);
+                var br = new Rectangle(card.X + ui.U(14) + b * (bw + ui.U(4)), by, bw, ui.U(24));
+                if (ui.Button(br, label, n > 0 && (want == 1 || n > 1)))
+                {
+                    note = C.Promote(c, st, to, n) ?? $"PROMOTED {n}";
+                    if (!c.Stacks.Contains(st)) { upStack = null; panel = PanelKind.Party; }
+                }
+                if (ui.Hover(br)) note = n > 0 ? $"PROMOTE {n} FOR {cost} CROWNS" : reason;
+                b++;
+            }
+            ui.TextC($"{st.Ready} READY, {C.S.Gold:0} CROWNS", card.X + cw / 2f, card.Bottom - ui.U(22), Style.Dim, 1);
             x += cw + gap;
         }
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "BACK")) panel = at != null && C.SettlementAt(C.Player.Pos) == at ? PanelKind.Settlement : PanelKind.Party;
+        // Moving and splitting the stack.
+        int mbw = ui.U(200), mby = r.Bottom - ui.U(80), mbx = r.X + (r.Width - 3 * mbw - 2 * ui.U(8)) / 2;
+        var target = C.Player.Companies.FirstOrDefault(o => o != c && Rules.Fits(o, st.Troop) && Rules.Places(o) + (st.Men + st.Wounded) * Rules.TierWeight(st.Type.Tier) <= Rules.Cap(Rules.RoleOf(o)) + 1e-3f);
+        if (ui.Button(new Rectangle(mbx, mby, mbw, ui.U(26)), target != null ? $"MOVE TO {target.Name.ToUpperInvariant()}" : "MOVE (NO ROOM)", target != null))
+        { note = C.MoveStack(c, st, target!) ?? "MOVED"; upStack = null; panel = PanelKind.Party; return; }
+        if (ui.Button(new Rectangle(mbx + mbw + ui.U(8), mby, mbw, ui.U(26)), "SPLIT HALF OFF", st.Men >= 2))
+        { note = C.SplitStack(c, st, st.Men / 2) ?? "SPLIT"; upStack = null; panel = PanelKind.Party; return; }
+        if (ui.Button(new Rectangle(mbx + 2 * (mbw + ui.U(8)), mby, mbw, ui.U(26)), "SPLIT OFF ALL", st.Men >= 1 && c.Stacks.Count > 1))
+        { note = C.SplitStack(c, st, st.Men) ?? "SPLIT"; upStack = null; panel = PanelKind.Party; return; }
+        Note(r);
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "BACK"))
+        { upStack = null; panel = at != null && C.SettlementAt(C.Player.Pos) == at ? PanelKind.Settlement : PanelKind.Party; }
     }
 
     void ResultsPanel()
@@ -1126,7 +1199,11 @@ sealed class MapScreen
         Rectangle B() { var b = new Rectangle(r.X + ui.U(40), y, r.Width - ui.U(80), ui.U(30)); y += ui.U(38); return b; }
         if (ui.Button(B(), "RESUME")) panel = PanelKind.None;
         if (ui.Button(B(), $"SAVE ({ctl.Name(Act.QuickSave)})")) { Save(); panel = PanelKind.None; }
-        if (ui.Button(B(), $"LOAD ({ctl.Name(Act.QuickLoad)})", !C.S.Ironman && CampaignState.Exists("quicksave")) && CampaignState.Load("quicksave") is CampaignState s) Open(new Campaign(s));
+        if (ui.Button(B(), $"LOAD ({ctl.Name(Act.QuickLoad)})", !C.S.Ironman && CampaignState.Exists("quicksave")) )
+        {
+            if (CampaignState.Load("quicksave") is CampaignState s) Open(new Campaign(s));
+            else note = (CampaignState.LoadError ?? "NO SAVE").ToUpperInvariant();
+        }
         if (ui.Button(B(), "SETTINGS")) OnSettings?.Invoke();
         if (ui.Button(B(), "QUIT TO TITLE")) { C.S.Save("autosave"); OnTitle?.Invoke(); }
     }
@@ -1147,7 +1224,7 @@ sealed class MapScreen
             case "settlement":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
                 tab = "MERCENARIES"; panel = PanelKind.Settlement; break;
-            case "upgrade": upgrading = C.Player.Companies[0]; panel = PanelKind.Upgrade; break;
+            case "upgrade": upgrading = C.Player.Companies[0]; upStack = upgrading.Main; panel = PanelKind.Upgrade; break;
             case "encounter": panel = PanelKind.Encounter; break;
             case "results": panel = PanelKind.Results; break;
         }

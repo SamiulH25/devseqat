@@ -150,9 +150,12 @@ public sealed partial class Battle
     {
         var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null && !Options.Siege, Company = company,
             AiControlled = company?.Allied == true && team == 0 };
+        // A mixed company spawns each stack in turn, largest first; a one-off squad is n men of `type`.
+        var types = company?.Mix is { Length: > 1 } ? company.Stacks.SelectMany(x => Enumerable.Repeat(Troops.Get(x.Troop), x.Count)).Take(n).ToList() : null;
         for (int i = 0; i < n; i++)
         {
-            var u = Spawn(type, team, s, s.Slot(i, n));
+            var u = Spawn(types != null && i < types.Count ? types[i] : type, team, s, s.Slot(i, n));
+            s.MarchSpeed = MathF.Min(s.MarchSpeed, u.Type.Speed);
             if (company != null) u.Morale = company.Morale;
             u.Face(front);
             u.Heading = u.Facing;
@@ -331,7 +334,7 @@ public sealed partial class Battle
         if (toSlot > 0.4f)
         {
             var to = Via(u, u.Slot) - u.Pos;
-            u.Wish = to / toSlot * u.Type.Speed * MathF.Min(1, toSlot);
+            u.Wish = to / toSlot * MathF.Min(u.Type.Speed, s.MarchSpeed) * MathF.Min(1, toSlot);
             u.Face(to);
         }
         else u.Face(s.FaceAt(u.Slot));
@@ -666,7 +669,7 @@ public sealed partial class Battle
         // Arrows and spears often take the horse instead of the rider (a footman's blade rarely does).
         if (t.Mounted && rng.NextSingle() < (ranged ? 0.55f : a.Type.Class == UnitClass.Skirmisher ? 0.55f : 0.18f))
         {
-            HitHorse(t, dmg * a.Type.VsMounted, a);
+            HitHorse(t, dmg * a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1), a);
             return;
         }
 
@@ -733,7 +736,7 @@ public sealed partial class Battle
         float officer = tired * (a.Squad?.Company is Company oc ? (oc.Has("Hothead") ? 1.1f : 1) * (oc.Has("Veteran") ? 1.05f : 1) : 1);
         if (ranged && t.Squad?.Formation == Formation.Square) officer *= 1.25f;                    // a packed square is an easy mark
         if (!ranged && a.Squad is { Formation: Formation.Wedge, Order: Order.Charge }) officer *= 1.15f; // a wedge drives in
-        float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted : 1);
+        float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1);
         if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged ? a.Type.Pierce : 0);
         Sound(ranged ? Cue.ArrowHit : t.Type.Armor >= 8 ? Cue.Clash : Cue.Hit, t.Pos);
@@ -797,6 +800,7 @@ public sealed partial class Battle
         if (t.Mounted)
         {
             LooseHorses.Add(new LooseHorse { Mount = t.Horse!, Hp = t.HorseHp, Pos = t.Pos, Heading = t.Heading, Team = t.Team, Coat = t.Coat });
+            if (killer.Squad != null && killer.Team != t.Team) killer.Squad.HorseKills++;
             t.Horse = null;
             t.Pos -= new Vector2(-t.HeadingDir.Y, t.HeadingDir.X) * 1.0f; // the rider falls off to the side
         }
@@ -1045,7 +1049,7 @@ public sealed partial class Battle
             u.Morale = Math.Clamp(u.Morale + m * dt, 0, 100);
             // Iron Will: near you, a company that still has a third of its men will not break.
             if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);
-            float routAt = u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? RoutAt - 4 : RoutAt; // officer trait; walls
+            float routAt = (u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? RoutAt - 4 : RoutAt) - (u.Squad.Company?.RoutBonus ?? 0); // officer trait; walls; honours
             if (!u.Routing && u.Morale < routAt) { u.Routing = true; u.Routs++; u.Action = UnitAction.None; u.Couched = false; }
             else if (u.Routing && u.Morale > RallyAt && u.Routs <= 1)
             {
@@ -1164,14 +1168,21 @@ public sealed partial class Battle
     {
         var list = new List<CompanyResult>();
         foreach (var s in Squads.Where(s => s.Company != null))
+        {
+            var stacks = s.Units.GroupBy(u => u.Type.Id).Select(g => new StackResult(g.Key, g.Count(),
+                Standing: g.Count(u => u.Active && !u.Routing), Fled: g.Count(u => u.Fled || (u.Active && u.Routing)), Fallen: g.Count(u => u.Dead))).ToList();
+            int fled = s.Units.Count(u => u.Fled || (u.Active && u.Routing));
             list.Add(new CompanyResult(s.Team, s.Company!.Id, s.StartCount,
                 Standing: s.Units.Count(u => u.Active && !u.Routing),
-                Fled: s.Units.Count(u => u.Fled || (u.Active && u.Routing)),
+                Fled: fled,
                 Fallen: s.Units.Count(u => u.Dead),
-                Kills: s.KillsByTier.Sum(), KillsByTier: (int[])s.KillsByTier.Clone(), Deployed: true));
+                Kills: s.KillsByTier.Sum(), KillsByTier: (int[])s.KillsByTier.Clone(), Deployed: true, Stacks: stacks, HorseKills: s.HorseKills,
+                Routed: fled * 2 > s.StartCount || s.RoutSounded));
+        }
         for (int team = 0; team < 2; team++)
             foreach (var (c, _) in reserves[team])
-                list.Add(new CompanyResult(team, c.Id, c.Count, c.Count, 0, 0, 0, new int[8], Deployed: false));
+                list.Add(new CompanyResult(team, c.Id, c.Count, c.Count, 0, 0, 0, new int[8], Deployed: false,
+                    Stacks: c.Stacks.Select(x => new StackResult(x.Troop, x.Count, x.Count, 0, 0)).ToList()));
         var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
         var foeLeader = EnemyCaptain.Dead ? LeaderFate.Slain : LeaderFate.Unhurt;
         int horses = LooseHorses.Count(h => h.Team == 1);
