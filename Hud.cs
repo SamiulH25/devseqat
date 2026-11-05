@@ -69,8 +69,9 @@ sealed class Hud
         cards.Clear(); buttons.Clear(); menu.Clear();
 
         var mine = Mine;
-        int cw = U(80), ch = U(94), gap = U(6), total = mine.Count * cw + (mine.Count - 1) * gap;
-        for (int i = 0; i < mine.Count; i++) cards.Add((new Rectangle((W - total) / 2 + i * (cw + gap), H - ch - U(10), cw, ch), mine[i]));
+        int cw = mine.Count > 8 ? U(68) : U(80), ch = U(94), gap = mine.Count > 8 ? U(4) : U(6), total = mine.Count * cw + Math.Max(0, mine.Count - 1) * gap;
+        int cx0 = Math.Max(U(296), (W - total) / 2);
+        for (int i = 0; i < mine.Count; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), H - ch - U(10), cw, ch), mine[i]));
 
         player = new Rectangle(U(10), H - U(104), U(280), U(94));
         int ms = U(150);
@@ -138,12 +139,12 @@ sealed class Hud
     void TextC(string s, float cx, float y, Color c, int scale = 2) => Text(s, cx - TW(s, scale) / 2f, y, c, scale);
     void TextR(string s, float rx, float y, Color c, int scale = 2) => Text(s, rx - TW(s, scale), y, c, scale);
 
-    static Color MoraleColor(float m) => m < 30 ? Bad : m < 50 ? Warn : Ok;
+    static Color MoraleColor(float m) => m < Battle.RoutAt ? Bad : m < Battle.RallyAt ? Warn : Ok;
 
     static (string Text, Color Col) StateOf(Squad s, int active, int routing, int morale) =>
         active == 0 ? ("LOST", Dim)
         : routing * 2 > active ? ("ROUTING", Bad)
-        : morale < 30 ? ("WAVERING", Warn)
+        : morale < Battle.RallyAt ? ("WAVERING", Warn)
         : s.Pressure > 1.5f ? ("FLANKED", Orange)
         : ("STEADY", Ok);
 
@@ -315,10 +316,11 @@ sealed class Hud
             if (active == 0) Rect(r, Color.Black * 0.4f);
 
             int idx = cards.FindIndex(c => c.S == s) + 1;
-            Rect(new Rectangle(r.X + U(3), r.Y + U(3), U(13), U(13)), sel ? Gold : Color.White * 0.2f);
-            Text($"{idx}", r.X + U(6), r.Y + U(6), sel ? Color.Black : Color.White, 1);
+            int bw = idx >= 10 ? U(18) : U(13);
+            Rect(new Rectangle(r.X + U(3), r.Y + U(3), bw, U(13)), sel ? Gold : Color.White * 0.2f);
+            Text($"{idx}", r.X + U(5), r.Y + U(6), sel ? Color.Black : Color.White, 1);
             var type = s.Units.FirstOrDefault()?.Type ?? UnitType.Shieldman;
-            Text(Style.Numerals[Math.Clamp(type.Tier, 0, 5)], r.X + U(4), r.Y + U(20), Gold, 1); // tier
+            Text(Style.Numerals[Math.Clamp(type.Tier, 0, 7)], r.X + U(4), r.Y + U(20), Gold, 1); // tier
             string tag = s.Order switch { Order.Follow => "FLW", Order.Charge => s.Target != null ? "ATK" : "CHG", _ => "HLD" };
             TextR(tag, r.Right - U(4), r.Y + U(5), s.Order == Order.Charge ? Foe : Dim, 1);
             if (s.Formation != Formation.Line)
@@ -526,7 +528,7 @@ sealed class Hud
         var lines = new List<(string, Color)>
         {
             ((s.Company?.Name is { Length: > 0 } n ? n + ": " : "") + t.Name.ToUpperInvariant(), s.Team == 0 ? Friendly : Foe),
-            ($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 5)]} {t.Class.ToString().ToUpperInvariant()}   {s.Alive}/{s.StartCount} MEN", Color.White),
+            ($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]} {t.Class.ToString().ToUpperInvariant()}   {s.Alive}/{s.StartCount} MEN", Color.White),
             ($"{StateOf(s)}   {FormationName(s.Formation)}", Dim),
             ($"MORALE {morale}   STAMINA {stamina}" + (t.Ammo > 0 ? $"   ARROWS {act.Sum(u => u.Ammo)}" : ""), morale < 30 ? Bad : Dim),
             ($"ARMOUR {t.Armor:0}  DAMAGE {t.Damage:0}" + (t.Range > 0 ? $"  RANGE {t.Range:0} M" : ""), Dim),
@@ -627,7 +629,7 @@ sealed class Hud
             ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.SelectAll,
                     Act.CommandView, Act.Pause, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
-                .Prepend(("SELECT SQUAD", "1-9")).ToArray()),
+                .Prepend(("SELECT SQUAD", "1-0")).ToArray()),
         };
         int cw = (r.Width - U(40)) / 3;
         for (int i = 0; i < cols.Length; i++)

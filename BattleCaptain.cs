@@ -128,16 +128,16 @@ public sealed partial class Battle
             .OrderBy(s => s.Units.First().Type.Armor + (s.Cavalry ? 3 : 0)).ThenBy(s => Vector2.Distance(s.Centroid(), at)).FirstOrDefault();
     }
 
-    /// A beaten AI side sounds the retreat instead of dying to the last man.
+    /// A beaten side sounds the retreat instead of dying to the last man (either side, so it is not an escape only the AI has).
     bool SoundRetreat(int team)
     {
         if (Time < 45 || retreated[team]) return false;
         float Str(int t) => Units.Where(u => u.Team == t && u.Active && !u.Routing).Sum(u => u.Hp + 5 * u.Type.Armor);
         float mine = Str(team), theirs = Str(1 - team);
-        if (mine > theirs * 0.2f) return false;
+        if (mine > theirs * 0.18f) return false;
         retreated[team] = true;
         foreach (var u in Units) if (u.Team == team && u.Active && !u.IsLeader) u.Routing = true;
-        Log(team == 1 ? "The enemy sounds the retreat!" : "Your allies sound the retreat!");
+        Log(team == 1 ? "The enemy sounds the retreat!" : "Your men sound the retreat!");
         Sound(Cue.Horn, centroid[team]);
         return true;
     }

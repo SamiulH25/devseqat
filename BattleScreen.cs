@@ -451,8 +451,8 @@ sealed class BattleScreen
     void OrderKeys()
     {
         var mine = battle.Commanded.ToList();
-        for (int i = 0; i < mine.Count && i < 9; i++)
-            if (Pressed(Keys.D1 + i) && !selected.Remove(mine[i])) selected.Add(mine[i]);
+        for (int i = 0; i < mine.Count && i < 10; i++)
+            if (Pressed(i == 9 ? Keys.D0 : Keys.D1 + i) && !selected.Remove(mine[i])) selected.Add(mine[i]);
         if (ctl.Pressed(Act.SelectAll)) selected.Clear();
         foreach (var (cmd, (_, act)) in Hud.Orders)
             if (ctl.Pressed(act)) Command(cmd);
@@ -591,7 +591,7 @@ sealed class BattleScreen
             if (ms.Y < edge) pan += f; else if (ms.Y > vp.Height - edge) pan -= f;
         }
         camFocus += pan * zoom * 0.9f * dt;
-        if (camFocus.Length() > Terrain.Half - 20) camFocus = Vector2.Normalize(camFocus) * (Terrain.Half - 20);
+        if (camFocus.Length() > battle.Terrain.Half - 20) camFocus = Vector2.Normalize(camFocus) * (battle.Terrain.Half - 20);
         camYaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt;
         if (ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
         {

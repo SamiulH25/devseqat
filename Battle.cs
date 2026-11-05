@@ -23,6 +23,8 @@ public sealed class Projectile
 public sealed partial class Battle
 {
     public const float MapRadius = 95, Gravity = 9.8f, ArrowSpeed = 28, RallyRadius = 15;
+    /// Morale at which a company breaks (Stubborn officers and men behind an unbroken wall hold to a little less).
+    public const float RoutAt = 12, RallyAt = 32;
     public readonly BattleOptions Options;
     /// Sound cues from the last Update (the screen plays them; headless runs ignore them).
     public readonly List<(Cue Cue, Vector2 Pos)> Sounds = new();
@@ -241,10 +243,11 @@ public sealed partial class Battle
     /// Nearest active, non-routing enemy; restricted to squad `only` when given.
     (Unit? unit, float dist) Nearest(Unit u, Squad? only = null) => NearestFast(u, only);
 
-    /// Spears (and shield walls standing tight) set themselves against horses when holding still.
+    /// Spears set their points whenever they are standing (whatever the order); other foot need to be holding tight.
     static bool CanBrace(Unit b) =>
-        !b.Mounted && b.Squad is { Order: Order.Hold } s && !b.Routing
-        && (b.Type.Class == UnitClass.Skirmisher || (b.Type.Class == UnitClass.Infantry && !s.Loose) || s.Formation is Formation.ShieldWall or Formation.Square);
+        !b.Mounted && !b.Routing && b.Squad is { } s && s.Formation != Formation.Loose
+        && (b.Type.Class == UnitClass.Skirmisher || s.Formation is Formation.ShieldWall or Formation.Square
+            || (b.Type.Class == UnitClass.Infantry && s.Order == Order.Hold));
 
     bool Braced(Unit b) => CanBrace(b) && b.Action is UnitAction.None or UnitAction.Block && b.Vel.LengthSquared() < 1 && Terrain.WaterDepth(b.Pos) < 0.5f;
 
@@ -306,9 +309,9 @@ public sealed partial class Battle
             return;
         }
 
-        float reach = enemy == null ? 0 : u.Type.Reach + (enemy.Mounted ? 0.6f : 0);
+        float reach = enemy == null ? 0 : u.Type.Reach + (enemy.Mounted ? 0.9f : 0);
         // Brace for the charge: hold the slot and present the point instead of stepping out to meet it.
-        if (enemy is { Mounted: true } && CanBrace(u) && d < 14 && toSlot < 3)
+        if (enemy is { Mounted: true } && CanBrace(u) && d < 16 && toSlot < 6)
         {
             u.Face(enemy.Pos - u.Pos);
             if (d <= reach && u.Cooldown <= 0 && enemy.Speed < 4) StartSwing(u, enemy);
@@ -342,7 +345,7 @@ public sealed partial class Battle
 
         // Riders strike at whatever comes into reach as they pass (not with a couched lance).
         if (enemy != null && !u.Couched && u.Cooldown <= 0
-            && d <= u.Type.Reach + (enemy.Mounted ? 0.6f : 0.2f) + MathF.Abs(u.Speed) * 0.12f
+            && d <= MathF.Min(u.Type.Reach, MountedMeleeReach) + (enemy.Mounted ? 0.5f : 0.2f) + MathF.Abs(u.Speed) * 0.08f
             && Vector2.Dot((enemy.Pos - u.Pos) / MathF.Max(d, 0.01f), hd) > -0.3f)
             StartSwing(u, enemy);
 
@@ -402,8 +405,8 @@ public sealed partial class Battle
             {
                 // Bogged down: stand and hack, then break off.
                 u.CavTimer -= dt;
-                u.Wish = td > u.Type.Reach ? (t.Pos - u.Pos) / td * h.Trot * 0.6f : Vector2.Zero;
-                if (u.CavTimer <= 0) { u.Cav = CavState.Withdraw; u.CavTimer = 3.5f; }
+                u.Wish = td > MountedMeleeReach ? (t.Pos - u.Pos) / td * h.Trot * 0.6f : Vector2.Zero;
+                if (u.CavTimer <= 0) { u.Cav = CavState.Withdraw; u.CavTimer = 4f; }
                 return;
             }
             default:
@@ -417,11 +420,11 @@ public sealed partial class Battle
                 if (u.Contact && td > 4 && Vector2.Dot(t.Pos - u.Pos, hd) < 0)
                 {
                     u.Cav = CavState.Withdraw; // rode through: wheel away
-                    u.CavTimer = 3f;
+                    u.CavTimer = 4f;
                     u.Contact = false;
                 }
                 u.Bogged = u.Speed < 2.5f && td < 4 ? u.Bogged + dt : 0;
-                if (u.Bogged > 1.2f) { u.Cav = CavState.Melee; u.CavTimer = 4f; u.Bogged = 0; u.Couched = false; }
+                if (u.Bogged > 1.2f) { u.Cav = CavState.Melee; u.CavTimer = 5f; u.Bogged = 0; u.Couched = false; }
                 return;
             }
         }
@@ -567,7 +570,10 @@ public sealed partial class Battle
         RallyCooldown = Options.RallyCooldown;
         foreach (var u in Units)
             if (u.Active && u.Team == p.Team && !u.IsPlayer && Vector2.DistanceSquared(u.Pos, p.Pos) < RallyRadius * RallyRadius)
+            {
                 u.Morale = MathF.Min(100, u.Morale + (u.Routing ? Options.RallyBonus + 20 : Options.RallyBonus));
+                if (u.Routing) u.Routs = Math.Min(u.Routs, 1); // a general's horn gives even a broken company one more chance
+            }
         Log("Rally! Hold the line!");
         Sound(Cue.Horn, p.Pos);
     }
@@ -593,17 +599,21 @@ public sealed partial class Battle
         }
     }
 
+    /// A rider's sword arm reaches about as far as a man's on foot: a troop's Reach is its lance or pike, not its blade.
+    internal const float MountedMeleeReach = 1.9f;
+
     void Strike(Unit a)
     {
         float dmg = a.Type.Damage * a.Power;
         if (!a.IsPlayer)
         {
             if (a.Target is not { Active: true } t) return;
-            float extra = t.Mounted ? 0.6f : 0;
+            float extra = t.Mounted ? 0.5f : 0;
             // A rider's blow lands on whatever is beside the horse; a footman needs the target in front.
+            float aiReach = a.Mounted ? MathF.Min(a.Type.Reach, MountedMeleeReach) : a.Type.Reach;
             bool lands = a.Mounted
-                ? Vector2.Distance(a.Pos, t.Pos) <= a.Type.Reach + 1.2f + extra
-                : InArc(a, t, a.Type.Reach + 0.4f + extra, 0.5f);
+                ? Vector2.Distance(a.Pos, t.Pos) <= aiReach + 0.35f + extra
+                : InArc(a, t, aiReach + 0.4f + extra, 0.5f);
             if (lands) Hit(a, t, dmg, false);
             return;
         }
@@ -614,7 +624,7 @@ public sealed partial class Battle
             AttackDir.Overhead => (a.Type.Reach + 0.3f, 0.6f, 1),
             _ => (a.Type.Reach + 0.3f, 0.2f, 3),
         };
-        if (a.Mounted) reach += 0.4f;
+        if (a.Mounted) reach += 0.4f; // the player rides high in the saddle and can swing further
         int hits = 0;
         foreach (var t in Units.Where(t => t.Team != a.Team && t.Active).OrderBy(t => Vector2.DistanceSquared(t.Pos, a.Pos)))
             if (InArc(a, t, reach + (t.Mounted ? 0.6f : 0), minDot) && hits++ < cleave) Hit(a, t, dmg, false);
@@ -635,7 +645,7 @@ public sealed partial class Battle
         if (l < 0.01f) return 0;
         var rel = a.Vel - t.Vel;
         float eff = 0.4f * rel.Length() + 0.6f * Vector2.Dot(rel, n / l);
-        return MathF.Max(0, eff - 2) * 0.06f;
+        return MathF.Max(0, eff - 2) * 0.05f;
     }
 
     enum Side { Front, Flank, Rear }
@@ -653,8 +663,8 @@ public sealed partial class Battle
     {
         if (a.Team == 1) dmg *= Options.EnemyDamage;
         if (ranged && Wall != null && SiegeWall.Inside(t.Pos) && !SiegeWall.Inside(a.Pos) && Terrain.Height(t.Pos) > Terrain.Height(a.Pos) + 2) dmg *= 0.6f; // merlons
-        // Arrows and spears often take the horse instead of the rider.
-        if (t.Mounted && rng.NextSingle() < (ranged ? 0.45f : a.Type.Class == UnitClass.Skirmisher ? 0.5f : 0.15f))
+        // Arrows and spears often take the horse instead of the rider (a footman's blade rarely does).
+        if (t.Mounted && rng.NextSingle() < (ranged ? 0.55f : a.Type.Class == UnitClass.Skirmisher ? 0.55f : 0.18f))
         {
             HitHorse(t, dmg * a.Type.VsMounted, a);
             return;
@@ -744,7 +754,7 @@ public sealed partial class Battle
         float real = MathF.Max(dmg * 0.25f, dmg - t.Type.Armor * (1 - pierce)); // bolts punch through part of the armour
         t.Hp -= real;
         t.HitFlash = 0.15f;
-        t.Morale -= real * 0.25f + extraShock;
+        t.Morale -= real * 0.16f + extraShock * 0.7f;
         if (t.Action == UnitAction.Windup || t.Charging) Stagger(t, 0.3f); // hits interrupt swings
         if (t.Hp <= 0) Kill(t, a);
         return real;
@@ -791,13 +801,13 @@ public sealed partial class Battle
             t.Pos -= new Vector2(-t.HeadingDir.Y, t.HeadingDir.X) * 1.0f; // the rider falls off to the side
         }
         if (killer.IsPlayer) PlayerKills++;
-        if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 4)]++;
+        if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 7)]++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;
         foreach (var u in t.IsLeader ? Units.ToArray() : Near(t.Pos, 10, nearKill).ToArray()) // a leader's fall is felt across the field
         {
             if (!u.Active) continue;
             float d = Vector2.Distance(u.Pos, t.Pos);
-            if (u.Team == t.Team) { if (t.IsLeader) u.Morale -= 25; else if (d < 10) u.Morale -= 5; }
+            if (u.Team == t.Team) { if (t.IsLeader) u.Morale -= 16; else if (d < 8) u.Morale -= 3; }
             else if (d < 10) u.Morale += killer.IsPlayer ? 6 : 2; // heroics inspire more
         }
         if (t.IsPlayer) Log("You have fallen! Your troops waver.");
@@ -906,11 +916,13 @@ public sealed partial class Battle
         if (Braced(f) && Vector2.Dot(-n, f.Dir) > 0.4f)
         {
             r.Speed *= 0.35f; // the horse balks at the wall
-            HitHorse(r, closing * 2, f);
+            HitHorse(r, closing * 2.6f, f);
             return;
         }
-        r.Speed *= f.Type.Class == UnitClass.Infantry && f.Squad is { Loose: false } ? 0.7f : 0.85f;
-        float real = Damage(r, f, closing * 3.2f * (r.Squad?.Formation == Formation.Wedge ? 1.3f : 1), 6);
+        r.Speed *= f.Type.Class == UnitClass.Infantry && f.Squad is { Loose: false } ? 0.55f : 0.75f;
+        // A spearman shoved by a horse still gets his point into it.
+        if (f.Type.Class == UnitClass.Skirmisher && f.Type.VsMounted > 1) HitHorse(r, closing * 1.6f * f.Type.VsMounted, f);
+        float real = Damage(r, f, closing * 2.6f * (r.Squad?.Formation == Formation.Wedge ? 1.3f : 1), 5);
         if (f.Active)
         {
             Stagger(f, 1.1f); // knocked flat
@@ -940,8 +952,8 @@ public sealed partial class Battle
                 b.Action = UnitAction.Recover; // shows the thrust
                 b.Swing = AttackDir.Thrust;
                 b.ActionTimer = b.Type.Recover;
-                HitHorse(u, closing * (b.Type.Class == UnitClass.Skirmisher ? 7 : 3.5f), b);
-                if (u.Mounted) { u.Speed *= 0.3f; Stagger(u, 0.5f); }
+                HitHorse(u, closing * (b.Type.Class == UnitClass.Skirmisher ? 8 : 4.5f), b);
+                if (u.Mounted) { u.Speed *= 0.25f; Stagger(u, 0.6f); }
                 break;
             }
         }
@@ -963,9 +975,9 @@ public sealed partial class Battle
                 float closing = Vector2.Dot(u.Vel - t.Vel, hd);
                 if (closing < 4) continue;
                 u.Swing = AttackDir.Thrust;
-                Hit(u, t, 14 + closing * 6, false, lance: true);
+                Hit(u, t, 10 + closing * 4.2f, false, lance: true);
                 u.Couched = false;
-                u.Cooldown = 1.2f;
+                u.Cooldown = 1.8f;
                 u.Contact = true;
                 break;
             }
@@ -992,13 +1004,30 @@ public sealed partial class Battle
         {
             if (!u.Active || u.IsLeader) continue; // leaders never break
             var lead = u.Team == 0 ? Player : EnemyCaptain;
+            // The enemy captain stands just behind his line, so his aura covers it all battle. Yours only reaches
+            // men around your body, and not at all from command view: a side whose general is alive but looking
+            // at a map would otherwise be permanently out-inspired.
             bool inspired = lead.Active && !(lead.IsPlayer && Commanding)
                 && Vector2.DistanceSquared(lead.Pos, u.Pos) < Options.AuraRadius * Options.AuraRadius;
+            bool led = !lead.Dead; // a living general heartens his whole army, wherever he stands
             float m = 0;
-            if (inspired) m += u.Routing ? 8 : 3;
-            if (u.Squad!.Alive < u.Squad.StartCount * 0.4f) m -= 1.5f;
-            if (u.EnemyDist > 12 && u.Morale < 60) m += 1;
-            m -= MathF.Min(4, u.Squad.Pressure * 0.8f); // attacked in the flank or rear
+            if (inspired) m += u.Routing ? 10 : 4;
+            else if (led) m += u.Routing ? 3 : 1.5f; // a living general heartens the whole army, wherever he stands
+            if (u.Routing)
+            {
+                // A broken man is running, not watching his company die: once he is clear of the enemy his nerve
+                // returns, so a rout can end short of the map's edge. A man who breaks twice has had enough.
+                float foe = Vector2.Distance(u.Pos, centroid[1 - u.Team]);
+                m += u.Routs > 1 ? -2f : foe > 26 ? 2f : -0.8f;
+            }
+            else
+            {
+                if (u.Squad!.Alive < u.Squad.StartCount * 0.4f) m -= 1.5f;
+                if (u.EnemyDist > 12 && u.Morale < 60) m += 1.5f;
+                // A company that still has most of its men steadies itself.
+                if (u.Morale < 45 && u.Squad.Alive > u.Squad.StartCount * 0.6f) m += 1.5f;
+            }
+            m -= MathF.Min(3, u.Squad!.Pressure * 0.6f); // attacked in the flank or rear
             if (lost[u.Team] > 0.5f) m -= 0.5f;          // the army is losing
             // Neighbours running away, and horsemen thundering at you, are frightening.
             int routing = 0;
@@ -1007,18 +1036,22 @@ public sealed partial class Battle
             {
                 if (!o.Active || o == u) continue;
                 float d2 = Vector2.DistanceSquared(o.Pos, u.Pos);
-                if (o.Team == u.Team) { if (o.Routing && d2 < 64) routing++; }
-                else if (!u.Mounted && o.Mounted && o.Speed > 7 && d2 < 100 && !Braced(u)
-                    && Vector2.Dot(o.HeadingDir, Vector2.Normalize(u.Pos - o.Pos)) > 0.8f) charged = true;
+                if (o.Team == u.Team) { if (o.Routing && d2 < 49) routing++; }
+                else if (!u.Mounted && o.Mounted && o.Speed > 7 && d2 < 64 && !Braced(u)
+                    && Vector2.Dot(o.HeadingDir, Vector2.Normalize(u.Pos - o.Pos)) > 0.85f) charged = true;
             }
-            m -= MathF.Min(3, routing * 0.5f);
-            if (charged) m -= 4;
+            m -= MathF.Min(2, routing * 0.3f);
+            if (charged) m -= 2.5f;
             u.Morale = Math.Clamp(u.Morale + m * dt, 0, 100);
             // Iron Will: near you, a company that still has a third of its men will not break.
             if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);
-            float routAt = u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? 10 : 15; // officer trait; walls
-            if (!u.Routing && u.Morale < routAt) { u.Routing = true; u.Action = UnitAction.None; u.Couched = false; }
-            else if (u.Routing && u.Morale > 45) u.Routing = false;
+            float routAt = u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? RoutAt - 4 : RoutAt; // officer trait; walls
+            if (!u.Routing && u.Morale < routAt) { u.Routing = true; u.Routs++; u.Action = UnitAction.None; u.Couched = false; }
+            else if (u.Routing && u.Morale > RallyAt && u.Routs <= 1)
+            {
+                u.Routing = false;
+                u.Morale = MathF.Max(u.Morale, Battle.RallyAt + 2); // they come back shaken but steady
+            }
         }
     }
 
@@ -1138,7 +1171,7 @@ public sealed partial class Battle
                 Kills: s.KillsByTier.Sum(), KillsByTier: (int[])s.KillsByTier.Clone(), Deployed: true));
         for (int team = 0; team < 2; team++)
             foreach (var (c, _) in reserves[team])
-                list.Add(new CompanyResult(team, c.Id, c.Count, c.Count, 0, 0, 0, new int[5], Deployed: false));
+                list.Add(new CompanyResult(team, c.Id, c.Count, c.Count, 0, 0, 0, new int[8], Deployed: false));
         var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
         var foeLeader = EnemyCaptain.Dead ? LeaderFate.Slain : LeaderFate.Unhurt;
         int horses = LooseHorses.Count(h => h.Team == 1);

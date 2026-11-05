@@ -1,6 +1,6 @@
 # Ironfield roadmap: what comes next
 
-Status: **built**. Every phase below (A-E) is in the game; "As built" at the end lists where the build differs from the plan.
+Status: phases A-E are **built**; phase F (the campaign overhaul, [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md)) is **planned**; "As built" at the end lists where the build differs from the plan.
 Written after the campaign landed (`docs/CAMPAIGN.md`, milestones M0-M5).
 Sizes are relative: **S** about a day of focused work, **M** a few days, **L** one to two weeks. Each item has a "done when" so it can be checked.
 
@@ -85,6 +85,25 @@ Small "As built" gaps to fold in alongside: renaming companies (text input, S), 
 | E4 | Map foliage cost: instancing or merged chunks with distance culling | S | The map draws at 60 fps on integrated graphics |
 | E5 | Determinism guard: battle seed and replay recorder (inputs plus seed reproduce a battle) | M | Any reported battle bug can be replayed exactly |
 
+## Phase F: campaign overhaul (planned)
+
+The campaign's play and progression layer is rebuilt; the world map itself is untouched. Full spec:
+[`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md). Saves break at F1 (version 4, no migration). Build in this order; each step
+ends playable and committed, with its tests in the self-test.
+
+| # | Feature | Size | Done when |
+|---|---|---|---|
+| F0 | **Groundwork:** commit the pending work, fix the stale four-tier text in DESIGN.md and CAMPAIGN.md, extend `--balance` with per-stage pacing telemetry | S | `--balance` writes a pacing CSV; the docs describe tiers I-VII |
+| F1 | **Troop stacks and per-man promotion:** companies of one role holding stacks of many troop types, an XP pool per stack, promotion one man at a time, mixed squads in battle, company identity (origin, banner, honours, ledger), party screen and promotion picker, save v4 | L | Five Levies of one company can go to Shieldmen and two to Bowmen, and the mixed company fights as one squad with casualties per stack |
+| F2 | **Cultures and regional recruitment:** `culture` on every troop, `Data/factions.json`, the southern tree split into Azure and Crimson, villages raise their culture, elite lines gated by barracks | M | Each realm's army is recognisable by its troops, and holding foreign villages gives foreign recruits |
+| F3 | **Characters and relations:** `Character` for lords and companions, traits that drive the AI, opinion with memories, returning lords and heirs, companions with roles, a Characters screen | M | A lord you beat and released treats you differently from one you beat and ransomed |
+| F4 | **Captain skill tree:** eight skills that rise by use, a perk choice every 25 points, replacing the `Perk` enum | M | Two captains played differently for 20 battles end with different skills and perks |
+| F5 | **Career ranks and the council:** Free Company to King, career beats, the realm council (fiefs, objectives, war, marshal), founding a realm by rebellion or claim, win and loss | L | A player can swear fealty, get a fief, become marshal or rebel, found a realm, and win |
+| F6 | **Fiefs:** prosperity, unrest and revolts, buildings, vassals with standing orders, defection | M | A fief's choices change its income and recruits, and a neglected one revolts |
+| F7 | **Strategic war and diplomacy:** realm objectives, marshal-led hosts with summons, war exhaustion, peace terms (land, gold, captives, tributary), alliances | L | A 240-day AI run ends wars with terms, and settlements change hands through planned campaigns |
+| F8 | **Events and quests:** data-driven events with choices, lord quests that reward opinion, brigand kings and pretenders | M | A long campaign shows events that depend on what happened in it |
+| F9 | **Pacing retune:** `upgradeXp` for T1-T7, renown and rank thresholds, against the F0 telemetry | S | Career stages land within the spec's target lengths in `--balance` runs |
+
 ---
 
 ## Recommended order
@@ -161,7 +180,8 @@ All of A-E is in. Where the build differs from the table above:
 **Phase E**
 - E1: a 4 m grid (`BattleGrid.cs`) serves separation, targeting, morale, arrows and death shock. The cap is now 400 men: 351 fielded run at
   about 310 ticks a second headless.
-- E2: saves are version 2 (per-pair wars); `CampaignState.Migrate` upgrades version 1.
+- E2: saves are version 3 (version 2 added per-pair wars, version 3 the campaign map's extent);
+  `CampaignState.Migrate` upgrades older saves and keeps them on the map they were played on.
 - E3: a GPU matrix cannot be run from CI. Instead `dotnet run -- --gpu-report` draws a battle at each quality and writes `gpu-report.txt`
   (driver, shader status, frames per second); the README lists what has been verified.
 - E4: foliage is built in 48 m tiles with bounding boxes, and each pass (camera and sun) draws only the tiles in its frustum.

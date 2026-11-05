@@ -239,8 +239,8 @@ public sealed partial class Campaign
             bool done = c.Kind switch
             {
                 "hunt" or "clear" => S.LastBattleFoe == c.Target || (c.Kind == "clear" && PartyById(c.Target) == null && S.LastBattleFoe == c.Target),
-                "defend" => (c.Progress += Vector2.Distance(Player.Pos, S.Settlements[c.Target].Pos) < 8 ? 1 : 0) >= 24,
-                "scout" => Vector2.Distance(Player.Pos, S.Settlements[c.Target].Pos) < 15,
+                "defend" => (c.Progress += Vector2.Distance(Player.Pos, S.Settlements[c.Target].Pos) < 8 * Map.Spread ? 1 : 0) >= 24,
+                "scout" => Vector2.Distance(Player.Pos, S.Settlements[c.Target].Pos) < 15 * Map.Spread,
                 "take" => S.Settlements[c.Target].Faction == c.Faction,
                 _ => false,
             };

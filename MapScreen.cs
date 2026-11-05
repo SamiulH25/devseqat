@@ -39,8 +39,11 @@ sealed class MapScreen
     string renameText = "";
     string tab = "RECRUIT", note = "";
     int speed = 1, lastWeek = -1;
+    /// The town tabs a NextStep hint may open on arrival.
+    static readonly HashSet<string> tabFor = new() { "TRAIN", "RECRUIT", "MARKET", "FOOD", "REST", "CONTRACT" };
     bool follow = true, pendingClick;
-    float yaw = MathHelper.PiOver2, pitch = 0.95f, zoom = 110, time;
+    /// The camera starts pulled back far enough to show a province and its neighbours on the (much larger) world map.
+    float yaw = MathHelper.PiOver2, pitch = 0.95f, zoom = 170, time;
     Vector2 focus;
     Matrix view, proj;
     Vector3 eye;
@@ -98,6 +101,8 @@ sealed class MapScreen
         if (C.Player.Companies.Any(Rules.UpgradeReady))
             Tips.Show("upgrade", "A company has the XP to upgrade (gold bar, UPGRADE READY).\nOpen the party screen (P) or a town's training yard, and choose its next troops.");
         if (Rules.PerkPoints(C.Captain) > 0) Tips.Show("perk", "Your renown has earned a perk. Take it in the party screen (P).");
+        if (C.Captain.Renown >= 80) Tips.Show("renown", "Renown is your standing: each victory adds to it. It raises your men cap\nand earns perks. The bar under the captain panel shows the next thing it buys.");
+        if (C.Player.Companies.Count >= Rules.CompanySlots(C.Captain)) Tips.Show("slots", "You have reached the maximum of 10 companies. Merge or disband a company to form a new one.");
         if (C.Day >= 7) Tips.Show("upkeep", "Upkeep is paid each week (the bar at the top). Your contract pays most of it;\nloot, ransoms and bounties pay the rest. Unpaid men desert.");
 
         if (panel == PanelKind.None)
@@ -135,6 +140,9 @@ sealed class MapScreen
                 else
                 {
                     at = s; tab = s.Kind == SettlementKind.Village ? "RECRUIT" : s.Kind == SettlementKind.Castle ? "REST" : "TRAIN"; panel = PanelKind.Settlement; note = "";
+                    // Open the tab the campaign says you need, not always the first one: arrival should feel like an answer.
+                    var (_, where) = C.NextStep();
+                    if (s.Kind == SettlementKind.Town && tabFor.Contains(where)) tab = where;
                     Tips.Show("settlement", "Villages give recruits (levies). Towns train companies that have the XP, sell horses and gear,\nhire out mercenary companies, and pay contracts. Resting in a town heals the wounded faster.");
                 }
             }
@@ -163,14 +171,15 @@ sealed class MapScreen
             if (ms.Y < edge) pan += f; else if (ms.Y > gd.Viewport.Height - edge) pan -= f;
         }
         if (pan != Vector2.Zero) { follow = false; focus += pan * zoom * 0.9f * dt; }
-        focus = Vector2.Clamp(focus, new Vector2(-WorldMap.Extent), new Vector2(WorldMap.Extent));
+        focus = Vector2.Clamp(focus, new Vector2(-C.Map.ExtentUsed), new Vector2(C.Map.ExtentUsed));
         yaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt;
         if (ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
         {
             yaw += (ms.X - pms.X) * 0.006f;
             pitch = Math.Clamp(pitch + (ms.Y - pms.Y) * 0.006f, 0.35f, 1.45f);
         }
-        zoom = Math.Clamp(zoom - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.08f, 25, 260);
+        // The map is much bigger than a battlefield: the camera pulls back far enough to see a province and its neighbours.
+        zoom = Math.Clamp(zoom - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.08f, 25, 620);
     }
 
     /// Typing a company's new name: Enter keeps it, Escape drops it.
@@ -240,9 +249,15 @@ sealed class MapScreen
         var f3 = new Vector3(focus.X, terrain.Height(focus), focus.Y);
         eye = f3 - look * zoom;
         eye.Y = MathF.Max(eye.Y, terrain.Height(new Vector2(eye.X, eye.Z)) + 2);
-        proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45), gd.Viewport.AspectRatio, 0.5f, 1600);
+        // Pulled back for a big map, the camera must still see the ground under it: the far plane and fog follow the zoom.
+        proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45), gd.Viewport.AspectRatio, 0.5f, MathF.Max(1600, zoom * 3.2f));
         view = Matrix.CreateLookAt(eye, f3, Vector3.Up);
         UpdateBearers();
+        // Fog starts beyond the near ground in view, so a wide view is hazy at the horizon rather than cut off.
+        float fogStart = MathF.Max(200, zoom * 1.9f), fogEnd = MathF.Max(600, zoom * 5.2f);
+        world!.SetFog(fogStart, fogEnd);
+        spriteFx.FogStart = fogStart;
+        spriteFx.FogEnd = fogEnd;
 
         bool shaded = shading != null && quality != Quality.Low;
         if (shaded)
@@ -250,7 +265,7 @@ sealed class MapScreen
             var sh = shading!;
             bool shadows = quality == Quality.High;
             var fog = sh.Fog;
-            sh.Fog = new Vector2(260, 700);
+            sh.Fog = new Vector2(fogStart, fogEnd);
             if (shadows)
             {
                 sh.AimSun(f3, Math.Clamp(zoom * 2.4f, 80, 420));
@@ -429,10 +444,11 @@ sealed class MapScreen
         foreach (var s in C.S.Settlements)
         {
             if (Screen(G(s.Pos, s.Kind == SettlementKind.Village ? 6 : 11)) is not Vector2 sp) continue;
-            if (s.Kind == SettlementKind.Village && zoom > 170) continue;
+            // Pulled back over a bigger world, the small labels would collide: villages drop out first, then towns shrink.
+            if (s.Kind == SettlementKind.Village && zoom > 230) continue;
             var col = SideColor(s.Faction);
             string label = s.Name.ToUpperInvariant() + (s.Besieged ? " (BESIEGED)" : "") + (s.Owner == C.Player.Id ? " *" : "");
-            int scale = s.Kind == SettlementKind.Village ? 1 : 2;
+            int scale = s.Kind == SettlementKind.Village || zoom > 300 ? 1 : 2;
             int w = ui.TW(label, scale) + ui.U(10);
             var r = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(scale == 2 ? 18 : 13), w, ui.U(scale == 2 ? 18 : 13));
             ui.Rect(r, Color.Black * 0.45f);
@@ -522,34 +538,50 @@ sealed class MapScreen
     void CaptainPanel()
     {
         var cap = C.Captain;
-        var r = new Rectangle(ui.U(10), ui.H - ui.U(132), ui.U(300), ui.U(122));
+        var r = new Rectangle(ui.U(10), ui.H - ui.U(146), ui.U(300), ui.U(136));
         ui.Panel(r);
         int x = r.X + ui.U(10), y = r.Y + ui.U(8);
-        ui.Text("CAPTAIN", x, y, Style.Accent);
+        ui.Text("CAPTAIN  " + C.Stage, x, y, Style.Accent);
         ui.TextR($"RENOWN {cap.Renown:0}", r.Right - ui.U(10), y + ui.U(2), Style.Text, 1);
-        y += ui.U(22);
+        // Renown is the campaign's score, so show the ladder: how far to the next thing it buys.
+        var (unlock, at) = Rules.NextRenownUnlock(cap);
+        y += ui.U(18);
+        float from = RenownStep(cap, at);
+        ui.Text($"NEXT: {unlock}", x, y, Style.Dim, 1);
+        ui.TextR($"{cap.Renown:0} / {at:0}", r.Right - ui.U(10), y, Style.Dim, 1);
+        y += ui.U(10);
+        ui.Bar(new Rectangle(x, y, r.Width - ui.U(20), ui.U(4)), (cap.Renown - from) / MathF.Max(1, at - from), Style.Accent);
+        y += ui.U(12);
         float bal = C.S.LastWeekBalance;
         ui.Text($"{C.S.Gold:0} CROWNS", x, y, Style.Text);
         ui.TextR($"{(bal >= 0 ? "+" : "")}{bal:0} / WEEK", r.Right - ui.U(10), y + ui.U(2), bal >= 0 ? Style.Ok : Style.Bad, 1);
-        y += ui.U(20);
+        y += ui.U(18);
         string contract = cap.Contract >= 0 ? "SWORN TO THE " + Campaign.FactionNames[cap.Contract].ToUpperInvariant() : "FREE CAPTAIN (NO PAY)";
         ui.Text(contract, x, y, cap.Contract >= 0 ? SideColor(cap.Contract) : Style.Dim, 1);
-        y += ui.U(14);
-        ui.Text($"MEN {C.Player.Men}+{C.Player.Wounded}W / {Rules.MenLimit(cap)}   COMPANIES {C.Player.Companies.Count}/{Rules.CompanySlots(cap)}   HORSES {C.Player.Horses}", x, y, Style.Dim, 1);
-        y += ui.U(14);
-        ui.Text($"FOOD {C.Player.Food:0} DAYS" + (C.PrisonerCount > 0 ? $"   PRISONERS {C.PrisonerCount}" : "") + (C.Player.Captives.Count > 0 ? $"   LORDS HELD {C.Player.Captives.Count}" : "")
-            + (C.Fiefs.Any() ? $"   FIEFS {C.Fiefs.Count(f => f.Kind != SettlementKind.Village)}" : ""), x, y, C.Player.Food < 3 ? Style.Bad : Style.Dim, 1);
-        y += ui.U(14);
+        y += ui.U(12);
+        ui.Text($"MEN {C.Player.Men}+{C.Player.Wounded}W / {Rules.MenLimit(cap)}   COMPANIES {C.Player.Companies.Count}/{Rules.CompanySlots(cap)}", x, y, Style.Dim, 1);
+        y += ui.U(12);
+        ui.Text($"HORSES {C.Player.Horses}   FOOD {C.Player.Food:0} DAYS" + (C.PrisonerCount > 0 ? $"   PRISONERS {C.PrisonerCount}" : ""), x, y, C.Player.Food < 3 ? Style.Bad : Style.Dim, 1);
+        y += ui.U(12);
         if (C.S.Hours < cap.WoundedUntil) ui.Text($"WOUNDED: {(cap.WoundedUntil - C.S.Hours) / 24:0.0} DAYS", x, y, Style.Bad, 1);
         else if (C.Besieging is Settlement sg) ui.Text($"BESIEGING {sg.Name.ToUpperInvariant()} (B)", x, y, Style.Warn, 1);
-        else if (Rules.PerkPoints(cap) > 0) ui.Text("A NEW PERK IS READY (P)", x, y, Style.Accent, 1);
-        else if (C.S.UnpaidWeeks > 0) ui.Text("YOUR MEN ARE UNPAID", x, y, Style.Bad, 1);
+        else { var (text, _) = C.NextStep(); ui.Text(text, x, y, Style.Accent, 1); }
+    }
+
+    /// How much renown the last rung of the ladder covered, so the bar runs from there to the next unlock.
+    static float RenownStep(CaptainState cap, float next)
+    {
+        var b = Balance.Get();
+        float prevMen = (Rules.MenLimit(cap) - b.MenBase) * b.MenRenownDivisor;
+        float prevPerk = (int)(cap.Renown / b.PerkEvery) * b.PerkEvery;
+        float best = MathF.Max(0, MathF.Max(prevMen < next ? prevMen : 0, prevPerk < next ? prevPerk : 0));
+        return MathF.Min(cap.Renown, best);
     }
 
     void Cards()
     {
         var list = C.Player.Companies;
-        int cw = ui.U(96), ch = ui.U(108), gap = ui.U(6), total = list.Count * cw + Math.Max(0, list.Count - 1) * gap;
+        int cw = list.Count >= 10 ? ui.U(88) : ui.U(96), ch = ui.U(108), gap = list.Count >= 10 ? ui.U(4) : ui.U(6), total = list.Count * cw + Math.Max(0, list.Count - 1) * gap;
         int x0 = Math.Max(ui.U(320), (ui.W - total) / 2);
         for (int i = 0; i < list.Count; i++)
         {
@@ -566,7 +598,7 @@ sealed class MapScreen
         bool ready = Rules.UpgradeReady(c);
         ui.Panel(r, ready ? Style.Accent : Style.PanelEdge, ready ? 2 : 1);
         ui.Text($"{index}", r.X + ui.U(5), r.Y + ui.U(5), Style.Dim, 1);
-        ui.Text(Style.Numerals[Math.Clamp(c.Type.Tier, 0, 5)], r.X + ui.U(5), r.Y + ui.U(16), Style.Accent, 1);
+        ui.Text(Style.Numerals[Math.Clamp(c.Type.Tier, 0, 7)], r.X + ui.U(5), r.Y + ui.U(16), Style.Accent, 1);
         ui.Portrait(c.Type, new Rectangle(r.X + ui.U(20), r.Y + ui.U(4), r.Width - ui.U(40), ui.U(44)));
         string name = c.Name.ToUpperInvariant();
         ui.TextC(name.Length > 15 ? name[..15] : name, r.X + r.Width / 2f, r.Y + ui.U(50), Style.Text, 1);
@@ -861,49 +893,54 @@ sealed class MapScreen
 
     void PartyPanel()
     {
-        var r = Modal(980, 560, "YOUR COMPANY");
-        int x = r.X + ui.U(20), y = r.Y + ui.U(50);
         var list = C.Player.Companies;
+        int rh = list.Count > 8 ? 42 : 46, rstep = list.Count > 8 ? 45 : 50;
+        var r = Modal(980, list.Count > 8 ? 610 : 560, "YOUR COMPANY");
+        int x = r.X + ui.U(20), y = r.Y + ui.U(46);
         foreach (var c in list.ToList())
         {
-            var row = new Rectangle(x, y, ui.U(660), ui.U(46));
+            var row = new Rectangle(x, y, ui.U(660), ui.U(rh));
             ui.Rect(row, Color.White * 0.04f);
-            ui.Portrait(c.Type, new Rectangle(row.X + ui.U(4), row.Y + ui.U(2), ui.U(44), ui.U(42)));
+            ui.Portrait(c.Type, new Rectangle(row.X + ui.U(4), row.Y + ui.U(2), ui.U(44), ui.U(rh - 4)));
             var nameBox = new Rectangle(row.X + ui.U(52), row.Y + ui.U(3), ui.U(200), ui.U(12));
             if (renaming == c) { ui.Rect(nameBox, Style.Accent * 0.25f); ui.Text(renameText + (time % 1 < 0.5f ? "_" : ""), row.X + ui.U(54), row.Y + ui.U(5), Style.Accent, 1); }
             else ui.Text(c.Name.ToUpperInvariant(), row.X + ui.U(54), row.Y + ui.U(5), Style.Text, 1);
             if (renaming == null && ui.Clicked(nameBox)) { renaming = c; renameText = c.Name.ToUpperInvariant(); Ui.Typed.Clear(); }
             if (ui.Hover(nameBox) && renaming == null) note = "CLICK TO RENAME (ENTER KEEPS IT)";
-            ui.Text($"{c.Type.Name.ToUpperInvariant()} {Style.Numerals[c.Type.Tier]}", row.X + ui.U(54), row.Y + ui.U(17), Style.Accent, 1);
+            ui.Text($"{c.Type.Name.ToUpperInvariant()} {Style.Numerals[Math.Clamp(c.Type.Tier, 0, 7)]}", row.X + ui.U(54), row.Y + ui.U(17), Style.Accent, 1);
             if (c.Officer != "")
             {
-                var off = new Rectangle(row.X + ui.U(150), row.Y + ui.U(16), ui.U(104), ui.U(10));
+                var off = new Rectangle(row.X + ui.U(170), row.Y + ui.U(16), ui.U(84), ui.U(10));
                 ui.Text(c.Officer.ToUpperInvariant() + (c.Traits.Count > 0 ? $" ({c.Traits.Count})" : ""), off.X, off.Y + 1, Style.Dim, 1);
                 if (ui.Hover(off)) note = c.Traits.Count == 0 ? $"{c.Officer.ToUpperInvariant()}: NO TRAITS YET (WON BATTLES MAY GIVE THEM)"
                     : $"{c.Officer.ToUpperInvariant()}: " + string.Join(", ", c.Traits.Select(t => $"{t.ToUpperInvariant()} - {Campaign.TraitText[t]}"));
             }
-            ui.Text($"{c.Men}{(c.Wounded > 0 ? $"+{c.Wounded}W" : "")}/{Rules.Cap(c.Troop, Rules.RoleOf(c))}  {c.Battles} BATTLES {c.Kills} KILLS", row.X + ui.U(54), row.Y + ui.U(30), Style.Dim, 1);
+            ui.Text($"{c.Men}{(c.Wounded > 0 ? $"+{c.Wounded}W" : "")}/{Rules.Cap(c.Troop, Rules.RoleOf(c))}  {c.Battles} BATTLES {c.Kills} KILLS", row.X + ui.U(54), row.Y + ui.U(29), Style.Dim, 1);
             float need = c.Type.UpgradeXp;
             ui.Text("XP", row.X + ui.U(262), row.Y + ui.U(8), Style.Dim, 1);
             ui.Bar(new Rectangle(row.X + ui.U(282), row.Y + ui.U(9), ui.U(100), ui.U(5)), need > 0 ? c.Xp / need : 1, Rules.UpgradeReady(c) ? Style.Accent : Style.Friendly);
             ui.Text("COH", row.X + ui.U(256), row.Y + ui.U(24), Style.Dim, 1);
             ui.Bar(new Rectangle(row.X + ui.U(282), row.Y + ui.U(25), ui.U(100), ui.U(5)), c.Cohesion / 30f, Style.Ok);
-            int bx = row.X + ui.U(392), bw = ui.U(62), bh = ui.U(20);
-            if (ui.Button(new Rectangle(bx, row.Y + ui.U(3), bw, bh), "UP", list.IndexOf(c) > 0)) C.MoveUp(c);
-            if (ui.Button(new Rectangle(bx + bw + 4, row.Y + ui.U(3), bw, bh), "SPLIT", c.Men >= 2)) note = C.Split(c) ?? "";
+            int bx = row.X + ui.U(392), bw = ui.U(62), bh = ui.U(18);
+            if (ui.Button(new Rectangle(bx, row.Y + ui.U(2), bw, bh), "UP", list.IndexOf(c) > 0)) C.MoveUp(c);
+            if (ui.Button(new Rectangle(bx + bw + 4, row.Y + ui.U(2), bw, bh), "SPLIT", c.Men >= 2)) note = C.Split(c) ?? "";
             var mate = list.FirstOrDefault(o => Rules.CanMerge(c, o));
-            if (ui.Button(new Rectangle(bx + 2 * (bw + 4), row.Y + ui.U(3), bw, bh), "MERGE", mate != null)) C.Merge(c, mate!);
-            if (ui.Button(new Rectangle(bx, row.Y + ui.U(24), bw * 2 + 4, bh), "UPGRADE...", c.Type.UpgradesTo.Length > 0)) { upgrading = c; panel = PanelKind.Upgrade; note = ""; }
-            if (ui.Button(new Rectangle(bx + 2 * (bw + 4), row.Y + ui.U(24), bw, bh), "DISBAND", list.Count > 1)) C.Disband(c);
-            y += ui.U(50);
+            if (ui.Button(new Rectangle(bx + 2 * (bw + 4), row.Y + ui.U(2), bw, bh), "MERGE", mate != null)) C.Merge(c, mate!);
+            if (ui.Button(new Rectangle(bx, row.Y + ui.U(22), bw * 2 + 4, bh), "UPGRADE...", c.Type.UpgradesTo.Length > 0)) { upgrading = c; panel = PanelKind.Upgrade; note = ""; }
+            if (ui.Button(new Rectangle(bx + 2 * (bw + 4), row.Y + ui.U(22), bw, bh), "DISBAND", list.Count > 1)) C.Disband(c);
+            y += ui.U(rstep);
         }
         // The captain and perks.
         int px = r.X + ui.U(700), py = r.Y + ui.U(50);
         var cap = C.Captain;
-        ui.Text("THE CAPTAIN", px, py, Style.Accent);
-        ui.Text($"RENOWN {cap.Renown:0}   PERK POINTS {Rules.PerkPoints(cap)}", px, py + ui.U(22), Style.Text, 1);
-        ui.Text($"{Rules.CompanySlots(cap)} COMPANIES, {Rules.MenLimit(cap)} MEN AT MOST", px, py + ui.U(36), Style.Dim, 1);
-        py += ui.U(56);
+        ui.Text("THE CAPTAIN  " + C.Stage, px, py, Style.Accent);
+        ui.Text($"RENOWN {cap.Renown:0}   PERK POINTS {Rules.PerkPoints(cap)}", px, py + ui.U(20), Style.Text, 1);
+        ui.Text($"{Rules.CompanySlots(cap)} COMPANIES, {Rules.MenLimit(cap)} MEN AT MOST", px, py + ui.U(32), Style.Dim, 1);
+        // The renown ladder, the same line the map HUD shows: what the next rung buys and how close it is.
+        var (unlock, at) = Rules.NextRenownUnlock(cap);
+        ui.Bar(new Rectangle(px, py + ui.U(44), ui.U(260), ui.U(4)), (cap.Renown - RenownStep(cap, at)) / MathF.Max(1, at - RenownStep(cap, at)), Style.Accent);
+        ui.Text($"NEXT: {unlock} AT {at:0} RENOWN", px, py + ui.U(50), Style.Dim, 1);
+        py += ui.U(68);
         foreach (Perk perk in Enum.GetValues<Perk>())
         {
             bool has = cap.Perks.Contains(perk);
@@ -998,11 +1035,11 @@ sealed class MapScreen
     void UpgradePanel()
     {
         var c = upgrading!;
-        var r = Modal(860, 440, "UPGRADE " + c.Name.ToUpperInvariant());
+        var options = c.Type.UpgradesTo;
+        var r = Modal(Math.Max(860, options.Length * 190 + 60), 440, "UPGRADE " + c.Name.ToUpperInvariant());
         ui.TextC($"{c.Men + c.Wounded} {c.Type.Name.ToUpperInvariant()}, XP {c.Xp:0} / {c.Type.UpgradeXp}. THE WHOLE COMPANY CHANGES; XP STARTS AGAIN.",
             r.X + r.Width / 2f, r.Y + ui.U(44), Style.Dim, 1);
-        var options = c.Type.UpgradesTo;
-        int cw = ui.U(190), gap = ui.U(12), x = r.X + (r.Width - options.Length * cw - (options.Length - 1) * gap) / 2, y = r.Y + ui.U(66);
+        int cw = options.Length >= 5 ? ui.U(176) : ui.U(190), gap = ui.U(10), x = r.X + (r.Width - options.Length * cw - (options.Length - 1) * gap) / 2, y = r.Y + ui.U(66);
         foreach (var to in options)
         {
             var t = Troops.Get(to);
@@ -1010,8 +1047,8 @@ sealed class MapScreen
             bool ok = C.CanUpgrade(c, to, out int cost, out string reason);
             ui.Panel(card, ok ? Style.Accent : Style.PanelEdge, ok ? 2 : 1);
             ui.Portrait(t, new Rectangle(card.X + ui.U(40), card.Y + ui.U(8), cw - ui.U(80), ui.U(70)));
-            ui.TextC(t.Name.ToUpperInvariant(), card.X + cw / 2f, card.Y + ui.U(86), Style.Text);
-            ui.TextC($"TIER {Style.Numerals[t.Tier]}  {t.Class.ToString().ToUpperInvariant()}", card.X + cw / 2f, card.Y + ui.U(106), Style.Accent, 1);
+            ui.TextC(t.Name.ToUpperInvariant(), card.X + cw / 2f, card.Y + ui.U(86), Style.Text, t.Name.Length > 16 ? 1 : 2);
+            ui.TextC($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]}  {t.Class.ToString().ToUpperInvariant()}", card.X + cw / 2f, card.Y + ui.U(106), Style.Accent, 1);
             int sy = card.Y + ui.U(124);
             foreach (var (label, value) in new[] { ("HEALTH", $"{t.MaxHp:0}"), ("ARMOUR", $"{t.Armor:0}"), ("DAMAGE", $"{t.Damage:0}"), ("REACH", $"{t.Reach:0.0} M"),
                          t.Range > 0 ? ("RANGE", $"{t.Range:0} M") : ("SPEED", $"{t.Speed:0.0}"), ("HORSE", t.Mount?.Name.ToUpperInvariant() ?? "-") })
@@ -1054,7 +1091,14 @@ sealed class MapScreen
         if (rep.Won)
             ui.Text($"LOOT {rep.Loot:0}   RANSOMS {rep.Ransom:0}   BOUNTY {rep.Bounty:0}   RENOWN +{rep.Renown:0}   HORSES +{rep.Horses}", x, y, Style.Accent);
         else ui.Text("YOUR ARMY FALLS BACK. WOUNDED LEFT ON THE FIELD MAY BE TAKEN.", x, y, Style.Bad);
-        y += ui.U(22);
+        y += ui.U(20);
+        // Progression, spelled out: what this battle was worth and what it unlocked, so the loop is never a mystery.
+        var (unlock, at) = Rules.NextRenownUnlock(C.Captain);
+        ui.Text($"RENOWN {C.Captain.Renown:0} / {at:0} TO THE NEXT {unlock}", x, y, Style.Dim, 1);
+        ui.Bar(new Rectangle(x + ui.U(300), y + ui.U(4), ui.U(240), ui.U(4)), (C.Captain.Renown - RenownStep(C.Captain, at)) / MathF.Max(1, at - RenownStep(C.Captain, at)), Style.Accent);
+        int ready = rep.Companies.Count(c => c.UpgradeReady);
+        if (ready > 0) ui.Text($"({ready} COMPANY{(ready == 1 ? "" : "IES")} CAN BE TRAINED UP IN A TOWN)", x + ui.U(560), y, Style.Accent, 1);
+        y += ui.U(20);
         if (rep.Captain == LeaderFate.Wounded) ui.Text("YOU ARE WOUNDED: FOR A FEW DAYS YOU COMMAND FROM THE REAR.", x, y, Style.Warn, 1);
         if (rep.Captain == LeaderFate.Captured) ui.Text("YOU WERE TAKEN AND RANSOMED (30% OF YOUR GOLD).", x, y, Style.Bad, 1);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CONTINUE"))
@@ -1097,8 +1141,8 @@ sealed class MapScreen
             case "contract":
                 at = C.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == C.Captain.Contract);
                 tab = "CONTRACT"; panel = PanelKind.Settlement; break;
-            case "map": panel = PanelKind.None; zoom = 130; pitch = 0.95f; break;
-            case "close": panel = PanelKind.None; zoom = 45; pitch = 0.7f; break;
+            case "map": panel = PanelKind.None; zoom = 330; pitch = 0.95f; break;
+            case "close": panel = PanelKind.None; zoom = 60; pitch = 0.7f; break;
             case "party": panel = PanelKind.Party; break;
             case "settlement":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));

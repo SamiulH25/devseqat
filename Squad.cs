@@ -28,7 +28,7 @@ public sealed class Squad
     }
     public float Pressure;                        // recent flank/rear hits; drains morale, decays over time
     public int Kills;                             // enemies this company has killed (campaign XP)
-    public readonly int[] KillsByTier = new int[5]; // kills by the victim's tier (0 = leaders)
+    public readonly int[] KillsByTier = new int[8]; // kills by the victim's tier (0 = leaders, 1-7 = troop tiers)
     public Company? Company;
     public bool RoutSounded;                      // the rout horn has blown for this company
     public bool AiControlled;                     // an allied lord's company: the AI general leads it, not you

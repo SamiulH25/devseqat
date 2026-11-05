@@ -111,8 +111,10 @@ public sealed class LogEntry
 
 public sealed class CampaignState
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
     public int Version = CurrentVersion, Seed, NextId = 1, UnpaidWeeks;
+    /// How far the provinces of this save's map reach (WorldMap.Extent for new campaigns; older saves have their own).
+    public float MapExtent = WorldMap.LegacyExtent;
     public double Hours;
     public ulong Rng;
     public float Gold, LastWeekBalance, TruceUntil;
@@ -149,6 +151,13 @@ public sealed class CampaignState
             Wars = new List<War> { new() { A = 0, B = 1, Active = AtWar ?? true, TruceUntil = TruceUntil, ScoreA = Factions.ElementAtOrDefault(0)?.WarScore ?? 0, ScoreB = Factions.ElementAtOrDefault(1)?.WarScore ?? 0 } };
             AtWar = null;
             Version = 2;
+        }
+        if (Version == 2)
+        {
+            // v3 doubled the campaign map. A v2 campaign was played on the small one, so it keeps that geography
+            // (its provinces and settlements are in the save anyway; this keeps the ground under them the same).
+            MapExtent = WorldMap.LegacyExtent;
+            Version = 3;
         }
     }
 
@@ -210,14 +219,30 @@ public sealed class Rng
 /// Campaign balance numbers (Data/campaign.json overrides these defaults).
 public sealed class Balance
 {
-    public float HourSeconds = 0.5f, FootSpeed = 5.5f, HorseSpeed = 9, RoadBonus = 1.3f, Vision = 40, EncounterRadius = 3.5f, JoinRadius = 10;
+    public float HourSeconds = 0.5f, FootSpeed = 5.5f, HorseSpeed = 9, RoadBonus = 1.3f, Vision = 55, EncounterRadius = 3.5f, JoinRadius = 10;
+    /// How much closer two AI parties must be before they fight (the player's own encounters use EncounterRadius).
+    public float AiClashRadius = 5.5f;
     public float StartGold = 300, StartRenown = 50;
     public float UpkeepRate = 0.1f, ContractPay = 0.85f, LootRate = 0.25f, RansomRate = 1, MercMarkup = 1.5f;
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;
     public float XpParticipation = 20, XpVictory = 1.5f, XpPerKillTier = 12;
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50, PerkEvery = 100;
-    public float CompanySlotsBase = 2, CompanySlotRenown = 150, MenBase = 40, MenRenownDivisor = 5;
-    public int VillageRecruitsMax = 8, LordsPerFaction = 6, BanditsMax = 6;
+    public float CompanySlotsBase = 10, CompanySlotRenown = 0, MenBase = 40, MenRenownDivisor = 5;
+    public int VillageRecruitsMax = 8, LordsPerFaction = 8, BanditsMax = 80;
+    /// A bandit band appears this many times a day while below BanditsMax (0-1) — the roll for each attempt.
+    public float BanditSpawnChance = 0.95f;
+    /// How many bands the world tries to raise each day (while under BanditsMax), so a big map fills up quickly.
+    /// It scales with the map's area, so a bigger world stays populated: Campaign.BanditSpawnsWanted.
+    public int BanditSpawnsPerDay = 5;
+    /// Lords per faction and bandit bands are quoted per the original 26-province map and multiply by how much world there
+    /// is (Campaign.LordsWanted, Campaign.BanditsWanted), so a realm has as many parties as its ground needs.
+    /// Bandit bands are rolled 1-3 strong, and gain a man for every this many days of campaign (they grow as you do).
+    public int BanditBandMin = 10, BanditBandMax = 20;
+    public float BanditGrowPerDays = 9;
+    public float BanditTierPerDays = 45;
+    /// Daily chance (0-1) that a lord who sees no enemy province to raid marches to a neighbouring faction's front instead:
+    /// how often the AI picks a fight on its own.
+    public float LordAggression = 0.35f;
     public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 1, DrillTown = 2;
     public float TownIncome = 150, CastleIncome = 90, VillageIncome = 40, LordWage = 1.3f;
     public float TruceDays = 30, PeaceScore = 1500, BountyBandits = 50, BountyLord = 120;

@@ -22,7 +22,7 @@ public sealed partial class Campaign
     void RaiseGarrison(Settlement s, float fill = 0.8f)
     {
         if (s.Kind == SettlementKind.Village) return;
-        int tier = Math.Clamp(2 + Day / 60, 2, 3);
+        int tier = Math.Clamp(2 + Day / 45, 2, 5);
         var roles = s.Kind == SettlementKind.Town ? new[] { "infantry", "archers", "spears" } : new[] { "infantry", "archers" };
         foreach (var role in roles)
         {
@@ -36,7 +36,7 @@ public sealed partial class Campaign
     public Party GarrisonParty(Settlement s) => new()
     {
         Id = -1000 - s.Id, Kind = PartyKind.Garrison, Faction = s.Faction, Name = "the garrison of " + s.Name, Pos = s.Pos, Companies = s.Garrison,
-        Tier = s.Garrison.Count == 0 ? 1 : Math.Clamp((int)MathF.Round((float)s.Garrison.Average(c => c.Type.Tier)), 1, 4), HomeId = s.Id,
+        Tier = s.Garrison.Count == 0 ? 1 : Math.Clamp((int)MathF.Round((float)s.Garrison.Average(c => c.Type.Tier)), 1, 7), HomeId = s.Id,
     };
 
     public int GarrisonMen(Settlement s) => s.Garrison.Sum(c => c.Men);
@@ -49,7 +49,7 @@ public sealed partial class Campaign
             foreach (var c in s.Garrison) { c.Men += c.Wounded; c.Wounded = 0; }
             var fs = S.Factions[s.Faction];
             RaiseGarrison(s, 0.4f);
-            foreach (var c in s.Garrison.Where(c => c.Type.Tier <= 3))
+            foreach (var c in s.Garrison.Where(c => c.Type.Tier <= 5))
             {
                 int want = (int)(Rules.Cap(c.Troop, Rules.RoleOf(c)) * 0.8f) - c.Men;
                 int n = Math.Min(want, (int)(fs.Treasury / 20));
@@ -195,15 +195,15 @@ public sealed partial class Campaign
     {
         if (p.PatrolProvince < 0) return false;
         var seat = S.Settlements.FirstOrDefault(t => t.Province == p.PatrolProvince && t.Kind != SettlementKind.Village);
-        if (seat == null || !FactionsAtWar(p.Faction, seat.Faction) || Vector2.Distance(p.Pos, seat.Pos) > 30) return false;
-        var host = S.Parties.Where(q => q.Kind == PartyKind.Lord && !q.Down && q.Faction == p.Faction && Vector2.Distance(q.Pos, seat.Pos) < 30).ToList();
+        if (seat == null || !FactionsAtWar(p.Faction, seat.Faction) || Vector2.Distance(p.Pos, seat.Pos) > 30 * Map.Spread) return false;
+        var host = S.Parties.Where(q => q.Kind == PartyKind.Lord && !q.Down && q.Faction == p.Faction && Vector2.Distance(q.Pos, seat.Pos) < 30 * Map.Spread).ToList();
         if (host.Sum(Rules.Strength) < Rules.Strength(GarrisonParty(seat)) * 1.6f) return false;
         foreach (var q in host)
         {
             q.SiegeTarget = seat.Id;
             q.Task = "siege";
             q.ChaseId = -1;
-            q.Goal = seat.Pos + new Vector2(rng.Range(-5, 5), rng.Range(-5, 5));
+            q.Goal = seat.Pos + new Vector2(rng.Range(-5, 5), rng.Range(-5, 5)) * Map.Spread;
             q.Moving = true;
         }
         if (!seat.Besieged)
@@ -240,7 +240,7 @@ public sealed partial class Campaign
             var lords = besiegers.Where(p => p.Kind == PartyKind.Lord).ToList();
             if (lords.Count == 0 || S.Hours - s.SiegeSince < 48 || !rng.Chance(0.5f)) continue;
             var defenders = new List<Party> { GarrisonParty(s) };
-            defenders.AddRange(S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == s.Faction && Vector2.Distance(p.Pos, s.Pos) < 8));
+            defenders.AddRange(S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == s.Faction && Vector2.Distance(p.Pos, s.Pos) < 8 * Map.Spread));
             var r = Rules.AutoResolve(lords, defenders, rng, false, wall: 1.4f);
             Apply(r, lords, defenders, "");
             if (r.Winner == 0) Capture(s, lords[0].Faction, -1);
