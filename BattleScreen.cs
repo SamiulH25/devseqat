@@ -98,7 +98,7 @@ sealed class BattleScreen
         pitch = 0.3f;
         paused = menuOpen = helpOpen = wheelOpen = false;
         StartDeployment();
-        battle.Log($"Battle against {s.EnemyName}: {s.Options.Ground?.Name.ToLowerInvariant() ?? "open"} ground.");
+        battle.Log($"Battle against {s.EnemyName}: {s.Options.Ground?.Name.ToLowerInvariant() ?? "open"} ground, {s.Options.Weather.Describe}.");
         if (!s.Options.Scouted) battle.Log("No scouts: you cannot see their ranks until the fight starts.");
     }
 
@@ -134,10 +134,19 @@ sealed class BattleScreen
         var levels = (Environment.GetEnvironmentVariable("IRONFIELD_LEVELS") ?? (shotDir != null ? "4,3" : "")).Split(',');
         int mine = int.TryParse(levels[0], out var l0) ? l0 : rng.Next(1, 5);
         int theirs = levels.Length > 1 && int.TryParse(levels[1], out var l1) ? l1 : Math.Clamp(mine + rng.Next(-1, 2), 1, 4);
+        // IRONFIELD_WEATHER=hour,rain,fog picks the weather; otherwise mostly fair days, sometimes dawn, dusk or rain.
+        var wv = (Environment.GetEnvironmentVariable("IRONFIELD_WEATHER") ?? "").Split(',').Select(v => float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : -1).ToArray();
+        var weather = wv.Length >= 1 && wv[0] >= 0 ? new Weather(wv[0], wv.Length > 1 ? Math.Max(0, wv[1]) : 0, wv.Length > 2 ? Math.Max(0, wv[2]) : 0)
+            : shotDir != null ? Weather.Clear : Weather.For(rng.NextSingle() < 0.7f ? 9 + rng.Next(8) : rng.Next(2) == 0 ? 6.5f : 18.5f, rng.Next(3), seed);
         battle = new Battle(seed, Armies.Random(rng, Math.Clamp(mine, 1, 4), 0), Armies.Random(rng, Math.Clamp(theirs, 1, 4), 1),
-            new BattleOptions { EnemyDamage = Settings.Current.EnemyDamage });
+            new BattleOptions
+            {
+                EnemyDamage = Settings.Current.EnemyDamage, Weather = weather,
+                // IRONFIELD_GROUND=river forces a river; otherwise a third of quick battles have one.
+                Ground = TerrainParams.Meadow with { River = Environment.GetEnvironmentVariable("IRONFIELD_GROUND") == "river" || (shotDir == null && rng.NextSingle() < 0.33f) },
+            });
         SetWorld();
-        battle.Log($"Your company (level {mine}) faces a level {theirs} host.");
+        battle.Log($"Your company (level {mine}) faces a level {theirs} host: {weather.Describe}.");
         foreach (var p in ctl.Problems) battle.Log(p);
         selected.Clear();
         yaw = MathHelper.PiOver2;
@@ -149,6 +158,7 @@ sealed class BattleScreen
 
     void SetWorld()
     {
+        Sky.Set(battle.Weather, nightFloor: 0.3f); // moonlight: dark, but you can still fight
         world?.Dispose();
         world = new World(GraphicsDevice, battle.Terrain);
     }
@@ -324,16 +334,24 @@ sealed class BattleScreen
             case 14 when pendingShot == null:
                 zoom = 7.5f; camPitch = 0.08f; camFocus = new Vector2(-31f, 0.6f);
                 pendingShot = "gallery-side-close"; shotIndex++; break;
-            case 15 when pendingShot == null: Exit(); break;
+            case 15 when pendingShot == null:
+                Gallery(new[] { "clansmen", "axemen", "huscarls", "greatswords", "crossbowmen", "horse_archers" }, 4);
+                shotFrames = 0; shotIndex++; break;
+            case 16 when shotFrames > 20:
+                pendingShot = "gallery-north"; shotIndex++; break;
+            case 17 when pendingShot == null:
+                zoom = 8.5f; camPitch = 0.08f; camFocus = new Vector2(-9.8f, 0.6f);
+                pendingShot = "gallery-north-close"; shotIndex++; break;
+            case 18 when pendingShot == null: Exit(); break;
         }
     }
 
     /// Debug lineup of every troop, left to right along each upgrade line, facing the camera.
-    void Gallery()
+    void Gallery(string[]? only = null, int palette = 0)
     {
         battle = Battle.Empty(1);
         SetWorld();
-        var order = new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "spearrunners", "pikemen", "bowmen", "longbowmen",
+        var order = only ?? new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "spearrunners", "pikemen", "bowmen", "longbowmen",
             "outriders", "lancers", "knights", "captain" };
         float x = 0;
         foreach (var id in order)
@@ -342,6 +360,7 @@ sealed class BattleScreen
             x += t.Mount != null ? 2.2f : 1.4f;
             var u = battle.AddSquad(0, t, 1, new Vector2(-x, 0), 1, -Vector2.UnitY).Units[0];
             u.ViewFacing = u.ViewHeading = u.Facing;
+            u.Palette = palette;
             x += t.Mount != null ? 2.2f : 1.4f;
         }
         paused = hudHidden = true;
@@ -377,6 +396,24 @@ sealed class BattleScreen
             case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15)); break;
             case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20)); break;
             case Cmd.Spacing: Issue("change spacing", s => s.Loose = !s.Loose); break;
+            case Cmd.Formation:
+            {
+                var list = Targets();
+                if (list.Count == 0) break;
+                // Cycle from the first company's formation; each company takes the next one it can (horse has no shield wall).
+                var first = list[0].Choices(list[0].Units[0].Type.HasShield);
+                var next = first[(Array.IndexOf(first, list[0].Formation) + 1) % first.Length];
+                foreach (var s in list)
+                {
+                    var ok = s.Choices(s.Units[0].Type.HasShield);
+                    s.Formation = ok.Contains(next) ? next : Formation.Line;
+                }
+                battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + next switch
+                {
+                    Formation.ShieldWall => "shield wall!", Formation.Square => "form square!", Formation.Wedge => "wedge!", Formation.Loose => "open ranks!", _ => "form line!",
+                });
+                break;
+            }
             case Cmd.FireAtWill:
             {
                 var archers = Targets().Where(s => s.Units.Any(u => u.Type.Ammo > 0)).ToList();
@@ -514,6 +551,8 @@ sealed class BattleScreen
             Attack = IsActive && !wheelOpen && ctl.Down(Act.Attack),
             Block = IsActive && !wheelOpen && ctl.Down(Act.Block),
             Rally = ctl.Pressed(Act.Rally),
+            Bash = ctl.Pressed(Act.Bash),
+            Swap = ctl.Pressed(Act.SwapWeapon),
         };
     }
 
@@ -842,9 +881,32 @@ sealed class BattleScreen
         }
     }
 
+    /// Rain streaks (or snowflakes) in a box around the camera, falling on a fixed pattern so nothing is stored.
+    void Precipitation()
+    {
+        var w = battle.Weather;
+        if (w.Rain < 0.05f) return;
+        int n = (int)(700 * w.Rain);
+        var c = eye;
+        float t = realTime;
+        var col = w.Snow ? new Color(236, 238, 244) : new Color(150, 162, 178);
+        for (int i = 0; i < n; i++)
+        {
+            uint h = (uint)i * 2654435761u;
+            float x = (h & 1023) / 1023f * 50 - 25, z = (h >> 10 & 1023) / 1023f * 50 - 25, ph = (h >> 20 & 1023) / 1023f;
+            float fall = w.Snow ? 1.2f : 9f, y = 18 - (ph * 18 + t * fall) % 18;
+            var p = new Vector3(MathF.Floor(c.X / 50) * 50 + x, c.Y - 6 + y, MathF.Floor(c.Z / 50) * 50 + z);
+            if (p.X < c.X - 25) p.X += 50; if (p.X > c.X + 25) p.X -= 50;
+            if (p.Z < c.Z - 25) p.Z += 50; if (p.Z > c.Z + 25) p.Z -= 50;
+            var drift = w.Snow ? new Vector3(MathF.Sin(t + i) * 0.05f, -0.08f, 0) : new Vector3(0.05f, -0.7f, 0.02f);
+            Line(p, p + drift, col);
+        }
+    }
+
     void DrawLines()
     {
         lines.N = 0;
+        Precipitation();
         foreach (var a in battle.Arrows)
         {
             var dir = a.Vel.LengthSquared() > 0 ? Vector3.Normalize(a.Vel) : Vector3.Down;

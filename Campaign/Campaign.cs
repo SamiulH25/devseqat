@@ -356,6 +356,7 @@ public sealed partial class Campaign
             PlayerMount = Rules.CaptainMount(Captain),
             EnemyDamage = Settings.Current.EnemyDamage,
             Ground = Map.BattleGround(Player.Pos),
+            Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(enemy.Kind == PartyKind.Bandit ? -2 : enemy.Faction) },
         };
         return setup;

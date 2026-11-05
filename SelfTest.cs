@@ -31,6 +31,12 @@ public static class SelfTest
         Bridge();
         Calibration();
         SiegeBattle();
+        Formations();
+        CaptainCombat();
+        RangedRoles();
+        FatigueAndSupply();
+        Generals();
+        Rivers();
         CampaignWar();
         Migration();
 
@@ -128,6 +134,150 @@ public static class SelfTest
         st = p.Stamina;
         b.Hit(foe, p, 30, false);
         Check(p.Hp == hp && p.Stamina < st - 5, "unmatched shield block holds but costs stamina");
+        // A guard held too long is only a block: parries need timing.
+        b.Time += 1;
+        b.Input.Dir = Dirs.Mirror(foe.Swing);
+        foe.Action = UnitAction.None;
+        p.Action = UnitAction.Block;
+        st = p.Stamina;
+        b.Hit(foe, p, 30, false);
+        Check(p.Stamina < st - 5, "a stale guard does not parry (it blocks, at a cost)");
+    }
+
+    /// Roadmap C1-C7 mechanics, each in a small scenario.
+    static void Formations()
+    {
+        float ArrowLoss(Formation f)
+        {
+            var b = Battle.Empty(8);
+            var wall = b.AddSquad(0, UnitType.Shieldman, 16, new(0, 0), 8, -Vector2.UnitY);
+            wall.Formation = f;
+            var bows = b.AddSquad(1, UnitType.Bowman, 16, new(0, -26), 8, Vector2.UnitY);
+            float before = wall.Units.Sum(u => u.Hp);
+            Run(b, 20);
+            return before - wall.Units.Sum(u => u.Hp);
+        }
+        float line = ArrowLoss(Formation.Line), shields = ArrowLoss(Formation.ShieldWall), square = ArrowLoss(Formation.Square);
+        Console.WriteLine($"arrows: line loses {line:0} hp, shield wall {shields:0}, square {square:0}");
+        Check(shields < line * 0.8f, "a shield wall stops more arrows");
+        Check(square > shields, "a square is a better mark for archers than a shield wall");
+        var s = new Squad("t", 0) { Anchor = Vector2.Zero, Front = Vector2.UnitY, Formation = Formation.Square };
+        var dirs = Enumerable.Range(0, 16).Select(i => s.FaceAt(s.Slot(i, 16))).ToList();
+        Check(dirs.Any(d => d.Y > 0.9f) && dirs.Any(d => d.Y < -0.9f) && dirs.Any(d => d.X > 0.9f) && dirs.Any(d => d.X < -0.9f), "a square faces every way");
+        s.Formation = Formation.Wedge;
+        Check(s.Slot(0, 9) == Vector2.Zero && s.Slot(1, 9).Y < 0 && s.Slot(4, 9).Y < s.Slot(1, 9).Y, "a wedge narrows to its point");
+        // Rear charge on a square: no flank pressure.
+        var c = Battle.Empty(9);
+        var sq = c.AddSquad(0, UnitType.Shieldman, 16, new(0, 0), 4, Vector2.UnitY);
+        sq.Formation = Formation.Square;
+        var t = sq.Units[^1];
+        c.Hit(c.EnemyCaptain, t, 5, false);
+        Check(sq.Pressure == 0, "a square cannot be taken in the flank");
+    }
+
+    static void CaptainCombat()
+    {
+        var b = Battle.Empty(10);
+        var p = b.Player;
+        p.Horse = null;
+        var foe = b.AddSquad(1, UnitType.Shieldman, 1, p.Pos + new Vector2(0, 1.2f), 1, -Vector2.UnitY).Units[0];
+        p.Facing = MathHelper.PiOver2;
+        b.Input = new PlayerInput { Facing = MathHelper.PiOver2, Bash = true };
+        b.Update(1 / 60f);
+        Check(foe.Action == UnitAction.Stagger, "a shield bash staggers the man in front");
+        b.Input = new PlayerInput { Facing = MathHelper.PiOver2 };
+        Run(b, 2);
+        b.Input = new PlayerInput { Facing = MathHelper.PiOver2, Swap = true };
+        b.Update(1 / 60f);
+        Check(b.TwoHanded && p.Type.Look.Weapon == "greatsword" && !p.Type.HasShield, "N swaps to the two-handed sword");
+        // Chambering: striking into a blow from the mirrored side turns it.
+        p.Action = UnitAction.Windup;
+        foe.Action = UnitAction.None;
+        foe.Swing = AttackDir.Left;
+        p.Swing = Dirs.Mirror(foe.Swing);
+        float hp = p.Hp;
+        b.Hit(foe, p, 30, false);
+        Check(p.Hp == hp && foe.Action == UnitAction.Stagger, "a chambered blow does no harm");
+    }
+
+    static void RangedRoles()
+    {
+        var b = Battle.Empty(11);
+        var xb = b.AddSquad(0, Troops.Get("crossbowmen"), 1, new(0, 0), 1, Vector2.UnitY).Units[0];
+        var bow = b.AddSquad(0, Troops.Get("bowmen"), 1, new(4, 0), 1, Vector2.UnitY).Units[0];
+        var knight = b.AddSquad(1, Troops.Get("ironguard"), 1, new(0, 20), 1, -Vector2.UnitY).Units[0];
+        knight.Type = knight.Type.Clone();
+        knight.Type.BlockChance = 0;
+        float h0 = knight.Hp; b.Hit(xb, knight, xb.Type.Damage, true); float bolt = h0 - knight.Hp;
+        h0 = knight.Hp; b.Hit(bow, knight, bow.Type.Damage, true); float arrow = h0 - knight.Hp;
+        Check(bolt > arrow * 2, $"a bolt punches through armour an arrow cannot ({bolt:0} vs {arrow:0})");
+        var c = Battle.Empty(12);
+        var ha = c.AddSquad(0, Troops.Get("horse_archers"), 6, new(0, -10), 6, Vector2.UnitY);
+        ha.Order = Order.Charge;
+        c.AddSquad(1, UnitType.Shieldman, 12, new(0, 15), 6, -Vector2.UnitY);
+        Run(c, 12);
+        Check(ha.Units.Sum(u => u.Type.Ammo - u.Ammo) > 6, "horse archers shoot from the saddle");
+        Check(ha.Units.All(u => u.Mounted), "and keep their distance (no horse lost)");
+    }
+
+    static void FatigueAndSupply()
+    {
+        var b = Battle.Empty(13);
+        var runners = b.AddSquad(0, UnitType.Shieldman, 4, new(0, 0), 4, Vector2.UnitY);
+        foreach (var u in runners.Units) u.Wish = Vector2.UnitY * u.Type.Speed;
+        runners.Anchor = new(0, 70);
+        Run(b, 20);
+        Check(runners.Units.All(u => u.Stamina < 80), "running tires men");
+        var archers = b.AddSquad(0, UnitType.Bowman, 4, b.Wagons[0], 4, Vector2.UnitY);
+        foreach (var u in archers.Units) u.Ammo = 0;
+        Run(b, 5);
+        Check(archers.Units.All(u => u.Ammo > 0) && b.WagonStock[0] < 300, "archers at the wagon draw arrows");
+        var w = new Weather(Hour: 23, Rain: 1, Fog: 0);
+        Check(w.Night && w.Vision <= 40 && w.Spread > 1.5f && w.MudFactor < 1, "night and rain blind archers and bog horses");
+    }
+
+    /// A battlefield river: carved below its banks, slow to wade, quicker at the fords; the map has rivers with bridges.
+    static void Rivers()
+    {
+        var t = new Terrain(21, TerrainParams.Meadow with { River = true });
+        var r = t.Rivers.Single();
+        var mid = r.Path[65];
+        Check(t.Height(mid) < t.Height(mid + new Vector2(0, 12)) - 0.8f || t.Height(mid) < t.Height(mid - new Vector2(0, 12)) - 0.8f, "the river runs below its banks");
+        Check(t.WaterDepth(mid) > 1 && t.WaterDepth(r.Fords[0]) is > 0 and < 0.5f, "deep in the stream, shallow at a ford");
+        Check(!t.Foliage.Any(f => f.Radius > 0 && t.WaterDepth(f.Pos) > 0), "no trees in the water");
+        float Cross(Vector2 at)
+        {
+            var b = new Battle(3, new ArmySpec("a", 1, new List<Company>()), new ArmySpec("b", 1, new List<Company>()), new BattleOptions { Ground = TerrainParams.Meadow with { River = true }, PlayerWounded = true });
+            var s = b.AddSquad(0, UnitType.Shieldman, 1, at - new Vector2(0, 8), 1, Vector2.UnitY);
+            s.Anchor = at + new Vector2(0, 8);
+            float time = 0;
+            while (s.Units[0].Pos.Y < at.Y + 6 && time < 30) { b.Update(1 / 60f); time += 1 / 60f; }
+            return time;
+        }
+        var br = new Terrain(3, TerrainParams.Meadow with { River = true }).Rivers.Single();
+        float deep = Cross(br.Path[50]), ford = Cross(br.Fords[0]);
+        Console.WriteLine($"river: wading takes {deep:0.0}s, the ford {ford:0.0}s");
+        Check(deep > ford * 1.2f, "a ford is the quick way over");
+        var m = WorldMap.Generate(11);
+        Check(m.Rivers.Count == 2 && m.Rivers.All(rv => rv.Fords.Length > 0), "the map has rivers with bridges");
+        Check(m.Settlements.All(s => m.RiverDist(s.Pos) > 4), "no settlement stands in a river");
+    }
+
+    /// Two AI generals: the reserve stays back until it is needed, and the field still resolves.
+    static void Generals()
+    {
+        var rng = new Random(3);
+        var a = Armies.Random(rng, 2, 0);
+        a = a with { Companies = a.Companies.Concat(new[] { new Company("shieldmen", 16, "infantry"), new Company("shieldmen", 12, "infantry") }).ToList() };
+        var b = new Battle(14, a, Armies.Random(rng, 2, 1), new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+        bool heldBack = false;
+        for (int step = 0; b.Winner < 0 && step < 60 * 600; step++)
+        {
+            b.Update(1 / 60f);
+            if (b.Time is > 15 and < 16 && b.SquadsOf(0).Any(s => s.Order == Order.Hold && s.Units[0].Type.Id == "shieldmen" && s.Alive > 0)) heldBack = true;
+        }
+        Check(b.Winner >= 0, "an AI-vs-AI battle with a reserve resolves");
+        Check(heldBack, "the AI keeps an infantry reserve back");
     }
 
     static void HorseDown()

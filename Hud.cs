@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ironfield;
 
 /// Orders the player can give, from hotkeys, the order wheel or the command-view buttons.
-public enum Cmd { Charge, Advance, FormHere, Spacing, FallBack, FireAtWill, Hold, Follow }
+public enum Cmd { Charge, Advance, FormHere, Spacing, FallBack, FireAtWill, Hold, Follow, Formation }
 
 public enum MenuItem { Resume, Controls, NewBattle, Quit, Withdraw, Continue, Title, Settings }
 
@@ -21,7 +21,7 @@ sealed class Hud
     {
         [Cmd.Charge] = ("CHARGE", Act.Charge), [Cmd.Advance] = ("ADVANCE", Act.Advance), [Cmd.FormHere] = ("FORM ON ME", Act.FormHere),
         [Cmd.Spacing] = ("SPACING", Act.Spacing), [Cmd.FallBack] = ("FALL BACK", Act.FallBack), [Cmd.FireAtWill] = ("FIRE / HOLD", Act.FireAtWill),
-        [Cmd.Hold] = ("HOLD", Act.HoldPosition), [Cmd.Follow] = ("FOLLOW ME", Act.Follow),
+        [Cmd.Hold] = ("HOLD", Act.HoldPosition), [Cmd.Follow] = ("FOLLOW ME", Act.Follow), [Cmd.Formation] = ("FORMATION", Act.Formation),
     };
 
     readonly SpriteBatch sb;
@@ -77,8 +77,8 @@ sealed class Hud
         if (Command)
         {
             int bw = U(112), bh = U(24);
-            var order = new[] { Cmd.Charge, Cmd.Hold, Cmd.Advance, Cmd.FallBack, Cmd.Follow, Cmd.FormHere, Cmd.Spacing, Cmd.FireAtWill };
-            int x0 = W - 2 * bw - U(16), y0 = H - 4 * (bh + U(4)) - U(10);
+            var order = new[] { Cmd.Charge, Cmd.Hold, Cmd.Advance, Cmd.FallBack, Cmd.Follow, Cmd.FormHere, Cmd.Spacing, Cmd.FireAtWill, Cmd.Formation };
+            int x0 = W - 2 * bw - U(16), y0 = H - (order.Length + 1) / 2 * (bh + U(4)) - U(10);
             for (int i = 0; i < order.Length; i++)
                 buttons.Add((new Rectangle(x0 + (i % 2) * (bw + U(4)), y0 + (i / 2) * (bh + U(4)), bw, bh), order[i]));
         }
@@ -319,7 +319,8 @@ sealed class Hud
             Text(Style.Numerals[Math.Clamp(type.Tier, 0, 5)], r.X + U(4), r.Y + U(20), Gold, 1); // tier
             string tag = s.Order switch { Order.Follow => "FLW", Order.Charge => s.Target != null ? "ATK" : "CHG", _ => "HLD" };
             TextR(tag, r.Right - U(4), r.Y + U(5), s.Order == Order.Charge ? Foe : Dim, 1);
-            if (s.Loose) TextR("LOOSE", r.Right - U(4), r.Y + U(14), Dim, 1);
+            if (s.Formation != Formation.Line)
+                TextR(s.Formation switch { Formation.ShieldWall => "WALL", Formation.Square => "SQUARE", Formation.Wedge => "WEDGE", _ => "LOOSE" }, r.Right - U(4), r.Y + U(14), Dim, 1);
             if (!s.FireAtWill) TextR("HOLD", r.Right - U(4), r.Y + U(23), Warn, 1);
 
             Icon(type, new Rectangle(r.X + U(16), r.Y + U(4), r.Width - U(32), U(44)));

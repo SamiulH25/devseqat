@@ -2,7 +2,44 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wall, Tower, Gate, Ladder, House }
+public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wall, Tower, Gate, Ladder, House, Wagon }
+
+/// A river (roadmap C5): a centre line, its width, and the fords where it runs shallow.
+public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float Depth = 1.3f)
+{
+    public const float FordRadius = 7;
+
+    /// Distance from p to the river's centre line.
+    public float Dist(Vector2 p)
+    {
+        float best = float.MaxValue;
+        for (int i = 0; i + 1 < Path.Length; i++)
+        {
+            var a = Path[i]; var ab = Path[i + 1] - a;
+            if (MathF.Abs(p.X - a.X) > 40 && MathF.Abs(p.X - Path[i + 1].X) > 40 && MathF.Abs(p.Y - a.Y) > 40 && MathF.Abs(p.Y - Path[i + 1].Y) > 40) continue;
+            float k = Math.Clamp(Vector2.Dot(p - a, ab) / ab.LengthSquared(), 0, 1);
+            best = MathF.Min(best, Vector2.Distance(p, a + ab * k));
+        }
+        return best;
+    }
+
+    public bool AtFord(Vector2 p) => Fords.Any(f => Vector2.DistanceSquared(f, p) < FordRadius * FordRadius);
+
+    /// How far the bed is cut below the banks here (shallow at a ford).
+    public float Carve(Vector2 p, float dist) => (AtFord(p) ? 0.35f : Depth) * Smooth(Width / 2 + 3, Width / 2 - 1, dist);
+
+    static float Smooth(float a, float b, float x) { float t = Math.Clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
+
+    /// A battlefield river across the field between the armies, with two fords.
+    public static River Across(Random rng)
+    {
+        float z0 = rng.NextSingle() * 8 - 4, phase = rng.NextSingle() * MathF.Tau, amp = 5 + rng.NextSingle() * 5;
+        var path = Enumerable.Range(0, 131).Select(i => { float x = -260 + i * 4; return new Vector2(x, z0 + MathF.Sin(x * 0.02f + phase) * amp); }).ToArray();
+        float f1 = -20 - rng.NextSingle() * 15, f2 = 15 + rng.NextSingle() * 15;
+        Vector2 At(float x) => new(x, z0 + MathF.Sin(x * 0.02f + phase) * amp);
+        return new River(path, 9, new[] { At(f1), At(f2) });
+    }
+}
 
 /// A town wall across the field for an assault (roadmap B1). It runs the whole width at z = 14..16.5 (a walkway on raised
 /// ground, faced in stone toward the attackers, with an earth bank behind it), has a gate near x = 0 that attackers break
@@ -35,7 +72,7 @@ public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale
 
 /// How a battlefield is generated: set from the campaign map cell where the fight happens (docs/CAMPAIGN.md 3.2).
 public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, float HillHeight, float Roll, float FlankWoodDist,
-    int Woods, int LoneTrees, int Bushes, bool Road)
+    int Woods, int LoneTrees, int Bushes, bool Road, bool River = false)
 {
     public static readonly TerrainParams Meadow = new("Meadow", 3, 5, 1f, 1f, 64, 11, 60, 220, true);
     public static readonly TerrainParams Farmland = new("Farmland", 1, 3, 0.7f, 0.6f, 70, 6, 30, 380, true);
@@ -72,14 +109,28 @@ public sealed class Terrain
 
     /// The town wall in an assault (null in field battles).
     public readonly SiegeWall? Wall;
+    /// Rivers on this ground (a battlefield has at most one; the campaign map has a few).
+    public readonly List<River> Rivers = new();
+
+    /// How deep the water is at p (0 on dry land; shallow at a ford).
+    public float WaterDepth(Vector2 p)
+    {
+        foreach (var r in Rivers)
+        {
+            float d = r.Dist(p);
+            if (d < r.Width / 2) return r.AtFord(p) ? 0.3f : r.Depth;
+        }
+        return 0;
+    }
 
     public static Terrain Flat() => new(0, true, TerrainParams.Meadow);
     public Terrain(int seed) : this(seed, false, TerrainParams.Meadow) { }
     public Terrain(int seed, TerrainParams p, SiegeWall? wall = null) : this(seed, false, p, wall) { }
 
     /// A campaign map: heights, roads, foliage and settlements all given; no grass, overview covers everything.
-    public Terrain(int seed, Func<float, float, float> height, Func<Vector2, float> roadDist, IEnumerable<Foliage> foliage, Func<Vector2, Vector3>? tint)
+    public Terrain(int seed, Func<float, float, float> height, Func<Vector2, float> roadDist, IEnumerable<Foliage> foliage, Func<Vector2, Vector3>? tint, IEnumerable<River>? rivers = null)
     {
+        if (rivers != null) Rivers.AddRange(rivers);
         Seed = seed;
         customHeight = height;
         customRoad = roadDist;
@@ -100,6 +151,7 @@ public sealed class Terrain
         Params = wall != null ? p with { Road = false } : p;
         Wall = wall;
         p = Params;
+        if (p.River && wall == null) Rivers.Add(River.Across(new Random(seed + 5)));
         for (int i = 0; i < buckets.Length; i++) buckets[i] = new List<int>();
         if (flat) return;
 
@@ -138,6 +190,12 @@ public sealed class Terrain
         h += SmoothStep(120, 240, r) * (14 + 10 * Noise(x * 0.008f, z * 0.008f, Seed + 3));
         float rd = RoadDist(new Vector2(x, z));
         if (rd < 5) h -= 0.25f * (1 - rd / 5); // worn a little into the ground
+        foreach (var river in Rivers)
+        {
+            var at = new Vector2(x, z);
+            float d = river.Dist(at);
+            if (d < river.Width / 2 + 3) h -= river.Carve(at, d);
+        }
         if (Wall != null)
         {
             h = MathHelper.Lerp(h, 0.4f * h, SmoothStep(40, 0, MathF.Abs(z - 15))); // level ground along the wall
@@ -190,6 +248,9 @@ public sealed class Terrain
         return z * Buckets + x;
     }
 
+    /// A prop placed after generation (the battle's supply wagons).
+    public void AddProp(Foliage f) => Add(f);
+
     void Add(Foliage f)
     {
         Foliage.Add(f);
@@ -241,7 +302,7 @@ public sealed class Terrain
 
     void PlaceFoliage(Random rng)
     {
-        bool Ok(Vector2 p, float space) => !Core(p) && RoadDist(p) > 4 && MathF.Abs(p.X) < Half - 8 && MathF.Abs(p.Y) < Half - 8 && !Blocked(p, space)
+        bool Ok(Vector2 p, float space) => !Core(p) && RoadDist(p) > 4 && WaterDepth(p) == 0 && Rivers.All(r => r.Dist(p) > r.Width / 2 + 2) && MathF.Abs(p.X) < Half - 8 && MathF.Abs(p.Y) < Half - 8 && !Blocked(p, space)
             && (Wall == null || p.Y < SiegeWall.Outer - 6 || p.Y > 70);
         if (Wall != null) PlaceTown(rng);
         var woods = new List<(Vector2 C, float R)>();

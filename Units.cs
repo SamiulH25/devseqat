@@ -79,6 +79,7 @@ public sealed class Unit
     public AttackDir Swing;
     public float ActionTimer, Cooldown, Charge, Power = 1, HitFlash, Anim;
     public bool Charging; // player holding the attack button
+    public float BlockStart; // when the player raised the guard (parries need fresh timing)
     public Unit? Target;
     public bool Dead, Fled, Routing;
 

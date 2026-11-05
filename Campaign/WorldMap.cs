@@ -14,6 +14,8 @@ public sealed class WorldMap
     public readonly List<Province> Provinces = new();
     public readonly List<Settlement> Settlements = new();
     public readonly List<(Vector2 A, Vector2 B)> Roads = new();
+    /// Two rivers wind across the land; where a road meets one there is a bridge (a ford on the battlefield).
+    public readonly List<River> Rivers = new();
     readonly List<(Vector2 C, float R, float H)> hills = new();
 
     WorldMap(int seed) { Seed = seed; }
@@ -78,6 +80,31 @@ public sealed class WorldMap
                 v++;
             }
         }
+        // Rivers: from one edge to the far one, wandering, kept clear of settlements; bridges where roads cross.
+        for (int k = 0; k < 2; k++)
+        {
+            bool northSouth = k == 0;
+            float off = (rng.NextSingle() - 0.5f) * Extent * 0.8f, ph = rng.NextSingle() * MathF.Tau;
+            var pts = new List<Vector2>();
+            for (float s = -Extent - 20; s <= Extent + 20; s += 4)
+            {
+                float w = off + MathF.Sin(s * 0.018f + ph) * 26 + MathF.Sin(s * 0.047f + ph * 2) * 9;
+                var p = northSouth ? new Vector2(w, s) : new Vector2(s, w);
+                foreach (var st in m.Settlements)
+                {
+                    var away = p - st.Pos;
+                    float d = away.Length();
+                    if (d < 9) p = st.Pos + (d > 0.01f ? away / d : Vector2.UnitX) * 9;
+                }
+                pts.Add(p);
+            }
+            var path = pts.ToArray();
+            var bridges = new List<Vector2>();
+            for (int i = 0; i + 1 < path.Length; i++)
+                foreach (var (a, b) in m.Roads)
+                    if (Cross(path[i], path[i + 1], a, b) is Vector2 x) bridges.Add(x);
+            m.Rivers.Add(new River(path, 2.6f, bridges.ToArray(), 1.1f));
+        }
         // Hill provinces get real hills.
         foreach (var p in m.Provinces.Where(p => p.Kind == "Hills"))
             for (int i = 0; i < 3; i++)
@@ -87,6 +114,17 @@ public sealed class WorldMap
             }
         return m;
     }
+
+    static Vector2? Cross(Vector2 p, Vector2 p2, Vector2 q, Vector2 q2)
+    {
+        Vector2 r = p2 - p, s = q2 - q;
+        float den = r.X * s.Y - r.Y * s.X;
+        if (MathF.Abs(den) < 1e-6f) return null;
+        float t = ((q.X - p.X) * s.Y - (q.Y - p.Y) * s.X) / den, u = ((q.X - p.X) * r.Y - (q.Y - p.Y) * r.X) / den;
+        return t is >= 0 and <= 1 && u is >= 0 and <= 1 ? p + r * t : null;
+    }
+
+    public float RiverDist(Vector2 p) => Rivers.Count == 0 ? float.MaxValue : Rivers.Min(r => r.Dist(p));
 
     // ---------- queries ----------
 
@@ -116,13 +154,13 @@ public sealed class WorldMap
 
     /// Map travel speed factor at a point (terrain kind, roads).
     public float SpeedFactor(Vector2 p, float roadBonus) =>
-        RoadDist(p) < 2.5f ? roadBonus : ProvinceAt(p).Kind switch { "Forest" => 0.7f, "Hills" => 0.8f, _ => 1f };
+        RoadDist(p) < 2.5f ? roadBonus : RiverDist(p) < 1.6f ? 0.35f : ProvinceAt(p).Kind switch { "Forest" => 0.7f, "Hills" => 0.8f, _ => 1f };
 
     /// Battle ground for a fight at p: the province's kind, with a road if one runs close.
     public TerrainParams BattleGround(Vector2 p)
     {
         var t = ProvinceAt(p).Kind switch { "Forest" => TerrainParams.Forest, "Hills" => TerrainParams.Hills, "Farmland" => TerrainParams.Farmland, _ => TerrainParams.Meadow };
-        return t with { Road = RoadDist(p) < 6 };
+        return t with { Road = RoadDist(p) < 6, River = RiverDist(p) < 12 };
     }
 
     public float Height(float x, float z)
@@ -136,6 +174,12 @@ public sealed class WorldMap
         float edge = MathF.Max(MathF.Abs(x), MathF.Abs(z));
         float t = Math.Clamp((edge - (Extent - 10)) / (256 - Extent + 10), 0, 1);
         h += t * t * (3 - 2 * t) * (24 + 10 * Terrain.Noise(x * 0.02f, z * 0.02f, Seed + 2)); // mountains close the world
+        foreach (var r in Rivers)
+        {
+            var at = new Vector2(x, z);
+            float d = r.Dist(at);
+            if (d < r.Width / 2 + 3) h -= r.Carve(at, d);
+        }
         return h;
     }
 
@@ -164,7 +208,7 @@ public sealed class WorldMap
         foreach (var s in Settlements)
             foliage.Add(new Foliage(s.Kind switch { SettlementKind.Town => FoliageKind.Town, SettlementKind.Castle => FoliageKind.Castle, _ => FoliageKind.Village },
                 s.Pos, s.Kind == SettlementKind.Village ? 1.6f : 2.1f, 0, s.Id * 31 + Seed));
-        bool Clear(Vector2 p) => Settlements.All(s => Vector2.Distance(s.Pos, p) > 9) && RoadDist(p) > 2.5f && MathF.Abs(p.X) < 250 && MathF.Abs(p.Y) < 250;
+        bool Clear(Vector2 p) => Settlements.All(s => Vector2.Distance(s.Pos, p) > 9) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && MathF.Abs(p.X) < 250 && MathF.Abs(p.Y) < 250;
         foreach (var p in Provinces)
         {
             int trees = p.Kind switch { "Forest" => 90, "Hills" => 26, "Farmland" => 6, _ => 14 };
@@ -190,6 +234,6 @@ public sealed class WorldMap
             if (MathF.Max(MathF.Abs(pos.X), MathF.Abs(pos.Y)) < Extent - 4) continue;
             foliage.Add(new Foliage(FoliageKind.Pine, pos, 2.4f + rng.NextSingle(), 0, rng.Next()));
         }
-        return new Terrain(Seed, Height, RoadDist, foliage, Tint);
+        return new Terrain(Seed, Height, RoadDist, foliage, Tint, Rivers);
     }
 }

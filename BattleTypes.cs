@@ -29,8 +29,18 @@ public sealed class BattleOptions
 }
 
 /// When and in what weather a battle is fought (roadmap C4). The campaign passes its hour and season.
-public sealed record Weather(float Hour = 13, float Rain = 0, float Fog = 0)
+public sealed record Weather(float Hour = 13, float Rain = 0, float Fog = 0, bool Snow = false)
 {
+    /// Weather for a campaign battle: the hour, and rain, snow or fog by season (deterministic from the seed).
+    public static Weather For(float hour, int season, int seed)
+    {
+        var r = new Random(seed);
+        float wet = season switch { 0 => 0.25f, 1 => 0.1f, 2 => 0.35f, _ => 0.3f };
+        float rain = r.NextSingle() < wet ? 0.4f + r.NextSingle() * 0.6f : 0;
+        float fog = (hour is > 4 and < 10 ? 0.35f : 0.08f) > r.NextSingle() ? 0.4f + r.NextSingle() * 0.5f : 0;
+        return new Weather(hour, rain, fog, season == 3 && rain > 0);
+    }
+
     public static readonly Weather Clear = new();
     public bool Night => Hour < 5.5f || Hour > 20.5f;
     /// Rain wets bowstrings and fog hides the mark: arrows scatter more.
@@ -39,7 +49,7 @@ public sealed record Weather(float Hour = 13, float Rain = 0, float Fog = 0)
     public float MudFactor => 1 - Rain * 0.2f;
     /// How far archers can pick out a target.
     public float Vision => MathF.Min(Night ? 40 : 200, Fog > 0 ? 140 - Fog * 95 : 200);
-    public string Describe => (Night ? "night" : Hour < 8 ? "dawn" : Hour > 18 ? "dusk" : "day") + (Rain > 0.3f ? ", rain" : "") + (Fog > 0.3f ? ", fog" : "");
+    public string Describe => (Night ? "night" : Hour < 8 ? "dawn" : Hour > 18 ? "dusk" : "day") + (Rain > 0.3f ? Snow ? ", snow" : ", rain" : "") + (Fog > 0.3f ? ", fog" : "");
 }
 
 public enum LeaderFate { Unhurt, Wounded, Captured, Slain }

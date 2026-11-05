@@ -12,7 +12,9 @@ public enum Quality { High, Medium, Low }
 sealed class Shading : IDisposable
 {
     public const int ShadowSize = 2048;
-    public static readonly Vector3 SunColor = new(0.9f, 0.84f, 0.72f), SkyColor = new(0.42f, 0.47f, 0.56f), GroundColor = new(0.3f, 0.29f, 0.24f);
+    public static Vector3 SunColor => Ironfield.Sky.SunColor;
+    public static Vector3 SkyColor => Ironfield.Sky.SkyColor;
+    public static Vector3 GroundColor => Ironfield.Sky.GroundColor;
     public static readonly Vector2 SpriteLight = new(1.05f, 0.62f); // sprite brightness: sky part, sun part (lit ~1.0, shade ~0.5)
     public static readonly Vector4 Wind = new(0.8f, 0.6f, 0.12f, 0.25f); // direction xz, strength, steady lean
 
@@ -116,7 +118,7 @@ sealed class Shading : IDisposable
         p["SkyColor"]?.SetValue(SkyColor);
         p["GroundColor"]?.SetValue(GroundColor);
         p["FogColor"]?.SetValue(Ironfield.World.Horizon.ToVector3());
-        p["FogParams"]?.SetValue(new Vector4(Fog.X, Fog.Y, 0.55f, 0));
+        p["FogParams"]?.SetValue(new Vector4(Fog.X * Ironfield.Sky.FogScale, Fog.Y * Ironfield.Sky.FogScale, 0.55f, 0));
         p["ShadowParams"]?.SetValue(new Vector4(ShadowTexel, ShadowBias, shadows ? 1 : 0, normalOffset));
         p["Time"]?.SetValue(time);
         p["Wind"]?.SetValue(Wind);

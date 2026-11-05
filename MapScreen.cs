@@ -217,6 +217,8 @@ sealed class MapScreen
 
     public void Draw(Quality quality)
     {
+        // Day and night on the map follow the campaign clock (kept readable at night); autumn and winter skies are greyer.
+        Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0), nightFloor: 0.5f);
         var look = new Vector3(MathF.Cos(yaw) * MathF.Cos(pitch), -MathF.Sin(pitch), MathF.Sin(yaw) * MathF.Cos(pitch));
         var f3 = new Vector3(focus.X, terrain.Height(focus), focus.Y);
         eye = f3 - look * zoom;

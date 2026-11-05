@@ -26,8 +26,9 @@ sealed class World : IDisposable
 {
     public const float MinimapRange = 110; // the minimap shows +-this many metres around the centre
     public const float FogStart = 110, FogEnd = 330;
-    public static readonly Color Horizon = new(186, 204, 218), Zenith = new(78, 126, 194);
-    public static readonly Vector3 SunDir = Vector3.Normalize(new Vector3(-0.45f, -0.8f, -0.35f)); // light travels this way
+    public static Color Horizon => Sky.Horizon;
+    public static Color Zenith => Sky.Zenith;
+    public static Vector3 SunDir => Sky.SunDir; // light travels this way
     const int Chunk = 60000; // primitives per draw call
 
     public readonly Texture2D Minimap;
@@ -71,10 +72,10 @@ sealed class World : IDisposable
     {
         fx.VertexColorEnabled = true;
         fx.LightingEnabled = true;
-        fx.AmbientLightColor = new Vector3(0.46f, 0.48f, 0.54f);
+        fx.AmbientLightColor = Sky.SkyColor * 1.1f;
         fx.DirectionalLight0.Enabled = true;
         fx.DirectionalLight0.Direction = SunDir;
-        fx.DirectionalLight0.DiffuseColor = new Vector3(0.72f, 0.67f, 0.58f);
+        fx.DirectionalLight0.DiffuseColor = Sky.SunColor * 0.8f;
         fx.DirectionalLight0.SpecularColor = Vector3.Zero;
         fx.DirectionalLight1.Enabled = fx.DirectionalLight2.Enabled = false;
         fx.SpecularPower = 1;
@@ -196,6 +197,7 @@ sealed class World : IDisposable
         float rd = t.RoadDist(p);
         c = Vector3.Lerp(c, new Vector3(0.56f, 0.47f, 0.34f), 1 - Smooth(1.8f, 3.4f + n2 * 0.6f, rd));      // road
         if (t.Tint != null) c *= t.Tint(p);
+        if (t.WaterDepth(p) > 0) c = Vector3.Lerp(c, new Vector3(0.24f, 0.38f, 0.46f), t.WaterDepth(p) > 0.5f ? 0.9f : 0.6f); // the minimap shows water
         return c * (1 + n2 * 0.05f);
     }
 
@@ -320,9 +322,11 @@ sealed class World : IDisposable
                 case FoliageKind.Gate: GateDoor(m, b, t.Wall?.GateOpen == true, rng); break;
                 case FoliageKind.Ladder: Ladder(m, b); break;
                 case FoliageKind.House: TownHouse(m, b, f.Scale, rng); break;
+                case FoliageKind.Wagon: Wagon(m, b, rng); break;
                 default: Rock(m, b, f.Scale, rng); break;
             }
         }
+        Water(m);
         Grass(m);
         if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
         var vb = new VertexBuffer(gd, VertexPNCT.Decl, Math.Max(3, m.V.Count), BufferUsage.WriteOnly);
@@ -435,6 +439,29 @@ sealed class World : IDisposable
         m.Frustum(b + new Vector3(0.6f * s, 2.2f * s, 0), b + new Vector3(0.6f * s, 3.0f * s, 0), 0.36f * s, 0, 6, Slate, r, capBottom: true);
     }
 
+    // ---------- water ----------
+
+    static readonly Color WaterDeep = new(52, 88, 112), WaterShallow = new(86, 124, 132);
+
+    /// Each river as a flat ribbon a little below its lower bank; shallower and paler over the fords.
+    void Water(Mesh m)
+    {
+        m.Tag = Vector2.Zero;
+        foreach (var r in t.Rivers)
+            for (int i = 0; i + 1 < r.Path.Length; i++)
+            {
+                Vector2 a = r.Path[i], b = r.Path[i + 1], d = Vector2.Normalize(b - a), n = new(-d.Y, d.X);
+                float half = r.Width / 2 + 1.2f, bank = r.Width / 2 + 3.5f;
+                float Level(Vector2 p) => MathF.Min(t.Height(p + n * bank), t.Height(p - n * bank)) - 0.3f;
+                float la = Level(a), lb = Level(b);
+                Color ca = r.AtFord(a) ? WaterShallow : WaterDeep, cb = r.AtFord(b) ? WaterShallow : WaterDeep;
+                Vector3 V(Vector2 p, float y) => new(p.X, y, p.Y);
+                var up = new Vector3((a.X + b.X) / 2, -1000, (a.Y + b.Y) / 2);
+                m.Tri(V(a - n * half, la), V(a + n * half, la), V(b + n * half, lb), ca, up);
+                m.Tri(V(a - n * half, la), V(b + n * half, lb), V(b - n * half, lb), cb, up);
+            }
+    }
+
     // ---------- a besieged town (Terrain.SiegeWall) ----------
 
     static readonly Color WallStone = new(150, 146, 136), Timber = new(104, 72, 44);
@@ -487,6 +514,17 @@ sealed class World : IDisposable
             m.Frustum(foot + Vector3.UnitX * side, top + Vector3.UnitX * side, 0.06f, 0.06f, 4, Timber, rng);
         for (float k = 0.08f; k < 1; k += 0.09f)
             m.Box(Vector3.Lerp(foot, top, k), 0.8f, 0.07f, 0.07f, 0, Timber);
+    }
+
+    /// The supply wagon: a bed on four wheels under a canvas tilt, with arrow sheaves.
+    static void Wagon(Mesh m, Vector3 b, Random r)
+    {
+        m.Tag = Vector2.Zero;
+        m.Box(b + Vector3.Up * 0.55f, 3.2f, 1.5f, 0.45f, 0, Timber);
+        foreach (var (x, z) in new[] { (-1.1f, -0.8f), (1.1f, -0.8f), (-1.1f, 0.8f), (1.1f, 0.8f) })
+            m.Frustum(b + new Vector3(x, 0.45f, z - 0.06f), b + new Vector3(x, 0.45f, z + 0.06f), 0.45f, 0.45f, 8, new Color(80, 58, 38), r, capBottom: true);
+        m.Gable(b + Vector3.Up * 1.0f, 3.0f, 1.6f, 0.8f, 0, new Color(214, 204, 176));
+        for (int i = 0; i < 3; i++) m.Box(b + new Vector3(-0.9f + i * 0.6f, 1.0f, 0), 0.25f, 0.25f, 0.6f, 0, new Color(150, 120, 80));
     }
 
     static void TownHouse(Mesh m, Vector3 b, float s, Random r)
