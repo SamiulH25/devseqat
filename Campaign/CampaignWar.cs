@@ -35,7 +35,7 @@ public sealed partial class Campaign
         return null;
     }
 
-    public int PrisonerValue => (int)Player.Prisoners.Sum(g => g.Count * Troops.Get(g.Troop).Cost * B.RansomRate);
+    public int PrisonerValue => (int)(Player.Prisoners.Sum(g => g.Count * Troops.Get(g.Troop).Cost * B.RansomRate) * (Has("RansomBroker") ? 1.5f : 1));
 
     public string? SellPrisoners(Settlement s)
     {
@@ -56,12 +56,13 @@ public sealed partial class Campaign
         Player.Prisoners.Clear();
     }
 
-    public int LordRansom(Party lord) => 300 + 200 * lord.Tier;
+    public int LordRansom(Party lord) => (int)((300 + 200 * lord.Tier) * (Has("RansomBroker") ? 1.5f : 1));
 
     public string? RansomLord(Party lord, Settlement s)
     {
         if (s.Kind == SettlementKind.Village) return "ONLY TOWNS AND CASTLES PAY RANSOMS";
         S.Gold += LordRansom(lord);
+        Practise("Charm", LordRansom(lord) / 100f);
         if (CharacterOf(lord) is Character ch) Remember(ch, Me, "you sold me back for gold", -10);
         Release(lord);
         Log($"{lord.Name} is ransomed for {LordRansom(lord)} crowns.");
@@ -108,7 +109,7 @@ public sealed partial class Campaign
 
     internal void OfficerAfterBattle(CompanyRecord c, bool won, float lostFrac)
     {
-        if (c.Officer == "") { if (rng.Chance(0.4f)) { c.Officer = "Sgt " + rng.Pick(Names.Get().Lords); c.OfficerBattles = 0; } return; }
+        if (c.Officer == "") { if (rng.Chance(Player.Companies.Contains(c) && Has("Sergeants") ? 0.8f : 0.4f)) { c.Officer = "Sgt " + rng.Pick(Names.Get().Lords); c.OfficerBattles = 0; } return; }
         if (lostFrac >= 0.5f && rng.Chance(0.25f))
         {
             if (Player.Companies.Contains(c)) Log($"{c.Officer} of {c.Name} has fallen.");
@@ -135,7 +136,7 @@ public sealed partial class Campaign
     public bool Winter => SeasonIndex == 3;
 
     int Mouths => Player.Men + Player.Wounded + PrisonerCount;
-    public int FoodPrice(int days) => (int)MathF.Ceiling(Mouths * days * 0.15f);
+    public int FoodPrice(int days) => (int)MathF.Ceiling(Mouths * days * 0.15f * (Has("Provisioner") ? 0.75f : 1));
 
     public string? BuyFood(int days)
     {
@@ -179,7 +180,7 @@ public sealed partial class Campaign
             BuyFood(7);
             Log($"Your quartermaster buys a week of food in {here.Name}.");
         }
-        Player.Food -= (Winter ? 1.5f : 1) * (HasCompanion("Quartermaster") ? 0.85f : 1);
+        Player.Food -= (Winter ? 1.5f : 1) * (HasCompanion("Quartermaster") ? 0.85f : 1) * (Has("Forager") ? 0.8f : 1);
         if (Player.Food >= 0) return;
         Player.Food = 0;
         foreach (var c in Player.Companies)

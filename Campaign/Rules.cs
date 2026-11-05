@@ -133,41 +133,38 @@ public static class Rules
             Head = c.HelmTier > 0 ? "greathelm" : l.Head,
         };
         t.Armor += 5 * c.ArmorTier + 2 * c.HelmTier;
+        // Arms (F4): +2% health per 10 points, Hardened +20%, Duellist +15% damage.
+        t.MaxHp *= 1 + Skills.Level(c, "Arms") / 500f + (c.Perks.Contains("Hardened") ? 0.2f : 0);
+        if (c.Perks.Contains("Duellist")) t.Damage *= 1.15f;
         return t;
     }
 
-    public static Mount CaptainMount(CaptainState c) => Troops.Mount(c.HorseTier switch { 2 => "destrier", 1 => "warhorse", _ => "courser" });
-
-    public static int CompanySlots(CaptainState c) => Math.Clamp((int)B.CompanySlotsBase, 1, 10);
-    public static int MenLimit(CaptainState c) => (int)(B.MenBase + c.Renown / B.MenRenownDivisor);
-    public static int PerkPoints(CaptainState c) => (int)(c.Renown / B.PerkEvery) - c.Perks.Count;
-
-    /// The next rung of the renown ladder, for the panel: what it buys and the renown that pays for it.
-    /// You may field up to 10 companies at any time; renown raises the men cap and earns perk points.
-    public static (string What, float At) NextRenownUnlock(CaptainState c)
+    public static Mount CaptainMount(CaptainState c)
     {
-        var options = new List<(string, float)>();
-        float menAt = (MenLimit(c) + 1 - B.MenBase) * B.MenRenownDivisor;
-        options.Add(($"MEN CAP {MenLimit(c) + 1}", menAt));
-        float perkAt = (int)(c.Renown / B.PerkEvery + 1) * B.PerkEvery;
-        options.Add(("A PERK", perkAt));
-        return options.OrderBy(o => o.Item2).First();
+        var m = Troops.Mount(c.HorseTier switch { 2 => "destrier", 1 => "warhorse", _ => "courser" });
+        return c.Perks.Contains("MountedLord") ? m with { Hp = m.Hp * 1.3f } : m;
     }
 
-    public static readonly Dictionary<Perk, string> PerkText = new()
+    public static int CompanySlots(CaptainState c) => Math.Clamp((int)B.CompanySlotsBase, 1, 10);
+    /// Men you may lead: a base, renown, Leadership (+1 per 5 points) and the Born Captain perk.
+    public static int MenLimit(CaptainState c) => (int)(B.MenBase + c.Renown / B.MenRenownDivisor + Skills.Level(c, "Leadership") / 5
+        + (c.Perks.Contains("BornCaptain") ? 10 : 0));
+
+    /// The next rung of the renown ladder, for the panel: renown now raises only the men cap (perks come from skills, F4).
+    public static (string What, float At) NextRenownUnlock(CaptainState c)
     {
-        [Perk.Bannerman] = "AURA RADIUS +4 M", [Perk.WarCry] = "RALLY +10 MORALE, 3 S FASTER", [Perk.Tactician] = "AUTO-RESOLVE +10%, SEE FOES WHEN DEPLOYING",
-        [Perk.Quartermaster] = "UPKEEP -10%", [Perk.Surgeon] = "+10% OF FALLEN SURVIVE WOUNDED", [Perk.Drillmaster] = "UPGRADE COMPANIES IN CAMP",
-        [Perk.Horsemaster] = "HORSES -30%, PARTY SPEED +5%", [Perk.IronWill] = "COMPANIES NEAR YOU HOLD UNTIL 30% STRENGTH",
-    };
+        float renownPart = c.Renown / B.MenRenownDivisor;
+        float at = ((int)renownPart + 1) * B.MenRenownDivisor;
+        return ($"MEN CAP {MenLimit(c) + 1}", at);
+    }
 
     // ---------- auto-resolve (5.4) ----------
 
     /// Fight it out on paper: the result has the same shape as a played battle.
     /// `wall` multiplies side 1's strength: defenders behind walls (1.4 against ladders, more without them).
-    public static BattleResult AutoResolve(IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, Rng rng, bool tactician0, float wall = 1)
+    public static BattleResult AutoResolve(IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, Rng rng, float edge0 = 1, float wall = 1)
     {
-        float s0 = side0.Sum(Strength) * (tactician0 ? 1.1f : 1) * rng.Range(0.85f, 1.15f);
+        float s0 = side0.Sum(Strength) * edge0 * rng.Range(0.85f, 1.15f);
         float s1 = side1.Sum(Strength) * wall * rng.Range(0.85f, 1.15f);
         int t0 = side0.Max(p => p.Tier), t1 = side1.Max(p => p.Tier);
         s0 *= 1 + 0.1f * (t0 - t1);

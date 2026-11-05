@@ -44,6 +44,7 @@ public static class SelfTest
         Stacks();
         Cultures();
         Characters();
+        SkillTree();
         StackBattle();
         ReplayExact();
 
@@ -564,7 +565,7 @@ public static class SelfTest
         {
             c.Captain.Renown = renown;
             var (_, at) = Rules.NextRenownUnlock(c.Captain);
-            Check(at >= renown || Rules.PerkPoints(c.Captain) >= 0, "the next unlock is always ahead");
+            Check(at > c.Captain.Renown, "the next unlock is always ahead");
             Check(at >= last - 0.01f, $"the unlock ladder does not go backwards (at {renown})");
             last = at;
         }
@@ -971,6 +972,90 @@ public static class SelfTest
     }
 
     /// A mixed company fights as one squad and gets its casualties back per stack (F1).
+    /// F4: two captains who fight differently for 20 battles end with different skills and perks; perks gate on skill, skills
+    /// rise with diminishing returns and stay in 0-100, perk effects reach the captain and the economy, and all of it saves.
+    static void SkillTree()
+    {
+        var a = Campaign.New(91);
+        var b = Campaign.New(91);
+        var rngA = new Rng(new CampaignState { Seed = 5 });
+        Check(a.Skill("Leadership") > 0 && a.Captain.Perks.Count == 0, "a new captain has some skill and no perks");
+        Check(a.TakePerk("Duellist") != null, "no perk before its skill reaches 25");
+        Check(a.BuyGear(0) is string g0 && g0.Contains("ARMS"), "plate armour needs Arms");
+        var town = a.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == 0);
+        for (int n = 0; n < 20; n++)
+        {
+            // The brawler fights every battle himself, in the thick of it.
+            var bandit = a.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
+            bandit.Pos = a.Player.Pos;
+            a.Encounter = bandit;
+            var setup = a.PrepareBattle(bandit);
+            var r = Rules.AutoResolve(setup.Side0, setup.Side1, rngA);
+            a.FinishBattle(r with { Duration = 120, PlayerKills = 9 }, setup);
+            foreach (var st in a.Player.Companies.SelectMany(co => co.Stacks)) { st.Men += st.Wounded; st.Wounded = 0; }
+            a.Captain.WoundedUntil = 0;
+            // The quartermaster lets the sergeants fight, then marches, heals and drills his men up in towns.
+            var foe = b.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
+            foe.Pos = b.Player.Pos;
+            b.Encounter = foe;
+            b.AutoResolveEncounter();
+            b.Captain.WoundedUntil = 0;
+            b.S.Gold = 5000;
+            b.MoveTo(b.Player.Pos + new Vector2(n % 2 == 0 ? 40 : -40, 0));
+            for (int h = 0; h < 24; h++) { b.Tick(1); b.Encounter = null; b.Arrived = null; b.Player.Food = 20; }
+            b.Player.Pos = town.Pos;
+            foreach (var co in b.Player.Companies.ToList())
+                foreach (var st in co.Stacks.Where(st => st.Type.UpgradesTo.Length > 0).ToList())
+                {
+                    st.Xp = MathF.Max(st.Xp, st.Type.UpgradeXp * Math.Min(5, st.Men));
+                    b.Promote(co, st, st.Type.UpgradesTo[0], 5);
+                }
+            if (b.Player.Men < 20) b.Player.Companies.Add(b.NewCompany(Campaign.RecruitTroop(0), "infantry", 20, 0, town));
+        }
+        // Each takes what his skills have opened: the brawler on his sword arm first, the quartermaster on the rest.
+        void Choose(Campaign c, IEnumerable<string> order)
+        {
+            foreach (var id in order)
+                foreach (var pk in Skills.Get(id).Perks)
+                    if (Skills.Picks(c.Captain, id) > 0 && !c.Has(pk.Id)) c.TakePerk(pk.Id);
+        }
+        Choose(a, new[] { "Arms", "Leadership", "Tactics" });
+        Choose(b, new[] { "Logistics", "Training", "Medicine", "Leadership" });
+        string Show(Campaign c) => string.Join(" ", Skills.All.Select(s => $"{s.Id[..3]} {c.Skill(s.Id):0}")) + " | " + string.Join(",", c.Captain.Perks);
+        Console.WriteLine($"skills: brawler    {Show(a)}");
+        Console.WriteLine($"skills: quartermaster {Show(b)}");
+        Check(a.Skill("Arms") > b.Skill("Arms") + 10, "the captain who fights himself has the better sword arm");
+        Check(b.Skill("Logistics") > a.Skill("Logistics") + 3, "the captain who marches knows the roads");
+        Check(b.Skill("Training") > a.Skill("Training") + 3, "the captain who promotes his men knows drill");
+        Check(a.Skill("Leadership") > 25 && b.Skill("Leadership") > 25, "commanding raises Leadership");
+        Check(!a.Captain.Perks.SequenceEqual(b.Captain.Perks) && a.Has("WarCry") && !b.Has("WarCry"), "and they end with different perks");
+        Check(Skills.All.All(s => a.Skill(s.Id) is >= 0 and <= 100 && b.Skill(s.Id) is >= 0 and <= 100), "skills stay in 0-100");
+        Check(Skills.All.All(s => Skills.Picks(a.Captain, s.Id) >= 0), "never more perks than the skill allows");
+        Check(a.TakePerk("WarCry") == "TAKEN", "a perk is taken once");
+        // Diminishing returns.
+        var cs = new CaptainState();
+        float g1 = Skills.Raise(cs, "Arms", 10);
+        cs.Skills["Arms"] = 90;
+        float g2 = Skills.Raise(cs, "Arms", 10) - 90;
+        Check(g1 > g2 * 2 && g2 > 0, $"skills rise more slowly near the top ({g1:0.0} vs {g2:0.0})");
+        for (int i = 0; i < 100; i++) Skills.Raise(cs, "Arms", 50);
+        Check(cs.Skills["Arms"] <= 100, "and never pass 100");
+        // Perk effects.
+        var plain = new CaptainState();
+        Check(Rules.CaptainType(new CaptainState { Perks = { "Duellist" } }).Damage > Rules.CaptainType(plain).Damage, "Duellist sharpens your blows");
+        Check(Rules.CaptainType(new CaptainState { Skills = { ["Arms"] = 80 } }).MaxHp > Rules.CaptainType(plain).MaxHp, "Arms toughens you");
+        Check(Rules.MenLimit(new CaptainState { Skills = { ["Leadership"] = 50 } }) == Rules.MenLimit(plain) + 10, "Leadership raises the men limit");
+        var merc = town.Mercenaries.FirstOrDefault() ?? b.Player.Companies[0];
+        int before = b.MercenaryPrice(merc);
+        b.Captain.Perks.Add("Haggler");
+        Check(b.MercenaryPrice(merc) < before, "Haggler bargains mercenaries down");
+        Check(a.TacticsEdge > Campaign.New(91).TacticsEdge || a.Skill("Tactics") <= 10, "Tactics improves auto-resolve odds");
+        // Saved and loaded.
+        var back = CampaignState.Deserialize(a.S.Serialize());
+        Check(back.Captain.Perks.SequenceEqual(a.Captain.Perks) && Math.Abs(back.Captain.Skills["Arms"] - a.Skill("Arms")) < 0.01f, "skills and perks survive a save");
+        Check(!Rules.NextRenownUnlock(a.Captain).What.Contains("PERK"), "renown no longer buys perks");
+    }
+
     static void StackBattle()
     {
         var c = Campaign.New(82);

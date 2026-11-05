@@ -27,7 +27,7 @@ public sealed partial class Campaign
         if (Player.Food <= 0) return ("YOUR MEN ARE STARVING: BUY FOOD", "FOOD");
         if (S.Hours < cap.WoundedUntil) return ("YOU ARE WOUNDED: LET IT PASS OR REST IN A TOWN", "REST");
         // 2. A perk or a company upgrade is ready: the core of the game's progress.
-        if (Rules.PerkPoints(cap) > 0) return ("A PERK IS READY: TAKE IT IN YOUR PARTY (P)", "PARTY");
+        if (Skills.PicksTotal(cap) > 0) return ("A PERK IS READY: CHOOSE IT IN YOUR SKILLS (K)", "SKILLS");
         if (MostReady() is var (rc, rs))
         {
             int n = rs.Ready;

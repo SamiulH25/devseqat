@@ -112,6 +112,12 @@ public sealed partial class Campaign
         if (who.Traits.Contains("Fickle")) weight *= 1.5f;
         if (who.Traits.Contains("Honourable") && what.Contains("free")) weight *= 1.3f;
         if (who.Traits.Contains("Greedy") && what.Contains("gold")) weight *= 1.3f;
+        // Charm (F4): goodwill you earn counts more, and earning it teaches you.
+        if (about == Me && weight > 0)
+        {
+            weight *= 1 + Skill("Charm") / 400f + (Has("SilverTongue") ? 0.25f : 0);
+            Practise("Charm", weight * 0.1f);
+        }
         who.Opinion[about.Id] = Math.Clamp(who.Opinion.GetValueOrDefault(about.Id) + weight, -100, 100);
         who.Memories.Add(new Memory { Day = Day, About = about.Id, What = what, Weight = weight });
         if (who.Memories.Count > 8) who.Memories.Remove(who.Memories.OrderBy(m => MathF.Abs(m.Weight)).ThenBy(m => m.Day).First());
@@ -257,7 +263,7 @@ public sealed partial class Campaign
     void HeroFell(CompanyRecord c)
     {
         if (Companions.FirstOrDefault(k => k.CompanyId == c.Id) is not Character k) return;
-        if (rng.Chance(0.1f)) { k.Dead = true; Log($"{k.Name}, your {k.Role.ToLowerInvariant()}, has fallen leading {c.Name}."); }
+        if (!Has("Triage") && rng.Chance(0.1f)) { k.Dead = true; Log($"{k.Name}, your {k.Role.ToLowerInvariant()}, has fallen leading {c.Name}."); }
         else { k.WoundedUntil = (float)S.Hours + 5 * 24; Log($"{k.Name} is carried from the field, wounded."); }
         RefreshHeroes();
     }
@@ -273,9 +279,10 @@ public sealed partial class Campaign
     public float RecruitShare(Settlement s)
     {
         if (s.Owner == Player.Id) return 1;
+        float recruiter = Has("Recruiter") ? 0.2f : 0;
         float op = HolderOf(s) is Character h ? OpinionOfYou(h)
             : S.Characters.Where(c => c.Kind == "lord" && !c.Dead && c.Faction == s.Faction).Select(OpinionOfYou).DefaultIfEmpty(0).Average();
-        return Math.Clamp(0.5f + op / 100f, 0, 1);
+        return Math.Clamp(0.5f + op / 100f + recruiter, 0, 1);
     }
 
     /// How many of a settlement's recruits will take your coin now.

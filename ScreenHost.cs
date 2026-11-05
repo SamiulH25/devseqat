@@ -280,7 +280,15 @@ sealed class ScreenHost : Game
                 cStage++; shotFrames = 0; break;
             }
             case 18: Shot("campaign-winter"); break;
-            case 19: Exit(); break;
+            case 19:
+            {
+                c.Captain.Skills["Arms"] = 62; c.Captain.Skills["Leadership"] = 41; c.Captain.Skills["Logistics"] = 27;
+                c.TakePerk("WarCry");
+                map.Stage("skills");
+                Shot("campaign-skills");
+                break;
+            }
+            case 20: Exit(); break;
         }
     }
 }

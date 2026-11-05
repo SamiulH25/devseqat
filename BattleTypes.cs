@@ -63,4 +63,5 @@ public sealed record CompanyResult(int Team, int Id, int Start, int Standing, in
 public sealed record StackResult(string Troop, int Start, int Standing, int Fled, int Fallen);
 
 /// What a battle hands back to the campaign. Winner: 0 you, 1 the enemy (also when you withdraw).
-public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<CompanyResult> Companies, LeaderFate Captain, LeaderFate EnemyLeader, int HorsesTaken);
+public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<CompanyResult> Companies, LeaderFate Captain, LeaderFate EnemyLeader, int HorsesTaken,
+    int PlayerKills = 0);

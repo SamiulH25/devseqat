@@ -9,7 +9,6 @@ namespace Ironfield;
 
 public enum SettlementKind { Village, Town, Castle }
 public enum PartyKind { Player, Lord, Bandit, Garrison }
-public enum Perk { Bannerman, WarCry, Tactician, Quartermaster, Surgeon, Drillmaster, Horsemaster, IronWill }
 
 /// A persistent company (CAMPAIGN_OVERHAUL.md 2): a banner with a role, a history and an officer, holding troop stacks of any
 /// troops that fit its role. The company's face (portrait, name in battle) is its largest stack.
@@ -211,7 +210,9 @@ public sealed class CaptainState
 {
     public float Renown = 50, WoundedUntil;
     public int ArmorTier, HelmTier, HorseTier, Contract = 0; // Contract: faction you serve, -1 = none
-    public List<Perk> Perks = new();
+    /// Skills 0-100 (step F4) by id, and the perks taken from their branches (Skills.cs).
+    public Dictionary<string, float> Skills = new();
+    public List<string> Perks = new();
 }
 
 public sealed class LogEntry
@@ -332,6 +333,8 @@ public sealed class Balance
 {
     /// Veteran honours (F1); the built-in defaults when empty.
     public List<HonourDef> Honours = new();
+    /// The captain's skill tree (F4); the built-in defaults when empty.
+    public List<SkillDef> Skills = new();
     public float HourSeconds = 0.5f, FootSpeed = 5.5f, HorseSpeed = 9, RoadBonus = 1.3f, Vision = 55, EncounterRadius = 3.5f, JoinRadius = 10;
     /// How much closer two AI parties must be before they fight (the player's own encounters use EncounterRadius).
     public float AiClashRadius = 5.5f;
@@ -339,7 +342,7 @@ public sealed class Balance
     public float UpkeepRate = 0.1f, ContractPay = 0.85f, LootRate = 0.25f, RansomRate = 1, MercMarkup = 1.5f;
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;
     public float XpParticipation = 20, XpVictory = 1.5f, XpPerKillTier = 12;
-    public float RenownPerVictory = 5, RenownStrengthDivisor = 50, PerkEvery = 100;
+    public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
     public float CompanySlotsBase = 10, CompanySlotRenown = 0, MenBase = 40, MenRenownDivisor = 5;
     public int VillageRecruitsMax = 8, LordsPerFaction = 8, BanditsMax = 80;
     /// A bandit band appears this many times a day while below BanditsMax (0-1) — the roll for each attempt.

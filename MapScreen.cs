@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -102,8 +102,8 @@ sealed class MapScreen
         Tips.Show("welcome", "Welcome, captain. Click the map to march; click a town or village to enter it.\nBrigands are close by: click their banner to ride at them, or let them come to you.\nWASD pans, the wheel zooms, Space pauses. P opens your company.");
         if (C.Player.Companies.Any(Rules.UpgradeReady))
             Tips.Show("upgrade", "Some of your men have the XP for promotion (gold bar, N READY).\nOpen the party screen (P) in a town, click a troop stack, and choose how many to promote and into what.");
-        if (Rules.PerkPoints(C.Captain) > 0) Tips.Show("perk", "Your renown has earned a perk. Take it in the party screen (P).");
-        if (C.Captain.Renown >= 80) Tips.Show("renown", "Renown is your standing: each victory adds to it. It raises your men cap\nand earns perks. The bar under the captain panel shows the next thing it buys.");
+        if (Skills.PicksTotal(C.Captain) > 0) Tips.Show("perk", "One of your skills has reached a new mark: choose a perk on its branch (K opens your skills).\nSkills rise by doing: commanding, marching, healing, promoting, fighting, ruling and winning goodwill.");
+        if (C.Captain.Renown >= 80) Tips.Show("renown", "Renown is your standing: each victory adds to it, and it raises your men cap.\nThe bar under the captain panel shows the next rise.");
         if (C.Player.Companies.Count >= Rules.CompanySlots(C.Captain)) Tips.Show("slots", "You have reached the maximum of 10 companies. Merge or disband a company to form a new one.");
         if (C.Day >= 7) Tips.Show("upkeep", "Upkeep is paid each week (the bar at the top). Your contract pays most of it;\nloot, ransoms and bounties pay the rest. Unpaid men desert.");
 
@@ -157,12 +157,14 @@ sealed class MapScreen
             if (C.SeasonIndex != season) { var keep = (focus, follow); Open(C); (focus, follow) = keep; C.Log($"{C.Season} comes."); }
             Trails();
         }
-        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters)
+        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills)
             panel = panel == PanelKind.Upgrade ? PanelKind.Party : PanelKind.None;
         if (renaming != null) Rename();
         else Ui.Typed.Clear();
         if (panel == PanelKind.None && Pressed(Keys.L)) { panel = PanelKind.Characters; note = ""; }
         else if (panel == PanelKind.Characters && Pressed(Keys.L)) panel = PanelKind.None;
+        else if (panel is PanelKind.None or PanelKind.Party && Pressed(Keys.K)) { panel = PanelKind.Skills; note = ""; }
+        else if (panel == PanelKind.Skills && Pressed(Keys.K)) panel = PanelKind.None;
         if (panel == PanelKind.None && C.Besieging is Settlement besieged && C.Player.SiegeTarget >= 0 && !C.Player.Moving && C.Encounter == null && Pressed(Keys.B)) { at = besieged; panel = PanelKind.Siege; }
         if (follow) focus = Vector2.Lerp(focus, C.Player.Pos, MathF.Min(1, dt * 4));
     }
@@ -437,6 +439,7 @@ sealed class MapScreen
             case PanelKind.GameOver: GameOverPanel(); break;
             case PanelKind.Siege: SiegePanel(); break;
             case PanelKind.Characters: CharactersPanel(); break;
+            case PanelKind.Skills: SkillsPanel(); break;
         }
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
@@ -578,14 +581,7 @@ sealed class MapScreen
     }
 
     /// How much renown the last rung of the ladder covered, so the bar runs from there to the next unlock.
-    static float RenownStep(CaptainState cap, float next)
-    {
-        var b = Balance.Get();
-        float prevMen = (Rules.MenLimit(cap) - b.MenBase) * b.MenRenownDivisor;
-        float prevPerk = (int)(cap.Renown / b.PerkEvery) * b.PerkEvery;
-        float best = MathF.Max(0, MathF.Max(prevMen < next ? prevMen : 0, prevPerk < next ? prevPerk : 0));
-        return MathF.Min(cap.Renown, best);
-    }
+    static float RenownStep(CaptainState cap, float next) => MathF.Min(cap.Renown, MathF.Max(0, next - Balance.Get().MenRenownDivisor));
 
     void Cards()
     {
@@ -636,7 +632,7 @@ sealed class MapScreen
 
     void Hints()
     {
-        ui.Text("LMB MOVE / ENTER / CHASE   P PARTY   L LORDS   SPACE PAUSE   1-3 SPEED", ui.U(12), ui.H - ui.U(160), Color.White * 0.6f, 1);
+        ui.Text("LMB MOVE / ENTER / CHASE   P PARTY   K SKILLS   L LORDS   SPACE PAUSE   1-3 SPEED", ui.U(12), ui.H - ui.U(160), Color.White * 0.6f, 1);
         ui.Text("WASD PAN   Q/E TURN   WHEEL ZOOM   F FOLLOW   F5 SAVE  F9 LOAD   ESC MENU", ui.U(12), ui.H - ui.U(146), Color.White * 0.6f, 1);
     }
 
@@ -814,9 +810,10 @@ sealed class MapScreen
                 var gear = C.Gear();
                 for (int i = 0; i < gear.Length; i++)
                 {
-                    var (name, cost, owned) = gear[i];
+                    var (name, cost, owned, arms) = gear[i];
                     var br = new Rectangle(body.X + (i % 2) * ui.U(370), body.Y + ui.U(116) + i / 2 * ui.U(36), ui.U(360), ui.U(30));
-                    if (ui.Button(br, name, !owned, owned ? "OWNED" : $"{cost} CROWNS")) note = C.BuyGear(i) ?? "BOUGHT";
+                    bool able = C.Skill("Arms") >= arms;
+                    if (ui.Button(br, name, !owned && able, owned ? "OWNED" : able ? $"{cost} CROWNS" : $"NEEDS ARMS {arms}")) note = C.BuyGear(i) ?? "BOUGHT";
                 }
                 break;
             }
@@ -993,21 +990,25 @@ sealed class MapScreen
         int px = r.X + ui.U(700), py = r.Y + ui.U(50);
         var cap = C.Captain;
         ui.Text("THE CAPTAIN  " + C.Stage, px, py, Style.Accent);
-        ui.Text($"RENOWN {cap.Renown:0}   PERK POINTS {Rules.PerkPoints(cap)}", px, py + ui.U(20), Style.Text, 1);
+        int picks = Skills.PicksTotal(cap);
+        ui.Text($"RENOWN {cap.Renown:0}   PERKS {cap.Perks.Count}" + (picks > 0 ? $"   {picks} TO CHOOSE" : ""), px, py + ui.U(20), picks > 0 ? Style.Accent : Style.Text, 1);
         ui.Text($"{Rules.CompanySlots(cap)} COMPANIES, {Rules.MenLimit(cap)} MEN AT MOST", px, py + ui.U(32), Style.Dim, 1);
         // The renown ladder, the same line the map HUD shows: what the next rung buys and how close it is.
         var (unlock, at) = Rules.NextRenownUnlock(cap);
         ui.Bar(new Rectangle(px, py + ui.U(44), ui.U(260), ui.U(4)), (cap.Renown - RenownStep(cap, at)) / MathF.Max(1, at - RenownStep(cap, at)), Style.Accent);
         ui.Text($"NEXT: {unlock} AT {at:0} RENOWN", px, py + ui.U(50), Style.Dim, 1);
         py += ui.U(68);
-        foreach (Perk perk in Enum.GetValues<Perk>())
+        // The skills in brief; the tree itself is its own screen (K).
+        for (int i = 0; i < Skills.All.Count; i++)
         {
-            bool has = cap.Perks.Contains(perk);
-            var br = new Rectangle(px, py, ui.U(260), ui.U(24));
-            if (ui.Button(br, perk.ToString().ToUpperInvariant(), !has && Rules.PerkPoints(cap) > 0, has ? "TAKEN" : "")) C.TakePerk(perk);
-            if (ui.Hover(br)) note = Rules.PerkText[perk];
-            py += ui.U(28);
+            var sk = Skills.All[i];
+            int sx = px + (i % 2) * ui.U(132), sy = py + i / 2 * ui.U(14);
+            int open = Skills.Picks(cap, sk.Id);
+            ui.Text($"{sk.Name.ToUpperInvariant()} {C.Skill(sk.Id):0}" + (open > 0 ? " *" : ""), sx, sy, open > 0 ? Style.Accent : Style.Dim, 1);
         }
+        py += ui.U(60);
+        if (ui.Button(new Rectangle(px, py, ui.U(260), ui.U(26)), "SKILLS AND PERKS", true, "K")) { panel = PanelKind.Skills; note = ""; }
+        py += ui.U(30);
         // Prisoners: turn them to your cause (green, cohesion 0) or let them go.
         py += ui.U(8);
         ui.Text($"PRISONERS {C.PrisonerCount}", px, py, Style.Accent);
@@ -1142,6 +1143,46 @@ sealed class MapScreen
         }
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (L)")) panel = PanelKind.None;
+    }
+
+    /// The captain's skill tree (F4): each skill's level and what raises it, and the four perks on its branch,
+    /// one more of which may be chosen for every 25 points.
+    void SkillsPanel()
+    {
+        var r = Modal(1040, 640, "SKILLS AND PERKS");
+        var cap = C.Captain;
+        int picks = Skills.PicksTotal(cap);
+        ui.TextC(picks > 0 ? $"{picks} PERK{(picks == 1 ? "" : "S")} TO CHOOSE" : "SKILLS RISE BY USE. EVERY 25 POINTS OPENS A PERK ON THAT BRANCH.",
+            r.X + r.Width / 2f, r.Y + ui.U(40), picks > 0 ? Style.Accent : Style.Dim, 1);
+        int colW = (r.Width - ui.U(60)) / 2, blockH = ui.U(122);
+        for (int i = 0; i < Skills.All.Count; i++)
+        {
+            var sk = Skills.All[i];
+            int bx = r.X + ui.U(24) + (i % 2) * (colW + ui.U(12)), by = r.Y + ui.U(58) + i / 2 * blockH;
+            var box = new Rectangle(bx, by, colW, blockH - ui.U(8));
+            ui.Rect(box, Color.White * 0.04f);
+            float lv = C.Skill(sk.Id);
+            int open = Skills.Picks(cap, sk.Id);
+            ui.Text($"{sk.Name.ToUpperInvariant()}  {lv:0}", bx + ui.U(8), by + ui.U(6), Style.Text, 2);
+            if (open > 0) ui.TextR($"{open} TO CHOOSE", box.Right - ui.U(8), by + ui.U(8), Style.Accent, 1);
+            var bar = new Rectangle(bx + ui.U(8), by + ui.U(26), colW - ui.U(16), ui.U(5));
+            ui.Bar(bar, lv / Skills.Max, Style.Accent);
+            for (int m = 1; m < 4; m++) ui.Rect(new Rectangle(bar.X + bar.Width * m / 4, bar.Y - 2, 1, bar.Height + 4), Style.Text * 0.6f);
+            ui.Text($"RISES BY {sk.Rises}", bx + ui.U(8), by + ui.U(36), Style.Dim, 1);
+            ui.Text(sk.Governs, bx + ui.U(8), by + ui.U(48), Style.Dim, 1);
+            int pw = (colW - ui.U(16) - 3 * ui.U(4)) / 4;
+            for (int k = 0; k < sk.Perks.Count && k < 4; k++)
+            {
+                var pk = sk.Perks[k];
+                bool has = cap.Perks.Contains(pk.Id);
+                var pr = new Rectangle(bx + ui.U(8) + k * (pw + ui.U(4)), by + ui.U(64), pw, ui.U(22));
+                if (ui.Button(pr, pk.Name.ToUpperInvariant(), has || open > 0, "", has) && !has) note = C.TakePerk(pk.Id) ?? $"{pk.Name.ToUpperInvariant()} LEARNED";
+                if (ui.Hover(pr)) note = $"{pk.Name.ToUpperInvariant()}: {pk.Text}" + (has ? " (TAKEN)" : open > 0 ? "" : $" (NEXT CHOICE AT {sk.Name.ToUpperInvariant()} {((int)(lv / Skills.Step) + 1) * (int)Skills.Step})");
+            }
+            ui.Text(string.Join("  ", sk.Perks.Where(p => cap.Perks.Contains(p.Id)).Select(p => p.Text)), bx + ui.U(8), by + ui.U(92), Style.Ok, 1);
+        }
+        Note(r);
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (K)")) panel = PanelKind.None;
     }
 
     /// A company's story for the party screen: origin, honours, and its last fights.
@@ -1303,6 +1344,7 @@ sealed class MapScreen
             case "map": panel = PanelKind.None; zoom = 330; pitch = 0.95f; break;
             case "close": panel = PanelKind.None; zoom = 60; pitch = 0.7f; break;
             case "party": panel = PanelKind.Party; break;
+            case "skills": panel = PanelKind.Skills; note = ""; break;
             case "settlement":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
                 tab = "MERCENARIES"; panel = PanelKind.Settlement; break;

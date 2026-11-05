@@ -1197,7 +1197,7 @@ public sealed partial class Battle
         var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
         var foeLeader = EnemyCaptain.Dead ? LeaderFate.Slain : LeaderFate.Unhurt;
         int horses = LooseHorses.Count(h => h.Team == 1);
-        return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0);
+        return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills);
     }
 
     float GapTo(Squad s, int team)

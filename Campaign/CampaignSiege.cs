@@ -13,7 +13,8 @@ public sealed partial class Campaign
     /// What a settlement yields a week: to its faction's treasury, or to you when it is your fief (with its province's villages).
     public float Income(Settlement t) => t.Kind switch
     {
-        SettlementKind.Town => B.TownIncome, SettlementKind.Castle => B.CastleIncome, _ => t.ThreatUntil > S.Hours ? 0 : B.VillageIncome,
+        SettlementKind.Town => B.TownIncome, SettlementKind.Castle => B.CastleIncome,
+        _ => t.ThreatUntil > S.Hours && !(t.Owner == Player.Id && Has("Castellan")) ? 0 : B.VillageIncome,
     } * (t.Besieged ? 0.25f : 1);
 
     public IEnumerable<Settlement> Fiefs => S.Settlements.Where(t => t.Owner == Player.Id);
@@ -117,7 +118,7 @@ public sealed partial class Campaign
     }
 
     /// Hours until your men have built ladders and a ram (0 = ready).
-    public float LaddersIn(Settlement s) => MathF.Max(0, s.SiegeSince + 12 - (float)S.Hours);
+    public float LaddersIn(Settlement s) => MathF.Max(0, s.SiegeSince + (Has("Siegecraft") ? 6 : 12) - (float)S.Hours);
 
     public BattleSetup PrepareAssault(Settlement s)
     {
@@ -137,7 +138,7 @@ public sealed partial class Campaign
     public BattleReport AutoResolveAssault(Settlement s)
     {
         var setup = PrepareAssault(s);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, Captain.Perks.Contains(Perk.Tactician), wall: setup.Options.Ladders > 0 ? 1.4f : 1.7f);
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge, wall: setup.Options.Ladders > 0 ? 1.4f : 1.7f);
         return FinishBattle(r, setup);
     }
 
@@ -243,7 +244,7 @@ public sealed partial class Campaign
             if (lords.Count == 0 || S.Hours - s.SiegeSince < 48 || !rng.Chance(0.5f)) continue;
             var defenders = new List<Party> { GarrisonParty(s) };
             defenders.AddRange(S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == s.Faction && Vector2.Distance(p.Pos, s.Pos) < 8 * Map.Spread));
-            var r = Rules.AutoResolve(lords, defenders, rng, false, wall: 1.4f);
+            var r = Rules.AutoResolve(lords, defenders, rng, wall: 1.4f);
             Apply(r, lords, defenders, "");
             if (r.Winner == 0) Capture(s, lords[0].Faction, -1);
             else

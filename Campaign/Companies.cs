@@ -84,6 +84,7 @@ public sealed partial class Campaign
     {
         if (n <= 0) return;
         Rules.AddMen(c, troop, n);
+        if (Has("VeteranCadre") && Player.Companies.Contains(c)) c.Stack(troop).AddXp(20 * n); // F4: recruits who know a little
         if (from != null)
         {
             string culture = from.Culture;
@@ -151,8 +152,12 @@ public sealed partial class Campaign
         return S.Settlements.Any(s => s.Kind == SettlementKind.Town && s.Culture == culture && (realm >= 0 && s.Faction == realm || s.Owner == p.Id));
     }
 
+    /// What one promotion costs this party: Cheap Steel takes 20% off yours (F4).
+    int PromoteCostFor(Party p, string from, string to, bool horse) =>
+        (int)MathF.Ceiling(Rules.PromoteCost(from, to, horse) * (p == Player && Has("CheapSteel") ? 0.8f : 1));
+
     /// Where promotions may happen: a town's training yard, or anywhere with the Drillmaster perk.
-    public bool CanTrainHere(Party p) => p != Player || InTown(Player) || Captain.Perks.Contains(Perk.Drillmaster);
+    public bool CanTrainHere(Party p) => p != Player || InTown(Player) || Has("Drillmaster");
 
     /// How many men of a stack could be promoted to `to` now (at most `want`), and what that costs; a reason when it is none.
     public int Promotable(Party p, CompanyRecord c, TroopStack s, string to, int want, float gold, out int cost, out string reason, bool ignorePlace = false)
@@ -170,7 +175,7 @@ public sealed partial class Campaign
         for (; n < Math.Min(want, s.Ready); n++)
         {
             bool horse = Rules.NeedsHorse(s.Troop, to) && horses > 0;
-            int each = Rules.PromoteCost(s.Troop, to, horse);
+            int each = PromoteCostFor(p, s.Troop, to, horse);
             if (cost + each > gold) { if (n == 0) reason = $"NEEDS {each} CROWNS"; break; }
             var into = Destination(p, c, s.Troop, to, free, ref extra, out string why);
             if (into == null) { if (n == 0) reason = why; break; }
@@ -195,7 +200,7 @@ public sealed partial class Campaign
             var into = Destination(p, c, s.Troop, to, new Dictionary<CompanyRecord, float>(), ref extra, out _);
             if (into == null) break;
             bool horse = Rules.NeedsHorse(s.Troop, to) && p.Horses > 0;
-            if (!pay(Rules.PromoteCost(s.Troop, to, horse))) break;
+            if (!pay(PromoteCostFor(p, s.Troop, to, horse))) break;
             if (into.Id == -1)
             {
                 // Raise the company he founds, of his new role, from the same country.
@@ -223,6 +228,7 @@ public sealed partial class Campaign
         string fromName = s.Type.Name;
         int done = PromoteMen(Player, c, s, to, n, cost => { if (S.Gold < cost) return false; S.Gold -= cost; return true; });
         if (done > 0) Log($"{done} {fromName} of {c.Name} become {Troops.Get(to).Name}.");
+        Practise("Training", done * 0.2f);
         return done > 0 ? null : "CANNOT PROMOTE";
     }
 

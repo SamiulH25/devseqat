@@ -116,8 +116,17 @@ public sealed class Pilot
         }
     }
 
+    /// Take every perk the skills have opened, on the branch in order (the stand-in captain has no favourites).
+    void TakePerks()
+    {
+        foreach (var sk in Skills.All)
+            foreach (var pk in sk.Perks)
+                if (Skills.Picks(c.Captain, sk.Id) > 0 && !c.Has(pk.Id)) c.TakePerk(pk.Id);
+    }
+
     void Think()
     {
+        TakePerks();
         if (c.Captain.Contract < 0) c.SignContract(c.S.Factions.Count > 0 ? 0 : -1);
         float mine = Rules.Strength(Me);
         // Danger first: a hostile party our size or bigger close by sends us behind walls.

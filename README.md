@@ -74,10 +74,14 @@ that will not last. Brigands roam between them all.
   fight, not loot. Villages get threatened, the war score moves,
   the losing side sues for a 30-day truce, and the war resumes when it ends. Upkeep is weekly, a contract pays 85% of it, and unpaid men desert.
 - **Progression is spelled out.** The captain panel shows your **stage** (Mercenary Band → Lord of War) and one clear **next step**
-  — promote your ready men, take the perk, see a steward for work, buy food — and arriving in a town opens the tab that step
-  names. You can field up to **10 companies** right away; **Renown** raises your total troop count (men limit) and buys perks (Bannerman, War Cry, Tactician, Quartermaster, Surgeon, Drillmaster,
-  Horsemaster, Iron Will), each of which changes the battles; a bar under the captain panel shows what the next rung buys and how
-  far off it is, and the results screen repeats it after every battle. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
+  — promote your ready men, choose a perk, see a steward for work, buy food — and arriving in a town opens the tab that step
+  names. You can field up to **10 companies** right away; **Renown** raises your total troop count (men limit); a bar under the captain
+  panel shows the next rise and how far off it is, and the results screen repeats it after every battle.
+- **Captain skills:** eight skills (Leadership, Tactics, Logistics, Training, Medicine, Stewardship, Charm, Arms) rise by doing what
+  they name: commanding, winning against the odds, marching, promoting men, healing them, ruling fiefs, winning goodwill and ransoms,
+  and your own kills. Every 25 points opens a perk on that branch (32 in all: Bannerman, Iron Will, Tactician, Siegecraft,
+  Quartermaster, Drillmaster, Cheap Steel, Surgeon, Tax Roll, Silver Tongue, Ransom Broker, War Cry, Duellist, ...), and the heavier
+  gear needs Arms. K opens the skill tree. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
 
 ## Controls
 
@@ -235,7 +239,7 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 | `BattleGrid.cs` | The spatial grid: near-neighbour queries for separation, targeting, morale and arrows. |
 | `Replay.cs` | Battle recording and exact playback (`--replay`). `GpuReport.cs`: `--gpu-report`. `Sky.cs`: light by hour and weather. |
 | `World.cs` | 3D world: terrain mesh, procedural low-poly foliage and grass (tagged with wind sway and leafiness), sky dome, minimap image; shaded and fixed-function draw paths. |
-| `Campaign/` | The headless campaign: `CampaignState` (save data and its version check, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, stacks, places, auto-resolve, battle bridge), `Companies` (stacks, promotion by the man, honours, ledger), `Campaign` (time, movement, encounters, AI, economy, your actions), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs), `CampaignProgression` (the career stage and the next step), `Characters` (lords, companions, opinion and memories), `Pilot` (a scripted stand-in captain for headless pacing runs). |
+| `Campaign/` | The headless campaign: `CampaignState` (save data and its version check, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, stacks, places, auto-resolve, battle bridge), `Companies` (stacks, promotion by the man, honours, ledger), `Campaign` (time, movement, encounters, AI, economy, your actions), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs), `CampaignProgression` (the career stage and the next step), `Characters` (lords, companions, opinion and memories), `Skills` (the captain's skill tree and perks), `Pilot` (a scripted stand-in captain for headless pacing runs). |
 | `MapScreen.cs` | The campaign map: 3D world, banner-bearer parties, map HUD and every campaign panel. `Ui.cs`: the immediate-mode panel kit. |
 | `BattleTypes.cs` | `BattleOptions` (perks, gear, wounds, palettes, ground, size cap), `BattleResult` / `CompanyResult` for the campaign. |
 | `Shading.cs` | The shader pipeline: effects, sun shadow map, scene target, post pass, light and grade values, quality levels. |

@@ -6,7 +6,7 @@
   "UpkeepRate": 0.1, "ContractPay": 0.85, "LootRate": 0.25, "RansomRate": 1.0, "MercMarkup": 1.5,
   "WoundBase": 0.3, "WoundArmor": 40, "WoundMin": 0.25, "WoundMax": 0.7, "CaptureChance": 0.5, "FledReturnOnDefeat": 0.7,
   "XpParticipation": 20, "XpVictory": 1.5, "XpPerKillTier": 12,
-  "RenownPerVictory": 5, "RenownStrengthDivisor": 50, "PerkEvery": 100,
+  "RenownPerVictory": 5, "RenownStrengthDivisor": 50,
   "CompanySlotsBase": 10, "CompanySlotRenown": 0, "MenBase": 40, "MenRenownDivisor": 5,
   "VillageRecruitsMax": 8, "HealField": 0.08, "HealTown": 0.25, "DrillCamp": 1, "DrillTown": 2,
   "LordsPerFaction": 8, "BanditsMax": 80, "BanditSpawnChance": 0.95, "BanditSpawnsPerDay": 5, "BanditBandMin": 10, "BanditBandMax": 20,

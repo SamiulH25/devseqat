@@ -46,6 +46,7 @@ public sealed partial class Campaign
     {
         var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent };
         s.Captain.Renown = B.StartRenown;
+        StartingSkills(s.Captain);
         var map = WorldMap.Generate(seed, s.MapExtent);
         s.Provinces = map.Provinces;
         s.Settlements = map.Settlements;
@@ -149,7 +150,8 @@ public sealed partial class Campaign
         bool mounted = p.Companies.Count > 0 && p.Companies.All(c => c.Men == 0 || c.Type.Mount != null);
         float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1);
         if (p.Kind == PartyKind.Player) s *= 1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f);
-        if (p.Kind == PartyKind.Player && Captain.Perks.Contains(Perk.Horsemaster)) s *= 1.05f;
+        if (p.Kind == PartyKind.Player)
+            s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1);
         int men = p.Men, wounded = p.Wounded;
         if (men + wounded > 0) s *= 1 - MathF.Min(0.2f, wounded / (float)(men + wounded) * 0.5f);
         return s;
@@ -180,6 +182,7 @@ public sealed partial class Campaign
                 if (p.Kind == PartyKind.Player && p.GoalSettlement >= 0) { Arrived = SettlementById(p.GoalSettlement); p.GoalSettlement = -1; }
             }
             else p.Pos += d / dist * step;
+            if (p.Kind == PartyKind.Player) Practise("Logistics", MathF.Min(dist, step) * 0.006f); // days on the march (F4)
             p.Pos = Vector2.Clamp(p.Pos, new Vector2(-Map.ExtentUsed), new Vector2(Map.ExtentUsed));
         }
     }
@@ -226,7 +229,7 @@ public sealed partial class Campaign
             Player.ChaseId = -1;
             return;
         }
-        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, false);
+        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng);
         var winner = r.Winner == 0 ? a : b;
         var loser = r.Winner == 0 ? b : a;
         AiBattles++;
@@ -257,7 +260,7 @@ public sealed partial class Campaign
             var (p, c, team) = e;
             bool teamWon = r.Winner == team;
             int menBefore = c.Men;
-            float surgeon = (p == Player && Captain.Perks.Contains(Perk.Surgeon) ? 0.1f : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
+            float surgeon = (p == Player ? Skill("Medicine") / 1000f + (Has("Surgeon") ? 0.1f : 0) : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
             int killedAll = 0, woundedAll = 0, capturedAll = 0, fledLostAll = 0;
             // Casualties come off each stack by its own armour (2.3); a battle without a breakdown counts as the company's face.
             var parts = cr.Stacks ?? new[] { new StackResult(c.Troop, cr.Start, cr.Standing, cr.Fled, cr.Fallen) };
@@ -279,7 +282,7 @@ public sealed partial class Campaign
                 if (playerIn && team != playerTeam && won)
                 {
                     loot += (sr.Fallen + sr.Fled) * st.Type.Cost * B.LootRate;
-                    TakePrisoners(st.Troop, captured); // held, not ransomed at once (B3)
+                    TakePrisoners(st.Troop, Has("Pursuit") ? (int)MathF.Round(captured * 1.25f) : captured); // held, not ransomed at once (B3)
                 }
             }
             // XP into each stack's pool: participation per surviving man, and the company's kill XP split by men (2.2).
@@ -333,6 +336,7 @@ public sealed partial class Campaign
             }
         }
         if (playerIn) RelationsAfterBattle(winners, losers, won);
+        if (playerIn) SkillsAfterBattle(r, won, playerTeam == 0 ? startStrength0 : startStrength1, playerTeam == 0 ? startStrength1 : startStrength0, before[Player]);
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, lostStrength);
         S.Parties.RemoveAll(p => p.Kind == PartyKind.Bandit && p.Down);
@@ -360,7 +364,7 @@ public sealed partial class Campaign
             Player.Pos += (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 8;
         }
         if (r.Captain is LeaderFate.Wounded or LeaderFate.Captured)
-            Captain.WoundedUntil = (float)S.Hours + 24 * rng.Range(3, 5);
+            Captain.WoundedUntil = (float)S.Hours + 24 * rng.Range(3, 5) * (Has("Bonesetter") ? 0.5f : 1);
         if (r.Captain == LeaderFate.Captured && S.Ironman)
         {
             S.GameOver = true;
@@ -395,18 +399,18 @@ public sealed partial class Campaign
             else if (Hostile(p, Player) && !Hostile(p, enemy)) setup.Side1.Add(p);
         }
         bool unpaid = S.UnpaidWeeks > 0;
-        setup.Player = Rules.Army("Your company", setup.Side0, unpaid ? -15 : 0);
+        setup.Player = Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0));
         setup.Enemy = Rules.Army(enemy.Name, setup.Side1);
         setup.Seed = HashCode.Combine(S.Seed, (int)(S.Hours * 4), enemy.Id);
         bool scouts = setup.Side0.SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
         setup.Options = new BattleOptions
         {
-            AuraRadius = Captain.Perks.Contains(Perk.Bannerman) ? 16 : 12,
-            RallyBonus = Captain.Perks.Contains(Perk.WarCry) ? 35 : 25,
-            RallyCooldown = Captain.Perks.Contains(Perk.WarCry) ? 9 : 12,
-            IronWill = Captain.Perks.Contains(Perk.IronWill),
+            AuraRadius = Has("Bannerman") ? 16 : 12,
+            RallyBonus = Has("WarCry") ? 35 : 25,
+            RallyCooldown = Has("WarCry") ? 9 : 12,
+            IronWill = Has("IronWill"),
             PlayerWounded = S.Hours < Captain.WoundedUntil,
-            Scouted = scouts || Captain.Perks.Contains(Perk.Tactician),
+            Scouted = scouts || Has("Tactician"),
             PlayerType = Rules.CaptainType(Captain),
             PlayerMount = Rules.CaptainMount(Captain),
             EnemyDamage = Settings.Current.EnemyDamage,
@@ -428,7 +432,7 @@ public sealed partial class Campaign
     public BattleReport AutoResolveEncounter()
     {
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, Captain.Perks.Contains(Perk.Tactician));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge);
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }
@@ -448,7 +452,7 @@ public sealed partial class Campaign
         var rear = Player.Companies.Where(c => c.Men > 0).OrderBy(c => c.Type.Mount != null ? 1 : 0).ThenByDescending(c => c.Men).FirstOrDefault();
         if (rear != null)
         {
-            int lost = Math.Max(1, (int)(rear.Men * rng.Range(0.1f, 0.25f)));
+            int lost = Math.Max(1, (int)(rear.Men * rng.Range(0.1f, 0.25f) * (Has("Ambusher") ? 0.5f : 1)));
             rear.RemoveFit(lost, false);
             rear.Prune();
             Log($"You escape. {rear.Name} lose {lost} men covering the retreat.");
@@ -523,7 +527,7 @@ public sealed partial class Campaign
         return null;
     }
 
-    public int MercenaryPrice(CompanyRecord m) => (int)(m.Stacks.Sum(x => x.Men * x.Type.Cost) * B.MercMarkup);
+    public int MercenaryPrice(CompanyRecord m) => (int)(m.Stacks.Sum(x => x.Men * x.Type.Cost) * B.MercMarkup * (Has("Haggler") ? 0.85f : 1));
 
     public string? Hire(Settlement s, CompanyRecord m)
     {
@@ -538,7 +542,7 @@ public sealed partial class Campaign
         return null;
     }
 
-    public int HorsePrice => (int)(Troops.Mount("courser").Hp * B.HorseCostRate * (Captain.Perks.Contains(Perk.Horsemaster) ? 0.7f : 1));
+    public int HorsePrice => (int)(Troops.Mount("courser").Hp * B.HorseCostRate * (Has("Horsemaster") ? 0.7f : 1) * (Has("Haggler") ? 0.85f : 1));
 
     public string? BuyHorses(Settlement s, int n)
     {
@@ -551,19 +555,21 @@ public sealed partial class Campaign
         return null;
     }
 
-    public (string Name, int Cost, bool Owned)[] Gear() => new[]
+    /// The captain's gear: heavier pieces need the Arms skill to wear (F4).
+    public (string Name, int Cost, bool Owned, int Arms)[] Gear() => new[]
     {
-        ("PLATE ARMOUR", (int)B.ArmorCost, Captain.ArmorTier > 0),
-        ("GREAT HELM", (int)B.HelmCost, Captain.HelmTier > 0),
-        ("WARHORSE", (int)B.WarhorseCost, Captain.HorseTier >= 1),
-        ("DESTRIER", (int)B.DestrierCost, Captain.HorseTier >= 2),
+        ("PLATE ARMOUR", (int)B.ArmorCost, Captain.ArmorTier > 0, 25),
+        ("GREAT HELM", (int)B.HelmCost, Captain.HelmTier > 0, 15),
+        ("WARHORSE", (int)B.WarhorseCost, Captain.HorseTier >= 1, 0),
+        ("DESTRIER", (int)B.DestrierCost, Captain.HorseTier >= 2, 35),
     };
 
     public string? BuyGear(int i)
     {
-        var (name, cost, owned) = Gear()[i];
+        var (name, cost, owned, arms) = Gear()[i];
         if (owned) return "OWNED";
         if (i == 3 && Captain.HorseTier < 1) return "BUY A WARHORSE FIRST";
+        if (Skill("Arms") < arms) return $"NEEDS ARMS {arms}";
         if (S.Gold < cost) return $"NEEDS {cost} CROWNS";
         S.Gold -= cost;
         switch (i) { case 0: Captain.ArmorTier = 1; break; case 1: Captain.HelmTier = 1; break; case 2: Captain.HorseTier = 1; break; default: Captain.HorseTier = 2; break; }
@@ -604,13 +610,6 @@ public sealed partial class Campaign
     {
         int i = Player.Companies.IndexOf(c);
         if (i > 0) (Player.Companies[i - 1], Player.Companies[i]) = (Player.Companies[i], Player.Companies[i - 1]);
-    }
-
-    public bool TakePerk(Perk p)
-    {
-        if (Rules.PerkPoints(Captain) <= 0 || Captain.Perks.Contains(p)) return false;
-        Captain.Perks.Add(p);
-        return true;
     }
 
     public void SignContract(int faction)
@@ -857,7 +856,10 @@ public sealed partial class Campaign
     void Daily()
     {
         foreach (var v in S.Settlements.Where(v => v.ThreatUntil <= S.Hours))
-            v.Recruits = v.Kind == SettlementKind.Village ? Math.Min(B.VillageRecruitsMax, v.Recruits + 1) : Math.Min(12, v.Recruits + 2); // towns and castles raise levies too
+        {
+            int more = v.Owner == Player.Id && Has("JustRuler") ? 2 : 1;
+            v.Recruits = v.Kind == SettlementKind.Village ? Math.Min(B.VillageRecruitsMax, v.Recruits + more) : Math.Min(12, v.Recruits + 2 * more); // towns and castles raise levies too
+        }
         foreach (var p in S.Parties.Where(p => !p.Down))
         {
             bool town = InTown(p);
@@ -867,15 +869,16 @@ public sealed partial class Campaign
                 {
                     if (st.Wounded > 0)
                     {
-                        float surgeon = p == Player && HasCompanion("Surgeon") ? 1.3f : 1;
+                        float surgeon = p == Player ? (HasCompanion("Surgeon") ? 1.3f : 1) * (!town && Has("FieldHospital") ? 1.5f : 1) : 1;
                         int heal = Math.Min(st.Wounded, Math.Max(1, (int)MathF.Round(st.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1) * surgeon)));
+                        if (p == Player) Practise("Medicine", heal * 0.1f);
                         st.Wounded -= heal;
                         st.Men += heal;
                     }
                     // Daily drill: per fit man, into each pool (Old Hands drill harder).
                     if (p.Kind != PartyKind.Bandit && st.Men > 0)
                         st.AddXp(st.Men * ((town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0)) * Honours.Of(c).DrillMul
-                            * (p == Player && HasCompanion("Drillmaster") ? 1.25f : 1));
+                            * (p == Player ? (HasCompanion("Drillmaster") ? 1.25f : 1) * (1 + Skill("Training") / 200f) : 1));
                 }
                 if (town && c.Cohesion < 20) c.Cohesion = MathF.Min(20, c.Cohesion + 1);
             }
@@ -974,10 +977,12 @@ public sealed partial class Campaign
             float upkeep = p.Companies.Sum(Rules.Upkeep);
             if (p == Player)
             {
-                if (Captain.Perks.Contains(Perk.Quartermaster)) upkeep *= 0.9f;
+                if (Has("Quartermaster")) upkeep *= 0.9f;
                 if (HasCompanion("Quartermaster")) upkeep *= 0.95f;
                 float pay = Captain.Contract >= 0 ? upkeep * B.ContractPay * Settings.Current.PayFactor : 0;
-                float fiefs = S.Settlements.Where(t => t.Owner == Player.Id).Sum(Income) * (HasCompanion("Steward") ? 1.15f : 1);
+                float fiefs = S.Settlements.Where(t => t.Owner == Player.Id).Sum(Income) * (HasCompanion("Steward") ? 1.15f : 1)
+                    * (1 + Skill("Stewardship") / 500f) * (Has("TaxRoll") ? 1.15f : 1);
+                if (fiefs > 0) Practise("Stewardship", 0.5f + fiefs / 40f);
                 S.LastWeekBalance = pay + fiefs - upkeep;
                 S.Gold += S.LastWeekBalance;
                 if (S.Gold < 0)

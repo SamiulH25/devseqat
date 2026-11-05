@@ -236,3 +236,17 @@ All of A-E is in. Where the build differs from the table above:
   province (-50 none, 0 half, +50 all; your own fiefs all). The Characters screen (L) lists lords by realm with traits, state, an
   opinion bar and the three strongest memories, and your household. Not yet: the Scout's vision (the map has no fog to widen), refusing
   a lord's quest and razing land (F8 and F6 add those events), raising companions to vassals (F5/F6).
+- F4: `Campaign/Skills.cs`. The `Perk` enum is gone: `CaptainState.Skills` (0-100 by id) and `Perks` (string ids), `Campaign.Has(perk)`.
+  Eight skills, four perks each (defaults in code, overridable as `Skills` in `Data/campaign.json`); a skill opens one perk choice per
+  25 points, and gains shrink as it climbs (x max(0.25, 1 - level/125)). Rises: Leadership 1.5 + men/40 a battle; Tactics 1 + 4 x
+  (odds - 0.8) a win, 0.4 a loss; Arms 0.45 a kill (an auto-resolved battle assumes 1-4 on a win); Logistics 0.006 per map unit
+  marched; Training 0.2 a man promoted; Medicine 0.1 a man healed; Stewardship 0.5 + income/40 a week with fiefs; Charm 10% of
+  goodwill won and 1 per 100 crowns of lord ransom. Levels count too: Leadership +1 men limit per 5, Tactics +1% auto-resolve per 10,
+  Logistics +1% speed per 20, Training +1% drill per 2, Medicine +1% of fallen wounded instead of killed per 10, Stewardship +1% fief
+  income per 5, Charm +1% goodwill per 4, Arms +2% health per 10; plate needs Arms 25, the great helm 15, the destrier 35. A new
+  captain starts at Leadership 15, Arms 15, Tactics 10 and 5 elsewhere. Renown no longer buys perks (`NextRenownUnlock` is the men
+  cap only). The eight old perks keep their effects; Born Captain is +10 men rather than a company slot (10 slots are already open
+  from the start). Stewardship's perks are Tax Roll, Provisioner (food -25%), Just Ruler (twice the recruits in your fiefs) and
+  Castellan (threatened villages still pay); Builder and unrest come with F6. The Skills screen (K) shows each branch, its bar with the
+  25-point marks, and the perks; the party screen has a summary. The pilot takes every perk it opens. `BattleResult.PlayerKills`
+  carries your kills to the campaign.

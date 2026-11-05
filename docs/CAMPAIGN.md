@@ -120,7 +120,7 @@ The battle's `Company(Troop, Count, Role)` becomes the battle-time view of a per
 A party is a leader plus companies:
 
 - **Player party:** you (the Captain) plus up to **10** companies (`CompanySlotsBase = 10`, available from the start without renown gating).
-  Total men ≤ 40 + renown / 5 *(tune)* (renown raises your total troop count and earns perk points).
+  Total men ≤ 40 + renown / 5 + Leadership / 5 *(tune)* (renown raises your total troop count; perks come from skills since F4).
 - **Lord parties (AI):** the same structure with a named lord as leader. A lord's personal tier (equipment) scales with renown.
 - **Bandit parties:** a leader-less mob of Levies and a few Bowmen or Outriders, up to tier II, that roams wild provinces.
 - **Travel speed** is set by the slowest company (foot 4 km/h, an all-mounted party 7 km/h *(tune)*), times terrain, times wounded load
@@ -254,7 +254,8 @@ Currency: **crowns**. Starting purse: 300 *(tune)*. Sources and sinks:
 
 ### 7.3 The Captain (you)
 - **Renown:** +5 per victory, + enemy strength / 50 *(tune)*. It raises the party caps (4.2) and the quality of mercenaries on offer.
-- **Perks:** one per 100 renown. Each extends something the battle already has:
+- **Perks:** *(replaced in F4 by the skill tree, `CAMPAIGN_OVERHAUL.md` 5.1: these eight now sit on the Leadership, Tactics,
+  Logistics, Training, Medicine and Arms branches, opened by skill, not renown.)* Each extends something the battle already has:
   - *Bannerman* (aura radius +4 m)
   - *War Cry* (rally +10 morale, −3 s cooldown)
   - *Tactician* (auto-resolve +10%, see the enemy at deployment)
@@ -434,10 +435,10 @@ build differs:
   are migrated on load, keeping the small map they were played on. See `docs/ROADMAP.md`, "As built".
 - **Progression is surfaced, not inferred** (roadmap A5). `Campaign.NextStep()` (`Campaign/CampaignProgression.cs`) is the single
   answer to "what should I do now", in priority order: unpaid men, no food, a wounded captain, a free company slot with men to fill
-  it, a perk point, a company with upgrade XP, no contract, too many wounded, and finally the next renown rung. The map HUD shows it
+  it, a perk to choose, a company with upgrade XP, no contract, too many wounded, and finally the next renown rung. The map HUD shows it
   under the captain panel, the results screen shows the renown ladder and how many companies are ready, and arriving in a town opens
   the tab the hint names (`TRAIN`, `RECRUIT`, `MARKET`, `FOOD`, `REST`, `CONTRACT`) instead of always the first one.
-  `Rules.NextRenownUnlock` names the next thing renown buys (a company slot, +1 men cap, or a perk) and the renown that pays for it;
+  `Rules.NextRenownUnlock` names the next thing renown buys (+1 men cap) and the renown that pays for it;
   the HUD and party screen draw the same bar from the last rung to the next, and `Campaign.Stage` gives the captain a title
   (Mercenary Band → Lord of War) that both panels show.
 - **Brigand pressure.** `BanditsMax` is 80 and `BanditSpawnsPerDay` is 5 (`BanditSpawnChance` 0.95 each) while below that cap, so
