@@ -1,6 +1,7 @@
 # Ironfield campaign specification
 
-Status: **draft for review**. This document specifies the campaign layer that wraps the battles: what the player does between
+Status: **implemented (M0-M5)**, with the open questions in section 13 settled by the proposals; see "As built" at the end
+for where the build differs from this text. This document specifies the campaign layer that wraps the battles: what the player does between
 fights, how armies persist and improve, and how the map hands a battle over and takes the result back.
 Look and interface follow [`DESIGN.md`](DESIGN.md). Numbers marked *(tune)* are starting values for play-testing, not promises.
 
@@ -389,3 +390,26 @@ the campaign, and it can be proven in a week with existing screens before any ma
 4. **Scale:** around 24 provinces and 200-unit battles (proposed) as the first target, or bigger from the start?
 5. **Sieges:** confirm out of scope for the first campaign release (they need walls, ladders and a new battle mode).
 6. **Factions:** stay with two plus bandits, or add a third faction with its own troop tree (new looks, painted by `SpriteSheet`) in M4?
+
+---
+
+## As built (differences from the spec above)
+
+The campaign was built to this spec with the section 13 proposals: a free captain under contract, real-time with pause,
+wounds and capture but no permadeath, about 24 provinces, 200-man battles, no sieges, and two factions plus brigands. Where the
+build differs:
+
+- **Allies** who join a battle fight under **your** command (their companies join your army) rather than under a team-0 AI
+  general. That general exists (`Battle.General(team)`) and runs your side in headless tests (`BattleOptions.AutoPlayer`).
+- **Map movement** is straight-line steering with terrain and road speed factors. There is no A* yet, because nothing on the map is impassable.
+- **No spatial grid yet:** the battle cap is 200 men and the O(n²) separation already runs a 185-man battle at about 590 ticks a second
+  (about 10× real time). The grid waits until the cap rises.
+- **Drill (new):** companies gain 1 XP a day in camp and 2 in a friendly town (`DrillCamp`, `DrillTown`). Without it the AI lords
+  rarely grew past tier II.
+- **Lord wages** are 1.3× upkeep plus a 2% share of the faction's war chest each week, so lords can afford upgrades.
+- **Prisoners** are ransomed at once as gold (half the spec's rate). **Fled men** return at once (all on a victory, 70% on a defeat).
+- **Code layout:** `BattleGame` hosts the title, map and battle modes instead of separate `Screens/` classes, and the map screen is
+  `MapScreen.cs`. The campaign sim, rules, map and state live in `Campaign/`, as specified.
+- **No renaming** of companies yet (it needs text entry). Merge and split, reordering, disbanding and the rest of section 9 work.
+- **Map keys** (P, Space, 1-3, F, F5, F9) are fixed rather than rebindable. Camera keys use `controls.json`.
+- **Debug:** `IRONFIELD_CAMPAIGN_SHOTS=/dir` walks through the campaign screens and saves a PNG of each; `IRONFIELD_SAVES` moves the save folder.

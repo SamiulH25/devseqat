@@ -54,6 +54,8 @@ sealed class Puppet
     }
 
     Look look = null!;
+    /// Size multiplier (the campaign map draws its banner-bearers larger than life).
+    public float Scale = 1;
     Color coatTint;
 
     /// Draw a unit standing on ground height `ground`, dressed by its troop's Look.
@@ -61,11 +63,11 @@ sealed class Puppet
     {
         if (u.Fled) return;
         look = u.Type.Look;
-        pal = "/" + (u.IsPlayer ? 2 : u.Team);
+        pal = "/" + (u.IsPlayer ? 2 : u.Palette);
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         float lift = ground;
-        if (u.Mounted && !u.Dead) lift = ground + Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true);
-        Frame(u.Pos, u.ViewFacing, lift, u.Type.Class == UnitClass.Captain ? 1.12f : 1);
+        if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true)) * Scale;
+        Frame(u.Pos, u.ViewFacing, lift, (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * Scale);
 
         if (u.Dead) { Corpse(); return; }
         var p = PoseOf(u);
@@ -125,7 +127,7 @@ sealed class Puppet
     /// Returns the gait bob height.
     float Horse(Vector2 pos, float ground, float heading, float anim, float speed, int coat, string barding, bool riderLegs)
     {
-        Frame(pos, heading, ground, 1);
+        Frame(pos, heading, ground, Scale);
         var side = pal;
         var plain = tint;
         coatTint = new Color(tint.ToVector3() * Style.Coats[coat % Style.Coats.Length]);

@@ -112,7 +112,8 @@ public static class Troops
 
 /// A company in an army: what the campaign map hands to a battle. Role ("infantry", "archers", "spears", "horse")
 /// decides where it deploys and how the AI uses it; empty = from the troop class.
-public sealed record Company(string Troop, int Count, string Role = "");
+/// Id and Name tie it to the campaign's CompanyRecord (0 = a one-off battle); Morale is its starting morale.
+public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70);
 
 public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Companies);
 
@@ -147,6 +148,9 @@ public static class Armies
 
     static ArmySpec Make(string name, int level, int[] tiers, bool enemy) =>
         new(name, level, Lines.Select((l, i) => new Company(l.ByTier[tiers[i] - 1], Count(l.Base, l.ByTier[tiers[i] - 1], enemy), l.Role)).ToList());
+
+    /// The troop a line fields at a tier (1-4).
+    public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 4) - 1];
 
     public static string RoleOf(Company c) => c.Role is { Length: > 0 } r ? r : Troops.Get(c.Troop).Class switch
     {

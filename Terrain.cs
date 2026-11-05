@@ -2,10 +2,20 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-public enum FoliageKind { Broadleaf, Pine, Bush, Rock }
+public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village }
 
-/// One piece of foliage. Radius > 0 = a solid obstacle (tree trunk, boulder) that units are pushed out of.
+/// One piece of foliage (or, on the campaign map, a settlement). Radius > 0 = a solid obstacle (tree trunk, boulder).
 public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale, float Radius, int Seed);
+
+/// How a battlefield is generated: set from the campaign map cell where the fight happens (docs/CAMPAIGN.md 3.2).
+public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, float HillHeight, float Roll, float FlankWoodDist,
+    int Woods, int LoneTrees, int Bushes, bool Road)
+{
+    public static readonly TerrainParams Meadow = new("Meadow", 3, 5, 1f, 1f, 64, 11, 60, 220, true);
+    public static readonly TerrainParams Farmland = new("Farmland", 1, 3, 0.7f, 0.6f, 70, 6, 30, 380, true);
+    public static readonly TerrainParams Forest = new("Forest", 2, 4, 0.9f, 1f, 55, 22, 150, 320, false);
+    public static readonly TerrainParams Hills = new("Hills", 5, 7, 1.7f, 1.4f, 66, 9, 50, 200, false);
+}
 
 /// Headless battlefield ground: a heightmap (gentle rolling meadow, a few hills, a rim of high ground,
 /// a dirt road through the middle) and the placement of trees, bushes and rocks.
@@ -24,14 +34,41 @@ public sealed class Terrain
     readonly List<int>[] buckets = new List<int>[Buckets * Buckets];
     readonly List<(Vector2 C, float R, float H)> hills = new();
     readonly float roadZ, roadPhase, roadAmp;
+    public readonly TerrainParams Params = TerrainParams.Meadow;
+    // The campaign map supplies its own shape.
+    readonly Func<float, float, float>? customHeight;
+    readonly Func<Vector2, float>? customRoad;
+    /// Optional ground colour multiplier (the campaign map's fields and forest floors). Visual only.
+    public readonly Func<Vector2, Vector3>? Tint;
+    /// Grass tufts and the minimap's reach (the campaign map has no grass and a wider overview).
+    public readonly bool Grass = true;
+    public readonly float MinimapRange = 110;
 
-    public static Terrain Flat() => new(0, true);
-    public Terrain(int seed) : this(seed, false) { }
+    public static Terrain Flat() => new(0, true, TerrainParams.Meadow);
+    public Terrain(int seed) : this(seed, false, TerrainParams.Meadow) { }
+    public Terrain(int seed, TerrainParams p) : this(seed, false, p) { }
 
-    Terrain(int seed, bool flat)
+    /// A campaign map: heights, roads, foliage and settlements all given; no grass, overview covers everything.
+    public Terrain(int seed, Func<float, float, float> height, Func<Vector2, float> roadDist, IEnumerable<Foliage> foliage, Func<Vector2, Vector3>? tint)
+    {
+        Seed = seed;
+        customHeight = height;
+        customRoad = roadDist;
+        Tint = tint;
+        Grass = false;
+        MinimapRange = Half;
+        for (int i = 0; i < buckets.Length; i++) buckets[i] = new List<int>();
+        for (int z = 0; z < N; z++)
+            for (int x = 0; x < N; x++)
+                grid[z * N + x] = RawHeight(-Half + x * Step, -Half + z * Step);
+        foreach (var f in foliage) Add(f);
+    }
+
+    Terrain(int seed, bool flat, TerrainParams p)
     {
         Seed = seed;
         IsFlat = flat;
+        Params = p;
         for (int i = 0; i < buckets.Length; i++) buckets[i] = new List<int>();
         if (flat) return;
 
@@ -39,11 +76,11 @@ public sealed class Terrain
         roadZ = rng.NextSingle() * 12 - 6;
         roadPhase = rng.NextSingle() * MathF.Tau;
         roadAmp = 8 + rng.NextSingle() * 6;
-        int hillCount = 3 + rng.Next(3);
+        int hillCount = p.HillsMin + rng.Next(p.HillsMax - p.HillsMin + 1);
         for (int i = 0; i < hillCount; i++)
         {
-            float a = rng.NextSingle() * MathF.Tau, d = 35 + rng.NextSingle() * 65;
-            hills.Add((new Vector2(MathF.Cos(a), MathF.Sin(a)) * d, 18 + rng.NextSingle() * 17, 2.5f + rng.NextSingle() * 3.5f));
+            float a = rng.NextSingle() * MathF.Tau, d = 30 + rng.NextSingle() * 70;
+            hills.Add((new Vector2(MathF.Cos(a), MathF.Sin(a)) * d, 18 + rng.NextSingle() * 17, (2.5f + rng.NextSingle() * 3.5f) * p.HillHeight));
         }
         for (int z = 0; z < N; z++)
             for (int x = 0; x < N; x++)
@@ -55,11 +92,12 @@ public sealed class Terrain
 
     float RawHeight(float x, float z)
     {
+        if (customHeight != null) return customHeight(x, z);
         float r = MathF.Sqrt(x * x + z * z);
         // Rolling ground, calmer where the armies meet.
         float roll = Noise(x * 0.011f, z * 0.011f, Seed) * 3.5f + Noise(x * 0.027f, z * 0.027f, Seed + 1) * 1.3f
                    + Noise(x * 0.07f, z * 0.07f, Seed + 2) * 0.35f;
-        float h = roll * (0.55f + 0.45f * SmoothStep(30, 120, r));
+        float h = roll * Params.Roll * (0.55f + 0.45f * SmoothStep(30, 120, r));
         foreach (var (c, hr, hh) in hills)
         {
             float d = Vector2.Distance(new Vector2(x, z), c) / hr;
@@ -77,7 +115,8 @@ public sealed class Terrain
     /// Approximate distance to the road's centre line (infinite when there is no road).
     public float RoadDist(Vector2 p)
     {
-        if (IsFlat) return float.MaxValue;
+        if (customRoad != null) return customRoad(p);
+        if (IsFlat || !Params.Road) return float.MaxValue;
         float slope = 0.018f * roadAmp * MathF.Cos(p.X * 0.018f + roadPhase);
         return MathF.Abs(p.Y - RoadCenter(p.X)) / MathF.Sqrt(1 + slope * slope);
     }
@@ -187,21 +226,21 @@ public sealed class Terrain
 
         // Two woods flank the field: cavalry has to ride round them.
         for (int side = -1; side <= 1; side += 2)
-            Wood(new Vector2(side * (64 + rng.NextSingle() * 8), rng.NextSingle() * 36 - 18), 13 + rng.NextSingle() * 4);
-        for (int i = 0; i < 11; i++)
+            Wood(new Vector2(side * (Params.FlankWoodDist + rng.NextSingle() * 8), rng.NextSingle() * 36 - 18), 13 + rng.NextSingle() * 4);
+        for (int i = 0; i < Params.Woods; i++)
         {
             float a = rng.NextSingle() * MathF.Tau, d = 80 + rng.NextSingle() * 130;
             var c = new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
             if (!Core(c)) Wood(c, 12 + rng.NextSingle() * 16);
         }
-        for (int i = 0; i < 60; i++) // lone trees
+        for (int i = 0; i < Params.LoneTrees; i++) // lone trees
         {
             var p = new Vector2(rng.NextSingle() * 440 - 220, rng.NextSingle() * 440 - 220);
             if (!Ok(p, 3)) continue;
             float s = 0.9f + rng.NextSingle() * 0.5f;
             Add(new Foliage(rng.NextSingle() < 0.3f ? FoliageKind.Pine : FoliageKind.Broadleaf, p, s, 0.32f * s, rng.Next()));
         }
-        for (int i = 0; i < 220; i++) // bushes: no collision; many hug the edges of the woods
+        for (int i = 0; i < Params.Bushes; i++) // bushes: no collision; many hug the edges of the woods
         {
             Vector2 p;
             if (i % 2 == 0 && woods.Count > 0)

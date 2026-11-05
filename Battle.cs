@@ -22,7 +22,8 @@ public sealed class Projectile
 /// Headless battle simulation. No graphics, so the self-test can run it.
 public sealed class Battle
 {
-    public const float MapRadius = 95, Gravity = 9.8f, ArrowSpeed = 28, AuraRadius = 12, RallyRadius = 15;
+    public const float MapRadius = 95, Gravity = 9.8f, ArrowSpeed = 28, RallyRadius = 15;
+    public readonly BattleOptions Options;
     const float LanceFrom = 1.0f, LanceTip = 2.7f, BraceExtra = 0.8f;
 
     public readonly List<Unit> Units = new();
@@ -47,18 +48,26 @@ public sealed class Battle
     readonly Dictionary<string, List<Squad>>[] roles = { new(), new() };
     readonly Dictionary<Squad, float> lateral = new(); // sideways place within its role group, in metres
     bool enemyCharged, enemyHorseCharged;
-    float generalTimer;
+    float generalTimer, reinforceTimer;
+    readonly bool[] charged = new bool[2], horseCharged = new bool[2];
+    readonly Queue<(Company C, string Role)>[] reserves = { new(), new() };
+    readonly List<(Company C, int Team)> heldBack = new(); // companies that never reached the field
 
     /// The prototype's standard battle (level 2 armies on both sides).
     public Battle(int seed) : this(seed, Ironfield.Armies.Standard(0), Ironfield.Armies.Standard(1)) { }
 
     /// A battle between two armies as the campaign map would hand them over.
-    public Battle(int seed, ArmySpec player, ArmySpec enemy) : this(seed, false)
+    public Battle(int seed, ArmySpec player, ArmySpec enemy, BattleOptions? options = null) : this(seed, false, options)
     {
-        Player.Horse = Mount.Courser; // you lead from the saddle
-        Player.HorseHp = Mount.Courser.Hp;
-        Deploy(0, player);
-        Deploy(1, enemy);
+        var mount = Options.PlayerMount ?? Mount.Courser; // you lead from the saddle
+        Player.Horse = mount;
+        Player.HorseHp = mount.Hp;
+        // The field holds at most Options.Cap men; each side gets its share and the rest wait as reinforcements.
+        int total = player.Companies.Sum(c => c.Count) + enemy.Companies.Sum(c => c.Count);
+        float share = total > Options.Cap ? Options.Cap / (float)total : 1;
+        Deploy(0, player, (int)(player.Companies.Sum(c => c.Count) * share));
+        Deploy(1, enemy, (int)(enemy.Companies.Sum(c => c.Count) * share));
+        if (Options.PlayerWounded) Player.Fled = true; // too hurt to ride: you command from the rear
         UpdateCentroids();
     }
 
@@ -66,11 +75,19 @@ public sealed class Battle
 
     /// Deployment spots per role on your side (the enemy's are mirrored through the centre): infantry in front,
     /// archers behind, spears on the left flank, horse on the right. Several companies of one role stand side by side.
-    void Deploy(int team, ArmySpec army)
+    void Deploy(int team, ArmySpec army, int budget)
     {
         Armies[team] = army;
         float f = team == 0 ? 1 : -1;
-        foreach (var group in army.Companies.Where(c => c.Count > 0).GroupBy(Ironfield.Armies.RoleOf))
+        // Biggest companies take the field first; the rest wait in reserve.
+        var onField = new List<Company>();
+        int used = 0;
+        foreach (var c in army.Companies.Where(c => c.Count > 0).OrderByDescending(c => c.Count))
+        {
+            if (onField.Count == 0 || used + c.Count <= budget) { onField.Add(c); used += c.Count; }
+            else reserves[team].Enqueue((c, Ironfield.Armies.RoleOf(c)));
+        }
+        foreach (var group in onField.GroupBy(Ironfield.Armies.RoleOf))
         {
             var spot = group.Key switch
             {
@@ -89,7 +106,7 @@ public sealed class Battle
                 float off = at + w / 2;
                 at += w + 4;
                 var pos = (spot + new Vector2(off, 0)) * f;
-                var s = AddSquad(team, t, c.Count, pos, cols, new Vector2(0, f));
+                var s = AddSquad(team, t, c.Count, pos, cols, new Vector2(0, f), c);
                 Role(team, group.Key).Add(s);
                 lateral[s] = off;
             }
@@ -99,12 +116,13 @@ public sealed class Battle
     /// An empty field with only the two leaders, far apart; scenarios add squads with <see cref="AddSquad"/>.
     public static Battle Empty(int seed) => new(seed, true);
 
-    Battle(int seed, bool scripted)
+    Battle(int seed, bool scripted, BattleOptions? options = null)
     {
         rng = new Random(seed);
         this.scripted = scripted;
-        Terrain = scripted ? Terrain.Flat() : new Terrain(seed);
-        Player = Spawn(UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34));
+        Options = options ?? new BattleOptions();
+        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, Options.Ground ?? TerrainParams.Meadow);
+        Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34));
         Player.IsPlayer = Player.IsLeader = true;
         Player.Facing = Player.Heading = MathHelper.PiOver2;
         eGuard = AddSquad(1, UnitType.Captain, 1, new(0, scripted ? 80 : 34), 1, -Vector2.UnitY);
@@ -117,12 +135,13 @@ public sealed class Battle
     public Vector2 Centroid(int team) => centroid[team];
     public void Log(string text) => Events.Add((text, Time));
 
-    public Squad AddSquad(int team, UnitType type, int n, Vector2 anchor, int cols, Vector2 front)
+    public Squad AddSquad(int team, UnitType type, int n, Vector2 anchor, int cols, Vector2 front, Company? company = null)
     {
-        var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null };
+        var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null, Company = company };
         for (int i = 0; i < n; i++)
         {
             var u = Spawn(type, team, s, s.Slot(i, n));
+            if (company != null) u.Morale = company.Morale;
             u.Face(front);
             u.Heading = u.Facing;
             s.Units.Add(u);
@@ -133,7 +152,8 @@ public sealed class Battle
 
     public Unit Spawn(UnitType t, int team, Squad? s, Vector2 pos)
     {
-        var u = new Unit { Type = t, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length) };
+        var u = new Unit { Type = t, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
+            Palette = Options.Palette[Math.Clamp(team, 0, 1)] };
         if (t.Mount != null) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; }
         Units.Add(u);
         return u;
@@ -144,7 +164,13 @@ public sealed class Battle
         Time += dt;
         RallyCooldown = MathF.Max(0, RallyCooldown - dt);
         UpdateCentroids();
-        if (!scripted && (generalTimer -= dt) <= 0) { generalTimer = 0.5f; EnemyGeneral(); }
+        if (!scripted && (generalTimer -= dt) <= 0)
+        {
+            generalTimer = 0.5f;
+            General(1);
+            if (Options.AutoPlayer) General(0);
+        }
+        if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
         foreach (var s in Squads) UpdateSquad(s, dt);
         foreach (var u in Units)
         {
@@ -502,10 +528,10 @@ public sealed class Battle
     void Rally(Unit p)
     {
         p.Stamina -= 30;
-        RallyCooldown = 12;
+        RallyCooldown = Options.RallyCooldown;
         foreach (var u in Units)
             if (u.Active && u.Team == p.Team && !u.IsPlayer && Vector2.DistanceSquared(u.Pos, p.Pos) < RallyRadius * RallyRadius)
-                u.Morale = MathF.Min(100, u.Morale + (u.Routing ? 45 : 25));
+                u.Morale = MathF.Min(100, u.Morale + (u.Routing ? Options.RallyBonus + 20 : Options.RallyBonus));
         Log("Rally! Hold the line!");
     }
 
@@ -700,6 +726,7 @@ public sealed class Battle
             t.Pos -= new Vector2(-t.HeadingDir.Y, t.HeadingDir.X) * 1.0f; // the rider falls off to the side
         }
         if (killer.IsPlayer) PlayerKills++;
+        if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 4)]++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;
         foreach (var u in Units)
         {
@@ -915,7 +942,7 @@ public sealed class Battle
             if (!u.Active || u.IsLeader) continue; // leaders never break
             var lead = u.Team == 0 ? Player : EnemyCaptain;
             bool inspired = lead.Active && !(lead.IsPlayer && Commanding)
-                && Vector2.DistanceSquared(lead.Pos, u.Pos) < AuraRadius * AuraRadius;
+                && Vector2.DistanceSquared(lead.Pos, u.Pos) < Options.AuraRadius * Options.AuraRadius;
             float m = 0;
             if (inspired) m += u.Routing ? 8 : 3;
             if (u.Squad!.Alive < u.Squad.StartCount * 0.4f) m -= 1.5f;
@@ -936,57 +963,105 @@ public sealed class Battle
             m -= MathF.Min(3, routing * 0.5f);
             if (charged) m -= 4;
             u.Morale = Math.Clamp(u.Morale + m * dt, 0, 100);
+            // Iron Will: near you, a company that still has a third of its men will not break.
+            if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);
             if (!u.Routing && u.Morale < 15) { u.Routing = true; u.Action = UnitAction.None; u.Couched = false; }
             else if (u.Routing && u.Morale > 45) u.Routing = false;
         }
     }
 
-    /// Enemy commander: advance as a block, charge when close, archers stop at bow range,
-    /// horse waits wide on the far flank and then hunts the softest companies with repeated charges.
-    void EnemyGeneral()
+    /// An AI commander for one side (always the enemy; your side too when Options.AutoPlayer): advance as a block,
+    /// charge when close, archers stop at bow range, horse waits wide on the far flank and then hunts the softest companies.
+    void General(int team)
     {
-        var inf = Role(1, "infantry").Where(s => s.Alive > 0).ToList();
-        var front = inf.Count > 0 ? inf.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / inf.Count : eGuard.Centroid();
-        var dir = centroid[0] - front;
+        int foe = 1 - team;
+        var inf = Role(team, "infantry").Where(s => s.Alive > 0).ToList();
+        var front = inf.Count > 0 ? inf.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / inf.Count : team == 1 ? eGuard.Centroid() : centroid[team];
+        var dir = centroid[foe] - front;
         if (dir.LengthSquared() < 1) return;
         dir.Normalize();
         var side = new Vector2(-dir.Y, dir.X);
-        var spears = Role(1, "spears");
-        if (!enemyCharged)
+        var spears = Role(team, "spears");
+        if (!charged[team])
         {
-            foreach (var s in inf) { s.Front = dir; s.Anchor = front + dir * 6 + side * lateral[s]; }
-            foreach (var s in spears) { s.Front = dir; s.Anchor = front + dir * 6 + side * (16 + lateral[s]); } // swing wide on a flank
-            if (inf.Any(s => GapTo(s, 0) < 16) || spears.Any(s => s.Alive > 0 && GapTo(s, 0) < 10))
+            foreach (var s in inf) { s.Front = dir; s.Anchor = front + dir * 6 + side * lateral.GetValueOrDefault(s); }
+            foreach (var s in spears) { s.Front = dir; s.Anchor = front + dir * 6 + side * (16 + lateral.GetValueOrDefault(s)); } // swing wide on a flank
+            if (inf.Any(s => GapTo(s, foe) < 16) || spears.Any(s => s.Alive > 0 && GapTo(s, foe) < 10))
             {
-                enemyCharged = true;
+                charged[team] = true;
                 foreach (var s in inf.Concat(spears)) s.Order = Order.Charge;
-                Log("The enemy line charges!");
+                Log(team == 1 ? "The enemy line charges!" : "Your line charges!");
             }
         }
-        foreach (var s in Role(1, "archers"))
+        else foreach (var s in inf.Concat(spears)) s.Order = Order.Charge; // late arrivals join the charge
+        foreach (var s in Role(team, "archers"))
         {
             if (s.Order == Order.Charge || s.Alive == 0) continue;
             s.Front = dir;
-            float gap = GapTo(s, 0), range = s.Units[0].Type.Range;
+            float gap = GapTo(s, foe), range = s.Units[0].Type.Range;
             if (gap > range - 4) s.Anchor = s.Centroid() + dir * 4;
             if (gap < 7 || s.Units.All(u => !u.Active || u.Ammo == 0)) s.Order = Order.Charge;
         }
-        var horse = Role(1, "horse");
-        if (!enemyHorseCharged)
+        var horse = Role(team, "horse");
+        if (!horseCharged[team])
         {
-            foreach (var s in horse) { s.Front = dir; s.Anchor = front + dir * 4 - side * (26 - lateral[s]); } // the other flank
-            if (enemyCharged || Time > 35 || horse.Any(s => s.Alive > 0 && GapTo(s, 0) < 20))
+            foreach (var s in horse) { s.Front = dir; s.Anchor = front + dir * 4 - side * (26 - lateral.GetValueOrDefault(s)); } // the other flank
+            if (charged[team] || Time > 35 || horse.Any(s => s.Alive > 0 && GapTo(s, foe) < 20))
             {
-                enemyHorseCharged = true;
+                horseCharged[team] = true;
                 foreach (var s in horse) s.Order = Order.Charge;
-                if (horse.Count > 0) Log("Enemy horse on the flank!");
+                if (horse.Count > 0) Log(team == 1 ? "Enemy horse on the flank!" : "Your horse sweeps the flank!");
             }
         }
-        if (enemyHorseCharged)
+        else foreach (var s in horse) s.Order = Order.Charge;
+        if (horseCharged[team])
             foreach (var s in horse.Where(s => s.Target == null))
-                s.Target = new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(0, r)).FirstOrDefault(t => t.Alive > 0); // soft targets first
-        eGuard.Front = dir;
-        eGuard.Anchor = front - dir * 4; // captain leads from just behind the line
+                s.Target = new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(foe, r)).FirstOrDefault(t => t.Alive > 0); // soft targets first
+        if (team == 1)
+        {
+            eGuard.Front = dir;
+            eGuard.Anchor = front - dir * 4; // captain leads from just behind the line
+        }
+    }
+
+    /// Reserves march on when the side's strength on the field drops: from behind its own lines.
+    void Reinforce()
+    {
+        for (int team = 0; team < 2; team++)
+        {
+            if (reserves[team].Count == 0) continue;
+            int onField = Units.Count(u => u.Team == team && u.Active && !u.Routing && !u.IsLeader);
+            int started = Squads.Where(s => s.Team == team && s.Company != null).Sum(s => s.StartCount);
+            if (onField > started * 0.6f && Time < 600) continue;
+            var (c, role) = reserves[team].Dequeue();
+            float f = team == 0 ? 1 : -1;
+            var t = Troops.Get(c.Troop);
+            var s = AddSquad(team, t, c.Count, new Vector2(lateral.Count % 3 * 12 - 12, -48) * f, (c.Count + 1) / 2, new Vector2(0, f), c);
+            s.Anchor = new Vector2(0, -30) * f;
+            Role(team, role).Add(s);
+            lateral[s] = 0;
+            if (team == 1 && charged[1] || team == 0 && Options.AutoPlayer) s.Order = Order.Charge;
+            Log(team == 0 ? $"Reinforcements: {t.Name} join the fight!" : $"Enemy reinforcements: {t.Name}!");
+        }
+    }
+
+    /// What happened, company by company, for the campaign: who stands, who fled, who fell, and whom they killed.
+    public BattleResult Result()
+    {
+        var list = new List<CompanyResult>();
+        foreach (var s in Squads.Where(s => s.Company != null))
+            list.Add(new CompanyResult(s.Team, s.Company!.Id, s.StartCount,
+                Standing: s.Units.Count(u => u.Active && !u.Routing),
+                Fled: s.Units.Count(u => u.Fled || (u.Active && u.Routing)),
+                Fallen: s.Units.Count(u => u.Dead),
+                Kills: s.KillsByTier.Sum(), KillsByTier: (int[])s.KillsByTier.Clone(), Deployed: true));
+        for (int team = 0; team < 2; team++)
+            foreach (var (c, _) in reserves[team])
+                list.Add(new CompanyResult(team, c.Id, c.Count, c.Count, 0, 0, 0, new int[5], Deployed: false));
+        var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
+        var foeLeader = EnemyCaptain.Dead ? LeaderFate.Slain : LeaderFate.Unhurt;
+        int horses = LooseHorses.Count(h => h.Team == 1);
+        return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0);
     }
 
     float GapTo(Squad s, int team)
@@ -1001,12 +1076,21 @@ public sealed class Battle
         return MathF.Sqrt(best);
     }
 
+    /// Give up the field: the battle ends as a defeat, and your men on the field count as fled (they live).
+    public void Withdraw()
+    {
+        if (Winner >= 0) return;
+        Winner = 1;
+        foreach (var u in Units) if (u.Team == 0 && u.Active && !u.IsPlayer) u.Routing = true;
+        Log("You sound the retreat.");
+    }
+
     void CheckEnd()
     {
         if (Winner >= 0) return;
         for (int t = 0; t < 2; t++)
         {
-            if (Units.Any(u => u.Team == t && u.Active && !u.Routing)) continue;
+            if (Units.Any(u => u.Team == t && u.Active && !u.Routing) || reserves[t].Count > 0 && Units.Any(u => u.Team == t && u.Active && u.Routing)) continue;
             Winner = 1 - t;
             Log(Winner == 0 ? "Victory! The field is yours." : "Defeat. Your army is broken.");
             return;

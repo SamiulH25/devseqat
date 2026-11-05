@@ -6,7 +6,7 @@ namespace Ironfield;
 /// Orders the player can give, from hotkeys, the order wheel or the command-view buttons.
 public enum Cmd { Charge, Advance, FormHere, Spacing, FallBack, FireAtWill, Hold, Follow }
 
-public enum MenuItem { Resume, Controls, NewBattle, Quit }
+public enum MenuItem { Resume, Controls, NewBattle, Quit, Withdraw, Continue, Title }
 
 /// All 2D interface: unit cards, player panel, balance of power, minimap, event feed, crosshair, order wheel,
 /// command buttons, squad banners and the menu / controls / result overlays. Layout is in 720p units times `Ui`.
@@ -34,7 +34,9 @@ sealed class Hud
     public HashSet<Squad> Selected = null!;
     public Controls Ctl = null!;
     public Texture2D? Minimap;
-    public bool Command, Paused, MenuOpen, HelpOpen, WheelOpen, ShowResult;
+    public bool Command, Paused, MenuOpen, HelpOpen, WheelOpen, ShowResult, InCampaign, Deploying;
+    Rectangle start;
+    public bool StartAt(Point p) => Deploying && start.Contains(p);
     public int WheelSector = -1;
     public AttackDir Aim;
     public Matrix View, Proj;
@@ -81,8 +83,10 @@ sealed class Hud
                 buttons.Add((new Rectangle(x0 + (i % 2) * (bw + U(4)), y0 + (i / 2) * (bh + U(4)), bw, bh), order[i]));
         }
 
-        var items = ShowResult ? new[] { MenuItem.NewBattle, MenuItem.Quit }
-            : MenuOpen ? new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.NewBattle, MenuItem.Quit } : Array.Empty<MenuItem>();
+        var items = ShowResult ? (InCampaign ? new[] { MenuItem.Continue } : new[] { MenuItem.NewBattle, MenuItem.Title })
+            : MenuOpen ? (InCampaign ? new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Withdraw } : new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.NewBattle, MenuItem.Title })
+            : Array.Empty<MenuItem>();
+        start = Deploying ? new Rectangle(W / 2 - U(130), U(96), U(260), U(30)) : Rectangle.Empty;
         int mw = U(220), mh = U(30), top = ShowResult ? H / 2 + U(70) : H / 2 - items.Length * (mh + U(8)) / 2 + U(10);
         for (int i = 0; i < items.Length; i++) menu.Add((new Rectangle((W - mw) / 2, top + i * (mh + U(8)), mw, mh), items[i]));
     }
@@ -92,7 +96,7 @@ sealed class Hud
     public MenuItem? MenuAt(Point p) => menu.Where(m => m.R.Contains(p)).Select(m => (MenuItem?)m.M).FirstOrDefault();
     public Vector2? MinimapAt(Point p) => minimap.Contains(p)
         ? World.MinimapToWorld(new Vector2((p.X - minimap.X) / (float)minimap.Width, (p.Y - minimap.Y) / (float)minimap.Height)) : null;
-    public bool Over(Point p) => CardAt(p) != null || ButtonAt(p) != null || minimap.Contains(p) || player.Contains(p);
+    public bool Over(Point p) => CardAt(p) != null || ButtonAt(p) != null || minimap.Contains(p) || player.Contains(p) || start.Contains(p);
 
     // ---------- primitives ----------
 
@@ -162,7 +166,17 @@ sealed class Hud
         if (WheelOpen) Wheel();
         Hints();
         if (Box is Rectangle box) { Rect(box, Gold * 0.12f); Frame(box, Gold, 1); }
-        if (Paused && !MenuOpen && !HelpOpen && !ShowResult)
+        if (Deploying)
+        {
+            var banner = new Rectangle(W / 2 - U(230), U(60), U(460), U(72));
+            Panel(banner, Gold);
+            TextC("DEPLOYMENT: PLACE YOUR COMPANIES IN YOUR THIRD OF THE FIELD", W / 2f, banner.Y + U(10), Gold, 1);
+            bool hover = start.Contains(Mouse);
+            Rect(start, hover ? Gold * 0.45f : Gold * 0.2f);
+            Frame(start, Gold, U(1));
+            TextC($"START BATTLE ({Ctl.Name(Act.Pause)})", start.X + start.Width / 2f, start.Y + U(8), Color.White);
+        }
+        else if (Paused && !MenuOpen && !HelpOpen && !ShowResult)
         {
             var r = new Rectangle(W / 2 - U(90), U(64), U(180), U(30));
             Panel(r, Gold);
@@ -252,7 +266,7 @@ sealed class Hud
         int x = r.X + U(10), y = r.Y + U(8), bw = U(170);
         if (!p.Active)
         {
-            Text("YOU HAVE FALLEN", x, y, Bad);
+            Text(B.Options.PlayerWounded ? "WOUNDED" : "YOU HAVE FALLEN", x, y, Bad);
             Text("COMMANDING FROM AFAR", x, y + U(22), Dim, 1);
             Text($"KILLS {B.PlayerKills}", x, y + U(40), Color.White);
             return;
@@ -307,10 +321,11 @@ sealed class Hud
 
     /// A portrait built from the troop's own part sprites, laid out by the same body metrics as the 3D puppet
     /// (so every loadout and tier is drawn correctly), cropped to `box`.
-    void Icon(UnitType t, Rectangle box)
+    void Icon(UnitType t, Rectangle box) => Portrait(sb, art, t, box, Ui);
+
+    public static void Portrait(SpriteBatch sb, Art art, UnitType t, Rectangle box, int k)
     {
         var l = t.Look;
-        int k = Ui;
         const float top = 1.92f; // metres at the top of the box
         void Part(string key, float xm, float ym, string pal = "/0", Color? tint = null)
         {
@@ -468,7 +483,8 @@ sealed class Hud
             bool hover = r.Contains(Mouse);
             Rect(r, hover ? Gold * 0.35f : Color.White * 0.06f);
             Frame(r, hover ? Gold : Edge, U(1));
-            TextC(m switch { MenuItem.Resume => "RESUME", MenuItem.Controls => "CONTROLS", MenuItem.NewBattle => "NEW BATTLE", _ => "QUIT" },
+            TextC(m switch { MenuItem.Resume => "RESUME", MenuItem.Controls => "CONTROLS", MenuItem.NewBattle => "NEW BATTLE", MenuItem.Withdraw => "WITHDRAW",
+                    MenuItem.Continue => "CONTINUE", MenuItem.Title => "QUIT TO TITLE", _ => "QUIT" },
                 r.X + r.Width / 2f, r.Y + U(8), Color.White);
         }
     }

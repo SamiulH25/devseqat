@@ -1,0 +1,15 @@
+{
+  "places": ["Ashford", "Brackmoor", "Caddon", "Dunmere", "Elsworth", "Fallowby", "Greywater", "Harrowgate", "Ivydown", "Jessop",
+    "Kettleby", "Larkhill", "Marrow", "Netherby", "Oakhollow", "Pellham", "Quarrell", "Redmarsh", "Stonebridge", "Thornwick",
+    "Underhill", "Vexley", "Wendle", "Yarrowby", "Aldgrave", "Briarfold", "Coldharbour", "Deepdene", "Emberly", "Foxcote",
+    "Gallowmere", "Hallowell", "Inkpen", "Juniper", "Kingsfold", "Lowmoor", "Millbeck", "Northam", "Orrin", "Pike Hollow",
+    "Ravensey", "Saltby", "Tamsworth", "Uffing", "Vale End", "Westerly", "Wyck", "Barrowden", "Cinderford", "Dewsbury",
+    "Elder Ford", "Frostley", "Gorsey", "Hawkridge", "Ironwell", "Kestrel", "Lindow", "Moorcross", "Nettlebed", "Oxlow"],
+  "lords": ["Aldric", "Berengar", "Cuthred", "Drogo", "Edmund", "Fulke", "Gerard", "Hamon", "Ivo", "Joscelin", "Lambert", "Merek",
+    "Nigel", "Osric", "Piers", "Ranulf", "Simon", "Theobald", "Walter", "Yves", "Adela", "Beatrix", "Cecily", "Isolde", "Matilda", "Rohese"],
+  "epithets": ["the Bold", "Ironhand", "the Grey", "of the Ford", "the Young", "Longshanks", "the Fair", "Blackmane", "the Steadfast",
+    "Halfhelm", "the Red", "Oakheart", "the Silent", "Stormborn"],
+  "bandits": ["Ragged Band", "Hollow Men", "Ditch Wolves", "Gallows Crew", "Mire Rats", "Black Hoods", "Thornback Gang", "Cinder Boys"],
+  "nouns": { "infantry": ["Shields", "Guard", "Wall", "Foot"], "archers": ["Bows", "Archers", "Fletchers"], "spears": ["Spears", "Pikes", "Thorns"],
+    "horse": ["Riders", "Horse", "Lances"] }
+}

@@ -255,9 +255,10 @@ public sealed class SpriteSheet
                 c.Line(cx - s, cy - s, cx + s, cy + s, mark, 0.45f, 3);
                 c.Line(cx + s, cy - s, cx - s, cy + s, mark, 0.45f, 3);
                 break;
-            default:
+            case Ironfield.Emblem.Lozenge:
                 c.Area((x, y) => MathF.Abs(x - cx) + MathF.Abs(y - cy) * 0.8f <= s, mark);
                 break;
+            default: break; // no charge (brigands)
         }
     }
 

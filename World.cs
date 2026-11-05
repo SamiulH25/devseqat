@@ -104,6 +104,13 @@ sealed class World : IDisposable
             gd.DrawPrimitives(PrimitiveType.TriangleList, s * 3, Math.Min(Chunk, foliageTris - s));
     }
 
+    /// Fog distances for the fixed-function path (the campaign map sees much further than a battle).
+    public void SetFog(float start, float end)
+    {
+        terrainFx.FogStart = foliageFx.FogStart = start;
+        terrainFx.FogEnd = foliageFx.FogEnd = end;
+    }
+
     /// Shaded path: sky shader, then lit and shadowed terrain and foliage (see Shaders/world.glsl, sky.glsl).
     public void DrawShaded(Shading sh, Matrix view, Matrix proj, Vector3 camPos, float time, bool shadows)
     {
@@ -179,6 +186,7 @@ sealed class World : IDisposable
         c = Vector3.Lerp(c, new Vector3(0.48f, 0.42f, 0.32f), Smooth(0.35f, 0.7f, t.Gradient(p).Length())); // bare slopes
         float rd = t.RoadDist(p);
         c = Vector3.Lerp(c, new Vector3(0.56f, 0.47f, 0.34f), 1 - Smooth(1.8f, 3.4f + n2 * 0.6f, rd));      // road
+        if (t.Tint != null) c *= t.Tint(p);
         return c * (1 + n2 * 0.05f);
     }
 
@@ -231,7 +239,7 @@ sealed class World : IDisposable
         for (int y = 0; y < S; y++)
             for (int x = 0; x < S; x++)
             {
-                var w = MinimapToWorld(new Vector2((x + 0.5f) / S, (y + 0.5f) / S));
+                var w = MinimapToWorld(new Vector2((x + 0.5f) / S, (y + 0.5f) / S), t.MinimapRange);
                 var g = t.Gradient(w);
                 var nrm = Vector3.Normalize(new Vector3(-g.X, 1, -g.Y));
                 float shade = 0.65f + 0.55f * MathF.Max(0, Vector3.Dot(nrm, -SunDir));
@@ -240,7 +248,7 @@ sealed class World : IDisposable
         foreach (var f in t.Foliage)
         {
             if (f.Kind is not (FoliageKind.Broadleaf or FoliageKind.Pine)) continue;
-            var m = WorldToMinimap(f.Pos) * S;
+            var m = WorldToMinimap(f.Pos, t.MinimapRange) * S;
             for (int dy = -1; dy <= 1; dy++)
                 for (int dx = -1; dx <= 1; dx++)
                 {
@@ -254,8 +262,8 @@ sealed class World : IDisposable
     }
 
     /// Minimap coordinates in 0..1 (x right, y down). It is drawn as seen from your side: enemy at the top, world -X to the right.
-    public static Vector2 WorldToMinimap(Vector2 w) => new((-w.X + MinimapRange) / (2 * MinimapRange), (-w.Y + MinimapRange) / (2 * MinimapRange));
-    public static Vector2 MinimapToWorld(Vector2 m) => new(MinimapRange - m.X * 2 * MinimapRange, MinimapRange - m.Y * 2 * MinimapRange);
+    public static Vector2 WorldToMinimap(Vector2 w, float range = MinimapRange) => new((-w.X + range) / (2 * range), (-w.Y + range) / (2 * range));
+    public static Vector2 MinimapToWorld(Vector2 m, float range = MinimapRange) => new(range - m.X * 2 * range, range - m.Y * 2 * range);
 
     // ---------- sky ----------
 
@@ -295,6 +303,9 @@ sealed class World : IDisposable
                 case FoliageKind.Broadleaf: Broadleaf(m, b, f.Scale, rng); break;
                 case FoliageKind.Pine: Pine(m, b, f.Scale, rng); break;
                 case FoliageKind.Bush: Bush(m, b, f.Scale, rng); break;
+                case FoliageKind.Village: Village(m, b, f.Scale, rng); break;
+                case FoliageKind.Town: Town(m, b, f.Scale, rng); break;
+                case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
                 default: Rock(m, b, f.Scale, rng); break;
             }
         }
@@ -358,10 +369,79 @@ sealed class World : IDisposable
         m.Blob(b + Vector3.Up * 0.12f * s, new Vector3(1.0f, 0.62f, 0.85f) * s, stone, r, 0.28f);
     }
 
+    // ---------- settlements (campaign map) ----------
+
+    static readonly Color Stone = new(150, 146, 136), Wattle = new(196, 176, 136), Thatch = new(150, 118, 66), Tile = new(150, 66, 48), Slate = new(84, 92, 106);
+
+    /// A cottage: walls with a gable roof, at `c` on the ground, turned `yaw`.
+    static void House(Mesh m, Vector3 c, float w, float d, float h, float yaw, Color wall, Color roof)
+    {
+        m.Tag = Vector2.Zero;
+        m.Box(c, w, d, h, yaw, wall);
+        m.Gable(c + Vector3.Up * h, w * 1.1f, d * 1.15f, h * 0.7f, yaw, roof);
+    }
+
+    static void Village(Mesh m, Vector3 b, float s, Random r)
+    {
+        int n = 4 + r.Next(3);
+        for (int i = 0; i < n; i++)
+        {
+            float a = r.NextSingle() * MathF.Tau, d = (0.8f + r.NextSingle() * 1.6f) * s;
+            House(m, b + new Vector3(MathF.Cos(a) * d, -0.1f, MathF.Sin(a) * d), 0.9f * s, 0.6f * s, 0.5f * s, r.NextSingle() * MathF.Tau,
+                Jitter(Wattle, r, 0.08f), Jitter(Thatch, r, 0.1f));
+        }
+    }
+
+    static void Town(Mesh m, Vector3 b, float s, Random r)
+    {
+        m.Tag = Vector2.Zero;
+        float rad = 3.6f * s, wallH = 1.0f * s;
+        const int segs = 14;
+        for (int i = 0; i < segs; i++)
+        {
+            float a0 = i * MathF.Tau / segs, a1 = (i + 1) * MathF.Tau / segs;
+            var p0 = b + new Vector3(MathF.Cos(a0), 0, MathF.Sin(a0)) * rad;
+            var p1 = b + new Vector3(MathF.Cos(a1), 0, MathF.Sin(a1)) * rad;
+            m.Box((p0 + p1) / 2 - Vector3.Up * 0.3f * s, Vector3.Distance(p0, p1) * 1.04f, 0.35f * s, wallH + 0.3f * s, MathF.Atan2(p1.Z - p0.Z, p1.X - p0.X), Stone);
+            if (i % 3 == 0)
+            {
+                m.Frustum(p0 - Vector3.Up * 0.3f * s, p0 + Vector3.Up * wallH * 1.5f, 0.45f * s, 0.42f * s, 8, Stone, r);
+                m.Frustum(p0 + Vector3.Up * wallH * 1.5f, p0 + Vector3.Up * wallH * 2.3f, 0.55f * s, 0, 8, Tile, r, capBottom: true);
+            }
+        }
+        for (int i = 0; i < 12; i++)
+        {
+            float a = r.NextSingle() * MathF.Tau, d = (0.9f + r.NextSingle() * 2.0f) * s;
+            House(m, b + new Vector3(MathF.Cos(a) * d, -0.1f, MathF.Sin(a) * d), 0.8f * s, 0.6f * s, (0.6f + r.NextSingle() * 0.4f) * s, r.NextSingle() * MathF.Tau,
+                Jitter(Wattle, r, 0.06f), Jitter(Tile, r, 0.12f));
+        }
+        // Church or hall in the middle.
+        House(m, b, 1.4f * s, 0.8f * s, 1.1f * s, 0.3f, Stone, Slate);
+        m.Frustum(b + new Vector3(0.6f * s, 0, 0), b + new Vector3(0.6f * s, 2.2f * s, 0), 0.3f * s, 0.28f * s, 6, Stone, r);
+        m.Frustum(b + new Vector3(0.6f * s, 2.2f * s, 0), b + new Vector3(0.6f * s, 3.0f * s, 0), 0.36f * s, 0, 6, Slate, r, capBottom: true);
+    }
+
+    static void Castle(Mesh m, Vector3 b, float s, Random r)
+    {
+        m.Tag = Vector2.Zero;
+        float h = 1.3f * s, half = 1.8f * s;
+        for (int i = 0; i < 4; i++)
+        {
+            float a = i * MathHelper.PiOver2;
+            var dir = new Vector3(MathF.Cos(a), 0, MathF.Sin(a));
+            m.Box(b + dir * half - Vector3.Up * 0.3f * s, 2 * half, 0.4f * s, h + 0.3f * s, a + MathHelper.PiOver2, Stone);
+            var corner = b + new Vector3(MathF.Cos(a + MathHelper.PiOver4), 0, MathF.Sin(a + MathHelper.PiOver4)) * half * 1.414f;
+            m.Frustum(corner - Vector3.Up * 0.3f * s, corner + Vector3.Up * h * 1.6f, 0.5f * s, 0.46f * s, 8, Stone, r);
+            m.Frustum(corner + Vector3.Up * h * 1.6f, corner + Vector3.Up * h * 2.3f, 0.6f * s, 0, 8, Slate, r, capBottom: true);
+        }
+        m.Box(b - Vector3.Up * 0.3f * s, 1.5f * s, 1.5f * s, h * 2.2f, 0, Jitter(Stone, r, 0.05f)); // keep
+        m.Gable(b + Vector3.Up * (h * 2.2f - 0.3f * s), 1.6f * s, 1.6f * s, 0.8f * s, 0, Slate);
+    }
+
     void Grass(Mesh m)
     {
         var r = new Random(t.Seed + 13);
-        int count = t.IsFlat ? 0 : 14000;
+        int count = t.IsFlat || !t.Grass ? 0 : 14000;
         var flowers = new[] { new Color(236, 214, 80), new Color(240, 240, 232), new Color(176, 120, 200) };
         for (int i = 0; i < count; i++)
         {
@@ -412,6 +492,31 @@ sealed class World : IDisposable
         public void TriUp(Vector3 a, Vector3 b, Vector3 c, Color ca, Color cb, Color cc, float tipSway = 1)
         {
             V.Add(new(a, Vector3.Up, ca, new Vector2(0, 1))); V.Add(new(b, Vector3.Up, cb, new Vector2(0, 1))); V.Add(new(c, Vector3.Up, cc, new Vector2(tipSway, 1)));
+        }
+
+        /// A box standing on `c` (bottom centre): w along its yaw, d across, h tall. No bottom face.
+        public void Box(Vector3 c, float w, float d, float h, float yaw, Color col)
+        {
+            var ax = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw)) * w / 2;
+            var az = new Vector3(-MathF.Sin(yaw), 0, MathF.Cos(yaw)) * d / 2;
+            var up = Vector3.Up * h;
+            Vector3 p0 = c - ax - az, p1 = c + ax - az, p2 = c + ax + az, p3 = c - ax + az, mid = c + up / 2;
+            void Quad(Vector3 a, Vector3 b2, Vector3 c2, Vector3 d2) { Tri(a, b2, c2, col, mid); Tri(a, c2, d2, col, mid); }
+            Quad(p0, p1, p1 + up, p0 + up); Quad(p1, p2, p2 + up, p1 + up); Quad(p2, p3, p3 + up, p2 + up); Quad(p3, p0, p0 + up, p3 + up);
+            Quad(p0 + up, p1 + up, p2 + up, p3 + up);
+        }
+
+        /// A gable roof on top of a w x d footprint at `c`, ridge `h` above it, running along the yaw.
+        public void Gable(Vector3 c, float w, float d, float h, float yaw, Color col)
+        {
+            var ax = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw)) * w / 2;
+            var az = new Vector3(-MathF.Sin(yaw), 0, MathF.Cos(yaw)) * d / 2;
+            var up = Vector3.Up * h;
+            Vector3 p0 = c - ax - az, p1 = c + ax - az, p2 = c + ax + az, p3 = c - ax + az, r0 = c - ax + up, r1 = c + ax + up, mid = c + up * 0.3f;
+            Tri(p0, p1, r1, col, mid); Tri(p0, r1, r0, col, mid);
+            Tri(p3, p2, r1, col, mid); Tri(p3, r1, r0, col, mid);
+            var gable = new Color(col.ToVector3() * 0.8f);
+            Tri(p0, p3, r0, gable, mid); Tri(p1, p2, r1, gable, mid);
         }
 
         /// A tapered prism from a to b (r1 = 0 makes a cone).

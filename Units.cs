@@ -52,6 +52,7 @@ public sealed class UnitType
     public Look Look = null!;
 
     public bool HasShield => Look.Shield != "none";
+    public UnitType Clone() => (UnitType)MemberwiseClone();
     public override string ToString() => Name;
 
     // The troops the prototype battles and tests refer to by name.
@@ -83,6 +84,7 @@ public sealed class Unit
     // Mounted state. The horse moves along Heading at Speed; the rider looks (and strikes) along Facing.
     public Mount? Horse;
     public int Coat;                       // horse coat colour (index into Style.Coats)
+    public int Palette;                    // heraldry to paint (Style.Sides index); the battle sets it per team
     public float HorseHp, Heading, ViewHeading, Speed;
     public bool Couched, Contact;          // lance lowered; this charge has reached the enemy
     public CavState Cav;

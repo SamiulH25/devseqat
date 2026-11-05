@@ -21,6 +21,15 @@ public sealed class BattleGame : Game
     readonly Controls ctl = Controls.Load();
     AlphaTestEffect spriteFx = null!;
     Shading? shading;                          // GLSL pipeline (null if it could not be created)
+    enum Mode { Title, Map, Battle }
+    Mode mode = Mode.Title;
+    Campaign? campaign;
+    MapScreen map = null!;
+    Ui titleUi = null!;
+    BattleSetup? campaignBattle;               // the battle in progress came from the campaign map
+    bool deploying, titleClick;
+    readonly string? campaignShots = Environment.GetEnvironmentVariable("IRONFIELD_CAMPAIGN_SHOTS") is { Length: > 0 } cs ? cs : null;
+    int cStage;
     Quality quality = Quality.High;
     Vector3 focusPoint;                        // what the camera looks at (the shadow map is centred here)
     BasicEffect shadowFx = null!, lineFx = null!;
@@ -84,6 +93,113 @@ public sealed class BattleGame : Game
         try { shading = new Shading(GraphicsDevice); }
         catch (Exception e) { Console.WriteLine("shaders unavailable: " + e.Message); quality = Quality.Low; }
         NewBattle();
+        map = new MapScreen(GraphicsDevice, sb, art, font, shading, ctl) { OnBattle = StartCampaignBattle, OnTitle = () => mode = Mode.Title };
+        titleUi = new Ui(sb, art, font);
+        if (shotDir != null) mode = Mode.Battle;
+        if (campaignShots != null) StartCampaign(3);
+    }
+
+    // ---------- title and campaign ----------
+
+    void StartCampaign(int seed)
+    {
+        campaign = Campaign.New(seed);
+        map.Open(campaign);
+        mode = Mode.Map;
+    }
+
+    void ContinueCampaign()
+    {
+        string? latest = new[] { "autosave", "quicksave" }.Where(CampaignState.Exists)
+            .OrderByDescending(n => File.GetLastWriteTimeUtc(Path.Combine(CampaignState.SaveDir, n + ".json"))).FirstOrDefault();
+        if (latest == null || CampaignState.Load(latest) is not CampaignState s) return;
+        campaign = new Campaign(s);
+        map.Open(campaign);
+        mode = Mode.Map;
+    }
+
+    void StartCampaignBattle(BattleSetup s)
+    {
+        campaign!.S.Save("autosave");
+        campaignBattle = s;
+        battle = new Battle(s.Seed, s.Player, s.Enemy, s.Options);
+        SetWorld();
+        selected.Clear();
+        yaw = MathHelper.PiOver2;
+        pitch = 0.3f;
+        paused = menuOpen = helpOpen = wheelOpen = false;
+        deploying = true;
+        mode = Mode.Battle;
+        SetCommand(true);
+        blend = 1;
+        battle.Log($"Battle against {s.EnemyName}: {s.Options.Ground?.Name.ToLowerInvariant() ?? "open"} ground.");
+        if (!s.Options.Scouted) battle.Log("No scouts: you cannot see their ranks until the fight starts.");
+    }
+
+    void FinishCampaignBattle()
+    {
+        campaign!.FinishBattle(battle.Result(), campaignBattle!);
+        campaignBattle = null;
+        deploying = false;
+        mode = Mode.Map;
+        map.ShowResults();
+    }
+
+    void DrawTitle()
+    {
+        var gd = GraphicsDevice;
+        gd.Clear(new Color(18, 20, 26));
+        titleUi.Begin(gd.Viewport, ms.Position, titleClick);
+        titleClick = false;
+        var u = titleUi;
+        u.Rect(new Rectangle(0, u.H / 2 - u.U(150), u.W, u.U(4)), Style.Accent * 0.5f);
+        u.TextC("IRONFIELD", u.W / 2f, u.H / 2f - u.U(130), Style.Accent, 8);
+        u.TextC("A CAPTAIN'S WAR", u.W / 2f, u.H / 2f - u.U(60), Style.Dim, 2);
+        int y = u.H / 2 - u.U(20), w = u.U(280);
+        Rectangle B() { var r = new Rectangle((u.W - w) / 2, y, w, u.U(34)); y += u.U(42); return r; }
+        if (u.Button(B(), "NEW CAMPAIGN")) StartCampaign(Environment.TickCount & 0xFFFF);
+        if (u.Button(B(), "CONTINUE", CampaignState.Exists("autosave") || CampaignState.Exists("quicksave"))) ContinueCampaign();
+        if (u.Button(B(), "QUICK BATTLE")) { NewBattle(); mode = Mode.Battle; deploying = true; SetCommand(true); blend = 1; }
+        if (u.Button(B(), "QUIT")) Exit();
+        u.TextC("F2 GRAPHICS QUALITY", u.W / 2f, u.H - u.U(30), Style.Dim * 0.7f, 1);
+        u.End();
+    }
+
+    /// Debug: IRONFIELD_CAMPAIGN_SHOTS=/dir walks through the campaign screens, saving a PNG of each, then quits.
+    void CampaignShots()
+    {
+        var c = campaign!;
+        if (shotFrames < 20 || pendingShot != null) return;
+        void Shot(string name) { pendingShot = name; shotFrames = 0; cStage++; }
+        switch (cStage)
+        {
+            case 0: map.Stage("map"); Shot("campaign-map"); break;
+            case 1: map.Stage("close"); Shot("campaign-close"); break;
+            case 2: c.Player.Companies[0].Xp = 70; c.Captain.Renown = 120; map.Stage("party"); Shot("campaign-party"); break;
+            case 3: map.Stage("upgrade"); Shot("campaign-upgrade"); break;
+            case 4: map.Stage("settlement"); Shot("campaign-town"); break;
+            case 5:
+            {
+                var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
+                bandit.Pos = c.Player.Pos + new Vector2(2, 0);
+                c.Encounter = bandit;
+                map.Stage("encounter"); Shot("campaign-encounter"); break;
+            }
+            case 6: c.AutoResolveEncounter(); map.Stage("results"); Shot("campaign-results"); break;
+            case 7:
+            {
+                map.Stage("map");
+                var lord = c.S.Parties.First(p => p.Kind == PartyKind.Lord && p.Faction == 1);
+                lord.Pos = c.Player.Pos + new Vector2(2, 0);
+                c.Encounter = lord;
+                StartCampaignBattle(c.PrepareBattle(lord));
+                cStage++; shotFrames = 0; break;
+            }
+            case 8: Shot("campaign-deploy"); break;
+            case 9: deploying = false; cStage++; break;
+            case 10 when battle.Time > 7: SetCommand(true); blend = 1; camFocus = battle.Centroid(0); camPitch = 0.8f; zoom = 50; Shot("campaign-battle"); break;
+            case 11: Exit(); break;
+        }
     }
 
     void NewBattle()
@@ -133,6 +249,22 @@ public sealed class BattleGame : Game
         ctl.Update(kb, ms);
         float dt = MathF.Min((float)gameTime.ElapsedGameTime.TotalSeconds, 1 / 30f);
         realTime += dt;
+        if (ctl.Pressed(Act.Graphics) && mode != Mode.Battle) quality = shading == null ? Quality.Low : (Quality)(((int)quality + 1) % 3);
+        if (mode == Mode.Title)
+        {
+            IsMouseVisible = true;
+            if (LmbPressed) titleClick = true;
+            base.Update(gameTime);
+            return;
+        }
+        if (mode == Mode.Map)
+        {
+            IsMouseVisible = true;
+            map.Update(dt, IsActive);
+            if (campaignShots != null) { shotFrames++; CampaignShots(); }
+            base.Update(gameTime);
+            return;
+        }
 
         if (ctl.Pressed(Act.Menu)) { if (helpOpen) helpOpen = false; else if (battle.Winner < 0) menuOpen = !menuOpen; skipMouse = true; }
         if (ctl.Pressed(Act.Help)) { helpOpen = !helpOpen; skipMouse = true; }
@@ -143,14 +275,19 @@ public sealed class BattleGame : Game
         {
             battle.Input = new PlayerInput { Dir = aimDir };
             wheelOpen = false;
-            if (battle.Winner >= 0 && Pressed(Keys.Enter)) NewBattle();
+            if (battle.Winner >= 0 && Pressed(Keys.Enter)) { if (campaignBattle != null) FinishCampaignBattle(); else NewBattle(); }
             else if (LmbPressed && hud.MenuAt(ms.Position) is MenuItem m) MenuChoice(m);
         }
         else
         {
-            if (!alive && !command) SetCommand(true);
-            else if (alive && ctl.Pressed(Act.CommandView)) SetCommand(!command);
-            if (ctl.Pressed(Act.Pause)) paused = !paused;
+            if ((!alive || deploying) && !command) SetCommand(true);
+            else if (alive && !deploying && ctl.Pressed(Act.CommandView)) SetCommand(!command);
+            if (deploying && (ctl.Pressed(Act.Pause) || (LmbPressed && hud.StartAt(ms.Position))))
+            {
+                deploying = false;
+                battle.Log("The battle begins!");
+            }
+            else if (ctl.Pressed(Act.Pause)) paused = !paused;
             if (ctl.Pressed(Act.Graphics))
             {
                 quality = shading == null ? Quality.Low : (Quality)(((int)quality + 1) % 3);
@@ -162,11 +299,12 @@ public sealed class BattleGame : Game
         IsMouseVisible = command || Overlay;
         battle.Commanding = command;
 
-        float scale = paused || menuOpen || helpOpen ? 0 : command && alive ? CommandTimeScale : 1;
+        float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
         if (scale > 0) battle.Update(dt * scale);
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
         if (shotDir != null) { shotFrames++; ShotScript(); }
+        if (campaignShots != null) { shotFrames++; CampaignShots(); }
         UpdateCamera();
         base.Update(gameTime);
     }
@@ -177,6 +315,8 @@ public sealed class BattleGame : Game
         hud.B = battle; hud.Selected = selected; hud.Ctl = ctl; hud.Minimap = world.Minimap;
         hud.Command = command; hud.Paused = paused; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
         hud.ShowResult = battle.Winner >= 0 && !helpOpen;
+        hud.InCampaign = campaignBattle != null;
+        hud.Deploying = deploying;
         hud.WheelOpen = wheelOpen; hud.WheelSector = WheelSector() ?? -1;
         hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = ms.Position;
         hud.Box = boxStart is Point b && command ? BoxOf(b, ms.Position) : null;
@@ -192,6 +332,9 @@ public sealed class BattleGame : Game
             case MenuItem.Controls: helpOpen = true; break;
             case MenuItem.NewBattle: NewBattle(); break;
             case MenuItem.Quit: Exit(); break;
+            case MenuItem.Withdraw: battle.Withdraw(); menuOpen = false; break;
+            case MenuItem.Continue: FinishCampaignBattle(); break;
+            case MenuItem.Title: menuOpen = false; mode = Mode.Title; break;
         }
     }
 
@@ -348,6 +491,7 @@ public sealed class BattleGame : Game
     /// Split the segment a-b between target squads, proportional to their size.
     void Distribute(Vector2 a, Vector2 b, Vector2 toward)
     {
+        if (deploying) { a.Y = MathF.Min(a.Y, -12); b.Y = MathF.Min(b.Y, -12); } // your third of the field
         foreach (var (s, a1, b1) in Split(a, b).ToList()) s.SetLine(a1, b1, toward);
     }
 
@@ -597,6 +741,23 @@ public sealed class BattleGame : Game
     protected override void Draw(GameTime gameTime)
     {
         var gd = GraphicsDevice;
+        if (mode != Mode.Battle)
+        {
+            if (mode == Mode.Title) DrawTitle();
+            else
+            {
+                try { map.Draw(quality); }
+                catch (Exception e) when (quality != Quality.Low)
+                {
+                    Console.WriteLine("shader pipeline failed on the map, falling back: " + e);
+                    gd.SetRenderTarget(null);
+                    quality = Quality.Low;
+                }
+            }
+            CaptureShot();
+            base.Draw(gameTime);
+            return;
+        }
         EaseFacings();
         bool shaded = quality != Quality.Low && shading != null;
         if (shaded)
@@ -624,18 +785,25 @@ public sealed class BattleGame : Game
         SyncHud();
         if (!hudHidden) hud.Draw();
 
-        if (pendingShot != null && shotDir != null)
+        CaptureShot();
+        base.Draw(gameTime);
+    }
+
+    void CaptureShot()
+    {
+        var gd = GraphicsDevice;
+        var dir = shotDir ?? campaignShots;
+        if (pendingShot != null && dir != null)
         {
             int w = gd.PresentationParameters.BackBufferWidth, h = gd.PresentationParameters.BackBufferHeight;
             var data = new Color[w * h];
             gd.GetBackBufferData(data);
             using var tex = new Texture2D(gd, w, h);
             tex.SetData(data);
-            using var file = File.Create(Path.Combine(shotDir, pendingShot + ".png"));
+            using var file = File.Create(Path.Combine(dir, pendingShot + ".png"));
             tex.SaveAsPng(file, w, h);
             pendingShot = null;
         }
-        base.Draw(gameTime);
     }
 
     /// The shader path: sun shadow map, then the scene into an off-screen target, then the post pass to the screen.
@@ -721,6 +889,7 @@ public sealed class BattleGame : Game
         foreach (var u in battle.Units)
         {
             if (!forSun && !u.IsPlayer && u.Team == 0 && blend < 0.5f && Vector2.DistanceSquared(u.Pos, eye2) < 6 * 6) continue; // friends don't fill the lens
+            if (deploying && !battle.Options.Scouted && u.Team == 1 && !u.IsLeader) continue; // unscouted: banners only
             puppet.Draw(u, t.Height(u.Pos));
         }
         foreach (var h in battle.LooseHorses) puppet.DrawLooseHorse(h, t.Height(h.Pos));

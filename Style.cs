@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-public enum Emblem { Chevron, Saltire, Lozenge }
+public enum Emblem { Chevron, Saltire, Lozenge, None }
 
 /// A side's heraldry: the cloth it dyes, the trim and charge painted on shields and tabards, and its UI colour.
 public sealed record Heraldry(string Name, Color Cloth, Color ClothDark, Color Trim, Emblem Charge, Color Ui);
@@ -12,12 +12,13 @@ public static class Style
 {
     // ---------- sides ----------
 
-    /// Palette index: 0 = your company (azure), 1 = the enemy host (crimson), 2 = you (gold, so you can always find yourself).
+    /// Palette index: 0 = the Azure Crown, 1 = the Crimson Compact, 2 = you (gold, so you can always find yourself), 3 = bandits.
     public static readonly Heraldry[] Sides =
     {
         new("Azure", new(54, 94, 176), new(30, 50, 108), new(230, 218, 178), Emblem.Chevron, new(112, 160, 255)),
         new("Crimson", new(172, 48, 42), new(98, 26, 28), new(222, 178, 72), Emblem.Saltire, new(236, 88, 70)),
         new("Gold", new(210, 168, 54), new(126, 88, 30), new(44, 36, 44), Emblem.Lozenge, new(240, 200, 60)),
+        new("Brigands", new(112, 98, 78), new(70, 62, 52), new(160, 150, 128), Emblem.None, new(190, 170, 130)),
     };
 
     // ---------- materials (base tones; the painter builds a 5-step ramp from each) ----------

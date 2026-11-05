@@ -16,12 +16,34 @@ dotnet run -- --selftest   # headless: formation math + 3 full battles must reso
 You need .NET SDK 10 (`net10.0`). On Ubuntu 24.04 `apt-get install dotnet-sdk-10.0` works (no Microsoft feed needed).
 The game needs no art files: sprites, terrain and the font are all generated in code. Troops come from `Data/troops.json`.
 **Design language:** see [`docs/DESIGN.md`](docs/DESIGN.md) (art direction, unit painting rules, heraldry, tiers, UI tokens).
-**Campaign plan:** see [`docs/CAMPAIGN.md`](docs/CAMPAIGN.md) (map, companies, XP and upgrades, economy, AI, battle hand-off, milestones).
+**Campaign:** see [`docs/CAMPAIGN.md`](docs/CAMPAIGN.md) (map, companies, XP and upgrades, economy, AI, battle hand-off; "As built" at the end).
+
+The game opens on a **title screen**: New Campaign, Continue (latest save), Quick Battle (one random battle), Quit.
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
 To render a few staged camera shots as PNGs and quit (works headless with `xvfb-run -a dotnet run`), set `IRONFIELD_SHOTS=/some/dir`.
 `dotnet run -- --write-controls` writes `controls.json` with the default bindings.
 Graphics quality: **F2** cycles High (shaders, sun shadows, post) / Medium (no shadows) / Low (fixed-function); `IRONFIELD_QUALITY=Low` picks one at start.
 Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, no Wine): see "Shaders" below.
+
+## The campaign
+
+You are a free captain sworn to the Azure Crown, at war with the Crimson Compact, with brigands roaming between them.
+- **Map:** click to march, click a town or village to enter it, and click a party to chase it. P opens the party screen, Space pauses,
+  1-3 set the speed (x1, x3, x8), F follows you, F5 saves, F9 loads, and Esc opens the menu. The camera works as in command view (WASD, Q/E, wheel,
+  middle-drag), and the overview (top right) jumps the camera. Hover anything for details.
+- **Companies persist.** They keep a name, men, wounded, XP, cohesion and history. They gain XP in battle and from drill, and upgrade along
+  `troops.json` in a town's training yard (Levies choose a line; cavalry needs horses). New recruits dilute XP.
+- **Towns:** train, hire mercenaries, buy horses and your own gear (plate, great helm, warhorse, destrier), rest to heal, and sign or end
+  contracts. **Villages:** recruit levies. **Castles:** rest and contracts.
+- **Encounters:** attack (the battle opens in a **deployment phase**: arrange your lines in your third of the field, then Space or START), auto-resolve,
+  retreat (a rearguard pays), or pay brigands off. Esc in a campaign battle lets you **withdraw**.
+- **Results:** the fallen split into killed and wounded (heavier armour survives more often). Then come XP, loot, ransom, bounty, renown and captured horses.
+  If you fall you are wounded, and command from the rear for a few days; if your army also loses, you are captured and ransomed.
+- **The world runs without you.** Lords recruit, refit, upgrade (same rules and prices), patrol, hunt, flee and muster hosts. Villages get threatened,
+  the war score moves, the losing side sues for a 30-day truce, and the war resumes when it ends. Upkeep is weekly, a contract pays 85% of it,
+  and unpaid men desert.
+- **Renown** raises your company and men limits and buys perks (Bannerman, War Cry, Tactician, Quartermaster, Surgeon, Drillmaster,
+  Horsemaster, Iron Will), each of which changes the battles. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
 
 ## Controls
 
@@ -164,6 +186,9 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 | `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles. |
 | `BattleGame.cs` | MonoGame `Game`: input, the blended third-person/command camera, terrain picking, orders, the render passes. |
 | `World.cs` | 3D world: terrain mesh, procedural low-poly foliage and grass (tagged with wind sway and leafiness), sky dome, minimap image; shaded and fixed-function draw paths. |
+| `Campaign/` | The headless campaign: `CampaignState` (save data, RNG, balance, names), `WorldMap` (generation, terrain, settlements), `Rules` (companies, XP, upgrades, auto-resolve, battle bridge), `Campaign` (time, movement, encounters, AI, economy, your actions). |
+| `MapScreen.cs` | The campaign map: 3D world, banner-bearer parties, map HUD and every campaign panel. `Ui.cs`: the immediate-mode panel kit. |
+| `BattleTypes.cs` | `BattleOptions` (perks, gear, wounds, palettes, ground, size cap), `BattleResult` / `CompanyResult` for the campaign. |
 | `Shading.cs` | The shader pipeline: effects, sun shadow map, scene target, post pass, light and grade values, quality levels. |
 | `GlslEffect.cs` | Builds MonoGame effects from GLSL at runtime (writes the DesktopGL MGFX format), no shader compiler needed. |
 | `Shaders/` | `world.glsl` (terrain, foliage), `sprite.glsl` (units), `sky.glsl`, `post.glsl`, `common.glsl` (shadow and fog helpers). |

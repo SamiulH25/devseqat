@@ -23,6 +23,13 @@ public static class SelfTest
         HoldFire();
         TroopTree();
         Sprites();
+        BigBattle();
+        CampaignMap();
+        CampaignPersistence();
+        CampaignRun();
+        Economy();
+        Bridge();
+        Calibration();
 
         for (int seed = 1; seed <= 3; seed++)
         {
@@ -203,6 +210,139 @@ public static class SelfTest
         Check(MathF.Abs((torso.Height - 2) * Style.Px - 0.675f) < 0.05f, "a torso keeps its size in metres");
         Check(sheet.Rects.Values.Any(r => r.Height > 90), "polearms are painted at full length");
     }
+
+    // ---------- campaign (docs/CAMPAIGN.md section 11) ----------
+
+    static ArmySpec Scaled(ArmySpec a, float k, int idBase) =>
+        a with { Companies = a.Companies.Select((c, i) => c with { Count = (int)(c.Count * k), Id = idBase + i }).ToList() };
+
+    /// A battle bigger than the field holds: reserves wait, march on, and every man is accounted for; 200 men run in real time.
+    static void BigBattle()
+    {
+        var rng = new Random(5);
+        var b = new Battle(5, Scaled(Armies.Random(rng, 2, 0), 2.2f, 100), Scaled(Armies.Random(rng, 2, 1), 2.2f, 200),
+            new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+        int fielded = b.Units.Count(u => !u.IsLeader), firstCompanies = b.Squads.Count(q => q.Company != null);
+        Check(fielded <= 210, $"the field holds about 200 men ({fielded})");
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        for (int i = 0; i < 600; i++) b.Update(1 / 60f);
+        double tps = 600 / watch.Elapsed.TotalSeconds;
+        Console.WriteLine($"big battle: {fielded} men fielded, {tps:0} ticks/s");
+        Check(tps >= 60, $"a 200-man battle runs in real time ({tps:0} ticks/s)");
+        for (int step = 0; b.Winner < 0 && step < 60 * 900; step++) b.Update(1 / 60f);
+        var r = b.Result();
+        Check(r.Winner >= 0, "the big battle ends");
+        Check(r.Companies.All(c => c.Standing + c.Fled + c.Fallen == c.Start), "every man is standing, fled or fallen");
+        Check(r.Companies.Count(c => c.Deployed) > firstCompanies, $"reserves marched on ({firstCompanies} -> {r.Companies.Count(c => c.Deployed)} companies)");
+    }
+
+    static void CampaignMap()
+    {
+        var m = WorldMap.Generate(11);
+        Check(m.Provinces.Count >= 18, $"enough provinces ({m.Provinces.Count})");
+        for (int f = 0; f < 2; f++) Check(m.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town), $"faction {f} has towns");
+        var seen = new HashSet<int> { 0 };
+        var todo = new Queue<int>(new[] { 0 });
+        while (todo.Count > 0) foreach (int n in m.Provinces[todo.Dequeue()].Neighbors) if (seen.Add(n)) todo.Enqueue(n);
+        Check(seen.Count == m.Provinces.Count, "every province is reachable by road");
+        Check(m.Settlements.Count(s => s.Kind == SettlementKind.Village) >= m.Provinces.Count * 2 - 4, "provinces have villages");
+    }
+
+    static void CampaignPersistence()
+    {
+        string Run() { var c = Campaign.New(21); for (int i = 0; i < 60 * 24 && c.Encounter == null; i += 6) c.Tick(6); c.Encounter = null; return c.S.Serialize(); }
+        Check(Run() == Run(), "the same seed gives the same campaign");
+        var a = Campaign.New(22);
+        a.Tick(24 * 5);
+        string json = a.S.Serialize();
+        Check(CampaignState.Deserialize(json).Serialize() == json, "save, load, save gives the same file");
+    }
+
+    /// 120 days with nobody playing: lords fight, bandits come and go, money moves; nothing breaks.
+    static void CampaignRun()
+    {
+        var c = Campaign.New(31);
+        int battles = 0;
+        for (int h = 0; h < 120 * 24; h++)
+        {
+            c.Tick(1);
+            if (c.Encounter != null) { c.AutoResolveEncounter(); battles++; }
+            c.Arrived = null;
+        }
+        foreach (var p in c.S.Parties)
+            foreach (var co in p.Companies)
+            {
+                Check(co.Men >= 0 && co.Wounded >= 0, "no negative men");
+                Check(Troops.All.Any(t => t.Id == co.Troop), "troop ids stay valid");
+            }
+        Check(c.S.Gold >= 0 && c.S.Factions.All(f => f.Treasury > -1), "no negative purses");
+        Check(c.S.Parties.Count(p => p.Kind == PartyKind.Lord) >= 8, "lords keep the field");
+        int upgraded = c.S.Parties.Where(p => p.Kind == PartyKind.Lord).SelectMany(p => p.Companies).Count(co => co.Type.Tier >= 3);
+        Console.WriteLine($"campaign: day {c.Day}, {c.S.Parties.Count} parties, {upgraded} lord companies at tier III+, your battles {battles}, war score {c.S.Factions[0].WarScore:0}/{c.S.Factions[1].WarScore:0}, at war {c.S.AtWar}");
+        var lords = c.S.Parties.Where(p => p.Kind == PartyKind.Lord).ToList();
+        Console.WriteLine($"lords: gold avg {lords.Average(l => l.Gold):0}, max company xp {lords.SelectMany(l => l.Companies).Max(co => co.Xp):0}, "
+            + $"ready {lords.SelectMany(l => l.Companies).Count(Rules.UpgradeReady)}, tiers {string.Join(",", lords.SelectMany(l => l.Companies).GroupBy(co => co.Type.Tier).OrderBy(g => g.Key).Select(g => $"{g.Key}:{g.Count()}"))}, "
+            + $"tasks {string.Join(",", lords.GroupBy(l => l.Task).Select(g => $"{g.Key}:{g.Count()}"))}, treasury {c.S.Factions[0].Treasury:0}/{c.S.Factions[1].Treasury:0}");
+        Check(upgraded > 0, "lords upgrade their companies too");
+    }
+
+    /// A level-2 army on contract, sitting still, stays solvent for 8 weeks.
+    static void Economy()
+    {
+        var c = Campaign.New(41);
+        c.Player.Companies.Clear();
+        foreach (var co in Armies.Standard(0).Companies) c.Player.Companies.Add(c.NewCompany(co.Troop, co.Role, co.Count, 0));
+        c.Player.Cooldown = 1e6f;
+        for (int h = 0; h < 8 * 168; h++) { c.Tick(1); c.Encounter = null; c.Arrived = null; }
+        Console.WriteLine($"economy: after 8 weeks gold {c.S.Gold:0}, weekly balance {c.S.LastWeekBalance:0}");
+        Check(c.S.UnpaidWeeks == 0 && c.S.Gold > 0 && c.Player.Men >= 60, "a contracted level-2 army stays paid for 8 weeks");
+    }
+
+    /// A battle built from map parties and played headless maps every casualty back to its company.
+    static void Bridge()
+    {
+        var c = Campaign.New(51);
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
+        bandit.Pos = c.Player.Pos;
+        c.Encounter = bandit;
+        var setup = c.PrepareBattle(bandit);
+        setup.Options.AutoPlayer = true;
+        setup.Options.PlayerWounded = true;
+        var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+        for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+        int before = c.Player.Men;
+        var report = c.FinishBattle(b.Result(), setup);
+        Check(report.Companies.Count > 0, "the report lists the companies");
+        foreach (var r in report.Companies.Where(r => r.Deployed))
+            Check(r.MenBefore == r.MenAfter + r.Killed + r.Wounded + r.Captured + r.FledLost, $"{r.Name}: every man accounted for");
+        Check(c.Player.Companies.All(co => co.Battles >= 1), "your companies remember the battle");
+        Console.WriteLine($"bridge: {(report.Won ? "won" : "lost")} vs {report.Enemy}, your men {before} -> {c.Player.Men} (+{c.Player.Wounded} wounded), gold {c.S.Gold:0}");
+    }
+
+    /// Auto-resolve picks the same winner as the battle simulation at least 75% of the time.
+    static void Calibration()
+    {
+        int agree = 0, n = 0;
+        for (int i = 0; i < 12; i++)
+        {
+            var rng = new Random(100 + i);
+            int l0 = 1 + i % 4, l1 = 1 + (i * 7 + 1) % 4;
+            var a0 = Armies.Random(rng, l0, 0);
+            var a1 = Armies.Random(rng, l1, 0);
+            a1 = a1 with { Companies = a1.Companies.Select(co => co with { Count = (int)(co.Count * (0.7f + 0.1f * (i % 6))) }).ToList() };
+            var b = new Battle(200 + i, Ids(a0, 1000), Ids(a1, 2000), new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+            for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+            Party P(ArmySpec a) { var p = new Party(); foreach (var co in a.Companies) p.Companies.Add(new CompanyRecord { Id = co.Id, Troop = co.Troop, Men = co.Count }); return p; }
+            float s0 = Rules.Strength(P(a0)), s1 = Rules.Strength(P(a1));
+            int predicted = s0 >= s1 ? 0 : 1;
+            n++;
+            if (predicted == b.Winner) agree++;
+        }
+        Console.WriteLine($"auto-resolve agrees with the battle sim in {agree}/{n} matchups");
+        Check(agree >= n * 0.75f, $"auto-resolve calibration ({agree}/{n})");
+    }
+
+    static ArmySpec Ids(ArmySpec a, int idBase) => a with { Companies = a.Companies.Select((c, i) => c with { Id = idBase + i }).ToList() };
 
     static void Check(bool ok, string what)
     {

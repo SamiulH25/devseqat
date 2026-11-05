@@ -101,6 +101,8 @@ sealed class Shading : IDisposable
     }
 
     public float ShadowTexel, ShadowBias, ShadowTexelMetres;
+    /// Fog start and end (the campaign map pushes them out for its far camera).
+    public Vector2 Fog = new(Ironfield.World.FogStart, Ironfield.World.FogEnd);
 
     /// Set the shared lighting parameters on a lit effect.
     public void Setup(Effect fx, Matrix viewProj, Vector3 camPos, float time, bool shadows, float normalOffset)
@@ -114,7 +116,7 @@ sealed class Shading : IDisposable
         p["SkyColor"]?.SetValue(SkyColor);
         p["GroundColor"]?.SetValue(GroundColor);
         p["FogColor"]?.SetValue(Ironfield.World.Horizon.ToVector3());
-        p["FogParams"]?.SetValue(new Vector4(Ironfield.World.FogStart, Ironfield.World.FogEnd, 0.55f, 0));
+        p["FogParams"]?.SetValue(new Vector4(Fog.X, Fog.Y, 0.55f, 0));
         p["ShadowParams"]?.SetValue(new Vector4(ShadowTexel, ShadowBias, shadows ? 1 : 0, normalOffset));
         p["Time"]?.SetValue(time);
         p["Wind"]?.SetValue(Wind);
