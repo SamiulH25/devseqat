@@ -31,6 +31,7 @@ public sealed class Battle
     public readonly List<LooseHorse> LooseHorses = new();
     public readonly List<(Vector2 Pos, float Heading, int Team)> DeadHorses = new();
     public readonly List<(string Text, float At)> Events = new();
+    public readonly Terrain Terrain;
     public Unit Player = null!, EnemyCaptain = null!;
     public PlayerInput Input;
     public bool Commanding; // player is in command view: no leadership aura, body stands idle
@@ -69,6 +70,7 @@ public sealed class Battle
     {
         rng = new Random(seed);
         this.scripted = scripted;
+        Terrain = scripted ? Terrain.Flat() : new Terrain(seed);
         Player = Spawn(UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34));
         Player.IsPlayer = Player.IsLeader = true;
         Player.Facing = Player.Heading = MathHelper.PiOver2;
@@ -224,7 +226,7 @@ public sealed class Battle
         if (charge && s.Target != null && d > 3) (enemy, d) = Nearest(u, s.Target); // go for the ordered target
 
         // Archers shoot once settled in formation (or anywhere when charging).
-        if (enemy != null && u.Ammo > 0 && d > 4 && d < u.Type.Range && (charge || toSlot < 2.5f))
+        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < u.Type.Range && (charge || toSlot < 2.5f))
         {
             u.Face(enemy.Pos - u.Pos);
             if (u.Cooldown <= 0) Shoot(u, enemy);
@@ -596,7 +598,9 @@ public sealed class Battle
         }
 
         float speed = ranged || lance ? 0 : SpeedBonus(a, t);
-        float mult = (1 + speed) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted : 1);
+        // Total War high ground: up to +-15% for fighting downhill / uphill.
+        float high = ranged ? 0 : Math.Clamp((Terrain.Height(a.Pos) - Terrain.Height(t.Pos)) * 0.05f, -0.15f, 0.15f);
+        float mult = (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted : 1);
         if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0);
         if (a.IsPlayer)
@@ -605,6 +609,7 @@ public sealed class Battle
             if (lance) text = "COUCHED LANCE " + text;
             if (speed >= 0.1f) text += $"  +{speed * 100:0}% SPEED";
             if (side != Side.Front) text += side == Side.Rear ? "  REAR" : "  FLANK";
+            if (high >= 0.05f) text += "  HIGH GROUND";
             PlayerHit = (text, Time);
         }
     }
@@ -634,7 +639,7 @@ public sealed class Battle
         r.Vel = Vector2.Zero;
         r.Couched = false;
         r.Morale -= 10;
-        if (r.IsPlayer) Log("Your horse is slain! Find another (H).");
+        if (r.IsPlayer) Log("Your horse is slain! Find a loose one to mount.");
         Stagger(r, 1.2f);
         Damage(by, r, 12, 0);
     }
@@ -683,12 +688,12 @@ public sealed class Battle
         aim += new Vector2(Gauss(), Gauss()) * d * 0.035f;
         float time = MathF.Max(0.1f, Vector2.Distance(u.Pos, aim) / ArrowSpeed);
         var h = (aim - u.Pos) / time;
-        float land = t.Mounted ? 1.5f : 1.0f;
-        // Launch at 1.5 m, land at `land` m after `time` seconds.
+        float from = Terrain.Height(u.Pos) + 1.5f, land = Terrain.Height(aim) + (t.Mounted ? 1.5f : 1.0f);
+        // Launch 1.5 m above the archer's ground, land at chest height on the target's ground after `time` seconds.
         Arrows.Add(new Projectile
         {
-            Pos = new(u.Pos.X, 1.5f, u.Pos.Y),
-            Vel = new(h.X, 0.5f * Gravity * time + (land - 1.5f) / time, h.Y),
+            Pos = new(u.Pos.X, from, u.Pos.Y),
+            Vel = new(h.X, 0.5f * Gravity * time + (land - from) / time, h.Y),
             Shooter = u,
             Damage = u.Type.Damage,
         });
@@ -708,14 +713,15 @@ public sealed class Battle
             }
             p.Vel.Y -= Gravity * dt;
             p.Pos += p.Vel * dt;
-            if (p.Pos.Y <= 0) { p.Pos.Y = 0; p.Stuck = 0; continue; }
-            if (p.Pos.Y > 2.6f) continue;
             var flat = new Vector2(p.Pos.X, p.Pos.Z);
+            float ground = Terrain.Height(flat);
+            if (p.Pos.Y <= ground) { p.Pos.Y = ground; p.Stuck = 0; continue; }
+            if (p.Pos.Y > ground + 2.6f) continue;
             foreach (var t in Units)
             {
                 if (t.Team == p.Shooter.Team || !t.Active) continue;
                 float r = t.Mounted ? 0.8f : 0.4f;
-                if ((!t.Mounted && p.Pos.Y > 2) || Vector2.DistanceSquared(t.Pos, flat) > r * r) continue;
+                if ((!t.Mounted && p.Pos.Y > ground + 2) || Vector2.DistanceSquared(t.Pos, flat) > r * r) continue;
                 Hit(p.Shooter, t, p.Damage, true);
                 Arrows.RemoveAt(i);
                 break;
@@ -734,7 +740,7 @@ public sealed class Battle
                 u.Vel = u.HeadingDir * u.Speed;
             }
             else u.Vel = u.Wish;
-            u.Pos += u.Vel * dt;
+            u.Pos += u.Vel * SlopeFactor(Terrain, u.Pos, u.Vel) * dt;
             u.Anim += dt * u.Vel.Length() * (u.Mounted ? 0.45f : 0.9f); // stride-locked walk / gallop cycle
         }
         // shortcut: O(n^2) separation, fine for ~150 units; switch to a spatial grid past ~400.
@@ -764,6 +770,16 @@ public sealed class Battle
                 else if (a.Mounted) { a.Speed *= 1 - 1.5f * dt; b.Speed *= 1 - 1.5f * dt; }
             }
         }
+        // Trees and boulders are solid; a horse that rides into one pulls up hard.
+        foreach (var u in Units)
+            if (u.Active && Terrain.PushOut(ref u.Pos, u.Mounted ? 0.9f : 0.35f) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
+    }
+
+    /// Uphill is slow, downhill a little quicker: a multiplier on ground speed.
+    internal static float SlopeFactor(Terrain t, Vector2 pos, Vector2 vel)
+    {
+        float slope = vel.LengthSquared() > 0.01f ? Vector2.Dot(t.Gradient(pos), Vector2.Normalize(vel)) : 0;
+        return Math.Clamp(1 - slope * 1.5f, 0.55f, 1.15f);
     }
 
     /// A horse at speed running into an enemy footman: knockdown and damage, unless the man is braced.

@@ -1,0 +1,416 @@
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+
+namespace Ironfield;
+
+/// Position + normal + colour + uv: lit, vertex-coloured (optionally textured) world geometry.
+public struct VertexPNCT : IVertexType
+{
+    public Vector3 Position, Normal;
+    public Color Color;
+    public Vector2 UV;
+
+    public static readonly VertexDeclaration Decl = new(
+        new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
+        new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
+        new VertexElement(24, VertexElementFormat.Color, VertexElementUsage.Color, 0),
+        new VertexElement(28, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0));
+
+    public VertexPNCT(Vector3 p, Vector3 n, Color c, Vector2 uv) { Position = p; Normal = n; Color = c; UV = uv; }
+    readonly VertexDeclaration IVertexType.VertexDeclaration => Decl;
+}
+
+/// The 3D world around the 2D units: lit heightmap terrain, low-poly foliage meshes (trees, pines, bushes, rocks, grass tufts)
+/// and a gradient sky dome. Everything is built once per battle into static vertex buffers.
+sealed class World : IDisposable
+{
+    public const float MinimapRange = 110; // the minimap shows +-this many metres around the centre
+    public const float FogStart = 110, FogEnd = 330;
+    public static readonly Color Horizon = new(186, 204, 218), Zenith = new(78, 126, 194);
+    public static readonly Vector3 SunDir = Vector3.Normalize(new Vector3(-0.45f, -0.8f, -0.35f)); // light travels this way
+    const int Chunk = 60000; // primitives per draw call
+
+    public readonly Texture2D Minimap;
+    readonly GraphicsDevice gd;
+    readonly Terrain t;
+    readonly VertexBuffer terrainVb, foliageVb, skyVb;
+    readonly IndexBuffer terrainIb;
+    readonly int terrainTris, foliageTris, skyTris;
+    readonly Texture2D detail;
+    readonly BasicEffect terrainFx, foliageFx, skyFx;
+    static readonly SamplerState DetailSampler = new()
+    {
+        Filter = TextureFilter.LinearMipPoint, AddressU = TextureAddressMode.Wrap, AddressV = TextureAddressMode.Wrap,
+    };
+
+    public World(GraphicsDevice gd, Terrain terrain)
+    {
+        this.gd = gd;
+        t = terrain;
+        (terrainVb, terrainIb, terrainTris) = BuildTerrain();
+        (foliageVb, foliageTris) = BuildFoliage();
+        (skyVb, skyTris) = BuildSky();
+        detail = BuildDetail();
+        Minimap = BuildMinimap();
+
+        terrainFx = Lit(new BasicEffect(gd) { TextureEnabled = true, Texture = detail });
+        foliageFx = Lit(new BasicEffect(gd));
+        skyFx = new BasicEffect(gd) { VertexColorEnabled = true };
+    }
+
+    BasicEffect Lit(BasicEffect fx)
+    {
+        fx.VertexColorEnabled = true;
+        fx.LightingEnabled = true;
+        fx.AmbientLightColor = new Vector3(0.46f, 0.48f, 0.54f);
+        fx.DirectionalLight0.Enabled = true;
+        fx.DirectionalLight0.Direction = SunDir;
+        fx.DirectionalLight0.DiffuseColor = new Vector3(0.72f, 0.67f, 0.58f);
+        fx.DirectionalLight0.SpecularColor = Vector3.Zero;
+        fx.DirectionalLight1.Enabled = fx.DirectionalLight2.Enabled = false;
+        fx.SpecularPower = 1;
+        fx.FogEnabled = true;
+        fx.FogColor = Horizon.ToVector3();
+        fx.FogStart = FogStart;
+        fx.FogEnd = FogEnd;
+        return fx;
+    }
+
+    public void Draw(Matrix view, Matrix proj, Vector3 camPos)
+    {
+        gd.RasterizerState = RasterizerState.CullNone;
+        gd.BlendState = BlendState.Opaque;
+
+        gd.DepthStencilState = DepthStencilState.None;
+        skyFx.World = Matrix.CreateTranslation(camPos);
+        skyFx.View = view; skyFx.Projection = proj;
+        skyFx.CurrentTechnique.Passes[0].Apply();
+        gd.SetVertexBuffer(skyVb);
+        gd.DrawPrimitives(PrimitiveType.TriangleList, 0, skyTris);
+
+        gd.DepthStencilState = DepthStencilState.Default;
+        gd.SamplerStates[0] = DetailSampler;
+        terrainFx.View = view; terrainFx.Projection = proj;
+        terrainFx.CurrentTechnique.Passes[0].Apply();
+        gd.SetVertexBuffer(terrainVb);
+        gd.Indices = terrainIb;
+        for (int s = 0; s < terrainTris; s += Chunk)
+            gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, s * 3, Math.Min(Chunk, terrainTris - s));
+
+        foliageFx.View = view; foliageFx.Projection = proj;
+        foliageFx.CurrentTechnique.Passes[0].Apply();
+        gd.SetVertexBuffer(foliageVb);
+        for (int s = 0; s < foliageTris; s += Chunk)
+            gd.DrawPrimitives(PrimitiveType.TriangleList, s * 3, Math.Min(Chunk, foliageTris - s));
+    }
+
+    public void Dispose()
+    {
+        terrainVb.Dispose(); terrainIb.Dispose(); foliageVb.Dispose(); skyVb.Dispose();
+        detail.Dispose(); Minimap.Dispose();
+        terrainFx.Dispose(); foliageFx.Dispose(); skyFx.Dispose();
+    }
+
+    // ---------- terrain ----------
+
+    static float Smooth(float a, float b, float x)
+    {
+        float k = Math.Clamp((x - a) / (b - a), 0, 1);
+        return k * k * (3 - 2 * k);
+    }
+
+    /// Ground colour: meadow greens, drier on high ground, dirt on steep slopes and the road.
+    public Vector3 GroundColor(Vector2 p)
+    {
+        int s = t.Seed;
+        float n = Terrain.Noise(p.X * 0.045f, p.Y * 0.045f, s + 7), n2 = Terrain.Noise(p.X * 0.19f, p.Y * 0.19f, s + 8);
+        var c = Vector3.Lerp(new Vector3(0.36f, 0.52f, 0.24f), new Vector3(0.47f, 0.6f, 0.28f), 0.5f + 0.5f * n);
+        c = Vector3.Lerp(c, new Vector3(0.58f, 0.6f, 0.34f), Smooth(4, 12, t.Height(p)) * 0.6f);           // dry hilltops
+        c = Vector3.Lerp(c, new Vector3(0.48f, 0.42f, 0.32f), Smooth(0.35f, 0.7f, t.Gradient(p).Length())); // bare slopes
+        float rd = t.RoadDist(p);
+        c = Vector3.Lerp(c, new Vector3(0.56f, 0.47f, 0.34f), 1 - Smooth(1.8f, 3.4f + n2 * 0.6f, rd));      // road
+        return c * (1 + n2 * 0.05f);
+    }
+
+    (VertexBuffer, IndexBuffer, int) BuildTerrain()
+    {
+        const int n = Terrain.N;
+        var v = new VertexPNCT[n * n];
+        for (int z = 0; z < n; z++)
+            for (int x = 0; x < n; x++)
+            {
+                var p = new Vector2(-Terrain.Half + x * Terrain.Step, -Terrain.Half + z * Terrain.Step);
+                float hl = t.GridHeight(Math.Max(0, x - 1), z), hr = t.GridHeight(Math.Min(n - 1, x + 1), z);
+                float hd = t.GridHeight(x, Math.Max(0, z - 1)), hu = t.GridHeight(x, Math.Min(n - 1, z + 1));
+                var normal = Vector3.Normalize(new Vector3(hl - hr, 2 * Terrain.Step, hd - hu));
+                v[z * n + x] = new VertexPNCT(new Vector3(p.X, t.GridHeight(x, z), p.Y), normal, new Color(GroundColor(p)), p / 4);
+            }
+        var idx = new ushort[(n - 1) * (n - 1) * 6];
+        int k = 0;
+        for (int z = 0; z < n - 1; z++)
+            for (int x = 0; x < n - 1; x++)
+            {
+                // Split along (x+1, z)-(x, z+1), matching Terrain.Height.
+                ushort a = (ushort)(z * n + x), b = (ushort)(a + 1), c = (ushort)(a + n), d = (ushort)(a + n + 1);
+                idx[k++] = a; idx[k++] = b; idx[k++] = c;
+                idx[k++] = d; idx[k++] = c; idx[k++] = b;
+            }
+        var vb = new VertexBuffer(gd, VertexPNCT.Decl, v.Length, BufferUsage.WriteOnly);
+        vb.SetData(v);
+        var ib = new IndexBuffer(gd, IndexElementSize.SixteenBits, idx.Length, BufferUsage.WriteOnly);
+        ib.SetData(idx);
+        return (vb, ib, idx.Length / 3);
+    }
+
+    Texture2D BuildDetail()
+    {
+        var rng = new Random(t.Seed + 5);
+        var data = new Color[64 * 64];
+        for (int i = 0; i < data.Length; i++)
+        {
+            int g = 214 + rng.Next(-22, 23) + (rng.Next(9) == 0 ? -30 : 0);
+            data[i] = new Color(g, g, g);
+        }
+        return Art.Mipped(gd, data, 64);
+    }
+
+    Texture2D BuildMinimap()
+    {
+        const int S = 128;
+        var data = new Color[S * S];
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++)
+            {
+                var w = MinimapToWorld(new Vector2((x + 0.5f) / S, (y + 0.5f) / S));
+                var g = t.Gradient(w);
+                var nrm = Vector3.Normalize(new Vector3(-g.X, 1, -g.Y));
+                float shade = 0.65f + 0.55f * MathF.Max(0, Vector3.Dot(nrm, -SunDir));
+                data[y * S + x] = new Color(GroundColor(w) * shade);
+            }
+        foreach (var f in t.Foliage)
+        {
+            if (f.Kind is not (FoliageKind.Broadleaf or FoliageKind.Pine)) continue;
+            var m = WorldToMinimap(f.Pos) * S;
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    int px = (int)m.X + dx, py = (int)m.Y + dy;
+                    if (px >= 0 && py >= 0 && px < S && py < S && (dx == 0 || dy == 0)) data[py * S + px] = new Color(34, 70, 36);
+                }
+        }
+        var tex = new Texture2D(gd, S, S);
+        tex.SetData(data);
+        return tex;
+    }
+
+    /// Minimap coordinates in 0..1 (x right, y down). It is drawn as seen from your side: enemy at the top, world -X to the right.
+    public static Vector2 WorldToMinimap(Vector2 w) => new((-w.X + MinimapRange) / (2 * MinimapRange), (-w.Y + MinimapRange) / (2 * MinimapRange));
+    public static Vector2 MinimapToWorld(Vector2 m) => new(MinimapRange - m.X * 2 * MinimapRange, MinimapRange - m.Y * 2 * MinimapRange);
+
+    // ---------- sky ----------
+
+    (VertexBuffer, int) BuildSky()
+    {
+        const int seg = 24, rings = 8;
+        const float r = 300;
+        var v = new List<VertexPositionColor>();
+        Vector3 P(int i, float e) => new(MathF.Cos(i * MathF.Tau / seg) * MathF.Cos(e) * r, MathF.Sin(e) * r, MathF.Sin(i * MathF.Tau / seg) * MathF.Cos(e) * r);
+        Color C(float e) => e <= 0 ? Horizon : Color.Lerp(Horizon, Zenith, MathF.Pow(e / MathHelper.PiOver2, 0.55f));
+        for (int k = 0; k < rings; k++)
+        {
+            float e0 = MathHelper.Lerp(-0.35f, MathHelper.PiOver2, k / (float)rings), e1 = MathHelper.Lerp(-0.35f, MathHelper.PiOver2, (k + 1) / (float)rings);
+            for (int i = 0; i < seg; i++)
+            {
+                VertexPositionColor A = new(P(i, e0), C(e0)), B = new(P(i + 1, e0), C(e0)), Cc = new(P(i, e1), C(e1)), D = new(P(i + 1, e1), C(e1));
+                v.Add(A); v.Add(B); v.Add(Cc);
+                v.Add(B); v.Add(D); v.Add(Cc);
+            }
+        }
+        var vb = new VertexBuffer(gd, VertexPositionColor.VertexDeclaration, v.Count, BufferUsage.WriteOnly);
+        vb.SetData(v.ToArray());
+        return (vb, v.Count / 3);
+    }
+
+    // ---------- foliage ----------
+
+    (VertexBuffer, int) BuildFoliage()
+    {
+        var m = new Mesh();
+        foreach (var f in t.Foliage)
+        {
+            var rng = new Random(f.Seed);
+            var b = new Vector3(f.Pos.X, t.Height(f.Pos), f.Pos.Y);
+            switch (f.Kind)
+            {
+                case FoliageKind.Broadleaf: Broadleaf(m, b, f.Scale, rng); break;
+                case FoliageKind.Pine: Pine(m, b, f.Scale, rng); break;
+                case FoliageKind.Bush: Bush(m, b, f.Scale, rng); break;
+                default: Rock(m, b, f.Scale, rng); break;
+            }
+        }
+        Grass(m);
+        if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
+        var vb = new VertexBuffer(gd, VertexPNCT.Decl, Math.Max(3, m.V.Count), BufferUsage.WriteOnly);
+        if (m.V.Count > 0) vb.SetData(m.V.ToArray());
+        return (vb, m.V.Count / 3);
+    }
+
+    static Color Jitter(Color c, Random r, float amount)
+    {
+        float k = 1 + (r.NextSingle() * 2 - 1) * amount;
+        return new Color(c.ToVector3() * k);
+    }
+
+    static void Broadleaf(Mesh m, Vector3 b, float s, Random r)
+    {
+        float th = (2.0f + r.NextSingle() * 1.0f) * s;
+        m.Frustum(b - Vector3.Up * 0.4f, b + Vector3.Up * th, 0.27f * s, 0.16f * s, 6, Jitter(new Color(96, 70, 46), r, 0.1f), r);
+        var leaf = Color.Lerp(new Color(58, 104, 46), new Color(92, 132, 56), r.NextSingle());
+        m.Blob(b + new Vector3(0, th + 1.1f * s, 0), new Vector3(1.9f, 1.55f, 1.9f) * s, leaf, r, 0.18f);
+        int extra = 1 + r.Next(2);
+        for (int i = 0; i < extra; i++)
+        {
+            float a = r.NextSingle() * MathF.Tau;
+            var off = new Vector3(MathF.Cos(a), 0, MathF.Sin(a)) * 0.95f * s + Vector3.Up * (th + (0.5f + r.NextSingle() * 0.8f) * s);
+            m.Blob(b + off, new Vector3(1.3f, 1.1f, 1.3f) * s, Jitter(leaf, r, 0.08f), r, 0.2f);
+        }
+    }
+
+    static void Pine(Mesh m, Vector3 b, float s, Random r)
+    {
+        m.Frustum(b - Vector3.Up * 0.4f, b + Vector3.Up * 1.8f * s, 0.22f * s, 0.12f * s, 6, Jitter(new Color(90, 64, 42), r, 0.1f), r);
+        var needles = Color.Lerp(new Color(34, 78, 50), new Color(52, 98, 58), r.NextSingle());
+        int tiers = 4;
+        for (int i = 0; i < tiers; i++)
+        {
+            float y0 = (1.1f + i * 1.3f) * s, rad = (2.1f - i * 0.42f) * s;
+            m.Frustum(b + Vector3.Up * y0, b + Vector3.Up * (y0 + 2.5f * s), rad, 0, 9, Jitter(needles, r, 0.08f), r, capBottom: true);
+        }
+    }
+
+    static void Bush(Mesh m, Vector3 b, float s, Random r)
+    {
+        var leaf = Color.Lerp(new Color(52, 98, 44), new Color(86, 122, 52), r.NextSingle());
+        m.Blob(b + Vector3.Up * 0.3f * s, new Vector3(0.95f, 0.7f, 0.95f) * s, leaf, r, 0.22f);
+        if (r.Next(2) == 0)
+            m.Blob(b + new Vector3(0.6f * s, 0.2f * s, 0.2f * s), new Vector3(0.6f, 0.5f, 0.6f) * s, Jitter(leaf, r, 0.1f), r, 0.2f);
+    }
+
+    static void Rock(Mesh m, Vector3 b, float s, Random r)
+    {
+        var stone = Jitter(new Color(128, 126, 122), r, 0.12f);
+        m.Blob(b + Vector3.Up * 0.12f * s, new Vector3(1.0f, 0.62f, 0.85f) * s, stone, r, 0.28f);
+    }
+
+    void Grass(Mesh m)
+    {
+        var r = new Random(t.Seed + 13);
+        int count = t.IsFlat ? 0 : 14000;
+        var flowers = new[] { new Color(236, 214, 80), new Color(240, 240, 232), new Color(176, 120, 200) };
+        for (int i = 0; i < count; i++)
+        {
+            float a = r.NextSingle() * MathF.Tau, d = MathF.Sqrt(r.NextSingle()) * 150;
+            var p = new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
+            if (t.RoadDist(p) < 2.6f) continue;
+            var ground = GroundColor(p);
+            var baseCol = new Color(ground * 0.78f);
+            var tip = new Color(Vector3.Lerp(ground, new Vector3(0.62f, 0.72f, 0.36f), 0.5f));
+            var b = new Vector3(p.X, t.Height(p) - 0.02f, p.Y);
+            for (int k = 0; k < 3; k++)
+            {
+                float ang = r.NextSingle() * MathF.Tau, w = 0.04f + r.NextSingle() * 0.04f, h = 0.22f + r.NextSingle() * 0.3f;
+                var side = new Vector3(MathF.Cos(ang), 0, MathF.Sin(ang)) * w;
+                var lean = new Vector3(r.NextSingle() - 0.5f, 0, r.NextSingle() - 0.5f) * 0.25f;
+                var o = new Vector3(r.NextSingle() - 0.5f, 0, r.NextSingle() - 0.5f) * 0.25f;
+                m.TriUp(b + o - side, b + o + side, b + o + Vector3.Up * h + lean, baseCol, baseCol, tip);
+            }
+            if (r.Next(22) == 0)
+            {
+                var top = b + Vector3.Up * (0.3f + r.NextSingle() * 0.15f);
+                var col = flowers[r.Next(flowers.Length)];
+                float f = 0.06f;
+                m.TriUp(top + new Vector3(-f, 0, 0), top + new Vector3(f, 0, 0), top + new Vector3(0, f, 0), col, col, col);
+                m.TriUp(top + new Vector3(0, 0, -f), top + new Vector3(0, 0, f), top + new Vector3(0, f, 0), col, col, col);
+            }
+        }
+    }
+
+    /// Flat-shaded triangle soup with a few low-poly primitives.
+    sealed class Mesh
+    {
+        public readonly List<VertexPNCT> V = new();
+        static readonly (Vector3[] P, int[] F) Sphere = Icosphere();
+
+        /// A triangle with its own face normal, flipped to point away from `center` (so closed shapes light from outside).
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Color col, Vector3 center)
+        {
+            var n = Vector3.Cross(b - a, c - a);
+            if (n.LengthSquared() < 1e-12f) n = Vector3.Up; else n.Normalize();
+            if (Vector3.Dot(n, (a + b + c) / 3 - center) < 0) n = -n;
+            V.Add(new(a, n, col, Vector2.Zero)); V.Add(new(b, n, col, Vector2.Zero)); V.Add(new(c, n, col, Vector2.Zero));
+        }
+
+        /// A triangle lit as if facing up (grass blades look the same from both sides).
+        public void TriUp(Vector3 a, Vector3 b, Vector3 c, Color ca, Color cb, Color cc)
+        {
+            V.Add(new(a, Vector3.Up, ca, Vector2.Zero)); V.Add(new(b, Vector3.Up, cb, Vector2.Zero)); V.Add(new(c, Vector3.Up, cc, Vector2.Zero));
+        }
+
+        /// A tapered prism from a to b (r1 = 0 makes a cone).
+        public void Frustum(Vector3 a, Vector3 b, float r0, float r1, int sides, Color col, Random rng, bool capBottom = false)
+        {
+            float rot = rng.NextSingle() * MathF.Tau;
+            var center = (a + b) / 2;
+            for (int i = 0; i < sides; i++)
+            {
+                float a0 = rot + i * MathF.Tau / sides, a1 = rot + (i + 1) * MathF.Tau / sides;
+                Vector3 d0 = new(MathF.Cos(a0), 0, MathF.Sin(a0)), d1 = new(MathF.Cos(a1), 0, MathF.Sin(a1));
+                var c = Jitter(col, rng, 0.06f);
+                Tri(a + d0 * r0, a + d1 * r0, b + d0 * r1, c, center);
+                if (r1 > 0) Tri(a + d1 * r0, b + d1 * r1, b + d0 * r1, c, center);
+                if (capBottom) Tri(a, a + d1 * r0, a + d0 * r0, new Color(col.ToVector3() * 0.7f), b);
+            }
+        }
+
+        /// A lumpy squashed sphere (subdivided icosahedron with jittered radius), each face shaded a little differently.
+        public void Blob(Vector3 c, Vector3 size, Color col, Random rng, float lump)
+        {
+            var (pts, faces) = Sphere;
+            var p = new Vector3[pts.Length];
+            for (int i = 0; i < pts.Length; i++) p[i] = c + pts[i] * size * (1 + (rng.NextSingle() * 2 - 1) * lump);
+            for (int f = 0; f < faces.Length; f += 3)
+                Tri(p[faces[f]], p[faces[f + 1]], p[faces[f + 2]], Jitter(col, rng, 0.07f), c);
+        }
+
+        static (Vector3[], int[]) Icosphere()
+        {
+            float g = (1 + MathF.Sqrt(5)) / 2;
+            var pts = new List<Vector3>
+            {
+                new(-1, g, 0), new(1, g, 0), new(-1, -g, 0), new(1, -g, 0), new(0, -1, g), new(0, 1, g),
+                new(0, -1, -g), new(0, 1, -g), new(g, 0, -1), new(g, 0, 1), new(-g, 0, -1), new(-g, 0, 1),
+            };
+            for (int i = 0; i < pts.Count; i++) pts[i] = Vector3.Normalize(pts[i]);
+            int[] faces =
+            {
+                0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
+                3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1,
+            };
+            var mid = new Dictionary<(int, int), int>();
+            int Mid(int a, int b)
+            {
+                var key = a < b ? (a, b) : (b, a);
+                if (mid.TryGetValue(key, out int i)) return i;
+                pts.Add(Vector3.Normalize(pts[a] + pts[b]));
+                return mid[key] = pts.Count - 1;
+            }
+            var sub = new List<int>();
+            for (int f = 0; f < faces.Length; f += 3)
+            {
+                int a = faces[f], b = faces[f + 1], c = faces[f + 2], ab = Mid(a, b), bc = Mid(b, c), ca = Mid(c, a);
+                sub.AddRange(new[] { a, ab, ca, b, bc, ab, c, ca, bc, ab, bc, ca });
+            }
+            return (pts.ToArray(), sub.ToArray());
+        }
+    }
+}

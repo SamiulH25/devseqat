@@ -3,7 +3,8 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Placeholder pixel art, generated at startup so the prototype needs no asset pipeline.
+/// Placeholder pixel art for the 2D units, generated at startup so the prototype needs no asset pipeline.
+/// (The world itself - terrain and foliage - is 3D geometry, see World.cs.)
 ///
 /// Units are puppets (see Puppet.cs): every body part is its own small sprite, written below as ASCII pixel art.
 /// View-dependent parts have ".f" (front), ".s" (side, facing right) and ".b" (back) variants.
@@ -13,7 +14,7 @@ public sealed class Art
 {
     public const float Px = 0.075f; // metres per sprite pixel: a soldier is ~24 px tall
 
-    public readonly Texture2D Atlas, Shadow, Grass, Pixel;
+    public readonly Texture2D Atlas, Shadow, Pixel;
     public Rectangle this[string key] => rects[key];
 
     static readonly (Color Main, Color Dark)[] Palettes =
@@ -90,10 +91,9 @@ public sealed class Art
     };
 
     const int AW = 512, AH = 256;
-    const int FW = 16, FH = 24; // prop painting area
     readonly Color[] px = new Color[AW * AH];
     readonly Dictionary<string, Rectangle> rects = new();
-    int packX, packY, rowH, ox, oy;
+    int packX, packY, rowH;
 
     public Art(GraphicsDevice gd)
     {
@@ -107,15 +107,6 @@ public sealed class Art
                 Outline(r);
                 rects[$"{name}/{p}"] = r;
             }
-        for (int k = 0; k < 4; k++)
-        {
-            var r = Alloc(FW + 2, FH + 2);
-            ox = r.X + 1;
-            oy = r.Y + 1;
-            Prop(k);
-            Outline(r);
-            rects[$"prop{k}"] = r;
-        }
         Atlas = new Texture2D(gd, AW, AH);
         Atlas.SetData(px);
 
@@ -128,15 +119,6 @@ public sealed class Art
             }
         Shadow = new Texture2D(gd, 32, 32);
         Shadow.SetData(shadow);
-
-        var rng = new Random(11);
-        var grass = new Color[64 * 64];
-        for (int i = 0; i < grass.Length; i++)
-        {
-            int n = rng.Next(-8, 9), blade = rng.Next(12) == 0 ? -18 : 0;
-            grass[i] = new Color(74 + n + blade, 122 + n + blade, 58 + n / 2);
-        }
-        Grass = Mipped(gd, grass, 64);
 
         Pixel = new Texture2D(gd, 1, 1);
         Pixel.SetData(new[] { Color.White });
@@ -169,7 +151,7 @@ public sealed class Art
         foreach (int i in add) px[i] = Ink;
     }
 
-    static Texture2D Mipped(GraphicsDevice gd, Color[] data, int size)
+    public static Texture2D Mipped(GraphicsDevice gd, Color[] data, int size)
     {
         var t = new Texture2D(gd, size, size, true, SurfaceFormat.Color);
         for (int level = 0; ; level++)
@@ -187,36 +169,6 @@ public sealed class Art
                 }
             data = next;
             size = h;
-        }
-    }
-
-    // ---------- hand-painted props ----------
-
-    void R(int x, int y, int w, int h, Color c)
-    {
-        for (int j = Math.Max(0, y); j < Math.Min(FH, y + h); j++)
-            for (int i = Math.Max(0, x); i < Math.Min(FW, x + w); i++) px[(oy + j) * AW + ox + i] = c;
-    }
-
-    void Disc(int cx, int cy, int rx, int ry, Color c)
-    {
-        for (int y = -ry; y <= ry; y++)
-            for (int x = -rx; x <= rx; x++)
-                if (x * x * ry * ry + y * y * rx * rx <= rx * rx * ry * ry) R(cx + x, cy + y, 1, 1, c);
-    }
-
-    void Prop(int k)
-    {
-        Color leaf = new(56, 122, 52), leafHi = new(84, 150, 70), pine = new(34, 92, 56), stone = new(122, 122, 128);
-        switch (k)
-        {
-            case 0: R(7, 13, 2, 11, Wood); Disc(8, 8, 7, 6, leaf); Disc(7, 6, 4, 3, leafHi); break;
-            case 1:
-                R(7, 18, 2, 6, Wood);
-                for (int y = 1; y < 19; y++) { int w = 1 + y * 7 / 18; R(8 - w, y, w * 2, 1, pine); }
-                break;
-            case 2: Disc(8, 19, 7, 4, leaf); Disc(7, 18, 4, 2, leafHi); break;
-            default: Disc(8, 20, 6, 3, stone); Disc(7, 19, 3, 2, new Color(160, 160, 166)); break;
         }
     }
 }

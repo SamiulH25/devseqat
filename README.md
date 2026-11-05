@@ -17,27 +17,34 @@ You need .NET SDK 10 (`net10.0`). On Ubuntu 24.04 `apt-get install dotnet-sdk-10
 The game needs no content files: sprites, terrain and the font are all generated in code (`Art.cs`).
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
 To render a few staged camera shots as PNGs and quit (works headless with `xvfb-run -a dotnet run`), set `IRONFIELD_SHOTS=/some/dir`.
+`dotnet run -- --write-controls` writes `controls.json` with the default bindings.
 
 ## Controls
 
-**Field view** (you fight; third-person camera over the right shoulder). You start **on horseback**.
-- Mounted: W/S rein (speed up / slow, back up), A/D turn the horse, Shift gallop, Q couch the lance (needs speed), H dismount (when nearly still).
+Press **F1** in game for the full list. Every key below is a default: rebind in `controls.json`
+(`dotnet run -- --write-controls` writes a template with every action, plus `MouseSensitivity` and `InvertMouseY`).
+Keys are MonoGame `Keys` names (`W`, `LeftShift`, `F1`...) or `LMB`/`RMB`/`MMB`/`MB4`/`MB5`, `SHIFT`, `CTRL`, `ALT`, `ESC`, digits.
+
+**Field view** (you fight; third-person camera, mouse wheel zooms it). You start **on horseback**.
+- Mounted: W/S rein (speed up / slow, back up), A/D turn the horse, Shift gallop, Q couch the lance (needs speed), E dismount (when nearly still).
   The mouse looks around freely: you strike where you look, not where the horse points.
-- On foot: WASD move, Shift sprint, H mount a loose horse within reach (yours, a fallen rider's, or the enemy's).
+- On foot: WASD move, Shift sprint, E mount a loose horse within reach (yours, a fallen rider's, or the enemy's). Prompts appear on screen.
 - **Attack direction** comes from the way the mouse last moved: up = overhead, down = thrust, left/right = side cuts.
-  Gold marks around the crosshair show it. LMB hold+release attacks (longer hold hits harder).
+  The gold chevron at the crosshair shows it. LMB hold+release attacks (longer hold hits harder).
 - RMB block (front only). A shield stops any direction at a stamina cost; blocking **in the direction the blow comes from**
-  (red mark at the crosshair) is a **parry**: free, and it staggers the attacker. RMB while winding up cancels the swing (feint).
-- R rally, Tab command view.
+  (red chevron) is a **parry**: free, and it staggers the attacker. RMB while winding up cancels the swing (feint).
+- R rally. **Hold MMB (or Z) for the order wheel**: move the mouse toward an order, release to give it.
 
-**Command view** (Tab):
-LMB select a squad (Shift adds), RMB click moves (keeps the current width), RMB drag draws the formation line (it faces the enemy),
-RMB click **on an enemy squad** attacks it (red line; hovered enemies are ringed),
-WASD pan, Q/E or middle-drag orbit (middle-drag also tilts), wheel zoom, G hold in place.
-Tab eases the camera between the two views over 0.45 s (focus, yaw, pitch, distance and FOV are all blended).
+**Command view** (Tab; time x0.25, Space pauses):
+- LMB select a squad, drag a box to select several (Shift adds). Click a unit card to select it, double-click to jump the camera to it.
+- RMB click moves (keeps the current width), RMB drag draws the formation line (it faces the enemy) with a preview of every man's spot,
+  RMB on an enemy squad attacks it (red line; hovered enemies are ringed).
+- WASD or the screen edges pan, Q/E or middle-drag orbit (middle-drag also tilts), wheel zoom, click the minimap to jump there.
+- The order buttons (bottom right) give the same orders as the hotkeys.
 
-**Both views:** 1-4 toggle a squad, 0 selects all (with nothing selected, orders go to every squad),
-F follow me, C charge, V loose/tight spacing, G form up ahead of you (field view). Enter starts a new battle after the result. Esc quits.
+**Orders (both views):** 1-9 toggle a squad, 0 or ~ selects all (with nothing selected, orders go to every squad).
+C charge, F follow me, G form a line on me, H hold position, T advance 15 m, B fall back 20 m, V loose/tight spacing,
+X archers fire at will / hold fire. **Esc** opens the menu (resume, controls, new battle, quit); Enter starts a new battle after the result.
 
 ## Design: soldier vs general
 
@@ -71,6 +78,29 @@ Each side has 10 **Lancers** (`UnitType.Lancer`, on a `Mount.Warhorse`); the pla
   in a crowd (slow, near the target for 1.2 s) fights in place for 4 s and then pulls out. Cavalry on Hold counter-charge enemies within 15 m.
 - **Enemy horse:** waits wide on the far flank, then hunts the softest squad (archers first) when the lines meet or after 35 s.
 
+## Design: terrain and the 3D world
+
+The world is 3D; only the units (and horses) are 2D sprite puppets.
+- **Terrain** (`Terrain.cs`, part of the headless sim): a 512 m heightmap on a 2.5 m grid. Gentle value-noise rolls (calmer in the middle),
+  3-5 random hills, a rim of high ground framing the valley, and a dirt road winding between the armies. It is seeded per battle.
+  `Height()` interpolates on the same triangles the mesh draws, so units stand exactly on the ground you see.
+- **It matters in the fight:** uphill is slower and downhill quicker (`Battle.SlopeFactor`, x0.55-1.15); striking from higher ground deals
+  up to +15% (less from below; the hit text says HIGH GROUND); arrows fly from and land on the real ground and stick where they hit it.
+- **Foliage** (placed by `Terrain`, built into meshes by `World.cs`): woods of broadleaf trees or pines, two of them flanking the field,
+  lone trees, bushes along wood edges, rocks and boulders, and ~14,000 3D grass tufts with a few flowers. All low-poly, flat-shaded and lit by one sun.
+  Tree trunks and boulders are **solid**: units are pushed out of them and a horse that rides into one pulls up hard.
+  The deployment ground (`Terrain.Core`) is kept clear of anything solid.
+- **Sky:** a gradient dome; fog fades the world into the horizon colour.
+
+## Design: interface
+
+- Bottom centre: **unit cards** (portrait made from the unit's own sprites, count, strength and morale bars, order tag, state above:
+  WAVERING / ROUTING / FLANKED). Bottom left: you (horse and speed, health, stamina, horse health, rally, kills).
+- Top: **balance of power** (strength-weighted), battle clock, event feed (top left), **minimap** (top right; enemy at the top, camera wedge).
+- Field view: directional crosshair chevrons, damage text (speed bonus, flank, rear, high ground, parry), context prompts.
+- Command view: squad **banners** with morale bars, order buttons, box select, formation preview, attack lines.
+- Overlays: order wheel, F1 controls, Esc menu, and a result screen with both armies' losses.
+
 ## Design: Total War morale and flanks
 
 - **Flanks and rear:** blows from the side deal x1.2, from behind x1.5, and only frontal blows can be blocked.
@@ -86,9 +116,13 @@ Each side has 10 **Lancers** (`UnitType.Lancer`, on a `Mount.Warhorse`); the pla
 | `Battle.cs` | Headless simulation: units, AI, melee, arrows, morale, enemy general, win check. No graphics. |
 | `Squad.cs` | Squad orders (Hold/Follow/Charge, optional attack `Target`), formation slots (anchor = centre of the front rank), flank `Pressure`. |
 | `Units.cs` | `UnitType` stat table and `Mount` horses (in code for now), the `Unit` state (incl. heading/speed when mounted), `LooseHorse`. |
-| `BattleGame.cs` | MonoGame `Game`: input, the blended third-person/command camera, picking, the render passes, HUD. |
+| `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles. |
+| `BattleGame.cs` | MonoGame `Game`: input, the blended third-person/command camera, terrain picking, orders, the render passes. |
+| `World.cs` | 3D world renderer: lit terrain mesh, procedural low-poly foliage and grass, sky dome, minimap image. |
+| `Hud.cs` | The whole 2D interface, its layout and hit-testing (cards, buttons, minimap clicks, menus). |
+| `Controls.cs` | Rebindable actions, defaults, `controls.json` loading and key names for the HUD. |
 | `Puppet.cs` | Draws each unit as a puppet of part sprites on a 3D skeleton, with continuous poses from its action state; horses too. |
-| `Art.cs` | Part sprites as ASCII pixel art (built per palette into a 512x256 atlas), props, grass, shadow, and the 5x7 `PixelFont`. |
+| `Art.cs` | Unit part sprites as ASCII pixel art (built per palette into a 512x256 atlas), the blob shadow, and the 5x7 `PixelFont`. |
 | `SelfTest.cs` | `--selftest` checks. |
 
 Ground positions are `Vector2` (X = world X, Y = world Z).
@@ -119,7 +153,10 @@ For real art, replace the ASCII strings in `Art.Sprites` with PNGs that keep the
 - **Sprite history:** side-only frames came first, then 16-direction box models pre-rendered at startup. These were replaced at the user's request by
   **puppets made of per-part pixel-art sprites** (the current version).
 - Mouse look warps the cursor to the window centre (`Mouse.SetPosition`). If a platform refuses warps, switch to SDL relative mouse mode.
-- Battle sim stays free of MonoGame graphics, so it runs headless in tests. Keep it that way.
+- Battle sim stays free of MonoGame graphics, so it runs headless in tests. Keep it that way (terrain and foliage placement included).
+- The game asks for the `HiDef` profile (big static meshes). Multisampling is off: asking for it made context creation fail on Mesa/Xvfb.
+- In field view, friendly soldiers within 6 m of the camera are not drawn, so your own ranks never fill the lens.
+- `Battle.Empty` uses `Terrain.Flat()` (no hills, no trees), so mechanic tests are not affected by the map.
 - Team 0 = player side and squads 1-3 in `Squads` order. `Squad.Alive` is refreshed each tick by `UpdateSquad`.
 - Known shortcuts (search `shortcut:`): O(n²) separation (fine up to about 400 units) and unit stats in code instead of data files.
 - `AttackDir` is named from the attacker's side; the defender must block `Dirs.Mirror(swing)`. The HUD shows incoming blows already mirrored.
@@ -131,6 +168,6 @@ For real art, replace the ASCII strings in `Art.Sprites` with PNGs that keep the
 
 1. Play-test the feel: horse turn rates, lance damage, parry timing (right now any matched block parries; a timing window would add skill).
 2. Horse archers and a wedge formation for cavalry; AI riders remounting loose horses.
-3. Unit cards you can click in the HUD, and a battle-start deployment phase.
+3. A battle-start deployment phase; woods that hide units and slow formations; rivers and fords.
 4. Move unit stats into JSON, then build the campaign map layer.
 5. A spatial grid for separation and target search, for bigger battles.

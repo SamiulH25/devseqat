@@ -14,7 +14,7 @@ public sealed class Squad
     public Squad? Target;                          // Charge at this squad (null = nearest enemy)
     public Vector2 Anchor, Front = Vector2.UnitY; // Anchor = centre of the front rank
     public int Columns = 8, StartCount, Alive;    // Alive = active and not routing, refreshed each tick
-    public bool Loose, Cavalry;
+    public bool Loose, Cavalry, FireAtWill = true; // FireAtWill off: archers hold their arrows
     public float Pressure;                        // recent flank/rear hits; drains morale, decays over time
 
     public Squad(string name, int team) { Name = name; Team = team; }
@@ -55,6 +55,15 @@ public sealed class Squad
         var perp = new Vector2(-d.Y, d.X);
         Front = Vector2.Dot(perp, toward - center) >= 0 ? perp : -perp;
         Columns = (int)(width / Spacing) + 1;
+    }
+
+    /// Hold position, then move the formation `metres` along its front (negative = fall back), facing `toward`.
+    public void Shift(Vector2 toward, float metres)
+    {
+        HoldInPlace();
+        var to = toward - Anchor;
+        if (to.LengthSquared() > 1) Front = Vector2.Normalize(to);
+        Anchor += Front * metres;
     }
 
     public void HoldInPlace()

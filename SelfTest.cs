@@ -19,6 +19,8 @@ public static class SelfTest
         Flanks();
         Parry();
         HorseDown();
+        Ground();
+        HoldFire();
 
         for (int seed = 1; seed <= 3; seed++)
         {
@@ -104,6 +106,44 @@ public static class SelfTest
         var l = Lancer(b);
         b.HitHorse(l, 999, b.EnemyCaptain);
         Check(!l.Mounted && b.DeadHorses.Count == 1 && l.Action == UnitAction.Stagger, "a slain horse throws its rider");
+    }
+
+    /// The heightmap matches its grid, the centre field is open, trunks are solid and slopes slow you down.
+    static void Ground()
+    {
+        var t = new Terrain(42);
+        Check(MathF.Abs(t.Height(new Vector2(-Terrain.Half + 10 * Terrain.Step, -Terrain.Half + 7 * Terrain.Step)) - t.GridHeight(10, 7)) < 1e-4f,
+            "height samples the mesh vertices exactly");
+        for (float x = -200; x <= 200; x += 7)
+            for (float z = -200; z <= 200; z += 7)
+                Check(float.IsFinite(t.Height(new Vector2(x, z))) && MathF.Abs(t.Height(new Vector2(x, z))) < 60, "heights stay sane");
+        Check(t.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine) > 150, "the land is wooded");
+        Check(!t.Foliage.Any(f => f.Radius > 0 && Terrain.Core(f.Pos)), "no trees or boulders where the armies deploy");
+        var tree = t.Foliage.First(f => f.Kind == FoliageKind.Broadleaf);
+        var p = tree.Pos + new Vector2(0.05f, 0);
+        Check(t.PushOut(ref p, 0.35f) && Vector2.Distance(p, tree.Pos) >= tree.Radius + 0.34f, "trunks push units out");
+
+        // Walking up a slope is slower than walking down it.
+        var steepest = Vector2.Zero;
+        for (float x = -45; x <= 45; x += 3)
+            for (float z = -50; z <= 50; z += 3)
+                if (t.Gradient(new Vector2(x, z)).Length() > t.Gradient(steepest).Length()) steepest = new Vector2(x, z);
+        var up = Vector2.Normalize(t.Gradient(steepest));
+        Check(Battle.SlopeFactor(t, steepest, up) < 1 && Battle.SlopeFactor(t, steepest, -up) > 1, "uphill is slower than downhill");
+    }
+
+    /// Archers told to hold their arrows do not shoot.
+    static void HoldFire()
+    {
+        var b = Battle.Empty(6);
+        var bows = b.AddSquad(0, UnitType.Bowman, 4, new(0, -10), 4, Vector2.UnitY);
+        bows.FireAtWill = false;
+        b.AddSquad(1, UnitType.Shieldman, 4, new(0, 15), 4, -Vector2.UnitY);
+        Run(b, 3);
+        Check(b.Arrows.Count == 0, "held arrows stay on the string");
+        bows.FireAtWill = true;
+        Run(b, 3);
+        Check(b.Arrows.Count > 0, "fire at will looses arrows");
     }
 
     static void Check(bool ok, string what)

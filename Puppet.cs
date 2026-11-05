@@ -53,13 +53,14 @@ sealed class Puppet
         flip = Vector3.Dot(fwd, camRight) < 0; // side sprites face right
     }
 
-    public void Draw(Unit u)
+    /// Draw a unit standing on ground height `ground`.
+    public void Draw(Unit u, float ground)
     {
         if (u.Fled) return;
         pal = "/" + (u.IsPlayer ? 2 : u.Team);
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
-        float lift = 0;
-        if (u.Mounted && !u.Dead) lift = Saddle + Horse(u.Pos, u.ViewHeading, u.Anim, u.Speed, true);
+        float lift = ground;
+        if (u.Mounted && !u.Dead) lift = ground + Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, true);
         Frame(u.Pos, u.ViewFacing, lift, u.Type.Class == UnitClass.Captain ? 1.12f : 1);
 
         if (u.Dead) { Corpse(u); return; }
@@ -118,9 +119,9 @@ sealed class Puppet
     }
 
     /// A horse (with the rider's legs when `riderLegs`), drawn in the current palette. Returns the gait bob height.
-    float Horse(Vector2 pos, float heading, float anim, float speed, bool riderLegs)
+    float Horse(Vector2 pos, float ground, float heading, float anim, float speed, bool riderLegs)
     {
-        Frame(pos, heading, 0, 1);
+        Frame(pos, heading, ground, 1);
         float gait = Math.Clamp(MathF.Abs(speed) / 11, 0, 1);
         float amp = MathF.Abs(speed) < 0.3f ? 0 : 14 + 30 * gait;
         float bob = MathF.Sin(anim * MathF.Tau) * 0.05f * gait;
@@ -152,18 +153,18 @@ sealed class Puppet
         return bob;
     }
 
-    public void DrawLooseHorse(LooseHorse h)
+    public void DrawLooseHorse(LooseHorse h, float ground)
     {
         pal = "/" + h.Team;
         tint = Color.White;
-        Horse(h.Pos, h.Heading, 0, 0, false);
+        Horse(h.Pos, ground, h.Heading, 0, 0, false);
     }
 
-    public void DrawDeadHorse(Vector2 pos, float heading, int team)
+    public void DrawDeadHorse(Vector2 pos, float heading, int team, float ground)
     {
         pal = "/" + team;
         tint = Color.White;
-        Frame(pos, heading, 0, 1);
+        Frame(pos, heading, ground, 1);
         Flat(new(0.3f, 0.02f, 0), "blood", false);
         Flat(new(0, 0.05f, 0), "hbody", true);
         Flat(new(0.2f, 0.06f, 1.2f), "hhead", true);
@@ -254,12 +255,12 @@ sealed class Puppet
     void Corpse(Unit u)
     {
         // Parts laid flat on the ground, body pointing backwards from the feet.
-        Flat(new(0, 0.02f, -0.7f), "blood", false);
-        Flat(new(0.12f, 0.04f, -0.2f), "leg", false);
-        Flat(new(-0.12f, 0.04f, -0.2f), "leg", false);
-        Flat(new(0, 0.05f, -0.75f), "torso.f", false);
-        Flat(new(0, 0.06f, -1.25f), u.Type.Class == UnitClass.Skirmisher ? "hood.b" : "helm.b", false);
-        if (u.Type.HasShield) Flat(new(-0.5f, 0.07f, -0.6f), "shield", true);
+        Flat(new(0, 0.06f, -0.7f), "blood", false);
+        Flat(new(0.12f, 0.08f, -0.2f), "leg", false);
+        Flat(new(-0.12f, 0.08f, -0.2f), "leg", false);
+        Flat(new(0, 0.09f, -0.75f), "torso.f", false);
+        Flat(new(0, 0.1f, -1.25f), u.Type.Class == UnitClass.Skirmisher ? "hood.b" : "helm.b", false);
+        if (u.Type.HasShield) Flat(new(-0.5f, 0.11f, -0.6f), "shield", true);
     }
 
     // ---------- quads ----------
