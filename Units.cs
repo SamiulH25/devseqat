@@ -84,6 +84,7 @@ public sealed class Unit
     public bool Dead, Fled, Routing;
     public float DiedAt;     // battle time of death (the fall is animated)
     public int StuckArrows;  // arrows caught in the shield (drawn)
+    public int Index;        // place in Battle.Units (the spatial grid orders pairs by it)
 
     // Mounted state. The horse moves along Heading at Speed; the rider looks (and strikes) along Facing.
     public Mount? Horse;

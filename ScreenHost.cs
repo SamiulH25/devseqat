@@ -13,6 +13,7 @@ sealed class ScreenHost : Game
     public PixelFont Font = null!;
     public Shading? Shading;
     public readonly Controls Ctl = Controls.Load();
+    GpuReport? gpuReport;
     public Quality Quality = Enum.TryParse<Quality>(Settings.Current.Quality, out var q0) ? q0 : Quality.High;
     public AudioEngine? Audio;
     public readonly SettingsScreen SettingsPanel;
@@ -69,8 +70,10 @@ sealed class ScreenHost : Game
         }
         Font = new PixelFont(GraphicsDevice);
         if (Environment.GetEnvironmentVariable("IRONFIELD_QUALITY") is { Length: > 0 } q && Enum.TryParse<Quality>(q, true, out var qv)) Quality = qv;
+        string? shaderError = null;
         try { Shading = new Shading(GraphicsDevice); }
-        catch (Exception e) { Console.WriteLine("shaders unavailable: " + e.Message); Quality = Quality.Low; }
+        catch (Exception e) { Console.WriteLine("shaders unavailable: " + e.Message); Quality = Quality.Low; shaderError = e.Message; }
+        if (GpuReport.Requested) gpuReport = new GpuReport(this, Shading != null, shaderError);
 
         Audio = new AudioEngine();
         AudioEngine.Current = Audio;
@@ -179,6 +182,11 @@ sealed class ScreenHost : Game
         }
         if (SettingsPanel.Open) SettingsPanel.Draw();
         CaptureShot();
+        if (gpuReport != null)
+        {
+            if (mode != Mode.Battle) QuickBattle();
+            else if (gpuReport.Frame(Quality)) Exit();
+        }
         base.Draw(gameTime);
     }
 

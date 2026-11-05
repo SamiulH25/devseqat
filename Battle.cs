@@ -46,6 +46,7 @@ public sealed partial class Battle
     public (string Text, float At) PlayerHit = ("", -10); // last thing the player's weapon did, shown under the crosshair
 
     readonly Random rng;
+    readonly List<Unit> nearArrow = new(32), nearKill = new(64);
     readonly Vector2[] centroid = new Vector2[2];
     readonly bool scripted; // self-test scenario: no enemy general
     Squad eGuard = null!;
@@ -170,8 +171,10 @@ public sealed partial class Battle
 
     public void Update(float dt)
     {
+        if (Recording != null) RecordFrame(dt);
         Sounds.Clear();
         Time += dt;
+        BuildGrid();
         RallyCooldown = MathF.Max(0, RallyCooldown - dt);
         UpdateCentroids();
         if (!scripted && (generalTimer -= dt) <= 0)
@@ -236,18 +239,7 @@ public sealed partial class Battle
     }
 
     /// Nearest active, non-routing enemy; restricted to squad `only` when given.
-    (Unit? unit, float dist) Nearest(Unit u, Squad? only = null)
-    {
-        Unit? best = null;
-        float bd = float.MaxValue;
-        foreach (var o in only?.Units ?? Units)
-        {
-            if (o.Team == u.Team || !o.Active || o.Routing) continue;
-            float d = Vector2.DistanceSquared(o.Pos, u.Pos);
-            if (d < bd) { bd = d; best = o; }
-        }
-        return (best, MathF.Sqrt(bd));
-    }
+    (Unit? unit, float dist) Nearest(Unit u, Squad? only = null) => NearestFast(u, only);
 
     /// Spears (and shield walls standing tight) set themselves against horses when holding still.
     static bool CanBrace(Unit b) =>
@@ -801,7 +793,7 @@ public sealed partial class Battle
         if (killer.IsPlayer) PlayerKills++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 4)]++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;
-        foreach (var u in Units)
+        foreach (var u in t.IsLeader ? Units.ToArray() : Near(t.Pos, 10, nearKill).ToArray()) // a leader's fall is felt across the field
         {
             if (!u.Active) continue;
             float d = Vector2.Distance(u.Pos, t.Pos);
@@ -853,7 +845,7 @@ public sealed partial class Battle
             float ground = Terrain.Height(flat);
             if (p.Pos.Y <= ground) { p.Pos.Y = ground; p.Stuck = 0; continue; }
             if (p.Pos.Y > ground + 2.6f) continue;
-            foreach (var t in Units)
+            foreach (var t in Near(flat, 1.5f, nearArrow))
             {
                 if (t.Team == p.Shooter.Team || !t.Active) continue;
                 float r = t.Mounted ? 0.8f : 0.4f;
@@ -880,33 +872,7 @@ public sealed partial class Battle
             u.Pos += u.Vel * SlopeFactor(Terrain, u.Pos, u.Vel) * Wading(u) * dt;
             u.Anim += dt * u.Vel.Length() * (u.Mounted ? 0.45f : 0.9f); // stride-locked walk / gallop cycle
         }
-        // shortcut: O(n^2) separation, fine for ~150 units; switch to a spatial grid past ~400.
-        // Horses are big and heavy: they shove footmen aside, and ride into them (Impact) at speed.
-        for (int i = 0; i < Units.Count; i++)
-        {
-            var a = Units[i];
-            if (!a.Active) continue;
-            float ra = a.Mounted ? 1.0f : 0.375f, ma = a.Mounted ? 6 : 1;
-            for (int j = i + 1; j < Units.Count; j++)
-            {
-                var b = Units[j];
-                if (!b.Active) continue;
-                float rb = b.Mounted ? 1.0f : 0.375f, r = ra + rb;
-                var d = b.Pos - a.Pos;
-                float l2 = d.LengthSquared();
-                if (l2 >= r * r) continue;
-                if (l2 < 1e-6f) { d = new Vector2(0.01f, 0); l2 = 1e-4f; }
-                float l = MathF.Sqrt(l2), mb = b.Mounted ? 6 : 1;
-                var n = d / l;
-                var push = n * (r - l);
-                a.Pos -= push * (mb / (ma + mb));
-                b.Pos += push * (ma / (ma + mb));
-                if (a.Team == b.Team) continue;
-                if (a.Mounted && !b.Mounted) Impact(a, b, n, dt);
-                else if (b.Mounted && !a.Mounted) Impact(b, a, -n, dt);
-                else if (a.Mounted) { a.Speed *= 1 - 1.5f * dt; b.Speed *= 1 - 1.5f * dt; }
-            }
-        }
+        Separate(dt); // near pairs only, through the spatial grid (BattleGrid.cs)
         // Trees and boulders are solid; a horse that rides into one pulls up hard.
         foreach (var u in Units)
             if (u.Active && Terrain.PushOut(ref u.Pos, u.Mounted ? 0.9f : 0.35f) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
@@ -1037,7 +1003,7 @@ public sealed partial class Battle
             // Neighbours running away, and horsemen thundering at you, are frightening.
             int routing = 0;
             bool charged = false;
-            foreach (var o in Units)
+            foreach (var o in Near(u.Pos, 10, near))
             {
                 if (!o.Active || o == u) continue;
                 float d2 = Vector2.DistanceSquared(o.Pos, u.Pos);
@@ -1195,6 +1161,7 @@ public sealed partial class Battle
     public void Withdraw()
     {
         if (Winner >= 0) return;
+        if (Recording != null) withdrawRequested = true;
         Winner = 1;
         foreach (var u in Units) if (u.Team == 0 && u.Active && !u.IsPlayer) u.Routing = true;
         Log("You sound the retreat.");

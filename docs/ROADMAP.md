@@ -1,6 +1,7 @@
 # Ironfield roadmap: what comes next
 
-Status: **proposal for review**. Written after the campaign landed (`docs/CAMPAIGN.md`, milestones M0-M5).
+Status: **built**. Every phase below (A-E) is in the game; "As built" at the end lists where the build differs from the plan.
+Written after the campaign landed (`docs/CAMPAIGN.md`, milestones M0-M5).
 Sizes are relative: **S** about a day of focused work, **M** a few days, **L** one to two weeks. Each item has a "done when" so it can be checked.
 
 ## Where the game stands
@@ -94,9 +95,75 @@ Small "As built" gaps to fold in alongside: renaming companies (text input, S), 
 4. Then B4/B5 (contracts, officers) and C2/C3 (AI, captain combat), guided by play-test feedback.
 5. B6, B7 and the rest of C and D as the game's identity firms up.
 
-## Decisions wanted
+## Decisions taken
 
-1. **Next big feature after the tester build:** sieges and ownership (recommended), a third faction, or deeper battles first?
-2. **Music:** commission or license tracks, or stay procedural (ambient drones and drums)?
-3. **Platforms:** Windows, Linux and macOS (recommended, since CI can build all three), or Windows only at first?
-4. **Difficulty:** add settings (AI aggression, economy multipliers, ironman) now with the settings screen, or after balancing?
+1. **Next big feature:** sieges and ownership, then the third faction and deeper battles.
+2. **Music:** procedural (drones and drums synthesised in `Audio.cs`), no files.
+3. **Platforms:** Windows, Linux and macOS (Intel and Apple silicon) builds from CI.
+4. **Difficulty:** in the settings screen now (Easy, Normal, Hard: enemy damage and contract pay), with Ironman for new campaigns.
+
+## As built
+
+All of A-E is in. Where the build differs from the table above:
+
+**Phase A**
+- A1: `ScreenHost` hosts `TitleScreen`, `MapScreen`, `BattleScreen` and the `SettingsScreen` overlay (one folder level, not `Screens/`).
+- A3: mouse sensitivity and invert live in `controls.json`, as before, rather than on the settings screen.
+- A4/D2: sound and music are both synthesised; there are no audio files.
+
+**Phase B**
+- B1 sieges: the wall runs across the whole field with a gate near the middle and two ladders (four with 90+ men; none if you
+  assault before the night's work is done, so only the gate). Attackers on foot climb at the ladders or batter the gate (`Battle.Batter`);
+  everyone fights on foot. Defenders' archers stand in one rank on the walkway, behind merlons (ranged hits from below do 60%), and
+  elevated archers shoot 20% further. On the map: besiege (12 hours to build ladders), assault, auto-resolve (walls count 1.4×, 1.7× without
+  ladders), wait, or lift. The garrison eats its supplies, then starves. Lords besiege when their host outmatches a garrison 1.6:1 and
+  assault after two days.
+- B2: a captured seat takes its province and villages. Your liege grants it to you as a fief: its income (and its villages') comes to you
+  weekly, you can station companies in its garrison, and you hand fiefs back if you change sides. Garrisons are refilled from the faction's
+  treasury. "Recruits of your culture": every village raises its own culture's recruits (clansmen in the north).
+- B3: prisoners slow you and eat; sell them in towns and castles, recruit them (cohesion 0), or free them for renown. Captured lords are
+  ransomed or freed; they do not take part in peace terms.
+- B4: the steward's board offers hunt, clear, defend (stay near a village 24 hours), scout and take contracts, at most three at a time.
+  Escorting a supply column was left out (there are no supply columns on the map).
+- B5: officers are named sergeants with up to three traits from Stubborn, Steady, Drillmaster, Hothead, Sharpshooter, Surgeon and Veteran.
+  Hothead adds 10% damage rather than charging early.
+- B6: the Northmarch holds the north. Wars and truces are per pair of factions (`CampaignState.Wars`), so "alliances" are expressed as
+  shared enemies. When one realm holds 45% of the towns and castles, the others make peace with each other and go to war with it.
+- B7: four 30-day seasons; winter slows the map by a quarter, doubles the time to heal and makes men eat half again as much. Your liege's towns
+  and castles feed you; elsewhere the quartermaster buys a week's food in friendly settlements, or you forage (renown cost at home,
+  a raid abroad).
+- Small gaps: companies can be renamed (click the name in the party screen), allied lords' companies fight under an AI general
+  (`Squad.AiControlled`), and **A\* was skipped**: rivers are crossable everywhere, only slowly, so straight-line steering still works.
+
+**Phase C**
+- C1: shield wall, square, wedge and loose, cycled with J (and the FORMATION button); not on the order wheel, which keeps its eight orders.
+- C2: an AI general keeps an infantry reserve, swings its outermost company wide, shoots the least armoured company, resupplies its archers,
+  and sounds the retreat when it is down to a fifth of the enemy's strength. The enemy captain joins the melee once the lines are engaged.
+  The auto-resolve calibration still holds (9 of 12).
+- C3: parries need the guard raised within 0.35 s of the blow; striking into a blow from the mirrored side chambers it; Ctrl bashes with the
+  shield (a kick with two hands); N swaps to a two-handed greatsword on foot (only parries stop blows from the wrong side); E with no horse in
+  reach whistles for the nearest loose horse of your side.
+- C4: the sun follows the hour (`Sky.cs`); nights are moonlit rather than torch-lit, because the shaders have no point lights. Rain and snow
+  fall as streaks or flakes, scatter arrows and slow horses; fog and night shorten archers' sight.
+- C5: rivers with two fords cross a third of quick battles and any campaign battle near a map river; the map's rivers have bridges where roads
+  cross. There are no bridge models: on the map a crossing is shallower water.
+- C6: crossbowmen (reload 2×, bolts ignore 60% of armour), horse archers (skirmish from the saddle), greatswords; and the Northmarch line
+  (clansmen, axemen, huscarls).
+- C7: the rank and file tire running and fighting (to 70% speed and damage); each side has a supply wagon of 300 arrows.
+
+**Phase D**
+- D1: particles are opaque pixel squares (sparks, blood, dust). Banners ride over the first man of each company. Falls topple over half a second.
+  Arrows stick in shields (up to four).
+- D3: colour-blind heraldry (Okabe-Ito blue, vermilion and purple) applies on restart. UI scale was already in A3.
+- D4: day and night, seasonal ground, party tracks and smoke over threatened villages. **Water is not animated.**
+- D5: hover any company in command view; select one for its detail panel; the results screen has a timeline.
+
+**Phase E**
+- E1: a 4 m grid (`BattleGrid.cs`) serves separation, targeting, morale, arrows and death shock. The cap is now 400 men: 351 fielded run at
+  about 310 ticks a second headless.
+- E2: saves are version 2 (per-pair wars); `CampaignState.Migrate` upgrades version 1.
+- E3: a GPU matrix cannot be run from CI. Instead `dotnet run -- --gpu-report` draws a battle at each quality and writes `gpu-report.txt`
+  (driver, shader status, frames per second); the README lists what has been verified.
+- E4: foliage is built in 48 m tiles with bounding boxes, and each pass (camera and sun) draws only the tiles in its frustum.
+- E5: every battle you fight is recorded (seed, armies, options, starting positions, each tick's input and your orders) to
+  `replays/last-battle.json`; `dotnet run -- --replay [file]` plays it back headless and checks that it ends the same way.

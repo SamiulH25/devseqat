@@ -39,6 +39,7 @@ public static class SelfTest
         Rivers();
         CampaignWar();
         Migration();
+        ReplayExact();
 
         for (int seed = 1; seed <= 3; seed++)
         {
@@ -274,7 +275,8 @@ public static class SelfTest
         for (int step = 0; b.Winner < 0 && step < 60 * 600; step++)
         {
             b.Update(1 / 60f);
-            if (b.Time is > 15 and < 16 && b.SquadsOf(0).Any(s => s.Order == Order.Hold && s.Units[0].Type.Id == "shieldmen" && s.Alive > 0)) heldBack = true;
+            var inf = b.SquadsOf(0).Where(s => s.Company != null && s.Alive > 0 && Armies.RoleOf(s.Company) == "infantry").ToList();
+            if (inf.Any(s => s.Order == Order.Charge) && inf.Any(s => s.Order == Order.Hold)) heldBack = true; // one company waits while the line charges
         }
         Check(b.Winner >= 0, "an AI-vs-AI battle with a reserve resolves");
         Check(heldBack, "the AI keeps an infantry reserve back");
@@ -382,7 +384,7 @@ public static class SelfTest
     {
         var rng = new Random(5);
         var b = new Battle(5, Scaled(Armies.Random(rng, 2, 0), 2.2f, 100), Scaled(Armies.Random(rng, 2, 1), 2.2f, 200),
-            new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+            new BattleOptions { AutoPlayer = true, PlayerWounded = true, Cap = 200 });
         int fielded = b.Units.Count(u => !u.IsLeader), firstCompanies = b.Squads.Count(q => q.Company != null);
         Check(fielded <= 210, $"the field holds about 200 men ({fielded})");
         var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -395,6 +397,17 @@ public static class SelfTest
         Check(r.Winner >= 0, "the big battle ends");
         Check(r.Companies.All(c => c.Standing + c.Fled + c.Fallen == c.Start), "every man is standing, fled or fallen");
         Check(r.Companies.Count(c => c.Deployed) > firstCompanies, $"reserves marched on ({firstCompanies} -> {r.Companies.Count(c => c.Deployed)} companies)");
+        // Roadmap E1: 400 men on the field still run faster than real time.
+        var h = new Battle(6, Scaled(Armies.Random(rng, 3, 0), 3.4f, 300), Scaled(Armies.Random(rng, 3, 1), 3.4f, 400),
+            new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+        int huge = h.Units.Count(u => !u.IsLeader);
+        for (int i = 0; i < 120; i++) h.Update(1 / 60f); // warm up
+        watch.Restart();
+        for (int i = 0; i < 600; i++) h.Update(1 / 60f);
+        double htps = 600 / watch.Elapsed.TotalSeconds;
+        Console.WriteLine($"huge battle: {huge} men fielded, {htps:0} ticks/s");
+        Check(huge is > 320 and <= 410, $"the field holds about 400 men ({huge})");
+        Check(htps >= 60, $"a 400-man battle runs in real time ({htps:0} ticks/s)");
     }
 
     static void CampaignMap()
@@ -608,6 +621,28 @@ public static class SelfTest
         for (int h = 0; h < 48; h++) { m.Tick(1); m.Encounter = null; m.Arrived = null; }
         Console.WriteLine($"migrated: day {m.Day}, wars {string.Join(" ", m.S.Wars.Select(w => $"{w.A}-{w.B}:{w.Active}:{w.TruceUntil}"))}");
         Check(m.Day >= 2 && m.FactionsAtWar(0, 1) == false, "a migrated campaign runs, its truce intact");
+    }
+
+    /// A recorded battle with player orders and input, saved to JSON and played back, ends exactly the same.
+    static void ReplayExact()
+    {
+        var rng = new Random(9);
+        var b = new Battle(31, Armies.Random(rng, 2, 0), Armies.Random(rng, 2, 1), new BattleOptions { Weather = new Weather(17, 0.5f) });
+        b.StartRecording(31);
+        var mine = b.Commanded.ToList();
+        for (int step = 0; b.Winner < 0 && step < 60 * 300; step++)
+        {
+            if (step == 60) foreach (var s in mine) { s.Order = Order.Charge; }
+            if (step == 120) mine[0].Formation = Formation.ShieldWall;
+            if (step == 200) mine[^1].Target = b.SquadsOf(1).First();
+            b.Input = new PlayerInput { Facing = MathHelper.PiOver2, Move = new Vector2(0, step % 300 < 150 ? 1 : 0), Attack = step % 50 < 20, Dir = (AttackDir)(step / 70 % 4) };
+            b.Update(1 / 60f);
+        }
+        var rec = b.FinishRecording()!;
+        var back = Replay.Deserialize(rec.Serialize());
+        var again = back.Play();
+        Console.WriteLine($"replay: {rec.Frames.Count} ticks, winner {again.Winner} after {again.Time:0.0}s, {again.Units.Count(u => u.Dead)} dead (recorded {rec.Winner}, {rec.Time:0.0}s, {rec.Dead})");
+        Check(back.Matches(again), "a replay reproduces its battle exactly");
     }
 
     static ArmySpec Ids(ArmySpec a, int idBase) => a with { Companies = a.Companies.Select((c, i) => c with { Id = idBase + i }).ToList() };

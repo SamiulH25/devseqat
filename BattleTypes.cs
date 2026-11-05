@@ -4,7 +4,7 @@ namespace Ironfield;
 public sealed class BattleOptions
 {
     /// Most men on the field at once (both sides together); the rest wait as reinforcements.
-    public int Cap = 200;
+    public int Cap = 400;
     public float AuraRadius = 12, RallyBonus = 25, RallyCooldown = 12;
     /// Iron Will perk: companies near you will not rout while a third of them stand.
     public bool IronWill;

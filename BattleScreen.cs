@@ -42,6 +42,7 @@ sealed class BattleScreen
     float yaw, pitch, fieldDist = 5.5f;       // field camera: third person behind the player
     float camYaw, camPitch, zoom = 45;        // command camera: free orbit around camFocus
     float blend, frameDt, realTime, lastCardClick;
+    bool replaySaved;
     Squad? lastCardSquad;
     Vector2 camFocus, mouseGround, aimAcc, wheelVec;
     AttackDir aimDir = AttackDir.Overhead;    // picked by the direction the mouse last moved
@@ -92,6 +93,8 @@ sealed class BattleScreen
     {
         campaignBattle = s;
         battle = new Battle(s.Seed, s.Player, s.Enemy, s.Options);
+        battle.StartRecording(s.Seed);
+        replaySaved = false;
         SetWorld();
         selected.Clear();
         yaw = MathHelper.PiOver2;
@@ -145,6 +148,8 @@ sealed class BattleScreen
                 // IRONFIELD_GROUND=river forces a river; otherwise a third of quick battles have one.
                 Ground = TerrainParams.Meadow with { River = Environment.GetEnvironmentVariable("IRONFIELD_GROUND") == "river" || (shotDir == null && rng.NextSingle() < 0.33f) },
             });
+        battle.StartRecording(seed);
+        replaySaved = false;
         SetWorld();
         battle.Log($"Your company (level {mine}) faces a level {theirs} host: {weather.Describe}.");
         foreach (var p in ctl.Problems) battle.Log(p);
@@ -184,6 +189,12 @@ sealed class BattleScreen
         pkb = kb; pms = ms;
         kb = Keyboard.GetState(); ms = Mouse.GetState();
         realTime += dt;
+        if (battle.Winner >= 0 && !replaySaved && shotDir == null)
+        {
+            // Keep the last battle as a replay (roadmap E5): `--replay` plays it back exactly.
+            replaySaved = true;
+            try { battle.FinishRecording()?.Save("last-battle"); } catch (Exception e) { Console.WriteLine("replay not saved: " + e.Message); }
+        }
         if (Pressed(Keys.Enter) && Tips.Active) Tips.Dismiss();
         else if (LmbPressed && Tips.Active && command && tipUi.Blocks(ms.Position)) Tips.Dismiss();
         if (deploying) Tips.Show("deploy", "Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press Space (or START BATTLE) to begin.");

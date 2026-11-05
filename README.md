@@ -1,16 +1,21 @@
-# Ironfield — battle prototype
+# Ironfield
 
 A 2.5D (2D sprites in a 3D world) medieval battle game in C# + MonoGame (DesktopGL), inspired by the
 "lead your army in person" genre. This is an original setting: no names, assets or factions from other games.
 
-This prototype covers **combat only**: how the player fights as a soldier while commanding as a general.
+You fight in person as a soldier while you command your army as a general, and between battles you lead a mercenary company
+through a war of three realms on a campaign map: sieges, fiefs, prisoners, contracts, seasons and the rest of `docs/ROADMAP.md`.
 
 ## Build / run / test
 
 ```sh
 dotnet build
 dotnet run                 # play
-dotnet run -- --selftest   # headless: formation math + 3 full battles must resolve
+dotnet run -- --selftest   # headless: mechanics, battles, sieges, campaigns, saves and replays
+dotnet run -- --selftest SiegeBattle   # one test by name
+dotnet run -- --balance 4  # telemetry: N headless campaigns and battles -> balance/*.csv
+dotnet run -- --replay     # play back your last battle (replays/last-battle.json) and check it ends the same way
+dotnet run -- --gpu-report # draw a battle at each quality; writes gpu-report.txt (driver, shaders, fps)
 ```
 
 You need .NET SDK 10 (`net10.0`). On Ubuntu 24.04 `apt-get install dotnet-sdk-10.0` works (no Microsoft feed needed).
@@ -21,21 +26,32 @@ The game needs no art files: sprites, terrain and the font are all generated in 
 
 The game opens on a **title screen**: New Campaign, Continue (latest save), Quick Battle (one random battle), Quit.
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
-To render a few staged camera shots as PNGs and quit (works headless with `xvfb-run -a dotnet run`), set `IRONFIELD_SHOTS=/some/dir`.
+To render a few staged camera shots as PNGs and quit (works headless with `xvfb-run -a dotnet run`), set `IRONFIELD_SHOTS=/some/dir`
+(`IRONFIELD_CAMPAIGN_SHOTS` does the same for the campaign screens). `IRONFIELD_WEATHER=hour,rain,fog` and `IRONFIELD_GROUND=river` set a quick battle's
+weather and ground.
 `dotnet run -- --write-controls` writes `controls.json` with the default bindings.
 Graphics quality: **F2** cycles High (shaders, sun shadows, post) / Medium (no shadows) / Low (fixed-function); `IRONFIELD_QUALITY=Low` picks one at start.
 Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, no Wine): see "Shaders" below.
 
 ## The campaign
 
-You are a free captain sworn to the Azure Crown, at war with the Crimson Compact, with brigands roaming between them.
+You are a free captain sworn to the Azure Crown. It is at war with the Crimson Compact, and the Northmarch clans hold the north under truces
+that will not last. Brigands roam between them all.
 - **Map:** click to march, click a town or village to enter it, and click a party to chase it. P opens the party screen, Space pauses,
   1-3 set the speed (x1, x3, x8), F follows you, F5 saves, F9 loads, and Esc opens the menu. The camera works as in command view (WASD, Q/E, wheel,
   middle-drag), and the overview (top right) jumps the camera. Hover anything for details.
 - **Companies persist.** They keep a name, men, wounded, XP, cohesion and history. They gain XP in battle and from drill, and upgrade along
   `troops.json` in a town's training yard (Levies choose a line; cavalry needs horses). New recruits dilute XP.
-- **Towns:** train, hire mercenaries, buy horses and your own gear (plate, great helm, warhorse, destrier), rest to heal, and sign or end
-  contracts. **Villages:** recruit levies. **Castles:** rest and contracts.
+- **Towns:** train, hire mercenaries, buy horses, food and your own gear (plate, great helm, warhorse, destrier), rest to heal, sell prisoners
+  and ransom lords, sign or end contracts, and take work from the steward's board (hunt a lord, clear brigands, guard a village, scout a town,
+  take a castle). **Villages:** recruit (levies, or clansmen in the north), buy or forage food. **Castles:** rest, prisoners and contracts.
+- **Sieges:** ride to an enemy town or castle and besiege it. After a night your men have ladders and a ram; assault the walls (an on-foot
+  battle: climb at the ladders, batter the gate, defenders on the walkway) or wait while the garrison starves. A captured seat becomes your
+  **fief**: weekly income, and a garrison you can strengthen with your own companies. Lords besiege and retake seats too.
+- **Prisoners** follow you (they slow you and eat): sell, recruit or free them. Lords you beat may be captured and ransomed.
+- **Officers:** sergeants with traits (Stubborn, Steady, Drillmaster, Hothead, Sharpshooter, Surgeon, Veteran) that show in battle; they can fall.
+- **Seasons and food:** winter slows the march, slows healing and doubles rations; starving men lose cohesion and desert. Your liege's towns feed you.
+- **Three realms:** wars and truces are per pair; a realm that grows too strong unites the others against it.
 - **Encounters:** attack (the battle opens in a **deployment phase**: arrange your lines in your third of the field, then Space or START), auto-resolve,
   retreat (a rearguard pays), or pay brigands off. Esc in a campaign battle lets you **withdraw**.
 - **Results:** the fallen split into killed and wounded (heavier armour survives more often). Then come XP, loot, ransom, bounty, renown and captured horses.
@@ -71,7 +87,11 @@ Keys are MonoGame `Keys` names (`W`, `LeftShift`, `F1`...) or `LMB`/`RMB`/`MMB`/
 
 **Orders (both views):** 1-9 toggle a squad, 0 or ~ selects all (with nothing selected, orders go to every squad).
 C charge, F follow me, G form a line on me, H hold position, T advance 15 m, B fall back 20 m, V loose/tight spacing,
-X archers fire at will / hold fire. **Esc** opens the menu (resume, controls, new battle, quit); Enter starts a new battle after the result.
+**J formation** (line, shield wall, square, wedge, loose), X archers fire at will / hold fire. Allied lords' companies follow their own AI general.
+
+**Captain combat:** a parry needs the guard raised just as the blow comes (within 0.35 s); attacking into a blow from the mirrored side
+**chambers** it. **Ctrl** shield bash (a kick with two hands), **N** swaps to a two-handed greatsword on foot, **E** with no horse in reach
+whistles for the nearest loose horse of your side. **Esc** opens the menu (resume, controls, new battle, quit); Enter starts a new battle after the result.
 
 ## Design: soldier vs general
 
@@ -185,9 +205,14 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 | `Troops.cs` | Loads and validates `Data/troops.json` (troops, upgrade trees, mounts); `ArmySpec`/`Company`; `Armies` builds armies by level. |
 | `Style.cs` | Design tokens: side heraldry, materials, horse coats, sprite light and density, UI colours, grid, type scale. |
 | `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles. |
-| `BattleGame.cs` | MonoGame `Game`: input, the blended third-person/command camera, terrain picking, orders, the render passes. |
+| `ScreenHost.cs` | The MonoGame `Game`: shared art, audio and settings; switches between `TitleScreen`, `MapScreen` and `BattleScreen`, with the `SettingsScreen` overlay. |
+| `BattleScreen.cs` | A battle on screen: input, the blended third-person/command camera, terrain picking, orders, particles, rain, the render passes. |
+| `BattleSiege.cs` | Assaults: deploying defenders on the wall, routing men through ladders and the gate (`Via`), the wall barrier, battering, siege generals. |
+| `BattleCaptain.cs` | Captain combat (bash, weapon swap, calling a horse), fatigue, supply wagons, AI reserve and retreat helpers. |
+| `BattleGrid.cs` | The spatial grid: near-neighbour queries for separation, targeting, morale and arrows. |
+| `Replay.cs` | Battle recording and exact playback (`--replay`). `GpuReport.cs`: `--gpu-report`. `Sky.cs`: light by hour and weather. |
 | `World.cs` | 3D world: terrain mesh, procedural low-poly foliage and grass (tagged with wind sway and leafiness), sky dome, minimap image; shaded and fixed-function draw paths. |
-| `Campaign/` | The headless campaign: `CampaignState` (save data, RNG, balance, names), `WorldMap` (generation, terrain, settlements), `Rules` (companies, XP, upgrades, auto-resolve, battle bridge), `Campaign` (time, movement, encounters, AI, economy, your actions). |
+| `Campaign/` | The headless campaign: `CampaignState` (save data and migration, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, XP, upgrades, auto-resolve, battle bridge), `Campaign` (time, movement, encounters, AI, economy, your actions), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs). |
 | `MapScreen.cs` | The campaign map: 3D world, banner-bearer parties, map HUD and every campaign panel. `Ui.cs`: the immediate-mode panel kit. |
 | `BattleTypes.cs` | `BattleOptions` (perks, gear, wounds, palettes, ground, size cap), `BattleResult` / `CompanyResult` for the campaign. |
 | `Shading.cs` | The shader pipeline: effects, sun shadow map, scene target, post pass, light and grade values, quality levels. |
@@ -237,18 +262,26 @@ For hand-made art later, put PNGs into the atlas under the same keys (`part.vari
 - In field view, friendly soldiers within 6 m of the camera are not drawn, so your own ranks never fill the lens.
 - `Battle.Empty` uses `Terrain.Flat()` (no hills, no trees), so mechanic tests are not affected by the map.
 - Team 0 = player side and squads 1-3 in `Squads` order. `Squad.Alive` is refreshed each tick by `UpdateSquad`.
-- Known shortcuts (search `shortcut:`): O(n²) separation (fine up to about 400 units).
+- Separation, targeting, morale and arrows go through the spatial grid (`BattleGrid.cs`); a 400-man battle runs about 5× real time headless.
 - Scaling a MonoGame `Color` by a float also scales its alpha: `Mat` forces opaque colours, so use `Color.Lerp` for tints.
 - `AttackDir` is named from the attacker's side; the defender must block `Dirs.Mirror(swing)`. The HUD shows incoming blows already mirrored.
 - Separation is mass-weighted (horse 6, man 1) with radii 1.0 / 0.375 m; horse-vs-footman overlaps are where trample `Impact` happens.
 - `Battle.Empty(seed)` builds a scenario field (two leaders far apart) for the self-test; `AddSquad`, `Hit` and `HitHorse` are reachable from it.
 - With an idle player, the AI enemy (bigger than yours at the same level) wins the self-test battles in about 30 s. The balance assumes the player fights and commands.
 
+## Graphics: verified setups
+
+`dotnet run -- --gpu-report` writes `gpu-report.txt` (driver, shader status, frames per second at each quality). Please send it with any
+graphics bug. Verified so far:
+
+| Setup | Shaders | High / Medium / Low |
+|---|---|---|
+| Linux, Mesa llvmpipe (software, Xvfb), .NET 10 | compile and run | 12 / 31 / 46 fps at 1280x720 |
+
+Real GPUs (Windows NVIDIA, AMD and Intel; macOS; Linux Mesa hardware drivers) are not verified yet. If the shaders fail on a driver,
+the game falls back to Low by itself.
+
 ## Next steps
 
-1. Play-test the feel: horse turn rates, lance damage, parry timing (right now any matched block parries; a timing window would add skill).
-2. Horse archers and a wedge formation for cavalry; AI riders remounting loose horses.
-3. A battle-start deployment phase; woods that hide units and slow formations; rivers and fords.
-4. The campaign, as specified in `docs/CAMPAIGN.md`, starting with M0 (battle-side prep: spatial grid, `Battle.Result()`, deployment) and
-   M1 (the company ledger: persistent companies across a chain of battles).
-5. A spatial grid for separation and target search, for bigger battles.
+The roadmap (`docs/ROADMAP.md`) is built; its "As built" section lists what was simplified. Next: play-testing and balance
+(`--balance` CSVs), real-GPU reports, animated water, torch light at night, and bridge models on the map.

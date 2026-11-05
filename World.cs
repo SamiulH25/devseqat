@@ -109,9 +109,7 @@ sealed class World : IDisposable
 
         foliageFx.View = view; foliageFx.Projection = proj;
         foliageFx.CurrentTechnique.Passes[0].Apply();
-        gd.SetVertexBuffer(foliageVb);
-        for (int s = 0; s < foliageTris; s += Chunk)
-            gd.DrawPrimitives(PrimitiveType.TriangleList, s * 3, Math.Min(Chunk, foliageTris - s));
+        DrawFoliage(new BoundingFrustum(view * proj));
     }
 
     /// Fog distances for the fixed-function path (the campaign map sees much further than a battle).
@@ -143,7 +141,7 @@ sealed class World : IDisposable
         var fx = sh.World;
         sh.Setup(fx, view * proj, camPos, time, shadows, 0.15f + sh.ShadowTexelMetres);
         fx.Parameters["Detail"].SetValue(detail);
-        DrawGeometry(fx, "Terrain", "Foliage");
+        DrawGeometry(fx, "Terrain", "Foliage", new BoundingFrustum(view * proj));
     }
 
     /// Terrain and foliage into the sun's shadow map (hills and trees cast shadows).
@@ -153,10 +151,10 @@ sealed class World : IDisposable
         sh.Setup(fx, Matrix.Identity, sh.LightEye, time, false, 0);
         fx.Parameters["ShadowMap"].SetValue((Texture2D?)null);
         fx.Parameters["Detail"].SetValue(detail);
-        DrawGeometry(fx, "TerrainShadow", "FoliageShadow");
+        DrawGeometry(fx, "TerrainShadow", "FoliageShadow", new BoundingFrustum(sh.LightViewProj));
     }
 
-    void DrawGeometry(Effect fx, string terrain, string foliage)
+    void DrawGeometry(Effect fx, string terrain, string foliage, BoundingFrustum view)
     {
         fx.CurrentTechnique = fx.Techniques[terrain];
         fx.CurrentTechnique.Passes[0].Apply();
@@ -166,9 +164,7 @@ sealed class World : IDisposable
             gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, s * 3, Math.Min(Chunk, terrainTris - s));
         fx.CurrentTechnique = fx.Techniques[foliage];
         fx.CurrentTechnique.Passes[0].Apply();
-        gd.SetVertexBuffer(foliageVb);
-        for (int s = 0; s < foliageTris; s += Chunk)
-            gd.DrawPrimitives(PrimitiveType.TriangleList, s * 3, Math.Min(Chunk, foliageTris - s));
+        DrawFoliage(view);
     }
 
     public void Dispose()
@@ -305,7 +301,28 @@ sealed class World : IDisposable
     (VertexBuffer, int) BuildFoliage()
     {
         var m = new Mesh();
-        foreach (var f in t.Foliage)
+        tiles.Clear();
+        // Foliage is built tile by tile (roadmap E4) so each frame draws only the tiles in view.
+        const float TileSize = 48;
+        foreach (var tile in t.Foliage.GroupBy(f => ((int)MathF.Floor(f.Pos.X / TileSize), (int)MathF.Floor(f.Pos.Y / TileSize))))
+        {
+            int start = m.V.Count;
+            foreach (var f in tile) Item(f);
+            if (m.V.Count == start) continue;
+            var min = new Vector3(float.MaxValue); var max = new Vector3(float.MinValue);
+            for (int i = start; i < m.V.Count; i++) { min = Vector3.Min(min, m.V[i].Position); max = Vector3.Max(max, m.V[i].Position); }
+            tiles.Add((start, (m.V.Count - start) / 3, new BoundingBox(min - new Vector3(1.5f), max + new Vector3(1.5f)))); // room for wind sway
+        }
+        alwaysStart = m.V.Count;
+        Water(m);
+        Grass(m);
+        if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
+        alwaysTris = (m.V.Count - alwaysStart) / 3;
+        var vb = new VertexBuffer(gd, VertexPNCT.Decl, Math.Max(3, m.V.Count), BufferUsage.WriteOnly);
+        if (m.V.Count > 0) vb.SetData(m.V.ToArray());
+        return (vb, m.V.Count / 3);
+
+        void Item(Foliage f)
         {
             var rng = new Random(f.Seed);
             var b = new Vector3(f.Pos.X, t.Height(f.Pos), f.Pos.Y);
@@ -326,12 +343,27 @@ sealed class World : IDisposable
                 default: Rock(m, b, f.Scale, rng); break;
             }
         }
-        Water(m);
-        Grass(m);
-        if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
-        var vb = new VertexBuffer(gd, VertexPNCT.Decl, Math.Max(3, m.V.Count), BufferUsage.WriteOnly);
-        if (m.V.Count > 0) vb.SetData(m.V.ToArray());
-        return (vb, m.V.Count / 3);
+    }
+
+    readonly List<(int Start, int Tris, BoundingBox Box)> tiles = new();
+    int alwaysStart, alwaysTris;
+    /// Foliage triangles drawn last frame (for the performance check), and in all.
+    public int FoliageDrawn { get; private set; }
+    public int FoliageTotal => foliageTris;
+
+    /// Draw the foliage tiles inside `view` (a camera's or the sun's frustum), then the water and grass.
+    void DrawFoliage(BoundingFrustum view)
+    {
+        gd.SetVertexBuffer(foliageVb);
+        int drawn = 0;
+        void Range(int start, int tris)
+        {
+            for (int s = 0; s < tris; s += Chunk) gd.DrawPrimitives(PrimitiveType.TriangleList, start + s * 3, Math.Min(Chunk, tris - s));
+            drawn += tris;
+        }
+        foreach (var (start, tris, box) in tiles) if (view.Intersects(box)) Range(start, tris);
+        if (alwaysTris > 0) Range(alwaysStart, alwaysTris);
+        FoliageDrawn = drawn;
     }
 
     static Color Jitter(Color c, Random r, float amount)

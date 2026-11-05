@@ -399,17 +399,17 @@ The campaign was built to this spec with the section 13 proposals: a free captai
 wounds and capture but no permadeath, about 24 provinces, 200-man battles, no sieges, and two factions plus brigands. Where the
 build differs:
 
-- **Allies** who join a battle fight under **your** command (their companies join your army) rather than under a team-0 AI
-  general. That general exists (`Battle.General(team)`) and runs your side in headless tests (`BattleOptions.AutoPlayer`).
+- **Allies** who join a battle fight on your side under a team-0 AI general (`Squad.AiControlled`); only your own companies take your orders.
 - **Map movement** is straight-line steering with terrain and road speed factors. There is no A* yet, because nothing on the map is impassable.
-- **No spatial grid yet:** the battle cap is 200 men and the O(n²) separation already runs a 185-man battle at about 590 ticks a second
-  (about 10× real time). The grid waits until the cap rises.
+- **Battle size:** the cap is 400 men, served by a spatial grid (roadmap E1).
 - **Drill (new):** companies gain 1 XP a day in camp and 2 in a friendly town (`DrillCamp`, `DrillTown`). Without it the AI lords
   rarely grew past tier II.
 - **Lord wages** are 1.3× upkeep plus a 2% share of the faction's war chest each week, so lords can afford upgrades.
-- **Prisoners** are ransomed at once as gold (half the spec's rate). **Fled men** return at once (all on a victory, 70% on a defeat).
-- **Code layout:** `BattleGame` hosts the title, map and battle modes instead of separate `Screens/` classes, and the map screen is
-  `MapScreen.cs`. The campaign sim, rules, map and state live in `Campaign/`, as specified.
-- **No renaming** of companies yet (it needs text entry). Merge and split, reordering, disbanding and the rest of section 9 work.
-- **Map keys** (P, Space, 1-3, F, F5, F9) are fixed rather than rebindable. Camera keys use `controls.json`.
+- **Prisoners** are held (roadmap B3): sold in towns and castles at the ransom rate, recruited, or freed. **Fled men** return at once (all on a victory, 70% on a defeat).
+- **Code layout:** `ScreenHost` hosts `TitleScreen`, `MapScreen`, `BattleScreen` and `SettingsScreen` (top level rather than `Screens/`).
+  The campaign sim, rules, map and state live in `Campaign/`, as specified.
+- **Renaming** works (click a company's name in the party screen). Merge and split, reordering, disbanding and the rest of section 9 work.
+- **Map keys** are rebindable like every other key (settings screen or `controls.json`).
+- **Later additions** (roadmap phase B): sieges and fiefs, a third faction (the Northmarch) with per-pair wars, prisoners, contracts,
+  officers, seasons and food. Saves are version 2; version 1 saves are migrated on load. See `docs/ROADMAP.md`, "As built".
 - **Debug:** `IRONFIELD_CAMPAIGN_SHOTS=/dir` walks through the campaign screens and saves a PNG of each; `IRONFIELD_SAVES` moves the save folder.
