@@ -43,6 +43,7 @@ public static class SelfTest
         RefuseOldSave();
         Stacks();
         Cultures();
+        Characters();
         StackBattle();
         ReplayExact();
 
@@ -864,6 +865,109 @@ public static class SelfTest
             Console.WriteLine("  " + string.Join(", ", w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).SelectMany(p => p.Companies).SelectMany(k => k.Stacks).GroupBy(st => st.Troop).Select(g => $"{g.Key}:{g.Sum(st => st.Men)}")));
             Check(all > 0 && own >= all * 0.85f, $"realm {f}'s army is recognisably {Factions.CultureOf(f)}");
         }
+    }
+
+    /// Characters and relations (F3): opinion stays in range and fades; captured lords come back; a lord you beat and freed thinks
+    /// better of you than one you beat and ransomed; traits change what a lord does; an heir inherits; companions come from
+    /// veteran officers and taverns and fight as heroes; a lord who dislikes you holds back his villages' recruits.
+    static void Characters()
+    {
+        var c = Campaign.New(85);
+        var lords = c.S.Parties.Where(p => p.Kind == PartyKind.Lord).ToList();
+        Check(lords.All(p => c.CharacterOf(p) is Character ch && ch.Traits.Count >= 2 && ch.Name == p.Name), "every lord is a character with traits");
+        Check(c.Me.Kind == "captain", "you have a character too");
+        Check(lords.Where(p => p.Faction == 0).All(p => c.OpinionOfYou(p) > 0), "your liege's lords start warm towards you");
+        // Range and decay.
+        var a = c.CharacterOf(lords[0])!;
+        for (int i = 0; i < 20; i++) c.Remember(a, c.Me, "you razed my village", -30);
+        Check(c.OpinionOfYou(a) >= -100 && a.Opinion.Values.All(v => v >= -100 && v <= 100), "opinion stays in range");
+        float low = c.OpinionOfYou(a);
+        for (int w = 0; w < 30; w++) c.RelationsWeekly();
+        Check(c.OpinionOfYou(a) > low + 40, $"opinion fades with time ({low:0} -> {c.OpinionOfYou(a):0})");
+        Check(a.Memories.Count <= 8, "memories are bounded");
+        // Two enemy lords beaten and captured: one freed, one ransomed.
+        var foes = lords.Where(p => p.Faction == 1).Take(2).ToList();
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == 0);
+        foreach (var f in foes) { f.Down = true; f.Captive = true; f.DownUntil = float.MaxValue; c.Player.Captives.Add(f.Id); }
+        c.RelationsAfterBattle(new[] { c.Player }, foes, true);
+        c.FreeLord(foes[0]);
+        c.RansomLord(foes[1], town);
+        float freed = c.OpinionOfYou(foes[0]), sold = c.OpinionOfYou(foes[1]);
+        var why = c.MemoriesOf(c.CharacterOf(foes[0])!, c.Me).Select(m => m.What).ToList();
+        Console.WriteLine($"characters: freed lord thinks {freed:0} of you ({string.Join("; ", why)}), ransomed lord {sold:0}");
+        Check(freed > sold + 15, "a lord you freed thinks better of you than one you ransomed");
+        Check(why.Contains("you beat me in the field") && why.Contains("you set me free without ransom"), "and remembers why");
+        // Captured lords come back to the field.
+        c.Player.Cooldown = 1e6f;
+        for (int h = 0; h < 5 * 24; h++) { c.Tick(1); c.Encounter = null; c.Arrived = null; }
+        Check(foes.All(f => !f.Down && !f.Captive), "released lords return to the field");
+        // Traits change choices: before a party a little stronger, the Cautious lord flees and the Reckless one does not.
+        string Choice(string trait)
+        {
+            var w = Campaign.New(86);
+            var lord = w.S.Parties.First(p => p.Kind == PartyKind.Lord && p.Faction == 0);
+            var foe = w.S.Parties.First(p => p.Kind == PartyKind.Lord && p.Faction == 1);
+            var ch = w.CharacterOf(lord)!;
+            ch.Traits.Clear(); ch.Traits.Add(trait);
+            var spot = new Vector2(0, 0);
+            foreach (var p in w.S.Parties.Where(p => p != lord && p != foe)) p.Pos = new Vector2(5000, 5000);
+            lord.Pos = spot; foe.Pos = spot + new Vector2(12, 0);
+            lord.Companies.Clear(); foe.Companies.Clear();
+            foreach (var role in new[] { "infantry", "archers", "spears" }) lord.Companies.Add(w.NewCompany(Armies.LineTroop(role, 3, 0), role, 16, 0));
+            foreach (var role in new[] { "infantry", "archers", "spears" }) foe.Companies.Add(w.NewCompany(Armies.LineTroop(role, 3, 1), role, 16, 0));
+            foe.Companies[0].Stack(foe.Companies[0].Troop).Men += 9;
+            float ratio = Rules.Strength(foe) / Rules.Strength(lord);
+            lord.SiegeTarget = -1; lord.Task = "patrol";
+            w.LordThink(lord);
+            Console.WriteLine($"  {trait} lord facing {ratio:0.00}x: {lord.Task}");
+            return lord.Task;
+        }
+        Check(Choice("Cautious") == "flee" && Choice("Reckless") != "flee", "a cautious lord flees what a reckless one stands against");
+        // A lord slain: his heir takes the banner and the grudge.
+        var victim = lords.First(p => p.Faction == 1 && !foes.Contains(p));
+        var father = c.CharacterOf(victim)!;
+        c.SlayLord(victim, true);
+        var heir = c.CharacterOf(victim)!;
+        Check(father.Dead && heir != father && !heir.Dead && victim.Name == heir.Name, "a slain lord's heir takes up his banner");
+        Check(c.MemoriesOf(heir, c.Me).Any(m => m.What == "you slew my father"), "and remembers who killed his father");
+        // Companions: a sergeant of 15 battles joins your household and leads his company as a hero.
+        var co = c.Player.Companies[0];
+        co.Officer = "Sgt Test";
+        co.OfficerBattles = Campaign.CompanionBattles - 1;
+        c.OfficerAfterBattle(co, true, 0);
+        var comp = c.Companions.FirstOrDefault();
+        Check(comp != null && comp.CompanyId == co.Id && co.Hero == comp.Name && comp.Role != "", "a veteran sergeant becomes a companion and leads his company");
+        // A wanderer in a tavern.
+        var tavern = c.S.Settlements.FirstOrDefault(t => c.WandererAt(t) != null);
+        for (int i = 0; tavern == null && i < 10; i++) { c.Tick(24 * 7); c.Encounter = null; tavern = c.S.Settlements.FirstOrDefault(t => c.WandererAt(t) != null); }
+        Check(tavern != null, "some towns have a wanderer");
+        c.S.Gold = 1000;
+        Check(c.HireWanderer(tavern!) == null && c.Companions.Count() == 2, "a wanderer can be taken into service");
+        // The hero fights in battle and is not counted among his company's men.
+        c.RefreshHeroes();
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
+        bandit.Pos = c.Player.Pos;
+        c.Encounter = bandit;
+        var setup = c.PrepareBattle(bandit);
+        var spec = setup.Player.Companies.First(k => k.Id == co.Id);
+        Check(spec.Hero == comp!.Name || c.S.Hours < comp.WoundedUntil, "the battle gets the company's hero");
+        var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+        var sq = b.Squads.First(q => q.Company?.Id == co.Id);
+        Check(sq.Units.Count(u => u.Hero) == 1 && sq.Units.Count(u => !u.Hero) == spec.Count, "one hero unit at the head of the company's men");
+        Check(b.Result().Companies.First(k => k.Id == co.Id).Start == spec.Count, "the hero is not counted in the company's result");
+        c.Encounter = null;
+        // A lord who hates you keeps his villages' men from you.
+        var village = c.S.Settlements.First(v => v.Kind == SettlementKind.Village && c.HolderOf(v) != null);
+        village.Recruits = 10;
+        var holder = c.HolderOf(village)!;
+        float before = c.RecruitsForYou(village);
+        holder.Opinion[c.Me.Id] = -100;
+        Check(c.RecruitsForYou(village) == 0 && before > 0, "a lord who hates you keeps his villages' recruits from you");
+        holder.Opinion[c.Me.Id] = 100;
+        Check(c.RecruitsForYou(village) == 10, "a lord who loves you lets them all go");
+        // Round trip.
+        var back = CampaignState.Deserialize(c.S.Serialize());
+        Check(back.Characters.Count == c.S.Characters.Count && back.Characters.Sum(k => k.Memories.Count) == c.S.Characters.Sum(k => k.Memories.Count), "characters survive a save");
     }
 
     /// A mixed company fights as one squad and gets its casualties back per stack (F1).

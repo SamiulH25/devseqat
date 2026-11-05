@@ -20,6 +20,10 @@ public sealed class CompanyRecord
     public float Cohesion = 10;
     /// The company's sergeant (B5): a name and up to three traits; "" = none yet.
     public string Officer = "";
+    /// Battles the current sergeant has lived through (15 make him a companion, F3).
+    public int OfficerBattles;
+    /// The companion who leads it into battle as a hero unit, while fit ("" = none); kept by Campaign.RefreshHeroes.
+    public string Hero = "";
     public List<string> Traits = new();
     public List<TroopStack> Stacks = new();
     /// Where the company was raised (2.4): its culture and home settlement.
@@ -144,6 +148,8 @@ public sealed class Contract
 public sealed class Party
 {
     public int Id, Faction = -1, HomeId = -1, ChaseId = -1, GoalSettlement = -1, PatrolProvince = -1, Horses, Tier = 1;
+    /// The lord's Character (F3); -1 for parties without one.
+    public int CharId = -1;
     public string Name = "", Task = "patrol";
     public PartyKind Kind;
     public Vector2 Pos, Goal;
@@ -235,6 +241,9 @@ public sealed class CampaignState
     public List<LogEntry> Log = new();
     public List<Contract> Contracts = new();   // the contracts you have accepted
     public int LastBattleFoe = -1;             // the last party you defeated (for hunt contracts)
+    /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
+    public List<Character> Characters = new();
+    public int CaptainChar = -1;
 
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true, WriteIndented = true };
 

@@ -62,6 +62,7 @@ public sealed partial class Campaign
     {
         if (s.Kind == SettlementKind.Village) return "ONLY TOWNS AND CASTLES PAY RANSOMS";
         S.Gold += LordRansom(lord);
+        if (CharacterOf(lord) is Character ch) Remember(ch, Me, "you sold me back for gold", -10);
         Release(lord);
         Log($"{lord.Name} is ransomed for {LordRansom(lord)} crowns.");
         AudioEngine.Current?.Play(Cue.Coin);
@@ -71,6 +72,7 @@ public sealed partial class Campaign
     public void FreeLord(Party lord)
     {
         Captain.Renown += 10;
+        if (CharacterOf(lord) is Character ch) Remember(ch, Me, "you set me free without ransom", 25);
         Release(lord);
         Log($"You release {lord.Name} without ransom. Your honour is spoken of.");
     }
@@ -104,16 +106,19 @@ public sealed partial class Campaign
         return c;
     }
 
-    void OfficerAfterBattle(CompanyRecord c, bool won, float lostFrac)
+    internal void OfficerAfterBattle(CompanyRecord c, bool won, float lostFrac)
     {
-        if (c.Officer == "") { if (rng.Chance(0.4f)) c.Officer = "Sgt " + rng.Pick(Names.Get().Lords); return; }
+        if (c.Officer == "") { if (rng.Chance(0.4f)) { c.Officer = "Sgt " + rng.Pick(Names.Get().Lords); c.OfficerBattles = 0; } return; }
         if (lostFrac >= 0.5f && rng.Chance(0.25f))
         {
             if (Player.Companies.Contains(c)) Log($"{c.Officer} of {c.Name} has fallen.");
             c.Officer = "";
             c.Traits.Clear();
+            c.OfficerBattles = 0;
             return;
         }
+        c.OfficerBattles++;
+        if (c.OfficerBattles >= CompanionBattles) OfficerToCompanion(c);
         if (won && c.Traits.Count < 3 && rng.Chance(0.15f))
         {
             var t = rng.Pick(TraitText.Keys.Where(k => !c.Traits.Contains(k)).ToList());
@@ -174,7 +179,7 @@ public sealed partial class Campaign
             BuyFood(7);
             Log($"Your quartermaster buys a week of food in {here.Name}.");
         }
-        Player.Food -= Winter ? 1.5f : 1;
+        Player.Food -= (Winter ? 1.5f : 1) * (HasCompanion("Quartermaster") ? 0.85f : 1);
         if (Player.Food >= 0) return;
         Player.Food = 0;
         foreach (var c in Player.Companies)

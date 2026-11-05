@@ -231,6 +231,6 @@ public static class Rules
                 return new Company(c.Troop, c.Men, RoleOf(c), c.Id, c.Name,
                     Math.Clamp(70 + c.Cohesion + moraleBonus + (c.Traits.Contains("Steady") ? 8 : 0) + h.Morale + (siege ? h.SiegeMorale : 0), 20, 100), c.Traits.ToArray(),
                     Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord, Mix: mix.Length > 1 ? mix : null,
-                    RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner);
+                    RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero);
             }).ToList());
 }

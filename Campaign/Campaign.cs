@@ -65,6 +65,7 @@ public sealed partial class Campaign
         s.Parties.Add(player);
         player.Companies.Add(c.NewCompany("levies", "infantry", 24, 0, capital));
         player.Companies.Add(c.NewCompany("levies", "spears", 15, 0, capital));
+        c.MakeCaptainCharacter(capital.Culture);
         foreach (var v in s.Settlements)
         {
             v.Recruits = v.Kind == SettlementKind.Village ? 4 + c.rng.Next(5) : 0;
@@ -76,6 +77,7 @@ public sealed partial class Campaign
             for (int i = 0; i < c.LordsWanted; i++) c.SpawnLord(f);
         // Open with a map's worth of brigands, not three: the roads are dangerous from the first day.
         for (int i = 0; i < c.BanditsWanted / 3; i++) c.SpawnBandits();
+        c.WanderersWeekly();
         // The guided first fight: a weak band close by, coming for you.
         var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
         first.Companies.Add(c.NewCompany("levies", "infantry", 9, 0));
@@ -294,6 +296,7 @@ public sealed partial class Campaign
             float lostFrac = menBefore > 0 ? (menBefore - c.Men) / (float)menBefore : 0;
             c.Cohesion = Math.Clamp(c.Cohesion + (teamWon ? 5 : -5) - lostFrac * 10, 0, 30);
             if (cr.Deployed) OfficerAfterBattle(c, teamWon, lostFrac);
+            if (cr.HeroFell && p == Player) HeroFell(c);
             Chronicle(c, cr, teamWon, menBefore - c.Men, team == 0 ? side1.FirstOrDefault()?.Name ?? "" : side0.FirstOrDefault()?.Name ?? "", siegeBattle, p);
             if (playerIn) reports.Add(new CompanyReport(c.Id, c.Name, c.Troop, team == playerTeam ? 0 : 1, menBefore, c.Men, killedAll, woundedAll, capturedAll,
                 fledLostAll, xpPerMan, Rules.UpgradeReady(c), cr.Deployed));
@@ -325,9 +328,11 @@ public sealed partial class Campaign
                     Player.Captives.Add(p.Id);
                     Log($"{p.Name} is your prisoner.");
                 }
-                else Log($"{p.Name}'s army is scattered.");
+                else { Log($"{p.Name}'s army is scattered."); MaybeSlain(p, playerIn && won); }
+                if (p.Captive && CharacterOf(p) is Character held) Remember(held, Me, "you took me captive", -8);
             }
         }
+        if (playerIn) RelationsAfterBattle(winners, losers, won);
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, lostStrength);
         S.Parties.RemoveAll(p => p.Kind == PartyKind.Bandit && p.Down);
@@ -480,8 +485,9 @@ public sealed partial class Campaign
 
     public string? RecruitLevies(Settlement s, int n)
     {
-        n = Math.Min(n, s.Recruits);
-        if (n <= 0) return "NO RECRUITS";
+        // Only some of them will follow you: how many depends on what their lord thinks of you (4.2).
+        n = Math.Min(n, RecruitsForYou(s));
+        if (n <= 0) return s.Recruits > 0 ? "THEY WILL NOT FOLLOW YOU: THEIR LORD THINKS ILL OF YOU" : "NO RECRUITS";
         string levy = RecruitTroop(s);
         int cost = n * Troops.Get(levy).Cost;
         if (S.Gold < cost) return $"NEEDS {cost} CROWNS";
@@ -639,8 +645,9 @@ public sealed partial class Campaign
         var lord = new Party
         {
             Id = S.NextId++, Kind = PartyKind.Lord, Faction = faction, HomeId = home.Id, Pos = home.Pos + new Vector2(rng.Range(-4, 4), rng.Range(-4, 4)),
-            Name = "Lord " + rng.Pick(n.Lords) + " " + rng.Pick(n.Epithets), Gold = 400, Tier = 1 + rng.Next(2),
+            Gold = 400, Tier = 1 + rng.Next(2),
         };
+        MakeLord(lord);
         lord.Goal = lord.Pos;
         int tier = Math.Clamp(1 + rng.Next(2) + Day / 30, 1, 7);
         foreach (var role in new[] { "infantry", "archers", rng.Next(2) == 0 ? "spears" : "horse" })
@@ -716,12 +723,16 @@ public sealed partial class Campaign
 
     IEnumerable<Party> Visible(Party p, float range) => S.Parties.Where(q => q != p && !q.Down && Vector2.Distance(p.Pos, q.Pos) < range);
 
-    void LordThink(Party p)
+    internal void LordThink(Party p)
     {
         var home = SettlementById(p.HomeId);
         float me = Rules.Strength(p);
         var hostiles = Visible(p, B.Vision).Where(q => Hostile(p, q)).ToList();
-        var threat = hostiles.Where(q => Rules.Strength(q) > me * 1.3f && Vector2.Distance(q.Pos, p.Pos) < 25).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault();
+        // Traits drive the odds a lord takes (3.1): the Reckless stand against worse, the Cautious run sooner and hunt only easy prey.
+        var who = CharacterOf(p);
+        float runAt = who?.Traits.Contains("Reckless") == true ? 1.7f : who?.Traits.Contains("Cautious") == true ? 1.1f : 1.3f;
+        float preyAt = who?.Traits.Contains("Reckless") == true ? 1.25f : who?.Traits.Contains("Cautious") == true ? 0.75f : 1f;
+        var threat = hostiles.Where(q => Rules.Strength(q) > me * runAt && Vector2.Distance(q.Pos, p.Pos) < 25).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault();
         // Go home to refit when the company is thin, or to spend an upgrade it can already pay for. Refit buys what the
         // purse allows and the faction treasury covers the rest, so a lord who has lost men goes home even when it is poor.
         bool needsRefit = p.Men < 45 || p.Companies.Count < 3
@@ -742,7 +753,7 @@ public sealed partial class Campaign
             p.Task = "refit"; p.ChaseId = -1; p.Goal = home.Pos; p.Moving = true;
             if (Vector2.Distance(p.Pos, home.Pos) < 2 * Map.Spread) { Refit(p, home); p.Task = "rest"; p.TaskUntil = (float)S.Hours + 12; }
         }
-        else if (hostiles.Where(q => Rules.Strength(q) < me * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f))
+        else if (hostiles.Where(q => Rules.Strength(q) < me * preyAt * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f))
                      .OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
         {
             p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 6;
@@ -856,17 +867,20 @@ public sealed partial class Campaign
                 {
                     if (st.Wounded > 0)
                     {
-                        int heal = Math.Min(st.Wounded, Math.Max(1, (int)MathF.Round(st.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1))));
+                        float surgeon = p == Player && HasCompanion("Surgeon") ? 1.3f : 1;
+                        int heal = Math.Min(st.Wounded, Math.Max(1, (int)MathF.Round(st.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1) * surgeon)));
                         st.Wounded -= heal;
                         st.Men += heal;
                     }
                     // Daily drill: per fit man, into each pool (Old Hands drill harder).
                     if (p.Kind != PartyKind.Bandit && st.Men > 0)
-                        st.AddXp(st.Men * ((town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0)) * Honours.Of(c).DrillMul);
+                        st.AddXp(st.Men * ((town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0)) * Honours.Of(c).DrillMul
+                            * (p == Player && HasCompanion("Drillmaster") ? 1.25f : 1));
                 }
                 if (town && c.Cohesion < 20) c.Cohesion = MathF.Min(20, c.Cohesion + 1);
             }
         }
+        RefreshHeroes();
         EatDaily();
         // A company bled out away from battle (rearguards, desertion, hunger) does not leave you with nothing to command:
         // a handful of loyal men gather at the nearest friendly town, as they do after a lost battle.
@@ -953,14 +967,17 @@ public sealed partial class Campaign
 
     void Weekly()
     {
+        RelationsWeekly();
+        WanderersWeekly();
         foreach (var p in S.Parties.Where(p => p.Kind != PartyKind.Bandit && !p.Down))
         {
             float upkeep = p.Companies.Sum(Rules.Upkeep);
             if (p == Player)
             {
                 if (Captain.Perks.Contains(Perk.Quartermaster)) upkeep *= 0.9f;
+                if (HasCompanion("Quartermaster")) upkeep *= 0.95f;
                 float pay = Captain.Contract >= 0 ? upkeep * B.ContractPay * Settings.Current.PayFactor : 0;
-                float fiefs = S.Settlements.Where(t => t.Owner == Player.Id).Sum(Income);
+                float fiefs = S.Settlements.Where(t => t.Owner == Player.Id).Sum(Income) * (HasCompanion("Steward") ? 1.15f : 1);
                 S.LastWeekBalance = pay + fiefs - upkeep;
                 S.Gold += S.LastWeekBalance;
                 if (S.Gold < 0)

@@ -57,7 +57,7 @@ public enum LeaderFate { Unhurt, Wounded, Captured, Slain }
 /// One company's battle: Standing at the end, Fled (ran, alive), Fallen (killed or wounded: the campaign decides which).
 /// Stacks breaks the same counts down by troop type, so the campaign takes casualties off the right stack (CAMPAIGN_OVERHAUL.md 2.3).
 public sealed record CompanyResult(int Team, int Id, int Start, int Standing, int Fled, int Fallen, int Kills, int[] KillsByTier, bool Deployed,
-    IReadOnlyList<StackResult>? Stacks = null, int HorseKills = 0, bool Routed = false);
+    IReadOnlyList<StackResult>? Stacks = null, int HorseKills = 0, bool Routed = false, bool HeroFell = false);
 
 /// One troop type's part of a company's battle.
 public sealed record StackResult(string Troop, int Start, int Standing, int Fled, int Fallen);

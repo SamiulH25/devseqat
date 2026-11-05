@@ -221,4 +221,18 @@ All of A-E is in. Where the build differs from the table above:
   company's for common troops; he may train into common troops or his own culture's. Tier V+ culture troops need a town of that
   culture in your realm (or held by you) as a stand-in for the F6 barracks. Mercenaries are hired from any realm's lines. AI lords
   now try every branch (realm line first): before, a refused first branch stopped a stack's promotions, which left the Crimson lords
-  without a single promotion. Not yet: the T2 village recruit at high prosperity (F6) and recruits scaled by the owner's opinion (F3).
+  without a single promotion. Not yet: the T2 village recruit at high prosperity (F6).
+- F3: `Campaign/Characters.cs`. A `Character` (lord, companion, wanderer or the captain) has traits, an `Opinion` per character id
+  and up to 8 `Memories`; what one thinks of another is that plus a base (-10 for a foreign culture, -15 per clashing trait pair) in
+  -100..100. Opinion and memories fade 5% a week, and lords of your liege warm by 1 a week (they start at +15). Events: fighting beside
+  a lord (+6, +4 more on a win), beating him (-12), taking him captive (-8), freeing him (+25, more if Honourable), ransoming him (-10,
+  more if Greedy), killing his father (-30, for the heir). Fickle lords swing 1.5x. Traits drive the AI: Reckless lords run from 1.7x and
+  hunt up to 1.25x their strength, Cautious ones run from 1.1x and hunt below 0.75x. A routed lord dies 5% of the time and an heir (a new
+  character of his house) takes his party, half his opinions and the grudge. Lords already came back after defeat (5 days, or when you
+  free or ransom them). Companions (at most 3) come from a sergeant who lives through 15 battles, or a wanderer in one town in four (150
+  crowns and up); each has a role (Quartermaster: food -15%, upkeep -5%; Surgeon: healing +30%; Scout; Drillmaster: drill +25%;
+  Steward: fief income +15%) and leads one company into battle as a hero unit (the captain's kit, AI-controlled, not counted among the
+  company's men); a hero who falls is out for 5 days, or dies one time in ten. Recruits follow your standing with the lord seated in the
+  province (-50 none, 0 half, +50 all; your own fiefs all). The Characters screen (L) lists lords by realm with traits, state, an
+  opinion bar and the three strongest memories, and your household. Not yet: the Scout's vision (the map has no fog to widen), refusing
+  a lord's quest and razing land (F8 and F6 add those events), raising companions to vassals (F5/F6).

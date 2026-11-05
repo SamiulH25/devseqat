@@ -161,6 +161,16 @@ public sealed partial class Battle
             u.Heading = u.Facing;
             s.Units.Add(u);
         }
+        // A companion fights at the head of his company as a hero (CAMPAIGN_OVERHAUL.md 3.3): the captain's kit, the AI's hands.
+        if (company is { Hero.Length: > 0 })
+        {
+            var h = Spawn(Troops.Get("captain"), team, s, s.Slot(0, n));
+            h.Hero = true;
+            h.Morale = company.Morale + 10;
+            h.Face(front);
+            h.Heading = h.Facing;
+            s.Units.Add(h);
+        }
         Squads.Add(s);
         return s;
     }
@@ -1169,15 +1179,16 @@ public sealed partial class Battle
         var list = new List<CompanyResult>();
         foreach (var s in Squads.Where(s => s.Company != null))
         {
-            var stacks = s.Units.GroupBy(u => u.Type.Id).Select(g => new StackResult(g.Key, g.Count(),
+            var men = s.Units.Where(u => !u.Hero).ToList();
+            var stacks = men.GroupBy(u => u.Type.Id).Select(g => new StackResult(g.Key, g.Count(),
                 Standing: g.Count(u => u.Active && !u.Routing), Fled: g.Count(u => u.Fled || (u.Active && u.Routing)), Fallen: g.Count(u => u.Dead))).ToList();
-            int fled = s.Units.Count(u => u.Fled || (u.Active && u.Routing));
+            int fled = men.Count(u => u.Fled || (u.Active && u.Routing));
             list.Add(new CompanyResult(s.Team, s.Company!.Id, s.StartCount,
-                Standing: s.Units.Count(u => u.Active && !u.Routing),
+                Standing: men.Count(u => u.Active && !u.Routing),
                 Fled: fled,
-                Fallen: s.Units.Count(u => u.Dead),
+                Fallen: men.Count(u => u.Dead),
                 Kills: s.KillsByTier.Sum(), KillsByTier: (int[])s.KillsByTier.Clone(), Deployed: true, Stacks: stacks, HorseKills: s.HorseKills,
-                Routed: fled * 2 > s.StartCount || s.RoutSounded));
+                Routed: fled * 2 > s.StartCount || s.RoutSounded, HeroFell: s.Units.Any(u => u.Hero && u.Dead)));
         }
         for (int team = 0; team < 2; team++)
             foreach (var (c, _) in reserves[team])

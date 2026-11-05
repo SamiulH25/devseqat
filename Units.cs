@@ -73,6 +73,8 @@ public sealed class Unit
     public int Team;
     public Squad? Squad;
     public bool IsPlayer, IsLeader;
+    /// A companion leading his company (F3): fights in its ranks but is not one of its men (not counted in its results).
+    public bool Hero;
     public Vector2 Pos, Vel, Wish, Slot;
     public float Facing, ViewFacing; // radians on the ground plane; ViewFacing is the eased value the renderer draws
     public float Hp, Morale = 70, Stamina = 100, EnemyDist = float.MaxValue;

@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -157,10 +157,12 @@ sealed class MapScreen
             if (C.SeasonIndex != season) { var keep = (focus, follow); Open(C); (focus, follow) = keep; C.Log($"{C.Season} comes."); }
             Trails();
         }
-        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege)
+        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters)
             panel = panel == PanelKind.Upgrade ? PanelKind.Party : PanelKind.None;
         if (renaming != null) Rename();
         else Ui.Typed.Clear();
+        if (panel == PanelKind.None && Pressed(Keys.L)) { panel = PanelKind.Characters; note = ""; }
+        else if (panel == PanelKind.Characters && Pressed(Keys.L)) panel = PanelKind.None;
         if (panel == PanelKind.None && C.Besieging is Settlement besieged && C.Player.SiegeTarget >= 0 && !C.Player.Moving && C.Encounter == null && Pressed(Keys.B)) { at = besieged; panel = PanelKind.Siege; }
         if (follow) focus = Vector2.Lerp(focus, C.Player.Pos, MathF.Min(1, dt * 4));
     }
@@ -434,6 +436,7 @@ sealed class MapScreen
             case PanelKind.Menu: MenuPanel(); break;
             case PanelKind.GameOver: GameOverPanel(); break;
             case PanelKind.Siege: SiegePanel(); break;
+            case PanelKind.Characters: CharactersPanel(); break;
         }
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
@@ -633,7 +636,7 @@ sealed class MapScreen
 
     void Hints()
     {
-        ui.Text("LMB MOVE / ENTER / CHASE   P PARTY   SPACE PAUSE   1-3 SPEED", ui.U(12), ui.H - ui.U(160), Color.White * 0.6f, 1);
+        ui.Text("LMB MOVE / ENTER / CHASE   P PARTY   L LORDS   SPACE PAUSE   1-3 SPEED", ui.U(12), ui.H - ui.U(160), Color.White * 0.6f, 1);
         ui.Text("WASD PAN   Q/E TURN   WHEEL ZOOM   F FOLLOW   F5 SAVE  F9 LOAD   ESC MENU", ui.U(12), ui.H - ui.U(146), Color.White * 0.6f, 1);
     }
 
@@ -656,6 +659,12 @@ sealed class MapScreen
                 linesOut.Add((ratio > 1.25f ? "STRONGER THAN YOU" : ratio < 0.8f ? "WEAKER THAN YOU" : "A FAIR MATCH", ratio > 1.25f ? Style.Bad : ratio < 0.8f ? Style.Ok : Style.Warn));
                 linesOut.Add((C.Hostile(p, C.Player) ? "HOSTILE" : "NOT HOSTILE", C.Hostile(p, C.Player) ? Style.Foe : Style.Dim));
                 if (p.Kind == PartyKind.Lord) linesOut.Add(($"TASK: {p.Task.ToUpperInvariant()}", Style.Dim));
+                if (C.CharacterOf(p) is Character pc)
+                {
+                    float op = C.OpinionOfYou(pc);
+                    linesOut.Add(($"{string.Join(", ", pc.Traits).ToUpperInvariant()}", Style.Dim));
+                    linesOut.Add(($"THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})", OpinionColor(op)));
+                }
             }
         }
         else
@@ -694,6 +703,11 @@ sealed class MapScreen
         int x = r.X + ui.U(24), y = r.Y + ui.U(52);
         ui.Text(e.Name.ToUpperInvariant(), x, y, PartyColor(e));
         ui.Text(e.Kind == PartyKind.Bandit ? "BRIGANDS" : Campaign.FactionNames[e.Faction].ToUpperInvariant(), x, y + ui.U(20), Style.Dim, 1);
+        if (C.CharacterOf(e) is Character ech)
+        {
+            float op = C.OpinionOfYou(ech);
+            ui.Text($"{string.Join(", ", ech.Traits).ToUpperInvariant()}   THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})", x + ui.U(170), y + ui.U(20), OpinionColor(op), 1);
+        }
         float me = Rules.Strength(C.Player), them = Rules.Strength(e);
         ui.TextR($"YOU {C.Player.Men}   THEM {e.Men}", r.Right - ui.U(24), y + ui.U(2), Style.Text);
         var bar = new Rectangle(x, y + ui.U(36), r.Width - ui.U(48), ui.U(10));
@@ -747,7 +761,10 @@ sealed class MapScreen
             case "RECRUIT":
             {
                 var levy = Troops.Get(Campaign.RecruitTroop(s));
-                ui.Text($"{s.Recruits} MEN WILL TAKE YOUR COIN HERE ({levy.Cost} CROWNS EACH)", body.X, body.Y, Style.Text);
+                int willing = C.RecruitsForYou(s);
+                ui.Text($"{willing} OF {s.Recruits} MEN WILL TAKE YOUR COIN HERE ({levy.Cost} CROWNS EACH)", body.X, body.Y, Style.Text);
+                if (C.HolderOf(s) is Character holder)
+                    ui.TextR($"{holder.Name.ToUpperInvariant()}: {OpinionWord(C.OpinionOfYou(holder))}", body.Right, body.Y + ui.U(4), OpinionColor(C.OpinionOfYou(holder)), 1);
                 if (s.ThreatUntil > C.S.Hours) ui.Text("THE VILLAGE WAS THREATENED: NO RECRUITS FOR NOW", body.X, body.Y + ui.U(20), Style.Foe, 1);
                 ui.Portrait(levy, new Rectangle(body.X, body.Y + ui.U(36), ui.U(60), ui.U(56)));
                 ui.Text($"{levy.Name.ToUpperInvariant()} (TIER I) JOIN A COMPANY OF THEIR KIND WITH ROOM, OR FORM A NEW ONE.", body.X + ui.U(70), body.Y + ui.U(44), Style.Dim, 1);
@@ -755,7 +772,7 @@ sealed class MapScreen
                 int y = body.Y + ui.U(104);
                 foreach (var (label, n) in new[] { ("RECRUIT 1", 1), ("RECRUIT 5", 5), ("RECRUIT ALL", 99) })
                 {
-                    if (ui.Button(new Rectangle(body.X, y, ui.U(170), ui.U(28)), label, s.Recruits > 0)) note = C.RecruitLevies(s, n) ?? $"RECRUITED. {s.Recruits} LEFT";
+                    if (ui.Button(new Rectangle(body.X, y, ui.U(170), ui.U(28)), label, willing > 0)) note = C.RecruitLevies(s, n) ?? $"RECRUITED. {s.Recruits} LEFT";
                     y += ui.U(34);
                 }
                 break;
@@ -764,6 +781,17 @@ sealed class MapScreen
             {
                 if (s.Mercenaries.Count == 0) ui.Text("NO COMPANIES FOR HIRE THIS WEEK.", body.X, body.Y, Style.Dim);
                 int y = body.Y;
+                // A wanderer in the tavern, looking for a captain (3.3).
+                if (C.WandererAt(s) is Character w)
+                {
+                    ui.Portrait(UnitType.Captain, new Rectangle(body.X, y, ui.U(56), ui.U(54)));
+                    ui.Text($"{w.Name.ToUpperInvariant()}, A WANDERER", body.X + ui.U(66), y + ui.U(4), Style.Accent);
+                    ui.Text($"{w.Role.ToUpperInvariant()} ({RoleTextOf(w.Role)}). {string.Join(", ", w.Traits).ToUpperInvariant()}. LEADS A COMPANY AS A HERO.", body.X + ui.U(66), y + ui.U(24), Style.Dim, 1);
+                    int wp = C.WandererPrice(w);
+                    if (ui.Button(new Rectangle(body.Right - ui.U(190), y + ui.U(10), ui.U(190), ui.U(30)), "TAKE INTO SERVICE", C.S.Gold >= wp, $"{wp} CROWNS"))
+                        note = C.HireWanderer(s) ?? "HE JOINS YOUR HOUSEHOLD";
+                    y += ui.U(66);
+                }
                 foreach (var m in s.Mercenaries.ToList())
                 {
                     ui.Portrait(m.Type, new Rectangle(body.X, y, ui.U(56), ui.U(54)));
@@ -930,7 +958,7 @@ sealed class MapScreen
             if (ui.Hover(nameBox) && renaming == null) note = "CLICK TO RENAME (ENTER KEEPS IT)";
             var info = new Rectangle(row.X + ui.U(52), row.Y + ui.U(15), ui.U(150), ui.U(rh - 16));
             string role = Rules.RoleOf(c).ToUpperInvariant();
-            ui.Text($"{role}{(c.Officer != "" ? "  " + c.Officer.ToUpperInvariant() : "")}", row.X + ui.U(54), row.Y + ui.U(17), Style.Accent, 1);
+            ui.Text($"{role}{(c.Hero != "" ? "  " + c.Hero.ToUpperInvariant() + " (HERO)" : c.Officer != "" ? "  " + c.Officer.ToUpperInvariant() : "")}", row.X + ui.U(54), row.Y + ui.U(17), Style.Accent, 1);
             ui.Text($"{c.Men}{(c.Wounded > 0 ? $"+{c.Wounded}W" : "")} MEN  {Rules.Places(c):0}/{Rules.Cap(Rules.RoleOf(c)):0} PLACES", row.X + ui.U(54), row.Y + ui.U(29), Style.Dim, 1);
             ui.Rect(new Rectangle(row.X + ui.U(186), row.Y + ui.U(5), ui.U(10), ui.U(8)), Style.Friendly);
             for (int h = 0; h < c.Honours.Count; h++) ui.Rect(new Rectangle(row.X + ui.U(186) - (h + 1) * ui.U(8), row.Y + ui.U(17), ui.U(5), ui.U(5)), Style.Accent);
@@ -1063,6 +1091,59 @@ sealed class MapScreen
         if (ui.Button(Bt(3), besieging ? "LIFT SIEGE" : "LEAVE")) { if (besieging) C.LiftSiege(); panel = PanelKind.None; }
     }
 
+    static string OpinionWord(float op) => op switch { >= 50 => "THE WORLD", >= 20 => "WELL", > -20 => "LITTLE", > -50 => "ILL", _ => "THE WORST" };
+    static Color OpinionColor(float op) => op >= 20 ? Style.Ok : op > -20 ? Style.Dim : Style.Bad;
+    static string RoleTextOf(string role) => Campaign.RoleText.TryGetValue(role, out var t) ? t : "";
+
+    int charTab;
+
+    /// The Characters screen (3.2): lords by realm with their traits, what they think of you and why; and your household.
+    void CharactersPanel()
+    {
+        var r = Modal(1000, 600, "LORDS AND COMPANIONS");
+        int realms = C.S.Factions.Count;
+        int tw = ui.U(200), tx = r.X + (r.Width - (realms + 1) * (tw + ui.U(6))) / 2;
+        for (int i = 0; i <= realms; i++)
+        {
+            string label = i < realms ? Campaign.FactionNames[i].ToUpperInvariant() : "YOUR HOUSEHOLD";
+            if (ui.Button(new Rectangle(tx + i * (tw + ui.U(6)), r.Y + ui.U(46), tw, ui.U(24)), label, true, "", charTab == i)) { charTab = i; note = ""; }
+        }
+        int x = r.X + ui.U(24), y = r.Y + ui.U(82), colW = (r.Width - ui.U(60)) / 2, rowH = ui.U(38);
+        var list = charTab < realms
+            ? C.S.Characters.Where(ch => ch.Kind == "lord" && !ch.Dead && ch.Faction == charTab).OrderByDescending(C.OpinionOfYou).ToList()
+            : C.Companions.ToList();
+        if (list.Count == 0) ui.Text(charTab < realms ? "NO LORDS." : $"NOBODY YET. OFFICERS WHO LIVE THROUGH {Campaign.CompanionBattles} BATTLES JOIN YOU, AND WANDERERS WAIT IN SOME TOWNS' TAVERNS.", x, y, Style.Dim, 1);
+        int i2 = 0;
+        foreach (var ch in list)
+        {
+            int col = i2 % 2, row = i2 / 2;
+            var box = new Rectangle(x + col * (colW + ui.U(12)), y + row * (rowH + ui.U(4)), colW, rowH);
+            if (box.Bottom > r.Bottom - ui.U(60)) break;
+            ui.Rect(box, Color.White * 0.04f);
+            float op = C.OpinionOfYou(ch);
+            var party = ch.PartyId >= 0 ? C.PartyById(ch.PartyId) : null;
+            string state = ch.Kind == "companion" ? $"{ch.Role.ToUpperInvariant()} ({RoleTextOf(ch.Role)})"
+                : party == null ? "" : party.Captive ? "YOUR PRISONER" : party.Down ? "SCATTERED" : $"{party.Men} MEN, {party.Task.ToUpperInvariant()}";
+            ui.Text(ch.Name.ToUpperInvariant(), box.X + ui.U(6), box.Y + ui.U(4), Style.Text, 1);
+            ui.TextR(state, box.Right - ui.U(6), box.Y + ui.U(4), ch.Kind == "companion" && C.S.Hours < ch.WoundedUntil ? Style.Warn : Style.Dim, 1);
+            ui.Text(string.Join(", ", ch.Traits).ToUpperInvariant() + $"  AGE {ch.Age}", box.X + ui.U(6), box.Y + ui.U(16), Style.Dim, 1);
+            // The opinion bar: centre is indifference.
+            var bar = new Rectangle(box.X + ui.U(6), box.Y + ui.U(29), box.Width - ui.U(12), ui.U(4));
+            ui.Rect(bar, Color.White * 0.08f);
+            int mid = bar.X + bar.Width / 2, len = (int)(bar.Width / 2f * MathF.Abs(op) / 100f);
+            ui.Rect(new Rectangle(op >= 0 ? mid : mid - len, bar.Y, len, bar.Height), OpinionColor(op));
+            ui.Rect(new Rectangle(mid, bar.Y - 1, 1, bar.Height + 2), Style.Text);
+            if (ui.Hover(box))
+            {
+                var why = C.MemoriesOf(ch, C.Me).Take(3).Select(m => $"{m.What.ToUpperInvariant()} ({m.Weight:+0;-0}, DAY {m.Day})").ToList();
+                note = $"THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})" + (why.Count > 0 ? ": " + string.Join("; ", why) : "");
+            }
+            i2++;
+        }
+        Note(r);
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (L)")) panel = PanelKind.None;
+    }
+
     /// A company's story for the party screen: origin, honours, and its last fights.
     static string CompanyNote(CompanyRecord c)
     {
@@ -1071,6 +1152,7 @@ sealed class MapScreen
         parts.Add($"{c.Battles} BATTLES, {c.Kills} KILLS");
         if (c.Honours.Count > 0) parts.Add("HONOURS: " + string.Join(", ", c.Honours.Select(h => Honours.Get(h) is HonourDef d ? $"{d.Name.ToUpperInvariant()} ({d.Text.ToUpperInvariant()})" : h)));
         if (c.Traits.Count > 0) parts.Add($"{c.Officer.ToUpperInvariant()}: " + string.Join(", ", c.Traits.Select(t => t.ToUpperInvariant())));
+        if (c.Hero != "") parts.Add($"LED BY {c.Hero.ToUpperInvariant()}");
         if (c.Ledger.Count > 0) parts.Add("LAST: " + string.Join("; ", c.Ledger.TakeLast(3).Reverse().Select(l => $"DAY {l.Day} {(l.Won ? "WON" : "LOST")} VS {l.Foe.ToUpperInvariant()}, {l.Kills} KILLS, {l.Lost} LOST")));
         return string.Join(". ", parts);
     }

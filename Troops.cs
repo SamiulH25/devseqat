@@ -118,7 +118,7 @@ public static class Troops
 /// Troop is the company's face (its largest stack) and Count its total; Mix lists every stack (troop, men) when the company
 /// holds more than one troop type (CAMPAIGN_OVERHAUL.md 2.3). RoutBonus and VsMounted come from its honours.
 public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,
-    StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1)
+    StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "")
 {
     public bool Has(string trait) => Traits?.Contains(trait) == true;
     /// The men to spawn, largest stack first (so a squad's first man is its majority troop).
