@@ -109,7 +109,7 @@ The battle's `Company(Troop, Count, Role)` becomes the battle-time view of a per
 | `Role` | infantry, archers, spears, horse (deployment; defaults from the class) |
 
 - **Company size caps** come from the same table that `Armies.Count` uses today: line base size times a tier factor
-  (tier I x1.25, II x1.0, III x0.85, IV x0.7). Elite companies are smaller.
+  (tier I x1.25, II x1.0, III x0.85, IV x0.7, V x0.65, VI x0.6, VII x0.55). Elite companies are smaller.
 - **Merge and split:** two companies of the same troop may merge (their XP is weighted by men) up to the cap. A company may split in two.
 - **Disband:** dismissed men go home, and a company at 0 fit and 0 wounded men is gone (its history goes to the party ledger).
 
@@ -174,7 +174,7 @@ Before the fight starts, the battle opens paused in command view with a **deploy
 BattleResult
   Winner              team (0 or 1), or -1 if you withdrew
   Duration            seconds
-  Companies[]         per company: Team, Id, Start, Standing, Fled, Fallen, Kills, KillsByTier[1..4], Routed (bool)
+  Companies[]         per company: Team, Id, Start, Standing, Fled, Fallen, Kills, KillsByTier[1..7], Routed (bool)
   Captain             Unhurt | Wounded | Captured   (the player body: never killed, see 7.3)
   EnemyLeader         Unhurt | Wounded | Slain | Captured
   HorsesTaken         loose enemy horses on the field at the end (for the winner)
@@ -200,8 +200,10 @@ Per battle, for each company that took the field:
 - Kills: `Σ(victim tier) × 12 / men` added to the average *(tune)*. A 24-man Shieldmen company killing 10 tier-II men gains +10 per man.
 - New men (replacements) arrive with 0 XP, so they **dilute** the average. This is the cost of refilling a veteran company.
 
-With these numbers, Levies (60 XP) are ready to upgrade after 1-2 battles, tier II companies (160-240 XP) after about 4, and Lancers
-(400 XP) after about 8. That sets a campaign's pace: a tier IV army takes about 25-30 battles to build.
+With these numbers, Levies (60 XP) are ready to upgrade after 1-2 battles, tier II companies (150-200 XP) after about 4, tier III
+(250-320 XP) after about 6, tier IV (390-460 XP) after about 8, and tier V-VI (550-800 XP) after 10-14 each. Tier VII is the top of
+every line. That sets a campaign's pace: a tier IV army takes about 25-30 battles to build, a tier VI one most of a long campaign.
+(The overhaul, `CAMPAIGN_OVERHAUL.md` 2.2, replaces the average with a pool per troop stack.)
 
 ### 6.2 Upgrading
 - When `Xp ≥ troop.upgradeXp`, the company card shows **UPGRADE READY**. Upgrading needs:

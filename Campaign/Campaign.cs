@@ -833,6 +833,15 @@ public sealed partial class Campaign
             }
         }
         EatDaily();
+        // A company bled out away from battle (rearguards, desertion, hunger) does not leave you with nothing to command:
+        // a handful of loyal men gather at the nearest friendly town, as they do after a lost battle.
+        if (Player.Companies.Count == 0 && !S.GameOver)
+        {
+            var refuge = S.Settlements.Where(t => t.Kind == SettlementKind.Town && !Refuses(t)).OrderBy(t => Vector2.Distance(t.Pos, Player.Pos)).FirstOrDefault();
+            if (refuge != null) { Player.Pos = refuge.Pos + new Vector2(5, 0); Player.Moving = false; }
+            Player.Companies.Add(NewCompany(RecruitTroop(Math.Max(0, Captain.Contract)), "infantry", 10, 0));
+            Log($"Your company is gone. Ten loyal men gather to your banner{(refuge != null ? " at " + refuge.Name : "")}.");
+        }
         FactionAI();
         SiegesDaily();
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous.

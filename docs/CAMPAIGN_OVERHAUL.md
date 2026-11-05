@@ -1,14 +1,14 @@
 # Ironfield campaign overhaul (roadmap phase F)
 
-Status: **planned, not started.** This spec replaces the campaign's play and progression layer: how companies are built and
+Status: **in progress (F0 built).** This spec replaces the campaign's play and progression layer: how companies are built and
 grown, how the captain rises, how lords, fiefs and realms behave, and what ends a campaign. The world map itself (generation,
 terrain, rendering) is out of scope. Where this text and [`CAMPAIGN.md`](CAMPAIGN.md) disagree, this text wins once the
 matching F step is built; until then `CAMPAIGN.md` describes the game as it is. Numbers marked *(tune)* are starting values.
 
-**Next step: F0** (`ROADMAP.md` phase F). The commit that added this spec also holds earlier uncommitted work (about 4,000
-lines across the battle, campaign and docs). That work was committed **without a build or `--selftest` run**, so F0 starts with
-`dotnet build` and `dotnet run -- --selftest`, fixing anything that fails, before the docs and telemetry tasks. The section 12
-open questions are not yet confirmed by the user; build to the bracketed proposals unless told otherwise.
+**Next step: F1** (`ROADMAP.md` phase F). F0 verified the pending work (it built and passed `--selftest` unchanged), brought the
+docs up to tiers I-VII, and added pacing telemetry: `--balance` runs a scripted stand-in captain (`Campaign/Pilot.cs`) through each
+campaign and writes `balance/pacing.csv` (the day each career stage is reached) and `balance/pacing_weekly.csv`. The section 12 open
+questions are not yet confirmed by the user; build to the bracketed proposals unless told otherwise.
 
 Decisions taken with the user (2026-11-05):
 - **All eight pillars** are in: career arc, lords and relations, cultures and regional recruitment, fiefs, strategic war and

@@ -764,6 +764,21 @@ public static class SelfTest
         Check(back.Matches(again), "a replay reproduces its battle exactly");
     }
 
+    /// Debug: a pilot's campaign with its log (`--selftest PilotTrace`).
+    static void PilotTrace()
+    {
+        var c = Campaign.New(2001);
+        var pilot = new Pilot(c);
+        int last = 0;
+        for (int d = 0; d < 110; d++)
+        {
+            pilot.Run(24);
+            foreach (var e in c.S.Log.Skip(Math.Max(0, c.S.Log.Count - 60)).Where(e => e.At >= (d) * 24 && !e.Text.Contains(" defeats ") && !e.Text.Contains("musters") && !e.Text.Contains("threatens") && !e.Text.Contains("besiege"))) Console.WriteLine($"  d{c.Day} {e.Text}");
+            if (c.Player.Men != last) Console.WriteLine($"day {c.Day}: men {c.Player.Men} food {c.Player.Food:0} gold {c.S.Gold:0} renown {c.Captain.Renown:0} at {c.Player.Pos.X:0},{c.Player.Pos.Y:0} moving {c.Player.Moving} goal {c.Player.GoalSettlement} chase {c.Player.ChaseId}");
+            last = c.Player.Men;
+        }
+    }
+
     static ArmySpec Ids(ArmySpec a, int idBase) => a with { Companies = a.Companies.Select((c, i) => c with { Id = idBase + i }).ToList() };
 
     static void Check(bool ok, string what)

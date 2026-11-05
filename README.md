@@ -13,7 +13,7 @@ dotnet build
 dotnet run                 # play
 dotnet run -- --selftest   # headless: mechanics, battles, sieges, campaigns, saves and replays
 dotnet run -- --selftest SiegeBattle   # one test by name
-dotnet run -- --balance 4  # telemetry: N headless campaigns and battles -> balance/*.csv
+dotnet run -- --balance 4  # telemetry: N headless campaigns (and a stand-in captain's career pacing) and battles -> balance/*.csv
 dotnet run -- --replay     # play back your last battle (replays/last-battle.json) and check it ends the same way
 dotnet run -- --gpu-report # draw a battle at each quality; writes gpu-report.txt (driver, shaders, fps)
 ```
@@ -222,7 +222,7 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 | `BattleGrid.cs` | The spatial grid: near-neighbour queries for separation, targeting, morale and arrows. |
 | `Replay.cs` | Battle recording and exact playback (`--replay`). `GpuReport.cs`: `--gpu-report`. `Sky.cs`: light by hour and weather. |
 | `World.cs` | 3D world: terrain mesh, procedural low-poly foliage and grass (tagged with wind sway and leafiness), sky dome, minimap image; shaded and fixed-function draw paths. |
-| `Campaign/` | The headless campaign: `CampaignState` (save data and migration, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, XP, upgrades, auto-resolve, battle bridge), `Campaign` (time, movement, encounters, AI, economy, your actions), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs). |
+| `Campaign/` | The headless campaign: `CampaignState` (save data and migration, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, XP, upgrades, auto-resolve, battle bridge), `Campaign` (time, movement, encounters, AI, economy, your actions), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs), `CampaignProgression` (the career stage and the next step), `Pilot` (a scripted stand-in captain for headless pacing runs). |
 | `MapScreen.cs` | The campaign map: 3D world, banner-bearer parties, map HUD and every campaign panel. `Ui.cs`: the immediate-mode panel kit. |
 | `BattleTypes.cs` | `BattleOptions` (perks, gear, wounds, palettes, ground, size cap), `BattleResult` / `CompanyResult` for the campaign. |
 | `Shading.cs` | The shader pipeline: effects, sun shadow map, scene target, post pass, light and grade values, quality levels. |

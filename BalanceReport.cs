@@ -7,6 +7,11 @@ namespace Ironfield;
 /// for tuning Data/campaign.json and troops.json. Nothing here needs a display.
 public static class BalanceReport
 {
+    /// How long each pacing run lasts (weeks of campaign time).
+    public const int PacingWeeks = 30;
+
+    static string Csv(string s) => s.Contains(',') ? $"\"{s}\"" : s;
+
     public static void Run(int campaigns)
     {
         Directory.CreateDirectory("balance");
@@ -34,6 +39,30 @@ public static class BalanceReport
             Console.WriteLine($"campaign {seed}: done");
         }
         File.WriteAllText("balance/economy.csv", eco.ToString());
+
+        // 1b. Pacing (F0): a scripted stand-in captain plays each campaign; record the day it reaches each career stage, and a
+        // weekly line of its progress. Every later overhaul step is tuned against these numbers (CAMPAIGN_OVERHAUL.md 9).
+        var stages = new StringBuilder("seed,stage,day,battles,won,renown,men\n");
+        var weekly = new StringBuilder("seed,week,day,stage,renown,men,wounded,companies,tier_avg,gold,battles,won\n");
+        for (int seed = 1; seed <= campaigns; seed++)
+        {
+            var c = Campaign.New(2000 + seed);
+            var pilot = new Pilot(c);
+            var seen = new HashSet<string>();
+            for (int week = 1; week <= PacingWeeks && !c.S.GameOver; week++)
+            {
+                pilot.Run(168);
+                foreach (var (stage, day) in pilot.StageDay.Where(kv => seen.Add(kv.Key)))
+                    stages.AppendLine(string.Join(",", seed, Csv(stage), day, pilot.Battles, pilot.Won, c.Captain.Renown.ToString("0", inv), c.Player.Men));
+                var cos = c.Player.Companies;
+                weekly.AppendLine(string.Join(",", seed, week, c.Day, Csv(c.Stage), c.Captain.Renown.ToString("0", inv), c.Player.Men, c.Player.Wounded, cos.Count,
+                    (cos.Count > 0 ? cos.Average(co => co.Type.Tier) : 0).ToString("0.00", inv), c.S.Gold.ToString("0", inv), pilot.Battles, pilot.Won));
+            }
+            Console.WriteLine($"pacing {seed}: day {c.Day}, {c.Stage}, renown {c.Captain.Renown:0}, {pilot.Battles} battles ({pilot.Won} won), "
+                + string.Join(", ", pilot.StageDay.Select(kv => $"{kv.Key} day {kv.Value}")));
+        }
+        File.WriteAllText("balance/pacing.csv", stages.ToString());
+        File.WriteAllText("balance/pacing_weekly.csv", weekly.ToString());
 
         // 2. Battle win rates by army level (AI against AI), and how long they take. Each side is built by the same
         // rule (Armies.Random), so a fair system should sit near 50% on the diagonal; drift shows a balance problem.
@@ -67,6 +96,6 @@ public static class BalanceReport
         foreach (var t in Troops.All)
             troops.AppendLine(string.Join(",", t.Id, t.Tier, t.Class, t.MaxHp, t.Armor, t.Damage, t.Cost, t.UpgradeXp, Rules.Strength(t, 1).ToString("0.00", inv)));
         File.WriteAllText("balance/troops.csv", troops.ToString());
-        Console.WriteLine("wrote balance/economy.csv, balance/battles.csv, balance/troops.csv");
+        Console.WriteLine("wrote balance/economy.csv, balance/pacing.csv, balance/pacing_weekly.csv, balance/battles.csv, balance/troops.csv");
     }
 }

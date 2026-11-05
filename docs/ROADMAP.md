@@ -85,7 +85,7 @@ Small "As built" gaps to fold in alongside: renaming companies (text input, S), 
 | E4 | Map foliage cost: instancing or merged chunks with distance culling | S | The map draws at 60 fps on integrated graphics |
 | E5 | Determinism guard: battle seed and replay recorder (inputs plus seed reproduce a battle) | M | Any reported battle bug can be replayed exactly |
 
-## Phase F: campaign overhaul (planned)
+## Phase F: campaign overhaul (in progress)
 
 The campaign's play and progression layer is rebuilt; the world map itself is untouched. Full spec:
 [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md). Saves break at F1 (version 4, no migration). Build in this order; each step
@@ -187,3 +187,10 @@ All of A-E is in. Where the build differs from the table above:
 - E4: foliage is built in 48 m tiles with bounding boxes, and each pass (camera and sun) draws only the tiles in its frustum.
 - E5: every battle you fight is recorded (seed, armies, options, starting positions, each tick's input and your orders) to
   `replays/last-battle.json`; `dotnet run -- --replay [file]` plays it back headless and checks that it ends the same way.
+
+**Phase F** (in progress; one entry per step as it lands)
+- F0: the pending work built and passed the self-test unchanged. `Campaign/Pilot.cs` is a scripted stand-in captain (it signs with the
+  Crown, hunts weaker parties and brigand contracts, recruits, promotes, buys food, and runs for a safe seat when outmatched); `--balance`
+  runs it for 30 weeks per seed and writes `balance/pacing.csv` and `balance/pacing_weekly.csv`. First numbers (3 seeds): Sworn Company
+  on days 18-32, Battle-Hardened on day 84 in one seed of three, 15-42 battles in 211 days. A company wiped out away from battle now
+  regroups ten men at the nearest friendly town (before, it was left with no companies). `--selftest PilotTrace` prints a pilot's run.

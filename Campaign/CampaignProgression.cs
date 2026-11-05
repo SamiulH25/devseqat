@@ -46,4 +46,16 @@ public sealed partial class Campaign
         var (what, at) = Rules.NextRenownUnlock(cap);
         return ($"FIGHT ON: {at - cap.Renown:0} MORE RENOWN BUYS {what}", "PARTY");
     }
+
+    /// Upgrades the party could make now if it were in a town with the gold: one choice per ready company, the cheapest branch.
+    public IEnumerable<(CompanyRecord Company, string To)> PromotionChoices() =>
+        Player.Companies.Where(Rules.UpgradeReady)
+            .Select(co => (co, co.Type.UpgradesTo.OrderBy(t => Rules.UpgradeCost(co, t, Player.Horses)).First()));
+
+    /// Could this upgrade be paid for, setting aside where you are (for deciding whether to ride to a town)?
+    public bool CanUpgradeIgnoringPlace(CompanyRecord co, string to) =>
+        Rules.CanUpgrade(co, to, S.Gold, Player.Horses, true, true, out _, out _);
+
+    /// A campaign-seeded random number in [0, max), for headless helpers that must stay deterministic.
+    public float Rand(float max) => rng.Float() * max;
 }
