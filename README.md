@@ -14,7 +14,8 @@ dotnet run -- --selftest   # headless: formation math + 3 full battles must reso
 ```
 
 You need .NET SDK 10 (`net10.0`). On Ubuntu 24.04 `apt-get install dotnet-sdk-10.0` works (no Microsoft feed needed).
-The game needs no content files: sprites, terrain and the font are all generated in code (`Art.cs`).
+The game needs no art files: sprites, terrain and the font are all generated in code. Troops come from `Data/troops.json`.
+**Design language:** see [`docs/DESIGN.md`](docs/DESIGN.md) (art direction, unit painting rules, heraldry, tiers, UI tokens).
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
 To render a few staged camera shots as PNGs and quit (works headless with `xvfb-run -a dotnet run`), set `IRONFIELD_SHOTS=/some/dir`.
 `dotnet run -- --write-controls` writes `controls.json` with the default bindings.
@@ -62,7 +63,8 @@ The core tension: **you are strongest as a leader when you are in the fight, but
 
 ## Design: cavalry
 
-Each side has 10 **Lancers** (`UnitType.Lancer`, on a `Mount.Warhorse`); the player rides a `Mount.Courser`.
+Cavalry comes in three tiers: **Outriders** (coursers), **Lancers** (warhorses) and **Knights** (caparisoned destriers);
+the player rides a courser.
 - **Momentum:** a horse has a heading and a speed. It accelerates, brakes and turns at limited rates (turning gets wider as it speeds up),
   so a charge needs room. AI riders steer toward a wished velocity (`Battle.Steer`); the player steers directly.
 - **Speed bonus (Mount & Blade):** every melee blow gets `+6%` per m/s of closing speed above 2 m/s (shown under the crosshair as `+N% SPEED`).
@@ -77,6 +79,21 @@ Each side has 10 **Lancers** (`UnitType.Lancer`, on a `Mount.Warhorse`); the pla
 - **Cycle charge (AI):** Charge → ride through the target → Withdraw (ride out ~3 s) → turn → Charge again. A rider that bogs down
   in a crowd (slow, near the target for 1.2 s) fights in place for 4 s and then pulls out. Cavalry on Hold counter-charge enemies within 15 m.
 - **Enemy horse:** waits wide on the far flank, then hunts the softest squad (archers first) when the lines meet or after 35 s.
+
+## Design: troops, tiers and armies (campaign-ready)
+
+- **Troops are data** (`Data/troops.json`, loaded by `Troops.cs`): stats, class, tier (I-IV), the troops each one
+  **upgrades to**, campaign cost and upgrade XP, its horse, and its **look** (head, body, legs, feet, hands, shield, weapon,
+  tabard, plume, cape). The self-test checks the tree: links exist, every upgrade raises the tier and is a better soldier,
+  and every troop can be reached from Levies.
+- **The tree:** Levies branch into Shieldmen -> Men-at-Arms -> Ironguard, Spearrunners -> Pikemen (reach 3 m, x2.3 vs horse),
+  Bowmen -> Longbowmen (range 42 m), and Outriders -> Lancers -> Knights.
+- **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
+  will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a
+  role stand side by side), and the enemy general commands any mix.
+- Until the campaign exists, each **new battle** rolls an army level (1-4) per side, and each line lands one tier up or down at random,
+  as if companies had been upgraded unevenly. Elite companies are smaller. Override with `IRONFIELD_LEVELS=4,2`.
+- Better troops look better (see the tier table in `docs/DESIGN.md`), and unit cards show the tier numeral.
 
 ## Design: terrain and the 3D world
 
@@ -115,21 +132,26 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
 |---|---|
 | `Battle.cs` | Headless simulation: units, AI, melee, arrows, morale, enemy general, win check. No graphics. |
 | `Squad.cs` | Squad orders (Hold/Follow/Charge, optional attack `Target`), formation slots (anchor = centre of the front rank), flank `Pressure`. |
-| `Units.cs` | `UnitType` stat table and `Mount` horses (in code for now), the `Unit` state (incl. heading/speed when mounted), `LooseHorse`. |
+| `Units.cs` | `UnitType` (a troop from the data), `Look`, `Mount`, the `Unit` state (incl. heading/speed when mounted), loose and dead horses. |
+| `Troops.cs` | Loads and validates `Data/troops.json` (troops, upgrade trees, mounts); `ArmySpec`/`Company`; `Armies` builds armies by level. |
+| `Style.cs` | Design tokens: side heraldry, materials, horse coats, sprite light and density, UI colours, grid, type scale. |
 | `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles. |
 | `BattleGame.cs` | MonoGame `Game`: input, the blended third-person/command camera, terrain picking, orders, the render passes. |
 | `World.cs` | 3D world renderer: lit terrain mesh, procedural low-poly foliage and grass, sky dome, minimap image. |
 | `Hud.cs` | The whole 2D interface, its layout and hit-testing (cards, buttons, minimap clicks, menus). |
 | `Controls.cs` | Rebindable actions, defaults, `controls.json` loading and key names for the HUD. |
 | `Puppet.cs` | Draws each unit as a puppet of part sprites on a 3D skeleton, with continuous poses from its action state; horses too. |
-| `Art.cs` | Unit part sprites as ASCII pixel art (built per palette into a 512x256 atlas), the blob shadow, and the 5x7 `PixelFont`. |
+| `Painter.cs` | The sprite painter: materials (hue-shifted 5-tone ramps + surface patterns), lit shapes, selective outline. |
+| `SpriteSheet.cs` | Paints every unit and horse part for every look, view and side, and packs a 1024x1024 atlas (headless). |
+| `Art.cs` | Uploads the atlas; blob shadow; white pixel. `PixelFont.cs`: the 5x7 HUD font. |
 | `SelfTest.cs` | `--selftest` checks. |
 
 Ground positions are `Vector2` (X = world X, Y = world Z).
 
 ### Puppet sprites (how units are drawn)
 
-Each unit is about 15 small pixel-art sprites placed on a 3D skeleton (unit space: +X right hand, +Y up, +Z facing, metres; 1 sprite px = 0.075 m):
+Each unit is about 15 painted pixel-art sprites placed on a 3D skeleton (unit space: +X right hand, +Y up, +Z facing, metres; 1 sprite px = 0.03 m),
+dressed from its troop's `Look` (`torso.mail.f`, `helm.greathelm.s`, `shield.heater`, ...):
 - **Billboards** (head, helm/hood, torso, hands, boots, plume, cape, quiver) always face the camera. View parts swap between `.f`/`.s`/`.b`
   sprites by the angle between the unit's facing and the camera; side sprites face right and are mirrored.
   Layered parts get a small toward-camera `bias` (the helm sits over the head) so they never z-fight.
@@ -144,7 +166,8 @@ Each unit is about 15 small pixel-art sprites placed on a 3D skeleton (unit spac
 Poses are continuous: `Puppet.PoseOf` blends the key poses (idle/raise/strike, as arm angle plus weapon pitch) by action progress,
 and the walk swing follows the stride. `Unit.ViewFacing` eases toward `Facing`, so turning sweeps smoothly.
 Everything is one draw call (`AlphaTestEffect`, so no sorting) plus blob shadows and lines for arrows and markers.
-For real art, replace the ASCII strings in `Art.Sprites` with PNGs that keep the same names (`name.view` + palette).
+Horse coat parts are neutral grey (`/n`) and tinted per horse; saddle cloths and caparisons are drawn over them in the side's colours.
+For hand-made art later, put PNGs into the atlas under the same keys (`part.variant.view/palette`); the puppet does not care who painted them.
 
 ## Decisions / gotchas
 
@@ -158,16 +181,17 @@ For real art, replace the ASCII strings in `Art.Sprites` with PNGs that keep the
 - In field view, friendly soldiers within 6 m of the camera are not drawn, so your own ranks never fill the lens.
 - `Battle.Empty` uses `Terrain.Flat()` (no hills, no trees), so mechanic tests are not affected by the map.
 - Team 0 = player side and squads 1-3 in `Squads` order. `Squad.Alive` is refreshed each tick by `UpdateSquad`.
-- Known shortcuts (search `shortcut:`): O(n²) separation (fine up to about 400 units) and unit stats in code instead of data files.
+- Known shortcuts (search `shortcut:`): O(n²) separation (fine up to about 400 units).
+- Scaling a MonoGame `Color` by a float also scales its alpha: `Mat` forces opaque colours, so use `Color.Lerp` for tints.
 - `AttackDir` is named from the attacker's side; the defender must block `Dirs.Mirror(swing)`. The HUD shows incoming blows already mirrored.
 - Separation is mass-weighted (horse 6, man 1) with radii 1.0 / 0.375 m; horse-vs-footman overlaps are where trample `Impact` happens.
 - `Battle.Empty(seed)` builds a scenario field (two leaders far apart) for the self-test; `AddSquad`, `Hit` and `HitHorse` are reachable from it.
-- With an idle player, the AI enemy (71 vs 63 units) wins the self-test battles in about 30 s. The balance assumes the player fights and commands.
+- With an idle player, the AI enemy (bigger than yours at the same level) wins the self-test battles in about 30 s. The balance assumes the player fights and commands.
 
 ## Next steps
 
 1. Play-test the feel: horse turn rates, lance damage, parry timing (right now any matched block parries; a timing window would add skill).
 2. Horse archers and a wedge formation for cavalry; AI riders remounting loose horses.
 3. A battle-start deployment phase; woods that hide units and slow formations; rivers and fords.
-4. Move unit stats into JSON, then build the campaign map layer.
+4. The campaign map layer: companies gain XP from `Squad` kills and upgrade along `troops.json`.
 5. A spatial grid for separation and target search, for bigger battles.

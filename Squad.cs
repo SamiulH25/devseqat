@@ -16,6 +16,7 @@ public sealed class Squad
     public int Columns = 8, StartCount, Alive;    // Alive = active and not routing, refreshed each tick
     public bool Loose, Cavalry, FireAtWill = true; // FireAtWill off: archers hold their arrows
     public float Pressure;                        // recent flank/rear hits; drains morale, decays over time
+    public int Kills;                             // enemies this company has killed (campaign XP)
 
     public Squad(string name, int team) { Name = name; Team = team; }
 

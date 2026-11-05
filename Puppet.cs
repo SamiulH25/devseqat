@@ -53,17 +53,21 @@ sealed class Puppet
         flip = Vector3.Dot(fwd, camRight) < 0; // side sprites face right
     }
 
-    /// Draw a unit standing on ground height `ground`.
+    Look look = null!;
+    Color coatTint;
+
+    /// Draw a unit standing on ground height `ground`, dressed by its troop's Look.
     public void Draw(Unit u, float ground)
     {
         if (u.Fled) return;
+        look = u.Type.Look;
         pal = "/" + (u.IsPlayer ? 2 : u.Team);
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         float lift = ground;
-        if (u.Mounted && !u.Dead) lift = ground + Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, true);
+        if (u.Mounted && !u.Dead) lift = ground + Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true);
         Frame(u.Pos, u.ViewFacing, lift, u.Type.Class == UnitClass.Captain ? 1.12f : 1);
 
-        if (u.Dead) { Corpse(u); return; }
+        if (u.Dead) { Corpse(); return; }
         var p = PoseOf(u);
         var cls = u.Type.Class;
 
@@ -73,68 +77,75 @@ sealed class Puppet
                 var hip = new Vector3(side * 0.12f, 0.68f, 0);
                 float s = Rad(p.Leg * side);
                 var foot = hip + new Vector3(0, -0.6f * MathF.Cos(s), 0.6f * MathF.Sin(s));
-                Axial(hip, foot, "leg");
-                Bill(foot + new Vector3(0, 0.02f, 0.03f), "boot", true);
+                Axial(hip, foot, $"leg.{look.Legs}");
+                Bill(foot + new Vector3(0, 0.02f, 0.03f), $"boot.{look.Feet}", true);
             }
-        Bill(new(0, 1.0f, 0), "torso", true);
+        if (look.Cape) Bill(new(0, 0.92f, -0.17f), "cape", false);
+        Bill(new(0, 1.0f, 0), $"torso.{look.Body}", true);
+        if (look.Tabard) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
         Bill(new(0, 1.53f, 0.02f), "head", true);
-        Bill(new(0, 1.63f, 0.02f), cls == UnitClass.Skirmisher ? "hood" : "helm", true, 0.04f);
-        if (cls == UnitClass.Captain)
+        if (look.Head != "none")
         {
-            Bill(new(0, 1.86f, -0.02f), "plume", false, 0.05f);
-            Bill(new(0, 0.92f, -0.17f), "cape", false);
+            // Every helmet's crown sits just above the head, whatever its height.
+            float h = art[$"helm.{look.Head}.f{pal}"].Height * Art.Px;
+            Bill(new(0, 1.81f - h / 2, 0.02f), $"helm.{look.Head}", true, 0.04f);
         }
-        if (cls == UnitClass.Cavalry) Bill(new(0, 1.8f, -0.02f), "plume", false, 0.05f);
+        if (look.Plume) Bill(new(0, 1.81f + art["plume" + pal].Height * Art.Px / 2 - 0.06f, -0.03f), "plume", false, 0.05f);
 
         var hand = Arm(1, p.ArmA, p.Yaw);
         var off = Arm(-1, p.OffA, 0);
         var dir = RotY(new Vector3(0, MathF.Sin(Rad(p.WeapB)), MathF.Cos(Rad(p.WeapB))), p.Yaw);
+        void ShieldOnArm()
+        {
+            if (!u.Type.HasShield) return;
+            var key = $"shield.{look.Shield}";
+            if (p.ShieldUp) Plane(off + new Vector3(0.2f, 0.02f, 0.1f), Vector3.UnitZ, key);
+            else Plane(off + new Vector3(-0.06f, 0.2f, 0.08f), Vector3.Normalize(new Vector3(-0.87f, 0, 0.5f)), key);
+        }
         if (u.Couched)
         {
             // Lance lowered and tucked under the arm, pointing along the horse.
             float rel = MathHelper.WrapAngle(u.ViewHeading - u.ViewFacing);
-            Span(hand, RotY(Vector3.Normalize(new Vector3(0, -0.06f, 1)), MathHelper.ToDegrees(rel)), "lance", 0.3f);
-            if (cls == UnitClass.Captain) Plane(off + new Vector3(-0.06f, 0.2f, 0.08f), Vector3.Normalize(new Vector3(-0.87f, 0, 0.5f)), "shield");
+            Span(hand, RotY(Vector3.Normalize(new Vector3(0, -0.06f, 1)), MathHelper.ToDegrees(rel)), "lance", SpriteSheet.Grip["lance"]);
+            ShieldOnArm();
             return;
         }
-        switch (cls)
+        if (cls == UnitClass.Archer)
         {
-            case UnitClass.Archer:
-                Bill(new(-0.1f, 1.15f, -0.2f), "quiver", false);
-                Span(off, Vector3.Up, "bow", 0.5f);
-                if (p.Aim && u.Action != UnitAction.Recover) Span(hand, Vector3.UnitZ, "arrow", 0.2f);
-                break;
-            case UnitClass.Skirmisher:
-                Span(hand, dir, "spear", 0.3f);
-                break;
-            case UnitClass.Cavalry:
-                Span(hand, dir, "lance", 0.3f);
-                break;
-            default:
-                Span(hand, dir, "sword", 3.5f / 15);
-                if (p.ShieldUp) Plane(off + new Vector3(0.2f, 0.02f, 0.1f), Vector3.UnitZ, "shield");
-                else Plane(off + new Vector3(-0.06f, 0.2f, 0.08f), Vector3.Normalize(new Vector3(-0.87f, 0, 0.5f)), "shield");
-                break;
+            Bill(new(-0.1f, 1.15f, -0.2f), "quiver", false);
+            Span(off, Vector3.Up, look.Weapon, SpriteSheet.Grip[look.Weapon]);
+            if (p.Aim && u.Action != UnitAction.Recover) Span(hand, Vector3.UnitZ, "arrow", 0.2f);
+            return;
         }
+        Span(hand, dir, look.Weapon, SpriteSheet.Grip[look.Weapon]);
+        ShieldOnArm();
     }
 
-    /// A horse (with the rider's legs when `riderLegs`), drawn in the current palette. Returns the gait bob height.
-    float Horse(Vector2 pos, float ground, float heading, float anim, float speed, bool riderLegs)
+    /// A horse (with the rider's legs when `riderLegs`): coat parts tinted by `coat`, gear in the side's colours.
+    /// Returns the gait bob height.
+    float Horse(Vector2 pos, float ground, float heading, float anim, float speed, int coat, string barding, bool riderLegs)
     {
         Frame(pos, heading, ground, 1);
+        var side = pal;
+        var plain = tint;
+        coatTint = new Color(tint.ToVector3() * Style.Coats[coat % Style.Coats.Length]);
+        bool caparison = barding == "caparison";
         float gait = Math.Clamp(MathF.Abs(speed) / 11, 0, 1);
         float amp = MathF.Abs(speed) < 0.3f ? 0 : 14 + 30 * gait;
         float bob = MathF.Sin(anim * MathF.Tau) * 0.05f * gait;
+        float y = 1.25f + bob;
+
+        pal = "/n";
+        tint = coatTint;
         ReadOnlySpan<float> phase = stackalloc float[] { 0, 0.3f, 0.55f, 0.85f };
         for (int i = 0; i < 4; i++)
         {
             bool front = i < 2;
-            float side = i % 2 == 0 ? -1 : 1;
+            float sd = i % 2 == 0 ? -1 : 1;
             float a = Rad(amp) * MathF.Sin(anim * MathF.PI + phase[i] * MathF.Tau);
-            var hip = new Vector3(side * 0.2f, 1.0f + bob, front ? 0.6f : -0.6f);
+            var hip = new Vector3(sd * 0.2f, 1.0f + bob, front ? 0.6f : -0.6f);
             Axial(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), "hleg");
         }
-        float y = 1.25f + bob;
         Long(new(0, y, -0.82f), new(0, y, 0.82f), "hbody");
         Bill(new(0, y, 0.6f), "hchest", false, -0.05f);
         Bill(new(0, y, -0.55f), "hrump", false, -0.05f);
@@ -142,13 +153,25 @@ sealed class Puppet
         Long(new(0, y + 0.73f, 0.95f), new(0, y + 0.37f, 1.42f), "hhead");
         Bill(new(0, y + 0.6f, 1.15f), "hface", false, -0.04f);
         Axial(new(0, y + 0.2f, -0.82f), new(0, 0.85f + bob + gait * 0.4f, -1.05f - gait * 0.35f), "htail");
+
+        // Gear over the coat.
+        pal = side;
+        tint = plain;
+        Long(new(0, y, -0.82f), new(0, y, 0.82f), caparison ? "hbody.caparison" : "hbody.saddle", 0.03f);
+        if (caparison)
+        {
+            Bill(new(0, y, 0.6f), "hchest.caparison", false, -0.035f);
+            Bill(new(0, y, -0.55f), "hrump.caparison", false, -0.035f);
+            Long(new(0, y + 0.17f, 0.62f), new(0, y + 0.73f, 1.0f), "hneck.caparison", 0.02f);
+            Long(new(0, y + 0.73f, 0.95f), new(0, y + 0.37f, 1.42f), "hhead.caparison", 0.02f);
+        }
         if (riderLegs)
-            for (int side = -1; side <= 1; side += 2)
+            for (int sd = -1; sd <= 1; sd += 2)
             {
-                var hip = new Vector3(side * 0.2f, Saddle + 0.68f + bob, 0);
-                var foot = new Vector3(side * 0.36f, 1.0f + bob, 0.18f);
-                Axial(hip, foot, "leg");
-                Bill(foot, "boot", true);
+                var hip = new Vector3(sd * 0.2f, Saddle + 0.68f + bob, 0);
+                var foot = new Vector3(sd * 0.36f, 1.0f + bob, 0.18f);
+                Axial(hip, foot, $"leg.{look.Legs}");
+                Bill(foot, $"boot.{look.Feet}", true);
             }
         return bob;
     }
@@ -157,19 +180,24 @@ sealed class Puppet
     {
         pal = "/" + h.Team;
         tint = Color.White;
-        Horse(h.Pos, ground, h.Heading, 0, 0, false);
+        Horse(h.Pos, ground, h.Heading, 0, 0, h.Coat, h.Mount.Barding, false);
     }
 
-    public void DrawDeadHorse(Vector2 pos, float heading, int team, float ground)
+    public void DrawDeadHorse(DeadHorse h, float ground)
     {
-        pal = "/" + team;
+        Frame(h.Pos, h.Heading, ground, 1);
+        pal = "/" + h.Team;
         tint = Color.White;
-        Frame(pos, heading, ground, 1);
         Flat(new(0.3f, 0.02f, 0), "blood", false);
+        pal = "/n";
+        tint = new Color(Style.Coats[h.Coat % Style.Coats.Length]);
         Flat(new(0, 0.05f, 0), "hbody", true);
         Flat(new(0.2f, 0.06f, 1.2f), "hhead", true);
         Flat(new(-0.55f, 0.04f, 0.5f), "hleg", false);
         Flat(new(-0.55f, 0.04f, -0.5f), "hleg", false);
+        pal = "/" + h.Team;
+        tint = Color.White;
+        Flat(new(0, 0.07f, 0), h.Barding == "caparison" ? "hbody.caparison" : "hbody.saddle", true);
     }
 
     static Vector3 RotY(Vector3 v, float deg)
@@ -183,8 +211,8 @@ sealed class Puppet
     {
         var shoulder = new Vector3(side * 0.3f, 1.31f, 0);
         var hand = shoulder + RotY(new Vector3(side * 0.04f, -0.55f * MathF.Cos(Rad(alpha)), 0.55f * MathF.Sin(Rad(alpha))), yaw);
-        Axial(shoulder, hand, "sleeve");
-        Bill(hand, "hand", false, 0.01f);
+        Axial(shoulder, hand, $"sleeve.{look.Body}");
+        Bill(hand, $"hand.{look.Hands}", false, 0.01f);
         return hand;
     }
 
@@ -252,15 +280,16 @@ sealed class Puppet
         return new Pose(leg, arm.Alpha, arm.Pitch, arm.Yaw, shield ? 85 : 15 + leg * 0.4f, shield, false);
     }
 
-    void Corpse(Unit u)
+    void Corpse()
     {
         // Parts laid flat on the ground, body pointing backwards from the feet.
         Flat(new(0, 0.06f, -0.7f), "blood", false);
-        Flat(new(0.12f, 0.08f, -0.2f), "leg", false);
-        Flat(new(-0.12f, 0.08f, -0.2f), "leg", false);
-        Flat(new(0, 0.09f, -0.75f), "torso.f", false);
-        Flat(new(0, 0.1f, -1.25f), u.Type.Class == UnitClass.Skirmisher ? "hood.b" : "helm.b", false);
-        if (u.Type.HasShield) Flat(new(-0.5f, 0.11f, -0.6f), "shield", true);
+        Flat(new(0.12f, 0.08f, -0.2f), $"leg.{look.Legs}", false);
+        Flat(new(-0.12f, 0.08f, -0.2f), $"leg.{look.Legs}", false);
+        Flat(new(0, 0.09f, -0.75f), $"torso.{look.Body}.f", false);
+        if (look.Tabard) Flat(new(0, 0.1f, -0.75f), "tabard.f", false);
+        Flat(new(0, 0.11f, -1.25f), look.Head == "none" ? "head.b" : $"helm.{look.Head}.b", false);
+        if (look.Shield != "none") Flat(new(-0.5f, 0.12f, -0.6f), $"shield.{look.Shield}", true);
     }
 
     // ---------- quads ----------
@@ -297,10 +326,12 @@ sealed class Puppet
     }
 
     // Sprite running from a (left column) to b (right column), turned about that axis to face the camera, top edge kept up.
-    void Long(Vector3 aLocal, Vector3 bLocal, string name)
+    // `bias` pulls it toward the camera (gear over the coat).
+    void Long(Vector3 aLocal, Vector3 bLocal, string name, float bias = 0)
     {
         var src = art[name + pal];
         Vector3 a = W(aLocal), b = W(bLocal), axis = b - a;
+        if (bias != 0) { var toward = Vector3.Normalize(camPos - (a + b) / 2) * bias; a += toward; b += toward; }
         var side = Vector3.Cross(axis, camPos - (a + b) / 2);
         side = side.LengthSquared() < 1e-8f ? Vector3.Up : Vector3.Normalize(side);
         if (side.Y < 0) side = -side;

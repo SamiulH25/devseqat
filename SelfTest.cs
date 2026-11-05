@@ -21,6 +21,8 @@ public static class SelfTest
         HorseDown();
         Ground();
         HoldFire();
+        TroopTree();
+        Sprites();
 
         for (int seed = 1; seed <= 3; seed++)
         {
@@ -29,6 +31,16 @@ public static class SelfTest
             Check(b.Winner >= 0, $"battle {seed} resolves within 10 minutes");
             Console.WriteLine($"battle {seed}: team {b.Winner} won after {b.Time:0}s, {b.Units.Count(u => u.Dead)} dead, "
                 + $"{b.Units.Count(u => u.Fled)} fled, {b.DeadHorses.Count} horses lost");
+        }
+        // Campaign-style armies at every level (both sides upgraded unevenly) still fight to a result.
+        for (int level = 1; level <= 4; level++)
+        {
+            var rng = new Random(level);
+            var b = new Battle(level, Armies.Random(rng, level, 0), Armies.Random(rng, level, 1));
+            for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+            Check(b.Winner >= 0, $"level {level} battle resolves");
+            Console.WriteLine($"level {level}: {string.Join(", ", b.Armies[0]!.Companies.Select(c => $"{c.Count} {Troops.Get(c.Troop).Name}"))}"
+                + $" vs {string.Join(", ", b.Armies[1]!.Companies.Select(c => $"{c.Count} {Troops.Get(c.Troop).Name}"))}: team {b.Winner} won after {b.Time:0}s");
         }
         Console.WriteLine("selftest ok");
     }
@@ -144,6 +156,52 @@ public static class SelfTest
         bows.FireAtWill = true;
         Run(b, 3);
         Check(b.Arrows.Count > 0, "fire at will looses arrows");
+    }
+
+    /// The upgrade trees are sound: every line climbs in tier, and higher tiers are better soldiers.
+    static void TroopTree()
+    {
+        Check(!Troops.Validate().Any(), "troops.json validates: " + string.Join("; ", Troops.Validate()));
+        var levies = Troops.Get("levies");
+        Check(levies.Tier == 1 && levies.UpgradesTo.Length >= 3, "levies branch into several lines");
+        foreach (var t in Troops.All)
+            foreach (var next in t.UpgradesTo.Select(Troops.Get))
+                Check(next.MaxHp + next.Armor * 5 + next.Damage > t.MaxHp + t.Armor * 5 + t.Damage, $"{t.Name} -> {next.Name} is an upgrade");
+        Check(Troops.Tree("levies").Any(t => t.Tier == 4), "the tree reaches tier IV");
+        var reachable = Troops.Tree("levies").Select(t => t.Id).ToHashSet();
+        Check(Troops.All.Where(t => !t.Leader).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading levies");
+    }
+
+    /// Every sprite any troop's look can ask for exists, for every side.
+    static void Sprites()
+    {
+        var sheet = new SpriteSheet();
+        IEnumerable<string> Keys(UnitType t)
+        {
+            var l = t.Look;
+            foreach (var v in new[] { "f", "s", "b" })
+            {
+                yield return $"torso.{l.Body}.{v}";
+                yield return $"boot.{l.Feet}.{v}";
+                yield return $"head.{v}";
+                if (l.Head != "none") yield return $"helm.{l.Head}.{v}";
+                if (l.Tabard) yield return $"tabard.{v}";
+            }
+            yield return $"sleeve.{l.Body}"; yield return $"leg.{l.Legs}"; yield return $"hand.{l.Hands}"; yield return l.Weapon;
+            if (l.Shield != "none") yield return $"shield.{l.Shield}";
+            if (l.Plume) yield return "plume";
+            if (l.Cape) yield return "cape";
+            if (t.Mount != null) { yield return "hbody.saddle"; yield return "hbody.caparison"; }
+        }
+        foreach (var t in Troops.All)
+            foreach (var k in Keys(t))
+                for (int p = 0; p < Style.Sides.Length; p++)
+                    Check(sheet.Rects.ContainsKey($"{k}/{p}"), $"sprite {k}/{p} for {t.Name}");
+        foreach (var k in new[] { "hbody", "hneck", "hhead", "hchest", "hrump", "hface", "hleg", "htail" })
+            Check(sheet.Rects.ContainsKey(k + "/n"), $"horse coat sprite {k}");
+        var torso = sheet.Rects["torso.mail.f/0"];
+        Check(MathF.Abs((torso.Height - 2) * Style.Px - 0.675f) < 0.05f, "a torso keeps its size in metres");
+        Check(sheet.Rects.Values.Any(r => r.Height > 90), "polearms are painted at full length");
     }
 
     static void Check(bool ok, string what)

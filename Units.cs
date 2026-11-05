@@ -18,24 +18,48 @@ public static class Dirs
 }
 
 /// A horse. Speeds in m/s, Accel in m/s^2, TurnRate in rad/s at a standstill (it falls as speed rises).
-public sealed record Mount(string Name, float Hp, float Trot, float Gallop, float Accel, float TurnRate)
+/// Barding is what it wears: "saddle" (saddle cloth) or "caparison" (full cloth barding and a steel chanfron).
+public sealed record Mount(string Id, string Name, float Hp, float Trot, float Gallop, float Accel, float TurnRate, string Barding)
 {
-    public static readonly Mount Warhorse = new("Warhorse", 140, 5.2f, 11.5f, 4.2f, 1.7f);
-    public static readonly Mount Courser = new("Courser", 120, 5.8f, 12.5f, 5.0f, 2.1f);
+    public static Mount Courser => Troops.Mount("courser");
+    public static Mount Warhorse => Troops.Mount("warhorse");
 }
 
-// shortcut: troop stats live in code; move to JSON data files once the campaign layer needs troop trees.
-public sealed record UnitType(string Name, UnitClass Class, float MaxHp, float Damage, float Armor,
-    float Reach, float Windup, float Recover, float Speed, float BlockChance, float Range, int Ammo,
-    Mount? Mount = null, float VsMounted = 1)
+/// What a troop wears and carries; every field names a sprite family in Art (e.g. Head "kettle" = "helm.kettle.f/s/b").
+public sealed record Look(string Head, string Body, string Legs, string Feet, string Hands, string Shield, string Weapon,
+    bool Tabard, bool Plume, bool Cape)
 {
-    public static readonly UnitType Shieldman = new("Shieldmen", UnitClass.Infantry, 100, 22, 6, 1.7f, 0.45f, 0.6f, 3.6f, 0.55f, 0, 0);
-    public static readonly UnitType Bowman = new("Bowmen", UnitClass.Archer, 70, 14, 2, 1.5f, 0.4f, 0.7f, 3.9f, 0.1f, 34, 30);
-    public static readonly UnitType Spearrunner = new("Spearrunners", UnitClass.Skirmisher, 80, 26, 3, 2.3f, 0.35f, 0.7f, 5.0f, 0.15f, 0, 0, VsMounted: 1.8f);
-    public static readonly UnitType Lancer = new("Lancers", UnitClass.Cavalry, 90, 20, 7, 2.6f, 0.4f, 0.8f, 3.8f, 0.2f, 0, 0, Mount.Warhorse);
-    public static readonly UnitType Captain = new("Captain", UnitClass.Captain, 220, 30, 10, 2.1f, 0.4f, 0.5f, 4.4f, 0.6f, 0, 0);
+    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm" };
+    public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate" };
+    public static readonly string[] LegsKinds = { "cloth", "mail", "plate" };
+    public static readonly string[] FeetKinds = { "boots", "sabatons" };
+    public static readonly string[] HandsKinds = { "skin", "gauntlets" };
+    public static readonly string[] Shields = { "none", "round", "kite", "heater" };
+    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow" };
+}
 
-    public bool HasShield => Class is UnitClass.Infantry or UnitClass.Captain;
+/// A troop type from Data/troops.json: stats, place in the upgrade tree, and look.
+public sealed class UnitType
+{
+    public string Id = "", Name = "";
+    public UnitClass Class;
+    public int Tier, Cost, UpgradeXp;
+    public string[] UpgradesTo = Array.Empty<string>();
+    public float MaxHp, Damage, Armor, Reach, Windup, Recover, Speed, BlockChance, Range, VsMounted = 1;
+    public int Ammo;
+    public bool Leader;
+    public Mount? Mount;
+    public Look Look = null!;
+
+    public bool HasShield => Look.Shield != "none";
+    public override string ToString() => Name;
+
+    // The troops the prototype battles and tests refer to by name.
+    public static UnitType Shieldman => Troops.Get("shieldmen");
+    public static UnitType Bowman => Troops.Get("bowmen");
+    public static UnitType Spearrunner => Troops.Get("spearrunners");
+    public static UnitType Lancer => Troops.Get("lancers");
+    public static UnitType Captain => Troops.Get("captain");
 }
 
 /// One soldier (or the player). Positions are on the ground plane: Pos.X = world X, Pos.Y = world Z.
@@ -58,6 +82,7 @@ public sealed class Unit
 
     // Mounted state. The horse moves along Heading at Speed; the rider looks (and strikes) along Facing.
     public Mount? Horse;
+    public int Coat;                       // horse coat colour (index into Style.Coats)
     public float HorseHp, Heading, ViewHeading, Speed;
     public bool Couched, Contact;          // lance lowered; this charge has reached the enemy
     public CavState Cav;
@@ -70,11 +95,13 @@ public sealed class Unit
     public void Face(Vector2 d) { if (d.LengthSquared() > 1e-6f) Facing = MathF.Atan2(d.Y, d.X); }
 }
 
-/// A riderless horse standing on the field: the player can mount it (H).
+/// A riderless horse standing on the field: the player can mount it.
 public sealed class LooseHorse
 {
     public Mount Mount = null!;
     public Vector2 Pos;
     public float Heading, Hp;
-    public int Team;
+    public int Team, Coat;
 }
+
+public readonly record struct DeadHorse(Vector2 Pos, float Heading, int Team, int Coat, string Barding);

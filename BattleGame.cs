@@ -43,9 +43,9 @@ public sealed class BattleGame : Game
 
     // Debug: IRONFIELD_SHOTS=/dir stages a few camera shots, saves them as PNGs and quits.
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
-    int shotIndex;
+    int shotIndex, shotFrames;
     string? pendingShot;
-    bool shotWheel;
+    bool shotWheel, hudHidden;
 
     public BattleGame()
     {
@@ -82,9 +82,15 @@ public sealed class BattleGame : Game
 
     void NewBattle()
     {
-        battle = new Battle(shotDir != null ? 7 : Environment.TickCount);
-        world?.Dispose();
-        world = new World(GraphicsDevice, battle.Terrain);
+        // Stand-in for the campaign map: both armies arrive with companies upgraded to some level (1-4).
+        int seed = shotDir != null ? 7 : Environment.TickCount;
+        var rng = new Random(seed);
+        var levels = (Environment.GetEnvironmentVariable("IRONFIELD_LEVELS") ?? (shotDir != null ? "4,3" : "")).Split(',');
+        int mine = int.TryParse(levels[0], out var l0) ? l0 : rng.Next(1, 5);
+        int theirs = levels.Length > 1 && int.TryParse(levels[1], out var l1) ? l1 : Math.Clamp(mine + rng.Next(-1, 2), 1, 4);
+        battle = new Battle(seed, Armies.Random(rng, Math.Clamp(mine, 1, 4), 0), Armies.Random(rng, Math.Clamp(theirs, 1, 4), 1));
+        SetWorld();
+        battle.Log($"Your company (level {mine}) faces a level {theirs} host.");
         foreach (var p in ctl.Problems) battle.Log(p);
         selected.Clear();
         yaw = MathHelper.PiOver2;
@@ -92,6 +98,12 @@ public sealed class BattleGame : Game
         blend = 0;
         paused = menuOpen = helpOpen = wheelOpen = false;
         SetCommand(false);
+    }
+
+    void SetWorld()
+    {
+        world?.Dispose();
+        world = new World(GraphicsDevice, battle.Terrain);
     }
 
     void SetCommand(bool on)
@@ -143,7 +155,7 @@ public sealed class BattleGame : Game
         if (scale > 0) battle.Update(dt * scale);
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
-        if (shotDir != null) ShotScript();
+        if (shotDir != null) { shotFrames++; ShotScript(); }
         UpdateCamera();
         base.Update(gameTime);
     }
@@ -175,7 +187,7 @@ public sealed class BattleGame : Game
     void ShotScript()
     {
         var b = battle;
-        var cav = b.SquadsOf(1).First(s => s.Cavalry);
+        var cav = b.SquadsOf(1).FirstOrDefault(s => s.Cavalry) ?? b.SquadsOf(1).First();
         switch (shotIndex)
         {
             case 0 when b.Time > 0.5f:
@@ -201,8 +213,53 @@ public sealed class BattleGame : Game
             case 6 when b.Time > 21f:
                 helpOpen = true;
                 pendingShot = "controls"; shotIndex++; break;
-            case 7 when pendingShot == null: Exit(); break;
+            case 7 when pendingShot == null:
+                helpOpen = false;
+                Gallery();
+                shotFrames = 0; shotIndex++; break;
+            case 8 when shotFrames > 20:
+                pendingShot = "gallery-front"; shotIndex++; break;
+            case >= 9 and <= 11 when pendingShot == null:
+                // Close-ups: foot, foot, horse.
+                zoom = 7.5f; camPitch = 0.08f;
+                camFocus = new Vector2(new[] { -5.6f, -16.8f, -31f }[shotIndex - 9], 0.6f);
+                pendingShot = $"gallery-close{shotIndex - 8}"; shotIndex++; break;
+            case 12 when pendingShot == null:
+                foreach (var u in b.Units.Where(u => !u.IsLeader)) { u.Team = 1; u.Facing = u.Heading = 0; }
+                zoom = 21; camPitch = 0.1f; camFocus = new Vector2(-19, 0);
+                shotFrames = 0; shotIndex++; break;
+            case 13 when shotFrames > 20:
+                pendingShot = "gallery-side"; shotIndex++; break;
+            case 14 when pendingShot == null:
+                zoom = 7.5f; camPitch = 0.08f; camFocus = new Vector2(-31f, 0.6f);
+                pendingShot = "gallery-side-close"; shotIndex++; break;
+            case 15 when pendingShot == null: Exit(); break;
         }
+    }
+
+    /// Debug lineup of every troop, left to right along each upgrade line, facing the camera.
+    void Gallery()
+    {
+        battle = Battle.Empty(1);
+        SetWorld();
+        var order = new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "spearrunners", "pikemen", "bowmen", "longbowmen",
+            "outriders", "lancers", "knights", "captain" };
+        float x = 0;
+        foreach (var id in order)
+        {
+            var t = Troops.Get(id);
+            x += t.Mount != null ? 2.2f : 1.4f;
+            var u = battle.AddSquad(0, t, 1, new Vector2(-x, 0), 1, -Vector2.UnitY).Units[0];
+            u.ViewFacing = u.ViewHeading = u.Facing;
+            x += t.Mount != null ? 2.2f : 1.4f;
+        }
+        paused = hudHidden = true;
+        SetCommand(true);
+        blend = 1;
+        camFocus = new Vector2(-x / 2, 0);
+        camYaw = MathHelper.PiOver2;
+        camPitch = 0.1f;
+        zoom = 21;
     }
 
     // ---------- orders ----------
@@ -534,7 +591,7 @@ public sealed class BattleGame : Game
         DrawSprites();
         DrawLines();
         SyncHud();
-        hud.Draw();
+        if (!hudHidden) hud.Draw();
 
         if (pendingShot != null && shotDir != null)
         {
@@ -593,7 +650,7 @@ public sealed class BattleGame : Game
             puppet.Draw(u, t.Height(u.Pos));
         }
         foreach (var h in battle.LooseHorses) puppet.DrawLooseHorse(h, t.Height(h.Pos));
-        foreach (var (pos, heading, team) in battle.DeadHorses) puppet.DrawDeadHorse(pos, heading, team, t.Height(pos));
+        foreach (var h in battle.DeadHorses) puppet.DrawDeadHorse(h, t.Height(h.Pos));
         if (sprites.N == 0) return;
 
         var gd = GraphicsDevice;

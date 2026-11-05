@@ -29,7 +29,8 @@ public sealed class Battle
     public readonly List<Squad> Squads = new();
     public readonly List<Projectile> Arrows = new();
     public readonly List<LooseHorse> LooseHorses = new();
-    public readonly List<(Vector2 Pos, float Heading, int Team)> DeadHorses = new();
+    public readonly List<DeadHorse> DeadHorses = new();
+    public readonly ArmySpec?[] Armies = new ArmySpec?[2];
     public readonly List<(string Text, float At)> Events = new();
     public readonly Terrain Terrain;
     public Unit Player = null!, EnemyCaptain = null!;
@@ -42,25 +43,57 @@ public sealed class Battle
     readonly Random rng;
     readonly Vector2[] centroid = new Vector2[2];
     readonly bool scripted; // self-test scenario: no enemy general
-    Squad eInf = null!, eArch = null!, eSkirm = null!, eGuard = null!, eCav = null!;
-    Squad pInf = null!, pArch = null!, pSkirm = null!, pCav = null!;
+    Squad eGuard = null!;
+    readonly Dictionary<string, List<Squad>>[] roles = { new(), new() };
+    readonly Dictionary<Squad, float> lateral = new(); // sideways place within its role group, in metres
     bool enemyCharged, enemyHorseCharged;
     float generalTimer;
 
-    public Battle(int seed) : this(seed, false)
+    /// The prototype's standard battle (level 2 armies on both sides).
+    public Battle(int seed) : this(seed, Ironfield.Armies.Standard(0), Ironfield.Armies.Standard(1)) { }
+
+    /// A battle between two armies as the campaign map would hand them over.
+    public Battle(int seed, ArmySpec player, ArmySpec enemy) : this(seed, false)
     {
         Player.Horse = Mount.Courser; // you lead from the saddle
         Player.HorseHp = Mount.Courser.Hp;
-        pInf = AddSquad(0, UnitType.Shieldman, 24, new(0, -30), 12, Vector2.UnitY);
-        pArch = AddSquad(0, UnitType.Bowman, 16, new(0, -38), 8, Vector2.UnitY);
-        pSkirm = AddSquad(0, UnitType.Spearrunner, 12, new(-22, -31), 6, Vector2.UnitY);
-        pCav = AddSquad(0, UnitType.Lancer, 10, new(24, -33), 5, Vector2.UnitY);
-
-        eInf = AddSquad(1, UnitType.Shieldman, 28, new(0, 30), 14, -Vector2.UnitY);
-        eArch = AddSquad(1, UnitType.Bowman, 18, new(0, 38), 9, -Vector2.UnitY);
-        eSkirm = AddSquad(1, UnitType.Spearrunner, 14, new(24, 31), 7, -Vector2.UnitY);
-        eCav = AddSquad(1, UnitType.Lancer, 10, new(-28, 34), 5, -Vector2.UnitY);
+        Deploy(0, player);
+        Deploy(1, enemy);
         UpdateCentroids();
+    }
+
+    List<Squad> Role(int team, string role) => roles[team].TryGetValue(role, out var l) ? l : roles[team][role] = new List<Squad>();
+
+    /// Deployment spots per role on your side (the enemy's are mirrored through the centre): infantry in front,
+    /// archers behind, spears on the left flank, horse on the right. Several companies of one role stand side by side.
+    void Deploy(int team, ArmySpec army)
+    {
+        Armies[team] = army;
+        float f = team == 0 ? 1 : -1;
+        foreach (var group in army.Companies.Where(c => c.Count > 0).GroupBy(Ironfield.Armies.RoleOf))
+        {
+            var spot = group.Key switch
+            {
+                "archers" => new Vector2(0, -38), "spears" => new Vector2(-22, -31), "horse" => new Vector2(24, -33), _ => new Vector2(0, -30),
+            };
+            var list = group.ToList();
+            var widths = list.Select(c =>
+            {
+                var t = Troops.Get(c.Troop);
+                int cols = (c.Count + 1) / 2;
+                return (c, t, cols, w: cols * (t.Mount != null ? 3f : 1.3f));
+            }).ToList();
+            float total = widths.Sum(x => x.w) + 4 * (widths.Count - 1), at = -total / 2;
+            foreach (var (c, t, cols, w) in widths)
+            {
+                float off = at + w / 2;
+                at += w + 4;
+                var pos = (spot + new Vector2(off, 0)) * f;
+                var s = AddSquad(team, t, c.Count, pos, cols, new Vector2(0, f));
+                Role(team, group.Key).Add(s);
+                lateral[s] = off;
+            }
+        }
     }
 
     /// An empty field with only the two leaders, far apart; scenarios add squads with <see cref="AddSquad"/>.
@@ -100,7 +133,7 @@ public sealed class Battle
 
     public Unit Spawn(UnitType t, int team, Squad? s, Vector2 pos)
     {
-        var u = new Unit { Type = t, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2 };
+        var u = new Unit { Type = t, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length) };
         if (t.Mount != null) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; }
         Units.Add(u);
         return u;
@@ -438,7 +471,7 @@ public sealed class Battle
         {
             if (MathF.Abs(p.Speed) > 1.5f) { Log("Slow down to dismount."); return; }
             var side = new Vector2(-p.HeadingDir.Y, p.HeadingDir.X);
-            LooseHorses.Add(new LooseHorse { Mount = p.Horse!, Hp = p.HorseHp, Pos = p.Pos, Heading = p.Heading, Team = p.Team });
+            LooseHorses.Add(new LooseHorse { Mount = p.Horse!, Hp = p.HorseHp, Pos = p.Pos, Heading = p.Heading, Team = p.Team, Coat = p.Coat });
             p.Pos -= side * 1.1f;
             p.Horse = null;
             p.Speed = 0;
@@ -457,6 +490,7 @@ public sealed class Battle
         LooseHorses.Remove(best);
         p.Horse = best.Mount;
         p.HorseHp = best.Hp;
+        p.Coat = best.Coat;
         p.Heading = best.Heading;
         p.Pos = best.Pos;
         p.Speed = 0;
@@ -633,7 +667,7 @@ public sealed class Battle
         if (by.IsPlayer) PlayerHit = ($"HORSE HIT {dmg:0}", Time);
         if (r.HorseHp > 0) return;
         // The horse goes down and throws its rider.
-        DeadHorses.Add((r.Pos, r.Heading, r.Team));
+        DeadHorses.Add(new DeadHorse(r.Pos, r.Heading, r.Team, r.Coat, r.Horse!.Barding));
         r.Horse = null;
         r.Speed = 0;
         r.Vel = Vector2.Zero;
@@ -661,11 +695,12 @@ public sealed class Battle
         t.Vel = t.Wish = Vector2.Zero;
         if (t.Mounted)
         {
-            LooseHorses.Add(new LooseHorse { Mount = t.Horse!, Hp = t.HorseHp, Pos = t.Pos, Heading = t.Heading, Team = t.Team });
+            LooseHorses.Add(new LooseHorse { Mount = t.Horse!, Hp = t.HorseHp, Pos = t.Pos, Heading = t.Heading, Team = t.Team, Coat = t.Coat });
             t.Horse = null;
             t.Pos -= new Vector2(-t.HeadingDir.Y, t.HeadingDir.X) * 1.0f; // the rider falls off to the side
         }
         if (killer.IsPlayer) PlayerKills++;
+        if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;
         foreach (var u in Units)
         {
             if (!u.Active) continue;
@@ -907,47 +942,49 @@ public sealed class Battle
     }
 
     /// Enemy commander: advance as a block, charge when close, archers stop at bow range,
-    /// horse waits wide on the far flank and then hunts the archers with repeated charges.
+    /// horse waits wide on the far flank and then hunts the softest companies with repeated charges.
     void EnemyGeneral()
     {
-        var front = eInf.Alive > 0 ? eInf.Centroid() : eGuard.Centroid();
+        var inf = Role(1, "infantry").Where(s => s.Alive > 0).ToList();
+        var front = inf.Count > 0 ? inf.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / inf.Count : eGuard.Centroid();
         var dir = centroid[0] - front;
         if (dir.LengthSquared() < 1) return;
         dir.Normalize();
         var side = new Vector2(-dir.Y, dir.X);
+        var spears = Role(1, "spears");
         if (!enemyCharged)
         {
-            eInf.Front = dir;
-            eInf.Anchor = front + dir * 6;
-            eSkirm.Front = dir;
-            eSkirm.Anchor = eInf.Anchor + side * 16; // swing wide on a flank
-            if (GapTo(eInf, 0) < 16 || GapTo(eSkirm, 0) < 10)
+            foreach (var s in inf) { s.Front = dir; s.Anchor = front + dir * 6 + side * lateral[s]; }
+            foreach (var s in spears) { s.Front = dir; s.Anchor = front + dir * 6 + side * (16 + lateral[s]); } // swing wide on a flank
+            if (inf.Any(s => GapTo(s, 0) < 16) || spears.Any(s => s.Alive > 0 && GapTo(s, 0) < 10))
             {
                 enemyCharged = true;
-                eInf.Order = eSkirm.Order = Order.Charge;
+                foreach (var s in inf.Concat(spears)) s.Order = Order.Charge;
                 Log("The enemy line charges!");
             }
         }
-        if (eArch.Order != Order.Charge)
+        foreach (var s in Role(1, "archers"))
         {
-            eArch.Front = dir;
-            float gap = GapTo(eArch, 0);
-            if (gap > UnitType.Bowman.Range - 4) eArch.Anchor = eArch.Centroid() + dir * 4;
-            if (gap < 7 || eArch.Units.All(u => !u.Active || u.Ammo == 0)) eArch.Order = Order.Charge;
+            if (s.Order == Order.Charge || s.Alive == 0) continue;
+            s.Front = dir;
+            float gap = GapTo(s, 0), range = s.Units[0].Type.Range;
+            if (gap > range - 4) s.Anchor = s.Centroid() + dir * 4;
+            if (gap < 7 || s.Units.All(u => !u.Active || u.Ammo == 0)) s.Order = Order.Charge;
         }
+        var horse = Role(1, "horse");
         if (!enemyHorseCharged)
         {
-            eCav.Front = dir;
-            eCav.Anchor = front + dir * 4 - side * 26; // the other flank
-            if (enemyCharged || Time > 35 || GapTo(eCav, 0) < 20)
+            foreach (var s in horse) { s.Front = dir; s.Anchor = front + dir * 4 - side * (26 - lateral[s]); } // the other flank
+            if (enemyCharged || Time > 35 || horse.Any(s => s.Alive > 0 && GapTo(s, 0) < 20))
             {
                 enemyHorseCharged = true;
-                eCav.Order = Order.Charge;
-                Log("Enemy horse on the flank!");
+                foreach (var s in horse) s.Order = Order.Charge;
+                if (horse.Count > 0) Log("Enemy horse on the flank!");
             }
         }
-        if (enemyHorseCharged && eCav.Target == null)
-            eCav.Target = new[] { pArch, pSkirm, pInf, pCav }.FirstOrDefault(s => s.Alive > 0); // soft targets first
+        if (enemyHorseCharged)
+            foreach (var s in horse.Where(s => s.Target == null))
+                s.Target = new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(0, r)).FirstOrDefault(t => t.Alive > 0); // soft targets first
         eGuard.Front = dir;
         eGuard.Anchor = front - dir * 4; // captain leads from just behind the line
     }

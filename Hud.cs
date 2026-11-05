@@ -12,10 +12,10 @@ public enum MenuItem { Resume, Controls, NewBattle, Quit }
 /// command buttons, squad banners and the menu / controls / result overlays. Layout is in 720p units times `Ui`.
 sealed class Hud
 {
-    public static readonly Color Gold = new(240, 200, 60), Friendly = new(110, 160, 255), Foe = new(236, 88, 70),
-        Ok = new(110, 196, 104), Warn = new(236, 186, 60), Bad = new(226, 72, 60), Dim = new(176, 182, 192),
-        Orange = new(240, 140, 50), HorseCol = new(168, 116, 70);
-    static readonly Color PanelBg = new Color(14, 16, 22) * 0.8f, Edge = Color.White * 0.16f;
+    // Colours come from the design tokens (Style.cs, docs/DESIGN.md).
+    public static readonly Color Gold = Style.Accent, Friendly = Style.Friendly, Foe = Style.Foe, Ok = Style.Ok, Warn = Style.Warn,
+        Bad = Style.Bad, Dim = Style.Dim, Orange = Style.Orange, HorseCol = Style.HorseBar;
+    static readonly Color PanelBg = Style.Panel, Edge = Style.PanelEdge;
 
     public static readonly Dictionary<Cmd, (string Label, Act Key)> Orders = new()
     {
@@ -98,9 +98,11 @@ sealed class Hud
 
     void Rect(Rectangle r, Color c) => sb.Draw(art.Pixel, r, c);
 
+    /// The one panel style: slate fill, a hairline edge, and a faint top light (the "iron plate" bevel).
     void Panel(Rectangle r, Color? edge = null, int thick = 1)
     {
         Rect(r, PanelBg);
+        Rect(new Rectangle(r.X + U(thick), r.Y + U(thick), r.Width - 2 * U(thick), U(1)), Style.PanelLight);
         Frame(r, edge ?? Edge, U(thick));
     }
 
@@ -202,10 +204,12 @@ sealed class Hud
             var c = up.StartsWith("VICTORY") || up.Contains("CAPTAIN IS SLAIN") ? Gold
                 : up.StartsWith("DEFEAT") || up.Contains("YOU HAVE FALLEN") || up.Contains("HORSE IS SLAIN") || up.Contains("GUARD BROKEN") ? Bad
                 : up.StartsWith("ENEMY") || up.StartsWith("THE ENEMY") ? Foe : Color.White;
-            int w = TW(up) + U(12);
-            Rect(new Rectangle(U(10), y - U(4), w, U(22)), Color.Black * (0.45f * alpha));
-            Text(up, U(16), y, c * alpha);
-            y += U(24);
+            // Keep clear of the balance bar in the middle: long lines drop to caption size.
+            int room = (W - U(376)) / 2 - U(26), scale = TW(up) <= room ? Style.Body : Style.Caption;
+            int w = TW(up, scale) + U(12);
+            Rect(new Rectangle(U(10), y - U(4), w, U(scale == Style.Body ? 22 : 15)), Color.Black * (0.45f * alpha));
+            Text(up, U(16), y, c * alpha, scale);
+            y += U(scale == Style.Body ? 24 : 17);
         }
     }
 
@@ -285,12 +289,14 @@ sealed class Hud
             int idx = cards.FindIndex(c => c.S == s) + 1;
             Rect(new Rectangle(r.X + U(3), r.Y + U(3), U(13), U(13)), sel ? Gold : Color.White * 0.2f);
             Text($"{idx}", r.X + U(6), r.Y + U(6), sel ? Color.Black : Color.White, 1);
+            var type = s.Units.FirstOrDefault()?.Type ?? UnitType.Shieldman;
+            Text(Style.Numerals[Math.Clamp(type.Tier, 0, 5)], r.X + U(4), r.Y + U(20), Gold, 1); // tier
             string tag = s.Order switch { Order.Follow => "FLW", Order.Charge => s.Target != null ? "ATK" : "CHG", _ => "HLD" };
             TextR(tag, r.Right - U(4), r.Y + U(5), s.Order == Order.Charge ? Foe : Dim, 1);
             if (s.Loose) TextR("LOOSE", r.Right - U(4), r.Y + U(14), Dim, 1);
             if (!s.FireAtWill) TextR("HOLD", r.Right - U(4), r.Y + U(23), Warn, 1);
 
-            Icon(s.Units.FirstOrDefault()?.Type ?? UnitType.Shieldman, r.X + r.Width / 2, r.Y + U(8));
+            Icon(type, new Rectangle(r.X + U(16), r.Y + U(4), r.Width - U(32), U(44)));
             TextC(s.Name.ToUpperInvariant(), r.X + r.Width / 2f, r.Y + U(50), Dim, 1);
             TextC($"{active}/{s.StartCount}", r.X + r.Width / 2f, r.Y + U(60), Color.White);
             Bar(new Rectangle(r.X + U(6), r.Y + U(77), r.Width - U(12), U(4)), active / (float)Math.Max(1, s.StartCount), Friendly);
@@ -299,31 +305,34 @@ sealed class Hud
         }
     }
 
-    /// A little portrait made from the unit's own part sprites.
-    void Icon(UnitType t, int cx, int top)
+    /// A portrait built from the troop's own part sprites, laid out by the same body metrics as the 3D puppet
+    /// (so every loadout and tier is drawn correctly), cropped to `box`.
+    void Icon(UnitType t, Rectangle box)
     {
-        int k = 2 * Ui;
-        void Part(string key, float x, float y, int maxH = 99)
+        var l = t.Look;
+        int k = Ui;
+        const float top = 1.92f; // metres at the top of the box
+        void Part(string key, float xm, float ym, string pal = "/0", Color? tint = null)
         {
-            var src = art[key + "/0"];
-            if (src.Height > maxH) src.Height = maxH;
-            sb.Draw(art.Atlas, new Rectangle(cx + (int)(x * k), top + (int)(y * k), src.Width * k, src.Height * k), src, Color.White);
+            var src = art[key + pal];
+            var dest = new Rectangle((int)(box.Center.X + xm / Art.Px * k - src.Width * k / 2f), (int)(box.Y + (top - ym) / Art.Px * k - src.Height * k / 2f),
+                src.Width * k, src.Height * k);
+            var d = Rectangle.Intersect(dest, box);
+            if (d.IsEmpty) return;
+            var s2 = new Rectangle(src.X + (d.X - dest.X) / k, src.Y + (d.Y - dest.Y) / k, d.Width / k, d.Height / k);
+            sb.Draw(art.Atlas, new Rectangle(d.X, d.Y, s2.Width * k, s2.Height * k), s2, tint ?? Color.White);
         }
-        switch (t.Class)
-        {
-            case UnitClass.Archer: Part("bow", -10, 3); break;
-            case UnitClass.Infantry or UnitClass.Captain: Part("shield", -11, 8); break;
-            case UnitClass.Cavalry: Part("hhead", -12, 11); break;
-        }
-        Part("torso.f", -5, 7);
-        Part("head.f", -4, 1);
-        Part(t.Class == UnitClass.Skirmisher ? "hood.f" : "helm.f", -4.5f, -0.5f);
-        switch (t.Class)
-        {
-            case UnitClass.Skirmisher: Part("spear", 4, -2, 21); break;
-            case UnitClass.Cavalry: Part("lance", 4, -2, 21); break;
-            case UnitClass.Infantry or UnitClass.Captain: Part("sword", 4, 3); break;
-        }
+        float WeaponY(string w) => 1.0f + (0.5f - SpriteSheet.Grip[w]) * art[w + "/0"].Height * Art.Px;
+        if (t.Mount != null) Part("hhead", -0.25f, 0.78f, "/n", new Color(Style.Coats[0]));
+        if (t.Class == UnitClass.Archer) Part(l.Weapon, 0.42f, 1.2f);
+        if (l.Cape) Part("cape", 0, 1.0f);
+        Part($"torso.{l.Body}.f", 0, 1.0f);
+        if (l.Tabard) Part("tabard.f", 0, 0.98f);
+        Part("head.f", 0, 1.53f);
+        if (l.Head != "none") Part($"helm.{l.Head}.f", 0, 1.81f - art[$"helm.{l.Head}.f/0"].Height * Art.Px / 2);
+        if (l.Plume) Part("plume", 0, 1.81f + art["plume/0"].Height * Art.Px / 2 - 0.06f);
+        if (t.Class != UnitClass.Archer) Part(l.Weapon, -0.42f, WeaponY(l.Weapon));
+        if (l.Shield != "none") Part($"shield.{l.Shield}", 0.36f, 0.95f);
     }
 
     void Crosshair()
