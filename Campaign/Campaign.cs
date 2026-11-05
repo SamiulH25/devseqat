@@ -4,7 +4,7 @@ namespace Ironfield;
 
 /// The headless campaign simulation (docs/CAMPAIGN.md): time, movement, encounters, AI, economy and your actions.
 /// The UI (MapScreen) reads its state and raises actions; battles come back through ApplyBattle.
-public sealed class Campaign
+public sealed partial class Campaign
 {
     public readonly CampaignState S;
     public readonly WorldMap Map;
@@ -19,13 +19,15 @@ public sealed class Campaign
     public Party Player => S.Parties[0];
     public CaptainState Captain => S.Captain;
     public int Day => (int)(S.Hours / 24) + 1;
-    public static readonly string[] FactionNames = { "Azure Crown", "Crimson Compact" };
+    public static readonly string[] FactionNames = { "Azure Crown", "Crimson Compact", "Northmarch" };
 
     public Campaign(CampaignState state)
     {
         S = state;
         Map = WorldMap.Generate(state.Seed);
         rng = new Rng(state);
+        // The map's settlement models follow the save (a v1 save was generated before the Northmarch had its capital).
+        for (int i = 0; i < Math.Min(Map.Settlements.Count, S.Settlements.Count); i++) Map.Settlements[i].Kind = S.Settlements[i].Kind;
     }
 
     // ---------- a new campaign ----------
@@ -37,7 +39,15 @@ public sealed class Campaign
         var map = WorldMap.Generate(seed);
         s.Provinces = map.Provinces;
         s.Settlements = map.Settlements;
-        s.Factions = new List<FactionState> { new() { Id = 0, Name = FactionNames[0], Treasury = 2000 }, new() { Id = 1, Name = FactionNames[1], Treasury = 2000 } };
+        int factions = s.Provinces.Max(p => p.Faction) + 1;
+        s.Factions = Enumerable.Range(0, factions).Select(f => new FactionState { Id = f, Name = FactionNames[f], Treasury = 2000 }).ToList();
+        // The Crown and the Compact are at war; the Northmarch keeps truces with both, for 20 and 40 days.
+        s.Wars.Add(new War { A = 0, B = 1 });
+        if (factions > 2)
+        {
+            s.Wars.Add(new War { A = 0, B = 2, Active = false, TruceUntil = 20 * 24 });
+            s.Wars.Add(new War { A = 1, B = 2, Active = false, TruceUntil = 40 * 24 });
+        }
         var c = new Campaign(s);
         var capital = s.Settlements.Where(t => t.Kind == SettlementKind.Town && t.Faction == 0).OrderBy(t => t.Pos.X).First();
         var player = new Party { Id = s.NextId++, Kind = PartyKind.Player, Name = "Your company", Faction = 0, Pos = capital.Pos + new Vector2(2, 0), Tier = 2 };
@@ -50,8 +60,9 @@ public sealed class Campaign
             v.Recruits = v.Kind == SettlementKind.Village ? 4 + c.rng.Next(5) : 0;
             v.Horses = v.Kind == SettlementKind.Town ? 10 : 0;
             if (v.Kind == SettlementKind.Town) c.RefreshMercenaries(v);
+            c.RaiseGarrison(v);
         }
-        for (int f = 0; f < 2; f++)
+        for (int f = 0; f < factions; f++)
             for (int i = 0; i < B.LordsPerFaction; i++) c.SpawnLord(f);
         for (int i = 0; i < 3; i++) c.SpawnBandits();
         // The guided first fight: a weak band close by, coming for you.
@@ -64,7 +75,7 @@ public sealed class Campaign
     }
 
     public CompanyRecord NewCompany(string troop, string role, int men, float xp) =>
-        new() { Id = S.NextId++, Troop = troop, Role = role, Men = men, Xp = xp, Name = Rules.CompanyName(rng, role) };
+        WithOfficer(new() { Id = S.NextId++, Troop = troop, Role = role, Men = men, Xp = xp, Name = Rules.CompanyName(rng, role) });
 
     public void Log(string text)
     {
@@ -83,12 +94,23 @@ public sealed class Campaign
     {
         if (a == b || a.Down || b.Down) return false;
         if (a.Kind == PartyKind.Bandit || b.Kind == PartyKind.Bandit) return a.Kind != b.Kind;
-        int fa = SideOf(a), fb = SideOf(b);
-        return fa >= 0 && fb >= 0 && fa != fb && S.AtWar;
+        return FactionsAtWar(SideOf(a), SideOf(b));
+    }
+
+    public War? WarBetween(int a, int b) => S.Wars.FirstOrDefault(w => (w.A == a && w.B == b) || (w.A == b && w.B == a));
+    public bool FactionsAtWar(int a, int b) => a >= 0 && b >= 0 && a != b && WarBetween(a, b) is { Active: true };
+    public bool AtWarWithAnyone(int f) => S.Wars.Any(w => w.Active && (w.A == f || w.B == f));
+
+    /// Credit `winner` in its war with `loser` (battles won, villages threatened, towns taken).
+    void Score(int winner, int loser, float amount)
+    {
+        if (WarBetween(winner, loser) is not { Active: true } w) return;
+        if (w.A == winner) w.ScoreA += amount; else w.ScoreB += amount;
+        if (winner < S.Factions.Count) S.Factions[winner].WarScore += amount;
     }
 
     /// Enemy towns will not trade with you.
-    public bool Refuses(Settlement s) => Captain.Contract >= 0 && S.AtWar && s.Faction != Captain.Contract;
+    public bool Refuses(Settlement s) => Captain.Contract >= 0 && FactionsAtWar(Captain.Contract, s.Faction);
 
     public Settlement? SettlementAt(Vector2 p, float r = 6f) => S.Settlements.Where(s => Vector2.Distance(s.Pos, p) < r).OrderBy(s => Vector2.Distance(s.Pos, p)).FirstOrDefault();
     public bool InTown(Party p) => SettlementAt(p.Pos) is { Kind: SettlementKind.Town } t && (p.Kind != PartyKind.Player || !Refuses(t));
@@ -115,7 +137,8 @@ public sealed class Campaign
     public float Speed(Party p)
     {
         bool mounted = p.Companies.Count > 0 && p.Companies.All(c => c.Men == 0 || c.Type.Mount != null);
-        float s = mounted ? B.HorseSpeed : B.FootSpeed;
+        float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1);
+        if (p.Kind == PartyKind.Player) s *= 1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f);
         if (p.Kind == PartyKind.Player && Captain.Perks.Contains(Perk.Horsemaster)) s *= 1.05f;
         int men = p.Men, wounded = p.Wounded;
         if (men + wounded > 0) s *= 1 - MathF.Min(0.2f, wounded / (float)(men + wounded) * 0.5f);
@@ -197,7 +220,7 @@ public sealed class Campaign
             var (p, c, team) = e;
             bool teamWon = r.Winner == team;
             int menBefore = c.Men;
-            float pw = B.WoundBase + c.Type.Armor / B.WoundArmor + (p == Player && Captain.Perks.Contains(Perk.Surgeon) ? 0.1f : 0);
+            float pw = B.WoundBase + c.Type.Armor / B.WoundArmor + (p == Player && Captain.Perks.Contains(Perk.Surgeon) ? 0.1f : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
             pw = Math.Clamp(pw, B.WoundMin, B.WoundMax);
             int wounded = (int)MathF.Round(cr.Fallen * pw), killed = cr.Fallen - wounded;
             int captured = teamWon ? 0 : (int)MathF.Round(wounded * B.CaptureChance);
@@ -217,10 +240,11 @@ public sealed class Campaign
             if (cr.Deployed) { c.Battles++; c.Kills += cr.Kills; }
             float lostFrac = menBefore > 0 ? (menBefore - c.Men) / (float)menBefore : 0;
             c.Cohesion = Math.Clamp(c.Cohesion + (teamWon ? 5 : -5) - lostFrac * 10, 0, 30);
+            if (cr.Deployed) OfficerAfterBattle(c, teamWon, lostFrac);
             if (playerIn && team != playerTeam && won)
             {
                 loot += (cr.Fallen + cr.Fled) * c.Type.Cost * B.LootRate;
-                ransom += captured * c.Type.Cost * B.RansomRate;
+                TakePrisoners(c.Troop, captured); // held, not ransomed at once (B3)
             }
             if (playerIn) reports.Add(new CompanyReport(c.Id, c.Name, c.Troop, team == playerTeam ? 0 : 1, menBefore, c.Men, killed, wounded, captured,
                 cr.Fled - fledBack, xp, Rules.UpgradeReady(c), cr.Deployed));
@@ -231,22 +255,31 @@ public sealed class Campaign
         var winners = r.Winner == 0 ? side0 : side1;
         var losers = r.Winner == 0 ? side1 : side0;
         float lostStrength = (r.Winner == 0 ? startStrength1 - side1.Sum(Rules.Strength) : startStrength0 - side0.Sum(Rules.Strength));
-        foreach (var p in winners) { p.Cooldown = 6; if (p.Kind != PartyKind.Player) p.Gold += lostStrength * 2; }
+        foreach (var p in winners) { p.Cooldown = 6; if (p.Kind is PartyKind.Lord) p.Gold += lostStrength * 2; }
         foreach (var p in losers)
         {
             p.Cooldown = 12;
             p.ChaseId = -1;
+            if (p.Kind == PartyKind.Garrison) continue;
             if (p.Kind == PartyKind.Bandit) { p.Down = true; continue; }
             if (p.Kind == PartyKind.Lord && (p.Men < before[p] * 0.25f || p.Men == 0))
             {
                 p.Down = true;
                 p.DownUntil = (float)S.Hours + 5 * 24;
                 p.Pos = SettlementById(p.HomeId).Pos;
-                Log($"{p.Name}'s army is scattered.");
+                p.SiegeTarget = -1;
+                if (playerIn && won && rng.Chance(0.5f))
+                {
+                    p.Captive = true;
+                    p.DownUntil = float.MaxValue;
+                    Player.Captives.Add(p.Id);
+                    Log($"{p.Name} is your prisoner.");
+                }
+                else Log($"{p.Name}'s army is scattered.");
             }
         }
-        int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
-        if (wf >= 0 && losers.Any(p => SideOf(p) >= 0)) S.Factions[wf].WarScore += lostStrength;
+        int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
+        if (wf >= 0 && lf >= 0) Score(wf, lf, lostStrength);
         S.Parties.RemoveAll(p => p.Kind == PartyKind.Bandit && p.Down);
 
         var report = new BattleReport(won, enemyName, reports, 0, 0, 0, 0, 0, r.Captain);
@@ -261,6 +294,7 @@ public sealed class Campaign
             renown = B.RenownPerVictory + (playerTeam == 0 ? startStrength1 : startStrength0) / B.RenownStrengthDivisor;
             horses = r.HorsesTaken;
             S.Gold += loot + ransom + bounty;
+            foreach (var e in losers) S.LastBattleFoe = e.Id;
             Captain.Renown += renown;
             Player.Horses += horses;
         }
@@ -322,7 +356,7 @@ public sealed class Campaign
             PlayerMount = Rules.CaptainMount(Captain),
             EnemyDamage = Settings.Current.EnemyDamage,
             Ground = Map.BattleGround(Player.Pos),
-            Palette = new[] { Math.Max(0, Captain.Contract), enemy.Kind == PartyKind.Bandit ? 3 : Math.Max(0, enemy.Faction) },
+            Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(enemy.Kind == PartyKind.Bandit ? -2 : enemy.Faction) },
         };
         return setup;
     }
@@ -330,7 +364,9 @@ public sealed class Campaign
     public BattleReport FinishBattle(BattleResult r, BattleSetup setup)
     {
         Encounter = null;
-        return Apply(r, setup.Side0, setup.Side1, setup.EnemyName);
+        var report = Apply(r, setup.Side0, setup.Side1, setup.EnemyName);
+        if (setup.SiegeOf >= 0) AfterAssault(S.Settlements[setup.SiegeOf], r.Winner == 0);
+        return Report ?? report;
     }
 
     public BattleReport AutoResolveEncounter()
@@ -394,14 +430,15 @@ public sealed class Campaign
     {
         n = Math.Min(n, s.Recruits);
         if (n <= 0) return "NO RECRUITS";
-        int cost = n * Troops.Get("levies").Cost;
+        string levy = RecruitTroop(s.Faction);
+        int cost = n * Troops.Get(levy).Cost;
         if (S.Gold < cost) return $"NEEDS {cost} CROWNS";
         if (n > RoomForMen) return "PARTY IS FULL (RENOWN RAISES THE LIMIT)";
-        var into = Player.Companies.FirstOrDefault(c => c.Troop == "levies" && c.Men + n <= Rules.Cap("levies", Rules.RoleOf(c)));
+        var into = Player.Companies.FirstOrDefault(c => c.Troop == levy && c.Men + n <= Rules.Cap(levy, Rules.RoleOf(c)));
         if (into == null)
         {
             if (Player.Companies.Count >= Slots) return "NO FREE COMPANY (RENOWN RAISES THE LIMIT)";
-            Player.Companies.Add(into = NewCompany("levies", "infantry", 0, 0));
+            Player.Companies.Add(into = NewCompany(levy, "infantry", 0, 0));
         }
         Rules.AddMen(into, n);
         s.Recruits -= n;
@@ -501,6 +538,12 @@ public sealed class Campaign
 
     public void SignContract(int faction)
     {
+        if (faction != Captain.Contract)
+            foreach (var f in S.Settlements.Where(t => t.Owner == Player.Id))
+            {
+                f.Owner = -1; // fiefs go back to the liege you leave
+                Log($"You give {f.Name} back to the {FactionNames[f.Faction]}.");
+            }
         Captain.Contract = faction;
         Log(faction < 0 ? "You are a free captain again." : $"You sign on with the {FactionNames[faction]}.");
     }
@@ -519,6 +562,7 @@ public sealed class Campaign
     void SpawnLord(int faction)
     {
         var towns = S.Settlements.Where(t => t.Faction == faction && t.Kind != SettlementKind.Village).ToList();
+        if (towns.Count == 0) return;
         var home = rng.Pick(towns);
         var n = Names.Get();
         var lord = new Party
@@ -530,7 +574,7 @@ public sealed class Campaign
         int tier = Math.Clamp(1 + rng.Next(2) + Day / 40, 1, 4);
         foreach (var role in new[] { "infantry", "archers", rng.Next(2) == 0 ? "spears" : "horse" })
         {
-            string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, 4));
+            string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, 4), faction);
             lord.Companies.Add(NewCompany(troop, role, (int)(Rules.Cap(troop, role) * rng.Range(0.7f, 1f)), 0));
         }
         S.Parties.Add(lord);
@@ -560,7 +604,7 @@ public sealed class Campaign
         {
             string role = rng.Pick(new[] { "infantry", "archers", "spears", "horse" });
             int tier = rng.Chance(Math.Min(0.7f, Day / 60f + 0.2f)) ? 3 : 2;
-            string troop = Armies.LineTroop(role, tier);
+            string troop = Armies.LineTroop(role, tier, t.Faction);
             var m = NewCompany(troop, role, (int)(Rules.Cap(troop, role) * rng.Range(0.6f, 0.9f)), 0);
             m.Xp = rng.Range(0, Math.Max(1, m.Type.UpgradeXp) * 0.5f);
             m.Name = Rules.CompanyName(rng, role);
@@ -578,7 +622,7 @@ public sealed class Campaign
                 if (p.Kind == PartyKind.Lord && S.Hours >= p.DownUntil)
                 {
                     p.Down = false;
-                    if (p.Men < 10) p.Companies.Add(NewCompany("levies", "infantry", 20, 0));
+                    if (p.Men < 10) p.Companies.Add(NewCompany(RecruitTroop(p.Faction), "infantry", 20, 0));
                     p.Task = "refit";
                 }
                 continue;
@@ -586,6 +630,8 @@ public sealed class Campaign
             if (S.Hours < p.TaskUntil && p.Task != "refit") continue;
             if (p.Kind == PartyKind.Lord) LordThink(p); else BanditThink(p);
         }
+        CheckContracts();
+        SiegeHourly();
     }
 
     IEnumerable<Party> Visible(Party p, float range) => S.Parties.Where(q => q != p && !q.Down && Vector2.Distance(p.Pos, q.Pos) < range);
@@ -601,8 +647,15 @@ public sealed class Campaign
             || p.Companies.Any(c => Rules.UpgradeReady(c) && p.Gold >= Rules.UpgradeCost(c, c.Type.UpgradesTo[0], p.Horses));
         if (threat != null)
         {
+            if (p.SiegeTarget >= 0) Log($"{p.Name} abandons the siege of {SettlementById(p.SiegeTarget).Name}.");
+            p.SiegeTarget = -1;
             p.Task = "flee"; p.ChaseId = -1; p.Goal = home.Pos; p.Moving = true; p.TaskUntil = (float)S.Hours + 3;
         }
+        else if (p.SiegeTarget >= 0)
+        {
+            p.Task = "siege"; p.ChaseId = -1; p.Moving = false; p.TaskUntil = (float)S.Hours + 4;
+        }
+        else if (!needsRefit && TryBesiege(p)) { }
         else if (needsRefit || p.Task == "refit")
         {
             p.Task = "refit"; p.ChaseId = -1; p.Goal = home.Pos; p.Moving = true;
@@ -621,12 +674,12 @@ public sealed class Campaign
             p.Moving = true;
             p.TaskUntil = (float)S.Hours + 10;
             // A lord in an enemy province threatens its villages (they stop giving recruits for a week).
-            if (prov.Faction != p.Faction && S.AtWar)
+            if (FactionsAtWar(p.Faction, prov.Faction))
                 foreach (var v in S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.Province == prov.Id && Vector2.Distance(v.Pos, p.Pos) < 12 && v.ThreatUntil < S.Hours))
                 {
                     v.ThreatUntil = (float)S.Hours + 7 * 24;
                     v.Recruits = 0;
-                    S.Factions[p.Faction].WarScore += 20;
+                    Score(p.Faction, prov.Faction, 20);
                     Log($"{p.Name} threatens {v.Name}.");
                 }
         }
@@ -635,13 +688,14 @@ public sealed class Campaign
     /// At home: recruit levies, upgrade companies that are ready, by the same rules and prices as yours.
     void Refit(Party p, Settlement home)
     {
-        if (p.Companies.Count == 0) p.Companies.Add(NewCompany("levies", "infantry", 12, 0)); // the lord's household, raised again
+        string levy = RecruitTroop(p.Faction);
+        if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", 12, 0)); // the lord's household, raised again
         foreach (var v in S.Settlements.Where(v => v.Province == home.Province))
         {
             int n = Math.Min(v.Recruits, (int)(p.Gold / 10));
             if (n <= 0) continue;
-            var into = p.Companies.FirstOrDefault(c => c.Troop == "levies" && c.Men + n <= Rules.Cap("levies", Rules.RoleOf(c)));
-            if (into == null && p.Companies.Count < 5) p.Companies.Add(into = NewCompany("levies", rng.Pick(new[] { "infantry", "spears", "archers" }), 0, 0));
+            var into = p.Companies.FirstOrDefault(c => c.Troop == levy && c.Men + n <= Rules.Cap(levy, Rules.RoleOf(c)));
+            if (into == null && p.Companies.Count < 5) p.Companies.Add(into = NewCompany(levy, rng.Pick(new[] { "infantry", "spears", "archers" }), 0, 0));
             if (into == null) break;
             Rules.AddMen(into, n);
             v.Recruits -= n;
@@ -650,7 +704,7 @@ public sealed class Campaign
         foreach (var c in p.Companies.Where(Rules.UpgradeReady).ToList())
         {
             var options = c.Type.UpgradesTo;
-            string to = c.Troop == "levies" ? Armies.LineTroop(Rules.RoleOf(c), 2) : options[rng.Next(options.Length)];
+            string to = c.Type.Tier == 1 ? Armies.LineTroop(Rules.RoleOf(c), 2, p.Faction) : options[rng.Next(options.Length)];
             if (!options.Contains(to)) to = options[0];
             int cost = Rules.UpgradeCost(c, to, p.Horses);
             if (p.Gold < cost) continue;
@@ -693,48 +747,69 @@ public sealed class Campaign
             {
                 if (c.Wounded > 0)
                 {
-                    int heal = Math.Min(c.Wounded, Math.Max(1, (int)MathF.Round(c.Wounded * (town ? B.HealTown : B.HealField))));
+                    int heal = Math.Min(c.Wounded, Math.Max(1, (int)MathF.Round(c.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1))));
                     c.Wounded -= heal;
                     c.Men += heal;
                 }
                 if (town && c.Cohesion < 20) c.Cohesion = MathF.Min(20, c.Cohesion + 1);
-                if (p.Kind != PartyKind.Bandit && c.Men > 0) c.Xp += town ? B.DrillTown : B.DrillCamp; // daily drill
+                if (p.Kind != PartyKind.Bandit && c.Men > 0) c.Xp += (town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0); // daily drill
             }
         }
+        EatDaily();
         FactionAI();
+        SiegesDaily();
         if (S.Parties.Count(p => p.Kind == PartyKind.Bandit) < B.BanditsMax && rng.Chance(0.5f)) SpawnBandits();
-        // War and truce.
-        if (S.AtWar && MathF.Abs(S.Factions[0].WarScore - S.Factions[1].WarScore) > B.PeaceScore)
+        // A realm that holds close to half the seats unites the others against it: their truces with it end, and they make peace.
+        int seats = S.Settlements.Count(s => s.Kind != SettlementKind.Village);
+        for (int f = 0; f < S.Factions.Count && S.Factions.Count > 2; f++)
         {
-            int loser = S.Factions[0].WarScore < S.Factions[1].WarScore ? 0 : 1;
-            S.AtWar = false;
-            S.TruceUntil = (float)S.Hours + B.TruceDays * 24;
-            foreach (var f in S.Factions) f.WarScore = 0;
-            Log($"The {FactionNames[loser]} sues for peace: a truce of {B.TruceDays} days.");
+            if (S.Settlements.Count(s => s.Kind != SettlementKind.Village && s.Faction == f) < seats * 0.45f) continue;
+            foreach (var w in S.Wars)
+            {
+                bool involves = w.A == f || w.B == f;
+                if (involves && !w.Active && Alive(w.A) && Alive(w.B)) { w.Active = true; w.ScoreA = w.ScoreB = 0; Log($"The realms rise against the {FactionNames[f]}: the {FactionNames[w.A == f ? w.B : w.A]} take up arms."); }
+                if (!involves && w.Active) { w.Active = false; w.TruceUntil = (float)S.Hours + B.TruceDays * 24; Log($"The {FactionNames[w.A]} and the {FactionNames[w.B]} make peace against the {FactionNames[f]}."); }
+            }
         }
-        else if (!S.AtWar && S.Hours >= S.TruceUntil)
+        // War and truce, for each pair of factions.
+        foreach (var w in S.Wars)
         {
-            S.AtWar = true;
-            Log("The truce ends. War again.");
+            bool aDead = !Alive(w.A), bDead = !Alive(w.B);
+            bool leaderInvolved = Enumerable.Range(0, S.Factions.Count).Any(f => (w.A == f || w.B == f) && S.Factions.Count > 2
+                && S.Settlements.Count(s => s.Kind != SettlementKind.Village && s.Faction == f) >= seats * 0.45f);
+            if (w.Active && ((MathF.Abs(w.ScoreA - w.ScoreB) > B.PeaceScore && !leaderInvolved) || aDead || bDead))
+            {
+                int loser = w.ScoreA < w.ScoreB ? w.A : w.B;
+                w.Active = false;
+                w.TruceUntil = (float)S.Hours + B.TruceDays * 24;
+                w.ScoreA = w.ScoreB = 0;
+                if (!aDead && !bDead) Log($"The {FactionNames[loser]} sues the {FactionNames[loser == w.A ? w.B : w.A]} for peace: a truce of {B.TruceDays} days.");
+            }
+            else if (!w.Active && S.Hours >= w.TruceUntil && !aDead && !bDead)
+            {
+                w.Active = true;
+                Log($"The truce between the {FactionNames[w.A]} and the {FactionNames[w.B]} ends. War again.");
+            }
         }
     }
 
+    /// A faction lives while it holds a town or castle.
+    public bool Alive(int f) => S.Settlements.Any(s => s.Faction == f && s.Kind != SettlementKind.Village);
+
     void FactionAI()
     {
-        for (int f = 0; f < 2; f++)
+        for (int f = 0; f < S.Factions.Count; f++)
         {
             var fs = S.Factions[f];
-            float income = S.Settlements.Where(t => t.Faction == f).Sum(t => t.Kind switch
-            {
-                SettlementKind.Town => B.TownIncome, SettlementKind.Castle => B.CastleIncome, _ => t.ThreatUntil > S.Hours ? 0 : B.VillageIncome,
-            });
+            if (!Alive(f)) continue;
+            float income = S.Settlements.Where(t => t.Faction == f && t.Owner != Player.Id).Sum(Income);
             fs.Treasury += income / 7;
             var lords = S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).ToList();
             if (lords.Count < B.LordsPerFaction && fs.Treasury >= 600) { SpawnLord(f); fs.Treasury -= 600; }
-            var front = S.Provinces.Where(p => p.Faction == f && p.Neighbors.Any(n => S.Provinces[n].Faction != f)).ToList();
-            var enemyFront = S.Provinces.Where(p => p.Faction != f && p.Neighbors.Any(n => S.Provinces[n].Faction == f)).ToList();
+            var front = S.Provinces.Where(p => p.Faction == f && p.Neighbors.Any(n => FactionsAtWar(f, S.Provinces[n].Faction))).ToList();
+            var enemyFront = S.Provinces.Where(p => FactionsAtWar(f, p.Faction) && p.Neighbors.Any(n => S.Provinces[n].Faction == f)).ToList();
             var idle = lords.Where(l => !l.Down && l.Task == "patrol").ToList();
-            if (S.AtWar && idle.Count >= 3 && enemyFront.Count > 0 && rng.Chance(0.2f))
+            if (idle.Count >= 3 && enemyFront.Count > 0 && rng.Chance(0.2f))
             {
                 var target = rng.Pick(enemyFront);
                 foreach (var l in idle.Take(4)) { l.PatrolProvince = target.Id; l.TaskUntil = 0; }
@@ -742,7 +817,7 @@ public sealed class Campaign
             }
             else
                 foreach (var l in idle.Where(l => l.PatrolProvince < 0 || rng.Chance(0.15f)))
-                    l.PatrolProvince = front.Count > 0 && S.AtWar ? rng.Pick(front).Id : S.Settlements[l.HomeId].Province;
+                    l.PatrolProvince = front.Count > 0 ? rng.Pick(front).Id : S.Settlements[l.HomeId].Province;
         }
     }
 
@@ -755,7 +830,8 @@ public sealed class Campaign
             {
                 if (Captain.Perks.Contains(Perk.Quartermaster)) upkeep *= 0.9f;
                 float pay = Captain.Contract >= 0 ? upkeep * B.ContractPay * Settings.Current.PayFactor : 0;
-                S.LastWeekBalance = pay - upkeep;
+                float fiefs = S.Settlements.Where(t => t.Owner == Player.Id).Sum(Income);
+                S.LastWeekBalance = pay + fiefs - upkeep;
                 S.Gold += S.LastWeekBalance;
                 if (S.Gold < 0)
                 {
@@ -782,6 +858,8 @@ public sealed class Campaign
             RefreshMercenaries(t);
             t.Horses = Math.Min(20, t.Horses + 5);
         }
+        GarrisonsWeekly();
+        PrisonersWeekly();
     }
 
     static void Desert(Party p)

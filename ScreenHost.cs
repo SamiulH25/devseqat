@@ -42,6 +42,7 @@ sealed class ScreenHost : Game
         };
         Window.AllowUserResizing = true;
         Window.Title = "Ironfield";
+        Window.TextInput += (_, e) => { if (Ui.Typed.Count < 32) Ui.Typed.Enqueue(e.Character); };
         SettingsPanel = new SettingsScreen(this);
     }
 
@@ -230,7 +231,30 @@ sealed class ScreenHost : Game
             case 8: Shot("campaign-deploy"); break;
             case 9: battle.StageCommandView(battle.Battle.Centroid(0), 0.8f, 50, true); cStage++; break;
             case 10 when battle.Battle.Time > 7: battle.StageCommandView(battle.Battle.Centroid(0), 0.8f, 50, false); Shot("campaign-battle"); break;
-            case 11: Exit(); break;
+            case 11:
+            {
+                mode = Mode.Map;
+                c.TakePrisoners("levies", 12);
+                map.Stage("contract");
+                Shot("campaign-contract");
+                break;
+            }
+            case 12:
+            {
+                var castle = c.S.Settlements.Where(s => s.Kind != SettlementKind.Village && c.FactionsAtWar(c.Captain.Contract, s.Faction)).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
+                foreach (var co in c.Player.Companies) co.Men = Math.Max(co.Men, 20);
+                c.Player.Pos = castle.Pos + new Vector2(4, 0);
+                c.Besiege(castle);
+                castle.SiegeSince -= 13;
+                map.Stage("siege", castle);
+                Shot("campaign-siege-panel");
+                break;
+            }
+            case 13: StartCampaignBattle(c.PrepareAssault(c.Besieging!)); cStage++; shotFrames = 0; break;
+            case 14: Shot("campaign-siege-deploy"); break;
+            case 15: battle.StageCommandView(new Vector2(0, 0), 0.9f, 60, true); cStage++; break;
+            case 16 when battle.Battle.Time > 10: battle.StageCommandView(new Vector2(-10, 6), 0.75f, 45, false); Shot("campaign-siege"); break;
+            case 17: Exit(); break;
         }
     }
 }

@@ -19,6 +19,7 @@ public sealed class SpriteSheet
     public static readonly Dictionary<string, float> Grip = new()
     {
         ["sword"] = 0.233f, ["longsword"] = 0.17f, ["axe"] = 0.2f, ["spear"] = 0.3f, ["pike"] = 0.3f, ["lance"] = 0.3f, ["bow"] = 0.5f, ["longbow"] = 0.5f,
+        ["crossbow"] = 0.55f, ["greatsword"] = 0.12f, ["daneaxe"] = 0.3f,
     };
 
     static readonly string[] Views = { "f", "s", "b" };
@@ -52,7 +53,7 @@ public sealed class SpriteSheet
     // ---------- materials for one side ----------
 
     Mat cloth = null!, clothDk = null!, trim = null!, quilt = null!, linen = null!, skin = null!, hair = null!, leather = null!,
-        wood = null!, steel = null!, plate = null!, iron = null!, mail = null!, brass = null!, ink = null!, blood = null!, mark = null!;
+        wood = null!, steel = null!, plate = null!, iron = null!, mail = null!, brass = null!, ink = null!, blood = null!, mark = null!, fur = null!;
     Emblem charge;
 
     void Side(int p)
@@ -63,7 +64,7 @@ public sealed class SpriteSheet
         skin = new(Style.Skin); hair = new(Style.Hair, Pattern.Hair); leather = new(Style.Leather); wood = new(Style.Wood, Pattern.Wood);
         steel = new(Style.Steel); plate = new(Color.Lerp(Style.Steel, Style.Iron, 0.3f), Pattern.Plate); iron = new(Style.Iron);
         mail = new(Color.Lerp(Style.Steel, Style.Iron, 0.15f), Pattern.Mail);
-        brass = new(Style.Brass); ink = Mat.Flat(new Color(32, 24, 30)); blood = new(Style.Blood); mark = Mat.Flat(h.Trim);
+        brass = new(Style.Brass); fur = new(new Color(122, 98, 72), Pattern.Hair); ink = Mat.Flat(new Color(32, 24, 30)); blood = new(Style.Blood); mark = Mat.Flat(h.Trim);
         charge = h.Charge;
         string s = "/" + p;
 
@@ -167,6 +168,20 @@ public sealed class SpriteSheet
                 else for (int x = 1; x < 17; x++) c.Set(x, 9, iron, 0.2f);
                 return c;
             }
+            case "spangen":
+            {
+                // The northern clans' helm: a riveted cone with a nasal, brass bands and short horns.
+                var c = new Canvas(24, 15);
+                c.Body(2.3f, 11, y => (12 - 1 - (y - 2.3f) * 0.82f, 12 + 1 + (y - 2.3f) * 0.82f), plate);
+                c.Rect(4.5f, 9.5f, 19.5f, 11.5f, brass);
+                for (int y = 3; y < 10; y++) c.Set(12, y, brass, 0.4f);
+                if (v == "f") c.Rect(11, 10, 13, 15, iron, 0.1f);
+                if (v == "s") c.Rect(18, 10, 20, 15, iron, 0.1f);
+                if (v != "s")
+                    for (int i = 0; i < 6; i++) { c.Set(4 - i / 2, 8 - i, linen, 0.3f); c.Set(20 + i / 2, 8 - i, linen, 0.3f); c.Set(5 - i / 2, 8 - i, linen); c.Set(19 + i / 2, 8 - i, linen); }
+                else for (int i = 0; i < 6; i++) { c.Set(11 - i / 2, 7 - i, linen, 0.3f); c.Set(12 - i / 2, 7 - i, linen); }
+                return c;
+            }
             default: // greathelm
             {
                 var c = new Canvas(18, 21);
@@ -202,7 +217,7 @@ public sealed class SpriteSheet
         bool side = v == "s";
         var c = new Canvas(side ? 13 : 20, 23);
         Func<float, (float, float)> span = side ? SideSpan : TorsoSpan;
-        var m = body switch { "gambeson" => quilt, "mail" => mail, "plate" => plate, _ => cloth };
+        var m = body switch { "gambeson" => quilt, "mail" => mail, "plate" => plate, "fur" => clothDk, _ => cloth };
         if (body == "plate")
         {
             c.Body(0, 14, span, plate);
@@ -224,6 +239,8 @@ public sealed class SpriteSheet
         if (v == "f" && body is "tunic" or "gambeson")
             foreach (var (x, y) in new[] { (9, 0), (10, 0), (9, 1), (10, 1), (10, 2) }) c.Set(x, y, skin, 0.4f);
         if (body == "gambeson") for (int x = 0; x < c.W; x++) c.Shade(x, 0, -0.3f);
+        if (body == "fur") // a shaggy mantle over the shoulders
+            c.Area((x, y) => y < 6.5f + 1.2f * MathF.Sin(x * 1.7f) && x >= span(y).Item1 - 0.6f && x <= span(y).Item2 + 0.6f, fur);
         return c;
     }
 
@@ -258,6 +275,9 @@ public sealed class SpriteSheet
             case Ironfield.Emblem.Lozenge:
                 c.Area((x, y) => MathF.Abs(x - cx) + MathF.Abs(y - cy) * 0.8f <= s, mark);
                 break;
+            case Ironfield.Emblem.Bend:
+                c.Line(cx - s, cy - s, cx + s, cy + s, mark, 0.7f, 3);
+                break;
             default: break; // no charge (brigands)
         }
     }
@@ -276,6 +296,7 @@ public sealed class SpriteSheet
         switch (body)
         {
             case "gambeson": c.Rect(1, 0, 7, 20, quilt); c.Rect(1, 0, 7, 2.5f, leather); break;
+            case "fur": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 4, fur); break;
             case "mail": c.Rect(1.5f, 0, 6.5f, 20, mail); break;
             case "plate":
                 c.Rect(1.5f, 0, 6.5f, 20, plate);
@@ -380,6 +401,29 @@ public sealed class SpriteSheet
             case "pike": return Polearm(90, 7, 2.2f, false);
             case "lance": return Polearm(93, 7, 1.8f, true);
             case "bow": return Bow(33);
+            case "greatsword": return Blade(58, 44);
+            case "daneaxe":
+            {
+                var c = new Canvas(12, 62);
+                c.Rect(5, 2, 7, 62, wood);
+                c.Body(1, 16, y => (0.3f, 6 - MathF.Abs(y - 8.5f) * 0.2f), steel); // a broad bearded head
+                c.Area((x, y) => y >= 12 && y < 20 && x >= 3 && x < 6 && y - 12 < (6 - x) * 2.5f, steel);
+                for (int y = 1; y < 16; y++) c.Shade(0, y, 0.5f);
+                c.Rect(4.5f, 0, 7.5f, 2.5f, iron);
+                c.Rect(4.6f, 40, 7.4f, 46, leather);
+                return c;
+            }
+            case "crossbow":
+            {
+                // Seen from above along the bolt: the stock, the steel prod across it, the string.
+                var c = new Canvas(24, 26);
+                c.Rect(10.5f, 3, 13.5f, 26, wood);
+                c.Body(2, 5, y => (0.5f, 23.5f), steel);
+                for (int x = 1; x < 23; x++) c.Set(x, 6 + (int)(MathF.Abs(x - 11.5f) * 0.15f), Mat.Flat(Style.Linen));
+                c.Rect(10, 0, 14, 3, iron);
+                c.Rect(9.5f, 14, 14.5f, 16, iron);
+                return c;
+            }
             default: return Bow(45); // longbow
         }
     }

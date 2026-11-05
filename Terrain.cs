@@ -2,7 +2,33 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village }
+public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wall, Tower, Gate, Ladder, House }
+
+/// A town wall across the field for an assault (roadmap B1). It runs the whole width at z = 14..16.5 (a walkway on raised
+/// ground, faced in stone toward the attackers, with an earth bank behind it), has a gate near x = 0 that attackers break
+/// down, and ladders where men on foot can climb. The heights are part of the terrain, so units stand on the walkway and
+/// arrows strike the wall's face; the face itself is a barrier in Battle.Move.
+public sealed class SiegeWall
+{
+    public const float Outer = 11.5f, Top0 = 14, Top1 = 16.5f, Inner = 19, Height = 4.5f, LadderHalf = 1.3f;
+    public const float GateX = 0.25f, GateHalf = 2.75f;
+    public readonly float[] Ladders;
+    public float GateHp, GateMax;
+    public bool GateOpen => GateHp <= 0;
+
+    public SiegeWall(int ladders, float gateHp)
+    {
+        Ladders = ladders switch { <= 0 => Array.Empty<float>(), 1 => new[] { -22f }, 2 => new[] { -24f, 22f }, _ => new[] { -36f, -16f, 18f, 38f } };
+        GateHp = GateMax = gateHp;
+    }
+
+    public bool AtGate(float x) => MathF.Abs(x - GateX) < GateHalf;
+    public bool AtLadder(float x) => Ladders.Any(l => MathF.Abs(x - l) < LadderHalf);
+    /// Inside the walls (on the walkway or in the town).
+    public static bool Inside(Vector2 p) => p.Y >= Outer;
+    /// Height the wall adds at a terrain vertex (vertices sit every 2.5 m; 14 and 16.5 are raised).
+    public float Raise(float x, float z) => z > 13 && z < 17.5f && !AtGate(x) ? Height : 0;
+}
 
 /// One piece of foliage (or, on the campaign map, a settlement). Radius > 0 = a solid obstacle (tree trunk, boulder).
 public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale, float Radius, int Seed);
@@ -44,9 +70,12 @@ public sealed class Terrain
     public readonly bool Grass = true;
     public readonly float MinimapRange = 110;
 
+    /// The town wall in an assault (null in field battles).
+    public readonly SiegeWall? Wall;
+
     public static Terrain Flat() => new(0, true, TerrainParams.Meadow);
     public Terrain(int seed) : this(seed, false, TerrainParams.Meadow) { }
-    public Terrain(int seed, TerrainParams p) : this(seed, false, p) { }
+    public Terrain(int seed, TerrainParams p, SiegeWall? wall = null) : this(seed, false, p, wall) { }
 
     /// A campaign map: heights, roads, foliage and settlements all given; no grass, overview covers everything.
     public Terrain(int seed, Func<float, float, float> height, Func<Vector2, float> roadDist, IEnumerable<Foliage> foliage, Func<Vector2, Vector3>? tint)
@@ -64,11 +93,13 @@ public sealed class Terrain
         foreach (var f in foliage) Add(f);
     }
 
-    Terrain(int seed, bool flat, TerrainParams p)
+    Terrain(int seed, bool flat, TerrainParams p, SiegeWall? wall = null)
     {
         Seed = seed;
         IsFlat = flat;
-        Params = p;
+        Params = wall != null ? p with { Road = false } : p;
+        Wall = wall;
+        p = Params;
         for (int i = 0; i < buckets.Length; i++) buckets[i] = new List<int>();
         if (flat) return;
 
@@ -107,6 +138,11 @@ public sealed class Terrain
         h += SmoothStep(120, 240, r) * (14 + 10 * Noise(x * 0.008f, z * 0.008f, Seed + 3));
         float rd = RoadDist(new Vector2(x, z));
         if (rd < 5) h -= 0.25f * (1 - rd / 5); // worn a little into the ground
+        if (Wall != null)
+        {
+            h = MathHelper.Lerp(h, 0.4f * h, SmoothStep(40, 0, MathF.Abs(z - 15))); // level ground along the wall
+            h += Wall.Raise(x, z);
+        }
         return h;
     }
 
@@ -205,7 +241,9 @@ public sealed class Terrain
 
     void PlaceFoliage(Random rng)
     {
-        bool Ok(Vector2 p, float space) => !Core(p) && RoadDist(p) > 4 && MathF.Abs(p.X) < Half - 8 && MathF.Abs(p.Y) < Half - 8 && !Blocked(p, space);
+        bool Ok(Vector2 p, float space) => !Core(p) && RoadDist(p) > 4 && MathF.Abs(p.X) < Half - 8 && MathF.Abs(p.Y) < Half - 8 && !Blocked(p, space)
+            && (Wall == null || p.Y < SiegeWall.Outer - 6 || p.Y > 70);
+        if (Wall != null) PlaceTown(rng);
         var woods = new List<(Vector2 C, float R)>();
 
         void Wood(Vector2 c, float r)
@@ -270,6 +308,27 @@ public sealed class Terrain
             float s = 0.9f + rng.NextSingle() * 1.1f;
             if (!Ok(p, s)) continue;
             Add(new Foliage(FoliageKind.Rock, p, s, 0.75f * s, rng.Next()));
+        }
+    }
+
+    /// The wall's stones, towers, gate and ladders, and the houses of the town behind it.
+    void PlaceTown(Random rng)
+    {
+        var w = Wall!;
+        for (float x = -250; x < 250; x += 5)
+            if (!w.AtGate(x + 2.5f) && !w.AtGate(x) && !w.AtGate(x + 5)) Add(new Foliage(FoliageKind.Wall, new Vector2(x + 2.5f, 15.25f), 5, 0, rng.Next()));
+        // The wall either side of the gate stops at the gatehouse towers.
+        Add(new Foliage(FoliageKind.Wall, new Vector2(SiegeWall.GateX - 4.6f, 15.25f), 3.7f, 0, rng.Next()));
+        Add(new Foliage(FoliageKind.Wall, new Vector2(SiegeWall.GateX + 4.6f, 15.25f), 3.7f, 0, rng.Next()));
+        foreach (float x in new[] { SiegeWall.GateX - 5.2f, SiegeWall.GateX + 5.2f, -60, -30, 30, 60, -95, 95 })
+            Add(new Foliage(FoliageKind.Tower, new Vector2(x, 15.25f), 1, 0, rng.Next()));
+        Add(new Foliage(FoliageKind.Gate, new Vector2(SiegeWall.GateX, SiegeWall.Outer + 0.6f), 1, 0, rng.Next()));
+        foreach (float x in w.Ladders) Add(new Foliage(FoliageKind.Ladder, new Vector2(x, SiegeWall.Outer), 1, 0, rng.Next()));
+        for (int i = 0; i < 40; i++)
+        {
+            var p = new Vector2(rng.NextSingle() * 150 - 75, 34 + rng.NextSingle() * 40);
+            if (MathF.Abs(p.X - SiegeWall.GateX) < 9 || Blocked(p, 5)) continue;
+            Add(new Foliage(FoliageKind.House, p, 1 + rng.NextSingle() * 0.4f, 2.6f, rng.Next()));
         }
     }
 

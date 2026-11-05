@@ -7,7 +7,7 @@ namespace Ironfield;
 // Nothing here references MonoGame graphics: the self-test runs whole campaigns headless.
 
 public enum SettlementKind { Village, Town, Castle }
-public enum PartyKind { Player, Lord, Bandit }
+public enum PartyKind { Player, Lord, Bandit, Garrison }
 public enum Perk { Bannerman, WarCry, Tactician, Quartermaster, Surgeon, Drillmaster, Horsemaster, IronWill }
 
 /// A persistent company (docs/CAMPAIGN.md 4.1). Xp is the average per fit man.
@@ -16,8 +16,26 @@ public sealed class CompanyRecord
     public int Id, Men, Wounded, Battles, Kills;
     public string Name = "", Troop = "", Role = "";
     public float Xp, Cohesion = 10;
+    /// The company's sergeant (B5): a name and up to three traits; "" = none yet.
+    public string Officer = "";
+    public List<string> Traits = new();
 
     public UnitType Type => Troops.Get(Troop);
+}
+
+/// Captured men held by a party (B3).
+public sealed class PrisonerGroup
+{
+    public string Troop = "";
+    public int Count;
+}
+
+/// A contract from a faction's steward (B4). Kind: hunt (a lord), clear (brigands), defend (a village), scout (a town), take (a castle or town).
+public sealed class Contract
+{
+    public int Id, Target, Faction;
+    public string Kind = "", Text = "";
+    public float Deadline, Reward, Progress;
 }
 
 public sealed class Party
@@ -29,6 +47,11 @@ public sealed class Party
     public bool Moving, Down, Resting;
     public float Gold, Cooldown, DownUntil, TaskUntil, Facing;
     public List<CompanyRecord> Companies = new();
+    public List<PrisonerGroup> Prisoners = new();
+    public List<int> Captives = new();   // lords you hold for ransom
+    public bool Captive;                 // a lord held by you
+    public float Food = 10;              // days of food (yours; lords are fed by their faction)
+    public int SiegeTarget = -1;         // the settlement this party is besieging
 
     public int Men => Companies.Sum(c => c.Men);
     public int Wounded => Companies.Sum(c => c.Wounded);
@@ -42,6 +65,12 @@ public sealed class Settlement
     public Vector2 Pos;
     public float ThreatUntil;
     public List<CompanyRecord> Mercenaries = new();
+    public List<CompanyRecord> Garrison = new();   // towns and castles (B1)
+    public List<Contract> Offers = new();          // the steward's contract board (towns)
+    public float Supplies = 30;                    // days a garrison can hold out under siege
+    public int Owner = -1;                         // party id of the holder of the fief (-1: the faction)
+    public bool Besieged;
+    public float SiegeSince;                       // when the siege began (ladders take 12 hours)
 }
 
 public sealed class Province
@@ -59,6 +88,14 @@ public sealed class FactionState
     public float Treasury, WarScore;
 }
 
+/// The state between two factions (B6): at war, or in truce until a time. Score: what each side has won from the other.
+public sealed class War
+{
+    public int A, B;
+    public bool Active = true;
+    public float TruceUntil, ScoreA, ScoreB;
+}
+
 public sealed class CaptainState
 {
     public float Renown = 50, WoundedUntil;
@@ -74,18 +111,22 @@ public sealed class LogEntry
 
 public sealed class CampaignState
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
     public int Version = CurrentVersion, Seed, NextId = 1, UnpaidWeeks;
     public double Hours;
     public ulong Rng;
     public float Gold, LastWeekBalance, TruceUntil;
-    public bool AtWar = true, Ironman, GameOver;
+    public bool Ironman, GameOver;
+    public bool? AtWar;                         // version 1 only (one war); read by Migrate
+    public List<War> Wars = new();
     public CaptainState Captain = new();
     public List<Party> Parties = new();
     public List<Settlement> Settlements = new();
     public List<Province> Provinces = new();
     public List<FactionState> Factions = new();
     public List<LogEntry> Log = new();
+    public List<Contract> Contracts = new();   // the contracts you have accepted
+    public int LastBattleFoe = -1;             // the last party you defeated (for hunt contracts)
 
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true, WriteIndented = true };
 
@@ -94,8 +135,21 @@ public sealed class CampaignState
     public static CampaignState Deserialize(string json)
     {
         var s = JsonSerializer.Deserialize<CampaignState>(json, Json) ?? throw new InvalidDataException("empty save");
-        if (s.Version != CurrentVersion) throw new InvalidDataException($"save version {s.Version} is not supported (this build reads {CurrentVersion})");
+        if (s.Version > CurrentVersion || s.Version < 1) throw new InvalidDataException($"save version {s.Version} is not supported (this build reads 1-{CurrentVersion})");
+        s.Migrate();
         return s;
+    }
+
+    /// Bring an older save up to this version (roadmap E2). Each step upgrades one version.
+    public void Migrate()
+    {
+        if (Version == 1)
+        {
+            // v1 had one war between the first two factions; v2 keeps a war per pair (and the Northmarch only in new campaigns).
+            Wars = new List<War> { new() { A = 0, B = 1, Active = AtWar ?? true, TruceUntil = TruceUntil, ScoreA = Factions.ElementAtOrDefault(0)?.WarScore ?? 0, ScoreB = Factions.ElementAtOrDefault(1)?.WarScore ?? 0 } };
+            AtWar = null;
+            Version = 2;
+        }
     }
 
     public static string SaveDir => Environment.GetEnvironmentVariable("IRONFIELD_SAVES") is { Length: > 0 } d ? d

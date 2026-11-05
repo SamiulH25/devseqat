@@ -30,6 +30,9 @@ public static class SelfTest
         Economy();
         Bridge();
         Calibration();
+        SiegeBattle();
+        CampaignWar();
+        Migration();
 
         for (int seed = 1; seed <= 3; seed++)
         {
@@ -50,6 +53,14 @@ public static class SelfTest
                 + $" vs {string.Join(", ", b.Armies[1]!.Companies.Select(c => $"{c.Count} {Troops.Get(c.Troop).Name}"))}: team {b.Winner} won after {b.Time:0}s");
         }
         Console.WriteLine("selftest ok");
+    }
+
+    public static void RunOne(string name)
+    {
+        var m = typeof(SelfTest).GetMethod(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)
+            ?? throw new ArgumentException("no test named " + name);
+        m.Invoke(null, null);
+        Console.WriteLine(name + " ok");
     }
 
     static Unit Lancer(Battle b)
@@ -175,8 +186,8 @@ public static class SelfTest
             foreach (var next in t.UpgradesTo.Select(Troops.Get))
                 Check(next.MaxHp + next.Armor * 5 + next.Damage > t.MaxHp + t.Armor * 5 + t.Damage, $"{t.Name} -> {next.Name} is an upgrade");
         Check(Troops.Tree("levies").Any(t => t.Tier == 4), "the tree reaches tier IV");
-        var reachable = Troops.Tree("levies").Select(t => t.Id).ToHashSet();
-        Check(Troops.All.Where(t => !t.Leader).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading levies");
+        var reachable = Troops.Tree("levies").Concat(Troops.Tree("clansmen")).Select(t => t.Id).ToHashSet();
+        Check(Troops.All.Where(t => !t.Leader).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
     }
 
     /// Every sprite any troop's look can ask for exists, for every side.
@@ -240,7 +251,7 @@ public static class SelfTest
     {
         var m = WorldMap.Generate(11);
         Check(m.Provinces.Count >= 18, $"enough provinces ({m.Provinces.Count})");
-        for (int f = 0; f < 2; f++) Check(m.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town), $"faction {f} has towns");
+        for (int f = 0; f < 3; f++) Check(m.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town), $"faction {f} has towns");
         var seen = new HashSet<int> { 0 };
         var todo = new Queue<int>(new[] { 0 });
         while (todo.Count > 0) foreach (int n in m.Provinces[todo.Dequeue()].Neighbors) if (seen.Add(n)) todo.Enqueue(n);
@@ -278,7 +289,7 @@ public static class SelfTest
         Check(c.S.Gold >= 0 && c.S.Factions.All(f => f.Treasury > -1), "no negative purses");
         Check(c.S.Parties.Count(p => p.Kind == PartyKind.Lord) >= 8, "lords keep the field");
         int upgraded = c.S.Parties.Where(p => p.Kind == PartyKind.Lord).SelectMany(p => p.Companies).Count(co => co.Type.Tier >= 3);
-        Console.WriteLine($"campaign: day {c.Day}, {c.S.Parties.Count} parties, {upgraded} lord companies at tier III+, your battles {battles}, war score {c.S.Factions[0].WarScore:0}/{c.S.Factions[1].WarScore:0}, at war {c.S.AtWar}");
+        Console.WriteLine($"campaign: day {c.Day}, {c.S.Parties.Count} parties, {upgraded} lord companies at tier III+, your battles {battles}, war score {string.Join("/", c.S.Factions.Select(f => f.WarScore.ToString("0")))}, wars {c.S.Wars.Count(w => w.Active)}");
         var lords = c.S.Parties.Where(p => p.Kind == PartyKind.Lord).ToList();
         Console.WriteLine($"lords: gold avg {lords.Average(l => l.Gold):0}, max company xp {lords.SelectMany(l => l.Companies).Max(co => co.Xp):0}, "
             + $"ready {lords.SelectMany(l => l.Companies).Count(Rules.UpgradeReady)}, tiers {string.Join(",", lords.SelectMany(l => l.Companies).GroupBy(co => co.Type.Tier).OrderBy(g => g.Key).Select(g => $"{g.Key}:{g.Count()}"))}, "
@@ -340,6 +351,113 @@ public static class SelfTest
         }
         Console.WriteLine($"auto-resolve agrees with the battle sim in {agree}/{n} matchups");
         Check(agree >= n * 0.75f, $"auto-resolve calibration ({agree}/{n})");
+    }
+
+    /// An assault headless: nobody crosses the wall's face except at a ladder or the broken gate, and it ends.
+    static void SiegeBattle()
+    {
+        var rng = new Random(5);
+        var att = Ids(Armies.Random(rng, 2, 0), 3000);
+        var def = Ids(Armies.Random(rng, 2, 1), 4000);
+        def = def with { Companies = def.Companies.Where(c => Armies.RoleOf(c) != "horse").Select(c => c with { Count = c.Count * 2 / 3 }).ToList() };
+        var b = new Battle(77, att, def, new BattleOptions { AutoPlayer = true, PlayerWounded = true, Siege = true, Ladders = 2, GateHp = 300 });
+        var w = b.Wall!;
+        Check(b.Terrain.Height(new Vector2(30, 15)) > b.Terrain.Height(new Vector2(30, 8)) + 3, "the wall stands above the field");
+        Check(b.Units.Where(u => u.Team == 1 && u.Ammo > 0).All(u => SiegeWall.Inside(u.Pos)), "defending archers start on the wall");
+        var was = b.Units.ToDictionary(u => u, u => SiegeWall.Inside(u.Pos));
+        int illegal = 0;
+        for (int step = 0; b.Winner < 0 && step < 60 * 900; step++)
+        {
+            b.Update(1 / 60f);
+            if (Environment.GetEnvironmentVariable("SIEGE_DEBUG") != null && step % 1800 == 0)
+                foreach (var sq in b.Squads.Where(q => q.Company != null))
+                    Console.WriteLine($"  t{b.Time:0} team{sq.Team} {sq.Name} {sq.Order} alive {sq.Alive} at {sq.Centroid().X:0},{sq.Centroid().Y:0} anchor {sq.Anchor.X:0},{sq.Anchor.Y:0} morale {sq.Units.Where(u => u.Active).Select(u => u.Morale).DefaultIfEmpty(0).Average():0}");
+            foreach (var u in b.Units)
+            {
+                bool inside = SiegeWall.Inside(u.Pos);
+                if (!was.TryGetValue(u, out bool before)) { was[u] = inside; continue; }
+                if (u.Active && inside != before && !(w.GateOpen && w.AtGate(u.Pos.X)) && !(u.Team == 0 && w.AtLadder(u.Pos.X))) illegal++;
+                was[u] = inside;
+            }
+        }
+        Console.WriteLine($"siege: team {b.Winner} won after {b.Time:0}s, gate {(w.GateOpen ? "broken" : $"{w.GateHp:0} hp")}, {b.Units.Count(u => u.Team == 0 && u.Active && SiegeWall.Inside(u.Pos))} attackers inside");
+        Check(illegal == 0, $"nobody walks through the wall ({illegal})");
+        Check(b.Winner >= 0, "an assault resolves within 15 minutes");
+        Check(w.GateOpen || b.Units.Any(u => u.Team == 0 && SiegeWall.Inside(u.Pos)), "the attackers got in somewhere");
+        // Without ladders the only way in is the gate: the attackers batter it down.
+        var g = new Battle(78, att, def, new BattleOptions { AutoPlayer = true, PlayerWounded = true, Siege = true, Ladders = 0, GateHp = 200 });
+        for (int step = 0; g.Winner < 0 && !g.Wall!.GateOpen && step < 60 * 300; step++) g.Update(1 / 60f);
+        Console.WriteLine($"siege without ladders: gate {(g.Wall!.GateOpen ? $"broken at {g.Time:0}s" : $"{g.Wall.GateHp:0} hp")}");
+        Check(g.Wall.GateOpen, "a ram breaks the gate");
+    }
+
+    /// Three realms: pairwise wars, sieges and captures, contracts, prisoners, food; 200 days, nothing breaks.
+    static void CampaignWar()
+    {
+        var c = Campaign.New(61);
+        Check(c.S.Factions.Count == 3 && c.FactionsAtWar(0, 1) && !c.FactionsAtWar(1, 2) && !c.FactionsAtWar(0, 2), "three realms, one war and two truces");
+        Check(c.S.Settlements.Where(s => s.Kind != SettlementKind.Village).All(s => s.Garrison.Count > 0), "every town and castle has a garrison");
+        Check(c.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == 2).SelectMany(p => p.Companies).Any(co => co.Troop is "clansmen" or "axemen" or "huscarls" or "horse_archers"), "Northmarch lords field their own troops");
+        // Your own siege, on paper: a strong company takes a castle and holds it as a fief.
+        var castle = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction == 1).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
+        c.Player.Companies.Clear();
+        foreach (var t in new[] { "men_at_arms", "men_at_arms", "longbowmen", "pikemen" }) c.Player.Companies.Add(c.NewCompany(t, Armies.RoleOf(new Company(t, 1)), Rules.Cap(t, "infantry"), 0));
+        c.Player.Pos = castle.Pos + new Vector2(3, 0);
+        foreach (var p in c.S.Parties.Where(p => p != c.Player && Vector2.Distance(p.Pos, castle.Pos) < 12)) p.Pos += new Vector2(40, 40);
+        Check(c.CanBesiege(castle, out string why), "you can besiege an enemy castle: " + why);
+        c.Besiege(castle);
+        c.Rest(13);
+        Check(c.LaddersIn(castle) == 0 && c.Besieging == castle, "ladders are built overnight");
+        c.Encounter = null;
+        c.AutoResolveAssault(castle);
+        Console.WriteLine($"assault on {castle.Name}: {(castle.Faction == 0 ? "taken" : "repulsed")}, prisoners {c.PrisonerCount}");
+        if (castle.Faction == 0)
+        {
+            Check(castle.Owner == c.Player.Id && c.S.Provinces[castle.Province].Faction == 0, "the castle and its province change hands");
+            Check(c.S.Settlements.Where(v => v.Province == castle.Province).All(v => v.Faction == 0), "its villages follow");
+            Check(c.PrisonerCount > 0, "the garrison is taken prisoner");
+            float before = c.S.Gold;
+            var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction == 0);
+            c.SellPrisoners(town);
+            Check(c.S.Gold > before && c.PrisonerCount == 0, "prisoners sell in a town");
+        }
+        var home = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction == 0);
+        var offers = c.Offers(home);
+        Check(offers.Count > 0, "the steward has contracts");
+        Check(c.Accept(home, offers[0]) == null && c.S.Contracts.Count == 1, "you can take a contract");
+        c.Player.Food = 2;
+        c.BuyFood(7);
+        Check(c.Player.Food >= 9, "food can be bought");
+        int captures = 0;
+        var owners = c.S.Settlements.ToDictionary(s => s.Id, s => s.Faction);
+        for (int h = 0; h < 200 * 24; h++)
+        {
+            c.Tick(1);
+            if (c.Encounter != null) { c.Retreat(); }
+            c.Arrived = null;
+            c.Player.Food = 10;
+        }
+        captures = c.S.Settlements.Count(s => s.Faction != owners[s.Id] && s.Kind != SettlementKind.Village);
+        foreach (var p in c.S.Parties) foreach (var co in p.Companies) Check(co.Men >= 0 && co.Wounded >= 0, "no negative men");
+        foreach (var s in c.S.Settlements) Check(s.Garrison.All(g => g.Men >= 0) && s.Supplies >= 0, "garrisons stay sane");
+        Check(c.S.Provinces.All(p => c.S.Settlements.First(s => s.Province == p.Id && s.Kind != SettlementKind.Village).Faction == p.Faction), "a province belongs to whoever holds its seat");
+        Console.WriteLine($"war: after 200 days {captures} seats changed hands, wars {string.Join(" ", c.S.Wars.Select(w => $"{w.A}-{w.B}:{(w.Active ? "war" : "truce")}"))}, "
+            + $"seats {string.Join("/", Enumerable.Range(0, 3).Select(f => c.S.Settlements.Count(s => s.Faction == f && s.Kind != SettlementKind.Village)))}, contracts {c.S.Contracts.Count}");
+        Check(captures > 0, "the lords take towns and castles from each other");
+    }
+
+    /// A version-1 save (one war, no Northmarch) loads as version 2.
+    static void Migration()
+    {
+        var c = Campaign.New(71);
+        var json = c.S.Serialize().Replace("\"Version\": 2", "\"Version\": 1").Replace("\"AtWar\": null", "\"AtWar\": false").Replace("\"TruceUntil\": 0,", "\"TruceUntil\": 1000,");
+        var s = CampaignState.Deserialize(json);
+        Check(s.Version == CampaignState.CurrentVersion && s.Wars.Count == 1 && !s.Wars[0].Active, "a v1 save migrates its war to the new format");
+        var m = new Campaign(s);
+        m.Player.Cooldown = 1e6f; // nobody may stop the clock
+        for (int h = 0; h < 48; h++) { m.Tick(1); m.Encounter = null; m.Arrived = null; }
+        Console.WriteLine($"migrated: day {m.Day}, wars {string.Join(" ", m.S.Wars.Select(w => $"{w.A}-{w.B}:{w.Active}:{w.TruceUntil}"))}");
+        Check(m.Day >= 2 && m.FactionsAtWar(0, 1) == false, "a migrated campaign runs, its truce intact");
     }
 
     static ArmySpec Ids(ArmySpec a, int idBase) => a with { Companies = a.Companies.Select((c, i) => c with { Id = idBase + i }).ToList() };

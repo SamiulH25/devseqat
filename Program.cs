@@ -12,7 +12,9 @@ if (args.Contains("--balance"))
 }
 if (args.Contains("--selftest"))
 {
-    Ironfield.SelfTest.Run();
+    // --selftest Name runs one test by its method name (for debugging); no name runs them all.
+    var only = args.SkipWhile(a => a != "--selftest").Skip(1).FirstOrDefault();
+    if (only != null) Ironfield.SelfTest.RunOne(only); else Ironfield.SelfTest.Run();
     return;
 }
 

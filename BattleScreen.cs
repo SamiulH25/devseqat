@@ -208,7 +208,7 @@ sealed class BattleScreen
         battle.Commanding = command;
 
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
-        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); }
+        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); if (battle.GateBroke) world.RebuildFoliage(); }
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
@@ -293,7 +293,7 @@ sealed class BattleScreen
             case 3 when b.Time > 13f:
                 shotWheel = wheelOpen = false;
                 SetCommand(true); blend = 1; camFocus = cav.Centroid(); camYaw = 2.4f; camPitch = 0.55f; zoom = 26;
-                selected.Add(b.SquadsOf(0).First());
+                selected.Add(b.Commanded.First());
                 pendingShot = "command-cav-charge"; shotIndex++; break;
             case 4 when b.Time > 20f:
                 camFocus = b.Centroid(0); camYaw = 1.9f; camPitch = 0.9f; zoom = 60;
@@ -356,7 +356,7 @@ sealed class BattleScreen
     // ---------- orders ----------
 
     List<Squad> Targets() =>
-        (selected.Count > 0 ? selected : battle.SquadsOf(0)).Where(s => s.Alive > 0).ToList();
+        (selected.Count > 0 ? selected : battle.Commanded).Where(s => s.Alive > 0).ToList();
 
     void Issue(string what, Action<Squad> act)
     {
@@ -400,7 +400,7 @@ sealed class BattleScreen
 
     void OrderKeys()
     {
-        var mine = battle.SquadsOf(0).ToList();
+        var mine = battle.Commanded.ToList();
         for (int i = 0; i < mine.Count && i < 9; i++)
             if (Pressed(Keys.D1 + i) && !selected.Remove(mine[i])) selected.Add(mine[i]);
         if (ctl.Pressed(Act.SelectAll)) selected.Clear();
@@ -582,7 +582,7 @@ sealed class BattleScreen
             else
             {
                 if (!add) selected.Clear();
-                foreach (var s in battle.SquadsOf(0))
+                foreach (var s in battle.Commanded)
                     if (s.Units.Any(u => u.Active && !u.Routing && OnScreen(u.Pos, out var sp) && box.Contains(sp))) selected.Add(s);
             }
         }
@@ -857,7 +857,7 @@ sealed class BattleScreen
         {
             if (battle.Player.Active) Ring(battle.Player.Pos, 0.8f, Gold);
             if (battle.EnemyCaptain.Active) Ring(battle.EnemyCaptain.Pos, 0.8f, Foe);
-            foreach (var s in battle.SquadsOf(0))
+            foreach (var s in battle.Commanded)
             {
                 if (s.Alive == 0) continue;
                 if (s.Order == Order.Charge && s.Target is { Alive: > 0 } tgt)

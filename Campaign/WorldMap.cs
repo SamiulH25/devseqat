@@ -34,12 +34,16 @@ public sealed class WorldMap
             var p = new Vector2(rng.NextSingle() * 2 - 1, rng.NextSingle() * 2 - 1) * Extent * 0.92f;
             if (centres.All(c => Vector2.Distance(c, p) > 66)) centres.Add(p);
         }
-        // West is the Azure Crown, east the Crimson Compact; the band between them is the marches.
+        // The north (low z) is the Northmarch; south of it, west is the Azure Crown and east the Crimson Compact.
+        var north = centres.OrderBy(c => c.Y).Take(centres.Count * 3 / 10).ToHashSet();
+        var south = centres.Where(c => !north.Contains(c)).OrderBy(c => c.X).ToList();
         foreach (var (c, i) in centres.OrderBy(c => c.X).Select((c, i) => (c, i)))
         {
             int kind = rng.NextSingle() switch { < 0.35f => 0, < 0.6f => 1, < 0.85f => 2, _ => 3 };
             if (MathF.Max(MathF.Abs(c.X), MathF.Abs(c.Y)) > Extent * 0.75f && rng.Next(2) == 0) kind = 3; // hills toward the rim
-            m.Provinces.Add(new Province { Id = i, Name = Place(), Kind = Kinds[kind], Center = c, Faction = i < centres.Count / 2 ? 0 : 1 });
+            if (north.Contains(c) && kind == 1) kind = 2; // the north is forest, not farmland
+            int faction = north.Contains(c) ? 2 : south.IndexOf(c) < south.Count / 2 ? 0 : 1;
+            m.Provinces.Add(new Province { Id = i, Name = Place(), Kind = Kinds[kind], Center = c, Faction = faction });
         }
         // Neighbours: each province links to its nearest few; roads follow the links.
         foreach (var p in m.Provinces)
@@ -55,11 +59,12 @@ public sealed class WorldMap
 
         // Settlements: a town or castle at each centre (capitals are the outermost towns), and 2-3 villages around it.
         int id = 0;
-        var westCap = m.Provinces.OrderBy(p => p.Center.X).First();
-        var eastCap = m.Provinces.OrderBy(p => p.Center.X).Last();
+        var westCap = m.Provinces.Where(p => p.Faction == 0).OrderBy(p => p.Center.X).First();
+        var eastCap = m.Provinces.Where(p => p.Faction == 1).OrderBy(p => p.Center.X).Last();
+        var northCap = m.Provinces.Where(p => p.Faction == 2).OrderBy(p => p.Center.Y).FirstOrDefault();
         foreach (var p in m.Provinces)
         {
-            bool town = p == westCap || p == eastCap || p.Id % 2 == 0;
+            bool town = p == westCap || p == eastCap || p == northCap || p.Id % 2 == 0;
             m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Name = p.Name, Pos = p.Center,
                 Kind = town ? SettlementKind.Town : SettlementKind.Castle });
             int villages = 2 + rng.Next(2);

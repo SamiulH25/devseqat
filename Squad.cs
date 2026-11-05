@@ -19,7 +19,8 @@ public sealed class Squad
     public int Kills;                             // enemies this company has killed (campaign XP)
     public readonly int[] KillsByTier = new int[5]; // kills by the victim's tier (0 = leaders)
     public Company? Company;
-    public bool RoutSounded;                      // the rout horn has blown for this company                      // the campaign company this squad fights for (null in scenarios)
+    public bool RoutSounded;                      // the rout horn has blown for this company
+    public bool AiControlled;                     // an allied lord's company: the AI general leads it, not you
 
     public Squad(string name, int team) { Name = name; Team = team; }
 

@@ -17,6 +17,8 @@ sealed class Ui
 
     /// Every button click calls this (the host plays a click).
     public static Action? OnClick;
+    /// Characters typed since the last frame (the window's text input), for renaming companies.
+    public static readonly Queue<char> Typed = new();
 
     public Ui(SpriteBatch sb, Art art, PixelFont font) { Sb = sb; this.art = art; this.font = font; }
 

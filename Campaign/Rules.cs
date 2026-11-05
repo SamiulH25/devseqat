@@ -18,6 +18,8 @@ public sealed class BattleSetup
     public BattleOptions Options = new();
     public readonly List<Party> Side0 = new(), Side1 = new();
     public string EnemyName = "";
+    /// An assault on this settlement (-1: a battle in the field).
+    public int SiegeOf = -1;
 }
 
 /// Company rules (caps, strength, XP, upgrades), auto-resolve, and the battle bridge (docs/CAMPAIGN.md 4-6).
@@ -146,10 +148,11 @@ public static class Rules
     // ---------- auto-resolve (5.4) ----------
 
     /// Fight it out on paper: the result has the same shape as a played battle.
-    public static BattleResult AutoResolve(IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, Rng rng, bool tactician0)
+    /// `wall` multiplies side 1's strength: defenders behind walls (1.4 against ladders, more without them).
+    public static BattleResult AutoResolve(IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, Rng rng, bool tactician0, float wall = 1)
     {
         float s0 = side0.Sum(Strength) * (tactician0 ? 1.1f : 1) * rng.Range(0.85f, 1.15f);
-        float s1 = side1.Sum(Strength) * rng.Range(0.85f, 1.15f);
+        float s1 = side1.Sum(Strength) * wall * rng.Range(0.85f, 1.15f);
         int t0 = side0.Max(p => p.Tier), t1 = side1.Max(p => p.Tier);
         s0 *= 1 + 0.1f * (t0 - t1);
         int winner = s0 >= s1 ? 0 : 1;
@@ -197,5 +200,7 @@ public static class Rules
 
     public static ArmySpec Army(string name, IEnumerable<Party> parties, float moraleBonus = 0) => new(name, 0,
         parties.SelectMany(p => p.Companies).Where(c => c.Men > 0)
-            .Select(c => new Company(c.Troop, c.Men, RoleOf(c), c.Id, c.Name, Math.Clamp(70 + c.Cohesion + moraleBonus, 20, 100))).ToList());
+            .Select(c => new Company(c.Troop, c.Men, RoleOf(c), c.Id, c.Name,
+                Math.Clamp(70 + c.Cohesion + moraleBonus + (c.Traits.Contains("Steady") ? 8 : 0), 20, 100), c.Traits.ToArray(),
+                Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord)).ToList());
 }

@@ -33,7 +33,7 @@ public static class Troops
         public string? Mount;
         public int Tier, Cost, UpgradeXp, Ammo;
         public string[] UpgradesTo = Array.Empty<string>();
-        public float Hp, Damage, Armor, Reach, Windup, Recover, Speed, Block, Range, VsMounted = 1;
+        public float Hp, Damage, Armor, Reach, Windup, Recover, Speed, Block, Range, VsMounted = 1, Pierce, Reload = 1;
         public bool Leader;
         public LookDto Look = new();
     }
@@ -68,7 +68,7 @@ public static class Troops
             {
                 Id = d.Id, Name = d.Name, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
                 UpgradesTo = d.UpgradesTo, MaxHp = d.Hp, Damage = d.Damage, Armor = d.Armor, Reach = d.Reach, Windup = d.Windup,
-                Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted,
+                Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, Pierce = d.Pierce, Reload = d.Reload,
                 Leader = d.Leader, Mount = d.Mount == null ? null : mounts[d.Mount],
                 Look = new Look(l.Head, l.Body, l.Legs, l.Feet, l.Hands, l.Shield, l.Weapon, l.Tabard, l.Plume, l.Cape),
             };
@@ -87,6 +87,7 @@ public static class Troops
                 else if (next.Tier <= t.Tier) yield return $"{t.Id} -> {u} does not raise the tier";
             if ((t.Class == UnitClass.Cavalry) != (t.Mount != null)) yield return $"{t.Id}: cavalry needs a mount and only cavalry has one";
             if (t.Class == UnitClass.Archer && (t.Ammo <= 0 || t.Range <= 0)) yield return $"{t.Id}: archers need ammo and range";
+            if (Look.Ranged(t.Look.Weapon) != t.Ammo > 0) yield return $"{t.Id}: a bow needs ammo, and only bows have it";
             var l = t.Look;
             if (!Look.Heads.Contains(l.Head)) yield return $"{t.Id}: unknown head {l.Head}";
             if (!Look.Bodies.Contains(l.Body)) yield return $"{t.Id}: unknown body {l.Body}";
@@ -113,7 +114,10 @@ public static class Troops
 /// A company in an army: what the campaign map hands to a battle. Role ("infantry", "archers", "spears", "horse")
 /// decides where it deploys and how the AI uses it; empty = from the troop class.
 /// Id and Name tie it to the campaign's CompanyRecord (0 = a one-off battle); Morale is its starting morale.
-public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70);
+public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false)
+{
+    public bool Has(string trait) => Traits?.Contains(trait) == true;
+}
 
 public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Companies);
 
@@ -121,6 +125,30 @@ public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Com
 /// standing in for companies the campaign has upgraded. Elite companies are smaller.
 public static class Armies
 {
+    /// Each culture's lines; index 0 is shared by the Azure Crown and the Crimson Compact, 1 is the Northmarch clans.
+    static readonly (string Role, string[] ByTier, int Base)[][] Cultures =
+    {
+        new[]
+        {
+            ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard" }, 24),
+            ("archers", new[] { "bowmen", "bowmen", "longbowmen", "crossbowmen" }, 16),
+            ("spears", new[] { "levies", "spearrunners", "pikemen", "pikemen" }, 12),
+            ("horse", new[] { "outriders", "lancers", "lancers", "knights" }, 10),
+        },
+        new[]
+        {
+            ("infantry", new[] { "clansmen", "axemen", "huscarls", "huscarls" }, 24),
+            ("archers", new[] { "bowmen", "bowmen", "longbowmen", "longbowmen" }, 16),
+            ("spears", new[] { "clansmen", "spearrunners", "spearrunners", "pikemen" }, 12),
+            ("horse", new[] { "outriders", "horse_archers", "horse_archers", "lancers" }, 10),
+        },
+    };
+
+    public static int CultureOf(int faction) => faction == 2 ? 1 : 0;
+
+    /// The troop a faction's line fields at a tier (1-4).
+    public static string LineTroop(string role, int tier, int faction) => Cultures[CultureOf(faction)].First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 4) - 1];
+
     static readonly (string Role, string[] ByTier, int Base)[] Lines =
     {
         ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard" }, 24),

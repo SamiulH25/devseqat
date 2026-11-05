@@ -29,13 +29,14 @@ public sealed record Mount(string Id, string Name, float Hp, float Trot, float G
 public sealed record Look(string Head, string Body, string Legs, string Feet, string Hands, string Shield, string Weapon,
     bool Tabard, bool Plume, bool Cape)
 {
-    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm" };
-    public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate" };
+    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen" };
+    public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate", "fur" };
     public static readonly string[] LegsKinds = { "cloth", "mail", "plate" };
     public static readonly string[] FeetKinds = { "boots", "sabatons" };
     public static readonly string[] HandsKinds = { "skin", "gauntlets" };
     public static readonly string[] Shields = { "none", "round", "kite", "heater" };
-    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow" };
+    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe" };
+    public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
 }
 
 /// A troop type from Data/troops.json: stats, place in the upgrade tree, and look.
@@ -45,7 +46,7 @@ public sealed class UnitType
     public UnitClass Class;
     public int Tier, Cost, UpgradeXp;
     public string[] UpgradesTo = Array.Empty<string>();
-    public float MaxHp, Damage, Armor, Reach, Windup, Recover, Speed, BlockChance, Range, VsMounted = 1;
+    public float MaxHp, Damage, Armor, Reach, Windup, Recover, Speed, BlockChance, Range, VsMounted = 1, Pierce, Reload = 1;
     public int Ammo;
     public bool Leader;
     public Mount? Mount;

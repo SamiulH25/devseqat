@@ -26,7 +26,7 @@ public static class BalanceReport
                 eco.AppendLine(string.Join(",", seed, week, c.S.Gold.ToString("0", inv), c.Player.Men, lords.Count,
                     (lords.Count > 0 ? lords.Average(l => l.Men) : 0).ToString("0.0", inv),
                     (cos.Count > 0 ? cos.Average(co => co.Type.Tier) : 0).ToString("0.00", inv), cos.Count(co => co.Type.Tier >= 3),
-                    c.S.Factions[0].WarScore.ToString("0", inv), c.S.Factions[1].WarScore.ToString("0", inv), c.S.AtWar ? 1 : 0,
+                    c.S.Factions[0].WarScore.ToString("0", inv), c.S.Factions[1].WarScore.ToString("0", inv), c.S.Wars.Count(w => w.Active),
                     c.S.Parties.Count(p => p.Kind == PartyKind.Bandit)));
             }
             Console.WriteLine($"campaign {seed}: done");

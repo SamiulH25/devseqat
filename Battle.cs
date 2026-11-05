@@ -20,7 +20,7 @@ public sealed class Projectile
 }
 
 /// Headless battle simulation. No graphics, so the self-test can run it.
-public sealed class Battle
+public sealed partial class Battle
 {
     public const float MapRadius = 95, Gravity = 9.8f, ArrowSpeed = 28, RallyRadius = 15;
     public readonly BattleOptions Options;
@@ -37,6 +37,7 @@ public sealed class Battle
     public readonly ArmySpec?[] Armies = new ArmySpec?[2];
     public readonly List<(string Text, float At)> Events = new();
     public readonly Terrain Terrain;
+    public Weather Weather => Options.Weather;
     public Unit Player = null!, EnemyCaptain = null!;
     public PlayerInput Input;
     public bool Commanding; // player is in command view: no leadership aura, body stands idle
@@ -62,8 +63,8 @@ public sealed class Battle
     /// A battle between two armies as the campaign map would hand them over.
     public Battle(int seed, ArmySpec player, ArmySpec enemy, BattleOptions? options = null) : this(seed, false, options)
     {
-        var mount = Options.PlayerMount ?? Mount.Courser; // you lead from the saddle
-        Player.Horse = mount;
+        var mount = Options.PlayerMount ?? Mount.Courser; // you lead from the saddle (on foot in an assault: horses do not climb ladders)
+        Player.Horse = Options.Siege ? null : mount;
         Player.HorseHp = mount.Hp;
         // The field holds at most Options.Cap men; each side gets its share and the rest wait as reinforcements.
         int total = player.Companies.Sum(c => c.Count) + enemy.Companies.Sum(c => c.Count);
@@ -90,6 +91,7 @@ public sealed class Battle
             if (onField.Count == 0 || used + c.Count <= budget) { onField.Add(c); used += c.Count; }
             else reserves[team].Enqueue((c, Ironfield.Armies.RoleOf(c)));
         }
+        if (Options.Siege && team == 1) { DeployDefenders(onField); return; }
         foreach (var group in onField.GroupBy(Ironfield.Armies.RoleOf))
         {
             var spot = group.Key switch
@@ -124,7 +126,7 @@ public sealed class Battle
         rng = new Random(seed);
         this.scripted = scripted;
         Options = options ?? new BattleOptions();
-        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, Options.Ground ?? TerrainParams.Meadow);
+        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, Options.Ground ?? TerrainParams.Meadow, Options.Siege ? new SiegeWall(Options.Ladders, Options.GateHp) : null);
         Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34));
         Player.IsPlayer = Player.IsLeader = true;
         Player.Facing = Player.Heading = MathHelper.PiOver2;
@@ -140,7 +142,8 @@ public sealed class Battle
 
     public Squad AddSquad(int team, UnitType type, int n, Vector2 anchor, int cols, Vector2 front, Company? company = null)
     {
-        var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null, Company = company };
+        var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null && !Options.Siege, Company = company,
+            AiControlled = company?.Allied == true && team == 0 };
         for (int i = 0; i < n; i++)
         {
             var u = Spawn(type, team, s, s.Slot(i, n));
@@ -157,7 +160,7 @@ public sealed class Battle
     {
         var u = new Unit { Type = t, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
             Palette = Options.Palette[Math.Clamp(team, 0, 1)] };
-        if (t.Mount != null) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; }
+        if (t.Mount != null && !Options.Siege) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; } // assaults are fought on foot
         Units.Add(u);
         return u;
     }
@@ -172,8 +175,9 @@ public sealed class Battle
         {
             generalTimer = 0.5f;
             General(1);
-            if (Options.AutoPlayer) General(0);
+            if (Options.AutoPlayer || Squads.Any(q => q.AiControlled && q.Alive > 0)) General(0);
         }
+        Batter(dt);
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
         foreach (var s in Squads) UpdateSquad(s, dt);
         foreach (var u in Units)
@@ -290,7 +294,8 @@ public sealed class Battle
         if (charge && s.Target != null && d > 3) (enemy, d) = Nearest(u, s.Target); // go for the ordered target
 
         // Archers shoot once settled in formation (or anywhere when charging).
-        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < u.Type.Range && (charge || toSlot < 2.5f))
+        float range = MathF.Min(Weather.Vision, u.Type.Range * (enemy != null && Terrain.Height(u.Pos) > Terrain.Height(enemy.Pos) + 2 ? 1.2f : 1)); // height carries arrows further; fog and night hide targets
+        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < range && (charge || toSlot < 2.5f))
         {
             u.Face(enemy.Pos - u.Pos);
             if (u.Cooldown <= 0) Shoot(u, enemy);
@@ -309,16 +314,16 @@ public sealed class Battle
         bool leashed = !charge && toSlot > 14;
         if (enemy != null && !leashed && (charge || d < 6))
         {
-            var to = enemy.Pos - u.Pos;
+            var to = Via(u, enemy.Pos) - u.Pos;
             u.Face(to);
             if (d <= reach) { if (u.Cooldown <= 0) StartSwing(u, enemy); }
-            else u.Wish = to / d * u.Type.Speed;
+            else u.Wish = to / MathF.Max(0.01f, to.Length()) * u.Type.Speed;
             return;
         }
 
         if (toSlot > 0.4f)
         {
-            var to = u.Slot - u.Pos;
+            var to = Via(u, u.Slot) - u.Pos;
             u.Wish = to / toSlot * u.Type.Speed * MathF.Min(1, toSlot);
             u.Face(to);
         }
@@ -337,6 +342,23 @@ public sealed class Battle
             && Vector2.Dot((enemy.Pos - u.Pos) / MathF.Max(d, 0.01f), hd) > -0.3f)
             StartSwing(u, enemy);
 
+        // Horse archers loose from the saddle at anything in range, whatever their order.
+        if (u.Ammo > 0 && enemy != null && s.FireAtWill && d > 5 && d < u.Type.Range && u.Cooldown <= 0 && u.Action == UnitAction.None)
+        {
+            Shoot(u, enemy);
+            u.Cooldown *= 1.3f; // slower from horseback
+        }
+        if (u.Ammo > 0 && s.Order == Order.Charge && enemy != null)
+        {
+            // Skirmish: ride in to bow range, wheel away when they come close, circle the enemy's flank.
+            var away = u.Pos - enemy.Pos;
+            var side = new Vector2(-away.Y, away.X) / MathF.Max(0.01f, d);
+            var dir = d < u.Type.Range * 0.45f ? away / MathF.Max(0.01f, d) + side * 0.4f : d > u.Type.Range * 0.8f ? -away / MathF.Max(0.01f, d) : side;
+            if (u.Pos.Length() > MapRadius - 20) dir -= Vector2.Normalize(u.Pos);
+            u.Wish = Vector2.Normalize(Via(u, u.Pos + dir * 10) - u.Pos + new Vector2(1e-4f, 0)) * (h.Trot + h.Gallop) / 2;
+            u.Couched = false;
+            return;
+        }
         if (s.Order != Order.Charge)
         {
             u.Cav = CavState.Charge;
@@ -349,7 +371,7 @@ public sealed class Battle
                 if (u.Type.Class == UnitClass.Cavalry && u.Speed > 6.5f && d > 4 && u.Cooldown <= 0) u.Couched = true;
                 return;
             }
-            Ride(u, u.Slot, toSlot > 12 ? h.Gallop * 0.8f : h.Trot);
+            Ride(u, Via(u, u.Slot), toSlot > 12 ? h.Gallop * 0.8f : h.Trot);
             return;
         }
 
@@ -384,7 +406,8 @@ public sealed class Battle
             {
                 // Charge: aim a few metres past the target to ride through it.
                 var to = (t.Pos - u.Pos) / MathF.Max(td, 0.01f);
-                u.Wish = Vector2.Normalize(t.Pos + to * 6 - u.Pos) * h.Gallop;
+                var aimAt = Via(u, t.Pos + to * 6);
+                u.Wish = (aimAt - u.Pos).LengthSquared() > 1e-4f ? Vector2.Normalize(aimAt - u.Pos) * h.Gallop : Vector2.Zero;
                 if (u.Type.Class == UnitClass.Cavalry && u.Speed > 6.5f && td < 30 && u.Cooldown <= 0) u.Couched = true;
                 if (td < 4) u.Contact = true;
                 if (u.Contact && td > 4 && Vector2.Dot(t.Pos - u.Pos, hd) < 0)
@@ -409,10 +432,11 @@ public sealed class Battle
     }
 
     static float Approach(float v, float target, float step) => v < target ? MathF.Min(target, v + step) : MathF.Max(target, v - step);
+    float Mud => Weather.MudFactor;
     static float TurnRate(Unit u) => u.Horse!.TurnRate * (1.25f - 0.6f * MathF.Min(1, MathF.Abs(u.Speed) / u.Horse.Gallop));
 
     /// AI horses: turn toward Wish at a limited rate, slow down for sharp turns, accelerate and brake with inertia.
-    static void Steer(Unit u, float dt)
+    void Steer(Unit u, float dt)
     {
         var h = u.Horse!;
         float ws = u.Action == UnitAction.Stagger ? 0 : u.Wish.Length(), rate = TurnRate(u);
@@ -424,7 +448,7 @@ public sealed class Battle
         }
         else if (MathF.Abs(u.Speed) < 1.5f)
             u.Heading += Math.Clamp(MathHelper.WrapAngle(u.Facing - u.Heading), -rate * 0.6f * dt, rate * 0.6f * dt); // turn on the spot
-        u.Speed = Approach(u.Speed, ws, (ws > u.Speed ? h.Accel : h.Accel * 1.8f) * dt);
+        u.Speed = Approach(u.Speed, ws * Mud, (ws > u.Speed ? h.Accel : h.Accel * 1.8f) * dt);
         if (u.Action == UnitAction.None && (ws > 0.05f || u.Speed > 1.5f)) u.Facing = u.Heading;
     }
 
@@ -621,6 +645,7 @@ public sealed class Battle
     internal void Hit(Unit a, Unit t, float dmg, bool ranged, bool lance = false)
     {
         if (a.Team == 1) dmg *= Options.EnemyDamage;
+        if (ranged && Wall != null && SiegeWall.Inside(t.Pos) && !SiegeWall.Inside(a.Pos) && Terrain.Height(t.Pos) > Terrain.Height(a.Pos) + 2) dmg *= 0.6f; // merlons
         // Arrows and spears often take the horse instead of the rider.
         if (t.Mounted && rng.NextSingle() < (ranged ? 0.45f : a.Type.Class == UnitClass.Skirmisher ? 0.5f : 0.15f))
         {
@@ -670,9 +695,10 @@ public sealed class Battle
         float speed = ranged || lance ? 0 : SpeedBonus(a, t);
         // Total War high ground: up to +-15% for fighting downhill / uphill.
         float high = ranged ? 0 : Math.Clamp((Terrain.Height(a.Pos) - Terrain.Height(t.Pos)) * 0.05f, -0.15f, 0.15f);
-        float mult = (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted : 1);
+        float officer = a.Squad?.Company is Company oc ? (oc.Has("Hothead") ? 1.1f : 1) * (oc.Has("Veteran") ? 1.05f : 1) : 1;
+        float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted : 1);
         if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
-        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0);
+        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged ? a.Type.Pierce : 0);
         Sound(ranged ? Cue.ArrowHit : t.Type.Armor >= 8 ? Cue.Clash : Cue.Hit, t.Pos);
         if (a.IsPlayer)
         {
@@ -686,9 +712,9 @@ public sealed class Battle
     }
 
     /// Armour, then hp, morale shock and interrupts. Returns the damage dealt.
-    float Damage(Unit a, Unit t, float dmg, float extraShock)
+    float Damage(Unit a, Unit t, float dmg, float extraShock, float pierce = 0)
     {
-        float real = MathF.Max(dmg * 0.25f, dmg - t.Type.Armor);
+        float real = MathF.Max(dmg * 0.25f, dmg - t.Type.Armor * (1 - pierce)); // bolts punch through part of the armour
         t.Hp -= real;
         t.HitFlash = 0.15f;
         t.Morale -= real * 0.25f + extraShock;
@@ -754,12 +780,12 @@ public sealed class Battle
     {
         u.Ammo--;
         Sound(Cue.Bow, u.Pos);
-        u.Cooldown = u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f;
+        u.Cooldown = (u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f) * u.Type.Reload; // a crossbow takes long to span
         u.Action = UnitAction.Recover; // shows the release pose
         u.ActionTimer = 0.25f;
         float d = Vector2.Distance(u.Pos, t.Pos);
         var aim = t.Pos + t.Vel * (d / ArrowSpeed); // lead the target
-        aim += new Vector2(Gauss(), Gauss()) * d * 0.035f;
+        aim += new Vector2(Gauss(), Gauss()) * d * 0.035f * (u.Squad?.Company?.Has("Sharpshooter") == true ? 0.65f : 1) * (u.Mounted ? 1.5f : 1) * Weather.Spread;
         float time = MathF.Max(0.1f, Vector2.Distance(u.Pos, aim) / ArrowSpeed);
         var h = (aim - u.Pos) / time;
         float from = Terrain.Height(u.Pos) + 1.5f, land = Terrain.Height(aim) + (t.Mounted ? 1.5f : 1.0f);
@@ -805,6 +831,7 @@ public sealed class Battle
 
     void Move(float dt)
     {
+        var before = Wall != null ? Units.Select(u => u.Pos).ToArray() : Array.Empty<Vector2>();
         foreach (var u in Units)
         {
             if (!u.Active) continue;
@@ -847,6 +874,7 @@ public sealed class Battle
         // Trees and boulders are solid; a horse that rides into one pulls up hard.
         foreach (var u in Units)
             if (u.Active && Terrain.PushOut(ref u.Pos, u.Mounted ? 0.9f : 0.35f) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
+        EnforceWall(before);
     }
 
     /// Uphill is slow, downhill a little quicker: a multiplier on ground speed.
@@ -978,23 +1006,29 @@ public sealed class Battle
             u.Morale = Math.Clamp(u.Morale + m * dt, 0, 100);
             // Iron Will: near you, a company that still has a third of its men will not break.
             if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);
-            if (!u.Routing && u.Morale < 15) { u.Routing = true; u.Action = UnitAction.None; u.Couched = false; }
+            float routAt = u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? 10 : 15; // officer trait; walls
+            if (!u.Routing && u.Morale < routAt) { u.Routing = true; u.Action = UnitAction.None; u.Couched = false; }
             else if (u.Routing && u.Morale > 45) u.Routing = false;
         }
     }
 
     /// An AI commander for one side (always the enemy; your side too when Options.AutoPlayer): advance as a block,
     /// charge when close, archers stop at bow range, horse waits wide on the far flank and then hunts the softest companies.
+    /// The companies a side's AI general leads: all of the enemy's; of yours, only allies' (or all, in headless runs).
+    List<Squad> Led(int team, string role) => Role(team, role).Where(s => team == 1 || Options.AutoPlayer || s.AiControlled).ToList();
+    public IEnumerable<Squad> Commanded => SquadsOf(0).Where(s => !s.AiControlled);
+
     void General(int team)
     {
+        if (Wall != null) { if (team == 1) SiegeDefend(); else SiegeAttack(); return; }
         int foe = 1 - team;
-        var inf = Role(team, "infantry").Where(s => s.Alive > 0).ToList();
+        var inf = Led(team, "infantry").Where(s => s.Alive > 0).ToList();
         var front = inf.Count > 0 ? inf.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / inf.Count : team == 1 ? eGuard.Centroid() : centroid[team];
         var dir = centroid[foe] - front;
         if (dir.LengthSquared() < 1) return;
         dir.Normalize();
         var side = new Vector2(-dir.Y, dir.X);
-        var spears = Role(team, "spears");
+        var spears = Led(team, "spears");
         if (!charged[team])
         {
             foreach (var s in inf) { s.Front = dir; s.Anchor = front + dir * 6 + side * lateral.GetValueOrDefault(s); }
@@ -1008,7 +1042,7 @@ public sealed class Battle
             }
         }
         else foreach (var s in inf.Concat(spears)) s.Order = Order.Charge; // late arrivals join the charge
-        foreach (var s in Role(team, "archers"))
+        foreach (var s in Led(team, "archers"))
         {
             if (s.Order == Order.Charge || s.Alive == 0) continue;
             s.Front = dir;
@@ -1016,7 +1050,7 @@ public sealed class Battle
             if (gap > range - 4) s.Anchor = s.Centroid() + dir * 4;
             if (gap < 7 || s.Units.All(u => !u.Active || u.Ammo == 0)) s.Order = Order.Charge;
         }
-        var horse = Role(team, "horse");
+        var horse = Led(team, "horse");
         if (!horseCharged[team])
         {
             foreach (var s in horse) { s.Front = dir; s.Anchor = front + dir * 4 - side * (26 - lateral.GetValueOrDefault(s)); } // the other flank

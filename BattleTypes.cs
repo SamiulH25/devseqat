@@ -21,6 +21,25 @@ public sealed class BattleOptions
     public int[] Palette = { 0, 1 };
     /// Difficulty: the enemy's blows are multiplied by this.
     public float EnemyDamage = 1;
+    /// An assault on a walled town (roadmap B1): team 1 holds the wall; ladders built and the gate's strength.
+    public bool Siege;
+    public int Ladders = 2;
+    public float GateHp = 500;
+    public Weather Weather = Weather.Clear;
+}
+
+/// When and in what weather a battle is fought (roadmap C4). The campaign passes its hour and season.
+public sealed record Weather(float Hour = 13, float Rain = 0, float Fog = 0)
+{
+    public static readonly Weather Clear = new();
+    public bool Night => Hour < 5.5f || Hour > 20.5f;
+    /// Rain wets bowstrings and fog hides the mark: arrows scatter more.
+    public float Spread => 1 + Rain * 0.6f + Fog * 0.25f;
+    /// Mud slows horses.
+    public float MudFactor => 1 - Rain * 0.2f;
+    /// How far archers can pick out a target.
+    public float Vision => MathF.Min(Night ? 40 : 200, Fog > 0 ? 140 - Fog * 95 : 200);
+    public string Describe => (Night ? "night" : Hour < 8 ? "dawn" : Hour > 18 ? "dusk" : "day") + (Rain > 0.3f ? ", rain" : "") + (Fog > 0.3f ? ", fog" : "");
 }
 
 public enum LeaderFate { Unhurt, Wounded, Captured, Slain }

@@ -55,7 +55,7 @@ sealed class Hud
     public Hud(SpriteBatch sb, Art art, PixelFont font) { this.sb = sb; this.art = art; this.font = font; }
 
     int U(float v) => (int)(v * Ui);
-    List<Squad> Mine => B.SquadsOf(0).ToList();
+    List<Squad> Mine => B.Commanded.ToList();
 
     // ---------- layout & hit testing ----------
 
@@ -205,6 +205,18 @@ sealed class Hud
         int t = (int)B.Time;
         string state = Paused ? "PAUSED" : Command && B.Player.Active ? "X0.25" : "";
         TextC($"{t / 60}:{t % 60:00} {state}".Trim(), W / 2f, y, Color.White);
+        if (B.Wall is SiegeWall w && !Deploying)
+        {
+            // The gate's strength under the balance bar, while it stands.
+            var g = new Rectangle(x + bw / 4, panel.Bottom + U(4), bw / 2, U(14));
+            Panel(g);
+            if (w.GateOpen) TextC("THE GATE IS BROKEN", W / 2f, g.Y + U(4), Gold, 1);
+            else
+            {
+                Rect(new Rectangle(g.X + U(40), g.Y + U(5), (int)((g.Width - U(46)) * w.GateHp / w.GateMax), U(4)), Style.HorseBar);
+                Text("GATE", g.X + U(6), g.Y + U(4), Color.White, 1);
+            }
+        }
     }
 
     void Feed()

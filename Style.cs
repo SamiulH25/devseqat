@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-public enum Emblem { Chevron, Saltire, Lozenge, None }
+public enum Emblem { Chevron, Saltire, Lozenge, None, Bend }
 
 /// A side's heraldry: the cloth it dyes, the trim and charge painted on shields and tabards, and its UI colour.
 public sealed record Heraldry(string Name, Color Cloth, Color ClothDark, Color Trim, Emblem Charge, Color Ui);
@@ -12,14 +12,19 @@ public static class Style
 {
     // ---------- sides ----------
 
-    /// Palette index: 0 = the Azure Crown, 1 = the Crimson Compact, 2 = you (gold, so you can always find yourself), 3 = bandits.
+    /// Palette index: 0 = the Azure Crown, 1 = the Crimson Compact, 2 = you (gold, so you can always find yourself), 3 = bandits,
+    /// 4 = the Northmarch clans.
     public static readonly Heraldry[] Sides =
     {
         new("Azure", new(54, 94, 176), new(30, 50, 108), new(230, 218, 178), Emblem.Chevron, new(112, 160, 255)),
         new("Crimson", new(172, 48, 42), new(98, 26, 28), new(222, 178, 72), Emblem.Saltire, new(236, 88, 70)),
         new("Gold", new(210, 168, 54), new(126, 88, 30), new(44, 36, 44), Emblem.Lozenge, new(240, 200, 60)),
         new("Brigands", new(112, 98, 78), new(70, 62, 52), new(160, 150, 128), Emblem.None, new(190, 170, 130)),
+        new("Northmarch", new(46, 104, 74), new(24, 58, 42), new(226, 228, 220), Emblem.Bend, new(96, 200, 140)),
     };
+
+    /// The palette a campaign faction paints with (the Northmarch clans are palette 4; -1 and -2 are free captains and brigands).
+    public static int PaletteOf(int faction) => faction switch { 2 => 4, -2 => 3, < 0 => 0, _ => faction };
 
     // ---------- materials (base tones; the painter builds a 5-step ramp from each) ----------
 

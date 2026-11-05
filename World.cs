@@ -33,9 +33,11 @@ sealed class World : IDisposable
     public readonly Texture2D Minimap;
     readonly GraphicsDevice gd;
     readonly Terrain t;
-    readonly VertexBuffer terrainVb, foliageVb, skyVb;
+    readonly VertexBuffer terrainVb, skyVb;
+    VertexBuffer foliageVb;
     readonly IndexBuffer terrainIb;
-    readonly int terrainTris, foliageTris, skyTris;
+    readonly int terrainTris, skyTris;
+    int foliageTris;
     readonly Texture2D detail;
     readonly BasicEffect terrainFx, foliageFx, skyFx;
     static readonly SamplerState DetailSampler = new()
@@ -56,6 +58,13 @@ sealed class World : IDisposable
         terrainFx = Lit(new BasicEffect(gd) { TextureEnabled = true, Texture = detail });
         foliageFx = Lit(new BasicEffect(gd));
         skyFx = new BasicEffect(gd) { VertexColorEnabled = true };
+    }
+
+    /// Build the foliage meshes again (after the gate of a besieged town breaks).
+    public void RebuildFoliage()
+    {
+        foliageVb.Dispose();
+        (foliageVb, foliageTris) = BuildFoliage();
     }
 
     BasicEffect Lit(BasicEffect fx)
@@ -306,6 +315,11 @@ sealed class World : IDisposable
                 case FoliageKind.Village: Village(m, b, f.Scale, rng); break;
                 case FoliageKind.Town: Town(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
+                case FoliageKind.Wall: WallStones(m, b, f.Scale, rng); break;
+                case FoliageKind.Tower: Tower(m, b, rng); break;
+                case FoliageKind.Gate: GateDoor(m, b, t.Wall?.GateOpen == true, rng); break;
+                case FoliageKind.Ladder: Ladder(m, b); break;
+                case FoliageKind.House: TownHouse(m, b, f.Scale, rng); break;
                 default: Rock(m, b, f.Scale, rng); break;
             }
         }
@@ -419,6 +433,67 @@ sealed class World : IDisposable
         House(m, b, 1.4f * s, 0.8f * s, 1.1f * s, 0.3f, Stone, Slate);
         m.Frustum(b + new Vector3(0.6f * s, 0, 0), b + new Vector3(0.6f * s, 2.2f * s, 0), 0.3f * s, 0.28f * s, 6, Stone, r);
         m.Frustum(b + new Vector3(0.6f * s, 2.2f * s, 0), b + new Vector3(0.6f * s, 3.0f * s, 0), 0.36f * s, 0, 6, Slate, r, capBottom: true);
+    }
+
+    // ---------- a besieged town (Terrain.SiegeWall) ----------
+
+    static readonly Color WallStone = new(150, 146, 136), Timber = new(104, 72, 44);
+
+    /// A length of wall: its top is the walkway (the terrain carries the units), faced in stone, with merlons on the outer edge.
+    static void WallStones(Mesh m, Vector3 b, float len, Random r)
+    {
+        m.Tag = Vector2.Zero;
+        const float h = SiegeWall.Height, d = SiegeWall.Top1 - SiegeWall.Outer;
+        var c = new Vector3(b.X, b.Y - h - 2, SiegeWall.Outer + d / 2);
+        m.Box(c, len + 0.05f, d, h + 2.04f, 0, Jitter(WallStone, r, 0.05f));
+        for (float x = -len / 2 + 0.5f; x < len / 2; x += 1.6f)
+            m.Box(new Vector3(b.X + x, b.Y, SiegeWall.Outer + 0.3f), 0.8f, 0.6f, 0.75f, 0, Jitter(WallStone, r, 0.06f));
+    }
+
+    static void Tower(Mesh m, Vector3 b, Random r)
+    {
+        m.Tag = Vector2.Zero;
+        var foot = new Vector3(b.X, b.Y - SiegeWall.Height - 2, SiegeWall.Outer + 1.5f);
+        m.Box(foot, 4.2f, 5.4f, SiegeWall.Height + 5.5f, 0, Jitter(WallStone, r, 0.04f));
+        for (int i = 0; i < 4; i++)
+        {
+            float x = (i % 2 * 2 - 1) * 1.7f, z = (i / 2 * 2 - 1) * 2.3f;
+            m.Box(foot + new Vector3(x, SiegeWall.Height + 5.5f, z), 0.8f, 0.8f, 0.8f, 0, WallStone);
+        }
+    }
+
+    static void GateDoor(Mesh m, Vector3 b, bool broken, Random r)
+    {
+        m.Tag = Vector2.Zero;
+        if (!broken)
+        {
+            m.Box(b, SiegeWall.GateHalf * 2 + 0.6f, 0.5f, SiegeWall.Height - 0.4f, 0, Timber);
+            for (int i = 0; i < 3; i++) m.Box(b + new Vector3(0, 0.8f + i * 1.3f, -0.3f), SiegeWall.GateHalf * 2 + 0.4f, 0.12f, 0.2f, 0, new Color(70, 72, 80));
+        }
+        else
+            for (int i = 0; i < 5; i++) // splintered planks on the ground
+                m.Box(b + new Vector3(r.NextSingle() * 5 - 2.5f, 0, 1 + r.NextSingle() * 3), 1.6f, 0.3f, 0.12f, r.NextSingle() * MathF.Tau, Timber);
+        m.Box(b + new Vector3(0, SiegeWall.Height - 0.4f, 0.9f), SiegeWall.GateHalf * 2 + 2, 2.4f, 1.2f, 0, WallStone); // the arch over the way
+    }
+
+    /// Two rails leaning from the ground to the wall top, with rungs.
+    static void Ladder(Mesh m, Vector3 b)
+    {
+        m.Tag = Vector2.Zero;
+        var foot = new Vector3(b.X, b.Y, SiegeWall.Outer - 2.2f);
+        var top = new Vector3(b.X, b.Y + SiegeWall.Height + 0.6f, SiegeWall.Outer + 0.05f);
+        var rng = new Random(1);
+        foreach (float side in new[] { -0.4f, 0.4f })
+            m.Frustum(foot + Vector3.UnitX * side, top + Vector3.UnitX * side, 0.06f, 0.06f, 4, Timber, rng);
+        for (float k = 0.08f; k < 1; k += 0.09f)
+            m.Box(Vector3.Lerp(foot, top, k), 0.8f, 0.07f, 0.07f, 0, Timber);
+    }
+
+    static void TownHouse(Mesh m, Vector3 b, float s, Random r)
+    {
+        m.Tag = Vector2.Zero;
+        float yaw = r.Next(4) * MathHelper.PiOver2;
+        House(m, b, 4.5f * s, 3.4f * s, 2.8f * s, yaw, Jitter(new Color(204, 192, 166), r, 0.08f), Jitter(new Color(140, 74, 52), r, 0.1f));
     }
 
     static void Castle(Mesh m, Vector3 b, float s, Random r)

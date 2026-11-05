@@ -112,7 +112,7 @@ sealed class Puppet
             ShieldOnArm();
             return;
         }
-        if (cls == UnitClass.Archer)
+        if (Look.Ranged(look.Weapon))
         {
             Bill(new(-0.1f, 1.15f, -0.2f), "quiver", false);
             Span(off, Vector3.Up, look.Weapon, SpriteSheet.Grip[look.Weapon]);
