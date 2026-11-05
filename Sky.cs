@@ -1,0 +1,63 @@
+using Microsoft.Xna.Framework;
+
+namespace Ironfield;
+
+/// The light of the moment (roadmap C4, D4): sun direction and colour, ambient, sky and fog, set from the hour and the weather.
+/// The renderers read these each frame; 13:00 in clear weather gives the original fixed values.
+public static class Sky
+{
+    public static Vector3 SunDir { get; private set; }
+    public static Vector3 SunColor { get; private set; }
+    public static Vector3 SkyColor { get; private set; }
+    public static Vector3 GroundColor { get; private set; }
+    public static Color Horizon { get; private set; }
+    public static Color Zenith { get; private set; }
+    /// Fog distances are multiplied by this (rain, fog and night close the view in).
+    public static float FogScale { get; private set; } = 1;
+    /// How dark it is (0 = day, 1 = full night): torches and the map's lamplight use it.
+    public static float Night { get; private set; }
+    public static float Rain { get; private set; }
+
+    static Sky() => Set(Weather.Clear);
+
+    static readonly Vector3 NoonSun = new(0.9f, 0.84f, 0.72f), DuskSun = new(0.95f, 0.6f, 0.36f), MoonSun = new(0.2f, 0.24f, 0.36f);
+    static readonly Vector3 NoonSky = new(0.42f, 0.47f, 0.56f), DuskSky = new(0.4f, 0.34f, 0.38f), NightSky = new(0.13f, 0.15f, 0.24f);
+    static readonly Color NoonHorizon = new(186, 204, 218), DuskHorizon = new(226, 168, 128), NightHorizon = new(30, 36, 56);
+    static readonly Color NoonZenith = new(78, 126, 194), DuskZenith = new(70, 84, 140), NightZenith = new(10, 14, 32);
+
+    /// `nightFloor` keeps the darkest night this bright (the campaign map stays readable at night).
+    public static void Set(Weather w, float nightFloor = 0)
+    {
+        float h = w.Hour;
+        float day = MathF.Sin(MathF.PI * (h - 6) / 12);                        // 1 at noon, 0 at 6:00 and 18:00, negative at night
+        float elev = MathHelper.ToRadians(53) * day / MathF.Sin(MathF.PI * 7 / 12);
+        float az = MathHelper.ToRadians(38 + (h - 13) * 15);
+        float k = Math.Clamp(elev / MathHelper.ToRadians(25), 0, 1);           // low sun -> high sun
+        float n = Math.Clamp(-elev / MathHelper.ToRadians(8), 0, 1);           // dusk -> night
+        n = MathF.Min(n, 1 - nightFloor);
+        Night = n;
+        Rain = w.Rain;
+        float shown = elev > 0 ? elev : MathHelper.ToRadians(40);               // at night the moon lights from high up
+        float showAz = elev > 0 ? az : az + MathF.PI;
+        var pos = new Vector3(MathF.Cos(showAz) * MathF.Cos(shown), MathF.Sin(shown), MathF.Sin(showAz) * MathF.Cos(shown));
+        SunDir = -Vector3.Normalize(pos);
+
+        var sun = Vector3.Lerp(Vector3.Lerp(DuskSun, NoonSun, k), MoonSun, n);
+        var sky = Vector3.Lerp(Vector3.Lerp(DuskSky, NoonSky, k), NightSky, n);
+        var hor = Color.Lerp(Color.Lerp(DuskHorizon, NoonHorizon, k), NightHorizon, n);
+        var zen = Color.Lerp(Color.Lerp(DuskZenith, NoonZenith, k), NightZenith, n);
+        // Rain and fog grey everything out and dim the sun.
+        float grey = Math.Clamp(w.Rain * 0.8f + w.Fog * 0.6f, 0, 0.9f);
+        static Vector3 Grey(Vector3 c) { float l = (c.X + c.Y + c.Z) / 3; return new Vector3(l); }
+        sun = Vector3.Lerp(sun, Grey(sun) * 0.55f, grey);
+        sky = Vector3.Lerp(sky, Grey(sky) * 1.05f, grey * 0.8f);
+        hor = Color.Lerp(hor, new Color(Grey(hor.ToVector3()) * 0.95f), grey);
+        zen = Color.Lerp(zen, new Color(Grey(zen.ToVector3()) * 1.1f + new Vector3(0.05f)), grey);
+        SunColor = sun;
+        SkyColor = sky;
+        GroundColor = Vector3.Lerp(new Vector3(0.3f, 0.29f, 0.24f), new Vector3(0.08f, 0.08f, 0.1f), n);
+        Horizon = hor;
+        Zenith = zen;
+        FogScale = Math.Clamp(1 - w.Fog * 0.7f - w.Rain * 0.3f - n * 0.35f, 0.2f, 1);
+    }
+}
