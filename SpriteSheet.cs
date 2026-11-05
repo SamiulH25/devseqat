@@ -86,6 +86,10 @@ public sealed class SpriteSheet
         Add($"plume{s}", Plume());
         Add($"cape{s}", Cape());
         Add($"blood{s}", Blood());
+        Add($"flag{s}", Flag());
+        var white = new Canvas(4, 4);
+        white.Area((_, _) => true, Mat.Flat(Color.White));
+        Add($"white{s}", white);
         HorseGear(s);
     }
 
@@ -490,6 +494,16 @@ public sealed class SpriteSheet
     {
         var c = new Canvas(8, 14);
         c.Fill((x, y) => InEl(x, y, 4.2f + (y - 7) * 0.12f, 7, 3.2f, 6.8f), (x, y) => new Vector3((x - 4) / 5, (y - 7) / 9, 0.8f), new Mat(trim.Ramp[2], Pattern.Hair));
+        return c;
+    }
+
+    /// A company's banner: the side's cloth with its trim and charge, swallow-tailed.
+    Canvas Flag()
+    {
+        var c = new Canvas(24, 16);
+        c.Area((x, y) => x < 23 - (MathF.Abs(y - 7.5f) < 3 ? 4 - MathF.Abs(y - 7.5f) : 0), cloth);
+        c.Border(trim);
+        Emblem(c, 10, 8, 4.5f);
         return c;
     }
 

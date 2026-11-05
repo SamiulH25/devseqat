@@ -37,7 +37,16 @@ sealed class Puppet
     }
 
     static float Rad(float deg) => MathHelper.ToRadians(deg);
-    Vector3 W(Vector3 l) => origin + (right * l.X + Vector3.Up * l.Y + fwd * l.Z) * scale;
+    Vector3 W(Vector3 l)
+    {
+        if (fall != 0) l = new Vector3(l.X, l.Y * MathF.Cos(fall) + l.Z * MathF.Sin(fall), l.Z * MathF.Cos(fall) - l.Y * MathF.Sin(fall)); // toppling backwards
+        return origin + (right * l.X + Vector3.Up * l.Y + fwd * l.Z) * scale;
+    }
+
+    /// The battle clock (falls are animated over FallTime after death; 0 = draw the dead lying at once).
+    public float Now;
+    const float FallTime = 0.5f;
+    float fall;
 
     void Frame(Vector2 pos, float yaw, float y, float s)
     {
@@ -69,7 +78,13 @@ sealed class Puppet
         if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true)) * Scale;
         Frame(u.Pos, u.ViewFacing, lift, (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * Scale);
 
-        if (u.Dead) { Corpse(); return; }
+        fall = 0;
+        if (u.Dead)
+        {
+            float k = Now > 0 ? (Now - u.DiedAt) / FallTime : 1;
+            if (k >= 1) { Corpse(); return; }
+            fall = k * k * MathHelper.ToRadians(80);
+        }
         var p = PoseOf(u);
         var cls = u.Type.Class;
 
@@ -101,8 +116,14 @@ sealed class Puppet
         {
             if (!u.Type.HasShield) return;
             var key = $"shield.{look.Shield}";
-            if (p.ShieldUp) Plane(off + new Vector3(0.2f, 0.02f, 0.1f), Vector3.UnitZ, key);
-            else Plane(off + new Vector3(-0.06f, 0.2f, 0.08f), Vector3.Normalize(new Vector3(-0.87f, 0, 0.5f)), key);
+            var at = p.ShieldUp ? off + new Vector3(0.2f, 0.02f, 0.1f) : off + new Vector3(-0.06f, 0.2f, 0.08f);
+            var n = p.ShieldUp ? Vector3.UnitZ : Vector3.Normalize(new Vector3(-0.87f, 0, 0.5f));
+            Plane(at, n, key);
+            for (int i = 0; i < u.StuckArrows; i++) // shafts caught in the shield, sticking out of its face
+            {
+                var j = at + new Vector3((i % 2 - 0.5f) * 0.16f, (i / 2 - 0.5f) * 0.18f, 0);
+                Axial(j, j + Vector3.Normalize(n + new Vector3(0.2f * (i % 2 * 2 - 1), 0.25f, 0)) * 0.4f, "arrow");
+            }
         }
         if (u.Couched)
         {
@@ -292,6 +313,38 @@ sealed class Puppet
         if (look.Tabard) Flat(new(0, 0.1f, -0.75f), "tabard.f", false);
         Flat(new(0, 0.11f, -1.25f), look.Head == "none" ? "head.b" : $"helm.{look.Head}.b", false);
         if (look.Shield != "none") Flat(new(-0.5f, 0.12f, -0.6f), $"shield.{look.Shield}", true);
+    }
+
+    // ---------- effects ----------
+
+    /// A solid-colour square facing the camera: dust, blood and sparks (pixel-art particles).
+    public void Particle(Vector3 c, float size, Color col)
+    {
+        var src = art["white/0"];
+        var hw = camRight * size / 2;
+        var hh = camUp * size / 2;
+        var keep = tint;
+        tint = col;
+        Quad(c - hw - hh, c + hw - hh, c - hw + hh, c + hw + hh, src, false);
+        tint = keep;
+    }
+
+    /// A company banner: a pole rising behind the bearer, the flag at its head turned to the camera.
+    public void Banner(Vector2 pos, float ground, int palette, float wave)
+    {
+        var foot = new Vector3(pos.X, ground, pos.Y);
+        var top = foot + Vector3.Up * 3.3f;
+        var side = Vector3.Normalize(new Vector3(camRight.X, 0, camRight.Z));
+        var keep = tint;
+        tint = new Color(92, 64, 40);
+        var white = art["white/0"];
+        Quad(foot - side * 0.03f, foot + side * 0.03f, top - side * 0.03f, top + side * 0.03f, white, false);
+        tint = Color.White;
+        var flag = art["flag/" + palette];
+        float w = flag.Width * Art.Px * 1.6f, h = flag.Height * Art.Px * 1.6f, sag = MathF.Sin(wave) * 0.05f;
+        var tl = top - Vector3.Up * 0.05f;
+        Quad(tl - Vector3.Up * h, tl + side * w - Vector3.Up * (h + sag), tl, tl + side * w + Vector3.Up * sag, flag, false);
+        tint = keep;
     }
 
     // ---------- quads ----------

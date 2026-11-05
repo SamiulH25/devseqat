@@ -16,6 +16,8 @@ public sealed class WorldMap
     public readonly List<(Vector2 A, Vector2 B)> Roads = new();
     /// Two rivers wind across the land; where a road meets one there is a bridge (a ford on the battlefield).
     public readonly List<River> Rivers = new();
+    /// 0-3: spring to winter. The ground's colours follow it (set before BuildTerrain).
+    public int Season;
     readonly List<(Vector2 C, float R, float H)> hills = new();
 
     WorldMap(int seed) { Seed = seed; }
@@ -184,7 +186,20 @@ public sealed class WorldMap
     }
 
     /// Ground tint: patchwork fields in farmland, dark forest floor, dry hills (visual only).
-    public Vector3 Tint(Vector2 p)
+    public Vector3 Tint(Vector2 p, Vector3 ground)
+    {
+        var c = ground * KindTint(p);
+        // Summer dries the grass, autumn browns it, winter lies white (more so on high ground; roads show through).
+        return Season switch
+        {
+            1 => c * new Vector3(1.06f, 1.02f, 0.86f),
+            2 => c * new Vector3(1.18f, 0.94f, 0.68f),
+            3 => Vector3.Lerp(c, new Vector3(0.86f, 0.89f, 0.93f), RoadDist(p) < 2.5f ? 0.35f : 0.7f + 0.2f * Math.Clamp(Height(p.X, p.Y) / 10, 0, 1)),
+            _ => c,
+        };
+    }
+
+    Vector3 KindTint(Vector2 p)
     {
         switch (ProvinceAt(p).Kind)
         {

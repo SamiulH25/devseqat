@@ -8,7 +8,7 @@ public enum Difficulty { Easy, Normal, Hard }
 public sealed class Settings
 {
     public int Width = 1280, Height = 720, UiScale; // UiScale 0 = automatic (by window height)
-    public bool Fullscreen, Fxaa = true, Ironman;
+    public bool Fullscreen, Fxaa = true, Ironman, ColorBlind;
     public string Quality = "High";
     public float MasterVolume = 0.8f, SfxVolume = 1, MusicVolume = 0.6f;
     public Difficulty Difficulty = Difficulty.Normal;

@@ -139,7 +139,9 @@ public sealed partial class Battle
 
     public IEnumerable<Squad> SquadsOf(int team) => Squads.Where(s => s.Team == team);
     public Vector2 Centroid(int team) => centroid[team];
-    public void Log(string text) => Events.Add((text, Time));
+    public void Log(string text) { Events.Add((text, Time)); if (!text.Contains(": ") || text.Contains("charge")) History.Add((text, Time)); }
+    /// Every notable event of the battle, kept for the post-battle timeline (orders you give are left out).
+    public readonly List<(string Text, float At)> History = new();
 
     public Squad AddSquad(int team, UnitType type, int n, Vector2 anchor, int cols, Vector2 front, Company? company = null)
     {
@@ -706,6 +708,7 @@ public sealed partial class Battle
             {
                 t.Action = UnitAction.Block;
                 t.ActionTimer = 0.35f;
+                if (ranged && t.Type.HasShield && t.StuckArrows < 4) t.StuckArrows++;
                 if (a.IsPlayer) PlayerHit = ("BLOCKED", Time);
                 Sound(t.Type.HasShield ? Cue.Block : Cue.Clash, t.Pos);
                 return;
@@ -785,6 +788,7 @@ public sealed partial class Battle
     void Kill(Unit t, Unit killer)
     {
         t.Dead = true;
+        t.DiedAt = Time;
         t.Hp = 0;
         t.Action = UnitAction.None;
         t.Vel = t.Wish = Vector2.Zero;

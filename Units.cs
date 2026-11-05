@@ -82,6 +82,8 @@ public sealed class Unit
     public float BlockStart; // when the player raised the guard (parries need fresh timing)
     public Unit? Target;
     public bool Dead, Fled, Routing;
+    public float DiedAt;     // battle time of death (the fall is animated)
+    public int StuckArrows;  // arrows caught in the shield (drawn)
 
     // Mounted state. The horse moves along Heading at Speed; the rider looks (and strikes) along Facing.
     public Mount? Horse;

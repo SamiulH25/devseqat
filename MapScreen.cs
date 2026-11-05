@@ -30,6 +30,8 @@ sealed class MapScreen
     readonly Dictionary<int, Unit> bearers = new();
     World? world;
     Terrain terrain = null!;
+    int season;
+    readonly Dictionary<int, List<Vector2>> trails = new(); // where each party has been lately (drawn as fading tracks)
 
     PanelKind panel;
     Settlement? at;
@@ -62,6 +64,7 @@ sealed class MapScreen
     {
         C = c;
         world?.Dispose();
+        c.Map.Season = season = c.SeasonIndex;
         terrain = c.Map.BuildTerrain();
         world = new World(gd, terrain);
         world.SetFog(260, 700);
@@ -137,6 +140,8 @@ sealed class MapScreen
             }
             int week = (int)(C.S.Hours / 168);
             if (week != lastWeek) { lastWeek = week; C.S.Save("autosave"); }
+            if (C.SeasonIndex != season) { var keep = (focus, follow); Open(C); (focus, follow) = keep; C.Log($"{C.Season} comes."); }
+            Trails();
         }
         else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege)
             panel = panel == PanelKind.Upgrade ? PanelKind.Party : PanelKind.None;
@@ -180,6 +185,18 @@ sealed class MapScreen
             else if (renameText.Length < 22 && (char.IsLetterOrDigit(ch) || ch is ' ' or '\'' or '-')) renameText += char.ToUpperInvariant(ch);
         }
         if (Pressed(Keys.Escape)) renaming = null;
+    }
+
+    void Trails()
+    {
+        foreach (var p in C.S.Parties)
+        {
+            if (!trails.TryGetValue(p.Id, out var t)) trails[p.Id] = t = new List<Vector2> { p.Pos };
+            if (Vector2.Distance(t[^1], p.Pos) > 2.5f) { t.Add(p.Pos); if (t.Count > 14) t.RemoveAt(0); }
+            if (p.Down) t.Clear();
+            if (t.Count == 0) t.Add(p.Pos);
+        }
+        foreach (int id in trails.Keys.Where(id => C.PartyById(id) == null).ToList()) trails.Remove(id);
     }
 
     void ClickWorld(Vector2 g)
@@ -342,6 +359,14 @@ sealed class MapScreen
                 Line(G(p + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r), G(p + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r), c);
             }
         }
+        // Tracks: dotted lines behind every party, toward its current position.
+        foreach (var (id, track) in trails)
+        {
+            if (C.PartyById(id) is not Party p || p.Down) continue;
+            var col = PartyColor(p) * 0.55f;
+            for (int i = 0; i + 1 < track.Count; i++)
+                Line(G(track[i], 0.3f), G(Vector2.Lerp(track[i], track[i + 1], 0.5f), 0.3f), Color.Lerp(Color.Black, col, (i + 1f) / track.Count));
+        }
         var pl = C.Player;
         Vector2? target = pl.ChaseId >= 0 ? C.PartyById(pl.ChaseId)?.Pos : pl.Moving ? pl.Goal : null;
         if (target is Vector2 t)
@@ -414,6 +439,15 @@ sealed class MapScreen
             ui.Rect(new Rectangle(r.X, r.Bottom - ui.U(2), r.Width, ui.U(2)), col);
             ui.TextC(label, sp.X, r.Y + ui.U(3), Color.White, scale);
         }
+        // Smoke rises over villages that were threatened or stripped.
+        foreach (var v in C.S.Settlements.Where(v => v.ThreatUntil > C.S.Hours))
+            for (int i = 0; i < 6; i++)
+            {
+                float ph = (time * 0.25f + i / 6f) % 1;
+                if (Screen(G(v.Pos + new Vector2(MathF.Sin(ph * 3 + i) * 1.5f, ph * 2), 3 + ph * 14)) is not Vector2 sp) continue;
+                int r = ui.U(4 + ph * 10 * 110 / MathF.Max(40, zoom));
+                ui.Rect(new Rectangle((int)sp.X - r / 2, (int)sp.Y - r / 2, r, r), new Color(70, 66, 62) * (0.75f * (1 - ph)));
+            }
         foreach (var p in C.S.Parties)
         {
             if (p.Down || Screen(G(p.Pos, 9)) is not Vector2 sp) continue;

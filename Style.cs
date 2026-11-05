@@ -14,7 +14,20 @@ public static class Style
 
     /// Palette index: 0 = the Azure Crown, 1 = the Crimson Compact, 2 = you (gold, so you can always find yourself), 3 = bandits,
     /// 4 = the Northmarch clans.
-    public static readonly Heraldry[] Sides =
+    public static readonly Heraldry[] Sides = Settings.Current.ColorBlind ? ColorBlind() : Standard();
+
+    /// Colour-blind-safe sides (roadmap D3): blue against vermilion and reddish purple (Okabe-Ito hues), which stay apart
+    /// under deuteranopia and protanopia. You stay gold; brigands stay grey-brown. Chosen at start-up (Settings).
+    static Heraldry[] ColorBlind() => new Heraldry[]
+    {
+        new("Azure", new(0, 96, 160), new(0, 56, 100), new(236, 228, 196), Emblem.Chevron, new(86, 180, 233)),
+        new("Crimson", new(204, 92, 0), new(120, 52, 0), new(250, 236, 200), Emblem.Saltire, new(230, 159, 0)),
+        new("Gold", new(210, 168, 54), new(126, 88, 30), new(44, 36, 44), Emblem.Lozenge, new(240, 228, 66)),
+        new("Brigands", new(112, 98, 78), new(70, 62, 52), new(160, 150, 128), Emblem.None, new(190, 170, 130)),
+        new("Northmarch", new(160, 84, 132), new(96, 46, 80), new(240, 236, 232), Emblem.Bend, new(204, 121, 167)),
+    };
+
+    static Heraldry[] Standard() => new Heraldry[]
     {
         new("Azure", new(54, 94, 176), new(30, 50, 108), new(230, 218, 178), Emblem.Chevron, new(112, 160, 255)),
         new("Crimson", new(172, 48, 42), new(98, 26, 28), new(222, 178, 72), Emblem.Saltire, new(236, 88, 70)),

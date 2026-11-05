@@ -44,6 +44,8 @@ sealed class Hud
     public Vector2 CamFocus;
     public Point Mouse;
     public Rectangle? Box;
+    /// The company under the mouse in command view (for the tooltip).
+    public Squad? HoverSquad;
 
     // Layout, rebuilt every frame.
     readonly List<(Rectangle R, Squad S)> cards = new();
@@ -162,7 +164,7 @@ sealed class Hud
         MinimapPanel();
         PlayerPanel();
         Cards();
-        if (Command) CommandPanel(); else Crosshair();
+        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) SquadTooltip(); } else Crosshair();
         if (WheelOpen) Wheel();
         Hints();
         if (Box is Rectangle box) { Rect(box, Gold * 0.12f); Frame(box, Gold, 1); }
@@ -509,10 +511,64 @@ sealed class Hud
         MenuButtons();
     }
 
+    static string StateOf(Squad s) => s.Alive == 0 ? "BROKEN" : s.Units.Count(u => u.Active && u.Routing) > s.Alive ? "ROUTING"
+        : s.Order switch { Order.Charge => "CHARGING", Order.Follow => "FOLLOWING", _ => "HOLDING" };
+
+    static string FormationName(Formation f) => f switch { Formation.ShieldWall => "SHIELD WALL", Formation.Square => "SQUARE", Formation.Wedge => "WEDGE", Formation.Loose => "LOOSE", _ => "LINE" };
+
+    /// Hovering a company in command view: what it is and how it stands.
+    void SquadTooltip()
+    {
+        if (HoverSquad is not Squad s || s.Units.Count == 0) return;
+        var t = s.Units[0].Type;
+        var act = s.Units.Where(u => u.Active).ToList();
+        int morale = act.Count == 0 ? 0 : (int)act.Average(u => u.Morale), stamina = act.Count == 0 ? 0 : (int)act.Average(u => u.Stamina);
+        var lines = new List<(string, Color)>
+        {
+            ((s.Company?.Name is { Length: > 0 } n ? n + ": " : "") + t.Name.ToUpperInvariant(), s.Team == 0 ? Friendly : Foe),
+            ($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 5)]} {t.Class.ToString().ToUpperInvariant()}   {s.Alive}/{s.StartCount} MEN", Color.White),
+            ($"{StateOf(s)}   {FormationName(s.Formation)}", Dim),
+            ($"MORALE {morale}   STAMINA {stamina}" + (t.Ammo > 0 ? $"   ARROWS {act.Sum(u => u.Ammo)}" : ""), morale < 30 ? Bad : Dim),
+            ($"ARMOUR {t.Armor:0}  DAMAGE {t.Damage:0}" + (t.Range > 0 ? $"  RANGE {t.Range:0} M" : ""), Dim),
+        };
+        if (s.Company?.Traits is { Length: > 0 } tr) lines.Add(("OFFICER: " + string.Join(", ", tr).ToUpperInvariant(), Gold));
+        int w = lines.Max(l => TW(l.Item1, 1)) + U(16), h = lines.Count * U(13) + U(10);
+        var r = new Rectangle(Math.Min(Mouse.X + U(18), W - w - 4), Math.Min(Mouse.Y + U(18), H - h - 4), w, h);
+        Panel(r);
+        for (int i = 0; i < lines.Count; i++) Text(lines[i].Item1, r.X + U(8), r.Y + U(6) + i * U(13), lines[i].Item2, 1);
+    }
+
+    /// With one company selected: its full detail above the cards.
+    void Detail()
+    {
+        if (Selected.Count != 1) return;
+        var s = Selected.First();
+        if (s.Units.Count == 0) return;
+        var t = s.Units[0].Type;
+        var act = s.Units.Where(u => u.Active).ToList();
+        var r = new Rectangle(U(10), H - U(104) - U(118), U(280), U(110));
+        Panel(r, Friendly);
+        int x = r.X + U(8), y = r.Y + U(6);
+        Text((s.Company?.Name ?? s.Name).ToUpperInvariant(), x, y, Gold, 1);
+        y += U(14);
+        Text($"{t.Name.ToUpperInvariant()}  {s.Alive}/{s.StartCount}  KILLS {s.Kills}", x, y, Color.White, 1);
+        y += U(14);
+        Text($"HP {t.MaxHp:0}  ARMOUR {t.Armor:0}  DMG {t.Damage:0}  REACH {t.Reach:0.0}", x, y, Dim, 1);
+        y += U(14);
+        Text($"{StateOf(s)}, {FormationName(s.Formation)}" + (t.Ammo > 0 ? $", {act.Sum(u => u.Ammo)} ARROWS" : ""), x, y, Dim, 1);
+        y += U(14);
+        float morale = act.Count == 0 ? 0 : act.Average(u => u.Morale) / 100, stamina = act.Count == 0 ? 0 : act.Average(u => u.Stamina) / 100;
+        Text("MORALE", x, y, Dim, 1); Bar(new Rectangle(x + U(60), y + U(1), U(170), U(5)), morale, morale < 0.3f ? Bad : Ok);
+        y += U(12);
+        Text("STAMINA", x, y, Dim, 1); Bar(new Rectangle(x + U(60), y + U(1), U(170), U(5)), stamina, Warn);
+        y += U(12);
+        if (s.Company?.Traits is { Length: > 0 } tr) Text("OFFICER: " + string.Join(", ", tr).ToUpperInvariant(), x, y, Gold, 1);
+    }
+
     void Result()
     {
         bool won = B.Winner == 0;
-        var r = new Rectangle(W / 2 - U(220), H / 2 - U(150), U(440), U(300));
+        var r = new Rectangle(W / 2 - U(380), H / 2 - U(150), U(760), U(300));
         Overlay(r, "", Color.White);
         TextC(won ? "VICTORY" : "DEFEAT", W / 2f, r.Y + U(18), won ? Gold : Bad, 5);
         int y = r.Y + U(80), lx = r.X + U(40), c1 = r.X + U(250), c2 = r.X + U(350);
@@ -535,6 +591,19 @@ sealed class Hud
         y += U(6);
         int time = (int)B.Time;
         Text($"YOUR KILLS {B.PlayerKills}     BATTLE TIME {time / 60}:{time % 60:00}", lx, y, Color.White, 1);
+        // The timeline: the moments that decided it.
+        int tx = r.X + U(430), ty = r.Y + U(80);
+        Text("HOW IT WENT", tx, ty, Gold, 1);
+        ty += U(16);
+        foreach (var (text, at) in B.History.TakeLast(12))
+        {
+            int s = (int)at;
+            var line = text.ToUpperInvariant();
+            if (line.Length > 44) line = line[..43] + ".";
+            Text($"{s / 60}:{s % 60:00}", tx, ty, Dim, 1);
+            Text(line, tx + U(36), ty, line.StartsWith("ENEMY") || line.StartsWith("THE ENEMY") ? Foe : Color.White, 1);
+            ty += U(13);
+        }
         MenuButtons();
     }
 
@@ -544,7 +613,7 @@ sealed class Hud
         Overlay(r, "CONTROLS", Gold);
         var cols = new (string Title, (string Label, string Key)[] Rows)[]
         {
-            ("IN THE FIELD", new[] { Act.Forward, Act.Back, Act.Left, Act.Right, Act.Sprint, Act.Attack, Act.Block, Act.Couch, Act.Interact, Act.Rally, Act.OrderWheel }
+            ("IN THE FIELD", new[] { Act.Forward, Act.Back, Act.Left, Act.Right, Act.Sprint, Act.Attack, Act.Block, Act.Bash, Act.SwapWeapon, Act.Couch, Act.Interact, Act.Rally, Act.OrderWheel }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Append(("SWING / BLOCK DIRECTION", "MOVE MOUSE"))
                 .Append(("FEINT", "BLOCK IN WINDUP")).ToArray()),
@@ -555,7 +624,7 @@ sealed class Hud
                 ("ROTATE", $"{Ctl.First(Act.RotateLeft)} {Ctl.First(Act.RotateRight)} / MMB DRAG"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"),
                 ("FOCUS SQUAD", "DOUBLE-CLICK CARD"),
             }),
-            ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.FireAtWill, Act.SelectAll,
+            ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.SelectAll,
                     Act.CommandView, Act.Pause, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Prepend(("SELECT SQUAD", "1-9")).ToArray()),

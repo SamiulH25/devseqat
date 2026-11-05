@@ -159,6 +159,7 @@ sealed class BattleScreen
     void SetWorld()
     {
         Sky.Set(battle.Weather, nightFloor: 0.3f); // moonlight: dark, but you can still fight
+        motes.Clear();
         world?.Dispose();
         world = new World(GraphicsDevice, battle.Terrain);
     }
@@ -218,7 +219,7 @@ sealed class BattleScreen
         battle.Commanding = command;
 
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
-        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); if (battle.GateBroke) world.RebuildFoliage(); }
+        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); if (battle.GateBroke) world.RebuildFoliage(); }
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
@@ -266,6 +267,7 @@ sealed class BattleScreen
         hud.WheelOpen = wheelOpen; hud.WheelSector = WheelSector() ?? -1;
         hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = ms.Position;
         hud.Box = boxStart is Point b && command ? BoxOf(b, ms.Position) : null;
+        hud.HoverSquad = command && !hud.Over(ms.Position) ? PickSquad(mouseGround, 1) ?? PickSquad(mouseGround, 0) : null;
         if (hud.Box is { Width: < 6, Height: < 6 }) hud.Box = null;
         hud.Layout(GraphicsDevice.Viewport);
     }
@@ -824,12 +826,71 @@ sealed class BattleScreen
         }
     }
 
+    // ---------- particles (D1) ----------
+
+    struct Mote { public Vector3 Pos, Vel; public float Life, Max, Size, Grow; public Color Col; public bool Heavy; }
+    readonly List<Mote> motes = new();
+    readonly Random fx = new(5);
+
+    void Spray(Vector2 at, float height, int n, Color col, float speed, float life, float size, bool heavy, float grow = 0)
+    {
+        if (motes.Count > 1500) return;
+        var g = battle.Terrain.Height(at);
+        for (int i = 0; i < n; i++)
+        {
+            var dir = new Vector3(fx.NextSingle() * 2 - 1, fx.NextSingle() * 0.8f + (heavy ? 0.4f : 0.1f), fx.NextSingle() * 2 - 1);
+            motes.Add(new Mote { Pos = new Vector3(at.X, g + height, at.Y), Vel = dir * speed, Life = life * (0.6f + fx.NextSingle() * 0.6f), Max = life,
+                Size = size, Grow = grow, Col = col, Heavy = heavy });
+        }
+    }
+
+    /// Sparks off steel, blood from wounds, dust under galloping hooves and at a charge's impact.
+    void Effects(float dt)
+    {
+        foreach (var (cue, at) in battle.Sounds)
+            switch (cue)
+            {
+                case Cue.Clash: Spray(at, 1.3f, 6, new Color(255, 226, 140), 3.5f, 0.25f, 0.05f, true); break;
+                case Cue.Block: Spray(at, 1.2f, 3, new Color(220, 200, 160), 2f, 0.2f, 0.05f, true); break;
+                case Cue.Hit: case Cue.ArrowHit: Spray(at, 1.1f, 5, new Color(140, 20, 22), 1.8f, 0.55f, 0.06f, true); break;
+                case Cue.Impact: Spray(at, 0.2f, 10, new Color(168, 150, 116), 1.6f, 1.3f, 0.25f, false, 0.6f); break;
+            }
+        foreach (var u in battle.Units)
+            if (u.Active && u.Mounted && u.Speed > 5.5f && fx.NextSingle() < dt * 9 && battle.Terrain.WaterDepth(u.Pos) == 0)
+                Spray(u.Pos - u.HeadingDir * 0.8f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.6f, 1.2f, 0.3f, false, 0.7f);
+        for (int i = motes.Count - 1; i >= 0; i--)
+        {
+            var m = motes[i];
+            m.Life -= dt;
+            if (m.Life <= 0) { motes.RemoveAt(i); continue; }
+            if (m.Heavy) m.Vel.Y -= 9.8f * dt; else m.Vel *= 1 - 1.5f * dt;
+            m.Pos += m.Vel * dt;
+            m.Size += m.Grow * dt;
+            float ground = battle.Terrain.Height(new Vector2(m.Pos.X, m.Pos.Z));
+            if (m.Pos.Y < ground) { m.Pos.Y = ground + 0.01f; m.Vel = Vector3.Zero; }
+            motes[i] = m;
+        }
+    }
+
     /// Build every puppet's quads, billboarded toward the camera of `viewer` (the player's camera or the sun).
     void BuildSprites(Matrix viewer, bool forSun)
     {
         var t = battle.Terrain;
         sprites.N = 0;
         puppet.Begin(viewer);
+        puppet.Now = battle.Time;
+        // A banner over every company, carried by its first man.
+        foreach (var s in battle.Squads)
+        {
+            if (s.Company == null || s.Alive == 0) continue;
+            if (deploying && !battle.Options.Scouted && s.Team == 1) continue;
+            var bearer = s.Units.FirstOrDefault(u => u.Active && !u.Routing);
+            if (bearer == null) continue;
+            var at = bearer.Pos - bearer.Dir * 0.35f + new Vector2(-bearer.Dir.Y, bearer.Dir.X) * 0.25f;
+            puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count);
+        }
+        if (!forSun)
+            foreach (var m in motes) puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
         var eye2 = new Vector2(eye.X, eye.Z);
         foreach (var u in battle.Units)
         {

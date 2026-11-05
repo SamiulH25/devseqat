@@ -254,7 +254,20 @@ sealed class ScreenHost : Game
             case 14: Shot("campaign-siege-deploy"); break;
             case 15: battle.StageCommandView(new Vector2(0, 0), 0.9f, 60, true); cStage++; break;
             case 16 when battle.Battle.Time > 10: battle.StageCommandView(new Vector2(-10, 6), 0.75f, 45, false); Shot("campaign-siege"); break;
-            case 17: Exit(); break;
+            case 17:
+            {
+                // Winter at midday, with a village burning nearby.
+                mode = Mode.Map;
+                c.Player.SiegeTarget = -1;
+                c.S.Hours = 100 * 24 + 12;
+                c.Encounter = null; c.Player.Cooldown = 1e6f;
+                var v = c.S.Settlements.Where(s => s.Kind == SettlementKind.Village).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
+                v.ThreatUntil = (float)c.S.Hours + 100;
+                map.Stage("map");
+                cStage++; shotFrames = 0; break;
+            }
+            case 18: Shot("campaign-winter"); break;
+            case 19: Exit(); break;
         }
     }
 }

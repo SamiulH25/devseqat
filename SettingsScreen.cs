@@ -143,6 +143,12 @@ sealed class SettingsScreen
                 Row();
                 ui.Text("IRONMAN: ONE AUTOSAVE, NO QUICK LOAD, AND A CAPTURED CAPTAIN IS EXECUTED: THE CAMPAIGN ENDS.", body.X, y, Style.Dim, 1);
                 y += ui.U(26);
+                Label("COLOUR-BLIND SIDES");
+                if (Choice(0, "OFF", !s.ColorBlind)) s.ColorBlind = false;
+                if (Choice(1, "ON", s.ColorBlind)) s.ColorBlind = true;
+                Row();
+                ui.Text("BLUE, VERMILION AND PURPLE HERALDRY THAT STAY APART WITH RED-GREEN COLOUR BLINDNESS. APPLIES ON RESTART.", body.X, y, Style.Dim, 1);
+                y += ui.U(26);
                 if (ui.Button(new Rectangle(body.X, y, ui.U(240), ui.U(26)), "SHOW TIPS AGAIN", s.TipsSeen.Count > 0)) { s.TipsSeen.Clear(); s.Save(); }
                 break;
         }

@@ -102,7 +102,7 @@ public sealed class Terrain
     readonly Func<float, float, float>? customHeight;
     readonly Func<Vector2, float>? customRoad;
     /// Optional ground colour multiplier (the campaign map's fields and forest floors). Visual only.
-    public readonly Func<Vector2, Vector3>? Tint;
+    public readonly Func<Vector2, Vector3, Vector3>? Tint; // (place, ground colour) -> the colour drawn
     /// Grass tufts and the minimap's reach (the campaign map has no grass and a wider overview).
     public readonly bool Grass = true;
     public readonly float MinimapRange = 110;
@@ -128,7 +128,7 @@ public sealed class Terrain
     public Terrain(int seed, TerrainParams p, SiegeWall? wall = null) : this(seed, false, p, wall) { }
 
     /// A campaign map: heights, roads, foliage and settlements all given; no grass, overview covers everything.
-    public Terrain(int seed, Func<float, float, float> height, Func<Vector2, float> roadDist, IEnumerable<Foliage> foliage, Func<Vector2, Vector3>? tint, IEnumerable<River>? rivers = null)
+    public Terrain(int seed, Func<float, float, float> height, Func<Vector2, float> roadDist, IEnumerable<Foliage> foliage, Func<Vector2, Vector3, Vector3>? tint, IEnumerable<River>? rivers = null)
     {
         if (rivers != null) Rivers.AddRange(rivers);
         Seed = seed;

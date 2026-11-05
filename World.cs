@@ -196,7 +196,7 @@ sealed class World : IDisposable
         c = Vector3.Lerp(c, new Vector3(0.48f, 0.42f, 0.32f), Smooth(0.35f, 0.7f, t.Gradient(p).Length())); // bare slopes
         float rd = t.RoadDist(p);
         c = Vector3.Lerp(c, new Vector3(0.56f, 0.47f, 0.34f), 1 - Smooth(1.8f, 3.4f + n2 * 0.6f, rd));      // road
-        if (t.Tint != null) c *= t.Tint(p);
+        if (t.Tint != null) c = t.Tint(p, c);
         if (t.WaterDepth(p) > 0) c = Vector3.Lerp(c, new Vector3(0.24f, 0.38f, 0.46f), t.WaterDepth(p) > 0.5f ? 0.9f : 0.6f); // the minimap shows water
         return c * (1 + n2 * 0.05f);
     }
