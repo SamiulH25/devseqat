@@ -16,6 +16,7 @@ dotnet run -- --selftest   # headless: formation math + 3 full battles must reso
 You need .NET SDK 10 (`net10.0`). On Ubuntu 24.04 `apt-get install dotnet-sdk-10.0` works (no Microsoft feed needed).
 The game needs no art files: sprites, terrain and the font are all generated in code. Troops come from `Data/troops.json`.
 **Design language:** see [`docs/DESIGN.md`](docs/DESIGN.md) (art direction, unit painting rules, heraldry, tiers, UI tokens).
+**Campaign plan:** see [`docs/CAMPAIGN.md`](docs/CAMPAIGN.md) (map, companies, XP and upgrades, economy, AI, battle hand-off, milestones).
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
 To render a few staged camera shots as PNGs and quit (works headless with `xvfb-run -a dotnet run`), set `IRONFIELD_SHOTS=/some/dir`.
 `dotnet run -- --write-controls` writes `controls.json` with the default bindings.
@@ -222,5 +223,6 @@ For hand-made art later, put PNGs into the atlas under the same keys (`part.vari
 1. Play-test the feel: horse turn rates, lance damage, parry timing (right now any matched block parries; a timing window would add skill).
 2. Horse archers and a wedge formation for cavalry; AI riders remounting loose horses.
 3. A battle-start deployment phase; woods that hide units and slow formations; rivers and fords.
-4. The campaign map layer: companies gain XP from `Squad` kills and upgrade along `troops.json`.
+4. The campaign, as specified in `docs/CAMPAIGN.md`, starting with M0 (battle-side prep: spatial grid, `Battle.Result()`, deployment) and
+   M1 (the company ledger: persistent companies across a chain of battles).
 5. A spatial grid for separation and target search, for bigger battles.
