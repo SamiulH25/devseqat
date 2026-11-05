@@ -103,7 +103,7 @@ public sealed class WorldMap
         foreach (var p in m.Provinces)
         {
             bool town = p == westCap || p == eastCap || p == northCap || p.Id % 2 == 0;
-            m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Name = p.Name, Pos = p.Center,
+            m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Culture = Factions.CultureOf(p.Faction), Name = p.Name, Pos = p.Center,
                 Kind = town ? SettlementKind.Town : SettlementKind.Castle });
             int villages = 2 + rng.Next(2);
             for (int v = 0, tries = 0; v < villages && tries < 200; tries++)
@@ -111,7 +111,7 @@ public sealed class WorldMap
                 float a = rng.NextSingle() * MathF.Tau, d = (16 + rng.NextSingle() * 16) * span;
                 var pos = p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
                 if (m.Settlements.Any(s => Vector2.Distance(s.Pos, pos) < 12 * span) || MathF.Abs(pos.X) > extent || MathF.Abs(pos.Y) > extent) continue;
-                m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Name = Place(), Pos = pos, Kind = SettlementKind.Village });
+                m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Culture = Factions.CultureOf(p.Faction), Name = Place(), Pos = pos, Kind = SettlementKind.Village });
                 m.Roads.Add((p.Center, pos));
                 v++;
             }

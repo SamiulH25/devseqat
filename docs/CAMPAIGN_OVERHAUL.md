@@ -1,13 +1,14 @@
 # Ironfield campaign overhaul (roadmap phase F)
 
-Status: **in progress (F0-F1 built).** This spec replaces the campaign's play and progression layer: how companies are built and
+Status: **in progress (F0-F2 built).** This spec replaces the campaign's play and progression layer: how companies are built and
 grown, how the captain rises, how lords, fiefs and realms behave, and what ends a campaign. The world map itself (generation,
 terrain, rendering) is out of scope. Where this text and [`CAMPAIGN.md`](CAMPAIGN.md) disagree, this text wins once the
 matching F step is built; until then `CAMPAIGN.md` describes the game as it is. Numbers marked *(tune)* are starting values.
 
-**Next step: F2** (`ROADMAP.md` phase F). F0 added pacing telemetry: `--balance` runs a scripted stand-in captain
+**Next step: F3** (`ROADMAP.md` phase F). F0 added pacing telemetry: `--balance` runs a scripted stand-in captain
 (`Campaign/Pilot.cs`) through each campaign and writes `balance/pacing.csv` and `balance/pacing_weekly.csv`. F1 built troop stacks,
-promotion by the man, mixed squads, company identity and save v4; see the as-built notes in `ROADMAP.md`. The section 12 open
+promotion by the man, mixed squads, company identity and save v4; F2 built cultures, `Data/factions.json` and regional recruitment; see
+the as-built notes in `ROADMAP.md`. The section 12 open
 questions are not yet confirmed by the user; build to the bracketed proposals unless told otherwise.
 
 Decisions taken with the user (2026-11-05):

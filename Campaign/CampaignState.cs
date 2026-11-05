@@ -164,6 +164,8 @@ public sealed class Settlement
 {
     public int Id, Province, Faction, Recruits, Horses;
     public string Name = "";
+    /// The culture its people belong to (F2): it keeps it when the settlement changes hands, so its recruits do too.
+    public string Culture = "common";
     public SettlementKind Kind;
     public Vector2 Pos;
     public float ThreatUntil;

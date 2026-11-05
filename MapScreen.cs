@@ -662,7 +662,7 @@ sealed class MapScreen
         {
             linesOut.Add((s!.Name.ToUpperInvariant(), SideColor(s.Faction)));
             linesOut.Add(($"{s.Kind.ToString().ToUpperInvariant()} OF THE {Campaign.FactionNames[s.Faction].ToUpperInvariant()}", Style.Dim));
-            linesOut.Add(($"{C.S.Provinces[s.Province].Kind.ToUpperInvariant()} COUNTRY", Style.Dim));
+            linesOut.Add(($"{C.S.Provinces[s.Province].Kind.ToUpperInvariant()} COUNTRY, {s.Culture.ToUpperInvariant()} PEOPLE", Style.Dim));
             if (s.Kind == SettlementKind.Village) linesOut.Add((s.ThreatUntil > C.S.Hours ? "THREATENED: NO RECRUITS" : $"{s.Recruits} RECRUITS", Style.Text));
             if (s.Kind == SettlementKind.Town) linesOut.Add(($"{s.Mercenaries.Count} MERCENARY COMPANIES, {s.Horses} HORSES", Style.Text));
             if (C.Refuses(s)) linesOut.Add(("WILL NOT TRADE WITH YOU", Style.Foe));
@@ -746,12 +746,12 @@ sealed class MapScreen
         {
             case "RECRUIT":
             {
-                var levy = Troops.Get(Campaign.RecruitTroop(s.Faction));
+                var levy = Troops.Get(Campaign.RecruitTroop(s));
                 ui.Text($"{s.Recruits} MEN WILL TAKE YOUR COIN HERE ({levy.Cost} CROWNS EACH)", body.X, body.Y, Style.Text);
                 if (s.ThreatUntil > C.S.Hours) ui.Text("THE VILLAGE WAS THREATENED: NO RECRUITS FOR NOW", body.X, body.Y + ui.U(20), Style.Foe, 1);
                 ui.Portrait(levy, new Rectangle(body.X, body.Y + ui.U(36), ui.U(60), ui.U(56)));
                 ui.Text($"{levy.Name.ToUpperInvariant()} (TIER I) JOIN A COMPANY OF THEIR KIND WITH ROOM, OR FORM A NEW ONE.", body.X + ui.U(70), body.Y + ui.U(44), Style.Dim, 1);
-                ui.Text("NEW MEN ARE GREEN: THEY LOWER A COMPANY'S AVERAGE XP.", body.X + ui.U(70), body.Y + ui.U(58), Style.Dim, 1);
+                ui.Text($"THEY ARE {s.Culture.ToUpperInvariant()} MEN: THEY CAN TRAIN INTO {s.Culture.ToUpperInvariant()} AND COMMON LINES. NEW MEN BRING NO XP.", body.X + ui.U(70), body.Y + ui.U(58), Style.Dim, 1);
                 int y = body.Y + ui.U(104);
                 foreach (var (label, n) in new[] { ("RECRUIT 1", 1), ("RECRUIT 5", 5), ("RECRUIT ALL", 99) })
                 {
@@ -1096,7 +1096,7 @@ sealed class MapScreen
             ui.Panel(card, one > 0 ? Style.Accent : Style.PanelEdge, one > 0 ? 2 : 1);
             ui.Portrait(t, new Rectangle(card.X + ui.U(40), card.Y + ui.U(8), cw - ui.U(80), ui.U(70)));
             ui.TextC(t.Name.ToUpperInvariant(), card.X + cw / 2f, card.Y + ui.U(86), Style.Text, t.Name.Length > 16 ? 1 : 2);
-            ui.TextC($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]}  {t.Class.ToString().ToUpperInvariant()}", card.X + cw / 2f, card.Y + ui.U(106), Style.Accent, 1);
+            ui.TextC($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]}  {t.Class.ToString().ToUpperInvariant()}  {t.Culture.ToUpperInvariant()}", card.X + cw / 2f, card.Y + ui.U(106), Style.Accent, 1);
             int sy = card.Y + ui.U(122);
             foreach (var (label, value) in new[] { ("HEALTH", $"{t.MaxHp:0}"), ("ARMOUR", $"{t.Armor:0}"), ("DAMAGE", $"{t.Damage:0}"), ("REACH", $"{t.Reach:0.0} M"),
                          t.Range > 0 ? ("RANGE", $"{t.Range:0} M") : ("SPEED", $"{t.Speed:0.0}"), ("HORSE", t.Mount?.Name.ToUpperInvariant() ?? "-") })

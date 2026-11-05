@@ -210,3 +210,15 @@ All of A-E is in. Where the build differs from the table above:
   he came home beaten, and a war chest keeps a 300-crown floor when paying lords (without these the 120-day run bled one realm's chest
   to zero). Pacing (3 seeds, 211 days): Sworn Company on days 9-200, Battle-Hardened on day 78 in one seed; the pilot still bleeds men to
   unpaid upkeep between fights in two seeds, as before F1 (to fix with the pacing work).
+- F2: every troop in `troops.json` has a `culture`. The common core is levies, shieldmen, spearrunners, bowmen and outriders, plus two
+  tier III hubs where the web has no other way into a culture's line: lancers (Azure demi-lancers, Crimson knights) and billmen (Crimson
+  halberds, Northern glaives). Azure (34 troops) keeps heavy foot, sergeants, pikes, crossbows and lances; Crimson (23) greatswords,
+  halberds, longbows and heavy horse; Northern (43) axes, glaives, rangers, horse archers and light horse. `Data/factions.json` (loaded by
+  `Factions.cs`, validated: seven troops per line, each an upgrade of the last, of the realm's culture or common) holds the realms and
+  cultures and replaces the hard-coded lines in `Armies`; `Campaign.FactionNames` and `Style.PaletteOf` read it. Settlements carry a
+  `Culture` from the realm that founded them and keep it when taken; villages raise their culture's root, and your recruits join a
+  company of their own people (else a new one, and only with no free slot a foreign company). A man's culture is his troop's, or his
+  company's for common troops; he may train into common troops or his own culture's. Tier V+ culture troops need a town of that
+  culture in your realm (or held by you) as a stand-in for the F6 barracks. Mercenaries are hired from any realm's lines. AI lords
+  now try every branch (realm line first): before, a refused first branch stopped a stack's promotions, which left the Crimson lords
+  without a single promotion. Not yet: the T2 village recruit at high prosperity (F6) and recruits scaled by the owner's opinion (F3).

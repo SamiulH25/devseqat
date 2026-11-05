@@ -29,7 +29,7 @@ public static class Troops
 
     sealed class TroopDto
     {
-        public string Id = "", Name = "", Class = "Infantry";
+        public string Id = "", Name = "", Class = "Infantry", Culture = "common";
         public string? Mount;
         public int Tier, Cost, UpgradeXp, Ammo;
         public string[] UpgradesTo = Array.Empty<string>();
@@ -66,7 +66,7 @@ public static class Troops
             var l = d.Look;
             troops[d.Id] = new UnitType
             {
-                Id = d.Id, Name = d.Name, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
+                Id = d.Id, Name = d.Name, Culture = d.Culture, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
                 UpgradesTo = d.UpgradesTo, MaxHp = d.Hp, Damage = d.Damage, Armor = d.Armor, Reach = d.Reach, Windup = d.Windup,
                 Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, Pierce = d.Pierce, Reload = d.Reload,
                 Leader = d.Leader, Mount = d.Mount == null ? null : mounts[d.Mount],
@@ -86,6 +86,7 @@ public static class Troops
                 if (!troops.TryGetValue(u, out var next)) yield return $"{t.Id} upgrades to unknown {u}";
                 else if (next.Tier <= t.Tier) yield return $"{t.Id} -> {u} does not raise the tier";
             if ((t.Class == UnitClass.Cavalry) != (t.Mount != null)) yield return $"{t.Id}: cavalry needs a mount and only cavalry has one";
+            if (t.Culture is not ("common" or "azure" or "crimson" or "northern")) yield return $"{t.Id}: unknown culture {t.Culture}";
             if (t.Class == UnitClass.Archer && (t.Ammo <= 0 || t.Range <= 0)) yield return $"{t.Id}: archers need ammo and range";
             if (Look.Ranged(t.Look.Weapon) != t.Ammo > 0) yield return $"{t.Id}: a bow needs ammo, and only bows have it";
             var l = t.Look;
@@ -133,29 +134,8 @@ public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Com
 /// standing in for companies the campaign has upgraded. Elite companies are smaller.
 public static class Armies
 {
-    /// Each culture's lines; index 0 is shared by the Azure Crown and the Crimson Compact, 1 is the Northmarch clans.
-    static readonly (string Role, string[] ByTier, int Base)[][] Cultures =
-    {
-        new[]
-        {
-            ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries", "immortals" }, 24),
-            ("archers", new[] { "bowmen", "bowmen", "longbowmen", "crossbowmen", "heavy_arbalests", "guild_sharpshooters", "grand_arbalests" }, 16),
-            ("spears", new[] { "levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx", "imperial_pikemen" }, 12),
-            ("horse", new[] { "outriders", "lancers", "lancers", "knights", "banner_knights", "paladin_knights", "grail_knights" }, 10),
-        },
-        new[]
-        {
-            ("infantry", new[] { "clansmen", "axemen", "huscarls", "varangians", "einherjar", "thane_champions", "high_king_chosen" }, 24),
-            ("archers", new[] { "bowmen", "bowmen", "rangers", "woodland_stalkers", "shadow_hunters", "highland_marksmen", "sky_piercers" }, 16),
-            ("spears", new[] { "clansmen", "spearrunners", "billmen", "halberdiers", "heavy_halberdiers", "royal_halberdiers", "sovereign_halberdiers" }, 12),
-            ("horse", new[] { "outriders", "horse_archers", "horse_archers", "nomad_bows", "steppe_marksmen", "khan_guard", "golden_horde_masters" }, 10),
-        },
-    };
-
-    public static int CultureOf(int faction) => faction == 2 ? 1 : 0;
-
-    /// The troop a faction's line fields at a tier (1-7).
-    public static string LineTroop(string role, int tier, int faction) => Cultures[CultureOf(faction)].First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 7) - 1];
+    /// The troop a realm's line fields at a tier (1-7), from Data/factions.json.
+    public static string LineTroop(string role, int tier, int faction) => Factions.Line(faction, role, tier);
 
     static readonly (string Role, string[] ByTier, int Base)[] Lines =
     {

@@ -66,7 +66,7 @@ public sealed partial class Campaign
     /// The charges a company banner may carry (the field is its side's colour).
     static readonly Emblem[] BannerCharges = { Emblem.Chevron, Emblem.Saltire, Emblem.Lozenge, Emblem.Bend };
 
-    public static string CultureName(int faction) => faction switch { 0 => "azure", 1 => "crimson", 2 => "northern", _ => "common" };
+    public static string CultureName(int faction) => Factions.CultureOf(faction);
 
     /// A new company with one stack (of `men` men with `xp` each in its pool), an origin, a banner and perhaps a sergeant.
     public CompanyRecord NewCompany(string troop, string role, int men, float xp, Settlement? home = null)
@@ -75,7 +75,7 @@ public sealed partial class Campaign
         var s = c.Stack(troop);
         s.Men = men;
         s.Xp = Math.Clamp(xp * men, 0, s.PoolCap);
-        if (home != null) { c.Home = home.Name; c.Culture = CultureName(home.Faction); }
+        if (home != null) { c.Home = home.Name; c.Culture = home.Culture; }
         return WithOfficer(c);
     }
 
@@ -86,7 +86,7 @@ public sealed partial class Campaign
         Rules.AddMen(c, troop, n);
         if (from != null)
         {
-            string culture = CultureName(from.Faction);
+            string culture = from.Culture;
             if (c.Culture == "") { c.Culture = culture; c.Home = from.Name; }
             else if (c.Culture != culture) c.Cohesion = MathF.Max(0, c.Cohesion - 5);
         }
@@ -121,6 +121,36 @@ public sealed partial class Campaign
 
     static string RoleWord(string role) => role switch { "archers" => "BOW", "spears" => "SPEAR", "horse" => "HORSE", _ => "FOOT" };
 
+    /// The culture a company's men train as (4.2): their troop's own culture, else the company's origin. Men of no known
+    /// culture (brigands, a company with no home) count as common and may enter any line.
+    public static string ManCulture(CompanyRecord c, string troop)
+    {
+        string t = Troops.Get(troop).Culture;
+        return t != Factions.Common ? t : c.Culture is "" ? Factions.Common : c.Culture;
+    }
+
+    static string CultureWord(string culture) => (Factions.Culture(culture)?.Name ?? culture).ToUpperInvariant();
+
+    /// May men of this stack train into `to` (4.2)? Common troops are open to all; a culture's own troops only to its men; and its
+    /// elite lines (tier V and up) need one of that culture's towns held by your realm or by you (its barracks; F6 adds the building).
+    public bool CanEnterLine(Party p, CompanyRecord c, string from, string to, out string reason)
+    {
+        reason = "";
+        var t = Troops.Get(to);
+        if (t.Culture == Factions.Common) return true;
+        string man = ManCulture(c, from);
+        if (man != Factions.Common && man != t.Culture) { reason = $"{CultureWord(man)} MEN CANNOT TRAIN AS {CultureWord(t.Culture)} TROOPS"; return false; }
+        if (t.Tier >= 5 && !HasBarracks(p, t.Culture)) { reason = $"NEEDS A {CultureWord(t.Culture)} TOWN IN YOUR REALM"; return false; }
+        return true;
+    }
+
+    /// Does the party's realm (your contract, or a lord's faction), or the party itself, hold a town of this culture?
+    public bool HasBarracks(Party p, string culture)
+    {
+        int realm = p == Player ? Captain.Contract : p.Faction;
+        return S.Settlements.Any(s => s.Kind == SettlementKind.Town && s.Culture == culture && (realm >= 0 && s.Faction == realm || s.Owner == p.Id));
+    }
+
     /// Where promotions may happen: a town's training yard, or anywhere with the Drillmaster perk.
     public bool CanTrainHere(Party p) => p != Player || InTown(Player) || Captain.Perks.Contains(Perk.Drillmaster);
 
@@ -131,6 +161,7 @@ public sealed partial class Campaign
         reason = "";
         var from = s.Type;
         if (!from.UpgradesTo.Contains(to)) { reason = "NOT ON THIS LINE"; return 0; }
+        if (!CanEnterLine(p, c, s.Troop, to, out reason)) return 0;
         if (s.Ready <= 0) { reason = $"NEEDS {from.UpgradeXp} XP"; return 0; }
         if (!ignorePlace && !CanTrainHere(p)) { reason = "NEEDS A TOWN"; return 0; }
         var free = new Dictionary<CompanyRecord, float>();
@@ -157,6 +188,7 @@ public sealed partial class Campaign
     {
         int done = 0;
         var from = s.Type;
+        if (!CanEnterLine(p, c, s.Troop, to, out _)) return 0;
         while (done < want && s.Ready > 0)
         {
             int extra = 0;
@@ -203,7 +235,9 @@ public sealed partial class Campaign
         foreach (var c in p.Companies.ToList())
             foreach (var s in c.Stacks.Where(s => s.Ready > 0).ToList())
             {
-                var options = s.Type.UpgradesTo.OrderBy(t => PreferredBranch(p.Faction, Rules.RoleOf(c), t) ? 0 : 1).ThenBy(t => Rules.PromoteCost(s.Troop, t, true)).ToList();
+                // The realm's own line first, then any branch of the company's role, then the rest; cheapest within each.
+                var options = s.Type.UpgradesTo.Where(t => CanEnterLine(p, c, s.Troop, t, out _))
+                    .OrderBy(t => BranchRank(p.Faction, Rules.RoleOf(c), t)).ThenBy(t => Rules.PromoteCost(s.Troop, t, true)).ToList();
                 foreach (var to in options)
                 {
                     int got = PromoteMen(p, c, s, to, s.Ready, cost =>
@@ -214,17 +248,17 @@ public sealed partial class Campaign
                         p.Gold -= cost - fromChest;
                         return true;
                     });
-                    if (s.Ready <= 0 || got == 0) break;
+                    if (s.Ready <= 0) break;
                 }
             }
         budget = chest;
     }
 
-    /// The branch a faction's lords prefer for a company of this role: its line troop at the next tier, or any troop of the role.
-    bool PreferredBranch(int faction, string role, string to)
+    /// How much a faction's lords like a branch for a company of this role: 0 its own line troop, 1 another troop of the role, 2 the rest.
+    static int BranchRank(int faction, string role, string to)
     {
         var t = Troops.Get(to);
-        return Armies.LineTroop(role, t.Tier, faction) == to || Rules.TroopRole(to) == role;
+        return Armies.LineTroop(role, t.Tier, faction) == to ? 0 : Rules.TroopRole(to) == role ? 1 : 2;
     }
 
     /// The stack with the most men ready for promotion in your party (for NextStep and the party screen).

@@ -7,6 +7,8 @@ public sealed partial class Campaign
 {
     /// The tier-1 recruits a faction's villages give (the Northmarch raise clansmen; the others levies).
     public static string RecruitTroop(int faction) => Armies.LineTroop("infantry", 1, Math.Max(0, faction));
+    /// What a settlement's people enlist as: its culture's T1 root, whoever holds it now (4.2).
+    public static string RecruitTroop(Settlement s) => Factions.Root(s.Culture);
 
     /// What a settlement yields a week: to its faction's treasury, or to you when it is your fief (with its province's villages).
     public float Income(Settlement t) => t.Kind switch

@@ -43,6 +43,8 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
 public sealed class UnitType
 {
     public string Id = "", Name = "";
+    /// "azure", "crimson", "northern" or "common" (open to every culture); see Data/factions.json.
+    public string Culture = "common";
     public UnitClass Class;
     public int Tier, Cost, UpgradeXp;
     public string[] UpgradesTo = Array.Empty<string>();

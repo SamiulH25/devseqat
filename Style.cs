@@ -37,7 +37,7 @@ public static class Style
     };
 
     /// The palette a campaign faction paints with (the Northmarch clans are palette 4; -1 and -2 are free captains and brigands).
-    public static int PaletteOf(int faction) => faction switch { 2 => 4, -2 => 3, < 0 => 0, _ => faction };
+    public static int PaletteOf(int faction) => faction switch { -2 => 3, < 0 => 0, _ => Factions.Get(faction).Palette };
 
     // ---------- materials (base tones; the painter builds a 5-step ramp from each) ----------
 

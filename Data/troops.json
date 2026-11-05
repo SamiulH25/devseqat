@@ -66,6 +66,7 @@
    "id": "levies",
    "name": "Levies",
    "class": "Infantry",
+   "culture": "common",
    "tier": 1,
    "upgradesTo": [
     "shieldmen",
@@ -97,6 +98,7 @@
    "id": "clansmen",
    "name": "Clansmen",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 1,
    "upgradesTo": [
     "axemen",
@@ -129,6 +131,7 @@
    "id": "shieldmen",
    "name": "Shieldmen",
    "class": "Infantry",
+   "culture": "common",
    "tier": 2,
    "upgradesTo": [
     "men_at_arms",
@@ -159,6 +162,7 @@
    "id": "men_at_arms",
    "name": "Men-at-Arms",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 3,
    "upgradesTo": [
     "ironguard",
@@ -189,6 +193,7 @@
    "id": "ironguard",
    "name": "Ironguard",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 4,
    "upgradesTo": [
     "aegis_wardens",
@@ -219,6 +224,7 @@
    "id": "foot_knights",
    "name": "Foot Knights",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 4,
    "upgradesTo": [
     "paladins",
@@ -249,6 +255,7 @@
    "id": "aegis_wardens",
    "name": "Aegis Wardens",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 5,
    "upgradesTo": [
     "citadel_sentinels",
@@ -279,6 +286,7 @@
    "id": "paladins",
    "name": "Paladins",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 5,
    "upgradesTo": [
     "iron_legionaries",
@@ -310,6 +318,7 @@
    "id": "citadel_sentinels",
    "name": "Citadel Sentinels",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 6,
    "upgradesTo": [
     "immortals",
@@ -341,6 +350,7 @@
    "id": "iron_legionaries",
    "name": "Iron Legionaries",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 6,
    "upgradesTo": [
     "immortals",
@@ -372,6 +382,7 @@
    "id": "royal_crusaders",
    "name": "Royal Crusaders",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 6,
    "upgradesTo": [
     "sovereign_champions"
@@ -403,6 +414,7 @@
    "id": "immortals",
    "name": "Immortals",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 7,
    "upgradesTo": [],
    "cost": 220,
@@ -431,6 +443,7 @@
    "id": "bastion_lords",
    "name": "Bastion Lords",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 7,
    "upgradesTo": [],
    "cost": 215,
@@ -458,6 +471,7 @@
    "id": "sovereign_champions",
    "name": "Sovereign Champions",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 7,
    "upgradesTo": [],
    "cost": 225,
@@ -486,6 +500,7 @@
    "id": "greatswords",
    "name": "Greatswords",
    "class": "Infantry",
+   "culture": "crimson",
    "tier": 3,
    "upgradesTo": [
     "zweihanders",
@@ -516,6 +531,7 @@
    "id": "zweihanders",
    "name": "Zweihanders",
    "class": "Infantry",
+   "culture": "crimson",
    "tier": 4,
    "upgradesTo": [
     "blademasters",
@@ -547,6 +563,7 @@
    "id": "sword_brethren",
    "name": "Sword Brethren",
    "class": "Infantry",
+   "culture": "crimson",
    "tier": 5,
    "upgradesTo": [
     "grand_blademasters",
@@ -578,6 +595,7 @@
    "id": "blademasters",
    "name": "Blademasters",
    "class": "Infantry",
+   "culture": "crimson",
    "tier": 5,
    "upgradesTo": [
     "grand_blademasters",
@@ -609,6 +627,7 @@
    "id": "executioners",
    "name": "Executioners",
    "class": "Infantry",
+   "culture": "crimson",
    "tier": 5,
    "upgradesTo": [
     "dread_cleavers"
@@ -639,6 +658,7 @@
    "id": "grand_blademasters",
    "name": "Grand Blademasters",
    "class": "Infantry",
+   "culture": "crimson",
    "tier": 6,
    "upgradesTo": [
     "sword_saints",
@@ -671,6 +691,7 @@
    "id": "dread_cleavers",
    "name": "Dread Cleavers",
    "class": "Infantry",
+   "culture": "crimson",
    "tier": 6,
    "upgradesTo": [
     "archons"
@@ -701,6 +722,7 @@
    "id": "sword_saints",
    "name": "Sword Saints",
    "class": "Infantry",
+   "culture": "crimson",
    "tier": 7,
    "upgradesTo": [],
    "cost": 225,
@@ -729,6 +751,7 @@
    "id": "archons",
    "name": "Archons",
    "class": "Infantry",
+   "culture": "crimson",
    "tier": 7,
    "upgradesTo": [],
    "cost": 230,
@@ -757,6 +780,7 @@
    "id": "sergeants",
    "name": "Sergeants",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 3,
    "upgradesTo": [
     "veteran_sergeants",
@@ -787,6 +811,7 @@
    "id": "veteran_sergeants",
    "name": "Veteran Sergeants",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 4,
    "upgradesTo": [
     "aegis_wardens",
@@ -817,6 +842,7 @@
    "id": "banner_sergeants",
    "name": "Banner Sergeants",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 5,
    "upgradesTo": [
     "marshal_guard"
@@ -847,6 +873,7 @@
    "id": "marshal_guard",
    "name": "Marshal Guard",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 6,
    "upgradesTo": [
     "imperial_marshals"
@@ -878,6 +905,7 @@
    "id": "imperial_marshals",
    "name": "Imperial Marshals",
    "class": "Infantry",
+   "culture": "azure",
    "tier": 7,
    "upgradesTo": [],
    "cost": 218,
@@ -906,6 +934,7 @@
    "id": "axemen",
    "name": "Axemen",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 2,
    "upgradesTo": [
     "huscarls",
@@ -935,6 +964,7 @@
    "id": "raiders",
    "name": "Raiders",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 2,
    "upgradesTo": [
     "hearthguard",
@@ -964,6 +994,7 @@
    "id": "huscarls",
    "name": "Huscarls",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 3,
    "upgradesTo": [
     "varangians",
@@ -995,6 +1026,7 @@
    "id": "berserkers",
    "name": "Berserkers",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 3,
    "upgradesTo": [
     "ulfhednar",
@@ -1024,6 +1056,7 @@
    "id": "hearthguard",
    "name": "Hearthguard",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 3,
    "upgradesTo": [
     "fjord_veterans",
@@ -1054,6 +1087,7 @@
    "id": "varangians",
    "name": "Varangians",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 4,
    "upgradesTo": [
     "einherjar",
@@ -1085,6 +1119,7 @@
    "id": "shieldbreakers",
    "name": "Shieldbreakers",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 4,
    "upgradesTo": [
     "einherjar",
@@ -1115,6 +1150,7 @@
    "id": "ulfhednar",
    "name": "Ulfhednar",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 4,
    "upgradesTo": [
     "doomcleavers"
@@ -1144,6 +1180,7 @@
    "id": "fjord_veterans",
    "name": "Fjord Veterans",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 4,
    "upgradesTo": [
     "jarl_guard"
@@ -1173,6 +1210,7 @@
    "id": "einherjar",
    "name": "Einherjar",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 5,
    "upgradesTo": [
     "thane_champions",
@@ -1205,6 +1243,7 @@
    "id": "doomcleavers",
    "name": "Doomcleavers",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 5,
    "upgradesTo": [
     "valhalla_reavers"
@@ -1234,6 +1273,7 @@
    "id": "jarl_guard",
    "name": "Jarl Guard",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 5,
    "upgradesTo": [
     "iron_thanes",
@@ -1265,6 +1305,7 @@
    "id": "thane_champions",
    "name": "Thane Champions",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 6,
    "upgradesTo": [
     "high_king_chosen",
@@ -1297,6 +1338,7 @@
    "id": "valhalla_reavers",
    "name": "Valhalla Reavers",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 6,
    "upgradesTo": [
     "blood_jarls"
@@ -1327,6 +1369,7 @@
    "id": "iron_thanes",
    "name": "Iron Thanes",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 6,
    "upgradesTo": [
     "allfather_guard",
@@ -1358,6 +1401,7 @@
    "id": "high_king_chosen",
    "name": "High King's Chosen",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 7,
    "upgradesTo": [],
    "cost": 228,
@@ -1386,6 +1430,7 @@
    "id": "blood_jarls",
    "name": "Blood Jarls",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 7,
    "upgradesTo": [],
    "cost": 222,
@@ -1413,6 +1458,7 @@
    "id": "allfather_guard",
    "name": "Allfather's Guard",
    "class": "Infantry",
+   "culture": "northern",
    "tier": 7,
    "upgradesTo": [],
    "cost": 224,
@@ -1441,6 +1487,7 @@
    "id": "spearrunners",
    "name": "Spearrunners",
    "class": "Skirmisher",
+   "culture": "common",
    "tier": 2,
    "upgradesTo": [
     "pikemen",
@@ -1471,6 +1518,7 @@
    "id": "pikemen",
    "name": "Pikemen",
    "class": "Skirmisher",
+   "culture": "azure",
    "tier": 3,
    "upgradesTo": [
     "phalanx_pikemen",
@@ -1501,6 +1549,7 @@
    "id": "billmen",
    "name": "Billmen",
    "class": "Skirmisher",
+   "culture": "common",
    "tier": 3,
    "upgradesTo": [
     "halberdiers",
@@ -1531,6 +1580,7 @@
    "id": "phalanx_pikemen",
    "name": "Phalanx Pikemen",
    "class": "Skirmisher",
+   "culture": "azure",
    "tier": 4,
    "upgradesTo": [
     "silver_pikes",
@@ -1562,6 +1612,7 @@
    "id": "halberdiers",
    "name": "Halberdiers",
    "class": "Skirmisher",
+   "culture": "crimson",
    "tier": 4,
    "upgradesTo": [
     "heavy_halberdiers",
@@ -1593,6 +1644,7 @@
    "id": "glaivemen",
    "name": "Glaivemen",
    "class": "Skirmisher",
+   "culture": "northern",
    "tier": 4,
    "upgradesTo": [
     "vanguard_glaives"
@@ -1623,6 +1675,7 @@
    "id": "silver_pikes",
    "name": "Silver Pikes",
    "class": "Skirmisher",
+   "culture": "azure",
    "tier": 5,
    "upgradesTo": [
     "grand_phalanx",
@@ -1654,6 +1707,7 @@
    "id": "heavy_halberdiers",
    "name": "Heavy Halberdiers",
    "class": "Skirmisher",
+   "culture": "crimson",
    "tier": 5,
    "upgradesTo": [
     "royal_halberdiers"
@@ -1685,6 +1739,7 @@
    "id": "vanguard_glaives",
    "name": "Vanguard Glaives",
    "class": "Skirmisher",
+   "culture": "northern",
    "tier": 5,
    "upgradesTo": [
     "dragon_glaives",
@@ -1717,6 +1772,7 @@
    "id": "grand_phalanx",
    "name": "Grand Phalanx",
    "class": "Skirmisher",
+   "culture": "azure",
    "tier": 6,
    "upgradesTo": [
     "imperial_pikemen",
@@ -1749,6 +1805,7 @@
    "id": "royal_halberdiers",
    "name": "Royal Halberdiers",
    "class": "Skirmisher",
+   "culture": "crimson",
    "tier": 6,
    "upgradesTo": [
     "sovereign_halberdiers"
@@ -1781,6 +1838,7 @@
    "id": "dragon_glaives",
    "name": "Dragon Glaives",
    "class": "Skirmisher",
+   "culture": "northern",
    "tier": 6,
    "upgradesTo": [
     "tempest_spears"
@@ -1813,6 +1871,7 @@
    "id": "imperial_pikemen",
    "name": "Imperial Pikemen",
    "class": "Skirmisher",
+   "culture": "azure",
    "tier": 7,
    "upgradesTo": [],
    "cost": 210,
@@ -1842,6 +1901,7 @@
    "id": "sovereign_halberdiers",
    "name": "Sovereign Halberdiers",
    "class": "Skirmisher",
+   "culture": "crimson",
    "tier": 7,
    "upgradesTo": [],
    "cost": 218,
@@ -1871,6 +1931,7 @@
    "id": "tempest_spears",
    "name": "Tempest Spears",
    "class": "Skirmisher",
+   "culture": "northern",
    "tier": 7,
    "upgradesTo": [],
    "cost": 212,
@@ -1900,6 +1961,7 @@
    "id": "bowmen",
    "name": "Bowmen",
    "class": "Archer",
+   "culture": "common",
    "tier": 2,
    "upgradesTo": [
     "longbowmen",
@@ -1932,6 +1994,7 @@
    "id": "longbowmen",
    "name": "Longbowmen",
    "class": "Archer",
+   "culture": "crimson",
    "tier": 3,
    "upgradesTo": [
     "yeoman_archers",
@@ -1963,6 +2026,7 @@
    "id": "rangers",
    "name": "Rangers",
    "class": "Archer",
+   "culture": "northern",
    "tier": 3,
    "upgradesTo": [
     "woodland_stalkers",
@@ -1995,6 +2059,7 @@
    "id": "crossbowmen",
    "name": "Crossbowmen",
    "class": "Archer",
+   "culture": "azure",
    "tier": 3,
    "upgradesTo": [
     "arbalests",
@@ -2028,6 +2093,7 @@
    "id": "yeoman_archers",
    "name": "Yeoman Archers",
    "class": "Archer",
+   "culture": "crimson",
    "tier": 4,
    "upgradesTo": [
     "master_longbowmen",
@@ -2060,6 +2126,7 @@
    "id": "composite_bowmen",
    "name": "Composite Bowmen",
    "class": "Archer",
+   "culture": "northern",
    "tier": 4,
    "upgradesTo": [
     "ward_archers",
@@ -2093,6 +2160,7 @@
    "id": "woodland_stalkers",
    "name": "Woodland Stalkers",
    "class": "Archer",
+   "culture": "northern",
    "tier": 4,
    "upgradesTo": [
     "shadow_hunters"
@@ -2124,6 +2192,7 @@
    "id": "arbalests",
    "name": "Arbalests",
    "class": "Archer",
+   "culture": "azure",
    "tier": 4,
    "upgradesTo": [
     "heavy_arbalests",
@@ -2158,6 +2227,7 @@
    "id": "pavise_crossbowmen",
    "name": "Pavise Crossbowmen",
    "class": "Archer",
+   "culture": "azure",
    "tier": 4,
    "upgradesTo": [
     "siege_crossbowmen"
@@ -2191,6 +2261,7 @@
    "id": "master_longbowmen",
    "name": "Master Longbowmen",
    "class": "Archer",
+   "culture": "crimson",
    "tier": 5,
    "upgradesTo": [
     "royal_yeomen",
@@ -2224,6 +2295,7 @@
    "id": "ward_archers",
    "name": "Ward Archers",
    "class": "Archer",
+   "culture": "crimson",
    "tier": 5,
    "upgradesTo": [
     "royal_yeomen"
@@ -2257,6 +2329,7 @@
    "id": "shadow_hunters",
    "name": "Shadow Hunters",
    "class": "Archer",
+   "culture": "northern",
    "tier": 5,
    "upgradesTo": [
     "highland_marksmen"
@@ -2289,6 +2362,7 @@
    "id": "heavy_arbalests",
    "name": "Heavy Arbalests",
    "class": "Archer",
+   "culture": "azure",
    "tier": 5,
    "upgradesTo": [
     "guild_sharpshooters",
@@ -2323,6 +2397,7 @@
    "id": "siege_crossbowmen",
    "name": "Siege Crossbowmen",
    "class": "Archer",
+   "culture": "azure",
    "tier": 5,
    "upgradesTo": [
     "fortress_bolters"
@@ -2356,6 +2431,7 @@
    "id": "royal_yeomen",
    "name": "Royal Yeomen",
    "class": "Archer",
+   "culture": "crimson",
    "tier": 6,
    "upgradesTo": [
     "sovereign_longbowmen",
@@ -2390,6 +2466,7 @@
    "id": "highland_marksmen",
    "name": "Highland Marksmen",
    "class": "Archer",
+   "culture": "northern",
    "tier": 6,
    "upgradesTo": [
     "sky_piercers"
@@ -2423,6 +2500,7 @@
    "id": "guild_sharpshooters",
    "name": "Guild Sharpshooters",
    "class": "Archer",
+   "culture": "azure",
    "tier": 6,
    "upgradesTo": [
     "grand_arbalests"
@@ -2457,6 +2535,7 @@
    "id": "fortress_bolters",
    "name": "Fortress Bolters",
    "class": "Archer",
+   "culture": "azure",
    "tier": 6,
    "upgradesTo": [
     "grand_arbalests",
@@ -2491,6 +2570,7 @@
    "id": "sovereign_longbowmen",
    "name": "Sovereign Longbowmen",
    "class": "Archer",
+   "culture": "crimson",
    "tier": 7,
    "upgradesTo": [],
    "cost": 210,
@@ -2522,6 +2602,7 @@
    "id": "sky_piercers",
    "name": "Sky Piercers",
    "class": "Archer",
+   "culture": "northern",
    "tier": 7,
    "upgradesTo": [],
    "cost": 206,
@@ -2553,6 +2634,7 @@
    "id": "grand_arbalests",
    "name": "Grand Arbalests",
    "class": "Archer",
+   "culture": "azure",
    "tier": 7,
    "upgradesTo": [],
    "cost": 218,
@@ -2585,6 +2667,7 @@
    "id": "iron_citadel_arbalests",
    "name": "Iron Citadel Arbalests",
    "class": "Archer",
+   "culture": "azure",
    "tier": 7,
    "upgradesTo": [],
    "cost": 222,
@@ -2617,6 +2700,7 @@
    "id": "outriders",
    "name": "Outriders",
    "class": "Cavalry",
+   "culture": "common",
    "tier": 2,
    "upgradesTo": [
     "lancers",
@@ -2648,6 +2732,7 @@
    "id": "lancers",
    "name": "Lancers",
    "class": "Cavalry",
+   "culture": "common",
    "tier": 3,
    "upgradesTo": [
     "knights",
@@ -2680,6 +2765,7 @@
    "id": "mounted_yeomen",
    "name": "Mounted Yeomen",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 3,
    "upgradesTo": [
     "demi_lancers",
@@ -2710,6 +2796,7 @@
    "id": "horse_archers",
    "name": "Horse Archers",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 3,
    "upgradesTo": [
     "nomad_bows",
@@ -2743,6 +2830,7 @@
    "id": "knights",
    "name": "Knights",
    "class": "Cavalry",
+   "culture": "crimson",
    "tier": 4,
    "upgradesTo": [
     "banner_knights",
@@ -2775,6 +2863,7 @@
    "id": "demi_lancers",
    "name": "Demi-Lancers",
    "class": "Cavalry",
+   "culture": "azure",
    "tier": 4,
    "upgradesTo": [
     "banner_knights",
@@ -2806,6 +2895,7 @@
    "id": "reaver_horsemen",
    "name": "Reaver Horsemen",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 4,
    "upgradesTo": [
     "valkyrie_lancers"
@@ -2836,6 +2926,7 @@
    "id": "nomad_bows",
    "name": "Nomad Bows",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 4,
    "upgradesTo": [
     "steppe_marksmen",
@@ -2869,6 +2960,7 @@
    "id": "mounted_crossbows",
    "name": "Mounted Crossbows",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 4,
    "upgradesTo": [
     "carabiniers"
@@ -2902,6 +2994,7 @@
    "id": "banner_knights",
    "name": "Banner Knights",
    "class": "Cavalry",
+   "culture": "azure",
    "tier": 5,
    "upgradesTo": [
     "paladin_knights",
@@ -2934,6 +3027,7 @@
    "id": "cataphracts",
    "name": "Cataphracts",
    "class": "Cavalry",
+   "culture": "crimson",
    "tier": 5,
    "upgradesTo": [
     "iron_cataphracts"
@@ -2965,6 +3059,7 @@
    "id": "valkyrie_lancers",
    "name": "Valkyrie Lancers",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 5,
    "upgradesTo": [
     "storm_riders",
@@ -2997,6 +3092,7 @@
    "id": "steppe_marksmen",
    "name": "Steppe Marksmen",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 5,
    "upgradesTo": [
     "khan_guard",
@@ -3032,6 +3128,7 @@
    "id": "carabiniers",
    "name": "Carabiniers",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 5,
    "upgradesTo": [
     "royal_dragoons"
@@ -3066,6 +3163,7 @@
    "id": "paladin_knights",
    "name": "Paladin Knights",
    "class": "Cavalry",
+   "culture": "azure",
    "tier": 6,
    "upgradesTo": [
     "grail_knights",
@@ -3099,6 +3197,7 @@
    "id": "iron_cataphracts",
    "name": "Iron Cataphracts",
    "class": "Cavalry",
+   "culture": "crimson",
    "tier": 6,
    "upgradesTo": [
     "imperial_cataphracts"
@@ -3130,6 +3229,7 @@
    "id": "storm_riders",
    "name": "Storm Riders",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 6,
    "upgradesTo": [
     "thunder_lords",
@@ -3163,6 +3263,7 @@
    "id": "khan_guard",
    "name": "Khan's Guard",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 6,
    "upgradesTo": [
     "golden_horde_masters",
@@ -3199,6 +3300,7 @@
    "id": "royal_dragoons",
    "name": "Royal Dragoons",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 6,
    "upgradesTo": [
     "sovereign_dragoons"
@@ -3234,6 +3336,7 @@
    "id": "grail_knights",
    "name": "Grail Knights",
    "class": "Cavalry",
+   "culture": "azure",
    "tier": 7,
    "upgradesTo": [],
    "mount": "royal_destrier",
@@ -3263,6 +3366,7 @@
    "id": "imperial_cataphracts",
    "name": "Imperial Cataphracts",
    "class": "Cavalry",
+   "culture": "crimson",
    "tier": 7,
    "upgradesTo": [],
    "mount": "cataphract_horse",
@@ -3292,6 +3396,7 @@
    "id": "thunder_lords",
    "name": "Thunder Lords",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 7,
    "upgradesTo": [],
    "mount": "royal_destrier",
@@ -3321,6 +3426,7 @@
    "id": "golden_horde_masters",
    "name": "Golden Horde Masters",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 7,
    "upgradesTo": [],
    "mount": "steppe_horse",
@@ -3353,6 +3459,7 @@
    "id": "sovereign_dragoons",
    "name": "Sovereign Dragoons",
    "class": "Cavalry",
+   "culture": "northern",
    "tier": 7,
    "upgradesTo": [],
    "mount": "royal_destrier",
@@ -3386,6 +3493,7 @@
    "id": "captain",
    "name": "Captain",
    "class": "Captain",
+   "culture": "common",
    "tier": 0,
    "upgradesTo": [],
    "leader": true,

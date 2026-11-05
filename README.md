@@ -45,6 +45,10 @@ that will not last. Brigands roam between them all.
   1, 5 or every ready man into any branch. A man promoted out of the company's role joins a company of his new role, or founds one.
   A mixed company fights as one squad. Companies keep an origin, a banner, a ledger of their last fights and up to three **honours**
   (Unbroken, Horse-breakers, Old Hands, Stormers, Bloodied) that change how they fight. Saves from before this (version 3 and older) are refused.
+- **Cultures:** every troop is Azure, Crimson, Northern or common (`Data/troops.json`), and each realm has a culture (`Data/factions.json`).
+  A village raises its own culture's men whoever holds it (clansmen in the north, levies in the south), and they form companies of their own
+  people. Men train into common troops or their own culture's lines only, and a culture's elite lines (tier V and up) need one of its towns
+  in your realm. Foreign mercenaries are the other way to field another culture's elites.
 - **Towns:** train, hire mercenaries, buy horses, food and your own gear (plate, great helm, warhorse, destrier), rest to heal, sell prisoners
   and ransom lords, sign or end contracts, and take work from the steward's board (hunt a lord, clear brigands, guard a village, scout a town,
   take a castle). **Villages:** recruit (levies, or clansmen in the north), buy or forage food. **Castles:** rest, prisoners and contracts.
@@ -216,6 +220,7 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 | `Squad.cs` | Squad orders (Hold/Follow/Charge, optional attack `Target`), formation slots (anchor = centre of the front rank), flank `Pressure`. |
 | `Units.cs` | `UnitType` (a troop from the data), `Look`, `Mount`, the `Unit` state (incl. heading/speed when mounted), loose and dead horses. |
 | `Troops.cs` | Loads and validates `Data/troops.json` (troops, upgrade trees, mounts); `ArmySpec`/`Company`; `Armies` builds armies by level. |
+| `Factions.cs` | Loads and validates `Data/factions.json`: the three realms (name, palette, culture, the troop each role fields per tier) and the cultures (each one's village recruit). |
 | `Style.cs` | Design tokens: side heraldry, materials, horse coats, sprite light and density, UI colours, grid, type scale. |
 | `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles. |
 | `ScreenHost.cs` | The MonoGame `Game`: shared art, audio and settings; switches between `TitleScreen`, `MapScreen` and `BattleScreen`, with the `SettingsScreen` overlay. |

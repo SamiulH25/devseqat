@@ -21,7 +21,7 @@ public sealed partial class Campaign
     public Party Player => S.Parties[0];
     public CaptainState Captain => S.Captain;
     public int Day => (int)(S.Hours / 24) + 1;
-    public static readonly string[] FactionNames = { "Azure Crown", "Crimson Compact", "Northmarch" };
+    public static readonly string[] FactionNames = Factions.All.Select(f => f.Name).ToArray();
     /// Party and event caps for the balance numbers scaled by how much world there is (a bigger map raises more lords and
     /// brigands). The numbers in Data/campaign.json are quoted against the original 26-province map.
     float ProvinceScale => Map.ProvinceScale;
@@ -482,29 +482,34 @@ public sealed partial class Campaign
     {
         n = Math.Min(n, s.Recruits);
         if (n <= 0) return "NO RECRUITS";
-        string levy = RecruitTroop(s.Faction);
+        string levy = RecruitTroop(s);
         int cost = n * Troops.Get(levy).Cost;
         if (S.Gold < cost) return $"NEEDS {cost} CROWNS";
         if (n > RoomForMen) return "PARTY IS FULL (RENOWN RAISES THE LIMIT)";
-        // Fill foot companies with room (raw recruits drill with any foot company), then raise new ones.
+        // Men join a company of their own people first (no cohesion lost, and they keep their culture's lines), then a new
+        // company of their own, and only when no slot is free a company of another culture (whose ways they take up).
         int left = n;
-        foreach (var co in Player.Companies.Where(co => Rules.Fits(co, levy)).OrderByDescending(co => co.Stacks.Any(x => x.Troop == levy)).ToList())
+        void Fill(IEnumerable<CompanyRecord> into)
         {
-            int k = Math.Min(left, Rules.Room(co, levy));
-            if (k <= 0) continue;
-            Enlist(co, levy, k, s);
-            left -= k;
-            if (left == 0) break;
+            foreach (var co in into.Where(co => Rules.Fits(co, levy)).OrderByDescending(co => co.Stacks.Any(x => x.Troop == levy)).ToList())
+            {
+                int k = Math.Min(left, Rules.Room(co, levy));
+                if (k <= 0) continue;
+                Enlist(co, levy, k, s);
+                left -= k;
+                if (left == 0) break;
+            }
         }
-        while (left > 0)
+        Fill(Player.Companies.Where(co => co.Culture == s.Culture || co.Culture == ""));
+        while (left > 0 && Player.Companies.Count < Slots)
         {
-            if (Player.Companies.Count >= Slots) break;
             var co = NewCompany(levy, "infantry", 0, 0, s);
             Player.Companies.Add(co);
             int k = Math.Min(left, Rules.Room(co, levy));
             Enlist(co, levy, k, s);
             left -= k;
         }
+        if (left > 0) Fill(Player.Companies);
         int took = n - left;
         if (took == 0) return $"MAX {Slots} COMPANIES, ALL FULL";
         s.Recruits -= took;
@@ -676,8 +681,11 @@ public sealed partial class Campaign
         {
             string role = rng.Pick(new[] { "infantry", "archers", "spears", "horse" });
             int tier = Math.Clamp(2 + Day / 40 + (rng.Chance(0.35f) ? 1 : 0), 2, 6);
-            string troop = Armies.LineTroop(role, tier, t.Faction);
-            var m = NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.6f, 0.9f)), 0, t);
+            // Sellswords come from every realm: a foreign company is the other way to field a culture's elite lines (4.2).
+            int from = rng.Chance(0.5f) ? t.Faction : rng.Next(S.Factions.Count);
+            string troop = Armies.LineTroop(role, tier, from);
+            var m = NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.6f, 0.9f)), 0);
+            m.Culture = Factions.CultureOf(from);
             m.Stacks[0].AddXp(rng.Range(0, Math.Max(1, m.Type.UpgradeXp) * 0.5f) * m.Men);
             m.Name = Rules.CompanyName(rng, role);
             t.Mercenaries.Add(m);
@@ -789,6 +797,7 @@ public sealed partial class Campaign
             int affordable = (int)((p.Gold + budget) / 10);
             int n = Math.Min(v.Recruits, Math.Max(0, affordable));
             if (n <= 0) continue;
+            levy = RecruitTroop(v); // each village raises its own culture's men (4.2)
             // Recruits fill the green companies; a lord keeps his veterans' companies for promoted men.
             var into = p.Companies.Where(c => c.Type.Tier <= 1 && Rules.Room(c, levy) > 0).OrderByDescending(c => Rules.Room(c, levy)).FirstOrDefault();
             if (into == null && p.Companies.Count < 5) p.Companies.Add(into = NewCompany(levy, rng.Pick(new[] { "infantry", "spears", "archers" }), 0, 0, v));

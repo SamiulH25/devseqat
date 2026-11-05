@@ -42,6 +42,7 @@ public static class SelfTest
         CampaignWar();
         RefuseOldSave();
         Stacks();
+        Cultures();
         StackBattle();
         ReplayExact();
 
@@ -793,6 +794,76 @@ public static class SelfTest
         var back = CampaignState.Deserialize(c.S.Serialize());
         var co2 = back.Parties.First(p => p.Kind == PartyKind.Player).Companies.First(k => k.Id == co.Id);
         Check(co2.Stacks.Count == co.Stacks.Count && co2.Stacks.Sum(st => st.Men) == co.Men && MathF.Abs(co2.Stacks.Sum(st => st.Xp) - co.Stacks.Sum(st => st.Xp)) < 1e-2f, "stacks and pools survive a save");
+    }
+
+    /// Cultures and regional recruitment (F2): every troop has a culture; every culture can climb from its village root to a
+    /// tier VII of its own; villages raise their culture's men whoever holds them; men cannot train into another culture's line;
+    /// elite lines need a town of their culture in your realm.
+    static void Cultures()
+    {
+        var errs = Factions.Validate().ToList();
+        Check(errs.Count == 0, "factions.json is valid: " + string.Join("; ", errs));
+        Check(Troops.All.All(t => t.Culture is "common" or "azure" or "crimson" or "northern"), "every troop has a culture");
+        foreach (var cul in Factions.Cultures)
+        {
+            var seen = new HashSet<string>();
+            var open = new Queue<string>(new[] { cul.Root });
+            while (open.Count > 0)
+            {
+                var t = Troops.Get(open.Dequeue());
+                if (!seen.Add(t.Id)) continue;
+                foreach (var u in t.UpgradesTo)
+                    if (Troops.Get(u).Culture is var uc && (uc == Factions.Common || uc == cul.Id)) open.Enqueue(u);
+            }
+            var top = seen.Select(Troops.Get).Where(t => t.Tier == 7 && t.Culture == cul.Id).ToList();
+            Console.WriteLine($"culture {cul.Id}: {seen.Count} troops open from {cul.Root}, tier VII: {string.Join(", ", top.Select(t => t.Id))}");
+            Check(top.Count >= 3, $"{cul.Id} men can climb from {cul.Root} to tier VII lines of their own");
+            foreach (var role in new[] { "infantry", "archers", "horse" })
+                Check(top.Any(t => Rules.TroopRole(t.Id) == role), $"{cul.Id} has a tier VII {role} line");
+        }
+        var c = Campaign.New(83);
+        foreach (var v in c.S.Settlements.Where(v => v.Kind == SettlementKind.Village))
+        {
+            Check(v.Culture == Factions.CultureOf(v.Faction), "a village starts with its realm's culture");
+            Check(Campaign.RecruitTroop(v) == Factions.Root(v.Culture), "a village raises its culture's root");
+        }
+        // A northern village held by the Azure Crown still raises clansmen, and they form a northern company.
+        var north = c.S.Settlements.First(v => v.Kind == SettlementKind.Village && v.Culture == "northern");
+        north.Faction = 0;
+        north.Recruits = 10;
+        c.Player.Pos = north.Pos;
+        c.S.Gold = 1000;
+        Check(c.RecruitLevies(north, 6) == null, "you can recruit in a conquered northern village");
+        var clans = c.Player.Companies.FirstOrDefault(k => k.Stacks.Any(st => st.Troop == "clansmen"));
+        Check(clans != null && clans.Culture == "northern" && clans.Stack("clansmen").Men == 6, "its men are clansmen, in a northern company");
+        Check(c.Player.Companies.Where(k => k != clans).All(k => k.Stacks.All(st => st.Troop != "clansmen")), "and they did not dilute the azure companies");
+        // Culture lines: azure shieldmen may become men-at-arms but not crimson greatswords.
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == 0);
+        c.Player.Pos = town.Pos;
+        var az = c.NewCompany("shieldmen", "infantry", 10, 1000, town);
+        c.Player.Companies.Add(az);
+        var sh = az.Stack("shieldmen");
+        Check(az.Culture == "azure" && sh.Ready > 0, "an azure company of ready shieldmen");
+        Check(c.Promotable(c.Player, az, sh, "greatswords", 1, 1000, out _, out string why) == 0 && why.Contains("CANNOT TRAIN"), "azure men cannot train as crimson greatswords: " + why);
+        Check(c.Promotable(c.Player, az, sh, "men_at_arms", 1, 1000, out _, out _) == 1, "but can as azure men-at-arms");
+        // Elite lines: azure ironguard -> paladins (tier V) needs an azure town in your realm.
+        var ig = c.NewCompany("ironguard", "infantry", 6, 1000, town);
+        c.Player.Companies.Add(ig);
+        Check(c.Promotable(c.Player, ig, ig.Stack("ironguard"), "paladins", 1, 5000, out _, out _) == 1, "a captain sworn to the Crown may train paladins");
+        c.Captain.Contract = -1;
+        Check(c.Promotable(c.Player, ig, ig.Stack("ironguard"), "paladins", 1, 5000, out _, out why) == 0 && why.Contains("TOWN"), "a free captain may not: " + why);
+        // Each realm's lords field their own culture's troops.
+        var w = Campaign.New(84);
+        w.Player.Cooldown = 1e6f;
+        for (int h = 0; h < 60 * 24; h++) { w.Tick(1); w.Encounter = null; w.Arrived = null; }
+        for (int f = 0; f < 3; f++)
+        {
+            var stacks = w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).SelectMany(p => p.Companies).SelectMany(k => k.Stacks).Where(st => st.Type.Culture != Factions.Common).ToList();
+            int own = stacks.Where(st => st.Type.Culture == Factions.CultureOf(f)).Sum(st => st.Men), all = stacks.Sum(st => st.Men);
+            Console.WriteLine($"realm {f} ({Factions.CultureOf(f)}): {own}/{all} of its lords' cultured men are its own");
+            Console.WriteLine("  " + string.Join(", ", w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).SelectMany(p => p.Companies).SelectMany(k => k.Stacks).GroupBy(st => st.Troop).Select(g => $"{g.Key}:{g.Sum(st => st.Men)}")));
+            Check(all > 0 && own >= all * 0.85f, $"realm {f}'s army is recognisably {Factions.CultureOf(f)}");
+        }
     }
 
     /// A mixed company fights as one squad and gets its casualties back per stack (F1).
