@@ -133,7 +133,8 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Campaign data model + save/load/migration | `Campaign/CampaignState.cs` (also `Rng`, `Balance` <- `Data/campaign.json`, `Names`) |
 | Campaign time, movement, encounters, hourly/daily/weekly ticks | `Campaign/Campaign.cs` |
 | Battles from the campaign: prepare, finish, auto-resolve, apply results | `Campaign/CampaignBattle.cs` (`PrepareBattle`, `FinishBattle`, `Apply`) |
-| Your town actions (recruit, hire, horses, gear, split, contract, rest) | `Campaign/CampaignActions.cs` |
+| Your town actions (recruit, hire, horses, split, contract, rest) | `Campaign/CampaignActions.cs` |
+| The captain's gear: kit (`CaptainState.Kit`), buy/sell/wear, armourer stock, old-save tiers -> kit | `Gear.cs` (`GearDef`, loads `Data/gear.json`, `Validate`) / `Campaign/Armoury.cs` (`BuyGear`, `Equip`, `SellGear`, `ArmourerStock`, `MigrateGear`); `Rules.CaptainType(c, side)` builds the battle unit; UI `MapScreen.Armoury.cs` (MARKET tab) |
 | Lord/bandit/realm AI, spawning | `Campaign/CampaignAI.cs` (`LordThink`, `BanditThink`, `FactionAI`) |
 | Company math, auto-resolve, army building | `Campaign/Rules.cs` |
 | World generation, provinces, rivers, roads | `Campaign/WorldMap.cs` |
@@ -179,6 +180,8 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 - **Add a count of men or a per-man price in the campaign:** armies are `Balance.ArmyScale` (3) times the base numbers. Write a count
   as `Scaled(n)` and anything paid per man or derived from `Rules.Strength` as `Rules.PerMan(x)` (docs/DEVELOPING.md 5.7).
   With ArmyScale 1 the campaign must play exactly as before; compare `--selftest CampaignRun`'s pressure line at 1 and 3.
+- **Add a piece of captain gear:** an entry in `Data/gear.json` (slot weapon/shield/body/helm/horse; look = an existing sprite part;
+  horse = a mount id from troops.json). `Gear.Validate` (run by `SelfTest.Armoury`) checks it.
 - **Add a campaign balance value:** add the field with its default to `Balance` (CampaignState.cs) AND to `Data/campaign.json` (they must match; `SelfTest.BalanceMatchesData` fails otherwise).
 - **Add a field to the save:** add a public field with a default on the class in `CampaignState.cs` (System.Text.Json, `IncludeFields`).
   Old saves still load (missing fields keep their default). There is no migration: bumping `CampaignState.CurrentVersion` makes

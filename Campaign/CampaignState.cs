@@ -311,7 +311,10 @@ public sealed class Summons
 public sealed class CaptainState
 {
     public float Renown = 50, WoundedUntil;
+    /// Before the armoury (P1) gear was three tiers; a save that still has them is moved onto the kit when loaded (`Campaign.MigrateGear`).
     public int ArmorTier, HelmTier, HorseTier, Contract = 0; // Contract: faction you serve, -1 = none
+    /// What the captain wears and carries (docs/PROGRESSION.md P1).
+    public CaptainKit Kit = new();
     /// Career (F5): you swore fealty to the realm you serve (a vassal, not a hired sword); when this contract began;
     /// and the highest rank reached so far (an int of Rank), so each career beat is shown once.
     public bool Fealty;
@@ -320,6 +323,15 @@ public sealed class CaptainState
     /// Skills 0-100 (step F4) by id, and the perks taken from their branches (Skills.cs).
     public Dictionary<string, float> Skills = new();
     public List<string> Perks = new();
+}
+
+/// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought
+/// (free gear is always yours and is not listed).
+public sealed class CaptainKit
+{
+    public string Weapon = "arming_sword", Side = "greatsword", Shield = "heater_shield", Body = "mail", Helm = "sallet", Horse = "courser";
+    public List<string> Owned = new();
+    public IEnumerable<string> Worn => new[] { Weapon, Side, Shield, Body, Helm, Horse }.Where(id => id != "");
 }
 
 public sealed class LogEntry
@@ -532,7 +544,7 @@ public sealed class Balance
     /// An undead host: the share of a field's dead that rise as skeletons, its size bounds (times ArmyScale), the share of
     /// the fallen it raises after a win, what it hunts, its auto-resolve weight by night and by day, and its bounty.
     public float UndeadShare = 0.5f, UndeadMinMen = 10, UndeadMaxMen = 50, UndeadGrowShare = 0.3f, UndeadPreyAt = 1.1f, UndeadNight = 1.3f, UndeadDay = 0.8f, BountyUndead = 250;
-    public float HorseCostRate = 0.5f, ArmorCost = 600, HelmCost = 300, WarhorseCost = 400, DestrierCost = 900;
+    public float HorseCostRate = 0.5f;
 
     static Balance? loaded;
     public static Balance Get()

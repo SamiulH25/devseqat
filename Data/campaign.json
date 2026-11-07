@@ -21,5 +21,5 @@
   "KennelPerWeek": 4, "KennelMax": 12, "OgreOfferChance": 0.05, "OgreMen": 1,
   "GraveMin": 40, "GraveRiseDays": 3, "GraveRiseChance": 0.35, "GraveDays": 15, "RealmBuryChance": 0.92, "UndeadMax": 2,
   "UndeadShare": 0.5, "UndeadMinMen": 10, "UndeadMaxMen": 50, "UndeadGrowShare": 0.3, "UndeadPreyAt": 1.1, "UndeadNight": 1.3, "UndeadDay": 0.8, "BountyUndead": 250,
-  "HorseCostRate": 0.5, "ArmorCost": 600, "HelmCost": 300, "WarhorseCost": 400, "DestrierCost": 900
+  "HorseCostRate": 0.5
 }

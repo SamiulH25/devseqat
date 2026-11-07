@@ -47,6 +47,7 @@ public static partial class SelfTest
         Characters();
         CampaignDivisions();
         SkillTree();
+        Armoury();
         BalanceMatchesData();
         HorsesCostGold();
         Career();

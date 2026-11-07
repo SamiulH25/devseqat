@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **plan only, nothing built yet.** This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1 in progress** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -187,4 +187,14 @@ Give the captain something to do in each fight beyond "win".
 
 ## As built
 
-(Nothing yet.)
+- P1 (armoury, step 1): `Data/gear.json` (10 weapons, 4 shields, 4 bodies, 4 helms, 5 horses) loaded by `Gear.cs`;
+  `CaptainState.Kit` (`CaptainKit`: worn ids per slot, `Side` weapon, `Owned`); free gear (cost 0) is always yours.
+  `Rules.CaptainType(c, side)` builds the captain from the kit: the weapon sets damage, reach, windup, recover, pierce,
+  ammo and range; two hands drop the shield; body and helm add armour and speed; the shield sets the block chance.
+  Old saves: `Campaign.MigrateGear` (constructor) turns `ArmorTier/HelmTier/HorseTier` into plate, great helm and
+  warhorse/destrier, then clears them (no version bump). The armourer is the right half of the MARKET tab
+  (`MapScreen.Armoury.cs`): tabs per slot, this week's stock (`ArmourerStock`, seeded by place and week; towns 70%, castles
+  45%, villages 20% and only cheap pieces), buy (worn at once), wear, carry second, drop, sell at 40%. Buying needs the
+  Arms skill (`needs`), the career rank (`rank`: the lord's harness, the barded destrier) and gold.
+  Simplifications: no lance item (the couched lance works with any weapon from the saddle); no pavise (no sprite); the
+  lord's harness uses the plate look. The old `Balance` gear costs are gone (prices live in gear.json).

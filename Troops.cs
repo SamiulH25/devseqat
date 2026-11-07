@@ -12,6 +12,7 @@ public static class Troops
 
     public static IReadOnlyCollection<UnitType> All { get { Load(); return troops!.Values; } }
     public static UnitType Get(string id) { Load(); return troops!.TryGetValue(id, out var t) ? t : throw new KeyNotFoundException("no troop " + id); }
+    public static bool HasMount(string id) { Load(); return mounts!.ContainsKey(id); }
     public static Mount Mount(string id) { Load(); return mounts!.TryGetValue(id, out var m) ? m : throw new KeyNotFoundException("no mount " + id); }
 
     // Data shapes of troops.json (public fields; names match the JSON keys, case-insensitively).

@@ -82,6 +82,8 @@ public sealed class UnitType
     public bool Has(string trait) => Traits.Contains(trait);
     public int Ammo;
     public bool Leader;
+    /// A spear that only thrusts (the captain's boar spear): every swing is a thrust.
+    public bool ThrustOnly;
     public Mount? Mount;
     public Look Look = null!;
 

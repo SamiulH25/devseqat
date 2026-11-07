@@ -179,7 +179,7 @@ partial class MapScreen
         }
     }
 
-    /// Market tab: horses and your own gear, as rows of goods.
+    /// Market tab: horses on the left, the armourer (your own gear) on the right.
     void MarketTab(Settlement s, Rectangle body)
     {
         int half = (body.Width - ui.U(12)) / 2, y = body.Y;
@@ -209,22 +209,7 @@ partial class MapScreen
             if (ui.Button(new Rectangle(k.Right - ui.U(84), k.Y + ui.U(38), ui.U(78), ui.U(24)), "TAKE ALL", s.Hounds > 0)) note = C.RaiseHounds(s, s.Hounds) ?? "THE HOUNDS JOIN YOU";
         }
 
-        c = Well(new Rectangle(body.X + half + ui.U(12), y, half, body.Height), "YOUR GEAR", Kit.Gilt);
-        var gear = C.Gear();
-        int rh = Math.Clamp(c.Height / Math.Max(1, gear.Length), ui.U(28), ui.U(44));
-        for (int i = 0; i < gear.Length && c.Y + (i + 1) * rh - ui.U(4) <= c.Bottom; i++)
-        {
-            var (name, cost, owned, arms) = gear[i];
-            bool able = C.Skill("Arms") >= arms;
-            var gr = new Rectangle(c.X, c.Y + i * rh, c.Width, rh - ui.U(4));
-            TownRow(gr);
-            int my = gr.Center.Y;
-            string icon = name.Contains("HORSE", StringComparison.OrdinalIgnoreCase) ? "horse" : name.Contains("HELM", StringComparison.OrdinalIgnoreCase) ? "crown" : "shield";
-            ui.Icon(icon, gr.X + ui.U(8), my - ui.U(7), owned ? Kit.Gilt : Style.Text, 2);
-            ui.Text(name.ToUpperInvariant(), gr.X + ui.U(30), my - ui.U(9), owned ? Kit.Gilt : Style.Text, 1);
-            ui.Text(owned ? "OWNED" : able ? $"{cost} CROWNS" : $"NEEDS ARMS {arms}", gr.X + ui.U(30), my + ui.U(2), owned ? Style.Ok : able ? Style.Dim : Style.Warn, 1);
-            if (!owned && ui.Button(new Rectangle(gr.Right - ui.U(70), my - ui.U(11), ui.U(64), ui.U(22)), "BUY", able)) note = C.BuyGear(i) ?? "BOUGHT";
-        }
+        ArmourerWell(s, Well(new Rectangle(body.X + half + ui.U(12), y, half, body.Height), "THE ARMOURER", Kit.Gilt));
     }
 
     /// Train tab: promote men with enough XP up their line.

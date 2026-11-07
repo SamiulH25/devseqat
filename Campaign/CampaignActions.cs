@@ -114,28 +114,6 @@ public partial class Campaign
         return null;
     }
 
-    /// The captain's gear: heavier pieces need the Arms skill to wear (F4).
-    public (string Name, int Cost, bool Owned, int Arms)[] Gear() => new[]
-    {
-        ("PLATE ARMOUR", (int)B.ArmorCost, Captain.ArmorTier > 0, 25),
-        ("GREAT HELM", (int)B.HelmCost, Captain.HelmTier > 0, 15),
-        ("WARHORSE", (int)B.WarhorseCost, Captain.HorseTier >= 1, 0),
-        ("DESTRIER", (int)B.DestrierCost, Captain.HorseTier >= 2, 35),
-    };
-
-    public string? BuyGear(int i)
-    {
-        var (name, cost, owned, arms) = Gear()[i];
-        if (owned) return "OWNED";
-        if (i == 3 && Captain.HorseTier < 1) return "BUY A WARHORSE FIRST";
-        if (Skill("Arms") < arms) return $"NEEDS ARMS {arms}";
-        if (S.Gold < cost) return $"NEEDS {cost} CROWNS";
-        S.Gold -= cost;
-        switch (i) { case 0: Captain.ArmorTier = 1; break; case 1: Captain.HelmTier = 1; break; case 2: Captain.HorseTier = 1; break; default: Captain.HorseTier = 2; break; }
-        Log($"You buy a {name.ToLowerInvariant()}.");
-        return null;
-    }
-
     public void Merge(CompanyRecord a, CompanyRecord b) { Rules.Merge(a, b); Player.Companies.Remove(b); }
 
     /// Split a company in two: half of every stack goes to the new company (with its share of each pool).

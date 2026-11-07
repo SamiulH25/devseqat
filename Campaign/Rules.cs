@@ -128,17 +128,20 @@ public static class Rules
 
     // ---------- the captain ----------
 
-    /// Your troop type in battle: the captain's data with your bought armour.
-    public static UnitType CaptainType(CaptainState c)
+    /// Your troop type in battle: the captain's data dressed in the kit (P1), with the second weapon in hand if `side`.
+    public static UnitType CaptainType(CaptainState c, bool side = false)
     {
+        var k = c.Kit;
+        var w = Gear.Get(side && k.Side != "" ? k.Side : k.Weapon);
+        var shield = Gear.Get(w.TwoHanded ? "no_shield" : k.Shield);
+        GearDef body = Gear.Get(k.Body), helm = Gear.Get(k.Helm);
         var t = Troops.Get("captain").Clone();
-        var l = t.Look;
-        t.Look = l with
-        {
-            Body = c.ArmorTier > 0 ? "plate" : l.Body, Legs = c.ArmorTier > 0 ? "plate" : l.Legs, Feet = c.ArmorTier > 0 ? "sabatons" : l.Feet,
-            Head = c.HelmTier > 0 ? "greathelm" : l.Head,
-        };
-        t.Armor += 5 * c.ArmorTier + 2 * c.HelmTier;
+        t.Look = t.Look with { Weapon = w.Look, Shield = shield.Look, Body = body.Look, Legs = body.Legs, Feet = body.Feet, Head = helm.Look };
+        (t.Damage, t.Reach, t.Windup, t.Recover, t.Pierce) = (w.Damage, w.Reach, w.Windup, w.Recover, w.Pierce);
+        (t.Ammo, t.Range, t.Reload, t.ThrustOnly) = (w.Ammo, w.Range, w.Reload, w.Thrust);
+        t.BlockChance = shield.Block;
+        t.Armor += body.Armor + helm.Armor;
+        t.Speed += body.Speed + helm.Speed + shield.Speed;
         // Arms (F4): +2% health per 10 points, Hardened +20%, Duellist +15% damage.
         t.MaxHp *= 1 + Skills.Level(c, "Arms") / 500f + (c.Perks.Contains("Hardened") ? 0.2f : 0);
         if (c.Perks.Contains("Duellist")) t.Damage *= 1.15f;
@@ -147,7 +150,7 @@ public static class Rules
 
     public static Mount CaptainMount(CaptainState c)
     {
-        var m = Troops.Mount(c.HorseTier switch { 2 => "destrier", 1 => "warhorse", _ => "courser" });
+        var m = Troops.Mount(Gear.Get(c.Kit.Horse).Mount);
         return c.Perks.Contains("MountedLord") ? m with { Hp = m.Hp * 1.3f } : m;
     }
 

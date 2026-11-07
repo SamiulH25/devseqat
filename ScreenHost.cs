@@ -464,7 +464,8 @@ sealed class ScreenHost : Game
                 Shot("campaign-gameover");
                 break;
             }
-            case 38: Exit(); break;
+            case 38: map.Stage("armourer"); Shot("campaign-armourer"); break;
+            case 39: Exit(); break;
         }
     }
 }

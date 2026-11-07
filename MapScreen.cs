@@ -458,6 +458,10 @@ sealed partial class MapScreen
                 at = what == "tavern" ? C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s))
                     : C.S.Settlements.OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).First(s => s.Kind == SettlementKind.Village && !C.Refuses(s));
                 tab = what.ToUpperInvariant(); panel = PanelKind.Settlement; note = ""; break;
+            case "armourer":
+                at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
+                C.S.Gold = 2000;
+                tab = "MARKET"; panel = PanelKind.Settlement; note = ""; break;
             case "upgrade": upgrading = C.Player.Companies[0]; upStack = upgrading.Main; panel = PanelKind.Upgrade; break;
             case "encounter": panel = PanelKind.Encounter; break;
             case "results": panel = PanelKind.Results; break;

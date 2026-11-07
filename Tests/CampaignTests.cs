@@ -562,6 +562,58 @@ public static partial class SelfTest
         Check(c.S.Divisions.Count == 0 && c.Player.Companies.All(x => x.Division == -1), "a division without its leader breaks up");
     }
 
+    /// The captain's kit (docs/PROGRESSION.md P1): data checks, old saves moved onto it, buying, wearing, selling, stats.
+    static void Armoury()
+    {
+        Check(!Gear.Validate().Any(), "gear.json validates: " + string.Join("; ", Gear.Validate()));
+        var c = Campaign.New(17);
+        var k = c.Captain.Kit;
+        Check(k.Weapon == "arming_sword" && k.Side == "greatsword" && c.Owns("greatsword"), "a new captain has sword, shield and the greatsword");
+        var plain = Rules.CaptainType(c.Captain);
+        Check(plain.Look.Weapon == "sword" && plain.Look.Shield == "heater" && plain.HasShield, "the starting kit looks as the captain always did");
+        var two = Rules.CaptainType(c.Captain, side: true);
+        Check(two.Look.Weapon == "greatsword" && !two.HasShield && two.Damage > plain.Damage && two.Reach > plain.Reach, "the second weapon is the greatsword, no shield");
+        // An old save's tiers become gear.
+        var old = new CaptainState { ArmorTier = 1, HelmTier = 1, HorseTier = 2 };
+        var st = c.S; st.Captain = old;
+        var moved = new Campaign(st);
+        Check(old.Kit.Body == "plate" && old.Kit.Helm == "great_helm" && old.Kit.Horse == "destrier" && moved.Owns("warhorse") && moved.Owns("plate"), "an old save's plate, helm and destrier carry over");
+        Check(old.ArmorTier == 0 && Rules.CaptainMount(old).Id == "destrier", "and the old tiers are cleared");
+        c = Campaign.New(17);
+        // Buying: skill, rank and gold gate it.
+        Check(c.BuyGear(Gear.Get("plate"))!.Contains("ARMS"), "plate needs Arms");
+        Check(c.BuyGear(Gear.Get("lords_harness"))!.Contains("LORD"), "the lord's harness is for a lord");
+        c.S.Gold = 0;
+        Check(c.BuyGear(Gear.Get("boar_spear"))!.Contains("CROWNS"), "gear costs gold");
+        c.S.Gold = 5000;
+        c.Captain.Skills["Arms"] = 40;
+        Check(c.BuyGear(Gear.Get("plate")) == null && c.Captain.Kit.Body == "plate" && c.S.Gold == 5000 - 600, "bought plate is worn at once");
+        var plated = Rules.CaptainType(c.Captain);
+        Check(plated.Armor > plain.Armor && plated.Speed < plain.Speed && plated.Look.Body == "plate", "plate: more armour, a little slower");
+        Check(c.BuyGear(Gear.Get("boar_spear")) == null && Rules.CaptainType(c.Captain) is var sp && sp.ThrustOnly && sp.Reach >= 3, "the spear reaches far and only thrusts");
+        Check(c.Equip("longsword") == "NOT YOURS", "only owned gear can be worn");
+        Check(c.Equip("arming_sword") == null && c.Equip("boar_spear", side: true) == null && c.Captain.Kit.Side == "boar_spear", "a bought weapon can be carried second");
+        Check(c.Equip("boar_spear") == null && c.Captain.Kit.Weapon == "boar_spear" && c.Captain.Kit.Side == "arming_sword", "putting the second weapon in hand swaps the two");
+        Check(c.SellGear(Gear.Get("boar_spear")) == "TAKE IT OFF FIRST", "worn gear is not sold");
+        c.Equip("arming_sword"); c.Equip("greatsword", side: true);
+        float gold = c.S.Gold;
+        Check(c.SellGear(Gear.Get("boar_spear")) == null && !c.Owns("boar_spear") && c.S.Gold == gold + Campaign.SellPrice(Gear.Get("boar_spear")), "selling pays part of the price");
+        c.BuyGear(Gear.Get("crossbow"));
+        var xbow = Rules.CaptainType(c.Captain);
+        Check(xbow.Ammo > 0 && xbow.Range > 40 && xbow.Pierce > 0.5f && !xbow.HasShield, "a crossbow shoots far and pierces, both hands on it");
+        // The armourer's stock is the same all week and towns carry more than villages.
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town);
+        var village = c.S.Settlements.First(s => s.Kind == SettlementKind.Village);
+        Check(c.ArmourerStock(town).Select(g => g.Id).SequenceEqual(c.ArmourerStock(town).Select(g => g.Id)), "stock does not reroll on a second look");
+        int towns = c.S.Settlements.Where(s => s.Kind == SettlementKind.Town).Sum(s => c.ArmourerStock(s).Count);
+        int villages = c.S.Settlements.Where(s => s.Kind == SettlementKind.Village).Sum(s => c.ArmourerStock(s).Count);
+        Check(towns / (float)c.S.Settlements.Count(s => s.Kind == SettlementKind.Town) > villages / (float)c.S.Settlements.Count(s => s.Kind == SettlementKind.Village) * 2, "towns stock more than villages");
+        Check(c.ArmourerStock(village).All(g => g.Cost <= 300), "village smiths sell only cheap gear");
+        // The kit survives a save.
+        var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        Check(back.Captain.Kit.Body == "plate" && back.Owns("crossbow") && back.Captain.Kit.Weapon == "crossbow", "the kit is saved");
+    }
+
     static void SkillTree()
     {
         var a = Campaign.New(91);
@@ -569,7 +621,7 @@ public static partial class SelfTest
         var rngA = new Rng(new CampaignState { Seed = 5 });
         Check(a.Skill("Leadership") > 0 && a.Captain.Perks.Count == 0, "a new captain has some skill and no perks");
         Check(a.TakePerk("Duellist") != null, "no perk before its skill reaches 25");
-        Check(a.BuyGear(0) is string g0 && g0.Contains("ARMS"), "plate armour needs Arms");
+        Check(a.BuyGear(Gear.Get("plate")) is string g0 && g0.Contains("ARMS"), "plate armour needs Arms");
         var town = a.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == 0);
         for (int n = 0; n < 20; n++)
         {
