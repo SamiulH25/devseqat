@@ -68,6 +68,13 @@ public partial class Campaign
             m.Name = Rules.CompanyName(rng, role);
             t.Mercenaries.Add(m);
         }
+        // Now and then a few ogres sell their clubs (docs/CREATURES.md phase 4): costly, and the only big beasts for hire.
+        if (rng.Chance(B.OgreOfferChance))
+        {
+            var o = NewCompany("ogre", Rules.TroopRole("ogre"), Scaled(B.OgreMen), 0);
+            o.Name = "Ogre Sellswords";
+            t.Mercenaries.Add(o);
+        }
     }
 
     IEnumerable<Party> Visible(Party p, float range) => S.Parties.Where(q => q != p && !q.Down && Vector2.Distance(p.Pos, q.Pos) < range);

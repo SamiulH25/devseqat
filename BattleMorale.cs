@@ -61,7 +61,7 @@ public partial class Battle
                 if (!o.Active || o == u) continue;
                 float d2 = Vector2.DistanceSquared(o.Pos, u.Pos);
                 if (o.Team == u.Team) { if (o.Routing && d2 < 49) routing++; }
-                else if (o.Type.Has("fear") && d2 < 64) feared = true;
+                else if (o.Type.Has("fear") && d2 < 64 && u.Type.VsMonster <= 1) feared = true; // hunters know what they face
                 else if (!u.Mounted && o.Mounted && o.Speed > 7 && d2 < 64 && !Braced(u)
                     && Vector2.Dot(o.HeadingDir, Vector2.Normalize(u.Pos - o.Pos)) > 0.85f) charged = true;
             }

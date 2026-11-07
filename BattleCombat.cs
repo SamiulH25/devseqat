@@ -161,7 +161,8 @@ public partial class Battle
         float officer = tired * (a.Squad?.Company is Company oc ? (oc.Has("Hothead") ? 1.1f : 1) * (oc.Has("Veteran") ? 1.05f : 1) : 1);
         if (ranged && t.Squad?.Formation == Formation.Square) officer *= 1.25f;                    // a packed square is an easy mark
         if (!ranged && a.Squad is { Formation: Formation.Wedge, Order: Order.Charge }) officer *= 1.15f; // a wedge drives in
-        float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1);
+        float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
+            * (t.Type.Wild ? a.Type.VsMonster : 1); // monster hunters
         if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged ? a.Type.Pierce : 0);
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);

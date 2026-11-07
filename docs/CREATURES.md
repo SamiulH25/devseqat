@@ -1,6 +1,6 @@
 # Creatures and monsters: brainstorm and plan
 
-Status: phase 1 (goblins), phase 2 (wolves, goblin wolf riders) phase 3 (trolls) and phase 4a (goblin thralls, war hounds) are built; see "As built" at the end. The rest is planned. Names are placeholders.
+Status: phase 1 (goblins), phase 2 (wolves, goblin wolf riders) phase 3 (trolls) and phase 4 (goblin thralls, war hounds, beast hunters, ogres for hire) are built; see "As built" at the end. The rest is planned. Names are placeholders.
 
 The world is a fantasy world. Today every enemy is a man: lords, bandits, garrisons. This plan adds creatures and
 monsters as new enemies, new kinds of map encounter and, later, new troops for the player.
@@ -222,3 +222,14 @@ village; clearing a holdout removes it and pays the hoard; lords are hostile to 
   `KennelMax` (12, scaled) (`Settlement.Hounds`). At a kennel of yours, the Market tab's kennel row raises them
   (`RaiseHounds`) into the pack you have or a new War Hounds company. `war_hounds` are wild (breed `hound`) and hunt
   with the wolves' `pack` trait; drawn on the wolf rig in a brown coat. AI realms do not build kennels.
+
+**Phase 4b** (`PlayerCreatures` test, debug `TrollTrace` now also against spearrunners and beast hunters):
+- `VsMonster` on a troop multiplies its damage against wild troops (like `VsMounted`); above 1, a monster's `fear`
+  does not reach it. `beast_hunters` (tier III, common, spear, fur and hood, VsMonster 1.5) branch from spearrunners
+  as an end of line; the AI's preset lines do not field them.
+- Found in testing: spears are a natural counter to a troll (many reach it at once), so the troll rose to hp 2000 and
+  armour 16. One troll by night still breaks 30 shieldmen; 20 spearrunners kill it; 20 beast hunters kill it in about
+  10 s without a man breaking.
+- `ogre` (wild, size 1.8, sweep and knockback, no regen or daylight): each week a town's mercenary board offers a
+  company of `OgreMen` (1, scaled) ogres with chance `OgreOfferChance` (0.05), as Ogre Sellswords.
+- Not built yet: tamed beasts (a troll needs a lair to take young from), culture flavour (bear-shirts).

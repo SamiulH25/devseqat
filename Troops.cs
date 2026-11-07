@@ -33,7 +33,7 @@ public static class Troops
         public string? Mount;
         public int Tier, Cost, UpgradeXp, Ammo;
         public string[] UpgradesTo = Array.Empty<string>();
-        public float Hp, Damage, Armor, Reach, Windup, Recover, Speed, Block, Range, VsMounted = 1, Pierce, Reload = 1, Size = 1;
+        public float Hp, Damage, Armor, Reach, Windup, Recover, Speed, Block, Range, VsMounted = 1, VsMonster = 1, Pierce, Reload = 1, Size = 1;
         public string[] Traits = Array.Empty<string>();
         public bool Leader;
         public LookDto Look = new();
@@ -69,7 +69,7 @@ public static class Troops
             {
                 Id = d.Id, Name = d.Name, Culture = d.Culture, Breed = d.Breed, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
                 UpgradesTo = d.UpgradesTo, MaxHp = d.Hp, Damage = d.Damage, Armor = d.Armor, Reach = d.Reach, Windup = d.Windup,
-                Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, Pierce = d.Pierce, Reload = d.Reload,
+                Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, VsMonster = d.VsMonster, Pierce = d.Pierce, Reload = d.Reload,
                 Leader = d.Leader, Size = d.Size, Traits = d.Traits, Mount = d.Mount == null ? null : mounts[d.Mount],
                 Look = new Look(l.Head, l.Body, l.Legs, l.Feet, l.Hands, l.Shield, l.Weapon, l.Tabard, l.Plume, l.Cape, l.Face),
             };

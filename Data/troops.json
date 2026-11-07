@@ -1501,7 +1501,8 @@
    "tier": 2,
    "upgradesTo": [
     "pikemen",
-    "billmen"
+    "billmen",
+    "beast_hunters"
    ],
    "cost": 22,
    "upgradeXp": 150,
@@ -3771,9 +3772,9 @@
    "upgradesTo": [],
    "cost": 300,
    "upgradeXp": 0,
-   "hp": 1800,
+   "hp": 2000,
    "damage": 70,
-   "armor": 14,
+   "armor": 16,
    "reach": 2.4,
    "windup": 0.8,
    "recover": 0.8,
@@ -3830,6 +3831,70 @@
     "shield": "none",
     "weapon": "sword",
     "face": "wolf"
+   }
+  },
+  {
+   "id": "beast_hunters",
+   "name": "Beast Hunters",
+   "class": "Skirmisher",
+   "culture": "common",
+   "tier": 3,
+   "upgradesTo": [],
+   "cost": 40,
+   "upgradeXp": 0,
+   "hp": 95,
+   "damage": 28,
+   "armor": 5,
+   "reach": 2.4,
+   "windup": 0.4,
+   "recover": 0.7,
+   "speed": 4.8,
+   "block": 0.2,
+   "vsMounted": 1.4,
+   "vsMonster": 1.5,
+   "look": {
+    "head": "hood",
+    "body": "fur",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "spear",
+    "cape": true
+   }
+  },
+  {
+   "id": "ogre",
+   "name": "Ogres",
+   "class": "Infantry",
+   "culture": "wild",
+   "breed": "ogre",
+   "tier": 4,
+   "upgradesTo": [],
+   "cost": 130,
+   "upgradeXp": 0,
+   "hp": 650,
+   "damage": 46,
+   "armor": 9,
+   "reach": 2.1,
+   "windup": 0.75,
+   "recover": 0.85,
+   "speed": 3.9,
+   "block": 0,
+   "size": 1.8,
+   "traits": [
+    "sweep",
+    "knockback"
+   ],
+   "look": {
+    "head": "kettle",
+    "body": "fur",
+    "legs": "hide",
+    "feet": "bare",
+    "hands": "claw",
+    "shield": "none",
+    "weapon": "club",
+    "face": "troll"
    }
   }
  ]

@@ -60,6 +60,8 @@ public sealed class UnitType
     public int Tier, Cost, UpgradeXp;
     public string[] UpgradesTo = Array.Empty<string>();
     public float MaxHp, Damage, Armor, Reach, Windup, Recover, Speed, BlockChance, Range, VsMounted = 1, Pierce, Reload = 1;
+    /// Damage against creatures (wild troops), like VsMounted against riders. Above 1, a monster's fear does not reach them.
+    public float VsMonster = 1;
     /// Drawn size (1 = a man). Goblins are small, bosses and trolls big.
     public float Size = 1;
     /// Creature traits (docs/CREATURES.md): "craven" (breaks early, rallies again and again while its boss lives),

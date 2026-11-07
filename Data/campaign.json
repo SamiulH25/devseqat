@@ -18,6 +18,6 @@
   "WolfPacksPerForest": 0.3, "WolfSpawnChance": 0.3, "WolfPackMin": 4, "WolfPackMax": 9,
   "HoldoutStartHoard": 60, "HoldoutHoardPerDay": 4, "HoldoutRaidLoot": 40, "BountyHoldout": 80,
   "RareStart": 2, "RareEvery": 60, "RareMax": 6, "RareSpawnChance": 0.25, "TrollMen": 2, "BountyTroll": 300, "TrollNight": 1.6, "TrollDay": 0.8,
-  "KennelPerWeek": 4, "KennelMax": 12,
+  "KennelPerWeek": 4, "KennelMax": 12, "OgreOfferChance": 0.05, "OgreMen": 1,
   "HorseCostRate": 0.5, "ArmorCost": 600, "HelmCost": 300, "WarhorseCost": 400, "DestrierCost": 900
 }

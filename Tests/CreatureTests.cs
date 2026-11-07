@@ -373,18 +373,50 @@ public static partial class SelfTest
         Check(c.RaiseHounds(town, 2) == null && pack.Men == 5 && c.Player.Companies.Count == companies + 1, "more hounds join the pack you have");
         var hound = Troops.Get("war_hounds");
         Check(hound.Wild && hound.Has("pack") && hound.Look.Beast && hound.UpgradesTo.Length == 0, "a war hound hunts like a wolf and never becomes a man");
+
+        // Beast hunters, a branch of the spear line, kill a troll that breaks shieldmen, and do not fear it.
+        Check(Troops.Get("spearrunners").UpgradesTo.Contains("beast_hunters") && Troops.Get("beast_hunters").VsMonster > 1, "spearrunners can train as beast hunters");
+        bool Kills(string foe, out Squad men)
+        {
+            var f = Battle.Empty(98);
+            f.Options.Weather = new Weather(23);
+            var tr = f.AddSquad(1, Troops.Get("troll"), 1, new(0, 20), 1, -Vector2.UnitY).Units[0];
+            men = f.AddSquad(0, Troops.Get(foe), 20, new(0, -5), 10, Vector2.UnitY);
+            men.Order = Order.Charge;
+            for (int i = 0; i < 60 * 120 && !tr.Dead && (i == 0 || men.Alive > 0); i++) f.Update(1 / 60f);
+            return tr.Dead;
+        }
+        bool hunters = Kills("beast_hunters", out var hs), shields = Kills("shieldmen", out var ss);
+        Console.WriteLine($"creatures: 20 beast hunters kill a troll by night {hunters} ({hs.Units.Count(u => u.Routing)} routed); 20 shieldmen {shields} ({ss.Units.Count(u => u.Routing)} routed)");
+        Check(hunters && !shields && hs.Units.Count(u => u.Routing) == 0, "beast hunters kill a troll that breaks shieldmen, and stand");
+
+        // Ogres turn up for hire now and then.
+        CompanyRecord? ogres = null;
+        Settlement? board = null;
+        for (int week = 0; week < 40 && ogres == null; week++)
+        {
+            Days(c, 7);
+            board = c.S.Settlements.FirstOrDefault(s => s.Mercenaries.Any(m => m.Troop == "ogre"));
+            ogres = board?.Mercenaries.First(m => m.Troop == "ogre");
+        }
+        Check(ogres != null && ogres.Type.Huge && ogres.Name == "Ogre Sellswords", $"ogres are offered as sellswords (by day {c.Day})");
+        c.S.Gold = 100000;
+        c.Player.Companies.RemoveAll(co => co.Troop == "war_hounds");
+        c.Player.Pos = board!.Pos;
+        Check(c.Hire(board, ogres!) == null && c.Player.Companies.Contains(ogres!), "you can hire the ogres");
     }
 
     /// Debug: one troll against companies of shieldmen by night and by day (`--selftest TrollTrace`).
     static void TrollTrace()
     {
+        foreach (var foe in new[] { "shieldmen", "spearrunners", "beast_hunters" })
         foreach (float hour in new[] { 23f, 13f })
             foreach (int n in new[] { 10, 20, 30, 45 })
             {
                 var f = Battle.Empty(91);
                 f.Options.Weather = new Weather(hour);
                 var troll = f.AddSquad(1, Troops.Get("troll"), 1, new(0, 20), 1, -Vector2.UnitY).Units[0];
-                var men = f.AddSquad(0, UnitType.Shieldman, n, new(0, -5), 10, Vector2.UnitY);
+                var men = f.AddSquad(0, Troops.Get(foe), n, new(0, -5), 10, Vector2.UnitY);
                 men.Order = Order.Charge;
                 float healed = 0; int swings = 0; var was = UnitAction.None; float menHp = men.Units.Sum(u => u.Hp);
                 for (int i = 0; i < 60 * 180 && f.Winner < 0 && !troll.Dead && (i == 0 || men.Alive > 0); i++)
@@ -395,7 +427,7 @@ public static partial class SelfTest
                     if (troll.Action == UnitAction.Windup && was != UnitAction.Windup) swings++;
                     was = troll.Action;
                 }
-                Console.WriteLine($"troll at {hour:0}h vs {n} shieldmen: {f.Time:0} s, troll {(troll.Dead ? "dead" : $"{troll.Hp:0} hp")}, healed {healed:0}, men dead {men.Units.Count(u => u.Dead)}, routed {men.Units.Count(u => u.Routing)}, swings {swings}, men hp lost {menHp - men.Units.Sum(u => MathF.Max(0, u.Hp)):0}, target {troll.Target?.Index}");
+                Console.WriteLine($"troll at {hour:0}h vs {n} {foe}: {f.Time:0} s, troll {(troll.Dead ? "dead" : $"{troll.Hp:0} hp")}, healed {healed:0}, men dead {men.Units.Count(u => u.Dead)}, routed {men.Units.Count(u => u.Routing)}, swings {swings}, men hp lost {menHp - men.Units.Sum(u => MathF.Max(0, u.Hp)):0}, target {troll.Target?.Index}");
             }
     }
 }

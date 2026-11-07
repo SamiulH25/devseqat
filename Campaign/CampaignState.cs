@@ -492,6 +492,8 @@ public sealed class Balance
     public float TrollNight = 1.6f, TrollDay = 0.8f;
     /// Creatures for you (phase 4): hounds a kennel breeds a week, and the most it keeps.
     public float KennelPerWeek = 4, KennelMax = 12;
+    /// The chance a town's mercenary board offers ogres each week, and how many.
+    public float OgreOfferChance = 0.05f, OgreMen = 1;
     public float HorseCostRate = 0.5f, ArmorCost = 600, HelmCost = 300, WarhorseCost = 400, DestrierCost = 900;
 
     static Balance? loaded;
