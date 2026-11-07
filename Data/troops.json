@@ -3760,6 +3760,44 @@
     "weapon": "spear",
     "face": "goblin"
    }
+  },
+  {
+   "id": "troll",
+   "name": "Trolls",
+   "class": "Infantry",
+   "culture": "wild",
+   "breed": "troll",
+   "tier": 5,
+   "upgradesTo": [],
+   "cost": 300,
+   "upgradeXp": 0,
+   "hp": 1800,
+   "damage": 70,
+   "armor": 14,
+   "reach": 2.4,
+   "windup": 0.8,
+   "recover": 0.8,
+   "speed": 4.2,
+   "block": 0,
+   "size": 2.3,
+   "traits": [
+    "sweep",
+    "knockback",
+    "fear",
+    "regen",
+    "daylight",
+    "fearless"
+   ],
+   "look": {
+    "head": "none",
+    "body": "rags",
+    "legs": "hide",
+    "feet": "bare",
+    "hands": "claw",
+    "shield": "none",
+    "weapon": "club",
+    "face": "troll"
+   }
   }
  ]
 }

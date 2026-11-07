@@ -484,6 +484,10 @@ public sealed class Balance
     /// men (times ArmyScale; a wolf more for every 30 days), plus the dire wolf that leads each.
     public float WolfPacksPerForest = 0.3f, WolfSpawnChance = 0.3f, WolfPackMin = 4, WolfPackMax = 9;
     public float HoldoutStartHoard = 60, HoldoutHoardPerDay = 4, HoldoutRaidLoot = 40, BountyHoldout = 80;
+    // Rare monsters (docs/CREATURES.md phase 3): how many trolls, how many in each, the bounty on one.
+    public float RareStart = 2, RareEvery = 60, RareMax = 6, RareSpawnChance = 0.25f, TrollMen = 2, BountyTroll = 300;
+    /// A troll's weight in an auto-resolve by night and by day (a battle at night or noon shows the same).
+    public float TrollNight = 1.6f, TrollDay = 0.8f;
     public float HorseCostRate = 0.5f, ArmorCost = 600, HelmCost = 300, WarhorseCost = 400, DestrierCost = 900;
 
     static Balance? loaded;

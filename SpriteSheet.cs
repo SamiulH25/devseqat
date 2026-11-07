@@ -19,7 +19,7 @@ public sealed class SpriteSheet
     public static readonly Dictionary<string, float> Grip = new()
     {
         ["sword"] = 0.233f, ["longsword"] = 0.17f, ["axe"] = 0.2f, ["spear"] = 0.3f, ["pike"] = 0.3f, ["lance"] = 0.3f, ["bow"] = 0.5f, ["longbow"] = 0.5f,
-        ["crossbow"] = 0.55f, ["greatsword"] = 0.12f, ["daneaxe"] = 0.3f,
+        ["crossbow"] = 0.55f, ["greatsword"] = 0.12f, ["daneaxe"] = 0.3f, ["club"] = 0.22f,
     };
 
     static readonly string[] Views = { "f", "s", "b" };
@@ -75,6 +75,7 @@ public sealed class SpriteSheet
         {
             Add($"head.{v}{s}", Head(v));
             Add($"head.goblin.{v}{s}", GoblinHead(v));
+            Add($"head.troll.{v}{s}", TrollHead(v));
             foreach (var helm in Look.Heads.Skip(1)) Add($"helm.{helm}.{v}{s}", Helm(helm, v));
             foreach (var body in Look.Bodies) Add($"torso.{body}.{v}{s}", Torso(body, v));
             Add($"tabard.{v}{s}", Tabard(v));
@@ -154,6 +155,36 @@ public sealed class SpriteSheet
                 c.Body(5, 8, y => (0.5f + (y - 5) * 1.2f, 5.5f), gskin, -0.2f);
                 c.Body(5, 8, y => (15.5f, 20.5f - (y - 5) * 1.2f), gskin, -0.2f);
                 for (int x = 6; x <= 15; x++) c.Shade(x, 13, -0.3f);
+                break;
+        }
+        return c;
+    }
+
+    /// A troll's head: low and heavy, a jutting jaw with tusks, small eyes under a brow ridge, moss in the hair.
+    Canvas TrollHead(string v)
+    {
+        var c = new Canvas(19, 17);
+        c.Ellipse(9.5f, 8.5f, 7.6f, 7.8f, gskin, -0.15f);
+        c.Ellipse(9.5f, 3.5f, 7f, 3.2f, fur, -0.1f); // a mat of hair and moss
+        switch (v)
+        {
+            case "f":
+                for (int x = 4; x <= 15; x++) c.Shade(x, 6, -0.35f); // brow ridge
+                foreach (int ex in new[] { 7, 12 }) c.Set(ex, 7, glow);
+                c.Ellipse(9.5f, 9.5f, 1.8f, 1.2f, gskin, -0.3f);    // broad nose
+                c.Body(11, 16, y => (3.5f, 15.5f), gskin, 0.05f);   // jutting jaw
+                for (int x = 5; x <= 14; x++) c.Set(x, 12, ink);
+                foreach (int tx in new[] { 5, 14 }) { c.Set(tx, 11, Mat.Flat(Style.Linen)); c.Set(tx, 10, Mat.Flat(Style.Linen)); } // tusks
+                break;
+            case "s":
+                c.Set(13, 7, glow); for (int x = 10; x <= 16; x++) c.Shade(x, 6, -0.35f);
+                c.Body(8, 11, y => (14, 18.5f), gskin, -0.1f);      // nose
+                c.Body(11, 16, y => (7, 17f), gskin, 0.05f);        // jaw
+                for (int x = 12; x <= 17; x++) c.Set(x, 12, ink);
+                c.Set(16, 11, Mat.Flat(Style.Linen)); c.Set(16, 10, Mat.Flat(Style.Linen));
+                break;
+            default:
+                c.Ellipse(9.5f, 8, 7f, 6f, fur, -0.15f);
                 break;
         }
         return c;
@@ -460,6 +491,16 @@ public sealed class SpriteSheet
                 for (int y = 1; y < 16; y++) c.Shade(0, y, 0.5f);
                 c.Rect(4.5f, 0, 7.5f, 2.5f, iron);
                 c.Rect(4.6f, 40, 7.4f, 46, leather);
+                return c;
+            }
+            case "club":
+            {
+                // A tree limb, thick and knotted at the striking end.
+                var c = new Canvas(14, 50);
+                c.Body(0, 50, y => (7 - (y < 22 ? 6.5f - y * 0.05f : 2.2f), 7 + (y < 22 ? 6.5f - y * 0.05f : 2.2f)), wood);
+                foreach (var (kx, ky) in new[] { (2, 5), (11, 9), (3, 15), (10, 19) }) { c.Ellipse(kx, ky, 1.6f, 1.6f, wood, -0.25f); c.Shade(kx, ky, -0.4f); }
+                for (int y = 0; y < 22; y++) c.Shade(1, y, 0.35f);
+                c.Rect(4.6f, 36, 9.4f, 44, leather);
                 return c;
             }
             case "crossbow":

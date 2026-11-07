@@ -32,7 +32,7 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     bool Tabard, bool Plume, bool Cape, string Face = "man")
 {
     /// "wolf" is a whole beast: the puppet draws it on four legs from the w* sprites, ignoring the rest of the look.
-    public static readonly string[] Faces = { "man", "goblin", "wolf" };
+    public static readonly string[] Faces = { "man", "goblin", "wolf", "troll" };
     public bool Beast => Face == "wolf";
     /// The sprite family of the bare head.
     public string HeadKey => Face == "man" ? "head" : "head." + Face;
@@ -43,7 +43,7 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public static readonly string[] FeetKinds = { "boots", "sabatons", "bare" };
     public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw" };
     public static readonly string[] Shields = { "none", "round", "kite", "heater" };
-    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe" };
+    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club" };
     public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
 }
 
@@ -64,9 +64,13 @@ public sealed class UnitType
     public float Size = 1;
     /// Creature traits (docs/CREATURES.md): "craven" (breaks early, rallies again and again while its boss lives),
     /// "pack" (wolves: circle to a foe's flank before they bite), "boss" (his fall shakes every craven or pack
-    /// creature of his side and stops their rallies: a goblin boss, a pack's alpha).
+    /// creature of his side and stops their rallies: a goblin boss, a pack's alpha). A troll's: "sweep" (a blow hits
+    /// the men beside its target too), "knockback" (throws men down and back), "fear" (unnerves foes near it),
+    /// "regen" (heals when left alone a moment), "daylight" (slow and weak in sunlight, no healing), "fearless" (never routs).
     public string[] Traits = Array.Empty<string>();
-    public static readonly string[] KnownTraits = { "craven", "boss", "pack" };
+    public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless" };
+    /// A body big enough to take more room, shove men aside and stand up to a horse (a troll).
+    public bool Huge => Size >= 1.6f;
     /// Bound to its boss: loses heart when he falls.
     public bool Bound => Has("craven") || Has("pack");
     public bool Has(string trait) => Traits.Contains(trait);
@@ -102,6 +106,8 @@ public sealed class Unit
     public Vector2 Pos, Vel, Wish, Slot;
     public float Facing, ViewFacing; // radians on the ground plane; ViewFacing is the eased value the renderer draws
     public float Hp, Morale = 70, Stamina = 100, EnemyDist = float.MaxValue;
+    /// Battle time of the last wound (a troll heals only when left alone).
+    public float HurtAt = -99;
     public int Ammo;
     public UnitAction Action;
     public AttackDir Swing;

@@ -1,6 +1,6 @@
 # Creatures and monsters: brainstorm and plan
 
-Status: phase 1 (goblins) and phase 2 (wolves, goblin wolf riders) are built; see "As built" at the end. The rest is planned. Names are placeholders.
+Status: phase 1 (goblins), phase 2 (wolves, goblin wolf riders) and phase 3 (trolls) are built; see "As built" at the end. The rest is planned. Names are placeholders.
 
 The world is a fantasy world. Today every enemy is a man: lords, bandits, garrisons. This plan adds creatures and
 monsters as new enemies, new kinds of map encounter and, later, new troops for the player.
@@ -194,3 +194,23 @@ village; clearing a holdout removes it and pays the hoard; lords are hostile to 
   `Beast`) with the rider astride it. `goblin_wolf_rider` is craven goblin cavalry with a spear.
 - A warg whose rider falls runs off: no loose horse to catch, and it does not count as a horse taken.
 - Big holdouts (two thirds of their cap) tame a few wargs, so their hosts and raids include wolf riders.
+
+**Phase 3** (trolls; `BattleCreatures.cs`, `Tests/CreatureTests.cs` `Trolls`, `TrollsAbroad`, debug `TrollTrace`):
+- `troll` (wild, breed `troll`, size 2.3) carries the new traits: `sweep` (an AI blow also lands on up to two more
+  men in front, at 0.8 damage), `knockback` (throws a man 1.3 m back and down, shakes those around him; never through
+  a siege wall), `fear` (foes within 8 m lose morale), `regen` (4% of its hp a second once nothing has hurt it for
+  3 s), `daylight` (in open day, 7:30 to 18:30 without thick fog: pace and blows at 0.65, no healing; `Battle.Sunlit`),
+  `fearless` (never routs). `UnitType.Huge` (size 1.6 or more): a wider, heavier body in `Separate` and against trees,
+  shields block its blows half as often, no blow or block staggers it, and a charging horse balks at it like a spear wall.
+- Drawn on the human rig at 2.3 times size with the goblin kit, its own head (`head.troll`: jaw, tusks, moss) and a
+  new `club` weapon.
+- Found in testing: a troll whose swing every blow interrupted never struck once (hence no staggers for huge bodies).
+  Tuned so one troll breaks 30 shieldmen at night and the same 30 kill it at noon.
+- Auto-resolve: `Rules.Strength` weighs a huge creature double. A troll fights from side 1 with `Edge` = `TrollNight`
+  (1.6) by night and `TrollDay` (0.8) by day, so a host that catches one asleep wins.
+- Map: trolls are the rare monsters (`RaresWanted`: `RareStart` 2, one more every `RareEvery` 60 days, at most
+  `RareMax` 6; `SpawnTroll`, `TrollThink`). A troll of `TrollMen` (2, scaled: six trolls) sleeps by day and by
+  night hunts what it can surely beat (under 0.9 times its strength), lords included, and keeps clear of a host 2.5
+  times stronger. Lords hunt one only with twice its strength, brigands never. Its death goes in the chronicle and pays
+  `BountyTroll`. Simplification: the trolls of one party are one band; a lone named troll and a troll bridge lair can
+  come later. Staged shots: `gallery-troll.png`, `campaign-troll.png`.

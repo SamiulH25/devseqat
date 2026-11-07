@@ -276,6 +276,7 @@ public sealed partial class Battle
             if (u.IsPlayer) UpdatePlayer(u, dt); else if (ThinkNow(u)) Think(u, dt);
             TickAction(u, dt);
             Tire(u, dt);
+            if (u.Type.Has("regen")) Regen(u, dt);
         }
         Mark(3);
         Move(dt);

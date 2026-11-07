@@ -88,6 +88,7 @@ public partial class Campaign
             if (p.Kind == PartyKind.Monster)
             {
                 p.Down = true;
+                if (p.Breed == "troll") Log($"{p.Name} is slain near {Map.ProvinceAt(p.Pos).Name}.");
                 if (p.Lair) { var taker = winners.FirstOrDefault(w => w.Kind is PartyKind.Player or PartyKind.Lord); if (taker != null && taker != Player) taker.Gold += p.Gold; HoldoutCleared(p, taker); }
                 continue;
             }
@@ -123,7 +124,8 @@ public partial class Campaign
         {
             foreach (var e in losers.Where(e => e.Lair)) loot += e.Gold; // a holdout's hoard goes to whoever burns it out
             foreach (var e in losers)
-                bounty += e.Lair ? B.BountyHoldout + Rules.PerMan(Rules.Strength(e) / 10)
+                bounty += e.Breed == "troll" ? B.BountyTroll
+                    : e.Lair ? B.BountyHoldout + Rules.PerMan(Rules.Strength(e) / 10)
                     : Outlaw(e) ? B.BountyBandits + Rules.PerMan(Rules.Strength(e) / 10)
                     : Captain.Contract >= 0 ? B.BountyLord + Rules.PerMan((startStrength1 + startStrength0) / 20) : 0;
             renown = B.RenownPerVictory + (playerTeam == 0 ? startStrength1 : startStrength0) / (B.RenownStrengthDivisor * B.ArmyScale);
@@ -211,7 +213,7 @@ public partial class Campaign
     public BattleReport AutoResolveEncounter()
     {
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge, Encounter!.Lair ? B.HoldoutDefence : 1);
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge, Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }

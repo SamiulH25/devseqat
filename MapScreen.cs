@@ -339,7 +339,7 @@ sealed partial class MapScreen
                 {
                     PartyKind.Player => Rules.CaptainType(C.Captain),
                     PartyKind.Bandit => Troops.Get("levies"),
-                    PartyKind.Monster => Troops.Get(p.Breed == "wolf" ? "dire_wolf" : p.Lair ? "hobgoblin" : "goblin"),
+                    PartyKind.Monster => Troops.Get(p.Breed == "wolf" ? "dire_wolf" : p.Breed == "troll" ? "troll" : p.Lair ? "hobgoblin" : "goblin"),
                     _ => Troops.Get(p.Tier >= 3 ? "knights" : "captain"),
                 };
                 u = new Unit

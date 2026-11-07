@@ -88,6 +88,7 @@ public sealed partial class Campaign
         for (int i = 0; i < c.HoldoutsWanted; i++)
             if (c.SpawnHoldout()) for (int d = c.rng.Next(40); d > 0; d--) c.Grow(c.S.Parties[^1]);
         for (int i = 0; i < c.WolfPacksWanted; i++) c.SpawnWolfPack();
+        for (int i = 0; i < c.RaresWanted; i++) c.SpawnTroll();
         c.WanderersWeekly();
         c.EnsureRulers();
         // The guided first fight: a weak band close by, coming for you.
@@ -246,8 +247,8 @@ public sealed partial class Campaign
             Player.ChaseId = -1;
             return;
         }
-        if (a.Lair) (a, b) = (b, a); // a holdout fights dug in, from side 1
-        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, 1, b.Lair ? B.HoldoutDefence : 1);
+        if (a.Lair || a.Breed == "troll") (a, b) = (b, a); // a holdout fights dug in, from side 1; so does a troll
+        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, 1, Edge(b));
         var winner = r.Winner == 0 ? a : b;
         var loser = r.Winner == 0 ? b : a;
         AiBattles++;
@@ -255,6 +256,10 @@ public sealed partial class Campaign
         if (winner.Kind == PartyKind.Lord || loser.Kind == PartyKind.Lord)
             Log($"{winner.Name} defeats {loser.Name} near {Map.ProvinceAt(loser.Pos).Name}.");
     }
+
+    /// How much harder a party fights than its strength says, on the defending side of an auto-resolve: a holdout dug in,
+    /// a troll in the dark (and the sun makes it slow and weak, as in a battle).
+    float Edge(Party p) => p.Lair ? B.HoldoutDefence : p.Breed == "troll" ? (Night ? B.TrollNight : B.TrollDay) : 1;
 
     void Hourly()
     {

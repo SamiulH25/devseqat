@@ -399,7 +399,18 @@ sealed class ScreenHost : Game
                 c.Encounter = lair;
                 map.Stage("encounter"); Shot("campaign-holdout"); break;
             }
-            case 30: Exit(); break;
+            case 30:
+            {
+                // A troll, abroad by night.
+                map.Stage("map");
+                c.Encounter = null;
+                var troll = c.Rares.First();
+                c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 23;
+                c.Player.Pos = troll.Pos + new Vector2(2, 0);
+                c.Encounter = troll;
+                map.Stage("encounter"); Shot("campaign-troll"); break;
+            }
+            case 31: Exit(); break;
         }
     }
 }

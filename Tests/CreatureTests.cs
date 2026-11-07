@@ -237,4 +237,123 @@ public static partial class SelfTest
         Console.WriteLine($"wolf riders: 12 riders vs 20 bowmen after {f.Time:0} s: {f.SquadsOf(0).Sum(q => q.Units.Count(x => x.Dead))} archers dead, {riders.Units.Count(x => x.Dead)} riders dead");
         Check(f.SquadsOf(0).Sum(q => q.Units.Count(x => x.Dead)) > 0, "wolf riders ride down archers");
     }
+
+    /// Trolls in battle: a huge body whose blows sweep and throw men, that heals in the dark, never breaks,
+    /// unnerves men near it, stands off horses, and goes slow and weak in sunlight.
+    static void Trolls()
+    {
+        var tt = Troops.Get("troll");
+        Check(tt.Huge && tt.Wild && tt.Breed == "troll" && tt.Look.HeadKey == "head.troll" && tt.Has("fearless"), "a troll is a huge wild creature with a troll's head");
+
+        // It heals when left alone, but not under the sun.
+        foreach (float hour in new[] { 23f, 13f })
+        {
+            var h = Battle.Empty(92);
+            h.Options.Weather = new Weather(hour);
+            var tr = h.AddSquad(1, tt, 1, new(0, 40), 1, -Vector2.UnitY).Units[0];
+            h.AddSquad(0, UnitType.Shieldman, 1, new(0, -40), 1, Vector2.UnitY);
+            tr.Squad!.Order = Order.Hold;
+            tr.Hp = tt.MaxHp / 2;
+            Run(h, 6);
+            if (hour > 20) Check(tr.Hp > tt.MaxHp * 0.6f, $"a troll heals in the dark ({tr.Hp:0})");
+            else Check(tr.Hp <= tt.MaxHp / 2 + 1, "a troll does not heal by day");
+        }
+
+        // One blow sweeps through the men beside its target and throws them back.
+        var b = Battle.Empty(93);
+        b.Options.Weather = new Weather(23);
+        var troll = b.AddSquad(1, tt, 1, new(0, 1.9f), 1, -Vector2.UnitY).Units[0];
+        var line = b.AddSquad(0, UnitType.Shieldman, 3, new(0, 0), 3, Vector2.UnitY);
+        line.Order = Order.Hold;
+        var start = line.Units.Select(u => u.Pos).ToList();
+        for (int i = 0; i < 60 * 4 && troll.Action != UnitAction.Recover; i++) b.Update(1 / 60f);
+        int hurt = line.Units.Count(u => u.Hp < u.Type.MaxHp || u.Dead);
+        float thrown = line.Units.Select((u, k) => Vector2.Distance(u.Pos, start[k])).Max();
+        Console.WriteLine($"trolls: one blow hurts {hurt} of 3 men, throws one {thrown:0.0} m");
+        Check(hurt >= 2, "a troll's blow hits more than one man");
+        Check(thrown > 1, "a troll's blow throws men back");
+        troll.Morale = 0;
+        Run(b, 0.2f);
+        Check(!troll.Routing, "a troll never breaks");
+
+        // A horse that rides into a troll comes off worse.
+        var c = Battle.Empty(94);
+        c.Options.Weather = new Weather(23);
+        var big = c.AddSquad(1, tt, 1, new(0, 0), 1, -Vector2.UnitY).Units[0];
+        big.Squad!.Order = Order.Hold;
+        var rider = c.AddSquad(0, UnitType.Lancer, 1, new(0, -30), 1, Vector2.UnitY).Units[0];
+        rider.Squad!.Order = Order.Charge;
+        float horse = rider.HorseHp;
+        for (int i = 0; i < 60 * 8 && !(rider.HorseHp < horse); i++) c.Update(1 / 60f);
+        Check(rider.HorseHp < horse && big.Action != UnitAction.Stagger, "a charging horse cannot trample a troll");
+
+        // At night a troll breaks a company; at midday the same company kills it.
+        bool Beats(float hour, out Battle f, out Squad men)
+        {
+            f = Battle.Empty(91);
+            f.Options.Weather = new Weather(hour);
+            var tr = f.AddSquad(1, tt, 1, new(0, 20), 1, -Vector2.UnitY).Units[0];
+            men = f.AddSquad(0, UnitType.Shieldman, 30, new(0, -5), 10, Vector2.UnitY);
+            men.Order = Order.Charge;
+            for (int i = 0; i < 60 * 180 && !tr.Dead && (i == 0 || men.Alive > 0); i++) f.Update(1 / 60f);
+            return !tr.Dead;
+        }
+        bool night = Beats(23, out var fn, out var mn), day = Beats(13, out var fd, out _);
+        Console.WriteLine($"trolls: a troll against 30 shieldmen wins by night {night} ({mn.Units.Count(u => u.Routing)} routed), by day {day}");
+        Check(night && !day, "a troll is terrible by night and beatable by day");
+        Check(Rules.Strength(tt, 1) > Rules.Strength(UnitType.Shieldman, 20), "auto-resolve weighs a troll as many men");
+    }
+
+    /// Trolls on the map: a few rare monsters that sleep by day and hunt by night; more wake as the years pass.
+    static void TrollsAbroad()
+    {
+        var c = Campaign.New(95);
+        var trolls = c.Rares.ToList();
+        Check(trolls.Count == 2 && c.RaresWanted == 2, $"the world starts with two trolls ({trolls.Count})");
+        foreach (var t in trolls)
+            Check(c.Map.ProvinceAt(t.Pos).Kind is "Forest" or "Hills" && t.Companies.All(co => co.Troop == "troll"), $"{t.Name} lives in the wilds");
+        var troll = trolls[0];
+        c.Player.Pos = troll.Pos + new Vector2(4, 0) * c.Map.Spread;
+        c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 13;
+        c.MonsterThink(troll);
+        Check(!troll.Moving && troll.Task == "rest", "a troll sleeps by day");
+        c.S.Hours += 10; // 23h
+        foreach (var co in c.Player.Companies) foreach (var st in co.Stacks) st.Men = Math.Min(st.Men, 3); // easy prey
+        c.MonsterThink(troll);
+        Check(troll.ChaseId == c.Player.Id, "and hunts easy prey by night");
+
+        // More wake over the years, up to the cap.
+        c.S.Hours += 24 * 120;
+        Check(c.RaresWanted == 4, $"one more every 60 days ({c.RaresWanted})");
+        c.S.Hours += 24 * 1000;
+        Check(c.RaresWanted == 6, "at most six");
+        var d = Campaign.New(96);
+        Days(d, 120);
+        Console.WriteLine($"trolls: after 120 days {d.Rares.Count()} trolls abroad (wanted {d.RaresWanted}): {string.Join(", ", d.Rares.Select(r => $"{r.Name} {r.Men}"))}");
+        Check(d.Rares.Count() >= 2 && d.Rares.Count() <= d.RaresWanted, "the world keeps its rare monsters");
+    }
+
+    /// Debug: one troll against companies of shieldmen by night and by day (`--selftest TrollTrace`).
+    static void TrollTrace()
+    {
+        foreach (float hour in new[] { 23f, 13f })
+            foreach (int n in new[] { 10, 20, 30, 45 })
+            {
+                var f = Battle.Empty(91);
+                f.Options.Weather = new Weather(hour);
+                var troll = f.AddSquad(1, Troops.Get("troll"), 1, new(0, 20), 1, -Vector2.UnitY).Units[0];
+                var men = f.AddSquad(0, UnitType.Shieldman, n, new(0, -5), 10, Vector2.UnitY);
+                men.Order = Order.Charge;
+                float healed = 0; int swings = 0; var was = UnitAction.None; float menHp = men.Units.Sum(u => u.Hp);
+                for (int i = 0; i < 60 * 180 && f.Winner < 0 && !troll.Dead && (i == 0 || men.Alive > 0); i++)
+                {
+                    float hp = troll.Hp;
+                    f.Update(1 / 60f);
+                    if (troll.Hp > hp) healed += troll.Hp - hp;
+                    if (troll.Action == UnitAction.Windup && was != UnitAction.Windup) swings++;
+                    was = troll.Action;
+                }
+                Console.WriteLine($"troll at {hour:0}h vs {n} shieldmen: {f.Time:0} s, troll {(troll.Dead ? "dead" : $"{troll.Hp:0} hp")}, healed {healed:0}, men dead {men.Units.Count(u => u.Dead)}, routed {men.Units.Count(u => u.Routing)}, swings {swings}, men hp lost {menHp - men.Units.Sum(u => MathF.Max(0, u.Hp)):0}, target {troll.Target?.Index}");
+            }
+    }
 }

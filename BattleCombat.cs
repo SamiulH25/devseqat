@@ -42,6 +42,7 @@ public partial class Battle
                 ? Vector2.Distance(a.Pos, t.Pos) <= aiReach + 0.35f + extra
                 : InArc(a, t, aiReach + 0.4f + extra, 0.5f);
             if (lands) Hit(a, t, dmg, false);
+            if (lands && a.Type.Has("sweep")) Sweep(a, t, dmg, aiReach + 0.4f);
             return;
         }
         // Player: thrusts reach far but hit one man; side cuts sweep a wide arc and cleave up to 3.
@@ -128,7 +129,7 @@ public partial class Battle
         else if (facing && t.Action is UnitAction.None or UnitAction.Block)
         {
             // Shields cover every direction; without one, thrusts and overheads are harder to read.
-            float chance = t.Type.BlockChance * (lance ? 0.5f : 1) * (t.Type.HasShield
+            float chance = t.Type.BlockChance * (lance ? 0.5f : 1) * (a.Type.Huge ? 0.5f : 1) * (t.Type.HasShield
                 ? (a.Swing == AttackDir.Thrust ? 0.9f : 1)
                 : a.Swing switch { AttackDir.Thrust => 0.7f, AttackDir.Overhead => 0.85f, _ => 1 });
             if (ranged && !t.Type.HasShield) chance *= 0.3f;
@@ -163,6 +164,7 @@ public partial class Battle
         float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1);
         if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged ? a.Type.Pierce : 0);
+        if (!ranged && a.Type.Has("knockback")) Knock(a, t);
         Sound(ranged ? Cue.ArrowHit : t.Type.Armor >= 8 ? Cue.Clash : Cue.Hit, t.Pos);
         if (a.IsPlayer)
         {
@@ -181,6 +183,7 @@ public partial class Battle
         float real = MathF.Max(dmg * 0.25f, dmg - t.Type.Armor * (1 - pierce)); // bolts punch through part of the armour
         t.Hp -= real;
         t.HitFlash = 0.15f;
+        t.HurtAt = Time;
         t.Morale -= real * 0.16f + extraShock * 0.7f;
         if (t.Action == UnitAction.Windup || t.Charging) Stagger(t, 0.3f); // hits interrupt swings
         if (t.Hp <= 0) Kill(t, a);
@@ -207,6 +210,7 @@ public partial class Battle
 
     static void Stagger(Unit u, float time)
     {
+        if (u.Type.Huge) return; // a troll's swing is not stopped by a man's blow or shield
         u.Action = UnitAction.Stagger;
         u.ActionTimer = time;
         u.Charging = false;

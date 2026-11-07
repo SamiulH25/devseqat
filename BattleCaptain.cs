@@ -83,7 +83,8 @@ public sealed partial class Battle
     }
 
     /// Men tire running and fighting (slower, weaker) and recover standing still. Horses and you are exempt (you have stamina).
-    float Fatigue(Unit u) => u.IsPlayer ? 1 : 0.7f + 0.3f * u.Stamina / 100;
+    /// Pace and blow strength from stamina (and, for a troll, the sun).
+    float Fatigue(Unit u) => u.IsPlayer ? 1 : (0.7f + 0.3f * u.Stamina / 100) * (u.Type.Has("daylight") && Sunlit ? 0.65f : 1);
 
     void Tire(Unit u, float dt)
     {

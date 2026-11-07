@@ -61,6 +61,8 @@ public static partial class SelfTest
         Holdouts();
         GoblinBattle();
         Wolves();
+        Trolls();
+        TrollsAbroad();
         WolfRiders();
         Couriers();
 

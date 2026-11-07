@@ -69,7 +69,7 @@ partial class BattleScreen
                 zoom = 8.5f; camPitch = 0.08f; camFocus = new Vector2(-9.8f, 0.6f);
                 pendingShot = "gallery-north-close"; shotIndex++; break;
             case 20 when pendingShot == null:
-                Gallery(new[] { "goblin", "goblin_archer", "hobgoblin", "goblin_boss", "goblin_wolf_rider", "wolf", "dire_wolf", "shieldmen" }, 3); // creatures (docs/CREATURES.md), a man for scale
+                Gallery(new[] { "goblin", "goblin_archer", "hobgoblin", "goblin_boss", "goblin_wolf_rider", "wolf", "dire_wolf", "troll", "shieldmen" }, 3); // creatures (docs/CREATURES.md), a man for scale
                 shotFrames = 0; shotIndex++; break;
             case 21 when shotFrames > 20:
                 zoom = 11f; camPitch = 0.1f; camFocus = new Vector2(-9.8f, 0.6f);
@@ -79,7 +79,13 @@ partial class BattleScreen
                 shotFrames = 0; shotIndex++; break;
             case 23 when shotFrames > 20:
                 pendingShot = "gallery-creatures-side"; shotIndex++; break;
-            case 24 when pendingShot == null: Exit(); break;
+            case 24 when pendingShot == null:
+                foreach (var u in b.Units.Where(u => !u.IsLeader)) u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = -MathHelper.PiOver2;
+                zoom = 12f; camPitch = 0.12f; camFocus = b.Units.First(u => u.Type.Id == "troll").Pos + new Vector2(-1.5f, 0.6f);
+                shotFrames = 0; shotIndex++; break;
+            case 25 when shotFrames > 20:
+                pendingShot = "gallery-troll"; shotIndex++; break;
+            case 26 when pendingShot == null: Exit(); break;
         }
     }
 

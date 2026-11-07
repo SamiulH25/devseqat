@@ -21,7 +21,7 @@ public partial class Battle
         float step = dt * 2;
         foreach (var u in Units)
         {
-            if (!u.Active || u.IsLeader) continue; // leaders never break
+            if (!u.Active || u.IsLeader || u.Type.Has("fearless")) continue; // leaders (and trolls) never break
             if ((tick + u.Index) % 2 != 0) continue;
             var lead = u.Team == 0 ? Player : EnemyCaptain;
             // The enemy captain stands just behind his line, so his aura covers it all battle. Yours only reaches
@@ -55,17 +55,19 @@ public partial class Battle
             if (lost[u.Team] > 0.5f) m -= 0.5f;          // the army is losing
             // Neighbours running away, and horsemen thundering at you, are frightening.
             int routing = 0;
-            bool charged = false;
+            bool charged = false, feared = false;
             foreach (var o in Near(u.Pos, 8, near))
             {
                 if (!o.Active || o == u) continue;
                 float d2 = Vector2.DistanceSquared(o.Pos, u.Pos);
                 if (o.Team == u.Team) { if (o.Routing && d2 < 49) routing++; }
+                else if (o.Type.Has("fear") && d2 < 64) feared = true;
                 else if (!u.Mounted && o.Mounted && o.Speed > 7 && d2 < 64 && !Braced(u)
                     && Vector2.Dot(o.HeadingDir, Vector2.Normalize(u.Pos - o.Pos)) > 0.85f) charged = true;
             }
             m -= MathF.Min(2, routing * 0.3f);
             if (charged) m -= 2.5f;
+            if (feared) m -= 2.5f; // a troll looming over you
             u.Morale = Math.Clamp(u.Morale + m * step, 0, 100);
             // Iron Will: near you, a company that still has a third of its men will not break.
             if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);
