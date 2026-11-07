@@ -72,7 +72,7 @@ public partial class Battle
             float routAt = (u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? RoutAt - 4 : RoutAt) - (u.Squad.Company?.RoutBonus ?? 0) // officer trait; walls; honours
                 + (u.Type.Has("craven") ? CravenRout : 0);
             if (!u.Routing && u.Morale < routAt) { u.Routing = true; u.Routs++; u.Action = UnitAction.None; u.Couched = false; }
-            else if (u.Routing && u.Morale > RallyAt && (u.Type.Has("craven") ? !BossDown[u.Team] : u.Routs <= 1))
+            else if (u.Routing && u.Morale > RallyAt && (u.Type.Has("craven") ? !BossDown[u.Team] : u.Routs <= 1 && !(u.Type.Bound && BossDown[u.Team])))
             {
                 u.Routing = false;
                 u.Morale = MathF.Max(u.Morale, Battle.RallyAt + 2); // they come back shaken but steady

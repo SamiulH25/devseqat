@@ -46,7 +46,7 @@ partial class MapScreen
         {
             if (C.Parley()) panel = PanelKind.None;
         }
-        if (price < 0 && ui.Hover(new Rectangle(bx + 3 * (bw + ui.U(8)), by, bw, ui.U(30)))) note = e.Kind == PartyKind.Monster ? "GOBLINS DO NOT BARGAIN" : "LORDS AT WAR DO NOT BARGAIN";
+        if (price < 0 && ui.Hover(new Rectangle(bx + 3 * (bw + ui.U(8)), by, bw, ui.U(30)))) note = e.Kind == PartyKind.Monster ? $"{Campaign.Plural(e.Breed).ToUpperInvariant()} DO NOT BARGAIN" : "LORDS AT WAR DO NOT BARGAIN";
     }
 
     /// At the walls of an enemy town or castle: besiege, assault, wait or leave.

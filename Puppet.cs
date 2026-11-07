@@ -86,9 +86,10 @@ sealed class Puppet
         if (u.Dead)
         {
             float k = Now > 0 ? (Now - u.DiedAt) / FallTime : 1;
-            if (k >= 1) { Corpse(); return; }
+            if (k >= 1) { if (look.Face == "wolf") BeastCorpse(u); else Corpse(); return; }
             fall = k * k * MathHelper.ToRadians(80);
         }
+        if (look.Face == "wolf") { Beast(u, ground); return; }
         var p = PoseOf(u);
         var cls = u.Type.Class;
 
@@ -201,6 +202,46 @@ sealed class Puppet
                 if (Detail == 0) Bill(foot, $"boot.{look.Feet}", true);
             }
         return bob;
+    }
+
+    /// A wolf on four legs: it trots, and lunges with its head in the strike (docs/CREATURES.md).
+    void Beast(Unit u, float ground)
+    {
+        var side = pal;
+        var plain = tint;
+        pal = "/n";
+        if (u.Type.Size > 1.1f) tint = Color.Lerp(tint, new Color(70, 64, 60), 0.45f); // a dire wolf is darker
+        float speed = u.Vel.Length();
+        float gait = Math.Clamp(speed / 7, 0, 1);
+        float amp = speed < 0.3f ? 0 : 18 + 30 * gait;
+        float bob = MathF.Sin(u.Anim * MathF.Tau * 1.5f) * 0.03f * gait;
+        float lunge = u.Action == UnitAction.Windup ? -0.12f : u.Action == UnitAction.Recover ? 0.28f : 0;
+        float y = 0.6f + bob;
+        ReadOnlySpan<float> phase = stackalloc float[] { 0, 0.5f, 0.3f, 0.8f };
+        for (int i = 0; i < 4; i++)
+        {
+            bool front = i < 2;
+            float sd = i % 2 == 0 ? -1 : 1;
+            float a = Rad(amp) * MathF.Sin(u.Anim * MathF.PI * 1.5f + phase[i] * MathF.Tau);
+            var hip = new Vector3(sd * 0.11f, y - 0.05f, front ? 0.36f : -0.38f);
+            Axial(hip, hip + new Vector3(0, -0.55f * MathF.Cos(a), 0.55f * MathF.Sin(a)), "wleg");
+        }
+        Long(new(0, y, -0.5f), new(0, y + 0.04f, 0.5f), "wbody");
+        Long(new(0, y + 0.16f, 0.42f + lunge), new(0, y + 0.08f + (lunge > 0 ? -0.08f : 0), 0.92f + lunge * 1.3f), "whead");
+        if (Detail == 0) Axial(new(0, y + 0.08f, -0.5f), new(0, y - 0.22f + gait * 0.22f, -0.86f - gait * 0.2f), "wtail");
+        pal = side;
+        tint = plain;
+    }
+
+    void BeastCorpse(Unit u)
+    {
+        Flat(new(0, 0.04f, -0.2f), "blood", false);
+        pal = "/n";
+        if (u.Type.Size > 1.1f) tint = Color.Lerp(tint, new Color(70, 64, 60), 0.45f);
+        Flat(new(0, 0.06f, 0), "wbody", true);
+        Flat(new(0.05f, 0.07f, 0.65f), "whead", true);
+        Flat(new(-0.25f, 0.05f, 0.25f), "wleg", false);
+        Flat(new(-0.25f, 0.05f, -0.3f), "wleg", false);
     }
 
     public void DrawLooseHorse(LooseHorse h, float ground)

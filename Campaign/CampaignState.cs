@@ -480,6 +480,9 @@ public sealed class Balance
     public float HoldoutDefence = 2.5f;
     /// Days a realm's lords hunt a holdout after its raiders plunder one of their villages.
     public float HoldoutHuntDays = 6;
+    /// Wolf packs: how many per forest province, the daily chance one appears while under that, and their size in base
+    /// men (times ArmyScale; a wolf more for every 30 days), plus the dire wolf that leads each.
+    public float WolfPacksPerForest = 0.3f, WolfSpawnChance = 0.3f, WolfPackMin = 4, WolfPackMax = 9;
     public float HoldoutStartHoard = 60, HoldoutHoardPerDay = 4, HoldoutRaidLoot = 40, BountyHoldout = 80;
     public float HorseCostRate = 0.5f, ArmorCost = 600, HelmCost = 300, WarhorseCost = 400, DestrierCost = 900;
 

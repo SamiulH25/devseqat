@@ -219,9 +219,9 @@ public partial class Battle
     {
         BossDown[boss.Team] = true;
         foreach (var u in Units)
-            if (u.Active && u.Team == boss.Team && u.Type.Has("craven")) u.Morale -= 30;
+            if (u.Active && u.Team == boss.Team && u.Type.Bound) u.Morale -= 30;
             else if (u.Active && u.Team != boss.Team) u.Morale = MathF.Min(100, u.Morale + 8);
-        Log($"The {boss.Type.Name.ToLowerInvariant()} is slain! {(boss.Team == 0 ? "Your" : "The")} goblins scatter.");
+        Log(boss.Type.Look.Beast ? $"The {boss.Type.Name.ToLowerInvariant()} is down! The pack scatters." : $"The {boss.Type.Name.ToLowerInvariant()} is slain! {(boss.Team == 0 ? "Your" : "The")} goblins scatter.");
     }
 
     void Kill(Unit t, Unit killer)

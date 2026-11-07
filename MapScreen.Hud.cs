@@ -15,7 +15,7 @@ partial class MapScreen
     {
         PartyKind.Bandit => "BRIGANDS",
         PartyKind.Player => "YOU",
-        PartyKind.Monster => p.Lair ? $"{p.Breed.ToUpperInvariant()} HOLDOUT" : $"{p.Breed.ToUpperInvariant()}S",
+        PartyKind.Monster => p.Lair ? $"{p.Breed.ToUpperInvariant()} HOLDOUT" : Campaign.Plural(p.Breed).ToUpperInvariant(),
         _ => C.FactionNames[p.Faction].ToUpperInvariant(),
     };
     Color PartyColor(Party p) => p.Kind == PartyKind.Player ? Style.Accent : SideColor(C.SideOf(p));
@@ -259,6 +259,7 @@ partial class MapScreen
             linesOut.Add((p.Name.ToUpperInvariant(), PartyColor(p)));
             linesOut.Add((Allegiance(p), Style.Dim));
             if (p.Lair) linesOut.Add(($"A HOARD OF ABOUT {MathF.Round(p.Gold / 50) * 50:0} CROWNS", Style.Warn));
+            else if (p.Breed == "wolf") linesOut.Add((p.Task == "rest" ? "LYING UP IN THE WOODS" : p.Task == "hunt" ? "ON THE HUNT" : "ON THE PROWL", Style.Warn));
             else if (p.Kind == PartyKind.Monster && p.Task == "raid" && p.RaidOn >= 0) linesOut.Add(($"OUT TO PLUNDER {C.SettlementById(p.RaidOn).Name.ToUpperInvariant()}", Style.Warn));
             linesOut.Add(($"{p.Men} MEN IN {p.Companies.Count} COMPANIES", Style.Text));
             if (p != C.Player)

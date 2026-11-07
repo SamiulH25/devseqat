@@ -220,7 +220,8 @@ public partial class Campaign
     {
         var e = Encounter!;
         bool horse = e.Companies.Any(c => c.Men > 0 && c.Type.Mount != null);
-        why = horse && Speed(e) > Speed(Player) ? "THEIR HORSE WILL RIDE YOU DOWN" : "";
+        why = e.Breed == "wolf" && Speed(e) > Speed(Player) ? "THE WOLVES WILL RUN YOU DOWN"
+            : horse && Speed(e) > Speed(Player) ? "THEIR HORSE WILL RIDE YOU DOWN" : "";
         return why == "";
     }
 

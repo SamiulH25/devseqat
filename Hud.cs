@@ -399,6 +399,14 @@ sealed partial class Hud
     {
         var l = t.Look;
         const float top = 1.92f; // metres at the top of the box
+        if (l.Face == "wolf") // a beast's portrait is its head, big
+        {
+            var src = art["whead/n"];
+            int kk = Math.Max(1, Math.Min(box.Width / src.Width, box.Height / src.Height));
+            var dst = new Rectangle(box.Center.X - src.Width * kk / 2, box.Center.Y - src.Height * kk / 2, src.Width * kk, src.Height * kk);
+            sb.Draw(art.Atlas, dst, src, t.Size > 1.1f ? new Color(150, 140, 135) : Color.White);
+            return;
+        }
         void Part(string key, float xm, float ym, string pal = "/0", Color? tint = null)
         {
             var src = art[key + pal];

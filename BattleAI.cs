@@ -5,6 +5,22 @@ namespace Ironfield;
 /// Battle: unit AI (Think, ThinkCav for cavalry, steering helpers) and the AI general that gives squads orders.
 public partial class Battle
 {
+    /// Where a man closes on his foe: straight at him, or for a pack beast in front of its foe, wide round to his flank
+    /// first so it bites where he is not looking (the flank and rear bonus in Hit does the rest). It gives up circling
+    /// after a few seconds (CavTimer, unused on foot, keeps count), so a man who keeps turning is still bitten.
+    Vector2 PackApproach(Unit u, Unit enemy, float d, float dt, out bool circling)
+    {
+        circling = false;
+        if (!u.Type.Has("pack") || enemy.Routing || d > 16) { u.CavTimer = 0; return enemy.Pos; }
+        var dir = (u.Pos - enemy.Pos) / MathF.Max(0.01f, d);
+        if (Vector2.Dot(dir, enemy.Dir) < 0.35f || u.CavTimer > 5) return enemy.Pos;
+        circling = true;
+        u.CavTimer += dt;
+        var side = new Vector2(-enemy.Dir.Y, enemy.Dir.X);
+        float s = Vector2.Dot(dir, side) >= 0 ? 1 : -1;
+        return enemy.Pos + side * s * 4.5f - enemy.Dir * 2.5f; // wide, out of reach, round the end of a line
+    }
+
     void Think(Unit u, float dt)
     {
         if (u.Routing)
@@ -62,9 +78,9 @@ public partial class Battle
         bool leashed = !charge && toSlot > 14;
         if (enemy != null && !leashed && (charge || d < 6))
         {
-            var to = Via(u, enemy.Pos) - u.Pos;
+            var to = Via(u, PackApproach(u, enemy, d, dt, out bool circling)) - u.Pos;
             u.Face(to);
-            if (d <= reach) { if (u.Cooldown <= 0) StartSwing(u, enemy); }
+            if (d <= reach && !circling) { if (u.Cooldown <= 0) StartSwing(u, enemy); }
             else u.Wish = to / MathF.Max(0.01f, to.Length()) * u.Type.Speed;
             return;
         }

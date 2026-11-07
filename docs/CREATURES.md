@@ -1,6 +1,6 @@
 # Creatures and monsters: brainstorm and plan
 
-Status: phase 1 (goblin holdouts on the map, goblins in battle) is built; see "As built" at the end. The rest is planned. Names are placeholders.
+Status: phase 1 (goblins) and phase 2a (wolves) are built; see "As built" at the end. The rest is planned. Names are placeholders.
 
 The world is a fantasy world. Today every enemy is a man: lords, bandits, garrisons. This plan adds creatures and
 monsters as new enemies, new kinds of map encounter and, later, new troops for the player.
@@ -174,3 +174,17 @@ village; clearing a holdout removes it and pays the hoard; lords are hostile to 
 - Craven squads are a `Swarm`: they spawn in loose order, and a division never puts them in a shield wall.
 - In a test fight 30 shieldmen beat 60 goblins and their boss in about a minute; goblins are weak alone and meant to
   come in numbers. Staged shot: `gallery-goblins.png` (`IRONFIELD_SHOTS`).
+
+**Phase 2a** (wolves; `Tests/CreatureTests.cs` `Wolves`, debug `WolfTrace`):
+- `wolf` and `dire_wolf` (breed `wolf`, `Look.Face` "wolf" = a beast). `Puppet.Beast` draws them on four legs from
+  the neutral `wbody`/`whead`/`wleg`/`wtail` sprites (`SpriteSheet.Wolf`); the head lunges in the strike; a dire wolf
+  is drawn darker and 1.35 times the size. The HUD portrait of a beast is its head.
+- Trait `pack`: `BattleAI.PackApproach` sends a wolf in front of its foe wide round his flank (4.5 m out, out of reach)
+  and it does not bite until beside or behind him, or after 5 s of circling. The dire wolf has `boss`: its fall
+  breaks the pack's heart and stops its rallies (`Type.Bound` = craven or pack).
+- Found in testing: a pack tears through levies and archers but breaks on a shield line (16 wolves and an alpha leave
+  0 of 20 bowmen and 20 of 20 shieldmen standing). That is the tactic, so it stays.
+- Map: wolf packs (`SpawnWolfPack`, `WolfThink`) keep to their forest province (`PatrolProvince`), lie up by day and
+  hunt by night anything up to 1.3 times their strength. They move at horse speed, so a company on foot cannot
+  retreat from them. They do not plunder. Balance: `WolfPacksPerForest`, `WolfSpawnChance`, `WolfPackMin/Max`.
+- Staged shots: `gallery-goblins.png` (front), `gallery-creatures-side.png` (side).

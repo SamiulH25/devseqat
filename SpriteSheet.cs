@@ -28,6 +28,7 @@ public sealed class SpriteSheet
     {
         for (int p = 0; p < Style.Sides.Length; p++) Side(p);
         Horse();
+        Wolf();
         Pack();
     }
 
@@ -616,6 +617,44 @@ public sealed class SpriteSheet
         var tail = new Canvas(5, 20);
         tail.Body(0, 20, y => { float half = 2.4f - y * 0.06f; return (2.5f - half, 2.5f + half); }, mane);
         Add("htail/n", tail);
+    }
+
+    // ---------- beasts (docs/CREATURES.md) ----------
+
+    /// A wolf's parts in grey fur ("/n"); the puppet tints a dire wolf darker. Long parts run tail to nose.
+    void Wolf()
+    {
+        var fur = new Mat(new Color(150, 148, 142), Pattern.Hair);
+        var pale = new Mat(new Color(198, 192, 180), Pattern.Hair);
+        var dark = new Mat(new Color(78, 76, 74), Pattern.Hair);
+        var eye = Mat.Flat(new Color(232, 196, 60));
+        var nose = Mat.Flat(new Color(28, 24, 24));
+
+        var body = new Canvas(30, 12);
+        body.Columns(0, 30, x => { float u = (x - 15) / 15f; float top = 2.2f + 1.2f * u * u - (x > 18 ? 1.0f : 0), bot = 10.5f - 1.5f * u * u - (x < 10 ? 1.2f : 0); return (top, bot); }, fur);
+        body.Area((x, y) => y > 8 && x > 6 && x < 26, pale);              // pale belly
+        body.Area((x, y) => y < 4.2f && x > 16 && x < 29, dark);          // dark ruff over the shoulders
+        Add("wbody/n", body);
+
+        var head = new Canvas(16, 9);
+        head.Columns(0, 16, x => { float h = x < 8 ? 4 : 4 - (x - 8) * 0.32f; float cy = x < 8 ? 4.4f : 4.4f + (x - 8) * 0.18f; return (cy - h, cy + h); }, fur);
+        head.Body(0, 3, y => (1.5f + y * 0.4f, 5 - y * 0.4f), dark);       // pricked ear
+        head.Set(7, 3, eye);
+        head.Set(15, 5, nose); head.Set(14, 5, nose);
+        for (int x = 9; x < 15; x++) head.Set(x, 7, ink);                  // the jaw line
+        head.Set(11, 7, Mat.Flat(Style.Linen)); head.Set(13, 7, Mat.Flat(Style.Linen));
+        Add("whead/n", head);
+
+        var leg = new Canvas(4, 16);
+        leg.Rect(0.5f, 0, 3.5f, 2, dark);
+        leg.Rect(0.8f, 2, 3.2f, 11, fur);
+        leg.Body(11, 16, y => (0.2f, 3.8f), fur);
+        Add("wleg/n", leg);
+
+        var tail = new Canvas(6, 15);
+        tail.Body(0, 15, y => { float half = 1.2f + MathF.Sin(y / 15 * MathF.PI) * 1.6f; return (3 - half, 3 + half); }, fur);
+        tail.Area((x, y) => y > 12, dark);
+        Add("wtail/n", tail);
     }
 
     static (float, float) HorseSpan(float x)

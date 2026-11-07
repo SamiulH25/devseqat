@@ -129,4 +129,89 @@ public static partial class SelfTest
         Console.WriteLine($"goblins: 30 shieldmen vs 60 goblins and a boss: winner {f.Winner} at {f.Time:0} s, {horde.Units.Count(u => u.Dead)} goblins dead, {back} broke and came back, boss down {f.BossDown[1]}");
         Check(back > 0, "goblins break and come back during a fight");
     }
+
+    /// Wolves: packs keep to the forests, outrun men on foot, and in battle circle to the flank; the pack breaks when
+    /// its dire wolf falls.
+    /// Debug: a pack against shieldmen, second by second (`--selftest WolfTrace`).
+    static void WolfTrace()
+    {
+        foreach (var foe in new[] { "shieldmen", "levies", "bowmen" })
+        {
+            var f = Battle.Empty(83);
+            var wolves = f.AddSquad(1, Troops.Get("wolf"), 16, new(0, 25), 8, -Vector2.UnitY);
+            f.AddSquad(1, Troops.Get("dire_wolf"), 1, new(0, 29), 1, -Vector2.UnitY);
+            var men = f.AddSquad(0, Troops.Get(foe), 20, new(0, -5), 10, Vector2.UnitY);
+            wolves.Order = Order.Charge;
+            int hits = 0;
+            for (int sec = 1; sec <= 30; sec++)
+            {
+                for (int i = 0; i < 60; i++) { f.Update(1 / 60f); }
+                if (sec % 5 == 0) Console.WriteLine($"{foe} {sec}s: men {men.Units.Count(u => u.Active)} hp {men.Units.Where(u => u.Active).Sum(u => u.Hp):0}, wolves {wolves.Units.Count(u => u.Active)} morale {wolves.Units.Where(u => u.Active).Select(u => u.Morale).DefaultIfEmpty(0).Average():0} staggered {wolves.Units.Count(u => u.Action == UnitAction.Stagger)}");
+            }
+        }
+    }
+
+    static void Wolves()
+    {
+        var c = Campaign.New(81);
+        var packs = c.WolfPacks.ToList();
+        Check(packs.Count == c.WolfPacksWanted && packs.Count > 0, $"the forests have their wolf packs ({packs.Count})");
+        foreach (var w in packs)
+        {
+            Check(c.Map.ProvinceAt(w.Pos).Kind == "Forest", $"{w.Name} lives in a forest");
+            Check(w.Companies.Any(co => co.Troop == "dire_wolf"), $"{w.Name} is led by a dire wolf");
+        }
+        var pack = packs[0];
+        Check(c.Speed(pack) > c.Speed(c.Player), "wolves outrun a company on foot");
+        pack.Pos = c.Player.Pos;
+        c.Encounter = pack;
+        Check(!c.CanRetreat(out string why) && why.Contains("WOLVES"), "you cannot run from wolves on foot");
+        c.Encounter = null;
+        Check(Troops.Get("wolf").Look.Beast && Troops.Get("dire_wolf").Has("boss"), "a wolf is a beast, its dire wolf the pack's boss");
+
+        // A wolf goes round to a man's flank before it bites.
+        var b = Battle.Empty(82);
+        var man = b.AddSquad(0, UnitType.Shieldman, 1, new(0, 0), 1, Vector2.UnitY).Units[0];
+        var wolf = b.AddSquad(1, Troops.Get("wolf"), 1, new(0.3f, 9), 1, -Vector2.UnitY).Units[0];
+        man.Face(Vector2.UnitY);
+        wolf.Squad!.Order = Order.Charge;
+        float angle = -1, t = 0;
+        for (int i = 0; i < 60 * 8 && angle < 0 && !wolf.Dead && !man.Dead; i++)
+        {
+            man.Face(Vector2.UnitY); man.Wish = Vector2.Zero;
+            b.Update(1 / 60f);
+            if (wolf.Action == UnitAction.Windup) { angle = MathHelper.ToDegrees(MathF.Acos(Math.Clamp(Vector2.Dot(Vector2.Normalize(wolf.Pos - man.Pos), Vector2.UnitY), -1, 1))); t = b.Time; }
+        }
+        Console.WriteLine($"wolves: a wolf charging a man head-on first bites at {t:0.0} s, {angle:0} degrees off his front");
+        Check(angle > 60, "a wolf bites a man from the flank, not his face");
+
+        // A pack tears through archers but breaks on a shield line; its alpha's fall breaks its heart.
+        int Fight(string foe, out Battle f, out Squad wolves, out Unit alpha)
+        {
+            f = Battle.Empty(83);
+            wolves = f.AddSquad(1, Troops.Get("wolf"), 16, new(0, 25), 8, -Vector2.UnitY);
+            alpha = f.AddSquad(1, Troops.Get("dire_wolf"), 1, new(0, 29), 1, -Vector2.UnitY).Units[0];
+            var men = f.AddSquad(0, Troops.Get(foe), 20, new(0, -5), 10, Vector2.UnitY);
+            wolves.Order = Order.Charge;
+            Check(wolves.Swarm && wolves.Formation == Formation.Loose, "a pack runs loose");
+            return men.Units.Count;
+        }
+        Fight("bowmen", out var fa, out var pa, out _);
+        for (int i = 0; i < 60 * 30; i++) fa.Update(1 / 60f);
+        int archersLeft = fa.SquadsOf(0).Sum(q => q.Units.Count(u => u.Active && !u.Routing && !u.IsLeader));
+        Fight("shieldmen", out var fs, out var ps, out var alpha);
+        for (int i = 0; i < 60 * 30; i++) fs.Update(1 / 60f);
+        int shieldsLeft = fs.SquadsOf(0).Sum(q => q.Units.Count(u => u.Active && !u.Routing && !u.IsLeader));
+        Console.WriteLine($"wolves: 16 wolves and an alpha leave {archersLeft} of 20 bowmen and {shieldsLeft} of 20 shieldmen standing after 30 s");
+        Check(archersLeft < 10, "a pack tears through archers");
+        Check(shieldsLeft > 15 && ps.Units.Count(u => u.Active) < 4, "a pack breaks on a shield line");
+
+        Fight("levies", out var fl, out var pl, out var alpha2);
+        for (int i = 0; i < 60 * 3; i++) fl.Update(1 / 60f);
+        float before = pl.Units.Where(u => u.Active).Average(u => u.Morale);
+        alpha2.Action = UnitAction.Stagger;
+        fl.Hit(fl.SquadsOf(0).First().Units[0], alpha2, 9999, false);
+        Check(alpha2.Dead && fl.BossDown[1], "the dire wolf can fall");
+        Check(pl.Units.Where(u => u.Active).Average(u => u.Morale) < before - 20, "the pack loses heart when its alpha falls");
+    }
 }

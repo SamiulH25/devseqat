@@ -87,6 +87,7 @@ public sealed partial class Campaign
         // The wilds already have their goblins, some of them well dug in.
         for (int i = 0; i < c.HoldoutsWanted; i++)
             if (c.SpawnHoldout()) for (int d = c.rng.Next(40); d > 0; d--) c.Grow(c.S.Parties[^1]);
+        for (int i = 0; i < c.WolfPacksWanted; i++) c.SpawnWolfPack();
         c.WanderersWeekly();
         c.EnsureRulers();
         // The guided first fight: a weak band close by, coming for you.
@@ -163,7 +164,7 @@ public sealed partial class Campaign
 
     public float Speed(Party p)
     {
-        bool mounted = p.Companies.Count > 0 && p.Companies.All(c => c.Men == 0 || c.Type.Mount != null);
+        bool mounted = p.Breed == "wolf" || p.Companies.Count > 0 && p.Companies.All(c => c.Men == 0 || c.Type.Mount != null); // wolves run as fast as horses
         float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1);
         if (p.Kind == PartyKind.Player) s *= 1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f);
         if (p.Kind == PartyKind.Player)

@@ -4,7 +4,8 @@ namespace Ironfield;
 
 /// Campaign: creatures of the wild (docs/CREATURES.md). Goblin holdouts sit in forest and hill country, grow, hoard
 /// and send raiders at villages; a holdout is a monster party that never moves (Party.Lair), so fighting it is a field
-/// battle and auto-resolve like any other. MonstersDaily runs from Daily, MonsterThink from Hourly.
+/// battle and auto-resolve like any other. Wolf packs roam the forests and hunt by night. MonstersDaily runs from
+/// Daily, MonsterThink from Hourly.
 public partial class Campaign
 {
     static readonly string[] LairNames = { "Warren", "Burrows", "Holdout", "Hole", "Den", "Diggings", "Pits" };
@@ -13,6 +14,64 @@ public partial class Campaign
     public int HoldoutsWanted => Math.Max(1, (int)MathF.Round(S.Provinces.Count(Wild) * B.HoldoutsPerWildProvince));
     public IEnumerable<Party> Holdouts => S.Parties.Where(p => p.Lair && !p.Down);
     static bool Wild(Province p) => p.Kind is "Forest" or "Hills";
+
+    /// Wolf packs the world keeps: a share of its forest provinces.
+    public int WolfPacksWanted => (int)MathF.Round(S.Provinces.Count(p => p.Kind == "Forest") * B.WolfPacksPerForest);
+    public IEnumerable<Party> WolfPacks => S.Parties.Where(p => p.Breed == "wolf" && !p.Down);
+    /// What a breed is called, many of them ("goblins", "wolves").
+    public static string Plural(string breed) => breed switch { "wolf" => "wolves", _ => breed + "s" };
+    /// Night on the map (wolves hunt from dusk to dawn).
+    bool Night => S.Hours % 24 is >= 20 or < 6;
+    static readonly string[] PackNames = { "Grey Pack", "Black Pack", "Hollow Howlers", "Frost Fangs", "Moon Pack", "Ash Pack", "Red Maws" };
+
+    /// Raise a wolf pack in a forest, away from settlements and from you: wolves and the dire wolf that leads them.
+    internal bool SpawnWolfPack()
+    {
+        var forests = S.Provinces.Where(p => p.Kind == "Forest").ToList();
+        if (forests.Count == 0) return false;
+        for (int attempt = 0; attempt < 16; attempt++)
+        {
+            var prov = rng.Pick(forests);
+            var at = prov.Center + new Vector2(rng.Range(-16, 16), rng.Range(-16, 16)) * Map.Spread;
+            if (Map.ProvinceAt(at).Id != prov.Id || S.Settlements.Any(s => Vector2.Distance(s.Pos, at) < 8 * Map.Spread)) continue;
+            if (Vector2.Distance(Player.Pos, at) < 30 * Map.Spread) continue;
+            var pack = new Party
+            {
+                Id = S.NextId++, Kind = PartyKind.Monster, Breed = "wolf", Name = rng.Pick(PackNames), Pos = at, Goal = at, Task = "roam", PatrolProvince = prov.Id, Tier = 2,
+            };
+            pack.Companies.Add(NewCompany("wolf", "infantry", Scaled(B.WolfPackMin + rng.Next(Math.Max(1, (int)(B.WolfPackMax - B.WolfPackMin))) + Day / 30f), 0));
+            pack.Companies.Add(NewCompany("dire_wolf", "infantry", 1, 0));
+            S.Parties.Add(pack);
+            return true;
+        }
+        return false;
+    }
+
+    /// Wolves keep to their forest. By day they lie up; by night they hunt anything up to a little stronger than the pack.
+    void WolfThink(Party p)
+    {
+        float me = Rules.Strength(p);
+        p.TaskUntil = (float)S.Hours + 2;
+        var near = Visible(p, 22).Where(q => Hostile(p, q) && !q.Lair).ToList();
+        if (near.FirstOrDefault(q => Rules.Strength(q) > me * 1.8f && Vector2.Distance(q.Pos, p.Pos) < 12) is Party threat)
+        {
+            var away = p.Pos - threat.Pos;
+            p.Goal = p.Pos + (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 12 * Map.Spread;
+            p.ChaseId = -1; p.Moving = true;
+            return;
+        }
+        if (Night && near.Where(q => Rules.Strength(q) < me * 1.3f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
+        {
+            p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true;
+            return;
+        }
+        p.ChaseId = -1;
+        p.Task = Night ? "prowl" : "rest";
+        if (!Night) { p.Moving = false; p.TaskUntil = (float)S.Hours + 3; return; }
+        var home = S.Provinces[Math.Clamp(p.PatrolProvince, 0, S.Provinces.Count - 1)];
+        p.Goal = home.Center + new Vector2(rng.Range(-18, 18), rng.Range(-18, 18)) * Map.Spread;
+        p.Moving = true; p.TaskUntil = (float)S.Hours + 4;
+    }
 
     /// Raise a small holdout somewhere in the wilds, away from every settlement and from you. False if no ground was found.
     internal bool SpawnHoldout()
@@ -46,6 +105,7 @@ public partial class Campaign
             lair.Gold += B.HoldoutHoardPerDay;
             if (S.Hours >= lair.NextRaid && lair.Men >= Scaled(B.HoldoutRaidMen)) SendRaiders(lair);
         }
+        if (WolfPacks.Count() < WolfPacksWanted && rng.Chance(B.WolfSpawnChance)) SpawnWolfPack();
         // A few tries a day on a big map, so cleared holdouts are replaced at about the same pace everywhere.
         for (int n = Math.Max(1, HoldoutsWanted / 6); n > 0; n--)
             if (Holdouts.Count() < HoldoutsWanted && rng.Chance(B.HoldoutSpawnChance)) SpawnHoldout();
@@ -105,6 +165,7 @@ public partial class Campaign
     internal void MonsterThink(Party p)
     {
         if (p.Lair) { p.Moving = false; p.ChaseId = -1; p.TaskUntil = (float)S.Hours + 24; return; }
+        if (p.Breed == "wolf") { WolfThink(p); return; }
         float me = Rules.Strength(p);
         var near = Visible(p, 25).Where(q => Hostile(p, q) && !q.Lair).ToList();
         p.TaskUntil = (float)S.Hours + 2;

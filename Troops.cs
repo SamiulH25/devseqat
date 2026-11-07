@@ -99,6 +99,7 @@ public static class Troops
             if (!Look.Faces.Contains(l.Face)) yield return $"{t.Id}: unknown face {l.Face}";
             foreach (var tr in t.Traits) if (!UnitType.KnownTraits.Contains(tr)) yield return $"{t.Id}: unknown trait {tr}";
             if (t.Size is < 0.5f or > 3f) yield return $"{t.Id}: size {t.Size} out of range";
+            if (l.Beast && (t.Mount != null || t.Ammo > 0 || l.Shield != "none")) yield return $"{t.Id}: a beast rides nothing, shoots nothing and carries no shield";
             if (!Look.Bodies.Contains(l.Body)) yield return $"{t.Id}: unknown body {l.Body}";
             if (!Look.LegsKinds.Contains(l.Legs)) yield return $"{t.Id}: unknown legs {l.Legs}";
             if (!Look.FeetKinds.Contains(l.Feet)) yield return $"{t.Id}: unknown feet {l.Feet}";

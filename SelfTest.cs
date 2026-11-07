@@ -60,6 +60,7 @@ public static partial class SelfTest
         DivisionGoals();
         Holdouts();
         GoblinBattle();
+        Wolves();
         Couriers();
 
         for (int seed = 1; seed <= 3; seed++)

@@ -15,6 +15,7 @@
   "HoldoutsPerWildProvince": 0.5, "HoldoutSpawnChance": 0.35, "HoldoutClearance": 12,
   "HoldoutStartMen": 10, "HoldoutMaxMen": 45, "HoldoutGrowPerDay": 0.7, "HoldoutBossMen": 35,
   "HoldoutRaidDays": 5, "HoldoutRaidMen": 18, "HoldoutRaidBand": 10, "HoldoutRaidRange": 45, "HoldoutDefence": 2.5, "HoldoutHuntDays": 6,
+  "WolfPacksPerForest": 0.3, "WolfSpawnChance": 0.3, "WolfPackMin": 4, "WolfPackMax": 9,
   "HoldoutStartHoard": 60, "HoldoutHoardPerDay": 4, "HoldoutRaidLoot": 40, "BountyHoldout": 80,
   "HorseCostRate": 0.5, "ArmorCost": 600, "HelmCost": 300, "WarhorseCost": 400, "DestrierCost": 900
 }

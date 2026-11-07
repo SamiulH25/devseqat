@@ -324,6 +324,7 @@ public static partial class SelfTest
         IEnumerable<string> Keys(UnitType t)
         {
             var l = t.Look;
+            if (l.Beast) yield break; // a beast is drawn from neutral w* parts, checked below
             foreach (var v in new[] { "f", "s", "b" })
             {
                 yield return $"torso.{l.Body}.{v}";
@@ -342,7 +343,7 @@ public static partial class SelfTest
             foreach (var k in Keys(t))
                 for (int p = 0; p < Style.Sides.Length; p++)
                     Check(sheet.Rects.ContainsKey($"{k}/{p}"), $"sprite {k}/{p} for {t.Name}");
-        foreach (var k in new[] { "hbody", "hneck", "hhead", "hchest", "hrump", "hface", "hleg", "htail" })
+        foreach (var k in new[] { "hbody", "hneck", "hhead", "hchest", "hrump", "hface", "hleg", "htail", "wbody", "whead", "wleg", "wtail" })
             Check(sheet.Rects.ContainsKey(k + "/n"), $"horse coat sprite {k}");
         foreach (var e in Enum.GetValues<Emblem>())
             for (int p = 0; p < Style.Sides.Length; p++) Check(sheet.Rects.ContainsKey($"flag.{(int)e}/{p}"), $"company banner flag.{(int)e}/{p}");

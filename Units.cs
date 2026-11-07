@@ -30,7 +30,9 @@ public sealed record Mount(string Id, string Name, float Hp, float Trot, float G
 public sealed record Look(string Head, string Body, string Legs, string Feet, string Hands, string Shield, string Weapon,
     bool Tabard, bool Plume, bool Cape, string Face = "man")
 {
-    public static readonly string[] Faces = { "man", "goblin" };
+    /// "wolf" is a whole beast: the puppet draws it on four legs from the w* sprites, ignoring the rest of the look.
+    public static readonly string[] Faces = { "man", "goblin", "wolf" };
+    public bool Beast => Face == "wolf";
     /// The sprite family of the bare head.
     public string HeadKey => Face == "man" ? "head" : "head." + Face;
     public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen" };
@@ -60,9 +62,12 @@ public sealed class UnitType
     /// Drawn size (1 = a man). Goblins are small, bosses and trolls big.
     public float Size = 1;
     /// Creature traits (docs/CREATURES.md): "craven" (breaks early, rallies again and again while its boss lives),
-    /// "boss" (his fall shakes every craven of his side and stops their rallies).
+    /// "pack" (wolves: circle to a foe's flank before they bite), "boss" (his fall shakes every craven or pack
+    /// creature of his side and stops their rallies: a goblin boss, a pack's alpha).
     public string[] Traits = Array.Empty<string>();
-    public static readonly string[] KnownTraits = { "craven", "boss" };
+    public static readonly string[] KnownTraits = { "craven", "boss", "pack" };
+    /// Bound to its boss: loses heart when he falls.
+    public bool Bound => Has("craven") || Has("pack");
     public bool Has(string trait) => Traits.Contains(trait);
     public int Ammo;
     public bool Leader;

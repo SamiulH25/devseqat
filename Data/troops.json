@@ -3649,6 +3649,73 @@
     "face": "goblin",
     "cape": true
    }
+  },
+  {
+   "id": "wolf",
+   "name": "Wolves",
+   "class": "Infantry",
+   "culture": "wild",
+   "breed": "wolf",
+   "tier": 2,
+   "upgradesTo": [],
+   "cost": 14,
+   "upgradeXp": 0,
+   "hp": 70,
+   "damage": 18,
+   "armor": 1,
+   "reach": 1.3,
+   "windup": 0.35,
+   "recover": 0.5,
+   "speed": 6.8,
+   "block": 0,
+   "size": 1.0,
+   "traits": [
+    "pack"
+   ],
+   "look": {
+    "head": "none",
+    "body": "tunic",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "sword",
+    "face": "wolf"
+   }
+  },
+  {
+   "id": "dire_wolf",
+   "name": "Dire Wolf",
+   "class": "Infantry",
+   "culture": "wild",
+   "breed": "wolf",
+   "tier": 4,
+   "upgradesTo": [],
+   "cost": 60,
+   "upgradeXp": 0,
+   "hp": 160,
+   "damage": 26,
+   "armor": 3,
+   "reach": 1.5,
+   "windup": 0.4,
+   "recover": 0.5,
+   "speed": 7.2,
+   "block": 0,
+   "size": 1.35,
+   "traits": [
+    "pack",
+    "boss"
+   ],
+   "look": {
+    "head": "none",
+    "body": "tunic",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "sword",
+    "face": "wolf"
+   }
   }
  ]
 }
