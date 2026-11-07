@@ -417,8 +417,8 @@ public sealed partial class Battle
             foreach (var (c, _) in reserves[team])
                 list.Add(new CompanyResult(team, c.Id, c.Count, c.Count, 0, 0, 0, new int[8], Deployed: false,
                     Stacks: c.Stacks.Select(x => new StackResult(x.Troop, x.Count, x.Count, 0, 0)).ToList()));
-        var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
-        var foeLeader = EnemyCaptain.Dead ? LeaderFate.Slain : LeaderFate.Unhurt;
+        var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 && !Options.Tournament ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
+        var foeLeader = EnemyCaptain.Dead && !Options.Tournament ? LeaderFate.Slain : LeaderFate.Unhurt;
         int horses = LooseHorses.Count(h => h.Team == 1);
         return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills);
     }

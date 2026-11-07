@@ -94,6 +94,7 @@ partial class MapScreen
             "prisoners_free" => ("FREE PRISONERS", Style.Ok, "chain"),
             "prisoners_recruit" => ("RECRUIT PRISONERS", Style.Warn, "chain"),
             "gamble" => ("A PRIZE, OR NOTHING", Kit.Gilt, "star"),
+            "lists" => ("FIGHT IN THE LISTS", Kit.Gilt, "sword"),
             "disband" => ("MEN LEAVE", Style.Bad, "skull"),
             "quest" => ("A QUEST", Kit.Gilt, "scroll"),
             "spent" => ("", Style.Dim, ""),

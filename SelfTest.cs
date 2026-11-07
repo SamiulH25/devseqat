@@ -72,6 +72,7 @@ public static partial class SelfTest
         Sites();
         Roads();
         Quests();
+        TownLife();
 
         for (int seed = 1; seed <= 3; seed++)
         {

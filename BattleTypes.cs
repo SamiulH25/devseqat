@@ -30,6 +30,8 @@ public sealed class BattleOptions
     public bool Horns;
     /// Orders to divisions ride out as couriers, who can be cut down on the way (a new one then sets out). Off: plain delays.
     public bool Couriers = true;
+    /// A tournament (S5): blunt weapons, so your captain is never taken and the champion who leads them is not slain.
+    public bool Tournament;
 }
 
 /// When and in what weather a battle is fought (roadmap C4). The campaign passes its hour and season.

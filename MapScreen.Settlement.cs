@@ -18,7 +18,7 @@ partial class MapScreen
             SettlementKind.Village when C.Refuses(s) => new[] { "FORAGE" },
             SettlementKind.Village => new[] { "RECRUIT", "FOOD", "FORAGE", "REST", "ELDERS" },
             SettlementKind.Castle => new[] { "REST", "FOOD", "CAPTIVES", "CONTRACT" },
-            _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "MARKET", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
+            _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "TAVERN", "MARKET", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
         }).Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
         int tw = Math.Min(ui.U(104), (r.Width - ui.U(40)) / tabs.Length);
         int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(80), tw * tabs.Length, ui.U(22)), tabs, Array.IndexOf(tabs, tab));
@@ -31,6 +31,7 @@ partial class MapScreen
         {
             case "RECRUIT": RecruitTab(s, body); break;
             case "MERCENARIES": MercenariesTab(s, body); break;
+            case "TAVERN": TavernTab(s, body); break;
             case "MARKET": MarketTab(s, body); break;
             case "TRAIN": TrainTab(s, body); break;
             case "REST": RestTab(s, body); break;
@@ -67,6 +68,7 @@ partial class MapScreen
             float o = C.OpinionOfYou(holder);
             ui.Chip(cx, cy, $"{holder.Name.ToUpperInvariant()}: {OpinionWord(o)}", OpinionColor(o), "heart");
         }
+        ui.Text(C.Flavour(s).ToUpperInvariant(), x + ui.U(52), y + ui.U(50), Style.Dim, 1);
         float rr = ui.U(16);
         bool revolt = s.Unrest >= Campaign.RevoltAt;
         ui.Ring(new Vector2(r.Right - ui.U(130), y + ui.U(20)), rr, s.Prosperity / 100f, Style.Ok, $"{s.Prosperity:0}");
@@ -119,16 +121,14 @@ partial class MapScreen
         if (s.ThreatUntil > C.S.Hours) ui.Text("THE VILLAGE WAS THREATENED: NO RECRUITS FOR NOW", body.X, row.Bottom + ui.U(12), Style.Foe, 1);
     }
 
-    /// Mercenaries tab: companies for hire, and a wanderer in the tavern.
-    void MercenariesTab(Settlement s, Rectangle body)
+    /// Tavern tab (S5): a wanderer looking for a captain (3.3), and what people are saying (rumours of real things nearby).
+    void TavernTab(Settlement s, Rectangle body)
     {
-        if (s.Mercenaries.Count == 0 && C.WandererAt(s) == null) ui.Text("NO COMPANIES FOR HIRE THIS WEEK.", body.X, body.Y, Style.Dim);
         int y = body.Y, rh = ui.U(66);
-        Rectangle Next() { var row = new Rectangle(body.X, y, body.Width, rh - ui.U(6)); y += rh; TownRow(row); return row; }
-        // A wanderer in the tavern, looking for a captain (3.3).
         if (C.WandererAt(s) is Character w)
         {
-            var row = Next();
+            var row = new Rectangle(body.X, y, body.Width, rh - ui.U(6));
+            TownRow(row);
             PortraitWell(UnitType.Captain, new Rectangle(row.X + ui.U(4), row.Y + ui.U(4), row.Height - ui.U(8), row.Height - ui.U(8)), 2);
             int tx = row.X + row.Height + ui.U(6);
             ui.Text($"{w.Name.ToUpperInvariant()}, A WANDERER", tx, row.Y + ui.U(8), Kit.Gilt, 2);
@@ -136,7 +136,32 @@ partial class MapScreen
             int wp = C.WandererPrice(w);
             if (ui.Button(new Rectangle(row.Right - ui.U(196), row.Center.Y - ui.U(14), ui.U(190), ui.U(28)), "TAKE INTO SERVICE", C.S.Gold >= wp, $"{wp} CROWNS"))
                 note = C.HireWanderer(s) ?? "HE JOINS YOUR HOUSEHOLD";
+            y += rh;
         }
+        else
+        {
+            ui.Text("NO WANDERER IS DRINKING HERE TONIGHT. THEY MOVE BETWEEN TOWNS.", body.X, y + ui.U(4), Style.Dim, 1);
+            y += ui.U(24);
+        }
+        ui.Text("TALK IN THE TAVERN", body.X, y + ui.U(4), Style.Accent, 1);
+        y += ui.U(22);
+        foreach (var talk in C.Rumours(s))
+        {
+            var row = new Rectangle(body.X, y, body.Width, ui.U(34));
+            TownRow(row);
+            ui.Text("\"" + talk.Text.ToUpperInvariant() + "\"", row.X + ui.U(8), row.Y + ui.U(12), Kit.Parchment, 1);
+            if (talk.At != s.Pos && ui.Button(new Rectangle(row.Right - ui.U(130), row.Y + ui.U(5), ui.U(124), ui.U(24)), "RIDE THERE"))
+            { C.Follow(talk); panel = PanelKind.None; at = null; }
+            y += ui.U(38);
+        }
+    }
+
+    /// Mercenaries tab: companies for hire.
+    void MercenariesTab(Settlement s, Rectangle body)
+    {
+        if (s.Mercenaries.Count == 0) ui.Text("NO COMPANIES FOR HIRE THIS WEEK. NEW ONES COME EVERY WEEK.", body.X, body.Y, Style.Dim, 1);
+        int y = body.Y, rh = ui.U(66);
+        Rectangle Next() { var row = new Rectangle(body.X, y, body.Width, rh - ui.U(6)); y += rh; TownRow(row); return row; }
         foreach (var m in s.Mercenaries.ToList())
         {
             if (y + rh - ui.U(6) > body.Bottom) break;
@@ -303,6 +328,7 @@ partial class MapScreen
     {
         ui.Text($"YOUR FIEF. IT PAYS YOU {C.Income(s) + C.S.Settlements.Where(v => v.Province == s.Province && v.Kind == SettlementKind.Village).Sum(C.Income):0} CROWNS A WEEK. SUPPLIES {s.Supplies:0} DAYS.", body.X, body.Y, Style.Text, 1);
         int y = body.Y + ui.U(18);
+        if (s.Garrison.Count == 0) ui.Text("NO MEN ARE STATIONED HERE. STATION A COMPANY TO HOLD THE WALLS.", body.X, y + ui.U(6), Style.Warn, 1);
         foreach (var g in s.Garrison.ToList())
         {
             ui.Text($"{g.Name.ToUpperInvariant()}: {g.Men} {g.Type.Name.ToUpperInvariant()}", body.X, y + ui.U(6), Style.Text, 1);
@@ -324,6 +350,8 @@ partial class MapScreen
     void ContractTab(Settlement s, Rectangle body)
     {
         int cur = C.Captain.Contract;
+        if (s.Kind == SettlementKind.Town && cur != s.Faction)
+            ui.Text("THE STEWARD'S BOARD IS FOR THOSE WHO SERVE THE " + C.FactionNames[s.Faction].ToUpperInvariant() + ". SIGN WITH THEM TO SEE IT.", body.X, body.Y + ui.U(130), Style.Dim, 1);
         if (s.Kind == SettlementKind.Town && cur == s.Faction)
         {
             ui.Text("THE STEWARD'S BOARD", body.X, body.Y + ui.U(130), Style.Accent, 1);

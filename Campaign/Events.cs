@@ -43,9 +43,9 @@ public sealed partial class Campaign
     {
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
-        "spent", "heal", "find", "learn", "men", "search", "omen", "spy",
+        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists",
     };
-    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy" };
+    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists" };
     static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site" };
 
     static List<EventDef>? events;
@@ -234,6 +234,7 @@ public sealed partial class Campaign
             case "exhaustion":
                 foreach (var w in S.Wars.Where(w => w.Active && (w.A == Captain.Contract || w.B == Captain.Contract))) AddExhaustion(w, Captain.Contract, n);
                 break;
+            case "lists": if (s != null) { Lists = s; return "The heralds cry your name. You ride into the lists."; } break;
             case "gamble":
                 if (rng.Chance(0.25f + Skill("Arms") / 300f)) { S.Gold += n; Captain.Renown += 5; return $"You win the tournament and {n:0} crowns!"; }
                 return "You are unhorsed in the second round.";

@@ -187,6 +187,18 @@ them. Then S3 and S4 together (escort needs caravans), S5, S6, and S7 last so th
   step; it goes on your list with a fresh six-day deadline, and the reward, renown and the giver's favour come at the end.
   Not done: a ransom under truce to an enemy town (it goes to any far town at peace), lords' own escort jobs. Test: `Quests`
   (and `EventsAndQuests` finishes whichever quest the lord gave).
+- **S5 (town life):** `Campaign/Town.cs`. Towns have a TAVERN tab: the wanderer (moved from MERCENARIES) and two or three
+  `Rumours` of real things near the town (goblin holdouts, wolf packs, a brigand king, the town's caravans on the road, sites
+  you have not seen, an enemy lord), the day's pick stable within a day; RIDE THERE goes to the place or site. The
+  `tournament` event's ENTER THE LISTS now sets `Campaign.Lists`; the map starts `PrepareTournament` at once: your captain and
+  up to six of your best men against seven of the town's champions (tier rising with your renown) on the flat `Lists` ground,
+  `BattleOptions.Tournament` (your captain is never taken, their champion never slain). `FinishTournament` skips the normal
+  results: no deaths, half the men who fell are wounded, some XP; the winner gets the 300 purse, 10 renown and a little less
+  unrest in the town (2 renown for losing); a beaten captain is bruised a day. The stand-in captain resolves it with
+  `AutoTournament`. Each town has a `Flavour` line under its header (culture, wealth, mood, holder). Empty states: the
+  mercenaries, tavern, garrison and steward's board say why they are empty. Not done: a mercenary captain's offer in the
+  tavern (the mercenaries tab covers it), rumours marked on the map. Test: `TownLife` (the tournament is fought and won as a
+  real battle); staged shots `campaign-tavern.png`, `campaign-elders.png`.
 - **S4 (roads):** `Campaign/Roads.cs`, `PartyKind.Caravan`. Each day new caravans set out to keep about one for every two
   towns on the roads (`CaravansWanted`): guards of their realm's tier II line, a purse, bound for a town of a realm at peace
   with theirs. Arriving adds `CaravanProsperity` (0.25) to the town and half that to home; being beaten takes it away. They

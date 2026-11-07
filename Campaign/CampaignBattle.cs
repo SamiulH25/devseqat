@@ -206,6 +206,7 @@ public partial class Campaign
 
     public BattleReport FinishBattle(BattleResult r, BattleSetup setup)
     {
+        if (setup.Tournament >= 0) return FinishTournament(r, S.Settlements[setup.Tournament]);
         Encounter = null;
         var report = Apply(r, setup.Side0, setup.Side1, setup.EnemyName, setup.SiegeOf >= 0);
         DivisionsAfterBattle(r);

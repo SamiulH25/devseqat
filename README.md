@@ -87,6 +87,12 @@ that will not last. Brigands roam between them all.
   a fair, a lord asking a favour (a quest that wins his friendship; refusing costs it), a plot against your liege, a feast for your
   veterans, a hard winter, a tournament. A big brigand band can crown a **brigand king** who burns villages, and a bad revolt can raise
   a **pretender** who will take the town if you do not beat him. Events are data in `Data/events.json`.
+- **Between the towns:** ruins, shrines, standing stones, old battlefields, mines, hermits, watchtowers, springs and mills dot
+  the map; ride to one to search, pray, rest or ask. Merchant caravans and pilgrims travel the roads: buy from them, ask their
+  news, or rob them (their realm will not forget). Village elders ask for small jobs anyone may take (wolves, goblins, a
+  stolen daughter, grain, militia drill); towns add caravan escorts and ransoms; lords may send you after a lost sword.
+- **Town life:** the tavern has a wanderer now and then and rumours of real things nearby (ride there from the list).
+  A tournament is a short fight in the lists with your captain and six of your best men: blunt weapons, no deaths, a purse.
 - **Prisoners** follow you (they slow you and eat): sell, recruit or free them. Lords you beat may be captured and ransomed.
 - **Officers:** sergeants with traits (Stubborn, Steady, Drillmaster, Hothead, Sharpshooter, Surgeon, Veteran) that show in battle; they can fall.
 - **Seasons and food:** winter slows the march, slows healing and doubles rations; starving men lose cohesion and desert. Your liege's towns feed you.

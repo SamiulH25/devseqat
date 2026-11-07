@@ -213,4 +213,38 @@ public static partial class SelfTest
         Check(!Holds("visitsite"), "the sword is found at the end of the chain");
         Console.WriteLine($"quests: relic had {(relic.Then != null ? 2 : 1)} steps; gold {c.S.Gold:0}");
     }
+
+    /// Town life (S5): the tavern talks of real things; a tournament is a real small battle with no deaths and a purse.
+    static void TownLife()
+    {
+        var c = Campaign.New(9);
+        var t = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && !c.Refuses(s));
+        var talk = c.Rumours(t);
+        Console.WriteLine($"tavern at {t.Name}: " + string.Join(" | ", talk.Select(r => r.Text)));
+        Check(talk.Count is >= 1 and <= 3 && talk.All(r => r.Text.Length > 0), "the tavern has two or three rumours");
+        Check(talk.SequenceEqual(c.Rumours(t)), "the talk does not change from one visit to the next on the same day");
+        Check(c.Flavour(t).Length > 20, "a town has a line that says what it is like");
+        // Enter the lists through the event, then fight it as a real battle with veterans at your side.
+        c.S.Event = new PendingEvent { Id = "tournament", Settlement = t.Id };
+        c.S.Gold = 500;
+        Check(c.Choose(0) != "" && c.Lists == t, "entering the tournament sends you to the lists");
+        var vets = c.NewCompany(Armies.LineTroop("infantry", 5, Math.Max(0, t.Faction)), "infantry", 8, 0);
+        c.Player.Companies.Add(vets);
+        var setup = c.PrepareTournament(t);
+        Check(setup.Options.Tournament && setup.Player.Companies.Sum(k => k.Count) == Campaign.TournamentMen, "your captain and a few of your best men ride in");
+        setup.Options.AutoPlayer = true;
+        var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+        while (b.Winner < 0 && b.Time < 240) b.Update(1 / 60f);
+        var r = b.Result();
+        Console.WriteLine($"tournament: winner {r.Winner} after {b.Time:0} s");
+        Check(r.Winner >= 0, "the tournament ends");
+        int men = c.Player.Men + c.Player.Wounded;
+        float gold = c.S.Gold, renown = c.Captain.Renown;
+        var report = c.FinishBattle(r, setup);
+        Check(c.Player.Men + c.Player.Wounded == men, "no one dies in the lists");
+        Check(c.Captain.Renown > renown && (report.Won ? c.S.Gold >= gold + Campaign.TournamentPurse : c.S.Gold == gold), $"the winner takes the purse (won {report.Won})");
+        var won = c.FinishBattle(r with { Winner = 0 }, setup);
+        Check(won.Won && won.Loot == Campaign.TournamentPurse, "a won tournament pays its purse");
+        Check(c.Lists == null || c.AutoTournament(t) != null, "the stand-in captain can enter without a fight");
+    }
 }

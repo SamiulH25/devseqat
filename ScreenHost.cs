@@ -452,7 +452,9 @@ sealed class ScreenHost : Game
                 Shot("campaign-caravan");
                 break;
             }
-            case 35: Exit(); break;
+            case 35: c.Encounter = null; map.Stage("tavern"); Shot("campaign-tavern"); break;
+            case 36: map.Stage("elders"); Shot("campaign-elders"); break;
+            case 37: Exit(); break;
         }
     }
 }

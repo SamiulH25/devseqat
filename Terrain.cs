@@ -80,6 +80,8 @@ public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, floa
     public static readonly TerrainParams Farmland = new("Farmland", 1, 3, 0.7f, 0.6f, 70, 6, 30, 380, true);
     public static readonly TerrainParams Forest = new("Forest", 2, 4, 0.9f, 1f, 55, 22, 150, 320, false);
     public static readonly TerrainParams Hills = new("Hills", 5, 7, 1.7f, 1.4f, 66, 9, 50, 200, false);
+    /// The tournament field (S5): flat, open, a few trees at the edge.
+    public static readonly TerrainParams Lists = new("Lists", 0, 0, 0.2f, 0.3f, 90, 0, 6, 30, false);
 }
 
 /// Headless battlefield ground: a heightmap (gentle rolling meadow, a few hills, a rim of high ground,

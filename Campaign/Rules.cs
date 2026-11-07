@@ -20,6 +20,8 @@ public sealed class BattleSetup
     public string EnemyName = "";
     /// An assault on this settlement (-1: a battle in the field).
     public int SiegeOf = -1;
+    /// A tournament in this settlement (S5; -1: a real fight).
+    public int Tournament = -1;
 }
 
 /// Company rules (caps, strength, XP, upgrades), auto-resolve, and the battle bridge (docs/CAMPAIGN.md 4-6).

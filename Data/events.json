@@ -106,7 +106,7 @@
       "id": "tournament", "trigger": "in_town", "cooldown": 40, "title": "A TOURNAMENT AT {settlement}",
       "text": "Banners in the square: {settlement} holds a tournament, and the heralds would gladly cry your name.",
       "choices": [
-        { "label": "ENTER THE LISTS", "need": "gold:50", "effects": ["gold:-50", "gamble:300", "renown:3"] },
+        { "label": "ENTER THE LISTS", "need": "gold:50", "effects": ["gold:-50", "lists"] },
         { "label": "WATCH FROM THE STANDS", "effects": ["cohesion:2"] }
       ]
     },
