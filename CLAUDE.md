@@ -120,7 +120,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 |---|---|
 | Battle setup, tick, reinforcements, result | `Battle.cs` (`Update`, `Deploy`, `AddSquad`, `Reinforce`, `Result`, `CheckEnd`) |
 | Unit AI, cavalry AI, the AI general | `BattleAI.cs` (`Think`, `ThinkCav`, `General`) |
-| Melee, damage, kills, arrows, braced spears, lances / big creatures (troll sweep, knockback, healing, sun) | `BattleCombat.cs` (`Strike`, `Hit`, `Damage`, `HitHorse`, `Kill`, `Shoot`, `UpdateArrows`) / `BattleCreatures.cs` (`Sunlit`, `Sweep`, `Knock`, `Regen`, `BodyRadius`) |
+| Melee, damage, kills, arrows, braced spears, lances / creatures (troll sweep, knockback, healing, sun; the necromancer raising the dead) | `BattleCombat.cs` (`Strike`, `Hit`, `Damage`, `HitHorse`, `Kill`, `Shoot`, `UpdateArrows`) / `BattleCreatures.cs` (`Sunlit`, `Sweep`, `Knock`, `Regen`, `BodyRadius`, `RaiseDead`, `MasterFalls`) |
 | Unit movement and collisions / morale / your own unit | `BattleMove.cs` (`Move`, `Impact`) / `BattleMorale.cs` (`UpdateMorale`) / `BattlePlayer.cs` (`UpdatePlayer`) |
 | Formations, orders, slots | `Squad.cs` (`Order`, `Formation`, `Slot`, `SetLine`) |
 | Sieges in battle / on the map | `BattleSiege.cs` (wall, ladders, gate `Via`) / `Campaign/CampaignSiege.cs` (garrisons, capture, fiefs) |

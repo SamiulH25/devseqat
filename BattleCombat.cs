@@ -162,7 +162,8 @@ public partial class Battle
         if (ranged && t.Squad?.Formation == Formation.Square) officer *= 1.25f;                    // a packed square is an easy mark
         if (!ranged && a.Squad is { Formation: Formation.Wedge, Order: Order.Charge }) officer *= 1.15f; // a wedge drives in
         float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
-            * (t.Type.Wild ? a.Type.VsMonster : 1); // monster hunters
+            * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
+            * (ranged && t.Type.Has("bones") ? 0.3f : 1); // arrows pass between a skeleton's ribs
         if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged ? a.Type.Pierce : 0);
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
@@ -255,6 +256,8 @@ public partial class Battle
             else if (d < 10) u.Morale += killer.IsPlayer ? 6 : 2; // heroics inspire more
         }
         if (t.Type.Has("boss") && !BossDown[t.Team]) BossFalls(t);
+        if (t.Type.Has("raise") && !Units.Any(u => u.Active && u.Team == t.Team && u.Type.Has("raise"))) MasterFalls(t);
+        if (killer.Active && killer.Type.Has("feed")) killer.Hp = MathF.Min(killer.Type.MaxHp, killer.Hp + killer.Type.MaxHp * 0.3f); // a ghoul feeds
         if (t.IsPlayer) Log("You have fallen! Your troops waver.");
         else if (t.IsLeader) Log("The enemy captain is slain!");
     }

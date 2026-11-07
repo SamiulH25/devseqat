@@ -430,4 +430,86 @@ public static partial class SelfTest
                 Console.WriteLine($"troll at {hour:0}h vs {n} {foe}: {f.Time:0} s, troll {(troll.Dead ? "dead" : $"{troll.Hp:0} hp")}, healed {healed:0}, men dead {men.Units.Count(u => u.Dead)}, routed {men.Units.Count(u => u.Routing)}, swings {swings}, men hp lost {menHp - men.Units.Sum(u => MathF.Max(0, u.Hp)):0}, target {troll.Target?.Index}");
             }
     }
+
+    /// Phase 5: skeletons shrug off arrows, ghouls feed, a necromancer raises the fallen and his death drops them all.
+    static void Undead()
+    {
+        var sk = Troops.Get("skeleton");
+        Check(sk.Wild && sk.Breed == "undead" && sk.Has("fearless") && sk.Look.HeadKey == "head.skull", "a skeleton is a fearless wild creature with a skull");
+
+        // Arrows: the same volley hurts a skeleton far less than a man of the same armour.
+        float Shot(UnitType t)
+        {
+            var b = Battle.Empty(95);
+            var mark = b.AddSquad(1, t, 10, new(0, 20), 5, -Vector2.UnitY);
+            mark.Order = Order.Hold;
+            foreach (var u in mark.Units) u.Hp = 1000; // nobody falls, so the whole volley counts
+            var bows = b.AddSquad(0, UnitType.Bowman, 20, new(0, 0), 10, Vector2.UnitY);
+            bows.Order = Order.Hold;
+            bows.Target = mark;
+            Run(b, 20);
+            return mark.Units.Sum(u => 1000 - u.Hp);
+        }
+        var man = Troops.Get("shieldmen");
+        float bone = Shot(sk), flesh = Shot(man);
+        Console.WriteLine($"undead: 20 bows for 20 s do {bone:0} to skeletons, {flesh:0} to shieldmen");
+        Check(bone < flesh * 0.5f, "arrows do little to skeletons");
+
+        // A necromancer raises the fallen near him; they charge; kill him and every one of them falls.
+        var f = Battle.Empty(96);
+        var necro = f.AddSquad(1, Troops.Get("necromancer"), 1, new(0, 30), 1, -Vector2.UnitY).Units[0];
+        necro.Squad!.Order = Order.Hold;
+        var dead = f.AddSquad(0, Troops.Get("levies"), 6, new(0, 24), 6, Vector2.UnitY);
+        foreach (var u in dead.Units) { u.Dead = true; u.DiedAt = -5; u.Hp = 0; }
+        Run(f, 6);
+        var risen = f.Squads.FirstOrDefault(q => q.Name == "The Risen");
+        Check(risen is { StartCount: >= 4 } && risen.Units.All(u => u.Type.Id == "skeleton" && u.Team == 1), $"a necromancer raises the fallen as skeletons ({risen?.StartCount ?? 0})");
+        Check(dead.Units.Count(u => u.Raised) == risen?.StartCount, "each corpse rises once");
+        var walker = risen!.Units[0];
+        walker.Morale = 0;
+        Run(f, 0.5f);
+        Check(!walker.Routing, "the undead never break");
+        int fallenBefore = f.Units.Count(u => u.Dead);
+        var men = f.AddSquad(0, UnitType.Shieldman, 30, new(0, 10), 10, Vector2.UnitY);
+        men.Order = Order.Charge;
+        men.Target = necro.Squad;
+        for (int i = 0; i < 60 * 120 && !necro.Dead; i++) f.Update(1 / 60f);
+        Run(f, 0.1f);
+        Console.WriteLine($"undead: 30 shieldmen cut down the necromancer after {f.Time:0} s; {risen.StartCount} risen, {risen.Units.Count(u => u.Active)} still up");
+        Check(necro.Dead && risen.Units.All(u => !u.Active), "when the necromancer falls his dead fall with him");
+
+        // A ghoul heals on a kill.
+        var g = Battle.Empty(97);
+        var ghoul = g.AddSquad(1, Troops.Get("ghoul"), 1, new(0, 1.2f), 1, -Vector2.UnitY).Units[0];
+        ghoul.Hp = ghoul.Type.MaxHp / 2;
+        var prey = g.AddSquad(0, Troops.Get("levies"), 1, new(0, 0), 1, Vector2.UnitY).Units[0];
+        prey.Hp = 1;
+        prey.Squad!.Order = Order.Hold;
+        ghoul.Squad!.Order = Order.Charge;
+        for (int i = 0; i < 60 * 5 && !prey.Dead; i++) g.Update(1 / 60f);
+        Check(prey.Dead && ghoul.Hp > ghoul.Type.MaxHp * 0.7f, $"a ghoul feeds on its kill ({ghoul.Hp:0})");
+    }
+
+    /// Debug: an undead host (skeletons, ghouls, a necromancer) against an army of men, with both generals (`--selftest UndeadTrace`).
+    static void UndeadTrace()
+    {
+        foreach (int men in new[] { 20, 40, 60 })
+            foreach (bool bows in new[] { true, false })
+            {
+                float hour = 23;
+                var host = new ArmySpec("The Dead", 3, new List<Company> { new("skeleton", 30, Id: 1), new("ghoul", 8, Id: 2), new("necromancer", 1, Id: 3) });
+                var army = new ArmySpec("Men", 3, new List<Company> { new("shieldmen", men, Id: 1), new("bowmen", bows ? men / 2 : 0, Id: 2) });
+                var b = new Battle(31, army, host, new BattleOptions { AutoPlayer = true, PlayerWounded = true, Weather = new Weather(hour) });
+                var necro = b.Units.First(u => u.Type.Has("raise"));
+                float behind = 0; int n = 0;
+                for (int i = 0; b.Winner < 0 && i < 60 * 300; i++)
+                {
+                    b.Update(1 / 60f);
+                    if (i % 60 == 0 && necro.Active) { behind += b.Units.Where(u => u.Team == 0 && u.Active).Min(u => Vector2.Distance(u.Pos, necro.Pos)); n++; }
+                }
+                var risen = b.Squads.FirstOrDefault(q => q.Name == "The Risen");
+                Console.WriteLine($"undead host vs {men} shieldmen + {(bows ? men / 2 : 0)} bows: winner {b.Winner} after {b.Time:0} s, necromancer {(necro.Dead ? $"slain at {necro.DiedAt:0} s" : "lives")}, mean gap to foe {behind / Math.Max(1, n):0} m, "
+                    + $"risen {risen?.StartCount ?? 0}, men dead {b.Units.Count(u => u.Team == 0 && u.Dead)}, undead down {b.Units.Count(u => u.Team == 1 && u.Dead)}");
+            }
+    }
 }

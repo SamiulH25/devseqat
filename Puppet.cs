@@ -74,7 +74,7 @@ sealed class Puppet
     /// Draw a unit standing on ground height `ground`, dressed by its troop's Look.
     public void Draw(Unit u, float ground)
     {
-        if (u.Fled) return;
+        if (u.Fled || u.Raised) return; // a raised corpse walks again as a new man
         look = u.Type.Look;
         pal = "/" + (u.IsPlayer ? 2 : u.Palette);
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
@@ -391,7 +391,7 @@ sealed class Puppet
     void Corpse()
     {
         // Parts laid flat on the ground, body pointing backwards from the feet.
-        Flat(new(0, 0.06f, -0.7f), "blood", false);
+        if (look.Body != "bones") Flat(new(0, 0.06f, -0.7f), "blood", false); // a skeleton falls in a heap of dry bones
         if (Detail > 0) { Flat(new(0, 0.09f, -0.75f), $"torso.{look.Body}.f", false); return; } // far off: a body and its blood
         Flat(new(0.12f, 0.08f, -0.2f), $"leg.{look.Legs}", false);
         Flat(new(-0.12f, 0.08f, -0.2f), $"leg.{look.Legs}", false);

@@ -222,7 +222,7 @@ public static class Armies
     /// The troop a line fields at a tier (1-7).
     public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 7) - 1];
 
-    public static string RoleOf(Company c) => c.Role is { Length: > 0 } r ? r : Troops.Get(c.Troop).Class switch
+    public static string RoleOf(Company c) => c.Role is { Length: > 0 } r ? r : Troops.Get(c.Troop).Has("raise") ? "casters" : Troops.Get(c.Troop).Class switch
     {
         UnitClass.Archer => "archers", UnitClass.Skirmisher => "spears", UnitClass.Cavalry => "horse", _ => "infantry",
     };

@@ -32,18 +32,19 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     bool Tabard, bool Plume, bool Cape, string Face = "man")
 {
     /// "wolf" is a whole beast: the puppet draws it on four legs from the w* sprites, ignoring the rest of the look.
-    public static readonly string[] Faces = { "man", "goblin", "wolf", "troll" };
+    public static readonly string[] Faces = { "man", "goblin", "wolf", "troll", "skull", "ghoul" };
     public bool Beast => Face == "wolf";
     /// The sprite family of the bare head.
     public string HeadKey => Face == "man" ? "head" : "head." + Face;
     public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen" };
     // Goblin kit: "rags" (bare green arms), "hide" (bare green legs), "bare" feet, "claw" hands.
-    public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate", "fur", "rags" };
-    public static readonly string[] LegsKinds = { "cloth", "mail", "plate", "hide" };
-    public static readonly string[] FeetKinds = { "boots", "sabatons", "bare" };
-    public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw" };
+    // Undead kit: "bones" (a ribcage and bare bone), "shroud" (a ghoul's grave wrappings over grey skin), "robe" (a necromancer's), "bone" feet and hands.
+    public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate", "fur", "rags", "bones", "shroud", "robe" };
+    public static readonly string[] LegsKinds = { "cloth", "mail", "plate", "hide", "bones", "shroud" };
+    public static readonly string[] FeetKinds = { "boots", "sabatons", "bare", "bone" };
+    public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw", "bone" };
     public static readonly string[] Shields = { "none", "round", "kite", "heater" };
-    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club" };
+    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff" };
     public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
 }
 
@@ -69,8 +70,11 @@ public sealed class UnitType
     /// creature of his side and stops their rallies: a goblin boss, a pack's alpha). A troll's: "sweep" (a blow hits
     /// the men beside its target too), "knockback" (throws men down and back), "fear" (unnerves foes near it),
     /// "regen" (heals when left alone a moment), "daylight" (slow and weak in sunlight, no healing), "fearless" (never routs).
+    /// The undead's: "bones" (arrows do little to a skeleton), "raise" (a necromancer: raises the fallen around him
+    /// to fight for him), "raised" (held up by a necromancer: falls apart when the last one of its side falls),
+    /// "feed" (a ghoul: a kill heals it).
     public string[] Traits = Array.Empty<string>();
-    public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless" };
+    public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless", "bones", "raised", "raise", "feed" };
     /// A body big enough to take more room, shove men aside and stand up to a horse (a troll).
     public bool Huge => Size >= 1.6f;
     /// Bound to its boss: loses heart when he falls.
@@ -110,6 +114,8 @@ public sealed class Unit
     public float Hp, Morale = 70, Stamina = 100, EnemyDist = float.MaxValue;
     /// Battle time of the last wound (a troll heals only when left alone).
     public float HurtAt = -99;
+    /// A corpse a necromancer has raised: it walks again as a new man, so it is no longer drawn on the ground.
+    public bool Raised;
     public int Ammo;
     public UnitAction Action;
     public AttackDir Swing;

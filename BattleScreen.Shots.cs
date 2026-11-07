@@ -85,7 +85,18 @@ partial class BattleScreen
                 shotFrames = 0; shotIndex++; break;
             case 25 when shotFrames > 20:
                 pendingShot = "gallery-troll"; shotIndex++; break;
-            case 26 when pendingShot == null: Exit(); break;
+            case 26 when pendingShot == null:
+                Gallery(new[] { "skeleton", "ghoul", "necromancer", "skeleton", "ghoul", "shieldmen" }, 3); // the undead (phase 5), a man for scale
+                zoom = 9f; camPitch = 0.1f;
+                shotFrames = 0; shotIndex++; break;
+            case 27 when shotFrames > 20:
+                pendingShot = "gallery-undead"; shotIndex++; break;
+            case 28 when pendingShot == null:
+                foreach (var u in b.Units.Where(u => !u.IsLeader)) u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = 0;
+                shotFrames = 0; shotIndex++; break;
+            case 29 when shotFrames > 20:
+                pendingShot = "gallery-undead-side"; shotIndex++; break;
+            case 30 when pendingShot == null: Exit(); break;
         }
     }
 

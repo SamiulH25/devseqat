@@ -137,7 +137,7 @@ public sealed partial class Battle
         float mine = Str(team), theirs = Str(1 - team);
         if (mine > theirs * 0.18f) return false;
         retreated[team] = true;
-        foreach (var u in Units) if (u.Team == team && u.Active && !u.IsLeader) u.Routing = true;
+        foreach (var u in Units) if (u.Team == team && u.Active && !u.IsLeader && !u.Type.Has("fearless")) u.Routing = true; // the undead and trolls do not heed a horn
         Log(team == 1 ? "The enemy sounds the retreat!" : "Your men sound the retreat!");
         Sound(Cue.Horn, centroid[team]);
         return true;

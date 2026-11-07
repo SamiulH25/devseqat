@@ -266,6 +266,7 @@ public partial class Battle
             }
         }
         else foreach (var s in inf.Concat(spears)) s.Order = Order.Charge; // late arrivals join the charge
+        foreach (var s in Led(team, "casters").Where(s => s.Alive > 0)) { s.Front = dir; s.Anchor = front - dir * 15; s.Order = Order.Hold; } // a necromancer works from behind his dead
         foreach (var s in Led(team, "archers"))
         {
             if (s.Order == Order.Charge || s.Alive == 0) continue;

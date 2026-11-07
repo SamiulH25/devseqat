@@ -116,7 +116,7 @@ public sealed partial class Battle
         {
             var spot = role switch
             {
-                "archers" => new Vector2(0, -38 - infDepth), "spears" => new Vector2(-spearsX, -31), "horse" => new Vector2(horseX, -33), _ => new Vector2(0, -30),
+                "archers" => new Vector2(0, -38 - infDepth), "casters" => new Vector2(0, -44 - infDepth), "spears" => new Vector2(-spearsX, -31), "horse" => new Vector2(horseX, -33), _ => new Vector2(0, -30),
             };
             float back = 0;
             foreach (var row in rows)
@@ -261,6 +261,7 @@ public sealed partial class Battle
         UpdateDivisions();
         Batter(dt);
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
+        RaiseDead(dt);
         Mark(1);
         UpdateCalledHorse(dt);
         Resupply(dt);

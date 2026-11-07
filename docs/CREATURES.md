@@ -1,6 +1,6 @@
 # Creatures and monsters: brainstorm and plan
 
-Status: phase 1 (goblins), phase 2 (wolves, goblin wolf riders) phase 3 (trolls) and phase 4 (goblin thralls, war hounds, beast hunters, ogres for hire) are built; see "As built" at the end. The rest is planned. Names are placeholders.
+Status: phase 1 (goblins), phase 2 (wolves, goblin wolf riders) phase 3 (trolls), phase 4 (goblin thralls, war hounds, beast hunters, ogres for hire) and phase 5a (the undead in battle) are built; see "As built" at the end. The rest is planned. Names are placeholders.
 
 The world is a fantasy world. Today every enemy is a man: lords, bandits, garrisons. This plan adds creatures and
 monsters as new enemies, new kinds of map encounter and, later, new troops for the player.
@@ -233,3 +233,21 @@ village; clearing a holdout removes it and pays the hoard; lords are hostile to 
 - `ogre` (wild, size 1.8, sweep and knockback, no regen or daylight): each week a town's mercenary board offers a
   company of `OgreMen` (1, scaled) ogres with chance `OgreOfferChance` (0.05), as Ogre Sellswords.
 - Not built yet: tamed beasts (a troll needs a lair to take young from), culture flavour (bear-shirts).
+
+**Phase 5a** (the undead in battle; `BattleCreatures.cs`, `Undead` test, debug `UndeadTrace`):
+- Three troops of breed `undead`, all wild and `fearless`: `skeleton` (`bones`: arrows do 0.3 damage to it; a skull,
+  ribcage, bone limbs, a round shield and sword), `ghoul` (fast, `fear`, `feed`: a kill heals it 30%; grey skin, a
+  grave shroud, bone hands) and `necromancer` (hp 500, `fear`, `raise`; a hood over a skull, a dark robe, a staff).
+- `raise`: every `RaiseEvery` (2.5 s) each necromancer raises up to two of the fallen within `RaiseRange` (22 m),
+  either side's, as skeletons in a squad named The Risen that charges at once (at most `RaiseMax` 40 a side). Beasts,
+  huge bodies, leaders, heroes and the undead's own dead do not rise. The Risen have no company, so they are not in the
+  campaign's results; a raised corpse is no longer drawn (`Unit.Raised`).
+- `raised` (skeletons and ghouls): when a side's last necromancer falls, every one of them falls where it stands
+  (`MasterFalls`, `Collapse`: dead, no one's kill) and their foes gain 10 morale.
+- The necromancer deploys in a new role, `casters` (`Armies.RoleOf`), behind the line, and the AI general holds him
+  15 m behind his infantry's centre, so you must cut through his dead or ride round them to reach him.
+- Fearless men (the undead, trolls) no longer run when their side sounds the retreat.
+- Found in testing: a host of 30 skeletons, 8 ghouls and a necromancer beats 20 shieldmen and 10 bowmen and about
+  matches 40 shieldmen at night (raising some 25 of the fallen); bowmen tip it to the men by shooting the ghouls and
+  the necromancer. Staged shots: `gallery-undead.png`, `gallery-undead-side.png`.
+

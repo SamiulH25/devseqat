@@ -65,6 +65,7 @@ public static partial class SelfTest
         TrollsAbroad();
         PlayerCreatures();
         WolfRiders();
+        Undead();
         Couriers();
 
         for (int seed = 1; seed <= 3; seed++)
