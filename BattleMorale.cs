@@ -5,6 +5,9 @@ namespace Ironfield;
 /// Battle: squad morale, wavering and routing.
 public partial class Battle
 {
+    /// How much sooner a craven creature breaks than a man (it routs below RoutAt + this).
+    public const float CravenRout = 14;
+
     void UpdateMorale(float dt)
     {
         var lost = new float[2];
@@ -37,7 +40,9 @@ public partial class Battle
                 // A broken man is running, not watching his company die: once he is clear of the enemy his nerve
                 // returns, so a rout can end short of the map's edge. A man who breaks twice has had enough.
                 float foe = Vector2.Distance(u.Pos, centroid[1 - u.Team]);
-                m += u.Routs > 1 ? -2f : foe > 26 ? 2f : -0.8f;
+                // Goblins scatter at the first scare but come back again and again, as long as their boss lives.
+                if (u.Type.Has("craven")) m += BossDown[u.Team] ? -2f : foe > 18 ? 3.5f : -0.5f;
+                else m += u.Routs > 1 ? -2f : foe > 26 ? 2f : -0.8f;
             }
             else
             {
@@ -64,9 +69,10 @@ public partial class Battle
             u.Morale = Math.Clamp(u.Morale + m * step, 0, 100);
             // Iron Will: near you, a company that still has a third of its men will not break.
             if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);
-            float routAt = (u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? RoutAt - 4 : RoutAt) - (u.Squad.Company?.RoutBonus ?? 0); // officer trait; walls; honours
+            float routAt = (u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? RoutAt - 4 : RoutAt) - (u.Squad.Company?.RoutBonus ?? 0) // officer trait; walls; honours
+                + (u.Type.Has("craven") ? CravenRout : 0);
             if (!u.Routing && u.Morale < routAt) { u.Routing = true; u.Routs++; u.Action = UnitAction.None; u.Couched = false; }
-            else if (u.Routing && u.Morale > RallyAt && u.Routs <= 1)
+            else if (u.Routing && u.Morale > RallyAt && (u.Type.Has("craven") ? !BossDown[u.Team] : u.Routs <= 1))
             {
                 u.Routing = false;
                 u.Morale = MathF.Max(u.Morale, Battle.RallyAt + 2); // they come back shaken but steady

@@ -26,6 +26,8 @@ public sealed class Squad
         get => Formation == Formation.Loose;
         set => Formation = value ? Formation.Loose : Formation == Formation.Loose ? Formation.Line : Formation;
     }
+    /// A swarm of craven creatures (goblins): it fights as a loose mob and never forms a shield wall.
+    public bool Swarm => Units.Count > 0 && Units[0].Type.Has("craven");
     public float Pressure;                        // recent flank/rear hits; drains morale, decays over time
     public int Kills;                             // enemies this company has killed (campaign XP)
     public readonly int[] KillsByTier = new int[8]; // kills by the victim's tier (0 = leaders, 1-7 = troop tiers)

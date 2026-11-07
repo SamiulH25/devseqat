@@ -68,7 +68,13 @@ partial class BattleScreen
             case 19 when pendingShot == null:
                 zoom = 8.5f; camPitch = 0.08f; camFocus = new Vector2(-9.8f, 0.6f);
                 pendingShot = "gallery-north-close"; shotIndex++; break;
-            case 20 when pendingShot == null: Exit(); break;
+            case 20 when pendingShot == null:
+                Gallery(new[] { "goblin", "goblin_archer", "hobgoblin", "goblin_boss", "shieldmen" }, 3); // creatures (docs/CREATURES.md), a man for scale
+                shotFrames = 0; shotIndex++; break;
+            case 21 when shotFrames > 20:
+                zoom = 9f; camPitch = 0.08f; camFocus = new Vector2(-7f, 0.6f);
+                pendingShot = "gallery-goblins"; shotIndex++; break;
+            case 22 when pendingShot == null: Exit(); break;
         }
     }
 

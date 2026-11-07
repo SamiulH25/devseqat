@@ -3536,14 +3536,19 @@
    "recover": 0.6,
    "speed": 4.1,
    "block": 0.15,
+   "size": 0.72,
+   "traits": [
+    "craven"
+   ],
    "look": {
     "head": "none",
-    "body": "tunic",
-    "legs": "cloth",
-    "feet": "boots",
-    "hands": "skin",
+    "body": "rags",
+    "legs": "hide",
+    "feet": "bare",
+    "hands": "claw",
     "shield": "round",
-    "weapon": "sword"
+    "weapon": "sword",
+    "face": "goblin"
    }
   },
   {
@@ -3566,14 +3571,19 @@
    "block": 0.05,
    "range": 26,
    "ammo": 18,
+   "size": 0.72,
+   "traits": [
+    "craven"
+   ],
    "look": {
     "head": "hood",
-    "body": "tunic",
-    "legs": "cloth",
-    "feet": "boots",
-    "hands": "skin",
+    "body": "rags",
+    "legs": "hide",
+    "feet": "bare",
+    "hands": "claw",
     "shield": "none",
-    "weapon": "bow"
+    "weapon": "bow",
+    "face": "goblin"
    }
   },
   {
@@ -3594,14 +3604,16 @@
    "recover": 0.6,
    "speed": 3.8,
    "block": 0.35,
+   "size": 0.95,
    "look": {
     "head": "nasal",
     "body": "fur",
-    "legs": "cloth",
+    "legs": "hide",
     "feet": "boots",
-    "hands": "skin",
+    "hands": "claw",
     "shield": "round",
-    "weapon": "axe"
+    "weapon": "axe",
+    "face": "goblin"
    }
   },
   {
@@ -3622,14 +3634,20 @@
    "recover": 0.6,
    "speed": 3.7,
    "block": 0.4,
+   "size": 1.15,
+   "traits": [
+    "boss"
+   ],
    "look": {
     "head": "spangen",
     "body": "mail",
-    "legs": "cloth",
+    "legs": "hide",
     "feet": "boots",
-    "hands": "skin",
+    "hands": "claw",
     "shield": "none",
-    "weapon": "daneaxe"
+    "weapon": "daneaxe",
+    "face": "goblin",
+    "cape": true
    }
   }
  ]

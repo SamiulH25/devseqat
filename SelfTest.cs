@@ -59,6 +59,7 @@ public static partial class SelfTest
         ScaleBattle();
         DivisionGoals();
         Holdouts();
+        GoblinBattle();
         Couriers();
 
         for (int seed = 1; seed <= 3; seed++)

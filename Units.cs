@@ -26,14 +26,19 @@ public sealed record Mount(string Id, string Name, float Hp, float Trot, float G
 }
 
 /// What a troop wears and carries; every field names a sprite family in Art (e.g. Head "kettle" = "helm.kettle.f/s/b").
+/// Face is whose head it is ("man", or a creature's: "goblin" = "head.goblin.f/s/b").
 public sealed record Look(string Head, string Body, string Legs, string Feet, string Hands, string Shield, string Weapon,
-    bool Tabard, bool Plume, bool Cape)
+    bool Tabard, bool Plume, bool Cape, string Face = "man")
 {
+    public static readonly string[] Faces = { "man", "goblin" };
+    /// The sprite family of the bare head.
+    public string HeadKey => Face == "man" ? "head" : "head." + Face;
     public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen" };
-    public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate", "fur" };
-    public static readonly string[] LegsKinds = { "cloth", "mail", "plate" };
-    public static readonly string[] FeetKinds = { "boots", "sabatons" };
-    public static readonly string[] HandsKinds = { "skin", "gauntlets" };
+    // Goblin kit: "rags" (bare green arms), "hide" (bare green legs), "bare" feet, "claw" hands.
+    public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate", "fur", "rags" };
+    public static readonly string[] LegsKinds = { "cloth", "mail", "plate", "hide" };
+    public static readonly string[] FeetKinds = { "boots", "sabatons", "bare" };
+    public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw" };
     public static readonly string[] Shields = { "none", "round", "kite", "heater" };
     public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe" };
     public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
@@ -52,6 +57,13 @@ public sealed class UnitType
     public int Tier, Cost, UpgradeXp;
     public string[] UpgradesTo = Array.Empty<string>();
     public float MaxHp, Damage, Armor, Reach, Windup, Recover, Speed, BlockChance, Range, VsMounted = 1, Pierce, Reload = 1;
+    /// Drawn size (1 = a man). Goblins are small, bosses and trolls big.
+    public float Size = 1;
+    /// Creature traits (docs/CREATURES.md): "craven" (breaks early, rallies again and again while its boss lives),
+    /// "boss" (his fall shakes every craven of his side and stops their rallies).
+    public string[] Traits = Array.Empty<string>();
+    public static readonly string[] KnownTraits = { "craven", "boss" };
+    public bool Has(string trait) => Traits.Contains(trait);
     public int Ammo;
     public bool Leader;
     public Mount? Mount;

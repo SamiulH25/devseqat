@@ -84,4 +84,49 @@ public static partial class SelfTest
         Check(holdouts >= 1, "holdouts come back after being cleared");
         Check(c.S.Parties.Where(p => p.Kind == PartyKind.Monster).All(p => p.Faction < 0 && p.Companies.All(co => co.Stacks.All(st => st.Type.Wild))), "goblin parties hold only goblins");
     }
+
+    /// Goblins in battle: a loose mob that breaks early and comes back, until its boss falls.
+    static void GoblinBattle()
+    {
+        var b = Battle.Empty(71);
+        var mob = b.AddSquad(1, Troops.Get("goblin"), 40, new(0, 30), 10, -Vector2.UnitY);
+        var boss = b.AddSquad(1, Troops.Get("goblin_boss"), 1, new(0, 36), 1, -Vector2.UnitY).Units[0];
+        var men = b.AddSquad(0, UnitType.Shieldman, 20, new(0, -10), 10, Vector2.UnitY);
+        Check(mob.Swarm && mob.Formation == Formation.Loose && !men.Swarm, "goblins come on as a loose mob");
+        Check(Troops.Get("goblin").Size < 1 && Troops.Get("goblin_boss").Size > 1 && Troops.Get("goblin").Look.HeadKey == "head.goblin", "goblins are small, the boss big, with goblin heads");
+
+        // A goblin breaks where a man stands.
+        var g = mob.Units[0];
+        var m = men.Units[0];
+        g.Morale = m.Morale = Battle.RoutAt + Battle.CravenRout - 4;
+        Run(b, 0.1f);
+        Check(g.Routing && !m.Routing, "a goblin breaks at a scare a man shrugs off");
+
+        // ...and comes back while its boss lives.
+        g.Pos = new Vector2(0, 90);
+        g.Morale = Battle.RallyAt + 5;
+        g.Routs = 3;
+        Run(b, 0.1f);
+        Check(!g.Routing, "a goblin rallies again and again while its boss lives");
+
+        // The boss falls: the mob loses heart and stops rallying.
+        float before = mob.Units.Where(u => u.Active).Average(u => u.Morale);
+        boss.Action = UnitAction.Stagger; // caught off guard: no block
+        b.Hit(m, boss, 9999, false);
+        Check(boss.Dead && b.BossDown[1], "the boss can be slain");
+        Check(mob.Units.Where(u => u.Active).Average(u => u.Morale) < before - 20, "his fall shakes every goblin");
+        g.Routing = true; g.Morale = Battle.RallyAt + 5;
+        Run(b, 0.1f);
+        Check(g.Routing, "with the boss dead, goblins no longer rally");
+
+        // A whole fight: men against twice as many goblins.
+        var f = Battle.Empty(72);
+        var horde = f.AddSquad(1, Troops.Get("goblin"), 60, new(0, 25), 12, -Vector2.UnitY);
+        f.AddSquad(1, Troops.Get("goblin_boss"), 1, new(0, 30), 1, -Vector2.UnitY);
+        f.AddSquad(0, UnitType.Shieldman, 30, new(0, -5), 10, Vector2.UnitY).Order = Order.Charge;
+        for (int i = 0; i < 60 * 240 && f.Winner < 0; i++) f.Update(1 / 60f);
+        int back = horde.Units.Count(u => u.Routs >= 2);
+        Console.WriteLine($"goblins: 30 shieldmen vs 60 goblins and a boss: winner {f.Winner} at {f.Time:0} s, {horde.Units.Count(u => u.Dead)} goblins dead, {back} broke and came back, boss down {f.BossDown[1]}");
+        Check(back > 0, "goblins break and come back during a fight");
+    }
 }

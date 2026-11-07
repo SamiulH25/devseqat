@@ -214,6 +214,16 @@ public partial class Battle
         u.Couched = false;
     }
 
+    /// A goblin boss is down: every craven of his side loses heart at once and stops rallying; his foes take courage.
+    void BossFalls(Unit boss)
+    {
+        BossDown[boss.Team] = true;
+        foreach (var u in Units)
+            if (u.Active && u.Team == boss.Team && u.Type.Has("craven")) u.Morale -= 30;
+            else if (u.Active && u.Team != boss.Team) u.Morale = MathF.Min(100, u.Morale + 8);
+        Log($"The {boss.Type.Name.ToLowerInvariant()} is slain! {(boss.Team == 0 ? "Your" : "The")} goblins scatter.");
+    }
+
     void Kill(Unit t, Unit killer)
     {
         t.Dead = true;
@@ -238,6 +248,7 @@ public partial class Battle
             if (u.Team == t.Team) { if (t.IsLeader) u.Morale -= 16; else if (d < 8) u.Morale -= 3; }
             else if (d < 10) u.Morale += killer.IsPlayer ? 6 : 2; // heroics inspire more
         }
+        if (t.Type.Has("boss") && !BossDown[t.Team]) BossFalls(t);
         if (t.IsPlayer) Log("You have fallen! Your troops waver.");
         else if (t.IsLeader) Log("The enemy captain is slain!");
     }

@@ -80,7 +80,7 @@ sealed class Puppet
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         float lift = ground;
         if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true)) * Scale;
-        Frame(u.Pos, u.ViewFacing, lift, (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * Scale);
+        Frame(u.Pos, u.ViewFacing, lift, (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * u.Type.Size * Scale);
 
         fall = 0;
         if (u.Dead)
@@ -104,7 +104,7 @@ sealed class Puppet
         if (look.Cape && Detail == 0) Bill(new(0, 0.92f, -0.17f), "cape", false);
         Bill(new(0, 1.0f, 0), $"torso.{look.Body}", true);
         if (look.Tabard && Detail == 0) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
-        Bill(new(0, 1.53f, 0.02f), "head", true);
+        Bill(new(0, 1.53f, 0.02f), look.HeadKey, true);
         if (look.Head != "none")
         {
             // Every helmet's crown sits just above the head, whatever its height.
@@ -317,7 +317,7 @@ sealed class Puppet
         Flat(new(-0.12f, 0.08f, -0.2f), $"leg.{look.Legs}", false);
         Flat(new(0, 0.09f, -0.75f), $"torso.{look.Body}.f", false);
         if (look.Tabard) Flat(new(0, 0.1f, -0.75f), "tabard.f", false);
-        Flat(new(0, 0.11f, -1.25f), look.Head == "none" ? "head.b" : $"helm.{look.Head}.b", false);
+        Flat(new(0, 0.11f, -1.25f), look.Head == "none" ? look.HeadKey + ".b" : $"helm.{look.Head}.b", false);
         if (look.Shield != "none") Flat(new(-0.5f, 0.12f, -0.6f), $"shield.{look.Shield}", true);
     }
 

@@ -328,7 +328,7 @@ public static partial class SelfTest
             {
                 yield return $"torso.{l.Body}.{v}";
                 yield return $"boot.{l.Feet}.{v}";
-                yield return $"head.{v}";
+                yield return $"{l.HeadKey}.{v}";
                 if (l.Head != "none") yield return $"helm.{l.Head}.{v}";
                 if (l.Tabard) yield return $"tabard.{v}";
             }

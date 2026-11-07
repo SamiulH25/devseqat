@@ -59,6 +59,8 @@ public sealed partial class Battle
     bool enemyCharged, enemyHorseCharged;
     float generalTimer, reinforceTimer;
     readonly bool[] charged = new bool[2], horseCharged = new bool[2];
+    /// A side whose boss has fallen (docs/CREATURES.md): its craven creatures no longer rally.
+    public readonly bool[] BossDown = new bool[2];
     readonly Queue<(Company C, string Role)>[] reserves = { new(), new() };
     readonly List<(Company C, int Team)> heldBack = new(); // companies that never reached the field
 
@@ -217,6 +219,7 @@ public sealed partial class Battle
             h.Heading = h.Facing;
             s.Units.Add(h);
         }
+        if (s.Swarm) s.Formation = Formation.Loose; // goblins come on as a mob
         Squads.Add(s);
         Bounds(s);
         return s;

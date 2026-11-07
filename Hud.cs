@@ -415,7 +415,7 @@ sealed partial class Hud
         if (l.Cape) Part("cape", 0, 1.0f);
         Part($"torso.{l.Body}.f", 0, 1.0f);
         if (l.Tabard) Part("tabard.f", 0, 0.98f);
-        Part("head.f", 0, 1.53f);
+        Part(l.HeadKey + ".f", 0, 1.53f);
         if (l.Head != "none") Part($"helm.{l.Head}.f", 0, 1.81f - art[$"helm.{l.Head}.f/0"].Height * Art.Px / 2);
         if (l.Plume) Part("plume", 0, 1.81f + art["plume/0"].Height * Art.Px / 2 - 0.06f);
         if (t.Class != UnitClass.Archer) Part(l.Weapon, -0.42f, WeaponY(l.Weapon));

@@ -23,7 +23,7 @@ public static class Troops
 
     sealed class LookDto
     {
-        public string Head = "none", Body = "tunic", Legs = "cloth", Feet = "boots", Hands = "skin", Shield = "none", Weapon = "sword";
+        public string Head = "none", Body = "tunic", Legs = "cloth", Feet = "boots", Hands = "skin", Shield = "none", Weapon = "sword", Face = "man";
         public bool Tabard, Plume, Cape;
     }
 
@@ -33,7 +33,8 @@ public static class Troops
         public string? Mount;
         public int Tier, Cost, UpgradeXp, Ammo;
         public string[] UpgradesTo = Array.Empty<string>();
-        public float Hp, Damage, Armor, Reach, Windup, Recover, Speed, Block, Range, VsMounted = 1, Pierce, Reload = 1;
+        public float Hp, Damage, Armor, Reach, Windup, Recover, Speed, Block, Range, VsMounted = 1, Pierce, Reload = 1, Size = 1;
+        public string[] Traits = Array.Empty<string>();
         public bool Leader;
         public LookDto Look = new();
     }
@@ -69,8 +70,8 @@ public static class Troops
                 Id = d.Id, Name = d.Name, Culture = d.Culture, Breed = d.Breed, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
                 UpgradesTo = d.UpgradesTo, MaxHp = d.Hp, Damage = d.Damage, Armor = d.Armor, Reach = d.Reach, Windup = d.Windup,
                 Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, Pierce = d.Pierce, Reload = d.Reload,
-                Leader = d.Leader, Mount = d.Mount == null ? null : mounts[d.Mount],
-                Look = new Look(l.Head, l.Body, l.Legs, l.Feet, l.Hands, l.Shield, l.Weapon, l.Tabard, l.Plume, l.Cape),
+                Leader = d.Leader, Size = d.Size, Traits = d.Traits, Mount = d.Mount == null ? null : mounts[d.Mount],
+                Look = new Look(l.Head, l.Body, l.Legs, l.Feet, l.Hands, l.Shield, l.Weapon, l.Tabard, l.Plume, l.Cape, l.Face),
             };
         }
         var problems = Validate().ToList();
@@ -95,6 +96,9 @@ public static class Troops
             if (Look.Ranged(t.Look.Weapon) != t.Ammo > 0) yield return $"{t.Id}: a bow needs ammo, and only bows have it";
             var l = t.Look;
             if (!Look.Heads.Contains(l.Head)) yield return $"{t.Id}: unknown head {l.Head}";
+            if (!Look.Faces.Contains(l.Face)) yield return $"{t.Id}: unknown face {l.Face}";
+            foreach (var tr in t.Traits) if (!UnitType.KnownTraits.Contains(tr)) yield return $"{t.Id}: unknown trait {tr}";
+            if (t.Size is < 0.5f or > 3f) yield return $"{t.Id}: size {t.Size} out of range";
             if (!Look.Bodies.Contains(l.Body)) yield return $"{t.Id}: unknown body {l.Body}";
             if (!Look.LegsKinds.Contains(l.Legs)) yield return $"{t.Id}: unknown legs {l.Legs}";
             if (!Look.FeetKinds.Contains(l.Feet)) yield return $"{t.Id}: unknown feet {l.Feet}";

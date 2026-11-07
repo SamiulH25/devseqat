@@ -1,6 +1,6 @@
 # Creatures and monsters: brainstorm and plan
 
-Status: phase 1a (goblin holdouts on the map) is built; see "As built" at the end. The rest is planned. Names are placeholders.
+Status: phase 1 (goblin holdouts on the map, goblins in battle) is built; see "As built" at the end. The rest is planned. Names are placeholders.
 
 The world is a fantasy world. Today every enemy is a man: lords, bandits, garrisons. This plan adds creatures and
 monsters as new enemies, new kinds of map encounter and, later, new troops for the player.
@@ -163,3 +163,14 @@ village; clearing a holdout removes it and pays the hoard; lords are hostile to 
 - Goblins are not taken prisoner yet (thralls come in phase 4). The holdout marker on the map is the party's figure
   (a hobgoblin) until 1b.
 - Staged screenshot: `campaign-holdout.png` (`IRONFIELD_CAMPAIGN_SHOTS`).
+
+**Phase 1b** (goblins in battle; `Tests/CreatureTests.cs` `GoblinBattle`):
+- Look: `Look.Face` ("man" or "goblin": the `head.goblin` sprite with ears and yellow eyes) and goblin kit: `rags`
+  (body), `hide` (legs), `bare` (feet), `claw` (hands), all green (`Style.GoblinSkin`). `UnitType.Size` scales the
+  drawing only (goblin 0.72, hobgoblin 0.95, boss 1.15); the sim's spacing is unchanged.
+- `UnitType.Traits` from data: `craven` (goblins, goblin archers) breaks `Battle.CravenRout` (14) morale sooner than a
+  man, regains its nerve fast once clear, and rallies any number of times while its side's boss lives; `boss`
+  (goblin boss): his fall (`BossFalls`) costs every craven on his side 30 morale, gives his foes 8, and stops their rallies.
+- Craven squads are a `Swarm`: they spawn in loose order, and a division never puts them in a shield wall.
+- In a test fight 30 shieldmen beat 60 goblins and their boss in about a minute; goblins are weak alone and meant to
+  come in numbers. Staged shot: `gallery-goblins.png` (`IRONFIELD_SHOTS`).

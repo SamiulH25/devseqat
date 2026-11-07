@@ -53,7 +53,8 @@ public sealed class SpriteSheet
     // ---------- materials for one side ----------
 
     Mat cloth = null!, clothDk = null!, trim = null!, quilt = null!, linen = null!, skin = null!, hair = null!, leather = null!,
-        wood = null!, steel = null!, plate = null!, iron = null!, mail = null!, brass = null!, ink = null!, blood = null!, mark = null!, fur = null!;
+        wood = null!, steel = null!, plate = null!, iron = null!, mail = null!, brass = null!, ink = null!, blood = null!, mark = null!, fur = null!,
+        gskin = null!, rag = null!, glow = null!;
     Emblem charge;
 
     void Side(int p)
@@ -65,12 +66,14 @@ public sealed class SpriteSheet
         steel = new(Style.Steel); plate = new(Color.Lerp(Style.Steel, Style.Iron, 0.3f), Pattern.Plate); iron = new(Style.Iron);
         mail = new(Color.Lerp(Style.Steel, Style.Iron, 0.15f), Pattern.Mail);
         brass = new(Style.Brass); fur = new(new Color(122, 98, 72), Pattern.Hair); ink = Mat.Flat(new Color(32, 24, 30)); blood = new(Style.Blood); mark = Mat.Flat(h.Trim);
+        gskin = new(Style.GoblinSkin); rag = new(new Color(110, 92, 70), Pattern.Cloth); glow = Mat.Flat(new Color(236, 206, 70));
         charge = h.Charge;
         string s = "/" + p;
 
         foreach (var v in Views)
         {
             Add($"head.{v}{s}", Head(v));
+            Add($"head.goblin.{v}{s}", GoblinHead(v));
             foreach (var helm in Look.Heads.Skip(1)) Add($"helm.{helm}.{v}{s}", Helm(helm, v));
             foreach (var body in Look.Bodies) Add($"torso.{body}.{v}{s}", Torso(body, v));
             Add($"tabard.{v}{s}", Tabard(v));
@@ -120,6 +123,36 @@ public sealed class SpriteSheet
                 break;
             default:
                 c.Area((x, y) => InEl(x, y, 7.5f, 7.5f, 7f, 7.3f) && y < 12.5f, hair);
+                break;
+        }
+        return c;
+    }
+
+    /// A goblin's head: green, with long ears sticking out to the sides, yellow eyes and a wide mouth of teeth.
+    Canvas GoblinHead(string v)
+    {
+        var c = new Canvas(21, 15);
+        c.Ellipse(10.5f, 8f, 6.2f, 6.4f, gskin);
+        switch (v)
+        {
+            case "f":
+                c.Body(5, 8, y => (0.5f + (y - 5) * 1.2f, 5.5f), gskin, -0.1f);    // left ear
+                c.Body(5, 8, y => (15.5f, 20.5f - (y - 5) * 1.2f), gskin, -0.1f);  // right ear
+                foreach (int ex in new[] { 8, 13 }) { c.Set(ex, 7, glow); c.Set(ex, 8, ink); }
+                c.Shade(10, 9, -0.35f); c.Shade(11, 9, -0.35f);                     // nose
+                for (int x = 7; x <= 14; x++) c.Set(x, 11, ink);                    // grin
+                foreach (int tx in new[] { 8, 10, 12 }) c.Set(tx, 11, Mat.Flat(Style.Linen));
+                break;
+            case "s":
+                c.Body(4, 7, y => (1.5f + (y - 4) * 1.4f, 7f), gskin, -0.15f);     // ear swept back
+                c.Set(14, 7, glow); c.Set(14, 8, ink);
+                c.Body(8.5f, 10.5f, y => (15, 18.5f), gskin);                       // long nose
+                for (int x = 12; x <= 16; x++) c.Set(x, 11, ink);
+                break;
+            default:
+                c.Body(5, 8, y => (0.5f + (y - 5) * 1.2f, 5.5f), gskin, -0.2f);
+                c.Body(5, 8, y => (15.5f, 20.5f - (y - 5) * 1.2f), gskin, -0.2f);
+                for (int x = 6; x <= 15; x++) c.Shade(x, 13, -0.3f);
                 break;
         }
         return c;
@@ -223,7 +256,7 @@ public sealed class SpriteSheet
         bool side = v == "s";
         var c = new Canvas(side ? 13 : 20, 23);
         Func<float, (float, float)> span = side ? SideSpan : TorsoSpan;
-        var m = body switch { "gambeson" => quilt, "mail" => mail, "plate" => plate, "fur" => clothDk, _ => cloth };
+        var m = body switch { "gambeson" => quilt, "mail" => mail, "plate" => plate, "fur" => clothDk, "rags" => rag, _ => cloth };
         if (body == "plate")
         {
             c.Body(0, 14, span, plate);
@@ -245,6 +278,12 @@ public sealed class SpriteSheet
         if (v == "f" && body is "tunic" or "gambeson")
             foreach (var (x, y) in new[] { (9, 0), (10, 0), (9, 1), (10, 1), (10, 2) }) c.Set(x, y, skin, 0.4f);
         if (body == "gambeson") for (int x = 0; x < c.W; x++) c.Shade(x, 0, -0.3f);
+        if (body == "rags") // bare green shoulders and a torn hem, patched with the side's cloth
+        {
+            c.Area((x, y) => y < 3.5f && x >= span(y).Item1 && x <= span(y).Item2, gskin);
+            for (int x = 1; x < c.W; x += 3) { c.Clear(x, 22); c.Clear(x + 1, 22); c.Clear(x, 21); }
+            c.Rect(c.W * 0.55f, 8, c.W * 0.55f + 3.5f, 11.5f, cloth);
+        }
         if (body == "fur") // a shaggy mantle over the shoulders
             c.Area((x, y) => y < 6.5f + 1.2f * MathF.Sin(x * 1.7f) && x >= span(y).Item1 - 0.6f && x <= span(y).Item2 + 0.6f, fur);
         return c;
@@ -303,6 +342,7 @@ public sealed class SpriteSheet
         {
             case "gambeson": c.Rect(1, 0, 7, 20, quilt); c.Rect(1, 0, 7, 2.5f, leather); break;
             case "fur": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 4, fur); break;
+            case "rags": c.Rect(2, 0, 6, 20, gskin); c.Rect(1.5f, 0, 6.5f, 3, rag); break; // a thin bare arm
             case "mail": c.Rect(1.5f, 0, 6.5f, 20, mail); break;
             case "plate":
                 c.Rect(1.5f, 0, 6.5f, 20, plate);
@@ -325,6 +365,7 @@ public sealed class SpriteSheet
                 c.Ellipse(4, 10, 3.5f, 2.6f, plate, 0.15f);
                 for (int x = 0; x < 8; x++) c.Shade(x, 5, -0.4f);
                 break;
+            case "hide": c.Rect(2, 0, 6, 20, gskin); c.Rect(1.5f, 0, 6.5f, 4, rag); for (int y = 9; y < 12; y++) c.Shade(4, y, -0.3f); break;
             default: c.Rect(1.5f, 0, 6.5f, 20, clothDk); break;
         }
         return c;
@@ -332,7 +373,7 @@ public sealed class SpriteSheet
 
     Canvas Boot(string kind, string v)
     {
-        var m = kind == "sabatons" ? plate : leather;
+        var m = kind == "sabatons" ? plate : kind == "bare" ? gskin : leather;
         if (v == "s")
         {
             var c = new Canvas(10, 8);
@@ -351,7 +392,8 @@ public sealed class SpriteSheet
     Canvas Hand(string kind)
     {
         var c = new Canvas(5, 5);
-        c.Ellipse(2.5f, 2.5f, 2.4f, 2.4f, kind == "gauntlets" ? plate : skin);
+        c.Ellipse(2.5f, 2.5f, 2.4f, 2.4f, kind == "gauntlets" ? plate : kind == "claw" ? gskin : skin);
+        if (kind == "claw") { c.Set(0, 4, ink); c.Set(2, 4, ink); c.Set(4, 4, ink); }
         return c;
     }
 
