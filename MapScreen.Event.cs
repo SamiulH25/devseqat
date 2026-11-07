@@ -105,12 +105,16 @@ partial class MapScreen
             "search" => ("TREASURE, OR WORSE", Kit.Gilt, "star"),
             "omen" => ("A SIGN, GOOD OR ILL", Style.Warn, "star"),
             "spy" => ("SCOUT THE COUNTRY", Style.Text, "scroll"),
+            "sick" => ($"{arg}% FALL SICK", Style.Bad, "skull"),
+            "reveal" => ("A PLACE ON THE MAP", Style.Text, "scroll"),
+            "man" => ("A MAN JOINS", Style.Ok, "flag"),
+            "flag" => ("", Style.Dim, ""),
             _ => (fx.Replace('_', ' ').Replace(":", " ").ToUpperInvariant(), Style.Text, "scroll"),
         };
     }
 
     /// A choice's effects in a few words ("GOLD -150, UNREST -20").
-    static string EffectsText(ChoiceDef c) => string.Join(", ", c.Effects.Select(fx => fx.Replace('_', ' ').Replace(":", " ").ToUpperInvariant()
+    static string EffectsText(ChoiceDef c) => string.Join(", ", c.Effects.Where(fx => !fx.StartsWith("flag:")).Select(fx => fx.Replace('_', ' ').Replace(":", " ").ToUpperInvariant()
         .Replace("OPINION REALM", "LORDS").Replace("OPINION LIEGE", "LIEGE").Replace("PRISONERS ", "PRISONERS: ").Replace("GAMBLE", "PRIZE")));
 
     // ---------- the pictures ----------
@@ -119,7 +123,8 @@ partial class MapScreen
     void EventScene(Rectangle p, string id)
     {
         float t = Environment.TickCount64 / 1000f;
-        string kind = id switch
+        string scene = Campaign.EventOf(id)?.Scene ?? "";
+        string kind = scene.StartsWith("site_") ? "site" : scene != "" ? scene : id switch
         {
             "band_terror" or "brigand_king" => "burning",
             "lord_favour" or "lord_gift" or "pretender" or "plot" or "tournament" => "court",
@@ -142,7 +147,7 @@ partial class MapScreen
             case "burning": Village(p, ground, near, t, true); break;
             case "town": Village(p, ground, near, t, false); break;
             case "court": Court(p, ground, near, t, id == "tournament"); break;
-            case "site": SiteScene(p, ground, near, t, id[5..]); break;
+            case "site": SiteScene(p, ground, near, t, scene.StartsWith("site_") ? scene[5..] : id[5..]); break;
             default: Camp(p, ground, near, t); break;
         }
         ui.Hills(p, ground + ui.U(6), ui.U(4), 3.3f, near);

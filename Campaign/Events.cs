@@ -7,6 +7,8 @@ namespace Ironfield;
 public sealed class EventDef
 {
     public string Id = "", Trigger = "", Title = "", Text = "";
+    /// The picture (S6): "camp", "town", "court", "burning" or "site_<kind>"; empty = chosen from the id.
+    public string Scene = "";
     public int Cooldown = 30;
     public List<ChoiceDef> Choices = new();
 }
@@ -36,17 +38,20 @@ public sealed partial class Campaign
         "fief_unrest", "fief_poor", "fief_rich", "lord_friend", "lord_hates_liege", "big_band", "veterans", "hungry_winter",
         "unpaid", "prisoners", "war_weary", "in_town", "brigand_king", "pretender", "graves",
         "site_ruin", "site_shrine", "site_stones", "site_battlefield", "site_mine", "site_hermit", "site_watchtower", "site_spring", "site_mill",
+        "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night",
     };
+    /// Days after a "flag:name" effect before the "flag:name" event follows.
+    public const int FlagDays = 7;
     /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
-    static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" || trigger.StartsWith("site_");
+    internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" || trigger.StartsWith("site_");
     static readonly string[] Verbs =
     {
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
-        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists",
+        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man",
     };
-    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists" };
-    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site" };
+    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man" };
+    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion" };
 
     static List<EventDef>? events;
     public static IReadOnlyList<EventDef> Events
@@ -75,7 +80,8 @@ public sealed partial class Campaign
         foreach (var e in Events)
         {
             if (Events.Count(x => x.Id == e.Id) > 1) yield return $"{e.Id}: duplicate id";
-            if (!Triggers.Contains(e.Trigger)) yield return $"{e.Id}: unknown trigger {e.Trigger}";
+            if (!Triggers.Contains(e.Trigger) && !e.Trigger.StartsWith("flag:")) yield return $"{e.Id}: unknown trigger {e.Trigger}";
+            if (e.Trigger.StartsWith("flag:") && !Events.Any(x => x.Choices.Any(c => c.Effects.Contains(e.Trigger)))) yield return $"{e.Id}: nothing sets {e.Trigger}";
             if (e.Choices.Count is < 2 or > 3) yield return $"{e.Id}: needs two or three choices";
             foreach (var text in new[] { e.Title, e.Text }.Concat(e.Choices.Select(c => c.Label)))
                 foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text, @"\{(\w+)\}"))
@@ -89,6 +95,7 @@ public sealed partial class Campaign
                     var (verb, n, ok) = ParseEffect(fx);
                     if (!Verbs.Contains(verb)) yield return $"{e.Id}: unknown effect {fx}";
                     else if (!ok) yield return $"{e.Id}: effect {fx} needs a number";
+                    else if (verb == "flag" && !Events.Any(x => x.Trigger == fx)) yield return $"{e.Id}: no event follows {fx}";
                 }
             }
         }
@@ -99,6 +106,7 @@ public sealed partial class Campaign
         int i = fx.IndexOf(':');
         string verb = i < 0 ? fx : fx[..i];
         if (NoNumber.Contains(verb)) return (verb, 0, i < 0);
+        if (verb == "flag") return (verb, 0, i > 0 && fx.Length > i + 1);
         bool ok = i >= 0 && float.TryParse(fx[(i + 1)..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float n);
         return (verb, ok ? float.Parse(fx[(i + 1)..], System.Globalization.CultureInfo.InvariantCulture) : 0, ok);
     }
@@ -128,6 +136,17 @@ public sealed partial class Campaign
             case "unpaid": return S.UnpaidWeeks > 0 ? ev : null;
             case "prisoners": return PrisonerCount >= Scaled(25) ? ev : null;
             case "war_weary": return Captain.Contract >= 0 && Exhaustion(Captain.Contract) >= 40 ? ev : null;
+            case "spring" or "summer" or "autumn" or "winter": return Season.ToLowerInvariant() == trigger ? ev : null;
+            case "night": return S.Hours % 24 is >= 20 or < 5 && SettlementAt(Player.Pos) == null ? ev : null;
+            case "forest" or "hills": return SettlementAt(Player.Pos) == null && Map.ProvinceAt(Player.Pos).Kind.Equals(trigger, StringComparison.OrdinalIgnoreCase) ? ev : null;
+            case "river": return SettlementAt(Player.Pos) == null && Map.RiverDist(Player.Pos) < 6 * Map.Spread ? ev : null;
+            case "near_site": return Pick(Sites.Where(x => !SiteSeen(x) && Vector2.Distance(x.Pos, Player.Pos) < 40 * Map.Spread), x => ev.Site = x.Id, ev);
+            case "after_battle": return S.Hours - S.LastBattleAt < 24 ? Pick(Player.Companies.Where(c => c.Men > 0), c => ev.Company = c.Id, ev) : null;
+            case "companion": return Pick(Companions, c => ev.Lord = c.Id, ev);
+            case "culture":
+                return Pick(S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.Culture != Me.Culture && v.Culture != "common" && !Refuses(v)
+                    && Vector2.Distance(v.Pos, Player.Pos) < 14 * Map.Spread), v => ev.Settlement = v.Id, ev);
+            case var f when f.StartsWith("flag:"): return S.Flags.TryGetValue(f[5..], out float set) && S.Hours - set >= FlagDays * 24 ? ev : null;
             case "in_town": return SettlementAt(Player.Pos) is { Kind: SettlementKind.Town } town && !Refuses(town) ? (ev.Settlement = town.Id) >= 0 ? ev : null : null;
             default: return null;
         }
@@ -161,7 +180,12 @@ public sealed partial class Campaign
     {
         S.Event = pe;
         S.EventsFired[pe.Id] = (float)S.Hours;
+        EventTally[pe.Id] = EventTally.GetValueOrDefault(pe.Id) + 1;
+        if (EventOf(pe.Id)?.Trigger is string t && t.StartsWith("flag:")) S.Flags.Remove(t[5..]);
     }
+
+    /// How often each event came up in this session (for the spread test and the balance report).
+    public readonly Dictionary<string, int> EventTally = new();
 
     /// An event the world forces (it does not wait for the gap); dropped if another is already waiting.
     void Force(string id, PendingEvent pe)
@@ -181,7 +205,8 @@ public sealed partial class Campaign
             .Replace("{company}", Player.Companies.FirstOrDefault(c => c.Id == pe.Company)?.Name ?? "a company")
             .Replace("{realm}", realm)
             .Replace("{liege}", RulerOf(Captain.Contract)?.Name ?? "your liege")
-            .Replace("{site}", SiteById(pe.Site)?.Name ?? "the place");
+            .Replace("{site}", SiteById(pe.Site)?.Name ?? "the place")
+            .Replace("{companion}", CharacterById(pe.Lord)?.Name ?? "your companion");
     }
 
     /// Why a choice cannot be taken now ("" = it can).
@@ -234,6 +259,22 @@ public sealed partial class Campaign
             case "exhaustion":
                 foreach (var w in S.Wars.Where(w => w.Active && (w.A == Captain.Contract || w.B == Captain.Contract))) AddExhaustion(w, Captain.Contract, n);
                 break;
+            case "flag": S.Flags[fx[5..]] = (float)S.Hours; break;
+            case "man": return GiftMen(1, SettlementNear(Player.Pos)) > 0 ? "He joins your company." : "You have no room for him.";
+            case "sick":
+                int ill = 0;
+                foreach (var st in Player.Companies.SelectMany(x => x.Stacks))
+                {
+                    int k = (int)MathF.Round(st.Men * n / 100);
+                    st.Men -= k; st.Wounded += k; ill += k;
+                }
+                return ill > 0 ? $"{ill} men fall sick." : null;
+            case "reveal":
+                var site = SiteById(pe.Site) is Site named && !SiteSeen(named) ? named
+                    : Sites.Where(x => !SiteSeen(x)).OrderBy(x => Vector2.Distance(x.Pos, Player.Pos)).FirstOrDefault();
+                if (site == null) return null;
+                S.SitesSeen.Add(site.Id);
+                return $"You learn the way to the {site.Name}, to the {Bearing(Player.Pos, site.Pos)}.";
             case "lists": if (s != null) { Lists = s; return "The heralds cry your name. You ride into the lists."; } break;
             case "gamble":
                 if (rng.Chance(0.25f + Skill("Arms") / 300f)) { S.Gold += n; Captain.Renown += 5; return $"You win the tournament and {n:0} crowns!"; }

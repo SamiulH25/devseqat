@@ -369,6 +369,9 @@ public sealed class CampaignState
     public List<Grave> Graves = new();
     public float LastSummons = -1000;
     public int LastBattleFoe = -1;             // the last party you defeated (for hunt contracts)
+    public float LastBattleAt = -9999;         // when you last fought (the after_battle events, S6)
+    /// Follow-up events waiting (S6): a "flag:name" effect sets name to the hour; a "flag:name" trigger fires a week later.
+    public Dictionary<string, float> Flags = new();
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
     public List<Character> Characters = new();
     public int CaptainChar = -1;

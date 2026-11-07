@@ -1,7 +1,8 @@
 {
   // Campaign events (CAMPAIGN_OVERHAUL.md 8). Each fires when its trigger holds (see Campaign/Events.cs for the list), at most
   // once per cooldown in days, and offers two or three choices. Effects are "verb" or "verb:number"; text may name
-  // {settlement}, {lord}, {band}, {company}, {realm} and {liege}. A choice's "need" (gold:N) greys it out when you cannot pay.
+  // {settlement}, {lord}, {band}, {company}, {realm}, {liege}, {site} and {companion}. A choice's "need" (gold:N) greys it out when
+  // you cannot pay. "scene" picks the picture. A "flag:name" effect is followed a week later by the event whose trigger is "flag:name".
   "events": [
     {
       "id": "unrest_petition", "trigger": "fief_unrest", "cooldown": 20, "title": "A PETITION FROM {settlement}",
@@ -194,6 +195,257 @@
         { "label": "BUY FLOUR", "need": "gold:50", "effects": ["gold:-50", "food:5", "spent:7"] },
         { "label": "BUY THE LOT", "need": "gold:120", "effects": ["gold:-120", "food:12", "spent:14"] },
         { "label": "RIDE ON", "effects": [] }
+      ]
+    },
+    {
+      "id": "spring_floods", "trigger": "spring", "cooldown": 60, "scene": "camp", "title": "THE THAW",
+      "text": "The snow melts in the hills and every stream runs brown and fast. The fords are waist deep and rising.",
+      "choices": [
+        { "label": "WAIT FOR THE WATER TO FALL", "effects": ["food:-2", "cohesion:1"] },
+        { "label": "CROSS NOW", "effects": ["sick:4", "renown:1"] }
+      ]
+    },
+    {
+      "id": "spring_lambs", "trigger": "spring", "cooldown": 60, "scene": "town", "title": "LAMBING TIME",
+      "text": "Shepherds drive their flocks past your camp. They will sell lambs cheap, for the hills are full of them this year.",
+      "choices": [
+        { "label": "BUY A FLOCK", "need": "gold:40", "effects": ["gold:-40", "food:4"] },
+        { "label": "TAKE A FEW FOR THE ROAD", "effects": ["food:2", "renown:-1"] },
+        { "label": "LET THEM PASS", "effects": [] }
+      ]
+    },
+    {
+      "id": "summer_fever", "trigger": "summer", "cooldown": 50, "scene": "camp", "title": "SUMMER FEVER",
+      "text": "Heat and flies. The water is bad, and men shiver in their blankets at noon.",
+      "choices": [
+        { "label": "PAY A BARBER-SURGEON", "need": "gold:80", "effects": ["gold:-80", "heal:20"] },
+        { "label": "BOIL THE WATER, MARCH ON", "effects": ["sick:3", "cohesion:-1"] }
+      ]
+    },
+    {
+      "id": "midsummer", "trigger": "summer", "cooldown": 60, "scene": "camp", "title": "MIDSUMMER NIGHT",
+      "text": "It is the shortest night of the year. The men want to light bonfires and drink until the sun comes back.",
+      "choices": [
+        { "label": "BREACH A CASK", "effects": ["food:-2", "cohesion:3"] },
+        { "label": "KEEP THEM SOBER", "effects": ["cohesion:-1", "xp:4"] }
+      ]
+    },
+    {
+      "id": "harvest", "trigger": "autumn", "cooldown": 60, "scene": "town", "title": "HARVEST",
+      "text": "The fields are gold and the farmers have too few hands. They offer a share of the grain for a few days' work.",
+      "choices": [
+        { "label": "LEND THEM YOUR MEN", "effects": ["food:6", "cohesion:-1", "renown:1"] },
+        { "label": "BUY THE SURPLUS", "need": "gold:60", "effects": ["gold:-60", "food:8"] },
+        { "label": "MARCH ON", "effects": [] }
+      ]
+    },
+    {
+      "id": "autumn_rains", "trigger": "autumn", "cooldown": 50, "scene": "camp", "title": "THE RAINS",
+      "text": "It has rained for four days. Boots rot, bowstrings stretch, and the roads are rivers of mud.",
+      "choices": [
+        { "label": "BUY OILCLOTH AND DRY STRINGS", "need": "gold:70", "effects": ["gold:-70", "cohesion:2"] },
+        { "label": "SLOG ON", "effects": ["cohesion:-2", "sick:2"] }
+      ]
+    },
+    {
+      "id": "first_snow", "trigger": "winter", "cooldown": 80, "scene": "camp", "title": "FIRST SNOW",
+      "text": "You wake to a white world. The men stamp and blow on their hands, and the older ones say it will be a long winter.",
+      "choices": [
+        { "label": "BUY FURS AND BLANKETS", "need": "gold:100", "effects": ["gold:-100", "cohesion:2"] },
+        { "label": "DOUBLE THE FIRES", "effects": ["food:-1", "cohesion:1"] },
+        { "label": "THEY WILL HARDEN", "effects": ["sick:4", "xp:3"] }
+      ]
+    },
+    {
+      "id": "poachers", "trigger": "forest", "cooldown": 40, "scene": "camp", "title": "POACHERS",
+      "text": "Your scouts drag in three ragged men with a deer between them. Poaching in the lord's wood is a hanging matter.",
+      "choices": [
+        { "label": "LET THEM GO", "effects": ["renown:1", "food:1"] },
+        { "label": "HANG THEM", "effects": ["opinion_realm:1", "cohesion:-1"] },
+        { "label": "OFFER THEM A SPEAR", "effects": ["men:3"] }
+      ]
+    },
+    {
+      "id": "lost_in_woods", "trigger": "forest", "cooldown": 40, "scene": "camp", "title": "LOST IN THE WOOD",
+      "text": "The trees close in and the path forks, and forks again. Your guide scratches his head.",
+      "choices": [
+        { "label": "FOLLOW THE STREAM DOWN", "effects": ["food:-1"] },
+        { "label": "CLIMB A TREE AND LOOK", "effects": ["reveal"] }
+      ]
+    },
+    {
+      "id": "shepherd_path", "trigger": "hills", "cooldown": 40, "scene": "camp", "title": "A SHEPHERD'S PATH",
+      "text": "An old shepherd watches your column toil up the slope. For a few coins he will show you the ways only goats know.",
+      "choices": [
+        { "label": "PAY HIM", "need": "gold:20", "effects": ["gold:-20", "reveal", "cohesion:1"] },
+        { "label": "SEND HIM OFF", "effects": [] }
+      ]
+    },
+    {
+      "id": "rockfall", "trigger": "hills", "cooldown": 50, "scene": "camp", "title": "ROCKFALL",
+      "text": "A slide of stones comes down on the baggage. Two wagons are buried and a mule is screaming.",
+      "choices": [
+        { "label": "DIG OUT THE WAGONS", "effects": ["food:-1", "cohesion:1"] },
+        { "label": "LEAVE THEM", "effects": ["food:-3"] }
+      ]
+    },
+    {
+      "id": "ferryman", "trigger": "river", "cooldown": 40, "scene": "camp", "title": "THE FERRYMAN",
+      "text": "There is one ferry for miles, and the ferryman knows it. He asks a crown a head.",
+      "choices": [
+        { "label": "PAY HIS TOLL", "need": "gold:30", "effects": ["gold:-30", "cohesion:1"] },
+        { "label": "TAKE THE FERRY", "effects": ["renown:-2", "opinion_realm:-1"] },
+        { "label": "SWIM THE HORSES ACROSS", "effects": ["sick:3", "horses:-1"] }
+      ]
+    },
+    {
+      "id": "river_fish", "trigger": "river", "cooldown": 40, "scene": "camp", "title": "A FAT RIVER",
+      "text": "The men rig lines and nets at the river and pull out more fish than they can carry.",
+      "choices": [
+        { "label": "FEAST TONIGHT", "effects": ["food:1", "cohesion:2"] },
+        { "label": "SMOKE IT FOR THE ROAD", "effects": ["food:3"] }
+      ]
+    },
+    {
+      "id": "woodcutter", "trigger": "near_site", "cooldown": 30, "scene": "camp", "title": "A WOODCUTTER'S TALE",
+      "text": "A woodcutter shares your fire and talks of the {site}, not far from here. Few go there, he says.",
+      "choices": [
+        { "label": "ASK HIM THE WAY", "effects": ["reveal"] },
+        { "label": "BUY HIM A DRINK FOR MORE", "need": "gold:15", "effects": ["gold:-15", "reveal", "learn:0.5"] }
+      ]
+    },
+    {
+      "id": "taken_standard", "trigger": "after_battle", "cooldown": 30, "scene": "camp", "title": "A TAKEN STANDARD",
+      "text": "The men of {company} bring you the enemy's banner, torn and muddy, taken in the thick of it.",
+      "choices": [
+        { "label": "HANG IT IN CAMP", "effects": ["cohesion:3"] },
+        { "label": "SELL IT", "effects": ["gold:120"] },
+        { "label": "SEND IT TO {liege}", "effects": ["opinion_liege:4", "renown:2"] }
+      ]
+    },
+    {
+      "id": "deserter", "trigger": "after_battle", "cooldown": 30, "scene": "camp", "title": "A MAN WHO RAN",
+      "text": "A man of {company} threw down his spear and ran when the lines met. His sergeant has him in chains.",
+      "choices": [
+        { "label": "FLOG HIM", "effects": ["cohesion:1"] },
+        { "label": "HANG HIM", "effects": ["cohesion:2", "renown:-1"] },
+        { "label": "FORGIVE HIM", "effects": ["cohesion:-1", "renown:1"] }
+      ]
+    },
+    {
+      "id": "spoils", "trigger": "after_battle", "cooldown": 25, "scene": "camp", "title": "SHARING THE SPOILS",
+      "text": "There was silver on the dead. The men watch to see how you share it out.",
+      "choices": [
+        { "label": "SHARE IT ALL", "effects": ["cohesion:3"] },
+        { "label": "TAKE YOUR CAPTAIN'S THIRD", "effects": ["gold:60", "cohesion:1"] },
+        { "label": "KEEP IT FOR THE CHEST", "effects": ["gold:150", "cohesion:-3"] }
+      ]
+    },
+    {
+      "id": "orphan", "trigger": "after_battle", "cooldown": 90, "scene": "camp", "title": "A BOY IN THE BAGGAGE",
+      "text": "A boy from a burnt farm has followed the company since the fight. He carries water and will not be sent away.",
+      "choices": [
+        { "label": "TAKE HIM IN", "effects": ["food:-1", "flag:orphan"] },
+        { "label": "SEND HIM TO A PRIEST", "effects": ["gold:-10", "renown:1"] }
+      ]
+    },
+    {
+      "id": "orphan_grown", "trigger": "flag:orphan", "cooldown": 0, "scene": "camp", "title": "THE BOY WITH THE SPEAR",
+      "text": "The boy you took in has been drilling with the men. He is quick, and the sergeants say he has the makings of a soldier.",
+      "choices": [
+        { "label": "ENLIST HIM", "effects": ["man", "cohesion:2"] },
+        { "label": "MAKE HIM YOUR SQUIRE", "effects": ["renown:2", "learn:1"] }
+      ]
+    },
+    {
+      "id": "companion_debts", "trigger": "companion", "cooldown": 45, "scene": "camp", "title": "{companion}'S DEBTS",
+      "text": "{companion} has lost at dice to half the company, and the winners want paying.",
+      "choices": [
+        { "label": "PAY HIS DEBTS", "need": "gold:60", "effects": ["gold:-60", "opinion:6"] },
+        { "label": "DOCK HIS PAY", "effects": ["opinion:-6", "cohesion:1"] },
+        { "label": "LET THEM SORT IT OUT", "effects": ["cohesion:-2"] }
+      ]
+    },
+    {
+      "id": "companion_drill", "trigger": "companion", "cooldown": 40, "scene": "camp", "title": "{companion} HAS AN IDEA",
+      "text": "{companion} thinks the men are soft, and asks leave to drill them hard for a few days.",
+      "choices": [
+        { "label": "LET HIM", "effects": ["xp:6", "cohesion:-1", "opinion:4"] },
+        { "label": "THE MEN NEED REST", "effects": ["cohesion:1", "opinion:-3"] }
+      ]
+    },
+    {
+      "id": "companion_letter", "trigger": "companion", "cooldown": 60, "scene": "camp", "title": "A LETTER FOR {companion}",
+      "text": "A letter reaches {companion}: his mother is sick and his brother cannot pay for the physician.",
+      "choices": [
+        { "label": "SEND MONEY HOME", "need": "gold:50", "effects": ["gold:-50", "opinion:10"] },
+        { "label": "SAY YOU ARE SORRY", "effects": ["opinion:-2"] }
+      ]
+    },
+    {
+      "id": "strange_tongue", "trigger": "culture", "cooldown": 40, "scene": "town", "title": "STRANGERS IN {settlement}",
+      "text": "The folk of {settlement} speak another tongue and keep their doors shut as your men pass. The children throw stones.",
+      "choices": [
+        { "label": "BUY THEIR BREAD FAIRLY", "need": "gold:20", "effects": ["gold:-20", "food:3", "prosperity:2"] },
+        { "label": "TAKE WHAT YOU NEED", "effects": ["food:4", "unrest:6", "renown:-2"] },
+        { "label": "MOVE ON", "effects": [] }
+      ]
+    },
+    {
+      "id": "saints_day", "trigger": "culture", "cooldown": 50, "scene": "town", "title": "A FEAST IN {settlement}",
+      "text": "It is a saint's day in {settlement}, a saint you have never heard of. The headman asks your men to join the feast.",
+      "choices": [
+        { "label": "JOIN THE FEAST", "effects": ["food:-1", "cohesion:2", "prosperity:1"] },
+        { "label": "BRING A GIFT", "need": "gold:40", "effects": ["gold:-40", "renown:2", "prosperity:3"] },
+        { "label": "KEEP TO CAMP", "effects": [] }
+      ]
+    },
+    {
+      "id": "horse_thieves", "trigger": "night", "cooldown": 40, "scene": "camp", "title": "THIEVES IN THE NIGHT",
+      "text": "Shouts at the horse lines. Shadows are running off with your mounts into the dark.",
+      "choices": [
+        { "label": "AFTER THEM", "effects": ["horses:1", "sick:1"] },
+        { "label": "LET THEM GO, DOUBLE THE WATCH", "effects": ["horses:-2", "cohesion:-1"] }
+      ]
+    },
+    {
+      "id": "falling_star", "trigger": "night", "cooldown": 50, "scene": "camp", "title": "A FALLING STAR",
+      "text": "A star falls across the whole sky, green and slow. Every man in camp saw it, and every man has a different idea of what it means.",
+      "choices": [
+        { "label": "CALL IT A GOOD SIGN", "effects": ["omen"] },
+        { "label": "SAY IT MEANS NOTHING", "effects": ["cohesion:-1", "xp:2"] }
+      ]
+    },
+    {
+      "id": "night_howls", "trigger": "night", "cooldown": 45, "scene": "camp", "title": "HOWLING",
+      "text": "Wolves howl all around the camp, close enough to see their eyes at the edge of the firelight.",
+      "choices": [
+        { "label": "KEEP THE FIRES HIGH", "effects": ["food:-1", "cohesion:1"] },
+        { "label": "SEND OUT HUNTERS", "effects": ["food:2", "sick:1"] }
+      ]
+    },
+    {
+      "id": "dying_stranger", "trigger": "forest", "cooldown": 120, "scene": "camp", "title": "A DYING STRANGER",
+      "text": "You find a man in the bracken with an arrow in him. Before he dies he presses a scrap of map into your hand.",
+      "choices": [
+        { "label": "KEEP THE MAP", "effects": ["flag:map"] },
+        { "label": "BURY HIM AND BURN IT", "effects": ["renown:1"] }
+      ]
+    },
+    {
+      "id": "map_found", "trigger": "flag:map", "cooldown": 0, "scene": "camp", "title": "THE DEAD MAN'S MAP",
+      "text": "A week of puzzling, and your clerk has it: the map marks a cairn by a lightning-struck oak, a day's ride from here.",
+      "choices": [
+        { "label": "DIG", "effects": ["find:300", "cohesion:1"] },
+        { "label": "SELL THE MAP", "effects": ["gold:80"] }
+      ]
+    },
+    {
+      "id": "veteran_returns", "trigger": "after_battle", "cooldown": 120, "scene": "camp", "title": "AN OLD SOLDIER",
+      "text": "An old soldier watched your fight from a hedge. He asks if a captain who fights like that has room for one more.",
+      "choices": [
+        { "label": "TAKE HIM ON", "effects": ["man", "xp:3"] },
+        { "label": "BUY HIM A MEAL", "effects": ["food:-1", "renown:1"] }
       ]
     },
     {

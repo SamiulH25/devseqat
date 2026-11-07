@@ -190,6 +190,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
   the GLSL; set with `effect.Parameters["Name"].SetValue(...)`. GLSL rules: README "Shaders" section.
 - **Add an event:** an entry in `Data/events.json` using an existing trigger and effect verbs; a new trigger or verb is a case
   in `Campaign.Find` / `ApplyEffect` plus its name in `Triggers` / `Verbs` (`SelfTest.EventsAndQuests` validates the file).
+  `"scene"` picks the picture; a follow-up weeks later is a `flag:name` effect plus an event with trigger `flag:name`.
 - **Try a new UI look:** add a page method in `UiLab.Pages.cs`/`.Scenes.cs`, list it in the `pages` array in `UiLab.cs`, build widgets in `UiKit.cs` (shared with the real screens); check with `IRONFIELD_LAB_SHOTS`.
 - **Add a sound:** add a `Cue`, synthesize it in `AudioEngine` ctor, emit from the sim with `Sound(Cue.X, pos)`.
 

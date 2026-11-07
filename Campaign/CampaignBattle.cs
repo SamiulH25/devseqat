@@ -121,6 +121,7 @@ public partial class Campaign
 
         var report = new BattleReport(won, enemyName, reports, 0, 0, 0, 0, 0, r.Captain);
         if (!playerIn) return report;
+        S.LastBattleAt = (float)S.Hours;
         float bounty = 0, renown = 0;
         int horses = 0;
         if (won)

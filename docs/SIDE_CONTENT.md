@@ -187,6 +187,17 @@ them. Then S3 and S4 together (escort needs caravans), S5, S6, and S7 last so th
   step; it goes on your list with a fresh six-day deadline, and the reward, renown and the giver's favour come at the end.
   Not done: a ransom under truce to an enemy town (it goes to any far town at peace), lords' own escort jobs. Test: `Quests`
   (and `EventsAndQuests` finishes whichever quest the lord gave).
+- **S6 (events):** `Data/events.json` grows from 25 to 55 events. New triggers in `Campaign.Find`: `spring`, `summer`, `autumn`,
+  `winter`; `forest`, `hills` (the province you are camped in) and `river` (camped by one); `near_site` (an unseen site
+  within a short ride: `{site}`); `after_battle` (within a day of a fight: `{company}`); `companion` (`{companion}`);
+  `culture` (a village of another people nearby); `night` (camped in the open after dark); and `flag:<name>`, which fires
+  a week (`FlagDays`) after a `flag:<name>` effect and clears it (`S.Flags`). New verbs: `sick:N` (N% of the men fall
+  sick), `reveal` (the event's site, else the nearest unseen one, goes on your map with its bearing), `man` (exactly one man
+  joins), `flag:<name>`. `EventDef.Scene` picks the picture (`camp`, `town`, `court`, `burning`, `site_<kind>`).
+  `ValidateEvents` also checks every flag has both a setter and a follow-up. Two chains: a boy in the baggage who grows into
+  a soldier, and a dying stranger's map. `S.LastBattleAt` marks your last fight. Spread: over 240 days the stand-in captain
+  sees 48 drawn events of 29 kinds (none more than 3 times) plus 28 forced ones (mostly burying the dead after its big
+  battles, which follows each fight by design and is not counted in the 15% rule). Test: `EventSpread`.
 - **S5 (town life):** `Campaign/Town.cs`. Towns have a TAVERN tab: the wanderer (moved from MERCENARIES) and two or three
   `Rumours` of real things near the town (goblin holdouts, wolf packs, a brigand king, the town's caravans on the road, sites
   you have not seen, an enemy lord), the day's pick stable within a day; RIDE THERE goes to the place or site. The

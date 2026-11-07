@@ -247,4 +247,43 @@ public static partial class SelfTest
         Check(won.Won && won.Loot == Campaign.TournamentPurse, "a won tournament pays its purse");
         Check(c.Lists == null || c.AutoTournament(t) != null, "the stand-in captain can enter without a fight");
     }
+
+    /// More events (S6): about fifty, valid; a long run fires a varied spread; a flag set by one event brings its follow-up.
+    static void EventSpread()
+    {
+        Check(Campaign.Events.Count >= 50, $"about fifty events ({Campaign.Events.Count})");
+        var c = Campaign.New(4242);
+        new Pilot(c).Run(240 * 24);
+        // The spread counts the daily draw; forced events (burying your dead, sites you ride to, a brigand king) follow the world.
+        var drawn = c.EventTally.Where(k => !Campaign.Forced(Campaign.EventOf(k.Key)!.Trigger)).ToList();
+        int total = drawn.Sum(k => k.Value), forced = c.EventTally.Values.Sum() - total;
+        var top = drawn.OrderByDescending(k => k.Value).First();
+        Console.WriteLine($"events in 240 days: {total} drawn ({drawn.Count} kinds) and {forced} forced; most often {top.Key} ({top.Value})");
+        Check(drawn.Count >= 15, $"a long run fires many kinds of event ({drawn.Count})");
+        Check(top.Value <= total * 0.15f, $"no event is more than 15% of the draw ({top.Key}: {top.Value} of {total})");
+        // A follow-up: keep the dead man's map, and a week later it leads somewhere.
+        var q = Campaign.New(77);
+        q.S.Event = new PendingEvent { Id = "dying_stranger" };
+        q.Choose(0);
+        Check(q.S.Flags.ContainsKey("map"), "keeping the map sets a flag");
+        q.S.NextEvent = 0;
+        float gold = q.S.Gold;
+        for (int d = 0; d < Campaign.FlagDays + 8 && !q.EventTally.ContainsKey("map_found"); d++)
+        {
+            Days(q, 1);
+            if (q.S.Event is { Id: not "map_found" }) { q.S.Event = null; q.S.NextEvent = 0; }
+        }
+        Check(q.S.Event is { Id: "map_found" } && !q.S.Flags.ContainsKey("map"), "a week later the map's event follows");
+        q.Choose(0);
+        Check(q.S.Gold > gold, "digging where the map says finds coin");
+        // New verbs: a fever lays men low; a tip reveals a site.
+        var men = q.Player.Men;
+        q.S.Event = new PendingEvent { Id = "summer_fever" };
+        q.Choose(1);
+        Check(q.Player.Men < men, "a fever wounds men");
+        int seen = q.S.SitesSeen.Count;
+        q.S.Event = new PendingEvent { Id = "lost_in_woods" };
+        q.Choose(1);
+        Check(q.S.SitesSeen.Count == seen + 1, "climbing a tree shows you a place on the map");
+    }
 }
