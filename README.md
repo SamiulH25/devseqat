@@ -124,8 +124,8 @@ that will not last. Brigands roam between them all.
   panel shows the next rise and how far off it is, and the results screen repeats it after every battle.
 - **Captain skills:** ten skills (Leadership, Tactics, Logistics, Training, Medicine, Stewardship, Charm, Arms, Riding, Bowcraft) rise by doing what
   they name: commanding, winning against the odds, marching, promoting men, healing them, ruling fiefs, winning goodwill and ransoms,
-  your own kills and parries on foot, your kills and lance hits from the saddle, and your arrows. Every 25 points opens a perk on that branch (40 in all: Bannerman, Iron Will, Tactician, Siegecraft,
-  Quartermaster, Drillmaster, Cheap Steel, Surgeon, Tax Roll, Silver Tongue, Ransom Broker, War Cry, Duellist, Lancer, Marksman, ...). Heavy
+  your own kills and parries on foot, your kills and lance hits from the saddle, and your arrows. Every 25 points opens a perk on that branch, in tiers: tier I at 25, II at 50, III at 75, and at 100 a crowned capstone that needs two other perks of the branch (50 in all: Bannerman, Iron Will, Tactician, Siegecraft,
+  Quartermaster, Drillmaster, Cheap Steel, Surgeon, Tax Roll, Silver Tongue, Ransom Broker, War Cry, Duellist, Lancer, Marksman, ... and the capstones Warlord, Master of War, Champion, Deadeye ...). Heavy
   gear needs Arms, great horses Riding, the war bow Bowcraft. K opens the skill tree. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
 
 ## Controls

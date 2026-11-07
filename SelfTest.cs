@@ -53,6 +53,7 @@ public static partial class SelfTest
         Armoury();
         Duels();
         RidingAndBowcraft();
+        PerkTiers();
         BalanceMatchesData();
         HorsesCostGold();
         Career();

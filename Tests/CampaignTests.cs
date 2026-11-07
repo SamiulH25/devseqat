@@ -715,6 +715,34 @@ public static partial class SelfTest
         Check(o.Riding == 80 && o.Perks.Contains("SaddleFast") && o.PlayerMount!.Gallop > gallop, "the battle gets your skills, perks and horse");
     }
 
+    /// Perk tiers (P3): each branch opens in order, and its capstone at 100 needs two of its other perks.
+    static void PerkTiers()
+    {
+        Check(Skills.All.All(s => s.Perks.Count == 5 && Skills.Capstone(s, s.Perks[4]) && !s.Perks.Take(4).Any(p => Skills.Capstone(s, p))), "every skill has four perks and a capstone");
+        var c = Campaign.New(31);
+        c.Captain.Skills["Arms"] = 30;
+        Check(c.TakePerk("IronGrip")!.Contains("ARMS 50"), "a tier II perk needs 50");
+        Check(c.TakePerk("WarCry") == null, "a tier I perk opens at 25");
+        c.Captain.Skills["Arms"] = 100;
+        Check(c.TakePerk("Champion")!.Contains("TWO"), "the capstone needs two other perks of its skill");
+        Check(c.TakePerk("Hardened") == null && c.TakePerk("Champion") == null && c.Has("Champion"), "with two, the capstone at 100");
+        Check(c.TakePerk("Duellist") == null && c.TakePerk("IronGrip") != null, "four choices at 100: one perk of five stays out");
+        // Capstones at work.
+        var lord = c.S.Characters.First(ch => ch.Kind == "lord");
+        float before = c.OpinionOfYou(lord);
+        c.Captain.Perks.Add("Kingmaker");
+        Check(c.OpinionOfYou(lord) == Math.Min(100, before + 10), "Kingmaker: every lord thinks better of you");
+        float speed = c.Speed(c.Player);
+        c.Captain.Perks.Add("ForcedMarch");
+        Check(c.Speed(c.Player) > speed * 1.05f, "Forced March quickens the march");
+        var b = Battle.Empty(32, new BattleOptions { Perks = { "FieldSurgeon" } });
+        b.Hit(b.EnemyCaptain, b.Player, 5000, false);
+        Check(b.Player.Active && b.Player.Hp > 0, "Field Surgeon: you get back up once");
+        b.Player.Action = UnitAction.None;
+        b.Hit(b.EnemyCaptain, b.Player, 5000, false);
+        Check(!b.Player.Active, "but only once");
+    }
+
     static void SkillTree()
     {
         var a = Campaign.New(91);

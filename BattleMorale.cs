@@ -71,6 +71,7 @@ public partial class Battle
             u.Morale = Math.Clamp(u.Morale + m * step, 0, 100);
             // Iron Will: near you, a company that still has a third of its men will not break.
             if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);
+            if (u.Team == 0 && inspired && Player.Active && Perk("Warlord")) u.Morale = MathF.Max(u.Morale, 16); // Warlord: none break while you stand
             float routAt = (u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? RoutAt - 4 : RoutAt) - (u.Squad.Company?.RoutBonus ?? 0) // officer trait; walls; honours
                 + (u.Type.Has("craven") ? CravenRout : 0);
             if (!u.Routing && u.Morale < routAt) { u.Routing = true; u.Routs++; u.Action = UnitAction.None; u.Couched = false; }

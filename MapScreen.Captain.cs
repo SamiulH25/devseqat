@@ -90,20 +90,21 @@ partial class MapScreen
             if (open > 0) ui.TextC($"{open} TO CHOOSE", box.Center.X, ty, Kit.Gilt, 1);
             else ui.TextC($"NEXT AT {((int)(lv / Skills.Step) + 1) * (int)Skills.Step}", box.Center.X, ty, Style.Dim * 0.7f, 1);
 
-            // The branch: up to four perks in a column of two by two nodes.
-            int node = Math.Clamp((bh - (ty - box.Y) - ui.U(30)) / 2 - ui.U(14), ui.U(22), ui.U(38)), ic = node >= ui.U(32) ? 2 : 1;
-            int gx = Math.Max(ui.U(16), bw / 2 - node), gy = ui.U(18), nx0 = box.Center.X - node - gx / 2, ny0 = ty + ui.U(16);
-            for (int k = 0; k < sk.Perks.Count && k < 4; k++)
+            // The branch (P3): tier I-III perks two by two, the capstone centred below them.
+            int node = Math.Clamp((bh - (ty - box.Y) - ui.U(20)) / 3 - ui.U(14), ui.U(18), ui.U(38)), ic = node >= ui.U(32) ? 2 : 1;
+            int gx = Math.Max(ui.U(16), bw / 2 - node), gy = ui.U(14), nx0 = box.Center.X - node - gx / 2, ny0 = ty + ui.U(14);
+            for (int k = 0; k < sk.Perks.Count && k < 5; k++)
             {
                 var pk = sk.Perks[k];
-                bool has = cap.Perks.Contains(pk.Id);
-                int state = has ? 2 : open > 0 ? 1 : 0;
-                var nr = new Rectangle(nx0 + k % 2 * (node + gx), ny0 + k / 2 * (node + gy), node, node);
+                bool has = cap.Perks.Contains(pk.Id), cap4 = Skills.Capstone(sk, pk);
+                int state = has ? 2 : Skills.Locked(cap, sk, pk) == null ? 1 : 0;
+                var nr = cap4 ? new Rectangle(box.Center.X - node / 2, ny0 + 2 * (node + gy), node, node)
+                    : new Rectangle(nx0 + k % 2 * (node + gx), ny0 + k / 2 * (node + gy), node, node);
                 bool hover = ui.Hover(nr);
                 ui.Rect(new Rectangle(nr.X + ui.U(2), nr.Y + ui.U(3), nr.Width, nr.Height), Color.Black * 0.4f);
                 ui.VGrad(nr, state == 2 ? Kit.Mul(Kit.Gilt, 0.6f) : state == 1 ? new Color(46, 46, 52) : new Color(24, 24, 28), state == 2 ? Kit.Mul(Kit.Gilt, 0.25f) : Kit.IronDark, 1);
-                ui.Frame(nr, state == 2 ? Kit.Gilt : state == 1 ? (hover ? Kit.Gilt : Style.Text * 0.7f) : Color.Black * 0.6f, ui.U(1));
-                string icon = SkillIcons.TryGetValue(sk.Id, out var si) ? si : "star";
+                ui.Frame(nr, state == 2 ? Kit.Gilt : state == 1 ? (hover ? Kit.Gilt : Style.Text * 0.7f) : cap4 ? Kit.Gilt * 0.35f : Color.Black * 0.6f, ui.U(cap4 ? 2 : 1));
+                string icon = cap4 ? "crown" : SkillIcons.TryGetValue(sk.Id, out var si) ? si : "star";
                 ui.Icon(icon, nr.X + (node - ui.U(7 * ic)) / 2, nr.Y + (node - ui.U(7 * ic)) / 2, state == 2 ? Color.White : state == 1 ? Style.Text : Style.Dim * 0.4f, ic);
                 string label = pk.Name.ToUpperInvariant();
                 int fit = (node + gx) / (6 * ui.S) - 1;
@@ -117,8 +118,9 @@ partial class MapScreen
         if (tip is var (tr, tp, ts, tst))
         {
             var lines = ui.Wrap(tp.Text.ToUpperInvariant(), ui.U(170)).ToList();
-            lines.Add(tst == 2 ? "TAKEN." : tst == 1 ? "CLICK TO TAKE IT." : $"NEXT CHOICE AT {ts.Name.ToUpperInvariant()} {((int)(C.Skill(ts.Id) / Skills.Step) + 1) * (int)Skills.Step}.");
-            ui.Tooltip(tr.Center.X, tr.Y - ui.U(2), tp.Name.ToUpperInvariant(), lines.ToArray());
+            lines.Add(tst == 2 ? "TAKEN." : tst == 1 ? "CLICK TO TAKE IT." : (Skills.Locked(cap, ts, tp) ?? "") + ".");
+            int tier = Skills.TierOf(ts, tp);
+            ui.Tooltip(tr.Center.X, tr.Y - ui.U(2), $"{tp.Name.ToUpperInvariant()} . {(tier == 4 ? "CAPSTONE" : "TIER " + Style.Numerals[tier])}", lines.ToArray());
         }
     }
 

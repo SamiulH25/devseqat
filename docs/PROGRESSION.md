@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1 and P2 built; P3 in progress** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1 and P2 built; P3 in progress (steps 1-2 built)** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -243,3 +243,15 @@ Give the captain something to do in each fight beyond "win".
   `ArrowHits`, `Parries`, `Ripostes` in `BattleResult`), and `SkillsAfterBattle` splits the rise: Arms for kills on foot and
   parries/ripostes, Riding for saddle kills and lance hits, Bowcraft for arrows; an auto-resolved battle gives Arms (or
   Bowcraft with a bow in hand) and a little Riding. Old saves: `MigrateSkills` sets both at half the captain's Arms (min 5).
+- P3 (step 2, tiers and capstones): `Skills.TierOf` gives each perk a tier by its place on the branch (the first two tier I,
+  then II, III, and the fifth perk the capstone, tier IV; `PerkDef.Tier` overrides). `Skills.Locked` says why a perk cannot
+  be taken: its tier needs the skill at 25 x tier (I 25, II 50, III 75, IV 100), a capstone needs two other perks of the
+  branch, and a choice must be open (one per 25 points). The ten capstones: Warlord (near you, no company's morale falls
+  below breaking while you stand), Master of War (auto-resolve +10%, order delay halved), Forced March (party speed +10%),
+  Academy (drill XP +50%), Field Surgeon (once a battle you get back up at half health), Builder (buildings half price),
+  Kingmaker (every lord +10 opinion of you), Champion (riposte window x1.5 and no one can block it), Knight of the Charge
+  (braced spears below tier IV cannot stop your charge), Deadeye (no scatter at full draw). The K sheet draws each branch
+  as two rows of tier I-III perks and the crowned capstone centred below; the tooltip shows tier and the lock reason.
+  `SelfTest.PerkTiers`. Simplifications against the plan: capstones are milder (Forced March is +10% always, not a
+  double-speed day; Academy speeds drill instead of a free promotion; Kingmaker is +10 opinion, not +20 votes); there is no
+  per-perk `Needs` chain.

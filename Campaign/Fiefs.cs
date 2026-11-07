@@ -60,7 +60,7 @@ public sealed partial class Campaign
     public bool CanBuild(Settlement s, BuildingDef d, out string why, out int cost)
     {
         int lv = Level(s, d.Id);
-        cost = (int)(d.Cost * (1 + lv * 0.5f) * (1 - Skill("Stewardship") / 400f));
+        cost = (int)(d.Cost * (1 + lv * 0.5f) * (1 - Skill("Stewardship") / 400f) * (Has("Builder") ? 0.5f : 1));
         why = s.Owner != Player.Id ? "ONLY IN YOUR OWN FIEFS"
             : s.Kind == SettlementKind.Village ? "BUILD IN THE TOWN OR CASTLE"
             : s.Kind == SettlementKind.Town && !d.Town || s.Kind == SettlementKind.Castle && !d.Castle ? $"NOT IN A {s.Kind.ToString().ToUpperInvariant()}"

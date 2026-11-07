@@ -121,7 +121,7 @@ public partial class Battle
                 {
                     Stagger(a, 0.9f);
                     t.Stamina = MathF.Max(0, t.Stamina - 2);
-                    RiposteUntil = Time + RiposteTime; // the opening: a swing started now is quick and hard to stop (P2)
+                    RiposteUntil = Time + RiposteTime * (Perk("Champion") ? 1.5f : 1); // the opening: a swing started now is quick and hard to stop (P2)
                     Parries++;
                     PlayerHit = ("PARRY! RIPOSTE", Time);
                     Sound(Cue.Clash, t.Pos);
@@ -146,7 +146,7 @@ public partial class Battle
                 ? (a.Swing == AttackDir.Thrust ? 0.9f : 1)
                 : a.Swing switch { AttackDir.Thrust => 0.7f, AttackDir.Overhead => 0.85f, _ => 1 });
             if (ranged && !t.Type.HasShield) chance *= 0.3f;
-            if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && t.Type.Tier <= 3 ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
+            if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && (t.Type.Tier <= 3 || Perk("Champion")) ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
             if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
             if (rng.NextSingle() < chance)
             {
@@ -248,6 +248,16 @@ public partial class Battle
 
     void Kill(Unit t, Unit killer)
     {
+        if (t.IsPlayer && Perk("FieldSurgeon") && !secondWind)
+        {
+            // Field Surgeon (P3): once a battle you get back up.
+            secondWind = true;
+            t.Hp = t.Type.MaxHp * 0.5f;
+            Stagger(t, 1.5f);
+            Log("You go down... and get back up!");
+            PlayerHit = ("BACK ON YOUR FEET", Time);
+            return;
+        }
         t.Dead = true;
         t.DiedAt = Time;
         t.Hp = 0;
@@ -348,6 +358,7 @@ public partial class Battle
             foreach (var u in Near(b.Pos, reach + 0.5f, nearBrace))
             {
                 if (!u.Active || !u.Mounted || u.Team == b.Team) continue;
+                if (u.IsPlayer && b.Type.Tier < 4 && Perk("KnightOfTheCharge")) continue; // their points do not stop your charge
                 var to = u.Pos - b.Pos;
                 float d = to.Length();
                 if (d > reach || d < 0.01f || Vector2.Dot(to / d, b.Dir) < 0.5f) continue;

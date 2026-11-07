@@ -125,6 +125,7 @@ public partial class Battle
         if (d.Leader is not { Active: true }) t *= 2;
         t *= 1 - 0.05f * d.Skill;
         if (d.Team == 0 && Options.Horns) t *= 0.7f;
+        if (d.Team == 0 && Perk("MasterOfWar")) t *= 0.5f;
         return t;
     }
 

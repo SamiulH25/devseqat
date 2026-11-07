@@ -4,6 +4,9 @@ namespace Ironfield;
 public sealed class PerkDef
 {
     public string Id = "", Name = "", Text = "";
+    /// 1-4 (P3): the skill needs Tier x 25 points; 0 = by place on the branch (the first two tier I, then II, III, and the
+    /// fifth, the branch's capstone, tier IV, which also needs two of the branch's other perks).
+    public int Tier;
 }
 
 /// A captain's skill: how it rises, what it governs, and the perks on its branch (one more may be taken per 25 points).
@@ -26,6 +29,7 @@ public static class Skills
             new() { Id = "IronWill", Name = "Iron Will", Text = "COMPANIES NEAR YOU HOLD UNTIL 30% STRENGTH" },
             new() { Id = "BornCaptain", Name = "Born Captain", Text = "+10 MEN LIMIT" },
             new() { Id = "Rallying", Name = "Rallying Cry", Text = "EVERY COMPANY STARTS A BATTLE WITH +5 MORALE" },
+            new() { Id = "Warlord", Name = "Warlord", Text = "NEAR YOU, NO COMPANY BREAKS WHILE YOU STAND" },
         } },
         new() { Id = "Tactics", Name = "Tactics", Rises = "BATTLES WON OUTNUMBERED", Governs = "AUTO-RESOLVE +1% PER 10 POINTS", Perks =
         {
@@ -33,6 +37,7 @@ public static class Skills
             new() { Id = "Ambusher", Name = "Ambusher", Text = "A RETREAT COSTS HALF THE REARGUARD" },
             new() { Id = "Siegecraft", Name = "Siegecraft", Text = "LADDERS AND RAM IN 6 HOURS, NOT 12" },
             new() { Id = "Pursuit", Name = "Pursuit", Text = "+25% PRISONERS AFTER A WIN" },
+            new() { Id = "MasterOfWar", Name = "Master of War", Text = "AUTO-RESOLVE +10%, ORDERS REACH YOUR SERGEANTS TWICE AS FAST" },
         } },
         new() { Id = "Logistics", Name = "Logistics", Rises = "DAYS ON THE MARCH", Governs = "PARTY SPEED +1% PER 20 POINTS", Perks =
         {
@@ -40,6 +45,7 @@ public static class Skills
             new() { Id = "Horsemaster", Name = "Horsemaster", Text = "HORSES -30%, PARTY SPEED +5%" },
             new() { Id = "Forager", Name = "Forager", Text = "THE COMPANY EATS 20% LESS" },
             new() { Id = "Pathfinder", Name = "Pathfinder", Text = "PARTY SPEED +5%" },
+            new() { Id = "ForcedMarch", Name = "Forced March", Text = "PARTY SPEED +10%" },
         } },
         new() { Id = "Training", Name = "Training", Rises = "MEN PROMOTED", Governs = "DRILL XP +1% PER 2 POINTS", Perks =
         {
@@ -47,6 +53,7 @@ public static class Skills
             new() { Id = "VeteranCadre", Name = "Veteran Cadre", Text = "RECRUITS JOIN WITH 20 XP EACH" },
             new() { Id = "CheapSteel", Name = "Cheap Steel", Text = "PROMOTIONS COST 20% LESS" },
             new() { Id = "Sergeants", Name = "Sergeants' Mess", Text = "COMPANIES FIND SERGEANTS TWICE AS OFTEN" },
+            new() { Id = "Academy", Name = "Academy", Text = "DRILL XP +50%" },
         } },
         new() { Id = "Medicine", Name = "Medicine", Rises = "WOUNDED HEALED", Governs = "+1% OF FALLEN SURVIVE PER 10 POINTS", Perks =
         {
@@ -54,6 +61,7 @@ public static class Skills
             new() { Id = "FieldHospital", Name = "Field Hospital", Text = "WOUNDED HEAL 50% FASTER OUTSIDE TOWNS" },
             new() { Id = "Bonesetter", Name = "Bonesetter", Text = "YOUR OWN WOUNDS HEAL IN HALF THE TIME" },
             new() { Id = "Triage", Name = "Triage", Text = "COMPANIONS WHO FALL ARE NEVER KILLED" },
+            new() { Id = "FieldSurgeon", Name = "Field Surgeon", Text = "ONCE A BATTLE YOU GET BACK UP AT HALF HEALTH" },
         } },
         new() { Id = "Stewardship", Name = "Stewardship", Rises = "FIEF INCOME, DAYS RULING", Governs = "FIEF INCOME +1% PER 5 POINTS", Perks =
         {
@@ -61,6 +69,7 @@ public static class Skills
             new() { Id = "Provisioner", Name = "Provisioner", Text = "FOOD COSTS 25% LESS" },
             new() { Id = "JustRuler", Name = "Just Ruler", Text = "YOUR FIEFS RAISE TWICE THE RECRUITS" },
             new() { Id = "Castellan", Name = "Castellan", Text = "YOUR VILLAGES PAY EVEN WHILE RAIDERS ARE NEAR" },
+            new() { Id = "Builder", Name = "Builder", Text = "BUILDINGS COST HALF" },
         } },
         new() { Id = "Charm", Name = "Charm", Rises = "GOODWILL WON, RANSOMS", Governs = "GOODWILL +1% PER 4 POINTS", Perks =
         {
@@ -68,6 +77,7 @@ public static class Skills
             new() { Id = "RansomBroker", Name = "Ransom Broker", Text = "RANSOMS PAY 50% MORE" },
             new() { Id = "Recruiter", Name = "Recruiter", Text = "+20% OF A SETTLEMENT'S RECRUITS FOLLOW YOU" },
             new() { Id = "Haggler", Name = "Haggler", Text = "MERCENARIES AND HORSES 15% CHEAPER" },
+            new() { Id = "Kingmaker", Name = "Kingmaker", Text = "EVERY LORD THINKS 10 BETTER OF YOU" },
         } },
         new() { Id = "Arms", Name = "Arms", Rises = "YOUR KILLS ON FOOT, PARRIES AND RIPOSTES", Governs = "YOUR HEALTH +2% PER 10 POINTS, QUICKER BLOWS, HEAVY GEAR NEEDS ARMS", Perks =
         {
@@ -75,6 +85,7 @@ public static class Skills
             new() { Id = "Duellist", Name = "Duellist", Text = "YOUR DAMAGE +15%" },
             new() { Id = "IronGrip", Name = "Iron Grip", Text = "BLOCKING COSTS YOU 30% LESS STAMINA" },
             new() { Id = "Hardened", Name = "Hardened", Text = "YOUR HEALTH +20%" },
+            new() { Id = "Champion", Name = "Champion", Text = "YOUR RIPOSTE SLIPS ANY GUARD AND LASTS LONGER" },
         } },
         new() { Id = "Riding", Name = "Riding", Rises = "KILLS AND LANCE HITS FROM THE SADDLE", Governs = "YOUR HORSE +1% HEALTH PER 4 POINTS, TURNS AND STRIKES BETTER, GREAT HORSES NEED RIDING", Perks =
         {
@@ -82,6 +93,7 @@ public static class Skills
             new() { Id = "Lancer", Name = "Lancer", Text = "YOUR COUCHED LANCE HITS 25% HARDER" },
             new() { Id = "SaddleFast", Name = "Saddle-Fast", Text = "YOUR HORSE GALLOPS 10% FASTER" },
             new() { Id = "HorseBreaker", Name = "Horse Breaker", Text = "YOUR BLOWS AGAINST RIDERS +25%" },
+            new() { Id = "KnightOfTheCharge", Name = "Knight of the Charge", Text = "SPEARS BELOW TIER IV CANNOT STOP YOUR CHARGE" },
         } },
         new() { Id = "Bowcraft", Name = "Bowcraft", Rises = "YOUR OWN ARROW HITS AND KILLS", Governs = "QUICKER DRAW, TIGHTER AIM, THE WAR BOW NEEDS BOWCRAFT", Perks =
         {
@@ -89,6 +101,7 @@ public static class Skills
             new() { Id = "SteadyAim", Name = "Steady Aim", Text = "YOUR SHOTS SCATTER 30% LESS" },
             new() { Id = "HorseArcher", Name = "Horse Archer", Text = "NO PENALTY SHOOTING FROM THE SADDLE" },
             new() { Id = "Marksman", Name = "Marksman", Text = "YOUR ARROWS HIT 20% HARDER" },
+            new() { Id = "Deadeye", Name = "Deadeye", Text = "AT FULL DRAW YOUR SHOTS DO NOT SCATTER" },
         } },
     };
 
@@ -98,6 +111,21 @@ public static class Skills
     public static PerkDef? Perk(string id) => All.SelectMany(s => s.Perks).FirstOrDefault(p => p.Id == id);
 
     public static float Level(CaptainState c, string skill) => c.Skills.GetValueOrDefault(skill);
+
+    public static int TierOf(SkillDef s, PerkDef p) { int i = s.Perks.IndexOf(p); return p.Tier > 0 ? p.Tier : i < 2 ? 1 : Math.Min(4, i); }
+    public static bool Capstone(SkillDef s, PerkDef p) => TierOf(s, p) == 4;
+
+    /// Why this perk cannot be taken now (P3): taken, no choice open, the skill short of its tier, a capstone without two
+    /// of the branch's other perks; null if it can.
+    public static string? Locked(CaptainState c, SkillDef s, PerkDef p)
+    {
+        if (c.Perks.Contains(p.Id)) return "TAKEN";
+        int tier = TierOf(s, p);
+        if (Level(c, s.Id) < tier * Step) return $"NEEDS {s.Name.ToUpperInvariant()} {tier * (int)Step}";
+        if (tier == 4 && c.Perks.Count(id => id != p.Id && Of(id) == s) < 2) return "NEEDS TWO OTHER PERKS OF THIS SKILL";
+        if (Picks(c, s.Id) <= 0) return $"NEEDS {s.Name.ToUpperInvariant()} {(c.Perks.Count(id => Of(id)?.Id == s.Id) + 1) * (int)Step}";
+        return null;
+    }
 
     /// Perk choices open on a skill's branch: one per 25 points, less those taken.
     public static int Picks(CaptainState c, string skill) =>
@@ -122,7 +150,7 @@ public sealed partial class Campaign
     public float Skill(string skill) => Skills.Level(Captain, skill);
 
     /// Your edge in an auto-resolved fight: Tactics skill (+1% per 10 points) and the Tactician perk (+10%).
-    public float TacticsEdge => 1 + Skill("Tactics") / 1000f + (Has("Tactician") ? 0.1f : 0) + DivisionEdge;
+    public float TacticsEdge => 1 + Skill("Tactics") / 1000f + (Has("Tactician") ? 0.1f : 0) + (Has("MasterOfWar") ? 0.1f : 0) + DivisionEdge;
 
     /// Starting skills for a new captain (a soldier who has led men before).
     internal static void StartingSkills(CaptainState c)
@@ -145,9 +173,7 @@ public sealed partial class Campaign
     {
         var skill = Skills.Of(id);
         if (skill == null) return "NO SUCH PERK";
-        if (Has(id)) return "TAKEN";
-        if (Skills.Picks(Captain, skill.Id) <= 0)
-            return $"NEEDS {skill.Name.ToUpperInvariant()} {(int)((Captain.Perks.Count(p => Skills.Of(p)?.Id == skill.Id) + 1) * Skills.Step)}";
+        if (Skills.Locked(Captain, skill, Skills.Perk(id)!) is string why) return why;
         Captain.Perks.Add(id);
         Log($"You learn {Skills.Perk(id)!.Name}.");
         return null;

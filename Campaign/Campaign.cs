@@ -179,7 +179,7 @@ public sealed partial class Campaign
         float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1);
         if (p.Kind == PartyKind.Player) s *= 1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f);
         if (p.Kind == PartyKind.Player)
-            s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1);
+            s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1) * (Has("ForcedMarch") ? 1.1f : 1);
         int men = p.Men, wounded = p.Wounded;
         if (men + wounded > 0) s *= 1 - MathF.Min(0.2f, wounded / (float)(men + wounded) * 0.5f);
         return s;
@@ -329,7 +329,7 @@ public sealed partial class Campaign
                     // Daily drill: per fit man, into each pool (Old Hands drill harder).
                     if (!Outlaw(p) && st.Men > 0)
                         st.AddXp(st.Men * ((town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0)) * Honours.Of(c).DrillMul
-                            * (p == Player ? (HasCompanion("Drillmaster") ? 1.25f : 1) * (1 + Skill("Training") / 200f) : 1));
+                            * (p == Player ? (HasCompanion("Drillmaster") ? 1.25f : 1) * (1 + Skill("Training") / 200f) * (Has("Academy") ? 1.5f : 1) : 1));
                 }
                 if (town && c.Cohesion < 20) c.Cohesion = MathF.Min(20, c.Cohesion + 1);
             }
