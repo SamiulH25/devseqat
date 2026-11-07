@@ -208,6 +208,9 @@ public sealed class FactionState
     public float Treasury, WarScore;
     /// The realm's ruler and marshal (F5): character ids, -1 until the council fills them. The marshal leads its hosts.
     public int Ruler = -1, Marshal = -1;
+    /// A tributary realm pays its overlord a quarter of its income and joins its wars until a time (F7); -1 = free.
+    public int TributaryOf = -1;
+    public float TributeUntil;
     /// The settlement the realm's hosts march on (7.1, chosen by the marshal), -1 = none.
     public int Objective = -1;
     /// When the council next sits (campaign hours), how many times it has sat, and what it decided last time.
@@ -237,6 +240,31 @@ public sealed class War
     public int A, B;
     public bool Active = true;
     public float TruceUntil, ScoreA, ScoreB;
+    /// War exhaustion of each side, 0-100 (F7): losses, lost seats and the war's length; it pushes a realm to sue for peace.
+    public float ExhA, ExhB;
+    /// When this war (or the last one) began, in campaign hours.
+    public float Since;
+}
+
+/// An alliance between two realms against a shared enemy (F7), until a time.
+public sealed class Pact
+{
+    public int A, B;
+    public float Until;
+}
+
+/// Gold owed under peace terms (F7): paid each week until the weeks run out.
+public sealed class Payment
+{
+    public int From, To, Weeks;
+    public float PerWeek;
+}
+
+/// The marshal's call to the host (F7): where to come, by when, and who called.
+public sealed class Summons
+{
+    public int Faction, Seat, From;
+    public float Until;
 }
 
 public sealed class CaptainState
@@ -282,6 +310,12 @@ public sealed class CampaignState
     public List<FactionState> Factions = new();
     public List<LogEntry> Log = new();
     public List<Contract> Contracts = new();   // the contracts you have accepted
+    /// Diplomacy (F7): alliances, gold owed under terms, the record of treaties (newest last), and the marshal's summons to you.
+    public List<Pact> Pacts = new();
+    public List<Payment> Payments = new();
+    public List<string> Treaties = new();
+    public Summons? Summons;
+    public float LastSummons = -1000;
     public int LastBattleFoe = -1;             // the last party you defeated (for hunt contracts)
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
     public List<Character> Characters = new();

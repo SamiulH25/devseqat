@@ -301,9 +301,29 @@ sealed class ScreenHost : Game
                 Shot("campaign-realm");
                 break;
             }
-            case 21: c.DeclareIndependence(); map.Stage("beat"); Shot("campaign-beat"); break;
-            case 22: c.Beat = null; map.Stage("realm"); Shot("campaign-realm-king"); break;
+            case 21:
+            {
+                // The marshal's summons (F7), as a vassal sees it.
+                var m = c.MarshalOf(c.Captain.Contract)!;
+                var seat = c.S.Settlements.First(t => t.Kind != SettlementKind.Village && c.FactionsAtWar(c.Captain.Contract, t.Faction));
+                c.S.Summons = new Summons { Faction = c.Captain.Contract, Seat = seat.Id, From = m.Id, Until = (float)c.S.Hours + 96 };
+                c.Beat = ("THE MARSHAL SUMMONS YOU", new[] { $"{m.Name.ToUpperInvariant()} CALLS THE HOST TO {seat.Name.ToUpperInvariant()}.", "COME WITHIN 4 DAYS. ANSWERING WINS HIS FAVOUR. IGNORING HIM COSTS IT." });
+                map.Stage("beat");
+                Shot("campaign-summons");
+                break;
+            }
+            case 22: c.S.Summons = null; c.DeclareIndependence(); map.Stage("beat"); Shot("campaign-beat"); break;
             case 23:
+            {
+                c.Beat = null;
+                int me = c.Captain.Contract;
+                var w = c.WarBetween(me, 0)!;
+                if (w.A == me) { w.ScoreA = 1800; w.ExhB = 41; w.ExhA = 12; } else { w.ScoreB = 1800; w.ExhA = 41; w.ExhB = 12; }
+                map.Stage("realm");
+                Shot("campaign-realm-king");
+                break;
+            }
+            case 24:
             {
                 // A fief of the new realm (F6): a market built, walls going up, a little unrest from high taxes.
                 c.Beat = null;
@@ -317,7 +337,7 @@ sealed class ScreenHost : Game
                 Shot("campaign-fief");
                 break;
             }
-            case 24:
+            case 25:
             {
                 var t = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction != c.Captain.Contract);
                 var w = new Character { Id = c.S.NextId++, Kind = "wanderer", Name = "Osric Longshanks", Culture = t.Culture, Role = "Steward", AtSettlement = t.Id };
@@ -332,7 +352,7 @@ sealed class ScreenHost : Game
                 Shot("campaign-household");
                 break;
             }
-            case 25: Exit(); break;
+            case 26: Exit(); break;
         }
     }
 }

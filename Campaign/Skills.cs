@@ -69,7 +69,7 @@ public static class Skills
             new() { Id = "Recruiter", Name = "Recruiter", Text = "+20% OF A SETTLEMENT'S RECRUITS FOLLOW YOU" },
             new() { Id = "Haggler", Name = "Haggler", Text = "MERCENARIES AND HORSES 15% CHEAPER" },
         } },
-        new() { Id = "Arms", Name = "Arms", Rises = "YOUR OWN KILLS IN BATTLE", Governs = "YOUR HEALTH +2% PER 10 POINTS; HEAVY GEAR NEEDS ARMS", Perks =
+        new() { Id = "Arms", Name = "Arms", Rises = "YOUR OWN KILLS IN BATTLE", Governs = "YOUR HEALTH +2% PER 10 POINTS, HEAVY GEAR NEEDS ARMS", Perks =
         {
             new() { Id = "WarCry", Name = "War Cry", Text = "RALLY +10 MORALE, 3 S FASTER" },
             new() { Id = "Duellist", Name = "Duellist", Text = "YOUR DAMAGE +15%" },

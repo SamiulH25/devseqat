@@ -124,6 +124,9 @@ public sealed partial class Campaign
     {
         if (WarBetween(winner, loser) is not { Active: true } w) return;
         if (w.A == winner) w.ScoreA += amount; else w.ScoreB += amount;
+        // Exhaustion (F7): the side that loses men, land or villages tires four times faster than the side that wins.
+        AddExhaustion(w, loser, amount / 60f);
+        AddExhaustion(w, winner, amount / 240f);
         if (winner < S.Factions.Count) S.Factions[winner].WarScore += amount;
     }
 
@@ -734,6 +737,7 @@ public sealed partial class Campaign
         }
         CheckContracts();
         SiegeHourly();
+        SummonsHourly();
     }
 
     IEnumerable<Party> Visible(Party p, float range) => S.Parties.Where(q => q != p && !q.Down && Vector2.Distance(p.Pos, q.Pos) < range);
@@ -934,30 +938,12 @@ public sealed partial class Campaign
             foreach (var w in S.Wars)
             {
                 bool involves = w.A == f || w.B == f;
-                if (involves && !w.Active && Alive(w.A) && Alive(w.B)) { w.Active = true; w.ScoreA = w.ScoreB = 0; Log($"The realms rise against the {FactionNames[f]}: the {FactionNames[w.A == f ? w.B : w.A]} take up arms."); }
+                if (involves && !w.Active && Alive(w.A) && Alive(w.B) && S.Factions[w.A == f ? w.B : w.A].TributaryOf != f) { w.Active = true; w.ScoreA = w.ScoreB = 0; w.Since = (float)S.Hours; Log($"The realms rise against the {FactionNames[f]}: the {FactionNames[w.A == f ? w.B : w.A]} take up arms."); }
                 if (!involves && w.Active) { w.Active = false; w.TruceUntil = (float)S.Hours + B.TruceDays * 24; Log($"The {FactionNames[w.A]} and the {FactionNames[w.B]} make peace against the {FactionNames[f]}."); }
             }
         }
-        // War and truce, for each pair of factions.
-        foreach (var w in S.Wars)
-        {
-            bool aDead = !Alive(w.A), bDead = !Alive(w.B);
-            bool leaderInvolved = Enumerable.Range(0, S.Factions.Count).Any(f => (w.A == f || w.B == f) && S.Factions.Count > 2
-                && S.Settlements.Count(s => s.Kind != SettlementKind.Village && s.Faction == f) >= seats * 0.45f);
-            if (w.Active && ((MathF.Abs(w.ScoreA - w.ScoreB) > B.PeaceScore && !leaderInvolved) || aDead || bDead))
-            {
-                int loser = w.ScoreA < w.ScoreB ? w.A : w.B;
-                w.Active = false;
-                w.TruceUntil = (float)S.Hours + B.TruceDays * 24;
-                w.ScoreA = w.ScoreB = 0;
-                if (!aDead && !bDead) Log($"The {FactionNames[loser]} sues the {FactionNames[loser == w.A ? w.B : w.A]} for peace: a truce of {B.TruceDays} days.");
-            }
-            else if (!w.Active && S.Hours >= w.TruceUntil && !aDead && !bDead)
-            {
-                w.Active = true;
-                Log($"The truce between the {FactionNames[w.A]} and the {FactionNames[w.B]} ends. War again.");
-            }
-        }
+        // War and peace, for each pair of factions (F7: exhaustion, terms, wars declared on purpose).
+        DiplomacyDaily();
     }
 
     /// A faction lives while it holds a town or castle.
@@ -983,12 +969,13 @@ public sealed partial class Campaign
             var enemyFront = S.Provinces.Where(p => FactionsAtWar(f, p.Faction) && p.Neighbors.Any(n => S.Provinces[n].Faction == f)).ToList();
             var idle = lords.Where(l => !l.Down && l.Task == "patrol" && !(IsVassal(l) && l.Order is "defend" or "follow")).ToList();
             // The marshal's objective (F5) draws the host; without one the realm picks a province on the front.
-            var objective = ObjectiveOf(f);
+            // An ally's host marches on your objective when it has none of its own (joint hosts, F7).
+            var objective = ObjectiveOf(f) ?? S.Pacts.Where(p => p.Until > S.Hours && (p.A == f || p.B == f)).Select(p => ObjectiveOf(p.A == f ? p.B : p.A))
+                .FirstOrDefault(o => o != null && FactionsAtWar(f, o.Faction));
             if (idle.Count >= 2 && (objective != null || enemyFront.Count > 0) && rng.Chance(objective != null ? 0.5f : 0.35f))
             {
                 var target = objective != null ? S.Provinces[objective.Province] : rng.Pick(enemyFront);
-                foreach (var l in idle.Take(5)) { l.PatrolProvince = target.Id; l.TaskUntil = 0; }
-                Log($"The {FactionNames[f]} musters a host against {target.Name}.");
+                MusterHost(f, target, idle);
             }
             else
                 foreach (var l in idle.Where(l => l.PatrolProvince < 0 || rng.Chance(0.15f)))
@@ -1043,6 +1030,7 @@ public sealed partial class Campaign
         PrisonersWeekly();
         BuildWeekly();
         PiousWeekly();
+        TributeWeekly();
     }
 
     static void Desert(Party p)

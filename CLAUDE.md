@@ -103,6 +103,7 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 | Prisoners, officers, food, contracts | `Campaign/CampaignWar.cs` |
 | Career ranks, fealty, realm council, founding a realm, win/loss (F5) | `Campaign/Career.cs` (`Rank`, `Council`, `DeclareIndependence`, `CheckEnd`) |
 | Fief prosperity/unrest/taxes, buildings, revolts, vassals and orders, defection (F6) | `Campaign/Fiefs.cs` (`FiefsDaily`, `Build`, `RaiseVassal`, `OrderedProvince`) |
+| War exhaustion, peace terms, war declarations, tribute, alliances, hosts, summons (F7) | `Campaign/Diplomacy.cs` (`DiplomacyDaily`, `MakePeace`, `OfferPeace`, `MusterHost`) |
 | Stacks/promotion, characters/opinion, skills, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Pilot.cs` |
 | Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
 | Campaign UI (all panels: settlement, party, siege, upgrade, results) | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |

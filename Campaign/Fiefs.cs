@@ -27,7 +27,7 @@ public sealed partial class Campaign
         new() { Id = "market", Name = "Market", Cost = 600, Days = 8, Castle = false, Text = "INCOME +20%, FOOD 20% CHEAPER HERE" },
         new() { Id = "granary", Name = "Granary", Cost = 300, Days = 5, Text = "15 MORE DAYS OF SUPPLIES, AND WINTER DOES NOT THIN THE PEOPLE" },
         new() { Id = "stables", Name = "Stables", Cost = 400, Days = 6, Castle = false, Text = "MORE HORSES FOR SALE, 30% CHEAPER HERE" },
-        new() { Id = "chapel", Name = "Chapel", Cost = 350, Days = 6, Text = "UNREST FALLS FASTER; PIOUS LORDS APPROVE OF YOU" },
+        new() { Id = "chapel", Name = "Chapel", Cost = 350, Days = 6, Text = "UNREST FALLS FASTER, PIOUS LORDS APPROVE OF YOU" },
         new() { Id = "watchtower", Name = "Watchtower", Cost = 250, Days = 4, Text = "RAIDS IN THE PROVINCE HURT HALF AS MUCH" },
     };
 

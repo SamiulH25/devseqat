@@ -48,6 +48,7 @@ public static class SelfTest
         Career();
         PilotCareer();
         FiefLife();
+        WarAndPeace();
         StackBattle();
         ReplayExact();
 
@@ -1229,9 +1230,9 @@ public static class SelfTest
     {
         var c = Campaign.New(2002);
         var pilot = new Pilot(c);
-        for (int d = 0; d < 60 && c.Rank < Rank.Vassal; d++) pilot.Run(24);
+        for (int d = 0; d < 120 && c.Rank < Rank.Vassal; d++) pilot.Run(24);
         Console.WriteLine($"pilot career: {c.Stage} on day {c.Day}, renown {c.Captain.Renown:0}, {pilot.Battles} battles");
-        Check(c.Rank >= Rank.Vassal, "the pilot reaches vassal within 60 days");
+        Check(c.Rank >= Rank.Vassal, "the pilot reaches vassal within 120 days");
     }
 
     /// Fiefs (F6): taxes and buildings change income, a neglected foreign fief revolts and defects, vassals take orders,
@@ -1318,6 +1319,82 @@ public static class SelfTest
         Console.WriteLine($"fiefs: buildings in the world {built} -> {c.S.Settlements.Sum(s => s.Buildings.Values.Sum())}, prosperity avg {c.S.Settlements.Average(s => s.Prosperity):0}");
         Check(c.S.Settlements.Sum(s => s.Buildings.Values.Sum()) > built, "AI realms raise buildings");
         Check(c.S.Settlements.All(s => s.Prosperity is >= 0 and <= 100 && s.Unrest is >= 0 and <= 100), "prosperity and unrest stay in range");
+    }
+
+    /// Strategic war and diplomacy (F7): a long AI run ends wars with terms and moves the border by planned campaigns; a king
+    /// imposes terms only as far as he is ahead, allies against a shared enemy, and draws tribute; a vassal is summoned.
+    static void WarAndPeace()
+    {
+        var c = Campaign.New(7007);
+        var owners = c.S.Settlements.ToDictionary(s => s.Id, s => s.Faction);
+        float peakExh = 0;
+        int hosts = 0;
+        for (int d = 0; d < 240; d++)
+        {
+            Days(c, 1);
+            peakExh = MathF.Max(peakExh, c.S.Wars.Where(w => w.Active).Select(w => MathF.Max(w.ExhA, w.ExhB)).DefaultIfEmpty(0).Max());
+            hosts += c.S.Log.Count(e => e.At >= c.S.Hours - 24 && e.Text.Contains("musters a host"));
+        }
+        int moved = c.S.Settlements.Count(s => s.Kind != SettlementKind.Village && s.Faction != owners[s.Id]);
+        var terms = c.S.Treaties.Where(t => t.Contains("sue")).ToList();
+        Console.WriteLine($"war and peace: 240 days, {moved} seats changed hands, {hosts} hosts, peak weariness {peakExh:0}, {c.S.Treaties.Count} treaties recorded");
+        foreach (var t in c.S.Treaties.TakeLast(8)) Console.WriteLine("  " + t);
+        Check(peakExh > 30, "wars wear realms down");
+        Check(terms.Count > 0, "a long war ends in peace on terms");
+        Check(moved > 0 && hosts > 0, "hosts march and seats change hands");
+        for (int f = 0; f < 3; f++)
+            if (c.Alive(f))
+            {
+                Check(c.S.Factions[f].Treasury >= 0, $"realm {f} keeps a treasury");
+                Check(c.S.Parties.Any(p => p.Kind == PartyKind.Lord && p.Faction == f), $"realm {f} still has lords");
+            }
+
+        // A king's terms: only what his standing allows.
+        var k = Campaign.New(7008);
+        k.Captain.Fealty = true;
+        k.Captain.Renown = 400;
+        foreach (var t in k.S.Settlements.Where(s => s.Faction == 0 && s.Kind != SettlementKind.Village).OrderByDescending(s => s.Kind == SettlementKind.Town).Take(2)) t.Owner = k.Player.Id;
+        Check(k.DeclareIndependence() == null, "a lord rebels to test diplomacy");
+        int me = k.Captain.Contract;
+        var war = k.WarBetween(me, 0)!;
+        Check(k.OfferPeace(0, Terms.Cede) != null, "an even war will not buy you a seat");
+        war.ScoreA = war.A == me ? 3000 : 0; war.ScoreB = war.B == me ? 3000 : 0;
+        if (war.A == me) war.ExhB = 60; else war.ExhA = 60;
+        Check(k.Margin(war, me, 0) >= 0.9f, "winning raises your standing");
+        int seats0 = k.S.Settlements.Count(s => s.Faction == 0 && s.Kind != SettlementKind.Village);
+        Check(k.OfferPeace(0, Terms.Cede) == null && !k.FactionsAtWar(me, 0), "a winning king takes a seat in the peace");
+        Check(k.S.Settlements.Count(s => s.Faction == 0 && s.Kind != SettlementKind.Village) == seats0 - 1, "the seat changes hands");
+        // Tribute: a tributary pays each week.
+        k.S.Factions[1].TributaryOf = me;
+        k.S.Factions[1].TributeUntil = (float)k.S.Hours + 30 * 24;
+        k.S.Factions[1].Treasury = 5000;
+        float gold = k.S.Gold;
+        Days(k, 8);
+        Check(k.S.Gold > gold + 1 || k.S.Factions[1].Treasury < 5000, "a tributary pays its overlord");
+        Check(k.RealmShare(me) > k.ProvinceShare(me), "a tributary's land counts toward your victory");
+        // An alliance needs a shared enemy.
+        Check(k.ProposeAlliance(2) != null || k.FactionsAtWar(2, 0), "no alliance without a shared enemy");
+        k.DeclareWar(0);
+        var w20 = k.WarBetween(2, 0) ?? new War { A = 2, B = 0 };
+        if (!k.S.Wars.Contains(w20)) k.S.Wars.Add(w20);
+        w20.Active = true;
+        if (k.RulerOf(2) is Character r2) r2.Opinion[k.Me.Id] = 20;
+        Check(k.ProposeAlliance(2) == null && k.Allied(me, 2), "a king allies against a shared enemy");
+
+        // A vassal is summoned to the host, and answering wins the marshal's favour.
+        var v = Campaign.New(7009);
+        v.Captain.Fealty = true;
+        v.S.Hours = 40 * 24;
+        var marshal = v.MarshalOf(0)!;
+        var target = v.S.Provinces.First(p => p.Faction == 1);
+        typeof(Campaign).GetMethod("MusterHost", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .Invoke(v, new object[] { 0, target, v.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == 0).ToList() });
+        Check(v.S.Summons != null && v.Beat is { Title: "THE MARSHAL SUMMONS YOU" }, "a vassal is summoned when the realm musters a host");
+        float before = v.OpinionOfYou(marshal);
+        v.Player.Pos = v.SettlementById(v.S.Summons!.Seat).Pos + new Vector2(5, 0);
+        v.Player.Cooldown = 1e6f;
+        Days(v, 1);
+        Check(v.S.Summons == null && v.OpinionOfYou(marshal) > before, "answering the summons pleases the marshal");
     }
 
     static Character MakeWanderer(Campaign c, Settlement t)

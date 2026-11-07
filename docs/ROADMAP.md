@@ -85,7 +85,7 @@ Small "As built" gaps to fold in alongside: renaming companies (text input, S), 
 | E4 | Map foliage cost: instancing or merged chunks with distance culling | S | The map draws at 60 fps on integrated graphics |
 | E5 | Determinism guard: battle seed and replay recorder (inputs plus seed reproduce a battle) | M | Any reported battle bug can be replayed exactly |
 
-## Phase F: campaign overhaul (in progress: F0-F6 built)
+## Phase F: campaign overhaul (in progress: F0-F7 built)
 
 The campaign's play and progression layer is rebuilt; the world map itself is untouched. Full spec:
 [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md). Saves break at F1 (version 4, no migration). Build in this order; each step
@@ -302,3 +302,23 @@ All of A-E is in. Where the build differs from the table above:
   another ruler goes over with his fiefs. Fief tab in your towns and castles (prosperity, unrest and why, taxes, buildings); settlement
   tooltips show prosperity, unrest, buildings and holder; vassals and raising them are under the household tab (L). Not yet: the
   Scout's vision and the Watchtower's early warning (there is no fog of war), the Builder perk (Stewardship lowers building costs instead).
+- F7: `Campaign/Diplomacy.cs`. Each `War` carries both sides' exhaustion (0-100) and when it began. `Score` now also tires the
+  loser by amount/60 and the winner by amount/240 (a battle's lost strength, 600 for a seat, 20 for a raid), and every day of war adds
+  0.12 to both. The war-score truce timer (`PeaceScore`) is gone: after 20 days, an AI realm sues for peace when its exhaustion passes 50
+  (70 with an ally in the war), or 30 while the other side's margin is over 0.5, or when both are tired (60/40); 30% a day once it wants
+  to. The winner's margin is (score difference)/1500 + (exhaustion difference)/40 and sets the terms: a plain truce, gold (half the
+  loser's chest, 200-1,600, over four weeks, `S.Payments`), a seat handed over (the loser's nearest, via `Capture`, then the council), or
+  tributary status for 90 days (margin 1.6, three seats: a quarter of its income weekly, and it joins its overlord's wars).
+  Payments keep the 300-crown floor. Wars no longer restart when a truce ends: a realm at peace declares war 5% a day (1% with one war
+  already, none with two; twice as often under an Ambitious or Reckless ruler, half under a Cautious one) on a realm out of truce, not
+  its tributary, overlord or ally, and not much stronger, neighbours and the weakest first. The coalition against a realm with 45% of the
+  seats is not settled by terms. Treaties are recorded (`S.Treaties`). **Hosts:** a muster (`MusterHost`) takes up to six idle lords
+  who think at least -20 of the marshal; an ally without an objective marches on yours. **Summons:** when your realm musters and you are
+  a vassal or lord (not marshal), you are summoned to the target seat for 4 days (at most once a week): reaching it within 35 map units
+  gives the marshal +8, failing gives -10. As marshal or king, CALL THE HOST sends every lord who thinks at least -20 of you to your
+  objective. **A king's diplomacy:** declare war; offer peace as a truce, gold, a seat or tribute, accepted only if your margin reaches
+  -0.5 / 0.35 / 0.9 / 1.6 (each captive lord of theirs you free adds 0.15, and they go home); alliances for 60 days against a shared
+  enemy if their ruler thinks at least -10 of you. The win counts your tributaries' provinces (`RealmShare`). The realm screen shows
+  weariness, tributes, the summons, and, as king, each realm's status with its terms buttons. Not yet: AI realms forming alliances
+  (only the coalition against a leader), AI realms offering you peace (you offer, they answer), exchanging captive lords on their own.
+  Pacing note: the pilot now reaches Vassal on day 110 in the self-test seed (was 38), with the world's wars playing out differently.

@@ -38,7 +38,7 @@ public sealed partial class Campaign
         // 5. The career (F5): an oath or a crown within reach, else the next rank's road, else the next rung of renown.
         if (CanSwearFealty(out _)) return ("YOU MAY SWEAR FEALTY AND HOLD LAND: SEE YOUR REALM (R)", "REALM");
         if (CanDeclareIndependence(out _) && !S.Won) return ("YOU COULD RULE IN YOUR OWN NAME: SEE YOUR REALM (R)", "REALM");
-        if (NextRank() is var (rank, needs)) return (rank == Rank ? needs : $"{RankName(rank)}: {needs}", "REALM");
+        if (NextRank() is var (rank, needs)) return (rank == Rank ? $"TO WIN: {needs}" : $"{RankName(rank)}: {needs}", "REALM");
         var (what, at) = Rules.NextRenownUnlock(cap);
         return ($"FIGHT ON: {at - cap.Renown:0} MORE RENOWN BUYS {what}", "PARTY");
     }

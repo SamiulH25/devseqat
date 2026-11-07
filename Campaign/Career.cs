@@ -83,7 +83,7 @@ public sealed partial class Campaign
             case Rank.Lord:
                 return (Rank.Marshal, "WIN THE COUNCIL'S VOTE, OR DECLARE INDEPENDENCE FROM A TOWN YOU HOLD");
             default:
-                return S.Won ? null : (r, $"HOLD {Pct(WinShare)} OF THE PROVINCES TO WIN ({Pct(ProvinceShare(Captain.Contract))} NOW)");
+                return S.Won ? null : (r, $"HOLD {Pct(WinShare)} OF THE PROVINCES ({Pct(RealmShare(Captain.Contract))} NOW)");
         }
     }
 
@@ -490,7 +490,9 @@ public sealed partial class Campaign
         if (w == null) S.Wars.Add(w = new War { A = a, B = b });
         w.Active = true;
         w.ScoreA = w.ScoreB = 0;
-        Log($"The {FactionNames[a]} declare war on the {FactionNames[b]}.");
+        w.ExhA = w.ExhB = 0;
+        w.Since = (float)S.Hours;
+        Treaty($"The {FactionNames[a]} declare war on the {FactionNames[b]}.");
     }
 
     /// As king: go to war with a realm.
@@ -500,21 +502,6 @@ public sealed partial class Campaign
         if (target == Captain.Contract || target < 0 || target >= S.Factions.Count || !Alive(target)) return "NO SUCH REALM";
         if (FactionsAtWar(Captain.Contract, target)) return "ALREADY AT WAR";
         DeclareWarBetween(Captain.Contract, target);
-        return null;
-    }
-
-    /// As king: offer a truce. They take it unless they are winning and stronger.
-    public string? OfferPeace(int target)
-    {
-        if (Rank != Rank.King) return "ONLY A KING MAKES PEACE";
-        var w = WarBetween(Captain.Contract, target);
-        if (w is not { Active: true }) return "YOU ARE NOT AT WAR WITH THEM";
-        float ours = w.A == Captain.Contract ? w.ScoreA : w.ScoreB, theirs = w.A == Captain.Contract ? w.ScoreB : w.ScoreA;
-        if (theirs > ours + 300 && RealmStrength(target) > RealmStrength(Captain.Contract)) return "THEY WILL NOT TALK WHILE THEY ARE WINNING";
-        w.Active = false;
-        w.TruceUntil = (float)S.Hours + B.TruceDays * 24;
-        w.ScoreA = w.ScoreB = 0;
-        Log($"The {FactionNames[target]} accept a truce of {B.TruceDays} days.");
         return null;
     }
 
@@ -543,14 +530,14 @@ public sealed partial class Campaign
     void CheckEnd()
     {
         int f = Captain.Contract;
-        if (!S.Won && f >= 0 && Rank >= Rank.Marshal && ProvinceShare(f) >= WinShare)
+        if (!S.Won && f >= 0 && Rank >= Rank.Marshal && RealmShare(f) >= WinShare)
         {
             S.Won = true;
             var how = Rank == Rank.King ? "AS KING" : "AS MARSHAL: THE KINGMAKER";
-            Log($"The {FactionNames[f]} hold {Pct(ProvinceShare(f))} of the land. You have won the war.");
+            Log($"The {FactionNames[f]} and their tributaries hold {Pct(RealmShare(f))} of the land. You have won the war.");
             Beat = ("THE WAR IS WON", new[]
             {
-                $"THE {FactionNames[f].ToUpperInvariant()} HOLD {Pct(ProvinceShare(f))} OF THE PROVINCES. YOU WON {how}.",
+                $"THE {FactionNames[f].ToUpperInvariant()} AND THEIR TRIBUTARIES HOLD {Pct(RealmShare(f))} OF THE PROVINCES. YOU WON {how}.",
                 $"DAY {Day}, {Captain.Renown:0} RENOWN, {FiefSeats} FIEFS.", "PLAY ON AS LONG AS YOU LIKE.",
             });
         }

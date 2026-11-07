@@ -67,6 +67,11 @@ that will not last. Brigands roam between them all.
   culture's elite tiers need one), walls, market, granary, stables, chapel and watchtower. AI realms build too. As a lord with two fiefs
   you can give one to a companion and make him your **vassal**, with standing orders (defend my lands, follow me, join the host); lords who
   hate their liege may defect to a ruler they like.
+- **War and peace:** wars wear realms down (losses, lost seats, time). A weary realm sues for peace on the winner's terms: a plain
+  truce, gold over four weeks, a seat handed over, or **tribute** (a quarter of its income, and it fights its overlord's wars). Realms at
+  rest pick new wars. The marshal **musters hosts** of the lords who respect him, and as a vassal you are **summoned**: come within four
+  days to win his favour. As king you declare war, offer peace on terms (only as far as you are ahead), and ally against a shared enemy;
+  your tributaries' land counts toward victory.
 - **Prisoners** follow you (they slow you and eat): sell, recruit or free them. Lords you beat may be captured and ransomed.
 - **Officers:** sergeants with traits (Stubborn, Steady, Drillmaster, Hothead, Sharpshooter, Surgeon, Veteran) that show in battle; they can fall.
 - **Seasons and food:** winter slows the march, slows healing and doubles rations; starving men lose cohesion and desert. Your liege's towns feed you.
