@@ -30,7 +30,7 @@ public sealed partial class Campaign
         setup.Options = new BattleOptions
         {
             Tournament = true, Couriers = false, Cap = 40, Scouted = true,
-            PlayerType = Rules.CaptainType(Captain), PlayerSide = Captain.Kit.Side != "" ? Rules.CaptainType(Captain, side: true) : null, PlayerMount = Rules.CaptainMount(Captain),
+            Arms = Skill("Arms"), PlayerType = Rules.CaptainType(Captain), PlayerSide = Captain.Kit.Side != "" ? Rules.CaptainType(Captain, side: true) : null, PlayerMount = Rules.CaptainMount(Captain),
             PlayerWounded = S.Hours < Captain.WoundedUntil, EnemyDamage = Settings.Current.EnemyDamage,
             Ground = TerrainParams.Lists, Weather = new Weather(13),
             Palette = new[] { mePal, townPal == mePal ? 3 : townPal },

@@ -7,6 +7,36 @@ namespace Ironfield;
 public sealed partial class Battle
 {
     public const float ParryWindow = 0.35f;
+    /// Battle time until which a swing you start is a riposte (after a parry).
+    public float RiposteUntil = -1;
+    public bool Riposting => Time < RiposteUntil;
+    /// Swings started hard on the heels of the last (within ChainGap of its recovery): each costs more stamina, and the
+    /// enemy, reading the rhythm, blocks them more often. A pause breaks the chain.
+    public int Chain;
+    public const float ChainGap = 0.4f, RiposteTime = 0.45f;
+    float lastRecovered = -9;
+    bool riposteSwing;
+    /// How far your Arms skill has come past a new captain's 15, 0-1.
+    public float ArmsEdge => Math.Clamp((Options.Arms - 15) / 85f, 0, 1);
+    float ParryTime => ParryWindow + 0.1f * ArmsEdge;
+
+    /// You release a swing (P2): its stamina cost, power and windup from the chain, a riposte, tiredness and Arms.
+    void ReleaseSwing(Unit p)
+    {
+        Chain = Time - lastRecovered < ChainGap ? Chain + 1 : 0;
+        riposteSwing = Riposting;
+        RiposteUntil = -1;
+        float cost = (8 + 5 * Chain) * (1 - 0.25f * ArmsEdge) * (riposteSwing ? 0.5f : 1);
+        bool tired = p.Stamina < cost;
+        p.Stamina = MathF.Max(0, p.Stamina - cost);
+        p.Power = (0.6f + p.Charge) * p.Swing switch { AttackDir.Overhead => 1.2f, AttackDir.Thrust => 1f, _ => 0.95f }
+            * (tired ? 0.6f : 1) * (riposteSwing ? 1.25f : 1);
+        p.Charge = 0;
+        p.Action = UnitAction.Windup;
+        p.ActionTimer = (p.Swing == AttackDir.Overhead ? 0.2f : 0.15f) * p.Type.Windup / 0.4f // your weapon sets your pace (P1)
+            * (tired ? 1.4f : 1) * (riposteSwing ? 0.5f : 1) * (1 - 0.15f * ArmsEdge);
+        if (tired) PlayerHit = ("TOO TIRED: A WEAK BLOW", Time);
+    }
     /// The supply wagon behind each side's lines, and the arrows left in it.
     public readonly Vector2[] Wagons = { new(-8, -52), new(8, 52) };
     public readonly int[] WagonStock = { 300, 300 };

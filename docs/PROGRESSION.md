@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1 built; P2 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1 built; P2 in progress** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -211,3 +211,13 @@ Give the captain something to do in each fight beyond "win".
   else 35%; 60% / 15% for brigands. A tournament win gives a prize half the time (`TournamentPrizeChance`). The report's
   SPOILS well shows it with TAKE (`TakeSpoil`: owned, wear it at any armourer); closing the report leaves it. The pilot
   takes every spoil and buys body armour, helms and horses with three reserves to spare (`Pilot.Kit`).
+- P2 (step 1, skill in the swing): `BattleCaptain.ReleaseSwing` decides each of your swings. A parry (`ParryTime`: 0.35 s
+  + 0.1 s at Arms 100) sets `RiposteUntil` (0.45 s); a swing started in it is a riposte (windup x0.5, power x1.25, half
+  the stamina, and `Hit` gives a tier I-III defender no block). A swing started within `ChainGap` (0.4 s) of the last
+  recovery extends `Chain`: stamina 8 + 5 a link, AI block chance +8% a link (up to 4), and from the second link your hits
+  no longer interrupt his windup (`Damage`), which is what ends the old stun-lock where constant swings kept a man from
+  ever striking. Stamina no longer refills while you wind up, recover or hold a swing; a swing you cannot pay for is weak
+  (x0.6) and slow (x1.4). `BattleOptions.Arms` (the campaign passes your skill; 15 by default) gives `ArmsEdge` 0-1:
+  windup -15%, stamina a swing -25%, parry window +0.1 s. `SelfTest.SkillBouts`: against two men-at-arms a scripted
+  parrying captain wins 10/10, a captain who only swings 0/10 (against one he still wins, at about half his health).
+  Mounted swings were already in (any direction from the saddle, with the speed bonus).

@@ -198,7 +198,7 @@ public partial class Campaign
             Cap = Settings.Current.BattleSize,
             PlayerWounded = S.Hours < Captain.WoundedUntil,
             Scouted = scouts || Has("Tactician"),
-            PlayerType = Rules.CaptainType(Captain), PlayerSide = Captain.Kit.Side != "" ? Rules.CaptainType(Captain, side: true) : null,
+            Arms = Skill("Arms"), PlayerType = Rules.CaptainType(Captain), PlayerSide = Captain.Kit.Side != "" ? Rules.CaptainType(Captain, side: true) : null,
             PlayerMount = Rules.CaptainMount(Captain),
             EnemyDamage = Settings.Current.EnemyDamage,
             Ground = Map.BattleGround(Player.Pos),

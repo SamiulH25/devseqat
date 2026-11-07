@@ -13,11 +13,13 @@ public partial class Battle
         {
             case UnitAction.Windup:
                 Strike(u);
+                if (u.IsPlayer) riposteSwing = false;
                 u.Action = UnitAction.Recover;
                 u.ActionTimer = u.IsPlayer ? 0.3f * u.Type.Recover / 0.5f : u.Type.Recover; // your weapon sets your pace (P1)
                 break;
             case UnitAction.Recover:
                 u.Action = UnitAction.None;
+                if (u.IsPlayer) lastRecovered = Time;
                 if (!u.IsPlayer) u.Cooldown = MathF.Max(u.Cooldown, rng.NextSingle() * 0.5f); // desync the line
                 break;
             default:
@@ -106,11 +108,12 @@ public partial class Battle
             if (facing && t.Action == UnitAction.Block)
             {
                 // Matching the incoming direction just as the blow comes is a parry: free, and it throws the attacker off balance.
-                if (!ranged && !lance && Input.Dir == Dirs.Mirror(a.Swing) && Time - t.BlockStart < ParryWindow)
+                if (!ranged && !lance && Input.Dir == Dirs.Mirror(a.Swing) && Time - t.BlockStart < ParryTime)
                 {
                     Stagger(a, 0.9f);
                     t.Stamina = MathF.Max(0, t.Stamina - 2);
-                    PlayerHit = ("PARRY!", Time);
+                    RiposteUntil = Time + RiposteTime; // the opening: a swing started now is quick and hard to stop (P2)
+                    PlayerHit = ("PARRY! RIPOSTE", Time);
                     Sound(Cue.Clash, t.Pos);
                     return;
                 }
@@ -133,6 +136,7 @@ public partial class Battle
                 ? (a.Swing == AttackDir.Thrust ? 0.9f : 1)
                 : a.Swing switch { AttackDir.Thrust => 0.7f, AttackDir.Overhead => 0.85f, _ => 1 });
             if (ranged && !t.Type.HasShield) chance *= 0.3f;
+            if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && t.Type.Tier <= 3 ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
             if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
             if (rng.NextSingle() < chance)
             {
@@ -187,7 +191,8 @@ public partial class Battle
         t.HitFlash = 0.15f;
         t.HurtAt = Time;
         t.Morale -= real * 0.16f + extraShock * 0.7f;
-        if (t.Action == UnitAction.Windup || t.Charging) Stagger(t, 0.3f); // hits interrupt swings
+        // Hits interrupt swings, but not a rhythm he has read: past your second chained blow he swings through it (P2).
+        if ((t.Action == UnitAction.Windup || t.Charging) && !(a.IsPlayer && Chain >= 2)) Stagger(t, 0.3f);
         if (t.Hp <= 0) Kill(t, a);
         return real;
     }

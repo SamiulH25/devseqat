@@ -163,8 +163,12 @@ rides out the long way round (cut down the enemy's red riders and his divisions 
 and order them directly: the order rides out the same way, and they then follow it until the division gets a new goal. If a
 sergeant falls, his men keep their last goal, orders take twice as long, and the best man left takes charge after 10 s.
 
-**Captain combat:** a parry needs the guard raised just as the blow comes (within 0.35 s); attacking into a blow from the mirrored side
-**chambers** it. **Ctrl** shield bash (a kick with two hands), **N** swaps to your second weapon (the greatsword at first; any weapon you own; two-handed blades on foot only). With a bow or crossbow in hand, hold attack to draw (the aim steadies), release to loose at the foe nearest your facing; arrows refill at your wagon. **E** with no horse in reach
+**Captain combat:** a parry needs the guard raised just as the blow comes (within 0.35 s, up to 0.45 s with Arms); attacking into a blow from the mirrored side
+**chambers** it. A parry opens a **riposte** for 0.45 s: a swing started then winds up twice as fast, hits a quarter harder, costs half
+the stamina and cannot be blocked by men of tier III or lower. Swings started hard on the heels of the last form a **chain**: each link
+costs 5 more stamina, the enemy reads the rhythm and blocks more often, and past the second link your blows no longer interrupt his
+swing. Breath comes back only between blows; a swing with too little stamina is weak and slow. Arms (15 to 100) quickens your
+blows by up to 15% and cuts their stamina cost by up to a quarter. **Ctrl** shield bash (a kick with two hands), **N** swaps to your second weapon (the greatsword at first; any weapon you own; two-handed blades on foot only). With a bow or crossbow in hand, hold attack to draw (the aim steadies), release to loose at the foe nearest your facing; arrows refill at your wagon. **E** with no horse in reach
 whistles for the nearest loose horse of your side. **Esc** opens the menu (resume, controls, new battle, quit); Enter starts a new battle after the result.
 
 ## Design: soldier vs general

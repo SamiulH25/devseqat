@@ -222,6 +222,95 @@ public static partial class SelfTest
         Check(mace > sword * 1.3f, $"a mace bites through plate ({mace:0.0} against the sword's {sword:0.0})");
     }
 
+    /// Skill beats spam (roadmap C3, PROGRESSION P2): a scripted captain who parries and ripostes against two tier III
+    /// men-at-arms, and one who only swings, ten bouts each; then the riposte and the Arms skill on their own.
+    static void SkillBouts()
+    {
+        int parried = 0, spammed = 0;
+        for (int seed = 0; seed < 10; seed++)
+        {
+            if (Bout(300 + seed, parry: true, men: 2)) parried++;
+            if (Bout(300 + seed, parry: false, men: 2)) spammed++;
+        }
+        Console.WriteLine($"bouts: a parrying captain wins {parried}/10, a swinging one {spammed}/10");
+        Check(parried >= 8, $"a captain who parries and ripostes wins most bouts against two men-at-arms ({parried}/10)");
+        Check(spammed <= 5, $"a captain who only swings loses at least half ({spammed}/10)");
+
+        // A parry opens a riposte: a quick blow a tier III man cannot block.
+        var b = Battle.Empty(14);
+        var p = b.Player;
+        p.Horse = null;
+        var foe = b.AddSquad(1, Troops.Get("men_at_arms"), 1, p.Pos + new Vector2(0, 1.6f), 1, -Vector2.UnitY).Units[0];
+        float up = MathHelper.PiOver2;
+        foe.Swing = AttackDir.Left;
+        b.Input = new PlayerInput { Facing = up, Block = true, Dir = Dirs.Mirror(foe.Swing) };
+        b.Update(1 / 60f);
+        b.Hit(foe, p, 26, false);
+        Check(b.Riposting && foe.Action == UnitAction.Stagger, "a parry staggers him and opens a riposte");
+        foe.Action = UnitAction.None; // he recovers at once, guard up
+        b.Input = new PlayerInput { Facing = up, Attack = true, Dir = AttackDir.Right };
+        b.Update(1 / 60f);
+        b.Input = new PlayerInput { Facing = up };
+        b.Update(1 / 60f);
+        float windup = p.ActionTimer;
+        Run(b, 0.3f);
+        Check(foe.Hp < foe.Type.MaxHp, "the riposte slips his guard");
+        Check(!b.Riposting, "and is spent with one blow");
+        // Arms: a practised captain's blows come quicker and his parry window is wider.
+        var green = Battle.Empty(15);
+        var old = Battle.Empty(15, new BattleOptions { Arms = 100 });
+        Check(old.ArmsEdge == 1 && green.ArmsEdge == 0, "Arms 15 is a new captain, 100 a master");
+        float Windup(Battle k)
+        {
+            k.Player.Horse = null;
+            k.Input = new PlayerInput { Facing = up, Attack = true };
+            k.Update(1 / 60f);
+            k.Input = new PlayerInput { Facing = up };
+            k.Update(1 / 60f);
+            return k.Player.ActionTimer;
+        }
+        Check(Windup(old) < Windup(green) * 0.9f, "a master's blows come quicker");
+        Check(windup < Windup(Battle.Empty(16)) * 0.6f, "a riposte winds up in half the time");
+    }
+
+    /// One bout on flat ground against `men` men-at-arms; true if the captain is standing when the last falls.
+    static bool Bout(int seed, bool parry, int men = 1)
+    {
+        var b = Battle.Empty(seed);
+        var p = b.Player;
+        p.Horse = null;
+        b.EnemyCaptain.Pos = new Vector2(0, 400); // the enemy's own captain stays out of it
+        var foes = b.AddSquad(1, Troops.Get("men_at_arms"), men, p.Pos + new Vector2(0, 3), men, -Vector2.UnitY).Units;
+        float hold = 0;
+        for (int i = 0; i < 60 * 60 && p.Active && foes.Any(f => f.Active); i++)
+        {
+            var foe = foes.Where(f => f.Active).MinBy(f => Vector2.DistanceSquared(f.Pos, p.Pos))!;
+            var threat = foes.Where(f => f.Active && f.Action == UnitAction.Windup && f.Target == p).MinBy(f => f.ActionTimer);
+            if (threat != null) foe = threat;
+            var d = foe.Pos - p.Pos;
+            var inp = new PlayerInput { Facing = MathF.Atan2(d.Y, d.X), Dir = AttackDir.Left };
+            if (d.Length() > p.Type.Reach) inp.Move = Vector2.Normalize(d);
+            if (parry && threat != null)
+            {
+                // Read the blow and meet it from the mirrored side just before it lands.
+                if (threat.ActionTimer < 0.25f) { inp.Block = true; inp.Dir = Dirs.Mirror(threat.Swing); }
+                hold = 0;
+            }
+            else if (!parry || foe.Action is UnitAction.Stagger or UnitAction.Recover || b.Riposting)
+            {
+                // Swing: the spammer always, the parrier into an opening.
+                hold += 1 / 60f;
+                inp.Attack = hold < (parry ? 0.12f : 0.3f);
+                if (!inp.Attack) hold = 0;
+                inp.Dir = (AttackDir)(i / 40 % 4);
+            }
+            b.Input = inp;
+            b.Update(1 / 60f);
+        }
+        if (Environment.GetEnvironmentVariable("BOUT_DEBUG") != null) Console.WriteLine($"bout {seed} parry={parry} men={men}: t={b.Time:0.0} hp {p.Hp:0}/{p.Type.MaxHp:0} left {foes.Count(f => f.Active)} stam {p.Stamina:0} chain {b.Chain}");
+        return p.Active && foes.All(f => !f.Active);
+    }
+
     static void RangedRoles()
     {
         var b = Battle.Empty(11);

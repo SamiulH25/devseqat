@@ -35,11 +35,7 @@ public partial class Battle
                 {
                     // Release: power scales with how long the swing was held.
                     p.Charging = false;
-                    p.Power = (0.6f + p.Charge) * p.Swing switch { AttackDir.Overhead => 1.2f, AttackDir.Thrust => 1f, _ => 0.95f };
-                    p.Charge = 0;
-                    p.Action = UnitAction.Windup;
-                    p.ActionTimer = (p.Swing == AttackDir.Overhead ? 0.2f : 0.15f) * p.Type.Windup / 0.4f; // your weapon sets your pace (P1)
-                    p.Stamina -= 8;
+                    ReleaseSwing(p);
                 }
             }
         }
@@ -70,7 +66,8 @@ public partial class Battle
                 * (p.Charging || p.Action == UnitAction.Block ? 0.5f : 1)
                 * (p.Action == UnitAction.Stagger ? 0 : busy ? 0.3f : 1);
             p.Wish = inp.Move * speed;
-            p.Stamina = Math.Clamp(p.Stamina + (sprint ? -20 : p.Action == UnitAction.Block ? 4 : 15) * dt, 0, 100);
+            // Breath comes back between blows, not while swinging (P2): a captain who never pauses runs dry.
+            p.Stamina = Math.Clamp(p.Stamina + (sprint ? -20 : p.Action == UnitAction.Block ? 4 : busy || p.Charging ? 0 : 15) * dt, 0, 100);
         }
         if (inp.Rally && RallyCooldown <= 0 && p.Stamina >= 30) Rally(p);
     }
