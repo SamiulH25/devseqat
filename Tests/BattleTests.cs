@@ -1,0 +1,441 @@
+using Microsoft.Xna.Framework;
+
+namespace Ironfield;
+
+/// Self-tests of the battle sim: mechanics scenarios (charges, parries, flanks, cavalry, ranged), troops, sprites, full battles, replays.
+public static partial class SelfTest
+{
+    /// A gallop into loose infantry hurts it; a braced spear line hurts the horse instead.
+    static void Charge()
+    {
+        var b = Battle.Empty(1);
+        var l = Lancer(b);
+        var foot = b.AddSquad(1, UnitType.Shieldman, 1, Vector2.Zero, 1, -Vector2.UnitY);
+        foot.Loose = true; // not braced
+        var f = foot.Units[0];
+        Run(b, 3);
+        Check(f.Hp < f.Type.MaxHp, "couched lance / trample hurts unbraced infantry");
+        Check(l.Mounted && l.HorseHp == l.Horse!.Hp, "an unbraced man does not hurt the horse");
+
+        b = Battle.Empty(2);
+        l = Lancer(b);
+        var spear = b.AddSquad(1, UnitType.Spearrunner, 1, Vector2.Zero, 1, -Vector2.UnitY).Units[0];
+        Run(b, 3);
+        Check(!l.Mounted || l.HorseHp < UnitType.Lancer.Mount!.Hp, "a braced spear catches the horse");
+        Check(spear.Active, "the braced spearman survives the charge");
+    }
+
+    /// Balance guards: a horse is not a free win, and a broken company can come back instead of always dissolving.
+    static void CavalryBalance()
+    {
+        // A rider's reach in a standing fight is a man's reach, not its lance's: foot can hit back.
+        Check(Battle.MountedMeleeReach < UnitType.Lancer.Reach && Battle.MountedMeleeReach >= UnitType.Shieldman.Reach,
+            $"a rider reaches as far as a footman, not as far as its lance ({Battle.MountedMeleeReach})");
+
+        // The same charge costs the horse more against a set shield wall than against loose ranks.
+        float HorseLoss(Formation f)
+        {
+            var b = Battle.Empty(40);
+            var foot = b.AddSquad(0, UnitType.Shieldman, 12, new(0, 0), 6, Vector2.UnitY);
+            foot.Formation = f;
+            var horse = b.AddSquad(1, Troops.Get("knights"), 5, new(0, 24), 5, -Vector2.UnitY);
+            horse.Order = Order.Charge;
+            float before = horse.Units.Sum(u => u.HorseHp);
+            Run(b, 20);
+            return before - horse.Units.Sum(u => u.Active ? u.HorseHp : 0);
+        }
+        float wall = HorseLoss(Formation.ShieldWall), open = HorseLoss(Formation.Loose);
+        Console.WriteLine($"knights into a shield wall lose {wall:0} horse hp, into loose ranks {open:0}");
+        Check(wall > open, $"a set shield wall hurts the horse more than loose ranks ({wall:0} vs {open:0})");
+
+        // Morale: a broken man's nerve returns once he is clear of the fight, but a man who breaks twice is done.
+        var m = Battle.Empty(50);
+        var squad = m.AddSquad(0, UnitType.Shieldman, 1, new(0, 0), 1, Vector2.UnitY);
+        m.AddSquad(1, UnitType.Shieldman, 1, new(0, 20), 1, -Vector2.UnitY);
+        var man = squad.Units[0];
+        man.Pos = new Vector2(0, -40); // clear of the enemy, with room before the map's edge
+        man.Routing = true;
+        man.Routs = 1;
+        man.Morale = 20;
+        Run(m, 10);
+        Check(!man.Routing && man.Morale > Battle.RallyAt, $"a broken man comes back once he is clear ({man.Morale:0})");
+        man.Routing = true;
+        man.Routs = 2;
+        man.Morale = 5;
+        Run(m, 2);
+        Check(man.Routing, "a man who breaks twice stays broken");
+    }
+
+    /// Blows from behind land harder than blows from the side.
+    static void Flanks()
+    {
+        var b = Battle.Empty(3);
+        var a = b.AddSquad(0, UnitType.Shieldman, 1, new(0, 0), 1, Vector2.UnitY).Units[0];
+        var t = b.AddSquad(1, UnitType.Shieldman, 2, new(0, 2), 2, Vector2.UnitY).Units[0]; // faces away from a
+        float hp = t.Hp;
+        b.Hit(a, t, 30, false);
+        float rear = hp - t.Hp;
+        t.Facing = 0; // now a stands at its side
+        hp = t.Hp;
+        b.Hit(a, t, 30, false);
+        float flank = hp - t.Hp;
+        Check(rear > flank && flank > 0, $"rear hits ({rear:0}) beat flank hits ({flank:0})");
+    }
+
+    /// Blocking in the direction the blow comes from is a parry: no damage, the attacker staggers.
+    static void Parry()
+    {
+        var b = Battle.Empty(4);
+        var p = b.Player;
+        var foe = b.AddSquad(1, UnitType.Shieldman, 1, p.Pos + new Vector2(0, 1.5f), 1, -Vector2.UnitY).Units[0];
+        p.Facing = MathHelper.PiOver2;
+        p.Action = UnitAction.Block;
+        foe.Swing = AttackDir.Right;
+        b.Input.Dir = Dirs.Mirror(foe.Swing);
+        float hp = p.Hp, st = p.Stamina;
+        b.Hit(foe, p, 30, false);
+        Check(p.Hp == hp && foe.Action == UnitAction.Stagger && p.Stamina > st - 5, "matched block parries");
+        b.Input.Dir = AttackDir.Overhead;
+        foe.Action = UnitAction.None;
+        st = p.Stamina;
+        b.Hit(foe, p, 30, false);
+        Check(p.Hp == hp && p.Stamina < st - 5, "unmatched shield block holds but costs stamina");
+        // A guard held too long is only a block: parries need timing.
+        b.Time += 1;
+        b.Input.Dir = Dirs.Mirror(foe.Swing);
+        foe.Action = UnitAction.None;
+        p.Action = UnitAction.Block;
+        st = p.Stamina;
+        b.Hit(foe, p, 30, false);
+        Check(p.Stamina < st - 5, "a stale guard does not parry (it blocks, at a cost)");
+    }
+
+    /// Roadmap C1-C7 mechanics, each in a small scenario.
+    static void Formations()
+    {
+        float ArrowLoss(Formation f)
+        {
+            var b = Battle.Empty(8);
+            var wall = b.AddSquad(0, UnitType.Shieldman, 16, new(0, 0), 8, -Vector2.UnitY);
+            wall.Formation = f;
+            var bows = b.AddSquad(1, UnitType.Bowman, 16, new(0, -26), 8, Vector2.UnitY);
+            float before = wall.Units.Sum(u => u.Hp);
+            Run(b, 20);
+            return before - wall.Units.Sum(u => u.Hp);
+        }
+        float line = ArrowLoss(Formation.Line), shields = ArrowLoss(Formation.ShieldWall), square = ArrowLoss(Formation.Square);
+        Console.WriteLine($"arrows: line loses {line:0} hp, shield wall {shields:0}, square {square:0}");
+        Check(shields < line * 0.8f, "a shield wall stops more arrows");
+        Check(square > shields, "a square is a better mark for archers than a shield wall");
+        var s = new Squad("t", 0) { Anchor = Vector2.Zero, Front = Vector2.UnitY, Formation = Formation.Square };
+        var dirs = Enumerable.Range(0, 16).Select(i => s.FaceAt(s.Slot(i, 16))).ToList();
+        Check(dirs.Any(d => d.Y > 0.9f) && dirs.Any(d => d.Y < -0.9f) && dirs.Any(d => d.X > 0.9f) && dirs.Any(d => d.X < -0.9f), "a square faces every way");
+        s.Formation = Formation.Wedge;
+        Check(s.Slot(0, 9) == Vector2.Zero && s.Slot(1, 9).Y < 0 && s.Slot(4, 9).Y < s.Slot(1, 9).Y, "a wedge narrows to its point");
+        // Rear charge on a square: no flank pressure.
+        var c = Battle.Empty(9);
+        var sq = c.AddSquad(0, UnitType.Shieldman, 16, new(0, 0), 4, Vector2.UnitY);
+        sq.Formation = Formation.Square;
+        var t = sq.Units[^1];
+        c.Hit(c.EnemyCaptain, t, 5, false);
+        Check(sq.Pressure == 0, "a square cannot be taken in the flank");
+    }
+
+    static void CaptainCombat()
+    {
+        var b = Battle.Empty(10);
+        var p = b.Player;
+        p.Horse = null;
+        var foe = b.AddSquad(1, UnitType.Shieldman, 1, p.Pos + new Vector2(0, 1.2f), 1, -Vector2.UnitY).Units[0];
+        p.Facing = MathHelper.PiOver2;
+        b.Input = new PlayerInput { Facing = MathHelper.PiOver2, Bash = true };
+        b.Update(1 / 60f);
+        Check(foe.Action == UnitAction.Stagger, "a shield bash staggers the man in front");
+        b.Input = new PlayerInput { Facing = MathHelper.PiOver2 };
+        Run(b, 2);
+        b.Input = new PlayerInput { Facing = MathHelper.PiOver2, Swap = true };
+        b.Update(1 / 60f);
+        Check(b.TwoHanded && p.Type.Look.Weapon == "greatsword" && !p.Type.HasShield, "N swaps to the two-handed sword");
+        // Chambering: striking into a blow from the mirrored side turns it.
+        p.Action = UnitAction.Windup;
+        foe.Action = UnitAction.None;
+        foe.Swing = AttackDir.Left;
+        p.Swing = Dirs.Mirror(foe.Swing);
+        float hp = p.Hp;
+        b.Hit(foe, p, 30, false);
+        Check(p.Hp == hp && foe.Action == UnitAction.Stagger, "a chambered blow does no harm");
+    }
+
+    static void RangedRoles()
+    {
+        var b = Battle.Empty(11);
+        var xb = b.AddSquad(0, Troops.Get("crossbowmen"), 1, new(0, 0), 1, Vector2.UnitY).Units[0];
+        var bow = b.AddSquad(0, Troops.Get("bowmen"), 1, new(4, 0), 1, Vector2.UnitY).Units[0];
+        var knight = b.AddSquad(1, Troops.Get("ironguard"), 1, new(0, 20), 1, -Vector2.UnitY).Units[0];
+        knight.Type = knight.Type.Clone();
+        knight.Type.BlockChance = 0;
+        float h0 = knight.Hp; b.Hit(xb, knight, xb.Type.Damage, true); float bolt = h0 - knight.Hp;
+        h0 = knight.Hp; b.Hit(bow, knight, bow.Type.Damage, true); float arrow = h0 - knight.Hp;
+        Check(bolt > arrow * 2, $"a bolt punches through armour an arrow cannot ({bolt:0} vs {arrow:0})");
+        var c = Battle.Empty(12);
+        var ha = c.AddSquad(0, Troops.Get("horse_archers"), 6, new(0, -10), 6, Vector2.UnitY);
+        ha.Order = Order.Charge;
+        c.AddSquad(1, UnitType.Shieldman, 12, new(0, 15), 6, -Vector2.UnitY);
+        Run(c, 12);
+        Check(ha.Units.Sum(u => u.Type.Ammo - u.Ammo) > 6, "horse archers shoot from the saddle");
+        Check(ha.Units.All(u => u.Mounted), "and keep their distance (no horse lost)");
+    }
+
+    static void FatigueAndSupply()
+    {
+        var b = Battle.Empty(13);
+        var runners = b.AddSquad(0, UnitType.Shieldman, 4, new(0, 0), 4, Vector2.UnitY);
+        foreach (var u in runners.Units) u.Wish = Vector2.UnitY * u.Type.Speed;
+        runners.Anchor = new(0, 70);
+        Run(b, 20);
+        Check(runners.Units.All(u => u.Stamina < 80), "running tires men");
+        var archers = b.AddSquad(0, UnitType.Bowman, 4, b.Wagons[0], 4, Vector2.UnitY);
+        foreach (var u in archers.Units) u.Ammo = 0;
+        Run(b, 5);
+        Check(archers.Units.All(u => u.Ammo > 0) && b.WagonStock[0] < 300, "archers at the wagon draw arrows");
+        var w = new Weather(Hour: 23, Rain: 1, Fog: 0);
+        Check(w.Night && w.Vision <= 40 && w.Spread > 1.5f && w.MudFactor < 1, "night and rain blind archers and bog horses");
+    }
+
+    /// A battlefield river: carved below its banks, slow to wade, quicker at the fords; the map has rivers with bridges.
+    static void Rivers()
+    {
+        var t = new Terrain(21, TerrainParams.Meadow with { River = true });
+        var r = t.Rivers.Single();
+        var mid = r.Path[65];
+        Check(t.Height(mid) < t.Height(mid + new Vector2(0, 12)) - 0.8f || t.Height(mid) < t.Height(mid - new Vector2(0, 12)) - 0.8f, "the river runs below its banks");
+        Check(t.WaterDepth(mid) > 1 && t.WaterDepth(r.Fords[0]) is > 0 and < 0.5f, "deep in the stream, shallow at a ford");
+        Check(!t.Foliage.Any(f => f.Radius > 0 && t.WaterDepth(f.Pos) > 0), "no trees in the water");
+        float Cross(Vector2 at)
+        {
+            var b = new Battle(3, new ArmySpec("a", 1, new List<Company>()), new ArmySpec("b", 1, new List<Company>()), new BattleOptions { Ground = TerrainParams.Meadow with { River = true }, PlayerWounded = true });
+            var s = b.AddSquad(0, UnitType.Shieldman, 1, at - new Vector2(0, 8), 1, Vector2.UnitY);
+            s.Anchor = at + new Vector2(0, 8);
+            float time = 0;
+            while (s.Units[0].Pos.Y < at.Y + 6 && time < 30) { b.Update(1 / 60f); time += 1 / 60f; }
+            return time;
+        }
+        var br = new Terrain(3, TerrainParams.Meadow with { River = true }).Rivers.Single();
+        float deep = Cross(br.Path[50]), ford = Cross(br.Fords[0]);
+        Console.WriteLine($"river: wading takes {deep:0.0}s, the ford {ford:0.0}s");
+        Check(deep > ford * 1.2f, "a ford is the quick way over");
+        var m = WorldMap.Generate(11);
+        Check(m.Rivers.Count == 2 && m.Rivers.All(rv => rv.Fords.Length > 0), "the map has rivers with bridges");
+        Check(m.Settlements.All(s => m.RiverDist(s.Pos) > 4), "no settlement stands in a river");
+    }
+
+    /// Two AI generals: the reserve stays back until it is needed, and the field still resolves.
+    static void Generals()
+    {
+        var rng = new Random(3);
+        var a = Armies.Random(rng, 2, 0);
+        a = a with { Companies = a.Companies.Concat(new[] { new Company("shieldmen", 16, "infantry"), new Company("shieldmen", 12, "infantry") }).ToList() };
+        var b = new Battle(14, a, Armies.Random(rng, 2, 1), new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+        bool heldBack = false;
+        for (int step = 0; b.Winner < 0 && step < 60 * 600; step++)
+        {
+            b.Update(1 / 60f);
+            var inf = b.SquadsOf(0).Where(s => s.Company != null && s.Alive > 0 && Armies.RoleOf(s.Company) == "infantry").ToList();
+            if (inf.Any(s => s.Order == Order.Charge) && inf.Any(s => s.Order == Order.Hold)) heldBack = true; // one company waits while the line charges
+        }
+        Check(b.Winner >= 0, "an AI-vs-AI battle with a reserve resolves");
+        Check(heldBack, "the AI keeps an infantry reserve back");
+    }
+
+    static void HorseDown()
+    {
+        var b = Battle.Empty(5);
+        var l = Lancer(b);
+        b.HitHorse(l, 999, b.EnemyCaptain);
+        Check(!l.Mounted && b.DeadHorses.Count == 1 && l.Action == UnitAction.Stagger, "a slain horse throws its rider");
+    }
+
+    /// The heightmap matches its grid, the centre field is open, trunks are solid and slopes slow you down.
+    static void Ground()
+    {
+        var t = new Terrain(42);
+        Check(MathF.Abs(t.Height(new Vector2(-Terrain.BattleHalf + 10 * Terrain.BattleStep, -Terrain.BattleHalf + 7 * Terrain.BattleStep)) - t.GridHeight(10, 7)) < 1e-4f,
+            "height samples the mesh vertices exactly");
+        for (float x = -200; x <= 200; x += 7)
+            for (float z = -200; z <= 200; z += 7)
+                Check(float.IsFinite(t.Height(new Vector2(x, z))) && MathF.Abs(t.Height(new Vector2(x, z))) < 60, "heights stay sane");
+        Check(t.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine) > 150, "the land is wooded");
+        Check(!t.Foliage.Any(f => f.Radius > 0 && Terrain.Core(f.Pos)), "no trees or boulders where the armies deploy");
+        var tree = t.Foliage.First(f => f.Kind == FoliageKind.Broadleaf);
+        var p = tree.Pos + new Vector2(0.05f, 0);
+        Check(t.PushOut(ref p, 0.35f) && Vector2.Distance(p, tree.Pos) >= tree.Radius + 0.34f, "trunks push units out");
+
+        // Walking up a slope is slower than walking down it.
+        var steepest = Vector2.Zero;
+        for (float x = -45; x <= 45; x += 3)
+            for (float z = -50; z <= 50; z += 3)
+                if (t.Gradient(new Vector2(x, z)).Length() > t.Gradient(steepest).Length()) steepest = new Vector2(x, z);
+        var up = Vector2.Normalize(t.Gradient(steepest));
+        Check(Battle.SlopeFactor(t, steepest, up) < 1 && Battle.SlopeFactor(t, steepest, -up) > 1, "uphill is slower than downhill");
+    }
+
+    /// Archers told to hold their arrows do not shoot.
+    static void HoldFire()
+    {
+        var b = Battle.Empty(6);
+        var bows = b.AddSquad(0, UnitType.Bowman, 4, new(0, -10), 4, Vector2.UnitY);
+        bows.FireAtWill = false;
+        b.AddSquad(1, UnitType.Shieldman, 4, new(0, 15), 4, -Vector2.UnitY);
+        Run(b, 3);
+        Check(b.Arrows.Count == 0, "held arrows stay on the string");
+        bows.FireAtWill = true;
+        Run(b, 3);
+        Check(b.Arrows.Count > 0, "fire at will looses arrows");
+    }
+
+    /// The upgrade trees are sound: every line climbs in tier, and higher tiers are better soldiers.
+    static void TroopTree()
+    {
+        Check(!Troops.Validate().Any(), "troops.json validates: " + string.Join("; ", Troops.Validate()));
+        var levies = Troops.Get("levies");
+        var clansmen = Troops.Get("clansmen");
+        Check(levies.Tier == 1 && levies.UpgradesTo.Length >= 4, "levies branch into several lines");
+        Check(clansmen.Tier == 1 && clansmen.UpgradesTo.Length >= 4, "clansmen branch into several lines");
+        foreach (var t in Troops.All)
+        {
+            Check(t.UpgradesTo.Length == 0 || t.UpgradeXp > 0, $"{t.Name} has upgradeXp when it upgrades");
+            foreach (var next in t.UpgradesTo.Select(Troops.Get))
+                Check(next.MaxHp + next.Armor * 5 + next.Damage > t.MaxHp + t.Armor * 5 + t.Damage, $"{t.Name} -> {next.Name} is an upgrade");
+        }
+        for (int tier = 1; tier <= 7; tier++)
+        {
+            Check(Troops.Tree("levies").Any(t => t.Tier == tier), $"levies tree reaches tier {Style.Numerals[tier]}");
+            Check(Troops.Tree("clansmen").Any(t => t.Tier == tier), $"clansmen tree reaches tier {Style.Numerals[tier]}");
+        }
+        Check(Troops.All.Count(t => !t.Leader) >= 80, $"massive 7-tier troop tree ({Troops.All.Count(t => !t.Leader)} troops)");
+        var reachable = Troops.Tree("levies").Concat(Troops.Tree("clansmen")).Select(t => t.Id).ToHashSet();
+        Check(Troops.All.Where(t => !t.Leader).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
+    }
+
+    /// Every sprite any troop's look can ask for exists, for every side.
+    static void Sprites()
+    {
+        var sheet = new SpriteSheet();
+        IEnumerable<string> Keys(UnitType t)
+        {
+            var l = t.Look;
+            foreach (var v in new[] { "f", "s", "b" })
+            {
+                yield return $"torso.{l.Body}.{v}";
+                yield return $"boot.{l.Feet}.{v}";
+                yield return $"head.{v}";
+                if (l.Head != "none") yield return $"helm.{l.Head}.{v}";
+                if (l.Tabard) yield return $"tabard.{v}";
+            }
+            yield return $"sleeve.{l.Body}"; yield return $"leg.{l.Legs}"; yield return $"hand.{l.Hands}"; yield return l.Weapon;
+            if (l.Shield != "none") yield return $"shield.{l.Shield}";
+            if (l.Plume) yield return "plume";
+            if (l.Cape) yield return "cape";
+            if (t.Mount != null) { yield return "hbody.saddle"; yield return "hbody.caparison"; }
+        }
+        foreach (var t in Troops.All)
+            foreach (var k in Keys(t))
+                for (int p = 0; p < Style.Sides.Length; p++)
+                    Check(sheet.Rects.ContainsKey($"{k}/{p}"), $"sprite {k}/{p} for {t.Name}");
+        foreach (var k in new[] { "hbody", "hneck", "hhead", "hchest", "hrump", "hface", "hleg", "htail" })
+            Check(sheet.Rects.ContainsKey(k + "/n"), $"horse coat sprite {k}");
+        foreach (var e in Enum.GetValues<Emblem>())
+            for (int p = 0; p < Style.Sides.Length; p++) Check(sheet.Rects.ContainsKey($"flag.{(int)e}/{p}"), $"company banner flag.{(int)e}/{p}");
+        var torso = sheet.Rects["torso.mail.f/0"];
+        Check(MathF.Abs((torso.Height - 2) * Style.Px - 0.675f) < 0.05f, "a torso keeps its size in metres");
+        Check(sheet.Rects.Values.Any(r => r.Height > 90), "polearms are painted at full length");
+    }
+
+    // ---------- campaign (docs/CAMPAIGN.md section 11) ----------
+
+    /// A battle bigger than the field holds: reserves wait, march on, and every man is accounted for; 200 men run in real time.
+    static void BigBattle()
+    {
+        var rng = new Random(5);
+        var b = new Battle(5, Scaled(Armies.Random(rng, 2, 0), 2.2f, 100), Scaled(Armies.Random(rng, 2, 1), 2.2f, 200),
+            new BattleOptions { AutoPlayer = true, PlayerWounded = true, Cap = 200 });
+        int fielded = b.Units.Count(u => !u.IsLeader), firstCompanies = b.Squads.Count(q => q.Company != null);
+        Check(fielded <= 210, $"the field holds about 200 men ({fielded})");
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        for (int i = 0; i < 600; i++) b.Update(1 / 60f);
+        double tps = 600 / watch.Elapsed.TotalSeconds;
+        Console.WriteLine($"big battle: {fielded} men fielded, {tps:0} ticks/s");
+        Check(tps >= 60, $"a 200-man battle runs in real time ({tps:0} ticks/s)");
+        for (int step = 0; b.Winner < 0 && step < 60 * 900; step++) b.Update(1 / 60f);
+        var r = b.Result();
+        Check(r.Winner >= 0, "the big battle ends");
+        Check(r.Companies.All(c => c.Standing + c.Fled + c.Fallen == c.Start), "every man is standing, fled or fallen");
+        Check(r.Companies.Count(c => c.Deployed) > firstCompanies, $"reserves marched on ({firstCompanies} -> {r.Companies.Count(c => c.Deployed)} companies)");
+        // Roadmap E1: 400 men on the field still run faster than real time.
+        var h = new Battle(6, Scaled(Armies.Random(rng, 3, 0), 3.4f, 300), Scaled(Armies.Random(rng, 3, 1), 3.4f, 400),
+            new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+        int huge = h.Units.Count(u => !u.IsLeader);
+        for (int i = 0; i < 120; i++) h.Update(1 / 60f); // warm up
+        watch.Restart();
+        for (int i = 0; i < 600; i++) h.Update(1 / 60f);
+        double htps = 600 / watch.Elapsed.TotalSeconds;
+        Console.WriteLine($"huge battle: {huge} men fielded, {htps:0} ticks/s");
+        Check(huge is > 320 and <= 410, $"the field holds about 400 men ({huge})");
+        Check(htps >= 60, $"a 400-man battle runs in real time ({htps:0} ticks/s)");
+    }
+
+    static void StackBattle()
+    {
+        var c = Campaign.New(82);
+        c.Player.Pos = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t)).Pos;
+        c.S.Gold = 2000;
+        var co = c.Player.Companies.First(k => Rules.RoleOf(k) == "infantry");
+        co.Stack("levies").AddXp(1e6f);
+        c.Promote(co, co.Stack("levies"), "shieldmen", 5);
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
+        bandit.Pos = c.Player.Pos;
+        c.Encounter = bandit;
+        var setup = c.PrepareBattle(bandit);
+        setup.Options.AutoPlayer = true;
+        setup.Options.PlayerWounded = true;
+        var spec = setup.Player.Companies.First(k => k.Id == co.Id);
+        Check(spec.Mix != null && spec.Mix.Length == 2, "the battle gets both stacks of the company");
+        var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+        var squads = b.Squads.Where(q => q.Company?.Id == co.Id).ToList();
+        Check(squads.Count == 1, "a mixed company is one squad");
+        Check(squads[0].Units.Select(u => u.Type.Id).Distinct().Count() == 2, "of two kinds of men");
+        for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+        var result = b.Result();
+        var cr = result.Companies.First(r => r.Id == co.Id);
+        Check(cr.Stacks != null && cr.Stacks.Count == 2 && cr.Stacks.Sum(st => st.Start) == cr.Start, "its result comes back per stack");
+        Check(cr.Stacks!.All(st => st.Start == st.Standing + st.Fled + st.Fallen), "every man of every stack is accounted for");
+        int before = co.Men + co.Wounded;
+        var report = c.FinishBattle(result, setup);
+        var line = report.Companies.First(r => r.Name == co.Name);
+        Check(line.MenBefore == line.MenAfter + line.Killed + line.Wounded + line.Captured + line.FledLost, "the report accounts for every man");
+        Check(co.Ledger.Count == 1 && co.Battles >= 1, "the company's ledger records the fight");
+        Console.WriteLine($"stack battle: {(report.Won ? "won" : "lost")}, {co.Name} {before} -> {co.Men}+{co.Wounded}W [{string.Join(", ", cr.Stacks.Select(st => $"{st.Troop} {st.Start}->{st.Standing}"))}]");
+    }
+
+    /// A recorded battle with player orders and input, saved to JSON and played back, ends exactly the same.
+    static void ReplayExact()
+    {
+        var rng = new Random(9);
+        var b = new Battle(31, Armies.Random(rng, 2, 0), Armies.Random(rng, 2, 1), new BattleOptions { Weather = new Weather(17, 0.5f) });
+        b.StartRecording(31);
+        var mine = b.Commanded.ToList();
+        for (int step = 0; b.Winner < 0 && step < 60 * 300; step++)
+        {
+            if (step == 60) foreach (var s in mine) { s.Order = Order.Charge; }
+            if (step == 120) mine[0].Formation = Formation.ShieldWall;
+            if (step == 200) mine[^1].Target = b.SquadsOf(1).First();
+            b.Input = new PlayerInput { Facing = MathHelper.PiOver2, Move = new Vector2(0, step % 300 < 150 ? 1 : 0), Attack = step % 50 < 20, Dir = (AttackDir)(step / 70 % 4) };
+            b.Update(1 / 60f);
+        }
+        var rec = b.FinishRecording()!;
+        var back = Replay.Deserialize(rec.Serialize());
+        var again = back.Play();
+        Console.WriteLine($"replay: {rec.Frames.Count} ticks, winner {again.Winner} after {again.Time:0.0}s, {again.Units.Count(u => u.Dead)} dead (recorded {rec.Winner}, {rec.Time:0.0}s, {rec.Dead})");
+        Check(back.Matches(again), "a replay reproduces its battle exactly");
+    }
+}
