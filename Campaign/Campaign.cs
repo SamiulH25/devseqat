@@ -378,6 +378,7 @@ public sealed partial class Campaign
         RelationsWeekly();
         WanderersWeekly();
         TraitsWeekly();
+        GuardWeekly();
         BuildWeekly(); // before wages: lords' pay takes a share of the chest down to its floor
         foreach (var p in S.Parties.Where(p => !Outlaw(p) && !p.Down))
         {
@@ -427,9 +428,9 @@ public sealed partial class Campaign
         TributeWeekly();
     }
 
-    static void Desert(Party p)
+    internal static void Desert(Party p)
     {
-        foreach (var c in p.Companies)
+        foreach (var c in p.Companies.Where(c => !c.Traits.Contains(HouseholdTrait))) // the household never deserts
         {
             c.RemoveFit((int)MathF.Ceiling(c.Men * 0.05f), true); // the lowest tiers leave first
             c.Prune();

@@ -129,15 +129,15 @@ public static class Skills
         int tier = TierOf(s, p);
         if (Level(c, s.Id) < tier * Step) return $"NEEDS {s.Name.ToUpperInvariant()} {tier * (int)Step}";
         if (tier == 4 && c.Perks.Count(id => id != p.Id && Of(id) == s) < 2) return "NEEDS TWO OTHER PERKS OF THIS SKILL";
-        if (Picks(c, s.Id) <= 0) return $"NEEDS {s.Name.ToUpperInvariant()} {(c.Perks.Count(id => Of(id)?.Id == s.Id) + 1) * (int)Step}";
+        if (Picks(c, s.Id) <= 0 && c.FreePerks <= 0) return $"NEEDS {s.Name.ToUpperInvariant()} {(c.Perks.Count(id => Of(id)?.Id == s.Id) + 1) * (int)Step}";
         return null;
     }
 
     /// Perk choices open on a skill's branch: one per 25 points, less those taken.
     public static int Picks(CaptainState c, string skill) =>
-        (int)(Level(c, skill) / Step) - c.Perks.Count(p => Of(p)?.Id == skill);
+        (int)(Level(c, skill) / Step) - c.Perks.Count(p => Of(p)?.Id == skill && !c.BonusPerks.Contains(p));
 
-    public static int PicksTotal(CaptainState c) => All.Sum(s => Math.Max(0, Picks(c, s.Id)));
+    public static int PicksTotal(CaptainState c) => All.Sum(s => Math.Max(0, Picks(c, s.Id))) + c.FreePerks;
 
     /// Raise a skill by use, with diminishing returns as it climbs; returns the new level.
     public static float Raise(CaptainState c, string skill, float amount)
@@ -180,6 +180,7 @@ public sealed partial class Campaign
         var skill = Skills.Of(id);
         if (skill == null) return "NO SUCH PERK";
         if (Skills.Locked(Captain, skill, Skills.Perk(id)!) is string why) return why;
+        if (Skills.Picks(Captain, skill.Id) <= 0) { Captain.FreePerks--; Captain.BonusPerks.Add(id); } // a rank's free choice (P5)
         Captain.Perks.Add(id);
         Log($"You learn {Skills.Perk(id)!.Name}.");
         return null;
@@ -210,6 +211,7 @@ public sealed partial class Campaign
         S.Gold -= RetrainCost;
         Captain.Retrained++;
         Captain.Perks.Remove(id);
+        if (Captain.BonusPerks.Remove(id)) Captain.FreePerks++; // a free choice comes back free
         Log($"You unlearn {Skills.Perk(id)!.Name}. The choice is open again.");
         return null;
     }

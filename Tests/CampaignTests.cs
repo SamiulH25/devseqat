@@ -846,6 +846,62 @@ public static partial class SelfTest
         Check(young.Me.Age == age + 1 && young.Skill("Arms") == arms, "a new year adds one to the captain's age, not yet to the wear");
     }
 
+    static void HouseholdGuard()
+    {
+        var c = Campaign.New(39);
+        c.GuardWeekly();
+        Check(c.Guard == null, "a free company has no household guard");
+        int slots = Rules.CompanySlots(c.Captain), limit = Rules.MenLimit(c.Captain);
+        c.Captain.BestRank = (int)Rank.Vassal;
+        c.GuardWeekly();
+        var g = c.Guard;
+        Check(g != null && g.Men == c.Scaled(15) && g.Type.Tier == 3 && g.Name == Campaign.HouseholdName, "a vassal's guard: 15 men of tier III");
+        Check(Rules.CompanySlots(c.Captain) == slots + 1 && Rules.MenLimit(c.Captain) == limit + c.Scaled(15), "the guard takes no slot and no room");
+        int men = g!.Men;
+        Campaign.Desert(c.Player);
+        Check(g.Men == men, "the household never deserts");
+        c.Captain.BestRank = (int)Rank.Lord;
+        c.GuardWeekly();
+        Check(g.Type.Tier == 4 && g.Men == men + c.Scaled(Campaign.GuardRefill), "a lord's guard: tier IV, and it fills toward 25");
+        for (int i = 0; i < 10; i++) c.GuardWeekly();
+        Check(g.Men == c.Scaled(25) && c.Player.Companies.Count(x => x.Traits.Contains(Campaign.HouseholdTrait)) == 1, "full at 25, and only one guard");
+        c.Captain.BestRank = (int)Rank.King;
+        c.GuardWeekly();
+        Check(g.Type.Tier == 5 && g.Type.Mount != null, $"a king's guard rides, tier V ({g.Troop})");
+        // In battle it follows you.
+        var b = Battle.Empty(40);
+        var sq = b.AddSquad(0, Troops.Get("men_at_arms"), 10, new Vector2(0, -10), 5, Vector2.UnitY, new Company("men_at_arms", 10, Traits: new[] { "Household" }));
+        Check(sq.Order == Order.Follow, "the guard keeps at your side in battle");
+    }
+
+    static void RankRewards()
+    {
+        // Sworn Sword: one perk free of the 25-point marks; forgetting it gives the choice back.
+        var c = Campaign.New(41);
+        c.Captain.Skills["Arms"] = 20;
+        Check(c.TakePerk("WarCry")!.Contains("ARMS 25"), "no perk before its mark");
+        c.Captain.Skills["Arms"] = 26;
+        Check(c.TakePerk("WarCry") == null && c.TakePerk("Duellist") != null, "one choice at 25");
+        c.Captain.FreePerks = 1;
+        Check(Skills.PicksTotal(c.Captain) == 1 && c.TakePerk("Duellist") == null && c.Captain.FreePerks == 0, "a rank's free perk is a second choice");
+        Check(Skills.Picks(c.Captain, "Arms") == 0, "the free perk does not eat the branch's next mark");
+        c.Player.Pos = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t)).Pos;
+        c.S.Gold = 1000;
+        Check(c.ForgetPerk("Duellist") == null && c.Captain.FreePerks == 1, "forget it and the free choice comes back");
+        // Lord: a wider aura; King: the King's Charge.
+        var opts = new BattleOptions { KingsCharge = true };
+        var b = Battle.Empty(42, opts);
+        var far = b.AddSquad(0, Troops.Get("men_at_arms"), 8, new Vector2(40, -30), 4, Vector2.UnitY);
+        foreach (var u in far.Units) { u.Routing = true; u.Morale = 5; u.Routs = 2; }
+        b.Input = new PlayerInput { Rally = true };
+        b.Update(1 / 60f);
+        Check(far.Units.All(u => u.Morale > Battle.RallyAt && u.Routs == 0), "the King's Charge calls back broken men out of earshot");
+        foreach (var u in far.Units) { u.Morale = 5; u.Routs = 2; }
+        b.Input = new PlayerInput();
+        for (int i = 0; i < 60 * 13; i++) { b.Input.Rally = i == 60 * 12 + 30; b.Update(1 / 60f); if (b.Winner >= 0) break; }
+        Check(far.Units.Where(u => u.Active).All(u => u.Routs == 2 || u.Morale < Battle.RallyAt + 25), "but only once a battle");
+    }
+
     static void SkillTree()
     {
         var a = Campaign.New(91);

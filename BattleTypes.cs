@@ -15,6 +15,8 @@ public sealed class BattleOptions
     public HashSet<string> Wounds = new();
     /// Iron Will perk: companies near you will not rout while a third of them stand.
     public bool IronWill;
+    /// A king's first rally of the battle calls every broken company back, wherever it runs (P5).
+    public bool KingsCharge;
     /// You are wounded: you command from the rear (command view only).
     public bool PlayerWounded;
     /// An AI general commands your side too (headless tests and auto-resolve calibration).

@@ -120,5 +120,21 @@ public partial class Battle
             }
         Log("Rally! Hold the line!");
         Sound(Cue.Horn, p.Pos);
+        if (Options.KingsCharge && !kingsCharged) KingsCharge(p);
+    }
+
+    bool kingsCharged;
+
+    /// The King's Charge (P5): once a battle every man of yours, broken or not, wherever he is, takes heart.
+    void KingsCharge(Unit p)
+    {
+        kingsCharged = true;
+        foreach (var u in Units)
+            if (u.Active && u.Team == p.Team && !u.IsPlayer)
+            {
+                u.Morale = MathF.Min(100, MathF.Max(u.Morale, RallyAt + 20) + 10);
+                if (u.Routing) u.Routs = 0;
+            }
+        Log("The King's Charge! Every banner turns back to the fight!");
     }
 }

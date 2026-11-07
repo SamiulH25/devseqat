@@ -144,7 +144,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Fief prosperity/unrest/taxes, buildings, revolts, vassals and orders, defection (F6) | `Campaign/Fiefs.cs` (`FiefsDaily`, `Build`, `RaiseVassal`, `OrderedProvince`) |
 | War exhaustion, peace terms, war declarations, tribute, alliances, hosts, summons (F7) | `Campaign/Diplomacy.cs` (`DiplomacyDaily`, `MakePeace`, `OfferPeace`, `MusterHost`) |
 | Events, lord quests, brigand kings, pretenders (F8) | `Campaign/Events.cs` + `Data/events.json` (`EventsDaily`, `Choose`, `ApplyEffect`, `ValidateEvents`) |
-| Stacks/promotion, characters/opinion, skills (tiers, retraining), the captain's lasting wounds, earned traits and age, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Wounds.cs`, `Traits.cs`, `Pilot.cs` |
+| Stacks/promotion, characters/opinion, skills (tiers, retraining), the captain's lasting wounds, earned traits and age, the household guard and rank rewards, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Wounds.cs`, `Traits.cs`, `Household.cs`, `Pilot.cs` |
 | Your divisions on the map (make, assign, goal, temper, command, into battle) | `Campaign/Divisions.cs` |
 | Monsters on the map: goblin holdouts (spawn, grow, raid, plunder, cleared), wolf packs, rare trolls, `MonsterThink` | `Campaign/Monsters.cs` (`SpawnHoldout`, `MonstersDaily`, `SendRaiders`, `HoldoutCleared`, `WolfThink`, `SpawnTroll`, `TrollThink`); docs/CREATURES.md |
 | The dead rise: grave fields after big battles, burial, undead hosts on the map | `Campaign/Undead.cs` (`AfterTheBattle`, `GravesDaily`, `RaiseHost`, `UndeadThink`); `bury_dead` in `Data/events.json` |

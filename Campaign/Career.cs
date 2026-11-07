@@ -45,11 +45,11 @@ public sealed partial class Campaign
     public static readonly (Rank Rank, string How, string Opens)[] Ladder =
     {
         (Rank.FreeCompany, "THE START", "CONTRACTS WITH ANY REALM, BRIGAND HUNTING"),
-        (Rank.SwornSword, $"SERVE ONE REALM {SwornDays:0} DAYS", "ITS RECRUITS AT HALF PRICE"),
-        (Rank.Vassal, $"SWEAR FEALTY: {VassalRenown:0} RENOWN, LIEGE OPINION {VassalOpinion:+0}", "HOLD FIEFS, A VOTE IN COUNCIL"),
-        (Rank.Lord, $"HOLD {LordFiefs} FIEFS, {LordRenown:0} RENOWN", "PROPOSE WARS, DECLARE INDEPENDENCE"),
-        (Rank.Marshal, "500 RENOWN, THE COUNCIL'S VOTE", "SET THE REALM'S OBJECTIVE"),
-        (Rank.King, "FOUND A REALM", "WAR AND PEACE, YOUR OWN COUNCIL"),
+        (Rank.SwornSword, $"SERVE ONE REALM {SwornDays:0} DAYS", "HALF-PRICE RECRUITS, A FREE PERK"),
+        (Rank.Vassal, $"SWEAR FEALTY: {VassalRenown:0} RENOWN, LIEGE OPINION {VassalOpinion:+0}", "FIEFS, A VOTE, A HOUSEHOLD GUARD"),
+        (Rank.Lord, $"HOLD {LordFiefs} FIEFS, {LordRenown:0} RENOWN", "WARS, INDEPENDENCE, BANNER, GUARD 25"),
+        (Rank.Marshal, "500 RENOWN, THE COUNCIL'S VOTE", "THE REALM'S OBJECTIVE, A MOUNTED GUARD"),
+        (Rank.King, "FOUND A REALM", "WAR AND PEACE, ROYAL GUARD, KING'S CHARGE"),
     };
 
     /// Towns and castles you hold (villages come with them).
@@ -532,11 +532,11 @@ public sealed partial class Campaign
 
     static readonly Dictionary<Rank, string> BeatText = new()
     {
-        [Rank.SwornSword] = "A MONTH IN ONE REALM'S PAY. ITS VILLAGES' RECRUITS NOW COST YOU HALF.",
-        [Rank.Vassal] = "YOU HAVE KNELT AND RISEN A VASSAL. YOU MAY HOLD LAND, AND YOU HAVE A VOICE IN THE COUNCIL.",
-        [Rank.Lord] = "TWO FIEFS AND A NAME THE REALM KNOWS. YOU MAY PROPOSE WARS, AND RISE AGAINST YOUR LIEGE IF YOU DARE.",
-        [Rank.Marshal] = "THE REALM'S HOSTS ARE YOURS TO LEAD. NAME THEIR OBJECTIVE IN YOUR REALM SCREEN (R).",
-        [Rank.King] = "YOU RULE IN YOUR OWN NAME. HOLD THE LAND, MAKE WAR AND PEACE, AND WIN THE REALM.",
+        [Rank.SwornSword] = "A MONTH IN ONE REALM'S PAY. ITS VILLAGES' RECRUITS NOW COST YOU HALF, AND YOU MAY CHOOSE ONE PERK FREE (K).",
+        [Rank.Vassal] = "YOU HAVE KNELT AND RISEN A VASSAL. YOU MAY HOLD LAND, YOU HAVE A VOICE IN THE COUNCIL, AND A HOUSEHOLD GUARD JOINS YOU THIS WEEK.",
+        [Rank.Lord] = "TWO FIEFS AND A NAME THE REALM KNOWS. YOU MAY PROPOSE WARS AND RISE AGAINST YOUR LIEGE. YOUR BANNER REACHES FURTHER; YOUR GUARD GROWS.",
+        [Rank.Marshal] = "THE REALM'S HOSTS ARE YOURS TO LEAD. NAME THEIR OBJECTIVE IN YOUR REALM SCREEN (R). YOUR GUARD RIDES.",
+        [Rank.King] = "YOU RULE IN YOUR OWN NAME. A ROYAL GUARD, AND ONCE A BATTLE THE KING'S CHARGE (RALLY) CALLS EVERY BROKEN COMPANY BACK.",
     };
 
     /// A new highest rank is shown once, as a career beat.
@@ -544,6 +544,7 @@ public sealed partial class Campaign
     {
         var r = Rank;
         if ((int)r <= Captain.BestRank) return;
+        if (r >= Rank.SwornSword && Captain.BestRank < (int)Rank.SwornSword) Captain.FreePerks++; // the rank's free perk (P5)
         Captain.BestRank = (int)r;
         Log($"You are now {RankName(r).ToLowerInvariant()}.");
         if (BeatText.TryGetValue(r, out var text)) Beat = ($"{RankName(r)}", new[] { text });

@@ -183,10 +183,10 @@ public static class Rules
         return o;
     }
 
-    public static int CompanySlots(CaptainState c) => Math.Clamp((int)B.CompanySlotsBase, 1, 10);
+    public static int CompanySlots(CaptainState c) => Math.Clamp((int)B.CompanySlotsBase, 1, 10) + (Campaign.GuardFor(c.BestRank).Men > 0 ? 1 : 0); // the guard's own (P5)
     /// Men you may lead: a base, renown, Leadership (+1 per 5 points) and the Born Captain perk.
     public static int MenLimit(CaptainState c) => (int)(B.ArmyScale * (B.MenBase + (int)(c.Renown / B.MenRenownDivisor) + Skills.Level(c, "Leadership") / 5
-        + (c.Perks.Contains("BornCaptain") ? 10 : 0)));
+        + (c.Perks.Contains("BornCaptain") ? 10 : 0) + Campaign.GuardFor(c.BestRank).Men)); // the household guard does not crowd your ranks (P5)
 
     /// The next rung of the renown ladder, for the panel: renown now raises only the men cap (perks come from skills, F4).
     public static (string What, float At) NextRenownUnlock(CaptainState c)

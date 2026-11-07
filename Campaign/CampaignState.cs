@@ -327,6 +327,9 @@ public sealed class CaptainState
     public int Retrained;
     /// Lasting wounds the captain carries (P4: "scar", "knee", "hand", "eye"; `Campaign.LastingWounds`).
     public List<string> Wounds = new();
+    /// Perk choices given by rank, free of any branch's 25-point marks (P5: one at Sworn Sword), and the perks taken with them.
+    public int FreePerks;
+    public List<string> BonusPerks = new();
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought

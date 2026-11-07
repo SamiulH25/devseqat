@@ -279,3 +279,14 @@ Give the captain something to do in each fight beyond "win".
   event trigger `trait:Name` (five events in `Data/events.json`). Age: a year is 120 days (`DaysPerYear`); past 45
   (`OldAge`) each new season costs a point of Arms and Leadership and Tactics rise 25% faster (`AgeEdge` in `Practise`).
   `SelfTest.CaptainTraits`. A campaign rarely runs the 15 years to 45; a new captain's age (30) is unchanged.
+- P5 (step 1, rank rewards): `Campaign/Household.cs`. From Vassal the captain has a **household guard** (`GuardWeekly`,
+  by `CaptainState.BestRank`, so it stays once earned): 15 men of tier III of your culture, a Lord's 25 of tier IV, a
+  Marshal's ride (tier IV horse), a King's 40 tier V horse (`GuardFor`, `GuardTroop`). It is a company with the trait
+  `Household`: one extra company slot and its men added to the men limit (`Rules.CompanySlots`, `MenLimit`), it never
+  deserts (`Desert`), refills 3 men a week, takes the new troop when your rank rises, and in battle starts on Follow
+  (`AddSquad`). Sworn Sword gives one free perk choice (`CaptainState.FreePerks`; the perk goes in `BonusPerks` so it does
+  not eat a branch's next mark, and forgetting it gives the choice back). A Lord's banner adds 4 m to the captain's
+  aura (`LordBanner`). A King's first rally of each battle is the King's Charge (`BattleOptions.KingsCharge`): every man
+  of yours, anywhere, to at least rally morale +10, broken companies given another chance. The ladder and the rank beats
+  name the rewards. `SelfTest.HouseholdGuard`, `SelfTest.RankRewards`.
+  Not done: the culture's gear at Sworn Sword (gear has no culture), a crown look, a free second sergeant at Marshal.

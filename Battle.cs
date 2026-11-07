@@ -236,6 +236,7 @@ public sealed partial class Battle
             s.Units.Add(h);
         }
         if (s.Swarm) s.Formation = Formation.Loose; // goblins come on as a mob
+        if (team == 0 && company?.Has("Household") == true) s.Order = Order.Follow; // the household guard keeps at your side (P5)
         Squads.Add(s);
         Bounds(s);
         return s;

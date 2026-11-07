@@ -197,7 +197,8 @@ public partial class Campaign
         bool scouts = setup.Side0.SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
         setup.Options = new BattleOptions
         {
-            AuraRadius = Has("Bannerman") ? 16 : 12,
+            AuraRadius = (Has("Bannerman") ? 16 : 12) + (Rank >= Rank.Lord ? LordBanner : 0), // a lord's banner reaches further (P5)
+            KingsCharge = Rank == Rank.King,
             RallyBonus = Has("WarCry") ? 35 : 25,
             RallyCooldown = Has("WarCry") ? 9 : 12,
             IronWill = Has("IronWill"),
