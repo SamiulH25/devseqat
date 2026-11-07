@@ -84,8 +84,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Bench.cs (37 lines)
 - **Bench** (class, L7): Run:9
 
-## Campaign/Armoury.cs (146 lines)
-- **Campaign** (class, L4): MigrateGear:10, Own:24, Unequip:27, Owns:39, Wears:40, CannotUse:43, CannotBuy:46, ArmourerStock:55, BuyGear:64, Equip:74, ClearSide:99, SellGear:102, SellPrice:112, BattleSpoil:120, SpoilFrom:130, TakeSpoil:137
+## Campaign/Armoury.cs (175 lines)
+- **Campaign** (class, L4): MigrateGear:10, ChooseRoad:27, OfferRoad:51, Own:53, Unequip:56, Owns:68, Wears:69, CannotUse:72, CannotBuy:75, ArmourerStock:84, BuyGear:93, Equip:103, ClearSide:128, SellGear:131, SellPrice:141, BattleSpoil:149, SpoilFrom:159, TakeSpoil:166
 
 ## Campaign/Campaign.cs (441 lines)
 - **Campaign** (class, L7): Campaign:36, New:54, Log:107, PartyById:113, SettlementById:114, SideOf:118, Outlaw:120, Hostile:122, WarBetween:131, FactionsAtWar:132, AtWarWithAnyone:133, Score:136, Refuses:147, InSight:152, SettlementAt:154, InTown:155, Tick:160, Speed:176, Move:188, Encounters:219, Clash:247, Edge:281, Hourly:283, Daily:306, Weekly:376, Desert:431
@@ -161,11 +161,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Duels.cs (79 lines)
 - **Campaign** (class, L5): CannotChallenge:14, LordChampion:27, PrepareDuel:39, FinishDuel:58, DuelMoraleFor:77, DuelEdge:78
 
-## Campaign/Events.cs (403 lines)
+## Campaign/Events.cs (404 lines)
 - **EventDef** (class, L7)
 - **ChoiceDef** (class, L16)
 - **PendingEvent** (class, L23)
-- **Campaign** (class, L30): Forced:46, EventOf:74, ValidateEvents:77, Find:118, Pick:157, EventsDaily:166, Raise:181, Force:193, Fill:201, ChoiceBlocked:215, EventOf0:219, Choose:222, ApplyEffect:236, GiveQuest:306, Bounty:329, BrigandKingsDaily:343, Crown:364, ThreatFalls:378, RaisePretender:389, DefectThreshold:402
+- **Campaign** (class, L30): Forced:46, EventOf:74, ValidateEvents:77, Find:118, Pick:157, EventsDaily:166, Raise:181, Force:193, Fill:201, ChoiceBlocked:215, EventOf0:219, Choose:222, ApplyEffect:236, GiveQuest:307, Bounty:330, BrigandKingsDaily:344, Crown:365, ThreatFalls:379, RaisePretender:390, DefectThreshold:403
 
 ## Campaign/Fiefs.cs (358 lines)
 - **BuildingDef** (class, L6)
@@ -308,11 +308,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:51, Deserialize:52, Save:56, Play:63, Matches:92, Run:95
 - **Battle** (class, L104): StartRecording:111, RecordFrame:116, FinishRecording:144
 
-## ScreenHost.cs (484 lines)
-- **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:108, OpenLab:121, QuickBattle:123, StartCampaignBattle:130, FinishCampaignBattle:138, CycleQuality:146, Update:150, Draw:179, CaptureShot:206, CampaignShots:224
+## ScreenHost.cs (485 lines)
+- **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:109, OpenLab:122, QuickBattle:124, StartCampaignBattle:131, FinishCampaignBattle:139, CycleQuality:147, Update:151, Draw:180, CaptureShot:207, CampaignShots:225
 
-## SelfTest.cs (160 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:112, Lancer:120, Run:129, Scaled:131, MakeWanderer:134, Days:142, Ids:154, Check:156
+## SelfTest.cs (161 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:113, Lancer:121, Run:130, Scaled:132, MakeWanderer:135, Days:143, Ids:155, Check:157
 
 ## Settings.cs (73 lines)
 - **Difficulty** (enum, L5)
@@ -353,8 +353,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/BattleTests.cs (789 lines)
 - **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, CaptainKit:170, SkillBouts:228, Bout:278, Fight:292, DuelFight:325, RangedRoles:346, FatigueAndSupply:366, Rivers:383, Generals:410, HorseDown:427, Ground:436, HoldFire:460, TroopTree:474, Sprites:498, BigBattle:535, StackBattle:565, ReplayExact:599, SpearsStopHorse:621, ScaleBattle:632, Couriers:670, DivisionGoals:691
 
-## Tests/CampaignTests.cs (1008 lines)
-- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:39, CampaignRun:50, Progression:92, Economy:119, Bridge:131, Calibration:152, SiegeBattle:176, CampaignWar:214, RefuseOldSave:274, Stacks:300, Cultures:345, Characters:415, CampaignDivisions:520, Armoury:566, Duels:637, RidingAndBowcraft:670, PerkTiers:719, SkillRises:746, LastingWounds:787, CaptainTraits:810, HouseholdGuard:849, RankRewards:877, SkillTree:905, BalanceMatchesData:988, HorsesCostGold:1000
+## Tests/CampaignTests.cs (1028 lines)
+- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:39, CampaignRun:50, Progression:92, Economy:119, Bridge:131, Calibration:152, SiegeBattle:176, CampaignWar:214, RefuseOldSave:274, Stacks:300, Cultures:345, Characters:415, CampaignDivisions:520, Armoury:566, Duels:637, RidingAndBowcraft:670, PerkTiers:719, SkillRises:746, LastingWounds:787, CaptainTraits:810, HouseholdGuard:849, RankRewards:877, StartingRoad:905, SkillTree:925, BalanceMatchesData:1008, HorsesCostGold:1020
 
 ## Tests/CareerTests.cs (368 lines)
 - **SelfTest** (class, L6): PilotTrace:9, Career:24, PilotCareer:120, FiefLife:139, WarAndPeace:227, EventsAndQuests:303

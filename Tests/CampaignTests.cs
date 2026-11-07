@@ -902,6 +902,26 @@ public static partial class SelfTest
         Check(far.Units.Where(u => u.Active).All(u => u.Routs == 2 || u.Morale < Battle.RallyAt + 25), "but only once a battle");
     }
 
+    static void StartingRoad()
+    {
+        var c = Campaign.New(43);
+        Check(c.S.Event == null, "a campaign made in code starts with no event");
+        c.OfferRoad();
+        Check(c.S.Event?.Id == "start_road", "a new campaign from the title opens with the road you came by");
+        foreach (var (road, check) in new (string, Func<Campaign, bool>)[]
+        {
+            ("sword", k => k.Skill("Arms") == 20 && k.Captain.Kit.Shield == "kite_shield"),
+            ("lance", k => k.Skill("Riding") == 20 && k.Captain.Kit.Horse == "warhorse" && k.Owns("warhorse") && k.Captain.Kit.Side == "boar_spear"),
+            ("bow", k => k.Skill("Bowcraft") == 20 && Rules.CaptainType(k.Captain).Ammo > 0 && k.Captain.Kit.Side == "arming_sword"),
+        })
+        {
+            var k = Campaign.New(43);
+            k.ChooseRoad(road);
+            Check(check(k), "the road of the " + road);
+            Check(Gear.Validate().Count() == 0 && k.Captain.Kit.Worn.All(id => Gear.Get(id).Free || k.Owns(id)), "the road's kit is owned");
+        }
+    }
+
     static void SkillTree()
     {
         var a = Campaign.New(91);

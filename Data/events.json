@@ -5,6 +5,15 @@
   // you cannot pay. "scene" picks the picture. A "flag:name" effect is followed a week later by the event whose trigger is "flag:name".
   "events": [
     {
+      "id": "start_road", "trigger": "start", "cooldown": 9999, "scene": "camp", "title": "THE ROAD YOU CAME BY",
+      "text": "Your company is young, but you are not. Before you took up the captain's staff you made your name one way. Which?",
+      "choices": [
+        { "label": "WITH SWORD AND SHIELD", "effects": ["road_sword"] },
+        { "label": "WITH THE LANCE, FROM THE SADDLE", "effects": ["road_lance"] },
+        { "label": "WITH THE BOW", "effects": ["road_bow"] }
+      ]
+    },
+    {
       "id": "unrest_petition", "trigger": "fief_unrest", "cooldown": 20, "title": "A PETITION FROM {settlement}",
       "text": "The guilds of {settlement} send a petition: taxes, soldiers in the streets, bread too dear. A crowd waits for your answer.",
       "choices": [

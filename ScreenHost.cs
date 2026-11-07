@@ -96,6 +96,7 @@ sealed class ScreenHost : Game
     public void StartCampaign(int seed)
     {
         campaign = Campaign.New(seed);
+        if (campaignShots == null) campaign.OfferRoad(); // the first choice: how the captain fights (P5)
         map.Open(campaign);
         mode = Mode.Map;
     }

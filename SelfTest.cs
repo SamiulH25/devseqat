@@ -59,6 +59,7 @@ public static partial class SelfTest
         CaptainTraits();
         HouseholdGuard();
         RankRewards();
+        StartingRoad();
         BalanceMatchesData();
         HorsesCostGold();
         Career();

@@ -290,3 +290,8 @@ Give the captain something to do in each fight beyond "win".
   of yours, anywhere, to at least rally morale +10, broken companies given another chance. The ladder and the rank beats
   name the rewards. `SelfTest.HouseholdGuard`, `SelfTest.RankRewards`.
   Not done: the culture's gear at Sworn Sword (gear has no culture), a crown look, a free second sergeant at Marshal.
+- P5 (step 2, the road you came by): a new campaign from the title opens with the event `start_road` (trigger `start`,
+  forced by `OfferRoad`; `ScreenHost.StartCampaign` calls it, not `Campaign.New`, so tests and tools start as before).
+  Its choices call `ChooseRoad` (Armoury.cs) through the verbs `road_sword` (Arms 20, kite shield), `road_lance`
+  (Riding 20, a warhorse, the boar spear as second weapon) and `road_bow` (Bowcraft 20, the hunting bow in hand, the sword
+  at the side). `SelfTest.StartingRoad`.

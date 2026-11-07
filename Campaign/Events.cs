@@ -38,19 +38,19 @@ public sealed partial class Campaign
         "fief_unrest", "fief_poor", "fief_rich", "lord_friend", "lord_hates_liege", "big_band", "veterans", "hungry_winter",
         "unpaid", "prisoners", "war_weary", "in_town", "brigand_king", "pretender", "graves",
         "peace_offer", "site_ruin", "site_shrine", "site_stones", "site_battlefield", "site_mine", "site_hermit", "site_watchtower", "site_spring", "site_mill",
-        "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night",
+        "start", "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night",
     };
     /// Days after a "flag:name" effect before the "flag:name" event follows.
     public const int FlagDays = 7;
     /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
-    internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" || trigger.StartsWith("site_");
+    internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" or "start" || trigger.StartsWith("site_");
     static readonly string[] Verbs =
     {
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
-        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend",
+        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend", "road_sword", "road_lance", "road_bow",
     };
-    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend" };
+    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow" };
     static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion" };
 
     static List<EventDef>? events;
@@ -287,6 +287,7 @@ public sealed partial class Campaign
             case "bounty": return pe.Party >= 0 ? Bounty(PartyById(pe.Party)) : s != null ? Bounty(Rebels(s)) : null;
             case "revolt": if (s != null && Rebels(s) == null) Revolt(s); break;
             case "prisoners_free": FreePrisoners(); break;
+            case "road_sword" or "road_lance" or "road_bow": return ChooseRoad(verb[5..]);
             case "prisoners_recruit":
                 foreach (var g in Player.Prisoners.ToList()) RecruitPrisoners(g);
                 break;

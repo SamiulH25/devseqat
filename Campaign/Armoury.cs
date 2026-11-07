@@ -21,6 +21,35 @@ public sealed partial class Campaign
             else Own(id);
     }
 
+    /// The road the captain came by (P5, the Free Company's reward), chosen once at the start: the sword (Arms 20 and a
+    /// kite shield), the lance (Riding 20, a warhorse, a boar spear as the second weapon) or the bow (Bowcraft 20, a
+    /// hunting bow in hand and the sword at the side). Returns the line the event shows.
+    public string ChooseRoad(string road)
+    {
+        var k = Captain.Kit;
+        switch (road)
+        {
+            case "lance":
+                Captain.Skills["Riding"] = MathF.Max(Skill("Riding"), 20);
+                Own("warhorse"); Own("boar_spear");
+                (k.Horse, k.Side) = ("warhorse", "boar_spear");
+                return "You ride a warhorse and know how to couch a lance.";
+            case "bow":
+                Captain.Skills["Bowcraft"] = MathF.Max(Skill("Bowcraft"), 20);
+                Own("hunting_bow");
+                (k.Weapon, k.Side) = ("hunting_bow", "arming_sword");
+                return "You carry a hunting bow and the eye to use it.";
+            default:
+                Captain.Skills["Arms"] = MathF.Max(Skill("Arms"), 20);
+                Own("kite_shield");
+                k.Shield = "kite_shield";
+                return "You fight on foot behind a kite shield, as you always have.";
+        }
+    }
+
+    /// Offer the starting road as the first event of a new campaign (the title screen calls it).
+    public void OfferRoad() => Force("start_road", new PendingEvent());
+
     void Own(string id) { if (!Gear.Get(id).Free && !Captain.Kit.Owned.Contains(id)) Captain.Kit.Owned.Add(id); }
 
     /// A worn piece the data no longer has goes back to the free piece of its slot.
