@@ -255,7 +255,37 @@ public sealed partial class Campaign
         bool touched = false;
         var ruler = CharacterById(fs.Ruler);
 
-        // 1. Fiefs. In your own realm the king decides: what you took is yours, what a vassal took is his.
+        // 1. Fiefs, 2. the marshal, 4. a motion of war: each step returns true if it concerned you.
+        if (CouncilFiefs(f, fs, ruler, mine, said)) touched = true;
+        if (CouncilMarshal(f, fs, mine, said)) touched = true;
+
+        // 3. The objective: the marshal names a seat to march on (you choose your own as marshal or king).
+        if (ObjectiveOf(f) == null) fs.Objective = -1;
+        if (fs.Objective < 0 && fs.Marshal != S.CaptainChar && PickObjective(f) is Settlement obj)
+        {
+            fs.Objective = obj.Id;
+            said.Add($"The host is to march on {obj.Name}.");
+        }
+
+        if (CouncilWarMotion(f, fs, said)) touched = true;
+
+        // 5. Lords who have had enough of their liege go over to a ruler they respect (F6).
+        var gone = Defections(f);
+        said.AddRange(gone);
+        if (gone.Count > 0 && mine) touched = true;
+        if (said.Count == 0) said.Add("Nothing of note is decided.");
+        fs.LastCouncil = said;
+        if (mine && Rank != Rank.King)
+        {
+            Log($"The council of the {FactionNames[f]} sits: {string.Join(" ", said)}");
+            if (touched) Beat = ($"THE COUNCIL OF THE {FactionNames[f].ToUpperInvariant()}", said.Select(x => x.ToUpperInvariant()).ToArray());
+        }
+    }
+
+    /// Council: Fiefs. In your own realm the king decides: what you took is yours, what a vassal took is his. Returns true if it concerned you.
+    bool CouncilFiefs(int f, FactionState fs, Character? ruler, bool mine, List<string> said)
+    {
+        bool touched = false;
         foreach (var g in fs.Pending.ToList())
         {
             fs.Pending.Remove(g);
@@ -282,8 +312,13 @@ public sealed partial class Campaign
             said.Add(winner == Me ? $"{seat.Name} is granted to you." : $"{seat.Name} is granted to {winner.Name}.");
             if (winner == Me || captor == Me) touched = true;
         }
+        return touched;
+    }
 
-        // 2. The marshal: when the baton is vacant or every few councils. A king is his own marshal.
+    /// Council: The marshal: when the baton is vacant or every few councils. A king is his own marshal. Returns true if it concerned you.
+    bool CouncilMarshal(int f, FactionState fs, bool mine, List<string> said)
+    {
+        bool touched = false;
         if (fs.Ruler != S.CaptainChar && (CharacterById(fs.Marshal) == null || fs.Councils % MarshalTerm == 0))
         {
             var cands = S.Characters.Where(c => c.Kind == "lord" && !c.Dead && c.Faction == f && c.Id != fs.Ruler && PartyById(c.PartyId) is { Captive: false })
@@ -301,16 +336,13 @@ public sealed partial class Campaign
                 if (m == Me || sitting == S.CaptainChar) touched = true;
             }
         }
+        return touched;
+    }
 
-        // 3. The objective: the marshal names a seat to march on (you choose your own as marshal or king).
-        if (ObjectiveOf(f) == null) fs.Objective = -1;
-        if (fs.Objective < 0 && fs.Marshal != S.CaptainChar && PickObjective(f) is Settlement obj)
-        {
-            fs.Objective = obj.Id;
-            said.Add($"The host is to march on {obj.Name}.");
-        }
-
-        // 4. A motion of war.
+    /// Council: A motion of war. Returns true if it concerned you.
+    bool CouncilWarMotion(int f, FactionState fs, List<string> said)
+    {
+        bool touched = false;
         if (fs.WarMotion >= 0)
         {
             int target = fs.WarMotion;
@@ -332,18 +364,7 @@ public sealed partial class Campaign
                 if (by == Me) touched = true;
             }
         }
-
-        // 5. Lords who have had enough of their liege go over to a ruler they respect (F6).
-        var gone = Defections(f);
-        said.AddRange(gone);
-        if (gone.Count > 0 && mine) touched = true;
-        if (said.Count == 0) said.Add("Nothing of note is decided.");
-        fs.LastCouncil = said;
-        if (mine && Rank != Rank.King)
-        {
-            Log($"The council of the {FactionNames[f]} sits: {string.Join(" ", said)}");
-            if (touched) Beat = ($"THE COUNCIL OF THE {FactionNames[f].ToUpperInvariant()}", said.Select(x => x.ToUpperInvariant()).ToArray());
-        }
+        return touched;
     }
 
     /// Fielded strength of a realm's lords.

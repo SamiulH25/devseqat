@@ -44,9 +44,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (229 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:74, CommandControls:82, BoxOf:162, OnScreen:164, PickSquad:171, GroundUnderMouse:185, UpdateCamera:207
 
-## BattleScreen.cs (312 lines)
+## BattleScreen.cs (300 lines)
 - **BattleScreen** (class, L10): Exit:16, BattleScreen:62, Load:74, BeginCampaign:92, StartDeployment:108, StageCommandView:116, FinishCampaignBattle:124, NewBattle:132, SetWorld:164, SetCommand:172, Pressed:181, Update:187, PlaySounds:242, Soundscape:252, SyncHud:271, MenuChoice:286
-- **Verts<T>** (class, L303): Add:307
 
 ## BattleScreen.Draw.cs (312 lines)
 - **BattleScreen** (class, L8): Draw:12, DrawShaded:50, DrawBlobs:83, EaseFacings:112, Spray:128, Effects:141, BuildSprites:169, SpriteStates:198, DrawSpritesBasic:206, DrawSpritesShaded:216, Line:226, G:227, Ring:229, Precipitation:239, DrawLines:260
@@ -113,9 +112,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/CampaignWar.cs (275 lines)
 - **Campaign** (class, L6): TakePrisoners:10, RecruitPrisoners:21, SellPrisoners:40, FreePrisoners:52, LordRansom:59, RansomLord:61, FreeLord:73, Release:81, PrisonersWeekly:89, WithOfficer:104, OfficerAfterBattle:110, FoodPrice:139, BuyFood:142, Forage:153, EatDaily:175, Offers:201, OfferValid:209, RefreshOffers:216, Accept:234, CheckContracts:245
 
-## Campaign/Career.cs (559 lines)
+## Campaign/Career.cs (580 lines)
 - **Rank** (enum, L6)
-- **Campaign** (class, L9): RankName:38, readonly:45, RulerOf:61, MarshalOf:62, Pct:92, ProvinceShare:95, CanSwearFealty:99, SwearFealty:113, LeaveRealm:125, GrantOnCapture:142, EnsureRulers:168, CareerDaily:195, SeatsOf:221, Vote:229, Liking:244, Council:248, RealmStrength:350, ObjectiveOf:354, PickObjective:362, ObjectiveChoices:373, SetObjective:378, ProposeWar:389, CanDeclareIndependence:403, DeclareIndependence:414, TakeOver:463, Defect:472, DeclareWarBetween:489, DeclareWar:501, CheckRank:522, CheckEnd:532, RecruitPriceFactor:558
+- **Campaign** (class, L9): RankName:38, readonly:45, RulerOf:61, MarshalOf:62, Pct:92, ProvinceShare:95, CanSwearFealty:99, SwearFealty:113, LeaveRealm:125, GrantOnCapture:142, EnsureRulers:168, CareerDaily:195, SeatsOf:221, Vote:229, Liking:244, Council:248, CouncilFiefs:286, CouncilMarshal:319, CouncilWarMotion:343, RealmStrength:371, ObjectiveOf:375, PickObjective:383, ObjectiveChoices:394, SetObjective:399, ProposeWar:410, CanDeclareIndependence:424, DeclareIndependence:435, TakeOver:484, Defect:493, DeclareWarBetween:510, DeclareWar:522, CheckRank:543, CheckEnd:553, RecruitPriceFactor:579
 
 ## Campaign/Characters.cs (292 lines)
 - **Character** (class, L6)
@@ -197,11 +196,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Party.cs (266 lines)
 - **MapScreen** (class, L8): PartyPanel:10, OpinionWord:97, OpinionColor:98, RoleTextOf:99, CharactersPanel:104, SkillsPanel:153, CompanyNote:192, UpgradePanel:206
 
-## MapScreen.Realm.cs (154 lines)
-- **MapScreen** (class, L8): Vassals:11, RealmPanel:42
+## MapScreen.Realm.cs (165 lines)
+- **MapScreen** (class, L8): Vassals:11, RealmPanel:42, RankLadder:60, RealmColumn:77, KingDiplomacy:140
 
-## MapScreen.Settlement.cs (270 lines)
-- **MapScreen** (class, L8): SettlementPanel:10, Contracts:215, FiefTab:235
+## MapScreen.Settlement.cs (290 lines)
+- **MapScreen** (class, L8): SettlementPanel:10, RecruitTab:47, MercenariesTab:67, MarketTab:95, TrainTab:113, RestTab:130, FoodTab:143, ForageTab:156, CaptivesTab:165, GarrisonTab:189, ContractTab:211, Contracts:235, FiefTab:255
 
 ## Painter.cs (160 lines)
 - **Pattern** (enum, L6)
@@ -299,6 +298,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Unit** (class, L70): Face:107
 - **LooseHorse** (class, L111)
 - **DeadHorse** (struct, L119)
+
+## Verts.cs (13 lines)
+- **Verts<T>** (class, L4): Add:8
 
 ## World.cs (729 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19

@@ -4,18 +4,29 @@ Read this first; it is written so a new session can start work without exploring
 For a member-level index (every type and method with its line number) read `docs/CODEMAP.md`.
 Keep both current: see "Keeping this map current" at the end.
 
+## Workflow for every change (follow in order)
+
+1. Find the code: use the "File guide" table below, then `docs/CODEMAP.md` for the exact line of a method.
+2. Make the smallest change that does the job. Match the style of the code around it. Do not reformat or move code you are not changing.
+3. If you added behaviour, add or extend a test (see "Recipes").
+4. Run `tools/check.sh`. It must end with `ALL CHECKS PASSED`. If it fails, fix the cause; never weaken or skip a test to get green.
+5. If you added, renamed or moved a method or file: `git add` new files, run `tools/codemap.sh`, and update the tables here if a file's job changed.
+6. Commit with a short message saying what changed and why.
+
 ## What this is
 
 **Ironfield**: a 2.5D medieval battle + campaign game. C# / .NET 10 / MonoGame 3.8 DesktopGL. One project
-(`Ironfield.csproj`, namespace `Ironfield`, ~13.7k lines). **No art or content pipeline**: sprites, terrain, font,
+(`Ironfield.csproj`, namespace `Ironfield`, ~17k lines). **No art or content pipeline**: sprites, terrain, font,
 sound and music are all generated in code; shaders are plain GLSL compiled at runtime. The only data is `Data/*.json`.
 `Content/Content.mgcb` has settings only, no content items.
 
 ## Commands
 
 ```bash
+tools/check.sh                                           # build + rule checks + self-test; run before every commit
+tools/check.sh --quick                                   # same without the self-test (while iterating)
 dotnet build -c Release                                  # ~30 s cold, warnings are expected (CS0649 on JSON DTOs)
-dotnet run -c Release --no-build -- --selftest           # THE test suite (headless, ~20 s); CI runs exactly this
+dotnet run -c Release --no-build -- --selftest           # THE test suite (headless, ~70 s); CI runs exactly this
 dotnet run -c Release --no-build -- --selftest Parry     # one test by SelfTest method name
 dotnet run -- --balance 4                                # N headless campaigns+battles -> balance/*.csv (gitignored)
 dotnet run -c Release -- --pacing 8                      # stand-in captain only: career stage days vs targets (~10 min)
@@ -40,7 +51,6 @@ Default save/settings location: `$XDG_CONFIG_HOME|~/.config/Ironfield/` (Applica
 Cloud environment "devseqat" has a setup script that installs `dotnet-sdk-10.0` + `xvfb` from the Ubuntu 24.04 archive and
 pre-builds. If `dotnet` is missing: `apt-get install -y dotnet-sdk-10.0 xvfb`. NuGet restore (MonoGame) needs package-registry access only.
 CI: `.github/workflows/ci.yml` builds, runs `--selftest`, and on push publishes self-contained builds for win/linux/osx.
-`.vscode/launch.json` still points at an old name (`Warband.csproj`): stale, ignore.
 
 ## Architecture in one screen
 
@@ -52,9 +62,9 @@ ScreenHost  MonoGame Game. Mode {Title, Map, Battle}; owns Art, Audio, Settings,
   BattleScreen (battle UI, camera, render) ◄┘
 
 HEADLESS (no MonoGame graphics; must stay that way so --selftest runs):
-  Battle (partial: Battle.cs, BattleSiege.cs, BattleCaptain.cs, BattleGrid.cs, Replay.cs)
+  Battle (partial: Battle.cs, BattleAI, BattleCombat, BattleMove, BattleMorale, BattlePlayer, BattleSiege, BattleCaptain, BattleGrid, Replay)
      uses Squad, Unit/UnitType/Mount/Look (Units.cs), Troops (Data/troops.json), Terrain, BattleOptions/Weather
-  Campaign (partial: Campaign/Campaign.cs, CampaignWar.cs, CampaignSiege.cs, Career.cs, Characters.cs, Companies.cs, Skills.cs, ...)
+  Campaign (partial: Campaign/Campaign.cs, CampaignBattle, CampaignActions, CampaignAI, CampaignWar, CampaignSiege, Career, Characters, ...)
      state = CampaignState (all save data, plain fields -> JSON), Rules (static company math), WorldMap, Rng, Balance, Names
 ```
 `Vector2` is used for both, but only `Microsoft.Xna.Framework` math types are allowed in headless code (no GraphicsDevice etc.).
@@ -73,14 +83,17 @@ RecordFrame -> BuildGrid -> centroids -> `General(team)` every 0.5 s (enemy AI, 
 Batter (siege gate) -> Reinforce (1 s) -> called horse, Resupply -> `UpdateSquad` each -> per unit: `UpdatePlayer` or `Think`
 (`ThinkCav` for cavalry), `TickAction` (windup/strike/recover), `Tire` -> `Move` (steering, separation, terrain, wall) ->
 `Braces`, `Lances` -> `UpdateArrows` -> `UpdateMorale` -> `CheckEnd` (sets `Winner`).
+Files: tick/setup/result in `Battle.cs`; `Think`/`ThinkCav`/`General` in `BattleAI.cs`; `UpdatePlayer` in `BattlePlayer.cs`;
+`TickAction`/`Strike`/`Hit`/`Kill`/arrows/`Braces`/`Lances` in `BattleCombat.cs`; `Move` in `BattleMove.cs`; `UpdateMorale` in `BattleMorale.cs`.
 Damage path: `Strike` -> `Hit(attacker, target, ...)` (block/parry, flank via `SideOf`, speed bonus, slope) -> `Kill`. Horses: `HitHorse`.
 Battle randomness uses its own seeded `rng` only: replays (`Replay.cs`) must reproduce exactly, so never use `Random.Shared`
 or wall-clock time in the sim; `SelfTest.ReplayExact` checks it.
 
 ### Campaign tick (`Campaign.Tick(hours)`, 0.25 h steps, stops on `Encounter`/`Arrived`)
+Ticks live in `Campaign.cs`; the AI they call (`LordThink`, `BanditThink`, `FactionAI`) in `CampaignAI.cs`.
 `Hourly` (lord/bandit AI: `LordThink`, `BanditThink`, contracts, `SiegeHourly`) / `Daily` (healing, drill, food `EatDaily`,
 `FactionAI`, sieges, truces) / `Weekly` (upkeep, income, garrisons, prisoners, desertion) -> `Move` -> `Encounters`.
-Player actions are public methods on `Campaign` returning `string?` (null = success, else the reason shown in the UI):
+Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` returning `string?` (null = success, else the reason shown in the UI):
 `Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`,
 `SwearFealty`, `ProposeWar`, `SetObjective`, `DeclareIndependence`, `DeclareWar`, `OfferPeace`...
 `Daily` ends with `FiefsDaily` then `CareerDaily` (rulers, councils due, rank beats, win/loss). Events the map must show once are plain fields:
@@ -90,7 +103,10 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 
 | Area | Files |
 |---|---|
-| Combat rules, AI, morale, cavalry, arrows | `Battle.cs` (`Think`, `ThinkCav`, `Hit`, `Strike`, `UpdateMorale`, `General` = AI general) |
+| Battle setup, tick, reinforcements, result | `Battle.cs` (`Update`, `Deploy`, `AddSquad`, `Reinforce`, `Result`, `CheckEnd`) |
+| Unit AI, cavalry AI, the AI general | `BattleAI.cs` (`Think`, `ThinkCav`, `General`) |
+| Melee, damage, kills, arrows, braced spears, lances | `BattleCombat.cs` (`Strike`, `Hit`, `Damage`, `HitHorse`, `Kill`, `Shoot`, `UpdateArrows`) |
+| Unit movement and collisions / morale / your own unit | `BattleMove.cs` (`Move`, `Impact`) / `BattleMorale.cs` (`UpdateMorale`) / `BattlePlayer.cs` (`UpdatePlayer`) |
 | Formations, orders, slots | `Squad.cs` (`Order`, `Formation`, `Slot`, `SetLine`) |
 | Sieges in battle / on the map | `BattleSiege.cs` (wall, ladders, gate `Via`) / `Campaign/CampaignSiege.cs` (garrisons, capture, fiefs) |
 | Captain combat (bash, swap, horse call), fatigue, supply | `BattleCaptain.cs` |
@@ -99,6 +115,10 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 | Battle inputs/outputs | `BattleTypes.cs` (`BattleOptions`, `Weather`, `BattleResult`, `CompanyResult`) |
 | Terrain, rivers, foliage placement, siege wall geometry | `Terrain.cs` (headless) |
 | Campaign data model + save/load/migration | `Campaign/CampaignState.cs` (also `Rng`, `Balance` <- `Data/campaign.json`, `Names`) |
+| Campaign time, movement, encounters, hourly/daily/weekly ticks | `Campaign/Campaign.cs` |
+| Battles from the campaign: prepare, finish, auto-resolve, apply results | `Campaign/CampaignBattle.cs` (`PrepareBattle`, `FinishBattle`, `Apply`) |
+| Your town actions (recruit, hire, horses, gear, split, contract, rest) | `Campaign/CampaignActions.cs` |
+| Lord/bandit/realm AI, spawning | `Campaign/CampaignAI.cs` (`LordThink`, `BanditThink`, `FactionAI`) |
 | Company math, auto-resolve, army building | `Campaign/Rules.cs` |
 | World generation, provinces, rivers, roads | `Campaign/WorldMap.cs` |
 | Prisoners, officers, food, contracts | `Campaign/CampaignWar.cs` |
@@ -108,8 +128,9 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 | Events, lord quests, brigand kings, pretenders (F8) | `Campaign/Events.cs` + `Data/events.json` (`EventsDaily`, `Choose`, `ApplyEffect`, `ValidateEvents`) |
 | Stacks/promotion, characters/opinion, skills, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Pilot.cs` |
 | Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
-| Campaign UI (all panels: settlement, party, siege, upgrade, results) | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
-| Battle UI, camera, input, orders, effects | `BattleScreen.cs` (input) + `Hud.cs` (drawing + hit-testing) |
+| Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
+| Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (one `XTab` method per tab), `.Party.cs` (party, characters, skills, upgrade), `.Realm.cs` (R), `.Dialogs.cs` (encounter, siege, results, events, menu) |
+| Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` + `.Draw.cs` (render, particles) + `Hud.cs` (2D drawing + hit-testing) |
 | Keys / rebinding | `Controls.cs` (`Act` enum + `Defaults` dict) |
 | 3D meshes (terrain, trees, towns, grass) | `World.cs` |
 | Shader pipeline / GLSL loader | `Shading.cs`, `GlslEffect.cs`, `Shaders/*.glsl`, `Sky.cs` (light by hour/weather) |
@@ -118,12 +139,12 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 | Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`) |
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
 | Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs` |
-| Tests | `SelfTest.cs` |
+| Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs` |
 | Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications) |
 
 ## Recipes
 
-- **Add a test:** write `static void Name()` in `SelfTest.cs` using `Check(cond, "message")`, call it from `Run()`.
+- **Add a test:** write `static void Name()` in the matching `Tests/*Tests.cs` file using `Check(cond, "message")`, and call it from `Run()` in `SelfTest.cs`.
   Scenario fields: `Battle.Empty(seed)` (flat terrain, two leaders) + `AddSquad`/`Spawn`, then loop `b.Update(1/60f)`.
 - **Add/change a troop:** edit `Data/troops.json` (stats, `upgradesTo`, `look`, mount). `Troops.Validate` + `SelfTest.TroopTree`
   enforce: links exist, upgrades raise tier and are better, every troop reachable from `levies`. New look parts need painting
@@ -133,7 +154,7 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
   If old saves need conversion, bump `CampaignState.CurrentVersion` and handle it in `Migrate()`; `SelfTest.Migration` covers it.
 - **Add a battle option from the campaign:** field on `BattleOptions`, set it in `Campaign.PrepareBattle`, read it in `Battle`.
 - **Add a key action:** add to `Act` enum and `Controls.Defaults`; read with `ctl.Pressed(Act.X)`; list it in the F1 help (`Hud.Help`).
-- **Add a campaign panel/button:** a method in `MapScreen.cs` using `Ui` (`ui.Button(...)` returns true on click); call the
+- **Add a campaign panel/button:** a method in the matching `MapScreen.*.cs` file using `Ui` (`ui.Button(...)` returns true on click); call the
   `Campaign` action and put a returned error string in the `note` field (drawn by `Note(r)`).
 - **Add a shader parameter:** declare it in the effect's uniform list in `Shading.cs` (see `GlslEffect.Uniform`), use the name in
   the GLSL; set with `effect.Parameters["Name"].SetValue(...)`. GLSL rules: README "Shaders" section.
@@ -161,6 +182,8 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 ## Keeping this map current
 
 - After adding, removing, renaming or moving types or methods: run `tools/codemap.sh` and commit `docs/CODEMAP.md`
-  (`tools/codemap.sh --check` tells you if it is stale).
+  (`tools/check.sh` fails if it is stale).
+- Keep files focused: a class that grows past ~600 lines gets split into partial files by area (`Name.Area.cs` for screens,
+  `NameArea.cs` for the sims), and a method past ~80 lines gets its natural steps pulled out into named methods.
 - After changing architecture, data flow, commands, env vars or a recipe above: update this file in the same commit.
 - Player-facing rules belong in `README.md`; campaign design in `docs/CAMPAIGN.md`. Keep this file about navigating the code.

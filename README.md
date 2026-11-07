@@ -248,7 +248,7 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 
 | File | Role |
 |---|---|
-| `Battle.cs` | Headless simulation: units, AI, melee, arrows, morale, enemy general, win check. No graphics. |
+| `Battle.cs` | Headless simulation: setup, deployment, the tick, reinforcements, result and win check. No graphics. Split by area into `BattleAI.cs` (unit AI, cavalry, the AI general), `BattleCombat.cs` (strikes, hits, kills, arrows, braces, lances), `BattleMove.cs` (movement, collisions), `BattleMorale.cs`, `BattlePlayer.cs` (your own unit). |
 | `Squad.cs` | Squad orders (Hold/Follow/Charge, optional attack `Target`), formation slots (anchor = centre of the front rank), flank `Pressure`. |
 | `Units.cs` | `UnitType` (a troop from the data), `Look`, `Mount`, the `Unit` state (incl. heading/speed when mounted), loose and dead horses. |
 | `Troops.cs` | Loads and validates `Data/troops.json` (troops, upgrade trees, mounts); `ArmySpec`/`Company`; `Armies` builds armies by level. |
@@ -256,14 +256,14 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 | `Style.cs` | Design tokens: side heraldry, materials, horse coats, sprite light and density, UI colours, grid, type scale. |
 | `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles. |
 | `ScreenHost.cs` | The MonoGame `Game`: shared art, audio and settings; switches between `TitleScreen`, `MapScreen` and `BattleScreen`, with the `SettingsScreen` overlay. |
-| `BattleScreen.cs` | A battle on screen: input, the blended third-person/command camera, terrain picking, orders, particles, rain, the render passes. |
+| `BattleScreen.cs` | A battle on screen: setup and the per-frame update; `BattleScreen.Controls.cs` (input, the blended third-person/command camera, terrain picking), `.Orders.cs` (squad orders), `.Draw.cs` (render passes, particles, rain), `.Shots.cs` (staged screenshots). |
 | `BattleSiege.cs` | Assaults: deploying defenders on the wall, routing men through ladders and the gate (`Via`), the wall barrier, battering, siege generals. |
 | `BattleCaptain.cs` | Captain combat (bash, weapon swap, calling a horse), fatigue, supply wagons, AI reserve and retreat helpers. |
 | `BattleGrid.cs` | The spatial grid: near-neighbour queries for separation, targeting, morale and arrows. |
 | `Replay.cs` | Battle recording and exact playback (`--replay`). `GpuReport.cs`: `--gpu-report`. `Sky.cs`: light by hour and weather. |
 | `World.cs` | 3D world: terrain mesh, procedural low-poly foliage and grass (tagged with wind sway and leafiness), sky dome, minimap image; shaded and fixed-function draw paths. |
-| `Campaign/` | The headless campaign: `CampaignState` (save data and its version check, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, stacks, places, auto-resolve, battle bridge), `Companies` (stacks, promotion by the man, honours, ledger), `Campaign` (time, movement, encounters, AI, economy, your actions), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs), `CampaignProgression` (the next step), `Career` (ranks, fealty, the council, founding a realm, winning and losing), `Characters` (lords, companions, opinion and memories), `Skills` (the captain's skill tree and perks), `Pilot` (a scripted stand-in captain for headless pacing runs). |
-| `MapScreen.cs` | The campaign map: 3D world, banner-bearer parties, map HUD and every campaign panel. `Ui.cs`: the immediate-mode panel kit. |
+| `Campaign/` | The headless campaign: `CampaignState` (save data and its version check, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, stacks, places, auto-resolve, battle bridge), `Companies` (stacks, promotion by the man, honours, ledger), `Campaign` (time, movement, encounters, the hourly/daily/weekly ticks), `CampaignBattle` (preparing and applying battles), `CampaignActions` (your actions in towns), `CampaignAI` (lords, bandits, realms), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs), `CampaignProgression` (the next step), `Career` (ranks, fealty, the council, founding a realm, winning and losing), `Characters` (lords, companions, opinion and memories), `Skills` (the captain's skill tree and perks), `Pilot` (a scripted stand-in captain for headless pacing runs). |
+| `MapScreen.cs` | The campaign map: 3D world, banner-bearer parties, input. Panels in `MapScreen.Hud.cs` (always-on map HUD), `.Settlement.cs` (one method per tab), `.Party.cs` (party, characters, skills, upgrade), `.Realm.cs`, `.Dialogs.cs` (encounter, siege, results, events, menu). `Ui.cs`: the immediate-mode panel kit. |
 | `BattleTypes.cs` | `BattleOptions` (perks, gear, wounds, palettes, ground, size cap), `BattleResult` / `CompanyResult` for the campaign. |
 | `Shading.cs` | The shader pipeline: effects, sun shadow map, scene target, post pass, light and grade values, quality levels. |
 | `GlslEffect.cs` | Builds MonoGame effects from GLSL at runtime (writes the DesktopGL MGFX format), no shader compiler needed. |
@@ -274,7 +274,7 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 | `Painter.cs` | The sprite painter: materials (hue-shifted 5-tone ramps + surface patterns), lit shapes, selective outline. |
 | `SpriteSheet.cs` | Paints every unit and horse part for every look, view and side, and packs a 1024x1024 atlas (headless). |
 | `Art.cs` | Uploads the atlas; blob shadow; white pixel. `PixelFont.cs`: the 5x7 HUD font. |
-| `SelfTest.cs` | `--selftest` checks. |
+| `SelfTest.cs` | `--selftest` runner and helpers; the tests are in `Tests/` (`BattleTests`, `CampaignTests`, `CareerTests`). `tools/check.sh` runs build + rules + self-test. |
 
 Ground positions are `Vector2` (X = world X, Y = world Z).
 

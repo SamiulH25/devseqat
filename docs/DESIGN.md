@@ -155,7 +155,7 @@ card, with an **upgrade** affordance that shows the next troops in the tree (por
 ## 7. Balance rules (battle)
 
 These are the working numbers that keep a battle winnable and cavalry from being an auto-win. They live as named constants in
-`Battle.cs` (`RoutAt`, `RallyAt`, `MountedMeleeReach`) so the sim, the HUD and the tests cannot drift apart.
+`Battle.cs` (`RoutAt`, `RallyAt`) and `BattleCombat.cs` (`MountedMeleeReach`) so the sim, the HUD and the tests cannot drift apart.
 
 - **Routs are recoverable, not terminal.** A company breaks at 12 morale and rallies above 32, and a routing man gains morale
   once he is clear of the enemy (26 m). A man who has broken twice stays broken, so battles still resolve. The HUD's WAVERING

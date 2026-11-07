@@ -43,8 +43,22 @@ partial class MapScreen
     {
         var r = Modal(1040, 620, "YOUR CAREER AND REALM");
         var rank = C.Rank;
-        int x = r.X + ui.U(24), y = r.Y + ui.U(52), lw = ui.U(470);
-        // The ladder.
+        int x = r.X + ui.U(24), lw = ui.U(470);
+        RankLadder(rank, x, r.Y + ui.U(52), lw);
+        int rx = x + lw + ui.U(24), ry = r.Y + ui.U(52), rw = r.Right - ui.U(24) - rx;
+        if (C.Realm is FactionState fs) RealmColumn(r, rank, fs, C.Captain.Contract, rx, ry, rw);
+        else
+        {
+            ui.Text("YOU SERVE NO REALM.", rx, ry, Style.Text);
+            ui.Text("SIGN WITH ONE AT A TOWN'S STEWARD (CONTRACT TAB).", rx, ry + ui.U(20), Style.Dim, 1);
+        }
+        Note(r);
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (R)")) panel = PanelKind.None;
+    }
+
+    /// The career ladder down the left: every rank, what it takes and what it opens, then what the next step needs.
+    void RankLadder(Rank rank, int x, int y, int lw)
+    {
         foreach (var (rk, how, opens) in Campaign.Ladder)
         {
             bool now = rk == rank, done = rk < rank;
@@ -57,98 +71,95 @@ partial class MapScreen
             y += ui.U(56);
         }
         if (C.NextRank() is var (next, needs)) ui.Text(next == rank ? $"TO WIN: {needs}" : $"NEXT: {Campaign.RankName(next)}: {needs}", x, y + ui.U(4), Style.Accent, 1);
+    }
 
-        // The realm.
-        int rx = x + lw + ui.U(24), ry = r.Y + ui.U(52), rw = r.Right - ui.U(24) - rx;
-        int f = C.Captain.Contract;
-        if (C.Realm is not FactionState fs)
+    /// The right column when you serve a realm: its state, the council, and the acts your rank allows.
+    void RealmColumn(Rectangle r, Rank rank, FactionState fs, int f, int rx, int ry, int rw)
+    {
+        ui.Text(C.FactionNames[f].ToUpperInvariant(), rx, ry, SideColor(f), 2);
+        ry += ui.U(24);
+        string Who(Character? ch) => ch == null ? "NONE" : ch == C.Me ? "YOU" : ch.Name.ToUpperInvariant();
+        ui.Text($"RULER: {Who(C.RulerOf(f))}   MARSHAL: {Who(C.MarshalOf(f))}", rx, ry, Style.Text, 1);
+        ry += ui.U(14);
+        var obj = C.ObjectiveOf(f);
+        ui.Text($"OBJECTIVE: {(obj == null ? "NONE" : obj.Name.ToUpperInvariant())}   LAND HELD: {Campaign.Pct(C.RealmShare(f))} (WIN AT {Campaign.Pct(Campaign.WinShare)})", rx, ry, Style.Dim, 1);
+        ry += ui.U(14);
+        var foes = Enumerable.Range(0, C.S.Factions.Count).Where(g => C.FactionsAtWar(f, g)).Select(g => C.FactionNames[g].ToUpperInvariant()).ToList();
+        ui.Text("AT WAR WITH: " + (foes.Count == 0 ? "NOBODY" : string.Join(", ", foes)) + (foes.Count > 0 ? $"   WEARINESS {C.Exhaustion(f):0}" : ""), rx, ry, Style.Dim, 1);
+        ry += ui.U(14);
+        if (fs.TributaryOf >= 0) { ui.Text($"TRIBUTARY TO THE {C.FactionNames[fs.TributaryOf].ToUpperInvariant()}", rx, ry, Style.Warn, 1); ry += ui.U(14); }
+        if (C.S.Summons is Summons sm)
         {
-            ui.Text("YOU SERVE NO REALM.", rx, ry, Style.Text);
-            ui.Text("SIGN WITH ONE AT A TOWN'S STEWARD (CONTRACT TAB).", rx, ry + ui.U(20), Style.Dim, 1);
+            ui.Text($"SUMMONED TO {C.SettlementById(sm.Seat).Name.ToUpperInvariant()}: {MathF.Max(0, (sm.Until - (float)C.S.Hours) / 24):0.0} DAYS LEFT", rx, ry, Style.Accent, 1);
+            ry += ui.U(14);
         }
-        else
+        ry += ui.U(6);
+        if (rank != Rank.King)
         {
-            ui.Text(C.FactionNames[f].ToUpperInvariant(), rx, ry, SideColor(f), 2);
-            ry += ui.U(24);
-            string Who(Character? ch) => ch == null ? "NONE" : ch == C.Me ? "YOU" : ch.Name.ToUpperInvariant();
-            ui.Text($"RULER: {Who(C.RulerOf(f))}   MARSHAL: {Who(C.MarshalOf(f))}", rx, ry, Style.Text, 1);
+            ui.Text($"THE COUNCIL SITS IN {MathF.Max(0, (fs.NextCouncil - (float)C.S.Hours) / 24):0} DAYS. LAST TIME:", rx, ry, Style.Accent, 1);
             ry += ui.U(14);
-            var obj = C.ObjectiveOf(f);
-            ui.Text($"OBJECTIVE: {(obj == null ? "NONE" : obj.Name.ToUpperInvariant())}   LAND HELD: {Campaign.Pct(C.RealmShare(f))} (WIN AT {Campaign.Pct(Campaign.WinShare)})", rx, ry, Style.Dim, 1);
-            ry += ui.U(14);
-            var foes = Enumerable.Range(0, C.S.Factions.Count).Where(g => C.FactionsAtWar(f, g)).Select(g => C.FactionNames[g].ToUpperInvariant()).ToList();
-            ui.Text("AT WAR WITH: " + (foes.Count == 0 ? "NOBODY" : string.Join(", ", foes)) + (foes.Count > 0 ? $"   WEARINESS {C.Exhaustion(f):0}" : ""), rx, ry, Style.Dim, 1);
-            ry += ui.U(14);
-            if (fs.TributaryOf >= 0) { ui.Text($"TRIBUTARY TO THE {C.FactionNames[fs.TributaryOf].ToUpperInvariant()}", rx, ry, Style.Warn, 1); ry += ui.U(14); }
-            if (C.S.Summons is Summons sm)
-            {
-                ui.Text($"SUMMONED TO {C.SettlementById(sm.Seat).Name.ToUpperInvariant()}: {MathF.Max(0, (sm.Until - (float)C.S.Hours) / 24):0.0} DAYS LEFT", rx, ry, Style.Accent, 1);
-                ry += ui.U(14);
-            }
-            ry += ui.U(6);
-            if (rank != Rank.King)
-            {
-                ui.Text($"THE COUNCIL SITS IN {MathF.Max(0, (fs.NextCouncil - (float)C.S.Hours) / 24):0} DAYS. LAST TIME:", rx, ry, Style.Accent, 1);
-                ry += ui.U(14);
-                foreach (var line in fs.LastCouncil.Take(4)) { ui.Text(line.ToUpperInvariant(), rx + ui.U(8), ry, Style.Dim, 1); ry += ui.U(12); }
-                if (fs.LastCouncil.Count == 0) { ui.Text("IT HAS NOT YET SAT.", rx + ui.U(8), ry, Style.Dim, 1); ry += ui.U(12); }
-                ry += ui.U(8);
-            }
-            int bw = rw, bh = ui.U(24);
-            Rectangle Btn() { var b = new Rectangle(rx, ry, bw, bh); ry += bh + ui.U(4); return b; }
-            if (rank < Rank.Vassal)
-            {
-                bool can = C.CanSwearFealty(out string why);
-                if (ui.Button(Btn(), "SWEAR FEALTY", can, can ? "" : why)) note = C.SwearFealty() ?? "YOU ARE A VASSAL";
-                if (!can) { ui.Text(why, rx, ry, Style.Dim, 1); ry += ui.U(14); }
-            }
-            // Acts of a lord, a marshal and a king.
-            var others = Enumerable.Range(0, C.S.Factions.Count).Where(g => g != f && C.Alive(g)).ToList();
-            if (rank is Rank.Lord or Rank.Marshal)
-            {
-                foreach (int g in others.Where(g => !C.FactionsAtWar(f, g)))
-                    if (ui.Button(Btn(), $"PROPOSE WAR ON THE {C.FactionNames[g].ToUpperInvariant()}", fs.WarMotion < 0, fs.WarMotion == g ? "AT THE NEXT COUNCIL" : ""))
-                        note = C.ProposeWar(g) ?? "THE MOTION GOES TO THE NEXT COUNCIL";
-            }
-            if (rank == Rank.King)
-                foreach (int g in others)
-                {
-                    var wr = C.WarBetween(f, g);
-                    bool war = C.FactionsAtWar(f, g);
-                    string status = war ? $"AT WAR  WEARINESS {C.ExhaustionOf(wr!, f):0} / {C.ExhaustionOf(wr!, g):0}  STANDING {C.Margin(wr!, f, g):+0.0;-0.0}"
-                        : C.Allied(f, g) ? "ALLIED" : C.S.Factions[g].TributaryOf == f ? "YOUR TRIBUTARY"
-                        : wr != null && wr.TruceUntil > C.S.Hours ? $"TRUCE, {(wr.TruceUntil - (float)C.S.Hours) / 24:0} DAYS" : "AT PEACE";
-                    ui.Text($"{C.FactionNames[g].ToUpperInvariant()}: {status}", rx, ry, SideColor(g), 1);
-                    ry += ui.U(13);
-                    int sw = (bw - ui.U(12)) / 4;
-                    var labels = war ? new[] { "TRUCE", "GOLD", "A SEAT", "TRIBUTE" } : new[] { "DECLARE WAR", "ALLIANCE" };
-                    for (int i = 0; i < labels.Length; i++)
-                    {
-                        var b = new Rectangle(rx + i * (sw + ui.U(4)), ry, war ? sw : sw * 2, ui.U(22));
-                        if (!war) b.X = rx + i * (sw * 2 + ui.U(4));
-                        if (ui.Button(b, labels[i]))
-                            note = war ? C.OfferPeace(g, (Terms)i) ?? "THEY ACCEPT" : (i == 0 ? C.DeclareWar(g) : C.ProposeAlliance(g)) ?? (i == 0 ? "WAR IS DECLARED" : "AN ALLIANCE IS SWORN");
-                        if (war && ui.Hover(b)) note = $"OFFER PEACE ON {Campaign.TermsText((Terms)i)}";
-                    }
-                    ry += ui.U(28);
-                }
-            if (rank >= Rank.Marshal)
-            {
-                ui.Text("NAME THE HOSTS' OBJECTIVE:", rx, ry + ui.U(4), Style.Accent, 1);
-                if (ui.Button(new Rectangle(rx + bw - ui.U(160), ry, ui.U(160), ui.U(20)), "CALL THE HOST", obj != null)) note = C.CallHost() ?? "THE LORDS MARCH";
-                ry += ui.U(22);
-                foreach (var s in C.ObjectiveChoices(f).Take(rank == Rank.King ? 3 : 4))
-                    if (ui.Button(Btn(), $"MARCH ON {s.Name.ToUpperInvariant()} ({C.FactionNames[s.Faction].ToUpperInvariant()})", true, "", obj == s))
-                        note = C.SetObjective(s) ?? $"THE HOSTS MARCH ON {s.Name.ToUpperInvariant()}";
-            }
-            if (rank is Rank.Lord or Rank.Marshal && ry < r.Bottom - ui.U(90))
-            {
-                bool can = C.CanDeclareIndependence(out string why);
-                if (ui.Button(new Rectangle(rx, r.Bottom - ui.U(84), bw, ui.U(26)), "DECLARE INDEPENDENCE", can, why))
-                    note = C.DeclareIndependence() ?? "";
-            }
+            foreach (var line in fs.LastCouncil.Take(4)) { ui.Text(line.ToUpperInvariant(), rx + ui.U(8), ry, Style.Dim, 1); ry += ui.U(12); }
+            if (fs.LastCouncil.Count == 0) { ui.Text("IT HAS NOT YET SAT.", rx + ui.U(8), ry, Style.Dim, 1); ry += ui.U(12); }
+            ry += ui.U(8);
         }
-        Note(r);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (R)")) panel = PanelKind.None;
+        int bw = rw, bh = ui.U(24);
+        Rectangle Btn() { var b = new Rectangle(rx, ry, bw, bh); ry += bh + ui.U(4); return b; }
+        if (rank < Rank.Vassal)
+        {
+            bool can = C.CanSwearFealty(out string why);
+            if (ui.Button(Btn(), "SWEAR FEALTY", can, can ? "" : why)) note = C.SwearFealty() ?? "YOU ARE A VASSAL";
+            if (!can) { ui.Text(why, rx, ry, Style.Dim, 1); ry += ui.U(14); }
+        }
+        // Acts of a lord, a marshal and a king.
+        var others = Enumerable.Range(0, C.S.Factions.Count).Where(g => g != f && C.Alive(g)).ToList();
+        if (rank is Rank.Lord or Rank.Marshal)
+        {
+            foreach (int g in others.Where(g => !C.FactionsAtWar(f, g)))
+                if (ui.Button(Btn(), $"PROPOSE WAR ON THE {C.FactionNames[g].ToUpperInvariant()}", fs.WarMotion < 0, fs.WarMotion == g ? "AT THE NEXT COUNCIL" : ""))
+                    note = C.ProposeWar(g) ?? "THE MOTION GOES TO THE NEXT COUNCIL";
+        }
+        if (rank == Rank.King) ry = KingDiplomacy(rx, ry, bw, f, others);
+        if (rank >= Rank.Marshal)
+        {
+            ui.Text("NAME THE HOSTS' OBJECTIVE:", rx, ry + ui.U(4), Style.Accent, 1);
+            if (ui.Button(new Rectangle(rx + bw - ui.U(160), ry, ui.U(160), ui.U(20)), "CALL THE HOST", obj != null)) note = C.CallHost() ?? "THE LORDS MARCH";
+            ry += ui.U(22);
+            foreach (var s in C.ObjectiveChoices(f).Take(rank == Rank.King ? 3 : 4))
+                if (ui.Button(Btn(), $"MARCH ON {s.Name.ToUpperInvariant()} ({C.FactionNames[s.Faction].ToUpperInvariant()})", true, "", obj == s))
+                    note = C.SetObjective(s) ?? $"THE HOSTS MARCH ON {s.Name.ToUpperInvariant()}";
+        }
+        if (rank is Rank.Lord or Rank.Marshal && ry < r.Bottom - ui.U(90))
+        {
+            bool can = C.CanDeclareIndependence(out string why);
+            if (ui.Button(new Rectangle(rx, r.Bottom - ui.U(84), bw, ui.U(26)), "DECLARE INDEPENDENCE", can, why))
+                note = C.DeclareIndependence() ?? "";
+        }
+    }
+
+    /// A king's row per other realm: war standing or peace, and buttons to offer terms, declare war or ally. Returns the new y.
+    int KingDiplomacy(int rx, int ry, int bw, int f, List<int> others)
+    {
+        foreach (int g in others)
+        {
+            var wr = C.WarBetween(f, g);
+            bool war = C.FactionsAtWar(f, g);
+            string status = war ? $"AT WAR  WEARINESS {C.ExhaustionOf(wr!, f):0} / {C.ExhaustionOf(wr!, g):0}  STANDING {C.Margin(wr!, f, g):+0.0;-0.0}"
+                : C.Allied(f, g) ? "ALLIED" : C.S.Factions[g].TributaryOf == f ? "YOUR TRIBUTARY"
+                : wr != null && wr.TruceUntil > C.S.Hours ? $"TRUCE, {(wr.TruceUntil - (float)C.S.Hours) / 24:0} DAYS" : "AT PEACE";
+            ui.Text($"{C.FactionNames[g].ToUpperInvariant()}: {status}", rx, ry, SideColor(g), 1);
+            ry += ui.U(13);
+            int sw = (bw - ui.U(12)) / 4;
+            var labels = war ? new[] { "TRUCE", "GOLD", "A SEAT", "TRIBUTE" } : new[] { "DECLARE WAR", "ALLIANCE" };
+            for (int i = 0; i < labels.Length; i++)
+            {
+                var b = new Rectangle(rx + i * (sw + ui.U(4)), ry, war ? sw : sw * 2, ui.U(22));
+                if (!war) b.X = rx + i * (sw * 2 + ui.U(4));
+                if (ui.Button(b, labels[i]))
+                    note = war ? C.OfferPeace(g, (Terms)i) ?? "THEY ACCEPT" : (i == 0 ? C.DeclareWar(g) : C.ProposeAlliance(g)) ?? (i == 0 ? "WAR IS DECLARED" : "AN ALLIANCE IS SWORN");
+                if (war && ui.Hover(b)) note = $"OFFER PEACE ON {Campaign.TermsText((Terms)i)}";
+            }
+            ry += ui.U(28);
+        }
+        return ry;
     }
 }
