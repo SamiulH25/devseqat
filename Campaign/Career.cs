@@ -331,6 +331,10 @@ public sealed partial class Campaign
             }
         }
 
+        // 5. Lords who have had enough of their liege go over to a ruler they respect (F6).
+        var gone = Defections(f);
+        said.AddRange(gone);
+        if (gone.Count > 0 && mine) touched = true;
         if (said.Count == 0) said.Add("Nothing of note is decided.");
         fs.LastCouncil = said;
         if (mine && Rank != Rank.King)
@@ -440,7 +444,7 @@ public sealed partial class Campaign
         foreach (var lord in S.Characters.Where(c => c.Kind == "lord" && !c.Dead && c.Faction == old && c != oldRuler).ToList())
         {
             float you = OpinionOfYou(lord), him = oldRuler != null ? OpinionOf(lord, oldRuler) : 0;
-            if (!lord.Traits.Contains("Loyal") && you >= 30 && you - him >= 20)
+            if (lord.Liege == S.CaptainChar || !lord.Traits.Contains("Loyal") && you >= 30 && you - him >= 20)
             {
                 Defect(lord, f);
                 followers.Add(lord.Name);
@@ -475,7 +479,7 @@ public sealed partial class Campaign
         foreach (var t in S.Settlements.Where(t => t.Owner == p.Id && t.Kind != SettlementKind.Village).ToList()) TakeOver(t, f);
         if (SettlementById(p.HomeId).Faction != f && S.Settlements.FirstOrDefault(t => t.Faction == f && t.Kind != SettlementKind.Village) is Settlement home)
             p.HomeId = home.Id;
-        Remember(lord, Me, "you gave me a realm worth serving", 10);
+        if (RulerOf(f) == Me) Remember(lord, Me, "you gave me a realm worth serving", 10);
     }
 
     // ---------- a king's diplomacy (7.2, first part) ----------

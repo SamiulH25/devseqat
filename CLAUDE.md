@@ -82,7 +82,7 @@ or wall-clock time in the sim; `SelfTest.ReplayExact` checks it.
 Player actions are public methods on `Campaign` returning `string?` (null = success, else the reason shown in the UI):
 `Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`,
 `SwearFealty`, `ProposeWar`, `SetObjective`, `DeclareIndependence`, `DeclareWar`, `OfferPeace`...
-`Daily` ends with `CareerDaily` (rulers, councils due, rank beats, win/loss). Events the map must show once are plain fields:
+`Daily` ends with `FiefsDaily` then `CareerDaily` (rulers, councils due, rank beats, win/loss). Events the map must show once are plain fields:
 `Encounter`, `Arrived`, `Report`, `Beat`. Map screens on keys: P party, K skills, L lords, R realm (hard-coded in `MapScreen.Update`).
 
 ## File guide (where to look for what)
@@ -102,6 +102,7 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 | World generation, provinces, rivers, roads | `Campaign/WorldMap.cs` |
 | Prisoners, officers, food, contracts | `Campaign/CampaignWar.cs` |
 | Career ranks, fealty, realm council, founding a realm, win/loss (F5) | `Campaign/Career.cs` (`Rank`, `Council`, `DeclareIndependence`, `CheckEnd`) |
+| Fief prosperity/unrest/taxes, buildings, revolts, vassals and orders, defection (F6) | `Campaign/Fiefs.cs` (`FiefsDaily`, `Build`, `RaiseVassal`, `OrderedProvince`) |
 | Stacks/promotion, characters/opinion, skills, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Pilot.cs` |
 | Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
 | Campaign UI (all panels: settlement, party, siege, upgrade, results) | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |

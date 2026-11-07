@@ -303,7 +303,36 @@ sealed class ScreenHost : Game
             }
             case 21: c.DeclareIndependence(); map.Stage("beat"); Shot("campaign-beat"); break;
             case 22: c.Beat = null; map.Stage("realm"); Shot("campaign-realm-king"); break;
-            case 23: Exit(); break;
+            case 23:
+            {
+                // A fief of the new realm (F6): a market built, walls going up, a little unrest from high taxes.
+                c.Beat = null;
+                var fief = c.Fiefs.First(t => t.Kind == SettlementKind.Town);
+                c.S.Gold = 3000;
+                fief.Buildings["market"] = 1; fief.Buildings["yard"] = 2;
+                c.SetTax(fief, 2);
+                fief.Prosperity = 68; fief.Unrest = 34;
+                c.Build(fief, "walls");
+                map.Stage("fief", fief);
+                Shot("campaign-fief");
+                break;
+            }
+            case 24:
+            {
+                var t = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction != c.Captain.Contract);
+                var w = new Character { Id = c.S.NextId++, Kind = "wanderer", Name = "Osric Longshanks", Culture = t.Culture, Role = "Steward", AtSettlement = t.Id };
+                c.S.Characters.Add(w);
+                c.S.Characters.Add(new Character { Id = c.S.NextId++, Kind = "wanderer", Name = "Wynn Ashdown", Culture = t.Culture, Role = "Surgeon", AtSettlement = t.Id + 1000 });
+                c.HireWanderer(t);
+                foreach (var extra in c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction != c.Captain.Contract).Take(1)) { extra.Faction = c.Captain.Contract; extra.Owner = c.Player.Id; }
+                c.RaiseVassal(c.Companions.First());
+                c.SetOrder(c.Vassals.First(), "follow");
+                var w2 = c.S.Characters.First(k => k.Name == "Wynn Ashdown"); w2.AtSettlement = t.Id; c.HireWanderer(t);
+                map.Stage("household");
+                Shot("campaign-household");
+                break;
+            }
+            case 25: Exit(); break;
         }
     }
 }

@@ -23,6 +23,8 @@ public sealed class Character
     public float WoundedUntil;
     /// The settlement a wanderer waits in (-1: none).
     public int AtSettlement = -1;
+    /// The character this lord holds his land from, when it is not simply his realm's ruler: your vassals (F6).
+    public int Liege = -1;
 }
 
 /// Something a character remembers about another (3.2): shown as the reasons behind an opinion; fades with time.

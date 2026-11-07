@@ -141,23 +141,27 @@ public sealed partial class Campaign
         if (t.Culture == Factions.Common) return true;
         string man = ManCulture(c, from);
         if (man != Factions.Common && man != t.Culture) { reason = $"{CultureWord(man)} MEN CANNOT TRAIN AS {CultureWord(t.Culture)} TROOPS"; return false; }
-        if (t.Tier >= 5 && !HasBarracks(p, t.Culture)) { reason = $"NEEDS A {CultureWord(t.Culture)} TOWN IN YOUR REALM"; return false; }
+        if (t.Tier >= 5 && !HasBarracks(p, t.Culture)) { reason = $"NEEDS A {CultureWord(t.Culture)} BARRACKS IN YOUR REALM"; return false; }
         return true;
     }
 
-    /// Does the party's realm (your contract, or a lord's faction), or the party itself, hold a town of this culture?
+    /// Does the party's realm (your contract, or a lord's faction), or the party itself, hold a barracks of this culture (F6)?
     public bool HasBarracks(Party p, string culture)
     {
         int realm = p == Player ? Captain.Contract : p.Faction;
-        return S.Settlements.Any(s => s.Kind == SettlementKind.Town && s.Culture == culture && (realm >= 0 && s.Faction == realm || s.Owner == p.Id));
+        return S.Settlements.Any(s => Level(s, "barracks") > 0 && s.Culture == culture && (realm >= 0 && s.Faction == realm || s.Owner == p.Id));
     }
 
     /// What one promotion costs this party: Cheap Steel takes 20% off yours (F4).
     int PromoteCostFor(Party p, string from, string to, bool horse) =>
-        (int)MathF.Ceiling(Rules.PromoteCost(from, to, horse) * (p == Player && Has("CheapSteel") ? 0.8f : 1));
+        (int)MathF.Ceiling(Rules.PromoteCost(from, to, horse) * (p == Player && Has("CheapSteel") ? 0.8f : 1) * (p == Player ? YardDiscount : 1));
+
+    /// A training yard of level II or III in the fief you stand in cuts promotion gold 10% or 20% (F6).
+    float YardDiscount => SettlementAt(Player.Pos) is Settlement s && s.Owner == Player.Id ? 1 - 0.1f * Math.Max(0, Level(s, "yard") - 1) : 1;
 
     /// Where promotions may happen: a town's training yard, or anywhere with the Drillmaster perk.
-    public bool CanTrainHere(Party p) => p != Player || InTown(Player) || Has("Drillmaster");
+    public bool CanTrainHere(Party p) => p != Player || InTown(Player) || Has("Drillmaster")
+        || SettlementAt(Player.Pos) is Settlement s && s.Owner == Player.Id && Level(s, "yard") > 0;
 
     /// How many men of a stack could be promoted to `to` now (at most `want`), and what that costs; a reason when it is none.
     public int Promotable(Party p, CompanyRecord c, TroopStack s, string to, int want, float gold, out int cost, out string reason, bool ignorePlace = false)

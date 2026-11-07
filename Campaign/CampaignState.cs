@@ -157,6 +157,8 @@ public sealed class Party
     public List<CompanyRecord> Companies = new();
     public List<PrisonerGroup> Prisoners = new();
     public List<int> Captives = new();   // lords you hold for ransom
+    /// A vassal's standing order from you (F6): "defend" your lands, "follow" you, or join the realm's "host".
+    public string Order = "";
     public bool Captive;                 // a lord held by you
     public float Food = 10;              // days of food (yours; lords are fed by their faction)
     public int SiegeTarget = -1;         // the settlement this party is besieging
@@ -181,6 +183,14 @@ public sealed class Settlement
     public int Owner = -1;                         // party id of the holder of the fief (-1: the faction)
     public bool Besieged;
     public float SiegeSince;                       // when the siege began (ladders take 12 hours)
+    /// Fiefs (F6): prosperity scales income and recruits; unrest above 70 raises rebels and at 100 the place defects.
+    public float Prosperity = 50, Unrest;
+    /// Buildings by id and level (towns and castles), and the one under construction until a time.
+    public Dictionary<string, int> Buildings = new();
+    public string Building = "";
+    public float BuildUntil;
+    /// Tax level: 0 low, 1 normal, 2 high (set by the holder; a seat's villages pay at its rate).
+    public int Tax = 1;
 }
 
 public sealed class Province
@@ -362,6 +372,8 @@ public sealed class Rng
 /// Campaign balance numbers (Data/campaign.json overrides these defaults).
 public sealed class Balance
 {
+    /// Fief buildings (F6); the built-in defaults when empty.
+    public List<BuildingDef> Buildings = new();
     /// Veteran honours (F1); the built-in defaults when empty.
     public List<HonourDef> Honours = new();
     /// The captain's skill tree (F4); the built-in defaults when empty.

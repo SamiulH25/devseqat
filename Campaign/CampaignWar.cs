@@ -136,7 +136,8 @@ public sealed partial class Campaign
     public bool Winter => SeasonIndex == 3;
 
     int Mouths => Player.Men + Player.Wounded + PrisonerCount;
-    public int FoodPrice(int days) => (int)MathF.Ceiling(Mouths * days * 0.15f * (Has("Provisioner") ? 0.75f : 1));
+    public int FoodPrice(int days) => (int)MathF.Ceiling(Mouths * days * 0.15f * (Has("Provisioner") ? 0.75f : 1)
+        * (SettlementAt(Player.Pos) is Settlement here && Level(SeatOf(here), "market") > 0 ? 0.8f : 1));
 
     public string? BuyFood(int days)
     {
@@ -155,6 +156,7 @@ public sealed partial class Campaign
         if (v.ThreatUntil > S.Hours) return "ALREADY STRIPPED BARE";
         Player.Food += 7;
         v.ThreatUntil = (float)S.Hours + 7 * 24;
+        Raided(v);
         v.Recruits = 0;
         if (Captain.Contract >= 0 && v.Faction == Captain.Contract)
         {

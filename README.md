@@ -61,6 +61,12 @@ that will not last. Brigands roam between them all.
   battle: climb at the ladders, batter the gate, defenders on the walkway) or wait while the garrison starves. A seat you capture as a sworn
   vassal becomes your **fief** (your first at once, later ones by the council's vote): weekly income, and a garrison you can strengthen
   with your own companies. Before you swear fealty the realm keeps it and pays you a captor's purse. Lords besiege and retake seats too.
+- **Fiefs live:** each has **prosperity** (it scales income and recruits; raids and sieges hurt it) and **unrest** (foreign rule,
+  high taxes, sieges and raids raise it; a garrison, a chapel and low taxes calm it). At 70 unrest rebels take the field; at 100 the place
+  goes over to the realm of its own people. In your fief's FIEF tab set **taxes** and raise **buildings**: training yard, barracks (a
+  culture's elite tiers need one), walls, market, granary, stables, chapel and watchtower. AI realms build too. As a lord with two fiefs
+  you can give one to a companion and make him your **vassal**, with standing orders (defend my lands, follow me, join the host); lords who
+  hate their liege may defect to a ruler they like.
 - **Prisoners** follow you (they slow you and eat): sell, recruit or free them. Lords you beat may be captured and ransomed.
 - **Officers:** sergeants with traits (Stubborn, Steady, Drillmaster, Hothead, Sharpshooter, Surgeon, Veteran) that show in battle; they can fall.
 - **Seasons and food:** winter slows the march, slows healing and doubles rations; starving men lose cohesion and desert. Your liege's towns feed you.

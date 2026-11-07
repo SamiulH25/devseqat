@@ -677,6 +677,10 @@ sealed class MapScreen
             linesOut.Add(($"{C.S.Provinces[s.Province].Kind.ToUpperInvariant()} COUNTRY, {s.Culture.ToUpperInvariant()} PEOPLE", Style.Dim));
             if (s.Kind == SettlementKind.Village) linesOut.Add((s.ThreatUntil > C.S.Hours ? "THREATENED: NO RECRUITS" : $"{s.Recruits} RECRUITS", Style.Text));
             if (s.Kind == SettlementKind.Town) linesOut.Add(($"{s.Mercenaries.Count} MERCENARY COMPANIES, {s.Horses} HORSES", Style.Text));
+            linesOut.Add(($"PROSPERITY {s.Prosperity:0}" + (s.Kind != SettlementKind.Village ? $"   UNREST {s.Unrest:0}" : ""), s.Unrest >= Campaign.RevoltAt ? Style.Bad : Style.Dim));
+            if (s.Kind != SettlementKind.Village && s.Buildings.Count > 0)
+                linesOut.Add((string.Join(", ", s.Buildings.Select(b => (Campaign.BuildingOf(b.Key)?.Name ?? b.Key) + (b.Value > 1 ? " " + Style.Numerals[b.Value] : ""))).ToUpperInvariant(), Style.Dim));
+            if (s.Owner >= 0 && s.Owner != C.Player.Id && C.PartyById(s.Owner) is Party holder) linesOut.Add(($"FIEF OF {holder.Name.ToUpperInvariant()}", Style.Dim));
             if (C.Refuses(s)) linesOut.Add(("WILL NOT TRADE WITH YOU", Style.Foe));
         }
         int w = linesOut.Max(l => ui.TW(l.Item1, 1)) + ui.U(16), h = linesOut.Count * ui.U(13) + ui.U(10);
@@ -754,7 +758,7 @@ sealed class MapScreen
             SettlementKind.Village => new[] { "RECRUIT", "FOOD", "FORAGE", "REST" },
             SettlementKind.Castle => new[] { "REST", "FOOD", "CAPTIVES", "CONTRACT" },
             _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "MARKET", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
-        }).Concat(fief ? new[] { "GARRISON" } : Array.Empty<string>()).ToArray();
+        }).Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
         int tw = ui.U(tabs.Length > 7 ? 90 : 112), tx = r.X + (r.Width - tabs.Length * (tw + ui.U(6))) / 2;
         for (int i = 0; i < tabs.Length; i++)
             if (ui.Button(new Rectangle(tx + i * (tw + ui.U(6)), r.Y + ui.U(56), tw, ui.U(24)), tabs[i], true, "", tab == tabs[i])) { tab = tabs[i]; note = ""; }
@@ -763,7 +767,7 @@ sealed class MapScreen
         {
             case "RECRUIT":
             {
-                var levy = Troops.Get(Campaign.RecruitTroop(s));
+                var levy = Troops.Get(C.RecruitTroopFor(s));
                 int willing = C.RecruitsForYou(s);
                 ui.Text($"{willing} OF {s.Recruits} MEN WILL TAKE YOUR COIN HERE ({levy.Cost} CROWNS EACH)", body.X, body.Y, Style.Text);
                 if (C.HolderOf(s) is Character holder)
@@ -916,6 +920,7 @@ sealed class MapScreen
                 }
                 break;
             }
+            case "FIEF": FiefTab(s, body); break;
             case "CONTRACT":
             {
                 int cur = C.Captain.Contract;
@@ -1148,6 +1153,7 @@ sealed class MapScreen
             }
             i2++;
         }
+        if (charTab == realms) Vassals(r, r.Y + ui.U(82) + ((list.Count + 1) / 2) * (rowH + ui.U(4)) + ui.U(12));
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (L)")) panel = PanelKind.None;
     }
@@ -1308,6 +1314,73 @@ sealed class MapScreen
         { panel = C.S.GameOver ? PanelKind.GameOver : PanelKind.None; C.Report = null; }
     }
 
+    /// Your fief (F6): its prosperity and unrest and why they move, its taxes, and its buildings.
+    void FiefTab(Settlement s, Rectangle body)
+    {
+        int x = body.X, y = body.Y, half = body.Width / 2 - ui.U(10);
+        ui.Text($"PROSPERITY {s.Prosperity:0}", x, y, Style.Text);
+        ui.TextR($"{C.ProsperityDrift(s):+0.00;-0.00} A DAY", x + half, y + ui.U(2), Style.Dim, 1);
+        ui.Bar(new Rectangle(x, y + ui.U(18), half, ui.U(5)), s.Prosperity / 100f, Style.Ok);
+        ui.Text($"INCOME {C.Income(s) + C.S.Settlements.Where(v => v.Province == s.Province && v.Kind == SettlementKind.Village && v.Owner == C.Player.Id).Sum(C.Income):0} A WEEK WITH ITS VILLAGES", x, y + ui.U(28), Style.Dim, 1);
+        int ux = x + half + ui.U(20);
+        var (drift, why) = C.UnrestDrift(s);
+        ui.Text($"UNREST {s.Unrest:0}", ux, y, s.Unrest >= Campaign.RevoltAt ? Style.Bad : Style.Text);
+        ui.TextR($"{drift:+0.00;-0.00} A DAY", ux + half, y + ui.U(2), drift > 0 ? Style.Warn : Style.Dim, 1);
+        ui.Bar(new Rectangle(ux, y + ui.U(18), half, ui.U(5)), s.Unrest / 100f, s.Unrest >= Campaign.RevoltAt ? Style.Bad : Style.Warn);
+        ui.Text(why.Count == 0 ? "THE PEOPLE ARE CONTENT." : string.Join("  ", why), ux, y + ui.U(28), Style.Dim, 1);
+        if (C.Rebels(s) is Party reb) ui.Text($"{reb.Men} REBELS ARE IN THE FIELD: BEAT THEM TO CALM THE PLACE.", ux, y + ui.U(40), Style.Bad, 1);
+        y += ui.U(56);
+        ui.Text("TAXES:", x, y + ui.U(6), Style.Dim, 1);
+        for (int i = 0; i < 3; i++)
+            if (ui.Button(new Rectangle(x + ui.U(60) + i * ui.U(110), y, ui.U(104), ui.U(24)), Campaign.TaxNames[i], true, "", s.Tax == i)) note = C.SetTax(s, i) ?? "";
+        ui.Text("LOW: INCOME -30%, CALMER, GROWS FASTER.  HIGH: INCOME +35%, UNREST, SLOWER GROWTH.", x + ui.U(400), y + ui.U(6), Style.Dim, 1);
+        y += ui.U(34);
+        if (s.Building != "") ui.Text($"BUILDING {Campaign.BuildingOf(s.Building)?.Name.ToUpperInvariant()}: {MathF.Max(0, (s.BuildUntil - (float)C.S.Hours) / 24):0.0} DAYS LEFT", x, y, Style.Accent, 1);
+        else ui.Text("BUILD (ONE AT A TIME):", x, y, Style.Accent, 1);
+        y += ui.U(16);
+        int bw = (body.Width - ui.U(8)) / 2, i2 = 0;
+        foreach (var d in Campaign.BuildingDefs)
+        {
+            var row = new Rectangle(x + (i2 % 2) * (bw + ui.U(8)), y + (i2 / 2) * ui.U(28), bw, ui.U(24));
+            int lv = Campaign.Level(s, d.Id);
+            bool can = C.CanBuild(s, d, out string why2, out int cost);
+            string label = $"{d.Name.ToUpperInvariant()}{(d.Max > 1 ? $" {Style.Numerals[Math.Min(d.Max, lv + (lv < d.Max ? 1 : 0))]}" : "")}";
+            if (ui.Button(row, lv >= d.Max ? label + " (BUILT)" : label, can, can ? $"{cost}" : why2, lv > 0)) note = C.Build(s, d.Id) ?? $"WORK BEGINS ON THE {d.Name.ToUpperInvariant()}";
+            if (ui.Hover(row)) note = d.Text;
+            i2++;
+        }
+    }
+
+    /// Your vassals and their standing orders, and companions you could raise to land (F6), under the household tab.
+    void Vassals(Rectangle r, int y)
+    {
+        int x = r.X + ui.U(24);
+        var vassals = C.Vassals.ToList();
+        var raisable = C.Companions.ToList();
+        if (vassals.Count == 0 && raisable.Count == 0) return;
+        ui.Text("YOUR VASSALS", x, y, Style.Accent, 1);
+        y += ui.U(16);
+        foreach (var v in vassals.Take(4))
+        {
+            ui.Text($"{v.Name.ToUpperInvariant()}  {v.Men} MEN  {(v.Down ? "SCATTERED" : v.Task.ToUpperInvariant())}", x, y + ui.U(6), Style.Text, 1);
+            for (int i = 0; i < Campaign.Orders.Length; i++)
+            {
+                string o = Campaign.Orders[i];
+                string label = o == "defend" ? "DEFEND MY LANDS" : o == "follow" ? "FOLLOW ME" : "JOIN THE HOST";
+                if (ui.Button(new Rectangle(r.Right - ui.U(24) - (3 - i) * ui.U(150), y, ui.U(144), ui.U(22)), label, true, "", v.Order == o)) note = C.SetOrder(v, o) ?? "";
+            }
+            y += ui.U(26);
+        }
+        if (vassals.Count == 0) { ui.Text("NONE YET. AS A LORD WITH TWO FIEFS YOU MAY GIVE ONE TO A COMPANION.", x, y, Style.Dim, 1); y += ui.U(16); }
+        foreach (var k in raisable.Take(3))
+        {
+            bool can = C.CanRaiseVassal(k, out string why);
+            if (ui.Button(new Rectangle(x, y, ui.U(460), ui.U(22)), $"RAISE {k.Name.ToUpperInvariant()} TO A LORD" + (can ? $" WITH {C.FiefToGrant()!.Name.ToUpperInvariant()}" : ""), can, can ? "" : why))
+                note = C.RaiseVassal(k) ?? $"{k.Name.ToUpperInvariant()} IS YOUR VASSAL";
+            y += ui.U(26);
+        }
+    }
+
     /// The career and realm screen (F5): the rank ladder on the left; the realm you serve (ruler, marshal, objective, the
     /// council) and the acts your rank allows on the right.
     void RealmPanel()
@@ -1461,6 +1534,8 @@ sealed class MapScreen
             case "party": panel = PanelKind.Party; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;
             case "realm": panel = PanelKind.Realm; note = ""; break;
+            case "fief": at = s; tab = "FIEF"; panel = PanelKind.Settlement; note = ""; break;
+            case "household": charTab = C.S.Factions.Count; panel = PanelKind.Characters; note = ""; break;
             case "beat": panel = PanelKind.Beat; break;
             case "settlement":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));

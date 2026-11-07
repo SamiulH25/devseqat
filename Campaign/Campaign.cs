@@ -39,6 +39,8 @@ public sealed partial class Campaign
         Map = WorldMap.Generate(state.Seed, state.MapExtent);
         rng = new Rng(state);
         Factions.Bind(S.Factions);
+        // Saves from before F6 have no buildings: give their towns the barracks their elite lines need.
+        if (S.Settlements.Count > 0 && S.Settlements.All(t => t.Buildings.Count == 0)) SeedBuildings();
         // The map's settlement models follow the save (a v1 save was generated before the Northmarch had its capital).
         for (int i = 0; i < Math.Min(Map.Settlements.Count, S.Settlements.Count); i++) Map.Settlements[i].Kind = S.Settlements[i].Kind;
     }
@@ -70,6 +72,7 @@ public sealed partial class Campaign
         player.Companies.Add(c.NewCompany("levies", "infantry", 24, 0, capital));
         player.Companies.Add(c.NewCompany("levies", "spears", 15, 0, capital));
         c.MakeCaptainCharacter(capital.Culture);
+        c.SeedBuildings();
         foreach (var v in s.Settlements)
         {
             v.Recruits = v.Kind == SettlementKind.Village ? 4 + c.rng.Next(5) : 0;
@@ -321,7 +324,7 @@ public sealed partial class Campaign
             p.Cooldown = 12;
             p.ChaseId = -1;
             if (p.Kind == PartyKind.Garrison) continue;
-            if (p.Kind == PartyKind.Bandit) { p.Down = true; continue; }
+            if (p.Kind == PartyKind.Bandit) { p.Down = true; if (p.HomeId >= 0) RebelsBeaten(p); continue; }
             if (p.Kind == PartyKind.Lord && (p.Men < before[p] * 0.25f || p.Men == 0))
             {
                 p.Down = true;
@@ -496,7 +499,7 @@ public sealed partial class Campaign
         // Only some of them will follow you: how many depends on what their lord thinks of you (4.2).
         n = Math.Min(n, RecruitsForYou(s));
         if (n <= 0) return s.Recruits > 0 ? "THEY WILL NOT FOLLOW YOU: THEIR LORD THINKS ILL OF YOU" : "NO RECRUITS";
-        string levy = RecruitTroop(s);
+        string levy = RecruitTroopFor(s);
         float each = Troops.Get(levy).Cost * RecruitPriceFactor(s);
         int cost = (int)MathF.Ceiling(n * each);
         if (S.Gold < cost) return $"NEEDS {cost} CROWNS";
@@ -547,7 +550,8 @@ public sealed partial class Campaign
         return null;
     }
 
-    public int HorsePrice => (int)(Troops.Mount("courser").Hp * B.HorseCostRate * (Has("Horsemaster") ? 0.7f : 1) * (Has("Haggler") ? 0.85f : 1));
+    public int HorsePrice => (int)(Troops.Mount("courser").Hp * B.HorseCostRate * (Has("Horsemaster") ? 0.7f : 1) * (Has("Haggler") ? 0.85f : 1)
+        * (SettlementAt(Player.Pos) is Settlement st && Level(st, "stables") > 0 ? 0.7f : 1));
 
     public string? BuyHorses(Settlement s, int n)
     {
@@ -758,6 +762,10 @@ public sealed partial class Campaign
         {
             p.Task = "siege"; p.ChaseId = -1; p.Moving = false; p.TaskUntil = (float)S.Hours + 4;
         }
+        else if (p.Order == "follow" && IsVassal(p) && p.Men >= 15 && Vector2.Distance(p.Pos, Player.Pos) > 6) // follows unless nearly broken
+        {
+            p.Task = "follow"; p.ChaseId = -1; p.Goal = Player.Pos + new Vector2(-3, 3); p.Moving = true; p.TaskUntil = (float)S.Hours + 1;
+        }
         else if (!needsRefit && TryBesiege(p)) { }
         else if (needsRefit || p.Task == "refit")
         {
@@ -773,8 +781,10 @@ public sealed partial class Campaign
         {
             p.Task = "patrol"; p.ChaseId = -1;
             var prov = p.PatrolProvince >= 0 ? S.Provinces[p.PatrolProvince] : S.Provinces[home.Province];
+            var ordered = OrderedProvince(p); // your vassals keep to their standing orders (F6)
+            if (ordered != null) prov = ordered;
             // A lord with no enemy in sight marches for the front rather than idling around home, so armies meet on their own.
-            if (AtWarWithAnyone(p.Faction) && rng.Chance(B.LordAggression) && EnemyProvinceNear(prov, p.Faction) is Province front) prov = front;
+            else if (AtWarWithAnyone(p.Faction) && rng.Chance(B.LordAggression) && EnemyProvinceNear(prov, p.Faction) is Province front) prov = front;
             p.Goal = prov.Center + new Vector2(rng.Range(-20, 20), rng.Range(-20, 20)) * Map.Spread;
             p.Moving = true;
             p.TaskUntil = (float)S.Hours + 10;
@@ -784,6 +794,7 @@ public sealed partial class Campaign
                 {
                     v.ThreatUntil = (float)S.Hours + 7 * 24;
                     v.Recruits = 0;
+                    Raided(v);
                     Score(p.Faction, prov.Faction, 20);
                     Log($"{p.Name} threatens {v.Name}.");
                 }
@@ -869,7 +880,8 @@ public sealed partial class Campaign
     {
         foreach (var v in S.Settlements.Where(v => v.ThreatUntil <= S.Hours))
         {
-            int more = v.Owner == Player.Id && Has("JustRuler") ? 2 : 1;
+            int more = (v.Owner == Player.Id && Has("JustRuler") ? 2 : 1) * (v.Prosperity >= 70 ? 2 : 1);
+            if (v.Prosperity < 20 && rng.Chance(0.5f)) continue; // a poor village raises men slowly
             v.Recruits = v.Kind == SettlementKind.Village ? Math.Min(B.VillageRecruitsMax, v.Recruits + more) : Math.Min(12, v.Recruits + 2 * more); // towns and castles raise levies too
         }
         foreach (var p in S.Parties.Where(p => !p.Down))
@@ -908,6 +920,7 @@ public sealed partial class Campaign
         }
         FactionAI();
         SiegesDaily();
+        FiefsDaily();
         CareerDaily();
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous.
         for (int n = 0; n < BanditSpawnsWanted; n++)
@@ -968,7 +981,7 @@ public sealed partial class Campaign
             if (lords.Count < wanted && fs.Treasury >= 600 + 400) { SpawnLord(f); fs.Treasury -= 600; }
             var front = S.Provinces.Where(p => p.Faction == f && p.Neighbors.Any(n => FactionsAtWar(f, S.Provinces[n].Faction))).ToList();
             var enemyFront = S.Provinces.Where(p => FactionsAtWar(f, p.Faction) && p.Neighbors.Any(n => S.Provinces[n].Faction == f)).ToList();
-            var idle = lords.Where(l => !l.Down && l.Task == "patrol").ToList();
+            var idle = lords.Where(l => !l.Down && l.Task == "patrol" && !(IsVassal(l) && l.Order is "defend" or "follow")).ToList();
             // The marshal's objective (F5) draws the host; without one the realm picks a province on the front.
             var objective = ObjectiveOf(f);
             if (idle.Count >= 2 && (objective != null || enemyFront.Count > 0) && rng.Chance(objective != null ? 0.5f : 0.35f))
@@ -1024,10 +1037,12 @@ public sealed partial class Campaign
         foreach (var t in S.Settlements.Where(t => t.Kind == SettlementKind.Town))
         {
             RefreshMercenaries(t);
-            t.Horses = Math.Min(20, t.Horses + 5);
+            t.Horses = Math.Min(Level(t, "stables") > 0 ? 35 : 20, t.Horses + (Level(t, "stables") > 0 ? 10 : 5));
         }
         GarrisonsWeekly();
         PrisonersWeekly();
+        BuildWeekly();
+        PiousWeekly();
     }
 
     static void Desert(Party p)

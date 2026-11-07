@@ -47,6 +47,7 @@ public static class SelfTest
         SkillTree();
         Career();
         PilotCareer();
+        FiefLife();
         StackBattle();
         ReplayExact();
 
@@ -851,12 +852,12 @@ public static class SelfTest
         Check(az.Culture == "azure" && sh.Ready > 0, "an azure company of ready shieldmen");
         Check(c.Promotable(c.Player, az, sh, "greatswords", 1, 1000, out _, out string why) == 0 && why.Contains("CANNOT TRAIN"), "azure men cannot train as crimson greatswords: " + why);
         Check(c.Promotable(c.Player, az, sh, "men_at_arms", 1, 1000, out _, out _) == 1, "but can as azure men-at-arms");
-        // Elite lines: azure ironguard -> paladins (tier V) needs an azure town in your realm.
+        // Elite lines: azure ironguard -> paladins (tier V) needs an azure barracks in your realm.
         var ig = c.NewCompany("ironguard", "infantry", 6, 1000, town);
         c.Player.Companies.Add(ig);
         Check(c.Promotable(c.Player, ig, ig.Stack("ironguard"), "paladins", 1, 5000, out _, out _) == 1, "a captain sworn to the Crown may train paladins");
         c.Captain.Contract = -1;
-        Check(c.Promotable(c.Player, ig, ig.Stack("ironguard"), "paladins", 1, 5000, out _, out why) == 0 && why.Contains("TOWN"), "a free captain may not: " + why);
+        Check(c.Promotable(c.Player, ig, ig.Stack("ironguard"), "paladins", 1, 5000, out _, out why) == 0 && why.Contains("BARRACKS"), "a free captain may not: " + why);
         // Each realm's lords field their own culture's troops.
         var w = Campaign.New(84);
         w.Player.Cooldown = 1e6f;
@@ -1231,6 +1232,99 @@ public static class SelfTest
         for (int d = 0; d < 60 && c.Rank < Rank.Vassal; d++) pilot.Run(24);
         Console.WriteLine($"pilot career: {c.Stage} on day {c.Day}, renown {c.Captain.Renown:0}, {pilot.Battles} battles");
         Check(c.Rank >= Rank.Vassal, "the pilot reaches vassal within 60 days");
+    }
+
+    /// Fiefs (F6): taxes and buildings change income, a neglected foreign fief revolts and defects, vassals take orders,
+    /// and a lord who hates his liege goes over to a ruler he likes.
+    static void FiefLife()
+    {
+        var c = Campaign.New(6006);
+        Check(c.S.Settlements.Where(s => s.Kind == SettlementKind.Town).All(s => Campaign.Level(s, "barracks") == 1), "every town starts with a barracks");
+        c.Captain.Fealty = true;
+        var town = c.S.Settlements.Where(s => s.Kind == SettlementKind.Town && s.Faction == 0).OrderBy(s => s.Id).First();
+        var castle = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction == 0).OrderBy(s => s.Id).First();
+        town.Owner = castle.Owner = c.Player.Id;
+        float normal = c.Income(town);
+        Check(c.SetTax(town, 2) == null && c.Income(town) > normal * 1.3f, "high taxes raise a fief's income");
+        c.SetTax(town, 1);
+        town.Prosperity = 90;
+        Check(c.Income(town) > normal * 1.2f, "a prosperous fief pays more");
+        town.Prosperity = 50;
+        float bare = c.Income(town);
+        c.S.Gold = 5000;
+        Check(c.Build(town, "market") == null && town.Building == "market", "you can build a market in your town");
+        Check(c.Build(town, "walls") != null, "one building at a time");
+        Check(c.Build(c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Owner != c.Player.Id), "walls") != null, "only in your own fiefs");
+        Check(c.Build(castle, "market") != null, "a castle has no market");
+        Days(c, 9);
+        Check(Campaign.Level(town, "market") == 1 && town.Building == "", "the market is finished after its days");
+        Check(c.Income(town) / (0.5f + town.Prosperity / 100) > bare / 1.0f * 1.15f, "a market raises income");
+        c.Build(castle, "walls");
+        Days(c, 13);
+        Check(Campaign.MaxSupplies(castle) > 30, "walls lay in more supplies");
+
+        // A foreign fief, taxed hard and left bare, revolts and then goes over to its own people's realm.
+        var foreign = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction == 1 && s.Culture == Factions.CultureOf(1)).OrderBy(s => s.Id).First();
+        var kin = foreign.Faction;
+        foreign.Faction = 0;
+        c.S.Provinces[foreign.Province].Faction = 0;
+        foreign.Owner = c.Player.Id;
+        foreign.Garrison.Clear();
+        c.SetTax(foreign, 2);
+        Check(c.UnrestDrift(foreign).Drift > 0.3f, "foreign rule and high taxes stir unrest: " + string.Join(" ", c.UnrestDrift(foreign).Why));
+        foreign.Unrest = 69;
+        Party? rebels = null;
+        for (int d = 0; d < 40 && rebels == null; d++) { Days(c, 1); rebels = c.Rebels(foreign); }
+        Check(rebels != null, "a neglected fief rises in revolt");
+        Console.WriteLine($"fiefs: {foreign.Name} revolts on day {c.Day} with {rebels!.Men} rebels, unrest {foreign.Unrest:0}");
+        c.S.Parties.Remove(rebels); // left in the field, the rebels could be beaten and calm the place
+        foreign.Unrest = 99.9f;
+        Days(c, 2);
+        Check(foreign.Faction == kin && foreign.Owner != c.Player.Id, "at the end of its patience a fief goes over to its own people");
+
+        // Vassals: a lord with two fiefs raises a companion to land and gives him orders.
+        c.Captain.Renown = 400;
+        foreach (var t in c.S.Settlements.Where(s => s.Faction == 0 && s.Kind == SettlementKind.Castle && s.Owner < 0).Take(1)) t.Owner = c.Player.Id;
+        Check(c.Rank >= Rank.Lord, "two fiefs and renown make a lord");
+        c.S.Gold += 1000;
+        var town2 = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction == 0);
+        c.Player.Pos = town2.Pos;
+        var w = c.WandererAt(town2) ?? MakeWanderer(c, town2);
+        Check(c.HireWanderer(town2) == null, "a wanderer joins the household");
+        var comp = c.Companions.First();
+        int seatsBefore = c.FiefSeats;
+        Check(c.RaiseVassal(comp) == null, "a lord raises a companion to a vassal");
+        var vassal = c.Vassals.Single();
+        Check(c.FiefSeats == seatsBefore - 1 && c.S.Settlements.Any(s => s.Owner == vassal.Id), "the vassal holds a fief of his own");
+        Check(c.SetOrder(vassal, "follow") == null, "you give your vassal a standing order");
+        vassal.Pos = c.Player.Pos + new Vector2(60, 0);
+        float before = Vector2.Distance(vassal.Pos, c.Player.Pos);
+        Days(c, 1);
+        Console.WriteLine($"fiefs: vassal {vassal.Name} follows from {before:0} to {Vector2.Distance(vassal.Pos, c.Player.Pos):0}");
+        Check(Vector2.Distance(vassal.Pos, c.Player.Pos) < before * 0.5f || vassal.Down, "a vassal told to follow you comes to you");
+
+        // Defection at the council: a lord who hates his liege and admires another ruler changes sides.
+        var realm1 = c.S.Factions[1];
+        var turn = c.S.Characters.First(ch => ch.Kind == "lord" && !ch.Dead && ch.Faction == 1 && ch.Id != realm1.Ruler && !ch.Traits.Contains("Loyal"));
+        turn.Opinion[realm1.Ruler] = -80;
+        turn.Opinion[c.S.Factions[2].Ruler] = 80;
+        realm1.NextCouncil = 0;
+        Days(c, 1);
+        Check(turn.Faction == 2, "a lord who hates his liege goes over to a ruler he admires: " + string.Join(" ", realm1.LastCouncil));
+
+        // The world builds without you.
+        var built = c.S.Settlements.Sum(s => s.Buildings.Values.Sum());
+        Days(c, 60);
+        Console.WriteLine($"fiefs: buildings in the world {built} -> {c.S.Settlements.Sum(s => s.Buildings.Values.Sum())}, prosperity avg {c.S.Settlements.Average(s => s.Prosperity):0}");
+        Check(c.S.Settlements.Sum(s => s.Buildings.Values.Sum()) > built, "AI realms raise buildings");
+        Check(c.S.Settlements.All(s => s.Prosperity is >= 0 and <= 100 && s.Unrest is >= 0 and <= 100), "prosperity and unrest stay in range");
+    }
+
+    static Character MakeWanderer(Campaign c, Settlement t)
+    {
+        var w = new Character { Id = c.S.NextId++, Kind = "wanderer", Name = "Test Wanderer", Culture = t.Culture, Role = "Steward", AtSettlement = t.Id };
+        c.S.Characters.Add(w);
+        return w;
     }
 
     /// Let whole days pass on the map, brushing aside encounters and arrivals (Tick stops for them).

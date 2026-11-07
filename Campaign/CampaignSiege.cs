@@ -15,7 +15,7 @@ public sealed partial class Campaign
     {
         SettlementKind.Town => B.TownIncome, SettlementKind.Castle => B.CastleIncome,
         _ => t.ThreatUntil > S.Hours && !(t.Owner == Player.Id && Has("Castellan")) ? 0 : B.VillageIncome,
-    } * (t.Besieged ? 0.25f : 1);
+    } * (t.Besieged ? 0.25f : 1) * FiefFactor(t);
 
     public IEnumerable<Settlement> Fiefs => S.Settlements.Where(t => t.Owner == Player.Id);
 
@@ -44,6 +44,9 @@ public sealed partial class Campaign
 
     public int GarrisonMen(Settlement s) => s.Garrison.Sum(c => c.Men);
 
+    /// Days a garrison can hold out when its stores are full: walls and a granary add to it (F6).
+    public static float MaxSupplies(Settlement s) => 30 + 10 * Level(s, "walls") + 15 * Level(s, "granary");
+
     /// Weekly: each faction pays to bring its garrisons back up (not while besieged); wounded heal.
     void GarrisonsWeekly()
     {
@@ -54,13 +57,13 @@ public sealed partial class Campaign
             RaiseGarrison(s, 0.4f);
             foreach (var c in s.Garrison.Where(c => c.Type.Tier <= 5))
             {
-                int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * 0.8f) - c.Men;
+                int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * (0.8f + 0.07f * Level(s, "walls"))) - c.Men;
                 int n = Math.Min(Math.Min(want, Rules.Room(c, c.Troop)), (int)(fs.Treasury / 20));
                 if (n <= 0) continue;
                 Rules.AddMen(c, c.Troop, n);
                 fs.Treasury -= n * 20;
             }
-            s.Supplies = MathF.Min(30, s.Supplies + 7);
+            s.Supplies = MathF.Min(MaxSupplies(s), s.Supplies + 7);
         }
     }
 
@@ -129,7 +132,7 @@ public sealed partial class Campaign
         // Lords of the town's faction resting inside fight too (PrepareBattle adds anyone near and friendly to them).
         setup.Options.Siege = true;
         setup.Options.Ladders = LaddersIn(s) > 0 ? 0 : Player.Men >= 90 ? 4 : 2;
-        setup.Options.GateHp = s.Kind == SettlementKind.Town ? 600 : 450;
+        setup.Options.GateHp = (s.Kind == SettlementKind.Town ? 600 : 450) + 150 * Level(s, "walls");
         setup.Options.Ground = Map.BattleGround(s.Pos) with { Road = false };
         setup.Options.Palette[1] = Style.PaletteOf(s.Faction);
         return setup;
@@ -138,7 +141,7 @@ public sealed partial class Campaign
     public BattleReport AutoResolveAssault(Settlement s)
     {
         var setup = PrepareAssault(s);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge, wall: setup.Options.Ladders > 0 ? 1.4f : 1.7f);
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge, wall: (setup.Options.Ladders > 0 ? 1.4f : 1.7f) + 0.1f * Level(s, "walls"));
         return FinishBattle(r, setup);
     }
 
@@ -248,7 +251,7 @@ public sealed partial class Campaign
             if (lords.Count == 0 || S.Hours - s.SiegeSince < 48 || !rng.Chance(0.5f)) continue;
             var defenders = new List<Party> { GarrisonParty(s) };
             defenders.AddRange(S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == s.Faction && Vector2.Distance(p.Pos, s.Pos) < 8 * Map.Spread));
-            var r = Rules.AutoResolve(lords, defenders, rng, wall: 1.4f);
+            var r = Rules.AutoResolve(lords, defenders, rng, wall: 1.4f + 0.1f * Level(s, "walls"));
             Apply(r, lords, defenders, "");
             if (r.Winner == 0) Capture(s, lords[0].Faction, -1, lords[0].CharId);
             else

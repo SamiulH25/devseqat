@@ -85,7 +85,7 @@ Small "As built" gaps to fold in alongside: renaming companies (text input, S), 
 | E4 | Map foliage cost: instancing or merged chunks with distance culling | S | The map draws at 60 fps on integrated graphics |
 | E5 | Determinism guard: battle seed and replay recorder (inputs plus seed reproduce a battle) | M | Any reported battle bug can be replayed exactly |
 
-## Phase F: campaign overhaul (in progress: F0-F5 built)
+## Phase F: campaign overhaul (in progress: F0-F6 built)
 
 The campaign's play and progression layer is rebuilt; the world map itself is untouched. Full spec:
 [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md). Saves break at F1 (version 4, no migration). Build in this order; each step
@@ -278,3 +278,27 @@ All of A-E is in. Where the build differs from the table above:
   and `--selftest PilotCareer` checks it. Not yet: **claiming** a realm as a free captain (a free company cannot besiege, so the road
   there needs personal wars), choosing the new realm's name and heraldry, summons to hosts (F7), raising companions to vassals and
   culture barracks (F6), and peace terms beyond a truce (F7).
+- F6: `Campaign/Fiefs.cs`. Every settlement has `Prosperity` (0-100; towns start at 60, the rest at 50) and seats have `Unrest`,
+  a `Tax` (low, normal, high: income x0.7 / x1 / x1.35, villages pay at their seat's rate) and `Buildings` (id -> level) with one under
+  construction at a time. Income is scaled by 0.5 + prosperity/100, the tax and a market. Prosperity drifts +0.12 a day (+0.03 per
+  building level, +0.1 low tax, -0.18 high tax, -0.1 in a winter without a granary, -0.1 above 50 unrest), -0.3 while threatened and -1
+  under siege; a raided village loses 6 and its seat 2 (half with a watchtower). Villages at 70+ prosperity raise recruits twice as fast
+  and below 20 half as fast, and at 75+ they offer you their culture's tier II infantry instead of the root (the F2 leftover). Unrest drifts
+  -0.15 a day, +0.35 under a realm of another culture, +0.3 high tax (-0.2 low), +0.5 besieged, +0.25 raids in the province, +0.2 below
+  25 prosperity, +0.3 while its rebels are abroad, -0.2 with 30+ men in garrison, -0.25 with a chapel, -0.2 with Just Ruler, -Stewardship/300
+  in your fiefs. At 70 a seat rises (10% a day): a rebel band of its own culture (`PartyKind.Bandit` with `HomeId` = the seat); beating
+  it takes 20 unrest off. At 100 it goes over to the realm of its people (if a different one stands). Buildings (defaults in code,
+  overridable as `Buildings` in `Data/campaign.json`): training yard I-III (promote in your fief; II and III cut promotion gold 10%/20%),
+  barracks (every town starts with one; it replaces the F2 stand-in: a culture's tier V-VII need a barracks of that culture in your
+  realm or fiefs), walls I-III (assault wall factor +0.1, gate +150, garrison refill +7%, supplies +10 days per level), market (towns:
+  income +20%, food 20% cheaper there), granary (+15 days of supplies, no winter loss), stables (towns: more horses, 30% cheaper),
+  chapel (unrest, Pious lords +1 a week towards you), watchtower (raids halved). Cost x1.5 per level already built, less Stewardship/400.
+  AI realms with 1,400+ in the chest build one thing a week (walls on a border, else market, else barracks, else yard; a lord who holds the
+  seat pays when he can). **Vassals:** as a lord with two or more seats you raise a companion (`RaiseVassal`): he becomes a lord of
+  your realm (`Character.Liege` = you) with a castle before a town (never your last town), the company he led and 20 tier II men; your
+  realm's lords are all your vassals when you are king. Standing orders (`Party.Order`): defend your lands (he patrols your nearest
+  fief's province), follow you (unless nearly broken), or join the host (the realm's objective). Vassals with your liege follow you
+  if you rebel. **Defection:** at each council a lord (not Loyal, not your vassal) who thinks below -30 of his liege and above +30 of
+  another ruler goes over with his fiefs. Fief tab in your towns and castles (prosperity, unrest and why, taxes, buildings); settlement
+  tooltips show prosperity, unrest, buildings and holder; vassals and raising them are under the household tab (L). Not yet: the
+  Scout's vision and the Watchtower's early warning (there is no fog of war), the Builder perk (Stewardship lowers building costs instead).
