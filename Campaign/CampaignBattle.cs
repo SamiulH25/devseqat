@@ -89,6 +89,7 @@ public partial class Campaign
             {
                 p.Down = true;
                 if (p.Breed == "troll") Log($"{p.Name} is slain near {Map.ProvinceAt(p.Pos).Name}.");
+                if (p.Breed == "undead") Log($"{p.Name} are laid to rest.");
                 if (p.Lair) { var taker = winners.FirstOrDefault(w => w.Kind is PartyKind.Player or PartyKind.Lord); if (taker != null && taker != Player) taker.Gold += p.Gold; HoldoutCleared(p, taker); }
                 continue;
             }
@@ -114,6 +115,7 @@ public partial class Campaign
         if (playerIn) SkillsAfterBattle(r, won, playerTeam == 0 ? startStrength0 : startStrength1, playerTeam == 0 ? startStrength1 : startStrength0, before[Player]);
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, Rules.PerMan(lostStrength));
+        AfterTheBattle(r, lookup, winners, losers, playerIn);
         S.Parties.RemoveAll(p => Outlaw(p) && p.Down);
 
         var report = new BattleReport(won, enemyName, reports, 0, 0, 0, 0, 0, r.Captain);
@@ -124,7 +126,7 @@ public partial class Campaign
         {
             foreach (var e in losers.Where(e => e.Lair)) loot += e.Gold; // a holdout's hoard goes to whoever burns it out
             foreach (var e in losers)
-                bounty += e.Breed == "troll" ? B.BountyTroll
+                bounty += e.Breed == "troll" ? B.BountyTroll : e.Breed == "undead" ? B.BountyUndead
                     : e.Lair ? B.BountyHoldout + Rules.PerMan(Rules.Strength(e) / 10)
                     : Outlaw(e) ? B.BountyBandits + Rules.PerMan(Rules.Strength(e) / 10)
                     : Captain.Contract >= 0 ? B.BountyLord + Rules.PerMan((startStrength1 + startStrength0) / 20) : 0;

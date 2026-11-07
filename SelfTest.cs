@@ -66,6 +66,7 @@ public static partial class SelfTest
         PlayerCreatures();
         WolfRiders();
         Undead();
+        UndeadAbroad();
         Couriers();
 
         for (int seed = 1; seed <= 3; seed++)

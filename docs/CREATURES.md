@@ -1,6 +1,6 @@
 # Creatures and monsters: brainstorm and plan
 
-Status: phase 1 (goblins), phase 2 (wolves, goblin wolf riders) phase 3 (trolls), phase 4 (goblin thralls, war hounds, beast hunters, ogres for hire) and phase 5a (the undead in battle) are built; see "As built" at the end. The rest is planned. Names are placeholders.
+Status: phase 1 (goblins), phase 2 (wolves, goblin wolf riders) phase 3 (trolls), phase 4 (goblin thralls, war hounds, beast hunters, ogres for hire) and phase 5 (the undead) are built; see "As built" at the end. The rest is planned. Names are placeholders.
 
 The world is a fantasy world. Today every enemy is a man: lords, bandits, garrisons. This plan adds creatures and
 monsters as new enemies, new kinds of map encounter and, later, new troops for the player.
@@ -250,4 +250,21 @@ village; clearing a holdout removes it and pays the hoard; lords are hostile to 
 - Found in testing: a host of 30 skeletons, 8 ghouls and a necromancer beats 20 shieldmen and 10 bowmen and about
   matches 40 shieldmen at night (raising some 25 of the fallen); bowmen tip it to the men by shooting the ghouls and
   the necromancer. Staged shots: `gallery-undead.png`, `gallery-undead-side.png`.
+
+**Phase 5b** (the dead rise; `Campaign/Undead.cs`, `UndeadAbroad` test, debug `GraveTrace`):
+- After a battle that leaves `GraveMin` (40, scaled) men dead, a grave field (`CampaignState.Graves`, `Grave`) stays on
+  the map. The realm whose land it is buries its own dead with chance `RealmBuryChance` (0.92). After a big battle of
+  yours you are asked (the forced event `bury_dead`): bury them (food, a little cohesion), burn the bodies (the men do
+  not like it), or march on. The new effect verb `bury` removes the field.
+- From `GraveRiseDays` (3) days on, an unburied field rises in the night with chance `GraveRiseChance` (0.35), while
+  the world holds fewer than `UndeadMax` (2) hosts; a field quiet for `GraveDays` (15) rests for good. The host
+  (`RaiseHost`, "The Dead of X") is `UndeadShare` (half) of the field's dead as skeletons (between `UndeadMinMen` and
+  `UndeadMaxMen`, scaled), a ghoul for every six and one necromancer.
+- `UndeadThink`: it lies in the earth by day and by night hunts the nearest living host under `UndeadPreyAt` (1.1)
+  times its strength; it never runs. A host that wins a fight raises `UndeadGrowShare` (0.3) of the fallen men into its
+  ranks. It fights auto-resolve from side 1 with `Edge` `UndeadNight` (1.3) or `UndeadDay` (0.8). Lords hunt one only
+  with twice its weight, brigands never. Its end goes in the chronicle and pays `BountyUndead` (250).
+- Found in testing: with the first rules (fields from every battle of 30 dead, realms burying 60%) the world was never
+  without three hosts. Now a fresh map (seed 61) sees none for some 50 days and two in 90; your own unburied fields add
+  more. Staged shot: `campaign-undead.png`.
 

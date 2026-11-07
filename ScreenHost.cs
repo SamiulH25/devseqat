@@ -410,7 +410,17 @@ sealed class ScreenHost : Game
                 c.Encounter = troll;
                 map.Stage("encounter"); Shot("campaign-troll"); break;
             }
-            case 31: Exit(); break;
+            case 31:
+            {
+                // The dead of an unburied field, walking in the dark.
+                map.Stage("map");
+                c.Encounter = null;
+                var host = c.RaiseHost(new Grave { Pos = c.Player.Pos + new Vector2(6, 4), Dead = 150, Hours = c.S.Hours });
+                c.Player.Pos = host.Pos + new Vector2(2, 0);
+                c.Encounter = host;
+                map.Stage("encounter"); Shot("campaign-undead"); break;
+            }
+            case 32: Exit(); break;
         }
     }
 }

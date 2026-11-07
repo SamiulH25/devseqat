@@ -21,7 +21,7 @@ public sealed class ChoiceDef
 public sealed class PendingEvent
 {
     public string Id = "";
-    public int Settlement = -1, Lord = -1, Party = -1, Company = -1;
+    public int Settlement = -1, Lord = -1, Party = -1, Company = -1, Grave = -1;
 }
 
 /// Events, lord quests and named threats (step F8).
@@ -34,16 +34,16 @@ public sealed partial class Campaign
     public static readonly string[] Triggers =
     {
         "fief_unrest", "fief_poor", "fief_rich", "lord_friend", "lord_hates_liege", "big_band", "veterans", "hungry_winter",
-        "unpaid", "prisoners", "war_weary", "in_town", "brigand_king", "pretender",
+        "unpaid", "prisoners", "war_weary", "in_town", "brigand_king", "pretender", "graves",
     };
     /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
-    static readonly string[] Forced = { "brigand_king", "pretender" };
+    static readonly string[] Forced = { "brigand_king", "pretender", "graves" };
     static readonly string[] Verbs =
     {
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
-        "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband",
+        "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
     };
-    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband" };
+    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury" };
     static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege" };
 
     static List<EventDef>? events;
@@ -239,6 +239,7 @@ public sealed partial class Campaign
             case "prisoners_recruit":
                 foreach (var g in Player.Prisoners.ToList()) RecruitPrisoners(g);
                 break;
+            case "bury": Bury(pe.Grave); break;
             case "disband":
                 if (s != null && Rebels(s) is Party reb) { reb.Down = true; S.Parties.Remove(reb); return "The pretender takes your gold and is gone."; }
                 break;

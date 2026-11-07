@@ -333,6 +333,54 @@ public static partial class SelfTest
         Check(d.Rares.Count() >= 2 && d.Rares.Count() <= d.RaresWanted, "the world keeps its rare monsters");
     }
 
+    /// Phase 5b: a big battle leaves a grave field; buried it lies quiet, left alone it rises some nights later as an undead
+    /// host that lies in the earth by day and hunts the living by night.
+    static void UndeadAbroad()
+    {
+        var c = Campaign.New(98);
+        Party Fight()
+        {
+            foreach (var co in c.Player.Companies) foreach (var st in co.Stacks) st.Men = 0;
+            c.Player.Companies.Clear();
+            c.Player.Companies.Add(c.NewCompany("ironguard", "infantry", c.Scaled(40), 0));
+            var band = c.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
+            foreach (var co in band.Companies) foreach (var st in co.Stacks) st.Men = 0;
+            band.Companies.Clear();
+            band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(70), 0));
+            band.Pos = c.Player.Pos;
+            c.Encounter = band;
+            c.S.Event = null;
+            c.AutoResolveEncounter();
+            c.Encounter = null;
+            return band;
+        }
+        Fight();
+        Check(c.S.Graves.Count == 1 && c.S.Event?.Id == "bury_dead", $"a big battle leaves a grave field, and you are asked to bury it ({c.S.Graves.Count}, {c.S.Event?.Id})");
+        Check(c.Choose(0) == null && c.S.Graves.Count == 0, "buried, the dead lie quiet");
+        Fight();
+        Check(c.Choose(2) == null && c.S.Graves.Count == 1, "march on and the field stays unburied");
+        int dead = c.S.Graves[0].Dead, gid = c.S.Graves[0].Id;
+        string where = c.Map.ProvinceAt(c.S.Graves[0].Pos).Name;
+        Party? risen = null;
+        int waited = 0;
+        while (waited < 15 && risen == null) { Days(c, 1); waited++; risen = c.UndeadHosts.FirstOrDefault(h => h.Name == $"The Dead of {where}"); }
+        Console.WriteLine($"undead: a field of {dead} dead {(risen != null ? $"rose after {waited} days as {risen.Men} undead" : "did not rise")}");
+        Check(risen != null && !c.S.Graves.Any(g => g.Id == gid), "an unburied field rises within days");
+
+        // A risen host: skeletons, ghouls and a necromancer; it lies still by day and hunts by night.
+        var host = c.RaiseHost(new Grave { Pos = c.Player.Pos + new Vector2(30, 0) * c.Map.Spread, Dead = 200, Hours = c.S.Hours });
+        Check(host.Companies.Any(co => co.Troop == "skeleton") && host.Companies.Any(co => co.Troop == "ghoul") && host.Companies.Single(co => co.Troop == "necromancer").Men == 1,
+            "a host of skeletons and ghouls led by one necromancer");
+        c.Player.Pos = host.Pos + new Vector2(4, 0) * c.Map.Spread;
+        c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 13;
+        c.MonsterThink(host);
+        Check(!host.Moving && host.Task == "rest", "the dead lie in the earth by day");
+        c.S.Hours += 10;
+        foreach (var co in c.Player.Companies) foreach (var st in co.Stacks) st.Men = Math.Min(st.Men, 3);
+        c.MonsterThink(host);
+        Check(host.ChaseId == c.Player.Id, "and hunt the living by night");
+    }
+
     /// Creatures for you (phase 4): goblins taken from a burnt-out holdout work as thralls; a kennel in your fief breeds
     /// war hounds.
     static void PlayerCreatures()
@@ -511,5 +559,19 @@ public static partial class SelfTest
                 Console.WriteLine($"undead host vs {men} shieldmen + {(bows ? men / 2 : 0)} bows: winner {b.Winner} after {b.Time:0} s, necromancer {(necro.Dead ? $"slain at {necro.DiedAt:0} s" : "lives")}, mean gap to foe {behind / Math.Max(1, n):0} m, "
                     + $"risen {risen?.StartCount ?? 0}, men dead {b.Units.Count(u => u.Team == 0 && u.Dead)}, undead down {b.Units.Count(u => u.Team == 1 && u.Dead)}");
             }
+    }
+
+    /// Debug: grave fields and undead hosts in a world left to itself (`--selftest GraveTrace`).
+    static void GraveTrace()
+    {
+        var c = Campaign.New(61);
+        var seen = new HashSet<int>();
+        for (int day = 1; day <= 90; day++)
+        {
+            Days(c, 1);
+            foreach (var h in c.UndeadHosts) seen.Add(h.Id);
+            if (day % 10 == 0)
+                Console.WriteLine($"day {day}: graves {c.S.Graves.Count}, hosts {string.Join(", ", c.UndeadHosts.Select(h => $"{h.Name} {h.Men}"))}; risen so far {seen.Count}");
+        }
     }
 }

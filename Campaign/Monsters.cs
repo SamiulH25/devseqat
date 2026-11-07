@@ -20,7 +20,7 @@ public partial class Campaign
     public int WolfPacksWanted => (int)MathF.Round(S.Provinces.Count(p => p.Kind == "Forest") * B.WolfPacksPerForest);
     public IEnumerable<Party> WolfPacks => S.Parties.Where(p => p.Breed == "wolf" && !p.Down);
     /// What a breed is called, many of them ("goblins", "wolves").
-    public static string Plural(string breed) => breed switch { "wolf" => "wolves", _ => breed + "s" };
+    public static string Plural(string breed) => breed switch { "wolf" => "wolves", "undead" => "undead", _ => breed + "s" };
     /// Night on the map (wolves hunt from dusk to dawn).
     bool Night => S.Hours % 24 is >= 20 or < 6;
     static readonly string[] PackNames = { "Grey Pack", "Black Pack", "Hollow Howlers", "Frost Fangs", "Moon Pack", "Ash Pack", "Red Maws" };
@@ -162,6 +162,7 @@ public partial class Campaign
         }
         if (WolfPacks.Count() < WolfPacksWanted && rng.Chance(B.WolfSpawnChance)) SpawnWolfPack();
         if (Rares.Count() < RaresWanted && rng.Chance(B.RareSpawnChance)) SpawnTroll();
+        GravesDaily();
         // A few tries a day on a big map, so cleared holdouts are replaced at about the same pace everywhere.
         for (int n = Math.Max(1, HoldoutsWanted / 6); n > 0; n--)
             if (Holdouts.Count() < HoldoutsWanted && rng.Chance(B.HoldoutSpawnChance)) SpawnHoldout();
@@ -224,6 +225,7 @@ public partial class Campaign
         if (p.Lair) { p.Moving = false; p.ChaseId = -1; p.TaskUntil = (float)S.Hours + 24; return; }
         if (p.Breed == "wolf") { WolfThink(p); return; }
         if (p.Breed == "troll") { TrollThink(p); return; }
+        if (p.Breed == "undead") { UndeadThink(p); return; }
         float me = Rules.Strength(p);
         var near = Visible(p, 25).Where(q => Hostile(p, q) && !q.Lair).ToList();
         p.TaskUntil = (float)S.Hours + 2;

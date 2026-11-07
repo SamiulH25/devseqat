@@ -115,7 +115,7 @@ public partial class Campaign
         }
         // A holdout is dug in: a lord goes after one only when its raiders have plundered his realm, and he is clearly the stronger.
         else if (hostiles.Where(q => !q.Lair || q.HuntedBy == p.Faction && S.Hours < q.HuntedUntil && Rules.Strength(q) * B.HoldoutDefence * 1.2f < me * preyAt)
-                     .Where(q => Rules.Strength(q) * (q.Breed == "troll" ? 2 : 1) < me * preyAt * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f)) // a troll only with twice its weight
+                     .Where(q => Rules.Strength(q) * (q.Breed is "troll" or "undead" ? 2 : 1) < me * preyAt * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f)) // a troll only with twice its weight
                      .OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
         {
             p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 6;
@@ -207,7 +207,7 @@ public partial class Campaign
             p.Goal = p.Pos + (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 20 * Map.Spread;
             p.ChaseId = -1; p.Moving = true; p.TaskUntil = (float)S.Hours + 2;
         }
-        else if (near.Where(q => !q.Lair && q.Breed != "troll" && Rules.Strength(q) < me * 0.9f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
+        else if (near.Where(q => !q.Lair && q.Breed is not ("troll" or "undead") && Rules.Strength(q) < me * 0.9f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
         {
             p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 4;
         }

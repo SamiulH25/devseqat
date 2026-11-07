@@ -145,6 +145,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Stacks/promotion, characters/opinion, skills, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Pilot.cs` |
 | Your divisions on the map (make, assign, goal, temper, command, into battle) | `Campaign/Divisions.cs` |
 | Monsters on the map: goblin holdouts (spawn, grow, raid, plunder, cleared), wolf packs, rare trolls, `MonsterThink` | `Campaign/Monsters.cs` (`SpawnHoldout`, `MonstersDaily`, `SendRaiders`, `HoldoutCleared`, `WolfThink`, `SpawnTroll`, `TrollThink`); docs/CREATURES.md |
+| The dead rise: grave fields after big battles, burial, undead hosts on the map | `Campaign/Undead.cs` (`AfterTheBattle`, `GravesDaily`, `RaiseHost`, `UndeadThink`); `bury_dead` in `Data/events.json` |
 | Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
 | Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
 | Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |

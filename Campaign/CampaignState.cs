@@ -217,6 +217,14 @@ public sealed class Settlement
     public int Tax = 1;
 }
 
+/// Where a big battle's dead lie unburied, how many, and since when.
+public sealed class Grave
+{
+    public int Id, Dead;
+    public Vector2 Pos;
+    public double Hours;
+}
+
 public sealed class Province
 {
     public int Id, Faction;
@@ -343,6 +351,8 @@ public sealed class CampaignState
     public PendingEvent? Event;
     public float NextEvent = 72;
     public Dictionary<string, float> EventsFired = new();
+    /// Grave fields of big battles whose dead were not buried (docs/CREATURES.md phase 5): one may rise as an undead host.
+    public List<Grave> Graves = new();
     public float LastSummons = -1000;
     public int LastBattleFoe = -1;             // the last party you defeated (for hunt contracts)
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
@@ -494,6 +504,12 @@ public sealed class Balance
     public float KennelPerWeek = 4, KennelMax = 12;
     /// The chance a town's mercenary board offers ogres each week, and how many.
     public float OgreOfferChance = 0.05f, OgreMen = 1;
+    /// The dead rise (phase 5): fallen men that make a grave field, how many days until it may rise, its nightly chance,
+    /// the days before it rests for good, the chance a realm buries a battle's dead in its lands, the most undead hosts at once.
+    public float GraveMin = 40, GraveRiseDays = 3, GraveRiseChance = 0.35f, GraveDays = 15, RealmBuryChance = 0.92f, UndeadMax = 2;
+    /// An undead host: the share of a field's dead that rise as skeletons, its size bounds (times ArmyScale), the share of
+    /// the fallen it raises after a win, what it hunts, its auto-resolve weight by night and by day, and its bounty.
+    public float UndeadShare = 0.5f, UndeadMinMen = 10, UndeadMaxMen = 50, UndeadGrowShare = 0.3f, UndeadPreyAt = 1.1f, UndeadNight = 1.3f, UndeadDay = 0.8f, BountyUndead = 250;
     public float HorseCostRate = 0.5f, ArmorCost = 600, HelmCost = 300, WarhorseCost = 400, DestrierCost = 900;
 
     static Balance? loaded;
