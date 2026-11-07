@@ -10,6 +10,8 @@ public sealed class Pilot
     readonly Campaign c;
     /// Fights you won and lost, played by the pilot (auto-resolved).
     public int Battles, Won;
+    /// Pacing telemetry (F9): men promoted, the day the first tier V man stood in the ranks, and seats taken by assault.
+    public int Promotions, FirstT5Day = -1, Taken, RenownForVassalDay = -1;
     /// The day each career stage was first reached (stage name -> day).
     public readonly Dictionary<string, int> StageDay = new();
     float nextThink;
@@ -33,6 +35,8 @@ public sealed class Pilot
             if (c.S.Event != null) c.Choose(c.EventOf0()); // the stand-in takes the first choice it can afford
             if (c.S.Hours >= nextThink) { Think(); nextThink = (float)c.S.Hours + 2; }
             if (!StageDay.ContainsKey(c.Stage)) StageDay[c.Stage] = c.Day;
+            if (RenownForVassalDay < 0 && c.Captain.Renown >= Campaign.VassalRenown) RenownForVassalDay = c.Day;
+            if (FirstT5Day < 0 && Me.Companies.Any(co => co.Stacks.Any(st => st.Men > 0 && st.Type.Tier >= 5))) FirstT5Day = c.Day;
         }
     }
 
@@ -114,7 +118,7 @@ public sealed class Pilot
         {
             if (!co.Stacks.Contains(st)) continue;
             int n = c.Promotable(Me, co, st, to, st.Ready, c.S.Gold - Reserve, out _, out _);
-            if (n > 0) c.Promote(co, st, to, n);
+            if (n > 0 && c.Promote(co, st, to, n) == null) Promotions += n;
         }
     }
 
@@ -136,6 +140,9 @@ public sealed class Pilot
         bool danger = c.S.Parties.Any(p => p != Me && !p.Down && c.Hostile(Me, p) && Rules.Strength(p) > mine * 0.9f && Vector2.Distance(p.Pos, Me.Pos) < 30);
         if (danger) { var near = c.S.Parties.Where(p => p != Me && !p.Down && c.Hostile(Me, p)).OrderBy(p => Vector2.Distance(p.Pos, Me.Pos)).First(); Refuge(near); return; }
         if (Me.Moving && Me.ChaseId >= 0 && c.PartyById(Me.ChaseId) is Party q && Rules.Strength(q) * 1.1f < mine) return;
+        if (Siege(mine)) return;
+        // The marshal's summons (F7): ride to the host.
+        if (c.S.Summons is Summons sm && Me.GoalSettlement != sm.Seat) { var seat = c.SettlementById(sm.Seat); if (!c.Refuses(seat)) c.GoTo(seat); else c.MoveTo(seat.Pos + new Vector2(12, 0)); return; }
         var friendlyTowns = c.S.Settlements.Where(t => t.Kind == SettlementKind.Town && !c.Refuses(t)).ToList();
         Settlement Nearest(IEnumerable<Settlement> list) => list.OrderBy(t => Vector2.Distance(t.Pos, Me.Pos)).First();
         // Business where we stand (we may have stopped here without "arriving").
@@ -174,6 +181,29 @@ public sealed class Pilot
         var next = c.S.Settlements.Where(s => s.Kind != SettlementKind.Village && !c.Refuses(s) && Vector2.Distance(s.Pos, Me.Pos) > 10)
             .OrderBy(s => Vector2.Distance(s.Pos, Me.Pos) + c.Rand(80)).FirstOrDefault();
         if (next != null) c.GoTo(next);
+    }
+
+    /// Sieges (F9, so the stand-in can earn fiefs and rank): once sworn, take a weakly held enemy seat in reach: besiege, wait for
+    /// the ladders, then storm it on paper. Returns true while busy with a siege.
+    bool Siege(float mine)
+    {
+        if (c.Besieging is Settlement b)
+        {
+            if (c.LaddersIn(b) > 0) return true;
+            float odds = mine / MathF.Max(1, Rules.Strength(c.GarrisonParty(b)) * 1.4f);
+            if (odds >= 1.1f) { var r = c.AutoResolveAssault(b); Battles++; if (r.Won) { Won++; Taken++; } }
+            else c.LiftSiege();
+            return true;
+        }
+        if (c.Rank < Rank.SwornSword || Me.Men < 40 || Me.Wounded > Me.Men / 4 || Me.Food < 6) return false;
+        var target = c.S.Settlements.Where(s => s.Kind != SettlementKind.Village && c.CanBesiege(s, out _) && Vector2.Distance(s.Pos, Me.Pos) < 140
+                && mine > Rules.Strength(c.GarrisonParty(s)) * 2.2f
+                && !c.S.Parties.Any(p => !p.Down && p.Kind == PartyKind.Lord && c.Hostile(Me, p) && Rules.Strength(p) > mine * 0.6f && Vector2.Distance(p.Pos, s.Pos) < 50))
+            .OrderBy(s => Vector2.Distance(s.Pos, Me.Pos)).FirstOrDefault();
+        if (target == null) return false;
+        if (Vector2.Distance(target.Pos, Me.Pos) > 6) { c.MoveTo(target.Pos + Vector2.Normalize(Me.Pos - target.Pos + new Vector2(0.01f, 0)) * 4); return true; }
+        c.Besiege(target);
+        return true;
     }
 
     static IEnumerable<Party> S(IEnumerable<Party?> list) => list.Where(p => p != null)!;

@@ -8,7 +8,58 @@ namespace Ironfield;
 public static class BalanceReport
 {
     /// How long each pacing run lasts (weeks of campaign time).
-    public const int PacingWeeks = 30;
+    public const int PacingWeeks = 40;
+
+    /// Play time per campaign day (F9): about 4.5 minutes, counting the map at mixed speeds, a share of a fought battle every
+    /// few days and the town screens. It turns CAMPAIGN_OVERHAUL.md 9's target hours into target days.
+    public const float MinutesPerDay = 4.5f;
+    public static float Hours(int day) => day * MinutesPerDay / 60;
+
+    /// The spec's target play hours from the start, per career stage, as campaign days (9: 3-5 h to Vassal, 4-6 more to Lord,
+    /// 6-10 more to Marshal or King).
+    public static readonly (string Stage, int From, int To)[] Targets =
+    {
+        ("VASSAL", 40, 67), ("LORD", 93, 147), ("MARSHAL", 173, 280),
+    };
+
+    /// `--pacing [n]`: only the stand-in captain's runs (1b), for tuning the career's pace quickly.
+    public static void Pacing(int campaigns)
+    {
+        Directory.CreateDirectory("balance");
+        var inv = CultureInfo.InvariantCulture;
+        // 1b. Pacing (F0): a scripted stand-in captain plays each campaign; record the day it reaches each career stage, and a
+        // weekly line of its progress. Every later overhaul step is tuned against these numbers (CAMPAIGN_OVERHAUL.md 9).
+        var stages = new StringBuilder("seed,stage,day,play_hours,battles,won,renown,men,promotions\n");
+        var weekly = new StringBuilder("seed,week,day,stage,renown,men,wounded,companies,tier_avg,gold,battles,won\n");
+        for (int seed = 1; seed <= campaigns; seed++)
+        {
+            var c = Campaign.New(2000 + seed);
+            var pilot = new Pilot(c);
+            var seen = new HashSet<string>();
+            for (int week = 1; week <= PacingWeeks && !c.S.GameOver; week++)
+            {
+                pilot.Run(168);
+                foreach (var (stage, day) in pilot.StageDay.Where(kv => seen.Add(kv.Key)))
+                    stages.AppendLine(string.Join(",", seed, Csv(stage), day, Hours(day).ToString("0.0", inv), pilot.Battles, pilot.Won, c.Captain.Renown.ToString("0", inv), c.Player.Men, pilot.Promotions));
+                var cos = c.Player.Companies;
+                weekly.AppendLine(string.Join(",", seed, week, c.Day, Csv(c.Stage), c.Captain.Renown.ToString("0", inv), c.Player.Men, c.Player.Wounded, cos.Count,
+                    (cos.Count > 0 ? cos.Average(co => co.Type.Tier) : 0).ToString("0.00", inv), c.S.Gold.ToString("0", inv), pilot.Battles, pilot.Won));
+            }
+            Console.WriteLine($"pacing {seed}: day {c.Day}, {c.Stage}, renown {c.Captain.Renown:0}, {pilot.Battles} battles ({pilot.Won} won), "
+                + $"{pilot.Promotions} promoted ({pilot.Promotions / (float)Math.Max(1, pilot.Battles):0.0} a battle), first tier V day {pilot.FirstT5Day}, {pilot.Taken} seats stormed, vassal renown day {pilot.RenownForVassalDay}, "
+                + string.Join(", ", pilot.StageDay.Select(kv => $"{kv.Key} day {kv.Value}")));
+            if (c.Rank == Rank.SwornSword && !c.CanSwearFealty(out string why)) Console.WriteLine($"  fealty refused: {why}");
+            foreach (var (stage, from, to) in Targets)
+            {
+                string got = pilot.StageDay.TryGetValue(stage, out int d) ? $"day {d} ({Hours(d):0.0} h)" : "not reached";
+                bool ok = pilot.StageDay.TryGetValue(stage, out d) && d >= from && d <= to;
+                Console.WriteLine($"  target {stage} day {from}-{to}: {got} {(ok ? "OK" : "OFF")}");
+            }
+        }
+        File.WriteAllText("balance/pacing.csv", stages.ToString());
+        File.WriteAllText("balance/pacing_weekly.csv", weekly.ToString());
+
+    }
 
     static string Csv(string s) => s.Contains(',') ? $"\"{s}\"" : s;
 
@@ -40,29 +91,7 @@ public static class BalanceReport
         }
         File.WriteAllText("balance/economy.csv", eco.ToString());
 
-        // 1b. Pacing (F0): a scripted stand-in captain plays each campaign; record the day it reaches each career stage, and a
-        // weekly line of its progress. Every later overhaul step is tuned against these numbers (CAMPAIGN_OVERHAUL.md 9).
-        var stages = new StringBuilder("seed,stage,day,battles,won,renown,men\n");
-        var weekly = new StringBuilder("seed,week,day,stage,renown,men,wounded,companies,tier_avg,gold,battles,won\n");
-        for (int seed = 1; seed <= campaigns; seed++)
-        {
-            var c = Campaign.New(2000 + seed);
-            var pilot = new Pilot(c);
-            var seen = new HashSet<string>();
-            for (int week = 1; week <= PacingWeeks && !c.S.GameOver; week++)
-            {
-                pilot.Run(168);
-                foreach (var (stage, day) in pilot.StageDay.Where(kv => seen.Add(kv.Key)))
-                    stages.AppendLine(string.Join(",", seed, Csv(stage), day, pilot.Battles, pilot.Won, c.Captain.Renown.ToString("0", inv), c.Player.Men));
-                var cos = c.Player.Companies;
-                weekly.AppendLine(string.Join(",", seed, week, c.Day, Csv(c.Stage), c.Captain.Renown.ToString("0", inv), c.Player.Men, c.Player.Wounded, cos.Count,
-                    (cos.Count > 0 ? cos.Average(co => co.Type.Tier) : 0).ToString("0.00", inv), c.S.Gold.ToString("0", inv), pilot.Battles, pilot.Won));
-            }
-            Console.WriteLine($"pacing {seed}: day {c.Day}, {c.Stage}, renown {c.Captain.Renown:0}, {pilot.Battles} battles ({pilot.Won} won), "
-                + string.Join(", ", pilot.StageDay.Select(kv => $"{kv.Key} day {kv.Value}")));
-        }
-        File.WriteAllText("balance/pacing.csv", stages.ToString());
-        File.WriteAllText("balance/pacing_weekly.csv", weekly.ToString());
+        Pacing(campaigns);
 
         // 2. Battle win rates by army level (AI against AI), and how long they take. Each side is built by the same
         // rule (Armies.Random), so a fair system should sit near 50% on the diagonal; drift shows a balance problem.

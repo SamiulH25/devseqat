@@ -1120,7 +1120,7 @@ public static class SelfTest
     /// Debug: a pilot's campaign with its log (`--selftest PilotTrace`).
     static void PilotTrace()
     {
-        var c = Campaign.New(2001);
+        var c = Campaign.New(int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_SEED"), out int seed) ? seed : 2001);
         var pilot = new Pilot(c);
         int last = 0;
         for (int d = 0; d < 110; d++)

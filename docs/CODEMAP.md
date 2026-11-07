@@ -12,8 +12,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **MusicTrack** (enum, L9)
 - **AudioEngine** (class, L13): AudioEngine:26, Play:66, PlayAt:76, Beds:85, Music:93, Update:111, Make:126, Buf:138, Rnd:139, Clash:142, Thud:156, Click:170, Pluck:182, Bow:195, Shout:205, Horn:227, Coin:243, Wind:252, Gallop:266, Din:279, MapTheme:297, Drums:318, Fanfare:336, Loop:350
 
-## BalanceReport.cs (101 lines)
-- **BalanceReport** (class, L8): Csv:13, Run:15
+## BalanceReport.cs (130 lines)
+- **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Csv:64, Run:66
 
 ## Battle.cs (1236 lines)
 - **PlayerInput** (struct, L5)
@@ -96,12 +96,18 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Terms** (enum, L6)
 - **Campaign** (class, L10): ExhaustionOf:16, ScoreOf:17, AddExhaustion:19, Exhaustion:25, Margin:29, Seats:31, BestTerms:34, TermsText:43, MakePeace:51, Treaty:91, PurseOf:99, Spare:102, Pay:104, DiplomacyDaily:113, LeaderWar:167, Strength:174, Allied:176, Borders:178, TributeWeekly:181, RealmShare:201, OfferPeace:208, OfferPeace:227, ProposeAlliance:230, MusterHost:249, SummonsHourly:273, SummonsDaily:284, CallHost:293
 
+## Campaign/Events.cs (347 lines)
+- **EventDef** (class, L7)
+- **ChoiceDef** (class, L14)
+- **PendingEvent** (class, L21)
+- **Campaign** (class, L28): EventOf:67, ValidateEvents:70, Find:107, Pick:134, EventsDaily:143, Raise:157, Force:164, Fill:172, ChoiceBlocked:184, EventOf0:188, Choose:191, ApplyEffect:205, GiveQuest:252, Bounty:273, BrigandKingsDaily:287, Crown:308, ThreatFalls:322, RaisePretender:333, DefectThreshold:346
+
 ## Campaign/Fiefs.cs (357 lines)
 - **BuildingDef** (class, L6)
 - **Campaign** (class, L15): BuildingOf:35, Level:37, SeatOf:40, FiefFactor:44, SeedBuildings:51, CanBuild:59, Build:74, StartBuilding:84, SetTax:91, KinRealm:102, ProsperityDrift:128, Rebels:141, FiefsDaily:144, Revolt:164, RebelsBeaten:183, Defects:192, BuildWeekly:203, IsVassal:235, FiefToGrant:238, CanRaiseVassal:246, RaiseVassal:256, SetOrder:290, OrderedProvince:301, Defections:315, PiousWeekly:333, Raided:341, RecruitTroopFor:350
 
-## Campaign/Pilot.cs (180 lines)
-- **Pilot** (class, L8): Pilot:17, Run:23, Fight:39, Refuge:65, Visit:75, Fresh:101, Promote:111, TakePerks:122, Think:129, S:179
+## Campaign/Pilot.cs (210 lines)
+- **Pilot** (class, L8): Pilot:19, Run:25, Fight:43, Refuge:69, Visit:79, Fresh:105, Promote:115, TakePerks:126, Think:133, Siege:188, S:209
 
 ## Campaign/Rules.cs (233 lines)
 - **CompanyReport** (record, L6)
@@ -154,7 +160,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## PixelFont.cs (59 lines)
 - **PixelFont** (class, L7): PixelFont:26, Width:41, Draw:43, DrawRun:49
 
-## Program.cs (28 lines)
+## Program.cs (34 lines)
 
 ## Puppet.cs (417 lines)
 - **Puppet** (class, L13): Puppet:28, Begin:30, Rad:39, W:40, Frame:51, Draw:71, Horse:149, DrawLooseHorse:202, DrawDeadHorse:209, RotY:226, Arm:233, Span:243, Pose:250, Key:251, Lerp:253, PoseOf:272, Corpse:306, Particle:321, Banner:333, Quad:352, Bill:362, Axial:373, Long:385, Plane:398, Flat:409
