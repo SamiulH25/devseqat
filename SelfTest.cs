@@ -49,6 +49,7 @@ public static class SelfTest
         PilotCareer();
         FiefLife();
         WarAndPeace();
+        EventsAndQuests();
         StackBattle();
         ReplayExact();
 
@@ -1395,6 +1396,69 @@ public static class SelfTest
         v.Player.Cooldown = 1e6f;
         Days(v, 1);
         Check(v.S.Summons == null && v.OpinionOfYou(marshal) > before, "answering the summons pleases the marshal");
+    }
+
+    /// Events and quests (F8): the data is valid; a long campaign raises events about what happened in it; a lord's quest done
+    /// wins his favour and a refusal costs it; a brigand king rises and falls; a bad revolt finds a pretender.
+    static void EventsAndQuests()
+    {
+        var problems = Campaign.ValidateEvents().ToList();
+        Check(problems.Count == 0, "events.json is valid: " + string.Join("; ", problems));
+        Check(Campaign.Events.Count >= 12, "a dozen events or more");
+
+        // A long campaign played by the stand-in captain: events come, and they name what is in its world.
+        var c = Campaign.New(8008);
+        var pilot = new Pilot(c);
+        pilot.Run(150 * 24);
+        var fired = c.S.EventsFired.Keys.ToList();
+        Console.WriteLine($"events: {fired.Count} kinds fired in 150 days: {string.Join(", ", fired)}");
+        Check(fired.Count >= 3, "a long campaign raises several kinds of events");
+
+        // A lord's quest: done, he thinks better of you; refused, worse.
+        var q = Campaign.New(8009);
+        var lord = q.S.Characters.First(ch => ch.Kind == "lord" && !ch.Dead && ch.Faction == 0);
+        lord.Opinion[q.Me.Id] = 50;
+        q.S.Event = new PendingEvent { Id = "lord_favour", Lord = lord.Id };
+        float before = q.OpinionOfYou(lord);
+        Check(q.Choose(0) == null && q.S.Contracts.Any(k => k.Giver == lord.Id), "a lord's request becomes a quest");
+        var quest = q.S.Contracts.First(k => k.Giver == lord.Id);
+        q.S.LastBattleFoe = quest.Target;
+        Days(q, 1);
+        Check(!q.S.Contracts.Contains(quest) && q.OpinionOfYou(lord) > before + 5, $"a quest done wins the lord's favour ({before:0} -> {q.OpinionOfYou(lord):0})");
+        q.S.Event = new PendingEvent { Id = "lord_favour", Lord = lord.Id };
+        before = q.OpinionOfYou(lord);
+        q.Choose(1);
+        Check(q.OpinionOfYou(lord) < before, "refusing a lord costs his favour");
+        Check(q.ChoiceBlocked(Campaign.EventOf("famine")!.Choices[0]) == "" || q.S.Gold < 200, "a choice you can pay for is open");
+        q.S.Gold = 10;
+        Check(q.ChoiceBlocked(Campaign.EventOf("famine")!.Choices[0]) != "", "a choice you cannot pay for is shut");
+
+        // A brigand king rises from the largest band, and dies at your hand.
+        var b = Campaign.New(8010);
+        b.S.Hours = 31 * 24;
+        var band = b.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
+        band.Companies.Add(b.NewCompany("levies", "infantry", 24, 0));
+        band.Companies.Add(b.NewCompany("levies", "spears", 12, 0));
+        Days(b, 1);
+        var king = b.CharacterOf(band);
+        Check(king is { Kind: "brigand" } && b.S.Event is { Id: "brigand_king" }, "the largest band crowns a brigand king");
+        b.Choose(0);
+        Check(b.S.Contracts.Any(k => k.Target == band.Id && k.Reward >= 400), "a bounty is posted on the brigand king");
+        b.Player.Companies.Clear();
+        foreach (var t in new[] { "ironguard", "ironguard", "arbalests", "phalanx_pikemen" }) b.Player.Companies.Add(b.NewCompany(t, Rules.TroopRole(t), Rules.CapOf(t, Rules.TroopRole(t)), 0));
+        b.Encounter = band;
+        float renown = b.Captain.Renown;
+        var rep = b.AutoResolveEncounter();
+        Check(!rep.Won || king!.Dead && b.Captain.Renown > renown + 20, "a brigand king beaten in the field is dead, and you are famous");
+
+        // A bad revolt in your town finds a pretender, and his town would go over sooner.
+        var r = Campaign.New(8011);
+        var town = r.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction == 0);
+        town.Owner = r.Player.Id;
+        town.Unrest = 90;
+        typeof(Campaign).GetMethod("Revolt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(r, new object[] { town });
+        var rising = r.Rebels(town);
+        Check(rising != null && r.CharacterOf(rising) is { Kind: "pretender" } && r.S.Event is { Id: "pretender" }, "a bad revolt in your town raises a pretender");
     }
 
     static Character MakeWanderer(Campaign c, Settlement t)

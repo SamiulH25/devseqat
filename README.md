@@ -72,6 +72,10 @@ that will not last. Brigands roam between them all.
   rest pick new wars. The marshal **musters hosts** of the lords who respect him, and as a vassal you are **summoned**: come within four
   days to win his favour. As king you declare war, offer peace on terms (only as far as you are ahead), and ally against a shared enemy;
   your tributaries' land counts toward victory.
+- **Events and quests:** every few days something happens that depends on your world: a petition from a restless fief, famine,
+  a fair, a lord asking a favour (a quest that wins his friendship; refusing costs it), a plot against your liege, a feast for your
+  veterans, a hard winter, a tournament. A big brigand band can crown a **brigand king** who burns villages, and a bad revolt can raise
+  a **pretender** who will take the town if you do not beat him. Events are data in `Data/events.json`.
 - **Prisoners** follow you (they slow you and eat): sell, recruit or free them. Lords you beat may be captured and ransomed.
 - **Officers:** sergeants with traits (Stubborn, Steady, Drillmaster, Hothead, Sharpshooter, Surgeon, Veteran) that show in battle; they can fall.
 - **Seasons and food:** winter slows the march, slows healing and doubles rations; starving men lose cohesion and desert. Your liege's towns feed you.

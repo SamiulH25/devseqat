@@ -352,7 +352,25 @@ sealed class ScreenHost : Game
                 Shot("campaign-household");
                 break;
             }
-            case 26: Exit(); break;
+            case 26:
+            {
+                // Events (F8): a lord asks a favour; then a brigand king rises.
+                var lord = c.S.Characters.First(k => k.Kind == "lord" && !k.Dead && k.Faction != 0);
+                c.S.Event = new PendingEvent { Id = "lord_favour", Lord = lord.Id };
+                map.Stage("event");
+                Shot("campaign-event");
+                break;
+            }
+            case 27:
+            {
+                c.S.Event = null;
+                var band = c.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down && p.CharId < 0);
+                c.Crown(band);
+                map.Stage("event");
+                Shot("campaign-brigand-king");
+                break;
+            }
+            case 28: Exit(); break;
         }
     }
 }

@@ -259,6 +259,7 @@ public sealed partial class Campaign
                 S.Gold += c.Reward;
                 Captain.Renown += 5;
                 S.Contracts.Remove(c);
+                if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you did what I asked of you", 15);
                 Log($"Contract done: {c.Text} (+{c.Reward:0} crowns).");
                 AudioEngine.Current?.Play(Cue.Coin);
             }
@@ -266,6 +267,7 @@ public sealed partial class Campaign
             {
                 Captain.Renown = MathF.Max(0, Captain.Renown - 5);
                 S.Contracts.Remove(c);
+                if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you failed me", -8);
                 Log($"Contract failed: {c.Text}");
             }
         }

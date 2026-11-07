@@ -83,7 +83,7 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 `Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`,
 `SwearFealty`, `ProposeWar`, `SetObjective`, `DeclareIndependence`, `DeclareWar`, `OfferPeace`...
 `Daily` ends with `FiefsDaily` then `CareerDaily` (rulers, councils due, rank beats, win/loss). Events the map must show once are plain fields:
-`Encounter`, `Arrived`, `Report`, `Beat`. Map screens on keys: P party, K skills, L lords, R realm (hard-coded in `MapScreen.Update`).
+`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm (hard-coded in `MapScreen.Update`).
 
 ## File guide (where to look for what)
 
@@ -104,6 +104,7 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 | Career ranks, fealty, realm council, founding a realm, win/loss (F5) | `Campaign/Career.cs` (`Rank`, `Council`, `DeclareIndependence`, `CheckEnd`) |
 | Fief prosperity/unrest/taxes, buildings, revolts, vassals and orders, defection (F6) | `Campaign/Fiefs.cs` (`FiefsDaily`, `Build`, `RaiseVassal`, `OrderedProvince`) |
 | War exhaustion, peace terms, war declarations, tribute, alliances, hosts, summons (F7) | `Campaign/Diplomacy.cs` (`DiplomacyDaily`, `MakePeace`, `OfferPeace`, `MusterHost`) |
+| Events, lord quests, brigand kings, pretenders (F8) | `Campaign/Events.cs` + `Data/events.json` (`EventsDaily`, `Choose`, `ApplyEffect`, `ValidateEvents`) |
 | Stacks/promotion, characters/opinion, skills, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Pilot.cs` |
 | Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
 | Campaign UI (all panels: settlement, party, siege, upgrade, results) | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
@@ -135,6 +136,8 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
   `Campaign` action and put a returned error string in the `note` field (drawn by `Note(r)`).
 - **Add a shader parameter:** declare it in the effect's uniform list in `Shading.cs` (see `GlslEffect.Uniform`), use the name in
   the GLSL; set with `effect.Parameters["Name"].SetValue(...)`. GLSL rules: README "Shaders" section.
+- **Add an event:** an entry in `Data/events.json` using an existing trigger and effect verbs; a new trigger or verb is a case
+  in `Campaign.Find` / `ApplyEffect` plus its name in `Triggers` / `Verbs` (`SelfTest.EventsAndQuests` validates the file).
 - **Add a sound:** add a `Cue`, synthesize it in `AudioEngine` ctor, emit from the sim with `Sound(Cue.X, pos)`.
 
 ## Invariants and gotchas (break these and things fail subtly)

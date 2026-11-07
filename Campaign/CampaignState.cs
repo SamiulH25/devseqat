@@ -140,6 +140,8 @@ public sealed class PrisonerGroup
 public sealed class Contract
 {
     public int Id, Target, Faction;
+    /// A lord's quest (F8): the character who asked (-1 = the steward's board); he rewards you mostly with his favour.
+    public int Giver = -1;
     public string Kind = "", Text = "";
     public float Deadline, Reward, Progress;
 }
@@ -315,6 +317,10 @@ public sealed class CampaignState
     public List<Payment> Payments = new();
     public List<string> Treaties = new();
     public Summons? Summons;
+    /// Events (F8): the one waiting for your answer, when the next may come, and when each last fired.
+    public PendingEvent? Event;
+    public float NextEvent = 72;
+    public Dictionary<string, float> EventsFired = new();
     public float LastSummons = -1000;
     public int LastBattleFoe = -1;             // the last party you defeated (for hunt contracts)
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.

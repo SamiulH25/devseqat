@@ -327,7 +327,7 @@ public sealed partial class Campaign
             p.Cooldown = 12;
             p.ChaseId = -1;
             if (p.Kind == PartyKind.Garrison) continue;
-            if (p.Kind == PartyKind.Bandit) { p.Down = true; if (p.HomeId >= 0) RebelsBeaten(p); continue; }
+            if (p.Kind == PartyKind.Bandit) { p.Down = true; if (p.HomeId >= 0) RebelsBeaten(p); if (p.CharId >= 0) ThreatFalls(p, playerIn && won); continue; }
             if (p.Kind == PartyKind.Lord && (p.Men < before[p] * 0.25f || p.Men == 0))
             {
                 p.Down = true;
@@ -926,6 +926,7 @@ public sealed partial class Campaign
         SiegesDaily();
         FiefsDaily();
         CareerDaily();
+        EventsDaily();
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous.
         for (int n = 0; n < BanditSpawnsWanted; n++)
             if (S.Parties.Count(p => p.Kind == PartyKind.Bandit && !p.Down) >= BanditsWanted || !rng.Chance(B.BanditSpawnChance)) break;

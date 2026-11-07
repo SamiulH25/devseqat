@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -170,6 +170,7 @@ sealed class MapScreen
         // A career beat or the council's word waits for the map to be clear (F5).
         if (panel == PanelKind.None && C.Beat != null) { panel = PanelKind.Beat; speed = 0; }
         if (panel == PanelKind.None && C.S.GameOver) { panel = PanelKind.GameOver; speed = 0; }
+        if (panel == PanelKind.None && C.S.Event != null && C.Encounter == null) { panel = PanelKind.Event; speed = 0; note = ""; }
         if (panel == PanelKind.None && C.Besieging is Settlement besieged && C.Player.SiegeTarget >= 0 && !C.Player.Moving && C.Encounter == null && Pressed(Keys.B)) { at = besieged; panel = PanelKind.Siege; }
         if (follow) focus = Vector2.Lerp(focus, C.Player.Pos, MathF.Min(1, dt * 4));
     }
@@ -447,6 +448,7 @@ sealed class MapScreen
             case PanelKind.Skills: SkillsPanel(); break;
             case PanelKind.Realm: RealmPanel(); break;
             case PanelKind.Beat: BeatPanel(); break;
+            case PanelKind.Event: EventPanel(); break;
         }
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
@@ -1496,6 +1498,36 @@ sealed class MapScreen
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (R)")) panel = PanelKind.None;
     }
 
+    /// An event (F8): what happened, and two or three choices with what each will do.
+    void EventPanel()
+    {
+        if (C.S.Event is not PendingEvent pe || Campaign.EventOf(pe.Id) is not EventDef e) { panel = PanelKind.None; return; }
+        var r = Modal(720, 330, C.Fill(e.Title, pe).ToUpperInvariant(), Style.Accent);
+        // The text, wrapped to the panel.
+        int x = r.X + ui.U(30), y = r.Y + ui.U(56), maxW = r.Width - ui.U(60);
+        var line = "";
+        foreach (var word in C.Fill(e.Text, pe).ToUpperInvariant().Split(' '))
+        {
+            if (ui.TW(line + " " + word, 1) > maxW && line != "") { ui.Text(line, x, y, Style.Text, 1); y += ui.U(15); line = word; }
+            else line = line == "" ? word : line + " " + word;
+        }
+        if (line != "") { ui.Text(line, x, y, Style.Text, 1); y += ui.U(15); }
+        y += ui.U(14);
+        for (int i = 0; i < e.Choices.Count; i++)
+        {
+            var ch = e.Choices[i];
+            string why = C.ChoiceBlocked(ch);
+            var b = new Rectangle(x, y, maxW, ui.U(28));
+            if (ui.Button(b, C.Fill(ch.Label, pe).ToUpperInvariant(), why == "", why == "" ? EffectsText(ch) : why)) { note = C.Choose(i) ?? ""; if (C.S.Event == null) panel = PanelKind.None; }
+            y += ui.U(34);
+        }
+        Note(r);
+    }
+
+    /// A choice's effects in a few words ("GOLD -150, UNREST -20").
+    static string EffectsText(ChoiceDef c) => string.Join(", ", c.Effects.Select(fx => fx.Replace('_', ' ').Replace(":", " ").ToUpperInvariant()
+        .Replace("OPINION REALM", "LORDS").Replace("OPINION LIEGE", "LIEGE").Replace("PRISONERS ", "PRISONERS: ").Replace("GAMBLE", "PRIZE")));
+
     /// A career beat, a council's decision that concerns you, or the war won (F5): shown once.
     void BeatPanel()
     {
@@ -1560,6 +1592,7 @@ sealed class MapScreen
             case "fief": at = s; tab = "FIEF"; panel = PanelKind.Settlement; note = ""; break;
             case "household": charTab = C.S.Factions.Count; panel = PanelKind.Characters; note = ""; break;
             case "beat": panel = PanelKind.Beat; break;
+            case "event": panel = PanelKind.Event; note = ""; break;
             case "settlement":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
                 tab = "MERCENARIES"; panel = PanelKind.Settlement; break;

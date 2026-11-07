@@ -85,7 +85,7 @@ Small "As built" gaps to fold in alongside: renaming companies (text input, S), 
 | E4 | Map foliage cost: instancing or merged chunks with distance culling | S | The map draws at 60 fps on integrated graphics |
 | E5 | Determinism guard: battle seed and replay recorder (inputs plus seed reproduce a battle) | M | Any reported battle bug can be replayed exactly |
 
-## Phase F: campaign overhaul (in progress: F0-F7 built)
+## Phase F: campaign overhaul (in progress: F0-F8 built)
 
 The campaign's play and progression layer is rebuilt; the world map itself is untouched. Full spec:
 [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md). Saves break at F1 (version 4, no migration). Build in this order; each step
@@ -322,3 +322,20 @@ All of A-E is in. Where the build differs from the table above:
   weariness, tributes, the summons, and, as king, each realm's status with its terms buttons. Not yet: AI realms forming alliances
   (only the coalition against a leader), AI realms offering you peace (you offer, they answer), exchanging captive lords on their own.
   Pacing note: the pilot now reaches Vassal on day 110 in the self-test seed (was 38), with the world's wars playing out differently.
+- F8: `Campaign/Events.cs` and `Data/events.json` (15 events). An event names a trigger (`Campaign.Triggers`: your fief's unrest
+  50+, poverty below 30 or prosperity 80+; a lord not at war with you who thinks 35+ of you; a lord of your realm who thinks -20 or
+  less of the ruler, while you are sworn; a band of 35+ men near you; a company of 12+ battles and 18+ cohesion; a hungry winter;
+  unpaid men; 25+ prisoners; your realm's weariness 40+; being in a town; and the forced brigand king and pretender), a title and
+  text with `{settlement}`, `{lord}`, `{band}`, `{company}`, `{realm}`, `{liege}`, a cooldown, and two or three choices with an optional
+  `need` (gold) and effects (`verb` or `verb:n`: gold, renown, food, horses, opinion, opinion_liege, opinion_realm, unrest, prosperity,
+  tax, cohesion, xp, exhaustion, gamble, quest, bounty, revolt, prisoners_free, prisoners_recruit, disband). Every 3-6 days, when no
+  event waits, one eligible event off cooldown comes up (`S.Event`), never in battle; the map shows it when nothing else is open,
+  and the stand-in captain takes the first choice it can afford. `Campaign.ValidateEvents` checks triggers, verbs, numbers,
+  placeholders and choice counts. **Lord quests** reuse contracts with a `Giver`: hunt a lord at war with his realm, else clear the
+  band nearest his home, in 12 days; done is +15 opinion (and a little gold), failed -8, refused -6 (closing the F3 gap). **Bounties**
+  put a band (or a pretender's rising) on your own contracts, +400 for a brigand king. **Brigand kings:** from day 30, the largest band of
+  40+ men (not rebels) crowns its chief, a `Character` of kind "brigand": his host grows a man a day (to 150) and threatens villages
+  within 15; beaten, he is dead and you gain 25 renown. **Pretenders:** a town that revolts at 85+ unrest has its rebels led by a
+  pretender ("of" the town), with more men; while he is at large it defects at 85 unrest rather than 100; beating him gives 15 renown.
+  The event panel wraps the text and lists each choice with its effects or why it is shut. Not yet: escort and deliver-ransom quests,
+  taking a castle for a lord, and a lair for the brigand king (he roams like any band).

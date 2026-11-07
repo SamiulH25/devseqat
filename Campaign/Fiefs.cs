@@ -155,7 +155,7 @@ public sealed partial class Campaign
                 s.Building = "";
             }
             s.Unrest = Math.Clamp(s.Unrest + UnrestDrift(s).Drift, 0, 100);
-            if (s.Unrest >= DefectAt && KinRealm(s) is int kin and >= 0) { Defects(s, kin); continue; }
+            if (s.Unrest >= DefectThreshold(s) && KinRealm(s) is int kin and >= 0) { Defects(s, kin); continue; }
             if (s.Unrest >= RevoltAt && Rebels(s) == null && rng.Chance(0.1f)) Revolt(s);
         }
     }
@@ -176,6 +176,7 @@ public sealed partial class Campaign
         p.Goal = p.Pos;
         S.Parties.Add(p);
         Log(s.Owner == Player.Id ? $"Your fief {s.Name} rises in revolt! {p.Men} rebels take the field." : $"{s.Name} rises against the {FactionNames[s.Faction]}.");
+        if (s.Unrest >= 85 && s.Kind == SettlementKind.Town) RaisePretender(s, p); // a bad rising finds a leader (F8)
     }
 
     /// Rebels beaten in the field: their seat calms.
