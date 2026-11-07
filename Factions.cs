@@ -32,7 +32,28 @@ public static class Factions
 
     public static IReadOnlyList<FactionDef> All { get { Load(); return factions!; } }
     public static IReadOnlyList<CultureDef> Cultures { get { Load(); return cultures!; } }
-    public static FactionDef Get(int faction) { Load(); return factions![Math.Clamp(faction, 0, factions.Count - 1)]; }
+    public static FactionDef Get(int faction)
+    {
+        Load();
+        if (faction >= factions!.Count && bound != null && faction < bound.Count && bound[faction].Founded)
+        {
+            if (!founded.TryGetValue(faction, out var d))
+            {
+                var st = bound[faction];
+                founded[faction] = d = new FactionDef { Name = st.Name, Culture = st.Culture, Palette = st.Palette, Lines = factions[Math.Clamp(st.Template, 0, factions.Count - 1)].Lines };
+            }
+            return d;
+        }
+        return factions[Math.Clamp(faction, 0, factions.Count - 1)];
+    }
+
+    // Realms founded in play (F5) live in the save, not in factions.json: the running campaign binds its list here so
+    // the static look-ups (lines, culture, heraldry) see them. Only one campaign is live at a time.
+    static IReadOnlyList<FactionState>? bound;
+    static readonly Dictionary<int, FactionDef> founded = new();
+
+    /// Make a campaign's realms the ones Get answers for (called when a campaign is built or a realm is founded).
+    public static void Bind(IReadOnlyList<FactionState> states) { bound = states; founded.Clear(); }
     public static CultureDef? Culture(string id) { Load(); return cultures!.FirstOrDefault(c => c.Id == id); }
     public static string CultureOf(int faction) => faction < 0 ? Common : Get(faction).Culture;
 

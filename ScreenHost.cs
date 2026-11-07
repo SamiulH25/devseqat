@@ -288,7 +288,22 @@ sealed class ScreenHost : Game
                 Shot("campaign-skills");
                 break;
             }
-            case 20: Exit(); break;
+            case 20:
+            {
+                // The career (F5): a lord of the realm with two fiefs, then a king.
+                c.Captain.Fealty = true;
+                c.Captain.Renown = 420;
+                foreach (var t in c.S.Settlements.Where(t => t.Faction == c.Captain.Contract && t.Kind != SettlementKind.Village)
+                             .OrderByDescending(t => t.Kind == SettlementKind.Town).Take(2)) t.Owner = c.Player.Id;
+                c.S.Factions[c.Captain.Contract].LastCouncil = new() { "Uffing is granted to you.", "The host is to march on Lowmoor." };
+                c.Beat = null;
+                map.Stage("realm");
+                Shot("campaign-realm");
+                break;
+            }
+            case 21: c.DeclareIndependence(); map.Stage("beat"); Shot("campaign-beat"); break;
+            case 22: c.Beat = null; map.Stage("realm"); Shot("campaign-realm-king"); break;
+            case 23: Exit(); break;
         }
     }
 }

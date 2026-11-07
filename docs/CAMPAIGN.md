@@ -440,7 +440,7 @@ build differs:
   the tab the hint names (`TRAIN`, `RECRUIT`, `MARKET`, `FOOD`, `REST`, `CONTRACT`) instead of always the first one.
   `Rules.NextRenownUnlock` names the next thing renown buys (+1 men cap) and the renown that pays for it;
   the HUD and party screen draw the same bar from the last rung to the next, and `Campaign.Stage` gives the captain a title
-  (Mercenary Band → Lord of War) that both panels show.
+  (Mercenary Band → Lord of War) that both panels show. (Since overhaul step F5 the title is the career rank, Free Company → King.)
 - **Brigand pressure.** `BanditsMax` is 80 and `BanditSpawnsPerDay` is 5 (`BanditSpawnChance` 0.95 each) while below that cap, so
   the roads fill with bands quickly. Both counts scale with `WorldMap.ProvinceScale`: the numbers in `Data/campaign.json` are quoted
   against the original 26-province map, so on the 60-province map the world holds around 190 bands (`Campaign.BanditsWanted`).

@@ -6,15 +6,8 @@ namespace Ironfield;
 /// HUD, the party screen and the tips all say the same thing, and a new player never has to guess what the game wants.
 public sealed partial class Campaign
 {
-    /// How far the company has come, in the words the game uses everywhere: raw levies, a paid band, a lord's host.
-    public string Stage => Captain.Renown switch
-    {
-        < 80 => "MERCENARY BAND",
-        < 200 => "SWORN COMPANY",
-        < 400 => "BATTLE-HARDENED",
-        < 700 => "FEARED CAPTAIN",
-        _ => "LORD OF WAR",
-    };
+    /// How far the captain has come: the career rank (F5), in the words the game uses everywhere.
+    public string Stage => RankName(Rank);
 
     /// The one thing the game most wants you to look at now, in priority order: something is broken, then something is
     /// ready and free, then something is ready and needs a town or gold, then the long game (renown and contracts).
@@ -42,7 +35,10 @@ public sealed partial class Campaign
         if (S.Contracts.Count == 0)
             return cap.Contract >= 0 ? ("NO CONTRACT IN HAND: SEE A TOWN'S STEWARD", "CONTRACT") : ("SIGN WITH A FACTION FOR PAY AND WORK", "CONTRACT");
         if (Player.Wounded > Player.Men / 2) return ("HALF YOUR MEN ARE WOUNDED: REST IN A TOWN", "REST");
-        // 5. Steady state: the next rung of renown.
+        // 5. The career (F5): an oath or a crown within reach, else the next rank's road, else the next rung of renown.
+        if (CanSwearFealty(out _)) return ("YOU MAY SWEAR FEALTY AND HOLD LAND: SEE YOUR REALM (R)", "REALM");
+        if (CanDeclareIndependence(out _) && !S.Won) return ("YOU COULD RULE IN YOUR OWN NAME: SEE YOUR REALM (R)", "REALM");
+        if (NextRank() is var (rank, needs)) return (rank == Rank ? needs : $"{RankName(rank)}: {needs}", "REALM");
         var (what, at) = Rules.NextRenownUnlock(cap);
         return ($"FIGHT ON: {at - cap.Renown:0} MORE RENOWN BUYS {what}", "PARTY");
     }

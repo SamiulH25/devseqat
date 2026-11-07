@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -157,7 +157,7 @@ sealed class MapScreen
             if (C.SeasonIndex != season) { var keep = (focus, follow); Open(C); (focus, follow) = keep; C.Log($"{C.Season} comes."); }
             Trails();
         }
-        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills)
+        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm)
             panel = panel == PanelKind.Upgrade ? PanelKind.Party : PanelKind.None;
         if (renaming != null) Rename();
         else Ui.Typed.Clear();
@@ -165,6 +165,11 @@ sealed class MapScreen
         else if (panel == PanelKind.Characters && Pressed(Keys.L)) panel = PanelKind.None;
         else if (panel is PanelKind.None or PanelKind.Party && Pressed(Keys.K)) { panel = PanelKind.Skills; note = ""; }
         else if (panel == PanelKind.Skills && Pressed(Keys.K)) panel = PanelKind.None;
+        else if (panel == PanelKind.None && Pressed(Keys.R)) { panel = PanelKind.Realm; note = ""; }
+        else if (panel == PanelKind.Realm && Pressed(Keys.R)) panel = PanelKind.None;
+        // A career beat or the council's word waits for the map to be clear (F5).
+        if (panel == PanelKind.None && C.Beat != null) { panel = PanelKind.Beat; speed = 0; }
+        if (panel == PanelKind.None && C.S.GameOver) { panel = PanelKind.GameOver; speed = 0; }
         if (panel == PanelKind.None && C.Besieging is Settlement besieged && C.Player.SiegeTarget >= 0 && !C.Player.Moving && C.Encounter == null && Pressed(Keys.B)) { at = besieged; panel = PanelKind.Siege; }
         if (follow) focus = Vector2.Lerp(focus, C.Player.Pos, MathF.Min(1, dt * 4));
     }
@@ -440,6 +445,8 @@ sealed class MapScreen
             case PanelKind.Siege: SiegePanel(); break;
             case PanelKind.Characters: CharactersPanel(); break;
             case PanelKind.Skills: SkillsPanel(); break;
+            case PanelKind.Realm: RealmPanel(); break;
+            case PanelKind.Beat: BeatPanel(); break;
         }
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
@@ -495,7 +502,7 @@ sealed class MapScreen
         int hour = (int)(C.S.Hours % 24);
         ui.Text($"DAY {C.Day}  {hour:00}:00  {C.Season.ToUpperInvariant()}", x + ui.U(10), y + ui.U(8), C.Winter ? Style.Friendly : Style.Text);
         int me = Math.Max(0, C.Captain.Contract);
-        var foes = Enumerable.Range(0, C.S.Factions.Count).Where(f => C.FactionsAtWar(me, f)).Select(f => Campaign.FactionNames[f].Split(' ').Last().ToUpperInvariant()).ToList();
+        var foes = Enumerable.Range(0, C.S.Factions.Count).Where(f => C.FactionsAtWar(me, f)).Select(f => C.FactionNames[f].Split(' ').Last().ToUpperInvariant()).ToList();
         string war = C.Captain.Contract < 0 ? "FREE CAPTAIN" : foes.Count > 0 ? "WAR: " + string.Join(", ", foes) : "AT PEACE";
         ui.Text(war, x + ui.U(10), y + ui.U(28), foes.Count > 0 ? Style.Foe : Style.Ok, 1);
         string[] labels = { "II", ">", ">>", ">>>" };
@@ -568,7 +575,7 @@ sealed class MapScreen
         ui.Text($"{C.S.Gold:0} CROWNS", x, y, Style.Text);
         ui.TextR($"{(bal >= 0 ? "+" : "")}{bal:0} / WEEK", r.Right - ui.U(10), y + ui.U(2), bal >= 0 ? Style.Ok : Style.Bad, 1);
         y += ui.U(18);
-        string contract = cap.Contract >= 0 ? "SWORN TO THE " + Campaign.FactionNames[cap.Contract].ToUpperInvariant() : "FREE CAPTAIN (NO PAY)";
+        string contract = cap.Contract >= 0 ? $"{C.Stage} OF THE {C.FactionNames[cap.Contract].ToUpperInvariant()}" : "FREE COMPANY (NO PAY)";
         ui.Text(contract, x, y, cap.Contract >= 0 ? SideColor(cap.Contract) : Style.Dim, 1);
         y += ui.U(12);
         ui.Text($"MEN {C.Player.Men}+{C.Player.Wounded}W / {Rules.MenLimit(cap)}   COMPANIES {C.Player.Companies.Count}/{Rules.CompanySlots(cap)}", x, y, Style.Dim, 1);
@@ -632,7 +639,7 @@ sealed class MapScreen
 
     void Hints()
     {
-        ui.Text("LMB MOVE / ENTER / CHASE   P PARTY   K SKILLS   L LORDS   SPACE PAUSE   1-3 SPEED", ui.U(12), ui.H - ui.U(160), Color.White * 0.6f, 1);
+        ui.Text("LMB MOVE / ENTER / CHASE   P PARTY   K SKILLS   L LORDS   R REALM   SPACE PAUSE   1-3 SPEED", ui.U(12), ui.H - ui.U(160), Color.White * 0.6f, 1);
         ui.Text("WASD PAN   Q/E TURN   WHEEL ZOOM   F FOLLOW   F5 SAVE  F9 LOAD   ESC MENU", ui.U(12), ui.H - ui.U(146), Color.White * 0.6f, 1);
     }
 
@@ -647,7 +654,7 @@ sealed class MapScreen
         if (p != null)
         {
             linesOut.Add((p.Name.ToUpperInvariant(), PartyColor(p)));
-            linesOut.Add((p.Kind == PartyKind.Bandit ? "BRIGANDS" : p.Kind == PartyKind.Player ? "YOU" : Campaign.FactionNames[p.Faction].ToUpperInvariant(), Style.Dim));
+            linesOut.Add((p.Kind == PartyKind.Bandit ? "BRIGANDS" : p.Kind == PartyKind.Player ? "YOU" : C.FactionNames[p.Faction].ToUpperInvariant(), Style.Dim));
             linesOut.Add(($"{p.Men} MEN IN {p.Companies.Count} COMPANIES", Style.Text));
             if (p != C.Player)
             {
@@ -666,7 +673,7 @@ sealed class MapScreen
         else
         {
             linesOut.Add((s!.Name.ToUpperInvariant(), SideColor(s.Faction)));
-            linesOut.Add(($"{s.Kind.ToString().ToUpperInvariant()} OF THE {Campaign.FactionNames[s.Faction].ToUpperInvariant()}", Style.Dim));
+            linesOut.Add(($"{s.Kind.ToString().ToUpperInvariant()} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}", Style.Dim));
             linesOut.Add(($"{C.S.Provinces[s.Province].Kind.ToUpperInvariant()} COUNTRY, {s.Culture.ToUpperInvariant()} PEOPLE", Style.Dim));
             if (s.Kind == SettlementKind.Village) linesOut.Add((s.ThreatUntil > C.S.Hours ? "THREATENED: NO RECRUITS" : $"{s.Recruits} RECRUITS", Style.Text));
             if (s.Kind == SettlementKind.Town) linesOut.Add(($"{s.Mercenaries.Count} MERCENARY COMPANIES, {s.Horses} HORSES", Style.Text));
@@ -698,7 +705,7 @@ sealed class MapScreen
         var r = Modal(680, 380, "ENCOUNTER", Style.Foe);
         int x = r.X + ui.U(24), y = r.Y + ui.U(52);
         ui.Text(e.Name.ToUpperInvariant(), x, y, PartyColor(e));
-        ui.Text(e.Kind == PartyKind.Bandit ? "BRIGANDS" : Campaign.FactionNames[e.Faction].ToUpperInvariant(), x, y + ui.U(20), Style.Dim, 1);
+        ui.Text(e.Kind == PartyKind.Bandit ? "BRIGANDS" : C.FactionNames[e.Faction].ToUpperInvariant(), x, y + ui.U(20), Style.Dim, 1);
         if (C.CharacterOf(e) is Character ech)
         {
             float op = C.OpinionOfYou(ech);
@@ -739,7 +746,7 @@ sealed class MapScreen
         var s = at!;
         var r = Modal(860, 500, s.Name.ToUpperInvariant(), SideColor(s.Faction));
         bool fief = s.Owner == C.Player.Id && s.Kind != SettlementKind.Village;
-        ui.TextC($"{s.Kind.ToString().ToUpperInvariant()} OF THE {Campaign.FactionNames[s.Faction].ToUpperInvariant()}   GOLD {C.S.Gold:0}",
+        ui.TextC($"{s.Kind.ToString().ToUpperInvariant()} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}   GOLD {C.S.Gold:0}",
             r.X + r.Width / 2f, r.Y + ui.U(40), Style.Dim, 1);
         var tabs = (s.Kind switch
         {
@@ -880,7 +887,7 @@ sealed class MapScreen
                 foreach (int id in C.Player.Captives.ToList())
                 {
                     if (C.PartyById(id) is not Party lord) continue;
-                    ui.Text($"{lord.Name.ToUpperInvariant()} OF THE {Campaign.FactionNames[lord.Faction].ToUpperInvariant()}", body.X, y + ui.U(6), SideColor(lord.Faction), 1);
+                    ui.Text($"{lord.Name.ToUpperInvariant()} OF THE {C.FactionNames[lord.Faction].ToUpperInvariant()}", body.X, y + ui.U(6), SideColor(lord.Faction), 1);
                     if (ui.Button(new Rectangle(body.Right - ui.U(360), y, ui.U(200), ui.U(24)), "RANSOM", true, $"{C.LordRansom(lord)}")) note = C.RansomLord(lord, s) ?? "RANSOMED";
                     if (ui.Button(new Rectangle(body.Right - ui.U(150), y, ui.U(150), ui.U(24)), "FREE (+RENOWN)")) C.FreeLord(lord);
                     y += ui.U(30);
@@ -924,12 +931,12 @@ sealed class MapScreen
                         if (y > body.Bottom - ui.U(24)) break;
                     }
                 }
-                ui.Text(cur >= 0 ? $"YOU SERVE THE {Campaign.FactionNames[cur].ToUpperInvariant()}." : "YOU ARE A FREE CAPTAIN: NO PAY, NO ENEMIES BUT BRIGANDS.", body.X, body.Y, Style.Text);
+                ui.Text(cur >= 0 ? $"YOU SERVE THE {C.FactionNames[cur].ToUpperInvariant()}." : "YOU ARE A FREE CAPTAIN: NO PAY, NO ENEMIES BUT BRIGANDS.", body.X, body.Y, Style.Text);
                 ui.Text("A CONTRACT PAYS 85% OF YOUR UPKEEP WEEKLY, AND BOUNTIES FOR BRIGANDS AND ENEMY LORDS.", body.X, body.Y + ui.U(20), Style.Dim, 1);
                 ui.Text("YOUR EMPLOYER'S ENEMIES BECOME YOURS.", body.X, body.Y + ui.U(34), Style.Dim, 1);
-                if (cur != s.Faction && ui.Button(new Rectangle(body.X, body.Y + ui.U(56), ui.U(380), ui.U(28)), $"SIGN WITH THE {Campaign.FactionNames[s.Faction].ToUpperInvariant()}"))
-                    C.SignContract(s.Faction);
-                if (cur >= 0 && ui.Button(new Rectangle(body.X, body.Y + ui.U(92), ui.U(380), ui.U(28)), "END YOUR CONTRACT")) C.SignContract(-1);
+                if (cur != s.Faction && ui.Button(new Rectangle(body.X, body.Y + ui.U(56), ui.U(380), ui.U(28)), $"SIGN WITH THE {C.FactionNames[s.Faction].ToUpperInvariant()}"))
+                    note = C.SignContract(s.Faction) ?? "";
+                if (cur >= 0 && ui.Button(new Rectangle(body.X, body.Y + ui.U(92), ui.U(380), ui.U(28)), C.Captain.Fealty ? "RENOUNCE YOUR OATH" : "END YOUR CONTRACT")) note = C.SignContract(-1) ?? "";
                 break;
             }
         }
@@ -1050,7 +1057,7 @@ sealed class MapScreen
         var s = at!;
         var r = Modal(680, 400, (C.Besieging == s ? "THE SIEGE OF " : "") + s.Name.ToUpperInvariant(), SideColor(s.Faction));
         int x = r.X + ui.U(24), y = r.Y + ui.U(50);
-        ui.Text($"{s.Kind.ToString().ToUpperInvariant()} OF THE {Campaign.FactionNames[s.Faction].ToUpperInvariant()}", x, y, Style.Dim, 1);
+        ui.Text($"{s.Kind.ToString().ToUpperInvariant()} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}", x, y, Style.Dim, 1);
         y += ui.U(18);
         ui.Text($"GARRISON {C.GarrisonMen(s)} MEN   SUPPLIES {s.Supplies:0} DAYS", x, y, Style.Text);
         y += ui.U(24);
@@ -1106,7 +1113,7 @@ sealed class MapScreen
         int tw = ui.U(200), tx = r.X + (r.Width - (realms + 1) * (tw + ui.U(6))) / 2;
         for (int i = 0; i <= realms; i++)
         {
-            string label = i < realms ? Campaign.FactionNames[i].ToUpperInvariant() : "YOUR HOUSEHOLD";
+            string label = i < realms ? C.FactionNames[i].ToUpperInvariant() : "YOUR HOUSEHOLD";
             if (ui.Button(new Rectangle(tx + i * (tw + ui.U(6)), r.Y + ui.U(46), tw, ui.U(24)), label, true, "", charTab == i)) { charTab = i; note = ""; }
         }
         int x = r.X + ui.U(24), y = r.Y + ui.U(82), colW = (r.Width - ui.U(60)) / 2, rowH = ui.U(38);
@@ -1301,12 +1308,120 @@ sealed class MapScreen
         { panel = C.S.GameOver ? PanelKind.GameOver : PanelKind.None; C.Report = null; }
     }
 
+    /// The career and realm screen (F5): the rank ladder on the left; the realm you serve (ruler, marshal, objective, the
+    /// council) and the acts your rank allows on the right.
+    void RealmPanel()
+    {
+        var r = Modal(1040, 620, "YOUR CAREER AND REALM");
+        var rank = C.Rank;
+        int x = r.X + ui.U(24), y = r.Y + ui.U(52), lw = ui.U(470);
+        // The ladder.
+        foreach (var (rk, how, opens) in Campaign.Ladder)
+        {
+            bool now = rk == rank, done = rk < rank;
+            var box = new Rectangle(x, y, lw, ui.U(52));
+            ui.Rect(box, now ? Style.Accent * 0.18f : Color.White * 0.04f);
+            ui.Text(Campaign.RankName(rk), box.X + ui.U(8), box.Y + ui.U(5), now ? Style.Accent : done ? Style.Text : Style.Dim, 2);
+            if (done) ui.TextR("REACHED", box.Right - ui.U(8), box.Y + ui.U(8), Style.Ok, 1);
+            ui.Text(how, box.X + ui.U(8), box.Y + ui.U(25), Style.Dim, 1);
+            ui.Text("OPENS: " + opens, box.X + ui.U(8), box.Y + ui.U(37), Style.Dim, 1);
+            y += ui.U(56);
+        }
+        if (C.NextRank() is var (next, needs)) ui.Text(next == rank ? $"TO WIN: {needs}" : $"NEXT: {Campaign.RankName(next)}: {needs}", x, y + ui.U(4), Style.Accent, 1);
+
+        // The realm.
+        int rx = x + lw + ui.U(24), ry = r.Y + ui.U(52), rw = r.Right - ui.U(24) - rx;
+        int f = C.Captain.Contract;
+        if (C.Realm is not FactionState fs)
+        {
+            ui.Text("YOU SERVE NO REALM.", rx, ry, Style.Text);
+            ui.Text("SIGN WITH ONE AT A TOWN'S STEWARD (CONTRACT TAB).", rx, ry + ui.U(20), Style.Dim, 1);
+        }
+        else
+        {
+            ui.Text(C.FactionNames[f].ToUpperInvariant(), rx, ry, SideColor(f), 2);
+            ry += ui.U(24);
+            string Who(Character? ch) => ch == null ? "NONE" : ch == C.Me ? "YOU" : ch.Name.ToUpperInvariant();
+            ui.Text($"RULER: {Who(C.RulerOf(f))}   MARSHAL: {Who(C.MarshalOf(f))}", rx, ry, Style.Text, 1);
+            ry += ui.U(14);
+            var obj = C.ObjectiveOf(f);
+            ui.Text($"OBJECTIVE: {(obj == null ? "NONE" : obj.Name.ToUpperInvariant())}   LAND HELD: {Campaign.Pct(C.ProvinceShare(f))} (WIN AT {Campaign.Pct(Campaign.WinShare)})", rx, ry, Style.Dim, 1);
+            ry += ui.U(14);
+            var foes = Enumerable.Range(0, C.S.Factions.Count).Where(g => C.FactionsAtWar(f, g)).Select(g => C.FactionNames[g].ToUpperInvariant()).ToList();
+            ui.Text("AT WAR WITH: " + (foes.Count == 0 ? "NOBODY" : string.Join(", ", foes)), rx, ry, Style.Dim, 1);
+            ry += ui.U(20);
+            if (rank != Rank.King)
+            {
+                ui.Text($"THE COUNCIL SITS IN {MathF.Max(0, (fs.NextCouncil - (float)C.S.Hours) / 24):0} DAYS. LAST TIME:", rx, ry, Style.Accent, 1);
+                ry += ui.U(14);
+                foreach (var line in fs.LastCouncil.Take(4)) { ui.Text(line.ToUpperInvariant(), rx + ui.U(8), ry, Style.Dim, 1); ry += ui.U(12); }
+                if (fs.LastCouncil.Count == 0) { ui.Text("IT HAS NOT YET SAT.", rx + ui.U(8), ry, Style.Dim, 1); ry += ui.U(12); }
+                ry += ui.U(8);
+            }
+            int bw = rw, bh = ui.U(24);
+            Rectangle Btn() { var b = new Rectangle(rx, ry, bw, bh); ry += bh + ui.U(4); return b; }
+            if (rank < Rank.Vassal)
+            {
+                bool can = C.CanSwearFealty(out string why);
+                if (ui.Button(Btn(), "SWEAR FEALTY", can, can ? "" : why)) note = C.SwearFealty() ?? "YOU ARE A VASSAL";
+                if (!can) { ui.Text(why, rx, ry, Style.Dim, 1); ry += ui.U(14); }
+            }
+            // Acts of a lord, a marshal and a king.
+            var others = Enumerable.Range(0, C.S.Factions.Count).Where(g => g != f && C.Alive(g)).ToList();
+            if (rank is Rank.Lord or Rank.Marshal)
+            {
+                foreach (int g in others.Where(g => !C.FactionsAtWar(f, g)))
+                    if (ui.Button(Btn(), $"PROPOSE WAR ON THE {C.FactionNames[g].ToUpperInvariant()}", fs.WarMotion < 0, fs.WarMotion == g ? "AT THE NEXT COUNCIL" : ""))
+                        note = C.ProposeWar(g) ?? "THE MOTION GOES TO THE NEXT COUNCIL";
+            }
+            if (rank == Rank.King)
+                foreach (int g in others)
+                {
+                    bool war = C.FactionsAtWar(f, g);
+                    if (ui.Button(Btn(), war ? $"OFFER PEACE TO THE {C.FactionNames[g].ToUpperInvariant()}" : $"DECLARE WAR ON THE {C.FactionNames[g].ToUpperInvariant()}"))
+                        note = (war ? C.OfferPeace(g) : C.DeclareWar(g)) ?? (war ? "A TRUCE IS AGREED" : "WAR IS DECLARED");
+                }
+            if (rank >= Rank.Marshal)
+            {
+                ui.Text("NAME THE HOSTS' OBJECTIVE:", rx, ry + ui.U(4), Style.Accent, 1);
+                ry += ui.U(18);
+                foreach (var s in C.ObjectiveChoices(f).Take(4))
+                    if (ui.Button(Btn(), $"MARCH ON {s.Name.ToUpperInvariant()} ({C.FactionNames[s.Faction].ToUpperInvariant()})", true, "", obj == s))
+                        note = C.SetObjective(s) ?? $"THE HOSTS MARCH ON {s.Name.ToUpperInvariant()}";
+            }
+            if (rank is Rank.Lord or Rank.Marshal && ry < r.Bottom - ui.U(90))
+            {
+                bool can = C.CanDeclareIndependence(out string why);
+                if (ui.Button(new Rectangle(rx, r.Bottom - ui.U(84), bw, ui.U(26)), "DECLARE INDEPENDENCE", can, why))
+                    note = C.DeclareIndependence() ?? "";
+            }
+        }
+        Note(r);
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (R)")) panel = PanelKind.None;
+    }
+
+    /// A career beat, a council's decision that concerns you, or the war won (F5): shown once.
+    void BeatPanel()
+    {
+        if (C.Beat is not var (title, lines)) { panel = PanelKind.None; return; }
+        bool won = title == "THE WAR IS WON";
+        var r = Modal(640, 150 + 16 * lines.Length + (won ? 40 : 0), title, won ? Style.Accent : Style.Text);
+        int y = r.Y + ui.U(62);
+        foreach (var line in lines) { ui.TextC(line, r.X + r.Width / 2f, y, Style.Text, 1); y += ui.U(16); }
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(44), ui.U(220), ui.U(30)), won ? "PLAY ON" : "CONTINUE"))
+        { C.Beat = null; panel = PanelKind.None; }
+        if (won && ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(80), ui.U(220), ui.U(30)), "TO THE TITLE"))
+        { C.Beat = null; C.S.Save("autosave"); OnTitle?.Invoke(); }
+        if (!won && ui.Button(new Rectangle(r.Right - ui.U(150), r.Bottom - ui.U(44), ui.U(130), ui.U(30)), "REALM (R)"))
+        { C.Beat = null; panel = PanelKind.Realm; note = ""; }
+    }
+
     /// Ironman: the captain was taken and executed. The campaign (and its save) ends here.
     void GameOverPanel()
     {
-        var r = Modal(560, 260, "YOUR WAR IS OVER", Style.Bad);
+        var r = Modal(620, 260, "YOUR WAR IS OVER", Style.Bad);
         ui.TextC($"YOU LED YOUR COMPANY FOR {C.Day} DAYS AND WON {C.Captain.Renown:0} RENOWN.", r.X + r.Width / 2f, r.Y + ui.U(70), Style.Text, 1);
-        ui.TextC("THE ENEMY DID NOT RANSOM YOU.", r.X + r.Width / 2f, r.Y + ui.U(90), Style.Dim, 1);
+        ui.TextC(C.S.EndReason != "" ? C.S.EndReason : "THE ENEMY DID NOT RANSOM YOU.", r.X + r.Width / 2f, r.Y + ui.U(90), Style.Dim, 1);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(50), ui.U(220), ui.U(32)), "TO THE TITLE"))
         {
             var p = Path.Combine(CampaignState.SaveDir, "autosave.json");
@@ -1345,6 +1460,8 @@ sealed class MapScreen
             case "close": panel = PanelKind.None; zoom = 60; pitch = 0.7f; break;
             case "party": panel = PanelKind.Party; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;
+            case "realm": panel = PanelKind.Realm; note = ""; break;
+            case "beat": panel = PanelKind.Beat; break;
             case "settlement":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
                 tab = "MERCENARIES"; panel = PanelKind.Settlement; break;

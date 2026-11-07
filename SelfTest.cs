@@ -45,6 +45,8 @@ public static class SelfTest
         Cultures();
         Characters();
         SkillTree();
+        Career();
+        PilotCareer();
         StackBattle();
         ReplayExact();
 
@@ -677,7 +679,8 @@ public static class SelfTest
         Check(c.S.Factions.Count == 3 && c.FactionsAtWar(0, 1) && !c.FactionsAtWar(1, 2) && !c.FactionsAtWar(0, 2), "three realms, one war and two truces");
         Check(c.S.Settlements.Where(s => s.Kind != SettlementKind.Village).All(s => s.Garrison.Count > 0), "every town and castle has a garrison");
         Check(c.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == 2).SelectMany(p => p.Companies).Any(co => co.Troop is "clansmen" or "axemen" or "huscarls" or "horse_archers"), "Northmarch lords field their own troops");
-        // Your own siege, on paper: a strong company takes a castle and holds it as a fief.
+        // Your own siege, on paper: a strong company takes a castle and, as a sworn vassal (F5), holds it as its first fief.
+        c.Captain.Fealty = true;
         var castle = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction == 1).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
         c.Player.Companies.Clear();
         foreach (var t in new[] { "men_at_arms", "men_at_arms", "longbowmen", "pikemen" }) c.Player.Companies.Add(c.NewCompany(t, Rules.TroopRole(t), Rules.CapOf(t, Rules.TroopRole(t)), 0));
@@ -1123,6 +1126,123 @@ public static class SelfTest
             foreach (var e in c.S.Log.Skip(Math.Max(0, c.S.Log.Count - 60)).Where(e => e.At >= (d) * 24 && !e.Text.Contains(" defeats ") && !e.Text.Contains("musters") && !e.Text.Contains("threatens") && !e.Text.Contains("besiege"))) Console.WriteLine($"  d{c.Day} {e.Text}");
             if (c.Player.Men != last) Console.WriteLine($"day {c.Day}: men {c.Player.Men} food {c.Player.Food:0} gold {c.S.Gold:0} renown {c.Captain.Renown:0} at {c.Player.Pos.X:0},{c.Player.Pos.Y:0} moving {c.Player.Moving} goal {c.Player.GoalSettlement} chase {c.Player.ChaseId}");
             last = c.Player.Men;
+        }
+    }
+
+    /// Career ranks, fealty, the council, founding a realm and winning (F5).
+    static void Career()
+    {
+        var c = Campaign.New(5005);
+        Check(c.Rank == Rank.FreeCompany && c.Stage == "FREE COMPANY", "a new captain is a free company");
+        Check(c.S.Factions.Take(3).All(f => c.CharacterById(f.Ruler) is { Kind: "lord" } && c.CharacterById(f.Marshal) != null), "every realm has a ruler and a marshal");
+        Check(!c.CanSwearFealty(out _), "a free company cannot swear fealty");
+        c.S.Hours = Campaign.SwornDays * 24 + 1;
+        Check(c.Rank == Rank.SwornSword, "a month of service makes a sworn sword");
+        var village = c.S.Settlements.First(s => s.Kind == SettlementKind.Village && s.Faction == 0);
+        Check(c.RecruitPriceFactor(village) == 0.5f, "a sworn sword recruits at half price in his realm");
+        c.Captain.Renown = 100;
+        Check(!c.CanSwearFealty(out string why) && why.Contains("RENOWN"), "fealty needs renown: " + why);
+        c.Captain.Renown = 200;
+        var ruler = c.RulerOf(0)!;
+        ruler.Opinion[c.Me.Id] = -40;
+        Check(!c.CanSwearFealty(out why) && why.Contains("TRUST"), "fealty needs the liege's trust: " + why);
+        ruler.Opinion[c.Me.Id] = 30;
+        Check(c.SwearFealty() == null && c.Rank == Rank.Vassal && c.Beat != null, "you swear fealty and become a vassal, with a career beat");
+        c.Beat = null;
+
+        // The council grants a seat the realm took; a strong favourite among the lords wins it, and as a vassal you stand too.
+        var seat = c.S.Settlements.First(s => s.Kind == SettlementKind.Castle && s.Faction == 1);
+        var lords0 = c.S.Characters.Where(ch => ch.Kind == "lord" && !ch.Dead && ch.Faction == 0).ToList();
+        foreach (var l in lords0) l.Opinion[c.Me.Id] = 60;
+        typeof(Campaign).GetMethod("Capture", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .Invoke(c, new object[] { seat, 0, -1, lords0[0].Id });
+        Check(seat.Faction == 0 && seat.Owner == -1 && c.S.Factions[0].Pending.Any(g => g.Seat == seat.Id), "a seat a lord takes waits for the council");
+        c.S.Factions[0].NextCouncil = 0;
+        Days(c, 1);
+        Console.WriteLine($"career: council granted {seat.Name} to {(seat.Owner == c.Player.Id ? "you" : c.PartyById(seat.Owner)?.Name ?? "nobody")}: {string.Join(" ", c.S.Factions[0].LastCouncil)}");
+        Check(seat.Owner >= 0, "the council grants the seat to someone");
+        Check(c.S.Factions[0].LastCouncil.Count > 0, "the council's decisions are kept for the realm screen");
+
+        // Lord: two fiefs and renown. Then the marshal's baton, by vote, and an objective for the hosts.
+        foreach (var t in c.S.Settlements.Where(s => s.Faction == 0 && s.Kind != SettlementKind.Village).OrderByDescending(s => s.Kind == SettlementKind.Town).Take(2)) t.Owner = c.Player.Id;
+        c.Captain.Renown = 400;
+        Check(c.Rank == Rank.Lord, "two fiefs and renown make a lord");
+        Days(c, 1);
+        Check(c.Beat is { Title: "LORD" }, "becoming a lord is a career beat");
+        c.Beat = null;
+        var truce = c.WarBetween(0, 2)!;
+        truce.Active = false;
+        truce.TruceUntil = (float)c.S.Hours + 90 * 24;
+        Check(c.ProposeWar(2) == null && c.S.Factions[0].WarMotion == 2, "a lord can put a motion of war to the council");
+        c.S.Factions[0].Marshal = -1; // the baton is vacant: the council elects
+        c.S.Factions[0].NextCouncil = 0;
+        Days(c, 1);
+        Console.WriteLine($"career: second council: {string.Join(" ", c.S.Factions[0].LastCouncil)}");
+        Check(c.Rank == Rank.Marshal, "lords who think well of you elect you marshal");
+        var target = c.ObjectiveChoices(0).First();
+        Check(c.SetObjective(target) == null && c.ObjectiveOf(0) == target, "the marshal names the hosts' objective");
+
+        // Rebellion: your fiefs become a realm at war with your old liege; a lord who loves you and not his king follows.
+        var follower = lords0.First(l => l.Id != c.S.Factions[0].Ruler && !l.Traits.Contains("Loyal"));
+        follower.Opinion[c.Me.Id] = 90;
+        follower.Opinion[c.S.Factions[0].Ruler] = -50;
+        var stay = lords0.FirstOrDefault(l => l.Traits.Contains("Loyal") && l.Id != c.S.Factions[0].Ruler);
+        int before = c.S.Factions.Count;
+        Check(c.DeclareIndependence() == null, "a lord with a town can declare independence");
+        int mine = c.Captain.Contract;
+        Check(c.S.Factions.Count == before + 1 && mine == before && c.Rank == Rank.King, "a new realm, and you are its king");
+        Check(c.FactionsAtWar(mine, 0) && !c.FactionsAtWar(mine, 1), "the new realm is at war with the old liege only");
+        Check(c.Fiefs.All(t => t.Faction == mine) && c.S.Provinces.Count(p => p.Faction == mine) >= 2, "your fiefs and their provinces go with you");
+        Check(follower.Faction == mine && c.PartyById(follower.PartyId)!.Faction == mine, "a lord who loves you follows you");
+        if (stay != null) Check(stay.Faction == 0, "a loyal lord stays with his liege");
+        Check(Factions.Get(mine).Name == c.S.Factions[mine].Name && Factions.CultureOf(mine) == c.S.Factions[mine].Culture, "the founded realm has its own name and culture");
+        Check(Style.PaletteOf(mine) == 2, "your realm flies your colours");
+        Check(c.SignContract(1) != null, "a king serves no one");
+        Check(c.DeclareWar(2) == null && c.FactionsAtWar(mine, 2), "a king declares war");
+        Check(c.OfferPeace(2) == null && !c.FactionsAtWar(mine, 2), "a king makes peace");
+        Days(c, 3); // the new realm lives in the world for a while: its lords think, its council sits
+
+        // A save keeps the founded realm.
+        var json = c.S.Serialize();
+        var back = new Campaign(CampaignState.Deserialize(json));
+        Check(back.S.Factions.Count == before + 1 && back.Rank == Rank.King && back.FactionNames[mine] == c.FactionNames[mine], "a founded realm survives save and load");
+        Check(back.S.Serialize() == json, "save, load, save is stable with a founded realm");
+
+        // Winning: hold 60% of the provinces as king.
+        foreach (var p in c.S.Provinces.Take((int)MathF.Ceiling(c.S.Provinces.Count * Campaign.WinShare)))
+        {
+            p.Faction = mine;
+            foreach (var s in c.S.Settlements.Where(s => s.Province == p.Id)) s.Faction = mine;
+        }
+        c.Beat = null;
+        Days(c, 1);
+        Check(c.S.Won && c.Beat is { Title: "THE WAR IS WON" }, "holding most of the land as king wins the campaign");
+        // Losing: a king whose realm holds no seat has lost.
+        foreach (var s in c.S.Settlements.Where(s => s.Faction == mine)) s.Faction = 0;
+        Days(c, 1);
+        Check(c.S.GameOver && c.S.EndReason.Contains("FALLEN"), "a king whose realm falls has lost");
+    }
+
+    /// The stand-in captain, playing by the map screen's own actions, earns a sworn sword's month and then swears fealty (F5).
+    static void PilotCareer()
+    {
+        var c = Campaign.New(2002);
+        var pilot = new Pilot(c);
+        for (int d = 0; d < 60 && c.Rank < Rank.Vassal; d++) pilot.Run(24);
+        Console.WriteLine($"pilot career: {c.Stage} on day {c.Day}, renown {c.Captain.Renown:0}, {pilot.Battles} battles");
+        Check(c.Rank >= Rank.Vassal, "the pilot reaches vassal within 60 days");
+    }
+
+    /// Let whole days pass on the map, brushing aside encounters and arrivals (Tick stops for them).
+    static void Days(Campaign c, int days)
+    {
+        double until = c.S.Hours + days * 24;
+        while (c.S.Hours < until - 1e-3)
+        {
+            c.Tick((float)Math.Min(1, until - c.S.Hours));
+            if (c.Encounter != null) c.Encounter.Cooldown = 3; // let it pass by
+            c.Encounter = null;
+            c.Arrived = null;
         }
     }
 

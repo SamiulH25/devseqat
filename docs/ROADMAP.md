@@ -85,7 +85,7 @@ Small "As built" gaps to fold in alongside: renaming companies (text input, S), 
 | E4 | Map foliage cost: instancing or merged chunks with distance culling | S | The map draws at 60 fps on integrated graphics |
 | E5 | Determinism guard: battle seed and replay recorder (inputs plus seed reproduce a battle) | M | Any reported battle bug can be replayed exactly |
 
-## Phase F: campaign overhaul (in progress)
+## Phase F: campaign overhaul (in progress: F0-F5 built)
 
 The campaign's play and progression layer is rebuilt; the world map itself is untouched. Full spec:
 [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md). Saves break at F1 (version 4, no migration). Build in this order; each step
@@ -250,3 +250,31 @@ All of A-E is in. Where the build differs from the table above:
   Castellan (threatened villages still pay); Builder and unrest come with F6. The Skills screen (K) shows each branch, its bar with the
   25-point marks, and the perks; the party screen has a summary. The pilot takes every perk it opens. `BattleResult.PlayerKills`
   carries your kills to the campaign.
+- F5: `Campaign/Career.cs`. The rank (`Campaign.Rank`) is read from the world rather than stored: Free Company; Sworn Sword after 30
+  days with one realm (`CaptainState.ContractSince`; its villages' recruits cost half); Vassal once you swear fealty (`Fealty`: 150
+  renown and the ruler's opinion +10); Lord with two towns or castles and 350 renown; Marshal when you hold the realm's baton; King when
+  you rule a realm. `Campaign.Stage` is now the rank's name, so `--balance` pacing reports ranks; the highest rank reached
+  (`BestRank`) fires a career beat once (`Campaign.Beat`, shown by the map as a panel). Every realm has a ruler and a marshal
+  (`FactionState.Ruler`/`Marshal`, character ids); a dead or departed ruler is followed by his heir or the eldest lord, and a vacant
+  baton calls the council within a day. **Fiefs:** before you swear fealty a seat you take stays with the realm and pays a captor's
+  purse (300 a town, 200 a castle); as a vassal your first seat is yours at once; every later seat, and every seat the lords take,
+  waits in `FactionState.Pending` for the **council** (every 14 days, staggered by realm). The council grants each seat by a weighted
+  vote (one, plus one per fief; the ruler's voice counts three) among the two lords with the fewest fiefs, the captor (+20) and you as
+  a vassal; voters back themselves (+30), else whom they think best of, less 10 per fief the candidate holds; passed-over lords think
+  less of their liege (-4). A lord holding a seat by grant moves his home there. It elects a marshal when the baton is vacant and every
+  fourth sitting (the two strongest lords, the sitting marshal +10, and you once you are a lord); the AI marshal names the objective
+  (an enemy town or castle, towns and kin first, near the realm's seats), and `FactionAI` musters its hosts on it (half the days
+  rather than a third). A lord may put a motion of war to it (`ProposeWar`); lords vote on opinion of the proposer, relative strength,
+  wars already fought and their traits. As marshal or king you name the objective yourself. **Rebellion** (`DeclareIndependence`,
+  a lord with a town): your fiefs, their provinces and villages become a new realm (`FactionState.Founded`, named "Realm of" your
+  capital, gold heraldry, the culture of your capital, the troop lines of the listed realm of that culture), at war with your old liege
+  and in a 30-day truce with the others; lords who think 30+ of you and 20 more of you than of their liege follow with their fiefs (the
+  Loyal never do). `Factions.Bind` lets the static look-ups (lines, culture, palette) see realms founded in play; `Campaign.FactionNames`
+  is per campaign. A king gets no contract pay, may declare war and offer peace (refused while they are well ahead and stronger), and
+  his own council grants seats to him (or to the vassal who took them). **Win:** your realm holds 60% of the provinces while you are
+  king or marshal (`CampaignState.Won`, a summary, and play goes on). **Loss:** a king whose realm holds no town or castle
+  (`GameOver`, with `EndReason`). The realm screen (R) shows the ladder, the realm's ruler, marshal, objective, wars and last council,
+  and the acts your rank allows. The pilot swears fealty when it can: Vassal on days 39 and 49 in two seeds of three (`--balance 3`),
+  and `--selftest PilotCareer` checks it. Not yet: **claiming** a realm as a free captain (a free company cannot besiege, so the road
+  there needs personal wars), choosing the new realm's name and heraldry, summons to hosts (F7), raising companions to vassals and
+  culture barracks (F6), and peace terms beyond a truce (F7).

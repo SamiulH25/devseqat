@@ -29,6 +29,7 @@ public sealed class Pilot
             if (c.Encounter != null) Fight();
             if (c.Arrived is Settlement s) { c.Arrived = null; Visit(s); }
             c.Report = null;
+            c.Beat = null;
             if (c.S.Hours >= nextThink) { Think(); nextThink = (float)c.S.Hours + 2; }
             if (!StageDay.ContainsKey(c.Stage)) StageDay[c.Stage] = c.Day;
         }
@@ -128,6 +129,7 @@ public sealed class Pilot
     {
         TakePerks();
         if (c.Captain.Contract < 0) c.SignContract(c.S.Factions.Count > 0 ? 0 : -1);
+        if (c.CanSwearFealty(out _)) c.SwearFealty(); // the career (F5): kneel as soon as the liege will have us
         float mine = Rules.Strength(Me);
         // Danger first: a hostile party our size or bigger close by sends us behind walls.
         bool danger = c.S.Parties.Any(p => p != Me && !p.Down && c.Hostile(Me, p) && Rules.Strength(p) > mine * 0.9f && Vector2.Distance(p.Pos, Me.Pos) < 30);

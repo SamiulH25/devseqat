@@ -150,7 +150,7 @@ public sealed partial class Campaign
             int taken = s.Garrison.Sum(c => c.Men + c.Wounded);
             foreach (var c in s.Garrison) TakePrisoners(c.Troop, (c.Men + c.Wounded) / 2);
             s.Garrison.Clear();
-            Capture(s, Captain.Contract, Player.Id);
+            Capture(s, Captain.Contract, Player.Id, S.CaptainChar);
             Captain.Renown += s.Kind == SettlementKind.Town ? 25 : 15;
             if (taken > 0) Log($"{taken / 2} of the garrison are your prisoners.");
         }
@@ -164,9 +164,12 @@ public sealed partial class Campaign
     // ---------- capture ----------
 
     /// `f` takes settlement s (and its province, with the villages): the new holder raises a small garrison.
-    void Capture(Settlement s, int f, int owner)
+    /// Who holds it as a fief is a career question (F5): `owner` is the party that asks for it and `captor` the character who
+    /// took it; the grant itself comes from GrantOnCapture (at once, or at the next council).
+    void Capture(Settlement s, int f, int owner, int captor = -1)
     {
         int old = s.Faction;
+        owner = GrantOnCapture(s, f, owner, captor);
         s.Faction = f;
         s.Owner = owner;
         s.Besieged = false;
@@ -185,7 +188,8 @@ public sealed partial class Campaign
             if (seats.Count > 0) l.HomeId = seats.OrderBy(t => Vector2.Distance(t.Pos, l.Pos)).First().Id;
             else { l.Down = true; l.DownUntil = float.MaxValue; }
         }
-        Log(owner == Player.Id ? $"{s.Name} is yours: the {FactionNames[f]} grant it to you as a fief."
+        Log(owner == Player.Id ? (Rank == Rank.King ? $"{s.Name} is yours." : $"{s.Name} is yours: the {FactionNames[f]} grant it to you as a fief.")
+            : captor == S.CaptainChar ? $"You take {s.Name} for the {FactionNames[f]}. {(Captain.Fealty ? "The council will decide who holds it." : "Only a sworn vassal holds land: the realm keeps it.")}"
             : $"The {FactionNames[f]} take {s.Name} from the {FactionNames[old]}.");
         if (!Alive(old)) Log($"The {FactionNames[old]} hold no town or castle: their realm is broken.");
         AudioEngine.Current?.Play(Cue.Horn);
@@ -239,14 +243,14 @@ public sealed partial class Campaign
                 s.Garrison.RemoveAll(c => c.Men + c.Wounded <= 0);
             }
             int f = besiegers[0] == Player ? Captain.Contract : besiegers[0].Faction;
-            if (GarrisonMen(s) == 0 && f >= 0) { Log($"{s.Name}'s garrison is starved out."); if (besiegers.Contains(Player)) AfterAssault(s, true); else Capture(s, f, -1); continue; }
+            if (GarrisonMen(s) == 0 && f >= 0) { Log($"{s.Name}'s garrison is starved out."); if (besiegers.Contains(Player)) AfterAssault(s, true); else Capture(s, f, -1, besiegers[0].CharId); continue; }
             var lords = besiegers.Where(p => p.Kind == PartyKind.Lord).ToList();
             if (lords.Count == 0 || S.Hours - s.SiegeSince < 48 || !rng.Chance(0.5f)) continue;
             var defenders = new List<Party> { GarrisonParty(s) };
             defenders.AddRange(S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == s.Faction && Vector2.Distance(p.Pos, s.Pos) < 8 * Map.Spread));
             var r = Rules.AutoResolve(lords, defenders, rng, wall: 1.4f);
             Apply(r, lords, defenders, "");
-            if (r.Winner == 0) Capture(s, lords[0].Faction, -1);
+            if (r.Winner == 0) Capture(s, lords[0].Faction, -1, lords[0].CharId);
             else
             {
                 foreach (var l in lords) l.SiegeTarget = -1;

@@ -21,7 +21,9 @@ public sealed partial class Campaign
     public Party Player => S.Parties[0];
     public CaptainState Captain => S.Captain;
     public int Day => (int)(S.Hours / 24) + 1;
-    public static readonly string[] FactionNames = Factions.All.Select(f => f.Name).ToArray();
+    /// The realms' names by faction id, including realms founded in play (F5).
+    public string[] FactionNames => names is { } n && n.Length == S.Factions.Count ? n : names = S.Factions.Select(f => f.Name).ToArray();
+    string[]? names;
     /// Party and event caps for the balance numbers scaled by how much world there is (a bigger map raises more lords and
     /// brigands). The numbers in Data/campaign.json are quoted against the original 26-province map.
     float ProvinceScale => Map.ProvinceScale;
@@ -36,6 +38,7 @@ public sealed partial class Campaign
         S = state;
         Map = WorldMap.Generate(state.Seed, state.MapExtent);
         rng = new Rng(state);
+        Factions.Bind(S.Factions);
         // The map's settlement models follow the save (a v1 save was generated before the Northmarch had its capital).
         for (int i = 0; i < Math.Min(Map.Settlements.Count, S.Settlements.Count); i++) Map.Settlements[i].Kind = S.Settlements[i].Kind;
     }
@@ -51,7 +54,7 @@ public sealed partial class Campaign
         s.Provinces = map.Provinces;
         s.Settlements = map.Settlements;
         int factions = s.Provinces.Max(p => p.Faction) + 1;
-        s.Factions = Enumerable.Range(0, factions).Select(f => new FactionState { Id = f, Name = FactionNames[f], Treasury = 2000 }).ToList();
+        s.Factions = Enumerable.Range(0, factions).Select(f => new FactionState { Id = f, Name = Factions.All[f].Name, Treasury = 2000, NextCouncil = (7 + 3 * f) * 24 }).ToList();
         // The Crown and the Compact are at war; the Northmarch keeps truces with both, for 20 and 40 days.
         s.Wars.Add(new War { A = 0, B = 1 });
         if (factions > 2)
@@ -79,11 +82,12 @@ public sealed partial class Campaign
         // Open with a map's worth of brigands, not three: the roads are dangerous from the first day.
         for (int i = 0; i < c.BanditsWanted / 3; i++) c.SpawnBandits();
         c.WanderersWeekly();
+        c.EnsureRulers();
         // The guided first fight: a weak band close by, coming for you.
         var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
         first.Companies.Add(c.NewCompany("levies", "infantry", 9, 0));
         s.Parties.Add(first);
-        c.Log($"You sign on with the {FactionNames[0]} as a free captain. Their steward pays 85% of your upkeep each week.");
+        c.Log($"You sign on with the {c.FactionNames[0]} as a free captain. Their steward pays 85% of your upkeep each week.");
         c.Log("Levies upgrade after a battle or two: visit a town's training yard.");
         return c;
     }
@@ -493,7 +497,8 @@ public sealed partial class Campaign
         n = Math.Min(n, RecruitsForYou(s));
         if (n <= 0) return s.Recruits > 0 ? "THEY WILL NOT FOLLOW YOU: THEIR LORD THINKS ILL OF YOU" : "NO RECRUITS";
         string levy = RecruitTroop(s);
-        int cost = n * Troops.Get(levy).Cost;
+        float each = Troops.Get(levy).Cost * RecruitPriceFactor(s);
+        int cost = (int)MathF.Ceiling(n * each);
         if (S.Gold < cost) return $"NEEDS {cost} CROWNS";
         if (n > RoomForMen) return "PARTY IS FULL (RENOWN RAISES THE LIMIT)";
         // Men join a company of their own people first (no cohesion lost, and they keep their culture's lines), then a new
@@ -523,7 +528,7 @@ public sealed partial class Campaign
         int took = n - left;
         if (took == 0) return $"MAX {Slots} COMPANIES, ALL FULL";
         s.Recruits -= took;
-        S.Gold -= took * Troops.Get(levy).Cost;
+        S.Gold -= MathF.Ceiling(took * each);
         return null;
     }
 
@@ -612,16 +617,23 @@ public sealed partial class Campaign
         if (i > 0) (Player.Companies[i - 1], Player.Companies[i]) = (Player.Companies[i], Player.Companies[i - 1]);
     }
 
-    public void SignContract(int faction)
+    /// Sign with a realm (or -1: end your contract). Leaving gives your fiefs back, breaks any oath of fealty and starts
+    /// the service clock again (F5). A king serves no one.
+    public string? SignContract(int faction)
     {
-        if (faction != Captain.Contract)
-            foreach (var f in S.Settlements.Where(t => t.Owner == Player.Id))
-            {
-                f.Owner = -1; // fiefs go back to the liege you leave
-                Log($"You give {f.Name} back to the {FactionNames[f.Faction]}.");
-            }
+        if (Rank == Rank.King) return "A KING SERVES NO ONE";
+        if (faction == Captain.Contract) return null;
+        foreach (var f in S.Settlements.Where(t => t.Owner == Player.Id))
+        {
+            f.Owner = -1; // fiefs go back to the liege you leave
+            Log($"You give {f.Name} back to the {FactionNames[f.Faction]}.");
+        }
+        if (Captain.Contract >= 0) LeaveRealm(Captain.Contract);
         Captain.Contract = faction;
+        Captain.ContractSince = (float)S.Hours;
+        Me.Faction = faction;
         Log(faction < 0 ? "You are a free captain again." : $"You sign on with the {FactionNames[faction]}.");
+        return null;
     }
 
     /// Rest where you are for some hours (healing is faster in a town).
@@ -896,6 +908,7 @@ public sealed partial class Campaign
         }
         FactionAI();
         SiegesDaily();
+        CareerDaily();
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous.
         for (int n = 0; n < BanditSpawnsWanted; n++)
             if (S.Parties.Count(p => p.Kind == PartyKind.Bandit && !p.Down) >= BanditsWanted || !rng.Chance(B.BanditSpawnChance)) break;
@@ -956,9 +969,11 @@ public sealed partial class Campaign
             var front = S.Provinces.Where(p => p.Faction == f && p.Neighbors.Any(n => FactionsAtWar(f, S.Provinces[n].Faction))).ToList();
             var enemyFront = S.Provinces.Where(p => FactionsAtWar(f, p.Faction) && p.Neighbors.Any(n => S.Provinces[n].Faction == f)).ToList();
             var idle = lords.Where(l => !l.Down && l.Task == "patrol").ToList();
-            if (idle.Count >= 2 && enemyFront.Count > 0 && rng.Chance(0.35f))
+            // The marshal's objective (F5) draws the host; without one the realm picks a province on the front.
+            var objective = ObjectiveOf(f);
+            if (idle.Count >= 2 && (objective != null || enemyFront.Count > 0) && rng.Chance(objective != null ? 0.5f : 0.35f))
             {
-                var target = rng.Pick(enemyFront);
+                var target = objective != null ? S.Provinces[objective.Province] : rng.Pick(enemyFront);
                 foreach (var l in idle.Take(5)) { l.PatrolProvince = target.Id; l.TaskUntil = 0; }
                 Log($"The {FactionNames[f]} musters a host against {target.Name}.");
             }
@@ -979,7 +994,7 @@ public sealed partial class Campaign
             {
                 if (Has("Quartermaster")) upkeep *= 0.9f;
                 if (HasCompanion("Quartermaster")) upkeep *= 0.95f;
-                float pay = Captain.Contract >= 0 ? upkeep * B.ContractPay * Settings.Current.PayFactor : 0;
+                float pay = Captain.Contract >= 0 && Rank != Rank.King ? upkeep * B.ContractPay * Settings.Current.PayFactor : 0;
                 float fiefs = S.Settlements.Where(t => t.Owner == Player.Id).Sum(Income) * (HasCompanion("Steward") ? 1.15f : 1)
                     * (1 + Skill("Stewardship") / 500f) * (Has("TaxRoll") ? 1.15f : 1);
                 if (fiefs > 0) Practise("Stewardship", 0.5f + fiefs / 40f);

@@ -196,6 +196,29 @@ public sealed class FactionState
     public int Id;
     public string Name = "";
     public float Treasury, WarScore;
+    /// The realm's ruler and marshal (F5): character ids, -1 until the council fills them. The marshal leads its hosts.
+    public int Ruler = -1, Marshal = -1;
+    /// The settlement the realm's hosts march on (7.1, chosen by the marshal), -1 = none.
+    public int Objective = -1;
+    /// When the council next sits (campaign hours), how many times it has sat, and what it decided last time.
+    public float NextCouncil;
+    public int Councils;
+    public List<string> LastCouncil = new();
+    /// Seats taken and not yet granted: the council decides who holds them.
+    public List<Grant> Pending = new();
+    /// A motion for war on this realm (faction id, -1 = none) and who proposed it (a character id).
+    public int WarMotion = -1, WarMotionBy = -1;
+    /// A realm founded in play (5.4): it has no entry in factions.json, so it carries its own culture and heraldry, and
+    /// fields the troop lines of the listed realm `Template`.
+    public bool Founded;
+    public string Culture = "";
+    public int Palette = 2, Template, Capital = -1;
+}
+
+/// A captured seat waiting for the council (5.3), and who took it (a character id, -1 = nobody in particular).
+public sealed class Grant
+{
+    public int Seat, Captor = -1;
 }
 
 /// The state between two factions (B6): at war, or in truce until a time. Score: what each side has won from the other.
@@ -210,6 +233,11 @@ public sealed class CaptainState
 {
     public float Renown = 50, WoundedUntil;
     public int ArmorTier, HelmTier, HorseTier, Contract = 0; // Contract: faction you serve, -1 = none
+    /// Career (F5): you swore fealty to the realm you serve (a vassal, not a hired sword); when this contract began;
+    /// and the highest rank reached so far (an int of Rank), so each career beat is shown once.
+    public bool Fealty;
+    public float ContractSince;
+    public int BestRank;
     /// Skills 0-100 (step F4) by id, and the perks taken from their branches (Skills.cs).
     public Dictionary<string, float> Skills = new();
     public List<string> Perks = new();
@@ -233,6 +261,9 @@ public sealed class CampaignState
     public ulong Rng;
     public float Gold, LastWeekBalance;
     public bool Ironman, GameOver;
+    /// Why the campaign ended ("" = the Ironman captain was not ransomed), and whether it was won (5.5; play may go on).
+    public string EndReason = "";
+    public bool Won;
     public List<War> Wars = new();
     public CaptainState Captain = new();
     public List<Party> Parties = new();

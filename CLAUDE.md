@@ -53,7 +53,7 @@ ScreenHost  MonoGame Game. Mode {Title, Map, Battle}; owns Art, Audio, Settings,
 HEADLESS (no MonoGame graphics; must stay that way so --selftest runs):
   Battle (partial: Battle.cs, BattleSiege.cs, BattleCaptain.cs, BattleGrid.cs, Replay.cs)
      uses Squad, Unit/UnitType/Mount/Look (Units.cs), Troops (Data/troops.json), Terrain, BattleOptions/Weather
-  Campaign (partial: Campaign/Campaign.cs, CampaignWar.cs, CampaignSiege.cs)
+  Campaign (partial: Campaign/Campaign.cs, CampaignWar.cs, CampaignSiege.cs, Career.cs, Characters.cs, Companies.cs, Skills.cs, ...)
      state = CampaignState (all save data, plain fields -> JSON), Rules (static company math), WorldMap, Rng, Balance, Names
 ```
 `Vector2` is used for both, but only `Microsoft.Xna.Framework` math types are allowed in headless code (no GraphicsDevice etc.).
@@ -80,7 +80,10 @@ or wall-clock time in the sim; `SelfTest.ReplayExact` checks it.
 `Hourly` (lord/bandit AI: `LordThink`, `BanditThink`, contracts, `SiegeHourly`) / `Daily` (healing, drill, food `EatDaily`,
 `FactionAI`, sieges, truces) / `Weekly` (upkeep, income, garrisons, prisoners, desertion) -> `Move` -> `Encounters`.
 Player actions are public methods on `Campaign` returning `string?` (null = success, else the reason shown in the UI):
-`Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`...
+`Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`,
+`SwearFealty`, `ProposeWar`, `SetObjective`, `DeclareIndependence`, `DeclareWar`, `OfferPeace`...
+`Daily` ends with `CareerDaily` (rulers, councils due, rank beats, win/loss). Events the map must show once are plain fields:
+`Encounter`, `Arrived`, `Report`, `Beat`. Map screens on keys: P party, K skills, L lords, R realm (hard-coded in `MapScreen.Update`).
 
 ## File guide (where to look for what)
 
@@ -98,6 +101,9 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 | Company math, auto-resolve, army building | `Campaign/Rules.cs` |
 | World generation, provinces, rivers, roads | `Campaign/WorldMap.cs` |
 | Prisoners, officers, food, contracts | `Campaign/CampaignWar.cs` |
+| Career ranks, fealty, realm council, founding a realm, win/loss (F5) | `Campaign/Career.cs` (`Rank`, `Council`, `DeclareIndependence`, `CheckEnd`) |
+| Stacks/promotion, characters/opinion, skills, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Pilot.cs` |
+| Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
 | Campaign UI (all panels: settlement, party, siege, upgrade, results) | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
 | Battle UI, camera, input, orders, effects | `BattleScreen.cs` (input) + `Hud.cs` (drawing + hit-testing) |
 | Keys / rebinding | `Controls.cs` (`Act` enum + `Defaults` dict) |
@@ -133,6 +139,9 @@ Player actions are public methods on `Campaign` returning `string?` (null = succ
 
 - Headless code (Battle*, Squad, Units, Troops, Terrain, Campaign/*) must not use MonoGame graphics/audio/input.
 - Ground positions are `Vector2(X = world X, Y = world Z)`; height comes from `Terrain.Height(pos)`.
+- Faction ids index `CampaignState.Factions`; ids past `Data/factions.json` are realms founded in play (F5). Use the instance
+  `campaign.FactionNames[f]` (not a static list) and `Factions.Get(f)`, which sees founded realms once `Factions.Bind` ran (the `Campaign` constructor does it).
+- The career rank is derived (`Campaign.Rank`), never stored; `CaptainState.BestRank` only remembers which beats were shown.
 - Team 0 = player side, team 1 = enemy. Palette 3 = bandits. `Squad.Alive` is refreshed every tick by `UpdateSquad`.
 - `AttackDir` is named from the attacker's side; the defender must block `Dirs.Mirror(swing)`.
 - MonoGame `Color * float` also scales alpha; use `Color.Lerp` for tints (`Mat` forces opaque).

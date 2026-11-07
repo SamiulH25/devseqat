@@ -58,8 +58,9 @@ that will not last. Brigands roam between them all.
   and ransom lords, sign or end contracts, and take work from the steward's board (hunt a lord, clear brigands, guard a village, scout a town,
   take a castle). **Villages:** recruit (levies, or clansmen in the north), buy or forage food. **Castles:** rest, prisoners and contracts.
 - **Sieges:** ride to an enemy town or castle and besiege it. After a night your men have ladders and a ram; assault the walls (an on-foot
-  battle: climb at the ladders, batter the gate, defenders on the walkway) or wait while the garrison starves. A captured seat becomes your
-  **fief**: weekly income, and a garrison you can strengthen with your own companies. Lords besiege and retake seats too.
+  battle: climb at the ladders, batter the gate, defenders on the walkway) or wait while the garrison starves. A seat you capture as a sworn
+  vassal becomes your **fief** (your first at once, later ones by the council's vote): weekly income, and a garrison you can strengthen
+  with your own companies. Before you swear fealty the realm keeps it and pays you a captor's purse. Lords besiege and retake seats too.
 - **Prisoners** follow you (they slow you and eat): sell, recruit or free them. Lords you beat may be captured and ransomed.
 - **Officers:** sergeants with traits (Stubborn, Steady, Drillmaster, Hothead, Sharpshooter, Surgeon, Veteran) that show in battle; they can fall.
 - **Seasons and food:** winter slows the march, slows healing and doubles rations; starving men lose cohesion and desert. Your liege's towns feed you.
@@ -73,7 +74,14 @@ that will not last. Brigands roam between them all.
   common — around 190 bands on the enlarged map, spawning in several a day — and grow with the campaign: a late band is a real
   fight, not loot. Villages get threatened, the war score moves,
   the losing side sues for a 30-day truce, and the war resumes when it ends. Upkeep is weekly, a contract pays 85% of it, and unpaid men desert.
-- **Progression is spelled out.** The captain panel shows your **stage** (Mercenary Band → Lord of War) and one clear **next step**
+- **A career, from hired sword to king.** Your **rank** rises: Free Company → Sworn Sword (a month in one realm's service; its recruits
+  cost you half) → Vassal (swear fealty at 150 renown when your liege trusts you; hold land, vote in council) → Lord (two fiefs and 350
+  renown; propose wars, declare independence) → Marshal (elected by the council; name the realm's objective) → King (declare
+  independence from a town you hold: your fiefs become a new realm at war with your old liege, and lords who like you more than him follow).
+  Every realm's **council** sits each fortnight to grant captured seats, elect a marshal and vote on war. A king declares war and offers
+  peace himself. **You win** when your realm holds 60% of the provinces while you are its king or marshal (play on after); a king whose
+  realm loses its last seat has lost. R opens your career and realm screen.
+- **Progression is spelled out.** The captain panel shows your **rank** and one clear **next step**
   — promote your ready men, choose a perk, see a steward for work, buy food — and arriving in a town opens the tab that step
   names. You can field up to **10 companies** right away; **Renown** raises your total troop count (men limit); a bar under the captain
   panel shows the next rise and how far off it is, and the results screen repeats it after every battle.
@@ -239,7 +247,7 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 | `BattleGrid.cs` | The spatial grid: near-neighbour queries for separation, targeting, morale and arrows. |
 | `Replay.cs` | Battle recording and exact playback (`--replay`). `GpuReport.cs`: `--gpu-report`. `Sky.cs`: light by hour and weather. |
 | `World.cs` | 3D world: terrain mesh, procedural low-poly foliage and grass (tagged with wind sway and leafiness), sky dome, minimap image; shaded and fixed-function draw paths. |
-| `Campaign/` | The headless campaign: `CampaignState` (save data and its version check, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, stacks, places, auto-resolve, battle bridge), `Companies` (stacks, promotion by the man, honours, ledger), `Campaign` (time, movement, encounters, AI, economy, your actions), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs), `CampaignProgression` (the career stage and the next step), `Characters` (lords, companions, opinion and memories), `Skills` (the captain's skill tree and perks), `Pilot` (a scripted stand-in captain for headless pacing runs). |
+| `Campaign/` | The headless campaign: `CampaignState` (save data and its version check, RNG, balance, names), `WorldMap` (generation, rivers, terrain, settlements), `Rules` (companies, stacks, places, auto-resolve, battle bridge), `Companies` (stacks, promotion by the man, honours, ledger), `Campaign` (time, movement, encounters, AI, economy, your actions), `CampaignWar` (prisoners, officers, seasons and food, contracts), `CampaignSiege` (garrisons, sieges, capture, fiefs), `CampaignProgression` (the next step), `Career` (ranks, fealty, the council, founding a realm, winning and losing), `Characters` (lords, companions, opinion and memories), `Skills` (the captain's skill tree and perks), `Pilot` (a scripted stand-in captain for headless pacing runs). |
 | `MapScreen.cs` | The campaign map: 3D world, banner-bearer parties, map HUD and every campaign panel. `Ui.cs`: the immediate-mode panel kit. |
 | `BattleTypes.cs` | `BattleOptions` (perks, gear, wounds, palettes, ground, size cap), `BattleResult` / `CompanyResult` for the campaign. |
 | `Shading.cs` | The shader pipeline: effects, sun shadow map, scene target, post pass, light and grade values, quality levels. |
