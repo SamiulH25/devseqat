@@ -8,7 +8,11 @@ public sealed record CompanyReport(int Id, string Name, string Troop, int Team, 
 
 /// Everything a finished battle changed, for the results screen.
 public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyReport> Companies, float Loot, float Ransom, float Bounty,
-    float Renown, int Horses, LeaderFate Captain, string Spoil = "");
+    float Renown, int Horses, LeaderFate Captain, string Spoil = "")
+{
+    /// The captain's skills that rose in this battle, one line each (P3).
+    public IReadOnlyList<string> Rises { get; init; } = Array.Empty<string>();
+}
 
 /// A battle about to be fought between map parties: the armies, options, and how its companies map back to campaign records.
 public sealed class BattleSetup

@@ -67,6 +67,9 @@ partial class MapScreen
     }
 
     /// Each skill as a ring with its perks beneath as nodes: gold when taken, lit when one may be taken now, dark when locked.
+    /// The perk the next click on the K sheet forgets (asked once before paying).
+    string? forgetAsk;
+
     void SkillTree(Rectangle c)
     {
         var cap = C.Captain;
@@ -111,6 +114,13 @@ partial class MapScreen
                 ui.TextC(label.Length > fit ? label[..fit] : label, nr.Center.X, nr.Bottom + ui.U(3), state == 0 ? Style.Dim * 0.5f : state == 2 ? Kit.Gilt : Style.Text, 1);
                 if (hover) tip = (nr, pk, sk, state);
                 if (state == 1 && ui.Clicked(nr)) { note = C.TakePerk(pk.Id) ?? $"{label} LEARNED"; Ui.OnClick?.Invoke(); }
+                // A taken perk can be forgotten in a town: the first click asks, the second pays.
+                if (state == 2 && ui.Clicked(nr))
+                {
+                    if (forgetAsk != pk.Id) { forgetAsk = C.CannotForget(pk.Id) == null ? pk.Id : null; note = C.CannotForget(pk.Id) is string w ? $"TO FORGET: {w}" : $"CLICK AGAIN TO FORGET {label}"; }
+                    else { note = C.ForgetPerk(pk.Id) ?? $"{label} FORGOTTEN"; forgetAsk = null; }
+                    Ui.OnClick?.Invoke();
+                }
             }
         }
         if (skillTip is var (sr, sd))
@@ -118,6 +128,7 @@ partial class MapScreen
         if (tip is var (tr, tp, ts, tst))
         {
             var lines = ui.Wrap(tp.Text.ToUpperInvariant(), ui.U(170)).ToList();
+            if (tst == 2) lines.Add(C.CannotForget(tp.Id) == null ? $"CLICK TWICE TO FORGET IT FOR {C.RetrainCost} CROWNS." : "FORGET IT IN A TOWN, FOR GOLD.");
             lines.Add(tst == 2 ? "TAKEN." : tst == 1 ? "CLICK TO TAKE IT." : (Skills.Locked(cap, ts, tp) ?? "") + ".");
             int tier = Skills.TierOf(ts, tp);
             ui.Tooltip(tr.Center.X, tr.Y - ui.U(2), $"{tp.Name.ToUpperInvariant()} . {(tier == 4 ? "CAPSTONE" : "TIER " + Style.Numerals[tier])}", lines.ToArray());

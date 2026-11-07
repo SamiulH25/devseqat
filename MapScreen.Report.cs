@@ -178,6 +178,16 @@ partial class MapScreen
             ui.Text("TRAIN THEM UP IN A TOWN.", c.X, y, Style.Dim, 1);
             y += ui.U(16);
         }
+        // What your own hands and head learned (P3): one line a skill, gilt when a perk opened.
+        foreach (var rise in rep.Rises)
+        {
+            if (y + ui.U(11) > c.Bottom) break;
+            bool perk = rise.EndsWith("PERK");
+            ui.Icon("up", c.X, y, perk ? Kit.Gilt : Style.Ok, 1);
+            ui.Text(rise, c.X + ui.U(14), y, perk ? Kit.Gilt : Style.Text, 1);
+            y += ui.U(11);
+        }
+        if (rep.Rises.Count > 0) y += ui.U(4);
         string? fate = rep.Captain switch
         {
             LeaderFate.Wounded => "YOU ARE WOUNDED: FOR A FEW DAYS YOU COMMAND FROM THE REAR.",

@@ -323,6 +323,8 @@ public sealed class CaptainState
     /// Skills 0-100 (step F4) by id, and the perks taken from their branches (Skills.cs).
     public Dictionary<string, float> Skills = new();
     public List<string> Perks = new();
+    /// Perks forgotten for gold so far; each costs more than the last (P3).
+    public int Retrained;
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought

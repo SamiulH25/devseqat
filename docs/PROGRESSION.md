@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1 and P2 built; P3 in progress (steps 1-2 built)** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1, P2 and P3 built; P4 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -255,3 +255,11 @@ Give the captain something to do in each fight beyond "win".
   `SelfTest.PerkTiers`. Simplifications against the plan: capstones are milder (Forced March is +10% always, not a
   double-speed day; Academy speeds drill instead of a free promotion; Kingmaker is +10 opinion, not +20 votes); there is no
   per-perk `Needs` chain.
+- P3 (step 3, a legible rise and retraining): `BattleReport.Rises` holds a line per skill that rose a whole point
+  (`Skills.Rises`: `ARMS 42 -> 44`, plus `. PERK` when a 25 mark was crossed); field battles, duels and tournaments fill
+  it and the report's YOUR CAREER well lists them (gilt when a perk opened). More ways to rise: a win that lost under 10%
+  of your men adds a point of Tactics (`CheapWin`); parries and ripostes in duels and tournaments feed Arms; a day the
+  company ends fed adds 0.03 Logistics. Retraining: on the K sheet, in a friendly town, click a taken perk twice to forget
+  it (`ForgetPerk`; `CannotForget` says why not: not in a town, a capstone still standing on it, gold). It costs 150
+  crowns, 150 more each time (`CaptainState.Retrained`), and the choice opens again. `SelfTest.SkillRises`.
+  Not done: holding a flag point (no flag points until P6); the plan's "training ground" building (any town will do).

@@ -61,14 +61,15 @@ public sealed partial class Campaign
         duelWith = e.Id;
         duelWon = won;
         string name = CharacterOf(e)?.Name ?? e.Name;
-        Practise("Arms", won ? 2.5f : 1);
+        var skillsBefore = new Dictionary<string, float>(Captain.Skills);
+        Practise("Arms", (won ? 2.5f : 1) + (r.Parries + r.Ripostes) * 0.15f);
         float renown = won ? DuelRenown : 0;
         Captain.Renown += renown;
         var fate = won ? LeaderFate.Unhurt : LeaderFate.Wounded;
         if (!won) Captain.WoundedUntil = MathF.Max(Captain.WoundedUntil, (float)S.Hours + 24 * 3);
         if (won) Deed($"You beat {name} in single combat before his army.", "duels");
         else Log($"{name} beats you in single combat. You will lead the battle from the rear.");
-        Report = new BattleReport(won, $"{name} in single combat", new List<CompanyReport>(), 0, 0, 0, renown, 0, fate);
+        Report = new BattleReport(won, $"{name} in single combat", new List<CompanyReport>(), 0, 0, 0, renown, 0, fate) { Rises = Skills.Rises(Captain, skillsBefore) };
         return Report;
     }
 

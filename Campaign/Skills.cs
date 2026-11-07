@@ -115,6 +115,12 @@ public static class Skills
     public static int TierOf(SkillDef s, PerkDef p) { int i = s.Perks.IndexOf(p); return p.Tier > 0 ? p.Tier : i < 2 ? 1 : Math.Min(4, i); }
     public static bool Capstone(SkillDef s, PerkDef p) => TierOf(s, p) == 4;
 
+    /// One line per skill that rose a whole point since `before`, for the battle report ("ARMS 42 -> 44"); a crossed
+    /// 25-point mark adds "PERK" (P3).
+    public static List<string> Rises(CaptainState c, IReadOnlyDictionary<string, float> before) =>
+        All.Select(s => (s, a: (int)before.GetValueOrDefault(s.Id), b: (int)Level(c, s.Id))).Where(x => x.b > x.a)
+            .Select(x => $"{x.s.Name.ToUpperInvariant()} {x.a} -> {x.b}" + ((int)(x.b / Step) > (int)(x.a / Step) ? " . PERK" : "")).ToList();
+
     /// Why this perk cannot be taken now (P3): taken, no choice open, the skill short of its tier, a capstone without two
     /// of the branch's other perks; null if it can.
     public static string? Locked(CaptainState c, SkillDef s, PerkDef p)
@@ -179,6 +185,38 @@ public sealed partial class Campaign
         return null;
     }
 
+    /// Crowns to forget a perk (P3): the first costs `RetrainBase`, each one after that `RetrainBase` more.
+    public const int RetrainBase = 150;
+    public int RetrainCost => RetrainBase * (1 + Captain.Retrained);
+
+    /// Why this perk cannot be forgotten now: not taken, not in a town (the masters live there), a capstone still
+    /// leaning on it, too little gold; null if it can.
+    public string? CannotForget(string id)
+    {
+        var skill = Skills.Of(id);
+        if (skill == null || !Captain.Perks.Contains(id)) return "NOT TAKEN";
+        if (SettlementAt(Player.Pos) is not Settlement t || t.Kind != SettlementKind.Town || Refuses(t)) return "ONLY IN A FRIENDLY TOWN";
+        var capstone = skill.Perks.FirstOrDefault(p => Skills.Capstone(skill, p) && p.Id != id && Captain.Perks.Contains(p.Id));
+        if (capstone != null && Captain.Perks.Count(p => p != id && p != capstone.Id && Skills.Of(p) == skill) < 2)
+            return $"{capstone.Name.ToUpperInvariant()} NEEDS IT";
+        if (S.Gold < RetrainCost) return $"NEEDS {RetrainCost} CROWNS";
+        return null;
+    }
+
+    /// Forget a perk for gold at a town's masters of arms and letters; the choice opens again on its branch.
+    public string? ForgetPerk(string id)
+    {
+        if (CannotForget(id) is string why) return why;
+        S.Gold -= RetrainCost;
+        Captain.Retrained++;
+        Captain.Perks.Remove(id);
+        Log($"You unlearn {Skills.Perk(id)!.Name}. The choice is open again.");
+        return null;
+    }
+
+    /// A win that lost fewer than this share of your men adds a point of Tactics (P3).
+    public const float CheapWin = 0.1f;
+
     /// The skill rises by use; crossing a 25-point mark opens a perk choice (logged).
     internal void Practise(string skill, float amount)
     {
@@ -190,11 +228,15 @@ public sealed partial class Campaign
 
     /// After a battle you fought: Leadership for commanding, Tactics for winning against the odds, and your own hands:
     /// Arms for kills on foot, Riding for the saddle and the lance, Bowcraft for your arrows (P3).
-    internal void SkillsAfterBattle(BattleResult r, bool won, float own, float foe, int menLed)
+    internal void SkillsAfterBattle(BattleResult r, bool won, float own, float foe, int menLed, int team = 0)
     {
         Practise("Leadership", 1.5f + Rules.PerMan(menLed / 40f));
         float odds = foe / MathF.Max(1, own);
         Practise("Tactics", won ? 1 + 4 * Math.Clamp(odds - 0.8f, 0, 2) : 0.4f);
+        // A win that cost little is a lesson in itself.
+        var mine = r.Companies.Where(x => x.Team == team).ToList();
+        int start = mine.Sum(x => x.Start), fell = mine.Sum(x => x.Fallen);
+        if (won && start > 0 && fell < start * CheapWin) Practise("Tactics", 1);
         if (r.Duration > 0)
         {
             int onFoot = Math.Max(0, r.PlayerKills - r.SaddleKills - r.ArrowKills);

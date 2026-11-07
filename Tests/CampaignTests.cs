@@ -743,6 +743,47 @@ public static partial class SelfTest
         Check(!b.Player.Active, "but only once");
     }
 
+    static void SkillRises()
+    {
+        // The report's lines: a whole-point rise, and PERK when a 25 mark is crossed.
+        var cap = new CaptainState { Skills = { ["Arms"] = 26.4f, ["Riding"] = 9.5f, ["Tactics"] = 10 } };
+        var lines = Skills.Rises(cap, new Dictionary<string, float> { ["Arms"] = 24.9f, ["Riding"] = 9.1f, ["Tactics"] = 8 });
+        Check(lines.Count == 2 && lines.Contains("ARMS 24 -> 26 . PERK") && lines.Contains("TACTICS 8 -> 10"), "one line a skill that rose a point: " + string.Join(", ", lines));
+        // A field battle's report carries them.
+        var c = Campaign.New(33);
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
+        bandit.Pos = c.Player.Pos;
+        c.Encounter = bandit;
+        var setup = c.PrepareBattle(bandit);
+        var res = Rules.AutoResolve(setup.Side0, setup.Side1, new Rng(new CampaignState { Seed = 4 }));
+        var rep = c.FinishBattle(res with { Winner = 0, Duration = 120, PlayerKills = 8, Parries = 12 }, setup);
+        Check(rep.Rises.Any(l => l.StartsWith("ARMS ")), "the battle report says how far Arms rose");
+        // A cheap win is worth a point of Tactics more than a costly one.
+        float Tactics(float share)
+        {
+            var k = Campaign.New(34);
+            float before = k.Skill("Tactics");
+            var r = new BattleResult(0, 60, new List<CompanyResult> { new(0, 1, 100, 100 - (int)(100 * share), 0, (int)(100 * share), 0, new int[6], true) }, LeaderFate.Unhurt, LeaderFate.Unhurt, 0);
+            k.SkillsAfterBattle(r, true, 100, 100, 100);
+            return k.Skill("Tactics") - before;
+        }
+        Check(Tactics(0.05f) - Tactics(0.4f) > 0.9f, "a win with few losses teaches Tactics");
+        // Forgetting a perk: only in a friendly town, for gold that rises, and not from under a capstone.
+        var f = Campaign.New(35);
+        f.Captain.Skills["Arms"] = 100;
+        foreach (var id in new[] { "WarCry", "Duellist", "Champion" }) Check(f.TakePerk(id) == null, "took " + id);
+        f.Player.Pos = f.S.Settlements.First(t => t.Kind == SettlementKind.Village).Pos;
+        Check(f.CannotForget("WarCry")!.Contains("TOWN"), "the masters who unteach live in towns, not villages");
+        var town = f.S.Settlements.First(t => t.Kind == SettlementKind.Town && !f.Refuses(t));
+        f.Player.Pos = town.Pos;
+        f.S.Gold = 1000;
+        Check(f.CannotForget("WarCry")!.Contains("CHAMPION"), "a capstone keeps the two perks it stands on");
+        Check(f.ForgetPerk("Champion") == null && !f.Has("Champion") && f.S.Gold == 1000 - Campaign.RetrainBase, "forget the capstone for gold");
+        Check(f.RetrainCost == 2 * Campaign.RetrainBase && f.ForgetPerk("WarCry") == null && f.S.Gold == 1000 - 3 * Campaign.RetrainBase, "each forgetting costs more");
+        Check(Skills.Picks(f.Captain, "Arms") == 3 && f.TakePerk("Hardened") == null, "the choice is open again");
+        Check(f.CannotForget("Hardened") == null && f.CannotForget("IronGrip") == "NOT TAKEN", "only taken perks can be forgotten");
+    }
+
     static void SkillTree()
     {
         var a = Campaign.New(91);
