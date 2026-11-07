@@ -93,6 +93,7 @@ public partial class Campaign
                 if (p.Lair) { var taker = winners.FirstOrDefault(w => w.Kind is PartyKind.Player or PartyKind.Lord); if (taker != null && taker != Player) taker.Gold += p.Gold; HoldoutCleared(p, taker); }
                 continue;
             }
+            if (p.Kind == PartyKind.Caravan) { p.Down = true; CaravanLost(p); var robber = winners.FirstOrDefault(w => w != Player); if (robber != null) robber.Gold += p.Gold; continue; }
             if (p.Kind == PartyKind.Bandit) { p.Down = true; if (p.HomeId >= 0) RebelsBeaten(p); if (p.CharId >= 0) ThreatFalls(p, playerIn && won); continue; }
             if (p.Kind == PartyKind.Lord && (p.Men < before[p] * 0.25f || p.Men == 0))
             {
@@ -116,7 +117,7 @@ public partial class Campaign
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, Rules.PerMan(lostStrength));
         AfterTheBattle(r, lookup, winners, losers, playerIn);
-        S.Parties.RemoveAll(p => Outlaw(p) && p.Down);
+        S.Parties.RemoveAll(p => (Outlaw(p) || p.Kind == PartyKind.Caravan) && p.Down);
 
         var report = new BattleReport(won, enemyName, reports, 0, 0, 0, 0, 0, r.Captain);
         if (!playerIn) return report;
@@ -124,7 +125,7 @@ public partial class Campaign
         int horses = 0;
         if (won)
         {
-            foreach (var e in losers.Where(e => e.Lair)) loot += e.Gold; // a holdout's hoard goes to whoever burns it out
+            foreach (var e in losers.Where(e => e.Lair || e.Kind == PartyKind.Caravan)) loot += e.Gold; // a holdout's hoard, a caravan's purse
             foreach (var e in losers)
                 bounty += e.Breed == "troll" ? B.BountyTroll : e.Breed == "undead" ? B.BountyUndead
                     : e.Lair ? B.BountyHoldout + Rules.PerMan(Rules.Strength(e) / 10)

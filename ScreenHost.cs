@@ -440,7 +440,19 @@ sealed class ScreenHost : Game
                 Shot("campaign-site-event");
                 break;
             }
-            case 34: Exit(); break;
+            case 34:
+            {
+                // A caravan met on the road (S4).
+                c.S.Event = null;
+                var car = c.SpawnCaravan()!;
+                car.Faction = c.Captain.Contract;
+                car.Pos = c.Player.Pos + new Vector2(2, 0);
+                c.Encounter = car;
+                map.Stage("encounter");
+                Shot("campaign-caravan");
+                break;
+            }
+            case 35: Exit(); break;
         }
     }
 }

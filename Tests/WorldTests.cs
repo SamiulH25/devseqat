@@ -79,4 +79,57 @@ public static partial class SelfTest
         }
         Console.WriteLine($"sites: {c.Sites.Count} on seed 7 ({string.Join(", ", Campaign.SiteKinds.Select(k => $"{c.Sites.Count(x => x.Kind == k)} {k}"))}); log: {c.S.Log.LastOrDefault()?.Text}");
     }
+
+    /// S4: caravans fill the roads, an arrival makes towns richer, a robbed caravan makes them poorer, and meeting one on the
+    /// road lets you buy, ask for news, or rob it (its realm's lords think less of you).
+    static void Roads()
+    {
+        var c = Campaign.New(9);
+        for (int d = 0; d < 4; d++) { c.Tick(24); c.Encounter = null; c.S.Event = null; }
+        int caravans = c.Caravans.Count();
+        Console.WriteLine($"roads day 4: {caravans} caravans, {c.CaravansArrived} arrived, {c.CaravansLost} lost");
+        Check(caravans >= c.CaravansWanted * 2 / 3, $"caravans take to the roads ({caravans} of {c.CaravansWanted})");
+        // An arrival.
+        var car = c.SpawnCaravan()!;
+        var dest = c.SettlementById(car.GoalSettlement);
+        dest.Prosperity = 50;
+        car.Pos = dest.Pos + new Vector2(0.5f, 0);
+        int arrived = c.CaravansArrived;
+        c.Tick(1.5f);
+        Check(c.CaravansArrived > arrived && dest.Prosperity > 50 && c.PartyById(car.Id) == null, $"a caravan that arrives makes its town richer ({dest.Prosperity:0})");
+        // Robbed by brigands.
+        var car2 = c.SpawnCaravan()!;
+        var home = c.SettlementById(car2.HomeId);
+        home.Prosperity = 50;
+        car2.Pos = c.Player.Pos + new Vector2(200, 200);
+        car2.Pos = Vector2.Clamp(car2.Pos, new Vector2(-c.Map.ExtentUsed + 20), new Vector2(c.Map.ExtentUsed - 20));
+        var band = new Party { Id = c.S.NextId++, Kind = PartyKind.Bandit, Name = "Test Band", Pos = car2.Pos + new Vector2(1, 0), Tier = 3 };
+        band.Companies.Add(c.NewCompany("men_at_arms", "infantry", c.Scaled(40), 0));
+        c.S.Parties.Add(band);
+        int lost = c.CaravansLost;
+        for (int i = 0; i < 8 && c.CaravansLost == lost; i++) { c.Tick(0.5f); c.Encounter = null; }
+        Check(c.CaravansLost > lost && home.Prosperity < 50, $"a robbed caravan makes its home poorer ({home.Prosperity:0})");
+        // Meeting one of your own realm's caravans: buy food, then rob it.
+        var mine = c.SpawnCaravan()!;
+        mine.Faction = c.Captain.Contract;
+        mine.Pos = c.Player.Pos + new Vector2(5, 0);
+        mine.Goal = mine.Pos; mine.Moving = false; mine.TaskUntil = (float)c.S.Hours + 48;
+        c.Chase(mine);
+        for (int i = 0; i < 20 && c.Encounter == null; i++) c.Tick(0.25f);
+        Check(c.Encounter == mine && c.Meeting(mine), "riding up to a friendly caravan is a meeting");
+        float food = c.Player.Food;
+        c.S.Gold = 500;
+        Check(c.BuyFromCaravan() == null && c.Player.Food > food, "you can buy food from a caravan");
+        var lord = c.S.Characters.First(x => x.Kind == "lord" && !x.Dead && x.Faction == mine.Faction);
+        float before = c.OpinionOfYou(lord), gold = c.S.Gold;
+        c.Rob();
+        Check(!c.Meeting(mine) && c.Hostile(c.Player, mine), "robbing makes them your enemy");
+        Check(c.OpinionOfYou(lord) < before - 10, "robbing your own realm's caravan angers its lords");
+        c.AutoResolveEncounter();
+        Check(c.PartyById(mine.Id) == null && c.S.Gold > gold, $"the robbed caravan is gone and its purse is yours ({gold:0} -> {c.S.Gold:0})");
+        // A long run keeps them going.
+        for (int d = 0; d < 30; d++) { c.Tick(24); c.Encounter = null; c.S.Event = null; }
+        Console.WriteLine($"roads: {c.Caravans.Count()} caravans and {c.Pilgrims.Count()} pilgrim bands on the map; {c.CaravansArrived} arrived, {c.CaravansLost} robbed in 34 days");
+        Check(c.CaravansArrived > 0, "caravans arrive over a month");
+    }
 }

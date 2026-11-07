@@ -120,6 +120,7 @@ public sealed partial class Campaign
     public bool Hostile(Party a, Party b)
     {
         if (a == b || a.Down || b.Down) return false;
+        if (a.Prey && b.Kind == PartyKind.Player || b.Prey && a.Kind == PartyKind.Player) return true;
         if (a.Kind == PartyKind.Monster || b.Kind == PartyKind.Monster) return a.Kind != b.Kind; // goblins fall on men and brigands alike
         if (a.Kind == PartyKind.Bandit || b.Kind == PartyKind.Bandit) return a.Kind != b.Kind;
         return FactionsAtWar(SideOf(a), SideOf(b));
@@ -238,8 +239,16 @@ public sealed partial class Campaign
     /// Resolve a meeting between two parties (an AI fight happens at once; a fight with you opens the encounter panel).
     void Clash(Party a, Party b)
     {
-        if (a == b || a.Cooldown > 0 || b.Cooldown > 0 || !Hostile(a, b)) return;
+        if (a == b || a.Cooldown > 0 || b.Cooldown > 0) return;
         bool playerInvolved = a.Kind == PartyKind.Player || b.Kind == PartyKind.Player;
+        // Riding up to travellers who are not your enemy is a meeting, not a fight (S4).
+        if (playerInvolved && (a.Kind == PartyKind.Player ? b : a) is { Kind: PartyKind.Caravan } trav && Player.ChaseId == trav.Id && !Hostile(a, b))
+        {
+            if (Vector2.DistanceSquared(a.Pos, b.Pos) > B.EncounterRadius * B.EncounterRadius) return;
+            Encounter = trav; Player.Moving = false;
+            return;
+        }
+        if (!Hostile(a, b)) return;
         // AI parties are a little slower to close than the player is, so the field is not one long chain of fights.
         float radius = playerInvolved ? B.EncounterRadius : B.AiClashRadius;
         if (Vector2.DistanceSquared(a.Pos, b.Pos) > radius * radius) return;
@@ -280,7 +289,7 @@ public sealed partial class Campaign
                 continue;
             }
             if (S.Hours < p.TaskUntil && p.Task != "refit") continue;
-            if (p.Kind == PartyKind.Lord) LordThink(p); else if (p.Kind == PartyKind.Monster) MonsterThink(p); else BanditThink(p);
+            if (p.Kind == PartyKind.Lord) LordThink(p); else if (p.Kind == PartyKind.Monster) MonsterThink(p); else if (p.Kind == PartyKind.Caravan) CaravanThink(p); else BanditThink(p);
         }
         CheckContracts();
         SiegeHourly();
@@ -339,6 +348,7 @@ public sealed partial class Campaign
             if (S.Parties.Count(p => p.Kind == PartyKind.Bandit && !p.Down) >= BanditsWanted || !rng.Chance(B.BanditSpawnChance)) break;
             else SpawnBandits();
         MonstersDaily();
+        RoadsDaily();
         // A realm that holds close to half the seats unites the others against it: their truces with it end, and they make peace.
         int seats = S.Settlements.Count(s => s.Kind != SettlementKind.Village);
         for (int f = 0; f < S.Factions.Count && S.Factions.Count > 2; f++)

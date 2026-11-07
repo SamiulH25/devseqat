@@ -10,6 +10,7 @@ partial class MapScreen
     void EncounterPanel()
     {
         var e = C.Encounter!;
+        if (C.Meeting(e)) { MeetingPanel(e); return; }
         var r = Modal(680, 380, "ENCOUNTER", Style.Foe);
         int x = r.X + ui.U(24), y = r.Y + ui.U(52);
         ui.Text(e.Name.ToUpperInvariant(), x, y, PartyColor(e));
@@ -47,6 +48,38 @@ partial class MapScreen
             if (C.Parley()) panel = PanelKind.None;
         }
         if (price < 0 && ui.Hover(new Rectangle(bx + 3 * (bw + ui.U(8)), by, bw, ui.U(30)))) note = e.Kind == PartyKind.Monster ? $"{Campaign.Plural(e.Breed).ToUpperInvariant()} DO NOT BARGAIN" : "LORDS AT WAR DO NOT BARGAIN";
+    }
+
+    /// Travellers on the road who are not your enemy (S4): buy from them, give alms, ask for news, rob them, or ride on.
+    void MeetingPanel(Party e)
+    {
+        bool pilgrims = e.Breed == "pilgrims";
+        var r = Modal(620, 250, pilgrims ? "PILGRIMS ON THE ROAD" : "A CARAVAN", PartyColor(e));
+        int x = r.X + ui.U(24), y = r.Y + ui.U(52);
+        ui.Text(e.Name.ToUpperInvariant(), x, y, PartyColor(e));
+        ui.Text(Allegiance(e), x, y + ui.U(20), Style.Dim, 1);
+        string bound = pilgrims ? "BOUND FOR THE SHRINE, SINGING." : C.SettlementById(e.GoalSettlement) is Settlement d ? $"BOUND FOR {d.Name.ToUpperInvariant()} WITH {e.Gold:0} CROWNS OF GOODS." : "ON THE ROAD.";
+        ui.Text(bound, x, y + ui.U(40), Style.Text, 1);
+        ui.Text($"{e.Men} GUARDS. ROBBING THEM WOULD ANGER THE {C.FactionNames[Math.Max(0, e.Faction)].ToUpperInvariant()}" + (e.Faction == C.Captain.Contract ? ", YOUR OWN REALM." : "."),
+            x, y + ui.U(56), e.Faction == C.Captain.Contract ? Style.Bad : Style.Dim, 1);
+        int px = x;
+        foreach (var c in e.Companies.Where(c => c.Men > 0).Take(3))
+        {
+            ui.Portrait(c.Type, new Rectangle(px, y + ui.U(76), ui.U(30), ui.U(28)));
+            ui.Text($"{c.Men} {c.Type.Name.ToUpperInvariant()}", px + ui.U(36), y + ui.U(86), Style.Text, 1);
+            px += ui.U(180);
+        }
+        Note(r);
+        int bw = ui.U(130), by = r.Bottom - ui.U(40), bx = r.X + (r.Width - 4 * bw - 3 * ui.U(8)) / 2;
+        string first = pilgrims ? $"ALMS {Campaign.PilgrimAlms:0}" : $"FOOD {Campaign.CaravanFoodPrice:0}";
+        if (ui.Button(new Rectangle(bx, by, bw, ui.U(30)), first))
+        {
+            note = (pilgrims ? C.GiveAlms() : C.BuyFromCaravan()) ?? (pilgrims ? "" : "4 DAYS OF FOOD BOUGHT.");
+            if (C.Encounter == null) panel = PanelKind.None;
+        }
+        if (ui.Button(new Rectangle(bx + bw + ui.U(8), by, bw, ui.U(30)), "NEWS")) { C.AskNews(); note = "THEIR NEWS IS IN THE LOG."; }
+        if (ui.Button(new Rectangle(bx + 2 * (bw + ui.U(8)), by, bw, ui.U(30)), "ROB THEM", C.Player.Men > 0)) C.Rob();
+        if (ui.Button(new Rectangle(bx + 3 * (bw + ui.U(8)), by, bw, ui.U(30)), "RIDE ON")) { C.Part(); panel = PanelKind.None; }
     }
 
     /// At the walls of an enemy town or castle: besiege, assault, wait or leave.

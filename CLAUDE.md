@@ -147,6 +147,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Monsters on the map: goblin holdouts (spawn, grow, raid, plunder, cleared), wolf packs, rare trolls, `MonsterThink` | `Campaign/Monsters.cs` (`SpawnHoldout`, `MonstersDaily`, `SendRaiders`, `HoldoutCleared`, `WolfThink`, `SpawnTroll`, `TrollThink`); docs/CREATURES.md |
 | The dead rise: grave fields after big battles, burial, undead hosts on the map | `Campaign/Undead.cs` (`AfterTheBattle`, `GravesDaily`, `RaiseHost`, `UndeadThink`); `bury_dead` in `Data/events.json` |
 | Sites on the map (ruins, shrines, stones, old battlefields, mines, hermits, watchtowers, springs, mills): visits and their effects | `Campaign/Sites.cs` (`Site`, `ArriveAtSite`, `SiteEffect`, `Search`, `Spy`); placed by `WorldMap.PlaceSites`; events `site_*` in `Data/events.json`; models `World.SiteModel`; docs/SIDE_CONTENT.md |
+| Life on the roads: caravans between towns, pilgrims to shrines, meeting them (buy, news, rob) | `Campaign/Roads.cs` (`RoadsDaily`, `SpawnCaravan`, `CaravanThink`, `Arrive`, `CaravanLost`, `Rob`); `PartyKind.Caravan`; `MapScreen.MeetingPanel` |
 | Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
 | Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
 | Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |
@@ -197,7 +198,8 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 - Faction ids index `CampaignState.Factions`; ids past `Data/factions.json` are realms founded in play (F5). Use the instance
   `campaign.FactionNames[f]` (not a static list) and `Factions.Get(f)`, which sees founded realms once `Factions.Bind` ran (the `Campaign` constructor does it).
 - The career rank is derived (`Campaign.Rank`), never stored; `CaptainState.BestRank` only remembers which beats were shown.
-- Team 0 = player side, team 1 = enemy. Palette 3 = bandits (and, for now, monsters). `PartyKind.Monster` parties have no
+- Team 0 = player side, team 1 = enemy. Palette 3 = bandits (and, for now, monsters). `PartyKind.Caravan` parties (merchants,
+  pilgrims) belong to a realm but are not soldiers: they never hunt, and `Party.Prey` (you robbed them) makes them hostile to you. `PartyKind.Monster` parties have no
   faction (`SideOf` = -3; `Campaign.Outlaw` covers brigands and monsters: no pay, no drill). Troops with culture `wild` are creatures:
   never recruited, outside the upgrade trees, not taken prisoner. `Squad.Alive` is refreshed every tick by `UpdateSquad`.
 - `AttackDir` is named from the attacker's side; the defender must block `Dirs.Mirror(swing)`.

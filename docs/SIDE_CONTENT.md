@@ -176,4 +176,16 @@ them. Then S3 and S4 together (escort needs caravans), S5, S6, and S7 last so th
   (`World.SiteModel`); the event dialog paints each kind (`SiteScene`). Not done: the stand-in captain does not detour to
   sites (so pacing is unchanged), the watchtower reports rather than widening a view (the map has no fog). Test: `Sites`;
   staged shots `campaign-sites.png`, `campaign-site-event.png`.
+- **S4 (roads):** `Campaign/Roads.cs`, `PartyKind.Caravan`. Each day new caravans set out to keep about one for every two
+  towns on the roads (`CaravansWanted`): guards of their realm's tier II line, a purse, bound for a town of a realm at peace
+  with theirs. Arriving adds `CaravanProsperity` (0.25) to the town and half that to home; being beaten takes it away. They
+  run for friendly walls from anything stronger. Brigands, monsters and lords at war with their realm hunt them like any
+  weaker party, and the winner takes the purse. Pilgrims walk from a town to a shrine site. Riding up to travellers who are
+  not your enemy (you chase them) opens a meeting (`MapScreen.MeetingPanel`): buy four days of food, give pilgrims alms, ask
+  for news (who they saw on the road, in the log), rob them (`Party.Prey` makes them hostile; their realm's lords lose 6
+  opinion of you, 14 if it is your own realm; robbing pilgrims costs 5 renown), or ride on. Peasants fleeing threatened
+  villages were left out. Balance: the `CampaignRun` pressure line is in its usual range; over six `--pacing` seeds the
+  stand-in captain makes Vassal on day 83 on average (105 before), as it now also preys on enemy caravans.
+  `PilotCareer` now asks for vassal in two seeds of three (one seed flipped with every change to the world). Test: `Roads`;
+  staged shot `campaign-caravan.png`.
 

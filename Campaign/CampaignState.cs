@@ -9,7 +9,7 @@ namespace Ironfield;
 
 public enum SettlementKind { Village, Town, Castle }
 /// Monster: creatures of the wild (docs/CREATURES.md), hostile to every party of men; Party.Breed says what they are.
-public enum PartyKind { Player, Lord, Bandit, Garrison, Monster }
+public enum PartyKind { Player, Lord, Bandit, Garrison, Monster, Caravan }
 
 /// A persistent company (CAMPAIGN_OVERHAUL.md 2): a banner with a role, a history and an officer, holding troop stacks of any
 /// troops that fit its role. The company's face (portrait, name in battle) is its largest stack.
@@ -166,6 +166,8 @@ public sealed class Party
     public PartyKind Kind;
     public Vector2 Pos, Goal;
     public bool Moving, Down, Resting;
+    /// Travellers you chose to rob (S4): hostile to you whatever their realm.
+    public bool Prey;
     public float Gold, Cooldown, DownUntil, TaskUntil, Facing;
     public List<CompanyRecord> Companies = new();
     public List<PrisonerGroup> Prisoners = new();

@@ -15,6 +15,7 @@ partial class MapScreen
     {
         PartyKind.Bandit => "BRIGANDS",
         PartyKind.Player => "YOU",
+        PartyKind.Caravan => p.Breed == "pilgrims" ? "PILGRIMS" : $"MERCHANTS OF THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
         PartyKind.Monster => p.Lair ? $"{p.Breed.ToUpperInvariant()} HOLDOUT" : Campaign.Plural(p.Breed).ToUpperInvariant(),
         _ => C.FactionNames[p.Faction].ToUpperInvariant(),
     };

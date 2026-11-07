@@ -70,6 +70,7 @@ public static partial class SelfTest
         Couriers();
         WorldNames();
         Sites();
+        Roads();
 
         for (int seed = 1; seed <= 3; seed++)
         {
