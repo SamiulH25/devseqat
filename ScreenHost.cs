@@ -370,7 +370,18 @@ sealed class ScreenHost : Game
                 Shot("campaign-brigand-king");
                 break;
             }
-            case 28: Exit(); break;
+            case 28:
+            {
+                c.S.Event = null;
+                var co = c.Player.Companies.First(x => x.Men > 0);
+                if (co.Officer == "") co.Officer = "Hal Brook";
+                foreach (var l in c.DivisionLeaders().Take(2).ToList()) c.MakeDivision(l.Char, l.Company);
+                if (c.S.Divisions.Count > 0) foreach (var x in c.Player.Companies.Where(x => x.Division < 0).Take(2)) c.AssignDivision(x, c.S.Divisions[0].Id);
+                map.Stage("divisions");
+                Shot("campaign-divisions");
+                break;
+            }
+            case 29: Exit(); break;
         }
     }
 }

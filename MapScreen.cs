@@ -430,6 +430,7 @@ sealed partial class MapScreen
             case "map": panel = PanelKind.None; zoom = 330; pitch = 0.95f; break;
             case "close": panel = PanelKind.None; zoom = 60; pitch = 0.7f; break;
             case "party": panel = PanelKind.Party; break;
+            case "divisions": panel = PanelKind.Divisions; note = ""; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;
             case "realm": panel = PanelKind.Realm; note = ""; break;
             case "fief": at = s; tab = "FIEF"; panel = PanelKind.Settlement; note = ""; break;

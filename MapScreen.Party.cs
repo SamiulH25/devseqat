@@ -274,7 +274,7 @@ partial class MapScreen
     {
         var r = Modal(1000, 600, "DIVISIONS");
         int x = r.X + ui.U(20), y = r.Y + ui.U(44), w = ui.U(560);
-        ui.Text("A DIVISION FOLLOWS A GOAL YOU GIVE ITS LEADER. ORDERS REACH HIM LATE, LATER THE FURTHER OFF HE IS.", x, y, Style.Dim, 1);
+        ui.Text("A DIVISION FOLLOWS THE GOAL YOU GIVE ITS LEADER. YOUR ORDERS REACH HIM LATE.", x, y, Style.Dim, 1);
         y += ui.U(18);
         var divs = C.S.Divisions.ToList();
         foreach (var d in divs)

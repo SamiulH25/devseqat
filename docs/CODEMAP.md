@@ -205,7 +205,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Divisions.cs (182 lines)
 - **Hud** (class, L8): readonly:14, readonly:22, LayoutDivisions:28, LayoutGoals:42, DivisionAt:50, DivisionTag:54, GoalTag:61, DivisionCards:63, GoalPanel:86, GoalWheel:103, SergeantPennants:125, DivisionMarkers:142
 
-## MapScreen.cs (447 lines)
+## MapScreen.cs (448 lines)
 - **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:83, Pressed:91, Update:95, Camera:180, Rename:204, Trails:217, ClickWorld:229, Ground:239, Draw:262, UpdateBearers:332, BuildSprites:362, DrawSprites:369, G:381, DrawLines:383, Stage:422
 
 ## MapScreen.Dialogs.cs (215 lines)
@@ -240,7 +240,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:51, Deserialize:52, Save:56, Play:63, Matches:92, Run:95
 - **Battle** (class, L104): StartRecording:111, RecordFrame:116, FinishRecording:144
 
-## ScreenHost.cs (376 lines)
+## ScreenHost.cs (387 lines)
 - **ScreenHost** (class, L9): ScreenHost:37, ApplyVideo:51, OpenSettings:60, LoadContent:62, StartCampaign:93, ContinueCampaign:105, QuickBattle:117, StartCampaignBattle:124, FinishCampaignBattle:132, CycleQuality:140, Update:144, Draw:172, CaptureShot:198, CampaignShots:215
 
 ## SelfTest.cs (132 lines)
