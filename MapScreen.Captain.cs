@@ -64,12 +64,22 @@ partial class MapScreen
             if (y > c.Bottom - ui.U(14)) break;
             cx += ui.Chip(cx, y, tt, Style.Ok) + ui.U(4);
         }
+        // Lasting wounds (P4), in red; the tooltip says what each costs.
+        foreach (var w in cap.Wounds.Select(Campaign.WoundOf).OfType<WoundDef>())
+        {
+            string wt = w.Name.ToUpperInvariant();
+            if (cx + ui.TW(wt, 1) + ui.U(10) > c.Right) { cx = c.X; y += ui.U(16); }
+            if (y > c.Bottom - ui.U(14)) break;
+            var chip = new Rectangle(cx, y, ui.TW(wt, 1) + ui.U(8), ui.U(14));
+            cx += ui.Chip(cx, y, wt, Style.Bad) + ui.U(4);
+            if (ui.Hover(chip)) ui.Tooltip(chip.Center.X, chip.Y - ui.U(2), wt, ui.Wrap(w.Text + ". A HEALING SPRING MAY MEND IT.", ui.U(170)).ToArray());
+        }
     }
 
-    /// Each skill as a ring with its perks beneath as nodes: gold when taken, lit when one may be taken now, dark when locked.
     /// The perk the next click on the K sheet forgets (asked once before paying).
     string? forgetAsk;
 
+    /// Each skill as a ring with its perks beneath as nodes: gold when taken, lit when one may be taken now, dark when locked.
     void SkillTree(Rectangle c)
     {
         var cap = C.Captain;

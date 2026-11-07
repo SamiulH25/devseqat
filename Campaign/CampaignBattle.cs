@@ -148,8 +148,12 @@ public partial class Campaign
             var away = Player.Pos - (losers == side0 ? side1 : side0)[0].Pos;
             Player.Pos += (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 8;
         }
+        string lasting = "";
         if (r.Captain is LeaderFate.Wounded or LeaderFate.Captured)
+        {
             Captain.WoundedUntil = (float)S.Hours + 24 * rng.Range(3, 5) * (Has("Bonesetter") ? 0.5f : 1);
+            lasting = MaybeLastingWound();
+        }
         if (r.Captain == LeaderFate.Captured && S.Ironman)
         {
             S.GameOver = true;
@@ -165,7 +169,7 @@ public partial class Campaign
             Log($"You are taken, and ransomed. Your men regroup at {refuge.Name}.");
         }
         string spoil = won ? BattleSpoil(losers, r) : "";
-        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore) };
+        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting };
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
         return Report;
     }

@@ -12,6 +12,8 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
 {
     /// The captain's skills that rose in this battle, one line each (P3).
     public IReadOnlyList<string> Rises { get; init; } = Array.Empty<string>();
+    /// A lasting wound the captain took in this battle (P4), or "".
+    public string LastingWound { get; init; } = "";
 }
 
 /// A battle about to be fought between map parties: the armies, options, and how its companies map back to campaign records.
@@ -154,6 +156,8 @@ public static class Rules
         if (w.Ranged && c.Perks.Contains("Marksman")) t.Damage *= 1.2f;   // Bowcraft perks (P3)
         if (w.Ranged && c.Perks.Contains("Fletcher")) t.Ammo = (int)(t.Ammo * 1.5f);
         if (c.Perks.Contains("HorseBreaker")) t.VsMounted *= 1.25f;      // Riding
+        if (c.Wounds.Contains("knee")) t.Speed *= 0.9f;                  // lasting wounds (P4)
+        if (c.Wounds.Contains("hand")) t.Damage *= 0.9f;
         return t;
     }
 
@@ -172,6 +176,7 @@ public static class Rules
         o.Riding = Skills.Level(c, "Riding");
         o.Bowcraft = Skills.Level(c, "Bowcraft");
         o.Perks = c.Perks.ToHashSet();
+        o.Wounds = c.Wounds.ToHashSet();
         o.PlayerType = CaptainType(c);
         o.PlayerSide = c.Kit.Side != "" ? CaptainType(c, side: true) : null;
         o.PlayerMount = CaptainMount(c);

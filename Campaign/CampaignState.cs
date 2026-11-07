@@ -325,6 +325,8 @@ public sealed class CaptainState
     public List<string> Perks = new();
     /// Perks forgotten for gold so far; each costs more than the last (P3).
     public int Retrained;
+    /// Lasting wounds the captain carries (P4: "scar", "knee", "hand", "eye"; `Campaign.LastingWounds`).
+    public List<string> Wounds = new();
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought

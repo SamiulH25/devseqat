@@ -110,6 +110,7 @@ public sealed partial class Campaign
                 int got = GiftMen(Scaled((int)n), SettlementNear(site?.Pos ?? Player.Pos));
                 return got > 0 ? $"{got} men join you." : "You have no room for them.";
             case "search": return Search(site);
+            case "mend": return MendWound();
             case "omen": return Omen();
             case "spy": return Spy(site?.Pos ?? Player.Pos);
         }

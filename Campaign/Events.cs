@@ -48,9 +48,9 @@ public sealed partial class Campaign
     {
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
-        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace",
+        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend",
     };
-    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace" };
+    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend" };
     static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion" };
 
     static List<EventDef>? events;

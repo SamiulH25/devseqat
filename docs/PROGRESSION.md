@@ -263,3 +263,10 @@ Give the captain something to do in each fight beyond "win".
   it (`ForgetPerk`; `CannotForget` says why not: not in a town, a capstone still standing on it, gold). It costs 150
   crowns, 150 more each time (`CaptainState.Retrained`), and the choice opens again. `SelfTest.SkillRises`.
   Not done: holding a flag point (no flag points until P6); the plan's "training ground" building (any town will do).
+- P4 (step 1, lasting wounds): `Campaign/Wounds.cs`. When the captain falls in a field battle (wounded or taken; not in
+  duels or tournaments) there is a 15% chance (`LastingWoundOdds`: Medicine down to half at 100, a Surgeon companion
+  halves it again) of a wound he does not carry yet (`CaptainState.Wounds`): Scarred (+5 renown when earned, harmless),
+  Bad Knee (speed on foot -10%), Broken Hand (blows -10%; both in `Rules.CaptainType`), Lost Eye (parry window 0.05 s
+  shorter; `BattleOptions.Wounds`). The battle report says so; the captain card (K) shows them as red chips with a
+  tooltip. A healing spring's rest mends one (event verb `mend`, `MendWound`); scars stay. `SelfTest.LastingWounds`.
+  Simplification: the surgeon lowers the odds rather than healing a wound.

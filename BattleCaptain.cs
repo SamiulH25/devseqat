@@ -23,7 +23,7 @@ public sealed partial class Battle
     public float BowEdge => Math.Clamp((Options.Bowcraft - 5) / 95f, 0, 1);
     bool Perk(string id) => Options.Perks.Contains(id);
     bool secondWind;
-    float ParryTime => ParryWindow + 0.1f * ArmsEdge;
+    float ParryTime => ParryWindow + 0.1f * ArmsEdge - (Options.Wounds.Contains("eye") ? 0.05f : 0);
 
     /// You release a swing (P2): its stamina cost, power and windup from the chain, a riposte, tiredness and Arms.
     void ReleaseSwing(Unit p)

@@ -784,6 +784,29 @@ public static partial class SelfTest
         Check(f.CannotForget("Hardened") == null && f.CannotForget("IronGrip") == "NOT TAKEN", "only taken perks can be forgotten");
     }
 
+    static void LastingWounds()
+    {
+        var c = Campaign.New(36);
+        float odds = c.LastingWoundOdds;
+        c.Captain.Skills["Medicine"] = 100;
+        Check(c.LastingWoundOdds < odds * 0.6f, "Medicine lowers the odds of a lasting wound");
+        // Falls enough times and the captain carries every wound, each once; the scar brings renown.
+        float renown = c.Captain.Renown;
+        for (int i = 0; i < 400; i++) c.MaybeLastingWound();
+        Check(c.Captain.Wounds.Count == Campaign.LastingWounds.Length && c.Captain.Wounds.Distinct().Count() == c.Captain.Wounds.Count, "every wound, once each: " + string.Join(",", c.Captain.Wounds));
+        Check(c.Captain.Renown == renown + 5, "a scar is a story worth 5 renown");
+        // What they cost.
+        var hale = new CaptainState();
+        var hurt = new CaptainState { Wounds = { "knee", "hand", "eye" } };
+        Check(Rules.CaptainType(hurt).Speed < Rules.CaptainType(hale).Speed && Rules.CaptainType(hurt).Damage < Rules.CaptainType(hale).Damage, "a bad knee slows you, a broken hand weakens your blows");
+        Check(new BattleOptions().WithCaptain(hurt).Wounds.Contains("eye"), "the lost eye goes into battle with you");
+        // The spring mends all but the scar.
+        int mended = 0;
+        while (c.MendWound() != null) mended++;
+        Check(mended == 3 && c.Captain.Wounds.SequenceEqual(new[] { "scar" }), "a healing spring mends wounds, never the scar");
+        Check(Campaign.Events.First(e => e.Id == "site_spring").Choices[0].Effects.Contains("mend"), "the spring's rest mends a wound");
+    }
+
     static void SkillTree()
     {
         var a = Campaign.New(91);

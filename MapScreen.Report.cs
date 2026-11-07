@@ -188,6 +188,11 @@ partial class MapScreen
             y += ui.U(11);
         }
         if (rep.Rises.Count > 0) y += ui.U(4);
+        if (Campaign.WoundOf(rep.LastingWound) is WoundDef lw)
+        {
+            foreach (var l in ui.Wrap($"A LASTING WOUND: {lw.Name.ToUpperInvariant()}. {lw.Text}.", c.Width - ui.U(14), 1)) { ui.Text(l, c.X + ui.U(14), y, Style.Bad, 1); y += ui.U(11); }
+            y += ui.U(4);
+        }
         string? fate = rep.Captain switch
         {
             LeaderFate.Wounded => "YOU ARE WOUNDED: FOR A FEW DAYS YOU COMMAND FROM THE REAR.",

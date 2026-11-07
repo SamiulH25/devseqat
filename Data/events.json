@@ -184,7 +184,7 @@
       "id": "site_spring", "trigger": "site_spring", "cooldown": 0, "title": "{site}",
       "text": "Cold clear water wells up among mossy stones. The villagers swear it closes wounds.",
       "choices": [
-        { "label": "REST THE WOUNDED HERE", "effects": ["heal:35", "spent:14"] },
+        { "label": "REST THE WOUNDED HERE", "effects": ["heal:35", "mend", "spent:14"] },
         { "label": "FILL THE WATERSKINS AND GO", "effects": ["heal:10", "spent:14"] }
       ]
     },
