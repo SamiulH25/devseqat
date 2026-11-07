@@ -322,8 +322,12 @@ public static partial class SelfTest
         float before = q.OpinionOfYou(lord);
         Check(q.Choose(0) == null && q.S.Contracts.Any(k => k.Giver == lord.Id), "a lord's request becomes a quest");
         var quest = q.S.Contracts.First(k => k.Giver == lord.Id);
-        q.S.LastBattleFoe = quest.Target;
-        Days(q, 1);
+        // Hunt and clear quests end with a won battle; the relic chain (S3) ends when each site is reached.
+        for (int step = 0; step < 3 && q.S.Contracts.FirstOrDefault(k => k.Giver == lord.Id) is Contract now; step++)
+        {
+            if (now.Kind == "visitsite") now.Progress = 1; else q.S.LastBattleFoe = now.Target;
+            Days(q, 1);
+        }
         Check(!q.S.Contracts.Contains(quest) && q.OpinionOfYou(lord) > before + 5, $"a quest done wins the lord's favour ({before:0} -> {q.OpinionOfYou(lord):0})");
         q.S.Event = new PendingEvent { Id = "lord_favour", Lord = lord.Id };
         before = q.OpinionOfYou(lord);

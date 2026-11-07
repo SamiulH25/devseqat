@@ -176,6 +176,17 @@ them. Then S3 and S4 together (escort needs caravans), S5, S6, and S7 last so th
   (`World.SiteModel`); the event dialog paints each kind (`SiteScene`). Not done: the stand-in captain does not detour to
   sites (so pacing is unchanged), the watchtower reports rather than widening a view (the map has no fog). Test: `Sites`;
   staged shots `campaign-sites.png`, `campaign-site-event.png`.
+- **S3 (quests):** `Campaign/Quests.cs`, on the contract machinery. Villages have an ELDERS tab (`ElderOffers`, refreshed
+  every four days when empty): up to three of *drive off the wolves*, *drive off / burn out the goblins*, *rescue the
+  headman's daughter* from a brigand band (`rescue`), *fetch grain from the market, then bring it home* (a two-step chain:
+  `visit` then `bring`, which takes three days of your food), and *drill the militia* (`militia`: 12 hours by the village;
+  lifts its threat). Elders' jobs have `Faction` -1 and `From` = the village, need no contract, pay little and add 3
+  prosperity. The town board adds *escort a caravan* (accepting sends a caravan out; it pays only if you ride in with it, and
+  fails if it is lost) and *carry a ransom* to a far town (`deliver`). A lord's quest is now sometimes his father's sword:
+  ask the hermit near a ruin, then search the ruin (`visitsite`, set by reaching the site). `Contract.Then` holds the next
+  step; it goes on your list with a fresh six-day deadline, and the reward, renown and the giver's favour come at the end.
+  Not done: a ransom under truce to an enemy town (it goes to any far town at peace), lords' own escort jobs. Test: `Quests`
+  (and `EventsAndQuests` finishes whichever quest the lord gave).
 - **S4 (roads):** `Campaign/Roads.cs`, `PartyKind.Caravan`. Each day new caravans set out to keep about one for every two
   towns on the roads (`CaravansWanted`): guards of their realm's tier II line, a purse, bound for a town of a realm at peace
   with theirs. Arriving adds `CaravanProsperity` (0.25) to the town and half that to home; being beaten takes it away. They

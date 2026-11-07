@@ -16,7 +16,7 @@ partial class MapScreen
         var tabs = (s.Kind switch
         {
             SettlementKind.Village when C.Refuses(s) => new[] { "FORAGE" },
-            SettlementKind.Village => new[] { "RECRUIT", "FOOD", "FORAGE", "REST" },
+            SettlementKind.Village => new[] { "RECRUIT", "FOOD", "FORAGE", "REST", "ELDERS" },
             SettlementKind.Castle => new[] { "REST", "FOOD", "CAPTIVES", "CONTRACT" },
             _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "MARKET", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
         }).Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
@@ -40,6 +40,7 @@ partial class MapScreen
             case "GARRISON": GarrisonTab(s, body); break;
             case "FIEF": FiefTab(s, body); break;
             case "CONTRACT": ContractTab(s, body); break;
+            case "ELDERS": EldersTab(s, body); break;
         }
         Note(r);
         // The purse, and the way out.
@@ -343,6 +344,23 @@ partial class MapScreen
         if (cur >= 0 && ui.Button(new Rectangle(body.X, body.Y + ui.U(92), ui.U(380), ui.U(28)), C.Captain.Fealty ? "RENOUNCE YOUR OATH" : "END YOUR CONTRACT")) note = C.SignContract(-1) ?? "";
     }
 
+    /// Elders tab (villages, S3): the village's own small jobs, open to any captain.
+    void EldersTab(Settlement s, Rectangle body)
+    {
+        ui.Text("THE ELDERS OF " + s.Name.ToUpperInvariant() + " ASK FOR HELP.", body.X, body.Y, Style.Text);
+        ui.Text("THEIR JOBS NEED NO CONTRACT. THEY PAY LITTLE, BUT THE VILLAGE PROSPERS.", body.X, body.Y + ui.U(20), Style.Dim, 1);
+        int y = body.Y + ui.U(48);
+        var jobs = C.ElderOffers(s).ToList();
+        if (jobs.Count == 0) ui.Text("NOTHING TODAY. COME BACK IN A FEW DAYS.", body.X, y + ui.U(6), Style.Dim, 1);
+        foreach (var o in jobs)
+        {
+            ui.Text(o.Text.ToUpperInvariant(), body.X, y + ui.U(6), Style.Text, 1);
+            float pay = o.Reward + (o.Then?.Reward ?? 0);
+            if (ui.Button(new Rectangle(body.Right - ui.U(200), y, ui.U(200), ui.U(24)), "ACCEPT", C.S.Contracts.Count < 3, $"{pay:0}")) note = C.Accept(s, o) ?? "ACCEPTED";
+            y += ui.U(28);
+        }
+    }
+
     /// Your accepted contracts, under the overview map.
     void Contracts()
     {
@@ -358,7 +376,7 @@ partial class MapScreen
             if (t.Length > 36) t = t[..35] + ".";
             ui.Text(t, x + ui.U(8), y, Style.Text, 1);
             float days = (c.Deadline - (float)C.S.Hours) / 24;
-            ui.Text($"{days:0.0} DAYS  {c.Reward:0} CROWNS" + (c.Kind == "defend" ? $"  {c.Progress:0}/24 H" : ""), x + ui.U(8), y + ui.U(11), days < 2 ? Style.Warn : Style.Dim, 1);
+            ui.Text($"{days:0.0} DAYS  {c.Reward:0} CROWNS" + (c.Kind switch { "defend" => $"  {c.Progress:0}/24 H", "militia" => $"  {c.Progress:0}/{Campaign.MilitiaHours} H", _ => c.Then != null ? "  MORE TO DO" : "" }), x + ui.U(8), y + ui.U(11), days < 2 ? Style.Warn : Style.Dim, 1);
             y += ui.U(26);
         }
     }

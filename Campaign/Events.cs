@@ -254,7 +254,8 @@ public sealed partial class Campaign
 
     // ---------- lord quests (8) ----------
 
-    /// A lord's quest, on the contract machinery: hunt a lord at war with his realm, or clear the worst band near his home.
+    /// A lord's quest, on the contract machinery: find his father's sword (S3), hunt a lord at war with his realm, or clear the
+    /// worst band near his home.
     /// The reward is mostly his favour.
     string? GiveQuest(Character giver)
     {
@@ -262,7 +263,9 @@ public sealed partial class Campaign
         var at = home?.Pos ?? Player.Pos;
         float deadline = (float)S.Hours + 12 * 24;
         Contract? q = null;
-        if (S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && FactionsAtWar(giver.Faction, p.Faction) && Hostile(Player, p))
+        if (rng.Chance(0.35f) && RelicQuest(giver, at) is Contract relic)
+            q = relic;
+        else if (S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && FactionsAtWar(giver.Faction, p.Faction) && Hostile(Player, p))
                 .OrderBy(p => Vector2.Distance(p.Pos, at)).FirstOrDefault() is Party rival)
             q = new Contract { Kind = "hunt", Target = rival.Id, Reward = 150, Text = $"Defeat {rival.Name} for {giver.Name}." };
         else if (S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down).OrderBy(p => Vector2.Distance(p.Pos, at)).FirstOrDefault() is Party band)

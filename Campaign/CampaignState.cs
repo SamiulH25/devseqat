@@ -147,6 +147,10 @@ public sealed class Contract
     public int Giver = -1;
     public string Kind = "", Text = "";
     public float Deadline, Reward, Progress;
+    /// A village elders' job (S3): the village that asked (-1 = none); such jobs have Faction -1 and need no contract.
+    public int From = -1;
+    /// The next step of a quest of more than one step, put on your list when this one is done.
+    public Contract? Then;
 }
 
 /// One of your divisions: led by a companion (LeaderChar) or by a company's sergeant (LeaderCompany).
@@ -204,7 +208,8 @@ public sealed class Settlement
     public float ThreatUntil;
     public List<CompanyRecord> Mercenaries = new();
     public List<CompanyRecord> Garrison = new();   // towns and castles (B1)
-    public List<Contract> Offers = new();          // the steward's contract board (towns)
+    public List<Contract> Offers = new();          // the steward's contract board (towns), the elders' jobs (villages)
+    public float OffersAt;                         // when the elders next think of work for you (villages)
     public float Supplies = 30;                    // days a garrison can hold out under siege
     public int Owner = -1;                         // party id of the holder of the fief (-1: the faction)
     public bool Besieged;

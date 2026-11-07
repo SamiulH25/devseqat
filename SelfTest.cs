@@ -71,6 +71,7 @@ public static partial class SelfTest
         WorldNames();
         Sites();
         Roads();
+        Quests();
 
         for (int seed = 1; seed <= 3; seed++)
         {

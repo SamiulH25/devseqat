@@ -209,7 +209,7 @@ public sealed partial class Campaign
 
     bool OfferValid(Contract o) => o.Kind switch
     {
-        "hunt" or "clear" => PartyById(o.Target) is { Down: false },
+        "hunt" or "clear" or "rescue" => PartyById(o.Target) is { Down: false },
         "take" => S.Settlements[o.Target].Faction != o.Faction,
         _ => true,
     };
@@ -230,12 +230,14 @@ public sealed partial class Campaign
         if (enemyTown != null) s.Offers.Add(Make("scout", enemyTown.Id, 160, $"Scout {enemyTown.Name} (ride within sight of it)."));
         var castle = S.Settlements.Where(t => t.Kind != SettlementKind.Village && FactionsAtWar(f, t.Faction)).OrderBy(t => Vector2.Distance(t.Pos, s.Pos)).FirstOrDefault();
         if (castle != null) s.Offers.Add(Make("take", castle.Id, 1200, $"Take {castle.Name} for the {FactionNames[f]}."));
+        MoreTownOffers(s, Make);
     }
 
     public string? Accept(Settlement s, Contract c)
     {
-        if (Captain.Contract != c.Faction) return "SIGN WITH THIS FACTION FIRST";
+        if (c.Faction >= 0 && Captain.Contract != c.Faction) return "SIGN WITH THIS FACTION FIRST";
         if (S.Contracts.Count >= 3) return "YOU ALREADY HOLD THREE CONTRACTS";
+        if (SetUp(s, c) is string why) return why;
         s.Offers.Remove(c);
         S.Contracts.Add(c);
         Log($"Contract: {c.Text}");
@@ -247,7 +249,7 @@ public sealed partial class Campaign
     {
         foreach (var c in S.Contracts.ToList())
         {
-            bool done = c.Kind switch
+            bool done = QuestDone(c) ?? c.Kind switch
             {
                 "hunt" or "clear" => S.LastBattleFoe == c.Target || (c.Kind == "clear" && PartyById(c.Target) == null && S.LastBattleFoe == c.Target),
                 "defend" => (c.Progress += Vector2.Distance(Player.Pos, S.Settlements[c.Target].Pos) < 8 * Map.Spread ? 1 : 0) >= 24,
@@ -258,13 +260,17 @@ public sealed partial class Campaign
             if (done)
             {
                 S.Gold += c.Reward;
-                Captain.Renown += 5;
                 S.Contracts.Remove(c);
-                if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you did what I asked of you", 15);
-                Log($"Contract done: {c.Text} (+{c.Reward:0} crowns).");
+                if (c.Then == null)
+                {
+                    Captain.Renown += 5;
+                    if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you did what I asked of you", 15);
+                }
+                Log(c.Reward > 0 ? $"Contract done: {c.Text} (+{c.Reward:0} crowns)." : $"Done: {c.Text}");
+                QuestStepDone(c);
                 AudioEngine.Current?.Play(Cue.Coin);
             }
-            else if (S.Hours > c.Deadline || (c.Kind is "hunt" or "clear" && PartyById(c.Target) is null or { Down: true } && S.LastBattleFoe != c.Target))
+            else if (S.Hours > c.Deadline || (c.Kind is "hunt" or "clear" && PartyById(c.Target) is null or { Down: true } && S.LastBattleFoe != c.Target) || QuestLost(c))
             {
                 Captain.Renown = MathF.Max(0, Captain.Renown - 5);
                 S.Contracts.Remove(c);

@@ -132,4 +132,85 @@ public static partial class SelfTest
         Console.WriteLine($"roads: {c.Caravans.Count()} caravans and {c.Pilgrims.Count()} pilgrim bands on the map; {c.CaravansArrived} arrived, {c.CaravansLost} robbed in 34 days");
         Check(c.CaravansArrived > 0, "caravans arrive over a month");
     }
+
+    /// More quests (S3): elders' jobs, escorts, ransoms, rescues, the relic chain; each can be done, and chains move on.
+    static void Quests()
+    {
+        var c = Campaign.New(9);
+        void Hours(int n) { for (int i = 0; i < n; i++) { c.Player.Moving = false; c.Tick(1); c.Encounter = null; c.S.Event = null; } }
+        Contract Job(string kind, int target, Settlement from) => new() { Id = c.S.NextId++, Kind = kind, Target = target, Faction = -1, From = from.Id, Deadline = (float)c.S.Hours + 72, Reward = 50 };
+        bool Holds(string kind) => c.S.Contracts.Any(k => k.Kind == kind);
+        var v = c.S.Settlements.First(s => s.Kind == SettlementKind.Village && !c.Refuses(s));
+        var jobs = c.ElderOffers(v);
+        Check(jobs.Count > 0 && jobs.All(j => j.Faction < 0 && j.From == v.Id), $"the elders of {v.Name} have work for anyone ({jobs.Count})");
+        var first = jobs[0];
+        Check(c.Accept(v, first) == null && c.S.Contracts.Contains(first), "an elders' job needs no contract");
+        c.S.Contracts.Clear();
+        // Militia: stay by the village twelve hours; the village prospers.
+        v.Prosperity = 50;
+        c.Player.Pos = v.Pos;
+        c.S.Contracts.Add(Job("militia", v.Id, v));
+        float gold = c.S.Gold;
+        Hours(Campaign.MilitiaHours + 1);
+        Check(!Holds("militia") && c.S.Gold > gold && v.Prosperity > 50, $"drilling the militia is paid and the village prospers ({v.Prosperity:0.0})");
+        // A chain: fetch grain from the market, then bring it home.
+        var market = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && !c.Refuses(s));
+        var fetch = Job("visit", market.Id, v);
+        fetch.Reward = 0;
+        fetch.Then = Job("bring", v.Id, v);
+        c.S.Contracts.Add(fetch);
+        c.Player.Pos = market.Pos;
+        Hours(1);
+        Check(!Holds("visit") && Holds("bring"), "a quest of two steps moves on to its second step");
+        c.Player.Pos = v.Pos;
+        c.Player.Food = 10;
+        Hours(1);
+        Check(!Holds("bring") && c.Player.Food < 8, $"the grain is handed over ({c.Player.Food:0.0} days left)");
+        // A ransom carried to a town.
+        c.S.Contracts.Add(Job("deliver", market.Id, market));
+        c.Player.Pos = market.Pos;
+        Hours(1);
+        Check(!Holds("deliver"), "the ransom is delivered on arrival");
+        // An escort: accepting it sends a caravan; riding in with it pays; losing it fails.
+        var esc = new Contract { Id = c.S.NextId++, Kind = "escort", Target = -1, Faction = -1, Deadline = (float)c.S.Hours + 240 };
+        Check(c.Accept(market, esc) == null && c.PartyById(esc.Target) is { Kind: PartyKind.Caravan }, "an escort job sends a caravan out");
+        var car = c.PartyById(esc.Target)!;
+        var dest = c.SettlementById(car.GoalSettlement);
+        car.Pos = dest.Pos + new Vector2(0.5f, 0);
+        c.Player.Pos = car.Pos;
+        gold = c.S.Gold;
+        Hours(2);
+        Check(!Holds("escort") && c.S.Gold > gold, $"the escort is paid when the caravan arrives ({c.S.Gold - gold:0})");
+        var esc2 = new Contract { Id = c.S.NextId++, Kind = "escort", Target = -1, Faction = -1, Deadline = (float)c.S.Hours + 240 };
+        c.Accept(market, esc2);
+        var car2 = c.PartyById(esc2.Target)!;
+        car2.Down = true; c.S.Parties.Remove(car2);
+        gold = c.S.Gold;
+        Hours(1);
+        Check(!Holds("escort") && c.S.Gold == gold, "an escort fails if the caravan is lost");
+        // A rescue: beat the band.
+        var band = new Party { Id = c.S.NextId++, Kind = PartyKind.Bandit, Name = "Test Band", Pos = c.Player.Pos + new Vector2(150, 150), Tier = 2 };
+        band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(10), 0));
+        c.S.Parties.Add(band);
+        c.S.Contracts.Add(Job("rescue", band.Id, v));
+        c.S.LastBattleFoe = band.Id;
+        Hours(1);
+        Check(!Holds("rescue"), "beating the band rescues the captive");
+        // The relic chain: the hermit, then the ruin.
+        var lord = c.S.Characters.First(x => x.Kind == "lord" && !x.Dead);
+        var ruin = c.Sites.First(x => x.Kind == "ruin");
+        var relic = c.RelicQuest(lord, ruin.Pos);
+        Check(relic is { Kind: "visitsite" }, "a lord can ask you to find his father's sword");
+        relic!.Deadline = (float)c.S.Hours + 240;
+        c.S.Contracts.Add(relic);
+        for (int step = 0; step < 2 && Holds("visitsite"); step++)
+        {
+            var site = c.SiteById(c.S.Contracts.First(k => k.Kind == "visitsite").Target)!;
+            c.Player.Pos = site.Pos + new Vector2(3, 0);
+            c.GoTo(site);
+            for (int i = 0; i < 6 && c.S.Contracts.Any(k => k.Kind == "visitsite" && k.Target == site.Id); i++) { c.Tick(1); c.Encounter = null; c.S.Event = null; }
+        }
+        Check(!Holds("visitsite"), "the sword is found at the end of the chain");
+        Console.WriteLine($"quests: relic had {(relic.Then != null ? 2 : 1)} steps; gold {c.S.Gold:0}");
+    }
 }

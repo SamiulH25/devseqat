@@ -24,11 +24,11 @@ public sealed partial class Campaign
     }
 
     /// A caravan from a town to another town of a realm at peace with it, far enough to be worth the road.
-    internal Party? SpawnCaravan()
+    internal Party? SpawnCaravan(Settlement? fromTown = null)
     {
         var towns = S.Settlements.Where(t => t.Kind == SettlementKind.Town && !t.Besieged && t.Faction >= 0).ToList();
         if (towns.Count < 2) return null;
-        var from = rng.Pick(towns);
+        var from = fromTown ?? rng.Pick(towns);
         var to = towns.Where(t => t != from && !FactionsAtWar(t.Faction, from.Faction))
             .Where(t => Vector2.Distance(t.Pos, from.Pos) is var d && d > 50 * Map.Spread && d < 260 * Map.Spread).ToList();
         if (to.Count == 0) return null;
@@ -93,6 +93,7 @@ public sealed partial class Campaign
             dest.Prosperity = Math.Clamp(dest.Prosperity + CaravanProsperity, 0, 100);
             if (SettlementById(p.HomeId) is Settlement home && home != dest) home.Prosperity = Math.Clamp(home.Prosperity + CaravanProsperity / 2, 0, 100);
             CaravansArrived++;
+            EscortArrived(p);
         }
         p.Down = true;
         S.Parties.Remove(p);
