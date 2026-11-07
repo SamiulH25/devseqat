@@ -51,6 +51,8 @@ public static partial class SelfTest
         var village = c.SettlementById(raiders.RaidOn);
         float prosperity = village.Prosperity;
         raiders.Pos = village.Pos;
+        // Nobody else about: a band near a stronger party runs, and near a weaker one hunts it instead.
+        foreach (var q in c.S.Parties.Where(q => q != raiders && Vector2.Distance(q.Pos, village.Pos) < 30 * c.Map.Spread)) q.Pos += new Vector2(60, 60) * c.Map.Spread;
         c.MonsterThink(raiders);
         Check(village.ThreatUntil > c.S.Hours && village.Recruits == 0 && village.Prosperity < prosperity, "raiders plunder the village");
         Check(raiders.Task == "home" && raiders.Gold > 0, "and carry the loot home");

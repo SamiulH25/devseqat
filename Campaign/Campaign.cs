@@ -351,6 +351,7 @@ public sealed partial class Campaign
     {
         RelationsWeekly();
         WanderersWeekly();
+        BuildWeekly(); // before wages: lords' pay takes a share of the chest down to its floor
         foreach (var p in S.Parties.Where(p => !Outlaw(p) && !p.Down))
         {
             float upkeep = p.Companies.Sum(Rules.Upkeep);
@@ -394,7 +395,6 @@ public sealed partial class Campaign
         }
         GarrisonsWeekly();
         PrisonersWeekly();
-        BuildWeekly();
         PiousWeekly();
         TributeWeekly();
     }

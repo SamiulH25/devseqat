@@ -207,7 +207,7 @@ public static partial class SelfTest
         // The world builds without you.
         var built = c.S.Settlements.Sum(s => s.Buildings.Values.Sum());
         Days(c, 60);
-        Console.WriteLine($"fiefs: buildings in the world {built} -> {c.S.Settlements.Sum(s => s.Buildings.Values.Sum())}, prosperity avg {c.S.Settlements.Average(s => s.Prosperity):0}");
+        Console.WriteLine($"fiefs: buildings in the world {built} -> {c.S.Settlements.Sum(s => s.Buildings.Values.Sum())}, prosperity avg {c.S.Settlements.Average(s => s.Prosperity):0}, chests {string.Join("/", c.S.Factions.Select(f => f.Treasury.ToString("0")))}");
         Check(c.S.Settlements.Sum(s => s.Buildings.Values.Sum()) > built, "AI realms raise buildings");
         Check(c.S.Settlements.All(s => s.Prosperity is >= 0 and <= 100 && s.Unrest is >= 0 and <= 100), "prosperity and unrest stay in range");
     }

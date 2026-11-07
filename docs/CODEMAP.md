@@ -309,8 +309,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/CareerTests.cs (353 lines)
 - **SelfTest** (class, L6): PilotTrace:9, Career:24, PilotCareer:120, FiefLife:131, WarAndPeace:217, EventsAndQuests:293
 
-## Tests/CreatureTests.cs (238 lines)
-- **SelfTest** (class, L6): HoldoutTrace:11, Holdouts:23, GoblinBattle:89, WolfTrace:136, Wolves:154, WolfRiders:219
+## Tests/CreatureTests.cs (240 lines)
+- **SelfTest** (class, L6): HoldoutTrace:11, Holdouts:23, GoblinBattle:91, WolfTrace:138, Wolves:156, WolfRiders:221
 
 ## Tips.cs (36 lines)
 - **Tips** (class, L6): Show:10, Dismiss:18, Draw:25
