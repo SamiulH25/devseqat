@@ -137,6 +137,12 @@ sealed class SettingsScreen
                 Row();
                 ui.Text("EASY: ENEMIES HIT 20% SOFTER, CONTRACTS PAY 15% MORE. HARD: THE OPPOSITE.", body.X, y, Style.Dim, 1);
                 y += ui.U(20);
+                Label("BATTLE SIZE");
+                for (int i = 0; i < Settings.BattleSizes.Length; i++)
+                    if (Choice(i, $"{Settings.BattleSizes[i]} MEN", s.BattleSize == Settings.BattleSizes[i])) s.BattleSize = Settings.BattleSizes[i];
+                Row();
+                ui.Text("THE MOST MEN ON THE FIELD AT ONCE. THE REST WAIT AS REINFORCEMENTS. LOWER IT ON A SLOW COMPUTER.", body.X, y, Style.Dim, 1);
+                y += ui.U(26);
                 Label("IRONMAN (NEW CAMPAIGNS)");
                 if (Choice(0, "OFF", !s.Ironman)) s.Ironman = false;
                 if (Choice(1, "ON", s.Ironman)) s.Ironman = true;

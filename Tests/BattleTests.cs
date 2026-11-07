@@ -448,4 +448,38 @@ public static partial class SelfTest
         Run(b, 6);
         Check(l.Dead || l.Hp < l.Type.MaxHp, "braced spears hurt a charging lancer");
     }
+
+    /// Battle scale (docs/COMBAT_OVERHAUL.md 2.7): a 1,200-man battle deploys without companies on top of each other,
+    /// stays on a wider field, runs well under a frame per tick, and replays exactly.
+    static void ScaleBattle()
+    {
+        var rng = new Random(12);
+        var b = new Battle(12, Armies.Large(rng, 2, 0, 600), Armies.Large(rng, 3, 1, 600), new BattleOptions { Cap = 1500 });
+        int men = b.Units.Count(u => u.Active);
+        Check(men >= 1200, $"a big battle puts everyone on the field ({men})");
+        Check(b.MapRadius > 120, "a big battle is fought on a wider field");
+        var sq = b.Squads.Where(q => q.Company != null).ToList();
+        int overlaps = 0;
+        for (int i = 0; i < sq.Count; i++)
+            for (int j = i + 1; j < sq.Count; j++)
+                if (sq[i].Units.Any(u => sq[j].Units.Any(o => Vector2.DistanceSquared(u.Pos, o.Pos) < 0.5f))) overlaps++;
+        Check(overlaps == 0, $"no two companies deploy on top of each other ({overlaps})");
+        b.StartRecording(12);
+        var mine = b.Commanded.ToList();
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        int ticks = 0;
+        for (; b.Winner < 0 && ticks < 60 * 40; ticks++)
+        {
+            if (ticks == 30) foreach (var s in mine) s.Order = Order.Charge;
+            b.Update(1 / 60f);
+        }
+        double ms = clock.Elapsed.TotalMilliseconds / ticks;
+        Console.WriteLine($"scale: {men} men, field {b.MapRadius:0} m, {ms:0.00} ms per tick, {b.Units.Count(u => u.Dead)} dead after {b.Time:0}s");
+        Check(ms < 12, $"a 1,200-man battle runs under 12 ms per tick ({ms:0.0})");
+        Check(b.Units.All(u => float.IsFinite(u.Pos.X) && float.IsFinite(u.Pos.Y)), "nobody's position goes bad in a big battle");
+        Check(b.Units.Count(u => u.Dead) > 50, "the big armies meet and fight");
+        var rec = b.FinishRecording()!;
+        var again = Replay.Deserialize(rec.Serialize()).Play();
+        Check(rec.Winner == again.Winner && again.Units.Count(u => u.Dead) == rec.Dead, "a big battle replays exactly");
+    }
 }

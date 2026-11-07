@@ -234,10 +234,10 @@ public partial class Battle
         if (reserveSquad[team] is Squad r && r.Alive > 0) { r.Order = Order.Hold; r.Front = dir; r.Anchor = front - dir * 14; }
         if (!charged[team])
         {
-            foreach (var s in inf) { s.Front = dir; s.Anchor = front + dir * 6 + side * lateral.GetValueOrDefault(s); }
+            foreach (var s in inf) { s.Front = dir; s.Anchor = front + dir * (6 - depth.GetValueOrDefault(s)) + side * lateral.GetValueOrDefault(s); }
             // With several companies, the outermost swings out to take the enemy line in the flank.
-            if (inf.Count >= 3) { var wing = inf.OrderBy(s => lateral.GetValueOrDefault(s)).Last(); wing.Anchor = front + dir * 2 + side * (lateral.GetValueOrDefault(wing) + 14); }
-            foreach (var s in spears) { s.Front = dir; s.Anchor = front + dir * 6 + side * (16 + lateral.GetValueOrDefault(s)); } // swing wide on a flank
+            if (inf.Count >= 3) { var wing = inf.OrderBy(s => lateral.GetValueOrDefault(s)).Last(); wing.Anchor = front + dir * (2 - depth.GetValueOrDefault(wing)) + side * (lateral.GetValueOrDefault(wing) + 14); }
+            foreach (var s in spears) { s.Front = dir; s.Anchor = front + dir * (6 - depth.GetValueOrDefault(s)) + side * (16 + flankOut[team].Spears + lateral.GetValueOrDefault(s)); } // swing wide on a flank
             if (inf.Any(s => GapTo(s, foe) < 16) || spears.Any(s => s.Alive > 0 && GapTo(s, foe) < 10))
             {
                 charged[team] = true;
@@ -261,7 +261,7 @@ public partial class Battle
         var horse = Led(team, "horse");
         if (!horseCharged[team])
         {
-            foreach (var s in horse) { s.Front = dir; s.Anchor = front + dir * 4 - side * (26 - lateral.GetValueOrDefault(s)); } // the other flank
+            foreach (var s in horse) { s.Front = dir; s.Anchor = front + dir * (4 - depth.GetValueOrDefault(s)) - side * (26 + flankOut[team].Horse - lateral.GetValueOrDefault(s)); } // the other flank
             if (charged[team] || Time > 35 || horse.Any(s => s.Alive > 0 && GapTo(s, foe) < 20))
             {
                 horseCharged[team] = true;

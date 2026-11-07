@@ -22,7 +22,9 @@ public sealed class Projectile
 /// Headless battle simulation. No graphics, so the self-test can run it.
 public sealed partial class Battle
 {
-    public const float MapRadius = 95, Gravity = 9.8f, ArrowSpeed = 28, RallyRadius = 15;
+    public const float Gravity = 9.8f, ArrowSpeed = 28, RallyRadius = 15;
+    /// How far men can run before they have left the field: 95 m for a few hundred men, wider for a big battle.
+    public float MapRadius { get; private set; } = 95;
     /// Morale at which a company breaks (Stubborn officers and men behind an unbroken wall hold to a little less).
     public const float RoutAt = 12, RallyAt = 32;
     public readonly BattleOptions Options;
@@ -72,6 +74,7 @@ public sealed partial class Battle
         // The field holds at most Options.Cap men; each side gets its share and the rest wait as reinforcements.
         int total = player.Companies.Sum(c => c.Count) + enemy.Companies.Sum(c => c.Count);
         float share = total > Options.Cap ? Options.Cap / (float)total : 1;
+        MapRadius = Math.Clamp(95 * MathF.Sqrt(Math.Min(total, Options.Cap) / 450f), 95, 230);
         Deploy(0, player, (int)(player.Companies.Sum(c => c.Count) * share));
         Deploy(1, enemy, (int)(enemy.Companies.Sum(c => c.Count) * share));
         if (Options.PlayerWounded) Player.Fled = true; // too hurt to ride: you command from the rear
@@ -95,30 +98,70 @@ public sealed partial class Battle
             else reserves[team].Enqueue((c, Ironfield.Armies.RoleOf(c)));
         }
         if (Options.Siege && team == 1) { DeployDefenders(onField); return; }
-        foreach (var group in onField.GroupBy(Ironfield.Armies.RoleOf))
+        // Lay out every role's lines first: how wide the centre ends up decides how far out the flanks stand.
+        var layout = onField.GroupBy(Ironfield.Armies.RoleOf)
+            .ToDictionary(g => g.Key, g => Rows(g.ToList(), g.Key == "infantry" ? MaxLine : MaxLine / 2));
+        float Half(string role) => layout.TryGetValue(role, out var rows) ? rows.Max(r => r.Sum(x => x.w) + 4 * (r.Count - 1)) / 2 : 0;
+        float Depth(string role) => layout.TryGetValue(role, out var rows) ? rows.Sum(r => r.Max(x => (x.c.Count + x.cols - 1) / x.cols * (x.t.Mount != null ? 3f : 1.3f)) + 5) - 5 : 0;
+        float centre = MathF.Max(Half("infantry"), Half("archers")), infDepth = MathF.Max(0, Depth("infantry") - 2.6f);
+        // Spears stand off the left of the line, horse off the right, archers behind it; a wide centre pushes them out.
+        float spearsX = MathF.Max(22, centre + 6 + Half("spears")), horseX = MathF.Max(24, centre + 6 + Half("horse"));
+        flankOut[team] = (spearsX - 22, horseX - 24);
+        foreach (var (role, rows) in layout)
         {
-            var spot = group.Key switch
+            var spot = role switch
             {
-                "archers" => new Vector2(0, -38), "spears" => new Vector2(-22, -31), "horse" => new Vector2(24, -33), _ => new Vector2(0, -30),
+                "archers" => new Vector2(0, -38 - infDepth), "spears" => new Vector2(-spearsX, -31), "horse" => new Vector2(horseX, -33), _ => new Vector2(0, -30),
             };
-            var list = group.ToList();
-            var widths = list.Select(c =>
+            float back = 0;
+            foreach (var row in rows)
             {
-                var t = Troops.Get(c.Troop);
-                int cols = (c.Count + 1) / 2;
-                return (c, t, cols, w: cols * (t.Mount != null ? 3f : 1.3f));
-            }).ToList();
-            float total = widths.Sum(x => x.w) + 4 * (widths.Count - 1), at = -total / 2;
-            foreach (var (c, t, cols, w) in widths)
-            {
-                float off = at + w / 2;
-                at += w + 4;
-                var pos = (spot + new Vector2(off, 0)) * f;
-                var s = AddSquad(team, t, c.Count, pos, cols, new Vector2(0, f), c);
-                Role(team, group.Key).Add(s);
-                lateral[s] = off;
+                float total = row.Sum(x => x.w) + 4 * (row.Count - 1), at = -total / 2, deep = 0;
+                foreach (var (c, t, cols, w) in row)
+                {
+                    float off = at + w / 2;
+                    at += w + 4;
+                    var pos = (spot + new Vector2(off, -back)) * f;
+                    var s = AddSquad(team, t, c.Count, pos, cols, new Vector2(0, f), c);
+                    Role(team, role).Add(s);
+                    lateral[s] = off;
+                    depth[s] = back;
+                    deep = MathF.Max(deep, (c.Count + cols - 1) / cols * (t.Mount != null ? 3f : 1.3f));
+                }
+                back += deep + 5;
             }
         }
+        rearLine[team] = MathF.Max(48, 44 + infDepth);
+    }
+
+    /// The widest a role's line may stand before its companies form a second line behind (the infantry's; flanks half).
+    const float MaxLine = 110;
+    /// How far each side's flanks were pushed out by a wide infantry line (the general keeps them there).
+    readonly (float Spears, float Horse)[] flankOut = new (float, float)[2];
+    /// How many metres behind its role's front line a company was deployed (0 = in the first line).
+    readonly Dictionary<Squad, float> depth = new();
+    /// How far behind the centre reserves march on from: just behind each side's deployment.
+    readonly float[] rearLine = { 48, 48 };
+
+    /// Ranks a company stands in: two for a small company, deeper for a big one, so a large army is not one thin line.
+    public static int Ranks(int men) => men <= 30 ? 2 : men <= 80 ? 3 : men <= 160 ? 4 : 6;
+    public static int ColumnsFor(int men) => (men + Ranks(men) - 1) / Ranks(men);
+
+    /// Companies laid out left to right, wrapping into another line when the line would grow wider than maxWidth.
+    static List<List<(Company c, UnitType t, int cols, float w)>> Rows(List<Company> list, float maxWidth)
+    {
+        var rows = new List<List<(Company, UnitType, int, float)>> { new() };
+        float width = 0;
+        foreach (var c in list)
+        {
+            var t = Troops.Get(c.Troop);
+            int cols = ColumnsFor(c.Count);
+            float w = cols * (t.Mount != null ? 3f : 1.3f);
+            if (rows[^1].Count > 0 && width + 4 + w > maxWidth) { rows.Add(new()); width = 0; }
+            width += (rows[^1].Count > 0 ? 4 : 0) + w;
+            rows[^1].Add((c, t, cols, w));
+        }
+        return rows;
     }
 
     /// An empty field with only the two leaders, far apart; scenarios add squads with <see cref="AddSquad"/>.
@@ -328,7 +371,7 @@ public sealed partial class Battle
             var (c, role) = reserves[team].Dequeue();
             float f = team == 0 ? 1 : -1;
             var t = Troops.Get(c.Troop);
-            var s = AddSquad(team, t, c.Count, new Vector2(lateral.Count % 3 * 12 - 12, -48) * f, (c.Count + 1) / 2, new Vector2(0, f), c);
+            var s = AddSquad(team, t, c.Count, new Vector2(lateral.Count % 3 * 12 - 12, -rearLine[team]) * f, ColumnsFor(c.Count), new Vector2(0, f), c);
             s.Anchor = new Vector2(0, -30) * f;
             Role(team, role).Add(s);
             lateral[s] = 0;

@@ -141,10 +141,12 @@ sealed partial class BattleScreen
         var wv = (Environment.GetEnvironmentVariable("IRONFIELD_WEATHER") ?? "").Split(',').Select(v => float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : -1).ToArray();
         var weather = wv.Length >= 1 && wv[0] >= 0 ? new Weather(wv[0], wv.Length > 1 ? Math.Max(0, wv[1]) : 0, wv.Length > 2 ? Math.Max(0, wv[2]) : 0)
             : shotDir != null ? Weather.Clear : Weather.For(rng.NextSingle() < 0.7f ? 9 + rng.Next(8) : rng.Next(2) == 0 ? 6.5f : 18.5f, rng.Next(3), seed);
-        battle = new Battle(seed, Armies.Random(rng, Math.Clamp(mine, 1, 4), 0), Armies.Random(rng, Math.Clamp(theirs, 1, 4), 1),
+        // A quick battle fills the field: about half the battle size a side (IRONFIELD_MEN=n sets the men a side).
+        int men = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MEN"), out var m) ? m : Settings.Current.BattleSize / 2;
+        battle = new Battle(seed, Armies.Large(rng, Math.Clamp(mine, 1, 4), 0, men), Armies.Large(rng, Math.Clamp(theirs, 1, 4), 1, men),
             new BattleOptions
             {
-                EnemyDamage = Settings.Current.EnemyDamage, Weather = weather,
+                EnemyDamage = Settings.Current.EnemyDamage, Weather = weather, Cap = Math.Max(Settings.Current.BattleSize, men * 2 + 20),
                 // IRONFIELD_GROUND=river forces a river; otherwise a third of quick battles have one.
                 Ground = TerrainParams.Meadow with { River = Environment.GetEnvironmentVariable("IRONFIELD_GROUND") == "river" || (shotDir == null && rng.NextSingle() < 0.33f) },
             });

@@ -3,11 +3,11 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// Roadmap E1: a uniform grid over the field so separation, morale, targeting and arrows look only at nearby men,
-/// not at every man on the field. Rebuilt every tick (cheap); cells are 4 m, covering +-128 m (beyond is the edge cell).
+/// not at every man on the field. Rebuilt every tick (cheap); cells are 4 m, covering +-256 m (the whole battle ground).
 public sealed partial class Battle
 {
     const float CellSize = 4;
-    const int GridN = 64;
+    const int GridN = 128;
     readonly List<Unit>[] cells = Enumerable.Range(0, GridN * GridN).Select(_ => new List<Unit>(8)).ToArray();
     readonly List<Unit> near = new(64), nearBrace = new(64);
 
