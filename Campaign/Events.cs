@@ -144,14 +144,15 @@ public sealed partial class Campaign
     {
         BrigandKingsDaily();
         if (S.Event != null || S.Hours < S.NextEvent) return;
-        S.NextEvent = (float)S.Hours + rng.Range(EventGapMin, EventGapMax) * 24;
         var ready = new List<PendingEvent>();
         foreach (var e in Events.Where(e => !Forced.Contains(e.Trigger)))
         {
             if (S.EventsFired.TryGetValue(e.Id, out float at) && S.Hours - at < e.Cooldown * 24) continue;
             if (Find(e.Trigger) is PendingEvent pe) { pe.Id = e.Id; ready.Add(pe); }
         }
-        if (ready.Count > 0) Raise(ready[rng.Next(ready.Count)]);
+        if (ready.Count == 0) return; // nothing fits today: try again tomorrow rather than wait out another gap
+        S.NextEvent = (float)S.Hours + rng.Range(EventGapMin, EventGapMax) * 24;
+        Raise(ready[rng.Next(ready.Count)]);
     }
 
     void Raise(PendingEvent pe)

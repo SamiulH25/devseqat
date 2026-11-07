@@ -49,7 +49,7 @@ public partial class Campaign
                 if (playerIn && team != playerTeam && won)
                 {
                     loot += (sr.Fallen + sr.Fled) * Rules.PerMan(st.Type.Cost) * B.LootRate;
-                    if (!st.Type.Wild) // creatures are not held for ransom (goblin thralls come later: docs/CREATURES.md)
+                    if (!st.Type.Wild || st.Type.Breed == "goblin" && !st.Type.Has("boss")) // of the creatures, only goblins are taken alive (as thralls)
                         TakePrisoners(st.Troop, Has("Pursuit") ? (int)MathF.Round(captured * 1.25f) : captured); // held, not ransomed at once (B3)
                 }
             }

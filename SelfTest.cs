@@ -63,6 +63,7 @@ public static partial class SelfTest
         Wolves();
         Trolls();
         TrollsAbroad();
+        PlayerCreatures();
         WolfRiders();
         Couriers();
 

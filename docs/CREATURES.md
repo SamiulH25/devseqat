@@ -1,6 +1,6 @@
 # Creatures and monsters: brainstorm and plan
 
-Status: phase 1 (goblins), phase 2 (wolves, goblin wolf riders) and phase 3 (trolls) are built; see "As built" at the end. The rest is planned. Names are placeholders.
+Status: phase 1 (goblins), phase 2 (wolves, goblin wolf riders) phase 3 (trolls) and phase 4a (goblin thralls, war hounds) are built; see "As built" at the end. The rest is planned. Names are placeholders.
 
 The world is a fantasy world. Today every enemy is a man: lords, bandits, garrisons. This plan adds creatures and
 monsters as new enemies, new kinds of map encounter and, later, new troops for the player.
@@ -214,3 +214,11 @@ village; clearing a holdout removes it and pays the hoard; lords are hostile to 
   times stronger. Lords hunt one only with twice its strength, brigands never. Its death goes in the chronicle and pays
   `BountyTroll`. Simplification: the trolls of one party are one band; a lone named troll and a troll bridge lair can
   come later. Staged shots: `gallery-troll.png`, `campaign-troll.png`.
+
+**Phase 4a** (creatures for you; `PlayerCreatures` test):
+- Goblin thralls: goblins (not their boss, and no other creature) beaten by you are taken alive like men. Recruited
+  from the captives, they make a company named Goblin Thralls: craven goblins with no cohesion that never upgrade.
+- War hounds: a `kennel` building (any fief, 350 crowns) breeds `KennelPerWeek` (4, scaled) hounds a week up to
+  `KennelMax` (12, scaled) (`Settlement.Hounds`). At a kennel of yours, the Market tab's kennel row raises them
+  (`RaiseHounds`) into the pack you have or a new War Hounds company. `war_hounds` are wild (breed `hound`) and hunt
+  with the wolves' `pack` trait; drawn on the wolf rig in a brown coat. AI realms do not build kennels.

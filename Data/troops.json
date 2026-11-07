@@ -3798,6 +3798,39 @@
     "weapon": "club",
     "face": "troll"
    }
+  },
+  {
+   "id": "war_hounds",
+   "name": "War Hounds",
+   "class": "Infantry",
+   "culture": "wild",
+   "breed": "hound",
+   "tier": 2,
+   "upgradesTo": [],
+   "cost": 22,
+   "upgradeXp": 0,
+   "hp": 65,
+   "damage": 16,
+   "armor": 2,
+   "reach": 1.3,
+   "windup": 0.35,
+   "recover": 0.5,
+   "speed": 7.0,
+   "block": 0,
+   "size": 0.95,
+   "traits": [
+    "pack"
+   ],
+   "look": {
+    "head": "none",
+    "body": "tunic",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "sword",
+    "face": "wolf"
+   }
   }
  ]
 }

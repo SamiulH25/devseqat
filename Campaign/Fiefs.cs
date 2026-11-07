@@ -29,6 +29,7 @@ public sealed partial class Campaign
         new() { Id = "stables", Name = "Stables", Cost = 400, Days = 6, Castle = false, Text = "MORE HORSES FOR SALE, 30% CHEAPER HERE" },
         new() { Id = "chapel", Name = "Chapel", Cost = 350, Days = 6, Text = "UNREST FALLS FASTER, PIOUS LORDS APPROVE OF YOU" },
         new() { Id = "watchtower", Name = "Watchtower", Cost = 250, Days = 4, Text = "RAIDS IN THE PROVINCE HURT HALF AS MUCH" },
+        new() { Id = "kennel", Name = "Kennel", Cost = 350, Days = 5, Text = "BREEDS WAR HOUNDS FOR YOUR COMPANY: A PACK THAT RUNS DOWN ARCHERS AND STRAGGLERS" },
     };
 
     public static IReadOnlyList<BuildingDef> BuildingDefs => B.Buildings.Count > 0 ? B.Buildings : DefaultBuildings;

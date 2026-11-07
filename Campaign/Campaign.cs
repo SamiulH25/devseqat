@@ -398,6 +398,7 @@ public sealed partial class Campaign
             RefreshMercenaries(t);
             t.Horses = Math.Min(Scaled(Level(t, "stables") > 0 ? 35 : 20), t.Horses + Scaled(Level(t, "stables") > 0 ? 10 : 5));
         }
+        foreach (var t in S.Settlements.Where(t => Level(t, "kennel") > 0)) t.Hounds = Math.Min(Scaled(B.KennelMax), t.Hounds + Scaled(B.KennelPerWeek));
         GarrisonsWeekly();
         PrisonersWeekly();
         PiousWeekly();

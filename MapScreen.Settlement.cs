@@ -169,6 +169,19 @@ partial class MapScreen
         if (ui.Button(new Rectangle(row.Right - ui.U(84), row.Y + ui.U(38), ui.U(78), ui.U(24)), "BUY 5", s.Horses > 0)) note = C.BuyHorses(s, 5) ?? "BOUGHT";
         ui.Text("MEN PROMOTED INTO CAVALRY NEED A HORSE EACH,", c.X, row.Bottom + ui.U(10), Style.Dim, 1);
         ui.Text("OR PAY FOR ONE WHEN PROMOTED.", c.X, row.Bottom + ui.U(22), Style.Dim, 1);
+        if (s.Owner == C.Player.Id && Campaign.Level(s, "kennel") > 0)
+        {
+            // Your kennel: war hounds join your company as a pack (docs/CREATURES.md phase 4).
+            var k = new Rectangle(c.X, row.Bottom + ui.U(40), c.Width, ui.U(70));
+            TownRow(k);
+            PortraitWell(Troops.Get("war_hounds"), new Rectangle(k.X + ui.U(4), k.Y + ui.U(4), k.Height - ui.U(8), k.Height - ui.U(8)), 2);
+            ui.Text("WAR HOUNDS", k.X + k.Height + ui.U(6), k.Y + ui.U(10), Style.Text, 2);
+            ui.Text($"{s.Hounds} READY AT YOUR KENNEL", k.X + k.Height + ui.U(6), k.Y + ui.U(30), Style.Dim, 1);
+            ui.Icon("coin", k.X + k.Height + ui.U(6), k.Y + ui.U(44), Kit.Gilt, 1);
+            ui.Text($"{C.HoundPrice} A HOUND", k.X + k.Height + ui.U(18), k.Y + ui.U(44), Kit.Gilt, 1);
+            if (ui.Button(new Rectangle(k.Right - ui.U(84), k.Y + ui.U(8), ui.U(78), ui.U(24)), "TAKE 3", s.Hounds > 0)) note = C.RaiseHounds(s, 3) ?? "THE HOUNDS JOIN YOU";
+            if (ui.Button(new Rectangle(k.Right - ui.U(84), k.Y + ui.U(38), ui.U(78), ui.U(24)), "TAKE ALL", s.Hounds > 0)) note = C.RaiseHounds(s, s.Hounds) ?? "THE HOUNDS JOIN YOU";
+        }
 
         c = Well(new Rectangle(body.X + half + ui.U(12), y, half, body.Height), "YOUR GEAR", Kit.Gilt);
         var gear = C.Gear();

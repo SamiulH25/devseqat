@@ -192,6 +192,8 @@ public sealed class Party
 public sealed class Settlement
 {
     public int Id, Province, Faction, Recruits, Horses;
+    /// War hounds ready at this place's kennel (docs/CREATURES.md phase 4).
+    public int Hounds;
     public string Name = "";
     /// The culture its people belong to (F2): it keeps it when the settlement changes hands, so its recruits do too.
     public string Culture = "common";
@@ -488,6 +490,8 @@ public sealed class Balance
     public float RareStart = 2, RareEvery = 60, RareMax = 6, RareSpawnChance = 0.25f, TrollMen = 2, BountyTroll = 300;
     /// A troll's weight in an auto-resolve by night and by day (a battle at night or noon shows the same).
     public float TrollNight = 1.6f, TrollDay = 0.8f;
+    /// Creatures for you (phase 4): hounds a kennel breeds a week, and the most it keeps.
+    public float KennelPerWeek = 4, KennelMax = 12;
     public float HorseCostRate = 0.5f, ArmorCost = 600, HelmCost = 300, WarhorseCost = 400, DestrierCost = 900;
 
     static Balance? loaded;

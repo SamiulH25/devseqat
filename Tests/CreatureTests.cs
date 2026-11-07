@@ -75,7 +75,7 @@ public static partial class SelfTest
         Check(c.PartyById(lair.Id) == null, "a beaten holdout is gone");
         Check(c.S.Gold >= gold + 500 && report.Loot >= 500 && report.Bounty >= Balance.Get().BountyHoldout, "you take its hoard and a bounty");
         Check(raiders.LairId < 0, "its raiders no longer have a home");
-        Check(!c.Player.Prisoners.Any(g => Troops.Get(g.Troop).Wild), "goblins are not taken for ransom");
+        Check(!c.Player.Prisoners.Any(g => Troops.Get(g.Troop).Wild && Troops.Get(g.Troop).Breed != "goblin"), "of the creatures, only goblins are taken alive");
 
         // Left alone, the wilds keep their goblins: holdouts are replaced and still raid.
         Days(c, 60);
@@ -331,6 +331,48 @@ public static partial class SelfTest
         Days(d, 120);
         Console.WriteLine($"trolls: after 120 days {d.Rares.Count()} trolls abroad (wanted {d.RaresWanted}): {string.Join(", ", d.Rares.Select(r => $"{r.Name} {r.Men}"))}");
         Check(d.Rares.Count() >= 2 && d.Rares.Count() <= d.RaresWanted, "the world keeps its rare monsters");
+    }
+
+    /// Creatures for you (phase 4): goblins taken from a burnt-out holdout work as thralls; a kennel in your fief breeds
+    /// war hounds.
+    static void PlayerCreatures()
+    {
+        var c = Campaign.New(97);
+        c.S.Gold = 5000;
+        foreach (var co in c.Player.Companies) foreach (var st in co.Stacks) st.Men = 0;
+        c.Player.Companies.Clear();
+        c.Player.Companies.Add(c.NewCompany("ironguard", "infantry", c.Scaled(30), 0));
+        var lair = c.Holdouts.First();
+        foreach (var co in lair.Companies) foreach (var st in co.Stacks) st.Men = 0;
+        lair.Companies.Clear();
+        lair.Companies.Add(c.NewCompany("goblin", "infantry", c.Scaled(30), 0));
+        lair.Pos = c.Player.Pos;
+        c.Encounter = lair;
+        var report = c.AutoResolveEncounter();
+        var caught = c.Player.Prisoners.FirstOrDefault(g => g.Troop == "goblin");
+        Console.WriteLine($"creatures: burning out a holdout of {c.Scaled(30)} goblins takes {caught?.Count ?? 0} alive");
+        Check(report.Won && caught is { Count: > 0 }, "goblins are taken alive from a burnt-out holdout");
+        Check(c.RecruitPrisoners(caught!) == null, "captured goblins can be put to work");
+        var thralls = c.Player.Companies.Last();
+        Check(thralls.Name == "Goblin Thralls" && thralls.Troop == "goblin" && thralls.Cohesion == 0 && thralls.Type.Has("craven"), "as a company of goblin thralls, cowardly and loveless");
+
+        // A kennel in your fief breeds hounds that join you as a pack.
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town);
+        var other = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s != town);
+        Check(c.RaiseHounds(town, 3) != null, "no kennel, no hounds");
+        town.Owner = c.Player.Id;
+        town.Buildings["kennel"] = 1;
+        other.Buildings["kennel"] = 1;
+        Days(c, 7);
+        Check(town.Hounds > 0, $"a kennel breeds hounds ({town.Hounds})");
+        Check(c.RaiseHounds(other, 3) != null, "only at a kennel of yours");
+        int companies = c.Player.Companies.Count;
+        Check(c.RaiseHounds(town, 3) == null, "you raise hounds at your kennel");
+        var pack = c.Player.Companies.First(co => co.Troop == "war_hounds");
+        Check(c.Player.Companies.Count == companies + 1 && pack.Men == 3 && pack.Name == "War Hounds", "a new pack of war hounds");
+        Check(c.RaiseHounds(town, 2) == null && pack.Men == 5 && c.Player.Companies.Count == companies + 1, "more hounds join the pack you have");
+        var hound = Troops.Get("war_hounds");
+        Check(hound.Wild && hound.Has("pack") && hound.Look.Beast && hound.UpgradesTo.Length == 0, "a war hound hunts like a wolf and never becomes a man");
     }
 
     /// Debug: one troll against companies of shieldmen by night and by day (`--selftest TrollTrace`).

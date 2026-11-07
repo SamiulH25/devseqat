@@ -209,7 +209,10 @@ sealed class Puppet
     void Beast(Unit u, float ground)
     {
         float lunge = u.Action == UnitAction.Windup ? -0.12f : u.Action == UnitAction.Recover ? 0.28f : 0;
+        var grey = tint;
+        if (u.Type.Breed == "hound") tint = Color.Lerp(tint, HoundCoat, 0.6f); // a war hound is a brown dog, not a grey wolf
         WolfBody(u.Pos, ground, u.ViewFacing, u.Anim, u.Vel.Length(), u.Type.Size * Scale, lunge, u.Type.Size > 1.1f);
+        tint = grey;
     }
 
     /// The wolf rig at `size` (1 = a wolf; a warg is bigger). Returns its back's height above the ground, in metres.
@@ -258,10 +261,13 @@ sealed class Puppet
         return seat - 0.63f * u.Type.Size * Scale; // the rider's origin sits so his hips are on its back
     }
 
+    static readonly Color HoundCoat = new(150, 100, 58);
+
     void BeastCorpse(Unit u)
     {
         Flat(new(0, 0.04f, -0.2f), "blood", false);
         pal = "/n";
+        if (u.Type.Breed == "hound") tint = Color.Lerp(tint, HoundCoat, 0.6f);
         if (u.Type.Size > 1.1f) tint = Color.Lerp(tint, new Color(70, 64, 60), 0.45f);
         Flat(new(0, 0.06f, 0), "wbody", true);
         Flat(new(0.05f, 0.07f, 0.65f), "whead", true);
