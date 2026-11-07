@@ -224,7 +224,8 @@ public partial class Battle
             }
             else inf.Remove(reserve);
         }
-        var front = inf.Count > 0 ? inf.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / inf.Count : team == 1 ? eGuard.Centroid() : centroid[team];
+        // The line's centre: its infantry, else the captain's guard while he lives, else the whole side.
+        var front = inf.Count > 0 ? inf.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / inf.Count : team == 1 && eGuard.Alive > 0 ? eGuard.Centroid() : centroid[team];
         var dir = centroid[foe] - front;
         if (dir.LengthSquared() < 1) return;
         dir.Normalize();

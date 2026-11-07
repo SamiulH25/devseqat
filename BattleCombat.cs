@@ -53,7 +53,7 @@ public partial class Battle
         };
         if (a.Mounted) reach += 0.4f; // the player rides high in the saddle and can swing further
         int hits = 0;
-        foreach (var t in Units.Where(t => t.Team != a.Team && t.Active).OrderBy(t => Vector2.DistanceSquared(t.Pos, a.Pos)))
+        foreach (var t in Near(a.Pos, reach + 1, nearBrace).Where(t => t.Team != a.Team && t.Active).OrderBy(t => Vector2.DistanceSquared(t.Pos, a.Pos)).ThenBy(t => t.Index).ToList())
             if (InArc(a, t, reach + (t.Mounted ? 0.6f : 0), minDot) && hits++ < cleave) Hit(a, t, dmg, false);
     }
 
@@ -302,7 +302,7 @@ public partial class Battle
         {
             if (!b.Active || b.BraceCd > 0 || !Braced(b)) continue;
             float reach = b.Type.Reach + BraceExtra;
-            foreach (var u in Units)
+            foreach (var u in Near(b.Pos, reach + 0.5f, nearBrace))
             {
                 if (!u.Active || !u.Mounted || u.Team == b.Team) continue;
                 var to = u.Pos - b.Pos;
@@ -329,7 +329,7 @@ public partial class Battle
             if (!u.Active || !u.Couched || !u.Mounted) continue;
             var hd = u.HeadingDir;
             Vector2 a = u.Pos + hd * LanceFrom, b = u.Pos + hd * LanceTip;
-            foreach (var t in Units)
+            foreach (var t in Near((a + b) / 2, 2, nearBrace))
             {
                 if (!t.Active || t.Team == u.Team) continue;
                 float r = t.Mounted ? 0.9f : 0.35f;

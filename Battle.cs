@@ -172,6 +172,7 @@ public sealed partial class Battle
             s.Units.Add(h);
         }
         Squads.Add(s);
+        Bounds(s);
         return s;
     }
 
@@ -184,14 +185,23 @@ public sealed partial class Battle
         return u;
     }
 
+    /// Set by the bench (`--bench`): called at the end of each tick stage (index into <see cref="Stages"/>; -1 = tick start).
+    /// The sim itself never reads a clock, so replays stay exact.
+    public Action<int>? Probe;
+    public static readonly string[] Stages = { "grid", "general", "squads", "think", "move", "lances", "arrows", "morale", "end" };
+    void Mark(int stage) => Probe?.Invoke(stage);
+
     public void Update(float dt)
     {
+        Mark(-1);
         if (Recording != null) RecordFrame(dt);
         Sounds.Clear();
         Time += dt;
+        tick++;
         BuildGrid();
         RallyCooldown = MathF.Max(0, RallyCooldown - dt);
         UpdateCentroids();
+        Mark(0);
         if (!scripted && (generalTimer -= dt) <= 0)
         {
             generalTimer = 0.5f;
@@ -200,9 +210,11 @@ public sealed partial class Battle
         }
         Batter(dt);
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
+        Mark(1);
         UpdateCalledHorse(dt);
         Resupply(dt);
         foreach (var s in Squads) UpdateSquad(s, dt);
+        Mark(2);
         foreach (var u in Units)
         {
             if (!u.Active) continue;
@@ -210,21 +222,47 @@ public sealed partial class Battle
             u.Cooldown -= dt;
             u.ImpactCd -= dt;
             u.BraceCd -= dt;
-            if (u.IsPlayer) UpdatePlayer(u, dt); else Think(u, dt);
+            if (u.IsPlayer) UpdatePlayer(u, dt); else if (ThinkNow(u)) Think(u, dt);
             TickAction(u, dt);
             Tire(u, dt);
         }
+        Mark(3);
         Move(dt);
+        Mark(4);
         Braces();
         Lances();
+        Mark(5);
         UpdateArrows(dt);
+        Mark(6);
         UpdateMorale(dt);
+        Mark(7);
         CheckEnd();
+        Mark(8);
         Events.RemoveAll(e => Time - e.At > 6);
     }
 
+    /// Each squad's bounding circle (Squad.Center, Radius), so distance questions can skip far squads.
+    static void Bounds(Squad s)
+    {
+        var sum = Vector2.Zero;
+        int n = 0;
+        foreach (var u in s.Units) if (u.Active) { sum += u.Pos; n++; }
+        if (n == 0) { s.Center = s.Anchor; s.Radius = 0; return; }
+        s.Center = sum / n;
+        float r = 0;
+        foreach (var u in s.Units) if (u.Active) r = MathF.Max(r, Vector2.DistanceSquared(u.Pos, s.Center));
+        s.Radius = MathF.Sqrt(r);
+    }
+
+    int tick;
+    /// Men far from any enemy think every 4th tick (riders, and men within 25 m, every 2nd), spread by index so the work
+    /// is even; men within 6 m of the enemy, or mid-action, think every tick. Deterministic, so replays still match.
+    bool ThinkNow(Unit u) => u.EnemyDist < 6 || u.Action is not (UnitAction.None or UnitAction.Block) || u.Routing
+        || (tick + u.Index) % (u.EnemyDist < 25 || u.Mounted ? 2 : 4) == 0;
+
     void UpdateCentroids()
     {
+        foreach (var s in Squads) Bounds(s);
         for (int t = 0; t < 2; t++)
         {
             var sum = Vector2.Zero;
@@ -326,15 +364,19 @@ public sealed partial class Battle
         return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills);
     }
 
+    /// The gap between squad s and the nearest active man of `team`. Exact, but squads whose bounding circles
+    /// are already further than the best gap found are skipped (this runs for every company, twice a second).
     float GapTo(Squad s, int team)
     {
         float best = float.MaxValue;
-        foreach (var a in s.Units)
+        void Pair(Unit b) { foreach (var a in s.Units) if (a.Active) best = MathF.Min(best, Vector2.DistanceSquared(a.Pos, b.Pos)); }
+        foreach (var e in Squads.Where(e => e.Team == team && e.Units.Any(u => u.Active)).OrderBy(e => Vector2.Distance(e.Center, s.Center) - e.Radius))
         {
-            if (!a.Active) continue;
-            foreach (var b in Units)
-                if (b.Team == team && b.Active) best = MathF.Min(best, Vector2.DistanceSquared(a.Pos, b.Pos));
+            float lb = Vector2.Distance(e.Center, s.Center) - e.Radius - s.Radius;
+            if (lb > 0 && lb * lb >= best) break;
+            foreach (var b in e.Units) if (b.Active) Pair(b);
         }
+        if (Player.Team == team && Player.Active) Pair(Player);
         return MathF.Sqrt(best);
     }
 

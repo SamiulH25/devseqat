@@ -162,6 +162,7 @@ public static partial class SelfTest
             int predicted = s0 >= s1 ? 0 : 1;
             n++;
             if (predicted == b.Winner) agree++;
+            if (Environment.GetEnvironmentVariable("CAL_DEBUG") != null) Console.WriteLine($"  {i}: s0 {s0:0} s1 {s1:0} winner {b.Winner} t {b.Time:0}");
         }
         Console.WriteLine($"auto-resolve agrees with the battle sim in {agree}/{n} matchups");
         Check(agree >= n * 0.75f, $"auto-resolve calibration ({agree}/{n})");

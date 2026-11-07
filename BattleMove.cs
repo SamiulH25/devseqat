@@ -67,7 +67,7 @@ public partial class Battle
             f.Pos += n * 0.6f;
         }
         if (r.IsPlayer) PlayerHit = ($"TRAMPLE {real:0}", Time);
-        foreach (var u in Units)
+        foreach (var u in Near(f.Pos, 5, nearBrace))
             if (u.Active && u.Team == f.Team && Vector2.DistanceSquared(u.Pos, f.Pos) < 25) u.Morale -= 2; // the shock spreads
     }
 }

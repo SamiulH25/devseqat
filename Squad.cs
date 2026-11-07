@@ -35,6 +35,9 @@ public sealed class Squad
     public Company? Company;
     public bool RoutSounded;                      // the rout horn has blown for this company
     public bool AiControlled;                     // an allied lord's company: the AI general leads it, not you
+    /// A circle round every active man (routing too), refreshed at the start of each tick: cheap squad-to-squad distance bounds.
+    public Vector2 Center;
+    public float Radius;
 
     public Squad(string name, int team) { Name = name; Team = team; }
 

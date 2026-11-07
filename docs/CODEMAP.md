@@ -15,12 +15,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BalanceReport.cs (130 lines)
 - **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Csv:64, Run:66
 
-## Battle.cs (362 lines)
+## Battle.cs (404 lines)
 - **PlayerInput** (struct, L5)
 - **Projectile** (class, L15)
-- **Battle** (class, L23): Sound:31, Battle:64, Battle:67, Role:81, Deploy:85, Empty:125, Battle:127, SquadsOf:143, Centroid:144, Log:145, AddSquad:149, Spawn:178, Update:187, UpdateCentroids:226, UpdateSquad:237, CanBrace:260, Braced:265, RandomSwing:267, StartSwing:271, Reinforce:282, Result:303, GapTo:329, Withdraw:342, CheckEnd:351
+- **Battle** (class, L23): Sound:31, Battle:64, Battle:67, Role:81, Deploy:85, Empty:125, Battle:127, SquadsOf:143, Centroid:144, Log:145, AddSquad:149, Spawn:179, Mark:192, Update:194, Bounds:245, ThinkNow:260, UpdateCentroids:263, UpdateSquad:275, CanBrace:298, Braced:303, RandomSwing:305, StartSwing:309, Reinforce:320, Result:341, GapTo:369, Withdraw:384, CheckEnd:393
 
-## BattleAI.cs (284 lines)
+## BattleAI.cs (285 lines)
 - **Battle** (class, L6): Think:8, ThinkCav:81, Ride:173, Approach:181, TurnRate:183, Steer:186, Led:205, General:208
 
 ## BattleCaptain.cs (145 lines)
@@ -29,10 +29,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleCombat.cs (355 lines)
 - **Battle** (class, L6): TickAction:8, Strike:32, InArc:60, SpeedBonus:68, SideOf:80, Hit:89, Damage:179, HitHorse:190, Stagger:208, Kill:217, Shoot:245, Gauss:268, UpdateArrows:270, Braces:299, Lances:325, DistToSegment:349
 
-## BattleGrid.cs (98 lines)
-- **Battle** (class, L7): CellOf:14, BuildGrid:16, Near:28, Separate:71
+## BattleGrid.cs (116 lines)
+- **Battle** (class, L7): CellOf:14, BuildGrid:16, Near:28, Separate:89
 
-## BattleMorale.cs (71 lines)
+## BattleMorale.cs (74 lines)
 - **Battle** (class, L6): UpdateMorale:8
 
 ## BattleMove.cs (73 lines)
@@ -66,6 +66,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **CompanyResult** (record, L59)
 - **StackResult** (record, L63)
 - **BattleResult** (record, L66)
+
+## Bench.cs (37 lines)
+- **Bench** (class, L7): Run:9
 
 ## Campaign/Campaign.cs (403 lines)
 - **Campaign** (class, L7): Campaign:36, New:50, Log:98, PartyById:104, SettlementById:105, SideOf:109, Hostile:111, WarBetween:118, FactionsAtWar:119, AtWarWithAnyone:120, Score:123, Refuses:134, SettlementAt:136, InTown:137, Tick:142, Speed:158, Move:170, Encounters:200, Clash:228, Hourly:251, Daily:274, Weekly:341, Desert:393
@@ -210,7 +213,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## PixelFont.cs (59 lines)
 - **PixelFont** (class, L7): PixelFont:26, Width:41, Draw:43, DrawRun:49
 
-## Program.cs (34 lines)
+## Program.cs (40 lines)
 
 ## Puppet.cs (417 lines)
 - **Puppet** (class, L13): Puppet:28, Begin:30, Rad:39, W:40, Frame:51, Draw:71, Horse:149, DrawLooseHorse:202, DrawDeadHorse:209, RotY:226, Arm:233, Span:243, Pose:250, Key:251, Lerp:253, PoseOf:272, Corpse:306, Particle:321, Banner:333, Quad:352, Bill:362, Axial:373, Long:385, Plane:398, Flat:409
@@ -243,10 +246,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteSheet.cs (634 lines)
 - **SpriteSheet** (class, L12): SpriteSheet:27, Add:34, Pack:36, Side:59, InEl:100, Head:102, Helm:128, Torso:221, Tabard:253, Emblem:269, Cape:291, Sleeve:299, Leg:317, Boot:333, Hand:351, Shield:358, Weapon:391, Blade:437, Polearm:448, Bow:463, Arrow:477, Quiver:486, Plume:495, Flag:503, Blood:512, Horse:523, BodyShape:585, HorseGear:588, Saddle:622
 
-## Squad.cs (139 lines)
+## Squad.cs (142 lines)
 - **Order** (enum, L5)
 - **Formation** (enum, L10)
-- **Squad** (class, L13): Squad:39, Choices:53, FaceAt:58, Slot:65, Centroid:94, SetLine:103, Shift:123, HoldInPlace:131
+- **Squad** (class, L13): Squad:42, Choices:56, FaceAt:61, Slot:68, Centroid:97, SetLine:106, Shift:126, HoldInPlace:134
 
 ## Style.cs (75 lines)
 - **Emblem** (enum, L5)
@@ -264,8 +267,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/BattleTests.cs (451 lines)
 - **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, RangedRoles:169, FatigueAndSupply:189, Rivers:206, Generals:233, HorseDown:250, Ground:259, HoldFire:283, TroopTree:297, Sprites:321, BigBattle:357, StackBattle:387, ReplayExact:421, SpearsStopHorse:443
 
-## Tests/CampaignTests.cs (616 lines)
-- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:35, CampaignRun:46, Progression:88, Economy:115, Bridge:127, Calibration:148, SiegeBattle:171, CampaignWar:209, RefuseOldSave:269, Stacks:295, Cultures:340, Characters:410, SkillTree:513, BalanceMatchesData:596, HorsesCostGold:608
+## Tests/CampaignTests.cs (617 lines)
+- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:35, CampaignRun:46, Progression:88, Economy:115, Bridge:127, Calibration:148, SiegeBattle:172, CampaignWar:210, RefuseOldSave:270, Stacks:296, Cultures:341, Characters:411, SkillTree:514, BalanceMatchesData:597, HorsesCostGold:609
 
 ## Tests/CareerTests.cs (353 lines)
 - **SelfTest** (class, L6): PilotTrace:9, Career:24, PilotCareer:120, FiefLife:131, WarAndPeace:217, EventsAndQuests:293
@@ -276,12 +279,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## TitleScreen.cs (43 lines)
 - **TitleScreen** (class, L7): TitleScreen:14, Update:16, Draw:23
 
-## Troops.cs (175 lines)
+## Troops.cs (185 lines)
 - **Troops** (class, L7): Get:14, Mount:15, Path:47, Load:57, Validate:81, Tree:106
 - **Company** (record, L120): Has:123
 - **StackSpec** (record, L129)
 - **ArmySpec** (record, L131)
-- **Armies** (class, L135): LineTroop:138, readonly:140, Count:148, Standard:156, Random:159, Make:165, LineTroop:169, RoleOf:171
+- **Armies** (class, L135): LineTroop:138, readonly:140, Count:148, Standard:156, Random:159, Large:166, Make:175, LineTroop:179, RoleOf:181
 
 ## Ui.cs (102 lines)
 - **Ui** (class, L8): Ui:23, Begin:25, End:35, Blocks:38, Block:39, U:40, Rect:42, Frame:44, Panel:52, Dim:61, Text:63, TW:64, TextC:65, TextR:66, Bar:68, Hover:74, Clicked:77, Button:85, Portrait:101

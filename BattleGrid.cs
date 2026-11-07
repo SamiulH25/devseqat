@@ -9,7 +9,7 @@ public sealed partial class Battle
     const float CellSize = 4;
     const int GridN = 64;
     readonly List<Unit>[] cells = Enumerable.Range(0, GridN * GridN).Select(_ => new List<Unit>(8)).ToArray();
-    readonly List<Unit> near = new(64);
+    readonly List<Unit> near = new(64), nearBrace = new(64);
 
     static int CellOf(float v) => Math.Clamp((int)MathF.Floor(v / CellSize) + GridN / 2, 0, GridN - 1);
 
@@ -36,10 +36,12 @@ public sealed partial class Battle
     }
 
     /// Nearest active, non-routing enemy of u (within `only` when given): grows the search ring before scanning everyone.
+    static readonly float[] Rings = { 4f, 10f };
+
     (Unit? unit, float dist) NearestFast(Unit u, Squad? only)
     {
         if (only != null) return NearestScan(u, only.Units);
-        foreach (float r in new[] { 10f, 28f })
+        foreach (float r in Rings)
         {
             Unit? best = null;
             float bd = r * r;
@@ -51,7 +53,23 @@ public sealed partial class Battle
             }
             if (best != null) return (best, MathF.Sqrt(bd));
         }
-        return NearestScan(u, Units);
+        return NearestFar(u);
+    }
+
+    /// Nobody within 10 m: look in the enemy squad whose bounding circle comes closest (and at the enemy general).
+    (Unit? unit, float dist) NearestFar(Unit u)
+    {
+        Squad? bestSquad = null;
+        float bd = float.MaxValue;
+        foreach (var e in Squads)
+        {
+            if (e.Team == u.Team || e.Alive == 0) continue;
+            float d = Vector2.Distance(e.Center, u.Pos) - e.Radius;
+            if (d < bd) { bd = d; bestSquad = e; }
+        }
+        var (best, dist) = bestSquad != null ? NearestScan(u, bestSquad.Units) : (null, float.MaxValue);
+        if (Player.Team != u.Team && Player.Active && !Player.Routing && Vector2.Distance(Player.Pos, u.Pos) is float pd && pd < dist) (best, dist) = (Player, pd);
+        return best == null ? NearestScan(u, Units) : (best, dist);
     }
 
     (Unit? unit, float dist) NearestScan(Unit u, List<Unit> among)

@@ -14,9 +14,12 @@ public partial class Battle
             foreach (var u in Units) if (u.Team == t) { all++; if (!u.Active) gone++; }
             lost[t] = all == 0 ? 0 : gone / (float)all;
         }
+        // Each man's morale is worked out every 2nd tick (half the men each tick) over twice the time step.
+        float step = dt * 2;
         foreach (var u in Units)
         {
             if (!u.Active || u.IsLeader) continue; // leaders never break
+            if ((tick + u.Index) % 2 != 0) continue;
             var lead = u.Team == 0 ? Player : EnemyCaptain;
             // The enemy captain stands just behind his line, so his aura covers it all battle. Yours only reaches
             // men around your body, and not at all from command view: a side whose general is alive but looking
@@ -46,7 +49,7 @@ public partial class Battle
             // Neighbours running away, and horsemen thundering at you, are frightening.
             int routing = 0;
             bool charged = false;
-            foreach (var o in Near(u.Pos, 10, near))
+            foreach (var o in Near(u.Pos, 8, near))
             {
                 if (!o.Active || o == u) continue;
                 float d2 = Vector2.DistanceSquared(o.Pos, u.Pos);
@@ -56,7 +59,7 @@ public partial class Battle
             }
             m -= MathF.Min(2, routing * 0.3f);
             if (charged) m -= 2.5f;
-            u.Morale = Math.Clamp(u.Morale + m * dt, 0, 100);
+            u.Morale = Math.Clamp(u.Morale + m * step, 0, 100);
             // Iron Will: near you, a company that still has a third of its men will not break.
             if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);
             float routAt = (u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? RoutAt - 4 : RoutAt) - (u.Squad.Company?.RoutBonus ?? 0); // officer trait; walls; honours

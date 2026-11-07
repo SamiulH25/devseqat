@@ -162,6 +162,16 @@ public static class Armies
         return Make(team == 1 ? "Crimson host" : "Azure company", level, tiers, team == 1);
     }
 
+    /// A big campaign-like army of about `men` men: several companies per line (the bench and scale tests).
+    public static ArmySpec Large(Random rng, int level, int team, int men)
+    {
+        var list = new List<Company>();
+        int id = 1;
+        while (list.Sum(c => c.Count) < men)
+            foreach (var c in Random(rng, level, team).Companies) list.Add(c with { Id = team * 1000 + id++ });
+        return new ArmySpec(team == 1 ? "Crimson host" : "Azure company", level, list);
+    }
+
     static ArmySpec Make(string name, int level, int[] tiers, bool enemy) =>
         new(name, level, Lines.Select((l, i) => new Company(l.ByTier[tiers[i] - 1], Count(l.Base, l.ByTier[tiers[i] - 1], enemy), l.Role)).ToList());
 
