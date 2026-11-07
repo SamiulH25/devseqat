@@ -87,6 +87,33 @@ public partial class Campaign
         return null;
     }
 
+    public int HoundPrice => (int)MathF.Ceiling(Rules.PerMan(Troops.Get("war_hounds").Cost));
+
+    /// War hounds bred at the kennel of a fief of yours join your company: into a pack you have, or as a new company.
+    public string? RaiseHounds(Settlement s, int n)
+    {
+        if (s.Owner != Player.Id || Level(s, "kennel") == 0) return "NO KENNEL OF YOURS HERE";
+        n = Math.Min(n, s.Hounds);
+        if (n <= 0) return "NO HOUNDS READY";
+        int room = Rules.MenLimit(Captain) - Player.Men - Player.Wounded;
+        if (room <= 0) return "PARTY IS FULL";
+        var pack = Player.Companies.FirstOrDefault(c => c.Troop == "war_hounds" && Rules.Room(c, "war_hounds") > 0);
+        if (pack == null && Player.Companies.Count >= Rules.CompanySlots(Captain)) return "NO FREE COMPANY";
+        string role = Rules.TroopRole("war_hounds");
+        n = Math.Min(n, Math.Min(room, pack != null ? Rules.Room(pack, "war_hounds") : Rules.CapOf("war_hounds", role)));
+        if (S.Gold < n * HoundPrice) return $"NEEDS {n * HoundPrice} CROWNS";
+        S.Gold -= n * HoundPrice;
+        s.Hounds -= n;
+        if (pack != null) Rules.AddMen(pack, "war_hounds", n);
+        else
+        {
+            pack = NewCompany("war_hounds", role, n, 0, s);
+            pack.Name = "War Hounds";
+            Player.Companies.Add(pack);
+        }
+        return null;
+    }
+
     /// The captain's gear: heavier pieces need the Arms skill to wear (F4).
     public (string Name, int Cost, bool Owned, int Arms)[] Gear() => new[]
     {

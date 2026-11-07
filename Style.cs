@@ -37,10 +37,12 @@ public static class Style
     };
 
     /// The palette a campaign faction paints with (the Northmarch clans are palette 4; -1 and -2 are free captains and brigands).
-    public static int PaletteOf(int faction) => faction switch { -2 => 3, < 0 => 0, _ => Factions.Get(faction).Palette };
+    public static int PaletteOf(int faction) => faction switch { -2 or -3 => 3, < 0 => 0, _ => Factions.Get(faction).Palette };
 
     // ---------- materials (base tones; the painter builds a 5-step ramp from each) ----------
 
+    public static readonly Color GoblinSkin = new(112, 140, 64);
+    public static readonly Color Bone = new(212, 202, 174);
     public static readonly Color Skin = new(226, 180, 140), Hair = new(96, 64, 40), Leather = new(118, 80, 48),
         Wood = new(140, 98, 58), Steel = new(172, 178, 190), Iron = new(96, 100, 112), Brass = new(214, 172, 70),
         Linen = new(222, 214, 190), Blood = new(128, 22, 22), Coat = new(208, 208, 208), Mane = new(92, 92, 92), Hoof = new(64, 60, 58);

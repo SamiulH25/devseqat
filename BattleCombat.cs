@@ -42,6 +42,7 @@ public partial class Battle
                 ? Vector2.Distance(a.Pos, t.Pos) <= aiReach + 0.35f + extra
                 : InArc(a, t, aiReach + 0.4f + extra, 0.5f);
             if (lands) Hit(a, t, dmg, false);
+            if (lands && a.Type.Has("sweep")) Sweep(a, t, dmg, aiReach + 0.4f);
             return;
         }
         // Player: thrusts reach far but hit one man; side cuts sweep a wide arc and cleave up to 3.
@@ -128,7 +129,7 @@ public partial class Battle
         else if (facing && t.Action is UnitAction.None or UnitAction.Block)
         {
             // Shields cover every direction; without one, thrusts and overheads are harder to read.
-            float chance = t.Type.BlockChance * (lance ? 0.5f : 1) * (t.Type.HasShield
+            float chance = t.Type.BlockChance * (lance ? 0.5f : 1) * (a.Type.Huge ? 0.5f : 1) * (t.Type.HasShield
                 ? (a.Swing == AttackDir.Thrust ? 0.9f : 1)
                 : a.Swing switch { AttackDir.Thrust => 0.7f, AttackDir.Overhead => 0.85f, _ => 1 });
             if (ranged && !t.Type.HasShield) chance *= 0.3f;
@@ -160,9 +161,12 @@ public partial class Battle
         float officer = tired * (a.Squad?.Company is Company oc ? (oc.Has("Hothead") ? 1.1f : 1) * (oc.Has("Veteran") ? 1.05f : 1) : 1);
         if (ranged && t.Squad?.Formation == Formation.Square) officer *= 1.25f;                    // a packed square is an easy mark
         if (!ranged && a.Squad is { Formation: Formation.Wedge, Order: Order.Charge }) officer *= 1.15f; // a wedge drives in
-        float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1);
+        float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
+            * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
+            * (ranged && t.Type.Has("bones") ? 0.3f : 1); // arrows pass between a skeleton's ribs
         if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged ? a.Type.Pierce : 0);
+        if (!ranged && a.Type.Has("knockback")) Knock(a, t);
         Sound(ranged ? Cue.ArrowHit : t.Type.Armor >= 8 ? Cue.Clash : Cue.Hit, t.Pos);
         if (a.IsPlayer)
         {
@@ -181,6 +185,7 @@ public partial class Battle
         float real = MathF.Max(dmg * 0.25f, dmg - t.Type.Armor * (1 - pierce)); // bolts punch through part of the armour
         t.Hp -= real;
         t.HitFlash = 0.15f;
+        t.HurtAt = Time;
         t.Morale -= real * 0.16f + extraShock * 0.7f;
         if (t.Action == UnitAction.Windup || t.Charging) Stagger(t, 0.3f); // hits interrupt swings
         if (t.Hp <= 0) Kill(t, a);
@@ -207,11 +212,22 @@ public partial class Battle
 
     static void Stagger(Unit u, float time)
     {
+        if (u.Type.Huge) return; // a troll's swing is not stopped by a man's blow or shield
         u.Action = UnitAction.Stagger;
         u.ActionTimer = time;
         u.Charging = false;
         u.Charge = 0;
         u.Couched = false;
+    }
+
+    /// A goblin boss is down: every craven of his side loses heart at once and stops rallying; his foes take courage.
+    void BossFalls(Unit boss)
+    {
+        BossDown[boss.Team] = true;
+        foreach (var u in Units)
+            if (u.Active && u.Team == boss.Team && u.Type.Bound) u.Morale -= 30;
+            else if (u.Active && u.Team != boss.Team) u.Morale = MathF.Min(100, u.Morale + 8);
+        Log(boss.Type.Look.Beast ? $"The {boss.Type.Name.ToLowerInvariant()} is down! The pack scatters." : $"The {boss.Type.Name.ToLowerInvariant()} is slain! {(boss.Team == 0 ? "Your" : "The")} goblins scatter.");
     }
 
     void Kill(Unit t, Unit killer)
@@ -223,8 +239,9 @@ public partial class Battle
         t.Vel = t.Wish = Vector2.Zero;
         if (t.Mounted)
         {
-            LooseHorses.Add(new LooseHorse { Mount = t.Horse!, Hp = t.HorseHp, Pos = t.Pos, Heading = t.Heading, Team = t.Team, Coat = t.Coat });
-            if (killer.Squad != null && killer.Team != t.Team) killer.Squad.HorseKills++;
+            if (t.Horse!.Barding != "wolf") // a warg whose rider falls runs off into the wild; nobody else can ride it
+                LooseHorses.Add(new LooseHorse { Mount = t.Horse!, Hp = t.HorseHp, Pos = t.Pos, Heading = t.Heading, Team = t.Team, Coat = t.Coat });
+            if (killer.Squad != null && killer.Team != t.Team && t.Horse.Barding != "wolf") killer.Squad.HorseKills++;
             t.Horse = null;
             t.Pos -= new Vector2(-t.HeadingDir.Y, t.HeadingDir.X) * 1.0f; // the rider falls off to the side
         }
@@ -238,6 +255,9 @@ public partial class Battle
             if (u.Team == t.Team) { if (t.IsLeader) u.Morale -= 16; else if (d < 8) u.Morale -= 3; }
             else if (d < 10) u.Morale += killer.IsPlayer ? 6 : 2; // heroics inspire more
         }
+        if (t.Type.Has("boss") && !BossDown[t.Team]) BossFalls(t);
+        if (t.Type.Has("raise") && !Units.Any(u => u.Active && u.Team == t.Team && u.Type.Has("raise"))) MasterFalls(t);
+        if (killer.Active && killer.Type.Has("feed")) killer.Hp = MathF.Min(killer.Type.MaxHp, killer.Hp + killer.Type.MaxHp * 0.3f); // a ghoul feeds
         if (t.IsPlayer) Log("You have fallen! Your troops waver.");
         else if (t.IsLeader) Log("The enemy captain is slain!");
     }

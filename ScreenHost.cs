@@ -390,7 +390,37 @@ sealed class ScreenHost : Game
                 Shot("campaign-divisions");
                 break;
             }
-            case 29: Exit(); break;
+            case 29:
+            {
+                // A goblin holdout (docs/CREATURES.md) at your feet.
+                map.Stage("map");
+                var lair = c.Holdouts.OrderByDescending(h => h.Men).First();
+                c.Player.Pos = lair.Pos + new Vector2(2, 0);
+                c.Encounter = lair;
+                map.Stage("encounter"); Shot("campaign-holdout"); break;
+            }
+            case 30:
+            {
+                // A troll, abroad by night.
+                map.Stage("map");
+                c.Encounter = null;
+                var troll = c.Rares.First();
+                c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 23;
+                c.Player.Pos = troll.Pos + new Vector2(2, 0);
+                c.Encounter = troll;
+                map.Stage("encounter"); Shot("campaign-troll"); break;
+            }
+            case 31:
+            {
+                // The dead of an unburied field, walking in the dark.
+                map.Stage("map");
+                c.Encounter = null;
+                var host = c.RaiseHost(new Grave { Pos = c.Player.Pos + new Vector2(6, 4), Dead = 150, Hours = c.S.Hours });
+                c.Player.Pos = host.Pos + new Vector2(2, 0);
+                c.Encounter = host;
+                map.Stage("encounter"); Shot("campaign-undead"); break;
+            }
+            case 32: Exit(); break;
         }
     }
 }

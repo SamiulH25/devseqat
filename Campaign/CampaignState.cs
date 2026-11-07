@@ -8,7 +8,8 @@ namespace Ironfield;
 // Nothing here references MonoGame graphics: the self-test runs whole campaigns headless.
 
 public enum SettlementKind { Village, Town, Castle }
-public enum PartyKind { Player, Lord, Bandit, Garrison }
+/// Monster: creatures of the wild (docs/CREATURES.md), hostile to every party of men; Party.Breed says what they are.
+public enum PartyKind { Player, Lord, Bandit, Garrison, Monster }
 
 /// A persistent company (CAMPAIGN_OVERHAUL.md 2): a banner with a role, a history and an officer, holding troop stacks of any
 /// troops that fit its role. The company's face (portrait, name in battle) is its largest stack.
@@ -174,6 +175,15 @@ public sealed class Party
     public bool Captive;                 // a lord held by you
     public float Food = 10;              // days of food (yours; lords are fed by their faction)
     public int SiegeTarget = -1;         // the settlement this party is besieging
+    /// Monsters (docs/CREATURES.md): what they are ("goblin"); a holdout is a Lair party that never moves, its Gold the
+    /// hoard; a raiding band names its holdout (LairId, a party id) and the village it is going to plunder (RaidOn).
+    public string Breed = "";
+    public bool Lair;
+    public int LairId = -1, RaidOn = -1;
+    public float NextRaid;               // a holdout's next raid (campaign hours)
+    /// A holdout whose raiders plundered a realm's village is hunted by that realm's lords until HuntedUntil.
+    public int HuntedBy = -1;
+    public float HuntedUntil;
 
     public int Men => Companies.Sum(c => c.Men);
     public int Wounded => Companies.Sum(c => c.Wounded);
@@ -182,6 +192,8 @@ public sealed class Party
 public sealed class Settlement
 {
     public int Id, Province, Faction, Recruits, Horses;
+    /// War hounds ready at this place's kennel (docs/CREATURES.md phase 4).
+    public int Hounds;
     public string Name = "";
     /// The culture its people belong to (F2): it keeps it when the settlement changes hands, so its recruits do too.
     public string Culture = "common";
@@ -203,6 +215,14 @@ public sealed class Settlement
     public float BuildUntil;
     /// Tax level: 0 low, 1 normal, 2 high (set by the holder; a seat's villages pay at its rate).
     public int Tax = 1;
+}
+
+/// Where a big battle's dead lie unburied, how many, and since when.
+public sealed class Grave
+{
+    public int Id, Dead;
+    public Vector2 Pos;
+    public double Hours;
 }
 
 public sealed class Province
@@ -331,6 +351,8 @@ public sealed class CampaignState
     public PendingEvent? Event;
     public float NextEvent = 72;
     public Dictionary<string, float> EventsFired = new();
+    /// Grave fields of big battles whose dead were not buried (docs/CREATURES.md phase 5): one may rise as an undead host.
+    public List<Grave> Graves = new();
     public float LastSummons = -1000;
     public int LastBattleFoe = -1;             // the last party you defeated (for hunt contracts)
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
@@ -459,6 +481,35 @@ public sealed class Balance
     public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 1, DrillTown = 2;
     public float TownIncome = 150, CastleIncome = 90, VillageIncome = 40, LordWage = 1.3f;
     public float TruceDays = 30, PeaceScore = 1500, BountyBandits = 50, BountyLord = 120;
+    /// Goblin holdouts (docs/CREATURES.md): how many per forest or hill province, the daily chance one is raised while
+    /// under that, how far from any settlement, and (in base men, times ArmyScale) their size when raised, their cap,
+    /// daily growth and when a boss appears. Raids leave every HoldoutRaidDays once the holdout has HoldoutRaidMen,
+    /// with HoldoutRaidBand men, at a village within HoldoutRaidRange. Gold: hoard to start, per day and per raid.
+    public float HoldoutsPerWildProvince = 0.5f, HoldoutSpawnChance = 0.35f, HoldoutClearance = 12;
+    public float HoldoutStartMen = 10, HoldoutMaxMen = 45, HoldoutGrowPerDay = 0.7f, HoldoutBossMen = 35;
+    public float HoldoutRaidDays = 5, HoldoutRaidMen = 18, HoldoutRaidBand = 10, HoldoutRaidRange = 45;
+    /// A holdout's host counts this many times its strength in an auto-resolved fight: it fights from its holes.
+    public float HoldoutDefence = 2.5f;
+    /// Days a realm's lords hunt a holdout after its raiders plunder one of their villages.
+    public float HoldoutHuntDays = 6;
+    /// Wolf packs: how many per forest province, the daily chance one appears while under that, and their size in base
+    /// men (times ArmyScale; a wolf more for every 30 days), plus the dire wolf that leads each.
+    public float WolfPacksPerForest = 0.3f, WolfSpawnChance = 0.3f, WolfPackMin = 4, WolfPackMax = 9;
+    public float HoldoutStartHoard = 60, HoldoutHoardPerDay = 4, HoldoutRaidLoot = 40, BountyHoldout = 80;
+    // Rare monsters (docs/CREATURES.md phase 3): how many trolls, how many in each, the bounty on one.
+    public float RareStart = 2, RareEvery = 60, RareMax = 6, RareSpawnChance = 0.25f, TrollMen = 2, BountyTroll = 300;
+    /// A troll's weight in an auto-resolve by night and by day (a battle at night or noon shows the same).
+    public float TrollNight = 1.6f, TrollDay = 0.8f;
+    /// Creatures for you (phase 4): hounds a kennel breeds a week, and the most it keeps.
+    public float KennelPerWeek = 4, KennelMax = 12;
+    /// The chance a town's mercenary board offers ogres each week, and how many.
+    public float OgreOfferChance = 0.05f, OgreMen = 1;
+    /// The dead rise (phase 5): fallen men that make a grave field, how many days until it may rise, its nightly chance,
+    /// the days before it rests for good, the chance a realm buries a battle's dead in its lands, the most undead hosts at once.
+    public float GraveMin = 40, GraveRiseDays = 3, GraveRiseChance = 0.35f, GraveDays = 15, RealmBuryChance = 0.92f, UndeadMax = 2;
+    /// An undead host: the share of a field's dead that rise as skeletons, its size bounds (times ArmyScale), the share of
+    /// the fallen it raises after a win, what it hunts, its auto-resolve weight by night and by day, and its bounty.
+    public float UndeadShare = 0.5f, UndeadMinMen = 10, UndeadMaxMen = 50, UndeadGrowShare = 0.3f, UndeadPreyAt = 1.1f, UndeadNight = 1.3f, UndeadDay = 0.8f, BountyUndead = 250;
     public float HorseCostRate = 0.5f, ArmorCost = 600, HelmCost = 300, WarhorseCost = 400, DestrierCost = 900;
 
     static Balance? loaded;

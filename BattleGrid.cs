@@ -107,16 +107,16 @@ public sealed partial class Battle
         foreach (var a in Units)
         {
             if (!a.Active) continue;
-            float ra = a.Mounted ? 1.0f : 0.375f, ma = a.Mounted ? 6 : 1;
+            float ra = BodyRadius(a), ma = BodyMass(a);
             foreach (var b in Near(a.Pos, 2.1f, near))
             {
                 if (b.Index <= a.Index || !b.Active) continue;
-                float rb = b.Mounted ? 1.0f : 0.375f, r = ra + rb;
+                float rb = BodyRadius(b), r = ra + rb;
                 var d = b.Pos - a.Pos;
                 float l2 = d.LengthSquared();
                 if (l2 >= r * r) continue;
                 if (l2 < 1e-6f) { d = new Vector2(0.01f, 0); l2 = 1e-4f; }
-                float l = MathF.Sqrt(l2), mb = b.Mounted ? 6 : 1;
+                float l = MathF.Sqrt(l2), mb = BodyMass(b);
                 var n = d / l;
                 var push = n * (r - l);
                 a.Pos -= push * (mb / (ma + mb));

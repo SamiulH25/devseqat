@@ -419,7 +419,7 @@ public partial class Battle
         if (threat != null && Vector2.Distance(center, at) < leash) Engage(d, live, threat);
         else Form(d, live, at, front);
         bool horseNear = Squads.Any(s => s.Team == foe && s.Cavalry && s.Alive > 0 && Vector2.Distance(s.Center, at) - s.Radius < 35);
-        foreach (var s in live.Where(s => !s.Cavalry && !Ranged(s) && s.Units[0].Type.HasShield))
+        foreach (var s in live.Where(s => !s.Cavalry && !Ranged(s) && !s.Swarm && s.Units[0].Type.HasShield))
             s.Formation = horseNear && d.Temper != Temper.Bold && s.Order == Order.Hold ? Formation.ShieldWall : Formation.Line;
         foreach (var s in live.Where(Ranged))
             if (s.Order == Order.Hold) { s.Target = SoftTarget(s, foe); s.FireAtWill = true; }

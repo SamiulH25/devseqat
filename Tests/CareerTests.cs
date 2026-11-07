@@ -101,8 +101,8 @@ public static partial class SelfTest
         Check(back.S.Factions.Count == before + 1 && back.Rank == Rank.King && back.FactionNames[mine] == c.FactionNames[mine], "a founded realm survives save and load");
         Check(back.S.Serialize() == json, "save, load, save is stable with a founded realm");
 
-        // Winning: hold 60% of the provinces as king.
-        foreach (var p in c.S.Provinces.Take((int)MathF.Ceiling(c.S.Provinces.Count * Campaign.WinShare)))
+        // Winning: hold 60% of the provinces as king (two more, so a fief lost in the day of war that follows keeps it over).
+        foreach (var p in c.S.Provinces.Take((int)MathF.Ceiling(c.S.Provinces.Count * Campaign.WinShare) + 2))
         {
             p.Faction = mine;
             foreach (var s in c.S.Settlements.Where(s => s.Province == p.Id)) s.Faction = mine;
@@ -207,7 +207,7 @@ public static partial class SelfTest
         // The world builds without you.
         var built = c.S.Settlements.Sum(s => s.Buildings.Values.Sum());
         Days(c, 60);
-        Console.WriteLine($"fiefs: buildings in the world {built} -> {c.S.Settlements.Sum(s => s.Buildings.Values.Sum())}, prosperity avg {c.S.Settlements.Average(s => s.Prosperity):0}");
+        Console.WriteLine($"fiefs: buildings in the world {built} -> {c.S.Settlements.Sum(s => s.Buildings.Values.Sum())}, prosperity avg {c.S.Settlements.Average(s => s.Prosperity):0}, chests {string.Join("/", c.S.Factions.Select(f => f.Treasury.ToString("0")))}");
         Check(c.S.Settlements.Sum(s => s.Buildings.Values.Sum()) > built, "AI realms raise buildings");
         Check(c.S.Settlements.All(s => s.Prosperity is >= 0 and <= 100 && s.Unrest is >= 0 and <= 100), "prosperity and unrest stay in range");
     }
@@ -329,6 +329,7 @@ public static partial class SelfTest
         var band = b.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
         band.Companies.Add(b.NewCompany("levies", "infantry", b.Scaled(24), 0));
         band.Companies.Add(b.NewCompany("levies", "spears", b.Scaled(12), 0));
+        band.Cooldown = 30; // kept out of fights for the day, so a passing lord cannot scatter it first
         Days(b, 1);
         var king = b.CharacterOf(band);
         Check(king is { Kind: "brigand" } && b.S.Event is { Id: "brigand_king" }, "the largest band crowns a brigand king");

@@ -58,6 +58,15 @@ public static partial class SelfTest
         ReplayExact();
         ScaleBattle();
         DivisionGoals();
+        Holdouts();
+        GoblinBattle();
+        Wolves();
+        Trolls();
+        TrollsAbroad();
+        PlayerCreatures();
+        WolfRiders();
+        Undead();
+        UndeadAbroad();
         Couriers();
 
         for (int seed = 1; seed <= 3; seed++)

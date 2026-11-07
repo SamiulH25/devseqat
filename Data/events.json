@@ -111,6 +111,15 @@
       ]
     },
     {
+      "id": "bury_dead", "trigger": "graves", "cooldown": 0, "title": "THE DEAD OF THE FIELD",
+      "text": "The field near {settlement} is thick with the dead of the battle. The old women say a field left unburied does not lie quiet for long.",
+      "choices": [
+        { "label": "BURY THEM", "effects": ["bury", "food:-3", "cohesion:2"] },
+        { "label": "BURN THE BODIES", "effects": ["bury", "cohesion:-2"] },
+        { "label": "MARCH ON", "effects": [] }
+      ]
+    },
+    {
       "id": "brigand_king", "trigger": "brigand_king", "cooldown": 9999, "title": "A BRIGAND KING",
       "text": "{lord} has gathered every cutthroat for miles into {band} and calls himself a king. Villages burn where he passes.",
       "choices": [

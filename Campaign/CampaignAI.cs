@@ -68,6 +68,13 @@ public partial class Campaign
             m.Name = Rules.CompanyName(rng, role);
             t.Mercenaries.Add(m);
         }
+        // Now and then a few ogres sell their clubs (docs/CREATURES.md phase 4): costly, and the only big beasts for hire.
+        if (rng.Chance(B.OgreOfferChance))
+        {
+            var o = NewCompany("ogre", Rules.TroopRole("ogre"), Scaled(B.OgreMen), 0);
+            o.Name = "Ogre Sellswords";
+            t.Mercenaries.Add(o);
+        }
     }
 
     IEnumerable<Party> Visible(Party p, float range) => S.Parties.Where(q => q != p && !q.Down && Vector2.Distance(p.Pos, q.Pos) < range);
@@ -81,7 +88,7 @@ public partial class Campaign
         var who = CharacterOf(p);
         float runAt = who?.Traits.Contains("Reckless") == true ? 1.7f : who?.Traits.Contains("Cautious") == true ? 1.1f : 1.3f;
         float preyAt = who?.Traits.Contains("Reckless") == true ? 1.25f : who?.Traits.Contains("Cautious") == true ? 0.75f : 1f;
-        var threat = hostiles.Where(q => Rules.Strength(q) > me * runAt && Vector2.Distance(q.Pos, p.Pos) < 25).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault();
+        var threat = hostiles.Where(q => !q.Lair && Rules.Strength(q) > me * runAt && Vector2.Distance(q.Pos, p.Pos) < 25).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault();
         // Go home to refit when the company is thin, or to spend an upgrade it can already pay for. Refit buys what the
         // purse allows and the faction treasury covers the rest, so a lord who has lost men goes home even when it is poor.
         bool needsRefit = p.Men < Scaled(45) || p.Companies.Count < 3
@@ -106,7 +113,9 @@ public partial class Campaign
             p.Task = "refit"; p.ChaseId = -1; p.Goal = home.Pos; p.Moving = true;
             if (Vector2.Distance(p.Pos, home.Pos) < 2 * Map.Spread) { Refit(p, home); p.Task = "rest"; p.TaskUntil = (float)S.Hours + 12; }
         }
-        else if (hostiles.Where(q => Rules.Strength(q) < me * preyAt * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f))
+        // A holdout is dug in: a lord goes after one only when its raiders have plundered his realm, and he is clearly the stronger.
+        else if (hostiles.Where(q => !q.Lair || q.HuntedBy == p.Faction && S.Hours < q.HuntedUntil && Rules.Strength(q) * B.HoldoutDefence * 1.2f < me * preyAt)
+                     .Where(q => Rules.Strength(q) * (q.Breed is "troll" or "undead" ? 2 : 1) < me * preyAt * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f)) // a troll only with twice its weight
                      .OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
         {
             p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 6;
@@ -192,13 +201,13 @@ public partial class Campaign
         var near = Visible(p, 25).Where(q => Hostile(p, q)).ToList();
         // Brigands are opportunists, not soldiers: they run from anything near their own weight and only fall on a
         // clearly weaker party. With many more bands on the big map they would otherwise grind the lords to nothing.
-        if (near.FirstOrDefault(q => Rules.Strength(q) > me * 1.05f) is Party threat)
+        if (near.FirstOrDefault(q => !q.Lair && Rules.Strength(q) > me * 1.05f) is Party threat)
         {
             var away = p.Pos - threat.Pos;
             p.Goal = p.Pos + (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 20 * Map.Spread;
             p.ChaseId = -1; p.Moving = true; p.TaskUntil = (float)S.Hours + 2;
         }
-        else if (near.Where(q => Rules.Strength(q) < me * 0.9f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
+        else if (near.Where(q => !q.Lair && q.Breed is not ("troll" or "undead") && Rules.Strength(q) < me * 0.9f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
         {
             p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 4;
         }

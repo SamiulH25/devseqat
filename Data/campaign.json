@@ -12,5 +12,14 @@
   "LordsPerFaction": 8, "BanditsMax": 80, "BanditSpawnChance": 0.95, "BanditSpawnsPerDay": 5, "BanditBandMin": 10, "BanditBandMax": 20,
   "BanditGrowPerDays": 9, "BanditTierPerDays": 45, "LordAggression": 0.35, "TownIncome": 150, "CastleIncome": 90, "VillageIncome": 40, "LordWage": 1.3,
   "TruceDays": 30, "PeaceScore": 1500, "BountyBandits": 50, "BountyLord": 120,
+  "HoldoutsPerWildProvince": 0.5, "HoldoutSpawnChance": 0.35, "HoldoutClearance": 12,
+  "HoldoutStartMen": 10, "HoldoutMaxMen": 45, "HoldoutGrowPerDay": 0.7, "HoldoutBossMen": 35,
+  "HoldoutRaidDays": 5, "HoldoutRaidMen": 18, "HoldoutRaidBand": 10, "HoldoutRaidRange": 45, "HoldoutDefence": 2.5, "HoldoutHuntDays": 6,
+  "WolfPacksPerForest": 0.3, "WolfSpawnChance": 0.3, "WolfPackMin": 4, "WolfPackMax": 9,
+  "HoldoutStartHoard": 60, "HoldoutHoardPerDay": 4, "HoldoutRaidLoot": 40, "BountyHoldout": 80,
+  "RareStart": 2, "RareEvery": 60, "RareMax": 6, "RareSpawnChance": 0.25, "TrollMen": 2, "BountyTroll": 300, "TrollNight": 1.6, "TrollDay": 0.8,
+  "KennelPerWeek": 4, "KennelMax": 12, "OgreOfferChance": 0.05, "OgreMen": 1,
+  "GraveMin": 40, "GraveRiseDays": 3, "GraveRiseChance": 0.35, "GraveDays": 15, "RealmBuryChance": 0.92, "UndeadMax": 2,
+  "UndeadShare": 0.5, "UndeadMinMen": 10, "UndeadMaxMen": 50, "UndeadGrowShare": 0.3, "UndeadPreyAt": 1.1, "UndeadNight": 1.3, "UndeadDay": 0.8, "BountyUndead": 250,
   "HorseCostRate": 0.5, "ArmorCost": 600, "HelmCost": 300, "WarhorseCost": 400, "DestrierCost": 900
 }

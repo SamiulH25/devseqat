@@ -23,17 +23,18 @@ public static class Troops
 
     sealed class LookDto
     {
-        public string Head = "none", Body = "tunic", Legs = "cloth", Feet = "boots", Hands = "skin", Shield = "none", Weapon = "sword";
+        public string Head = "none", Body = "tunic", Legs = "cloth", Feet = "boots", Hands = "skin", Shield = "none", Weapon = "sword", Face = "man";
         public bool Tabard, Plume, Cape;
     }
 
     sealed class TroopDto
     {
-        public string Id = "", Name = "", Class = "Infantry", Culture = "common";
+        public string Id = "", Name = "", Class = "Infantry", Culture = "common", Breed = "";
         public string? Mount;
         public int Tier, Cost, UpgradeXp, Ammo;
         public string[] UpgradesTo = Array.Empty<string>();
-        public float Hp, Damage, Armor, Reach, Windup, Recover, Speed, Block, Range, VsMounted = 1, Pierce, Reload = 1;
+        public float Hp, Damage, Armor, Reach, Windup, Recover, Speed, Block, Range, VsMounted = 1, VsMonster = 1, Pierce, Reload = 1, Size = 1;
+        public string[] Traits = Array.Empty<string>();
         public bool Leader;
         public LookDto Look = new();
     }
@@ -66,11 +67,11 @@ public static class Troops
             var l = d.Look;
             troops[d.Id] = new UnitType
             {
-                Id = d.Id, Name = d.Name, Culture = d.Culture, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
+                Id = d.Id, Name = d.Name, Culture = d.Culture, Breed = d.Breed, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
                 UpgradesTo = d.UpgradesTo, MaxHp = d.Hp, Damage = d.Damage, Armor = d.Armor, Reach = d.Reach, Windup = d.Windup,
-                Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, Pierce = d.Pierce, Reload = d.Reload,
-                Leader = d.Leader, Mount = d.Mount == null ? null : mounts[d.Mount],
-                Look = new Look(l.Head, l.Body, l.Legs, l.Feet, l.Hands, l.Shield, l.Weapon, l.Tabard, l.Plume, l.Cape),
+                Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, VsMonster = d.VsMonster, Pierce = d.Pierce, Reload = d.Reload,
+                Leader = d.Leader, Size = d.Size, Traits = d.Traits, Mount = d.Mount == null ? null : mounts[d.Mount],
+                Look = new Look(l.Head, l.Body, l.Legs, l.Feet, l.Hands, l.Shield, l.Weapon, l.Tabard, l.Plume, l.Cape, l.Face),
             };
         }
         var problems = Validate().ToList();
@@ -86,11 +87,19 @@ public static class Troops
                 if (!troops.TryGetValue(u, out var next)) yield return $"{t.Id} upgrades to unknown {u}";
                 else if (next.Tier <= t.Tier) yield return $"{t.Id} -> {u} does not raise the tier";
             if ((t.Class == UnitClass.Cavalry) != (t.Mount != null)) yield return $"{t.Id}: cavalry needs a mount and only cavalry has one";
-            if (t.Culture is not ("common" or "azure" or "crimson" or "northern")) yield return $"{t.Id}: unknown culture {t.Culture}";
+            if (t.Culture is not ("common" or "azure" or "crimson" or "northern" or "wild")) yield return $"{t.Id}: unknown culture {t.Culture}";
+            if (t.Wild != (t.Breed != "")) yield return $"{t.Id}: a wild troop needs a breed, and only wild troops have one";
+            if (t.Wild && t.UpgradesTo.Length > 0) yield return $"{t.Id}: wild troops do not upgrade";
+            foreach (var u in t.UpgradesTo)
+                if (troops.TryGetValue(u, out var up) && up.Wild) yield return $"{t.Id}: men do not upgrade into {u}";
             if (t.Class == UnitClass.Archer && (t.Ammo <= 0 || t.Range <= 0)) yield return $"{t.Id}: archers need ammo and range";
             if (Look.Ranged(t.Look.Weapon) != t.Ammo > 0) yield return $"{t.Id}: a bow needs ammo, and only bows have it";
             var l = t.Look;
             if (!Look.Heads.Contains(l.Head)) yield return $"{t.Id}: unknown head {l.Head}";
+            if (!Look.Faces.Contains(l.Face)) yield return $"{t.Id}: unknown face {l.Face}";
+            foreach (var tr in t.Traits) if (!UnitType.KnownTraits.Contains(tr)) yield return $"{t.Id}: unknown trait {tr}";
+            if (t.Size is < 0.5f or > 3f) yield return $"{t.Id}: size {t.Size} out of range";
+            if (l.Beast && (t.Mount != null || t.Ammo > 0 || l.Shield != "none")) yield return $"{t.Id}: a beast rides nothing, shoots nothing and carries no shield";
             if (!Look.Bodies.Contains(l.Body)) yield return $"{t.Id}: unknown body {l.Body}";
             if (!Look.LegsKinds.Contains(l.Legs)) yield return $"{t.Id}: unknown legs {l.Legs}";
             if (!Look.FeetKinds.Contains(l.Feet)) yield return $"{t.Id}: unknown feet {l.Feet}";
@@ -99,7 +108,7 @@ public static class Troops
             if (!Look.Weapons.Contains(l.Weapon)) yield return $"{t.Id}: unknown weapon {l.Weapon}";
         }
         foreach (var m in mounts!.Values)
-            if (m.Barding is not ("saddle" or "caparison")) yield return $"{m.Id}: unknown barding {m.Barding}";
+            if (m.Barding is not ("saddle" or "caparison" or "wolf")) yield return $"{m.Id}: unknown barding {m.Barding}";
     }
 
     /// Every troop reachable from `id` by upgrading (including itself).
@@ -213,7 +222,7 @@ public static class Armies
     /// The troop a line fields at a tier (1-7).
     public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 7) - 1];
 
-    public static string RoleOf(Company c) => c.Role is { Length: > 0 } r ? r : Troops.Get(c.Troop).Class switch
+    public static string RoleOf(Company c) => c.Role is { Length: > 0 } r ? r : Troops.Get(c.Troop).Has("raise") ? "casters" : Troops.Get(c.Troop).Class switch
     {
         UnitClass.Archer => "archers", UnitClass.Skirmisher => "spears", UnitClass.Cavalry => "horse", _ => "infantry",
     };

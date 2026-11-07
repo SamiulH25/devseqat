@@ -399,6 +399,14 @@ sealed partial class Hud
     {
         var l = t.Look;
         const float top = 1.92f; // metres at the top of the box
+        if (l.Face == "wolf") // a beast's portrait is its head, big
+        {
+            var src = art["whead/n"];
+            int kk = Math.Max(1, Math.Min(box.Width / src.Width, box.Height / src.Height));
+            var dst = new Rectangle(box.Center.X - src.Width * kk / 2, box.Center.Y - src.Height * kk / 2, src.Width * kk, src.Height * kk);
+            sb.Draw(art.Atlas, dst, src, t.Size > 1.1f ? new Color(150, 140, 135) : Color.White);
+            return;
+        }
         void Part(string key, float xm, float ym, string pal = "/0", Color? tint = null)
         {
             var src = art[key + pal];
@@ -410,12 +418,13 @@ sealed partial class Hud
             sb.Draw(art.Atlas, new Rectangle(d.X, d.Y, s2.Width * k, s2.Height * k), s2, tint ?? Color.White);
         }
         float WeaponY(string w) => 1.0f + (0.5f - SpriteSheet.Grip[w]) * art[w + "/0"].Height * Art.Px;
-        if (t.Mount != null) Part("hhead", -0.25f, 0.78f, "/n", new Color(Style.Coats[0]));
+        if (t.Mount is { Barding: "wolf" }) Part("whead", -0.3f, 0.8f, "/n", new Color(150, 140, 135));
+        else if (t.Mount != null) Part("hhead", -0.25f, 0.78f, "/n", new Color(Style.Coats[0]));
         if (t.Class == UnitClass.Archer) Part(l.Weapon, 0.42f, 1.2f);
         if (l.Cape) Part("cape", 0, 1.0f);
         Part($"torso.{l.Body}.f", 0, 1.0f);
         if (l.Tabard) Part("tabard.f", 0, 0.98f);
-        Part("head.f", 0, 1.53f);
+        Part(l.HeadKey + ".f", 0, 1.53f);
         if (l.Head != "none") Part($"helm.{l.Head}.f", 0, 1.81f - art[$"helm.{l.Head}.f/0"].Height * Art.Px / 2);
         if (l.Plume) Part("plume", 0, 1.81f + art["plume/0"].Height * Art.Px / 2 - 0.06f);
         if (t.Class != UnitClass.Archer) Part(l.Weapon, -0.42f, WeaponY(l.Weapon));

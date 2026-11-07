@@ -63,6 +63,7 @@ public static class Rules
     public static float Strength(UnitType t, int men)
     {
         float cls = t.Class switch { UnitClass.Cavalry => 1.35f, UnitClass.Archer => 0.9f, _ => 1f };
+        if (t.Huge) cls *= 2f; // a troll's blows sweep through several men, and it heals
         return men * (t.MaxHp + 5 * t.Armor + 2 * t.Damage) * cls / 100f;
     }
 

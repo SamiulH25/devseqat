@@ -23,7 +23,7 @@ public partial class Battle
         Separate(dt); // near pairs only, through the spatial grid (BattleGrid.cs)
         // Trees and boulders are solid; a horse that rides into one pulls up hard.
         foreach (var u in Units)
-            if (u.Active && Terrain.PushOut(ref u.Pos, u.Mounted ? 0.9f : 0.35f) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
+            if (u.Active && Terrain.PushOut(ref u.Pos, u.Mounted ? 0.9f : BodyRadius(u) - 0.025f) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
         EnforceWall(before);
     }
 
@@ -51,7 +51,7 @@ public partial class Battle
         f.ImpactCd = 0.8f;
         Sound(Cue.Impact, f.Pos);
         r.Contact = true;
-        if (Braced(f) && Vector2.Dot(-n, f.Dir) > 0.4f)
+        if (f.Type.Huge || Braced(f) && Vector2.Dot(-n, f.Dir) > 0.4f) // a troll stands a horse off like a spear wall
         {
             r.Speed *= 0.35f; // the horse balks at the wall
             HitHorse(r, closing * 2.6f, f);

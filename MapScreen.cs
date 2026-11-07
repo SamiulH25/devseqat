@@ -328,20 +328,26 @@ sealed partial class MapScreen
         DrawUi();
     }
 
-    /// Each party is drawn as its leader on horseback (bandits on foot), three times life size.
+    /// Each party is drawn as its leader on horseback (brigands and goblins on foot), three times life size.
     void UpdateBearers()
     {
         foreach (var p in C.S.Parties)
         {
             if (!bearers.TryGetValue(p.Id, out var u))
             {
-                var type = p.Kind == PartyKind.Player ? Rules.CaptainType(C.Captain) : p.Kind == PartyKind.Bandit ? Troops.Get("levies") : Troops.Get(p.Tier >= 3 ? "knights" : "captain");
+                var type = p.Kind switch
+                {
+                    PartyKind.Player => Rules.CaptainType(C.Captain),
+                    PartyKind.Bandit => Troops.Get("levies"),
+                    PartyKind.Monster => Troops.Get(p.Breed == "wolf" ? "dire_wolf" : p.Breed == "troll" ? "troll" : p.Breed == "undead" ? "skeleton" : p.Lair ? "hobgoblin" : "goblin"),
+                    _ => Troops.Get(p.Tier >= 3 ? "knights" : "captain"),
+                };
                 u = new Unit
                 {
-                    Type = type, Team = 1, IsPlayer = p.Kind == PartyKind.Player, Palette = Style.PaletteOf(p.Kind == PartyKind.Bandit ? -2 : p.Faction),
+                    Type = type, Team = 1, IsPlayer = p.Kind == PartyKind.Player, Palette = Style.PaletteOf(C.SideOf(p)),
                     Coat = p.Id % Style.Coats.Length, Facing = p.Facing, ViewFacing = p.Facing, Heading = p.Facing, ViewHeading = p.Facing,
                 };
-                if (p.Kind != PartyKind.Bandit) { u.Horse = p.Kind == PartyKind.Player ? Rules.CaptainMount(C.Captain) : type.Mount ?? Mount.Courser; u.HorseHp = u.Horse.Hp; }
+                if (!Campaign.Outlaw(p)) { u.Horse = p.Kind == PartyKind.Player ? Rules.CaptainMount(C.Captain) : type.Mount ?? Mount.Courser; u.HorseHp = u.Horse.Hp; }
                 bearers[p.Id] = u;
             }
             var moved = p.Pos - u.Pos;

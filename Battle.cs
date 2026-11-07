@@ -59,6 +59,8 @@ public sealed partial class Battle
     bool enemyCharged, enemyHorseCharged;
     float generalTimer, reinforceTimer;
     readonly bool[] charged = new bool[2], horseCharged = new bool[2];
+    /// A side whose boss has fallen (docs/CREATURES.md): its craven creatures no longer rally.
+    public readonly bool[] BossDown = new bool[2];
     readonly Queue<(Company C, string Role)>[] reserves = { new(), new() };
     readonly List<(Company C, int Team)> heldBack = new(); // companies that never reached the field
 
@@ -114,7 +116,7 @@ public sealed partial class Battle
         {
             var spot = role switch
             {
-                "archers" => new Vector2(0, -38 - infDepth), "spears" => new Vector2(-spearsX, -31), "horse" => new Vector2(horseX, -33), _ => new Vector2(0, -30),
+                "archers" => new Vector2(0, -38 - infDepth), "casters" => new Vector2(0, -44 - infDepth), "spears" => new Vector2(-spearsX, -31), "horse" => new Vector2(horseX, -33), _ => new Vector2(0, -30),
             };
             float back = 0;
             foreach (var row in rows)
@@ -217,6 +219,7 @@ public sealed partial class Battle
             h.Heading = h.Facing;
             s.Units.Add(h);
         }
+        if (s.Swarm) s.Formation = Formation.Loose; // goblins come on as a mob
         Squads.Add(s);
         Bounds(s);
         return s;
@@ -258,6 +261,7 @@ public sealed partial class Battle
         UpdateDivisions();
         Batter(dt);
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
+        RaiseDead(dt);
         Mark(1);
         UpdateCalledHorse(dt);
         Resupply(dt);
@@ -273,6 +277,7 @@ public sealed partial class Battle
             if (u.IsPlayer) UpdatePlayer(u, dt); else if (ThinkNow(u)) Think(u, dt);
             TickAction(u, dt);
             Tire(u, dt);
+            if (u.Type.Has("regen")) Regen(u, dt);
         }
         Mark(3);
         Move(dt);
