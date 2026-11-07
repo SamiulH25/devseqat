@@ -200,6 +200,7 @@ public sealed partial class Campaign
                 p.Pos = t;
                 if (p.ChaseId < 0) p.Moving = false;
                 if (p.Kind == PartyKind.Player && p.GoalSettlement >= 0) { Arrived = SettlementById(p.GoalSettlement); p.GoalSettlement = -1; }
+                if (p.Kind == PartyKind.Player && SiteById(S.GoalSite) is Site site) { S.GoalSite = -1; ArriveAtSite(site); }
             }
             else p.Pos += d / dist * step;
             if (p.Kind == PartyKind.Player) Practise("Logistics", MathF.Min(dist, step) * 0.006f); // days on the march (F4)

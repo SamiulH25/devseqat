@@ -345,6 +345,8 @@ sealed class World : IDisposable
                 case FoliageKind.Ladder: Ladder(m, b); break;
                 case FoliageKind.House: TownHouse(m, b, f.Scale, rng); break;
                 case FoliageKind.Wagon: Wagon(m, b, rng); break;
+                case FoliageKind.Ruin or FoliageKind.Shrine or FoliageKind.Stones or FoliageKind.Field or FoliageKind.Mine
+                    or FoliageKind.Hut or FoliageKind.Watch or FoliageKind.Spring or FoliageKind.Mill: SiteModel(m, f.Kind, b, f.Scale, rng); break;
                 default: Rock(m, b, f.Scale, rng); break;
             }
         }
@@ -474,6 +476,87 @@ sealed class World : IDisposable
         House(m, b, 1.4f * s, 0.8f * s, 1.1f * s, 0.3f, Stone, Slate);
         m.Frustum(b + new Vector3(0.6f * s, 0, 0), b + new Vector3(0.6f * s, 2.2f * s, 0), 0.3f * s, 0.28f * s, 6, Stone, r);
         m.Frustum(b + new Vector3(0.6f * s, 2.2f * s, 0), b + new Vector3(0.6f * s, 3.0f * s, 0), 0.36f * s, 0, 6, Slate, r, capBottom: true);
+    }
+
+    // ---------- sites (campaign map, docs/SIDE_CONTENT.md S2) ----------
+
+    static readonly Color Moss = new(96, 110, 78), Earth = new(96, 78, 58), Iron = new(70, 72, 80);
+
+    /// A site's model: small enough to sit between the villages, but each with a shape you can tell from the others.
+    static void SiteModel(Mesh m, FoliageKind kind, Vector3 b, float s, Random r)
+    {
+        m.Tag = Vector2.Zero;
+        switch (kind)
+        {
+            case FoliageKind.Ruin: // broken walls of uneven height around a fallen tower
+                for (int i = 0; i < 7; i++)
+                {
+                    float a = i * MathF.Tau / 7, h = (0.3f + r.NextSingle() * 1.1f) * s;
+                    m.Box(b + new Vector3(MathF.Cos(a), -0.1f, MathF.Sin(a)) * 2.2f * s, 1.6f * s, 0.35f * s, h, a + MathF.PI / 2, Jitter(Stone, r, 0.1f));
+                }
+                m.Frustum(b - Vector3.Up * 0.1f, b + Vector3.Up * 1.9f * s, 0.7f * s, 0.6f * s, 7, Jitter(Stone, r, 0.08f), r);
+                for (int i = 0; i < 4; i++) m.Blob(b + new Vector3(r.NextSingle() * 3 - 1.5f, 0, r.NextSingle() * 3 - 1.5f) * s, new Vector3(0.4f, 0.25f, 0.4f) * s, Moss, r, 0.3f);
+                break;
+            case FoliageKind.Shrine: // a little chapel with a spire
+                House(m, b, 1.0f * s, 0.7f * s, 0.8f * s, r.NextSingle() * MathF.Tau, Stone, Slate);
+                m.Frustum(b + Vector3.Up * 1.1f * s, b + Vector3.Up * 2.2f * s, 0.18f * s, 0, 5, Slate, r);
+                m.Box(b + new Vector3(1.3f, 0, 0.8f) * s, 0.12f * s, 0.12f * s, 0.9f * s, 0, Timber);
+                m.Box(b + new Vector3(1.3f, 0.6f, 0.8f) * s, 0.5f * s, 0.12f * s, 0.12f * s, 0, Timber);
+                break;
+            case FoliageKind.Stones: // a ring of standing stones
+                for (int i = 0; i < 9; i++)
+                {
+                    float a = i * MathF.Tau / 9;
+                    m.Box(b + new Vector3(MathF.Cos(a), -0.1f, MathF.Sin(a)) * 2.0f * s, 0.45f * s, 0.3f * s, (1.0f + r.NextSingle() * 0.7f) * s, a, Jitter(new Color(140, 140, 136), r, 0.08f));
+                }
+                m.Box(b + new Vector3(0, -0.1f, 0), 1.0f * s, 0.6f * s, 0.35f * s, r.NextSingle(), new Color(120, 120, 118));
+                break;
+            case FoliageKind.Field: // old grave mounds, stakes and a leaning banner pole
+                for (int i = 0; i < 5; i++) m.Blob(b + new Vector3(i * 0.9f - 1.8f, 0, (i % 2) * 1.2f - 0.6f) * s, new Vector3(0.5f, 0.25f, 0.9f) * s, Earth, r, 0.15f);
+                for (int i = 0; i < 6; i++)
+                {
+                    var foot = b + new Vector3(r.NextSingle() * 4 - 2, 0, r.NextSingle() * 4 - 2) * s;
+                    m.Frustum(foot, foot + new Vector3(r.NextSingle() - 0.5f, 1.1f, r.NextSingle() - 0.5f) * s, 0.06f * s, 0.02f * s, 4, Timber, r);
+                }
+                m.Frustum(b + new Vector3(2.2f, 0, -1.4f) * s, b + new Vector3(2.6f, 2.4f, -1.2f) * s, 0.06f * s, 0.05f * s, 4, Timber, r);
+                m.Box(b + new Vector3(2.6f, 1.6f, -1.2f) * s, 0.8f * s, 0.05f * s, 0.6f * s, 0.2f, new Color(130, 40, 34));
+                break;
+            case FoliageKind.Mine: // a timbered adit in a spoil heap, with a cart
+                m.Blob(b, new Vector3(2.4f, 1.3f, 1.8f) * s, Earth, r, 0.2f);
+                m.Box(b + new Vector3(0, 0, 1.6f) * s, 1.0f * s, 0.4f * s, 0.9f * s, 0, new Color(24, 22, 22));
+                m.Box(b + new Vector3(0, 0.9f, 1.7f) * s, 1.3f * s, 0.3f * s, 0.18f * s, 0, Timber);
+                m.Box(b + new Vector3(1.6f, 0.15f, 2.4f) * s, 0.7f * s, 0.5f * s, 0.4f * s, 0.4f, Iron);
+                break;
+            case FoliageKind.Hut: // a low round hut of wattle with a turf roof, and a woodpile
+                m.Frustum(b - Vector3.Up * 0.1f, b + Vector3.Up * 0.6f * s, 0.8f * s, 0.75f * s, 8, Wattle, r);
+                m.Frustum(b + Vector3.Up * 0.6f * s, b + Vector3.Up * 1.4f * s, 1.0f * s, 0, 8, Moss, r, capBottom: true);
+                m.Box(b + new Vector3(1.3f, 0, 0.2f) * s, 0.8f * s, 0.4f * s, 0.35f * s, 0.5f, Timber);
+                break;
+            case FoliageKind.Watch: // a tall square tower with merlons
+                m.Box(b - Vector3.Up * 0.2f, 1.3f * s, 1.3f * s, 4.2f * s, 0.3f, Jitter(Stone, r, 0.05f));
+                for (int i = 0; i < 4; i++)
+                {
+                    float x = (i % 2 * 2 - 1) * 0.5f, z = (i / 2 * 2 - 1) * 0.5f;
+                    m.Box(b + new Vector3(x, 4.0f, z) * s, 0.35f * s, 0.35f * s, 0.35f * s, 0.3f, Stone);
+                }
+                break;
+            case FoliageKind.Spring: // a pool ringed with stones
+                m.Box(b + Vector3.Up * 0.02f, 2.0f * s, 1.6f * s, 0.06f, 0.4f, new Color(86, 124, 132));
+                for (int i = 0; i < 10; i++)
+                {
+                    float a = i * MathF.Tau / 10;
+                    m.Blob(b + new Vector3(MathF.Cos(a) * 1.3f, 0.05f, MathF.Sin(a) * 1.05f) * s, new Vector3(0.3f, 0.2f, 0.3f) * s, new Color(132, 130, 124), r, 0.25f);
+                }
+                break;
+            default: // the mill: a house with a big wheel on its side
+                House(m, b, 1.4f * s, 1.0f * s, 1.0f * s, 0, Wattle, Thatch);
+                for (int i = 0; i < 12; i++) // the wheel's rim, standing against the end wall
+                {
+                    float a = i * MathF.Tau / 12;
+                    m.Box(b + new Vector3(0.95f * s + 0.1f, 0.85f * s + MathF.Sin(a) * 0.75f * s - 0.1f * s, MathF.Cos(a) * 0.75f * s), 0.2f * s, 0.25f * s, 0.2f * s, 0, Timber);
+                }
+                break;
+        }
     }
 
     // ---------- water ----------

@@ -96,6 +96,14 @@ partial class MapScreen
             "gamble" => ("A PRIZE, OR NOTHING", Kit.Gilt, "star"),
             "disband" => ("MEN LEAVE", Style.Bad, "skull"),
             "quest" => ("A QUEST", Kit.Gilt, "scroll"),
+            "spent" => ("", Style.Dim, ""),
+            "heal" => ($"HEAL {arg}%", Style.Ok, "heart"),
+            "find" => ($"ABOUT {arg} CROWNS", Kit.Gilt, "coin"),
+            "learn" => ("A LESSON", Style.Ok, "up"),
+            "men" => ("MEN JOIN YOU", Style.Ok, "flag"),
+            "search" => ("TREASURE, OR WORSE", Kit.Gilt, "star"),
+            "omen" => ("A SIGN, GOOD OR ILL", Style.Warn, "star"),
+            "spy" => ("SCOUT THE COUNTRY", Style.Text, "scroll"),
             _ => (fx.Replace('_', ' ').Replace(":", " ").ToUpperInvariant(), Style.Text, "scroll"),
         };
     }
@@ -115,9 +123,10 @@ partial class MapScreen
             "band_terror" or "brigand_king" => "burning",
             "lord_favour" or "lord_gift" or "pretender" or "plot" or "tournament" => "court",
             "unrest_petition" or "famine" or "fair" => "town",
+            _ when id.StartsWith("site_") => "site",
             _ => "camp",
         };
-        bool day = kind is "town" or "court" && id != "plot";
+        bool day = kind is "town" or "court" or "site" && id != "plot" && id != "site_stones";
         ui.VGrad(p, day ? new Color(70, 96, 130) : Kit.Night, day ? new Color(214, 160, 110) : kind == "burning" ? new Color(120, 54, 40) : Kit.Dusk, 2);
         if (!day) ui.Stars(new Rectangle(p.X, p.Y, p.Width, p.Height / 2), t, 30);
         var orb = new Vector2(p.X + p.Width * 0.82f, p.Y + p.Height * 0.28f);
@@ -132,6 +141,7 @@ partial class MapScreen
             case "burning": Village(p, ground, near, t, true); break;
             case "town": Village(p, ground, near, t, false); break;
             case "court": Court(p, ground, near, t, id == "tournament"); break;
+            case "site": SiteScene(p, ground, near, t, id[5..]); break;
             default: Camp(p, ground, near, t); break;
         }
         ui.Hills(p, ground + ui.U(6), ui.U(4), 3.3f, near);
@@ -198,6 +208,75 @@ partial class MapScreen
         {
             float k = (t * 0.4f + s * 0.125f) % 1;
             ui.Rect(new Rectangle((int)(fire.X + MathF.Sin(k * 9 + s) * ui.U(8)), (int)(fire.Y - ui.U(14) - k * p.Height * 0.5f), ui.U(1), ui.U(1)), Kit.Ember * (1 - k));
+        }
+    }
+
+    /// A site as a silhouette against the sky: each kind its own shape (docs/SIDE_CONTENT.md S2).
+    void SiteScene(Rectangle p, int ground, Color c, float t, string kind)
+    {
+        int cx = p.X + p.Width / 2, u = ui.U(1);
+        void Block(int x, int w, int h) => ui.Rect(new Rectangle(cx + x * u, ground - h * u, w * u, h * u), c);
+        switch (kind)
+        {
+            case "ruin":
+                int[] hs = { 18, 34, 12, 52, 26, 8, 30 };
+                for (int i = 0; i < hs.Length; i++) Block(-90 + i * 26, 18, hs[i]);
+                Block(-14, 28, 70);
+                ui.Rect(new Rectangle(cx - 6 * u, ground - 50 * u, 12 * u, 18 * u), Color.Black * 0.6f);
+                break;
+            case "shrine":
+                Block(-24, 48, 34);
+                for (int k = 0; k < 24; k++) Block(-24 + k, 48 - 2 * k, 34 + k);
+                Block(-3, 6, 86);
+                ui.Rect(new Rectangle(cx - 10 * u, ground - 80 * u, 20 * u, 4 * u), c); // the cross on the spire
+                ui.Rect(new Rectangle(cx - 3 * u, ground - 20 * u, 6 * u, 8 * u), Kit.Ember * (0.6f + 0.3f * MathF.Sin(t * 5)));
+                break;
+            case "stones":
+                for (int i = 0; i < 9; i++) Block(-110 + i * 26, 12, 30 + (i * 37 % 5) * 6);
+                ui.Disc(new Vector2(cx, p.Y + p.Height * 0.3f), ui.U(26), new Color(236, 226, 200) * 0.15f);
+                break;
+            case "battlefield":
+                for (int i = 0; i < 5; i++) ui.Disc(new Vector2(cx - 100 * u + i * 50 * u, ground), 16 * u, c);
+                for (int i = 0; i < 9; i++) Block(-120 + i * 29, 3, 18 + i % 3 * 8);
+                Block(70, 4, 70);
+                ui.Banner(cx + 74 * u, ground - 70 * u, 26 * u, 34 * u, Style.Sides[1], t * 1.2f);
+                break;
+            case "mine":
+                ui.Disc(new Vector2(cx, ground + 10 * u), 70 * u, c);
+                Block(-20, 40, 40); // the timbered mouth, its dark shaft cut into it below
+                ui.Rect(new Rectangle(cx - 12 * u, ground - 34 * u, 24 * u, 34 * u), new Color(10, 8, 8));
+                ui.Rect(new Rectangle(cx + 60 * u, ground - 30 * u, 4 * u, 30 * u), c);
+                ui.Disc(new Vector2(cx + 62 * u, ground - 36 * u), 8 * u, Kit.Ember * 0.3f);
+                break;
+            case "hermit":
+                for (int k = 0; k < 30; k++) Block(-30 + k, 60 - 2 * k, 20 + k);
+                ui.Rect(new Rectangle(cx - 5 * u, ground - 14 * u, 10 * u, 14 * u), Kit.Ember * 0.7f);
+                for (int s = 0; s < 6; s++)
+                {
+                    float k = (t * 0.3f + s / 6f) % 1;
+                    ui.Disc(new Vector2(cx + 10 * u + k * 20 * u, ground - 50 * u - k * p.Height * 0.4f), 3 * u + k * 6 * u, new Color(90, 90, 96) * (0.5f * (1 - k)));
+                }
+                break;
+            case "watchtower":
+                Block(-18, 36, 110);
+                for (int i = 0; i < 4; i++) Block(-18 + i * 10, 6, 118);
+                ui.Rect(new Rectangle(cx - 4 * u, ground - 80 * u, 8 * u, 12 * u), Color.Black * 0.6f);
+                break;
+            case "spring":
+                ui.Disc(new Vector2(cx, ground), 46 * u, new Color(86, 124, 132));
+                ui.Rect(new Rectangle(p.X, ground, p.Width, p.Bottom - ground), c);
+                for (int i = 0; i < 8; i++) ui.Disc(new Vector2(cx - 56 * u + i * 16 * u, ground), 8 * u, c);
+                break;
+            default: // mill
+                Block(-40, 60, 40);
+                for (int k = 0; k < 30; k++) Block(-40 + k, 60 - 2 * k, 40 + k / 2);
+                float spin = t * 0.8f;
+                for (int i = 0; i < 8; i++)
+                {
+                    float a = spin + i * MathF.Tau / 8;
+                    for (int k = 0; k < 30; k += 2) ui.Rect(new Rectangle(cx + 40 * u + (int)(MathF.Cos(a) * k * u), ground - 30 * u + (int)(MathF.Sin(a) * k * u), 2 * u, 2 * u), c);
+                }
+                break;
         }
     }
 }

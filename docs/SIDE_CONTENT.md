@@ -164,3 +164,16 @@ them. Then S3 and S4 together (escort needs caravans), S5, S6, and S7 last so th
   culture's names, skipping names in use without extra random draws (so the campaign plays out exactly as before);
   `BandName` avoids band names already on the map; sergeants use the `sergeants` list. Saves keep the names they were made
   with (the `Campaign` constructor copies saved names onto the regenerated map). Test: `WorldNames`.
+- **S2 (sites):** `Campaign/Sites.cs`. `WorldMap.PlaceSites` puts one or two sites in each province (about 90 on a new map)
+  with its own random numbers, so no seed's geography moved: off roads, clear of settlements, rivers and each other, the
+  kind drawn from what the country holds (hills: ruins, stones, mines; forest: ruins, hermits, springs; farmland: mills,
+  shrines, old battlefields). Clicking a site rides there (`S.GoalSite`); arriving remembers it (`SitesSeen`) and, if it is
+  ready, raises one of the events with trigger `site_<kind>`. New effect verbs: `spent:N` (rest N days; 9999 = for good),
+  `heal:N` (% of wounded), `find:N` (about N crowns), `learn:N` (your lowest skill), `men:N` (local levies for nothing),
+  `search` (a ruin: coin, a relic, a banner, nothing, or goblins who move in and fall on you), `omen` (stones: good or bad,
+  worse at night and with graves about), `spy` (the four nearest hostile or monster parties and where they are). The map
+  shows site labels when zoomed in (pale; "?" until visited; dimmed while resting), a tooltip, and a model per kind
+  (`World.SiteModel`); the event dialog paints each kind (`SiteScene`). Not done: the stand-in captain does not detour to
+  sites (so pacing is unchanged), the watchtower reports rather than widening a view (the map has no fog). Test: `Sites`;
+  staged shots `campaign-sites.png`, `campaign-site-event.png`.
+

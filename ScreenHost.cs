@@ -420,7 +420,27 @@ sealed class ScreenHost : Game
                 c.Encounter = host;
                 map.Stage("encounter"); Shot("campaign-undead"); break;
             }
-            case 32: Exit(); break;
+            case 32:
+            {
+                // Sites (docs/SIDE_CONTENT.md S2): the country around a ruin, then the ruin's event.
+                c.Encounter = null;
+                foreach (var p in c.S.Parties.Where(p => p != c.Player && p.Kind != PartyKind.Lord)) p.Down = true; // a clear view
+                var ruin = c.Sites.OrderByDescending(x => c.Sites.Count(y => Vector2.Distance(x.Pos, y.Pos) < 60)).First();
+                c.Player.Pos = ruin.Pos + new Vector2(8, 6);
+                c.S.SitesSeen.Add(ruin.Id);
+                map.Stage("sites");
+                Shot("campaign-sites");
+                break;
+            }
+            case 33:
+            {
+                var ruin = c.Sites.First(x => x.Kind == "ruin");
+                c.S.Event = new PendingEvent { Id = "site_ruin", Site = ruin.Id };
+                map.Stage("event");
+                Shot("campaign-site-event");
+                break;
+            }
+            case 34: Exit(); break;
         }
     }
 }

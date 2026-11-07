@@ -2,7 +2,9 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wall, Tower, Gate, Ladder, House, Wagon }
+public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wall, Tower, Gate, Ladder, House, Wagon,
+    // Sites on the campaign map (docs/SIDE_CONTENT.md S2).
+    Ruin, Shrine, Stones, Field, Mine, Hut, Watch, Spring, Mill }
 
 /// A river (roadmap C5): a centre line, its width, and the fords where it runs shallow.
 public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float Depth = 1.3f)

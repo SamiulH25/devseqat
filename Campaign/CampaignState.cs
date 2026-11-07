@@ -339,6 +339,11 @@ public sealed class CampaignState
     public List<War> Wars = new();
     public CaptainState Captain = new();
     public List<Party> Parties = new();
+    /// Sites (docs/SIDE_CONTENT.md S2): when each can be used again (campaign hours; absent = now), the ones you have
+    /// been to, and the site you are riding to (-1 = none).
+    public Dictionary<int, float> SiteUntil = new();
+    public List<int> SitesSeen = new();
+    public int GoalSite = -1;
     public List<Settlement> Settlements = new();
     public List<Province> Provinces = new();
     public List<FactionState> Factions = new();

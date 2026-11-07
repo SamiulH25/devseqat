@@ -7,9 +7,9 @@ public partial class Campaign
 {
     // ---------- your actions ----------
 
-    public void MoveTo(Vector2 p) { Player.Goal = p; Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = -1; Player.Resting = false; }
-    public void Chase(Party q) { Player.ChaseId = q.Id; Player.Moving = true; Player.GoalSettlement = -1; Player.Resting = false; }
-    public void GoTo(Settlement s) { Player.Goal = s.Pos; Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = s.Id; Player.Resting = false; }
+    public void MoveTo(Vector2 p) { S.GoalSite = -1; Player.Goal = p; Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = -1; Player.Resting = false; }
+    public void Chase(Party q) { S.GoalSite = -1; Player.ChaseId = q.Id; Player.Moving = true; Player.GoalSettlement = -1; Player.Resting = false; }
+    public void GoTo(Settlement s) { S.GoalSite = -1; Player.Goal = s.Pos; Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = s.Id; Player.Resting = false; }
 
     int Slots => Rules.CompanySlots(Captain);
     int RoomForMen => Rules.MenLimit(Captain) - Player.Men - Player.Wounded;

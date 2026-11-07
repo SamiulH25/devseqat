@@ -230,8 +230,10 @@ sealed partial class MapScreen
     {
         var party = C.S.Parties.Where(p => p != C.Player && !p.Down && Vector2.Distance(p.Pos, g) < 5).OrderBy(p => Vector2.Distance(p.Pos, g)).FirstOrDefault();
         var town = C.SettlementAt(g, 6);
+        var site = town == null ? C.SiteAt(g) : null;
         if (party != null) C.Chase(party);
         else if (town != null) C.GoTo(town);
+        else if (site != null) C.GoTo(site);
         else C.MoveTo(g);
         if (speed == 0) speed = 1;
     }
@@ -435,6 +437,7 @@ sealed partial class MapScreen
                 tab = "CONTRACT"; panel = PanelKind.Settlement; break;
             case "map": panel = PanelKind.None; zoom = 330; pitch = 0.95f; break;
             case "close": panel = PanelKind.None; zoom = 60; pitch = 0.7f; break;
+            case "sites": panel = PanelKind.None; zoom = 120; pitch = 0.85f; focus = C.Player.Pos; follow = true; break;
             case "party": panel = PanelKind.Party; break;
             case "divisions": panel = PanelKind.Divisions; note = ""; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;

@@ -120,6 +120,83 @@
       ]
     },
     {
+      "id": "site_ruin", "trigger": "site_ruin", "cooldown": 0, "title": "THE {site}",
+      "text": "Broken walls in the brambles, a roofless hall, a stair going down into the dark. Old folk say a lord kept his gold here before the plague.",
+      "choices": [
+        { "label": "SEARCH THE RUIN", "effects": ["search", "spent:9999"] },
+        { "label": "LEAVE IT TO THE CROWS", "effects": [] }
+      ]
+    },
+    {
+      "id": "site_shrine", "trigger": "site_shrine", "cooldown": 0, "title": "{site}",
+      "text": "A little stone shrine by the way, hung with ribbons and old horseshoes. A candle still burns in it.",
+      "choices": [
+        { "label": "PRAY BEFORE THE MARCH", "effects": ["cohesion:3", "spent:30"] },
+        { "label": "LEAVE AN OFFERING", "need": "gold:60", "effects": ["gold:-60", "cohesion:5", "renown:2", "spent:30"] },
+        { "label": "RIDE ON", "effects": [] }
+      ]
+    },
+    {
+      "id": "site_stones", "trigger": "site_stones", "cooldown": 0, "title": "{site}",
+      "text": "A ring of grey stones taller than a horseman stands on the hill. The men go quiet near it. Nobody will say who raised them.",
+      "choices": [
+        { "label": "CAMP AMONG THE STONES", "effects": ["omen", "spent:20"] },
+        { "label": "RIDE ON", "effects": [] }
+      ]
+    },
+    {
+      "id": "site_battlefield", "trigger": "site_battlefield", "cooldown": 0, "title": "THE {site}",
+      "text": "Rusted helms in the grass and a line of old grave mounds. A great battle was fought here in your grandfather's time.",
+      "choices": [
+        { "label": "SCAVENGE THE FIELD", "effects": ["find:140", "cohesion:-1", "spent:60"] },
+        { "label": "SAY WORDS FOR THE DEAD", "effects": ["renown:2", "cohesion:2", "spent:60"] },
+        { "label": "RIDE ON", "effects": [] }
+      ]
+    },
+    {
+      "id": "site_mine", "trigger": "site_mine", "cooldown": 0, "title": "{site}",
+      "text": "Spoil heaps and a smoking forge at the mouth of a shaft. The diggers are hard men, and the silver has thinned.",
+      "choices": [
+        { "label": "TAKE A TOLL OF THE SILVER", "effects": ["find:220", "opinion_realm:-1", "spent:30"] },
+        { "label": "HIRE DIGGERS FOR YOUR RANKS", "need": "gold:80", "effects": ["gold:-80", "men:5", "spent:30"] },
+        { "label": "RIDE ON", "effects": [] }
+      ]
+    },
+    {
+      "id": "site_hermit", "trigger": "site_hermit", "cooldown": 0, "title": "THE {site}",
+      "text": "An old man with a white beard sits outside a hut of wattle and moss. He was a soldier once, he says, and has thought about it since.",
+      "choices": [
+        { "label": "ASK HIS COUNSEL", "effects": ["learn:6", "spent:9999"] },
+        { "label": "ASK WHAT MOVES IN THE COUNTRY", "effects": ["spy", "spent:20"] },
+        { "label": "LEAVE HIM BE", "effects": [] }
+      ]
+    },
+    {
+      "id": "site_watchtower", "trigger": "site_watchtower", "cooldown": 0, "title": "{site}",
+      "text": "An old tower of the kings, its stair half gone. From the top a man can see three provinces on a clear day.",
+      "choices": [
+        { "label": "CLIMB TO THE TOP", "effects": ["spy", "spent:3"] },
+        { "label": "RIDE ON", "effects": [] }
+      ]
+    },
+    {
+      "id": "site_spring", "trigger": "site_spring", "cooldown": 0, "title": "{site}",
+      "text": "Cold clear water wells up among mossy stones. The villagers swear it closes wounds.",
+      "choices": [
+        { "label": "REST THE WOUNDED HERE", "effects": ["heal:35", "spent:14"] },
+        { "label": "FILL THE WATERSKINS AND GO", "effects": ["heal:10", "spent:14"] }
+      ]
+    },
+    {
+      "id": "site_mill", "trigger": "site_mill", "cooldown": 0, "title": "{site}",
+      "text": "The great wheel turns and the miller comes out white with flour. He has sacks to spare, for a price.",
+      "choices": [
+        { "label": "BUY FLOUR", "need": "gold:50", "effects": ["gold:-50", "food:5", "spent:7"] },
+        { "label": "BUY THE LOT", "need": "gold:120", "effects": ["gold:-120", "food:12", "spent:14"] },
+        { "label": "RIDE ON", "effects": [] }
+      ]
+    },
+    {
       "id": "brigand_king", "trigger": "brigand_king", "cooldown": 9999, "title": "A BRIGAND KING",
       "text": "{lord} has gathered every cutthroat for miles into {band} and calls himself a king. Villages burn where he passes.",
       "choices": [

@@ -21,7 +21,7 @@ public sealed class ChoiceDef
 public sealed class PendingEvent
 {
     public string Id = "";
-    public int Settlement = -1, Lord = -1, Party = -1, Company = -1, Grave = -1;
+    public int Settlement = -1, Lord = -1, Party = -1, Company = -1, Grave = -1, Site = -1;
 }
 
 /// Events, lord quests and named threats (step F8).
@@ -35,16 +35,18 @@ public sealed partial class Campaign
     {
         "fief_unrest", "fief_poor", "fief_rich", "lord_friend", "lord_hates_liege", "big_band", "veterans", "hungry_winter",
         "unpaid", "prisoners", "war_weary", "in_town", "brigand_king", "pretender", "graves",
+        "site_ruin", "site_shrine", "site_stones", "site_battlefield", "site_mine", "site_hermit", "site_watchtower", "site_spring", "site_mill",
     };
     /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
-    static readonly string[] Forced = { "brigand_king", "pretender", "graves" };
+    static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" || trigger.StartsWith("site_");
     static readonly string[] Verbs =
     {
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
+        "spent", "heal", "find", "learn", "men", "search", "omen", "spy",
     };
-    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury" };
-    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege" };
+    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy" };
+    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site" };
 
     static List<EventDef>? events;
     public static IReadOnlyList<EventDef> Events
@@ -145,7 +147,7 @@ public sealed partial class Campaign
         BrigandKingsDaily();
         if (S.Event != null || S.Hours < S.NextEvent) return;
         var ready = new List<PendingEvent>();
-        foreach (var e in Events.Where(e => !Forced.Contains(e.Trigger)))
+        foreach (var e in Events.Where(e => !Forced(e.Trigger)))
         {
             if (S.EventsFired.TryGetValue(e.Id, out float at) && S.Hours - at < e.Cooldown * 24) continue;
             if (Find(e.Trigger) is PendingEvent pe) { pe.Id = e.Id; ready.Add(pe); }
@@ -178,7 +180,8 @@ public sealed partial class Campaign
             .Replace("{band}", PartyById(pe.Party)?.Name ?? "brigands")
             .Replace("{company}", Player.Companies.FirstOrDefault(c => c.Id == pe.Company)?.Name ?? "a company")
             .Replace("{realm}", realm)
-            .Replace("{liege}", RulerOf(Captain.Contract)?.Name ?? "your liege");
+            .Replace("{liege}", RulerOf(Captain.Contract)?.Name ?? "your liege")
+            .Replace("{site}", SiteById(pe.Site)?.Name ?? "the place");
     }
 
     /// Why a choice cannot be taken now ("" = it can).
@@ -209,6 +212,8 @@ public sealed partial class Campaign
         var s = pe.Settlement >= 0 ? SettlementById(pe.Settlement) : null;
         var lord = CharacterById(pe.Lord);
         var co = Player.Companies.FirstOrDefault(x => x.Id == pe.Company);
+        string? said = SiteEffect(verb, n, pe, out bool siteVerb);
+        if (siteVerb) return said;
         switch (verb)
         {
             case "gold": S.Gold = MathF.Max(0, S.Gold + n); break;

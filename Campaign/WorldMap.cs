@@ -34,6 +34,8 @@ public sealed class WorldMap
     public readonly List<(Vector2 A, Vector2 B)> Roads = new();
     /// Two rivers wind across the land; where a road meets one there is a bridge (a ford on the battlefield).
     public readonly List<River> Rivers = new();
+    /// Places of interest between the settlements (docs/SIDE_CONTENT.md S2): ruins, shrines, mines and the rest.
+    public readonly List<Site> Sites = new();
     /// 0-3: spring to winter. The ground's colours follow it (set before BuildTerrain).
     public int Season;
     /// The extent this map was generated with (provinces live within it; mountains close the world beyond).
@@ -149,7 +151,44 @@ public sealed class WorldMap
                 float a = rng.NextSingle() * MathF.Tau, d = (10 + rng.NextSingle() * 30) * span;
                 m.hills.Add((p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d, (16 + rng.NextSingle() * 14) * span, 5 + rng.NextSingle() * 5));
             }
+        m.PlaceSites(namer, span);
         return m;
+    }
+
+    /// Which sites each kind of country holds (the first kinds are the likeliest).
+    static string[] SiteKindsFor(string province) => province switch
+    {
+        "Hills" => new[] { "ruin", "stones", "mine", "watchtower", "hermit", "spring" },
+        "Forest" => new[] { "ruin", "hermit", "spring", "shrine", "stones", "watchtower" },
+        "Farmland" => new[] { "mill", "shrine", "battlefield", "watchtower", "spring", "ruin" },
+        _ => new[] { "shrine", "battlefield", "mill", "spring", "ruin", "watchtower" },
+    };
+
+    /// One or two sites per province, off the roads and clear of settlements and rivers. They use their own random numbers,
+    /// so adding them moved nothing else on the map.
+    void PlaceSites(PlaceNamer namer, float span)
+    {
+        var rng = new Random(Seed * 17 + 101);
+        int id = 0;
+        foreach (var p in Provinces)
+        {
+            int want = rng.NextSingle() < 0.5f ? 1 : 2;
+            var kinds = SiteKindsFor(p.Kind);
+            var taken = new List<string>();
+            for (int tries = 0; tries < 60 && taken.Count < want; tries++)
+            {
+                float a = rng.NextSingle() * MathF.Tau, d = (14 + rng.NextSingle() * 26) * span;
+                var pos = p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
+                // The likelier kinds come first: the square favours the head of the list.
+                string kind = kinds[(int)(rng.NextSingle() * rng.NextSingle() * kinds.Length)];
+                if (taken.Contains(kind) || MathF.Abs(pos.X) > ExtentUsed - 8 || MathF.Abs(pos.Y) > ExtentUsed - 8) continue;
+                if (ProvinceAt(pos) != p || RoadDist(pos) < 4 || RiverDist(pos) < (kind is "mill" or "spring" ? 4 : 6)) continue;
+                if (Settlements.Any(s => Vector2.Distance(s.Pos, pos) < 9 * span) || Sites.Any(x => Vector2.Distance(x.Pos, pos) < 10 * span)) continue;
+                if (kind is "mill" or "spring" && RiverDist(pos) > 30 * span && rng.NextSingle() < 0.5f) continue; // mills and springs like water
+                Sites.Add(new Site { Id = id++, Province = p.Id, Kind = kind, Pos = pos, Name = Site.NameFor(kind, p.Name, namer, rng) });
+                taken.Add(kind);
+            }
+        }
     }
 
     static Vector2? Cross(Vector2 p, Vector2 p2, Vector2 q, Vector2 q2)
@@ -259,8 +298,14 @@ public sealed class WorldMap
         foreach (var s in Settlements)
             foliage.Add(new Foliage(s.Kind switch { SettlementKind.Town => FoliageKind.Town, SettlementKind.Castle => FoliageKind.Castle, _ => FoliageKind.Village },
                 s.Pos, s.Kind == SettlementKind.Village ? 1.6f : 2.1f, 0, s.Id * 31 + Seed));
+        foreach (var site in Sites)
+            foliage.Add(new Foliage(site.Kind switch
+            {
+                "ruin" => FoliageKind.Ruin, "shrine" => FoliageKind.Shrine, "stones" => FoliageKind.Stones, "battlefield" => FoliageKind.Field,
+                "mine" => FoliageKind.Mine, "hermit" => FoliageKind.Hut, "watchtower" => FoliageKind.Watch, "spring" => FoliageKind.Spring, _ => FoliageKind.Mill,
+            }, site.Pos, 2.0f, 0, site.Id * 53 + Seed));
         float half = GroundHalf - 6;
-        bool Clear(Vector2 p) => Settlements.All(s => Vector2.Distance(s.Pos, p) > 9 * span) && RoadDist(p) > 2.5f && RiverDist(p) > 3
+        bool Clear(Vector2 p) => Settlements.All(s => Vector2.Distance(s.Pos, p) > 9 * span) && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3
             && MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half;
         foreach (var p in Provinces)
         {

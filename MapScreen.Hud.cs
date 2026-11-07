@@ -77,6 +77,18 @@ partial class MapScreen
             ui.Rect(new Rectangle(r.X, r.Bottom - ui.U(2), r.Width, ui.U(2)), col);
             ui.TextC(label, sp.X, r.Y + ui.U(3), Color.White, scale);
         }
+        // Sites: small pale labels, only close in; a spent one is dimmed, one you have never visited is marked "?".
+        if (zoom <= 200)
+            foreach (var site in C.Sites)
+            {
+                if (Screen(G(site.Pos, 5)) is not Vector2 sp) continue;
+                bool ready = C.SiteReady(site);
+                string label = site.Name.ToUpperInvariant() + (C.SiteSeen(site) ? "" : " ?");
+                int w = ui.TW(label, 1) + ui.U(8);
+                var r = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(12), w, ui.U(12));
+                ui.Rect(r, Color.Black * (ready ? 0.4f : 0.25f));
+                ui.TextC(label, sp.X, r.Y + ui.U(2), ready ? Kit.Parchment : Style.Dim, 1);
+            }
         // Smoke rises over villages that were threatened or stripped.
         foreach (var v in C.S.Settlements.Where(v => v.ThreatUntil > C.S.Hours))
             for (int i = 0; i < 6; i++)
@@ -252,9 +264,18 @@ partial class MapScreen
         var g = Ground(ms.Position);
         var p = C.S.Parties.Where(q => !q.Down && Vector2.Distance(q.Pos, g) < 5).OrderBy(q => Vector2.Distance(q.Pos, g)).FirstOrDefault();
         var s = p == null ? C.SettlementAt(g, 6) : null;
-        if (p == null && s == null) return;
+        var site = p == null && s == null ? C.SiteAt(g) : null;
+        if (p == null && s == null && site == null) return;
         var linesOut = new List<(string, Color)>();
-        if (p != null)
+        if (site != null)
+        {
+            linesOut.Add((site.Name.ToUpperInvariant(), Kit.Parchment));
+            linesOut.Add((site.What, Style.Dim));
+            linesOut.Add((C.S.Provinces[site.Province].Title.ToUpperInvariant(), Style.Dim));
+            string wait = C.SiteWait(site);
+            linesOut.Add((wait != "" ? wait : C.SiteSeen(site) ? "CLICK TO GO THERE" : "NOT YET VISITED: CLICK TO GO THERE", wait != "" ? Style.Dim : Style.Ok));
+        }
+        else if (p != null)
         {
             linesOut.Add((p.Name.ToUpperInvariant(), PartyColor(p)));
             linesOut.Add((Allegiance(p), Style.Dim));
