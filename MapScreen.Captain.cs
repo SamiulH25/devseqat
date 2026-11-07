@@ -62,7 +62,7 @@ partial class MapScreen
             string tt = t.ToUpperInvariant();
             if (cx + ui.TW(tt, 1) + ui.U(10) > c.Right) { cx = c.X; y += ui.U(16); }
             if (y > c.Bottom - ui.U(14)) break;
-            cx += ui.Chip(cx, y, tt, Style.Ok) + ui.U(4);
+            cx += ui.Chip(cx, y, tt, t is "Coward" ? Style.Bad : t is "Ruthless" ? Style.Warn : Style.Ok) + ui.U(4);
         }
         // Lasting wounds (P4), in red; the tooltip says what each costs.
         foreach (var w in cap.Wounds.Select(Campaign.WoundOf).OfType<WoundDef>())

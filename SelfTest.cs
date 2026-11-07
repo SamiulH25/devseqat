@@ -56,6 +56,7 @@ public static partial class SelfTest
         PerkTiers();
         SkillRises();
         LastingWounds();
+        CaptainTraits();
         BalanceMatchesData();
         HorsesCostGold();
         Career();

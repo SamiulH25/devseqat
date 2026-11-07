@@ -80,7 +80,8 @@ public sealed partial class Campaign
         foreach (var e in Events)
         {
             if (Events.Count(x => x.Id == e.Id) > 1) yield return $"{e.Id}: duplicate id";
-            if (!Triggers.Contains(e.Trigger) && !e.Trigger.StartsWith("flag:")) yield return $"{e.Id}: unknown trigger {e.Trigger}";
+            if (!Triggers.Contains(e.Trigger) && !e.Trigger.StartsWith("flag:") && !(e.Trigger.StartsWith("trait:") && EarnedTraits.Contains(e.Trigger[6..])))
+                yield return $"{e.Id}: unknown trigger {e.Trigger}";
             if (e.Trigger.StartsWith("flag:") && !Events.Any(x => x.Choices.Any(c => c.Effects.Contains(e.Trigger)))) yield return $"{e.Id}: nothing sets {e.Trigger}";
             if (e.Choices.Count is < 2 or > 3) yield return $"{e.Id}: needs two or three choices";
             foreach (var text in new[] { e.Title, e.Text }.Concat(e.Choices.Select(c => c.Label)))
@@ -114,7 +115,7 @@ public sealed partial class Campaign
     // ---------- finding what an event is about ----------
 
     /// The subject of a trigger in the world now, or null when it does not hold.
-    PendingEvent? Find(string trigger)
+    internal PendingEvent? Find(string trigger)
     {
         var ev = new PendingEvent();
         var seats = Fiefs.Where(t => t.Kind != SettlementKind.Village).ToList();
@@ -146,6 +147,7 @@ public sealed partial class Campaign
             case "culture":
                 return Pick(S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.Culture != Me.Culture && v.Culture != "common" && !Refuses(v)
                     && Vector2.Distance(v.Pos, Player.Pos) < 14 * Map.Spread), v => ev.Settlement = v.Id, ev);
+            case var tr when tr.StartsWith("trait:"): return Me.Traits.Contains(tr[6..]) ? ev : null;
             case var f when f.StartsWith("flag:"): return S.Flags.TryGetValue(f[5..], out float set) && S.Hours - set >= FlagDays * 24 ? ev : null;
             case "in_town": return SettlementAt(Player.Pos) is { Kind: SettlementKind.Town } town && !Refuses(town) ? (ev.Settlement = town.Id) >= 0 ? ev : null : null;
             default: return null;

@@ -221,6 +221,7 @@ public sealed partial class Campaign
     internal void Practise(string skill, float amount)
     {
         if (amount <= 0 || S.GameOver) return;
+        amount *= AgeEdge(skill);
         float before = Skill(skill), after = Skills.Raise(Captain, skill, amount);
         if ((int)(after / Skills.Step) > (int)(before / Skills.Step))
             Log($"Your {skill.ToLowerInvariant()} reaches {(int)after}: a perk may be chosen (K).");

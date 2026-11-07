@@ -54,6 +54,7 @@ public sealed partial class Campaign
     {
         Captain.Renown += Rules.PerMan(PrisonerCount * 0.5f);
         Log($"You free {PrisonerCount} prisoners. Word of your mercy spreads.");
+        if (PrisonerCount > 0) Count("freed");
         Player.Prisoners.Clear();
     }
 
@@ -77,6 +78,7 @@ public sealed partial class Campaign
         if (CharacterOf(lord) is Character ch) Remember(ch, Me, "you set me free without ransom", 25);
         Release(lord);
         Log($"You release {lord.Name} without ransom. Your honour is spoken of.");
+        Count("freed");
     }
 
     void Release(Party lord)

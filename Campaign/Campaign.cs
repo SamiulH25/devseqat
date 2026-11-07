@@ -305,6 +305,7 @@ public sealed partial class Campaign
 
     void Daily()
     {
+        AgeDaily();
         foreach (var v in S.Settlements.Where(v => v.ThreatUntil <= S.Hours))
         {
             int more = (v.Owner == Player.Id && Has("JustRuler") ? 2 : 1) * (v.Prosperity >= 70 ? 2 : 1);
@@ -376,6 +377,7 @@ public sealed partial class Campaign
     {
         RelationsWeekly();
         WanderersWeekly();
+        TraitsWeekly();
         BuildWeekly(); // before wages: lords' pay takes a share of the chest down to its floor
         foreach (var p in S.Parties.Where(p => !Outlaw(p) && !p.Down))
         {

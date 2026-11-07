@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1, P2 and P3 built; P4 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1-P4 built; P5 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -270,3 +270,12 @@ Give the captain something to do in each fight beyond "win".
   shorter; `BattleOptions.Wounds`). The battle report says so; the captain card (K) shows them as red chips with a
   tooltip. A healing spring's rest mends one (event verb `mend`, `MendWound`); scars stay. `SelfTest.LastingWounds`.
   Simplification: the surgeon lowers the odds rather than healing a wound.
+- P4 (step 2, earned traits and age): `Campaign/Traits.cs`. Each week `TraitsWeekly` works the captain's traits out again
+  from the tally (`TraitsEarned`), so they come and go: Lionheart (2 duels won or 8 battles with 5+ of your own kills,
+  tally `frontline`), Steadfast (4 battles won at 1.5x odds or worse, `outnumbered`), Merciful (3 lords or prisoner bands
+  freed, `freed`) or Ruthless (3 caravans robbed), whichever leads by two, and Coward (4 retreats, `fled`, and more than
+  half as many as victories). They sit on the captain's `Character` and colour lords' opinion (`RegardOfTraits`: e.g.
+  Lionheart +5 to all and +5 more from the Reckless, Ruthless -15 from the Honourable, Coward -10 to all), and each is an
+  event trigger `trait:Name` (five events in `Data/events.json`). Age: a year is 120 days (`DaysPerYear`); past 45
+  (`OldAge`) each new season costs a point of Arms and Leadership and Tactics rise 25% faster (`AgeEdge` in `Practise`).
+  `SelfTest.CaptainTraits`. A campaign rarely runs the 15 years to 45; a new captain's age (30) is unchanged.

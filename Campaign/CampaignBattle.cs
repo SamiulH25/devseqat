@@ -125,6 +125,8 @@ public partial class Campaign
         S.LastBattleAt = (float)S.Hours;
         Count("battles");
         if (won) Count("victories");
+        if (r.PlayerKills >= 5) Count("frontline");
+        if (won && (playerTeam == 0 ? startStrength1 / MathF.Max(1, startStrength0) : startStrength0 / MathF.Max(1, startStrength1)) >= 1.5f) Count("outnumbered");
         float bounty = 0, renown = 0;
         int horses = 0;
         if (won)
@@ -244,6 +246,7 @@ public partial class Campaign
     public void Retreat()
     {
         duelWith = -1;
+        Count("fled");
         var e = Encounter!;
         var rear = Player.Companies.Where(c => c.Men > 0).OrderBy(c => c.Type.Mount != null ? 1 : 0).ThenByDescending(c => c.Men).FirstOrDefault();
         if (rear != null)

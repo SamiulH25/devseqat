@@ -471,6 +471,47 @@
         { "label": "MARCH AT ONCE", "effects": ["bounty"] },
         { "label": "OFFER HIM GOLD TO LEAVE", "need": "gold:300", "effects": ["gold:-300", "disband", "unrest:-15"] }
       ]
+    },
+    {
+      "id": "trait_lionheart", "trigger": "trait:Lionheart", "cooldown": 90, "scene": "town", "title": "A SONG ABOUT YOU",
+      "text": "A minstrel at the inn sings of a captain who fights in the front rank and calls out lords to single combat. Heads turn your way.",
+      "choices": [
+        { "label": "TOSS HIM A PURSE", "need": "gold:40", "effects": ["gold:-40", "renown:6"] },
+        { "label": "LET HIM SING", "effects": ["renown:3"] }
+      ]
+    },
+    {
+      "id": "trait_steadfast", "trigger": "trait:Steadfast", "cooldown": 90, "scene": "camp", "title": "THEY ASK FOR YOU",
+      "text": "Young men from the farms come to your fires. They have heard of the captain who stands when the odds are against him.",
+      "choices": [
+        { "label": "TAKE THEM ON", "effects": ["men:6"] },
+        { "label": "SEND THEM HOME TO THEIR FIELDS", "effects": ["renown:2"] }
+      ]
+    },
+    {
+      "id": "trait_merciful", "trigger": "trait:Merciful", "cooldown": 90, "scene": "camp", "title": "BREAD FOR THE CAPTAIN",
+      "text": "A family whose son you once let go walks into camp with a cart of bread and a ham. They will not take coin.",
+      "choices": [
+        { "label": "ACCEPT IT WITH THANKS", "effects": ["food:4", "cohesion:1"] },
+        { "label": "GIVE IT TO THE POOR OF THE VILLAGE", "effects": ["renown:3"] }
+      ]
+    },
+    {
+      "id": "trait_ruthless", "trigger": "trait:Ruthless", "cooldown": 90, "scene": "burning", "title": "BARRED DOORS",
+      "text": "When your banner shows on the road the villagers bar their doors and hide their daughters. Your name has gone ahead of you.",
+      "choices": [
+        { "label": "LET THEM FEAR", "effects": ["cohesion:2", "renown:-2"] },
+        { "label": "PAY FOR WHAT THE MEN TAKE", "need": "gold:80", "effects": ["gold:-80", "renown:2"] }
+      ]
+    },
+    {
+      "id": "trait_coward", "trigger": "trait:Coward", "cooldown": 60, "scene": "camp", "title": "TALK BY THE FIRES",
+      "text": "Your men mutter that you are quick to leave a field. A sergeant says it to your face.",
+      "choices": [
+        { "label": "STAND HIM BEFORE THE COMPANY", "effects": ["cohesion:-2", "renown:1"] },
+        { "label": "DOUBLE THEIR PAY THIS WEEK", "need": "gold:100", "effects": ["gold:-100", "cohesion:4"] },
+        { "label": "SAY NOTHING", "effects": ["cohesion:-1"] }
+      ]
     }
   ]
 }

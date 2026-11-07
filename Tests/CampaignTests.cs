@@ -807,6 +807,45 @@ public static partial class SelfTest
         Check(Campaign.Events.First(e => e.Id == "site_spring").Choices[0].Effects.Contains("mend"), "the spring's rest mends a wound");
     }
 
+    static void CaptainTraits()
+    {
+        var c = Campaign.New(37);
+        var lord = c.S.Characters.First(ch => ch.Kind == "lord" && !ch.Traits.Contains("Reckless"));
+        float before = c.OpinionOfYou(lord);
+        // Fleeing more than half as often as winning makes a coward; winning more unmakes him.
+        c.S.Tally["fled"] = 4;
+        c.TraitsWeekly();
+        Check(c.Me.Traits.Contains("Coward") && c.OpinionOfYou(lord) <= before - 10, "four flights and few wins: lords think less of a coward");
+        Check(c.Find("trait:Coward") != null && c.Find("trait:Lionheart") == null, "a trait is a trigger for its events");
+        c.S.Tally["victories"] = 10;
+        c.TraitsWeekly();
+        Check(!c.Me.Traits.Contains("Coward") && c.OpinionOfYou(lord) == before, "ten wins later the name is gone");
+        c.S.Tally["duels"] = 2;
+        c.S.Tally["freed"] = 3;
+        c.TraitsWeekly();
+        Check(c.Me.Traits.Contains("Lionheart") && c.Me.Traits.Contains("Merciful"), "duels won make a Lionheart, freed prisoners a Merciful captain");
+        c.S.Tally["robbed"] = 6;
+        c.TraitsWeekly();
+        Check(c.Me.Traits.Contains("Ruthless") && !c.Me.Traits.Contains("Merciful"), "robbing caravans outweighs old mercy");
+        Check(Campaign.Events.Count(e => e.Trigger.StartsWith("trait:")) >= Campaign.EarnedTraits.Length, "each earned trait has an event");
+        // Age: past 45 a season costs a point of Arms, and Leadership comes quicker.
+        var young = Campaign.New(38);
+        var old = Campaign.New(38);
+        old.Me.Age = Campaign.OldAge + 1;
+        float l0 = young.Skill("Leadership");
+        young.Practise("Leadership", 4);
+        old.Practise("Leadership", 4);
+        Check(old.Skill("Leadership") - l0 > young.Skill("Leadership") - l0, "the old captain learns to lead faster");
+        float arms = old.Skill("Arms");
+        old.S.Hours = 30 * 24;
+        old.AgeDaily();
+        Check(old.Skill("Arms") == arms - 1, $"a new season costs the old captain a point of Arms (day {old.Day})");
+        int age = young.Me.Age;
+        young.S.Hours = Campaign.DaysPerYear * 24;
+        young.AgeDaily();
+        Check(young.Me.Age == age + 1 && young.Skill("Arms") == arms, "a new year adds one to the captain's age, not yet to the wear");
+    }
+
     static void SkillTree()
     {
         var a = Campaign.New(91);

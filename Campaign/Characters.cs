@@ -117,7 +117,7 @@ public sealed partial class Campaign
     }
 
     /// What `a` thinks of `b`, -100..100.
-    public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar && Has("Kingmaker") ? 10 : 0), -100, 100);
+    public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar ? (Has("Kingmaker") ? 10 : 0) + RegardOfTraits(a) : 0), -100, 100);
 
     /// What a character thinks of you.
     public float OpinionOfYou(Character a) => OpinionOf(a, Me);
