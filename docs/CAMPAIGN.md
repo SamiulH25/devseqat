@@ -1,6 +1,6 @@
 # Ironfield campaign specification
 
-Status: **implemented (M0-M5)**, with the open questions in section 13 settled by the proposals; see "As built" at the end
+Status: **implemented (M0-M5)**; roadmap phase F will replace much of it (see [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md)), with the open questions in section 13 settled by the proposals; see "As built" at the end
 for where the build differs from this text. This document specifies the campaign layer that wraps the battles: what the player does between
 fights, how armies persist and improve, and how the map hands a battle over and takes the result back.
 Look and interface follow [`DESIGN.md`](DESIGN.md). Numbers marked *(tune)* are starting values for play-testing, not promises.
@@ -46,12 +46,21 @@ Section 12 sequences the work; section 13 lists the decisions still open.
 ## 3. World map
 
 ### 3.1 Structure
-- A **province graph**: about 24 provinces *(tune)*. Each holds 1 town or castle and 2-3 villages, joined by roads. Province borders
-  follow ridges and rivers.
+- A **province graph**: about 60 provinces *(tune)*. Each holds 1 town or castle and 2-3 villages, joined by roads. Province borders
+  follow ridges and rivers. Provinces are packed by `WorldMap.ProvinceSpacing` (66 units, spread by `(extent/196)^0.3`), so the
+  spacing decides the count and `WorldMap.ProvinceCount` records the expected result.
 - **Factions own provinces.** At the start the Azure Crown and the Crimson Compact each hold about half, and a band of contested
   marches lies between them. Bandit camps spawn in wild provinces.
 - **Generated from a seed**, like battle terrain: the same seed always gives the same map (useful for saves and bug reports).
   A hand-authored map can replace it later without code changes (it is data).
+- **Size.** The provinces span +-`WorldMap.Extent` (392 units, ~590 km across); the rendered ground reaches +-`GroundHalf`, the
+  difference being a rim of mountains that closes the world in. The ground is drawn on a 4 m grid (`WorldMap.Step`), which is
+  coarser than a battlefield's 2.5 m because it covers a much larger area; the mesh uses 32-bit indices past 65k vertices.
+  A save records the extent it was made with (`CampaignState.MapExtent`), so campaigns started on the original small map keep
+  that geography after the map was enlarged.
+- **Scale factors.** `WorldMap.ProvinceScale` (provinces / the original 26) scales how many parties the world raises;
+  `WorldMap.Spread` (spacing / the original) scales distances that mean "nearby" — a lord's patrol goal, a siege's muster
+  radius, a contract's "at the village" check — so a bigger map does not mean longer rides to everything.
 
 ### 3.2 Terrain kinds
 Each map cell has a terrain kind. The kind sets map travel speed and **parameterises the battle terrain** generated where a fight happens:
@@ -85,6 +94,9 @@ wood count and distance, and road on or off. Today's `Terrain(seed)` becomes `Me
 ## 4. Parties and companies
 
 ### 4.1 Company (the persistent unit)
+
+> **Superseded by F1** ([`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md) section 2): a company now holds stacks of troops with an XP
+> pool each, and men are promoted one at a time. The text below describes the pre-overhaul whole-company model.
 The battle's `Company(Troop, Count, Role)` becomes the battle-time view of a persistent **CompanyRecord**:
 
 | Field | Meaning |
@@ -100,15 +112,15 @@ The battle's `Company(Troop, Count, Role)` becomes the battle-time view of a per
 | `Role` | infantry, archers, spears, horse (deployment; defaults from the class) |
 
 - **Company size caps** come from the same table that `Armies.Count` uses today: line base size times a tier factor
-  (tier I x1.25, II x1.0, III x0.85, IV x0.7). Elite companies are smaller.
+  (tier I x1.25, II x1.0, III x0.85, IV x0.7, V x0.65, VI x0.6, VII x0.55). Elite companies are smaller.
 - **Merge and split:** two companies of the same troop may merge (their XP is weighted by men) up to the cap. A company may split in two.
 - **Disband:** dismissed men go home, and a company at 0 fit and 0 wounded men is gone (its history goes to the party ledger).
 
 ### 4.2 Party
 A party is a leader plus companies:
 
-- **Player party:** you (the Captain) plus up to N companies, where N = 2 + renown / 150, capped at **9** (the number keys) *(tune)*.
-  Total men ≤ 40 + renown / 5 *(tune)*.
+- **Player party:** you (the Captain) plus up to **10** companies (`CompanySlotsBase = 10`, available from the start without renown gating).
+  Total men ≤ 40 + renown / 5 + Leadership / 5 *(tune)* (renown raises your total troop count; perks come from skills since F4).
 - **Lord parties (AI):** the same structure with a named lord as leader. A lord's personal tier (equipment) scales with renown.
 - **Bandit parties:** a leader-less mob of Levies and a few Bowmen or Outriders, up to tier II, that roams wild provinces.
 - **Travel speed** is set by the slowest company (foot 4 km/h, an all-mounted party 7 km/h *(tune)*), times terrain, times wounded load
@@ -165,7 +177,7 @@ Before the fight starts, the battle opens paused in command view with a **deploy
 BattleResult
   Winner              team (0 or 1), or -1 if you withdrew
   Duration            seconds
-  Companies[]         per company: Team, Id, Start, Standing, Fled, Fallen, Kills, KillsByTier[1..4], Routed (bool)
+  Companies[]         per company: Team, Id, Start, Standing, Fled, Fallen, Kills, KillsByTier[1..7], Routed (bool)
   Captain             Unhurt | Wounded | Captured   (the player body: never killed, see 7.3)
   EnemyLeader         Unhurt | Wounded | Slain | Captured
   HorsesTaken         loose enemy horses on the field at the end (for the winner)
@@ -185,14 +197,19 @@ Applying the result (`Campaign.Apply`):
 
 ## 6. Progression: XP and upgrades
 
+> **Superseded by F1** ([`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md) section 2): a company now holds stacks of troops with an XP
+> pool each, and men are promoted one at a time. The text below describes the pre-overhaul whole-company model.
+
 ### 6.1 Experience
 Per battle, for each company that took the field:
 - Participation: 20 XP per surviving man, x1.5 for a victory *(tune)*.
 - Kills: `Σ(victim tier) × 12 / men` added to the average *(tune)*. A 24-man Shieldmen company killing 10 tier-II men gains +10 per man.
 - New men (replacements) arrive with 0 XP, so they **dilute** the average. This is the cost of refilling a veteran company.
 
-With these numbers, Levies (60 XP) are ready to upgrade after 1-2 battles, tier II companies (160-240 XP) after about 4, and Lancers
-(400 XP) after about 8. That sets a campaign's pace: a tier IV army takes about 25-30 battles to build.
+With these numbers, Levies (60 XP) are ready to upgrade after 1-2 battles, tier II companies (150-200 XP) after about 4, tier III
+(250-320 XP) after about 6, tier IV (390-460 XP) after about 8, and tier V-VI (550-800 XP) after 10-14 each. Tier VII is the top of
+every line. That sets a campaign's pace: a tier IV army takes about 25-30 battles to build, a tier VI one most of a long campaign.
+(The overhaul, `CAMPAIGN_OVERHAUL.md` 2.2, replaces the average with a pool per troop stack.)
 
 ### 6.2 Upgrading
 - When `Xp ≥ troop.upgradeXp`, the company card shows **UPGRADE READY**. Upgrading needs:
@@ -237,7 +254,8 @@ Currency: **crowns**. Starting purse: 300 *(tune)*. Sources and sinks:
 
 ### 7.3 The Captain (you)
 - **Renown:** +5 per victory, + enemy strength / 50 *(tune)*. It raises the party caps (4.2) and the quality of mercenaries on offer.
-- **Perks:** one per 100 renown. Each extends something the battle already has:
+- **Perks:** *(replaced in F4 by the skill tree, `CAMPAIGN_OVERHAUL.md` 5.1: these eight now sit on the Leadership, Tactics,
+  Logistics, Training, Medicine and Arms branches, opened by skill, not renown.)* Each extends something the battle already has:
   - *Bannerman* (aura radius +4 m)
   - *War Cry* (rally +10 morale, −3 s cooldown)
   - *Tactician* (auto-resolve +10%, see the enemy at deployment)
@@ -399,6 +417,8 @@ The campaign was built to this spec with the section 13 proposals: a free captai
 wounds and capture but no permadeath, about 24 provinces, 200-man battles, no sieges, and two factions plus brigands. Where the
 build differs:
 
+- **A far larger world** (after the campaign was built): about 60 provinces across +-392 units, a much wider bandit population,
+  ~250 parties and a coarse-grid campaign terrain. See 3.1 and the brigand-pressure note below for the sizes and the scaling rules.
 - **Allies** who join a battle fight on your side under a team-0 AI general (`Squad.AiControlled`); only your own companies take your orders.
 - **Map movement** is straight-line steering with terrain and road speed factors. There is no A* yet, because nothing on the map is impassable.
 - **Battle size:** the cap is 400 men, served by a spatial grid (roadmap E1).
@@ -411,5 +431,33 @@ build differs:
 - **Renaming** works (click a company's name in the party screen). Merge and split, reordering, disbanding and the rest of section 9 work.
 - **Map keys** are rebindable like every other key (settings screen or `controls.json`).
 - **Later additions** (roadmap phase B): sieges and fiefs, a third faction (the Northmarch) with per-pair wars, prisoners, contracts,
-  officers, seasons and food. Saves are version 2; version 1 saves are migrated on load. See `docs/ROADMAP.md`, "As built".
+  officers, seasons and food. Saves are version 3 (version 2 added the third realm's wars, version 3 the map extent); older saves
+  are migrated on load, keeping the small map they were played on. See `docs/ROADMAP.md`, "As built".
+- **Progression is surfaced, not inferred** (roadmap A5). `Campaign.NextStep()` (`Campaign/CampaignProgression.cs`) is the single
+  answer to "what should I do now", in priority order: unpaid men, no food, a wounded captain, a free company slot with men to fill
+  it, a perk to choose, a company with upgrade XP, no contract, too many wounded, and finally the next renown rung. The map HUD shows it
+  under the captain panel, the results screen shows the renown ladder and how many companies are ready, and arriving in a town opens
+  the tab the hint names (`TRAIN`, `RECRUIT`, `MARKET`, `FOOD`, `REST`, `CONTRACT`) instead of always the first one.
+  `Rules.NextRenownUnlock` names the next thing renown buys (+1 men cap) and the renown that pays for it;
+  the HUD and party screen draw the same bar from the last rung to the next, and `Campaign.Stage` gives the captain a title
+  (Mercenary Band → Lord of War) that both panels show. (Since overhaul step F5 the title is the career rank, Free Company → King.)
+- **Brigand pressure.** `BanditsMax` is 80 and `BanditSpawnsPerDay` is 5 (`BanditSpawnChance` 0.95 each) while below that cap, so
+  the roads fill with bands quickly. Both counts scale with `WorldMap.ProvinceScale`: the numbers in `Data/campaign.json` are quoted
+  against the original 26-province map, so on the 60-province map the world holds around 190 bands (`Campaign.BanditsWanted`).
+  A band's strength still scales with the campaign day (`BanditBandMin/Max`, `BanditGrowPerDays`, `BanditTierPerDays`), so brigandry
+  stays a threat instead of free loot. Bands are opportunists: `BanditThink` runs from anything within 1.2× its strength and only
+  falls on a party below 0.9×, which keeps many small bands from grinding the lords to nothing.
+- **Lords pick fights.** `LordAggression` (0.35 a day) has a lord with no enemy in sight march for the nearest enemy province
+  (`EnemyProvinceNear`, up to two hops out) rather than patrolling home; lords on campaign accept even fights (1.0× strength,
+  1.3× on enemy ground). `LordsPerFaction` is 8 per 26 provinces and scales with `ProvinceScale` (`Campaign.LordsWanted`), but is
+  also capped by the seats a realm actually holds (`seats * 2 + 2`): a realm raises only the lords its provinces can pay for.
+  AI parties close to `AiClashRadius` (5.5) rather than the player's `EncounterRadius` when neither is yours, and `Vision` is 55.
+  `Campaign.Encounters` indexes parties into a 16 m grid, so ~250 parties on the big map do not cost an O(n²) sweep each tick.
+- **The war chest backs refits.** A lord who has lost men goes home regardless of his own purse, and `Refit` may draw on the faction
+  treasury — each visit may take up to half the chest divided between the realm's lords (capped at `250 * ProvinceScale`), so a run
+  of refits can never drain the chest past what it needs to raise new lords (600 each). Without this the first battle a lord lost
+  was permanent: beaten, broke, never refit, and ground to nothing by day 120.
+- **Pressure telemetry.** `Campaign.AiBattles` counts fights resolved without you, and `--balance` writes it plus every faction's
+  treasury to `balance/economy.csv`. `SelfTest.CampaignRun` fails if bandits stop appearing, AI parties stop fighting, lord companies
+  shrink below 18 men, or a treasury cannot afford a lord.
 - **Debug:** `IRONFIELD_CAMPAIGN_SHOTS=/dir` walks through the campaign screens and saves a PNG of each; `IRONFIELD_SAVES` moves the save folder.

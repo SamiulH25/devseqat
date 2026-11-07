@@ -10,6 +10,18 @@ if (args.Contains("--balance"))
     Ironfield.BalanceReport.Run(n > 0 ? n : 4);
     return;
 }
+if (args.Contains("--pacing"))
+{
+    int n = args.SkipWhile(a => a != "--pacing").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();
+    Ironfield.BalanceReport.Pacing(n > 0 ? n : 4);
+    return;
+}
+if (args.Contains("--bench"))
+{
+    int n = args.SkipWhile(a => a != "--bench").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();
+    Ironfield.Bench.Run(n > 0 ? n : 750);
+    return;
+}
 if (args.Contains("--replay"))
 {
     Ironfield.Replay.Run(args.SkipWhile(a => a != "--replay").Skip(1).FirstOrDefault() ?? Path.Combine(Ironfield.Replay.Folder, "last-battle.json"));

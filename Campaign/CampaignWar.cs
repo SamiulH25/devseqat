@@ -22,9 +22,10 @@ public sealed partial class Campaign
     {
         int room = Rules.MenLimit(Captain) - Player.Men - Player.Wounded;
         if (room <= 0) return "PARTY IS FULL";
-        int n = Math.Min(g.Count, Math.Min(room, Rules.Cap(g.Troop, Armies.RoleOf(new Company(g.Troop, 1)))));
+        string role = Rules.TroopRole(g.Troop);
+        int n = Math.Min(g.Count, Math.Min(room, Rules.CapOf(g.Troop, role)));
         if (Player.Companies.Count >= Rules.CompanySlots(Captain)) return "NO FREE COMPANY";
-        var c = NewCompany(g.Troop, Armies.RoleOf(new Company(g.Troop, n)), n, 0);
+        var c = NewCompany(g.Troop, role, n, 0);
         c.Cohesion = 0;
         c.Name = "Turncoat " + c.Name.Split(' ').Last();
         Player.Companies.Add(c);
@@ -34,7 +35,7 @@ public sealed partial class Campaign
         return null;
     }
 
-    public int PrisonerValue => (int)Player.Prisoners.Sum(g => g.Count * Troops.Get(g.Troop).Cost * B.RansomRate);
+    public int PrisonerValue => (int)(Player.Prisoners.Sum(g => g.Count * Rules.PerMan(Troops.Get(g.Troop).Cost) * B.RansomRate) * (Has("RansomBroker") ? 1.5f : 1));
 
     public string? SellPrisoners(Settlement s)
     {
@@ -50,17 +51,19 @@ public sealed partial class Campaign
 
     public void FreePrisoners()
     {
-        Captain.Renown += PrisonerCount * 0.5f;
+        Captain.Renown += Rules.PerMan(PrisonerCount * 0.5f);
         Log($"You free {PrisonerCount} prisoners. Word of your mercy spreads.");
         Player.Prisoners.Clear();
     }
 
-    public int LordRansom(Party lord) => 300 + 200 * lord.Tier;
+    public int LordRansom(Party lord) => (int)((300 + 200 * lord.Tier) * (Has("RansomBroker") ? 1.5f : 1));
 
     public string? RansomLord(Party lord, Settlement s)
     {
         if (s.Kind == SettlementKind.Village) return "ONLY TOWNS AND CASTLES PAY RANSOMS";
         S.Gold += LordRansom(lord);
+        Practise("Charm", LordRansom(lord) / 100f);
+        if (CharacterOf(lord) is Character ch) Remember(ch, Me, "you sold me back for gold", -10);
         Release(lord);
         Log($"{lord.Name} is ransomed for {LordRansom(lord)} crowns.");
         AudioEngine.Current?.Play(Cue.Coin);
@@ -70,6 +73,7 @@ public sealed partial class Campaign
     public void FreeLord(Party lord)
     {
         Captain.Renown += 10;
+        if (CharacterOf(lord) is Character ch) Remember(ch, Me, "you set me free without ransom", 25);
         Release(lord);
         Log($"You release {lord.Name} without ransom. Your honour is spoken of.");
     }
@@ -103,16 +107,19 @@ public sealed partial class Campaign
         return c;
     }
 
-    void OfficerAfterBattle(CompanyRecord c, bool won, float lostFrac)
+    internal void OfficerAfterBattle(CompanyRecord c, bool won, float lostFrac)
     {
-        if (c.Officer == "") { if (rng.Chance(0.4f)) c.Officer = "Sgt " + rng.Pick(Names.Get().Lords); return; }
+        if (c.Officer == "") { if (rng.Chance(Player.Companies.Contains(c) && Has("Sergeants") ? 0.8f : 0.4f)) { c.Officer = "Sgt " + rng.Pick(Names.Get().Lords); c.OfficerBattles = 0; } return; }
         if (lostFrac >= 0.5f && rng.Chance(0.25f))
         {
             if (Player.Companies.Contains(c)) Log($"{c.Officer} of {c.Name} has fallen.");
             c.Officer = "";
             c.Traits.Clear();
+            c.OfficerBattles = 0;
             return;
         }
+        c.OfficerBattles++;
+        if (c.OfficerBattles >= CompanionBattles) OfficerToCompanion(c);
         if (won && c.Traits.Count < 3 && rng.Chance(0.15f))
         {
             var t = rng.Pick(TraitText.Keys.Where(k => !c.Traits.Contains(k)).ToList());
@@ -129,7 +136,8 @@ public sealed partial class Campaign
     public bool Winter => SeasonIndex == 3;
 
     int Mouths => Player.Men + Player.Wounded + PrisonerCount;
-    public int FoodPrice(int days) => (int)MathF.Ceiling(Mouths * days * 0.15f);
+    public int FoodPrice(int days) => (int)MathF.Ceiling(Mouths * days * Rules.PerMan(0.15f) * (Has("Provisioner") ? 0.75f : 1)
+        * (SettlementAt(Player.Pos) is Settlement here && Level(SeatOf(here), "market") > 0 ? 0.8f : 1));
 
     public string? BuyFood(int days)
     {
@@ -148,6 +156,7 @@ public sealed partial class Campaign
         if (v.ThreatUntil > S.Hours) return "ALREADY STRIPPED BARE";
         Player.Food += 7;
         v.ThreatUntil = (float)S.Hours + 7 * 24;
+        Raided(v);
         v.Recruits = 0;
         if (Captain.Contract >= 0 && v.Faction == Captain.Contract)
         {
@@ -173,13 +182,14 @@ public sealed partial class Campaign
             BuyFood(7);
             Log($"Your quartermaster buys a week of food in {here.Name}.");
         }
-        Player.Food -= Winter ? 1.5f : 1;
+        Player.Food -= (Winter ? 1.5f : 1) * (HasCompanion("Quartermaster") ? 0.85f : 1) * (Has("Forager") ? 0.8f : 1);
         if (Player.Food >= 0) return;
         Player.Food = 0;
         foreach (var c in Player.Companies)
         {
             c.Cohesion = MathF.Max(0, c.Cohesion - 5);
-            c.Men -= (int)MathF.Ceiling(c.Men * 0.03f);
+            c.RemoveFit((int)MathF.Ceiling(c.Men * 0.03f), true);
+            c.Prune();
         }
         Player.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
         Log("Your men are starving. Buy food in a town or village.");
@@ -211,7 +221,7 @@ public sealed partial class Campaign
         if (S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && FactionsAtWar(f, p.Faction)).OrderBy(p => Vector2.Distance(p.Pos, s.Pos)).FirstOrDefault() is Party lord)
             s.Offers.Add(Make("hunt", lord.Id, 300 + Rules.Strength(lord), $"Defeat {lord.Name} in the field."));
         if (S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down).OrderBy(p => Vector2.Distance(p.Pos, s.Pos)).FirstOrDefault() is Party band)
-            s.Offers.Add(Make("clear", band.Id, 150 + Rules.Strength(band) / 2, $"Destroy the {band.Name}."));
+            s.Offers.Add(Make("clear", band.Id, 150 + Rules.PerMan(Rules.Strength(band) / 2), $"Destroy the {band.Name}."));
         var frontVillage = S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.Faction == f && S.Provinces[v.Province].Neighbors.Any(n => S.Provinces[n].Faction != f))
             .OrderBy(_ => rng.Float()).FirstOrDefault();
         if (frontVillage != null) s.Offers.Add(Make("defend", frontVillage.Id, 220, $"Guard {frontVillage.Name} for a day."));
@@ -239,8 +249,8 @@ public sealed partial class Campaign
             bool done = c.Kind switch
             {
                 "hunt" or "clear" => S.LastBattleFoe == c.Target || (c.Kind == "clear" && PartyById(c.Target) == null && S.LastBattleFoe == c.Target),
-                "defend" => (c.Progress += Vector2.Distance(Player.Pos, S.Settlements[c.Target].Pos) < 8 ? 1 : 0) >= 24,
-                "scout" => Vector2.Distance(Player.Pos, S.Settlements[c.Target].Pos) < 15,
+                "defend" => (c.Progress += Vector2.Distance(Player.Pos, S.Settlements[c.Target].Pos) < 8 * Map.Spread ? 1 : 0) >= 24,
+                "scout" => Vector2.Distance(Player.Pos, S.Settlements[c.Target].Pos) < 15 * Map.Spread,
                 "take" => S.Settlements[c.Target].Faction == c.Faction,
                 _ => false,
             };
@@ -249,6 +259,7 @@ public sealed partial class Campaign
                 S.Gold += c.Reward;
                 Captain.Renown += 5;
                 S.Contracts.Remove(c);
+                if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you did what I asked of you", 15);
                 Log($"Contract done: {c.Text} (+{c.Reward:0} crowns).");
                 AudioEngine.Current?.Play(Cue.Coin);
             }
@@ -256,6 +267,7 @@ public sealed partial class Campaign
             {
                 Captain.Renown = MathF.Max(0, Captain.Renown - 5);
                 S.Contracts.Remove(c);
+                if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you failed me", -8);
                 Log($"Contract failed: {c.Text}");
             }
         }

@@ -1,0 +1,39 @@
+{
+  // Realms and cultures (CAMPAIGN_OVERHAUL.md 4.1). A realm's culture decides what its villages raise and which lines its lords
+  // promote along; "lines" are the troop each role fields at tiers I-VII (each entry must be an upgrade of the one before, or
+  // the same troop). Troops carry their culture in troops.json; "common" troops are open to every culture.
+  "cultures": [
+    { "id": "azure", "name": "Azure", "root": "levies", "text": "heavy foot, crossbows and lances" },
+    { "id": "crimson", "name": "Crimson", "root": "levies", "text": "greatswords, halberds, longbows and heavy horse" },
+    { "id": "northern", "name": "Northern", "root": "clansmen", "text": "axes, round shields, glaives and light horse" }
+  ],
+  "factions": [
+    {
+      "name": "Azure Crown", "palette": 0, "culture": "azure",
+      "lines": {
+        "infantry": ["levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries", "immortals"],
+        "archers": ["bowmen", "bowmen", "crossbowmen", "arbalests", "heavy_arbalests", "guild_sharpshooters", "grand_arbalests"],
+        "spears": ["levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx", "imperial_pikemen"],
+        "horse": ["outriders", "outriders", "lancers", "demi_lancers", "banner_knights", "paladin_knights", "grail_knights"]
+      }
+    },
+    {
+      "name": "Crimson Compact", "palette": 1, "culture": "crimson",
+      "lines": {
+        "infantry": ["levies", "shieldmen", "greatswords", "zweihanders", "blademasters", "grand_blademasters", "sword_saints"],
+        "archers": ["bowmen", "bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen", "sovereign_longbowmen"],
+        "spears": ["levies", "spearrunners", "billmen", "halberdiers", "heavy_halberdiers", "royal_halberdiers", "sovereign_halberdiers"],
+        "horse": ["outriders", "outriders", "lancers", "knights", "cataphracts", "iron_cataphracts", "imperial_cataphracts"]
+      }
+    },
+    {
+      "name": "Northmarch", "palette": 4, "culture": "northern",
+      "lines": {
+        "infantry": ["clansmen", "axemen", "huscarls", "varangians", "einherjar", "thane_champions", "high_king_chosen"],
+        "archers": ["bowmen", "bowmen", "rangers", "woodland_stalkers", "shadow_hunters", "highland_marksmen", "sky_piercers"],
+        "spears": ["clansmen", "spearrunners", "billmen", "glaivemen", "vanguard_glaives", "dragon_glaives", "tempest_spears"],
+        "horse": ["outriders", "outriders", "horse_archers", "nomad_bows", "steppe_marksmen", "khan_guard", "golden_horde_masters"]
+      }
+    }
+  ]
+}

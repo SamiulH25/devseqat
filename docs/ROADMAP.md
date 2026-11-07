@@ -1,6 +1,6 @@
 # Ironfield roadmap: what comes next
 
-Status: **built**. Every phase below (A-E) is in the game; "As built" at the end lists where the build differs from the plan.
+Status: phases A-E are **built**; phase F (the campaign overhaul, [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md)) is **planned**; "As built" at the end lists where the build differs from the plan.
 Written after the campaign landed (`docs/CAMPAIGN.md`, milestones M0-M5).
 Sizes are relative: **S** about a day of focused work, **M** a few days, **L** one to two weeks. Each item has a "done when" so it can be checked.
 
@@ -85,6 +85,25 @@ Small "As built" gaps to fold in alongside: renaming companies (text input, S), 
 | E4 | Map foliage cost: instancing or merged chunks with distance culling | S | The map draws at 60 fps on integrated graphics |
 | E5 | Determinism guard: battle seed and replay recorder (inputs plus seed reproduce a battle) | M | Any reported battle bug can be replayed exactly |
 
+## Phase F: campaign overhaul (built: F0-F9)
+
+The campaign's play and progression layer is rebuilt; the world map itself is untouched. Full spec:
+[`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md). Saves break at F1 (version 4, no migration). Build in this order; each step
+ends playable and committed, with its tests in the self-test.
+
+| # | Feature | Size | Done when |
+|---|---|---|---|
+| F0 | **Groundwork:** commit the pending work, fix the stale four-tier text in DESIGN.md and CAMPAIGN.md, extend `--balance` with per-stage pacing telemetry | S | `--balance` writes a pacing CSV; the docs describe tiers I-VII |
+| F1 | **Troop stacks and per-man promotion:** companies of one role holding stacks of many troop types, an XP pool per stack, promotion one man at a time, mixed squads in battle, company identity (origin, banner, honours, ledger), party screen and promotion picker, save v4 | L | Five Levies of one company can go to Shieldmen and two to Bowmen, and the mixed company fights as one squad with casualties per stack |
+| F2 | **Cultures and regional recruitment:** `culture` on every troop, `Data/factions.json`, the southern tree split into Azure and Crimson, villages raise their culture, elite lines gated by barracks | M | Each realm's army is recognisable by its troops, and holding foreign villages gives foreign recruits |
+| F3 | **Characters and relations:** `Character` for lords and companions, traits that drive the AI, opinion with memories, returning lords and heirs, companions with roles, a Characters screen | M | A lord you beat and released treats you differently from one you beat and ransomed |
+| F4 | **Captain skill tree:** eight skills that rise by use, a perk choice every 25 points, replacing the `Perk` enum | M | Two captains played differently for 20 battles end with different skills and perks |
+| F5 | **Career ranks and the council:** Free Company to King, career beats, the realm council (fiefs, objectives, war, marshal), founding a realm by rebellion or claim, win and loss | L | A player can swear fealty, get a fief, become marshal or rebel, found a realm, and win |
+| F6 | **Fiefs:** prosperity, unrest and revolts, buildings, vassals with standing orders, defection | M | A fief's choices change its income and recruits, and a neglected one revolts |
+| F7 | **Strategic war and diplomacy:** realm objectives, marshal-led hosts with summons, war exhaustion, peace terms (land, gold, captives, tributary), alliances | L | A 240-day AI run ends wars with terms, and settlements change hands through planned campaigns |
+| F8 | **Events and quests:** data-driven events with choices, lord quests that reward opinion, brigand kings and pretenders | M | A long campaign shows events that depend on what happened in it |
+| F9 | **Pacing retune:** `upgradeXp` for T1-T7, renown and rank thresholds, against the F0 telemetry | S | Career stages land within the spec's target lengths in `--balance` runs |
+
 ---
 
 ## Recommended order
@@ -161,9 +180,173 @@ All of A-E is in. Where the build differs from the table above:
 **Phase E**
 - E1: a 4 m grid (`BattleGrid.cs`) serves separation, targeting, morale, arrows and death shock. The cap is now 400 men: 351 fielded run at
   about 310 ticks a second headless.
-- E2: saves are version 2 (per-pair wars); `CampaignState.Migrate` upgrades version 1.
+- E2: saves are version 3 (version 2 added per-pair wars, version 3 the campaign map's extent);
+  `CampaignState.Migrate` upgrades older saves and keeps them on the map they were played on.
 - E3: a GPU matrix cannot be run from CI. Instead `dotnet run -- --gpu-report` draws a battle at each quality and writes `gpu-report.txt`
   (driver, shader status, frames per second); the README lists what has been verified.
 - E4: foliage is built in 48 m tiles with bounding boxes, and each pass (camera and sun) draws only the tiles in its frustum.
 - E5: every battle you fight is recorded (seed, armies, options, starting positions, each tick's input and your orders) to
   `replays/last-battle.json`; `dotnet run -- --replay [file]` plays it back headless and checks that it ends the same way.
+
+**Phase F** (in progress; one entry per step as it lands)
+- F0: the pending work built and passed the self-test unchanged. `Campaign/Pilot.cs` is a scripted stand-in captain (it signs with the
+  Crown, hunts weaker parties and brigand contracts, recruits, promotes, buys food, and runs for a safe seat when outmatched); `--balance`
+  runs it for 30 weeks per seed and writes `balance/pacing.csv` and `balance/pacing_weekly.csv`. First numbers (3 seeds): Sworn Company
+  on days 18-32, Battle-Hardened on day 84 in one seed of three, 15-42 battles in 211 days. A company wiped out away from battle now
+  regroups ten men at the nearest friendly town (before, it was left with no companies). `--selftest PilotTrace` prints a pilot's run.
+- F1: `CompanyRecord` holds `Stacks` (troop, men, wounded, XP pool capped at `upgradeXp x men`); a company's places come from its role
+  (foot 24, bows 16, spears 12, horse 10) and each man takes his tier's weight (I 0.8 ... VII 1.6). `Campaign/Companies.cs` promotes by
+  the man: each spends `upgradeXp` from his stack's pool and the difference in troop price (plus a horse into cavalry, bought on the spot
+  when the party has none) and moves to his new troop's stack, in the same company if it fits and has room, else the first company of
+  his role with room, else a new company. The AI uses the same rule (`PromoteAll`). Battles get a `Mix` per company and spawn one squad
+  of mixed men (largest stack first, marching at its slowest man); results come back per stack (`StackResult`) and wounds, captures,
+  fled men and pool XP are applied per stack. Companies carry a culture, home, banner charge (a baked flag per side and charge, carried
+  in battle), a ledger of the last 8 fights and up to 3 honours from `Data/campaign.json` `Honours` (defaults built in). The party screen
+  shows stacks as chips (tier, men, pool bar, N READY); a chip opens the promotion picker (1 / 5 / all per branch, with cost and the
+  reason when it cannot) with MOVE and SPLIT for the stack. Saves are version 4; older ones are refused with a message on the title
+  screen and on quickload. Deviations from the spec: raw tier I recruits fit any foot company (so levies can drill in a spear or bow
+  company until promoted); Stormers gives assault morale only (ladder speed is not modelled); mixing cultures costs 5 cohesion at once
+  rather than over a week. Balance: AI recruits now fill only green (tier I) companies, a lord's promotions come from his own purse unless
+  he came home beaten, and a war chest keeps a 300-crown floor when paying lords (without these the 120-day run bled one realm's chest
+  to zero). Pacing (3 seeds, 211 days): Sworn Company on days 9-200, Battle-Hardened on day 78 in one seed; the pilot still bleeds men to
+  unpaid upkeep between fights in two seeds, as before F1 (to fix with the pacing work).
+- F2: every troop in `troops.json` has a `culture`. The common core is levies, shieldmen, spearrunners, bowmen and outriders, plus two
+  tier III hubs where the web has no other way into a culture's line: lancers (Azure demi-lancers, Crimson knights) and billmen (Crimson
+  halberds, Northern glaives). Azure (34 troops) keeps heavy foot, sergeants, pikes, crossbows and lances; Crimson (23) greatswords,
+  halberds, longbows and heavy horse; Northern (43) axes, glaives, rangers, horse archers and light horse. `Data/factions.json` (loaded by
+  `Factions.cs`, validated: seven troops per line, each an upgrade of the last, of the realm's culture or common) holds the realms and
+  cultures and replaces the hard-coded lines in `Armies`; `Campaign.FactionNames` and `Style.PaletteOf` read it. Settlements carry a
+  `Culture` from the realm that founded them and keep it when taken; villages raise their culture's root, and your recruits join a
+  company of their own people (else a new one, and only with no free slot a foreign company). A man's culture is his troop's, or his
+  company's for common troops; he may train into common troops or his own culture's. Tier V+ culture troops need a town of that
+  culture in your realm (or held by you) as a stand-in for the F6 barracks. Mercenaries are hired from any realm's lines. AI lords
+  now try every branch (realm line first): before, a refused first branch stopped a stack's promotions, which left the Crimson lords
+  without a single promotion. Not yet: the T2 village recruit at high prosperity (F6).
+- F3: `Campaign/Characters.cs`. A `Character` (lord, companion, wanderer or the captain) has traits, an `Opinion` per character id
+  and up to 8 `Memories`; what one thinks of another is that plus a base (-10 for a foreign culture, -15 per clashing trait pair) in
+  -100..100. Opinion and memories fade 5% a week, and lords of your liege warm by 1 a week (they start at +15). Events: fighting beside
+  a lord (+6, +4 more on a win), beating him (-12), taking him captive (-8), freeing him (+25, more if Honourable), ransoming him (-10,
+  more if Greedy), killing his father (-30, for the heir). Fickle lords swing 1.5x. Traits drive the AI: Reckless lords run from 1.7x and
+  hunt up to 1.25x their strength, Cautious ones run from 1.1x and hunt below 0.75x. A routed lord dies 5% of the time and an heir (a new
+  character of his house) takes his party, half his opinions and the grudge. Lords already came back after defeat (5 days, or when you
+  free or ransom them). Companions (at most 3) come from a sergeant who lives through 15 battles, or a wanderer in one town in four (150
+  crowns and up); each has a role (Quartermaster: food -15%, upkeep -5%; Surgeon: healing +30%; Scout; Drillmaster: drill +25%;
+  Steward: fief income +15%) and leads one company into battle as a hero unit (the captain's kit, AI-controlled, not counted among the
+  company's men); a hero who falls is out for 5 days, or dies one time in ten. Recruits follow your standing with the lord seated in the
+  province (-50 none, 0 half, +50 all; your own fiefs all). The Characters screen (L) lists lords by realm with traits, state, an
+  opinion bar and the three strongest memories, and your household. Not yet: the Scout's vision (the map has no fog to widen), refusing
+  a lord's quest and razing land (F8 and F6 add those events), raising companions to vassals (F5/F6).
+- F4: `Campaign/Skills.cs`. The `Perk` enum is gone: `CaptainState.Skills` (0-100 by id) and `Perks` (string ids), `Campaign.Has(perk)`.
+  Eight skills, four perks each (defaults in code, overridable as `Skills` in `Data/campaign.json`); a skill opens one perk choice per
+  25 points, and gains shrink as it climbs (x max(0.25, 1 - level/125)). Rises: Leadership 1.5 + men/40 a battle; Tactics 1 + 4 x
+  (odds - 0.8) a win, 0.4 a loss; Arms 0.45 a kill (an auto-resolved battle assumes 1-4 on a win); Logistics 0.006 per map unit
+  marched; Training 0.2 a man promoted; Medicine 0.1 a man healed; Stewardship 0.5 + income/40 a week with fiefs; Charm 10% of
+  goodwill won and 1 per 100 crowns of lord ransom. Levels count too: Leadership +1 men limit per 5, Tactics +1% auto-resolve per 10,
+  Logistics +1% speed per 20, Training +1% drill per 2, Medicine +1% of fallen wounded instead of killed per 10, Stewardship +1% fief
+  income per 5, Charm +1% goodwill per 4, Arms +2% health per 10; plate needs Arms 25, the great helm 15, the destrier 35. A new
+  captain starts at Leadership 15, Arms 15, Tactics 10 and 5 elsewhere. Renown no longer buys perks (`NextRenownUnlock` is the men
+  cap only). The eight old perks keep their effects; Born Captain is +10 men rather than a company slot (10 slots are already open
+  from the start). Stewardship's perks are Tax Roll, Provisioner (food -25%), Just Ruler (twice the recruits in your fiefs) and
+  Castellan (threatened villages still pay); Builder and unrest come with F6. The Skills screen (K) shows each branch, its bar with the
+  25-point marks, and the perks; the party screen has a summary. The pilot takes every perk it opens. `BattleResult.PlayerKills`
+  carries your kills to the campaign.
+- F5: `Campaign/Career.cs`. The rank (`Campaign.Rank`) is read from the world rather than stored: Free Company; Sworn Sword after 30
+  days with one realm (`CaptainState.ContractSince`; its villages' recruits cost half); Vassal once you swear fealty (`Fealty`: 150
+  renown and the ruler's opinion +10); Lord with two towns or castles and 350 renown; Marshal when you hold the realm's baton; King when
+  you rule a realm. `Campaign.Stage` is now the rank's name, so `--balance` pacing reports ranks; the highest rank reached
+  (`BestRank`) fires a career beat once (`Campaign.Beat`, shown by the map as a panel). Every realm has a ruler and a marshal
+  (`FactionState.Ruler`/`Marshal`, character ids); a dead or departed ruler is followed by his heir or the eldest lord, and a vacant
+  baton calls the council within a day. **Fiefs:** before you swear fealty a seat you take stays with the realm and pays a captor's
+  purse (300 a town, 200 a castle); as a vassal your first seat is yours at once; every later seat, and every seat the lords take,
+  waits in `FactionState.Pending` for the **council** (every 14 days, staggered by realm). The council grants each seat by a weighted
+  vote (one, plus one per fief; the ruler's voice counts three) among the two lords with the fewest fiefs, the captor (+20) and you as
+  a vassal; voters back themselves (+30), else whom they think best of, less 10 per fief the candidate holds; passed-over lords think
+  less of their liege (-4). A lord holding a seat by grant moves his home there. It elects a marshal when the baton is vacant and every
+  fourth sitting (the two strongest lords, the sitting marshal +10, and you once you are a lord); the AI marshal names the objective
+  (an enemy town or castle, towns and kin first, near the realm's seats), and `FactionAI` musters its hosts on it (half the days
+  rather than a third). A lord may put a motion of war to it (`ProposeWar`); lords vote on opinion of the proposer, relative strength,
+  wars already fought and their traits. As marshal or king you name the objective yourself. **Rebellion** (`DeclareIndependence`,
+  a lord with a town): your fiefs, their provinces and villages become a new realm (`FactionState.Founded`, named "Realm of" your
+  capital, gold heraldry, the culture of your capital, the troop lines of the listed realm of that culture), at war with your old liege
+  and in a 30-day truce with the others; lords who think 30+ of you and 20 more of you than of their liege follow with their fiefs (the
+  Loyal never do). `Factions.Bind` lets the static look-ups (lines, culture, palette) see realms founded in play; `Campaign.FactionNames`
+  is per campaign. A king gets no contract pay, may declare war and offer peace (refused while they are well ahead and stronger), and
+  his own council grants seats to him (or to the vassal who took them). **Win:** your realm holds 60% of the provinces while you are
+  king or marshal (`CampaignState.Won`, a summary, and play goes on). **Loss:** a king whose realm holds no town or castle
+  (`GameOver`, with `EndReason`). The realm screen (R) shows the ladder, the realm's ruler, marshal, objective, wars and last council,
+  and the acts your rank allows. The pilot swears fealty when it can: Vassal on days 39 and 49 in two seeds of three (`--balance 3`),
+  and `--selftest PilotCareer` checks it. Not yet: **claiming** a realm as a free captain (a free company cannot besiege, so the road
+  there needs personal wars), choosing the new realm's name and heraldry, summons to hosts (F7), raising companions to vassals and
+  culture barracks (F6), and peace terms beyond a truce (F7).
+- F6: `Campaign/Fiefs.cs`. Every settlement has `Prosperity` (0-100; towns start at 60, the rest at 50) and seats have `Unrest`,
+  a `Tax` (low, normal, high: income x0.7 / x1 / x1.35, villages pay at their seat's rate) and `Buildings` (id -> level) with one under
+  construction at a time. Income is scaled by 0.5 + prosperity/100, the tax and a market. Prosperity drifts +0.12 a day (+0.03 per
+  building level, +0.1 low tax, -0.18 high tax, -0.1 in a winter without a granary, -0.1 above 50 unrest), -0.3 while threatened and -1
+  under siege; a raided village loses 6 and its seat 2 (half with a watchtower). Villages at 70+ prosperity raise recruits twice as fast
+  and below 20 half as fast, and at 75+ they offer you their culture's tier II infantry instead of the root (the F2 leftover). Unrest drifts
+  -0.15 a day, +0.35 under a realm of another culture, +0.3 high tax (-0.2 low), +0.5 besieged, +0.25 raids in the province, +0.2 below
+  25 prosperity, +0.3 while its rebels are abroad, -0.2 with 30+ men in garrison, -0.25 with a chapel, -0.2 with Just Ruler, -Stewardship/300
+  in your fiefs. At 70 a seat rises (10% a day): a rebel band of its own culture (`PartyKind.Bandit` with `HomeId` = the seat); beating
+  it takes 20 unrest off. At 100 it goes over to the realm of its people (if a different one stands). Buildings (defaults in code,
+  overridable as `Buildings` in `Data/campaign.json`): training yard I-III (promote in your fief; II and III cut promotion gold 10%/20%),
+  barracks (every town starts with one; it replaces the F2 stand-in: a culture's tier V-VII need a barracks of that culture in your
+  realm or fiefs), walls I-III (assault wall factor +0.1, gate +150, garrison refill +7%, supplies +10 days per level), market (towns:
+  income +20%, food 20% cheaper there), granary (+15 days of supplies, no winter loss), stables (towns: more horses, 30% cheaper),
+  chapel (unrest, Pious lords +1 a week towards you), watchtower (raids halved). Cost x1.5 per level already built, less Stewardship/400.
+  AI realms with 1,400+ in the chest build one thing a week (walls on a border, else market, else barracks, else yard; a lord who holds the
+  seat pays when he can). **Vassals:** as a lord with two or more seats you raise a companion (`RaiseVassal`): he becomes a lord of
+  your realm (`Character.Liege` = you) with a castle before a town (never your last town), the company he led and 20 tier II men; your
+  realm's lords are all your vassals when you are king. Standing orders (`Party.Order`): defend your lands (he patrols your nearest
+  fief's province), follow you (unless nearly broken), or join the host (the realm's objective). Vassals with your liege follow you
+  if you rebel. **Defection:** at each council a lord (not Loyal, not your vassal) who thinks below -30 of his liege and above +30 of
+  another ruler goes over with his fiefs. Fief tab in your towns and castles (prosperity, unrest and why, taxes, buildings); settlement
+  tooltips show prosperity, unrest, buildings and holder; vassals and raising them are under the household tab (L). Not yet: the
+  Scout's vision and the Watchtower's early warning (there is no fog of war), the Builder perk (Stewardship lowers building costs instead).
+- F7: `Campaign/Diplomacy.cs`. Each `War` carries both sides' exhaustion (0-100) and when it began. `Score` now also tires the
+  loser by amount/60 and the winner by amount/240 (a battle's lost strength, 600 for a seat, 20 for a raid), and every day of war adds
+  0.12 to both. The war-score truce timer (`PeaceScore`) is gone: after 20 days, an AI realm sues for peace when its exhaustion passes 50
+  (70 with an ally in the war), or 30 while the other side's margin is over 0.5, or when both are tired (60/40); 30% a day once it wants
+  to. The winner's margin is (score difference)/1500 + (exhaustion difference)/40 and sets the terms: a plain truce, gold (half the
+  loser's chest, 200-1,600, over four weeks, `S.Payments`), a seat handed over (the loser's nearest, via `Capture`, then the council), or
+  tributary status for 90 days (margin 1.6, three seats: a quarter of its income weekly, and it joins its overlord's wars).
+  Payments keep the 300-crown floor. Wars no longer restart when a truce ends: a realm at peace declares war 5% a day (1% with one war
+  already, none with two; twice as often under an Ambitious or Reckless ruler, half under a Cautious one) on a realm out of truce, not
+  its tributary, overlord or ally, and not much stronger, neighbours and the weakest first. The coalition against a realm with 45% of the
+  seats is not settled by terms. Treaties are recorded (`S.Treaties`). **Hosts:** a muster (`MusterHost`) takes up to six idle lords
+  who think at least -20 of the marshal; an ally without an objective marches on yours. **Summons:** when your realm musters and you are
+  a vassal or lord (not marshal), you are summoned to the target seat for 4 days (at most once a week): reaching it within 35 map units
+  gives the marshal +8, failing gives -10. As marshal or king, CALL THE HOST sends every lord who thinks at least -20 of you to your
+  objective. **A king's diplomacy:** declare war; offer peace as a truce, gold, a seat or tribute, accepted only if your margin reaches
+  -0.5 / 0.35 / 0.9 / 1.6 (each captive lord of theirs you free adds 0.15, and they go home); alliances for 60 days against a shared
+  enemy if their ruler thinks at least -10 of you. The win counts your tributaries' provinces (`RealmShare`). The realm screen shows
+  weariness, tributes, the summons, and, as king, each realm's status with its terms buttons. Not yet: AI realms forming alliances
+  (only the coalition against a leader), AI realms offering you peace (you offer, they answer), exchanging captive lords on their own.
+  Pacing note: the pilot now reaches Vassal on day 110 in the self-test seed (was 38), with the world's wars playing out differently.
+- F8: `Campaign/Events.cs` and `Data/events.json` (15 events). An event names a trigger (`Campaign.Triggers`: your fief's unrest
+  50+, poverty below 30 or prosperity 80+; a lord not at war with you who thinks 35+ of you; a lord of your realm who thinks -20 or
+  less of the ruler, while you are sworn; a band of 35+ men near you; a company of 12+ battles and 18+ cohesion; a hungry winter;
+  unpaid men; 25+ prisoners; your realm's weariness 40+; being in a town; and the forced brigand king and pretender), a title and
+  text with `{settlement}`, `{lord}`, `{band}`, `{company}`, `{realm}`, `{liege}`, a cooldown, and two or three choices with an optional
+  `need` (gold) and effects (`verb` or `verb:n`: gold, renown, food, horses, opinion, opinion_liege, opinion_realm, unrest, prosperity,
+  tax, cohesion, xp, exhaustion, gamble, quest, bounty, revolt, prisoners_free, prisoners_recruit, disband). Every 3-6 days, when no
+  event waits, one eligible event off cooldown comes up (`S.Event`), never in battle; the map shows it when nothing else is open,
+  and the stand-in captain takes the first choice it can afford. `Campaign.ValidateEvents` checks triggers, verbs, numbers,
+  placeholders and choice counts. **Lord quests** reuse contracts with a `Giver`: hunt a lord at war with his realm, else clear the
+  band nearest his home, in 12 days; done is +15 opinion (and a little gold), failed -8, refused -6 (closing the F3 gap). **Bounties**
+  put a band (or a pretender's rising) on your own contracts, +400 for a brigand king. **Brigand kings:** from day 30, the largest band of
+  40+ men (not rebels) crowns its chief, a `Character` of kind "brigand": his host grows a man a day (to 150) and threatens villages
+  within 15; beaten, he is dead and you gain 25 renown. **Pretenders:** a town that revolts at 85+ unrest has its rebels led by a
+  pretender ("of" the town), with more men; while he is at large it defects at 85 unrest rather than 100; beating him gives 15 renown.
+  The event panel wraps the text and lists each choice with its effects or why it is shut. Not yet: escort and deliver-ransom quests,
+  taking a castle for a lord, and a lair for the brigand king (he roams like any band).
+- F9: pacing retune against the stand-in captain. `--pacing N` runs only the pilot (40 weeks a seed, 2000+seed) and prints, per seed,
+  battles, men promoted per battle, the first tier V day, seats stormed, the day renown first allows fealty, each stage's day, and
+  each target (`BalanceReport.Targets`, from section 9 at about 4.5 minutes of play a day: Vassal days 40-67, Lord 93-147,
+  Marshal 173-280) as OK or OFF; `--balance` runs it too. The pilot now besieges and storms weakly held enemy seats once sworn,
+  answers summons, and counts the retainer and the real levy price. Tuning: fealty at 120 renown (was 150); standing for marshal
+  needs 500 renown and two fiefs (was the lord's 350); a liege pays a sworn sword or better a weekly retainer of 30 crowns plus a
+  tenth of renown on top of contract pay, so a beaten company can rebuild instead of bleeding out. Result over 8 seeds: 7 reach
+  Lord and 6 Marshal; medians Vassal day 59, Lord 145, Marshal 274 (all in target), with a wide spread (Vassal 31-156, one seed
+  still a sworn sword at day 281). `upgradeXp` was left as it is: men promoted per battle run 3-11 and the first tier V man
+  arrives near the Vassal rank in most seeds, so gold, not XP, is the brake. Not yet: renown per victory scaled by rank, and the
+  marshal vote often lands late because the baton is only contested every fourth council.

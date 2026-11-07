@@ -19,11 +19,12 @@ sealed class ScreenHost : Game
     public readonly SettingsScreen SettingsPanel;
     readonly GraphicsDeviceManager gdm;
 
-    enum Mode { Title, Map, Battle }
+    enum Mode { Title, Map, Battle, Lab }
     Mode mode = Mode.Title;
     BattleScreen battle = null!;
     MapScreen map = null!;
     TitleScreen title = null!;
+    UiLab lab = null!;
     Campaign? campaign;
     BattleSetup? setup;
 
@@ -84,6 +85,8 @@ sealed class ScreenHost : Game
         battle.OnTitle = () => mode = Mode.Title;
         map = new MapScreen(GraphicsDevice, Sb, Art, Font, Shading, Ctl) { OnBattle = StartCampaignBattle, OnTitle = () => mode = Mode.Title, OnSettings = OpenSettings };
         title = new TitleScreen(this);
+        lab = new UiLab(this) { OnBack = () => mode = Mode.Title };
+        if (lab.ShotsDir != null) mode = Mode.Lab;
         if (battle.HasShots) mode = Mode.Battle;
         if (campaignShots != null) StartCampaign(3);
     }
@@ -97,17 +100,25 @@ sealed class ScreenHost : Game
         mode = Mode.Map;
     }
 
+    /// A message for the title screen (why a save would not load).
+    public string TitleNote = "";
+
     public bool CanContinue => CampaignState.Exists("autosave") || CampaignState.Exists("quicksave");
 
     public void ContinueCampaign()
     {
         string? latest = new[] { "autosave", "quicksave" }.Where(CampaignState.Exists)
             .OrderByDescending(n => File.GetLastWriteTimeUtc(Path.Combine(CampaignState.SaveDir, n + ".json"))).FirstOrDefault();
-        if (latest == null || CampaignState.Load(latest) is not CampaignState s) return;
+        if (latest == null) return;
+        if (CampaignState.Load(latest) is not CampaignState s) { TitleNote = (CampaignState.LoadError ?? "the save could not be read").ToUpperInvariant(); return; }
+        TitleNote = "";
         campaign = new Campaign(s);
         map.Open(campaign);
         mode = Mode.Map;
     }
+
+    /// The UI lab: a gallery of interface concepts (F3 on the title screen).
+    public void OpenLab() => mode = Mode.Lab;
 
     public void QuickBattle()
     {
@@ -157,6 +168,7 @@ sealed class ScreenHost : Game
         switch (mode)
         {
             case Mode.Title: IsMouseVisible = true; title.Update(); Audio?.Music(MusicTrack.Map); Audio?.Beds(0.6f, 0, 0); break;
+            case Mode.Lab: IsMouseVisible = true; lab.Update(dt); Audio?.Music(MusicTrack.Map); break;
             case Mode.Map: IsMouseVisible = true; map.Update(dt, IsActive); Audio?.Music(MusicTrack.Map); Audio?.Beds(1, 0, 0); break;
             default: battle.Update(dt); break;
         }
@@ -169,6 +181,7 @@ sealed class ScreenHost : Game
         switch (mode)
         {
             case Mode.Title: title.Draw(); break;
+            case Mode.Lab: lab.Draw(); break;
             case Mode.Map:
                 try { map.Draw(Quality); }
                 catch (Exception e) when (Quality != Quality.Low)
@@ -192,8 +205,8 @@ sealed class ScreenHost : Game
 
     void CaptureShot()
     {
-        string? name = pendingShot ?? battle.PendingShot;
-        string? dir = campaignShots ?? Environment.GetEnvironmentVariable("IRONFIELD_SHOTS");
+        string? name = pendingShot ?? battle.PendingShot ?? lab.PendingShot;
+        string? dir = campaignShots ?? lab.ShotsDir ?? Environment.GetEnvironmentVariable("IRONFIELD_SHOTS");
         if (name == null || string.IsNullOrEmpty(dir)) return;
         var gd = GraphicsDevice;
         int w = gd.PresentationParameters.BackBufferWidth, h = gd.PresentationParameters.BackBufferHeight;
@@ -205,6 +218,7 @@ sealed class ScreenHost : Game
         tex.SaveAsPng(file, w, h);
         pendingShot = null;
         battle.PendingShot = null;
+        lab.PendingShot = null;
     }
 
     void CampaignShots()
@@ -216,7 +230,7 @@ sealed class ScreenHost : Game
         {
             case 0: map.Stage("map"); Shot("campaign-map"); break;
             case 1: map.Stage("close"); Shot("campaign-close"); break;
-            case 2: c.Player.Companies[0].Xp = 70; c.Captain.Renown = 120; map.Stage("party"); Shot("campaign-party"); break;
+            case 2: { var st0 = c.Player.Companies[0].Main!; st0.Xp = st0.PoolCap * 0.6f; } c.Captain.Renown = 120; map.Stage("party"); Shot("campaign-party"); break;
             case 3: map.Stage("upgrade"); Shot("campaign-upgrade"); break;
             case 4: map.Stage("settlement"); Shot("campaign-town"); break;
             case 5:
@@ -250,7 +264,7 @@ sealed class ScreenHost : Game
             case 12:
             {
                 var castle = c.S.Settlements.Where(s => s.Kind != SettlementKind.Village && c.FactionsAtWar(c.Captain.Contract, s.Faction)).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
-                foreach (var co in c.Player.Companies) co.Men = Math.Max(co.Men, 20);
+                foreach (var co in c.Player.Companies) co.Main!.Men = Math.Max(co.Main!.Men, 20);
                 c.Player.Pos = castle.Pos + new Vector2(4, 0);
                 c.Besiege(castle);
                 castle.SiegeSince -= 13;
@@ -275,7 +289,108 @@ sealed class ScreenHost : Game
                 cStage++; shotFrames = 0; break;
             }
             case 18: Shot("campaign-winter"); break;
-            case 19: Exit(); break;
+            case 19:
+            {
+                c.Captain.Skills["Arms"] = 62; c.Captain.Skills["Leadership"] = 41; c.Captain.Skills["Logistics"] = 27;
+                c.TakePerk("WarCry");
+                map.Stage("skills");
+                Shot("campaign-skills");
+                break;
+            }
+            case 20:
+            {
+                // The career (F5): a lord of the realm with two fiefs, then a king.
+                c.Captain.Fealty = true;
+                c.Captain.Renown = 420;
+                foreach (var t in c.S.Settlements.Where(t => t.Faction == c.Captain.Contract && t.Kind != SettlementKind.Village)
+                             .OrderByDescending(t => t.Kind == SettlementKind.Town).Take(2)) t.Owner = c.Player.Id;
+                c.S.Factions[c.Captain.Contract].LastCouncil = new() { "Uffing is granted to you.", "The host is to march on Lowmoor." };
+                c.Beat = null;
+                map.Stage("realm");
+                Shot("campaign-realm");
+                break;
+            }
+            case 21:
+            {
+                // The marshal's summons (F7), as a vassal sees it.
+                var m = c.MarshalOf(c.Captain.Contract)!;
+                var seat = c.S.Settlements.First(t => t.Kind != SettlementKind.Village && c.FactionsAtWar(c.Captain.Contract, t.Faction));
+                c.S.Summons = new Summons { Faction = c.Captain.Contract, Seat = seat.Id, From = m.Id, Until = (float)c.S.Hours + 96 };
+                c.Beat = ("THE MARSHAL SUMMONS YOU", new[] { $"{m.Name.ToUpperInvariant()} CALLS THE HOST TO {seat.Name.ToUpperInvariant()}.", "COME WITHIN 4 DAYS. ANSWERING WINS HIS FAVOUR. IGNORING HIM COSTS IT." });
+                map.Stage("beat");
+                Shot("campaign-summons");
+                break;
+            }
+            case 22: c.S.Summons = null; c.DeclareIndependence(); map.Stage("beat"); Shot("campaign-beat"); break;
+            case 23:
+            {
+                c.Beat = null;
+                int me = c.Captain.Contract;
+                var w = c.WarBetween(me, 0)!;
+                if (w.A == me) { w.ScoreA = 1800; w.ExhB = 41; w.ExhA = 12; } else { w.ScoreB = 1800; w.ExhA = 41; w.ExhB = 12; }
+                map.Stage("career");
+                Shot("campaign-realm-king");
+                break;
+            }
+            case 24:
+            {
+                // A fief of the new realm (F6): a market built, walls going up, a little unrest from high taxes.
+                c.Beat = null;
+                var fief = c.Fiefs.First(t => t.Kind == SettlementKind.Town);
+                c.S.Gold = 3000;
+                fief.Buildings["market"] = 1; fief.Buildings["yard"] = 2;
+                c.SetTax(fief, 2);
+                fief.Prosperity = 68; fief.Unrest = 34;
+                c.Build(fief, "walls");
+                map.Stage("fief", fief);
+                Shot("campaign-fief");
+                break;
+            }
+            case 25:
+            {
+                var t = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction != c.Captain.Contract);
+                var w = new Character { Id = c.S.NextId++, Kind = "wanderer", Name = "Osric Longshanks", Culture = t.Culture, Role = "Steward", AtSettlement = t.Id };
+                c.S.Characters.Add(w);
+                c.S.Characters.Add(new Character { Id = c.S.NextId++, Kind = "wanderer", Name = "Wynn Ashdown", Culture = t.Culture, Role = "Surgeon", AtSettlement = t.Id + 1000 });
+                c.HireWanderer(t);
+                foreach (var extra in c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction != c.Captain.Contract).Take(1)) { extra.Faction = c.Captain.Contract; extra.Owner = c.Player.Id; }
+                c.RaiseVassal(c.Companions.First());
+                c.SetOrder(c.Vassals.First(), "follow");
+                var w2 = c.S.Characters.First(k => k.Name == "Wynn Ashdown"); w2.AtSettlement = t.Id; c.HireWanderer(t);
+                map.Stage("household");
+                Shot("campaign-household");
+                break;
+            }
+            case 26:
+            {
+                // Events (F8): a lord asks a favour; then a brigand king rises.
+                var lord = c.S.Characters.First(k => k.Kind == "lord" && !k.Dead && k.Faction != 0);
+                c.S.Event = new PendingEvent { Id = "lord_favour", Lord = lord.Id };
+                map.Stage("event");
+                Shot("campaign-event");
+                break;
+            }
+            case 27:
+            {
+                c.S.Event = null;
+                var band = c.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down && p.CharId < 0);
+                c.Crown(band);
+                map.Stage("event");
+                Shot("campaign-brigand-king");
+                break;
+            }
+            case 28:
+            {
+                c.S.Event = null;
+                var co = c.Player.Companies.First(x => x.Men > 0);
+                if (co.Officer == "") co.Officer = "Hal Brook";
+                foreach (var l in c.DivisionLeaders().Take(2).ToList()) c.MakeDivision(l.Char, l.Company);
+                if (c.S.Divisions.Count > 0) foreach (var x in c.Player.Companies.Where(x => x.Division < 0).Take(2)) c.AssignDivision(x, c.S.Divisions[0].Id);
+                map.Stage("divisions");
+                Shot("campaign-divisions");
+                break;
+            }
+            case 29: Exit(); break;
         }
     }
 }

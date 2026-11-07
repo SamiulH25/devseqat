@@ -7,12 +7,15 @@ public sealed partial class Campaign
 {
     /// The tier-1 recruits a faction's villages give (the Northmarch raise clansmen; the others levies).
     public static string RecruitTroop(int faction) => Armies.LineTroop("infantry", 1, Math.Max(0, faction));
+    /// What a settlement's people enlist as: its culture's T1 root, whoever holds it now (4.2).
+    public static string RecruitTroop(Settlement s) => Factions.Root(s.Culture);
 
     /// What a settlement yields a week: to its faction's treasury, or to you when it is your fief (with its province's villages).
     public float Income(Settlement t) => t.Kind switch
     {
-        SettlementKind.Town => B.TownIncome, SettlementKind.Castle => B.CastleIncome, _ => t.ThreatUntil > S.Hours ? 0 : B.VillageIncome,
-    } * (t.Besieged ? 0.25f : 1);
+        SettlementKind.Town => B.TownIncome, SettlementKind.Castle => B.CastleIncome,
+        _ => t.ThreatUntil > S.Hours && !(t.Owner == Player.Id && Has("Castellan")) ? 0 : B.VillageIncome,
+    } * (t.Besieged ? 0.25f : 1) * FiefFactor(t);
 
     public IEnumerable<Settlement> Fiefs => S.Settlements.Where(t => t.Owner == Player.Id);
 
@@ -22,13 +25,13 @@ public sealed partial class Campaign
     void RaiseGarrison(Settlement s, float fill = 0.8f)
     {
         if (s.Kind == SettlementKind.Village) return;
-        int tier = Math.Clamp(2 + Day / 60, 2, 3);
+        int tier = Math.Clamp(2 + Day / 45, 2, 5);
         var roles = s.Kind == SettlementKind.Town ? new[] { "infantry", "archers", "spears" } : new[] { "infantry", "archers" };
         foreach (var role in roles)
         {
             if (s.Garrison.Any(c => Rules.RoleOf(c) == role)) continue;
             string troop = Armies.LineTroop(role, tier, s.Faction);
-            s.Garrison.Add(NewCompany(troop, role, Math.Max(4, (int)(Rules.Cap(troop, role) * fill)), 0));
+            s.Garrison.Add(NewCompany(troop, role, Math.Max(4, (int)(Rules.CapOf(troop, role) * fill)), 0, s));
         }
     }
 
@@ -36,28 +39,31 @@ public sealed partial class Campaign
     public Party GarrisonParty(Settlement s) => new()
     {
         Id = -1000 - s.Id, Kind = PartyKind.Garrison, Faction = s.Faction, Name = "the garrison of " + s.Name, Pos = s.Pos, Companies = s.Garrison,
-        Tier = s.Garrison.Count == 0 ? 1 : Math.Clamp((int)MathF.Round((float)s.Garrison.Average(c => c.Type.Tier)), 1, 4), HomeId = s.Id,
+        Tier = s.Garrison.Count == 0 ? 1 : Math.Clamp((int)MathF.Round((float)s.Garrison.Average(c => c.Type.Tier)), 1, 7), HomeId = s.Id,
     };
 
     public int GarrisonMen(Settlement s) => s.Garrison.Sum(c => c.Men);
+
+    /// Days a garrison can hold out when its stores are full: walls and a granary add to it (F6).
+    public static float MaxSupplies(Settlement s) => 30 + 10 * Level(s, "walls") + 15 * Level(s, "granary");
 
     /// Weekly: each faction pays to bring its garrisons back up (not while besieged); wounded heal.
     void GarrisonsWeekly()
     {
         foreach (var s in S.Settlements.Where(s => s.Kind != SettlementKind.Village && !s.Besieged))
         {
-            foreach (var c in s.Garrison) { c.Men += c.Wounded; c.Wounded = 0; }
+            foreach (var st in s.Garrison.SelectMany(c => c.Stacks)) { st.Men += st.Wounded; st.Wounded = 0; }
             var fs = S.Factions[s.Faction];
             RaiseGarrison(s, 0.4f);
-            foreach (var c in s.Garrison.Where(c => c.Type.Tier <= 3))
+            foreach (var c in s.Garrison.Where(c => c.Type.Tier <= 5))
             {
-                int want = (int)(Rules.Cap(c.Troop, Rules.RoleOf(c)) * 0.8f) - c.Men;
-                int n = Math.Min(want, (int)(fs.Treasury / 20));
+                int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * (0.8f + 0.07f * Level(s, "walls"))) - c.Men;
+                int n = Math.Min(Math.Min(want, Rules.Room(c, c.Troop)), (int)(fs.Treasury / Rules.PerMan(20)));
                 if (n <= 0) continue;
-                Rules.AddMen(c, n);
-                fs.Treasury -= n * 20;
+                Rules.AddMen(c, c.Troop, n);
+                fs.Treasury -= n * Rules.PerMan(20);
             }
-            s.Supplies = MathF.Min(30, s.Supplies + 7);
+            s.Supplies = MathF.Min(MaxSupplies(s), s.Supplies + 7);
         }
     }
 
@@ -91,7 +97,7 @@ public sealed partial class Campaign
         why = s.Kind == SettlementKind.Village ? "VILLAGES HAVE NO WALLS"
             : Captain.Contract < 0 ? "SIGN WITH A FACTION FIRST"
             : !FactionsAtWar(Captain.Contract, s.Faction) ? "YOU ARE NOT AT WAR WITH THEM"
-            : Player.Men < 20 ? "TOO FEW MEN (20 OR MORE)"
+            : Player.Men < Scaled(20) ? $"TOO FEW MEN ({Scaled(20)} OR MORE)"
             : Player.SiegeTarget >= 0 && Player.SiegeTarget != s.Id ? "YOU ARE BESIEGING ANOTHER PLACE" : "";
         return why == "";
     }
@@ -115,7 +121,7 @@ public sealed partial class Campaign
     }
 
     /// Hours until your men have built ladders and a ram (0 = ready).
-    public float LaddersIn(Settlement s) => MathF.Max(0, s.SiegeSince + 12 - (float)S.Hours);
+    public float LaddersIn(Settlement s) => MathF.Max(0, s.SiegeSince + (Has("Siegecraft") ? 6 : 12) - (float)S.Hours);
 
     public BattleSetup PrepareAssault(Settlement s)
     {
@@ -125,8 +131,8 @@ public sealed partial class Campaign
         setup.SiegeOf = s.Id;
         // Lords of the town's faction resting inside fight too (PrepareBattle adds anyone near and friendly to them).
         setup.Options.Siege = true;
-        setup.Options.Ladders = LaddersIn(s) > 0 ? 0 : Player.Men >= 90 ? 4 : 2;
-        setup.Options.GateHp = s.Kind == SettlementKind.Town ? 600 : 450;
+        setup.Options.Ladders = LaddersIn(s) > 0 ? 0 : Player.Men >= Scaled(90) ? 4 : 2;
+        setup.Options.GateHp = (s.Kind == SettlementKind.Town ? 600 : 450) + 150 * Level(s, "walls");
         setup.Options.Ground = Map.BattleGround(s.Pos) with { Road = false };
         setup.Options.Palette[1] = Style.PaletteOf(s.Faction);
         return setup;
@@ -135,7 +141,7 @@ public sealed partial class Campaign
     public BattleReport AutoResolveAssault(Settlement s)
     {
         var setup = PrepareAssault(s);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, Captain.Perks.Contains(Perk.Tactician), wall: setup.Options.Ladders > 0 ? 1.4f : 1.7f);
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge, wall: (setup.Options.Ladders > 0 ? 1.4f : 1.7f) + 0.1f * Level(s, "walls"));
         return FinishBattle(r, setup);
     }
 
@@ -147,7 +153,7 @@ public sealed partial class Campaign
             int taken = s.Garrison.Sum(c => c.Men + c.Wounded);
             foreach (var c in s.Garrison) TakePrisoners(c.Troop, (c.Men + c.Wounded) / 2);
             s.Garrison.Clear();
-            Capture(s, Captain.Contract, Player.Id);
+            Capture(s, Captain.Contract, Player.Id, S.CaptainChar);
             Captain.Renown += s.Kind == SettlementKind.Town ? 25 : 15;
             if (taken > 0) Log($"{taken / 2} of the garrison are your prisoners.");
         }
@@ -161,9 +167,12 @@ public sealed partial class Campaign
     // ---------- capture ----------
 
     /// `f` takes settlement s (and its province, with the villages): the new holder raises a small garrison.
-    void Capture(Settlement s, int f, int owner)
+    /// Who holds it as a fief is a career question (F5): `owner` is the party that asks for it and `captor` the character who
+    /// took it; the grant itself comes from GrantOnCapture (at once, or at the next council).
+    void Capture(Settlement s, int f, int owner, int captor = -1)
     {
         int old = s.Faction;
+        owner = GrantOnCapture(s, f, owner, captor);
         s.Faction = f;
         s.Owner = owner;
         s.Besieged = false;
@@ -182,7 +191,8 @@ public sealed partial class Campaign
             if (seats.Count > 0) l.HomeId = seats.OrderBy(t => Vector2.Distance(t.Pos, l.Pos)).First().Id;
             else { l.Down = true; l.DownUntil = float.MaxValue; }
         }
-        Log(owner == Player.Id ? $"{s.Name} is yours: the {FactionNames[f]} grant it to you as a fief."
+        Log(owner == Player.Id ? (Rank == Rank.King ? $"{s.Name} is yours." : $"{s.Name} is yours: the {FactionNames[f]} grant it to you as a fief.")
+            : captor == S.CaptainChar ? $"You take {s.Name} for the {FactionNames[f]}. {(Captain.Fealty ? "The council will decide who holds it." : "Only a sworn vassal holds land: the realm keeps it.")}"
             : $"The {FactionNames[f]} take {s.Name} from the {FactionNames[old]}.");
         if (!Alive(old)) Log($"The {FactionNames[old]} hold no town or castle: their realm is broken.");
         AudioEngine.Current?.Play(Cue.Horn);
@@ -195,15 +205,15 @@ public sealed partial class Campaign
     {
         if (p.PatrolProvince < 0) return false;
         var seat = S.Settlements.FirstOrDefault(t => t.Province == p.PatrolProvince && t.Kind != SettlementKind.Village);
-        if (seat == null || !FactionsAtWar(p.Faction, seat.Faction) || Vector2.Distance(p.Pos, seat.Pos) > 30) return false;
-        var host = S.Parties.Where(q => q.Kind == PartyKind.Lord && !q.Down && q.Faction == p.Faction && Vector2.Distance(q.Pos, seat.Pos) < 30).ToList();
+        if (seat == null || !FactionsAtWar(p.Faction, seat.Faction) || Vector2.Distance(p.Pos, seat.Pos) > 30 * Map.Spread) return false;
+        var host = S.Parties.Where(q => q.Kind == PartyKind.Lord && !q.Down && q.Faction == p.Faction && Vector2.Distance(q.Pos, seat.Pos) < 30 * Map.Spread).ToList();
         if (host.Sum(Rules.Strength) < Rules.Strength(GarrisonParty(seat)) * 1.6f) return false;
         foreach (var q in host)
         {
             q.SiegeTarget = seat.Id;
             q.Task = "siege";
             q.ChaseId = -1;
-            q.Goal = seat.Pos + new Vector2(rng.Range(-5, 5), rng.Range(-5, 5));
+            q.Goal = seat.Pos + new Vector2(rng.Range(-5, 5), rng.Range(-5, 5)) * Map.Spread;
             q.Moving = true;
         }
         if (!seat.Besieged)
@@ -232,18 +242,18 @@ public sealed partial class Campaign
             if (s.Supplies <= 0)
             {
                 s.Supplies = 0;
-                foreach (var c in s.Garrison) c.Men -= (int)MathF.Ceiling(c.Men * 0.1f);
+                foreach (var c in s.Garrison) { c.RemoveFit((int)MathF.Ceiling(c.Men * 0.1f), true); c.Prune(); }
                 s.Garrison.RemoveAll(c => c.Men + c.Wounded <= 0);
             }
             int f = besiegers[0] == Player ? Captain.Contract : besiegers[0].Faction;
-            if (GarrisonMen(s) == 0 && f >= 0) { Log($"{s.Name}'s garrison is starved out."); if (besiegers.Contains(Player)) AfterAssault(s, true); else Capture(s, f, -1); continue; }
+            if (GarrisonMen(s) == 0 && f >= 0) { Log($"{s.Name}'s garrison is starved out."); if (besiegers.Contains(Player)) AfterAssault(s, true); else Capture(s, f, -1, besiegers[0].CharId); continue; }
             var lords = besiegers.Where(p => p.Kind == PartyKind.Lord).ToList();
             if (lords.Count == 0 || S.Hours - s.SiegeSince < 48 || !rng.Chance(0.5f)) continue;
             var defenders = new List<Party> { GarrisonParty(s) };
-            defenders.AddRange(S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == s.Faction && Vector2.Distance(p.Pos, s.Pos) < 8));
-            var r = Rules.AutoResolve(lords, defenders, rng, false, wall: 1.4f);
+            defenders.AddRange(S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == s.Faction && Vector2.Distance(p.Pos, s.Pos) < 8 * Map.Spread));
+            var r = Rules.AutoResolve(lords, defenders, rng, wall: 1.4f + 0.1f * Level(s, "walls"));
             Apply(r, lords, defenders, "");
-            if (r.Winner == 0) Capture(s, lords[0].Faction, -1);
+            if (r.Winner == 0) Capture(s, lords[0].Faction, -1, lords[0].CharId);
             else
             {
                 foreach (var l in lords) l.SiegeTarget = -1;

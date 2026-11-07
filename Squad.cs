@@ -28,10 +28,22 @@ public sealed class Squad
     }
     public float Pressure;                        // recent flank/rear hits; drains morale, decays over time
     public int Kills;                             // enemies this company has killed (campaign XP)
-    public readonly int[] KillsByTier = new int[5]; // kills by the victim's tier (0 = leaders)
+    public readonly int[] KillsByTier = new int[8]; // kills by the victim's tier (0 = leaders, 1-7 = troop tiers)
+    public int HorseKills;                        // mounted enemies killed (the Horse-breakers honour)
+    /// The pace the company keeps in formation: its slowest man's (a mixed company marches together).
+    public float MarchSpeed = float.MaxValue;
     public Company? Company;
     public bool RoutSounded;                      // the rout horn has blown for this company
     public bool AiControlled;                     // an allied lord's company: the AI general leads it, not you
+    /// The division this company belongs to (null: you, or the AI general, command it directly).
+    public Division? Division;
+    /// A division's company following your direct order: its sergeant leaves it alone until his next goal arrives.
+    public bool Override;
+    /// Charging men also cut down routers (a division told to pursue).
+    public bool Pursue;
+    /// A circle round every active man (routing too), refreshed at the start of each tick: cheap squad-to-squad distance bounds.
+    public Vector2 Center;
+    public float Radius;
 
     public Squad(string name, int team) { Name = name; Team = team; }
 

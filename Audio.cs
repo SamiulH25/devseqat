@@ -18,7 +18,7 @@ sealed class AudioEngine
     readonly Dictionary<Cue, SoundEffect> cues = new();
     readonly Dictionary<MusicTrack, SoundEffect> music = new();
     readonly Dictionary<Cue, int> playedThisFrame = new();
-    SoundEffectInstance? wind, gallop, din, current, previous;
+    SoundEffectInstance? wind, gallop, din, roar, current, previous;
     MusicTrack track = MusicTrack.None;
     float fade = 1;
     static readonly Random Noise = new(1);
@@ -48,6 +48,8 @@ sealed class AudioEngine
             gallop.IsLooped = true; gallop.Volume = 0; gallop.Play();
             din = Make(Din()).CreateInstance();
             din.IsLooped = true; din.Volume = 0; din.Play();
+            roar = Make(Roar()).CreateInstance();
+            roar.IsLooped = true; roar.Volume = 0; roar.Play();
             Enabled = true;
         }
         catch (Exception e)
@@ -81,10 +83,12 @@ sealed class AudioEngine
         Play(c, v * v * 1.2f, dist > 0.1f ? Vector3.Dot(d / dist, right) * 0.8f : 0);
     }
 
-    /// Ambient beds: wind always, plus galloping and melee din by how much of each is near the camera (0..1).
-    public void Beds(float windLevel, float gallopLevel, float dinLevel)
+    /// Ambient beds: wind always, plus galloping and melee din by how much of each is near the camera (0..1), and the
+    /// roar of the whole battle by how many men are fighting anywhere on the field (0..1).
+    public void Beds(float windLevel, float gallopLevel, float dinLevel, float roarLevel = 0)
     {
         if (!Enabled) return;
+        roar!.Volume = Math.Clamp(roarLevel * 0.5f * Sfx, 0, 1);
         wind!.Volume = Math.Clamp(windLevel * 0.35f * Sfx, 0, 1);
         gallop!.Volume = Math.Clamp(gallopLevel * 0.8f * Sfx, 0, 1);
         din!.Volume = Math.Clamp(dinLevel * 0.6f * Sfx, 0, 1);
@@ -291,6 +295,29 @@ sealed class AudioEngine
             for (int i = 0; i < src.Length; i++) b[s + i] += src[i] * g;
         }
         return Loop(b, 0.2f);
+    }
+
+    /// A distant battle: a deep rumble of many voices with far-off clashes, softened by distance (low-passed).
+    static float[] Roar()
+    {
+        var b = Buf(6);
+        float lp = 0, lp2 = 0;
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = i / (float)Rate;
+            lp += (Rnd() - lp) * 0.012f;
+            lp2 += (lp - lp2) * 0.03f;
+            // Voices swell and ebb in slow, overlapping waves.
+            b[i] = lp2 * 5 * (0.7f + 0.15f * MathF.Sin(t * 1.7f) + 0.15f * MathF.Sin(t * 0.63f + 1));
+        }
+        var clash = Clash();
+        for (int k = 0; k < 40; k++)
+        {
+            int s = Noise.Next(b.Length - clash.Length);
+            float g = 0.03f + Noise.NextSingle() * 0.05f, f = 0;
+            for (int i = 0; i < clash.Length; i++) { f += (clash[i] - f) * 0.15f; b[s + i] += f * g; } // muffled by distance
+        }
+        return Loop(b, 0.4f);
     }
 
     /// The map: a low drone and a lute wandering a pentatonic scale.

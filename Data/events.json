@@ -1,0 +1,130 @@
+{
+  // Campaign events (CAMPAIGN_OVERHAUL.md 8). Each fires when its trigger holds (see Campaign/Events.cs for the list), at most
+  // once per cooldown in days, and offers two or three choices. Effects are "verb" or "verb:number"; text may name
+  // {settlement}, {lord}, {band}, {company}, {realm} and {liege}. A choice's "need" (gold:N) greys it out when you cannot pay.
+  "events": [
+    {
+      "id": "unrest_petition", "trigger": "fief_unrest", "cooldown": 20, "title": "A PETITION FROM {settlement}",
+      "text": "The guilds of {settlement} send a petition: taxes, soldiers in the streets, bread too dear. A crowd waits for your answer.",
+      "choices": [
+        { "label": "LOWER THEIR TAXES", "effects": ["tax:0", "unrest:-12", "renown:2"] },
+        { "label": "PAY FOR BREAD", "need": "gold:150", "effects": ["gold:-150", "unrest:-20", "prosperity:3"] },
+        { "label": "HANG THE RINGLEADERS", "effects": ["unrest:-6", "prosperity:-4", "opinion_realm:-2"] }
+      ]
+    },
+    {
+      "id": "famine", "trigger": "fief_poor", "cooldown": 30, "title": "HUNGER IN {settlement}",
+      "text": "Raids and hard times have emptied the granaries of {settlement}. The poor eat bark, and some talk of better masters.",
+      "choices": [
+        { "label": "OPEN YOUR STORES", "need": "gold:200", "effects": ["gold:-200", "prosperity:12", "unrest:-10"] },
+        { "label": "BUY GRAIN ON CREDIT", "effects": ["gold:-60", "prosperity:5", "unrest:5"] },
+        { "label": "LET THEM FEND", "effects": ["unrest:12", "prosperity:-3"] }
+      ]
+    },
+    {
+      "id": "fair", "trigger": "fief_rich", "cooldown": 30, "title": "THE FAIR AT {settlement}",
+      "text": "{settlement} is thriving, and its merchants ask leave to hold a great fair under your banner.",
+      "choices": [
+        { "label": "GRANT IT A CHARTER", "effects": ["gold:250", "prosperity:4", "renown:4"] },
+        { "label": "TAX THE STALLS", "effects": ["gold:450", "unrest:8"] }
+      ]
+    },
+    {
+      "id": "lord_favour", "trigger": "lord_friend", "cooldown": 18, "title": "A REQUEST FROM {lord}",
+      "text": "{lord} sends a rider: he has trouble only a captain like you can settle, and he will not forget who helped him.",
+      "choices": [
+        { "label": "TAKE IT ON", "effects": ["quest"] },
+        { "label": "REFUSE HIM", "effects": ["opinion:-6"] }
+      ]
+    },
+    {
+      "id": "lord_gift", "trigger": "lord_friend", "cooldown": 40, "title": "A GIFT FROM {lord}",
+      "text": "{lord} remembers your service and sends a cask of wine and a purse, with his regards.",
+      "choices": [
+        { "label": "ACCEPT GRACIOUSLY", "effects": ["gold:120", "opinion:3"] },
+        { "label": "SEND IT TO YOUR MEN", "effects": ["cohesion:4", "opinion:5"] }
+      ]
+    },
+    {
+      "id": "plot", "trigger": "lord_hates_liege", "cooldown": 45, "title": "A WHISPER AT COURT",
+      "text": "{lord} has no love for {liege}, and lets you know it over wine. He asks where you would stand if it came to it.",
+      "choices": [
+        { "label": "WARN {liege}", "effects": ["opinion_liege:12", "opinion:-25"] },
+        { "label": "LISTEN AND SAY NOTHING", "effects": ["opinion:12"] },
+        { "label": "WALK AWAY", "effects": [] }
+      ]
+    },
+    {
+      "id": "band_terror", "trigger": "big_band", "cooldown": 25, "title": "THE {band}",
+      "text": "Villagers flee down the road: the {band} are burning farms nearby, more of them than any band you have seen.",
+      "choices": [
+        { "label": "POST A BOUNTY AND HUNT THEM", "effects": ["bounty"] },
+        { "label": "LET THE LORDS DEAL WITH IT", "effects": ["opinion_realm:-1"] }
+      ]
+    },
+    {
+      "id": "veterans", "trigger": "veterans", "cooldown": 35, "title": "THE OLD HANDS OF {company}",
+      "text": "{company} have bled together through many fights. Their sergeant asks for a feast, and a night to tell their stories.",
+      "choices": [
+        { "label": "FEAST THEM", "need": "gold:100", "effects": ["gold:-100", "cohesion:8", "xp:15"] },
+        { "label": "DRILL THEM HARDER", "effects": ["xp:25", "cohesion:-4"] }
+      ]
+    },
+    {
+      "id": "winter_march", "trigger": "hungry_winter", "cooldown": 20, "title": "A HARD WINTER",
+      "text": "Snow on the road and little in the carts. The men grumble that they will eat the horses before spring.",
+      "choices": [
+        { "label": "EAT THE PACK HORSES", "effects": ["food:6", "horses:-4"] },
+        { "label": "HALF RATIONS", "effects": ["food:3", "cohesion:-6"] }
+      ]
+    },
+    {
+      "id": "unpaid", "trigger": "unpaid", "cooldown": 14, "title": "MUTTERING IN THE RANKS",
+      "text": "The men have not been paid. A delegation of sergeants stands at your tent, caps in hand but jaws set.",
+      "choices": [
+        { "label": "PROMISE PLUNDER", "effects": ["cohesion:-3", "renown:-2"] },
+        { "label": "PAWN YOUR GEAR", "effects": ["gold:120", "renown:-4"] }
+      ]
+    },
+    {
+      "id": "prisoners", "trigger": "prisoners", "cooldown": 25, "title": "TOO MANY MOUTHS",
+      "text": "Your prisoners outnumber some of your companies, and they eat as much as your men.",
+      "choices": [
+        { "label": "SET THEM FREE", "effects": ["prisoners_free", "renown:5"] },
+        { "label": "PRESS THEM INTO SERVICE", "effects": ["prisoners_recruit"] }
+      ]
+    },
+    {
+      "id": "war_weary", "trigger": "war_weary", "cooldown": 30, "title": "THE REALM TIRES OF WAR",
+      "text": "Widows in the streets and empty fields: the {realm} grows weary. Lords ask whether the war is worth its price.",
+      "choices": [
+        { "label": "RALLY THEM WITH A SPEECH", "effects": ["exhaustion:-8", "renown:3"] },
+        { "label": "PAY FOR MASSES FOR THE DEAD", "need": "gold:200", "effects": ["gold:-200", "exhaustion:-15", "opinion_realm:2"] }
+      ]
+    },
+    {
+      "id": "tournament", "trigger": "in_town", "cooldown": 40, "title": "A TOURNAMENT AT {settlement}",
+      "text": "Banners in the square: {settlement} holds a tournament, and the heralds would gladly cry your name.",
+      "choices": [
+        { "label": "ENTER THE LISTS", "need": "gold:50", "effects": ["gold:-50", "gamble:300", "renown:3"] },
+        { "label": "WATCH FROM THE STANDS", "effects": ["cohesion:2"] }
+      ]
+    },
+    {
+      "id": "brigand_king", "trigger": "brigand_king", "cooldown": 9999, "title": "A BRIGAND KING",
+      "text": "{lord} has gathered every cutthroat for miles into {band} and calls himself a king. Villages burn where he passes.",
+      "choices": [
+        { "label": "SWEAR TO BRING HIM DOWN", "effects": ["bounty", "renown:2"] },
+        { "label": "STAY OUT OF HIS WAY", "effects": [] }
+      ]
+    },
+    {
+      "id": "pretender", "trigger": "pretender", "cooldown": 9999, "title": "A PRETENDER IN {settlement}",
+      "text": "The rebels of {settlement} have found a leader of the old blood, who calls himself its rightful lord. If he is not beaten, the town will open its gates to him.",
+      "choices": [
+        { "label": "MARCH AT ONCE", "effects": ["bounty"] },
+        { "label": "OFFER HIM GOLD TO LEAVE", "need": "gold:300", "effects": ["gold:-300", "disband", "unrest:-15"] }
+      ]
+    }
+  ]
+}

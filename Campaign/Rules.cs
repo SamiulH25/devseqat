@@ -27,86 +27,93 @@ public static class Rules
 {
     static Balance B => Balance.Get();
 
-    public static string RoleOf(CompanyRecord c) => c.Role is { Length: > 0 } r ? r : Armies.RoleOf(new Company(c.Troop, c.Men));
+    public static string RoleOf(CompanyRecord c) => c.Role is { Length: > 0 } r ? r : TroopRole(c.Troop);
 
-    /// Most men a company of this troop may hold: the line's base size times the tier factor (elite companies are smaller).
-    public static int Cap(string troop, string role)
+    /// A troop's role from its class (the same rule as Armies.RoleOf): archers, spears (skirmishers), horse, or infantry.
+    public static string TroopRole(string troop) => Armies.RoleOf(new Company(troop, 1));
+
+    /// May this troop stand in this company? Any troop of the company's role, from any tree and tier (2.1); raw tier I recruits
+    /// also drill in any foot company until they are promoted into a line. Horse only joins horse, so a company is all-mounted or all-foot.
+    public static bool Fits(CompanyRecord c, string troop)
     {
-        int baseSize = role switch { "archers" => 16, "spears" => 12, "horse" => 10, _ => 24 };
-        float k = Troops.Get(troop).Tier switch { 1 => 1.25f, 2 => 1f, 3 => 0.85f, _ => 0.7f };
-        return (int)MathF.Round(baseSize * k);
+        string role = RoleOf(c), tr = TroopRole(troop);
+        if (tr == role) return true;
+        return Troops.Get(troop).Tier == 1 && role != "horse" && tr != "horse";
     }
+
+    /// How many places one man of a tier takes in a company (2.1): elites fill a company sooner *(tune)*.
+    public static float TierWeight(int tier) => tier switch { <= 1 => 0.8f, 2 => 1f, 3 => 1.15f, 4 => 1.3f, 5 => 1.4f, 6 => 1.5f, _ => 1.6f };
+
+    /// A company's places, from its role (shared by all its stacks).
+    public static float Cap(string role) => B.ArmyScale * role switch { "archers" => 16, "spears" => 12, "horse" => 10, _ => 24 };
+
+    /// A price per man (wage, levy, loot, ransom, promotion): the troop price spread over ArmyScale men.
+    public static float PerMan(float cost) => cost / B.ArmyScale;
+
+    /// The places a company's men (fit and wounded) take.
+    public static float Places(CompanyRecord c) => c.Stacks.Sum(s => (s.Men + s.Wounded) * TierWeight(s.Type.Tier));
+
+    /// How many more men of this troop the company has room for (0 if the troop does not fit it).
+    public static int Room(CompanyRecord c, string troop) =>
+        !Fits(c, troop) ? 0 : Math.Max(0, (int)MathF.Floor((Cap(RoleOf(c)) - Places(c)) / TierWeight(Troops.Get(troop).Tier) + 1e-4f));
+
+    /// A full company of one troop: the most men of it a fresh company can hold.
+    public static int CapOf(string troop, string role) => (int)MathF.Floor(Cap(role) / TierWeight(Troops.Get(troop).Tier) + 1e-4f);
 
     public static float Strength(UnitType t, int men)
     {
-        float cls = t.Class switch { UnitClass.Cavalry => 1.6f, UnitClass.Archer => 0.9f, _ => 1f };
+        float cls = t.Class switch { UnitClass.Cavalry => 1.35f, UnitClass.Archer => 0.9f, _ => 1f };
         return men * (t.MaxHp + 5 * t.Armor + 2 * t.Damage) * cls / 100f;
     }
 
-    public static float Strength(CompanyRecord c) => Strength(c.Type, c.Men);
+    public static float Strength(CompanyRecord c) => c.Stacks.Sum(s => Strength(s.Type, s.Men));
     public static float Strength(Party p) => p.Companies.Sum(Strength);
 
-    public static int Upkeep(CompanyRecord c) => (int)MathF.Ceiling((c.Men + c.Wounded) * c.Type.Cost * B.UpkeepRate);
+    public static int Upkeep(CompanyRecord c) => (int)MathF.Ceiling(c.Stacks.Sum(s => (s.Men + s.Wounded) * PerMan(s.Type.Cost) * B.UpkeepRate));
 
-    public static bool UpgradeReady(CompanyRecord c) => c.Type.UpgradesTo.Length > 0 && c.Xp >= c.Type.UpgradeXp && c.Men > 0;
+    /// Has any stack a man ready for promotion?
+    public static bool UpgradeReady(CompanyRecord c) => c.Ready > 0;
 
-    /// Can company c become troop `to` now? Gold covers the price difference per man (and horses if it becomes cavalry);
-    /// it needs a town's training yard unless the captain has Drillmaster. `reason` explains a refusal.
-    public static bool CanUpgrade(CompanyRecord c, string to, float gold, int horses, bool inTown, bool drillmaster, out int cost, out string reason)
+    /// What promoting one man from `from` to `to` costs: the difference in troop price, and a horse when he moves into the
+    /// saddle (from the party's horses if `hasHorse`, else bought at the horse price).
+    public static int PromoteCost(string from, string to, bool hasHorse)
     {
-        var from = c.Type;
-        var next = Troops.Get(to);
-        cost = UpgradeCost(c, to, horses);
-        reason = "";
-        if (!from.UpgradesTo.Contains(to)) reason = "NOT ON THIS LINE";
-        else if (c.Xp < from.UpgradeXp) reason = $"NEEDS {from.UpgradeXp} XP";
-        else if (!inTown && !drillmaster) reason = "NEEDS A TOWN";
-        else if (gold < cost) reason = $"NEEDS {cost} CROWNS";
-        _ = next;
-        return reason == "";
+        var a = Troops.Get(from);
+        var b = Troops.Get(to);
+        float cost = Math.Max(0, b.Cost - a.Cost);
+        if (b.Mount != null && a.Mount == null && !hasHorse) cost += b.Mount.Hp * B.HorseCostRate;
+        return (int)MathF.Ceiling(PerMan(cost));
     }
 
-    public static int UpgradeCost(CompanyRecord c, string to, int horses)
-    {
-        var from = c.Type;
-        var next = Troops.Get(to);
-        int cost = Math.Max(0, next.Cost - from.Cost) * (c.Men + c.Wounded);
-        if (next.Mount != null && from.Mount == null) cost += (int)(Math.Max(0, c.Men + c.Wounded - horses) * next.Mount.Hp * B.HorseCostRate);
-        return cost;
-    }
+    public static bool NeedsHorse(string from, string to) => Troops.Get(to).Mount != null && Troops.Get(from).Mount == null;
 
-    /// The whole company changes troop; XP starts again. Returns horses used.
-    public static int Upgrade(CompanyRecord c, string to, int horses)
-    {
-        var from = c.Type;
-        var next = Troops.Get(to);
-        int used = next.Mount != null && from.Mount == null ? Math.Min(horses, c.Men + c.Wounded) : 0;
-        c.Troop = to;
-        c.Xp = 0;
-        if (c.Role == "" || from.Tier == 1) c.Role = Armies.RoleOf(new Company(to, c.Men));
-        return used;
-    }
-
-    /// Add men of the company's own troop: they arrive green and dilute the average XP.
-    public static void AddMen(CompanyRecord c, int n)
+    /// Add men of a troop to a company: they arrive with no XP (the pool is untouched, so veterans are not diluted).
+    public static void AddMen(CompanyRecord c, string troop, int n)
     {
         if (n <= 0) return;
-        c.Xp = c.Men + n > 0 ? c.Xp * c.Men / (c.Men + n) : 0;
-        c.Men += n;
+        c.Stack(troop).Men += n;
     }
 
     public static bool CanMerge(CompanyRecord a, CompanyRecord b) =>
-        a != b && a.Troop == b.Troop && a.Men + b.Men <= Cap(a.Troop, RoleOf(a));
+        a != b && RoleOf(a) == RoleOf(b) && b.Stacks.All(s => Fits(a, s.Troop)) && Places(a) + Places(b) <= Cap(RoleOf(a)) + 1e-3f;
 
     public static void Merge(CompanyRecord into, CompanyRecord from)
     {
         int men = into.Men + from.Men;
-        into.Xp = men > 0 ? (into.Xp * into.Men + from.Xp * from.Men) / men : 0;
         into.Cohesion = men > 0 ? (into.Cohesion * into.Men + from.Cohesion * from.Men) / men : into.Cohesion;
-        into.Men = men;
-        into.Wounded += from.Wounded;
+        foreach (var s in from.Stacks)
+        {
+            var t = into.Stack(s.Troop);
+            t.Men += s.Men;
+            t.Wounded += s.Wounded;
+            t.Xp += s.Xp;
+            t.Xp = Math.Clamp(t.Xp, 0, t.PoolCap);
+        }
         into.Battles = Math.Max(into.Battles, from.Battles);
         into.Kills += from.Kills;
+        into.HorseKills += from.HorseKills;
+        into.Assaults = Math.Max(into.Assaults, from.Assaults);
+        foreach (var h in from.Honours) if (!into.Honours.Contains(h) && into.Honours.Count < 3) into.Honours.Add(h);
     }
 
     public static string CompanyName(Rng rng, string role)
@@ -129,29 +136,38 @@ public static class Rules
             Head = c.HelmTier > 0 ? "greathelm" : l.Head,
         };
         t.Armor += 5 * c.ArmorTier + 2 * c.HelmTier;
+        // Arms (F4): +2% health per 10 points, Hardened +20%, Duellist +15% damage.
+        t.MaxHp *= 1 + Skills.Level(c, "Arms") / 500f + (c.Perks.Contains("Hardened") ? 0.2f : 0);
+        if (c.Perks.Contains("Duellist")) t.Damage *= 1.15f;
         return t;
     }
 
-    public static Mount CaptainMount(CaptainState c) => Troops.Mount(c.HorseTier switch { 2 => "destrier", 1 => "warhorse", _ => "courser" });
-
-    public static int CompanySlots(CaptainState c) => Math.Min(9, (int)(B.CompanySlotsBase + c.Renown / B.CompanySlotRenown));
-    public static int MenLimit(CaptainState c) => (int)(B.MenBase + c.Renown / B.MenRenownDivisor);
-    public static int PerkPoints(CaptainState c) => (int)(c.Renown / B.PerkEvery) - c.Perks.Count;
-
-    public static readonly Dictionary<Perk, string> PerkText = new()
+    public static Mount CaptainMount(CaptainState c)
     {
-        [Perk.Bannerman] = "AURA RADIUS +4 M", [Perk.WarCry] = "RALLY +10 MORALE, 3 S FASTER", [Perk.Tactician] = "AUTO-RESOLVE +10%, SEE FOES WHEN DEPLOYING",
-        [Perk.Quartermaster] = "UPKEEP -10%", [Perk.Surgeon] = "+10% OF FALLEN SURVIVE WOUNDED", [Perk.Drillmaster] = "UPGRADE COMPANIES IN CAMP",
-        [Perk.Horsemaster] = "HORSES -30%, PARTY SPEED +5%", [Perk.IronWill] = "COMPANIES NEAR YOU HOLD UNTIL 30% STRENGTH",
-    };
+        var m = Troops.Mount(c.HorseTier switch { 2 => "destrier", 1 => "warhorse", _ => "courser" });
+        return c.Perks.Contains("MountedLord") ? m with { Hp = m.Hp * 1.3f } : m;
+    }
+
+    public static int CompanySlots(CaptainState c) => Math.Clamp((int)B.CompanySlotsBase, 1, 10);
+    /// Men you may lead: a base, renown, Leadership (+1 per 5 points) and the Born Captain perk.
+    public static int MenLimit(CaptainState c) => (int)(B.ArmyScale * (B.MenBase + (int)(c.Renown / B.MenRenownDivisor) + Skills.Level(c, "Leadership") / 5
+        + (c.Perks.Contains("BornCaptain") ? 10 : 0)));
+
+    /// The next rung of the renown ladder, for the panel: renown now raises only the men cap (perks come from skills, F4).
+    public static (string What, float At) NextRenownUnlock(CaptainState c)
+    {
+        float renownPart = c.Renown / B.MenRenownDivisor;
+        float at = ((int)renownPart + 1) * B.MenRenownDivisor;
+        return ($"MEN CAP {MenLimit(c) + (int)B.ArmyScale}", at);
+    }
 
     // ---------- auto-resolve (5.4) ----------
 
     /// Fight it out on paper: the result has the same shape as a played battle.
     /// `wall` multiplies side 1's strength: defenders behind walls (1.4 against ladders, more without them).
-    public static BattleResult AutoResolve(IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, Rng rng, bool tactician0, float wall = 1)
+    public static BattleResult AutoResolve(IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, Rng rng, float edge0 = 1, float wall = 1)
     {
-        float s0 = side0.Sum(Strength) * (tactician0 ? 1.1f : 1) * rng.Range(0.85f, 1.15f);
+        float s0 = side0.Sum(Strength) * edge0 * rng.Range(0.85f, 1.15f);
         float s1 = side1.Sum(Strength) * wall * rng.Range(0.85f, 1.15f);
         int t0 = side0.Max(p => p.Tier), t1 = side1.Max(p => p.Tier);
         s0 *= 1 + 0.1f * (t0 - t1);
@@ -164,15 +180,22 @@ public static class Rules
         {
             var side = team == 0 ? side0 : side1;
             float loss = team == winner ? winnerLoss : loserLoss;
-            var cos = side.SelectMany(p => p.Companies).Where(c => c.Men > 0).ToList();
-            float weight = cos.Sum(c => c.Men / (float)c.Type.Tier);
-            int totalLoss = (int)MathF.Round(cos.Sum(c => c.Men) * loss);
-            foreach (var c in cos)
+            // Losses fall on the lower tiers: each stack's share is its men over its tier.
+            var stacks = side.SelectMany(p => p.Companies).Where(c => c.Men > 0).SelectMany(c => c.Stacks.Where(st => st.Men > 0).Select(st => (c, st))).ToList();
+            float weight = stacks.Sum(x => x.st.Men / (float)x.st.Type.Tier);
+            int totalLoss = (int)MathF.Round(stacks.Sum(x => x.st.Men) * loss);
+            foreach (var co in stacks.GroupBy(x => x.c))
             {
-                int fallen = Math.Min(c.Men, (int)MathF.Round(totalLoss * (c.Men / (float)c.Type.Tier) / MathF.Max(1, weight)));
-                int fled = team == winner ? 0 : (int)((c.Men - fallen) * 0.15f);
-                kills[1 - team] += fallen;
-                list.Add(new CompanyResult(team, c.Id, c.Men, c.Men - fallen - fled, fled, fallen, 0, new int[5], true));
+                var parts = co.Select(x =>
+                {
+                    int fallen = Math.Min(x.st.Men, (int)MathF.Round(totalLoss * (x.st.Men / (float)x.st.Type.Tier) / MathF.Max(1, weight)));
+                    int fled = team == winner ? 0 : (int)((x.st.Men - fallen) * 0.15f);
+                    return new StackResult(x.st.Troop, x.st.Men, x.st.Men - fallen - fled, fled, fallen);
+                }).ToList();
+                int men = parts.Sum(p => p.Start), fallenAll = parts.Sum(p => p.Fallen), fledAll = parts.Sum(p => p.Fled);
+                kills[1 - team] += fallenAll;
+                list.Add(new CompanyResult(team, co.Key.Id, men, men - fallenAll - fledAll, fledAll, fallenAll, 0, new int[8], true, parts,
+                    Routed: team != winner && fledAll + fallenAll > men / 2));
             }
         }
         // Kills go to each side's companies by strength, as victims of the enemy's average tier.
@@ -181,6 +204,7 @@ public static class Rules
             var side = team == 0 ? side0 : side1;
             var foes = (team == 0 ? side1 : side0).SelectMany(p => p.Companies).Where(c => c.Men > 0).ToList();
             int foeTier = foes.Count == 0 ? 1 : (int)MathF.Round((float)foes.Average(c => c.Type.Tier));
+            float foeMounted = foes.Count == 0 ? 0 : foes.Sum(c => c.Stacks.Where(s => s.Type.Mount != null).Sum(s => s.Men)) / (float)Math.Max(1, foes.Sum(c => c.Men));
             float total = side.Sum(Strength);
             for (int i = 0; i < list.Count; i++)
             {
@@ -188,9 +212,9 @@ public static class Rules
                 if (r.Team != team) continue;
                 var c = side.SelectMany(p => p.Companies).First(c => c.Id == r.Id);
                 int k = (int)MathF.Round(kills[team] * Strength(c) / MathF.Max(1, total));
-                var byTier = new int[5];
-                byTier[Math.Clamp(foeTier, 1, 4)] = k;
-                list[i] = r with { Kills = k, KillsByTier = byTier };
+                var byTier = new int[8];
+                byTier[Math.Clamp(foeTier, 1, 7)] = k;
+                list[i] = r with { Kills = k, KillsByTier = byTier, HorseKills = (int)MathF.Round(k * foeMounted) };
             }
         }
         return new BattleResult(winner, 0, list, LeaderFate.Unhurt, LeaderFate.Unhurt, 0);
@@ -198,9 +222,15 @@ public static class Rules
 
     // ---------- the bridge (5.2, 5.5) ----------
 
-    public static ArmySpec Army(string name, IEnumerable<Party> parties, float moraleBonus = 0) => new(name, 0,
+    public static ArmySpec Army(string name, IEnumerable<Party> parties, float moraleBonus = 0, bool siege = false) => new(name, 0,
         parties.SelectMany(p => p.Companies).Where(c => c.Men > 0)
-            .Select(c => new Company(c.Troop, c.Men, RoleOf(c), c.Id, c.Name,
-                Math.Clamp(70 + c.Cohesion + moraleBonus + (c.Traits.Contains("Steady") ? 8 : 0), 20, 100), c.Traits.ToArray(),
-                Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord)).ToList());
+            .Select(c =>
+            {
+                var h = Honours.Of(c);
+                var mix = c.Stacks.Where(s => s.Men > 0).Select(s => new StackSpec(s.Troop, s.Men)).ToArray();
+                return new Company(c.Troop, c.Men, RoleOf(c), c.Id, c.Name,
+                    Math.Clamp(70 + c.Cohesion + moraleBonus + (c.Traits.Contains("Steady") ? 8 : 0) + h.Morale + (siege ? h.SiegeMorale : 0), 20, 100), c.Traits.ToArray(),
+                    Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord, Mix: mix.Length > 1 ? mix : null,
+                    RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero);
+            }).ToList());
 }

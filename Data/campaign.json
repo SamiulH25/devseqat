@@ -1,15 +1,16 @@
 {
   "_comment": "Campaign balance (docs/CAMPAIGN.md). Every value here is a starting point for play-testing; the defaults in Balance.cs match.",
   "HourSeconds": 0.5,
-  "FootSpeed": 5.5, "HorseSpeed": 9.0, "RoadBonus": 1.3, "Vision": 40, "EncounterRadius": 3.5, "JoinRadius": 10,
+  "FootSpeed": 5.5, "HorseSpeed": 9.0, "RoadBonus": 1.3, "Vision": 55, "EncounterRadius": 3.5, "JoinRadius": 10, "AiClashRadius": 5.5,
   "StartGold": 300, "StartRenown": 50,
   "UpkeepRate": 0.1, "ContractPay": 0.85, "LootRate": 0.25, "RansomRate": 1.0, "MercMarkup": 1.5,
   "WoundBase": 0.3, "WoundArmor": 40, "WoundMin": 0.25, "WoundMax": 0.7, "CaptureChance": 0.5, "FledReturnOnDefeat": 0.7,
   "XpParticipation": 20, "XpVictory": 1.5, "XpPerKillTier": 12,
-  "RenownPerVictory": 5, "RenownStrengthDivisor": 50, "PerkEvery": 100,
-  "CompanySlotsBase": 2, "CompanySlotRenown": 150, "MenBase": 40, "MenRenownDivisor": 5,
-  "VillageRecruitsMax": 8, "HealField": 0.08, "HealTown": 0.25, "DrillCamp": 1, "DrillTown": 2,
-  "LordsPerFaction": 6, "BanditsMax": 6, "TownIncome": 150, "CastleIncome": 90, "VillageIncome": 40, "LordWage": 1.3,
+  "RenownPerVictory": 5, "RenownStrengthDivisor": 50,
+  "CompanySlotsBase": 10, "CompanySlotRenown": 0, "MenBase": 40, "MenRenownDivisor": 5,
+  "ArmyScale": 3, "VillageRecruitsMax": 8, "HealField": 0.08, "HealTown": 0.25, "DrillCamp": 1, "DrillTown": 2,
+  "LordsPerFaction": 8, "BanditsMax": 80, "BanditSpawnChance": 0.95, "BanditSpawnsPerDay": 5, "BanditBandMin": 10, "BanditBandMax": 20,
+  "BanditGrowPerDays": 9, "BanditTierPerDays": 45, "LordAggression": 0.35, "TownIncome": 150, "CastleIncome": 90, "VillageIncome": 40, "LordWage": 1.3,
   "TruceDays": 30, "PeaceScore": 1500, "BountyBandits": 50, "BountyLord": 120,
   "HorseCostRate": 0.5, "ArmorCost": 600, "HelmCost": 300, "WarhorseCost": 400, "DestrierCost": 900
 }

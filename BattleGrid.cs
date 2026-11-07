@@ -3,13 +3,13 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// Roadmap E1: a uniform grid over the field so separation, morale, targeting and arrows look only at nearby men,
-/// not at every man on the field. Rebuilt every tick (cheap); cells are 4 m, covering +-128 m (beyond is the edge cell).
+/// not at every man on the field. Rebuilt every tick (cheap); cells are 4 m, covering +-256 m (the whole battle ground).
 public sealed partial class Battle
 {
     const float CellSize = 4;
-    const int GridN = 64;
+    const int GridN = 128;
     readonly List<Unit>[] cells = Enumerable.Range(0, GridN * GridN).Select(_ => new List<Unit>(8)).ToArray();
-    readonly List<Unit> near = new(64);
+    readonly List<Unit> near = new(64), nearBrace = new(64);
 
     static int CellOf(float v) => Math.Clamp((int)MathF.Floor(v / CellSize) + GridN / 2, 0, GridN - 1);
 
@@ -36,10 +36,12 @@ public sealed partial class Battle
     }
 
     /// Nearest active, non-routing enemy of u (within `only` when given): grows the search ring before scanning everyone.
+    static readonly float[] Rings = { 4f, 10f };
+
     (Unit? unit, float dist) NearestFast(Unit u, Squad? only)
     {
         if (only != null) return NearestScan(u, only.Units);
-        foreach (float r in new[] { 10f, 28f })
+        foreach (float r in Rings)
         {
             Unit? best = null;
             float bd = r * r;
@@ -51,7 +53,38 @@ public sealed partial class Battle
             }
             if (best != null) return (best, MathF.Sqrt(bd));
         }
-        return NearestScan(u, Units);
+        return NearestFar(u);
+    }
+
+    /// Nobody within 10 m: look in the enemy squad whose bounding circle comes closest (and at the enemy general).
+    (Unit? unit, float dist) NearestFar(Unit u)
+    {
+        Squad? bestSquad = null;
+        float bd = float.MaxValue;
+        foreach (var e in Squads)
+        {
+            if (e.Team == u.Team || e.Alive == 0) continue;
+            float d = Vector2.Distance(e.Center, u.Pos) - e.Radius;
+            if (d < bd) { bd = d; bestSquad = e; }
+        }
+        var (best, dist) = bestSquad != null ? NearestScan(u, bestSquad.Units) : (null, float.MaxValue);
+        if (Player.Team != u.Team && Player.Active && !Player.Routing && Vector2.Distance(Player.Pos, u.Pos) is float pd && pd < dist) (best, dist) = (Player, pd);
+        return best == null ? NearestScan(u, Units) : (best, dist);
+    }
+
+    /// The nearest routing enemy within 16 m that is closer than `than` (pursuers chase the broken too).
+    (Unit unit, float dist)? NearestRouter(Unit u, float than)
+    {
+        Unit? best = null;
+        float bd = MathF.Min(than, 16);
+        bd *= bd;
+        foreach (var o in Near(u.Pos, 16, near))
+        {
+            if (o.Team == u.Team || !o.Routing || !o.Active) continue;
+            float d = Vector2.DistanceSquared(o.Pos, u.Pos);
+            if (d < bd) { bd = d; best = o; }
+        }
+        return best == null ? null : (best, MathF.Sqrt(bd));
     }
 
     (Unit? unit, float dist) NearestScan(Unit u, List<Unit> among)

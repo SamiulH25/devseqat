@@ -12,6 +12,9 @@ public sealed class Settings
     public string Quality = "High";
     public float MasterVolume = 0.8f, SfxVolume = 1, MusicVolume = 0.6f;
     public Difficulty Difficulty = Difficulty.Normal;
+    /// Most men on a battlefield at once, both sides together (the rest wait as reinforcements).
+    public int BattleSize = 1500;
+    public static readonly int[] BattleSizes = { 400, 800, 1500, 3000 };
     public HashSet<string> TipsSeen = new();
 
     public static string Folder => Environment.GetEnvironmentVariable("IRONFIELD_SAVES") is { Length: > 0 } d ? Path.GetDirectoryName(Path.GetFullPath(d)) ?? d

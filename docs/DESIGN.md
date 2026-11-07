@@ -87,10 +87,15 @@ full protection:
 | I (levy) | linen cap | dyed tunic | round wooden | painted quarters | Levies |
 | II (regular) | kettle hat or hood | tunic or quilted gambeson | kite | charge on shield | Shieldmen, Spearrunners, Bowmen, Outriders |
 | III (veteran) | nasal helm or kettle | mail | heater | tabard with charge | Men-at-Arms, Pikemen, Longbowmen, Lancers |
-| IV (elite) | great helm | plate | heater | tabard, plume; caparisoned destrier | Ironguard, Knights |
+| IV (elite) | sallet, spangenhelm or great helm | mail, plate on the heaviest | heater, or none | tabard, often a cape; caparisoned destrier | Ironguard, Knights |
+| V (champion) | sallet or great helm | plate (mail for some archers) | heater, or none | tabard, cape; plume on the heavy lines | Paladins, Banner Knights, Master Longbowmen |
+| VI (household) | great helm or sallet | plate | heater, or none | tabard, cape and plume | Iron Legionaries, Paladin Knights, Royal Yeomen |
+| VII (legend) | great helm | plate | heater, or none | tabard, cape and plume on every man | Immortals, Grail Knights, Sky Piercers |
 
 Silhouettes also separate the lines: a **shield** means a line infantryman, a **long pole** a spearman (a longer one a pikeman),
-a **bow** an archer, a **horse** cavalry, and a **plume** an officer, lancer or knight. Tier numerals (I-IV) appear on unit cards.
+a **bow** an archer, a **horse** cavalry, and a **plume** an officer, lancer or knight. Tier numerals (I-VII) appear on unit cards. Tiers V-VII use the same parts as tier IV and add
+heraldry (tabard, then cape, then plume), so a high tier reads from across the field without new sprites. The Northmarch lines
+keep fur, spangenhelms and round shields at every tier.
 
 ### Horses
 - Coat parts are painted once in neutral grey and **tinted per horse** (bay, chestnut, black, grey, dun: `Style.Coats`),
@@ -105,8 +110,12 @@ a **bow** an archer, a **horse** cavalry, and a **plume** an officer, lancer or 
 ## 4. Interface
 
 ### Tokens (`Style.cs`)
-- **Panel:** slate (`Style.Panel`, 82% opacity), a 1 px edge (`PanelEdge`) and a 1 px top light (`PanelLight`): the
-  "iron plate". There is one panel style; emphasis comes from the edge colour and weight, not from new shapes.
+- **Panel:** the "iron plate" (`Kit.PlateBody`, used by `Ui.Panel` and the battle HUD): a dark iron gradient, a black outer
+  frame, an inner frame in the edge colour and a 1 px top light. Plates big enough to hold content also get a drop shadow,
+  a hairline inset and four rivets. Modals are solid; HUD panels are slightly see-through. There is one plate; emphasis comes
+  from the edge colour (gold for the main dialog of a screen), not from new shapes.
+- **Kit colours (`Kit` in `UiKit.cs`):** `Iron`/`IronDark` (plates), `Rivet`, `Gilt`/`GiltDark` (gold trim, the chosen thing),
+  `Parchment` (story text), `Night`/`Dusk`/`Ember` (painted scenes).
 - **Colour roles:**
   - **Gold** (`Accent`) means *you*: your body, your selection, the highlighted choice, parries.
   - **Side colours** (`Friendly`, `Foe`) mean allegiance only.
@@ -117,17 +126,41 @@ a **bow** an archer, a **horse** cavalry, and a **plume** an officer, lancer or 
   heading x3, title x5. No other fonts and no mixed case.
 
 ### Components
-- **Unit card:** index badge (gold when selected), tier numeral, order tag (HLD / CHG / ATK / FLW), a portrait built from the
-  troop's own sprites, its name, men left, a strength bar (side colour) and a morale bar (state colour). A state word sits
-  above the card when it is not steady.
-- **Bars:** 4 px high on cards, 8 px in the player panel, always on a dark trough. Fill colours follow the colour roles.
-- **Buttons:** a label on the left and its key on the right (dim). On hover: a gold edge and a gold wash.
+All widgets are extension methods on `Ui` in `UiKit.cs` (the UI lab, F3 on the title, shows every one).
+- **Ribbon title:** every dialog has its title on a cloth ribbon across its top edge, tinted by side when it belongs to one.
+- **Buttons:** a bevelled iron button with a top light, a shade line and a drop shadow; its key hint sits on the right (dim).
+  On hover or when active: a gold edge and a gold wash. `Gilded` is the larger gold-edged button for the main choices
+  (title menu, leave, continue).
+- **Tabs:** raised cards; the active one is lit and joins the gold line beneath.
+- **Wells:** sunken boxes inside a dialog with a short coloured heading (`Well`), used to group a screen into parts.
+- **Rows:** lists of things to buy, hire or promote are rows on a faint plate that lights under the mouse, with a portrait in
+  a well tinted with the side's cloth, the name at body size, stats as icon + number, and the button on the right.
+- **Readouts:** `Ring` (a value out of a whole: men of the limit, days of food, a skill), `Pips` (progress in steps: renown,
+  places), `Gauge` (a bevelled bar), `TugBar` (two sides pulling: the battle balance), `Chart` (a line over time), and
+  `Chip` (a small coloured tag with an icon: rank, stance, an event's effect).
+- **Heraldry:** `Shield` and `Banner` draw a side's arms from `Style.Sides`; a realm, a town and an army always show theirs.
+- **Unit card** (battle dock and muster): index badge (gold when selected), tier numeral, order tag (HLD / CHG / ATK / FLW), a
+  portrait from the troop's own sprites on its side's cloth, its name, men left, a strength gauge (side colour) and a morale
+  gauge (state colour). A state chip sits above the card when it is not steady. Battle cards sit on one dock plate.
+- **Battle HUD:** the balance as a tug bar between the two sides' shields; the feed as toasts with an icon per kind of news;
+  the minimap in a plate with gilt corners; the player panel with gauges and a rally key; order keys with an icon each.
 - **Banners** (command view): a pole and a flag in the side colour with the company number (yours) or initial (theirs),
   and a morale strip beneath.
 - **Order wheel:** eight sectors clockwise from the top: Charge, Advance, Form on me, Spacing, Fall back, Fire/Hold, Hold,
   Follow me. The chosen sector is gold.
 - **Crosshair:** four chevrons for the attack directions. Gold is your chosen direction, red is an incoming blow.
-- **Overlays** (menu, controls, result) dim the battle to 45% and centre one panel.
+- **Overlays** (menu, controls, result) dim the battle to 50% and centre one plate with a ribbon title. The result is an
+  after-action report: the tally side against side, both sides' strength over the battle, and how it went.
+- **Painted scenes:** the title (night sky into an ember dusk, hills, a castle, the two realms' banners) and the event dialog
+  (a picture chosen by the event: a burning village, a court, a market town or the camp) are drawn from rectangles and discs.
+
+### Screens
+- **Title:** the dusk scene, the menu on a plate, and a card for the last save (captain, service, day, purse, men).
+- **Party (P), the muster roll:** a card per company with its stacks to promote and its moves; open slots; the captain down
+  the right. **Skills (K), the captain sheet:** the captain, a ring and a perk branch per skill, the record.
+  **Realm (R):** a card per realm, the relations grid and the chronicle; the career ladder and your acts on a second tab.
+- **Settlement:** the town's arms, standing and prosperity/unrest rings over tabs of rows; the purse and LEAVE beneath.
+- **Battle results (campaign):** the after-action report: tally, spoils, each company's losses and XP, your career.
 
 ### Voice
 - Orders and events are short and in the imperative or reporting voice: "HOLD POSITION!", "ENEMY HORSE ON THE FLANK!".
@@ -147,7 +180,26 @@ The campaign uses the same world language: low-poly 3D land under the same sun a
 card, with an **upgrade** affordance that shows the next troops in the tree (portraits and tier numerals) and the XP and cost from
 `troops.json`. Settlements are simple faceted 3D models in the world palette.
 
-## 7. Adding content
+## 7. Balance rules (battle)
+
+These are the working numbers that keep a battle winnable and cavalry from being an auto-win. They live as named constants in
+`Battle.cs` (`RoutAt`, `RallyAt`) and `BattleCombat.cs` (`MountedMeleeReach`) so the sim, the HUD and the tests cannot drift apart.
+
+- **Routs are recoverable, not terminal.** A company breaks at 12 morale and rallies above 32, and a routing man gains morale
+  once he is clear of the enemy (26 m). A man who has broken twice stays broken, so battles still resolve. The HUD's WAVERING
+  warning uses `RallyAt`, so a company is never shown as steady while it is about to run.
+- **A general heartens his whole army.** The captain who stands behind his line kept a permanent aura the player lost entirely
+  in command view. A living general now gives every man +1.5 morale/s (+3 routing); being inside the aura adds more.
+- **Reach is the counter to horses.** A troop's `reach` is its lance or pike. A rider's ordinary melee blow is capped at
+  `MountedMeleeReach` (1.9 m), about a footman's, so a stalled charge is not free damage. Spears brace in any tight formation
+  (`CanBrace`), not only on Hold, which the AI abandons the moment the lines meet.
+- **The charge is a moment, not a state.** A couched lance is `10 + 4.2 x closing speed`, tramples `2.6 x closing`, horses
+  lose more speed pushing through formed bodies, and the AI's cycle charge spends longer withdrawn. Arrows take the horse 55%
+  of the time, where a footman's blade does 18%.
+- **Fair rosters.** `Armies` builds the enemy host only 5% larger than yours at the same level, and `--balance` reports the
+  win rate of even fights, so a systematic bias shows up as a number instead of a feeling.
+
+## 8. Adding content
 
 - **A troop:** add an entry to `Data/troops.json` (stats, tier, `upgradesTo`, look). The self-test checks the tree and that
   every look part has sprites.

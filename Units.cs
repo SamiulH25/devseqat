@@ -43,6 +43,8 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
 public sealed class UnitType
 {
     public string Id = "", Name = "";
+    /// "azure", "crimson", "northern" or "common" (open to every culture); see Data/factions.json.
+    public string Culture = "common";
     public UnitClass Class;
     public int Tier, Cost, UpgradeXp;
     public string[] UpgradesTo = Array.Empty<string>();
@@ -71,6 +73,10 @@ public sealed class Unit
     public int Team;
     public Squad? Squad;
     public bool IsPlayer, IsLeader;
+    /// A companion leading his company (F3): fights in its ranks but is not one of its men (not counted in its results).
+    public bool Hero;
+    /// Leads a division (drawn with a pennant; his fall leaves the division without orders for a while).
+    public bool Sergeant;
     public Vector2 Pos, Vel, Wish, Slot;
     public float Facing, ViewFacing; // radians on the ground plane; ViewFacing is the eased value the renderer draws
     public float Hp, Morale = 70, Stamina = 100, EnemyDist = float.MaxValue;
@@ -82,6 +88,7 @@ public sealed class Unit
     public float BlockStart; // when the player raised the guard (parries need fresh timing)
     public Unit? Target;
     public bool Dead, Fled, Routing;
+    public int Routs;        // how many times this man has broken (a second rout is final)
     public float DiedAt;     // battle time of death (the fall is animated)
     public int StuckArrows;  // arrows caught in the shield (drawn)
     public int Index;        // place in Battle.Units (the spatial grid orders pairs by it)

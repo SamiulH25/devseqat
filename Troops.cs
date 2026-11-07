@@ -29,7 +29,7 @@ public static class Troops
 
     sealed class TroopDto
     {
-        public string Id = "", Name = "", Class = "Infantry";
+        public string Id = "", Name = "", Class = "Infantry", Culture = "common";
         public string? Mount;
         public int Tier, Cost, UpgradeXp, Ammo;
         public string[] UpgradesTo = Array.Empty<string>();
@@ -66,7 +66,7 @@ public static class Troops
             var l = d.Look;
             troops[d.Id] = new UnitType
             {
-                Id = d.Id, Name = d.Name, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
+                Id = d.Id, Name = d.Name, Culture = d.Culture, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
                 UpgradesTo = d.UpgradesTo, MaxHp = d.Hp, Damage = d.Damage, Armor = d.Armor, Reach = d.Reach, Windup = d.Windup,
                 Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, Pierce = d.Pierce, Reload = d.Reload,
                 Leader = d.Leader, Mount = d.Mount == null ? null : mounts[d.Mount],
@@ -86,6 +86,7 @@ public static class Troops
                 if (!troops.TryGetValue(u, out var next)) yield return $"{t.Id} upgrades to unknown {u}";
                 else if (next.Tier <= t.Tier) yield return $"{t.Id} -> {u} does not raise the tier";
             if ((t.Class == UnitClass.Cavalry) != (t.Mount != null)) yield return $"{t.Id}: cavalry needs a mount and only cavalry has one";
+            if (t.Culture is not ("common" or "azure" or "crimson" or "northern")) yield return $"{t.Id}: unknown culture {t.Culture}";
             if (t.Class == UnitClass.Archer && (t.Ammo <= 0 || t.Range <= 0)) yield return $"{t.Id}: archers need ammo and range";
             if (Look.Ranged(t.Look.Weapon) != t.Ammo > 0) yield return $"{t.Id}: a bow needs ammo, and only bows have it";
             var l = t.Look;
@@ -114,54 +115,47 @@ public static class Troops
 /// A company in an army: what the campaign map hands to a battle. Role ("infantry", "archers", "spears", "horse")
 /// decides where it deploys and how the AI uses it; empty = from the troop class.
 /// Id and Name tie it to the campaign's CompanyRecord (0 = a one-off battle); Morale is its starting morale.
-public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false)
+/// Troop is the company's face (its largest stack) and Count its total; Mix lists every stack (troop, men) when the company
+/// holds more than one troop type (CAMPAIGN_OVERHAUL.md 2.3). RoutBonus and VsMounted come from its honours.
+public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,
+    StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "", int Division = -1)
 {
     public bool Has(string trait) => Traits?.Contains(trait) == true;
+    /// The men to spawn, largest stack first (so a squad's first man is its majority troop).
+    public IEnumerable<StackSpec> Stacks => Mix is { Length: > 0 } m ? m.Where(x => x.Count > 0).OrderByDescending(x => x.Count) : new[] { new StackSpec(Troop, Count) };
 }
 
-public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Companies);
+/// One troop type's men in a battle company.
+public sealed record StackSpec(string Troop, int Count);
+
+public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Companies, IReadOnlyList<DivisionSpec>? Divisions = null);
+
+/// A division (docs/COMBAT_OVERHAUL.md 1): companies whose Company.Division is Id, led by a sergeant who pursues a goal.
+/// Leader names the companion fighting as a company's Hero, if one leads it; Temper is "Bold", "Steady" or "Cautious";
+/// Skill (0-10) is his Command skill; Goal is the goal he starts the battle with (a GoalKind name); LeadCompany, when
+/// Leader is empty, is the company his best man is picked from (a sergeant leading from his own company).
+public sealed record DivisionSpec(int Id, string Name, string Temper = "Steady", int Skill = 3, string Goal = "Hold", string Leader = "", int LeadCompany = 0);
 
 /// Army builder. A company belongs to a line (infantry, spears, archers, horse); its tier picks the troop on that line,
 /// standing in for companies the campaign has upgraded. Elite companies are smaller.
 public static class Armies
 {
-    /// Each culture's lines; index 0 is shared by the Azure Crown and the Crimson Compact, 1 is the Northmarch clans.
-    static readonly (string Role, string[] ByTier, int Base)[][] Cultures =
-    {
-        new[]
-        {
-            ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard" }, 24),
-            ("archers", new[] { "bowmen", "bowmen", "longbowmen", "crossbowmen" }, 16),
-            ("spears", new[] { "levies", "spearrunners", "pikemen", "pikemen" }, 12),
-            ("horse", new[] { "outriders", "lancers", "lancers", "knights" }, 10),
-        },
-        new[]
-        {
-            ("infantry", new[] { "clansmen", "axemen", "huscarls", "huscarls" }, 24),
-            ("archers", new[] { "bowmen", "bowmen", "longbowmen", "longbowmen" }, 16),
-            ("spears", new[] { "clansmen", "spearrunners", "spearrunners", "pikemen" }, 12),
-            ("horse", new[] { "outriders", "horse_archers", "horse_archers", "lancers" }, 10),
-        },
-    };
-
-    public static int CultureOf(int faction) => faction == 2 ? 1 : 0;
-
-    /// The troop a faction's line fields at a tier (1-4).
-    public static string LineTroop(string role, int tier, int faction) => Cultures[CultureOf(faction)].First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 4) - 1];
+    /// The troop a realm's line fields at a tier (1-7), from Data/factions.json.
+    public static string LineTroop(string role, int tier, int faction) => Factions.Line(faction, role, tier);
 
     static readonly (string Role, string[] ByTier, int Base)[] Lines =
     {
-        ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard" }, 24),
-        ("archers", new[] { "bowmen", "bowmen", "longbowmen", "longbowmen" }, 16),
-        ("spears", new[] { "levies", "spearrunners", "pikemen", "pikemen" }, 12),
-        ("horse", new[] { "outriders", "lancers", "lancers", "knights" }, 10),
+        ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries", "immortals" }, 24),
+        ("archers", new[] { "bowmen", "bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen", "sovereign_longbowmen" }, 16),
+        ("spears", new[] { "levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx", "imperial_pikemen" }, 12),
+        ("horse", new[] { "outriders", "lancers", "lancers", "knights", "banner_knights", "paladin_knights", "grail_knights" }, 10),
     };
 
     static int Count(int baseCount, string troop, bool enemy)
     {
         var t = Troops.Get(troop);
-        float k = t.Tier switch { 1 => 1.25f, 2 => 1f, 3 => 0.85f, _ => 0.7f };
-        return Math.Max(4, (int)MathF.Round(baseCount * k * (enemy ? 1.15f : 1)));
+        float k = t.Tier switch { 1 => 1.25f, 2 => 1f, 3 => 0.85f, 4 => 0.7f, 5 => 0.65f, 6 => 0.6f, _ => 0.55f };
+        return Math.Max(4, (int)MathF.Round(baseCount * k * (enemy ? 1.05f : 1)));
     }
 
     /// The prototype's standard army (level 2: Shieldmen, Bowmen, Spearrunners, Lancers).
@@ -170,15 +164,54 @@ public static class Armies
     /// A campaign-like army: each line's tier is the level, give or take one (companies are upgraded unevenly).
     public static ArmySpec Random(Random rng, int level, int team)
     {
-        var tiers = Lines.Select(_ => Math.Clamp(level + (rng.NextSingle() < 0.35f ? (rng.Next(2) == 0 ? -1 : 1) : 0), 1, 4)).ToArray();
+        var tiers = Lines.Select(_ => Math.Clamp(level + (rng.NextSingle() < 0.35f ? (rng.Next(2) == 0 ? -1 : 1) : 0), 1, 7)).ToArray();
         return Make(team == 1 ? "Crimson host" : "Azure company", level, tiers, team == 1);
+    }
+
+    /// A big campaign-like army of about `men` men: several companies per line (the bench and scale tests).
+    public static ArmySpec Large(Random rng, int level, int team, int men)
+    {
+        var list = new List<Company>();
+        int id = 1;
+        while (list.Sum(c => c.Count) < men)
+            foreach (var c in Random(rng, level, team).Companies) list.Add(c with { Id = team * 1000 + id++ });
+        return new ArmySpec(team == 1 ? "Crimson host" : "Azure company", level, list);
+    }
+
+    /// Split a big army into divisions under sergeants (docs/COMBAT_OVERHAUL.md 1.6): the horse rides a wing, the foot
+    /// is cut into a left and a right battle, and the middle of the foot, the bows and the allies stay with the captain.
+    /// Armies under 240 men or 6 companies are left whole; an army that already has divisions is not touched.
+    public static ArmySpec Divide(ArmySpec army)
+    {
+        if (army.Divisions is { Count: > 0 } || army.Companies.Count < 6 || army.Companies.Sum(c => c.Count) < 240) return army;
+        var comps = army.Companies.ToList();
+        var specs = new List<DivisionSpec>();
+        void Make(string name, List<int> idx, string goal, string temper)
+        {
+            if (idx.Count == 0) return;
+            int id = specs.Count;
+            foreach (var i in idx) comps[i] = comps[i] with { Division = id };
+            var lead = idx.OrderByDescending(i => Troops.Get(comps[i].Troop).Tier).ThenBy(i => i).First();
+            specs.Add(new DivisionSpec(id, name, temper, 3 + army.Level / 2, goal, "", comps[lead].Id));
+        }
+        var own = Enumerable.Range(0, comps.Count).Where(i => !comps[i].Allied).ToList();
+        var horse = own.Where(i => RoleOf(comps[i]) == "horse").ToList();
+        var foot = own.Where(i => RoleOf(comps[i]) is "infantry" or "spears").ToList();
+        if (horse.Sum(i => comps[i].Count) >= 30) Make("The horse", horse, "FlankRight", "Bold");
+        if (foot.Count >= 4)
+        {
+            int third = foot.Count / 3;
+            Make("Left battle", foot.Take(third).ToList(), "Hold", "Steady");
+            Make("Right battle", foot.Skip(foot.Count - third).ToList(), "Hold", "Steady");
+        }
+        return army with { Companies = comps, Divisions = specs.Count > 0 ? specs : null };
     }
 
     static ArmySpec Make(string name, int level, int[] tiers, bool enemy) =>
         new(name, level, Lines.Select((l, i) => new Company(l.ByTier[tiers[i] - 1], Count(l.Base, l.ByTier[tiers[i] - 1], enemy), l.Role)).ToList());
 
-    /// The troop a line fields at a tier (1-4).
-    public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 4) - 1];
+    /// The troop a line fields at a tier (1-7).
+    public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 7) - 1];
 
     public static string RoleOf(Company c) => c.Role is { Length: > 0 } r ? r : Troops.Get(c.Troop).Class switch
     {
