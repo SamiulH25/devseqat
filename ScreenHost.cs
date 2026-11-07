@@ -19,11 +19,12 @@ sealed class ScreenHost : Game
     public readonly SettingsScreen SettingsPanel;
     readonly GraphicsDeviceManager gdm;
 
-    enum Mode { Title, Map, Battle }
+    enum Mode { Title, Map, Battle, Lab }
     Mode mode = Mode.Title;
     BattleScreen battle = null!;
     MapScreen map = null!;
     TitleScreen title = null!;
+    UiLab lab = null!;
     Campaign? campaign;
     BattleSetup? setup;
 
@@ -84,6 +85,8 @@ sealed class ScreenHost : Game
         battle.OnTitle = () => mode = Mode.Title;
         map = new MapScreen(GraphicsDevice, Sb, Art, Font, Shading, Ctl) { OnBattle = StartCampaignBattle, OnTitle = () => mode = Mode.Title, OnSettings = OpenSettings };
         title = new TitleScreen(this);
+        lab = new UiLab(this) { OnBack = () => mode = Mode.Title };
+        if (lab.ShotsDir != null) mode = Mode.Lab;
         if (battle.HasShots) mode = Mode.Battle;
         if (campaignShots != null) StartCampaign(3);
     }
@@ -113,6 +116,9 @@ sealed class ScreenHost : Game
         map.Open(campaign);
         mode = Mode.Map;
     }
+
+    /// The UI lab: a gallery of interface concepts (F3 on the title screen).
+    public void OpenLab() => mode = Mode.Lab;
 
     public void QuickBattle()
     {
@@ -162,6 +168,7 @@ sealed class ScreenHost : Game
         switch (mode)
         {
             case Mode.Title: IsMouseVisible = true; title.Update(); Audio?.Music(MusicTrack.Map); Audio?.Beds(0.6f, 0, 0); break;
+            case Mode.Lab: IsMouseVisible = true; lab.Update(dt); Audio?.Music(MusicTrack.Map); break;
             case Mode.Map: IsMouseVisible = true; map.Update(dt, IsActive); Audio?.Music(MusicTrack.Map); Audio?.Beds(1, 0, 0); break;
             default: battle.Update(dt); break;
         }
@@ -174,6 +181,7 @@ sealed class ScreenHost : Game
         switch (mode)
         {
             case Mode.Title: title.Draw(); break;
+            case Mode.Lab: lab.Draw(); break;
             case Mode.Map:
                 try { map.Draw(Quality); }
                 catch (Exception e) when (Quality != Quality.Low)
@@ -197,8 +205,8 @@ sealed class ScreenHost : Game
 
     void CaptureShot()
     {
-        string? name = pendingShot ?? battle.PendingShot;
-        string? dir = campaignShots ?? Environment.GetEnvironmentVariable("IRONFIELD_SHOTS");
+        string? name = pendingShot ?? battle.PendingShot ?? lab.PendingShot;
+        string? dir = campaignShots ?? lab.ShotsDir ?? Environment.GetEnvironmentVariable("IRONFIELD_SHOTS");
         if (name == null || string.IsNullOrEmpty(dir)) return;
         var gd = GraphicsDevice;
         int w = gd.PresentationParameters.BackBufferWidth, h = gd.PresentationParameters.BackBufferHeight;
@@ -210,6 +218,7 @@ sealed class ScreenHost : Game
         tex.SaveAsPng(file, w, h);
         pendingShot = null;
         battle.PendingShot = null;
+        lab.PendingShot = null;
     }
 
     void CampaignShots()

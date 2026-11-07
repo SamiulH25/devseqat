@@ -240,8 +240,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:51, Deserialize:52, Save:56, Play:63, Matches:92, Run:95
 - **Battle** (class, L104): StartRecording:111, RecordFrame:116, FinishRecording:144
 
-## ScreenHost.cs (387 lines)
-- **ScreenHost** (class, L9): ScreenHost:37, ApplyVideo:51, OpenSettings:60, LoadContent:62, StartCampaign:93, ContinueCampaign:105, QuickBattle:117, StartCampaignBattle:124, FinishCampaignBattle:132, CycleQuality:140, Update:144, Draw:172, CaptureShot:198, CampaignShots:215
+## ScreenHost.cs (396 lines)
+- **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:108, OpenLab:121, QuickBattle:123, StartCampaignBattle:130, FinishCampaignBattle:138, CycleQuality:146, Update:150, Draw:179, CaptureShot:206, CampaignShots:224
 
 ## SelfTest.cs (132 lines)
 - **SelfTest** (class, L6): Run:8, RunOne:84, Lancer:92, Run:101, Scaled:103, MakeWanderer:106, Days:114, Ids:126, Check:128
@@ -294,8 +294,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tips.cs (36 lines)
 - **Tips** (class, L6): Show:10, Dismiss:18, Draw:25
 
-## TitleScreen.cs (43 lines)
-- **TitleScreen** (class, L7): TitleScreen:14, Update:16, Draw:23
+## TitleScreen.cs (46 lines)
+- **TitleScreen** (class, L7): TitleScreen:15, Update:17, Draw:26
 
 ## Troops.cs (220 lines)
 - **Troops** (class, L7): Get:14, Mount:15, Path:47, Load:57, Validate:81, Tree:106
@@ -305,8 +305,20 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **DivisionSpec** (record, L137)
 - **Armies** (class, L141): LineTroop:144, readonly:146, Count:154, Standard:162, Random:165, Large:172, Divide:184, Make:210, LineTroop:214, RoleOf:216
 
-## Ui.cs (102 lines)
-- **Ui** (class, L8): Ui:23, Begin:25, End:35, Blocks:38, Block:39, U:40, Rect:42, Frame:44, Panel:52, Dim:61, Text:63, TW:64, TextC:65, TextR:66, Bar:68, Hover:74, Clicked:77, Button:85, Portrait:101
+## Ui.cs (106 lines)
+- **Ui** (class, L8): Ui:23, Begin:25, End:35, Blocks:38, Block:39, U:40, Rect:42, Frame:46, Panel:54, Dim:63, Text:66, TW:67, TextC:68, TextR:69, Bar:71, Hover:77, Clicked:80, Button:88, Portrait:105
+
+## UiLab.cs (99 lines)
+- **UiLab** (class, L9): UiLab:29, Update:40, Shots:56, Draw:68, Nav:81
+
+## UiLab.Kit.cs (509 lines)
+- **Kit** (class, L9): Mul:17, N:19, VGrad:24, HGrad:31, Line:38, Disc:45, Vignette:56, Hills:70, HillY:81, Stars:88, Castle:101, Plate:124, Inset:147, Ribbon:150, Divider:169, Shield:180, Banner:215, Icon:261, Ring:281, Pips:297, Gauge:311, TugBar:320, Chart:331, Chip:353, Gilded:364, Toggle:384, Check:397, Slider:408, Stepper:424, Tabs:438, Toast:457, OrderKey:467, Tooltip:482, Wrap:496
+
+## UiLab.Pages.cs (489 lines)
+- **UiLab** (class, L6): U:14, T:15, Side:16, Caption:19, KitPage:28, TitlePage:137, readonly:186, MusterPage:193, CompanyCard:250, ReportPage:304, MarketPage:408
+
+## UiLab.Scenes.cs (427 lines)
+- **UiLab** (class, L6): HudPage:12, Field:81, readonly:115, DockCard:121, CaptainPage:149, RealmsPage:237, EventPage:336, Burning:400
 
 ## Units.cs (121 lines)
 - **UnitClass** (enum, L5)

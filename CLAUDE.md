@@ -42,7 +42,7 @@ Rendering without a display (works in the cloud container, software GL via Mesa 
 IRONFIELD_SAVES=/tmp/ifs IRONFIELD_SHOTS=/tmp/shots xvfb-run -a -s "-screen 0 1280x720x24" dotnet run -c Release --no-build
 ```
 Saves ~20 staged battle PNGs (field-view.png, command-overview.png, gallery-*.png...) and quits. `IRONFIELD_CAMPAIGN_SHOTS=/dir`
-does the same for campaign screens. ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
+does the same for campaign screens, `IRONFIELD_LAB_SHOTS=/dir` for every UI lab page. ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
 
 Other env vars: `IRONFIELD_SAVES` (save dir; settings go to its parent), `IRONFIELD_QUALITY=High|Medium|Low`,
 `IRONFIELD_LEVELS=4,2` (quick-battle army levels), `IRONFIELD_MEN=750` (quick-battle men a side; default half the Battle size setting), `IRONFIELD_WEATHER=hour,rain,fog`, `IRONFIELD_GROUND=river`,
@@ -153,6 +153,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Shader pipeline / GLSL loader | `Shading.cs`, `GlslEffect.cs`, `Shaders/*.glsl`, `Sky.cs` (light by hour/weather) |
 | Unit drawing (puppets of part sprites) | `Puppet.cs` (poses, skeleton), `SpriteSheet.cs` (paints parts), `Painter.cs` (materials), `Art.cs` (atlas) |
 | Colours, heraldry, UI tokens | `Style.cs` |
+| UI lab (F3 on the title): gallery of interface concepts with mock data | `UiLab.cs` (screen, pages list, shots) + `.Pages.cs` / `.Scenes.cs` (one method per page) + `.Kit.cs` (new widgets: `Plate`, `Ribbon`, `Shield`, `Icon`, `Ring`, `Gilded`...) |
 | Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`) |
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
 | Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs`, `Bench.cs` |
@@ -182,6 +183,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
   the GLSL; set with `effect.Parameters["Name"].SetValue(...)`. GLSL rules: README "Shaders" section.
 - **Add an event:** an entry in `Data/events.json` using an existing trigger and effect verbs; a new trigger or verb is a case
   in `Campaign.Find` / `ApplyEffect` plus its name in `Triggers` / `Verbs` (`SelfTest.EventsAndQuests` validates the file).
+- **Try a new UI look:** add a page method in `UiLab.Pages.cs`/`.Scenes.cs`, list it in the `pages` array in `UiLab.cs`, build widgets in `UiLab.Kit.cs`; check with `IRONFIELD_LAB_SHOTS`.
 - **Add a sound:** add a `Cue`, synthesize it in `AudioEngine` ctor, emit from the sim with `Sound(Cue.X, pos)`.
 
 ## Invariants and gotchas (break these and things fail subtly)

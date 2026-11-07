@@ -40,6 +40,8 @@ sealed class Ui
     public int U(float v) => (int)(v * S);
 
     public void Rect(Rectangle r, Color c) => Sb.Draw(art.Pixel, r, c);
+    /// The 1x1 white texture, for drawing rotated lines.
+    public Texture2D Pixel => art.Pixel;
 
     public void Frame(Rectangle r, Color c, int t)
     {
@@ -60,7 +62,8 @@ sealed class Ui
     /// Dim everything behind a modal panel (and swallow clicks outside it).
     public void Dim(float a = 0.5f) { Rect(new Rectangle(0, 0, W, H), Color.Black * a); Block(new Rectangle(0, 0, W, H)); }
 
-    public void Text(string s, float x, float y, Color c, int scale = 2) => font.Draw(Sb, s, new Vector2(x, y), c, scale * S);
+    /// Text at whole-pixel positions (a half-pixel offset makes the point-sampled glyphs lose rows).
+    public void Text(string s, float x, float y, Color c, int scale = 2) => font.Draw(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale * S);
     public int TW(string s, int scale = 2) => PixelFont.Width(s, scale * S);
     public void TextC(string s, float cx, float y, Color c, int scale = 2) => Text(s, cx - TW(s, scale) / 2f, y, c, scale);
     public void TextR(string s, float rx, float y, Color c, int scale = 2) => Text(s, rx - TW(s, scale), y, c, scale);
@@ -98,5 +101,6 @@ sealed class Ui
         return hit;
     }
 
-    public void Portrait(UnitType t, Rectangle box) => Hud.Portrait(Sb, art, t, box, S);
+    /// A troop portrait cropped to `box`; `k` is the pixel scale (default: the UI scale).
+    public void Portrait(UnitType t, Rectangle box, int k = 0) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S);
 }

@@ -9,6 +9,7 @@ sealed class TitleScreen
     readonly ScreenHost host;
     readonly Ui ui;
     MouseState ms, pms;
+    KeyboardState kb, pkb;
     bool click;
 
     public TitleScreen(ScreenHost host) { this.host = host; ui = new Ui(host.Sb, host.Art, host.Font); }
@@ -18,6 +19,8 @@ sealed class TitleScreen
         pms = ms;
         ms = Mouse.GetState();
         if (ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released) click = true;
+        pkb = kb; kb = Keyboard.GetState();
+        if (kb.IsKeyDown(Keys.F3) && !pkb.IsKeyDown(Keys.F3)) host.OpenLab();
     }
 
     public void Draw()
@@ -37,7 +40,7 @@ sealed class TitleScreen
         if (ui.Button(B(), "SETTINGS")) host.OpenSettings();
         if (ui.Button(B(), "QUIT")) host.Exit();
         if (host.TitleNote != "") ui.TextC(host.TitleNote, ui.W / 2f, y + ui.U(8), Style.Warn, 1);
-        ui.TextC("F2 GRAPHICS QUALITY", ui.W / 2f, ui.H - ui.U(30), Style.Dim * 0.7f, 1);
+        ui.TextC("F2 GRAPHICS QUALITY   F3 UI LAB", ui.W / 2f, ui.H - ui.U(30), Style.Dim * 0.7f, 1);
         ui.End();
     }
 }

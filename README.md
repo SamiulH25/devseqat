@@ -32,6 +32,7 @@ To render a few staged camera shots as PNGs and quit (works headless with `xvfb-
 weather and ground; `IRONFIELD_MEN=n` sets its men a side (default: half the Battle size setting).
 `dotnet run -- --write-controls` writes `controls.json` with the default bindings.
 Graphics quality: **F2** cycles High (shaders, sun shadows, post) / Medium (no shadows) / Low (fixed-function); `IRONFIELD_QUALITY=Low` picks one at start.
+UI lab: **F3** on the title screen opens a gallery of interface concepts (left/right to page, Esc back).
 Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, no Wine): see "Shaders" below.
 
 ## The campaign
