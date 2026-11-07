@@ -48,7 +48,7 @@ public sealed partial class Campaign
         (Rank.SwornSword, $"SERVE ONE REALM {SwornDays:0} DAYS", "ITS RECRUITS AT HALF PRICE"),
         (Rank.Vassal, $"SWEAR FEALTY: {VassalRenown:0} RENOWN, LIEGE OPINION {VassalOpinion:+0}", "HOLD FIEFS, A VOTE IN COUNCIL"),
         (Rank.Lord, $"HOLD {LordFiefs} FIEFS, {LordRenown:0} RENOWN", "PROPOSE WARS, DECLARE INDEPENDENCE"),
-        (Rank.Marshal, "THE COUNCIL'S VOTE", "SET THE REALM'S OBJECTIVE"),
+        (Rank.Marshal, "500 RENOWN, THE COUNCIL'S VOTE", "SET THE REALM'S OBJECTIVE"),
         (Rank.King, "FOUND A REALM", "WAR AND PEACE, YOUR OWN COUNCIL"),
     };
 
