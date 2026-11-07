@@ -85,7 +85,7 @@ Small "As built" gaps to fold in alongside: renaming companies (text input, S), 
 | E4 | Map foliage cost: instancing or merged chunks with distance culling | S | The map draws at 60 fps on integrated graphics |
 | E5 | Determinism guard: battle seed and replay recorder (inputs plus seed reproduce a battle) | M | Any reported battle bug can be replayed exactly |
 
-## Phase F: campaign overhaul (in progress: F0-F8 built)
+## Phase F: campaign overhaul (built: F0-F9)
 
 The campaign's play and progression layer is rebuilt; the world map itself is untouched. Full spec:
 [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md). Saves break at F1 (version 4, no migration). Build in this order; each step
@@ -339,3 +339,14 @@ All of A-E is in. Where the build differs from the table above:
   pretender ("of" the town), with more men; while he is at large it defects at 85 unrest rather than 100; beating him gives 15 renown.
   The event panel wraps the text and lists each choice with its effects or why it is shut. Not yet: escort and deliver-ransom quests,
   taking a castle for a lord, and a lair for the brigand king (he roams like any band).
+- F9: pacing retune against the stand-in captain. `--pacing N` runs only the pilot (40 weeks a seed, 2000+seed) and prints, per seed,
+  battles, men promoted per battle, the first tier V day, seats stormed, the day renown first allows fealty, each stage's day, and
+  each target (`BalanceReport.Targets`, from section 9 at about 4.5 minutes of play a day: Vassal days 40-67, Lord 93-147,
+  Marshal 173-280) as OK or OFF; `--balance` runs it too. The pilot now besieges and storms weakly held enemy seats once sworn,
+  answers summons, and counts the retainer and the real levy price. Tuning: fealty at 120 renown (was 150); standing for marshal
+  needs 500 renown and two fiefs (was the lord's 350); a liege pays a sworn sword or better a weekly retainer of 30 crowns plus a
+  tenth of renown on top of contract pay, so a beaten company can rebuild instead of bleeding out. Result over 8 seeds: 7 reach
+  Lord and 6 Marshal; medians Vassal day 59, Lord 145, Marshal 274 (all in target), with a wide spread (Vassal 31-156, one seed
+  still a sworn sword at day 281). `upgradeXp` was left as it is: men promoted per battle run 3-11 and the first tier V man
+  arrives near the Vassal rank in most seeds, so gold, not XP, is the brake. Not yet: renown per victory scaled by rank, and the
+  marshal vote often lands late because the baton is only contested every fourth council.

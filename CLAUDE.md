@@ -18,6 +18,7 @@ dotnet build -c Release                                  # ~30 s cold, warnings 
 dotnet run -c Release --no-build -- --selftest           # THE test suite (headless, ~20 s); CI runs exactly this
 dotnet run -c Release --no-build -- --selftest Parry     # one test by SelfTest method name
 dotnet run -- --balance 4                                # N headless campaigns+battles -> balance/*.csv (gitignored)
+dotnet run -c Release -- --pacing 8                      # stand-in captain only: career stage days vs targets (~10 min)
 dotnet run -- --replay [file]                            # replay replays/last-battle.json, check same outcome
 dotnet run -- --write-controls                           # write default controls.json
 ```

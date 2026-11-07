@@ -1,17 +1,17 @@
 # Ironfield campaign overhaul (roadmap phase F)
 
-Status: **in progress (F0-F8 built).** This spec replaces the campaign's play and progression layer: how companies are built and
+Status: **built (F0-F9).** This spec replaces the campaign's play and progression layer: how companies are built and
 grown, how the captain rises, how lords, fiefs and realms behave, and what ends a campaign. The world map itself (generation,
 terrain, rendering) is out of scope. Where this text and [`CAMPAIGN.md`](CAMPAIGN.md) disagree, this text wins once the
 matching F step is built; until then `CAMPAIGN.md` describes the game as it is. Numbers marked *(tune)* are starting values.
 
-**Next step: F9** (`ROADMAP.md` phase F). F0 added pacing telemetry: `--balance` runs a scripted stand-in captain
+**All steps built** (`ROADMAP.md` phase F). F0 added pacing telemetry: `--balance` runs a scripted stand-in captain
 (`Campaign/Pilot.cs`) through each campaign and writes `balance/pacing.csv` and `balance/pacing_weekly.csv`. F1 built troop stacks,
 promotion by the man, mixed squads, company identity and save v4; F2 built cultures, `Data/factions.json` and regional recruitment; F3
 characters, opinion, heirs and companions; F4 the captain's skill tree; F5 career ranks, the realm council,
 founding a realm by rebellion, and winning and losing; F6 fiefs (prosperity, unrest, revolts, buildings, vassals,
 defection); F7 war exhaustion, peace terms, hosts and summons, tributaries and alliances; F8 events, lord quests, brigand
-kings and pretenders; see the as-built notes in `ROADMAP.md`. The section 12 open
+kings and pretenders; F9 the pacing retune (`--pacing N`); see the as-built notes in `ROADMAP.md`. The section 12 open
 questions are not yet confirmed by the user; build to the bracketed proposals unless told otherwise.
 
 Decisions taken with the user (2026-11-05):

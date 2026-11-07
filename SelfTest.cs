@@ -1178,6 +1178,8 @@ public static class SelfTest
         truce.TruceUntil = (float)c.S.Hours + 90 * 24;
         Check(c.ProposeWar(2) == null && c.S.Factions[0].WarMotion == 2, "a lord can put a motion of war to the council");
         c.S.Factions[0].Marshal = -1; // the baton is vacant: the council elects
+        Check(c.NextRank()!.Value.Needs.Contains("RENOWN TO STAND"), "standing for marshal needs more renown than a lord");
+        c.Captain.Renown = Campaign.MarshalRenown;
         c.S.Factions[0].NextCouncil = 0;
         Days(c, 1);
         Console.WriteLine($"career: second council: {string.Join(" ", c.S.Factions[0].LastCouncil)}");
