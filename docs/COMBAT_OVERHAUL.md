@@ -197,9 +197,51 @@ A goal is data: `Goal { Kind, Point?, TargetSquad?, Trigger? }`. The sergeant tu
 | 6 | Campaign scale + balance (2.6) | `--balance` and `--pacing` within targets |
 | 7 | Messenger riders, polish, docs (README rules, DEVELOPING, CLAUDE.md) | |
 
-## Open questions
+## Open questions (answered)
 
-1. Target numbers in 2.1: are 1,500 by default and 3,000 at most right?
-2. Can you still command a division's companies directly in an emergency (with the delay), or only through goals?
-3. Should messenger riders be real units from the start, or plain delays first?
-4. Do divisions come only from companions, or can any promoted sergeant (officer) lead one?
+1. Battle size: 1,500 by default, 3,000 at most (also 400 and 800). **Yes.**
+2. You can still order a division's companies directly; the order rides out with the same delay. **Yes.**
+3. Plain delays first, real riders after. **Done in that order.**
+4. Promoted sergeants can lead divisions as well as companions. **Yes.**
+
+## As built
+
+All phases 0-7 are built on branch `combat-overhaul`. What differs from the plan, and the numbers:
+
+**Scale (phases 0-2).**
+- `--bench N`: 3,000 men went from 20.5 ms a tick to about 3.6 ms (1,500 men about 1.9 ms), under the 6 ms budget.
+  The wins: staggered thinking (`ThinkNow`), morale every 2nd tick, squad bounding circles for `GapTo` and the far nearest-enemy
+  search (`NearestFar`), and a 128x128 grid (4 m cells, +-256 m). No cached alive counts were needed.
+- Field radius `95 * sqrt(men / 450)`, 95-230 m (not 300 m: 230 m already holds 3,000 men with room to manoeuvre).
+  Deployment lays companies out in rows that wrap past 110 m, with 2-6 ranks by size; flanks sit outside the widest line.
+- Reinforcements come in from the rear line in columns; no rally points or waves.
+- Rendering: frustum culling (also for the sun pass) and three puppet detail levels by distance (fewer parts far away).
+  Software GL (llvmpipe) holds about 32 fps with 3,000 men on Medium, against 40 with 70 men; real GPUs are far above that.
+  No impostor sprites or instancing were needed.
+- Sound: a synthesised crowd roar rises with the men in contact (`sqrt(men / 600)`); one-shot cues are capped at 64 a tick.
+
+**Divisions (phases 3-5).**
+- Goals as planned plus Take (hold a chosen point) and Pursue; Flank keeps an axis fixed when the goal starts.
+- Delay `1.5 s + distance / 14 m/s`, +2 s if the sergeant is fighting, x2 with no sergeant, -5% per skill point, x0.7 with
+  the Bannerman perk ("Horns"). A fallen sergeant costs his men 8 morale; after 10 s the best man left takes charge.
+- Couriers (phase 7) are not units: a rider follows the line from the general so he arrives on time, and an enemy within
+  2.5 m cuts him down. Each replacement swings 30 m further round. This keeps replays exact and costs nothing at scale;
+  the rider is drawn as a dot in command view, not as a horseman.
+- Campaign: the V panel (also DIVISIONS on the party screen) makes up to 6 divisions under companions or sergeants, assigns
+  companies and sets a starting goal. Companions now have a Command skill (2-10, +1 every 2 battles led) and a temper;
+  sergeants' command comes from their battles (at most 6). `MaxCompanions` went from 3 to 6.
+- `Armies.Divide` splits armies of 240+ men and 6+ companies into a horse wing and two foot battles; enemy lords and quick
+  battles use it. The AI general sends divisions in when the lines close, the fight starts, or after 15/30/45 s by temper.
+- Auto-resolve: each division leader past command 3 adds 1%, at most 8%.
+
+**Campaign scale (phase 6).**
+- One knob, `Balance.ArmyScale` = 3, instead of separate raises: company places, the men limit, bands, garrisons, recruits and
+  horses for sale are x3 (`Scaled`), and everything paid per man or derived from strength is /3 (`Rules.PerMan`): wages, levies,
+  loot, ransom, promotion, food, bounties, parley prices, contract rewards, lord battle gold, war score, skill gains.
+  You start with about 120 men (target 120) and late games reach several hundred (target ~1,000 is not reached by default:
+  10 companies of 72 is the ceiling; raise `ArmyScale` for more).
+- Check: with `ArmyScale` 1 the campaign self-test prints exactly the old numbers. At 3: AI battles 1,918 (1,880 before), lords
+  average 73 men (21 x 3 = 63 before), war chests healthy.
+- `--pacing 6`: 5 of 6 stand-in careers reach Marshal (2 of 6 before), 6 stages off target (9 before). Vassal day 31-56, Lord
+  day 127-163, Marshal day 218-274.
+- The economy per man is unchanged rather than cheaper: a big army is affordable late because income from fiefs grows, as before.

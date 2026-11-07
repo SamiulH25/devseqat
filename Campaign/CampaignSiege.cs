@@ -58,10 +58,10 @@ public sealed partial class Campaign
             foreach (var c in s.Garrison.Where(c => c.Type.Tier <= 5))
             {
                 int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * (0.8f + 0.07f * Level(s, "walls"))) - c.Men;
-                int n = Math.Min(Math.Min(want, Rules.Room(c, c.Troop)), (int)(fs.Treasury / 20));
+                int n = Math.Min(Math.Min(want, Rules.Room(c, c.Troop)), (int)(fs.Treasury / Rules.PerMan(20)));
                 if (n <= 0) continue;
                 Rules.AddMen(c, c.Troop, n);
-                fs.Treasury -= n * 20;
+                fs.Treasury -= n * Rules.PerMan(20);
             }
             s.Supplies = MathF.Min(MaxSupplies(s), s.Supplies + 7);
         }
@@ -97,7 +97,7 @@ public sealed partial class Campaign
         why = s.Kind == SettlementKind.Village ? "VILLAGES HAVE NO WALLS"
             : Captain.Contract < 0 ? "SIGN WITH A FACTION FIRST"
             : !FactionsAtWar(Captain.Contract, s.Faction) ? "YOU ARE NOT AT WAR WITH THEM"
-            : Player.Men < 20 ? "TOO FEW MEN (20 OR MORE)"
+            : Player.Men < Scaled(20) ? $"TOO FEW MEN ({Scaled(20)} OR MORE)"
             : Player.SiegeTarget >= 0 && Player.SiegeTarget != s.Id ? "YOU ARE BESIEGING ANOTHER PLACE" : "";
         return why == "";
     }
@@ -131,7 +131,7 @@ public sealed partial class Campaign
         setup.SiegeOf = s.Id;
         // Lords of the town's faction resting inside fight too (PrepareBattle adds anyone near and friendly to them).
         setup.Options.Siege = true;
-        setup.Options.Ladders = LaddersIn(s) > 0 ? 0 : Player.Men >= 90 ? 4 : 2;
+        setup.Options.Ladders = LaddersIn(s) > 0 ? 0 : Player.Men >= Scaled(90) ? 4 : 2;
         setup.Options.GateHp = (s.Kind == SettlementKind.Town ? 600 : 450) + 150 * Level(s, "walls");
         setup.Options.Ground = Map.BattleGround(s.Pos) with { Road = false };
         setup.Options.Palette[1] = Style.PaletteOf(s.Faction);

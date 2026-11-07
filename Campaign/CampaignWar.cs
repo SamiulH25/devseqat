@@ -35,7 +35,7 @@ public sealed partial class Campaign
         return null;
     }
 
-    public int PrisonerValue => (int)(Player.Prisoners.Sum(g => g.Count * Troops.Get(g.Troop).Cost * B.RansomRate) * (Has("RansomBroker") ? 1.5f : 1));
+    public int PrisonerValue => (int)(Player.Prisoners.Sum(g => g.Count * Rules.PerMan(Troops.Get(g.Troop).Cost) * B.RansomRate) * (Has("RansomBroker") ? 1.5f : 1));
 
     public string? SellPrisoners(Settlement s)
     {
@@ -51,7 +51,7 @@ public sealed partial class Campaign
 
     public void FreePrisoners()
     {
-        Captain.Renown += PrisonerCount * 0.5f;
+        Captain.Renown += Rules.PerMan(PrisonerCount * 0.5f);
         Log($"You free {PrisonerCount} prisoners. Word of your mercy spreads.");
         Player.Prisoners.Clear();
     }
@@ -136,7 +136,7 @@ public sealed partial class Campaign
     public bool Winter => SeasonIndex == 3;
 
     int Mouths => Player.Men + Player.Wounded + PrisonerCount;
-    public int FoodPrice(int days) => (int)MathF.Ceiling(Mouths * days * 0.15f * (Has("Provisioner") ? 0.75f : 1)
+    public int FoodPrice(int days) => (int)MathF.Ceiling(Mouths * days * Rules.PerMan(0.15f) * (Has("Provisioner") ? 0.75f : 1)
         * (SettlementAt(Player.Pos) is Settlement here && Level(SeatOf(here), "market") > 0 ? 0.8f : 1));
 
     public string? BuyFood(int days)
@@ -221,7 +221,7 @@ public sealed partial class Campaign
         if (S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && FactionsAtWar(f, p.Faction)).OrderBy(p => Vector2.Distance(p.Pos, s.Pos)).FirstOrDefault() is Party lord)
             s.Offers.Add(Make("hunt", lord.Id, 300 + Rules.Strength(lord), $"Defeat {lord.Name} in the field."));
         if (S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down).OrderBy(p => Vector2.Distance(p.Pos, s.Pos)).FirstOrDefault() is Party band)
-            s.Offers.Add(Make("clear", band.Id, 150 + Rules.Strength(band) / 2, $"Destroy the {band.Name}."));
+            s.Offers.Add(Make("clear", band.Id, 150 + Rules.PerMan(Rules.Strength(band) / 2), $"Destroy the {band.Name}."));
         var frontVillage = S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.Faction == f && S.Provinces[v.Province].Neighbors.Any(n => S.Provinces[n].Faction != f))
             .OrderBy(_ => rng.Float()).FirstOrDefault();
         if (frontVillage != null) s.Offers.Add(Make("defend", frontVillage.Id, 220, $"Guard {frontVillage.Name} for a day."));

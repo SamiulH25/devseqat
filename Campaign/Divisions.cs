@@ -103,6 +103,9 @@ public partial class Campaign
         };
     }
 
+    /// Auto-resolve edge from your divisions: each leader past command 3 adds 1%, at most 8% in all.
+    public float DivisionEdge => MathF.Min(0.08f, S.Divisions.Where(d => CompaniesOf(d).Any(c => c.Men > 0)).Sum(d => Math.Max(0, CommandOf(d) - 3)) * 0.01f);
+
     /// After a battle: every companion who led a division that took the field gets better at it.
     internal void DivisionsAfterBattle(BattleResult r)
     {

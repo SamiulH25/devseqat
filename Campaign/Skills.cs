@@ -108,7 +108,7 @@ public sealed partial class Campaign
     public float Skill(string skill) => Skills.Level(Captain, skill);
 
     /// Your edge in an auto-resolved fight: Tactics skill (+1% per 10 points) and the Tactician perk (+10%).
-    public float TacticsEdge => 1 + Skill("Tactics") / 1000f + (Has("Tactician") ? 0.1f : 0);
+    public float TacticsEdge => 1 + Skill("Tactics") / 1000f + (Has("Tactician") ? 0.1f : 0) + DivisionEdge;
 
     /// Starting skills for a new captain (a soldier who has led men before).
     internal static void StartingSkills(CaptainState c)
@@ -144,7 +144,7 @@ public sealed partial class Campaign
     /// After a battle you fought: Leadership for commanding, Tactics for winning against the odds, Arms for your own kills.
     internal void SkillsAfterBattle(BattleResult r, bool won, float own, float foe, int menLed)
     {
-        Practise("Leadership", 1.5f + menLed / 40f);
+        Practise("Leadership", 1.5f + Rules.PerMan(menLed / 40f));
         float odds = foe / MathF.Max(1, own);
         Practise("Tactics", won ? 1 + 4 * Math.Clamp(odds - 0.8f, 0, 2) : 0.4f);
         // A played battle counts your own kills; an auto-resolved one assumes you did your part.

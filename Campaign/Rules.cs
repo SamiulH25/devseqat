@@ -45,7 +45,10 @@ public static class Rules
     public static float TierWeight(int tier) => tier switch { <= 1 => 0.8f, 2 => 1f, 3 => 1.15f, 4 => 1.3f, 5 => 1.4f, 6 => 1.5f, _ => 1.6f };
 
     /// A company's places, from its role (shared by all its stacks).
-    public static float Cap(string role) => role switch { "archers" => 16, "spears" => 12, "horse" => 10, _ => 24 };
+    public static float Cap(string role) => B.ArmyScale * role switch { "archers" => 16, "spears" => 12, "horse" => 10, _ => 24 };
+
+    /// A price per man (wage, levy, loot, ransom, promotion): the troop price spread over ArmyScale men.
+    public static float PerMan(float cost) => cost / B.ArmyScale;
 
     /// The places a company's men (fit and wounded) take.
     public static float Places(CompanyRecord c) => c.Stacks.Sum(s => (s.Men + s.Wounded) * TierWeight(s.Type.Tier));
@@ -66,7 +69,7 @@ public static class Rules
     public static float Strength(CompanyRecord c) => c.Stacks.Sum(s => Strength(s.Type, s.Men));
     public static float Strength(Party p) => p.Companies.Sum(Strength);
 
-    public static int Upkeep(CompanyRecord c) => (int)MathF.Ceiling(c.Stacks.Sum(s => (s.Men + s.Wounded) * s.Type.Cost * B.UpkeepRate));
+    public static int Upkeep(CompanyRecord c) => (int)MathF.Ceiling(c.Stacks.Sum(s => (s.Men + s.Wounded) * PerMan(s.Type.Cost) * B.UpkeepRate));
 
     /// Has any stack a man ready for promotion?
     public static bool UpgradeReady(CompanyRecord c) => c.Ready > 0;
@@ -77,9 +80,9 @@ public static class Rules
     {
         var a = Troops.Get(from);
         var b = Troops.Get(to);
-        int cost = Math.Max(0, b.Cost - a.Cost);
-        if (b.Mount != null && a.Mount == null && !hasHorse) cost += (int)(b.Mount.Hp * B.HorseCostRate);
-        return cost;
+        float cost = Math.Max(0, b.Cost - a.Cost);
+        if (b.Mount != null && a.Mount == null && !hasHorse) cost += b.Mount.Hp * B.HorseCostRate;
+        return (int)MathF.Ceiling(PerMan(cost));
     }
 
     public static bool NeedsHorse(string from, string to) => Troops.Get(to).Mount != null && Troops.Get(from).Mount == null;
@@ -147,15 +150,15 @@ public static class Rules
 
     public static int CompanySlots(CaptainState c) => Math.Clamp((int)B.CompanySlotsBase, 1, 10);
     /// Men you may lead: a base, renown, Leadership (+1 per 5 points) and the Born Captain perk.
-    public static int MenLimit(CaptainState c) => (int)(B.MenBase + c.Renown / B.MenRenownDivisor + Skills.Level(c, "Leadership") / 5
-        + (c.Perks.Contains("BornCaptain") ? 10 : 0));
+    public static int MenLimit(CaptainState c) => (int)(B.ArmyScale * (B.MenBase + (int)(c.Renown / B.MenRenownDivisor) + Skills.Level(c, "Leadership") / 5
+        + (c.Perks.Contains("BornCaptain") ? 10 : 0)));
 
     /// The next rung of the renown ladder, for the panel: renown now raises only the men cap (perks come from skills, F4).
     public static (string What, float At) NextRenownUnlock(CaptainState c)
     {
         float renownPart = c.Renown / B.MenRenownDivisor;
         float at = ((int)renownPart + 1) * B.MenRenownDivisor;
-        return ($"MEN CAP {MenLimit(c) + 1}", at);
+        return ($"MEN CAP {MenLimit(c) + (int)B.ArmyScale}", at);
     }
 
     // ---------- auto-resolve (5.4) ----------

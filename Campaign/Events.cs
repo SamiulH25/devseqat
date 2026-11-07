@@ -120,11 +120,11 @@ public sealed partial class Campaign
                 if (!Captain.Fealty || RulerOf(Captain.Contract) is not Character ruler) return null;
                 return Pick(S.Characters.Where(c => c.Kind == "lord" && !c.Dead && c.Faction == Captain.Contract && c != ruler && OpinionOf(c, ruler) <= -20), c => ev.Lord = c.Id, ev);
             case "big_band":
-                return Pick(S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down && p.Men >= 35 && Vector2.Distance(p.Pos, Player.Pos) < 80 * Map.Spread), p => ev.Party = p.Id, ev);
+                return Pick(S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down && p.Men >= Scaled(35) && Vector2.Distance(p.Pos, Player.Pos) < 80 * Map.Spread), p => ev.Party = p.Id, ev);
             case "veterans": return Pick(Player.Companies.Where(c => c.Battles >= 12 && c.Cohesion >= 18), c => ev.Company = c.Id, ev);
             case "hungry_winter": return Winter && Player.Food < 6 ? ev : null;
             case "unpaid": return S.UnpaidWeeks > 0 ? ev : null;
-            case "prisoners": return PrisonerCount >= 25 ? ev : null;
+            case "prisoners": return PrisonerCount >= Scaled(25) ? ev : null;
             case "war_weary": return Captain.Contract >= 0 && Exhaustion(Captain.Contract) >= 40 ? ev : null;
             case "in_town": return SettlementAt(Player.Pos) is { Kind: SettlementKind.Town } town && !Refuses(town) ? (ev.Settlement = town.Id) >= 0 ? ev : null : null;
             default: return null;
@@ -276,7 +276,7 @@ public sealed partial class Campaign
         S.Contracts.Add(new Contract
         {
             Id = S.NextId++, Kind = "clear", Target = band.Id, Faction = Captain.Contract, Deadline = (float)S.Hours + 15 * 24,
-            Reward = 200 + Rules.Strength(band) / 2 + (band.CharId >= 0 ? 400 : 0), Text = $"Destroy the {band.Name}.",
+            Reward = 200 + Rules.PerMan(Rules.Strength(band) / 2) + (band.CharId >= 0 ? 400 : 0), Text = $"Destroy the {band.Name}.",
         });
         return $"A bounty is posted on the {band.Name}.";
     }
@@ -289,12 +289,12 @@ public sealed partial class Campaign
         var king = S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Bandit && !p.Down && p.CharId >= 0 && CharacterById(p.CharId) is { Kind: "brigand" });
         if (king == null && Day >= 30)
         {
-            var big = S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down && p.HomeId < 0 && p.CharId < 0 && p.Men >= BrigandKingMen).OrderByDescending(p => p.Men).FirstOrDefault();
+            var big = S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down && p.HomeId < 0 && p.CharId < 0 && p.Men >= Scaled(BrigandKingMen)).OrderByDescending(p => p.Men).FirstOrDefault();
             if (big != null) Crown(big);
         }
         else if (king != null)
         {
-            if (king.Men < 150 && king.Companies.Count > 0) { var st = king.Companies[0].Stacks[0]; if (Rules.Room(king.Companies[0], st.Troop) > 0) st.Men++; else if (king.Companies.Count < 5) king.Companies.Add(NewCompany(st.Troop, "infantry", 6, 0)); }
+            if (king.Men < Scaled(150) && king.Companies.Count > 0) { var st = king.Companies[0].Stacks[0]; if (Rules.Room(king.Companies[0], st.Troop) > 0) st.Men += Math.Min(Rules.Room(king.Companies[0], st.Troop), Scaled(1)); else if (king.Companies.Count < 5) king.Companies.Add(NewCompany(st.Troop, "infantry", Scaled(6), 0)); }
             foreach (var v in S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.ThreatUntil < S.Hours && Vector2.Distance(v.Pos, king.Pos) < 15 * Map.Spread))
             {
                 v.ThreatUntil = (float)S.Hours + 7 * 24;
@@ -313,7 +313,7 @@ public sealed partial class Campaign
         band.CharId = ch.Id;
         band.Name = $"{ch.Name.Split(' ')[0]}'s Host";
         string troop = band.Companies.FirstOrDefault()?.Troop ?? "levies";
-        band.Companies.Add(NewCompany(troop, "infantry", 16, 0));
+        band.Companies.Add(NewCompany(troop, "infantry", Scaled(16), 0));
         Log($"{ch.Name} gathers the brigands of the land and calls himself their king.");
         Force("brigand_king", new PendingEvent { Party = band.Id, Lord = ch.Id });
     }

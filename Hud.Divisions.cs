@@ -30,8 +30,8 @@ sealed partial class Hud
         divCards.Clear();
         goals.Clear();
         var mine = B.DivisionsOf(0).ToList();
-        // Top left, under a label: the score bar is in the middle and the minimap on the right.
-        int w = U(200), h = U(34), x = U(10), y = U(26);
+        // Right, under the minimap: the battle log is top left and the score bar in the middle.
+        int w = U(200), h = U(34), x = W - w - U(10), y = minimap.Bottom + U(22);
         foreach (var d in mine)
         {
             divCards.Add((new Rectangle(x, y, w, h), d));
@@ -121,6 +121,23 @@ sealed partial class Hud
         TextC(n.Length > 18 ? n[..18] : n, c.X, c.Y + U(1), Gold, 1);
     }
 
+    /// A small pennant over every sergeant who leads a division (yours gold, the enemy's red); in field view only near you.
+    void SergeantPennants()
+    {
+        var vp = new Viewport(0, 0, W, H);
+        foreach (var d in B.Divisions)
+        {
+            if (d.Leader is not { Active: true } l) continue;
+            if (!Command && Vector2.DistanceSquared(l.Pos, B.Player.Pos) > 70 * 70) continue;
+            var v = vp.Project(new Vector3(l.Pos.X, B.Terrain.Height(l.Pos) + (l.Mounted ? 3.6f : 2.6f), l.Pos.Y), Proj, View, Matrix.Identity);
+            if (v.Z is <= 0 or >= 1) continue;
+            int x = (int)v.X, y = (int)v.Y, s = Command ? U(1) : Math.Clamp((int)(U(1) * 30 / MathF.Max(8, Vector2.Distance(l.Pos, B.Player.Pos))), 1, U(2));
+            var col = d.Team == 0 ? Gold : Foe;
+            Rect(new Rectangle(x, y - 12 * s, Math.Max(1, s), 12 * s), Color.Black * 0.7f); // staff
+            for (int i = 0; i < 5; i++) Rect(new Rectangle(x + s, y - 12 * s + i * s, (8 - i * 1) * s, s), col); // a tapering pennant
+        }
+    }
+
     /// In command view: a line from each of your divisions to where its goal points (dim when a new goal is on its way).
     void DivisionMarkers()
     {
@@ -131,6 +148,15 @@ sealed partial class Hud
             s = new Vector2(v.X, v.Y);
             return v.Z is > 0 and < 1;
         }
+        // Riders on the road: yours gold, the enemy's red (cut one down and his order comes late).
+        foreach (var c in B.Couriers)
+            if (Screen(c.Pos, out var cp))
+            {
+                var col = c.Div.Team == 0 ? Gold : Foe;
+                Rect(new Rectangle((int)cp.X - U(3), (int)cp.Y - U(3), U(6), U(6)), Color.Black * 0.7f);
+                Rect(new Rectangle((int)cp.X - U(2), (int)cp.Y - U(2), U(4), U(4)), col);
+                if (c.Div.Team == 0) Text("RIDER", cp.X + U(5), cp.Y - U(4), col, 1);
+            }
         foreach (var d in B.DivisionsOf(0))
         {
             if (d.Alive == 0) continue;

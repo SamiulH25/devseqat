@@ -69,6 +69,9 @@ public sealed partial class Campaign
     public static string CultureName(int faction) => Factions.CultureOf(faction);
 
     /// A new company with one stack (of `men` men with `xp` each in its pool), an origin, a banner and perhaps a sergeant.
+    /// A base count of men at the campaign's army scale (Balance.ArmyScale).
+    internal int Scaled(float men) => (int)MathF.Round(men * B.ArmyScale);
+
     public CompanyRecord NewCompany(string troop, string role, int men, float xp, Settlement? home = null)
     {
         var c = new CompanyRecord { Id = S.NextId++, Role = role, Name = Rules.CompanyName(rng, role), Banner = (int)rng.Pick(BannerCharges) };
@@ -232,7 +235,7 @@ public sealed partial class Campaign
         string fromName = s.Type.Name;
         int done = PromoteMen(Player, c, s, to, n, cost => { if (S.Gold < cost) return false; S.Gold -= cost; return true; });
         if (done > 0) Log($"{done} {fromName} of {c.Name} become {Troops.Get(to).Name}.");
-        Practise("Training", done * 0.2f);
+        Practise("Training", Rules.PerMan(done * 0.2f));
         return done > 0 ? null : "CANNOT PROMOTE";
     }
 

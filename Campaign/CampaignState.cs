@@ -439,6 +439,8 @@ public sealed class Balance
     public float XpParticipation = 20, XpVictory = 1.5f, XpPerKillTier = 12;
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
     public float CompanySlotsBase = 10, CompanySlotRenown = 0, MenBase = 40, MenRenownDivisor = 5;
+    /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
+    public float ArmyScale = 3;
     public int VillageRecruitsMax = 8, LordsPerFaction = 8, BanditsMax = 80;
     /// A bandit band appears this many times a day while below BanditsMax (0-1) — the roll for each attempt.
     public float BanditSpawnChance = 0.95f;

@@ -530,6 +530,9 @@ public static partial class SelfTest
         Check(c.AssignDivision(lead, -1) != null, "his own company cannot leave him");
         c.SetDivisionGoal(d, "FlankLeft");
         Check(c.CommandOf(d) == 3, $"a sergeant's command grows with his battles ({c.CommandOf(d)})");
+        float edge = c.TacticsEdge;
+        lead.OfficerBattles = 15;
+        Check(c.TacticsEdge > edge, "a skilled division leader helps when you auto-resolve");
         var back = CampaignState.Deserialize(c.S.Serialize());
         Check(back.Divisions.Count == 1 && back.Divisions[0].Goal == "FlankLeft" && back.Parties[0].Companies.Count(x => x.Division == d.Id) == 2,
             "the save keeps divisions and who is in them");
@@ -625,7 +628,7 @@ public static partial class SelfTest
         var plain = new CaptainState();
         Check(Rules.CaptainType(new CaptainState { Perks = { "Duellist" } }).Damage > Rules.CaptainType(plain).Damage, "Duellist sharpens your blows");
         Check(Rules.CaptainType(new CaptainState { Skills = { ["Arms"] = 80 } }).MaxHp > Rules.CaptainType(plain).MaxHp, "Arms toughens you");
-        Check(Rules.MenLimit(new CaptainState { Skills = { ["Leadership"] = 50 } }) == Rules.MenLimit(plain) + 10, "Leadership raises the men limit");
+        Check(Rules.MenLimit(new CaptainState { Skills = { ["Leadership"] = 50 } }) == Rules.MenLimit(plain) + (int)(10 * Balance.Get().ArmyScale), "Leadership raises the men limit");
         var merc = town.Mercenaries.FirstOrDefault() ?? b.Player.Companies[0];
         int before = b.MercenaryPrice(merc);
         b.Captain.Perks.Add("Haggler");

@@ -487,6 +487,29 @@ public static partial class SelfTest
     /// Divisions (docs/COMBAT_OVERHAUL.md 1.8): goals arrive late and a newer one cancels an older; a Hold goal keeps the
     /// division near its ground; Flank swings wide and hits a side; a fallen sergeant is replaced; direct orders wait
     /// for the delay too; and a battle with divisions and goals replays exactly.
+    /// Orders ride out as couriers (docs/COMBAT_OVERHAUL.md 1.4): a rider who meets the enemy on the road is cut down and
+    /// the order lands later; with couriers off the same order lands on time.
+    static void Couriers()
+    {
+        float Landed(bool couriers, bool blocked)
+        {
+            var b = Battle.Empty(31);
+            b.Options.Couriers = couriers;
+            var far = b.AddSquad(0, Troops.Get("shieldmen"), 12, new(60, -20), 6, Vector2.UnitY);
+            var d = b.AddDivision(0, "Sgt Far", new[] { far }, Temper.Steady, 3);
+            if (blocked) b.AddSquad(1, Troops.Get("levies"), 16, new(30, -50), 8, Vector2.UnitX); // across the road (you stand at 0,-80)
+            Run(b, 0.2f);
+            b.IssueGoal(d, new Goal(GoalKind.Take, new(60, -10)));
+            if (couriers) Check(b.Couriers.Count == 1, "a goal sends a rider");
+            for (int i = 0; i < 60 * 30 && d.Goal.Kind != GoalKind.Take; i++) b.Update(1 / 60f);
+            return d.Goal.Kind == GoalKind.Take ? b.Time : float.MaxValue;
+        }
+        float plain = Landed(false, false), clear = Landed(true, false), cut = Landed(true, true);
+        Console.WriteLine($"couriers: order lands at {plain:0.0}s plain, {clear:0.0}s by rider, {cut:0.0}s with the road blocked");
+        Check(MathF.Abs(plain - clear) < 0.1f, "a rider on a clear road arrives when the delay says");
+        Check(cut > clear + 1 && cut < clear + 30, "a rider cut down on the road makes the order late, and the next goes round");
+    }
+
     static void DivisionGoals()
     {
         // Delay and countermand.

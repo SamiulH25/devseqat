@@ -20,7 +20,7 @@ public partial class Campaign
         n = Math.Min(n, RecruitsForYou(s));
         if (n <= 0) return s.Recruits > 0 ? "THEY WILL NOT FOLLOW YOU: THEIR LORD THINKS ILL OF YOU" : "NO RECRUITS";
         string levy = RecruitTroopFor(s);
-        float each = Troops.Get(levy).Cost * RecruitPriceFactor(s);
+        float each = Rules.PerMan(Troops.Get(levy).Cost) * RecruitPriceFactor(s);
         int cost = (int)MathF.Ceiling(n * each);
         if (S.Gold < cost) return $"NEEDS {cost} CROWNS";
         if (n > RoomForMen) return "PARTY IS FULL (RENOWN RAISES THE LIMIT)";
@@ -55,7 +55,10 @@ public partial class Campaign
         return null;
     }
 
-    public int MercenaryPrice(CompanyRecord m) => (int)(m.Stacks.Sum(x => x.Men * x.Type.Cost) * B.MercMarkup * (Has("Haggler") ? 0.85f : 1));
+    /// The levy price for a band of ArmyScale men here (shown in the recruit tab).
+    public int LevyPrice(Settlement s) => (int)MathF.Ceiling(Troops.Get(RecruitTroopFor(s)).Cost * RecruitPriceFactor(s));
+
+    public int MercenaryPrice(CompanyRecord m) => (int)(m.Stacks.Sum(x => x.Men * Rules.PerMan(x.Type.Cost)) * B.MercMarkup * (Has("Haggler") ? 0.85f : 1));
 
     public string? Hire(Settlement s, CompanyRecord m)
     {
@@ -70,7 +73,7 @@ public partial class Campaign
         return null;
     }
 
-    public int HorsePrice => (int)(Troops.Mount("courser").Hp * B.HorseCostRate * (Has("Horsemaster") ? 0.7f : 1) * (Has("Haggler") ? 0.85f : 1)
+    public int HorsePrice => (int)(Rules.PerMan(Troops.Mount("courser").Hp * B.HorseCostRate) * (Has("Horsemaster") ? 0.7f : 1) * (Has("Haggler") ? 0.85f : 1)
         * (SettlementAt(Player.Pos) is Settlement st && Level(st, "stables") > 0 ? 0.7f : 1));
 
     public string? BuyHorses(Settlement s, int n)

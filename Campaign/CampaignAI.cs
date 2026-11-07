@@ -36,7 +36,7 @@ public partial class Campaign
         var n = Names.Get();
         // Bands grow as the campaign does, so brigandry stays a threat instead of becoming free loot for a growing company.
         int tier = Math.Clamp(1 + Day / (int)MathF.Max(1, B.BanditTierPerDays), 1, 5);
-        int men = B.BanditBandMin + rng.Next(Math.Max(1, B.BanditBandMax - B.BanditBandMin)) + Day / (int)MathF.Max(1, B.BanditGrowPerDays);
+        int men = Scaled(B.BanditBandMin + rng.Next(Math.Max(1, B.BanditBandMax - B.BanditBandMin)) + Day / (int)MathF.Max(1, B.BanditGrowPerDays));
         string foot = Armies.LineTroop("infantry", tier, rng.Next(3));
         var band = new Party
         {
@@ -46,7 +46,7 @@ public partial class Campaign
         band.Goal = band.Pos;
         band.Companies.Add(NewCompany(foot, "infantry", men, 0));
         if (rng.Chance(0.6f))
-            band.Companies.Add(NewCompany(Armies.LineTroop(rng.Chance(0.6f) ? "archers" : "horse", tier, rng.Next(3)), rng.Chance(0.6f) ? "archers" : "horse", rng.Next(5, 10) + Day / 20, 0));
+            band.Companies.Add(NewCompany(Armies.LineTroop(rng.Chance(0.6f) ? "archers" : "horse", tier, rng.Next(3)), rng.Chance(0.6f) ? "archers" : "horse", Scaled(rng.Next(5, 10) + Day / 20), 0));
         foreach (var c in band.Companies) c.Role = Rules.TroopRole(c.Troop) is "horse" or "archers" ? Rules.TroopRole(c.Troop) : c.Role;
         S.Parties.Add(band);
     }
@@ -84,8 +84,8 @@ public partial class Campaign
         var threat = hostiles.Where(q => Rules.Strength(q) > me * runAt && Vector2.Distance(q.Pos, p.Pos) < 25).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault();
         // Go home to refit when the company is thin, or to spend an upgrade it can already pay for. Refit buys what the
         // purse allows and the faction treasury covers the rest, so a lord who has lost men goes home even when it is poor.
-        bool needsRefit = p.Men < 45 || p.Companies.Count < 3
-            || p.Companies.Sum(c => c.Ready) >= 6 && p.Gold >= 150;
+        bool needsRefit = p.Men < Scaled(45) || p.Companies.Count < 3
+            || p.Companies.Sum(c => c.Ready) >= Scaled(6) && p.Gold >= 150;
         if (threat != null)
         {
             if (p.SiegeTarget >= 0) Log($"{p.Name} abandons the siege of {SettlementById(p.SiegeTarget).Name}.");
@@ -96,7 +96,7 @@ public partial class Campaign
         {
             p.Task = "siege"; p.ChaseId = -1; p.Moving = false; p.TaskUntil = (float)S.Hours + 4;
         }
-        else if (p.Order == "follow" && IsVassal(p) && p.Men >= 15 && Vector2.Distance(p.Pos, Player.Pos) > 6) // follows unless nearly broken
+        else if (p.Order == "follow" && IsVassal(p) && p.Men >= Scaled(15) && Vector2.Distance(p.Pos, Player.Pos) > 6) // follows unless nearly broken
         {
             p.Task = "follow"; p.ChaseId = -1; p.Goal = Player.Pos + new Vector2(-3, 3); p.Moving = true; p.TaskUntil = (float)S.Hours + 1;
         }
@@ -158,10 +158,10 @@ public partial class Campaign
         float share = MathF.Min(250 * Map.ProvinceScale, fs.Treasury * 0.5f / lordsOfFaction);
         float budget = Math.Clamp(share, 0, 250 * Map.ProvinceScale);
         string levy = RecruitTroop(p.Faction);
-        if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", 12, 0, home)); // the lord's household, raised again
+        if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", Scaled(12), 0, home)); // the lord's household, raised again
         foreach (var v in S.Settlements.Where(v => v.Province == home.Province))
         {
-            int affordable = (int)((p.Gold + budget) / 10);
+            int affordable = (int)((p.Gold + budget) / Rules.PerMan(10));
             int n = Math.Min(v.Recruits, Math.Max(0, affordable));
             if (n <= 0) continue;
             levy = RecruitTroop(v); // each village raises its own culture's men (4.2)
@@ -173,7 +173,7 @@ public partial class Campaign
             if (n <= 0) break;
             Enlist(into, levy, n, v);
             v.Recruits -= n;
-            int bill = n * 10;
+            int bill = (int)MathF.Ceiling(n * Rules.PerMan(10));
             int fromChest = Math.Min(bill, (int)budget);
             fs.Treasury -= fromChest;
             budget -= fromChest;
@@ -181,7 +181,7 @@ public partial class Campaign
         }
         // Promotions come from the lord's own purse; the chest only tops up a lord who came home beaten (thin), or a run of
         // refits for a few ready men would bleed the realm dry.
-        if (p.Men >= 45 && p.Companies.Count >= 3) budget = 0;
+        if (p.Men >= Scaled(45) && p.Companies.Count >= 3) budget = 0;
         PromoteAll(p, ref budget);
         if (p.Companies.Count > 0) p.Tier = Math.Clamp((int)MathF.Round((float)p.Companies.Average(c => c.Type.Tier)), 1, 7);
     }

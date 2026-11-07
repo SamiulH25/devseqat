@@ -48,7 +48,7 @@ partial class MapScreen
     {
         var levy = Troops.Get(C.RecruitTroopFor(s));
         int willing = C.RecruitsForYou(s);
-        ui.Text($"{willing} OF {s.Recruits} MEN WILL TAKE YOUR COIN HERE ({levy.Cost} CROWNS EACH)", body.X, body.Y, Style.Text);
+        ui.Text($"{willing} OF {s.Recruits} MEN WILL TAKE YOUR COIN HERE ({C.LevyPrice(s)} CROWNS PER {(int)Balance.Get().ArmyScale} MEN)", body.X, body.Y, Style.Text);
         if (C.HolderOf(s) is Character holder)
             ui.TextR($"{holder.Name.ToUpperInvariant()}: {OpinionWord(C.OpinionOfYou(holder))}", body.Right, body.Y + ui.U(4), OpinionColor(C.OpinionOfYou(holder)), 1);
         if (s.ThreatUntil > C.S.Hours) ui.Text("THE VILLAGE WAS THREATENED: NO RECRUITS FOR NOW", body.X, body.Y + ui.U(20), Style.Foe, 1);

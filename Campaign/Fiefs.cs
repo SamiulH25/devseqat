@@ -111,7 +111,7 @@ public sealed partial class Campaign
         if (s.Tax == 2) Add(0.3f, "HIGH TAXES"); else if (s.Tax == 0) Add(-0.2f, "LOW TAXES");
         if (s.Besieged) Add(0.5f, "SIEGE");
         if (S.Settlements.Any(v => v.Province == s.Province && v.Kind == SettlementKind.Village && v.ThreatUntil > S.Hours)) Add(0.25f, "RAIDS");
-        if (GarrisonMen(s) >= 30) Add(-0.2f, "GARRISON");
+        if (GarrisonMen(s) >= Scaled(30)) Add(-0.2f, "GARRISON");
         if (Level(s, "chapel") > 0) Add(-0.25f, "CHAPEL");
         if (s.Prosperity < 25) Add(0.2f, "POVERTY");
         if (s.Owner == Player.Id)
@@ -164,7 +164,7 @@ public sealed partial class Campaign
     void Revolt(Settlement s)
     {
         string root = Factions.Root(s.Culture);
-        int men = 14 + (int)(s.Unrest / 5) + Day / 12;
+        int men = Scaled(14 + (int)(s.Unrest / 5) + Day / 12);
         var p = new Party
         {
             Id = S.NextId++, Kind = PartyKind.Bandit, Name = $"Rebels of {s.Name}", HomeId = s.Id, Tier = 2,
@@ -268,7 +268,7 @@ public sealed partial class Campaign
             p.Companies.Add(led);
         }
         string troop = Armies.LineTroop("infantry", 2, f);
-        p.Companies.Add(NewCompany(troop, "infantry", 20, 0, fief));
+        p.Companies.Add(NewCompany(troop, "infantry", Scaled(20), 0, fief));
         S.Parties.Add(p);
         ch.Kind = "lord";
         ch.Faction = f;

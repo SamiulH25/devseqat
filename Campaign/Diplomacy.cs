@@ -122,7 +122,7 @@ public sealed partial class Campaign
             if (S.Hours - w.Since < 20 * 24 || LeaderWar(w)) continue;
             // You decide your own realm's peace (from the realm screen); the AI decides the rest.
             if (RulerOf(w.A) == Me || RulerOf(w.B) == Me) continue;
-            float strengthA = Strength(w.A) / 1500 - w.ExhA / 40, strengthB = Strength(w.B) / 1500 - w.ExhB / 40;
+            float strengthA = Rules.PerMan(Strength(w.A) / 1500) - w.ExhA / 40, strengthB = Rules.PerMan(Strength(w.B) / 1500) - w.ExhB / 40;
             int win = w.ScoreA / 1500 - w.ExhA / 40 >= w.ScoreB / 1500 - w.ExhB / 40 ? w.A : w.B, lose = win == w.A ? w.B : w.A;
             float le = ExhaustionOf(w, lose), we = ExhaustionOf(w, win);
             bool allied = S.Pacts.Any(p => p.Until > S.Hours && (p.A == lose || p.B == lose) && FactionsAtWar(p.A == lose ? p.B : p.A, win));

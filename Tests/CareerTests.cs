@@ -109,7 +109,7 @@ public static partial class SelfTest
         }
         c.Beat = null;
         Days(c, 1);
-        Check(c.S.Won && c.Beat is { Title: "THE WAR IS WON" }, "holding most of the land as king wins the campaign");
+        Check(c.S.Won && c.Beat is { Title: "THE WAR IS WON" }, $"holding most of the land as king wins the campaign (won {c.S.Won}, beat {c.Beat?.Title}, rank {c.Rank}, share {c.RealmShare(mine):0.00}, over {c.S.GameOver})");
         // Losing: a king whose realm holds no seat has lost.
         foreach (var s in c.S.Settlements.Where(s => s.Faction == mine)) s.Faction = 0;
         Days(c, 1);
@@ -327,8 +327,8 @@ public static partial class SelfTest
         var b = Campaign.New(8010);
         b.S.Hours = 31 * 24;
         var band = b.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
-        band.Companies.Add(b.NewCompany("levies", "infantry", 24, 0));
-        band.Companies.Add(b.NewCompany("levies", "spears", 12, 0));
+        band.Companies.Add(b.NewCompany("levies", "infantry", b.Scaled(24), 0));
+        band.Companies.Add(b.NewCompany("levies", "spears", b.Scaled(12), 0));
         Days(b, 1);
         var king = b.CharacterOf(band);
         Check(king is { Kind: "brigand" } && b.S.Event is { Id: "brigand_king" }, "the largest band crowns a brigand king");

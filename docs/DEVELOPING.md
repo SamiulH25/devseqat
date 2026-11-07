@@ -76,7 +76,7 @@ One project, `Ironfield.csproj`, namespace `Ironfield`, file-scoped namespaces. 
 files by area. All `*.cs` files in the folder tree are compiled (SDK globbing), so a new file needs no project edit.
 
 ```
-Program.cs              command-line switches (--selftest, --balance, --pacing, --replay, --write-controls), else start the game
+Program.cs              command-line switches (--selftest, --balance, --pacing, --replay, --bench, --write-controls), else start the game
 ScreenHost.cs           the MonoGame Game: owns art, audio, settings, controls; switches Title / Map / Battle
 
 ── Battle simulation (headless) ── class Battle, partial ──────────────────────────────────────────────
@@ -88,11 +88,13 @@ BattleMorale.cs         UpdateMorale (wavering, routing, rallying)
 BattlePlayer.cs         UpdatePlayer (your own unit), ToggleMount, Rally
 BattleCaptain.cs        captain moves (bash, weapon swap, calling a horse), fatigue, supply wagons, AI retreat
 BattleSiege.cs          assaults: defenders on the wall, ladders and gate routing (Via), battering
-BattleGrid.cs           spatial grid for neighbour queries (Near, Separate)
+BattleGrid.cs           spatial grid for neighbour queries (Near, Separate, NearestFar, NearestRouter)
+BattleDivision.cs       divisions: Goal, Temper, IssueGoal and OrderDelay, Direct, the sergeant's Brain, AiCommand
+BattleCourier.cs        riders carrying orders to divisions; cut down by enemies on the road
 BattleTypes.cs          BattleOptions, Weather, BattleResult, CompanyResult, StackResult
 Squad.cs                a company on the field: Order, Formation, slots
 Units.cs                UnitType (a troop), Unit (one soldier), Mount, Look, enums
-Troops.cs               loads Data/troops.json; Company / ArmySpec records; Armies (preset armies by level)
+Troops.cs               loads Data/troops.json; Company / ArmySpec / DivisionSpec records; Armies (presets, Large, Divide)
 Terrain.cs              heightmap, roads, rivers, foliage placement, siege wall geometry
 Replay.cs               record and replay battles exactly
 
@@ -107,7 +109,8 @@ CampaignSiege.cs        garrisons, besieging, assaults, capture
 CampaignProgression.cs  "what to do next" hints
 Career.cs               ranks, fealty, the realm council, founding a realm, winning and losing
 Characters.cs           lords, companions, wanderers, opinion and memories
-Companies.cs            troop stacks, promotion, honours, ledgers
+Companies.cs            troop stacks, promotion, honours, ledgers; Scaled(n) (army scale)
+Divisions.cs            your divisions: make, assign, goals, leader temper and command, WithDivisions (into battle)
 Diplomacy.cs            war exhaustion, peace terms, alliances, tribute, hosts, summons
 Events.cs               events from Data/events.json, lord quests, brigand kings, pretenders
 Fiefs.cs                prosperity, unrest, taxes, buildings, revolts, vassals, defection
@@ -121,7 +124,7 @@ TitleScreen.cs, SettingsScreen.cs, Tips.cs
 MapScreen.cs            campaign map: 3D world, parties, camera, input, panel switch
 MapScreen.Hud.cs        always-on map interface, tooltips, Modal(), Note()
 MapScreen.Settlement.cs settlement panel, one method per tab (RecruitTab, MarketTab, ... FiefTab)
-MapScreen.Party.cs      party, characters, skills, upgrade panels
+MapScreen.Party.cs      party, characters, skills, upgrade and divisions (V) panels
 MapScreen.Realm.cs      realm panel (R): RankLadder, RealmColumn, KingDiplomacy; Vassals
 MapScreen.Dialogs.cs    encounter, siege, results, event, beat, game over, menu panels
 BattleScreen.cs         battle screen: setup, per-frame update, sounds, HUD sync
@@ -130,6 +133,7 @@ BattleScreen.Orders.cs  squad orders and drawn lines
 BattleScreen.Draw.cs    render passes, sprites, particles, rain, order lines
 BattleScreen.Shots.cs   staged screenshots (IRONFIELD_SHOTS)
 Hud.cs                  battle 2D interface: layout, drawing and hit-testing
+Hud.Divisions.cs        division cards, goal buttons, goal wheel, goal lines, riders, sergeant pennants
 Ui.cs                   immediate-mode panel kit used by the campaign screens
 Controls.cs             rebindable actions (Act enum), defaults, controls.json
 
@@ -143,7 +147,7 @@ SelfTest.cs             test runner (Run, RunOne), shared helpers, Check
 Tests/BattleTests.cs    battle mechanics, troops, sprites, full battles, replays
 Tests/CampaignTests.cs  map, saves, economy, sieges, war, stacks, cultures, characters, skills, balance data
 Tests/CareerTests.cs    pilot, ranks, fiefs, diplomacy, events
-BalanceReport.cs        --balance and --pacing reports; GpuReport.cs: --gpu-report
+BalanceReport.cs        --balance and --pacing reports; GpuReport.cs: --gpu-report; Bench.cs: --bench
 tools/check.sh          the pre-commit check; tools/codemap.sh regenerates docs/CODEMAP.md
 Data/*.json             troops, factions, campaign balance, events, names
 ```
@@ -179,10 +183,12 @@ Tests run it at a fixed `1/60` s. Each step, with the file it lives in:
 
 | Step | Method | File |
 |---|---|---|
+| delayed direct orders to division companies that are due | `ApplyDirects` | `BattleDivision.cs` |
 | record the frame for replays | `RecordFrame` | `Replay.cs` |
 | rebuild the neighbour grid | `BuildGrid` | `BattleGrid.cs` |
-| team centroids | `UpdateCentroids` | `Battle.cs` |
+| team centroids and squad bounding circles | `UpdateCentroids` | `Battle.cs` |
 | AI generals, every 0.5 s (team 1 always; team 0 when `AutoPlayer` or it has AI squads) | `General` | `BattleAI.cs` |
+| couriers, goals that arrive, the AI's goals, each division's brain | `UpdateDivisions` | `BattleDivision.cs`, `BattleCourier.cs` |
 | siege gate battering | `Batter` | `BattleSiege.cs` |
 | reinforcements, every 1 s | `Reinforce` | `Battle.cs` |
 | called horse, supply wagons | `UpdateCalledHorse`, `Resupply` | `BattleCaptain.cs` |
@@ -193,6 +199,11 @@ Tests run it at a fixed `1/60` s. Each step, with the file it lives in:
 | arrows in flight | `UpdateArrows` | `BattleCombat.cs` |
 | morale | `UpdateMorale` | `BattleMorale.cs` |
 | has a side lost? | `CheckEnd` (sets `Winner`) | `Battle.cs` |
+
+**Staggered thinking (scale):** `ThinkNow(u)` lets a man within 6 m of an enemy, mid-action or routing think every tick,
+one within 25 m (and every rider) every 2nd tick, and the rest every 4th, offset by `u.Index` so the work spreads evenly.
+Morale runs every 2nd tick with `dt * 2`. Both are keyed on the tick counter, so replays stay exact. `--bench N` prints
+ms per tick for each stage (through the `Probe` callback; the timing lives in `Bench.cs` because the sim may not read a clock).
 
 Units do not move themselves in `Think`: they set `u.Wish` (desired velocity). `Move` turns wishes into motion with
 separation, terrain and walls. Keep that split when adding behaviour.
@@ -254,7 +265,31 @@ once 26 m clear of the enemy (a man who breaks twice keeps running). Constants `
 the player giving up: a loss, your men count as fled. `Result()` builds the `BattleResult`; companies still in reserve
 come back as `Deployed: false` with no losses.
 
-### 4.9 Determinism and replays
+### 4.9 Divisions (`BattleDivision.cs`, `BattleCourier.cs`)
+
+A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a `Temper` (Bold, Steady, Cautious), a
+`Skill` (1-10) and a `Goal` (`GoalKind` + point / target squad / flank side). Division squads are left out of
+`Commanded` (your orders) and of the AI general's `Led()`; the division's `Brain` gives their orders instead, every
+0.5-1 s by skill. Goals: Hold and Take (stand at a point, engage what comes within reach, leash back by temper), Attack
+(form toward the target, then engage), Flank (an axis fixed when the goal starts; swing wide, come alongside, hit), Screen
+(stand in front of a friend), Guard (stay by the general), Reserve, Harass (ranged), Pursue, FallBack.
+
+- **Orders arrive late:** `IssueGoal(d, goal)` sets `d.Pending` and `d.PendingAt = Time + OrderDelay(d)`; `UpdateDivisions`
+  swaps it in when due. A newer goal replaces a pending one. `Direct(squad, act)` delays a plain order to one company the
+  same way; when it lands the squad gets `Override = true` and its sergeant leaves it alone until the next goal.
+- **Couriers:** each goal (and each batch of direct orders) sends a `Courier` that rides the line from the general so that it
+  arrives at `PendingAt`. An enemy within 2.5 m cuts it down (after a 1.5 s grace): the order's time moves back by a fresh
+  delay, and the next rider bends round the danger. `BattleOptions.Couriers = false` keeps plain delays.
+- **Leaders:** `LeaderCheck` notices a dead sergeant (morale -8 for his men, orders x2 slower) and promotes the best man
+  left after 10 s. His aura is in `UpdateMorale`.
+- **Where divisions come from:** `ArmySpec.Divisions` (a list of `DivisionSpec`) plus `Company.Division`, read by
+  `BuildDivisions` in the constructor (not in sieges). The campaign fills them from `CampaignState.Divisions`
+  (`Campaign.WithDivisions`); `Armies.Divide` splits any big army into a horse wing and two foot battles (enemy lords and
+  quick battles). The AI's goals come from `AiCommand(team)`.
+- **Replays:** goals you give are recorded (`Frame.Goals`) and re-issued on playback; the AI's are recomputed. Direct orders
+  are recorded when they land, as ordinary order changes.
+
+### 4.10 Determinism and replays
 
 `Replay.cs` records the seed, armies, options, start positions and, per frame, `dt`, the player's input and any orders
 that changed. `Replay.Play()` reruns it; `--replay` checks the outcome matches. Anything in the sim that is not driven by
@@ -362,6 +397,15 @@ The campaign was built in steps F1-F9 (see `docs/CAMPAIGN_OVERHAUL.md`); each la
 Tunable numbers live in `Balance` (`CampaignState.cs`), read with `Balance.Get()` (in `Campaign` there is the shortcut `B`).
 `Data/campaign.json` overrides them at runtime. Keep both identical (rule 4). Career thresholds (renown for ranks, council
 days) are `const` in `Career.cs`, not in `Balance`.
+
+**Army scale.** `Balance.ArmyScale` (3) multiplies every count of men in the campaign: company places (`Rules.Cap`), your men
+limit, bands, garrisons, recruits, horses for sale. Base numbers in the code and in `campaign.json` stay at the old size; when you
+write a new one:
+- a count of men: `Scaled(n)` (in `Campaign`), e.g. `NewCompany(troop, "infantry", Scaled(20), 0)`;
+- a price, reward or skill gain paid **per man** (wages, levies, loot, ransom, promotion, food), or worked out from
+  `Rules.Strength` (which grows with men): wrap it in `Rules.PerMan(x)`, so a 3x army costs and earns what the old one did.
+With `ArmyScale` set to 1 the campaign plays exactly as it did before the overhaul; compare `CampaignRun`'s printed pressure
+line at 1 and 3 to find a value that was missed.
 
 ---
 
@@ -538,6 +582,10 @@ Both are real tests (`SpearsStopHorse` in `Tests/BattleTests.cs`, `HorsesCostGol
 
 Put battle tests in `Tests/BattleTests.cs`, campaign tests in `Tests/CampaignTests.cs`, career/realm/event tests in
 `Tests/CareerTests.cs`, and add the call to `SelfTest.Run()`. Use fixed seeds so results are repeatable.
+
+Battle-scale tests: `ScaleBattle` (600 a side, divided, deploys without overlaps, under 12 ms a tick, replays exactly),
+`DivisionGoals` (delay, countermand, direct orders, leash, flank, a fallen sergeant, replay) and `Couriers`; campaign:
+`CampaignDivisions` (make, assign, save, into battle, old saves).
 
 Other tools: `--balance N` writes CSVs of N headless campaigns and battles to `balance/` (gitignored); `--pacing N` runs the
 stand-in captain and reports career stage days against targets (slow: ~10 min for 8).

@@ -16,6 +16,7 @@ dotnet run -- --selftest SiegeBattle   # one test by name
 dotnet run -- --balance 4  # telemetry: N headless campaigns (and a stand-in captain's career pacing) and battles -> balance/*.csv
 dotnet run -- --replay     # play back your last battle (replays/last-battle.json) and check it ends the same way
 dotnet run -- --gpu-report # draw a battle at each quality; writes gpu-report.txt (driver, shaders, fps)
+dotnet run -c Release -- --bench 1500  # headless N-a-side battle: ms per tick for each stage of the simulation
 ```
 
 You need .NET SDK 10 (`net10.0`). On Ubuntu 24.04 `apt-get install dotnet-sdk-10.0` works (no Microsoft feed needed).
@@ -28,7 +29,7 @@ The game opens on a **title screen**: New Campaign, Continue (latest save), Quic
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
 To render a few staged camera shots as PNGs and quit (works headless with `xvfb-run -a dotnet run`), set `IRONFIELD_SHOTS=/some/dir`
 (`IRONFIELD_CAMPAIGN_SHOTS` does the same for the campaign screens). `IRONFIELD_WEATHER=hour,rain,fog` and `IRONFIELD_GROUND=river` set a quick battle's
-weather and ground.
+weather and ground; `IRONFIELD_MEN=n` sets its men a side (default: half the Battle size setting).
 `dotnet run -- --write-controls` writes `controls.json` with the default bindings.
 Graphics quality: **F2** cycles High (shaders, sun shadows, post) / Medium (no shadows) / Low (fixed-function); `IRONFIELD_QUALITY=Low` picks one at start.
 Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, no Wine): see "Shaders" below.
@@ -40,6 +41,15 @@ that will not last. Brigands roam between them all.
 - **Map:** click to march, click a town or village to enter it, and click a party to chase it. P opens the party screen, Space pauses,
   1-3 set the speed (x1, x3, x8), F follows you, F5 saves, F9 loads, and Esc opens the menu. The camera works as in command view (WASD, Q/E, wheel,
   middle-drag), and the overview (top right) jumps the camera. Hover anything for details.
+- **Big armies.** Campaign armies are three times the old size (`ArmyScale` in `Data/campaign.json`): you start with about 120 men
+  and can lead several hundred late on; lords field 100-200, and companies hold up to 72 men. Prices per man are a third of
+  the troop price, so the economy works out as before. **Battle size** (Settings, GAME tab: 400 / 800 / 1,500 / 3,000) is how many
+  men stand on the field at once; the rest wait as reinforcements. The field grows with the armies.
+- **Divisions (V, or DIVISIONS on the party screen):** put companies under a companion or a company's sergeant. A division fights
+  by a **goal** (hold, attack, flank left or right, reserve, screen, harass, guard) rather than your orders, in the leader's temper
+  (bold, steady, cautious) and with his command skill, which grows with the battles he leads. Companies in no division are your
+  retinue and obey you at once. At most 6 divisions; a division whose leader falls or leaves breaks up. Skilled leaders also help
+  a little when you auto-resolve. Big enemy armies split into divisions too (a horse wing and two foot battles).
 - **Companies persist.** A company is a banner of one role (foot, spears, bows or horse) holding **stacks** of troops, each with its own
   XP pool. Men are **promoted one at a time** along `troops.json` in a town's training yard: click a stack in the party screen and promote
   1, 5 or every ready man into any branch. A man promoted out of the company's role joins a company of his new role, or founds one.
@@ -132,6 +142,15 @@ Keys are MonoGame `Keys` names (`W`, `LeftShift`, `F1`...) or `LMB`/`RMB`/`MMB`/
 **Orders (both views):** 1-9 toggle a squad, 0 or ~ selects all (with nothing selected, orders go to every squad).
 C charge, F follow me, G form a line on me, H hold position, T advance 15 m, B fall back 20 m, V loose/tight spacing,
 **J formation** (line, shield wall, square, wedge, loose), X archers fire at will / hold fire. Allied lords' companies follow their own AI general.
+
+**Divisions (both views):** division cards sit top left; click one (or press **Y** to cycle) to give it goals. In command view the
+order buttons become goal buttons, and RMB on the ground means *take this ground*, on an enemy *attack it*, on a friend *screen it*.
+In field view the order wheel becomes a goal wheel. Goals do not arrive at once: a **rider** carries each one to the sergeant
+(about 1.5 s plus 1 s per 14 m, longer if he is fighting, shorter with his skill and the Bannerman perk), and a newer goal overtakes
+one still on the road. Riders show as gold dots in command view; an enemy who reaches the road cuts a rider down and the next one
+rides out the long way round (cut down the enemy's red riders and his divisions wait). You can still select a division's companies
+and order them directly: the order rides out the same way, and they then follow it until the division gets a new goal. If a
+sergeant falls, his men keep their last goal, orders take twice as long, and the best man left takes charge after 10 s.
 
 **Captain combat:** a parry needs the guard raised just as the blow comes (within 0.35 s); attacking into a blow from the mirrored side
 **chambers** it. **Ctrl** shield bash (a kick with two hands), **N** swaps to a two-handed greatsword on foot, **E** with no horse in reach
@@ -235,6 +254,17 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 - Field view: directional crosshair chevrons, damage text (speed bonus, flank, rear, high ground, parry), context prompts.
 - Command view: squad **banners** with morale bars, order buttons, box select, formation preview, attack lines.
 - Overlays: order wheel, F1 controls, Esc menu, and a result screen with both armies' losses.
+
+## Design: divisions and scale
+
+- **Why divisions:** at 1,500 men you cannot steer forty companies one by one. Divisions turn the general's job into picking goals
+  and timing them, and the order delay means you must plan ahead: a flank ordered late arrives late.
+- **Sergeants:** each division has a leader on the field (a gold pennant marks him); his aura steadies nearby men (+1.5 morale a
+  second, +4 to the routing). Killing the enemy's sergeants is a real aim: their divisions freeze on their last goal.
+- **The AI general** keeps his centre under his own hand and sends his divisions in when the lines close, the fight starts, or
+  they have waited long enough for their temper; a broken wing that is not bold falls back.
+- **Scale:** men near the enemy think every tick, others every 2nd or 4th tick, so 3,000 men cost about 3.6 ms a tick
+  (`--bench`). Far men are drawn with fewer parts, and the roar of a big melee rises with the men in contact.
 
 ## Design: Total War morale and flanks
 

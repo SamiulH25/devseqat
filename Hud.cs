@@ -79,11 +79,11 @@ sealed partial class Hud
         int cx0 = Math.Max(U(296), (W - total) / 2);
         for (int i = 0; i < shown; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), H - ch - U(10), cw, ch), mine[i]));
         hiddenCards = mine.Count - shown;
-        LayoutDivisions();
 
         player = new Rectangle(U(10), H - U(104), U(280), U(94));
         int ms = U(150);
         minimap = new Rectangle(W - ms - U(10), U(10), ms, ms);
+        LayoutDivisions();
 
         if (Command && Div != null) LayoutGoals();
         else if (Command)
@@ -168,15 +168,17 @@ sealed partial class Hud
     public void Draw()
     {
         sb.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.AlphaBlend);
+        SergeantPennants();
         if (Command) Banners();
         Balance();
         Feed();
         MinimapPanel();
         PlayerPanel();
+        if (Command) DivisionMarkers(); // under the cards and panels
         Cards();
         DivisionCards();
         if (Command && Div != null) GoalPanel();
-        if (Command) { DivisionMarkers(); CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) SquadTooltip(); } else Crosshair();
+        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) SquadTooltip(); } else Crosshair();
         if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
         Hints();
         if (Box is Rectangle box) { Rect(box, Gold * 0.12f); Frame(box, Gold, 1); }

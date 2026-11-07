@@ -69,14 +69,14 @@ public sealed partial class Campaign
         var player = new Party { Id = s.NextId++, Kind = PartyKind.Player, Name = "Your company", Faction = 0, Pos = capital.Pos + new Vector2(2, 0), Tier = 2 };
         player.Goal = player.Pos;
         s.Parties.Add(player);
-        player.Companies.Add(c.NewCompany("levies", "infantry", 24, 0, capital));
-        player.Companies.Add(c.NewCompany("levies", "spears", 15, 0, capital));
+        player.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(24), 0, capital));
+        player.Companies.Add(c.NewCompany("levies", "spears", c.Scaled(15), 0, capital));
         c.MakeCaptainCharacter(capital.Culture);
         c.SeedBuildings();
         foreach (var v in s.Settlements)
         {
-            v.Recruits = v.Kind == SettlementKind.Village ? 4 + c.rng.Next(5) : 0;
-            v.Horses = v.Kind == SettlementKind.Town ? 10 : 0;
+            v.Recruits = v.Kind == SettlementKind.Village ? c.Scaled(4 + c.rng.Next(5)) : 0;
+            v.Horses = v.Kind == SettlementKind.Town ? c.Scaled(10) : 0;
             if (v.Kind == SettlementKind.Town) c.RefreshMercenaries(v);
             c.RaiseGarrison(v);
         }
@@ -88,7 +88,7 @@ public sealed partial class Campaign
         c.EnsureRulers();
         // The guided first fight: a weak band close by, coming for you.
         var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
-        first.Companies.Add(c.NewCompany("levies", "infantry", 9, 0));
+        first.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(9), 0));
         s.Parties.Add(first);
         c.Log($"You sign on with the {c.FactionNames[0]} as a free captain. Their steward pays 85% of your upkeep each week.");
         c.Log("Levies upgrade after a battle or two: visit a town's training yard.");
@@ -258,7 +258,7 @@ public sealed partial class Campaign
                 if (p.Kind == PartyKind.Lord && S.Hours >= p.DownUntil)
                 {
                     p.Down = false;
-                    if (p.Men < 10) p.Companies.Add(NewCompany(RecruitTroop(p.Faction), "infantry", 20, 0, SettlementById(p.HomeId)));
+                    if (p.Men < Scaled(10)) p.Companies.Add(NewCompany(RecruitTroop(p.Faction), "infantry", Scaled(20), 0, SettlementById(p.HomeId)));
                     p.Task = "refit";
                 }
                 continue;
@@ -277,7 +277,7 @@ public sealed partial class Campaign
         {
             int more = (v.Owner == Player.Id && Has("JustRuler") ? 2 : 1) * (v.Prosperity >= 70 ? 2 : 1);
             if (v.Prosperity < 20 && rng.Chance(0.5f)) continue; // a poor village raises men slowly
-            v.Recruits = v.Kind == SettlementKind.Village ? Math.Min(B.VillageRecruitsMax, v.Recruits + more) : Math.Min(12, v.Recruits + 2 * more); // towns and castles raise levies too
+            v.Recruits = v.Kind == SettlementKind.Village ? Math.Min(Scaled(B.VillageRecruitsMax), v.Recruits + Scaled(more)) : Math.Min(Scaled(12), v.Recruits + Scaled(2 * more)); // towns and castles raise levies too
         }
         foreach (var p in S.Parties.Where(p => !p.Down))
         {
@@ -290,7 +290,7 @@ public sealed partial class Campaign
                     {
                         float surgeon = p == Player ? (HasCompanion("Surgeon") ? 1.3f : 1) * (!town && Has("FieldHospital") ? 1.5f : 1) : 1;
                         int heal = Math.Min(st.Wounded, Math.Max(1, (int)MathF.Round(st.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1) * surgeon)));
-                        if (p == Player) Practise("Medicine", heal * 0.1f);
+                        if (p == Player) Practise("Medicine", Rules.PerMan(heal * 0.1f));
                         st.Wounded -= heal;
                         st.Men += heal;
                     }
@@ -310,7 +310,7 @@ public sealed partial class Campaign
         {
             var refuge = S.Settlements.Where(t => t.Kind == SettlementKind.Town && !Refuses(t)).OrderBy(t => Vector2.Distance(t.Pos, Player.Pos)).FirstOrDefault();
             if (refuge != null) { Player.Pos = refuge.Pos + new Vector2(5, 0); Player.Moving = false; }
-            Player.Companies.Add(NewCompany(RecruitTroop(Math.Max(0, Captain.Contract)), "infantry", 10, 0));
+            Player.Companies.Add(NewCompany(RecruitTroop(Math.Max(0, Captain.Contract)), "infantry", Scaled(10), 0));
             Log($"Your company is gone. Ten loyal men gather to your banner{(refuge != null ? " at " + refuge.Name : "")}.");
         }
         FactionAI();
@@ -381,7 +381,7 @@ public sealed partial class Campaign
         foreach (var t in S.Settlements.Where(t => t.Kind == SettlementKind.Town))
         {
             RefreshMercenaries(t);
-            t.Horses = Math.Min(Level(t, "stables") > 0 ? 35 : 20, t.Horses + (Level(t, "stables") > 0 ? 10 : 5));
+            t.Horses = Math.Min(Scaled(Level(t, "stables") > 0 ? 35 : 20), t.Horses + Scaled(Level(t, "stables") > 0 ? 10 : 5));
         }
         GarrisonsWeekly();
         PrisonersWeekly();

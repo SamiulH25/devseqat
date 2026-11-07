@@ -28,6 +28,8 @@ public sealed class BattleOptions
     public Weather Weather = Weather.Clear;
     /// The Horns perk: orders reach your sergeants 30% sooner.
     public bool Horns;
+    /// Orders to divisions ride out as couriers, who can be cut down on the way (a new one then sets out). Off: plain delays.
+    public bool Couriers = true;
 }
 
 /// When and in what weather a battle is fought (roadmap C4). The campaign passes its hour and season.

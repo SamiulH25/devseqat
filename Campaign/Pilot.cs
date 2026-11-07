@@ -86,7 +86,7 @@ public sealed class Pilot
         // Recruit while there is room and a reserve of gold for a few weeks' upkeep.
         float reserve = Reserve;
         int room = Rules.MenLimit(c.Captain) - Me.Men - Me.Wounded;
-        float levy = MathF.Max(1, Troops.Get(c.RecruitTroopFor(s)).Cost * c.RecruitPriceFactor(s));
+        float levy = MathF.Max(0.1f, Rules.PerMan(Troops.Get(c.RecruitTroopFor(s)).Cost) * c.RecruitPriceFactor(s));
         if (room > 0 && s.Recruits > 0 && c.S.Gold > reserve) c.RecruitLevies(s, Math.Min(room, (int)((c.S.Gold - reserve) / levy)));
         if (s.Kind == SettlementKind.Town)
         {
@@ -168,7 +168,7 @@ public sealed class Pilot
         float reserve = Reserve;
         if (room >= 6 && c.S.Gold > reserve + 30)
         {
-            var v = c.S.Settlements.Where(s => s.Recruits >= 3 && !c.Refuses(s) && Fresh(s))
+            var v = c.S.Settlements.Where(s => s.Recruits >= 3 * B.ArmyScale && !c.Refuses(s) && Fresh(s))
                 .OrderBy(s => Vector2.Distance(s.Pos, Me.Pos)).FirstOrDefault();
             if (v != null && Vector2.Distance(v.Pos, Me.Pos) < 150) { c.GoTo(v); return; }
         }
@@ -196,7 +196,7 @@ public sealed class Pilot
             else c.LiftSiege();
             return true;
         }
-        if (c.Rank < Rank.SwornSword || Me.Men < 40 || Me.Wounded > Me.Men / 4 || Me.Food < 6) return false;
+        if (c.Rank < Rank.SwornSword || Me.Men < 40 * B.ArmyScale || Me.Wounded > Me.Men / 4 || Me.Food < 6) return false;
         var target = c.S.Settlements.Where(s => s.Kind != SettlementKind.Village && c.CanBesiege(s, out _) && Vector2.Distance(s.Pos, Me.Pos) < 140
                 && mine > Rules.Strength(c.GarrisonParty(s)) * 2.2f
                 && !c.S.Parties.Any(p => !p.Down && p.Kind == PartyKind.Lord && c.Hostile(Me, p) && Rules.Strength(p) > mine * 0.6f && Vector2.Distance(p.Pos, s.Pos) < 50))

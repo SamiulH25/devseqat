@@ -34,6 +34,7 @@ dotnet run -- --balance 4                                # N headless campaigns+
 dotnet run -c Release -- --pacing 8                      # stand-in captain only: career stage days vs targets (~10 min)
 dotnet run -- --replay [file]                            # replay replays/last-battle.json, check same outcome
 dotnet run -- --write-controls                           # write default controls.json
+dotnet run -c Release -- --bench 1500                    # headless 1500-a-side battle: ms per tick by stage (3000 men ~3.6 ms)
 ```
 
 Rendering without a display (works in the cloud container, software GL via Mesa llvmpipe):
@@ -44,7 +45,7 @@ Saves ~20 staged battle PNGs (field-view.png, command-overview.png, gallery-*.pn
 does the same for campaign screens. ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
 
 Other env vars: `IRONFIELD_SAVES` (save dir; settings go to its parent), `IRONFIELD_QUALITY=High|Medium|Low`,
-`IRONFIELD_LEVELS=4,2` (quick-battle army levels), `IRONFIELD_WEATHER=hour,rain,fog`, `IRONFIELD_GROUND=river`,
+`IRONFIELD_LEVELS=4,2` (quick-battle army levels), `IRONFIELD_MEN=750` (quick-battle men a side; default half the Battle size setting), `IRONFIELD_WEATHER=hour,rain,fog`, `IRONFIELD_GROUND=river`,
 `IRONFIELD_DUMP_ATLAS=/x.png`, `IRONFIELD_GPU_REPORT=1` (same as `--gpu-report`).
 Default save/settings location: `$XDG_CONFIG_HOME|~/.config/Ironfield/` (ApplicationData). Set `IRONFIELD_SAVES` when running so you do not touch real saves.
 
@@ -64,7 +65,8 @@ ScreenHost  MonoGame Game. Mode {Title, Map, Battle}; owns Art, Audio, Settings,
   BattleScreen (battle UI, camera, render) ◄┘
 
 HEADLESS (no MonoGame graphics; must stay that way so --selftest runs):
-  Battle (partial: Battle.cs, BattleAI, BattleCombat, BattleMove, BattleMorale, BattlePlayer, BattleSiege, BattleCaptain, BattleGrid, Replay)
+  Battle (partial: Battle.cs, BattleAI, BattleCombat, BattleMove, BattleMorale, BattlePlayer, BattleSiege, BattleCaptain, BattleGrid,
+          BattleDivision, BattleCourier, Replay)
      uses Squad, Unit/UnitType/Mount/Look (Units.cs), Troops (Data/troops.json), Terrain, BattleOptions/Weather
   Campaign (partial: Campaign/Campaign.cs, CampaignBattle, CampaignActions, CampaignAI, CampaignWar, CampaignSiege, Career, Characters, ...)
      state = CampaignState (all save data, plain fields -> JSON), Rules (static company math), WorldMap, Rng, Balance, Names
@@ -81,13 +83,24 @@ Auto-resolve skips the battle: `Campaign.AutoResolveEncounter` -> `Rules.AutoRes
 `ArmySpec` = list of `Company(troop id, count, role, id, ...)`; `CompanyResult.Id` maps back to `CompanyRecord.Id`.
 
 ### Battle tick (`Battle.Update(dt)`, fixed 1/60 s in tests)
-RecordFrame -> BuildGrid -> centroids -> `General(team)` every 0.5 s (enemy AI, and own side if AutoPlayer/AI squads) ->
+ApplyDirects -> RecordFrame -> BuildGrid -> centroids -> `General(team)` every 0.5 s (enemy AI, and own side if AutoPlayer/AI squads) ->
+`UpdateDivisions` (couriers, arrived goals, `AiCommand`, each division's `Brain`) ->
 Batter (siege gate) -> Reinforce (1 s) -> called horse, Resupply -> `UpdateSquad` each -> per unit: `UpdatePlayer` or `Think`
 (`ThinkCav` for cavalry), `TickAction` (windup/strike/recover), `Tire` -> `Move` (steering, separation, terrain, wall) ->
 `Braces`, `Lances` -> `UpdateArrows` -> `UpdateMorale` -> `CheckEnd` (sets `Winner`).
 Files: tick/setup/result in `Battle.cs`; `Think`/`ThinkCav`/`General` in `BattleAI.cs`; `UpdatePlayer` in `BattlePlayer.cs`;
 `TickAction`/`Strike`/`Hit`/`Kill`/arrows/`Braces`/`Lances` in `BattleCombat.cs`; `Move` in `BattleMove.cs`; `UpdateMorale` in `BattleMorale.cs`.
 Damage path: `Strike` -> `Hit(attacker, target, ...)` (block/parry, flank via `SideOf`, speed bonus, slope) -> `Kill`. Horses: `HitHorse`.
+Men think on a stagger (`ThinkNow`: near the enemy every tick, else every 2nd/4th) and morale every 2nd tick, keyed on the tick counter.
+
+### Divisions (docs/COMBAT_OVERHAUL.md)
+A `Division` (BattleDivision.cs) is a group of squads under a sergeant (`Unit.Sergeant`) that follows a `Goal` (Hold, Take, Attack,
+Flank, Screen, Guard, Reserve, Harass, Pursue, FallBack) through its `Brain`, not your orders. Division squads are excluded from
+`Commanded` and the general's `Led()`. `IssueGoal` sets `Pending` + `PendingAt` (the order delay); a `Courier` rides there and can
+be cut down (BattleCourier.cs). `Direct(squad, act)` delays a plain order and sets `Squad.Override`. Divisions come from
+`ArmySpec.Divisions` + `Company.Division` (`BuildDivisions`); the campaign fills them from `CampaignState.Divisions`
+(`Campaign.WithDivisions`, Campaign/Divisions.cs); `Armies.Divide` splits big AI armies. Battle UI: `Hud.Divisions.cs`, Y key.
+
 Battle randomness uses its own seeded `rng` only: replays (`Replay.cs`) must reproduce exactly, so never use `Random.Shared`
 or wall-clock time in the sim; `SelfTest.ReplayExact` checks it.
 
@@ -99,7 +112,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 `Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`,
 `SwearFealty`, `ProposeWar`, `SetObjective`, `DeclareIndependence`, `DeclareWar`, `OfferPeace`...
 `Daily` ends with `FiefsDaily` then `CareerDaily` (rulers, councils due, rank beats, win/loss). Events the map must show once are plain fields:
-`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm (hard-coded in `MapScreen.Update`).
+`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm, V divisions (hard-coded in `MapScreen.Update`).
 
 ## File guide (where to look for what)
 
@@ -113,7 +126,8 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Sieges in battle / on the map | `BattleSiege.cs` (wall, ladders, gate `Via`) / `Campaign/CampaignSiege.cs` (garrisons, capture, fiefs) |
 | Captain combat (bash, swap, horse call), fatigue, supply | `BattleCaptain.cs` |
 | Spatial grid (`Near`, `Separate`) | `BattleGrid.cs` |
-| Unit/troop types, look, mounts | `Units.cs`, `Troops.cs` (+ `Armies` presets), `Data/troops.json` |
+| Divisions: goals, order delay, sergeant brain, AI goals / couriers | `BattleDivision.cs` (`IssueGoal`, `OrderDelay`, `Direct`, `Brain`, `AiCommand`) / `BattleCourier.cs` |
+| Unit/troop types, look, mounts | `Units.cs`, `Troops.cs` (+ `Armies` presets, `Large`, `Divide`), `Data/troops.json` |
 | Battle inputs/outputs | `BattleTypes.cs` (`BattleOptions`, `Weather`, `BattleResult`, `CompanyResult`) |
 | Terrain, rivers, foliage placement, siege wall geometry | `Terrain.cs` (headless) |
 | Campaign data model + save/load/migration | `Campaign/CampaignState.cs` (also `Rng`, `Balance` <- `Data/campaign.json`, `Names`) |
@@ -129,10 +143,11 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | War exhaustion, peace terms, war declarations, tribute, alliances, hosts, summons (F7) | `Campaign/Diplomacy.cs` (`DiplomacyDaily`, `MakePeace`, `OfferPeace`, `MusterHost`) |
 | Events, lord quests, brigand kings, pretenders (F8) | `Campaign/Events.cs` + `Data/events.json` (`EventsDaily`, `Choose`, `ApplyEffect`, `ValidateEvents`) |
 | Stacks/promotion, characters/opinion, skills, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Pilot.cs` |
+| Your divisions on the map (make, assign, goal, temper, command, into battle) | `Campaign/Divisions.cs` |
 | Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
 | Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
-| Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (one `XTab` method per tab), `.Party.cs` (party, characters, skills, upgrade), `.Realm.cs` (R), `.Dialogs.cs` (encounter, siege, results, events, menu) |
-| Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` + `.Draw.cs` (render, particles) + `Hud.cs` (2D drawing + hit-testing) |
+| Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (one `XTab` method per tab), `.Party.cs` (party, characters, skills, upgrade, divisions V), `.Realm.cs` (R), `.Dialogs.cs` (encounter, siege, results, events, menu) |
+| Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` (orders, goals, `Send`) + `.Draw.cs` (render, particles, culling, detail) + `Hud.cs` (2D drawing + hit-testing) + `Hud.Divisions.cs` |
 | Keys / rebinding | `Controls.cs` (`Act` enum + `Defaults` dict) |
 | 3D meshes (terrain, trees, towns, grass) | `World.cs` |
 | Shader pipeline / GLSL loader | `Shading.cs`, `GlslEffect.cs`, `Shaders/*.glsl`, `Sky.cs` (light by hour/weather) |
@@ -140,7 +155,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Colours, heraldry, UI tokens | `Style.cs` |
 | Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`) |
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
-| Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs` |
+| Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs`, `Bench.cs` |
 | Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs` |
 | Developer guide (systems in depth, worked examples) | `docs/DEVELOPING.md` |
 | Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications), `docs/COMBAT_OVERHAUL.md` (plan: sergeant divisions + battle scale) |
@@ -152,6 +167,9 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 - **Add/change a troop:** edit `Data/troops.json` (stats, `upgradesTo`, `look`, mount). `Troops.Validate` + `SelfTest.TroopTree`
   enforce: links exist, upgrades raise tier and are better, every troop reachable from `levies`. New look parts need painting
   code in `SpriteSheet.cs` (keys `part.variant.view/palette`).
+- **Add a count of men or a per-man price in the campaign:** armies are `Balance.ArmyScale` (3) times the base numbers. Write a count
+  as `Scaled(n)` and anything paid per man or derived from `Rules.Strength` as `Rules.PerMan(x)` (docs/DEVELOPING.md 5.7).
+  With ArmyScale 1 the campaign must play exactly as before; compare `--selftest CampaignRun`'s pressure line at 1 and 3.
 - **Add a campaign balance value:** add the field with its default to `Balance` (CampaignState.cs) AND to `Data/campaign.json` (they must match; `SelfTest.BalanceMatchesData` fails otherwise).
 - **Add a field to the save:** add a public field with a default on the class in `CampaignState.cs` (System.Text.Json, `IncludeFields`).
   Old saves still load (missing fields keep their default). There is no migration: bumping `CampaignState.CurrentVersion` makes

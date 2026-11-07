@@ -118,9 +118,8 @@ public partial class Battle
     /// dead (his men wait for someone to take charge), shorter with his skill and with the Horns perk.
     public float OrderDelay(Division d)
     {
-        var general = d.Team == 0 ? Player : EnemyCaptain;
-        var from = general.Active ? general.Pos : new Vector2(0, -rearLine[d.Team] * (d.Team == 0 ? 1 : -1));
-        var to = d.Leader is { Active: true } l ? l.Pos : d.Squads.Where(s => s.Alive > 0).Select(s => s.Center).DefaultIfEmpty(from).First();
+        var from = GeneralPos(d.Team);
+        var to = CourierGoal(d);
         float t = 1.5f + Vector2.Distance(from, to) / CourierSpeed;
         if (d.Leader is { Active: true, EnemyDist: < 5 }) t += 2;
         if (d.Leader is not { Active: true }) t *= 2;
@@ -136,6 +135,8 @@ public partial class Battle
         bool countermand = d.Pending != null;
         d.Pending = g;
         d.PendingAt = Time + delay;
+        Couriers.RemoveAll(c => c.Div == d && c.Goal); // a countermand overtakes the rider still on the road
+        SendCourier(d, Time + delay, true);
         if (Recording != null && d.Team == 0 && !ai)
             (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Kind = g.Kind, Point = g.Point, Target = g.Target != null ? Squads.IndexOf(g.Target) : -1, Side = g.Side });
         if (d.Team == 0) Log(countermand ? $"New orders ride to {d.Name}: {g.Describe} ({delay:0}s)." : $"Orders ride to {d.Name}: {g.Describe} ({delay:0}s).");
@@ -150,6 +151,7 @@ public partial class Battle
         if (s.Division == null) { act(s); return 0; }
         float delay = OrderDelay(s.Division);
         directs.Add((Time + delay, s, act));
+        if (!Couriers.Any(c => c.Div == s.Division && !c.Goal && c.At == Time + delay)) SendCourier(s.Division, Time + delay, false);
         return delay;
     }
     readonly List<(float At, Squad S, Action<Squad> Act)> directs = new();
@@ -169,6 +171,7 @@ public partial class Battle
 
     void UpdateDivisions()
     {
+        UpdateCouriers();
         if (Time >= nextAiCommand && Divisions.Count > 0)
         {
             nextAiCommand = Time + 4;

@@ -48,7 +48,7 @@ public partial class Campaign
                 killedAll += killed; woundedAll += wounded; capturedAll += captured; fledLostAll += sr.Fled - fledBack;
                 if (playerIn && team != playerTeam && won)
                 {
-                    loot += (sr.Fallen + sr.Fled) * st.Type.Cost * B.LootRate;
+                    loot += (sr.Fallen + sr.Fled) * Rules.PerMan(st.Type.Cost) * B.LootRate;
                     TakePrisoners(st.Troop, Has("Pursuit") ? (int)MathF.Round(captured * 1.25f) : captured); // held, not ransomed at once (B3)
                 }
             }
@@ -78,7 +78,7 @@ public partial class Campaign
         var winners = r.Winner == 0 ? side0 : side1;
         var losers = r.Winner == 0 ? side1 : side0;
         float lostStrength = (r.Winner == 0 ? startStrength1 - side1.Sum(Rules.Strength) : startStrength0 - side0.Sum(Rules.Strength));
-        foreach (var p in winners) { p.Cooldown = 6; if (p.Kind is PartyKind.Lord) p.Gold += lostStrength * 2; }
+        foreach (var p in winners) { p.Cooldown = 6; if (p.Kind is PartyKind.Lord) p.Gold += Rules.PerMan(lostStrength * 2); }
         foreach (var p in losers)
         {
             p.Cooldown = 12;
@@ -105,7 +105,7 @@ public partial class Campaign
         if (playerIn) RelationsAfterBattle(winners, losers, won);
         if (playerIn) SkillsAfterBattle(r, won, playerTeam == 0 ? startStrength0 : startStrength1, playerTeam == 0 ? startStrength1 : startStrength0, before[Player]);
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
-        if (wf >= 0 && lf >= 0) Score(wf, lf, lostStrength);
+        if (wf >= 0 && lf >= 0) Score(wf, lf, Rules.PerMan(lostStrength));
         S.Parties.RemoveAll(p => p.Kind == PartyKind.Bandit && p.Down);
 
         var report = new BattleReport(won, enemyName, reports, 0, 0, 0, 0, 0, r.Captain);
@@ -115,9 +115,9 @@ public partial class Campaign
         if (won)
         {
             foreach (var e in losers)
-                bounty += e.Kind == PartyKind.Bandit ? B.BountyBandits + Rules.Strength(e) / 10
-                    : Captain.Contract >= 0 ? B.BountyLord + (startStrength1 + startStrength0) / 20 : 0;
-            renown = B.RenownPerVictory + (playerTeam == 0 ? startStrength1 : startStrength0) / B.RenownStrengthDivisor;
+                bounty += e.Kind == PartyKind.Bandit ? B.BountyBandits + Rules.PerMan(Rules.Strength(e) / 10)
+                    : Captain.Contract >= 0 ? B.BountyLord + Rules.PerMan((startStrength1 + startStrength0) / 20) : 0;
+            renown = B.RenownPerVictory + (playerTeam == 0 ? startStrength1 : startStrength0) / (B.RenownStrengthDivisor * B.ArmyScale);
             horses = r.HorsesTaken;
             S.Gold += loot + ransom + bounty;
             foreach (var e in losers) S.LastBattleFoe = e.Id;
@@ -234,7 +234,7 @@ public partial class Campaign
         Encounter = null;
     }
 
-    public int ParleyPrice(Party e) => e.Kind == PartyKind.Bandit ? (int)(Rules.Strength(e) * 2 + 50) : -1;
+    public int ParleyPrice(Party e) => e.Kind == PartyKind.Bandit ? (int)(Rules.PerMan(Rules.Strength(e) * 2) + 50) : -1;
 
     public bool Parley()
     {
