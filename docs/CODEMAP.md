@@ -7,10 +7,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Art.cs (56 lines)
 - **Art** (class, L8): Art:16, Mipped:36
 
-## Audio.cs (358 lines)
+## Audio.cs (385 lines)
 - **Cue** (enum, L7)
 - **MusicTrack** (enum, L9)
-- **AudioEngine** (class, L13): AudioEngine:26, Play:66, PlayAt:76, Beds:85, Music:93, Update:111, Make:126, Buf:138, Rnd:139, Clash:142, Thud:156, Click:170, Pluck:182, Bow:195, Shout:205, Horn:227, Coin:243, Wind:252, Gallop:266, Din:279, MapTheme:297, Drums:318, Fanfare:336, Loop:350
+- **AudioEngine** (class, L13): AudioEngine:26, Play:68, PlayAt:78, Beds:88, Music:97, Update:115, Make:130, Buf:142, Rnd:143, Clash:146, Thud:160, Click:174, Pluck:186, Bow:199, Shout:209, Horn:231, Coin:247, Wind:256, Gallop:270, Din:283, Roar:301, MapTheme:324, Drums:345, Fanfare:363, Loop:377
 
 ## BalanceReport.cs (130 lines)
 - **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Csv:64, Run:66
@@ -44,11 +44,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (229 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:74, CommandControls:82, BoxOf:162, OnScreen:164, PickSquad:171, GroundUnderMouse:185, UpdateCamera:207
 
-## BattleScreen.cs (302 lines)
-- **BattleScreen** (class, L10): Exit:16, BattleScreen:62, Load:74, BeginCampaign:92, StartDeployment:108, StageCommandView:116, FinishCampaignBattle:124, NewBattle:132, SetWorld:166, SetCommand:174, Pressed:183, Update:189, PlaySounds:244, Soundscape:254, SyncHud:273, MenuChoice:288
+## BattleScreen.cs (303 lines)
+- **BattleScreen** (class, L10): Exit:16, BattleScreen:62, Load:74, BeginCampaign:92, StartDeployment:108, StageCommandView:116, FinishCampaignBattle:124, NewBattle:132, SetWorld:166, SetCommand:174, Pressed:183, Update:189, PlaySounds:244, Soundscape:254, SyncHud:274, MenuChoice:289
 
-## BattleScreen.Draw.cs (312 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:50, DrawBlobs:83, EaseFacings:112, Spray:128, Effects:141, BuildSprites:169, SpriteStates:198, DrawSpritesBasic:206, DrawSpritesShaded:216, Line:226, G:227, Ring:229, Precipitation:239, DrawLines:260
+## BattleScreen.Draw.cs (327 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:50, DrawBlobs:83, EaseFacings:112, Spray:128, Effects:141, BuildSprites:169, SpriteStates:213, DrawSpritesBasic:221, DrawSpritesShaded:231, Line:241, G:242, Ring:244, Precipitation:254, DrawLines:275
 
 ## BattleScreen.Orders.cs (129 lines)
 - **BattleScreen** (class, L8): Targets:12, Issue:15, Command:23, OrderKeys:73, LineAt:84, Distribute:101, PreviewSlots:120
@@ -215,8 +215,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Program.cs (40 lines)
 
-## Puppet.cs (417 lines)
-- **Puppet** (class, L13): Puppet:28, Begin:30, Rad:39, W:40, Frame:51, Draw:71, Horse:149, DrawLooseHorse:202, DrawDeadHorse:209, RotY:226, Arm:233, Span:243, Pose:250, Key:251, Lerp:253, PoseOf:272, Corpse:306, Particle:321, Banner:333, Quad:352, Bill:362, Axial:373, Long:385, Plane:398, Flat:409
+## Puppet.cs (423 lines)
+- **Puppet** (class, L13): Puppet:28, Begin:30, Rad:39, W:40, Frame:51, Draw:75, Horse:153, DrawLooseHorse:206, DrawDeadHorse:213, RotY:230, Arm:237, Span:248, Pose:255, Key:256, Lerp:258, PoseOf:277, Corpse:311, Particle:327, Banner:339, Quad:358, Bill:368, Axial:379, Long:391, Plane:404, Flat:415
 
 ## Replay.cs (139 lines)
 - **Replay** (class, L8): Serialize:42, Deserialize:43, Save:47, Play:54, Matches:80, Run:83

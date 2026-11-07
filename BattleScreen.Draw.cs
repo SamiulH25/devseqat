@@ -185,14 +185,29 @@ partial class BattleScreen
         if (!forSun)
             foreach (var m in motes) puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
         var eye2 = new Vector2(eye.X, eye.Z);
+        // Men outside the view (or, for the sun's pass, outside the shadow map) are skipped; men far off
+        // are drawn with fewer parts. Low quality brings the detail bands closer.
+        var frustum = new BoundingFrustum(forSun && shading != null ? shading.LightViewProj : view * proj);
+        float near = quality == Quality.Low ? 25 : 45, far = quality == Quality.Low ? 60 : 100;
+        bool Seen(Vector2 p, float h, float r)
+        {
+            if (frustum.Contains(new BoundingSphere(new Vector3(p.X, h + 1, p.Y), r)) == ContainmentType.Disjoint) return false;
+            float d2 = Vector2.DistanceSquared(p, eye2);
+            puppet.Detail = forSun ? (d2 < near * near ? 0 : 1) : d2 < near * near ? 0 : d2 < far * far ? 1 : 2;
+            return true;
+        }
         foreach (var u in battle.Units)
         {
+            if (u.Fled) continue;
             if (!forSun && !u.IsPlayer && u.Team == 0 && blend < 0.5f && Vector2.DistanceSquared(u.Pos, eye2) < 6 * 6) continue; // friends don't fill the lens
             if (deploying && !battle.Options.Scouted && u.Team == 1 && !u.IsLeader) continue; // unscouted: banners only
-            puppet.Draw(u, t.Height(u.Pos));
+            float h = t.Height(u.Pos);
+            if (!Seen(u.Pos, h, u.Mounted ? 2.5f : 1.5f)) continue;
+            puppet.Draw(u, h);
         }
-        foreach (var h in battle.LooseHorses) puppet.DrawLooseHorse(h, t.Height(h.Pos));
-        foreach (var h in battle.DeadHorses) puppet.DrawDeadHorse(h, t.Height(h.Pos));
+        foreach (var h in battle.LooseHorses) if (Seen(h.Pos, t.Height(h.Pos), 2.5f)) puppet.DrawLooseHorse(h, t.Height(h.Pos));
+        foreach (var h in battle.DeadHorses) if (Seen(h.Pos, t.Height(h.Pos), 2.5f)) puppet.DrawDeadHorse(h, t.Height(h.Pos));
+        puppet.Detail = 0;
     }
 
     void SpriteStates()

@@ -257,15 +257,16 @@ sealed partial class BattleScreen
         if (audio == null) return;
         var ear = new Vector2(focusPoint.X, focusPoint.Z);
         float range = 25 + 30 * blend;
-        int horses = 0, fighting = 0;
+        int horses = 0, fighting = 0, field = 0;
         foreach (var u in battle.Units)
         {
+            if (u.Active && u.EnemyDist < 4) field++; // men in contact anywhere: the roar of the whole battle
             if (!u.Active || Vector2.DistanceSquared(u.Pos, ear) > range * range) continue;
             if (u.Mounted && MathF.Abs(u.Speed) > 5) horses++;
             if (u.Action is UnitAction.Windup or UnitAction.Recover && u.Type.Ammo == 0) fighting++;
         }
         bool quiet = paused || menuOpen || deploying;
-        audio.Beds(0.7f, quiet ? 0 : MathF.Min(1, horses / 5f), quiet ? 0 : MathF.Min(1, fighting / 14f));
+        audio.Beds(0.7f, quiet ? 0 : MathF.Min(1, horses / 5f), quiet ? 0 : MathF.Min(1, fighting / 14f), quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)));
         audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Map : MusicTrack.Battle);
     }
 

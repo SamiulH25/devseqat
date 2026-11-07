@@ -67,6 +67,10 @@ sealed class Puppet
     public float Scale = 1;
     Color coatTint;
 
+    /// Level of detail for the next Draw (set per unit by distance): 0 every part; 1 drops small kit (boots, capes,
+    /// tabards, plumes, quivers, stuck arrows, horse details); 2 also drops hands and sleeves, for men far off.
+    public int Detail;
+
     /// Draw a unit standing on ground height `ground`, dressed by its troop's Look.
     public void Draw(Unit u, float ground)
     {
@@ -95,11 +99,11 @@ sealed class Puppet
                 float s = Rad(p.Leg * side);
                 var foot = hip + new Vector3(0, -0.6f * MathF.Cos(s), 0.6f * MathF.Sin(s));
                 Axial(hip, foot, $"leg.{look.Legs}");
-                Bill(foot + new Vector3(0, 0.02f, 0.03f), $"boot.{look.Feet}", true);
+                if (Detail == 0) Bill(foot + new Vector3(0, 0.02f, 0.03f), $"boot.{look.Feet}", true);
             }
-        if (look.Cape) Bill(new(0, 0.92f, -0.17f), "cape", false);
+        if (look.Cape && Detail == 0) Bill(new(0, 0.92f, -0.17f), "cape", false);
         Bill(new(0, 1.0f, 0), $"torso.{look.Body}", true);
-        if (look.Tabard) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
+        if (look.Tabard && Detail == 0) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
         Bill(new(0, 1.53f, 0.02f), "head", true);
         if (look.Head != "none")
         {
@@ -107,7 +111,7 @@ sealed class Puppet
             float h = art[$"helm.{look.Head}.f{pal}"].Height * Art.Px;
             Bill(new(0, 1.81f - h / 2, 0.02f), $"helm.{look.Head}", true, 0.04f);
         }
-        if (look.Plume) Bill(new(0, 1.81f + art["plume" + pal].Height * Art.Px / 2 - 0.06f, -0.03f), "plume", false, 0.05f);
+        if (look.Plume && Detail == 0) Bill(new(0, 1.81f + art["plume" + pal].Height * Art.Px / 2 - 0.06f, -0.03f), "plume", false, 0.05f);
 
         var hand = Arm(1, p.ArmA, p.Yaw);
         var off = Arm(-1, p.OffA, 0);
@@ -119,7 +123,7 @@ sealed class Puppet
             var at = p.ShieldUp ? off + new Vector3(0.2f, 0.02f, 0.1f) : off + new Vector3(-0.06f, 0.2f, 0.08f);
             var n = p.ShieldUp ? Vector3.UnitZ : Vector3.Normalize(new Vector3(-0.87f, 0, 0.5f));
             Plane(at, n, key);
-            for (int i = 0; i < u.StuckArrows; i++) // shafts caught in the shield, sticking out of its face
+            for (int i = 0; i < (Detail == 0 ? u.StuckArrows : 0); i++) // shafts caught in the shield, sticking out of its face
             {
                 var j = at + new Vector3((i % 2 - 0.5f) * 0.16f, (i / 2 - 0.5f) * 0.18f, 0);
                 Axial(j, j + Vector3.Normalize(n + new Vector3(0.2f * (i % 2 * 2 - 1), 0.25f, 0)) * 0.4f, "arrow");
@@ -135,7 +139,7 @@ sealed class Puppet
         }
         if (Look.Ranged(look.Weapon))
         {
-            Bill(new(-0.1f, 1.15f, -0.2f), "quiver", false);
+            if (Detail == 0) Bill(new(-0.1f, 1.15f, -0.2f), "quiver", false);
             Span(off, Vector3.Up, look.Weapon, SpriteSheet.Grip[look.Weapon]);
             if (p.Aim && u.Action != UnitAction.Recover) Span(hand, Vector3.UnitZ, "arrow", 0.2f);
             return;
@@ -170,18 +174,18 @@ sealed class Puppet
             Axial(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), "hleg");
         }
         Long(new(0, y, -0.82f), new(0, y, 0.82f), "hbody");
-        Bill(new(0, y, 0.6f), "hchest", false, -0.05f);
-        Bill(new(0, y, -0.55f), "hrump", false, -0.05f);
+        if (Detail == 0) Bill(new(0, y, 0.6f), "hchest", false, -0.05f);
+        if (Detail == 0) Bill(new(0, y, -0.55f), "hrump", false, -0.05f);
         Long(new(0, y + 0.17f, 0.62f), new(0, y + 0.73f, 1.0f), "hneck");
         Long(new(0, y + 0.73f, 0.95f), new(0, y + 0.37f, 1.42f), "hhead");
-        Bill(new(0, y + 0.6f, 1.15f), "hface", false, -0.04f);
-        Axial(new(0, y + 0.2f, -0.82f), new(0, 0.85f + bob + gait * 0.4f, -1.05f - gait * 0.35f), "htail");
+        if (Detail == 0) Bill(new(0, y + 0.6f, 1.15f), "hface", false, -0.04f);
+        if (Detail == 0) Axial(new(0, y + 0.2f, -0.82f), new(0, 0.85f + bob + gait * 0.4f, -1.05f - gait * 0.35f), "htail");
 
         // Gear over the coat.
         pal = side;
         tint = plain;
         Long(new(0, y, -0.82f), new(0, y, 0.82f), caparison ? "hbody.caparison" : "hbody.saddle", 0.03f);
-        if (caparison)
+        if (caparison && Detail == 0)
         {
             Bill(new(0, y, 0.6f), "hchest.caparison", false, -0.035f);
             Bill(new(0, y, -0.55f), "hrump.caparison", false, -0.035f);
@@ -194,7 +198,7 @@ sealed class Puppet
                 var hip = new Vector3(sd * 0.2f, Saddle + 0.68f + bob, 0);
                 var foot = new Vector3(sd * 0.36f, 1.0f + bob, 0.18f);
                 Axial(hip, foot, $"leg.{look.Legs}");
-                Bill(foot, $"boot.{look.Feet}", true);
+                if (Detail == 0) Bill(foot, $"boot.{look.Feet}", true);
             }
         return bob;
     }
@@ -234,6 +238,7 @@ sealed class Puppet
     {
         var shoulder = new Vector3(side * 0.3f, 1.31f, 0);
         var hand = shoulder + RotY(new Vector3(side * 0.04f, -0.55f * MathF.Cos(Rad(alpha)), 0.55f * MathF.Sin(Rad(alpha))), yaw);
+        if (Detail >= 2) return hand; // far off: the weapon alone shows the arm
         Axial(shoulder, hand, $"sleeve.{look.Body}");
         Bill(hand, $"hand.{look.Hands}", false, 0.01f);
         return hand;
@@ -307,6 +312,7 @@ sealed class Puppet
     {
         // Parts laid flat on the ground, body pointing backwards from the feet.
         Flat(new(0, 0.06f, -0.7f), "blood", false);
+        if (Detail > 0) { Flat(new(0, 0.09f, -0.75f), $"torso.{look.Body}.f", false); return; } // far off: a body and its blood
         Flat(new(0.12f, 0.08f, -0.2f), $"leg.{look.Legs}", false);
         Flat(new(-0.12f, 0.08f, -0.2f), $"leg.{look.Legs}", false);
         Flat(new(0, 0.09f, -0.75f), $"torso.{look.Body}.f", false);

@@ -101,7 +101,7 @@ partial class BattleScreen
             camYaw += (ms.X - pms.X) * 0.006f;
             camPitch = Math.Clamp(camPitch + (ms.Y - pms.Y) * 0.006f, 0.25f, 1.45f);
         }
-        zoom = Math.Clamp(zoom - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.03f, 10, 110);
+        zoom = Math.Clamp(zoom - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.03f, 10, MathHelper.Clamp(battle.MapRadius * 1.3f, 110, 260)); // a big field lets you pull further out
         battle.Input = new PlayerInput { Dir = aimDir };
         if (!IsActive) return;
         mouseGround = GroundUnderMouse();
