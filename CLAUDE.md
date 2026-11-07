@@ -2,6 +2,8 @@
 
 Read this first; it is written so a new session can start work without exploring the code.
 For a member-level index (every type and method with its line number) read `docs/CODEMAP.md`.
+For how each system works in depth (data model, tick order, damage path, campaign layers, data formats, worked examples,
+troubleshooting) read `docs/DEVELOPING.md`.
 Keep both current: see "Keeping this map current" at the end.
 
 ## Workflow for every change (follow in order)
@@ -140,6 +142,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
 | Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs` |
 | Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs` |
+| Developer guide (systems in depth, worked examples) | `docs/DEVELOPING.md` |
 | Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications) |
 
 ## Recipes
@@ -149,9 +152,10 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 - **Add/change a troop:** edit `Data/troops.json` (stats, `upgradesTo`, `look`, mount). `Troops.Validate` + `SelfTest.TroopTree`
   enforce: links exist, upgrades raise tier and are better, every troop reachable from `levies`. New look parts need painting
   code in `SpriteSheet.cs` (keys `part.variant.view/palette`).
-- **Add a campaign balance value:** add the field with its default to `Balance` (CampaignState.cs) AND to `Data/campaign.json` (they must match).
-- **Add a field to the save:** add a public field on the class in `CampaignState.cs` (System.Text.Json, `IncludeFields`).
-  If old saves need conversion, bump `CampaignState.CurrentVersion` and handle it in `Migrate()`; `SelfTest.Migration` covers it.
+- **Add a campaign balance value:** add the field with its default to `Balance` (CampaignState.cs) AND to `Data/campaign.json` (they must match; `SelfTest.BalanceMatchesData` fails otherwise).
+- **Add a field to the save:** add a public field with a default on the class in `CampaignState.cs` (System.Text.Json, `IncludeFields`).
+  Old saves still load (missing fields keep their default). There is no migration: bumping `CampaignState.CurrentVersion` makes
+  older saves be refused (`SelfTest.RefuseOldSave`), so bump it only when old saves can no longer be read correctly.
 - **Add a battle option from the campaign:** field on `BattleOptions`, set it in `Campaign.PrepareBattle`, read it in `Battle`.
 - **Add a key action:** add to `Act` enum and `Controls.Defaults`; read with `ctl.Pressed(Act.X)`; list it in the F1 help (`Hud.Help`).
 - **Add a campaign panel/button:** a method in the matching `MapScreen.*.cs` file using `Ui` (`ui.Button(...)` returns true on click); call the

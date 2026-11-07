@@ -222,8 +222,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (376 lines)
 - **ScreenHost** (class, L9): ScreenHost:37, ApplyVideo:51, OpenSettings:60, LoadContent:62, StartCampaign:93, ContinueCampaign:105, QuickBattle:117, StartCampaignBattle:124, FinishCampaignBattle:132, CycleQuality:140, Update:144, Draw:172, CaptureShot:198, CampaignShots:215
 
-## SelfTest.cs (125 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:77, Lancer:85, Run:94, Scaled:96, MakeWanderer:99, Days:107, Ids:119, Check:121
+## SelfTest.cs (128 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:80, Lancer:88, Run:97, Scaled:99, MakeWanderer:102, Days:110, Ids:122, Check:124
 
 ## Settings.cs (70 lines)
 - **Difficulty** (enum, L5)
@@ -261,11 +261,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **TerrainParams** (record, L74)
 - **Terrain** (class, L86): WaterDepth:122, Flat:132, Terrain:133, Terrain:134, Terrain:138, Terrain:160, RawHeight:195, RoadCenter:226, RoadDist:229, Height:238, Height:250, GridHeight:251, Gradient:254, BucketOf:264, AddProp:271, Add:273, Blocked:280, PushOut:294, Core:320, PlaceFoliage:322, PlaceTown:395, SmoothStep:417, Hash:423, Noise:435
 
-## Tests/BattleTests.cs (441 lines)
-- **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, RangedRoles:169, FatigueAndSupply:189, Rivers:206, Generals:233, HorseDown:250, Ground:259, HoldFire:283, TroopTree:297, Sprites:321, BigBattle:357, StackBattle:387, ReplayExact:421
+## Tests/BattleTests.cs (451 lines)
+- **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, RangedRoles:169, FatigueAndSupply:189, Rivers:206, Generals:233, HorseDown:250, Ground:259, HoldFire:283, TroopTree:297, Sprites:321, BigBattle:357, StackBattle:387, ReplayExact:421, SpearsStopHorse:443
 
-## Tests/CampaignTests.cs (594 lines)
-- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:35, CampaignRun:46, Progression:88, Economy:115, Bridge:127, Calibration:148, SiegeBattle:171, CampaignWar:209, RefuseOldSave:269, Stacks:295, Cultures:340, Characters:410, SkillTree:513
+## Tests/CampaignTests.cs (616 lines)
+- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:35, CampaignRun:46, Progression:88, Economy:115, Bridge:127, Calibration:148, SiegeBattle:171, CampaignWar:209, RefuseOldSave:269, Stacks:295, Cultures:340, Characters:410, SkillTree:513, BalanceMatchesData:596, HorsesCostGold:608
 
 ## Tests/CareerTests.cs (353 lines)
 - **SelfTest** (class, L6): PilotTrace:9, Career:24, PilotCareer:120, FiefLife:131, WarAndPeace:217, EventsAndQuests:293

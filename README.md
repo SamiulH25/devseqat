@@ -246,6 +246,8 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 
 ## Architecture
 
+For a detailed developer guide (how each system works, data formats, worked examples) see `docs/DEVELOPING.md`.
+
 | File | Role |
 |---|---|
 | `Battle.cs` | Headless simulation: setup, deployment, the tick, reinforcements, result and win check. No graphics. Split by area into `BattleAI.cs` (unit AI, cavalry, the AI general), `BattleCombat.cs` (strikes, hits, kills, arrows, braces, lances), `BattleMove.cs` (movement, collisions), `BattleMorale.cs`, `BattlePlayer.cs` (your own unit). |

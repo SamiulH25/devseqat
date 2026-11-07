@@ -25,6 +25,7 @@ public static partial class SelfTest
         TroopTree();
         Sprites();
         BigBattle();
+        SpearsStopHorse();
         CampaignMap();
         CampaignPersistence();
         CampaignRun();
@@ -45,6 +46,8 @@ public static partial class SelfTest
         Cultures();
         Characters();
         SkillTree();
+        BalanceMatchesData();
+        HorsesCostGold();
         Career();
         PilotCareer();
         FiefLife();

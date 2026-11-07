@@ -438,4 +438,14 @@ public static partial class SelfTest
         Console.WriteLine($"replay: {rec.Frames.Count} ticks, winner {again.Winner} after {again.Time:0.0}s, {again.Units.Count(u => u.Dead)} dead (recorded {rec.Winner}, {rec.Time:0.0}s, {rec.Dead})");
         Check(back.Matches(again), "a replay reproduces its battle exactly");
     }
+
+    /// Braced spears hurt a lancer charging into them (also the example in docs/DEVELOPING.md 9).
+    static void SpearsStopHorse()
+    {
+        var b = Battle.Empty(7);
+        b.AddSquad(1, Troops.Get("spearrunners"), 12, new(0, 0), 6, -Vector2.UnitY);
+        var l = Lancer(b);                       // team 0, galloping at the spears
+        Run(b, 6);
+        Check(l.Dead || l.Hp < l.Type.MaxHp, "braced spears hurt a charging lancer");
+    }
 }

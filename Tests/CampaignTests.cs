@@ -591,4 +591,26 @@ public static partial class SelfTest
         Check(back.Captain.Perks.SequenceEqual(a.Captain.Perks) && Math.Abs(back.Captain.Skills["Arms"] - a.Skill("Arms")) < 0.01f, "skills and perks survive a save");
         Check(!Rules.NextRenownUnlock(a.Captain).What.Contains("PERK"), "renown no longer buys perks");
     }
+
+    /// Data/campaign.json and the defaults in Balance must agree (a value changed in one place only is a silent bug).
+    static void BalanceMatchesData()
+    {
+        var file = Balance.Get();
+        var defaults = new Balance();
+        var off = typeof(Balance).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .Where(f => f.FieldType.IsPrimitive || f.FieldType == typeof(string))
+            .Where(f => !Equals(f.GetValue(file), f.GetValue(defaults)))
+            .Select(f => $"{f.Name} (campaign.json {f.GetValue(file)}, Balance default {f.GetValue(defaults)})").ToList();
+        Check(off.Count == 0, "campaign.json and Balance defaults differ: " + string.Join(", ", off));
+    }
+
+    /// Buying a horse costs HorsePrice (also the example in docs/DEVELOPING.md 9).
+    static void HorsesCostGold()
+    {
+        var c = Campaign.New(3);
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Horses > 0);
+        float gold = c.S.Gold;
+        Check(c.BuyHorses(town, 1) == null, "can buy a horse");
+        Check(c.S.Gold == gold - c.HorsePrice, "a horse costs HorsePrice");
+    }
 }
