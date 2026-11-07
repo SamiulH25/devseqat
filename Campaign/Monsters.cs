@@ -23,7 +23,8 @@ public partial class Campaign
     public static string Plural(string breed) => breed switch { "wolf" => "wolves", "undead" => "undead", _ => breed + "s" };
     /// Night on the map (wolves hunt from dusk to dawn).
     bool Night => S.Hours % 24 is >= 20 or < 6;
-    static readonly string[] PackNames = { "Grey Pack", "Black Pack", "Hollow Howlers", "Frost Fangs", "Moon Pack", "Ash Pack", "Red Maws" };
+    static readonly string[] PackNames = { "Grey Pack", "Black Pack", "Hollow Howlers", "Frost Fangs", "Moon Pack", "Ash Pack", "Red Maws",
+        "Night Runners", "Bone Gnawers", "Pale Pack", "Hill Howlers", "Ember Eyes", "Thorn Pack", "Winter Teeth" };
 
     /// Raise a wolf pack in a forest, away from settlements and from you: wolves and the dire wolf that leads them.
     internal bool SpawnWolfPack()

@@ -310,7 +310,7 @@ public sealed partial class Campaign
     internal void Crown(Party band)
     {
         var n = Names.Get();
-        var ch = NewCharacter("brigand", rng.Pick(n.Lords) + " " + rng.Pick(n.Epithets), -1, Factions.Common, 2);
+        var ch = NewCharacter("brigand", PersonName(Factions.Common), -1, Factions.Common, 2);
         ch.PartyId = band.Id;
         band.CharId = ch.Id;
         band.Name = $"{ch.Name.Split(' ')[0]}'s Host";
@@ -335,7 +335,7 @@ public sealed partial class Campaign
     void RaisePretender(Settlement s, Party rebels)
     {
         var n = Names.Get();
-        var ch = NewCharacter("pretender", rng.Pick(n.Lords) + " of " + s.Name, s.Faction, s.Culture, 2);
+        var ch = NewCharacter("pretender", rng.Pick(n.LordsOf(s.Culture)) + " of " + s.Name, s.Faction, s.Culture, 2);
         ch.PartyId = rebels.Id;
         rebels.CharId = ch.Id;
         rebels.Name = $"{ch.Name.Split(' ')[0]}'s Rising";

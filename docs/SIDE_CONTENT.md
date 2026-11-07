@@ -1,6 +1,6 @@
 # Side content, polish and a fuller world: plan
 
-Status: **planned, not started.** This plan covers what a player does between the big wars: places to find on the map,
+Status: **in progress** (built steps are listed under "As built" at the end). This plan covers what a player does between the big wars: places to find on the map,
 small quests, life on the roads and in towns, many more events, and a polish pass on the campaign screens. The main
 loop (companies, career, fiefs, war, creatures) is built (`CAMPAIGN_OVERHAUL.md`, `CREATURES.md`) and is not changed here.
 Numbers marked *(tune)* are starting values.
@@ -152,3 +152,15 @@ them. Then S3 and S4 together (escort needs caravans), S5, S6, and S7 last so th
 4. **Saves:** keep version 4 and add fields with defaults [yes; old saves load and simply have no sites visited].
 5. **Size of the world's population:** how busy should roads feel? [about one non-soldier party for every two soldier
    parties, tuned for speed.]
+
+## As built
+
+- **S1 (names):** `Data/names.json` has per-culture `places` and `lords` (70 places and 30 first names each for Azure,
+  Crimson and Northern), more epithets (36) and band names (30), `sergeants` (common folk), and `prefixes`/`suffixes`.
+  `PlaceNamer` (Campaign/WorldMap.cs) hands out names from its own seeded generator: the culture's list, then the common
+  list, then built names, so no place repeats on a map. The map generator still makes the 60 draws the old name shuffle made,
+  so every old seed keeps its rivers and towns (`CampaignMap` checks seed 11's geography). `Province.Title` names the land
+  ("the Champvert Hills"), shown in settlement tooltips. `Campaign.PersonName` gives lords, wanderers and brigand kings their
+  culture's names, skipping names in use without extra random draws (so the campaign plays out exactly as before);
+  `BandName` avoids band names already on the map; sergeants use the `sergeants` list. Saves keep the names they were made
+  with (the `Campaign` constructor copies saved names onto the regenerated map). Test: `WorldNames`.

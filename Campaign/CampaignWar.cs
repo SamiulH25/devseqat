@@ -104,13 +104,13 @@ public sealed partial class Campaign
 
     CompanyRecord WithOfficer(CompanyRecord c)
     {
-        if (c.Officer == "" && rng.Chance(0.6f)) c.Officer = "Sgt " + rng.Pick(Names.Get().Lords);
+        if (c.Officer == "" && rng.Chance(0.6f)) c.Officer = SergeantName();
         return c;
     }
 
     internal void OfficerAfterBattle(CompanyRecord c, bool won, float lostFrac)
     {
-        if (c.Officer == "") { if (rng.Chance(Player.Companies.Contains(c) && Has("Sergeants") ? 0.8f : 0.4f)) { c.Officer = "Sgt " + rng.Pick(Names.Get().Lords); c.OfficerBattles = 0; } return; }
+        if (c.Officer == "") { if (rng.Chance(Player.Companies.Contains(c) && Has("Sergeants") ? 0.8f : 0.4f)) { c.Officer = SergeantName(); c.OfficerBattles = 0; } return; }
         if (lostFrac >= 0.5f && rng.Chance(0.25f))
         {
             if (Player.Companies.Contains(c)) Log($"{c.Officer} of {c.Name} has fallen.");
@@ -273,4 +273,7 @@ public sealed partial class Campaign
             }
         }
     }
+
+    /// A sergeant's name: common folk, not the lords' names (S1).
+    string SergeantName() => "Sgt " + rng.Pick(Names.Get().Sergeants.Count > 0 ? Names.Get().Sergeants : Names.Get().Lords);
 }

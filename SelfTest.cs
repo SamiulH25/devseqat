@@ -68,6 +68,7 @@ public static partial class SelfTest
         Undead();
         UndeadAbroad();
         Couriers();
+        WorldNames();
 
         for (int seed = 1; seed <= 3; seed++)
         {

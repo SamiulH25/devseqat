@@ -29,6 +29,14 @@ public partial class Campaign
         S.Parties.Add(lord);
     }
 
+    /// A band name no band on the map carries now, if one is left (S1).
+    string BandName()
+    {
+        var all = Names.Get().Bandits;
+        var free = all.Where(b => !S.Parties.Any(p => !p.Down && p.Name == b)).ToList();
+        return rng.Pick(free.Count > 0 ? free : all);
+    }
+
     void SpawnBandits()
     {
         var villages = S.Settlements.Where(v => v.Kind == SettlementKind.Village).ToList();
@@ -40,7 +48,7 @@ public partial class Campaign
         string foot = Armies.LineTroop("infantry", tier, rng.Next(3));
         var band = new Party
         {
-            Id = S.NextId++, Kind = PartyKind.Bandit, Name = rng.Pick(n.Bandits), Tier = tier,
+            Id = S.NextId++, Kind = PartyKind.Bandit, Name = BandName(), Tier = tier,
         };
         band.Pos = at.Pos + new Vector2(rng.Range(-14, 14), rng.Range(-14, 14)) * Map.Spread;
         band.Goal = band.Pos;

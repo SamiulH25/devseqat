@@ -58,9 +58,10 @@ public sealed class WorldMap
         var m = new WorldMap(seed) { ExtentUsed = extent };
         var rng = new Random(seed);
         var names = Names.Get();
-        var places = names.Places.OrderBy(_ => rng.Next()).ToList();
-        int nameAt = 0;
-        string Place() => places[nameAt++ % places.Count];
+        // Maps once shuffled a 60-name list here: keep those draws so an old seed still gives the same rivers and towns.
+        for (int i = 0; i < 60; i++) rng.Next();
+        // Names come from their own generator, so changing the name lists never moves a river or a town.
+        var namer = new PlaceNamer(names, seed);
         // Everything below is measured in "spans": 1 = the map before it grew (196), so a bigger world scales with it.
         float span = extent / LegacyExtent;
         float spacing = ProvinceSpacing * MathF.Pow(span, 0.3f);
@@ -81,7 +82,7 @@ public sealed class WorldMap
             if (MathF.Max(MathF.Abs(c.X), MathF.Abs(c.Y)) > extent * 0.75f && rng.Next(2) == 0) kind = 3; // hills toward the rim
             if (north.Contains(c) && kind == 1) kind = 2; // the north is forest, not farmland
             int faction = north.Contains(c) ? 2 : south.IndexOf(c) < south.Count / 2 ? 0 : 1;
-            m.Provinces.Add(new Province { Id = i, Name = Place(), Kind = Kinds[kind], Center = c, Faction = faction });
+            m.Provinces.Add(new Province { Id = i, Name = namer.Next(Factions.CultureOf(faction)), Kind = Kinds[kind], Center = c, Faction = faction });
         }
         // Neighbours: each province links to its nearest few; roads follow the links.
         foreach (var p in m.Provinces)
@@ -111,7 +112,7 @@ public sealed class WorldMap
                 float a = rng.NextSingle() * MathF.Tau, d = (16 + rng.NextSingle() * 16) * span;
                 var pos = p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
                 if (m.Settlements.Any(s => Vector2.Distance(s.Pos, pos) < 12 * span) || MathF.Abs(pos.X) > extent || MathF.Abs(pos.Y) > extent) continue;
-                m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Culture = Factions.CultureOf(p.Faction), Name = Place(), Pos = pos, Kind = SettlementKind.Village });
+                m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Culture = Factions.CultureOf(p.Faction), Name = namer.Next(Factions.CultureOf(p.Faction)), Pos = pos, Kind = SettlementKind.Village });
                 m.Roads.Add((p.Center, pos));
                 v++;
             }
@@ -291,5 +292,35 @@ public sealed class WorldMap
             foliage.Add(new Foliage(FoliageKind.Pine, pos, 2.4f + rng.NextSingle(), 0, rng.Next()));
         }
         return new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers);
+    }
+}
+
+/// Hands out place names without repeats: the culture's own list first, then the common list, then built names
+/// ("Ash" + "ford"), and as a last resort a numbered one.
+public sealed class PlaceNamer
+{
+    readonly Names names;
+    readonly Random rng;
+    readonly Dictionary<string, Queue<string>> pools = new();
+    public readonly HashSet<string> Used = new();
+
+    public PlaceNamer(Names names, int seed) { this.names = names; rng = new Random(seed * 31 + 7); }
+
+    Queue<string> Pool(string key, List<string> list)
+    {
+        if (!pools.TryGetValue(key, out var q)) pools[key] = q = new Queue<string>(list.OrderBy(_ => rng.Next()));
+        return q;
+    }
+
+    public string Next(string culture)
+    {
+        foreach (var q in new[] { Pool(culture, names.PlacesOf(culture)), Pool("", names.Places) })
+            while (q.Count > 0) { var n = q.Dequeue(); if (Used.Add(n)) return n; }
+        for (int i = 0; i < 200 && names.Prefixes.Count > 0 && names.Suffixes.Count > 0; i++)
+        {
+            var n = names.Prefixes[rng.Next(names.Prefixes.Count)] + names.Suffixes[rng.Next(names.Suffixes.Count)];
+            if (Used.Add(n)) return n;
+        }
+        for (int i = 2; ; i++) if (Used.Add($"Newstead {i}")) return $"Newstead {i}";
     }
 }

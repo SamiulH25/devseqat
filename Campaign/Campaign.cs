@@ -42,7 +42,9 @@ public sealed partial class Campaign
         // Saves from before F6 have no buildings: give their towns the barracks their elite lines need.
         if (S.Settlements.Count > 0 && S.Settlements.All(t => t.Buildings.Count == 0)) SeedBuildings();
         // The map's settlement models follow the save (a v1 save was generated before the Northmarch had its capital).
-        for (int i = 0; i < Math.Min(Map.Settlements.Count, S.Settlements.Count); i++) Map.Settlements[i].Kind = S.Settlements[i].Kind;
+        for (int i = 0; i < Math.Min(Map.Settlements.Count, S.Settlements.Count); i++) { Map.Settlements[i].Kind = S.Settlements[i].Kind; Map.Settlements[i].Name = S.Settlements[i].Name; }
+        // ...and so do the names (a save keeps the names it was made with, whatever the name lists say now).
+        for (int i = 0; i < Math.Min(Map.Provinces.Count, S.Provinces.Count); i++) Map.Provinces[i].Name = S.Provinces[i].Name;
     }
 
     // ---------- a new campaign ----------

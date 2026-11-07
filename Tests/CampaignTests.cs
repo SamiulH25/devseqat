@@ -11,6 +11,10 @@ public static partial class SelfTest
         var lm = legacy.BuildTerrain();
         Console.WriteLine($"legacy map: {lm.N} vertices, {lm.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine)} trees");
         var m = WorldMap.Generate(11);
+        // Saves regenerate their map from the seed: the geography of a seed must never drift (names may).
+        float geo = m.Settlements.Sum(s => s.Pos.X * 3 + s.Pos.Y), river = m.Rivers.Sum(r => r.Path.Sum(p => p.X));
+        Check(m.Settlements.Count == 215 && MathF.Abs(geo + 3773.913f) < 0.5f && MathF.Abs(river + 18550.46f) < 0.5f,
+            $"seed 11 keeps its geography ({m.Settlements.Count} places, {geo:0.000}, {river:0.000})");
         Check(m.Provinces.Count >= 50, $"a big map: enough provinces ({m.Provinces.Count})");
         Check(m.Provinces.Count is >= WorldMap.ProvinceCount - 8 and <= WorldMap.ProvinceCount + 8,
             $"about {WorldMap.ProvinceCount} provinces on the enlarged map ({m.Provinces.Count})");

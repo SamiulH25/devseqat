@@ -77,11 +77,26 @@ public sealed partial class Campaign
         S.CaptainChar = me.Id;
     }
 
+    /// A first name of the culture and an epithet that no living character already bears (S1). It always takes exactly two
+    /// draws (a clash steps to the next epithet), so name lists never shift the campaign's random numbers.
+    public string PersonName(string culture)
+    {
+        var n = Names.Get();
+        string first = rng.Pick(n.LordsOf(culture));
+        int e = rng.Next(n.Epithets.Count);
+        for (int k = 0; k < n.Epithets.Count; k++)
+        {
+            string name = first + " " + n.Epithets[(e + k) % n.Epithets.Count];
+            if (!S.Characters.Any(c => !c.Dead && c.Name.EndsWith(name))) return name;
+        }
+        return first + " " + n.Epithets[e];
+    }
+
     /// A lord for a new party: 2-3 traits, his realm's culture; a lord of your liege starts warm towards you (you are sworn to the same crown).
     Character MakeLord(Party p)
     {
         var n = Names.Get();
-        var ch = NewCharacter("lord", "Lord " + rng.Pick(n.Lords) + " " + rng.Pick(n.Epithets), p.Faction, Factions.CultureOf(p.Faction), 2 + rng.Next(2));
+        var ch = NewCharacter("lord", "Lord " + PersonName(Factions.CultureOf(p.Faction)), p.Faction, Factions.CultureOf(p.Faction), 2 + rng.Next(2));
         ch.PartyId = p.Id;
         p.CharId = ch.Id;
         p.Name = ch.Name;
@@ -179,7 +194,7 @@ public sealed partial class Campaign
         old.Dead = true;
         old.PartyId = -1;
         var heir = MakeLord(p);
-        heir.Name = old.Name.Split(' ') is var parts && parts.Length >= 2 ? $"Lord {rng.Pick(Names.Get().Lords)} {string.Join(' ', parts.Skip(2))}".Trim() : heir.Name;
+        heir.Name = old.Name.Split(' ') is var parts && parts.Length >= 2 ? $"Lord {rng.Pick(Names.Get().LordsOf(old.Culture))} {string.Join(' ', parts.Skip(2))}".Trim() : heir.Name;
         p.Name = heir.Name;
         heir.Age = 18 + rng.Next(10);
         // The heir inherits his father's view of you, and adds his own if you were the one who killed him.
@@ -221,7 +236,7 @@ public sealed partial class Campaign
         {
             if (!rng.Chance(0.25f)) continue;
             var n = Names.Get();
-            var ch = NewCharacter("wanderer", rng.Pick(n.Lords) + " " + rng.Pick(n.Epithets), -1, t.Culture, 2);
+            var ch = NewCharacter("wanderer", PersonName(t.Culture), -1, t.Culture, 2);
             ch.Role = rng.Pick(CompanionRoles);
             ch.AtSettlement = t.Id;
         }

@@ -229,6 +229,8 @@ public sealed class Province
 {
     public int Id, Faction;
     public string Name = "", Kind = "Meadow";
+    /// The province as the land knows it: "the Greywater Hills", "Oakhollow Forest" (S1).
+    [JsonIgnore] public string Title => Kind switch { "Hills" => $"the {Name} Hills", "Forest" => $"{Name} Forest", "Farmland" => $"the {Name} Fields", _ => $"the Vale of {Name}" };
     public Vector2 Center;
     public List<int> Neighbors = new();
 }
@@ -528,11 +530,22 @@ public sealed class Balance
     }
 }
 
+/// One culture's name pools.
+public sealed class CultureNames
+{
+    public List<string> Places = new(), Lords = new();
+}
+
 /// Name lists (Data/names.json).
 public sealed class Names
 {
-    public List<string> Places = new(), Lords = new(), Epithets = new(), Bandits = new();
+    public List<string> Places = new(), Lords = new(), Epithets = new(), Bandits = new(), Sergeants = new(), Prefixes = new(), Suffixes = new();
     public Dictionary<string, List<string>> Nouns = new();
+    /// Each culture's own places and lords (docs/SIDE_CONTENT.md S1).
+    public Dictionary<string, CultureNames> Cultures = new();
+
+    public List<string> PlacesOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Places.Count > 0 ? c.Places : Places;
+    public List<string> LordsOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Lords.Count > 0 ? c.Lords : Lords;
 
     static Names? loaded;
     public static Names Get()

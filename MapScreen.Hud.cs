@@ -282,7 +282,7 @@ partial class MapScreen
         {
             linesOut.Add((s!.Name.ToUpperInvariant(), SideColor(s.Faction)));
             linesOut.Add(($"{s.Kind.ToString().ToUpperInvariant()} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}", Style.Dim));
-            linesOut.Add(($"{C.S.Provinces[s.Province].Kind.ToUpperInvariant()} COUNTRY, {s.Culture.ToUpperInvariant()} PEOPLE", Style.Dim));
+            linesOut.Add(($"{C.S.Provinces[s.Province].Title.ToUpperInvariant()}, {s.Culture.ToUpperInvariant()} PEOPLE", Style.Dim));
             if (s.Kind == SettlementKind.Village) linesOut.Add((s.ThreatUntil > C.S.Hours ? "THREATENED: NO RECRUITS" : $"{s.Recruits} RECRUITS", Style.Text));
             if (s.Kind == SettlementKind.Town) linesOut.Add(($"{s.Mercenaries.Count} MERCENARY COMPANIES, {s.Horses} HORSES", Style.Text));
             linesOut.Add(($"PROSPERITY {s.Prosperity:0}" + (s.Kind != SettlementKind.Village ? $"   UNREST {s.Unrest:0}" : ""), s.Unrest >= Campaign.RevoltAt ? Style.Bad : Style.Dim));
