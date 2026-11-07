@@ -54,10 +54,19 @@ public partial class Battle
             AttackDir.Overhead => (a.Type.Reach + 0.3f, 0.6f, 1),
             _ => (a.Type.Reach + 0.3f, 0.2f, 3),
         };
-        if (a.Mounted) reach += 0.4f; // the player rides high in the saddle and can swing further
+        if (a.Mounted) { reach += 0.4f; dmg *= 1 + 0.1f * RidingEdge; } // the player rides high in the saddle and can swing further
         int hits = 0;
         foreach (var t in Near(a.Pos, reach + 1, nearBrace).Where(t => t.Team != a.Team && t.Active).OrderBy(t => Vector2.DistanceSquared(t.Pos, a.Pos)).ThenBy(t => t.Index).ToList())
             if (InArc(a, t, reach + (t.Mounted ? 0.6f : 0), minDot) && hits++ < cleave) Hit(a, t, dmg, false);
+    }
+
+    /// What your own hands did (P3): arrow and lance hits, ripostes, and kills from the saddle or the bow.
+    void CountDeed(Unit t, bool ranged, bool lance)
+    {
+        if (ranged) ArrowHits++;
+        if (lance) LanceHits++;
+        if (riposteSwing && !ranged && !lance) Ripostes++;
+        if (t.Dead) { if (ranged) ArrowKills++; else if (Player.Mounted) SaddleKills++; }
     }
 
     static bool InArc(Unit a, Unit t, float reach, float minDot)
@@ -113,6 +122,7 @@ public partial class Battle
                     Stagger(a, 0.9f);
                     t.Stamina = MathF.Max(0, t.Stamina - 2);
                     RiposteUntil = Time + RiposteTime; // the opening: a swing started now is quick and hard to stop (P2)
+                    Parries++;
                     PlayerHit = ("PARRY! RIPOSTE", Time);
                     Sound(Cue.Clash, t.Pos);
                     return;
@@ -122,7 +132,7 @@ public partial class Battle
                     dmg *= 0.5f; // a two-handed guard only half-stops a blow from the wrong side
                     goto Struck;
                 }
-                t.Stamina -= (ranged ? 4 : dmg * (lance ? 1.2f : 0.8f)) * (t.Type.HasShield ? 1 : 1.4f); // a shield stops any direction, at a stamina cost
+                t.Stamina -= (ranged ? 4 : dmg * (lance ? 1.2f : 0.8f)) * (t.Type.HasShield ? 1 : 1.4f) * (Perk("IronGrip") ? 0.7f : 1); // a shield stops any direction, at a stamina cost
                 Sound(Cue.Block, t.Pos);
                 if (t.Stamina <= 0) { t.Stamina = 0; Stagger(t, 0.8f); Log("Guard broken!"); }
                 else if (!ranged && !lance) Stagger(a, 0.35f);
@@ -171,6 +181,7 @@ public partial class Battle
         if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? a.Type.Pierce : 0); // your mace or axe bites through armour too
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
+        if (a.IsPlayer) CountDeed(t, ranged, lance);
         Sound(ranged ? Cue.ArrowHit : t.Type.Armor >= 8 ? Cue.Clash : Cue.Hit, t.Pos);
         if (a.IsPlayer)
         {
@@ -283,7 +294,7 @@ public partial class Battle
         u.ActionTimer = 0.25f;
         float d = Vector2.Distance(u.Pos, at);
         var aim = at + (t?.Vel ?? Vector2.Zero) * (d / ArrowSpeed); // lead the target
-        aim += new Vector2(Gauss(), Gauss()) * d * 0.035f * spread * (u.Mounted ? 1.5f : 1) * Weather.Spread;
+        aim += new Vector2(Gauss(), Gauss()) * d * 0.035f * spread * (u.Mounted && !(u.IsPlayer && Perk("HorseArcher")) ? 1.5f : 1) * Weather.Spread;
         float time = MathF.Max(0.1f, Vector2.Distance(u.Pos, aim) / ArrowSpeed);
         var h = (aim - u.Pos) / time;
         float from = Terrain.Height(u.Pos) + 1.5f, land = Terrain.Height(aim) + (t?.Mounted == true ? 1.5f : 1.0f);
@@ -369,7 +380,7 @@ public partial class Battle
                 float closing = Vector2.Dot(u.Vel - t.Vel, hd);
                 if (closing < 4) continue;
                 u.Swing = AttackDir.Thrust;
-                Hit(u, t, 10 + closing * 4.2f, false, lance: true);
+                Hit(u, t, (10 + closing * 4.2f) * (u.IsPlayer ? (1 + 0.2f * RidingEdge) * (Perk("Lancer") ? 1.25f : 1) : 1), false, lance: true);
                 u.Couched = false;
                 u.Cooldown = 1.8f;
                 u.Contact = true;

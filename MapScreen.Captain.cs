@@ -9,7 +9,7 @@ partial class MapScreen
     static readonly Dictionary<string, string> SkillIcons = new()
     {
         ["Leadership"] = "flag", ["Tactics"] = "arrow", ["Logistics"] = "bread", ["Training"] = "up",
-        ["Medicine"] = "heart", ["Stewardship"] = "coin", ["Charm"] = "star", ["Arms"] = "sword",
+        ["Medicine"] = "heart", ["Stewardship"] = "coin", ["Charm"] = "star", ["Arms"] = "sword", ["Riding"] = "horse", ["Bowcraft"] = "arrow",
     };
 
     void SkillsPanel()
@@ -70,7 +70,7 @@ partial class MapScreen
     void SkillTree(Rectangle c)
     {
         var cap = C.Captain;
-        int n = Skills.All.Count, cols = 4, rows = (n + cols - 1) / cols;
+        int n = Skills.All.Count, cols = n > 8 ? 5 : 4, rows = (n + cols - 1) / cols;
         int bw = c.Width / cols, bh = c.Height / Math.Max(1, rows);
         (Rectangle Node, PerkDef Perk, SkillDef Skill, int State)? tip = null;
         (Rectangle Box, SkillDef Skill)? skillTip = null;

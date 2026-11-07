@@ -147,13 +147,31 @@ public static class Rules
         // Arms (F4): +2% health per 10 points, Hardened +20%, Duellist +15% damage.
         t.MaxHp *= 1 + Skills.Level(c, "Arms") / 500f + (c.Perks.Contains("Hardened") ? 0.2f : 0);
         if (c.Perks.Contains("Duellist")) t.Damage *= 1.15f;
+        if (w.Ranged && c.Perks.Contains("Marksman")) t.Damage *= 1.2f;   // Bowcraft perks (P3)
+        if (w.Ranged && c.Perks.Contains("Fletcher")) t.Ammo = (int)(t.Ammo * 1.5f);
+        if (c.Perks.Contains("HorseBreaker")) t.VsMounted *= 1.25f;      // Riding
         return t;
     }
 
+    /// Your horse: Riding adds 1% health per 4 points; Mounted Lord +30% health, Saddle-Fast +10% gallop.
     public static Mount CaptainMount(CaptainState c)
     {
         var m = Troops.Mount(Gear.Get(c.Kit.Horse).Mount);
-        return c.Perks.Contains("MountedLord") ? m with { Hp = m.Hp * 1.3f } : m;
+        m = m with { Hp = m.Hp * (1 + Skills.Level(c, "Riding") / 400f + (c.Perks.Contains("MountedLord") ? 0.3f : 0)) };
+        return c.Perks.Contains("SaddleFast") ? m with { Gallop = m.Gallop * 1.1f } : m;
+    }
+
+    /// The captain's part of a battle's options: skills, battle perks, kit and horse.
+    public static BattleOptions WithCaptain(this BattleOptions o, CaptainState c)
+    {
+        o.Arms = Skills.Level(c, "Arms");
+        o.Riding = Skills.Level(c, "Riding");
+        o.Bowcraft = Skills.Level(c, "Bowcraft");
+        o.Perks = c.Perks.ToHashSet();
+        o.PlayerType = CaptainType(c);
+        o.PlayerSide = c.Kit.Side != "" ? CaptainType(c, side: true) : null;
+        o.PlayerMount = CaptainMount(c);
+        return o;
     }
 
     public static int CompanySlots(CaptainState c) => Math.Clamp((int)B.CompanySlotsBase, 1, 10);

@@ -200,6 +200,7 @@ public static partial class SelfTest
         }
         Check(p.Ammo == 16 - shots, $"each shot costs a bolt ({p.Ammo} left after {shots})");
         Check(foe.Hp < foe.Type.MaxHp || foe.Dead, $"the captain's bolts find the man in front ({shots} shots)");
+        Check(b.ArrowHits >= 1 && b.Result().ArrowHits == b.ArrowHits, "your arrow hits are counted for Bowcraft");
         b.Input = new PlayerInput { Facing = up, Swap = true };
         b.Update(1 / 60f);
         b.Input = new PlayerInput { Facing = up };

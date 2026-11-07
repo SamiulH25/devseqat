@@ -40,6 +40,7 @@ public sealed partial class Campaign
         rng = new Rng(state);
         Factions.Bind(S.Factions);
         MigrateGear();
+        MigrateSkills();
         // Saves from before F6 have no buildings: give their towns the barracks their elite lines need.
         if (S.Settlements.Count > 0 && S.Settlements.All(t => t.Buildings.Count == 0)) SeedBuildings();
         // The map's settlement models follow the save (a v1 save was generated before the Northmarch had its capital).

@@ -43,7 +43,7 @@ public partial class Battle
         if (p.Mounted)
         {
             var h = p.Horse!;
-            float rate = TurnRate(p) * 1.2f;
+            float rate = TurnRate(p) * 1.2f * (1 + 0.25f * RidingEdge); // Riding (P3): a surer hand on the reins
             p.Heading += inp.Steer * rate * dt;
             float target = inp.Throttle > 0 ? (inp.Sprint ? h.Gallop : h.Trot) : inp.Throttle < 0 ? -1.8f : 0;
             if (p.Action == UnitAction.Stagger) target = 0;

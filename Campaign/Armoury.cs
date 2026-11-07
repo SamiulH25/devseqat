@@ -39,8 +39,8 @@ public sealed partial class Campaign
     public bool Owns(string id) => Gear.Find(id) is GearDef g && (g.Free || Captain.Kit.Owned.Contains(id));
     public bool Wears(string id) => Captain.Kit.Worn.Contains(id);
 
-    /// Why the captain may not use this piece (the Arms skill it needs), or null.
-    public string? CannotUse(GearDef g) => Skill("Arms") < g.Needs ? $"NEEDS ARMS {g.Needs}" : null;
+    /// Why the captain may not use this piece (the skill it needs), or null.
+    public string? CannotUse(GearDef g) => Skill(g.Skill) < g.Needs ? $"NEEDS {g.Skill.ToUpperInvariant()} {g.Needs}" : null;
 
     /// Why the captain may not buy it: owned, rank, skill or gold.
     public string? CannotBuy(GearDef g)

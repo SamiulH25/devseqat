@@ -6,6 +6,8 @@ namespace Ironfield;
 public sealed class GearDef
 {
     public string Id = "", Slot = "", Name = "", Look = "", Legs = "cloth", Feet = "boots", Mount = "", Text = "";
+    /// The skill `Needs` counts (Arms by default; Riding for great horses, Bowcraft for the war bow).
+    public string Skill = "Arms";
     public int Cost, Needs, Rank, Ammo;
     public float Damage, Reach, Windup, Recover, Pierce, Range, Reload = 1, Block, Armor, Speed;
     /// Two hands on the weapon (no shield); a spear that only thrusts.
@@ -51,6 +53,7 @@ public static class Gear
         {
             if (!Slots.Contains(g.Slot)) { yield return $"{g.Id}: unknown slot {g.Slot}"; continue; }
             if (g.Cost < 0 || g.Needs is < 0 or > 100 || g.Rank is < 0 or > 5) yield return $"{g.Id}: cost, needs or rank out of range";
+            if (!Skills.All.Any(s => s.Id == g.Skill)) yield return $"{g.Id}: unknown skill {g.Skill}";
             switch (g.Slot)
             {
                 case "weapon":

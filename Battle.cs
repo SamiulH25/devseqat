@@ -46,6 +46,8 @@ public sealed partial class Battle
     public PlayerInput Input;
     public bool Commanding; // player is in command view: no leadership aura, body stands idle
     public int Winner = -1, PlayerKills;
+    /// Your own deeds this battle (P3): see BattleResult.
+    public int SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes;
     public float Time, RallyCooldown;
     public (string Text, float At) PlayerHit = ("", -10); // last thing the player's weapon did, shown under the crosshair
 
@@ -435,7 +437,7 @@ public sealed partial class Battle
         var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 && !blunt ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
         var foeLeader = EnemyCaptain.Dead ? (Options.Tournament ? LeaderFate.Unhurt : Options.Duel ? LeaderFate.Wounded : LeaderFate.Slain) : LeaderFate.Unhurt;
         int horses = LooseHorses.Count(h => h.Team == 1);
-        return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills);
+        return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills, SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes);
     }
 
     /// The gap between squad s and the nearest active man of `team`. Exact, but squads whose bounding circles

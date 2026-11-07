@@ -1,5 +1,5 @@
 {
-  "_comment": "The captain's gear (docs/PROGRESSION.md P1). slot: weapon, shield, body, helm, horse. A weapon sets damage, reach, windup and recover; armour adds to the captain troop's armour and speed; a shield sets the block chance; a horse names a mount in troops.json. needs = the Arms skill to use it, rank = the career rank to buy it (0 free company, 1 sworn sword, 2 vassal, 3 lord). look = the sprite part (weapon, shield, body or head).",
+  "_comment": "The captain's gear (docs/PROGRESSION.md P1). slot: weapon, shield, body, helm, horse. A weapon sets damage, reach, windup and recover; armour adds to the captain troop's armour and speed; a shield sets the block chance; a horse names a mount in troops.json. needs = the level of `skill` (Arms unless named) to use it, rank = the career rank to buy it (0 free company, 1 sworn sword, 2 vassal, 3 lord). look = the sprite part (weapon, shield, body or head).",
   "gear": [
     { "id": "arming_sword", "slot": "weapon", "name": "Arming Sword", "cost": 0, "look": "sword", "damage": 30, "reach": 2.1, "windup": 0.4, "recover": 0.5,
       "text": "A plain, quick blade. Good with a shield." },
@@ -17,7 +17,7 @@
       "text": "Slow, and splits a helm. Two hands, no shield." },
     { "id": "hunting_bow", "slot": "weapon", "name": "Hunting Bow", "cost": 250, "look": "bow", "damage": 22, "reach": 1.2, "windup": 0.4, "recover": 0.5, "ammo": 24, "range": 45, "twoHanded": true,
       "text": "Shoot from the saddle or on foot. 24 arrows." },
-    { "id": "war_bow", "slot": "weapon", "name": "War Bow", "cost": 600, "needs": 20, "look": "longbow", "damage": 30, "reach": 1.2, "windup": 0.5, "recover": 0.5, "ammo": 24, "range": 60, "pierce": 0.15, "twoHanded": true,
+    { "id": "war_bow", "slot": "weapon", "name": "War Bow", "cost": 600, "needs": 20, "skill": "Bowcraft", "look": "longbow", "damage": 30, "reach": 1.2, "windup": 0.5, "recover": 0.5, "ammo": 24, "range": 60, "pierce": 0.15, "twoHanded": true,
       "text": "A heavy draw that carries far. 24 arrows." },
     { "id": "crossbow", "slot": "weapon", "name": "Crossbow", "cost": 650, "look": "crossbow", "damage": 42, "reach": 1.2, "windup": 0.4, "recover": 0.5, "ammo": 16, "range": 55, "pierce": 0.6, "reload": 2.2, "twoHanded": true,
       "text": "Slow to span, and punches through plate. 16 bolts." },
@@ -55,9 +55,9 @@
       "text": "Tough and tireless." },
     { "id": "warhorse", "slot": "horse", "name": "Warhorse", "cost": 400, "mount": "warhorse",
       "text": "Bred for battle." },
-    { "id": "destrier", "slot": "horse", "name": "Destrier", "cost": 900, "needs": 35, "mount": "destrier",
+    { "id": "destrier", "slot": "horse", "name": "Destrier", "cost": 900, "needs": 30, "skill": "Riding", "mount": "destrier",
       "text": "A great horse in cloth barding." },
-    { "id": "barded_destrier", "slot": "horse", "name": "Barded Destrier", "cost": 1600, "needs": 35, "rank": 2, "mount": "cataphract_horse",
+    { "id": "barded_destrier", "slot": "horse", "name": "Barded Destrier", "cost": 1600, "needs": 40, "skill": "Riding", "rank": 2, "mount": "cataphract_horse",
       "text": "A destrier in steel and cloth, for a vassal." }
   ]
 }

@@ -52,6 +52,7 @@ public static partial class SelfTest
         SkillTree();
         Armoury();
         Duels();
+        RidingAndBowcraft();
         BalanceMatchesData();
         HorsesCostGold();
         Career();

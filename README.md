@@ -122,11 +122,11 @@ that will not last. Brigands roam between them all.
   — promote your ready men, choose a perk, see a steward for work, buy food — and arriving in a town opens the tab that step
   names. You can field up to **10 companies** right away; **Renown** raises your total troop count (men limit); a bar under the captain
   panel shows the next rise and how far off it is, and the results screen repeats it after every battle.
-- **Captain skills:** eight skills (Leadership, Tactics, Logistics, Training, Medicine, Stewardship, Charm, Arms) rise by doing what
+- **Captain skills:** ten skills (Leadership, Tactics, Logistics, Training, Medicine, Stewardship, Charm, Arms, Riding, Bowcraft) rise by doing what
   they name: commanding, winning against the odds, marching, promoting men, healing them, ruling fiefs, winning goodwill and ransoms,
-  and your own kills. Every 25 points opens a perk on that branch (32 in all: Bannerman, Iron Will, Tactician, Siegecraft,
-  Quartermaster, Drillmaster, Cheap Steel, Surgeon, Tax Roll, Silver Tongue, Ransom Broker, War Cry, Duellist, ...), and the heavier
-  gear needs Arms. K opens the skill tree. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
+  your own kills and parries on foot, your kills and lance hits from the saddle, and your arrows. Every 25 points opens a perk on that branch (40 in all: Bannerman, Iron Will, Tactician, Siegecraft,
+  Quartermaster, Drillmaster, Cheap Steel, Surgeon, Tax Roll, Silver Tongue, Ransom Broker, War Cry, Duellist, Lancer, Marksman, ...). Heavy
+  gear needs Arms, great horses Riding, the war bow Bowcraft. K opens the skill tree. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
 
 ## Controls
 

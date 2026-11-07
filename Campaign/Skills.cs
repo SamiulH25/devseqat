@@ -69,12 +69,26 @@ public static class Skills
             new() { Id = "Recruiter", Name = "Recruiter", Text = "+20% OF A SETTLEMENT'S RECRUITS FOLLOW YOU" },
             new() { Id = "Haggler", Name = "Haggler", Text = "MERCENARIES AND HORSES 15% CHEAPER" },
         } },
-        new() { Id = "Arms", Name = "Arms", Rises = "YOUR OWN KILLS IN BATTLE", Governs = "YOUR HEALTH +2% PER 10 POINTS, HEAVY GEAR NEEDS ARMS", Perks =
+        new() { Id = "Arms", Name = "Arms", Rises = "YOUR KILLS ON FOOT, PARRIES AND RIPOSTES", Governs = "YOUR HEALTH +2% PER 10 POINTS, QUICKER BLOWS, HEAVY GEAR NEEDS ARMS", Perks =
         {
             new() { Id = "WarCry", Name = "War Cry", Text = "RALLY +10 MORALE, 3 S FASTER" },
             new() { Id = "Duellist", Name = "Duellist", Text = "YOUR DAMAGE +15%" },
-            new() { Id = "MountedLord", Name = "Mounted Lord", Text = "YOUR HORSE HAS 30% MORE HEALTH" },
+            new() { Id = "IronGrip", Name = "Iron Grip", Text = "BLOCKING COSTS YOU 30% LESS STAMINA" },
             new() { Id = "Hardened", Name = "Hardened", Text = "YOUR HEALTH +20%" },
+        } },
+        new() { Id = "Riding", Name = "Riding", Rises = "KILLS AND LANCE HITS FROM THE SADDLE", Governs = "YOUR HORSE +1% HEALTH PER 4 POINTS, TURNS AND STRIKES BETTER, GREAT HORSES NEED RIDING", Perks =
+        {
+            new() { Id = "MountedLord", Name = "Mounted Lord", Text = "YOUR HORSE HAS 30% MORE HEALTH" },
+            new() { Id = "Lancer", Name = "Lancer", Text = "YOUR COUCHED LANCE HITS 25% HARDER" },
+            new() { Id = "SaddleFast", Name = "Saddle-Fast", Text = "YOUR HORSE GALLOPS 10% FASTER" },
+            new() { Id = "HorseBreaker", Name = "Horse Breaker", Text = "YOUR BLOWS AGAINST RIDERS +25%" },
+        } },
+        new() { Id = "Bowcraft", Name = "Bowcraft", Rises = "YOUR OWN ARROW HITS AND KILLS", Governs = "QUICKER DRAW, TIGHTER AIM, THE WAR BOW NEEDS BOWCRAFT", Perks =
+        {
+            new() { Id = "Fletcher", Name = "Fletcher", Text = "50% MORE ARROWS FOR YOUR BOW" },
+            new() { Id = "SteadyAim", Name = "Steady Aim", Text = "YOUR SHOTS SCATTER 30% LESS" },
+            new() { Id = "HorseArcher", Name = "Horse Archer", Text = "NO PENALTY SHOOTING FROM THE SADDLE" },
+            new() { Id = "Marksman", Name = "Marksman", Text = "YOUR ARROWS HIT 20% HARDER" },
         } },
     };
 
@@ -119,6 +133,13 @@ public sealed partial class Campaign
         c.Skills["Tactics"] = 10;
     }
 
+    /// A save from before Riding and Bowcraft (P3): they start at half the captain's Arms (at least 5).
+    internal void MigrateSkills()
+    {
+        foreach (var id in new[] { "Riding", "Bowcraft" })
+            if (!Captain.Skills.ContainsKey(id)) Captain.Skills[id] = MathF.Max(5, Skill("Arms") / 2);
+    }
+
     /// Take a perk on a branch with a choice open; returns why not.
     public string? TakePerk(string id)
     {
@@ -141,14 +162,24 @@ public sealed partial class Campaign
             Log($"Your {skill.ToLowerInvariant()} reaches {(int)after}: a perk may be chosen (K).");
     }
 
-    /// After a battle you fought: Leadership for commanding, Tactics for winning against the odds, Arms for your own kills.
+    /// After a battle you fought: Leadership for commanding, Tactics for winning against the odds, and your own hands:
+    /// Arms for kills on foot, Riding for the saddle and the lance, Bowcraft for your arrows (P3).
     internal void SkillsAfterBattle(BattleResult r, bool won, float own, float foe, int menLed)
     {
         Practise("Leadership", 1.5f + Rules.PerMan(menLed / 40f));
         float odds = foe / MathF.Max(1, own);
         Practise("Tactics", won ? 1 + 4 * Math.Clamp(odds - 0.8f, 0, 2) : 0.4f);
-        // A played battle counts your own kills; an auto-resolved one assumes you did your part.
-        int kills = r.Duration > 0 ? r.PlayerKills : won ? rng.Next(1, 5) : rng.Next(0, 2);
-        Practise("Arms", kills * 0.45f);
+        if (r.Duration > 0)
+        {
+            int onFoot = Math.Max(0, r.PlayerKills - r.SaddleKills - r.ArrowKills);
+            Practise("Arms", onFoot * 0.45f + (r.Parries + r.Ripostes) * 0.15f);
+            Practise("Riding", r.SaddleKills * 0.4f + r.LanceHits * 0.3f);
+            Practise("Bowcraft", r.ArrowKills * 0.35f + r.ArrowHits * 0.15f);
+            return;
+        }
+        // An auto-resolved battle assumes you did your part, with what you carry, from the saddle you lead from.
+        int kills = won ? rng.Next(1, 5) : rng.Next(0, 2);
+        Practise(Gear.Get(Captain.Kit.Weapon).Ranged ? "Bowcraft" : "Arms", kills * 0.45f);
+        Practise("Riding", 0.3f);
     }
 }

@@ -8,6 +8,9 @@ public sealed class BattleOptions
     public float AuraRadius = 12, RallyBonus = 25, RallyCooldown = 12;
     /// Your Arms skill (0-100; a new captain has 15): quicker blows, a wider parry window, less stamina a swing (P2).
     public float Arms = 15;
+    /// Your Riding and Bowcraft skills (P3; a new captain has 5) and the perks you hold that act in battle.
+    public float Riding = 5, Bowcraft = 5;
+    public HashSet<string> Perks = new();
     /// Iron Will perk: companies near you will not rout while a third of them stand.
     public bool IronWill;
     /// You are wounded: you command from the rear (command view only).
@@ -79,5 +82,7 @@ public sealed record CompanyResult(int Team, int Id, int Start, int Standing, in
 public sealed record StackResult(string Troop, int Start, int Standing, int Fled, int Fallen);
 
 /// What a battle hands back to the campaign. Winner: 0 you, 1 the enemy (also when you withdraw).
+/// PlayerKills counts all your kills; of them SaddleKills from horseback and ArrowKills with your bow. LanceHits, ArrowHits,
+/// Parries and Ripostes are what you did with your own hands (P3: each feeds a skill).
 public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<CompanyResult> Companies, LeaderFate Captain, LeaderFate EnemyLeader, int HorsesTaken,
-    int PlayerKills = 0);
+    int PlayerKills = 0, int SaddleKills = 0, int ArrowKills = 0, int LanceHits = 0, int ArrowHits = 0, int Parries = 0, int Ripostes = 0);

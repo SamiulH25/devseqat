@@ -47,11 +47,10 @@ public sealed partial class Campaign
         setup.Options = new BattleOptions
         {
             Duel = true, Couriers = false, Cap = 10, Scouted = true,
-            Arms = Skill("Arms"), PlayerType = Rules.CaptainType(Captain), PlayerSide = Captain.Kit.Side != "" ? Rules.CaptainType(Captain, side: true) : null,
             EnemyLeader = LordChampion(e), EnemyDamage = Settings.Current.EnemyDamage,
             Ground = TerrainParams.Lists, Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, e.Id)),
             Palette = new[] { mine, his == mine ? 3 : his },
-        };
+        }.WithCaptain(Captain);
         return setup;
     }
 

@@ -18,6 +18,10 @@ public sealed partial class Battle
     bool riposteSwing;
     /// How far your Arms skill has come past a new captain's 15, 0-1.
     public float ArmsEdge => Math.Clamp((Options.Arms - 15) / 85f, 0, 1);
+    /// Riding and Bowcraft past a new captain's 5, 0-1 (P3).
+    public float RidingEdge => Math.Clamp((Options.Riding - 5) / 95f, 0, 1);
+    public float BowEdge => Math.Clamp((Options.Bowcraft - 5) / 95f, 0, 1);
+    bool Perk(string id) => Options.Perks.Contains(id);
     float ParryTime => ParryWindow + 0.1f * ArmsEdge;
 
     /// You release a swing (P2): its stamina cost, power and windup from the chain, a riposte, tiredness and Arms.
@@ -87,7 +91,8 @@ public sealed partial class Battle
     /// Your bow (P1): hold attack to draw (the aim steadies), release to loose at the foe nearest your facing.
     void PlayerBow(Unit p, PlayerInput inp, float dt)
     {
-        float draw = p.Type.Windup * 1.75f / p.Type.Reload; // a crossbow is spanned already: it aims quickly, then reloads slowly
+        float draw = p.Type.Windup * 1.75f / p.Type.Reload // a crossbow is spanned already: it aims quickly, then reloads slowly
+            * (1 - 0.25f * BowEdge);
         if (inp.Attack)
         {
             if (p.Ammo <= 0) { if (!p.Charging) PlayerHit = ("NO ARROWS: SWAP WEAPON OR GO TO THE WAGON", Time); p.Charging = true; return; }
@@ -103,7 +108,7 @@ public sealed partial class Battle
         if (p.Ammo <= 0 || charge < 0.3f) return; // let down without loosing
         var t = AimTarget(p);
         var aim = t?.Pos ?? p.Pos + p.Dir * p.Type.Range * 0.8f;
-        Loose(p, aim, t, p.Type.Damage * (0.5f + 0.5f * charge), 1.6f - 1.1f * charge);
+        Loose(p, aim, t, p.Type.Damage * (0.5f + 0.5f * charge), (1.6f - 1.1f * charge) * (1 - 0.3f * BowEdge) * (Perk("SteadyAim") ? 0.7f : 1));
         p.Cooldown = 0.3f + (p.Type.Reload - 1) * 1.2f;
     }
 

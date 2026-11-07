@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1 and P2 built; P3 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1 and P2 built; P3 in progress** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -232,3 +232,14 @@ Give the captain something to do in each fight beyond "win".
   battle has `PlayerWounded`. The state (`duelWith`, `duelWon`) is not saved and clears after the battle or a retreat.
   `SelfTest.DuelFight` (a parrying captain beats a tier IV lord 6/6) and `SelfTest.Duels` (acceptance, effects).
   Not done: duels in towns or as events, the AI lord challenging you.
+- P3 (step 1, Riding and Bowcraft): two new skills in `Skills.Defaults` (10 now). Riding: horse health +1% per 4 points
+  (`CaptainMount`), and `RidingEdge` (0-1 from 5 to 100) gives mounted turning +25%, saddle blows +10% and the couched lance
+  +20%; perks Mounted Lord (moved from Arms; same id), Lancer (lance +25%), Saddle-Fast (gallop +10%), Horse Breaker (vs
+  riders +25%). Bowcraft: `BowEdge` gives draw time -25% and scatter -30%; perks Fletcher (+50% arrows), Steady Aim (scatter
+  -30%), Horse Archer (no saddle penalty), Marksman (arrows +20%). Arms trades Mounted Lord for Iron Grip (blocking costs 30%
+  less stamina). `GearDef.Skill` names the skill `needs` counts: the war bow Bowcraft 20, the destrier Riding 30, the barded
+  destrier Riding 40. `Rules.WithCaptain(options, captain)` fills every battle's captain part (skills, `Perks`, kit, horse)
+  for field battles, tournaments and duels. The battle counts your deeds (`SaddleKills`, `ArrowKills`, `LanceHits`,
+  `ArrowHits`, `Parries`, `Ripostes` in `BattleResult`), and `SkillsAfterBattle` splits the rise: Arms for kills on foot and
+  parries/ripostes, Riding for saddle kills and lance hits, Bowcraft for arrows; an auto-resolved battle gives Arms (or
+  Bowcraft with a bow in hand) and a little Riding. Old saves: `MigrateSkills` sets both at half the captain's Arms (min 5).

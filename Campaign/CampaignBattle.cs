@@ -198,13 +198,11 @@ public partial class Campaign
             Cap = Settings.Current.BattleSize,
             PlayerWounded = S.Hours < Captain.WoundedUntil,
             Scouted = scouts || Has("Tactician"),
-            Arms = Skill("Arms"), PlayerType = Rules.CaptainType(Captain), PlayerSide = Captain.Kit.Side != "" ? Rules.CaptainType(Captain, side: true) : null,
-            PlayerMount = Rules.CaptainMount(Captain),
             EnemyDamage = Settings.Current.EnemyDamage, EnemyMorale = DuelMoraleFor(enemy),
             Ground = Map.BattleGround(Player.Pos),
             Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
-        };
+        }.WithCaptain(Captain);
         return setup;
     }
 

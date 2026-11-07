@@ -666,6 +666,55 @@ public static partial class SelfTest
         Check(c2.PrepareBattle(lord2).Options.PlayerWounded && c2.CannotChallenge(lord2) != null, "a lost duel leaves you wounded for the battle");
     }
 
+    /// Riding and Bowcraft (P3): split off Arms, rising with what you do from the saddle and with the bow.
+    static void RidingAndBowcraft()
+    {
+        var c = Campaign.New(29);
+        Check(c.Skill("Riding") == 5 && c.Skill("Bowcraft") == 5, "a new captain starts with a little Riding and Bowcraft");
+        Check(Skills.Of("MountedLord")!.Id == "Riding" && Skills.Of("Fletcher")!.Id == "Bowcraft", "the horse perks are Riding's, the bow perks Bowcraft's");
+        Check(c.CannotUse(Gear.Get("destrier"))!.Contains("RIDING") && c.CannotUse(Gear.Get("war_bow"))!.Contains("BOWCRAFT"), "great horses need Riding, the war bow Bowcraft");
+        // An old save gets them at half its Arms.
+        var st = c.S;
+        st.Captain.Skills.Remove("Riding"); st.Captain.Skills.Remove("Bowcraft"); st.Captain.Skills["Arms"] = 40;
+        var old = new Campaign(st);
+        Check(old.Skill("Riding") == 20 && old.Skill("Bowcraft") == 20, "an old save's captain rides and shoots at half his Arms");
+        // A battle fought from the saddle with the lance raises Riding; one with the bow raises Bowcraft.
+        float Rise(Campaign k, string skill, BattleResult r)
+        {
+            float before = k.Skill(skill);
+            var bandit = k.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
+            bandit.Pos = k.Player.Pos;
+            k.Encounter = bandit;
+            var setup = k.PrepareBattle(bandit);
+            var res = Rules.AutoResolve(setup.Side0, setup.Side1, new Rng(new CampaignState { Seed = 4 }));
+            k.FinishBattle(res with { Duration = 120, PlayerKills = r.PlayerKills, SaddleKills = r.SaddleKills, ArrowKills = r.ArrowKills, LanceHits = r.LanceHits, ArrowHits = r.ArrowHits, Parries = r.Parries }, setup);
+            k.Captain.WoundedUntil = 0;
+            return k.Skill(skill) - before;
+        }
+        var empty = new BattleResult(0, 0, new List<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Unhurt, 0);
+        var k1 = Campaign.New(29);
+        float riding = Rise(k1, "Riding", empty with { PlayerKills = 6, SaddleKills = 6, LanceHits = 5 });
+        float arms = Rise(Campaign.New(29), "Arms", empty with { PlayerKills = 6, SaddleKills = 6, LanceHits = 5 });
+        Check(riding > 3 && arms < 0.5f, $"kills from the saddle raise Riding, not Arms ({riding:0.0} / {arms:0.0})");
+        float bow = Rise(Campaign.New(29), "Bowcraft", empty with { PlayerKills = 4, ArrowKills = 4, ArrowHits = 10 });
+        Check(bow > 2, $"arrow kills and hits raise Bowcraft ({bow:0.0})");
+        float parry = Rise(Campaign.New(29), "Arms", empty with { Parries = 10 });
+        Check(parry > 1, $"parries raise Arms ({parry:0.0})");
+        // Their perks.
+        var archer = new CaptainState { Kit = { Weapon = "hunting_bow" } };
+        int arrows = Rules.CaptainType(archer).Ammo;
+        float dmg = Rules.CaptainType(archer).Damage;
+        archer.Perks.AddRange(new[] { "Fletcher", "Marksman" });
+        Check(Rules.CaptainType(archer).Ammo > arrows && Rules.CaptainType(archer).Damage > dmg, "Fletcher and Marksman: more arrows, harder hits");
+        var rider = new CaptainState();
+        float hp = Rules.CaptainMount(rider).Hp, gallop = Rules.CaptainMount(rider).Gallop;
+        rider.Skills["Riding"] = 80;
+        rider.Perks.Add("SaddleFast");
+        Check(Rules.CaptainMount(rider).Hp > hp && Rules.CaptainMount(rider).Gallop > gallop, "Riding toughens your horse; Saddle-Fast quickens it");
+        var o = new BattleOptions().WithCaptain(rider);
+        Check(o.Riding == 80 && o.Perks.Contains("SaddleFast") && o.PlayerMount!.Gallop > gallop, "the battle gets your skills, perks and horse");
+    }
+
     static void SkillTree()
     {
         var a = Campaign.New(91);
