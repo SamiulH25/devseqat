@@ -135,6 +135,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Battles from the campaign: prepare, finish, auto-resolve, apply results | `Campaign/CampaignBattle.cs` (`PrepareBattle`, `FinishBattle`, `Apply`) |
 | Your town actions (recruit, hire, horses, split, contract, rest) | `Campaign/CampaignActions.cs` |
 | The captain's gear: kit (`CaptainState.Kit`), buy/sell/wear, armourer stock, old-save tiers -> kit | `Gear.cs` (`GearDef`, loads `Data/gear.json`, `Validate`) / `Campaign/Armoury.cs` (`BuyGear`, `Equip`, `SellGear`, `ArmourerStock`, `MigrateGear`); `Rules.CaptainType(c, side)` builds the battle unit; UI `MapScreen.Armoury.cs` (MARKET tab) |
+| Duels before a battle: who accepts, the lord's fighting form, the fight (`BattleSetup.Duel`, `BattleOptions.Duel`), what it does to the battle | `Campaign/Duels.cs` (`CannotChallenge`, `LordChampion`, `PrepareDuel`, `FinishDuel`); `Battle.SetupDuel`; CHALLENGE in `MapScreen.Dialogs.cs` `EncounterPanel` |
 | Lord/bandit/realm AI, spawning | `Campaign/CampaignAI.cs` (`LordThink`, `BanditThink`, `FactionAI`) |
 | Company math, auto-resolve, army building | `Campaign/Rules.cs` |
 | World generation, provinces, rivers, roads | `Campaign/WorldMap.cs` |

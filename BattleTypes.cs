@@ -36,6 +36,12 @@ public sealed class BattleOptions
     public bool Couriers = true;
     /// A tournament (S5): blunt weapons, so your captain is never taken and the champion who leads them is not slain.
     public bool Tournament;
+    /// Single combat before a battle (P2): you on foot against the enemy leader, nobody else; a fall is a yield, not a death.
+    public bool Duel;
+    /// The enemy leader's own type (a lord's champion in a duel); null = the plain captain.
+    public UnitType? EnemyLeader;
+    /// Added to every enemy man's morale at the start (a duel lost by his lord: -15).
+    public float EnemyMorale;
 }
 
 /// When and in what weather a battle is fought (roadmap C4). The campaign passes its hour and season.

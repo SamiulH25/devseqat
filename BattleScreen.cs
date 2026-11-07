@@ -102,6 +102,14 @@ sealed partial class BattleScreen
         yaw = MathHelper.PiOver2;
         pitch = 0.3f;
         paused = menuOpen = helpOpen = wheelOpen = false;
+        if (s.Options.Duel)
+        {
+            // Single combat (P2): no lines to draw up, straight into your own eyes.
+            deploying = false;
+            SetCommand(false);
+            battle.Log($"Single combat with {s.EnemyName}. The armies watch.");
+            return;
+        }
         StartDeployment();
         battle.Log($"Battle against {s.EnemyName}: {s.Options.Ground?.Name.ToLowerInvariant() ?? "open"} ground, {s.Options.Weather.Describe}.");
         if (!s.Options.Scouted) battle.Log("No scouts: you cannot see their ranks until the fight starts.");

@@ -83,7 +83,20 @@ public sealed partial class Battle
         BuildDivisions(0, player);
         BuildDivisions(1, enemy);
         if (Options.PlayerWounded) Player.Fled = true; // too hurt to ride: you command from the rear
+        foreach (var u in Units) if (u.Team == 1 && !u.IsLeader) u.Morale = Math.Clamp(u.Morale + Options.EnemyMorale, 5, 100);
+        if (Options.Duel) SetupDuel();
         UpdateCentroids();
+    }
+
+    /// Single combat (P2): the two leaders face each other on foot a few paces apart.
+    void SetupDuel()
+    {
+        Player.Horse = null;
+        Player.Pos = new Vector2(0, -5);
+        EnemyCaptain.Horse = null;
+        EnemyCaptain.Pos = new Vector2(0, 5);
+        EnemyCaptain.Face(Player.Pos - EnemyCaptain.Pos);
+        eGuard.Order = Order.Charge;
     }
 
     List<Squad> Role(int team, string role) => roles[team].TryGetValue(role, out var l) ? l : roles[team][role] = new List<Squad>();
@@ -183,7 +196,7 @@ public sealed partial class Battle
         Player.IsPlayer = Player.IsLeader = true;
         SetupCaptain();
         Player.Facing = Player.Heading = MathHelper.PiOver2;
-        eGuard = AddSquad(1, UnitType.Captain, 1, new(0, scripted ? 80 : 34), 1, -Vector2.UnitY);
+        eGuard = AddSquad(1, Options.EnemyLeader ?? UnitType.Captain, 1, new(0, scripted ? 80 : 34), 1, -Vector2.UnitY);
         EnemyCaptain = eGuard.Units[0];
         EnemyCaptain.IsLeader = true;
         UpdateCentroids();
@@ -418,8 +431,9 @@ public sealed partial class Battle
             foreach (var (c, _) in reserves[team])
                 list.Add(new CompanyResult(team, c.Id, c.Count, c.Count, 0, 0, 0, new int[8], Deployed: false,
                     Stacks: c.Stacks.Select(x => new StackResult(x.Troop, x.Count, x.Count, 0, 0)).ToList()));
-        var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 && !Options.Tournament ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
-        var foeLeader = EnemyCaptain.Dead && !Options.Tournament ? LeaderFate.Slain : LeaderFate.Unhurt;
+        bool blunt = Options.Tournament || Options.Duel; // the lists and single combat: a fall is a yield
+        var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 && !blunt ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
+        var foeLeader = EnemyCaptain.Dead ? (Options.Tournament ? LeaderFate.Unhurt : Options.Duel ? LeaderFate.Wounded : LeaderFate.Slain) : LeaderFate.Unhurt;
         int horses = LooseHorses.Count(h => h.Team == 1);
         return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills);
     }

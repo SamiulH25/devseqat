@@ -22,6 +22,8 @@ public sealed class BattleSetup
     public int SiegeOf = -1;
     /// A tournament in this settlement (S5; -1: a real fight).
     public int Tournament = -1;
+    /// A duel with this party's lord (P2), -1 = none.
+    public int Duel = -1;
 }
 
 /// Company rules (caps, strength, XP, upgrades), auto-resolve, and the battle bridge (docs/CAMPAIGN.md 4-6).

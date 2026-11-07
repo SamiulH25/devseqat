@@ -38,6 +38,7 @@ public static partial class SelfTest
         CaptainCombat();
         CaptainKit();
         SkillBouts();
+        DuelFight();
         RangedRoles();
         FatigueAndSupply();
         Generals();
@@ -50,6 +51,7 @@ public static partial class SelfTest
         CampaignDivisions();
         SkillTree();
         Armoury();
+        Duels();
         BalanceMatchesData();
         HorsesCostGold();
         Career();

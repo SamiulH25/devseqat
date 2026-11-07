@@ -200,7 +200,7 @@ public partial class Campaign
             Scouted = scouts || Has("Tactician"),
             Arms = Skill("Arms"), PlayerType = Rules.CaptainType(Captain), PlayerSide = Captain.Kit.Side != "" ? Rules.CaptainType(Captain, side: true) : null,
             PlayerMount = Rules.CaptainMount(Captain),
-            EnemyDamage = Settings.Current.EnemyDamage,
+            EnemyDamage = Settings.Current.EnemyDamage, EnemyMorale = DuelMoraleFor(enemy),
             Ground = Map.BattleGround(Player.Pos),
             Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
@@ -211,7 +211,9 @@ public partial class Campaign
     public BattleReport FinishBattle(BattleResult r, BattleSetup setup)
     {
         if (setup.Tournament >= 0) return FinishTournament(r, S.Settlements[setup.Tournament]);
+        if (setup.Duel >= 0 && PartyById(setup.Duel) is Party foe) return FinishDuel(r, foe);
         Encounter = null;
+        duelWith = -1;
         var report = Apply(r, setup.Side0, setup.Side1, setup.EnemyName, setup.SiegeOf >= 0);
         DivisionsAfterBattle(r);
         if (setup.SiegeOf >= 0) AfterAssault(S.Settlements[setup.SiegeOf], r.Winner == 0);
@@ -221,7 +223,7 @@ public partial class Campaign
     public BattleReport AutoResolveEncounter()
     {
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge, Edge(Encounter!));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge * DuelEdge(Encounter!), Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }
@@ -238,6 +240,7 @@ public partial class Campaign
     /// Escape, leaving a rearguard: the slowest company loses 10-25% of its men.
     public void Retreat()
     {
+        duelWith = -1;
         var e = Encounter!;
         var rear = Player.Companies.Where(c => c.Men > 0).OrderBy(c => c.Type.Mount != null ? 1 : 0).ThenByDescending(c => c.Men).FirstOrDefault();
         if (rear != null)

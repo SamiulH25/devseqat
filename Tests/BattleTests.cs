@@ -281,6 +281,16 @@ public static partial class SelfTest
         p.Horse = null;
         b.EnemyCaptain.Pos = new Vector2(0, 400); // the enemy's own captain stays out of it
         var foes = b.AddSquad(1, Troops.Get("men_at_arms"), men, p.Pos + new Vector2(0, 3), men, -Vector2.UnitY).Units;
+        bool won = Fight(b, foes, parry);
+        if (Environment.GetEnvironmentVariable("BOUT_DEBUG") != null) Console.WriteLine($"bout {seed} parry={parry} men={men}: t={b.Time:0.0} hp {p.Hp:0}/{p.Type.MaxHp:0} left {foes.Count(f => f.Active)} stam {p.Stamina:0} chain {b.Chain}");
+        return won;
+    }
+
+    /// A scripted captain fights `foes` on foot for up to a minute: parrying and riposting, or only swinging.
+    /// True if he is standing when the last of them falls.
+    static bool Fight(Battle b, IReadOnlyList<Unit> foes, bool parry)
+    {
+        var p = b.Player;
         float hold = 0;
         for (int i = 0; i < 60 * 60 && p.Active && foes.Any(f => f.Active); i++)
         {
@@ -307,8 +317,29 @@ public static partial class SelfTest
             b.Input = inp;
             b.Update(1 / 60f);
         }
-        if (Environment.GetEnvironmentVariable("BOUT_DEBUG") != null) Console.WriteLine($"bout {seed} parry={parry} men={men}: t={b.Time:0.0} hp {p.Hp:0}/{p.Type.MaxHp:0} left {foes.Count(f => f.Active)} stam {p.Stamina:0} chain {b.Chain}");
         return p.Active && foes.All(f => !f.Active);
+    }
+
+    /// Single combat (P2): the two leaders alone on foot; the lord comes for you; a fall is a yield.
+    static void DuelFight()
+    {
+        int won = 0;
+        for (int seed = 0; seed < 6; seed++)
+        {
+            var none = new ArmySpec("none", 0, new List<Company>());
+            var lordParty = new Party { Tier = 4 };
+            var b = new Battle(400 + seed, none, none, new BattleOptions { Duel = true, Couriers = false, EnemyLeader = Campaign.LordChampion(lordParty), PlayerMount = Mount.Warhorse });
+            Check(!b.Player.Mounted && b.Units.Count(u => u.Active) == 2, "a duel is the two leaders, on foot");
+            Check(b.EnemyCaptain.Type.MaxHp > UnitType.Captain.MaxHp, "a lord of a strong army fights better than a plain captain");
+            bool w = Fight(b, new[] { b.EnemyCaptain }, parry: true);
+            for (int i = 0; i < 120 && b.Winner < 0; i++) b.Update(1 / 60f);
+            var r = b.Result();
+            Check(b.Winner >= 0, "the duel ends");
+            Check(r.Captain != LeaderFate.Captured && r.EnemyLeader != LeaderFate.Slain, "a fall in single combat is a yield, not a death or capture");
+            if (w) won++;
+        }
+        Console.WriteLine($"duels: a parrying captain beats a tier IV lord {won}/6");
+        Check(won >= 3, $"a captain who parries well wins most duels against a strong lord ({won}/6)");
     }
 
     static void RangedRoles()

@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1 built; P2 in progress** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1 and P2 built; P3 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -221,3 +221,14 @@ Give the captain something to do in each fight beyond "win".
   windup -15%, stamina a swing -25%, parry window +0.1 s. `SelfTest.SkillBouts`: against two men-at-arms a scripted
   parrying captain wins 10/10, a captain who only swings 0/10 (against one he still wins, at about half his health).
   Mounted swings were already in (any direction from the saddle, with the speed bonus).
+- P2 (step 2, duels): `Campaign/Duels.cs`. CHALLENGE on a lord's encounter panel (`CannotChallenge`: lords only; not
+  while wounded; one an encounter; Cautious never; a lord 1.5x stronger than you only if Reckless or Honourable).
+  `PrepareDuel` builds a setup with empty armies and `BattleOptions.Duel` on the lists ground; the enemy leader is
+  `LordChampion(party)` (the captain's type, +12 health, +2 damage, +1 armour a tier past II, plate from tier IV).
+  In battle `SetupDuel` puts both on foot 10 m apart, the AI general just sends him at you, and `Result` reports a fall as
+  Wounded on both sides (no capture, no slaying); the battle screen skips deployment. `FinishDuel` (from `FinishBattle`)
+  keeps the encounter open: a win gives +10 renown, Arms 2.5, a deed, and the next battle against that party gets
+  `BattleOptions.EnemyMorale` -15 (`DuelMoraleFor`; auto-resolve x1.1, a loss x0.95); a loss wounds you 3 days, so the
+  battle has `PlayerWounded`. The state (`duelWith`, `duelWon`) is not saved and clears after the battle or a retreat.
+  `SelfTest.DuelFight` (a parrying captain beats a tier IV lord 6/6) and `SelfTest.Duels` (acceptance, effects).
+  Not done: duels in towns or as events, the AI lord challenging you.

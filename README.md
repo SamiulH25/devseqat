@@ -103,6 +103,7 @@ that will not last. Brigands roam between them all.
 - **Three realms:** wars and truces are per pair; a realm that grows too strong unites the others against it.
 - **Encounters:** attack (the battle opens in a **deployment phase**: arrange your lines in your third of the field, then Space or START), auto-resolve,
   retreat (a rearguard pays), or pay brigands off. Esc in a campaign battle lets you **withdraw**.
+- **Duels:** meeting a lord, **CHALLENGE** him to single combat between the armies (on foot, the two of you, a fall is a yield). A cautious lord refuses, and one whose army is half again as strong as yours sees no need unless he is reckless or honourable. Win: +10 renown and his men start the battle 15 morale down. Lose: you are wounded and lead the battle from the rear. One duel an encounter.
 - **Results:** the fallen split into killed and wounded (heavier armour survives more often). Then come XP, loot, ransom, bounty, renown and captured horses, and sometimes a piece of the beaten leader's gear to take (sure if you cut down a lord; a tournament win may give a prize too).
   If you fall you are wounded, and command from the rear for a few days; if your army also loses, you are captured and ransomed.
 - **The world runs without you.** Lords recruit, refit, upgrade (same rules and prices), patrol, hunt, flee and muster hosts, and

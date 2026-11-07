@@ -225,6 +225,7 @@ public partial class Battle
 
     void General(int team)
     {
+        if (Options.Duel) { eGuard.Order = Order.Charge; return; } // single combat: he comes for you, nothing else moves
         if ((team == 1 || Options.AutoPlayer) && SoundRetreat(team)) return;
         if (Wall != null) { if (team == 1) SiegeDefend(); else SiegeAttack(); return; }
         int foe = 1 - team;

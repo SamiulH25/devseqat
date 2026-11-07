@@ -633,6 +633,39 @@ public static partial class SelfTest
         Check(offered >= 1, $"beaten brigand chiefs leave gear behind ({offered} in {fights} fights)");
     }
 
+    /// Duels before a battle (P2): who accepts, and what winning or losing does to the battle that follows.
+    static void Duels()
+    {
+        var c = Campaign.New(23);
+        var lord = c.S.Parties.First(p => p.Kind == PartyKind.Lord && c.CharacterOf(p) != null);
+        var ch = c.CharacterOf(lord)!;
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
+        Check(c.CannotChallenge(bandit) != null, "brigands do not fight duels");
+        ch.Traits = new List<string> { "Cautious" };
+        Check(c.CannotChallenge(lord)!.Contains("RISK"), "a cautious lord will not risk himself");
+        ch.Traits = new List<string> { "Reckless" };
+        Check(c.CannotChallenge(lord) == null, "a reckless lord accepts");
+        lord.Pos = c.Player.Pos;
+        c.Encounter = lord;
+        var setup = c.PrepareDuel(lord);
+        Check(setup.Options.Duel && setup.Player.Companies.Count == 0 && setup.Enemy.Companies.Count == 0 && setup.Duel == lord.Id, "the duel is the two of you");
+        float renown = c.Captain.Renown;
+        var rep = c.FinishBattle(new BattleResult(0, 20, new List<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Wounded, 0), setup);
+        Check(rep.Won && c.Captain.Renown > renown && c.Encounter == lord, "a won duel brings renown, and the battle is still to fight");
+        Check(c.CannotChallenge(lord)!.Contains("ALREADY"), "one duel an encounter");
+        var battle = c.PrepareBattle(lord);
+        Check(battle.Options.EnemyMorale < 0, "his men start the battle shaken");
+        c.FinishBattle(Rules.AutoResolve(battle.Side0, battle.Side1, new Rng(new CampaignState { Seed = 1 })), battle);
+        Check(c.PrepareBattle(bandit).Options.EnemyMorale == 0, "the shaking lasts one battle");
+        // Lose one: you lead the battle wounded.
+        var c2 = Campaign.New(23);
+        var lord2 = c2.S.Parties.First(p => p.Kind == PartyKind.Lord && c2.CharacterOf(p) != null);
+        c2.CharacterOf(lord2)!.Traits = new List<string> { "Honourable" };
+        c2.Encounter = lord2;
+        c2.FinishBattle(new BattleResult(1, 20, new List<CompanyResult>(), LeaderFate.Wounded, LeaderFate.Unhurt, 0), c2.PrepareDuel(lord2));
+        Check(c2.PrepareBattle(lord2).Options.PlayerWounded && c2.CannotChallenge(lord2) != null, "a lost duel leaves you wounded for the battle");
+    }
+
     static void SkillTree()
     {
         var a = Campaign.New(91);

@@ -11,7 +11,8 @@ partial class MapScreen
     {
         var e = C.Encounter!;
         if (C.Meeting(e)) { MeetingPanel(e); return; }
-        var r = Modal(680, 380, "ENCOUNTER", Style.Foe);
+        bool lord = e.Kind == PartyKind.Lord;
+        var r = Modal(lord ? 780 : 680, 380, "ENCOUNTER", Style.Foe);
         int x = r.X + ui.U(24), y = r.Y + ui.U(52);
         ui.Text(e.Name.ToUpperInvariant(), x, y, PartyColor(e));
         ui.Text(Allegiance(e), x, y + ui.U(20), Style.Dim, 1);
@@ -35,7 +36,7 @@ partial class MapScreen
             if (x > r.Right - ui.U(180)) { x = r.X + ui.U(24); y += ui.U(36); }
         }
         Note(r);
-        int bw = ui.U(156), by = r.Bottom - ui.U(40), bx = r.X + (r.Width - 4 * bw - 3 * ui.U(8)) / 2;
+        int n = lord ? 5 : 4, bw = ui.U(lord ? 140 : 156), by = r.Bottom - ui.U(40), bx = r.X + (r.Width - n * bw - (n - 1) * ui.U(8)) / 2;
         bool fit = C.Player.Men > 0;
         if (ui.Button(new Rectangle(bx, by, bw, ui.U(30)), "ATTACK", fit)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareBattle(e)); }
         if (ui.Button(new Rectangle(bx + bw + ui.U(8), by, bw, ui.U(30)), "AUTO-RESOLVE", fit)) { C.AutoResolveEncounter(); ShowResults(); }
@@ -48,6 +49,12 @@ partial class MapScreen
             if (C.Parley()) panel = PanelKind.None;
         }
         if (price < 0 && ui.Hover(new Rectangle(bx + 3 * (bw + ui.U(8)), by, bw, ui.U(30)))) note = e.Kind == PartyKind.Monster ? $"{Campaign.Plural(e.Breed).ToUpperInvariant()} DO NOT BARGAIN" : "LORDS AT WAR DO NOT BARGAIN";
+        if (!lord) return;
+        // Single combat between the lines (P2): win and his men start shaken; lose and you lead the battle wounded.
+        var duel = new Rectangle(bx + 4 * (bw + ui.U(8)), by, bw, ui.U(30));
+        string? cant = C.CannotChallenge(e);
+        if (ui.Button(duel, "CHALLENGE", cant == null)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareDuel(e)); }
+        if (ui.Hover(duel)) note = cant ?? "MEET HIS LORD IN SINGLE COMBAT. WIN AND HIS MEN START THE BATTLE SHAKEN.";
     }
 
     /// Travellers on the road who are not your enemy (S4): buy from them, give alms, ask for news, rob them, or ride on.

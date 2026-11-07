@@ -465,7 +465,20 @@ sealed class ScreenHost : Game
                 break;
             }
             case 38: map.Stage("armourer"); Shot("campaign-armourer"); break;
-            case 39: Exit(); break;
+            case 39:
+            {
+                // Single combat (P2): the encounter with a lord, then the duel itself.
+                mode = Mode.Map;
+                var lord = c.S.Parties.First(p => p.Kind == PartyKind.Lord && c.CharacterOf(p) != null && p.Faction != Math.Max(0, c.Captain.Contract));
+                c.CharacterOf(lord)!.Traits = new List<string> { "Reckless" };
+                lord.Pos = c.Player.Pos + new Vector2(2, 0);
+                c.Captain.WoundedUntil = 0;
+                c.Encounter = lord;
+                map.Stage("encounter"); Shot("campaign-encounter-lord"); break;
+            }
+            case 40: StartCampaignBattle(c.PrepareDuel(c.Encounter!)); cStage++; shotFrames = 0; break;
+            case 41 when battle.Battle.Time > 3: Shot("campaign-duel"); break;
+            case 42: Exit(); break;
         }
     }
 }
