@@ -286,4 +286,46 @@ public static partial class SelfTest
         q.Choose(1);
         Check(q.S.SitesSeen.Count == seen + 1, "climbing a tree shows you a place on the map");
     }
+
+    /// Polish (S7): deeds outlive the log and add up to a summary; you make out parties only within sight (further with a
+    /// watchtower's view); a weary enemy sues a king for peace.
+    static void Polish()
+    {
+        var c = Campaign.New(9);
+        var site = c.Sites.OrderBy(x => Vector2.Distance(x.Pos, c.Player.Pos)).First();
+        c.Player.Pos = site.Pos + new Vector2(3, 0);
+        c.GoTo(site);
+        for (int i = 0; i < 6 && c.Tally("sites") == 0; i++) { c.Tick(1); c.Encounter = null; c.S.Event = null; }
+        Check(c.Tally("sites") == 1 && c.S.Deeds.Count > 0, "finding a place is a deed");
+        var deed = c.S.Deeds[^1];
+        for (int i = 0; i < 70; i++) c.Log($"filler {i}");
+        Check(!c.S.Log.Contains(deed) && c.ChronicleEntries.Contains(deed), "the chronicle keeps your deeds after the log forgets them");
+        var sum = c.Summary();
+        Console.WriteLine("summary: " + string.Join(" / ", sum));
+        Check(sum.Count >= 3 && sum[2].Contains("1 PLACE FOUND"), "the end summary counts what you did");
+        // Sight.
+        var far = c.Player.Pos + new Vector2(c.PlayerSight * 1.5f, 0);
+        Check(c.InSight(c.Player.Pos + new Vector2(10, 0)) && !c.InSight(far), "you make out parties near you, not far off");
+        c.S.Event = new PendingEvent { Id = "site_watchtower", Site = site.Id };
+        c.Choose(0);
+        Check(c.InSight(far), "from a watchtower you see much further for a while");
+        // A weary enemy sues for peace.
+        var k = Campaign.New(7008);
+        k.Captain.Fealty = true;
+        k.Captain.Renown = 400;
+        foreach (var t in k.S.Settlements.Where(s => s.Faction == 0 && s.Kind != SettlementKind.Village).OrderByDescending(s => s.Kind == SettlementKind.Town).Take(2)) t.Owner = k.Player.Id;
+        Check(k.DeclareIndependence() == null, "a lord rebels to test peace offers");
+        int me = k.Captain.Contract;
+        var war = k.WarBetween(me, 0)!;
+        war.Since = -1000;
+        for (int d = 0; d < 40 && k.S.Event?.Id != "peace_offer" && k.FactionsAtWar(me, 0); d++)
+        {
+            if (war.A == me) war.ExhB = 70; else war.ExhA = 70;
+            Days(k, 1);
+            if (k.S.Event is { Id: not "peace_offer" }) k.S.Event = null;
+        }
+        Check(k.S.Event?.Id == "peace_offer", "a weary enemy sends an envoy to sue for peace");
+        k.Choose(0);
+        Check(!k.FactionsAtWar(me, 0), "accepting the envoy ends the war");
+    }
 }

@@ -449,6 +449,7 @@ sealed partial class MapScreen
             case "fief": at = s; tab = "FIEF"; panel = PanelKind.Settlement; note = ""; break;
             case "household": charTab = C.S.Factions.Count; panel = PanelKind.Characters; note = ""; break;
             case "beat": panel = PanelKind.Beat; break;
+            case "gameover": panel = PanelKind.GameOver; break;
             case "event": panel = PanelKind.Event; note = ""; break;
             case "settlement":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));

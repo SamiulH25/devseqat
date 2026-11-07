@@ -144,6 +144,11 @@ public sealed partial class Campaign
     /// Enemy towns will not trade with you.
     public bool Refuses(Settlement s) => Captain.Contract >= 0 && FactionsAtWar(Captain.Contract, s.Faction);
 
+    /// How far you can make out who a party is (S7): a Scout sees a quarter further, a watchtower's view doubles it for a while.
+    /// Your fiefs watch the country around them too.
+    public float PlayerSight => B.Vision * 1.6f * Map.Spread * (HasCompanion("Scout") ? 1.25f : 1) * (S.Hours < S.FarSightUntil ? 2 : 1);
+    public bool InSight(Vector2 p) => Vector2.Distance(p, Player.Pos) < PlayerSight || Fiefs.Any(f => f.Kind != SettlementKind.Village && Vector2.Distance(f.Pos, p) < 30 * Map.Spread);
+
     public Settlement? SettlementAt(Vector2 p, float r = 6f) => S.Settlements.Where(s => Vector2.Distance(s.Pos, p) < r).OrderBy(s => Vector2.Distance(s.Pos, p)).FirstOrDefault();
     public bool InTown(Party p) => SettlementAt(p.Pos) is { Kind: SettlementKind.Town } t && (p.Kind != PartyKind.Player || !Refuses(t));
 

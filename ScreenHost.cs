@@ -454,7 +454,17 @@ sealed class ScreenHost : Game
             }
             case 35: c.Encounter = null; map.Stage("tavern"); Shot("campaign-tavern"); break;
             case 36: map.Stage("elders"); Shot("campaign-elders"); break;
-            case 37: Exit(); break;
+            case 37:
+            {
+                // The end of the war (S7): the summary of what you did.
+                c.S.GameOver = true;
+                c.S.EndReason = "YOU ARE TAKEN, AND YOUR CAPTORS WILL NOT RANSOM YOU.";
+                c.S.Tally["quests"] = 6; c.S.Tally["sites"] = 4; c.S.Tally["tournaments"] = 1;
+                map.Stage("gameover");
+                Shot("campaign-gameover");
+                break;
+            }
+            case 38: Exit(); break;
         }
     }
 }

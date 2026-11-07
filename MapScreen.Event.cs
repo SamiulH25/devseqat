@@ -108,6 +108,8 @@ partial class MapScreen
             "sick" => ($"{arg}% FALL SICK", Style.Bad, "skull"),
             "reveal" => ("A PLACE ON THE MAP", Style.Text, "scroll"),
             "man" => ("A MAN JOINS", Style.Ok, "flag"),
+            "farsight" => ($"SEE FAR FOR {arg} DAYS", Style.Ok, "scroll"),
+            "peace" => ("PEACE", Style.Ok, "flag"),
             "flag" => ("", Style.Dim, ""),
             _ => (fx.Replace('_', ' ').Replace(":", " ").ToUpperInvariant(), Style.Text, "scroll"),
         };

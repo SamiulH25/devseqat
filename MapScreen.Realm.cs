@@ -183,16 +183,16 @@ partial class MapScreen
     void Chronicle(Rectangle c)
     {
         int y = c.Y, step = ui.U(14);
-        foreach (var e in Enumerable.Reverse(C.S.Log))
+        foreach (var e in C.ChronicleEntries)
         {
             if (y + ui.U(10) > c.Bottom) break;
             string t = e.Text.ToUpperInvariant();
-            var col = t.Contains("WAR") ? Style.Bad : t.StartsWith("YOU") ? Kit.Gilt : t.Contains("TRUCE") || t.Contains("PEACE") ? Style.Warn : Style.Text;
+            var col = C.IsDeed(e) || t.StartsWith("YOU") ? Kit.Gilt : t.Contains("WAR") ? Style.Bad : t.Contains("TRUCE") || t.Contains("PEACE") ? Style.Warn : Style.Text;
             ui.Rect(new Rectangle(c.X + ui.U(1), y + ui.U(5), ui.U(1), step - ui.U(4)), Color.White * 0.1f);
             ui.Rect(new Rectangle(c.X, y + ui.U(2), ui.U(3), ui.U(3)), col);
             ui.Text($"DAY {(int)(e.At / 24) + 1}", c.X + ui.U(10), y, Style.Dim, 1);
             int tx = c.X + ui.U(64), fit = (c.Right - tx) / (6 * ui.S);
-            ui.Text(t.Length > fit ? t[..Math.Max(1, fit - 1)] + "." : t, tx, y, Style.Text, 1);
+            ui.Text(t.Length > fit ? t[..Math.Max(1, fit - 1)] + "." : t, tx, y, C.IsDeed(e) ? Kit.Parchment : Style.Text, 1);
             y += step;
         }
         if (C.S.Log.Count == 0) ui.Text("NOTHING WORTH THE INK YET.", c.X, y, Style.Dim, 1);

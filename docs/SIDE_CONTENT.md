@@ -1,6 +1,6 @@
 # Side content, polish and a fuller world: plan
 
-Status: **in progress** (built steps are listed under "As built" at the end). This plan covers what a player does between the big wars: places to find on the map,
+Status: **S1-S7 built; S8 (creatures at sites) left for later** (built steps are listed under "As built" at the end). This plan covers what a player does between the big wars: places to find on the map,
 small quests, life on the roads and in towns, many more events, and a polish pass on the campaign screens. The main
 loop (companies, career, fiefs, war, creatures) is built (`CAMPAIGN_OVERHAUL.md`, `CREATURES.md`) and is not changed here.
 Numbers marked *(tune)* are starting values.
@@ -187,6 +187,18 @@ them. Then S3 and S4 together (escort needs caravans), S5, S6, and S7 last so th
   step; it goes on your list with a fresh six-day deadline, and the reward, renown and the giver's favour come at the end.
   Not done: a ransom under truce to an enemy town (it goes to any far town at peace), lords' own escort jobs. Test: `Quests`
   (and `EventsAndQuests` finishes whichever quest the lord gave).
+- **S7 (polish):** `Campaign/Record.cs`. Map labels are placed by priority (you, your target and goal; towns and castles;
+  lords; villages; bands, monsters and travellers; sites; distant banners) and a label that would overlap one already placed
+  is dropped, or, for a party under another party's label, folded into it as "+N"; caravans drop out when zoomed far out.
+  Your sight (`PlayerSight`: 88 units at the starting map's spread, a quarter more with a Scout, doubled for two days after
+  climbing a watchtower: `farsight:N`, `S.FarSightUntil`; your fiefs watch 30 around them): beyond it a party's label is
+  "?" and its tooltip says it is too far to make out. Deeds (sites found, contracts and quests done, tournaments won,
+  caravans robbed, holdouts burnt out, the war won) go to `S.Deeds`, which the realm tab's chronicle shows after the 60-line
+  log forgets them, and are counted in `S.Tally` with battles and victories; `Summary()` puts them on the game-over panel and
+  a line of them on the victory beat. A weary enemy now sues a king for peace (`SuePeace`, the forced event `peace_offer`,
+  at most every 20 days; `peace` accepts, with gold if you are well ahead). Already built before: tier II village recruits
+  at prosperity 75 (`RecruitTroopFor`). Not done: AI alliances (as planned), tooltips on every number. Test: `Polish`;
+  staged shot `campaign-gameover.png` (and `campaign-map.png` shows the decluttered labels).
 - **S6 (events):** `Data/events.json` grows from 25 to 55 events. New triggers in `Campaign.Find`: `spring`, `summer`, `autumn`,
   `winter`; `forest`, `hills` (the province you are camped in) and `river` (camped by one); `near_site` (an unseen site
   within a short ride: `{site}`); `after_battle` (within a day of a fight: `{company}`); `companion` (`{companion}`);

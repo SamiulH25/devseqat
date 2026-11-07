@@ -266,7 +266,8 @@ public sealed partial class Campaign
                     Captain.Renown += 5;
                     if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you did what I asked of you", 15);
                 }
-                Log(c.Reward > 0 ? $"Contract done: {c.Text} (+{c.Reward:0} crowns)." : $"Done: {c.Text}");
+                if (c.Then == null) Deed($"Contract done: {c.Text} (+{c.Reward:0} crowns).", "quests");
+                else Log($"Done: {c.Text}");
                 QuestStepDone(c);
                 AudioEngine.Current?.Play(Cue.Coin);
             }

@@ -91,6 +91,10 @@ that will not last. Brigands roam between them all.
   the map; ride to one to search, pray, rest or ask. Merchant caravans and pilgrims travel the roads: buy from them, ask their
   news, or rob them (their realm will not forget). Village elders ask for small jobs anyone may take (wolves, goblins, a
   stolen daughter, grain, militia drill); towns add caravan escorts and ransoms; lords may send you after a lost sword.
+- **Sight:** you make out who a party is only within a day's sight of your company or your fiefs; further off you see
+  banners, not names. A Scout companion sees a quarter further; the top of a watchtower doubles it for two days.
+- **Your record:** your deeds stay in the realm tab's chronicle, and when the war ends a summary tells what you did.
+  A weary enemy may send an envoy to sue a king for peace.
 - **Town life:** the tavern has a wanderer now and then and rumours of real things nearby (ride there from the list).
   A tournament is a short fight in the lists with your captain and six of your best men: blunt weapons, no deaths, a purse.
 - **Prisoners** follow you (they slow you and eat): sell, recruit or free them. Lords you beat may be captured and ransomed.

@@ -150,9 +150,11 @@ partial class MapScreen
     /// Ironman: the captain was taken and executed. The campaign (and its save) ends here.
     void GameOverPanel()
     {
-        var r = Modal(620, 260, "YOUR WAR IS OVER", Style.Bad);
-        ui.TextC($"YOU LED YOUR COMPANY FOR {C.Day} DAYS AND WON {C.Captain.Renown:0} RENOWN.", r.X + r.Width / 2f, r.Y + ui.U(70), Style.Text, 1);
-        ui.TextC(C.S.EndReason != "" ? C.S.EndReason : "THE ENEMY DID NOT RANSOM YOU.", r.X + r.Width / 2f, r.Y + ui.U(90), Style.Dim, 1);
+        var r = Modal(620, 330, "YOUR WAR IS OVER", Style.Bad);
+        ui.TextC(C.S.EndReason != "" ? C.S.EndReason : "THE ENEMY DID NOT RANSOM YOU.", r.X + r.Width / 2f, r.Y + ui.U(66), Style.Warn, 1);
+        int y = r.Y + ui.U(96);
+        foreach (var line in C.Summary()) { ui.TextC(line, r.X + r.Width / 2f, y, Style.Text, 1); y += ui.U(18); }
+        if (C.S.Deeds.Count > 0) ui.TextC("LAST DEED: " + C.S.Deeds[^1].Text.ToUpperInvariant(), r.X + r.Width / 2f, y + ui.U(8), Kit.Parchment, 1);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(50), ui.U(220), ui.U(32)), "TO THE TITLE"))
         {
             var p = Path.Combine(CampaignState.SaveDir, "autosave.json");

@@ -74,6 +74,7 @@ public static partial class SelfTest
         Quests();
         TownLife();
         EventSpread();
+        Polish();
 
         for (int seed = 1; seed <= 3; seed++)
         {

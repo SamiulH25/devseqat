@@ -70,6 +70,7 @@ public sealed partial class Campaign
     void ArriveAtSite(Site site)
     {
         if (!S.SitesSeen.Contains(site.Id)) S.SitesSeen.Add(site.Id);
+        if (!S.SitesVisited.Contains(site.Id)) { S.SitesVisited.Add(site.Id); Deed($"You come to the {site.Name}.", "sites"); }
         SiteQuests(site);
         if (!SiteReady(site)) { Log($"{site.Name}: {SiteWait(site).ToLowerInvariant()}."); return; }
         var fits = Events.Where(e => e.Trigger == "site_" + site.Kind).ToList();

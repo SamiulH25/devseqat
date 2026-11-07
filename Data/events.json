@@ -176,7 +176,7 @@
       "id": "site_watchtower", "trigger": "site_watchtower", "cooldown": 0, "title": "{site}",
       "text": "An old tower of the kings, its stair half gone. From the top a man can see three provinces on a clear day.",
       "choices": [
-        { "label": "CLIMB TO THE TOP", "effects": ["spy", "spent:3"] },
+        { "label": "CLIMB TO THE TOP", "effects": ["spy", "farsight:2", "spent:3"] },
         { "label": "RIDE ON", "effects": [] }
       ]
     },
@@ -446,6 +446,14 @@
       "choices": [
         { "label": "TAKE HIM ON", "effects": ["man", "xp:3"] },
         { "label": "BUY HIM A MEAL", "effects": ["food:-1", "renown:1"] }
+      ]
+    },
+    {
+      "id": "peace_offer", "trigger": "peace_offer", "cooldown": 0, "scene": "court", "title": "AN ENVOY FROM {lord}",
+      "text": "An envoy rides in under a white branch. {lord} is weary of the war and asks for peace. If you are well ahead, he will pay for it.",
+      "choices": [
+        { "label": "MAKE PEACE", "effects": ["peace", "renown:2"] },
+        { "label": "FIGHT ON", "effects": ["renown:1", "opinion:-5"] }
       ]
     },
     {

@@ -67,7 +67,8 @@ public sealed partial class Campaign
         if (won) { S.Gold += TournamentPurse; t.Unrest = Math.Clamp(t.Unrest - 3, 0, 100); }
         var fate = r.Captain == LeaderFate.Unhurt ? LeaderFate.Unhurt : LeaderFate.Wounded;
         if (fate == LeaderFate.Wounded) Captain.WoundedUntil = MathF.Max(Captain.WoundedUntil, (float)S.Hours + 24);
-        Log(won ? $"You win the tournament at {t.Name} and its purse of {TournamentPurse:0} crowns." : $"You are beaten in the lists at {t.Name}. The crowd cheers you anyway.");
+        if (won) Deed($"You win the tournament at {t.Name} and its purse of {TournamentPurse:0} crowns.", "tournaments");
+        else Log($"You are beaten in the lists at {t.Name}. The crowd cheers you anyway.");
         Report = new BattleReport(won, $"Champions of {t.Name}", rows, won ? TournamentPurse : 0, 0, 0, renown, 0, fate);
         return Report;
     }

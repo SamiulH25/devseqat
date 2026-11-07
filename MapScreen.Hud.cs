@@ -62,21 +62,41 @@ partial class MapScreen
         return p.Z is > 0 and < 1 ? new Vector2(p.X, p.Y) : null;
     }
 
+    /// One map label waiting to be placed: lower Pri wins a crowded spot. Party labels that lose to another party's label fold
+    /// into it as "+N" (S7).
+    sealed class Label
+    {
+        public int Pri, More;
+        public Rectangle R;
+        public bool Party;
+        public Action<Label> Draw = null!;
+    }
+
     void Flags()
     {
+        var all = new List<Label>();
+        var pl = C.Player;
+        int target = pl.ChaseId >= 0 ? pl.ChaseId : -1, goalTown = pl.GoalSettlement;
         foreach (var s in C.S.Settlements)
         {
             if (Screen(G(s.Pos, s.Kind == SettlementKind.Village ? 6 : 11)) is not Vector2 sp) continue;
             // Pulled back over a bigger world, the small labels would collide: villages drop out first, then towns shrink.
-            if (s.Kind == SettlementKind.Village && zoom > 230) continue;
+            if (s.Kind == SettlementKind.Village && zoom > 230 && s.Id != goalTown) continue;
             var col = SideColor(s.Faction);
             string label = s.Name.ToUpperInvariant() + (s.Besieged ? " (BESIEGED)" : "") + (s.Owner == C.Player.Id ? " *" : "");
             int scale = s.Kind == SettlementKind.Village || zoom > 300 ? 1 : 2;
             int w = ui.TW(label, scale) + ui.U(10);
             var r = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(scale == 2 ? 18 : 13), w, ui.U(scale == 2 ? 18 : 13));
-            ui.Rect(r, Color.Black * 0.45f);
-            ui.Rect(new Rectangle(r.X, r.Bottom - ui.U(2), r.Width, ui.U(2)), col);
-            ui.TextC(label, sp.X, r.Y + ui.U(3), Color.White, scale);
+            all.Add(new Label
+            {
+                Pri = s.Id == goalTown ? 0 : s.Kind == SettlementKind.Village ? 3 : 1, R = r,
+                Draw = l =>
+                {
+                    ui.Rect(l.R, Color.Black * 0.45f);
+                    ui.Rect(new Rectangle(l.R.X, l.R.Bottom - ui.U(2), l.R.Width, ui.U(2)), col);
+                    ui.TextC(label, sp.X, l.R.Y + ui.U(3), Color.White, scale);
+                },
+            });
         }
         // Sites: small pale labels, only close in; a spent one is dimmed, one you have never visited is marked "?".
         if (zoom <= 200)
@@ -86,9 +106,11 @@ partial class MapScreen
                 bool ready = C.SiteReady(site);
                 string label = site.Name.ToUpperInvariant() + (C.SiteSeen(site) ? "" : " ?");
                 int w = ui.TW(label, 1) + ui.U(8);
-                var r = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(12), w, ui.U(12));
-                ui.Rect(r, Color.Black * (ready ? 0.4f : 0.25f));
-                ui.TextC(label, sp.X, r.Y + ui.U(2), ready ? Kit.Parchment : Style.Dim, 1);
+                all.Add(new Label
+                {
+                    Pri = site.Id == C.S.GoalSite ? 0 : 5, R = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(12), w, ui.U(12)),
+                    Draw = l => { ui.Rect(l.R, Color.Black * (ready ? 0.4f : 0.25f)); ui.TextC(label, sp.X, l.R.Y + ui.U(2), ready ? Kit.Parchment : Style.Dim, 1); },
+                });
             }
         // Smoke rises over villages that were threatened or stripped.
         foreach (var v in C.S.Settlements.Where(v => v.ThreatUntil > C.S.Hours))
@@ -102,12 +124,35 @@ partial class MapScreen
         foreach (var p in C.S.Parties)
         {
             if (p.Down || Screen(G(p.Pos, 9)) is not Vector2 sp) continue;
-            string label = $"{p.Name.ToUpperInvariant()} {p.Men}";
+            bool mine = p == pl || p.Id == target || p == C.Encounter;
+            // Far out, travellers' labels drop out unless they are your business.
+            if (!mine && zoom > 260 && p.Kind == PartyKind.Caravan) continue;
+            // Beyond your sight you see banners on the move, not whose (S7).
+            bool seen = mine || C.InSight(p.Pos);
+            string label = seen ? $"{p.Name.ToUpperInvariant()} {p.Men}" : "?";
             int w = ui.TW(label, 1) + ui.U(8);
-            var r = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(12), w, ui.U(12));
-            ui.Rect(r, PartyColor(p) * 0.85f);
-            ui.TextC(label, sp.X, r.Y + ui.U(3), Color.Black, 1);
+            all.Add(new Label
+            {
+                Pri = mine ? 0 : !seen ? 6 : p.Kind is PartyKind.Lord ? 2 : 4, Party = true, R = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(12), w, ui.U(12)),
+                Draw = l =>
+                {
+                    string text = l.More > 0 ? $"{label} +{l.More}" : label;
+                    var r = l.More > 0 ? new Rectangle(l.R.X, l.R.Y, ui.TW(text, 1) + ui.U(8), l.R.Height) : l.R;
+                    ui.Rect(r, seen ? PartyColor(p) * 0.85f : Color.Black * 0.5f);
+                    ui.TextC(text, r.Center.X, r.Y + ui.U(3), seen ? Color.Black : Style.Dim, 1);
+                },
+            });
         }
+        // Place by priority (stable within one, so labels do not flicker), then draw.
+        var placed = new List<Label>();
+        foreach (var l in all.OrderBy(l => l.Pri))
+        {
+            var pad = new Rectangle(l.R.X - ui.U(2), l.R.Y - ui.U(1), l.R.Width + ui.U(4), l.R.Height + ui.U(2));
+            var hit = l.Pri == 0 ? null : placed.FirstOrDefault(o => o.R.Intersects(pad));
+            if (hit == null) placed.Add(l);
+            else if (l.Party && hit.Party && hit.Pri > 0) hit.More++;
+        }
+        foreach (var l in placed.AsEnumerable().Reverse()) l.Draw(l);
     }
 
     void TopBar()
@@ -275,6 +320,11 @@ partial class MapScreen
             linesOut.Add((C.S.Provinces[site.Province].Title.ToUpperInvariant(), Style.Dim));
             string wait = C.SiteWait(site);
             linesOut.Add((wait != "" ? wait : C.SiteSeen(site) ? "CLICK TO GO THERE" : "NOT YET VISITED: CLICK TO GO THERE", wait != "" ? Style.Dim : Style.Ok));
+        }
+        else if (p != null && p != C.Player && p != C.Encounter && p.Id != C.Player.ChaseId && !C.InSight(p.Pos))
+        {
+            linesOut.Add(("BANNERS IN THE DISTANCE", Style.Dim));
+            linesOut.Add(("TOO FAR TO MAKE OUT. RIDE CLOSER, OR TAKE A SCOUT.", Style.Dim));
         }
         else if (p != null)
         {

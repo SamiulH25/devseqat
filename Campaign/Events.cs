@@ -37,20 +37,20 @@ public sealed partial class Campaign
     {
         "fief_unrest", "fief_poor", "fief_rich", "lord_friend", "lord_hates_liege", "big_band", "veterans", "hungry_winter",
         "unpaid", "prisoners", "war_weary", "in_town", "brigand_king", "pretender", "graves",
-        "site_ruin", "site_shrine", "site_stones", "site_battlefield", "site_mine", "site_hermit", "site_watchtower", "site_spring", "site_mill",
+        "peace_offer", "site_ruin", "site_shrine", "site_stones", "site_battlefield", "site_mine", "site_hermit", "site_watchtower", "site_spring", "site_mill",
         "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night",
     };
     /// Days after a "flag:name" effect before the "flag:name" event follows.
     public const int FlagDays = 7;
     /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
-    internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" || trigger.StartsWith("site_");
+    internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" || trigger.StartsWith("site_");
     static readonly string[] Verbs =
     {
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
-        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man",
+        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace",
     };
-    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man" };
+    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace" };
     static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion" };
 
     static List<EventDef>? events;
@@ -260,6 +260,8 @@ public sealed partial class Campaign
                 foreach (var w in S.Wars.Where(w => w.Active && (w.A == Captain.Contract || w.B == Captain.Contract))) AddExhaustion(w, Captain.Contract, n);
                 break;
             case "flag": S.Flags[fx[5..]] = (float)S.Hours; break;
+            case "farsight": S.FarSightUntil = (float)S.Hours + n * 24; return $"For {n:0} days you will see much further.";
+            case "peace": return lord != null ? AcceptPeace(lord.Faction) : null;
             case "man": return GiftMen(1, SettlementNear(Player.Pos)) > 0 ? "He joins your company." : "You have no room for him.";
             case "sick":
                 int ill = 0;

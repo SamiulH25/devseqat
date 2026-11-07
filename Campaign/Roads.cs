@@ -156,7 +156,7 @@ public sealed partial class Campaign
         foreach (var l in S.Characters.Where(x => x.Kind == "lord" && !x.Dead && x.Faction == e.Faction))
             l.Opinion[S.CaptainChar] = Math.Clamp(l.Opinion.GetValueOrDefault(S.CaptainChar) + hit, -100, 100);
         if (e.Breed == "pilgrims") Captain.Renown = MathF.Max(0, Captain.Renown - 5);
-        Log($"You fall on the {e.Name}. The {FactionNames[Math.Max(0, e.Faction)]} will hear of it.");
+        Deed($"You fall on the {e.Name}. The {FactionNames[Math.Max(0, e.Faction)]} will hear of it.", "robbed");
     }
 
     /// Ride on: the travellers go their way.

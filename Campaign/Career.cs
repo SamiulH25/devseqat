@@ -557,11 +557,11 @@ public sealed partial class Campaign
         {
             S.Won = true;
             var how = Rank == Rank.King ? "AS KING" : "AS MARSHAL: THE KINGMAKER";
-            Log($"The {FactionNames[f]} and their tributaries hold {Pct(RealmShare(f))} of the land. You have won the war.");
+            Deed($"The {FactionNames[f]} and their tributaries hold {Pct(RealmShare(f))} of the land. You have won the war.");
             Beat = ("THE WAR IS WON", new[]
             {
                 $"THE {FactionNames[f].ToUpperInvariant()} AND THEIR TRIBUTARIES HOLD {Pct(RealmShare(f))} OF THE PROVINCES. YOU WON {how}.",
-                $"DAY {Day}, {Captain.Renown:0} RENOWN, {FiefSeats} FIEFS.", "PLAY ON AS LONG AS YOU LIKE.",
+                $"DAY {Day}, {Captain.Renown:0} RENOWN, {FiefSeats} FIEFS.", Summary()[2], "PLAY ON AS LONG AS YOU LIKE.",
             });
         }
         if (!S.GameOver && f >= 0 && Rank == Rank.King && !Alive(f))

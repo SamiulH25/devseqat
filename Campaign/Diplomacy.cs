@@ -120,8 +120,8 @@ public sealed partial class Campaign
             AddExhaustion(w, w.A, 0.12f);
             AddExhaustion(w, w.B, 0.12f);
             if (S.Hours - w.Since < 20 * 24 || LeaderWar(w)) continue;
-            // You decide your own realm's peace (from the realm screen); the AI decides the rest.
-            if (RulerOf(w.A) == Me || RulerOf(w.B) == Me) continue;
+            // You decide your own realm's peace (from the realm screen), though a weary enemy may sue for it (S7); the AI decides the rest.
+            if (RulerOf(w.A) == Me || RulerOf(w.B) == Me) { SuePeace(w); continue; }
             float strengthA = Rules.PerMan(Strength(w.A) / 1500) - w.ExhA / 40, strengthB = Rules.PerMan(Strength(w.B) / 1500) - w.ExhB / 40;
             int win = w.ScoreA / 1500 - w.ExhA / 40 >= w.ScoreB / 1500 - w.ExhB / 40 ? w.A : w.B, lose = win == w.A ? w.B : w.A;
             float le = ExhaustionOf(w, lose), we = ExhaustionOf(w, win);
@@ -225,6 +225,27 @@ public sealed partial class Campaign
     }
 
     public string? OfferPeace(int target) => OfferPeace(target, Terms.White);
+
+    /// A weary enemy sues you, the king, for peace (S7): the forced event "peace_offer", at most every 20 days.
+    void SuePeace(War w)
+    {
+        int me = Captain.Contract, them = w.A == me ? w.B : w.A;
+        if (Rank != Rank.King || RulerOf(them) is not Character ruler || S.Event != null) return;
+        if (S.EventsFired.TryGetValue("peace_offer", out float at) && S.Hours - at < 20 * 24) return;
+        float tired = ExhaustionOf(w, them);
+        if (!(tired > 50 || tired > 30 && Margin(w, me, them) > 0.5f) || !rng.Chance(0.25f)) return;
+        Force("peace_offer", new PendingEvent { Lord = ruler.Id });
+    }
+
+    /// Their offer accepted: a truce, and gold besides if you are well ahead.
+    string? AcceptPeace(int them)
+    {
+        int me = Captain.Contract;
+        if (WarBetween(me, them) is not { Active: true } w) return "The war is already over.";
+        var terms = Margin(w, me, them) > 0.35f && Spare(them) > 100 ? Terms.Gold : Terms.White;
+        MakePeace(w, me, them, terms);
+        return terms == Terms.Gold ? "They pay to end it." : "The war is over.";
+    }
 
     /// As king: an alliance against an enemy you share; their ruler must not think ill of you.
     public string? ProposeAlliance(int target)

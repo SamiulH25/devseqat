@@ -372,6 +372,11 @@ public sealed class CampaignState
     public float LastBattleAt = -9999;         // when you last fought (the after_battle events, S6)
     /// Follow-up events waiting (S6): a "flag:name" effect sets name to the hour; a "flag:name" trigger fires a week later.
     public Dictionary<string, float> Flags = new();
+    /// Your deeds for the chronicle and the end summary (S7), what you did counted by kind, and a watchtower's long view.
+    public List<LogEntry> Deeds = new();
+    public List<int> SitesVisited = new();
+    public Dictionary<string, int> Tally = new();
+    public float FarSightUntil;
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
     public List<Character> Characters = new();
     public int CaptainChar = -1;
