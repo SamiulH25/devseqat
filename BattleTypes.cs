@@ -15,6 +15,8 @@ public sealed class BattleOptions
     /// Your companies get to see the enemy during deployment (Outriders or the Tactician perk).
     public bool Scouted = true;
     public UnitType? PlayerType;
+    /// Your second weapon (N swaps to it). Null with a PlayerType means none; with neither, the quick battle's greatsword.
+    public UnitType? PlayerSide;
     public Mount? PlayerMount;
     public TerrainParams? Ground;
     /// Heraldry palette per team (Style.Sides index): your colours and theirs (3 = bandits).

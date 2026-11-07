@@ -13,28 +13,87 @@ public sealed partial class Battle
     LooseHorse? called;
     UnitType? primary, secondary;
 
-    /// Your second weapon on foot: a two-handed blade (more damage and reach; no shield, so only parries stop a blow cleanly).
-    public bool TwoHanded => Player.Type == secondary;
+    /// Your hands are both on the weapon (a greatsword, an axe or a bow): no shield, so only parries stop a blow cleanly.
+    public bool TwoHanded => !Player.Type.HasShield;
+    /// Arrows left for the weapon not in hand (each weapon keeps its own).
+    int sideAmmo;
 
     void SetupCaptain()
     {
         primary = Player.Type;
-        secondary = primary.Clone();
-        secondary.Look = primary.Look with { Weapon = "greatsword", Shield = "none" };
-        secondary.Damage *= 1.35f;
-        secondary.Reach += 0.5f;
+        if (Options.PlayerSide != null) secondary = Options.PlayerSide;
+        else if (Options.PlayerType == null)
+        {
+            // A quick battle's captain carries the old pair: sword and shield, and a greatsword.
+            secondary = primary.Clone();
+            secondary.Look = primary.Look with { Weapon = "greatsword", Shield = "none" };
+            secondary.Damage *= 1.35f;
+            secondary.Reach += 0.5f;
+        }
+        sideAmmo = secondary?.Ammo ?? 0;
         if (!Terrain.IsFlat) Terrain.AddProp(new Foliage(FoliageKind.Wagon, Wagons[0], 1, 1.4f, 1));
         if (!Terrain.IsFlat) Terrain.AddProp(new Foliage(FoliageKind.Wagon, Wagons[1], 1, 1.4f, 2));
     }
 
     void SwapWeapon(Unit p)
     {
-        if (p.Mounted) { Log("Two hands for the sword: dismount first."); return; }
+        if (secondary == null) { Log("You carry no second weapon."); return; }
+        var to = p.Type == secondary ? primary! : secondary;
+        if (p.Mounted && !to.HasShield && to.Ammo == 0) { Log("Two hands for that: dismount first."); return; }
         if (p.Action != UnitAction.None || p.Charging) return;
-        p.Type = TwoHanded ? primary! : secondary!;
+        p.Type = to;
+        (p.Ammo, sideAmmo) = (sideAmmo, p.Ammo);
         p.Action = UnitAction.Stagger; // a moment to change grip
         p.ActionTimer = 0.4f;
-        Log(TwoHanded ? "You take up the greatsword." : "Sword and shield.");
+        Log(to.Ammo > 0 ? $"You take up the {WeaponName(to)}. {p.Ammo} shots left." : $"You take up the {WeaponName(to)}.");
+    }
+
+    static string WeaponName(UnitType t) => t.Look.Weapon switch
+    {
+        "sword" => t.HasShield ? "sword and shield" : "sword", "daneaxe" => "dane axe", "club" => "mace",
+        var w => t.HasShield ? w + " and shield" : w,
+    };
+
+    /// Your bow (P1): hold attack to draw (the aim steadies), release to loose at the foe nearest your facing.
+    void PlayerBow(Unit p, PlayerInput inp, float dt)
+    {
+        float draw = p.Type.Windup * 1.75f / p.Type.Reload; // a crossbow is spanned already: it aims quickly, then reloads slowly
+        if (inp.Attack)
+        {
+            if (p.Ammo <= 0) { if (!p.Charging) PlayerHit = ("NO ARROWS: SWAP WEAPON OR GO TO THE WAGON", Time); p.Charging = true; return; }
+            if (p.Cooldown > 0) return;
+            p.Charging = true;
+            p.Charge = MathF.Min(1, p.Charge + dt / draw);
+            return;
+        }
+        if (!p.Charging) return;
+        p.Charging = false;
+        float charge = p.Charge;
+        p.Charge = 0;
+        if (p.Ammo <= 0 || charge < 0.3f) return; // let down without loosing
+        var t = AimTarget(p);
+        var aim = t?.Pos ?? p.Pos + p.Dir * p.Type.Range * 0.8f;
+        Loose(p, aim, t, p.Type.Damage * (0.5f + 0.5f * charge), 1.6f - 1.1f * charge);
+        p.Cooldown = 0.3f + (p.Type.Reload - 1) * 1.2f;
+    }
+
+    /// The enemy you are aiming at: in range and within a narrow cone of your facing, the closest to its centre line.
+    Unit? AimTarget(Unit p)
+    {
+        Unit? best = null;
+        float bs = float.MaxValue, range = MathF.Min(Weather.Vision, p.Type.Range);
+        foreach (var t in Units)
+        {
+            if (t.Team == p.Team || !t.Active) continue;
+            var d = t.Pos - p.Pos;
+            float l = d.Length();
+            if (l < 2 || l > range) continue;
+            float off = MathF.Acos(Math.Clamp(Vector2.Dot(d / l, p.Dir), -1, 1));
+            if (off > 0.2f) continue;
+            float score = off * l + l * 0.02f;
+            if (score < bs) { bs = score; best = t; }
+        }
+        return best;
     }
 
     /// Shield bash (or a kick, with two hands): staggers a man in front of you, through his guard.
@@ -101,7 +160,7 @@ public sealed partial class Battle
         resupplyTimer = 1.5f;
         foreach (var u in Units)
         {
-            if (!u.Active || u.IsPlayer || u.Type.Ammo == 0 || u.Ammo >= u.Type.Ammo || WagonStock[u.Team] <= 0) continue;
+            if (!u.Active || u.Type.Ammo == 0 || u.Ammo >= u.Type.Ammo || WagonStock[u.Team] <= 0) continue;
             if (Vector2.Distance(u.Pos, Wagons[u.Team]) > 7) continue;
             int n = Math.Min(4, Math.Min(u.Type.Ammo - u.Ammo, WagonStock[u.Team]));
             u.Ammo += n;

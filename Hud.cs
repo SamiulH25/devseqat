@@ -317,6 +317,7 @@ sealed partial class Hud
         }
         string mount = p.Mounted ? (p.Couched ? "LANCE COUCHED" : $"{p.Horse!.Name.ToUpperInvariant()}  {MathF.Abs(p.Speed):0.0} M/S") : "ON FOOT";
         Text(mount, x, y, p.Couched ? Gold : Color.White, 1);
+        if (p.Type.Ammo > 0) TextR($"{p.Ammo} SHOTS", x + U(60) + bw, y, p.Ammo > 0 ? Gold : Bad, 1); // your bow (P1)
         y += U(14);
         void Row(string icon, string label, float frac, Color c)
         {

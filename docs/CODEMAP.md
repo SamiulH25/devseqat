@@ -15,19 +15,19 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BalanceReport.cs (130 lines)
 - **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Csv:64, Run:66
 
-## Battle.cs (463 lines)
+## Battle.cs (464 lines)
 - **PlayerInput** (struct, L5)
 - **Projectile** (class, L15)
-- **Battle** (class, L23): Sound:33, Battle:68, Battle:71, Role:89, Deploy:93, Ranks:152, ColumnsFor:153, Empty:173, Battle:175, SquadsOf:191, Centroid:192, Log:193, AddSquad:197, Spawn:228, Mark:241, Update:243, Bounds:298, ThinkNow:313, UpdateCentroids:316, UpdateSquad:328, CanBrace:351, Braced:356, RandomSwing:358, StartSwing:362, Reinforce:373, Result:400, GapTo:428, Withdraw:443, CheckEnd:452
+- **Battle** (class, L23): Sound:33, Battle:68, Battle:71, Role:89, Deploy:93, Ranks:152, ColumnsFor:153, Empty:173, Empty:174, Battle:176, SquadsOf:192, Centroid:193, Log:194, AddSquad:198, Spawn:229, Mark:242, Update:244, Bounds:299, ThinkNow:314, UpdateCentroids:317, UpdateSquad:329, CanBrace:352, Braced:357, RandomSwing:359, StartSwing:363, Reinforce:374, Result:401, GapTo:429, Withdraw:444, CheckEnd:453
 
 ## BattleAI.cs (304 lines)
 - **Battle** (class, L6): PackApproach:11, Think:24, ThinkCav:98, Ride:190, Approach:198, TurnRate:200, Steer:203, Led:222, General:226
 
-## BattleCaptain.cs (146 lines)
-- **Battle** (class, L7): SetupCaptain:19, SwapWeapon:30, Bash:41, CallHorse:66, UpdateCalledHorse:74, Fatigue:87, Tire:89, Resupply:98, ArcherSupply:114, SoftTarget:124, SoundRetreat:133
+## BattleCaptain.cs (205 lines)
+- **Battle** (class, L7): SetupCaptain:21, SwapWeapon:38, WeaponName:51, PlayerBow:58, AimTarget:81, Bash:100, CallHorse:125, UpdateCalledHorse:133, Fatigue:146, Tire:148, Resupply:157, ArcherSupply:173, SoftTarget:183, SoundRetreat:192
 
-## BattleCombat.cs (375 lines)
-- **Battle** (class, L6): TickAction:8, Strike:32, InArc:61, SpeedBonus:69, SideOf:81, Hit:90, Damage:183, HitHorse:195, Stagger:213, BossFalls:224, Kill:233, Shoot:265, Gauss:288, UpdateArrows:290, Braces:319, Lances:345, DistToSegment:369
+## BattleCombat.cs (382 lines)
+- **Battle** (class, L6): TickAction:8, Strike:32, InArc:61, SpeedBonus:69, SideOf:81, Hit:90, Damage:183, HitHorse:195, Stagger:213, BossFalls:224, Kill:233, Shoot:265, Loose:273, Gauss:295, UpdateArrows:297, Braces:326, Lances:352, DistToSegment:376
 
 ## BattleCourier.cs (77 lines)
 - **Courier** (class, L9)
@@ -52,8 +52,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleMove.cs (73 lines)
 - **Battle** (class, L6): Move:8, Wading:31, SlopeFactor:39, Impact:46
 
-## BattlePlayer.cs (126 lines)
-- **Battle** (class, L6): UpdatePlayer:8, ToggleMount:78, Rally:113
+## BattlePlayer.cs (127 lines)
+- **Battle** (class, L6): UpdatePlayer:8, ToggleMount:79, Rally:114
 
 ## BattleScreen.Controls.cs (255 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:78, CommandControls:86, BoxOf:188, OnScreen:190, PickSquad:197, GroundUnderMouse:211, UpdateCamera:233
@@ -73,16 +73,19 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleSiege.cs (162 lines)
 - **Battle** (class, L7): DeployDefenders:18, Via:48, MayCross:75, EnforceWall:82, Batter:95, SiegeDefend:121, SiegeAttack:144
 
-## BattleTypes.cs (73 lines)
+## BattleTypes.cs (75 lines)
 - **BattleOptions** (class, L4)
-- **Weather** (record, L38): For:41
-- **LeaderFate** (enum, L61)
-- **CompanyResult** (record, L65)
-- **StackResult** (record, L69)
-- **BattleResult** (record, L72)
+- **Weather** (record, L40): For:43
+- **LeaderFate** (enum, L63)
+- **CompanyResult** (record, L67)
+- **StackResult** (record, L71)
+- **BattleResult** (record, L74)
 
 ## Bench.cs (37 lines)
 - **Bench** (class, L7): Run:9
+
+## Campaign/Armoury.cs (113 lines)
+- **Campaign** (class, L4): MigrateGear:10, Own:24, Unequip:27, Owns:39, Wears:40, CannotUse:43, CannotBuy:46, ArmourerStock:55, BuyGear:64, Equip:74, ClearSide:99, SellGear:102, SellPrice:112
 
 ## Campaign/Campaign.cs (437 lines)
 - **Campaign** (class, L7): Campaign:36, New:53, Log:106, PartyById:112, SettlementById:113, SideOf:117, Outlaw:119, Hostile:121, WarBetween:130, FactionsAtWar:131, AtWarWithAnyone:132, Score:135, Refuses:146, InSight:151, SettlementAt:153, InTown:154, Tick:159, Speed:175, Move:187, Encounters:218, Clash:246, Edge:280, Hourly:282, Daily:305, Weekly:374, Desert:427
@@ -218,6 +221,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **FactionDef** (class, L12)
 - **Factions** (class, L20): Get:35, Bind:56, Culture:57, CultureOf:58, Root:61, Line:64, Path:67, Load:77, Validate:92
 
+## Gear.cs (83 lines)
+- **GearDef** (class, L6): ToString:16
+- **Gear** (class, L20): Get:27, Find:28, InSlot:29, Load:33, Validate:47
+
 ## GlslEffect.cs (178 lines)
 - **Uniform** (struct, L7): Float:9, Vec2:10, Vec3:11, Vec4:12, Mat4:13
 - **TextureSlot** (struct, L18)
@@ -227,16 +234,19 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## GpuReport.cs (64 lines)
 - **GpuReport** (class, L9): GpuReport:20, Frame:33, Next:49, Write:57
 
-## Hud.cs (617 lines)
+## Hud.cs (618 lines)
 - **Cmd** (enum, L7)
 - **MenuItem** (enum, L9)
-- **Hud** (class, L13): StartAt:39, Hud:62, U:64, Layout:69, CardAt:111, ButtonAt:112, MenuAt:113, MinimapAt:114, Over:116, Rect:120, Panel:123, Frame:125, Line:133, Bar:139, Text:142, TW:143, TextC:144, TextR:145, MoraleColor:147, AvgMorale:156, Draw:164, Strength:206, SideArms:209, Balance:212, Feed:244, MinimapPanel:268, PlayerPanel:304, Cards:344, Icon:396, Portrait:398, Crosshair:434, CommandPanel:480, Wheel:502, Hints:529, Banners:538, StateOf:564, FormationName:567, SquadTooltip:570, Detail:592
+- **Hud** (class, L13): StartAt:39, Hud:62, U:64, Layout:69, CardAt:111, ButtonAt:112, MenuAt:113, MinimapAt:114, Over:116, Rect:120, Panel:123, Frame:125, Line:133, Bar:139, Text:142, TW:143, TextC:144, TextR:145, MoraleColor:147, AvgMorale:156, Draw:164, Strength:206, SideArms:209, Balance:212, Feed:244, MinimapPanel:268, PlayerPanel:304, Cards:345, Icon:397, Portrait:399, Crosshair:435, CommandPanel:481, Wheel:503, Hints:530, Banners:539, StateOf:565, FormationName:568, SquadTooltip:571, Detail:593
 
 ## Hud.Divisions.cs (182 lines)
 - **Hud** (class, L8): readonly:14, readonly:22, LayoutDivisions:28, LayoutGoals:42, DivisionAt:50, DivisionTag:54, GoalTag:61, DivisionCards:63, GoalPanel:86, GoalWheel:103, SergeantPennants:125, DivisionMarkers:142
 
 ## Hud.Overlays.cs (176 lines)
 - **Hud** (class, L7): SampleStrength:15, Overlay:24, MenuButtons:31, Menu:38, Result:50, Well:81, Tally:91, StrengthChart:125, Help:138
+
+## MapScreen.Armoury.cs (72 lines)
+- **MapScreen** (class, L7): ArmourerWell:12, GearRow:29, GearStats:64
 
 ## MapScreen.Captain.cs (162 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:70, CaptainRecord:126
@@ -288,8 +298,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (471 lines)
 - **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:108, OpenLab:121, QuickBattle:123, StartCampaignBattle:130, FinishCampaignBattle:138, CycleQuality:146, Update:150, Draw:179, CaptureShot:206, CampaignShots:224
 
-## SelfTest.cs (149 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:101, Lancer:109, Run:118, Scaled:120, MakeWanderer:123, Days:131, Ids:143, Check:145
+## SelfTest.cs (150 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:102, Lancer:110, Run:119, Scaled:121, MakeWanderer:124, Days:132, Ids:144, Check:146
 
 ## Settings.cs (73 lines)
 - **Difficulty** (enum, L5)
@@ -327,8 +337,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **TerrainParams** (record, L76)
 - **Terrain** (class, L90): WaterDepth:126, Flat:136, Terrain:137, Terrain:138, Terrain:142, Terrain:164, RawHeight:199, RoadCenter:230, RoadDist:233, Height:242, Height:254, GridHeight:255, Gradient:258, BucketOf:268, AddProp:275, Add:277, Blocked:284, PushOut:298, Core:324, PlaceFoliage:326, PlaceTown:399, SmoothStep:421, Hash:427, Noise:439
 
-## Tests/BattleTests.cs (612 lines)
-- **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, RangedRoles:169, FatigueAndSupply:189, Rivers:206, Generals:233, HorseDown:250, Ground:259, HoldFire:283, TroopTree:297, Sprites:321, BigBattle:358, StackBattle:388, ReplayExact:422, SpearsStopHorse:444, ScaleBattle:455, Couriers:493, DivisionGoals:514
+## Tests/BattleTests.cs (668 lines)
+- **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, CaptainKit:170, RangedRoles:225, FatigueAndSupply:245, Rivers:262, Generals:289, HorseDown:306, Ground:315, HoldFire:339, TroopTree:353, Sprites:377, BigBattle:414, StackBattle:444, ReplayExact:478, SpearsStopHorse:500, ScaleBattle:511, Couriers:549, DivisionGoals:570
 
 ## Tests/CampaignTests.cs (720 lines)
 - **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:39, CampaignRun:50, Progression:92, Economy:119, Bridge:131, Calibration:152, SiegeBattle:176, CampaignWar:214, RefuseOldSave:274, Stacks:300, Cultures:345, Characters:415, CampaignDivisions:520, Armoury:566, SkillTree:617, BalanceMatchesData:700, HorsesCostGold:712

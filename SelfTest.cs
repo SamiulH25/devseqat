@@ -36,6 +36,7 @@ public static partial class SelfTest
         SiegeBattle();
         Formations();
         CaptainCombat();
+        CaptainKit();
         RangedRoles();
         FatigueAndSupply();
         Generals();

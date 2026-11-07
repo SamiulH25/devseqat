@@ -65,7 +65,7 @@ that will not last. Brigands roam between them all.
   with time. A lord who thinks ill of you keeps his villages' recruits from you. A lord can fall in battle and his heir takes up his banner
   and his grudges. Sergeants who live through 15 battles, and wanderers found in town taverns, join your household as **companions**
   (quartermaster, surgeon, scout, drillmaster or steward) and lead a company into battle as a hero. L opens the lords and companions screen.
-- **Towns:** train, hire mercenaries, buy horses, food and your own gear (plate, great helm, warhorse, destrier), rest to heal, sell prisoners
+- **Towns:** train, hire mercenaries, buy horses and food, kit yourself out at the armourer (MARKET tab: weapons from spear to crossbow, shields, armour, helms and horses; stock changes weekly, heavy pieces need the Arms skill, the best need a rank; worn gear can be swapped, spare gear sold back at 40%), rest to heal, sell prisoners
   and ransom lords, sign or end contracts, and take work from the steward's board (hunt a lord, clear brigands, guard a village, scout a town,
   take a castle). **Villages:** recruit (levies, or clansmen in the north), buy or forage food. **Castles:** rest, prisoners and contracts.
 - **Sieges:** ride to an enemy town or castle and besiege it. After a night your men have ladders and a ram; assault the walls (an on-foot
@@ -164,7 +164,7 @@ and order them directly: the order rides out the same way, and they then follow 
 sergeant falls, his men keep their last goal, orders take twice as long, and the best man left takes charge after 10 s.
 
 **Captain combat:** a parry needs the guard raised just as the blow comes (within 0.35 s); attacking into a blow from the mirrored side
-**chambers** it. **Ctrl** shield bash (a kick with two hands), **N** swaps to a two-handed greatsword on foot, **E** with no horse in reach
+**chambers** it. **Ctrl** shield bash (a kick with two hands), **N** swaps to your second weapon (the greatsword at first; any weapon you own; two-handed blades on foot only). With a bow or crossbow in hand, hold attack to draw (the aim steadies), release to loose at the foe nearest your facing; arrows refill at your wagon. **E** with no horse in reach
 whistles for the nearest loose horse of your side. **Esc** opens the menu (resume, controls, new battle, quit); Enter starts a new battle after the result.
 
 ## Design: soldier vs general

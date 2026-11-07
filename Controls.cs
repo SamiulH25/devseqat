@@ -106,7 +106,7 @@ public sealed class Controls
         [Act.CommandView] = "COMMAND VIEW", [Act.Pause] = "PAUSE", [Act.Menu] = "MENU", [Act.Help] = "CONTROLS", [Act.Graphics] = "GRAPHICS QUALITY",
         [Act.PartyScreen] = "PARTY SCREEN (MAP)", [Act.Speed1] = "SPEED X1 (MAP)", [Act.Speed2] = "SPEED X3 (MAP)", [Act.Speed3] = "SPEED X8 (MAP)",
         [Act.FollowParty] = "FOLLOW YOUR PARTY (MAP)", [Act.QuickSave] = "QUICK SAVE", [Act.QuickLoad] = "QUICK LOAD",
-        [Act.Formation] = "CYCLE FORMATION", [Act.Bash] = "SHIELD BASH / KICK", [Act.SwapWeapon] = "SWAP WEAPON (ON FOOT)",
+        [Act.Formation] = "CYCLE FORMATION", [Act.Bash] = "SHIELD BASH / KICK", [Act.SwapWeapon] = "SWAP WEAPON",
         [Act.NextDivision] = "NEXT DIVISION (GOALS)",
     };
 

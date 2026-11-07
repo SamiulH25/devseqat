@@ -166,6 +166,62 @@ public static partial class SelfTest
         Check(p.Hp == hp && foe.Action == UnitAction.Stagger, "a chambered blow does no harm");
     }
 
+    /// The captain's kit in battle (P1): a thrusting spear, a crossbow as the second weapon with its own bolts, a mace through plate.
+    static void CaptainKit()
+    {
+        var cap = new CaptainState();
+        cap.Kit.Weapon = "boar_spear";
+        cap.Kit.Side = "crossbow";
+        var b = Battle.Empty(12, new BattleOptions { PlayerType = Rules.CaptainType(cap), PlayerSide = Rules.CaptainType(cap, side: true) });
+        var p = b.Player;
+        p.Horse = null;
+        float up = MathHelper.PiOver2;
+        b.Input = new PlayerInput { Facing = up, Attack = true, Dir = AttackDir.Left };
+        b.Update(1 / 60f);
+        Check(p.Charging && p.Swing == AttackDir.Thrust, "the boar spear only thrusts");
+        b.Input = new PlayerInput { Facing = up };
+        Run(b, 1);
+        b.Input = new PlayerInput { Facing = up, Swap = true };
+        b.Update(1 / 60f);
+        b.Input = new PlayerInput { Facing = up };
+        Run(b, 0.6f);
+        Check(p.Type.Look.Weapon == "crossbow" && p.Ammo == 16 && b.TwoHanded, "swapping takes up the crossbow, with its 16 bolts");
+        var foe = b.AddSquad(1, Troops.Get("levies"), 1, p.Pos + new Vector2(0, 25), 1, -Vector2.UnitY).Units[0];
+        foe.Type = foe.Type.Clone();
+        foe.Type.BlockChance = 0;
+        int shots = 0;
+        while (shots < 6 && foe.Hp >= foe.Type.MaxHp && !foe.Dead)
+        {
+            b.Input = new PlayerInput { Facing = up, Attack = true };
+            Run(b, 0.6f);
+            b.Input = new PlayerInput { Facing = up };
+            Run(b, 2.2f);
+            shots++;
+        }
+        Check(p.Ammo == 16 - shots, $"each shot costs a bolt ({p.Ammo} left after {shots})");
+        Check(foe.Hp < foe.Type.MaxHp || foe.Dead, $"the captain's bolts find the man in front ({shots} shots)");
+        b.Input = new PlayerInput { Facing = up, Swap = true };
+        b.Update(1 / 60f);
+        b.Input = new PlayerInput { Facing = up };
+        Run(b, 0.6f);
+        Check(p.Type.Look.Weapon == "spear" && p.Ammo == 0, "back to the spear");
+        // A mace and a sword strike a knight with the same blow: the mace does more through his plate.
+        float Blow(string weapon)
+        {
+            var k = Battle.Empty(13);
+            var me = k.Player;
+            me.Type = Rules.CaptainType(new CaptainState { Kit = { Weapon = weapon } });
+            var knight = k.AddSquad(1, Troops.Get("ironguard"), 1, me.Pos + new Vector2(0, 1.5f), 1, -Vector2.UnitY).Units[0];
+            knight.Type = knight.Type.Clone();
+            knight.Type.BlockChance = 0;
+            float hp = knight.Hp;
+            k.Hit(me, knight, 30, false);
+            return hp - knight.Hp;
+        }
+        float mace = Blow("mace"), sword = Blow("arming_sword");
+        Check(mace > sword * 1.3f, $"a mace bites through plate ({mace:0.0} against the sword's {sword:0.0})");
+    }
+
     static void RangedRoles()
     {
         var b = Battle.Empty(11);

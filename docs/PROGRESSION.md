@@ -16,7 +16,7 @@ Found by reading `Campaign/Skills.cs`, `Rules.CaptainType`, `BattleCaptain.cs`, 
   0.45 a kill). How you fought (parries, a lance charge, a duel won, the banner held) earns nothing.
 - **One body of gear.** `CaptainState` has `ArmorTier`, `HelmTier`, `HorseTier`: four one-time buys (plate, great helm,
   warhorse, destrier). Once bought there is nothing more to want. Loot never touches the captain.
-- **One weapon.** The captain fights with sword and shield; X swaps to a greatsword that is a clone of the same type
+- **One weapon.** The captain fights with sword and shield; N swaps to a greatsword that is a clone of the same type
   (`Damage * 1.35`, `Reach + 0.5`, no shield). No spear, axe, bow or crossbow for the captain, though troops use all of them.
 - **Combat has its pieces but no depth curve.** Timed parry (`ParryWindow` 0.35 s), feint (cancel into a block), held
   swings scaling power, shield bash/kick, couched lance, rally, calling a horse. None of it improves with skill: a
@@ -198,3 +198,11 @@ Give the captain something to do in each fight beyond "win".
   Arms skill (`needs`), the career rank (`rank`: the lord's harness, the barded destrier) and gold.
   Simplifications: no lance item (the couched lance works with any weapon from the saddle); no pavise (no sprite); the
   lord's harness uses the plate look. The old `Balance` gear costs are gone (prices live in gear.json).
+- P1 (step 2, the kit in battle): `BattleOptions.PlayerSide` is the second weapon (`Rules.CaptainType(c, side: true)`); a
+  quick battle keeps the old greatsword clone. `SwapWeapon` (N) swaps the two, each keeping its own arrows (`sideAmmo`);
+  two-handed melee weapons only on foot, bows also in the saddle. The boar spear only thrusts (`UnitType.ThrustOnly`). Your
+  windup and recover scale with the weapon (`Windup / 0.4`, `Recover / 0.5`; the arming sword plays as before), and your
+  melee blows use the weapon's pierce (the mace and axes). Captain archery (`PlayerBow`): hold attack to draw
+  (`Windup * 1.75 / Reload` seconds; a crossbow aims fast and reloads slowly), release past 30% to loose at the enemy
+  nearest your facing within 0.2 rad and range (`AimTarget`), damage and spread by draw; arrows refill at your wagon
+  (`Resupply` now serves you too). `Shoot` and the player share `Loose`. The HUD shows shots left.

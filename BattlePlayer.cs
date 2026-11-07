@@ -22,11 +22,12 @@ public partial class Battle
             if (inp.Block && p.Action != UnitAction.Block) p.BlockStart = Time;
             if (inp.Block) p.Action = UnitAction.Block;
             else if (p.Action == UnitAction.Block) p.Action = UnitAction.None;
-            if (p.Action == UnitAction.None && !p.Couched)
+            if (p.Action == UnitAction.None && !p.Couched && p.Type.Ammo > 0) PlayerBow(p, inp, dt);
+            else if (p.Action == UnitAction.None && !p.Couched)
             {
                 if (inp.Attack)
                 {
-                    if (!p.Charging) p.Swing = inp.Dir; // direction locks in when the swing starts
+                    if (!p.Charging) p.Swing = p.Type.ThrustOnly ? AttackDir.Thrust : inp.Dir; // direction locks in when the swing starts
                     p.Charging = true;
                     p.Charge = MathF.Min(1, p.Charge + dt / 0.7f);
                 }
@@ -37,7 +38,7 @@ public partial class Battle
                     p.Power = (0.6f + p.Charge) * p.Swing switch { AttackDir.Overhead => 1.2f, AttackDir.Thrust => 1f, _ => 0.95f };
                     p.Charge = 0;
                     p.Action = UnitAction.Windup;
-                    p.ActionTimer = p.Swing == AttackDir.Overhead ? 0.2f : 0.15f;
+                    p.ActionTimer = (p.Swing == AttackDir.Overhead ? 0.2f : 0.15f) * p.Type.Windup / 0.4f; // your weapon sets your pace (P1)
                     p.Stamina -= 8;
                 }
             }

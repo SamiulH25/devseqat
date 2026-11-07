@@ -14,7 +14,7 @@ public partial class Battle
             case UnitAction.Windup:
                 Strike(u);
                 u.Action = UnitAction.Recover;
-                u.ActionTimer = u.IsPlayer ? 0.3f : u.Type.Recover;
+                u.ActionTimer = u.IsPlayer ? 0.3f * u.Type.Recover / 0.5f : u.Type.Recover; // your weapon sets your pace (P1)
                 break;
             case UnitAction.Recover:
                 u.Action = UnitAction.None;
@@ -165,7 +165,7 @@ public partial class Battle
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1); // arrows pass between a skeleton's ribs
         if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
-        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged ? a.Type.Pierce : 0);
+        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? a.Type.Pierce : 0); // your mace or axe bites through armour too
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
         Sound(ranged ? Cue.ArrowHit : t.Type.Armor >= 8 ? Cue.Clash : Cue.Hit, t.Pos);
         if (a.IsPlayer)
@@ -264,24 +264,31 @@ public partial class Battle
 
     void Shoot(Unit u, Unit t)
     {
+        u.Cooldown = (u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f) * u.Type.Reload; // a crossbow takes long to span
+        float spread = (u.Squad?.Company?.Has("Sharpshooter") == true ? 0.65f : 1);
+        Loose(u, t.Pos, t, u.Type.Damage, spread);
+    }
+
+    /// An arrow from u at a point (leading the target t if there is one), scattered by distance times `spread`.
+    void Loose(Unit u, Vector2 at, Unit? t, float damage, float spread)
+    {
         u.Ammo--;
         Sound(Cue.Bow, u.Pos);
-        u.Cooldown = (u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f) * u.Type.Reload; // a crossbow takes long to span
         u.Action = UnitAction.Recover; // shows the release pose
         u.ActionTimer = 0.25f;
-        float d = Vector2.Distance(u.Pos, t.Pos);
-        var aim = t.Pos + t.Vel * (d / ArrowSpeed); // lead the target
-        aim += new Vector2(Gauss(), Gauss()) * d * 0.035f * (u.Squad?.Company?.Has("Sharpshooter") == true ? 0.65f : 1) * (u.Mounted ? 1.5f : 1) * Weather.Spread;
+        float d = Vector2.Distance(u.Pos, at);
+        var aim = at + (t?.Vel ?? Vector2.Zero) * (d / ArrowSpeed); // lead the target
+        aim += new Vector2(Gauss(), Gauss()) * d * 0.035f * spread * (u.Mounted ? 1.5f : 1) * Weather.Spread;
         float time = MathF.Max(0.1f, Vector2.Distance(u.Pos, aim) / ArrowSpeed);
         var h = (aim - u.Pos) / time;
-        float from = Terrain.Height(u.Pos) + 1.5f, land = Terrain.Height(aim) + (t.Mounted ? 1.5f : 1.0f);
+        float from = Terrain.Height(u.Pos) + 1.5f, land = Terrain.Height(aim) + (t?.Mounted == true ? 1.5f : 1.0f);
         // Launch 1.5 m above the archer's ground, land at chest height on the target's ground after `time` seconds.
         Arrows.Add(new Projectile
         {
             Pos = new(u.Pos.X, from, u.Pos.Y),
             Vel = new(h.X, 0.5f * Gravity * time + (land - from) / time, h.Y),
             Shooter = u,
-            Damage = u.Type.Damage,
+            Damage = damage,
         });
     }
 

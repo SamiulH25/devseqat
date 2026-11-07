@@ -70,7 +70,7 @@ public sealed partial class Campaign
         return Equip(g.Id);
     }
 
-    /// Wear a piece you own; `side` puts a weapon in the second hand (the one X swaps to).
+    /// Wear a piece you own; `side` puts a weapon in the second hand (the one N swaps to).
     public string? Equip(string id, bool side = false)
     {
         if (Gear.Find(id) is not GearDef g) return "NO SUCH GEAR";

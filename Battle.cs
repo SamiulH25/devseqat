@@ -171,6 +171,7 @@ public sealed partial class Battle
 
     /// An empty field with only the two leaders, far apart; scenarios add squads with <see cref="AddSquad"/>.
     public static Battle Empty(int seed) => new(seed, true);
+    public static Battle Empty(int seed, BattleOptions options) => new(seed, true, options);
 
     Battle(int seed, bool scripted, BattleOptions? options = null)
     {
