@@ -454,7 +454,8 @@ public static partial class SelfTest
     static void ScaleBattle()
     {
         var rng = new Random(12);
-        var b = new Battle(12, Armies.Large(rng, 2, 0, 600), Armies.Large(rng, 3, 1, 600), new BattleOptions { Cap = 1500 });
+        var b = new Battle(12, Armies.Divide(Armies.Large(rng, 2, 0, 600)), Armies.Divide(Armies.Large(rng, 3, 1, 600)), new BattleOptions { Cap = 1500 });
+        Check(b.DivisionsOf(0).Count() >= 2 && b.DivisionsOf(1).Count() >= 2 && b.Divisions.All(d => d.Leader?.Sergeant == true), $"big armies split into divisions under sergeants ({b.Divisions.Count})");
         int men = b.Units.Count(u => u.Active);
         Check(men >= 1200, $"a big battle puts everyone on the field ({men})");
         Check(b.MapRadius > 120, "a big battle is fought on a wider field");

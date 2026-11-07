@@ -25,6 +25,10 @@ public sealed class Character
     public int AtSettlement = -1;
     /// The character this lord holds his land from, when it is not simply his realm's ruler: your vassals (F6).
     public int Liege = -1;
+    /// A companion's skill at leading a division (0-10): one more for every two battles he leads one.
+    public int Command = 2, CommandBattles;
+    /// How he leads a division: "Bold", "Steady" or "Cautious" ("" = from his traits).
+    public string Temper = "";
 }
 
 /// Something a character remembers about another (3.2): shown as the reasons behind an opinion; fades with time.
@@ -46,7 +50,7 @@ public sealed partial class Campaign
         ["Quartermaster"] = "FOOD -15%, UPKEEP -5%", ["Surgeon"] = "WOUNDED HEAL 30% FASTER", ["Scout"] = "SEES 25% FURTHER",
         ["Drillmaster"] = "DRILL XP +25%", ["Steward"] = "FIEF INCOME +15%",
     };
-    public const int MaxCompanions = 3, CompanionBattles = 15, LordSlainPercent = 5;
+    public const int MaxCompanions = 6, CompanionBattles = 15, LordSlainPercent = 5;
 
     public Character Me => CharacterById(S.CaptainChar)!;
     public Character? CharacterById(int id) => S.Characters.FirstOrDefault(c => c.Id == id);
@@ -196,6 +200,8 @@ public sealed partial class Campaign
         if (Companions.Count() >= MaxCompanions || Companions.Any(k => k.CompanyId == c.Id)) return;
         var ch = NewCharacter("companion", c.Officer.Replace("Sgt ", ""), Captain.Contract, c.Culture == "" ? Me.Culture : c.Culture, 2);
         ch.Role = rng.Pick(CompanionRoles.Where(r => !Companions.Any(k => k != ch && k.Role == r)).DefaultIfEmpty("Quartermaster").ToList());
+        ch.Temper = rng.Pick(new[] { "Bold", "Steady", "Steady", "Cautious" });
+        ch.Command = 3; // he has led men already, as a sergeant
         ch.CompanyId = c.Id;
         ch.PartyId = Player.Id;
         ch.Opinion[S.CaptainChar] = 40;
@@ -259,6 +265,7 @@ public sealed partial class Campaign
         // A companion whose company is gone takes the first company without one.
         foreach (var k in Companions.Where(k => Player.Companies.All(c => c.Id != k.CompanyId)).ToList())
             if (Player.Companies.FirstOrDefault(c => !Companions.Any(o => o.CompanyId == c.Id)) is CompanyRecord free) { k.CompanyId = free.Id; free.Hero = S.Hours >= k.WoundedUntil ? k.Name : ""; }
+        PruneDivisions();
     }
 
     /// A hero who fell in battle is wounded for five days; one time in ten he does not get up.

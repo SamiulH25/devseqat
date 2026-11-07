@@ -166,8 +166,8 @@ public partial class Campaign
             else if (Hostile(p, Player) && !Hostile(p, enemy)) setup.Side1.Add(p);
         }
         bool unpaid = S.UnpaidWeeks > 0;
-        setup.Player = Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0));
-        setup.Enemy = Rules.Army(enemy.Name, setup.Side1);
+        setup.Player = WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0)));
+        setup.Enemy = Armies.Divide(Rules.Army(enemy.Name, setup.Side1));
         setup.Seed = HashCode.Combine(S.Seed, (int)(S.Hours * 4), enemy.Id);
         bool scouts = setup.Side0.SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
         setup.Options = new BattleOptions
@@ -176,6 +176,8 @@ public partial class Campaign
             RallyBonus = Has("WarCry") ? 35 : 25,
             RallyCooldown = Has("WarCry") ? 9 : 12,
             IronWill = Has("IronWill"),
+            Horns = Has("Bannerman"),
+            Cap = Settings.Current.BattleSize,
             PlayerWounded = S.Hours < Captain.WoundedUntil,
             Scouted = scouts || Has("Tactician"),
             PlayerType = Rules.CaptainType(Captain),
@@ -192,6 +194,7 @@ public partial class Campaign
     {
         Encounter = null;
         var report = Apply(r, setup.Side0, setup.Side1, setup.EnemyName, setup.SiegeOf >= 0);
+        DivisionsAfterBattle(r);
         if (setup.SiegeOf >= 0) AfterAssault(S.Settlements[setup.SiegeOf], r.Winner == 0);
         return Report ?? report;
     }

@@ -97,6 +97,8 @@ public partial class Battle
             var squads = Squads.Where(s => s.Team == team && s.Company?.Division == spec.Id).ToList();
             var temper = Enum.TryParse<Temper>(spec.Temper, out var t) ? t : Temper.Steady;
             var hero = spec.Leader.Length > 0 ? squads.SelectMany(s => s.Units).FirstOrDefault(u => u.Hero && u.Squad?.Company?.Hero == spec.Leader) : null;
+            hero ??= (squads.FirstOrDefault(s => spec.LeadCompany != 0 && s.Company?.Id == spec.LeadCompany) ?? squads.FirstOrDefault())?.Units
+                .Where(u => u.Active).OrderByDescending(u => u.Type.Tier).ThenBy(u => u.Index).FirstOrDefault(); // the sergeant's own company
             var d = AddDivision(team, spec.Name, squads, temper, spec.Skill, null, hero);
             d.SpecId = spec.Id;
             d.Goal = StartGoal(d, spec.Goal);
@@ -128,13 +130,13 @@ public partial class Battle
     }
 
     /// Send a division a new goal: it rides out now and takes over when it arrives (replacing any goal still on its way).
-    public float IssueGoal(Division d, Goal g)
+    public float IssueGoal(Division d, Goal g, bool now = false, bool ai = false)
     {
-        float delay = OrderDelay(d);
+        float delay = now ? 0 : OrderDelay(d);
         bool countermand = d.Pending != null;
         d.Pending = g;
         d.PendingAt = Time + delay;
-        if (Recording != null && d.Team == 0)
+        if (Recording != null && d.Team == 0 && !ai)
             (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Kind = g.Kind, Point = g.Point, Target = g.Target != null ? Squads.IndexOf(g.Target) : -1, Side = g.Side });
         if (d.Team == 0) Log(countermand ? $"New orders ride to {d.Name}: {g.Describe} ({delay:0}s)." : $"Orders ride to {d.Name}: {g.Describe} ({delay:0}s).");
         return delay;
@@ -167,6 +169,12 @@ public partial class Battle
 
     void UpdateDivisions()
     {
+        if (Time >= nextAiCommand && Divisions.Count > 0)
+        {
+            nextAiCommand = Time + 4;
+            AiCommand(1);
+            if (Options.AutoPlayer) AiCommand(0);
+        }
         foreach (var d in Divisions)
         {
             if (d.Pending != null && Time >= d.PendingAt)
@@ -184,6 +192,30 @@ public partial class Battle
             d.NextThink = Time + 0.5f + (10 - d.Skill) * 0.06f; // a sharp sergeant reacts quicker
             if (!LeaderCheck(d) || d.Alive == 0) continue;
             Brain(d);
+        }
+    }
+
+    float nextAiCommand = 4;
+
+    /// The AI general's divisions (and yours when the AI plays you): wings that hold send in their men once the
+    /// lines close, the fight starts, or they have waited long enough; a broken division falls back.
+    void AiCommand(int team)
+    {
+        int foe = 1 - team;
+        bool fighting = SquadsOf(team).Any(s => s.Alive > 0 && s.Division == null && s.Units.Any(u => u.Active && u.EnemyDist < 5));
+        foreach (var d in DivisionsOf(team))
+        {
+            if (d.Pending != null || d.Alive == 0) continue;
+            var live = d.Squads.Where(s => s.Alive > 0).ToList();
+            var at = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / live.Count;
+            var near = EnemySquadNear(at, float.MaxValue, foe);
+            if (near == null) continue;
+            float gap = Vector2.Distance(at, near.Center) - near.Radius;
+            float wait = d.Temper switch { Temper.Bold => 15, Temper.Steady => 30, _ => 45 };
+            if (d.Goal.Kind is GoalKind.Hold or GoalKind.Reserve && (fighting || gap < 30 || Time - d.GoalSince > wait))
+                IssueGoal(d, new Goal(GoalKind.Attack, Target: near), ai: true);
+            else if (d.Goal.Kind == GoalKind.Attack && d.Alive < d.Start / 4 && d.Temper != Temper.Bold)
+                IssueGoal(d, new Goal(GoalKind.FallBack, at + Toward(at, centroid[foe], team) * -30), ai: true);
         }
     }
 

@@ -79,6 +79,8 @@ partial class MapScreen
         py += ui.U(60);
         if (ui.Button(new Rectangle(px, py, ui.U(260), ui.U(26)), "SKILLS AND PERKS", true, "K")) { panel = PanelKind.Skills; note = ""; }
         py += ui.U(30);
+        if (ui.Button(new Rectangle(px, py, ui.U(260), ui.U(26)), $"DIVISIONS ({C.S.Divisions.Count})", true, "V")) { panel = PanelKind.Divisions; note = ""; }
+        py += ui.U(30);
         // Prisoners: turn them to your cause (green, cohesion 0) or let them go.
         py += ui.U(8);
         ui.Text($"PRISONERS {C.PrisonerCount}", px, py, Style.Accent);
@@ -262,5 +264,79 @@ partial class MapScreen
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "BACK"))
         { upStack = null; panel = at != null && C.SettlementAt(C.Player.Pos) == at ? PanelKind.Settlement : PanelKind.Party; }
+    }
+
+    static string GoalText(string g) => g switch { "FlankLeft" => "FLANK LEFT", "FlankRight" => "FLANK RIGHT", _ => g.ToUpperInvariant() };
+
+    /// Divisions (docs/COMBAT_OVERHAUL.md 1.5): group companies under a companion or a sergeant, who leads them in battle
+    /// by goals and hears your orders late. Companies in no division are your retinue: they obey you at once.
+    void DivisionsPanel()
+    {
+        var r = Modal(1000, 600, "DIVISIONS");
+        int x = r.X + ui.U(20), y = r.Y + ui.U(44), w = ui.U(560);
+        ui.Text("A DIVISION FOLLOWS A GOAL YOU GIVE ITS LEADER. ORDERS REACH HIM LATE, LATER THE FURTHER OFF HE IS.", x, y, Style.Dim, 1);
+        y += ui.U(18);
+        var divs = C.S.Divisions.ToList();
+        foreach (var d in divs)
+        {
+            var box = new Rectangle(x, y, w, ui.U(62));
+            ui.Rect(box, Color.White * 0.04f);
+            string temper = C.TemperOf(d).ToUpperInvariant();
+            ui.Text($"{C.DivisionName(d).ToUpperInvariant()}", box.X + ui.U(6), box.Y + ui.U(5), Style.Accent, 1);
+            ui.Text($"{temper}, COMMAND {C.CommandOf(d)}", box.X + ui.U(6), box.Y + ui.U(17), Style.Dim, 1);
+            var comps = C.CompaniesOf(d).ToList();
+            string names = string.Join(", ", comps.Select(c => $"{c.Name.ToUpperInvariant()} ({c.Men})"));
+            if (names.Length > 86) names = names[..84] + "..";
+            ui.Text(comps.Count == 0 ? "NO COMPANIES YET: GIVE HIM SOME ON THE RIGHT." : $"{comps.Sum(c => c.Men)} MEN: {names}", box.X + ui.U(6), box.Y + ui.U(31), comps.Count == 0 ? Style.Warn : Style.Text, 1);
+            if (ui.Hover(new Rectangle(box.X, box.Y, ui.U(300), ui.U(28))))
+                note = temper switch { "BOLD" => "BOLD: CHARGES EARLY AND CHASES FAR.", "CAUTIOUS" => "CAUTIOUS: KEEPS A SHORT LEASH AND LETS THE ENEMY COME.", _ => "STEADY: KEEPS FORMATION AND WAITS FOR CONTACT." }
+                    + " COMMAND MAKES HIM QUICKER TO ACT AND TO HEAR ORDERS.";
+            int gi = Array.IndexOf(Campaign.DivisionGoals, d.Goal);
+            if (ui.Button(new Rectangle(box.Right - ui.U(250), box.Y + ui.U(5), ui.U(150), ui.U(22)), "STARTS: " + GoalText(d.Goal)))
+                C.SetDivisionGoal(d, Campaign.DivisionGoals[(gi + 1) % Campaign.DivisionGoals.Length]);
+            if (ui.Button(new Rectangle(box.Right - ui.U(94), box.Y + ui.U(5), ui.U(88), ui.U(22)), "DISBAND")) C.DisbandDivision(d);
+            y += ui.U(66);
+        }
+        if (divs.Count < Campaign.MaxDivisions)
+        {
+            y += ui.U(6);
+            ui.Text("NEW DIVISION UNDER:", x, y, Style.Accent, 1);
+            y += ui.U(16);
+            var leaders = C.DivisionLeaders().ToList();
+            if (leaders.Count == 0) ui.Text("NOBODY FREE TO LEAD ONE. COMPANIONS AND COMPANY SERGEANTS CAN.", x, y, Style.Dim, 1);
+            int i = 0;
+            foreach (var (name, ch, co) in leaders)
+            {
+                var b = new Rectangle(x + i % 3 * ui.U(188), y + i / 3 * ui.U(26), ui.U(182), ui.U(22));
+                if (b.Bottom > r.Bottom - ui.U(60)) break;
+                if (ui.Button(b, name.ToUpperInvariant())) note = C.MakeDivision(ch, co) ?? "";
+                if (ui.Hover(b)) note = ch >= 0 ? "A COMPANION: HE GROWS BETTER AT COMMAND WITH EVERY TWO BATTLES." : "A COMPANY SERGEANT: HIS COMMAND GROWS WITH HIS BATTLES (AT MOST 6).";
+                i++;
+            }
+        }
+        // Every company, and the division it fights in: click to move it to the next one.
+        int cx = r.X + ui.U(600), cy = r.Y + ui.U(44);
+        ui.Text("COMPANIES", cx, cy, Style.Accent, 1);
+        cy += ui.U(18);
+        foreach (var c in C.Player.Companies)
+        {
+            if (cy > r.Bottom - ui.U(80)) break;
+            var row = new Rectangle(cx, cy, ui.U(380), ui.U(24));
+            ui.Rect(row, Color.White * 0.04f);
+            string nm = c.Name.ToUpperInvariant();
+            ui.Text(nm.Length > 18 ? nm[..18] : nm, row.X + ui.U(6), row.Y + ui.U(7), Style.Text, 1);
+            ui.Text($"{c.Men}", row.X + ui.U(150), row.Y + ui.U(7), Style.Dim, 1);
+            var cur = divs.FirstOrDefault(d => d.Id == c.Division);
+            string label = cur == null ? "RETINUE (YOU)" : C.DivisionName(cur).ToUpperInvariant();
+            if (ui.Button(new Rectangle(row.Right - ui.U(196), row.Y + ui.U(2), ui.U(192), ui.U(20)), label.Length > 22 ? label[..22] : label, divs.Count > 0, "", cur != null))
+            {
+                int at = cur == null ? -1 : divs.IndexOf(cur);
+                int next = at + 1 >= divs.Count ? -1 : divs[at + 1].Id;
+                note = C.AssignDivision(c, next) ?? "";
+            }
+            cy += ui.U(27);
+        }
+        Note(r);
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "BACK (V)")) panel = PanelKind.Party;
     }
 }

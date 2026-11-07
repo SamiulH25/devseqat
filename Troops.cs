@@ -132,8 +132,9 @@ public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Com
 
 /// A division (docs/COMBAT_OVERHAUL.md 1): companies whose Company.Division is Id, led by a sergeant who pursues a goal.
 /// Leader names the companion fighting as a company's Hero, if one leads it; Temper is "Bold", "Steady" or "Cautious";
-/// Skill (0-10) is his Command skill; Goal is the goal he starts the battle with (a GoalKind name).
-public sealed record DivisionSpec(int Id, string Name, string Temper = "Steady", int Skill = 3, string Goal = "Hold", string Leader = "");
+/// Skill (0-10) is his Command skill; Goal is the goal he starts the battle with (a GoalKind name); LeadCompany, when
+/// Leader is empty, is the company his best man is picked from (a sergeant leading from his own company).
+public sealed record DivisionSpec(int Id, string Name, string Temper = "Steady", int Skill = 3, string Goal = "Hold", string Leader = "", int LeadCompany = 0);
 
 /// Army builder. A company belongs to a line (infantry, spears, archers, horse); its tier picks the troop on that line,
 /// standing in for companies the campaign has upgraded. Elite companies are smaller.
@@ -175,6 +176,35 @@ public static class Armies
         while (list.Sum(c => c.Count) < men)
             foreach (var c in Random(rng, level, team).Companies) list.Add(c with { Id = team * 1000 + id++ });
         return new ArmySpec(team == 1 ? "Crimson host" : "Azure company", level, list);
+    }
+
+    /// Split a big army into divisions under sergeants (docs/COMBAT_OVERHAUL.md 1.6): the horse rides a wing, the foot
+    /// is cut into a left and a right battle, and the middle of the foot, the bows and the allies stay with the captain.
+    /// Armies under 240 men or 6 companies are left whole; an army that already has divisions is not touched.
+    public static ArmySpec Divide(ArmySpec army)
+    {
+        if (army.Divisions is { Count: > 0 } || army.Companies.Count < 6 || army.Companies.Sum(c => c.Count) < 240) return army;
+        var comps = army.Companies.ToList();
+        var specs = new List<DivisionSpec>();
+        void Make(string name, List<int> idx, string goal, string temper)
+        {
+            if (idx.Count == 0) return;
+            int id = specs.Count;
+            foreach (var i in idx) comps[i] = comps[i] with { Division = id };
+            var lead = idx.OrderByDescending(i => Troops.Get(comps[i].Troop).Tier).ThenBy(i => i).First();
+            specs.Add(new DivisionSpec(id, name, temper, 3 + army.Level / 2, goal, "", comps[lead].Id));
+        }
+        var own = Enumerable.Range(0, comps.Count).Where(i => !comps[i].Allied).ToList();
+        var horse = own.Where(i => RoleOf(comps[i]) == "horse").ToList();
+        var foot = own.Where(i => RoleOf(comps[i]) is "infantry" or "spears").ToList();
+        if (horse.Sum(i => comps[i].Count) >= 30) Make("The horse", horse, "FlankRight", "Bold");
+        if (foot.Count >= 4)
+        {
+            int third = foot.Count / 3;
+            Make("Left battle", foot.Take(third).ToList(), "Hold", "Steady");
+            Make("Right battle", foot.Skip(foot.Count - third).ToList(), "Hold", "Steady");
+        }
+        return army with { Companies = comps, Divisions = specs.Count > 0 ? specs : null };
     }
 
     static ArmySpec Make(string name, int level, int[] tiers, bool enemy) =>

@@ -46,7 +46,11 @@ partial class BattleScreen
             Mouse.SetPosition(c.X, c.Y);
         }
         else skipMouse = true;
-        if (wasWheel && !wheelOpen && WheelSector() is int sector) Command(Hud.WheelOrder[sector]);
+        if (wasWheel && !wheelOpen && WheelSector() is int sector)
+        {
+            if (selectedDivision is { } dv) GoalCommand(dv, Hud.GoalWheelOrder[sector].G, Hud.GoalWheelOrder[sector].Side);
+            else Command(Hud.WheelOrder[sector]);
+        }
         fieldDist = Math.Clamp(fieldDist - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.004f, 2.5f, 12);
 
         var f = Forward(yaw);
@@ -110,12 +114,24 @@ partial class BattleScreen
         // Left button: HUD first (buttons, cards, minimap), then the field (click or box select).
         if (LmbPressed)
         {
-            if (hud.ButtonAt(ms.Position) is Cmd cmd) Command(cmd);
+            if (selectedDivision != null && hud.GoalAt(ms.Position) is var (gk, gs)) GoalCommand(selectedDivision, gk, gs);
+            else if (hud.DivisionAt(ms.Position) is Division dc)
+            {
+                selectedDivision = selectedDivision == dc ? null : dc;
+                if (selectedDivision != null)
+                {
+                    selected.Clear();
+                    if (realTime - lastCardClick < DoubleClick && dc.Squads.Any(s => s.Alive > 0)) camFocus = dc.Squads.First(s => s.Alive > 0).Centroid();
+                }
+                lastCardClick = realTime;
+            }
+            else if (hud.ButtonAt(ms.Position) is Cmd cmd) Command(cmd);
             else if (hud.CardAt(ms.Position) is Squad card)
             {
                 if (card == lastCardSquad && realTime - lastCardClick < DoubleClick) camFocus = card.Centroid(); // double-click: look at it
                 lastCardSquad = card;
                 lastCardClick = realTime;
+                selectedDivision = null;
                 if (add) { if (!selected.Remove(card)) selected.Add(card); }
                 else { selected.Clear(); selected.Add(card); }
             }
@@ -129,6 +145,8 @@ partial class BattleScreen
             if (box.Width < 6 && box.Height < 6)
             {
                 var sq = PickSquad(mouseGround, 0);
+                if (sq?.AiControlled == true) sq = null;
+                if (sq != null) selectedDivision = null;
                 if (sq == null) { if (!add) selected.Clear(); }
                 else if (add) { if (!selected.Remove(sq)) selected.Add(sq); }
                 else { selected.Clear(); selected.Add(sq); }
@@ -136,7 +154,7 @@ partial class BattleScreen
             else
             {
                 if (!add) selected.Clear();
-                foreach (var s in battle.Commanded)
+                foreach (var s in Selectable)
                     if (s.Units.Any(u => u.Active && !u.Routing && OnScreen(u.Pos, out var sp) && box.Contains(sp))) selected.Add(s);
             }
         }
@@ -148,6 +166,14 @@ partial class BattleScreen
             dragStart = null;
             var enemy = battle.Centroid(1);
             bool click = Vector2.Distance(a, mouseGround) < 2;
+            if (selectedDivision is { } dv && !deploying)
+            {
+                // A division takes goals, not orders: an enemy is Attack, a friend is Screen, ground is Take.
+                if (click && PickSquad(mouseGround, 1) is Squad tf) GiveGoal(dv, new Goal(GoalKind.Attack, Target: tf));
+                else if (click && PickSquad(mouseGround, 0) is Squad fr && fr.Division != dv) GiveGoal(dv, new Goal(GoalKind.Screen, Target: fr));
+                else GiveGoal(dv, new Goal(GoalKind.Take, mouseGround));
+                return;
+            }
             if (click && PickSquad(mouseGround, 1) is Squad foe)
             {
                 Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }); // click an enemy: attack it

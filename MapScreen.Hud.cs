@@ -41,6 +41,7 @@ partial class MapScreen
             case PanelKind.Realm: RealmPanel(); break;
             case PanelKind.Beat: BeatPanel(); break;
             case PanelKind.Event: EventPanel(); break;
+            case PanelKind.Divisions: DivisionsPanel(); break;
         }
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it

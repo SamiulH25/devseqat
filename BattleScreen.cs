@@ -34,6 +34,8 @@ sealed partial class BattleScreen
     BasicEffect shadowFx = null!, lineFx = null!;
     Battle battle = null!;
     readonly HashSet<Squad> selected = new();
+    /// The division you are giving goals to (cards on the left, Y cycles), or null for plain orders.
+    Division? selectedDivision;
     readonly Verts<VertexPositionColorTexture> sprites = new();
     readonly Verts<VertexPositionTexture> shadows = new();
     readonly Verts<VertexPositionColor> lines = new();
@@ -143,7 +145,7 @@ sealed partial class BattleScreen
             : shotDir != null ? Weather.Clear : Weather.For(rng.NextSingle() < 0.7f ? 9 + rng.Next(8) : rng.Next(2) == 0 ? 6.5f : 18.5f, rng.Next(3), seed);
         // A quick battle fills the field: about half the battle size a side (IRONFIELD_MEN=n sets the men a side).
         int men = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MEN"), out var m) ? m : Settings.Current.BattleSize / 2;
-        battle = new Battle(seed, Armies.Large(rng, Math.Clamp(mine, 1, 4), 0, men), Armies.Large(rng, Math.Clamp(theirs, 1, 4), 1, men),
+        battle = new Battle(seed, Armies.Divide(Armies.Large(rng, Math.Clamp(mine, 1, 4), 0, men)), Armies.Divide(Armies.Large(rng, Math.Clamp(theirs, 1, 4), 1, men)),
             new BattleOptions
             {
                 EnemyDamage = Settings.Current.EnemyDamage, Weather = weather, Cap = Math.Max(Settings.Current.BattleSize, men * 2 + 20),
@@ -278,6 +280,8 @@ sealed partial class BattleScreen
         hud.ShowResult = battle.Winner >= 0 && !helpOpen;
         hud.InCampaign = campaignBattle != null;
         hud.Deploying = deploying;
+        if (selectedDivision != null && selectedDivision.Alive == 0) selectedDivision = null;
+        hud.Div = selectedDivision;
         hud.WheelOpen = wheelOpen; hud.WheelSector = WheelSector() ?? -1;
         hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = ms.Position;
         hud.Box = boxStart is Point b && command ? BoxOf(b, ms.Position) : null;

@@ -511,6 +511,50 @@ public static partial class SelfTest
     /// A mixed company fights as one squad and gets its casualties back per stack (F1).
     /// F4: two captains who fight differently for 20 battles end with different skills and perks; perks gate on skill, skills
     /// rise with diminishing returns and stay in 0-100, perk effects reach the captain and the economy, and all of it saves.
+    /// Divisions on the map (docs/COMBAT_OVERHAUL.md 1.5): make one under a sergeant, assign a company, keep it in the
+    /// save, take it into battle; an old save without divisions loads with everyone in your retinue.
+    static void CampaignDivisions()
+    {
+        var c = Campaign.New(33);
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
+        while (c.Player.Companies.Count < 3) c.Player.Companies.Add(new CompanyRecord { Id = c.Player.Companies.Max(x => x.Id) + 1, Stacks = { new TroopStack { Troop = "levies", Men = 20 } } });
+        var lead = c.Player.Companies[0];
+        lead.Officer = "Hal Brook";
+        lead.OfficerBattles = 6;
+        Check(c.DivisionLeaders().Any(l => l.Company == lead.Id), "a company's sergeant can lead a division");
+        Check(c.MakeDivision(-1, lead.Id) == null, "make a division under him");
+        var d = c.S.Divisions.Single();
+        Check(lead.Division == d.Id, "his own company joins it");
+        var other = c.Player.Companies[1];
+        Check(c.AssignDivision(other, d.Id) == null && other.Division == d.Id, "assign another company");
+        Check(c.AssignDivision(lead, -1) != null, "his own company cannot leave him");
+        c.SetDivisionGoal(d, "FlankLeft");
+        Check(c.CommandOf(d) == 3, $"a sergeant's command grows with his battles ({c.CommandOf(d)})");
+        var back = CampaignState.Deserialize(c.S.Serialize());
+        Check(back.Divisions.Count == 1 && back.Divisions[0].Goal == "FlankLeft" && back.Parties[0].Companies.Count(x => x.Division == d.Id) == 2,
+            "the save keeps divisions and who is in them");
+        var setup = c.PrepareBattle(bandit);
+        Check(setup.Player.Divisions?.Count == 1 && setup.Player.Companies.Count(x => x.Division == d.Id) == 2, "the battle army carries the division");
+        var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+        var bd = b.DivisionsOf(0).SingleOrDefault();
+        Check(bd != null && bd.Squads.Count == 2 && bd.Goal.Kind == GoalKind.Flank && bd.Goal.Side < 0 && bd.Leader?.Sergeant == true,
+            $"in battle the division has its companies, goal and sergeant ({bd?.Squads.Count} squads, {bd?.Goal.Describe})");
+        // An old save (no Division fields) loads with nobody in a division.
+        var node = System.Text.Json.Nodes.JsonNode.Parse(c.S.Serialize())!;
+        void Strip(System.Text.Json.Nodes.JsonNode? n)
+        {
+            if (n is System.Text.Json.Nodes.JsonObject o) { o.Remove("Division"); o.Remove("Divisions"); foreach (var kv in o.ToList()) Strip(kv.Value); }
+            else if (n is System.Text.Json.Nodes.JsonArray arr) foreach (var x in arr) Strip(x);
+        }
+        Strip(node);
+        var old = CampaignState.Deserialize(node.ToJsonString());
+        Check(old.Divisions.Count == 0 && old.Parties.SelectMany(p => p.Companies).All(x => x.Division == -1), "an old save loads with everyone in the retinue");
+        // Losing the sergeant breaks the division up.
+        lead.Officer = "";
+        c.PruneDivisions();
+        Check(c.S.Divisions.Count == 0 && c.Player.Companies.All(x => x.Division == -1), "a division without its leader breaks up");
+    }
+
     static void SkillTree()
     {
         var a = Campaign.New(91);

@@ -22,7 +22,7 @@ public static class Skills
     {
         new() { Id = "Leadership", Name = "Leadership", Rises = "BATTLES COMMANDED, MEN LED", Governs = "MEN LIMIT +1 PER 5 POINTS", Perks =
         {
-            new() { Id = "Bannerman", Name = "Bannerman", Text = "AURA RADIUS +4 M" },
+            new() { Id = "Bannerman", Name = "Bannerman", Text = "AURA RADIUS +4 M, ORDERS REACH SERGEANTS 30% SOONER" },
             new() { Id = "IronWill", Name = "Iron Will", Text = "COMPANIES NEAR YOU HOLD UNTIL 30% STRENGTH" },
             new() { Id = "BornCaptain", Name = "Born Captain", Text = "+10 MEN LIMIT" },
             new() { Id = "Rallying", Name = "Rallying Cry", Text = "EVERY COMPANY STARTS A BATTLE WITH +5 MORALE" },

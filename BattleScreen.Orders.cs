@@ -16,8 +16,44 @@ partial class BattleScreen
     {
         var list = Targets();
         if (list.Count == 0) return;
-        foreach (var s in list) act(s);
-        battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what);
+        float late = 0;
+        foreach (var s in list) late = MathF.Max(late, Send(s, act));
+        battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
+    }
+
+    /// Give one company an order: at once for your retinue (and anyone before the battle starts); a company in a
+    /// division gets it when the rider arrives, and then follows it instead of its sergeant. Returns the delay.
+    float Send(Squad s, Action<Squad> act)
+    {
+        if (deploying || s.Division == null) { act(s); return 0; }
+        return battle.Direct(s, act);
+    }
+
+    /// Companies you can pick: your retinue and the companies of your divisions (their orders arrive late).
+    IEnumerable<Squad> Selectable => battle.SquadsOf(0).Where(s => !s.AiControlled);
+
+    /// Give a division a goal (it reaches the sergeant after a delay; before the battle starts, at once).
+    void GiveGoal(Division d, Goal g) => battle.IssueGoal(d, g, now: deploying);
+
+    void GoalCommand(Division d, GoalKind kind, int side)
+    {
+        var mid = d.Squads.Where(s => s.Alive > 0).Select(s => s.Center).DefaultIfEmpty(Vector2.Zero).Aggregate((a, b) => a + b) / Math.Max(1, d.Squads.Count(s => s.Alive > 0));
+        var foe = battle.SquadsOf(1).Where(s => s.Alive > 0).OrderBy(s => Vector2.DistanceSquared(s.Center, mid)).FirstOrDefault();
+        var enemy = battle.Centroid(1);
+        var away = mid - enemy;
+        if (away.LengthSquared() < 1) away = -Vector2.UnitY;
+        away.Normalize();
+        Goal g = kind switch
+        {
+            GoalKind.Attack or GoalKind.Harass => new Goal(kind, Target: foe),
+            GoalKind.Flank => new Goal(kind, Target: foe, Side: side),
+            GoalKind.Screen => new Goal(kind, Target: battle.SquadsOf(0).Where(s => s.Alive > 0 && s.Division != d).OrderBy(s => Vector2.DistanceSquared(s.Center, mid)).FirstOrDefault()),
+            GoalKind.Take => new Goal(kind, mid - away * 25),
+            GoalKind.FallBack => new Goal(kind, mid + away * 30),
+            GoalKind.Hold => new Goal(kind, mid),
+            _ => new Goal(kind, mid),
+        };
+        GiveGoal(d, g);
     }
 
     void Command(Cmd c)
@@ -41,7 +77,8 @@ partial class BattleScreen
                 foreach (var s in list)
                 {
                     var ok = s.Choices(s.Units[0].Type.HasShield);
-                    s.Formation = ok.Contains(next) ? next : Formation.Line;
+                    var f = ok.Contains(next) ? next : Formation.Line;
+                    Send(s, q => q.Formation = f);
                 }
                 battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + next switch
                 {
@@ -54,7 +91,7 @@ partial class BattleScreen
                 var archers = Targets().Where(s => s.Units.Any(u => u.Type.Ammo > 0)).ToList();
                 if (archers.Count == 0) { battle.Log("No archers selected."); break; }
                 bool fire = !archers[0].FireAtWill;
-                foreach (var s in archers) s.FireAtWill = fire;
+                foreach (var s in archers) Send(s, q => q.FireAtWill = fire);
                 battle.Log(fire ? "Archers: fire at will!" : "Archers: hold your arrows!");
                 break;
             }
@@ -75,9 +112,20 @@ partial class BattleScreen
         var mine = battle.Commanded.ToList();
         for (int i = 0; i < mine.Count && i < 10; i++)
             if (Pressed(i == 9 ? Keys.D0 : Keys.D1 + i) && !selected.Remove(mine[i])) selected.Add(mine[i]);
-        if (ctl.Pressed(Act.SelectAll)) selected.Clear();
+        if (ctl.Pressed(Act.SelectAll)) { selected.Clear(); selectedDivision = null; }
+        if (ctl.Pressed(Act.NextDivision)) NextDivision();
         foreach (var (cmd, (_, act)) in Hud.Orders)
             if (ctl.Pressed(act)) Command(cmd);
+    }
+
+    /// Cycle the division you give goals to: none, then each living one in turn, then none again.
+    void NextDivision()
+    {
+        var list = battle.DivisionsOf(0).Where(d => d.Alive > 0).ToList();
+        if (list.Count == 0) { battle.Log("You have no divisions. Make them on the campaign map (V)."); return; }
+        int i = selectedDivision == null ? -1 : list.IndexOf(selectedDivision);
+        selectedDivision = i + 1 < list.Count ? list[i + 1] : null;
+        if (selectedDivision != null) { selected.Clear(); battle.Log($"Goals for {selectedDivision.Name}: {selectedDivision.Goal.Describe}"); }
     }
 
     /// Line of the selected squads' combined width, centred on `center`, facing `toward`.
@@ -101,7 +149,7 @@ partial class BattleScreen
     void Distribute(Vector2 a, Vector2 b, Vector2 toward)
     {
         if (deploying) { a.Y = MathF.Min(a.Y, -12); b.Y = MathF.Min(b.Y, -12); } // your third of the field
-        foreach (var (s, a1, b1) in Split(a, b).ToList()) s.SetLine(a1, b1, toward);
+        foreach (var (s, a1, b1) in Split(a, b).ToList()) Send(s, q => q.SetLine(a1, b1, toward));
     }
 
     IEnumerable<(Squad S, Vector2 A, Vector2 B)> Split(Vector2 a, Vector2 b)

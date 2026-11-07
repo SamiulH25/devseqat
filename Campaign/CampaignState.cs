@@ -23,6 +23,8 @@ public sealed class CompanyRecord
     public int OfficerBattles;
     /// The companion who leads it into battle as a hero unit, while fit ("" = none); kept by Campaign.RefreshHeroes.
     public string Hero = "";
+    /// The division it fights in (a DivisionRecord.Id); -1 = your retinue, which takes your orders at once.
+    public int Division = -1;
     public List<string> Traits = new();
     public List<TroopStack> Stacks = new();
     /// Where the company was raised (2.4): its culture and home settlement.
@@ -144,6 +146,14 @@ public sealed class Contract
     public int Giver = -1;
     public string Kind = "", Text = "";
     public float Deadline, Reward, Progress;
+}
+
+/// One of your divisions: led by a companion (LeaderChar) or by a company's sergeant (LeaderCompany).
+public sealed class DivisionRecord
+{
+    public int Id, LeaderChar = -1, LeaderCompany = -1;
+    /// The goal it starts a battle with: Hold, Attack, FlankLeft, FlankRight, Reserve, Screen, Harass or Guard.
+    public string Goal = "Hold";
 }
 
 public sealed class Party
@@ -326,6 +336,8 @@ public sealed class CampaignState
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
     public List<Character> Characters = new();
     public int CaptainChar = -1;
+    /// Your divisions (docs/COMBAT_OVERHAUL.md 1.5): who leads each and the goal it starts a battle with.
+    public List<DivisionRecord> Divisions = new();
 
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true, WriteIndented = true };
 

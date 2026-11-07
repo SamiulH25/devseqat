@@ -10,7 +10,7 @@ public enum MenuItem { Resume, Controls, NewBattle, Quit, Withdraw, Continue, Ti
 
 /// All 2D interface: unit cards, player panel, balance of power, minimap, event feed, crosshair, order wheel,
 /// command buttons, squad banners and the menu / controls / result overlays. Layout is in 720p units times `Ui`.
-sealed class Hud
+sealed partial class Hud
 {
     // Colours come from the design tokens (Style.cs, docs/DESIGN.md).
     public static readonly Color Gold = Style.Accent, Friendly = Style.Friendly, Foe = Style.Foe, Ok = Style.Ok, Warn = Style.Warn,
@@ -46,6 +46,8 @@ sealed class Hud
     public Rectangle? Box;
     /// The company under the mouse in command view (for the tooltip).
     public Squad? HoverSquad;
+    /// The division you are giving goals to (cards, goal buttons and the goal wheel), or null.
+    public Division? Div;
 
     // Layout, rebuilt every frame.
     readonly List<(Rectangle R, Squad S)> cards = new();
@@ -69,15 +71,22 @@ sealed class Hud
         cards.Clear(); buttons.Clear(); menu.Clear();
 
         var mine = Mine;
-        int cw = mine.Count > 8 ? U(68) : U(80), ch = U(94), gap = mine.Count > 8 ? U(4) : U(6), total = mine.Count * cw + Math.Max(0, mine.Count - 1) * gap;
+        // Cards shrink to fit a big retinue; past what fits, the rest are summed up on the last card.
+        int room = W - U(296) - U(250), gap = mine.Count > 8 ? U(4) : U(6), ch = U(94);
+        int cw = Math.Clamp((room - gap * Math.Max(0, mine.Count - 1)) / Math.Max(1, mine.Count), U(64), mine.Count > 8 ? U(68) : U(80));
+        int fit = Math.Max(1, (room + gap) / (cw + gap));
+        int shown = Math.Min(mine.Count, fit), total = shown * cw + Math.Max(0, shown - 1) * gap;
         int cx0 = Math.Max(U(296), (W - total) / 2);
-        for (int i = 0; i < mine.Count; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), H - ch - U(10), cw, ch), mine[i]));
+        for (int i = 0; i < shown; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), H - ch - U(10), cw, ch), mine[i]));
+        hiddenCards = mine.Count - shown;
+        LayoutDivisions();
 
         player = new Rectangle(U(10), H - U(104), U(280), U(94));
         int ms = U(150);
         minimap = new Rectangle(W - ms - U(10), U(10), ms, ms);
 
-        if (Command)
+        if (Command && Div != null) LayoutGoals();
+        else if (Command)
         {
             int bw = U(112), bh = U(24);
             var order = new[] { Cmd.Charge, Cmd.Hold, Cmd.Advance, Cmd.FallBack, Cmd.Follow, Cmd.FormHere, Cmd.Spacing, Cmd.FireAtWill, Cmd.Formation };
@@ -99,7 +108,7 @@ sealed class Hud
     public MenuItem? MenuAt(Point p) => menu.Where(m => m.R.Contains(p)).Select(m => (MenuItem?)m.M).FirstOrDefault();
     public Vector2? MinimapAt(Point p) => minimap.Contains(p)
         ? World.MinimapToWorld(new Vector2((p.X - minimap.X) / (float)minimap.Width, (p.Y - minimap.Y) / (float)minimap.Height)) : null;
-    public bool Over(Point p) => CardAt(p) != null || ButtonAt(p) != null || minimap.Contains(p) || player.Contains(p) || start.Contains(p);
+    public bool Over(Point p) => CardAt(p) != null || ButtonAt(p) != null || DivisionAt(p) != null || GoalAt(p) != null || minimap.Contains(p) || player.Contains(p) || start.Contains(p);
 
     // ---------- primitives ----------
 
@@ -165,8 +174,10 @@ sealed class Hud
         MinimapPanel();
         PlayerPanel();
         Cards();
-        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) SquadTooltip(); } else Crosshair();
-        if (WheelOpen) Wheel();
+        DivisionCards();
+        if (Command && Div != null) GoalPanel();
+        if (Command) { DivisionMarkers(); CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) SquadTooltip(); } else Crosshair();
+        if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
         Hints();
         if (Box is Rectangle box) { Rect(box, Gold * 0.12f); Frame(box, Gold, 1); }
         if (Deploying)
@@ -328,13 +339,21 @@ sealed class Hud
             if (!s.FireAtWill) TextR("HOLD", r.Right - U(4), r.Y + U(23), Warn, 1);
 
             Icon(type, new Rectangle(r.X + U(16), r.Y + U(4), r.Width - U(32), U(44)));
-            TextC(s.Name.ToUpperInvariant(), r.X + r.Width / 2f, r.Y + U(50), Dim, 1);
+            string nm = s.Name.ToUpperInvariant();
+            int fits = Math.Max(3, (r.Width - U(4)) / U(6));
+            TextC(nm.Length > fits ? nm[..fits] : nm, r.X + r.Width / 2f, r.Y + U(50), Dim, 1);
             TextC($"{active}/{s.StartCount}", r.X + r.Width / 2f, r.Y + U(60), Color.White);
             Bar(new Rectangle(r.X + U(6), r.Y + U(77), r.Width - U(12), U(4)), active / (float)Math.Max(1, s.StartCount), Friendly);
             Bar(new Rectangle(r.X + U(6), r.Y + U(84), r.Width - U(12), U(4)), morale / 100f, MoraleColor(morale));
             if (state != "STEADY") TextC(state, r.X + r.Width / 2f, r.Y - U(12), sc, 1);
         }
+        if (hiddenCards > 0 && cards.Count > 0)
+        {
+            var last = cards[^1].R;
+            TextC($"+{hiddenCards} MORE", last.X + last.Width / 2f, last.Y - U(12), Gold, 1);
+        }
     }
+    int hiddenCards;
 
     /// A portrait built from the troop's own part sprites, laid out by the same body metrics as the 3D puppet
     /// (so every loadout and tier is drawn correctly), cropped to `box`.
@@ -478,7 +497,8 @@ sealed class Hud
             var flag = new Rectangle(x + U(2), y - U(24), U(24), U(15));
             Rect(flag, col * 0.9f);
             Frame(flag, sel ? Gold : Color.Black * 0.6f, U(sel ? 2 : 1));
-            string label = own ? $"{mine.IndexOf(s) + 1}" : s.Name[..1];
+            string label = !own ? s.Name[..1] : s.Division != null ? DivisionTag(s.Division) : $"{mine.IndexOf(s) + 1}";
+            if (own && s.Division != null && s.Division == Div) Frame(new Rectangle(flag.X - U(1), flag.Y - U(1), flag.Width + U(2), flag.Height + U(2)), Gold, U(1));
             TextC(label, flag.X + flag.Width / 2f, flag.Y + U(4), Color.White, 1);
             int morale = AvgMorale(s.Units);
             Bar(new Rectangle(flag.X, flag.Bottom + U(2), flag.Width, U(3)), morale / 100f, MoraleColor(morale));
@@ -622,11 +642,11 @@ sealed class Hud
             ("COMMAND VIEW", new (string, string)[]
             {
                 ("SELECT SQUAD / BOX", "LMB / DRAG"), ("ADD TO SELECTION", Ctl.Name(Act.AddToSelection)), ("MOVE (KEEP WIDTH)", "RMB"),
-                ("DRAW FORMATION LINE", "RMB DRAG"), ("ATTACK ENEMY SQUAD", "RMB ON ENEMY"), ("PAN", $"{Ctl.First(Act.Forward)}{Ctl.First(Act.Left)}{Ctl.First(Act.Back)}{Ctl.First(Act.Right)} / SCREEN EDGES"),
+                ("DRAW FORMATION LINE", "RMB DRAG"), ("ATTACK ENEMY SQUAD", "RMB ON ENEMY"), ("DIVISION: GOAL HERE / ATTACK / SCREEN", "PICK CARD, RMB"), ("PAN", $"{Ctl.First(Act.Forward)}{Ctl.First(Act.Left)}{Ctl.First(Act.Back)}{Ctl.First(Act.Right)} / SCREEN EDGES"),
                 ("ROTATE", $"{Ctl.First(Act.RotateLeft)} {Ctl.First(Act.RotateRight)} / MMB DRAG"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"),
                 ("FOCUS SQUAD", "DOUBLE-CLICK CARD"),
             }),
-            ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.SelectAll,
+            ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.SelectAll, Act.NextDivision,
                     Act.CommandView, Act.Pause, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Prepend(("SELECT SQUAD", "1-0")).ToArray()),
