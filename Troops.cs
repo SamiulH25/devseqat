@@ -118,7 +118,7 @@ public static class Troops
 /// Troop is the company's face (its largest stack) and Count its total; Mix lists every stack (troop, men) when the company
 /// holds more than one troop type (CAMPAIGN_OVERHAUL.md 2.3). RoutBonus and VsMounted come from its honours.
 public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,
-    StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "")
+    StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "", int Division = -1)
 {
     public bool Has(string trait) => Traits?.Contains(trait) == true;
     /// The men to spawn, largest stack first (so a squad's first man is its majority troop).
@@ -128,7 +128,12 @@ public sealed record Company(string Troop, int Count, string Role = "", int Id =
 /// One troop type's men in a battle company.
 public sealed record StackSpec(string Troop, int Count);
 
-public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Companies);
+public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Companies, IReadOnlyList<DivisionSpec>? Divisions = null);
+
+/// A division (docs/COMBAT_OVERHAUL.md 1): companies whose Company.Division is Id, led by a sergeant who pursues a goal.
+/// Leader names the companion fighting as a company's Hero, if one leads it; Temper is "Bold", "Steady" or "Cautious";
+/// Skill (0-10) is his Command skill; Goal is the goal he starts the battle with (a GoalKind name).
+public sealed record DivisionSpec(int Id, string Name, string Temper = "Steady", int Skill = 3, string Goal = "Hold", string Leader = "");
 
 /// Army builder. A company belongs to a line (infantry, spears, archers, horse); its tier picks the troop on that line,
 /// standing in for companies the campaign has upgraded. Elite companies are smaller.

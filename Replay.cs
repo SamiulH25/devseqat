@@ -25,6 +25,15 @@ public sealed class Replay
         public PlayerInput Input;
         public bool Commanding, Withdraw;
         public List<SquadOrder>? Orders;
+        public List<GoalOrder>? Goals;
+    }
+
+    /// A goal you sent one of your divisions (it then rides to him inside the sim, so it replays exactly).
+    public sealed class GoalOrder
+    {
+        public int Division, Target = -1, Side = 1;
+        public GoalKind Kind;
+        public Vector2 Point;
     }
 
     /// One of your companies' orders, recorded when it changes.
@@ -34,7 +43,7 @@ public sealed class Replay
         public Order Order;
         public Vector2 Anchor, Front;
         public Formation Formation;
-        public bool FireAtWill;
+        public bool FireAtWill, Override, Pursue;
     }
 
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true };
@@ -65,9 +74,12 @@ public sealed class Replay
                 foreach (var o in f.Orders)
                 {
                     var s = b.Squads[o.Squad];
-                    s.Order = o.Order; s.Anchor = o.Anchor; s.Front = o.Front; s.Columns = o.Columns; s.Formation = o.Formation; s.FireAtWill = o.FireAtWill;
+                    s.Order = o.Order; s.Anchor = o.Anchor; s.Front = o.Front; s.Columns = o.Columns; s.Formation = o.Formation; s.FireAtWill = o.FireAtWill; s.Override = o.Override; s.Pursue = o.Pursue;
                     s.Target = o.Target >= 0 ? b.Squads[o.Target] : null;
                 }
+            if (f.Goals != null)
+                foreach (var g in f.Goals)
+                    b.IssueGoal(b.Divisions[g.Division], new Goal(g.Kind, g.Point, g.Target >= 0 ? b.Squads[g.Target] : null, g.Side));
             b.Input = f.Input;
             b.Commanding = f.Commanding;
             if (f.Withdraw) b.Withdraw();
@@ -109,19 +121,20 @@ public sealed partial class Battle
             r.Start = Units.Select(u => u.Pos).ToList();
             r.StartFacing = Units.Select(u => u.Facing).ToList();
         }
-        var f = new Replay.Frame { Dt = dt, Input = Input, Commanding = Commanding, Withdraw = withdrawRequested };
+        var f = new Replay.Frame { Dt = dt, Input = Input, Commanding = Commanding, Withdraw = withdrawRequested, Goals = goalRecords };
+        goalRecords = null;
         withdrawRequested = false;
         for (int i = 0; i < Squads.Count; i++)
         {
             var s = Squads[i];
             if (s.Team != 0 || s.AiControlled || Options.AutoPlayer) continue;
             int target = s.Target != null ? Squads.IndexOf(s.Target) : -1;
-            string sig = $"{s.Order}|{target}|{s.Anchor.X:R},{s.Anchor.Y:R}|{s.Front.X:R},{s.Front.Y:R}|{s.Columns}|{s.Formation}|{s.FireAtWill}";
+            string sig = $"{s.Order}|{target}|{s.Anchor.X:R},{s.Anchor.Y:R}|{s.Front.X:R},{s.Front.Y:R}|{s.Columns}|{s.Formation}|{s.FireAtWill}|{s.Override}|{s.Pursue}";
             if (lastOrders.TryGetValue(i, out var last) && last == sig) continue;
             lastOrders[i] = sig;
             (f.Orders ??= new()).Add(new Replay.SquadOrder
             {
-                Squad = i, Target = target, Order = s.Order, Anchor = s.Anchor, Front = s.Front, Columns = s.Columns, Formation = s.Formation, FireAtWill = s.FireAtWill,
+                Squad = i, Target = target, Order = s.Order, Anchor = s.Anchor, Front = s.Front, Columns = s.Columns, Formation = s.Formation, FireAtWill = s.FireAtWill, Override = s.Override, Pursue = s.Pursue,
             });
         }
         r.Frames.Add(f);

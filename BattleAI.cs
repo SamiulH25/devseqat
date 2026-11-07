@@ -27,6 +27,7 @@ public partial class Battle
 
         var s = u.Squad!;
         var (enemy, d) = Nearest(u);
+        if (s.Pursue && s.Order == Order.Charge && NearestRouter(u, d) is (Unit r, float rd)) (enemy, d) = (r, rd); // run down the broken
         u.EnemyDist = d;
         if (u.Mounted) { ThinkCav(u, s, enemy, d, dt); return; }
         u.Wish = Vector2.Zero;
@@ -202,8 +203,9 @@ public partial class Battle
     /// An AI commander for one side (always the enemy; your side too when Options.AutoPlayer): advance as a block,
     /// charge when close, archers stop at bow range, horse waits wide on the far flank and then hunts the softest companies.
     /// The companies a side's AI general leads: all of the enemy's; of yours, only allies' (or all, in headless runs).
-    List<Squad> Led(int team, string role) => Role(team, role).Where(s => team == 1 || Options.AutoPlayer || s.AiControlled).ToList();
-    public IEnumerable<Squad> Commanded => SquadsOf(0).Where(s => !s.AiControlled);
+    List<Squad> Led(int team, string role) => Role(team, role).Where(s => s.Division == null && (team == 1 || Options.AutoPlayer || s.AiControlled)).ToList();
+    /// Your companies that take your orders at once: not an ally's, not in a division.
+    public IEnumerable<Squad> Commanded => SquadsOf(0).Where(s => !s.AiControlled && s.Division == null);
 
     void General(int team)
     {

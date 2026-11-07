@@ -482,4 +482,106 @@ public static partial class SelfTest
         var again = Replay.Deserialize(rec.Serialize()).Play();
         Check(rec.Winner == again.Winner && again.Units.Count(u => u.Dead) == rec.Dead, "a big battle replays exactly");
     }
+
+    /// Divisions (docs/COMBAT_OVERHAUL.md 1.8): goals arrive late and a newer one cancels an older; a Hold goal keeps the
+    /// division near its ground; Flank swings wide and hits a side; a fallen sergeant is replaced; direct orders wait
+    /// for the delay too; and a battle with divisions and goals replays exactly.
+    static void DivisionGoals()
+    {
+        // Delay and countermand.
+        var b = Battle.Empty(21);
+        var a = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, -20), 8, Vector2.UnitY);
+        var d = b.AddDivision(0, "Sgt Test", new[] { a }, Temper.Steady, 3);
+        Run(b, 0.5f);
+        float delay = b.IssueGoal(d, new Goal(GoalKind.Take, new(30, -20)));
+        Check(delay > 1.5f, $"an order takes time to reach a sergeant ({delay:0.0}s)");
+        Run(b, delay * 0.5f);
+        Check(d.Goal.Kind == GoalKind.Hold && d.Pending != null, "the goal has not arrived halfway through the delay");
+        float again = b.IssueGoal(d, new Goal(GoalKind.FallBack, new(0, -40)));
+        bool sawTake = false;
+        for (int i = 0; i < (again + 1) * 60; i++) { b.Update(1 / 60f); sawTake |= d.Goal.Kind == GoalKind.Take; }
+        Check(!sawTake && d.Goal.Kind == GoalKind.FallBack, "a newer goal cancels one still on its way");
+        Run(b, 15);
+        Check(Vector2.Distance(a.Centroid(), new Vector2(0, -40)) < 6, "the division falls back to the point it was given");
+
+        // Direct order: waits for the delay, then the company follows it and not its sergeant.
+        float wait = b.Direct(a, s => { s.Order = Order.Charge; });
+        Check(wait > 1 && a.Order == Order.Hold, "a direct order to a division's company is not obeyed at once");
+        Run(b, wait + 0.2f);
+        Check(a.Override && a.Order == Order.Charge, "the direct order lands after the delay and the sergeant leaves it alone");
+        b.IssueGoal(d, new Goal(GoalKind.Hold, new(0, -40)));
+        Run(b, 6);
+        Check(!a.Override, "a new goal hands the company back to its sergeant");
+
+        // Hold against an enemy that comes close and then draws off: the division does not follow it far.
+        b = Battle.Empty(22);
+        var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new(0, 0), 10, Vector2.UnitY);
+        var bait = b.AddSquad(1, Troops.Get("levies"), 12, new(0, 14), 6, -Vector2.UnitY);
+        d = b.AddDivision(0, "Sgt Hold", new[] { mine }, Temper.Steady, 5, new Goal(GoalKind.Hold, new(0, 0)));
+        bait.Order = Order.Charge;
+        float farthest = 0;
+        for (int i = 0; i < 60 * 40; i++)
+        {
+            if (i == 60 * 4) { bait.Order = Order.Hold; bait.Anchor = new(0, 70); } // draw off
+            b.Update(1 / 60f);
+            farthest = MathF.Max(farthest, mine.Centroid().Length());
+        }
+        Console.WriteLine($"divisions: hold leash {farthest:0} m");
+        Check(mine.Centroid().Length() < 12, "a Hold division comes back to its ground");
+        Check(farthest < 40, "a steady sergeant does not chase far from the ground he holds");
+
+        // Flank: around the side of a holding line, then into it.
+        b = Battle.Empty(23);
+        var line = b.AddSquad(1, Troops.Get("shieldmen"), 30, new(0, 30), 15, -Vector2.UnitY);
+        var wing = b.AddSquad(0, Troops.Get("men_at_arms"), 16, new(0, -10), 8, Vector2.UnitY);
+        d = b.AddDivision(0, "Sgt Wing", new[] { wing }, Temper.Bold, 6, new Goal(GoalKind.Flank, Side: 1));
+        float wide = 0, pressure = 0;
+        for (int i = 0; i < 60 * 70 && (i < 2 || line.Alive > 0); i++)
+        {
+            b.Update(1 / 60f);
+            wide = MathF.Max(wide, MathF.Abs(wing.Centroid().X));
+            pressure = MathF.Max(pressure, line.Pressure);
+        }
+        Console.WriteLine($"divisions: flank swung {wide:0} m wide, line pressure {pressure:0.0}");
+        Check(wide > 20, "a flanking division swings wide of the enemy line");
+        Check(pressure > 0.5f, "the flank attack lands on the side or rear");
+
+        // A fallen sergeant: the men fight on, then someone takes over.
+        b = Battle.Empty(24);
+        var c1 = b.AddSquad(0, Troops.Get("shieldmen"), 12, new(-10, 0), 6, Vector2.UnitY);
+        var c2 = b.AddSquad(0, Troops.Get("bowmen"), 10, new(10, 0), 5, Vector2.UnitY);
+        d = b.AddDivision(0, "Sgt Doomed", new[] { c1, c2 }, Temper.Steady, 3);
+        var first = d.Leader!;
+        Run(b, 1);
+        float before = b.OrderDelay(d);
+        first.Dead = true;
+        Run(b, 1);
+        Check(d.Leaderless && b.OrderDelay(d) > before * 1.5f, "a division without its sergeant hears orders late");
+        Run(b, 11);
+        Check(!d.Leaderless && d.Leader != first && d.Leader!.Active, "the best man left takes command after a while");
+
+        // Replay with divisions built from the army and goals sent during the fight.
+        var rng = new Random(25);
+        ArmySpec Div(ArmySpec x) => x with
+        {
+            Companies = x.Companies.Select((c, i) => c with { Id = 100 + i, Division = i < 2 ? 0 : i == 2 ? 1 : -1 }).ToList(),
+            Divisions = new[] { new DivisionSpec(0, "Sgt Left", "Bold", 4, "Hold"), new DivisionSpec(1, "Sgt Bows", "Cautious", 2, "Hold") },
+        };
+        b = new Battle(25, Div(Armies.Random(rng, 2, 0)), Armies.Random(rng, 2, 1), new BattleOptions());
+        Check(b.DivisionsOf(0).Count() == 2 && b.DivisionsOf(0).All(x => x.Squads.Count > 0 && x.Leader != null), "divisions are built from the army's specs");
+        b.StartRecording(25);
+        for (int step = 0; b.Winner < 0 && step < 60 * 200; step++)
+        {
+            if (step == 90) b.IssueGoal(b.Divisions[0], new Goal(GoalKind.Attack, Target: b.SquadsOf(1).First(s => s.Company != null)));
+            if (step == 200) b.IssueGoal(b.Divisions[1], new Goal(GoalKind.Harass));
+            if (step == 300) b.Direct(b.Divisions[1].Squads[0], s => s.Formation = Formation.Loose);
+            if (step == 400) b.IssueGoal(b.Divisions[0], new Goal(GoalKind.Pursue));
+            b.Update(1 / 60f);
+        }
+        var rec = b.FinishRecording()!;
+        var back = Replay.Deserialize(rec.Serialize());
+        var replayed = back.Play();
+        Check(back.Matches(replayed), "a battle with divisions and goals replays exactly");
+    }
 }
+

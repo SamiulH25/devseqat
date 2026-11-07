@@ -56,6 +56,7 @@ public static partial class SelfTest
         StackBattle();
         ReplayExact();
         ScaleBattle();
+        DivisionGoals();
 
         for (int seed = 1; seed <= 3; seed++)
         {

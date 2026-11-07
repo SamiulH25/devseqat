@@ -72,6 +72,21 @@ public sealed partial class Battle
         return best == null ? NearestScan(u, Units) : (best, dist);
     }
 
+    /// The nearest routing enemy within 16 m that is closer than `than` (pursuers chase the broken too).
+    (Unit unit, float dist)? NearestRouter(Unit u, float than)
+    {
+        Unit? best = null;
+        float bd = MathF.Min(than, 16);
+        bd *= bd;
+        foreach (var o in Near(u.Pos, 16, near))
+        {
+            if (o.Team == u.Team || !o.Routing || !o.Active) continue;
+            float d = Vector2.DistanceSquared(o.Pos, u.Pos);
+            if (d < bd) { bd = d; best = o; }
+        }
+        return best == null ? null : (best, MathF.Sqrt(bd));
+    }
+
     (Unit? unit, float dist) NearestScan(Unit u, List<Unit> among)
     {
         Unit? best = null;

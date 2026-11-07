@@ -26,6 +26,8 @@ public sealed class BattleOptions
     public int Ladders = 2;
     public float GateHp = 500;
     public Weather Weather = Weather.Clear;
+    /// The Horns perk: orders reach your sergeants 30% sooner.
+    public bool Horns;
 }
 
 /// When and in what weather a battle is fought (roadmap C4). The campaign passes its hour and season.

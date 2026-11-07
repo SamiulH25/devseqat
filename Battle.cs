@@ -77,6 +77,9 @@ public sealed partial class Battle
         MapRadius = Math.Clamp(95 * MathF.Sqrt(Math.Min(total, Options.Cap) / 450f), 95, 230);
         Deploy(0, player, (int)(player.Companies.Sum(c => c.Count) * share));
         Deploy(1, enemy, (int)(enemy.Companies.Sum(c => c.Count) * share));
+        UpdateCentroids();
+        BuildDivisions(0, player);
+        BuildDivisions(1, enemy);
         if (Options.PlayerWounded) Player.Fled = true; // too hurt to ride: you command from the rear
         UpdateCentroids();
     }
@@ -237,6 +240,7 @@ public sealed partial class Battle
     public void Update(float dt)
     {
         Mark(-1);
+        ApplyDirects(); // before recording, so a replay sees the order land on the same tick
         if (Recording != null) RecordFrame(dt);
         Sounds.Clear();
         Time += dt;
@@ -251,6 +255,7 @@ public sealed partial class Battle
             General(1);
             if (Options.AutoPlayer || Squads.Any(q => q.AiControlled && q.Alive > 0)) General(0);
         }
+        UpdateDivisions();
         Batter(dt);
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
         Mark(1);
@@ -375,6 +380,12 @@ public sealed partial class Battle
             s.Anchor = new Vector2(0, -30) * f;
             Role(team, role).Add(s);
             lateral[s] = 0;
+            if (Divisions.FirstOrDefault(d => d.Team == team && d.SpecId >= 0 && d.SpecId == c.Division) is Division div)
+            {
+                div.Squads.Add(s);
+                s.Division = div;
+                if (div.Leader is not { Active: true } && s.Units.FirstOrDefault(u => u.Hero) is Unit h) { div.Leader = h; h.Sergeant = true; }
+            }
             if (team == 1 && charged[1] || team == 0 && Options.AutoPlayer) s.Order = Order.Charge;
             Log(team == 0 ? $"Reinforcements: {t.Name} join the fight!" : $"Enemy reinforcements: {t.Name}!");
         }
