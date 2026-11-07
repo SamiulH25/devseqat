@@ -432,7 +432,8 @@ sealed partial class MapScreen
             case "party": panel = PanelKind.Party; break;
             case "divisions": panel = PanelKind.Divisions; note = ""; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;
-            case "realm": panel = PanelKind.Realm; note = ""; break;
+            case "realm": realmTab = 0; panel = PanelKind.Realm; note = ""; break;
+            case "career": realmTab = 1; panel = PanelKind.Realm; note = ""; break;
             case "fief": at = s; tab = "FIEF"; panel = PanelKind.Settlement; note = ""; break;
             case "household": charTab = C.S.Factions.Count; panel = PanelKind.Characters; note = ""; break;
             case "beat": panel = PanelKind.Beat; break;

@@ -3,9 +3,10 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The widgets the UI lab tries out, as extensions on `Ui`: gradients, an ornamented plate with rivets and a ribbon title,
-/// painted heater shields, 7x7 pixel icons, ring gauges, segmented bars, toggles, sliders, chips, charts and tooltips.
-/// Everything is drawn from the 1x1 pixel and the pixel font, so it keeps the hard-edged look of the rest of the interface.
+/// The interface kit beyond the basics in `Ui`, as extensions on it (docs/DESIGN.md 4): gradients, the iron plate with rivets
+/// and a ribbon title, painted heater shields, 7x7 pixel icons, ring gauges, segmented bars, toggles, sliders, chips, charts
+/// and tooltips. Everything is drawn from the 1x1 pixel and the pixel font, so it keeps the hard-edged pixel look.
+/// The UI lab (F3 on the title) shows every widget.
 static class Kit
 {
     // ---------- colours ----------
@@ -124,13 +125,24 @@ static class Kit
     public static Rectangle Plate(this Ui ui, Rectangle r, string? title = null, Color? edge = null, bool solid = true)
     {
         var e = edge ?? Rivet;
-        ui.Rect(new Rectangle(r.X + ui.U(3), r.Y + ui.U(4), r.Width, r.Height), Color.Black * 0.35f);
-        if (solid) ui.VGrad(r, Iron, IronDark);
-        else ui.VGrad(r, Iron * 0.88f, IronDark * 0.88f);
+        ui.PlateBody(r, e, 1, solid ? 1f : 0.88f);
+        int top = ui.U(14);
+        if (title != null) { ui.Ribbon(r.Center.X, r.Y - ui.U(9), title, e); top = ui.U(28); }
+        return new Rectangle(r.X + ui.U(14), r.Y + top, r.Width - ui.U(28), r.Height - top - ui.U(14));
+    }
+
+    /// The plate itself: a drop shadow, a gradient iron fill, a dark outer line, the edge colour (`thick` units), a top light,
+    /// an inner hairline and, on plates big enough to carry them, four rivets. `alpha` lets the map show through a little.
+    public static void PlateBody(this Ui ui, Rectangle r, Color e, int thick = 1, float alpha = 1)
+    {
+        bool big = r.Width >= ui.U(80) && r.Height >= ui.U(48);
+        if (big) ui.Rect(new Rectangle(r.X + ui.U(3), r.Y + ui.U(4), r.Width, r.Height), Color.Black * 0.3f);
+        ui.VGrad(r, Iron * alpha, IronDark * alpha, 3);
         ui.Frame(r, Color.Black * 0.7f, ui.U(1));
         var inner = Inset(r, ui.U(1));
-        ui.Frame(inner, Mul(e, 0.8f), ui.U(1));
-        ui.Rect(new Rectangle(inner.X + ui.U(1), inner.Y + ui.U(1), inner.Width - ui.U(2), ui.U(1)), Color.White * 0.1f);
+        ui.Frame(inner, Mul(e, 0.8f), ui.U(thick));
+        ui.Rect(new Rectangle(inner.X + ui.U(thick), inner.Y + ui.U(thick), inner.Width - ui.U(2 * thick), ui.U(1)), Color.White * 0.1f);
+        if (!big) { ui.Block(r); return; }
         ui.Frame(Inset(r, ui.U(4)), Color.White * 0.05f, ui.U(1));
         foreach (var p in new[] { new Point(r.X, r.Y), new Point(r.Right, r.Y), new Point(r.X, r.Bottom), new Point(r.Right, r.Bottom) })
         {
@@ -139,9 +151,6 @@ static class Kit
             ui.Rect(new Rectangle(x, y, ui.U(2), ui.U(1)), Mul(e, 1.3f));
         }
         ui.Block(r);
-        int top = ui.U(14);
-        if (title != null) { ui.Ribbon(r.Center.X, r.Y - ui.U(9), title, e); top = ui.U(28); }
-        return new Rectangle(r.X + ui.U(14), r.Y + top, r.Width - ui.U(28), r.Height - top - ui.U(14));
     }
 
     public static Rectangle Inset(Rectangle r, int d) => new(r.X + d, r.Y + d, r.Width - 2 * d, r.Height - 2 * d);
@@ -454,13 +463,13 @@ static class Kit
     }
 
     /// A line of the event feed: a coloured edge, an icon and the text, fading to the right.
-    public static void Toast(this Ui ui, int x, int y, string text, Color c, string icon)
+    public static void Toast(this Ui ui, int x, int y, string text, Color c, string icon, float alpha = 1)
     {
         int w = ui.TW(text, 1) + ui.U(30);
-        ui.HGrad(new Rectangle(x, y, w + ui.U(30), ui.U(18)), Mul(c, 0.35f) * 0.9f, c * 0f);
-        ui.Rect(new Rectangle(x, y, ui.U(2), ui.U(18)), c);
-        ui.Icon(icon, x + ui.U(8), y + ui.U(5), c, 1);
-        ui.Text(text, x + ui.U(22), y + ui.U(6), Color.Lerp(c, Color.White, 0.6f), 1);
+        ui.HGrad(new Rectangle(x, y, w + ui.U(30), ui.U(18)), Mul(c, 0.35f) * (0.9f * alpha), c * 0f);
+        ui.Rect(new Rectangle(x, y, ui.U(2), ui.U(18)), c * alpha);
+        ui.Icon(icon, x + ui.U(8), y + ui.U(5), c * alpha, 1);
+        ui.Text(text, x + ui.U(22), y + ui.U(6), Color.Lerp(c, Color.White, 0.6f) * alpha, 1);
     }
 
     /// A square order key: an icon over its key letter, gold when chosen.

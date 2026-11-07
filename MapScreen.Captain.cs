@@ -1,0 +1,162 @@
+using Microsoft.Xna.Framework;
+
+namespace Ironfield;
+
+/// MapScreen: the skills screen (K) as a captain's sheet: the captain on the left, a ring and a branch of perks per skill
+/// in the middle (click an open perk to take it), and the record on the right.
+partial class MapScreen
+{
+    static readonly Dictionary<string, string> SkillIcons = new()
+    {
+        ["Leadership"] = "flag", ["Tactics"] = "arrow", ["Logistics"] = "bread", ["Training"] = "up",
+        ["Medicine"] = "heart", ["Stewardship"] = "coin", ["Charm"] = "star", ["Arms"] = "sword",
+    };
+
+    void SkillsPanel()
+    {
+        var r = Modal(1060, 620, "THE CAPTAIN");
+        int gap = ui.U(10), lw = ui.U(220), rw = ui.U(200), top = r.Y + ui.U(30), h = r.Height - ui.U(96);
+        CaptainCard(Well(new Rectangle(r.X + ui.U(20), top, lw, h), "THE CAPTAIN", Kit.Gilt));
+        var mid = new Rectangle(r.X + ui.U(20) + lw + gap, top, r.Width - lw - rw - 2 * gap - ui.U(40), h);
+        int picks = Skills.PicksTotal(C.Captain);
+        var tree = Well(mid, picks > 0 ? $"SKILLS AND PERKS . {picks} PERK{(picks == 1 ? "" : "S")} TO CHOOSE" : "SKILLS AND PERKS", picks > 0 ? Kit.Gilt : Style.Friendly);
+        SkillTree(tree);
+        CaptainRecord(Well(new Rectangle(r.Right - ui.U(20) - rw, top, rw, h), "RECORD", Kit.Gilt));
+        Note(r);
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: "K")) panel = PanelKind.None;
+    }
+
+    /// The captain's portrait under a night sky, name, rank, renown and traits.
+    void CaptainCard(Rectangle c)
+    {
+        var cap = C.Captain;
+        var me = C.S.Characters.FirstOrDefault(ch => ch.Id == C.S.CaptainChar);
+        var port = new Rectangle(c.X, c.Y, c.Width, Math.Min(ui.U(160), c.Height / 2));
+        ui.VGrad(port, Kit.Mul(Style.Sides[2].Cloth, 0.6f), new Color(18, 16, 14), 2);
+        ui.Stars(new Rectangle(port.X, port.Y, port.Width, port.Height / 2), (float)C.S.Hours, 20);
+        ui.Hills(port, port.Bottom - ui.U(20), ui.U(8), 1.5f, new Color(30, 24, 20));
+        ui.Portrait(UnitType.Captain, new Rectangle(port.X, port.Y + ui.U(4), port.Width, port.Height - ui.U(4)), 3 * ui.S);
+        ui.Frame(port, Color.Black * 0.6f, ui.U(1));
+        ui.Shield(new Rectangle(port.X + ui.U(6), port.Bottom - ui.U(42), ui.U(30), ui.U(36)), Style.Sides[2]);
+        int y = port.Bottom + ui.U(10);
+        string name = (me?.Name ?? "The Captain").ToUpperInvariant();
+        ui.Text(name, c.X, y, Style.Text, ui.TW(name, 2) <= c.Width ? 2 : 1); y += ui.U(20);
+        int cx = c.X;
+        cx += ui.Chip(cx, y, Campaign.RankName(C.Rank).ToUpperInvariant(), Kit.Gilt, "crown") + ui.U(4);
+        if (me != null) ui.Chip(cx, y, $"AGE {me.Age}", Style.Dim);
+        y += ui.U(22);
+        var (unlock, at) = Rules.NextRenownUnlock(cap);
+        float from = RenownStep(cap, at);
+        ui.Text("RENOWN", c.X, y, Style.Dim, 1); ui.TextR($"{cap.Renown:0} / {at:0}", c.Right, y, Kit.Gilt, 1); y += ui.U(11);
+        ui.Pips(new Rectangle(c.X, y, c.Width, ui.U(8)), (cap.Renown - from) / MathF.Max(1, at - from), Kit.Gilt, 12); y += ui.U(14);
+        foreach (var l in ui.Wrap($"NEXT: {unlock}", c.Width)) { ui.Text(l, c.X, y, Style.Dim * 0.8f, 1); y += ui.U(11); }
+        if (C.NextRank() is var (next, needs))
+        {
+            y += ui.U(4);
+            foreach (var l in ui.Wrap($"TO BE {Campaign.RankName(next).ToUpperInvariant()}: {needs.ToUpperInvariant()}", c.Width)) { if (y > c.Bottom - ui.U(30)) break; ui.Text(l, c.X, y, Style.Dim * 0.8f, 1); y += ui.U(11); }
+        }
+        y += ui.U(6);
+        cx = c.X;
+        foreach (var t in me?.Traits ?? new List<string>())
+        {
+            string tt = t.ToUpperInvariant();
+            if (cx + ui.TW(tt, 1) + ui.U(10) > c.Right) { cx = c.X; y += ui.U(16); }
+            if (y > c.Bottom - ui.U(14)) break;
+            cx += ui.Chip(cx, y, tt, Style.Ok) + ui.U(4);
+        }
+    }
+
+    /// Each skill as a ring with its perks beneath as nodes: gold when taken, lit when one may be taken now, dark when locked.
+    void SkillTree(Rectangle c)
+    {
+        var cap = C.Captain;
+        int n = Skills.All.Count, cols = 4, rows = (n + cols - 1) / cols;
+        int bw = c.Width / cols, bh = c.Height / Math.Max(1, rows);
+        (Rectangle Node, PerkDef Perk, SkillDef Skill, int State)? tip = null;
+        (Rectangle Box, SkillDef Skill)? skillTip = null;
+        for (int i = 0; i < n; i++)
+        {
+            var sk = Skills.All[i];
+            var box = new Rectangle(c.X + i % cols * bw, c.Y + i / cols * bh, bw, bh);
+            float lv = C.Skill(sk.Id);
+            int open = Skills.Picks(cap, sk.Id);
+            float rr = Math.Min(ui.U(22), bw / 5f);
+            var centre = new Vector2(box.Center.X, box.Y + rr + ui.U(6));
+            ui.Ring(centre, rr, lv / Skills.Max, open > 0 ? Kit.Gilt : Style.Friendly, $"{lv:0}");
+            var ringBox = new Rectangle((int)(centre.X - rr), (int)(centre.Y - rr), (int)(2 * rr), (int)(2 * rr));
+            if (ui.Hover(ringBox)) skillTip = (ringBox, sk);
+            ui.TextC(sk.Name.ToUpperInvariant(), box.Center.X, centre.Y + rr + ui.U(8), open > 0 ? Kit.Gilt : Style.Text, 1);
+            int ty = (int)(centre.Y + rr) + ui.U(20);
+            if (open > 0) ui.TextC($"{open} TO CHOOSE", box.Center.X, ty, Kit.Gilt, 1);
+            else ui.TextC($"NEXT AT {((int)(lv / Skills.Step) + 1) * (int)Skills.Step}", box.Center.X, ty, Style.Dim * 0.7f, 1);
+
+            // The branch: up to four perks in a column of two by two nodes.
+            int node = Math.Clamp((bh - (ty - box.Y) - ui.U(30)) / 2 - ui.U(14), ui.U(22), ui.U(38)), ic = node >= ui.U(32) ? 2 : 1;
+            int gx = Math.Max(ui.U(16), bw / 2 - node), gy = ui.U(18), nx0 = box.Center.X - node - gx / 2, ny0 = ty + ui.U(16);
+            for (int k = 0; k < sk.Perks.Count && k < 4; k++)
+            {
+                var pk = sk.Perks[k];
+                bool has = cap.Perks.Contains(pk.Id);
+                int state = has ? 2 : open > 0 ? 1 : 0;
+                var nr = new Rectangle(nx0 + k % 2 * (node + gx), ny0 + k / 2 * (node + gy), node, node);
+                bool hover = ui.Hover(nr);
+                ui.Rect(new Rectangle(nr.X + ui.U(2), nr.Y + ui.U(3), nr.Width, nr.Height), Color.Black * 0.4f);
+                ui.VGrad(nr, state == 2 ? Kit.Mul(Kit.Gilt, 0.6f) : state == 1 ? new Color(46, 46, 52) : new Color(24, 24, 28), state == 2 ? Kit.Mul(Kit.Gilt, 0.25f) : Kit.IronDark, 1);
+                ui.Frame(nr, state == 2 ? Kit.Gilt : state == 1 ? (hover ? Kit.Gilt : Style.Text * 0.7f) : Color.Black * 0.6f, ui.U(1));
+                string icon = SkillIcons.TryGetValue(sk.Id, out var si) ? si : "star";
+                ui.Icon(icon, nr.X + (node - ui.U(7 * ic)) / 2, nr.Y + (node - ui.U(7 * ic)) / 2, state == 2 ? Color.White : state == 1 ? Style.Text : Style.Dim * 0.4f, ic);
+                string label = pk.Name.ToUpperInvariant();
+                int fit = (node + gx) / (6 * ui.S) - 1;
+                ui.TextC(label.Length > fit ? label[..fit] : label, nr.Center.X, nr.Bottom + ui.U(3), state == 0 ? Style.Dim * 0.5f : state == 2 ? Kit.Gilt : Style.Text, 1);
+                if (hover) tip = (nr, pk, sk, state);
+                if (state == 1 && ui.Clicked(nr)) { note = C.TakePerk(pk.Id) ?? $"{label} LEARNED"; Ui.OnClick?.Invoke(); }
+            }
+        }
+        if (skillTip is var (sr, sd))
+            ui.Tooltip(sr.Center.X, sr.Y - ui.U(2), sd.Name.ToUpperInvariant(), ui.Wrap($"RISES BY {sd.Rises}.", ui.U(170)).Concat(ui.Wrap($"{sd.Governs}.", ui.U(170))).ToArray());
+        if (tip is var (tr, tp, ts, tst))
+        {
+            var lines = ui.Wrap(tp.Text.ToUpperInvariant(), ui.U(170)).ToList();
+            lines.Add(tst == 2 ? "TAKEN." : tst == 1 ? "CLICK TO TAKE IT." : $"NEXT CHOICE AT {ts.Name.ToUpperInvariant()} {((int)(C.Skill(ts.Id) / Skills.Step) + 1) * (int)Skills.Step}.");
+            ui.Tooltip(tr.Center.X, tr.Y - ui.U(2), tp.Name.ToUpperInvariant(), lines.ToArray());
+        }
+    }
+
+    /// The captain's record: days, fights, kills, holdings, health, and how each skill rises.
+    void CaptainRecord(Rectangle c)
+    {
+        var cap = C.Captain;
+        var comps = C.Player.Companies;
+        int y = c.Y;
+        int fiefs = C.S.Settlements.Count(s => s.Owner == C.Player.Id);
+        foreach (var (icon, label, value) in new[]
+                 {
+                     ("clock", "DAYS IN THE FIELD", $"{C.Day}"), ("flag", "MOST BATTLES", $"{(comps.Count == 0 ? 0 : comps.Max(k => k.Battles))}"),
+                     ("skull", "FOES SLAIN", $"{comps.Sum(k => k.Kills):N0}"), ("shield", "COMPANIES", $"{comps.Count}"),
+                     ("star", "PERKS", $"{cap.Perks.Count}"), ("tower", "FIEFS", $"{fiefs}"), ("chain", "LORDS HELD", $"{C.Player.Captives.Count}"),
+                 })
+        {
+            ui.Icon(icon, c.X, y, Style.Dim, 1);
+            ui.Text(label, c.X + ui.U(12), y, Style.Dim, 1);
+            ui.TextR(value, c.Right, y, Style.Text, 1);
+            y += ui.U(15);
+        }
+        y += ui.U(4);
+        ui.Divider(c.X, y, c.Width, Kit.Gilt * 0.6f); y += ui.U(12);
+        float hurt = (cap.WoundedUntil - (float)C.S.Hours) / 24;
+        ui.Text("HEALTH", c.X, y, Style.Dim, 1);
+        ui.TextR(hurt > 0 ? $"WOUNDED {hurt:0.0} DAYS" : "HALE", c.Right, y, hurt > 0 ? Style.Warn : Style.Ok, 1); y += ui.U(11);
+        ui.Gauge(new Rectangle(c.X, y, c.Width, ui.U(7)), hurt > 0 ? 0.35f : 1, hurt > 0 ? Style.Warn : Style.Ok); y += ui.U(16);
+        ui.Divider(c.X, y, c.Width, Kit.Gilt * 0.6f); y += ui.U(12);
+        ui.Text("PERKS TAKEN", c.X, y, Kit.Gilt, 1); y += ui.U(13);
+        foreach (var id in cap.Perks)
+        {
+            if (y > c.Bottom - ui.U(11)) break;
+            var pk = Skills.All.SelectMany(s => s.Perks).FirstOrDefault(p => p.Id == id);
+            foreach (var l in ui.Wrap(pk == null ? id.ToUpperInvariant() : $"{pk.Name.ToUpperInvariant()}: {pk.Text.ToUpperInvariant()}", c.Width))
+            { if (y > c.Bottom - ui.U(11)) break; ui.Text(l, c.X, y, Style.Dim, 1); y += ui.U(11); }
+            y += ui.U(3);
+        }
+        if (cap.Perks.Count == 0) foreach (var l in ui.Wrap("NONE YET. SKILLS RISE BY USE; EVERY 25 POINTS OPENS A PERK ON THAT BRANCH.", c.Width)) { ui.Text(l, c.X, y, Style.Dim * 0.8f, 1); y += ui.U(11); }
+    }
+}

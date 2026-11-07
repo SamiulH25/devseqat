@@ -328,7 +328,7 @@ sealed class ScreenHost : Game
                 int me = c.Captain.Contract;
                 var w = c.WarBetween(me, 0)!;
                 if (w.A == me) { w.ScoreA = 1800; w.ExhB = 41; w.ExhA = 12; } else { w.ScoreB = 1800; w.ExhA = 41; w.ExhB = 12; }
-                map.Stage("realm");
+                map.Stage("career");
                 Shot("campaign-realm-king");
                 break;
             }

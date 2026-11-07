@@ -59,7 +59,7 @@ CI: `.github/workflows/ci.yml` builds, runs `--selftest`, and on push publishes 
 
 ```
 Program.cs  CLI switches (--selftest/--balance/--replay/--write-controls) else runs ScreenHost
-ScreenHost  MonoGame Game. Mode {Title, Map, Battle}; owns Art, Audio, Settings, Controls (Ctl), Shading, Quality
+ScreenHost  MonoGame Game. Mode {Title, Map, Battle, Lab}; owns Art, Audio, Settings, Controls (Ctl), Shading, Quality
   TitleScreen ── New/Continue/QuickBattle ──┐
   MapScreen (campaign UI + 3D map) ◄────────┤   SettingsScreen overlay on any mode
   BattleScreen (battle UI, camera, render) ◄┘
@@ -146,14 +146,15 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Your divisions on the map (make, assign, goal, temper, command, into battle) | `Campaign/Divisions.cs` |
 | Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
 | Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
-| Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (one `XTab` method per tab), `.Party.cs` (party, characters, skills, upgrade, divisions V), `.Realm.cs` (R), `.Dialogs.cs` (encounter, siege, results, events, menu) |
-| Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` (orders, goals, `Send`) + `.Draw.cs` (render, particles, culling, detail) + `Hud.cs` (2D drawing + hit-testing) + `Hud.Divisions.cs` |
+| Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |
+| Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` (orders, goals, `Send`) + `.Draw.cs` (render, particles, culling, detail) + `Hud.cs` (2D drawing + hit-testing) + `Hud.Overlays.cs` (menu, after-action result, controls) + `Hud.Divisions.cs` |
 | Keys / rebinding | `Controls.cs` (`Act` enum + `Defaults` dict) |
 | 3D meshes (terrain, trees, towns, grass) | `World.cs` |
 | Shader pipeline / GLSL loader | `Shading.cs`, `GlslEffect.cs`, `Shaders/*.glsl`, `Sky.cs` (light by hour/weather) |
 | Unit drawing (puppets of part sprites) | `Puppet.cs` (poses, skeleton), `SpriteSheet.cs` (paints parts), `Painter.cs` (materials), `Art.cs` (atlas) |
 | Colours, heraldry, UI tokens | `Style.cs` |
-| UI lab (F3 on the title): gallery of interface concepts with mock data | `UiLab.cs` (screen, pages list, shots) + `.Pages.cs` / `.Scenes.cs` (one method per page) + `.Kit.cs` (new widgets: `Plate`, `Ribbon`, `Shield`, `Icon`, `Ring`, `Gilded`...) |
+| The interface kit: every widget (`Plate`, `PlateBody`, `Ribbon`, `Shield`, `Banner`, `Icon`, `Ring`, `Pips`, `Gauge`, `Chip`, `Tabs`, `Gilded`, `Toast`...) | `UiKit.cs` (static class `Kit`, extension methods on `Ui`; `Ui.Panel`/`Button`/`Bar` and the battle HUD draw through it) |
+| UI lab (F3 on the title): gallery of interface concepts with mock data | `UiLab.cs` (screen, pages list, shots) + `.Pages.cs` / `.Scenes.cs` (one method per page) |
 | Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`) |
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
 | Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs`, `Bench.cs` |
@@ -183,7 +184,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
   the GLSL; set with `effect.Parameters["Name"].SetValue(...)`. GLSL rules: README "Shaders" section.
 - **Add an event:** an entry in `Data/events.json` using an existing trigger and effect verbs; a new trigger or verb is a case
   in `Campaign.Find` / `ApplyEffect` plus its name in `Triggers` / `Verbs` (`SelfTest.EventsAndQuests` validates the file).
-- **Try a new UI look:** add a page method in `UiLab.Pages.cs`/`.Scenes.cs`, list it in the `pages` array in `UiLab.cs`, build widgets in `UiLab.Kit.cs`; check with `IRONFIELD_LAB_SHOTS`.
+- **Try a new UI look:** add a page method in `UiLab.Pages.cs`/`.Scenes.cs`, list it in the `pages` array in `UiLab.cs`, build widgets in `UiKit.cs` (shared with the real screens); check with `IRONFIELD_LAB_SHOTS`.
 - **Add a sound:** add a `Cue`, synthesize it in `AudioEngine` ctor, emit from the sim with `Sound(Cue.X, pos)`.
 
 ## Invariants and gotchas (break these and things fail subtly)

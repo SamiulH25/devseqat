@@ -110,8 +110,12 @@ keep fur, spangenhelms and round shields at every tier.
 ## 4. Interface
 
 ### Tokens (`Style.cs`)
-- **Panel:** slate (`Style.Panel`, 82% opacity), a 1 px edge (`PanelEdge`) and a 1 px top light (`PanelLight`): the
-  "iron plate". There is one panel style; emphasis comes from the edge colour and weight, not from new shapes.
+- **Panel:** the "iron plate" (`Kit.PlateBody`, used by `Ui.Panel` and the battle HUD): a dark iron gradient, a black outer
+  frame, an inner frame in the edge colour and a 1 px top light. Plates big enough to hold content also get a drop shadow,
+  a hairline inset and four rivets. Modals are solid; HUD panels are slightly see-through. There is one plate; emphasis comes
+  from the edge colour (gold for the main dialog of a screen), not from new shapes.
+- **Kit colours (`Kit` in `UiKit.cs`):** `Iron`/`IronDark` (plates), `Rivet`, `Gilt`/`GiltDark` (gold trim, the chosen thing),
+  `Parchment` (story text), `Night`/`Dusk`/`Ember` (painted scenes).
 - **Colour roles:**
   - **Gold** (`Accent`) means *you*: your body, your selection, the highlighted choice, parries.
   - **Side colours** (`Friendly`, `Foe`) mean allegiance only.
@@ -122,17 +126,41 @@ keep fur, spangenhelms and round shields at every tier.
   heading x3, title x5. No other fonts and no mixed case.
 
 ### Components
-- **Unit card:** index badge (gold when selected), tier numeral, order tag (HLD / CHG / ATK / FLW), a portrait built from the
-  troop's own sprites, its name, men left, a strength bar (side colour) and a morale bar (state colour). A state word sits
-  above the card when it is not steady.
-- **Bars:** 4 px high on cards, 8 px in the player panel, always on a dark trough. Fill colours follow the colour roles.
-- **Buttons:** a label on the left and its key on the right (dim). On hover: a gold edge and a gold wash.
+All widgets are extension methods on `Ui` in `UiKit.cs` (the UI lab, F3 on the title, shows every one).
+- **Ribbon title:** every dialog has its title on a cloth ribbon across its top edge, tinted by side when it belongs to one.
+- **Buttons:** a bevelled iron button with a top light, a shade line and a drop shadow; its key hint sits on the right (dim).
+  On hover or when active: a gold edge and a gold wash. `Gilded` is the larger gold-edged button for the main choices
+  (title menu, leave, continue).
+- **Tabs:** raised cards; the active one is lit and joins the gold line beneath.
+- **Wells:** sunken boxes inside a dialog with a short coloured heading (`Well`), used to group a screen into parts.
+- **Rows:** lists of things to buy, hire or promote are rows on a faint plate that lights under the mouse, with a portrait in
+  a well tinted with the side's cloth, the name at body size, stats as icon + number, and the button on the right.
+- **Readouts:** `Ring` (a value out of a whole: men of the limit, days of food, a skill), `Pips` (progress in steps: renown,
+  places), `Gauge` (a bevelled bar), `TugBar` (two sides pulling: the battle balance), `Chart` (a line over time), and
+  `Chip` (a small coloured tag with an icon: rank, stance, an event's effect).
+- **Heraldry:** `Shield` and `Banner` draw a side's arms from `Style.Sides`; a realm, a town and an army always show theirs.
+- **Unit card** (battle dock and muster): index badge (gold when selected), tier numeral, order tag (HLD / CHG / ATK / FLW), a
+  portrait from the troop's own sprites on its side's cloth, its name, men left, a strength gauge (side colour) and a morale
+  gauge (state colour). A state chip sits above the card when it is not steady. Battle cards sit on one dock plate.
+- **Battle HUD:** the balance as a tug bar between the two sides' shields; the feed as toasts with an icon per kind of news;
+  the minimap in a plate with gilt corners; the player panel with gauges and a rally key; order keys with an icon each.
 - **Banners** (command view): a pole and a flag in the side colour with the company number (yours) or initial (theirs),
   and a morale strip beneath.
 - **Order wheel:** eight sectors clockwise from the top: Charge, Advance, Form on me, Spacing, Fall back, Fire/Hold, Hold,
   Follow me. The chosen sector is gold.
 - **Crosshair:** four chevrons for the attack directions. Gold is your chosen direction, red is an incoming blow.
-- **Overlays** (menu, controls, result) dim the battle to 45% and centre one panel.
+- **Overlays** (menu, controls, result) dim the battle to 50% and centre one plate with a ribbon title. The result is an
+  after-action report: the tally side against side, both sides' strength over the battle, and how it went.
+- **Painted scenes:** the title (night sky into an ember dusk, hills, a castle, the two realms' banners) and the event dialog
+  (a picture chosen by the event: a burning village, a court, a market town or the camp) are drawn from rectangles and discs.
+
+### Screens
+- **Title:** the dusk scene, the menu on a plate, and a card for the last save (captain, service, day, purse, men).
+- **Party (P), the muster roll:** a card per company with its stacks to promote and its moves; open slots; the captain down
+  the right. **Skills (K), the captain sheet:** the captain, a ring and a perk branch per skill, the record.
+  **Realm (R):** a card per realm, the relations grid and the chronicle; the career ladder and your acts on a second tab.
+- **Settlement:** the town's arms, standing and prosperity/unrest rings over tabs of rows; the purse and LEAVE beneath.
+- **Battle results (campaign):** the after-action report: tally, spoils, each company's losses and XP, your career.
 
 ### Voice
 - Orders and events are short and in the imperative or reporting voice: "HOLD POSITION!", "ENEMY HORSE ON THE FLANK!".

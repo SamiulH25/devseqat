@@ -10,10 +10,9 @@ partial class MapScreen
     void SettlementPanel()
     {
         var s = at!;
-        var r = Modal(860, 500, s.Name.ToUpperInvariant(), SideColor(s.Faction));
+        var r = Modal(900, 540, s.Name.ToUpperInvariant(), SideColor(s.Faction));
         bool fief = s.Owner == C.Player.Id && s.Kind != SettlementKind.Village;
-        ui.TextC($"{s.Kind.ToString().ToUpperInvariant()} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}   GOLD {C.S.Gold:0}",
-            r.X + r.Width / 2f, r.Y + ui.U(40), Style.Dim, 1);
+        TownHeader(s, r);
         var tabs = (s.Kind switch
         {
             SettlementKind.Village when C.Refuses(s) => new[] { "FORAGE" },
@@ -21,10 +20,13 @@ partial class MapScreen
             SettlementKind.Castle => new[] { "REST", "FOOD", "CAPTIVES", "CONTRACT" },
             _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "MARKET", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
         }).Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
-        int tw = ui.U(tabs.Length > 7 ? 90 : 112), tx = r.X + (r.Width - tabs.Length * (tw + ui.U(6))) / 2;
-        for (int i = 0; i < tabs.Length; i++)
-            if (ui.Button(new Rectangle(tx + i * (tw + ui.U(6)), r.Y + ui.U(56), tw, ui.U(24)), tabs[i], true, "", tab == tabs[i])) { tab = tabs[i]; note = ""; }
-        var body = new Rectangle(r.X + ui.U(24), r.Y + ui.U(92), r.Width - ui.U(48), r.Height - ui.U(160));
+        int tw = Math.Min(ui.U(104), (r.Width - ui.U(40)) / tabs.Length);
+        int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(80), tw * tabs.Length, ui.U(22)), tabs, Array.IndexOf(tabs, tab));
+        if (pick >= 0) { tab = tabs[pick]; note = ""; }
+        var well = new Rectangle(r.X + ui.U(20), r.Y + ui.U(102), r.Width - ui.U(40), r.Height - ui.U(170));
+        ui.Rect(well, Color.Black * 0.22f);
+        ui.Frame(well, Color.White * 0.06f, ui.U(1));
+        var body = Kit.Inset(well, ui.U(12));
         switch (tab)
         {
             case "RECRUIT": RecruitTab(s, body); break;
@@ -40,72 +42,149 @@ partial class MapScreen
             case "CONTRACT": ContractTab(s, body); break;
         }
         Note(r);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "LEAVE")) panel = PanelKind.None;
+        // The purse, and the way out.
+        int by = r.Bottom - ui.U(40);
+        ui.Icon("coin", r.X + ui.U(24), by + ui.U(7), Kit.Gilt, 2);
+        ui.Text($"{C.S.Gold:N0}", r.X + ui.U(44), by + ui.U(7), Kit.Gilt, 2);
+        ui.Text($"CROWNS   {C.Player.Men} MEN   FOOD {C.Player.Food:0} DAYS   {C.Player.Horses} HORSES", r.X + ui.U(48) + ui.TW($"{C.S.Gold:N0}", 2), by + ui.U(11), Style.Dim, 1);
+        if (ui.Gilded(new Rectangle(r.Right - ui.U(200), by, ui.U(176), ui.U(28)), "LEAVE", ctl.Name(Act.Menu))) panel = PanelKind.None;
+    }
+
+    /// The town's arms, name, standing and, where it has them, its prosperity and unrest.
+    void TownHeader(Settlement s, Rectangle r)
+    {
+        int x = r.X + ui.U(22), y = r.Y + ui.U(20);
+        ui.Shield(new Rectangle(x, y, ui.U(40), ui.U(48)), Style.Sides[Style.PaletteOf(s.Faction)]);
+        ui.Text(s.Name.ToUpperInvariant(), x + ui.U(52), y + ui.U(2), Style.Text, 3);
+        int cx = x + ui.U(52), cy = y + ui.U(30);
+        cx += ui.Chip(cx, cy, s.Kind.ToString().ToUpperInvariant(), Style.Dim, s.Kind == SettlementKind.Village ? "bread" : "tower") + ui.U(4);
+        cx += ui.Chip(cx, cy, C.FactionNames[s.Faction].ToUpperInvariant(), SideColor(s.Faction), "flag") + ui.U(4);
+        if (s.Owner == C.Player.Id) cx += ui.Chip(cx, cy, "YOUR FIEF", Kit.Gilt, "crown") + ui.U(4);
+        if (C.Refuses(s)) cx += ui.Chip(cx, cy, "HOSTILE", Style.Bad) + ui.U(4);
+        if (C.HolderOf(s) is Character holder)
+        {
+            float o = C.OpinionOfYou(holder);
+            ui.Chip(cx, cy, $"{holder.Name.ToUpperInvariant()}: {OpinionWord(o)}", OpinionColor(o), "heart");
+        }
+        float rr = ui.U(16);
+        bool revolt = s.Unrest >= Campaign.RevoltAt;
+        ui.Ring(new Vector2(r.Right - ui.U(130), y + ui.U(20)), rr, s.Prosperity / 100f, Style.Ok, $"{s.Prosperity:0}");
+        ui.TextC(s.Prosperity >= 70 ? "PROSPEROUS" : s.Prosperity >= 40 ? "PROSPERITY" : "POOR", r.Right - ui.U(130), y + ui.U(42), Style.Dim, 1);
+        ui.Ring(new Vector2(r.Right - ui.U(50), y + ui.U(20)), rr, s.Unrest / 100f, revolt ? Style.Bad : Style.Warn, $"{s.Unrest:0}");
+        ui.TextC(revolt ? "REVOLT" : "UNREST", r.Right - ui.U(50), y + ui.U(42), revolt ? Style.Bad : Style.Dim, 1);
+    }
+
+    /// A row in a town list: a faint plate that lights under the mouse.
+    void TownRow(Rectangle row) => ui.Rect(row, Color.White * (ui.Hover(row) ? 0.07f : 0.03f));
+
+    /// A portrait in a framed well tinted with a side's cloth.
+    void PortraitWell(UnitType t, Rectangle port, int palette)
+    {
+        ui.VGrad(port, Kit.Mul(Style.Sides[palette].Cloth, 0.5f), Kit.IronDark, 2);
+        ui.Portrait(t, port, Math.Max(1, port.Height / ui.U(36)) * ui.S);
+        ui.Frame(port, Color.Black * 0.6f, ui.U(1));
+    }
+
+    /// A troop's fighting numbers as icons: damage, armour, speed.
+    void TroopStats(UnitType t, int x, int y)
+    {
+        foreach (var (icon, v) in new[] { ("sword", $"{t.Damage:0}"), ("shield", $"{t.Armor:0}"), ("boot", $"{t.Speed:0.0}") })
+        { ui.Icon(icon, x, y, Style.Dim, 1); ui.Text(v, x + ui.U(11), y, Style.Text, 1); x += ui.U(40); }
     }
 
     /// Recruit tab: local levies who will take your coin.
     void RecruitTab(Settlement s, Rectangle body)
     {
         var levy = Troops.Get(C.RecruitTroopFor(s));
-        int willing = C.RecruitsForYou(s);
-        ui.Text($"{willing} OF {s.Recruits} MEN WILL TAKE YOUR COIN HERE ({C.LevyPrice(s)} CROWNS PER {(int)Balance.Get().ArmyScale} MEN)", body.X, body.Y, Style.Text);
-        if (C.HolderOf(s) is Character holder)
-            ui.TextR($"{holder.Name.ToUpperInvariant()}: {OpinionWord(C.OpinionOfYou(holder))}", body.Right, body.Y + ui.U(4), OpinionColor(C.OpinionOfYou(holder)), 1);
-        if (s.ThreatUntil > C.S.Hours) ui.Text("THE VILLAGE WAS THREATENED: NO RECRUITS FOR NOW", body.X, body.Y + ui.U(20), Style.Foe, 1);
-        ui.Portrait(levy, new Rectangle(body.X, body.Y + ui.U(36), ui.U(60), ui.U(56)));
-        ui.Text($"{levy.Name.ToUpperInvariant()} (TIER I) JOIN A COMPANY OF THEIR KIND WITH ROOM, OR FORM A NEW ONE.", body.X + ui.U(70), body.Y + ui.U(44), Style.Dim, 1);
-        ui.Text($"THEY ARE {s.Culture.ToUpperInvariant()} MEN: THEY CAN TRAIN INTO {s.Culture.ToUpperInvariant()} AND COMMON LINES. NEW MEN BRING NO XP.", body.X + ui.U(70), body.Y + ui.U(58), Style.Dim, 1);
-        int y = body.Y + ui.U(104);
+        int willing = C.RecruitsForYou(s), per = (int)Balance.Get().ArmyScale;
+        var row = new Rectangle(body.X, body.Y, body.Width, ui.U(104));
+        TownRow(row);
+        PortraitWell(levy, new Rectangle(row.X + ui.U(6), row.Y + ui.U(6), ui.U(92), ui.U(92)), Style.PaletteOf(s.Faction));
+        int tx = row.X + ui.U(110), ty = row.Y + ui.U(10);
+        ui.Text(levy.Name.ToUpperInvariant(), tx, ty, Style.Text, 2);
+        ui.Text($"TIER {Style.Numerals[levy.Tier]} . {s.Culture.ToUpperInvariant()} MEN . {willing} OF {s.Recruits} WILLING", tx, ty + ui.U(20), Style.Dim, 1);
+        ui.Icon("coin", tx, ty + ui.U(34), Kit.Gilt, 1);
+        ui.Text($"{C.LevyPrice(s)} CROWNS FOR {per} MEN", tx + ui.U(12), ty + ui.U(34), Kit.Gilt, 1);
+        TroopStats(levy, tx + ui.U(160), ty + ui.U(34));
+        ui.Pips(new Rectangle(tx, ty + ui.U(50), ui.U(220), ui.U(7)), s.Recruits == 0 ? 0 : willing / (float)s.Recruits, Style.Friendly, 12);
+        ui.Text("THEY JOIN A COMPANY OF THEIR KIND WITH ROOM, OR FORM A NEW ONE.", tx, ty + ui.U(66), Style.Dim, 1);
+        ui.Text($"THEY CAN TRAIN INTO {s.Culture.ToUpperInvariant()} AND COMMON LINES. NEW MEN BRING NO XP.", tx, ty + ui.U(78), Style.Dim, 1);
+        int bx = row.Right - ui.U(150), by = row.Y + ui.U(8);
         foreach (var (label, n) in new[] { ("RECRUIT 1", 1), ("RECRUIT 5", 5), ("RECRUIT ALL", 99) })
         {
-            if (ui.Button(new Rectangle(body.X, y, ui.U(170), ui.U(28)), label, willing > 0)) note = C.RecruitLevies(s, n) ?? $"RECRUITED. {s.Recruits} LEFT";
-            y += ui.U(34);
+            if (ui.Button(new Rectangle(bx, by, ui.U(142), ui.U(26)), label, willing > 0, "", n == 99)) note = C.RecruitLevies(s, n) ?? $"RECRUITED. {s.Recruits} LEFT";
+            by += ui.U(31);
         }
+        if (s.ThreatUntil > C.S.Hours) ui.Text("THE VILLAGE WAS THREATENED: NO RECRUITS FOR NOW", body.X, row.Bottom + ui.U(12), Style.Foe, 1);
     }
 
     /// Mercenaries tab: companies for hire, and a wanderer in the tavern.
     void MercenariesTab(Settlement s, Rectangle body)
     {
-        if (s.Mercenaries.Count == 0) ui.Text("NO COMPANIES FOR HIRE THIS WEEK.", body.X, body.Y, Style.Dim);
-        int y = body.Y;
+        if (s.Mercenaries.Count == 0 && C.WandererAt(s) == null) ui.Text("NO COMPANIES FOR HIRE THIS WEEK.", body.X, body.Y, Style.Dim);
+        int y = body.Y, rh = ui.U(66);
+        Rectangle Next() { var row = new Rectangle(body.X, y, body.Width, rh - ui.U(6)); y += rh; TownRow(row); return row; }
         // A wanderer in the tavern, looking for a captain (3.3).
         if (C.WandererAt(s) is Character w)
         {
-            ui.Portrait(UnitType.Captain, new Rectangle(body.X, y, ui.U(56), ui.U(54)));
-            ui.Text($"{w.Name.ToUpperInvariant()}, A WANDERER", body.X + ui.U(66), y + ui.U(4), Style.Accent);
-            ui.Text($"{w.Role.ToUpperInvariant()} ({RoleTextOf(w.Role)}). {string.Join(", ", w.Traits).ToUpperInvariant()}. LEADS A COMPANY AS A HERO.", body.X + ui.U(66), y + ui.U(24), Style.Dim, 1);
+            var row = Next();
+            PortraitWell(UnitType.Captain, new Rectangle(row.X + ui.U(4), row.Y + ui.U(4), row.Height - ui.U(8), row.Height - ui.U(8)), 2);
+            int tx = row.X + row.Height + ui.U(6);
+            ui.Text($"{w.Name.ToUpperInvariant()}, A WANDERER", tx, row.Y + ui.U(8), Kit.Gilt, 2);
+            ui.Text($"{w.Role.ToUpperInvariant()} ({RoleTextOf(w.Role)}). {string.Join(", ", w.Traits).ToUpperInvariant()}. LEADS A COMPANY AS A HERO.", tx, row.Y + ui.U(28), Style.Dim, 1);
             int wp = C.WandererPrice(w);
-            if (ui.Button(new Rectangle(body.Right - ui.U(190), y + ui.U(10), ui.U(190), ui.U(30)), "TAKE INTO SERVICE", C.S.Gold >= wp, $"{wp} CROWNS"))
+            if (ui.Button(new Rectangle(row.Right - ui.U(196), row.Center.Y - ui.U(14), ui.U(190), ui.U(28)), "TAKE INTO SERVICE", C.S.Gold >= wp, $"{wp} CROWNS"))
                 note = C.HireWanderer(s) ?? "HE JOINS YOUR HOUSEHOLD";
-            y += ui.U(66);
         }
         foreach (var m in s.Mercenaries.ToList())
         {
-            ui.Portrait(m.Type, new Rectangle(body.X, y, ui.U(56), ui.U(54)));
-            ui.Text(m.Name.ToUpperInvariant(), body.X + ui.U(66), y + ui.U(4), Style.Text);
-            ui.Text(string.Join(", ", m.Stacks.Select(st => $"{st.Men} {st.Type.Name.ToUpperInvariant()} {Style.Numerals[st.Type.Tier]}")) + (m.Honours.Count > 0 ? "  HONOURS: " + string.Join(", ", m.Honours.Select(h => Honours.Get(h)?.Name.ToUpperInvariant() ?? h)) : ""), body.X + ui.U(66), y + ui.U(24), Style.Dim, 1);
+            if (y + rh - ui.U(6) > body.Bottom) break;
+            var row = Next();
+            PortraitWell(m.Type, new Rectangle(row.X + ui.U(4), row.Y + ui.U(4), row.Height - ui.U(8), row.Height - ui.U(8)), 3);
+            int tx = row.X + row.Height + ui.U(6);
+            ui.Text(m.Name.ToUpperInvariant(), tx, row.Y + ui.U(8), Style.Text, 2);
+            int cx = tx;
+            foreach (var st in m.Stacks) cx += ui.Chip(cx, row.Y + ui.U(26), $"{st.Men} {st.Type.Name.ToUpperInvariant()} {Style.Numerals[st.Type.Tier]}", Style.Dim, "shield") + ui.U(4);
+            if (m.Honours.Count > 0)
+                ui.Text("HONOURS: " + string.Join(", ", m.Honours.Select(h => Honours.Get(h)?.Name.ToUpperInvariant() ?? h)), tx, row.Y + ui.U(44), Kit.Gilt, 1);
             int price = C.MercenaryPrice(m);
-            if (ui.Button(new Rectangle(body.Right - ui.U(190), y + ui.U(10), ui.U(190), ui.U(30)), "HIRE", C.S.Gold >= price, $"{price} CROWNS"))
+            if (ui.Button(new Rectangle(row.Right - ui.U(196), row.Center.Y - ui.U(14), ui.U(190), ui.U(28)), "HIRE", C.S.Gold >= price, $"{price} CROWNS"))
                 note = C.Hire(s, m) ?? "HIRED";
-            y += ui.U(66);
         }
     }
 
-    /// Market tab: horses and your own gear.
+    /// Market tab: horses and your own gear, as rows of goods.
     void MarketTab(Settlement s, Rectangle body)
     {
-        ui.Text($"HORSES: {s.Horses} FOR SALE AT {C.HorsePrice} CROWNS. YOU HAVE {C.Player.Horses}.", body.X, body.Y, Style.Text);
-        ui.Text("MEN PROMOTED INTO CAVALRY NEED A HORSE EACH (OR PAY FOR ONE WHEN PROMOTED).", body.X, body.Y + ui.U(20), Style.Dim, 1);
-        if (ui.Button(new Rectangle(body.X, body.Y + ui.U(40), ui.U(150), ui.U(28)), "BUY 1", s.Horses > 0)) note = C.BuyHorses(s, 1) ?? "BOUGHT";
-        if (ui.Button(new Rectangle(body.X + ui.U(160), body.Y + ui.U(40), ui.U(150), ui.U(28)), "BUY 5", s.Horses > 0)) note = C.BuyHorses(s, 5) ?? "BOUGHT";
-        ui.Text("YOUR GEAR", body.X, body.Y + ui.U(92), Style.Accent);
+        int half = (body.Width - ui.U(12)) / 2, y = body.Y;
+        var c = Well(new Rectangle(body.X, y, half, body.Height), "THE STABLES", Kit.Gilt);
+        var row = new Rectangle(c.X, c.Y, c.Width, ui.U(70));
+        TownRow(row);
+        ui.Icon("horse", row.X + ui.U(10), row.Y + ui.U(14), Style.Text, 3);
+        ui.Text("HORSES", row.X + ui.U(48), row.Y + ui.U(10), Style.Text, 2);
+        ui.Text($"{s.Horses} FOR SALE . YOU HAVE {C.Player.Horses}", row.X + ui.U(48), row.Y + ui.U(30), Style.Dim, 1);
+        ui.Icon("coin", row.X + ui.U(48), row.Y + ui.U(44), Kit.Gilt, 1);
+        ui.Text($"{C.HorsePrice} A HORSE", row.X + ui.U(60), row.Y + ui.U(44), Kit.Gilt, 1);
+        if (ui.Button(new Rectangle(row.Right - ui.U(84), row.Y + ui.U(8), ui.U(78), ui.U(24)), "BUY 1", s.Horses > 0)) note = C.BuyHorses(s, 1) ?? "BOUGHT";
+        if (ui.Button(new Rectangle(row.Right - ui.U(84), row.Y + ui.U(38), ui.U(78), ui.U(24)), "BUY 5", s.Horses > 0)) note = C.BuyHorses(s, 5) ?? "BOUGHT";
+        ui.Text("MEN PROMOTED INTO CAVALRY NEED A HORSE EACH,", c.X, row.Bottom + ui.U(10), Style.Dim, 1);
+        ui.Text("OR PAY FOR ONE WHEN PROMOTED.", c.X, row.Bottom + ui.U(22), Style.Dim, 1);
+
+        c = Well(new Rectangle(body.X + half + ui.U(12), y, half, body.Height), "YOUR GEAR", Kit.Gilt);
         var gear = C.Gear();
-        for (int i = 0; i < gear.Length; i++)
+        int rh = Math.Clamp(c.Height / Math.Max(1, gear.Length), ui.U(28), ui.U(44));
+        for (int i = 0; i < gear.Length && c.Y + (i + 1) * rh - ui.U(4) <= c.Bottom; i++)
         {
             var (name, cost, owned, arms) = gear[i];
-            var br = new Rectangle(body.X + (i % 2) * ui.U(370), body.Y + ui.U(116) + i / 2 * ui.U(36), ui.U(360), ui.U(30));
             bool able = C.Skill("Arms") >= arms;
-            if (ui.Button(br, name, !owned && able, owned ? "OWNED" : able ? $"{cost} CROWNS" : $"NEEDS ARMS {arms}")) note = C.BuyGear(i) ?? "BOUGHT";
+            var gr = new Rectangle(c.X, c.Y + i * rh, c.Width, rh - ui.U(4));
+            TownRow(gr);
+            int my = gr.Center.Y;
+            string icon = name.Contains("HORSE", StringComparison.OrdinalIgnoreCase) ? "horse" : name.Contains("HELM", StringComparison.OrdinalIgnoreCase) ? "crown" : "shield";
+            ui.Icon(icon, gr.X + ui.U(8), my - ui.U(7), owned ? Kit.Gilt : Style.Text, 2);
+            ui.Text(name.ToUpperInvariant(), gr.X + ui.U(30), my - ui.U(9), owned ? Kit.Gilt : Style.Text, 1);
+            ui.Text(owned ? "OWNED" : able ? $"{cost} CROWNS" : $"NEEDS ARMS {arms}", gr.X + ui.U(30), my + ui.U(2), owned ? Style.Ok : able ? Style.Dim : Style.Warn, 1);
+            if (!owned && ui.Button(new Rectangle(gr.Right - ui.U(70), my - ui.U(11), ui.U(64), ui.U(22)), "BUY", able)) note = C.BuyGear(i) ?? "BOUGHT";
         }
     }
 
@@ -113,42 +192,62 @@ partial class MapScreen
     void TrainTab(Settlement s, Rectangle body)
     {
         ui.Text("MEN WITH ENOUGH XP CAN BE PROMOTED UP THEIR LINE HERE, ONE BY ONE OR ALL AT ONCE.", body.X, body.Y, Style.Dim, 1);
-        int y = body.Y + ui.U(18);
+        int y = body.Y + ui.U(16), rh = ui.U(46);
         foreach (var (c, st) in C.Player.Companies.SelectMany(c => c.Stacks.Select(st => (c, st))).OrderByDescending(x => x.st.Ready).ToList())
         {
-            ui.Portrait(st.Type, new Rectangle(body.X, y, ui.U(40), ui.U(38)));
-            ui.Text($"{c.Name.ToUpperInvariant()}: {st.Men} {st.Type.Name.ToUpperInvariant()} {Style.Numerals[st.Type.Tier]}", body.X + ui.U(48), y + ui.U(4), Style.Text, 1);
-            ui.Text(st.Type.UpgradesTo.Length == 0 ? "AT THE TOP OF ITS LINE" : $"{st.Ready} READY   POOL {st.Xp:0} / {st.PoolCap:0} XP ({st.Type.UpgradeXp} A MAN)", body.X + ui.U(48), y + ui.U(18), st.Ready > 0 ? Style.Accent : Style.Dim, 1);
-            if (st.Type.UpgradesTo.Length > 0 && ui.Button(new Rectangle(body.Right - ui.U(160), y + ui.U(4), ui.U(160), ui.U(28)), "PROMOTE...", st.Ready > 0))
+            if (y + rh - ui.U(4) > body.Bottom) break;
+            var row = new Rectangle(body.X, y, body.Width, rh - ui.U(4));
+            TownRow(row);
+            PortraitWell(st.Type, new Rectangle(row.X + ui.U(3), row.Y + ui.U(3), row.Height - ui.U(6), row.Height - ui.U(6)), 2);
+            int tx = row.X + row.Height + ui.U(6);
+            ui.Text($"{c.Name.ToUpperInvariant()}: {st.Men} {st.Type.Name.ToUpperInvariant()} {Style.Numerals[st.Type.Tier]}", tx, row.Y + ui.U(6), Style.Text, 1);
+            bool top = st.Type.UpgradesTo.Length == 0;
+            if (!top) ui.Gauge(new Rectangle(tx, row.Y + ui.U(19), ui.U(160), ui.U(6)), st.PoolCap <= 0 ? 0 : st.Xp / st.PoolCap, st.Ready > 0 ? Kit.Gilt : Style.Friendly);
+            ui.Text(top ? "AT THE TOP OF ITS LINE" : $"{st.Ready} READY   POOL {st.Xp:0} / {st.PoolCap:0} XP ({st.Type.UpgradeXp} A MAN)", tx + (top ? 0 : ui.U(170)), row.Y + ui.U(19), st.Ready > 0 ? Style.Accent : Style.Dim, 1);
+            if (!top && ui.Button(new Rectangle(row.Right - ui.U(150), row.Center.Y - ui.U(12), ui.U(144), ui.U(24)), "PROMOTE...", st.Ready > 0, "", st.Ready > 0))
             { upgrading = c; upStack = st; panel = PanelKind.Upgrade; note = ""; }
-            y += ui.U(42);
-            if (y > body.Bottom - ui.U(30)) break;
+            y += rh;
         }
     }
 
     /// Rest tab: wait here to heal the wounded.
     void RestTab(Settlement s, Rectangle body)
     {
-        ui.Text($"YOUR WOUNDED: {C.Player.Wounded}. THEY HEAL {(s.Kind == SettlementKind.Town ? "QUICKLY IN A TOWN" : "SLOWLY HERE")}.", body.X, body.Y, Style.Text);
-        ui.Text("RESTING IN A TOWN ALSO RESTORES COHESION (UP TO 20).", body.X, body.Y + ui.U(20), Style.Dim, 1);
-        if (ui.Button(new Rectangle(body.X, body.Y + ui.U(44), ui.U(200), ui.U(28)), "REST 1 DAY")) { C.Rest(24); note = $"RESTED. WOUNDED: {C.Player.Wounded}"; }
-        if (ui.Button(new Rectangle(body.X + ui.U(210), body.Y + ui.U(44), ui.U(250), ui.U(28)), "REST UNTIL HEALED", C.Player.Wounded > 0))
+        bool town = s.Kind == SettlementKind.Town;
+        float frac = C.Player.Men + C.Player.Wounded == 0 ? 1 : C.Player.Men / (float)(C.Player.Men + C.Player.Wounded);
+        ui.Ring(new Vector2(body.X + ui.U(50), body.Y + ui.U(48)), ui.U(34), frac, C.Player.Wounded > 0 ? Style.Warn : Style.Ok, $"{C.Player.Wounded}", "WOUNDED");
+        int tx = body.X + ui.U(110);
+        ui.Text(town ? "A TOWN'S BEDS AND BARBERS" : "A COLD BILLET", tx, body.Y + ui.U(14), Style.Text, 2);
+        ui.Text($"YOUR WOUNDED HEAL {(town ? "QUICKLY IN A TOWN" : "SLOWLY HERE")}.", tx, body.Y + ui.U(36), Style.Dim, 1);
+        ui.Text("RESTING IN A TOWN ALSO RESTORES COHESION (UP TO 20).", tx, body.Y + ui.U(48), Style.Dim, 1);
+        int y = body.Y + ui.U(104);
+        if (ui.Button(new Rectangle(body.X, y, ui.U(200), ui.U(28)), "REST 1 DAY")) { C.Rest(24); note = $"RESTED. WOUNDED: {C.Player.Wounded}"; }
+        if (ui.Button(new Rectangle(body.X + ui.U(210), y, ui.U(250), ui.U(28)), "REST UNTIL HEALED", C.Player.Wounded > 0, "", C.Player.Wounded > 0))
         {
             for (int d = 0; d < 10 && C.Player.Wounded > 0 && C.Encounter == null; d++) C.Rest(24);
             note = $"RESTED. WOUNDED: {C.Player.Wounded}";
         }
     }
 
-    /// Food tab: buy days of food.
+    /// Food tab: buy days of food, as rows of provisions.
     void FoodTab(Settlement s, Rectangle body)
     {
-        ui.Text($"YOU CARRY FOOD FOR {C.Player.Food:0} DAYS. {C.Season.ToUpperInvariant()}{(C.Winter ? ": MEN EAT HALF AGAIN AS MUCH" : "")}.", body.X, body.Y, Style.Text);
-        ui.Text("PRISONERS EAT TOO. A STARVING COMPANY LOSES COHESION AND MEN EVERY DAY.", body.X, body.Y + ui.U(20), Style.Dim, 1);
-        int y = body.Y + ui.U(44);
-        foreach (int days in new[] { 3, 7, 14 })
+        ui.Ring(new Vector2(body.X + ui.U(50), body.Y + ui.U(48)), ui.U(34), Math.Clamp(C.Player.Food / 14f, 0, 1), C.Player.Food < 3 ? Style.Bad : Style.Ok, $"{C.Player.Food:0}", "DAYS");
+        int tx = body.X + ui.U(110);
+        ui.Text($"{C.Season.ToUpperInvariant()}{(C.Winter ? ": MEN EAT HALF AGAIN AS MUCH" : "")}", tx, body.Y + ui.U(14), C.Winter ? Style.Warn : Style.Text, 2);
+        ui.Text("PRISONERS EAT TOO. A STARVING COMPANY LOSES", tx, body.Y + ui.U(36), Style.Dim, 1);
+        ui.Text("COHESION AND MEN EVERY DAY.", tx, body.Y + ui.U(48), Style.Dim, 1);
+        int y = body.Y + ui.U(96);
+        foreach (var (days, name) in new[] { (3, "BREAD AND CHEESE"), (7, "GRAIN AND SALT PORK"), (14, "A WAGON OF STORES") })
         {
-            if (ui.Button(new Rectangle(body.X, y, ui.U(300), ui.U(28)), $"BUY {days} DAYS", C.S.Gold >= C.FoodPrice(days), $"{C.FoodPrice(days)} CROWNS")) note = C.BuyFood(days) ?? "BOUGHT";
-            y += ui.U(34);
+            var row = new Rectangle(body.X, y, body.Width, ui.U(40));
+            TownRow(row);
+            ui.Icon("bread", row.X + ui.U(10), row.Center.Y - ui.U(7), Style.Text, 2);
+            ui.Text(name, row.X + ui.U(36), row.Y + ui.U(9), Style.Text, 1);
+            ui.Text($"+{days} DAYS", row.X + ui.U(36), row.Y + ui.U(21), Style.Dim, 1);
+            int price = C.FoodPrice(days);
+            if (ui.Button(new Rectangle(row.Right - ui.U(160), row.Y + ui.U(7), ui.U(154), ui.U(26)), $"BUY {days} DAYS", C.S.Gold >= price, $"{price}")) note = C.BuyFood(days) ?? "BOUGHT";
+            y += ui.U(46);
         }
     }
 

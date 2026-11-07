@@ -7,100 +7,13 @@ namespace Ironfield;
 /// MapScreen: party, characters, skills and upgrade panels.
 partial class MapScreen
 {
-    void PartyPanel()
-    {
-        var list = C.Player.Companies;
-        int rh = list.Count > 8 ? 42 : 46, rstep = list.Count > 8 ? 45 : 50;
-        var r = Modal(1000, list.Count > 8 ? 610 : 560, "YOUR COMPANY");
-        int x = r.X + ui.U(20), y = r.Y + ui.U(46);
-        foreach (var c in list.ToList())
-        {
-            var row = new Rectangle(x, y, ui.U(660), ui.U(rh));
-            ui.Rect(row, Color.White * 0.04f);
-            ui.Portrait(c.Type, new Rectangle(row.X + ui.U(4), row.Y + ui.U(2), ui.U(44), ui.U(rh - 4)));
-            var nameBox = new Rectangle(row.X + ui.U(52), row.Y + ui.U(3), ui.U(150), ui.U(12));
-            if (renaming == c) { ui.Rect(nameBox, Style.Accent * 0.25f); ui.Text(renameText + (time % 1 < 0.5f ? "_" : ""), row.X + ui.U(54), row.Y + ui.U(5), Style.Accent, 1); }
-            else ui.Text(c.Name.ToUpperInvariant(), row.X + ui.U(54), row.Y + ui.U(5), Style.Text, 1);
-            if (renaming == null && ui.Clicked(nameBox)) { renaming = c; renameText = c.Name.ToUpperInvariant(); Ui.Typed.Clear(); }
-            if (ui.Hover(nameBox) && renaming == null) note = "CLICK TO RENAME (ENTER KEEPS IT)";
-            var info = new Rectangle(row.X + ui.U(52), row.Y + ui.U(15), ui.U(150), ui.U(rh - 16));
-            string role = Rules.RoleOf(c).ToUpperInvariant();
-            ui.Text($"{role}{(c.Hero != "" ? "  " + c.Hero.ToUpperInvariant() + " (HERO)" : c.Officer != "" ? "  " + c.Officer.ToUpperInvariant() : "")}", row.X + ui.U(54), row.Y + ui.U(17), Style.Accent, 1);
-            ui.Text($"{c.Men}{(c.Wounded > 0 ? $"+{c.Wounded}W" : "")} MEN  {Rules.Places(c):0}/{Rules.Cap(Rules.RoleOf(c)):0} PLACES", row.X + ui.U(54), row.Y + ui.U(29), Style.Dim, 1);
-            ui.Rect(new Rectangle(row.X + ui.U(186), row.Y + ui.U(5), ui.U(10), ui.U(8)), Style.Friendly);
-            for (int h = 0; h < c.Honours.Count; h++) ui.Rect(new Rectangle(row.X + ui.U(186) - (h + 1) * ui.U(8), row.Y + ui.U(17), ui.U(5), ui.U(5)), Style.Accent);
-            if (ui.Hover(info)) note = CompanyNote(c);
-            ui.Bar(new Rectangle(row.X + ui.U(54), row.Y + ui.U(rh - 6), ui.U(140), ui.U(3)), c.Cohesion / 30f, Style.Ok);
-            // The troop stacks: click one for its promotion and moves.
-            int sx = row.X + ui.U(206), sw = ui.U(76);
-            foreach (var st in c.Stacks.OrderByDescending(t => t.Type.Tier).Take(4).ToList())
-            {
-                var chip = new Rectangle(sx, row.Y + ui.U(2), sw, ui.U(rh - 4));
-                bool sel = upStack == st;
-                ui.Panel(chip, st.Ready > 0 ? Style.Accent : sel ? Style.Text : Style.PanelEdge, st.Ready > 0 || sel ? 2 : 1);
-                ui.Text($"{Style.Numerals[st.Type.Tier]} {st.Men}{(st.Wounded > 0 ? $"+{st.Wounded}" : "")}", chip.X + ui.U(4), chip.Y + ui.U(4), Style.Text, 1);
-                string tn = st.Type.Name.ToUpperInvariant();
-                ui.Text(tn.Length > 11 ? tn[..11] : tn, chip.X + ui.U(4), chip.Y + ui.U(15), Style.Dim, 1);
-                ui.Bar(new Rectangle(chip.X + ui.U(4), chip.Y + ui.U(27), sw - ui.U(8), ui.U(3)), st.PoolCap > 0 ? st.Xp / st.PoolCap : 1, st.Ready > 0 ? Style.Accent : Style.Friendly);
-                if (st.Ready > 0) ui.Text($"{st.Ready} READY", chip.X + ui.U(4), chip.Y + ui.U(32), Style.Accent, 1);
-                if (ui.Hover(chip)) note = $"{st.Men} {tn}: POOL {st.Xp:0}/{st.PoolCap:0} XP, {st.Type.UpgradeXp} XP A MAN. CLICK TO PROMOTE, MOVE OR SPLIT.";
-                if (ui.Clicked(chip)) { upgrading = c; upStack = st; panel = PanelKind.Upgrade; note = ""; }
-                sx += sw + ui.U(3);
-            }
-            if (c.Stacks.Count > 4) ui.Text($"+{c.Stacks.Count - 4}", sx, row.Y + ui.U(16), Style.Dim, 1);
-            int bx = row.X + ui.U(530), bw = ui.U(62), bh = ui.U(18);
-            if (ui.Button(new Rectangle(bx, row.Y + ui.U(2), bw, bh), "UP", list.IndexOf(c) > 0)) C.MoveUp(c);
-            if (ui.Button(new Rectangle(bx + bw + 4, row.Y + ui.U(2), bw, bh), "SPLIT", c.Men >= 2)) note = C.Split(c) ?? "";
-            var mate = list.FirstOrDefault(o => Rules.CanMerge(c, o));
-            if (ui.Button(new Rectangle(bx, row.Y + ui.U(22), bw, bh), "MERGE", mate != null)) C.Merge(c, mate!);
-            if (ui.Button(new Rectangle(bx + bw + 4, row.Y + ui.U(22), bw, bh), "DISBAND", list.Count > 1)) C.Disband(c);
-            y += ui.U(rstep);
-        }
-        // The captain and perks.
-        int px = r.X + ui.U(700), py = r.Y + ui.U(50);
-        var cap = C.Captain;
-        ui.Text("THE CAPTAIN  " + C.Stage, px, py, Style.Accent);
-        int picks = Skills.PicksTotal(cap);
-        ui.Text($"RENOWN {cap.Renown:0}   PERKS {cap.Perks.Count}" + (picks > 0 ? $"   {picks} TO CHOOSE" : ""), px, py + ui.U(20), picks > 0 ? Style.Accent : Style.Text, 1);
-        ui.Text($"{Rules.CompanySlots(cap)} COMPANIES, {Rules.MenLimit(cap)} MEN AT MOST", px, py + ui.U(32), Style.Dim, 1);
-        // The renown ladder, the same line the map HUD shows: what the next rung buys and how close it is.
-        var (unlock, at) = Rules.NextRenownUnlock(cap);
-        ui.Bar(new Rectangle(px, py + ui.U(44), ui.U(260), ui.U(4)), (cap.Renown - RenownStep(cap, at)) / MathF.Max(1, at - RenownStep(cap, at)), Style.Accent);
-        ui.Text($"NEXT: {unlock} AT {at:0} RENOWN", px, py + ui.U(50), Style.Dim, 1);
-        py += ui.U(68);
-        // The skills in brief; the tree itself is its own screen (K).
-        for (int i = 0; i < Skills.All.Count; i++)
-        {
-            var sk = Skills.All[i];
-            int sx = px + (i % 2) * ui.U(132), sy = py + i / 2 * ui.U(14);
-            int open = Skills.Picks(cap, sk.Id);
-            ui.Text($"{sk.Name.ToUpperInvariant()} {C.Skill(sk.Id):0}" + (open > 0 ? " *" : ""), sx, sy, open > 0 ? Style.Accent : Style.Dim, 1);
-        }
-        py += ui.U(60);
-        if (ui.Button(new Rectangle(px, py, ui.U(260), ui.U(26)), "SKILLS AND PERKS", true, "K")) { panel = PanelKind.Skills; note = ""; }
-        py += ui.U(30);
-        if (ui.Button(new Rectangle(px, py, ui.U(260), ui.U(26)), $"DIVISIONS ({C.S.Divisions.Count})", true, "V")) { panel = PanelKind.Divisions; note = ""; }
-        py += ui.U(30);
-        // Prisoners: turn them to your cause (green, cohesion 0) or let them go.
-        py += ui.U(8);
-        ui.Text($"PRISONERS {C.PrisonerCount}", px, py, Style.Accent);
-        py += ui.U(20);
-        foreach (var g in C.Player.Prisoners.ToList())
-        {
-            if (py > r.Bottom - ui.U(90)) break;
-            if (ui.Button(new Rectangle(px, py, ui.U(260), ui.U(22)), $"RECRUIT {g.Count} {Troops.Get(g.Troop).Name.ToUpperInvariant()}")) note = C.RecruitPrisoners(g) ?? "";
-            py += ui.U(26);
-        }
-        if (C.PrisonerCount > 0 && ui.Button(new Rectangle(px, py, ui.U(260), ui.U(22)), "FREE THEM ALL (+RENOWN)")) C.FreePrisoners();
-        Note(r);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE")) { panel = PanelKind.None; renaming = null; }
-    }
-
     static string OpinionWord(float op) => op switch { >= 50 => "THE WORLD", >= 20 => "WELL", > -20 => "LITTLE", > -50 => "ILL", _ => "THE WORST" };
     static Color OpinionColor(float op) => op >= 20 ? Style.Ok : op > -20 ? Style.Dim : Style.Bad;
     static string RoleTextOf(string role) => Campaign.RoleText.TryGetValue(role, out var t) ? t : "";
 
     int charTab;
+    /// The realm screen's tab: 0 the realms, 1 your career.
+    int realmTab;
 
     /// The Characters screen (3.2): lords by realm with their traits, what they think of you and why; and your household.
     void CharactersPanel()
@@ -148,46 +61,6 @@ partial class MapScreen
         if (charTab == realms) Vassals(r, r.Y + ui.U(82) + ((list.Count + 1) / 2) * (rowH + ui.U(4)) + ui.U(12));
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (L)")) panel = PanelKind.None;
-    }
-
-    /// The captain's skill tree (F4): each skill's level and what raises it, and the four perks on its branch,
-    /// one more of which may be chosen for every 25 points.
-    void SkillsPanel()
-    {
-        var r = Modal(1040, 640, "SKILLS AND PERKS");
-        var cap = C.Captain;
-        int picks = Skills.PicksTotal(cap);
-        ui.TextC(picks > 0 ? $"{picks} PERK{(picks == 1 ? "" : "S")} TO CHOOSE" : "SKILLS RISE BY USE. EVERY 25 POINTS OPENS A PERK ON THAT BRANCH.",
-            r.X + r.Width / 2f, r.Y + ui.U(40), picks > 0 ? Style.Accent : Style.Dim, 1);
-        int colW = (r.Width - ui.U(60)) / 2, blockH = ui.U(122);
-        for (int i = 0; i < Skills.All.Count; i++)
-        {
-            var sk = Skills.All[i];
-            int bx = r.X + ui.U(24) + (i % 2) * (colW + ui.U(12)), by = r.Y + ui.U(58) + i / 2 * blockH;
-            var box = new Rectangle(bx, by, colW, blockH - ui.U(8));
-            ui.Rect(box, Color.White * 0.04f);
-            float lv = C.Skill(sk.Id);
-            int open = Skills.Picks(cap, sk.Id);
-            ui.Text($"{sk.Name.ToUpperInvariant()}  {lv:0}", bx + ui.U(8), by + ui.U(6), Style.Text, 2);
-            if (open > 0) ui.TextR($"{open} TO CHOOSE", box.Right - ui.U(8), by + ui.U(8), Style.Accent, 1);
-            var bar = new Rectangle(bx + ui.U(8), by + ui.U(26), colW - ui.U(16), ui.U(5));
-            ui.Bar(bar, lv / Skills.Max, Style.Accent);
-            for (int m = 1; m < 4; m++) ui.Rect(new Rectangle(bar.X + bar.Width * m / 4, bar.Y - 2, 1, bar.Height + 4), Style.Text * 0.6f);
-            ui.Text($"RISES BY {sk.Rises}", bx + ui.U(8), by + ui.U(36), Style.Dim, 1);
-            ui.Text(sk.Governs, bx + ui.U(8), by + ui.U(48), Style.Dim, 1);
-            int pw = (colW - ui.U(16) - 3 * ui.U(4)) / 4;
-            for (int k = 0; k < sk.Perks.Count && k < 4; k++)
-            {
-                var pk = sk.Perks[k];
-                bool has = cap.Perks.Contains(pk.Id);
-                var pr = new Rectangle(bx + ui.U(8) + k * (pw + ui.U(4)), by + ui.U(64), pw, ui.U(22));
-                if (ui.Button(pr, pk.Name.ToUpperInvariant(), has || open > 0, "", has) && !has) note = C.TakePerk(pk.Id) ?? $"{pk.Name.ToUpperInvariant()} LEARNED";
-                if (ui.Hover(pr)) note = $"{pk.Name.ToUpperInvariant()}: {pk.Text}" + (has ? " (TAKEN)" : open > 0 ? "" : $" (NEXT CHOICE AT {sk.Name.ToUpperInvariant()} {((int)(lv / Skills.Step) + 1) * (int)Skills.Step})");
-            }
-            ui.Text(string.Join("  ", sk.Perks.Where(p => cap.Perks.Contains(p.Id)).Select(p => p.Text)), bx + ui.U(8), by + ui.U(92), Style.Ok, 1);
-        }
-        Note(r);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (K)")) panel = PanelKind.None;
     }
 
     /// A company's story for the party screen: origin, honours, and its last fights.

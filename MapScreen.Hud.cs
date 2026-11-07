@@ -287,9 +287,10 @@ partial class MapScreen
     Rectangle Modal(int w, int h, string title, Color? tc = null)
     {
         ui.Dim(0.45f);
-        var r = new Rectangle((ui.W - ui.U(w)) / 2, (ui.H - ui.U(h)) / 2, ui.U(w), ui.U(h));
-        ui.Panel(r);
-        ui.TextC(title, r.X + r.Width / 2f, r.Y + ui.U(12), tc ?? Style.Accent, 3);
+        int pw = Math.Min(ui.U(w), ui.W - ui.U(16)), ph = Math.Min(ui.U(h), ui.H - ui.U(28)); // never wider or taller than the screen
+        var r = new Rectangle((ui.W - pw) / 2, (ui.H - ph) / 2 + ui.U(6), pw, ph);
+        ui.PlateBody(r, Kit.Gilt);
+        ui.Ribbon(r.Center.X, r.Y - ui.U(10), title, Kit.Mul(tc ?? Kit.Gilt, 0.66f));
         return r;
     }
 

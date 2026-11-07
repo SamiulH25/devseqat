@@ -97,75 +97,6 @@ partial class MapScreen
         if (ui.Button(Bt(3), besieging ? "LIFT SIEGE" : "LEAVE")) { if (besieging) C.LiftSiege(); panel = PanelKind.None; }
     }
 
-    void ResultsPanel()
-    {
-        var rep = C.Report;
-        if (rep == null) { panel = PanelKind.None; return; }
-        var r = Modal(900, 520, rep.Won ? "VICTORY" : "DEFEAT", rep.Won ? Style.Accent : Style.Bad);
-        ui.TextC("AGAINST " + rep.Enemy.ToUpperInvariant(), r.X + r.Width / 2f, r.Y + ui.U(44), Style.Dim, 1);
-        int x = r.X + ui.U(24), y = r.Y + ui.U(64);
-        string[] heads = { "COMPANY", "MEN", "KILLED", "WOUNDED", "LOST", "XP" };
-        int[] cols = { 0, 330, 450, 540, 640, 720 };
-        for (int i = 0; i < heads.Length; i++) ui.Text(heads[i], x + ui.U(cols[i]), y, Style.Dim, 1);
-        y += ui.U(16);
-        foreach (var c in rep.Companies.Where(c => c.Team == 0).Take(12))
-        {
-            ui.Text($"{c.Name.ToUpperInvariant()} ({Troops.Get(c.Troop).Name.ToUpperInvariant()})", x, y, Style.Text, 1);
-            ui.Text($"{c.MenBefore} -> {c.MenAfter}", x + ui.U(cols[1]), y, Style.Text, 1);
-            ui.Text($"{c.Killed}", x + ui.U(cols[2]), y, c.Killed > 0 ? Style.Bad : Style.Dim, 1);
-            ui.Text($"{c.Wounded}", x + ui.U(cols[3]), y, Style.Warn, 1);
-            ui.Text($"{c.Captured + c.FledLost}", x + ui.U(cols[4]), y, Style.Dim, 1);
-            ui.Text(c.Deployed ? $"+{c.XpGain:0}" : "RESERVE", x + ui.U(cols[5]), y, Style.Ok, 1);
-            if (c.UpgradeReady) ui.Text("UPGRADE READY", x + ui.U(770), y, Style.Accent, 1);
-            y += ui.U(16);
-        }
-        y += ui.U(10);
-        if (rep.Won)
-            ui.Text($"LOOT {rep.Loot:0}   RANSOMS {rep.Ransom:0}   BOUNTY {rep.Bounty:0}   RENOWN +{rep.Renown:0}   HORSES +{rep.Horses}", x, y, Style.Accent);
-        else ui.Text("YOUR ARMY FALLS BACK. WOUNDED LEFT ON THE FIELD MAY BE TAKEN.", x, y, Style.Bad);
-        y += ui.U(20);
-        // Progression, spelled out: what this battle was worth and what it unlocked, so the loop is never a mystery.
-        var (unlock, at) = Rules.NextRenownUnlock(C.Captain);
-        ui.Text($"RENOWN {C.Captain.Renown:0} / {at:0} TO THE NEXT {unlock}", x, y, Style.Dim, 1);
-        ui.Bar(new Rectangle(x + ui.U(300), y + ui.U(4), ui.U(240), ui.U(4)), (C.Captain.Renown - RenownStep(C.Captain, at)) / MathF.Max(1, at - RenownStep(C.Captain, at)), Style.Accent);
-        int ready = rep.Companies.Count(c => c.UpgradeReady);
-        if (ready > 0) ui.Text($"({ready} COMPANY{(ready == 1 ? "" : "IES")} CAN BE TRAINED UP IN A TOWN)", x + ui.U(560), y, Style.Accent, 1);
-        y += ui.U(20);
-        if (rep.Captain == LeaderFate.Wounded) ui.Text("YOU ARE WOUNDED: FOR A FEW DAYS YOU COMMAND FROM THE REAR.", x, y, Style.Warn, 1);
-        if (rep.Captain == LeaderFate.Captured) ui.Text("YOU WERE TAKEN AND RANSOMED (30% OF YOUR GOLD).", x, y, Style.Bad, 1);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CONTINUE"))
-        { panel = C.S.GameOver ? PanelKind.GameOver : PanelKind.None; C.Report = null; }
-    }
-
-    /// An event (F8): what happened, and two or three choices with what each will do.
-    void EventPanel()
-    {
-        if (C.S.Event is not PendingEvent pe || Campaign.EventOf(pe.Id) is not EventDef e) { panel = PanelKind.None; return; }
-        var r = Modal(720, 330, C.Fill(e.Title, pe).ToUpperInvariant(), Style.Accent);
-        // The text, wrapped to the panel.
-        int x = r.X + ui.U(30), y = r.Y + ui.U(56), maxW = r.Width - ui.U(60);
-        var line = "";
-        foreach (var word in C.Fill(e.Text, pe).ToUpperInvariant().Split(' '))
-        {
-            if (ui.TW(line + " " + word, 1) > maxW && line != "") { ui.Text(line, x, y, Style.Text, 1); y += ui.U(15); line = word; }
-            else line = line == "" ? word : line + " " + word;
-        }
-        if (line != "") { ui.Text(line, x, y, Style.Text, 1); y += ui.U(15); }
-        y += ui.U(14);
-        for (int i = 0; i < e.Choices.Count; i++)
-        {
-            var ch = e.Choices[i];
-            string why = C.ChoiceBlocked(ch);
-            var b = new Rectangle(x, y, maxW, ui.U(28));
-            if (ui.Button(b, C.Fill(ch.Label, pe).ToUpperInvariant(), why == "", why == "" ? EffectsText(ch) : why)) { note = C.Choose(i) ?? ""; if (C.S.Event == null) panel = PanelKind.None; }
-            y += ui.U(34);
-        }
-        Note(r);
-    }
-
-    /// A choice's effects in a few words ("GOLD -150, UNREST -20").
-    static string EffectsText(ChoiceDef c) => string.Join(", ", c.Effects.Select(fx => fx.Replace('_', ' ').Replace(":", " ").ToUpperInvariant()
-        .Replace("OPINION REALM", "LORDS").Replace("OPINION LIEGE", "LIEGE").Replace("PRISONERS ", "PRISONERS: ").Replace("GAMBLE", "PRIZE")));
 
     /// A career beat, a council's decision that concerns you, or the war won (F5): shown once.
     void BeatPanel()
@@ -180,7 +111,7 @@ partial class MapScreen
         if (won && ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(80), ui.U(220), ui.U(30)), "TO THE TITLE"))
         { C.Beat = null; C.S.Save("autosave"); OnTitle?.Invoke(); }
         if (!won && ui.Button(new Rectangle(r.Right - ui.U(150), r.Bottom - ui.U(44), ui.U(130), ui.U(30)), "REALM (R)"))
-        { C.Beat = null; panel = PanelKind.Realm; note = ""; }
+        { C.Beat = null; realmTab = 1; panel = PanelKind.Realm; note = ""; }
     }
 
     /// Ironman: the captain was taken and executed. The campaign (and its save) ends here.

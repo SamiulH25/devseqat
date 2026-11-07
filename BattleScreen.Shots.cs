@@ -37,34 +37,38 @@ partial class BattleScreen
                 helpOpen = true;
                 pendingShot = "controls"; shotIndex++; break;
             case 7 when pendingShot == null:
-                helpOpen = false;
+                helpOpen = false; b.Winner = 0; // the after-action overlay, staged as a win
+                shotFrames = 0; shotIndex++; break;
+            case 8 when shotFrames > 3:
+                pendingShot = "battle-result"; shotIndex++; break;
+            case 9 when pendingShot == null:
                 Gallery();
                 shotFrames = 0; shotIndex++; break;
-            case 8 when shotFrames > 20:
+            case 10 when shotFrames > 20:
                 pendingShot = "gallery-front"; shotIndex++; break;
-            case >= 9 and <= 11 when pendingShot == null:
+            case >= 11 and <= 13 when pendingShot == null:
                 // Close-ups: foot, foot, horse.
                 zoom = 7.5f; camPitch = 0.08f;
-                camFocus = new Vector2(new[] { -5.6f, -16.8f, -31f }[shotIndex - 9], 0.6f);
-                pendingShot = $"gallery-close{shotIndex - 8}"; shotIndex++; break;
-            case 12 when pendingShot == null:
+                camFocus = new Vector2(new[] { -5.6f, -16.8f, -31f }[shotIndex - 11], 0.6f);
+                pendingShot = $"gallery-close{shotIndex - 10}"; shotIndex++; break;
+            case 14 when pendingShot == null:
                 foreach (var u in b.Units.Where(u => !u.IsLeader)) { u.Team = 1; u.Facing = u.Heading = 0; }
                 zoom = 21; camPitch = 0.1f; camFocus = new Vector2(-19, 0);
                 shotFrames = 0; shotIndex++; break;
-            case 13 when shotFrames > 20:
+            case 15 when shotFrames > 20:
                 pendingShot = "gallery-side"; shotIndex++; break;
-            case 14 when pendingShot == null:
+            case 16 when pendingShot == null:
                 zoom = 7.5f; camPitch = 0.08f; camFocus = new Vector2(-31f, 0.6f);
                 pendingShot = "gallery-side-close"; shotIndex++; break;
-            case 15 when pendingShot == null:
+            case 17 when pendingShot == null:
                 Gallery(new[] { "clansmen", "axemen", "huscarls", "greatswords", "crossbowmen", "horse_archers" }, 4);
                 shotFrames = 0; shotIndex++; break;
-            case 16 when shotFrames > 20:
+            case 18 when shotFrames > 20:
                 pendingShot = "gallery-north"; shotIndex++; break;
-            case 17 when pendingShot == null:
+            case 19 when pendingShot == null:
                 zoom = 8.5f; camPitch = 0.08f; camFocus = new Vector2(-9.8f, 0.6f);
                 pendingShot = "gallery-north-close"; shotIndex++; break;
-            case 18 when pendingShot == null: Exit(); break;
+            case 20 when pendingShot == null: Exit(); break;
         }
     }
 
