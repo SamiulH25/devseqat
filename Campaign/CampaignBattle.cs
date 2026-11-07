@@ -163,7 +163,8 @@ public partial class Campaign
             if (Player.Men == 0 && Player.Wounded == 0) Player.Companies.Add(NewCompany(RecruitTroop(Math.Max(0, Captain.Contract)), "infantry", 10, 0, refuge));
             Log($"You are taken, and ransomed. Your men regroup at {refuge.Name}.");
         }
-        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses };
+        string spoil = won ? BattleSpoil(losers, r) : "";
+        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil };
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
         return Report;
     }

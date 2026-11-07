@@ -69,7 +69,8 @@ public sealed partial class Campaign
         if (fate == LeaderFate.Wounded) Captain.WoundedUntil = MathF.Max(Captain.WoundedUntil, (float)S.Hours + 24);
         if (won) Deed($"You win the tournament at {t.Name} and its purse of {TournamentPurse:0} crowns.", "tournaments");
         else Log($"You are beaten in the lists at {t.Name}. The crowd cheers you anyway.");
-        Report = new BattleReport(won, $"Champions of {t.Name}", rows, won ? TournamentPurse : 0, 0, 0, renown, 0, fate);
+        string prize = won && rng.Chance(TournamentPrizeChance) ? SpoilFrom(900) : ""; // the lord of the lists gives a prize (P1)
+        Report = new BattleReport(won, $"Champions of {t.Name}", rows, won ? TournamentPurse : 0, 0, 0, renown, 0, fate, prize);
         return Report;
     }
 

@@ -30,6 +30,7 @@ public sealed class Pilot
             c.Tick(MathF.Min(1, (float)(until - c.S.Hours)));
             if (c.Encounter != null) Fight();
             if (c.Arrived is Settlement s) { c.Arrived = null; Visit(s); }
+            if (c.Report is { Spoil.Length: > 0 }) c.TakeSpoil(); // a beaten chief's gear is free
             c.Report = null;
             c.Beat = null;
             if (c.S.Event != null) c.Choose(c.EventOf0()); // the stand-in takes the first choice it can afford
@@ -99,8 +100,22 @@ public sealed class Pilot
                              && Rules.Strength(t) * 1.5f < Rules.Strength(Me) && Vector2.Distance(t.Pos, Me.Pos) < 100).Take(1).ToList()) c.Accept(s, o);
         }
         if (Me.Wounded > Me.Men / 3 && s.Kind != SettlementKind.Village) c.Rest(24);
+        Kit(s);
         visited[s.Id] = (float)c.S.Hours;
     }
+
+    /// The captain's own kit (P1): the armour and horse that do the most for the money, with plenty of gold to spare;
+    /// wear the best piece owned in each slot (spoils included). Weapons stay as they are: the pilot does not fight by hand.
+    void Kit(Settlement s)
+    {
+        foreach (var g in c.ArmourerStock(s).Where(g => g.Slot is "body" or "helm" or "horse").OrderByDescending(g => g.Cost))
+            if (c.CannotBuy(g) == null && c.S.Gold - g.Cost > Reserve * 3 && Worth(g) > Worth(Gear.Get(Worn(g.Slot)))) c.BuyGear(g);
+        foreach (var slot in new[] { "body", "helm", "horse" })
+            if (Gear.InSlot(slot).Where(g => c.Owns(g.Id) && c.CannotUse(g) == null).MaxBy(Worth) is GearDef best && best.Id != Worn(slot)) c.Equip(best.Id);
+    }
+
+    string Worn(string slot) => slot switch { "body" => c.Captain.Kit.Body, "helm" => c.Captain.Kit.Helm, _ => c.Captain.Kit.Horse };
+    static float Worth(GearDef g) => g.Slot == "horse" ? Troops.Mount(g.Mount).Hp : g.Armor;
 
     /// When the pilot last did its business in each settlement, so it does not camp in one.
     readonly Dictionary<int, float> visited = new();

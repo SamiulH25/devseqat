@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1 in progress** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1 built; P2 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -206,3 +206,8 @@ Give the captain something to do in each fight beyond "win".
   (`Windup * 1.75 / Reload` seconds; a crossbow aims fast and reloads slowly), release past 30% to loose at the enemy
   nearest your facing within 0.2 rad and range (`AimTarget`), damage and spread by draw; arrows refill at your wagon
   (`Resupply` now serves you too). `Shoot` and the player share `Loose`. The HUD shows shots left.
+- P1 (step 3, spoils): `BattleReport.Spoil` (a gear id). After a win over a lord or brigands, `BattleSpoil` offers a piece
+  the captain lacks (no rank pieces; up to 900 crowns from a lord, 300 from brigands): sure from a lord whose leader fell,
+  else 35%; 60% / 15% for brigands. A tournament win gives a prize half the time (`TournamentPrizeChance`). The report's
+  SPOILS well shows it with TAKE (`TakeSpoil`: owned, wear it at any armourer); closing the report leaves it. The pilot
+  takes every spoil and buys body armour, helms and horses with three reserves to spare (`Pilot.Kit`).

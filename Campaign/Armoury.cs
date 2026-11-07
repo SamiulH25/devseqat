@@ -110,4 +110,37 @@ public sealed partial class Campaign
     }
 
     public static int SellPrice(GearDef g) => (int)(g.Cost * SellBack);
+
+    // ---------- spoils ----------
+
+    public const float TournamentPrizeChance = 0.5f;
+
+    /// After a win: a piece of the beaten leader's gear, sure if you cut him down, likelier from a lord than a brigand.
+    /// Monsters and caravans carry nothing you would wear. Returns a gear id or "".
+    string BattleSpoil(IReadOnlyList<Party> losers, BattleResult r)
+    {
+        bool lord = losers.Any(p => p.Kind == PartyKind.Lord), brigand = losers.Any(p => p.Kind == PartyKind.Bandit);
+        if (!lord && !brigand) return "";
+        bool downed = r.EnemyLeader != LeaderFate.Unhurt;
+        float chance = lord ? (downed ? 1 : 0.35f) : downed ? 0.6f : 0.15f;
+        return rng.Chance(chance) ? SpoilFrom(lord ? 900 : 300) : "";
+    }
+
+    /// A piece you do not own, of no rank, up to a price.
+    string SpoilFrom(int maxCost)
+    {
+        var pool = Gear.All.Where(g => !g.Free && g.Rank == 0 && g.Cost <= maxCost && !Owns(g.Id)).ToList();
+        return pool.Count == 0 ? "" : rng.Pick(pool).Id;
+    }
+
+    /// Take the spoil the last report offers (it is yours; wear it at an armourer or from the report). Returns why not.
+    public string? TakeSpoil()
+    {
+        if (Report is not { Spoil.Length: > 0 } rep || Gear.Find(rep.Spoil) is not GearDef g) return "NOTHING TO TAKE";
+        Own(g.Id);
+        Report = rep with { Spoil = "" };
+        Log($"You take the {g.Name.ToLowerInvariant()}. Wear it from the armourer in any market.");
+        Count("spoils");
+        return null;
+    }
 }

@@ -612,6 +612,25 @@ public static partial class SelfTest
         // The kit survives a save.
         var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
         Check(back.Captain.Kit.Body == "plate" && back.Owns("crossbow") && back.Captain.Kit.Weapon == "crossbow", "the kit is saved");
+        // Spoils: cut down a brigand chief and his gear may be yours (only cheap pieces from brigands).
+        var rng = new Rng(new CampaignState { Seed = 3 });
+        int offered = 0, fights = 0;
+        for (; fights < 12 && offered < 2; fights++)
+        {
+            var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
+            bandit.Pos = c.Player.Pos;
+            c.Encounter = bandit;
+            var setup = c.PrepareBattle(bandit);
+            var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng);
+            var rep = c.FinishBattle(r with { Winner = 0, EnemyLeader = LeaderFate.Slain, Captain = LeaderFate.Unhurt }, setup);
+            c.Captain.WoundedUntil = 0;
+            if (rep.Spoil == "") continue;
+            offered++;
+            var g = Gear.Get(rep.Spoil);
+            Check(g.Cost <= 300 && !c.Owns(g.Id) && g.Rank == 0, $"a brigand's spoil is a cheap piece you lack ({g.Id})");
+            Check(c.TakeSpoil() == null && c.Owns(g.Id) && c.Report!.Spoil == "" && c.TakeSpoil() != null, "a spoil is taken once and is yours");
+        }
+        Check(offered >= 1, $"beaten brigand chiefs leave gear behind ({offered} in {fights} fights)");
     }
 
     static void SkillTree()

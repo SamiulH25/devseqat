@@ -103,7 +103,8 @@ partial class MapScreen
             ("coin", "LOOT", $"+{rep.Loot:0}", Kit.Gilt), ("chain", "RANSOMS", $"+{rep.Ransom:0}", Kit.Gilt), ("scroll", "BOUNTY", $"+{rep.Bounty:0}", Kit.Gilt),
             ("star", "RENOWN", $"+{rep.Renown:0}", Kit.Gilt), ("horse", "HORSES TAKEN", $"{rep.Horses}", Style.Text),
         };
-        int rh = Math.Clamp(c.Height / rows.Length, ui.U(16), ui.U(28)), big = rh >= ui.U(26) ? 2 : 1, y = c.Y;
+        bool spoil = rep.Spoil != "" && Gear.Find(rep.Spoil) != null;
+        int rh = Math.Clamp(c.Height / (rows.Length + (spoil ? 1 : 0)), ui.U(16), ui.U(28)), big = rh >= ui.U(26) ? 2 : 1, y = c.Y;
         foreach (var (icon, label, value, col) in rows)
         {
             var row = new Rectangle(c.X - ui.U(4), y, c.Width + ui.U(8), rh - ui.U(2));
@@ -113,6 +114,14 @@ partial class MapScreen
             ui.TextR(value, row.Right - ui.U(5), row.Y + (row.Height - ui.U(7 * big)) / 2, value is "+0" or "0" ? Style.Dim : col, big);
             y += rh;
         }
+        if (!spoil) return;
+        // A piece of the beaten leader's gear, or the tournament's prize (P1): take it now or leave it on the field.
+        var g = Gear.Get(rep.Spoil);
+        var sr = new Rectangle(c.X - ui.U(4), y, c.Width + ui.U(8), rh - ui.U(2));
+        ui.Rect(sr, Kit.Gilt * 0.12f);
+        ui.Icon(g.Slot == "horse" ? "horse" : g.Slot == "weapon" ? "sword" : "shield", sr.X + ui.U(5), sr.Y + (sr.Height - ui.U(7)) / 2, Kit.Gilt, 1);
+        ui.Text(g.Name.ToUpperInvariant(), sr.X + ui.U(19), sr.Y + (sr.Height - ui.U(7)) / 2, Kit.Gilt, 1);
+        if (ui.Button(new Rectangle(sr.Right - ui.U(58), sr.Y + ui.U(1), ui.U(54), sr.Height - ui.U(2)), "TAKE")) note = C.TakeSpoil() ?? $"THE {g.Name.ToUpperInvariant()} IS YOURS";
     }
 
     /// Every company of yours: men before and after, the fallen, wounded and lost, and the drill it earned.
