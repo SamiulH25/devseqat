@@ -120,6 +120,7 @@ public partial class Campaign
         if (lair.Men >= cap) return;
         if (lair.Men >= cap / 3 && rng.Chance(0.4f)) Recruit(lair, "goblin_archer", "archers", Scaled(1));
         if (lair.Men >= cap / 2 && rng.Chance(0.3f)) Recruit(lair, "hobgoblin", "infantry", Scaled(1));
+        if (lair.Men >= cap * 2 / 3 && rng.Chance(0.25f)) Recruit(lair, "goblin_wolf_rider", "horse", Scaled(1)); // a big holdout tames wargs
         if (lair.Men >= Scaled(B.HoldoutBossMen) && !lair.Companies.Any(c => c.Stacks.Any(st => st.Troop == "goblin_boss" && st.Men > 0)))
         {
             Recruit(lair, "goblin_boss", "infantry", 1);

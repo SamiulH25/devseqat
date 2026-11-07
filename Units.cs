@@ -18,7 +18,8 @@ public static class Dirs
 }
 
 /// A horse. Speeds in m/s, Accel in m/s^2, TurnRate in rad/s at a standstill (it falls as speed rises).
-/// Barding is what it wears: "saddle" (saddle cloth) or "caparison" (full cloth barding and a steel chanfron).
+/// Barding is what it wears: "saddle" (saddle cloth) or "caparison" (full cloth barding and a steel chanfron);
+/// "wolf" is not a horse at all but a warg, drawn with the wolf rig (docs/CREATURES.md).
 public sealed record Mount(string Id, string Name, float Hp, float Trot, float Gallop, float Accel, float TurnRate, string Barding)
 {
     public static Mount Courser => Troops.Mount("courser");

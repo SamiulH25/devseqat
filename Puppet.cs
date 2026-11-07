@@ -79,7 +79,8 @@ sealed class Puppet
         pal = "/" + (u.IsPlayer ? 2 : u.Palette);
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         float lift = ground;
-        if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true)) * Scale;
+        if (u.Mounted && !u.Dead && u.Horse!.Barding == "wolf") lift = ground + Warg(u, ground);
+        else if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true)) * Scale;
         Frame(u.Pos, u.ViewFacing, lift, (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * u.Type.Size * Scale);
 
         fall = 0;
@@ -207,22 +208,28 @@ sealed class Puppet
     /// A wolf on four legs: it trots, and lunges with its head in the strike (docs/CREATURES.md).
     void Beast(Unit u, float ground)
     {
+        float lunge = u.Action == UnitAction.Windup ? -0.12f : u.Action == UnitAction.Recover ? 0.28f : 0;
+        WolfBody(u.Pos, ground, u.ViewFacing, u.Anim, u.Vel.Length(), u.Type.Size * Scale, lunge, u.Type.Size > 1.1f);
+    }
+
+    /// The wolf rig at `size` (1 = a wolf; a warg is bigger). Returns its back's height above the ground, in metres.
+    float WolfBody(Vector2 pos, float ground, float heading, float anim, float speed, float size, float lunge, bool dark)
+    {
+        Frame(pos, heading, ground, size);
         var side = pal;
         var plain = tint;
         pal = "/n";
-        if (u.Type.Size > 1.1f) tint = Color.Lerp(tint, new Color(70, 64, 60), 0.45f); // a dire wolf is darker
-        float speed = u.Vel.Length();
+        if (dark) tint = Color.Lerp(tint, new Color(70, 64, 60), 0.45f); // a dire wolf or warg is darker
         float gait = Math.Clamp(speed / 7, 0, 1);
         float amp = speed < 0.3f ? 0 : 18 + 30 * gait;
-        float bob = MathF.Sin(u.Anim * MathF.Tau * 1.5f) * 0.03f * gait;
-        float lunge = u.Action == UnitAction.Windup ? -0.12f : u.Action == UnitAction.Recover ? 0.28f : 0;
+        float bob = MathF.Sin(anim * MathF.Tau * 1.5f) * 0.03f * gait;
         float y = 0.6f + bob;
         ReadOnlySpan<float> phase = stackalloc float[] { 0, 0.5f, 0.3f, 0.8f };
         for (int i = 0; i < 4; i++)
         {
             bool front = i < 2;
             float sd = i % 2 == 0 ? -1 : 1;
-            float a = Rad(amp) * MathF.Sin(u.Anim * MathF.PI * 1.5f + phase[i] * MathF.Tau);
+            float a = Rad(amp) * MathF.Sin(anim * MathF.PI * 1.5f + phase[i] * MathF.Tau);
             var hip = new Vector3(sd * 0.11f, y - 0.05f, front ? 0.36f : -0.38f);
             Axial(hip, hip + new Vector3(0, -0.55f * MathF.Cos(a), 0.55f * MathF.Sin(a)), "wleg");
         }
@@ -231,6 +238,24 @@ sealed class Puppet
         if (Detail == 0) Axial(new(0, y + 0.08f, -0.5f), new(0, y - 0.22f + gait * 0.22f, -0.86f - gait * 0.2f), "wtail");
         pal = side;
         tint = plain;
+        return (y + 0.06f) * size;
+    }
+
+    /// A ridden warg (a mount with "wolf" barding) and the rider's legs astride it. Returns the rider's seat height.
+    float Warg(Unit u, float ground)
+    {
+        const float size = 1.5f;
+        float seat = WolfBody(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, size * Scale, 0, true);
+        Frame(u.Pos, u.ViewHeading, ground, u.Type.Size * Scale);
+        float hipY = seat / (u.Type.Size * Scale);
+        for (int sd = -1; sd <= 1; sd += 2)
+        {
+            var hip = new Vector3(sd * 0.14f, hipY + 0.05f, 0);
+            var foot = new Vector3(sd * 0.3f, hipY - 0.45f, 0.15f);
+            Axial(hip, foot, $"leg.{look.Legs}");
+            if (Detail == 0) Bill(foot, $"boot.{look.Feet}", true);
+        }
+        return seat - 0.63f * u.Type.Size * Scale; // the rider's origin sits so his hips are on its back
     }
 
     void BeastCorpse(Unit u)
@@ -248,15 +273,23 @@ sealed class Puppet
     {
         pal = "/" + h.Team;
         tint = Color.White;
+        if (h.Mount.Barding == "wolf") { WolfBody(h.Pos, ground, h.Heading, 0, 0, 1.5f, 0, true); return; }
         Horse(h.Pos, ground, h.Heading, 0, 0, h.Coat, h.Mount.Barding, false);
     }
 
     public void DrawDeadHorse(DeadHorse h, float ground)
     {
-        Frame(h.Pos, h.Heading, ground, 1);
+        Frame(h.Pos, h.Heading, ground, h.Barding == "wolf" ? 1.5f : 1);
         pal = "/" + h.Team;
         tint = Color.White;
         Flat(new(0.3f, 0.02f, 0), "blood", false);
+        if (h.Barding == "wolf")
+        {
+            pal = "/n"; tint = new Color(150, 140, 135);
+            Flat(new(0, 0.06f, 0), "wbody", true); Flat(new(0.05f, 0.07f, 0.65f), "whead", true); Flat(new(-0.25f, 0.05f, 0.25f), "wleg", false);
+            pal = "/" + h.Team; tint = Color.White;
+            return;
+        }
         pal = "/n";
         tint = new Color(Style.Coats[h.Coat % Style.Coats.Length]);
         Flat(new(0, 0.05f, 0), "hbody", true);

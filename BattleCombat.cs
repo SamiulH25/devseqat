@@ -233,8 +233,9 @@ public partial class Battle
         t.Vel = t.Wish = Vector2.Zero;
         if (t.Mounted)
         {
-            LooseHorses.Add(new LooseHorse { Mount = t.Horse!, Hp = t.HorseHp, Pos = t.Pos, Heading = t.Heading, Team = t.Team, Coat = t.Coat });
-            if (killer.Squad != null && killer.Team != t.Team) killer.Squad.HorseKills++;
+            if (t.Horse!.Barding != "wolf") // a warg whose rider falls runs off into the wild; nobody else can ride it
+                LooseHorses.Add(new LooseHorse { Mount = t.Horse!, Hp = t.HorseHp, Pos = t.Pos, Heading = t.Heading, Team = t.Team, Coat = t.Coat });
+            if (killer.Squad != null && killer.Team != t.Team && t.Horse.Barding != "wolf") killer.Squad.HorseKills++;
             t.Horse = null;
             t.Pos -= new Vector2(-t.HeadingDir.Y, t.HeadingDir.X) * 1.0f; // the rider falls off to the side
         }

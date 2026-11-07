@@ -1,6 +1,6 @@
 # Creatures and monsters: brainstorm and plan
 
-Status: phase 1 (goblins) and phase 2a (wolves) are built; see "As built" at the end. The rest is planned. Names are placeholders.
+Status: phase 1 (goblins) and phase 2 (wolves, goblin wolf riders) are built; see "As built" at the end. The rest is planned. Names are placeholders.
 
 The world is a fantasy world. Today every enemy is a man: lords, bandits, garrisons. This plan adds creatures and
 monsters as new enemies, new kinds of map encounter and, later, new troops for the player.
@@ -188,3 +188,9 @@ village; clearing a holdout removes it and pays the hoard; lords are hostile to 
   hunt by night anything up to 1.3 times their strength. They move at horse speed, so a company on foot cannot
   retreat from them. They do not plunder. Balance: `WolfPacksPerForest`, `WolfSpawnChance`, `WolfPackMin/Max`.
 - Staged shots: `gallery-goblins.png` (front), `gallery-creatures-side.png` (side).
+
+**Phase 2b** (goblin wolf riders; `WolfRiders` test):
+- Mount `warg` with barding `wolf`: `Puppet.Warg` draws a dark wolf 1.5 times size (`WolfBody`, shared with
+  `Beast`) with the rider astride it. `goblin_wolf_rider` is craven goblin cavalry with a spear.
+- A warg whose rider falls runs off: no loose horse to catch, and it does not count as a horse taken.
+- Big holdouts (two thirds of their cap) tame a few wargs, so their hosts and raids include wolf riders.

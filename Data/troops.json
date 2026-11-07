@@ -59,6 +59,16 @@
    "accel": 4.2,
    "turnRate": 1.7,
    "barding": "caparison"
+  },
+  {
+   "id": "warg",
+   "name": "Warg",
+   "hp": 95,
+   "trot": 6.0,
+   "gallop": 11.8,
+   "accel": 6.0,
+   "turnRate": 2.8,
+   "barding": "wolf"
   }
  ],
  "troops": [
@@ -3715,6 +3725,40 @@
     "shield": "none",
     "weapon": "sword",
     "face": "wolf"
+   }
+  },
+  {
+   "id": "goblin_wolf_rider",
+   "name": "Wolf Riders",
+   "class": "Cavalry",
+   "culture": "wild",
+   "breed": "goblin",
+   "tier": 2,
+   "mount": "warg",
+   "upgradesTo": [],
+   "cost": 40,
+   "upgradeXp": 0,
+   "hp": 50,
+   "damage": 15,
+   "armor": 1,
+   "reach": 1.7,
+   "windup": 0.45,
+   "recover": 0.6,
+   "speed": 4.1,
+   "block": 0.1,
+   "size": 0.72,
+   "traits": [
+    "craven"
+   ],
+   "look": {
+    "head": "none",
+    "body": "rags",
+    "legs": "hide",
+    "feet": "bare",
+    "hands": "claw",
+    "shield": "none",
+    "weapon": "spear",
+    "face": "goblin"
    }
   }
  ]

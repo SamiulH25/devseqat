@@ -418,7 +418,8 @@ sealed partial class Hud
             sb.Draw(art.Atlas, new Rectangle(d.X, d.Y, s2.Width * k, s2.Height * k), s2, tint ?? Color.White);
         }
         float WeaponY(string w) => 1.0f + (0.5f - SpriteSheet.Grip[w]) * art[w + "/0"].Height * Art.Px;
-        if (t.Mount != null) Part("hhead", -0.25f, 0.78f, "/n", new Color(Style.Coats[0]));
+        if (t.Mount is { Barding: "wolf" }) Part("whead", -0.3f, 0.8f, "/n", new Color(150, 140, 135));
+        else if (t.Mount != null) Part("hhead", -0.25f, 0.78f, "/n", new Color(Style.Coats[0]));
         if (t.Class == UnitClass.Archer) Part(l.Weapon, 0.42f, 1.2f);
         if (l.Cape) Part("cape", 0, 1.0f);
         Part($"torso.{l.Body}.f", 0, 1.0f);

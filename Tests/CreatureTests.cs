@@ -214,4 +214,25 @@ public static partial class SelfTest
         Check(alpha2.Dead && fl.BossDown[1], "the dire wolf can fall");
         Check(pl.Units.Where(u => u.Active).Average(u => u.Morale) < before - 20, "the pack loses heart when its alpha falls");
     }
+
+    /// Goblin wolf riders: cavalry on wargs. A warg whose rider falls runs off: no loose horse, no horse taken.
+    static void WolfRiders()
+    {
+        var rider = Troops.Get("goblin_wolf_rider");
+        Check(rider.Class == UnitClass.Cavalry && rider.Mount is { Barding: "wolf" } && rider.Has("craven"), "wolf riders are craven goblins on wargs");
+        var b = Battle.Empty(91);
+        var foe = b.AddSquad(0, UnitType.Shieldman, 1, new(0, 0), 1, Vector2.UnitY).Units[0];
+        var u = b.AddSquad(1, rider, 1, new(0, 3), 1, -Vector2.UnitY).Units[0];
+        Check(u.Mounted && u.Horse!.Barding == "wolf", "a wolf rider rides");
+        u.Action = UnitAction.Stagger;
+        b.Hit(foe, u, 9999, false);
+        Check(u.Dead && b.LooseHorses.Count == 0 && foe.Squad!.HorseKills == 0, "his warg runs off: nothing to catch or count");
+        var f = Battle.Empty(92);
+        var riders = f.AddSquad(1, rider, 12, new(0, 30), 6, -Vector2.UnitY);
+        f.AddSquad(0, Troops.Get("bowmen"), 20, new(0, -5), 10, Vector2.UnitY);
+        riders.Order = Order.Charge;
+        for (int i = 0; i < 60 * 40 && f.Winner < 0; i++) f.Update(1 / 60f);
+        Console.WriteLine($"wolf riders: 12 riders vs 20 bowmen after {f.Time:0} s: {f.SquadsOf(0).Sum(q => q.Units.Count(x => x.Dead))} archers dead, {riders.Units.Count(x => x.Dead)} riders dead");
+        Check(f.SquadsOf(0).Sum(q => q.Units.Count(x => x.Dead)) > 0, "wolf riders ride down archers");
+    }
 }

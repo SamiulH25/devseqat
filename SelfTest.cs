@@ -61,6 +61,7 @@ public static partial class SelfTest
         Holdouts();
         GoblinBattle();
         Wolves();
+        WolfRiders();
         Couriers();
 
         for (int seed = 1; seed <= 3; seed++)
