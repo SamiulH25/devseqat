@@ -86,7 +86,8 @@ public sealed class Pilot
         // Recruit while there is room and a reserve of gold for a few weeks' upkeep.
         float reserve = Reserve;
         int room = Rules.MenLimit(c.Captain) - Me.Men - Me.Wounded;
-        if (room > 0 && s.Recruits > 0 && c.S.Gold > reserve) c.RecruitLevies(s, Math.Min(room, (int)((c.S.Gold - reserve) / 10)));
+        float levy = MathF.Max(1, Troops.Get(c.RecruitTroopFor(s)).Cost * c.RecruitPriceFactor(s));
+        if (room > 0 && s.Recruits > 0 && c.S.Gold > reserve) c.RecruitLevies(s, Math.Min(room, (int)((c.S.Gold - reserve) / levy)));
         if (s.Kind == SettlementKind.Town)
         {
             foreach (var m in s.Mercenaries.ToList())
@@ -104,8 +105,8 @@ public sealed class Pilot
     readonly Dictionary<int, float> visited = new();
     bool Fresh(Settlement s) => !visited.TryGetValue(s.Id, out float at) || c.S.Hours - at > 48;
 
-    /// Gold kept back: a month of what upkeep costs after contract pay, plus a margin.
-    float Reserve => Me.Companies.Sum(Rules.Upkeep) * (c.Captain.Contract >= 0 ? 1 - B.ContractPay : 1) * 4 + 60;
+    /// Gold kept back: a month of what upkeep costs after contract pay and the liege's retainer, plus a margin.
+    float Reserve => MathF.Max(0, Me.Companies.Sum(Rules.Upkeep) * (c.Captain.Contract >= 0 ? 1 - B.ContractPay : 1) - c.Retainer) * 4 + 60;
 
     /// Promotions the purse can pay for while keeping a reserve for upkeep.
     IEnumerable<(CompanyRecord Company, TroopStack Stack, string To)> Affordable() =>
@@ -165,7 +166,7 @@ public sealed class Pilot
         // Room for men and money for them: the nearest settlement with recruits (villages, and towns and castles raise levies too).
         int room = Rules.MenLimit(c.Captain) - Me.Men - Me.Wounded;
         float reserve = Reserve;
-        if (room >= 6 && c.S.Gold > reserve + 40)
+        if (room >= 6 && c.S.Gold > reserve + 30)
         {
             var v = c.S.Settlements.Where(s => s.Recruits >= 3 && !c.Refuses(s) && Fresh(s))
                 .OrderBy(s => Vector2.Distance(s.Pos, Me.Pos)).FirstOrDefault();

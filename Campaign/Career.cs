@@ -552,8 +552,8 @@ public sealed partial class Campaign
     }
 
     /// Recruits of your realm cost a sworn sword (and anyone above) half.
-    /// The weekly retainer a liege pays a sworn sword or better, on top of contract pay (F9): 20 crowns plus a tenth of renown.
-    public float Retainer => Rank is >= Rank.SwornSword and < Rank.King ? 20 + Captain.Renown * 0.1f : 0;
+    /// The weekly retainer a liege pays a sworn sword or better, on top of contract pay (F9): 30 crowns plus a tenth of renown.
+    public float Retainer => Rank is >= Rank.SwornSword and < Rank.King ? 30 + Captain.Renown * 0.1f : 0;
 
     public float RecruitPriceFactor(Settlement s) => Rank >= Rank.SwornSword && s.Faction == Captain.Contract ? 0.5f : 1;
 }
