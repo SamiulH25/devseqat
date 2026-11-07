@@ -996,6 +996,8 @@ public sealed partial class Campaign
                 if (Has("Quartermaster")) upkeep *= 0.9f;
                 if (HasCompanion("Quartermaster")) upkeep *= 0.95f;
                 float pay = Captain.Contract >= 0 && Rank != Rank.King ? upkeep * B.ContractPay * Settings.Current.PayFactor : 0;
+                // A sworn man's liege keeps him in the field (F9): a retainer that lets a beaten company rebuild.
+                pay += Retainer;
                 float fiefs = S.Settlements.Where(t => t.Owner == Player.Id).Sum(Income) * (HasCompanion("Steward") ? 1.15f : 1)
                     * (1 + Skill("Stewardship") / 500f) * (Has("TaxRoll") ? 1.15f : 1);
                 if (fiefs > 0) Practise("Stewardship", 0.5f + fiefs / 40f);

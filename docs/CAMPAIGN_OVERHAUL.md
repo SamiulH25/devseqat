@@ -197,7 +197,7 @@ The eight perks become a **skill tree**. Skills rise by use (0-100), and every 2
 |---|---|---|
 | **Free Company** | the start | mercenary contracts with any realm, brigand hunting |
 | **Sworn Sword** | a contract with one realm for 30 days *(tune)* | the realm's contract board, wages, its recruits at half price |
-| **Vassal** | swear fealty: renown >= 150 and liege opinion >= 10 | a fief grant (F6), a council vote, summons to hosts |
+| **Vassal** | swear fealty: renown >= 120 and liege opinion >= 10 | a fief grant (F6), a council vote, summons to hosts |
 | **Lord** | hold 2 fiefs, renown >= 350 | raise companions to vassals, propose wars in council, culture barracks |
 | **Marshal** | a council vote (5.3) or the liege's choice | lead the realm's hosts: set its war objective, summon lords |
 | **King** | found a realm (5.4) | diplomacy, your own council and vassals, the win condition |

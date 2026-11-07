@@ -8,7 +8,7 @@ public enum Rank { FreeCompany, SwornSword, Vassal, Lord, Marshal, King }
 /// Career ranks, the realm council, founding a realm, and winning or losing the campaign (step F5).
 public sealed partial class Campaign
 {
-    public const float SwornDays = 30, VassalRenown = 150, VassalOpinion = 10, LordRenown = 350, CouncilDays = 14, WinShare = 0.6f;
+    public const float SwornDays = 30, VassalRenown = 120, VassalOpinion = 10, LordRenown = 350, MarshalRenown = 500, CouncilDays = 14, WinShare = 0.6f;
     public const int LordFiefs = 2, MarshalTerm = 4;
 
     /// A career beat or the council's word for the map screen to show once (not saved): a title and a few lines.
@@ -81,7 +81,9 @@ public sealed partial class Campaign
                 if (Captain.Renown < LordRenown) need.Add($"{LordRenown - Captain.Renown:0} MORE RENOWN");
                 return (Rank.Lord, string.Join(" AND ", need));
             case Rank.Lord:
-                return (Rank.Marshal, "WIN THE COUNCIL'S VOTE, OR DECLARE INDEPENDENCE FROM A TOWN YOU HOLD");
+                return (Rank.Marshal, Captain.Renown < MarshalRenown
+                    ? $"{MarshalRenown - Captain.Renown:0} MORE RENOWN TO STAND FOR MARSHAL, OR DECLARE INDEPENDENCE FROM A TOWN YOU HOLD"
+                    : "WIN THE COUNCIL'S VOTE, OR DECLARE INDEPENDENCE FROM A TOWN YOU HOLD");
             default:
                 return S.Won ? null : (r, $"HOLD {Pct(WinShare)} OF THE PROVINCES ({Pct(RealmShare(Captain.Contract))} NOW)");
         }
@@ -287,7 +289,7 @@ public sealed partial class Campaign
             var cands = S.Characters.Where(c => c.Kind == "lord" && !c.Dead && c.Faction == f && c.Id != fs.Ruler && PartyById(c.PartyId) is { Captive: false })
                 .OrderByDescending(c => PartyById(c.PartyId) is Party p ? Rules.Strength(p) : 0).Take(2).ToList();
             if (CharacterById(fs.Marshal) is Character cur && cur != Me && !cands.Contains(cur)) cands.Add(cur);
-            bool standing = mine && Captain.Fealty && Captain.Renown >= LordRenown && FiefSeats >= LordFiefs;
+            bool standing = mine && Captain.Fealty && Captain.Renown >= MarshalRenown && FiefSeats >= LordFiefs;
             if (standing || fs.Marshal == S.CaptainChar && mine && Captain.Fealty) cands.Add(Me);
             int sitting = fs.Marshal;
             var m = Vote(f, cands, (v, c) => Liking(v, c) + (c.Id == sitting ? 10 : 0), out _);
@@ -550,5 +552,8 @@ public sealed partial class Campaign
     }
 
     /// Recruits of your realm cost a sworn sword (and anyone above) half.
+    /// The weekly retainer a liege pays a sworn sword or better, on top of contract pay (F9): 20 crowns plus a tenth of renown.
+    public float Retainer => Rank is >= Rank.SwornSword and < Rank.King ? 20 + Captain.Renown * 0.1f : 0;
+
     public float RecruitPriceFactor(Settlement s) => Rank >= Rank.SwornSword && s.Faction == Captain.Contract ? 0.5f : 1;
 }

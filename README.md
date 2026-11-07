@@ -90,7 +90,7 @@ that will not last. Brigands roam between them all.
   fight, not loot. Villages get threatened, the war score moves,
   the losing side sues for a 30-day truce, and the war resumes when it ends. Upkeep is weekly, a contract pays 85% of it, and unpaid men desert.
 - **A career, from hired sword to king.** Your **rank** rises: Free Company → Sworn Sword (a month in one realm's service; its recruits
-  cost you half) → Vassal (swear fealty at 150 renown when your liege trusts you; hold land, vote in council) → Lord (two fiefs and 350
+  cost you half) → Vassal (swear fealty at 120 renown when your liege trusts you; hold land, vote in council) → Lord (two fiefs and 350
   renown; propose wars, declare independence) → Marshal (elected by the council; name the realm's objective) → King (declare
   independence from a town you hold: your fiefs become a new realm at war with your old liege, and lords who like you more than him follow).
   Every realm's **council** sits each fortnight to grant captured seats, elect a marshal and vote on war. A king declares war and offers
