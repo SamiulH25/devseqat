@@ -342,7 +342,7 @@ public static partial class SelfTest
     {
         var errs = Factions.Validate().ToList();
         Check(errs.Count == 0, "factions.json is valid: " + string.Join("; ", errs));
-        Check(Troops.All.All(t => t.Culture is "common" or "azure" or "crimson" or "northern"), "every troop has a culture");
+        Check(Troops.All.All(t => t.Culture is "common" or "azure" or "crimson" or "northern" or "wild"), "every troop has a culture");
         foreach (var cul in Factions.Cultures)
         {
             var seen = new HashSet<string>();

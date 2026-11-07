@@ -13,7 +13,7 @@ partial class MapScreen
         var r = Modal(680, 380, "ENCOUNTER", Style.Foe);
         int x = r.X + ui.U(24), y = r.Y + ui.U(52);
         ui.Text(e.Name.ToUpperInvariant(), x, y, PartyColor(e));
-        ui.Text(e.Kind == PartyKind.Bandit ? "BRIGANDS" : C.FactionNames[e.Faction].ToUpperInvariant(), x, y + ui.U(20), Style.Dim, 1);
+        ui.Text(Allegiance(e), x, y + ui.U(20), Style.Dim, 1);
         if (C.CharacterOf(e) is Character ech)
         {
             float op = C.OpinionOfYou(ech);
@@ -46,7 +46,7 @@ partial class MapScreen
         {
             if (C.Parley()) panel = PanelKind.None;
         }
-        if (price < 0 && ui.Hover(new Rectangle(bx + 3 * (bw + ui.U(8)), by, bw, ui.U(30)))) note = "LORDS AT WAR DO NOT BARGAIN";
+        if (price < 0 && ui.Hover(new Rectangle(bx + 3 * (bw + ui.U(8)), by, bw, ui.U(30)))) note = e.Kind == PartyKind.Monster ? "GOBLINS DO NOT BARGAIN" : "LORDS AT WAR DO NOT BARGAIN";
     }
 
     /// At the walls of an enemy town or castle: besiege, assault, wait or leave.

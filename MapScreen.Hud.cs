@@ -10,6 +10,14 @@ partial class MapScreen
     // ---------- interface ----------
 
     static Color SideColor(int side) => side == -1 ? Style.Dim : Style.Sides[Style.PaletteOf(side)].Ui;
+    /// Who a party is, in the tooltip and the encounter panel.
+    string Allegiance(Party p) => p.Kind switch
+    {
+        PartyKind.Bandit => "BRIGANDS",
+        PartyKind.Player => "YOU",
+        PartyKind.Monster => p.Lair ? $"{p.Breed.ToUpperInvariant()} HOLDOUT" : $"{p.Breed.ToUpperInvariant()}S",
+        _ => C.FactionNames[p.Faction].ToUpperInvariant(),
+    };
     Color PartyColor(Party p) => p.Kind == PartyKind.Player ? Style.Accent : SideColor(C.SideOf(p));
 
     void DrawUi()
@@ -249,7 +257,9 @@ partial class MapScreen
         if (p != null)
         {
             linesOut.Add((p.Name.ToUpperInvariant(), PartyColor(p)));
-            linesOut.Add((p.Kind == PartyKind.Bandit ? "BRIGANDS" : p.Kind == PartyKind.Player ? "YOU" : C.FactionNames[p.Faction].ToUpperInvariant(), Style.Dim));
+            linesOut.Add((Allegiance(p), Style.Dim));
+            if (p.Lair) linesOut.Add(($"A HOARD OF ABOUT {MathF.Round(p.Gold / 50) * 50:0} CROWNS", Style.Warn));
+            else if (p.Kind == PartyKind.Monster && p.Task == "raid" && p.RaidOn >= 0) linesOut.Add(($"OUT TO PLUNDER {C.SettlementById(p.RaidOn).Name.ToUpperInvariant()}", Style.Warn));
             linesOut.Add(($"{p.Men} MEN IN {p.Companies.Count} COMPANIES", Style.Text));
             if (p != C.Player)
             {

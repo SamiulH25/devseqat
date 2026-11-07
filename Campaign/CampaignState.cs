@@ -8,7 +8,8 @@ namespace Ironfield;
 // Nothing here references MonoGame graphics: the self-test runs whole campaigns headless.
 
 public enum SettlementKind { Village, Town, Castle }
-public enum PartyKind { Player, Lord, Bandit, Garrison }
+/// Monster: creatures of the wild (docs/CREATURES.md), hostile to every party of men; Party.Breed says what they are.
+public enum PartyKind { Player, Lord, Bandit, Garrison, Monster }
 
 /// A persistent company (CAMPAIGN_OVERHAUL.md 2): a banner with a role, a history and an officer, holding troop stacks of any
 /// troops that fit its role. The company's face (portrait, name in battle) is its largest stack.
@@ -174,6 +175,15 @@ public sealed class Party
     public bool Captive;                 // a lord held by you
     public float Food = 10;              // days of food (yours; lords are fed by their faction)
     public int SiegeTarget = -1;         // the settlement this party is besieging
+    /// Monsters (docs/CREATURES.md): what they are ("goblin"); a holdout is a Lair party that never moves, its Gold the
+    /// hoard; a raiding band names its holdout (LairId, a party id) and the village it is going to plunder (RaidOn).
+    public string Breed = "";
+    public bool Lair;
+    public int LairId = -1, RaidOn = -1;
+    public float NextRaid;               // a holdout's next raid (campaign hours)
+    /// A holdout whose raiders plundered a realm's village is hunted by that realm's lords until HuntedUntil.
+    public int HuntedBy = -1;
+    public float HuntedUntil;
 
     public int Men => Companies.Sum(c => c.Men);
     public int Wounded => Companies.Sum(c => c.Wounded);
@@ -459,6 +469,18 @@ public sealed class Balance
     public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 1, DrillTown = 2;
     public float TownIncome = 150, CastleIncome = 90, VillageIncome = 40, LordWage = 1.3f;
     public float TruceDays = 30, PeaceScore = 1500, BountyBandits = 50, BountyLord = 120;
+    /// Goblin holdouts (docs/CREATURES.md): how many per forest or hill province, the daily chance one is raised while
+    /// under that, how far from any settlement, and (in base men, times ArmyScale) their size when raised, their cap,
+    /// daily growth and when a boss appears. Raids leave every HoldoutRaidDays once the holdout has HoldoutRaidMen,
+    /// with HoldoutRaidBand men, at a village within HoldoutRaidRange. Gold: hoard to start, per day and per raid.
+    public float HoldoutsPerWildProvince = 0.5f, HoldoutSpawnChance = 0.35f, HoldoutClearance = 12;
+    public float HoldoutStartMen = 10, HoldoutMaxMen = 45, HoldoutGrowPerDay = 0.7f, HoldoutBossMen = 35;
+    public float HoldoutRaidDays = 5, HoldoutRaidMen = 18, HoldoutRaidBand = 10, HoldoutRaidRange = 45;
+    /// A holdout's host counts this many times its strength in an auto-resolved fight: it fights from its holes.
+    public float HoldoutDefence = 2.5f;
+    /// Days a realm's lords hunt a holdout after its raiders plunder one of their villages.
+    public float HoldoutHuntDays = 6;
+    public float HoldoutStartHoard = 60, HoldoutHoardPerDay = 4, HoldoutRaidLoot = 40, BountyHoldout = 80;
     public float HorseCostRate = 0.5f, ArmorCost = 600, HelmCost = 300, WarhorseCost = 400, DestrierCost = 900;
 
     static Balance? loaded;

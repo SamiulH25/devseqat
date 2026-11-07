@@ -84,6 +84,9 @@ public sealed partial class Campaign
             for (int i = 0; i < c.LordsWanted; i++) c.SpawnLord(f);
         // Open with a map's worth of brigands, not three: the roads are dangerous from the first day.
         for (int i = 0; i < c.BanditsWanted / 3; i++) c.SpawnBandits();
+        // The wilds already have their goblins, some of them well dug in.
+        for (int i = 0; i < c.HoldoutsWanted; i++)
+            if (c.SpawnHoldout()) for (int d = c.rng.Next(40); d > 0; d--) c.Grow(c.S.Parties[^1]);
         c.WanderersWeekly();
         c.EnsureRulers();
         // The guided first fight: a weak band close by, coming for you.
@@ -106,11 +109,14 @@ public sealed partial class Campaign
 
     // ---------- relations ----------
 
-    public int SideOf(Party p) => p.Kind == PartyKind.Player ? Captain.Contract : p.Kind == PartyKind.Bandit ? -2 : p.Faction;
+    public int SideOf(Party p) => p.Kind switch { PartyKind.Player => Captain.Contract, PartyKind.Bandit => -2, PartyKind.Monster => -3, _ => p.Faction };
+    /// Brigands and monsters: parties outside any realm, with no pay, no drill and no prisoners to ransom.
+    public static bool Outlaw(Party p) => p.Kind is PartyKind.Bandit or PartyKind.Monster;
 
     public bool Hostile(Party a, Party b)
     {
         if (a == b || a.Down || b.Down) return false;
+        if (a.Kind == PartyKind.Monster || b.Kind == PartyKind.Monster) return a.Kind != b.Kind; // goblins fall on men and brigands alike
         if (a.Kind == PartyKind.Bandit || b.Kind == PartyKind.Bandit) return a.Kind != b.Kind;
         return FactionsAtWar(SideOf(a), SideOf(b));
     }
@@ -239,7 +245,8 @@ public sealed partial class Campaign
             Player.ChaseId = -1;
             return;
         }
-        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng);
+        if (a.Lair) (a, b) = (b, a); // a holdout fights dug in, from side 1
+        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, 1, b.Lair ? B.HoldoutDefence : 1);
         var winner = r.Winner == 0 ? a : b;
         var loser = r.Winner == 0 ? b : a;
         AiBattles++;
@@ -264,7 +271,7 @@ public sealed partial class Campaign
                 continue;
             }
             if (S.Hours < p.TaskUntil && p.Task != "refit") continue;
-            if (p.Kind == PartyKind.Lord) LordThink(p); else BanditThink(p);
+            if (p.Kind == PartyKind.Lord) LordThink(p); else if (p.Kind == PartyKind.Monster) MonsterThink(p); else BanditThink(p);
         }
         CheckContracts();
         SiegeHourly();
@@ -295,7 +302,7 @@ public sealed partial class Campaign
                         st.Men += heal;
                     }
                     // Daily drill: per fit man, into each pool (Old Hands drill harder).
-                    if (p.Kind != PartyKind.Bandit && st.Men > 0)
+                    if (!Outlaw(p) && st.Men > 0)
                         st.AddXp(st.Men * ((town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0)) * Honours.Of(c).DrillMul
                             * (p == Player ? (HasCompanion("Drillmaster") ? 1.25f : 1) * (1 + Skill("Training") / 200f) : 1));
                 }
@@ -322,6 +329,7 @@ public sealed partial class Campaign
         for (int n = 0; n < BanditSpawnsWanted; n++)
             if (S.Parties.Count(p => p.Kind == PartyKind.Bandit && !p.Down) >= BanditsWanted || !rng.Chance(B.BanditSpawnChance)) break;
             else SpawnBandits();
+        MonstersDaily();
         // A realm that holds close to half the seats unites the others against it: their truces with it end, and they make peace.
         int seats = S.Settlements.Count(s => s.Kind != SettlementKind.Village);
         for (int f = 0; f < S.Factions.Count && S.Factions.Count > 2; f++)
@@ -342,7 +350,7 @@ public sealed partial class Campaign
     {
         RelationsWeekly();
         WanderersWeekly();
-        foreach (var p in S.Parties.Where(p => p.Kind != PartyKind.Bandit && !p.Down))
+        foreach (var p in S.Parties.Where(p => !Outlaw(p) && !p.Down))
         {
             float upkeep = p.Companies.Sum(Rules.Upkeep);
             if (p == Player)

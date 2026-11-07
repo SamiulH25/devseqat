@@ -44,7 +44,10 @@ public sealed class UnitType
 {
     public string Id = "", Name = "";
     /// "azure", "crimson", "northern" or "common" (open to every culture); see Data/factions.json.
+    /// "wild" is a creature (docs/CREATURES.md): never recruited from a village and outside every upgrade tree.
     public string Culture = "common";
+    /// What a wild troop is ("goblin"); empty for men.
+    public string Breed = "";
     public UnitClass Class;
     public int Tier, Cost, UpgradeXp;
     public string[] UpgradesTo = Array.Empty<string>();
@@ -55,6 +58,7 @@ public sealed class UnitType
     public Look Look = null!;
 
     public bool HasShield => Look.Shield != "none";
+    public bool Wild => Culture == "wild";
     public UnitType Clone() => (UnitType)MemberwiseClone();
     public override string ToString() => Name;
 

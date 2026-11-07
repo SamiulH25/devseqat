@@ -144,6 +144,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Events, lord quests, brigand kings, pretenders (F8) | `Campaign/Events.cs` + `Data/events.json` (`EventsDaily`, `Choose`, `ApplyEffect`, `ValidateEvents`) |
 | Stacks/promotion, characters/opinion, skills, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Pilot.cs` |
 | Your divisions on the map (make, assign, goal, temper, command, into battle) | `Campaign/Divisions.cs` |
+| Monsters on the map: goblin holdouts (spawn, grow, raid, plunder, cleared), `MonsterThink` | `Campaign/Monsters.cs` (`SpawnHoldout`, `MonstersDaily`, `SendRaiders`, `HoldoutCleared`); docs/CREATURES.md |
 | Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
 | Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
 | Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |
@@ -158,7 +159,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`) |
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
 | Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs`, `Bench.cs` |
-| Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs` |
+| Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs`, `Tests/CreatureTests.cs` |
 | Developer guide (systems in depth, worked examples) | `docs/DEVELOPING.md` |
 | Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications), `docs/COMBAT_OVERHAUL.md` (plan: sergeant divisions + battle scale), `docs/CREATURES.md` (plan: monsters, creature encounters and troops) |
 
@@ -194,7 +195,9 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 - Faction ids index `CampaignState.Factions`; ids past `Data/factions.json` are realms founded in play (F5). Use the instance
   `campaign.FactionNames[f]` (not a static list) and `Factions.Get(f)`, which sees founded realms once `Factions.Bind` ran (the `Campaign` constructor does it).
 - The career rank is derived (`Campaign.Rank`), never stored; `CaptainState.BestRank` only remembers which beats were shown.
-- Team 0 = player side, team 1 = enemy. Palette 3 = bandits. `Squad.Alive` is refreshed every tick by `UpdateSquad`.
+- Team 0 = player side, team 1 = enemy. Palette 3 = bandits (and, for now, monsters). `PartyKind.Monster` parties have no
+  faction (`SideOf` = -3; `Campaign.Outlaw` covers brigands and monsters: no pay, no drill). Troops with culture `wild` are creatures:
+  never recruited, outside the upgrade trees, not taken prisoner. `Squad.Alive` is refreshed every tick by `UpdateSquad`.
 - `AttackDir` is named from the attacker's side; the defender must block `Dirs.Mirror(swing)`.
 - MonoGame `Color * float` also scales alpha; use `Color.Lerp` for tints (`Mat` forces opaque).
 - Render targets sample upside down on GL: `uv.y = 0.5 - 0.5*ndc.y`. Vertex shaders end with `FIXUP_POSITION`.

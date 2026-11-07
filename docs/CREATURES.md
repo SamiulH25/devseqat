@@ -1,6 +1,6 @@
 # Creatures and monsters: brainstorm and plan
 
-Status: plan agreed in outline (branch `creature-work`). Nothing here is built yet. Names are placeholders.
+Status: phase 1a (goblin holdouts on the map) is built; see "As built" at the end. The rest is planned. Names are placeholders.
 
 The world is a fantasy world. Today every enemy is a man: lords, bandits, garrisons. This plan adds creatures and
 monsters as new enemies, new kinds of map encounter and, later, new troops for the player.
@@ -89,22 +89,77 @@ Rare and costly: a captain might have one troll or a few hound packs, not a mons
 | Events | `Data/events.json`, `Campaign/Events.cs` | New triggers (near a lair, after a battle) and verbs (spawn a monster, raise the dead). |
 | Tests | `Tests/BattleTests.cs`, `Tests/CampaignTests.cs` | Each trait gets a small scenario test. |
 
-## Suggested phases
+## Phases
 
 Each phase is playable on its own and ends with `tools/check.sh` green.
 
-1. **Goblins and holdouts.** Goblins are frequent and walk on two legs, so they reuse the human rig (smaller, new
-   sprites) and give the most play first. Trait fields, goblin troops, swarm AI, `PartyKind.Monster` raiding bands,
-   holdout sites on the map that grow and can be assaulted, auto-resolve, encounter text, tests.
+1. **Goblins and holdouts.** Goblins are frequent and walk on two legs, so they reuse the human rig and give the most
+   play first.
+   - **1a, the world** (campaign map): goblin troops in data, `PartyKind.Monster`, holdouts that spawn, grow and
+     raid, raiding bands, clearing a holdout, map markers, tooltip and encounter text, auto-resolve, tests.
+   - **1b, the battle**: goblins drawn small with their own sprites (green skin, rags, crude weapons), swarm AI
+     (loose mobs, rush the nearest, flee early and come back), and the boss bond (the boss falls, the band scatters).
 2. **Beasts: wolves.** The four-legged rig (from the horse), pack AI, the alpha bond; then wolf riders for goblins.
-3. **A rare big monster: the troll.** Size, sweep, knockback, fear, regen, daylight weakness. Spawned rarely.
+3. **A rare big monster: the troll.** Size, sweep, knockback, fear, regen, daylight weakness.
 4. **Player creatures.** Goblin thralls, war hounds, tamed beasts, monster hunters, the odd ogre mercenary.
 5. **Undead.** Fearless, arrow resistance, necromancer bond, the dead rising after battles at night.
 6. **Later.** Giants, spiders and webs, fey in fog, flyers, legendary monsters, a marsh terrain kind.
 
-## Open questions
+## Settled details
 
-- How early can the player get monster troops? Proposed: goblin thralls and hounds from the mid game, a troll or
-  tamed beast only late (high renown, a cleared lair).
-- How often should a rare monster appear? Proposed: a few in the whole world at once, more as the campaign goes on.
-- Holdout battles: fight at the cave mouth in the open, or a small assault into the ruin like a siege?
+- **When monster troops come.** Goblin thralls from your first cleared holdout (cheap, weak, cowardly). War hounds
+  once you hold a fief with a kennel. A tamed troll or other big beast only late: high renown and a cleared lair of
+  that kind. Monster troops never upgrade into men, and men never upgrade into monsters.
+- **How many rare monsters.** Two in the whole world at the start, one more every 60 days, at most six. Goblin
+  holdouts are not counted: they are the common threat.
+- **Holdout battles.** Fought in the open, outside the cave mouth or ruin, on the province's ground. It reuses the
+  field battle. A ruin battle ground (walls and rubble to fight among) can come later.
+
+## Phase 1a in detail: goblin holdouts on the map
+
+**Troops** (`Data/troops.json`, culture `wild`, no upgrades, never recruitable): goblin (tier 1, weak and fast),
+goblin archer (tier 1, short bow), hobgoblin (tier 3, the tough ones), goblin boss (tier 4, one per big holdout).
+Until 1b paints them, they borrow existing sprite parts.
+
+**Parties.** `PartyKind.Monster`, with a `Breed` ("goblin") and a `LairId`. Monsters are hostile to everyone but
+other monsters: men, lords and brigands alike. They pay no upkeep, do not drill, and have no realm.
+
+**A holdout** is a goblin party that never moves (`Lair` set). Fighting it is fighting the holdout.
+- **Where.** In forest and hills provinces, away from towns, castles and villages. The world aims for about one
+  holdout for every two wild provinces, and tops up each day by chance, so a cleared one is replaced in a while.
+- **Growth.** It gains goblins each day up to a cap, and hobgoblins as it grows. A big holdout gets a goblin boss.
+- **Hoard.** It piles up stolen gold over time and from every raid. Whoever clears it takes the hoard.
+- **Raids.** Once big enough, every few days it sends out a raiding band at the nearest village. A band that
+  reaches the village plunders it (prosperity down, unrest up, no recruits for a week), then carries the loot home.
+  Raiders fight like brigands but dumber: they take on parties up to a bit stronger than themselves.
+- **Clearing.** Beat the holdout's host and it is gone: you take the hoard and a bounty, and villages near it calm
+  down. Lords clear holdouts too, when they are strong enough, so the wilds do not fill up unchecked. Raiders whose
+  holdout is gone keep roaming as a plain goblin band.
+
+**Map.** A holdout shows as a goblin standing at the cave mouth (its own marker comes with the 1b sprites). The
+tooltip and encounter panel name it ("GOBLIN HOLDOUT", "GOBLINS"). Goblins cannot be bribed.
+
+**Balance values** (`Balance` + `Data/campaign.json`): holdouts per wild province, spawn chance, starting and
+largest size, daily growth, raid size and interval, hoard growth, holdout bounty.
+
+**Tests.** Holdouts spawn in wild provinces away from settlements; they grow and send raiders; raiders plunder a
+village; clearing a holdout removes it and pays the hoard; lords are hostile to goblins; a save with goblins loads.
+
+## As built
+
+**Phase 1a** (`Campaign/Monsters.cs`, `Tests/CreatureTests.cs`):
+- Goblin troops (`goblin`, `goblin_archer`, `hobgoblin`, `goblin_boss`) in `Data/troops.json` with culture `wild` and
+  `breed: goblin`. `Troops.Validate` keeps wild troops out of every upgrade tree. They borrow men's sprites until 1b.
+- `PartyKind.Monster` (+ `Party.Breed`, `Lair`, `LairId`, `RaidOn`, `NextRaid`, `HuntedBy`, `HuntedUntil`; new save
+  fields with defaults, no version bump). A holdout's `Gold` is its hoard.
+- Two rules found in testing, so holdouts do not vanish in a week:
+  - A holdout fights dug in: in auto-resolve its side counts `HoldoutDefence` (2.5) times its strength. A played
+    battle is still a plain field battle.
+  - Brigands never go after a holdout, and lords go after one only when its raiders have plundered a village of their
+    realm in the last `HoldoutHuntDays`, and they are clearly stronger. Lords and brigands still fight a holdout they
+    blunder into.
+- Result on a fresh map (seed 61): it keeps 15 to 18 of its 18 wanted holdouts. About 30 are cleared and replaced in
+  40 days, and a few raiding bands are out on most days. `--selftest HoldoutTrace` prints it day by day.
+- Goblins are not taken prisoner yet (thralls come in phase 4). The holdout marker on the map is the party's figure
+  (a hobgoblin) until 1b.
+- Staged screenshot: `campaign-holdout.png` (`IRONFIELD_CAMPAIGN_SHOTS`).

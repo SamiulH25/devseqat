@@ -390,7 +390,16 @@ sealed class ScreenHost : Game
                 Shot("campaign-divisions");
                 break;
             }
-            case 29: Exit(); break;
+            case 29:
+            {
+                // A goblin holdout (docs/CREATURES.md) at your feet.
+                map.Stage("map");
+                var lair = c.Holdouts.OrderByDescending(h => h.Men).First();
+                c.Player.Pos = lair.Pos + new Vector2(2, 0);
+                c.Encounter = lair;
+                map.Stage("encounter"); Shot("campaign-holdout"); break;
+            }
+            case 30: Exit(); break;
         }
     }
 }

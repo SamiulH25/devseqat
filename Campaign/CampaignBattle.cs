@@ -49,7 +49,8 @@ public partial class Campaign
                 if (playerIn && team != playerTeam && won)
                 {
                     loot += (sr.Fallen + sr.Fled) * Rules.PerMan(st.Type.Cost) * B.LootRate;
-                    TakePrisoners(st.Troop, Has("Pursuit") ? (int)MathF.Round(captured * 1.25f) : captured); // held, not ransomed at once (B3)
+                    if (!st.Type.Wild) // creatures are not held for ransom (goblin thralls come later: docs/CREATURES.md)
+                        TakePrisoners(st.Troop, Has("Pursuit") ? (int)MathF.Round(captured * 1.25f) : captured); // held, not ransomed at once (B3)
                 }
             }
             // XP into each stack's pool: participation per surviving man, and the company's kill XP split by men (2.2).
@@ -84,6 +85,12 @@ public partial class Campaign
             p.Cooldown = 12;
             p.ChaseId = -1;
             if (p.Kind == PartyKind.Garrison) continue;
+            if (p.Kind == PartyKind.Monster)
+            {
+                p.Down = true;
+                if (p.Lair) { var taker = winners.FirstOrDefault(w => w.Kind is PartyKind.Player or PartyKind.Lord); if (taker != null && taker != Player) taker.Gold += p.Gold; HoldoutCleared(p, taker); }
+                continue;
+            }
             if (p.Kind == PartyKind.Bandit) { p.Down = true; if (p.HomeId >= 0) RebelsBeaten(p); if (p.CharId >= 0) ThreatFalls(p, playerIn && won); continue; }
             if (p.Kind == PartyKind.Lord && (p.Men < before[p] * 0.25f || p.Men == 0))
             {
@@ -106,7 +113,7 @@ public partial class Campaign
         if (playerIn) SkillsAfterBattle(r, won, playerTeam == 0 ? startStrength0 : startStrength1, playerTeam == 0 ? startStrength1 : startStrength0, before[Player]);
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, Rules.PerMan(lostStrength));
-        S.Parties.RemoveAll(p => p.Kind == PartyKind.Bandit && p.Down);
+        S.Parties.RemoveAll(p => Outlaw(p) && p.Down);
 
         var report = new BattleReport(won, enemyName, reports, 0, 0, 0, 0, 0, r.Captain);
         if (!playerIn) return report;
@@ -114,8 +121,10 @@ public partial class Campaign
         int horses = 0;
         if (won)
         {
+            foreach (var e in losers.Where(e => e.Lair)) loot += e.Gold; // a holdout's hoard goes to whoever burns it out
             foreach (var e in losers)
-                bounty += e.Kind == PartyKind.Bandit ? B.BountyBandits + Rules.PerMan(Rules.Strength(e) / 10)
+                bounty += e.Lair ? B.BountyHoldout + Rules.PerMan(Rules.Strength(e) / 10)
+                    : Outlaw(e) ? B.BountyBandits + Rules.PerMan(Rules.Strength(e) / 10)
                     : Captain.Contract >= 0 ? B.BountyLord + Rules.PerMan((startStrength1 + startStrength0) / 20) : 0;
             renown = B.RenownPerVictory + (playerTeam == 0 ? startStrength1 : startStrength0) / (B.RenownStrengthDivisor * B.ArmyScale);
             horses = r.HorsesTaken;
@@ -185,7 +194,7 @@ public partial class Campaign
             EnemyDamage = Settings.Current.EnemyDamage,
             Ground = Map.BattleGround(Player.Pos),
             Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
-            Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(enemy.Kind == PartyKind.Bandit ? -2 : enemy.Faction) },
+            Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
         };
         return setup;
     }
@@ -202,7 +211,7 @@ public partial class Campaign
     public BattleReport AutoResolveEncounter()
     {
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge);
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge, Encounter!.Lair ? B.HoldoutDefence : 1);
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }

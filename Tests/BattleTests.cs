@@ -312,9 +312,9 @@ public static partial class SelfTest
             Check(Troops.Tree("levies").Any(t => t.Tier == tier), $"levies tree reaches tier {Style.Numerals[tier]}");
             Check(Troops.Tree("clansmen").Any(t => t.Tier == tier), $"clansmen tree reaches tier {Style.Numerals[tier]}");
         }
-        Check(Troops.All.Count(t => !t.Leader) >= 80, $"massive 7-tier troop tree ({Troops.All.Count(t => !t.Leader)} troops)");
+        Check(Troops.All.Count(t => !t.Leader && !t.Wild) >= 80, $"massive 7-tier troop tree ({Troops.All.Count(t => !t.Leader)} troops)");
         var reachable = Troops.Tree("levies").Concat(Troops.Tree("clansmen")).Select(t => t.Id).ToHashSet();
-        Check(Troops.All.Where(t => !t.Leader).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
+        Check(Troops.All.Where(t => !t.Leader && !t.Wild).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
     }
 
     /// Every sprite any troop's look can ask for exists, for every side.

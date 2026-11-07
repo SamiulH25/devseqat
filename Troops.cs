@@ -29,7 +29,7 @@ public static class Troops
 
     sealed class TroopDto
     {
-        public string Id = "", Name = "", Class = "Infantry", Culture = "common";
+        public string Id = "", Name = "", Class = "Infantry", Culture = "common", Breed = "";
         public string? Mount;
         public int Tier, Cost, UpgradeXp, Ammo;
         public string[] UpgradesTo = Array.Empty<string>();
@@ -66,7 +66,7 @@ public static class Troops
             var l = d.Look;
             troops[d.Id] = new UnitType
             {
-                Id = d.Id, Name = d.Name, Culture = d.Culture, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
+                Id = d.Id, Name = d.Name, Culture = d.Culture, Breed = d.Breed, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
                 UpgradesTo = d.UpgradesTo, MaxHp = d.Hp, Damage = d.Damage, Armor = d.Armor, Reach = d.Reach, Windup = d.Windup,
                 Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, Pierce = d.Pierce, Reload = d.Reload,
                 Leader = d.Leader, Mount = d.Mount == null ? null : mounts[d.Mount],
@@ -86,7 +86,11 @@ public static class Troops
                 if (!troops.TryGetValue(u, out var next)) yield return $"{t.Id} upgrades to unknown {u}";
                 else if (next.Tier <= t.Tier) yield return $"{t.Id} -> {u} does not raise the tier";
             if ((t.Class == UnitClass.Cavalry) != (t.Mount != null)) yield return $"{t.Id}: cavalry needs a mount and only cavalry has one";
-            if (t.Culture is not ("common" or "azure" or "crimson" or "northern")) yield return $"{t.Id}: unknown culture {t.Culture}";
+            if (t.Culture is not ("common" or "azure" or "crimson" or "northern" or "wild")) yield return $"{t.Id}: unknown culture {t.Culture}";
+            if (t.Wild != (t.Breed != "")) yield return $"{t.Id}: a wild troop needs a breed, and only wild troops have one";
+            if (t.Wild && t.UpgradesTo.Length > 0) yield return $"{t.Id}: wild troops do not upgrade";
+            foreach (var u in t.UpgradesTo)
+                if (troops.TryGetValue(u, out var up) && up.Wild) yield return $"{t.Id}: men do not upgrade into {u}";
             if (t.Class == UnitClass.Archer && (t.Ammo <= 0 || t.Range <= 0)) yield return $"{t.Id}: archers need ammo and range";
             if (Look.Ranged(t.Look.Weapon) != t.Ammo > 0) yield return $"{t.Id}: a bow needs ammo, and only bows have it";
             var l = t.Look;
