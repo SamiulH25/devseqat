@@ -143,7 +143,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs` |
 | Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs` |
 | Developer guide (systems in depth, worked examples) | `docs/DEVELOPING.md` |
-| Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications) |
+| Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications), `docs/COMBAT_OVERHAUL.md` (plan: sergeant divisions + battle scale) |
 
 ## Recipes
 
