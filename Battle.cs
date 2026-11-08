@@ -374,7 +374,18 @@ public sealed partial class Battle
         && (b.Type.Class == UnitClass.Skirmisher || s.Formation is Formation.ShieldWall or Formation.Square
             || (b.Type.Class == UnitClass.Infantry && s.Order == Order.Hold));
 
-    bool Braced(Unit b) => CanBrace(b) && b.Action is UnitAction.None or UnitAction.Block && b.Vel.LengthSquared() < 1 && Terrain.WaterDepth(b.Pos) < 0.5f;
+    bool Braced(Unit b) => CanBrace(b) && b.Action is UnitAction.None or UnitAction.Block && b.Vel.LengthSquared() < 1 && InOrder(b);
+
+    /// Can a man keep his place in the ranks here? Not in a wood or deep water (Data/ground.json `order` below 0.6):
+    /// no braced points, no locked shields.
+    bool InOrder(Unit u) => Terrain.GroundDefAt(u.Pos).Order >= 0.6f;
+
+    /// A man's reach on this ground: a long weapon (past 2 m) loses part of its length among trees (ground `reach`).
+    float ReachOf(Unit u)
+    {
+        float r = u.Type.Reach;
+        return r <= 2 ? r : 2 + (r - 2) * Terrain.GroundDefAt(u.Pos).Reach;
+    }
 
     AttackDir RandomSwing(Unit u) => u.Type.Class is UnitClass.Skirmisher or UnitClass.Cavalry
         ? (rng.Next(4) == 0 ? AttackDir.Overhead : AttackDir.Thrust)

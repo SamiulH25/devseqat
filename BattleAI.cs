@@ -21,6 +21,9 @@ public partial class Battle
         return enemy.Pos + side * s * 4.5f - enemy.Dir * 2.5f; // wide, out of reach, round the end of a line
     }
 
+    /// Height carries arrows further: up to a quarter more range, reached 6 m above the mark.
+    internal static float HeightRange(float above) => 1 + Math.Clamp(above / 24, 0, 0.25f);
+
     void Think(Unit u, float dt)
     {
         if (u.Routing)
@@ -58,7 +61,7 @@ public partial class Battle
             var (tu, td) = Nearest(u, s.Target);
             if (tu != null && td < u.Type.Range) (enemy, d) = (tu, td);
         }
-        float range = MathF.Min(Weather.Vision, u.Type.Range * (enemy != null && Terrain.Height(u.Pos) > Terrain.Height(enemy.Pos) + 2 ? 1.2f : 1)); // height carries arrows further; fog and night hide targets
+        float range = MathF.Min(Weather.Vision, u.Type.Range * (enemy != null ? HeightRange(Terrain.Height(u.Pos) - Terrain.Height(enemy.Pos)) : 1)); // fog and night hide targets
         if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < range && (charge || toSlot < 2.5f))
         {
             u.Face(enemy.Pos - u.Pos);
@@ -66,7 +69,7 @@ public partial class Battle
             return;
         }
 
-        float reach = enemy == null ? 0 : u.Type.Reach + (enemy.Mounted ? 0.9f : 0);
+        float reach = enemy == null ? 0 : ReachOf(u) + (enemy.Mounted ? 0.9f : 0);
         // Brace for the charge: hold the slot and present the point instead of stepping out to meet it.
         if (enemy is { Mounted: true } && CanBrace(u) && d < 16 && toSlot < 6)
         {

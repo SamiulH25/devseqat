@@ -492,6 +492,44 @@ public static partial class SelfTest
         Check(Battle.SlopeFactor(t, steep, up, true) < Battle.SlopeFactor(t, steep, up), "a horse feels a climb more than a man");
     }
 
+    /// Ground that changes how men fight (docs/TERRAIN.md T1): spears in a wood cannot brace, a horse on stones stumbles
+    /// (and the same seed stumbles the same way), high ground is a smooth curve, a downhill charge hits harder,
+    /// height carries arrows further.
+    static void GroundFights()
+    {
+        float HorseHurt(GroundKind k)
+        {
+            var b = Battle.Empty(7);
+            b.Terrain.Paint(new Vector2(0, 0), 12, k);
+            b.AddSquad(1, Troops.Get("spearrunners"), 12, new(0, 0), 6, -Vector2.UnitY);
+            var l = Lancer(b);
+            float hp = l.HorseHp;
+            Run(b, 3.5f);
+            return l.Mounted ? hp - l.HorseHp : hp; // the braced points wound the horse first
+        }
+        float grass = HorseHurt(GroundKind.Grass), wood = HorseHurt(GroundKind.Wood);
+        Console.WriteLine($"ground: a lancer's horse riding into spears loses {grass:0} hp on grass, {wood:0} in a wood");
+        Check(wood < grass, "spears in a wood cannot brace against horse");
+        (float speed, Vector2 pos) Gallop(int seed)
+        {
+            var b = Battle.Empty(seed);
+            b.Terrain.Paint(new Vector2(0, 40), 70, GroundKind.Stony);
+            var s = b.AddSquad(0, UnitType.Lancer, 1, new(0, -10), 1, Vector2.UnitY);
+            s.Order = Order.Hold; s.Anchor = new(0, 90); s.Front = Vector2.UnitY;
+            var u = s.Units[0];
+            float slowest = float.MaxValue;
+            for (int i = 0; i < 60 * 8; i++) { u.Speed = MathF.Max(u.Speed, i % 30 == 0 ? u.Horse!.Gallop : 0); b.Update(1 / 60f); slowest = MathF.Min(slowest, u.Speed); }
+            return (slowest, u.Pos);
+        }
+        var g1 = Gallop(4);
+        Check(g1.speed < UnitType.Lancer.Mount!.Gallop * 0.5f, "a horse galloping over stones stumbles");
+        Check(Gallop(4).pos == g1.pos, "and the same seed stumbles the same way");
+        Check(Battle.HighGround(1, 0, 0) > 0 && Battle.HighGround(1, 0, 0) < Battle.HighGround(3, 0, 0) && Battle.HighGround(30, 0, 0) <= 0.15f
+            && Battle.HighGround(-3, 0, 0) < 0 && Battle.HighGround(0, 0, 0) == 0, "high ground: a smooth edge up to 15%");
+        Check(Battle.HighGround(1, -0.1f, 6) > Battle.HighGround(1, -0.1f, 1) + 0.05f && Battle.HighGround(1, 0.1f, 6) == Battle.HighGround(1, 0.1f, 1), "a charge down a slope hits harder");
+        Check(Battle.HeightRange(0) == 1 && Battle.HeightRange(-5) == 1 && Battle.HeightRange(3) > 1 && Battle.HeightRange(50) == 1.25f, "height carries arrows further, up to a quarter");
+    }
+
     /// A battlefield river: carved below its banks, slow to wade, quicker at the fords; the map has rivers with bridges.
     static void Rivers()
     {

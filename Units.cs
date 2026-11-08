@@ -142,8 +142,8 @@ public sealed class Unit
     public bool Couched, Contact;          // lance lowered; this charge has reached the enemy
     public CavState Cav;
     public float CavTimer, Bogged, ImpactCd, BraceCd;
-    /// Last tick's ground and slope on his pace (1 = level grass), and how steeply he was climbing (rise a metre; BattleMove.cs).
-    public float GroundPace = 1, Climb;
+    /// Last tick's ground and slope on his pace (1 = level grass), and the slope along his way (rise a metre, negative downhill; BattleMove.cs).
+    public float GroundPace = 1, Slope;
 
     public bool Active => !Dead && !Fled;
     public bool Mounted => Horse != null;

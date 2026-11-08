@@ -201,7 +201,7 @@ public sealed partial class Battle
     float Strain(Unit u)
     {
         float weight = 1 + MathF.Max(0, u.Type.Armor - 8) / 20;
-        return MathF.Max(0, Terrain.GroundDefAt(u.Pos).Fatigue - 1 + u.Climb * 5) * weight;
+        return MathF.Max(0, Terrain.GroundDefAt(u.Pos).Fatigue - 1 + MathF.Max(0, u.Slope) * 5) * weight;
     }
 
     /// Archers standing at their own wagon draw arrows from it.

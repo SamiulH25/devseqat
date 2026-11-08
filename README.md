@@ -242,8 +242,13 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   65k vertices). Gentle value-noise rolls (calmer in the middle),
   3-5 random hills, a rim of high ground framing the valley, and a dirt road winding between the armies. It is seeded per battle.
   `Height()` interpolates on the same triangles the mesh draws, so units stand exactly on the ground you see.
-- **It matters in the fight:** uphill is slower and downhill quicker (`Battle.SlopeFactor`, x0.55-1.15); striking from higher ground deals
-  up to +15% (less from below; the hit text says HIGH GROUND); arrows fly from and land on the real ground and stick where they hit it.
+- **It matters in the fight:** uphill is slower and downhill quicker (`Battle.SlopeFactor`; a horse feels it more than a man);
+  striking from higher ground deals up to +15% on a smooth curve, and +10% more for running downhill into the blow (the hit text
+  says HIGH GROUND); archers above their mark reach up to a quarter further. Arrows fly from and land on the real ground.
+- **Kinds of ground** (`TerrainGround.cs`, rules in `Data/ground.json`): every 2.5 m of the field is grass, road, wood, a ford,
+  deep water and so on. The ground sets the pace (a wood halves a horse; a road is quick), tires men (mud and climbs, worse in
+  heavy armour), and blunts a charge. In a wood or deep water men cannot keep the ranks: no braced spears and no locked shields,
+  and pikes lose part of their length among the trees. A horse galloping over stones, scrub or mud may stumble.
 - **Foliage** (placed by `Terrain`, built into meshes by `World.cs`): woods of broadleaf trees or pines, two of them flanking the field,
   lone trees, bushes along wood edges, rocks and boulders, and ~14,000 3D grass tufts with a few flowers. All low-poly, flat-shaded and lit by one sun.
   Tree trunks and boulders are **solid**: units are pushed out of them and a horse that rides into one pulls up hard.
@@ -313,7 +318,7 @@ For a detailed developer guide (how each system works, data formats, worked exam
 | `Troops.cs` | Loads and validates `Data/troops.json` (troops, upgrade trees, mounts); `ArmySpec`/`Company`; `Armies` builds armies by level. |
 | `Factions.cs` | Loads and validates `Data/factions.json`: the seven realms (name, palette, culture, home on the map, the troop each role fields per tier), the cultures (each one's village recruit, kin, town flavour) and the opening wars and truces. |
 | `Style.cs` | Design tokens: side heraldry, materials, horse coats, sprite light and density, UI colours, grid, type scale. |
-| `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles. |
+| `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles; `TerrainGround.cs` the ground layer (kinds of ground and their rules). |
 | `ScreenHost.cs` | The MonoGame `Game`: shared art, audio and settings; switches between `TitleScreen`, `MapScreen` and `BattleScreen`, with the `SettingsScreen` overlay. |
 | `BattleScreen.cs` | A battle on screen: setup and the per-frame update; `BattleScreen.Controls.cs` (input, the blended third-person/command camera, terrain picking), `.Orders.cs` (squad orders), `.Draw.cs` (render passes, particles, rain), `.Shots.cs` (staged screenshots). |
 | `BattleSiege.cs` | Assaults: deploying defenders on the wall, routing men through ladders and the gate (`Via`), the wall barrier, battering, siege generals. |

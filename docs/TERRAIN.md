@@ -322,3 +322,25 @@ T6 medium, T7 medium, T8 small.
   layout must put a bridge where they cross.
 - Baseline (`--bench 1500`, cloud container): terrain built in 63 ms; 3,013 men at 4.47 ms a tick mean, 6.52 p95
   (think 1.54, move 1.32, morale 1.17).
+
+### T1 (done)
+- Pace: `Move` scales each man's velocity (not only his step) by `SlopeFactor` and the ground's foot or horse speed, so
+  charges, impacts and arrow leads see the real speed. The result is kept as `Unit.GroundPace`, with the signed slope in
+  `Unit.Slope`. A horse's slope factor is ×2 a unit of rise (clamped 0.5-1.2); a man's is unchanged. `Wading` is gone:
+  Ford and Water in `ground.json` carry its numbers.
+- Fatigue: `Tire` measures effort before the ground slows a man (`Vel / (Speed × GroundPace)`), so slogging through mud at a
+  run is running. `Strain` adds the ground's `fatigue` and climbing (×5 the rise), both × (1 + armour past 8 / 20). Level grass adds nothing.
+- Order: `InOrder` (ground order ≥ 0.6) gates bracing (it replaces the water-depth check) and the shield wall's block bonus.
+  The looser slot spacing on bad ground is **not built** yet. It moves to T2, where squads on mixed ground can be looked at.
+- Charge: `Impact` and couched lances scale by the ground's `charge` where the blow lands. `Stumble`: a horse at 70% of gallop or
+  more may check to 40% speed and raise its lance (seeded `rng`, only drawn on ground with a stumble chance).
+- Reach: `ReachOf`: a weapon longer than 2 m loses `(reach - 2) × (1 - ground reach)` (pikes in a wood), for the AI's reach,
+  the player's swings and braced points.
+- `Battle.HighGround(above, slope, speed)` = 0.15·tanh(above / 3), plus up to +0.1 running (over 3 m/s) downhill.
+  `Battle.HeightRange(above)` = 1 + above / 24, capped at +25%.
+- AI fix found on the way: archers with nobody left to hold a line shoot what they carry and charge, with no wagon trips
+  (a level-3 self-test battle stalled for ten minutes on this).
+- Tests: `GroundMoves` (wood vs horse and foot, road, mud fatigue, horse on a slope), `GroundFights` (no bracing in a wood:
+  the horse loses 17 hp, against 140 on grass; seeded stumbles; the high-ground and range curves).
+- Bench after T1: 3,013 men at 4.6 ms a tick mean (think 1.62, move 1.38), the same as the T0 baseline within noise.
+

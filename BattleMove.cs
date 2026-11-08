@@ -17,9 +17,9 @@ public partial class Battle
                 u.Vel = u.HeadingDir * u.Speed;
             }
             else u.Vel = u.Wish * (u.Squad is { } fs && !u.Routing && fs.Order != Order.Charge ? fs.Pace : 1) * (u.Mounted ? 1 : Fatigue(u));
-            float slope = Slope(Terrain, u.Pos, u.Vel);
-            u.Climb = MathF.Max(0, slope);
-            u.GroundPace = SlopeFactor(slope, u.Mounted) * GroundSpeed(u); // the ground and the slope set the pace
+            u.Slope = Slope(Terrain, u.Pos, u.Vel);
+            u.GroundPace = SlopeFactor(u.Slope, u.Mounted) * GroundSpeed(u); // the ground and the slope set the pace
+            if (u.Mounted) Stumble(u, dt);
             u.Vel *= u.GroundPace;
             u.Pos += u.Vel * dt;
             u.Anim += dt * u.Vel.Length() * (u.Mounted ? 0.45f : 0.9f); // stride-locked walk / gallop cycle
@@ -37,6 +37,16 @@ public partial class Battle
     {
         var g = Terrain.GroundDefAt(u.Pos);
         return u.Mounted ? g.HorseSpeed : g.FootSpeed;
+    }
+
+    /// A horse galloping over stones, scrub or mud may stumble: it checks hard and the lance comes up (no harm done).
+    void Stumble(Unit u, float dt)
+    {
+        float chance = Terrain.GroundDefAt(u.Pos).Stumble;
+        if (chance <= 0 || u.Speed < u.Horse!.Gallop * 0.7f || rng.NextSingle() >= chance * dt) return;
+        u.Speed *= 0.4f;
+        u.Couched = false;
+        if (u.IsPlayer) PlayerHit = ("STUMBLE", Time);
     }
 
     /// Rise per metre along the way he is going (negative downhill).
@@ -64,7 +74,7 @@ public partial class Battle
         r.Speed *= f.Type.Class == UnitClass.Infantry && f.Squad is { Loose: false } ? 0.55f : 0.75f;
         // A spearman shoved by a horse still gets his point into it.
         if (f.Type.Class == UnitClass.Skirmisher && f.Type.VsMounted > 1) HitHorse(r, closing * 1.6f * f.Type.VsMounted, f);
-        float real = Damage(r, f, closing * 2.6f * (r.Squad?.Formation == Formation.Wedge ? 1.3f : 1), 5);
+        float real = Damage(r, f, closing * 2.6f * (r.Squad?.Formation == Formation.Wedge ? 1.3f : 1) * Terrain.GroundDefAt(f.Pos).Charge, 5); // no charge over bad ground
         if (f.Active)
         {
             Stagger(f, 1.1f); // knocked flat
