@@ -57,6 +57,14 @@ public partial class Campaign
                 {
                     if (cr.Named != null) RollFought(c, st, cr.Named, teamWon, pw, foe);
                     else RollFates(c, st, stBefore, killed, wounded, captured + sr.Fled - fledBack, foe);
+                    // A named man who fell and lives is one of the wounded, even when the stack's rounded odds said killed.
+                    int more = Math.Min(c.Roll.Count(m => m.Troop == st.Troop && m.Hurt) - st.Wounded, killed + captured);
+                    if (more > 0)
+                    {
+                        int fromKilled = Math.Min(more, killed);
+                        killed -= fromKilled; captured -= more - fromKilled;
+                        wounded += more; st.Wounded += more;
+                    }
                 }
                 killedAll += killed; woundedAll += wounded; capturedAll += captured; fledLostAll += sr.Fled - fledBack;
                 if (playerIn && team != playerTeam && won)
@@ -195,7 +203,8 @@ public partial class Campaign
         string spoil = won ? BattleSpoil(losers, r) : "";
         Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting,
             Goals = r.Goals.Select((id, i) => (i < r.GoalTexts.Count ? r.GoalTexts[i] : Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
-            Roll = RollNewsOrdered() };
+            Roll = RollNewsOrdered().Where(n => n.Item1 is not ("HONOUR" or "LOST")).ToList(),
+            Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field };
         if (won) RaiseBurial();
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
         return Report;
@@ -206,7 +215,7 @@ public partial class Campaign
     /// The parties that fight with you and against you: anyone close enough joins the side they are friendly to.
     public BattleSetup PrepareBattle(Party enemy)
     {
-        var setup = new BattleSetup { EnemyName = enemy.Name };
+        var setup = new BattleSetup { EnemyName = enemy.Name, Field = BattleName(Player.Pos) };
         setup.Side0.Add(Player);
         setup.Side1.Add(enemy);
         foreach (var p in S.Parties)

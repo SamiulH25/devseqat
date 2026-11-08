@@ -52,6 +52,7 @@ partial class MapScreen
             case PanelKind.Event: EventPanel(); break;
             case PanelKind.Divisions: DivisionsPanel(); break;
             case PanelKind.Atlas: AtlasPanel(); break;
+            case PanelKind.Help: HelpPanel(); break;
         }
         // Tips draw last so nothing covers them; over an open panel they sit at the top, clear of its buttons.
         if (panel == PanelKind.None) Tips.Draw(ui, ui.U(130));
@@ -180,14 +181,14 @@ partial class MapScreen
 
     void Feed()
     {
-        int y = ui.U(10), room = (ui.W - ui.U(480)) / 2 - ui.U(30), chars = Math.Max(10, room / (6 * ui.S));
+        int y = ui.U(10), room = Math.Max(ui.U(80), (ui.W - ui.U(480)) / 2 - ui.U(30));
         foreach (var e in C.S.Log.AsEnumerable().Reverse().Take(6))
         {
             float age = (float)(C.S.Hours - e.At) / 24;
             var c = Color.White * Math.Clamp(1.4f - age * 0.25f, 0.45f, 1);
-            string t = e.Text.ToUpperInvariant();
-            if (t.Length > chars) t = t[..(chars - 2)] + "..";
-            ui.Rect(new Rectangle(ui.U(10), y - ui.U(3), ui.TW(t, 1) + ui.U(10), ui.U(13)), Color.Black * 0.4f);
+            string t = ui.Fit(e.Text.ToUpperInvariant(), room);
+            // Dark enough that map names under the log do not show through it.
+            ui.Rect(new Rectangle(ui.U(10), y - ui.U(3), ui.TW(t, 1) + ui.U(10), ui.U(13)), Color.Black * 0.62f);
             ui.Text(t, ui.U(15), y, c, 1);
             y += ui.U(15);
         }
@@ -225,8 +226,10 @@ partial class MapScreen
         var r = new Rectangle(ui.U(10), ui.H - ui.U(146), ui.U(300), ui.U(136));
         ui.Panel(r);
         int x = r.X + ui.U(10), y = r.Y + ui.U(8);
-        ui.Text("CAPTAIN  " + C.Stage, x, y, Style.Accent);
-        ui.TextR($"RENOWN {cap.Renown:0}", r.Right - ui.U(10), y + ui.U(2), Style.Text, 1);
+        string renown = $"RENOWN {cap.Renown:0}", title = "CAPTAIN  " + C.Stage;
+        int room = r.Width - ui.U(28) - ui.TW(renown, 1), ts = ui.FitScale(title, room);
+        ui.Text(ui.Fit(title, room, ts), x, y + (ts == 1 ? ui.U(3) : 0), Style.Accent, ts);
+        ui.TextR(renown, r.Right - ui.U(10), y + ui.U(2), Style.Text, 1);
         // Renown is the campaign's score, so show the ladder: how far to the next thing it buys.
         var (unlock, at) = Rules.NextRenownUnlock(cap);
         y += ui.U(18);
@@ -241,15 +244,21 @@ partial class MapScreen
         ui.TextR($"{(bal >= 0 ? "+" : "")}{bal:0} / WEEK", r.Right - ui.U(10), y + ui.U(2), bal >= 0 ? Style.Ok : Style.Bad, 1);
         y += ui.U(18);
         string contract = cap.Contract >= 0 ? $"{C.Stage} OF THE {C.FactionNames[cap.Contract].ToUpperInvariant()}" : "FREE COMPANY (NO PAY)";
-        ui.Text(contract, x, y, cap.Contract >= 0 ? SideColor(cap.Contract) : Style.Dim, 1);
+        ui.TextFit(contract, x, y, r.Width - ui.U(20), cap.Contract >= 0 ? SideColor(cap.Contract) : Style.Dim, 1);
         y += ui.U(12);
         ui.Text($"MEN {C.Player.Men}+{C.Player.Wounded}W / {Rules.MenLimit(cap)}   COMPANIES {C.Player.Companies.Count}/{Rules.CompanySlots(cap)}", x, y, Style.Dim, 1);
         y += ui.U(12);
         ui.Text($"HORSES {C.Player.Horses}   FOOD {C.Player.Food:0} DAYS" + (C.PrisonerCount > 0 ? $"   PRISONERS {C.PrisonerCount}" : ""), x, y, C.Player.Food < 3 ? Style.Bad : Style.Dim, 1);
         y += ui.U(12);
         if (C.S.Hours < cap.WoundedUntil) ui.Text($"WOUNDED: {(cap.WoundedUntil - C.S.Hours) / 24:0.0} DAYS", x, y, Style.Bad, 1);
-        else if (C.Besieging is Settlement sg) ui.Text($"BESIEGING {sg.Name.ToUpperInvariant()} (B)", x, y, Style.Warn, 1);
-        else { var (text, _) = C.NextStep(); ui.Text(text, x, y, Style.Accent, 1); }
+        else if (C.Besieging is Settlement sg) ui.TextFit($"BESIEGING {sg.Name.ToUpperInvariant()} ({ctl.First(Act.SiegeScreen)})", x, y, r.Width - ui.U(20), Style.Warn, 1);
+        else
+        {
+            // The next step can be long: two lines, then cut.
+            var lines = ui.Wrap(C.NextStep().Text.ToUpperInvariant(), r.Width - ui.U(20));
+            for (int i = 0; i < Math.Min(2, lines.Count); i++)
+                ui.Text(i == 1 && lines.Count > 2 ? ui.Fit(lines[1] + " " + lines[2], r.Width - ui.U(20)) : lines[i], x, y + i * ui.U(10), Style.Accent, 1);
+        }
     }
 
     /// How much renown the last rung of the ladder covered, so the bar runs from there to the next unlock.
@@ -302,10 +311,57 @@ partial class MapScreen
         }
     }
 
+    /// The screens a mouse can reach, one button each above the captain card, with its key.
     void Hints()
     {
-        ui.Text("LMB MOVE / ENTER / CHASE   P PARTY   K SKILLS   L LORDS   R REALM   M MAP   SPACE PAUSE   1-3 SPEED", ui.U(12), ui.H - ui.U(160), Color.White * 0.6f, 1);
-        ui.Text("WASD PAN   Q/E TURN   WHEEL ZOOM   F FOLLOW   F5 SAVE  F9 LOAD   ESC MENU", ui.U(12), ui.H - ui.U(146), Color.White * 0.6f, 1);
+        var row = new (string Label, Act Key, PanelKind Panel)[]
+        {
+            ("COMPANY", Act.PartyScreen, PanelKind.Party), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("LORDS", Act.LordsScreen, PanelKind.Characters),
+            ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("KEYS", Act.Help, PanelKind.Help),
+        };
+        int x = ui.U(10), y = ui.H - ui.U(172), h = ui.U(20);
+        foreach (var (label, key, kind) in row)
+        {
+            string k = ctl.First(key);
+            int w = ui.TW(label, 1) + ui.TW(k, 1) + ui.U(20);
+            if (ui.Button(new Rectangle(x, y, w, h), label, true, k)) { if (kind == PanelKind.Help) panel = kind; else OpenScreen(kind); }
+            x += w + ui.U(4);
+        }
+    }
+
+    /// The map's keys (F1), laid out like the battle's controls.
+    void HelpPanel()
+    {
+        var r = Modal(860, 470, "CONTROLS");
+        string Pan() => $"{ctl.First(Act.Forward)}{ctl.First(Act.Left)}{ctl.First(Act.Back)}{ctl.First(Act.Right)}";
+        var cols = new (string Title, (string Label, string Key)[] Rows)[]
+        {
+            ("ON THE MAP", new (string, string)[]
+            {
+                ("MARCH / ENTER / CHASE", "LMB"), ("PAN", $"{Pan()} / SCREEN EDGES"), ("TURN", $"{ctl.First(Act.RotateLeft)} {ctl.First(Act.RotateRight)} / MMB DRAG"),
+                ("ZOOM", "WHEEL"), (Controls.Labels[Act.FollowParty], ctl.Name(Act.FollowParty)), ("PAUSE", ctl.Name(Act.Pause)),
+                ("SPEED X1 / X3 / X8", $"{ctl.First(Act.Speed1)} {ctl.First(Act.Speed2)} {ctl.First(Act.Speed3)}"), ("LOOK THERE", "CLICK THE MINIMAP"),
+            }),
+            ("SCREENS", new[] { Act.PartyScreen, Act.SkillsScreen, Act.LordsScreen, Act.RealmScreen, Act.DivisionsScreen, Act.AtlasScreen, Act.SiegeScreen }
+                .Select(a => (Controls.Labels[a].Replace(" (MAP)", ""), ctl.Name(a))).ToArray()),
+            ("THE GAME", new[] { Act.QuickSave, Act.QuickLoad, Act.Menu, Act.Help, Act.Graphics }
+                .Select(a => (Controls.Labels[a], ctl.Name(a))).Append(("DISMISS A TIP", "ENTER")).ToArray()),
+        };
+        int cw = (r.Width - ui.U(40)) / 3;
+        for (int i = 0; i < cols.Length; i++)
+        {
+            int x = r.X + ui.U(20) + i * cw, y = r.Y + ui.U(30);
+            ui.Text(cols[i].Title, x, y, Kit.Gilt);
+            y += ui.U(22);
+            foreach (var (label, key) in cols[i].Rows)
+            {
+                ui.Text(label, x, y, Style.Dim, 1);
+                ui.Text(key, x, y + ui.U(9), Style.Text, 1);
+                y += ui.U(24);
+            }
+        }
+        ui.TextC($"REBIND IN SETTINGS (MENU) OR {Controls.FileName.ToUpperInvariant()}", r.Center.X, r.Bottom - ui.U(56), Style.Dim, 1);
+        if (ui.Button(new Rectangle(r.Center.X - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.Help))) panel = PanelKind.None;
     }
 
     void Tooltip()

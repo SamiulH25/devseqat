@@ -18,6 +18,10 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
     public IReadOnlyList<(string Text, bool Met)> Goals { get; init; } = Array.Empty<(string, bool)>();
     /// Your named men in this battle (docs/LEGACY.md L3): the fallen and missing first, then the hurt, then new names.
     public IReadOnlyList<(string Kind, string Text)> Roll { get; init; } = Array.Empty<(string, string)>();
+    /// The battle's name ("Ashby Ford", L5), "" when it has none (a duel, the lists).
+    public string Field { get; init; } = "";
+    /// Banner honours this battle won, lost or won back (L5): HONOUR or LOST, and the line.
+    public IReadOnlyList<(string Kind, string Text)> Honours { get; init; } = Array.Empty<(string, string)>();
 }
 
 /// A battle about to be fought between map parties: the armies, options, and how its companies map back to campaign records.
@@ -28,6 +32,8 @@ public sealed class BattleSetup
     public BattleOptions Options = new();
     public readonly List<Party> Side0 = new(), Side1 = new();
     public string EnemyName = "";
+    /// The battle's name ("Ashby Ford", L5), for its opening line; "" for duels and the lists.
+    public string Field = "";
     /// An assault on this settlement (-1: a battle in the field).
     public int SiegeOf = -1;
     /// A tournament in this settlement (S5; -1: a real fight).

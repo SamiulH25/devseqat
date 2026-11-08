@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed partial class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -112,6 +112,7 @@ sealed partial class MapScreen
         if (panel == PanelKind.None)
         {
             if (ctl.Pressed(Act.Menu)) { panel = PanelKind.Menu; return; }
+            if (ctl.Pressed(Act.Help)) { panel = PanelKind.Help; return; }
             if (ctl.Pressed(Act.Pause)) speed = speed == 0 ? 1 : 0;
             if (ctl.Pressed(Act.Speed1)) speed = 1;
             if (ctl.Pressed(Act.Speed2)) speed = 3;
@@ -158,6 +159,7 @@ sealed partial class MapScreen
             if (C.SeasonIndex != season) { var keep = (focus, follow); Open(C); (focus, follow) = keep; C.Log($"{C.Season} comes."); }
             Trails();
         }
+        else if (panel == PanelKind.Help && (ctl.Pressed(Act.Help) || ctl.Pressed(Act.Menu))) panel = PanelKind.None;
         else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll)
             panel = panel is PanelKind.Upgrade or PanelKind.Roll ? PanelKind.Party : panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Siege ? PanelKind.None : CameFrom(panel);
         if (renaming != null) Rename();
@@ -323,7 +325,8 @@ sealed partial class MapScreen
         eye = f3 - look * zoom;
         eye.Y = MathF.Max(eye.Y, terrain.Height(new Vector2(eye.X, eye.Z)) + 2);
         // Pulled back for a big map, the camera must still see the ground under it: the far plane and fog follow the zoom.
-        proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45), gd.Viewport.AspectRatio, 0.5f, MathF.Max(1600, zoom * 3.2f));
+        // The near plane follows the zoom too: trees right by the camera are clipped rather than filling the screen.
+        proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45), gd.Viewport.AspectRatio, Math.Clamp(zoom * 0.35f, 0.5f, 40), MathF.Max(1600, zoom * 3.2f));
         view = Matrix.CreateLookAt(eye, f3, Vector3.Up);
         UpdateBearers();
         // Fog starts beyond the near ground in view, so a wide view is hazy at the horizon rather than cut off.

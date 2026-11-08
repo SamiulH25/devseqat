@@ -20,11 +20,13 @@ partial class MapScreen
     {
         var r = Modal(1000, 600, "LORDS AND COMPANIONS");
         int realms = C.S.Factions.Count;
-        int tw = ui.U(200), tx = r.X + (r.Width - (realms + 1) * (tw + ui.U(6))) / 2;
+        // One tab per realm and the household, all inside the panel: a long name shows its last word ("EMIRATES").
+        int tw = Math.Min(ui.U(200), (r.Width - ui.U(40) - realms * ui.U(4)) / (realms + 1)), tx = r.X + (r.Width - (realms + 1) * (tw + ui.U(4)) + ui.U(4)) / 2;
         for (int i = 0; i <= realms; i++)
         {
             string label = i < realms ? C.FactionNames[i].ToUpperInvariant() : "YOUR HOUSEHOLD";
-            if (ui.Button(new Rectangle(tx + i * (tw + ui.U(6)), r.Y + ui.U(46), tw, ui.U(24)), label, true, "", charTab == i)) { charTab = i; note = ""; }
+            if (ui.TW(label, 1) > tw - ui.U(8)) label = ui.Fit(label.Split(' ').Last(), tw - ui.U(8));
+            if (ui.Button(new Rectangle(tx + i * (tw + ui.U(4)), r.Y + ui.U(46), tw, ui.U(24)), label, true, "", charTab == i)) { charTab = i; note = ""; }
         }
         int x = r.X + ui.U(24), y = r.Y + ui.U(82), colW = (r.Width - ui.U(60)) / 2, rowH = ui.U(38);
         var list = charTab < realms

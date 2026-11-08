@@ -61,7 +61,11 @@ sealed class Ui
     public void Dim(float a = 0.5f) { Rect(new Rectangle(0, 0, W, H), Color.Black * a); Block(new Rectangle(0, 0, W, H)); }
 
     /// Text at whole-pixel positions (a half-pixel offset makes the point-sampled glyphs lose rows).
-    public void Text(string s, float x, float y, Color c, int scale = 2) => font.Draw(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale * S);
+    public void Text(string s, float x, float y, Color c, int scale = 2)
+    {
+        Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
+        font.Draw(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale * S);
+    }
     public int TW(string s, int scale = 2) => PixelFont.Width(s, scale * S);
     public void TextC(string s, float cx, float y, Color c, int scale = 2) => Text(s, cx - TW(s, scale) / 2f, y, c, scale);
     public void TextR(string s, float rx, float y, Color c, int scale = 2) => Text(s, rx - TW(s, scale), y, c, scale);
@@ -92,6 +96,7 @@ sealed class Ui
     public bool Button(Rectangle r, string label, bool enabled = true, string note = "", bool active = false)
     {
         bool hover = enabled && Hover(r);
+        Overflow.Box(r);
         if (r.Height >= U(18)) Rect(new Rectangle(r.X + U(1), r.Y + U(2), r.Width, r.Height), Color.Black * 0.35f);
         var (top, bottom) = active ? (Kit.Mul(Kit.Gilt, 0.5f), Kit.Mul(Kit.Gilt, 0.22f)) : hover ? (Kit.Mul(Kit.Gilt, 0.4f), Kit.Mul(Kit.Gilt, 0.15f))
             : enabled ? (new Color(46, 44, 46), new Color(24, 24, 28)) : (new Color(30, 30, 34), new Color(20, 20, 24));

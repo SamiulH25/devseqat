@@ -132,25 +132,26 @@ partial class MapScreen
     void RealmCard(int f, Rectangle box)
     {
         var hd = Style.Sides[Style.PaletteOf(f)];
-        var c = ui.Plate(box, null, hd.Ui);
+        // Seven cards share the width: a thin inner margin, so names and lines have room.
+        ui.PlateBody(box, hd.Ui);
+        var c = new Rectangle(box.X + ui.U(7), box.Y + ui.U(12), box.Width - ui.U(14), box.Height - ui.U(19));
         int sh = Math.Min(ui.U(64), c.Height / 4);
         ui.Shield(new Rectangle(c.Center.X - (int)(sh / 1.2f) / 2, c.Y - ui.U(4), (int)(sh / 1.2f), sh), hd);
         int y = c.Y + sh + ui.U(2);
         string name = C.FactionNames[f].ToUpperInvariant();
-        ui.TextC(name, c.Center.X, y, Style.Text, ui.TW(name, 2) <= c.Width ? 2 : 1); y += ui.U(18);
-        var cult = Factions.Culture(Factions.CultureOf(f));
-        string text = (cult?.Text ?? "").ToUpperInvariant();
-        // Long culture lines wrap once at a comma, then shorten.
-        string second = "";
-        int cut = text.IndexOf(", ");
-        if (ui.TW(text, 1) > c.Width && cut > 0) { second = text[(cut + 2)..]; text = text[..(cut + 1)]; }
-        foreach (var line in second == "" ? new[] { text } : new[] { text, second })
+        if (ui.TW(name, 2) <= c.Width) { ui.TextC(name, c.Center.X, y, Style.Text, 2); y += ui.U(18); }
+        else
         {
-            string l = line;
-            while (l.Length > 4 && ui.TW(l, 1) > c.Width) l = l[..^2];
-            ui.TextC(l, c.Center.X, y, Style.Dim, 1); y += ui.U(second == "" ? 14 : 11);
+            // A long name ("Order of the Ashen Sun") goes on two small lines.
+            var nl = ui.Wrap(name, c.Width);
+            for (int i = 0; i < Math.Min(2, nl.Count); i++) { ui.TextFitC(i == 1 ? string.Join(" ", nl.Skip(1)) : nl[i], c.Center.X, y, c.Width, Style.Text, 1); y += ui.U(10); }
+            y += ui.U(4);
         }
-        if (second != "") y += ui.U(3);
+        var cult = Factions.Culture(Factions.CultureOf(f));
+        // The culture's line: up to two lines, then cut.
+        var cl = ui.Wrap((cult?.Text ?? "").ToUpperInvariant(), c.Width);
+        for (int i = 0; i < Math.Min(2, cl.Count); i++) { ui.TextFitC(i == 1 ? string.Join(" ", cl.Skip(1)) : cl[i], c.Center.X, y, c.Width, Style.Dim, 1); y += ui.U(10); }
+        y += ui.U(4);
         var (st, sc) = Stance(f);
         int chipW = ui.TW(st, 1) + ui.U(10);
         ui.Chip(c.Center.X - chipW / 2, y, st, sc); y += ui.U(20);
@@ -181,10 +182,8 @@ partial class MapScreen
         {
             var ruler = C.RulerOf(f);
             string rn = ruler == null ? "NONE" : ruler == C.Me ? "YOU" : ruler.Name.ToUpperInvariant();
-            int sp = rn.IndexOf(' ');
-            if (ui.TW(rn, 1) > c.Width - ui.U(56) && sp > 0) rn = rn[(sp + 1)..]; // drop the title before cutting the name
-            while (rn.Length > 4 && ui.TW(rn, 1) > c.Width - ui.U(56)) rn = rn[..^2];
-            ui.Text("RULED BY", c.X, y, Style.Dim, 1); ui.TextR(rn, c.Right, y, Style.Text, 1); y += ui.U(14);
+            if (ui.TW("RULED BY " + rn, 1) <= c.Width) { ui.Text("RULED BY", c.X, y, Style.Dim, 1); ui.TextR(rn, c.Right, y, Style.Text, 1); y += ui.U(14); }
+            else { ui.TextC("RULED BY", c.Center.X, y, Style.Dim, 1); ui.TextFitC(rn, c.Center.X, y + ui.U(10), c.Width, Style.Text, 1); y += ui.U(24); }
         }
         int ps = Math.Min((c.Width - ui.U(8)) / 3, c.Bottom - y);
         if (ps >= ui.U(30))
@@ -205,9 +204,9 @@ partial class MapScreen
     {
         int n = alive.Count;
         if (n == 0) return;
-        int label = ui.U(64), cell = Math.Min((m.Width - label) / n, (m.Height - ui.U(14)) / n);
+        int label = ui.U(66), cell = Math.Min((m.Width - label) / n, (m.Height - ui.U(14)) / n);
         int ox = m.X + label, oy = m.Y + ui.U(12);
-        string Short(int f) { var w = C.FactionNames[f].ToUpperInvariant().Split(' ').Last(); return w.Length > 8 ? w[..8] : w; }
+        string Short(int f) { var w = C.FactionNames[f].ToUpperInvariant().Split(' ').Last(); return w.Length > 10 ? w[..10] : w; }
         for (int i = 0; i < n; i++)
         {
             var col = Style.Sides[Style.PaletteOf(alive[i])].Ui;

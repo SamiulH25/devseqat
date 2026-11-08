@@ -558,7 +558,7 @@ public static partial class SelfTest
         var won = Fight(0, true, false);
         var co = c.Player.Companies.OrderByDescending(k => k.BattleHonours.Count).First();
         Check(co.BattleHonours.Count == 1 && co.Ledger[^1].Name == co.BattleHonours[0], "slaying their captain sews the battle's name on the banner");
-        Check(won.Roll.Any(x => x.Kind == "HONOUR"), "and the report says so");
+        Check(won.Honours.Any(x => x.Kind == "HONOUR") && won.Field != "", "and the report says so");
         Check(c.PrepareBattle(lord).Player.Companies.First(k => k.Id == co.Id).Streamers == 1, "the company's flag carries a streamer");
         Fight(0, false, false);
         Check(co.BattleHonours.Count == 1, "an ordinary win sews nothing");

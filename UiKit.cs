@@ -136,6 +136,7 @@ static class Kit
     public static void PlateBody(this Ui ui, Rectangle r, Color e, int thick = 1, float alpha = 1)
     {
         bool big = r.Width >= ui.U(80) && r.Height >= ui.U(48);
+        Overflow.Box(r);
         if (big) ui.Rect(new Rectangle(r.X + ui.U(3), r.Y + ui.U(4), r.Width, r.Height), Color.Black * 0.3f);
         ui.VGrad(r, Iron * alpha, IronDark * alpha, 3);
         ui.Frame(r, Color.Black * 0.7f, ui.U(1));
@@ -152,6 +153,28 @@ static class Kit
         }
         ui.Block(r);
     }
+
+    /// `s` cut to fit `width` pixels at `scale`: whole words first, then letters, ending "..". Unchanged when it fits.
+    public static string Fit(this Ui ui, string s, int width, int scale = 1)
+    {
+        if (ui.TW(s, scale) <= width) return s;
+        string cut = s;
+        while (cut.Length > 1 && ui.TW(cut + "..", scale) > width)
+        {
+            int sp = cut.LastIndexOf(' ');
+            cut = sp > cut.Length / 2 ? cut[..sp].TrimEnd(',', '.', ':', ' ') : cut[..^1];
+        }
+        return cut.TrimEnd() + "..";
+    }
+
+    /// The largest scale (2, then 1) at which `s` fits `width`, or 1 when neither does.
+    public static int FitScale(this Ui ui, string s, int width, int scale = 2) => scale > 1 && ui.TW(s, scale) > width ? 1 : scale;
+
+    /// Text cut to fit `width` (see Fit), left-aligned or centred.
+    public static void TextFit(this Ui ui, string s, float x, float y, int width, Color c, int scale = 1)
+        => ui.Text(ui.Fit(s, width, scale), x, y, c, scale);
+    public static void TextFitC(this Ui ui, string s, float cx, float y, int width, Color c, int scale = 1)
+        => ui.TextC(ui.Fit(s, width, scale), cx, y, c, scale);
 
     public static Rectangle Inset(Rectangle r, int d) => new(r.X + d, r.Y + d, r.Width - 2 * d, r.Height - 2 * d);
 

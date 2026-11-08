@@ -105,8 +105,9 @@ partial class MapScreen
             else ui.TextC($"NEXT AT {((int)(lv / Skills.Step) + 1) * (int)Skills.Step}", box.Center.X, ty, Style.Dim * 0.7f, 1);
 
             // The branch (P3): tier I-III perks two by two, the capstone centred below them.
-            int node = Math.Clamp((bh - (ty - box.Y) - ui.U(20)) / 3 - ui.U(14), ui.U(18), ui.U(38)), ic = node >= ui.U(32) ? 2 : 1;
-            int gx = Math.Max(ui.U(16), bw / 2 - node), gy = ui.U(14), nx0 = box.Center.X - node - gx / 2, ny0 = ty + ui.U(14);
+            // Room under each node for a name of two lines.
+            int node = Math.Clamp((bh - (ty - box.Y) - ui.U(20)) / 3 - ui.U(22), ui.U(18), ui.U(38)), ic = node >= ui.U(32) ? 2 : 1;
+            int gx = Math.Max(ui.U(16), bw / 2 - node), gy = ui.U(22), nx0 = box.Center.X - node - gx / 2, ny0 = ty + ui.U(14);
             for (int k = 0; k < sk.Perks.Count && k < 5; k++)
             {
                 var pk = sk.Perks[k];
@@ -121,8 +122,10 @@ partial class MapScreen
                 string icon = cap4 ? "crown" : SkillIcons.TryGetValue(sk.Id, out var si) ? si : "star";
                 ui.Icon(icon, nr.X + (node - ui.U(7 * ic)) / 2, nr.Y + (node - ui.U(7 * ic)) / 2, state == 2 ? Color.White : state == 1 ? Style.Text : Style.Dim * 0.4f, ic);
                 string label = pk.Name.ToUpperInvariant();
-                int fit = (node + gx) / (6 * ui.S) - 1;
-                ui.TextC(label.Length > fit ? label[..fit] : label, nr.Center.X, nr.Bottom + ui.U(3), state == 0 ? Style.Dim * 0.5f : state == 2 ? Kit.Gilt : Style.Text, 1);
+                var shown = ui.Wrap(label, node + gx - ui.U(4));
+                for (int li = 0; li < Math.Min(2, shown.Count); li++)
+                    ui.TextFitC(li == 1 && shown.Count > 2 ? string.Join(" ", shown.Skip(1)) : shown[li], nr.Center.X, nr.Bottom + ui.U(3 + 9 * li), node + gx - ui.U(4),
+                        state == 0 ? Style.Dim * 0.5f : state == 2 ? Kit.Gilt : Style.Text, 1);
                 if (hover) tip = (nr, pk, sk, state);
                 if (state == 1 && ui.Clicked(nr)) { note = C.TakePerk(pk.Id) ?? $"{label} LEARNED"; Ui.OnClick?.Invoke(); }
                 // A taken perk can be forgotten in a town: the first click asks, the second pays.

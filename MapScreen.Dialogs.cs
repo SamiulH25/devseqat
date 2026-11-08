@@ -12,7 +12,7 @@ partial class MapScreen
         var e = C.Encounter!;
         if (C.Meeting(e)) { MeetingPanel(e); return; }
         bool lord = e.Kind == PartyKind.Lord;
-        var r = Modal(lord ? 780 : 680, 380, "ENCOUNTER", Style.Foe);
+        var r = Modal(lord ? 780 : 680, 440, "ENCOUNTER", Style.Foe);
         int x = r.X + ui.U(24), y = r.Y + ui.U(52);
         ui.Text(e.Name.ToUpperInvariant(), x, y, PartyColor(e));
         ui.Text(Allegiance(e), x, y + ui.U(20), Style.Dim, 1);
@@ -36,6 +36,7 @@ partial class MapScreen
             x += ui.U(190);
             if (x > r.Right - ui.U(180)) { x = r.X + ui.U(24); y += ui.U(36); }
         }
+        EncounterOwnSide(r, x == r.X + ui.U(24) ? y : y + ui.U(36), me, them);
         Note(r);
         int n = lord ? 5 : 4, bw = ui.U(lord ? 140 : 156), by = r.Bottom - ui.U(40), bx = r.X + (r.Width - n * bw - (n - 1) * ui.U(8)) / 2;
         bool fit = C.Player.Men > 0;
@@ -56,6 +57,33 @@ partial class MapScreen
         string? cant = C.CannotChallenge(e);
         if (ui.Button(duel, "CHALLENGE", cant == null)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareDuel(e)); }
         if (ui.Hover(duel)) note = cant ?? "MEET HIS LORD IN SINGLE COMBAT. WIN AND HIS MEN START THE BATTLE SHAKEN.";
+    }
+
+    /// Under the enemy's companies: the odds in words, the field's name, and your own companies, so the choice is made
+    /// with both sides in view.
+    void EncounterOwnSide(Rectangle r, int y, float me, float them)
+    {
+        int x = r.X + ui.U(24), w = r.Width - ui.U(48), bottom = r.Bottom - ui.U(62);
+        if (y + ui.U(30) > bottom) return;
+        ui.Rect(new Rectangle(x, y, w, ui.U(1)), Color.White * 0.08f);
+        y += ui.U(8);
+        float odds = me / MathF.Max(1, them);
+        string word = odds >= 2 ? "THEY ARE FAR WEAKER" : odds >= 1.25f ? "YOU HAVE THE EDGE" : odds >= 0.8f ? "AN EVEN FIGHT" : odds >= 0.5f ? "THEY HAVE THE EDGE" : "THEY ARE FAR STRONGER";
+        ui.Text($"ODDS: {word}", x, y, odds >= 1.25f ? Style.Ok : odds >= 0.8f ? Style.Warn : Style.Bad, 1);
+        ui.TextR($"THE FIELD: {C.BattleName(C.Player.Pos).ToUpperInvariant()}", x + w, y, Style.Dim, 1);
+        y += ui.U(16);
+        if (y + ui.U(30) > bottom) return;
+        ui.Text("YOUR COMPANY", x, y, Style.Friendly, 1);
+        y += ui.U(12);
+        foreach (var c in C.Player.Companies.Where(c => c.Men > 0))
+        {
+            if (y + ui.U(30) > bottom) break;
+            ui.Portrait(c.Type, new Rectangle(x, y, ui.U(32), ui.U(30)));
+            ui.TextFit(c.Name.ToUpperInvariant(), x + ui.U(40), y + ui.U(4), ui.U(146), Style.Text, 1);
+            ui.Text($"{c.Men} MEN" + (c.Wounded > 0 ? $" +{c.Wounded}W" : ""), x + ui.U(40), y + ui.U(16), Style.Dim, 1);
+            x += ui.U(190);
+            if (x > r.Right - ui.U(180)) { x = r.X + ui.U(24); y += ui.U(36); }
+        }
     }
 
     /// Travellers on the road who are not your enemy (S4): buy from them, give alms, ask for news, rob them, or ride on.

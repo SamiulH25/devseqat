@@ -179,6 +179,7 @@ sealed class ScreenHost : Game
 
     protected override void Draw(GameTime gameTime)
     {
+        Overflow.Frame(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
         switch (mode)
         {
             case Mode.Title: title.Draw(); break;
@@ -218,6 +219,7 @@ sealed class ScreenHost : Game
         Directory.CreateDirectory(dir);
         using var file = File.Create(Path.Combine(dir, name + ".png"));
         tex.SaveAsPng(file, w, h);
+        Overflow.Flush(dir, name);
         pendingShot = null;
         battle.PendingShot = null;
         lab.PendingShot = null;

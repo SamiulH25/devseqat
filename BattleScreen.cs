@@ -136,7 +136,7 @@ sealed partial class BattleScreen
             return;
         }
         StartDeployment();
-        battle.Log($"Battle against {s.EnemyName}: {s.Options.Ground?.Name.ToLowerInvariant() ?? "open"} ground, {s.Options.Weather.Describe}.");
+        battle.Log((s.Field != "" ? $"The battle of {s.Field}, against {s.EnemyName}" : $"Battle against {s.EnemyName}") + $": {s.Options.Ground?.Name.ToLowerInvariant() ?? "open"} ground, {s.Options.Weather.Describe}.");
         if (!s.Options.Scouted) battle.Log("No scouts: you cannot see their ranks until the fight starts.");
     }
 

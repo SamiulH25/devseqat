@@ -137,7 +137,8 @@ sealed partial class Hud
 
     void Help()
     {
-        var r = new Rectangle(W / 2 - U(420), H / 2 - U(250), U(840), U(500));
+        int oh = Math.Min(U(560), H - U(24));
+        var r = new Rectangle(W / 2 - U(420), (H - oh) / 2, U(840), oh);
         Overlay(r, "CONTROLS", Gold);
         var cols = new (string Title, (string Label, string Key)[] Rows)[]
         {
@@ -159,7 +160,9 @@ sealed partial class Hud
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Prepend(("SELECT SQUAD", "1-0")).ToArray()),
         };
-        int cw = (r.Width - U(40)) / 3;
+        int cw = (r.Width - U(40)) / 3, most = cols.Max(c => c.Rows.Length);
+        // Rows close up so the longest column always fits above the footer line.
+        int step = Math.Clamp((r.Height - U(56) - U(24) - U(32)) / Math.Max(1, most), U(19), U(24));
         for (int i = 0; i < cols.Length; i++)
         {
             int x = r.X + U(20) + i * cw, y = r.Y + U(56);
@@ -169,7 +172,7 @@ sealed partial class Hud
             {
                 Text(label, x, y, Dim, 1);
                 Text(key, x, y + U(9), Color.White, 1);
-                y += U(24);
+                y += step;
             }
         }
         TextC($"REBIND IN {Controls.FileName.ToUpperInvariant()}  (RUN WITH --WRITE-CONTROLS FOR A TEMPLATE)    {Ctl.Name(Act.Help)} / {Ctl.Name(Act.Menu)} CLOSE",

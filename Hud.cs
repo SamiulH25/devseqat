@@ -139,7 +139,11 @@ sealed partial class Hud
     void Bar(Rectangle r, float frac, Color c) => kit.Bar(r, frac, c);
 
     // Text scales: 1 = small, 2 = normal, 4 = big (all times Ui).
-    void Text(string s, float x, float y, Color c, int scale = 2) => font.Draw(sb, s, new Vector2(x, y), c, scale * Ui);
+    void Text(string s, float x, float y, Color c, int scale = 2)
+    {
+        Overflow.Text(s, x, y, TW(s, scale));
+        font.Draw(sb, s, new Vector2(x, y), c, scale * Ui);
+    }
     int TW(string s, int scale = 2) => PixelFont.Width(s, scale * Ui);
     void TextC(string s, float cx, float y, Color c, int scale = 2) => Text(s, cx - TW(s, scale) / 2f, y, c, scale);
     void TextR(string s, float rx, float y, Color c, int scale = 2) => Text(s, rx - TW(s, scale), y, c, scale);
@@ -282,7 +286,7 @@ sealed partial class Hud
                 : (Color.White, "scroll");
             // Keep clear of the balance bar in the middle.
             int room = (W - U(472)) / 2 - U(40);
-            if (TW(up, 1) > room) { int fit = Math.Max(4, room / U(6)); up = up[..Math.Min(up.Length, fit)]; }
+            up = kit.Fit(up, room);
             kit.Toast(U(10), y, up, c, icon, alpha);
             y += U(21);
         }
@@ -408,9 +412,10 @@ sealed partial class Hud
                 TextR(s.Formation switch { Formation.ShieldWall => "WALL", Formation.Square => "SQUARE", Formation.Wedge => "WEDGE", _ => "LOOSE" }, r.Right - U(4), r.Y + U(14), Dim, 1);
             if (!s.FireAtWill) TextR("HOLD", r.Right - U(4), r.Y + U(23), Warn, 1);
 
+            // The troop's name by measured width; too long, its last word ("YEOMAN ARCHERS" -> "ARCHERS"), then cut.
             string nm = s.Name.ToUpperInvariant();
-            int fits = Math.Max(3, (r.Width - U(4)) / U(6));
-            TextC(nm.Length > fits ? nm[..fits] : nm, r.X + r.Width / 2f, r.Y + U(52), Dim, 1);
+            if (TW(nm, 1) > r.Width - U(2)) nm = kit.Fit(nm.Split(' ').Last(), r.Width - U(2));
+            TextC(nm, r.X + r.Width / 2f, r.Y + U(52), Dim, 1);
             TextC($"{active}/{s.StartCount}", r.X + r.Width / 2f, r.Y + U(61), Color.White);
             kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(76), r.Width - U(8), U(6)), active / (float)Math.Max(1, s.StartCount), cloth.Ui);
             kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(84), r.Width - U(8), U(6)), morale / 100f, MoraleColor(morale));
@@ -565,7 +570,10 @@ sealed partial class Hud
             ? $"{Ctl.Name(Act.Help)} CONTROLS   {Ctl.Name(Act.Pause)} PAUSE   {Ctl.Name(Act.CommandView)} {(B.Player.Active ? "BACK TO BODY" : "")}"
             : $"{Ctl.Name(Act.Help)} CONTROLS   {Ctl.Name(Act.OrderWheel)} ORDERS   {Ctl.Name(Act.CommandView)} COMMAND   {Ctl.Name(Act.Menu)} MENU";
         int y = Command && buttons.Count > 0 ? buttons[0].R.Y - U(40) : H - U(18);
-        TextR(s.Trim(), W - U(12), y, Color.White * 0.6f, 1);
+        // Keep off the company cards: if the line would run into them, it sits just above them.
+        s = s.Trim();
+        if (cards.Count > 0 && !(Command && buttons.Count > 0) && W - U(12) - TW(s, 1) < cards[^1].R.Right + U(14)) y = cards[^1].R.Y - U(26);
+        TextR(s, W - U(12), y, Color.White * 0.6f, 1);
     }
 
     void Banners()
