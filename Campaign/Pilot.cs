@@ -16,7 +16,11 @@ public sealed class Pilot
     public readonly Dictionary<string, int> StageDay = new();
     float nextThink;
 
-    public Pilot(Campaign campaign) { c = campaign; StageDay[c.Stage] = c.Day; }
+    public Pilot(Campaign campaign)
+    {
+        c = campaign; StageDay[c.Stage] = c.Day;
+        if (c.S.Hours < 1 && c.Captain.Kit.Horse == "courser") c.ChooseRoad("lance"); // the road (P5): a horse keeps the captain alive
+    }
 
     Party Me => c.Player;
     Balance B => Balance.Get();
@@ -97,7 +101,7 @@ public sealed class Pilot
             // Only work it can win: brigands or a lord clearly weaker than the company, not too far away.
             if (c.Captain.Contract >= 0 && c.Captain.Contract == s.Faction && c.S.Contracts.Count < 2)
                 foreach (var o in c.Offers(s).Where(o => o.Kind == "clear" && c.PartyById(o.Target) is Party t
-                             && Rules.Strength(t) * 1.5f < Rules.Strength(Me) && Vector2.Distance(t.Pos, Me.Pos) < 100).Take(1).ToList()) c.Accept(s, o);
+                             && Rules.Strength(t) * 1.5f < Rules.Strength(Me) && Vector2.Distance(t.Pos, Me.Pos) < 150).Take(1).ToList()) c.Accept(s, o);
         }
         if (Me.Wounded > Me.Men / 3 && s.Kind != SettlementKind.Village) c.Rest(24);
         Kit(s);
@@ -145,6 +149,10 @@ public sealed class Pilot
         foreach (var sk in Skills.All)
             foreach (var pk in sk.Perks)
                 if (Skills.Picks(c.Captain, sk.Id) > 0 && !c.Has(pk.Id)) c.TakePerk(pk.Id);
+        // A rank's free choice (P5) goes to the first perk anywhere that is open to it.
+        foreach (var sk in Skills.All)
+            foreach (var pk in sk.Perks)
+                if (c.Captain.FreePerks > 0 && Skills.Locked(c.Captain, sk, pk) == null) c.TakePerk(pk.Id);
     }
 
     void Think()
@@ -190,7 +198,7 @@ public sealed class Pilot
         }
         // A contract target we outmatch, then any hostile party we clearly outmatch.
         var prey = S(c.S.Contracts.Where(k => k.Kind is "clear" or "hunt").Select(k => c.PartyById(k.Target)))
-            .Concat(c.S.Parties.Where(p => Vector2.Distance(p.Pos, Me.Pos) < B.Vision * 2))
+            .Concat(c.S.Parties.Where(p => Vector2.Distance(p.Pos, Me.Pos) < B.Vision * 3)) // a player rides out after work
             .Where(p => p != Me && !p.Down && c.Hostile(Me, p) && Rules.Strength(p) * 1.3f < mine)
             .OrderBy(p => Vector2.Distance(p.Pos, Me.Pos)).FirstOrDefault();
         if (prey != null) { c.Chase(prey); return; }

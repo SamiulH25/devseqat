@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1-P7 built; P8 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1-P8 built** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -332,3 +332,9 @@ Give the captain something to do in each fight beyond "win".
   rises, lasting wounds, traits and title were drawn as each step was built (P3-P6). Simplifications: no separate paper
   doll tab (the armourer's slot tabs show what you wear) and no new UI lab pages (the real screens are in the campaign
   and battle shots).
+- P8 (the stand-in captain and pacing): the pilot takes the lance road at the start (a warhorse keeps it alive), spends a
+  rank's free perk on the first perk open to it, and looks a little further for work (prey within three times its sight,
+  contracts within 150). The Coward fix from P4 (only retreats from weaker foes count) stands. `--pacing 8`: 7 of 8
+  reach Vassal (days 37-206; four inside or near the 40-67 target), 6 reach Marshal (days 162-274). The miss (seed 3)
+  is a quiet world: 19 battles in 281 days, renown 82. No balance values changed: the pilot auto-resolves every fight, so
+  it never earns the battle goals' renown a player does, and a player is already faster than this.

@@ -184,8 +184,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Monsters.cs (299 lines)
 - **Campaign** (class, L10): Wild:17, Plural:23, SpawnWolfPack:30, WolfThink:53, SpawnTroll:84, TrollThink:108, SpawnHoldout:133, MonstersDaily:156, Grow:173, Recruit:189, SendRaiders:198, MonsterThink:224, Plunder:269, Rejoin:281, HoldoutCleared:291
 
-## Campaign/Pilot.cs (227 lines)
-- **Pilot** (class, L8): Pilot:19, Run:25, Fight:45, Refuge:71, Visit:81, Kit:109, Worn:117, Worth:118, Fresh:122, Promote:132, TakePerks:143, Think:150, Siege:205, S:226
+## Campaign/Pilot.cs (235 lines)
+- **Pilot** (class, L8): Pilot:19, Run:29, Fight:49, Refuge:75, Visit:85, Kit:113, Worn:121, Worth:122, Fresh:126, Promote:136, TakePerks:147, Think:158, Siege:213, S:234
 
 ## Campaign/Quests.cs (127 lines)
 - **Campaign** (class, L7): ElderOffers:13, RefreshElders:21, MoreTownOffers:44, SetUp:57, QuestDone:68, QuestLost:80, QuestStepDone:88, EscortArrived:105, SiteQuests:112, RelicQuest:118
