@@ -167,6 +167,7 @@ sealed partial class Hud
         SampleStrength();
         sb.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.AlphaBlend);
         SergeantPennants();
+        NamedMarks();
         BannerMark();
         if (Command) Banners();
         Balance();

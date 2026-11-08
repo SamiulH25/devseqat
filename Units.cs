@@ -114,6 +114,11 @@ public sealed class Unit
     public bool Hero;
     /// Leads a division (drawn with a pennant; his fall leaves the division without orders for a while).
     public bool Sergeant;
+    /// A named man of his company (docs/LEGACY.md L2): his Soldier id, 0 for the rest.
+    public int SoldierId;
+    /// Enemies he has killed this battle, and whether one was a captain or a hero.
+    public int Kills;
+    public bool FelledLeader;
     public Vector2 Pos, Vel, Wish, Slot;
     public float Facing, ViewFacing; // radians on the ground plane; ViewFacing is the eased value the renderer draws
     public float Hp, Morale = 70, Stamina = 100, EnemyDist = float.MaxValue;

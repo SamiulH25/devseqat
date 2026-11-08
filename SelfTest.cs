@@ -70,6 +70,7 @@ public static partial class SelfTest
         CampaignWar();
         RefuseOldSave();
         Stacks();
+        RollEarnsNames();
         Cultures();
         Characters();
         CampaignDivisions();
@@ -93,6 +94,8 @@ public static partial class SelfTest
         WarAndPeace();
         EventsAndQuests();
         StackBattle();
+        NamedMenFight();
+        AutoResolveNamedMen();
         ReplayExact();
         ScaleBattle();
         DivisionGoals();

@@ -3,6 +3,14 @@
 This document is the reference for how everything in Ironfield looks, reads and behaves, from a footman's sleeve to the
 campaign map. The tokens it names live in code in `Style.cs`. When this document and the code disagree, fix one of them.
 
+## 0. The player fantasy
+
+> **You lead a free company in person. Every man you lose was someone you knew, and every honour on the banner is one
+> you earned.**
+
+This is the one main fantasy, and everything below serves it (the plan is `docs/LEGACY.md`). The test for a feature: does it
+make the player care more about *their* men, or let them see what they have built? Work that passes comes first.
+
 ## 1. Pillars
 
 1. **Read the battle at a glance.** Side, troop type and state must be readable from the command camera at 60 m.

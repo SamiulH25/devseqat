@@ -138,6 +138,27 @@ sealed partial class Hud
         }
     }
 
+    /// Your named men (docs/LEGACY.md L2): a small gold mark over each within 25 m of you (any distance in command view), and
+    /// his name when he is close (10 m) or under the cursor.
+    void NamedMarks()
+    {
+        var vp = new Viewport(0, 0, W, H);
+        foreach (var u in B.Units)
+        {
+            if (u.SoldierId == 0 || u.Team != 0 || !u.Active) continue;
+            float d = Vector2.Distance(u.Pos, B.Player.Pos);
+            if (!Command && d > 25) continue;
+            var v = vp.Project(new Vector3(u.Pos.X, B.Terrain.Height(u.Pos) + (u.Mounted ? 3.2f : 2.2f), u.Pos.Y), Proj, View, Matrix.Identity);
+            if (v.Z is <= 0 or >= 1) continue;
+            int x = (int)v.X, y = (int)v.Y, s = Command ? U(1) : Math.Clamp((int)(U(1) * 20 / MathF.Max(6, d)), 1, U(2));
+            Rect(new Rectangle(x - s, y - 3 * s, 2 * s, 2 * s), Color.Black * 0.6f);
+            Rect(new Rectangle(x - s, y - 4 * s, 2 * s, 2 * s), Gold);
+            bool hover = Command && Math.Abs(Mouse.X - x) < U(8) && Math.Abs(Mouse.Y - y) < U(12);
+            if ((!Command && d < 10 || hover) && u.Squad?.Company?.Named?.FirstOrDefault(m => m.Id == u.SoldierId) is NamedSpec m)
+                TextC(m.Name.ToUpperInvariant(), x, y - 4 * s - U(10), u.Routing ? Dim : Gold, 1);
+        }
+    }
+
     /// Your banner (P6): a tall gold pennant over its bearer, or a fallen grey one on the ground where it lies.
     void BannerMark()
     {

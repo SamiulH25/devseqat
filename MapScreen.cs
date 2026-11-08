@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed partial class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -158,8 +158,8 @@ sealed partial class MapScreen
             if (C.SeasonIndex != season) { var keep = (focus, follow); Open(C); (focus, follow) = keep; C.Log($"{C.Season} comes."); }
             Trails();
         }
-        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas)
-            panel = panel is PanelKind.Upgrade or PanelKind.Divisions ? PanelKind.Party : PanelKind.None;
+        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll)
+            panel = panel is PanelKind.Upgrade or PanelKind.Divisions or PanelKind.Roll ? PanelKind.Party : PanelKind.None;
         if (renaming != null) Rename();
         else Ui.Typed.Clear();
         if (panel == PanelKind.None && Pressed(Keys.L)) { panel = PanelKind.Characters; note = ""; }

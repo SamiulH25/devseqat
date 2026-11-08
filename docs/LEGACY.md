@@ -1,6 +1,6 @@
 # The company is the legacy: plan
 
-Status: **plan, nothing built yet.** Each phase L0-L8 can ship on its own, and `tools/check.sh` must pass after each one.
+Status: **L0-L2 built** (see "As built"). Each phase L0-L8 can ship on its own, and `tools/check.sh` must pass after each one.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 
 ## 1. The fantasy
@@ -168,4 +168,22 @@ only. (c) Save growth: Fallen is never trimmed but is one short line a man, so c
 
 ## As built
 
-(nothing yet)
+- **L0:** the pitch and test are `docs/DESIGN.md` section 0 and a line at the top of the README's campaign section.
+- **L1:** `Campaign/Roll.cs`. Only your own companies keep a roll (AI parties do not). A man's name is a first name of the
+  company's culture (`men` per culture in `Data/names.json`) and an epithet, or "of" the company's home. The roll draws on
+  its own stream (`CampaignState.RollRng`) and ids (`NextSoldier`), so the campaign's main draws and ids are unchanged.
+  In every battle, fought or auto-resolved, each fit named man shares his stack's odds (killed and lost scaled by
+  `VeteranSurvival`), until L2 gives fought battles real fates. Deeds come from what the company did (wall taken, horse
+  killed, bloodied, came home from a loss, front rank), not yet from the man himself (L2). "First of the company made X"
+  names a man on a promotion to a new top tier. `SyncRoll` (after each battle and daily) keeps the roll true to its stacks:
+  surplus hurt men heal, and surplus fit men (desertion, hunger) leave for the fallen as "left". Merged companies keep
+  every name even past the cap. A disbanded company's roll goes with it.
+- **L2:** `Rules.Army` hands each company's fit named men to the battle (`Company.Named`, `NamedSpec`); `Battle.AddSquad`
+  marks the first unit of each one's troop (`Unit.SoldierId`), so he stands in its front rank. Every unit now counts its own
+  `Kills` and `FelledLeader` (in `Battle.Kill`). `Battle.Result` returns `CompanyResult.Named` (each man's kills, fell,
+  fled) and the best unnamed man (`BestKills`, `BestTroop`). `Campaign.RollFought` applies them: one who fell is wounded,
+  not killed, more often than his stack (killed odds times `VeteranSurvival`), and may be taken on a lost field; one who
+  fled from a lost field may be missing. 5+ kills or a captain cut down is a deed. The company's best man earns a name for
+  4+ kills or a captain. Auto-resolve hands back no `Named`, so the L1 shared odds apply. The HUD (`Hud.NamedMarks`) puts
+  a small gold mark over named men within 25 m (all of them in command view) and shows the name within 10 m or under the
+  cursor. Tests: `NamedMenFight` (placing, fates, kills, replay), `AutoResolveNamedMen`.

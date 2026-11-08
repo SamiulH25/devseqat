@@ -37,6 +37,9 @@ Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, 
 
 ## The campaign
 
+**The heart of it:** you lead a free company in person. Every man you lose was someone you knew, and every honour on the
+banner is one you earned (`docs/LEGACY.md`).
+
 You are a free captain sworn to the Azure Crown in the west. It is at war with the Northmarch clans of the cold north, its long
 border; the Crimson Compact in the east fights the Khaganate of the Grass, horse archers from the eastern steppe. The Sunward
 Emirates hold the dry south, the Saltmarsh League the fens and canals of the south-west, and the knight-brothers of the Order of the
@@ -59,6 +62,10 @@ mountain ridges you cross by road at the passes.
   1, 5 or every ready man into any branch. A man promoted out of the company's role joins a company of his new role, or founds one.
   A mixed company fights as one squad. Companies keep an origin, a banner, a ledger of their last fights and up to three **honours**
   (Unbroken, Horse-breakers, Old Hands, Stormers, Bloodied) that change how they fight. Saves from before this (version 3 and older) are refused.
+- **The roll:** each of your companies keeps up to six **named men** (ROLL on its card in the party screen). A new company names
+  its first man, and men earn names in battle (first over a wall, a horseman brought down, standing when half the company fell).
+  A named man is one of the men of his stack: he shares its losses (a little less often killed), is promoted before the others, and goes
+  where his men go. Those lost are kept for ever under THE FALLEN.
 - **Cultures:** every troop is of one of the seven cultures or common (`Data/troops.json`), and each realm has a culture (`Data/factions.json`).
   A village raises its own culture's men whoever holds it (clansmen in the north, levies in the south), and they form companies of their own
   people. Men train into common troops or their own culture's lines only, and a culture's elite lines (tier V and up) need one of its towns

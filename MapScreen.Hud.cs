@@ -41,6 +41,7 @@ partial class MapScreen
             case PanelKind.Settlement: SettlementPanel(); break;
             case PanelKind.Party: PartyPanel(); break;
             case PanelKind.Upgrade: UpgradePanel(); break;
+            case PanelKind.Roll: RollPanel(); break;
             case PanelKind.Results: ResultsPanel(); break;
             case PanelKind.Menu: MenuPanel(); break;
             case PanelKind.GameOver: GameOverPanel(); break;

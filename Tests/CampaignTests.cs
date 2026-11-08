@@ -378,6 +378,76 @@ public static partial class SelfTest
         finally { Environment.SetEnvironmentVariable("IRONFIELD_SAVES", was); Directory.Delete(dir, true); }
     }
 
+    /// The roll (docs/LEGACY.md L1): each company names a first man, names fit its culture, battles add names up to the cap, the
+    /// roll always fits its stacks, a named man is promoted first, naming draws nothing from the main stream, old saves load.
+    static void RollEarnsNames()
+    {
+        var c = Campaign.New(37);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        Check(c.Player.Companies.All(k => k.RollStarted && k.Roll.Count >= 1), "every company names its first man on the first day");
+        var names = Names.Get();
+        foreach (var k in c.Player.Companies)
+            foreach (var m in k.Roll)
+                Check(names.MenOf(k.Culture).Any(f => m.Name.StartsWith(f + " ")), $"a name fits the company's culture ({m.Name}, {k.Culture})");
+        ulong main = c.S.Rng;
+        var first = c.Player.Companies[0];
+        first.Roll.Clear();
+        Check(c.NameMan(first, "test") != null && c.S.Rng == main, "naming a man draws nothing from the campaign's main stream");
+        // Fight brigands (won), and the roll fills by deeds, never past the cap and always true to its stacks.
+        var rng = new Rng(new CampaignState { Seed = 9 });
+        int named0 = c.Player.Companies.Sum(k => k.Roll.Count), cap = Balance.Get().RollSize;
+        for (int i = 0; i < 30; i++)
+        {
+            var bandit = c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Bandit && !p.Down);
+            if (bandit == null) break;
+            bandit.Pos = c.Player.Pos;
+            c.Encounter = bandit;
+            var setup = c.PrepareBattle(bandit);
+            var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng);
+            c.FinishBattle(r with { Winner = i % 4 == 3 ? 1 : 0, Captain = LeaderFate.Unhurt }, setup);
+            c.Captain.WoundedUntil = 0; c.Encounter = null; c.Player.Food = 20;
+            if (c.Player.Companies.Sum(k => k.Men) < 30) foreach (var k in c.Player.Companies) Rules.AddMen(k, k.Stacks[0].Troop, 20);
+            c.Tick(24); c.Encounter = null; c.Arrived = null;
+        }
+        int named = c.Player.Companies.Sum(k => k.Roll.Count + k.Fallen.Count);
+        Console.WriteLine($"roll: {named0} named at first, {named} named or fallen after the fights; " +
+            string.Join("; ", c.Player.Companies.Select(k => $"{k.Name} {k.Roll.Count}+{k.Fallen.Count}f")));
+        Console.WriteLine("fates: " + string.Join(", ", c.Player.Companies.SelectMany(k => k.Fallen).GroupBy(m => m.Fate).Select(g => $"{g.Count()} {g.Key}")));
+        Check(named > named0, "battles name more men");
+        Check(c.Player.Companies.All(k => k.Roll.Count <= cap), "no roll runs past the cap");
+        foreach (var k in c.Player.Companies)
+            foreach (var g in k.Roll.GroupBy(m => m.Troop))
+            {
+                var st = k.Stacks.FirstOrDefault(s => s.Troop == g.Key);
+                Check(st != null && g.Count(m => !m.Hurt) <= st.Men && g.Count(m => m.Hurt) <= st.Wounded, $"the roll fits its stacks ({k.Name}, {g.Key})");
+            }
+        Check(c.Player.Companies.SelectMany(k => k.Roll).All(m => m.Battles >= 1 || m.Joined == c.Day), "named men count their battles");
+        Check(c.Player.Companies.SelectMany(k => k.Fallen).All(m => m.Fate is "fell" or "missing" or "left"), "the fallen say how they went");
+        // A named man is promoted first.
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t));
+        c.Player.Pos = town.Pos;
+        c.S.Gold = 5000;
+        var co = c.Player.Companies.First(k => k.Stacks.Any(s => s.Troop == "levies" && s.Men > 1));
+        var lev = co.Stack("levies");
+        co.Roll.RemoveAll(m => m.Troop == "levies");
+        var vet = c.NameMan(co, "test", "levies")!;
+        lev.AddXp(1e6f);
+        Check(c.Promote(co, lev, "shieldmen", 1) == null && vet.Troop == "shieldmen", "the named man is the one promoted");
+        // An old save (no roll) loads with empty rolls, and names its first men on the next day.
+        var node = System.Text.Json.Nodes.JsonNode.Parse(c.S.Serialize())!;
+        foreach (var p in node["Parties"]!.AsArray())
+            foreach (var k in p!["Companies"]!.AsArray()) { var o = k!.AsObject(); o.Remove("Roll"); o.Remove("Fallen"); o.Remove("RollStarted"); }
+        var old = CampaignState.Deserialize(node.ToJsonString());
+        var oc = new Campaign(old);
+        Check(oc.Player.Companies.All(k => k.Roll.Count == 0 && !k.RollStarted), "an old save loads with empty rolls");
+        oc.Player.Cooldown = 1e6f;
+        oc.Tick(24);
+        Check(oc.Player.Companies.All(k => k.Roll.Count >= 1 || k.Men == 0), "and its companies name their first men");
+        var back = CampaignState.Deserialize(c.S.Serialize()).Parties.First(p => p.Kind == PartyKind.Player);
+        Check(back.Companies.Sum(k => k.Roll.Count) == c.Player.Companies.Sum(k => k.Roll.Count), "the roll is saved");
+    }
+
     /// Troop stacks and promotion by the man (F1): a promotion moves exactly one man and spends exactly his XP; out-of-role
     /// promotions go to a company of the new role; pools never exceed their cap.
     static void Stacks()

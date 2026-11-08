@@ -358,6 +358,7 @@ public sealed partial class Campaign
             }
         }
         RefreshHeroes();
+        RollDaily();
         EatDaily();
         // A company bled out away from battle (rearguards, desertion, hunger) does not leave you with nothing to command:
         // a handful of loyal men gather at the nearest friendly town, as they do after a lost battle.

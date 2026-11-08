@@ -1138,6 +1138,75 @@ public static partial class SelfTest
         Console.WriteLine($"stack battle: {(report.Won ? "won" : "lost")}, {co.Name} {before} -> {co.Men}+{co.Wounded}W [{string.Join(", ", cr.Stacks.Select(st => $"{st.Troop} {st.Start}->{st.Standing}"))}]");
     }
 
+    /// Named men in battle (docs/LEGACY.md L2): placed as real units, their kills and fates come back by id and reach the roll,
+    /// the company's best man may earn a name, and a battle with named men replays exactly.
+    static void NamedMenFight()
+    {
+        var c = Campaign.New(84);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        foreach (var k in c.Player.Companies) for (int i = 0; i < 3; i++) c.NameMan(k, "test");
+        int named = c.Player.Companies.Sum(k => k.Roll.Count);
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
+        bandit.Pos = c.Player.Pos;
+        c.Encounter = bandit;
+        var setup = c.PrepareBattle(bandit);
+        setup.Options.AutoPlayer = true;
+        setup.Options.PlayerWounded = true;
+        Check(setup.Player.Companies.Sum(k => k.Named?.Length ?? 0) == named, "the battle gets every fit named man");
+        var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+        b.StartRecording(setup.Seed);
+        int placed = b.Units.Count(u => u.SoldierId != 0);
+        int onField = setup.Player.Companies.Where(k => b.Squads.Any(q => q.Company?.Id == k.Id)).Sum(k => k.Named?.Length ?? 0);
+        Check(placed == onField && placed > 0, $"each named man of a company on the field is one of its units ({placed} of {onField})");
+        Check(b.Units.Where(u => u.SoldierId != 0).All(u => setup.Player.Companies.Any(k => k.Named?.Any(m => m.Id == u.SoldierId && m.Troop == u.Type.Id) == true)), "of his own troop");
+        for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+        var result = b.Result();
+        var fates = result.Companies.Where(r => r.Named != null).SelectMany(r => r.Named!).ToList();
+        Check(fates.Count == placed, "each named man's fate comes back");
+        Check(result.Companies.Where(r => r.Named != null).All(r => r.Named!.Sum(n => n.Kills) <= r.Kills), "his kills are among the company's");
+        var rec = b.FinishRecording()!;
+        var back = Replay.Deserialize(rec.Serialize());
+        Check(back.Matches(back.Play()), "a battle with named men replays exactly");
+        var before = c.Player.Companies.SelectMany(k => k.Roll).ToDictionary(m => m.Id, m => m.Kills);
+        c.FinishBattle(result, setup);
+        foreach (var f in fates)
+        {
+            var co = c.Player.Companies.FirstOrDefault(k => k.Roll.Concat(k.Fallen).Any(m => m.Id == f.Id));
+            var m = co?.Roll.Concat(co.Fallen).First(x => x.Id == f.Id);
+            Check(m != null && m.Kills == before[f.Id] + f.Kills, "his kills reach the roll");
+            Check(!f.Fell || m!.Hurt || m.Fate != "", "one who fell is hurt or lost");
+            Check(f.Fell || f.Fled || m!.Fate is "" or "left", "one who stood comes home");
+        }
+        Console.WriteLine($"named men fight: {(result.Winner == 0 ? "won" : "lost")}, {placed} placed, {fates.Count(f => f.Fell)} fell, {fates.Sum(f => f.Kills)} kills; " +
+            $"best man {result.Companies.Max(r => r.BestKills)} kills");
+    }
+
+    /// Auto-resolve (L2): named men share their stack's odds, so a hard-lost fight costs named men too.
+    static void AutoResolveNamedMen()
+    {
+        int lost = 0, men = 0;
+        for (int seed = 0; seed < 6; seed++)
+        {
+            var c = Campaign.New(90 + seed);
+            c.Player.Cooldown = 1e6f;
+            c.Tick(24); c.Encounter = null; c.Arrived = null;
+            foreach (var k in c.Player.Companies) for (int i = 0; i < 5; i++) c.NameMan(k, "test");
+            int had = c.Player.Companies.Sum(k => k.Roll.Count);
+            men += had;
+            var lord = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && c.Hostile(c.Player, p)).OrderByDescending(p => p.Men).First();
+            lord.Pos = c.Player.Pos;
+            c.Encounter = lord;
+            var setup = c.PrepareBattle(lord);
+            var r = Rules.AutoResolve(setup.Side0, setup.Side1, new Rng(new CampaignState { Seed = seed + 1 }));
+            Check(r.Companies.All(x => x.Named == null), "auto-resolve hands back no fought fates");
+            c.FinishBattle(r with { Winner = 1, Captain = LeaderFate.Wounded }, setup);
+            lost += had - c.Player.Companies.Sum(k => k.Roll.Count); // a company wiped out takes its roll with it
+        }
+        Console.WriteLine($"auto-resolve named men: {lost} of {men} lost in six lost fights");
+        Check(lost > 0, "auto-resolving a lost fight costs named men too");
+    }
+
     /// A recorded battle with player orders and input, saved to JSON and played back, ends exactly the same.
     static void ReplayExact()
     {

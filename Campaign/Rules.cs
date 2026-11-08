@@ -127,6 +127,9 @@ public static class Rules
         into.HorseKills += from.HorseKills;
         into.Assaults = Math.Max(into.Assaults, from.Assaults);
         foreach (var h in from.Honours) if (!into.Honours.Contains(h) && into.Honours.Count < 3) into.Honours.Add(h);
+        into.Roll.AddRange(from.Roll); from.Roll.Clear(); // the named men keep their names (L1); the roll may run past RollSize
+        into.Fallen.AddRange(from.Fallen);
+        into.RollStarted |= from.RollStarted;
     }
 
     public static string CompanyName(Rng rng, string role)
@@ -268,6 +271,7 @@ public static class Rules
                 return new Company(c.Troop, c.Men, RoleOf(c), c.Id, c.Name,
                     Math.Clamp(70 + c.Cohesion + moraleBonus + (c.Traits.Contains("Steady") ? 8 : 0) + h.Morale + (siege ? h.SiegeMorale : 0), 20, 100), c.Traits.ToArray(),
                     Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord, Mix: mix.Length > 1 ? mix : null,
-                    RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero);
+                    RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero,
+                    Named: c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).Select(m => new NamedSpec(m.Id, m.Troop, m.Name)).ToArray() : null);
             }).ToList());
 }

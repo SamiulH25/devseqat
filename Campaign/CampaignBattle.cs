@@ -27,6 +27,7 @@ public partial class Campaign
             var (p, c, team) = e;
             bool teamWon = r.Winner == team;
             int menBefore = c.Men;
+            string foe = team == 0 ? side1.FirstOrDefault()?.Name ?? "" : side0.FirstOrDefault()?.Name ?? "";
             float surgeon = (p == Player ? Skill("Medicine") / 1000f + (Has("Surgeon") ? 0.1f : 0) : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
             int killedAll = 0, woundedAll = 0, capturedAll = 0, fledLostAll = 0;
             // Casualties come off each stack by its own armour (2.3); a battle without a breakdown counts as the company's face.
@@ -45,6 +46,11 @@ public partial class Campaign
                 int after = Math.Clamp(standing + fledBack, 0, stBefore);
                 if (after < stBefore) st.Take(stBefore - after);
                 st.Wounded += wounded;
+                if (p == Player && cr.Deployed)
+                {
+                    if (cr.Named != null) RollFought(c, st, cr.Named, teamWon, pw, foe);
+                    else RollFates(c, st, stBefore, killed, wounded, captured + sr.Fled - fledBack, foe);
+                }
                 killedAll += killed; woundedAll += wounded; capturedAll += captured; fledLostAll += sr.Fled - fledBack;
                 if (playerIn && team != playerTeam && won)
                 {
@@ -68,10 +74,11 @@ public partial class Campaign
             c.Cohesion = Math.Clamp(c.Cohesion + (teamWon ? 5 : -5) - lostFrac * 10, 0, 30);
             if (cr.Deployed) OfficerAfterBattle(c, teamWon, lostFrac);
             if (cr.HeroFell && p == Player) HeroFell(c);
-            Chronicle(c, cr, teamWon, menBefore - c.Men, team == 0 ? side1.FirstOrDefault()?.Name ?? "" : side0.FirstOrDefault()?.Name ?? "", siegeBattle, p);
+            Chronicle(c, cr, teamWon, menBefore - c.Men, foe, siegeBattle, p);
             if (playerIn) reports.Add(new CompanyReport(c.Id, c.Name, c.Troop, team == playerTeam ? 0 : 1, menBefore, c.Men, killedAll, woundedAll, capturedAll,
                 fledLostAll, xpPerMan, Rules.UpgradeReady(c), cr.Deployed));
             c.Prune();
+            if (p == Player) SyncRoll(c);
         }
         foreach (var p in side0.Concat(side1)) p.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
 

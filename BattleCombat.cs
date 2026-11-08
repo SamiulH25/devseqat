@@ -279,6 +279,7 @@ public partial class Battle
         if (killer.IsPlayer && t != killer) PlayerKills++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 7)]++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;
+        if (killer.Team != t.Team) { killer.Kills++; if (t.IsLeader || t.Hero) killer.FelledLeader = true; }
         foreach (var u in t.IsLeader ? Units.ToArray() : Near(t.Pos, 10, nearKill).ToArray()) // a leader's fall is felt across the field
         {
             if (!u.Active) continue;

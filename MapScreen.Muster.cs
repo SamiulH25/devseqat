@@ -78,6 +78,16 @@ partial class MapScreen
         ui.Gauge(new Rectangle(x, y, w, ui.U(5)), c.Cohesion / 30f, c.Cohesion >= 15 ? Style.Ok : c.Cohesion >= 8 ? Style.Warn : Style.Bad);
         y += ui.U(9);
         if (ui.Hover(info) || ui.Hover(port)) note = CompanyNote(c);
+        // The roll (docs/LEGACY.md L1): click for the named men and the fallen.
+        var roll = new Rectangle(x - ui.U(2), y - ui.U(1), w + ui.U(4), ui.U(12));
+        bool rh = ui.Hover(roll);
+        if (rh) ui.Rect(roll, Color.White * 0.06f);
+        ui.Icon("flag", x, y, Kit.Gilt, 1);
+        string rl = $"ROLL {c.Roll.Count}" + (c.Fallen.Count > 0 ? $", {c.Fallen.Count} FALLEN" : "");
+        ui.Text(rl.Length > fit - 2 ? rl[..(fit - 2)] : rl, x + ui.U(11), y, rh ? Style.Text : Style.Dim, 1);
+        if (rh) note = c.Roll.Count > 0 ? string.Join(", ", c.Roll.Select(m => m.Name.ToUpperInvariant())) + ". CLICK FOR THE ROLL." : "NO NAMED MEN YET. MEN EARN NAMES IN BATTLE.";
+        if (ui.Clicked(roll)) { rollOf = c; panel = PanelKind.Roll; note = ""; }
+        y += ui.U(12);
 
         // The troop stacks: click one for its promotion and moves.
         int bh = ui.U(16), stackRoom = r.Bottom - ui.U(6) - 2 * bh - ui.U(4) - y, sh = ui.U(19);
@@ -111,6 +121,57 @@ partial class MapScreen
         if (ui.Button(new Rectangle(x, by + bh + ui.U(3), bw, bh), "MERGE", mate != null)) C.Merge(c, mate!);
         if (ui.Button(new Rectangle(x + bw + ui.U(3), by + bh + ui.U(3), bw, bh), "DISBAND", list.Count > 1)) C.Disband(c);
         ui.Block(r);
+    }
+
+    /// The company the roll panel shows.
+    CompanyRecord? rollOf;
+
+    /// A company's roll (docs/LEGACY.md L1): its named men, what each is known for, and the men it has lost.
+    void RollPanel()
+    {
+        var c = rollOf;
+        if (c == null) { panel = PanelKind.Party; return; }
+        var r = Modal(760, 560, c.Name.ToUpperInvariant());
+        int x = r.X + ui.U(24), w = r.Width - ui.U(48), y = r.Y + ui.U(34);
+        int fit = Math.Max(10, w / (6 * ui.S));
+        string Cut(string s, int n) => s.Length > n ? s[..n] : s;
+        ui.Text(c.Home != "" ? $"RAISED IN {c.Home.ToUpperInvariant()}. {c.Battles} BATTLES, {c.Kills} KILLS." : $"{c.Battles} BATTLES, {c.Kills} KILLS.", x, y, Style.Dim, 1);
+        y += ui.U(14);
+        ui.Text("THE ROLL", x, y, Kit.Gilt, 2);
+        ui.TextR($"{c.Roll.Count} OF {Balance.Get().RollSize} NAMED", x + w, y + ui.U(4), Style.Dim, 1);
+        y += ui.U(20);
+        if (c.Roll.Count == 0) { ui.Text("NO MAN HAS EARNED A NAME YET. THEY DO IT IN BATTLE.", x, y, Style.Dim, 1); y += ui.U(14); }
+        foreach (var m in c.Roll.OrderByDescending(m => m.Battles))
+        {
+            if (y > r.Bottom - ui.U(150)) break;
+            var row = new Rectangle(x - ui.U(4), y - ui.U(3), w + ui.U(8), ui.U(32));
+            ui.Rect(row, Color.White * (ui.Hover(row) ? 0.07f : 0.035f));
+            ui.Text(m.Name.ToUpperInvariant(), x, y, Style.Text, 1);
+            string stat = $"{m.Battles} BATTLES, {m.Kills} KILLS" + (m.Wounds > 0 ? $", {m.Wounds} WOUNDS" : "");
+            ui.TextR(stat, x + w, y, Style.Dim, 1);
+            ui.Text(Troops.Get(m.Troop).Name.ToUpperInvariant() + (m.Hurt ? " . HURT" : ""), x, y + ui.U(10), m.Hurt ? Style.Warn : Kit.Gilt, 1);
+            ui.Text(Cut((m.Deeds.Count > 0 ? m.Deeds[^1] : "").ToUpperInvariant(), fit - 22), x + ui.U(150), y + ui.U(10), Style.Dim, 1);
+            if (ui.Hover(row)) note = string.Join(" ", m.Deeds).ToUpperInvariant() + $" ON THE ROLL SINCE DAY {m.Joined}.";
+            y += ui.U(36);
+        }
+        y += ui.U(6);
+        ui.Divider(x, y, w, Kit.Gilt * 0.5f);
+        y += ui.U(10);
+        ui.Text("THE FALLEN", x, y, Kit.Gilt, 2);
+        ui.TextR($"{c.Fallen.Count}", x + w, y + ui.U(4), Style.Dim, 1);
+        y += ui.U(20);
+        if (c.Fallen.Count == 0) ui.Text("NONE YET.", x, y, Style.Dim, 1);
+        foreach (var m in Enumerable.Reverse(c.Fallen))
+        {
+            if (y > r.Bottom - ui.U(56)) { ui.Text("AND MORE BEFORE THEM.", x, y, Style.Dim, 1); break; }
+            string how = m.Fate switch { "missing" => "MISSING", "left" => "LEFT THE COMPANY", _ => "FELL" };
+            string at = m.DiedAt != "" ? $" AGAINST {m.DiedAt.ToUpperInvariant()}" : "";
+            ui.Text(Cut($"{m.Name.ToUpperInvariant()}, {Troops.Get(m.Troop).Name.ToUpperInvariant()}", fit / 2), x, y, Style.Text, 1);
+            ui.TextR(Cut($"{how}{at}, DAY {m.DiedDay}. {m.Battles} BATTLES", fit / 2), x + w, y, m.Fate == "fell" ? Style.Bad : Style.Dim, 1);
+            y += ui.U(12);
+        }
+        Note(r);
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "BACK", note: ctl.Name(Act.Menu))) panel = PanelKind.Party;
     }
 
     /// The whole company in one strip: men by role, and the numbers that keep it in the field.

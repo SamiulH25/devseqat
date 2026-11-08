@@ -38,6 +38,12 @@ public sealed class CompanyRecord
     /// Its last battles, newest last (at most LedgerSize).
     public List<LedgerEntry> Ledger = new();
     public const int LedgerSize = 8;
+    /// Your companies' named men (docs/LEGACY.md L1): the few who earned a name, each one of the men of his stack.
+    public List<Soldier> Roll = new();
+    /// The named men the company has lost, never trimmed (L3 shows them).
+    public List<Soldier> Fallen = new();
+    /// The roll has been started (a new company names its first man once).
+    public bool RollStarted;
 
     [JsonIgnore] public int Men => Stacks.Sum(s => s.Men);
     [JsonIgnore] public int Wounded => Stacks.Sum(s => s.Wounded);
@@ -122,6 +128,20 @@ public sealed class TroopStack
         Men -= k;
         Xp = Math.Clamp(Xp, 0, PoolCap);
     }
+}
+
+/// A named man of one of your companies (docs/LEGACY.md L1). He is one of the men of the stack of his troop: hurt while
+/// among its wounded. When he leaves the roll he goes to the company's Fallen list with how (Fate) and where (DiedAt).
+public sealed class Soldier
+{
+    public int Id, Battles, Kills, Wounds, Joined, DiedDay;
+    public string Name = "", Troop = "", Fate = "", DiedAt = "";
+    public bool Hurt;
+    /// What he is known for, newest last (at most MaxDeeds).
+    public List<string> Deeds = new();
+    public const int MaxDeeds = 4;
+
+    public void Deed(string d) { Deeds.Add(d); if (Deeds.Count > MaxDeeds) Deeds.RemoveAt(1); } // the first, how he got his name, stays
 }
 
 /// One line of a company's ledger (2.4).
@@ -359,6 +379,8 @@ public sealed class CampaignState
     public const int CurrentVersion = 4;
     public const string TooOld = "this save is from before the campaign overhaul and cannot be loaded";
     public int Version = CurrentVersion, Seed, NextId = 1, UnpaidWeeks;
+    /// Ids of named men (L1), counted apart from NextId so naming men moves no other id.
+    public int NextSoldier = 1;
     /// How far the provinces of this save's map reach (WorldMap.Extent for new campaigns; older saves have their own).
     public float MapExtent = WorldMap.PreviousExtent;
     /// How the map lays out its realms (WorldMap.Layout): saves from before docs/WORLD.md W1 have none and keep the old bands.
@@ -367,6 +389,8 @@ public sealed class CampaignState
     public int DataRealms = 3;
     public double Hours;
     public ulong Rng;
+    /// The roll's own stream (L1), so naming men never moves the campaign's main draws.
+    public ulong RollRng;
     public float Gold, LastWeekBalance;
     public bool Ironman, GameOver;
     /// Why the campaign ended ("" = the Ironman captain was not ransomed), and whether it was won (5.5; play may go on).
@@ -476,13 +500,16 @@ public sealed class CampaignState
 public sealed class Rng
 {
     readonly CampaignState s;
+    readonly bool roll;
     public Rng(CampaignState state) { s = state; if (s.Rng == 0) s.Rng = 0x9E3779B97F4A7C15UL ^ (ulong)(uint)s.Seed; }
+    /// The roll's stream (CampaignState.RollRng), seeded apart from the main one.
+    public Rng(CampaignState state, bool roll) : this(state) { this.roll = roll; if (roll && s.RollRng == 0) s.RollRng = 0xD1B54A32D192ED03UL ^ (ulong)(uint)s.Seed; }
 
     public ulong NextU()
     {
-        ulong x = s.Rng;
+        ulong x = roll ? s.RollRng : s.Rng;
         x ^= x >> 12; x ^= x << 25; x ^= x >> 27;
-        s.Rng = x;
+        if (roll) s.RollRng = x; else s.Rng = x;
         return x * 0x2545F4914F6CDD1DUL;
     }
 
@@ -514,6 +541,9 @@ public sealed class Balance
     public float CompanySlotsBase = 10, CompanySlotRenown = 0, MenBase = 40, MenRenownDivisor = 5;
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
     public float ArmyScale = 3;
+    /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).
+    public int RollSize = 6;
+    public float VeteranSurvival = 0.6f;
     public int VillageRecruitsMax = 8, LordsPerFaction = 8, BanditsMax = 80;
     /// A bandit band appears this many times a day while below BanditsMax (0-1) — the roll for each attempt.
     public float BanditSpawnChance = 0.95f;
@@ -582,7 +612,7 @@ public sealed class Balance
 /// One culture's name pools.
 public sealed class CultureNames
 {
-    public List<string> Places = new(), Lords = new();
+    public List<string> Places = new(), Lords = new(), Men = new();
 }
 
 /// Name lists (Data/names.json).
@@ -595,6 +625,8 @@ public sealed class Names
 
     public List<string> PlacesOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Places.Count > 0 ? c.Places : Places;
     public List<string> LordsOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Lords.Count > 0 ? c.Lords : Lords;
+    /// Common soldiers' names of a culture (L1); the sergeants' list when it has none.
+    public List<string> MenOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Men.Count > 0 ? c.Men : Sergeants;
 
     static Names? loaded;
     public static Names Get()

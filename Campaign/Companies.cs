@@ -222,6 +222,7 @@ public sealed partial class Campaign
             s.Xp -= from.UpgradeXp;
             s.Men--;
             into.Stack(to).Men++;
+            if (p == Player) RollPromoted(c, into, s.Troop, to);
             s.Xp = Math.Clamp(s.Xp, 0, s.PoolCap);
             done++;
         }
@@ -291,6 +292,7 @@ public sealed partial class Campaign
         if (Rules.Places(to) + need > Rules.Cap(Rules.RoleOf(to)) + 1e-3f) return "NO ROOM";
         var t = to.Stack(s.Troop);
         t.Men += s.Men; t.Wounded += s.Wounded; t.Xp = Math.Clamp(t.Xp + s.Xp, 0, t.PoolCap);
+        MoveNamed(from, to, s.Troop);
         from.Stacks.Remove(s);
         if (from.Men + from.Wounded == 0) Player.Companies.Remove(from);
         return null;
@@ -307,6 +309,8 @@ public sealed partial class Campaign
         nc.Culture = c.Culture; nc.Home = c.Home; nc.Cohesion = c.Cohesion;
         nc.Name = c.Name + " II";
         float xp = s.Men > 0 ? s.Xp * n / s.Men : 0;
+        MoveNamed(c, nc, s.Troop, s.Men > 0 ? n / (float)s.Men : 0);
+        nc.RollStarted = true; // its named men came with it, or it has none yet
         s.Take(n);
         var t = nc.Stack(s.Troop);
         t.Men = n;
@@ -330,5 +334,6 @@ public sealed partial class Campaign
         bool bloodied = won && cr.Start > 0 && lost * 2 >= cr.Start;
         foreach (var h in Honours.Earn(c, bloodied))
             if (owner == Player) Log($"{c.Name} earn an honour: {h.Name}.");
+        if (owner == Player) RollAfterBattle(c, cr, won, bloodied, siege, foe);
     }
 }
