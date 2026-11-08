@@ -98,6 +98,14 @@ public sealed partial class Terrain
         return Vector2.Zero;
     }
 
+    /// Does a short step from a to b cross a feature? (Only the features near b are looked at.)
+    public bool CrossesFeatureNear(Vector2 a, Vector2 b)
+    {
+        if (!featureCells.TryGetValue(CellX(b.Y) * bucketSide + CellX(b.X), out var near)) return false;
+        foreach (int i in near) if (SegmentsCross(a, b, Features[i].A, Features[i].B)) return true;
+        return false;
+    }
+
     /// Does the straight line from a to b cross a feature? (Pathing and sight use it.)
     public bool CrossesFeature(Vector2 a, Vector2 b)
     {

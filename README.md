@@ -254,6 +254,10 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   of one army, a knoll on each wing, broken stony ground, a fen, a river line (with a bridge where the road crosses), a big wood on
   one wing, a clearing ringed by woods, a village between the lines, hedgerows, a pass between high sides.
 - **Hedges, fences and bridges** (`TerrainFeatures.cs`) are lines men cannot walk through; they go round by the gaps.
+- **Sight and cover** (`BattleSight.cs`): a crest hides what is behind it, and men in a wood are seen only from within 25 m or
+  when they shoot. Archers shoot only at companies their side has seen, and an enemy you have not seen is not drawn: its flag
+  stays where you last saw it. A hidden company found close to the enemy is an ambush and shakes the men it falls on.
+  Low arrows are caught by woods, crops and houses, and a hedge stops flat shots; arrows dropping steeply still land behind it.
 - **Foliage** (placed by `Terrain`, built into meshes by `World.cs`): woods of broadleaf trees or pines, two of them flanking the field,
   lone trees, bushes along wood edges, rocks and boulders, and ~14,000 3D grass tufts with a few flowers. All low-poly, flat-shaded and lit by one sun.
   Tree trunks and boulders are **solid**: units are pushed out of them and a horse that rides into one pulls up hard.

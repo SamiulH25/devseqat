@@ -179,6 +179,7 @@ partial class BattleScreen
             if (deploying && !battle.Options.Scouted && s.Team == 1) continue;
             var bearer = s.Units.FirstOrDefault(u => u.Active && !u.Routing);
             if (bearer == null) continue;
+            if (!battle.Visible(s, 0)) { puppet.Banner(s.LastSeen, t.Height(s.LastSeen), bearer.Palette, 0, s.Company.Banner); continue; } // where you last saw it
             var at = bearer.Pos - bearer.Dir * 0.35f + new Vector2(-bearer.Dir.Y, bearer.Dir.X) * 0.25f;
             puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner);
         }
@@ -201,6 +202,7 @@ partial class BattleScreen
             if (u.Fled) continue;
             if (!forSun && !u.IsPlayer && u.Team == 0 && blend < 0.5f && Vector2.DistanceSquared(u.Pos, eye2) < 6 * 6) continue; // friends don't fill the lens
             if (deploying && !battle.Options.Scouted && u.Team == 1 && !u.IsLeader) continue; // unscouted: banners only
+            if (u.Team == 1 && !u.IsLeader && !battle.Visible(u.Squad, 0)) continue; // hidden by a crest or a wood
             float h = t.Height(u.Pos);
             if (!Seen(u.Pos, h, u.Mounted ? 2.5f : 1.5f)) continue;
             puppet.Draw(u, h);

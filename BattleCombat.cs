@@ -304,6 +304,7 @@ public partial class Battle
     void Loose(Unit u, Vector2 at, Unit? t, float damage, float spread)
     {
         u.Ammo--;
+        if (u.Squad != null) u.Squad.LooseAt = Time;
         Sound(Cue.Bow, u.Pos);
         u.Action = UnitAction.Recover; // shows the release pose
         u.ActionTimer = 0.25f;
@@ -336,11 +337,13 @@ public partial class Battle
                 continue;
             }
             p.Vel.Y -= Gravity * dt;
+            var from = new Vector2(p.Pos.X, p.Pos.Z);
             p.Pos += p.Vel * dt;
             var flat = new Vector2(p.Pos.X, p.Pos.Z);
             float ground = Terrain.Height(flat);
             if (p.Pos.Y <= ground) { p.Pos.Y = ground; p.Stuck = 0; continue; }
             if (p.Pos.Y > ground + 2.6f) continue;
+            if (Covered(from, flat, p.Pos.Y - ground)) { p.Pos.Y = MathF.Max(ground, p.Pos.Y - 0.5f); p.Stuck = 0; continue; } // into a tree or a hedge
             foreach (var t in Near(flat, 1.5f, nearArrow))
             {
                 if (t.Team == p.Shooter.Team || !t.Active) continue;
@@ -351,6 +354,16 @@ public partial class Battle
                 break;
             }
         }
+    }
+
+    /// Does a low arrow flying from `a` to `b` this tick strike cover? Woods, crops and houses catch it in proportion to
+    /// how much of them it flies through low (Data/ground.json `cover`); a hedge stops a flat shot outright, mostly.
+    /// An arrow dropping steeply onto men in the open is low for only the last stride, so cover in front does not save them.
+    bool Covered(Vector2 a, Vector2 b, float above)
+    {
+        float cover = Terrain.CoverAt(b);
+        if (cover > 0 && rng.NextSingle() < cover * Vector2.Distance(a, b) * 0.12f) return true;
+        return above < 1.8f && Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(a, b) && rng.NextSingle() < 0.7f;
     }
 
     /// Braced spears catch a horse that rides onto their points (their reach beats a couched lance).

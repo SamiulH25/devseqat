@@ -49,6 +49,11 @@ public sealed class Squad
 
     public Squad(string name, int team) { Name = name; Team = team; }
 
+    /// When each side last saw this company (Battle.UpdateSight), where the enemy last saw it, and when it last loosed arrows.
+    public readonly float[] SeenAt = { -99, -99 };
+    public Vector2 LastSeen; // set where it deploys
+    public float LooseAt = -99;
+
     /// How much the ground where it stands opens its ranks (1 on open ground; more in a wood or water; Battle.UpdateSquad sets it).
     public float Loosen = 1;
 

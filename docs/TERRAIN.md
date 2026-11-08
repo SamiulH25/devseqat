@@ -386,3 +386,21 @@ T6 medium, T7 medium, T8 small.
   `Rivers` and `GroundLayer` now sample the river away from the bridge.
 - Not built: crops by season (T7 sets the season), and features giving cover (T3).
 
+### T3 (done): sight and cover
+- Arrows: `BattleCombat.Covered` runs for each arrow in its low band (below 2.6 m over the ground). It is stopped with chance
+  `cover × step × 0.12` (seeded), so 20 m through a wood stops about 80%, and a few metres of the edge about 15%. A hedge crossed
+  below 1.8 m stops 70% (`CrossesFeatureNear`, the features near the arrow only). In the test, a mark took 232 in the open,
+  40 deep in a wood and 72 behind a hedge.
+- Sight (`BattleSight.cs`, its own bench stage, about 0.02 ms a tick): every 0.5 s each company is checked against the other side's
+  company centres and leader. Seen if within 12 m (fighting), never beyond `Weather.Vision`, always within 2 s of loosing arrows
+  (`Squad.LooseAt`). In a wood (cover ≥ 0.5) it is hidden past 25 m. Otherwise `ClearLine` must pass: no ground above the eye-to-target
+  line (crests), and no more than 15 cover-metres along it, not counting the watcher's own wood. `Squad.SeenAt[team]` lasts 3 s,
+  and `Squad.LastSeen` starts where the company deploys.
+- Effects: archers shoot only at companies `Visible` to their side (`Think`, `SoftTarget`), and the AI's horse prefers targets it
+  can see. A company first seen after more than 6 s hidden, with at least three enemies within 15 m of it, is an ambush: those men lose 15 morale.
+- Screen: unseen enemy companies are not drawn, on the field or the minimap. Their banner and HUD flag stay at `LastSeen`.
+- Sight is off in duels, tournaments and scripted test fields (`Battle.Empty`), where everything is seen.
+- Not built yet: the AI general plans from the true enemy centroid (the whole army's position is treated as known). T5 moves its
+  choices onto what it has seen. A faded look for last-known banners is left for T6 polish.
+- Test `SightAndCover`.
+

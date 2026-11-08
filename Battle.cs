@@ -222,7 +222,7 @@ public sealed partial class Battle
     public Squad AddSquad(int team, UnitType type, int n, Vector2 anchor, int cols, Vector2 front, Company? company = null)
     {
         var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null && !Options.Siege, Company = company,
-            AiControlled = company?.Allied == true && team == 0 };
+            AiControlled = company?.Allied == true && team == 0, LastSeen = anchor };
         // A mixed company spawns each stack in turn, largest first; a one-off squad is n men of `type`.
         var types = company?.Mix is { Length: > 1 } ? company.Stacks.SelectMany(x => Enumerable.Repeat(Troops.Get(x.Troop), x.Count)).Take(n).ToList() : null;
         for (int i = 0; i < n; i++)
@@ -263,7 +263,7 @@ public sealed partial class Battle
     /// Set by the bench (`--bench`): called at the end of each tick stage (index into <see cref="Stages"/>; -1 = tick start).
     /// The sim itself never reads a clock, so replays stay exact.
     public Action<int>? Probe;
-    public static readonly string[] Stages = { "grid", "general", "squads", "think", "move", "lances", "arrows", "morale", "end" };
+    public static readonly string[] Stages = { "grid", "general", "sight", "squads", "think", "move", "lances", "arrows", "morale", "end" };
     void Mark(int stage) => Probe?.Invoke(stage);
 
     public void Update(float dt)
@@ -290,10 +290,12 @@ public sealed partial class Battle
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
         RaiseDead(dt);
         Mark(1);
+        UpdateSight(dt);
+        Mark(2);
         UpdateCalledHorse(dt);
         Resupply(dt);
         foreach (var s in Squads) UpdateSquad(s, dt);
-        Mark(2);
+        Mark(3);
         foreach (var u in Units)
         {
             if (!u.Active) continue;
@@ -306,19 +308,19 @@ public sealed partial class Battle
             Tire(u, dt);
             if (u.Type.Has("regen")) Regen(u, dt);
         }
-        Mark(3);
-        Move(dt);
         Mark(4);
+        Move(dt);
+        Mark(5);
         Braces();
         Lances();
-        Mark(5);
-        UpdateArrows(dt);
         Mark(6);
+        UpdateArrows(dt);
+        Mark(7);
         UpdateMorale(dt);
         UpdateBanner();
-        Mark(7);
-        CheckEnd();
         Mark(8);
+        CheckEnd();
+        Mark(9);
         Events.RemoveAll(e => Time - e.At > 6);
     }
 

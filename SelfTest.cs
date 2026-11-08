@@ -51,6 +51,7 @@ public static partial class SelfTest
         Layouts();
         HedgesAndBridges();
         EveryLayoutResolves();
+        SightAndCover();
         CampaignWar();
         RefuseOldSave();
         Stacks();

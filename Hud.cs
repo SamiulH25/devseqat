@@ -299,7 +299,7 @@ sealed partial class Hud
         bool Inside(Vector2 p) => r.Contains((int)p.X, (int)p.Y);
         foreach (var u in B.Units)
         {
-            if (!u.Active || u.IsPlayer) continue;
+            if (!u.Active || u.IsPlayer || u.Team == 1 && !u.IsLeader && !B.Visible(u.Squad, 0)) continue;
             var p = M(u.Pos);
             if (!Inside(p)) continue;
             var c = u.Routing ? Dim : u.Team == 1 ? Foe : u.Squad != null && Selected.Contains(u.Squad) ? Gold : Friendly;
@@ -573,7 +573,7 @@ sealed partial class Hud
         foreach (var s in B.Squads)
         {
             if (s.Alive == 0) continue;
-            var c = s.Centroid();
+            var c = B.Visible(s, 0) ? s.Centroid() : s.LastSeen; // an enemy you cannot see: its flag stays where you last saw it
             var sp = vp.Project(new Vector3(c.X, B.Terrain.Height(c) + 3.4f, c.Y), Proj, View, Matrix.Identity);
             if (sp.Z < 0 || sp.Z > 1) continue;
             bool own = s.Team == 0, sel = Selected.Contains(s);

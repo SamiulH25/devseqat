@@ -631,6 +631,49 @@ public static partial class SelfTest
         }
     }
 
+    /// Sight and cover (docs/TERRAIN.md T3): a wood soaks up arrows, a hedge stops flat shots, a crest hides what is behind
+    /// it, men in a wood are unseen from afar, and a hidden company that is found close to the enemy is an ambush.
+    static void SightAndCover()
+    {
+        int Hits(Action<Battle> ground)
+        {
+            var b = Battle.Empty(8);
+            ground(b);
+            var bows = b.AddSquad(0, UnitType.Bowman, 12, new(0, -28), 6, Vector2.UnitY);
+            var mark = b.AddSquad(1, UnitType.Shieldman, 12, new(0, 0), 6, -Vector2.UnitY);
+            bows.Target = mark;
+            foreach (var u in mark.Units) u.Hp = 100000; // a mark that does not fall (the troop type itself is shared: leave it be)
+            Run(b, 20);
+            return mark.Units.Sum(u => (int)(100000 - u.Hp));
+        }
+        int open = Hits(_ => { }), wood = Hits(b => b.Terrain.Paint(Vector2.Zero, 20, GroundKind.Wood)),
+            hedge = Hits(b => b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-20, -3.5f), new Vector2(20, -3.5f)));
+        Console.WriteLine($"cover: arrow damage on a mark in the open {open}, in a wood {wood}, behind a hedge {hedge}");
+        Check(wood < open * 0.8f, "a wood soaks up arrows");
+        Check(hedge < open * 0.8f, "a hedge stops flat shots");
+
+        var g = TerrainParams.Hills with { Layouts = new[] { FieldLayout.Ridge }, HillsMin = 0, HillsMax = 0 };
+        var none = new ArmySpec("a", 1, new List<Company>());
+        var rb = new Battle(13, none, none, new BattleOptions { Ground = g });
+        float side = rb.Terrain.RidgeSide == 0 ? -1 : 1;
+        var behind = new Vector2(0, rb.Terrain.RidgeZ + side * 22);
+        Check(!rb.ClearLine(new Vector2(0, -side * 35), behind), "a crest hides what is behind it");
+        Check(rb.ClearLine(new Vector2(0, -side * 35), new Vector2(0, -side * 5)), "but not the open field in front");
+
+        var flat = TerrainParams.Meadow with { Layouts = null, HillsMin = 0, HillsMax = 0, Road = false, Woods = 0, LoneTrees = 0 };
+        var wb = new Battle(14, none, none, new BattleOptions { Ground = flat, PlayerWounded = true });
+        wb.Terrain.Paint(new Vector2(0, 20), 22, GroundKind.DenseWood);
+        var lurk = wb.AddSquad(1, UnitType.Shieldman, 12, new(0, 20), 6, -Vector2.UnitY);
+        var walk = wb.AddSquad(0, UnitType.Shieldman, 12, new(0, -40), 6, Vector2.UnitY);
+        Run(wb, 1.2f);
+        Check(!wb.Visible(lurk, 0) && wb.Visible(walk, 1), "men in a wood are not seen from afar; men in the open are");
+        foreach (var u in walk.Units) u.Pos += new Vector2(0, 46); // walk up to the edge of the wood
+        walk.Anchor += new Vector2(0, 46);
+        Run(wb, 1.2f);
+        Check(wb.Visible(lurk, 0), "close up you see them");
+        Check(wb.History.Any(h => h.Text.Contains("from cover")), "and a company found that close is an ambush");
+    }
+
     /// A battlefield river: carved below its banks, slow to wade, quicker at the fords; the map has rivers with bridges.
     static void Rivers()
     {

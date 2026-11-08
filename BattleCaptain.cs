@@ -235,7 +235,7 @@ public sealed partial class Battle
     {
         var at = archers.Centroid();
         float range = archers.Units.FirstOrDefault()?.Type.Range ?? 30;
-        return SquadsOf(foe).Where(s => s.Alive > 0 && Vector2.Distance(s.Centroid(), at) < range * 1.1f)
+        return SquadsOf(foe).Where(s => s.Alive > 0 && Visible(s, archers.Team) && Vector2.Distance(s.Centroid(), at) < range * 1.1f)
             .OrderBy(s => s.Units.First().Type.Armor + (s.Cavalry ? 3 : 0)).ThenBy(s => Vector2.Distance(s.Centroid(), at)).FirstOrDefault();
     }
 

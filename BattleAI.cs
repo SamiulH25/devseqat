@@ -62,7 +62,7 @@ public partial class Battle
             if (tu != null && td < u.Type.Range) (enemy, d) = (tu, td);
         }
         float range = MathF.Min(Weather.Vision, u.Type.Range * (enemy != null ? HeightRange(Terrain.Height(u.Pos) - Terrain.Height(enemy.Pos)) : 1)); // fog and night hide targets
-        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < range && (charge || toSlot < 2.5f))
+        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < range && (charge || toSlot < 2.5f) && Visible(enemy, u.Team)) // only at what your side can see
         {
             u.Face(enemy.Pos - u.Pos);
             if (u.Cooldown <= 0) Shoot(u, enemy);
@@ -297,7 +297,7 @@ public partial class Battle
         else foreach (var s in horse) s.Order = Order.Charge;
         if (horseCharged[team])
             foreach (var s in horse.Where(s => s.Target == null))
-                s.Target = new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(foe, r)).FirstOrDefault(t => t.Alive > 0); // soft targets first
+                s.Target = new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(foe, r)).Where(t => t.Alive > 0).OrderBy(t => Visible(t, team) ? 0 : 1).FirstOrDefault(); // soft targets first, ones it can see
         if (team == 1)
         {
             eGuard.Front = dir;
