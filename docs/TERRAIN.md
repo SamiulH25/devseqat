@@ -504,3 +504,29 @@ T6 medium, T7 medium, T8 small.
   site does not count as scouting yet.
 - Tests `RiverRoadGivesBridge`, `RainMakesMud` (0 mud cells dry, 324 after a wet week), `DefenderChoosesGround`,
   `AutoResolveGroundEdge`; `Calibration` still agrees in 11 of 12 matchups.
+
+### T8 (done): polish and balance
+- **Sound and effects** (`BattleScreen.GroundSteps`, run with the other particles): men moving through water throw up
+  splashes, through mud dark spatter (horse more), through woods a falling leaf now and then; dry ground keeps the horse's
+  dust. New cues Splash, Squelch, Rustle and Hollow (the bridge) are synthesised in `Audio.cs` and played from the ground
+  under the men near the camera, each at most every 0.12-0.6 s depending on how many are there. They are screen-side, not
+  `Battle.Sounds`, so the sim, its replays and its numbers do not move.
+- **Dotted order line**: while you draw an order whose straight way is barred, `Battle.Route(squad, dest)` gives the way the
+  first chosen company will go (2.5 m steps down a flow field), drawn as gold dashes on the ground. Its field is built apart
+  from the battle's cache, so looking never changes the battle.
+- **Balance tool** `--grounds n` (`BalanceReport.Grounds`): the same army on both sides with the same head count, each seed
+  fought twice with the ground chosen by each side in turn. With 24 seeds: Open, Broken, Fen, River line, both forest
+  layouts, Village, Hedgerows and Pass come out at 23-24 of 48 for the chooser (they give nothing to choose, or a small
+  shift); Two hills 28/48; Ridge 44/48. In mirrored fights any steady edge wins most of them (5% more men alone wins 84%), so
+  the Ridge's edge is of the order of auto-resolve's ×1.08, which is what T7 meant. Left as it is.
+- **A stall fixed**: a charge with no enemy company left had no goal for pathing, so men pressed against a hedge with the lone
+  captain behind it until the clock ran out. `NearestSquadCenter` now falls back to the enemy captain (test
+  `ChargeFindsCaptain`).
+- **Found, not changed**: in AI-against-AI fights your side's stand-in loses most mirrored battles (about 16% wins with
+  `PlayerWounded`, 32% with equal men), because the enemy fields 5% more men and his captain leads from behind his line
+  while yours stands where he spawned. This predates the terrain work (2 of 80 before T0, 12 of 80 after T5), is by design
+  (balance assumes you fight), and is why `--grounds` swaps the chooser rather than reading side 0's wins.
+- Not built: Column formation, rout jams at bridges, pavises, `Deploy` onto good ground. They stay as ideas; nothing in the
+  balance runs asks for them.
+- Tests: `ChargeFindsCaptain`; `FilesThroughGap` checks the dotted line goes through the gap.
+

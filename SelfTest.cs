@@ -52,6 +52,7 @@ public static partial class SelfTest
         GoesToFord();
         FilesThroughGap();
         FlowCacheBound();
+        ChargeFindsCaptain();
         HoldsTheCrest();
         HorseAvoidsBadGround();
         AmbushWaits();

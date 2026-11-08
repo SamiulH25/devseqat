@@ -289,7 +289,32 @@ A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a 
 - **Replays:** goals you give are recorded (`Frame.Goals`) and re-issued on playback; the AI's are recomputed. Direct orders
   are recorded when they land, as ordinary order changes.
 
-### 4.10 Determinism and replays
+### 4.10 Ground (docs/TERRAIN.md)
+
+The field has three layers on top of the height map. Each 2.5 m cell has a `GroundKind` (`TerrainGround.cs`, rules per
+kind in `Data/ground.json`: pace for foot and horse, tiring, formation order, charge, reach, cover, stumbling). Line features
+(`TerrainFeatures.cs`: hedges, fences, rails, planted stakes) block movement and give cover; `Feature.Stops(mounted)` says
+who they stop. A field's shape comes from a `FieldLayout` (`TerrainLayouts.cs`) the seed (or the campaign) picks.
+
+- **Moving and fighting:** `Move` reads the cell's pace and order; `Hit` reads slope (high ground) and the kind's reach and
+  charge; `Tire` reads its fatigue. Arrows look along their flight for cover (`Covered`).
+- **Sight** (`BattleSight.cs`): every 0.5 s each side works out which enemy companies it sees. Crests and woods hide;
+  `Visible(s, team)` is what the AI and the HUD may use.
+- **Pathing** (`BattlePath.cs`): only when the straight way is barred (`WayBlocked`), a company follows a cached flow field.
+  `Via` -> `PathVia` steers each man. The screen's dotted order line (`Route`) builds its own field and never touches the
+  battle's cache, so looking cannot change what happens.
+- **The AI on the ground** (`BattleGround.cs`): `Survey` names the places worth holding (crest, knoll, wood edge, ford,
+  bridge, hedge, village); the general holds good ground for a while (`HoldsGround`), keeps anchors dry (`DryAnchor`),
+  picks firm going for horse (`HorseGoing`, `HorseFlank`), plants stakes; divisions snap to good ground and lie in ambush.
+- **From the campaign** (`Campaign/Ground.cs`): `WorldMap.BattleGround` picks the layout from the map cell, `Province.Wet`
+  (daily rain) and the season set `TerrainParams.Wet`/`Season`, and `Favour` puts the side that chose the ground on it.
+- **On screen:** the ground line and order warnings (`Hud.Ground.cs`), the ground map (M), ground effects and sounds
+  (`BattleScreen.GroundSteps`: splashes, mud, falling leaves; Splash, Squelch, Rustle and Hollow cues, played near the
+  camera, so the sim stays silent about footsteps).
+- **Tuning:** `--grounds n` fights the same army on both sides on each layout, twice a seed with the ground chosen by each
+  side in turn. Layouts the chooser cannot change come out exactly even; a Ridge gives the chooser most fights.
+
+### 4.11 Determinism and replays
 
 `Replay.cs` records the seed, armies, options, start positions and, per frame, `dt`, the player's input and any orders
 that changed. `Replay.Play()` reruns it; `--replay` checks the outcome matches. Anything in the sim that is not driven by
@@ -473,7 +498,7 @@ There are no image, model or sound files: everything is generated at startup.
   are in the README "Shaders" section: render targets sample upside down on GL, vertex shaders end with `FIXUP_POSITION`,
   no MSAA (breaks Mesa/Xvfb).
 - **Light:** `Sky.cs` sets sun, ambient and fog from the hour and weather.
-- **Sound:** `Audio.cs` synthesises every `Cue` (Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin)
+- **Sound:** `Audio.cs` synthesises every `Cue` (Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin; the ground's Splash, Squelch, Rustle, Hollow)
   and the music. The sim emits cues with `Sound(Cue.X, pos)` into `Battle.Sounds`; the screen plays them. No audio device
   means silence, not a crash.
 

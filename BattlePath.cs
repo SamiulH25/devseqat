@@ -80,6 +80,7 @@ public partial class Battle
         s.Path = Flow(g, s.Cavalry);
     }
 
+    /// Where a charge with no target makes for: the nearest enemy company, or once none is left the enemy's captain.
     Vector2? NearestSquadCenter(Squad s)
     {
         Vector2? best = null;
@@ -90,7 +91,10 @@ public partial class Battle
             float d = Vector2.DistanceSquared(o.Center, s.Center);
             if (d < bd) { bd = d; best = o.Center; }
         }
-        return best;
+        if (best != null) return best;
+        // No company left: the men outside companies (a captain on his own) are what is left to reach.
+        var leader = s.Team == 0 ? EnemyCaptain : Player;
+        return leader.Active ? leader.Pos : null;
     }
 
     /// Is the way to g barred for the company: from its centre, or from any of four of its men? Each look takes the next
@@ -106,6 +110,30 @@ public partial class Battle
             if (!u.Dead && !u.Routing && Far(u.Pos) && WayBlocked(u.Pos, g, s.Cavalry)) return true;
         }
         return false;
+    }
+
+    FlowField? previewFlow;
+
+    /// The way a company would take to dest, as points 2.5 m apart, for the dotted line while you draw an order; null when
+    /// it would go straight. The field is kept apart from the battle's cache, so looking never changes what the men do.
+    public List<Vector2>? Route(Squad s, Vector2 dest)
+    {
+        if (s.Alive == 0 || !WayBlocked(s.Center, dest, s.Cavalry)) return null;
+        var key = FlowKey(dest);
+        if (previewFlow == null || previewFlow.Goal != key || previewFlow.Horse != s.Cavalry)
+            previewFlow = BuildFlow(key, s.Cavalry);
+        if (float.IsPositiveInfinity(previewFlow.CostFrom(s.Center))) return null;
+        var list = new List<Vector2>();
+        var p = s.Center;
+        for (int i = 0; i < 160 && Vector2.DistanceSquared(p, dest) > PathNear * PathNear; i++)
+        {
+            var d = previewFlow.Dir(p);
+            if (d == Vector2.Zero) break;
+            p += d * Terrain.Step;
+            list.Add(p);
+        }
+        list.Add(dest);
+        return list;
     }
 
     /// Is the straight way from a to b barred: deep water, a hedge or fence, a house; for horse also thick wood?

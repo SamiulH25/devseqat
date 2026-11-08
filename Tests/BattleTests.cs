@@ -907,6 +907,30 @@ public static partial class SelfTest
         Console.WriteLine($"hedge: a company of 16 through the gap in {time:0.0}s");
         Check(routed && s.Units.All(u => u.Pos.Y > 4), "a company finds the gap in a hedge and all of it gets through");
         Check(!b.WayBlocked(new Vector2(-20, -14), new Vector2(-20, -40), false) && b.WayBlocked(new Vector2(-20, -14), new Vector2(-20, 14), false), "a hedge blocks the way, open ground does not");
+        // The dotted line you see while drawing an order goes the same way: through the gap.
+        var c = Battle.Empty(5);
+        c.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-60, 0), new Vector2(18, 0));
+        c.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(26, 0), new Vector2(60, 0));
+        var q = c.AddSquad(0, UnitType.Shieldman, 16, new(6, -14), 8, Vector2.UnitY);
+        c.Update(1 / 60f);
+        var route = c.Route(q, new(6, 14));
+        Check(route != null && route.Any(p => MathF.Abs(p.Y) < 2 && p.X > 17 && p.X < 27) && c.Route(q, new(6, -40)) == null, "the order's dotted line shows the way through the gap, and none on open ground");
+    }
+
+    /// Pathing: a charge with no company left to hit goes round the hedge for the captain behind it (a battle once stalled
+    /// with the last enemy company pressed against a hedge, the lone captain on the far side).
+    static void ChargeFindsCaptain()
+    {
+        var b = Battle.Empty(5);
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-60, 0), new Vector2(18, 0));
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(26, 0), new Vector2(60, 0));
+        b.Player.Pos = new(-20, -10);
+        var s = b.AddSquad(1, UnitType.Shieldman, 8, new(-20, 10), 4, -Vector2.UnitY);
+        s.Order = Order.Charge;
+        float time = 0;
+        while (!b.Player.Dead && s.Units.All(u => Vector2.Distance(u.Pos, b.Player.Pos) > 3) && time < 60) { b.Update(1 / 60f); time += 1 / 60f; }
+        Console.WriteLine($"hedge: the charge reaches the captain in {time:0.0}s");
+        Check(time < 60, "a charge with no company to hit goes round the hedge for the captain");
     }
 
     /// Pathing: flow fields are cached, the cache stays small, and the same goal is not built twice.

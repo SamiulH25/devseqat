@@ -121,11 +121,11 @@ partial class BattleScreen
 
     // ---------- particles (D1) ----------
 
-    struct Mote { public Vector3 Pos, Vel; public float Life, Max, Size, Grow; public Color Col; public bool Heavy; }
+    struct Mote { public Vector3 Pos, Vel; public float Life, Max, Size, Grow, Fall; public Color Col; public bool Heavy; }
     readonly List<Mote> motes = new();
     readonly Random fx = new(5);
 
-    void Spray(Vector2 at, float height, int n, Color col, float speed, float life, float size, bool heavy, float grow = 0)
+    void Spray(Vector2 at, float height, int n, Color col, float speed, float life, float size, bool heavy, float grow = 0, float fall = 0)
     {
         if (motes.Count > 1500) return;
         var g = battle.Terrain.Height(at);
@@ -133,7 +133,7 @@ partial class BattleScreen
         {
             var dir = new Vector3(fx.NextSingle() * 2 - 1, fx.NextSingle() * 0.8f + (heavy ? 0.4f : 0.1f), fx.NextSingle() * 2 - 1);
             motes.Add(new Mote { Pos = new Vector3(at.X, g + height, at.Y), Vel = dir * speed, Life = life * (0.6f + fx.NextSingle() * 0.6f), Max = life,
-                Size = size, Grow = grow, Col = col, Heavy = heavy });
+                Size = size, Grow = grow, Fall = fall, Col = col, Heavy = heavy });
         }
     }
 
@@ -148,9 +148,7 @@ partial class BattleScreen
                 case Cue.Hit: case Cue.ArrowHit: Spray(at, 1.1f, 5, new Color(140, 20, 22), 1.8f, 0.55f, 0.06f, true); break;
                 case Cue.Impact: Spray(at, 0.2f, 10, new Color(168, 150, 116), 1.6f, 1.3f, 0.25f, false, 0.6f); break;
             }
-        foreach (var u in battle.Units)
-            if (u.Active && u.Mounted && u.Speed > 5.5f && fx.NextSingle() < dt * 9 && battle.Terrain.WaterDepth(u.Pos) == 0)
-                Spray(u.Pos - u.HeadingDir * 0.8f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.6f, 1.2f, 0.3f, false, 0.7f);
+        GroundSteps(dt);
         for (int i = motes.Count - 1; i >= 0; i--)
         {
             var m = motes[i];
@@ -158,10 +156,66 @@ partial class BattleScreen
             if (m.Life <= 0) { motes.RemoveAt(i); continue; }
             if (m.Heavy) m.Vel.Y -= 9.8f * dt; else m.Vel *= 1 - 1.5f * dt;
             m.Pos += m.Vel * dt;
+            m.Pos.Y -= m.Fall * dt;
             m.Size += m.Grow * dt;
             float ground = battle.Terrain.Height(new Vector2(m.Pos.X, m.Pos.Z));
             if (m.Pos.Y < ground) { m.Pos.Y = ground + 0.01f; m.Vel = Vector3.Zero; }
             motes[i] = m;
+        }
+    }
+
+    readonly float[] stepTimer = new float[4];
+
+    /// What the ground does under moving men (docs/TERRAIN.md T8): dust under galloping hooves, splashes at fords and in water,
+    /// mud thrown up, leaves shaken down in woods; and near the camera, their sounds (splash, squelch, rustle, the bridge's beat).
+    void GroundSteps(float dt)
+    {
+        var t = battle.Terrain;
+        var ear = new Vector2(focusPoint.X, focusPoint.Z);
+        float range = 25 + 30 * blend;
+        Span<int> heard = stackalloc int[4]; // splash, squelch, rustle, hollow
+        Span<Vector2> where = stackalloc Vector2[4];
+        foreach (var u in battle.Units)
+        {
+            float speed = MathF.Abs(u.Speed);
+            if (!u.Active || speed < 1.2f) continue;
+            var kind = t.GroundAt(u.Pos);
+            bool wet = t.WaterDepth(u.Pos) > 0.05f, fast = speed > 5.5f;
+            int cue = -1;
+            if (wet)
+            {
+                cue = 0;
+                if (fx.NextSingle() < dt * (u.Mounted ? 10 : 3) * MathF.Min(1, speed / 3))
+                    Spray(u.Pos, 0.15f, u.Mounted ? 4 : 2, new Color(200, 214, 220), u.Mounted ? 2.6f : 1.6f, 0.6f, 0.07f, true);
+            }
+            else if (kind == GroundKind.Mud)
+            {
+                cue = 1;
+                if (fx.NextSingle() < dt * (u.Mounted ? 9 : 2))
+                    Spray(u.Pos - u.HeadingDir * 0.6f, 0.1f, u.Mounted ? 3 : 1, new Color(70, 54, 36), u.Mounted ? 2.2f : 1.2f, 0.7f, 0.08f, true);
+            }
+            else if (kind is GroundKind.Wood or GroundKind.DenseWood or GroundKind.Scrub)
+            {
+                cue = 2;
+                if (kind != GroundKind.Scrub && fx.NextSingle() < dt * 0.8f)
+                    Spray(u.Pos + new Vector2(fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f) * 2, 3.2f, 1,
+                        fx.Next(3) == 0 ? new Color(150, 120, 50) : new Color(96, 120, 52), 0.5f, 2.6f, 0.09f, false, 0, 1.2f);
+            }
+            else if (kind == GroundKind.Bridge) cue = 3;
+            else if (u.Mounted && fast && fx.NextSingle() < dt * 9)
+                Spray(u.Pos - u.HeadingDir * 0.8f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.6f, 1.2f, 0.3f, false, 0.7f);
+            if (cue >= 0 && Vector2.DistanceSquared(u.Pos, ear) < range * range) { heard[cue] += u.Mounted ? 3 : 1; where[cue] = u.Pos; }
+        }
+        var audio = host.Audio;
+        if (audio == null || !audio.Enabled) return;
+        var right = Matrix.Invert(view).Right;
+        for (int i = 0; i < 4; i++)
+        {
+            stepTimer[i] -= dt;
+            if (heard[i] == 0 || stepTimer[i] > 0) continue;
+            stepTimer[i] = MathF.Max(0.12f, 0.6f - heard[i] * 0.02f) * (0.7f + fx.NextSingle() * 0.6f);
+            var c = i switch { 0 => Cue.Splash, 1 => Cue.Squelch, 2 => Cue.Rustle, _ => Cue.Hollow };
+            audio.PlayAt(c, new Vector3(where[i].X, t.Height(where[i]) + 0.5f, where[i].Y), eye, right, 45);
         }
     }
 
@@ -299,6 +353,20 @@ partial class BattleScreen
         }
     }
 
+    static readonly Color RouteGilt = new(244, 214, 120);
+
+    /// The order's way round as a dotted line on the ground: short dashes every other step.
+    void RouteDots()
+    {
+        if (route == null) return;
+        for (int i = 0; i + 1 < route.Count; i += 2)
+        {
+            var a = route[i];
+            var b = Vector2.Lerp(route[i], route[i + 1], 0.6f);
+            Line(G(a, 0.25f), G(b, 0.25f), RouteGilt);
+        }
+    }
+
     void DrawLines()
     {
         lines.N = 0;
@@ -309,6 +377,7 @@ partial class BattleScreen
             Line(a.Pos, a.Pos - dir * (a.Stuck >= 0 ? 0.5f : 0.8f), ArrowColor);
         }
         Stakes();
+        RouteDots();
         foreach (var s in selected)
             foreach (var u in s.Units)
                 if (u.Active) Ring(u.Pos, u.Mounted ? 1.05f : 0.45f, Sel, 8);

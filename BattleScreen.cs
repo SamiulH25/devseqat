@@ -305,6 +305,10 @@ sealed partial class BattleScreen
         audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Map : MusicTrack.Battle);
     }
 
+    /// The dotted way the first chosen company would take while you draw an order (round a river by the ford, through a hedge's gap).
+    List<Vector2>? route;
+    Vector2? routeAt;
+
     /// Hand the HUD everything it shows, and lay it out (also used for clicks).
     void SyncHud()
     {
@@ -312,6 +316,11 @@ sealed partial class BattleScreen
         hud.GroundView = groundView ?? deploying; // the ground map is up while you deploy, until you close it
         hud.GroundLine = command && !hud.Over(ms.Position) && dragStart == null ? Grounds.Describe(battle.Terrain.GroundAt(mouseGround)) : null;
         hud.OrderWarning = command && dragStart != null && Targets().Count > 0 ? battle.GroundWarning(Targets(), mouseGround) : null;
+        if (command && dragStart != null && Targets() is { Count: > 0 } ts)
+        {
+            if (routeAt == null || Vector2.DistanceSquared(routeAt.Value, mouseGround) > 4) { route = battle.Route(ts[0], mouseGround); routeAt = mouseGround; }
+        }
+        else { route = null; routeAt = null; }
         hud.Command = command; hud.Paused = paused; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
         hud.ShowResult = battle.Winner >= 0 && !helpOpen;
         hud.InCampaign = campaignBattle != null;

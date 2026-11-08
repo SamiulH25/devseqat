@@ -281,7 +281,9 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   or has the better scouts (horse, the Tactician perk), chooses where to stand: it gets the crest. The encounter panel says so
   ("YOU HOLD THE HIGH GROUND."). Auto-resolve counts it too, and horse is worth less on wet or wooded ground.
 - **Pathing** (`BattlePath.cs`): companies find their own way round: sent over a river they make for the ford or bridge, and sent at a hedge they file
-  through its gaps. On open ground they march straight.
+  through its gaps. On open ground they march straight. While you draw an order whose way is barred, a dotted gold line shows the way they will take.
+- **Hearing the ground:** men splash through fords, squelch in mud and rustle through woods, and a bridge rings hollow under
+  them; horses throw up dust on dry ground and mud on wet, and leaves fall where men push through a wood.
 - **Foliage** (placed by `Terrain`, built into meshes by `World.cs`): woods of broadleaf trees or pines, two of them flanking the field,
   lone trees, bushes along wood edges, rocks and boulders, and ~14,000 3D grass tufts with a few flowers. All low-poly, flat-shaded and lit by one sun.
   Tree trunks and boulders are **solid**: units are pushed out of them and a horse that rides into one pulls up hard.
