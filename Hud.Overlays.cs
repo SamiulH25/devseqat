@@ -144,7 +144,8 @@ sealed partial class Hud
             ("IN THE FIELD", new[] { Act.Forward, Act.Back, Act.Left, Act.Right, Act.Sprint, Act.Attack, Act.Block, Act.Bash, Act.SwapWeapon, Act.Couch, Act.Interact, Act.Rally, Act.OrderWheel }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Append(("SWING / BLOCK DIRECTION", "MOVE MOUSE"))
-                .Append(("FEINT", "BLOCK IN WINDUP")).ToArray()),
+                .Append(("FEINT", "BLOCK IN WINDUP"))
+                .Append(("RIPOSTE", "SWING JUST AFTER A PARRY")).ToArray()),
             ("COMMAND VIEW", new (string, string)[]
             {
                 ("SELECT SQUAD / BOX", "LMB / DRAG"), ("ADD TO SELECTION", Ctl.Name(Act.AddToSelection)), ("MOVE (KEEP WIDTH)", "RMB"),

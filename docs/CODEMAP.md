@@ -26,8 +26,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleBanner.cs (109 lines)
 - **Battle** (class, L10): SetupBanner:24, UpdateBanner:32, BannerFalls:47, RaiseBanner:58, LastStand:75, UpdateLastStand:89
 
-## BattleCaptain.cs (241 lines)
-- **Battle** (class, L7): Perk:24, ReleaseSwing:29, SetupCaptain:56, SwapWeapon:73, WeaponName:86, PlayerBow:93, AimTarget:117, Bash:136, CallHorse:161, UpdateCalledHorse:169, Fatigue:182, Tire:184, Resupply:193, ArcherSupply:209, SoftTarget:219, SoundRetreat:228
+## BattleCaptain.cs (245 lines)
+- **Battle** (class, L7): Perk:24, ReleaseSwing:29, SetupCaptain:56, SwapWeapon:73, WeaponName:90, PlayerBow:97, AimTarget:121, Bash:140, CallHorse:165, UpdateCalledHorse:173, Fatigue:186, Tire:188, Resupply:197, ArcherSupply:213, SoftTarget:223, SoundRetreat:232
 
 ## BattleCombat.cs (410 lines)
 - **Battle** (class, L6): TickAction:8, Strike:34, CountDeed:64, InArc:72, SpeedBonus:80, SideOf:92, Hit:101, Damage:198, HitHorse:211, Stagger:229, BossFalls:240, Kill:249, Shoot:292, Loose:300, Gauss:322, UpdateArrows:324, Braces:353, Lances:380, DistToSegment:404
@@ -254,19 +254,19 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## GpuReport.cs (64 lines)
 - **GpuReport** (class, L9): GpuReport:20, Frame:33, Next:49, Write:57
 
-## Hud.cs (639 lines)
+## Hud.cs (648 lines)
 - **Cmd** (enum, L7)
 - **MenuItem** (enum, L9)
-- **Hud** (class, L13): StartAt:39, Hud:62, U:64, Layout:69, CardAt:111, ButtonAt:112, MenuAt:113, MinimapAt:114, Over:116, Rect:120, Panel:123, Frame:125, Line:133, Bar:139, Text:142, TW:143, TextC:144, TextR:145, MoraleColor:147, AvgMorale:156, Draw:164, Strength:214, SideArms:217, GoalLines:221, Balance:233, Feed:265, MinimapPanel:289, PlayerPanel:325, Cards:366, Icon:418, Portrait:420, Crosshair:456, CommandPanel:502, Wheel:524, Hints:551, Banners:560, StateOf:586, FormationName:589, SquadTooltip:592, Detail:614
+- **Hud** (class, L13): StartAt:39, Hud:62, U:64, Layout:69, CardAt:111, ButtonAt:112, MenuAt:113, MinimapAt:114, Over:116, Rect:120, Panel:123, Frame:125, Line:133, Bar:139, Text:142, TW:143, TextC:144, TextR:145, MoraleColor:147, AvgMorale:156, Draw:164, Strength:214, SideArms:217, GoalLines:221, Balance:233, Feed:265, MinimapPanel:289, PlayerPanel:325, Cards:375, Icon:427, Portrait:429, Crosshair:465, CommandPanel:511, Wheel:533, Hints:560, Banners:569, StateOf:595, FormationName:598, SquadTooltip:601, Detail:623
 
 ## Hud.Divisions.cs (205 lines)
 - **Hud** (class, L8): readonly:14, readonly:22, LayoutDivisions:28, LayoutGoals:42, DivisionAt:50, DivisionTag:54, GoalTag:61, DivisionCards:63, GoalPanel:86, GoalWheel:103, SergeantPennants:125, BannerMark:142, DivisionMarkers:165
 
-## Hud.Overlays.cs (176 lines)
+## Hud.Overlays.cs (177 lines)
 - **Hud** (class, L7): SampleStrength:15, Overlay:24, MenuButtons:31, Menu:38, Result:50, Well:81, Tally:91, StrengthChart:125, Help:138
 
-## MapScreen.Armoury.cs (72 lines)
-- **MapScreen** (class, L7): ArmourerWell:12, GearRow:29, GearStats:64
+## MapScreen.Armoury.cs (103 lines)
+- **MapScreen** (class, L7): ArmourerWell:12, GearRow:29, GearStats:95
 
 ## MapScreen.Captain.cs (186 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:84, CaptainRecord:150

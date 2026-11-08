@@ -83,6 +83,10 @@ public sealed partial class Battle
         Log(to.Ammo > 0 ? $"You take up the {WeaponName(to)}. {p.Ammo} shots left." : $"You take up the {WeaponName(to)}.");
     }
 
+    /// The weapon you hold now and whether a second one waits (for the HUD).
+    public string PlayerWeapon => WeaponName(Player.Type);
+    public bool HasSecondWeapon => secondary != null;
+
     static string WeaponName(UnitType t) => t.Look.Weapon switch
     {
         "sword" => t.HasShield ? "sword and shield" : "sword", "daneaxe" => "dane axe", "club" => "mace",

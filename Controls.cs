@@ -98,7 +98,7 @@ public sealed class Controls
     {
         [Act.Forward] = "MOVE / REIN FORWARD", [Act.Back] = "MOVE / REIN BACK", [Act.Left] = "MOVE / TURN LEFT", [Act.Right] = "MOVE / TURN RIGHT",
         [Act.Sprint] = "SPRINT / GALLOP", [Act.Attack] = "ATTACK (HOLD = POWER)", [Act.Block] = "BLOCK (MATCH = PARRY)",
-        [Act.Couch] = "COUCH LANCE", [Act.Interact] = "MOUNT / DISMOUNT", [Act.Rally] = "RALLY", [Act.OrderWheel] = "ORDER WHEEL (HOLD)",
+        [Act.Couch] = "COUCH LANCE", [Act.Interact] = "MOUNT / DISMOUNT", [Act.Rally] = "RALLY / FIGHT ON WHEN DOWN", [Act.OrderWheel] = "ORDER WHEEL (HOLD)",
         [Act.RotateLeft] = "ROTATE CAMERA LEFT", [Act.RotateRight] = "ROTATE CAMERA RIGHT", [Act.AddToSelection] = "ADD TO SELECTION",
         [Act.Charge] = "CHARGE", [Act.Follow] = "FOLLOW ME", [Act.FormHere] = "FORM LINE ON ME", [Act.HoldPosition] = "HOLD POSITION",
         [Act.Advance] = "ADVANCE", [Act.FallBack] = "FALL BACK", [Act.Spacing] = "LOOSE / TIGHT", [Act.FireAtWill] = "FIRE AT WILL / HOLD",

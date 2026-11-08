@@ -360,6 +360,15 @@ sealed partial class Hud
         TextR(ready ? $"RALLY {Ctl.Name(Act.Rally)}" : $"{B.RallyCooldown:0}", rally.Right - U(5), rally.Y + U(6), ready ? Gold : Dim, 1);
         kit.Icon("skull", rx - U(64), r.Y + U(10), Dim, 1);
         TextR($"{B.PlayerKills}", rx, r.Y + U(10), Color.White, 1);
+        // What is in your hands (P7), and the swap key when a second weapon waits.
+        string weapon = B.PlayerWeapon.ToUpperInvariant() + (B.HasSecondWeapon ? $" ({Ctl.Name(Act.SwapWeapon)})" : "");
+        if (TW(weapon, 1) < rally.X - x - U(8)) Text(weapon, x, r.Bottom - U(16), Dim, 1);
+        // The swing (P2): a riposte window open, a chain of blows under way.
+        if (!Command)
+        {
+            if (B.Riposting) TextC("RIPOSTE!", W / 2f, H / 2f + U(36), Gold, 2);
+            else if (B.Chain >= 1 && p.Action is UnitAction.Windup or UnitAction.Recover) TextC($"CHAIN X{B.Chain + 1}", W / 2f, H / 2f + U(36), B.Chain >= 3 ? Bad : Color.White, 1);
+        }
     }
 
     /// The unit cards as a dock along the bottom: portrait in its side's cloth, number, tier, order, men and morale gauges.

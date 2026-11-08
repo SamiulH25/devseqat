@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1-P6 built; P7 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1-P7 built; P8 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -325,3 +325,10 @@ Give the captain something to do in each fight beyond "win".
   quarter of your health (`FoughtOn`, which still counts as a fall in the result), or be carried off when the moment
   passes; a blow while down ends it. `SelfTest.BannerAndLastStand`; `ReplayExact` now also replays a battle with all three.
   Simplifications: the bearer stays in his company's ranks rather than at your side; no "a horse is near" condition.
+- P7 (the screens): the armourer lists each piece's stats against what you wear in that slot, the difference in green or
+  red (`MapScreen.Armoury.Compare`: damage, reach, armour, speed). The battle HUD shows your weapon and the swap key under
+  the bars (`Battle.PlayerWeapon`, `HasSecondWeapon`) and flashes "RIPOSTE!" or "CHAIN X3" under the crosshair. F1 help
+  lists the riposte, and the rally key now reads "RALLY / FIGHT ON WHEN DOWN". The goals, banner, last stand, skill
+  rises, lasting wounds, traits and title were drawn as each step was built (P3-P6). Simplifications: no separate paper
+  doll tab (the armourer's slot tabs show what you wear) and no new UI lab pages (the real screens are in the campaign
+  and battle shots).

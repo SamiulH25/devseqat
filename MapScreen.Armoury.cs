@@ -36,7 +36,17 @@ partial class MapScreen
         ui.Icon(icon, r.X + ui.U(8), r.Y + ui.U(8), col, 2);
         string state = main ? (g.Slot == "weapon" ? " . IN HAND" : " . WORN") : second ? " . SECOND" : "";
         ui.Text(g.Name.ToUpperInvariant() + state, r.X + ui.U(30), r.Y + ui.U(6), col, 1);
-        ui.Text(GearStats(g), r.X + ui.U(30), r.Y + ui.U(19), Style.Dim, 1);
+        string stats = GearStats(g);
+        ui.Text(stats, r.X + ui.U(30), r.Y + ui.U(19), Style.Dim, 1);
+        // Against what you wear now (P7): better in green, worse in red.
+        int cx = r.X + ui.U(30) + ui.TW(stats, 1) + ui.U(8);
+        if (!main && !second)
+            foreach (var (text, good) in Compare(g))
+            {
+                if (cx + ui.TW(text, 1) > r.Right - ui.U(112)) break; // clear of the buttons
+                ui.Text(text, cx, r.Y + ui.U(19), good ? Style.Ok : Style.Bad, 1);
+                cx += ui.TW(text, 1) + ui.U(6);
+            }
         int bw = ui.U(50), bx = r.Right - ui.U(4) - bw, by = r.Center.Y - ui.U(10);
         Rectangle B() { var b = new Rectangle(bx, by, bw, ui.U(20)); bx -= bw + ui.U(4); return b; }
         string info = "";
@@ -58,6 +68,27 @@ partial class MapScreen
             else if (!main && !second && !g.Free) (info, infoCol) = ($"SELLS {Campaign.SellPrice(g)}", Style.Dim);
         }
         if (info != "") ui.TextR(info, bx + bw, r.Y + ui.U(6), infoCol, 1);
+    }
+
+    /// How a piece differs from the one worn in its slot (the weapon in hand for weapons): the stats that change.
+    List<(string Text, bool Good)> Compare(GearDef g)
+    {
+        var k = C.Captain.Kit;
+        var worn = Gear.Find(g.Slot switch { "weapon" => k.Weapon, "shield" => k.Shield, "body" => k.Body, "helm" => k.Helm, _ => k.Horse });
+        var d = new List<(string, bool)>();
+        if (worn == null || worn.Id == g.Id) return d;
+        void Add(string what, float delta, string fmt, bool more = true) { if (MathF.Abs(delta) >= 0.05f) d.Add(($"{delta.ToString(fmt)} {what}", delta > 0 == more)); }
+        switch (g.Slot)
+        {
+            case "weapon": Add("DMG", g.Damage - worn.Damage, "+0;-0"); if (!g.Ranged && !worn.Ranged) Add("REACH", g.Reach - worn.Reach, "+0.0;-0.0"); break;
+            case "shield": Add("BLOCK", (g.Block - worn.Block) * 100, "+0;-0"); break;
+            case "horse":
+                var (a, b) = (Troops.Mount(g.Mount), Troops.Mount(worn.Mount));
+                Add("HEALTH", a.Hp - b.Hp, "+0;-0"); Add("GALLOP", a.Gallop - b.Gallop, "+0.0;-0.0");
+                break;
+            default: Add("ARMOUR", g.Armor - worn.Armor, "+0;-0"); Add("SPEED", g.Speed - worn.Speed, "+0.0;-0.0"); break;
+        }
+        return d;
     }
 
     /// One short line of what a piece does.
