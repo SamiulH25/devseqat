@@ -274,6 +274,31 @@ partial class BattleScreen
         }
     }
 
+    static readonly Color StakeWood = new(150, 118, 78);
+
+    /// Planted stakes (they come mid-battle, after the field's meshes are built): sharpened poles leaning toward the enemy.
+    void Stakes()
+    {
+        foreach (var f in battle.Terrain.Features)
+        {
+            if (f.Kind != FeatureKind.Stakes) continue;
+            var d = f.B - f.A;
+            float len = d.Length();
+            if (len < 0.1f) continue;
+            // Toward the far army: whoever planted them stands just behind.
+            var far = Vector2.DistanceSquared(f.A, battle.Centroid(0)) > Vector2.DistanceSquared(f.A, battle.Centroid(1)) ? battle.Centroid(0) : battle.Centroid(1);
+            var lean = new Vector2(-d.Y, d.X) / len;
+            lean *= Vector2.Dot(lean, far - f.A) > 0 ? 0.55f : -0.55f;
+            for (float s = 0; s <= len; s += 0.6f)
+            {
+                var p = f.A + d * (s / len);
+                var top = G(p + lean, f.Height);
+                Line(G(p, 0), top, StakeWood);
+                Line(top, top + new Vector3(lean.X, 0.15f, lean.Y) * 0.3f, Color.LightGray); // the sharpened point
+            }
+        }
+    }
+
     void DrawLines()
     {
         lines.N = 0;
@@ -283,6 +308,7 @@ partial class BattleScreen
             var dir = a.Vel.LengthSquared() > 0 ? Vector3.Normalize(a.Vel) : Vector3.Down;
             Line(a.Pos, a.Pos - dir * (a.Stuck >= 0 ? 0.5f : 0.8f), ArrowColor);
         }
+        Stakes();
         foreach (var s in selected)
             foreach (var u in s.Units)
                 if (u.Active) Ring(u.Pos, u.Mounted ? 1.05f : 0.45f, Sel, 8);

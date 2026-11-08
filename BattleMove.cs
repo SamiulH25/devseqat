@@ -30,23 +30,27 @@ public partial class Battle
         {
             if (!u.Active) continue;
             float r = u.Mounted ? 0.9f : BodyRadius(u) - 0.025f;
-            if (Terrain.PushOut(ref u.Pos, r) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
+            if (Terrain.PushOut(ref u.Pos, r, u.Mounted) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
             // Pressed against a fence or hedge: edge along it toward the nearer end.
-            if (Terrain.Features.Count > 0 && u.Vel.LengthSquared() > 0.1f && Terrain.GoRound(u.Pos, r, Vector2.Normalize(u.Vel)) is var round && round != Vector2.Zero)
+            if (Terrain.Features.Count > 0 && u.Vel.LengthSquared() > 0.1f && Terrain.GoRound(u.Pos, r, Vector2.Normalize(u.Vel), u.Mounted) is var round && round != Vector2.Zero)
             {
                 u.Pos += round * u.Vel.Length() * 0.8f * dt;
-                Terrain.PushOut(ref u.Pos, r);
+                Terrain.PushOut(ref u.Pos, r, u.Mounted);
             }
         }
         EnforceWall(before);
     }
 
     /// The ground slows men and horses (Data/ground.json): water a lot, a ford or a wood less; a road is quick.
+    /// (Pathfinder halves what woods and marsh cost your side.)
     /// Deep water also disorders a formation (no bracing).
     float GroundSpeed(Unit u)
     {
         var g = Terrain.GroundDefAt(u.Pos);
-        return u.Mounted ? g.HorseSpeed : g.FootSpeed;
+        float pace = u.Mounted ? g.HorseSpeed : g.FootSpeed;
+        // Pathfinder: your men lose half the pace woods, scrub and marsh cost them.
+        if (pace < 1 && u.Team == 0 && Perk("Pathfinder") && Terrain.GroundAt(u.Pos) is GroundKind.Wood or GroundKind.DenseWood or GroundKind.Scrub or GroundKind.Mud) pace = 1 - (1 - pace) / 2;
+        return pace;
     }
 
     /// A horse galloping over stones, scrub or mud may stumble: it checks hard and the lance comes up (no harm done).

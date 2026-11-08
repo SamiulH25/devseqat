@@ -2,14 +2,18 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A line across the field that men cannot walk through (docs/TERRAIN.md 3): a hedge, a fence, a bridge's rail.
-/// Gaps are simply the spaces between segments.
-public enum FeatureKind { Hedge, Fence, Rail }
+/// A line across the field that men cannot walk through (docs/TERRAIN.md 3): a hedge, a fence, a bridge's rail; or a row of
+/// sharpened stakes, which only stops horse (T6). Gaps are simply the spaces between segments.
+public enum FeatureKind { Hedge, Fence, Rail, Stakes }
 
 /// One straight length of a line feature, from A to B, `Half` thick either side of the line.
 public readonly record struct Feature(FeatureKind Kind, Vector2 A, Vector2 B, float Half)
 {
-    public float Height => Kind == FeatureKind.Hedge ? 1.7f : 1.1f;
+    public float Height => Kind switch { FeatureKind.Hedge => 1.7f, FeatureKind.Stakes => 1.0f, _ => 1.1f };
+    /// Stakes: men on foot pass between them, horse cannot.
+    public bool HorseOnly => Kind == FeatureKind.Stakes;
+    /// Does it stop this man (foot pass stakes)?
+    public bool Stops(bool mounted) => mounted || !HorseOnly;
 }
 
 /// Terrain: line features, kept in their own bucket grid so `PushOut` only looks at the near ones.
@@ -21,7 +25,7 @@ public sealed partial class Terrain
     /// Lay a length of hedge, fence or rail from a to b.
     public void AddFeature(FeatureKind kind, Vector2 a, Vector2 b)
     {
-        var f = new Feature(kind, a, b, kind == FeatureKind.Hedge ? 0.5f : 0.12f);
+        var f = new Feature(kind, a, b, kind switch { FeatureKind.Hedge => 0.5f, FeatureKind.Stakes => 0.35f, _ => 0.12f });
         Features.Add(f);
         float pad = f.Half + 1;
         int x0 = CellX(MathF.Min(a.X, b.X) - pad), x1 = CellX(MathF.Max(a.X, b.X) + pad);
@@ -57,14 +61,15 @@ public sealed partial class Terrain
         }
     }
 
-    /// Push a circle of radius r out of any feature it overlaps. Returns true if it hit one.
-    bool PushOutFeatures(ref Vector2 p, float r)
+    /// Push a circle of radius r out of any feature it overlaps (stakes only for horse). Returns true if it hit one.
+    bool PushOutFeatures(ref Vector2 p, float r, bool mounted)
     {
         if (Features.Count == 0 || !featureCells.TryGetValue(CellX(p.Y) * bucketSide + CellX(p.X), out var near)) return false;
         bool hit = false;
         foreach (int i in near)
         {
             var f = Features[i];
+            if (!f.Stops(mounted)) continue;
             var ab = f.B - f.A;
             float k = Math.Clamp(Vector2.Dot(p - f.A, ab) / ab.LengthSquared(), 0, 1);
             var c = f.A + ab * k;
@@ -81,12 +86,13 @@ public sealed partial class Terrain
 
     /// A man walking `dir` who is pressed against a feature: the way along it to its nearer end (zero when he is not).
     /// Steering has no paths yet (T4), so this is how men find the gap at the end of a fence.
-    public Vector2 GoRound(Vector2 p, float r, Vector2 dir)
+    public Vector2 GoRound(Vector2 p, float r, Vector2 dir, bool mounted = true)
     {
         if (Features.Count == 0 || !featureCells.TryGetValue(CellX(p.Y) * bucketSide + CellX(p.X), out var near)) return Vector2.Zero;
         foreach (int i in near)
         {
             var f = Features[i];
+            if (!f.Stops(mounted)) continue;
             var ab = f.B - f.A;
             float len2 = ab.LengthSquared(), k = Math.Clamp(Vector2.Dot(p - f.A, ab) / len2, 0, 1);
             var c = f.A + ab * k;
@@ -112,19 +118,20 @@ public sealed partial class Terrain
         return false;
     }
 
-    /// Does a short step from a to b cross a feature? (Only the features near b are looked at.)
-    public bool CrossesFeatureNear(Vector2 a, Vector2 b)
+    /// Does a short step from a to b cross a feature that stops this man (stakes stop only horse; pass false for arrows)?
+    /// Only the features near b are looked at.
+    public bool CrossesFeatureNear(Vector2 a, Vector2 b, bool mounted = true)
     {
         if (!featureCells.TryGetValue(CellX(b.Y) * bucketSide + CellX(b.X), out var near)) return false;
-        foreach (int i in near) if (SegmentsCross(a, b, Features[i].A, Features[i].B)) return true;
+        foreach (int i in near) if (Features[i].Stops(mounted) && SegmentsCross(a, b, Features[i].A, Features[i].B)) return true;
         return false;
     }
 
-    /// Does the straight line from a to b cross a feature? (Pathing and sight use it.)
-    public bool CrossesFeature(Vector2 a, Vector2 b)
+    /// Does the straight line from a to b cross a feature that stops this man? (Pathing uses it.)
+    public bool CrossesFeature(Vector2 a, Vector2 b, bool mounted = true)
     {
         foreach (var f in Features)
-            if (SegmentsCross(a, b, f.A, f.B)) return true;
+            if (f.Stops(mounted) && SegmentsCross(a, b, f.A, f.B)) return true;
         return false;
     }
 

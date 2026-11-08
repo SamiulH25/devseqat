@@ -115,8 +115,22 @@ partial class BattleScreen
             if (Pressed(i == 9 ? Keys.D0 : Keys.D1 + i) && !selected.Remove(mine[i])) selected.Add(mine[i]);
         if (ctl.Pressed(Act.SelectAll)) { selected.Clear(); selectedDivision = null; }
         if (ctl.Pressed(Act.NextDivision)) NextDivision();
+        if (ctl.Pressed(Act.GroundView)) groundView = !(groundView ?? deploying);
+        if (ctl.Pressed(Act.Stakes)) PlantStakes();
         foreach (var (cmd, (_, act)) in Hud.Orders)
             if (ctl.Pressed(act)) Command(cmd);
+    }
+
+    /// Your selected longbowmen (or all of them) plant their stakes in front of their line (docs/TERRAIN.md T6).
+    void PlantStakes()
+    {
+        var bows = Targets().Where(s => s.Units[0].Type.Has("stakes")).ToList();
+        if (bows.Count == 0) { battle.Log("Only longbowmen carry stakes."); return; }
+        string? why = null;
+        int planted = 0;
+        foreach (var s in bows) { var no = battle.PlantStakes(s); if (no == null) planted++; else why ??= no; }
+        if (planted == 0 && why != null) battle.Log($"No stakes: {why.ToLowerInvariant()}.");
+        else Tips.Show("stakes", "Stakes stop horse: riders cannot cross them, but your men on foot slip between.\nEach company of longbowmen plants them once, while it holds and no enemy is within 30 m.");
     }
 
     /// Cycle the division you give goals to: none, then each living one in turn, then none again.

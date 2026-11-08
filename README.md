@@ -266,6 +266,15 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   or until it is bled by arrows, then comes down. It never sends its line into deep water (it goes for the ford or bridge), its
   horse picks targets on firm, level ground, and it rides round the outside of a wood on a flank. Its foot may lie in wait in a
   wood near its line.
+- **Reading the ground yourself:** in command view, hover the field to see what the ground does ("WOOD. COVER FROM ARROWS.
+  HORSE SLOWED. NO FORMATION."). **M** opens the ground map: every kind of ground in its own colour, with 2 m height lines,
+  hedges and houses. It is open while you deploy. Drawing an order warns you of bad ground: horse into a wood or mud, a climb,
+  or deep water on the way. Enemy flags you can no longer see are faded.
+- **Stakes:** longbowmen (the longbow line) plant a row of sharpened stakes in front of their line with **K**. A company does
+  it once, while holding with no enemy within 30 m. Horse cannot cross stakes; men on foot slip between them. The enemy's
+  longbowmen plant them too when you have horse.
+- **Perks on the ground:** Pathfinder (woods, scrub and marsh slow your men half as much), Tactician (your side sees a quarter
+  further and further into woods), Ambusher (your ambushes shake the enemy more).
 - **Pathing** (`BattlePath.cs`): companies find their own way round: sent over a river they make for the ford or bridge, and sent at a hedge they file
   through its gaps. On open ground they march straight.
 - **Foliage** (placed by `Terrain`, built into meshes by `World.cs`): woods of broadleaf trees or pines, two of them flanking the field,

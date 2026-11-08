@@ -18,7 +18,7 @@ public enum Act
     // campaign map
     PartyScreen, Speed1, Speed2, Speed3, FollowParty, QuickSave, QuickLoad,
     // battle (later additions)
-    Formation, Bash, SwapWeapon, NextDivision,
+    Formation, Bash, SwapWeapon, NextDivision, GroundView, Stakes,
 }
 
 public enum MouseButton { Left, Right, Middle, X1, X2 }
@@ -91,7 +91,7 @@ public sealed class Controls
         [Act.PartyScreen] = new[] { "P" }, [Act.Speed1] = new[] { "1" }, [Act.Speed2] = new[] { "2" }, [Act.Speed3] = new[] { "3" },
         [Act.FollowParty] = new[] { "F" }, [Act.QuickSave] = new[] { "F5" }, [Act.QuickLoad] = new[] { "F9" },
         [Act.Formation] = new[] { "J" }, [Act.Bash] = new[] { "CTRL" }, [Act.SwapWeapon] = new[] { "N" },
-        [Act.NextDivision] = new[] { "Y" },
+        [Act.NextDivision] = new[] { "Y" }, [Act.GroundView] = new[] { "M" }, [Act.Stakes] = new[] { "K" },
     };
 
     public static readonly Dictionary<Act, string> Labels = new()
@@ -107,7 +107,7 @@ public sealed class Controls
         [Act.PartyScreen] = "PARTY SCREEN (MAP)", [Act.Speed1] = "SPEED X1 (MAP)", [Act.Speed2] = "SPEED X3 (MAP)", [Act.Speed3] = "SPEED X8 (MAP)",
         [Act.FollowParty] = "FOLLOW YOUR PARTY (MAP)", [Act.QuickSave] = "QUICK SAVE", [Act.QuickLoad] = "QUICK LOAD",
         [Act.Formation] = "CYCLE FORMATION", [Act.Bash] = "SHIELD BASH / KICK", [Act.SwapWeapon] = "SWAP WEAPON",
-        [Act.NextDivision] = "NEXT DIVISION (GOALS)",
+        [Act.NextDivision] = "NEXT DIVISION (GOALS)", [Act.GroundView] = "GROUND MAP", [Act.Stakes] = "PLANT STAKES (LONGBOWMEN)",
     };
 
     public Controls()

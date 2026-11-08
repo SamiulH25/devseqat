@@ -30,6 +30,20 @@ sealed partial class BattleScreen
     AlphaTestEffect spriteFx = null!;
     BattleSetup? campaignBattle;               // the battle in progress came from the campaign map
     bool deploying;
+    /// First times on the ground (docs/TERRAIN.md T6): a river, a wood, a field with places to hide.
+    void GroundTips()
+    {
+        var t = battle.Terrain;
+        if (t.Rivers.Count > 0)
+            Tips.Show("river", "A river. Deep water is slow, tiring and breaks your ranks. Companies sent over it go by the ford\nor the bridge if one is near (pale blue on the ground map). Press M for the ground map.");
+        else if (battle.Places.Any(p => p.Kind == PlaceKind.WoodEdge))
+            Tips.Show("wood", "A wood. It slows horse, breaks formations and stops arrows, and men inside it are seen only up close.\nHover the ground in command view to see what it does. A division given AMBUSH waits in a wood, unseen.");
+        else if (battle.Places.Any(p => p.Kind is PlaceKind.Crest or PlaceKind.Knoll))
+            Tips.Show("height", "High ground. Men fighting downhill hit harder, archers shoot further, and a crest hides what is behind it.\nAn enemy on good ground may wait for you to come to him.");
+    }
+
+    /// The ground map, as you last set it (null: shown while deploying only).
+    bool? groundView;
     Vector3 focusPoint;                        // what the camera looks at (the shadow map is centred here)
     BasicEffect shadowFx = null!, lineFx = null!;
     Battle battle = null!;
@@ -222,6 +236,7 @@ sealed partial class BattleScreen
         if (deploying) Tips.Show("deploy", "Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press Space (or START BATTLE) to begin.");
         else if (!command && battle.Player.Active) Tips.Show("field", "Field view: you fight. On horseback W/S rein, A/D turn, Shift gallops. On foot WASD.\nMove the mouse to choose a swing direction, LMB to attack, RMB to block (match the red mark to parry).\nTab: command view. Hold MMB or Z: the order wheel.");
         else if (command && !deploying) Tips.Show("command", "Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. Tab returns to your body: you inspire the men near you.");
+        if (deploying) GroundTips();
 
         if (ctl.Pressed(Act.Menu)) { if (helpOpen) helpOpen = false; else if (battle.Winner < 0) menuOpen = !menuOpen; skipMouse = true; }
         if (ctl.Pressed(Act.Help)) { helpOpen = !helpOpen; skipMouse = true; }
@@ -293,7 +308,10 @@ sealed partial class BattleScreen
     /// Hand the HUD everything it shows, and lay it out (also used for clicks).
     void SyncHud()
     {
-        hud.B = battle; hud.Selected = selected; hud.Ctl = ctl; hud.Minimap = world.Minimap;
+        hud.B = battle; hud.Selected = selected; hud.Ctl = ctl; hud.Minimap = world.Minimap; hud.GroundMap = world.GroundMap;
+        hud.GroundView = groundView ?? deploying; // the ground map is up while you deploy, until you close it
+        hud.GroundLine = command && !hud.Over(ms.Position) && dragStart == null ? Grounds.Describe(battle.Terrain.GroundAt(mouseGround)) : null;
+        hud.OrderWarning = command && dragStart != null && Targets().Count > 0 ? battle.GroundWarning(Targets(), mouseGround) : null;
         hud.Command = command; hud.Paused = paused; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
         hud.ShowResult = battle.Winner >= 0 && !helpOpen;
         hud.InCampaign = campaignBattle != null;

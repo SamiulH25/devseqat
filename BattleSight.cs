@@ -8,6 +8,7 @@ namespace Ironfield;
 public partial class Battle
 {
     float sightTimer;
+    readonly float[] ambushLogged = { -99, -99 };
     bool sightStarted;
     /// How long a sighting lasts, and how near you must be to see men in a wood (or anyone, when fighting them).
     const float SightMemory = 3, WoodSight = 25, CloseSight = 12;
@@ -32,7 +33,8 @@ public partial class Battle
             foreach (var s in Squads)
             {
                 if (s.Team != team || s.Alive == 0) continue;
-                if (!eyes.Any(e => Sees(e, s))) continue;
+                bool keen = foe == 0 && Perk("Tactician"); // an eye for ground: you see further, and into the edge of a wood
+                if (!eyes.Any(e => Sees(e, s, keen))) continue;
                 bool fresh = Time - s.SeenAt[foe] > 6;
                 s.SeenAt[foe] = Time;
                 s.LastSeen = s.Center;
@@ -42,19 +44,19 @@ public partial class Battle
         sightStarted = true;
     }
 
-    /// Can a man standing at `eye` see company s?
-    bool Sees(Vector2 eye, Squad s)
+    /// Can a man standing at `eye` see company s? A keen eye (the Tactician perk) sees a quarter further.
+    bool Sees(Vector2 eye, Squad s, bool keen = false)
     {
-        float d = MathF.Max(0, Vector2.Distance(eye, s.Center) - s.Radius);
+        float d = MathF.Max(0, Vector2.Distance(eye, s.Center) - s.Radius), far = keen ? 1.25f : 1;
         if (d < CloseSight) return true;
-        if (d > Weather.Vision) return false;
+        if (d > Weather.Vision * far) return false;
         if (Time - s.LooseAt < 2) return true; // a volley gives you away
-        if (Terrain.CoverAt(s.Center) >= 0.5f && d > WoodSight) return false;
-        return ClearLine(eye, s.Center);
+        if (Terrain.CoverAt(s.Center) >= 0.5f && d > WoodSight * far) return false;
+        return ClearLine(eye, s.Center, keen ? 19 : 15);
     }
 
     /// Nothing between: no crest above the line of sight, and not too much wood or village along it.
-    internal bool ClearLine(Vector2 a, Vector2 b)
+    internal bool ClearLine(Vector2 a, Vector2 b, float through = 15)
     {
         float len = Vector2.Distance(a, b);
         if (len < 1) return true;
@@ -67,7 +69,7 @@ public partial class Battle
             if (Terrain.Height(p) > MathHelper.Lerp(h0, h1, s / len)) return false; // a crest in the way
             float c = Terrain.CoverAt(p);
             if (inside) { inside = c > 0.3f; continue; }
-            if ((cover += c * 5) > 15) return false;                                 // about 27 m of wood
+            if ((cover += c * 5) > through) return false;                            // about 27 m of wood
         }
         return true;
     }
@@ -76,9 +78,11 @@ public partial class Battle
     void Ambush(Squad s)
     {
         int foe = 1 - s.Team, shaken = 0;
+        float shock = s.Team == 0 && Perk("Ambusher") ? 25 : 15; // your ambushes strike harder with the Ambusher perk
         foreach (var u in Near(s.Center, s.Radius + 15, nearBrace))
-            if (u.Team == foe && u.Active && !u.IsLeader && !u.Routing) { u.Morale -= 15; shaken++; }
-        if (shaken < 3) return;
+            if (u.Team == foe && u.Active && !u.IsLeader && !u.Routing) { u.Morale -= shock; shaken++; }
+        if (shaken < 3 || Time - ambushLogged[s.Team] < 5) return; // one cry for companies breaking cover together
+        ambushLogged[s.Team] = Time;
         Log(s.Team == 0 ? "Your men burst from cover!" : "Ambush! The enemy bursts from cover!");
         Sound(Cue.Shout, s.Center);
     }

@@ -325,9 +325,9 @@ public sealed partial class Terrain
     }
 
     /// Push a circle of radius r out of any trunk or boulder it overlaps. Returns true if it hit something.
-    public bool PushOut(ref Vector2 p, float r)
+    public bool PushOut(ref Vector2 p, float r, bool mounted = true)
     {
-        bool hit = PushOutFeatures(ref p, r);
+        bool hit = PushOutFeatures(ref p, r, mounted);
         if (IsFlat) return hit;
         int bx = (int)((p.X + Half) / Cell), bz = (int)((p.Y + Half) / Cell);
         for (int z = bz - 1; z <= bz + 1; z++)

@@ -52,6 +52,9 @@ public static partial class SelfTest
         HorseAvoidsBadGround();
         AmbushWaits();
         TakesTheFord();
+        GroundForThePlayer();
+        Stakes();
+        Pathfinder();
         GroundLayer();
         GroundMoves();
         GroundFights();

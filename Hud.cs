@@ -178,7 +178,8 @@ sealed partial class Hud
         Cards();
         DivisionCards();
         if (Command && Div != null) GoalPanel();
-        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) SquadTooltip(); } else Crosshair();
+        if (GroundView && !ShowResult && !MenuOpen) GroundPanel();
+        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) { SquadTooltip(); GroundHints(); } } else Crosshair();
         if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
         Hints();
         if (B.DownSince >= 0) // the last stand (P6)
@@ -573,11 +574,12 @@ sealed partial class Hud
         foreach (var s in B.Squads)
         {
             if (s.Alive == 0) continue;
-            var c = B.Visible(s, 0) ? s.Centroid() : s.LastSeen; // an enemy you cannot see: its flag stays where you last saw it
+            bool seen = B.Visible(s, 0);
+            var c = seen ? s.Centroid() : s.LastSeen; // an enemy you cannot see: its flag stays where you last saw it, faded
             var sp = vp.Project(new Vector3(c.X, B.Terrain.Height(c) + 3.4f, c.Y), Proj, View, Matrix.Identity);
             if (sp.Z < 0 || sp.Z > 1) continue;
             bool own = s.Team == 0, sel = Selected.Contains(s);
-            var col = own ? Friendly : Foe;
+            var col = own ? Friendly : seen ? Foe : Color.Lerp(Foe, Dim, 0.6f);
             int x = (int)sp.X, y = (int)sp.Y;
             Rect(new Rectangle(x, y - U(24), U(2), U(26)), Color.Black * 0.7f); // pole
             var flag = new Rectangle(x + U(2), y - U(24), U(24), U(15));

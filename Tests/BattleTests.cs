@@ -787,6 +787,83 @@ public static partial class SelfTest
         Check(b.Winner >= 0, "a battle on a river line resolves");
     }
 
+    /// Tools for the player (docs/TERRAIN.md T6): the ground's line, order warnings, stakes, and the Pathfinder perk.
+    static void GroundForThePlayer()
+    {
+        Check(Grounds.Describe(GroundKind.Grass) == "GRASS. GOOD GOING.", "plain grass is good going");
+        var wood = Grounds.Describe(GroundKind.Wood);
+        Check(wood.StartsWith("WOOD. COVER FROM ARROWS. HORSE SLOWED. NO FORMATION."), "a wood says what it does: " + wood);
+        Check(Grounds.Describe(GroundKind.Road).Contains("QUICK GOING"), "a road is quick");
+
+        var b = Battle.Empty(5);
+        b.Terrain.Paint(new Vector2(0, 40), 12, GroundKind.Wood);
+        var horse = b.AddSquad(0, Troops.Get("lancers"), 6, Vector2.Zero, 6, Vector2.UnitY);
+        var foot = b.AddSquad(0, UnitType.Shieldman, 6, new(20, 0), 6, Vector2.UnitY);
+        Run(b, 0.1f);
+        Check(b.GroundWarning(new[] { horse }, new Vector2(0, 40)) == "HORSE IN THE WOOD: SLOWED, NO CHARGE.", "sending horse into a wood warns you");
+        Check(b.GroundWarning(new[] { foot }, new Vector2(20, 40)) == null, "open ground does not");
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-30, 20), new Vector2(30, 20));
+        Check(b.GroundWarning(new[] { foot }, new Vector2(20, 40)) == null, "a hedge in the way is no warning (they go round)");
+    }
+
+    /// Longbowmen's stakes stop horse but let men on foot through; each company plants them once.
+    static void Stakes()
+    {
+        var bows = Troops.Get("longbowmen");
+        Check(bows.Has("stakes") && !Troops.Get("bowmen").Has("stakes"), "longbowmen carry stakes");
+        float Crossed(bool mounted, out string? second)
+        {
+            var b = Battle.Empty(5);
+            var archers = b.AddSquad(0, bows, 10, new(0, -4), 10, Vector2.UnitY);
+            archers.Order = Order.Hold; archers.Anchor = new(0, -4); archers.Front = Vector2.UnitY;
+            Run(b, 0.1f);
+            var shield = b.AddSquad(0, UnitType.Shieldman, 4, new(-60, -60), 4, Vector2.UnitY);
+            Check(b.CannotStake(shield) != null, "only longbowmen can plant stakes");
+            Check(b.PlantStakes(archers) == null, "longbowmen plant stakes");
+            second = b.PlantStakes(archers);
+            foreach (var u in archers.Units) u.Pos += new Vector2(0, -30); // out of the way
+            archers.Anchor = new(0, -34);
+            var came = b.AddSquad(1, mounted ? Troops.Get("lancers") : UnitType.Shieldman, 8, new(0, 14), 8, -Vector2.UnitY);
+            came.Order = Order.Hold; came.Anchor = new(0, -12); came.Front = -Vector2.UnitY;
+            var stakes = b.Terrain.Features.Where(f => f.Kind == FeatureKind.Stakes).ToList();
+            float half = stakes.Max(f => MathF.Max(MathF.Abs(f.A.X), MathF.Abs(f.B.X))), line = stakes[0].A.Y;
+            var through = new HashSet<Unit>();
+            for (int i = 0; i < 60 * 12; i++)
+            {
+                var was = came.Units.Select(u => u.Pos).ToList();
+                b.Update(1 / 60f);
+                for (int k = 0; k < came.Units.Count; k++) // crossed the staked front itself, not round its end
+                    if (was[k].Y >= line && came.Units[k].Pos.Y < line && MathF.Abs(came.Units[k].Pos.X) < half) through.Add(came.Units[k]);
+            }
+            return through.Count;
+        }
+        float riders = Crossed(true, out var again), men = Crossed(false, out _);
+        Console.WriteLine($"stakes: {riders} of 8 riders and {men} of 8 men on foot got through");
+        Check(again != null, "a company plants its stakes once");
+        Check(riders == 0, "horse cannot cross stakes");
+        Check(men >= 4, "men on foot slip between them");
+    }
+
+    /// Pathfinder: your men lose half the pace a wood costs.
+    static void Pathfinder()
+    {
+        float Walk(bool perk)
+        {
+            var o = new BattleOptions();
+            if (perk) o.Perks.Add("Pathfinder");
+            var b = Battle.Empty(5, o);
+            b.Terrain.Paint(new Vector2(0, 15), 25, GroundKind.Wood);
+            var s = b.AddSquad(0, UnitType.Shieldman, 1, Vector2.Zero, 1, Vector2.UnitY);
+            s.Order = Order.Hold; s.Anchor = new(0, 30); s.Front = Vector2.UnitY;
+            float time = 0;
+            while (s.Units[0].Pos.Y < 28 && time < 60) { b.Update(1 / 60f); time += 1 / 60f; }
+            return time;
+        }
+        float plain = Walk(false), finder = Walk(true);
+        Console.WriteLine($"pathfinder: 30 m of wood in {plain:0.0}s, {finder:0.0}s with the perk");
+        Check(finder < plain * 0.93f, "Pathfinder men cross a wood quicker");
+    }
+
     /// Pathing (docs/TERRAIN.md T4): an order across a river goes by the ford when one is near, rather than wading the deep.
     static void GoesToFord()
     {

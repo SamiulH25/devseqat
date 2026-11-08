@@ -131,6 +131,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Spatial grid (`Near`, `Separate`) | `BattleGrid.cs` |
 | Sight: who has seen which company, crests and woods, ambushes (docs/TERRAIN.md T3) | `BattleSight.cs` (`UpdateSight`, `Visible`, `Sees`, `ClearLine`, `Ambush`); arrow cover `BattleCombat.Covered` |
 | The AI reads the ground: the survey of places, holding a crest, dry anchors, horse going, the horse's flank, sergeants' snap, the AI's ambush wood | `BattleGround.cs` (`Places`, `Survey`, `BestPlace`, `SnapToGround`, `HoldsGround`, `Patience`, `DryAnchor`, `HorseGoing`, `HorseFlank`); `BattleDivision.AmbushWood` |
+| Ground for the player: ground words, ground map (M), order warnings, stakes (K) | `Grounds.Describe`/`Name` (TerrainGround.cs); `Hud.Ground.cs` (`GroundPanel`, `GroundHints`); `World.GroundMap`, `World.KindColor` (World.Features.cs); `Battle.GroundWarning`, `PlantStakes`, `CannotStake` (BattleGround.cs); `FeatureKind.Stakes` (stops horse only: `Feature.Stops`); drawn in `BattleScreen.Stakes` |
 | Pathing: flow fields round water, hedges, houses (only when the straight way is barred) | `BattlePath.cs` (`UpdatePath`, `WayBlocked`, `PathVia`, `Flow`, `FlowField`); hooked in `BattleSiege.Via` |
 | Divisions: goals, order delay, sergeant brain, AI goals / couriers | `BattleDivision.cs` (`IssueGoal`, `OrderDelay`, `Direct`, `Brain`, `AiCommand`) / `BattleCourier.cs` |
 | Unit/troop types, look, mounts | `Units.cs`, `Troops.cs` (+ `Armies` presets, `Large`, `Divide`), `Data/troops.json` |

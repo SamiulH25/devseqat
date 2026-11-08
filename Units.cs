@@ -75,9 +75,9 @@ public sealed class UnitType
     /// "regen" (heals when left alone a moment), "daylight" (slow and weak in sunlight, no healing), "fearless" (never routs).
     /// The undead's: "bones" (arrows do little to a skeleton), "raise" (a necromancer: raises the fallen around him
     /// to fight for him), "raised" (held up by a necromancer: falls apart when the last one of its side falls),
-    /// "feed" (a ghoul: a kill heals it).
+    /// "feed" (a ghoul: a kill heals it). Men's: "stakes" (longbowmen carry stakes to plant before their line, docs/TERRAIN.md T6).
     public string[] Traits = Array.Empty<string>();
-    public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless", "bones", "raised", "raise", "feed" };
+    public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless", "bones", "raised", "raise", "feed", "stakes" };
     /// A body big enough to take more room, shove men aside and stand up to a horse (a troll).
     public bool Huge => Size >= 1.6f;
     /// Bound to its boss: loses heart when he falls.

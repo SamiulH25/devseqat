@@ -363,7 +363,7 @@ public partial class Battle
     {
         float cover = Terrain.CoverAt(b);
         if (cover > 0 && rng.NextSingle() < cover * Vector2.Distance(a, b) * 0.12f) return true;
-        return above < 1.8f && Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(a, b) && rng.NextSingle() < 0.7f;
+        return above < 1.8f && Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(a, b, mounted: false) && rng.NextSingle() < 0.7f; // stakes are no cover
     }
 
     /// Braced spears catch a horse that rides onto their points (their reach beats a couched lance).

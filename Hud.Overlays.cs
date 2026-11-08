@@ -151,7 +151,8 @@ sealed partial class Hud
                 ("SELECT SQUAD / BOX", "LMB / DRAG"), ("ADD TO SELECTION", Ctl.Name(Act.AddToSelection)), ("MOVE (KEEP WIDTH)", "RMB"),
                 ("DRAW FORMATION LINE", "RMB DRAG"), ("ATTACK ENEMY SQUAD", "RMB ON ENEMY"), ("DIVISION: GOAL HERE / ATTACK / SCREEN", "PICK CARD, RMB"), ("PAN", $"{Ctl.First(Act.Forward)}{Ctl.First(Act.Left)}{Ctl.First(Act.Back)}{Ctl.First(Act.Right)} / SCREEN EDGES"),
                 ("ROTATE", $"{Ctl.First(Act.RotateLeft)} {Ctl.First(Act.RotateRight)} / MMB DRAG"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"),
-                ("FOCUS SQUAD", "DOUBLE-CLICK CARD"),
+                ("FOCUS SQUAD", "DOUBLE-CLICK CARD"), ("WHAT THE GROUND DOES", "HOVER IT"), (Controls.Labels[Act.GroundView], Ctl.Name(Act.GroundView)),
+                (Controls.Labels[Act.Stakes], Ctl.Name(Act.Stakes)),
             }),
             ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.SelectAll, Act.NextDivision,
                     Act.CommandView, Act.Pause, Act.Menu, Act.Help, Act.Graphics }

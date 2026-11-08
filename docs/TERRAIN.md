@@ -450,3 +450,31 @@ T6 medium, T7 medium, T8 small.
   ridge already stands at the line of the side it favours. Screen and Harass do not seek cover, and Guard still guards the captain.
 - Tests `HoldsTheCrest` (the side on the ridge moves about 3 m before the lines meet), `HorseAvoidsBadGround` (mud;
   thick wood is handled by sight and pathing), `AmbushWaits` (sprung at 39 m) and `TakesTheFord`.
+
+### T6 (done): tools for the player
+- **Ground words**: `Grounds.Describe(kind)` builds the line from `ground.json`: cover, going, tiring, no formation (order
+  below 0.6, as `InOrder`), no charge, stumbling. Plain grass reads "GRASS. GOOD GOING." Shown under the mouse in command view
+  when no company is hovered (`Hud.GroundHints`).
+- **Ground map** (`Act.GroundView`, M; `Hud.Ground.cs`): `World.GroundMap` is a 256² texture in the minimap's framing, with flat
+  kind colours (`World.KindColor`), 2 m contours, hedges, fences and houses. Your companies and the enemies you have seen
+  (at `LastSeen`) are drawn on it, with a legend of the kinds on this field. It is up during deployment until you toggle it.
+  The minimap gained contours, hedges, fences and houses too (`World.MapFeatures`).
+- **Order warning**: while you drag an order, `Battle.GroundWarning(squads, dest)` gives "HORSE IN THE WOOD: SLOWED, NO CHARGE.",
+  "HORSE IN THE MUD: …", "INTO DEEP WATER: NO FORMATION.", "ACROSS DEEP WATER: BY THE FORD." (or "THEY WILL WADE." with no
+  crossing) or "UPHILL: THEY ARRIVE TIRED.", drawn on a red-edged panel by the cursor. A hedge in the way is not a warning,
+  because pathing goes round it.
+- **Stakes**: troop trait `stakes` (longbowmen, yeoman archers, master and sovereign longbowmen). `PlantStakes(squad)` (K, or the
+  AI's archers once in range with your horse on the field) lays 2.4 m runs with 0.8 m gaps, 2.2 m in front of the anchor.
+  It works once a company, while holding with no enemy within 30 m (`CannotStake` gives the reason). `FeatureKind.Stakes` stops only horse
+  (`Feature.Stops(mounted)`, through `PushOut`, `GoRound`, `CrossesFeature(Near)` and the horse's path costs). Arrows ignore it.
+  The planted stakes are drawn each frame as leaning poles (`BattleScreen.Stakes`), since the field's meshes are built before. Replays record
+  your plantings (`Frame.Stakes`); the AI's replay by themselves.
+- **Perks**: no new perk slots. The tree's five-per-branch shape stays, so the T6 effects joined existing perks. Pathfinder:
+  woods, scrub and mud cost your men half the pace. Tactician (the "eye for ground"): your side's sight reaches 1.25× further,
+  into woods 31 m instead of 25, and through 19 cover-metres instead of 15. Ambusher: your companies that break cover take 25
+  morale from the men they fall on instead of 15.
+- **Small things**: unseen enemy flags are faded; the sight system's ambush cry is logged once per side every 5 s; the
+  enemy's stakes are logged once. There are tips for the first river, wood or high ground, and for stakes. F1 lists the new keys.
+- Not built: pavises as cover, and the dotted preview path through the ford.
+- Tests `GroundForThePlayer`, `Stakes` (0 of 8 riders cross, 8 of 8 men on foot) and `Pathfinder` (30 m of wood in 10.2 s,
+  9.0 s with the perk).

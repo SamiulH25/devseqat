@@ -23,6 +23,32 @@ public static class Grounds
     static GroundDef[]? table;
 
     public static GroundDef Get(GroundKind k) { Load(); return table![(int)k]; }
+
+    /// The kind's name for the screen ("THICK WOOD").
+    public static string Name(GroundKind k) => k switch
+    {
+        GroundKind.DenseWood => "THICK WOOD", GroundKind.Water => "DEEP WATER", GroundKind.Stony => "STONY GROUND", GroundKind.Scrub => "SCRUB",
+        _ => k.ToString().ToUpperInvariant(),
+    };
+
+    /// What the ground does, in one short line (docs/TERRAIN.md T6): "WOOD. COVER FROM ARROWS. HORSE SLOWED. NO FORMATION."
+    public static string Describe(GroundKind k)
+    {
+        var g = Get(k);
+        var said = new List<string> { Name(k) };
+        if (g.Cover >= 0.4f) said.Add("COVER FROM ARROWS");
+        else if (g.Cover >= 0.15f) said.Add("SOME COVER");
+        if (g.FootSpeed > 1.02f) said.Add("QUICK GOING");
+        else if (g.FootSpeed <= 0.75f && g.HorseSpeed <= 0.75f) said.Add("SLOW GOING");
+        else if (g.HorseSpeed <= 0.75f) said.Add("HORSE SLOWED");
+        else if (g.FootSpeed <= 0.75f) said.Add("FOOT SLOWED");
+        if (g.Fatigue >= 1.4f) said.Add("TIRING");
+        if (g.Order < 0.6f) said.Add("NO FORMATION");
+        if (g.Charge <= 0.5f) said.Add("NO CHARGE");
+        if (g.Stumble > 0) said.Add("HORSES STUMBLE");
+        if (said.Count == 1) said.Add("GOOD GOING");
+        return string.Join(". ", said) + ".";
+    }
     public static IReadOnlyList<GroundDef> All { get { Load(); return table!; } }
 
     sealed class FileDto { public List<GroundDef> Ground = new(); }

@@ -285,6 +285,7 @@ public partial class Battle
             s.Front = dir;
             float gap = GapTo(s, foe), range = s.Units[0].Type.Range;
             if (gap > range - 4 || !seesFoe) s.Anchor = s.Centroid() + dir * 4; // close to bow range, or until they can see someone to shoot
+            else if (!charged[team] && Role(foe, "horse").Any(h => h.Alive > 0) && CannotStake(s) == null) PlantStakes(s, record: false); // in range, horse about: stakes
             s.Target = SoftTarget(s, foe); // shoot the least armoured company in reach
             if (gap < 7 || (s.Units.Count(u => u.Active && u.Ammo > 0) * 4 <= s.Alive && (WagonStock[team] <= 0 || bowsAlone))) { s.Order = Order.Charge; s.Target = null; } // or three in four out of arrows
         }

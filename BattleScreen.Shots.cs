@@ -33,8 +33,11 @@ partial class BattleScreen
             case 5 when b.Time > 20.5f:
                 camFocus = new Vector2(0, -60); camYaw = MathHelper.PiOver2; camPitch = 0.32f; zoom = 90;
                 pendingShot = "landscape"; shotIndex++; break;
-            case 6 when b.Time > 21f:
-                helpOpen = true;
+            case 6 when b.Time > 21f && groundView != true:
+                groundView = true; camFocus = b.Centroid(0) + new Vector2(0, 25); zoom = 50; camPitch = 0.7f;
+                pendingShot = "ground-map"; break; // the ground map (docs/TERRAIN.md T6)
+            case 6 when groundView == true && pendingShot == null:
+                groundView = false; helpOpen = true;
                 pendingShot = "controls"; shotIndex++; break;
             case 7 when pendingShot == null:
                 helpOpen = false; b.Winner = 0; // the after-action overlay, staged as a win

@@ -32,6 +32,9 @@ sealed partial class World : IDisposable
     const int Chunk = 60000; // primitives per draw call
 
     public readonly Texture2D Minimap;
+    /// The ground map (Act.GroundView, docs/TERRAIN.md T6): each kind of ground in its own flat colour, height contours every
+    /// 2 m, hedges, fences and houses. Same framing as the minimap.
+    public readonly Texture2D GroundMap;
     readonly GraphicsDevice gd;
     readonly Terrain t;
     readonly VertexBuffer terrainVb, skyVb;
@@ -55,6 +58,7 @@ sealed partial class World : IDisposable
         (skyVb, skyTris) = BuildSky();
         detail = BuildDetail();
         Minimap = BuildMinimap();
+        GroundMap = BuildGroundMap();
 
         terrainFx = Lit(new BasicEffect(gd) { TextureEnabled = true, Texture = detail });
         foliageFx = Lit(new BasicEffect(gd));
@@ -268,8 +272,9 @@ sealed partial class World : IDisposable
                 var g = t.Gradient(w);
                 var nrm = Vector3.Normalize(new Vector3(-g.X, 1, -g.Y));
                 float shade = 0.65f + 0.55f * MathF.Max(0, Vector3.Dot(nrm, -SunDir));
-                data[y * S + x] = new Color(GroundColor(w) * shade);
+                data[y * S + x] = new Color(GroundColor(w) * shade * (Contour(w, metresPerTexel) ? 0.86f : 1));
             }
+        MapFeatures(data, S, new Color(40, 56, 30), new Color(70, 52, 34));
         foreach (var f in t.Foliage)
         {
             if (f.Kind is not (FoliageKind.Broadleaf or FoliageKind.Pine)) continue;

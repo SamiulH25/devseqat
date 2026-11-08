@@ -2035,6 +2035,9 @@
   },
   {
    "id": "longbowmen",
+   "traits": [
+    "stakes"
+   ],
    "name": "Longbowmen",
    "class": "Archer",
    "culture": "crimson",
@@ -2134,6 +2137,9 @@
   },
   {
    "id": "yeoman_archers",
+   "traits": [
+    "stakes"
+   ],
    "name": "Yeoman Archers",
    "class": "Archer",
    "culture": "crimson",
@@ -2302,6 +2308,9 @@
   },
   {
    "id": "master_longbowmen",
+   "traits": [
+    "stakes"
+   ],
    "name": "Master Longbowmen",
    "class": "Archer",
    "culture": "crimson",
@@ -2611,6 +2620,9 @@
   },
   {
    "id": "sovereign_longbowmen",
+   "traits": [
+    "stakes"
+   ],
    "name": "Sovereign Longbowmen",
    "class": "Archer",
    "culture": "crimson",

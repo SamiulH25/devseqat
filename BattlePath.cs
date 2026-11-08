@@ -26,7 +26,7 @@ public sealed class FlowField
                 if ((dx | dz) == 0 || nx < 0 || nz < 0 || nx >= n || nz >= n) continue;
                 if (cost[nz * n + nx] >= best) continue;
                 if (dx != 0 && dz != 0 && (float.IsPositiveInfinity(cost[z * n + nx]) || float.IsPositiveInfinity(cost[nz * n + x]))) continue; // no cutting round a hedge's end
-                if (t.CrossesFeatureNear(p, new Vector2(-t.Half + nx * t.Step, -t.Half + nz * t.Step))) continue; // not over the hedge he stands against
+                if (t.CrossesFeatureNear(p, new Vector2(-t.Half + nx * t.Step, -t.Half + nz * t.Step), Horse)) continue; // not over the hedge he stands against
                 best = cost[nz * n + nx]; bx = nx; bz = nz;
             }
         if (bx == x && bz == z) return float.IsPositiveInfinity(here) ? Vector2.Zero : Goal - p is var g && g.LengthSquared() > 1e-4f ? Vector2.Normalize(g) : Vector2.Zero;
@@ -111,7 +111,7 @@ public partial class Battle
     /// Is the straight way from a to b barred: deep water, a hedge or fence, a house; for horse also thick wood?
     internal bool WayBlocked(Vector2 a, Vector2 b, bool horse)
     {
-        if (Terrain.Features.Count > 0 && Terrain.CrossesFeature(a, b)) return true;
+        if (Terrain.Features.Count > 0 && Terrain.CrossesFeature(a, b, horse)) return true;
         float len = Vector2.Distance(a, b);
         var dir = (b - a) / MathF.Max(len, 0.01f);
         for (float s = 0; s < len; s += 2.5f)
@@ -213,6 +213,7 @@ public partial class Battle
             }
         foreach (var f in Terrain.Features)
         {
+            if (!f.Stops(horse)) continue;
             float len = Vector2.Distance(f.A, f.B);
             for (float s = 0; s <= len; s += 0.5f)
             {

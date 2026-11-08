@@ -163,4 +163,65 @@ public partial class Battle
         horseFlank[team] = f;
         return f;
     }
+
+    // ---------- for the player (T6) ----------
+
+    /// A warning for an order sending these companies to `dest`, in a few words (null when the way is fine):
+    /// horse into a wood or a bog, a climb, or deep water on the way.
+    public string? GroundWarning(IReadOnlyCollection<Squad> squads, Vector2 dest)
+    {
+        var live = squads.Where(s => s.Alive > 0).ToList();
+        if (live.Count == 0) return null;
+        var g = Terrain.GroundAt(dest);
+        if (live.Any(s => s.Cavalry) && g is GroundKind.Wood or GroundKind.DenseWood) return "HORSE IN THE WOOD: SLOWED, NO CHARGE.";
+        if (live.Any(s => s.Cavalry) && g == GroundKind.Mud) return "HORSE IN THE MUD: SLOWED, NO CHARGE.";
+        if (g == GroundKind.Water) return "INTO DEEP WATER: NO FORMATION.";
+        var at = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / live.Count;
+        if (live.Any(s => WayBlocked(s.Center, dest, s.Cavalry) && CrossesWater(s.Center, dest)))
+            return Terrain.Rivers.Any(r => r.Fords.Length > 0 || r.Bridges.Length > 0) ? "ACROSS DEEP WATER: BY THE FORD." : "ACROSS DEEP WATER: THEY WILL WADE.";
+        if (Terrain.Height(dest) - Terrain.Height(at) > 4) return "UPHILL: THEY ARRIVE TIRED.";
+        return null;
+    }
+
+    bool CrossesWater(Vector2 a, Vector2 b)
+    {
+        float len = Vector2.Distance(a, b);
+        for (float s = 0; s < len; s += 2.5f) if (Terrain.GroundAt(Vector2.Lerp(a, b, s / MathF.Max(len, 0.01f))) == GroundKind.Water) return true;
+        return false;
+    }
+
+    /// Companies that have planted their stakes this battle (once each).
+    readonly HashSet<Squad> staked = new();
+    bool enemyStaked;
+    /// Stakes planted this tick, for the replay.
+    List<int>? stakeRecords;
+
+    /// Can this company plant stakes now? Null if so, else the reason (for the screen).
+    public string? CannotStake(Squad s)
+    {
+        if (s.Alive == 0 || s.Units.Count == 0 || !s.Units[0].Type.Has("stakes")) return "ONLY LONGBOWMEN CARRY STAKES";
+        if (staked.Contains(s)) return "THEY HAVE PLANTED THEIR STAKES";
+        if (s.Order != Order.Hold) return "THEY MUST BE HOLDING";
+        if (EnemySquadNear(s.Center, 30, 1 - s.Team) != null) return "THE ENEMY IS TOO CLOSE";
+        return null;
+    }
+
+    /// Plant a row of sharpened stakes a pace in front of the company's front rank (T6): horse cannot cross it, men on foot
+    /// slip between. Returns null on success, else the reason. The AI passes record: false (the sim does it again on playback).
+    public string? PlantStakes(Squad s, bool record = true)
+    {
+        if (CannotStake(s) is string no) return no;
+        staked.Add(s);
+        if (record && Recording != null) (stakeRecords ??= new()).Add(Squads.IndexOf(s));
+        var side = new Vector2(-s.Front.Y, s.Front.X);
+        float half = (Math.Min(s.Columns, s.Alive) * s.Spacing) / 2 + 1.5f;
+        var mid = s.Anchor + s.Front * 2.2f;
+        for (float x = -half; x < half; x += 3.2f) // runs of 2.4 m with gaps a man can slip through
+            Terrain.AddFeature(FeatureKind.Stakes, mid + side * x, mid + side * MathF.Min(half, x + 2.4f));
+        stepCost[1] = null; // the horse's routes must go round them now
+        flowCache.RemoveAll(f => f.Horse);
+        if (s.Team == 0 || !enemyStaked) Log(s.Team == 0 ? $"The {s.Name} plant their stakes." : "The enemy archers plant stakes.");
+        if (s.Team == 1) enemyStaked = true;
+        return null;
+    }
 }
