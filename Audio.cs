@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Audio;
 namespace Ironfield;
 
 /// Sound cues the headless battle reports (Battle.Sounds); the audio engine turns them into positional sound.
-public enum Cue { Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin }
+public enum Cue { Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin, Splash, Squelch, Rustle, Hollow }
 
 public enum MusicTrack { None, Map, Battle, Victory, Defeat }
 
@@ -38,6 +38,10 @@ sealed class AudioEngine
             cues[Cue.Rout] = Make(Horn(150, 1.6f, true));
             cues[Cue.Click] = Make(Click(0.04f, 1800, 0.2f));
             cues[Cue.Coin] = Make(Coin());
+            cues[Cue.Splash] = Make(Splash());
+            cues[Cue.Squelch] = Make(Squelch());
+            cues[Cue.Rustle] = Make(Rustle());
+            cues[Cue.Hollow] = Make(Thud(118, 0.32f, 0.25f));
             music[MusicTrack.Map] = Make(MapTheme());
             music[MusicTrack.Battle] = Make(Drums());
             music[MusicTrack.Victory] = Make(Fanfare(true));
@@ -152,6 +156,50 @@ sealed class AudioEngine
             float t = i / (float)Rate, s = 0;
             for (int p = 0; p < f.Length; p++) s += MathF.Sin(MathF.Tau * f[p] * t) * MathF.Exp(-k[p] * t) / (p + 1.5f);
             b[i] = s * 0.7f + Rnd() * MathF.Exp(-t * 90) * 0.5f;
+        }
+        return b;
+    }
+
+    /// Feet in water: a bright noise burst that falls away, with a second slap.
+    static float[] Splash()
+    {
+        var b = Buf(0.4f);
+        float lp = 0;
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = i / (float)Rate, n = Rnd();
+            lp += (n - lp) * 0.45f;
+            b[i] = (n - lp) * 0.7f * (MathF.Exp(-t * 14) + 0.6f * MathF.Exp(-MathF.Abs(t - 0.12f) * 40));
+        }
+        return b;
+    }
+
+    /// A boot pulled out of mud: a low sucking sweep and dull noise.
+    static float[] Squelch()
+    {
+        var b = Buf(0.22f);
+        float lp = 0, ph = 0;
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = i / (float)Rate;
+            ph += MathF.Tau * (260 - 900 * t) / Rate;
+            lp += (Rnd() - lp) * 0.08f;
+            b[i] = (MathF.Sin(ph) * 0.35f + lp * 1.6f) * MathF.Sin(MathF.PI * t / 0.22f);
+        }
+        return b;
+    }
+
+    /// Men pushing through branches: soft leafy noise with a few snapping twigs.
+    static float[] Rustle()
+    {
+        var b = Buf(0.45f);
+        float lp = 0;
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = i / (float)Rate, n = Rnd();
+            lp += (n - lp) * 0.3f;
+            float twig = MathF.Exp(-MathF.Abs(t - 0.08f) * 300) + MathF.Exp(-MathF.Abs(t - 0.27f) * 260) * 0.7f;
+            b[i] = (n - lp) * 0.35f * MathF.Sin(MathF.PI * t / 0.45f) + n * twig * 0.8f;
         }
         return b;
     }

@@ -5,13 +5,16 @@ namespace Ironfield;
 /// One-time tips for new players (A5). Each key is shown once, ever (Settings.TipsSeen); "Show tips again" in the settings resets them.
 static class Tips
 {
-    static readonly Queue<(string Key, string Text)> queue = new();
+    static readonly Queue<(string Key, string Text, float At)> queue = new();
 
     public static void Show(string key, string text)
     {
         if (Settings.Current.TipsSeen.Contains(key) || queue.Any(q => q.Key == key)) return;
-        queue.Enqueue((key, text));
+        queue.Enqueue((key, text, Ui.Now));
     }
+
+    /// When the tip now showing was raised (interface time), or +inf with none.
+    public static float Since => queue.Count > 0 ? queue.Peek().At : float.PositiveInfinity;
 
     public static bool Active => queue.Count > 0;
 
@@ -25,9 +28,18 @@ static class Tips
     public static void Draw(Ui ui, int bottom)
     {
         if (queue.Count == 0) return;
+        DrawAt(ui, ui.H - bottom - Height(ui));
+    }
+
+    static int Height(Ui ui) => queue.Peek().Text.Split('\n').Length * ui.U(14) + ui.U(52);
+
+    /// Draw the current tip with its top at `top` (over an open panel: at the top of the screen, clear of its buttons).
+    public static void DrawAt(Ui ui, int top)
+    {
+        if (queue.Count == 0) return;
         var lines = queue.Peek().Text.ToUpperInvariant().Split('\n');
-        int w = lines.Max(l => ui.TW(l, 1)) + ui.U(40), h = lines.Length * ui.U(14) + ui.U(52);
-        var r = new Rectangle((ui.W - w) / 2, ui.H - bottom - h, w, h);
+        int w = lines.Max(l => ui.TW(l, 1)) + ui.U(40), h = Height(ui);
+        var r = new Rectangle((ui.W - w) / 2, top, w, h);
         ui.Panel(r, Style.Accent);
         ui.Text("TIP", r.X + ui.U(12), r.Y + ui.U(8), Style.Accent, 1);
         for (int i = 0; i < lines.Length; i++) ui.Text(lines[i], r.X + ui.U(20), r.Y + ui.U(22) + i * ui.U(14), Style.Text, 1);

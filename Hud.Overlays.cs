@@ -51,9 +51,11 @@ sealed partial class Hud
     {
         bool won = B.Winner == 0;
         var r = ResultBox;
-        Rect(new Rectangle(0, 0, W, H), Color.Black * 0.5f);
+        float since = Ironfield.Ui.Since(9001);
+        Rect(new Rectangle(0, 0, W, H), Color.Black * (0.5f * Math.Clamp(since / 0.4f, 0, 1)));
         kit.PlateBody(r, won ? Kit.Gilt : Bad);
         kit.Ribbon(r.Center.X, r.Y - U(16), won ? "VICTORY" : "DEFEAT", Kit.Mul(won ? Kit.Gilt : Bad, 0.66f), 3);
+        if (since < 1) Kit.Shine(kit, new Rectangle(r.X, r.Y - U(30), r.Width, U(30)), since);
         int pad = U(16), lw = U(420);
         var tally = Well(new Rectangle(r.X + pad, r.Y + U(28), lw, U(160)), "THE TALLY", Gold);
         Tally(tally);
@@ -137,7 +139,8 @@ sealed partial class Hud
 
     void Help()
     {
-        var r = new Rectangle(W / 2 - U(420), H / 2 - U(250), U(840), U(500));
+        int oh = Math.Min(U(560), H - U(24));
+        var r = new Rectangle(W / 2 - U(420), (H - oh) / 2, U(840), oh);
         Overlay(r, "CONTROLS", Gold);
         var cols = new (string Title, (string Label, string Key)[] Rows)[]
         {
@@ -151,14 +154,17 @@ sealed partial class Hud
                 ("SELECT SQUAD / BOX", "LMB / DRAG"), ("ADD TO SELECTION", Ctl.Name(Act.AddToSelection)), ("MOVE (KEEP WIDTH)", "RMB"),
                 ("DRAW FORMATION LINE", "RMB DRAG"), ("ATTACK ENEMY SQUAD", "RMB ON ENEMY"), ("DIVISION: GOAL HERE / ATTACK / SCREEN", "PICK CARD, RMB"), ("PAN", $"{Ctl.First(Act.Forward)}{Ctl.First(Act.Left)}{Ctl.First(Act.Back)}{Ctl.First(Act.Right)} / SCREEN EDGES"),
                 ("ROTATE", $"{Ctl.First(Act.RotateLeft)} {Ctl.First(Act.RotateRight)} / MMB DRAG"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"),
-                ("FOCUS SQUAD", "DOUBLE-CLICK CARD"),
+                ("FOCUS SQUAD", "DOUBLE-CLICK CARD"), ("WHAT THE GROUND DOES", "HOVER IT"), (Controls.Labels[Act.GroundView], Ctl.Name(Act.GroundView)),
+                (Controls.Labels[Act.Stakes], Ctl.Name(Act.Stakes)),
             }),
             ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.SelectAll, Act.NextDivision,
                     Act.CommandView, Act.Pause, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Prepend(("SELECT SQUAD", "1-0")).ToArray()),
         };
-        int cw = (r.Width - U(40)) / 3;
+        int cw = (r.Width - U(40)) / 3, most = cols.Max(c => c.Rows.Length);
+        // Rows close up so the longest column always fits above the footer line.
+        int step = Math.Clamp((r.Height - U(56) - U(24) - U(32)) / Math.Max(1, most), U(19), U(24));
         for (int i = 0; i < cols.Length; i++)
         {
             int x = r.X + U(20) + i * cw, y = r.Y + U(56);
@@ -168,7 +174,7 @@ sealed partial class Hud
             {
                 Text(label, x, y, Dim, 1);
                 Text(key, x, y + U(9), Color.White, 1);
-                y += U(24);
+                y += step;
             }
         }
         TextC($"REBIND IN {Controls.FileName.ToUpperInvariant()}  (RUN WITH --WRITE-CONTROLS FOR A TEMPLATE)    {Ctl.Name(Act.Help)} / {Ctl.Name(Act.Menu)} CLOSE",

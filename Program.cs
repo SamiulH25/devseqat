@@ -22,6 +22,12 @@ if (args.Contains("--realms"))
     Ironfield.BalanceReport.Realms(n > 0 ? n : 8);
     return;
 }
+if (args.Contains("--grounds"))
+{
+    int n = args.SkipWhile(a => a != "--grounds").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();
+    Ironfield.BalanceReport.Grounds(n > 0 ? n : 8);
+    return;
+}
 if (args.Contains("--campaign-bench"))
 {
     int n = args.SkipWhile(a => a != "--campaign-bench").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();

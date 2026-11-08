@@ -114,7 +114,7 @@ public partial class Campaign
         return null;
     }
 
-    public void Merge(CompanyRecord a, CompanyRecord b) { Rules.Merge(a, b); Player.Companies.Remove(b); }
+    public void Merge(CompanyRecord a, CompanyRecord b) { Rules.Merge(a, b); Player.Companies.Remove(b); foreach (var m in FallenOf(b).ToList()) m.Company = a.Id; }
 
     /// Split a company in two: half of every stack goes to the new company (with its share of each pool).
     public string? Split(CompanyRecord c)

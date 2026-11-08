@@ -16,6 +16,12 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
     public string LastingWound { get; init; } = "";
     /// The battle's personal goals and whether each was met (P6).
     public IReadOnlyList<(string Text, bool Met)> Goals { get; init; } = Array.Empty<(string, bool)>();
+    /// Your named men in this battle (docs/LEGACY.md L3): the fallen and missing first, then the hurt, then new names.
+    public IReadOnlyList<(string Kind, string Text)> Roll { get; init; } = Array.Empty<(string, string)>();
+    /// The battle's name ("Ashby Ford", L5), "" when it has none (a duel, the lists).
+    public string Field { get; init; } = "";
+    /// Banner honours this battle won, lost or won back (L5): HONOUR or LOST, and the line.
+    public IReadOnlyList<(string Kind, string Text)> Honours { get; init; } = Array.Empty<(string, string)>();
 }
 
 /// A battle about to be fought between map parties: the armies, options, and how its companies map back to campaign records.
@@ -26,6 +32,8 @@ public sealed class BattleSetup
     public BattleOptions Options = new();
     public readonly List<Party> Side0 = new(), Side1 = new();
     public string EnemyName = "";
+    /// The battle's name ("Ashby Ford", L5), for its opening line; "" for duels and the lists.
+    public string Field = "";
     /// An assault on this settlement (-1: a battle in the field).
     public int SiegeOf = -1;
     /// A tournament in this settlement (S5; -1: a real fight).
@@ -127,6 +135,8 @@ public static class Rules
         into.HorseKills += from.HorseKills;
         into.Assaults = Math.Max(into.Assaults, from.Assaults);
         foreach (var h in from.Honours) if (!into.Honours.Contains(h) && into.Honours.Count < 3) into.Honours.Add(h);
+        into.Roll.AddRange(from.Roll); from.Roll.Clear(); // the named men keep their names (L1); the roll may run past RollSize
+        into.RollStarted |= from.RollStarted;
     }
 
     public static string CompanyName(Rng rng, string role)
@@ -268,6 +278,8 @@ public static class Rules
                 return new Company(c.Troop, c.Men, RoleOf(c), c.Id, c.Name,
                     Math.Clamp(70 + c.Cohesion + moraleBonus + (c.Traits.Contains("Steady") ? 8 : 0) + h.Morale + (siege ? h.SiegeMorale : 0), 20, 100), c.Traits.ToArray(),
                     Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord, Mix: mix.Length > 1 ? mix : null,
-                    RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero);
+                    RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero,
+                    Streamers: c.BattleHonours.Count, Fringe: c.Battles >= 10,
+                    Named: c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).Select(m => new NamedSpec(m.Id, m.Troop, m.Name)).ToArray() : null);
             }).ToList());
 }

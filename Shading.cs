@@ -31,6 +31,7 @@ sealed class Shading : IDisposable
     };
 
     static readonly SamplerState ShadowSampler = new() { Filter = TextureFilter.Point, AddressU = TextureAddressMode.Clamp, AddressV = TextureAddressMode.Clamp };
+    static readonly SamplerState GroundSampler = new() { Filter = TextureFilter.Linear, AddressU = TextureAddressMode.Clamp, AddressV = TextureAddressMode.Clamp };
     static readonly SamplerState DetailSampler = new() { Filter = TextureFilter.LinearMipPoint, AddressU = TextureAddressMode.Wrap, AddressV = TextureAddressMode.Wrap };
 
     static string Source(string file)
@@ -51,12 +52,12 @@ sealed class Shading : IDisposable
         {
             Uniform.Mat4("ViewProj"), Uniform.Mat4("LightViewProj"), Uniform.Vec3("CameraPos"), Uniform.Vec3("SunDir"), Uniform.Vec3("SunColor"),
             Uniform.Vec3("SkyColor"), Uniform.Vec3("GroundColor"), Uniform.Vec3("FogColor"), Uniform.Vec4("FogParams"), Uniform.Vec4("ShadowParams"),
-            Uniform.Float("Time"), Uniform.Vec4("Wind"), Uniform.Vec2("SpriteLight"),
+            Uniform.Float("Time"), Uniform.Vec4("Wind"), Uniform.Vec2("SpriteLight"), Uniform.Vec4("Field"), Uniform.Vec4("Look"),
         };
         var shadowTex = new TextureSlot("ShadowMap", 1, ShadowSampler);
 
         World = GlslEffect.Create(gd, "world", common + Source("world.glsl"), lit,
-            new[] { new TextureSlot("Detail", 0, DetailSampler), shadowTex },
+            new[] { new TextureSlot("Detail", 0, DetailSampler), shadowTex, new TextureSlot("GroundMap", 2, GroundSampler) },
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aNormal", VertexElementUsage.Normal),
                     new Attribute("aColor", VertexElementUsage.Color), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
             new GlslEffect.Technique("Terrain", "TERRAIN"), new GlslEffect.Technique("Foliage", "FOLIAGE"),
@@ -74,7 +75,7 @@ sealed class Shading : IDisposable
             new GlslEffect.Technique("Sky"));
 
         Post = GlslEffect.Create(gd, "post", Source("post.glsl"),
-            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade") },
+            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade"), Uniform.Vec4("Tint") },
             new[] { new TextureSlot("Scene", 0, SamplerState.LinearClamp) },
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
             new GlslEffect.Technique("Post"));
@@ -103,6 +104,11 @@ sealed class Shading : IDisposable
     }
 
     public float ShadowTexel, ShadowBias, ShadowTexelMetres;
+    /// The ground map (trampled grass, red channel) and its size in metres, or null; set by the battle screen.
+    public Texture2D? GroundMap;
+    public float GroundSize = 1;
+    /// Close-up ground detail (the battle's field camera; off on the campaign map's far view).
+    public bool NearDetail;
     /// Fog start and end (the campaign map pushes them out for its far camera).
     public Vector2 Fog = new(Ironfield.World.FogStart, Ironfield.World.FogEnd);
 
@@ -124,6 +130,17 @@ sealed class Shading : IDisposable
         p["Wind"]?.SetValue(Wind);
         p["SpriteLight"]?.SetValue(SpriteLight);
         p["ShadowMap"]?.SetValue(ShadowMap);
+        p["Field"]?.SetValue(new Vector4(1f / GroundSize, GroundMap != null ? 1 : 0, Ironfield.Sky.Clouds, Ironfield.Sky.Wet));
+        p["Look"]?.SetValue(new Vector4(Ironfield.Sky.Snow, NearDetail ? 1 : 0, 0, 0));
+        if (p["GroundMap"] is { } gm) gm.SetValue(GroundMap ?? Blank(gd));
+    }
+
+    static Texture2D? blank;
+    /// A 1x1 black texture: a ground map with nothing on it.
+    static Texture2D Blank(GraphicsDevice gd)
+    {
+        if (blank == null) { blank = new Texture2D(gd, 1, 1); blank.SetData(new[] { Color.Black }); }
+        return blank;
     }
 
     /// The off-screen colour target the scene is drawn into before the post pass (recreated on resize).
@@ -138,8 +155,9 @@ sealed class Shading : IDisposable
         return scene;
     }
 
-    /// Draw the scene target to the screen through the post shader.
-    public void PostToScreen(bool fxaa)
+    /// Draw the scene target to the screen through the post shader: `tint` grades the light by hour and weather
+    /// (Sky.Grade; One = none), `bloom` lets bright highlights glow (0 = off; High quality only).
+    public void PostToScreen(bool fxaa, Vector3? tint = null, float bloom = 0)
     {
         var s = Scene();
         gd.SetRenderTarget(null);
@@ -149,6 +167,7 @@ sealed class Shading : IDisposable
         Post.Parameters["Scene"].SetValue(s);
         Post.Parameters["Texel"].SetValue(new Vector2(1f / s.Width, 1f / s.Height));
         Post.Parameters["Grade"].SetValue(new Vector4(0.96f, 1.05f, 0.26f, fxaa ? 1 : 0)); // saturation, contrast, vignette, FXAA
+        Post.Parameters["Tint"].SetValue(new Vector4(tint ?? Vector3.One, bloom));
         Post.CurrentTechnique.Passes[0].Apply();
         gd.DrawUserPrimitives(PrimitiveType.TriangleList, quad, 0, 2);
     }

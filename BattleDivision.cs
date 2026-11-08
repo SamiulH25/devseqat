@@ -3,13 +3,13 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// What a sergeant can be told to do (docs/COMBAT_OVERHAUL.md 1.2).
-public enum GoalKind { Hold, Take, Attack, Flank, Screen, Guard, Reserve, Harass, Pursue, FallBack }
+public enum GoalKind { Hold, Take, Attack, Flank, Screen, Guard, Reserve, Harass, Pursue, FallBack, Ambush }
 
 /// How a sergeant fights: Bold charges early and chases far; Steady keeps formation and waits for contact;
 /// Cautious keeps a short leash and lets the enemy come to him.
 public enum Temper { Bold, Steady, Cautious }
 
-/// A sergeant's goal. Point is used by Hold, Take and FallBack; Target by Attack (an enemy squad) and Screen (a friendly
+/// A sergeant's goal. Point is used by Hold, Take, FallBack and Ambush; Target by Attack (an enemy squad) and Screen (a friendly
 /// one); Side by Flank (+1 his right, -1 his left). Null Target: he picks one himself.
 public sealed record Goal(GoalKind Kind, Vector2 Point = default, Squad? Target = null, int Side = 1)
 {
@@ -24,6 +24,7 @@ public sealed record Goal(GoalKind Kind, Vector2 Point = default, Squad? Target 
         GoalKind.Reserve => "wait in reserve",
         GoalKind.Harass => "harass them",
         GoalKind.Pursue => "run them down",
+        GoalKind.Ambush => "lie in wait",
         _ => "fall back",
     };
 
@@ -200,6 +201,10 @@ public partial class Battle
     }
 
     float nextAiCommand = 4;
+    /// How near an enemy company must come before a division lying in wait falls on it.
+    public const float AmbushReach = 40;
+    /// The AI's divisions that have already been offered the chance to lie in wait.
+    readonly HashSet<Division> ambushTried = new();
 
     /// The AI general's divisions (and yours when the AI plays you): wings that hold send in their men once the
     /// lines close, the fight starts, or they have waited long enough; a broken division falls back.
@@ -216,11 +221,23 @@ public partial class Battle
             if (near == null) continue;
             float gap = Vector2.Distance(at, near.Center) - near.Radius;
             float wait = d.Temper switch { Temper.Bold => 15, Temper.Steady => 30, _ => 45 };
-            if (d.Goal.Kind is GoalKind.Hold or GoalKind.Reserve && (fighting || gap < 30 || Time - d.GoalSince > wait))
+            if (d.Goal.Kind == GoalKind.Hold && d.Temper != Temper.Bold && !fighting && gap > 50 && ambushTried.Add(d) && AmbushWood(d, live, at, foe) is Vector2 wood)
+                IssueGoal(d, new Goal(GoalKind.Ambush, wood), ai: true); // a wood near by on the enemy's way: wait in it
+            else if (d.Goal.Kind is GoalKind.Hold or GoalKind.Reserve && (fighting || gap < 30 || Time - d.GoalSince > wait))
                 IssueGoal(d, new Goal(GoalKind.Attack, Target: near), ai: true);
+            else if (d.Goal.Kind == GoalKind.Ambush && Time - d.GoalSince > wait * 3)
+                IssueGoal(d, new Goal(GoalKind.Attack, Target: near), ai: true); // nobody came: go and find them
             else if (d.Goal.Kind == GoalKind.Attack && d.Alive < d.Start / 4 && d.Temper != Temper.Bold)
                 IssueGoal(d, new Goal(GoalKind.FallBack, at + Toward(at, centroid[foe], team) * -30), ai: true);
         }
+    }
+
+    /// A wood edge to lie in wait at: within 50 m of the division, no further back than it stands, and of foot only.
+    Vector2? AmbushWood(Division d, List<Squad> live, Vector2 at, int foe)
+    {
+        if (live.Any(s => s.Cavalry || Ranged(s))) return null;
+        var fwd = Toward(at, centroid[foe], d.Team);
+        return BestPlace(at, 50, p => p.Kind == PlaceKind.WoodEdge && Vector2.Dot(p.Pos - at, fwd) > -5 ? p.Hide : 0)?.Pos;
     }
 
     static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
@@ -261,14 +278,34 @@ public partial class Battle
         switch (g.Kind)
         {
             case GoalKind.Hold:
-                HoldGround(d, live, g.Point, Toward(g.Point, centroid[foe], d.Team), chargeAt * 0.7f, leash);
+            {
+                var at = SnapToGround(g.Point); // the best ground near where he was told (BattleGround.cs)
+                HoldGround(d, live, at, Toward(at, centroid[foe], d.Team), chargeAt * 0.7f, leash);
                 break;
+            }
             case GoalKind.Take:
             {
-                var threat = EnemySquadNear(g.Point, 15, foe);
+                var at = SnapToGround(g.Point);
+                var threat = EnemySquadNear(at, 15, foe);
                 if (threat != null) Engage(d, live, threat);
-                else if (Vector2.Distance(center, g.Point) > 6) Form(d, live, g.Point, dir);
-                else HoldGround(d, live, g.Point, dir, chargeAt * 0.7f, leash);
+                else if (Vector2.Distance(center, at) > 6) Form(d, live, at, dir);
+                else HoldGround(d, live, at, dir, chargeAt * 0.7f, leash);
+                break;
+            }
+            case GoalKind.Ambush:
+            {
+                // Wait still and hidden at the point; when an enemy company comes within 40 m, fall on it.
+                var prey = EnemySquadNear(center, AmbushReach, foe);
+                if (prey != null)
+                {
+                    d.Goal = new Goal(GoalKind.Attack, Target: prey);
+                    d.Phase = 1;
+                    Engage(d, live, prey);
+                    if (d.Team == 0) Log($"{d.Name} springs the ambush!");
+                    else Log("An ambush! The enemy breaks cover.");
+                }
+                else Form(d, live, g.Point, Toward(g.Point, centroid[foe], d.Team));
+                foreach (var s in live) s.FireAtWill = false; // no arrows to give them away
                 break;
             }
             case GoalKind.Attack:

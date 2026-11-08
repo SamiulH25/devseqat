@@ -39,7 +39,7 @@ public partial class Battle
             if (a.Target is not { Active: true } t) return;
             float extra = t.Mounted ? 0.5f : 0;
             // A rider's blow lands on whatever is beside the horse; a footman needs the target in front.
-            float aiReach = a.Mounted ? MathF.Min(a.Type.Reach, MountedMeleeReach) : a.Type.Reach;
+            float aiReach = a.Mounted ? MathF.Min(a.Type.Reach, MountedMeleeReach) : ReachOf(a);
             bool lands = a.Mounted
                 ? Vector2.Distance(a.Pos, t.Pos) <= aiReach + 0.35f + extra
                 : InArc(a, t, aiReach + 0.4f + extra, 0.5f);
@@ -50,9 +50,9 @@ public partial class Battle
         // Player: thrusts reach far but hit one man; side cuts sweep a wide arc and cleave up to 3.
         var (reach, minDot, cleave) = a.Swing switch
         {
-            AttackDir.Thrust => (a.Type.Reach + 0.7f, 0.8f, 1),
-            AttackDir.Overhead => (a.Type.Reach + 0.3f, 0.6f, 1),
-            _ => (a.Type.Reach + 0.3f, 0.2f, 3),
+            AttackDir.Thrust => (ReachOf(a) + 0.7f, 0.8f, 1),
+            AttackDir.Overhead => (ReachOf(a) + 0.3f, 0.6f, 1),
+            _ => (ReachOf(a) + 0.3f, 0.2f, 3),
         };
         if (a.Mounted) { reach += 0.4f; dmg *= 1 + 0.1f * RidingEdge; } // the player rides high in the saddle and can swing further
         int hits = 0;
@@ -77,6 +77,11 @@ public partial class Battle
     }
 
     /// Mount & Blade speed bonus: blows land harder the faster the two bodies close on each other.
+    /// High ground in melee: a smooth curve on how far above his foe a man stands, up to +-15%, and up to +10% more
+    /// for running downhill into the blow (a charge down a slope).
+    internal static float HighGround(float above, float slope, float speed) =>
+        0.15f * MathF.Tanh(above / 3) + (speed > 3 ? Math.Clamp(-slope, 0, 0.1f) : 0);
+
     static float SpeedBonus(Unit a, Unit t)
     {
         var n = t.Pos - a.Pos;
@@ -147,7 +152,7 @@ public partial class Battle
                 : a.Swing switch { AttackDir.Thrust => 0.7f, AttackDir.Overhead => 0.85f, _ => 1 });
             if (ranged && !t.Type.HasShield) chance *= 0.3f;
             if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && (t.Type.Tier <= 3 || Perk("Champion")) ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
-            if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
+            if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t)) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
             if (rng.NextSingle() < chance)
             {
                 t.Action = UnitAction.Block;
@@ -169,8 +174,7 @@ public partial class Battle
             return;
         }
         float speed = ranged || lance ? 0 : SpeedBonus(a, t);
-        // Total War high ground: up to +-15% for fighting downhill / uphill.
-        float high = ranged ? 0 : Math.Clamp((Terrain.Height(a.Pos) - Terrain.Height(t.Pos)) * 0.05f, -0.15f, 0.15f);
+        float high = ranged ? 0 : HighGround(Terrain.Height(a.Pos) - Terrain.Height(t.Pos), a.Slope, a.Vel.Length());
         float tired = Fatigue(a);
         float officer = tired * (a.Squad?.Company is Company oc ? (oc.Has("Hothead") ? 1.1f : 1) * (oc.Has("Veteran") ? 1.05f : 1) : 1);
         if (ranged && t.Squad?.Formation == Formation.Square) officer *= 1.25f;                    // a packed square is an easy mark
@@ -246,7 +250,7 @@ public partial class Battle
         Log(boss.Type.Look.Beast ? $"The {boss.Type.Name.ToLowerInvariant()} is down! The pack scatters." : $"The {boss.Type.Name.ToLowerInvariant()} is slain! {(boss.Team == 0 ? "Your" : "The")} goblins scatter.");
     }
 
-    void Kill(Unit t, Unit killer)
+    internal void Kill(Unit t, Unit killer)
     {
         if (t.IsPlayer && Perk("FieldSurgeon") && !secondWind)
         {
@@ -261,6 +265,7 @@ public partial class Battle
         if (LastStand(t, killer)) return; // P6
         t.Dead = true;
         t.DiedAt = Time;
+        t.DiedFrom = killer.Pos;
         t.Hp = 0;
         t.Action = UnitAction.None;
         t.Vel = t.Wish = Vector2.Zero;
@@ -275,6 +280,10 @@ public partial class Battle
         if (killer.IsPlayer && t != killer) PlayerKills++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 7)]++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;
+        if (killer.Team != t.Team) { killer.Kills++; if (t.IsLeader || t.Hero) killer.FelledLeader = true; }
+        // Your named men are heard (L8): a veteran down, a veteran's fifth man.
+        if (t.SoldierId != 0 && t.Team == 0) { Log($"{NameOf(t)} is down!"); Downed.Add(t); }
+        if (killer.SoldierId != 0 && killer.Team == 0 && killer.Kills == 5) Log($"{NameOf(killer)} has felled five!");
         foreach (var u in t.IsLeader ? Units.ToArray() : Near(t.Pos, 10, nearKill).ToArray()) // a leader's fall is felt across the field
         {
             if (!u.Active) continue;
@@ -300,6 +309,7 @@ public partial class Battle
     void Loose(Unit u, Vector2 at, Unit? t, float damage, float spread)
     {
         u.Ammo--;
+        if (u.Squad != null) u.Squad.LooseAt = Time;
         Sound(Cue.Bow, u.Pos);
         u.Action = UnitAction.Recover; // shows the release pose
         u.ActionTimer = 0.25f;
@@ -332,11 +342,13 @@ public partial class Battle
                 continue;
             }
             p.Vel.Y -= Gravity * dt;
+            var from = new Vector2(p.Pos.X, p.Pos.Z);
             p.Pos += p.Vel * dt;
             var flat = new Vector2(p.Pos.X, p.Pos.Z);
             float ground = Terrain.Height(flat);
             if (p.Pos.Y <= ground) { p.Pos.Y = ground; p.Stuck = 0; continue; }
             if (p.Pos.Y > ground + 2.6f) continue;
+            if (Covered(from, flat, p.Pos.Y - ground)) { p.Pos.Y = MathF.Max(ground, p.Pos.Y - 0.5f); p.Stuck = 0; continue; } // into a tree or a hedge
             foreach (var t in Near(flat, 1.5f, nearArrow))
             {
                 if (t.Team == p.Shooter.Team || !t.Active) continue;
@@ -349,13 +361,23 @@ public partial class Battle
         }
     }
 
+    /// Does a low arrow flying from `a` to `b` this tick strike cover? Woods, crops and houses catch it in proportion to
+    /// how much of them it flies through low (Data/ground.json `cover`); a hedge stops a flat shot outright, mostly.
+    /// An arrow dropping steeply onto men in the open is low for only the last stride, so cover in front does not save them.
+    bool Covered(Vector2 a, Vector2 b, float above)
+    {
+        float cover = Terrain.CoverAt(b);
+        if (cover > 0 && rng.NextSingle() < cover * Vector2.Distance(a, b) * 0.12f) return true;
+        return above < 1.8f && Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(a, b, mounted: false) && rng.NextSingle() < 0.7f; // stakes are no cover
+    }
+
     /// Braced spears catch a horse that rides onto their points (their reach beats a couched lance).
     void Braces()
     {
         foreach (var b in Units)
         {
             if (!b.Active || b.BraceCd > 0 || !Braced(b)) continue;
-            float reach = b.Type.Reach + BraceExtra;
+            float reach = ReachOf(b) + BraceExtra;
             foreach (var u in Near(b.Pos, reach + 0.5f, nearBrace))
             {
                 if (!u.Active || !u.Mounted || u.Team == b.Team) continue;
@@ -392,7 +414,7 @@ public partial class Battle
                 float closing = Vector2.Dot(u.Vel - t.Vel, hd);
                 if (closing < 4) continue;
                 u.Swing = AttackDir.Thrust;
-                Hit(u, t, (10 + closing * 4.2f) * (u.IsPlayer ? (1 + 0.2f * RidingEdge) * (Perk("Lancer") ? 1.25f : 1) : 1), false, lance: true);
+                Hit(u, t, (10 + closing * 4.2f * Terrain.GroundDefAt(t.Pos).Charge) * (u.IsPlayer ? (1 + 0.2f * RidingEdge) * (Perk("Lancer") ? 1.25f : 1) : 1), false, lance: true);
                 u.Couched = false;
                 u.Cooldown = 1.8f;
                 u.Contact = true;

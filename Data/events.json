@@ -23,6 +23,14 @@
       ]
     },
     {
+      "id": "rabble", "trigger": "fief_unrest", "cooldown": 30, "title": "HOTHEADS IN {settlement}",
+      "text": "Men in {settlement} are arming in the back streets. They want a charter and lower dues, or they will take them.",
+      "choices": [
+        { "label": "GRANT THEIR CHARTER", "effects": ["tax:0", "unrest:-15", "prosperity:-3"] },
+        { "label": "LET THEM RISE, THEN PUT THEM DOWN", "effects": ["revolt", "bounty", "unrest:-5"] }
+      ]
+    },
+    {
       "id": "famine", "trigger": "fief_poor", "cooldown": 30, "title": "HUNGER IN {settlement}",
       "text": "Raids and hard times have emptied the granaries of {settlement}. The poor eat bark, and some talk of better masters.",
       "choices": [
@@ -32,11 +40,27 @@
       ]
     },
     {
+      "id": "fief_sickness", "trigger": "fief_poor", "cooldown": 30, "title": "SICKNESS IN {settlement}",
+      "text": "A fever runs through the poor quarter of {settlement}. The priests ask for physicians; the council asks you to shut the gates.",
+      "choices": [
+        { "label": "PAY FOR PHYSICIANS", "need": "gold:80", "effects": ["gold:-80", "prosperity:6", "unrest:-6"] },
+        { "label": "SHUT THE GATES", "effects": ["prosperity:-5", "unrest:6"] }
+      ]
+    },
+    {
       "id": "fair", "trigger": "fief_rich", "cooldown": 30, "title": "THE FAIR AT {settlement}",
       "text": "{settlement} is thriving, and its merchants ask leave to hold a great fair under your banner.",
       "choices": [
         { "label": "GRANT IT A CHARTER", "effects": ["gold:250", "prosperity:4", "renown:4"] },
         { "label": "TAX THE STALLS", "effects": ["gold:450", "unrest:8"] }
+      ]
+    },
+    {
+      "id": "guild_offer", "trigger": "fief_rich", "cooldown": 30, "title": "THE GUILDS OF {settlement}",
+      "text": "The guild masters of {settlement} are rich, and they would like you to owe them. They offer a loan, or new walls for the market.",
+      "choices": [
+        { "label": "TAKE THE LOAN", "effects": ["gold:300", "unrest:4"] },
+        { "label": "LET THEM BUILD", "effects": ["prosperity:6", "renown:2"] }
       ]
     },
     {
@@ -81,6 +105,14 @@
       ]
     },
     {
+      "id": "veteran_banner", "trigger": "veterans", "cooldown": 35, "title": "A NEW BANNER FOR {company}",
+      "text": "The old hands of {company} want their battles stitched on a new banner, in good silk, so the young ones know what they joined.",
+      "choices": [
+        { "label": "PAY FOR THE SILK", "need": "gold:60", "effects": ["gold:-60", "cohesion:6", "renown:2"] },
+        { "label": "LET THEM SEW IT THEMSELVES", "effects": ["cohesion:3"] }
+      ]
+    },
+    {
       "id": "winter_march", "trigger": "hungry_winter", "cooldown": 20, "title": "A HARD WINTER",
       "text": "Snow on the road and little in the carts. The men grumble that they will eat the horses before spring.",
       "choices": [
@@ -94,6 +126,14 @@
       "choices": [
         { "label": "PROMISE PLUNDER", "effects": ["cohesion:-3", "renown:-2"] },
         { "label": "PAWN YOUR GEAR", "effects": ["gold:120", "renown:-4"] }
+      ]
+    },
+    {
+      "id": "unpaid_books", "trigger": "unpaid", "cooldown": 14, "title": "THE QUARTERMASTER'S BOOKS",
+      "text": "Your quartermaster has gone through the books twice. The crowns are not there, and the men know it. He asks what to cut.",
+      "choices": [
+        { "label": "CUT THE RATIONS", "effects": ["food:2", "cohesion:-3"] },
+        { "label": "SELL THE SPARE HORSES", "effects": ["horses:-6", "gold:90"] }
       ]
     },
     {
@@ -118,6 +158,24 @@
       "choices": [
         { "label": "ENTER THE LISTS", "need": "gold:50", "effects": ["gold:-50", "lists"] },
         { "label": "WATCH FROM THE STANDS", "effects": ["cohesion:2"] }
+      ]
+    },
+    {
+      "id": "dice", "trigger": "in_town", "cooldown": 25, "title": "DICE AT {settlement}",
+      "text": "A game in the back of an inn at {settlement}. The merchants play deep, and they are short a player.",
+      "choices": [
+        { "label": "PLAY FOR 50 CROWNS", "need": "gold:50", "effects": ["gamble:50"] },
+        { "label": "PLAY FOR 200 CROWNS", "need": "gold:200", "effects": ["gamble:200"] },
+        { "label": "BUY THE MEN A ROUND INSTEAD", "need": "gold:20", "effects": ["gold:-20", "cohesion:2"] }
+      ]
+    },
+    {
+      "id": "bury_named", "trigger": "fallen", "cooldown": 0, "scene": "camp", "title": "{man}",
+      "text": "{man} of {company} lies with the dead of the field. The men who stood beside him wait to see what you will do.",
+      "choices": [
+        { "label": "BURY HIM WITH HONOUR", "effects": ["cohesion:2", "food:-1"] },
+        { "label": "SAY THE WORDS AND MARCH", "effects": ["cohesion:1"] },
+        { "label": "THERE IS NO TIME", "effects": ["cohesion:-1"] }
       ]
     },
     {

@@ -22,7 +22,7 @@ sealed partial class BattleScreen
     Quality quality { get => host.Quality; set => host.Quality = value; }
 
     const float CommandTimeScale = 0.25f, BlendTime = 0.45f, DoubleClick = 0.35f;
-    static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30);
+    static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30), ArrowStreak = new(150, 146, 132);
 
     Puppet puppet = null!;
     Hud hud = null!;
@@ -30,6 +30,20 @@ sealed partial class BattleScreen
     AlphaTestEffect spriteFx = null!;
     BattleSetup? campaignBattle;               // the battle in progress came from the campaign map
     bool deploying;
+    /// First times on the ground (docs/TERRAIN.md T6): a river, a wood, a field with places to hide.
+    void GroundTips()
+    {
+        var t = battle.Terrain;
+        if (t.Rivers.Count > 0)
+            Tips.Show("river", $"A river. Deep water is slow, tiring and breaks your ranks. Companies sent over it go by the ford\nor the bridge if one is near (pale blue on the ground map). Press {ctl.First(Act.GroundView)} for the ground map.");
+        else if (battle.Places.Any(p => p.Kind == PlaceKind.WoodEdge))
+            Tips.Show("wood", "A wood. It slows horse, breaks formations and stops arrows, and men inside it are seen only up close.\nHover the ground in command view to see what it does. A division given AMBUSH waits in a wood, unseen.");
+        else if (battle.Places.Any(p => p.Kind is PlaceKind.Crest or PlaceKind.Knoll))
+            Tips.Show("height", "High ground. Men fighting downhill hit harder, archers shoot further, and a crest hides what is behind it.\nAn enemy on good ground may wait for you to come to him.");
+    }
+
+    /// The ground map, as you last set it (null: shown while deploying only).
+    bool? groundView;
     Vector3 focusPoint;                        // what the camera looks at (the shadow map is centred here)
     BasicEffect shadowFx = null!, lineFx = null!;
     Battle battle = null!;
@@ -90,6 +104,17 @@ sealed partial class BattleScreen
 
     // ---------- campaign hand-off ----------
 
+    /// The quick battle's field. IRONFIELD_GROUND=preset[,river] (or just "river") picks it, IRONFIELD_LAYOUT=Ridge its shape;
+    /// otherwise a meadow, and a third of quick battles have a river.
+    TerrainParams QuickGround(Random rng)
+    {
+        var env = (Environment.GetEnvironmentVariable("IRONFIELD_GROUND") ?? "").Split(',');
+        bool river = env.Contains("river") || (shotDir == null && rng.NextSingle() < 0.33f);
+        var ground = env.Select(TerrainParams.Named).FirstOrDefault(g => g != null) ?? TerrainParams.Meadow;
+        ground = ground with { River = river || ground.River };
+        return Enum.TryParse<FieldLayout>(Environment.GetEnvironmentVariable("IRONFIELD_LAYOUT"), true, out var l) ? ground with { Layouts = new[] { l } } : ground;
+    }
+
     /// A battle handed over by the campaign map: it opens in the deployment phase.
     public void BeginCampaign(BattleSetup s)
     {
@@ -111,7 +136,7 @@ sealed partial class BattleScreen
             return;
         }
         StartDeployment();
-        battle.Log($"Battle against {s.EnemyName}: {s.Options.Ground?.Name.ToLowerInvariant() ?? "open"} ground, {s.Options.Weather.Describe}.");
+        battle.Log((s.Field != "" ? $"The battle of {s.Field}, against {s.EnemyName}" : $"Battle against {s.EnemyName}") + $": {s.Options.Ground?.Name.ToLowerInvariant() ?? "open"} ground, {s.Options.Weather.Describe}.");
         if (!s.Options.Scouted) battle.Log("No scouts: you cannot see their ranks until the fight starts.");
     }
 
@@ -120,7 +145,14 @@ sealed partial class BattleScreen
         deploying = true;
         SetCommand(true);
         blend = 1;
+        intro = shotDir == null && !Ui.Instant ? 0 : -1;
     }
+
+    // The opening sweep over the field (seconds into it; -1 = done) and the closing beat (seconds since the winner was known).
+    float intro = -1, ending = -1;
+    const float IntroTime = 4.5f, EndBeat = 1.6f;
+    /// The battle is decided but the result is not up yet: the field plays on at half speed and the camera rises.
+    bool Ending => ending >= 0 && ending < EndBeat && shotDir == null;
 
     /// Debug staging for the host's campaign screenshots.
     public void StageCommandView(Vector2 focus, float camPitch2, float zoom2, bool startFight)
@@ -157,8 +189,7 @@ sealed partial class BattleScreen
             new BattleOptions
             {
                 EnemyDamage = Settings.Current.EnemyDamage, Weather = weather, Cap = Math.Max(Settings.Current.BattleSize, men * 2 + 20),
-                // IRONFIELD_GROUND=river forces a river; otherwise a third of quick battles have one.
-                Ground = TerrainParams.Meadow with { River = Environment.GetEnvironmentVariable("IRONFIELD_GROUND") == "river" || (shotDir == null && rng.NextSingle() < 0.33f) },
+                Ground = QuickGround(rng),
             });
         battle.StartRecording(seed);
         replaySaved = false;
@@ -177,6 +208,8 @@ sealed partial class BattleScreen
     {
         Sky.Set(battle.Weather, nightFloor: 0.3f); // moonlight: dark, but you can still fight
         motes.Clear();
+        markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
+        Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
         world = new World(GraphicsDevice, battle.Terrain);
     }
@@ -192,6 +225,8 @@ sealed partial class BattleScreen
 
     bool Pressed(Keys k) => kb.IsKeyDown(k) && !pkb.IsKeyDown(k);
     bool Overlay => menuOpen || helpOpen || battle.Winner >= 0;
+    /// Tips wait while the menu, the controls or the result is up, so they never cover its buttons.
+    bool TipsHeld => Overlay;
     bool LmbPressed => ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released;
     bool LmbReleased => ms.LeftButton == ButtonState.Released && pms.LeftButton == ButtonState.Pressed;
 
@@ -207,11 +242,14 @@ sealed partial class BattleScreen
             replaySaved = true;
             try { battle.FinishRecording()?.Save("last-battle"); } catch (Exception e) { Console.WriteLine("replay not saved: " + e.Message); }
         }
-        if (Pressed(Keys.Enter) && Tips.Active) Tips.Dismiss();
-        else if (LmbPressed && Tips.Active && command && tipUi.Blocks(ms.Position)) Tips.Dismiss();
-        if (deploying) Tips.Show("deploy", "Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press Space (or START BATTLE) to begin.");
-        else if (!command && battle.Player.Active) Tips.Show("field", "Field view: you fight. On horseback W/S rein, A/D turn, Shift gallops. On foot WASD.\nMove the mouse to choose a swing direction, LMB to attack, RMB to block (match the red mark to parry).\nTab: command view. Hold MMB or Z: the order wheel.");
-        else if (command && !deploying) Tips.Show("command", "Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. Tab returns to your body: you inspire the men near you.");
+        if (!TipsHeld && Pressed(Keys.Enter) && Tips.Active) Tips.Dismiss();
+        else if (!TipsHeld && LmbPressed && Tips.Active && command && tipUi.Blocks(ms.Position)) Tips.Dismiss();
+        if (battle.Units.Any(battle.Rescuable))
+            Tips.Show("rescue", "One of your named men is down (the gold mark). Stand over him while the fight goes on\nand you carry him out alive, if you are quick.");
+        if (deploying) Tips.Show("deploy", $"Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press {ctl.First(Act.Pause)} (or START BATTLE) to begin.");
+        else if (!command && battle.Player.Active) Tips.Show("field", $"Field view: you fight. On horseback {ctl.First(Act.Forward)}/{ctl.First(Act.Back)} rein, {ctl.First(Act.Left)}/{ctl.First(Act.Right)} turn, {ctl.First(Act.Sprint)} gallops.\nMove the mouse to choose a swing direction, {ctl.First(Act.Attack)} to attack, {ctl.First(Act.Block)} to block (match the red mark to parry).\n{ctl.First(Act.CommandView)}: command view. Hold {ctl.Name(Act.OrderWheel)}: the order wheel. {ctl.First(Act.Help)}: all the keys.");
+        else if (command && !deploying) Tips.Show("command", $"Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. {ctl.First(Act.CommandView)} returns to your body: you inspire the men near you.");
+        if (deploying) GroundTips();
 
         if (ctl.Pressed(Act.Menu)) { if (helpOpen) helpOpen = false; else if (battle.Winner < 0) menuOpen = !menuOpen; skipMouse = true; }
         if (ctl.Pressed(Act.Help)) { helpOpen = !helpOpen; skipMouse = true; }
@@ -222,8 +260,8 @@ sealed partial class BattleScreen
         {
             battle.Input = new PlayerInput { Dir = aimDir };
             wheelOpen = false;
-            if (battle.Winner >= 0 && Pressed(Keys.Enter)) { if (campaignBattle != null) FinishCampaignBattle(); else NewBattle(); }
-            else if (LmbPressed && hud.MenuAt(ms.Position) is MenuItem m) MenuChoice(m);
+            if (battle.Winner >= 0 && !Ending && Pressed(Keys.Enter)) { if (campaignBattle != null) FinishCampaignBattle(); else NewBattle(); }
+            else if (!Ending && LmbPressed && hud.MenuAt(ms.Position) is MenuItem m) MenuChoice(m);
         }
         else
         {
@@ -241,8 +279,13 @@ sealed partial class BattleScreen
         IsMouseVisible = command || Overlay;
         battle.Commanding = command;
 
+        // The opening sweep runs until it ends or you press anything.
+        if (intro >= 0) { intro += dt; if (intro > IntroTime || LmbPressed || Keyboard.GetState().GetPressedKeyCount() > 0) intro = -1; }
+        if (battle.Winner >= 0) ending = ending < 0 ? 0 : ending + dt;
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
-        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); if (battle.GateBroke) world.RebuildFoliage(); }
+        if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
+        if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
+        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
@@ -280,12 +323,24 @@ sealed partial class BattleScreen
         audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Map : MusicTrack.Battle);
     }
 
+    /// The dotted way the first chosen company would take while you draw an order (round a river by the ford, through a hedge's gap).
+    List<Vector2>? route;
+    Vector2? routeAt;
+
     /// Hand the HUD everything it shows, and lay it out (also used for clicks).
     void SyncHud()
     {
-        hud.B = battle; hud.Selected = selected; hud.Ctl = ctl; hud.Minimap = world.Minimap;
+        hud.B = battle; hud.Selected = selected; hud.Ctl = ctl; hud.Minimap = world.Minimap; hud.GroundMap = world.GroundMap;
+        hud.GroundView = groundView ?? deploying; // the ground map is up while you deploy, until you close it
+        hud.GroundLine = command && !hud.Over(ms.Position) && dragStart == null ? Grounds.Describe(battle.Terrain.GroundAt(mouseGround)) : null;
+        hud.OrderWarning = command && dragStart != null && Targets().Count > 0 ? battle.GroundWarning(Targets(), mouseGround) : null;
+        if (command && dragStart != null && Targets() is { Count: > 0 } ts)
+        {
+            if (routeAt == null || Vector2.DistanceSquared(routeAt.Value, mouseGround) > 4) { route = battle.Route(ts[0], mouseGround); routeAt = mouseGround; }
+        }
+        else { route = null; routeAt = null; }
         hud.Command = command; hud.Paused = paused; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
-        hud.ShowResult = battle.Winner >= 0 && !helpOpen;
+        hud.ShowResult = battle.Winner >= 0 && !helpOpen && !Ending;
         hud.InCampaign = campaignBattle != null;
         hud.Deploying = deploying;
         if (selectedDivision != null && selectedDivision.Alive == 0) selectedDivision = null;

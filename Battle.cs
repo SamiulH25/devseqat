@@ -70,7 +70,7 @@ public sealed partial class Battle
     public Battle(int seed) : this(seed, Ironfield.Armies.Standard(0), Ironfield.Armies.Standard(1)) { }
 
     /// A battle between two armies as the campaign map would hand them over.
-    public Battle(int seed, ArmySpec player, ArmySpec enemy, BattleOptions? options = null) : this(seed, false, options)
+    public Battle(int seed, ArmySpec player, ArmySpec enemy, BattleOptions? options = null) : this(seed, false, options, FieldScale(player, enemy, options))
     {
         var mount = Options.PlayerMount ?? Mount.Courser; // you lead from the saddle (on foot in an assault: horses do not climb ladders)
         Player.Horse = Options.Siege ? null : mount;
@@ -78,7 +78,7 @@ public sealed partial class Battle
         // The field holds at most Options.Cap men; each side gets its share and the rest wait as reinforcements.
         int total = player.Companies.Sum(c => c.Count) + enemy.Companies.Sum(c => c.Count);
         float share = total > Options.Cap ? Options.Cap / (float)total : 1;
-        MapRadius = Math.Clamp(95 * MathF.Sqrt(Math.Min(total, Options.Cap) / 450f), 95, 230);
+        MapRadius = 95 * FieldScale(player, enemy, Options);
         Deploy(0, player, (int)(player.Companies.Sum(c => c.Count) * share));
         Deploy(1, enemy, (int)(enemy.Companies.Sum(c => c.Count) * share));
         UpdateCentroids();
@@ -190,12 +190,19 @@ public sealed partial class Battle
     public static Battle Empty(int seed) => new(seed, true);
     public static Battle Empty(int seed, BattleOptions options) => new(seed, true, options);
 
-    Battle(int seed, bool scripted, BattleOptions? options = null)
+    /// How big the field is for these armies: 1 up to 450 men on it, growing to about 2.4 at 2,600 (the room to flee, the clear ground).
+    static float FieldScale(ArmySpec player, ArmySpec enemy, BattleOptions? options)
+    {
+        int total = player.Companies.Sum(c => c.Count) + enemy.Companies.Sum(c => c.Count);
+        return Math.Clamp(MathF.Sqrt(Math.Min(total, (options ?? new BattleOptions()).Cap) / 450f), 1, 230 / 95f);
+    }
+
+    Battle(int seed, bool scripted, BattleOptions? options = null, float scale = 1)
     {
         rng = new Random(seed);
         this.scripted = scripted;
         Options = options ?? new BattleOptions();
-        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, Options.Ground ?? TerrainParams.Meadow, Options.Siege ? new SiegeWall(Options.Ladders, Options.GateHp) : null);
+        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, (Options.Ground ?? TerrainParams.Meadow) with { Scale = scale }, Options.Siege ? new SiegeWall(Options.Ladders, Options.GateHp) : null);
         Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34));
         Player.IsPlayer = Player.IsLeader = true;
         SetupCaptain();
@@ -215,7 +222,7 @@ public sealed partial class Battle
     public Squad AddSquad(int team, UnitType type, int n, Vector2 anchor, int cols, Vector2 front, Company? company = null)
     {
         var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null && !Options.Siege, Company = company,
-            AiControlled = company?.Allied == true && team == 0 };
+            AiControlled = company?.Allied == true && team == 0, LastSeen = anchor, PathTimer = Squads.Count % 8 * 0.06f }; // squads look for routes on different ticks
         // A mixed company spawns each stack in turn, largest first; a one-off squad is n men of `type`.
         var types = company?.Mix is { Length: > 1 } ? company.Stacks.SelectMany(x => Enumerable.Repeat(Troops.Get(x.Troop), x.Count)).Take(n).ToList() : null;
         for (int i = 0; i < n; i++)
@@ -227,6 +234,9 @@ public sealed partial class Battle
             u.Heading = u.Facing;
             s.Units.Add(u);
         }
+        // Named men (docs/LEGACY.md L2) are the first men of their troop, so they stand in its front rank.
+        foreach (var m in company?.Named ?? Array.Empty<NamedSpec>())
+            if (s.Units.FirstOrDefault(x => x.SoldierId == 0 && x.Type.Id == m.Troop) is Unit nu) { nu.SoldierId = m.Id; anyNamed = true; }
         // A companion fights at the head of his company as a hero (CAMPAIGN_OVERHAUL.md 3.3): the captain's kit, the AI's hands.
         if (company is { Hero.Length: > 0 })
         {
@@ -256,7 +266,7 @@ public sealed partial class Battle
     /// Set by the bench (`--bench`): called at the end of each tick stage (index into <see cref="Stages"/>; -1 = tick start).
     /// The sim itself never reads a clock, so replays stay exact.
     public Action<int>? Probe;
-    public static readonly string[] Stages = { "grid", "general", "squads", "think", "move", "lances", "arrows", "morale", "end" };
+    public static readonly string[] Stages = { "grid", "general", "sight", "squads", "think", "move", "lances", "arrows", "morale", "end" };
     void Mark(int stage) => Probe?.Invoke(stage);
 
     public void Update(float dt)
@@ -283,10 +293,12 @@ public sealed partial class Battle
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
         RaiseDead(dt);
         Mark(1);
+        UpdateSight(dt);
+        Mark(2);
         UpdateCalledHorse(dt);
         Resupply(dt);
         foreach (var s in Squads) UpdateSquad(s, dt);
-        Mark(2);
+        Mark(3);
         foreach (var u in Units)
         {
             if (!u.Active) continue;
@@ -299,19 +311,20 @@ public sealed partial class Battle
             Tire(u, dt);
             if (u.Type.Has("regen")) Regen(u, dt);
         }
-        Mark(3);
-        Move(dt);
         Mark(4);
+        Move(dt);
+        Mark(5);
         Braces();
         Lances();
-        Mark(5);
-        UpdateArrows(dt);
         Mark(6);
+        UpdateArrows(dt);
+        Mark(7);
         UpdateMorale(dt);
         UpdateBanner();
-        Mark(7);
-        CheckEnd();
+        UpdateRescue(dt);
         Mark(8);
+        CheckEnd();
+        Mark(9);
         Events.RemoveAll(e => Time - e.At > 6);
     }
 
@@ -349,6 +362,8 @@ public sealed partial class Battle
     void UpdateSquad(Squad s, float dt)
     {
         s.Pressure *= MathF.Exp(-0.6f * dt);
+        s.Loosen = 1 + (1 - Terrain.GroundDefAt(s.Anchor).Order) * 0.5f; // bad ground opens the ranks (docs/TERRAIN.md T2)
+        UpdatePath(s, dt);
         if (s.Target is { Alive: 0 }) s.Target = null; // target broken: fall back to the nearest enemy
         if (s.Order == Order.Follow && Player.Active)
         {
@@ -374,7 +389,18 @@ public sealed partial class Battle
         && (b.Type.Class == UnitClass.Skirmisher || s.Formation is Formation.ShieldWall or Formation.Square
             || (b.Type.Class == UnitClass.Infantry && s.Order == Order.Hold));
 
-    bool Braced(Unit b) => CanBrace(b) && b.Action is UnitAction.None or UnitAction.Block && b.Vel.LengthSquared() < 1 && Terrain.WaterDepth(b.Pos) < 0.5f;
+    bool Braced(Unit b) => CanBrace(b) && b.Action is UnitAction.None or UnitAction.Block && b.Vel.LengthSquared() < 1 && InOrder(b);
+
+    /// Can a man keep his place in the ranks here? Not in a wood or deep water (Data/ground.json `order` below 0.6):
+    /// no braced points, no locked shields.
+    bool InOrder(Unit u) => Terrain.GroundDefAt(u.Pos).Order >= 0.6f;
+
+    /// A man's reach on this ground: a long weapon (past 2 m) loses part of its length among trees (ground `reach`).
+    float ReachOf(Unit u)
+    {
+        float r = u.Type.Reach;
+        return r <= 2 ? r : 2 + (r - 2) * Terrain.GroundDefAt(u.Pos).Reach;
+    }
 
     AttackDir RandomSwing(Unit u) => u.Type.Class is UnitClass.Skirmisher or UnitClass.Cavalry
         ? (rng.Next(4) == 0 ? AttackDir.Overhead : AttackDir.Thrust)
@@ -427,12 +453,15 @@ public sealed partial class Battle
             var stacks = men.GroupBy(u => u.Type.Id).Select(g => new StackResult(g.Key, g.Count(),
                 Standing: g.Count(u => u.Active && !u.Routing), Fled: g.Count(u => u.Fled || (u.Active && u.Routing)), Fallen: g.Count(u => u.Dead))).ToList();
             int fled = men.Count(u => u.Fled || (u.Active && u.Routing));
+            var named = men.Where(u => u.SoldierId != 0).Select(u => new NamedResult(u.SoldierId, u.Kills, u.Dead, u.Fled || (u.Active && u.Routing), u.FelledLeader, u.Saved)).ToList();
+            var best = men.Where(u => u.SoldierId == 0).MaxBy(u => u.Kills);
             list.Add(new CompanyResult(s.Team, s.Company!.Id, s.StartCount,
                 Standing: men.Count(u => u.Active && !u.Routing),
                 Fled: fled,
                 Fallen: men.Count(u => u.Dead),
                 Kills: s.KillsByTier.Sum(), KillsByTier: (int[])s.KillsByTier.Clone(), Deployed: true, Stacks: stacks, HorseKills: s.HorseKills,
-                Routed: fled * 2 > s.StartCount || s.RoutSounded, HeroFell: s.Units.Any(u => u.Hero && u.Dead)));
+                Routed: fled * 2 > s.StartCount || s.RoutSounded, HeroFell: s.Units.Any(u => u.Hero && u.Dead),
+                Named: named, BestKills: best?.Kills ?? 0, BestTroop: best?.Type.Id ?? "", BestFelledLeader: best?.FelledLeader == true));
         }
         for (int team = 0; team < 2; team++)
             foreach (var (c, _) in reserves[team])
@@ -444,7 +473,7 @@ public sealed partial class Battle
         int horses = LooseHorses.Count(h => h.Team == 1);
         return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills, SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes)
         {
-            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(),
+            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(), GoalTexts = Goals.Select(GoalText).ToList(),
         };
     }
 

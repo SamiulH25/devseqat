@@ -49,7 +49,20 @@ public sealed class Squad
 
     public Squad(string name, int team) { Name = name; Team = team; }
 
-    public float Spacing => Formation switch
+    /// When each side last saw this company (Battle.UpdateSight), where the enemy last saw it, and when it last loosed arrows.
+    public readonly float[] SeenAt = { -99, -99 };
+    public Vector2 LastSeen; // set where it deploys
+    public float LooseAt = -99;
+
+    /// Its route when the straight way is blocked (Battle.UpdatePath; null on open ground), and when it is next looked at.
+    public FlowField? Path;
+    public float PathTimer;
+    public int PathClear;
+
+    /// How much the ground where it stands opens its ranks (1 on open ground; more in a wood or water; Battle.UpdateSquad sets it).
+    public float Loosen = 1;
+
+    public float Spacing => Loosen * Formation switch
     {
         Formation.Loose => Cavalry ? 4.5f : 2.6f,
         Formation.ShieldWall => 1.0f,

@@ -32,6 +32,8 @@ public sealed class BattleOptions
     public UnitType? PlayerSide;
     public Mount? PlayerMount;
     public TerrainParams? Ground;
+    /// The enemy realm's temper (Factions.Aggression, 0.3-3): how soon an AI holding good ground loses patience and attacks.
+    public float EnemyAggression = 1;
     /// Heraldry palette per team (Style.Sides index): your colours and theirs (3 = bandits).
     public int[] Palette = { 0, 1 };
     /// Difficulty: the enemy's blows are multiplied by this.
@@ -84,7 +86,13 @@ public enum LeaderFate { Unhurt, Wounded, Captured, Slain }
 /// One company's battle: Standing at the end, Fled (ran, alive), Fallen (killed or wounded: the campaign decides which).
 /// Stacks breaks the same counts down by troop type, so the campaign takes casualties off the right stack (CAMPAIGN_OVERHAUL.md 2.3).
 public sealed record CompanyResult(int Team, int Id, int Start, int Standing, int Fled, int Fallen, int Kills, int[] KillsByTier, bool Deployed,
-    IReadOnlyList<StackResult>? Stacks = null, int HorseKills = 0, bool Routed = false, bool HeroFell = false);
+    IReadOnlyList<StackResult>? Stacks = null, int HorseKills = 0, bool Routed = false, bool HeroFell = false,
+    IReadOnlyList<NamedResult>? Named = null, int BestKills = 0, string BestTroop = "", bool BestFelledLeader = false);
+
+/// What one named man did in a fought battle (docs/LEGACY.md L2): his kills, and whether he fell or fled. Null on a
+/// CompanyResult when the battle was not fought (auto-resolve): then named men share their stack's odds instead.
+/// BestKills/BestTroop on the CompanyResult are the company's best unnamed man, who may earn a name.
+public sealed record NamedResult(int Id, int Kills, bool Fell, bool Fled, bool FelledLeader, bool Saved = false);
 
 /// One troop type's part of a company's battle.
 public sealed record StackResult(string Troop, int Start, int Standing, int Fled, int Fallen);
@@ -98,4 +106,6 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     /// The battle's personal goals (P6, `Battle.GoalKinds` ids) and those met.
     public IReadOnlyList<string> Goals { get; init; } = Array.Empty<string>();
     public IReadOnlyList<string> GoalsMet { get; init; } = Array.Empty<string>();
+    /// Each goal's text as shown (a goal about a named man carries his name), in the order of Goals.
+    public IReadOnlyList<string> GoalTexts { get; init; } = Array.Empty<string>();
 }

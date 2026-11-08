@@ -33,8 +33,8 @@ public static class Skills
         } },
         new() { Id = "Tactics", Name = "Tactics", Rises = "BATTLES WON OUTNUMBERED", Governs = "AUTO-RESOLVE +1% PER 10 POINTS", Perks =
         {
-            new() { Id = "Tactician", Name = "Tactician", Text = "AUTO-RESOLVE +10%, SEE FOES WHEN DEPLOYING" },
-            new() { Id = "Ambusher", Name = "Ambusher", Text = "A RETREAT COSTS HALF THE REARGUARD" },
+            new() { Id = "Tactician", Name = "Tactician", Text = "AUTO-RESOLVE +10%, SEE FOES DEPLOYING, SEE 25% FURTHER" },
+            new() { Id = "Ambusher", Name = "Ambusher", Text = "RETREATS COST HALF THE REARGUARD, AMBUSHES SHAKE MORE" },
             new() { Id = "Siegecraft", Name = "Siegecraft", Text = "LADDERS AND RAM IN 6 HOURS, NOT 12" },
             new() { Id = "Pursuit", Name = "Pursuit", Text = "+25% PRISONERS AFTER A WIN" },
             new() { Id = "MasterOfWar", Name = "Master of War", Text = "AUTO-RESOLVE +10%, ORDERS REACH YOUR SERGEANTS TWICE AS FAST" },
@@ -44,7 +44,7 @@ public static class Skills
             new() { Id = "Quartermaster", Name = "Quartermaster", Text = "UPKEEP -10%" },
             new() { Id = "Horsemaster", Name = "Horsemaster", Text = "HORSES -30%, PARTY SPEED +5%" },
             new() { Id = "Forager", Name = "Forager", Text = "THE COMPANY EATS 20% LESS" },
-            new() { Id = "Pathfinder", Name = "Pathfinder", Text = "PARTY SPEED +5%" },
+            new() { Id = "Pathfinder", Name = "Pathfinder", Text = "PARTY SPEED +5%, WOODS AND MARSH SLOW YOUR MEN LESS" },
             new() { Id = "ForcedMarch", Name = "Forced March", Text = "PARTY SPEED +10%" },
         } },
         new() { Id = "Training", Name = "Training", Rises = "MEN PROMOTED", Governs = "DRILL XP +1% PER 2 POINTS", Perks =

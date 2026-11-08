@@ -28,10 +28,16 @@ public static partial class SelfTest
         SpearsStopHorse();
         CampaignMap();
         CampaignPersistence();
+        SaveMidRun();
+        ReportMatchesRecord();
         CampaignRun();
         Progression();
         Economy();
         Bridge();
+        RiverRoadGivesBridge();
+        RainMakesMud();
+        DefenderChoosesGround();
+        AutoResolveGroundEdge();
         Calibration();
         SiegeBattle();
         Formations();
@@ -45,9 +51,34 @@ public static partial class SelfTest
         FatigueAndSupply();
         Generals();
         Rivers();
+        GoesToFord();
+        FilesThroughGap();
+        FlowCacheBound();
+        ChargeFindsCaptain();
+        HoldsTheCrest();
+        HorseAvoidsBadGround();
+        AmbushWaits();
+        TakesTheFord();
+        GroundForThePlayer();
+        Stakes();
+        Pathfinder();
+        GroundLayer();
+        GroundMoves();
+        GroundFights();
+        Layouts();
+        HedgesAndBridges();
+        EveryLayoutResolves();
+        SightAndCover();
         CampaignWar();
         RefuseOldSave();
         Stacks();
+        RollEarnsNames();
+        FallenRemembered();
+        RisesFromRanks();
+        BannerHonours();
+        FameDraws();
+        RetireAndSucceed();
+        BuryNamed();
         Cultures();
         Characters();
         CampaignDivisions();
@@ -71,6 +102,9 @@ public static partial class SelfTest
         WarAndPeace();
         EventsAndQuests();
         StackBattle();
+        NamedMenFight();
+        AutoResolveNamedMen();
+        PullBack();
         ReplayExact();
         ScaleBattle();
         DivisionGoals();
@@ -115,6 +149,7 @@ public static partial class SelfTest
             Console.WriteLine($"level {level}: {string.Join(", ", b.Armies[0]!.Companies.Select(c => $"{c.Count} {Troops.Get(c.Troop).Name}"))}"
                 + $" vs {string.Join(", ", b.Armies[1]!.Companies.Select(c => $"{c.Count} {Troops.Get(c.Troop).Name}"))}: team {b.Winner} won after {b.Time:0}s");
         }
+        Animation(); // last: it builds battles, and the sim draws from shared counters
         Console.WriteLine("selftest ok");
     }
 

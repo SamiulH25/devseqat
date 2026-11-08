@@ -5,6 +5,7 @@ varying vec3 vNormal;
 varying vec4 vColor;
 varying vec2 vUV;
 varying vec4 vLight;
+varying float vTrample;
 
 #ifdef VERTEX
 attribute vec4 aPos;
@@ -22,6 +23,16 @@ void main()
     float w = (sin(Time * 1.9 + phase) * 0.6 + sin(Time * 3.7 + phase * 2.3) * 0.25) * gust;
     p.xz += Wind.xy * (w + Wind.w) * Wind.z * aUV.x;
     p.y -= abs(w) * Wind.z * aUV.x * 0.25;
+    // Grass where many men have walked lies flattened (the ground map's red channel; blades only: lit straight up).
+    vTrample = 0.0;
+    if (Field.y > 0.5 && aNormal.y > 0.999 && aUV.y > 0.99)
+    {
+        vTrample = texture2DLod(GroundMap, p.xz * Field.x + 0.5, 0.0).r;
+        p.y -= vTrample * 0.32 * aUV.x;
+        p.xz += Wind.xy * vTrample * 0.22 * aUV.x;
+    }
+#else
+    vTrample = 0.0;
 #endif
     vWorld = p;
     vNormal = aNormal;
@@ -45,20 +56,57 @@ void main()
     gl_FragColor = vec4(vLight.z / vLight.w, 0.0, 0.0, 1.0);
 #else
     vec3 albedo = vColor.rgb;
+    vec3 n = normalize(vNormal);
+    float puddle = 0.0;
 #ifdef TERRAIN
     albedo *= texture2D(Detail, vUV).rgb * 1.05;
+    // Close up, the ground breaks into mottled grass and patches of clover and dry stalks (faded in within ~40 m).
+    float near = Look.y * (1.0 - smoothstep(16.0, 42.0, length(vWorld - CameraPos)));
+    if (near > 0.0)
+    {
+        float m = Noise2(vWorld.xz * 3.1) * 0.6 + Noise2(vWorld.xz * 9.0) * 0.4;
+        albedo *= 1.0 + (m - 0.5) * 0.4 * near;
+        float patch = Noise2(vWorld.xz * 0.35 + 3.0);
+        albedo = mix(albedo, albedo * vec3(1.1, 1.05, 0.78), smoothstep(0.6, 0.78, patch) * 0.7 * near);
+        albedo = mix(albedo, albedo * vec3(0.82, 0.95, 0.8), smoothstep(0.62, 0.8, 1.0 - patch) * 0.6 * near);
+    }
+    // Trampled earth where the fighting has been.
+    if (Field.y > 0.5) albedo = mix(albedo, vec3(0.34, 0.28, 0.2), texture2D(GroundMap, vWorld.xz * Field.x + 0.5).r * 0.5);
+    // Rain: standing water in the low flat places.
+    if (Field.w > 0.0) puddle = Field.w * smoothstep(0.8, 0.86, Noise2(vWorld.xz * 0.28 + 11.0) * 0.7 + Noise2(vWorld.xz * 1.3) * 0.3) * smoothstep(0.97, 0.995, n.y);
 #endif
-    vec3 n = normalize(vNormal);
+#ifdef FOLIAGE
+    albedo = mix(albedo, albedo * vec3(0.78, 0.74, 0.55), vTrample * 0.6); // bruised, flattened blades
+#endif
+    albedo *= 1.0 - Field.w * 0.22; // wet ground and leaves are darker
+    albedo = mix(albedo, vec3(0.9, 0.92, 0.96), Look.x * smoothstep(0.5, 0.85, n.y) * 0.85); // snow lies on what faces up
     vec3 l = -SunDir;
     float ndl = dot(n, l);
     float diffuse = max(ndl, 0.0);
 #ifdef FOLIAGE
     diffuse = mix(diffuse, ndl * 0.5 + 0.5, vUV.y * 0.6); // leaves scatter light: softer terminator
 #endif
-    float shadow = ShadowAt(vWorld + n * ShadowParams.w);
+    float shadow = ShadowAt(vWorld + n * ShadowParams.w) * CloudAt(vWorld);
     vec3 ambient = mix(GroundColor, SkyColor, n.y * 0.5 + 0.5);
     vec3 col = albedo * (ambient + SunColor * diffuse * shadow);
+    if (Field.w > 0.0)
+    {
+        // A wet sheen toward the sun, and puddles that mirror the sky.
+        vec3 v = normalize(CameraPos - vWorld);
+        float spec = pow(max(dot(reflect(-l, n), v), 0.0), 20.0);
+        col += SunColor * spec * Field.w * (0.18 + puddle * 0.8) * shadow;
+        col = mix(col, mix(col * 0.45, FogColor * 0.7, 0.5), puddle * 0.6);
+    }
 #ifdef FOLIAGE
+    // Rivers (flat, blue, no UVs) ripple and glint as the water moves.
+    if (vUV.x + vUV.y < 0.001 && n.y > 0.99 && vColor.b - vColor.r > 0.12)
+    {
+        float rip = Noise2(vWorld.xz * 0.7 + vec2(Time * 0.45, Time * 0.3)) * 0.6 + Noise2(vWorld.xz * 2.3 - vec2(Time * 0.2, Time * 0.6)) * 0.4;
+        col *= 0.9 + rip * 0.22;
+        vec3 vw = normalize(CameraPos - vWorld);
+        vec3 rn = normalize(vec3((rip - 0.5) * 0.5, 1.0, (Noise2(vWorld.xz * 1.1 + Time * 0.35) - 0.5) * 0.5));
+        col += SunColor * pow(max(dot(reflect(-l, rn), vw), 0.0), 40.0) * 0.5 * shadow;
+    }
     // Backlit leaves glow.
     vec3 toCam = normalize(CameraPos - vWorld);
     col += albedo * SunColor * pow(max(dot(-toCam, l), 0.0), 4.0) * vUV.y * 0.6 * shadow;

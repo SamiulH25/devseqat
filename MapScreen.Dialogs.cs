@@ -12,7 +12,7 @@ partial class MapScreen
         var e = C.Encounter!;
         if (C.Meeting(e)) { MeetingPanel(e); return; }
         bool lord = e.Kind == PartyKind.Lord;
-        var r = Modal(lord ? 780 : 680, 380, "ENCOUNTER", Style.Foe);
+        var r = Modal(lord ? 780 : 680, 440, "ENCOUNTER", Style.Foe);
         int x = r.X + ui.U(24), y = r.Y + ui.U(52);
         ui.Text(e.Name.ToUpperInvariant(), x, y, PartyColor(e));
         ui.Text(Allegiance(e), x, y + ui.U(20), Style.Dim, 1);
@@ -26,7 +26,8 @@ partial class MapScreen
         var bar = new Rectangle(x, y + ui.U(36), r.Width - ui.U(48), ui.U(10));
         ui.Rect(bar, Style.Foe);
         ui.Rect(new Rectangle(bar.X, bar.Y, (int)(bar.Width * me / MathF.Max(1, me + them)), bar.Height), Style.Friendly);
-        y += ui.U(60);
+        ui.Text(C.GroundNote(e), x, bar.Bottom + ui.U(8), Kit.Gilt, 1); // the ground and who holds it (docs/TERRAIN.md T7)
+        y += ui.U(76);
         foreach (var c in e.Companies.Where(c => c.Men > 0).Take(6))
         {
             ui.Portrait(c.Type, new Rectangle(x, y, ui.U(32), ui.U(30)));
@@ -35,6 +36,7 @@ partial class MapScreen
             x += ui.U(190);
             if (x > r.Right - ui.U(180)) { x = r.X + ui.U(24); y += ui.U(36); }
         }
+        EncounterOwnSide(r, x == r.X + ui.U(24) ? y : y + ui.U(36), me, them);
         Note(r);
         int n = lord ? 5 : 4, bw = ui.U(lord ? 140 : 156), by = r.Bottom - ui.U(40), bx = r.X + (r.Width - n * bw - (n - 1) * ui.U(8)) / 2;
         bool fit = C.Player.Men > 0;
@@ -55,6 +57,33 @@ partial class MapScreen
         string? cant = C.CannotChallenge(e);
         if (ui.Button(duel, "CHALLENGE", cant == null)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareDuel(e)); }
         if (ui.Hover(duel)) note = cant ?? "MEET HIS LORD IN SINGLE COMBAT. WIN AND HIS MEN START THE BATTLE SHAKEN.";
+    }
+
+    /// Under the enemy's companies: the odds in words, the field's name, and your own companies, so the choice is made
+    /// with both sides in view.
+    void EncounterOwnSide(Rectangle r, int y, float me, float them)
+    {
+        int x = r.X + ui.U(24), w = r.Width - ui.U(48), bottom = r.Bottom - ui.U(62);
+        if (y + ui.U(30) > bottom) return;
+        ui.Rect(new Rectangle(x, y, w, ui.U(1)), Color.White * 0.08f);
+        y += ui.U(8);
+        float odds = me / MathF.Max(1, them);
+        string word = odds >= 2 ? "THEY ARE FAR WEAKER" : odds >= 1.25f ? "YOU HAVE THE EDGE" : odds >= 0.8f ? "AN EVEN FIGHT" : odds >= 0.5f ? "THEY HAVE THE EDGE" : "THEY ARE FAR STRONGER";
+        ui.Text($"ODDS: {word}", x, y, odds >= 1.25f ? Style.Ok : odds >= 0.8f ? Style.Warn : Style.Bad, 1);
+        ui.TextR($"THE FIELD: {C.BattleName(C.Player.Pos).ToUpperInvariant()}", x + w, y, Style.Dim, 1);
+        y += ui.U(16);
+        if (y + ui.U(30) > bottom) return;
+        ui.Text("YOUR COMPANY", x, y, Style.Friendly, 1);
+        y += ui.U(12);
+        foreach (var c in C.Player.Companies.Where(c => c.Men > 0))
+        {
+            if (y + ui.U(30) > bottom) break;
+            ui.Portrait(c.Type, new Rectangle(x, y, ui.U(32), ui.U(30)));
+            ui.TextFit(c.Name.ToUpperInvariant(), x + ui.U(40), y + ui.U(4), ui.U(146), Style.Text, 1);
+            ui.Text($"{c.Men} MEN" + (c.Wounded > 0 ? $" +{c.Wounded}W" : ""), x + ui.U(40), y + ui.U(16), Style.Dim, 1);
+            x += ui.U(190);
+            if (x > r.Right - ui.U(180)) { x = r.X + ui.U(24); y += ui.U(36); }
+        }
     }
 
     /// Travellers on the road who are not your enemy (S4): buy from them, give alms, ask for news, rob them, or ride on.
@@ -138,11 +167,14 @@ partial class MapScreen
     }
 
 
+    object? beatHeard;
+
     /// A career beat, a council's decision that concerns you, or the war won (F5): shown once.
     void BeatPanel()
     {
         if (C.Beat is not var (title, lines)) { panel = PanelKind.None; return; }
         bool won = title == "THE WAR IS WON";
+        if (!ReferenceEquals(lines, beatHeard)) { beatHeard = lines; AudioEngine.Current?.Play(Cue.Horn); } // a horn as the banner sweeps in
         var r = Modal(640, 150 + 16 * lines.Length + (won ? 40 : 0), title, won ? Style.Accent : Style.Text);
         int y = r.Y + ui.U(62);
         foreach (var line in lines) { ui.TextC(line, r.X + r.Width / 2f, y, Style.Text, 1); y += ui.U(16); }
@@ -150,14 +182,14 @@ partial class MapScreen
         { C.Beat = null; panel = PanelKind.None; }
         if (won && ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(80), ui.U(220), ui.U(30)), "TO THE TITLE"))
         { C.Beat = null; C.S.Save("autosave"); OnTitle?.Invoke(); }
-        if (!won && ui.Button(new Rectangle(r.Right - ui.U(150), r.Bottom - ui.U(44), ui.U(130), ui.U(30)), "REALM (R)"))
-        { C.Beat = null; realmTab = 1; panel = PanelKind.Realm; note = ""; }
+        if (!won && ui.Button(new Rectangle(r.Right - ui.U(150), r.Bottom - ui.U(44), ui.U(130), ui.U(30)), $"REALM ({ctl.Name(Act.RealmScreen)})"))
+        { C.Beat = null; realmTab = 1; OpenScreen(PanelKind.Realm); }
     }
 
     /// Ironman: the captain was taken and executed. The campaign (and its save) ends here.
     void GameOverPanel()
     {
-        var r = Modal(620, 330, "YOUR WAR IS OVER", Style.Bad);
+        var r = Modal(760, 420, C.S.Retired ? "THE COMPANY'S LEGEND" : "YOUR WAR IS OVER", C.S.Retired ? Kit.Gilt : Style.Bad);
         ui.TextC(C.S.EndReason != "" ? C.S.EndReason : "THE ENEMY DID NOT RANSOM YOU.", r.X + r.Width / 2f, r.Y + ui.U(66), Style.Warn, 1);
         int y = r.Y + ui.U(96);
         foreach (var line in C.Summary()) { ui.TextC(line, r.X + r.Width / 2f, y, Style.Text, 1); y += ui.U(18); }

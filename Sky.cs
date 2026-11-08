@@ -17,6 +17,13 @@ public static class Sky
     /// How dark it is (0 = day, 1 = full night): torches and the map's lamplight use it.
     public static float Night { get; private set; }
     public static float Rain { get; private set; }
+    /// How strong cloud shadows are over the land (thin on a clear day, none under full overcast or at night), how wet the
+    /// ground is, and snow cover (docs/VISUALS.md V4).
+    public static float Clouds { get; private set; }
+    public static float Wet { get; private set; }
+    public static float Snow { get; private set; }
+    /// The colour of the moment for the final grade: gold at dawn and dusk, cool in rain, blue at night.
+    public static Vector3 Grade { get; private set; } = Vector3.One;
 
     static Sky() => Set(Weather.Clear);
 
@@ -59,5 +66,11 @@ public static class Sky
         Horizon = hor;
         Zenith = zen;
         FogScale = Math.Clamp(1 - w.Fog * 0.7f - w.Rain * 0.3f - n * 0.35f, 0.2f, 1);
+        Clouds = (1 - n) * Math.Clamp(0.32f + w.Rain * 0.2f - w.Fog * 0.3f, 0, 0.45f) * (grey > 0.7f ? 0.3f : 1);
+        Wet = w.Snow ? 0.15f : Math.Clamp(w.Rain, 0, 1);
+        Snow = w.Snow ? 0.8f : 0;
+        var gold = new Vector3(1.06f, 0.98f, 0.86f);
+        var cool = new Vector3(0.94f, 0.98f, 1.05f);
+        Grade = Vector3.Lerp(Vector3.Lerp(Vector3.Lerp(gold, Vector3.One, k), cool, Math.Clamp(w.Rain + w.Fog * 0.5f, 0, 1)), new Vector3(0.9f, 0.95f, 1.1f), n);
     }
 }

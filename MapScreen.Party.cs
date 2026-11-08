@@ -20,11 +20,13 @@ partial class MapScreen
     {
         var r = Modal(1000, 600, "LORDS AND COMPANIONS");
         int realms = C.S.Factions.Count;
-        int tw = ui.U(200), tx = r.X + (r.Width - (realms + 1) * (tw + ui.U(6))) / 2;
+        // One tab per realm and the household, all inside the panel: a long name shows its last word ("EMIRATES").
+        int tw = Math.Min(ui.U(200), (r.Width - ui.U(40) - realms * ui.U(4)) / (realms + 1)), tx = r.X + (r.Width - (realms + 1) * (tw + ui.U(4)) + ui.U(4)) / 2;
         for (int i = 0; i <= realms; i++)
         {
             string label = i < realms ? C.FactionNames[i].ToUpperInvariant() : "YOUR HOUSEHOLD";
-            if (ui.Button(new Rectangle(tx + i * (tw + ui.U(6)), r.Y + ui.U(46), tw, ui.U(24)), label, true, "", charTab == i)) { charTab = i; note = ""; }
+            if (ui.TW(label, 1) > tw - ui.U(8)) label = ui.Fit(label.Split(' ').Last(), tw - ui.U(8));
+            if (ui.Button(new Rectangle(tx + i * (tw + ui.U(4)), r.Y + ui.U(46), tw, ui.U(24)), label, true, "", charTab == i)) { charTab = i; note = ""; }
         }
         int x = r.X + ui.U(24), y = r.Y + ui.U(82), colW = (r.Width - ui.U(60)) / 2, rowH = ui.U(38);
         var list = charTab < realms
@@ -44,7 +46,8 @@ partial class MapScreen
                 : party == null ? "" : party.Captive ? "YOUR PRISONER" : party.Down ? "SCATTERED" : $"{party.Men} MEN, {party.Task.ToUpperInvariant()}";
             ui.Text(ch.Name.ToUpperInvariant(), box.X + ui.U(6), box.Y + ui.U(4), Style.Text, 1);
             ui.TextR(state, box.Right - ui.U(6), box.Y + ui.U(4), ch.Kind == "companion" && C.S.Hours < ch.WoundedUntil ? Style.Warn : Style.Dim, 1);
-            ui.Text(string.Join(", ", ch.Traits).ToUpperInvariant() + $"  AGE {ch.Age}", box.X + ui.U(6), box.Y + ui.U(16), Style.Dim, 1);
+            string rose = C.RoseFrom(ch);
+            ui.Text(string.Join(", ", ch.Traits).ToUpperInvariant() + $"  AGE {ch.Age}" + (rose != "" ? "  . " + rose : ""), box.X + ui.U(6), box.Y + ui.U(16), rose != "" ? Kit.Gilt : Style.Dim, 1);
             // The opinion bar: centre is indifference.
             var bar = new Rectangle(box.X + ui.U(6), box.Y + ui.U(29), box.Width - ui.U(12), ui.U(4));
             ui.Rect(bar, Color.White * 0.08f);
@@ -60,7 +63,7 @@ partial class MapScreen
         }
         if (charTab == realms) Vassals(r, r.Y + ui.U(82) + ((list.Count + 1) / 2) * (rowH + ui.U(4)) + ui.U(12));
         Note(r);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (L)")) panel = PanelKind.None;
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.LordsScreen))) panel = CameFrom(PanelKind.Characters);
     }
 
     /// A company's story for the party screen: origin, honours, and its last fights.
@@ -69,10 +72,11 @@ partial class MapScreen
         var parts = new List<string>();
         parts.Add(c.Home != "" ? $"RAISED IN {c.Home.ToUpperInvariant()} ({c.Culture.ToUpperInvariant()})" : "NO HOME");
         parts.Add($"{c.Battles} BATTLES, {c.Kills} KILLS");
+        if (c.BattleHonours.Count > 0) parts.Add("BATTLE HONOURS: " + string.Join(", ", c.BattleHonours).ToUpperInvariant());
         if (c.Honours.Count > 0) parts.Add("HONOURS: " + string.Join(", ", c.Honours.Select(h => Honours.Get(h) is HonourDef d ? $"{d.Name.ToUpperInvariant()} ({d.Text.ToUpperInvariant()})" : h)));
         if (c.Traits.Count > 0) parts.Add($"{c.Officer.ToUpperInvariant()}: " + string.Join(", ", c.Traits.Select(t => t.ToUpperInvariant())));
         if (c.Hero != "") parts.Add($"LED BY {c.Hero.ToUpperInvariant()}");
-        if (c.Ledger.Count > 0) parts.Add("LAST: " + string.Join("; ", c.Ledger.TakeLast(3).Reverse().Select(l => $"DAY {l.Day} {(l.Won ? "WON" : "LOST")} VS {l.Foe.ToUpperInvariant()}, {l.Kills} KILLS, {l.Lost} LOST")));
+        if (c.Ledger.Count > 0) parts.Add("LAST: " + string.Join("; ", c.Ledger.TakeLast(3).Reverse().Select(l => $"DAY {l.Day} {(l.Won ? "WON" : "LOST")}{(l.Name != "" ? $" AT {l.Name.ToUpperInvariant()}" : "")} VS {l.Foe.ToUpperInvariant()}, {l.Kills} KILLS, {l.Lost} LOST")));
         return string.Join(". ", parts);
     }
 
@@ -156,7 +160,8 @@ partial class MapScreen
             ui.Rect(box, Color.White * 0.04f);
             string temper = C.TemperOf(d).ToUpperInvariant();
             ui.Text($"{C.DivisionName(d).ToUpperInvariant()}", box.X + ui.U(6), box.Y + ui.U(5), Style.Accent, 1);
-            ui.Text($"{temper}, COMMAND {C.CommandOf(d)}", box.X + ui.U(6), box.Y + ui.U(17), Style.Dim, 1);
+            string rose = C.RoseFrom(C.S.Characters.FirstOrDefault(ch => ch.Id == d.LeaderChar));
+            ui.Text($"{temper}, COMMAND {C.CommandOf(d)}" + (rose != "" ? " . " + rose : ""), box.X + ui.U(6), box.Y + ui.U(17), rose != "" ? Kit.Gilt : Style.Dim, 1);
             var comps = C.CompaniesOf(d).ToList();
             string names = string.Join(", ", comps.Select(c => $"{c.Name.ToUpperInvariant()} ({c.Men})"));
             if (names.Length > 86) names = names[..84] + "..";
@@ -210,6 +215,6 @@ partial class MapScreen
             cy += ui.U(27);
         }
         Note(r);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "BACK (V)")) panel = PanelKind.Party;
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), from == PanelKind.Party ? "BACK" : "CLOSE", note: ctl.Name(Act.DivisionsScreen))) panel = CameFrom(PanelKind.Divisions);
     }
 }

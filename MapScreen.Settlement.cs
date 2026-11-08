@@ -407,15 +407,17 @@ partial class MapScreen
         ui.Text($"UNREST {s.Unrest:0}", ux, y, s.Unrest >= Campaign.RevoltAt ? Style.Bad : Style.Text);
         ui.TextR($"{drift:+0.00;-0.00} A DAY", ux + half, y + ui.U(2), drift > 0 ? Style.Warn : Style.Dim, 1);
         ui.Bar(new Rectangle(ux, y + ui.U(18), half, ui.U(5)), s.Unrest / 100f, s.Unrest >= Campaign.RevoltAt ? Style.Bad : Style.Warn);
-        ui.Text(why.Count == 0 ? "THE PEOPLE ARE CONTENT." : string.Join("  ", why), ux, y + ui.U(28), Style.Dim, 1);
+        ui.TextFit(why.Count == 0 ? "THE PEOPLE ARE CONTENT." : string.Join("  ", why), ux, y + ui.U(28), half, Style.Dim, 1);
         if (C.Rebels(s) is Party reb) ui.Text($"{reb.Men} REBELS ARE IN THE FIELD: BEAT THEM TO CALM THE PLACE.", ux, y + ui.U(40), Style.Bad, 1);
         y += ui.U(56);
         ui.Text("TAXES:", x, y + ui.U(6), Style.Dim, 1);
         for (int i = 0; i < 3; i++)
             if (ui.Button(new Rectangle(x + ui.U(60) + i * ui.U(110), y, ui.U(104), ui.U(24)), Campaign.TaxNames[i], true, "", s.Tax == i)) note = C.SetTax(s, i) ?? "";
-        ui.Text("LOW: INCOME -30%, CALMER, GROWS FASTER.  HIGH: INCOME +35%, UNREST, SLOWER GROWTH.", x + ui.U(400), y + ui.U(6), Style.Dim, 1);
+        ui.Text("LOW: INCOME -30%, CALMER, GROWS FASTER.", x + ui.U(400), y, Style.Dim, 1);
+        ui.Text("HIGH: INCOME +35%, UNREST, SLOWER GROWTH.", x + ui.U(400), y + ui.U(12), Style.Dim, 1);
         y += ui.U(34);
-        if (s.Building != "") ui.Text($"BUILDING {Campaign.BuildingOf(s.Building)?.Name.ToUpperInvariant()}: {MathF.Max(0, (s.BuildUntil - (float)C.S.Hours) / 24):0.0} DAYS LEFT", x, y, Style.Accent, 1);
+        string? busy = s.Building != "" ? Campaign.BuildingOf(s.Building)?.Name.ToUpperInvariant() : null;
+        if (busy != null) ui.Text($"BUSY: BUILDING {busy}, {MathF.Max(0, (s.BuildUntil - (float)C.S.Hours) / 24):0.0} DAYS LEFT. ONE BUILDING AT A TIME.", x, y, Style.Accent, 1);
         else ui.Text("BUILD (ONE AT A TIME):", x, y, Style.Accent, 1);
         y += ui.U(16);
         int bw = (body.Width - ui.U(8)) / 2, i2 = 0;
@@ -425,7 +427,9 @@ partial class MapScreen
             int lv = Campaign.Level(s, d.Id);
             bool can = C.CanBuild(s, d, out string why2, out int cost);
             string label = $"{d.Name.ToUpperInvariant()}{(d.Max > 1 ? $" {Style.Numerals[Math.Min(d.Max, lv + (lv < d.Max ? 1 : 0))]}" : "")}";
-            if (ui.Button(row, lv >= d.Max ? label + " (BUILT)" : label, can, can ? $"{cost}" : why2, lv > 0)) note = C.Build(s, d.Id) ?? $"WORK BEGINS ON THE {d.Name.ToUpperInvariant()}";
+            // While something is building, the line above says so once; each button shows its cost, not the same reason.
+            string side = can || why2.StartsWith("BUILDING ") ? $"{cost}" : why2;
+            if (ui.Button(row, lv >= d.Max ? label + " (BUILT)" : label, can, side, lv > 0)) note = C.Build(s, d.Id) ?? $"WORK BEGINS ON THE {d.Name.ToUpperInvariant()}";
             if (ui.Hover(row)) note = d.Text;
             i2++;
         }

@@ -21,6 +21,9 @@ public partial class Battle
         return enemy.Pos + side * s * 4.5f - enemy.Dir * 2.5f; // wide, out of reach, round the end of a line
     }
 
+    /// Height carries arrows further: up to a quarter more range, reached 6 m above the mark.
+    internal static float HeightRange(float above) => 1 + Math.Clamp(above / 24, 0, 0.25f);
+
     void Think(Unit u, float dt)
     {
         if (u.Routing)
@@ -58,15 +61,15 @@ public partial class Battle
             var (tu, td) = Nearest(u, s.Target);
             if (tu != null && td < u.Type.Range) (enemy, d) = (tu, td);
         }
-        float range = MathF.Min(Weather.Vision, u.Type.Range * (enemy != null && Terrain.Height(u.Pos) > Terrain.Height(enemy.Pos) + 2 ? 1.2f : 1)); // height carries arrows further; fog and night hide targets
-        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < range && (charge || toSlot < 2.5f))
+        float range = MathF.Min(Weather.Vision, u.Type.Range * (enemy != null ? HeightRange(Terrain.Height(u.Pos) - Terrain.Height(enemy.Pos)) : 1)); // fog and night hide targets
+        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < range && (charge || toSlot < 2.5f) && Visible(enemy, u.Team)) // only at what your side can see
         {
             u.Face(enemy.Pos - u.Pos);
             if (u.Cooldown <= 0) Shoot(u, enemy);
             return;
         }
 
-        float reach = enemy == null ? 0 : u.Type.Reach + (enemy.Mounted ? 0.9f : 0);
+        float reach = enemy == null ? 0 : ReachOf(u) + (enemy.Mounted ? 0.9f : 0);
         // Brace for the charge: hold the slot and present the point instead of stepping out to meet it.
         if (enemy is { Mounted: true } && CanBrace(u) && d < 16 && toSlot < 6)
         {
@@ -88,7 +91,7 @@ public partial class Battle
         if (toSlot > 0.4f)
         {
             var to = Via(u, u.Slot) - u.Pos;
-            u.Wish = to / toSlot * MathF.Min(u.Type.Speed, s.MarchSpeed) * MathF.Min(1, toSlot);
+            u.Wish = to / MathF.Max(0.01f, to.Length()) * MathF.Min(u.Type.Speed, s.MarchSpeed) * MathF.Min(1, toSlot);
             u.Face(to);
         }
         else u.Face(s.FaceAt(u.Slot));
@@ -250,13 +253,17 @@ public partial class Battle
         dir.Normalize();
         var side = new Vector2(-dir.Y, dir.X);
         var spears = Led(team, "spears");
+        // On better ground than the enemy, the line stays on it and lets him come (BattleGround.cs).
+        var hold = HoldsGround(team, front, foe);
+        var basis = hold ?? front;
+        float step = hold != null ? 0 : 6;
         if (reserveSquad[team] is Squad r && r.Alive > 0) { r.Order = Order.Hold; r.Front = dir; r.Anchor = front - dir * 14; }
         if (!charged[team])
         {
-            foreach (var s in inf) { s.Front = dir; s.Anchor = front + dir * (6 - depth.GetValueOrDefault(s)) + side * lateral.GetValueOrDefault(s); }
+            foreach (var s in inf) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * lateral.GetValueOrDefault(s)); }
             // With several companies, the outermost swings out to take the enemy line in the flank.
-            if (inf.Count >= 3) { var wing = inf.OrderBy(s => lateral.GetValueOrDefault(s)).Last(); wing.Anchor = front + dir * (2 - depth.GetValueOrDefault(wing)) + side * (lateral.GetValueOrDefault(wing) + 14); }
-            foreach (var s in spears) { s.Front = dir; s.Anchor = front + dir * (6 - depth.GetValueOrDefault(s)) + side * (16 + flankOut[team].Spears + lateral.GetValueOrDefault(s)); } // swing wide on a flank
+            if (inf.Count >= 3) { var wing = inf.OrderBy(s => lateral.GetValueOrDefault(s)).Last(); wing.Anchor = DryAnchor(basis + dir * (step - 4 - depth.GetValueOrDefault(wing)) + side * (lateral.GetValueOrDefault(wing) + 14)); }
+            foreach (var s in spears) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * (16 + flankOut[team].Spears + lateral.GetValueOrDefault(s))); } // swing wide on a flank
             if (inf.Any(s => GapTo(s, foe) < 16) || spears.Any(s => s.Alive > 0 && GapTo(s, foe) < 10))
             {
                 charged[team] = true;
@@ -268,21 +275,26 @@ public partial class Battle
         }
         else foreach (var s in inf.Concat(spears)) s.Order = Order.Charge; // late arrivals join the charge
         foreach (var s in Led(team, "casters").Where(s => s.Alive > 0)) { s.Front = dir; s.Anchor = front - dir * 15; s.Order = Order.Hold; } // a necromancer works from behind his dead
+        // With no one left to hold a line, archers shoot what they carry and then go in: no trips back to the wagon.
+        bool bowsAlone = !Units.Any(u => u.Team == team && u.Active && !u.Routing && u.Type.Ammo == 0);
+        bool seesFoe = Squads.Any(o => o.Team != team && o.Alive > 0 && Visible(o, team));
         foreach (var s in Led(team, "archers"))
         {
             if (s.Order == Order.Charge || s.Alive == 0) continue;
-            if (ArcherSupply(s, team)) continue; // out of arrows: to the wagon
+            if (!bowsAlone && ArcherSupply(s, team)) continue; // out of arrows: to the wagon
             s.Front = dir;
             float gap = GapTo(s, foe), range = s.Units[0].Type.Range;
-            if (gap > range - 4) s.Anchor = s.Centroid() + dir * 4;
+            if (gap > range - 4 || !seesFoe) s.Anchor = s.Centroid() + dir * 4; // close to bow range, or until they can see someone to shoot
+            else if (!charged[team] && Role(foe, "horse").Any(h => h.Alive > 0) && CannotStake(s) == null) PlantStakes(s, record: false); // in range, horse about: stakes
             s.Target = SoftTarget(s, foe); // shoot the least armoured company in reach
-            if (gap < 7 || (s.Units.All(u => !u.Active || u.Ammo == 0) && WagonStock[team] <= 0)) { s.Order = Order.Charge; s.Target = null; }
+            if (gap < 7 || (s.Units.Count(u => u.Active && u.Ammo > 0) * 4 <= s.Alive && (WagonStock[team] <= 0 || bowsAlone))) { s.Order = Order.Charge; s.Target = null; } // or three in four out of arrows
         }
         var horse = Led(team, "horse");
         if (!horseCharged[team])
         {
-            foreach (var s in horse) { s.Front = dir; s.Anchor = front + dir * (4 - depth.GetValueOrDefault(s)) - side * (26 + flankOut[team].Horse - lateral.GetValueOrDefault(s)); } // the other flank
-            if (charged[team] || Time > 35 || horse.Any(s => s.Alive > 0 && GapTo(s, foe) < 20))
+            var (sign, outward) = HorseFlank(team, front, dir, side); // the other flank, or round the outside of a wood
+            foreach (var s in horse) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - 2 - depth.GetValueOrDefault(s)) + side * (sign * (26 + outward + flankOut[team].Horse) + lateral.GetValueOrDefault(s))); }
+            if (charged[team] || (Time > 35 && hold == null) || horse.Any(s => s.Alive > 0 && GapTo(s, foe) < 20))
             {
                 horseCharged[team] = true;
                 foreach (var s in horse) s.Order = Order.Charge;
@@ -292,7 +304,7 @@ public partial class Battle
         else foreach (var s in horse) s.Order = Order.Charge;
         if (horseCharged[team])
             foreach (var s in horse.Where(s => s.Target == null))
-                s.Target = new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(foe, r)).FirstOrDefault(t => t.Alive > 0); // soft targets first
+                s.Target = new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(foe, r)).Where(t => t.Alive > 0).OrderBy(t => Visible(t, team) ? 0 : 1).ThenBy(t => HorseGoing(s, t)).FirstOrDefault(); // ones it can see, on good going; soft targets first
         if (team == 1)
         {
             eGuard.Front = dir;

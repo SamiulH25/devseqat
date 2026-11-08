@@ -131,6 +131,7 @@ public sealed partial class Campaign
         var g = GarrisonParty(s);
         var setup = PrepareBattle(g);
         setup.EnemyName = g.Name;
+        setup.Field = BattleName(Player.Pos, true);
         setup.SiegeOf = s.Id;
         // Lords of the town's faction resting inside fight too (PrepareBattle adds anyone near and friendly to them).
         setup.Options.Siege = true;

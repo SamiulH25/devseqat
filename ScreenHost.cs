@@ -21,6 +21,12 @@ sealed class ScreenHost : Game
 
     enum Mode { Title, Map, Battle, Lab }
     Mode mode = Mode.Title;
+    // The screen last drawn and when it changed: each new screen rises out of black (docs/VISUALS.md V6).
+    Mode shown = Mode.Title;
+    float fadeAt = -10;
+    // The plate over a battle's opening fade: its name, then the ground and weather.
+    string plateName = "", plateNote = "";
+    Ui fadeUi = null!;
     BattleScreen battle = null!;
     MapScreen map = null!;
     TitleScreen title = null!;
@@ -70,6 +76,7 @@ sealed class ScreenHost : Game
             Art.Atlas.SaveAsPng(file, Art.Atlas.Width, Art.Atlas.Height);
         }
         Font = new PixelFont(GraphicsDevice);
+        fadeUi = new Ui(Sb, Art, Font);
         if (Environment.GetEnvironmentVariable("IRONFIELD_QUALITY") is { Length: > 0 } q && Enum.TryParse<Quality>(q, true, out var qv)) Quality = qv;
         string? shaderError = null;
         try { Shading = new Shading(GraphicsDevice); }
@@ -134,6 +141,8 @@ sealed class ScreenHost : Game
         setup = s;
         battle.BeginCampaign(s);
         mode = Mode.Battle;
+        plateName = s.Field != "" ? $"THE BATTLE OF {s.Field.ToUpperInvariant()}" : s.Tournament >= 0 ? "THE LISTS" : $"AGAINST {s.EnemyName.ToUpperInvariant()}";
+        plateNote = $"{(s.Options.Ground?.Name ?? "open").ToUpperInvariant()} GROUND, {s.Options.Weather.Describe.ToUpperInvariant()}";
     }
 
     void FinishCampaignBattle(BattleResult r)
@@ -179,6 +188,9 @@ sealed class ScreenHost : Game
 
     protected override void Draw(GameTime gameTime)
     {
+        Ui.Now = (float)gameTime.TotalGameTime.TotalSeconds;
+        Ui.Instant = campaignShots != null || lab.ShotsDir != null || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("IRONFIELD_SHOTS"));
+        Overflow.Frame(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
         switch (mode)
         {
             case Mode.Title: title.Draw(); break;
@@ -194,6 +206,7 @@ sealed class ScreenHost : Game
                 break;
             default: battle.Draw(); break;
         }
+        Fade();
         if (SettingsPanel.Open) SettingsPanel.Draw();
         CaptureShot();
         if (gpuReport != null)
@@ -202,6 +215,37 @@ sealed class ScreenHost : Game
             else if (gpuReport.Frame(Quality)) Exit();
         }
         base.Draw(gameTime);
+    }
+
+    /// Black over a screen that just came up, lifting over 0.35 s (a battle holds it longer under its name plate).
+    void Fade()
+    {
+        if (mode != shown)
+        {
+            if (mode != Mode.Battle) plateName = "";
+            shown = mode;
+            fadeAt = Ui.Now;
+        }
+        if (Ui.Instant) return;
+        bool plate = plateName != "" && mode == Mode.Battle;
+        float hold = plate ? 1.1f : 0, lift = plate ? 0.7f : 0.35f;
+        float t = (Ui.Now - fadeAt - hold) / lift;
+        if (t >= 1) { plateName = ""; return; }
+        float a = 1 - Ease.InOut(Math.Clamp(t, 0, 1));
+        var ui = fadeUi;
+        ui.Begin(GraphicsDevice.Viewport, Point.Zero, false);
+        ui.Rect(new Rectangle(0, 0, ui.W, ui.H), Color.Black * a);
+        if (plate)
+        {
+            // The name comes up first, then a gilt rule draws out under it, then the ground and weather.
+            float since = Ui.Now - fadeAt, ta = Ease.OutCubic(Math.Clamp(since / 0.4f, 0, 1)) * a;
+            int cx = ui.W / 2, y = ui.H / 2 - ui.U(24) + (int)((1 - ta) * ui.U(6));
+            ui.TextC(plateName, cx, y, Kit.Gilt * ta, 3);
+            int w = (int)(ui.TW(plateName, 3) * Ease.OutCubic(Math.Clamp((since - 0.2f) / 0.5f, 0, 1)));
+            ui.Rect(new Rectangle(cx - w / 2, y + ui.U(30), w, Math.Max(1, ui.U(1))), Kit.Gilt * (0.7f * a));
+            ui.TextC(plateNote, cx, y + ui.U(40), Kit.Parchment * (Math.Clamp((since - 0.4f) / 0.4f, 0, 1) * a), 1);
+        }
+        ui.End();
     }
 
     void CaptureShot()
@@ -215,8 +259,12 @@ sealed class ScreenHost : Game
         gd.GetBackBufferData(data);
         using var tex = new Texture2D(gd, w, h);
         tex.SetData(data);
+        Directory.CreateDirectory(dir);
         using var file = File.Create(Path.Combine(dir, name + ".png"));
         tex.SaveAsPng(file, w, h);
+        Overflow.Flush(dir, name);
+        // What the frame cost to draw, so a heavy effect shows up between runs (docs/VISUALS.md V8).
+        if (mode == Mode.Battle) File.AppendAllText(Path.Combine(dir, "render.txt"), $"{name}: {battle.RenderCost}\n");
         pendingShot = null;
         battle.PendingShot = null;
         lab.PendingShot = null;
@@ -480,7 +528,28 @@ sealed class ScreenHost : Game
             }
             case 41: StartCampaignBattle(c.PrepareDuel(c.Encounter!)); cStage++; shotFrames = 0; break;
             case 42 when battle.Battle.Time > 3: Shot("campaign-duel"); break;
-            case 43: Exit(); break;
+            case 43:
+            {
+                // The roll (docs/LEGACY.md L1-L3): a company's named men and its fallen.
+                mode = Mode.Map;
+                var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+                for (int i = 0; i < 6; i++) if (c.NameMan(co, i % 2 == 0 ? "Killed 6 against the Red Lances." : "Stood when half the company fell.") is Soldier m) { m.Battles = 3 + i * 2; m.Kills = i * 3; }
+                if (co.Roll.Count > 0) co.Roll[^1].Hurt = true;
+                c.S.Fallen.Add(new Soldier { Name = "Wat the Grey", Troop = co.Troop, Battles = 9, Fate = "fell", DiedAt = "the Red Lances", DiedDay = c.Day, Company = co.Id, CompanyName = co.Name });
+                map.Stage("roll");
+                Shot("campaign-roll");
+                break;
+            }
+            case 44:
+            {
+                // The report with your named men above the companies (L3).
+                var lines = c.Player.Companies.Select(k => new CompanyReport(k.Id, k.Name, k.Troop, 0, k.Men + 6, k.Men, 4, 2, 0, 0, 14, false, true)).ToList();
+                c.Report = new BattleReport(true, "the Red Lances", lines, 120, 0, 0, 6, 2, LeaderFate.Unhurt) { Roll = new List<(string, string)> { ("FELL", "Wat the Grey, Levies, the company. 9 battles, 4 kills. Killed 6 against the Red Lances."), ("HURT", "Hob of Ashby, the company."), ("NAMED", "Tam Longshanks, Spearmen, the company. Killed 5 against the brigands.") } };
+                map.Stage("results");
+                Shot("campaign-results-roll");
+                break;
+            }
+            case 45: Exit(); break;
         }
     }
 }

@@ -21,6 +21,9 @@ partial class MapScreen
     };
     Color PartyColor(Party p) => p.Kind == PartyKind.Player ? Style.Accent : SideColor(C.SideOf(p));
 
+    PanelKind lastPanel;
+    float panelSince;
+
     void DrawUi()
     {
         bool click = pendingClick;
@@ -34,13 +37,13 @@ partial class MapScreen
         Cards();
         Contracts();
         if (panel == PanelKind.None) { Tooltip(); Hints(); }
-        Tips.Draw(ui, ui.U(130));
         switch (panel)
         {
             case PanelKind.Encounter: EncounterPanel(); break;
             case PanelKind.Settlement: SettlementPanel(); break;
             case PanelKind.Party: PartyPanel(); break;
             case PanelKind.Upgrade: UpgradePanel(); break;
+            case PanelKind.Roll: RollPanel(); break;
             case PanelKind.Results: ResultsPanel(); break;
             case PanelKind.Menu: MenuPanel(); break;
             case PanelKind.GameOver: GameOverPanel(); break;
@@ -52,7 +55,14 @@ partial class MapScreen
             case PanelKind.Event: EventPanel(); break;
             case PanelKind.Divisions: DivisionsPanel(); break;
             case PanelKind.Atlas: AtlasPanel(); break;
+            case PanelKind.Help: HelpPanel(); break;
         }
+        if (panel != PanelKind.None && modalIn < 1) ui.Rect(modalRect, Kit.IronDark * (1 - modalIn)); // the panel's entrance: it comes up out of the dark
+        if (panel != lastPanel) { lastPanel = panel; panelSince = Ui.Now; }
+        // Tips draw last so nothing covers them; over an open panel they sit at the top, clear of its buttons. A tip that was
+        // already waiting when the panel opened keeps waiting for the map (only tips about the panel itself show over it).
+        if (panel == PanelKind.None) Tips.Draw(ui, ui.U(130));
+        else if (Tips.Since >= panelSince) Tips.DrawAt(ui, ui.U(6));
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
     }
@@ -95,7 +105,7 @@ partial class MapScreen
                 {
                     ui.Rect(l.R, Color.Black * 0.45f);
                     ui.Rect(new Rectangle(l.R.X, l.R.Bottom - ui.U(2), l.R.Width, ui.U(2)), col);
-                    ui.TextC(label, sp.X, l.R.Y + ui.U(3), Color.White, scale);
+                    ui.TextC(label, l.R.Center.X, l.R.Y + ui.U(3), Color.White, scale);
                 },
             });
         }
@@ -110,7 +120,7 @@ partial class MapScreen
                 all.Add(new Label
                 {
                     Pri = site.Id == C.S.GoalSite ? 0 : 5, R = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(12), w, ui.U(12)),
-                    Draw = l => { ui.Rect(l.R, Color.Black * (ready ? 0.4f : 0.25f)); ui.TextC(label, sp.X, l.R.Y + ui.U(2), ready ? Kit.Parchment : Style.Dim, 1); },
+                    Draw = l => { ui.Rect(l.R, Color.Black * (ready ? 0.4f : 0.25f)); ui.TextC(label, l.R.Center.X, l.R.Y + ui.U(2), ready ? Kit.Parchment : Style.Dim, 1); },
                 });
             }
         // Smoke rises over villages that were threatened or stripped.
@@ -122,6 +132,7 @@ partial class MapScreen
                 int r = ui.U(4 + ph * 10 * 110 / MathF.Max(40, zoom));
                 ui.Rect(new Rectangle((int)sp.X - r / 2, (int)sp.Y - r / 2, r, r), new Color(70, 66, 62) * (0.75f * (1 - ph)));
             }
+        if (zoom < 240) Life();
         foreach (var p in C.S.Parties)
         {
             if (p.Down || Screen(G(p.Pos, 9)) is not Vector2 sp) continue;
@@ -139,6 +150,7 @@ partial class MapScreen
                 {
                     string text = l.More > 0 ? $"{label} +{l.More}" : label;
                     var r = l.More > 0 ? new Rectangle(l.R.X, l.R.Y, ui.TW(text, 1) + ui.U(8), l.R.Height) : l.R;
+                    r.X = Math.Min(r.X, Math.Max(ui.U(4), ui.W - ui.U(4) - r.Width));
                     ui.Rect(r, seen ? PartyColor(p) * 0.85f : Color.Black * 0.5f);
                     ui.TextC(text, r.Center.X, r.Y + ui.U(3), seen ? Color.Black : Style.Dim, 1);
                 },
@@ -148,12 +160,46 @@ partial class MapScreen
         var placed = new List<Label>();
         foreach (var l in all.OrderBy(l => l.Pri))
         {
+            // A label cut by the edge slides in to stay whole on the screen; one wholly off it is not drawn.
+            if (l.R.Right <= 0 || l.R.X >= ui.W) continue;
+            l.R.X = Math.Clamp(l.R.X, ui.U(4), Math.Max(ui.U(4), ui.W - ui.U(4) - l.R.Width));
             var pad = new Rectangle(l.R.X - ui.U(2), l.R.Y - ui.U(1), l.R.Width + ui.U(4), l.R.Height + ui.U(2));
             var hit = l.Pri == 0 ? null : placed.FirstOrDefault(o => o.R.Intersects(pad));
             if (hit == null) placed.Add(l);
             else if (l.Party && hit.Party && hit.Pri > 0) hit.More++;
         }
         foreach (var l in placed.AsEnumerable().Reverse()) l.Draw(l);
+    }
+
+    /// The land lives: thin smoke from town chimneys, and dust kicked up behind parties on the move (docs/VISUALS.md V4).
+    void Life()
+    {
+        float fade = Math.Clamp((240 - zoom) / 80, 0, 1);
+        foreach (var t in C.S.Settlements)
+        {
+            if (t.Kind == SettlementKind.Village && t.ThreatUntil > C.S.Hours) continue; // already burning
+            int n = t.Kind == SettlementKind.Village ? 2 : 3;
+            for (int i = 0; i < n; i++)
+            {
+                float ph = (time * 0.12f + i / (float)n + t.Id * 0.37f) % 1;
+                var at = t.Pos + new Vector2((i - 1) * 1.6f + MathF.Sin(ph * 4 + t.Id) * 0.6f + ph * 2.5f, 0.8f * i);
+                if (Screen(G(at, (t.Kind == SettlementKind.Village ? 4 : 7) + ph * 9)) is not Vector2 sp) continue;
+                int r = Math.Max(1, ui.U((2 + ph * 6) * 110 / MathF.Max(40, zoom)));
+                ui.Rect(new Rectangle((int)sp.X - r / 2, (int)sp.Y - r / 2, r, r), new Color(200, 196, 190) * (0.22f * (1 - ph) * fade));
+            }
+        }
+        foreach (var p in C.S.Parties)
+        {
+            if (p.Down || !bearers.TryGetValue(p.Id, out var u) || u.Speed <= 0) continue;
+            var back = -new Vector2(MathF.Cos(p.Facing), MathF.Sin(p.Facing));
+            for (int i = 0; i < 4; i++)
+            {
+                float ph = (time * 1.4f + i / 4f + p.Id * 0.21f) % 1;
+                if (Screen(G(p.Pos + back * (1.2f + ph * 3) + new Vector2(-back.Y, back.X) * MathF.Sin(i * 2.3f) * 0.6f, 0.4f + ph * 1.5f)) is not Vector2 sp) continue;
+                int r = Math.Max(1, ui.U((2 + ph * 4) * 110 / MathF.Max(40, zoom)));
+                ui.Rect(new Rectangle((int)sp.X - r / 2, (int)sp.Y - r / 2, r, r), new Color(150, 132, 104) * (0.35f * (1 - ph) * fade));
+            }
+        }
     }
 
     void TopBar()
@@ -177,14 +223,14 @@ partial class MapScreen
 
     void Feed()
     {
-        int y = ui.U(10), room = (ui.W - ui.U(480)) / 2 - ui.U(30), chars = Math.Max(10, room / (6 * ui.S));
+        int y = ui.U(10), room = Math.Max(ui.U(80), (ui.W - ui.U(480)) / 2 - ui.U(30));
         foreach (var e in C.S.Log.AsEnumerable().Reverse().Take(6))
         {
             float age = (float)(C.S.Hours - e.At) / 24;
             var c = Color.White * Math.Clamp(1.4f - age * 0.25f, 0.45f, 1);
-            string t = e.Text.ToUpperInvariant();
-            if (t.Length > chars) t = t[..(chars - 2)] + "..";
-            ui.Rect(new Rectangle(ui.U(10), y - ui.U(3), ui.TW(t, 1) + ui.U(10), ui.U(13)), Color.Black * 0.4f);
+            string t = ui.Fit(e.Text.ToUpperInvariant(), room);
+            // Dark enough that map names under the log do not show through it.
+            ui.Rect(new Rectangle(ui.U(10), y - ui.U(3), ui.TW(t, 1) + ui.U(10), ui.U(13)), Color.Black * 0.62f);
             ui.Text(t, ui.U(15), y, c, 1);
             y += ui.U(15);
         }
@@ -222,8 +268,10 @@ partial class MapScreen
         var r = new Rectangle(ui.U(10), ui.H - ui.U(146), ui.U(300), ui.U(136));
         ui.Panel(r);
         int x = r.X + ui.U(10), y = r.Y + ui.U(8);
-        ui.Text("CAPTAIN  " + C.Stage, x, y, Style.Accent);
-        ui.TextR($"RENOWN {cap.Renown:0}", r.Right - ui.U(10), y + ui.U(2), Style.Text, 1);
+        string renown = $"RENOWN {cap.Renown:0}", title = "CAPTAIN  " + C.Stage;
+        int room = r.Width - ui.U(28) - ui.TW(renown, 1), ts = ui.FitScale(title, room);
+        ui.Text(ui.Fit(title, room, ts), x, y + (ts == 1 ? ui.U(3) : 0), Style.Accent, ts);
+        ui.TextR(renown, r.Right - ui.U(10), y + ui.U(2), Style.Text, 1);
         // Renown is the campaign's score, so show the ladder: how far to the next thing it buys.
         var (unlock, at) = Rules.NextRenownUnlock(cap);
         y += ui.U(18);
@@ -238,15 +286,21 @@ partial class MapScreen
         ui.TextR($"{(bal >= 0 ? "+" : "")}{bal:0} / WEEK", r.Right - ui.U(10), y + ui.U(2), bal >= 0 ? Style.Ok : Style.Bad, 1);
         y += ui.U(18);
         string contract = cap.Contract >= 0 ? $"{C.Stage} OF THE {C.FactionNames[cap.Contract].ToUpperInvariant()}" : "FREE COMPANY (NO PAY)";
-        ui.Text(contract, x, y, cap.Contract >= 0 ? SideColor(cap.Contract) : Style.Dim, 1);
+        ui.TextFit(contract, x, y, r.Width - ui.U(20), cap.Contract >= 0 ? SideColor(cap.Contract) : Style.Dim, 1);
         y += ui.U(12);
         ui.Text($"MEN {C.Player.Men}+{C.Player.Wounded}W / {Rules.MenLimit(cap)}   COMPANIES {C.Player.Companies.Count}/{Rules.CompanySlots(cap)}", x, y, Style.Dim, 1);
         y += ui.U(12);
         ui.Text($"HORSES {C.Player.Horses}   FOOD {C.Player.Food:0} DAYS" + (C.PrisonerCount > 0 ? $"   PRISONERS {C.PrisonerCount}" : ""), x, y, C.Player.Food < 3 ? Style.Bad : Style.Dim, 1);
         y += ui.U(12);
         if (C.S.Hours < cap.WoundedUntil) ui.Text($"WOUNDED: {(cap.WoundedUntil - C.S.Hours) / 24:0.0} DAYS", x, y, Style.Bad, 1);
-        else if (C.Besieging is Settlement sg) ui.Text($"BESIEGING {sg.Name.ToUpperInvariant()} (B)", x, y, Style.Warn, 1);
-        else { var (text, _) = C.NextStep(); ui.Text(text, x, y, Style.Accent, 1); }
+        else if (C.Besieging is Settlement sg) ui.TextFit($"BESIEGING {sg.Name.ToUpperInvariant()} ({ctl.First(Act.SiegeScreen)})", x, y, r.Width - ui.U(20), Style.Warn, 1);
+        else
+        {
+            // The next step can be long: two lines, then cut.
+            var lines = ui.Wrap(C.NextStep().Text.ToUpperInvariant(), r.Width - ui.U(20));
+            for (int i = 0; i < Math.Min(2, lines.Count); i++)
+                ui.Text(i == 1 && lines.Count > 2 ? ui.Fit(lines[1] + " " + lines[2], r.Width - ui.U(20)) : lines[i], x, y + i * ui.U(10), Style.Accent, 1);
+        }
     }
 
     /// How much renown the last rung of the ladder covered, so the bar runs from there to the next unlock.
@@ -299,10 +353,57 @@ partial class MapScreen
         }
     }
 
+    /// The screens a mouse can reach, one button each above the captain card, with its key.
     void Hints()
     {
-        ui.Text("LMB MOVE / ENTER / CHASE   P PARTY   K SKILLS   L LORDS   R REALM   M MAP   SPACE PAUSE   1-3 SPEED", ui.U(12), ui.H - ui.U(160), Color.White * 0.6f, 1);
-        ui.Text("WASD PAN   Q/E TURN   WHEEL ZOOM   F FOLLOW   F5 SAVE  F9 LOAD   ESC MENU", ui.U(12), ui.H - ui.U(146), Color.White * 0.6f, 1);
+        var row = new (string Label, Act Key, PanelKind Panel)[]
+        {
+            ("COMPANY", Act.PartyScreen, PanelKind.Party), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("LORDS", Act.LordsScreen, PanelKind.Characters),
+            ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("KEYS", Act.Help, PanelKind.Help),
+        };
+        int x = ui.U(10), y = ui.H - ui.U(172), h = ui.U(20);
+        foreach (var (label, key, kind) in row)
+        {
+            string k = ctl.First(key);
+            int w = ui.TW(label, 1) + ui.TW(k, 1) + ui.U(20);
+            if (ui.Button(new Rectangle(x, y, w, h), label, true, k)) { if (kind == PanelKind.Help) panel = kind; else OpenScreen(kind); }
+            x += w + ui.U(4);
+        }
+    }
+
+    /// The map's keys (F1), laid out like the battle's controls.
+    void HelpPanel()
+    {
+        var r = Modal(860, 470, "CONTROLS");
+        string Pan() => $"{ctl.First(Act.Forward)}{ctl.First(Act.Left)}{ctl.First(Act.Back)}{ctl.First(Act.Right)}";
+        var cols = new (string Title, (string Label, string Key)[] Rows)[]
+        {
+            ("ON THE MAP", new (string, string)[]
+            {
+                ("MARCH / ENTER / CHASE", "LMB"), ("PAN", $"{Pan()} / SCREEN EDGES"), ("TURN", $"{ctl.First(Act.RotateLeft)} {ctl.First(Act.RotateRight)} / MMB DRAG"),
+                ("ZOOM", "WHEEL"), (Controls.Labels[Act.FollowParty], ctl.Name(Act.FollowParty)), ("PAUSE", ctl.Name(Act.Pause)),
+                ("SPEED X1 / X3 / X8", $"{ctl.First(Act.Speed1)} {ctl.First(Act.Speed2)} {ctl.First(Act.Speed3)}"), ("LOOK THERE", "CLICK THE MINIMAP"),
+            }),
+            ("SCREENS", new[] { Act.PartyScreen, Act.SkillsScreen, Act.LordsScreen, Act.RealmScreen, Act.DivisionsScreen, Act.AtlasScreen, Act.SiegeScreen }
+                .Select(a => (Controls.Labels[a].Replace(" (MAP)", ""), ctl.Name(a))).ToArray()),
+            ("THE GAME", new[] { Act.QuickSave, Act.QuickLoad, Act.Menu, Act.Help, Act.Graphics }
+                .Select(a => (Controls.Labels[a], ctl.Name(a))).Append(("DISMISS A TIP", "ENTER")).ToArray()),
+        };
+        int cw = (r.Width - ui.U(40)) / 3;
+        for (int i = 0; i < cols.Length; i++)
+        {
+            int x = r.X + ui.U(20) + i * cw, y = r.Y + ui.U(30);
+            ui.Text(cols[i].Title, x, y, Kit.Gilt);
+            y += ui.U(22);
+            foreach (var (label, key) in cols[i].Rows)
+            {
+                ui.Text(label, x, y, Style.Dim, 1);
+                ui.Text(key, x, y + ui.U(9), Style.Text, 1);
+                y += ui.U(24);
+            }
+        }
+        ui.TextC($"REBIND IN SETTINGS (MENU) OR {Controls.FileName.ToUpperInvariant()}", r.Center.X, r.Bottom - ui.U(56), Style.Dim, 1);
+        if (ui.Button(new Rectangle(r.Center.X - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.Help))) panel = PanelKind.None;
     }
 
     void Tooltip()
@@ -370,13 +471,21 @@ partial class MapScreen
         for (int i = 0; i < linesOut.Count; i++) ui.Text(linesOut[i].Item1, r.X + ui.U(8), r.Y + ui.U(6) + i * ui.U(13), linesOut[i].Item2, 1);
     }
 
+    /// The open modal and how far its entrance has run (0..1): the panel fades in from dark as it rises into place.
+    Rectangle modalRect;
+    float modalIn = 1;
+
     Rectangle Modal(int w, int h, string title, Color? tc = null)
     {
         ui.Dim(0.45f);
         int pw = Math.Min(ui.U(w), ui.W - ui.U(16)), ph = Math.Min(ui.U(h), ui.H - ui.U(28)); // never wider or taller than the screen
-        var r = new Rectangle((ui.W - pw) / 2, (ui.H - ph) / 2 + ui.U(6), pw, ph);
+        float t = Ui.Since(HashCode.Combine(title, 0x30da1));
+        modalIn = Ease.OutCubic(t / 0.12f);
+        var r = new Rectangle((ui.W - pw) / 2, (ui.H - ph) / 2 + ui.U(6) + (int)((1 - modalIn) * ui.U(6)), pw, ph);
+        modalRect = r;
         ui.PlateBody(r, Kit.Gilt);
         ui.Ribbon(r.Center.X, r.Y - ui.U(10), title, Kit.Mul(tc ?? Kit.Gilt, 0.66f));
+        if (t < 0.7f) Kit.Shine(ui, new Rectangle(r.Center.X - ui.TW(title, 2) / 2 - ui.U(20), r.Y - ui.U(10), ui.TW(title, 2) + ui.U(40), ui.U(22)), t / 0.7f);
         return r;
     }
 

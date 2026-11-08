@@ -22,7 +22,7 @@ public struct VertexPNCT : IVertexType
 
 /// The 3D world around the 2D units: lit heightmap terrain, low-poly foliage meshes (trees, pines, bushes, rocks, grass tufts)
 /// and a gradient sky dome. Everything is built once per battle into static vertex buffers.
-sealed class World : IDisposable
+sealed partial class World : IDisposable
 {
     public const float MinimapRange = 110; // the minimap shows +-this many metres around the centre
     public const float FogStart = 110, FogEnd = 330;
@@ -32,13 +32,15 @@ sealed class World : IDisposable
     const int Chunk = 60000; // primitives per draw call
 
     public readonly Texture2D Minimap;
+    /// The ground map (Act.GroundView, docs/TERRAIN.md T6): each kind of ground in its own flat colour, height contours every
+    /// 2 m, hedges, fences and houses. Same framing as the minimap.
+    public readonly Texture2D GroundMap;
     readonly GraphicsDevice gd;
     readonly Terrain t;
     readonly VertexBuffer terrainVb, skyVb;
     VertexBuffer foliageVb;
     readonly IndexBuffer terrainIb;
     readonly int terrainTris, skyTris;
-    int foliageTris;
     readonly Texture2D detail;
     readonly BasicEffect terrainFx, foliageFx, skyFx;
     static readonly SamplerState DetailSampler = new()
@@ -46,15 +48,20 @@ sealed class World : IDisposable
         Filter = TextureFilter.LinearMipPoint, AddressU = TextureAddressMode.Wrap, AddressV = TextureAddressMode.Wrap,
     };
 
-    public World(GraphicsDevice gd, Terrain terrain)
+    /// Trees and bushes drawn at this share of their size: the campaign map shrinks them so towns stand out (docs/VISUALS.md V4).
+    readonly float treeScale;
+
+    public World(GraphicsDevice gd, Terrain terrain, float treeScale = 1)
     {
         this.gd = gd;
         t = terrain;
+        this.treeScale = treeScale;
         (terrainVb, terrainIb, terrainTris) = BuildTerrain();
-        (foliageVb, foliageTris) = BuildFoliage();
+        (foliageVb, _) = BuildFoliage();
         (skyVb, skyTris) = BuildSky();
         detail = BuildDetail();
         Minimap = BuildMinimap();
+        GroundMap = BuildGroundMap();
 
         terrainFx = Lit(new BasicEffect(gd) { TextureEnabled = true, Texture = detail });
         foliageFx = Lit(new BasicEffect(gd));
@@ -65,7 +72,7 @@ sealed class World : IDisposable
     public void RebuildFoliage()
     {
         foliageVb.Dispose();
-        (foliageVb, foliageTris) = BuildFoliage();
+        (foliageVb, _) = BuildFoliage();
     }
 
     BasicEffect Lit(BasicEffect fx)
@@ -192,6 +199,19 @@ sealed class World : IDisposable
         c = Vector3.Lerp(c, new Vector3(0.48f, 0.42f, 0.32f), Smooth(0.35f, 0.7f, t.Gradient(p).Length())); // bare slopes
         float rd = t.RoadDist(p);
         c = Vector3.Lerp(c, new Vector3(0.56f, 0.47f, 0.34f), 1 - Smooth(1.8f, 3.4f + n2 * 0.6f, rd));      // road
+        c = t.GroundAt(p) switch // the ground layer (TerrainGround.cs): you can see where a wood or a bog starts
+        {
+            GroundKind.Mud => Vector3.Lerp(c, new Vector3(0.34f, 0.29f, 0.2f), 0.7f + 0.1f * n),
+            GroundKind.Stony => Vector3.Lerp(c, new Vector3(0.52f, 0.5f, 0.45f), 0.55f + 0.15f * n2),
+            GroundKind.Scrub => Vector3.Lerp(c, new Vector3(0.33f, 0.37f, 0.19f), 0.5f),
+            GroundKind.Wood => Vector3.Lerp(c, new Vector3(0.28f, 0.34f, 0.18f), 0.45f),
+            GroundKind.DenseWood => Vector3.Lerp(c, new Vector3(0.2f, 0.26f, 0.14f), 0.65f),
+            GroundKind.Sand => Vector3.Lerp(c, new Vector3(0.72f, 0.64f, 0.45f), 0.7f),
+            GroundKind.Crops => Vector3.Lerp(c, new Vector3(0.64f, 0.57f, 0.3f), 0.7f),
+            GroundKind.Street => Vector3.Lerp(c, new Vector3(0.5f, 0.45f, 0.38f), 0.7f),
+            GroundKind.Bridge => new Vector3(0.45f, 0.33f, 0.21f), // the deck, as the minimap shows it
+            _ => c,
+        };
         if (t.Tint != null) c = t.Tint(p, c);
         if (t.WaterDepth(p) > 0) c = Vector3.Lerp(c, new Vector3(0.24f, 0.38f, 0.46f), t.WaterDepth(p) > 0.5f ? 0.9f : 0.6f); // the minimap shows water
         return c * (1 + n2 * 0.05f);
@@ -255,8 +275,9 @@ sealed class World : IDisposable
                 var g = t.Gradient(w);
                 var nrm = Vector3.Normalize(new Vector3(-g.X, 1, -g.Y));
                 float shade = 0.65f + 0.55f * MathF.Max(0, Vector3.Dot(nrm, -SunDir));
-                data[y * S + x] = new Color(GroundColor(w) * shade);
+                data[y * S + x] = new Color(GroundColor(w) * shade * (Contour(w, metresPerTexel) ? 0.86f : 1));
             }
+        MapFeatures(data, S, new Color(40, 56, 30), new Color(70, 52, 34));
         foreach (var f in t.Foliage)
         {
             if (f.Kind is not (FoliageKind.Broadleaf or FoliageKind.Pine)) continue;
@@ -320,6 +341,7 @@ sealed class World : IDisposable
         }
         alwaysStart = m.V.Count;
         Water(m);
+        Features(m);
         Grass(m);
         if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
         alwaysTris = (m.V.Count - alwaysStart) / 3;
@@ -333,9 +355,9 @@ sealed class World : IDisposable
             var b = new Vector3(f.Pos.X, t.Height(f.Pos), f.Pos.Y);
             switch (f.Kind)
             {
-                case FoliageKind.Broadleaf: Broadleaf(m, b, f.Scale, rng); break;
-                case FoliageKind.Pine: Pine(m, b, f.Scale, rng); break;
-                case FoliageKind.Bush: Bush(m, b, f.Scale, rng); break;
+                case FoliageKind.Broadleaf: Broadleaf(m, b, f.Scale * treeScale, rng); break;
+                case FoliageKind.Pine: Pine(m, b, f.Scale * treeScale, rng); break;
+                case FoliageKind.Bush: Bush(m, b, f.Scale * treeScale, rng); break;
                 case FoliageKind.Village: Village(m, b, f.Scale, rng); break;
                 case FoliageKind.Town: Town(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
@@ -354,9 +376,8 @@ sealed class World : IDisposable
 
     readonly List<(int Start, int Tris, BoundingBox Box)> tiles = new();
     int alwaysStart, alwaysTris;
-    /// Foliage triangles drawn last frame (for the performance check), and in all.
+    /// Foliage triangles drawn last frame (for the performance check).
     public int FoliageDrawn { get; private set; }
-    public int FoliageTotal => foliageTris;
 
     /// Draw the foliage tiles inside `view` (a camera's or the sun's frustum), then the water and grass.
     void DrawFoliage(BoundingFrustum view)

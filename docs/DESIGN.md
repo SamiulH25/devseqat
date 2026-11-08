@@ -3,6 +3,14 @@
 This document is the reference for how everything in Ironfield looks, reads and behaves, from a footman's sleeve to the
 campaign map. The tokens it names live in code in `Style.cs`. When this document and the code disagree, fix one of them.
 
+## 0. The player fantasy
+
+> **You lead a free company in person. Every man you lose was someone you knew, and every honour on the banner is one
+> you earned.**
+
+This is the one main fantasy, and everything below serves it (the plan is `docs/LEGACY.md`). The test for a feature: does it
+make the player care more about *their* men, or let them see what they have built? Work that passes comes first.
+
 ## 1. Pillars
 
 1. **Read the battle at a glance.** Side, troop type and state must be readable from the command camera at 60 m.
@@ -30,9 +38,14 @@ campaign map. The tokens it names live in code in `Style.cs`. When this document
 - **Atmosphere:** a gradient sky dome (pale horizon to deep zenith) with a sun disc, a soft glow and slow drifting clouds; fog that
   fades distance into the horizon colour, thinner on high ground and warmer toward the sun.
 - **Life:** grass and leaves sway in one wind (waves across the field plus slow gusts); leaves glow when lit from behind.
-  Nothing else in the world moves.
+  Rivers ripple and glint. Cloud shadows drift over the field. Rain darkens the ground and leaves standing water with a sheen;
+  snow lies on what faces up.
+- **The battle leaves marks** (`BattleScreen.Effects.cs`): blood and scuffs where men fall, dust where horse strikes home, and
+  a trample map that wears the grass to earth where the fighting has been (the grass blades lie flat there too).
+  Close up, the ground breaks into mottled grass, clover and dry stalks.
 - **Grade:** a gentle final grade. Saturation stays just under neutral so heraldry outshouts the land, the contrast is slightly lifted,
-  highlights are split-toned warm and shadows cool (the same rule as the sprite ramps), with a light vignette. Values live in `Shading.cs`.
+  highlights are split-toned warm and shadows cool (the same rule as the sprite ramps), with a light vignette. The light is graded by
+  hour and weather (`Sky.Grade`: gold at dusk, cool in rain, blue at night), and on High bright highlights glow. Values live in `Shading.cs`.
 - **Readable ground:** the deployment ground is kept open. Woods frame the flanks and cue cavalry routes. The road is a
   strong line that orients you.
 
@@ -104,7 +117,12 @@ keep fur, spangenhelms and round shields at every tier.
   with crinet and a steel chanfron (destriers).
 
 ### Feedback on units
-- Hit: a brief red tint (0.15 s). Routing: desaturated grey. Dead: the parts laid flat with blood.
+- Your blows land: the camera kicks and, on a hit, the moment holds for 45 ms (Settings: CAMERA SHAKE, HIT PAUSE).
+- A banner whose bearer falls topples over and lies in the grass.
+- Company flags (command view): overlapping flags step up, then shrink to a plain small flag; the chosen one is in front.
+  A wavering company's flag shakes; a routed one droops grey. A chosen company's rings swell once; an order draws an arrow out
+  to where it was sent and draws it in again over a second; a rider carrying an order flies a little flag.
+- Hit: a brief red tint and a flinch (0.15 s). Routing: desaturated grey, arms up, weapon gone. Dead: a fall away from the blow, then the parts laid flat with blood and the weapon beside them.
 - The player's own troops never fill the camera lens (friendly sprites within 6 m of the field camera are hidden).
 
 ## 4. Interface
@@ -169,16 +187,35 @@ All widgets are extension methods on `Ui` in `UiKit.cs` (the UI lab, F3 on the t
 
 ## 5. Motion
 
-- Camera transitions ease (smoothstep, 0.45 s). Facing changes ease too, so turning is a sweep.
-- Text in the event feed holds for 4.5 s and fades over 1.5 s. Hit text holds for 1.2 s.
-- Nothing on the HUD bounces or slides. Emphasis is colour, not movement.
+Motion has a job: it shows cause and effect, draws the eye to what changed, or makes a moment land. Nothing idles or wobbles
+for its own sake on the HUD, and nothing bounces. All of it is in the view: the sim never knows (docs/VISUALS.md section 3).
+
+- **Curves:** `Ease` (Ease.cs). Windups ease in and hold at the top; strikes snap through and overshoot (`OutBack`); returns
+  are `InOut`. Hit reactions are a `Kick` (fast out, slow back).
+- **Men:** arms swing against the legs, the body bobs twice a stride and leans forward as it runs. Standing men breathe and
+  shift their weight, each on his own phase (`Ease.Hash(Unit.Index)`), so a line never moves in step. The body leans into a
+  swing and flinches away from a blow. The dead fall away from the killing blow (`Unit.DiedFrom`) in 0.45-0.75 s, stumbling
+  back or crumpling at the knees, and lie along that line with their weapon beside them. Routers throw down weapon and shield.
+  When the battle is won, the winners cheer.
+- **Horses:** a four-beat walk, a trot on diagonal pairs and a gallop that rocks front to back, the head nodding with the stride.
+- **Camera:** transitions ease (smoothstep, 0.45 s). Facing changes ease too, so turning is a sweep. A battle opens with a 4.5 s
+  sweep from over the far side down to your lines (any key skips it); when it is decided the field plays on at half speed for
+  1.6 s while the camera rises, and then the result fades in.
+- **Screens:** every new screen rises out of black (0.35 s); a campaign battle holds the black under a plate with its name,
+  ground and weather. The title scene drifts (clouds, birds, sparks, castle fires, a little parallax with the mouse); event
+  pictures breathe (moon glow, clouds, fire flicker).
+- **Interface:** panels fade in and rise a few pixels (120 ms in, 80 ms out); hover brightens over 80 ms; bars and counts slide
+  to their new value. Text in the event feed holds for 4.5 s and fades over 1.5 s. Hit text holds for 1.2 s.
+- **Check it:** the pose sheet shots (`pose-sheet`, `pose-sheet2`, `pose-horses`) freeze every pose in one still.
 
 ## 6. Campaign map (direction)
 
 The campaign uses the same world language: low-poly 3D land under the same sun and fog, with armies shown as
 **2D banner-bearer sprites** and company flags. A company's card on the campaign map is the same component as the battle
 card, with an **upgrade** affordance that shows the next troops in the tree (portraits and tier numerals) and the XP and cost from
-`troops.json`. Settlements are simple faceted 3D models in the world palette.
+`troops.json`. Settlements are simple faceted 3D models in the world palette. Trees are drawn smaller than on the battlefield
+(`World` `treeScale`) so towns stand out; chimneys smoke and marching parties raise dust. Day and night follow the clock (nights
+kept readable). Labels cut by the screen edge slide in to stay whole.
 
 ## 7. Balance rules (battle)
 

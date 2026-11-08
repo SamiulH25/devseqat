@@ -8,6 +8,9 @@ public static class Bench
 {
     public static void Run(int men, int seconds = 60)
     {
+        var built = Stopwatch.StartNew();
+        foreach (var g in new[] { TerrainParams.Meadow, TerrainParams.Forest, TerrainParams.Marsh }) _ = new Terrain(7, g);
+        Console.WriteLine($"bench: terrain builds in {built.Elapsed.TotalMilliseconds / 3:0} ms (mean of Meadow, Forest, Marsh, ground layer included)");
         var rng = new Random(7);
         var b = new Battle(7, Armies.Divide(Armies.Large(rng, 2, 0, men)), Armies.Divide(Armies.Large(rng, 2, 1, men)),
             new BattleOptions { AutoPlayer = true, Cap = men * 2 + 20 });
@@ -30,7 +33,7 @@ public static class Bench
         }
         ticks.Sort();
         double mean = ticks.Average();
-        Console.WriteLine($"bench: {on} men on the field, {ticks.Count} ticks ({b.Time:0}s), winner {b.Winner}, {b.Units.Count(u => u.Dead)} dead");
+        Console.WriteLine($"bench: {on} men on the field, {ticks.Count} ticks ({b.Time:0}s), winner {b.Winner}, {b.Units.Count(u => u.Dead)} dead; {b.Terrain.Layout} field, {b.FlowBuilds} paths built");
         Console.WriteLine($"  tick ms: mean {mean:0.00}, p95 {ticks[(int)(ticks.Count * 0.95)]:0.00}, max {ticks[^1]:0.00}");
         Console.WriteLine("  stages: " + string.Join(", ", Battle.Stages.Select((s, i) => $"{s} {profile[i] / ticks.Count:0.00}")));
     }

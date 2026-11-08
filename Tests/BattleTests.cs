@@ -5,6 +5,31 @@ namespace Ironfield;
 /// Self-tests of the battle sim: mechanics scenarios (charges, parries, flanks, cavalry, ranged), troops, sprites, full battles, replays.
 public static partial class SelfTest
 {
+    /// Animation curves and poses (docs/VISUALS.md V1-V2): easing keeps its ends, a windup ends raised, a strike overshoots,
+    /// and the drawn pose never touches the sim (a killed man only remembers where the blow came from).
+    static void Animation()
+    {
+        foreach (var f in new Func<float, float>[] { Ease.In, Ease.Out, Ease.OutCubic, Ease.InOut, t => Ease.OutBack(t), t => Ease.Spring(t) })
+            Check(MathF.Abs(f(0)) < 0.01f && MathF.Abs(f(1) - 1) < 0.02f, "easing curves run from 0 to 1");
+        for (float t = 0; t < 1; t += 0.05f) Check(Ease.InOut(t + 0.05f) >= Ease.InOut(t) && Ease.Out(t + 0.05f) >= Ease.Out(t), "InOut and Out never go back");
+        Check(Ease.OutBack(0.6f) > 1, "OutBack overshoots (the follow-through)");
+        Check(Ease.Kick(0) == 0 && Ease.Kick(1) < 0.01f && Ease.Kick(0.25f) > 0.5f, "a kick rises and falls back");
+        Check(Ease.Hash(1) != Ease.Hash(2) && Ease.Hash(7) == Ease.Hash(7), "the per-man phase is stable and varied");
+        var b = Battle.Empty(1);
+        var u = b.AddSquad(0, UnitType.Shieldman, 1, Vector2.Zero, 1, Vector2.UnitY).Units[0];
+        var (_, raise, strike) = Puppet.Keys(u.Type.Class, AttackDir.Right);
+        u.Action = UnitAction.Windup; u.Swing = AttackDir.Right; u.ActionTimer = u.Type.Windup * 0.1f;
+        Check(MathF.Abs(Puppet.PoseOf(u, 1, 0.5f).ArmA - raise.Alpha) < 1, "the windup holds at the top");
+        u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - 0.15f);
+        float through = Puppet.PoseOf(u, 1, 0.5f).Yaw;
+        Check(through < strike.Yaw, $"the strike swings past its mark ({through:0} < {strike.Yaw:0})");
+        u.Action = UnitAction.None; u.Routing = true;
+        Check(!Puppet.PoseOf(u, 1, 0.5f).Armed, "a routed man has thrown his weapon away");
+        var foe = b.AddSquad(1, UnitType.Shieldman, 1, new Vector2(0, 2), 1, -Vector2.UnitY).Units[0];
+        b.Kill(foe, u);
+        Check(foe.Dead && foe.DiedFrom == u.Pos, "a dead man remembers where the blow came from");
+    }
+
     /// A gallop into loose infantry hurts it; a braced spear line hurts the horse instead.
     static void Charge()
     {
@@ -438,12 +463,248 @@ public static partial class SelfTest
         Check(w.Night && w.Vision <= 40 && w.Spread > 1.5f && w.MudFactor < 1, "night and rain blind archers and bog horses");
     }
 
+    /// The ground layer (docs/TERRAIN.md T0): the data validates, the same seed gives the same ground, and the layer marks
+    /// what is on the field: water and fords on the river, the road, the woods; grass on a flat test field.
+    static void GroundLayer()
+    {
+        Check(!Grounds.Validate().Any(), "ground.json validates: " + string.Join("; ", Grounds.Validate()));
+        Check(Grounds.All.Count == Enum.GetValues<GroundKind>().Length, "every kind of ground has its rules");
+        var p = TerrainParams.Meadow with { River = true };
+        var a = new Terrain(21, p);
+        Check(a.GroundHash() == new Terrain(21, p).GroundHash() && a.GroundHash() != new Terrain(22, p).GroundHash(), "the same seed gives the same ground");
+        var r = a.Rivers.Single();
+        var open = r.Path.Skip(55).First(q => !r.AtBridge(q) && !r.AtFord(q) && !r.AtBridge(q + new Vector2(3, 0)) && !r.AtBridge(q - new Vector2(3, 0)));
+        Check(a.GroundAt(open) == GroundKind.Water && a.GroundAt(r.Fords[0]) == GroundKind.Ford, "the river is water, shallow at its fords");
+        var road = Enumerable.Range(0, 40).Select(i => new Vector2(-200 + i * 10, a.RoadCenter(-200 + i * 10))).First(q => a.Rivers.All(rv => rv.Dist(q) > 12));
+        Check(a.GroundAt(road) == GroundKind.Road, "the road is road (away from the river: no bridges yet)");
+        var trunks = a.Foliage.Where(f => f.Kind is FoliageKind.Pine or FoliageKind.Broadleaf && f.Radius > 0).ToList();
+        int inWood = trunks.Count(f => a.GroundAt(f.Pos) == GroundKind.Wood);
+        Check(inWood > trunks.Count / 2, $"most trees stand on wood ground ({inWood} of {trunks.Count})");
+        Check(a.GroundAt(Vector2.Zero) is not (GroundKind.Wood or GroundKind.DenseWood), "the middle of the field is open");
+        var flat = Terrain.Flat();
+        Check(flat.GroundAt(new Vector2(30, 30)) == GroundKind.Grass && flat.CoverAt(Vector2.Zero) == 0, "a flat test field is all grass");
+        var b = Battle.Empty(3);
+        b.StartRecording(3);
+        Check(b.Recording!.TerrainVersion == Terrain.Version && Replay.Deserialize("{\"Seed\":1}").TerrainVersion == 0, "a replay keeps the ground version it was made on");
+    }
+
+    /// Ground that changes how men move (docs/TERRAIN.md T1): a wood slows horse far more than foot, a road is quick,
+    /// mud tires an armoured man, a slope tells on a horse more than on a man.
+    static void GroundMoves()
+    {
+        float Ride(UnitType t, GroundKind k, Func<Battle, Unit, float>? measure = null)
+        {
+            var b = Battle.Empty(5);
+            b.Terrain.Paint(new Vector2(40, 0), 30, k);
+            var s = b.AddSquad(0, t, 1, new(40, -10), 1, Vector2.UnitY);
+            s.Order = Order.Hold; s.Anchor = new(40, 60); s.Front = Vector2.UnitY;
+            var u = s.Units[0];
+            if (u.Mounted) u.Speed = u.Horse!.Gallop;
+            u.Stamina = 50;
+            Run(b, 2);
+            return measure?.Invoke(b, u) ?? u.Pos.Y + 10;
+        }
+        float horseGrass = Ride(UnitType.Lancer, GroundKind.Grass), horseWood = Ride(UnitType.Lancer, GroundKind.Wood);
+        float footGrass = Ride(UnitType.Shieldman, GroundKind.Grass), footWood = Ride(UnitType.Shieldman, GroundKind.Wood), footRoad = Ride(UnitType.Shieldman, GroundKind.Road);
+        Console.WriteLine($"ground: 2 s ride grass {horseGrass:0.0} m, wood {horseWood:0.0}; walk grass {footGrass:0.0}, wood {footWood:0.0}, road {footRoad:0.0}");
+        Check(horseWood < horseGrass * 0.7f && footWood < footGrass && footWood / footGrass > horseWood / horseGrass, "a wood slows horse more than foot");
+        Check(footRoad > footGrass, "the road is quicker");
+        var heavy = Troops.Get("iron_legionaries");
+        float Tired(GroundKind k) => Ride(heavy, k, (b, u) => u.Stamina);
+        Check(Tired(GroundKind.Mud) < Tired(GroundKind.Grass), "mud tires an armoured man");
+        var t = new Terrain(11, TerrainParams.Hills);
+        var steep = Enumerable.Range(0, 900).Select(i => new Vector2(-45 + i % 30 * 3, -45 + i / 30 * 3)).MaxBy(q => t.Gradient(q).Length());
+        var up = Vector2.Normalize(t.Gradient(steep));
+        Check(Battle.SlopeFactor(t, steep, up, true) < Battle.SlopeFactor(t, steep, up), "a horse feels a climb more than a man");
+    }
+
+    /// Ground that changes how men fight (docs/TERRAIN.md T1): spears in a wood cannot brace, a horse on stones stumbles
+    /// (and the same seed stumbles the same way), high ground is a smooth curve, a downhill charge hits harder,
+    /// height carries arrows further.
+    static void GroundFights()
+    {
+        float HorseHurt(GroundKind k)
+        {
+            var b = Battle.Empty(7);
+            b.Terrain.Paint(new Vector2(0, 0), 12, k);
+            b.AddSquad(1, Troops.Get("spearrunners"), 12, new(0, 0), 6, -Vector2.UnitY);
+            var l = Lancer(b);
+            float hp = l.HorseHp;
+            Run(b, 3.5f);
+            return l.Mounted ? hp - l.HorseHp : hp; // the braced points wound the horse first
+        }
+        float grass = HorseHurt(GroundKind.Grass), wood = HorseHurt(GroundKind.Wood);
+        Console.WriteLine($"ground: a lancer's horse riding into spears loses {grass:0} hp on grass, {wood:0} in a wood");
+        Check(wood < grass, "spears in a wood cannot brace against horse");
+        (float speed, Vector2 pos) Gallop(int seed)
+        {
+            var b = Battle.Empty(seed);
+            b.Terrain.Paint(new Vector2(0, 40), 70, GroundKind.Stony);
+            var s = b.AddSquad(0, UnitType.Lancer, 1, new(0, -10), 1, Vector2.UnitY);
+            s.Order = Order.Hold; s.Anchor = new(0, 90); s.Front = Vector2.UnitY;
+            var u = s.Units[0];
+            float slowest = float.MaxValue;
+            for (int i = 0; i < 60 * 8; i++) { u.Speed = MathF.Max(u.Speed, i % 30 == 0 ? u.Horse!.Gallop : 0); b.Update(1 / 60f); slowest = MathF.Min(slowest, u.Speed); }
+            return (slowest, u.Pos);
+        }
+        var g1 = Gallop(4);
+        Check(g1.speed < UnitType.Lancer.Mount!.Gallop * 0.5f, "a horse galloping over stones stumbles");
+        Check(Gallop(4).pos == g1.pos, "and the same seed stumbles the same way");
+        Check(Battle.HighGround(1, 0, 0) > 0 && Battle.HighGround(1, 0, 0) < Battle.HighGround(3, 0, 0) && Battle.HighGround(30, 0, 0) <= 0.15f
+            && Battle.HighGround(-3, 0, 0) < 0 && Battle.HighGround(0, 0, 0) == 0, "high ground: a smooth edge up to 15%");
+        Check(Battle.HighGround(1, -0.1f, 6) > Battle.HighGround(1, -0.1f, 1) + 0.05f && Battle.HighGround(1, 0.1f, 6) == Battle.HighGround(1, 0.1f, 1), "a charge down a slope hits harder");
+        Check(Battle.HeightRange(0) == 1 && Battle.HeightRange(-5) == 1 && Battle.HeightRange(3) > 1 && Battle.HeightRange(50) == 1.25f, "height carries arrows further, up to a quarter");
+    }
+
+    /// Fields built to a layout (docs/TERRAIN.md T2): the deployment ground stays clear at every size of battle, a ridge
+    /// rises in front of one army, two hills stand on the wings, broken ground is stony and the fen is mud.
+    static void Layouts()
+    {
+        foreach (var g in new[] { TerrainParams.Meadow, TerrainParams.Forest, TerrainParams.Hills, TerrainParams.Marsh, TerrainParams.Badlands })
+            foreach (float scale in new[] { 1f, 2.4f })
+            {
+                var t = new Terrain(13, g with { Scale = scale });
+                Check(!t.Foliage.Any(f => f.Radius > 0 && t.Core(f.Pos)), $"{g.Name} at scale {scale}: no trees or boulders where the armies deploy");
+                Check(t.Core(new Vector2(0, -30 * scale)) && t.Core(new Vector2(48 * scale, 0)), $"{g.Name} at scale {scale}: the clear ground grows with the battle");
+            }
+        Terrain Built(FieldLayout l, int seed = 13) => new(seed, TerrainParams.Hills with { Layouts = new[] { l }, HillsMin = 0, HillsMax = 0 });
+        var ridge = Built(FieldLayout.Ridge);
+        float side = ridge.RidgeSide == 0 ? -1 : 1;
+        Check(ridge.Layout == FieldLayout.Ridge && MathF.Abs(ridge.RidgeZ) > 20 && MathF.Sign(ridge.RidgeZ) == side, "a ridge lies on one army's side");
+        Check(ridge.Height(new Vector2(0, ridge.RidgeZ)) > ridge.Height(Vector2.Zero) + 2.5f && ridge.Height(new Vector2(0, ridge.RidgeZ)) > ridge.Height(new Vector2(0, ridge.RidgeZ + side * 28)) + 1,
+            "the ridge stands above the field and above the ground behind it");
+        var two = Built(FieldLayout.TwoHills);
+        Check(two.Height(new Vector2(-48, 0)) > two.Height(Vector2.Zero) + 2 || two.Height(new Vector2(48, 0)) > two.Height(Vector2.Zero) + 2, "two hills stand on the wings");
+        int Count(Terrain t, GroundKind k) => Enumerable.Range(0, 41 * 41).Count(i => t.GroundAt(new Vector2(-100 + i % 41 * 5, -100 + i / 41 * 5)) == k);
+        var broken = new Terrain(13, TerrainParams.Badlands with { Layouts = new[] { FieldLayout.Broken } });
+        var fen = new Terrain(13, TerrainParams.Marsh);
+        var forest = new Terrain(13, TerrainParams.Forest);
+        Console.WriteLine($"layouts: broken {Count(broken, GroundKind.Stony)} stony, {Count(broken, GroundKind.Scrub)} scrub; fen {Count(fen, GroundKind.Mud)} mud; forest {Count(forest, GroundKind.DenseWood)} thick wood (of 1681)");
+        Check(Count(broken, GroundKind.Stony) > 20 && Count(broken, GroundKind.Scrub) > 100, "broken ground is stony and scrubby");
+        Check(fen.Layout == FieldLayout.Fen && Count(fen, GroundKind.Mud) > 400, "the fen is mud");
+        Check(Count(forest, GroundKind.DenseWood) > 0, "big woods have a thick heart");
+        Check(new Terrain(13, TerrainParams.Meadow with { Layouts = null }).Layout == FieldLayout.Open, "no layouts means an open field");
+    }
+
+    /// Line features and the rest of the layouts (docs/TERRAIN.md T2): a hedge stops a man except at its gaps, a road over
+    /// a river gets a bridge you can walk across dry-shod, a village has houses and fences, a pass has high sides, and a
+    /// company in a wood opens its ranks.
+    static void HedgesAndBridges()
+    {
+        var b = Battle.Empty(5);
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-20, 0), new Vector2(20, 0));
+        var s = b.AddSquad(0, UnitType.Shieldman, 1, new(0, -6), 1, Vector2.UnitY);
+        s.Order = Order.Hold; s.Anchor = new(0, 10); s.Front = Vector2.UnitY;
+        Run(b, 6);
+        Check(s.Units[0].Pos.Y < 0, "a hedge stops a man");
+        var gap = b.AddSquad(0, UnitType.Shieldman, 1, new(25, -6), 1, Vector2.UnitY);
+        gap.Order = Order.Hold; gap.Anchor = new(25, 10); gap.Front = Vector2.UnitY;
+        Run(b, 8);
+        Check(gap.Units[0].Pos.Y > 8, "but not past its end");
+        Check(b.Terrain.CrossesFeature(new Vector2(0, -5), new Vector2(0, 5)) && !b.Terrain.CrossesFeature(new Vector2(25, -5), new Vector2(25, 5)), "a line across a hedge crosses it");
+
+        var river = new Terrain(21, TerrainParams.Meadow with { Layouts = new[] { FieldLayout.RiverLine } });
+        var r = river.Rivers.Single();
+        Check(river.Layout == FieldLayout.RiverLine && r.Bridges.Length == 1, "a river line has a bridge where the road crosses");
+        var (at, along) = r.Bridges[0];
+        Check(river.WaterDepth(at) == 0 && river.GroundAt(at) == GroundKind.Bridge && river.Features.Count(f => f.Kind == FeatureKind.Rail) == 2, "the bridge is dry, with a rail each side");
+        int seg = Enumerable.Range(0, r.Path.Length - 1).MinBy(i => Vector2.DistanceSquared(r.Path[i], at));
+        var aside = at + Vector2.Normalize(r.Path[seg + 1] - r.Path[seg]) * 7; // along the river, off the deck
+        Check(river.WaterDepth(aside) > 0.5f || r.AtFord(aside), "beside the bridge is the river");
+        Check(MathF.Abs(river.Height(at) - river.Height(at + along * 8)) < 1.2f, "the bridge runs level from bank to bank");
+
+        var village = new Terrain(9, TerrainParams.Farmland with { Layouts = new[] { FieldLayout.Village } });
+        Check(village.Foliage.Count(f => f.Kind == FoliageKind.House) >= 6 && village.Features.Any(f => f.Kind == FeatureKind.Fence), "a village has houses and fences");
+        Check(village.GroundAt(village.VillageAt) is GroundKind.Street or GroundKind.Road, "with streets between the houses");
+        Check(!village.Foliage.Any(f => f.Radius > 0 && MathF.Abs(f.Pos.X) < 50 && MathF.Abs(f.Pos.Y) is > 22 and < 54), "and none of it where the armies deploy");
+        var hedges = new Terrain(9, TerrainParams.Farmland with { Layouts = new[] { FieldLayout.Hedgerows } });
+        Check(hedges.Features.Count(f => f.Kind == FeatureKind.Hedge) > 8, "hedgerows have hedges");
+        Check(!hedges.Features.Any(f => MathF.Abs(f.A.Y) > 22 || MathF.Abs(f.B.Y) > 22), "but not where the armies deploy");
+        var pass = new Terrain(9, TerrainParams.Hills with { Layouts = new[] { FieldLayout.Pass }, HillsMin = 0, HillsMax = 0 });
+        Check(pass.Height(new Vector2(-110, 0)) > pass.Height(Vector2.Zero) + 6 && pass.Height(new Vector2(110, 0)) > pass.Height(Vector2.Zero) + 6, "a pass has high ground both sides");
+        foreach (var l in new[] { FieldLayout.WoodedFlank, FieldLayout.ForestClearing })
+        {
+            var w = new Terrain(9, TerrainParams.Forest with { Layouts = new[] { l } });
+            Check(!w.Foliage.Any(f => f.Radius > 0 && w.Core(f.Pos)), $"{l}: the deployment ground is clear");
+        }
+
+        var wood = Battle.Empty(5);
+        wood.Terrain.Paint(new Vector2(0, 0), 30, GroundKind.Wood);
+        var inWood = wood.AddSquad(0, UnitType.Shieldman, 12, new(0, 0), 6, Vector2.UnitY);
+        var open = wood.AddSquad(0, UnitType.Shieldman, 12, new(0, 60), 6, Vector2.UnitY);
+        Run(wood, 0.1f);
+        Check(inWood.Spacing > open.Spacing * 1.15f, "a company in a wood opens its ranks");
+    }
+
+    /// Every layout fights to a result with an idle player (nobody stuck behind a fence, in a village or a bog).
+    static void EveryLayoutResolves()
+    {
+        foreach (var l in Enum.GetValues<FieldLayout>())
+        {
+            var g = (l switch
+            {
+                FieldLayout.Hedgerows or FieldLayout.Village => TerrainParams.Farmland,
+                FieldLayout.Fen => TerrainParams.Marsh,
+                FieldLayout.ForestClearing or FieldLayout.WoodedFlank => TerrainParams.Forest,
+                FieldLayout.Broken => TerrainParams.Badlands,
+                _ => TerrainParams.Hills,
+            }) with { Layouts = new[] { l } };
+            var rng = new Random(2);
+            var b = new Battle(2, Armies.Random(rng, 3, 0), Armies.Random(rng, 3, 1), new BattleOptions { Ground = g });
+            for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+            Check(b.Winner >= 0, $"a battle on a {l} field resolves");
+        }
+    }
+
+    /// Sight and cover (docs/TERRAIN.md T3): a wood soaks up arrows, a hedge stops flat shots, a crest hides what is behind
+    /// it, men in a wood are unseen from afar, and a hidden company that is found close to the enemy is an ambush.
+    static void SightAndCover()
+    {
+        int Hits(Action<Battle> ground)
+        {
+            var b = Battle.Empty(8);
+            ground(b);
+            var bows = b.AddSquad(0, UnitType.Bowman, 12, new(0, -28), 6, Vector2.UnitY);
+            var mark = b.AddSquad(1, UnitType.Shieldman, 12, new(0, 0), 6, -Vector2.UnitY);
+            bows.Target = mark;
+            foreach (var u in mark.Units) u.Hp = 100000; // a mark that does not fall (the troop type itself is shared: leave it be)
+            Run(b, 20);
+            return mark.Units.Sum(u => (int)(100000 - u.Hp));
+        }
+        int open = Hits(_ => { }), wood = Hits(b => b.Terrain.Paint(Vector2.Zero, 20, GroundKind.Wood)),
+            hedge = Hits(b => b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-20, -3.5f), new Vector2(20, -3.5f)));
+        Console.WriteLine($"cover: arrow damage on a mark in the open {open}, in a wood {wood}, behind a hedge {hedge}");
+        Check(wood < open * 0.8f, "a wood soaks up arrows");
+        Check(hedge < open * 0.8f, "a hedge stops flat shots");
+
+        var g = TerrainParams.Hills with { Layouts = new[] { FieldLayout.Ridge }, HillsMin = 0, HillsMax = 0 };
+        var none = new ArmySpec("a", 1, new List<Company>());
+        var rb = new Battle(13, none, none, new BattleOptions { Ground = g });
+        float side = rb.Terrain.RidgeSide == 0 ? -1 : 1;
+        var behind = new Vector2(0, rb.Terrain.RidgeZ + side * 22);
+        Check(!rb.ClearLine(new Vector2(0, -side * 35), behind), "a crest hides what is behind it");
+        Check(rb.ClearLine(new Vector2(0, -side * 35), new Vector2(0, -side * 5)), "but not the open field in front");
+
+        var flat = TerrainParams.Meadow with { Layouts = null, HillsMin = 0, HillsMax = 0, Road = false, Woods = 0, LoneTrees = 0 };
+        var wb = new Battle(14, none, none, new BattleOptions { Ground = flat, PlayerWounded = true });
+        wb.Terrain.Paint(new Vector2(0, 20), 22, GroundKind.DenseWood);
+        var lurk = wb.AddSquad(1, UnitType.Shieldman, 12, new(0, 20), 6, -Vector2.UnitY);
+        var walk = wb.AddSquad(0, UnitType.Shieldman, 12, new(0, -40), 6, Vector2.UnitY);
+        Run(wb, 1.2f);
+        Check(!wb.Visible(lurk, 0) && wb.Visible(walk, 1), "men in a wood are not seen from afar; men in the open are");
+        foreach (var u in walk.Units) u.Pos += new Vector2(0, 46); // walk up to the edge of the wood
+        walk.Anchor += new Vector2(0, 46);
+        Run(wb, 1.2f);
+        Check(wb.Visible(lurk, 0), "close up you see them");
+        Check(wb.History.Any(h => h.Text.Contains("from cover")), "and a company found that close is an ambush");
+    }
+
     /// A battlefield river: carved below its banks, slow to wade, quicker at the fords; the map has rivers with bridges.
     static void Rivers()
     {
         var t = new Terrain(21, TerrainParams.Meadow with { River = true });
         var r = t.Rivers.Single();
-        var mid = r.Path[65];
+        var mid = r.Path.Skip(55).First(q => !r.AtBridge(q) && !r.AtBridge(q + new Vector2(6, 0)) && !r.AtBridge(q - new Vector2(6, 0)) && !r.AtFord(q)); // open water, off the bridge
         Check(t.Height(mid) < t.Height(mid + new Vector2(0, 12)) - 0.8f || t.Height(mid) < t.Height(mid - new Vector2(0, 12)) - 0.8f, "the river runs below its banks");
         Check(t.WaterDepth(mid) > 1 && t.WaterDepth(r.Fords[0]) is > 0 and < 0.5f, "deep in the stream, shallow at a ford");
         Check(!t.Foliage.Any(f => f.Radius > 0 && t.WaterDepth(f.Pos) > 0), "no trees in the water");
@@ -463,6 +724,253 @@ public static partial class SelfTest
         var m = WorldMap.Generate(11);
         Check(m.Rivers.Count == 4 && m.Rivers.All(rv => rv.Fords.Length > 0), "the map has four rivers with bridges");
         Check(m.Settlements.All(s => m.RiverDist(s.Pos) > 4), "no settlement stands in a river");
+    }
+
+    /// The AI reads the ground (docs/TERRAIN.md T5): on a ridge, the side on the crest lets the other come up to it, and
+    /// still fights to a result.
+    static void HoldsTheCrest()
+    {
+        var g = TerrainParams.Hills with { Layouts = new[] { FieldLayout.Ridge }, HillsMin = 0, HillsMax = 0 };
+        for (int seed = 1; seed <= 3; seed++)
+        {
+            var b = new Battle(seed, Armies.Random(new Random(seed), 2, 0), Armies.Random(new Random(seed), 2, 1), new BattleOptions { Ground = g, AutoPlayer = true, PlayerWounded = true });
+            Check(b.Places.Any(p => p.Kind is PlaceKind.Crest or PlaceKind.Knoll), "the survey finds the ridge");
+            int r = b.Terrain.RidgeSide, low = 1 - r;
+            Vector2 Line(int team) { var l = b.SquadsOf(team).Where(s => s.Company != null && Armies.RoleOf(s.Company) == "infantry" && s.Alive > 0).ToList(); return l.Count == 0 ? b.Centroid(team) : l.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / l.Count; }
+            var start = Line(r);
+            var fwd = Vector2.Normalize(Line(low) - start);
+            float moved = 0;
+            while (b.Winner < 0 && b.Time < 600)
+            {
+                b.Update(1 / 60f);
+                if (Vector2.Distance(Line(r), Line(low)) < 28) break;
+                moved = MathF.Max(moved, Vector2.Dot(Line(r) - start, fwd));
+            }
+            Console.WriteLine($"crest {seed}: the side on the ridge came {moved:0.0} m forward before the lines met at {b.Time:0}s");
+            Check(moved < 8, "the side on the crest does not leave it first");
+            while (b.Winner < 0 && b.Time < 600) b.Update(1 / 60f);
+            Check(b.Winner >= 0, "a battle on a ridge resolves");
+        }
+    }
+
+    /// The AI's horse picks a company on good going over one standing in mud.
+    static void HorseAvoidsBadGround()
+    {
+        var flat = TerrainParams.Steppe with { HillsMin = 0, HillsMax = 0, Layouts = new[] { FieldLayout.Open } };
+        var mine = new ArmySpec("a", 1, new List<Company> { new("bowmen", 16, "archers"), new("bowmen", 16, "archers") });
+        var theirs = new ArmySpec("b", 1, new List<Company> { new("lancers", 12, "horse") });
+        foreach (int muddy in new[] { 0, 1 })
+        {
+            var b = new Battle(4, mine, theirs, new BattleOptions { Ground = flat, PlayerWounded = true });
+            var bows = b.SquadsOf(0).Where(s => s.Company?.Troop == "bowmen").ToList();
+            b.Terrain.Paint(bows[muddy].Center, 6, GroundKind.Mud);
+            var horse = b.SquadsOf(1).First(s => s.Cavalry && s.Company != null);
+            while (horse.Target == null && b.Time < 60) b.Update(1 / 60f);
+            Check(horse.Target == bows[1 - muddy], "the horse charges the company on firm ground, not the one in mud");
+        }
+    }
+
+    /// A division lying in wait stays still until an enemy company comes within reach, then falls on it.
+    static void AmbushWaits()
+    {
+        var b = Battle.Empty(5);
+        b.Terrain.Paint(Vector2.Zero, 16, GroundKind.Wood);
+        var s = b.AddSquad(0, UnitType.Shieldman, 12, Vector2.Zero, 6, Vector2.UnitY);
+        var d = b.AddDivision(0, "Hal", new[] { s }, Temper.Steady, 5, new Goal(GoalKind.Ambush, Vector2.Zero));
+        var foe = b.AddSquad(1, UnitType.Shieldman, 12, new(0, 90), 6, -Vector2.UnitY);
+        foe.Order = Order.Hold; foe.Anchor = new(0, 90);
+        Run(b, 6);
+        Check(d.Goal.Kind == GoalKind.Ambush && s.Order == Order.Hold && Vector2.Distance(s.Center, Vector2.Zero) < 6, "a division lying in wait stays put while the enemy is far");
+        foe.Anchor = new(0, -20);
+        float gapAtSpring = -1;
+        for (int i = 0; i < 60 * 40 && d.Goal.Kind == GoalKind.Ambush; i++) { b.Update(1 / 60f); gapAtSpring = Vector2.Distance(s.Center, foe.Center) - foe.Radius; }
+        Run(b, 1);
+        Console.WriteLine($"ambush: sprung with the enemy {gapAtSpring:0} m off");
+        Check(d.Goal.Kind == GoalKind.Attack && d.Goal.Target == foe && gapAtSpring <= Battle.AmbushReach + 1, "it falls on the enemy when he comes within reach");
+        Check(s.Order == Order.Charge, "and charges");
+    }
+
+    /// On a river line the AI never sets a company's ground in deep water: it goes over by the crossing.
+    static void TakesTheFord()
+    {
+        var g = TerrainParams.Meadow with { Layouts = new[] { FieldLayout.RiverLine } };
+        var rng = new Random(6);
+        var b = new Battle(6, Armies.Random(rng, 2, 0), Armies.Random(rng, 2, 1), new BattleOptions { Ground = g, AutoPlayer = true, PlayerWounded = true });
+        Check(b.Places.Any(p => p.Kind is PlaceKind.Ford or PlaceKind.Bridge), "the survey finds the crossings");
+        int wet = 0, looks = 0;
+        while (b.Winner < 0 && b.Time < 600)
+        {
+            b.Update(1 / 60f);
+            if (b.Time < 90 && (int)(b.Time * 60) % 30 == 0)
+                foreach (var s in b.Squads.Where(s => s.Alive > 0 && s.Order == Order.Hold && s.Company != null))
+                {
+                    looks++;
+                    if (b.Terrain.WaterDepth(s.Anchor) > 0.6f) wet++;
+                }
+        }
+        Check(looks > 0 && wet == 0, "no company is told to stand in deep water");
+        Check(b.Winner >= 0, "a battle on a river line resolves");
+    }
+
+    /// Tools for the player (docs/TERRAIN.md T6): the ground's line, order warnings, stakes, and the Pathfinder perk.
+    static void GroundForThePlayer()
+    {
+        Check(Grounds.Describe(GroundKind.Grass) == "GRASS. GOOD GOING.", "plain grass is good going");
+        var wood = Grounds.Describe(GroundKind.Wood);
+        Check(wood.StartsWith("WOOD. COVER FROM ARROWS. HORSE SLOWED. NO FORMATION."), "a wood says what it does: " + wood);
+        Check(Grounds.Describe(GroundKind.Road).Contains("QUICK GOING"), "a road is quick");
+
+        var b = Battle.Empty(5);
+        b.Terrain.Paint(new Vector2(0, 40), 12, GroundKind.Wood);
+        var horse = b.AddSquad(0, Troops.Get("lancers"), 6, Vector2.Zero, 6, Vector2.UnitY);
+        var foot = b.AddSquad(0, UnitType.Shieldman, 6, new(20, 0), 6, Vector2.UnitY);
+        Run(b, 0.1f);
+        Check(b.GroundWarning(new[] { horse }, new Vector2(0, 40)) == "HORSE IN THE WOOD: SLOWED, NO CHARGE.", "sending horse into a wood warns you");
+        Check(b.GroundWarning(new[] { foot }, new Vector2(20, 40)) == null, "open ground does not");
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-30, 20), new Vector2(30, 20));
+        Check(b.GroundWarning(new[] { foot }, new Vector2(20, 40)) == null, "a hedge in the way is no warning (they go round)");
+    }
+
+    /// Longbowmen's stakes stop horse but let men on foot through; each company plants them once.
+    static void Stakes()
+    {
+        var bows = Troops.Get("longbowmen");
+        Check(bows.Has("stakes") && !Troops.Get("bowmen").Has("stakes"), "longbowmen carry stakes");
+        float Crossed(bool mounted, out string? second)
+        {
+            var b = Battle.Empty(5);
+            var archers = b.AddSquad(0, bows, 10, new(0, -4), 10, Vector2.UnitY);
+            archers.Order = Order.Hold; archers.Anchor = new(0, -4); archers.Front = Vector2.UnitY;
+            Run(b, 0.1f);
+            var shield = b.AddSquad(0, UnitType.Shieldman, 4, new(-60, -60), 4, Vector2.UnitY);
+            Check(b.CannotStake(shield) != null, "only longbowmen can plant stakes");
+            Check(b.PlantStakes(archers) == null, "longbowmen plant stakes");
+            second = b.PlantStakes(archers);
+            foreach (var u in archers.Units) u.Pos += new Vector2(0, -30); // out of the way
+            archers.Anchor = new(0, -34);
+            var came = b.AddSquad(1, mounted ? Troops.Get("lancers") : UnitType.Shieldman, 8, new(0, 14), 8, -Vector2.UnitY);
+            came.Order = Order.Hold; came.Anchor = new(0, -12); came.Front = -Vector2.UnitY;
+            var stakes = b.Terrain.Features.Where(f => f.Kind == FeatureKind.Stakes).ToList();
+            float half = stakes.Max(f => MathF.Max(MathF.Abs(f.A.X), MathF.Abs(f.B.X))), line = stakes[0].A.Y;
+            var through = new HashSet<Unit>();
+            for (int i = 0; i < 60 * 12; i++)
+            {
+                var was = came.Units.Select(u => u.Pos).ToList();
+                b.Update(1 / 60f);
+                for (int k = 0; k < came.Units.Count; k++) // crossed the staked front itself, not round its end
+                    if (was[k].Y >= line && came.Units[k].Pos.Y < line && MathF.Abs(came.Units[k].Pos.X) < half) through.Add(came.Units[k]);
+            }
+            return through.Count;
+        }
+        float riders = Crossed(true, out var again), men = Crossed(false, out _);
+        Console.WriteLine($"stakes: {riders} of 8 riders and {men} of 8 men on foot got through");
+        Check(again != null, "a company plants its stakes once");
+        Check(riders == 0, "horse cannot cross stakes");
+        Check(men >= 4, "men on foot slip between them");
+    }
+
+    /// Pathfinder: your men lose half the pace a wood costs.
+    static void Pathfinder()
+    {
+        float Walk(bool perk)
+        {
+            var o = new BattleOptions();
+            if (perk) o.Perks.Add("Pathfinder");
+            var b = Battle.Empty(5, o);
+            b.Terrain.Paint(new Vector2(0, 15), 25, GroundKind.Wood);
+            var s = b.AddSquad(0, UnitType.Shieldman, 1, Vector2.Zero, 1, Vector2.UnitY);
+            s.Order = Order.Hold; s.Anchor = new(0, 30); s.Front = Vector2.UnitY;
+            float time = 0;
+            while (s.Units[0].Pos.Y < 28 && time < 60) { b.Update(1 / 60f); time += 1 / 60f; }
+            return time;
+        }
+        float plain = Walk(false), finder = Walk(true);
+        Console.WriteLine($"pathfinder: 30 m of wood in {plain:0.0}s, {finder:0.0}s with the perk");
+        Check(finder < plain * 0.93f, "Pathfinder men cross a wood quicker");
+    }
+
+    /// Pathing (docs/TERRAIN.md T4): an order across a river goes by the ford when one is near, rather than wading the deep.
+    static void GoesToFord()
+    {
+        var g = TerrainParams.Meadow with { River = true, Road = false, Layouts = new[] { FieldLayout.Open } };
+        var r = new Terrain(3, g with { Scale = 1 }).Rivers.Single();
+        var ford = r.Fords[0];
+        int fi = Enumerable.Range(0, r.Path.Length).MinBy(i => Vector2.DistanceSquared(r.Path[i], ford));
+        var at = r.Path[Math.Min(r.Path.Length - 1, fi + 7)]; // up the river from the ford
+        float Crossing(bool paths, out float deepest)
+        {
+            var b = new Battle(3, new ArmySpec("a", 1, new List<Company>()), new ArmySpec("b", 1, new List<Company>()), new BattleOptions { Ground = g, PlayerWounded = true });
+            var s = b.AddSquad(0, UnitType.Shieldman, 6, at - new Vector2(0, 16), 3, Vector2.UnitY);
+            s.Order = Order.Hold; s.Anchor = at + new Vector2(0, 16); s.Front = Vector2.UnitY;
+            if (!paths) s.PathTimer = float.MaxValue;
+            float time = 0;
+            deepest = 0;
+            while (s.Units.Any(u => !u.Dead && Vector2.Distance(u.Pos, s.Anchor) > 6) && time < 90)
+            {
+                b.Update(1 / 60f); time += 1 / 60f;
+                foreach (var u in s.Units) if (b.Terrain.WaterDepth(u.Pos) > 0.6f) deepest += 1 / 60f; // man-seconds in deep water
+            }
+            return time;
+        }
+        float straight = Crossing(false, out float wade), routed = Crossing(true, out float ford2);
+        Console.WriteLine($"river: straight over {straight:0.0}s ({wade:0} man-s in deep water), by the ford {routed:0.0}s ({ford2:0} man-s)");
+        Check(ford2 < wade * 0.5f, "a company sent over a river crosses at the ford"); // its outer files may still step off the ford
+        Check(routed < 90, "and gets there");
+    }
+
+    /// Pathing: a wide company sent through a long hedge finds the gap and all of it gets through.
+    static void FilesThroughGap()
+    {
+        var b = Battle.Empty(5);
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-60, 0), new Vector2(18, 0));
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(26, 0), new Vector2(60, 0));
+        var s = b.AddSquad(0, UnitType.Shieldman, 16, new(-20, -14), 8, Vector2.UnitY);
+        s.Order = Order.Hold; s.Anchor = new(-20, 14); s.Front = Vector2.UnitY;
+        bool routed = false;
+        float time = 0;
+        while (s.Units.Any(u => u.Pos.Y < 4) && time < 60) { b.Update(1 / 60f); time += 1 / 60f; routed |= s.Path != null; }
+        Console.WriteLine($"hedge: a company of 16 through the gap in {time:0.0}s");
+        Check(routed && s.Units.All(u => u.Pos.Y > 4), "a company finds the gap in a hedge and all of it gets through");
+        Check(!b.WayBlocked(new Vector2(-20, -14), new Vector2(-20, -40), false) && b.WayBlocked(new Vector2(-20, -14), new Vector2(-20, 14), false), "a hedge blocks the way, open ground does not");
+        // The dotted line you see while drawing an order goes the same way: through the gap.
+        var c = Battle.Empty(5);
+        c.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-60, 0), new Vector2(18, 0));
+        c.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(26, 0), new Vector2(60, 0));
+        var q = c.AddSquad(0, UnitType.Shieldman, 16, new(6, -14), 8, Vector2.UnitY);
+        c.Update(1 / 60f);
+        var route = c.Route(q, new(6, 14));
+        Check(route != null && route.Any(p => MathF.Abs(p.Y) < 2 && p.X > 17 && p.X < 27) && c.Route(q, new(6, -40)) == null, "the order's dotted line shows the way through the gap, and none on open ground");
+    }
+
+    /// Pathing: a charge with no company left to hit goes round the hedge for the captain behind it (a battle once stalled
+    /// with the last enemy company pressed against a hedge, the lone captain on the far side).
+    static void ChargeFindsCaptain()
+    {
+        var b = Battle.Empty(5);
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-60, 0), new Vector2(18, 0));
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(26, 0), new Vector2(60, 0));
+        b.Player.Pos = new(-20, -10);
+        var s = b.AddSquad(1, UnitType.Shieldman, 8, new(-20, 10), 4, -Vector2.UnitY);
+        s.Order = Order.Charge;
+        float time = 0;
+        while (!b.Player.Dead && s.Units.All(u => Vector2.Distance(u.Pos, b.Player.Pos) > 3) && time < 60) { b.Update(1 / 60f); time += 1 / 60f; }
+        Console.WriteLine($"hedge: the charge reaches the captain in {time:0.0}s");
+        Check(time < 60, "a charge with no company to hit goes round the hedge for the captain");
+    }
+
+    /// Pathing: flow fields are cached, the cache stays small, and the same goal is not built twice.
+    static void FlowCacheBound()
+    {
+        var b = Battle.Empty(5);
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-80, 0), new Vector2(80, 0));
+        var s = b.AddSquad(0, UnitType.Shieldman, 4, new(0, -20), 2, Vector2.UnitY);
+        s.Order = Order.Hold; s.Front = Vector2.UnitY;
+        for (int i = 0; i < 80; i++) { s.Anchor = new(-60 + i * 1.5f, 30); s.PathTimer = 0; s.Path = null; b.Update(1 / 60f); }
+        Check(b.FlowCached <= 48 && b.FlowBuilds > 0, "the flow cache stays bounded");
+        int built = b.FlowBuilds;
+        s.Anchor = new(-60, 30); s.PathTimer = 0; s.Path = null; b.Update(1 / 60f);
+        s.Anchor = new(-60.5f, 30.5f); s.PathTimer = 0; s.Path = null; b.Update(1 / 60f);
+        Check(b.FlowBuilds <= built + 1, "a goal near one already built uses the cached field");
     }
 
     /// Two AI generals: the reserve stays back until it is needed, and the field still resolves.
@@ -501,7 +1009,7 @@ public static partial class SelfTest
             for (float z = -200; z <= 200; z += 7)
                 Check(float.IsFinite(t.Height(new Vector2(x, z))) && MathF.Abs(t.Height(new Vector2(x, z))) < 60, "heights stay sane");
         Check(t.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine) > 150, "the land is wooded");
-        Check(!t.Foliage.Any(f => f.Radius > 0 && Terrain.Core(f.Pos)), "no trees or boulders where the armies deploy");
+        Check(!t.Foliage.Any(f => f.Radius > 0 && t.Core(f.Pos)), "no trees or boulders where the armies deploy");
         var tree = t.Foliage.First(f => f.Kind == FoliageKind.Broadleaf);
         var p = tree.Pos + new Vector2(0.05f, 0);
         Check(t.PushOut(ref p, 0.35f) && Vector2.Distance(p, tree.Pos) >= tree.Radius + 0.34f, "trunks push units out");
@@ -653,6 +1161,106 @@ public static partial class SelfTest
         Check(line.MenBefore == line.MenAfter + line.Killed + line.Wounded + line.Captured + line.FledLost, "the report accounts for every man");
         Check(co.Ledger.Count == 1 && co.Battles >= 1, "the company's ledger records the fight");
         Console.WriteLine($"stack battle: {(report.Won ? "won" : "lost")}, {co.Name} {before} -> {co.Men}+{co.Wounded}W [{string.Join(", ", cr.Stacks.Select(st => $"{st.Troop} {st.Start}->{st.Standing}"))}]");
+    }
+
+    /// Named men in battle (docs/LEGACY.md L2): placed as real units, their kills and fates come back by id and reach the roll,
+    /// the company's best man may earn a name, and a battle with named men replays exactly.
+    static void NamedMenFight()
+    {
+        var c = Campaign.New(84);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        foreach (var k in c.Player.Companies) for (int i = 0; i < 3; i++) c.NameMan(k, "test");
+        int named = c.Player.Companies.Sum(k => k.Roll.Count);
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
+        bandit.Pos = c.Player.Pos;
+        c.Encounter = bandit;
+        var setup = c.PrepareBattle(bandit);
+        setup.Options.AutoPlayer = true;
+        setup.Options.PlayerWounded = true;
+        Check(setup.Player.Companies.Sum(k => k.Named?.Length ?? 0) == named, "the battle gets every fit named man");
+        var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+        b.StartRecording(setup.Seed);
+        int placed = b.Units.Count(u => u.SoldierId != 0);
+        int onField = setup.Player.Companies.Where(k => b.Squads.Any(q => q.Company?.Id == k.Id)).Sum(k => k.Named?.Length ?? 0);
+        Check(placed == onField && placed > 0, $"each named man of a company on the field is one of its units ({placed} of {onField})");
+        Check(b.Units.Where(u => u.SoldierId != 0).All(u => setup.Player.Companies.Any(k => k.Named?.Any(m => m.Id == u.SoldierId && m.Troop == u.Type.Id) == true)), "of his own troop");
+        for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+        var result = b.Result();
+        var fates = result.Companies.Where(r => r.Named != null).SelectMany(r => r.Named!).ToList();
+        Check(fates.Count == placed, "each named man's fate comes back");
+        Check(result.Companies.Where(r => r.Named != null).All(r => r.Named!.Sum(n => n.Kills) <= r.Kills), "his kills are among the company's");
+        var rec = b.FinishRecording()!;
+        var back = Replay.Deserialize(rec.Serialize());
+        Check(back.Matches(back.Play()), "a battle with named men replays exactly");
+        var before = c.Player.Companies.SelectMany(k => k.Roll).ToDictionary(m => m.Id, m => m.Kills);
+        c.FinishBattle(result, setup);
+        foreach (var f in fates)
+        {
+            var m = c.Player.Companies.SelectMany(k => k.Roll).Concat(c.S.Fallen).FirstOrDefault(x => x.Id == f.Id);
+            Check(m != null && m.Kills == before[f.Id] + f.Kills, "his kills reach the roll");
+            Check(!f.Fell || m!.Hurt || m.Fate != "", "one who fell is hurt or lost");
+            Check(f.Fell || f.Fled || m!.Fate is "" or "left", "one who stood comes home");
+        }
+        Console.WriteLine($"named men fight: {(result.Winner == 0 ? "won" : "lost")}, {placed} placed, {fates.Count(f => f.Fell)} fell, {fates.Sum(f => f.Kills)} kills; " +
+            $"best man {result.Companies.Max(r => r.BestKills)} kills");
+    }
+
+    /// Auto-resolve (L2): named men share their stack's odds, so a hard-lost fight costs named men too.
+    static void AutoResolveNamedMen()
+    {
+        int lost = 0, men = 0;
+        for (int seed = 0; seed < 6; seed++)
+        {
+            var c = Campaign.New(90 + seed);
+            c.Player.Cooldown = 1e6f;
+            c.Tick(24); c.Encounter = null; c.Arrived = null;
+            foreach (var k in c.Player.Companies) for (int i = 0; i < 5; i++) c.NameMan(k, "test");
+            int had = c.Player.Companies.Sum(k => k.Roll.Count);
+            men += had;
+            var lord = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && c.Hostile(c.Player, p)).OrderByDescending(p => p.Men).First();
+            lord.Pos = c.Player.Pos;
+            c.Encounter = lord;
+            var setup = c.PrepareBattle(lord);
+            var r = Rules.AutoResolve(setup.Side0, setup.Side1, new Rng(new CampaignState { Seed = seed + 1 }));
+            Check(r.Companies.All(x => x.Named == null), "auto-resolve hands back no fought fates");
+            c.FinishBattle(r with { Winner = 1, Captain = LeaderFate.Wounded }, setup);
+            lost += had - c.Player.Companies.Sum(k => k.Roll.Count); // a company wiped out takes its roll with it
+        }
+        Console.WriteLine($"auto-resolve named men: {lost} of {men} lost in six lost fights");
+        Check(lost > 0, "auto-resolving a lost fight costs named men too");
+    }
+
+    /// Fighting for your men (docs/LEGACY.md L8): a fallen named man you stand over is got out (saved), which the result
+    /// carries; the "bring him home" goal names him and is lost if he dies; your named men are heard in the log.
+    static void PullBack()
+    {
+        var spec = new Company("shieldmen", 10, "infantry", 7, "Test Guard", Named: new[] { new NamedSpec(5, "shieldmen", "Hob the Red") });
+        var b = new Battle(5, new ArmySpec("mine", 0, new List<Company> { spec }), new ArmySpec("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9) }),
+            new BattleOptions { Goals = true });
+        var hob = b.Units.First(u => u.SoldierId == 5);
+        Check(Battle.NameOf(hob) == "Hob the Red", "a named man is known by name in the battle");
+        b.Ward = hob;
+        var goal = Battle.GoalKinds.First(g => g.Id == "bringhome");
+        Check(b.GoalText(goal) == "BRING HOB THE RED HOME", "the goal names him");
+        // He falls; you stand over him.
+        b.KillForTest(hob, b.SquadsOf(1).First().Units[0]);
+        Check(b.Events.Any(e => e.Text.Contains("Hob the Red is down")), "his fall is heard");
+        Check(b.Rescuable(hob), "he can still be got out");
+        b.Player.Pos = hob.Pos + new Vector2(1, 0);
+        b.Player.Fled = false;
+        for (int i = 0; i < 60 * 3 && !hob.Saved && b.Winner < 0; i++) { b.Player.Pos = hob.Pos + new Vector2(1, 0); b.Update(1 / 60f); }
+        Check(hob.Saved && !b.Rescuable(hob), "standing over him gets him out");
+        Check(b.Result().Companies.First(r => r.Id == 7).Named!.First(n => n.Id == 5) is { Fell: true, Saved: true }, "the result says he fell but was saved");
+        Check(b.GoalState(goal) >= 0, "and the goal is not lost");
+        // A second battle: he dies and nobody comes.
+        var b2 = new Battle(6, new ArmySpec("mine", 0, new List<Company> { spec }), new ArmySpec("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9) }), new BattleOptions());
+        var hob2 = b2.Units.First(u => u.SoldierId == 5);
+        b2.Ward = hob2;
+        b2.KillForTest(hob2, b2.SquadsOf(1).First().Units[0]);
+        b2.Player.Pos = hob2.Pos + new Vector2(30, 0);
+        for (int i = 0; i < 60 * 65 && b2.Winner < 0; i++) b2.Update(1 / 60f);
+        Check(!hob2.Saved && b2.GoalState(goal) == -1, "left where he fell, he is lost, and the goal with him");
     }
 
     /// A recorded battle with player orders and input, saved to JSON and played back, ends exactly the same.

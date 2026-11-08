@@ -411,15 +411,25 @@ public sealed class WorldMap
         : ProvinceAt(p).Kind switch { "Forest" => 0.7f, "Hills" => 0.8f, "Marsh" => 0.6f, "Steppe" => 1.1f, "Badlands" => 0.85f, _ => 1f };
 
     /// Battle ground for a fight at p: the province's kind, with a road if one runs close.
-    public TerrainParams BattleGround(Vector2 p)
+    public TerrainParams BattleGround(Vector2 p, float wet = 0, int season = -1)
     {
         var t = OnRidge(p) ? TerrainParams.Hills : ProvinceAt(p).Kind switch
         {
             "Forest" => TerrainParams.Forest, "Hills" => TerrainParams.Hills, "Farmland" => TerrainParams.Farmland,
             "Marsh" => TerrainParams.Marsh, "Steppe" => TerrainParams.Steppe, "Badlands" => TerrainParams.Badlands, _ => TerrainParams.Meadow,
         };
-        return t with { Road = RoadDist(p) < 6, River = RiverDist(p) < 12 || t == TerrainParams.Marsh };
+        bool road = RoadDist(p) < 6, river = RiverDist(p) < 12;
+        // The field's shape from what is on the map here (docs/TERRAIN.md T7): a road meeting a river is a river line
+        // with its bridge, a village gives a village between the lines, a ridge a crest or (near a road) a pass.
+        var layouts = t.Layouts;
+        if (road && river && t != TerrainParams.Marsh) layouts = new[] { FieldLayout.RiverLine };
+        else if (Settlements.Any(s => s.Kind == SettlementKind.Village && Vector2.Distance(s.Pos, p) < VillageNear) && t != TerrainParams.Marsh && t != TerrainParams.Forest) layouts = new[] { FieldLayout.Village };
+        else if (OnRidge(p)) layouts = road ? new[] { FieldLayout.Pass } : new[] { FieldLayout.Ridge, FieldLayout.Ridge, FieldLayout.TwoHills };
+        return t with { Road = road, River = river || t == TerrainParams.Marsh, Layouts = layouts, Wet = wet, Season = season };
     }
+
+    /// How near a village a fight must be to be fought among its houses.
+    public const float VillageNear = 8;
 
     public float Height(float x, float z)
     {

@@ -36,6 +36,7 @@ dotnet run -- --replay [file]                            # replay replays/last-b
 dotnet run -- --write-controls                           # write default controls.json
 dotnet run -c Release -- --bench 1500                    # headless 1500-a-side battle: ms per tick by stage (3000 men ~3.6 ms)
 dotnet run -c Release -- --realms 8                      # snowball guard: N campaigns x 240 days, realm shares -> balance/realms.csv (~3 min)
+dotnet run -c Release -- --grounds 24                    # same army both sides on each field layout, ground chosen by each in turn -> balance/grounds.csv (~2 min)
 dotnet run -c Release -- --campaign-bench 30             # headless campaign for N days: ms a day by tick stage (~76 ms on the 115-province map)
 ```
 
@@ -43,11 +44,11 @@ Rendering without a display (works in the cloud container, software GL via Mesa 
 ```bash
 IRONFIELD_SAVES=/tmp/ifs IRONFIELD_SHOTS=/tmp/shots xvfb-run -a -s "-screen 0 1280x720x24" dotnet run -c Release --no-build
 ```
-Saves ~20 staged battle PNGs (field-view.png, command-overview.png, gallery-*.png...) and quits. `IRONFIELD_CAMPAIGN_SHOTS=/dir`
-does the same for campaign screens, `IRONFIELD_LAB_SHOTS=/dir` for every UI lab page. ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
+Saves ~30 staged battle PNGs (field-view.png, command-overview.png, gallery-*.png, pose-sheet*.png, pose-horses.png...) and quits, with `render.txt` (sprite triangles, lines and marks drawn per shot). `IRONFIELD_CAMPAIGN_SHOTS=/dir`
+does the same for campaign screens, `IRONFIELD_LAB_SHOTS=/dir` for every UI lab page. Each run also writes `overflow.txt` (text that runs out of its panel; aim for none). ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
 
 Other env vars: `IRONFIELD_SAVES` (save dir; settings go to its parent), `IRONFIELD_QUALITY=High|Medium|Low`,
-`IRONFIELD_LEVELS=4,2` (quick-battle army levels), `IRONFIELD_MEN=750` (quick-battle men a side; default half the Battle size setting), `IRONFIELD_WEATHER=hour,rain,fog`, `IRONFIELD_GROUND=river`,
+`IRONFIELD_LEVELS=4,2` (quick-battle army levels), `IRONFIELD_MEN=750` (quick-battle men a side; default half the Battle size setting), `IRONFIELD_WEATHER=hour,rain,fog`, `IRONFIELD_GROUND=river` or `=Hills,river` (a `TerrainParams` preset), `IRONFIELD_LAYOUT=Ridge` (a `FieldLayout`),
 `IRONFIELD_DUMP_ATLAS=/x.png`, `IRONFIELD_GPU_REPORT=1` (same as `--gpu-report`).
 Default save/settings location: `$XDG_CONFIG_HOME|~/.config/Ironfield/` (ApplicationData). Set `IRONFIELD_SAVES` when running so you do not touch real saves.
 
@@ -86,8 +87,8 @@ Auto-resolve skips the battle: `Campaign.AutoResolveEncounter` -> `Rules.AutoRes
 
 ### Battle tick (`Battle.Update(dt)`, fixed 1/60 s in tests)
 ApplyDirects -> RecordFrame -> BuildGrid -> centroids -> `General(team)` every 0.5 s (enemy AI, and own side if AutoPlayer/AI squads) ->
-`UpdateDivisions` (couriers, arrived goals, `AiCommand`, each division's `Brain`) ->
-Batter (siege gate) -> Reinforce (1 s) -> called horse, Resupply -> `UpdateSquad` each -> per unit: `UpdatePlayer` or `Think`
+`UpdateDivisions` (couriers, arrived goals, `AiCommand`, each division's `Brain`) -> `UpdateSight` (every 0.5 s) ->
+Batter (siege gate) -> Reinforce (1 s) -> called horse, Resupply -> `UpdateSquad` each (and `UpdatePath`) -> per unit: `UpdatePlayer` or `Think`
 (`ThinkCav` for cavalry), `TickAction` (windup/strike/recover), `Tire` -> `Move` (steering, separation, terrain, wall) ->
 `Braces`, `Lances` -> `UpdateArrows` -> `UpdateMorale` -> `CheckEnd` (sets `Winner`).
 Files: tick/setup/result in `Battle.cs`; `Think`/`ThinkCav`/`General` in `BattleAI.cs`; `UpdatePlayer` in `BattlePlayer.cs`;
@@ -97,7 +98,7 @@ Men think on a stagger (`ThinkNow`: near the enemy every tick, else every 2nd/4t
 
 ### Divisions (docs/COMBAT_OVERHAUL.md)
 A `Division` (BattleDivision.cs) is a group of squads under a sergeant (`Unit.Sergeant`) that follows a `Goal` (Hold, Take, Attack,
-Flank, Screen, Guard, Reserve, Harass, Pursue, FallBack) through its `Brain`, not your orders. Division squads are excluded from
+Flank, Screen, Guard, Reserve, Harass, Pursue, FallBack, Ambush) through its `Brain`, not your orders. Division squads are excluded from
 `Commanded` and the general's `Led()`. `IssueGoal` sets `Pending` + `PendingAt` (the order delay); a `Courier` rides there and can
 be cut down (BattleCourier.cs). `Direct(squad, act)` delays a plain order and sets `Squad.Override`. Divisions come from
 `ArmySpec.Divisions` + `Company.Division` (`BuildDivisions`); the campaign fills them from `CampaignState.Divisions`
@@ -114,7 +115,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 `Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`,
 `SwearFealty`, `ProposeWar`, `SetObjective`, `DeclareIndependence`, `DeclareWar`, `OfferPeace`...
 `Daily` ends with `FiefsDaily` then `CareerDaily` (rulers, councils due, rank beats, win/loss). Events the map must show once are plain fields:
-`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm, V divisions, M realm map (hard-coded in `MapScreen.Update`).
+`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm, V divisions, M realm map, B siege, F1 key help (`Act` entries, table `MapScreen.Screens`; `OpenScreen`/`CameFrom` remember the party screen as the way back).
 
 ## File guide (where to look for what)
 
@@ -129,10 +130,15 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Captain combat (bash, swap, horse call), fatigue, supply | `BattleCaptain.cs` |
 | Personal goals in a battle (draw, live state, result) / your banner and the last stand | `BattleDeeds.cs` (`DrawGoals`, `GoalState`); HUD `Hud.GoalLines` / `BattleBanner.cs` (`UpdateBanner`, `LastStand`, `UpdateLastStand`) |
 | Spatial grid (`Near`, `Separate`) | `BattleGrid.cs` |
+| Sight: who has seen which company, crests and woods, ambushes (docs/TERRAIN.md T3) | `BattleSight.cs` (`UpdateSight`, `Visible`, `Sees`, `ClearLine`, `Ambush`); arrow cover `BattleCombat.Covered` |
+| The AI reads the ground: the survey of places, holding a crest, dry anchors, horse going, the horse's flank, sergeants' snap, the AI's ambush wood | `BattleGround.cs` (`Places`, `Survey`, `BestPlace`, `SnapToGround`, `HoldsGround`, `Patience`, `DryAnchor`, `HorseGoing`, `HorseFlank`); `BattleDivision.AmbushWood` |
+| Ground for the player: ground words, ground map (M), order warnings, stakes (K) | `Grounds.Describe`/`Name` (TerrainGround.cs); `Hud.Ground.cs` (`GroundPanel`, `GroundHints`); `World.GroundMap`, `World.KindColor` (World.Features.cs); `Battle.GroundWarning`, `PlantStakes`, `CannotStake` (BattleGround.cs); `FeatureKind.Stakes` (stops horse only: `Feature.Stops`); drawn in `BattleScreen.Stakes` |
+| The campaign chooses the ground: field from the map cell, rain per province, who chooses, the panel line, auto-resolve edge | `WorldMap.BattleGround`; `Campaign/Ground.cs` (`RainDaily`, `GroundChooser`, `GroundFor`, `BattleSeed`, `GroundNote`, `GroundEdge`); `TerrainParams.Wet`/`Season`/`Favour` read in `TerrainLayouts` (`GroundOf`) |
+| Pathing: flow fields round water, hedges, houses (only when the straight way is barred) | `BattlePath.cs` (`UpdatePath`, `WayBlocked`, `PathVia`, `Flow`, `FlowField`, `Route` for the order's dotted line); hooked in `BattleSiege.Via` |
 | Divisions: goals, order delay, sergeant brain, AI goals / couriers | `BattleDivision.cs` (`IssueGoal`, `OrderDelay`, `Direct`, `Brain`, `AiCommand`) / `BattleCourier.cs` |
 | Unit/troop types, look, mounts | `Units.cs`, `Troops.cs` (+ `Armies` presets, `Large`, `Divide`), `Data/troops.json` |
 | Battle inputs/outputs | `BattleTypes.cs` (`BattleOptions`, `Weather`, `BattleResult`, `CompanyResult`) |
-| Terrain, rivers, foliage placement, siege wall geometry | `Terrain.cs` (headless) |
+| Terrain, rivers, foliage placement, siege wall geometry / the ground layer (kinds of ground, cover) / field layouts (ridge, two hills, broken, fen, river line, wooded flank, forest clearing, village, hedgerows, pass) / hedges, fences, bridges | `Terrain.cs` (headless) / `TerrainGround.cs` (`GroundKind`, `Grounds` <- `Data/ground.json`, `GroundAt`, `CoverAt`, `Paint`) / `TerrainLayouts.cs` (`FieldLayout`, `ShapeLayout`, `LayoutHeight`, `GroundOf`, `PlaceVillage`, `PlaceHedges`) / `TerrainFeatures.cs` (`Feature`, `AddFeature`, `GoRound`, `CrossesFeature`, `BridgeTheRoad`); drawn in `World.Features.cs`; docs/TERRAIN.md |
 | Campaign data model + save/load/migration | `Campaign/CampaignState.cs` (also `Rng`, `Balance` <- `Data/campaign.json`, `Names`) |
 | Campaign time, movement, encounters, hourly/daily/weekly ticks | `Campaign/Campaign.cs` |
 | Battles from the campaign: prepare, finish, auto-resolve, apply results | `Campaign/CampaignBattle.cs` (`PrepareBattle`, `FinishBattle`, `Apply`) |
@@ -149,6 +155,8 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Events, lord quests, brigand kings, pretenders (F8) | `Campaign/Events.cs` + `Data/events.json` (`EventsDaily`, `Choose`, `ApplyEffect`, `ValidateEvents`) |
 | Stacks/promotion, characters/opinion, skills (tiers, retraining), the captain's lasting wounds, earned traits and age, the household guard and rank rewards, the pilot | `Campaign/Companies.cs`, `Characters.cs`, `Skills.cs`, `Wounds.cs`, `Traits.cs`, `Household.cs`, `Pilot.cs` |
 | Your divisions on the map (make, assign, goal, temper, command, into battle) | `Campaign/Divisions.cs` |
+| The roll of named men (docs/LEGACY.md): naming, fates in battle, following promotion, moves, splits and merges | `Campaign/Roll.cs` (`NameMan`, `RollFates` (auto-resolve), `RollFought` (fought battles), `RollAfterBattle`, `SyncRoll`, `RollPromoted`, `MoveNamed`; the fallen in `CampaignState.Fallen` via `FallenOf`, report `BattleReport.Roll`; sergeants and companions from the ranks `RiseToSergeant`, `SergeantFell`, `CompanionFell`, `RoseFrom`); in battle `Company.Named` -> `Unit.SoldierId` (`AddSquad`) -> `CompanyResult.Named`; HUD `Hud.NamedMarks`; save `Soldier`, `CompanyRecord.Roll`/`Fallen` (own stream `CampaignState.RollRng`); UI `MapScreen.RollPanel` (Muster.cs) |
+| The company's legend (docs/LEGACY.md L5-L8): battle names, banner honours won and lost, fame and what it draws, retire and hand over / pulling a downed named man out in battle | `Campaign/Legacy.cs` (`BattleName`, `BannerAfterBattle`, `Fame`, `FamePay`, `Retire`, `HandOver`); UI THE LEGEND tab `MapScreen.Realm.cs` `Legend` / `BattleRescue.cs` (`UpdateRescue`, `Rescuable`, `Ward`); burial event `bury_named` (trigger `fallen`) |
 | Monsters on the map: goblin holdouts (spawn, grow, raid, plunder, cleared), wolf packs, rare trolls, `MonsterThink` | `Campaign/Monsters.cs` (`SpawnHoldout`, `MonstersDaily`, `SendRaiders`, `HoldoutCleared`, `WolfThink`, `SpawnTroll`, `TrollThink`); docs/CREATURES.md |
 | The dead rise: grave fields after big battles, burial, undead hosts on the map | `Campaign/Undead.cs` (`AfterTheBattle`, `GravesDaily`, `RaiseHost`, `UndeadThink`); `bury_dead` in `Data/events.json` |
 | Sites on the map (ruins, shrines, stones, old battlefields, mines, hermits, watchtowers, springs, mills): visits and their effects | `Campaign/Sites.cs` (`Site`, `ArriveAtSite`, `SiteEffect`, `Search`, `Spy`); placed by `WorldMap.PlaceSites`; events `site_*` in `Data/events.json`; models `World.SiteModel`; docs/SIDE_CONTENT.md |
@@ -159,20 +167,21 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Realms and cultures data: lines, heraldry palette, home on the map, town flavour, opening wars (`relations`) | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`); `WorldMap.GrowRealms` lays them out; a realm's temper (aggression, garrison, siege, tribute, hunts) is read in `Diplomacy.cs` (`WarAppeal`, `AlliancesDaily`, `Leading`), `CampaignAI.LordThink` and `CampaignSiege` |
 | Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
 | Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Atlas.cs` (M: realm map, province colours and borders, legend), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |
-| Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` (orders, goals, `Send`) + `.Draw.cs` (render, particles, culling, detail) + `Hud.cs` (2D drawing + hit-testing) + `Hud.Overlays.cs` (menu, after-action result, controls) + `Hud.Divisions.cs` |
+| Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` (orders, goals, `Send`) + `.Draw.cs` (render, particles, culling, detail, order arrows) + `.Effects.cs` (camera kick, hit pause, ground marks, trample map, falling banners; docs/VISUALS.md) + `.Shots.cs` (staged shots, pose sheets) + `Hud.cs` (2D drawing + hit-testing) + `Hud.Overlays.cs` (menu, after-action result, controls) + `Hud.Divisions.cs` |
 | Keys / rebinding | `Controls.cs` (`Act` enum + `Defaults` dict) |
 | 3D meshes (terrain, trees, towns, grass) | `World.cs` |
 | Shader pipeline / GLSL loader | `Shading.cs`, `GlslEffect.cs`, `Shaders/*.glsl`, `Sky.cs` (light by hour/weather) |
 | Unit drawing (puppets of part sprites) | `Puppet.cs` (poses, skeleton), `SpriteSheet.cs` (paints parts), `Painter.cs` (materials), `Art.cs` (atlas) |
 | Colours, heraldry, UI tokens | `Style.cs` |
-| The interface kit: every widget (`Plate`, `PlateBody`, `Ribbon`, `Shield`, `Banner`, `Icon`, `Ring`, `Pips`, `Gauge`, `Chip`, `Tabs`, `Gilded`, `Toast`...) | `UiKit.cs` (static class `Kit`, extension methods on `Ui`; `Ui.Panel`/`Button`/`Bar` and the battle HUD draw through it) |
+| Motion: easing curves, per-man phase / UI animation (`Ui.Anim`, `AnimLag`, `Since`, `Count`; `Ui.Now`, `Ui.Instant` freezes it for shots) / soldier and horse poses (`PoseOf`, `Fallen`, `Banner`) | `Ease.cs` / `Ui.cs` / `Puppet.cs`; rules in docs/DESIGN.md section 5 |
+| The interface kit: every widget (`Plate`, `PlateBody`, `Ribbon`, `Shield`, `Banner`, `Icon`, `Ring`, `Pips`, `Gauge`, `Chip`, `Tabs`, `Gilded`, `Toast`...; `Fit`/`TextFit` cut text to a width) | `UiKit.cs` (static class `Kit`, extension methods on `Ui`; `Ui.Panel`/`Button`/`Bar` and the battle HUD draw through it) |
 | UI lab (F3 on the title): gallery of interface concepts with mock data | `UiLab.cs` (screen, pages list, shots) + `.Pages.cs` / `.Scenes.cs` (one method per page) |
-| Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`) |
+| Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`; ground footsteps and their splashes, mud and leaves come from `BattleScreen.GroundSteps`) |
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
-| Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs`, `Bench.cs` |
+| Tools | `Replay.cs`, `BalanceReport.cs` (`Run`, `Pacing`, `Realms`, `Grounds`), `GpuReport.cs`, `Bench.cs`; `Overflow.cs` (shots runs: text leaving its panel -> `overflow.txt`) |
 | Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs`, `Tests/CreatureTests.cs`, `Tests/MapTests.cs` |
 | Developer guide (systems in depth, worked examples) | `docs/DEVELOPING.md` |
-| Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications), `docs/COMBAT_OVERHAUL.md` (plan: sergeant divisions + battle scale), `docs/CREATURES.md` (plan: monsters, creature encounters and troops), `docs/SIDE_CONTENT.md` (plan: sites, side quests, caravans, town life, events, polish), `docs/PROGRESSION.md` (plan: captain gear, combat, skill tree, rank rewards, battle goals), `docs/WORLD.md` (plan: bigger world, seven realms) |
+| Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/LEGACY.md` (THE player fantasy: your company is your legacy; plan L0-L8, read first when choosing work), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications), `docs/COMBAT_OVERHAUL.md` (plan: sergeant divisions + battle scale), `docs/CREATURES.md` (plan: monsters, creature encounters and troops), `docs/SIDE_CONTENT.md` (plan: sites, side quests, caravans, town life, events, polish), `docs/PROGRESSION.md` (plan: captain gear, combat, skill tree, rank rewards, battle goals), `docs/WORLD.md` (plan: bigger world, seven realms), `docs/TERRAIN.md` (plan: ground kinds, battlefield layouts, sight and cover, pathing, terrain-aware AI), `docs/POLISH.md` (plan: polish pass Q1-Q7: bugs, tips, text that fits, map keys, story, continuity tests), `docs/VISUALS.md` (plan: visuals and motion pass V1-V8: animation, effects, world, UI motion, big moments) |
 
 ## Recipes
 

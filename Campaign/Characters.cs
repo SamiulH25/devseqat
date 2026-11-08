@@ -29,6 +29,9 @@ public sealed class Character
     public int Command = 2, CommandBattles;
     /// How he leads a division: "Bold", "Steady" or "Cautious" ("" = from his traits).
     public string Temper = "";
+    /// A companion who rose from the ranks (docs/LEGACY.md L4): his record as a named man and the company he came from (-1: none).
+    public Soldier? Ranks;
+    public int FromCompany = -1;
 }
 
 /// Something a character remembers about another (3.2): shown as the reasons behind an opinion; fades with time.
@@ -117,7 +120,7 @@ public sealed partial class Campaign
     }
 
     /// What `a` thinks of `b`, -100..100.
-    public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar ? (Has("Kingmaker") ? 10 : 0) + RegardOfTraits(a) : 0), -100, 100);
+    public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar ? (Has("Kingmaker") ? 10 : 0) + RegardOfTraits(a) + FameRegard : 0), -100, 100);
 
     /// What a character thinks of you.
     public float OpinionOfYou(Character a) => OpinionOf(a, Me);
@@ -219,6 +222,8 @@ public sealed partial class Campaign
         ch.Command = 3; // he has led men already, as a sergeant
         ch.CompanyId = c.Id;
         ch.PartyId = Player.Id;
+        ch.Ranks = c.OfficerMan; ch.FromCompany = c.OfficerMan != null ? c.Id : -1; // L4: he rose from its ranks
+        c.OfficerMan = null;
         ch.Opinion[S.CaptainChar] = 40;
         Remember(ch, Me, "you made me one of your household", 10);
         Log($"{c.Officer} of {c.Name} has fought {c.OfficerBattles} battles at your side and joins your household as {ch.Role.ToLowerInvariant()}.");
@@ -284,10 +289,10 @@ public sealed partial class Campaign
     }
 
     /// A hero who fell in battle is wounded for five days; one time in ten he does not get up.
-    void HeroFell(CompanyRecord c)
+    void HeroFell(CompanyRecord c, string foe = "")
     {
         if (Companions.FirstOrDefault(k => k.CompanyId == c.Id) is not Character k) return;
-        if (!Has("Triage") && rng.Chance(0.1f)) { k.Dead = true; Log($"{k.Name}, your {k.Role.ToLowerInvariant()}, has fallen leading {c.Name}."); }
+        if (!Has("Triage") && rng.Chance(0.1f)) { k.Dead = true; Log($"{k.Name}, your {k.Role.ToLowerInvariant()}, has fallen leading {c.Name}."); CompanionFell(k, foe); }
         else { k.WoundedUntil = (float)S.Hours + 5 * 24; Log($"{k.Name} is carried from the field, wounded."); }
         RefreshHeroes();
     }
@@ -310,5 +315,5 @@ public sealed partial class Campaign
     }
 
     /// How many of a settlement's recruits will take your coin now.
-    public int RecruitsForYou(Settlement s) => (int)MathF.Floor(s.Recruits * RecruitShare(s));
+    public int RecruitsForYou(Settlement s) => (int)MathF.Floor(s.Recruits * MathF.Min(1, RecruitShare(s) + FameShare)); // L6: fame draws men
 }

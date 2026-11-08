@@ -88,6 +88,14 @@ sealed class SettingsScreen
                 if (Choice(0, "OFF", !s.Fxaa)) s.Fxaa = false;
                 if (Choice(1, "ON", s.Fxaa)) s.Fxaa = true;
                 Row();
+                Label("CAMERA SHAKE");
+                foreach (var (v, name, i) in new[] { (0f, "OFF", 0), (0.5f, "SOFT", 1), (1f, "FULL", 2) })
+                    if (Choice(i, name, MathF.Abs(s.CameraShake - v) < 0.01f)) s.CameraShake = v;
+                Row();
+                Label("HIT PAUSE");
+                if (Choice(0, "OFF", !s.HitPause)) s.HitPause = false;
+                if (Choice(1, "ON", s.HitPause)) s.HitPause = true;
+                Row();
                 ui.Text("HIGH: SHADERS, SUN SHADOWS, POST. MEDIUM: NO SHADOWS. LOW: BASIC (ALSO THE FALLBACK).", body.X, y + ui.U(6), Style.Dim, 1);
                 break;
             case "AUDIO":

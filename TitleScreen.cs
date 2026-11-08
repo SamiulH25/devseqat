@@ -104,15 +104,68 @@ sealed class TitleScreen
         ui.VGrad(new Rectangle(0, 0, ui.W, ui.H / 2), Kit.Night, Kit.Dusk);
         ui.VGrad(new Rectangle(0, ui.H / 2, ui.W, ui.H - ui.H / 2), Kit.Dusk, new Color(196, 110, 62));
         ui.Stars(new Rectangle(0, 0, ui.W, ui.H / 2), time);
-        var moon = new Vector2(ui.W * 0.8f, ui.H * 0.2f);
+        // The mouse leans the scene a little: far layers move less than near ones.
+        float px = Ui.Instant ? 0 : (ms.X / (float)Math.Max(1, ui.W) - 0.5f) * U(18);
+        var moon = new Vector2(ui.W * 0.8f - px * 0.2f, ui.H * 0.2f);
         ui.Disc(moon, U(46), Color.White * 0.04f); ui.Disc(moon, U(34), Color.White * 0.06f);
         ui.Disc(moon, U(24), new Color(240, 232, 210)); ui.Disc(moon + new Vector2(U(6), U(-4)), U(5), new Color(214, 206, 186));
-        int castleX = (int)(ui.W * 0.76f);
-        ui.Castle(castleX, ui.HillY(screen, castleX, (int)(ui.H * 0.66f), U(26), 0.4f) + U(6), 3, new Color(78, 50, 70), Kit.Ember);
-        ui.Hills(screen, (int)(ui.H * 0.66f), U(26), 0.4f, new Color(78, 50, 70));
-        ui.Hills(screen, (int)(ui.H * 0.76f), U(22), 3.1f, new Color(46, 32, 48));
-        ui.Hills(screen, (int)(ui.H * 0.88f), U(14), 5.7f, new Color(20, 16, 26));
+        Clouds();
+        int castleX = (int)(ui.W * 0.76f - px * 0.4f);
+        // The castle's windows flicker like fires behind them.
+        var ember = Color.Lerp(Kit.Ember, new Color(255, 214, 140), 0.25f + 0.25f * MathF.Sin(time * 7.3f) * MathF.Sin(time * 3.1f));
+        ui.Castle(castleX, ui.HillY(screen, castleX, (int)(ui.H * 0.66f), U(26), 0.4f) + U(6), 3, new Color(78, 50, 70), ember);
+        ui.Hills(Shifted(screen, px * 0.4f), (int)(ui.H * 0.66f), U(26), 0.4f, new Color(78, 50, 70));
+        Birds();
+        ui.Hills(Shifted(screen, px * 0.7f), (int)(ui.H * 0.76f), U(22), 3.1f, new Color(46, 32, 48));
+        ui.Hills(Shifted(screen, px), (int)(ui.H * 0.88f), U(14), 5.7f, new Color(20, 16, 26));
+        Embers();
         ui.Vignette(0.8f);
+    }
+
+    /// The screen moved sideways by `dx`, widened so the hills still cover both edges.
+    static Rectangle Shifted(Rectangle r, float dx) => new(r.X - (int)MathF.Abs(dx) - 8 + (int)dx, r.Y, r.Width + 2 * (int)MathF.Abs(dx) + 16, r.Height);
+
+    /// Long thin clouds drifting slowly across the dusk.
+    void Clouds()
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            float span = ui.W + U(400);
+            float x = ((i * 0.37f * span + time * U(6 + i * 2)) % span) - U(200);
+            float y = ui.H * (0.12f + 0.07f * i);
+            var c = Color.Lerp(new Color(120, 80, 120), new Color(236, 150, 112), 0.15f * i) * (0.06f + 0.015f * i);
+            for (int k = 0; k < 24; k++) // a long low streak: puffs swelling in the middle, overlapping softly
+            {
+                float e = MathF.Sin(k / 23f * MathF.PI);
+                ui.Disc(new Vector2(x + U(k * 9), y + U(MathF.Sin(k * 0.9f + i) * 1.5f)), U(3 + 7 * e), c);
+            }
+        }
+    }
+
+    /// A few rooks wheeling over the far hill, wings beating.
+    void Birds()
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            float a = time * 0.25f + i * 1.3f;
+            var at = new Vector2(ui.W * (0.8f + 0.06f * MathF.Cos(a)) + U(i * 14), ui.H * (0.46f + 0.03f * MathF.Sin(a * 1.7f)));
+            float flap = MathF.Sin(time * 9 + i * 2) * U(3);
+            var c = new Color(40, 26, 36);
+            ui.Line(at, at + new Vector2(-U(5), -flap), c, Math.Max(1, U(1)));
+            ui.Line(at, at + new Vector2(U(5), -flap), c, Math.Max(1, U(1)));
+        }
+    }
+
+    /// Sparks rising from the near fields.
+    void Embers()
+    {
+        for (int i = 0; i < 18; i++)
+        {
+            float life = 6 + i % 4, t = ((time + i * 0.71f) % life) / life;
+            float x = ui.W * ((i * 0.618f) % 1) + MathF.Sin(t * 6 + i) * U(12);
+            float y = ui.H * (0.98f - 0.5f * t);
+            ui.Disc(new Vector2(x, y), Math.Max(1, U(1.5f)), Color.Lerp(new Color(255, 200, 120), Kit.Ember, t) * (1 - t) * 0.8f);
+        }
     }
 
     /// The newest save as a card, re-read only when the file changes.

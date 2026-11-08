@@ -37,6 +37,9 @@ Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, 
 
 ## The campaign
 
+**The heart of it:** you lead a free company in person. Every man you lose was someone you knew, and every honour on the
+banner is one you earned (`docs/LEGACY.md`).
+
 You are a free captain sworn to the Azure Crown in the west. It is at war with the Northmarch clans of the cold north, its long
 border; the Crimson Compact in the east fights the Khaganate of the Grass, horse archers from the eastern steppe. The Sunward
 Emirates hold the dry south, the Saltmarsh League the fens and canals of the south-west, and the knight-brothers of the Order of the
@@ -59,6 +62,15 @@ mountain ridges you cross by road at the passes.
   1, 5 or every ready man into any branch. A man promoted out of the company's role joins a company of his new role, or founds one.
   A mixed company fights as one squad. Companies keep an origin, a banner, a ledger of their last fights and up to three **honours**
   (Unbroken, Horse-breakers, Old Hands, Stormers, Bloodied) that change how they fight. Saves from before this (version 3 and older) are refused.
+- **The roll:** each of your companies keeps up to six **named men** (ROLL on its card in the party screen). A new company names
+  its first man, and men earn names in battle (first over a wall, a horseman brought down, standing when half the company fell).
+  A named man is one of the men of his stack: he shares its losses (a little less often killed), is promoted before the others, and goes
+  where his men go. In a fought battle he is a real man in the front rank (a gold mark over him near you) and earns his own deeds.
+  Those lost are kept for ever under THE FALLEN, named first in the battle report, and each costs his company cohesion. When a
+  company needs a sergeant, its senior named man rises to the post, and a sergeant of 15 battles joins your household.
+- **The legend:** great battles are named and sewn on the company's banner as honours; a rout can lose one to the enemy until
+  you win it back. Fame from your companies raises pay, recruits and the regard of lords. In battle, stand over a fallen named
+  man to pull him out alive. THE LEGEND (R) lets you retire in glory or hand the company to a companion and play on.
 - **Cultures:** every troop is of one of the seven cultures or common (`Data/troops.json`), and each realm has a culture (`Data/factions.json`).
   A village raises its own culture's men whoever holds it (clansmen in the north, levies in the south), and they form companies of their own
   people. Men train into common troops or their own culture's lines only, and a culture's elite lines (tier V and up) need one of its towns
@@ -174,6 +186,9 @@ one still on the road. Riders show as gold dots in command view; an enemy who re
 rides out the long way round (cut down the enemy's red riders and his divisions wait). You can still select a division's companies
 and order them directly: the order rides out the same way, and they then follow it until the division gets a new goal. If a
 sergeant falls, his men keep their last goal, orders take twice as long, and the best man left takes charge after 10 s.
+Sergeants told to hold or take ground stand on the best ground within 25 m of it (a crest, a knoll, a wood's edge, the village).
+**AMBUSH** (command view) sends a division of foot to the nearest wood to wait unseen, arrows held; it falls on the first enemy
+company that comes within 40 m.
 
 **Captain combat:** a parry needs the guard raised just as the blow comes (within 0.35 s, up to 0.45 s with Arms); attacking into a blow from the mirrored side
 **chambers** it. A parry opens a **riposte** for 0.45 s: a swing started then winds up twice as fast, hits a quarter harder, costs half
@@ -242,8 +257,45 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   65k vertices). Gentle value-noise rolls (calmer in the middle),
   3-5 random hills, a rim of high ground framing the valley, and a dirt road winding between the armies. It is seeded per battle.
   `Height()` interpolates on the same triangles the mesh draws, so units stand exactly on the ground you see.
-- **It matters in the fight:** uphill is slower and downhill quicker (`Battle.SlopeFactor`, x0.55-1.15); striking from higher ground deals
-  up to +15% (less from below; the hit text says HIGH GROUND); arrows fly from and land on the real ground and stick where they hit it.
+- **It matters in the fight:** uphill is slower and downhill quicker (`Battle.SlopeFactor`; a horse feels it more than a man);
+  striking from higher ground deals up to +15% on a smooth curve, and +10% more for running downhill into the blow (the hit text
+  says HIGH GROUND); archers above their mark reach up to a quarter further. Arrows fly from and land on the real ground.
+- **Kinds of ground** (`TerrainGround.cs`, rules in `Data/ground.json`): every 2.5 m of the field is grass, road, wood, a ford,
+  deep water and so on. The ground sets the pace (a wood halves a horse; a road is quick), tires men (mud and climbs, worse in
+  heavy armour), and blunts a charge. In a wood or deep water men cannot keep the ranks: no braced spears and no locked shields,
+  and pikes lose part of their length among the trees. A horse galloping over stones, scrub or mud may stumble.
+  Companies open their ranks where the ground is bad.
+- **Fields with a shape** (`TerrainLayouts.cs`): each kind of ground has layouts the seed picks from: an open field, a ridge in front
+  of one army, a knoll on each wing, broken stony ground, a fen, a river line (with a bridge where the road crosses), a big wood on
+  one wing, a clearing ringed by woods, a village between the lines, hedgerows, a pass between high sides.
+- **Hedges, fences and bridges** (`TerrainFeatures.cs`) are lines men cannot walk through; they go round by the gaps.
+- **Sight and cover** (`BattleSight.cs`): a crest hides what is behind it, and men in a wood are seen only from within 25 m or
+  when they shoot. Archers shoot only at companies their side has seen, and an enemy you have not seen is not drawn: its flag
+  stays where you last saw it. A hidden company found close to the enemy is an ambush and shakes the men it falls on.
+  Low arrows are caught by woods, crops and houses, and a hedge stops flat shots; arrows dropping steeply still land behind it.
+- **An enemy that reads the ground** (`BattleGround.cs`): a side that starts on clearly higher ground, or in a wood or village
+  facing open ground, holds there and lets you come up to it. It waits about a minute (less for an aggressive realm or brigands),
+  or until it is bled by arrows, then comes down. It never sends its line into deep water (it goes for the ford or bridge), its
+  horse picks targets on firm, level ground, and it rides round the outside of a wood on a flank. Its foot may lie in wait in a
+  wood near its line.
+- **Reading the ground yourself:** in command view, hover the field to see what the ground does ("WOOD. COVER FROM ARROWS.
+  HORSE SLOWED. NO FORMATION."). **M** opens the ground map: every kind of ground in its own colour, with 2 m height lines,
+  hedges and houses. It is open while you deploy. Drawing an order warns you of bad ground: horse into a wood or mud, a climb,
+  or deep water on the way. Enemy flags you can no longer see are faded.
+- **Stakes:** longbowmen (the longbow line) plant a row of sharpened stakes in front of their line with **K**. A company does
+  it once, while holding with no enemy within 30 m. Horse cannot cross stakes; men on foot slip between them. The enemy's
+  longbowmen plant them too when you have horse.
+- **Perks on the ground:** Pathfinder (woods, scrub and marsh slow your men half as much), Tactician (your side sees a quarter
+  further and further into woods), Ambusher (your ambushes shake the enemy more).
+- **The campaign picks the field** (`Campaign/Ground.cs`): where you meet decides the ground. A road over a river gives a river
+  line with its bridge, a village a fight among its houses, a ridge a crest or a pass. Rain soaks each province day by day (the
+  fens most, the steppe least) and a wet field has mud on its low ground; winter fields lie bare. The side that was set upon,
+  or has the better scouts (horse, the Tactician perk), chooses where to stand: it gets the crest. The encounter panel says so
+  ("YOU HOLD THE HIGH GROUND."). Auto-resolve counts it too, and horse is worth less on wet or wooded ground.
+- **Pathing** (`BattlePath.cs`): companies find their own way round: sent over a river they make for the ford or bridge, and sent at a hedge they file
+  through its gaps. On open ground they march straight. While you draw an order whose way is barred, a dotted gold line shows the way they will take.
+- **Hearing the ground:** men splash through fords, squelch in mud and rustle through woods, and a bridge rings hollow under
+  them; horses throw up dust on dry ground and mud on wet, and leaves fall where men push through a wood.
 - **Foliage** (placed by `Terrain`, built into meshes by `World.cs`): woods of broadleaf trees or pines, two of them flanking the field,
   lone trees, bushes along wood edges, rocks and boulders, and ~14,000 3D grass tufts with a few flowers. All low-poly, flat-shaded and lit by one sun.
   Tree trunks and boulders are **solid**: units are pushed out of them and a horse that rides into one pulls up hard.
@@ -313,7 +365,7 @@ For a detailed developer guide (how each system works, data formats, worked exam
 | `Troops.cs` | Loads and validates `Data/troops.json` (troops, upgrade trees, mounts); `ArmySpec`/`Company`; `Armies` builds armies by level. |
 | `Factions.cs` | Loads and validates `Data/factions.json`: the seven realms (name, palette, culture, home on the map, the troop each role fields per tier), the cultures (each one's village recruit, kin, town flavour) and the opening wars and truces. |
 | `Style.cs` | Design tokens: side heraldry, materials, horse coats, sprite light and density, UI colours, grid, type scale. |
-| `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles. |
+| `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles; `TerrainGround.cs` the ground layer (kinds of ground and their rules). |
 | `ScreenHost.cs` | The MonoGame `Game`: shared art, audio and settings; switches between `TitleScreen`, `MapScreen` and `BattleScreen`, with the `SettingsScreen` overlay. |
 | `BattleScreen.cs` | A battle on screen: setup and the per-frame update; `BattleScreen.Controls.cs` (input, the blended third-person/command camera, terrain picking), `.Orders.cs` (squad orders), `.Draw.cs` (render passes, particles, rain), `.Shots.cs` (staged screenshots). |
 | `BattleSiege.cs` | Assaults: deploying defenders on the wall, routing men through ladders and the gate (`Via`), the wall barrier, battering, siege generals. |

@@ -141,15 +141,18 @@ public static class BalanceReport
 
         // 2. Battle win rates by army level (AI against AI), and how long they take. Each side is built by the same
         // rule (Armies.Random), so a fair system should sit near 50% on the diagonal; drift shows a balance problem.
-        var battles = new StringBuilder("level_a,level_b,seed,winner,seconds,dead\n");
+        // Each seed fights on a different ground, so the columns show who wins on which field (docs/TERRAIN.md T7).
+        var grounds = new[] { TerrainParams.Meadow, TerrainParams.Farmland, TerrainParams.Forest, TerrainParams.Hills, TerrainParams.Marsh, TerrainParams.Badlands };
+        var battles = new StringBuilder("level_a,level_b,seed,winner,seconds,dead,ground,layout,ridge_side\n");
         for (int a = 1; a <= 4; a++)
             for (int b = 1; b <= 4; b++)
                 for (int seed = 0; seed < 6; seed++)
                 {
                     var rng = new Random(a * 100 + b * 10 + seed);
-                    var battle = new Battle(seed, Armies.Random(rng, a, 0), Armies.Random(rng, b, 0), new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+                    var battle = new Battle(seed, Armies.Random(rng, a, 0), Armies.Random(rng, b, 0), new BattleOptions { AutoPlayer = true, PlayerWounded = true, Ground = grounds[seed % grounds.Length] });
                     for (int step = 0; battle.Winner < 0 && step < 60 * 600; step++) battle.Update(1 / 60f);
-                    battles.AppendLine(string.Join(",", a, b, seed, battle.Winner, battle.Time.ToString("0", inv), battle.Units.Count(u => u.Dead)));
+                    battles.AppendLine(string.Join(",", a, b, seed, battle.Winner, battle.Time.ToString("0", inv), battle.Units.Count(u => u.Dead),
+                        battle.Terrain.Params.Name, battle.Terrain.Layout, battle.Terrain.RidgeSide));
                 }
         File.WriteAllText("balance/battles.csv", battles.ToString());
 
@@ -172,5 +175,47 @@ public static class BalanceReport
             troops.AppendLine(string.Join(",", t.Id, t.Tier, t.Class, t.MaxHp, t.Armor, t.Damage, t.Cost, t.UpgradeXp, Rules.Strength(t, 1).ToString("0.00", inv)));
         File.WriteAllText("balance/troops.csv", troops.ToString());
         Console.WriteLine("wrote balance/economy.csv, balance/pacing.csv, balance/pacing_weekly.csv, balance/battles.csv, balance/troops.csv");
+    }
+
+    /// `--grounds [n]` (docs/TERRAIN.md T8): the same army on both sides, AI against AI, n seeds on each field layout, each fought
+    /// twice with the ground chosen by each side in turn. A fair layout gives the chooser an edge but not a sure
+    /// win; writes balance/grounds.csv and prints a line per layout.
+    public static void Grounds(int seeds)
+    {
+        Directory.CreateDirectory("balance");
+        var inv = CultureInfo.InvariantCulture;
+        var csv = new StringBuilder("layout,level,seed,favour,winner,seconds,dead\n");
+        foreach (var layout in Enum.GetValues<FieldLayout>())
+        {
+            var g = (layout switch
+            {
+                FieldLayout.Fen => TerrainParams.Marsh,
+                FieldLayout.WoodedFlank or FieldLayout.ForestClearing => TerrainParams.Forest,
+                FieldLayout.Village or FieldLayout.Hedgerows => TerrainParams.Farmland,
+                FieldLayout.Ridge or FieldLayout.TwoHills or FieldLayout.Pass => TerrainParams.Hills,
+                _ => TerrainParams.Meadow,
+            }) with { Layouts = new[] { layout }, River = layout == FieldLayout.RiverLine, Road = layout is FieldLayout.RiverLine or FieldLayout.Pass or FieldLayout.Village };
+            int chooser = 0, stalls = 0, n = 0;
+            float time = 0;
+            for (int seed = 0; seed < seeds; seed++)
+                for (int favour = 0; favour < 2; favour++)
+                {
+                    // Both sides the same army with the same head count (team 1's): your side's stand-in still lacks the
+                    // enemy captain's aura, so each seed is fought twice, the ground chosen by each side in turn.
+                    int level = 1 + seed % 4;
+                    var a = Armies.Random(new Random(seed * 7 + level), level, 1);
+                    var b = Armies.Random(new Random(seed * 7 + level), level, 1);
+                    var battle = new Battle(seed, a, b, new BattleOptions { AutoPlayer = true, Ground = g with { Favour = favour } });
+                    for (int step = 0; battle.Winner < 0 && step < 60 * 400; step++) battle.Update(1 / 60f);
+                    n++;
+                    if (battle.Winner < 0) stalls++;
+                    if (battle.Winner == favour) chooser++;
+                    time += battle.Time;
+                    csv.AppendLine(string.Join(",", layout, level, seed, favour, battle.Winner, battle.Time.ToString("0", inv), battle.Units.Count(u => u.Dead)));
+                }
+            Console.WriteLine($"{layout,-15} chooser wins {chooser}/{n}, {stalls} unfinished, {time / n:0} s a battle");
+        }
+        File.WriteAllText("balance/grounds.csv", csv.ToString());
+        Console.WriteLine("wrote balance/grounds.csv");
     }
 }

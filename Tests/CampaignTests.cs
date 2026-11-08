@@ -150,7 +150,8 @@ public static partial class SelfTest
         Console.WriteLine($"bridge: {(report.Won ? "won" : "lost")} vs {report.Enemy}, your men {before} -> {c.Player.Men} (+{c.Player.Wounded} wounded), gold {c.S.Gold:0}");
     }
 
-    /// Auto-resolve picks the same winner as the battle simulation at least 75% of the time.
+    /// Auto-resolve picks the same winner as the battle simulation at least 75% of the time. On open ground: auto-resolve does
+    /// not yet weigh the field (a ridge gives one side an edge); docs/TERRAIN.md T7 adds that, and this test then varies the ground.
     static void Calibration()
     {
         int agree = 0, n = 0;
@@ -161,7 +162,7 @@ public static partial class SelfTest
             var a0 = Armies.Random(rng, l0, 0);
             var a1 = Armies.Random(rng, l1, 0);
             a1 = a1 with { Companies = a1.Companies.Select(co => co with { Count = (int)(co.Count * (0.7f + 0.1f * (i % 6))) }).ToList() };
-            var b = new Battle(200 + i, Ids(a0, 1000), Ids(a1, 2000), new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+            var b = new Battle(200 + i, Ids(a0, 1000), Ids(a1, 2000), new BattleOptions { AutoPlayer = true, PlayerWounded = true, Ground = TerrainParams.Meadow with { Layouts = null } });
             for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
             Party P(ArmySpec a) { var p = new Party(); foreach (var co in a.Companies) { var r = new CompanyRecord { Id = co.Id, Role = co.Role }; foreach (var st in co.Stacks) r.Stack(st.Troop).Men += st.Count; p.Companies.Add(r); } return p; }
             float s0 = Rules.Strength(P(a0)), s1 = Rules.Strength(P(a1));
@@ -172,6 +173,85 @@ public static partial class SelfTest
         }
         Console.WriteLine($"auto-resolve agrees with the battle sim in {agree}/{n} matchups");
         Check(agree >= n * 0.75f, $"auto-resolve calibration ({agree}/{n})");
+    }
+
+    /// The campaign chooses the ground (docs/TERRAIN.md T7): a road over a river is a river line with its bridge, a village
+    /// gives a village field, a ridge a crest or a pass.
+    static void RiverRoadGivesBridge()
+    {
+        var m = WorldMap.Generate(11);
+        Vector2? crossing = null, village = null;
+        for (float z = -280; z < 280 && crossing == null; z += 2)
+            for (float x = -280; x < 280; x += 2)
+            {
+                var p = new Vector2(x, z);
+                if (m.RoadDist(p) < 3 && m.RiverDist(p) < 4 && m.ProvinceAt(p).Kind != "Marsh") { crossing = p; break; }
+            }
+        Check(crossing != null, "the map has a road over a river");
+        var g = m.BattleGround(crossing!.Value);
+        Check(g.Layouts is [FieldLayout.RiverLine], "a fight where a road meets a river is on a river line");
+        var t = new Terrain(5, g);
+        Check(t.Rivers.Count == 1 && t.Rivers[0].Bridges.Length == 1, "with its bridge");
+        foreach (var s in m.Settlements.Where(s => s.Kind == SettlementKind.Village))
+        {
+            var p = s.Pos + new Vector2(3, 0);
+            if (m.RoadDist(p) < 6 && m.RiverDist(p) < 12 || m.ProvinceAt(p).Kind is "Marsh" or "Forest" || m.OnRidge(p)) continue;
+            village = p;
+            break;
+        }
+        Check(village != null && m.BattleGround(village.Value).Layouts is [FieldLayout.Village], "a fight by a village is among its houses");
+    }
+
+    /// Rain makes mud: a field after a wet week has far more mud than a dry one; winter fields lie bare.
+    static void RainMakesMud()
+    {
+        int Mud(TerrainParams p)
+        {
+            var t = new Terrain(9, p);
+            int n = 0;
+            for (float z = -90; z <= 90; z += 5)
+                for (float x = -90; x <= 90; x += 5) if (t.GroundAt(new Vector2(x, z)) == GroundKind.Mud) n++;
+            return n;
+        }
+        var open = TerrainParams.Meadow with { Layouts = new[] { FieldLayout.Open }, River = true };
+        int dry = Mud(open), wet = Mud(open with { Wet = 0.9f });
+        Console.WriteLine($"rain: {dry} mud cells dry, {wet} after a wet week");
+        Check(wet > dry + 40, "a wet week turns low ground to mud");
+        var farm = TerrainParams.Farmland with { Layouts = new[] { FieldLayout.Hedgerows } };
+        int Crops(TerrainParams p) { var t = new Terrain(9, p); return Enumerable.Range(0, 1600).Count(i => t.GroundAt(new Vector2(i % 40 * 4 - 80, i / 40 * 4 - 80)) == GroundKind.Crops); }
+        Check(Crops(farm) > 100 && Crops(farm with { Season = 3 }) == 0, "winter fields lie bare");
+
+        var c = Campaign.New(31);
+        for (int i = 0; i < 20 * 24 * 4; i++) { c.Encounter = null; c.Arrived = null; c.Tick(0.25f); }
+        Check(c.S.Provinces.Any(p => p.Wet > 0.2f) && c.S.Provinces.Any(p => p.Wet < 0.1f), "it rains in some provinces and not others");
+        Check(c.S.Provinces.Where(p => p.Kind == "Marsh").DefaultIfEmpty().Average(p => p?.Wet ?? 0) >= c.S.Provinces.Where(p => p.Kind is "Steppe" or "Badlands").DefaultIfEmpty().Average(p => p?.Wet ?? 0), "the fens stay wetter than the steppe");
+    }
+
+    /// The side that was set upon (or scouts better) chooses where to stand: it gets the crest, and the panel says so.
+    static void DefenderChoosesGround()
+    {
+        var ridge = TerrainParams.Hills with { Layouts = new[] { FieldLayout.Ridge } };
+        for (int seed = 1; seed <= 6; seed++)
+            Check(new Terrain(seed, ridge with { Favour = 0 }).RidgeSide == 0 && new Terrain(seed, ridge with { Favour = 1 }).RidgeSide == 1, "the side that chose stands on the crest");
+        Check(new Terrain(3, ridge).RidgeSide == new Terrain(3, ridge with { Favour = -1 }).RidgeSide, "with nobody choosing, the seed decides as before");
+        var c = Campaign.New(31);
+        var foe = c.S.Parties.First(p => p != c.Player && p.Men > 0 && p.Kind != PartyKind.Caravan);
+        foe.ChaseId = c.Player.Id;
+        Check(c.GroundChooser(foe) == 0, "set upon, you choose the ground");
+        foe.ChaseId = -1;
+        Check(c.GroundChooser(foe) == 1, "attacking, they do");
+        Check(c.GroundNote(foe).Length > 0, "the encounter panel says what the ground is");
+    }
+
+    /// Auto-resolve weighs the ground: the side that chose it has an edge, and horse loses worth on wet ground.
+    static void AutoResolveGroundEdge()
+    {
+        var foot = new Party(); foot.Companies.Add(new CompanyRecord { Role = "infantry" }); foot.Companies[0].Stack("shieldmen").Men = 30;
+        var horse = new Party(); horse.Companies.Add(new CompanyRecord { Role = "horse" }); horse.Companies[0].Stack("lancers").Men = 30;
+        var g = TerrainParams.Meadow with { Layouts = new[] { FieldLayout.Open } };
+        float none = Campaign.GroundEdge(g, new[] { foot }, new[] { foot }, 1), mine = Campaign.GroundEdge(g with { Favour = 0 }, new[] { foot }, new[] { foot }, 1), theirs = Campaign.GroundEdge(g with { Favour = 1 }, new[] { foot }, new[] { foot }, 1);
+        Check(none == 1 && mine > 1 && theirs < 1, "choosing the ground is an edge");
+        Check(Campaign.GroundEdge(g with { Wet = 0.9f }, new[] { foot }, new[] { horse }, 1) > Campaign.GroundEdge(g, new[] { foot }, new[] { horse }, 1), "their horse is worth less on sodden ground");
     }
 
     /// An assault headless: nobody crosses the wall's face except at a ladder or the broken gate, and it ends.
@@ -296,6 +376,282 @@ public static partial class SelfTest
             Check(CampaignState.Load("new") != null && CampaignState.LoadError == null, "a new save loads from disk");
         }
         finally { Environment.SetEnvironmentVariable("IRONFIELD_SAVES", was); Directory.Delete(dir, true); }
+    }
+
+    /// The roll (docs/LEGACY.md L1): each company names a first man, names fit its culture, battles add names up to the cap, the
+    /// roll always fits its stacks, a named man is promoted first, naming draws nothing from the main stream, old saves load.
+    static void RollEarnsNames()
+    {
+        var c = Campaign.New(37);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        Check(c.Player.Companies.All(k => k.RollStarted && k.Roll.Count >= 1), "every company names its first man on the first day");
+        var names = Names.Get();
+        foreach (var k in c.Player.Companies)
+            foreach (var m in k.Roll)
+                Check(names.MenOf(k.Culture).Any(f => m.Name.StartsWith(f + " ")), $"a name fits the company's culture ({m.Name}, {k.Culture})");
+        ulong main = c.S.Rng;
+        var first = c.Player.Companies[0];
+        first.Roll.Clear();
+        Check(c.NameMan(first, "test") != null && c.S.Rng == main, "naming a man draws nothing from the campaign's main stream");
+        // Fight brigands (won), and the roll fills by deeds, never past the cap and always true to its stacks.
+        var rng = new Rng(new CampaignState { Seed = 9 });
+        int named0 = c.Player.Companies.Sum(k => k.Roll.Count), cap = Balance.Get().RollSize;
+        for (int i = 0; i < 30; i++)
+        {
+            var bandit = c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Bandit && !p.Down);
+            if (bandit == null) break;
+            bandit.Pos = c.Player.Pos;
+            c.Encounter = bandit;
+            var setup = c.PrepareBattle(bandit);
+            var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng);
+            c.FinishBattle(r with { Winner = i % 4 == 3 ? 1 : 0, Captain = LeaderFate.Unhurt }, setup);
+            c.Captain.WoundedUntil = 0; c.Encounter = null; c.Player.Food = 20;
+            if (c.Player.Companies.Sum(k => k.Men) < 30) foreach (var k in c.Player.Companies) Rules.AddMen(k, k.Stacks[0].Troop, 20);
+            c.Tick(24); c.Encounter = null; c.Arrived = null;
+        }
+        int named = c.Player.Companies.Sum(k => k.Roll.Count) + c.S.Fallen.Count;
+        Console.WriteLine($"roll: {named0} named at first, {named} named or fallen after the fights; " +
+            string.Join("; ", c.Player.Companies.Select(k => $"{k.Name} {k.Roll.Count}+{c.FallenOf(k).Count()}f")));
+        Console.WriteLine("fates: " + string.Join(", ", c.S.Fallen.GroupBy(m => m.Fate).Select(g => $"{g.Count()} {g.Key}")));
+        Check(named > named0, "battles name more men");
+        Check(c.Player.Companies.All(k => k.Roll.Count <= cap), "no roll runs past the cap");
+        foreach (var k in c.Player.Companies)
+            foreach (var g in k.Roll.GroupBy(m => m.Troop))
+            {
+                var st = k.Stacks.FirstOrDefault(s => s.Troop == g.Key);
+                Check(st != null && g.Count(m => !m.Hurt) <= st.Men && g.Count(m => m.Hurt) <= st.Wounded, $"the roll fits its stacks ({k.Name}, {g.Key})");
+            }
+        Check(c.Player.Companies.SelectMany(k => k.Roll).All(m => m.Battles >= 1 || m.Joined == c.Day), "named men count their battles");
+        Check(c.S.Fallen.All(m => m.Fate is "fell" or "missing" or "left"), "the fallen say how they went");
+        // A named man is promoted first.
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t));
+        c.Player.Pos = town.Pos;
+        c.S.Gold = 5000;
+        var co = c.Player.Companies.First(k => k.Stacks.Any(s => s.Troop == "levies" && s.Men > 1));
+        var lev = co.Stack("levies");
+        co.Roll.RemoveAll(m => m.Troop == "levies");
+        var vet = c.NameMan(co, "test", "levies")!;
+        lev.AddXp(1e6f);
+        Check(c.Promote(co, lev, "shieldmen", 1) == null && vet.Troop == "shieldmen", "the named man is the one promoted");
+        // An old save (no roll) loads with empty rolls, and names its first men on the next day.
+        var node = System.Text.Json.Nodes.JsonNode.Parse(c.S.Serialize())!;
+        foreach (var p in node["Parties"]!.AsArray())
+            foreach (var k in p!["Companies"]!.AsArray()) { var o = k!.AsObject(); o.Remove("Roll"); o.Remove("RollStarted"); }
+        var old = CampaignState.Deserialize(node.ToJsonString());
+        var oc = new Campaign(old);
+        Check(oc.Player.Companies.All(k => k.Roll.Count == 0 && !k.RollStarted), "an old save loads with empty rolls");
+        oc.Player.Cooldown = 1e6f;
+        oc.Tick(24);
+        Check(oc.Player.Companies.All(k => k.Roll.Count >= 1 || k.Men == 0), "and its companies name their first men");
+        var back = CampaignState.Deserialize(c.S.Serialize()).Parties.First(p => p.Kind == PartyKind.Player);
+        Check(back.Companies.Sum(k => k.Roll.Count) == c.Player.Companies.Sum(k => k.Roll.Count), "the roll is saved");
+    }
+
+    /// The fallen (docs/LEGACY.md L3): a named man lost costs his company cohesion; the report names him; a long-serving man
+    /// is written in the chronicle; the dead are kept after their company is gone.
+    static void FallenRemembered()
+    {
+        var c = Campaign.New(41);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Roll.Clear();
+        for (int i = 0; i < 5; i++) c.NameMan(co, "test");
+        var st = co.Stacks.OrderByDescending(x => x.Men).First();
+        int named = Campaign.FitNamed(co, st.Troop).Count(), lost0 = c.S.Fallen.Count;
+        co.Cohesion = 20;
+        c.RollFates(co, st, st.Men, st.Men, 0, 0, "the Test");
+        int died = c.S.Fallen.Count - lost0;
+        Console.WriteLine($"fallen: {died} of {named} named men died when their whole stack was killed");
+        Check(died > 0 && died <= named, "named men die with their stack, though not all of them");
+        Check(MathF.Abs(co.Cohesion - (20 - died * Balance.Get().FallenCohesion)) < 1e-3f, "each one lost costs the company cohesion");
+        // A fought-out loss: the report names the fallen, and a veteran's death is in the chronicle.
+        foreach (var k in c.Player.Companies) { k.Roll.Clear(); for (int i = 0; i < 6; i++) if (c.NameMan(k, "test") is Soldier m) m.Battles = 12; }
+        var rng = new Rng(new CampaignState { Seed = 5 });
+        BattleReport? hit = null;
+        for (int i = 0; i < 12 && hit == null; i++)
+        {
+            var lord = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && c.Hostile(c.Player, p)).OrderByDescending(p => p.Men).FirstOrDefault();
+            if (lord == null) break;
+            lord.Pos = c.Player.Pos;
+            c.Encounter = lord;
+            var setup = c.PrepareBattle(lord);
+            var rep = c.FinishBattle(Rules.AutoResolve(setup.Side0, setup.Side1, rng) with { Winner = 1, Captain = LeaderFate.Wounded }, setup);
+            c.Captain.WoundedUntil = 0; c.Encounter = null;
+            if (rep.Roll.Any(x => x.Kind == "FELL")) hit = rep;
+            if (c.Player.Companies.Sum(k => k.Men) < 40) foreach (var k in c.Player.Companies) Rules.AddMen(k, k.Stacks[0].Troop, 30);
+        }
+        Check(hit != null, "a lost battle's report names the fallen");
+        var gone = c.S.Fallen.Last(m => m.Fate == "fell");
+        Check(hit!.Roll.Any(x => x.Text.Contains(gone.Name)), "by name");
+        Check(c.S.Deeds.Any(d => d.Text.Contains(gone.Name)), "and a man of twelve battles is written in the chronicle");
+        var home = c.Player.Companies.FirstOrDefault(k => k.Id == gone.Company);
+        if (home != null) c.Player.Companies.Remove(home);
+        Check(c.S.Fallen.Contains(gone) && gone.CompanyName != "", "the dead are kept after their company is gone");
+        Check(CampaignState.Deserialize(c.S.Serialize()).Fallen.Count == c.S.Fallen.Count, "the fallen are saved");
+    }
+
+    /// Rising from the ranks (L4): the senior named man becomes sergeant (and leaves the ranks), a sergeant of 15 battles
+    /// becomes a companion who keeps that history, and a sergeant from the ranks who falls joins the fallen.
+    static void RisesFromRanks()
+    {
+        var c = Campaign.New(43);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Roll.Clear(); co.Officer = ""; co.Traits.Clear();
+        var vet = c.NameMan(co, "test")!;
+        vet.Battles = 6;
+        var young = c.NameMan(co, "test");
+        if (young != null) young.Battles = 1;
+        int men = co.Men;
+        for (int i = 0; i < 60 && co.Officer == ""; i++) c.OfficerAfterBattle(co, true, 0);
+        Check(co.Officer == "Sgt " + vet.Name && co.OfficerMan == vet && !co.Roll.Contains(vet), "the senior named man is made sergeant");
+        Check(co.Men == men - 1, "and leaves the ranks");
+        // Fifteen battles a sergeant, and he joins your household with his history.
+        co.OfficerBattles = Campaign.CompanionBattles - 1;
+        int companions = c.Companions.Count();
+        c.OfficerAfterBattle(co, true, 0);
+        var ch = c.Companions.FirstOrDefault(k => k.Ranks == vet);
+        Check(c.Companions.Count() == companions + 1 && ch != null && ch.FromCompany == co.Id, "the sergeant becomes a companion who rose from the ranks");
+        Check(c.RoseFrom(ch).Contains(co.Name.ToUpperInvariant()), "and the screens say so");
+        Check(CampaignState.Deserialize(c.S.Serialize()).Characters.Any(k => k.Ranks?.Id == vet.Id), "his history is saved");
+        // A second one rises, and falls.
+        co.Roll.Clear(); co.Officer = "";
+        var sec = c.NameMan(co, "test")!;
+        sec.Battles = 4;
+        for (int i = 0; i < 60 && co.Officer == ""; i++) c.OfficerAfterBattle(co, true, 0);
+        Check(co.OfficerMan == sec, "a second sergeant rises");
+        for (int i = 0; i < 80 && co.OfficerMan != null; i++) c.OfficerAfterBattle(co, false, 0.6f, "the Test");
+        Check(c.S.Fallen.Any(m => m.Id == sec.Id && m.Fate == "fell" && m.DiedAt == "the Test"), "a sergeant from the ranks who falls joins the fallen");
+        // With no named man ready, a sergeant comes from elsewhere, as before.
+        co.Roll.Clear(); co.Officer = ""; co.OfficerMan = null;
+        for (int i = 0; i < 60 && co.Officer == ""; i++) c.OfficerAfterBattle(co, true, 0);
+        Check(co.Officer != "" && co.OfficerMan == null, "with no veteran on the roll a sergeant comes from elsewhere");
+    }
+
+    /// The banner's history (docs/LEGACY.md L5): battles get names; a notable win sews one on the banner; a company that breaks
+    /// before a realm loses its newest to that realm, and wins it back by beating the realm; your flag shows them.
+    static void BannerHonours()
+    {
+        var c = Campaign.New(47);
+        c.Player.Cooldown = 1e6f;
+        string name = c.BattleName(c.Player.Pos);
+        Check(name.Length > 3 && c.S.Settlements.Any(t => name.StartsWith(t.Name + " ")), $"a battle is named for the nearest place ({name})");
+        Check(c.BattleName(c.Player.Pos) == name, "the same field gives the same name");
+        Check(c.BattleName(c.Player.Pos, true).StartsWith("the walls of "), "an assault is named for the walls");
+        var lord = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && c.Hostile(c.Player, p)).OrderByDescending(p => p.Men).First();
+        int realm = lord.Faction;
+        BattleReport Fight(int winner, bool slain, bool routed)
+        {
+            lord.Down = false; lord.Pos = c.Player.Pos; c.Encounter = lord;
+            var setup = c.PrepareBattle(lord);
+            var r = Rules.AutoResolve(setup.Side0, setup.Side1, new Rng(new CampaignState { Seed = 3 }));
+            r = r with { Winner = winner, EnemyLeader = slain ? LeaderFate.Slain : LeaderFate.Unhurt, Captain = LeaderFate.Unhurt,
+                Companies = r.Companies.Select(x => x with { Routed = routed && x.Team == 0 }).ToList() };
+            var rep = c.FinishBattle(r, setup);
+            c.Captain.WoundedUntil = 0; c.Encounter = null; c.S.Event = null;
+            foreach (var k in c.Player.Companies) if (k.Men < 20) Rules.AddMen(k, k.Stacks[0].Troop, 30);
+            return rep;
+        }
+        var won = Fight(0, true, false);
+        var co = c.Player.Companies.OrderByDescending(k => k.BattleHonours.Count).First();
+        Check(co.BattleHonours.Count == 1 && co.Ledger[^1].Name == co.BattleHonours[0], "slaying their captain sews the battle's name on the banner");
+        Check(won.Honours.Any(x => x.Kind == "HONOUR") && won.Field != "", "and the report says so");
+        Check(c.PrepareBattle(lord).Player.Companies.First(k => k.Id == co.Id).Streamers == 1, "the company's flag carries a streamer");
+        Fight(0, false, false);
+        Check(co.BattleHonours.Count == 1, "an ordinary win sews nothing");
+        string honour = co.BattleHonours[0];
+        Fight(1, false, true);
+        Check(co.BattleHonours.Count == 0 && co.LostHonours.Any(l => l.Name == honour && l.Faction == realm), "breaking before a realm's army loses the honour to it");
+        Fight(0, false, false);
+        Check(co.BattleHonours.Contains(honour) && co.LostHonours.Count == 0, "beating that realm wins it back");
+        var back = CampaignState.Deserialize(c.S.Serialize()).Parties.First(p => p.Kind == PartyKind.Player).Companies.First(k => k.Id == co.Id);
+        Check(back.BattleHonours.SequenceEqual(co.BattleHonours), "battle honours are saved");
+    }
+
+    /// Fame (L6): a famous company is paid more, thought better of, followed by more men, and its own people join knowing it.
+    static void FameDraws()
+    {
+        var c = Campaign.New(49);
+        var lordCh = c.S.Characters.First(k => k.Kind == "lord" && !k.Dead);
+        float pay = c.FamePay, regard = c.OpinionOfYou(lordCh);
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t));
+        town.Recruits = 40;
+        int follow = c.RecruitsForYou(town);
+        var co = c.Player.Companies[0];
+        co.Culture = town.Culture;
+        float xp0 = co.Stacks.Sum(st => st.Xp);
+        int men0 = co.Men;
+        c.Enlist(co, co.Stacks[0].Troop, 2, town);
+        float plainXp = co.Stacks.Sum(st => st.Xp) - xp0;
+        co.Battles = 80; co.BattleHonours.AddRange(new[] { "Ashby Ford", "Hollin Hill", "the walls of Tamsworth" }); co.Honours.Add("Unbroken");
+        Console.WriteLine($"fame: {c.Fame} ({Campaign.FameWord(c.Fame)}), pay x{c.FamePay:0.00}, regard +{c.FameRegard:0}, share +{c.FameShare:0.00}");
+        Check(c.Fame >= 130 && c.FamePay > pay && c.FamePay <= 1.5f, "fame raises the pay of contracts, within a half again");
+        Check(c.OpinionOfYou(lordCh) > regard, "lords think better of a famous captain");
+        Check(c.RecruitsForYou(town) >= follow, "no fewer men follow a famous captain");
+        float xp1 = co.Stacks.Sum(st => st.Xp);
+        c.Enlist(co, co.Stacks[0].Troop, 2, town);
+        Check(co.Stacks.Sum(st => st.Xp) - xp1 > plainXp, "a famous company's own people join knowing the work");
+    }
+
+    /// How it ends (L7): no retiring until a company is a legend; handing over gives the company to a companion who rose from
+    /// its ranks and play goes on; retiring wins the campaign and the summary tells the company's story first.
+    static void RetireAndSucceed()
+    {
+        var c = Campaign.New(53);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        Check(c.CannotRetire() != null && c.Retire() != null && !c.S.GameOver, "a young company cannot retire");
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Battles = Campaign.RetireBattles; co.BattleHonours.AddRange(new[] { "Ashby Ford", "Hollin Hill", "Wyck Moor" });
+        Check(c.CannotRetire() == null && c.LegendCompany == co, "a company of three battle honours and forty battles is a legend");
+        Check(c.HandOver() != null, "no one to hand over to without a companion");
+        // A sergeant from the ranks becomes a companion, then the captain.
+        co.Roll.Clear(); co.Officer = "";
+        var vet = c.NameMan(co, "test")!;
+        vet.Battles = 9;
+        for (int i = 0; i < 60 && co.Officer == ""; i++) c.OfficerAfterBattle(co, true, 0);
+        co.OfficerBattles = Campaign.CompanionBattles - 1;
+        c.OfficerAfterBattle(co, true, 0);
+        var heir = c.Successor;
+        Check(heir != null && heir.Ranks == vet, "the successor is the companion who rose from the ranks");
+        float renown = c.Captain.Renown;
+        Check(c.HandOver() == null && c.Me.Name == heir!.Name && !c.Companions.Contains(heir) && !c.S.GameOver && c.S.Generation == 1, "handing over: you play on as him");
+        Check(MathF.Abs(c.Captain.Renown - renown * 0.5f) < 1e-3f && c.Player.Companies.Contains(co), "with half the renown and the same company");
+        c.S.Fallen.Add(new Soldier { Name = "Wat the Grey", Troop = "levies", Battles = 30, Fate = "fell", Company = co.Id, CompanyName = co.Name });
+        Check(c.Retire() == null && c.S.GameOver && c.S.Won && c.S.Retired, "retiring ends the campaign as a win");
+        var sum = c.Summary();
+        Check(sum[0].StartsWith(co.Name.ToUpperInvariant()) && sum.Any(l => l.Contains("WAT THE GREY")) && sum.Any(l => l.Contains("ROSE FROM THE RANKS")), "the summary tells the company's story first");
+        Console.WriteLine("legend: " + string.Join(" / ", sum.Take(3)));
+    }
+
+    /// The burial (L3): after a won battle where a named man fell, an event asks what to do for him, by name.
+    static void BuryNamed()
+    {
+        var c = Campaign.New(57);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        Check(Campaign.Events.Any(e => e.Id == "bury_named"), "the burial event is in the data");
+        var rng = new Rng(new CampaignState { Seed = 7 });
+        bool raised = false;
+        for (int i = 0; i < 20 && !raised; i++)
+        {
+            foreach (var k in c.Player.Companies) { k.Roll.Clear(); for (int j = 0; j < 6; j++) c.NameMan(k, "test"); if (k.Men < 30) Rules.AddMen(k, k.Stacks[0].Troop, 30); }
+            var lord = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && c.Hostile(c.Player, p)).OrderByDescending(p => p.Men).First();
+            lord.Pos = c.Player.Pos; c.Encounter = lord;
+            var setup = c.PrepareBattle(lord);
+            c.S.Event = null;
+            c.FinishBattle(Rules.AutoResolve(setup.Side0, setup.Side1, rng) with { Winner = 0, Captain = LeaderFate.Unhurt }, setup);
+            c.Encounter = null;
+            raised = c.S.Event?.Id == "bury_named";
+        }
+        Check(raised, "a won battle with a named man fallen raises his burial");
+        var pe = c.S.Event!;
+        var man = c.S.Fallen.First(m => m.Id == pe.Soldier);
+        var ev = Campaign.Events.First(e => e.Id == "bury_named");
+        Check(c.Fill(ev.Title, pe) == man.Name && c.Fill(ev.Text, pe).Contains(man.Name), "the burial names him");
     }
 
     /// Troop stacks and promotion by the man (F1): a promotion moves exactly one man and spends exactly his XP; out-of-role
@@ -1043,4 +1399,96 @@ public static partial class SelfTest
         Check(c.BuyHorses(town, 1) == null, "can buy a horse");
         Check(c.S.Gold == gold - c.HorsePrice, "a horse costs HorsePrice");
     }
+
+    /// Polish Q6: a game saved in the middle of a long run and loaded again goes on exactly as one that never saved
+    /// (no state kept only in memory), and a long run leaves nothing broken behind it.
+    static void SaveMidRun()
+    {
+        var c = Campaign.New(2203);
+        new Pilot(c).Run(200 * 24);
+        CheckSound(c, "after 200 days");
+        Check(c.S.Fallen.Count + c.Player.Companies.Sum(k => k.Roll.Count) > 0, "by day 200 the roll is in play");
+        var loaded = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        string a = Drive(c, 60), b = Drive(loaded, 60);
+        if (a != b)
+        {
+            var la = a.Split('\n'); var lb = b.Split('\n');
+            int i = 0; while (i < Math.Min(la.Length, lb.Length) && la[i] == lb[i]) i++;
+            Console.WriteLine($"first difference at line {i}: {(i < la.Length ? la[i].Trim() : "")} / {(i < lb.Length ? lb[i].Trim() : "")}");
+        }
+        Check(a == b, "a game saved and loaded at day 200 goes on as one that never saved");
+        CheckSound(c, "after 260 days");
+        Console.WriteLine($"save mid-run: day {c.Day}, {c.Player.Men} men, {c.S.Fallen.Count} fallen, {c.S.Log.Count} log lines");
+    }
+
+    /// The same plain driver for both halves of `SaveMidRun`: the pilot keeps a little state of its own, the campaign must not.
+    static string Drive(Campaign c, int days)
+    {
+        for (int h = 0; h < days * 24 && !c.S.GameOver; h++)
+        {
+            c.Tick(1);
+            if (c.Encounter != null) c.AutoResolveEncounter();
+            c.Arrived = null; c.Report = null; c.Beat = null;
+            if (c.S.Event != null) c.Choose(c.EventOf0());
+        }
+        return c.S.Serialize();
+    }
+
+    /// Nothing a long run should leave: empty companies on a roster, negative men, lords serving a realm with no land.
+    static void CheckSound(Campaign c, string when)
+    {
+        foreach (var p in c.S.Parties.Append(c.Player))
+            foreach (var k in p.Companies)
+            {
+                Check(k.Men + k.Wounded > 0, $"{when}: no empty company on a roster ({k.Name})");
+                Check(k.Stacks.All(st => st.Men >= 0 && st.Wounded >= 0), $"{when}: no negative men ({k.Name})");
+            }
+        var landed = c.S.Settlements.Select(t => t.Faction).ToHashSet();
+        foreach (var f in c.S.Factions.Where(f => !landed.Contains(f.Id)))
+            Check(!c.S.Parties.Any(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == f.Id && p != c.Player), $"{when}: no lords for {f.Name}, a realm with no land");
+    }
+
+    /// Polish Q6: each company's report adds up to what happened to its record, and each named man the report names is
+    /// on a roll or among the fallen; after auto-resolved fights and after a fought one.
+    static void ReportMatchesRecord()
+    {
+        var c = Campaign.New(2207);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        foreach (var k in c.Player.Companies) for (int i = 0; i < 3; i++) c.NameMan(k, "test");
+        int checkedReports = 0;
+        for (int round = 0; round < 6; round++)
+        {
+            var bandit = c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Bandit && !p.Down);
+            if (bandit == null || c.Player.Men <= 0) break;
+            bandit.Pos = c.Player.Pos;
+            c.Encounter = bandit;
+            BattleReport rep;
+            if (round % 2 == 0) rep = c.AutoResolveEncounter();
+            else
+            {
+                var setup = c.PrepareBattle(bandit);
+                setup.Options.AutoPlayer = true;
+                var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+                for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+                rep = c.FinishBattle(b.Result(), setup);
+            }
+            c.Encounter = null;
+            foreach (var cr in rep.Companies.Where(x => x.Team == 0))
+            {
+                Check(cr.MenBefore - cr.MenAfter == cr.Killed + cr.Wounded + cr.Captured + cr.FledLost,
+                    $"{cr.Name}: lost {cr.MenBefore - cr.MenAfter} = killed {cr.Killed} + hurt {cr.Wounded} + taken {cr.Captured} + fled {cr.FledLost}");
+                if (c.Player.Companies.FirstOrDefault(k => k.Id == cr.Id) is CompanyRecord k)
+                    Check(k.Men == cr.MenAfter, $"{cr.Name}: the report's men ({cr.MenAfter}) are the company's ({k.Men})");
+                checkedReports++;
+            }
+            var known = c.Player.Companies.SelectMany(k => k.Roll).Concat(c.S.Fallen).Select(m => m.Name).ToList();
+            foreach (var (kind, text) in rep.Roll.Where(n => n.Item1 is "FELL" or "MISSING" or "HURT" or "NAMED"))
+                Check(known.Any(n => text.StartsWith(n + ",")), $"the report's {kind} man is on a roll or among the fallen: {text}");
+            c.Player.Cooldown = 1e6f;
+        }
+        Check(checkedReports > 0, "some reports were checked");
+        Console.WriteLine($"report matches record: {checkedReports} company reports, {c.S.Fallen.Count} fallen");
+    }
 }
+

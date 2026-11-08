@@ -15,7 +15,7 @@ sealed partial class Hud
     {
         (GoalKind.Attack, 1, "ATTACK"), (GoalKind.Hold, 1, "HOLD"), (GoalKind.Take, 1, "TAKE GROUND"), (GoalKind.FallBack, 1, "FALL BACK"),
         (GoalKind.Flank, -1, "FLANK LEFT"), (GoalKind.Flank, 1, "FLANK RIGHT"), (GoalKind.Screen, 1, "SCREEN"), (GoalKind.Guard, 1, "GUARD ME"),
-        (GoalKind.Reserve, 1, "RESERVE"), (GoalKind.Harass, 1, "HARASS"), (GoalKind.Pursue, 1, "PURSUE"),
+        (GoalKind.Reserve, 1, "RESERVE"), (GoalKind.Harass, 1, "HARASS"), (GoalKind.Pursue, 1, "PURSUE"), (GoalKind.Ambush, 1, "AMBUSH"),
     };
 
     /// The goal wheel's sectors (field view), clockwise from the top: the same count as the order wheel.
@@ -138,6 +138,43 @@ sealed partial class Hud
         }
     }
 
+    /// Your named men (docs/LEGACY.md L2): a small gold mark over each within 25 m of you (any distance in command view), and
+    /// his name when he is close (10 m) or under the cursor.
+    void NamedMarks()
+    {
+        var vp = new Viewport(0, 0, W, H);
+        foreach (var u in B.Units)
+        {
+            if (u.SoldierId == 0 || u.Team != 0 || !u.Active) continue;
+            float d = Vector2.Distance(u.Pos, B.Player.Pos);
+            if (!Command && d > 25) continue;
+            var v = vp.Project(new Vector3(u.Pos.X, B.Terrain.Height(u.Pos) + (u.Mounted ? 3.2f : 2.2f), u.Pos.Y), Proj, View, Matrix.Identity);
+            if (v.Z is <= 0 or >= 1) continue;
+            int x = (int)v.X, y = (int)v.Y, s = Command ? U(1) : Math.Clamp((int)(U(1) * 20 / MathF.Max(6, d)), 1, U(2));
+            Rect(new Rectangle(x - s, y - 3 * s, 2 * s, 2 * s), Color.Black * 0.6f);
+            Rect(new Rectangle(x - s, y - 4 * s, 2 * s, 2 * s), Gold);
+            bool hover = Command && Math.Abs(Mouse.X - x) < U(8) && Math.Abs(Mouse.Y - y) < U(12);
+            if ((!Command && d < 10 || hover) && u.Squad?.Company?.Named?.FirstOrDefault(m => m.Id == u.SoldierId) is NamedSpec m)
+                TextC(m.Name.ToUpperInvariant(), x, y - 4 * s - U(10), u.Routing ? Dim : Gold, 1);
+        }
+        // Fallen named men you can still get out (L8): a red mark, and close by, what to do and how far along you are.
+        foreach (var u in B.Downed)
+        {
+            if (!B.Rescuable(u)) continue;
+            float d = Vector2.Distance(u.Pos, B.Player.Pos);
+            if (!Command && d > 25) continue;
+            var v = vp.Project(new Vector3(u.Pos.X, B.Terrain.Height(u.Pos) + 0.8f, u.Pos.Y), Proj, View, Matrix.Identity);
+            if (v.Z is <= 0 or >= 1) continue;
+            int x = (int)v.X, y = (int)v.Y, s = Command ? U(1) : Math.Clamp((int)(U(1) * 20 / MathF.Max(6, d)), 1, U(2));
+            Rect(new Rectangle(x - s, y - 4 * s, 2 * s, 2 * s), Foe);
+            if (d < 8 && !Command)
+            {
+                TextC($"{Battle.NameOf(u).ToUpperInvariant()} IS DOWN: STAND OVER HIM", x, y - 4 * s - U(10), Foe, 1);
+                if (u.Rescue > 0) Bar(new Rectangle(x - U(20), y - 4 * s - U(18), U(40), U(3)), u.Rescue / Battle.RescueTime, Gold);
+            }
+        }
+    }
+
     /// Your banner (P6): a tall gold pennant over its bearer, or a fallen grey one on the ground where it lies.
     void BannerMark()
     {
@@ -178,8 +215,12 @@ sealed partial class Hud
                 var col = c.Div.Team == 0 ? Gold : Foe;
                 Rect(new Rectangle((int)cp.X - U(3), (int)cp.Y - U(3), U(6), U(6)), Color.Black * 0.7f);
                 Rect(new Rectangle((int)cp.X - U(2), (int)cp.Y - U(2), U(4), U(4)), col);
+                // A little flag on a staff that flutters as he rides, so you can watch the order travel.
+                Rect(new Rectangle((int)cp.X, (int)cp.Y - U(14), Math.Max(1, U(1)), U(12)), Color.Black * 0.7f);
+                for (int i = 0; i < 4; i++) Rect(new Rectangle((int)cp.X + U(1), (int)cp.Y - U(14) + i * U(1) + (int)(MathF.Sin(Ironfield.Ui.Now * 12 + i) * U(0.6f)), U(7 - i), Math.Max(1, U(1))), col);
                 if (c.Div.Team == 0) Text("RIDER", cp.X + U(5), cp.Y - U(4), col, 1);
             }
+        var tags = new List<Rectangle>();
         foreach (var d in B.DivisionsOf(0))
         {
             if (d.Alive == 0) continue;
@@ -190,7 +231,7 @@ sealed partial class Hud
             foreach (var g in new[] { d.Goal, d.Pending })
             {
                 if (g == null) continue;
-                Vector2? to = g.Kind is GoalKind.Hold or GoalKind.Take or GoalKind.FallBack ? g.Point : g.Target?.Alive > 0 ? g.Target.Center : null;
+                Vector2? to = g.Kind is GoalKind.Hold or GoalKind.Take or GoalKind.FallBack or GoalKind.Ambush ? g.Point : g.Target?.Alive > 0 ? g.Target.Center : null;
                 if (to is Vector2 t && Screen(t, out var dst))
                 {
                     var c = g == d.Pending ? Warn * 0.7f : col * 0.8f;
@@ -199,7 +240,14 @@ sealed partial class Hud
                 }
             }
             string tag = (d.Leader is { Active: true } ? "" : "! ") + d.Name.ToUpperInvariant() + ": " + GoalTag(d.Goal);
-            TextC(tag, from.X, from.Y - U(26), col, 1);
+            // The tag stays off the HUD's panels, and one that would cover another division's is dimmed.
+            int tw = TW(tag, 1);
+            var tr = new Rectangle((int)from.X - tw / 2, (int)from.Y - U(26), tw, U(9));
+            if (Over(tr.Location) || Over(new Point(tr.Right, tr.Y)) || Over(new Point(tr.X, tr.Bottom)) || Over(new Point(tr.Right, tr.Bottom))) continue;
+            bool crowded = tags.Any(o => o.Intersects(tr));
+            tags.Add(tr);
+            if (crowded) Rect(new Rectangle(tr.X - U(2), tr.Y - U(1), tr.Width + U(4), tr.Height + U(2)), Color.Black * 0.35f);
+            TextC(tag, from.X, from.Y - U(26), crowded ? col * 0.55f : col, 1);
         }
     }
 }

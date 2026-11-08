@@ -11,6 +11,9 @@ public sealed class Settings
     public bool Fullscreen, Fxaa = true, Ironman, ColorBlind;
     public string Quality = "High";
     public float MasterVolume = 0.8f, SfxVolume = 1, MusicVolume = 0.6f;
+    /// The field camera's kick when blows land (0 off, 0.5 soft, 1 full), and the brief hold when your own blow lands.
+    public float CameraShake = 1;
+    public bool HitPause = true;
     public Difficulty Difficulty = Difficulty.Normal;
     /// Most men on a battlefield at once, both sides together (the rest wait as reinforcements).
     public int BattleSize = 1500;

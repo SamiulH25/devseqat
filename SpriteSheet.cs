@@ -99,6 +99,7 @@ public sealed class SpriteSheet
         Add($"plume{s}", Plume());
         Add($"cape{s}", Cape());
         Add($"blood{s}", Blood());
+        Add($"splat{s}", Splat());
         Add($"flag{s}", Flag());
         // Company banners (F1): the side's field with each company's own charge.
         foreach (var e in Enum.GetValues<Emblem>()) { var keep = charge; charge = e; Add($"flag.{(int)e}{s}", Flag()); charge = keep; }
@@ -767,6 +768,17 @@ public sealed class SpriteSheet
         var c = new Canvas(15, 8);
         c.Ellipse(7.5f, 4, 7, 3.4f, blood, -0.2f);
         c.Ellipse(12, 6, 2.5f, 1.6f, blood, -0.2f);
+        return c;
+    }
+
+    /// A pale ragged patch for marks on the ground (churned earth, trampled grass), tinted when drawn.
+    Canvas Splat()
+    {
+        var c = new Canvas(16, 12);
+        var m = new Mat(new Color(230, 226, 220));
+        c.Ellipse(8, 6, 6.5f, 4.2f, m, -0.1f);
+        c.Ellipse(3.5f, 4, 2.6f, 2f, m, -0.1f);
+        c.Ellipse(12.5f, 8.5f, 2.8f, 2.2f, m, -0.1f);
         return c;
     }
 

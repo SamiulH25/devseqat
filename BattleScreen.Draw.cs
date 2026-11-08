@@ -40,6 +40,7 @@ partial class BattleScreen
         if (!hudHidden)
         {
             hud.Draw();
+            if (TipsHeld) return;
             tipUi.Begin(gd.Viewport, ms.Position, false);
             Tips.Draw(tipUi, tipUi.U(124));
             tipUi.End();
@@ -71,13 +72,15 @@ partial class BattleScreen
         gd.Textures[1] = null;
         gd.SetRenderTarget(sh.Scene());
         gd.Clear(World.Horizon);
+        sh.GroundMap = TrampleTexture(); sh.GroundSize = TrampleSize; sh.NearDetail = true;
         world.DrawShaded(sh, view, proj, eye, realTime, shadows);
+        sh.GroundMap = null; sh.NearDetail = false;
         DrawBlobs(shadows ? 0.4f : 1); // with real shadows the blobs only add contact darkening
         BuildSprites(view, false);
         sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
         DrawSpritesShaded(sh.Sprite, "Sprite");
         DrawLines();
-        sh.PostToScreen(fxaa: Settings.Current.Fxaa);
+        sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0);
     }
 
     void DrawBlobs(float alpha)
@@ -121,11 +124,11 @@ partial class BattleScreen
 
     // ---------- particles (D1) ----------
 
-    struct Mote { public Vector3 Pos, Vel; public float Life, Max, Size, Grow; public Color Col; public bool Heavy; }
+    struct Mote { public Vector3 Pos, Vel; public float Life, Max, Size, Grow, Fall; public Color Col; public bool Heavy; }
     readonly List<Mote> motes = new();
     readonly Random fx = new(5);
 
-    void Spray(Vector2 at, float height, int n, Color col, float speed, float life, float size, bool heavy, float grow = 0)
+    void Spray(Vector2 at, float height, int n, Color col, float speed, float life, float size, bool heavy, float grow = 0, float fall = 0)
     {
         if (motes.Count > 1500) return;
         var g = battle.Terrain.Height(at);
@@ -133,7 +136,7 @@ partial class BattleScreen
         {
             var dir = new Vector3(fx.NextSingle() * 2 - 1, fx.NextSingle() * 0.8f + (heavy ? 0.4f : 0.1f), fx.NextSingle() * 2 - 1);
             motes.Add(new Mote { Pos = new Vector3(at.X, g + height, at.Y), Vel = dir * speed, Life = life * (0.6f + fx.NextSingle() * 0.6f), Max = life,
-                Size = size, Grow = grow, Col = col, Heavy = heavy });
+                Size = size, Grow = grow, Fall = fall, Col = col, Heavy = heavy });
         }
     }
 
@@ -148,9 +151,7 @@ partial class BattleScreen
                 case Cue.Hit: case Cue.ArrowHit: Spray(at, 1.1f, 5, new Color(140, 20, 22), 1.8f, 0.55f, 0.06f, true); break;
                 case Cue.Impact: Spray(at, 0.2f, 10, new Color(168, 150, 116), 1.6f, 1.3f, 0.25f, false, 0.6f); break;
             }
-        foreach (var u in battle.Units)
-            if (u.Active && u.Mounted && u.Speed > 5.5f && fx.NextSingle() < dt * 9 && battle.Terrain.WaterDepth(u.Pos) == 0)
-                Spray(u.Pos - u.HeadingDir * 0.8f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.6f, 1.2f, 0.3f, false, 0.7f);
+        GroundSteps(dt);
         for (int i = motes.Count - 1; i >= 0; i--)
         {
             var m = motes[i];
@@ -158,10 +159,68 @@ partial class BattleScreen
             if (m.Life <= 0) { motes.RemoveAt(i); continue; }
             if (m.Heavy) m.Vel.Y -= 9.8f * dt; else m.Vel *= 1 - 1.5f * dt;
             m.Pos += m.Vel * dt;
+            m.Pos.Y -= m.Fall * dt;
             m.Size += m.Grow * dt;
             float ground = battle.Terrain.Height(new Vector2(m.Pos.X, m.Pos.Z));
             if (m.Pos.Y < ground) { m.Pos.Y = ground + 0.01f; m.Vel = Vector3.Zero; }
             motes[i] = m;
+        }
+    }
+
+    readonly float[] stepTimer = new float[4];
+
+    /// What the ground does under moving men (docs/TERRAIN.md T8): dust under galloping hooves, splashes at fords and in water,
+    /// mud thrown up, leaves shaken down in woods; and near the camera, their sounds (splash, squelch, rustle, the bridge's beat).
+    void GroundSteps(float dt)
+    {
+        var t = battle.Terrain;
+        var ear = new Vector2(focusPoint.X, focusPoint.Z);
+        float range = 25 + 30 * blend;
+        Span<int> heard = stackalloc int[4]; // splash, squelch, rustle, hollow
+        Span<Vector2> where = stackalloc Vector2[4];
+        foreach (var u in battle.Units)
+        {
+            if (u.Routing && u.Active && !u.Mounted && fx.NextSingle() < dt * 1.5f && u.Vel.LengthSquared() > 4) // men running for their lives kick up dust
+                Spray(u.Pos - u.Dir * 0.4f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.5f, 1.0f, 0.22f, false, 0.5f);
+            float speed = MathF.Abs(u.Speed);
+            if (!u.Active || speed < 1.2f) continue;
+            var kind = t.GroundAt(u.Pos);
+            bool wet = t.WaterDepth(u.Pos) > 0.05f, fast = speed > 5.5f;
+            int cue = -1;
+            if (wet)
+            {
+                cue = 0;
+                if (fx.NextSingle() < dt * (u.Mounted ? 10 : 3) * MathF.Min(1, speed / 3))
+                    Spray(u.Pos, 0.15f, u.Mounted ? 4 : 2, new Color(200, 214, 220), u.Mounted ? 2.6f : 1.6f, 0.6f, 0.07f, true);
+            }
+            else if (kind == GroundKind.Mud)
+            {
+                cue = 1;
+                if (fx.NextSingle() < dt * (u.Mounted ? 9 : 2))
+                    Spray(u.Pos - u.HeadingDir * 0.6f, 0.1f, u.Mounted ? 3 : 1, new Color(70, 54, 36), u.Mounted ? 2.2f : 1.2f, 0.7f, 0.08f, true);
+            }
+            else if (kind is GroundKind.Wood or GroundKind.DenseWood or GroundKind.Scrub)
+            {
+                cue = 2;
+                if (kind != GroundKind.Scrub && fx.NextSingle() < dt * 0.8f)
+                    Spray(u.Pos + new Vector2(fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f) * 2, 3.2f, 1,
+                        fx.Next(3) == 0 ? new Color(150, 120, 50) : new Color(96, 120, 52), 0.5f, 2.6f, 0.09f, false, 0, 1.2f);
+            }
+            else if (kind == GroundKind.Bridge) cue = 3;
+            else if (u.Mounted && fast && fx.NextSingle() < dt * 9)
+                Spray(u.Pos - u.HeadingDir * 0.8f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.6f, 1.2f, 0.3f, false, 0.7f);
+            if (cue >= 0 && Vector2.DistanceSquared(u.Pos, ear) < range * range) { heard[cue] += u.Mounted ? 3 : 1; where[cue] = u.Pos; }
+        }
+        var audio = host.Audio;
+        if (audio == null || !audio.Enabled) return;
+        var right = Matrix.Invert(view).Right;
+        for (int i = 0; i < 4; i++)
+        {
+            stepTimer[i] -= dt;
+            if (heard[i] == 0 || stepTimer[i] > 0) continue;
+            stepTimer[i] = MathF.Max(0.12f, 0.6f - heard[i] * 0.02f) * (0.7f + fx.NextSingle() * 0.6f);
+            var c = i switch { 0 => Cue.Splash, 1 => Cue.Squelch, 2 => Cue.Rustle, _ => Cue.Hollow };
+            audio.PlayAt(c, new Vector3(where[i].X, t.Height(where[i]) + 0.5f, where[i].Y), eye, right, 45);
         }
     }
 
@@ -172,18 +231,26 @@ partial class BattleScreen
         sprites.N = 0;
         puppet.Begin(viewer);
         puppet.Now = battle.Time;
+        puppet.Winner = battle.Winner;
         // A banner over every company, carried by its first man.
         foreach (var s in battle.Squads)
         {
             if (s.Company == null || s.Alive == 0) continue;
             if (deploying && !battle.Options.Scouted && s.Team == 1) continue;
             var bearer = s.Units.FirstOrDefault(u => u.Active && !u.Routing);
+            if (!forSun) BannerFalls(s, bearer);
             if (bearer == null) continue;
+            if (!battle.Visible(s, 0)) { puppet.Banner(s.LastSeen, t.Height(s.LastSeen), bearer.Palette, 0, s.Company.Banner); continue; } // where you last saw it
             var at = bearer.Pos - bearer.Dir * 0.35f + new Vector2(-bearer.Dir.Y, bearer.Dir.X) * 0.25f;
-            puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner);
+            float stream = Math.Clamp((bearer.Mounted ? MathF.Abs(bearer.Speed) : bearer.Vel.Length()) / 6, 0, 1);
+            puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
         }
+        DrawFallingBanners();
         if (!forSun)
+        {
+            DrawMarks();
             foreach (var m in motes) puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
+        }
         var eye2 = new Vector2(eye.X, eye.Z);
         // Men outside the view (or, for the sun's pass, outside the shadow map) are skipped; men far off
         // are drawn with fewer parts. Low quality brings the detail bands closer.
@@ -201,6 +268,7 @@ partial class BattleScreen
             if (u.Fled) continue;
             if (!forSun && !u.IsPlayer && u.Team == 0 && blend < 0.5f && Vector2.DistanceSquared(u.Pos, eye2) < 6 * 6) continue; // friends don't fill the lens
             if (deploying && !battle.Options.Scouted && u.Team == 1 && !u.IsLeader) continue; // unscouted: banners only
+            if (u.Team == 1 && !u.IsLeader && !battle.Visible(u.Squad, 0)) continue; // hidden by a crest or a wood
             float h = t.Height(u.Pos);
             if (!Seen(u.Pos, h, u.Mounted ? 2.5f : 1.5f)) continue;
             puppet.Draw(u, h);
@@ -241,6 +309,31 @@ partial class BattleScreen
     void Line(Vector3 a, Vector3 b, Color c) { lines.Add(new(a, c)); lines.Add(new(b, c)); }
     Vector3 G(Vector2 p, float y = 0.08f) => new(p.X, battle.Terrain.Height(p) + y, p.Y);
 
+    /// The last frame's draw load: sprite triangles, line segments, ground marks, units on the field (shots runs log it).
+    public string RenderCost => $"{sprites.N / 3} sprite tris, {lines.N / 2} lines, {markCount} marks, {battle.Units.Count(u => u.Active)} men";
+
+    readonly Dictionary<Squad, float> selectedAt = new();
+    /// Orders just given: an arrow from each company to where it was sent, drawn out and then drawn in over a second (V7).
+    readonly List<(Vector2 From, Vector2 To, float At)> arrows = new();
+
+    void OrderArrows(Vector2 to) { foreach (var s in Targets()) arrows.Add((s.Centroid(), to, Ui.Now)); }
+
+    void OrderArrowLines()
+    {
+        arrows.RemoveAll(a => Ui.Now - a.At > 1.1f || Ui.Now < a.At);
+        foreach (var (from, to, at) in arrows)
+        {
+            float t = (Ui.Now - at) / 1.1f;
+            var head = Vector2.Lerp(from, to, Ease.OutCubic(Math.Min(1, t / 0.35f)));
+            var tail = Vector2.Lerp(from, to, Ease.In(Math.Max(0, (t - 0.45f) / 0.55f)));
+            if (Vector2.DistanceSquared(head, tail) < 0.25f) continue;
+            Line(G(tail, 0.2f), G(head, 0.2f), Sel);
+            var d = Vector2.Normalize(head - tail); var n = new Vector2(-d.Y, d.X);
+            Line(G(head, 0.2f), G(head - d * 1.6f + n, 0.2f), Sel);
+            Line(G(head, 0.2f), G(head - d * 1.6f - n, 0.2f), Sel);
+        }
+    }
+
     void Ring(Vector2 p, float r, Color c, int seg = 12)
     {
         for (int i = 0; i < seg; i++)
@@ -272,6 +365,45 @@ partial class BattleScreen
         }
     }
 
+    static readonly Color StakeWood = new(150, 118, 78);
+
+    /// Planted stakes (they come mid-battle, after the field's meshes are built): sharpened poles leaning toward the enemy.
+    void Stakes()
+    {
+        foreach (var f in battle.Terrain.Features)
+        {
+            if (f.Kind != FeatureKind.Stakes) continue;
+            var d = f.B - f.A;
+            float len = d.Length();
+            if (len < 0.1f) continue;
+            // Toward the far army: whoever planted them stands just behind.
+            var far = Vector2.DistanceSquared(f.A, battle.Centroid(0)) > Vector2.DistanceSquared(f.A, battle.Centroid(1)) ? battle.Centroid(0) : battle.Centroid(1);
+            var lean = new Vector2(-d.Y, d.X) / len;
+            lean *= Vector2.Dot(lean, far - f.A) > 0 ? 0.55f : -0.55f;
+            for (float s = 0; s <= len; s += 0.6f)
+            {
+                var p = f.A + d * (s / len);
+                var top = G(p + lean, f.Height);
+                Line(G(p, 0), top, StakeWood);
+                Line(top, top + new Vector3(lean.X, 0.15f, lean.Y) * 0.3f, Color.LightGray); // the sharpened point
+            }
+        }
+    }
+
+    static readonly Color RouteGilt = new(244, 214, 120);
+
+    /// The order's way round as a dotted line on the ground: short dashes every other step.
+    void RouteDots()
+    {
+        if (route == null) return;
+        for (int i = 0; i + 1 < route.Count; i += 2)
+        {
+            var a = route[i];
+            var b = Vector2.Lerp(route[i], route[i + 1], 0.6f);
+            Line(G(a, 0.25f), G(b, 0.25f), RouteGilt);
+        }
+    }
+
     void DrawLines()
     {
         lines.N = 0;
@@ -280,10 +412,20 @@ partial class BattleScreen
         {
             var dir = a.Vel.LengthSquared() > 0 ? Vector3.Normalize(a.Vel) : Vector3.Down;
             Line(a.Pos, a.Pos - dir * (a.Stuck >= 0 ? 0.5f : 0.8f), ArrowColor);
+            if (a.Stuck < 0 && quality != Quality.Low) Line(a.Pos - dir * 0.8f, a.Pos - dir * 2.4f, ArrowStreak); // a faint streak behind it in flight
         }
+        Stakes();
+        RouteDots();
         foreach (var s in selected)
+        {
+            // A company just chosen: its rings swell once, so you see which it was.
+            if (!selectedAt.TryGetValue(s, out float at)) selectedAt[s] = at = Ui.Now;
+            float swell = 1 + 0.7f * Ease.Kick((Ui.Now - at) / 0.45f);
             foreach (var u in s.Units)
-                if (u.Active) Ring(u.Pos, u.Mounted ? 1.05f : 0.45f, Sel, 8);
+                if (u.Active) Ring(u.Pos, (u.Mounted ? 1.05f : 0.45f) * swell, Sel, 8);
+        }
+        foreach (var gone in selectedAt.Keys.Where(k => !selected.Contains(k)).ToList()) selectedAt.Remove(gone);
+        OrderArrowLines();
         if (command)
         {
             if (battle.Player.Active) Ring(battle.Player.Pos, 0.8f, Gold);

@@ -139,11 +139,24 @@ partial class MapScreen
         if (!day) ui.Stars(new Rectangle(p.X, p.Y, p.Width, p.Height / 2), t, 30);
         var orb = new Vector2(p.X + p.Width * 0.82f, p.Y + p.Height * 0.28f);
         if (day) { ui.Disc(orb, ui.U(20), new Color(255, 230, 170) * 0.25f); ui.Disc(orb, ui.U(12), new Color(255, 236, 190)); }
-        else ui.Disc(orb, ui.U(12), new Color(236, 226, 200));
+        else
+        {
+            float glow = 0.05f + 0.02f * MathF.Sin(t * 0.9f);
+            ui.Disc(orb, ui.U(26), new Color(236, 226, 200) * glow); ui.Disc(orb, ui.U(18), new Color(236, 226, 200) * (glow * 1.6f));
+            ui.Disc(orb, ui.U(12), new Color(236, 226, 200));
+        }
+        // Clouds drift across, slowly; the far hills slide a little against the near ones.
+        for (int i = 0; i < 3; i++)
+        {
+            float span = p.Width + ui.U(160), cx = p.X - ui.U(80) + (i * 0.41f * span + t * ui.U(3 + 2 * i)) % span;
+            float cy = p.Y + p.Height * (0.18f + 0.13f * i);
+            var cc = (day ? Color.White : new Color(120, 90, 110)) * (day ? 0.25f : 0.12f);
+            for (int k = 0; k < 5; k++) ui.Disc(new Vector2(cx + ui.U(k * 12), cy + ui.U(MathF.Sin(k * 2.1f + i) * 2)), ui.U(6 + (k * 5 + i) % 6), cc);
+        }
         int ground = p.Bottom - ui.U(22);
         var far = day ? new Color(92, 100, 110) : new Color(54, 30, 36);
         var near = day ? new Color(40, 46, 40) : new Color(22, 14, 18);
-        ui.Hills(p, p.Bottom - ui.U(36), ui.U(10), 0.9f + id.Length, far);
+        ui.Hills(p, p.Bottom - ui.U(36), ui.U(10), 0.9f + id.Length + MathF.Sin(t * 0.07f) * 0.15f, far);
         switch (kind)
         {
             case "burning": Village(p, ground, near, t, true); break;
@@ -210,7 +223,8 @@ partial class MapScreen
             ui.Rect(new Rectangle(tx + tw / 2, ground - th - ui.U(6), ui.U(1), ui.U(6)), c);
         }
         var fire = new Vector2(p.X + p.Width * 0.46f, ground - ui.U(4));
-        for (int g = 0; g < 4; g++) ui.Disc(fire, ui.U(40 - g * 9), Kit.Ember * 0.05f);
+        float flick = 0.8f + 0.2f * MathF.Sin(t * 11) * MathF.Sin(t * 4.3f + 1);
+        for (int g = 0; g < 4; g++) ui.Disc(fire, ui.U(40 - g * 9) * flick, Kit.Ember * 0.05f);
         ui.Icon("fire", (int)fire.X - ui.U(7), (int)fire.Y - ui.U(12), Kit.Ember, 2);
         for (int s = 0; s < 8; s++)
         {

@@ -11,7 +11,9 @@ partial class MapScreen
         var rep = C.Report;
         if (rep == null) { panel = PanelKind.None; return; }
         var r = Modal(1000, 600, rep.Won ? "VICTORY" : "DEFEAT", rep.Won ? Kit.Gilt : Style.Bad);
-        ui.TextC($"AGAINST {rep.Enemy.ToUpperInvariant()} . DAY {C.Day}", r.Center.X, r.Y + ui.U(22), Style.Dim, 1);
+        // The battle has a name (L5): it heads the report, as it will the banner and the chronicle.
+        string head = rep.Field != "" ? $"THE BATTLE OF {rep.Field.ToUpperInvariant()}, AGAINST {rep.Enemy.ToUpperInvariant()} . DAY {C.Day}" : $"AGAINST {rep.Enemy.ToUpperInvariant()} . DAY {C.Day}";
+        ui.TextFitC(head, r.Center.X, r.Y + ui.U(22), r.Width - ui.U(40), rep.Field != "" ? Kit.Gilt : Style.Dim, 1);
         int pad = ui.U(20), gap = ui.U(12), top = r.Y + ui.U(40), lw = (int)((r.Width - 2 * pad - gap) * 0.6f), rw = r.Width - 2 * pad - gap - lw;
         int h1 = ui.U(190), h2 = r.Bottom - ui.U(52) - top - h1 - gap;
         var tally = new Rectangle(r.X + pad, top, lw, h1);
@@ -26,6 +28,7 @@ partial class MapScreen
     /// A sunken box inside a modal, with a small heading.
     Rectangle Well(Rectangle r, string title, Color c)
     {
+        Overflow.Box(r);
         ui.Rect(r, Color.Black * 0.22f);
         ui.Frame(r, Color.White * 0.06f, ui.U(1));
         ui.Rect(new Rectangle(r.X, r.Y, ui.U(2), ui.U(14)), c);
@@ -100,8 +103,10 @@ partial class MapScreen
         }
         var rows = new (string Icon, string Label, string Value, Color Col)[]
         {
-            ("coin", "LOOT", $"+{rep.Loot:0}", Kit.Gilt), ("chain", "RANSOMS", $"+{rep.Ransom:0}", Kit.Gilt), ("scroll", "BOUNTY", $"+{rep.Bounty:0}", Kit.Gilt),
-            ("star", "RENOWN", $"+{rep.Renown:0}", Kit.Gilt), ("horse", "HORSES TAKEN", $"{rep.Horses}", Style.Text),
+            // The spoils count up as the report opens.
+            ("coin", "LOOT", $"+{Ui.Count(1, (int)rep.Loot)}", Kit.Gilt), ("chain", "RANSOMS", $"+{Ui.Count(2, (int)rep.Ransom)}", Kit.Gilt),
+            ("scroll", "BOUNTY", $"+{Ui.Count(3, (int)rep.Bounty)}", Kit.Gilt), ("star", "RENOWN", $"+{Ui.Count(4, (int)rep.Renown)}", Kit.Gilt),
+            ("horse", "HORSES TAKEN", $"{Ui.Count(5, rep.Horses)}", Style.Text),
         };
         bool spoil = rep.Spoil != "" && Gear.Find(rep.Spoil) != null;
         int rh = Math.Clamp(c.Height / (rows.Length + (spoil ? 1 : 0)), ui.U(16), ui.U(28)), big = rh >= ui.U(26) ? 2 : 1, y = c.Y;
@@ -127,6 +132,32 @@ partial class MapScreen
     /// Every company of yours: men before and after, the fallen, wounded and lost, and the drill it earned.
     void ReportCompanies(BattleReport rep, Rectangle box)
     {
+        // Your named men first (docs/LEGACY.md L3): who fell, who is missing, who is hurt, who earned a name.
+        if (rep.Roll.Count > 0)
+        {
+            // Each man's line wraps to two rows; at most eight rows, the rest pointed to the roll.
+            int tw = box.Width - ui.U(16) - ui.U(60), most = 8, rows = 0, shown = 0;
+            var wrapped = rep.Roll.Select(x => ui.Wrap(x.Text.ToUpperInvariant(), tw).Take(2).ToList()).ToList();
+            while (shown < wrapped.Count && rows + wrapped[shown].Count <= most - (shown + 1 < wrapped.Count ? 1 : 0)) rows += wrapped[shown++].Count;
+            bool more = shown < wrapped.Count;
+            int nh = ui.U(26) + (rows + (more ? 1 : 0)) * ui.U(11);
+            var n = Well(new Rectangle(box.X, box.Y, box.Width, nh), rep.Roll.Any(x => x.Kind == "FELL") ? "THE FALLEN" : "YOUR NAMED MEN", rep.Roll.Any(x => x.Kind is "FELL" or "MISSING") ? Style.Bad : Kit.Gilt);
+            int ny = n.Y;
+            for (int i = 0; i < shown; i++)
+            {
+                var kind = rep.Roll[i].Kind;
+                var col = kind switch { "FELL" => Style.Bad, "MISSING" => Style.Warn, "HURT" => Style.Warn, _ => Kit.Gilt };
+                ui.Text(kind, n.X, ny, col, 1);
+                for (int l = 0; l < wrapped[i].Count; l++)
+                {
+                    string t = l == 1 && ui.Wrap(rep.Roll[i].Text.ToUpperInvariant(), tw).Count > 2 ? ui.Fit(string.Join(" ", ui.Wrap(rep.Roll[i].Text.ToUpperInvariant(), tw).Skip(1)), tw) : wrapped[i][l];
+                    ui.Text(t, n.X + ui.U(60), ny, Style.Text, 1);
+                    ny += ui.U(11);
+                }
+            }
+            if (more) ui.Text($"AND {wrapped.Count - shown} MORE. SEE THE ROLL ({ctl.First(Act.PartyScreen)}).", n.X + ui.U(60), ny, Style.Dim, 1);
+            box = new Rectangle(box.X, box.Y + nh + ui.U(6), box.Width, box.Height - nh - ui.U(6));
+        }
         var c = Well(box, "YOUR COMPANIES", Style.Friendly);
         string[] heads = { "MEN", "FELL", "HURT", "LOST", "XP" };
         int[] cols = { c.Width - ui.U(250), c.Width - ui.U(180), c.Width - ui.U(140), c.Width - ui.U(100), c.Width - ui.U(56) };
@@ -178,6 +209,16 @@ partial class MapScreen
             ui.Text("TRAIN THEM UP IN A TOWN.", c.X, y, Style.Dim, 1);
             y += ui.U(16);
         }
+        // Banner honours won, lost or won back here (L5), each with the banner mark.
+        foreach (var (kind, text) in rep.Honours)
+            foreach (var (l, i) in ui.Wrap(text.ToUpperInvariant(), c.Width - ui.U(14)).Take(2).Select((l, i) => (l, i)))
+            {
+                if (y + ui.U(11) > c.Bottom) break;
+                if (i == 0) ui.Icon("flag", c.X, y, kind == "LOST" ? Style.Bad : Kit.Gilt, 1);
+                ui.Text(l, c.X + ui.U(14), y, kind == "LOST" ? Style.Bad : Kit.Gilt, 1);
+                y += ui.U(11);
+            }
+        if (rep.Honours.Count > 0) y += ui.U(4);
         // Your goals for the battle (P6): met in gilt, missed in grey.
         foreach (var (text, met) in rep.Goals)
         {

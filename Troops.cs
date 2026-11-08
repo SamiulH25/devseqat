@@ -128,8 +128,12 @@ public static class Troops
 /// Id and Name tie it to the campaign's CompanyRecord (0 = a one-off battle); Morale is its starting morale.
 /// Troop is the company's face (its largest stack) and Count its total; Mix lists every stack (troop, men) when the company
 /// holds more than one troop type (CAMPAIGN_OVERHAUL.md 2.3). RoutBonus and VsMounted come from its honours.
+/// A named man of a company (docs/LEGACY.md L2): placed as a real unit of his troop, his fate handed back by id.
+public sealed record NamedSpec(int Id, string Troop, string Name);
+
 public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,
-    StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "", int Division = -1)
+    StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "", int Division = -1, NamedSpec[]? Named = null,
+    int Streamers = 0, bool Fringe = false)
 {
     public bool Has(string trait) => Traits?.Contains(trait) == true;
     /// The men to spawn, largest stack first (so a squad's first man is its majority troop).

@@ -20,6 +20,13 @@ public partial class Campaign
         bool won = r.Winner == playerTeam;
         float loot = 0, ransom = 0;
         var reports = new List<CompanyReport>();
+        rollNews.Clear();
+        rollFell.Clear();
+        // L5: the battle's name, and whether a win here is worth a battle honour (outnumbered, their captain slain, a wall taken).
+        string field = playerIn ? BattleName(Player.Pos, siegeBattle) : "";
+        float mine = playerTeam == 0 ? startStrength0 : startStrength1, theirs = playerTeam == 0 ? startStrength1 : startStrength0;
+        bool notable = playerIn && won && (theirs >= 1.5f * MathF.Max(1, mine) || r.EnemyLeader == LeaderFate.Slain || siegeBattle);
+        int foeFaction = (playerTeam == 0 ? side1 : side0).Select(SideOf).FirstOrDefault(f => f >= 0, -1);
 
         foreach (var cr in r.Companies)
         {
@@ -27,6 +34,7 @@ public partial class Campaign
             var (p, c, team) = e;
             bool teamWon = r.Winner == team;
             int menBefore = c.Men;
+            string foe = team == 0 ? side1.FirstOrDefault()?.Name ?? "" : side0.FirstOrDefault()?.Name ?? "";
             float surgeon = (p == Player ? Skill("Medicine") / 1000f + (Has("Surgeon") ? 0.1f : 0) : 0) + (c.Traits.Contains("Surgeon") ? 0.1f : 0);
             int killedAll = 0, woundedAll = 0, capturedAll = 0, fledLostAll = 0;
             // Casualties come off each stack by its own armour (2.3); a battle without a breakdown counts as the company's face.
@@ -35,16 +43,7 @@ public partial class Campaign
             {
                 var st = c.Stacks.FirstOrDefault(x => x.Troop == sr.Troop);
                 if (st == null) continue;
-                int stBefore = st.Men;
-                float pw = Math.Clamp(B.WoundBase + st.Type.Armor / B.WoundArmor + surgeon, B.WoundMin, B.WoundMax);
-                int wounded = (int)MathF.Round(sr.Fallen * pw), killed = sr.Fallen - wounded;
-                int captured = teamWon ? 0 : (int)MathF.Round(wounded * B.CaptureChance);
-                wounded -= captured;
-                int fledBack = teamWon ? sr.Fled : (int)MathF.Round(sr.Fled * B.FledReturnOnDefeat);
-                int standing = cr.Deployed ? sr.Standing : stBefore;
-                int after = Math.Clamp(standing + fledBack, 0, stBefore);
-                if (after < stBefore) st.Take(stBefore - after);
-                st.Wounded += wounded;
+                var (killed, wounded, captured, fledBack) = StackLosses(p, c, cr, sr, st, teamWon, surgeon, foe);
                 killedAll += killed; woundedAll += wounded; capturedAll += captured; fledLostAll += sr.Fled - fledBack;
                 if (playerIn && team != playerTeam && won)
                 {
@@ -66,12 +65,14 @@ public partial class Campaign
             if (cr.Deployed) { c.Battles++; c.Kills += cr.Kills; }
             float lostFrac = menBefore > 0 ? (menBefore - c.Men) / (float)menBefore : 0;
             c.Cohesion = Math.Clamp(c.Cohesion + (teamWon ? 5 : -5) - lostFrac * 10, 0, 30);
-            if (cr.Deployed) OfficerAfterBattle(c, teamWon, lostFrac);
-            if (cr.HeroFell && p == Player) HeroFell(c);
-            Chronicle(c, cr, teamWon, menBefore - c.Men, team == 0 ? side1.FirstOrDefault()?.Name ?? "" : side0.FirstOrDefault()?.Name ?? "", siegeBattle, p);
+            if (cr.Deployed) OfficerAfterBattle(c, teamWon, lostFrac, foe);
+            if (cr.HeroFell && p == Player) HeroFell(c, foe);
+            Chronicle(c, cr, teamWon, menBefore - c.Men, foe, siegeBattle, p, field);
+            if (p == Player) BannerAfterBattle(c, cr, teamWon, notable, field, foeFaction);
             if (playerIn) reports.Add(new CompanyReport(c.Id, c.Name, c.Troop, team == playerTeam ? 0 : 1, menBefore, c.Men, killedAll, woundedAll, capturedAll,
                 fledLostAll, xpPerMan, Rules.UpgradeReady(c), cr.Deployed));
             c.Prune();
+            if (p == Player) SyncRoll(c, true, foe);
         }
         foreach (var p in side0.Concat(side1)) p.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
 
@@ -179,17 +180,50 @@ public partial class Campaign
         }
         string spoil = won ? BattleSpoil(losers, r) : "";
         Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting,
-            Goals = r.Goals.Select(id => (Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList() };
+            Goals = r.Goals.Select((id, i) => (i < r.GoalTexts.Count ? r.GoalTexts[i] : Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
+            Roll = RollNewsOrdered().Where(n => n.Item1 is not ("HONOUR" or "LOST")).ToList(),
+            Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field };
+        if (won) RaiseBurial();
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
         return Report;
     }
 
     // ---------- encounters with you ----------
 
+    /// One stack's share of a battle: the fallen split into killed, wounded and taken by its armour and your surgeons,
+    /// the fled who come back, the men taken off the stack, and its named men's fates. Returns the counts for the report.
+    (int Killed, int Wounded, int Captured, int FledBack) StackLosses(Party p, CompanyRecord c, CompanyResult cr, StackResult sr, TroopStack st, bool teamWon, float surgeon, string foe)
+    {
+        int stBefore = st.Men;
+        float pw = Math.Clamp(B.WoundBase + st.Type.Armor / B.WoundArmor + surgeon, B.WoundMin, B.WoundMax);
+        int wounded = (int)MathF.Round(sr.Fallen * pw), killed = sr.Fallen - wounded;
+        int captured = teamWon ? 0 : (int)MathF.Round(wounded * B.CaptureChance);
+        wounded -= captured;
+        int fledBack = teamWon ? sr.Fled : (int)MathF.Round(sr.Fled * B.FledReturnOnDefeat);
+        int standing = cr.Deployed ? sr.Standing : stBefore;
+        int after = Math.Clamp(standing + fledBack, 0, stBefore);
+        if (after < stBefore) st.Take(stBefore - after);
+        st.Wounded += wounded;
+        if (p == Player && cr.Deployed)
+        {
+            if (cr.Named != null) RollFought(c, st, cr.Named, teamWon, pw, foe);
+            else RollFates(c, st, stBefore, killed, wounded, captured + sr.Fled - fledBack, foe);
+            // A named man who fell and lives is one of the wounded, even when the stack's rounded odds said killed.
+            int more = Math.Min(c.Roll.Count(m => m.Troop == st.Troop && m.Hurt) - st.Wounded, killed + captured);
+            if (more > 0)
+            {
+                int fromKilled = Math.Min(more, killed);
+                killed -= fromKilled; captured -= more - fromKilled;
+                wounded += more; st.Wounded += more;
+            }
+        }
+        return (killed, wounded, captured, fledBack);
+    }
+
     /// The parties that fight with you and against you: anyone close enough joins the side they are friendly to.
     public BattleSetup PrepareBattle(Party enemy)
     {
-        var setup = new BattleSetup { EnemyName = enemy.Name };
+        var setup = new BattleSetup { EnemyName = enemy.Name, Field = BattleName(Player.Pos) };
         setup.Side0.Add(Player);
         setup.Side1.Add(enemy);
         foreach (var p in S.Parties)
@@ -201,7 +235,7 @@ public partial class Campaign
         bool unpaid = S.UnpaidWeeks > 0;
         setup.Player = WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0)));
         setup.Enemy = Armies.Divide(Rules.Army(enemy.Name, setup.Side1));
-        setup.Seed = HashCode.Combine(S.Seed, (int)(S.Hours * 4), enemy.Id);
+        setup.Seed = BattleSeed(enemy);
         bool scouts = setup.Side0.SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
         setup.Options = new BattleOptions
         {
@@ -216,7 +250,8 @@ public partial class Campaign
             PlayerWounded = S.Hours < Captain.WoundedUntil,
             Scouted = scouts || Has("Tactician"),
             EnemyDamage = Settings.Current.EnemyDamage, EnemyMorale = DuelMoraleFor(enemy),
-            Ground = Map.BattleGround(Player.Pos),
+            Ground = GroundFor(enemy, GroundChooser(enemy, setup.Side0)), // the map's field, the rain, who chose it (Ground.cs)
+            EnemyAggression = SideOf(enemy) >= 0 ? Factions.Get(SideOf(enemy)).Aggression : 1.5f, // a realm's temper; brigands do not wait long
             Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
         }.WithCaptain(Captain);
@@ -238,7 +273,7 @@ public partial class Campaign
     public BattleReport AutoResolveEncounter()
     {
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge * DuelEdge(Encounter!), Edge(Encounter!));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed), Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }

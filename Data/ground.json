@@ -1,0 +1,20 @@
+{
+  // How each kind of battlefield ground plays (docs/TERRAIN.md 3). Speeds, fatigue, charge and reach are multipliers (1 = no change).
+  // order: how well a formation keeps its shape (1 = parade ground); below 0.6 no bracing and no shield wall.
+  // cover: how much it hides men and stops arrows (T3). stumble: chance a second that a galloping horse stumbles.
+  "ground": [
+    { "id": "Grass",     "name": "Grass",      "text": "Open ground." },
+    { "id": "Road",      "name": "Road",       "text": "A road. Quick going.", "footSpeed": 1.1, "horseSpeed": 1.15 },
+    { "id": "Crops",     "name": "Crops",      "text": "Standing crops. Some cover.", "footSpeed": 0.95, "horseSpeed": 0.9, "fatigue": 1.05, "order": 0.9, "charge": 0.9, "cover": 0.25 },
+    { "id": "Scrub",     "name": "Scrub",      "text": "Gorse and broom. Bad for horse.", "footSpeed": 0.85, "horseSpeed": 0.75, "fatigue": 1.2, "order": 0.75, "charge": 0.7, "cover": 0.2, "stumble": 0.04 },
+    { "id": "Stony",     "name": "Stony",      "text": "Stony ground. Horses stumble.", "footSpeed": 0.9, "horseSpeed": 0.7, "fatigue": 1.1, "order": 0.85, "charge": 0.6, "stumble": 0.08 },
+    { "id": "Mud",       "name": "Mud",        "text": "Mud. Slow, tiring, no charge.", "footSpeed": 0.7, "horseSpeed": 0.55, "fatigue": 1.6, "order": 0.7, "charge": 0.5, "stumble": 0.06 },
+    { "id": "Wood",      "name": "Wood",       "text": "Woodland. Cover from arrows. Horse slowed. No formation.", "footSpeed": 0.8, "horseSpeed": 0.5, "fatigue": 1.1, "order": 0.55, "charge": 0.3, "reach": 0.6, "cover": 0.55, "stumble": 0.05 },
+    { "id": "DenseWood", "name": "Thick wood", "text": "Thick wood. Good cover. No place for horse.", "footSpeed": 0.6, "horseSpeed": 0.25, "fatigue": 1.3, "order": 0.3, "charge": 0.1, "reach": 0.3, "cover": 0.85, "stumble": 0.1 },
+    { "id": "Ford",      "name": "Ford",       "text": "A ford. Shallow water.", "footSpeed": 0.8, "horseSpeed": 0.8, "fatigue": 1.2, "order": 0.6, "charge": 0.6 },
+    { "id": "Water",     "name": "Deep water", "text": "Deep water. Very slow. No formation.", "footSpeed": 0.45, "horseSpeed": 0.55, "fatigue": 1.8, "order": 0.2, "charge": 0.2 },
+    { "id": "Bridge",    "name": "Bridge",     "text": "A narrow bridge." },
+    { "id": "Street",    "name": "Street",     "text": "Between the houses. Some cover.", "horseSpeed": 0.9, "order": 0.6, "charge": 0.6, "cover": 0.3 },
+    { "id": "Sand",      "name": "Sand",       "text": "Loose sand. Tiring.", "footSpeed": 0.85, "horseSpeed": 0.8, "fatigue": 1.4, "order": 0.9, "charge": 0.8 }
+  ]
+}

@@ -75,9 +75,9 @@ public sealed class UnitType
     /// "regen" (heals when left alone a moment), "daylight" (slow and weak in sunlight, no healing), "fearless" (never routs).
     /// The undead's: "bones" (arrows do little to a skeleton), "raise" (a necromancer: raises the fallen around him
     /// to fight for him), "raised" (held up by a necromancer: falls apart when the last one of its side falls),
-    /// "feed" (a ghoul: a kill heals it).
+    /// "feed" (a ghoul: a kill heals it). Men's: "stakes" (longbowmen carry stakes to plant before their line, docs/TERRAIN.md T6).
     public string[] Traits = Array.Empty<string>();
-    public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless", "bones", "raised", "raise", "feed" };
+    public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless", "bones", "raised", "raise", "feed", "stakes" };
     /// A body big enough to take more room, shove men aside and stand up to a horse (a troll).
     public bool Huge => Size >= 1.6f;
     /// Bound to its boss: loses heart when he falls.
@@ -114,6 +114,14 @@ public sealed class Unit
     public bool Hero;
     /// Leads a division (drawn with a pennant; his fall leaves the division without orders for a while).
     public bool Sergeant;
+    /// A named man of his company (docs/LEGACY.md L2): his Soldier id, 0 for the rest.
+    public int SoldierId;
+    /// Enemies he has killed this battle, and whether one was a captain or a hero.
+    public int Kills;
+    public bool FelledLeader;
+    /// A fallen named man you stood over (L8): seconds so far, and whether you got him out (wounded, not dead).
+    public float Rescue;
+    public bool Saved;
     public Vector2 Pos, Vel, Wish, Slot;
     public float Facing, ViewFacing; // radians on the ground plane; ViewFacing is the eased value the renderer draws
     public float Hp, Morale = 70, Stamina = 100, EnemyDist = float.MaxValue;
@@ -131,6 +139,7 @@ public sealed class Unit
     public bool Dead, Fled, Routing;
     public int Routs;        // how many times this man has broken (a second rout is final)
     public float DiedAt;     // battle time of death (the fall is animated)
+    public Vector2 DiedFrom; // where the killing blow came from (the body falls away from it; drawing only)
     public int StuckArrows;  // arrows caught in the shield (drawn)
     public int Index;        // place in Battle.Units (the spatial grid orders pairs by it)
 
@@ -142,6 +151,8 @@ public sealed class Unit
     public bool Couched, Contact;          // lance lowered; this charge has reached the enemy
     public CavState Cav;
     public float CavTimer, Bogged, ImpactCd, BraceCd;
+    /// Last tick's ground and slope on his pace (1 = level grass), and the slope along his way (rise a metre, negative downhill; BattleMove.cs).
+    public float GroundPace = 1, Slope;
 
     public bool Active => !Dead && !Fled;
     public bool Mounted => Horse != null;
