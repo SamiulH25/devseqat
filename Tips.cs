@@ -25,9 +25,18 @@ static class Tips
     public static void Draw(Ui ui, int bottom)
     {
         if (queue.Count == 0) return;
+        DrawAt(ui, ui.H - bottom - Height(ui));
+    }
+
+    static int Height(Ui ui) => queue.Peek().Text.Split('\n').Length * ui.U(14) + ui.U(52);
+
+    /// Draw the current tip with its top at `top` (over an open panel: at the top of the screen, clear of its buttons).
+    public static void DrawAt(Ui ui, int top)
+    {
+        if (queue.Count == 0) return;
         var lines = queue.Peek().Text.ToUpperInvariant().Split('\n');
-        int w = lines.Max(l => ui.TW(l, 1)) + ui.U(40), h = lines.Length * ui.U(14) + ui.U(52);
-        var r = new Rectangle((ui.W - w) / 2, ui.H - bottom - h, w, h);
+        int w = lines.Max(l => ui.TW(l, 1)) + ui.U(40), h = Height(ui);
+        var r = new Rectangle((ui.W - w) / 2, top, w, h);
         ui.Panel(r, Style.Accent);
         ui.Text("TIP", r.X + ui.U(12), r.Y + ui.U(8), Style.Accent, 1);
         for (int i = 0; i < lines.Length; i++) ui.Text(lines[i], r.X + ui.U(20), r.Y + ui.U(22) + i * ui.U(14), Style.Text, 1);

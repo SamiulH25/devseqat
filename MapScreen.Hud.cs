@@ -34,7 +34,6 @@ partial class MapScreen
         Cards();
         Contracts();
         if (panel == PanelKind.None) { Tooltip(); Hints(); }
-        Tips.Draw(ui, ui.U(130));
         switch (panel)
         {
             case PanelKind.Encounter: EncounterPanel(); break;
@@ -54,6 +53,9 @@ partial class MapScreen
             case PanelKind.Divisions: DivisionsPanel(); break;
             case PanelKind.Atlas: AtlasPanel(); break;
         }
+        // Tips draw last so nothing covers them; over an open panel they sit at the top, clear of its buttons.
+        if (panel == PanelKind.None) Tips.Draw(ui, ui.U(130));
+        else Tips.DrawAt(ui, ui.U(6));
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
     }

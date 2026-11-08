@@ -106,6 +106,7 @@ sealed partial class MapScreen
         if (Skills.PicksTotal(C.Captain) > 0) Tips.Show("perk", $"One of your skills has reached a new mark: choose a perk on its branch ({ctl.First(Act.SkillsScreen)} opens your skills).\nSkills rise by doing: commanding, marching, healing, promoting, fighting, ruling and winning goodwill.");
         if (C.Captain.Renown >= 80) Tips.Show("renown", "Renown is your standing: each victory adds to it, and it raises your men cap.\nThe bar under the captain panel shows the next rise.");
         if (C.Player.Companies.Count >= Rules.CompanySlots(C.Captain)) Tips.Show("slots", $"You have reached the most companies you can lead ({Rules.CompanySlots(C.Captain)}). Merge or disband a company to form a new one.");
+        LaterTips();
         if (C.Day >= 7) Tips.Show("upkeep", "Upkeep is paid each week (the bar at the top). Your contract pays most of it;\nloot, ransoms and bounties pay the rest. Unpaid men desert.");
 
         if (panel == PanelKind.None)
@@ -184,6 +185,30 @@ sealed partial class MapScreen
     /// Panels you can leave for another screen without losing a choice (no encounter, town, event or report open).
     bool Browsing => panel is PanelKind.None or PanelKind.Party or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm
         or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll;
+
+    /// One-time tips for the systems a campaign reaches later: named men, divisions, sites, duels, gear, fiefs, fame, retiring.
+    void LaterTips()
+    {
+        string party = ctl.First(Act.PartyScreen);
+        if (C.Player.Companies.Any(k => k.Roll.Count > 0))
+            Tips.Show("roll", $"Some of your men have earned names. Each company keeps a roll of them: open your company ({party})\nand click ROLL on a card. Named men are hard to kill, and the company remembers the ones it loses.");
+        if (C.S.Fallen.Count > 0)
+            Tips.Show("fallen", "A named man has fallen. His company's roll keeps him among THE FALLEN,\nand his loss costs the company a little cohesion. Burying him well steadies the men.");
+        if (C.S.Divisions.Count == 0 && C.Companions.Any())
+            Tips.Show("divisions", $"A companion can lead a division: companies that follow his goal in battle, not your orders.\nOpen DIVISIONS ({ctl.First(Act.DivisionsScreen)}) to make one and give him companies.");
+        if (C.S.SitesSeen.Count > 0)
+            Tips.Show("site", "A place of note is near (the marks on the map): ruins, shrines, old battlefields, mines, hermits.\nRide to one to see what is there. Some help you, some cost you.");
+        if (panel == PanelKind.Encounter && C.Encounter is Party foe && C.CannotChallenge(foe) == null)
+            Tips.Show("duel", "This lord will meet you in single combat. CHALLENGE him: win and his men start shaken;\nlose and you fight the battle wounded, from the rear.");
+        if (panel == PanelKind.Settlement && tab == "MARKET")
+            Tips.Show("market", "The market sells horses for your men, and arms and armour for you.\nClick a piece to see how it compares with what you wear, then buy it and put it on.");
+        if (C.Fiefs.Any())
+            Tips.Show("fief", "You hold a fief. Its FIEF tab sets the taxes and builds; its GARRISON tab keeps men there.\nHigh taxes and an empty garrison breed unrest, and unrest breeds revolt.");
+        if (C.Fame >= 20)
+            Tips.Show("fame", "Your company is spoken of. Fame comes from battles and honours: it draws recruits to you,\nand contracts pay more to a company with a name. See THE LEGEND in the realms screen.");
+        if (C.CannotRetire() == null)
+            Tips.Show("legend", $"A company of yours has made its legend. In THE LEGEND ({ctl.First(Act.RealmScreen)}) you may retire on it and end the\ncampaign as a win, or hand the company to a companion and play on as him.");
+    }
 
     /// The four pan keys as one word ("WASD").
     string Pan() => $"{ctl.First(Act.Forward)}{ctl.First(Act.Left)}{ctl.First(Act.Back)}{ctl.First(Act.Right)}";

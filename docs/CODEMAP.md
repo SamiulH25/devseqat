@@ -77,11 +77,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (255 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:78, CommandControls:86, BoxOf:188, OnScreen:190, PickSquad:197, GroundUnderMouse:211, UpdateCamera:233
 
-## BattleScreen.cs (352 lines)
-- **BattleScreen** (class, L10): Exit:16, GroundTips:34, BattleScreen:78, Load:90, QuickGround:109, BeginCampaign:119, StartDeployment:143, StageCommandView:151, FinishCampaignBattle:159, NewBattle:167, SetWorld:200, SetCommand:208, Pressed:217, Update:223, PlaySounds:279, Soundscape:289, SyncHud:313, MenuChoice:338
+## BattleScreen.cs (356 lines)
+- **BattleScreen** (class, L10): Exit:16, GroundTips:34, BattleScreen:78, Load:90, QuickGround:109, BeginCampaign:119, StartDeployment:143, StageCommandView:151, FinishCampaignBattle:159, NewBattle:167, SetWorld:200, SetCommand:208, Pressed:217, Update:225, PlaySounds:283, Soundscape:293, SyncHud:317, MenuChoice:342
 
-## BattleScreen.Draw.cs (424 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:50, DrawBlobs:83, EaseFacings:112, Spray:128, Effects:141, GroundSteps:171, BuildSprites:223, SpriteStates:269, DrawSpritesBasic:277, DrawSpritesShaded:287, Line:297, G:298, Ring:300, Precipitation:310, Stakes:334, RouteDots:359, DrawLines:370
+## BattleScreen.Draw.cs (425 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:51, DrawBlobs:84, EaseFacings:113, Spray:129, Effects:142, GroundSteps:172, BuildSprites:224, SpriteStates:270, DrawSpritesBasic:278, DrawSpritesShaded:288, Line:298, G:299, Ring:301, Precipitation:311, Stakes:335, RouteDots:360, DrawLines:371
 
 ## BattleScreen.Orders.cs (192 lines)
 - **BattleScreen** (class, L8): Targets:12, Issue:15, Send:26, GiveGoal:36, GoalCommand:38, Command:60, OrderKeys:111, PlantStakes:125, NextDivision:137, LineAt:147, Distribute:164, PreviewSlots:183
@@ -308,8 +308,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Captain.cs (186 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:84, CaptainRecord:150
 
-## MapScreen.cs (498 lines)
-- **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:84, Pressed:92, Update:96, readonly:176, Pan:189, ScreenKeys:191, OpenScreen:199, CameFrom:206, Camera:208, Rename:232, Trails:245, ClickWorld:257, Ground:269, Draw:292, UpdateBearers:362, BuildSprites:399, DrawSprites:406, G:418, DrawLines:420, Stage:459
+## MapScreen.cs (523 lines)
+- **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:84, Pressed:92, Update:96, readonly:177, LaterTips:190, Pan:214, ScreenKeys:216, OpenScreen:224, CameFrom:231, Camera:233, Rename:257, Trails:270, ClickWorld:282, Ground:294, Draw:317, UpdateBearers:387, BuildSprites:424, DrawSprites:431, G:443, DrawLines:445, Stage:484
 
 ## MapScreen.Dialogs.cs (189 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, MeetingPanel:62, SiegePanel:94, BeatPanel:143, GameOverPanel:159, MenuPanel:174
@@ -317,8 +317,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Event.cs (290 lines)
 - **MapScreen** (class, L7): EventPanel:9, EventChoice:42, EffectsText:119, EventScene:125, Village:164, Court:186, Camp:204, SiteScene:223
 
-## MapScreen.Hud.cs (388 lines)
-- **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:22, DrawUi:24, Screen:61, Flags:77, TopBar:160, Feed:179, Overview:194, CaptainPanel:220, RenownStep:254, Cards:256, Card:271, TierStrip:291, Hints:303, Tooltip:309, Modal:374, Note:384
+## MapScreen.Hud.cs (390 lines)
+- **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:22, DrawUi:24, Screen:63, Flags:79, TopBar:162, Feed:181, Overview:196, CaptainPanel:222, RenownStep:256, Cards:258, Card:273, TierStrip:293, Hints:305, Tooltip:311, Modal:376, Note:386
 
 ## MapScreen.Muster.cs (299 lines)
 - **MapScreen** (class, L7): PartyPanel:9, MusterCard:34, RollPanel:131, MusterSummary:189, OpenSlot:229, MusterSide:240
@@ -427,8 +427,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/WorldTests.cs (333 lines)
 - **SelfTest** (class, L6): WorldNames:9, Sites:32, Roads:85, Quests:138, TownLife:220, EventSpread:254, Polish:294
 
-## Tips.cs (36 lines)
-- **Tips** (class, L6): Show:10, Dismiss:18, Draw:25
+## Tips.cs (45 lines)
+- **Tips** (class, L6): Show:10, Dismiss:18, Draw:25, Height:31, DrawAt:34
 
 ## TitleScreen.cs (143 lines)
 - **TitleScreen** (class, L7): SaveCard:19, TitleScreen:21, Update:23, U:33, Draw:35, ChooseRealm:82, Scene:101, Card:119, Fit:142

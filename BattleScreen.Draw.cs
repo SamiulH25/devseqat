@@ -40,6 +40,7 @@ partial class BattleScreen
         if (!hudHidden)
         {
             hud.Draw();
+            if (TipsHeld) return;
             tipUi.Begin(gd.Viewport, ms.Position, false);
             Tips.Draw(tipUi, tipUi.U(124));
             tipUi.End();

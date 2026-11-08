@@ -216,6 +216,8 @@ sealed partial class BattleScreen
 
     bool Pressed(Keys k) => kb.IsKeyDown(k) && !pkb.IsKeyDown(k);
     bool Overlay => menuOpen || helpOpen || battle.Winner >= 0;
+    /// Tips wait while the menu, the controls or the result is up, so they never cover its buttons.
+    bool TipsHeld => Overlay;
     bool LmbPressed => ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released;
     bool LmbReleased => ms.LeftButton == ButtonState.Released && pms.LeftButton == ButtonState.Pressed;
 
@@ -231,8 +233,10 @@ sealed partial class BattleScreen
             replaySaved = true;
             try { battle.FinishRecording()?.Save("last-battle"); } catch (Exception e) { Console.WriteLine("replay not saved: " + e.Message); }
         }
-        if (Pressed(Keys.Enter) && Tips.Active) Tips.Dismiss();
-        else if (LmbPressed && Tips.Active && command && tipUi.Blocks(ms.Position)) Tips.Dismiss();
+        if (!TipsHeld && Pressed(Keys.Enter) && Tips.Active) Tips.Dismiss();
+        else if (!TipsHeld && LmbPressed && Tips.Active && command && tipUi.Blocks(ms.Position)) Tips.Dismiss();
+        if (battle.Units.Any(battle.Rescuable))
+            Tips.Show("rescue", "One of your named men is down (the gold mark). Stand over him while the fight goes on\nand you carry him out alive, if you are quick.");
         if (deploying) Tips.Show("deploy", $"Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press {ctl.First(Act.Pause)} (or START BATTLE) to begin.");
         else if (!command && battle.Player.Active) Tips.Show("field", $"Field view: you fight. On horseback {ctl.First(Act.Forward)}/{ctl.First(Act.Back)} rein, {ctl.First(Act.Left)}/{ctl.First(Act.Right)} turn, {ctl.First(Act.Sprint)} gallops.\nMove the mouse to choose a swing direction, {ctl.First(Act.Attack)} to attack, {ctl.First(Act.Block)} to block (match the red mark to parry).\n{ctl.First(Act.CommandView)}: command view. Hold {ctl.Name(Act.OrderWheel)}: the order wheel. {ctl.First(Act.Help)}: all the keys.");
         else if (command && !deploying) Tips.Show("command", $"Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. {ctl.First(Act.CommandView)} returns to your body: you inspire the men near you.");
