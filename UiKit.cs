@@ -203,6 +203,11 @@ static class Kit
             Emblem.Saltire => MathF.Abs(u - 0.5f - (v - 0.5f) * 0.84f) < 0.075f || MathF.Abs(u - 0.5f + (v - 0.5f) * 0.84f) < 0.075f,
             Emblem.Lozenge => MathF.Abs(u - 0.5f) + MathF.Abs(v - 0.45f) * 0.8f < 0.2f,
             Emblem.Bend => MathF.Abs(u - v * 0.84f - 0.08f) < 0.085f,
+            Emblem.Cross => MathF.Abs(u - 0.5f) < 0.07f || MathF.Abs(v - 0.4f) < 0.07f,
+            Emblem.Pale => MathF.Abs(u - 0.5f) < 0.12f,
+            Emblem.Fess => MathF.Abs(v - 0.45f) < 0.11f,
+            Emblem.Sun => (u - 0.5f) * (u - 0.5f) + (v - 0.45f) * (v - 0.45f) < 0.02f
+                || MathF.Abs(MathF.Sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.45f) * (v - 0.45f)) - 0.22f) < 0.04f && ((int)((MathF.Atan2(v - 0.45f, u - 0.5f) + MathF.PI) / (MathF.PI / 4)) % 2 == 0),
             _ => false,
         };
         for (int j = 0; j < gh; j++)

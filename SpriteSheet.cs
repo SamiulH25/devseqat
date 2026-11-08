@@ -34,6 +34,9 @@ public sealed class SpriteSheet
 
     void Add(string key, Canvas c) => pending.Add((key, c));
 
+    /// How many rows of the atlas the packed sprites use (of H): each palette paints a full set of parts.
+    public int Filled { get; private set; }
+
     void Pack()
     {
         int x = 0, y = 0, rowH = 0;
@@ -48,6 +51,7 @@ public sealed class SpriteSheet
             x += w;
             rowH = Math.Max(rowH, h);
         }
+        Filled = y + rowH;
         pending.Clear();
     }
 
@@ -309,6 +313,27 @@ public sealed class SpriteSheet
                 else for (int i = 0; i < 6; i++) { c.Set(11 - i / 2, 7 - i, linen, 0.3f); c.Set(12 - i / 2, 7 - i, linen); }
                 return c;
             }
+            case "turban":
+            {
+                // Linen wound in bands over a small spiked steel cap (the south).
+                var c = new Canvas(20, 14);
+                c.Fill((x, y) => InEl(x, y, 10, 10, 9.4f, 7.6f) && y < 12.5f && y > 3, (x, y) => new Vector3((x - 10) / 10, (y - 9) / 9, 0.6f), linen);
+                for (int x = 0; x < 20; x++) for (int y = 4; y < 13; y++) if ((y + x / 3) % 3 == 0) c.Shade(x, y, -0.22f);
+                c.Body(0.3f, 4.5f, y => (10 - 0.4f - y * 0.55f, 10 + 0.4f + y * 0.55f), steel);
+                if (v != "b") c.Set(v == "s" ? 15 : 10, 8, brass, 0.7f);
+                return c;
+            }
+            case "steppe":
+            {
+                // A tall steel cone with a fur brim and a tassel at the point (the Khaganate).
+                var c = new Canvas(20, 17);
+                c.Body(2, 13, y => (10 - 0.8f - (y - 2) * 0.68f, 10 + 0.8f + (y - 2) * 0.68f), plate);
+                c.Rect(1.5f, 11.5f, 18.5f, 15.5f, fur);
+                for (int x = 1; x < 19; x += 2) c.Shade(x, 15, -0.3f);
+                c.Body(0, 2.5f, y => (9.2f - y * 0.2f, 10.8f + y * 0.2f), trim);
+                for (int y = 4; y < 11; y++) c.Set(10, y, brass, 0.4f);
+                return c;
+            }
             default: // greathelm
             {
                 var c = new Canvas(18, 21);
@@ -344,7 +369,8 @@ public sealed class SpriteSheet
         bool side = v == "s";
         var c = new Canvas(side ? 13 : 20, 23);
         Func<float, (float, float)> span = side ? SideSpan : TorsoSpan;
-        var m = body switch { "gambeson" => quilt, "mail" => mail, "plate" => plate, "fur" => clothDk, "rags" => rag, "shroud" => shroud, "robe" => robe, _ => cloth };
+        var m = body switch { "gambeson" => quilt, "mail" => mail, "plate" => plate, "fur" => clothDk, "rags" => rag, "shroud" => shroud, "robe" => robe,
+            "lamellar" => plate, "deel" => cloth, "brigandine" => clothDk, _ => cloth };
         if (body == "bones") return Ribs(c, span, side);
         if (body == "plate")
         {
@@ -383,6 +409,20 @@ public sealed class SpriteSheet
             c.Body(13.5f, 15.6f, span, linen, -0.2f);
             for (int x = 0; x < c.W; x++) c.Shade(x, 22, -0.3f);
         }
+        if (body == "lamellar") // rows of small laced plates, a cloth skirt below the belt
+        {
+            for (int y = 1; y < 14; y++) for (int x = 0; x < c.W; x++)
+                if (y % 3 == 0 || (x + (y / 3 % 2) * 2) % 4 == 0) c.Shade(x, y, -0.28f);
+            c.Body(15.6f, 23, span, clothDk);
+        }
+        if (body == "deel") // a long coat wrapped left over right, a trim down the overlap and a wide sash
+        {
+            if (v == "f") for (int y = 0; y < 23; y++) { int x = (int)(6 + y * 0.35f); c.Set(x, y, trim, 0.5f); c.Set(x + 1, y, trim, 0.35f); }
+            c.Body(13, 16, span, trim, -0.1f);
+            c.Area((x, y) => y < 3 && x >= span(y).Item1 && x <= span(y).Item2, fur);
+        }
+        if (body == "brigandine") // dark cloth over riveted plates
+            for (int y = 2; y < 13; y += 3) for (int x = 2 + y % 2; x < c.W - 1; x += 3) c.Set(x, y, brass, 0.65f);
         if (body == "fur") // a shaggy mantle over the shoulders
             c.Area((x, y) => y < 6.5f + 1.2f * MathF.Sin(x * 1.7f) && x >= span(y).Item1 - 0.6f && x <= span(y).Item2 + 0.6f, fur);
         return c;
@@ -438,6 +478,24 @@ public sealed class SpriteSheet
             case Ironfield.Emblem.Bend:
                 c.Line(cx - s, cy - s, cx + s, cy + s, mark, 0.7f, 3);
                 break;
+            case Ironfield.Emblem.Cross:
+                c.Line(cx, cy - s, cx, cy + s, mark, 0.5f, 3);
+                c.Line(cx - s, cy - s * 0.2f, cx + s, cy - s * 0.2f, mark, 0.5f, 3);
+                break;
+            case Ironfield.Emblem.Pale:
+                c.Line(cx, cy - s, cx, cy + s, mark, 0.8f, 3);
+                break;
+            case Ironfield.Emblem.Fess:
+                c.Line(cx - s, cy, cx + s, cy, mark, 0.8f, 3);
+                break;
+            case Ironfield.Emblem.Sun:
+                c.Area((x, y) => (x - cx) * (x - cx) + (y - cy) * (y - cy) <= s * s * 0.36f, mark);
+                for (int i = 0; i < 8; i++)
+                {
+                    float a = i * MathF.PI / 4;
+                    c.Line(cx + MathF.Cos(a) * s * 0.7f, cy + MathF.Sin(a) * s * 0.7f, cx + MathF.Cos(a) * s, cy + MathF.Sin(a) * s, mark, 0.35f, 3);
+                }
+                break;
             default: break; // no charge (brigands)
         }
     }
@@ -462,6 +520,9 @@ public sealed class SpriteSheet
             case "shroud": c.Rect(2.2f, 0, 5.8f, 20, pale); c.Rect(1.5f, 0, 6.5f, 5, shroud); break;
             case "robe": c.Rect(1, 0, 7, 20, robe); c.Rect(0.5f, 16, 7.5f, 20, robe, -0.15f); break; // wide sleeves
             case "mail": c.Rect(1.5f, 0, 6.5f, 20, mail); break;
+            case "lamellar": c.Rect(1.5f, 0, 6.5f, 20, mail); c.Rect(1, 0, 7, 6, plate); for (int x = 0; x < 8; x++) c.Shade(x, 3, -0.3f); break;
+            case "deel": c.Rect(1, 0, 7, 20, cloth); c.Rect(1, 16.5f, 7, 20, trim); break;
+            case "brigandine": c.Rect(1.5f, 0, 6.5f, 20, mail); c.Rect(1, 0, 7, 7, clothDk); c.Set(3, 3, brass, 0.65f); c.Set(5, 5, brass, 0.65f); break;
             case "plate":
                 c.Rect(1.5f, 0, 6.5f, 20, plate);
                 c.Ellipse(4, 10, 3.4f, 2.6f, plate, 0.15f);
@@ -519,6 +580,16 @@ public sealed class SpriteSheet
 
     Canvas Shield(string kind)
     {
+        if (kind == "pavise")
+        {
+            // A tall board a crossbowman stands behind: the side's cloth, a raised spine and the charge high on it.
+            var pv = new Canvas(20, 34);
+            pv.Fill((x, y) => y > 0.3f && x > 0.5f && x < 19.5f && (y > 2 || MathF.Abs(x - 10) < 7 + y), (x, y) => new Vector3((x - 10) / 18, 0, 1), cloth);
+            pv.Rect(8.6f, 1, 11.4f, 33.7f, wood, 0.1f);
+            pv.Border(iron);
+            Emblem(pv, 10, 11, 5.5f);
+            return pv;
+        }
         var c = new Canvas(20, 25);
         switch (kind)
         {
@@ -756,6 +827,11 @@ public sealed class SpriteSheet
         var tail = new Canvas(5, 20);
         tail.Body(0, 20, y => { float half = 2.4f - y * 0.06f; return (2.5f - half, 2.5f + half); }, mane);
         Add("htail/n", tail);
+
+        // A camel (docs/WORLD.md W4) is the horse rig in a sand coat with a hump over the back.
+        var hump = new Canvas(24, 12);
+        hump.Fill((x, y) => InEl(x, y, 12, 12, 11.5f, 11.5f), (x, y) => new Vector3((x - 12) / 12, (y - 12) / 12, 0.7f), new Mat(Style.Coat, Pattern.Hair));
+        Add("hhump/n", hump);
     }
 
     // ---------- beasts (docs/CREATURES.md) ----------

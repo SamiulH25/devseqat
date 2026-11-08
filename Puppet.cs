@@ -142,6 +142,7 @@ sealed class Puppet
         if (Look.Ranged(look.Weapon))
         {
             if (Detail == 0) Bill(new(-0.1f, 1.15f, -0.2f), "quiver", false);
+            if (u.Type.HasShield && Detail == 0) Plane(new(0.05f, 1.0f, -0.24f), -Vector3.UnitZ, $"shield.{look.Shield}"); // slung on the back
             Span(off, Vector3.Up, look.Weapon, SpriteSheet.Grip[look.Weapon]);
             if (p.Aim && u.Action != UnitAction.Recover) Span(hand, Vector3.UnitZ, "arrow", 0.2f);
             return;
@@ -157,8 +158,8 @@ sealed class Puppet
         Frame(pos, heading, ground, Scale);
         var side = pal;
         var plain = tint;
-        coatTint = new Color(tint.ToVector3() * Style.Coats[coat % Style.Coats.Length]);
-        bool caparison = barding == "caparison";
+        bool caparison = barding == "caparison", camel = barding == "camel";
+        coatTint = new Color(tint.ToVector3() * (camel ? Style.CamelCoat : Style.Coats[coat % Style.Coats.Length]));
         float gait = Math.Clamp(MathF.Abs(speed) / 11, 0, 1);
         float amp = MathF.Abs(speed) < 0.3f ? 0 : 14 + 30 * gait;
         float bob = MathF.Sin(anim * MathF.Tau) * 0.05f * gait;
@@ -176,6 +177,7 @@ sealed class Puppet
             Axial(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), "hleg");
         }
         Long(new(0, y, -0.82f), new(0, y, 0.82f), "hbody");
+        if (camel) Long(new(0, y + 0.4f, -0.5f), new(0, y + 0.4f, 0.2f), "hhump", 0.01f);
         if (Detail == 0) Bill(new(0, y, 0.6f), "hchest", false, -0.05f);
         if (Detail == 0) Bill(new(0, y, -0.55f), "hrump", false, -0.05f);
         Long(new(0, y + 0.17f, 0.62f), new(0, y + 0.73f, 1.0f), "hneck");
@@ -297,7 +299,7 @@ sealed class Puppet
             return;
         }
         pal = "/n";
-        tint = new Color(Style.Coats[h.Coat % Style.Coats.Length]);
+        tint = new Color(h.Barding == "camel" ? Style.CamelCoat : Style.Coats[h.Coat % Style.Coats.Length]);
         Flat(new(0, 0.05f, 0), "hbody", true);
         Flat(new(0.2f, 0.06f, 1.2f), "hhead", true);
         Flat(new(-0.55f, 0.04f, 0.5f), "hleg", false);

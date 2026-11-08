@@ -20,6 +20,7 @@ public static class Dirs
 /// A horse. Speeds in m/s, Accel in m/s^2, TurnRate in rad/s at a standstill (it falls as speed rises).
 /// Barding is what it wears: "saddle" (saddle cloth) or "caparison" (full cloth barding and a steel chanfron);
 /// "wolf" is not a horse at all but a warg, drawn with the wolf rig (docs/CREATURES.md).
+/// "camel" is the horse rig in a sand coat with a hump (docs/WORLD.md W4).
 public sealed record Mount(string Id, string Name, float Hp, float Trot, float Gallop, float Accel, float TurnRate, string Barding)
 {
     public static Mount Courser => Troops.Mount("courser");
@@ -36,14 +37,16 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public bool Beast => Face == "wolf";
     /// The sprite family of the bare head.
     public string HeadKey => Face == "man" ? "head" : "head." + Face;
-    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen" };
+    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen", "turban", "steppe" };
     // Goblin kit: "rags" (bare green arms), "hide" (bare green legs), "bare" feet, "claw" hands.
     // Undead kit: "bones" (a ribcage and bare bone), "shroud" (a ghoul's grave wrappings over grey skin), "robe" (a necromancer's), "bone" feet and hands.
-    public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate", "fur", "rags", "bones", "shroud", "robe" };
+    // The new realms (docs/WORLD.md W4): "lamellar" (rows of small plates), "deel" (a long wrapped steppe coat), "brigandine"
+    // (cloth over riveted plates); the "turban" wound over a spiked cap, the fur-brimmed "steppe" helm; the tall "pavise".
+    public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate", "fur", "rags", "bones", "shroud", "robe", "lamellar", "deel", "brigandine" };
     public static readonly string[] LegsKinds = { "cloth", "mail", "plate", "hide", "bones", "shroud" };
     public static readonly string[] FeetKinds = { "boots", "sabatons", "bare", "bone" };
     public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw", "bone" };
-    public static readonly string[] Shields = { "none", "round", "kite", "heater" };
+    public static readonly string[] Shields = { "none", "round", "kite", "heater", "pavise" };
     public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff" };
     public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
 }
@@ -52,7 +55,7 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
 public sealed class UnitType
 {
     public string Id = "", Name = "";
-    /// "azure", "crimson", "northern" or "common" (open to every culture); see Data/factions.json.
+    /// A culture id from Data/factions.json, "common" (open to every culture) or "wild" (creatures).
     /// "wild" is a creature (docs/CREATURES.md): never recruited from a village and outside every upgrade tree.
     public string Culture = "common";
     /// What a wild troop is ("goblin"); empty for men.

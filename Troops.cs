@@ -82,13 +82,14 @@ public static class Troops
     /// Data checks: links exist, upgrades raise the tier, every look part has sprites, cavalry has horses.
     public static IEnumerable<string> Validate()
     {
+        if (troops == null) Load();
         foreach (var t in troops!.Values)
         {
             foreach (var u in t.UpgradesTo)
                 if (!troops.TryGetValue(u, out var next)) yield return $"{t.Id} upgrades to unknown {u}";
                 else if (next.Tier <= t.Tier) yield return $"{t.Id} -> {u} does not raise the tier";
             if ((t.Class == UnitClass.Cavalry) != (t.Mount != null)) yield return $"{t.Id}: cavalry needs a mount and only cavalry has one";
-            if (t.Culture is not ("common" or "azure" or "crimson" or "northern" or "wild")) yield return $"{t.Id}: unknown culture {t.Culture}";
+            if (t.Culture is not ("common" or "wild") && Factions.Culture(t.Culture) == null) yield return $"{t.Id}: unknown culture {t.Culture}";
             if (t.Wild != (t.Breed != "")) yield return $"{t.Id}: a wild troop needs a breed, and only wild troops have one";
             if (t.Wild && t.UpgradesTo.Length > 0) yield return $"{t.Id}: wild troops do not upgrade";
             foreach (var u in t.UpgradesTo)
@@ -109,7 +110,7 @@ public static class Troops
             if (!Look.Weapons.Contains(l.Weapon)) yield return $"{t.Id}: unknown weapon {l.Weapon}";
         }
         foreach (var m in mounts!.Values)
-            if (m.Barding is not ("saddle" or "caparison" or "wolf")) yield return $"{m.Id}: unknown barding {m.Barding}";
+            if (m.Barding is not ("saddle" or "caparison" or "wolf" or "camel")) yield return $"{m.Id}: unknown barding {m.Barding}";
     }
 
     /// Every troop reachable from `id` by upgrading (including itself).

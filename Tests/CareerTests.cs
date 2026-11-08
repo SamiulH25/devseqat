@@ -128,7 +128,7 @@ public static partial class SelfTest
             var c = Campaign.New(seed);
             var pilot = new Pilot(c);
             for (int d = 0; d < 120 && c.Rank < Rank.Vassal; d++) pilot.Run(24);
-            Console.WriteLine($"pilot career (seed {seed}): {c.Stage} on day {c.Day}, renown {c.Captain.Renown:0}, {pilot.Battles} battles");
+            Console.WriteLine($"pilot career (seed {seed}): {c.Stage} on day {c.Day}, renown {c.Captain.Renown:0}, {pilot.Battles} battles ({pilot.Won} won)");
             if (c.Rank >= Rank.Vassal) made++;
         }
         Check(made >= 2, $"the pilot reaches vassal within 120 days in two seeds of three ({made} of {tried})");
@@ -204,10 +204,17 @@ public static partial class SelfTest
         Check(c.UnrestDrift(foreign).Drift > 0.3f, "foreign rule and high taxes stir unrest: " + string.Join(" ", c.UnrestDrift(foreign).Why));
         foreign.Unrest = 69;
         Party? rebels = null;
-        for (int d = 0; d < 40 && rebels == null; d++) { Days(c, 1); rebels = c.Rebels(foreign); }
-        Check(rebels != null, "a neglected fief rises in revolt");
-        Console.WriteLine($"fiefs: {foreign.Name} revolts on day {c.Day} with {rebels!.Men} rebels, unrest {foreign.Unrest:0}");
-        c.S.Parties.Remove(rebels); // left in the field, the rebels could be beaten and calm the place
+        bool rose = false;
+        // A rising can be put down the same day it starts (the log still tells of it).
+        for (int d = 0; d < 40 && rebels == null && !rose; d++)
+        {
+            Days(c, 1);
+            rebels = c.Rebels(foreign);
+            rose = c.S.Log.Any(e => e.At >= c.S.Hours - 24 && e.Text.Contains($"{foreign.Name} rises in revolt"));
+        }
+        Check(rebels != null || rose, "a neglected fief rises in revolt");
+        Console.WriteLine($"fiefs: {foreign.Name} revolts on day {c.Day} with {rebels?.Men.ToString() ?? "a band put down that day:"} rebels, unrest {foreign.Unrest:0}");
+        if (rebels != null) c.S.Parties.Remove(rebels); // left in the field, the rebels could be beaten and calm the place
         // Set it at the brink just before the day turns, so nothing in the world (a holdout burnt out nearby: -3) calms it first.
         while (c.S.Hours % 24 < 23) { c.Tick(0.5f); c.Encounter = null; c.Arrived = null; }
         foreign.Unrest = 99.9f;
@@ -258,11 +265,13 @@ public static partial class SelfTest
     {
         var c = Campaign.New(7007);
         var owners = c.S.Settlements.ToDictionary(s => s.Id, s => s.Faction);
-        float peakExh = 0;
-        int hosts = 0;
+        float peakExh = 0, peakShare = 0;
+        int hosts = 0, fellEarly = 0;
         for (int d = 0; d < 240; d++)
         {
             Days(c, 1);
+            peakShare = MathF.Max(peakShare, Enumerable.Range(0, c.S.Factions.Count).Max(f => c.S.Provinces.Count(p => p.Faction == f)) / (float)c.S.Provinces.Count);
+            if (d < 120) fellEarly = Math.Max(fellEarly, Enumerable.Range(0, c.S.Factions.Count).Count(f => !c.Alive(f)));
             peakExh = MathF.Max(peakExh, c.S.Wars.Where(w => w.Active).Select(w => MathF.Max(w.ExhA, w.ExhB)).DefaultIfEmpty(0).Max());
             hosts += c.S.Log.Count(e => e.At >= c.S.Hours - 24 && e.Text.Contains("musters a host"));
         }
@@ -273,7 +282,10 @@ public static partial class SelfTest
         Check(peakExh > 30, "wars wear realms down");
         Check(terms.Count > 0, "a long war ends in peace on terms");
         Check(moved > 0 && hosts > 0, "hosts march and seats change hands");
-        for (int f = 0; f < 3; f++)
+        // The snowball guard (docs/WORLD.md W5; --realms runs it on more seeds): no realm falls in the first year, none runs away.
+        Console.WriteLine($"  largest realm {peakShare * 100:0}% of the provinces, {fellEarly} fallen in year one");
+        Check(fellEarly == 0 && peakShare <= 0.4f, "no realm falls in the first year and none holds over 40% of the map");
+        for (int f = 0; f < c.S.Factions.Count; f++)
             if (c.Alive(f))
             {
                 Check(c.S.Factions[f].Treasury >= 0, $"realm {f} keeps a treasury");

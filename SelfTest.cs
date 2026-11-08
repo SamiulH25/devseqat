@@ -86,6 +86,11 @@ public static partial class SelfTest
         Couriers();
         WorldNames();
         Sites();
+        MapIndexMatches();
+        RealmsFromData();
+        ClimatesAndRidges();
+        SevenRealms();
+        RealmTempers();
         Roads();
         Quests();
         TownLife();

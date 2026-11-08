@@ -26,17 +26,20 @@ public sealed partial class Campaign
     string[]? names;
     /// Party and event caps for the balance numbers scaled by how much world there is (a bigger map raises more lords and
     /// brigands). The numbers in Data/campaign.json are quoted against the original 26-province map.
-    float ProvinceScale => Map.ProvinceScale;
+    float ProvinceScale => Map.PartyScale;
     /// Lords spread thinner than brigands: a realm with four times the ground raises about twice the armies, not four
     /// times (village recruits are the bottleneck, and a crowd of lords starves all of them).
-    public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale);
+    /// LordsPerFaction is quoted for the three realms of the original map: more realms share the same land, so each raises
+    /// fewer lords and the world's total follows the size of the map, not the number of realms (docs/WORLD.md W0).
+    public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale * LegacyRealms / Math.Max(1, S.DataRealms));
+    public const int LegacyRealms = 3;
     public int BanditsWanted => (int)MathF.Round(B.BanditsMax * ProvinceScale);
     int BanditSpawnsWanted => Math.Max(1, (int)MathF.Round(B.BanditSpawnsPerDay * ProvinceScale));
 
     public Campaign(CampaignState state)
     {
         S = state;
-        Map = WorldMap.Generate(state.Seed, state.MapExtent);
+        Map = WorldMap.Generate(state.Seed, state.MapExtent, state.Layout, state.DataRealms);
         rng = new Rng(state);
         Factions.Bind(S.Factions);
         MigrateGear();
@@ -51,29 +54,36 @@ public sealed partial class Campaign
 
     // ---------- a new campaign ----------
 
-    public static Campaign New(int seed)
+    /// A new campaign; `realm` is the realm you start in (docs/WORLD.md W5): its capital, its villages' recruits.
+    public static Campaign New(int seed, int realm = 0)
     {
-        var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent };
+        var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent,
+            Layout = WorldMap.CurrentLayout, DataRealms = Factions.All.Count };
         s.Captain.Renown = B.StartRenown;
         StartingSkills(s.Captain);
-        var map = WorldMap.Generate(seed, s.MapExtent);
+        var map = WorldMap.Generate(seed, s.MapExtent, s.Layout, s.DataRealms);
         s.Provinces = map.Provinces;
         s.Settlements = map.Settlements;
         int factions = s.Provinces.Max(p => p.Faction) + 1;
         s.Factions = Enumerable.Range(0, factions).Select(f => new FactionState { Id = f, Name = Factions.All[f].Name, Treasury = 2000, NextCouncil = (7 + 3 * f) * 24 }).ToList();
-        // The Crown and the Compact are at war; the Northmarch keeps truces with both, for 20 and 40 days.
-        s.Wars.Add(new War { A = 0, B = 1 });
-        if (factions > 2)
+        // The opening wars and truces come from Data/factions.json (border wars: the Crown and the Northmarch, the Compact and the Khaganate).
+        foreach (var r in Factions.Relations)
         {
-            s.Wars.Add(new War { A = 0, B = 2, Active = false, TruceUntil = 20 * 24 });
-            s.Wars.Add(new War { A = 1, B = 2, Active = false, TruceUntil = 40 * 24 });
+            int a = Factions.IndexOf(r.A), b = Factions.IndexOf(r.B);
+            if (a < 0 || b < 0 || a >= factions || b >= factions) continue;
+            s.Wars.Add(r.War ? new War { A = a, B = b } : new War { A = a, B = b, Active = false, TruceUntil = r.TruceDays * 24 });
         }
         var c = new Campaign(s);
-        var capital = s.Settlements.Where(t => t.Kind == SettlementKind.Town && t.Faction == 0).OrderBy(t => t.Pos.X).First();
-        var player = new Party { Id = s.NextId++, Kind = PartyKind.Player, Name = "Your company", Faction = 0, Pos = capital.Pos + new Vector2(2, 0), Tier = 2 };
+        realm = Math.Clamp(realm, 0, factions - 1);
+        // The Crown's westernmost town (as it always was); another realm's town nearest the middle of its land.
+        var towns = s.Settlements.Where(t => t.Kind == SettlementKind.Town && t.Faction == realm).ToList();
+        var middle = s.Provinces.Where(p => p.Faction == realm).Aggregate(Vector2.Zero, (a, p) => a + p.Center) / Math.Max(1, s.Provinces.Count(p => p.Faction == realm));
+        var capital = realm == 0 ? towns.OrderBy(t => t.Pos.X).First() : towns.OrderBy(t => Vector2.Distance(t.Pos, middle)).First();
+        var player = new Party { Id = s.NextId++, Kind = PartyKind.Player, Name = "Your company", Faction = realm, Pos = capital.Pos + new Vector2(2, 0), Tier = 2 };
         player.Goal = player.Pos;
         s.Parties.Add(player);
-        player.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(24), 0, capital));
+        if (s.Captain.Contract >= 0) s.Captain.Contract = realm; // you start in the pay of the realm you chose
+        player.Companies.Add(c.NewCompany(Factions.Root(Factions.CultureOf(realm)), "infantry", c.Scaled(24), 0, capital));
         player.Companies.Add(c.NewCompany("levies", "spears", c.Scaled(15), 0, capital));
         c.MakeCaptainCharacter(capital.Culture);
         c.SeedBuildings();
@@ -165,13 +175,24 @@ public sealed partial class Campaign
             hours -= h;
             double before = S.Hours;
             S.Hours += h;
+            Probe?.Invoke(-1);
             if ((int)before != (int)S.Hours) Hourly();
+            Probe?.Invoke(0);
             if ((int)(before / 24) != (int)(S.Hours / 24)) Daily();
+            Probe?.Invoke(1);
             if ((int)(before / 168) != (int)(S.Hours / 168)) Weekly();
+            Probe?.Invoke(2);
             Move(h);
+            Probe?.Invoke(3);
             Encounters();
+            Probe?.Invoke(4);
         }
     }
+
+    /// Set by the campaign bench (`--campaign-bench`): called at the end of each tick stage (index into <see cref="Stages"/>;
+    /// -1 = step start).
+    public Action<int>? Probe;
+    public static readonly string[] Stages = { "hourly", "daily", "weekly", "move", "encounters" };
 
     public float Speed(Party p)
     {
@@ -278,7 +299,8 @@ public sealed partial class Campaign
 
     /// How much harder a party fights than its strength says, on the defending side of an auto-resolve: a holdout dug in,
     /// a troll in the dark (and the sun makes it slow and weak, as in a battle); the dead by night (by day they lie in the earth).
-    float Edge(Party p) => p.Lair ? B.HoldoutDefence : p.Breed == "troll" ? (Night ? B.TrollNight : B.TrollDay) : p.Breed == "undead" ? (Night ? B.UndeadNight : B.UndeadDay) : 1;
+    /// How much harder a party fights than its strength says: a holdout's den, a troll by night, the dead by night.
+    public float Edge(Party p) => p.Lair ? B.HoldoutDefence : p.Breed == "troll" ? (Night ? B.TrollNight : B.TrollDay) : p.Breed == "undead" ? (Night ? B.UndeadNight : B.UndeadDay) : 1;
 
     void Hourly()
     {
@@ -357,11 +379,14 @@ public sealed partial class Campaign
             else SpawnBandits();
         MonstersDaily();
         RoadsDaily();
-        // A realm that holds close to half the seats unites the others against it: their truces with it end, and they make peace.
-        int seats = S.Settlements.Count(s => s.Kind != SettlementKind.Village);
+        // A realm that holds too many of the seats (LeaderShare: close to half of three realms', less with more) unites the others
+        // against it: their truces with it end, its neighbours take up arms, and they make peace among themselves.
         for (int f = 0; f < S.Factions.Count && S.Factions.Count > 2; f++)
         {
-            if (S.Settlements.Count(s => s.Kind != SettlementKind.Village && s.Faction == f) < seats * 0.45f) continue;
+            if (!Leading(f)) continue;
+            for (int g = 0; g < S.Factions.Count; g++)
+                if (g != f && Alive(g) && WarBetween(f, g) == null && Borders(f, g) && S.Factions[g].TributaryOf != f)
+                    S.Wars.Add(new War { A = g, B = f, Active = false });
             foreach (var w in S.Wars)
             {
                 bool involves = w.A == f || w.B == f;

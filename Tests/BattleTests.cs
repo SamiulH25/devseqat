@@ -461,7 +461,7 @@ public static partial class SelfTest
         Console.WriteLine($"river: wading takes {deep:0.0}s, the ford {ford:0.0}s");
         Check(deep > ford * 1.2f, "a ford is the quick way over");
         var m = WorldMap.Generate(11);
-        Check(m.Rivers.Count == 2 && m.Rivers.All(rv => rv.Fords.Length > 0), "the map has rivers with bridges");
+        Check(m.Rivers.Count == 4 && m.Rivers.All(rv => rv.Fords.Length > 0), "the map has four rivers with bridges");
         Check(m.Settlements.All(s => m.RiverDist(s.Pos) > 4), "no settlement stands in a river");
     }
 
@@ -586,6 +586,7 @@ public static partial class SelfTest
         var torso = sheet.Rects["torso.mail.f/0"];
         Check(MathF.Abs((torso.Height - 2) * Style.Px - 0.675f) < 0.05f, "a torso keeps its size in metres");
         Check(sheet.Rects.Values.Any(r => r.Height > 90), "polearms are painted at full length");
+        Console.WriteLine($"sprites: {sheet.Rects.Count} parts for {Style.Sides.Length} palettes, atlas {sheet.Filled * 100 / SpriteSheet.H}% full");
     }
 
     // ---------- campaign (docs/CAMPAIGN.md section 11) ----------

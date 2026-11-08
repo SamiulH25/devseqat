@@ -18,7 +18,7 @@ public static partial class SelfTest
         }
         var c = Campaign.New(5);
         var names = Names.Get();
-        var lords = c.S.Characters.Where(x => x.Kind == "lord" && x.Faction is >= 0 and < 3).ToList();
+        var lords = c.S.Characters.Where(x => x.Kind == "lord" && x.Faction >= 0 && x.Faction < Factions.All.Count).ToList();
         int native = lords.Count(l => names.LordsOf(Factions.CultureOf(l.Faction)).Contains(l.Name.Split(' ')[1]));
         Check(lords.Count > 0 && native == lords.Count, $"lords carry their culture's names ({native}/{lords.Count})");
         Check(lords.Select(l => l.Name).Distinct().Count() >= lords.Count - 1, "lords' names hardly ever repeat");
@@ -85,9 +85,10 @@ public static partial class SelfTest
     static void Roads()
     {
         var c = Campaign.New(9);
-        for (int d = 0; d < 4; d++) { c.Tick(24); c.Encounter = null; c.S.Event = null; }
+        // Whole game days: an encounter cuts a tick short, and a war next door brings them early.
+        for (double end = c.S.Hours + 4 * 24; c.S.Hours < end - 1e-3;) { c.Tick((float)Math.Min(1, end - c.S.Hours)); c.Encounter = null; c.S.Event = null; c.Arrived = null; }
         int caravans = c.Caravans.Count();
-        Console.WriteLine($"roads day 4: {caravans} caravans, {c.CaravansArrived} arrived, {c.CaravansLost} lost");
+        Console.WriteLine($"roads day {c.Day}: {caravans} caravans, {c.CaravansArrived} arrived, {c.CaravansLost} lost");
         Check(caravans >= c.CaravansWanted * 2 / 3, $"caravans take to the roads ({caravans} of {c.CaravansWanted})");
         // An arrival.
         var car = c.SpawnCaravan()!;
@@ -137,7 +138,8 @@ public static partial class SelfTest
     static void Quests()
     {
         var c = Campaign.New(9);
-        void Hours(int n) { for (int i = 0; i < n; i++) { c.Player.Moving = false; c.Tick(1); c.Encounter = null; c.S.Event = null; } }
+        // Whole game hours: a meeting stops a tick short, so keep ticking until the time has really passed.
+        void Hours(int n) { double end = c.S.Hours + n; while (c.S.Hours < end - 1e-3) { c.Player.Moving = false; c.Tick((float)Math.Min(1, end - c.S.Hours)); c.Encounter = null; c.S.Event = null; c.Arrived = null; } }
         Contract Job(string kind, int target, Settlement from) => new() { Id = c.S.NextId++, Kind = kind, Target = target, Faction = -1, From = from.Id, Deadline = (float)c.S.Hours + 72, Reward = 50 };
         bool Holds(string kind) => c.S.Contracts.Any(k => k.Kind == kind);
         var v = c.S.Settlements.First(s => s.Kind == SettlementKind.Village && !c.Refuses(s));

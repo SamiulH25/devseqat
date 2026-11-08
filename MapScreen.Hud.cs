@@ -51,6 +51,7 @@ partial class MapScreen
             case PanelKind.Beat: BeatPanel(); break;
             case PanelKind.Event: EventPanel(); break;
             case PanelKind.Divisions: DivisionsPanel(); break;
+            case PanelKind.Atlas: AtlasPanel(); break;
         }
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
@@ -300,7 +301,7 @@ partial class MapScreen
 
     void Hints()
     {
-        ui.Text("LMB MOVE / ENTER / CHASE   P PARTY   K SKILLS   L LORDS   R REALM   SPACE PAUSE   1-3 SPEED", ui.U(12), ui.H - ui.U(160), Color.White * 0.6f, 1);
+        ui.Text("LMB MOVE / ENTER / CHASE   P PARTY   K SKILLS   L LORDS   R REALM   M MAP   SPACE PAUSE   1-3 SPEED", ui.U(12), ui.H - ui.U(160), Color.White * 0.6f, 1);
         ui.Text("WASD PAN   Q/E TURN   WHEEL ZOOM   F FOLLOW   F5 SAVE  F9 LOAD   ESC MENU", ui.U(12), ui.H - ui.U(146), Color.White * 0.6f, 1);
     }
 

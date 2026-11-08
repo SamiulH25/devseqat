@@ -80,6 +80,12 @@ public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, floa
     public static readonly TerrainParams Farmland = new("Farmland", 1, 3, 0.7f, 0.6f, 70, 6, 30, 380, true);
     public static readonly TerrainParams Forest = new("Forest", 2, 4, 0.9f, 1f, 55, 22, 150, 320, false);
     public static readonly TerrainParams Hills = new("Hills", 5, 7, 1.7f, 1.4f, 66, 9, 50, 200, false);
+    /// Fens: low and wet (a stream always runs through), thick with bushes and alders.
+    public static readonly TerrainParams Marsh = new("Marsh", 1, 2, 0.5f, 0.5f, 52, 14, 90, 520, false, true);
+    /// Steppe: open grass to the horizon, gentle swells, hardly a tree (room for horse).
+    public static readonly TerrainParams Steppe = new("Steppe", 2, 3, 0.8f, 1.2f, 96, 1, 6, 60, false);
+    /// Badlands: dry, broken ground with tall knolls and little cover.
+    public static readonly TerrainParams Badlands = new("Badlands", 6, 8, 2.1f, 1.6f, 80, 2, 14, 90, false);
     /// The tournament field (S5): flat, open, a few trees at the edge.
     public static readonly TerrainParams Lists = new("Lists", 0, 0, 0.2f, 0.3f, 90, 0, 6, 30, false);
 }

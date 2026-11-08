@@ -31,9 +31,12 @@ public sealed partial class Campaign
         {
             if (s.Garrison.Any(c => Rules.RoleOf(c) == role)) continue;
             string troop = Armies.LineTroop(role, tier, s.Faction);
-            s.Garrison.Add(NewCompany(troop, role, Math.Max(4, (int)(Rules.CapOf(troop, role) * fill)), 0, s));
+            s.Garrison.Add(NewCompany(troop, role, Math.Max(4, (int)(Rules.CapOf(troop, role) * MathF.Min(1, fill * GarrisonTemper(s)))), 0, s));
         }
     }
+
+    /// How full a realm keeps its garrisons (its temper, docs/WORLD.md W5); towns and castles of no realm as the rule says.
+    static float GarrisonTemper(Settlement s) => s.Faction >= 0 ? Factions.Get(s.Faction).Garrison : 1;
 
     /// The garrison as a party for a battle; it shares the settlement's company list, so losses stick.
     public Party GarrisonParty(Settlement s) => new()
@@ -57,7 +60,7 @@ public sealed partial class Campaign
             RaiseGarrison(s, 0.4f);
             foreach (var c in s.Garrison.Where(c => c.Type.Tier <= 5))
             {
-                int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * (0.8f + 0.07f * Level(s, "walls"))) - c.Men;
+                int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * (0.8f + 0.07f * Level(s, "walls")) * GarrisonTemper(s)) - c.Men;
                 int n = Math.Min(Math.Min(want, Rules.Room(c, c.Troop)), (int)(fs.Treasury / Rules.PerMan(20)));
                 if (n <= 0) continue;
                 Rules.AddMen(c, c.Troop, n);
@@ -208,7 +211,7 @@ public sealed partial class Campaign
         var seat = S.Settlements.FirstOrDefault(t => t.Province == p.PatrolProvince && t.Kind != SettlementKind.Village);
         if (seat == null || !FactionsAtWar(p.Faction, seat.Faction) || Vector2.Distance(p.Pos, seat.Pos) > 30 * Map.Spread) return false;
         var host = S.Parties.Where(q => q.Kind == PartyKind.Lord && !q.Down && q.Faction == p.Faction && Vector2.Distance(q.Pos, seat.Pos) < 30 * Map.Spread).ToList();
-        if (host.Sum(Rules.Strength) < Rules.Strength(GarrisonParty(seat)) * 1.6f) return false;
+        if (host.Sum(Rules.Strength) < Rules.Strength(GarrisonParty(seat)) * 1.6f / Factions.Get(p.Faction).Siege) return false; // a realm's siege appetite (W5)
         foreach (var q in host)
         {
             q.SiegeTarget = seat.Id;

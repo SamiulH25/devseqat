@@ -28,7 +28,7 @@ public static partial class SelfTest
         Check(Troops.Get("goblin").Wild && Troops.Get("goblin").Breed == "goblin", "goblins are wild troops");
         foreach (var h in lairs)
         {
-            Check(c.Map.ProvinceAt(h.Pos).Kind is "Forest" or "Hills", $"{h.Name} is in forest or hill country");
+            Check(Campaign.Wild(c.Map.ProvinceAt(h.Pos)), $"{h.Name} is in wild country");
             Check(c.S.Settlements.All(s => Vector2.Distance(s.Pos, h.Pos) >= Balance.Get().HoldoutClearance * c.Map.Spread - 1e-3f), $"{h.Name} keeps away from settlements");
             Check(h.Kind == PartyKind.Monster && h.Breed == "goblin" && h.Men > 0, $"{h.Name} is held by goblins");
         }
@@ -311,7 +311,7 @@ public static partial class SelfTest
         var trolls = c.Rares.ToList();
         Check(trolls.Count == 2 && c.RaresWanted == 2, $"the world starts with two trolls ({trolls.Count})");
         foreach (var t in trolls)
-            Check(c.Map.ProvinceAt(t.Pos).Kind is "Forest" or "Hills" && t.Companies.All(co => co.Troop == "troll"), $"{t.Name} lives in the wilds");
+            Check(Campaign.Wild(c.Map.ProvinceAt(t.Pos)) && t.Companies.All(co => co.Troop == "troll"), $"{t.Name} lives in the wilds");
         var troll = trolls[0];
         c.Player.Pos = troll.Pos + new Vector2(4, 0) * c.Map.Spread;
         c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 13;

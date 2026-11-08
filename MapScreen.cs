@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed partial class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -72,6 +72,7 @@ sealed partial class MapScreen
         c.Map.Season = season = c.SeasonIndex;
         terrain = c.Map.BuildTerrain();
         world = new World(gd, terrain);
+        atlasIds = null;
         world.SetFog(260, 700);
         bearers.Clear();
         focus = c.Player.Pos;
@@ -157,7 +158,7 @@ sealed partial class MapScreen
             if (C.SeasonIndex != season) { var keep = (focus, follow); Open(C); (focus, follow) = keep; C.Log($"{C.Season} comes."); }
             Trails();
         }
-        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions)
+        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas)
             panel = panel is PanelKind.Upgrade or PanelKind.Divisions ? PanelKind.Party : PanelKind.None;
         if (renaming != null) Rename();
         else Ui.Typed.Clear();
@@ -169,6 +170,8 @@ sealed partial class MapScreen
         else if (panel == PanelKind.Realm && Pressed(Keys.R)) panel = PanelKind.None;
         else if (panel is PanelKind.None or PanelKind.Party && Pressed(Keys.V)) { panel = PanelKind.Divisions; note = ""; }
         else if (panel == PanelKind.Divisions && Pressed(Keys.V)) panel = PanelKind.None;
+        else if (panel == PanelKind.None && Pressed(Keys.M)) { panel = PanelKind.Atlas; note = ""; }
+        else if (panel == PanelKind.Atlas && Pressed(Keys.M)) panel = PanelKind.None;
         // A career beat or the council's word waits for the map to be clear (F5).
         if (panel == PanelKind.None && C.Beat != null) { panel = PanelKind.Beat; speed = 0; }
         if (panel == PanelKind.None && C.S.GameOver) { panel = PanelKind.GameOver; speed = 0; }
@@ -445,6 +448,7 @@ sealed partial class MapScreen
             case "divisions": panel = PanelKind.Divisions; note = ""; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;
             case "realm": realmTab = 0; panel = PanelKind.Realm; note = ""; break;
+            case "atlas": panel = PanelKind.Atlas; note = ""; break;
             case "career": realmTab = 1; panel = PanelKind.Realm; note = ""; break;
             case "fief": at = s; tab = "FIEF"; panel = PanelKind.Settlement; note = ""; break;
             case "household": charTab = C.S.Factions.Count; panel = PanelKind.Characters; note = ""; break;

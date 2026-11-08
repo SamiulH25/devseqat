@@ -100,8 +100,17 @@ partial class MapScreen
         ui.TextC(name, c.Center.X, y, Style.Text, ui.TW(name, 2) <= c.Width ? 2 : 1); y += ui.U(18);
         var cult = Factions.Culture(Factions.CultureOf(f));
         string text = (cult?.Text ?? "").ToUpperInvariant();
-        while (text.Length > 4 && ui.TW(text, 1) > c.Width) text = text[..^2];
-        ui.TextC(text, c.Center.X, y, Style.Dim, 1); y += ui.U(14);
+        // Long culture lines wrap once at a comma, then shorten.
+        string second = "";
+        int cut = text.IndexOf(", ");
+        if (ui.TW(text, 1) > c.Width && cut > 0) { second = text[(cut + 2)..]; text = text[..(cut + 1)]; }
+        foreach (var line in second == "" ? new[] { text } : new[] { text, second })
+        {
+            string l = line;
+            while (l.Length > 4 && ui.TW(l, 1) > c.Width) l = l[..^2];
+            ui.TextC(l, c.Center.X, y, Style.Dim, 1); y += ui.U(second == "" ? 14 : 11);
+        }
+        if (second != "") y += ui.U(3);
         var (st, sc) = Stance(f);
         int chipW = ui.TW(st, 1) + ui.U(10);
         ui.Chip(c.Center.X - chipW / 2, y, st, sc); y += ui.U(20);
@@ -132,6 +141,8 @@ partial class MapScreen
         {
             var ruler = C.RulerOf(f);
             string rn = ruler == null ? "NONE" : ruler == C.Me ? "YOU" : ruler.Name.ToUpperInvariant();
+            int sp = rn.IndexOf(' ');
+            if (ui.TW(rn, 1) > c.Width - ui.U(56) && sp > 0) rn = rn[(sp + 1)..]; // drop the title before cutting the name
             while (rn.Length > 4 && ui.TW(rn, 1) > c.Width - ui.U(56)) rn = rn[..^2];
             ui.Text("RULED BY", c.X, y, Style.Dim, 1); ui.TextR(rn, c.Right, y, Style.Text, 1); y += ui.U(14);
         }

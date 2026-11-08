@@ -35,6 +35,8 @@ dotnet run -c Release -- --pacing 8                      # stand-in captain only
 dotnet run -- --replay [file]                            # replay replays/last-battle.json, check same outcome
 dotnet run -- --write-controls                           # write default controls.json
 dotnet run -c Release -- --bench 1500                    # headless 1500-a-side battle: ms per tick by stage (3000 men ~3.6 ms)
+dotnet run -c Release -- --realms 8                      # snowball guard: N campaigns x 240 days, realm shares -> balance/realms.csv (~3 min)
+dotnet run -c Release -- --campaign-bench 30             # headless campaign for N days: ms a day by tick stage (~76 ms on the 115-province map)
 ```
 
 Rendering without a display (works in the cloud container, software GL via Mesa llvmpipe):
@@ -112,7 +114,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 `Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`,
 `SwearFealty`, `ProposeWar`, `SetObjective`, `DeclareIndependence`, `DeclareWar`, `OfferPeace`...
 `Daily` ends with `FiefsDaily` then `CareerDaily` (rulers, councils due, rank beats, win/loss). Events the map must show once are plain fields:
-`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm, V divisions (hard-coded in `MapScreen.Update`).
+`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm, V divisions, M realm map (hard-coded in `MapScreen.Update`).
 
 ## File guide (where to look for what)
 
@@ -139,7 +141,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Duels before a battle: who accepts, the lord's fighting form, the fight (`BattleSetup.Duel`, `BattleOptions.Duel`), what it does to the battle | `Campaign/Duels.cs` (`CannotChallenge`, `LordChampion`, `PrepareDuel`, `FinishDuel`); `Battle.SetupDuel`; CHALLENGE in `MapScreen.Dialogs.cs` `EncounterPanel` |
 | Lord/bandit/realm AI, spawning | `Campaign/CampaignAI.cs` (`LordThink`, `BanditThink`, `FactionAI`) |
 | Company math, auto-resolve, army building | `Campaign/Rules.cs` |
-| World generation, provinces, rivers, roads | `Campaign/WorldMap.cs` |
+| World generation, provinces, rivers, roads / the look-up grid behind `ProvinceAt`, `RoadDist`, `RiverDist` | `Campaign/WorldMap.cs` / `Campaign/MapIndex.cs` (exact: must answer as the full scans do, `SelfTest.MapIndexMatches`) |
 | Prisoners, officers, food, contracts | `Campaign/CampaignWar.cs` |
 | Career ranks, fealty, realm council, founding a realm, win/loss (F5) | `Campaign/Career.cs` (`Rank`, `Council`, `DeclareIndependence`, `CheckEnd`) |
 | Fief prosperity/unrest/taxes, buildings, revolts, vassals and orders, defection (F6) | `Campaign/Fiefs.cs` (`FiefsDaily`, `Build`, `RaiseVassal`, `OrderedProvince`) |
@@ -154,9 +156,9 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Town life: tavern rumours, tournaments as small battles (`BattleSetup.Tournament`, `BattleOptions.Tournament`), town flavour line | `Campaign/Town.cs` (`Rumours`, `Follow`, `PrepareTournament`, `FinishTournament`, `AutoTournament`, `Flavour`); `MapScreen.Settlement.cs` `TavernTab`, `EldersTab` |
 | Your record: deeds, the chronicle's memory, the tally, the end summary | `Campaign/Record.cs` (`Deed`, `Tally`, `ChronicleEntries`, `Summary`); sight `Campaign.PlayerSight`/`InSight` (Campaign.cs); peace offers `SuePeace` (Diplomacy.cs) |
 | Life on the roads: caravans between towns, pilgrims to shrines, meeting them (buy, news, rob) | `Campaign/Roads.cs` (`RoadsDaily`, `SpawnCaravan`, `CaravanThink`, `Arrive`, `CaravanLost`, `Rob`); `PartyKind.Caravan`; `MapScreen.MeetingPanel` |
-| Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
+| Realms and cultures data: lines, heraldry palette, home on the map, town flavour, opening wars (`relations`) | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`); `WorldMap.GrowRealms` lays them out; a realm's temper (aggression, garrison, siege, tribute, hunts) is read in `Diplomacy.cs` (`WarAppeal`, `AlliancesDaily`, `Leading`), `CampaignAI.LordThink` and `CampaignSiege` |
 | Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
-| Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |
+| Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Atlas.cs` (M: realm map, province colours and borders, legend), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |
 | Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` (orders, goals, `Send`) + `.Draw.cs` (render, particles, culling, detail) + `Hud.cs` (2D drawing + hit-testing) + `Hud.Overlays.cs` (menu, after-action result, controls) + `Hud.Divisions.cs` |
 | Keys / rebinding | `Controls.cs` (`Act` enum + `Defaults` dict) |
 | 3D meshes (terrain, trees, towns, grass) | `World.cs` |
@@ -168,9 +170,9 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`) |
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
 | Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs`, `Bench.cs` |
-| Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs`, `Tests/CreatureTests.cs` |
+| Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs`, `Tests/CreatureTests.cs`, `Tests/MapTests.cs` |
 | Developer guide (systems in depth, worked examples) | `docs/DEVELOPING.md` |
-| Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications), `docs/COMBAT_OVERHAUL.md` (plan: sergeant divisions + battle scale), `docs/CREATURES.md` (plan: monsters, creature encounters and troops), `docs/SIDE_CONTENT.md` (plan: sites, side quests, caravans, town life, events, polish), `docs/PROGRESSION.md` (plan: captain gear, combat, skill tree, rank rewards, battle goals) |
+| Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications), `docs/COMBAT_OVERHAUL.md` (plan: sergeant divisions + battle scale), `docs/CREATURES.md` (plan: monsters, creature encounters and troops), `docs/SIDE_CONTENT.md` (plan: sites, side quests, caravans, town life, events, polish), `docs/PROGRESSION.md` (plan: captain gear, combat, skill tree, rank rewards, battle goals), `docs/WORLD.md` (plan: bigger world, seven realms) |
 
 ## Recipes
 
@@ -182,6 +184,10 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 - **Add a count of men or a per-man price in the campaign:** armies are `Balance.ArmyScale` (3) times the base numbers. Write a count
   as `Scaled(n)` and anything paid per man or derived from `Rules.Strength` as `Rules.PerMan(x)` (docs/DEVELOPING.md 5.7).
   With ArmyScale 1 the campaign must play exactly as before; compare `--selftest CampaignRun`'s pressure line at 1 and 3.
+- **Add a realm:** an entry in `Data/factions.json` (`palette` = a new `Style.Sides` entry in both `Standard()` and `ColorBlind()`,
+  with its own `Emblem` charge; `home`; four seven-troop `lines` of its culture, common or kin troops), a culture (root, `kin`,
+  `flavour`), its `relations`, and place/lord names in `Data/names.json`. New maps need a new `WorldMap.CurrentLayout`
+  (existing layouts must keep their realm homes). `SelfTest.SevenRealms` checks heraldry and lines.
 - **Add a piece of captain gear:** an entry in `Data/gear.json` (slot weapon/shield/body/helm/horse; look = an existing sprite part;
   horse = a mount id from troops.json). `Gear.Validate` (run by `SelfTest.Armoury`) checks it.
 - **Add a campaign balance value:** add the field with its default to `Balance` (CampaignState.cs) AND to `Data/campaign.json` (they must match; `SelfTest.BalanceMatchesData` fails otherwise).
@@ -204,7 +210,11 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 
 - Headless code (Battle*, Squad, Units, Troops, Terrain, Campaign/*) must not use MonoGame graphics/audio/input.
 - Ground positions are `Vector2(X = world X, Y = world Z)`; height comes from `Terrain.Height(pos)`.
-- Faction ids index `CampaignState.Factions`; ids past `Data/factions.json` are realms founded in play (F5). Use the instance
+- Faction ids index `CampaignState.Factions`; realms founded in play (F5) carry `FactionState.Founded` (ids past the save's
+  `DataRealms`; never test `id >= Factions.All.Count`, the data may have grown since the save). A map's realm layout comes from
+  `CampaignState.Layout` (0 = the old fixed bands, kept for old saves; 1 = realms grow from `home` in `factions.json`;
+  2 = also climates, ridges, four rivers on the 620 map). A seed's map must never change for an existing layout: put new
+  generation behind a new layout number. Party counts scale with `WorldMap.PartyScale` (land area past the 392 map). Use the instance
   `campaign.FactionNames[f]` (not a static list) and `Factions.Get(f)`, which sees founded realms once `Factions.Bind` ran (the `Campaign` constructor does it).
 - The career rank is derived (`Campaign.Rank`), never stored; `CaptainState.BestRank` only remembers which beats were shown.
 - Team 0 = player side, team 1 = enemy. Palette 3 = bandits (and, for now, monsters). `PartyKind.Caravan` parties (merchants,
