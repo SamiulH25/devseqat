@@ -66,12 +66,12 @@ The core of the overhaul is a **headless ground layer** on the terrain's own 2.5
 so it is cheap to read. Every system reads this layer, not the foliage list.
 
 ```csharp
-public enum Ground : byte { Grass, Road, Crops, Scrub, Stony, Mud, Wood, DenseWood, Ford, Water, Bridge, Street, Sand }
+public enum GroundKind : byte { Grass, Road, Crops, Scrub, Stony, Mud, Wood, DenseWood, Ford, Water, Bridge, Street, Sand }
 public readonly record struct Feature(FeatureKind Kind, Vector2 A, Vector2 B, float Width, int Id); // hedge, fence, wall, ditch, bridge, palisade, stakes
 partial class Terrain {
     byte[] ground;                         // Ground per vertex cell
     byte[] cover;                          // 0-255: how much this cell hides men and stops arrows (woods, crops, hedges)
-    public Ground GroundAt(Vector2 p);
+    public GroundKind GroundAt(Vector2 p);
     public float CoverAt(Vector2 p);       // 0..1
     public IReadOnlyList<Feature> Features;// line obstacles (segments, not circles)
 }
@@ -306,4 +306,19 @@ T6 medium, T7 medium, T8 small.
 
 ## As built
 
-(nothing yet)
+### T0 (done)
+- `TerrainGround.cs`: `GroundKind` (named so, since `BattleOptions.Ground` is already the `TerrainParams` field), `GroundDef`,
+  the `Grounds` table (loads `Data/ground.json`, `Validate`), and the `Terrain` partial with `GroundAt`, `CoverAt`, `GroundDefAt`.
+  The layer is one byte per vertex cell (nearest vertex). `PaintGround` marks water and fords, then the road (within 2.5 m),
+  then woods (the circles `PlaceFoliage` grows them in, now kept in `woods`). Everything else is Grass. Flat test fields and
+  the campaign map have no layer and answer Grass.
+- `Data/ground.json`: all thirteen kinds, neutral (multipliers 1, cover and stumble 0). Nothing in the sim reads it yet.
+- `Terrain.Version` = 1, recorded in `Replay.TerrainVersion` (`Replay.CurrentVersion` 2). `--replay` refuses a replay made on
+  other ground, with a message. Old replays read 0 and are refused.
+- `--bench` first prints the terrain build time.
+- Test `GroundLayer`: the data validates, the same seed gives the same ground (FNV hash, `Terrain.GroundHash`), and rivers,
+  fords, the road and woods are marked.
+- A note for T2: the battlefield road can cross the river with no bridge (the road cells there are Water). The River line
+  layout must put a bridge where they cross.
+- Baseline (`--bench 1500`, cloud container): terrain built in 63 ms; 3,013 men at 4.47 ms a tick mean, 6.52 p95
+  (think 1.54, move 1.32, morale 1.17).

@@ -45,6 +45,7 @@ public static partial class SelfTest
         FatigueAndSupply();
         Generals();
         Rivers();
+        GroundLayer();
         CampaignWar();
         RefuseOldSave();
         Stacks();

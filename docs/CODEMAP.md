@@ -88,8 +88,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **StackResult** (record, L90)
 - **BattleResult** (record, L95)
 
-## Bench.cs (60 lines)
-- **Bench** (class, L7): Run:9, Campaign:40
+## Bench.cs (63 lines)
+- **Bench** (class, L7): Run:9, Campaign:43
 
 ## Campaign/Armoury.cs (175 lines)
 - **Campaign** (class, L4): MigrateGear:10, ChooseRoad:27, OfferRoad:51, Own:53, Unequip:56, Owns:68, Wears:69, CannotUse:72, CannotBuy:75, ArmourerStock:84, BuyGear:93, Equip:103, ClearSide:128, SellGear:131, SellPrice:141, BattleSpoil:149, SpoilFrom:159, TakeSpoil:166
@@ -318,15 +318,15 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet.cs (505 lines)
 - **Puppet** (class, L13): Puppet:28, Begin:30, Rad:39, W:40, Frame:51, Draw:75, Horse:156, Beast:211, WolfBody:221, Warg:250, BeastCorpse:268, DrawLooseHorse:280, DrawDeadHorse:288, RotY:312, Arm:319, Span:330, Pose:337, Key:338, Lerp:340, PoseOf:359, Corpse:393, Particle:409, Banner:421, Quad:440, Bill:450, Axial:461, Long:473, Plane:486, Flat:497
 
-## Replay.cs (152 lines)
-- **Replay** (class, L8): Serialize:51, Deserialize:52, Save:56, Play:63, Matches:92, Run:95
-- **Battle** (class, L104): StartRecording:111, RecordFrame:116, FinishRecording:144
+## Replay.cs (159 lines)
+- **Replay** (class, L8): Serialize:53, Deserialize:54, Save:58, Play:65, Matches:94, Run:97
+- **Battle** (class, L111): StartRecording:118, RecordFrame:123, FinishRecording:151
 
 ## ScreenHost.cs (486 lines)
 - **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:109, OpenLab:122, QuickBattle:124, StartCampaignBattle:131, FinishCampaignBattle:139, CycleQuality:147, Update:151, Draw:180, CaptureShot:207, CampaignShots:225
 
-## SelfTest.cs (169 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:121, Lancer:129, Run:138, Scaled:140, MakeWanderer:143, Days:151, Ids:163, Check:165
+## SelfTest.cs (170 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:122, Lancer:130, Run:139, Scaled:141, MakeWanderer:144, Days:152, Ids:164, Check:166
 
 ## Settings.cs (73 lines)
 - **Difficulty** (enum, L5)
@@ -356,16 +356,22 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Heraldry** (record, L8)
 - **Style** (class, L11): ColorBlind:22, Standard:35, PaletteOf:49
 
-## Terrain.cs (454 lines)
+## Terrain.cs (453 lines)
 - **FoliageKind** (enum, L5)
 - **River** (record, L10): Dist:15, AtFord:28, Carve:31, Smooth:33, Across:36
 - **SiegeWall** (class, L50): SiegeWall:58, AtGate:64, AtLadder:65, Inside:67, Raise:69
 - **Foliage** (struct, L73)
 - **TerrainParams** (record, L76)
-- **Terrain** (class, L96): WaterDepth:132, Flat:142, Terrain:143, Terrain:144, Terrain:148, Terrain:170, RawHeight:205, RoadCenter:236, RoadDist:239, Height:248, Height:260, GridHeight:261, Gradient:264, BucketOf:274, AddProp:281, Add:283, Blocked:290, PushOut:304, Core:330, PlaceFoliage:332, PlaceTown:405, SmoothStep:427, Hash:433, Noise:445
+- **Terrain** (class, L96): WaterDepth:132, Flat:142, Terrain:143, Terrain:144, Terrain:148, Terrain:170, RawHeight:206, RoadCenter:237, RoadDist:240, Height:249, Height:261, GridHeight:262, Gradient:265, BucketOf:275, AddProp:282, Add:284, Blocked:291, PushOut:305, Core:331, PlaceFoliage:333, PlaceTown:404, SmoothStep:426, Hash:432, Noise:444
 
-## Tests/BattleTests.cs (860 lines)
-- **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, CaptainKit:170, SkillBouts:228, Bout:278, Fight:292, BattleGoals:325, BannerAndLastStand:347, DuelFight:384, RangedRoles:405, FatigueAndSupply:425, Rivers:442, Generals:469, HorseDown:486, Ground:495, HoldFire:519, TroopTree:533, Sprites:557, BigBattle:595, StackBattle:625, ReplayExact:659, SpearsStopHorse:692, ScaleBattle:703, Couriers:741, DivisionGoals:762
+## TerrainGround.cs (123 lines)
+- **GroundKind** (enum, L7)
+- **GroundDef** (class, L11): ToString:16
+- **Grounds** (class, L20): Get:25, Load:31, Validate:45, Check:47
+- **Terrain** (class, L67): CellOf:76, GroundAt:83, CoverAt:85, GroundDefAt:87, PaintGround:90, InWood:108, GroundHash:115
+
+## Tests/BattleTests.cs (884 lines)
+- **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, CaptainKit:170, SkillBouts:228, Bout:278, Fight:292, BattleGoals:325, BannerAndLastStand:347, DuelFight:384, RangedRoles:405, FatigueAndSupply:425, GroundLayer:443, Rivers:466, Generals:493, HorseDown:510, Ground:519, HoldFire:543, TroopTree:557, Sprites:581, BigBattle:619, StackBattle:649, ReplayExact:683, SpearsStopHorse:716, ScaleBattle:727, Couriers:765, DivisionGoals:786
 
 ## Tests/CampaignTests.cs (1046 lines)
 - **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:41, CampaignRun:52, Progression:94, Economy:121, Bridge:133, Calibration:154, SiegeBattle:178, CampaignWar:216, RefuseOldSave:277, Stacks:303, Cultures:348, Characters:421, CampaignDivisions:526, Armoury:572, Duels:643, RidingAndBowcraft:676, PerkTiers:725, SkillRises:752, LastingWounds:805, CaptainTraits:828, HouseholdGuard:867, RankRewards:895, StartingRoad:923, SkillTree:943, BalanceMatchesData:1026, HorsesCostGold:1038

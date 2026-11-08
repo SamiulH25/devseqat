@@ -8,6 +8,9 @@ public static class Bench
 {
     public static void Run(int men, int seconds = 60)
     {
+        var built = Stopwatch.StartNew();
+        foreach (var g in new[] { TerrainParams.Meadow, TerrainParams.Forest, TerrainParams.Marsh }) _ = new Terrain(7, g);
+        Console.WriteLine($"bench: terrain builds in {built.Elapsed.TotalMilliseconds / 3:0} ms (mean of Meadow, Forest, Marsh, ground layer included)");
         var rng = new Random(7);
         var b = new Battle(7, Armies.Divide(Armies.Large(rng, 2, 0, men)), Armies.Divide(Armies.Large(rng, 2, 1, men)),
             new BattleOptions { AutoPlayer = true, Cap = men * 2 + 20 });

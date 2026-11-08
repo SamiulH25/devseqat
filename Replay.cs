@@ -7,8 +7,10 @@ namespace Ironfield;
 /// The screen records each battle and keeps the last one; `--replay file` plays it back headless and checks the outcome.
 public sealed class Replay
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
     public int Version = CurrentVersion, Seed;
+    /// The battlefield generation it was recorded on (`Terrain.Version`); 0 in replays from before it was kept.
+    public int TerrainVersion;
     public ArmySpec Player = null!, Enemy = null!;
     public BattleOptions Options = new();
     /// Where every man stood when the fighting began (after deployment).
@@ -95,6 +97,11 @@ public sealed class Replay
     public static void Run(string path)
     {
         var r = Deserialize(File.ReadAllText(path));
+        if (r.TerrainVersion != Terrain.Version)
+        {
+            Console.WriteLine($"replay {Path.GetFileName(path)} was recorded on older ground (version {r.TerrainVersion}, now {Terrain.Version}): it cannot be played back");
+            return;
+        }
         var b = r.Play();
         Console.WriteLine($"replay {Path.GetFileName(path)}: {r.Frames.Count} ticks, winner {b.Winner} after {b.Time:0.0}s, {b.Units.Count(u => u.Dead)} dead");
         Console.WriteLine(r.Matches(b) ? "replay matches the recording" : $"REPLAY DIVERGED: recorded winner {r.Winner} after {r.Time:0.0}s, {r.Dead} dead");
@@ -110,7 +117,7 @@ public sealed partial class Battle
 
     public void StartRecording(int seed)
     {
-        Recording = new Replay { Seed = seed, Player = Armies[0]!, Enemy = Armies[1]!, Options = Options };
+        Recording = new Replay { Seed = seed, TerrainVersion = Terrain.Version, Player = Armies[0]!, Enemy = Armies[1]!, Options = Options };
     }
 
     void RecordFrame(float dt)

@@ -132,7 +132,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Divisions: goals, order delay, sergeant brain, AI goals / couriers | `BattleDivision.cs` (`IssueGoal`, `OrderDelay`, `Direct`, `Brain`, `AiCommand`) / `BattleCourier.cs` |
 | Unit/troop types, look, mounts | `Units.cs`, `Troops.cs` (+ `Armies` presets, `Large`, `Divide`), `Data/troops.json` |
 | Battle inputs/outputs | `BattleTypes.cs` (`BattleOptions`, `Weather`, `BattleResult`, `CompanyResult`) |
-| Terrain, rivers, foliage placement, siege wall geometry | `Terrain.cs` (headless) |
+| Terrain, rivers, foliage placement, siege wall geometry / the ground layer (kinds of ground, cover) | `Terrain.cs` (headless) / `TerrainGround.cs` (`GroundKind`, `Grounds` <- `Data/ground.json`, `GroundAt`, `CoverAt`); docs/TERRAIN.md |
 | Campaign data model + save/load/migration | `Campaign/CampaignState.cs` (also `Rng`, `Balance` <- `Data/campaign.json`, `Names`) |
 | Campaign time, movement, encounters, hourly/daily/weekly ticks | `Campaign/Campaign.cs` |
 | Battles from the campaign: prepare, finish, auto-resolve, apply results | `Campaign/CampaignBattle.cs` (`PrepareBattle`, `FinishBattle`, `Apply`) |

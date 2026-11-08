@@ -438,6 +438,30 @@ public static partial class SelfTest
         Check(w.Night && w.Vision <= 40 && w.Spread > 1.5f && w.MudFactor < 1, "night and rain blind archers and bog horses");
     }
 
+    /// The ground layer (docs/TERRAIN.md T0): the data validates, the same seed gives the same ground, and the layer marks
+    /// what is on the field: water and fords on the river, the road, the woods; grass on a flat test field.
+    static void GroundLayer()
+    {
+        Check(!Grounds.Validate().Any(), "ground.json validates: " + string.Join("; ", Grounds.Validate()));
+        Check(Grounds.All.Count == Enum.GetValues<GroundKind>().Length, "every kind of ground has its rules");
+        var p = TerrainParams.Meadow with { River = true };
+        var a = new Terrain(21, p);
+        Check(a.GroundHash() == new Terrain(21, p).GroundHash() && a.GroundHash() != new Terrain(22, p).GroundHash(), "the same seed gives the same ground");
+        var r = a.Rivers.Single();
+        Check(a.GroundAt(r.Path[65]) == (r.AtFord(r.Path[65]) ? GroundKind.Ford : GroundKind.Water) && a.GroundAt(r.Fords[0]) == GroundKind.Ford, "the river is water, shallow at its fords");
+        var road = Enumerable.Range(0, 40).Select(i => new Vector2(-200 + i * 10, a.RoadCenter(-200 + i * 10))).First(q => a.Rivers.All(rv => rv.Dist(q) > 12));
+        Check(a.GroundAt(road) == GroundKind.Road, "the road is road (away from the river: no bridges yet)");
+        var trunks = a.Foliage.Where(f => f.Kind is FoliageKind.Pine or FoliageKind.Broadleaf && f.Radius > 0).ToList();
+        int inWood = trunks.Count(f => a.GroundAt(f.Pos) == GroundKind.Wood);
+        Check(inWood > trunks.Count / 2, $"most trees stand on wood ground ({inWood} of {trunks.Count})");
+        Check(a.GroundAt(Vector2.Zero) is GroundKind.Grass or GroundKind.Road or GroundKind.Water or GroundKind.Ford, "the middle of the field is open");
+        var flat = Terrain.Flat();
+        Check(flat.GroundAt(new Vector2(30, 30)) == GroundKind.Grass && flat.CoverAt(Vector2.Zero) == 0, "a flat test field is all grass");
+        var b = Battle.Empty(3);
+        b.StartRecording(3);
+        Check(b.Recording!.TerrainVersion == Terrain.Version && Replay.Deserialize("{\"Seed\":1}").TerrainVersion == 0, "a replay keeps the ground version it was made on");
+    }
+
     /// A battlefield river: carved below its banks, slow to wade, quicker at the fords; the map has rivers with bridges.
     static void Rivers()
     {

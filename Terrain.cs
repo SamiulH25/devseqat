@@ -93,7 +93,7 @@ public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, floa
 /// Headless battlefield ground: a heightmap (gentle rolling meadow, a few hills, a rim of high ground,
 /// a dirt road through the middle) and the placement of trees, bushes and rocks.
 /// Heights are sampled per triangle exactly as the rendered mesh is split, so units stand on the drawn ground.
-public sealed class Terrain
+public sealed partial class Terrain
 {
     /// A battlefield: +-256 m of ground on 2.5 m vertices. The campaign map is much bigger and coarser (WorldMap.WorldShape).
     public const float BattleHalf = 256, BattleStep = 2.5f;
@@ -198,6 +198,7 @@ public sealed class Terrain
             for (int x = 0; x < N; x++)
                 grid[z * N + x] = RawHeight(-Half + x * Step, -Half + z * Step);
         PlaceFoliage(new Random(seed + 99));
+        PaintGround();
     }
 
     // ---------- heights ----------
@@ -334,8 +335,6 @@ public sealed class Terrain
         bool Ok(Vector2 p, float space) => !Core(p) && RoadDist(p) > 4 && WaterDepth(p) == 0 && Rivers.All(r => r.Dist(p) > r.Width / 2 + 2) && MathF.Abs(p.X) < Half - 8 && MathF.Abs(p.Y) < Half - 8 && !Blocked(p, space)
             && (Wall == null || p.Y < SiegeWall.Outer - 6 || p.Y > 70);
         if (Wall != null) PlaceTown(rng);
-        var woods = new List<(Vector2 C, float R)>();
-
         void Wood(Vector2 c, float r)
         {
             woods.Add((c, r));

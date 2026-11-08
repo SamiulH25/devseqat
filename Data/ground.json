@@ -1,0 +1,19 @@
+{
+  // How each kind of battlefield ground plays (docs/TERRAIN.md 3). Multipliers: 1 = no change.
+  // T0: every kind is neutral; later phases give them their values.
+  "ground": [
+    { "id": "Grass",     "name": "Grass",      "text": "Open ground." },
+    { "id": "Road",      "name": "Road",       "text": "A beaten road." },
+    { "id": "Crops",     "name": "Crops",      "text": "Standing crops." },
+    { "id": "Scrub",     "name": "Scrub",      "text": "Gorse and broom." },
+    { "id": "Stony",     "name": "Stony",      "text": "Stony ground." },
+    { "id": "Mud",       "name": "Mud",        "text": "Soft, wet ground." },
+    { "id": "Wood",      "name": "Wood",       "text": "Open woodland." },
+    { "id": "DenseWood", "name": "Thick wood", "text": "Thick wood." },
+    { "id": "Ford",      "name": "Ford",       "text": "Shallow water." },
+    { "id": "Water",     "name": "Deep water", "text": "Deep water." },
+    { "id": "Bridge",    "name": "Bridge",     "text": "A narrow bridge." },
+    { "id": "Street",    "name": "Street",     "text": "Between the houses." },
+    { "id": "Sand",      "name": "Sand",       "text": "Loose sand." }
+  ]
+}
