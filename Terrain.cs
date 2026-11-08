@@ -73,21 +73,27 @@ public sealed class SiegeWall
 public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale, float Radius, int Seed);
 
 /// How a battlefield is generated: set from the campaign map cell where the fight happens (docs/CAMPAIGN.md 3.2).
+/// `Layouts` are the field shapes this ground may take (docs/TERRAIN.md T2; null = open field), picked by the seed.
+/// `Scale` grows the clear deployment ground and the flank woods with the size of the battle (1 up to 450 men).
 public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, float HillHeight, float Roll, float FlankWoodDist,
-    int Woods, int LoneTrees, int Bushes, bool Road, bool River = false)
+    int Woods, int LoneTrees, int Bushes, bool Road, bool River = false, FieldLayout[]? Layouts = null, float Scale = 1)
 {
-    public static readonly TerrainParams Meadow = new("Meadow", 3, 5, 1f, 1f, 64, 11, 60, 220, true);
+    public static readonly TerrainParams Meadow = new("Meadow", 3, 5, 1f, 1f, 64, 11, 60, 220, true, Layouts: new[] { FieldLayout.Open, FieldLayout.Open, FieldLayout.Ridge });
     public static readonly TerrainParams Farmland = new("Farmland", 1, 3, 0.7f, 0.6f, 70, 6, 30, 380, true);
     public static readonly TerrainParams Forest = new("Forest", 2, 4, 0.9f, 1f, 55, 22, 150, 320, false);
-    public static readonly TerrainParams Hills = new("Hills", 5, 7, 1.7f, 1.4f, 66, 9, 50, 200, false);
-    /// Fens: low and wet (a stream always runs through), thick with bushes and alders.
-    public static readonly TerrainParams Marsh = new("Marsh", 1, 2, 0.5f, 0.5f, 52, 14, 90, 520, false, true);
+    public static readonly TerrainParams Hills = new("Hills", 5, 7, 1.7f, 1.4f, 66, 9, 50, 200, false, Layouts: new[] { FieldLayout.Ridge, FieldLayout.TwoHills });
+    /// Fens: low and wet (a stream always runs through), thick with bushes and alders, soft mud underfoot.
+    public static readonly TerrainParams Marsh = new("Marsh", 1, 2, 0.5f, 0.5f, 52, 14, 90, 520, false, true, new[] { FieldLayout.Fen });
     /// Steppe: open grass to the horizon, gentle swells, hardly a tree (room for horse).
     public static readonly TerrainParams Steppe = new("Steppe", 2, 3, 0.8f, 1.2f, 96, 1, 6, 60, false);
-    /// Badlands: dry, broken ground with tall knolls and little cover.
-    public static readonly TerrainParams Badlands = new("Badlands", 6, 8, 2.1f, 1.6f, 80, 2, 14, 90, false);
+    /// Badlands: dry, broken ground with tall knolls, stones and scrub, and little cover.
+    public static readonly TerrainParams Badlands = new("Badlands", 6, 8, 2.1f, 1.6f, 80, 2, 14, 90, false, Layouts: new[] { FieldLayout.Broken, FieldLayout.Broken, FieldLayout.TwoHills });
     /// The tournament field (S5): flat, open, a few trees at the edge.
     public static readonly TerrainParams Lists = new("Lists", 0, 0, 0.2f, 0.3f, 90, 0, 6, 30, false);
+
+    /// A preset by name (IRONFIELD_GROUND), or null.
+    public static TerrainParams? Named(string name) =>
+        new[] { Meadow, Farmland, Forest, Hills, Marsh, Steppe, Badlands, Lists }.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 }
 
 /// Headless battlefield ground: a heightmap (gentle rolling meadow, a few hills, a rim of high ground,
@@ -191,9 +197,11 @@ public sealed partial class Terrain
         int hillCount = p.HillsMin + rng.Next(p.HillsMax - p.HillsMin + 1);
         for (int i = 0; i < hillCount; i++)
         {
-            float a = rng.NextSingle() * MathF.Tau, d = 30 + rng.NextSingle() * 70;
-            hills.Add((new Vector2(MathF.Cos(a), MathF.Sin(a)) * d, 18 + rng.NextSingle() * 17, (2.5f + rng.NextSingle() * 3.5f) * p.HillHeight));
+            float a = rng.NextSingle() * MathF.Tau, d = (30 + rng.NextSingle() * 70) * p.Scale;
+            hills.Add((new Vector2(MathF.Cos(a), MathF.Sin(a)) * d, (18 + rng.NextSingle() * 17) * MathF.Sqrt(p.Scale), (2.5f + rng.NextSingle() * 3.5f) * p.HillHeight));
         }
+        Layout = wall != null || p.Layouts is not { Length: > 0 } ? FieldLayout.Open : p.Layouts[new Random(seed + 17).Next(p.Layouts.Length)];
+        ShapeLayout(new Random(seed + 18));
         for (int z = 0; z < N; z++)
             for (int x = 0; x < N; x++)
                 grid[z * N + x] = RawHeight(-Half + x * Step, -Half + z * Step);
@@ -216,6 +224,7 @@ public sealed partial class Terrain
             float d = Vector2.Distance(new Vector2(x, z), c) / hr;
             if (d < 1) h += hh * (1 - d * d) * (1 - d * d);
         }
+        h += LayoutHeight(x, z);
         // High ground all round frames the valley (and the horizon).
         h += SmoothStep(120, 240, r) * (14 + 10 * Noise(x * 0.008f, z * 0.008f, Seed + 3));
         float rd = RoadDist(new Vector2(x, z));
@@ -327,8 +336,8 @@ public sealed partial class Terrain
         return hit;
     }
 
-    /// The open ground where the armies deploy and meet: no trees or boulders here.
-    public static bool Core(Vector2 p) => MathF.Abs(p.X) < 50 && MathF.Abs(p.Y) < 54;
+    /// The open ground where the armies deploy and meet: no trees or boulders here. It grows with the battle (`Scale`).
+    public bool Core(Vector2 p) => MathF.Abs(p.X) < 50 * Params.Scale && MathF.Abs(p.Y) < 54 * Params.Scale;
 
     void PlaceFoliage(Random rng)
     {
@@ -353,7 +362,7 @@ public sealed partial class Terrain
 
         // Two woods flank the field: cavalry has to ride round them.
         for (int side = -1; side <= 1; side += 2)
-            Wood(new Vector2(side * (Params.FlankWoodDist + rng.NextSingle() * 8), rng.NextSingle() * 36 - 18), 13 + rng.NextSingle() * 4);
+            Wood(new Vector2(side * (Params.FlankWoodDist * Params.Scale + rng.NextSingle() * 8), rng.NextSingle() * 36 - 18), 13 + rng.NextSingle() * 4);
         for (int i = 0; i < Params.Woods; i++)
         {
             float a = rng.NextSingle() * MathF.Tau, d = 80 + rng.NextSingle() * 130;

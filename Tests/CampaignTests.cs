@@ -150,7 +150,8 @@ public static partial class SelfTest
         Console.WriteLine($"bridge: {(report.Won ? "won" : "lost")} vs {report.Enemy}, your men {before} -> {c.Player.Men} (+{c.Player.Wounded} wounded), gold {c.S.Gold:0}");
     }
 
-    /// Auto-resolve picks the same winner as the battle simulation at least 75% of the time.
+    /// Auto-resolve picks the same winner as the battle simulation at least 75% of the time. On open ground: auto-resolve does
+    /// not yet weigh the field (a ridge gives one side an edge); docs/TERRAIN.md T7 adds that, and this test then varies the ground.
     static void Calibration()
     {
         int agree = 0, n = 0;
@@ -161,7 +162,7 @@ public static partial class SelfTest
             var a0 = Armies.Random(rng, l0, 0);
             var a1 = Armies.Random(rng, l1, 0);
             a1 = a1 with { Companies = a1.Companies.Select(co => co with { Count = (int)(co.Count * (0.7f + 0.1f * (i % 6))) }).ToList() };
-            var b = new Battle(200 + i, Ids(a0, 1000), Ids(a1, 2000), new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+            var b = new Battle(200 + i, Ids(a0, 1000), Ids(a1, 2000), new BattleOptions { AutoPlayer = true, PlayerWounded = true, Ground = TerrainParams.Meadow with { Layouts = null } });
             for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
             Party P(ArmySpec a) { var p = new Party(); foreach (var co in a.Companies) { var r = new CompanyRecord { Id = co.Id, Role = co.Role }; foreach (var st in co.Stacks) r.Stack(st.Troop).Men += st.Count; p.Companies.Add(r); } return p; }
             float s0 = Rules.Strength(P(a0)), s1 = Rules.Strength(P(a1));

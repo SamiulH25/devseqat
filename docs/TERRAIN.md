@@ -344,3 +344,25 @@ T6 medium, T7 medium, T8 small.
   the horse loses 17 hp, against 140 on grass; seeded stumbles; the high-ground and range curves).
 - Bench after T1: 3,013 men at 4.6 ms a tick mean (think 1.62, move 1.38), the same as the T0 baseline within noise.
 
+### T2a (done): the layout framework
+- `TerrainLayouts.cs`: `FieldLayout` { Open, Ridge, TwoHills, Broken, Fen }. `TerrainParams.Layouts` lists the shapes a
+  preset may take (Meadow: open, open, ridge; Hills: ridge, two hills; Badlands: broken, broken, two hills; Marsh: fen;
+  the rest open). The layout is drawn from its own stream (`seed + 17`, features from `seed + 18`), so hills, woods and
+  trees stay the same for a seed, and an open field at Scale 1 is the same map as before.
+- Ridge: a crest 24-30 m in front of one army (`RidgeSide`, `RidgeZ`), 4-6.5 m high (more on Hills), steeper toward the enemy
+  and gentle behind. Two hills: a knoll on each wing between the lines. Broken: four steep knolls; Stony on slopes over 0.22,
+  scrub patches. Fen: Mud over about a third of the field and along the stream.
+- Every field: thick wood (DenseWood) in the heart of woods over 18 m across, scrub in patches round wood edges, Stony on
+  slopes over 0.45. Water and the road are never painted over.
+- `TerrainParams.Scale` (from `Battle.FieldScale`, the same number `MapRadius` uses / 95): the clear deployment ground (`Core`,
+  now an instance method), the flank woods and the spread of the hills grow with the battle. 1 up to 450 men, 2.4 at 2,600.
+- `World.GroundColor` colours each kind (mud dark brown, stones grey, scrub olive, the forest floor darker, and so on), and so does the minimap.
+- `IRONFIELD_GROUND=Hills[,river]` and `IRONFIELD_LAYOUT=Ridge` pick a quick battle's field (for shots and testing).
+- `Terrain.Version` 2.
+- Auto-resolve now disagrees with the sim more often on ridges (8/12 instead of 9/12 on mixed Meadow fields).
+  `Calibration` runs on open ground until T7 gives auto-resolve its ground edge.
+- Test `Layouts`: clear ground at scale 1 and 2.4 for five presets; the ridge, the two hills, stony broken ground,
+  a muddy fen, thick wood in big woods.
+- Still to come in T2: line features (hedges, fences, a bridge where the road crosses the river), the Village, Hedgerows,
+  Wooded flank, Forest clearing, River line and Pass layouts, crops in season, and looser ranks on bad ground (from T1).
+

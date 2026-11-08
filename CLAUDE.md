@@ -47,7 +47,7 @@ Saves ~20 staged battle PNGs (field-view.png, command-overview.png, gallery-*.pn
 does the same for campaign screens, `IRONFIELD_LAB_SHOTS=/dir` for every UI lab page. ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
 
 Other env vars: `IRONFIELD_SAVES` (save dir; settings go to its parent), `IRONFIELD_QUALITY=High|Medium|Low`,
-`IRONFIELD_LEVELS=4,2` (quick-battle army levels), `IRONFIELD_MEN=750` (quick-battle men a side; default half the Battle size setting), `IRONFIELD_WEATHER=hour,rain,fog`, `IRONFIELD_GROUND=river`,
+`IRONFIELD_LEVELS=4,2` (quick-battle army levels), `IRONFIELD_MEN=750` (quick-battle men a side; default half the Battle size setting), `IRONFIELD_WEATHER=hour,rain,fog`, `IRONFIELD_GROUND=river` or `=Hills,river` (a `TerrainParams` preset), `IRONFIELD_LAYOUT=Ridge` (a `FieldLayout`),
 `IRONFIELD_DUMP_ATLAS=/x.png`, `IRONFIELD_GPU_REPORT=1` (same as `--gpu-report`).
 Default save/settings location: `$XDG_CONFIG_HOME|~/.config/Ironfield/` (ApplicationData). Set `IRONFIELD_SAVES` when running so you do not touch real saves.
 
@@ -132,7 +132,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Divisions: goals, order delay, sergeant brain, AI goals / couriers | `BattleDivision.cs` (`IssueGoal`, `OrderDelay`, `Direct`, `Brain`, `AiCommand`) / `BattleCourier.cs` |
 | Unit/troop types, look, mounts | `Units.cs`, `Troops.cs` (+ `Armies` presets, `Large`, `Divide`), `Data/troops.json` |
 | Battle inputs/outputs | `BattleTypes.cs` (`BattleOptions`, `Weather`, `BattleResult`, `CompanyResult`) |
-| Terrain, rivers, foliage placement, siege wall geometry / the ground layer (kinds of ground, cover) | `Terrain.cs` (headless) / `TerrainGround.cs` (`GroundKind`, `Grounds` <- `Data/ground.json`, `GroundAt`, `CoverAt`); docs/TERRAIN.md |
+| Terrain, rivers, foliage placement, siege wall geometry / the ground layer (kinds of ground, cover) / field layouts (ridge, two hills, broken, fen) | `Terrain.cs` (headless) / `TerrainGround.cs` (`GroundKind`, `Grounds` <- `Data/ground.json`, `GroundAt`, `CoverAt`, `Paint`) / `TerrainLayouts.cs` (`FieldLayout`, `ShapeLayout`, `LayoutHeight`, `GroundOf`); docs/TERRAIN.md |
 | Campaign data model + save/load/migration | `Campaign/CampaignState.cs` (also `Rng`, `Balance` <- `Data/campaign.json`, `Names`) |
 | Campaign time, movement, encounters, hourly/daily/weekly ticks | `Campaign/Campaign.cs` |
 | Battles from the campaign: prepare, finish, auto-resolve, apply results | `Campaign/CampaignBattle.cs` (`PrepareBattle`, `FinishBattle`, `Apply`) |

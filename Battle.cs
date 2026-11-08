@@ -70,7 +70,7 @@ public sealed partial class Battle
     public Battle(int seed) : this(seed, Ironfield.Armies.Standard(0), Ironfield.Armies.Standard(1)) { }
 
     /// A battle between two armies as the campaign map would hand them over.
-    public Battle(int seed, ArmySpec player, ArmySpec enemy, BattleOptions? options = null) : this(seed, false, options)
+    public Battle(int seed, ArmySpec player, ArmySpec enemy, BattleOptions? options = null) : this(seed, false, options, FieldScale(player, enemy, options))
     {
         var mount = Options.PlayerMount ?? Mount.Courser; // you lead from the saddle (on foot in an assault: horses do not climb ladders)
         Player.Horse = Options.Siege ? null : mount;
@@ -78,7 +78,7 @@ public sealed partial class Battle
         // The field holds at most Options.Cap men; each side gets its share and the rest wait as reinforcements.
         int total = player.Companies.Sum(c => c.Count) + enemy.Companies.Sum(c => c.Count);
         float share = total > Options.Cap ? Options.Cap / (float)total : 1;
-        MapRadius = Math.Clamp(95 * MathF.Sqrt(Math.Min(total, Options.Cap) / 450f), 95, 230);
+        MapRadius = 95 * FieldScale(player, enemy, Options);
         Deploy(0, player, (int)(player.Companies.Sum(c => c.Count) * share));
         Deploy(1, enemy, (int)(enemy.Companies.Sum(c => c.Count) * share));
         UpdateCentroids();
@@ -190,12 +190,19 @@ public sealed partial class Battle
     public static Battle Empty(int seed) => new(seed, true);
     public static Battle Empty(int seed, BattleOptions options) => new(seed, true, options);
 
-    Battle(int seed, bool scripted, BattleOptions? options = null)
+    /// How big the field is for these armies: 1 up to 450 men on it, growing to about 2.4 at 2,600 (the room to flee, the clear ground).
+    static float FieldScale(ArmySpec player, ArmySpec enemy, BattleOptions? options)
+    {
+        int total = player.Companies.Sum(c => c.Count) + enemy.Companies.Sum(c => c.Count);
+        return Math.Clamp(MathF.Sqrt(Math.Min(total, (options ?? new BattleOptions()).Cap) / 450f), 1, 230 / 95f);
+    }
+
+    Battle(int seed, bool scripted, BattleOptions? options = null, float scale = 1)
     {
         rng = new Random(seed);
         this.scripted = scripted;
         Options = options ?? new BattleOptions();
-        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, Options.Ground ?? TerrainParams.Meadow, Options.Siege ? new SiegeWall(Options.Ladders, Options.GateHp) : null);
+        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, (Options.Ground ?? TerrainParams.Meadow) with { Scale = scale }, Options.Siege ? new SiegeWall(Options.Ladders, Options.GateHp) : null);
         Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34));
         Player.IsPlayer = Player.IsLeader = true;
         SetupCaptain();

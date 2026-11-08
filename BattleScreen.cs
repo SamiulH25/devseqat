@@ -90,6 +90,17 @@ sealed partial class BattleScreen
 
     // ---------- campaign hand-off ----------
 
+    /// The quick battle's field. IRONFIELD_GROUND=preset[,river] (or just "river") picks it, IRONFIELD_LAYOUT=Ridge its shape;
+    /// otherwise a meadow, and a third of quick battles have a river.
+    TerrainParams QuickGround(Random rng)
+    {
+        var env = (Environment.GetEnvironmentVariable("IRONFIELD_GROUND") ?? "").Split(',');
+        bool river = env.Contains("river") || (shotDir == null && rng.NextSingle() < 0.33f);
+        var ground = env.Select(TerrainParams.Named).FirstOrDefault(g => g != null) ?? TerrainParams.Meadow;
+        ground = ground with { River = river || ground.River };
+        return Enum.TryParse<FieldLayout>(Environment.GetEnvironmentVariable("IRONFIELD_LAYOUT"), true, out var l) ? ground with { Layouts = new[] { l } } : ground;
+    }
+
     /// A battle handed over by the campaign map: it opens in the deployment phase.
     public void BeginCampaign(BattleSetup s)
     {
@@ -157,8 +168,7 @@ sealed partial class BattleScreen
             new BattleOptions
             {
                 EnemyDamage = Settings.Current.EnemyDamage, Weather = weather, Cap = Math.Max(Settings.Current.BattleSize, men * 2 + 20),
-                // IRONFIELD_GROUND=river forces a river; otherwise a third of quick battles have one.
-                Ground = TerrainParams.Meadow with { River = Environment.GetEnvironmentVariable("IRONFIELD_GROUND") == "river" || (shotDir == null && rng.NextSingle() < 0.33f) },
+                Ground = QuickGround(rng),
             });
         battle.StartRecording(seed);
         replaySaved = false;

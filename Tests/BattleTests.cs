@@ -530,6 +530,36 @@ public static partial class SelfTest
         Check(Battle.HeightRange(0) == 1 && Battle.HeightRange(-5) == 1 && Battle.HeightRange(3) > 1 && Battle.HeightRange(50) == 1.25f, "height carries arrows further, up to a quarter");
     }
 
+    /// Fields built to a layout (docs/TERRAIN.md T2): the deployment ground stays clear at every size of battle, a ridge
+    /// rises in front of one army, two hills stand on the wings, broken ground is stony and the fen is mud.
+    static void Layouts()
+    {
+        foreach (var g in new[] { TerrainParams.Meadow, TerrainParams.Forest, TerrainParams.Hills, TerrainParams.Marsh, TerrainParams.Badlands })
+            foreach (float scale in new[] { 1f, 2.4f })
+            {
+                var t = new Terrain(13, g with { Scale = scale });
+                Check(!t.Foliage.Any(f => f.Radius > 0 && t.Core(f.Pos)), $"{g.Name} at scale {scale}: no trees or boulders where the armies deploy");
+                Check(t.Core(new Vector2(0, -30 * scale)) && t.Core(new Vector2(48 * scale, 0)), $"{g.Name} at scale {scale}: the clear ground grows with the battle");
+            }
+        Terrain Built(FieldLayout l, int seed = 13) => new(seed, TerrainParams.Hills with { Layouts = new[] { l }, HillsMin = 0, HillsMax = 0 });
+        var ridge = Built(FieldLayout.Ridge);
+        float side = ridge.RidgeSide == 0 ? -1 : 1;
+        Check(ridge.Layout == FieldLayout.Ridge && MathF.Abs(ridge.RidgeZ) > 20 && MathF.Sign(ridge.RidgeZ) == side, "a ridge lies on one army's side");
+        Check(ridge.Height(new Vector2(0, ridge.RidgeZ)) > ridge.Height(Vector2.Zero) + 2.5f && ridge.Height(new Vector2(0, ridge.RidgeZ)) > ridge.Height(new Vector2(0, ridge.RidgeZ + side * 28)) + 1,
+            "the ridge stands above the field and above the ground behind it");
+        var two = Built(FieldLayout.TwoHills);
+        Check(two.Height(new Vector2(-48, 0)) > two.Height(Vector2.Zero) + 2 || two.Height(new Vector2(48, 0)) > two.Height(Vector2.Zero) + 2, "two hills stand on the wings");
+        int Count(Terrain t, GroundKind k) => Enumerable.Range(0, 41 * 41).Count(i => t.GroundAt(new Vector2(-100 + i % 41 * 5, -100 + i / 41 * 5)) == k);
+        var broken = new Terrain(13, TerrainParams.Badlands with { Layouts = new[] { FieldLayout.Broken } });
+        var fen = new Terrain(13, TerrainParams.Marsh);
+        var forest = new Terrain(13, TerrainParams.Forest);
+        Console.WriteLine($"layouts: broken {Count(broken, GroundKind.Stony)} stony, {Count(broken, GroundKind.Scrub)} scrub; fen {Count(fen, GroundKind.Mud)} mud; forest {Count(forest, GroundKind.DenseWood)} thick wood (of 1681)");
+        Check(Count(broken, GroundKind.Stony) > 20 && Count(broken, GroundKind.Scrub) > 100, "broken ground is stony and scrubby");
+        Check(fen.Layout == FieldLayout.Fen && Count(fen, GroundKind.Mud) > 400, "the fen is mud");
+        Check(Count(forest, GroundKind.DenseWood) > 0, "big woods have a thick heart");
+        Check(new Terrain(13, TerrainParams.Meadow with { Layouts = null }).Layout == FieldLayout.Open, "no layouts means an open field");
+    }
+
     /// A battlefield river: carved below its banks, slow to wade, quicker at the fords; the map has rivers with bridges.
     static void Rivers()
     {
@@ -593,7 +623,7 @@ public static partial class SelfTest
             for (float z = -200; z <= 200; z += 7)
                 Check(float.IsFinite(t.Height(new Vector2(x, z))) && MathF.Abs(t.Height(new Vector2(x, z))) < 60, "heights stay sane");
         Check(t.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine) > 150, "the land is wooded");
-        Check(!t.Foliage.Any(f => f.Radius > 0 && Terrain.Core(f.Pos)), "no trees or boulders where the armies deploy");
+        Check(!t.Foliage.Any(f => f.Radius > 0 && t.Core(f.Pos)), "no trees or boulders where the armies deploy");
         var tree = t.Foliage.First(f => f.Kind == FoliageKind.Broadleaf);
         var p = tree.Pos + new Vector2(0.05f, 0);
         Check(t.PushOut(ref p, 0.35f) && Vector2.Distance(p, tree.Pos) >= tree.Radius + 0.34f, "trunks push units out");

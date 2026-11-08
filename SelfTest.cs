@@ -48,6 +48,7 @@ public static partial class SelfTest
         GroundLayer();
         GroundMoves();
         GroundFights();
+        Layouts();
         CampaignWar();
         RefuseOldSave();
         Stacks();

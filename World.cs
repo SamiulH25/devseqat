@@ -192,6 +192,18 @@ sealed class World : IDisposable
         c = Vector3.Lerp(c, new Vector3(0.48f, 0.42f, 0.32f), Smooth(0.35f, 0.7f, t.Gradient(p).Length())); // bare slopes
         float rd = t.RoadDist(p);
         c = Vector3.Lerp(c, new Vector3(0.56f, 0.47f, 0.34f), 1 - Smooth(1.8f, 3.4f + n2 * 0.6f, rd));      // road
+        c = t.GroundAt(p) switch // the ground layer (TerrainGround.cs): you can see where a wood or a bog starts
+        {
+            GroundKind.Mud => Vector3.Lerp(c, new Vector3(0.34f, 0.29f, 0.2f), 0.7f + 0.1f * n),
+            GroundKind.Stony => Vector3.Lerp(c, new Vector3(0.52f, 0.5f, 0.45f), 0.55f + 0.15f * n2),
+            GroundKind.Scrub => Vector3.Lerp(c, new Vector3(0.33f, 0.37f, 0.19f), 0.5f),
+            GroundKind.Wood => Vector3.Lerp(c, new Vector3(0.28f, 0.34f, 0.18f), 0.45f),
+            GroundKind.DenseWood => Vector3.Lerp(c, new Vector3(0.2f, 0.26f, 0.14f), 0.65f),
+            GroundKind.Sand => Vector3.Lerp(c, new Vector3(0.72f, 0.64f, 0.45f), 0.7f),
+            GroundKind.Crops => Vector3.Lerp(c, new Vector3(0.64f, 0.57f, 0.3f), 0.7f),
+            GroundKind.Street => Vector3.Lerp(c, new Vector3(0.5f, 0.45f, 0.38f), 0.7f),
+            _ => c,
+        };
         if (t.Tint != null) c = t.Tint(p, c);
         if (t.WaterDepth(p) > 0) c = Vector3.Lerp(c, new Vector3(0.24f, 0.38f, 0.46f), t.WaterDepth(p) > 0.5f ? 0.9f : 0.6f); // the minimap shows water
         return c * (1 + n2 * 0.05f);

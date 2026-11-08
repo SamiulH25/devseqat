@@ -67,7 +67,7 @@ public static class Grounds
 public sealed partial class Terrain
 {
     /// Bump when battlefield generation changes, so replays made on older ground refuse to play (Replay.TerrainVersion).
-    public const int Version = 1;
+    public const int Version = 2;
 
     /// Woods placed on this field (centre, radius); the ground layer marks them.
     readonly List<(Vector2 C, float R)> woods = new();
@@ -86,7 +86,8 @@ public sealed partial class Terrain
     /// The rules of the ground at p.
     public GroundDef GroundDefAt(Vector2 p) => Grounds.Get(GroundAt(p));
 
-    /// Fill the ground layer from what is on the field: water and fords first, then the road, then woods; grass elsewhere.
+    /// Fill the ground layer from what is on the field: water and fords first, then the road, then woods; grass elsewhere;
+    /// then what the field's shape and layout make of it (`GroundOf`, TerrainLayouts.cs).
     void PaintGround()
     {
         ground = new byte[N * N];
@@ -96,10 +97,10 @@ public sealed partial class Terrain
             {
                 var p = new Vector2(-Half + x * Step, -Half + z * Step);
                 float water = WaterDepth(p);
-                var k = water > 0 ? (water < 0.5f ? GroundKind.Ford : GroundKind.Water)
+                var k = GroundOf(p, water > 0 ? (water < 0.5f ? GroundKind.Ford : GroundKind.Water)
                     : RoadDist(p) < 2.5f ? GroundKind.Road
                     : InWood(p) ? GroundKind.Wood
-                    : GroundKind.Grass;
+                    : GroundKind.Grass);
                 ground[z * N + x] = (byte)k;
                 cover[z * N + x] = (byte)MathF.Round(Grounds.Get(k).Cover * 255);
             }
