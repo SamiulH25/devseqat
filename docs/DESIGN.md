@@ -112,7 +112,7 @@ keep fur, spangenhelms and round shields at every tier.
   with crinet and a steel chanfron (destriers).
 
 ### Feedback on units
-- Hit: a brief red tint (0.15 s). Routing: desaturated grey. Dead: the parts laid flat with blood.
+- Hit: a brief red tint and a flinch (0.15 s). Routing: desaturated grey, arms up, weapon gone. Dead: a fall away from the blow, then the parts laid flat with blood and the weapon beside them.
 - The player's own troops never fill the camera lens (friendly sprites within 6 m of the field camera are hidden).
 
 ## 4. Interface
@@ -177,9 +177,21 @@ All widgets are extension methods on `Ui` in `UiKit.cs` (the UI lab, F3 on the t
 
 ## 5. Motion
 
-- Camera transitions ease (smoothstep, 0.45 s). Facing changes ease too, so turning is a sweep.
-- Text in the event feed holds for 4.5 s and fades over 1.5 s. Hit text holds for 1.2 s.
-- Nothing on the HUD bounces or slides. Emphasis is colour, not movement.
+Motion has a job: it shows cause and effect, draws the eye to what changed, or makes a moment land. Nothing idles or wobbles
+for its own sake on the HUD, and nothing bounces. All of it is in the view: the sim never knows (docs/VISUALS.md section 3).
+
+- **Curves:** `Ease` (Ease.cs). Windups ease in and hold at the top; strikes snap through and overshoot (`OutBack`); returns
+  are `InOut`. Hit reactions are a `Kick` (fast out, slow back).
+- **Men:** arms swing against the legs, the body bobs twice a stride and leans forward as it runs. Standing men breathe and
+  shift their weight, each on his own phase (`Ease.Hash(Unit.Index)`), so a line never moves in step. The body leans into a
+  swing and flinches away from a blow. The dead fall away from the killing blow (`Unit.DiedFrom`) in 0.45-0.75 s, stumbling
+  back or crumpling at the knees, and lie along that line with their weapon beside them. Routers throw down weapon and shield.
+  When the battle is won, the winners cheer.
+- **Horses:** a four-beat walk, a trot on diagonal pairs and a gallop that rocks front to back, the head nodding with the stride.
+- **Camera:** transitions ease (smoothstep, 0.45 s). Facing changes ease too, so turning is a sweep.
+- **Interface:** panels fade in and rise a few pixels (120 ms in, 80 ms out); hover brightens over 80 ms; bars and counts slide
+  to their new value. Text in the event feed holds for 4.5 s and fades over 1.5 s. Hit text holds for 1.2 s.
+- **Check it:** the pose sheet shots (`pose-sheet`, `pose-sheet2`, `pose-horses`) freeze every pose in one still.
 
 ## 6. Campaign map (direction)
 

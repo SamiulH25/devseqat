@@ -5,6 +5,31 @@ namespace Ironfield;
 /// Self-tests of the battle sim: mechanics scenarios (charges, parries, flanks, cavalry, ranged), troops, sprites, full battles, replays.
 public static partial class SelfTest
 {
+    /// Animation curves and poses (docs/VISUALS.md V1-V2): easing keeps its ends, a windup ends raised, a strike overshoots,
+    /// and the drawn pose never touches the sim (a killed man only remembers where the blow came from).
+    static void Animation()
+    {
+        foreach (var f in new Func<float, float>[] { Ease.In, Ease.Out, Ease.OutCubic, Ease.InOut, t => Ease.OutBack(t), t => Ease.Spring(t) })
+            Check(MathF.Abs(f(0)) < 0.01f && MathF.Abs(f(1) - 1) < 0.02f, "easing curves run from 0 to 1");
+        for (float t = 0; t < 1; t += 0.05f) Check(Ease.InOut(t + 0.05f) >= Ease.InOut(t) && Ease.Out(t + 0.05f) >= Ease.Out(t), "InOut and Out never go back");
+        Check(Ease.OutBack(0.6f) > 1, "OutBack overshoots (the follow-through)");
+        Check(Ease.Kick(0) == 0 && Ease.Kick(1) < 0.01f && Ease.Kick(0.25f) > 0.5f, "a kick rises and falls back");
+        Check(Ease.Hash(1) != Ease.Hash(2) && Ease.Hash(7) == Ease.Hash(7), "the per-man phase is stable and varied");
+        var b = Battle.Empty(1);
+        var u = b.AddSquad(0, UnitType.Shieldman, 1, Vector2.Zero, 1, Vector2.UnitY).Units[0];
+        var (_, raise, strike) = Puppet.Keys(u.Type.Class, AttackDir.Right);
+        u.Action = UnitAction.Windup; u.Swing = AttackDir.Right; u.ActionTimer = u.Type.Windup * 0.1f;
+        Check(MathF.Abs(Puppet.PoseOf(u, 1, 0.5f).ArmA - raise.Alpha) < 1, "the windup holds at the top");
+        u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - 0.15f);
+        float through = Puppet.PoseOf(u, 1, 0.5f).Yaw;
+        Check(through < strike.Yaw, $"the strike swings past its mark ({through:0} < {strike.Yaw:0})");
+        u.Action = UnitAction.None; u.Routing = true;
+        Check(!Puppet.PoseOf(u, 1, 0.5f).Armed, "a routed man has thrown his weapon away");
+        var foe = b.AddSquad(1, UnitType.Shieldman, 1, new Vector2(0, 2), 1, -Vector2.UnitY).Units[0];
+        b.Kill(foe, u);
+        Check(foe.Dead && foe.DiedFrom == u.Pos, "a dead man remembers where the blow came from");
+    }
+
     /// A gallop into loose infantry hurts it; a braced spear line hurts the horse instead.
     static void Charge()
     {

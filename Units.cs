@@ -139,6 +139,7 @@ public sealed class Unit
     public bool Dead, Fled, Routing;
     public int Routs;        // how many times this man has broken (a second rout is final)
     public float DiedAt;     // battle time of death (the fall is animated)
+    public Vector2 DiedFrom; // where the killing blow came from (the body falls away from it; drawing only)
     public int StuckArrows;  // arrows caught in the shield (drawn)
     public int Index;        // place in Battle.Units (the spatial grid orders pairs by it)
 

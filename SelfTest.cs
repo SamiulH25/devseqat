@@ -149,6 +149,7 @@ public static partial class SelfTest
             Console.WriteLine($"level {level}: {string.Join(", ", b.Armies[0]!.Companies.Select(c => $"{c.Count} {Troops.Get(c.Troop).Name}"))}"
                 + $" vs {string.Join(", ", b.Armies[1]!.Companies.Select(c => $"{c.Count} {Troops.Get(c.Troop).Name}"))}: team {b.Winner} won after {b.Time:0}s");
         }
+        Animation(); // last: it builds battles, and the sim draws from shared counters
         Console.WriteLine("selftest ok");
     }
 

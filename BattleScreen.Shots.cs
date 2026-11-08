@@ -107,7 +107,11 @@ partial class BattleScreen
                 shotFrames = 0; shotIndex++; break;
             case >= 31 and <= 37 when shotFrames > 20 && shotIndex % 2 == 1:
                 pendingShot = $"gallery-{NewRealms[(shotIndex - 31) / 2].Name}"; shotIndex++; break;
-            case 38 when pendingShot == null: Exit(); break;
+            case 38 or 40 or 42 when pendingShot == null:
+                PoseSheet((shotIndex - 38) / 2); shotFrames = 0; shotIndex++; break;
+            case 39 or 41 or 43 when shotFrames > 3:
+                pendingShot = new[] { "pose-sheet", "pose-sheet2", "pose-horses" }[(shotIndex - 39) / 2]; shotIndex++; break;
+            case 44 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -118,6 +122,70 @@ partial class BattleScreen
         ("saltmarsh", 7, new[] { "canal_guards", "brigandiers", "lion_guard", "league_pikes", "league_crossbows", "pavisiers", "lion_crossbows", "stradiots", "lion_knights" }),
         ("order", 8, new[] { "order_sergeants", "ashen_brothers", "ashen_saints", "order_spears", "dawn_pikes", "order_crossbows", "dawn_watch", "order_riders", "grand_masters" }),
     };
+
+    /// The pose sheet (docs/VISUALS.md V1): one man frozen at each moment of each action along a row, so every pose can be
+    /// checked in one still. Sheet 0: the melee and the march; 1: the bow, the fall and the cheer; 2: riders at a stand, walk, trot, canter and gallop, the last with his lance couched.
+    void PoseSheet(int sheet)
+    {
+        battle = Battle.Empty(1);
+        SetWorld();
+        battle.Time = 20;
+        var b = battle;
+        float x = 0;
+        Unit Add(string troop, int team = 0)
+        {
+            var t = Troops.Get(troop);
+            x += t.Mount != null ? 2.4f : 1.25f;
+            var u = b.AddSquad(team, t, 1, new Vector2(-x, 0), 1, -Vector2.UnitY).Units[0];
+            u.ViewFacing = u.ViewHeading = u.Facing = u.Heading = -MathHelper.PiOver2 - 0.6f; // three-quarter view
+            u.Palette = 0;
+            x += t.Mount != null ? 2.4f : 1.25f;
+            return u;
+        }
+        if (sheet == 2)
+        {
+            foreach (var (speed, anim) in new[] { (0f, 0f), (1.8f, 0.3f), (4f, 0.3f), (7.5f, 0.3f), (11f, 0.3f), (11f, 0.8f) })
+            {
+                var u = Add("knights");
+                u.Speed = speed; u.Anim = anim; u.Vel = u.HeadingDir * speed;
+                if (speed > 8) u.Couched = anim > 0.5f;
+            }
+        }
+        else if (sheet == 0)
+        {
+            const string foot = "men_at_arms";
+            Add(foot); // idle
+            var w = Add(foot); w.Action = UnitAction.Windup; w.Swing = AttackDir.Right; w.ActionTimer = w.Type.Windup * 0.5f;
+            w = Add(foot); w.Action = UnitAction.Windup; w.Swing = AttackDir.Overhead; w.ActionTimer = w.Type.Windup * 0.05f;
+            w = Add(foot); w.Action = UnitAction.Recover; w.Swing = AttackDir.Overhead; w.ActionTimer = w.Type.Recover * 0.88f; // the strike
+            w = Add(foot); w.Action = UnitAction.Recover; w.Swing = AttackDir.Right; w.ActionTimer = w.Type.Recover * 0.4f;
+            w = Add(foot); w.Action = UnitAction.Block;
+            w = Add(foot); w.Action = UnitAction.Stagger; w.HitFlash = 0.1f;
+            w = Add(foot); w.Vel = w.Dir * 1.4f; w.Anim = 0.5f; // walking
+            w = Add(foot); w.Vel = w.Dir * 4.5f; w.Anim = 0.5f; // running
+            w = Add(foot); w.Routing = true; w.Vel = w.Dir * 4f; w.Anim = 1.5f;
+        }
+        else
+        {
+            const string foot = "men_at_arms";
+            var a = Add("longbowmen"); a.Ammo = 10; a.EnemyDist = 20; a.Cooldown = 1.0f; // nocking
+            a = Add("longbowmen"); a.Ammo = 10; a.EnemyDist = 20; a.Cooldown = 0.05f; // full draw
+            a = Add("longbowmen"); a.Action = UnitAction.Recover; a.Ammo = 10; // the release
+            foreach (var k in new[] { 0.35f, 0.7f })
+            {
+                var d = Add(foot); d.Dead = true; d.DiedAt = b.Time - k * 0.6f; d.DiedFrom = d.Pos + d.Dir * 2; // falling back
+            }
+            var dead = Add(foot); dead.Dead = true; dead.DiedAt = 0; dead.DiedFrom = dead.Pos + dead.Dir * 2;
+            var cheer = Add(foot, 1); cheer.Palette = 0; b.Winner = 1; // the battle won: he cheers
+        }
+        paused = hudHidden = true;
+        SetCommand(true);
+        blend = 1;
+        camFocus = new Vector2(-x / 2, 0.6f);
+        camYaw = MathHelper.PiOver2;
+        camPitch = 0.1f;
+        zoom = x * 0.8f;
+    }
 
     /// Debug lineup of every troop, left to right along each upgrade line, facing the camera.
     void Gallery(string[]? only = null, int palette = 0)

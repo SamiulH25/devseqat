@@ -250,7 +250,7 @@ public partial class Battle
         Log(boss.Type.Look.Beast ? $"The {boss.Type.Name.ToLowerInvariant()} is down! The pack scatters." : $"The {boss.Type.Name.ToLowerInvariant()} is slain! {(boss.Team == 0 ? "Your" : "The")} goblins scatter.");
     }
 
-    void Kill(Unit t, Unit killer)
+    internal void Kill(Unit t, Unit killer)
     {
         if (t.IsPlayer && Perk("FieldSurgeon") && !secondWind)
         {
@@ -265,6 +265,7 @@ public partial class Battle
         if (LastStand(t, killer)) return; // P6
         t.Dead = true;
         t.DiedAt = Time;
+        t.DiedFrom = killer.Pos;
         t.Hp = 0;
         t.Action = UnitAction.None;
         t.Vel = t.Wish = Vector2.Zero;

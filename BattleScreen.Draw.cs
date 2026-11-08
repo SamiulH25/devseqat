@@ -227,6 +227,7 @@ partial class BattleScreen
         sprites.N = 0;
         puppet.Begin(viewer);
         puppet.Now = battle.Time;
+        puppet.Winner = battle.Winner;
         // A banner over every company, carried by its first man.
         foreach (var s in battle.Squads)
         {
