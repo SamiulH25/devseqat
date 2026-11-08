@@ -169,6 +169,21 @@ realm's own lands field its culture). Staged shots `gallery-sunward`, `-khaganat
 - **Choose your start**: the new-campaign screen lets you pick the realm you start in (its capital, its levies), or
   start as a free captain on the border.
 
+**As built (W5).** Realm temper in `factions.json` (`FactionDef.Aggression`, `Garrison`, `Siege`, `Tribute`, `Hunts`; 1 = the
+shared rule, `Factions.Validate` keeps them 0.3-3): aggression scales the daily war chance and lords marching for the front,
+garrison how full seats are kept (`GarrisonTemper`), siege the odds a host needs to lay siege (`TryBesiege`), tribute how soon a
+losing realm takes terms (also when you offer them); `"hunts": "monsters"` (the Order) digs out any holdout its lords outweigh and
+goes after beasts before men (`MonsterHunter`). Wars: an AI realm declares war only on a neighbour, picked by `WarAppeal`
+(border length, relative strength, wars the target already fights); a council motion against a realm you do not border loses
+25 per voter. `AlliancesDaily`: two realms at war with the same stronger realm ally (5% a day; your realm's are yours to make as
+king). Coalition: `LeaderShare` is 45% of the seats with three realms, max(30%, 2.1/alive) with more (30% at seven), and a
+leading realm's neighbours get a war record if they had none. Snowball guard: `--realms [n]` runs n campaigns for 240 days and
+writes `balance/realms.csv`; on 8 seeds the largest realm held 24%, none fell, 5-9 wars and 1-5 alliances at the end; the
+240-day `WarAndPeace` test checks the same bounds on one seed. Choose your start: NEW CAMPAIGN on the title lists the seven
+realms; `Campaign.New(seed, realm)` starts you at that realm's town nearest the middle of its land (the Crown keeps its westernmost
+town), with its villages' recruits and in its pay; the pilot serves the realm it started in. Not built: a free-captain start on a
+border (you can leave your contract at once). Test: `RealmTempers`.
+
 ### W6: screens and docs
 - Realm panel (R), relations (a 7x7 table becomes a list of your realm's wars/truces/alliances plus a small matrix),
   map legend and flags, title-screen save card. Check every page with `IRONFIELD_LAB_SHOTS` and `IRONFIELD_CAMPAIGN_SHOTS`.

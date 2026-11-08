@@ -10,7 +10,7 @@ sealed class TitleScreen
     readonly Ui ui;
     MouseState ms, pms;
     KeyboardState kb, pkb;
-    bool click;
+    bool click, choosing = Environment.GetEnvironmentVariable("IRONFIELD_TITLE_PICK") != null;
     float time;
     // The latest save, read once per file change, for the continue card.
     DateTime saveStamp;
@@ -52,7 +52,7 @@ sealed class TitleScreen
         var m = ui.Plate(new Rectangle(cx - mw / 2, my, mw, U(206)), solid: false);
         int y = m.Y;
         Rectangle B() { var r = new Rectangle(m.X, y, m.Width, U(30)); y += U(36); return r; }
-        if (ui.Gilded(B(), "NEW CAMPAIGN")) host.StartCampaign(Environment.TickCount & 0xFFFF);
+        if (ui.Gilded(B(), "NEW CAMPAIGN")) choosing = true;
         if (ui.Gilded(B(), "CONTINUE", save != null ? $"DAY {save.Day}" : "", host.CanContinue)) host.ContinueCampaign();
         if (ui.Gilded(B(), "QUICK BATTLE")) host.QuickBattle();
         if (ui.Gilded(B(), "SETTINGS")) host.OpenSettings();
@@ -61,6 +61,7 @@ sealed class TitleScreen
         ui.Banner(cx - mw / 2 - U(64), my - U(10), U(52), U(150), Style.Sides[0], sway);
         ui.Banner(cx + mw / 2 + U(64), my - U(10), U(52), U(150), Style.Sides[1], sway + 1.3f);
         if (host.TitleNote != "") ui.TextC(host.TitleNote, cx, my + U(214), Style.Warn, 1);
+        if (choosing) ChooseRealm(cx);
 
         if (save != null)
         {
@@ -75,6 +76,25 @@ sealed class TitleScreen
         }
         ui.TextR("F2 GRAPHICS QUALITY   F3 UI LAB", ui.W - U(24), ui.H - U(24), Style.Dim * 0.6f, 1);
         ui.End();
+    }
+
+    /// Where the company starts (docs/WORLD.md W5): one row per realm, its shield, its name and how its people fight.
+    void ChooseRealm(int cx)
+    {
+        int rowH = U(34), w = U(420), h = U(46) + rowH * Factions.All.Count + U(40);
+        var r = ui.Plate(new Rectangle(cx - w / 2, (ui.H - h) / 2, w, h), "WHERE DOES YOUR COMPANY START?", Kit.Gilt);
+        int y = r.Y;
+        for (int f = 0; f < Factions.All.Count; f++)
+        {
+            var def = Factions.All[f];
+            var row = new Rectangle(r.X, y, r.Width, rowH - U(4));
+            if (ui.Button(row, "")) { choosing = false; host.StartCampaign(Environment.TickCount & 0xFFFF, f); }
+            ui.Shield(new Rectangle(row.X + U(4), row.Y + U(1), U(22), U(26)), Style.Sides[def.Palette]);
+            ui.Text(def.Name.ToUpperInvariant(), row.X + U(34), row.Y + U(4), Style.Text, 1);
+            ui.Text((Factions.Culture(def.Culture)?.Text ?? "").ToUpperInvariant(), row.X + U(34), row.Y + U(16), Style.Dim, 1);
+            y += rowH;
+        }
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - U(50), y + U(6), U(100), U(24)), "BACK") || kb.IsKeyDown(Keys.Escape)) choosing = false;
     }
 
     /// Night sky into an ember dusk, a moon, a castle on the far hill and three ranges of hills.

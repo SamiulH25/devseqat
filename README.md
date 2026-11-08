@@ -103,7 +103,11 @@ mountain ridges you cross by road at the passes.
 - **Prisoners** follow you (they slow you and eat): sell, recruit or free them. Lords you beat may be captured and ransomed.
 - **Officers:** sergeants with traits (Stubborn, Steady, Drillmaster, Hothead, Sharpshooter, Surgeon, Veteran) that show in battle; they can fall.
 - **Seasons and food:** winter slows the march, slows healing and doubles rations; starving men lose cohesion and desert. Your liege's towns feed you.
-- **Seven realms:** wars and truces are per pair; a realm that grows too strong unites the others against it. Each realm has its own
+- **Seven realms:** wars and truces are per pair, and realms go to war with their neighbours; two realms fighting the same
+  stronger realm tend to ally, and a realm that holds too much (30% of the seats with seven realms) unites its neighbours against
+  it. Each realm has a temper: the Khaganate and the Northmarch are quick to war, the Saltmarsh League and the Sunward Emirates
+  keep full garrisons and take terms readily, the Khaganate dislikes sieges, and the Order of the Ashen Sun hunts goblins, beasts
+  and the dead before men. A new campaign asks which realm your company starts in. Each realm has its own
   heraldry and its own troops in all four lines, in its own kit: turbans, lamellar and camel riders in the south, fur-brimmed helms and
   long deel coats on the steppe, brigandines and tall pavises in the Saltmarsh League, white surcoats in the Order. The four younger
   realms' men may also train as their kin's troops (a Sunward man may become a Crimson greatsword, never an Azure man-at-arms).

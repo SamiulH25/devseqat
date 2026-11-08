@@ -124,7 +124,8 @@ public sealed partial class Campaign
             if (RulerOf(w.A) == Me || RulerOf(w.B) == Me) { SuePeace(w); continue; }
             float strengthA = Rules.PerMan(Strength(w.A) / 1500) - w.ExhA / 40, strengthB = Rules.PerMan(Strength(w.B) / 1500) - w.ExhB / 40;
             int win = w.ScoreA / 1500 - w.ExhA / 40 >= w.ScoreB / 1500 - w.ExhB / 40 ? w.A : w.B, lose = win == w.A ? w.B : w.A;
-            float le = ExhaustionOf(w, lose), we = ExhaustionOf(w, win);
+            // A realm that takes terms readily (its temper's "tribute", W5) feels the war sooner.
+            float le = ExhaustionOf(w, lose) * Factions.Get(lose).Tribute, we = ExhaustionOf(w, win);
             bool allied = S.Pacts.Any(p => p.Until > S.Hours && (p.A == lose || p.B == lose) && FactionsAtWar(p.A == lose ? p.B : p.A, win));
             bool wants = le > (allied ? 70 : 50) || le > 30 && Margin(w, win, lose) > 0.5f || we > 60 && le > 40;
             if (wants && rng.Chance(0.3f)) MakePeace(w, win, lose, BestTerms(w, win, lose));
@@ -137,14 +138,16 @@ public sealed partial class Campaign
             if (wars >= 2) continue;
             var ruler = RulerOf(f);
             float chance = (wars == 0 ? 0.05f : 0.01f) * (ruler?.Traits.Contains("Ambitious") == true || ruler?.Traits.Contains("Reckless") == true ? 2 : 1)
-                * (ruler?.Traits.Contains("Cautious") == true ? 0.5f : 1);
+                * (ruler?.Traits.Contains("Cautious") == true ? 0.5f : 1) * Factions.Get(f).Aggression;
             if (!rng.Chance(chance)) continue;
+            // Only a neighbour (W5): with seven realms a war across the map is a war nobody can fight.
             var target = Enumerable.Range(0, S.Factions.Count)
                 .Where(g => g != f && Alive(g) && !FactionsAtWar(f, g) && (WarBetween(f, g)?.TruceUntil ?? 0) <= S.Hours
-                    && S.Factions[g].TributaryOf != f && S.Factions[f].TributaryOf != g && !Allied(f, g) && Strength(f) > Strength(g) * 0.8f)
-                .OrderByDescending(g => Borders(f, g) ? 1 : 0).ThenBy(g => Strength(g)).Cast<int?>().FirstOrDefault();
+                    && S.Factions[g].TributaryOf != f && S.Factions[f].TributaryOf != g && !Allied(f, g) && Strength(f) > Strength(g) * 0.8f && Borders(f, g))
+                .OrderByDescending(g => WarAppeal(f, g)).Cast<int?>().FirstOrDefault();
             if (target is int t) DeclareWarBetween(f, t);
         }
+        AlliancesDaily();
         // Tributaries march with their overlords and are freed when the term ends.
         foreach (var fs in S.Factions.Where(fs => fs.TributaryOf >= 0))
         {
@@ -164,11 +167,49 @@ public sealed partial class Campaign
     }
 
     /// The great coalition war against a realm grown too strong is not settled by terms.
-    bool LeaderWar(War w)
+    bool LeaderWar(War w) => Leading(w.A) || Leading(w.B);
+
+    /// The share of the seats that unites the other realms against one: 45% of three realms' seats, less with more realms
+    /// (30% of seven), so no realm runs away with the map (docs/WORLD.md W5).
+    public float LeaderShare
     {
-        if (S.Factions.Count <= 2) return false;
+        get
+        {
+            int alive = Enumerable.Range(0, S.Factions.Count).Count(Alive);
+            return alive <= 3 ? 0.45f : MathF.Max(0.3f, 2.1f / alive);
+        }
+    }
+
+    /// Does this realm hold enough of the seats to unite the others against it?
+    public bool Leading(int f)
+    {
+        if (S.Factions.Count <= 2 || f < 0) return false;
         int seats = S.Settlements.Count(s => s.Kind != SettlementKind.Village);
-        return Seats(w.A) >= seats * 0.45f || Seats(w.B) >= seats * 0.45f;
+        return Seats(f) >= seats * LeaderShare;
+    }
+
+    /// How much a realm wants a war with a neighbour: a long border, a weaker foe, and one already busy with other wars.
+    float WarAppeal(int f, int g) =>
+        MathF.Min(BorderLength(f, g), 6) / 6f + MathF.Min(2, Strength(f) / MathF.Max(1, Strength(g))) * 0.5f
+        + 0.2f * S.Wars.Count(w => w.Active && (w.A == g || w.B == g));
+
+    /// Provinces of one realm that touch the other's.
+    int BorderLength(int a, int b) => S.Provinces.Count(p => p.Faction == a && p.Neighbors.Any(n => S.Provinces[n].Faction == b));
+
+    /// Two realms at war with the same stronger realm tend to ally against it (F7, W5). You make your own realm's alliances.
+    void AlliancesDaily()
+    {
+        for (int a = 0; a < S.Factions.Count; a++)
+            for (int b = a + 1; b < S.Factions.Count; b++)
+            {
+                if (!Alive(a) || !Alive(b) || Allied(a, b) || FactionsAtWar(a, b) || S.Factions[a].TributaryOf >= 0 || S.Factions[b].TributaryOf >= 0) continue;
+                if (Rank == Rank.King && (a == Captain.Contract || b == Captain.Contract)) continue;
+                float stronger = MathF.Max(Strength(a), Strength(b));
+                int foe = Enumerable.Range(0, S.Factions.Count).FirstOrDefault(c => c != a && c != b && FactionsAtWar(a, c) && FactionsAtWar(b, c) && Strength(c) > stronger, -1);
+                if (foe < 0 || !rng.Chance(0.05f)) continue;
+                S.Pacts.Add(new Pact { A = a, B = b, Until = (float)S.Hours + AllianceDays * 24 });
+                Treaty($"The {FactionNames[a]} and the {FactionNames[b]} ally against the {FactionNames[foe]} for {AllianceDays:0} days.");
+            }
     }
 
     float Strength(int f) => RealmStrength(f);
@@ -213,7 +254,7 @@ public sealed partial class Campaign
         if (w is not { Active: true }) return "YOU ARE NOT AT WAR WITH THEM";
         var held = Player.Captives.Select(PartyById).Where(p => p != null && p.Faction == target).ToList();
         float sweet = held.Count * 0.15f;
-        float m = Margin(w, me, target) + sweet;
+        float m = Margin(w, me, target) + sweet + (Factions.Get(target).Tribute - 1) * 0.4f; // some realms take terms sooner (W5)
         float need = terms switch { Terms.Tributary => 1.6f, Terms.Cede => 0.9f, Terms.Gold => 0.35f, _ => -0.5f };
         if (terms == Terms.White && ExhaustionOf(w, target) < 20 && m < -0.5f) return "THEY WILL NOT TALK WHILE THEY ARE WINNING";
         if (m < need) return $"THEY REFUSE {TermsText(terms)} (YOUR STANDING {m:+0.00;-0.00}, NEEDS {need:+0.00;-0.00})";

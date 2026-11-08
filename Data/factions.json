@@ -4,20 +4,24 @@
   // the same troop). Troops carry their culture in troops.json; "common" troops are open to every culture.
   // A realm's "home" is where its land grows from on a new map ([x, z] from -1 to 1; -1 z is the north) and "reach" lets
   // it grow further (map units on the original map) before its neighbours stop it (docs/WORLD.md W1). "relations" are the
-  // wars and truces a new campaign opens with; realms not listed start at peace. A culture's "kin" are the cultures whose
-  // troops its men may also train as (docs/WORLD.md W3); since W4 every realm's four lines are its own culture's troops.
+  // wars and truces a new campaign opens with. A realm's temper (docs/WORLD.md W5) multiplies the shared rules (1 = as before):
+  // "aggression" (wars declared, lords marching for the front), "garrison" (how full its seats are kept), "siege" (how readily its
+  // lords lay siege), "tribute" (how soon it takes terms); "hunts": "monsters" sends its lords after goblins, beasts and the dead
+  // first. Realms not listed in "relations" start at peace. A culture's "kin" are the cultures whose troops its men may also
+  // train as (docs/WORLD.md W3); since W4 every realm's four lines are its own culture's troops.
   "cultures": [
     { "id": "azure", "name": "Azure", "root": "levies", "text": "heavy foot, crossbows and lances", "flavour": "Blue roofs and quiet bells" },
     { "id": "crimson", "name": "Crimson", "root": "levies", "text": "greatswords, halberds, longbows and heavy horse", "flavour": "Red banners and loud markets" },
     { "id": "northern", "name": "Northern", "root": "clansmen", "text": "axes, round shields, glaives and light horse", "flavour": "Timber halls and smoke" },
     { "id": "southern", "name": "Sunward", "root": "levies", "kin": ["crimson", "northern"], "text": "spears and javelins, light horse and mamluks", "flavour": "White walls, palms and a call to prayer" },
-    { "id": "steppe", "name": "Steppe", "root": "clansmen", "kin": ["northern"], "text": "horse archers first, bows on foot, axes borrowed", "flavour": "Felt tents around a wooden hall" },
+    { "id": "steppe", "name": "Steppe", "root": "clansmen", "kin": ["northern"], "text": "horse archers first, bows on foot, axes and spears", "flavour": "Felt tents around a wooden hall" },
     { "id": "league", "name": "League", "root": "levies", "kin": ["azure"], "text": "pikes and pavise crossbows, hired steel", "flavour": "Canals, cranes and counting houses" },
     { "id": "order", "name": "Ashen Sun", "root": "levies", "kin": ["azure", "crimson"], "text": "sworn brothers on foot and knight-brothers", "flavour": "Bells, banners and a great grey chapter house" }
   ],
   "factions": [
     {
       "name": "Azure Crown", "palette": 0, "culture": "azure", "home": [-0.75, -0.05],
+      "siege": 1.1,
       "lines": {
         "infantry": ["levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries", "immortals"],
         "archers": ["bowmen", "bowmen", "crossbowmen", "arbalests", "heavy_arbalests", "guild_sharpshooters", "grand_arbalests"],
@@ -27,6 +31,7 @@
     },
     {
       "name": "Crimson Compact", "palette": 1, "culture": "crimson", "home": [0.45, 0.4],
+      "aggression": 1.2, "siege": 1.2, "tribute": 0.8,
       "lines": {
         "infantry": ["levies", "shieldmen", "greatswords", "zweihanders", "blademasters", "grand_blademasters", "sword_saints"],
         "archers": ["bowmen", "bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen", "sovereign_longbowmen"],
@@ -36,6 +41,7 @@
     },
     {
       "name": "Northmarch", "palette": 4, "culture": "northern", "home": [-0.2, -0.85],
+      "aggression": 1.3, "garrison": 0.85, "tribute": 0.7,
       "lines": {
         "infantry": ["clansmen", "axemen", "huscarls", "varangians", "einherjar", "thane_champions", "high_king_chosen"],
         "archers": ["bowmen", "bowmen", "rangers", "woodland_stalkers", "shadow_hunters", "highland_marksmen", "sky_piercers"],
@@ -45,6 +51,7 @@
     },
     {
       "name": "Sunward Emirates", "palette": 5, "culture": "southern", "home": [0.1, 0.85],
+      "garrison": 1.2, "tribute": 1.4,
       "lines": {
         "infantry": ["levies", "shieldmen", "ghazis", "jandars", "dervish_blades", "emir_guard", "lions_of_the_sun"],
         "archers": ["bowmen", "bowmen", "sand_archers", "oasis_bows", "emir_archers", "falcon_eyes", "sultans_bows"],
@@ -54,6 +61,7 @@
     },
     {
       "name": "Khaganate of the Grass", "palette": 6, "culture": "steppe", "home": [0.88, -0.3],
+      "aggression": 1.4, "garrison": 0.8, "siege": 0.6,
       "lines": {
         "infantry": ["clansmen", "axemen", "yurt_guards", "torguud", "wolf_axes", "noyan_guard", "khagans_axes"],
         "archers": ["bowmen", "bowmen", "steppe_archers", "yurt_archers", "tengri_bows", "sky_wolf_archers", "eternal_sky_archers"],
@@ -63,6 +71,7 @@
     },
     {
       "name": "Saltmarsh League", "palette": 7, "culture": "league", "home": [-0.8, 0.8],
+      "aggression": 0.7, "garrison": 1.25, "tribute": 1.5,
       "lines": {
         "infantry": ["levies", "shieldmen", "canal_guards", "guild_swords", "brigandiers", "doge_guard", "lion_guard"],
         "archers": ["bowmen", "bowmen", "league_crossbows", "pavisiers", "guild_arbalesters", "doge_arbalesters", "lion_crossbows"],
@@ -72,6 +81,7 @@
     },
     {
       "name": "Order of the Ashen Sun", "palette": 8, "culture": "order", "home": [0, 0], "reach": -25,
+      "aggression": 0.8, "garrison": 1.2, "hunts": "monsters",
       "lines": {
         "infantry": ["levies", "shieldmen", "order_sergeants", "sun_brothers", "ashen_brothers", "sun_templars", "ashen_saints"],
         "archers": ["bowmen", "bowmen", "order_crossbows", "chapter_arbalests", "ashen_arbalests", "sun_arbalests", "dawn_watch"],

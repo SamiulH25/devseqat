@@ -62,6 +62,51 @@ public static class BalanceReport
 
     }
 
+    /// `--realms [n]`: the snowball guard (docs/WORLD.md W5). n campaigns run two years (240 days) with your company out of
+    /// the way; each realm's share of the provinces at the end of each year, and the day any realm falls. Flags a realm gone
+    /// in the first year or one holding more than 40% of the map. Writes balance/realms.csv.
+    public static void Realms(int campaigns)
+    {
+        Directory.CreateDirectory("balance");
+        var inv = CultureInfo.InvariantCulture;
+        var csv = new StringBuilder("seed,day,realm,provinces,share,seats,lords\n");
+        int flags = 0;
+        float peak = 0;
+        for (int seed = 1; seed <= campaigns; seed++)
+        {
+            var c = Campaign.New(3000 + seed);
+            c.Player.Cooldown = 1e6f;
+            var fell = new Dictionary<int, int>();
+            var line = new StringBuilder($"realms {seed}:");
+            for (int day = 1; day <= 240; day++)
+            {
+                for (int h = 0; h < 24; h++) { c.Tick(1); c.Encounter = null; c.Arrived = null; c.S.Event = null; c.Beat = null; c.Report = null; }
+                for (int f = 0; f < c.S.Factions.Count; f++) if (!c.Alive(f) && !fell.ContainsKey(f)) fell[f] = day;
+                if (day % 120 != 0) continue;
+                line.Append($" year {day / 120}:");
+                for (int f = 0; f < c.S.Factions.Count; f++)
+                {
+                    int prov = c.S.Provinces.Count(p => p.Faction == f);
+                    float share = prov / (float)c.S.Provinces.Count;
+                    peak = MathF.Max(peak, share);
+                    int seats = c.S.Settlements.Count(s => s.Faction == f && s.Kind != SettlementKind.Village);
+                    int lords = c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction == f);
+                    csv.AppendLine(string.Join(",", seed, day, Csv(c.FactionNames[f]), prov, share.ToString("0.000", inv), seats, lords));
+                    line.Append($" {share * 100:0}");
+                    if (share > 0.4f) { flags++; line.Append("!"); }
+                }
+            }
+            foreach (var (f, day) in fell)
+            {
+                line.Append($"; {c.FactionNames[f]} fell on day {day}");
+                if (day <= 120) { flags++; line.Append("!"); }
+            }
+            Console.WriteLine(line + $"; wars {c.S.Wars.Count(w => w.Active)}, alliances {c.S.Pacts.Count}");
+        }
+        File.WriteAllText("balance/realms.csv", csv.ToString());
+        Console.WriteLine($"realms: {campaigns} campaigns, largest share {peak * 100:0}%, {flags} flags (a realm over 40% or gone in year one)");
+    }
+
     static string Csv(string s) => s.Contains(',') ? $"\"{s}\"" : s;
 
     public static void Run(int campaigns)

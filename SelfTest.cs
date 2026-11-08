@@ -90,6 +90,7 @@ public static partial class SelfTest
         RealmsFromData();
         ClimatesAndRidges();
         SevenRealms();
+        RealmTempers();
         Roads();
         Quests();
         TownLife();

@@ -87,6 +87,9 @@ public partial class Campaign
 
     IEnumerable<Party> Visible(Party p, float range) => S.Parties.Where(q => q != p && !q.Down && Vector2.Distance(p.Pos, q.Pos) < range);
 
+    /// Lords of a realm whose temper sends them after monsters first (docs/WORLD.md W5).
+    bool MonsterHunter(Party p) => p.Faction >= 0 && Factions.Get(p.Faction).Hunts == "monsters";
+
     internal void LordThink(Party p)
     {
         var home = SettlementById(p.HomeId);
@@ -122,9 +125,10 @@ public partial class Campaign
             if (Vector2.Distance(p.Pos, home.Pos) < 2 * Map.Spread) { Refit(p, home); p.Task = "rest"; p.TaskUntil = (float)S.Hours + 12; }
         }
         // A holdout is dug in: a lord goes after one only when its raiders have plundered his realm, and he is clearly the stronger.
-        else if (hostiles.Where(q => !q.Lair || q.HuntedBy == p.Faction && S.Hours < q.HuntedUntil && Rules.Strength(q) * B.HoldoutDefence * 1.2f < me * preyAt)
+        // A realm that hunts monsters (the Order, W5) digs out any holdout it outweighs and goes after beasts before men.
+        else if (hostiles.Where(q => !q.Lair || (q.HuntedBy == p.Faction && S.Hours < q.HuntedUntil || MonsterHunter(p)) && Rules.Strength(q) * B.HoldoutDefence * 1.2f < me * preyAt)
                      .Where(q => Rules.Strength(q) * (q.Breed is "troll" or "undead" ? 2 : 1) < me * preyAt * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f)) // a troll only with twice its weight
-                     .OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
+                     .OrderBy(q => MonsterHunter(p) && q.Kind == PartyKind.Monster ? 0 : 1).ThenBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
         {
             p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 6;
         }
@@ -135,7 +139,7 @@ public partial class Campaign
             var ordered = OrderedProvince(p); // your vassals keep to their standing orders (F6)
             if (ordered != null) prov = ordered;
             // A lord with no enemy in sight marches for the front rather than idling around home, so armies meet on their own.
-            else if (AtWarWithAnyone(p.Faction) && rng.Chance(B.LordAggression) && EnemyProvinceNear(prov, p.Faction) is Province front) prov = front;
+            else if (AtWarWithAnyone(p.Faction) && rng.Chance(MathF.Min(0.95f, B.LordAggression * Factions.Get(p.Faction).Aggression)) && EnemyProvinceNear(prov, p.Faction) is Province front) prov = front;
             p.Goal = prov.Center + new Vector2(rng.Range(-20, 20), rng.Range(-20, 20)) * Map.Spread;
             p.Moving = true;
             p.TaskUntil = (float)S.Hours + 10;

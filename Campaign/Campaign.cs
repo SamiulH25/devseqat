@@ -54,7 +54,8 @@ public sealed partial class Campaign
 
     // ---------- a new campaign ----------
 
-    public static Campaign New(int seed)
+    /// A new campaign; `realm` is the realm you start in (docs/WORLD.md W5): its capital, its villages' recruits.
+    public static Campaign New(int seed, int realm = 0)
     {
         var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent,
             Layout = WorldMap.CurrentLayout, DataRealms = Factions.All.Count };
@@ -73,11 +74,16 @@ public sealed partial class Campaign
             s.Wars.Add(r.War ? new War { A = a, B = b } : new War { A = a, B = b, Active = false, TruceUntil = r.TruceDays * 24 });
         }
         var c = new Campaign(s);
-        var capital = s.Settlements.Where(t => t.Kind == SettlementKind.Town && t.Faction == 0).OrderBy(t => t.Pos.X).First();
-        var player = new Party { Id = s.NextId++, Kind = PartyKind.Player, Name = "Your company", Faction = 0, Pos = capital.Pos + new Vector2(2, 0), Tier = 2 };
+        realm = Math.Clamp(realm, 0, factions - 1);
+        // The Crown's westernmost town (as it always was); another realm's town nearest the middle of its land.
+        var towns = s.Settlements.Where(t => t.Kind == SettlementKind.Town && t.Faction == realm).ToList();
+        var middle = s.Provinces.Where(p => p.Faction == realm).Aggregate(Vector2.Zero, (a, p) => a + p.Center) / Math.Max(1, s.Provinces.Count(p => p.Faction == realm));
+        var capital = realm == 0 ? towns.OrderBy(t => t.Pos.X).First() : towns.OrderBy(t => Vector2.Distance(t.Pos, middle)).First();
+        var player = new Party { Id = s.NextId++, Kind = PartyKind.Player, Name = "Your company", Faction = realm, Pos = capital.Pos + new Vector2(2, 0), Tier = 2 };
         player.Goal = player.Pos;
         s.Parties.Add(player);
-        player.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(24), 0, capital));
+        if (s.Captain.Contract >= 0) s.Captain.Contract = realm; // you start in the pay of the realm you chose
+        player.Companies.Add(c.NewCompany(Factions.Root(Factions.CultureOf(realm)), "infantry", c.Scaled(24), 0, capital));
         player.Companies.Add(c.NewCompany("levies", "spears", c.Scaled(15), 0, capital));
         c.MakeCaptainCharacter(capital.Culture);
         c.SeedBuildings();
@@ -373,11 +379,14 @@ public sealed partial class Campaign
             else SpawnBandits();
         MonstersDaily();
         RoadsDaily();
-        // A realm that holds close to half the seats unites the others against it: their truces with it end, and they make peace.
-        int seats = S.Settlements.Count(s => s.Kind != SettlementKind.Village);
+        // A realm that holds too many of the seats (LeaderShare: close to half of three realms', less with more) unites the others
+        // against it: their truces with it end, its neighbours take up arms, and they make peace among themselves.
         for (int f = 0; f < S.Factions.Count && S.Factions.Count > 2; f++)
         {
-            if (S.Settlements.Count(s => s.Kind != SettlementKind.Village && s.Faction == f) < seats * 0.45f) continue;
+            if (!Leading(f)) continue;
+            for (int g = 0; g < S.Factions.Count; g++)
+                if (g != f && Alive(g) && WarBetween(f, g) == null && Borders(f, g) && S.Factions[g].TributaryOf != f)
+                    S.Wars.Add(new War { A = g, B = f, Active = false });
             foreach (var w in S.Wars)
             {
                 bool involves = w.A == f || w.B == f;

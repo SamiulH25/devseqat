@@ -351,12 +351,13 @@ public sealed partial class Campaign
             if (Alive(target) && !FactionsAtWar(f, target))
             {
                 float ours = RealmStrength(f), theirs = MathF.Max(1, RealmStrength(target));
+                bool border = Borders(f, target); // a war with a realm the realm does not touch wins few votes (W5)
                 int wars = S.Wars.Count(w => w.Active && (w.A == f || w.B == f));
                 float yes = 0, no = 0;
                 foreach (var (who, weight) in Voters(f))
                 {
                     float s = who == Me ? 100 : (by != null ? OpinionOf(who, by) * 0.5f : 0) + (ours / theirs - 1) * 30 - wars * 15
-                        + (who.Traits.Contains("Reckless") || who.Traits.Contains("Ambitious") ? 15 : 0) - (who.Traits.Contains("Cautious") ? 15 : 0);
+                        + (who.Traits.Contains("Reckless") || who.Traits.Contains("Ambitious") ? 15 : 0) - (who.Traits.Contains("Cautious") ? 15 : 0) - (border ? 0 : 25);
                     if (s > 0) yes += weight; else no += weight;
                 }
                 if (yes > no) { DeclareWarBetween(f, target); said.Add($"The council votes for war on the {FactionNames[target]} ({yes:0} to {no:0})."); }
@@ -368,7 +369,7 @@ public sealed partial class Campaign
     }
 
     /// Fielded strength of a realm's lords.
-    float RealmStrength(int f) => S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == f).Sum(Rules.Strength)
+    public float RealmStrength(int f) => S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == f).Sum(Rules.Strength)
         + (Captain.Contract == f ? Rules.Strength(Player) : 0);
 
     /// The seat a realm's host marches on, while it is still worth marching on (held by an enemy at war with it).

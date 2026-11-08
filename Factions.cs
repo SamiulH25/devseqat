@@ -29,6 +29,11 @@ public sealed class FactionDef
     /// Where the realm's land grows from on a new map ([x, z], each -1 to 1) and how much further it reaches (docs/WORLD.md W1).
     public float[] Home = { 0, 0 };
     public float Reach;
+    /// The realm's temper (docs/WORLD.md W5), each a multiplier on the shared rule (1 = as before): how readily it goes to war
+    /// and marches for the front, how full it keeps its garrisons, how readily its lords lay siege, how soon it takes terms.
+    public float Aggression = 1, Garrison = 1, Siege = 1, Tribute = 1;
+    /// What its lords hunt first: "" (whatever is hostile in reach) or "monsters" (goblins, beasts and the dead before men).
+    public string Hunts = "";
 }
 
 /// Realms and cultures, loaded once from Data/factions.json (copied next to the game).
@@ -122,7 +127,11 @@ public static class Factions
         foreach (var r in relations!)
             if (factions.All(f => f.Name != r.A) || factions.All(f => f.Name != r.B) || r.A == r.B) yield return $"relation {r.A} - {r.B}: unknown realm";
         foreach (var f in factions)
+        {
             if (f.Home.Length != 2 || f.Home.Any(v => v is < -1 or > 1)) yield return $"{f.Name}: home must be [x, z] within -1..1";
+            if (new[] { f.Aggression, f.Garrison, f.Siege, f.Tribute }.Any(v => v is < 0.3f or > 3)) yield return $"{f.Name}: temper values must be 0.3-3";
+            if (f.Hunts is not ("" or "monsters")) yield return $"{f.Name}: hunts must be \"\" or \"monsters\"";
+        }
         foreach (var c in cultures!)
         {
             if (!Troops.All.Any(t => t.Id == c.Root)) yield return $"culture {c.Id}: unknown root {c.Root}";

@@ -16,9 +16,13 @@ public sealed class Pilot
     public readonly Dictionary<string, int> StageDay = new();
     float nextThink;
 
+    /// The realm the company started in (docs/WORLD.md W5): the pilot takes service there.
+    readonly int StartRealm;
+
     public Pilot(Campaign campaign)
     {
         c = campaign; StageDay[c.Stage] = c.Day;
+        StartRealm = Math.Max(0, c.Player.Faction);
         if (c.S.Hours < 1 && c.Captain.Kit.Horse == "courser") c.ChooseRoad("lance"); // the road (P5): a horse keeps the captain alive
     }
 
@@ -158,7 +162,7 @@ public sealed class Pilot
     void Think()
     {
         TakePerks();
-        if (c.Captain.Contract < 0) c.SignContract(c.S.Factions.Count > 0 ? 0 : -1);
+        if (c.Captain.Contract < 0) c.SignContract(c.S.Factions.Count > 0 ? StartRealm : -1);
         if (c.CanSwearFealty(out _)) c.SwearFealty(); // the career (F5): kneel as soon as the liege will have us
         float mine = Rules.Strength(Me);
         // Danger first: a hostile party our size or bigger close by sends us behind walls.
