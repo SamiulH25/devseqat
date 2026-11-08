@@ -87,6 +87,7 @@ public static partial class SelfTest
         WorldNames();
         Sites();
         MapIndexMatches();
+        RealmsFromData();
         Roads();
         Quests();
         TownLife();

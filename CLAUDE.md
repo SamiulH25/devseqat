@@ -155,7 +155,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Town life: tavern rumours, tournaments as small battles (`BattleSetup.Tournament`, `BattleOptions.Tournament`), town flavour line | `Campaign/Town.cs` (`Rumours`, `Follow`, `PrepareTournament`, `FinishTournament`, `AutoTournament`, `Flavour`); `MapScreen.Settlement.cs` `TavernTab`, `EldersTab` |
 | Your record: deeds, the chronicle's memory, the tally, the end summary | `Campaign/Record.cs` (`Deed`, `Tally`, `ChronicleEntries`, `Summary`); sight `Campaign.PlayerSight`/`InSight` (Campaign.cs); peace offers `SuePeace` (Diplomacy.cs) |
 | Life on the roads: caravans between towns, pilgrims to shrines, meeting them (buy, news, rob) | `Campaign/Roads.cs` (`RoadsDaily`, `SpawnCaravan`, `CaravanThink`, `Arrive`, `CaravanLost`, `Rob`); `PartyKind.Caravan`; `MapScreen.MeetingPanel` |
-| Realms and cultures data | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`) |
+| Realms and cultures data: lines, heraldry palette, home on the map, town flavour, opening wars (`relations`) | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`); `WorldMap.GrowRealms` lays them out |
 | Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
 | Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |
 | Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` (orders, goals, `Send`) + `.Draw.cs` (render, particles, culling, detail) + `Hud.cs` (2D drawing + hit-testing) + `Hud.Overlays.cs` (menu, after-action result, controls) + `Hud.Divisions.cs` |
@@ -205,7 +205,9 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 
 - Headless code (Battle*, Squad, Units, Troops, Terrain, Campaign/*) must not use MonoGame graphics/audio/input.
 - Ground positions are `Vector2(X = world X, Y = world Z)`; height comes from `Terrain.Height(pos)`.
-- Faction ids index `CampaignState.Factions`; ids past `Data/factions.json` are realms founded in play (F5). Use the instance
+- Faction ids index `CampaignState.Factions`; realms founded in play (F5) carry `FactionState.Founded` (ids past the save's
+  `DataRealms`; never test `id >= Factions.All.Count`, the data may have grown since the save). A map's realm layout comes from
+  `CampaignState.Layout` (0 = the old fixed bands, kept for old saves; 1 = realms grow from `home` in `factions.json`). Use the instance
   `campaign.FactionNames[f]` (not a static list) and `Factions.Get(f)`, which sees founded realms once `Factions.Bind` ran (the `Campaign` constructor does it).
 - The career rank is derived (`Campaign.Rank`), never stored; `CaptainState.BestRank` only remembers which beats were shown.
 - Team 0 = player side, team 1 = enemy. Palette 3 = bandits (and, for now, monsters). `PartyKind.Caravan` parties (merchants,

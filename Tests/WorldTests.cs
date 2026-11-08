@@ -137,7 +137,8 @@ public static partial class SelfTest
     static void Quests()
     {
         var c = Campaign.New(9);
-        void Hours(int n) { for (int i = 0; i < n; i++) { c.Player.Moving = false; c.Tick(1); c.Encounter = null; c.S.Event = null; } }
+        // Whole game hours: a meeting stops a tick short, so keep ticking until the time has really passed.
+        void Hours(int n) { double end = c.S.Hours + n; while (c.S.Hours < end - 1e-3) { c.Player.Moving = false; c.Tick((float)Math.Min(1, end - c.S.Hours)); c.Encounter = null; c.S.Event = null; c.Arrived = null; } }
         Contract Job(string kind, int target, Settlement from) => new() { Id = c.S.NextId++, Kind = kind, Target = target, Faction = -1, From = from.Id, Deadline = (float)c.S.Hours + 72, Reward = 50 };
         bool Holds(string kind) => c.S.Contracts.Any(k => k.Kind == kind);
         var v = c.S.Settlements.First(s => s.Kind == SettlementKind.Village && !c.Refuses(s));

@@ -2,14 +2,17 @@
   // Realms and cultures (CAMPAIGN_OVERHAUL.md 4.1). A realm's culture decides what its villages raise and which lines its lords
   // promote along; "lines" are the troop each role fields at tiers I-VII (each entry must be an upgrade of the one before, or
   // the same troop). Troops carry their culture in troops.json; "common" troops are open to every culture.
+  // A realm's "home" is where its land grows from on a new map ([x, z] from -1 to 1; -1 z is the north) and "reach" lets
+  // it grow further (map units on the original map) before its neighbours stop it (docs/WORLD.md W1). "relations" are the
+  // wars and truces a new campaign opens with; realms not listed start at peace.
   "cultures": [
-    { "id": "azure", "name": "Azure", "root": "levies", "text": "heavy foot, crossbows and lances" },
-    { "id": "crimson", "name": "Crimson", "root": "levies", "text": "greatswords, halberds, longbows and heavy horse" },
-    { "id": "northern", "name": "Northern", "root": "clansmen", "text": "axes, round shields, glaives and light horse" }
+    { "id": "azure", "name": "Azure", "root": "levies", "text": "heavy foot, crossbows and lances", "flavour": "Blue roofs and quiet bells" },
+    { "id": "crimson", "name": "Crimson", "root": "levies", "text": "greatswords, halberds, longbows and heavy horse", "flavour": "Red banners and loud markets" },
+    { "id": "northern", "name": "Northern", "root": "clansmen", "text": "axes, round shields, glaives and light horse", "flavour": "Timber halls and smoke" }
   ],
   "factions": [
     {
-      "name": "Azure Crown", "palette": 0, "culture": "azure",
+      "name": "Azure Crown", "palette": 0, "culture": "azure", "home": [-0.8, 0.45],
       "lines": {
         "infantry": ["levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries", "immortals"],
         "archers": ["bowmen", "bowmen", "crossbowmen", "arbalests", "heavy_arbalests", "guild_sharpshooters", "grand_arbalests"],
@@ -18,7 +21,7 @@
       }
     },
     {
-      "name": "Crimson Compact", "palette": 1, "culture": "crimson",
+      "name": "Crimson Compact", "palette": 1, "culture": "crimson", "home": [0.8, 0.45],
       "lines": {
         "infantry": ["levies", "shieldmen", "greatswords", "zweihanders", "blademasters", "grand_blademasters", "sword_saints"],
         "archers": ["bowmen", "bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen", "sovereign_longbowmen"],
@@ -27,7 +30,7 @@
       }
     },
     {
-      "name": "Northmarch", "palette": 4, "culture": "northern",
+      "name": "Northmarch", "palette": 4, "culture": "northern", "home": [0, -0.85], "reach": -20,
       "lines": {
         "infantry": ["clansmen", "axemen", "huscarls", "varangians", "einherjar", "thane_champions", "high_king_chosen"],
         "archers": ["bowmen", "bowmen", "rangers", "woodland_stalkers", "shadow_hunters", "highland_marksmen", "sky_piercers"],
@@ -35,5 +38,10 @@
         "horse": ["outriders", "outriders", "horse_archers", "nomad_bows", "steppe_marksmen", "khan_guard", "golden_horde_masters"]
       }
     }
+  ],
+  "relations": [
+    { "a": "Azure Crown", "b": "Crimson Compact", "war": true },
+    { "a": "Azure Crown", "b": "Northmarch", "truceDays": 20 },
+    { "a": "Crimson Compact", "b": "Northmarch", "truceDays": 40 }
   ]
 }

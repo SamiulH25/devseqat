@@ -58,9 +58,14 @@ public sealed class WorldMap
 
     /// The map a fresh campaign uses. `extent` is half the side the provinces may use (Extent for new campaigns,
     /// LegacyExtent for saves made before the map grew), so a save keeps the geography it was played on.
-    public static WorldMap Generate(int seed, float extent = Extent)
+    /// How realms are laid out: 0 = the original three by fixed bands (every save from before docs/WORLD.md W1 keeps it),
+    /// 1 = each data realm grows from its home in Data/factions.json.
+    public const int LegacyLayout = 0, CurrentLayout = 1;
+    public int Layout;
+
+    public static WorldMap Generate(int seed, float extent = Extent, int layout = CurrentLayout)
     {
-        var m = new WorldMap(seed) { ExtentUsed = extent };
+        var m = new WorldMap(seed) { ExtentUsed = extent, Layout = layout };
         var rng = new Random(seed);
         var names = Names.Get();
         // Maps once shuffled a 60-name list here: keep those draws so an old seed still gives the same rivers and towns.
@@ -81,12 +86,14 @@ public sealed class WorldMap
         // The north (low z) is the Northmarch; south of it, west is the Azure Crown and east the Crimson Compact.
         var north = centres.OrderBy(c => c.Y).Take(centres.Count * 3 / 10).ToHashSet();
         var south = centres.Where(c => !north.Contains(c)).OrderBy(c => c.X).ToList();
-        foreach (var (c, i) in centres.OrderBy(c => c.X).Select((c, i) => (c, i)))
+        var byX = centres.OrderBy(c => c.X).ToList();
+        int[]? realms = layout >= 1 ? GrowRealms(byX, extent, span) : null;
+        foreach (var (c, i) in byX.Select((c, i) => (c, i)))
         {
             int kind = rng.NextSingle() switch { < 0.35f => 0, < 0.6f => 1, < 0.85f => 2, _ => 3 };
             if (MathF.Max(MathF.Abs(c.X), MathF.Abs(c.Y)) > extent * 0.75f && rng.Next(2) == 0) kind = 3; // hills toward the rim
             if (north.Contains(c) && kind == 1) kind = 2; // the north is forest, not farmland
-            int faction = north.Contains(c) ? 2 : south.IndexOf(c) < south.Count / 2 ? 0 : 1;
+            int faction = realms?[i] ?? (north.Contains(c) ? 2 : south.IndexOf(c) < south.Count / 2 ? 0 : 1);
             m.Provinces.Add(new Province { Id = i, Name = namer.Next(Factions.CultureOf(faction)), Kind = Kinds[kind], Center = c, Faction = faction });
         }
         // Neighbours: each province links to its nearest few; roads follow the links.
@@ -103,12 +110,17 @@ public sealed class WorldMap
 
         // Settlements: a town or castle at each centre (capitals are the outermost towns), and 2-3 villages around it.
         int id = 0;
-        var westCap = m.Provinces.Where(p => p.Faction == 0).OrderBy(p => p.Center.X).First();
-        var eastCap = m.Provinces.Where(p => p.Faction == 1).OrderBy(p => p.Center.X).Last();
-        var northCap = m.Provinces.Where(p => p.Faction == 2).OrderBy(p => p.Center.Y).FirstOrDefault();
+        var capitals = layout >= 1
+            ? Enumerable.Range(0, Factions.All.Count).Select(f => m.Provinces.Where(p => p.Faction == f).OrderBy(p => Vector2.Distance(p.Center, HomeOf(f, extent))).FirstOrDefault()).ToHashSet()
+            : new HashSet<Province?>
+            {
+                m.Provinces.Where(p => p.Faction == 0).OrderBy(p => p.Center.X).First(),
+                m.Provinces.Where(p => p.Faction == 1).OrderBy(p => p.Center.X).Last(),
+                m.Provinces.Where(p => p.Faction == 2).OrderBy(p => p.Center.Y).FirstOrDefault(),
+            };
         foreach (var p in m.Provinces)
         {
-            bool town = p == westCap || p == eastCap || p == northCap || p.Id % 2 == 0;
+            bool town = capitals.Contains(p) || p.Id % 2 == 0;
             m.Settlements.Add(new Settlement { Id = id++, Province = p.Id, Faction = p.Faction, Culture = Factions.CultureOf(p.Faction), Name = p.Name, Pos = p.Center,
                 Kind = town ? SettlementKind.Town : SettlementKind.Castle });
             int villages = 2 + rng.Next(2);
@@ -156,6 +168,53 @@ public sealed class WorldMap
             }
         m.PlaceSites(namer, span);
         return m;
+    }
+
+    /// Where a data realm's land grows from on a map of this extent.
+    static Vector2 HomeOf(int f, float extent) => new Vector2(Factions.All[f].Home[0], Factions.All[f].Home[1]) * extent * 0.92f;
+
+    /// The realm of each province (layout 1): every realm grows from the province nearest its home along the links between
+    /// neighbouring provinces, the cheapest claim winning (distance less the realm's reach). Growing over the links keeps each
+    /// realm's land in one piece; provinces no link reaches go to the nearest claim in a straight line.
+    static int[] GrowRealms(List<Vector2> centres, float extent, float span)
+    {
+        int n = centres.Count, realms = Factions.All.Count;
+        var links = new List<int>[n];
+        for (int i = 0; i < n; i++) links[i] = new List<int>();
+        for (int i = 0; i < n; i++)
+            foreach (int j in Enumerable.Range(0, n).Where(j => j != i).OrderBy(j => Vector2.Distance(centres[i], centres[j])).Take(3))
+                if (Vector2.Distance(centres[i], centres[j]) < 160 * span)
+                {
+                    if (!links[i].Contains(j)) links[i].Add(j);
+                    if (!links[j].Contains(i)) links[j].Add(i);
+                }
+        var cost = Enumerable.Repeat(float.MaxValue, n).ToArray();
+        var owner = Enumerable.Repeat(-1, n).ToArray();
+        var open = new PriorityQueue<int, float>();
+        var seeds = new HashSet<int>();
+        for (int f = 0; f < realms; f++)
+        {
+            var home = HomeOf(f, extent);
+            int seed = Enumerable.Range(0, n).Where(i => !seeds.Contains(i)).OrderBy(i => Vector2.Distance(centres[i], home)).First();
+            seeds.Add(seed);
+            cost[seed] = -Factions.All[f].Reach * span;
+            owner[seed] = f;
+            open.Enqueue(seed, cost[seed]);
+        }
+        while (open.TryDequeue(out int i, out float at))
+        {
+            if (at > cost[i]) continue;
+            foreach (int j in links[i])
+            {
+                if (seeds.Contains(j)) continue;
+                float c = at + Vector2.Distance(centres[i], centres[j]);
+                if (c < cost[j]) { cost[j] = c; owner[j] = owner[i]; open.Enqueue(j, c); }
+            }
+        }
+        for (int i = 0; i < n; i++)
+            if (owner[i] < 0)
+                owner[i] = Enumerable.Range(0, n).Where(j => owner[j] >= 0).OrderBy(j => cost[j] + Vector2.Distance(centres[i], centres[j])).Select(j => owner[j]).First();
+        return owner;
     }
 
     /// Which sites each kind of country holds (the first kinds are the likeliest).

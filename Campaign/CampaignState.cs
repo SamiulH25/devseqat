@@ -355,6 +355,10 @@ public sealed class CampaignState
     public int Version = CurrentVersion, Seed, NextId = 1, UnpaidWeeks;
     /// How far the provinces of this save's map reach (WorldMap.Extent for new campaigns; older saves have their own).
     public float MapExtent = WorldMap.Extent;
+    /// How the map lays out its realms (WorldMap.Layout): saves from before docs/WORLD.md W1 have none and keep the old bands.
+    public int Layout = WorldMap.LegacyLayout;
+    /// How many realms Data/factions.json held when the campaign began (older saves: three). Realms past it are founded in play.
+    public int DataRealms = 3;
     public double Hours;
     public ulong Rng;
     public float Gold, LastWeekBalance;

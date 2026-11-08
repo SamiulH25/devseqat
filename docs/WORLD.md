@@ -81,6 +81,14 @@ The atlas is 30% full with 5 palettes (the Sprites test prints it), so 9 palette
   gets a `flavour` line per culture in data, and the tests loop over `Factions.All.Count`.
 - Old maps keep generating the old way (see 6). Still three realms at the end of W1.
 
+**As built (W1).** `factions.json`: realms have `home` and `reach`, cultures a `flavour` line, and a top-level `relations` list
+opens the wars and truces (`Campaign.New`). `WorldMap.GrowRealms` (layout 1) grows realms from their homes over the province
+links, cheapest claim first, so each realm is one piece; the capital is the realm's province nearest its home. Saves record
+`Layout` (missing = 0, the old bands, unchanged) and `DataRealms` (missing = 3); `Factions.Get` knows founded realms by
+`FactionState.Founded`, so old founded realms keep their look when the data grows. `Troops.Validate` reads the cultures from
+the data. Test: `RealmsFromData` (sizes on seeds 11-13: 19/24/17, 21/19/22, 18/24/19). The "Quests" test helper now ticks
+whole game hours (a meeting cut its ticks short on the new map).
+
 ### W2: a bigger, varied land
 - `Extent` 392 -> ~620. `ProvinceSpacing` stays, so the `(extent/196)^0.3` spread gives about 120 provinces.
 - **Climate**: province kind is chosen from position plus noise, no longer at random everywhere. Cold north, dry south,

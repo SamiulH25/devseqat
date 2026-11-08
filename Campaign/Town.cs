@@ -118,7 +118,7 @@ public sealed partial class Campaign
     /// One line on what a town is like: its people, its wealth, its mood and who holds it.
     public string Flavour(Settlement s)
     {
-        string folk = s.Culture switch { "azure" => "Blue roofs and quiet bells", "crimson" => "Red banners and loud markets", "northern" => "Timber halls and smoke", _ => "Thatch and mud lanes" };
+        string folk = Factions.Culture(s.Culture)?.Flavour ?? "Thatch and mud lanes";
         string wealth = s.Prosperity >= 70 ? "The streets are full and the stalls are fat" : s.Prosperity >= 40 ? "Trade is steady" : "Half the shops are shut";
         string mood = s.Unrest >= RevoltAt ? "Men talk of rebellion openly." : s.Unrest >= 40 ? "There is grumbling about the taxes." : s.Besieged ? "The walls are manned day and night." : "The people seem content.";
         string holder = s.Owner == Player.Id ? " It is yours." : HolderOf(s) is Character h ? $" {h.Name} holds it." : "";

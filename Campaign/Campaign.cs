@@ -31,7 +31,7 @@ public sealed partial class Campaign
     /// times (village recruits are the bottleneck, and a crowd of lords starves all of them).
     /// LordsPerFaction is quoted for the three realms of the original map: more realms share the same land, so each raises
     /// fewer lords and the world's total follows the size of the map, not the number of realms (docs/WORLD.md W0).
-    public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale * LegacyRealms / Math.Max(1, Factions.All.Count));
+    public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale * LegacyRealms / Math.Max(1, S.DataRealms));
     public const int LegacyRealms = 3;
     public int BanditsWanted => (int)MathF.Round(B.BanditsMax * ProvinceScale);
     int BanditSpawnsWanted => Math.Max(1, (int)MathF.Round(B.BanditSpawnsPerDay * ProvinceScale));
@@ -39,7 +39,7 @@ public sealed partial class Campaign
     public Campaign(CampaignState state)
     {
         S = state;
-        Map = WorldMap.Generate(state.Seed, state.MapExtent);
+        Map = WorldMap.Generate(state.Seed, state.MapExtent, state.Layout);
         rng = new Rng(state);
         Factions.Bind(S.Factions);
         MigrateGear();
@@ -56,20 +56,21 @@ public sealed partial class Campaign
 
     public static Campaign New(int seed)
     {
-        var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent };
+        var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent,
+            Layout = WorldMap.CurrentLayout, DataRealms = Factions.All.Count };
         s.Captain.Renown = B.StartRenown;
         StartingSkills(s.Captain);
-        var map = WorldMap.Generate(seed, s.MapExtent);
+        var map = WorldMap.Generate(seed, s.MapExtent, s.Layout);
         s.Provinces = map.Provinces;
         s.Settlements = map.Settlements;
         int factions = s.Provinces.Max(p => p.Faction) + 1;
         s.Factions = Enumerable.Range(0, factions).Select(f => new FactionState { Id = f, Name = Factions.All[f].Name, Treasury = 2000, NextCouncil = (7 + 3 * f) * 24 }).ToList();
-        // The Crown and the Compact are at war; the Northmarch keeps truces with both, for 20 and 40 days.
-        s.Wars.Add(new War { A = 0, B = 1 });
-        if (factions > 2)
+        // The opening wars and truces come from Data/factions.json (the Crown and the Compact at war; the Northmarch on truces).
+        foreach (var r in Factions.Relations)
         {
-            s.Wars.Add(new War { A = 0, B = 2, Active = false, TruceUntil = 20 * 24 });
-            s.Wars.Add(new War { A = 1, B = 2, Active = false, TruceUntil = 40 * 24 });
+            int a = Factions.IndexOf(r.A), b = Factions.IndexOf(r.B);
+            if (a < 0 || b < 0 || a >= factions || b >= factions) continue;
+            s.Wars.Add(r.War ? new War { A = a, B = b } : new War { A = a, B = b, Active = false, TruceUntil = r.TruceDays * 24 });
         }
         var c = new Campaign(s);
         var capital = s.Settlements.Where(t => t.Kind == SettlementKind.Town && t.Faction == 0).OrderBy(t => t.Pos.X).First();

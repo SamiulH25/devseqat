@@ -26,4 +26,48 @@ public static partial class SelfTest
             Console.WriteLine($"map index: seed {seed}, {m.Provinces.Count} provinces, {m.Roads.Count} roads; 20000 checks in {clock.ElapsedMilliseconds} ms");
         }
     }
+
+    /// W1: a new map grows each data realm from its home in one piece with a capital town; an old save's map keeps the old
+    /// bands; the opening wars come from the data; a realm founded in play keeps its look whatever its id.
+    static void RealmsFromData()
+    {
+        foreach (int seed in new[] { 11, 12, 13 })
+        {
+            var m = WorldMap.Generate(seed);
+            var sizes = new List<int>();
+            for (int f = 0; f < Factions.All.Count; f++)
+            {
+                var land = m.Provinces.Where(p => p.Faction == f).ToList();
+                sizes.Add(land.Count);
+                Check(land.Count >= 4, $"seed {seed}: {Factions.All[f].Name} holds land ({land.Count} provinces)");
+                Check(m.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town), $"seed {seed}: {Factions.All[f].Name} has a town");
+                // One piece: from any of its provinces, walking its own links reaches all of them (unlinked provinces aside).
+                var linked = land.Where(p => p.Neighbors.Count > 0).ToList();
+                var seen = new HashSet<int> { linked[0].Id };
+                var todo = new Queue<int>(seen);
+                while (todo.TryDequeue(out int i))
+                    foreach (int j in m.Provinces[i].Neighbors)
+                        if (m.Provinces[j].Faction == f && seen.Add(j)) todo.Enqueue(j);
+                Check(seen.Count == linked.Count, $"seed {seed}: {Factions.All[f].Name}'s land is in one piece ({seen.Count} of {linked.Count})");
+            }
+            Console.WriteLine($"realms: seed {seed}, provinces a realm {string.Join("/", sizes)}");
+        }
+        // The old bands: north 30% to the Northmarch, the south split west/east (an old save's map must not change).
+        var old = WorldMap.Generate(11, WorldMap.Extent, WorldMap.LegacyLayout);
+        var north = old.Provinces.OrderBy(p => p.Center.Y).Take(old.Provinces.Count * 3 / 10).ToHashSet();
+        var south = old.Provinces.Where(p => !north.Contains(p)).OrderBy(p => p.Center.X).ToList();
+        Check(old.Provinces.All(p => p.Faction == (north.Contains(p) ? 2 : south.IndexOf(p) < south.Count / 2 ? 0 : 1)), "an old save's map keeps the old realm bands");
+        var c = Campaign.New(11);
+        foreach (var r in Factions.Relations)
+        {
+            var w = c.WarBetween(Factions.IndexOf(r.A), Factions.IndexOf(r.B));
+            Check(w != null && w.Active == r.War && (r.War || MathF.Abs(w.TruceUntil - r.TruceDays * 24) < 1e-3f), $"{r.A} and {r.B} open as the data says");
+        }
+        Check(c.S.Layout == WorldMap.CurrentLayout && c.S.DataRealms == Factions.All.Count, "a new campaign records its layout and realms");
+        var states = Enumerable.Range(0, 2).Select(f => new FactionState { Id = f, Name = "x" }).ToList();
+        states[1].Founded = true; states[1].Name = "Realm of Testford"; states[1].Palette = 2; states[1].Culture = "azure";
+        Factions.Bind(states);
+        Check(Factions.Get(1).Name == "Realm of Testford" && Factions.Get(0).Name == Factions.All[0].Name, "a founded realm is known by its flag, not its id");
+        Factions.Bind(c.S.Factions);
+    }
 }

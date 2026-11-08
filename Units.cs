@@ -52,7 +52,7 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
 public sealed class UnitType
 {
     public string Id = "", Name = "";
-    /// "azure", "crimson", "northern" or "common" (open to every culture); see Data/factions.json.
+    /// A culture id from Data/factions.json, "common" (open to every culture) or "wild" (creatures).
     /// "wild" is a creature (docs/CREATURES.md): never recruited from a village and outside every upgrade tree.
     public string Culture = "common";
     /// What a wild troop is ("goblin"); empty for men.

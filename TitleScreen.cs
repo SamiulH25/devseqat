@@ -113,7 +113,7 @@ sealed class TitleScreen
             bool serving = f >= 0 && f < s.Factions.Count;
             string service = !serving ? "A FREE COMPANY" : (s.Captain.Fealty ? "SWORN TO THE " : "IN THE PAY OF THE ") + s.Factions[f].Name;
             card = new SaveCard(name.ToUpperInvariant(), Fit(service.ToUpperInvariant()), (int)(s.Hours / 24) + 1, (int)s.Gold,
-                s.Parties.Count > 0 ? s.Parties[0].Men : 0, !serving ? 2 : f < Factions.All.Count ? Factions.All[f].Palette : s.Factions[f].Palette);
+                s.Parties.Count > 0 ? s.Parties[0].Men : 0, !serving ? 2 : f < s.Factions.Count && s.Factions[f].Founded ? s.Factions[f].Palette : Factions.All[Math.Min(f, Factions.All.Count - 1)].Palette);
         }
         catch (Exception) { }
         return card;
