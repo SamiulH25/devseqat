@@ -28,6 +28,8 @@ public static partial class SelfTest
         SpearsStopHorse();
         CampaignMap();
         CampaignPersistence();
+        SaveMidRun();
+        ReportMatchesRecord();
         CampaignRun();
         Progression();
         Economy();

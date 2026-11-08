@@ -45,7 +45,7 @@ Rendering without a display (works in the cloud container, software GL via Mesa 
 IRONFIELD_SAVES=/tmp/ifs IRONFIELD_SHOTS=/tmp/shots xvfb-run -a -s "-screen 0 1280x720x24" dotnet run -c Release --no-build
 ```
 Saves ~20 staged battle PNGs (field-view.png, command-overview.png, gallery-*.png...) and quits. `IRONFIELD_CAMPAIGN_SHOTS=/dir`
-does the same for campaign screens, `IRONFIELD_LAB_SHOTS=/dir` for every UI lab page. ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
+does the same for campaign screens, `IRONFIELD_LAB_SHOTS=/dir` for every UI lab page. Each run also writes `overflow.txt` (text that runs out of its panel; aim for none). ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
 
 Other env vars: `IRONFIELD_SAVES` (save dir; settings go to its parent), `IRONFIELD_QUALITY=High|Medium|Low`,
 `IRONFIELD_LEVELS=4,2` (quick-battle army levels), `IRONFIELD_MEN=750` (quick-battle men a side; default half the Battle size setting), `IRONFIELD_WEATHER=hour,rain,fog`, `IRONFIELD_GROUND=river` or `=Hills,river` (a `TerrainParams` preset), `IRONFIELD_LAYOUT=Ridge` (a `FieldLayout`),
@@ -115,7 +115,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 `Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`,
 `SwearFealty`, `ProposeWar`, `SetObjective`, `DeclareIndependence`, `DeclareWar`, `OfferPeace`...
 `Daily` ends with `FiefsDaily` then `CareerDaily` (rulers, councils due, rank beats, win/loss). Events the map must show once are plain fields:
-`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm, V divisions, M realm map, B siege (`Act` entries, table `MapScreen.Screens`; `OpenScreen`/`CameFrom` remember the party screen as the way back).
+`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm, V divisions, M realm map, B siege, F1 key help (`Act` entries, table `MapScreen.Screens`; `OpenScreen`/`CameFrom` remember the party screen as the way back).
 
 ## File guide (where to look for what)
 
@@ -173,11 +173,11 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Shader pipeline / GLSL loader | `Shading.cs`, `GlslEffect.cs`, `Shaders/*.glsl`, `Sky.cs` (light by hour/weather) |
 | Unit drawing (puppets of part sprites) | `Puppet.cs` (poses, skeleton), `SpriteSheet.cs` (paints parts), `Painter.cs` (materials), `Art.cs` (atlas) |
 | Colours, heraldry, UI tokens | `Style.cs` |
-| The interface kit: every widget (`Plate`, `PlateBody`, `Ribbon`, `Shield`, `Banner`, `Icon`, `Ring`, `Pips`, `Gauge`, `Chip`, `Tabs`, `Gilded`, `Toast`...) | `UiKit.cs` (static class `Kit`, extension methods on `Ui`; `Ui.Panel`/`Button`/`Bar` and the battle HUD draw through it) |
+| The interface kit: every widget (`Plate`, `PlateBody`, `Ribbon`, `Shield`, `Banner`, `Icon`, `Ring`, `Pips`, `Gauge`, `Chip`, `Tabs`, `Gilded`, `Toast`...; `Fit`/`TextFit` cut text to a width) | `UiKit.cs` (static class `Kit`, extension methods on `Ui`; `Ui.Panel`/`Button`/`Bar` and the battle HUD draw through it) |
 | UI lab (F3 on the title): gallery of interface concepts with mock data | `UiLab.cs` (screen, pages list, shots) + `.Pages.cs` / `.Scenes.cs` (one method per page) |
 | Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`; ground footsteps and their splashes, mud and leaves come from `BattleScreen.GroundSteps`) |
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
-| Tools | `Replay.cs`, `BalanceReport.cs` (`Run`, `Pacing`, `Realms`, `Grounds`), `GpuReport.cs`, `Bench.cs` |
+| Tools | `Replay.cs`, `BalanceReport.cs` (`Run`, `Pacing`, `Realms`, `Grounds`), `GpuReport.cs`, `Bench.cs`; `Overflow.cs` (shots runs: text leaving its panel -> `overflow.txt`) |
 | Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs`, `Tests/CreatureTests.cs`, `Tests/MapTests.cs` |
 | Developer guide (systems in depth, worked examples) | `docs/DEVELOPING.md` |
 | Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/LEGACY.md` (THE player fantasy: your company is your legacy; plan L0-L8, read first when choosing work), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications), `docs/COMBAT_OVERHAUL.md` (plan: sergeant divisions + battle scale), `docs/CREATURES.md` (plan: monsters, creature encounters and troops), `docs/SIDE_CONTENT.md` (plan: sites, side quests, caravans, town life, events, polish), `docs/PROGRESSION.md` (plan: captain gear, combat, skill tree, rank rewards, battle goals), `docs/WORLD.md` (plan: bigger world, seven realms), `docs/TERRAIN.md` (plan: ground kinds, battlefield layouts, sight and cover, pathing, terrain-aware AI), `docs/POLISH.md` (plan: polish pass Q1-Q7: bugs, tips, text that fits, map keys, story, continuity tests) |

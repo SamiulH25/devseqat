@@ -119,8 +119,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/CampaignAI.cs (270 lines)
 - **Campaign** (class, L6): SpawnLord:10, BandName:33, SpawnBandits:40, RefreshMercenaries:62, Visible:88, MonsterHunter:91, LordThink:93, EnemyProvinceNear:160, Refit:173, BanditThink:210, Alive:235, FactionAI:237
 
-## Campaign/CampaignBattle.cs (316 lines)
-- **Campaign** (class, L6): Apply:11, PrepareBattle:216, FinishBattle:253, AutoResolveEncounter:265, CanRetreat:273, Retreat:283, ParleyPrice:303, Parley:305
+## Campaign/CampaignBattle.cs (324 lines)
+- **Campaign** (class, L6): Apply:11, PrepareBattle:224, FinishBattle:261, AutoResolveEncounter:273, CanRetreat:281, Retreat:291, ParleyPrice:311, Parley:313
 
 ## Campaign/CampaignProgression.cs (62 lines)
 - **Campaign** (class, L7): PromotableAnywhere:52, Rand:61
@@ -358,8 +358,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (510 lines)
 - **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:109, OpenLab:122, QuickBattle:124, StartCampaignBattle:131, FinishCampaignBattle:139, CycleQuality:147, Update:151, Draw:180, CaptureShot:208, CampaignShots:228
 
-## SelfTest.cs (201 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:153, Lancer:161, Run:170, Scaled:172, MakeWanderer:175, Days:183, Ids:195, Check:197
+## SelfTest.cs (203 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:155, Lancer:163, Run:172, Scaled:174, MakeWanderer:177, Days:185, Ids:197, Check:199
 
 ## Settings.cs (73 lines)
 - **Difficulty** (enum, L5)
@@ -415,8 +415,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/BattleTests.cs (1443 lines)
 - **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, CaptainKit:170, SkillBouts:228, Bout:278, Fight:292, BattleGoals:325, BannerAndLastStand:347, DuelFight:384, RangedRoles:405, FatigueAndSupply:425, GroundLayer:443, GroundMoves:468, GroundFights:499, Layouts:536, HedgesAndBridges:567, EveryLayoutResolves:615, SightAndCover:636, Rivers:678, HoldsTheCrest:706, HorseAvoidsBadGround:732, AmbushWaits:749, TakesTheFord:769, GroundForThePlayer:791, Stakes:810, Pathfinder:848, GoesToFord:868, FilesThroughGap:897, ChargeFindsCaptain:922, FlowCacheBound:937, Generals:952, HorseDown:969, Ground:978, HoldFire:1002, TroopTree:1016, Sprites:1040, BigBattle:1078, StackBattle:1108, NamedMenFight:1143, AutoResolveNamedMen:1185, PullBack:1211, ReplayExact:1242, SpearsStopHorse:1275, ScaleBattle:1286, Couriers:1324, DivisionGoals:1345
 
-## Tests/CampaignTests.cs (1402 lines)
-- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:41, CampaignRun:52, Progression:94, Economy:121, Bridge:133, Calibration:155, RiverRoadGivesBridge:180, RainMakesMud:206, DefenderChoosesGround:231, AutoResolveGroundEdge:247, SiegeBattle:258, CampaignWar:296, RefuseOldSave:357, RollEarnsNames:383, FallenRemembered:453, RisesFromRanks:497, BannerHonours:536, FameDraws:575, RetireAndSucceed:601, BuryNamed:631, Stacks:659, Cultures:704, Characters:777, CampaignDivisions:882, Armoury:928, Duels:999, RidingAndBowcraft:1032, PerkTiers:1081, SkillRises:1108, LastingWounds:1161, CaptainTraits:1184, HouseholdGuard:1223, RankRewards:1251, StartingRoad:1279, SkillTree:1299, BalanceMatchesData:1382, HorsesCostGold:1394
+## Tests/CampaignTests.cs (1494 lines)
+- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:41, CampaignRun:52, Progression:94, Economy:121, Bridge:133, Calibration:155, RiverRoadGivesBridge:180, RainMakesMud:206, DefenderChoosesGround:231, AutoResolveGroundEdge:247, SiegeBattle:258, CampaignWar:296, RefuseOldSave:357, RollEarnsNames:383, FallenRemembered:453, RisesFromRanks:497, BannerHonours:536, FameDraws:575, RetireAndSucceed:601, BuryNamed:631, Stacks:659, Cultures:704, Characters:777, CampaignDivisions:882, Armoury:928, Duels:999, RidingAndBowcraft:1032, PerkTiers:1081, SkillRises:1108, LastingWounds:1161, CaptainTraits:1184, HouseholdGuard:1223, RankRewards:1251, StartingRoad:1279, SkillTree:1299, BalanceMatchesData:1382, HorsesCostGold:1394, SaveMidRun:1405, Drive:1425, CheckSound:1438, ReportMatchesRecord:1453
 
 ## Tests/CareerTests.cs (410 lines)
 - **SelfTest** (class, L6): PilotTrace:9, Career:24, PilotCareer:120, FreeCrown:138, FiefLife:169, WarAndPeace:264, EventsAndQuests:345

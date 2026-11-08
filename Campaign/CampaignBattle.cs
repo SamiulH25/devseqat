@@ -43,29 +43,7 @@ public partial class Campaign
             {
                 var st = c.Stacks.FirstOrDefault(x => x.Troop == sr.Troop);
                 if (st == null) continue;
-                int stBefore = st.Men;
-                float pw = Math.Clamp(B.WoundBase + st.Type.Armor / B.WoundArmor + surgeon, B.WoundMin, B.WoundMax);
-                int wounded = (int)MathF.Round(sr.Fallen * pw), killed = sr.Fallen - wounded;
-                int captured = teamWon ? 0 : (int)MathF.Round(wounded * B.CaptureChance);
-                wounded -= captured;
-                int fledBack = teamWon ? sr.Fled : (int)MathF.Round(sr.Fled * B.FledReturnOnDefeat);
-                int standing = cr.Deployed ? sr.Standing : stBefore;
-                int after = Math.Clamp(standing + fledBack, 0, stBefore);
-                if (after < stBefore) st.Take(stBefore - after);
-                st.Wounded += wounded;
-                if (p == Player && cr.Deployed)
-                {
-                    if (cr.Named != null) RollFought(c, st, cr.Named, teamWon, pw, foe);
-                    else RollFates(c, st, stBefore, killed, wounded, captured + sr.Fled - fledBack, foe);
-                    // A named man who fell and lives is one of the wounded, even when the stack's rounded odds said killed.
-                    int more = Math.Min(c.Roll.Count(m => m.Troop == st.Troop && m.Hurt) - st.Wounded, killed + captured);
-                    if (more > 0)
-                    {
-                        int fromKilled = Math.Min(more, killed);
-                        killed -= fromKilled; captured -= more - fromKilled;
-                        wounded += more; st.Wounded += more;
-                    }
-                }
+                var (killed, wounded, captured, fledBack) = StackLosses(p, c, cr, sr, st, teamWon, surgeon, foe);
                 killedAll += killed; woundedAll += wounded; capturedAll += captured; fledLostAll += sr.Fled - fledBack;
                 if (playerIn && team != playerTeam && won)
                 {
@@ -211,6 +189,36 @@ public partial class Campaign
     }
 
     // ---------- encounters with you ----------
+
+    /// One stack's share of a battle: the fallen split into killed, wounded and taken by its armour and your surgeons,
+    /// the fled who come back, the men taken off the stack, and its named men's fates. Returns the counts for the report.
+    (int Killed, int Wounded, int Captured, int FledBack) StackLosses(Party p, CompanyRecord c, CompanyResult cr, StackResult sr, TroopStack st, bool teamWon, float surgeon, string foe)
+    {
+        int stBefore = st.Men;
+        float pw = Math.Clamp(B.WoundBase + st.Type.Armor / B.WoundArmor + surgeon, B.WoundMin, B.WoundMax);
+        int wounded = (int)MathF.Round(sr.Fallen * pw), killed = sr.Fallen - wounded;
+        int captured = teamWon ? 0 : (int)MathF.Round(wounded * B.CaptureChance);
+        wounded -= captured;
+        int fledBack = teamWon ? sr.Fled : (int)MathF.Round(sr.Fled * B.FledReturnOnDefeat);
+        int standing = cr.Deployed ? sr.Standing : stBefore;
+        int after = Math.Clamp(standing + fledBack, 0, stBefore);
+        if (after < stBefore) st.Take(stBefore - after);
+        st.Wounded += wounded;
+        if (p == Player && cr.Deployed)
+        {
+            if (cr.Named != null) RollFought(c, st, cr.Named, teamWon, pw, foe);
+            else RollFates(c, st, stBefore, killed, wounded, captured + sr.Fled - fledBack, foe);
+            // A named man who fell and lives is one of the wounded, even when the stack's rounded odds said killed.
+            int more = Math.Min(c.Roll.Count(m => m.Troop == st.Troop && m.Hurt) - st.Wounded, killed + captured);
+            if (more > 0)
+            {
+                int fromKilled = Math.Min(more, killed);
+                killed -= fromKilled; captured -= more - fromKilled;
+                wounded += more; st.Wounded += more;
+            }
+        }
+        return (killed, wounded, captured, fledBack);
+    }
 
     /// The parties that fight with you and against you: anyone close enough joins the side they are friendly to.
     public BattleSetup PrepareBattle(Party enemy)

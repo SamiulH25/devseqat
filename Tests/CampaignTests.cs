@@ -1399,4 +1399,96 @@ public static partial class SelfTest
         Check(c.BuyHorses(town, 1) == null, "can buy a horse");
         Check(c.S.Gold == gold - c.HorsePrice, "a horse costs HorsePrice");
     }
+
+    /// Polish Q6: a game saved in the middle of a long run and loaded again goes on exactly as one that never saved
+    /// (no state kept only in memory), and a long run leaves nothing broken behind it.
+    static void SaveMidRun()
+    {
+        var c = Campaign.New(2203);
+        new Pilot(c).Run(200 * 24);
+        CheckSound(c, "after 200 days");
+        Check(c.S.Fallen.Count + c.Player.Companies.Sum(k => k.Roll.Count) > 0, "by day 200 the roll is in play");
+        var loaded = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        string a = Drive(c, 60), b = Drive(loaded, 60);
+        if (a != b)
+        {
+            var la = a.Split('\n'); var lb = b.Split('\n');
+            int i = 0; while (i < Math.Min(la.Length, lb.Length) && la[i] == lb[i]) i++;
+            Console.WriteLine($"first difference at line {i}: {(i < la.Length ? la[i].Trim() : "")} / {(i < lb.Length ? lb[i].Trim() : "")}");
+        }
+        Check(a == b, "a game saved and loaded at day 200 goes on as one that never saved");
+        CheckSound(c, "after 260 days");
+        Console.WriteLine($"save mid-run: day {c.Day}, {c.Player.Men} men, {c.S.Fallen.Count} fallen, {c.S.Log.Count} log lines");
+    }
+
+    /// The same plain driver for both halves of `SaveMidRun`: the pilot keeps a little state of its own, the campaign must not.
+    static string Drive(Campaign c, int days)
+    {
+        for (int h = 0; h < days * 24 && !c.S.GameOver; h++)
+        {
+            c.Tick(1);
+            if (c.Encounter != null) c.AutoResolveEncounter();
+            c.Arrived = null; c.Report = null; c.Beat = null;
+            if (c.S.Event != null) c.Choose(c.EventOf0());
+        }
+        return c.S.Serialize();
+    }
+
+    /// Nothing a long run should leave: empty companies on a roster, negative men, lords serving a realm with no land.
+    static void CheckSound(Campaign c, string when)
+    {
+        foreach (var p in c.S.Parties.Append(c.Player))
+            foreach (var k in p.Companies)
+            {
+                Check(k.Men + k.Wounded > 0, $"{when}: no empty company on a roster ({k.Name})");
+                Check(k.Stacks.All(st => st.Men >= 0 && st.Wounded >= 0), $"{when}: no negative men ({k.Name})");
+            }
+        var landed = c.S.Settlements.Select(t => t.Faction).ToHashSet();
+        foreach (var f in c.S.Factions.Where(f => !landed.Contains(f.Id)))
+            Check(!c.S.Parties.Any(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == f.Id && p != c.Player), $"{when}: no lords for {f.Name}, a realm with no land");
+    }
+
+    /// Polish Q6: each company's report adds up to what happened to its record, and each named man the report names is
+    /// on a roll or among the fallen; after auto-resolved fights and after a fought one.
+    static void ReportMatchesRecord()
+    {
+        var c = Campaign.New(2207);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        foreach (var k in c.Player.Companies) for (int i = 0; i < 3; i++) c.NameMan(k, "test");
+        int checkedReports = 0;
+        for (int round = 0; round < 6; round++)
+        {
+            var bandit = c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Bandit && !p.Down);
+            if (bandit == null || c.Player.Men <= 0) break;
+            bandit.Pos = c.Player.Pos;
+            c.Encounter = bandit;
+            BattleReport rep;
+            if (round % 2 == 0) rep = c.AutoResolveEncounter();
+            else
+            {
+                var setup = c.PrepareBattle(bandit);
+                setup.Options.AutoPlayer = true;
+                var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+                for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+                rep = c.FinishBattle(b.Result(), setup);
+            }
+            c.Encounter = null;
+            foreach (var cr in rep.Companies.Where(x => x.Team == 0))
+            {
+                Check(cr.MenBefore - cr.MenAfter == cr.Killed + cr.Wounded + cr.Captured + cr.FledLost,
+                    $"{cr.Name}: lost {cr.MenBefore - cr.MenAfter} = killed {cr.Killed} + hurt {cr.Wounded} + taken {cr.Captured} + fled {cr.FledLost}");
+                if (c.Player.Companies.FirstOrDefault(k => k.Id == cr.Id) is CompanyRecord k)
+                    Check(k.Men == cr.MenAfter, $"{cr.Name}: the report's men ({cr.MenAfter}) are the company's ({k.Men})");
+                checkedReports++;
+            }
+            var known = c.Player.Companies.SelectMany(k => k.Roll).Concat(c.S.Fallen).Select(m => m.Name).ToList();
+            foreach (var (kind, text) in rep.Roll.Where(n => n.Item1 is "FELL" or "MISSING" or "HURT" or "NAMED"))
+                Check(known.Any(n => text.StartsWith(n + ",")), $"the report's {kind} man is on a roll or among the fallen: {text}");
+            c.Player.Cooldown = 1e6f;
+        }
+        Check(checkedReports > 0, "some reports were checked");
+        Console.WriteLine($"report matches record: {checkedReports} company reports, {c.S.Fallen.Count} fallen");
+    }
 }
+

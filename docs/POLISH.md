@@ -145,4 +145,29 @@ that `overflow.txt` is empty.
 
 ## As built
 
-(Nothing yet.)
+- **Q1.** The map screens have their own key actions (`Act.LordsScreen`, `SkillsScreen`, `RealmScreen`, `DivisionsScreen`,
+  `AtlasScreen`, `SiegeScreen`; table `MapScreen.Screens`), so they can be rebound and the tips name the bound key
+  (`ctl.First`). A screen opened from the party screen closes back to it (`OpenScreen`/`CameFrom`). The shots runs make
+  their folders. Unused fields and styles were removed (`CompanySlotRenown`, `PeaceScore`, `Style.PanelLight`/`Grid`,
+  `World.FoliageTotal`), and `ValidateEvents` reports effect verbs that no event uses.
+- **Q2.** In battle, a tip is not drawn and cannot be dismissed while a menu or overlay is open (`BattleScreen.TipsHeld`).
+  On the map a tip sits at the top while a panel is open (`Tips.DrawAt`), so it never covers a panel's buttons. New tips
+  in `MapScreen.LaterTips` cover the roll, the fallen, divisions, sites, duels, the market, fiefs, fame and the legend.
+- **Q3.** `Kit.Fit`/`FitScale`/`TextFit`/`TextFitC` (UiKit.cs) cut text at a word and end it with "..". Battle cards,
+  toasts, lords tabs, realm cards, perk labels, the captain card, the event feed and the fief tab now fit their boxes.
+  `Overflow.cs` writes text that leaves its panel to `overflow.txt` in shots runs. What is left there is map labels near
+  the screen's right edge.
+- **Q4.** F1 on the map opens a help panel (`MapScreen.HelpPanel`). The old hint line became a row of buttons with their
+  keys (`Hints`). The battle F1 overlay fits at 720 px high.
+- **Q5.** A battle has a name (`BattleSetup.Field`, `BattleReport.Field`). It shows in the battle log, the encounter panel
+  ("THE FIELD") and the report heading. Honours won and lost have their own section in the report (`BattleReport.Honours`).
+  The encounter panel shows your own companies and the odds in words. There are six new events (rabble, dice,
+  fief_sickness, guild_offer, veteran_banner, unpaid_books), and `gamble` is now a dice roll weighted by Charm.
+- **Q6.** `SelfTest.SaveMidRun`: the pilot plays 200 days, the game is saved and loaded, and both copies play 60 more days
+  under the same driver. They must give the same save, and neither may leave empty companies, negative men or lords of a
+  realm with no land (`CheckSound`). It runs 260 days rather than 365 to keep the suite short. `SelfTest.ReportMatchesRecord`:
+  in auto-resolved and fought battles, each company's losses add up and match its record, and every named man the report
+  names is on a roll or among the fallen. The new events shifted a test's dice and showed a bug: a named man who fell and
+  lived could come back fit because his stack's rounding counted him killed. He is now always counted among the wounded.
+- **Q7.** The per-stack part of `Campaign.Apply` is now `StackLosses`. The other splits were left, since no phase changed
+  those methods much.
