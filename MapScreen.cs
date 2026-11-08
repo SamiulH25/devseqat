@@ -100,18 +100,17 @@ sealed partial class MapScreen
         time += dt;
         if (ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released) pendingClick = true;
         if (Pressed(Keys.Enter)) Tips.Dismiss();
-        Tips.Show("welcome", "Welcome, captain. Click the map to march; click a town or village to enter it.\nBrigands are close by: click their banner to ride at them, or let them come to you.\nWASD pans, the wheel zooms, Space pauses. P opens your company.");
+        Tips.Show("welcome", $"Welcome, captain. Click the map to march; click a town or village to enter it.\nBrigands are close by: click their banner to ride at them, or let them come to you.\n{Pan()} pans, the wheel zooms, {ctl.First(Act.Pause)} pauses. {ctl.First(Act.PartyScreen)} opens your company. {ctl.First(Act.Help)} lists the keys.");
         if (C.Player.Companies.Any(Rules.UpgradeReady))
-            Tips.Show("upgrade", "Some of your men have the XP for promotion (gold bar, N READY).\nOpen the party screen (P) in a town, click a troop stack, and choose how many to promote and into what.");
-        if (Skills.PicksTotal(C.Captain) > 0) Tips.Show("perk", "One of your skills has reached a new mark: choose a perk on its branch (K opens your skills).\nSkills rise by doing: commanding, marching, healing, promoting, fighting, ruling and winning goodwill.");
+            Tips.Show("upgrade", $"Some of your men have the XP for promotion (gold bar, N READY).\nOpen the party screen ({ctl.First(Act.PartyScreen)}) in a town, click a troop stack, and choose how many to promote and into what.");
+        if (Skills.PicksTotal(C.Captain) > 0) Tips.Show("perk", $"One of your skills has reached a new mark: choose a perk on its branch ({ctl.First(Act.SkillsScreen)} opens your skills).\nSkills rise by doing: commanding, marching, healing, promoting, fighting, ruling and winning goodwill.");
         if (C.Captain.Renown >= 80) Tips.Show("renown", "Renown is your standing: each victory adds to it, and it raises your men cap.\nThe bar under the captain panel shows the next rise.");
-        if (C.Player.Companies.Count >= Rules.CompanySlots(C.Captain)) Tips.Show("slots", "You have reached the maximum of 10 companies. Merge or disband a company to form a new one.");
+        if (C.Player.Companies.Count >= Rules.CompanySlots(C.Captain)) Tips.Show("slots", $"You have reached the most companies you can lead ({Rules.CompanySlots(C.Captain)}). Merge or disband a company to form a new one.");
         if (C.Day >= 7) Tips.Show("upkeep", "Upkeep is paid each week (the bar at the top). Your contract pays most of it;\nloot, ransoms and bounties pay the rest. Unpaid men desert.");
 
         if (panel == PanelKind.None)
         {
             if (ctl.Pressed(Act.Menu)) { panel = PanelKind.Menu; return; }
-            if (ctl.Pressed(Act.PartyScreen)) { panel = PanelKind.Party; return; }
             if (ctl.Pressed(Act.Pause)) speed = speed == 0 ? 1 : 0;
             if (ctl.Pressed(Act.Speed1)) speed = 1;
             if (ctl.Pressed(Act.Speed2)) speed = 3;
@@ -159,28 +158,52 @@ sealed partial class MapScreen
             Trails();
         }
         else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll)
-            panel = panel is PanelKind.Upgrade or PanelKind.Divisions or PanelKind.Roll ? PanelKind.Party : PanelKind.None;
+            panel = panel is PanelKind.Upgrade or PanelKind.Roll ? PanelKind.Party : panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Siege ? PanelKind.None : CameFrom(panel);
         if (renaming != null) Rename();
         else Ui.Typed.Clear();
-        if (panel == PanelKind.None && Pressed(Keys.L)) { panel = PanelKind.Characters; note = ""; }
-        else if (panel == PanelKind.Characters && Pressed(Keys.L)) panel = PanelKind.None;
-        else if (panel is PanelKind.None or PanelKind.Party && Pressed(Keys.K)) { panel = PanelKind.Skills; note = ""; }
-        else if (panel == PanelKind.Skills && Pressed(Keys.K)) panel = PanelKind.None;
-        else if (panel == PanelKind.None && Pressed(Keys.R)) { panel = PanelKind.Realm; note = ""; }
-        else if (panel == PanelKind.Realm && Pressed(Keys.R)) panel = PanelKind.None;
-        else if (panel is PanelKind.None or PanelKind.Party && Pressed(Keys.V)) { panel = PanelKind.Divisions; note = ""; }
-        else if (panel == PanelKind.Divisions && Pressed(Keys.V)) panel = PanelKind.None;
-        else if (panel == PanelKind.None && Pressed(Keys.M)) { panel = PanelKind.Atlas; note = ""; }
-        else if (panel == PanelKind.Atlas && Pressed(Keys.M)) panel = PanelKind.None;
+        if (renaming == null) ScreenKeys();
         // A career beat or the council's word waits for the map to be clear (F5).
         if (panel == PanelKind.None && C.Beat != null) { panel = PanelKind.Beat; speed = 0; }
         if (panel == PanelKind.None && C.S.GameOver) { panel = PanelKind.GameOver; speed = 0; }
         if (panel == PanelKind.None && C.S.Event != null && C.Encounter == null) { panel = PanelKind.Event; speed = 0; note = ""; }
         // You entered a tournament (S5): the fight in the lists starts at once.
         if (panel == PanelKind.None && C.Lists is Settlement lists) { C.Lists = null; speed = 0; OnBattle?.Invoke(C.PrepareTournament(lists)); }
-        if (panel == PanelKind.None && C.Besieging is Settlement besieged && C.Player.SiegeTarget >= 0 && !C.Player.Moving && C.Encounter == null && Pressed(Keys.B)) { at = besieged; panel = PanelKind.Siege; }
+        if (panel == PanelKind.None && C.Besieging is Settlement besieged && C.Player.SiegeTarget >= 0 && !C.Player.Moving && C.Encounter == null && ctl.Pressed(Act.SiegeScreen)) { at = besieged; panel = PanelKind.Siege; }
         if (follow) focus = Vector2.Lerp(focus, C.Player.Pos, MathF.Min(1, dt * 4));
     }
+
+    /// The screens a key opens from the map or from another of these screens, and closes again.
+    static readonly (Act Key, PanelKind Panel)[] Screens =
+    {
+        (Act.PartyScreen, PanelKind.Party), (Act.LordsScreen, PanelKind.Characters), (Act.SkillsScreen, PanelKind.Skills),
+        (Act.RealmScreen, PanelKind.Realm), (Act.DivisionsScreen, PanelKind.Divisions), (Act.AtlasScreen, PanelKind.Atlas),
+    };
+    /// The screen the current one was opened from (the map or the party screen), where BACK and its key return.
+    PanelKind from;
+
+    /// Panels you can leave for another screen without losing a choice (no encounter, town, event or report open).
+    bool Browsing => panel is PanelKind.None or PanelKind.Party or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm
+        or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll;
+
+    /// The four pan keys as one word ("WASD").
+    string Pan() => $"{ctl.First(Act.Forward)}{ctl.First(Act.Left)}{ctl.First(Act.Back)}{ctl.First(Act.Right)}";
+
+    void ScreenKeys()
+    {
+        if (!Browsing || panel == PanelKind.None && (C.Encounter != null || C.Beat != null || C.S.Event != null)) return;
+        foreach (var (key, kind) in Screens)
+            if (ctl.Pressed(key)) { if (panel == kind) panel = CameFrom(kind); else OpenScreen(kind); return; }
+    }
+
+    /// Open a screen, remembering where from (the party screen is remembered; other screens go back to the map).
+    void OpenScreen(PanelKind kind)
+    {
+        from = panel == PanelKind.Party ? PanelKind.Party : PanelKind.None;
+        panel = kind; note = "";
+    }
+
+    /// Where closing `kind` goes: back to the party screen if it was opened from there.
+    PanelKind CameFrom(PanelKind kind) => kind != PanelKind.Party && from == PanelKind.Party ? PanelKind.Party : PanelKind.None;
 
     void Camera(float dt, bool active)
     {

@@ -62,7 +62,7 @@ partial class MapScreen
             }
         }
         Note(r);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: "R")) panel = PanelKind.None;
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.RealmScreen))) panel = CameFrom(PanelKind.Realm);
     }
 
     /// THE LEGEND (docs/LEGACY.md L5-L7): each company's fame and battle honours, the honours realms have taken, the dead

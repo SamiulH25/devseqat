@@ -23,7 +23,7 @@ partial class MapScreen
         SkillTree(tree);
         CaptainRecord(Well(new Rectangle(r.Right - ui.U(20) - rw, top, rw, h), "RECORD", Kit.Gilt));
         Note(r);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: "K")) panel = PanelKind.None;
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.SkillsScreen))) panel = CameFrom(PanelKind.Skills);
     }
 
     /// The captain's portrait under a night sky, name, rank, renown and traits.

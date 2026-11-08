@@ -151,8 +151,8 @@ partial class MapScreen
         { C.Beat = null; panel = PanelKind.None; }
         if (won && ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(80), ui.U(220), ui.U(30)), "TO THE TITLE"))
         { C.Beat = null; C.S.Save("autosave"); OnTitle?.Invoke(); }
-        if (!won && ui.Button(new Rectangle(r.Right - ui.U(150), r.Bottom - ui.U(44), ui.U(130), ui.U(30)), "REALM (R)"))
-        { C.Beat = null; realmTab = 1; panel = PanelKind.Realm; note = ""; }
+        if (!won && ui.Button(new Rectangle(r.Right - ui.U(150), r.Bottom - ui.U(44), ui.U(130), ui.U(30)), $"REALM ({ctl.Name(Act.RealmScreen)})"))
+        { C.Beat = null; realmTab = 1; OpenScreen(PanelKind.Realm); }
     }
 
     /// Ironman: the captain was taken and executed. The campaign (and its save) ends here.

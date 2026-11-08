@@ -557,7 +557,7 @@ public sealed class Balance
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;
     public float XpParticipation = 20, XpVictory = 1.5f, XpPerKillTier = 12;
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
-    public float CompanySlotsBase = 10, CompanySlotRenown = 0, MenBase = 40, MenRenownDivisor = 5;
+    public float CompanySlotsBase = 10, MenBase = 40, MenRenownDivisor = 5;
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
     public float ArmyScale = 3;
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).
@@ -582,7 +582,7 @@ public sealed class Balance
     public float LordAggression = 0.35f;
     public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 1, DrillTown = 2;
     public float TownIncome = 150, CastleIncome = 90, VillageIncome = 40, LordWage = 1.3f;
-    public float TruceDays = 30, PeaceScore = 1500, BountyBandits = 50, BountyLord = 120;
+    public float TruceDays = 30, BountyBandits = 50, BountyLord = 120;
     /// Goblin holdouts (docs/CREATURES.md): how many per forest or hill province, the daily chance one is raised while
     /// under that, how far from any settlement, and (in base men, times ArmyScale) their size when raised, their cap,
     /// daily growth and when a boss appears. Raids leave every HoldoutRaidDays once the holdout has HoldoutRaidMen,

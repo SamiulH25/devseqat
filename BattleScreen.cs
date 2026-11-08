@@ -35,7 +35,7 @@ sealed partial class BattleScreen
     {
         var t = battle.Terrain;
         if (t.Rivers.Count > 0)
-            Tips.Show("river", "A river. Deep water is slow, tiring and breaks your ranks. Companies sent over it go by the ford\nor the bridge if one is near (pale blue on the ground map). Press M for the ground map.");
+            Tips.Show("river", $"A river. Deep water is slow, tiring and breaks your ranks. Companies sent over it go by the ford\nor the bridge if one is near (pale blue on the ground map). Press {ctl.First(Act.GroundView)} for the ground map.");
         else if (battle.Places.Any(p => p.Kind == PlaceKind.WoodEdge))
             Tips.Show("wood", "A wood. It slows horse, breaks formations and stops arrows, and men inside it are seen only up close.\nHover the ground in command view to see what it does. A division given AMBUSH waits in a wood, unseen.");
         else if (battle.Places.Any(p => p.Kind is PlaceKind.Crest or PlaceKind.Knoll))
@@ -233,9 +233,9 @@ sealed partial class BattleScreen
         }
         if (Pressed(Keys.Enter) && Tips.Active) Tips.Dismiss();
         else if (LmbPressed && Tips.Active && command && tipUi.Blocks(ms.Position)) Tips.Dismiss();
-        if (deploying) Tips.Show("deploy", "Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press Space (or START BATTLE) to begin.");
-        else if (!command && battle.Player.Active) Tips.Show("field", "Field view: you fight. On horseback W/S rein, A/D turn, Shift gallops. On foot WASD.\nMove the mouse to choose a swing direction, LMB to attack, RMB to block (match the red mark to parry).\nTab: command view. Hold MMB or Z: the order wheel.");
-        else if (command && !deploying) Tips.Show("command", "Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. Tab returns to your body: you inspire the men near you.");
+        if (deploying) Tips.Show("deploy", $"Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press {ctl.First(Act.Pause)} (or START BATTLE) to begin.");
+        else if (!command && battle.Player.Active) Tips.Show("field", $"Field view: you fight. On horseback {ctl.First(Act.Forward)}/{ctl.First(Act.Back)} rein, {ctl.First(Act.Left)}/{ctl.First(Act.Right)} turn, {ctl.First(Act.Sprint)} gallops.\nMove the mouse to choose a swing direction, {ctl.First(Act.Attack)} to attack, {ctl.First(Act.Block)} to block (match the red mark to parry).\n{ctl.First(Act.CommandView)}: command view. Hold {ctl.Name(Act.OrderWheel)}: the order wheel. {ctl.First(Act.Help)}: all the keys.");
+        else if (command && !deploying) Tips.Show("command", $"Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. {ctl.First(Act.CommandView)} returns to your body: you inspire the men near you.");
         if (deploying) GroundTips();
 
         if (ctl.Pressed(Act.Menu)) { if (helpOpen) helpOpen = false; else if (battle.Winner < 0) menuOpen = !menuOpen; skipMouse = true; }

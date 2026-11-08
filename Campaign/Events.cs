@@ -100,6 +100,9 @@ public sealed partial class Campaign
                 }
             }
         }
+        // Every verb the code knows is used by some event, so none is left behind untested.
+        foreach (var verb in Verbs)
+            if (!Events.Any(e => e.Choices.Any(c => c.Effects.Any(fx => ParseEffect(fx).Verb == verb)))) yield return $"no event uses the effect {verb}";
     }
 
     static (string Verb, float N, bool Ok) ParseEffect(string fx)
@@ -282,8 +285,10 @@ public sealed partial class Campaign
                 return $"You learn the way to the {site.Name}, to the {Bearing(Player.Pos, site.Pos)}.";
             case "lists": if (s != null) { Lists = s; return "The heralds cry your name. You ride into the lists."; } break;
             case "gamble":
-                if (rng.Chance(0.25f + Skill("Arms") / 300f)) { S.Gold += n; Captain.Renown += 5; return $"You win the tournament and {n:0} crowns!"; }
-                return "You are unhorsed in the second round.";
+                // A stake of n crowns at dice: the charming read the table better.
+                if (rng.Chance(0.4f + Skill("Charm") / 500f)) { S.Gold += n; return $"The dice love you tonight: you win {n:0} crowns."; }
+                S.Gold = MathF.Max(0, S.Gold - n);
+                return $"The dice go against you. {n:0} crowns gone.";
             case "quest": return lord != null ? GiveQuest(lord) : null;
             case "bounty": return pe.Party >= 0 ? Bounty(PartyById(pe.Party)) : s != null ? Bounty(Rebels(s)) : null;
             case "revolt": if (s != null && Rebels(s) == null) Revolt(s); break;

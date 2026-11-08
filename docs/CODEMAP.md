@@ -186,11 +186,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Duels.cs (79 lines)
 - **Campaign** (class, L5): CannotChallenge:14, LordChampion:27, PrepareDuel:39, FinishDuel:58, DuelMoraleFor:77, DuelEdge:78
 
-## Campaign/Events.cs (406 lines)
+## Campaign/Events.cs (411 lines)
 - **EventDef** (class, L7)
 - **ChoiceDef** (class, L16)
 - **PendingEvent** (class, L23)
-- **Campaign** (class, L30): Forced:46, EventOf:74, ValidateEvents:77, Find:118, Pick:157, EventsDaily:166, Raise:181, Force:193, Fill:201, ChoiceBlocked:216, EventOf0:220, Choose:223, ApplyEffect:237, GiveQuest:309, Bounty:332, BrigandKingsDaily:346, Crown:367, ThreatFalls:381, RaisePretender:392, DefectThreshold:405
+- **Campaign** (class, L30): Forced:46, EventOf:74, ValidateEvents:77, Find:121, Pick:160, EventsDaily:169, Raise:184, Force:196, Fill:204, ChoiceBlocked:219, EventOf0:223, Choose:226, ApplyEffect:240, GiveQuest:314, Bounty:337, BrigandKingsDaily:351, Crown:372, ThreatFalls:386, RaisePretender:397, DefectThreshold:410
 
 ## Campaign/Fiefs.cs (358 lines)
 - **BuildingDef** (class, L6)
@@ -260,11 +260,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **WoundDef** (record, L4)
 - **Campaign** (class, L7): WoundOf:21, MaybeLastingWound:27, MendWound:40
 
-## Controls.cs (219 lines)
+## Controls.cs (225 lines)
 - **Act** (enum, L8)
-- **MouseButton** (enum, L24)
-- **Bind** (struct, L27): ToString:29, Parse:44
-- **Controls** (class, L66): Controls:113, SaveUser:121, ResetDefaults:130, AnyPressed:138, FindFile:146, Load:156, WriteDefaults:183, Update:192, IsDown:198, Down:208, WasDown:209, Pressed:210, Released:211, Axis:212, First:215, Name:218
+- **MouseButton** (enum, L26)
+- **Bind** (struct, L29): ToString:31, Parse:46
+- **Controls** (class, L68): Controls:119, SaveUser:127, ResetDefaults:136, AnyPressed:144, FindFile:152, Load:162, WriteDefaults:189, Update:198, IsDown:204, Down:214, WasDown:215, Pressed:216, Released:217, Axis:218, First:221, Name:224
 
 ## Factions.cs (157 lines)
 - **CultureDef** (class, L6)
@@ -308,8 +308,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Captain.cs (186 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:84, CaptainRecord:150
 
-## MapScreen.cs (475 lines)
-- **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:84, Pressed:92, Update:96, Camera:185, Rename:209, Trails:222, ClickWorld:234, Ground:246, Draw:269, UpdateBearers:339, BuildSprites:376, DrawSprites:383, G:395, DrawLines:397, Stage:436
+## MapScreen.cs (498 lines)
+- **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:84, Pressed:92, Update:96, readonly:176, Pan:189, ScreenKeys:191, OpenScreen:199, CameFrom:206, Camera:208, Rename:232, Trails:245, ClickWorld:257, Ground:269, Draw:292, UpdateBearers:362, BuildSprites:399, DrawSprites:406, G:418, DrawLines:420, Stage:459
 
 ## MapScreen.Dialogs.cs (189 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, MeetingPanel:62, SiegePanel:94, BeatPanel:143, GameOverPanel:159, MenuPanel:174
@@ -352,8 +352,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:55, Deserialize:56, Save:60, Play:67, Matches:97, Run:100
 - **Battle** (class, L114): StartRecording:121, RecordFrame:126, FinishRecording:155
 
-## ScreenHost.cs (507 lines)
-- **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:109, OpenLab:122, QuickBattle:124, StartCampaignBattle:131, FinishCampaignBattle:139, CycleQuality:147, Update:151, Draw:180, CaptureShot:207, CampaignShots:225
+## ScreenHost.cs (508 lines)
+- **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:109, OpenLab:122, QuickBattle:124, StartCampaignBattle:131, FinishCampaignBattle:139, CycleQuality:147, Update:151, Draw:180, CaptureShot:207, CampaignShots:226
 
 ## SelfTest.cs (201 lines)
 - **SelfTest** (class, L6): Run:8, RunOne:153, Lancer:161, Run:170, Scaled:172, MakeWanderer:175, Days:183, Ids:195, Check:197
@@ -381,7 +381,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Formation** (enum, L10)
 - **Squad** (class, L13): Squad:50, Choices:77, FaceAt:82, Slot:89, Centroid:118, SetLine:127, Shift:147, HoldInPlace:155
 
-## Style.cs (89 lines)
+## Style.cs (86 lines)
 - **Emblem** (enum, L5)
 - **Heraldry** (record, L8)
 - **Style** (class, L11): ColorBlind:22, Standard:35, PaletteOf:49
@@ -473,9 +473,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Verts.cs (13 lines)
 - **Verts<T>** (class, L4): Add:8
 
-## World.cs (831 lines)
+## World.cs (829 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): World:52, RebuildFoliage:69, Lit:75, Draw:93, SetFog:120, DrawShaded:127, DrawShadowCasters:152, DrawGeometry:161, Dispose:174, Smooth:183, GroundColor:190, BuildDetail:250, BuildMinimap:262, WorldToMinimap:295, MinimapToWorld:296, DrawFoliage:381, Jitter:395, Broadleaf:401, Pine:418, Bush:432, Rock:441, House:453, Village:460, Town:471, SiteModel:505, Water:586, WallStones:609, Tower:619, GateDoor:631, Ladder:646, Wagon:659, TownHouse:669, Castle:676, Grass:693
+- **World** (class, L25): World:51, RebuildFoliage:68, Lit:74, Draw:92, SetFog:119, DrawShaded:126, DrawShadowCasters:151, DrawGeometry:160, Dispose:173, Smooth:182, GroundColor:189, BuildDetail:249, BuildMinimap:261, WorldToMinimap:294, MinimapToWorld:295, DrawFoliage:379, Jitter:393, Broadleaf:399, Pine:416, Bush:430, Rock:439, House:451, Village:458, Town:469, SiteModel:503, Water:584, WallStones:607, Tower:617, GateDoor:629, Ladder:644, Wagon:657, TownHouse:667, Castle:674, Grass:691
 
 ## World.Features.cs (117 lines)
 - **World** (class, L7): Features:11

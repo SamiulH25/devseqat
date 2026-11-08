@@ -77,10 +77,7 @@ public static class Style
     public static readonly Color Friendly = Sides[0].Ui, Foe = Sides[1].Ui;
     public static readonly Color Ok = new(110, 196, 104), Warn = new(236, 186, 60), Bad = new(226, 72, 60), Orange = new(240, 140, 50);
     public static readonly Color Text = new(238, 236, 228), Dim = new(170, 174, 182), HorseBar = new(168, 116, 70);
-    public static readonly Color Panel = new Color(16, 18, 24) * 0.82f, PanelEdge = Color.White * 0.16f, PanelLight = Color.White * 0.07f;
-
-    /// Spacing grid: every gap and margin is a multiple of this (times the UI scale).
-    public const int Grid = 4;
+    public static readonly Color Panel = new Color(16, 18, 24) * 0.82f, PanelEdge = Color.White * 0.16f;
 
     /// Type scale for the 5x7 pixel font (times the UI scale): captions, body, headings, titles.
     public const int Caption = 1, Body = 2, Heading = 3, Title = 5;

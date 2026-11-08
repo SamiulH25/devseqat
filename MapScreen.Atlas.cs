@@ -84,7 +84,7 @@ sealed partial class MapScreen
             if (ui.Clicked(m)) { focus = w; follow = false; panel = PanelKind.None; }
         }
         AtlasLegend(new Rectangle(m.Right + ui.U(20), m.Y, r.Right - m.Right - ui.U(36), m.Height));
-        if (ui.Button(new Rectangle(r.Center.X - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: "M")) panel = PanelKind.None;
+        if (ui.Button(new Rectangle(r.Center.X - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.AtlasScreen))) panel = CameFrom(PanelKind.Atlas);
     }
 
     /// The realms, largest first: shield, name, land held, and how they stand to you.

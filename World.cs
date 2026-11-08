@@ -41,7 +41,6 @@ sealed partial class World : IDisposable
     VertexBuffer foliageVb;
     readonly IndexBuffer terrainIb;
     readonly int terrainTris, skyTris;
-    int foliageTris;
     readonly Texture2D detail;
     readonly BasicEffect terrainFx, foliageFx, skyFx;
     static readonly SamplerState DetailSampler = new()
@@ -54,7 +53,7 @@ sealed partial class World : IDisposable
         this.gd = gd;
         t = terrain;
         (terrainVb, terrainIb, terrainTris) = BuildTerrain();
-        (foliageVb, foliageTris) = BuildFoliage();
+        (foliageVb, _) = BuildFoliage();
         (skyVb, skyTris) = BuildSky();
         detail = BuildDetail();
         Minimap = BuildMinimap();
@@ -69,7 +68,7 @@ sealed partial class World : IDisposable
     public void RebuildFoliage()
     {
         foliageVb.Dispose();
-        (foliageVb, foliageTris) = BuildFoliage();
+        (foliageVb, _) = BuildFoliage();
     }
 
     BasicEffect Lit(BasicEffect fx)
@@ -373,9 +372,8 @@ sealed partial class World : IDisposable
 
     readonly List<(int Start, int Tris, BoundingBox Box)> tiles = new();
     int alwaysStart, alwaysTris;
-    /// Foliage triangles drawn last frame (for the performance check), and in all.
+    /// Foliage triangles drawn last frame (for the performance check).
     public int FoliageDrawn { get; private set; }
-    public int FoliageTotal => foliageTris;
 
     /// Draw the foliage tiles inside `view` (a camera's or the sun's frustum), then the water and grass.
     void DrawFoliage(BoundingFrustum view)

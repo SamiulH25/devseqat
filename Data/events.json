@@ -23,6 +23,14 @@
       ]
     },
     {
+      "id": "rabble", "trigger": "fief_unrest", "cooldown": 30, "title": "HOTHEADS IN {settlement}",
+      "text": "Men in {settlement} are arming in the back streets. They want a charter and lower dues, or they will take them.",
+      "choices": [
+        { "label": "GRANT THEIR CHARTER", "effects": ["tax:0", "unrest:-15", "prosperity:-3"] },
+        { "label": "LET THEM RISE, THEN PUT THEM DOWN", "effects": ["revolt", "bounty", "unrest:-5"] }
+      ]
+    },
+    {
       "id": "famine", "trigger": "fief_poor", "cooldown": 30, "title": "HUNGER IN {settlement}",
       "text": "Raids and hard times have emptied the granaries of {settlement}. The poor eat bark, and some talk of better masters.",
       "choices": [
@@ -118,6 +126,15 @@
       "choices": [
         { "label": "ENTER THE LISTS", "need": "gold:50", "effects": ["gold:-50", "lists"] },
         { "label": "WATCH FROM THE STANDS", "effects": ["cohesion:2"] }
+      ]
+    },
+    {
+      "id": "dice", "trigger": "in_town", "cooldown": 25, "title": "DICE AT {settlement}",
+      "text": "A game in the back of an inn at {settlement}. The merchants play deep, and they are short a player.",
+      "choices": [
+        { "label": "PLAY FOR 50 CROWNS", "need": "gold:50", "effects": ["gamble:50"] },
+        { "label": "PLAY FOR 200 CROWNS", "need": "gold:200", "effects": ["gamble:200"] },
+        { "label": "BUY THE MEN A ROUND INSTEAD", "need": "gold:20", "effects": ["gold:-20", "cohesion:2"] }
       ]
     },
     {

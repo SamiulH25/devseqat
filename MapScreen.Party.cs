@@ -61,7 +61,7 @@ partial class MapScreen
         }
         if (charTab == realms) Vassals(r, r.Y + ui.U(82) + ((list.Count + 1) / 2) * (rowH + ui.U(4)) + ui.U(12));
         Note(r);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE (L)")) panel = PanelKind.None;
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.LordsScreen))) panel = CameFrom(PanelKind.Characters);
     }
 
     /// A company's story for the party screen: origin, honours, and its last fights.
@@ -213,6 +213,6 @@ partial class MapScreen
             cy += ui.U(27);
         }
         Note(r);
-        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "BACK (V)")) panel = PanelKind.Party;
+        if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), from == PanelKind.Party ? "BACK" : "CLOSE", note: ctl.Name(Act.DivisionsScreen))) panel = CameFrom(PanelKind.Divisions);
     }
 }

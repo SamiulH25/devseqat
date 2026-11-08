@@ -215,6 +215,7 @@ sealed class ScreenHost : Game
         gd.GetBackBufferData(data);
         using var tex = new Texture2D(gd, w, h);
         tex.SetData(data);
+        Directory.CreateDirectory(dir);
         using var file = File.Create(Path.Combine(dir, name + ".png"));
         tex.SaveAsPng(file, w, h);
         pendingShot = null;

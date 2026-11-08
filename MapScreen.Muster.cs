@@ -278,9 +278,9 @@ partial class MapScreen
             ui.TextR($"{C.Skill(sk.Id):0}" + (open > 0 ? "*" : ""), sx + w / 2 - ui.U(6), sy, open > 0 ? Kit.Gilt : Style.Text, 1);
         }
         y += (Skills.All.Count + 1) / 2 * ui.U(12) + ui.U(6);
-        if (ui.Button(new Rectangle(x, y, w, ui.U(22)), "SKILLS AND PERKS", true, "K")) { panel = PanelKind.Skills; note = ""; }
+        if (ui.Button(new Rectangle(x, y, w, ui.U(22)), "SKILLS AND PERKS", true, ctl.Name(Act.SkillsScreen))) OpenScreen(PanelKind.Skills);
         y += ui.U(25);
-        if (ui.Button(new Rectangle(x, y, w, ui.U(22)), $"DIVISIONS ({C.S.Divisions.Count})", true, "V")) { panel = PanelKind.Divisions; note = ""; }
+        if (ui.Button(new Rectangle(x, y, w, ui.U(22)), $"DIVISIONS ({C.S.Divisions.Count})", true, ctl.Name(Act.DivisionsScreen))) OpenScreen(PanelKind.Divisions);
         y += ui.U(30);
         // Prisoners: turn them to your cause (green, cohesion 0) or let them go.
         ui.Icon("chain", x, y, Kit.Gilt, 1);
