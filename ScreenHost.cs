@@ -179,6 +179,8 @@ sealed class ScreenHost : Game
 
     protected override void Draw(GameTime gameTime)
     {
+        Ui.Now = (float)gameTime.TotalGameTime.TotalSeconds;
+        Ui.Instant = campaignShots != null || lab.ShotsDir != null || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("IRONFIELD_SHOTS"));
         Overflow.Frame(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
         switch (mode)
         {

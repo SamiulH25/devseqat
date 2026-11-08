@@ -103,8 +103,10 @@ partial class MapScreen
         }
         var rows = new (string Icon, string Label, string Value, Color Col)[]
         {
-            ("coin", "LOOT", $"+{rep.Loot:0}", Kit.Gilt), ("chain", "RANSOMS", $"+{rep.Ransom:0}", Kit.Gilt), ("scroll", "BOUNTY", $"+{rep.Bounty:0}", Kit.Gilt),
-            ("star", "RENOWN", $"+{rep.Renown:0}", Kit.Gilt), ("horse", "HORSES TAKEN", $"{rep.Horses}", Style.Text),
+            // The spoils count up as the report opens.
+            ("coin", "LOOT", $"+{Ui.Count(1, (int)rep.Loot)}", Kit.Gilt), ("chain", "RANSOMS", $"+{Ui.Count(2, (int)rep.Ransom)}", Kit.Gilt),
+            ("scroll", "BOUNTY", $"+{Ui.Count(3, (int)rep.Bounty)}", Kit.Gilt), ("star", "RENOWN", $"+{Ui.Count(4, (int)rep.Renown)}", Kit.Gilt),
+            ("horse", "HORSES TAKEN", $"{Ui.Count(5, rep.Horses)}", Style.Text),
         };
         bool spoil = rep.Spoil != "" && Gear.Find(rep.Spoil) != null;
         int rh = Math.Clamp(c.Height / (rows.Length + (spoil ? 1 : 0)), ui.U(16), ui.U(28)), big = rh >= ui.U(26) ? 2 : 1, y = c.Y;

@@ -5,13 +5,16 @@ namespace Ironfield;
 /// One-time tips for new players (A5). Each key is shown once, ever (Settings.TipsSeen); "Show tips again" in the settings resets them.
 static class Tips
 {
-    static readonly Queue<(string Key, string Text)> queue = new();
+    static readonly Queue<(string Key, string Text, float At)> queue = new();
 
     public static void Show(string key, string text)
     {
         if (Settings.Current.TipsSeen.Contains(key) || queue.Any(q => q.Key == key)) return;
-        queue.Enqueue((key, text));
+        queue.Enqueue((key, text, Ui.Now));
     }
+
+    /// When the tip now showing was raised (interface time), or +inf with none.
+    public static float Since => queue.Count > 0 ? queue.Peek().At : float.PositiveInfinity;
 
     public static bool Active => queue.Count > 0;
 

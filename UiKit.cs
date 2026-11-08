@@ -179,6 +179,20 @@ static class Kit
     public static Rectangle Inset(Rectangle r, int d) => new(r.X + d, r.Y + d, r.Width - 2 * d, r.Height - 2 * d);
 
     /// A cloth ribbon with notched tails, centred on cx, with the text in it.
+    /// A band of light sweeping once across `r` as `t` runs 0..1 (a ribbon or plate catching the light as it appears).
+    public static void Shine(Ui ui, Rectangle r, float t)
+    {
+        if (t <= 0 || t >= 1) return;
+        int band = ui.U(14), x = r.X - band + (int)((r.Width + band) * Ease.InOut(t));
+        for (int i = 0; i < band; i += ui.U(1))
+        {
+            int px = x + i;
+            if (px < r.X || px >= r.Right) continue;
+            float a = MathF.Sin(i / (float)band * MathF.PI) * 0.35f * MathF.Sin(t * MathF.PI);
+            ui.Rect(new Rectangle(px, r.Y, ui.U(1), r.Height), Color.White * a);
+        }
+    }
+
     public static void Ribbon(this Ui ui, int cx, int y, string text, Color c, int scale = 2)
     {
         int h = ui.U(7 * scale + 8), w = ui.TW(text, scale) + ui.U(28), x = cx - w / 2, tail = ui.U(16), drop = ui.U(4), s = Math.Max(1, ui.U(1));
@@ -319,6 +333,7 @@ static class Kit
     {
         const int n = 32;
         int sz = ui.U(4);
+        frac = Ui.Anim(HashCode.Combine((int)c.X, (int)c.Y, 0x41), frac, 8);
         for (int i = 0; i < n; i++)
         {
             float a = -MathF.PI / 2 + i / (float)n * MathF.Tau;
@@ -348,7 +363,7 @@ static class Kit
     public static void Gauge(this Ui ui, Rectangle r, float frac, Color c)
     {
         ui.Rect(r, Color.Black * 0.6f);
-        var f = new Rectangle(r.X + ui.U(1), r.Y + ui.U(1), (int)((r.Width - ui.U(2)) * Math.Clamp(frac, 0, 1)), r.Height - ui.U(2));
+        var f = new Rectangle(r.X + ui.U(1), r.Y + ui.U(1), (int)((r.Width - ui.U(2)) * Ui.Anim(Ui.Key(r, 0x9a), Math.Clamp(frac, 0, 1), 10)), r.Height - ui.U(2));
         ui.VGrad(f, Mul(c, 1.15f), Mul(c, 0.7f), 1);
         ui.Rect(new Rectangle(f.X, f.Y, f.Width, ui.U(1)), Color.White * 0.35f);
     }
@@ -487,6 +502,9 @@ static class Kit
             ui.TextC(labels[i], t.Center.X, t.Y + (t.Height - ui.U(7)) / 2f, on ? Gilt : hover ? Style.Text : Style.Dim, 1);
             if (ui.Clicked(t)) { hit = i; Ui.OnClick?.Invoke(); }
         }
+        // A gold mark along the top of the chosen tab slides over when the choice changes.
+        float x = Ui.Anim(Ui.Key(r, 0x7ab), active * w, 22);
+        if (active >= 0) ui.Rect(new Rectangle(r.X + (int)x + ui.U(2), r.Y, w - ui.U(4), ui.U(2)), Gilt);
         return hit;
     }
 
@@ -518,6 +536,7 @@ static class Kit
     /// A tooltip box with a pointer under it, its bottom tip at (x, y).
     public static void Tooltip(this Ui ui, int x, int y, string title, params string[] lines)
     {
+        if (Ui.Since(HashCode.Combine(title, 0x7f)) < 0.25f) return; // a tooltip waits a moment, so a passing mouse does not flash one
         int w = Math.Max(ui.TW(title, 1), lines.Select(l => ui.TW(l, 1)).DefaultIfEmpty(0).Max()) + ui.U(16);
         int h = ui.U(18 + 11 * lines.Length);
         var r = new Rectangle(x - w / 2, y - h - ui.U(6), w, h);

@@ -21,6 +21,9 @@ partial class MapScreen
     };
     Color PartyColor(Party p) => p.Kind == PartyKind.Player ? Style.Accent : SideColor(C.SideOf(p));
 
+    PanelKind lastPanel;
+    float panelSince;
+
     void DrawUi()
     {
         bool click = pendingClick;
@@ -54,9 +57,12 @@ partial class MapScreen
             case PanelKind.Atlas: AtlasPanel(); break;
             case PanelKind.Help: HelpPanel(); break;
         }
-        // Tips draw last so nothing covers them; over an open panel they sit at the top, clear of its buttons.
+        if (panel != PanelKind.None && modalIn < 1) ui.Rect(modalRect, Kit.IronDark * (1 - modalIn)); // the panel's entrance: it comes up out of the dark
+        if (panel != lastPanel) { lastPanel = panel; panelSince = Ui.Now; }
+        // Tips draw last so nothing covers them; over an open panel they sit at the top, clear of its buttons. A tip that was
+        // already waiting when the panel opened keeps waiting for the map (only tips about the panel itself show over it).
         if (panel == PanelKind.None) Tips.Draw(ui, ui.U(130));
-        else Tips.DrawAt(ui, ui.U(6));
+        else if (Tips.Since >= panelSince) Tips.DrawAt(ui, ui.U(6));
         ui.End();
         if (panel == PanelKind.None && click && !ui.Blocks(ms.Position)) pendingClick = true; // the map gets it
     }
@@ -429,13 +435,21 @@ partial class MapScreen
         for (int i = 0; i < linesOut.Count; i++) ui.Text(linesOut[i].Item1, r.X + ui.U(8), r.Y + ui.U(6) + i * ui.U(13), linesOut[i].Item2, 1);
     }
 
+    /// The open modal and how far its entrance has run (0..1): the panel fades in from dark as it rises into place.
+    Rectangle modalRect;
+    float modalIn = 1;
+
     Rectangle Modal(int w, int h, string title, Color? tc = null)
     {
         ui.Dim(0.45f);
         int pw = Math.Min(ui.U(w), ui.W - ui.U(16)), ph = Math.Min(ui.U(h), ui.H - ui.U(28)); // never wider or taller than the screen
-        var r = new Rectangle((ui.W - pw) / 2, (ui.H - ph) / 2 + ui.U(6), pw, ph);
+        float t = Ui.Since(HashCode.Combine(title, 0x30da1));
+        modalIn = Ease.OutCubic(t / 0.12f);
+        var r = new Rectangle((ui.W - pw) / 2, (ui.H - ph) / 2 + ui.U(6) + (int)((1 - modalIn) * ui.U(6)), pw, ph);
+        modalRect = r;
         ui.PlateBody(r, Kit.Gilt);
         ui.Ribbon(r.Center.X, r.Y - ui.U(10), title, Kit.Mul(tc ?? Kit.Gilt, 0.66f));
+        if (t < 0.7f) Kit.Shine(ui, new Rectangle(r.Center.X - ui.TW(title, 2) / 2 - ui.U(20), r.Y - ui.U(10), ui.TW(title, 2) + ui.U(40), ui.U(22)), t / 0.7f);
         return r;
     }
 
