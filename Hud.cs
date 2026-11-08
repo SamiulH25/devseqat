@@ -167,6 +167,7 @@ sealed partial class Hud
         SampleStrength();
         sb.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.AlphaBlend);
         SergeantPennants();
+        BannerMark();
         if (Command) Banners();
         Balance();
         GoalLines();
@@ -180,6 +181,12 @@ sealed partial class Hud
         if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) SquadTooltip(); } else Crosshair();
         if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
         Hints();
+        if (B.DownSince >= 0) // the last stand (P6)
+        {
+            var r = new Rectangle(W / 2 - U(160), H / 2 - U(60), U(320), U(34));
+            Panel(r, Bad);
+            TextC($"YOU ARE DOWN: {Ctl.Name(Act.Rally)} TO FIGHT ON ({MathF.Max(0, Battle.LastStandWindow - (B.Time - B.DownSince)):0})", W / 2f, r.Y + U(12), Color.White, 1);
+        }
         if (Box is Rectangle box) { Rect(box, Gold * 0.12f); Frame(box, Gold, 1); }
         if (Deploying)
         {

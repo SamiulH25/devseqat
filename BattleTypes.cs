@@ -19,6 +19,8 @@ public sealed class BattleOptions
     public bool KingsCharge;
     /// Draw personal goals for the captain (P6; the campaign's field battles and assaults).
     public bool Goals;
+    /// A man carries your banner (its fall takes your aura); your first fall is a last stand (P6).
+    public bool Banner, LastStand;
     /// You are wounded: you command from the rear (command view only).
     public bool PlayerWounded;
     /// An AI general commands your side too (headless tests and auto-resolve calibration).

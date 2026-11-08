@@ -88,6 +88,7 @@ public sealed partial class Battle
         foreach (var u in Units) if (u.Team == 1 && !u.IsLeader) u.Morale = Math.Clamp(u.Morale + Options.EnemyMorale, 5, 100);
         if (Options.Duel) SetupDuel();
         UpdateCentroids();
+        SetupBanner();
         DrawGoals(seed);
     }
 
@@ -267,6 +268,7 @@ public sealed partial class Battle
         Time += dt;
         tick++;
         BuildGrid();
+        UpdateLastStand();
         RallyCooldown = MathF.Max(0, RallyCooldown - dt);
         UpdateCentroids();
         Mark(0);
@@ -306,6 +308,7 @@ public sealed partial class Battle
         UpdateArrows(dt);
         Mark(6);
         UpdateMorale(dt);
+        UpdateBanner();
         Mark(7);
         CheckEnd();
         Mark(8);
@@ -436,7 +439,7 @@ public sealed partial class Battle
                 list.Add(new CompanyResult(team, c.Id, c.Count, c.Count, 0, 0, 0, new int[8], Deployed: false,
                     Stacks: c.Stacks.Select(x => new StackResult(x.Troop, x.Count, x.Count, 0, 0)).ToList()));
         bool blunt = Options.Tournament || Options.Duel; // the lists and single combat: a fall is a yield
-        var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 && !blunt ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
+        var captain = Player.Dead || Options.PlayerWounded || FoughtOn ? (Winner == 1 && !blunt ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
         var foeLeader = EnemyCaptain.Dead ? (Options.Tournament ? LeaderFate.Unhurt : Options.Duel ? LeaderFate.Wounded : LeaderFate.Slain) : LeaderFate.Unhurt;
         int horses = LooseHorses.Count(h => h.Team == 1);
         return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills, SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes)

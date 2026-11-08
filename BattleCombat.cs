@@ -258,6 +258,7 @@ public partial class Battle
             PlayerHit = ("BACK ON YOUR FEET", Time);
             return;
         }
+        if (LastStand(t, killer)) return; // P6
         t.Dead = true;
         t.DiedAt = Time;
         t.Hp = 0;
@@ -271,7 +272,7 @@ public partial class Battle
             t.Horse = null;
             t.Pos -= new Vector2(-t.HeadingDir.Y, t.HeadingDir.X) * 1.0f; // the rider falls off to the side
         }
-        if (killer.IsPlayer) PlayerKills++;
+        if (killer.IsPlayer && t != killer) PlayerKills++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 7)]++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;
         foreach (var u in t.IsLeader ? Units.ToArray() : Near(t.Pos, 10, nearKill).ToArray()) // a leader's fall is felt across the field

@@ -14,6 +14,7 @@ partial class Battle
         new("cavalry", "BREAK THEIR HORSE", "Tactics"),
         new("norout", "NO COMPANY OF YOURS ROUTS", "Leadership"),
         new("quick", "WIN WITHIN THREE MINUTES", "Tactics"),
+        new("banner", "KEEP YOUR BANNER FLYING", "Leadership"),
     };
 
     /// Seconds within which a quick win must come.
@@ -35,6 +36,7 @@ partial class Battle
             "quick" => !Options.Siege,
             "hand" => !Options.PlayerWounded,
             "captain" => !scripted,
+            "banner" => Options.Banner && Bearer != null,
             _ => true,
         }).ToList();
         var r = new Random(seed * 31 + 7);
@@ -60,6 +62,7 @@ partial class Battle
             case "norout":
                 if (Squads.Any(s => s.Team == 0 && s.Company != null && s.RoutSounded)) return -1;
                 return over ? (Winner == 0 ? 1 : -1) : 0;
+            case "banner": return BannerEverFell ? -1 : over ? 1 : 0;
             case "quick":
                 if (over) return Winner == 0 && Time <= QuickWin ? 1 : -1;
                 return Time > QuickWin ? -1 : 0;

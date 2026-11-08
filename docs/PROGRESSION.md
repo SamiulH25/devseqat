@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1-P5 built; P6 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1-P6 built; P7 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -315,3 +315,13 @@ Give the captain something to do in each fight beyond "win".
   refused its fealty by one point; `fled` now counts only retreats from a weaker foe. After the fix 2 of 4 seeds reach
   Vassal (days 81 and 193) and one reaches Marshal (day 218); the end-of-P3 build gave 2 of 3 (days 51, 91). The misses
   stall at 99-119 renown of the 120 fealty needs. Retune in P8.
+- P6 (step 2, the banner and the last stand): `BattleBanner.cs` (headless). With `BattleOptions.Banner` (campaign
+  battles) the first man of your household guard, else of the company nearest you, is `Bearer`. If he falls the banner
+  is down where he fell: every man of yours loses 10 morale and your aura stops working (`BannerUp` in `UpdateMorale`)
+  until you reach it (2.5 m) or, after 3 s, the nearest man of yours within 4 m raises it (+5 morale). The goal
+  "keep your banner flying" (Leadership) is drawn only with a bearer. The HUD shows a gold pennant over the bearer and the
+  fallen banner on the ground (`Hud.BannerMark`). With `BattleOptions.LastStand` your first fall (after Field Surgeon,
+  which still gets you up free) puts you down for 4 s (`DownSince`, staggered at 1 health): rally (R) to fight on at a
+  quarter of your health (`FoughtOn`, which still counts as a fall in the result), or be carried off when the moment
+  passes; a blow while down ends it. `SelfTest.BannerAndLastStand`; `ReplayExact` now also replays a battle with all three.
+  Simplifications: the bearer stays in his company's ranks rather than at your side; no "a horse is near" condition.

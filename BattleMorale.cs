@@ -27,7 +27,7 @@ public partial class Battle
             // The enemy captain stands just behind his line, so his aura covers it all battle. Yours only reaches
             // men around your body, and not at all from command view: a side whose general is alive but looking
             // at a map would otherwise be permanently out-inspired.
-            bool inspired = lead.Active && !(lead.IsPlayer && Commanding)
+            bool inspired = lead.Active && !(lead.IsPlayer && Commanding) && (u.Team == 1 || BannerUp)
                 && Vector2.DistanceSquared(lead.Pos, u.Pos) < Options.AuraRadius * Options.AuraRadius;
             bool led = !lead.Dead; // a living general heartens his whole army, wherever he stands
             float m = 0;

@@ -207,7 +207,7 @@ public partial class Campaign
         {
             AuraRadius = (Has("Bannerman") ? 16 : 12) + (Rank >= Rank.Lord ? LordBanner : 0), // a lord's banner reaches further (P5)
             KingsCharge = Rank == Rank.King,
-            Goals = true, // personal goals (P6)
+            Goals = true, Banner = true, LastStand = true, // personal goals, your banner, the last stand (P6)
             RallyBonus = Has("WarCry") ? 35 : 25,
             RallyCooldown = Has("WarCry") ? 9 : 12,
             IronWill = Has("IronWill"),

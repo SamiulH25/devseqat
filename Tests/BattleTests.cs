@@ -344,6 +344,43 @@ public static partial class SelfTest
             $"every goal is settled at the end ({string.Join(",", r.GoalsMet)} of {string.Join(",", r.Goals)})");
     }
 
+    static void BannerAndLastStand()
+    {
+        var b = new Battle(52, Armies.Standard(0), Armies.Standard(1), new BattleOptions { Banner = true, Goals = true, Cap = 200 });
+        Check(b.Bearer is { Team: 0, IsPlayer: false }, "a man of yours carries your banner");
+        var bearer = b.Bearer!;
+        var mate = bearer.Squad!.Units.First(u => u != bearer);
+        b.Update(1 / 60f);
+        float morale = mate.Morale;
+        bearer.Dead = true; // cut down
+        b.Update(1 / 60f);
+        Check(b.BannerDown && b.BannerEverFell && mate.Morale < morale - 5, $"the banner falls with him, and the men lose heart ({b.BannerDown} {morale:0} -> {mate.Morale:0})");
+        b.Player.Pos = b.BannerPos;
+        b.Update(1 / 60f);
+        Check(!b.BannerDown && b.Bearer == b.Player, "you pick it up");
+        Check(!b.Goals.Any(g => g.Id == "banner") || b.GoalState(Battle.Goal("banner")) == -1, "a banner that fell is a goal lost");
+        // Left alone, a fallen banner is picked up by the nearest man.
+        var c = new Battle(53, Armies.Standard(0), Armies.Standard(1), new BattleOptions { Banner = true, Cap = 200 });
+        c.Bearer!.Dead = true;
+        for (int i = 0; i < 60 * 5; i++) c.Update(1 / 60f);
+        Check(c.Bearer is { IsPlayer: false, Active: true } && !c.BannerDown, "after a moment one of your men raises it");
+        // The last stand: down, then rally to fight on at a quarter of your health; a second fall is the end.
+        var d = Battle.Empty(54, new BattleOptions { LastStand = true });
+        d.Hit(d.EnemyCaptain, d.Player, 5000, false);
+        Check(d.Player.Active && d.DownSince >= 0, "your first fall puts you down, not out");
+        d.Input = new PlayerInput { Rally = true };
+        d.Update(1 / 60f);
+        Check(d.DownSince < 0 && d.FoughtOn && MathF.Abs(d.Player.Hp - d.Player.Type.MaxHp * Battle.LastStandHealth) < 1, "rally to fight on at a quarter of your health");
+        d.Input = new PlayerInput();
+        d.Hit(d.EnemyCaptain, d.Player, 5000, false);
+        Check(!d.Player.Active, "a second fall is the end");
+        Check(d.Result().Captain != LeaderFate.Unhurt, "fighting on still counts as a fall");
+        var e = Battle.Empty(55, new BattleOptions { LastStand = true });
+        e.Hit(e.EnemyCaptain, e.Player, 5000, false);
+        for (int i = 0; i < 60 * 5; i++) e.Update(1 / 60f);
+        Check(!e.Player.Active && e.PlayerKills == 0, "without a rally you are carried off when the moment passes");
+    }
+
     static void DuelFight()
     {
         int won = 0;
@@ -637,6 +674,17 @@ public static partial class SelfTest
         var again = back.Play();
         Console.WriteLine($"replay: {rec.Frames.Count} ticks, winner {again.Winner} after {again.Time:0.0}s, {again.Units.Count(u => u.Dead)} dead (recorded {rec.Winner}, {rec.Time:0.0}s, {rec.Dead})");
         Check(back.Matches(again), "a replay reproduces its battle exactly");
+        // With the banner, the last stand and goals (P6), rallying now and then.
+        var p6 = new Battle(32, Armies.Random(rng, 2, 0), Armies.Random(rng, 2, 1), new BattleOptions { Banner = true, LastStand = true, Goals = true });
+        p6.StartRecording(32);
+        for (int step = 0; p6.Winner < 0 && step < 60 * 300; step++)
+        {
+            p6.Input = new PlayerInput { Facing = MathHelper.PiOver2, Move = new Vector2(0, 1), Attack = step % 50 < 20, Rally = step % 400 == 399 };
+            p6.Update(1 / 60f);
+        }
+        var rec6 = p6.FinishRecording()!;
+        var back6 = Replay.Deserialize(rec6.Serialize());
+        Check(back6.Matches(back6.Play()), "and with a banner, a last stand and goals");
     }
 
     /// Braced spears hurt a lancer charging into them (also the example in docs/DEVELOPING.md 9).

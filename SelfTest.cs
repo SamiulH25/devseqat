@@ -40,6 +40,7 @@ public static partial class SelfTest
         SkillBouts();
         DuelFight();
         BattleGoals();
+        BannerAndLastStand();
         RangedRoles();
         FatigueAndSupply();
         Generals();

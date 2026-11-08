@@ -138,6 +138,29 @@ sealed partial class Hud
         }
     }
 
+    /// Your banner (P6): a tall gold pennant over its bearer, or a fallen grey one on the ground where it lies.
+    void BannerMark()
+    {
+        if (!B.Options.Banner) return;
+        var vp = new Viewport(0, 0, W, H);
+        var at = B.BannerDown ? B.BannerPos : B.Bearer is { Active: true } b ? b.Pos : (Vector2?)null;
+        if (at is not Vector2 p) return;
+        float lift = B.BannerDown ? 0.3f : B.Bearer!.Mounted ? 4.6f : 3.6f;
+        var v = vp.Project(new Vector3(p.X, B.Terrain.Height(p) + lift, p.Y), Proj, View, Matrix.Identity);
+        if (v.Z is <= 0 or >= 1) return;
+        int x = (int)v.X, y = (int)v.Y, s = Command ? U(1) : Math.Clamp((int)(U(2) * 30 / MathF.Max(8, Vector2.Distance(p, B.Player.Pos))), U(2), U(3));
+        if (B.BannerDown)
+        {
+            Rect(new Rectangle(x - 8 * s, y, 16 * s, Math.Max(1, s)), Color.Black * 0.7f); // the staff in the mud
+            Rect(new Rectangle(x - 2 * s, y - 4 * s, 7 * s, 4 * s), Dim);
+            TextC("YOUR BANNER", x, y + 3 * s, Dim, 1);
+            return;
+        }
+        Rect(new Rectangle(x, y - 16 * s, Math.Max(1, s), 16 * s), Color.Black * 0.7f);
+        Rect(new Rectangle(x + s, y - 16 * s, 9 * s, 6 * s), Gold);
+        Rect(new Rectangle(x + s, y - 10 * s, 5 * s, 2 * s), Gold);
+    }
+
     /// In command view: a line from each of your divisions to where its goal points (dim when a new goal is on its way).
     void DivisionMarkers()
     {
