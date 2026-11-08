@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: unit movement (steering, separation, terrain, wading, slope) and collisions.
+/// Battle: unit movement (steering, separation, ground, slope) and collisions.
 public partial class Battle
 {
     void Move(float dt)
@@ -17,7 +17,11 @@ public partial class Battle
                 u.Vel = u.HeadingDir * u.Speed;
             }
             else u.Vel = u.Wish * (u.Squad is { } fs && !u.Routing && fs.Order != Order.Charge ? fs.Pace : 1) * (u.Mounted ? 1 : Fatigue(u));
-            u.Pos += u.Vel * SlopeFactor(Terrain, u.Pos, u.Vel) * Wading(u) * dt;
+            float slope = Slope(Terrain, u.Pos, u.Vel);
+            u.Climb = MathF.Max(0, slope);
+            u.GroundPace = SlopeFactor(slope, u.Mounted) * GroundSpeed(u); // the ground and the slope set the pace
+            u.Vel *= u.GroundPace;
+            u.Pos += u.Vel * dt;
             u.Anim += dt * u.Vel.Length() * (u.Mounted ? 0.45f : 0.9f); // stride-locked walk / gallop cycle
         }
         Separate(dt); // near pairs only, through the spatial grid (BattleGrid.cs)
@@ -27,20 +31,20 @@ public partial class Battle
         EnforceWall(before);
     }
 
-    /// Water slows men and horses: a ford a little, the river itself a lot (and it disorders a formation: no bracing).
-    float Wading(Unit u)
+    /// The ground slows men and horses (Data/ground.json): water a lot, a ford or a wood less; a road is quick.
+    /// Deep water also disorders a formation (no bracing).
+    float GroundSpeed(Unit u)
     {
-        if (Terrain.Rivers.Count == 0) return 1;
-        float d = Terrain.WaterDepth(u.Pos);
-        return d == 0 ? 1 : d < 0.5f ? 0.8f : u.Mounted ? 0.55f : 0.45f;
+        var g = Terrain.GroundDefAt(u.Pos);
+        return u.Mounted ? g.HorseSpeed : g.FootSpeed;
     }
 
-    /// Uphill is slow, downhill a little quicker: a multiplier on ground speed.
-    internal static float SlopeFactor(Terrain t, Vector2 pos, Vector2 vel)
-    {
-        float slope = vel.LengthSquared() > 0.01f ? Vector2.Dot(t.Gradient(pos), Vector2.Normalize(vel)) : 0;
-        return Math.Clamp(1 - slope * 1.5f, 0.55f, 1.15f);
-    }
+    /// Rise per metre along the way he is going (negative downhill).
+    static float Slope(Terrain t, Vector2 pos, Vector2 vel) => vel.LengthSquared() > 0.01f ? Vector2.Dot(t.Gradient(pos), Vector2.Normalize(vel)) : 0;
+
+    /// Uphill is slow, downhill a little quicker: a multiplier on ground speed. A horse feels the slope more than a man.
+    internal static float SlopeFactor(Terrain t, Vector2 pos, Vector2 vel, bool mounted = false) => SlopeFactor(Slope(t, pos, vel), mounted);
+    static float SlopeFactor(float slope, bool mounted) => mounted ? Math.Clamp(1 - slope * 2f, 0.5f, 1.2f) : Math.Clamp(1 - slope * 1.5f, 0.55f, 1.15f);
 
     /// A horse at speed running into an enemy footman: knockdown and damage, unless the man is braced.
     void Impact(Unit r, Unit f, Vector2 n, float dt)

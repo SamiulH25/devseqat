@@ -105,6 +105,19 @@ public sealed partial class Terrain
             }
     }
 
+    /// Lay a kind of ground over a circle (layouts; test fields, flat ones too).
+    public void Paint(Vector2 c, float r, GroundKind k)
+    {
+        ground ??= new byte[N * N];
+        cover ??= new byte[N * N];
+        byte cv = (byte)MathF.Round(Grounds.Get(k).Cover * 255);
+        int x0 = Math.Max(0, (int)((c.X - r + Half) / Step)), x1 = Math.Min(N - 1, (int)MathF.Ceiling((c.X + r + Half) / Step));
+        int z0 = Math.Max(0, (int)((c.Y - r + Half) / Step)), z1 = Math.Min(N - 1, (int)MathF.Ceiling((c.Y + r + Half) / Step));
+        for (int z = z0; z <= z1; z++)
+            for (int x = x0; x <= x1; x++)
+                if (Vector2.DistanceSquared(new Vector2(-Half + x * Step, -Half + z * Step), c) <= r * r) { ground[z * N + x] = (byte)k; cover[z * N + x] = cv; }
+    }
+
     bool InWood(Vector2 p)
     {
         foreach (var (c, r) in woods) if (Vector2.DistanceSquared(p, c) < r * r) return true;

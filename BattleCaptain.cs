@@ -188,9 +188,20 @@ public sealed partial class Battle
     void Tire(Unit u, float dt)
     {
         if (u.IsPlayer || u.Mounted) return;
-        float run = u.Vel.Length() / MathF.Max(0.1f, u.Type.Speed);
+        // Effort, not ground covered: a man slogging through mud at a run is running.
+        float run = u.Vel.Length() / MathF.Max(0.1f, u.Type.Speed * u.GroundPace);
         float rate = run > 0.7f ? -2.5f * run : u.Action != UnitAction.None ? -1f : run < 0.2f ? 4f : 1f;
+        float extra = run < 0.2f ? 0 : Strain(u);
+        rate = rate < 0 ? rate * (1 + extra) : rate - 2.5f * run * extra; // hard ground and climbs tire a man on the move
         u.Stamina = Math.Clamp(u.Stamina + rate * dt, 0, 100);
+    }
+
+    /// How much more than usual moving here tires a man: heavy ground (Data/ground.json `fatigue`) and climbing,
+    /// both worse in heavy armour. 0 on level grass.
+    float Strain(Unit u)
+    {
+        float weight = 1 + MathF.Max(0, u.Type.Armor - 8) / 20;
+        return MathF.Max(0, Terrain.GroundDefAt(u.Pos).Fatigue - 1 + u.Climb * 5) * weight;
     }
 
     /// Archers standing at their own wagon draw arrows from it.

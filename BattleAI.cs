@@ -268,15 +268,17 @@ public partial class Battle
         }
         else foreach (var s in inf.Concat(spears)) s.Order = Order.Charge; // late arrivals join the charge
         foreach (var s in Led(team, "casters").Where(s => s.Alive > 0)) { s.Front = dir; s.Anchor = front - dir * 15; s.Order = Order.Hold; } // a necromancer works from behind his dead
+        // With no one left to hold a line, archers shoot what they carry and then go in: no trips back to the wagon.
+        bool bowsAlone = !Units.Any(u => u.Team == team && u.Active && !u.Routing && u.Type.Ammo == 0);
         foreach (var s in Led(team, "archers"))
         {
             if (s.Order == Order.Charge || s.Alive == 0) continue;
-            if (ArcherSupply(s, team)) continue; // out of arrows: to the wagon
+            if (!bowsAlone && ArcherSupply(s, team)) continue; // out of arrows: to the wagon
             s.Front = dir;
             float gap = GapTo(s, foe), range = s.Units[0].Type.Range;
             if (gap > range - 4) s.Anchor = s.Centroid() + dir * 4;
             s.Target = SoftTarget(s, foe); // shoot the least armoured company in reach
-            if (gap < 7 || (s.Units.All(u => !u.Active || u.Ammo == 0) && WagonStock[team] <= 0)) { s.Order = Order.Charge; s.Target = null; }
+            if (gap < 7 || (s.Units.All(u => !u.Active || u.Ammo == 0) && (WagonStock[team] <= 0 || bowsAlone))) { s.Order = Order.Charge; s.Target = null; }
         }
         var horse = Led(team, "horse");
         if (!horseCharged[team])

@@ -462,6 +462,36 @@ public static partial class SelfTest
         Check(b.Recording!.TerrainVersion == Terrain.Version && Replay.Deserialize("{\"Seed\":1}").TerrainVersion == 0, "a replay keeps the ground version it was made on");
     }
 
+    /// Ground that changes how men move (docs/TERRAIN.md T1): a wood slows horse far more than foot, a road is quick,
+    /// mud tires an armoured man, a slope tells on a horse more than on a man.
+    static void GroundMoves()
+    {
+        float Ride(UnitType t, GroundKind k, Func<Battle, Unit, float>? measure = null)
+        {
+            var b = Battle.Empty(5);
+            b.Terrain.Paint(new Vector2(40, 0), 30, k);
+            var s = b.AddSquad(0, t, 1, new(40, -10), 1, Vector2.UnitY);
+            s.Order = Order.Hold; s.Anchor = new(40, 60); s.Front = Vector2.UnitY;
+            var u = s.Units[0];
+            if (u.Mounted) u.Speed = u.Horse!.Gallop;
+            u.Stamina = 50;
+            Run(b, 2);
+            return measure?.Invoke(b, u) ?? u.Pos.Y + 10;
+        }
+        float horseGrass = Ride(UnitType.Lancer, GroundKind.Grass), horseWood = Ride(UnitType.Lancer, GroundKind.Wood);
+        float footGrass = Ride(UnitType.Shieldman, GroundKind.Grass), footWood = Ride(UnitType.Shieldman, GroundKind.Wood), footRoad = Ride(UnitType.Shieldman, GroundKind.Road);
+        Console.WriteLine($"ground: 2 s ride grass {horseGrass:0.0} m, wood {horseWood:0.0}; walk grass {footGrass:0.0}, wood {footWood:0.0}, road {footRoad:0.0}");
+        Check(horseWood < horseGrass * 0.7f && footWood < footGrass && footWood / footGrass > horseWood / horseGrass, "a wood slows horse more than foot");
+        Check(footRoad > footGrass, "the road is quicker");
+        var heavy = Troops.Get("iron_legionaries");
+        float Tired(GroundKind k) => Ride(heavy, k, (b, u) => u.Stamina);
+        Check(Tired(GroundKind.Mud) < Tired(GroundKind.Grass), "mud tires an armoured man");
+        var t = new Terrain(11, TerrainParams.Hills);
+        var steep = Enumerable.Range(0, 900).Select(i => new Vector2(-45 + i % 30 * 3, -45 + i / 30 * 3)).MaxBy(q => t.Gradient(q).Length());
+        var up = Vector2.Normalize(t.Gradient(steep));
+        Check(Battle.SlopeFactor(t, steep, up, true) < Battle.SlopeFactor(t, steep, up), "a horse feels a climb more than a man");
+    }
+
     /// A battlefield river: carved below its banks, slow to wade, quicker at the fords; the map has rivers with bridges.
     static void Rivers()
     {

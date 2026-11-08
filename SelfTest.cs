@@ -46,6 +46,7 @@ public static partial class SelfTest
         Generals();
         Rivers();
         GroundLayer();
+        GroundMoves();
         CampaignWar();
         RefuseOldSave();
         Stacks();
