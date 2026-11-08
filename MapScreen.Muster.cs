@@ -136,7 +136,8 @@ partial class MapScreen
         int x = r.X + ui.U(24), w = r.Width - ui.U(48), y = r.Y + ui.U(34);
         int fit = Math.Max(10, w / (6 * ui.S));
         string Cut(string s, int n) => s.Length > n ? s[..n] : s;
-        ui.Text(c.Home != "" ? $"RAISED IN {c.Home.ToUpperInvariant()}. {c.Battles} BATTLES, {c.Kills} KILLS." : $"{c.Battles} BATTLES, {c.Kills} KILLS.", x, y, Style.Dim, 1);
+        string record = $"{Campaign.N(c.Battles, "BATTLE")}, {Campaign.N(c.Kills, "KILL")}.";
+        ui.Text(c.Home != "" ? $"RAISED IN {c.Home.ToUpperInvariant()}. {record}" : record, x, y, Style.Dim, 1);
         y += ui.U(14);
         ui.Text("THE ROLL", x, y, Kit.Gilt, 2);
         ui.TextR($"{c.Roll.Count} OF {Balance.Get().RollSize} NAMED", x + w, y + ui.U(4), Style.Dim, 1);
@@ -148,7 +149,7 @@ partial class MapScreen
             var row = new Rectangle(x - ui.U(4), y - ui.U(3), w + ui.U(8), ui.U(32));
             ui.Rect(row, Color.White * (ui.Hover(row) ? 0.07f : 0.035f));
             ui.Text(m.Name.ToUpperInvariant(), x, y, Style.Text, 1);
-            string stat = $"{m.Battles} BATTLES, {m.Kills} KILLS" + (m.Wounds > 0 ? $", {m.Wounds} WOUNDS" : "");
+            string stat = $"{Campaign.N(m.Battles, "BATTLE")}, {Campaign.N(m.Kills, "KILL")}" + (m.Wounds > 0 ? $", {Campaign.N(m.Wounds, "WOUND")}" : "");
             ui.TextR(stat, x + w, y, Style.Dim, 1);
             ui.Text(Troops.Get(m.Troop).Name.ToUpperInvariant() + (m.Hurt ? " . HURT" : ""), x, y + ui.U(10), m.Hurt ? Style.Warn : Kit.Gilt, 1);
             ui.Text(Cut((m.Deeds.Count > 0 ? m.Deeds[^1] : "").ToUpperInvariant(), fit - 22), x + ui.U(150), y + ui.U(10), Style.Dim, 1);
@@ -169,7 +170,7 @@ partial class MapScreen
             string how = m.Fate switch { "missing" => "MISSING", "left" => "LEFT THE COMPANY", _ => "FELL" };
             string at = m.DiedAt != "" ? $" AGAINST {m.DiedAt.ToUpperInvariant()}" : "";
             ui.Text(Cut($"{m.Name.ToUpperInvariant()}, {Troops.Get(m.Troop).Name.ToUpperInvariant()}", fit / 2), x, y, Style.Text, 1);
-            ui.TextR(Cut($"{how}{at}, DAY {m.DiedDay}. {m.Battles} BATTLES", fit / 2), x + w, y, m.Fate == "fell" ? Style.Bad : Style.Dim, 1);
+            ui.TextR(Cut($"{how}{at}, DAY {m.DiedDay}. {Campaign.N(m.Battles, "BATTLE")}", fit / 2), x + w, y, m.Fate == "fell" ? Style.Bad : Style.Dim, 1);
             y += ui.U(12);
         }
         Note(r);

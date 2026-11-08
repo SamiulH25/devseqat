@@ -480,7 +480,28 @@ sealed class ScreenHost : Game
             }
             case 41: StartCampaignBattle(c.PrepareDuel(c.Encounter!)); cStage++; shotFrames = 0; break;
             case 42 when battle.Battle.Time > 3: Shot("campaign-duel"); break;
-            case 43: Exit(); break;
+            case 43:
+            {
+                // The roll (docs/LEGACY.md L1-L3): a company's named men and its fallen.
+                mode = Mode.Map;
+                var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+                for (int i = 0; i < 6; i++) if (c.NameMan(co, i % 2 == 0 ? "Killed 6 against the Red Lances." : "Stood when half the company fell.") is Soldier m) { m.Battles = 3 + i * 2; m.Kills = i * 3; }
+                if (co.Roll.Count > 0) co.Roll[^1].Hurt = true;
+                c.S.Fallen.Add(new Soldier { Name = "Wat the Grey", Troop = co.Troop, Battles = 9, Fate = "fell", DiedAt = "the Red Lances", DiedDay = c.Day, Company = co.Id, CompanyName = co.Name });
+                map.Stage("roll");
+                Shot("campaign-roll");
+                break;
+            }
+            case 44:
+            {
+                // The report with your named men above the companies (L3).
+                var lines = c.Player.Companies.Select(k => new CompanyReport(k.Id, k.Name, k.Troop, 0, k.Men + 6, k.Men, 4, 2, 0, 0, 14, false, true)).ToList();
+                c.Report = new BattleReport(true, "the Red Lances", lines, 120, 0, 0, 6, 2, LeaderFate.Unhurt) { Roll = new List<(string, string)> { ("FELL", "Wat the Grey, Levies, the company. 9 battles, 4 kills. Killed 6 against the Red Lances."), ("HURT", "Hob of Ashby, the company."), ("NAMED", "Tam Longshanks, Spearmen, the company. Killed 5 against the brigands.") } };
+                map.Stage("results");
+                Shot("campaign-results-roll");
+                break;
+            }
+            case 45: Exit(); break;
         }
     }
 }

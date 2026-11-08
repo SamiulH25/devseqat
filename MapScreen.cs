@@ -445,6 +445,7 @@ sealed partial class MapScreen
             case "close": panel = PanelKind.None; zoom = 60; pitch = 0.7f; break;
             case "sites": panel = PanelKind.None; zoom = 120; pitch = 0.85f; focus = C.Player.Pos; follow = true; break;
             case "party": panel = PanelKind.Party; break;
+            case "roll": rollOf = C.Player.Companies.OrderByDescending(k => k.Roll.Count).First(); panel = PanelKind.Roll; note = ""; break;
             case "divisions": panel = PanelKind.Divisions; note = ""; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;
             case "realm": realmTab = 0; panel = PanelKind.Realm; note = ""; break;

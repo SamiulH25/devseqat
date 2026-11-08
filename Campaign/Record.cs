@@ -38,5 +38,5 @@ public sealed partial class Campaign
         return lines;
     }
 
-    static string N(int n, string word) => $"{n} {word}{(n == 1 ? "" : "S")}";
+    public static string N(int n, string word) => $"{n} {word}{(n == 1 ? "" : "S")}";
 }

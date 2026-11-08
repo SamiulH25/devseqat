@@ -301,7 +301,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Captain.cs (186 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:84, CaptainRecord:150
 
-## MapScreen.cs (474 lines)
+## MapScreen.cs (475 lines)
 - **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:84, Pressed:92, Update:96, Camera:185, Rename:209, Trails:222, ClickWorld:234, Ground:246, Draw:269, UpdateBearers:339, BuildSprites:376, DrawSprites:383, G:395, DrawLines:397, Stage:436
 
 ## MapScreen.Dialogs.cs (189 lines)
@@ -313,8 +313,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Hud.cs (388 lines)
 - **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:22, DrawUi:24, Screen:61, Flags:77, TopBar:160, Feed:179, Overview:194, CaptainPanel:220, RenownStep:254, Cards:256, Card:271, TierStrip:291, Hints:303, Tooltip:309, Modal:374, Note:384
 
-## MapScreen.Muster.cs (290 lines)
-- **MapScreen** (class, L7): PartyPanel:9, MusterCard:34, RollPanel:131, MusterSummary:180, OpenSlot:220, MusterSide:231
+## MapScreen.Muster.cs (291 lines)
+- **MapScreen** (class, L7): PartyPanel:9, MusterCard:34, RollPanel:131, MusterSummary:181, OpenSlot:221, MusterSide:232
 
 ## MapScreen.Party.cs (217 lines)
 - **MapScreen** (class, L8): OpinionWord:10, OpinionColor:11, RoleTextOf:12, CharactersPanel:19, CompanyNote:68, UpgradePanel:82, GoalText:143, DivisionsPanel:147
@@ -345,7 +345,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:55, Deserialize:56, Save:60, Play:67, Matches:97, Run:100
 - **Battle** (class, L114): StartRecording:121, RecordFrame:126, FinishRecording:155
 
-## ScreenHost.cs (486 lines)
+## ScreenHost.cs (507 lines)
 - **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:109, OpenLab:122, QuickBattle:124, StartCampaignBattle:131, FinishCampaignBattle:139, CycleQuality:147, Update:151, Draw:180, CaptureShot:207, CampaignShots:225
 
 ## SelfTest.cs (196 lines)
