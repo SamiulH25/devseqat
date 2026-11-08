@@ -44,12 +44,12 @@ public sealed partial class Campaign
     /// How each rank is reached and what it opens, for the realm screen's ladder.
     public static readonly (Rank Rank, string How, string Opens)[] Ladder =
     {
-        (Rank.FreeCompany, "THE START", "CONTRACTS WITH ANY REALM, BRIGAND HUNTING"),
-        (Rank.SwornSword, $"SERVE ONE REALM {SwornDays:0} DAYS", "HALF-PRICE RECRUITS, A FREE PERK"),
-        (Rank.Vassal, $"SWEAR FEALTY: {VassalRenown:0} RENOWN, LIEGE OPINION {VassalOpinion:+0}", "FIEFS, A VOTE, A HOUSEHOLD GUARD"),
-        (Rank.Lord, $"HOLD {LordFiefs} FIEFS, {LordRenown:0} RENOWN", "WARS, INDEPENDENCE, BANNER, GUARD 25"),
-        (Rank.Marshal, "500 RENOWN, THE COUNCIL'S VOTE", "THE REALM'S OBJECTIVE, A MOUNTED GUARD"),
-        (Rank.King, "FOUND A REALM", "WAR AND PEACE, ROYAL GUARD, KING'S CHARGE"),
+        (Rank.FreeCompany, "THE START", "WORK AND PAY FOR YOUR MEN FROM ANY REALM"),
+        (Rank.SwornSword, $"SERVE ONE REALM {SwornDays:0} DAYS", "RECRUITS FOR THE RANKS AT HALF PRICE, A PERK"),
+        (Rank.Vassal, $"SWEAR FEALTY: {VassalRenown:0} RENOWN, LIEGE OPINION {VassalOpinion:+0}", "LAND FOR YOUR MEN, A VOTE, A GUARD"),
+        (Rank.Lord, $"HOLD {LordFiefs} FIEFS, {LordRenown:0} RENOWN", "A HALL FOR THE COMPANY, WARS, GUARD 25"),
+        (Rank.Marshal, "500 RENOWN, THE COUNCIL'S VOTE", "THE REALM MARCHES WITH YOU, A MOUNTED GUARD"),
+        (Rank.King, "FOUND A REALM", "A REALM FOR THE COMPANY, KING'S CHARGE"),
     };
 
     /// Towns and castles you hold (villages come with them).

@@ -121,6 +121,15 @@
       ]
     },
     {
+      "id": "bury_named", "trigger": "fallen", "cooldown": 0, "scene": "camp", "title": "{man}",
+      "text": "{man} of {company} lies with the dead of the field. The men who stood beside him wait to see what you will do.",
+      "choices": [
+        { "label": "BURY HIM WITH HONOUR", "effects": ["cohesion:2", "food:-1"] },
+        { "label": "SAY THE WORDS AND MARCH", "effects": ["cohesion:1"] },
+        { "label": "THERE IS NO TIME", "effects": ["cohesion:-1"] }
+      ]
+    },
+    {
       "id": "bury_dead", "trigger": "graves", "cooldown": 0, "title": "THE DEAD OF THE FIELD",
       "text": "The field near {settlement} is thick with the dead of the battle. The old women say a field left unburied does not lie quiet for long.",
       "choices": [

@@ -15,6 +15,7 @@ partial class Battle
         new("norout", "NO COMPANY OF YOURS ROUTS", "Leadership"),
         new("quick", "WIN WITHIN THREE MINUTES", "Tactics"),
         new("banner", "KEEP YOUR BANNER FLYING", "Leadership"),
+        new("bringhome", "BRING HIM HOME", "Leadership"), // L8: one of your named men lives through it
     };
 
     /// Seconds within which a quick win must come.
@@ -37,6 +38,7 @@ partial class Battle
             "hand" => !Options.PlayerWounded,
             "captain" => !scripted,
             "banner" => Options.Banner && Bearer != null,
+            "bringhome" => anyNamed,
             _ => true,
         }).ToList();
         var r = new Random(seed * 31 + 7);
@@ -45,6 +47,7 @@ partial class Battle
             var g = fit[r.Next(fit.Count)];
             Goals.Add(g);
             fit.Remove(g);
+            if (g.Id == "bringhome") { var named = Units.Where(u => u.SoldierId != 0 && u.Team == 0).ToList(); Ward = named[r.Next(named.Count)]; }
         }
     }
 
@@ -63,6 +66,7 @@ partial class Battle
                 if (Squads.Any(s => s.Team == 0 && s.Company != null && s.RoutSounded)) return -1;
                 return over ? (Winner == 0 ? 1 : -1) : 0;
             case "banner": return BannerEverFell ? -1 : over ? 1 : 0;
+            case "bringhome": return Ward == null ? -1 : Ward.Dead && !Ward.Saved && Time - Ward.DiedAt >= RescueWindow ? -1 : over ? (Ward.Dead && !Ward.Saved ? -1 : 1) : 0;
             case "quick":
                 if (over) return Winner == 0 && Time <= QuickWin ? 1 : -1;
                 return Time > QuickWin ? -1 : 0;

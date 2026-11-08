@@ -120,7 +120,7 @@ public sealed partial class Campaign
     }
 
     /// What `a` thinks of `b`, -100..100.
-    public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar ? (Has("Kingmaker") ? 10 : 0) + RegardOfTraits(a) : 0), -100, 100);
+    public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar ? (Has("Kingmaker") ? 10 : 0) + RegardOfTraits(a) + FameRegard : 0), -100, 100);
 
     /// What a character thinks of you.
     public float OpinionOfYou(Character a) => OpinionOf(a, Me);
@@ -315,5 +315,5 @@ public sealed partial class Campaign
     }
 
     /// How many of a settlement's recruits will take your coin now.
-    public int RecruitsForYou(Settlement s) => (int)MathF.Floor(s.Recruits * RecruitShare(s));
+    public int RecruitsForYou(Settlement s) => (int)MathF.Floor(s.Recruits * MathF.Min(1, RecruitShare(s) + FameShare)); // L6: fame draws men
 }

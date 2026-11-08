@@ -227,7 +227,7 @@ sealed partial class Hud
         {
             int st = B.GoalState(g);
             string mark = st > 0 ? "DONE: " : st < 0 ? "LOST: " : "GOAL: ";
-            TextC(mark + g.Text, W / 2f, y, st > 0 ? Gold : st < 0 ? Dim * 0.6f : Color.White, 1);
+            TextC(mark + B.GoalText(g), W / 2f, y, st > 0 ? Gold : st < 0 ? Dim * 0.6f : Color.White, 1);
             y += U(11);
         }
     }
@@ -590,6 +590,12 @@ sealed partial class Hud
             if (own && s.Division != null && s.Division == Div) Frame(new Rectangle(flag.X - U(1), flag.Y - U(1), flag.Width + U(2), flag.Height + U(2)), Gold, U(1));
             TextC(label, flag.X + flag.Width / 2f, flag.Y + U(4), Color.White, 1);
             int morale = AvgMorale(s.Units);
+            // The company's history on its flag (L5): a gold fringe after ten battles, a streamer for each battle honour.
+            if (own && s.Company is Company co)
+            {
+                if (co.Fringe) Rect(new Rectangle(flag.X, flag.Bottom - U(2), flag.Width, U(2)), Gold);
+                for (int i = 0; i < Math.Min(3, co.Streamers); i++) Rect(new Rectangle(flag.Right, flag.Y + U(2) + i * U(4), U(6 - i), U(2)), Gold);
+            }
             Bar(new Rectangle(flag.X, flag.Bottom + U(2), flag.Width, U(3)), morale / 100f, MoraleColor(morale));
             if (s.Target != null && own) Text("ATK", flag.Right + U(3), flag.Y + U(4), Foe, 1);
         }

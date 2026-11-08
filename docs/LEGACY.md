@@ -1,6 +1,6 @@
 # The company is the legacy: plan
 
-Status: **L0-L4 built** (see "As built"); L5-L8 to come. Each phase L0-L8 can ship on its own, and `tools/check.sh` must pass after each one.
+Status: **L0-L8 built** (see "As built"). Each phase L0-L8 can ship on its own, and `tools/check.sh` must pass after each one.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 
 ## 1. The fantasy
@@ -193,8 +193,8 @@ only. (c) Save growth: Fallen is never trimmed but is one short line a man, so c
   no separate one-battle morale hit. The battle report (`BattleReport.Roll`) lists the fallen, the missing, the hurt and new
   names above YOUR COMPANIES. A man of 10+ battles who falls is written in the chronicle (`Deed`). `SyncRoll` after a battle
   wounds surplus fit named men if the stack's wounded have room, and counts any still over (a stack wiped out) as fallen
-  there. VeteranSurvival now turns the deaths it spares into wounds. **Not built:** the burial choice after a battle (an
-  event naming the man): it needs a new event trigger, left for a later pass.
+  there. VeteranSurvival now turns the deaths it spares into wounds. The burial choice came with L5-L8: after a won
+  battle where a named man fell, the forced trigger `fallen` raises `bury_named` (`RaiseBurial`, `{man}` in the text).
 - **L4:** `Campaign.RiseToSergeant`: when a company of yours gets a sergeant, its senior fit named man with 3+ battles takes
   the post (`CompanyRecord.OfficerMan`), leaves the ranks (one man fewer in his stack) and the roll. The old name draw is still
   made, so the main stream does not move. With no veteran ready, a sergeant comes from elsewhere, as before. His battles keep
@@ -202,3 +202,19 @@ only. (c) Save growth: Fallen is never trimmed but is one short line a man, so c
   keeps the record (`Character.Ranks`, `FromCompany`), and the household (L) and division (V) panels say "ROSE FROM THE RANKS
   OF X" (`RoseFrom`). If such a companion dies, his record goes to the fallen (`CompanionFell`). Tests: `FallenRemembered`,
   `RisesFromRanks`.
+- **L5 (banner):** `Campaign/Legacy.cs`. A battle gets a name (`BattleName`: "the Ford of X", "the walls of X"...). A notable
+  win (a big foe, a lord or a siege) adds it to the company's `BattleHonours`; a rout before a realm loses the newest one to that
+  realm (`LostHonours`), and beating that realm later wins it back (`BannerAfterBattle`). The ledger and roll show them. In battle
+  the company's flag on the HUD gets a fringe and one streamer per honour (`Company.Fringe`/`Streamers`). **Not built:** the
+  streamers on the 3D banner sprite; only the HUD flag shows them.
+- **L6 (fame):** `CompanyFame` = battles + 10 per honour + 15 per battle honour; `Fame` sums your best three companies. Fame
+  raises lords' opinion (`FameRegard`), the share of recruits who come to you (`FameShare`), contract pay (`FamePay`) and the
+  drill of men of a company's own culture (`FameXp`). The rank ladder lines now speak of what each rank gives your men.
+- **L7 (the end):** THE LEGEND tab in the realm screen (R) shows fame, honours, those taken, and the dead. RETIRE (3 battle
+  honours or 40 battles in one company; `CannotRetire`) ends the game won with the company's story first in the summary
+  (`CompanyStory`). HAND OVER passes the company to a companion (`Successor`, `HandOver`): you play on as him, renown halved,
+  `Generation` counted. **Not built:** an option where the captain can die in battle for good.
+- **L8 (bring him home):** `BattleRescue.cs`. A named man downed in battle is logged and marked red on the HUD; stand over him
+  for two seconds within a minute (`RescueReach`, `RescueTime`, `RescueWindow`) and he is pulled from the press: wounded, not dead,
+  with a deed (`NamedResult.Saved`). A personal goal "bring him home" names one man (`Ward`) to keep alive. Tests: `BannerHonours`,
+  `FameDraws`, `RetireAndSucceed`, `BuryNamed`, `PullBack`.

@@ -531,6 +531,129 @@ public static partial class SelfTest
         Check(co.Officer != "" && co.OfficerMan == null, "with no veteran on the roll a sergeant comes from elsewhere");
     }
 
+    /// The banner's history (docs/LEGACY.md L5): battles get names; a notable win sews one on the banner; a company that breaks
+    /// before a realm loses its newest to that realm, and wins it back by beating the realm; your flag shows them.
+    static void BannerHonours()
+    {
+        var c = Campaign.New(47);
+        c.Player.Cooldown = 1e6f;
+        string name = c.BattleName(c.Player.Pos);
+        Check(name.Length > 3 && c.S.Settlements.Any(t => name.StartsWith(t.Name + " ")), $"a battle is named for the nearest place ({name})");
+        Check(c.BattleName(c.Player.Pos) == name, "the same field gives the same name");
+        Check(c.BattleName(c.Player.Pos, true).StartsWith("the walls of "), "an assault is named for the walls");
+        var lord = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && c.Hostile(c.Player, p)).OrderByDescending(p => p.Men).First();
+        int realm = lord.Faction;
+        BattleReport Fight(int winner, bool slain, bool routed)
+        {
+            lord.Down = false; lord.Pos = c.Player.Pos; c.Encounter = lord;
+            var setup = c.PrepareBattle(lord);
+            var r = Rules.AutoResolve(setup.Side0, setup.Side1, new Rng(new CampaignState { Seed = 3 }));
+            r = r with { Winner = winner, EnemyLeader = slain ? LeaderFate.Slain : LeaderFate.Unhurt, Captain = LeaderFate.Unhurt,
+                Companies = r.Companies.Select(x => x with { Routed = routed && x.Team == 0 }).ToList() };
+            var rep = c.FinishBattle(r, setup);
+            c.Captain.WoundedUntil = 0; c.Encounter = null; c.S.Event = null;
+            foreach (var k in c.Player.Companies) if (k.Men < 20) Rules.AddMen(k, k.Stacks[0].Troop, 30);
+            return rep;
+        }
+        var won = Fight(0, true, false);
+        var co = c.Player.Companies.OrderByDescending(k => k.BattleHonours.Count).First();
+        Check(co.BattleHonours.Count == 1 && co.Ledger[^1].Name == co.BattleHonours[0], "slaying their captain sews the battle's name on the banner");
+        Check(won.Roll.Any(x => x.Kind == "HONOUR"), "and the report says so");
+        Check(c.PrepareBattle(lord).Player.Companies.First(k => k.Id == co.Id).Streamers == 1, "the company's flag carries a streamer");
+        Fight(0, false, false);
+        Check(co.BattleHonours.Count == 1, "an ordinary win sews nothing");
+        string honour = co.BattleHonours[0];
+        Fight(1, false, true);
+        Check(co.BattleHonours.Count == 0 && co.LostHonours.Any(l => l.Name == honour && l.Faction == realm), "breaking before a realm's army loses the honour to it");
+        Fight(0, false, false);
+        Check(co.BattleHonours.Contains(honour) && co.LostHonours.Count == 0, "beating that realm wins it back");
+        var back = CampaignState.Deserialize(c.S.Serialize()).Parties.First(p => p.Kind == PartyKind.Player).Companies.First(k => k.Id == co.Id);
+        Check(back.BattleHonours.SequenceEqual(co.BattleHonours), "battle honours are saved");
+    }
+
+    /// Fame (L6): a famous company is paid more, thought better of, followed by more men, and its own people join knowing it.
+    static void FameDraws()
+    {
+        var c = Campaign.New(49);
+        var lordCh = c.S.Characters.First(k => k.Kind == "lord" && !k.Dead);
+        float pay = c.FamePay, regard = c.OpinionOfYou(lordCh);
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t));
+        town.Recruits = 40;
+        int follow = c.RecruitsForYou(town);
+        var co = c.Player.Companies[0];
+        co.Culture = town.Culture;
+        float xp0 = co.Stacks.Sum(st => st.Xp);
+        int men0 = co.Men;
+        c.Enlist(co, co.Stacks[0].Troop, 2, town);
+        float plainXp = co.Stacks.Sum(st => st.Xp) - xp0;
+        co.Battles = 80; co.BattleHonours.AddRange(new[] { "Ashby Ford", "Hollin Hill", "the walls of Tamsworth" }); co.Honours.Add("Unbroken");
+        Console.WriteLine($"fame: {c.Fame} ({Campaign.FameWord(c.Fame)}), pay x{c.FamePay:0.00}, regard +{c.FameRegard:0}, share +{c.FameShare:0.00}");
+        Check(c.Fame >= 130 && c.FamePay > pay && c.FamePay <= 1.5f, "fame raises the pay of contracts, within a half again");
+        Check(c.OpinionOfYou(lordCh) > regard, "lords think better of a famous captain");
+        Check(c.RecruitsForYou(town) >= follow, "no fewer men follow a famous captain");
+        float xp1 = co.Stacks.Sum(st => st.Xp);
+        c.Enlist(co, co.Stacks[0].Troop, 2, town);
+        Check(co.Stacks.Sum(st => st.Xp) - xp1 > plainXp, "a famous company's own people join knowing the work");
+    }
+
+    /// How it ends (L7): no retiring until a company is a legend; handing over gives the company to a companion who rose from
+    /// its ranks and play goes on; retiring wins the campaign and the summary tells the company's story first.
+    static void RetireAndSucceed()
+    {
+        var c = Campaign.New(53);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        Check(c.CannotRetire() != null && c.Retire() != null && !c.S.GameOver, "a young company cannot retire");
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Battles = Campaign.RetireBattles; co.BattleHonours.AddRange(new[] { "Ashby Ford", "Hollin Hill", "Wyck Moor" });
+        Check(c.CannotRetire() == null && c.LegendCompany == co, "a company of three battle honours and forty battles is a legend");
+        Check(c.HandOver() != null, "no one to hand over to without a companion");
+        // A sergeant from the ranks becomes a companion, then the captain.
+        co.Roll.Clear(); co.Officer = "";
+        var vet = c.NameMan(co, "test")!;
+        vet.Battles = 9;
+        for (int i = 0; i < 60 && co.Officer == ""; i++) c.OfficerAfterBattle(co, true, 0);
+        co.OfficerBattles = Campaign.CompanionBattles - 1;
+        c.OfficerAfterBattle(co, true, 0);
+        var heir = c.Successor;
+        Check(heir != null && heir.Ranks == vet, "the successor is the companion who rose from the ranks");
+        float renown = c.Captain.Renown;
+        Check(c.HandOver() == null && c.Me.Name == heir!.Name && !c.Companions.Contains(heir) && !c.S.GameOver && c.S.Generation == 1, "handing over: you play on as him");
+        Check(MathF.Abs(c.Captain.Renown - renown * 0.5f) < 1e-3f && c.Player.Companies.Contains(co), "with half the renown and the same company");
+        c.S.Fallen.Add(new Soldier { Name = "Wat the Grey", Troop = "levies", Battles = 30, Fate = "fell", Company = co.Id, CompanyName = co.Name });
+        Check(c.Retire() == null && c.S.GameOver && c.S.Won && c.S.Retired, "retiring ends the campaign as a win");
+        var sum = c.Summary();
+        Check(sum[0].StartsWith(co.Name.ToUpperInvariant()) && sum.Any(l => l.Contains("WAT THE GREY")) && sum.Any(l => l.Contains("ROSE FROM THE RANKS")), "the summary tells the company's story first");
+        Console.WriteLine("legend: " + string.Join(" / ", sum.Take(3)));
+    }
+
+    /// The burial (L3): after a won battle where a named man fell, an event asks what to do for him, by name.
+    static void BuryNamed()
+    {
+        var c = Campaign.New(57);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        Check(Campaign.Events.Any(e => e.Id == "bury_named"), "the burial event is in the data");
+        var rng = new Rng(new CampaignState { Seed = 7 });
+        bool raised = false;
+        for (int i = 0; i < 20 && !raised; i++)
+        {
+            foreach (var k in c.Player.Companies) { k.Roll.Clear(); for (int j = 0; j < 6; j++) c.NameMan(k, "test"); if (k.Men < 30) Rules.AddMen(k, k.Stacks[0].Troop, 30); }
+            var lord = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && c.Hostile(c.Player, p)).OrderByDescending(p => p.Men).First();
+            lord.Pos = c.Player.Pos; c.Encounter = lord;
+            var setup = c.PrepareBattle(lord);
+            c.S.Event = null;
+            c.FinishBattle(Rules.AutoResolve(setup.Side0, setup.Side1, rng) with { Winner = 0, Captain = LeaderFate.Unhurt }, setup);
+            c.Encounter = null;
+            raised = c.S.Event?.Id == "bury_named";
+        }
+        Check(raised, "a won battle with a named man fallen raises his burial");
+        var pe = c.S.Event!;
+        var man = c.S.Fallen.First(m => m.Id == pe.Soldier);
+        var ev = Campaign.Events.First(e => e.Id == "bury_named");
+        Check(c.Fill(ev.Title, pe) == man.Name && c.Fill(ev.Text, pe).Contains(man.Name), "the burial names him");
+    }
+
     /// Troop stacks and promotion by the man (F1): a promotion moves exactly one man and spends exactly his XP; out-of-role
     /// promotions go to a company of the new role; pools never exceed their cap.
     static void Stacks()

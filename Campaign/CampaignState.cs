@@ -42,6 +42,10 @@ public sealed class CompanyRecord
     public List<Soldier> Roll = new();
     /// The roll has been started (a new company names its first man once).
     public bool RollStarted;
+    /// Battle honours (L5): the names of notable wins sewn on its banner, kept for ever; and those a realm took when the
+    /// company broke before it, until it beats that realm again.
+    public List<string> BattleHonours = new();
+    public List<LostHonour> LostHonours = new();
     /// The named man who became its sergeant (L4), null for a sergeant from elsewhere.
     public Soldier? OfficerMan;
 
@@ -145,11 +149,20 @@ public sealed class Soldier
     public void Deed(string d) { Deeds.Add(d); if (Deeds.Count > MaxDeeds) Deeds.RemoveAt(1); } // the first, how he got his name, stays
 }
 
+/// A battle honour a realm took from a company (L5).
+public sealed class LostHonour
+{
+    public string Name = "";
+    public int Faction = -1;
+}
+
 /// One line of a company's ledger (2.4).
 public sealed class LedgerEntry
 {
     public int Day, Lost, Kills;
     public string Foe = "";
+    /// The battle's name (L5), "" for battles before names.
+    public string Name = "";
     public bool Won;
 }
 
@@ -384,6 +397,9 @@ public sealed class CampaignState
     public int NextSoldier = 1;
     /// Every named man your companies have lost (L3), never trimmed.
     public List<Soldier> Fallen = new();
+    /// You retired on the company's legend (L7), and how many captains have led it since you began (handing over).
+    public bool Retired;
+    public int Generation;
     /// How far the provinces of this save's map reach (WorldMap.Extent for new campaigns; older saves have their own).
     public float MapExtent = WorldMap.PreviousExtent;
     /// How the map lays out its realms (WorldMap.Layout): saves from before docs/WORLD.md W1 have none and keep the old bands.

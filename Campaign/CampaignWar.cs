@@ -223,7 +223,7 @@ public sealed partial class Campaign
     {
         int f = s.Faction;
         float deadline = (float)S.Hours + 10 * 24;
-        Contract Make(string kind, int target, float reward, string text) => new() { Id = S.NextId++, Kind = kind, Target = target, Faction = f, Deadline = deadline, Reward = reward, Text = text };
+        Contract Make(string kind, int target, float reward, string text) => new() { Id = S.NextId++, Kind = kind, Target = target, Faction = f, Deadline = deadline, Reward = reward * FamePay, Text = text }; // L6: a famous company is paid more
         if (S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && FactionsAtWar(f, p.Faction)).OrderBy(p => Vector2.Distance(p.Pos, s.Pos)).FirstOrDefault() is Party lord)
             s.Offers.Add(Make("hunt", lord.Id, 300 + Rules.Strength(lord), $"Defeat {lord.Name} in the field."));
         if (S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down).OrderBy(p => Vector2.Distance(p.Pos, s.Pos)).FirstOrDefault() is Party band)

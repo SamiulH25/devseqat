@@ -280,6 +280,9 @@ public partial class Battle
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 7)]++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;
         if (killer.Team != t.Team) { killer.Kills++; if (t.IsLeader || t.Hero) killer.FelledLeader = true; }
+        // Your named men are heard (L8): a veteran down, a veteran's fifth man.
+        if (t.SoldierId != 0 && t.Team == 0) { Log($"{NameOf(t)} is down!"); Downed.Add(t); }
+        if (killer.SoldierId != 0 && killer.Team == 0 && killer.Kills == 5) Log($"{NameOf(killer)} has felled five!");
         foreach (var u in t.IsLeader ? Units.ToArray() : Near(t.Pos, 10, nearKill).ToArray()) // a leader's fall is felt across the field
         {
             if (!u.Active) continue;

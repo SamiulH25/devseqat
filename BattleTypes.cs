@@ -92,7 +92,7 @@ public sealed record CompanyResult(int Team, int Id, int Start, int Standing, in
 /// What one named man did in a fought battle (docs/LEGACY.md L2): his kills, and whether he fell or fled. Null on a
 /// CompanyResult when the battle was not fought (auto-resolve): then named men share their stack's odds instead.
 /// BestKills/BestTroop on the CompanyResult are the company's best unnamed man, who may earn a name.
-public sealed record NamedResult(int Id, int Kills, bool Fell, bool Fled, bool FelledLeader);
+public sealed record NamedResult(int Id, int Kills, bool Fell, bool Fled, bool FelledLeader, bool Saved = false);
 
 /// One troop type's part of a company's battle.
 public sealed record StackResult(string Troop, int Start, int Standing, int Fled, int Fallen);
@@ -106,4 +106,6 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     /// The battle's personal goals (P6, `Battle.GoalKinds` ids) and those met.
     public IReadOnlyList<string> Goals { get; init; } = Array.Empty<string>();
     public IReadOnlyList<string> GoalsMet { get; init; } = Array.Empty<string>();
+    /// Each goal's text as shown (a goal about a named man carries his name), in the order of Goals.
+    public IReadOnlyList<string> GoalTexts { get; init; } = Array.Empty<string>();
 }

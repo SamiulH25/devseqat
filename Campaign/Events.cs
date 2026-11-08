@@ -23,7 +23,7 @@ public sealed class ChoiceDef
 public sealed class PendingEvent
 {
     public string Id = "";
-    public int Settlement = -1, Lord = -1, Party = -1, Company = -1, Grave = -1, Site = -1;
+    public int Settlement = -1, Lord = -1, Party = -1, Company = -1, Grave = -1, Site = -1, Soldier = -1;
 }
 
 /// Events, lord quests and named threats (step F8).
@@ -38,12 +38,12 @@ public sealed partial class Campaign
         "fief_unrest", "fief_poor", "fief_rich", "lord_friend", "lord_hates_liege", "big_band", "veterans", "hungry_winter",
         "unpaid", "prisoners", "war_weary", "in_town", "brigand_king", "pretender", "graves",
         "peace_offer", "site_ruin", "site_shrine", "site_stones", "site_battlefield", "site_mine", "site_hermit", "site_watchtower", "site_spring", "site_mill",
-        "start", "crown", "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night",
+        "start", "crown", "fallen", "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night",
     };
     /// Days after a "flag:name" effect before the "flag:name" event follows.
     public const int FlagDays = 7;
     /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
-    internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" or "start" or "crown" || trigger.StartsWith("site_");
+    internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" or "start" or "crown" or "fallen" || trigger.StartsWith("site_");
     static readonly string[] Verbs =
     {
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
@@ -51,7 +51,7 @@ public sealed partial class Campaign
         "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown",
     };
     static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
-    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion" };
+    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man" };
 
     static List<EventDef>? events;
     public static IReadOnlyList<EventDef> Events
@@ -208,7 +208,8 @@ public sealed partial class Campaign
             .Replace("{realm}", realm)
             .Replace("{liege}", RulerOf(Captain.Contract)?.Name ?? "your liege")
             .Replace("{site}", SiteById(pe.Site)?.Name ?? "the place")
-            .Replace("{companion}", CharacterById(pe.Lord)?.Name ?? "your companion");
+            .Replace("{companion}", CharacterById(pe.Lord)?.Name ?? "your companion")
+            .Replace("{man}", S.Fallen.FirstOrDefault(m => m.Id == pe.Soldier)?.Name ?? "one of your men");
     }
 
     /// Why a choice cannot be taken now ("" = it can).

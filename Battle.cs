@@ -236,7 +236,7 @@ public sealed partial class Battle
         }
         // Named men (docs/LEGACY.md L2) are the first men of their troop, so they stand in its front rank.
         foreach (var m in company?.Named ?? Array.Empty<NamedSpec>())
-            if (s.Units.FirstOrDefault(x => x.SoldierId == 0 && x.Type.Id == m.Troop) is Unit nu) nu.SoldierId = m.Id;
+            if (s.Units.FirstOrDefault(x => x.SoldierId == 0 && x.Type.Id == m.Troop) is Unit nu) { nu.SoldierId = m.Id; anyNamed = true; }
         // A companion fights at the head of his company as a hero (CAMPAIGN_OVERHAUL.md 3.3): the captain's kit, the AI's hands.
         if (company is { Hero.Length: > 0 })
         {
@@ -321,6 +321,7 @@ public sealed partial class Battle
         Mark(7);
         UpdateMorale(dt);
         UpdateBanner();
+        UpdateRescue(dt);
         Mark(8);
         CheckEnd();
         Mark(9);
@@ -452,7 +453,7 @@ public sealed partial class Battle
             var stacks = men.GroupBy(u => u.Type.Id).Select(g => new StackResult(g.Key, g.Count(),
                 Standing: g.Count(u => u.Active && !u.Routing), Fled: g.Count(u => u.Fled || (u.Active && u.Routing)), Fallen: g.Count(u => u.Dead))).ToList();
             int fled = men.Count(u => u.Fled || (u.Active && u.Routing));
-            var named = men.Where(u => u.SoldierId != 0).Select(u => new NamedResult(u.SoldierId, u.Kills, u.Dead, u.Fled || (u.Active && u.Routing), u.FelledLeader)).ToList();
+            var named = men.Where(u => u.SoldierId != 0).Select(u => new NamedResult(u.SoldierId, u.Kills, u.Dead, u.Fled || (u.Active && u.Routing), u.FelledLeader, u.Saved)).ToList();
             var best = men.Where(u => u.SoldierId == 0).MaxBy(u => u.Kills);
             list.Add(new CompanyResult(s.Team, s.Company!.Id, s.StartCount,
                 Standing: men.Count(u => u.Active && !u.Routing),
@@ -472,7 +473,7 @@ public sealed partial class Battle
         int horses = LooseHorses.Count(h => h.Team == 1);
         return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills, SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes)
         {
-            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(),
+            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(), GoalTexts = Goals.Select(GoalText).ToList(),
         };
     }
 

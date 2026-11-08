@@ -10,7 +10,18 @@ public sealed partial class Campaign
     readonly List<(string Kind, string Text)> rollNews = new();
 
     List<(string, string)> RollNewsOrdered() =>
-        rollNews.OrderBy(n => n.Kind switch { "FELL" => 0, "MISSING" => 1, "HURT" => 2, _ => 3 }).ToList();
+        rollNews.OrderBy(n => n.Kind switch { "FELL" => 0, "MISSING" => 1, "LOST" => 2, "HONOUR" => 3, "HURT" => 4, _ => 5 }).ToList();
+    /// The named men who fell in the battle being applied (company id, soldier id), for the burial (L3).
+    readonly List<(int Company, int Soldier)> rollFell = new();
+
+    /// After a battle you won where named men fell: a burial for the longest-serving of them, if nothing else is waiting.
+    void RaiseBurial()
+    {
+        if (S.Event != null || rollFell.Count == 0 || Events.All(e => e.Id != "bury_named")) return;
+        var (co, id) = rollFell.OrderByDescending(f => S.Fallen.FirstOrDefault(m => m.Id == f.Soldier)?.Battles ?? 0).First();
+        if (Player.Companies.All(c => c.Id != co)) return;
+        Raise(new PendingEvent { Id = "bury_named", Company = co, Soldier = id });
+    }
 
     static string Known(Soldier m) => m.Deeds.Count > 0 ? " " + m.Deeds[^1] : "";
     Rng RollRng => rollRng ??= new Rng(S, true);
@@ -70,6 +81,7 @@ public sealed partial class Campaign
         {
             // Losing a man the company knew costs it (L3); a long-serving man is remembered in the chronicle.
             c.Cohesion = MathF.Max(0, c.Cohesion - B.FallenCohesion);
+            if (fate == "fell") rollFell.Add((c.Id, m.Id));
             rollNews.Add((fate == "fell" ? "FELL" : "MISSING", $"{m.Name}, {Troops.Get(m.Troop).Name}, {c.Name}. {N(m.Battles, "battle")}, {N(m.Kills, "kill")}.{Known(m)}"));
             if (fate == "fell" && m.Battles >= 10) Deed($"{m.Name} of {c.Name} fell against {(where != "" ? where : "the enemy")}, after {m.Battles} battles.");
         }
@@ -111,7 +123,8 @@ public sealed partial class Campaign
             m.Kills += nr.Kills;
             if (nr.FelledLeader) m.Deed($"Cut down a captain{against}.");
             else if (nr.Kills >= 5) m.Deed($"Killed {nr.Kills}{against}.");
-            if (nr.Fell)
+            if (nr.Fell && nr.Saved) { m.Deed($"Pulled from the press by the captain{against}."); Hurt(c, m); }
+            else if (nr.Fell)
             {
                 if (RollRng.Float() >= 1 - (1 - pw) * B.VeteranSurvival) Lose(c, m, "fell", foe);
                 else if (!won && RollRng.Chance(B.CaptureChance * B.VeteranSurvival)) Lose(c, m, "missing", foe);

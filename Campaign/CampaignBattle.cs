@@ -21,6 +21,12 @@ public partial class Campaign
         float loot = 0, ransom = 0;
         var reports = new List<CompanyReport>();
         rollNews.Clear();
+        rollFell.Clear();
+        // L5: the battle's name, and whether a win here is worth a battle honour (outnumbered, their captain slain, a wall taken).
+        string field = playerIn ? BattleName(Player.Pos, siegeBattle) : "";
+        float mine = playerTeam == 0 ? startStrength0 : startStrength1, theirs = playerTeam == 0 ? startStrength1 : startStrength0;
+        bool notable = playerIn && won && (theirs >= 1.5f * MathF.Max(1, mine) || r.EnemyLeader == LeaderFate.Slain || siegeBattle);
+        int foeFaction = (playerTeam == 0 ? side1 : side0).Select(SideOf).FirstOrDefault(f => f >= 0, -1);
 
         foreach (var cr in r.Companies)
         {
@@ -75,7 +81,8 @@ public partial class Campaign
             c.Cohesion = Math.Clamp(c.Cohesion + (teamWon ? 5 : -5) - lostFrac * 10, 0, 30);
             if (cr.Deployed) OfficerAfterBattle(c, teamWon, lostFrac, foe);
             if (cr.HeroFell && p == Player) HeroFell(c, foe);
-            Chronicle(c, cr, teamWon, menBefore - c.Men, foe, siegeBattle, p);
+            Chronicle(c, cr, teamWon, menBefore - c.Men, foe, siegeBattle, p, field);
+            if (p == Player) BannerAfterBattle(c, cr, teamWon, notable, field, foeFaction);
             if (playerIn) reports.Add(new CompanyReport(c.Id, c.Name, c.Troop, team == playerTeam ? 0 : 1, menBefore, c.Men, killedAll, woundedAll, capturedAll,
                 fledLostAll, xpPerMan, Rules.UpgradeReady(c), cr.Deployed));
             c.Prune();
@@ -187,8 +194,9 @@ public partial class Campaign
         }
         string spoil = won ? BattleSpoil(losers, r) : "";
         Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting,
-            Goals = r.Goals.Select(id => (Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
+            Goals = r.Goals.Select((id, i) => (i < r.GoalTexts.Count ? r.GoalTexts[i] : Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
             Roll = RollNewsOrdered() };
+        if (won) RaiseBurial();
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
         return Report;
     }

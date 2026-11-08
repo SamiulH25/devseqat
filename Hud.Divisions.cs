@@ -157,6 +157,22 @@ sealed partial class Hud
             if ((!Command && d < 10 || hover) && u.Squad?.Company?.Named?.FirstOrDefault(m => m.Id == u.SoldierId) is NamedSpec m)
                 TextC(m.Name.ToUpperInvariant(), x, y - 4 * s - U(10), u.Routing ? Dim : Gold, 1);
         }
+        // Fallen named men you can still get out (L8): a red mark, and close by, what to do and how far along you are.
+        foreach (var u in B.Downed)
+        {
+            if (!B.Rescuable(u)) continue;
+            float d = Vector2.Distance(u.Pos, B.Player.Pos);
+            if (!Command && d > 25) continue;
+            var v = vp.Project(new Vector3(u.Pos.X, B.Terrain.Height(u.Pos) + 0.8f, u.Pos.Y), Proj, View, Matrix.Identity);
+            if (v.Z is <= 0 or >= 1) continue;
+            int x = (int)v.X, y = (int)v.Y, s = Command ? U(1) : Math.Clamp((int)(U(1) * 20 / MathF.Max(6, d)), 1, U(2));
+            Rect(new Rectangle(x - s, y - 4 * s, 2 * s, 2 * s), Foe);
+            if (d < 8 && !Command)
+            {
+                TextC($"{Battle.NameOf(u).ToUpperInvariant()} IS DOWN: STAND OVER HIM", x, y - 4 * s - U(10), Foe, 1);
+                if (u.Rescue > 0) Bar(new Rectangle(x - U(20), y - 4 * s - U(18), U(40), U(3)), u.Rescue / Battle.RescueTime, Gold);
+            }
+        }
     }
 
     /// Your banner (P6): a tall gold pennant over its bearer, or a fallen grey one on the ground where it lies.

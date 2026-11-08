@@ -42,11 +42,12 @@ partial class MapScreen
     void RealmPanel()
     {
         var r = Modal(1060, 620, "THE REALMS");
-        var tabs = new[] { "THE REALMS", "YOUR CAREER" };
-        int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(24), ui.U(260), ui.U(22)), tabs, realmTab);
+        var tabs = new[] { "THE REALMS", "YOUR CAREER", "THE LEGEND" };
+        int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(24), ui.U(390), ui.U(22)), tabs, realmTab);
         if (pick >= 0) { realmTab = pick; note = ""; }
         var body = new Rectangle(r.X + ui.U(20), r.Y + ui.U(56), r.Width - ui.U(40), r.Height - ui.U(122));
         if (realmTab == 0) Realms(body);
+        else if (realmTab == 2) Legend(body);
         else
         {
             var rank = C.Rank;
@@ -62,6 +63,45 @@ partial class MapScreen
         }
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: "R")) panel = PanelKind.None;
+    }
+
+    /// THE LEGEND (docs/LEGACY.md L5-L7): each company's fame and battle honours, the honours realms have taken, the dead
+    /// it remembers, and the two ways to end the story once a company is legend enough.
+    void Legend(Rectangle a)
+    {
+        int x = a.X + ui.U(4), w = a.Width - ui.U(8), y = a.Y;
+        int fit = Math.Max(20, w / (6 * ui.S));
+        string Cut(string s) => s.Length > fit ? s[..fit] : s;
+        ui.Text($"YOUR FAME: {C.Fame} ({Campaign.FameWord(C.Fame)})", x, y, Kit.Gilt, 2);
+        y += ui.U(18);
+        ui.Text(Cut($"CONTRACTS PAY +{(C.FamePay - 1) * 100:0}%. LORDS THINK +{C.FameRegard:0} BETTER OF YOU. MORE MEN FOLLOW YOU, AND YOUR OWN PEOPLE COME KNOWING THE WORK."), x, y, Style.Dim, 1);
+        y += ui.U(18);
+        foreach (var c in C.Player.Companies.OrderByDescending(Campaign.CompanyFame))
+        {
+            if (y > a.Bottom - ui.U(130)) break;
+            var row = new Rectangle(x - ui.U(4), y - ui.U(3), w + ui.U(8), ui.U(30));
+            ui.Rect(row, Color.White * 0.04f);
+            ui.Text(c.Name.ToUpperInvariant(), x, y, Style.Text, 1);
+            ui.TextR($"{Campaign.N(c.Battles, "BATTLE")}, FAME {Campaign.CompanyFame(c)} ({Campaign.FameWord(Campaign.CompanyFame(c))})", x + w, y, Style.Dim, 1);
+            string hon = c.BattleHonours.Count > 0 ? "HONOURS: " + string.Join(", ", c.BattleHonours).ToUpperInvariant() : "NO BATTLE HONOURS YET. WIN OUTNUMBERED, SLAY THEIR CAPTAIN OR TAKE A WALL.";
+            if (c.LostHonours.Count > 0) hon += ". TAKEN: " + string.Join(", ", c.LostHonours.Select(l => $"{l.Name} BY THE {C.FactionNames[l.Faction]}")).ToUpperInvariant();
+            ui.Text(Cut(hon), x, y + ui.U(11), c.BattleHonours.Count > 0 ? Kit.Gilt : Style.Dim, 1);
+            y += ui.U(34);
+        }
+        y = Math.Max(y, a.Bottom - ui.U(122));
+        ui.Divider(x, y, w, Kit.Gilt * 0.5f);
+        y += ui.U(10);
+        var dead = C.S.Fallen.Where(m => m.Fate is "fell" or "missing").ToList();
+        ui.Text(Cut(dead.Count == 0 ? "NO NAMED MAN LOST YET." : $"{dead.Count} NAMED MEN LOST. " + string.Join(", ", dead.OrderByDescending(m => m.Battles).Take(6).Select(m => m.Name.ToUpperInvariant())) + "."), x, y, Style.Text, 1);
+        y += ui.U(16);
+        string? why = C.CannotRetire();
+        ui.Text(Cut(why == null ? $"{C.LegendCompany!.Name.ToUpperInvariant()} IS A LEGEND. YOU MAY END YOUR STORY." : $"TO END YOUR STORY: {why}."), x, y, why == null ? Kit.Gilt : Style.Dim, 1);
+        y += ui.U(16);
+        var heir = C.Successor;
+        if (ui.Button(new Rectangle(x, y, ui.U(220), ui.U(26)), "RETIRE ON THE LEGEND", why == null)) { note = C.Retire() ?? ""; if (C.S.GameOver) panel = PanelKind.GameOver; }
+        if (ui.Button(new Rectangle(x + ui.U(230), y, ui.U(280), ui.U(26)), heir != null ? $"HAND OVER TO {heir.Name.ToUpperInvariant()}" : "HAND OVER (NO COMPANION)", why == null && heir != null)) note = C.HandOver() ?? "";
+        if (ui.Hover(new Rectangle(x, y, ui.U(510), ui.U(26))))
+            note = "RETIRE ENDS THE CAMPAIGN AS A WIN AND TELLS THE COMPANY'S STORY. HANDING OVER GIVES THE COMPANY TO A COMPANION (ONE WHO ROSE FROM ITS RANKS FIRST): YOU PLAY ON AS HIM, WITH HALF YOUR RENOWN.";
     }
 
     /// Every living realm as a card, then the relations between them and the chronicle of the war.

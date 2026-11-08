@@ -138,7 +138,15 @@ partial class MapScreen
         string Cut(string s, int n) => s.Length > n ? s[..n] : s;
         string record = $"{Campaign.N(c.Battles, "BATTLE")}, {Campaign.N(c.Kills, "KILL")}.";
         ui.Text(c.Home != "" ? $"RAISED IN {c.Home.ToUpperInvariant()}. {record}" : record, x, y, Style.Dim, 1);
-        y += ui.U(14);
+        ui.TextR($"FAME {Campaign.CompanyFame(c)}: {Campaign.FameWord(Campaign.CompanyFame(c))}", x + w, y, Kit.Gilt, 1);
+        y += ui.U(11);
+        if (c.BattleHonours.Count > 0 || c.LostHonours.Count > 0)
+        {
+            string hon = "BATTLE HONOURS: " + (c.BattleHonours.Count > 0 ? string.Join(", ", c.BattleHonours) : "NONE") + (c.LostHonours.Count > 0 ? ". TAKEN: " + string.Join(", ", c.LostHonours.Select(l => l.Name)) : "");
+            ui.Text(Cut(hon.ToUpperInvariant(), fit), x, y, Kit.Gilt, 1);
+            y += ui.U(11);
+        }
+        y += ui.U(3);
         ui.Text("THE ROLL", x, y, Kit.Gilt, 2);
         ui.TextR($"{c.Roll.Count} OF {Balance.Get().RollSize} NAMED", x + w, y + ui.U(4), Style.Dim, 1);
         y += ui.U(20);

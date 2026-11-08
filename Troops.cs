@@ -132,7 +132,8 @@ public static class Troops
 public sealed record NamedSpec(int Id, string Troop, string Name);
 
 public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,
-    StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "", int Division = -1, NamedSpec[]? Named = null)
+    StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "", int Division = -1, NamedSpec[]? Named = null,
+    int Streamers = 0, bool Fringe = false)
 {
     public bool Has(string trait) => Traits?.Contains(trait) == true;
     /// The men to spawn, largest stack first (so a squad's first man is its majority troop).

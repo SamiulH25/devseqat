@@ -92,6 +92,7 @@ public sealed partial class Campaign
         {
             string culture = from.Culture;
             if (c.Culture == "") { c.Culture = culture; c.Home = from.Name; }
+            else if (c.Culture == culture && Player.Companies.Contains(c)) c.Stack(troop).AddXp(FameXp(c) * n); // L6: they come knowing its name
             else if (c.Culture != culture) c.Cohesion = MathF.Max(0, c.Cohesion - 5);
         }
     }
@@ -323,10 +324,10 @@ public sealed partial class Campaign
     // ---------- after a battle ----------
 
     /// The company's history after a battle: ledger, honour counters, new honours.
-    void Chronicle(CompanyRecord c, CompanyResult cr, bool won, int lost, string foe, bool siege, Party owner)
+    void Chronicle(CompanyRecord c, CompanyResult cr, bool won, int lost, string foe, bool siege, Party owner, string field = "")
     {
         if (!cr.Deployed) return;
-        c.Ledger.Add(new LedgerEntry { Day = Day, Foe = foe, Lost = lost, Kills = cr.Kills, Won = won });
+        c.Ledger.Add(new LedgerEntry { Day = Day, Foe = foe, Lost = lost, Kills = cr.Kills, Won = won, Name = field });
         if (c.Ledger.Count > CompanyRecord.LedgerSize) c.Ledger.RemoveAt(0);
         c.HorseKills += cr.HorseKills;
         if (siege && owner == Player) c.Assaults++;

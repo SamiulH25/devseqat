@@ -1206,6 +1206,38 @@ public static partial class SelfTest
         Check(lost > 0, "auto-resolving a lost fight costs named men too");
     }
 
+    /// Fighting for your men (docs/LEGACY.md L8): a fallen named man you stand over is got out (saved), which the result
+    /// carries; the "bring him home" goal names him and is lost if he dies; your named men are heard in the log.
+    static void PullBack()
+    {
+        var spec = new Company("shieldmen", 10, "infantry", 7, "Test Guard", Named: new[] { new NamedSpec(5, "shieldmen", "Hob the Red") });
+        var b = new Battle(5, new ArmySpec("mine", 0, new List<Company> { spec }), new ArmySpec("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9) }),
+            new BattleOptions { Goals = true });
+        var hob = b.Units.First(u => u.SoldierId == 5);
+        Check(Battle.NameOf(hob) == "Hob the Red", "a named man is known by name in the battle");
+        b.Ward = hob;
+        var goal = Battle.GoalKinds.First(g => g.Id == "bringhome");
+        Check(b.GoalText(goal) == "BRING HOB THE RED HOME", "the goal names him");
+        // He falls; you stand over him.
+        b.KillForTest(hob, b.SquadsOf(1).First().Units[0]);
+        Check(b.Events.Any(e => e.Text.Contains("Hob the Red is down")), "his fall is heard");
+        Check(b.Rescuable(hob), "he can still be got out");
+        b.Player.Pos = hob.Pos + new Vector2(1, 0);
+        b.Player.Fled = false;
+        for (int i = 0; i < 60 * 3 && !hob.Saved && b.Winner < 0; i++) { b.Player.Pos = hob.Pos + new Vector2(1, 0); b.Update(1 / 60f); }
+        Check(hob.Saved && !b.Rescuable(hob), "standing over him gets him out");
+        Check(b.Result().Companies.First(r => r.Id == 7).Named!.First(n => n.Id == 5) is { Fell: true, Saved: true }, "the result says he fell but was saved");
+        Check(b.GoalState(goal) >= 0, "and the goal is not lost");
+        // A second battle: he dies and nobody comes.
+        var b2 = new Battle(6, new ArmySpec("mine", 0, new List<Company> { spec }), new ArmySpec("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9) }), new BattleOptions());
+        var hob2 = b2.Units.First(u => u.SoldierId == 5);
+        b2.Ward = hob2;
+        b2.KillForTest(hob2, b2.SquadsOf(1).First().Units[0]);
+        b2.Player.Pos = hob2.Pos + new Vector2(30, 0);
+        for (int i = 0; i < 60 * 65 && b2.Winner < 0; i++) b2.Update(1 / 60f);
+        Check(!hob2.Saved && b2.GoalState(goal) == -1, "left where he fell, he is lost, and the goal with him");
+    }
+
     /// A recorded battle with player orders and input, saved to JSON and played back, ends exactly the same.
     static void ReplayExact()
     {

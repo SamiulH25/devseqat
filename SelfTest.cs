@@ -73,6 +73,10 @@ public static partial class SelfTest
         RollEarnsNames();
         FallenRemembered();
         RisesFromRanks();
+        BannerHonours();
+        FameDraws();
+        RetireAndSucceed();
+        BuryNamed();
         Cultures();
         Characters();
         CampaignDivisions();
@@ -98,6 +102,7 @@ public static partial class SelfTest
         StackBattle();
         NamedMenFight();
         AutoResolveNamedMen();
+        PullBack();
         ReplayExact();
         ScaleBattle();
         DivisionGoals();

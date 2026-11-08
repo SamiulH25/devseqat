@@ -119,6 +119,9 @@ public sealed class Unit
     /// Enemies he has killed this battle, and whether one was a captain or a hero.
     public int Kills;
     public bool FelledLeader;
+    /// A fallen named man you stood over (L8): seconds so far, and whether you got him out (wounded, not dead).
+    public float Rescue;
+    public bool Saved;
     public Vector2 Pos, Vel, Wish, Slot;
     public float Facing, ViewFacing; // radians on the ground plane; ViewFacing is the eased value the renderer draws
     public float Hp, Morale = 70, Stamina = 100, EnemyDist = float.MaxValue;

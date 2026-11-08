@@ -158,7 +158,7 @@ partial class MapScreen
     /// Ironman: the captain was taken and executed. The campaign (and its save) ends here.
     void GameOverPanel()
     {
-        var r = Modal(620, 330, "YOUR WAR IS OVER", Style.Bad);
+        var r = Modal(760, 420, C.S.Retired ? "THE COMPANY'S LEGEND" : "YOUR WAR IS OVER", C.S.Retired ? Kit.Gilt : Style.Bad);
         ui.TextC(C.S.EndReason != "" ? C.S.EndReason : "THE ENEMY DID NOT RANSOM YOU.", r.X + r.Width / 2f, r.Y + ui.U(66), Style.Warn, 1);
         int y = r.Y + ui.U(96);
         foreach (var line in C.Summary()) { ui.TextC(line, r.X + r.Width / 2f, y, Style.Text, 1); y += ui.U(18); }

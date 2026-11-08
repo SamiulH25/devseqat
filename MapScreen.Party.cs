@@ -70,10 +70,11 @@ partial class MapScreen
         var parts = new List<string>();
         parts.Add(c.Home != "" ? $"RAISED IN {c.Home.ToUpperInvariant()} ({c.Culture.ToUpperInvariant()})" : "NO HOME");
         parts.Add($"{c.Battles} BATTLES, {c.Kills} KILLS");
+        if (c.BattleHonours.Count > 0) parts.Add("BATTLE HONOURS: " + string.Join(", ", c.BattleHonours).ToUpperInvariant());
         if (c.Honours.Count > 0) parts.Add("HONOURS: " + string.Join(", ", c.Honours.Select(h => Honours.Get(h) is HonourDef d ? $"{d.Name.ToUpperInvariant()} ({d.Text.ToUpperInvariant()})" : h)));
         if (c.Traits.Count > 0) parts.Add($"{c.Officer.ToUpperInvariant()}: " + string.Join(", ", c.Traits.Select(t => t.ToUpperInvariant())));
         if (c.Hero != "") parts.Add($"LED BY {c.Hero.ToUpperInvariant()}");
-        if (c.Ledger.Count > 0) parts.Add("LAST: " + string.Join("; ", c.Ledger.TakeLast(3).Reverse().Select(l => $"DAY {l.Day} {(l.Won ? "WON" : "LOST")} VS {l.Foe.ToUpperInvariant()}, {l.Kills} KILLS, {l.Lost} LOST")));
+        if (c.Ledger.Count > 0) parts.Add("LAST: " + string.Join("; ", c.Ledger.TakeLast(3).Reverse().Select(l => $"DAY {l.Day} {(l.Won ? "WON" : "LOST")}{(l.Name != "" ? $" AT {l.Name.ToUpperInvariant()}" : "")} VS {l.Foe.ToUpperInvariant()}, {l.Kills} KILLS, {l.Lost} LOST")));
         return string.Join(". ", parts);
     }
 
