@@ -53,12 +53,18 @@ Section 12 sequences the work; section 13 lists the decisions still open.
   marches lies between them. Bandit camps spawn in wild provinces.
 - **Generated from a seed**, like battle terrain: the same seed always gives the same map (useful for saves and bug reports).
   A hand-authored map can replace it later without code changes (it is data).
-- **Size.** The provinces span +-`WorldMap.Extent` (392 units, ~590 km across); the rendered ground reaches +-`GroundHalf`, the
+- **Size.** The provinces span +-`WorldMap.Extent` (620 units, ~930 km across, about 115 provinces; maps from before
+  docs/WORLD.md W2 keep 392); the rendered ground reaches +-`GroundHalf`, the
   difference being a rim of mountains that closes the world in. The ground is drawn on a 4 m grid (`WorldMap.Step`), which is
   coarser than a battlefield's 2.5 m because it covers a much larger area; the mesh uses 32-bit indices past 65k vertices.
   A save records the extent it was made with (`CampaignState.MapExtent`), so campaigns started on the original small map keep
   that geography after the map was enlarged.
-- **Scale factors.** `WorldMap.ProvinceScale` (provinces / the original 26) scales how many parties the world raises;
+- **Climates and ridges (layout 2, docs/WORLD.md W2).** Province kinds follow climate bands: forest and hills in the north,
+  Steppe in the east, Badlands in the south, Marsh (fens) in the south-west, highlands in the middle. Two to five mountain
+  ridges cross the land (`WorldMap.Ridges`): slow going (x0.45) and Hills battlefields, except at the passes where roads cross.
+  Four rivers instead of two.
+- **Scale factors.** `WorldMap.PartyScale` scales how many parties the world raises: provinces / the original 26 up to the
+  392 map, then land area beyond it (so a bigger map stays as crowded per league). `WorldMap.ProvinceScale` (provinces / 26) remains for the rest;
   `WorldMap.Spread` (spacing / the original) scales distances that mean "nearby" — a lord's patrol goal, a siege's muster
   radius, a contract's "at the village" check — so a bigger map does not mean longer rides to everything.
 

@@ -237,7 +237,11 @@ public sealed class Province
     public int Id, Faction;
     public string Name = "", Kind = "Meadow";
     /// The province as the land knows it: "the Greywater Hills", "Oakhollow Forest" (S1).
-    [JsonIgnore] public string Title => Kind switch { "Hills" => $"the {Name} Hills", "Forest" => $"{Name} Forest", "Farmland" => $"the {Name} Fields", _ => $"the Vale of {Name}" };
+    [JsonIgnore] public string Title => Kind switch
+    {
+        "Hills" => $"the {Name} Hills", "Forest" => $"{Name} Forest", "Farmland" => $"the {Name} Fields",
+        "Marsh" => $"the {Name} Fens", "Steppe" => $"the {Name} Steppe", "Badlands" => $"the {Name} Wastes", _ => $"the Vale of {Name}",
+    };
     public Vector2 Center;
     public List<int> Neighbors = new();
 }
@@ -354,7 +358,7 @@ public sealed class CampaignState
     public const string TooOld = "this save is from before the campaign overhaul and cannot be loaded";
     public int Version = CurrentVersion, Seed, NextId = 1, UnpaidWeeks;
     /// How far the provinces of this save's map reach (WorldMap.Extent for new campaigns; older saves have their own).
-    public float MapExtent = WorldMap.Extent;
+    public float MapExtent = WorldMap.PreviousExtent;
     /// How the map lays out its realms (WorldMap.Layout): saves from before docs/WORLD.md W1 have none and keep the old bands.
     public int Layout = WorldMap.LegacyLayout;
     /// How many realms Data/factions.json held when the campaign began (older saves: three). Realms past it are founded in play.

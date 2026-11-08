@@ -35,7 +35,7 @@ dotnet run -c Release -- --pacing 8                      # stand-in captain only
 dotnet run -- --replay [file]                            # replay replays/last-battle.json, check same outcome
 dotnet run -- --write-controls                           # write default controls.json
 dotnet run -c Release -- --bench 1500                    # headless 1500-a-side battle: ms per tick by stage (3000 men ~3.6 ms)
-dotnet run -c Release -- --campaign-bench 30             # headless campaign for N days: ms a day by tick stage (~45 ms on the 60-province map)
+dotnet run -c Release -- --campaign-bench 30             # headless campaign for N days: ms a day by tick stage (~76 ms on the 115-province map)
 ```
 
 Rendering without a display (works in the cloud container, software GL via Mesa llvmpipe):
@@ -207,7 +207,9 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 - Ground positions are `Vector2(X = world X, Y = world Z)`; height comes from `Terrain.Height(pos)`.
 - Faction ids index `CampaignState.Factions`; realms founded in play (F5) carry `FactionState.Founded` (ids past the save's
   `DataRealms`; never test `id >= Factions.All.Count`, the data may have grown since the save). A map's realm layout comes from
-  `CampaignState.Layout` (0 = the old fixed bands, kept for old saves; 1 = realms grow from `home` in `factions.json`). Use the instance
+  `CampaignState.Layout` (0 = the old fixed bands, kept for old saves; 1 = realms grow from `home` in `factions.json`;
+  2 = also climates, ridges, four rivers on the 620 map). A seed's map must never change for an existing layout: put new
+  generation behind a new layout number. Party counts scale with `WorldMap.PartyScale` (land area past the 392 map). Use the instance
   `campaign.FactionNames[f]` (not a static list) and `Factions.Get(f)`, which sees founded realms once `Factions.Bind` ran (the `Campaign` constructor does it).
 - The career rank is derived (`Campaign.Rank`), never stored; `CaptainState.BestRank` only remembers which beats were shown.
 - Team 0 = player side, team 1 = enemy. Palette 3 = bandits (and, for now, monsters). `PartyKind.Caravan` parties (merchants,

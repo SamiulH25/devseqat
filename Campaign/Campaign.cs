@@ -26,7 +26,7 @@ public sealed partial class Campaign
     string[]? names;
     /// Party and event caps for the balance numbers scaled by how much world there is (a bigger map raises more lords and
     /// brigands). The numbers in Data/campaign.json are quoted against the original 26-province map.
-    float ProvinceScale => Map.ProvinceScale;
+    float ProvinceScale => Map.PartyScale;
     /// Lords spread thinner than brigands: a realm with four times the ground raises about twice the armies, not four
     /// times (village recruits are the bottleneck, and a crowd of lords starves all of them).
     /// LordsPerFaction is quoted for the three realms of the original map: more realms share the same land, so each raises

@@ -14,7 +14,8 @@ public partial class Campaign
     /// Goblin holdouts the world keeps: a share of its forest and hill provinces.
     public int HoldoutsWanted => Math.Max(1, (int)MathF.Round(S.Provinces.Count(Wild) * B.HoldoutsPerWildProvince));
     public IEnumerable<Party> Holdouts => S.Parties.Where(p => p.Lair && !p.Down);
-    static bool Wild(Province p) => p.Kind is "Forest" or "Hills";
+    /// Wild country, where goblins dig in and trolls roam: forest, hills, fens and badlands.
+    public static bool Wild(Province p) => p.Kind is "Forest" or "Hills" or "Marsh" or "Badlands";
 
     /// Wolf packs the world keeps: a share of its forest provinces.
     public int WolfPacksWanted => (int)MathF.Round(S.Provinces.Count(p => p.Kind == "Forest") * B.WolfPacksPerForest);
@@ -162,7 +163,9 @@ public partial class Campaign
             if (S.Hours >= lair.NextRaid && lair.Men >= Scaled(B.HoldoutRaidMen)) SendRaiders(lair);
         }
         if (WolfPacks.Count() < WolfPacksWanted && rng.Chance(B.WolfSpawnChance)) SpawnWolfPack();
-        if (Rares.Count() < RaresWanted && rng.Chance(B.RareSpawnChance)) SpawnTroll();
+        // Each missing troll has its own chance to wake: on the crowded big map they fall more often.
+        for (int missing = RaresWanted - Rares.Count(); missing > 0; missing--)
+            if (rng.Chance(B.RareSpawnChance)) SpawnTroll();
         GravesDaily();
         // A few tries a day on a big map, so cleared holdouts are replaced at about the same pace everywhere.
         for (int n = Math.Max(1, HoldoutsWanted / 6); n > 0; n--)

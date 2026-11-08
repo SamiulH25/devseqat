@@ -10,15 +10,17 @@ public static partial class SelfTest
         var legacy = WorldMap.Generate(11, WorldMap.LegacyExtent);
         var lm = legacy.BuildTerrain();
         Console.WriteLine($"legacy map: {lm.N} vertices, {lm.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine)} trees");
+        // Saves regenerate their map from the seed: the geography of a seed must never drift (names may). This is the map
+        // saves made before docs/WORLD.md W2 were played on.
+        var saved = WorldMap.Generate(11, WorldMap.PreviousExtent, WorldMap.LegacyLayout);
+        float geo = saved.Settlements.Sum(s => s.Pos.X * 3 + s.Pos.Y), river = saved.Rivers.Sum(r => r.Path.Sum(p => p.X));
+        Check(saved.Settlements.Count == 215 && MathF.Abs(geo + 3773.913f) < 0.5f && MathF.Abs(river + 18550.46f) < 0.5f,
+            $"seed 11 keeps its geography ({saved.Settlements.Count} places, {geo:0.000}, {river:0.000})");
         var m = WorldMap.Generate(11);
-        // Saves regenerate their map from the seed: the geography of a seed must never drift (names may).
-        float geo = m.Settlements.Sum(s => s.Pos.X * 3 + s.Pos.Y), river = m.Rivers.Sum(r => r.Path.Sum(p => p.X));
-        Check(m.Settlements.Count == 215 && MathF.Abs(geo + 3773.913f) < 0.5f && MathF.Abs(river + 18550.46f) < 0.5f,
-            $"seed 11 keeps its geography ({m.Settlements.Count} places, {geo:0.000}, {river:0.000})");
-        Check(m.Provinces.Count >= 50, $"a big map: enough provinces ({m.Provinces.Count})");
+        Check(m.Provinces.Count >= 100, $"a big map: enough provinces ({m.Provinces.Count})");
         Check(m.Provinces.Count is >= WorldMap.ProvinceCount - 8 and <= WorldMap.ProvinceCount + 8,
             $"about {WorldMap.ProvinceCount} provinces on the enlarged map ({m.Provinces.Count})");
-        Check(m.ExtentUsed >= WorldMap.Extent && m.Settlements.Max(s => MathF.Abs(s.Pos.X)) > WorldMap.LegacyExtent,
+        Check(m.ExtentUsed >= WorldMap.Extent && m.Settlements.Max(s => MathF.Abs(s.Pos.X)) > WorldMap.PreviousExtent,
             "the map is bigger than the old one, not just denser");
         for (int f = 0; f < 3; f++) Check(m.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town), $"faction {f} has towns");
         var seen = new HashSet<int> { 0 };
@@ -229,8 +231,8 @@ public static partial class SelfTest
         foreach (var p in c.S.Parties.Where(p => p != c.Player && Vector2.Distance(p.Pos, castle.Pos) < clear)) p.Pos += Vector2.Normalize(p.Pos - castle.Pos + new Vector2(0.01f, 0)) * clear;
         Check(c.CanBesiege(castle, out string why), "you can besiege an enemy castle: " + why);
         c.Besiege(castle);
-        for (int h = 0; h < 13 && c.Encounter == null; h++) c.Rest(1);
-        c.Encounter = null;
+        // Rest the whole night: a party passing the camp only interrupts it (more of them roam the bigger map).
+        for (double end = c.S.Hours + 13; c.S.Hours < end - 1e-3 && c.Besieging == castle;) { c.Rest(1); c.Encounter = null; c.Arrived = null; }
         Check(c.LaddersIn(castle) == 0 && c.Besieging == castle, "ladders are built overnight");
         c.Encounter = null;
         c.AutoResolveAssault(castle);

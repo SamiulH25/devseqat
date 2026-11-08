@@ -172,8 +172,8 @@ public partial class Campaign
         // A beaten lord may draw on the war chest, but only his share of it: half the chest is split between the realm's
         // lords, so a run of refits costs the realm at most half of what it holds and it can still raise new lords (600).
         int lordsOfFaction = Math.Max(1, S.Parties.Count(q => q.Kind == PartyKind.Lord && q.Faction == p.Faction));
-        float share = MathF.Min(250 * Map.ProvinceScale, fs.Treasury * 0.5f / lordsOfFaction);
-        float budget = Math.Clamp(share, 0, 250 * Map.ProvinceScale);
+        float share = MathF.Min(250 * Map.PartyScale, fs.Treasury * 0.5f / lordsOfFaction);
+        float budget = Math.Clamp(share, 0, 250 * Map.PartyScale);
         string levy = RecruitTroop(p.Faction);
         if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", Scaled(12), 0, home)); // the lord's household, raised again
         foreach (var v in S.Settlements.Where(v => v.Province == home.Province))

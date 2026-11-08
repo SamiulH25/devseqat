@@ -106,6 +106,18 @@ whole game hours (a meeting cut its ticks short on the new map).
 - Terrain build: the ground grows from ~50k to ~150k vertices. Check build time and frame time on Low/Medium/High,
   and cull trees by distance if needed (`World.cs`).
 
+**As built (W2).** `WorldMap.Extent` 620 (about 112-119 provinces); `CampaignState.MapExtent` defaults to 392 for saves
+without it, and `Layout` 2 turns on the rest (layouts 0-1 are unchanged). `WorldMap.Climate` picks province kinds by
+region with noisy edges; new kinds Marsh (speed 0.6, always a stream on the battlefield), Steppe (1.1, open), Badlands
+(0.85, tall knolls), each with `TerrainParams`, a tint, a tree count, site kinds and a title ("the X Fens/Steppe/Wastes");
+`Campaign.Wild` counts fens and badlands as wild. `RaiseRidges`: 2-3 wandering crests, kept 9.5 x span from settlements
+(they break where they cannot be), slopes 8 x span, passes wherever a road crosses (low, and the road's pace); stored as
+`River` records in `WorldMap.Ridges` with their own `MapIndex`. Ridge slopes are rock-tinted with pines. Four rivers.
+`WorldMap.PartyScale` follows land area past the 392 map (provinces spread out as the map grows, so parties counted by
+province grew sparse: the stand-in captain fought 8-10 battles in 120 days instead of 15-19). Bench: 76 ms a game day
+with ~300 parties. Lakes and route-finding through passes are not built (parties still walk straight, slowly over ridges).
+Tests: `ClimatesAndRidges`; the siege test rests the whole night (more parties pass the camp). Each missing troll now has its own daily chance to wake (big bandit bands kill them more often on the crowded map).
+
 ### W3: four new realms (first pass)
 - Add the four realms to `factions.json`, with names (`names.json` places and people per culture) and heraldry: four more
   palettes, plus new charges (`Emblem`: Cross, Pale, Fess, Quarterly) so seven realms tell apart even in colour-blind mode,
