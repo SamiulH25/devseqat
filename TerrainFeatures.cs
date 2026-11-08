@@ -98,6 +98,20 @@ public sealed partial class Terrain
         return Vector2.Zero;
     }
 
+    /// Is there a house (a big solid thing) at p? Trunks and boulders are left to steering.
+    public bool House(Vector2 p)
+    {
+        int bx = (int)((p.X + Half) / Cell), bz = (int)((p.Y + Half) / Cell);
+        for (int z = bz - 1; z <= bz + 1; z++)
+            for (int x = bx - 1; x <= bx + 1; x++)
+            {
+                if (x < 0 || z < 0 || x >= bucketSide || z >= bucketSide) continue;
+                foreach (int i in buckets[z * bucketSide + x])
+                    if (Foliage[i].Kind == FoliageKind.House && Vector2.Distance(Foliage[i].Pos, p) < Foliage[i].Radius + 0.6f) return true;
+            }
+        return false;
+    }
+
     /// Does a short step from a to b cross a feature? (Only the features near b are looked at.)
     public bool CrossesFeatureNear(Vector2 a, Vector2 b)
     {

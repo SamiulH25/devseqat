@@ -48,7 +48,7 @@ public sealed partial class Battle
     Vector2 Via(Unit u, Vector2 dest)
     {
         var w = Wall;
-        if (w == null) return dest;
+        if (w == null) return PathVia(u, dest); // a field: the company's route round water, hedges and houses (BattlePath.cs)
         bool inU = SiegeWall.Inside(u.Pos), inD = SiegeWall.Inside(dest);
         if (inU == inD) return dest;
         float best = float.MaxValue;

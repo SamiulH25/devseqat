@@ -87,7 +87,7 @@ Auto-resolve skips the battle: `Campaign.AutoResolveEncounter` -> `Rules.AutoRes
 ### Battle tick (`Battle.Update(dt)`, fixed 1/60 s in tests)
 ApplyDirects -> RecordFrame -> BuildGrid -> centroids -> `General(team)` every 0.5 s (enemy AI, and own side if AutoPlayer/AI squads) ->
 `UpdateDivisions` (couriers, arrived goals, `AiCommand`, each division's `Brain`) -> `UpdateSight` (every 0.5 s) ->
-Batter (siege gate) -> Reinforce (1 s) -> called horse, Resupply -> `UpdateSquad` each -> per unit: `UpdatePlayer` or `Think`
+Batter (siege gate) -> Reinforce (1 s) -> called horse, Resupply -> `UpdateSquad` each (and `UpdatePath`) -> per unit: `UpdatePlayer` or `Think`
 (`ThinkCav` for cavalry), `TickAction` (windup/strike/recover), `Tire` -> `Move` (steering, separation, terrain, wall) ->
 `Braces`, `Lances` -> `UpdateArrows` -> `UpdateMorale` -> `CheckEnd` (sets `Winner`).
 Files: tick/setup/result in `Battle.cs`; `Think`/`ThinkCav`/`General` in `BattleAI.cs`; `UpdatePlayer` in `BattlePlayer.cs`;
@@ -130,6 +130,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Personal goals in a battle (draw, live state, result) / your banner and the last stand | `BattleDeeds.cs` (`DrawGoals`, `GoalState`); HUD `Hud.GoalLines` / `BattleBanner.cs` (`UpdateBanner`, `LastStand`, `UpdateLastStand`) |
 | Spatial grid (`Near`, `Separate`) | `BattleGrid.cs` |
 | Sight: who has seen which company, crests and woods, ambushes (docs/TERRAIN.md T3) | `BattleSight.cs` (`UpdateSight`, `Visible`, `Sees`, `ClearLine`, `Ambush`); arrow cover `BattleCombat.Covered` |
+| Pathing: flow fields round water, hedges, houses (only when the straight way is barred) | `BattlePath.cs` (`UpdatePath`, `WayBlocked`, `PathVia`, `Flow`, `FlowField`); hooked in `BattleSiege.Via` |
 | Divisions: goals, order delay, sergeant brain, AI goals / couriers | `BattleDivision.cs` (`IssueGoal`, `OrderDelay`, `Direct`, `Brain`, `AiCommand`) / `BattleCourier.cs` |
 | Unit/troop types, look, mounts | `Units.cs`, `Troops.cs` (+ `Armies` presets, `Large`, `Divide`), `Data/troops.json` |
 | Battle inputs/outputs | `BattleTypes.cs` (`BattleOptions`, `Weather`, `BattleResult`, `CompanyResult`) |

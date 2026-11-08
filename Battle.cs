@@ -222,7 +222,7 @@ public sealed partial class Battle
     public Squad AddSquad(int team, UnitType type, int n, Vector2 anchor, int cols, Vector2 front, Company? company = null)
     {
         var s = new Squad(type.Name, team) { Anchor = anchor, Columns = cols, Front = front, StartCount = n, Cavalry = type.Mount != null && !Options.Siege, Company = company,
-            AiControlled = company?.Allied == true && team == 0, LastSeen = anchor };
+            AiControlled = company?.Allied == true && team == 0, LastSeen = anchor, PathTimer = Squads.Count % 8 * 0.06f }; // squads look for routes on different ticks
         // A mixed company spawns each stack in turn, largest first; a one-off squad is n men of `type`.
         var types = company?.Mix is { Length: > 1 } ? company.Stacks.SelectMany(x => Enumerable.Repeat(Troops.Get(x.Troop), x.Count)).Take(n).ToList() : null;
         for (int i = 0; i < n; i++)
@@ -359,6 +359,7 @@ public sealed partial class Battle
     {
         s.Pressure *= MathF.Exp(-0.6f * dt);
         s.Loosen = 1 + (1 - Terrain.GroundDefAt(s.Anchor).Order) * 0.5f; // bad ground opens the ranks (docs/TERRAIN.md T2)
+        UpdatePath(s, dt);
         if (s.Target is { Alive: 0 }) s.Target = null; // target broken: fall back to the nearest enemy
         if (s.Order == Order.Follow && Player.Active)
         {

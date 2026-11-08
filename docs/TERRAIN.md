@@ -404,3 +404,23 @@ T6 medium, T7 medium, T8 small.
   choices onto what it has seen. A faded look for last-known banners is left for T6 polish.
 - Test `SightAndCover`.
 
+
+### T4 (done): pathing
+- `BattlePath.cs`. Each company looks again every 0.5 s, staggered by squad (`UpdatePath`). Its goal is its anchor, or, on a charge,
+  its target's centre. It gets a route only when the straight way there is barred (`WayBlocked`): a hedge, fence or rail, deep
+  water, a house, or, for horse, thick wood. The way is tried from the company's centre and from four of its men, a different four
+  each time, so the route is kept until the last man is past. Four clear looks in a row drop it. On open ground nobody is pathed
+  and men steer straight as before.
+- A route is a `FlowField`: Dijkstra over the terrain's own 2.5 m cells (not 5 m: a hedge gap is 6 m), 8-way, no cutting
+  corners. Two classes: foot and horse. A cell's cost is 1 / speed from `ground.json`; water costs a further 2 to 10 times by
+  depth, so a ford 25 m away beats wading; hedge, fence and house cells are blocked. Fields are keyed by the goal's 5 m square
+  and kept in a 48-entry LRU (`FlowCached`). At most one new field is built a tick (a few ms each on the big field).
+- Men use it through `Via` (`PathVia`): more than 12 m from their slot or target they head 3 m along the field, otherwise
+  straight. The field never sends a man over the hedge he stands against (`CrossesFeatureNear`). `GoRound` stays as the close-in
+  fallback. The slot walk now normalises by the distance to the waypoint, not to the slot.
+- Found on the way: on the Village layout a lone archer company could stand forever, unable to see past the houses or with one man
+  still holding arrows. Archers who see no enemy now step forward. They charge once three in four are out of arrows, not all.
+- Bench (3,000 men, open field): 44 fields built in 60 s, mostly horse round thick wood; about 0.3 ms a tick more in all.
+- Not built: `Formation.Column` at gaps, routing along the flow (`RoutJamsBridge`), and the dotted preview path. They are left
+  for T6 (preview) and T8 (column, rout).
+- Tests `GoesToFord` (wading: 34 man-seconds in deep water straight over, 10 by the ford), `FilesThroughGap`, `FlowCacheBound`.

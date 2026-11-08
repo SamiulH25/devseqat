@@ -45,6 +45,9 @@ public static partial class SelfTest
         FatigueAndSupply();
         Generals();
         Rivers();
+        GoesToFord();
+        FilesThroughGap();
+        FlowCacheBound();
         GroundLayer();
         GroundMoves();
         GroundFights();

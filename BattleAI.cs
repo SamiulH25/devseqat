@@ -91,7 +91,7 @@ public partial class Battle
         if (toSlot > 0.4f)
         {
             var to = Via(u, u.Slot) - u.Pos;
-            u.Wish = to / toSlot * MathF.Min(u.Type.Speed, s.MarchSpeed) * MathF.Min(1, toSlot);
+            u.Wish = to / MathF.Max(0.01f, to.Length()) * MathF.Min(u.Type.Speed, s.MarchSpeed) * MathF.Min(1, toSlot);
             u.Face(to);
         }
         else u.Face(s.FaceAt(u.Slot));
@@ -273,15 +273,16 @@ public partial class Battle
         foreach (var s in Led(team, "casters").Where(s => s.Alive > 0)) { s.Front = dir; s.Anchor = front - dir * 15; s.Order = Order.Hold; } // a necromancer works from behind his dead
         // With no one left to hold a line, archers shoot what they carry and then go in: no trips back to the wagon.
         bool bowsAlone = !Units.Any(u => u.Team == team && u.Active && !u.Routing && u.Type.Ammo == 0);
+        bool seesFoe = Squads.Any(o => o.Team != team && o.Alive > 0 && Visible(o, team));
         foreach (var s in Led(team, "archers"))
         {
             if (s.Order == Order.Charge || s.Alive == 0) continue;
             if (!bowsAlone && ArcherSupply(s, team)) continue; // out of arrows: to the wagon
             s.Front = dir;
             float gap = GapTo(s, foe), range = s.Units[0].Type.Range;
-            if (gap > range - 4) s.Anchor = s.Centroid() + dir * 4;
+            if (gap > range - 4 || !seesFoe) s.Anchor = s.Centroid() + dir * 4; // close to bow range, or until they can see someone to shoot
             s.Target = SoftTarget(s, foe); // shoot the least armoured company in reach
-            if (gap < 7 || (s.Units.All(u => !u.Active || u.Ammo == 0) && (WagonStock[team] <= 0 || bowsAlone))) { s.Order = Order.Charge; s.Target = null; }
+            if (gap < 7 || (s.Units.Count(u => u.Active && u.Ammo > 0) * 4 <= s.Alive && (WagonStock[team] <= 0 || bowsAlone))) { s.Order = Order.Charge; s.Target = null; } // or three in four out of arrows
         }
         var horse = Led(team, "horse");
         if (!horseCharged[team])

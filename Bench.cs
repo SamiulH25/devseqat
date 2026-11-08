@@ -33,7 +33,7 @@ public static class Bench
         }
         ticks.Sort();
         double mean = ticks.Average();
-        Console.WriteLine($"bench: {on} men on the field, {ticks.Count} ticks ({b.Time:0}s), winner {b.Winner}, {b.Units.Count(u => u.Dead)} dead");
+        Console.WriteLine($"bench: {on} men on the field, {ticks.Count} ticks ({b.Time:0}s), winner {b.Winner}, {b.Units.Count(u => u.Dead)} dead; {b.Terrain.Layout} field, {b.FlowBuilds} paths built");
         Console.WriteLine($"  tick ms: mean {mean:0.00}, p95 {ticks[(int)(ticks.Count * 0.95)]:0.00}, max {ticks[^1]:0.00}");
         Console.WriteLine("  stages: " + string.Join(", ", Battle.Stages.Select((s, i) => $"{s} {profile[i] / ticks.Count:0.00}")));
     }

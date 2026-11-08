@@ -701,6 +701,66 @@ public static partial class SelfTest
         Check(m.Settlements.All(s => m.RiverDist(s.Pos) > 4), "no settlement stands in a river");
     }
 
+    /// Pathing (docs/TERRAIN.md T4): an order across a river goes by the ford when one is near, rather than wading the deep.
+    static void GoesToFord()
+    {
+        var g = TerrainParams.Meadow with { River = true, Road = false, Layouts = new[] { FieldLayout.Open } };
+        var r = new Terrain(3, g with { Scale = 1 }).Rivers.Single();
+        var ford = r.Fords[0];
+        int fi = Enumerable.Range(0, r.Path.Length).MinBy(i => Vector2.DistanceSquared(r.Path[i], ford));
+        var at = r.Path[Math.Min(r.Path.Length - 1, fi + 7)]; // up the river from the ford
+        float Crossing(bool paths, out float deepest)
+        {
+            var b = new Battle(3, new ArmySpec("a", 1, new List<Company>()), new ArmySpec("b", 1, new List<Company>()), new BattleOptions { Ground = g, PlayerWounded = true });
+            var s = b.AddSquad(0, UnitType.Shieldman, 6, at - new Vector2(0, 16), 3, Vector2.UnitY);
+            s.Order = Order.Hold; s.Anchor = at + new Vector2(0, 16); s.Front = Vector2.UnitY;
+            if (!paths) s.PathTimer = float.MaxValue;
+            float time = 0;
+            deepest = 0;
+            while (s.Units.Any(u => !u.Dead && Vector2.Distance(u.Pos, s.Anchor) > 6) && time < 90)
+            {
+                b.Update(1 / 60f); time += 1 / 60f;
+                foreach (var u in s.Units) if (b.Terrain.WaterDepth(u.Pos) > 0.6f) deepest += 1 / 60f; // man-seconds in deep water
+            }
+            return time;
+        }
+        float straight = Crossing(false, out float wade), routed = Crossing(true, out float ford2);
+        Console.WriteLine($"river: straight over {straight:0.0}s ({wade:0} man-s in deep water), by the ford {routed:0.0}s ({ford2:0} man-s)");
+        Check(ford2 < wade * 0.5f, "a company sent over a river crosses at the ford"); // its outer files may still step off the ford
+        Check(routed < 90, "and gets there");
+    }
+
+    /// Pathing: a wide company sent through a long hedge finds the gap and all of it gets through.
+    static void FilesThroughGap()
+    {
+        var b = Battle.Empty(5);
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-60, 0), new Vector2(18, 0));
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(26, 0), new Vector2(60, 0));
+        var s = b.AddSquad(0, UnitType.Shieldman, 16, new(-20, -14), 8, Vector2.UnitY);
+        s.Order = Order.Hold; s.Anchor = new(-20, 14); s.Front = Vector2.UnitY;
+        bool routed = false;
+        float time = 0;
+        while (s.Units.Any(u => u.Pos.Y < 4) && time < 60) { b.Update(1 / 60f); time += 1 / 60f; routed |= s.Path != null; }
+        Console.WriteLine($"hedge: a company of 16 through the gap in {time:0.0}s");
+        Check(routed && s.Units.All(u => u.Pos.Y > 4), "a company finds the gap in a hedge and all of it gets through");
+        Check(!b.WayBlocked(new Vector2(-20, -14), new Vector2(-20, -40), false) && b.WayBlocked(new Vector2(-20, -14), new Vector2(-20, 14), false), "a hedge blocks the way, open ground does not");
+    }
+
+    /// Pathing: flow fields are cached, the cache stays small, and the same goal is not built twice.
+    static void FlowCacheBound()
+    {
+        var b = Battle.Empty(5);
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-80, 0), new Vector2(80, 0));
+        var s = b.AddSquad(0, UnitType.Shieldman, 4, new(0, -20), 2, Vector2.UnitY);
+        s.Order = Order.Hold; s.Front = Vector2.UnitY;
+        for (int i = 0; i < 80; i++) { s.Anchor = new(-60 + i * 1.5f, 30); s.PathTimer = 0; s.Path = null; b.Update(1 / 60f); }
+        Check(b.FlowCached <= 48 && b.FlowBuilds > 0, "the flow cache stays bounded");
+        int built = b.FlowBuilds;
+        s.Anchor = new(-60, 30); s.PathTimer = 0; s.Path = null; b.Update(1 / 60f);
+        s.Anchor = new(-60.5f, 30.5f); s.PathTimer = 0; s.Path = null; b.Update(1 / 60f);
+        Check(b.FlowBuilds <= built + 1, "a goal near one already built uses the cached field");
+    }
+
     /// Two AI generals: the reserve stays back until it is needed, and the field still resolves.
     static void Generals()
     {
