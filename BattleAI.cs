@@ -253,13 +253,17 @@ public partial class Battle
         dir.Normalize();
         var side = new Vector2(-dir.Y, dir.X);
         var spears = Led(team, "spears");
+        // On better ground than the enemy, the line stays on it and lets him come (BattleGround.cs).
+        var hold = HoldsGround(team, front, foe);
+        var basis = hold ?? front;
+        float step = hold != null ? 0 : 6;
         if (reserveSquad[team] is Squad r && r.Alive > 0) { r.Order = Order.Hold; r.Front = dir; r.Anchor = front - dir * 14; }
         if (!charged[team])
         {
-            foreach (var s in inf) { s.Front = dir; s.Anchor = front + dir * (6 - depth.GetValueOrDefault(s)) + side * lateral.GetValueOrDefault(s); }
+            foreach (var s in inf) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * lateral.GetValueOrDefault(s)); }
             // With several companies, the outermost swings out to take the enemy line in the flank.
-            if (inf.Count >= 3) { var wing = inf.OrderBy(s => lateral.GetValueOrDefault(s)).Last(); wing.Anchor = front + dir * (2 - depth.GetValueOrDefault(wing)) + side * (lateral.GetValueOrDefault(wing) + 14); }
-            foreach (var s in spears) { s.Front = dir; s.Anchor = front + dir * (6 - depth.GetValueOrDefault(s)) + side * (16 + flankOut[team].Spears + lateral.GetValueOrDefault(s)); } // swing wide on a flank
+            if (inf.Count >= 3) { var wing = inf.OrderBy(s => lateral.GetValueOrDefault(s)).Last(); wing.Anchor = DryAnchor(basis + dir * (step - 4 - depth.GetValueOrDefault(wing)) + side * (lateral.GetValueOrDefault(wing) + 14)); }
+            foreach (var s in spears) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * (16 + flankOut[team].Spears + lateral.GetValueOrDefault(s))); } // swing wide on a flank
             if (inf.Any(s => GapTo(s, foe) < 16) || spears.Any(s => s.Alive > 0 && GapTo(s, foe) < 10))
             {
                 charged[team] = true;
@@ -287,8 +291,9 @@ public partial class Battle
         var horse = Led(team, "horse");
         if (!horseCharged[team])
         {
-            foreach (var s in horse) { s.Front = dir; s.Anchor = front + dir * (4 - depth.GetValueOrDefault(s)) - side * (26 + flankOut[team].Horse - lateral.GetValueOrDefault(s)); } // the other flank
-            if (charged[team] || Time > 35 || horse.Any(s => s.Alive > 0 && GapTo(s, foe) < 20))
+            var (sign, outward) = HorseFlank(team, front, dir, side); // the other flank, or round the outside of a wood
+            foreach (var s in horse) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - 2 - depth.GetValueOrDefault(s)) + side * (sign * (26 + outward + flankOut[team].Horse) + lateral.GetValueOrDefault(s))); }
+            if (charged[team] || (Time > 35 && hold == null) || horse.Any(s => s.Alive > 0 && GapTo(s, foe) < 20))
             {
                 horseCharged[team] = true;
                 foreach (var s in horse) s.Order = Order.Charge;
@@ -298,7 +303,7 @@ public partial class Battle
         else foreach (var s in horse) s.Order = Order.Charge;
         if (horseCharged[team])
             foreach (var s in horse.Where(s => s.Target == null))
-                s.Target = new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(foe, r)).Where(t => t.Alive > 0).OrderBy(t => Visible(t, team) ? 0 : 1).FirstOrDefault(); // soft targets first, ones it can see
+                s.Target = new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(foe, r)).Where(t => t.Alive > 0).OrderBy(t => Visible(t, team) ? 0 : 1).ThenBy(t => HorseGoing(s, t)).FirstOrDefault(); // ones it can see, on good going; soft targets first
         if (team == 1)
         {
             eGuard.Front = dir;

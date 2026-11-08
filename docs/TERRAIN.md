@@ -424,3 +424,29 @@ T6 medium, T7 medium, T8 small.
 - Not built: `Formation.Column` at gaps, routing along the flow (`RoutJamsBridge`), and the dotted preview path. They are left
   for T6 (preview) and T8 (column, rout).
 - Tests `GoesToFord` (wading: 34 man-seconds in deep water straight over, 10 by the ford), `FilesThroughGap`, `FlowCacheBound`.
+
+### T5 (done): an AI that reads the ground
+- The survey (`BattleGround.cs`, `Battle.Places`, built the first time it is asked for). It scans an 8 m grid. A rise above its
+  14 m ring is a **Crest** (higher than 5 of the 8 ring points) or a **Knoll** (all 8). A cover point with open ground within 8 m is
+  a **WoodEdge**. Each kind is thinned to the best one within 22 m (rises) or 25 m (edges). Then come the rivers' **Ford**s and
+  **Bridge**s, the middle of each **Hedge** segment, and the **Village**. Each place scores `Hold`, `Shoot` and `Hide`.
+  `BestPlace(near, radius, score)` weighs a place's score by its distance.
+- **Hold good ground** (`HoldsGround`). It applies only to the ground a side starts on, within 20 s. If the line is 2.5 m higher
+  than the enemy's centre, or in a wood or village while he stands in the open, its infantry, spears and horse anchors stay put
+  instead of stepping forward 6 m a think. Its horse waits instead of charging at 35 s. Archers still close to bow range. It
+  breaks when the enemy comes within charge range (the usual 16 m), when it loses 15% of its men, or after `Patience`:
+  70 s ÷ `BattleOptions.EnemyAggression`, clamped to 25–150 s. The campaign sets that from the enemy realm's `Aggression`;
+  brigands and monsters use 1.5. Log lines tell you.
+- **Take the crossing** (`DryAnchor`): any general's anchor in water deeper than 0.6 m moves to the nearest ford or bridge.
+  Pathing (T4) then takes the company there.
+- **Horse**: targets are ordered by seen first, then `HorseGoing` (wood, mud or water under the target, or 3 m uphill), then role.
+  `HorseFlank`: if a wood edge lies 30–100 m out on a flank and up to 60 m forward, the horse takes that flank, 18 m outside it.
+- **Sergeants**: `Hold` and `Take` stand at `SnapToGround(point)`, the best crest, knoll, wood edge or village within 25 m.
+  The new goal **`Ambush`** forms at its point (a wood) with arrows held, and attacks the first enemy company within
+  `AmbushReach` (40 m). It is on the command-view goal buttons (AMBUSH, aimed at the best `Hide` place within 60 m). `AiCommand`
+  offers it once to each of its Steady or Cautious foot divisions while the enemy is over 50 m off, if a wood edge lies within
+  50 m and not behind them. After three times the division's usual wait, an ambush nobody walked into turns to attack.
+- Not built: `Deploy` does not move companies onto good ground yet. That waits for T7, where a side chooses its ground; today's
+  ridge already stands at the line of the side it favours. Screen and Harass do not seek cover, and Guard still guards the captain.
+- Tests `HoldsTheCrest` (the side on the ridge moves about 3 m before the lines meet), `HorseAvoidsBadGround` (mud;
+  thick wood is handled by sight and pathing), `AmbushWaits` (sprung at 39 m) and `TakesTheFord`.

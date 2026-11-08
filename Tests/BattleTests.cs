@@ -701,6 +701,92 @@ public static partial class SelfTest
         Check(m.Settlements.All(s => m.RiverDist(s.Pos) > 4), "no settlement stands in a river");
     }
 
+    /// The AI reads the ground (docs/TERRAIN.md T5): on a ridge, the side on the crest lets the other come up to it, and
+    /// still fights to a result.
+    static void HoldsTheCrest()
+    {
+        var g = TerrainParams.Hills with { Layouts = new[] { FieldLayout.Ridge }, HillsMin = 0, HillsMax = 0 };
+        for (int seed = 1; seed <= 3; seed++)
+        {
+            var b = new Battle(seed, Armies.Random(new Random(seed), 2, 0), Armies.Random(new Random(seed), 2, 1), new BattleOptions { Ground = g, AutoPlayer = true, PlayerWounded = true });
+            Check(b.Places.Any(p => p.Kind is PlaceKind.Crest or PlaceKind.Knoll), "the survey finds the ridge");
+            int r = b.Terrain.RidgeSide, low = 1 - r;
+            Vector2 Line(int team) { var l = b.SquadsOf(team).Where(s => s.Company != null && Armies.RoleOf(s.Company) == "infantry" && s.Alive > 0).ToList(); return l.Count == 0 ? b.Centroid(team) : l.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / l.Count; }
+            var start = Line(r);
+            var fwd = Vector2.Normalize(Line(low) - start);
+            float moved = 0;
+            while (b.Winner < 0 && b.Time < 600)
+            {
+                b.Update(1 / 60f);
+                if (Vector2.Distance(Line(r), Line(low)) < 28) break;
+                moved = MathF.Max(moved, Vector2.Dot(Line(r) - start, fwd));
+            }
+            Console.WriteLine($"crest {seed}: the side on the ridge came {moved:0.0} m forward before the lines met at {b.Time:0}s");
+            Check(moved < 8, "the side on the crest does not leave it first");
+            while (b.Winner < 0 && b.Time < 600) b.Update(1 / 60f);
+            Check(b.Winner >= 0, "a battle on a ridge resolves");
+        }
+    }
+
+    /// The AI's horse picks a company on good going over one standing in mud.
+    static void HorseAvoidsBadGround()
+    {
+        var flat = TerrainParams.Steppe with { HillsMin = 0, HillsMax = 0, Layouts = new[] { FieldLayout.Open } };
+        var mine = new ArmySpec("a", 1, new List<Company> { new("bowmen", 16, "archers"), new("bowmen", 16, "archers") });
+        var theirs = new ArmySpec("b", 1, new List<Company> { new("lancers", 12, "horse") });
+        foreach (int muddy in new[] { 0, 1 })
+        {
+            var b = new Battle(4, mine, theirs, new BattleOptions { Ground = flat, PlayerWounded = true });
+            var bows = b.SquadsOf(0).Where(s => s.Company?.Troop == "bowmen").ToList();
+            b.Terrain.Paint(bows[muddy].Center, 6, GroundKind.Mud);
+            var horse = b.SquadsOf(1).First(s => s.Cavalry && s.Company != null);
+            while (horse.Target == null && b.Time < 60) b.Update(1 / 60f);
+            Check(horse.Target == bows[1 - muddy], "the horse charges the company on firm ground, not the one in mud");
+        }
+    }
+
+    /// A division lying in wait stays still until an enemy company comes within reach, then falls on it.
+    static void AmbushWaits()
+    {
+        var b = Battle.Empty(5);
+        b.Terrain.Paint(Vector2.Zero, 16, GroundKind.Wood);
+        var s = b.AddSquad(0, UnitType.Shieldman, 12, Vector2.Zero, 6, Vector2.UnitY);
+        var d = b.AddDivision(0, "Hal", new[] { s }, Temper.Steady, 5, new Goal(GoalKind.Ambush, Vector2.Zero));
+        var foe = b.AddSquad(1, UnitType.Shieldman, 12, new(0, 90), 6, -Vector2.UnitY);
+        foe.Order = Order.Hold; foe.Anchor = new(0, 90);
+        Run(b, 6);
+        Check(d.Goal.Kind == GoalKind.Ambush && s.Order == Order.Hold && Vector2.Distance(s.Center, Vector2.Zero) < 6, "a division lying in wait stays put while the enemy is far");
+        foe.Anchor = new(0, -20);
+        float gapAtSpring = -1;
+        for (int i = 0; i < 60 * 40 && d.Goal.Kind == GoalKind.Ambush; i++) { b.Update(1 / 60f); gapAtSpring = Vector2.Distance(s.Center, foe.Center) - foe.Radius; }
+        Run(b, 1);
+        Console.WriteLine($"ambush: sprung with the enemy {gapAtSpring:0} m off");
+        Check(d.Goal.Kind == GoalKind.Attack && d.Goal.Target == foe && gapAtSpring <= Battle.AmbushReach + 1, "it falls on the enemy when he comes within reach");
+        Check(s.Order == Order.Charge, "and charges");
+    }
+
+    /// On a river line the AI never sets a company's ground in deep water: it goes over by the crossing.
+    static void TakesTheFord()
+    {
+        var g = TerrainParams.Meadow with { Layouts = new[] { FieldLayout.RiverLine } };
+        var rng = new Random(6);
+        var b = new Battle(6, Armies.Random(rng, 2, 0), Armies.Random(rng, 2, 1), new BattleOptions { Ground = g, AutoPlayer = true, PlayerWounded = true });
+        Check(b.Places.Any(p => p.Kind is PlaceKind.Ford or PlaceKind.Bridge), "the survey finds the crossings");
+        int wet = 0, looks = 0;
+        while (b.Winner < 0 && b.Time < 600)
+        {
+            b.Update(1 / 60f);
+            if (b.Time < 90 && (int)(b.Time * 60) % 30 == 0)
+                foreach (var s in b.Squads.Where(s => s.Alive > 0 && s.Order == Order.Hold && s.Company != null))
+                {
+                    looks++;
+                    if (b.Terrain.WaterDepth(s.Anchor) > 0.6f) wet++;
+                }
+        }
+        Check(looks > 0 && wet == 0, "no company is told to stand in deep water");
+        Check(b.Winner >= 0, "a battle on a river line resolves");
+    }
+
     /// Pathing (docs/TERRAIN.md T4): an order across a river goes by the ford when one is near, rather than wading the deep.
     static void GoesToFord()
     {

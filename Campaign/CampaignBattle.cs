@@ -217,6 +217,7 @@ public partial class Campaign
             Scouted = scouts || Has("Tactician"),
             EnemyDamage = Settings.Current.EnemyDamage, EnemyMorale = DuelMoraleFor(enemy),
             Ground = Map.BattleGround(Player.Pos),
+            EnemyAggression = SideOf(enemy) >= 0 ? Factions.Get(SideOf(enemy)).Aggression : 1.5f, // a realm's temper; brigands do not wait long
             Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
         }.WithCaptain(Captain);

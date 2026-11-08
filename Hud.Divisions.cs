@@ -15,7 +15,7 @@ sealed partial class Hud
     {
         (GoalKind.Attack, 1, "ATTACK"), (GoalKind.Hold, 1, "HOLD"), (GoalKind.Take, 1, "TAKE GROUND"), (GoalKind.FallBack, 1, "FALL BACK"),
         (GoalKind.Flank, -1, "FLANK LEFT"), (GoalKind.Flank, 1, "FLANK RIGHT"), (GoalKind.Screen, 1, "SCREEN"), (GoalKind.Guard, 1, "GUARD ME"),
-        (GoalKind.Reserve, 1, "RESERVE"), (GoalKind.Harass, 1, "HARASS"), (GoalKind.Pursue, 1, "PURSUE"),
+        (GoalKind.Reserve, 1, "RESERVE"), (GoalKind.Harass, 1, "HARASS"), (GoalKind.Pursue, 1, "PURSUE"), (GoalKind.Ambush, 1, "AMBUSH"),
     };
 
     /// The goal wheel's sectors (field view), clockwise from the top: the same count as the order wheel.
@@ -190,7 +190,7 @@ sealed partial class Hud
             foreach (var g in new[] { d.Goal, d.Pending })
             {
                 if (g == null) continue;
-                Vector2? to = g.Kind is GoalKind.Hold or GoalKind.Take or GoalKind.FallBack ? g.Point : g.Target?.Alive > 0 ? g.Target.Center : null;
+                Vector2? to = g.Kind is GoalKind.Hold or GoalKind.Take or GoalKind.FallBack or GoalKind.Ambush ? g.Point : g.Target?.Alive > 0 ? g.Target.Center : null;
                 if (to is Vector2 t && Screen(t, out var dst))
                 {
                     var c = g == d.Pending ? Warn * 0.7f : col * 0.8f;

@@ -48,6 +48,10 @@ public static partial class SelfTest
         GoesToFord();
         FilesThroughGap();
         FlowCacheBound();
+        HoldsTheCrest();
+        HorseAvoidsBadGround();
+        AmbushWaits();
+        TakesTheFord();
         GroundLayer();
         GroundMoves();
         GroundFights();

@@ -174,6 +174,9 @@ one still on the road. Riders show as gold dots in command view; an enemy who re
 rides out the long way round (cut down the enemy's red riders and his divisions wait). You can still select a division's companies
 and order them directly: the order rides out the same way, and they then follow it until the division gets a new goal. If a
 sergeant falls, his men keep their last goal, orders take twice as long, and the best man left takes charge after 10 s.
+Sergeants told to hold or take ground stand on the best ground within 25 m of it (a crest, a knoll, a wood's edge, the village).
+**AMBUSH** (command view) sends a division of foot to the nearest wood to wait unseen, arrows held; it falls on the first enemy
+company that comes within 40 m.
 
 **Captain combat:** a parry needs the guard raised just as the blow comes (within 0.35 s, up to 0.45 s with Arms); attacking into a blow from the mirrored side
 **chambers** it. A parry opens a **riposte** for 0.45 s: a swing started then winds up twice as fast, hits a quarter harder, costs half
@@ -258,6 +261,11 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   when they shoot. Archers shoot only at companies their side has seen, and an enemy you have not seen is not drawn: its flag
   stays where you last saw it. A hidden company found close to the enemy is an ambush and shakes the men it falls on.
   Low arrows are caught by woods, crops and houses, and a hedge stops flat shots; arrows dropping steeply still land behind it.
+- **An enemy that reads the ground** (`BattleGround.cs`): a side that starts on clearly higher ground, or in a wood or village
+  facing open ground, holds there and lets you come up to it. It waits about a minute (less for an aggressive realm or brigands),
+  or until it is bled by arrows, then comes down. It never sends its line into deep water (it goes for the ford or bridge), its
+  horse picks targets on firm, level ground, and it rides round the outside of a wood on a flank. Its foot may lie in wait in a
+  wood near its line.
 - **Pathing** (`BattlePath.cs`): companies find their own way round: sent over a river they make for the ford or bridge, and sent at a hedge they file
   through its gaps. On open ground they march straight.
 - **Foliage** (placed by `Terrain`, built into meshes by `World.cs`): woods of broadleaf trees or pines, two of them flanking the field,

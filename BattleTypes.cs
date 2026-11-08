@@ -32,6 +32,8 @@ public sealed class BattleOptions
     public UnitType? PlayerSide;
     public Mount? PlayerMount;
     public TerrainParams? Ground;
+    /// The enemy realm's temper (Factions.Aggression, 0.3-3): how soon an AI holding good ground loses patience and attacks.
+    public float EnemyAggression = 1;
     /// Heraldry palette per team (Style.Sides index): your colours and theirs (3 = bandits).
     public int[] Palette = { 0, 1 };
     /// Difficulty: the enemy's blows are multiplied by this.

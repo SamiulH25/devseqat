@@ -97,7 +97,7 @@ Men think on a stagger (`ThinkNow`: near the enemy every tick, else every 2nd/4t
 
 ### Divisions (docs/COMBAT_OVERHAUL.md)
 A `Division` (BattleDivision.cs) is a group of squads under a sergeant (`Unit.Sergeant`) that follows a `Goal` (Hold, Take, Attack,
-Flank, Screen, Guard, Reserve, Harass, Pursue, FallBack) through its `Brain`, not your orders. Division squads are excluded from
+Flank, Screen, Guard, Reserve, Harass, Pursue, FallBack, Ambush) through its `Brain`, not your orders. Division squads are excluded from
 `Commanded` and the general's `Led()`. `IssueGoal` sets `Pending` + `PendingAt` (the order delay); a `Courier` rides there and can
 be cut down (BattleCourier.cs). `Direct(squad, act)` delays a plain order and sets `Squad.Override`. Divisions come from
 `ArmySpec.Divisions` + `Company.Division` (`BuildDivisions`); the campaign fills them from `CampaignState.Divisions`
@@ -130,6 +130,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Personal goals in a battle (draw, live state, result) / your banner and the last stand | `BattleDeeds.cs` (`DrawGoals`, `GoalState`); HUD `Hud.GoalLines` / `BattleBanner.cs` (`UpdateBanner`, `LastStand`, `UpdateLastStand`) |
 | Spatial grid (`Near`, `Separate`) | `BattleGrid.cs` |
 | Sight: who has seen which company, crests and woods, ambushes (docs/TERRAIN.md T3) | `BattleSight.cs` (`UpdateSight`, `Visible`, `Sees`, `ClearLine`, `Ambush`); arrow cover `BattleCombat.Covered` |
+| The AI reads the ground: the survey of places, holding a crest, dry anchors, horse going, the horse's flank, sergeants' snap, the AI's ambush wood | `BattleGround.cs` (`Places`, `Survey`, `BestPlace`, `SnapToGround`, `HoldsGround`, `Patience`, `DryAnchor`, `HorseGoing`, `HorseFlank`); `BattleDivision.AmbushWood` |
 | Pathing: flow fields round water, hedges, houses (only when the straight way is barred) | `BattlePath.cs` (`UpdatePath`, `WayBlocked`, `PathVia`, `Flow`, `FlowField`); hooked in `BattleSiege.Via` |
 | Divisions: goals, order delay, sergeant brain, AI goals / couriers | `BattleDivision.cs` (`IssueGoal`, `OrderDelay`, `Direct`, `Brain`, `AiCommand`) / `BattleCourier.cs` |
 | Unit/troop types, look, mounts | `Units.cs`, `Troops.cs` (+ `Armies` presets, `Large`, `Divide`), `Data/troops.json` |

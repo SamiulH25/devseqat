@@ -51,6 +51,7 @@ partial class BattleScreen
             GoalKind.Take => new Goal(kind, mid - away * 25),
             GoalKind.FallBack => new Goal(kind, mid + away * 30),
             GoalKind.Hold => new Goal(kind, mid),
+            GoalKind.Ambush => new Goal(kind, battle.BestPlace(mid, 60, p => p.Hide)?.Pos ?? mid), // the nearest wood to hide in
             _ => new Goal(kind, mid),
         };
         GiveGoal(d, g);
