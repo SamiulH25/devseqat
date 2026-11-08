@@ -127,6 +127,22 @@ partial class MapScreen
     /// Every company of yours: men before and after, the fallen, wounded and lost, and the drill it earned.
     void ReportCompanies(BattleReport rep, Rectangle box)
     {
+        // Your named men first (docs/LEGACY.md L3): who fell, who is missing, who is hurt, who earned a name.
+        if (rep.Roll.Count > 0)
+        {
+            int lines = Math.Min(rep.Roll.Count, 5), nh = ui.U(26) + lines * ui.U(11);
+            var n = Well(new Rectangle(box.X, box.Y, box.Width, nh), rep.Roll.Any(x => x.Kind == "FELL") ? "THE FALLEN" : "YOUR NAMED MEN", rep.Roll.Any(x => x.Kind is "FELL" or "MISSING") ? Style.Bad : Kit.Gilt);
+            int ny = n.Y, fit = Math.Max(10, (n.Width - ui.U(64)) / (6 * ui.S));
+            foreach (var (kind, text) in rep.Roll.Take(lines))
+            {
+                var col = kind switch { "FELL" => Style.Bad, "MISSING" => Style.Warn, "HURT" => Style.Warn, _ => Kit.Gilt };
+                ui.Text(kind, n.X, ny, col, 1);
+                string t = (lines < rep.Roll.Count && ny + ui.U(11) >= n.Y + lines * ui.U(11) ? $"AND {rep.Roll.Count - lines + 1} MORE. SEE THE ROLL (P)." : text).ToUpperInvariant();
+                ui.Text(t.Length > fit ? t[..fit] : t, n.X + ui.U(60), ny, Style.Text, 1);
+                ny += ui.U(11);
+            }
+            box = new Rectangle(box.X, box.Y + nh + ui.U(6), box.Width, box.Height - nh - ui.U(6));
+        }
         var c = Well(box, "YOUR COMPANIES", Style.Friendly);
         string[] heads = { "MEN", "FELL", "HURT", "LOST", "XP" };
         int[] cols = { c.Width - ui.U(250), c.Width - ui.U(180), c.Width - ui.U(140), c.Width - ui.U(100), c.Width - ui.U(56) };

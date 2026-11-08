@@ -65,7 +65,9 @@ mountain ridges you cross by road at the passes.
 - **The roll:** each of your companies keeps up to six **named men** (ROLL on its card in the party screen). A new company names
   its first man, and men earn names in battle (first over a wall, a horseman brought down, standing when half the company fell).
   A named man is one of the men of his stack: he shares its losses (a little less often killed), is promoted before the others, and goes
-  where his men go. Those lost are kept for ever under THE FALLEN.
+  where his men go. In a fought battle he is a real man in the front rank (a gold mark over him near you) and earns his own deeds.
+  Those lost are kept for ever under THE FALLEN, named first in the battle report, and each costs his company cohesion. When a
+  company needs a sergeant, its senior named man rises to the post, and a sergeant of 15 battles joins your household.
 - **Cultures:** every troop is of one of the seven cultures or common (`Data/troops.json`), and each realm has a culture (`Data/factions.json`).
   A village raises its own culture's men whoever holds it (clansmen in the north, levies in the south), and they form companies of their own
   people. Men train into common troops or their own culture's lines only, and a culture's elite lines (tier V and up) need one of its towns

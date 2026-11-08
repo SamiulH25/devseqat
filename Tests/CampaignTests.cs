@@ -410,10 +410,10 @@ public static partial class SelfTest
             if (c.Player.Companies.Sum(k => k.Men) < 30) foreach (var k in c.Player.Companies) Rules.AddMen(k, k.Stacks[0].Troop, 20);
             c.Tick(24); c.Encounter = null; c.Arrived = null;
         }
-        int named = c.Player.Companies.Sum(k => k.Roll.Count + k.Fallen.Count);
+        int named = c.Player.Companies.Sum(k => k.Roll.Count) + c.S.Fallen.Count;
         Console.WriteLine($"roll: {named0} named at first, {named} named or fallen after the fights; " +
-            string.Join("; ", c.Player.Companies.Select(k => $"{k.Name} {k.Roll.Count}+{k.Fallen.Count}f")));
-        Console.WriteLine("fates: " + string.Join(", ", c.Player.Companies.SelectMany(k => k.Fallen).GroupBy(m => m.Fate).Select(g => $"{g.Count()} {g.Key}")));
+            string.Join("; ", c.Player.Companies.Select(k => $"{k.Name} {k.Roll.Count}+{c.FallenOf(k).Count()}f")));
+        Console.WriteLine("fates: " + string.Join(", ", c.S.Fallen.GroupBy(m => m.Fate).Select(g => $"{g.Count()} {g.Key}")));
         Check(named > named0, "battles name more men");
         Check(c.Player.Companies.All(k => k.Roll.Count <= cap), "no roll runs past the cap");
         foreach (var k in c.Player.Companies)
@@ -423,7 +423,7 @@ public static partial class SelfTest
                 Check(st != null && g.Count(m => !m.Hurt) <= st.Men && g.Count(m => m.Hurt) <= st.Wounded, $"the roll fits its stacks ({k.Name}, {g.Key})");
             }
         Check(c.Player.Companies.SelectMany(k => k.Roll).All(m => m.Battles >= 1 || m.Joined == c.Day), "named men count their battles");
-        Check(c.Player.Companies.SelectMany(k => k.Fallen).All(m => m.Fate is "fell" or "missing" or "left"), "the fallen say how they went");
+        Check(c.S.Fallen.All(m => m.Fate is "fell" or "missing" or "left"), "the fallen say how they went");
         // A named man is promoted first.
         var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && !c.Refuses(t));
         c.Player.Pos = town.Pos;
@@ -437,7 +437,7 @@ public static partial class SelfTest
         // An old save (no roll) loads with empty rolls, and names its first men on the next day.
         var node = System.Text.Json.Nodes.JsonNode.Parse(c.S.Serialize())!;
         foreach (var p in node["Parties"]!.AsArray())
-            foreach (var k in p!["Companies"]!.AsArray()) { var o = k!.AsObject(); o.Remove("Roll"); o.Remove("Fallen"); o.Remove("RollStarted"); }
+            foreach (var k in p!["Companies"]!.AsArray()) { var o = k!.AsObject(); o.Remove("Roll"); o.Remove("RollStarted"); }
         var old = CampaignState.Deserialize(node.ToJsonString());
         var oc = new Campaign(old);
         Check(oc.Player.Companies.All(k => k.Roll.Count == 0 && !k.RollStarted), "an old save loads with empty rolls");
@@ -446,6 +446,89 @@ public static partial class SelfTest
         Check(oc.Player.Companies.All(k => k.Roll.Count >= 1 || k.Men == 0), "and its companies name their first men");
         var back = CampaignState.Deserialize(c.S.Serialize()).Parties.First(p => p.Kind == PartyKind.Player);
         Check(back.Companies.Sum(k => k.Roll.Count) == c.Player.Companies.Sum(k => k.Roll.Count), "the roll is saved");
+    }
+
+    /// The fallen (docs/LEGACY.md L3): a named man lost costs his company cohesion; the report names him; a long-serving man
+    /// is written in the chronicle; the dead are kept after their company is gone.
+    static void FallenRemembered()
+    {
+        var c = Campaign.New(41);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Roll.Clear();
+        for (int i = 0; i < 5; i++) c.NameMan(co, "test");
+        var st = co.Stacks.OrderByDescending(x => x.Men).First();
+        int named = Campaign.FitNamed(co, st.Troop).Count(), lost0 = c.S.Fallen.Count;
+        co.Cohesion = 20;
+        c.RollFates(co, st, st.Men, st.Men, 0, 0, "the Test");
+        int died = c.S.Fallen.Count - lost0;
+        Console.WriteLine($"fallen: {died} of {named} named men died when their whole stack was killed");
+        Check(died > 0 && died <= named, "named men die with their stack, though not all of them");
+        Check(MathF.Abs(co.Cohesion - (20 - died * Balance.Get().FallenCohesion)) < 1e-3f, "each one lost costs the company cohesion");
+        // A fought-out loss: the report names the fallen, and a veteran's death is in the chronicle.
+        foreach (var k in c.Player.Companies) { k.Roll.Clear(); for (int i = 0; i < 6; i++) if (c.NameMan(k, "test") is Soldier m) m.Battles = 12; }
+        var rng = new Rng(new CampaignState { Seed = 5 });
+        BattleReport? hit = null;
+        for (int i = 0; i < 12 && hit == null; i++)
+        {
+            var lord = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && c.Hostile(c.Player, p)).OrderByDescending(p => p.Men).FirstOrDefault();
+            if (lord == null) break;
+            lord.Pos = c.Player.Pos;
+            c.Encounter = lord;
+            var setup = c.PrepareBattle(lord);
+            var rep = c.FinishBattle(Rules.AutoResolve(setup.Side0, setup.Side1, rng) with { Winner = 1, Captain = LeaderFate.Wounded }, setup);
+            c.Captain.WoundedUntil = 0; c.Encounter = null;
+            if (rep.Roll.Any(x => x.Kind == "FELL")) hit = rep;
+            if (c.Player.Companies.Sum(k => k.Men) < 40) foreach (var k in c.Player.Companies) Rules.AddMen(k, k.Stacks[0].Troop, 30);
+        }
+        Check(hit != null, "a lost battle's report names the fallen");
+        var gone = c.S.Fallen.Last(m => m.Fate == "fell");
+        Check(hit!.Roll.Any(x => x.Text.Contains(gone.Name)), "by name");
+        Check(c.S.Deeds.Any(d => d.Text.Contains(gone.Name)), "and a man of twelve battles is written in the chronicle");
+        var home = c.Player.Companies.FirstOrDefault(k => k.Id == gone.Company);
+        if (home != null) c.Player.Companies.Remove(home);
+        Check(c.S.Fallen.Contains(gone) && gone.CompanyName != "", "the dead are kept after their company is gone");
+        Check(CampaignState.Deserialize(c.S.Serialize()).Fallen.Count == c.S.Fallen.Count, "the fallen are saved");
+    }
+
+    /// Rising from the ranks (L4): the senior named man becomes sergeant (and leaves the ranks), a sergeant of 15 battles
+    /// becomes a companion who keeps that history, and a sergeant from the ranks who falls joins the fallen.
+    static void RisesFromRanks()
+    {
+        var c = Campaign.New(43);
+        c.Player.Cooldown = 1e6f;
+        c.Tick(24); c.Encounter = null; c.Arrived = null;
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Roll.Clear(); co.Officer = ""; co.Traits.Clear();
+        var vet = c.NameMan(co, "test")!;
+        vet.Battles = 6;
+        var young = c.NameMan(co, "test");
+        if (young != null) young.Battles = 1;
+        int men = co.Men;
+        for (int i = 0; i < 60 && co.Officer == ""; i++) c.OfficerAfterBattle(co, true, 0);
+        Check(co.Officer == "Sgt " + vet.Name && co.OfficerMan == vet && !co.Roll.Contains(vet), "the senior named man is made sergeant");
+        Check(co.Men == men - 1, "and leaves the ranks");
+        // Fifteen battles a sergeant, and he joins your household with his history.
+        co.OfficerBattles = Campaign.CompanionBattles - 1;
+        int companions = c.Companions.Count();
+        c.OfficerAfterBattle(co, true, 0);
+        var ch = c.Companions.FirstOrDefault(k => k.Ranks == vet);
+        Check(c.Companions.Count() == companions + 1 && ch != null && ch.FromCompany == co.Id, "the sergeant becomes a companion who rose from the ranks");
+        Check(c.RoseFrom(ch).Contains(co.Name.ToUpperInvariant()), "and the screens say so");
+        Check(CampaignState.Deserialize(c.S.Serialize()).Characters.Any(k => k.Ranks?.Id == vet.Id), "his history is saved");
+        // A second one rises, and falls.
+        co.Roll.Clear(); co.Officer = "";
+        var sec = c.NameMan(co, "test")!;
+        sec.Battles = 4;
+        for (int i = 0; i < 60 && co.Officer == ""; i++) c.OfficerAfterBattle(co, true, 0);
+        Check(co.OfficerMan == sec, "a second sergeant rises");
+        for (int i = 0; i < 80 && co.OfficerMan != null; i++) c.OfficerAfterBattle(co, false, 0.6f, "the Test");
+        Check(c.S.Fallen.Any(m => m.Id == sec.Id && m.Fate == "fell" && m.DiedAt == "the Test"), "a sergeant from the ranks who falls joins the fallen");
+        // With no named man ready, a sergeant comes from elsewhere, as before.
+        co.Roll.Clear(); co.Officer = ""; co.OfficerMan = null;
+        for (int i = 0; i < 60 && co.Officer == ""; i++) c.OfficerAfterBattle(co, true, 0);
+        Check(co.Officer != "" && co.OfficerMan == null, "with no veteran on the roll a sergeant comes from elsewhere");
     }
 
     /// Troop stacks and promotion by the man (F1): a promotion moves exactly one man and spends exactly his XP; out-of-role

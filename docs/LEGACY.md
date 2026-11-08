@@ -1,6 +1,6 @@
 # The company is the legacy: plan
 
-Status: **L0-L2 built** (see "As built"). Each phase L0-L8 can ship on its own, and `tools/check.sh` must pass after each one.
+Status: **L0-L4 built** (see "As built"); L5-L8 to come. Each phase L0-L8 can ship on its own, and `tools/check.sh` must pass after each one.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 
 ## 1. The fantasy
@@ -187,3 +187,18 @@ only. (c) Save growth: Fallen is never trimmed but is one short line a man, so c
   4+ kills or a captain. Auto-resolve hands back no `Named`, so the L1 shared odds apply. The HUD (`Hud.NamedMarks`) puts
   a small gold mark over named men within 25 m (all of them in command view) and shows the name within 10 m or under the
   cursor. Tests: `NamedMenFight` (placing, fates, kills, replay), `AutoResolveNamedMen`.
+- **L3:** the fallen live in `CampaignState.Fallen` (not on the company), each with his company's id and name, so they are
+  remembered after the company is gone (`Campaign.FallenOf(c)` for one company; a merge moves them over). Each named man killed
+  or missing costs his company `FallenCohesion` (1.5) cohesion; cohesion already feeds a company's battle morale, so there is
+  no separate one-battle morale hit. The battle report (`BattleReport.Roll`) lists the fallen, the missing, the hurt and new
+  names above YOUR COMPANIES. A man of 10+ battles who falls is written in the chronicle (`Deed`). `SyncRoll` after a battle
+  wounds surplus fit named men if the stack's wounded have room, and counts any still over (a stack wiped out) as fallen
+  there. VeteranSurvival now turns the deaths it spares into wounds. **Not built:** the burial choice after a battle (an
+  event naming the man): it needs a new event trigger, left for a later pass.
+- **L4:** `Campaign.RiseToSergeant`: when a company of yours gets a sergeant, its senior fit named man with 3+ battles takes
+  the post (`CompanyRecord.OfficerMan`), leaves the ranks (one man fewer in his stack) and the roll. The old name draw is still
+  made, so the main stream does not move. With no veteran ready, a sergeant comes from elsewhere, as before. His battles keep
+  counting. A sergeant from the ranks who falls joins the fallen (`SergeantFell`). At 15 battles he becomes a companion who
+  keeps the record (`Character.Ranks`, `FromCompany`), and the household (L) and division (V) panels say "ROSE FROM THE RANKS
+  OF X" (`RoseFrom`). If such a companion dies, his record goes to the fallen (`CompanionFell`). Tests: `FallenRemembered`,
+  `RisesFromRanks`.

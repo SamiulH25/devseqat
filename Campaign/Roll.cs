@@ -6,7 +6,17 @@ namespace Ironfield;
 public sealed partial class Campaign
 {
     Rng? rollRng;
+    /// What happened to your named men in the battle being applied (L3), for the report.
+    readonly List<(string Kind, string Text)> rollNews = new();
+
+    List<(string, string)> RollNewsOrdered() =>
+        rollNews.OrderBy(n => n.Kind switch { "FELL" => 0, "MISSING" => 1, "HURT" => 2, _ => 3 }).ToList();
+
+    static string Known(Soldier m) => m.Deeds.Count > 0 ? " " + m.Deeds[^1] : "";
     Rng RollRng => rollRng ??= new Rng(S, true);
+
+    /// The named men a company has lost, oldest first.
+    public IEnumerable<Soldier> FallenOf(CompanyRecord c) => S.Fallen.Where(m => m.Company == c.Id);
 
     /// Your named men in a stack who are fit to fight.
     public static IEnumerable<Soldier> FitNamed(CompanyRecord c, string troop) => c.Roll.Where(m => m.Troop == troop && !m.Hurt);
@@ -21,7 +31,7 @@ public sealed partial class Campaign
         {
             string first = RollRng.Pick(firsts);
             name = c.Home != "" && RollRng.Chance(0.35f) ? $"{first} of {c.Home}" : $"{first} {RollRng.Pick(n.Epithets)}";
-            if (!c.Roll.Concat(c.Fallen).Any(m => m.Name == name)) break;
+            if (!c.Roll.Concat(FallenOf(c)).Any(m => m.Name == name)) break;
         }
         return name;
     }
@@ -53,9 +63,23 @@ public sealed partial class Campaign
     {
         c.Roll.Remove(m);
         m.Fate = fate; m.DiedDay = Day; m.DiedAt = where; m.Hurt = false;
-        c.Fallen.Add(m);
-        if (Player.Companies.Contains(c))
-            Log(fate switch { "fell" => $"{m.Name} of {c.Name} has fallen.", "missing" => $"{m.Name} of {c.Name} is missing.", _ => $"{m.Name} has left {c.Name}." });
+        m.Company = c.Id; m.CompanyName = c.Name;
+        S.Fallen.Add(m);
+        if (!Player.Companies.Contains(c)) return;
+        if (fate is "fell" or "missing")
+        {
+            // Losing a man the company knew costs it (L3); a long-serving man is remembered in the chronicle.
+            c.Cohesion = MathF.Max(0, c.Cohesion - B.FallenCohesion);
+            rollNews.Add((fate == "fell" ? "FELL" : "MISSING", $"{m.Name}, {Troops.Get(m.Troop).Name}, {c.Name}. {m.Battles} battles, {m.Kills} kills.{Known(m)}"));
+            if (fate == "fell" && m.Battles >= 10) Deed($"{m.Name} of {c.Name} fell against {(where != "" ? where : "the enemy")}, after {m.Battles} battles.");
+        }
+        Log(fate switch { "fell" => $"{m.Name} of {c.Name} has fallen.", "missing" => $"{m.Name} of {c.Name} is missing.", _ => $"{m.Name} has left {c.Name}." });
+    }
+
+    void Hurt(CompanyRecord c, Soldier m)
+    {
+        m.Hurt = true; m.Wounds++;
+        rollNews.Add(("HURT", $"{m.Name}, {c.Name}."));
     }
 
     /// The named men of one stack share its fortune in a battle (L1): each fit one is killed, lost or wounded with the
@@ -63,13 +87,15 @@ public sealed partial class Campaign
     internal void RollFates(CompanyRecord c, TroopStack st, int fitBefore, int killed, int wounded, int lost, string foe)
     {
         if (fitBefore <= 0 || c.Roll.Count == 0) return;
-        float pk = killed / (float)fitBefore * B.VeteranSurvival, pl = lost / (float)fitBefore * B.VeteranSurvival, pw = wounded / (float)fitBefore;
+        // VeteranSurvival turns some of the deaths and losses into wounds.
+        float pk = killed / (float)fitBefore * B.VeteranSurvival, pl = lost / (float)fitBefore * B.VeteranSurvival,
+            pw = (wounded + (killed + lost) * (1 - B.VeteranSurvival)) / fitBefore;
         foreach (var m in FitNamed(c, st.Troop).ToList())
         {
             float u = RollRng.Float();
             if (u < pk) Lose(c, m, "fell", foe);
             else if (u < pk + pl) Lose(c, m, "missing", foe);
-            else if (u < pk + pl + pw) { m.Hurt = true; m.Wounds++; }
+            else if (u < pk + pl + pw) Hurt(c, m);
         }
     }
 
@@ -89,7 +115,7 @@ public sealed partial class Campaign
             {
                 if (RollRng.Float() >= 1 - (1 - pw) * B.VeteranSurvival) Lose(c, m, "fell", foe);
                 else if (!won && RollRng.Chance(B.CaptureChance * B.VeteranSurvival)) Lose(c, m, "missing", foe);
-                else { m.Hurt = true; m.Wounds++; }
+                else Hurt(c, m);
             }
             else if (nr.Fled && !won && RollRng.Chance((1 - B.FledReturnOnDefeat) * B.VeteranSurvival)) Lose(c, m, "missing", foe);
         }
@@ -106,6 +132,7 @@ public sealed partial class Campaign
             && NameMan(c, cr.BestFelledLeader ? $"Cut down a captain{against}." : $"Killed {cr.BestKills}{against}.", cr.BestTroop) is Soldier hand)
         {
             hand.Battles = 1; hand.Kills = cr.BestKills;
+            rollNews.Add(("NAMED", $"{hand.Name}, {Troops.Get(hand.Troop).Name}, {c.Name}.{Known(hand)}"));
             return;
         }
         string? deed = siege && won ? $"First over the wall{against}."
@@ -114,21 +141,29 @@ public sealed partial class Campaign
             : !won && RollRng.Chance(0.5f) ? $"Came home from the lost field{against}."
             : won && cr.Kills > 0 && RollRng.Chance(0.35f) ? $"Fought in the front rank{against}."
             : null;
-        if (deed != null && NameMan(c, deed) is Soldier named) named.Battles = 1;
+        if (deed != null && NameMan(c, deed) is Soldier named)
+        {
+            named.Battles = 1;
+            rollNews.Add(("NAMED", $"{named.Name}, {Troops.Get(named.Troop).Name}, {c.Name}.{Known(named)}"));
+        }
     }
 
-    /// Keep the roll true to its stacks: no more hurt named men than the stack's wounded (the rest are healed), no more fit
-    /// ones than its fit men, none of a troop the company no longer has (they have left). A new company names its first man.
-    internal void SyncRoll(CompanyRecord c)
+    /// Keep the roll true to its stacks: no more hurt named men than the stack's wounded and no more fit ones than its fit men.
+    /// Surplus hurt men heal if the fit have room; after a battle (`battle`) surplus fit men are wounded if the wounded have
+    /// room. Any still over, or of a troop the company no longer has, leave the roll: as "fell" after a battle (`foe` is
+    /// where), else "left" (desertion, hunger). A new company names its first man.
+    internal void SyncRoll(CompanyRecord c, bool battle = false, string foe = "")
     {
+        string surplus = battle ? "fell" : "left";
         foreach (var g in c.Roll.GroupBy(m => m.Troop).ToList())
         {
             var st = c.Stacks.FirstOrDefault(s => s.Troop == g.Key);
-            if (st == null) { foreach (var m in g.ToList()) Lose(c, m, "left", ""); continue; }
+            if (st == null) { foreach (var m in g.ToList()) Lose(c, m, surplus, battle ? foe : ""); continue; }
             var hurt = g.Where(m => m.Hurt).ToList();
-            for (int i = st.Wounded; i < hurt.Count; i++) hurt[i].Hurt = false;
             var fit = g.Where(m => !m.Hurt).ToList();
-            for (int i = st.Men; i < fit.Count; i++) Lose(c, fit[i], "left", "");
+            while (hurt.Count > st.Wounded && fit.Count < st.Men) { var m = hurt[^1]; hurt.RemoveAt(hurt.Count - 1); m.Hurt = false; fit.Add(m); }
+            while (battle && fit.Count > st.Men && hurt.Count < st.Wounded) { var m = fit[^1]; fit.RemoveAt(fit.Count - 1); Hurt(c, m); hurt.Add(m); }
+            foreach (var m in hurt.Skip(st.Wounded).Concat(fit.Skip(st.Men)).ToList()) Lose(c, m, surplus, battle ? foe : "");
         }
         if (!c.RollStarted && c.Men > 0)
         {
@@ -162,5 +197,55 @@ public sealed partial class Campaign
         var men = share >= 1 ? from.Roll.Where(m => m.Troop == troop).ToList() : FitNamed(from, troop).ToList();
         int k = share >= 1 ? men.Count : (int)MathF.Round(men.Count * share);
         foreach (var m in men.Take(k)) { from.Roll.Remove(m); to.Roll.Add(m); }
+    }
+
+    // ---------- rising from the ranks (L4) ----------
+
+    /// Where a companion came from, for the screens: "ROSE FROM THE RANKS OF X" or "".
+    public string RoseFrom(Character? ch) => ch?.Ranks == null ? "" :
+        $"ROSE FROM THE RANKS OF {(Player.Companies.FirstOrDefault(c => c.Id == ch.FromCompany)?.Name ?? ch.Ranks.CompanyName).ToUpperInvariant()}";
+
+    /// A new sergeant for one of your companies: its senior named man (3+ battles) leaves the ranks to take the post. `drawn`
+    /// is the name drawn as before (the draw is kept so the main stream does not move), used when no named man is ready.
+    string RiseToSergeant(CompanyRecord c, string drawn)
+    {
+        c.OfficerMan = null;
+        if (!Player.Companies.Contains(c)) return drawn;
+        var m = c.Roll.Where(x => !x.Hurt && x.Battles >= 3).OrderByDescending(x => x.Battles).ThenByDescending(x => x.Kills).FirstOrDefault();
+        if (m == null || c.Stacks.FirstOrDefault(s => s.Troop == m.Troop) is not TroopStack st || st.Men <= 0) return drawn;
+        c.Roll.Remove(m);
+        st.Take(1); // he leaves the ranks
+        m.Deed($"Made sergeant of {c.Name} on day {Day}.");
+        c.OfficerMan = m;
+        Log($"{m.Name} rises from the ranks to be sergeant of {c.Name}.");
+        return "Sgt " + m.Name;
+    }
+
+    /// A sergeant who rose from the ranks falls: he goes to the fallen with his record.
+    void SergeantFell(CompanyRecord c, string where)
+    {
+        if (c.OfficerMan is not Soldier m) return;
+        c.OfficerMan = null;
+        m.Deed($"Fell as sergeant of {c.Name}.");
+        LoseRecord(c, m, where);
+    }
+
+    /// A companion who rose from the ranks falls: his old record goes to the fallen of the company he came from.
+    void CompanionFell(Character k, string where)
+    {
+        if (k.Ranks is not Soldier m) return;
+        k.Ranks = null;
+        m.Deed($"Fell as your {k.Role.ToLowerInvariant()}.");
+        var c = Player.Companies.FirstOrDefault(x => x.Id == k.FromCompany);
+        if (c != null) LoseRecord(c, m, where);
+        else { m.Fate = "fell"; m.DiedDay = Day; m.DiedAt = where; S.Fallen.Add(m); }
+    }
+
+    /// Put a man who is no longer on the roll (a sergeant, a companion) among the company's fallen, with the battle's news.
+    void LoseRecord(CompanyRecord c, Soldier m, string where)
+    {
+        m.Battles = Math.Max(m.Battles, 1);
+        c.Roll.Add(m);
+        Lose(c, m, "fell", where);
     }
 }

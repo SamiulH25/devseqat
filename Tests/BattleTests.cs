@@ -1172,8 +1172,7 @@ public static partial class SelfTest
         c.FinishBattle(result, setup);
         foreach (var f in fates)
         {
-            var co = c.Player.Companies.FirstOrDefault(k => k.Roll.Concat(k.Fallen).Any(m => m.Id == f.Id));
-            var m = co?.Roll.Concat(co.Fallen).First(x => x.Id == f.Id);
+            var m = c.Player.Companies.SelectMany(k => k.Roll).Concat(c.S.Fallen).FirstOrDefault(x => x.Id == f.Id);
             Check(m != null && m.Kills == before[f.Id] + f.Kills, "his kills reach the roll");
             Check(!f.Fell || m!.Hurt || m.Fate != "", "one who fell is hurt or lost");
             Check(f.Fell || f.Fled || m!.Fate is "" or "left", "one who stood comes home");

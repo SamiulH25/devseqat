@@ -83,7 +83,8 @@ partial class MapScreen
         bool rh = ui.Hover(roll);
         if (rh) ui.Rect(roll, Color.White * 0.06f);
         ui.Icon("flag", x, y, Kit.Gilt, 1);
-        string rl = $"ROLL {c.Roll.Count}" + (c.Fallen.Count > 0 ? $", {c.Fallen.Count} FALLEN" : "");
+        int lost = C.FallenOf(c).Count();
+        string rl = $"ROLL {c.Roll.Count}" + (lost > 0 ? $", {lost} FALLEN" : "");
         ui.Text(rl.Length > fit - 2 ? rl[..(fit - 2)] : rl, x + ui.U(11), y, rh ? Style.Text : Style.Dim, 1);
         if (rh) note = c.Roll.Count > 0 ? string.Join(", ", c.Roll.Select(m => m.Name.ToUpperInvariant())) + ". CLICK FOR THE ROLL." : "NO NAMED MEN YET. MEN EARN NAMES IN BATTLE.";
         if (ui.Clicked(roll)) { rollOf = c; panel = PanelKind.Roll; note = ""; }
@@ -158,10 +159,11 @@ partial class MapScreen
         ui.Divider(x, y, w, Kit.Gilt * 0.5f);
         y += ui.U(10);
         ui.Text("THE FALLEN", x, y, Kit.Gilt, 2);
-        ui.TextR($"{c.Fallen.Count}", x + w, y + ui.U(4), Style.Dim, 1);
+        var fallen = C.FallenOf(c).Reverse().ToList();
+        ui.TextR($"{fallen.Count}", x + w, y + ui.U(4), Style.Dim, 1);
         y += ui.U(20);
-        if (c.Fallen.Count == 0) ui.Text("NONE YET.", x, y, Style.Dim, 1);
-        foreach (var m in Enumerable.Reverse(c.Fallen))
+        if (fallen.Count == 0) ui.Text("NONE YET.", x, y, Style.Dim, 1);
+        foreach (var m in fallen)
         {
             if (y > r.Bottom - ui.U(56)) { ui.Text("AND MORE BEFORE THEM.", x, y, Style.Dim, 1); break; }
             string how = m.Fate switch { "missing" => "MISSING", "left" => "LEFT THE COMPANY", _ => "FELL" };

@@ -20,6 +20,7 @@ public partial class Campaign
         bool won = r.Winner == playerTeam;
         float loot = 0, ransom = 0;
         var reports = new List<CompanyReport>();
+        rollNews.Clear();
 
         foreach (var cr in r.Companies)
         {
@@ -72,13 +73,13 @@ public partial class Campaign
             if (cr.Deployed) { c.Battles++; c.Kills += cr.Kills; }
             float lostFrac = menBefore > 0 ? (menBefore - c.Men) / (float)menBefore : 0;
             c.Cohesion = Math.Clamp(c.Cohesion + (teamWon ? 5 : -5) - lostFrac * 10, 0, 30);
-            if (cr.Deployed) OfficerAfterBattle(c, teamWon, lostFrac);
-            if (cr.HeroFell && p == Player) HeroFell(c);
+            if (cr.Deployed) OfficerAfterBattle(c, teamWon, lostFrac, foe);
+            if (cr.HeroFell && p == Player) HeroFell(c, foe);
             Chronicle(c, cr, teamWon, menBefore - c.Men, foe, siegeBattle, p);
             if (playerIn) reports.Add(new CompanyReport(c.Id, c.Name, c.Troop, team == playerTeam ? 0 : 1, menBefore, c.Men, killedAll, woundedAll, capturedAll,
                 fledLostAll, xpPerMan, Rules.UpgradeReady(c), cr.Deployed));
             c.Prune();
-            if (p == Player) SyncRoll(c);
+            if (p == Player) SyncRoll(c, true, foe);
         }
         foreach (var p in side0.Concat(side1)) p.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
 
@@ -186,7 +187,8 @@ public partial class Campaign
         }
         string spoil = won ? BattleSpoil(losers, r) : "";
         Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting,
-            Goals = r.Goals.Select(id => (Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList() };
+            Goals = r.Goals.Select(id => (Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
+            Roll = RollNewsOrdered() };
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
         return Report;
     }

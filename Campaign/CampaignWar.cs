@@ -106,22 +106,24 @@ public sealed partial class Campaign
 
     CompanyRecord WithOfficer(CompanyRecord c)
     {
-        if (c.Officer == "" && rng.Chance(0.6f)) c.Officer = SergeantName();
+        if (c.Officer == "" && rng.Chance(0.6f)) c.Officer = RiseToSergeant(c, SergeantName());
         return c;
     }
 
-    internal void OfficerAfterBattle(CompanyRecord c, bool won, float lostFrac)
+    internal void OfficerAfterBattle(CompanyRecord c, bool won, float lostFrac, string foe = "")
     {
-        if (c.Officer == "") { if (rng.Chance(Player.Companies.Contains(c) && Has("Sergeants") ? 0.8f : 0.4f)) { c.Officer = SergeantName(); c.OfficerBattles = 0; } return; }
+        if (c.Officer == "") { if (rng.Chance(Player.Companies.Contains(c) && Has("Sergeants") ? 0.8f : 0.4f)) { c.Officer = RiseToSergeant(c, SergeantName()); c.OfficerBattles = 0; } return; }
         if (lostFrac >= 0.5f && rng.Chance(0.25f))
         {
             if (Player.Companies.Contains(c)) Log($"{c.Officer} of {c.Name} has fallen.");
+            SergeantFell(c, foe);
             c.Officer = "";
             c.Traits.Clear();
             c.OfficerBattles = 0;
             return;
         }
         c.OfficerBattles++;
+        if (c.OfficerMan != null) c.OfficerMan.Battles++;
         if (c.OfficerBattles >= CompanionBattles) OfficerToCompanion(c);
         if (won && c.Traits.Count < 3 && rng.Chance(0.15f))
         {

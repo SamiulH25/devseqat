@@ -16,6 +16,8 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
     public string LastingWound { get; init; } = "";
     /// The battle's personal goals and whether each was met (P6).
     public IReadOnlyList<(string Text, bool Met)> Goals { get; init; } = Array.Empty<(string, bool)>();
+    /// Your named men in this battle (docs/LEGACY.md L3): the fallen and missing first, then the hurt, then new names.
+    public IReadOnlyList<(string Kind, string Text)> Roll { get; init; } = Array.Empty<(string, string)>();
 }
 
 /// A battle about to be fought between map parties: the armies, options, and how its companies map back to campaign records.
@@ -128,7 +130,6 @@ public static class Rules
         into.Assaults = Math.Max(into.Assaults, from.Assaults);
         foreach (var h in from.Honours) if (!into.Honours.Contains(h) && into.Honours.Count < 3) into.Honours.Add(h);
         into.Roll.AddRange(from.Roll); from.Roll.Clear(); // the named men keep their names (L1); the roll may run past RollSize
-        into.Fallen.AddRange(from.Fallen);
         into.RollStarted |= from.RollStarted;
     }
 

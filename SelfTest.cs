@@ -71,6 +71,8 @@ public static partial class SelfTest
         RefuseOldSave();
         Stacks();
         RollEarnsNames();
+        FallenRemembered();
+        RisesFromRanks();
         Cultures();
         Characters();
         CampaignDivisions();

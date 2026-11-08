@@ -40,10 +40,10 @@ public sealed class CompanyRecord
     public const int LedgerSize = 8;
     /// Your companies' named men (docs/LEGACY.md L1): the few who earned a name, each one of the men of his stack.
     public List<Soldier> Roll = new();
-    /// The named men the company has lost, never trimmed (L3 shows them).
-    public List<Soldier> Fallen = new();
     /// The roll has been started (a new company names its first man once).
     public bool RollStarted;
+    /// The named man who became its sergeant (L4), null for a sergeant from elsewhere.
+    public Soldier? OfficerMan;
 
     [JsonIgnore] public int Men => Stacks.Sum(s => s.Men);
     [JsonIgnore] public int Wounded => Stacks.Sum(s => s.Wounded);
@@ -131,11 +131,12 @@ public sealed class TroopStack
 }
 
 /// A named man of one of your companies (docs/LEGACY.md L1). He is one of the men of the stack of his troop: hurt while
-/// among its wounded. When he leaves the roll he goes to the company's Fallen list with how (Fate) and where (DiedAt).
+/// among its wounded. When he leaves the roll he goes to CampaignState.Fallen with how (Fate), where (DiedAt) and his
+/// company (Company, CompanyName), so he is remembered after the company itself is gone.
 public sealed class Soldier
 {
-    public int Id, Battles, Kills, Wounds, Joined, DiedDay;
-    public string Name = "", Troop = "", Fate = "", DiedAt = "";
+    public int Id, Battles, Kills, Wounds, Joined, DiedDay, Company = -1;
+    public string Name = "", Troop = "", Fate = "", DiedAt = "", CompanyName = "";
     public bool Hurt;
     /// What he is known for, newest last (at most MaxDeeds).
     public List<string> Deeds = new();
@@ -381,6 +382,8 @@ public sealed class CampaignState
     public int Version = CurrentVersion, Seed, NextId = 1, UnpaidWeeks;
     /// Ids of named men (L1), counted apart from NextId so naming men moves no other id.
     public int NextSoldier = 1;
+    /// Every named man your companies have lost (L3), never trimmed.
+    public List<Soldier> Fallen = new();
     /// How far the provinces of this save's map reach (WorldMap.Extent for new campaigns; older saves have their own).
     public float MapExtent = WorldMap.PreviousExtent;
     /// How the map lays out its realms (WorldMap.Layout): saves from before docs/WORLD.md W1 have none and keep the old bands.
@@ -544,6 +547,8 @@ public sealed class Balance
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).
     public int RollSize = 6;
     public float VeteranSurvival = 0.6f;
+    /// Cohesion a company loses with each named man killed or lost (L3).
+    public float FallenCohesion = 1.5f;
     public int VillageRecruitsMax = 8, LordsPerFaction = 8, BanditsMax = 80;
     /// A bandit band appears this many times a day while below BanditsMax (0-1) — the roll for each attempt.
     public float BanditSpawnChance = 0.95f;
