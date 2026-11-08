@@ -32,6 +32,10 @@ public static partial class SelfTest
         Progression();
         Economy();
         Bridge();
+        RiverRoadGivesBridge();
+        RainMakesMud();
+        DefenderChoosesGround();
+        AutoResolveGroundEdge();
         Calibration();
         SiegeBattle();
         Formations();

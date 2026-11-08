@@ -141,15 +141,18 @@ public static class BalanceReport
 
         // 2. Battle win rates by army level (AI against AI), and how long they take. Each side is built by the same
         // rule (Armies.Random), so a fair system should sit near 50% on the diagonal; drift shows a balance problem.
-        var battles = new StringBuilder("level_a,level_b,seed,winner,seconds,dead\n");
+        // Each seed fights on a different ground, so the columns show who wins on which field (docs/TERRAIN.md T7).
+        var grounds = new[] { TerrainParams.Meadow, TerrainParams.Farmland, TerrainParams.Forest, TerrainParams.Hills, TerrainParams.Marsh, TerrainParams.Badlands };
+        var battles = new StringBuilder("level_a,level_b,seed,winner,seconds,dead,ground,layout,ridge_side\n");
         for (int a = 1; a <= 4; a++)
             for (int b = 1; b <= 4; b++)
                 for (int seed = 0; seed < 6; seed++)
                 {
                     var rng = new Random(a * 100 + b * 10 + seed);
-                    var battle = new Battle(seed, Armies.Random(rng, a, 0), Armies.Random(rng, b, 0), new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+                    var battle = new Battle(seed, Armies.Random(rng, a, 0), Armies.Random(rng, b, 0), new BattleOptions { AutoPlayer = true, PlayerWounded = true, Ground = grounds[seed % grounds.Length] });
                     for (int step = 0; battle.Winner < 0 && step < 60 * 600; step++) battle.Update(1 / 60f);
-                    battles.AppendLine(string.Join(",", a, b, seed, battle.Winner, battle.Time.ToString("0", inv), battle.Units.Count(u => u.Dead)));
+                    battles.AppendLine(string.Join(",", a, b, seed, battle.Winner, battle.Time.ToString("0", inv), battle.Units.Count(u => u.Dead),
+                        battle.Terrain.Params.Name, battle.Terrain.Layout, battle.Terrain.RidgeSide));
                 }
         File.WriteAllText("balance/battles.csv", battles.ToString());
 

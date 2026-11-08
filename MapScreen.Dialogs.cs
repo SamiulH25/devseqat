@@ -26,7 +26,8 @@ partial class MapScreen
         var bar = new Rectangle(x, y + ui.U(36), r.Width - ui.U(48), ui.U(10));
         ui.Rect(bar, Style.Foe);
         ui.Rect(new Rectangle(bar.X, bar.Y, (int)(bar.Width * me / MathF.Max(1, me + them)), bar.Height), Style.Friendly);
-        y += ui.U(60);
+        ui.Text(C.GroundNote(e), x, bar.Bottom + ui.U(8), Kit.Gilt, 1); // the ground and who holds it (docs/TERRAIN.md T7)
+        y += ui.U(76);
         foreach (var c in e.Companies.Where(c => c.Men > 0).Take(6))
         {
             ui.Portrait(c.Type, new Rectangle(x, y, ui.U(32), ui.U(30)));

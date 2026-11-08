@@ -91,6 +91,13 @@ public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale
 public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, float HillHeight, float Roll, float FlankWoodDist,
     int Woods, int LoneTrees, int Bushes, bool Road, bool River = false, FieldLayout[]? Layouts = null, float Scale = 1)
 {
+    /// From the campaign (docs/TERRAIN.md T7): how wet the ground is from recent rain (0-1: low ground turns to mud),
+    /// the season (0 spring .. 3 winter; -1 any: winter fields lie bare), and the team that chose where to stand
+    /// (-1 nobody: the seed decides; it gets the crest, the village, the hills on its side).
+    public float Wet { get; init; }
+    public int Season { get; init; } = -1;
+    public int Favour { get; init; } = -1;
+
     public static readonly TerrainParams Meadow = new("Meadow", 3, 5, 1f, 1f, 64, 11, 60, 220, true, Layouts: new[] { FieldLayout.Open, FieldLayout.Open, FieldLayout.Ridge, FieldLayout.WoodedFlank, FieldLayout.Village, FieldLayout.RiverLine });
     public static readonly TerrainParams Farmland = new("Farmland", 1, 3, 0.7f, 0.6f, 70, 6, 30, 380, true, Layouts: new[] { FieldLayout.Hedgerows, FieldLayout.Hedgerows, FieldLayout.Village, FieldLayout.Open });
     public static readonly TerrainParams Forest = new("Forest", 2, 4, 0.9f, 1f, 55, 22, 150, 320, false, Layouts: new[] { FieldLayout.ForestClearing, FieldLayout.WoodedFlank });
@@ -114,6 +121,10 @@ public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, floa
 /// Heights are sampled per triangle exactly as the rendered mesh is split, so units stand on the drawn ground.
 public sealed partial class Terrain
 {
+    /// The layout a field with this seed and ground is built to (the encounter panel asks before the battle).
+    public static FieldLayout LayoutFor(int seed, TerrainParams p, bool siege = false) =>
+        siege || p.Layouts is not { Length: > 0 } ? FieldLayout.Open : p.Layouts[new Random(seed + 17).Next(p.Layouts.Length)];
+
     /// A battlefield: +-256 m of ground on 2.5 m vertices. The campaign map is much bigger and coarser (WorldMap.WorldShape).
     public const float BattleHalf = 256, BattleStep = 2.5f;
     public const int BattleN = 205; // vertices per side = 2 * BattleHalf / BattleStep + 1
@@ -190,7 +201,7 @@ public sealed partial class Terrain
     {
         Seed = seed;
         IsFlat = flat;
-        Layout = wall != null || flat || p.Layouts is not { Length: > 0 } ? FieldLayout.Open : p.Layouts[new Random(seed + 17).Next(p.Layouts.Length)];
+        Layout = flat ? FieldLayout.Open : LayoutFor(seed, p, wall != null);
         Params = wall != null ? p with { Road = false } : Layout == FieldLayout.RiverLine ? p with { Road = true, River = true } : p;
         Wall = wall;
         p = Params;

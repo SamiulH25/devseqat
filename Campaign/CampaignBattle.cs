@@ -201,7 +201,7 @@ public partial class Campaign
         bool unpaid = S.UnpaidWeeks > 0;
         setup.Player = WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0)));
         setup.Enemy = Armies.Divide(Rules.Army(enemy.Name, setup.Side1));
-        setup.Seed = HashCode.Combine(S.Seed, (int)(S.Hours * 4), enemy.Id);
+        setup.Seed = BattleSeed(enemy);
         bool scouts = setup.Side0.SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
         setup.Options = new BattleOptions
         {
@@ -216,7 +216,7 @@ public partial class Campaign
             PlayerWounded = S.Hours < Captain.WoundedUntil,
             Scouted = scouts || Has("Tactician"),
             EnemyDamage = Settings.Current.EnemyDamage, EnemyMorale = DuelMoraleFor(enemy),
-            Ground = Map.BattleGround(Player.Pos),
+            Ground = GroundFor(enemy, GroundChooser(enemy, setup.Side0)), // the map's field, the rain, who chose it (Ground.cs)
             EnemyAggression = SideOf(enemy) >= 0 ? Factions.Get(SideOf(enemy)).Aggression : 1.5f, // a realm's temper; brigands do not wait long
             Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
@@ -239,7 +239,7 @@ public partial class Campaign
     public BattleReport AutoResolveEncounter()
     {
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge * DuelEdge(Encounter!), Edge(Encounter!));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed), Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }

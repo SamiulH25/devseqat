@@ -275,6 +275,11 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   longbowmen plant them too when you have horse.
 - **Perks on the ground:** Pathfinder (woods, scrub and marsh slow your men half as much), Tactician (your side sees a quarter
   further and further into woods), Ambusher (your ambushes shake the enemy more).
+- **The campaign picks the field** (`Campaign/Ground.cs`): where you meet decides the ground. A road over a river gives a river
+  line with its bridge, a village a fight among its houses, a ridge a crest or a pass. Rain soaks each province day by day (the
+  fens most, the steppe least) and a wet field has mud on its low ground; winter fields lie bare. The side that was set upon,
+  or has the better scouts (horse, the Tactician perk), chooses where to stand: it gets the crest. The encounter panel says so
+  ("YOU HOLD THE HIGH GROUND."). Auto-resolve counts it too, and horse is worth less on wet or wooded ground.
 - **Pathing** (`BattlePath.cs`): companies find their own way round: sent over a river they make for the ford or bridge, and sent at a hedge they file
   through its gaps. On open ground they march straight.
 - **Foliage** (placed by `Terrain`, built into meshes by `World.cs`): woods of broadleaf trees or pines, two of them flanking the field,

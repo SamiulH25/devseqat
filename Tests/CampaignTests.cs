@@ -175,6 +175,85 @@ public static partial class SelfTest
         Check(agree >= n * 0.75f, $"auto-resolve calibration ({agree}/{n})");
     }
 
+    /// The campaign chooses the ground (docs/TERRAIN.md T7): a road over a river is a river line with its bridge, a village
+    /// gives a village field, a ridge a crest or a pass.
+    static void RiverRoadGivesBridge()
+    {
+        var m = WorldMap.Generate(11);
+        Vector2? crossing = null, village = null;
+        for (float z = -280; z < 280 && crossing == null; z += 2)
+            for (float x = -280; x < 280; x += 2)
+            {
+                var p = new Vector2(x, z);
+                if (m.RoadDist(p) < 3 && m.RiverDist(p) < 4 && m.ProvinceAt(p).Kind != "Marsh") { crossing = p; break; }
+            }
+        Check(crossing != null, "the map has a road over a river");
+        var g = m.BattleGround(crossing!.Value);
+        Check(g.Layouts is [FieldLayout.RiverLine], "a fight where a road meets a river is on a river line");
+        var t = new Terrain(5, g);
+        Check(t.Rivers.Count == 1 && t.Rivers[0].Bridges.Length == 1, "with its bridge");
+        foreach (var s in m.Settlements.Where(s => s.Kind == SettlementKind.Village))
+        {
+            var p = s.Pos + new Vector2(3, 0);
+            if (m.RoadDist(p) < 6 && m.RiverDist(p) < 12 || m.ProvinceAt(p).Kind is "Marsh" or "Forest" || m.OnRidge(p)) continue;
+            village = p;
+            break;
+        }
+        Check(village != null && m.BattleGround(village.Value).Layouts is [FieldLayout.Village], "a fight by a village is among its houses");
+    }
+
+    /// Rain makes mud: a field after a wet week has far more mud than a dry one; winter fields lie bare.
+    static void RainMakesMud()
+    {
+        int Mud(TerrainParams p)
+        {
+            var t = new Terrain(9, p);
+            int n = 0;
+            for (float z = -90; z <= 90; z += 5)
+                for (float x = -90; x <= 90; x += 5) if (t.GroundAt(new Vector2(x, z)) == GroundKind.Mud) n++;
+            return n;
+        }
+        var open = TerrainParams.Meadow with { Layouts = new[] { FieldLayout.Open }, River = true };
+        int dry = Mud(open), wet = Mud(open with { Wet = 0.9f });
+        Console.WriteLine($"rain: {dry} mud cells dry, {wet} after a wet week");
+        Check(wet > dry + 40, "a wet week turns low ground to mud");
+        var farm = TerrainParams.Farmland with { Layouts = new[] { FieldLayout.Hedgerows } };
+        int Crops(TerrainParams p) { var t = new Terrain(9, p); return Enumerable.Range(0, 1600).Count(i => t.GroundAt(new Vector2(i % 40 * 4 - 80, i / 40 * 4 - 80)) == GroundKind.Crops); }
+        Check(Crops(farm) > 100 && Crops(farm with { Season = 3 }) == 0, "winter fields lie bare");
+
+        var c = Campaign.New(31);
+        for (int i = 0; i < 20 * 24 * 4; i++) { c.Encounter = null; c.Arrived = null; c.Tick(0.25f); }
+        Check(c.S.Provinces.Any(p => p.Wet > 0.2f) && c.S.Provinces.Any(p => p.Wet < 0.1f), "it rains in some provinces and not others");
+        Check(c.S.Provinces.Where(p => p.Kind == "Marsh").DefaultIfEmpty().Average(p => p?.Wet ?? 0) >= c.S.Provinces.Where(p => p.Kind is "Steppe" or "Badlands").DefaultIfEmpty().Average(p => p?.Wet ?? 0), "the fens stay wetter than the steppe");
+    }
+
+    /// The side that was set upon (or scouts better) chooses where to stand: it gets the crest, and the panel says so.
+    static void DefenderChoosesGround()
+    {
+        var ridge = TerrainParams.Hills with { Layouts = new[] { FieldLayout.Ridge } };
+        for (int seed = 1; seed <= 6; seed++)
+            Check(new Terrain(seed, ridge with { Favour = 0 }).RidgeSide == 0 && new Terrain(seed, ridge with { Favour = 1 }).RidgeSide == 1, "the side that chose stands on the crest");
+        Check(new Terrain(3, ridge).RidgeSide == new Terrain(3, ridge with { Favour = -1 }).RidgeSide, "with nobody choosing, the seed decides as before");
+        var c = Campaign.New(31);
+        var foe = c.S.Parties.First(p => p != c.Player && p.Men > 0 && p.Kind != PartyKind.Caravan);
+        foe.ChaseId = c.Player.Id;
+        Check(c.GroundChooser(foe) == 0, "set upon, you choose the ground");
+        foe.ChaseId = -1;
+        Check(c.GroundChooser(foe) == 1, "attacking, they do");
+        Check(c.GroundNote(foe).Length > 0, "the encounter panel says what the ground is");
+    }
+
+    /// Auto-resolve weighs the ground: the side that chose it has an edge, and horse loses worth on wet ground.
+    static void AutoResolveGroundEdge()
+    {
+        var foot = new Party(); foot.Companies.Add(new CompanyRecord { Role = "infantry" }); foot.Companies[0].Stack("shieldmen").Men = 30;
+        var horse = new Party(); horse.Companies.Add(new CompanyRecord { Role = "horse" }); horse.Companies[0].Stack("lancers").Men = 30;
+        var g = TerrainParams.Meadow with { Layouts = new[] { FieldLayout.Open } };
+        float none = Campaign.GroundEdge(g, new[] { foot }, new[] { foot }, 1), mine = Campaign.GroundEdge(g with { Favour = 0 }, new[] { foot }, new[] { foot }, 1), theirs = Campaign.GroundEdge(g with { Favour = 1 }, new[] { foot }, new[] { foot }, 1);
+        Check(none == 1 && mine > 1 && theirs < 1, "choosing the ground is an edge");
+        Check(Campaign.GroundEdge(g with { Wet = 0.9f }, new[] { foot }, new[] { horse }, 1) > Campaign.GroundEdge(g, new[] { foot }, new[] { horse }, 1), "their horse is worth less on sodden ground");
+    }
+
     /// An assault headless: nobody crosses the wall's face except at a ladder or the broken gate, and it ends.
     static void SiegeBattle()
     {

@@ -33,6 +33,7 @@ public sealed partial class Terrain
             case FieldLayout.Ridge:
                 // A long crest just in front of one army's line, with a gentle reverse slope behind it.
                 RidgeSide = rng.Next(2);
+                if (p.Favour >= 0) RidgeSide = p.Favour; // the side that chose its ground stands on the crest
                 RidgeZ = (RidgeSide == 0 ? -1 : 1) * (24 + rng.NextSingle() * 6);
                 ridgeH = (4 + rng.NextSingle() * 2.5f) * MathF.Max(1, p.HillHeight * 0.8f);
                 ridgeW = 14 + rng.NextSingle() * 5;
@@ -41,7 +42,7 @@ public sealed partial class Terrain
             case FieldLayout.TwoHills:
                 // A knoll on each wing, between the lines: whoever holds both rules the field.
                 for (int side = -1; side <= 1; side += 2)
-                    hills.Add((new Vector2(side * (40 + rng.NextSingle() * 16) * p.Scale, rng.NextSingle() * 16 - 8),
+                    hills.Add((new Vector2(side * (40 + rng.NextSingle() * 16) * p.Scale, rng.NextSingle() * 16 - 8 + (p.Favour < 0 ? 0 : p.Favour == 0 ? -10 : 10)), // nearer the side that chose
                         20 + rng.NextSingle() * 6, (5 + rng.NextSingle() * 2) * MathF.Max(1, p.HillHeight * 0.8f)));
                 break;
             case FieldLayout.WoodedFlank:
@@ -66,7 +67,7 @@ public sealed partial class Terrain
                 passH = (10 + rng.NextSingle() * 5) * MathF.Max(1, p.HillHeight * 0.7f);
                 break;
             case FieldLayout.Village:
-                VillageAt = new Vector2((rng.NextSingle() * 50 - 25) * p.Scale, rng.NextSingle() * 6 - 3);
+                VillageAt = new Vector2((rng.NextSingle() * 50 - 25) * p.Scale, rng.NextSingle() * 6 - 3 + (p.Favour < 0 ? 0 : p.Favour == 0 ? -8 : 8)); // on the chooser's side
                 break;
             case FieldLayout.Broken:
                 // Tall, steep knolls scattered over the field.
@@ -99,9 +100,24 @@ public sealed partial class Terrain
         return ridgeH * profile * along * (0.85f + 0.15f * Noise(x * 0.02f, 0, Seed + 41));
     }
 
+    /// The ground at p: from the field's shape and layout (`ShapeGround`), then the season and the rain (T7): winter fields lie
+    /// bare, and after rain the low, flat ground turns to mud.
+    GroundKind GroundOf(Vector2 p, GroundKind k)
+    {
+        var g = ShapeGround(p, k);
+        if (g == GroundKind.Crops && Params.Season == 3) g = Params.Wet > 0.3f ? GroundKind.Mud : GroundKind.Grass;
+        if (Params.Wet > 0 && g is GroundKind.Grass or GroundKind.Crops or GroundKind.Scrub)
+        {
+            float soak = Noise(p.X * 0.035f, p.Y * 0.035f, Seed + 57) * 0.6f + Params.Wet - Gradient(p).Length() * 3 - MathF.Max(0, Height(p)) * 0.08f;
+            if (Rivers.Any(r => r.Dist(p) < r.Width / 2 + 8)) soak += 0.35f; // the banks go first
+            if (soak > 0.85f) g = GroundKind.Mud;
+        }
+        return g;
+    }
+
     /// Ground every field gets from its shape: thick wood in the heart of a big wood, scrub at wood edges, stones on the
     /// steepest slopes; then the layout's own ground. Water and the road are never painted over.
-    GroundKind GroundOf(Vector2 p, GroundKind k)
+    GroundKind ShapeGround(Vector2 p, GroundKind k)
     {
         if (k is GroundKind.Water or GroundKind.Ford or GroundKind.Road or GroundKind.Bridge) return k;
         foreach (var (c, r) in woods)

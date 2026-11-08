@@ -244,6 +244,8 @@ public sealed class Province
     };
     public Vector2 Center;
     public List<int> Neighbors = new();
+    /// How wet its ground is from recent rain, 0-1 (docs/TERRAIN.md T7; Campaign.RainDaily).
+    public float Wet;
 }
 
 public sealed class FactionState

@@ -370,6 +370,7 @@ public sealed partial class Campaign
         }
         FactionAI();
         SiegesDaily();
+        RainDaily();
         FiefsDaily();
         CareerDaily();
         EventsDaily();

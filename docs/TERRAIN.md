@@ -478,3 +478,29 @@ T6 medium, T7 medium, T8 small.
 - Not built: pavises as cover, and the dotted preview path through the ford.
 - Tests `GroundForThePlayer`, `Stakes` (0 of 8 riders cross, 8 of 8 men on foot) and `Pathfinder` (30 m of wood in 10.2 s,
   9.0 s with the perk).
+
+### T7 (done): the campaign chooses the ground
+- **The field from the map** (`WorldMap.BattleGround(p, wet, season)`): the land kind still gives the preset (a forest cell's
+  preset already weights Forest clearing and Wooded flank). Then a road within 6 and a river within 12 give a River line with its
+  bridge (not in the fens); a village within `VillageNear` (8) gives a Village field (not in forest or fen); a ridge gives Ridge,
+  Ridge or Two hills, or a Pass when a road runs over it.
+- **Rain** (`Campaign/Ground.cs`, `RainDaily`, before `FiefsDaily`): each day each province rolls for rain by season (wettest in
+  autumn) and land (fens 1.6×, steppe 0.5×). The roll is a fixed hash (`Roll`), so the main random stream and old saves' futures
+  are untouched. `Province.Wet` goes `wet*0.75 + 0.3` on a rainy day and drains by a quarter on a dry one.
+- **Wet and season on the field** (`TerrainLayouts.GroundOf` wraps `ShapeGround`): low, flat ground near water soaks first
+  (noise + `Wet` − slope − height, more by a river); past the mark grass, crops and scrub turn to mud. In winter (`Season` 3)
+  crops lie bare: mud when wet, else grass. Snow is not built.
+- **Who chooses** (`GroundChooser`): the side that was set upon (`ChaseId` is the other party) scores 2, scouts (any horse) 1,
+  the Tactician perk 1; you win ties. `TerrainParams.Favour` puts the chooser on the ground: Ridge's `RidgeSide`, Two hills'
+  shift (±10 toward the chooser), the village (±8). With `Favour` −1 the seed decides as before. The battle seed is now
+  `BattleSeed(enemy)`, so the panel's promise and the field agree.
+- **The panel** (`GroundNote`, drawn in gilt under the strength bar): "YOU HOLD THE HIGH GROUND.", "THEY HOLD THE FORD." and so on,
+  plus " THE GROUND IS SODDEN." when wet.
+- **Auto-resolve** (`Campaign.GroundEdge`, multiplied into `edge0`): ×1.08 to the side that chose; each side's horse share ×
+  badness (wet, fen, wood) × 0.3 off its worth.
+- `--balance` plays on six grounds in turn and writes `ground`, `layout`, `ridge_side`.
+- Save: `Province.Wet` has a default; no version bump.
+- Not built: `Deploy` on the best place of a chosen zone (the favoured layouts already put the chooser on it); the watchtower
+  site does not count as scouting yet.
+- Tests `RiverRoadGivesBridge`, `RainMakesMud` (0 mud cells dry, 324 after a wet week), `DefenderChoosesGround`,
+  `AutoResolveGroundEdge`; `Calibration` still agrees in 11 of 12 matchups.
