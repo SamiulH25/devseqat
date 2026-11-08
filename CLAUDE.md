@@ -114,7 +114,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 `Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`,
 `SwearFealty`, `ProposeWar`, `SetObjective`, `DeclareIndependence`, `DeclareWar`, `OfferPeace`...
 `Daily` ends with `FiefsDaily` then `CareerDaily` (rulers, councils due, rank beats, win/loss). Events the map must show once are plain fields:
-`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm, V divisions (hard-coded in `MapScreen.Update`).
+`Encounter`, `Arrived`, `Report`, `Beat` (and the saved `S.Event`, an event waiting for a choice). Map screens on keys: P party, K skills, L lords, R realm, V divisions, M realm map (hard-coded in `MapScreen.Update`).
 
 ## File guide (where to look for what)
 
@@ -158,7 +158,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Life on the roads: caravans between towns, pilgrims to shrines, meeting them (buy, news, rob) | `Campaign/Roads.cs` (`RoadsDaily`, `SpawnCaravan`, `CaravanThink`, `Arrive`, `CaravanLost`, `Rob`); `PartyKind.Caravan`; `MapScreen.MeetingPanel` |
 | Realms and cultures data: lines, heraldry palette, home on the map, town flavour, opening wars (`relations`) | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`); `WorldMap.GrowRealms` lays them out; a realm's temper (aggression, garrison, siege, tribute, hunts) is read in `Diplomacy.cs` (`WarAppeal`, `AlliancesDaily`, `Leading`), `CampaignAI.LordThink` and `CampaignSiege` |
 | Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
-| Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |
+| Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Atlas.cs` (M: realm map, province colours and borders, legend), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |
 | Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` (orders, goals, `Send`) + `.Draw.cs` (render, particles, culling, detail) + `Hud.cs` (2D drawing + hit-testing) + `Hud.Overlays.cs` (menu, after-action result, controls) + `Hud.Divisions.cs` |
 | Keys / rebinding | `Controls.cs` (`Act` enum + `Defaults` dict) |
 | 3D meshes (terrain, trees, towns, grass) | `World.cs` |

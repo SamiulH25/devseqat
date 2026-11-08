@@ -127,7 +127,8 @@ mountain ridges you cross by road at the passes.
   independence from a town you hold: your fiefs become a new realm at war with your old liege, and lords who like you more than him follow).
   Every realm's **council** sits each fortnight to grant captured seats, elect a marshal and vote on war. A king declares war and offers
   peace himself. **You win** when your realm holds 60% of the provinces while you are its king or marshal (play on after); a king whose
-  realm loses its last seat has lost. R opens the realm screen: every realm, their relations and the chronicle, with your career and your acts on its second tab.
+  realm loses its last seat has lost. R opens the realm screen: every realm, their relations and the chronicle, with your career and your acts on its second tab. M opens the realm map: every province in its
+  realm's colour, the borders between realms, the towns and you, with the realms listed by the land they hold; click it to look there.
 - **Progression is spelled out.** The captain panel shows your **rank** and one clear **next step**
   — promote your ready men, choose a perk, see a steward for work, buy food — and arriving in a town opens the tab that step
   names. You can field up to **10 companies** right away; **Renown** raises your total troop count (men limit); a bar under the captain

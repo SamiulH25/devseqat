@@ -272,11 +272,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Armoury.cs (103 lines)
 - **MapScreen** (class, L7): ArmourerWell:12, GearRow:29, GearStats:95
 
+## MapScreen.Atlas.cs (120 lines)
+- **MapScreen** (class, L7): AtlasIds:14, AtlasTexture:29, AtlasPanel:58, AtlasLegend:91
+
 ## MapScreen.Captain.cs (186 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:84, CaptainRecord:150
 
-## MapScreen.cs (470 lines)
-- **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:83, Pressed:91, Update:95, Camera:182, Rename:206, Trails:219, ClickWorld:231, Ground:243, Draw:266, UpdateBearers:336, BuildSprites:373, DrawSprites:380, G:392, DrawLines:394, Stage:433
+## MapScreen.cs (474 lines)
+- **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:84, Pressed:92, Update:96, Camera:185, Rename:209, Trails:222, ClickWorld:234, Ground:246, Draw:269, UpdateBearers:339, BuildSprites:376, DrawSprites:383, G:395, DrawLines:397, Stage:436
 
 ## MapScreen.Dialogs.cs (188 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, MeetingPanel:61, SiegePanel:93, BeatPanel:142, GameOverPanel:158, MenuPanel:173
@@ -284,8 +287,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Event.cs (290 lines)
 - **MapScreen** (class, L7): EventPanel:9, EventChoice:42, EffectsText:119, EventScene:125, Village:164, Court:186, Camp:204, SiteScene:223
 
-## MapScreen.Hud.cs (386 lines)
-- **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:22, DrawUi:24, Screen:59, Flags:75, TopBar:158, Feed:177, Overview:192, CaptainPanel:218, RenownStep:252, Cards:254, Card:269, TierStrip:289, Hints:301, Tooltip:307, Modal:372, Note:382
+## MapScreen.Hud.cs (387 lines)
+- **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:22, DrawUi:24, Screen:60, Flags:76, TopBar:159, Feed:178, Overview:193, CaptainPanel:219, RenownStep:253, Cards:255, Card:270, TierStrip:290, Hints:302, Tooltip:308, Modal:373, Note:383
 
 ## MapScreen.Muster.cs (227 lines)
 - **MapScreen** (class, L7): PartyPanel:9, MusterCard:34, MusterSummary:117, OpenSlot:157, MusterSide:168
@@ -293,8 +296,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Party.cs (215 lines)
 - **MapScreen** (class, L8): OpinionWord:10, OpinionColor:11, RoleTextOf:12, CharactersPanel:19, CompanyNote:67, UpgradePanel:81, GoalText:142, DivisionsPanel:146
 
-## MapScreen.Realm.cs (307 lines)
-- **MapScreen** (class, L8): Vassals:11, RealmPanel:42, Realms:68, RealmCard:92, Relations:153, Chronicle:183, RankLadder:202, RealmColumn:219, KingDiplomacy:282
+## MapScreen.Realm.cs (318 lines)
+- **MapScreen** (class, L8): Vassals:11, RealmPanel:42, Realms:68, RealmCard:92, Relations:164, Chronicle:194, RankLadder:213, RealmColumn:230, KingDiplomacy:293
 
 ## MapScreen.Report.cs (218 lines)
 - **MapScreen** (class, L7): ResultsPanel:9, Well:27, Tally:37, Spoils:92, ReportCompanies:128, Progress:160
@@ -319,7 +322,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:51, Deserialize:52, Save:56, Play:63, Matches:92, Run:95
 - **Battle** (class, L104): StartRecording:111, RecordFrame:116, FinishRecording:144
 
-## ScreenHost.cs (485 lines)
+## ScreenHost.cs (486 lines)
 - **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:109, OpenLab:122, QuickBattle:124, StartCampaignBattle:131, FinishCampaignBattle:139, CycleQuality:147, Update:151, Draw:180, CaptureShot:207, CampaignShots:225
 
 ## SelfTest.cs (169 lines)

@@ -436,6 +436,7 @@ build differs:
 - **Code layout:** `ScreenHost` hosts `TitleScreen`, `MapScreen`, `BattleScreen` and `SettingsScreen` (top level rather than `Screens/`).
   The campaign sim, rules, map and state live in `Campaign/`, as specified.
 - **Renaming** works (click a company's name in the party screen). Merge and split, reordering, disbanding and the rest of section 9 work.
+- **The realm map** (M, docs/WORLD.md W6) shows every province in its realm's colour with the borders between realms and a legend.
 - **Map keys** are rebindable like every other key (settings screen or `controls.json`).
 - **Later additions** (roadmap phase B): sieges and fiefs, a third faction (the Northmarch) with per-pair wars, prisoners, contracts,
   officers, seasons and food. Saves are version 3 (version 2 added the third realm's wars, version 3 the map extent); older saves

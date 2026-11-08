@@ -190,6 +190,14 @@ border (you can leave your contract at once). Test: `RealmTempers`.
 - A map overview toggle (M) that shows realm colours and borders, because a world 930 km across needs one.
 - Update `README.md` (realms, cultures), `docs/CAMPAIGN.md` 3.1-3.2 "As built", `CLAUDE.md` file guide, `CODEMAP.md`.
 
+**As built (W6).** M opens the realm map (`MapScreen.Atlas.cs`): the minimap with every province washed in its realm's colour,
+dark lines where realms meet and faint ones between provinces, towns and castles, your company, the province under the mouse,
+and a legend of the realms by land held with how each stands to you; a click moves the camera there. The province grid is
+worked out once per map (`AtlasIds`, 256x256) and repainted when the panel is open, so conquests show at once. The realm cards
+(R) wrap a long culture line and drop a ruler's title before cutting the name; the 7x7 relations matrix and the career tab's
+per-realm rows fit as they were, so no list view was needed. The title screen's realm choice came with W5. Not built: banners
+over the 3D map's realm borders (the realm map covers it). Shot: `campaign-atlas`.
+
 ## 5. Tests to add
 
 - `WorldScale`: on 3 seeds, ~110-130 provinces. Each of the 7 realms has a capital town, at least 10 provinces, and

@@ -465,8 +465,9 @@ sealed class ScreenHost : Game
                 Shot("campaign-gameover");
                 break;
             }
-            case 38: map.Stage("armourer"); Shot("campaign-armourer"); break;
-            case 39:
+            case 38: map.Stage("atlas"); Shot("campaign-atlas"); break;
+            case 39: map.Stage("armourer"); Shot("campaign-armourer"); break;
+            case 40:
             {
                 // Single combat (P2): the encounter with a lord, then the duel itself.
                 mode = Mode.Map;
@@ -477,9 +478,9 @@ sealed class ScreenHost : Game
                 c.Encounter = lord;
                 map.Stage("encounter"); Shot("campaign-encounter-lord"); break;
             }
-            case 40: StartCampaignBattle(c.PrepareDuel(c.Encounter!)); cStage++; shotFrames = 0; break;
-            case 41 when battle.Battle.Time > 3: Shot("campaign-duel"); break;
-            case 42: Exit(); break;
+            case 41: StartCampaignBattle(c.PrepareDuel(c.Encounter!)); cStage++; shotFrames = 0; break;
+            case 42 when battle.Battle.Time > 3: Shot("campaign-duel"); break;
+            case 43: Exit(); break;
         }
     }
 }
