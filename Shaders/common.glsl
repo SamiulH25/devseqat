@@ -1,6 +1,27 @@
-// Shared lighting helpers for world.glsl and sprite.glsl (fragment stage only).
-// Needs uniforms LightViewProj, ShadowParams, CameraPos, SunDir, SunColor, FogColor, FogParams and the ShadowMap sampler.
+// Shared lighting helpers for world.glsl and sprite.glsl (fragment stage only, but the noise is for both).
+// Needs uniforms LightViewProj, ShadowParams, CameraPos, SunDir, SunColor, FogColor, FogParams, Field, Look and the ShadowMap sampler.
+// Field: x = 1 / ground-map size in metres, y = ground map on (1), z = cloud shadow strength, w = wetness.
+// Look: x = snow cover, y = close-up ground detail on (1).
+
+// Cheap value noise (docs/VISUALS.md V4): mottled ground, patches, puddles, cloud shadows.
+float Hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float Noise2(vec2 p)
+{
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(Hash2(i), Hash2(i + vec2(1.0, 0.0)), f.x), mix(Hash2(i + vec2(0.0, 1.0)), Hash2(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
 #ifdef FRAGMENT
+
+// Shadows of clouds drifting over the land with the wind: 1 = in sun.
+float CloudAt(vec3 world)
+{
+    if (Field.z <= 0.0) return 1.0;
+    vec2 p = world.xz * 0.011 + Wind.xy * Time * 0.018;
+    float n = Noise2(p) * 0.65 + Noise2(p * 2.3 + 7.0) * 0.35;
+    return 1.0 - Field.z * smoothstep(0.48, 0.72, n);
+}
 
 // Fraction of sunlight reaching `world` (1 = lit): a 3x3 percentage-closer filter over the sun's shadow map.
 // ShadowParams: x = texel size, y = depth bias, z = enabled.

@@ -72,7 +72,9 @@ partial class BattleScreen
         gd.Textures[1] = null;
         gd.SetRenderTarget(sh.Scene());
         gd.Clear(World.Horizon);
+        sh.GroundMap = TrampleTexture(); sh.GroundSize = TrampleSize; sh.NearDetail = true;
         world.DrawShaded(sh, view, proj, eye, realTime, shadows);
+        sh.GroundMap = null; sh.NearDetail = false;
         DrawBlobs(shadows ? 0.4f : 1); // with real shadows the blobs only add contact darkening
         BuildSprites(view, false);
         sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
@@ -178,6 +180,8 @@ partial class BattleScreen
         Span<Vector2> where = stackalloc Vector2[4];
         foreach (var u in battle.Units)
         {
+            if (u.Routing && u.Active && !u.Mounted && fx.NextSingle() < dt * 1.5f && u.Vel.LengthSquared() > 4) // men running for their lives kick up dust
+                Spray(u.Pos - u.Dir * 0.4f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.5f, 1.0f, 0.22f, false, 0.5f);
             float speed = MathF.Abs(u.Speed);
             if (!u.Active || speed < 1.2f) continue;
             var kind = t.GroundAt(u.Pos);
@@ -234,13 +238,19 @@ partial class BattleScreen
             if (s.Company == null || s.Alive == 0) continue;
             if (deploying && !battle.Options.Scouted && s.Team == 1) continue;
             var bearer = s.Units.FirstOrDefault(u => u.Active && !u.Routing);
+            if (!forSun) BannerFalls(s, bearer);
             if (bearer == null) continue;
             if (!battle.Visible(s, 0)) { puppet.Banner(s.LastSeen, t.Height(s.LastSeen), bearer.Palette, 0, s.Company.Banner); continue; } // where you last saw it
             var at = bearer.Pos - bearer.Dir * 0.35f + new Vector2(-bearer.Dir.Y, bearer.Dir.X) * 0.25f;
-            puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner);
+            float stream = Math.Clamp((bearer.Mounted ? MathF.Abs(bearer.Speed) : bearer.Vel.Length()) / 6, 0, 1);
+            puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
         }
+        DrawFallingBanners();
         if (!forSun)
+        {
+            DrawMarks();
             foreach (var m in motes) puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
+        }
         var eye2 = new Vector2(eye.X, eye.Z);
         // Men outside the view (or, for the sun's pass, outside the shadow map) are skipped; men far off
         // are drawn with fewer parts. Low quality brings the detail bands closer.
@@ -377,6 +387,7 @@ partial class BattleScreen
         {
             var dir = a.Vel.LengthSquared() > 0 ? Vector3.Normalize(a.Vel) : Vector3.Down;
             Line(a.Pos, a.Pos - dir * (a.Stuck >= 0 ? 0.5f : 0.8f), ArrowColor);
+            if (a.Stuck < 0 && quality != Quality.Low) Line(a.Pos - dir * 0.8f, a.Pos - dir * 2.4f, ArrowStreak); // a faint streak behind it in flight
         }
         Stakes();
         RouteDots();

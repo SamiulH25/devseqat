@@ -529,22 +529,61 @@ sealed class Puppet
         tint = keep;
     }
 
-    /// A company banner: a pole rising behind the bearer, the flag at its head turned to the camera.
-    public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1)
+    /// A company banner: a pole rising behind the bearer, the flag at its head turned to the camera. The cloth ripples in
+    /// three strips (more as the bearer moves: `stream` 0..1); `lean` tips the pole over (radians, a falling banner) toward `fallDir`.
+    public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1, float stream = 0, float lean = 0, Vector2 fallDir = default)
     {
         var foot = new Vector3(pos.X, ground, pos.Y);
-        var top = foot + Vector3.Up * 3.3f;
         var side = Vector3.Normalize(new Vector3(camRight.X, 0, camRight.Z));
+        var up = Vector3.Up;
+        if (lean != 0)
+        {
+            var d = new Vector3(fallDir.X, 0, fallDir.Y);
+            up = Vector3.Normalize(Vector3.Up * MathF.Cos(lean) + d * MathF.Sin(lean));
+        }
+        var top = foot + up * 3.3f;
         var keep = tint;
         tint = new Color(92, 64, 40);
         var white = art["white/0"];
         Quad(foot - side * 0.03f, foot + side * 0.03f, top - side * 0.03f, top + side * 0.03f, white, false);
         tint = Color.White;
         var flag = art[(charge >= 0 ? $"flag.{charge}/" : "flag/") + palette];
-        float w = flag.Width * Art.Px * 1.6f, h = flag.Height * Art.Px * 1.6f, sag = MathF.Sin(wave) * 0.05f;
-        var tl = top - Vector3.Up * 0.05f;
-        Quad(tl - Vector3.Up * h, tl + side * w - Vector3.Up * (h + sag), tl, tl + side * w + Vector3.Up * sag, flag, false);
+        float w = flag.Width * Art.Px * 1.6f, h = flag.Height * Art.Px * 1.6f;
+        var tl = top - up * 0.05f;
+        // Three strips of cloth, each fold a little behind the last, rippling out from the pole.
+        const int strips = 3;
+        float amp = 0.05f + 0.07f * stream;
+        Vector3 Edge(int i, out float off)
+        {
+            float f = i / (float)strips;
+            off = MathF.Sin(wave * (1.6f + stream) - f * 3.2f) * amp * f * 2 - 0.12f * f * (1 - stream) * (lean != 0 ? 0 : 1); // hangs slack when still
+            return tl + side * w * f + up * off;
+        }
+        var src = flag;
+        float aw = art.Atlas.Width, ah = art.Atlas.Height, e = 0.01f;
+        var a = Edge(0, out _);
+        for (int i = 1; i <= strips; i++)
+        {
+            var b = Edge(i, out _);
+            float u0 = (src.Left + e + (src.Width - 2 * e) * (i - 1) / strips) / aw, u1 = (src.Left + e + (src.Width - 2 * e) * i / strips) / aw;
+            float v0 = (src.Top + e) / ah, v1 = (src.Bottom - e) / ah;
+            Vector3 atl = a, atr = b, abl = a - up * h, abr = b - up * h;
+            verts.Add(new(atl, tint, new(u0, v0))); verts.Add(new(atr, tint, new(u1, v0))); verts.Add(new(abl, tint, new(u0, v1)));
+            verts.Add(new(atr, tint, new(u1, v0))); verts.Add(new(abr, tint, new(u1, v1))); verts.Add(new(abl, tint, new(u0, v1)));
+            a = b;
+        }
         tint = keep;
+    }
+
+    /// A mark lying on the ground: `key` a sprite (blood, splat), `size` metres across, turned by `rot`, tinted.
+    public void Decal(Vector2 pos, float ground, float size, float rot, Color col, string key)
+    {
+        tilt = 0;
+        var keepTint = tint; var keepPal = pal;
+        tint = col; pal = "/0";
+        Frame(pos, rot, ground, size);
+        Flat(new(0, 0.035f, 0), key, true);
+        tint = keepTint; pal = keepPal;
     }
 
     // ---------- quads ----------

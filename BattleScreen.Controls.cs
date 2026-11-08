@@ -244,7 +244,9 @@ partial class BattleScreen
         float y = yaw + MathHelper.WrapAngle(camYaw - yaw) * k; // shortest way round
         float pt = MathHelper.Lerp(pitch, camPitch, k), dist = MathHelper.Lerp(fieldDist + (mounted ? 1.5f : 0), zoom, k);
         var look = new Vector3(MathF.Cos(y) * MathF.Cos(pt), -MathF.Sin(pt), MathF.Sin(y) * MathF.Cos(pt));
-        eye = focus - look * dist;
+        var shake = Shake();
+        eye = focus - look * dist + shake;
+        focus += shake * 0.6f;
         focusPoint = focus;
         eye.Y = MathF.Max(eye.Y, t.Height(new Vector2(eye.X, eye.Z)) + 0.5f); // never under the ground
         proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(MathHelper.Lerp(62, 45, k)), GraphicsDevice.Viewport.AspectRatio, 0.2f, 700);

@@ -74,14 +74,17 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleRescue.cs (45 lines)
 - **Battle** (class, L8): NameOf:19, Rescuable:22, UpdateRescue:25, KillForTest:41, GoalText:44
 
-## BattleScreen.Controls.cs (255 lines)
+## BattleScreen.Controls.cs (257 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:78, CommandControls:86, BoxOf:188, OnScreen:190, PickSquad:197, GroundUnderMouse:211, UpdateCamera:233
 
-## BattleScreen.cs (356 lines)
-- **BattleScreen** (class, L10): Exit:16, GroundTips:34, BattleScreen:78, Load:90, QuickGround:109, BeginCampaign:119, StartDeployment:143, StageCommandView:151, FinishCampaignBattle:159, NewBattle:167, SetWorld:200, SetCommand:208, Pressed:217, Update:225, PlaySounds:283, Soundscape:293, SyncHud:317, MenuChoice:342
+## BattleScreen.cs (359 lines)
+- **BattleScreen** (class, L10): Exit:16, GroundTips:34, BattleScreen:78, Load:90, QuickGround:109, BeginCampaign:119, StartDeployment:143, StageCommandView:151, FinishCampaignBattle:159, NewBattle:167, SetWorld:200, SetCommand:210, Pressed:219, Update:227, PlaySounds:286, Soundscape:296, SyncHud:320, MenuChoice:345
 
-## BattleScreen.Draw.cs (426 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:51, DrawBlobs:84, EaseFacings:113, Spray:129, Effects:142, GroundSteps:172, BuildSprites:224, SpriteStates:271, DrawSpritesBasic:279, DrawSpritesShaded:289, Line:299, G:300, Ring:302, Precipitation:312, Stakes:336, RouteDots:361, DrawLines:372
+## BattleScreen.Draw.cs (437 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:51, DrawBlobs:86, EaseFacings:115, Spray:131, Effects:144, GroundSteps:174, BuildSprites:228, SpriteStates:281, DrawSpritesBasic:289, DrawSpritesShaded:299, Line:309, G:310, Ring:312, Precipitation:322, Stakes:346, RouteDots:371, DrawLines:382
+
+## BattleScreen.Effects.cs (160 lines)
+- **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:76, Stamp:101, Trample:110, TrampleTexture:120, BannerFalls:139, DrawFallingBanners:150
 
 ## BattleScreen.Orders.cs (192 lines)
 - **BattleScreen** (class, L8): Targets:12, Issue:15, Send:26, GiveGoal:36, GoalCommand:38, Command:60, OrderKeys:111, PlantStakes:125, NextDivision:137, LineAt:147, Distribute:164, PreviewSlots:183
@@ -351,8 +354,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Program.cs (58 lines)
 
-## Puppet.cs (617 lines)
-- **Puppet** (class, L13): Puppet:28, Begin:30, Rad:39, W:40, Lean:59, Frame:66, Draw:90, Horse:168, Beast:232, WolfBody:242, Warg:271, BeastCorpse:289, DrawLooseHorse:301, DrawDeadHorse:310, RotY:335, Arm:342, Span:353, Pose:362, Key:364, Lerp:366, static:370, PoseOf:387, Fallen:462, Corpse:503, Particle:521, Banner:533, Quad:552, Bill:562, Axial:573, Long:585, Plane:598, Flat:609
+## Puppet.cs (656 lines)
+- **Puppet** (class, L13): Puppet:28, Begin:30, Rad:39, W:40, Lean:59, Frame:66, Draw:90, Horse:168, Beast:232, WolfBody:242, Warg:271, BeastCorpse:289, DrawLooseHorse:301, DrawDeadHorse:310, RotY:335, Arm:342, Span:353, Pose:362, Key:364, Lerp:366, static:370, PoseOf:387, Fallen:462, Corpse:503, Particle:521, Banner:534, Decal:579, Quad:591, Bill:601, Axial:612, Long:624, Plane:637, Flat:648
 
 ## Replay.cs (163 lines)
 - **Replay** (class, L8): Serialize:55, Deserialize:56, Save:60, Play:67, Matches:97, Run:100
@@ -364,23 +367,23 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SelfTest.cs (204 lines)
 - **SelfTest** (class, L6): Run:8, RunOne:156, Lancer:164, Run:173, Scaled:175, MakeWanderer:178, Days:186, Ids:198, Check:200
 
-## Settings.cs (73 lines)
+## Settings.cs (76 lines)
 - **Difficulty** (enum, L5)
-- **Settings** (class, L8): Load:27, Save:34, UiFor:41, FirstTime:48
-- **CrashLog** (class, L57): Install:59, Write:61
+- **Settings** (class, L8): Load:30, Save:37, UiFor:44, FirstTime:51
+- **CrashLog** (class, L60): Install:62, Write:64
 
-## SettingsScreen.cs (164 lines)
+## SettingsScreen.cs (172 lines)
 - **SettingsScreen** (class, L7): readonly:18, SettingsScreen:20, Update:22, Close:40, Draw:48
 
-## Shading.cs (161 lines)
+## Shading.cs (178 lines)
 - **Quality** (enum, L8)
-- **Shading** (class, L12): Source:36, Shading:46, AimSun:87, Setup:110, Scene:130, PostToScreen:142, Dispose:156
+- **Shading** (class, L12): Source:37, Shading:47, AimSun:88, Setup:116, Blank:140, Scene:147, PostToScreen:159, Dispose:173
 
-## Sky.cs (63 lines)
-- **Sky** (class, L7): Sky:21, Set:29
+## Sky.cs (76 lines)
+- **Sky** (class, L7): Sky:28, Set:36
 
-## SpriteSheet.cs (930 lines)
-- **SpriteSheet** (class, L12): SpriteSheet:27, Add:35, Pack:40, Side:65, InEl:113, Head:115, GoblinHead:142, TrollHead:172, SkullHead:202, GhoulHead:228, Helm:253, Torso:367, Ribs:432, Tabard:447, Emblem:463, Cape:503, Sleeve:511, Leg:536, Boot:555, Hand:573, Shield:581, Weapon:624, Blade:690, Polearm:701, Bow:716, Arrow:730, Quiver:739, Plume:748, Flag:756, Blood:765, Horse:776, Wolf:840, BodyShape:881, HorseGear:884, Saddle:918
+## SpriteSheet.cs (942 lines)
+- **SpriteSheet** (class, L12): SpriteSheet:27, Add:35, Pack:40, Side:65, InEl:114, Head:116, GoblinHead:143, TrollHead:173, SkullHead:203, GhoulHead:229, Helm:254, Torso:368, Ribs:433, Tabard:448, Emblem:464, Cape:504, Sleeve:512, Leg:537, Boot:556, Hand:574, Shield:582, Weapon:625, Blade:691, Polearm:702, Bow:717, Arrow:731, Quiver:740, Plume:749, Flag:757, Blood:766, Splat:775, Horse:788, Wolf:852, BodyShape:893, HorseGear:896, Saddle:930
 
 ## Squad.cs (163 lines)
 - **Order** (enum, L5)

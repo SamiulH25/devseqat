@@ -22,7 +22,7 @@ sealed partial class BattleScreen
     Quality quality { get => host.Quality; set => host.Quality = value; }
 
     const float CommandTimeScale = 0.25f, BlendTime = 0.45f, DoubleClick = 0.35f;
-    static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30);
+    static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30), ArrowStreak = new(150, 146, 132);
 
     Puppet puppet = null!;
     Hud hud = null!;
@@ -201,6 +201,8 @@ sealed partial class BattleScreen
     {
         Sky.Set(battle.Weather, nightFloor: 0.3f); // moonlight: dark, but you can still fight
         motes.Clear();
+        markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = 0; lastHitAt = lastPlayerHp = -1;
+        Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
         world = new World(GraphicsDevice, battle.Terrain);
     }
@@ -271,7 +273,8 @@ sealed partial class BattleScreen
         battle.Commanding = command;
 
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
-        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); if (battle.GateBroke) world.RebuildFoliage(); }
+        if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
+        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
