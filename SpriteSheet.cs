@@ -34,6 +34,9 @@ public sealed class SpriteSheet
 
     void Add(string key, Canvas c) => pending.Add((key, c));
 
+    /// How many rows of the atlas the packed sprites use (of H): each palette paints a full set of parts.
+    public int Filled { get; private set; }
+
     void Pack()
     {
         int x = 0, y = 0, rowH = 0;
@@ -48,6 +51,7 @@ public sealed class SpriteSheet
             x += w;
             rowH = Math.Max(rowH, h);
         }
+        Filled = y + rowH;
         pending.Clear();
     }
 

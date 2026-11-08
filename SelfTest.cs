@@ -86,6 +86,7 @@ public static partial class SelfTest
         Couriers();
         WorldNames();
         Sites();
+        MapIndexMatches();
         Roads();
         Quests();
         TownLife();

@@ -34,4 +34,27 @@ public static class Bench
         Console.WriteLine($"  tick ms: mean {mean:0.00}, p95 {ticks[(int)(ticks.Count * 0.95)]:0.00}, max {ticks[^1]:0.00}");
         Console.WriteLine("  stages: " + string.Join(", ", Battle.Stages.Select((s, i) => $"{s} {profile[i] / ticks.Count:0.00}")));
     }
+
+    /// `dotnet run -c Release -- --campaign-bench [days]`: a headless campaign for some days (the player idles, encounters
+    /// are waved through), printing ms per day for each tick stage. The check for every change that grows the world (docs/WORLD.md W0).
+    public static void Campaign(int days)
+    {
+        var clock = Stopwatch.StartNew();
+        var c = Ironfield.Campaign.New(11);
+        double setup = clock.Elapsed.TotalMilliseconds;
+        var profile = new double[Ironfield.Campaign.Stages.Length];
+        long markAt = 0;
+        c.Probe = stage =>
+        {
+            long now = Stopwatch.GetTimestamp();
+            if (stage >= 0) profile[stage] += (now - markAt) * 1000.0 / Stopwatch.Frequency;
+            markAt = now;
+        };
+        clock.Restart();
+        for (int h = 0; h < days * 24; h++) { c.Tick(1); c.Encounter = null; c.Arrived = null; }
+        double total = clock.Elapsed.TotalMilliseconds;
+        Console.WriteLine($"campaign bench: {c.Map.Provinces.Count} provinces, {c.S.Settlements.Count} settlements, {c.Map.Roads.Count} roads, {c.S.Factions.Count} realms");
+        Console.WriteLine($"  setup {setup:0} ms; {days} days, {total / days:0.0} ms a day; parties now {c.S.Parties.Count(p => !p.Down)} ({c.S.Parties.Count(p => p.Kind == PartyKind.Lord && !p.Down)} lords)");
+        Console.WriteLine("  ms a day by stage: " + string.Join(", ", Ironfield.Campaign.Stages.Select((s, i) => $"{s} {profile[i] / days:0.0}")));
+    }
 }

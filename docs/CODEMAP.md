@@ -88,14 +88,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **StackResult** (record, L90)
 - **BattleResult** (record, L95)
 
-## Bench.cs (37 lines)
-- **Bench** (class, L7): Run:9
+## Bench.cs (60 lines)
+- **Bench** (class, L7): Run:9, Campaign:40
 
 ## Campaign/Armoury.cs (175 lines)
 - **Campaign** (class, L4): MigrateGear:10, ChooseRoad:27, OfferRoad:51, Own:53, Unequip:56, Owns:68, Wears:69, CannotUse:72, CannotBuy:75, ArmourerStock:84, BuyGear:93, Equip:103, ClearSide:128, SellGear:131, SellPrice:141, BattleSpoil:149, SpoilFrom:159, TakeSpoil:166
 
-## Campaign/Campaign.cs (441 lines)
-- **Campaign** (class, L7): Campaign:36, New:54, Log:107, PartyById:113, SettlementById:114, SideOf:118, Outlaw:120, Hostile:122, WarBetween:131, FactionsAtWar:132, AtWarWithAnyone:133, Score:136, Refuses:147, InSight:152, SettlementAt:154, InTown:155, Tick:160, Speed:176, Move:188, Encounters:219, Clash:247, Edge:281, Hourly:283, Daily:306, Weekly:376, Desert:431
+## Campaign/Campaign.cs (455 lines)
+- **Campaign** (class, L7): Campaign:39, New:57, Log:110, PartyById:116, SettlementById:117, SideOf:121, Outlaw:123, Hostile:125, WarBetween:134, FactionsAtWar:135, AtWarWithAnyone:136, Score:139, Refuses:150, InSight:155, SettlementAt:157, InTown:158, Tick:163, Speed:190, Move:202, Encounters:233, Clash:261, Edge:295, Hourly:297, Daily:320, Weekly:390, Desert:445
 
 ## Campaign/CampaignActions.cs (179 lines)
 - **Campaign** (class, L6): MoveTo:10, Chase:11, GoTo:12, RecruitLevies:17, LevyPrice:59, MercenaryPrice:61, Hire:63, BuyHorses:79, RaiseHounds:93, Merge:117, Split:120, Disband:144, MoveUp:146, SignContract:154, Rest:172
@@ -181,6 +181,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Household.cs (75 lines)
 - **Campaign** (class, L6): static:13, GuardTroop:34, GuardWeekly:46
 
+## Campaign/MapIndex.cs (119 lines)
+- **MapIndex** (class, L9): MapIndex:20, Within:54, SegDist:56, CellOf:63, ProvinceAt:70, RoadDist:85, RiverDist:101
+
 ## Campaign/Monsters.cs (299 lines)
 - **Campaign** (class, L10): Wild:17, Plural:23, SpawnWolfPack:30, WolfThink:53, SpawnTroll:84, TrollThink:108, SpawnHoldout:133, MonstersDaily:156, Grow:173, Recruit:189, SendRaiders:198, MonsterThink:224, Plunder:269, Rejoin:281, HoldoutCleared:291
 
@@ -222,9 +225,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Undead.cs (87 lines)
 - **Campaign** (class, L9): AfterTheBattle:15, Bury:35, GravesDaily:39, RaiseHost:52, UndeadThink:71
 
-## Campaign/WorldMap.cs (371 lines)
-- **WorldMap** (class, L8): WorldMap:54, Generate:58, SiteKindsFor:159, PlaceSites:169, Cross:194, RiverDist:203, ProvinceAt:207, RoadDist:219, SpeedFactor:232, BattleGround:236, Height:242, Tint:263, KindTint:276, BuildTerrain:293
-- **PlaceNamer** (class, L345): PlaceNamer:352, Pool:354, Next:360
+## Campaign/WorldMap.cs (380 lines)
+- **WorldMap** (class, L8): WorldMap:57, Generate:61, SiteKindsFor:162, PlaceSites:172, Cross:197, RiverDist:206, RiverScan:207, ProvinceAt:211, ProvinceScan:214, RoadDist:226, RoadScan:228, SpeedFactor:241, BattleGround:245, Height:251, Tint:272, KindTint:285, BuildTerrain:302
+- **PlaceNamer** (class, L354): PlaceNamer:361, Pool:363, Next:369
 
 ## Campaign/Wounds.cs (47 lines)
 - **WoundDef** (record, L4)
@@ -306,7 +309,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## PixelFont.cs (59 lines)
 - **PixelFont** (class, L7): PixelFont:26, Width:41, Draw:43, DrawRun:49
 
-## Program.cs (40 lines)
+## Program.cs (46 lines)
 
 ## Puppet.cs (503 lines)
 - **Puppet** (class, L13): Puppet:28, Begin:30, Rad:39, W:40, Frame:51, Draw:75, Horse:155, Beast:209, WolfBody:219, Warg:248, BeastCorpse:266, DrawLooseHorse:278, DrawDeadHorse:286, RotY:310, Arm:317, Span:328, Pose:335, Key:336, Lerp:338, PoseOf:357, Corpse:391, Particle:407, Banner:419, Quad:438, Bill:448, Axial:459, Long:471, Plane:484, Flat:495
@@ -318,8 +321,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (485 lines)
 - **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:109, OpenLab:122, QuickBattle:124, StartCampaignBattle:131, FinishCampaignBattle:139, CycleQuality:147, Update:151, Draw:180, CaptureShot:207, CampaignShots:225
 
-## SelfTest.cs (164 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:116, Lancer:124, Run:133, Scaled:135, MakeWanderer:138, Days:146, Ids:158, Check:160
+## SelfTest.cs (165 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:117, Lancer:125, Run:134, Scaled:136, MakeWanderer:139, Days:147, Ids:159, Check:161
 
 ## Settings.cs (73 lines)
 - **Difficulty** (enum, L5)
@@ -336,8 +339,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Sky.cs (63 lines)
 - **Sky** (class, L7): Sky:21, Set:29
 
-## SpriteSheet.cs (854 lines)
-- **SpriteSheet** (class, L12): SpriteSheet:27, Add:35, Pack:37, Side:61, InEl:109, Head:111, GoblinHead:138, TrollHead:168, SkullHead:198, GhoulHead:224, Helm:249, Torso:342, Ribs:392, Tabard:407, Emblem:423, Cape:445, Sleeve:453, Leg:475, Boot:494, Hand:512, Shield:520, Weapon:553, Blade:619, Polearm:630, Bow:645, Arrow:659, Quiver:668, Plume:677, Flag:685, Blood:694, Horse:705, Wolf:764, BodyShape:805, HorseGear:808, Saddle:842
+## SpriteSheet.cs (858 lines)
+- **SpriteSheet** (class, L12): SpriteSheet:27, Add:35, Pack:40, Side:65, InEl:113, Head:115, GoblinHead:142, TrollHead:172, SkullHead:202, GhoulHead:228, Helm:253, Torso:346, Ribs:396, Tabard:411, Emblem:427, Cape:449, Sleeve:457, Leg:479, Boot:498, Hand:516, Shield:524, Weapon:557, Blade:623, Polearm:634, Bow:649, Arrow:663, Quiver:672, Plume:681, Flag:689, Blood:698, Horse:709, Wolf:768, BodyShape:809, HorseGear:812, Saddle:846
 
 ## Squad.cs (150 lines)
 - **Order** (enum, L5)
@@ -357,8 +360,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **TerrainParams** (record, L76)
 - **Terrain** (class, L90): WaterDepth:126, Flat:136, Terrain:137, Terrain:138, Terrain:142, Terrain:164, RawHeight:199, RoadCenter:230, RoadDist:233, Height:242, Height:254, GridHeight:255, Gradient:258, BucketOf:268, AddProp:275, Add:277, Blocked:284, PushOut:298, Core:324, PlaceFoliage:326, PlaceTown:399, SmoothStep:421, Hash:427, Noise:439
 
-## Tests/BattleTests.cs (859 lines)
-- **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, CaptainKit:170, SkillBouts:228, Bout:278, Fight:292, BattleGoals:325, BannerAndLastStand:347, DuelFight:384, RangedRoles:405, FatigueAndSupply:425, Rivers:442, Generals:469, HorseDown:486, Ground:495, HoldFire:519, TroopTree:533, Sprites:557, BigBattle:594, StackBattle:624, ReplayExact:658, SpearsStopHorse:691, ScaleBattle:702, Couriers:740, DivisionGoals:761
+## Tests/BattleTests.cs (860 lines)
+- **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, CaptainKit:170, SkillBouts:228, Bout:278, Fight:292, BattleGoals:325, BannerAndLastStand:347, DuelFight:384, RangedRoles:405, FatigueAndSupply:425, Rivers:442, Generals:469, HorseDown:486, Ground:495, HoldFire:519, TroopTree:533, Sprites:557, BigBattle:595, StackBattle:625, ReplayExact:659, SpearsStopHorse:692, ScaleBattle:703, Couriers:741, DivisionGoals:762
 
 ## Tests/CampaignTests.cs (1040 lines)
 - **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:39, CampaignRun:50, Progression:92, Economy:119, Bridge:131, Calibration:152, SiegeBattle:176, CampaignWar:214, RefuseOldSave:274, Stacks:300, Cultures:345, Characters:415, CampaignDivisions:520, Armoury:566, Duels:637, RidingAndBowcraft:670, PerkTiers:719, SkillRises:746, LastingWounds:799, CaptainTraits:822, HouseholdGuard:861, RankRewards:889, StartingRoad:917, SkillTree:937, BalanceMatchesData:1020, HorsesCostGold:1032
@@ -368,6 +371,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Tests/CreatureTests.cs (577 lines)
 - **SelfTest** (class, L6): HoldoutTrace:11, Holdouts:23, GoblinBattle:91, WolfTrace:138, Wolves:156, WolfRiders:221, Trolls:243, TrollsAbroad:308, UndeadAbroad:338, PlayerCreatures:386, TrollTrace:458, Undead:483, UndeadTrace:542, GraveTrace:565
+
+## Tests/MapTests.cs (29 lines)
+- **SelfTest** (class, L6): MapIndexMatches:10
 
 ## Tests/WorldTests.cs (331 lines)
 - **SelfTest** (class, L6): WorldNames:9, Sites:32, Roads:85, Quests:137, TownLife:218, EventSpread:252, Polish:292

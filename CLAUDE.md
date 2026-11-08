@@ -35,6 +35,7 @@ dotnet run -c Release -- --pacing 8                      # stand-in captain only
 dotnet run -- --replay [file]                            # replay replays/last-battle.json, check same outcome
 dotnet run -- --write-controls                           # write default controls.json
 dotnet run -c Release -- --bench 1500                    # headless 1500-a-side battle: ms per tick by stage (3000 men ~3.6 ms)
+dotnet run -c Release -- --campaign-bench 30             # headless campaign for N days: ms a day by tick stage (~45 ms on the 60-province map)
 ```
 
 Rendering without a display (works in the cloud container, software GL via Mesa llvmpipe):
@@ -139,7 +140,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Duels before a battle: who accepts, the lord's fighting form, the fight (`BattleSetup.Duel`, `BattleOptions.Duel`), what it does to the battle | `Campaign/Duels.cs` (`CannotChallenge`, `LordChampion`, `PrepareDuel`, `FinishDuel`); `Battle.SetupDuel`; CHALLENGE in `MapScreen.Dialogs.cs` `EncounterPanel` |
 | Lord/bandit/realm AI, spawning | `Campaign/CampaignAI.cs` (`LordThink`, `BanditThink`, `FactionAI`) |
 | Company math, auto-resolve, army building | `Campaign/Rules.cs` |
-| World generation, provinces, rivers, roads | `Campaign/WorldMap.cs` |
+| World generation, provinces, rivers, roads / the look-up grid behind `ProvinceAt`, `RoadDist`, `RiverDist` | `Campaign/WorldMap.cs` / `Campaign/MapIndex.cs` (exact: must answer as the full scans do, `SelfTest.MapIndexMatches`) |
 | Prisoners, officers, food, contracts | `Campaign/CampaignWar.cs` |
 | Career ranks, fealty, realm council, founding a realm, win/loss (F5) | `Campaign/Career.cs` (`Rank`, `Council`, `DeclareIndependence`, `CheckEnd`) |
 | Fief prosperity/unrest/taxes, buildings, revolts, vassals and orders, defection (F6) | `Campaign/Fiefs.cs` (`FiefsDaily`, `Build`, `RaiseVassal`, `OrderedProvince`) |
@@ -168,7 +169,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`) |
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
 | Tools | `Replay.cs`, `BalanceReport.cs`, `GpuReport.cs`, `Bench.cs` |
-| Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs`, `Tests/CreatureTests.cs` |
+| Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs`, `Tests/CreatureTests.cs`, `Tests/MapTests.cs` |
 | Developer guide (systems in depth, worked examples) | `docs/DEVELOPING.md` |
 | Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications), `docs/COMBAT_OVERHAUL.md` (plan: sergeant divisions + battle scale), `docs/CREATURES.md` (plan: monsters, creature encounters and troops), `docs/SIDE_CONTENT.md` (plan: sites, side quests, caravans, town life, events, polish), `docs/PROGRESSION.md` (plan: captain gear, combat, skill tree, rank rewards, battle goals), `docs/WORLD.md` (plan: bigger world, seven realms) |
 

@@ -29,7 +29,10 @@ public sealed partial class Campaign
     float ProvinceScale => Map.ProvinceScale;
     /// Lords spread thinner than brigands: a realm with four times the ground raises about twice the armies, not four
     /// times (village recruits are the bottleneck, and a crowd of lords starves all of them).
-    public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale);
+    /// LordsPerFaction is quoted for the three realms of the original map: more realms share the same land, so each raises
+    /// fewer lords and the world's total follows the size of the map, not the number of realms (docs/WORLD.md W0).
+    public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale * LegacyRealms / Math.Max(1, Factions.All.Count));
+    public const int LegacyRealms = 3;
     public int BanditsWanted => (int)MathF.Round(B.BanditsMax * ProvinceScale);
     int BanditSpawnsWanted => Math.Max(1, (int)MathF.Round(B.BanditSpawnsPerDay * ProvinceScale));
 
@@ -165,13 +168,24 @@ public sealed partial class Campaign
             hours -= h;
             double before = S.Hours;
             S.Hours += h;
+            Probe?.Invoke(-1);
             if ((int)before != (int)S.Hours) Hourly();
+            Probe?.Invoke(0);
             if ((int)(before / 24) != (int)(S.Hours / 24)) Daily();
+            Probe?.Invoke(1);
             if ((int)(before / 168) != (int)(S.Hours / 168)) Weekly();
+            Probe?.Invoke(2);
             Move(h);
+            Probe?.Invoke(3);
             Encounters();
+            Probe?.Invoke(4);
         }
     }
+
+    /// Set by the campaign bench (`--campaign-bench`): called at the end of each tick stage (index into <see cref="Stages"/>;
+    /// -1 = step start).
+    public Action<int>? Probe;
+    public static readonly string[] Stages = { "hourly", "daily", "weekly", "move", "encounters" };
 
     public float Speed(Party p)
     {

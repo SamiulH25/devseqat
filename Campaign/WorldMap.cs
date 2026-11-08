@@ -50,6 +50,9 @@ public sealed class WorldMap
     /// Half the side of this map's ground: the provinces, plus the mountain rim (an old save keeps the small world it had).
     public float GroundHalf => ExtentUsed + Rim;
     readonly List<(Vector2 C, float R, float H)> hills = new();
+    /// The look-up grid for ProvinceAt, RoadDist and RiverDist, built on first use (once the roads and rivers are laid).
+    MapIndex? index;
+    MapIndex Index => index ??= new MapIndex(Provinces, Roads, Rivers, GroundHalf + 64);
 
     WorldMap(int seed) { Seed = seed; }
 
@@ -200,11 +203,15 @@ public sealed class WorldMap
         return t is >= 0 and <= 1 && u is >= 0 and <= 1 ? p + r * t : null;
     }
 
-    public float RiverDist(Vector2 p) => Rivers.Count == 0 ? float.MaxValue : Rivers.Min(r => r.Dist(p));
+    public float RiverDist(Vector2 p) => Index.RiverDist(p) ?? RiverScan(p);
+    public float RiverScan(Vector2 p) => Rivers.Count == 0 ? float.MaxValue : Rivers.Min(r => r.Dist(p));
 
     // ---------- queries ----------
 
-    public Province ProvinceAt(Vector2 p)
+    public Province ProvinceAt(Vector2 p) => Index.ProvinceAt(p) ?? ProvinceScan(p);
+
+    /// The full scans the index answers for; kept for points off the grid and for the test that checks the two agree.
+    public Province ProvinceScan(Vector2 p)
     {
         Province best = Provinces[0];
         float bd = float.MaxValue;
@@ -216,7 +223,9 @@ public sealed class WorldMap
         return best;
     }
 
-    public float RoadDist(Vector2 p)
+    public float RoadDist(Vector2 p) => Index.RoadDist(p) ?? RoadScan(p);
+
+    public float RoadScan(Vector2 p)
     {
         float best = float.MaxValue;
         foreach (var (a, b) in Roads)

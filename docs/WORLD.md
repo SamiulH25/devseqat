@@ -1,6 +1,6 @@
 # A bigger world: more land, seven realms
 
-Plan only; nothing here is built yet. Phases W0-W6 can each ship on their own, and `tools/check.sh` must pass after each.
+Plan and progress: each phase's "As built" note says what shipped. Phases W0-W6 can each ship on their own, and `tools/check.sh` must pass after each.
 
 ## 1. Where we are
 
@@ -63,6 +63,12 @@ There are no new races. These are human realms, in the same fantasy-medieval ton
   encounters). This is the baseline for every later phase. If `Encounters` checks every party against every other, give it the grid too.
 - **Atlas check**: dump the atlas (`IRONFIELD_DUMP_ATLAS`) and measure how full it is. If 9 palettes do not fit, either grow it
   to 2048x2048 or paint only the dyed parts (cloth, shields, banners) per palette and share the rest.
+
+**As built (W0).** `Campaign/MapIndex.cs`: a 16-unit grid whose cells keep every province, road and river bend that could
+answer for a point inside them, so the answers are bit-for-bit the full scans' (`SelfTest.MapIndexMatches`, 60k points;
+sites placed on an old seed do not move). `--campaign-bench 30` on seed 11 (60 provinces, 163 parties): 80 -> 45 ms a game
+day, movement 52 -> 18 ms. `LordsWanted` now divides by the number of data realms over three (same counts today).
+The atlas is 30% full with 5 palettes (the Sprites test prints it), so 9 palettes fit as it is. Encounters already had a grid.
 
 ### W1: realms from data
 - `factions.json` per realm: `home` (a point on a unit square, e.g. `[0.5, 0.85]` = south centre), `weight` (how much

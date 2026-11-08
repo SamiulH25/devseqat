@@ -586,6 +586,7 @@ public static partial class SelfTest
         var torso = sheet.Rects["torso.mail.f/0"];
         Check(MathF.Abs((torso.Height - 2) * Style.Px - 0.675f) < 0.05f, "a torso keeps its size in metres");
         Check(sheet.Rects.Values.Any(r => r.Height > 90), "polearms are painted at full length");
+        Console.WriteLine($"sprites: {sheet.Rects.Count} parts for {Style.Sides.Length} palettes, atlas {sheet.Filled * 100 / SpriteSheet.H}% full");
     }
 
     // ---------- campaign (docs/CAMPAIGN.md section 11) ----------
