@@ -1,6 +1,6 @@
 # Captain progression and gameplay: plan
 
-Status: **P1-P4 built; P5 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
+Status: **P1-P5 built; P6 next** (built steps are listed under "As built" at the end). This plan covers the captain as a person: the skills and perks they grow, the
 gear they carry, how they fight with their own hands, and what each step of the career gives *them* (not only the realm).
 The campaign loop (companies, career, fiefs, war, creatures, side content) is built and is not changed here, except
 where a phase says so. Numbers marked *(tune)* are starting values.
@@ -295,3 +295,11 @@ Give the captain something to do in each fight beyond "win".
   Its choices call `ChooseRoad` (Armoury.cs) through the verbs `road_sword` (Arms 20, kite shield), `road_lance`
   (Riding 20, a warhorse, the boar spear as second weapon) and `road_bow` (Bowcraft 20, the hunting bow in hand, the sword
   at the side). `SelfTest.StartingRoad`.
+- P5 (step 3, the free road to a crown and titles): `ClaimCrown` (Career.cs). An unsworn captain under contract with 400
+  renown (`CrownRenown`) who storms a town (`AfterAssault`) is asked by the forced event `free_crown` (trigger `crown`)
+  whether to hand it over or keep it; the `crown` verb gives the town and its villages to the captain and founds a realm
+  on them through `FoundRealm`, the body `DeclareIndependence` now shares: King at once, at war with the old paymaster.
+  Titles: past 300 renown (`TitleRenown`) the captain is called by a name (`Campaign.Title`): a trait first (the Craven,
+  the Lionheart, the Cruel, the Merciful, the Steadfast), else deeds (the Champion for 3 duels, of the Lists for 3
+  tournaments, Goblin-Bane for 3 holdouts, the Hammer for 20 victories), else the Bold. Shown under the name on the
+  captain card and in the end summary. `SelfTest.FreeCrown`. The pilot always hands the town over (first choice).

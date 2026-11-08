@@ -30,7 +30,7 @@ public sealed partial class Campaign
         var lines = new List<string>
         {
             $"{N(Day, "DAY")} IN THE FIELD. {N(Tally("battles"), "BATTLE")}, {Tally("victories")} WON. {Captain.Renown:0} RENOWN.",
-            $"RANK: {RankName(Rank)}. FIEFS: {FiefSeats}. GOLD: {S.Gold:0}.",
+            $"RANK: {RankName(Rank)}{(Title != "" ? $", {Title.ToUpperInvariant()}" : "")}. FIEFS: {FiefSeats}. GOLD: {S.Gold:0}.",
             $"{N(Tally("quests"), "CONTRACT")} AND QUESTS DONE, {N(Tally("sites"), "PLACE")} FOUND, {N(Tally("tournaments"), "TOURNAMENT")} WON.",
         };
         if (Tally("holdouts") + Tally("robbed") > 0) lines.Add($"{N(Tally("holdouts"), "GOBLIN HOLE")} BURNT OUT. {N(Tally("robbed"), "CARAVAN")} ROBBED.");

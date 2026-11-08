@@ -134,6 +134,36 @@ public static partial class SelfTest
         Check(made >= 2, $"the pilot reaches vassal within 120 days in two seeds of three ({made} of {tried})");
     }
 
+    /// The free road to a crown (P5): an unsworn company with renown keeps a town it storms and founds a realm.
+    static void FreeCrown()
+    {
+        var c = Campaign.New(6010);
+        int f = Enumerable.Range(0, c.S.Factions.Count).First(a => Enumerable.Range(0, c.S.Factions.Count).Any(b => c.FactionsAtWar(a, b)));
+        Check(c.SignContract(f) == null || c.Captain.Contract == f, "signed with a realm at war");
+        c.Captain.Contract = f;
+        var town = c.S.Settlements.Where(t => t.Kind == SettlementKind.Town && c.FactionsAtWar(f, t.Faction)).OrderBy(t => t.Id).First();
+        c.Captain.Renown = 200;
+        c.AfterAssault(town, true);
+        Check(town.Faction == f && c.S.Event == null && c.CannotClaimCrown(town)!.Contains("RENOWN"), "a small name takes a town for its paymaster and nothing more");
+        var town2 = c.S.Settlements.Where(t => t.Kind == SettlementKind.Town && c.FactionsAtWar(f, t.Faction)).OrderBy(t => t.Id).First();
+        c.Captain.Renown = Campaign.CrownRenown;
+        c.AfterAssault(town2, true);
+        Check(c.S.Event?.Id == "free_crown", "with the renown, the company is asked whether to keep it");
+        Check(c.Choose(1) == null, "keep it");
+        Check(c.Rank == Rank.King && town2.Faction == c.Captain.Contract && town2.Faction != f && town2.Owner == c.Player.Id, "a free company becomes a king");
+        Check(c.FactionsAtWar(f, c.Captain.Contract), "at war with the realm that hired it");
+        Check(c.CannotClaimCrown(town2) != null, "and a king claims no second crown");
+        // Titles past 300 renown: from the captain's name first, else the deeds.
+        var t = Campaign.New(6011);
+        Check(t.Title == "", "no title for a small name");
+        t.Captain.Renown = Campaign.TitleRenown;
+        Check(t.Title == "the Bold", "a known captain is at least the Bold");
+        t.S.Tally["holdouts"] = 3;
+        Check(t.Title == "Goblin-Bane", "burnt goblin holes give a name");
+        t.Me.Traits.Add("Lionheart");
+        Check(t.Title == "the Lionheart" && t.Summary()[1].Contains("THE LIONHEART"), "a trait outranks a deed, and the summary says it");
+    }
+
     /// Fiefs (F6): taxes and buildings change income, a neglected foreign fief revolts and defects, vassals take orders,
     /// and a lord who hates his liege goes over to a ruler he likes.
     static void FiefLife()

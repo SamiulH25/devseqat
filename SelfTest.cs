@@ -64,6 +64,7 @@ public static partial class SelfTest
         HorsesCostGold();
         Career();
         PilotCareer();
+        FreeCrown();
         FiefLife();
         WarAndPeace();
         EventsAndQuests();

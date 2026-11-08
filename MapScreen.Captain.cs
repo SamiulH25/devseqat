@@ -41,6 +41,7 @@ partial class MapScreen
         int y = port.Bottom + ui.U(10);
         string name = (me?.Name ?? "The Captain").ToUpperInvariant();
         ui.Text(name, c.X, y, Style.Text, ui.TW(name, 2) <= c.Width ? 2 : 1); y += ui.U(20);
+        if (C.Title is { Length: > 0 } title) { ui.Text(title.ToUpperInvariant(), c.X, y - ui.U(4), Kit.Gilt, 1); y += ui.U(10); } // P5
         int cx = c.X;
         cx += ui.Chip(cx, y, Campaign.RankName(C.Rank).ToUpperInvariant(), Kit.Gilt, "crown") + ui.U(4);
         if (me != null) ui.Chip(cx, y, $"AGE {me.Age}", Style.Dim);

@@ -482,6 +482,14 @@
       ]
     },
     {
+      "id": "free_crown", "trigger": "crown", "cooldown": 0, "scene": "court", "title": "{settlement} IS YOURS",
+      "text": "Your banner flies over {settlement}. The {realm} expect you to hand it over and take your pay. Your sergeants look at you, and at the walls, and wait.",
+      "choices": [
+        { "label": "HAND IT TO THE {realm}", "effects": ["renown:5"] },
+        { "label": "KEEP IT AND RULE IN YOUR OWN NAME", "effects": ["crown"] }
+      ]
+    },
+    {
       "id": "trait_lionheart", "trigger": "trait:Lionheart", "cooldown": 90, "scene": "town", "title": "A SONG ABOUT YOU",
       "text": "A minstrel at the inn sings of a captain who fights in the front rank and calls out lords to single combat. Heads turn your way.",
       "choices": [

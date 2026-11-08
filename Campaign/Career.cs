@@ -435,6 +435,36 @@ public sealed partial class Campaign
     public string? DeclareIndependence(string? name = null)
     {
         if (!CanDeclareIndependence(out string why)) return why;
+        FoundRealm(name);
+        return null;
+    }
+
+    /// Renown a free company needs to keep a town it storms as the seat of its own realm (P5).
+    public const float CrownRenown = 400;
+
+    /// Why a free company may not keep this town for itself; null if it may: an unsworn captain under contract, with
+    /// `CrownRenown`, who has just taken a town for the realm that pays him.
+    public string? CannotClaimCrown(Settlement s) =>
+        Captain.Fealty || Rank >= Rank.Vassal ? "ONLY A FREE COMPANY CLAIMS A CROWN THIS WAY"
+        : Captain.Contract < 0 || s.Faction != Captain.Contract ? "ONLY A TOWN YOU TOOK UNDER CONTRACT"
+        : s.Kind != SettlementKind.Town ? "ONLY A TOWN CAN BE A CAPITAL"
+        : Captain.Renown < CrownRenown ? $"NEEDS {CrownRenown:0} RENOWN"
+        : null;
+
+    /// The free road to a crown (P5): keep the town you took and rule it, at war with the realm that hired you.
+    public string? ClaimCrown(Settlement s)
+    {
+        if (CannotClaimCrown(s) is string why) return why;
+        s.Owner = Player.Id;
+        foreach (var v in S.Settlements.Where(v => v.Province == s.Province && v.Kind == SettlementKind.Village)) v.Owner = Player.Id;
+        Deed($"You keep {s.Name} for yourself. A free company has a crown.");
+        FoundRealm(null);
+        return null;
+    }
+
+    /// Found a realm on the land you hold (`DeclareIndependence`, `ClaimCrown`).
+    void FoundRealm(string? name)
+    {
         int old = Captain.Contract;
         var oldRuler = RulerOf(old);
         var capital = Fiefs.Where(t => t.Kind == SettlementKind.Town).OrderBy(t => t.Id).First();
@@ -477,7 +507,6 @@ public sealed partial class Campaign
         Log($"You declare the {realm.Name}, free of the {FactionNames[old]}. {(followers.Count > 0 ? string.Join(", ", followers) + " ride with you." : "No lord follows you yet.")}");
         AudioEngine.Current?.Play(Cue.Horn);
         CheckRank();
-        return null;
     }
 
     /// A seat (with its province and villages) passes to another realm without a fight; its garrison stays.

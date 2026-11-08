@@ -54,6 +54,22 @@ partial class Campaign
         }
     }
 
+    /// Renown past which people give the captain a title (P5).
+    public const float TitleRenown = 300;
+
+    /// What people call the captain once renown passes `TitleRenown`, from their name (traits) or else their deeds; "" before.
+    public string Title
+    {
+        get
+        {
+            if (Captain.Renown < TitleRenown || CharacterById(S.CaptainChar) is not Character me) return "";
+            foreach (var (trait, title) in new[] { ("Coward", "the Craven"), ("Lionheart", "the Lionheart"), ("Ruthless", "the Cruel"), ("Merciful", "the Merciful"), ("Steadfast", "the Steadfast") })
+                if (me.Traits.Contains(trait)) return title;
+            return Tally("duels") >= 3 ? "the Champion" : Tally("tournaments") >= 3 ? "of the Lists" : Tally("holdouts") >= 3 ? "Goblin-Bane"
+                : Tally("victories") >= 20 ? "the Hammer" : "the Bold";
+        }
+    }
+
     /// The age past which the captain's body slips and their head sharpens.
     public const int OldAge = 45;
     public const int DaysPerYear = 120;

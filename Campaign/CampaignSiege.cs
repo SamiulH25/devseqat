@@ -146,7 +146,7 @@ public sealed partial class Campaign
     }
 
     /// After an assault (played or on paper): a win takes the place; a defeat ends your siege.
-    void AfterAssault(Settlement s, bool won)
+    internal void AfterAssault(Settlement s, bool won)
     {
         if (won)
         {
@@ -155,6 +155,7 @@ public sealed partial class Campaign
             s.Garrison.Clear();
             Capture(s, Captain.Contract, Player.Id, S.CaptainChar);
             Captain.Renown += s.Kind == SettlementKind.Town ? 25 : 15;
+            if (CannotClaimCrown(s) == null) Force("free_crown", new PendingEvent { Settlement = s.Id }); // keep it for yourself? (P5)
             if (taken > 0) Log($"{taken / 2} of the garrison are your prisoners.");
         }
         else
