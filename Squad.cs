@@ -49,7 +49,10 @@ public sealed class Squad
 
     public Squad(string name, int team) { Name = name; Team = team; }
 
-    public float Spacing => Formation switch
+    /// How much the ground where it stands opens its ranks (1 on open ground; more in a wood or water; Battle.UpdateSquad sets it).
+    public float Loosen = 1;
+
+    public float Spacing => Loosen * Formation switch
     {
         Formation.Loose => Cavalry ? 4.5f : 2.6f,
         Formation.ShieldWall => 1.0f,

@@ -97,7 +97,8 @@ public sealed partial class Terrain
             {
                 var p = new Vector2(-Half + x * Step, -Half + z * Step);
                 float water = WaterDepth(p);
-                var k = GroundOf(p, water > 0 ? (water < 0.5f ? GroundKind.Ford : GroundKind.Water)
+                var k = GroundOf(p, Rivers.Any(r => r.AtBridge(p)) ? GroundKind.Bridge
+                    : water > 0 ? (water < 0.5f ? GroundKind.Ford : GroundKind.Water)
                     : RoadDist(p) < 2.5f ? GroundKind.Road
                     : InWood(p) ? GroundKind.Wood
                     : GroundKind.Grass);

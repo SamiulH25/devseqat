@@ -15,10 +15,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BalanceReport.cs (176 lines)
 - **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Realms:68, Csv:110, Run:112
 
-## Battle.cs (506 lines)
+## Battle.cs (507 lines)
 - **PlayerInput** (struct, L5)
 - **Projectile** (class, L15)
-- **Battle** (class, L23): Sound:33, Battle:70, Battle:73, SetupDuel:96, Role:106, Deploy:110, Ranks:169, ColumnsFor:170, Empty:190, Empty:191, FieldScale:194, Battle:200, SquadsOf:216, Centroid:217, Log:218, AddSquad:222, Spawn:254, Mark:267, Update:269, Bounds:326, ThinkNow:341, UpdateCentroids:344, UpdateSquad:356, CanBrace:379, Braced:384, InOrder:388, ReachOf:391, RandomSwing:397, StartSwing:401, Reinforce:412, Result:439, GapTo:471, Withdraw:486, CheckEnd:495
+- **Battle** (class, L23): Sound:33, Battle:70, Battle:73, SetupDuel:96, Role:106, Deploy:110, Ranks:169, ColumnsFor:170, Empty:190, Empty:191, FieldScale:194, Battle:200, SquadsOf:216, Centroid:217, Log:218, AddSquad:222, Spawn:254, Mark:267, Update:269, Bounds:326, ThinkNow:341, UpdateCentroids:344, UpdateSquad:356, CanBrace:380, Braced:385, InOrder:389, ReachOf:392, RandomSwing:398, StartSwing:402, Reinforce:413, Result:440, GapTo:472, Withdraw:487, CheckEnd:496
 
 ## BattleAI.cs (310 lines)
 - **Battle** (class, L6): PackApproach:11, HeightRange:25, Think:27, ThinkCav:101, Ride:193, Approach:201, TurnRate:203, Steer:206, Led:225, General:229
@@ -56,8 +56,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleMorale.cs (85 lines)
 - **Battle** (class, L6): UpdateMorale:11
 
-## BattleMove.cs (87 lines)
-- **Battle** (class, L6): Move:8, GroundSpeed:36, Stumble:43, Slope:53, SlopeFactor:56, SlopeFactor:57, Impact:60
+## BattleMove.cs (97 lines)
+- **Battle** (class, L6): Move:8, GroundSpeed:46, Stumble:53, Slope:63, SlopeFactor:66, SlopeFactor:67, Impact:70
 
 ## BattlePlayer.cs (140 lines)
 - **Battle** (class, L6): UpdatePlayer:8, ToggleMount:76, Rally:111, KingsCharge:129
@@ -325,8 +325,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (486 lines)
 - **ScreenHost** (class, L9): ScreenHost:38, ApplyVideo:52, OpenSettings:61, LoadContent:63, StartCampaign:96, ContinueCampaign:109, OpenLab:122, QuickBattle:124, StartCampaignBattle:131, FinishCampaignBattle:139, CycleQuality:147, Update:151, Draw:180, CaptureShot:207, CampaignShots:225
 
-## SelfTest.cs (173 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:125, Lancer:133, Run:142, Scaled:144, MakeWanderer:147, Days:155, Ids:167, Check:169
+## SelfTest.cs (175 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:127, Lancer:135, Run:144, Scaled:146, MakeWanderer:149, Days:157, Ids:169, Check:171
 
 ## Settings.cs (73 lines)
 - **Difficulty** (enum, L5)
@@ -346,36 +346,41 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteSheet.cs (930 lines)
 - **SpriteSheet** (class, L12): SpriteSheet:27, Add:35, Pack:40, Side:65, InEl:113, Head:115, GoblinHead:142, TrollHead:172, SkullHead:202, GhoulHead:228, Helm:253, Torso:367, Ribs:432, Tabard:447, Emblem:463, Cape:503, Sleeve:511, Leg:536, Boot:555, Hand:573, Shield:581, Weapon:624, Blade:690, Polearm:701, Bow:716, Arrow:730, Quiver:739, Plume:748, Flag:756, Blood:765, Horse:776, Wolf:840, BodyShape:881, HorseGear:884, Saddle:918
 
-## Squad.cs (150 lines)
+## Squad.cs (153 lines)
 - **Order** (enum, L5)
 - **Formation** (enum, L10)
-- **Squad** (class, L13): Squad:50, Choices:64, FaceAt:69, Slot:76, Centroid:105, SetLine:114, Shift:134, HoldInPlace:142
+- **Squad** (class, L13): Squad:50, Choices:67, FaceAt:72, Slot:79, Centroid:108, SetLine:117, Shift:137, HoldInPlace:145
 
 ## Style.cs (89 lines)
 - **Emblem** (enum, L5)
 - **Heraldry** (record, L8)
 - **Style** (class, L11): ColorBlind:22, Standard:35, PaletteOf:49
 
-## Terrain.cs (462 lines)
+## Terrain.cs (479 lines)
 - **FoliageKind** (enum, L5)
-- **River** (record, L10): Dist:15, AtFord:28, Carve:31, Smooth:33, Across:36
-- **SiegeWall** (class, L50): SiegeWall:58, AtGate:64, AtLadder:65, Inside:67, Raise:69
-- **Foliage** (struct, L73)
-- **TerrainParams** (record, L78): Named:95
-- **Terrain** (class, L102): WaterDepth:138, Flat:148, Terrain:149, Terrain:150, Terrain:154, Terrain:176, RawHeight:214, RoadCenter:246, RoadDist:249, Height:258, Height:270, GridHeight:271, Gradient:274, BucketOf:284, AddProp:291, Add:293, Blocked:300, PushOut:314, Core:340, PlaceFoliage:342, PlaceTown:413, SmoothStep:435, Hash:441, Noise:453
+- **River** (record, L10): AtBridge:17, Dist:28, AtFord:41, Carve:44, Smooth:46, Across:49
+- **SiegeWall** (class, L63): SiegeWall:71, AtGate:77, AtLadder:78, Inside:80, Raise:82
+- **Foliage** (struct, L86)
+- **TerrainParams** (record, L91): Named:108
+- **Terrain** (class, L115): WaterDepth:151, Flat:161, Terrain:162, Terrain:163, Terrain:167, Terrain:189, RawHeight:228, RoadCenter:260, RoadDist:263, Height:272, Height:284, GridHeight:285, Gradient:288, BucketOf:298, AddProp:305, Add:307, Blocked:314, PushOut:328, Core:354, PlaceFoliage:356, PlaceTown:430, SmoothStep:452, Hash:458, Noise:470
 
-## TerrainGround.cs (137 lines)
+## TerrainFeatures.cs (148 lines)
+- **FeatureKind** (enum, L7)
+- **Feature** (struct, L10)
+- **Terrain** (class, L16): AddFeature:22, RemoveFeatureAt:38, CellX:44, FeatureLine:47, PushOutFeatures:61, GoRound:84, CrossesFeature:102, SegmentsCross:109, BridgeTheRoad:122, RiverZ:142
+
+## TerrainGround.cs (138 lines)
 - **GroundKind** (enum, L7)
 - **GroundDef** (class, L11): ToString:16
 - **Grounds** (class, L20): Get:25, Load:31, Validate:45, Check:47
-- **Terrain** (class, L67): CellOf:76, GroundAt:83, CoverAt:85, GroundDefAt:87, PaintGround:91, Paint:110, InWood:122, GroundHash:129
+- **Terrain** (class, L67): CellOf:76, GroundAt:83, CoverAt:85, GroundDefAt:87, PaintGround:91, Paint:111, InWood:123, GroundHash:130
 
-## TerrainLayouts.cs (90 lines)
+## TerrainLayouts.cs (197 lines)
 - **FieldLayout** (enum, L7)
-- **Terrain** (class, L11): ShapeLayout:21, LayoutHeight:52, GroundOf:66
+- **Terrain** (class, L11): ShapeLayout:28, LayoutHeight:83, GroundOf:104, Sq:137, PlaceVillage:140, PlaceHedges:169, HedgeLine:185
 
-## Tests/BattleTests.cs (982 lines)
-- **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, CaptainKit:170, SkillBouts:228, Bout:278, Fight:292, BattleGoals:325, BannerAndLastStand:347, DuelFight:384, RangedRoles:405, FatigueAndSupply:425, GroundLayer:443, GroundMoves:467, GroundFights:498, Layouts:535, Rivers:564, Generals:591, HorseDown:608, Ground:617, HoldFire:641, TroopTree:655, Sprites:679, BigBattle:717, StackBattle:747, ReplayExact:781, SpearsStopHorse:814, ScaleBattle:825, Couriers:863, DivisionGoals:884
+## Tests/BattleTests.cs (1053 lines)
+- **SelfTest** (class, L6): Charge:9, CavalryBalance:29, Flanks:70, Parry:86, Formations:114, CaptainCombat:144, CaptainKit:170, SkillBouts:228, Bout:278, Fight:292, BattleGoals:325, BannerAndLastStand:347, DuelFight:384, RangedRoles:405, FatigueAndSupply:425, GroundLayer:443, GroundMoves:468, GroundFights:499, Layouts:536, HedgesAndBridges:567, EveryLayoutResolves:615, Rivers:635, Generals:662, HorseDown:679, Ground:688, HoldFire:712, TroopTree:726, Sprites:750, BigBattle:788, StackBattle:818, ReplayExact:852, SpearsStopHorse:885, ScaleBattle:896, Couriers:934, DivisionGoals:955
 
 ## Tests/CampaignTests.cs (1047 lines)
 - **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:41, CampaignRun:52, Progression:94, Economy:121, Bridge:133, Calibration:155, SiegeBattle:179, CampaignWar:217, RefuseOldSave:278, Stacks:304, Cultures:349, Characters:422, CampaignDivisions:527, Armoury:573, Duels:644, RidingAndBowcraft:677, PerkTiers:726, SkillRises:753, LastingWounds:806, CaptainTraits:829, HouseholdGuard:868, RankRewards:896, StartingRoad:924, SkillTree:944, BalanceMatchesData:1027, HorsesCostGold:1039
@@ -437,7 +442,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Verts.cs (13 lines)
 - **Verts<T>** (class, L4): Add:8
 
-## World.cs (824 lines)
+## World.cs (826 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): World:49, RebuildFoliage:65, Lit:71, Draw:89, SetFog:116, DrawShaded:123, DrawShadowCasters:148, DrawGeometry:157, Dispose:170, Smooth:179, GroundColor:186, BuildDetail:245, BuildMinimap:257, WorldToMinimap:289, MinimapToWorld:290, DrawFoliage:374, Jitter:388, Broadleaf:394, Pine:411, Bush:425, Rock:434, House:446, Village:453, Town:464, SiteModel:498, Water:579, WallStones:602, Tower:612, GateDoor:624, Ladder:639, Wagon:652, TownHouse:662, Castle:669, Grass:686
+- **World** (class, L25): World:49, RebuildFoliage:65, Lit:71, Draw:89, SetFog:116, DrawShaded:123, DrawShadowCasters:148, DrawGeometry:157, Dispose:170, Smooth:179, GroundColor:186, BuildDetail:246, BuildMinimap:258, WorldToMinimap:290, MinimapToWorld:291, DrawFoliage:376, Jitter:390, Broadleaf:396, Pine:413, Bush:427, Rock:436, House:448, Village:455, Town:466, SiteModel:500, Water:581, WallStones:604, Tower:614, GateDoor:626, Ladder:641, Wagon:654, TownHouse:664, Castle:671, Grass:688
+
+## World.Features.cs (54 lines)
+- **World** (class, L6): Features:10
 

@@ -448,13 +448,14 @@ public static partial class SelfTest
         var a = new Terrain(21, p);
         Check(a.GroundHash() == new Terrain(21, p).GroundHash() && a.GroundHash() != new Terrain(22, p).GroundHash(), "the same seed gives the same ground");
         var r = a.Rivers.Single();
-        Check(a.GroundAt(r.Path[65]) == (r.AtFord(r.Path[65]) ? GroundKind.Ford : GroundKind.Water) && a.GroundAt(r.Fords[0]) == GroundKind.Ford, "the river is water, shallow at its fords");
+        var open = r.Path.Skip(55).First(q => !r.AtBridge(q) && !r.AtFord(q) && !r.AtBridge(q + new Vector2(3, 0)) && !r.AtBridge(q - new Vector2(3, 0)));
+        Check(a.GroundAt(open) == GroundKind.Water && a.GroundAt(r.Fords[0]) == GroundKind.Ford, "the river is water, shallow at its fords");
         var road = Enumerable.Range(0, 40).Select(i => new Vector2(-200 + i * 10, a.RoadCenter(-200 + i * 10))).First(q => a.Rivers.All(rv => rv.Dist(q) > 12));
         Check(a.GroundAt(road) == GroundKind.Road, "the road is road (away from the river: no bridges yet)");
         var trunks = a.Foliage.Where(f => f.Kind is FoliageKind.Pine or FoliageKind.Broadleaf && f.Radius > 0).ToList();
         int inWood = trunks.Count(f => a.GroundAt(f.Pos) == GroundKind.Wood);
         Check(inWood > trunks.Count / 2, $"most trees stand on wood ground ({inWood} of {trunks.Count})");
-        Check(a.GroundAt(Vector2.Zero) is GroundKind.Grass or GroundKind.Road or GroundKind.Water or GroundKind.Ford, "the middle of the field is open");
+        Check(a.GroundAt(Vector2.Zero) is not (GroundKind.Wood or GroundKind.DenseWood), "the middle of the field is open");
         var flat = Terrain.Flat();
         Check(flat.GroundAt(new Vector2(30, 30)) == GroundKind.Grass && flat.CoverAt(Vector2.Zero) == 0, "a flat test field is all grass");
         var b = Battle.Empty(3);
@@ -560,12 +561,82 @@ public static partial class SelfTest
         Check(new Terrain(13, TerrainParams.Meadow with { Layouts = null }).Layout == FieldLayout.Open, "no layouts means an open field");
     }
 
+    /// Line features and the rest of the layouts (docs/TERRAIN.md T2): a hedge stops a man except at its gaps, a road over
+    /// a river gets a bridge you can walk across dry-shod, a village has houses and fences, a pass has high sides, and a
+    /// company in a wood opens its ranks.
+    static void HedgesAndBridges()
+    {
+        var b = Battle.Empty(5);
+        b.Terrain.AddFeature(FeatureKind.Hedge, new Vector2(-20, 0), new Vector2(20, 0));
+        var s = b.AddSquad(0, UnitType.Shieldman, 1, new(0, -6), 1, Vector2.UnitY);
+        s.Order = Order.Hold; s.Anchor = new(0, 10); s.Front = Vector2.UnitY;
+        Run(b, 6);
+        Check(s.Units[0].Pos.Y < 0, "a hedge stops a man");
+        var gap = b.AddSquad(0, UnitType.Shieldman, 1, new(25, -6), 1, Vector2.UnitY);
+        gap.Order = Order.Hold; gap.Anchor = new(25, 10); gap.Front = Vector2.UnitY;
+        Run(b, 8);
+        Check(gap.Units[0].Pos.Y > 8, "but not past its end");
+        Check(b.Terrain.CrossesFeature(new Vector2(0, -5), new Vector2(0, 5)) && !b.Terrain.CrossesFeature(new Vector2(25, -5), new Vector2(25, 5)), "a line across a hedge crosses it");
+
+        var river = new Terrain(21, TerrainParams.Meadow with { Layouts = new[] { FieldLayout.RiverLine } });
+        var r = river.Rivers.Single();
+        Check(river.Layout == FieldLayout.RiverLine && r.Bridges.Length == 1, "a river line has a bridge where the road crosses");
+        var (at, along) = r.Bridges[0];
+        Check(river.WaterDepth(at) == 0 && river.GroundAt(at) == GroundKind.Bridge && river.Features.Count(f => f.Kind == FeatureKind.Rail) == 2, "the bridge is dry, with a rail each side");
+        int seg = Enumerable.Range(0, r.Path.Length - 1).MinBy(i => Vector2.DistanceSquared(r.Path[i], at));
+        var aside = at + Vector2.Normalize(r.Path[seg + 1] - r.Path[seg]) * 7; // along the river, off the deck
+        Check(river.WaterDepth(aside) > 0.5f || r.AtFord(aside), "beside the bridge is the river");
+        Check(MathF.Abs(river.Height(at) - river.Height(at + along * 8)) < 1.2f, "the bridge runs level from bank to bank");
+
+        var village = new Terrain(9, TerrainParams.Farmland with { Layouts = new[] { FieldLayout.Village } });
+        Check(village.Foliage.Count(f => f.Kind == FoliageKind.House) >= 6 && village.Features.Any(f => f.Kind == FeatureKind.Fence), "a village has houses and fences");
+        Check(village.GroundAt(village.VillageAt) is GroundKind.Street or GroundKind.Road, "with streets between the houses");
+        Check(!village.Foliage.Any(f => f.Radius > 0 && MathF.Abs(f.Pos.X) < 50 && MathF.Abs(f.Pos.Y) is > 22 and < 54), "and none of it where the armies deploy");
+        var hedges = new Terrain(9, TerrainParams.Farmland with { Layouts = new[] { FieldLayout.Hedgerows } });
+        Check(hedges.Features.Count(f => f.Kind == FeatureKind.Hedge) > 8, "hedgerows have hedges");
+        Check(!hedges.Features.Any(f => MathF.Abs(f.A.Y) > 22 || MathF.Abs(f.B.Y) > 22), "but not where the armies deploy");
+        var pass = new Terrain(9, TerrainParams.Hills with { Layouts = new[] { FieldLayout.Pass }, HillsMin = 0, HillsMax = 0 });
+        Check(pass.Height(new Vector2(-110, 0)) > pass.Height(Vector2.Zero) + 6 && pass.Height(new Vector2(110, 0)) > pass.Height(Vector2.Zero) + 6, "a pass has high ground both sides");
+        foreach (var l in new[] { FieldLayout.WoodedFlank, FieldLayout.ForestClearing })
+        {
+            var w = new Terrain(9, TerrainParams.Forest with { Layouts = new[] { l } });
+            Check(!w.Foliage.Any(f => f.Radius > 0 && w.Core(f.Pos)), $"{l}: the deployment ground is clear");
+        }
+
+        var wood = Battle.Empty(5);
+        wood.Terrain.Paint(new Vector2(0, 0), 30, GroundKind.Wood);
+        var inWood = wood.AddSquad(0, UnitType.Shieldman, 12, new(0, 0), 6, Vector2.UnitY);
+        var open = wood.AddSquad(0, UnitType.Shieldman, 12, new(0, 60), 6, Vector2.UnitY);
+        Run(wood, 0.1f);
+        Check(inWood.Spacing > open.Spacing * 1.15f, "a company in a wood opens its ranks");
+    }
+
+    /// Every layout fights to a result with an idle player (nobody stuck behind a fence, in a village or a bog).
+    static void EveryLayoutResolves()
+    {
+        foreach (var l in Enum.GetValues<FieldLayout>())
+        {
+            var g = (l switch
+            {
+                FieldLayout.Hedgerows or FieldLayout.Village => TerrainParams.Farmland,
+                FieldLayout.Fen => TerrainParams.Marsh,
+                FieldLayout.ForestClearing or FieldLayout.WoodedFlank => TerrainParams.Forest,
+                FieldLayout.Broken => TerrainParams.Badlands,
+                _ => TerrainParams.Hills,
+            }) with { Layouts = new[] { l } };
+            var rng = new Random(2);
+            var b = new Battle(2, Armies.Random(rng, 3, 0), Armies.Random(rng, 3, 1), new BattleOptions { Ground = g });
+            for (int step = 0; b.Winner < 0 && step < 60 * 600; step++) b.Update(1 / 60f);
+            Check(b.Winner >= 0, $"a battle on a {l} field resolves");
+        }
+    }
+
     /// A battlefield river: carved below its banks, slow to wade, quicker at the fords; the map has rivers with bridges.
     static void Rivers()
     {
         var t = new Terrain(21, TerrainParams.Meadow with { River = true });
         var r = t.Rivers.Single();
-        var mid = r.Path[65];
+        var mid = r.Path.Skip(55).First(q => !r.AtBridge(q) && !r.AtBridge(q + new Vector2(6, 0)) && !r.AtBridge(q - new Vector2(6, 0)) && !r.AtFord(q)); // open water, off the bridge
         Check(t.Height(mid) < t.Height(mid + new Vector2(0, 12)) - 0.8f || t.Height(mid) < t.Height(mid - new Vector2(0, 12)) - 0.8f, "the river runs below its banks");
         Check(t.WaterDepth(mid) > 1 && t.WaterDepth(r.Fords[0]) is > 0 and < 0.5f, "deep in the stream, shallow at a ford");
         Check(!t.Foliage.Any(f => f.Radius > 0 && t.WaterDepth(f.Pos) > 0), "no trees in the water");

@@ -366,3 +366,23 @@ T6 medium, T7 medium, T8 small.
 - Still to come in T2: line features (hedges, fences, a bridge where the road crosses the river), the Village, Hedgerows,
   Wooded flank, Forest clearing, River line and Pass layouts, crops in season, and looser ranks on bad ground (from T1).
 
+### T2b (done): line features and the rest of the layouts
+- `TerrainFeatures.cs`: `Feature` (Hedge 0.5 m thick and 1.7 m high, Fence and Rail 0.12 m and 1.1 m), its own bucket grid,
+  `PushOut` covers features as well as trunks. `FeatureLine` lays a line in runs with gaps. `CrossesFeature` is for pathing and sight.
+- `GoRound`: with no pathing yet, a man pressed against a feature slides along it toward its nearer end. Without this, a Village
+  field stalled the level-4 self-test battle: the enemy line piled against the village fence and never reached you. T4 replaces it.
+- Bridges: `River.Bridges` (where, and which way the deck runs). `BridgeTheRoad` puts one where the road crosses the river nearest
+  the middle. There the river is not carved and has no deep water, the ground is Bridge, and a rail runs along each side.
+  `World.Features.cs` draws a plank deck with beams down to the water. Any field with both a road and a river gets one.
+- New layouts: RiverLine (forces road and river), WoodedFlank (a 28-35 m wood on one wing, reaching past the lines),
+  ForestClearing (a ring of ten woods with two rides through it), Village (up to ten houses on a low rise between the lines,
+  with Street ground, garden fences, a fence round it with gaps, and crops around), Hedgerows (a hedge across the field in front
+  of each army and four between them, all with gaps; crops in the fields), Pass (sides 10-15 m high beyond a floor 38-48 m wide).
+- Presets: Meadow adds wooded flank, village and river line; Farmland gets hedgerows, village and open; Forest gets a clearing
+  and a wooded flank; Hills and Badlands add a pass.
+- Looser ranks (left over from T1): `Squad.Loosen` = 1 + (1 - order at the anchor) × 0.5, which scales `Spacing`.
+- Tests: `HedgesAndBridges` (a hedge stops a man but not past its end, the bridge is dry and level with rails, a village, hedgerows,
+  a pass, clear deployment ground, a company in a wood opens up), `EveryLayoutResolves` (each layout fights to a result, about 8 s).
+  `Rivers` and `GroundLayer` now sample the river away from the bridge.
+- Not built: crops by season (T7 sets the season), and features giving cover (T3).
+

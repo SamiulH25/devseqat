@@ -249,6 +249,11 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   deep water and so on. The ground sets the pace (a wood halves a horse; a road is quick), tires men (mud and climbs, worse in
   heavy armour), and blunts a charge. In a wood or deep water men cannot keep the ranks: no braced spears and no locked shields,
   and pikes lose part of their length among the trees. A horse galloping over stones, scrub or mud may stumble.
+  Companies open their ranks where the ground is bad.
+- **Fields with a shape** (`TerrainLayouts.cs`): each kind of ground has layouts the seed picks from: an open field, a ridge in front
+  of one army, a knoll on each wing, broken stony ground, a fen, a river line (with a bridge where the road crosses), a big wood on
+  one wing, a clearing ringed by woods, a village between the lines, hedgerows, a pass between high sides.
+- **Hedges, fences and bridges** (`TerrainFeatures.cs`) are lines men cannot walk through; they go round by the gaps.
 - **Foliage** (placed by `Terrain`, built into meshes by `World.cs`): woods of broadleaf trees or pines, two of them flanking the field,
   lone trees, bushes along wood edges, rocks and boulders, and ~14,000 3D grass tufts with a few flowers. All low-poly, flat-shaded and lit by one sun.
   Tree trunks and boulders are **solid**: units are pushed out of them and a horse that rides into one pulls up hard.

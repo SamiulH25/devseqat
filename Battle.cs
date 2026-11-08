@@ -356,6 +356,7 @@ public sealed partial class Battle
     void UpdateSquad(Squad s, float dt)
     {
         s.Pressure *= MathF.Exp(-0.6f * dt);
+        s.Loosen = 1 + (1 - Terrain.GroundDefAt(s.Anchor).Order) * 0.5f; // bad ground opens the ranks (docs/TERRAIN.md T2)
         if (s.Target is { Alive: 0 }) s.Target = null; // target broken: fall back to the nearest enemy
         if (s.Order == Order.Follow && Player.Active)
         {

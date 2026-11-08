@@ -27,7 +27,17 @@ public partial class Battle
         Separate(dt); // near pairs only, through the spatial grid (BattleGrid.cs)
         // Trees and boulders are solid; a horse that rides into one pulls up hard.
         foreach (var u in Units)
-            if (u.Active && Terrain.PushOut(ref u.Pos, u.Mounted ? 0.9f : BodyRadius(u) - 0.025f) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
+        {
+            if (!u.Active) continue;
+            float r = u.Mounted ? 0.9f : BodyRadius(u) - 0.025f;
+            if (Terrain.PushOut(ref u.Pos, r) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
+            // Pressed against a fence or hedge: edge along it toward the nearer end.
+            if (Terrain.Features.Count > 0 && u.Vel.LengthSquared() > 0.1f && Terrain.GoRound(u.Pos, r, Vector2.Normalize(u.Vel)) is var round && round != Vector2.Zero)
+            {
+                u.Pos += round * u.Vel.Length() * 0.8f * dt;
+                Terrain.PushOut(ref u.Pos, r);
+            }
+        }
         EnforceWall(before);
     }
 

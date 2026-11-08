@@ -9,7 +9,20 @@ public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wa
 /// A river (roadmap C5): a centre line, its width, and the fords where it runs shallow.
 public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float Depth = 1.3f)
 {
-    public const float FordRadius = 7;
+    public const float FordRadius = 7, BridgeHalf = 2.4f;
+    /// Bridges on a battlefield river: where each crosses and the way its deck runs (TerrainFeatures.cs `BridgeTheRoad`).
+    public (Vector2 At, Vector2 Along)[] Bridges { get; init; } = Array.Empty<(Vector2, Vector2)>();
+
+    /// On a bridge's deck (within its half-width of the road, and no further along it than the banks).
+    public bool AtBridge(Vector2 p)
+    {
+        foreach (var (at, along) in Bridges)
+        {
+            var d = p - at;
+            if (MathF.Abs(Vector2.Dot(d, along)) < Width / 2 + 3 && MathF.Abs(d.X * along.Y - d.Y * along.X) < BridgeHalf) return true;
+        }
+        return false;
+    }
 
     /// Distance from p to the river's centre line.
     public float Dist(Vector2 p)
@@ -28,7 +41,7 @@ public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float D
     public bool AtFord(Vector2 p) => Fords.Any(f => Vector2.DistanceSquared(f, p) < FordRadius * FordRadius);
 
     /// How far the bed is cut below the banks here (shallow at a ford).
-    public float Carve(Vector2 p, float dist) => (AtFord(p) ? 0.35f : Depth) * Smooth(Width / 2 + 3, Width / 2 - 1, dist);
+    public float Carve(Vector2 p, float dist) => AtBridge(p) ? 0 : (AtFord(p) ? 0.35f : Depth) * Smooth(Width / 2 + 3, Width / 2 - 1, dist);
 
     static float Smooth(float a, float b, float x) { float t = Math.Clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
 
@@ -78,16 +91,16 @@ public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale
 public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, float HillHeight, float Roll, float FlankWoodDist,
     int Woods, int LoneTrees, int Bushes, bool Road, bool River = false, FieldLayout[]? Layouts = null, float Scale = 1)
 {
-    public static readonly TerrainParams Meadow = new("Meadow", 3, 5, 1f, 1f, 64, 11, 60, 220, true, Layouts: new[] { FieldLayout.Open, FieldLayout.Open, FieldLayout.Ridge });
-    public static readonly TerrainParams Farmland = new("Farmland", 1, 3, 0.7f, 0.6f, 70, 6, 30, 380, true);
-    public static readonly TerrainParams Forest = new("Forest", 2, 4, 0.9f, 1f, 55, 22, 150, 320, false);
-    public static readonly TerrainParams Hills = new("Hills", 5, 7, 1.7f, 1.4f, 66, 9, 50, 200, false, Layouts: new[] { FieldLayout.Ridge, FieldLayout.TwoHills });
+    public static readonly TerrainParams Meadow = new("Meadow", 3, 5, 1f, 1f, 64, 11, 60, 220, true, Layouts: new[] { FieldLayout.Open, FieldLayout.Open, FieldLayout.Ridge, FieldLayout.WoodedFlank, FieldLayout.Village, FieldLayout.RiverLine });
+    public static readonly TerrainParams Farmland = new("Farmland", 1, 3, 0.7f, 0.6f, 70, 6, 30, 380, true, Layouts: new[] { FieldLayout.Hedgerows, FieldLayout.Hedgerows, FieldLayout.Village, FieldLayout.Open });
+    public static readonly TerrainParams Forest = new("Forest", 2, 4, 0.9f, 1f, 55, 22, 150, 320, false, Layouts: new[] { FieldLayout.ForestClearing, FieldLayout.WoodedFlank });
+    public static readonly TerrainParams Hills = new("Hills", 5, 7, 1.7f, 1.4f, 66, 9, 50, 200, false, Layouts: new[] { FieldLayout.Ridge, FieldLayout.TwoHills, FieldLayout.Pass });
     /// Fens: low and wet (a stream always runs through), thick with bushes and alders, soft mud underfoot.
     public static readonly TerrainParams Marsh = new("Marsh", 1, 2, 0.5f, 0.5f, 52, 14, 90, 520, false, true, new[] { FieldLayout.Fen });
     /// Steppe: open grass to the horizon, gentle swells, hardly a tree (room for horse).
     public static readonly TerrainParams Steppe = new("Steppe", 2, 3, 0.8f, 1.2f, 96, 1, 6, 60, false);
     /// Badlands: dry, broken ground with tall knolls, stones and scrub, and little cover.
-    public static readonly TerrainParams Badlands = new("Badlands", 6, 8, 2.1f, 1.6f, 80, 2, 14, 90, false, Layouts: new[] { FieldLayout.Broken, FieldLayout.Broken, FieldLayout.TwoHills });
+    public static readonly TerrainParams Badlands = new("Badlands", 6, 8, 2.1f, 1.6f, 80, 2, 14, 90, false, Layouts: new[] { FieldLayout.Broken, FieldLayout.Broken, FieldLayout.TwoHills, FieldLayout.Pass });
     /// The tournament field (S5): flat, open, a few trees at the edge.
     public static readonly TerrainParams Lists = new("Lists", 0, 0, 0.2f, 0.3f, 90, 0, 6, 30, false);
 
@@ -140,7 +153,7 @@ public sealed partial class Terrain
         foreach (var r in Rivers)
         {
             float d = r.Dist(p);
-            if (d < r.Width / 2) return r.AtFord(p) ? 0.3f : r.Depth;
+            if (d < r.Width / 2) return r.AtBridge(p) ? 0 : r.AtFord(p) ? 0.3f : r.Depth;
         }
         return 0;
     }
@@ -177,7 +190,8 @@ public sealed partial class Terrain
     {
         Seed = seed;
         IsFlat = flat;
-        Params = wall != null ? p with { Road = false } : p;
+        Layout = wall != null || flat || p.Layouts is not { Length: > 0 } ? FieldLayout.Open : p.Layouts[new Random(seed + 17).Next(p.Layouts.Length)];
+        Params = wall != null ? p with { Road = false } : Layout == FieldLayout.RiverLine ? p with { Road = true, River = true } : p;
         Wall = wall;
         p = Params;
         Half = BattleHalf;
@@ -200,7 +214,7 @@ public sealed partial class Terrain
             float a = rng.NextSingle() * MathF.Tau, d = (30 + rng.NextSingle() * 70) * p.Scale;
             hills.Add((new Vector2(MathF.Cos(a), MathF.Sin(a)) * d, (18 + rng.NextSingle() * 17) * MathF.Sqrt(p.Scale), (2.5f + rng.NextSingle() * 3.5f) * p.HillHeight));
         }
-        Layout = wall != null || p.Layouts is not { Length: > 0 } ? FieldLayout.Open : p.Layouts[new Random(seed + 17).Next(p.Layouts.Length)];
+        BridgeTheRoad();
         ShapeLayout(new Random(seed + 18));
         for (int z = 0; z < N; z++)
             for (int x = 0; x < N; x++)
@@ -313,8 +327,8 @@ public sealed partial class Terrain
     /// Push a circle of radius r out of any trunk or boulder it overlaps. Returns true if it hit something.
     public bool PushOut(ref Vector2 p, float r)
     {
-        if (IsFlat) return false;
-        bool hit = false;
+        bool hit = PushOutFeatures(ref p, r);
+        if (IsFlat) return hit;
         int bx = (int)((p.X + Half) / Cell), bz = (int)((p.Y + Half) / Cell);
         for (int z = bz - 1; z <= bz + 1; z++)
             for (int x = bx - 1; x <= bx + 1; x++)
@@ -344,6 +358,7 @@ public sealed partial class Terrain
         bool Ok(Vector2 p, float space) => !Core(p) && RoadDist(p) > 4 && WaterDepth(p) == 0 && Rivers.All(r => r.Dist(p) > r.Width / 2 + 2) && MathF.Abs(p.X) < Half - 8 && MathF.Abs(p.Y) < Half - 8 && !Blocked(p, space)
             && (Wall == null || p.Y < SiegeWall.Outer - 6 || p.Y > 70);
         if (Wall != null) PlaceTown(rng);
+        if (Layout == FieldLayout.Village) PlaceVillage(new Random(Seed + 19));
         void Wood(Vector2 c, float r)
         {
             woods.Add((c, r));
@@ -363,6 +378,7 @@ public sealed partial class Terrain
         // Two woods flank the field: cavalry has to ride round them.
         for (int side = -1; side <= 1; side += 2)
             Wood(new Vector2(side * (Params.FlankWoodDist * Params.Scale + rng.NextSingle() * 8), rng.NextSingle() * 36 - 18), 13 + rng.NextSingle() * 4);
+        foreach (var (c, r) in layoutWoods) Wood(c, r);
         for (int i = 0; i < Params.Woods; i++)
         {
             float a = rng.NextSingle() * MathF.Tau, d = 80 + rng.NextSingle() * 130;
@@ -393,6 +409,7 @@ public sealed partial class Terrain
             if (RoadDist(p) < 3 || Blocked(p, 0.5f)) continue;
             Add(new Foliage(FoliageKind.Bush, p, 0.7f + rng.NextSingle() * 0.6f, 0, rng.Next()));
         }
+        if (Layout == FieldLayout.Hedgerows) PlaceHedges(new Random(Seed + 20));
         for (int i = 0; i < 90; i++) // pebbles and small rocks
         {
             float a = rng.NextSingle() * MathF.Tau, d = MathF.Sqrt(rng.NextSingle()) * 180;

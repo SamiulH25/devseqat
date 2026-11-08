@@ -22,7 +22,7 @@ public struct VertexPNCT : IVertexType
 
 /// The 3D world around the 2D units: lit heightmap terrain, low-poly foliage meshes (trees, pines, bushes, rocks, grass tufts)
 /// and a gradient sky dome. Everything is built once per battle into static vertex buffers.
-sealed class World : IDisposable
+sealed partial class World : IDisposable
 {
     public const float MinimapRange = 110; // the minimap shows +-this many metres around the centre
     public const float FogStart = 110, FogEnd = 330;
@@ -202,6 +202,7 @@ sealed class World : IDisposable
             GroundKind.Sand => Vector3.Lerp(c, new Vector3(0.72f, 0.64f, 0.45f), 0.7f),
             GroundKind.Crops => Vector3.Lerp(c, new Vector3(0.64f, 0.57f, 0.3f), 0.7f),
             GroundKind.Street => Vector3.Lerp(c, new Vector3(0.5f, 0.45f, 0.38f), 0.7f),
+            GroundKind.Bridge => new Vector3(0.45f, 0.33f, 0.21f), // the deck, as the minimap shows it
             _ => c,
         };
         if (t.Tint != null) c = t.Tint(p, c);
@@ -332,6 +333,7 @@ sealed class World : IDisposable
         }
         alwaysStart = m.V.Count;
         Water(m);
+        Features(m);
         Grass(m);
         if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
         alwaysTris = (m.V.Count - alwaysStart) / 3;
