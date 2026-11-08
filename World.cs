@@ -48,10 +48,14 @@ sealed partial class World : IDisposable
         Filter = TextureFilter.LinearMipPoint, AddressU = TextureAddressMode.Wrap, AddressV = TextureAddressMode.Wrap,
     };
 
-    public World(GraphicsDevice gd, Terrain terrain)
+    /// Trees and bushes drawn at this share of their size: the campaign map shrinks them so towns stand out (docs/VISUALS.md V4).
+    readonly float treeScale;
+
+    public World(GraphicsDevice gd, Terrain terrain, float treeScale = 1)
     {
         this.gd = gd;
         t = terrain;
+        this.treeScale = treeScale;
         (terrainVb, terrainIb, terrainTris) = BuildTerrain();
         (foliageVb, _) = BuildFoliage();
         (skyVb, skyTris) = BuildSky();
@@ -351,9 +355,9 @@ sealed partial class World : IDisposable
             var b = new Vector3(f.Pos.X, t.Height(f.Pos), f.Pos.Y);
             switch (f.Kind)
             {
-                case FoliageKind.Broadleaf: Broadleaf(m, b, f.Scale, rng); break;
-                case FoliageKind.Pine: Pine(m, b, f.Scale, rng); break;
-                case FoliageKind.Bush: Bush(m, b, f.Scale, rng); break;
+                case FoliageKind.Broadleaf: Broadleaf(m, b, f.Scale * treeScale, rng); break;
+                case FoliageKind.Pine: Pine(m, b, f.Scale * treeScale, rng); break;
+                case FoliageKind.Bush: Bush(m, b, f.Scale * treeScale, rng); break;
                 case FoliageKind.Village: Village(m, b, f.Scale, rng); break;
                 case FoliageKind.Town: Town(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;

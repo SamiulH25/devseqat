@@ -98,6 +98,15 @@ void main()
         col = mix(col, mix(col * 0.45, FogColor * 0.7, 0.5), puddle * 0.6);
     }
 #ifdef FOLIAGE
+    // Rivers (flat, blue, no UVs) ripple and glint as the water moves.
+    if (vUV.x + vUV.y < 0.001 && n.y > 0.99 && vColor.b - vColor.r > 0.12)
+    {
+        float rip = Noise2(vWorld.xz * 0.7 + vec2(Time * 0.45, Time * 0.3)) * 0.6 + Noise2(vWorld.xz * 2.3 - vec2(Time * 0.2, Time * 0.6)) * 0.4;
+        col *= 0.9 + rip * 0.22;
+        vec3 vw = normalize(CameraPos - vWorld);
+        vec3 rn = normalize(vec3((rip - 0.5) * 0.5, 1.0, (Noise2(vWorld.xz * 1.1 + Time * 0.35) - 0.5) * 0.5));
+        col += SunColor * pow(max(dot(reflect(-l, rn), vw), 0.0), 40.0) * 0.5 * shadow;
+    }
     // Backlit leaves glow.
     vec3 toCam = normalize(CameraPos - vWorld);
     col += albedo * SunColor * pow(max(dot(-toCam, l), 0.0), 4.0) * vUV.y * 0.6 * shadow;

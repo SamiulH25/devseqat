@@ -105,7 +105,7 @@ partial class MapScreen
                 {
                     ui.Rect(l.R, Color.Black * 0.45f);
                     ui.Rect(new Rectangle(l.R.X, l.R.Bottom - ui.U(2), l.R.Width, ui.U(2)), col);
-                    ui.TextC(label, sp.X, l.R.Y + ui.U(3), Color.White, scale);
+                    ui.TextC(label, l.R.Center.X, l.R.Y + ui.U(3), Color.White, scale);
                 },
             });
         }
@@ -120,7 +120,7 @@ partial class MapScreen
                 all.Add(new Label
                 {
                     Pri = site.Id == C.S.GoalSite ? 0 : 5, R = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(12), w, ui.U(12)),
-                    Draw = l => { ui.Rect(l.R, Color.Black * (ready ? 0.4f : 0.25f)); ui.TextC(label, sp.X, l.R.Y + ui.U(2), ready ? Kit.Parchment : Style.Dim, 1); },
+                    Draw = l => { ui.Rect(l.R, Color.Black * (ready ? 0.4f : 0.25f)); ui.TextC(label, l.R.Center.X, l.R.Y + ui.U(2), ready ? Kit.Parchment : Style.Dim, 1); },
                 });
             }
         // Smoke rises over villages that were threatened or stripped.
@@ -132,6 +132,7 @@ partial class MapScreen
                 int r = ui.U(4 + ph * 10 * 110 / MathF.Max(40, zoom));
                 ui.Rect(new Rectangle((int)sp.X - r / 2, (int)sp.Y - r / 2, r, r), new Color(70, 66, 62) * (0.75f * (1 - ph)));
             }
+        if (zoom < 240) Life();
         foreach (var p in C.S.Parties)
         {
             if (p.Down || Screen(G(p.Pos, 9)) is not Vector2 sp) continue;
@@ -149,6 +150,7 @@ partial class MapScreen
                 {
                     string text = l.More > 0 ? $"{label} +{l.More}" : label;
                     var r = l.More > 0 ? new Rectangle(l.R.X, l.R.Y, ui.TW(text, 1) + ui.U(8), l.R.Height) : l.R;
+                    r.X = Math.Min(r.X, Math.Max(ui.U(4), ui.W - ui.U(4) - r.Width));
                     ui.Rect(r, seen ? PartyColor(p) * 0.85f : Color.Black * 0.5f);
                     ui.TextC(text, r.Center.X, r.Y + ui.U(3), seen ? Color.Black : Style.Dim, 1);
                 },
@@ -158,12 +160,46 @@ partial class MapScreen
         var placed = new List<Label>();
         foreach (var l in all.OrderBy(l => l.Pri))
         {
+            // A label cut by the edge slides in to stay whole on the screen; one wholly off it is not drawn.
+            if (l.R.Right <= 0 || l.R.X >= ui.W) continue;
+            l.R.X = Math.Clamp(l.R.X, ui.U(4), Math.Max(ui.U(4), ui.W - ui.U(4) - l.R.Width));
             var pad = new Rectangle(l.R.X - ui.U(2), l.R.Y - ui.U(1), l.R.Width + ui.U(4), l.R.Height + ui.U(2));
             var hit = l.Pri == 0 ? null : placed.FirstOrDefault(o => o.R.Intersects(pad));
             if (hit == null) placed.Add(l);
             else if (l.Party && hit.Party && hit.Pri > 0) hit.More++;
         }
         foreach (var l in placed.AsEnumerable().Reverse()) l.Draw(l);
+    }
+
+    /// The land lives: thin smoke from town chimneys, and dust kicked up behind parties on the move (docs/VISUALS.md V4).
+    void Life()
+    {
+        float fade = Math.Clamp((240 - zoom) / 80, 0, 1);
+        foreach (var t in C.S.Settlements)
+        {
+            if (t.Kind == SettlementKind.Village && t.ThreatUntil > C.S.Hours) continue; // already burning
+            int n = t.Kind == SettlementKind.Village ? 2 : 3;
+            for (int i = 0; i < n; i++)
+            {
+                float ph = (time * 0.12f + i / (float)n + t.Id * 0.37f) % 1;
+                var at = t.Pos + new Vector2((i - 1) * 1.6f + MathF.Sin(ph * 4 + t.Id) * 0.6f + ph * 2.5f, 0.8f * i);
+                if (Screen(G(at, (t.Kind == SettlementKind.Village ? 4 : 7) + ph * 9)) is not Vector2 sp) continue;
+                int r = Math.Max(1, ui.U((2 + ph * 6) * 110 / MathF.Max(40, zoom)));
+                ui.Rect(new Rectangle((int)sp.X - r / 2, (int)sp.Y - r / 2, r, r), new Color(200, 196, 190) * (0.22f * (1 - ph) * fade));
+            }
+        }
+        foreach (var p in C.S.Parties)
+        {
+            if (p.Down || !bearers.TryGetValue(p.Id, out var u) || u.Speed <= 0) continue;
+            var back = -new Vector2(MathF.Cos(p.Facing), MathF.Sin(p.Facing));
+            for (int i = 0; i < 4; i++)
+            {
+                float ph = (time * 1.4f + i / 4f + p.Id * 0.21f) % 1;
+                if (Screen(G(p.Pos + back * (1.2f + ph * 3) + new Vector2(-back.Y, back.X) * MathF.Sin(i * 2.3f) * 0.6f, 0.4f + ph * 1.5f)) is not Vector2 sp) continue;
+                int r = Math.Max(1, ui.U((2 + ph * 4) * 110 / MathF.Max(40, zoom)));
+                ui.Rect(new Rectangle((int)sp.X - r / 2, (int)sp.Y - r / 2, r, r), new Color(150, 132, 104) * (0.35f * (1 - ph) * fade));
+            }
+        }
     }
 
     void TopBar()

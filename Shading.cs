@@ -75,7 +75,7 @@ sealed class Shading : IDisposable
             new GlslEffect.Technique("Sky"));
 
         Post = GlslEffect.Create(gd, "post", Source("post.glsl"),
-            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade") },
+            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade"), Uniform.Vec4("Tint") },
             new[] { new TextureSlot("Scene", 0, SamplerState.LinearClamp) },
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
             new GlslEffect.Technique("Post"));
@@ -155,8 +155,9 @@ sealed class Shading : IDisposable
         return scene;
     }
 
-    /// Draw the scene target to the screen through the post shader.
-    public void PostToScreen(bool fxaa)
+    /// Draw the scene target to the screen through the post shader: `tint` grades the light by hour and weather
+    /// (Sky.Grade; One = none), `bloom` lets bright highlights glow (0 = off; High quality only).
+    public void PostToScreen(bool fxaa, Vector3? tint = null, float bloom = 0)
     {
         var s = Scene();
         gd.SetRenderTarget(null);
@@ -166,6 +167,7 @@ sealed class Shading : IDisposable
         Post.Parameters["Scene"].SetValue(s);
         Post.Parameters["Texel"].SetValue(new Vector2(1f / s.Width, 1f / s.Height));
         Post.Parameters["Grade"].SetValue(new Vector4(0.96f, 1.05f, 0.26f, fxaa ? 1 : 0)); // saturation, contrast, vignette, FXAA
+        Post.Parameters["Tint"].SetValue(new Vector4(tint ?? Vector3.One, bloom));
         Post.CurrentTechnique.Passes[0].Apply();
         gd.DrawUserPrimitives(PrimitiveType.TriangleList, quad, 0, 2);
     }

@@ -323,8 +323,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Event.cs (304 lines)
 - **MapScreen** (class, L7): EventPanel:9, EventChoice:42, EffectsText:119, EventScene:125, Village:177, Court:199, Camp:217, SiteScene:237
 
-## MapScreen.Hud.cs (460 lines)
-- **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:22, DrawUi:27, Screen:70, Flags:86, TopBar:169, Feed:188, Overview:203, CaptainPanel:229, RenownStep:271, Cards:273, Card:288, TierStrip:308, Hints:321, HelpPanel:339, Tooltip:373, Modal:442, Note:456
+## MapScreen.Hud.cs (496 lines)
+- **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:22, DrawUi:27, Screen:70, Flags:86, Life:175, TopBar:205, Feed:224, Overview:239, CaptainPanel:265, RenownStep:307, Cards:309, Card:324, TierStrip:344, Hints:357, HelpPanel:375, Tooltip:409, Modal:478, Note:492
 
 ## MapScreen.Muster.cs (299 lines)
 - **MapScreen** (class, L7): PartyPanel:9, MusterCard:34, RollPanel:131, MusterSummary:189, OpenSlot:229, MusterSide:240
@@ -375,9 +375,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SettingsScreen.cs (172 lines)
 - **SettingsScreen** (class, L7): readonly:18, SettingsScreen:20, Update:22, Close:40, Draw:48
 
-## Shading.cs (178 lines)
+## Shading.cs (180 lines)
 - **Quality** (enum, L8)
-- **Shading** (class, L12): Source:37, Shading:47, AimSun:88, Setup:116, Blank:140, Scene:147, PostToScreen:159, Dispose:173
+- **Shading** (class, L12): Source:37, Shading:47, AimSun:88, Setup:116, Blank:140, Scene:147, PostToScreen:160, Dispose:175
 
 ## Sky.cs (76 lines)
 - **Sky** (class, L7): Sky:28, Set:36
@@ -482,9 +482,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Verts.cs (13 lines)
 - **Verts<T>** (class, L4): Add:8
 
-## World.cs (829 lines)
+## World.cs (833 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): World:51, RebuildFoliage:68, Lit:74, Draw:92, SetFog:119, DrawShaded:126, DrawShadowCasters:151, DrawGeometry:160, Dispose:173, Smooth:182, GroundColor:189, BuildDetail:249, BuildMinimap:261, WorldToMinimap:294, MinimapToWorld:295, DrawFoliage:379, Jitter:393, Broadleaf:399, Pine:416, Bush:430, Rock:439, House:451, Village:458, Town:469, SiteModel:503, Water:584, WallStones:607, Tower:617, GateDoor:629, Ladder:644, Wagon:657, TownHouse:667, Castle:674, Grass:691
+- **World** (class, L25): World:54, RebuildFoliage:72, Lit:78, Draw:96, SetFog:123, DrawShaded:130, DrawShadowCasters:155, DrawGeometry:164, Dispose:177, Smooth:186, GroundColor:193, BuildDetail:253, BuildMinimap:265, WorldToMinimap:298, MinimapToWorld:299, DrawFoliage:383, Jitter:397, Broadleaf:403, Pine:420, Bush:434, Rock:443, House:455, Village:462, Town:473, SiteModel:507, Water:588, WallStones:611, Tower:621, GateDoor:633, Ladder:648, Wagon:661, TownHouse:671, Castle:678, Grass:695
 
 ## World.Features.cs (117 lines)
 - **World** (class, L7): Features:11

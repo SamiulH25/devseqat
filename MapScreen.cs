@@ -71,7 +71,7 @@ sealed partial class MapScreen
         world?.Dispose();
         c.Map.Season = season = c.SeasonIndex;
         terrain = c.Map.BuildTerrain();
-        world = new World(gd, terrain);
+        world = new World(gd, terrain, treeScale: 0.72f);
         atlasIds = null;
         world.SetFog(260, 700);
         bearers.Clear();
@@ -319,7 +319,7 @@ sealed partial class MapScreen
     public void Draw(Quality quality)
     {
         // Day and night on the map follow the campaign clock (kept readable at night); autumn and winter skies are greyer.
-        Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0), nightFloor: 0.5f);
+        Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0), nightFloor: 0.62f);
         var look = new Vector3(MathF.Cos(yaw) * MathF.Cos(pitch), -MathF.Sin(pitch), MathF.Sin(yaw) * MathF.Cos(pitch));
         var f3 = new Vector3(focus.X, terrain.Height(focus), focus.Y);
         eye = f3 - look * zoom;
@@ -364,7 +364,7 @@ sealed partial class MapScreen
             sh.Setup(sh.Sprite, view * proj, eye, time, shadows, 1.2f);
             DrawSprites(sh.Sprite, "Sprite");
             DrawLines();
-            sh.PostToScreen(Settings.Current.Fxaa);
+            sh.PostToScreen(Settings.Current.Fxaa, Sky.Grade);
             sh.Fog = fog;
         }
         else

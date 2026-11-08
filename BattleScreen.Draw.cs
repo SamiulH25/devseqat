@@ -80,7 +80,7 @@ partial class BattleScreen
         sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
         DrawSpritesShaded(sh.Sprite, "Sprite");
         DrawLines();
-        sh.PostToScreen(fxaa: Settings.Current.Fxaa);
+        sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0);
     }
 
     void DrawBlobs(float alpha)

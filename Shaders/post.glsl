@@ -1,5 +1,6 @@
 // Full-screen pass over the rendered scene: FXAA (the game runs without MSAA), colour grade, vignette.
 // Grade: x = saturation, y = contrast, z = vignette strength, w = FXAA on (1) / off (0). Texel = 1 / screen size.
+// Tint: rgb = the light's colour grade by hour and weather (1,1,1 = none), w = bloom strength (0 = off).
 varying vec2 vUV;
 
 #ifdef VERTEX
@@ -39,9 +40,24 @@ vec3 Fxaa(vec2 uv)
     return (lB < lMin || lB > lMax) ? a : b;
 }
 
+// A cheap glow: the bright part of a ring of taps round the pixel (sun on helms, fires, snow in sun).
+vec3 Bloom(vec2 uv)
+{
+    vec3 sum = vec3(0.0);
+    for (int i = 0; i < 8; i++)
+    {
+        float a = float(i) * 0.7854;
+        vec2 o = vec2(cos(a), sin(a)) * Texel;
+        sum += max(texture2D(Scene, uv + o * 4.0).rgb - 0.72, 0.0) + max(texture2D(Scene, uv + o * 10.0).rgb - 0.72, 0.0) * 0.6;
+    }
+    return sum / 12.8;
+}
+
 void main()
 {
     vec3 col = Grade.w > 0.5 ? Fxaa(vUV) : texture2D(Scene, vUV).rgb;
+    if (Tint.w > 0.0) col += Bloom(vUV) * Tint.w;
+    col *= mix(vec3(1.0), Tint.rgb, 0.6);
     float l = dot(col, Luma);
     col = mix(vec3(l), col, Grade.x);
     col = (col - 0.5) * Grade.y + 0.5;
