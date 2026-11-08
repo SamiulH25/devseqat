@@ -129,6 +129,19 @@ Tests: `ClimatesAndRidges`; the siege test rests the whole night (more parties p
   willingness, and what it hunts first (the Order hunts monsters and undead). `FactionAI`, `LordThink` and
   `Diplomacy` read these values.
 
+**As built (W3).** `factions.json` has seven realms and seven cultures. New cultures: `southern` (Sunward Emirates, south;
+own spears and horse: javelins to Golden Spears, Desert Riders to the Sultan's Guard), `steppe` (Khaganate, east; own horse
+archers and foot bows), `league` (Saltmarsh League, south-west; own pikes and pavise crossbows), `order` (Order of the Ashen
+Sun, the middle, small: reach -25; own brothers on foot and knight-brothers). 39 new troops (`Data/troops.json`), made
+from the troop each replaces in the borrowed line with a culture twist, and built only from existing sprite parts.
+`CultureDef.Kin` + `Factions.Open` let a culture's lines and men use its kin's troops (`Companies.CanEnterLine`: a kin line's
+elite tiers train in the men's own barracks too). Heraldry: palettes 5-8 (Sunward, Khaganate, Saltmarsh, Ashen Sun) in both
+colour sets, new charges `Cross`, `Pale`, `Fess`, `Sun` (sprites and UI shields); the atlas is 51% full with 9 palettes.
+70 places and 30 lord names per new culture. Opening relations: two border wars (Azure-Northmarch, Crimson-Khaganate; Azure and Crimson share no border on any seed), truces elsewhere. Layout 3 puts
+the realms at their data homes (Azure west, Crimson south-east, Northmarch north); layouts 1-2 keep the three old homes in
+code (`WorldMap.ThreeRealmHomes`), and `Generate` takes the save's `DataRealms`. Realm sizes on seed 11-13: 8 to 24
+provinces. The stand-in captain (`Pilot`) now counts a den's or the night's edge (`Campaign.Edge`) before it picks a fight, as a player would. Test: `SevenRealms`. Not yet: the realms' own behaviour (aggression, tribute, monster hunting) is W5.
+
 ### W4: full troop trees and looks
 - Fill each new culture's four lines to seven tiers with their own troops (~15-20 new troops a culture), with `look` parts:
   turbans and lamellar, steppe caps and deel coats, marsh-league pavises and brigandines, Order white surcoats with a sun charge.

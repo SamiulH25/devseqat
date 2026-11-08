@@ -286,7 +286,8 @@ Currency: **crowns**. Starting purse: 300 *(tune)*. Sources and sinks:
 ## 8. Factions and AI
 
 ### 8.1 Factions
-- **Azure Crown** (palette 0, chevron) and **Crimson Compact** (palette 1, saltire) start at war. You start as a free captain who
+- **Azure Crown** (palette 0, chevron) and **Crimson Compact** (palette 1, saltire) start at war (with seven realms, docs/WORLD.md
+  W3: the Crown fights the Northmarch and the Compact the Khaganate, their neighbours). You start as a free captain who
   signs a contract with the Azure Crown in the tutorial (13.1).
 - **Bandits** (a new heraldry row: grey-brown cloth, no charge, a tattered banner) are hostile to all.
 - Each faction lists its troop trees in `factions.json`. At first both use the shared tree; culture variants are a data change (new looks).

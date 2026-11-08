@@ -39,7 +39,7 @@ public sealed partial class Campaign
     public Campaign(CampaignState state)
     {
         S = state;
-        Map = WorldMap.Generate(state.Seed, state.MapExtent, state.Layout);
+        Map = WorldMap.Generate(state.Seed, state.MapExtent, state.Layout, state.DataRealms);
         rng = new Rng(state);
         Factions.Bind(S.Factions);
         MigrateGear();
@@ -60,12 +60,12 @@ public sealed partial class Campaign
             Layout = WorldMap.CurrentLayout, DataRealms = Factions.All.Count };
         s.Captain.Renown = B.StartRenown;
         StartingSkills(s.Captain);
-        var map = WorldMap.Generate(seed, s.MapExtent, s.Layout);
+        var map = WorldMap.Generate(seed, s.MapExtent, s.Layout, s.DataRealms);
         s.Provinces = map.Provinces;
         s.Settlements = map.Settlements;
         int factions = s.Provinces.Max(p => p.Faction) + 1;
         s.Factions = Enumerable.Range(0, factions).Select(f => new FactionState { Id = f, Name = Factions.All[f].Name, Treasury = 2000, NextCouncil = (7 + 3 * f) * 24 }).ToList();
-        // The opening wars and truces come from Data/factions.json (the Crown and the Compact at war; the Northmarch on truces).
+        // The opening wars and truces come from Data/factions.json (border wars: the Crown and the Northmarch, the Compact and the Khaganate).
         foreach (var r in Factions.Relations)
         {
             int a = Factions.IndexOf(r.A), b = Factions.IndexOf(r.B);
@@ -293,7 +293,8 @@ public sealed partial class Campaign
 
     /// How much harder a party fights than its strength says, on the defending side of an auto-resolve: a holdout dug in,
     /// a troll in the dark (and the sun makes it slow and weak, as in a battle); the dead by night (by day they lie in the earth).
-    float Edge(Party p) => p.Lair ? B.HoldoutDefence : p.Breed == "troll" ? (Night ? B.TrollNight : B.TrollDay) : p.Breed == "undead" ? (Night ? B.UndeadNight : B.UndeadDay) : 1;
+    /// How much harder a party fights than its strength says: a holdout's den, a troll by night, the dead by night.
+    public float Edge(Party p) => p.Lair ? B.HoldoutDefence : p.Breed == "troll" ? (Night ? B.TrollNight : B.TrollDay) : p.Breed == "undead" ? (Night ? B.UndeadNight : B.UndeadDay) : 1;
 
     void Hourly()
     {

@@ -50,7 +50,7 @@ public sealed class Pilot
     {
         var e = c.Encounter!;
         var setup = c.PrepareBattle(e);
-        float me = setup.Side0.Sum(Rules.Strength), them = setup.Side1.Sum(Rules.Strength);
+        float me = setup.Side0.Sum(Rules.Strength), them = setup.Side1.Sum(Rules.Strength) * c.Edge(e); // a den or the night fights for them
         // Auto-resolve swings 15% either way: take anything close to even, and pay off brigands rather than bleed.
         // Retreating again and again bleeds the rearguard dry: after two in a day, stand.
         retreats.RemoveAll(t => t < c.S.Hours - 24);
@@ -199,7 +199,7 @@ public sealed class Pilot
         // A contract target we outmatch, then any hostile party we clearly outmatch.
         var prey = S(c.S.Contracts.Where(k => k.Kind is "clear" or "hunt").Select(k => c.PartyById(k.Target)))
             .Concat(c.S.Parties.Where(p => Vector2.Distance(p.Pos, Me.Pos) < B.Vision * 3)) // a player rides out after work
-            .Where(p => p != Me && !p.Down && c.Hostile(Me, p) && Rules.Strength(p) * 1.3f < mine)
+            .Where(p => p != Me && !p.Down && c.Hostile(Me, p) && Rules.Strength(p) * c.Edge(p) * 1.3f < mine)
             .OrderBy(p => Vector2.Distance(p.Pos, Me.Pos)).FirstOrDefault();
         if (prey != null) { c.Chase(prey); return; }
         // Otherwise ride to a friendly settlement in reach and look for work there.

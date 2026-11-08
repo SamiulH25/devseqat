@@ -128,7 +128,7 @@ public static partial class SelfTest
             var c = Campaign.New(seed);
             var pilot = new Pilot(c);
             for (int d = 0; d < 120 && c.Rank < Rank.Vassal; d++) pilot.Run(24);
-            Console.WriteLine($"pilot career (seed {seed}): {c.Stage} on day {c.Day}, renown {c.Captain.Renown:0}, {pilot.Battles} battles");
+            Console.WriteLine($"pilot career (seed {seed}): {c.Stage} on day {c.Day}, renown {c.Captain.Renown:0}, {pilot.Battles} battles ({pilot.Won} won)");
             if (c.Rank >= Rank.Vassal) made++;
         }
         Check(made >= 2, $"the pilot reaches vassal within 120 days in two seeds of three ({made} of {tried})");
@@ -273,7 +273,7 @@ public static partial class SelfTest
         Check(peakExh > 30, "wars wear realms down");
         Check(terms.Count > 0, "a long war ends in peace on terms");
         Check(moved > 0 && hosts > 0, "hosts march and seats change hands");
-        for (int f = 0; f < 3; f++)
+        for (int f = 0; f < c.S.Factions.Count; f++)
             if (c.Alive(f))
             {
                 Check(c.S.Factions[f].Treasury >= 0, $"realm {f} keeps a treasury");

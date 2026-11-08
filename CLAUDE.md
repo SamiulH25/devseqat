@@ -183,6 +183,10 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 - **Add a count of men or a per-man price in the campaign:** armies are `Balance.ArmyScale` (3) times the base numbers. Write a count
   as `Scaled(n)` and anything paid per man or derived from `Rules.Strength` as `Rules.PerMan(x)` (docs/DEVELOPING.md 5.7).
   With ArmyScale 1 the campaign must play exactly as before; compare `--selftest CampaignRun`'s pressure line at 1 and 3.
+- **Add a realm:** an entry in `Data/factions.json` (`palette` = a new `Style.Sides` entry in both `Standard()` and `ColorBlind()`,
+  with its own `Emblem` charge; `home`; four seven-troop `lines` of its culture, common or kin troops), a culture (root, `kin`,
+  `flavour`), its `relations`, and place/lord names in `Data/names.json`. New maps need a new `WorldMap.CurrentLayout`
+  (existing layouts must keep their realm homes). `SelfTest.SevenRealms` checks heraldry and lines.
 - **Add a piece of captain gear:** an entry in `Data/gear.json` (slot weapon/shield/body/helm/horse; look = an existing sprite part;
   horse = a mount id from troops.json). `Gear.Validate` (run by `SelfTest.Armoury`) checks it.
 - **Add a campaign balance value:** add the field with its default to `Balance` (CampaignState.cs) AND to `Data/campaign.json` (they must match; `SelfTest.BalanceMatchesData` fails otherwise).

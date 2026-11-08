@@ -442,6 +442,24 @@ public sealed class SpriteSheet
             case Ironfield.Emblem.Bend:
                 c.Line(cx - s, cy - s, cx + s, cy + s, mark, 0.7f, 3);
                 break;
+            case Ironfield.Emblem.Cross:
+                c.Line(cx, cy - s, cx, cy + s, mark, 0.5f, 3);
+                c.Line(cx - s, cy - s * 0.2f, cx + s, cy - s * 0.2f, mark, 0.5f, 3);
+                break;
+            case Ironfield.Emblem.Pale:
+                c.Line(cx, cy - s, cx, cy + s, mark, 0.8f, 3);
+                break;
+            case Ironfield.Emblem.Fess:
+                c.Line(cx - s, cy, cx + s, cy, mark, 0.8f, 3);
+                break;
+            case Ironfield.Emblem.Sun:
+                c.Area((x, y) => (x - cx) * (x - cx) + (y - cy) * (y - cy) <= s * s * 0.36f, mark);
+                for (int i = 0; i < 8; i++)
+                {
+                    float a = i * MathF.PI / 4;
+                    c.Line(cx + MathF.Cos(a) * s * 0.7f, cy + MathF.Sin(a) * s * 0.7f, cx + MathF.Cos(a) * s, cy + MathF.Sin(a) * s, mark, 0.35f, 3);
+                }
+                break;
             default: break; // no charge (brigands)
         }
     }

@@ -22,7 +22,7 @@ public static partial class SelfTest
             $"about {WorldMap.ProvinceCount} provinces on the enlarged map ({m.Provinces.Count})");
         Check(m.ExtentUsed >= WorldMap.Extent && m.Settlements.Max(s => MathF.Abs(s.Pos.X)) > WorldMap.PreviousExtent,
             "the map is bigger than the old one, not just denser");
-        for (int f = 0; f < 3; f++) Check(m.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town), $"faction {f} has towns");
+        for (int f = 0; f < Factions.All.Count; f++) Check(m.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town), $"faction {f} has towns");
         var seen = new HashSet<int> { 0 };
         var todo = new Queue<int>(new[] { 0 });
         while (todo.Count > 0) foreach (int n in m.Provinces[todo.Dequeue()].Neighbors) if (seen.Add(n)) todo.Enqueue(n);
@@ -216,12 +216,13 @@ public static partial class SelfTest
     static void CampaignWar()
     {
         var c = Campaign.New(61);
-        Check(c.S.Factions.Count == 3 && c.FactionsAtWar(0, 1) && !c.FactionsAtWar(1, 2) && !c.FactionsAtWar(0, 2), "three realms, one war and two truces");
+        Check(c.S.Factions.Count == Factions.All.Count && c.FactionsAtWar(0, 2) && c.FactionsAtWar(1, 4) && !c.FactionsAtWar(0, 1) && !c.FactionsAtWar(1, 2), $"{c.S.Factions.Count} realms; the Crown fights the Northmarch and the Compact the Khaganate, truces elsewhere");
+        Check(Enumerable.Range(3, c.S.Factions.Count - 3).All(f => c.S.Parties.Any(p => p.Kind == PartyKind.Lord && p.Faction == f)), "the new realms raise lords");
         Check(c.S.Settlements.Where(s => s.Kind != SettlementKind.Village).All(s => s.Garrison.Count > 0), "every town and castle has a garrison");
         Check(c.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == 2).SelectMany(p => p.Companies).Any(co => co.Troop is "clansmen" or "axemen" or "huscarls" or "horse_archers"), "Northmarch lords field their own troops");
         // Your own siege, on paper: a strong company takes a castle and, as a sworn vassal (F5), holds it as its first fief.
         c.Captain.Fealty = true;
-        var castle = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction == 1).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
+        var castle = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction == 2).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
         c.Player.Companies.Clear();
         foreach (var t in new[] { "men_at_arms", "men_at_arms", "longbowmen", "pikemen" }) c.Player.Companies.Add(c.NewCompany(t, Rules.TroopRole(t), Rules.CapOf(t, Rules.TroopRole(t)), 0));
         c.Player.Pos = castle.Pos + new Vector2(3, 0);
@@ -348,7 +349,7 @@ public static partial class SelfTest
     {
         var errs = Factions.Validate().ToList();
         Check(errs.Count == 0, "factions.json is valid: " + string.Join("; ", errs));
-        Check(Troops.All.All(t => t.Culture is "common" or "azure" or "crimson" or "northern" or "wild"), "every troop has a culture");
+        Check(Troops.All.All(t => t.Culture is "common" or "wild" || Factions.Culture(t.Culture) != null), "every troop has a culture");
         foreach (var cul in Factions.Cultures)
         {
             var seen = new HashSet<string>();
@@ -358,11 +359,13 @@ public static partial class SelfTest
                 var t = Troops.Get(open.Dequeue());
                 if (!seen.Add(t.Id)) continue;
                 foreach (var u in t.UpgradesTo)
-                    if (Troops.Get(u).Culture is var uc && (uc == Factions.Common || uc == cul.Id)) open.Enqueue(u);
+                    if (Factions.Open(cul.Id, Troops.Get(u).Culture)) open.Enqueue(u);
             }
-            var top = seen.Select(Troops.Get).Where(t => t.Tier == 7 && t.Culture == cul.Id).ToList();
+            // A culture with kin borrows some line ends from them until its own trees are full (docs/WORLD.md W3).
+            var top = seen.Select(Troops.Get).Where(t => t.Tier == 7 && t.Culture != Factions.Common && Factions.Open(cul.Id, t.Culture)).ToList();
+            var own = top.Count(t => t.Culture == cul.Id);
             Console.WriteLine($"culture {cul.Id}: {seen.Count} troops open from {cul.Root}, tier VII: {string.Join(", ", top.Select(t => t.Id))}");
-            Check(top.Count >= 3, $"{cul.Id} men can climb from {cul.Root} to tier VII lines of their own");
+            Check(own >= (cul.Kin.Length == 0 ? 3 : 2) && top.Count >= 3, $"{cul.Id} men can climb from {cul.Root} to tier VII lines of their own");
             foreach (var role in new[] { "infantry", "archers", "horse" })
                 Check(top.Any(t => Rules.TroopRole(t.Id) == role), $"{cul.Id} has a tier VII {role} line");
         }
@@ -401,11 +404,12 @@ public static partial class SelfTest
         var w = Campaign.New(84);
         w.Player.Cooldown = 1e6f;
         for (int h = 0; h < 60 * 24; h++) { w.Tick(1); w.Encounter = null; w.Arrived = null; }
-        for (int f = 0; f < 3; f++)
+        for (int f = 0; f < w.S.Factions.Count; f++)
         {
             var stacks = w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).SelectMany(p => p.Companies).SelectMany(k => k.Stacks).Where(st => st.Type.Culture != Factions.Common).ToList();
-            int own = stacks.Where(st => st.Type.Culture == Factions.CultureOf(f)).Sum(st => st.Men), all = stacks.Sum(st => st.Men);
-            Console.WriteLine($"realm {f} ({Factions.CultureOf(f)}): {own}/{all} of its lords' cultured men are its own");
+            // Its own culture's troops or its kin's (the realms of docs/WORLD.md W3 borrow two of their four lines).
+            int own = stacks.Where(st => Factions.Open(Factions.CultureOf(f), st.Type.Culture)).Sum(st => st.Men), all = stacks.Sum(st => st.Men);
+            Console.WriteLine($"realm {f} ({Factions.CultureOf(f)}): {own}/{all} of its lords' cultured men are its own or its kin's");
             Console.WriteLine("  " + string.Join(", ", w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).SelectMany(p => p.Companies).SelectMany(k => k.Stacks).GroupBy(st => st.Troop).Select(g => $"{g.Key}:{g.Sum(st => st.Men)}")));
             Check(all > 0 && own >= all * 0.85f, $"realm {f}'s army is recognisably {Factions.CultureOf(f)}");
         }
@@ -450,7 +454,7 @@ public static partial class SelfTest
         {
             var w = Campaign.New(86);
             var lord = w.S.Parties.First(p => p.Kind == PartyKind.Lord && p.Faction == 0);
-            var foe = w.S.Parties.First(p => p.Kind == PartyKind.Lord && p.Faction == 1);
+            var foe = w.S.Parties.First(p => p.Kind == PartyKind.Lord && p.Faction == 2); // the Crown and the Northmarch open at war
             var ch = w.CharacterOf(lord)!;
             ch.Traits.Clear(); ch.Traits.Add(trait);
             var spot = new Vector2(0, 0);
@@ -458,7 +462,7 @@ public static partial class SelfTest
             lord.Pos = spot; foe.Pos = spot + new Vector2(12, 0);
             lord.Companies.Clear(); foe.Companies.Clear();
             foreach (var role in new[] { "infantry", "archers", "spears" }) lord.Companies.Add(w.NewCompany(Armies.LineTroop(role, 3, 0), role, 16, 0));
-            foreach (var role in new[] { "infantry", "archers", "spears" }) foe.Companies.Add(w.NewCompany(Armies.LineTroop(role, 3, 1), role, 16, 0));
+            foreach (var role in new[] { "infantry", "archers", "spears" }) foe.Companies.Add(w.NewCompany(Armies.LineTroop(role, 3, 2), role, 16, 0));
             foe.Companies[0].Stack(foe.Companies[0].Troop).Men += 9;
             float ratio = Rules.Strength(foe) / Rules.Strength(lord);
             lord.SiegeTarget = -1; lord.Task = "patrol";

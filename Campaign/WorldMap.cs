@@ -74,13 +74,18 @@ public sealed class WorldMap
     /// The map a fresh campaign uses. `extent` is half the side the provinces may use (Extent for new campaigns,
     /// LegacyExtent for saves made before the map grew), so a save keeps the geography it was played on.
     /// How the map is laid out: 0 = the original three realms by fixed bands (every save from before docs/WORLD.md W1 keeps it),
-    /// 1 = each data realm grows from its home in Data/factions.json, 2 = that plus climates, ridges and more rivers (W2).
-    public const int LegacyLayout = 0, CurrentLayout = 2;
+    /// 1 = each data realm grows from its home in Data/factions.json, 2 = that plus climates, ridges and more rivers (W2),
+    /// 3 = all the data realms (seven, W3) at their homes in the data. Layouts 1-2 keep the three homes they were made with.
+    public const int LegacyLayout = 0, CurrentLayout = 3;
+    /// The three realms' homes (x, z, reach) on layout 1-2 maps, as factions.json had them before the realms became seven.
+    static readonly (float X, float Z, float Reach)[] ThreeRealmHomes = { (-0.8f, 0.45f, 0), (0.8f, 0.45f, 0), (0, -0.85f, -20) };
     public int Layout;
 
-    public static WorldMap Generate(int seed, float extent = Extent, int layout = CurrentLayout)
+    /// `realms` = how many data realms the map shares out (a save's DataRealms; 0 = all of them, as a new campaign has).
+    public static WorldMap Generate(int seed, float extent = Extent, int layout = CurrentLayout, int realms = 0)
     {
         var m = new WorldMap(seed) { ExtentUsed = extent, Layout = layout };
+        int realmCount = layout < 3 ? 3 : realms > 0 ? Math.Min(realms, Factions.All.Count) : Factions.All.Count;
         var rng = new Random(seed);
         var names = Names.Get();
         // Maps once shuffled a 60-name list here: keep those draws so an old seed still gives the same rivers and towns.
@@ -102,14 +107,14 @@ public sealed class WorldMap
         var north = centres.OrderBy(c => c.Y).Take(centres.Count * 3 / 10).ToHashSet();
         var south = centres.Where(c => !north.Contains(c)).OrderBy(c => c.X).ToList();
         var byX = centres.OrderBy(c => c.X).ToList();
-        int[]? realms = layout >= 1 ? GrowRealms(byX, extent, span) : null;
+        int[]? owners = layout >= 1 ? GrowRealms(byX, extent, span, layout, realmCount) : null;
         foreach (var (c, i) in byX.Select((c, i) => (c, i)))
         {
             int kind = rng.NextSingle() switch { < 0.35f => 0, < 0.6f => 1, < 0.85f => 2, _ => 3 };
             if (MathF.Max(MathF.Abs(c.X), MathF.Abs(c.Y)) > extent * 0.75f && rng.Next(2) == 0) kind = 3; // hills toward the rim
             if (north.Contains(c) && kind == 1) kind = 2; // the north is forest, not farmland
             if (layout >= 2) kind = Climate(c, extent, seed, rng.NextSingle(), kind);
-            int faction = realms?[i] ?? (north.Contains(c) ? 2 : south.IndexOf(c) < south.Count / 2 ? 0 : 1);
+            int faction = owners?[i] ?? (north.Contains(c) ? 2 : south.IndexOf(c) < south.Count / 2 ? 0 : 1);
             m.Provinces.Add(new Province { Id = i, Name = namer.Next(Factions.CultureOf(faction)), Kind = Kinds[kind], Center = c, Faction = faction });
         }
         // Neighbours: each province links to its nearest few; roads follow the links.
@@ -127,7 +132,7 @@ public sealed class WorldMap
         // Settlements: a town or castle at each centre (capitals are the outermost towns), and 2-3 villages around it.
         int id = 0;
         var capitals = layout >= 1
-            ? Enumerable.Range(0, Factions.All.Count).Select(f => m.Provinces.Where(p => p.Faction == f).OrderBy(p => Vector2.Distance(p.Center, HomeOf(f, extent))).FirstOrDefault()).ToHashSet()
+            ? Enumerable.Range(0, realmCount).Select(f => m.Provinces.Where(p => p.Faction == f).OrderBy(p => Vector2.Distance(p.Center, HomeOf(f, extent, layout))).FirstOrDefault()).ToHashSet()
             : new HashSet<Province?>
             {
                 m.Provinces.Where(p => p.Faction == 0).OrderBy(p => p.Center.X).First(),
@@ -269,15 +274,17 @@ public sealed class WorldMap
     /// On a ridge's slopes, away from the passes: slow going (the passes keep the road's pace).
     public bool OnRidge(Vector2 p) => Ridges.Count > 0 && RidgeDist(p) < Ridges[0].Width * 0.6f;
 
-    /// Where a data realm's land grows from on a map of this extent.
-    static Vector2 HomeOf(int f, float extent) => new Vector2(Factions.All[f].Home[0], Factions.All[f].Home[1]) * extent * 0.92f;
+    /// Where a data realm's land grows from on a map of this extent and layout, and how much further it reaches.
+    static Vector2 HomeOf(int f, float extent, int layout) =>
+        (layout < 3 ? new Vector2(ThreeRealmHomes[f].X, ThreeRealmHomes[f].Z) : new Vector2(Factions.All[f].Home[0], Factions.All[f].Home[1])) * extent * 0.92f;
+    static float ReachOf(int f, int layout) => layout < 3 ? ThreeRealmHomes[f].Reach : Factions.All[f].Reach;
 
     /// The realm of each province (layout 1): every realm grows from the province nearest its home along the links between
     /// neighbouring provinces, the cheapest claim winning (distance less the realm's reach). Growing over the links keeps each
     /// realm's land in one piece; provinces no link reaches go to the nearest claim in a straight line.
-    static int[] GrowRealms(List<Vector2> centres, float extent, float span)
+    static int[] GrowRealms(List<Vector2> centres, float extent, float span, int layout, int realms)
     {
-        int n = centres.Count, realms = Factions.All.Count;
+        int n = centres.Count;
         var links = new List<int>[n];
         for (int i = 0; i < n; i++) links[i] = new List<int>();
         for (int i = 0; i < n; i++)
@@ -293,10 +300,10 @@ public sealed class WorldMap
         var seeds = new HashSet<int>();
         for (int f = 0; f < realms; f++)
         {
-            var home = HomeOf(f, extent);
+            var home = HomeOf(f, extent, layout);
             int seed = Enumerable.Range(0, n).Where(i => !seeds.Contains(i)).OrderBy(i => Vector2.Distance(centres[i], home)).First();
             seeds.Add(seed);
-            cost[seed] = -Factions.All[f].Reach * span;
+            cost[seed] = -ReachOf(f, layout) * span;
             owner[seed] = f;
             open.Enqueue(seed, cost[seed]);
         }

@@ -8,6 +8,8 @@ public sealed class CultureDef
     public string Id = "", Name = "", Root = "levies", Text = "";
     /// One line on what its towns look like (the town screen's flavour line).
     public string Flavour = "Thatch and mud lanes";
+    /// Cultures whose troops this culture's lines may borrow and its men may train as (docs/WORLD.md W3).
+    public string[] Kin = { };
 }
 
 /// How two realms stand when a new campaign opens: at war, or at peace with a truce for some days (Data/factions.json).
@@ -77,6 +79,9 @@ public static class Factions
     public static CultureDef? Culture(string id) { Load(); return cultures!.FirstOrDefault(c => c.Id == id); }
     public static string CultureOf(int faction) => faction < 0 ? Common : Get(faction).Culture;
 
+    /// May men of `culture` serve as troops of `troop`'s culture? Their own, common troops, and their kin's.
+    public static bool Open(string culture, string troop) => troop == Common || troop == culture || (Culture(culture)?.Kin.Contains(troop) ?? false);
+
     /// The T1 troop a culture's villages raise ("common" and unknown cultures raise levies).
     public static string Root(string culture) => Culture(culture)?.Root ?? "levies";
 
@@ -119,7 +124,11 @@ public static class Factions
         foreach (var f in factions)
             if (f.Home.Length != 2 || f.Home.Any(v => v is < -1 or > 1)) yield return $"{f.Name}: home must be [x, z] within -1..1";
         foreach (var c in cultures!)
+        {
             if (!Troops.All.Any(t => t.Id == c.Root)) yield return $"culture {c.Id}: unknown root {c.Root}";
+            foreach (var k in c.Kin) if (cultures.All(o => o.Id != k) || k == c.Id) yield return $"culture {c.Id}: unknown kin {k}";
+            if (!Open(c.Id, Troops.Get(c.Root).Culture)) yield return $"culture {c.Id}: its root {c.Root} is not of its culture or kin";
+        }
         foreach (var f in factions)
         {
             if (cultures.All(c => c.Id != f.Culture)) yield return $"{f.Name}: unknown culture {f.Culture}";
@@ -130,7 +139,7 @@ public static class Factions
                 {
                     if (!Troops.All.Any(t => t.Id == line[i])) { yield return $"{f.Name} {role}: unknown troop {line[i]}"; continue; }
                     var t = Troops.Get(line[i]);
-                    if (t.Culture != Common && t.Culture != f.Culture) yield return $"{f.Name} {role}: {t.Id} is {t.Culture}, not {f.Culture}";
+                    if (!Open(f.Culture, t.Culture)) yield return $"{f.Name} {role}: {t.Id} is {t.Culture}, not {f.Culture} or its kin";
                     if (i > 0 && line[i] != line[i - 1] && !Troops.Get(line[i - 1]).UpgradesTo.Contains(line[i])) yield return $"{f.Name} {role}: {line[i - 1]} does not upgrade to {line[i]}";
                 }
             }

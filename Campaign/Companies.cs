@@ -143,8 +143,10 @@ public sealed partial class Campaign
         var t = Troops.Get(to);
         if (t.Culture == Factions.Common) return true;
         string man = ManCulture(c, from);
-        if (man != Factions.Common && man != t.Culture) { reason = $"{CultureWord(man)} MEN CANNOT TRAIN AS {CultureWord(t.Culture)} TROOPS"; return false; }
-        if (t.Tier >= 5 && !HasBarracks(p, t.Culture)) { reason = $"NEEDS A {CultureWord(t.Culture)} BARRACKS IN YOUR REALM"; return false; }
+        if (man != Factions.Common && !Factions.Open(man, t.Culture)) { reason = $"{CultureWord(man)} MEN CANNOT TRAIN AS {CultureWord(t.Culture)} TROOPS"; return false; }
+        // A borrowed (kin) line trains in the men's own barracks as well as in its own culture's.
+        if (t.Tier >= 5 && !HasBarracks(p, t.Culture) && !(man != t.Culture && man != Factions.Common && HasBarracks(p, man)))
+        { reason = $"NEEDS A {CultureWord(t.Culture)} BARRACKS IN YOUR REALM"; return false; }
         return true;
     }
 

@@ -99,4 +99,23 @@ public static partial class SelfTest
         var old = WorldMap.Generate(11, WorldMap.PreviousExtent, WorldMap.LegacyLayout);
         Check(old.Ridges.Count == 0 && old.Rivers.Count == 2 && old.Provinces.All(p => Array.IndexOf(WorldMap.Kinds, p.Kind) < 4), "an old save's map has no ridges or new country");
     }
+
+    /// W3: seven realms, each with its own heraldry (colour and charge both differ), its own troops in at least two lines and
+    /// borrowed ones only from its kin; men may train as their kin's troops but not as a stranger's.
+    static void SevenRealms()
+    {
+        Check(Factions.All.Count == 7, $"seven realms ({Factions.All.Count})");
+        var palettes = Factions.All.Select(f => f.Palette).ToList();
+        Check(palettes.Distinct().Count() == 7 && palettes.All(p => p != 2 && p != 3 && p < Style.Sides.Length), "each realm has its own palette (not yours, not the brigands')");
+        Check(palettes.Select(p => Style.Sides[p].Charge).Distinct().Count() == 7, "each realm has its own charge, so colour is never the only difference");
+        foreach (var f in Factions.All.Skip(3))
+        {
+            int ownLines = f.Lines.Values.Count(l => l.Skip(2).All(t => Troops.Get(t).Culture == f.Culture || Troops.Get(t).Culture == Factions.Common) && l.Skip(2).Any(t => Troops.Get(t).Culture == f.Culture));
+            Check(ownLines >= 2, $"{f.Name} fields its own troops in two lines ({ownLines})");
+            Check(Factions.Culture(f.Culture)!.Kin.Length > 0, $"{f.Name} borrows from kin");
+        }
+        Check(Factions.Open("southern", "crimson") && Factions.Open("order", "azure") && !Factions.Open("azure", "southern") && !Factions.Open("league", "northern"),
+            "men train as their kin's troops, not a stranger's");
+        Console.WriteLine("realms: " + string.Join("; ", Factions.All.Select(f => $"{f.Name} ({Style.Sides[f.Palette].Name}, {Style.Sides[f.Palette].Charge})")));
+    }
 }

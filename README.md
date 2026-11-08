@@ -4,7 +4,7 @@ A 2.5D (2D sprites in a 3D world) medieval battle game in C# + MonoGame (Desktop
 "lead your army in person" genre. This is an original setting: no names, assets or factions from other games.
 
 You fight in person as a soldier while you command your army as a general, and between battles you lead a mercenary company
-through a war of three realms on a campaign map: sieges, fiefs, prisoners, contracts, seasons and the rest of `docs/ROADMAP.md`.
+through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contracts, seasons and the rest of `docs/ROADMAP.md`.
 
 ## Build / run / test
 
@@ -37,8 +37,11 @@ Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, 
 
 ## The campaign
 
-You are a free captain sworn to the Azure Crown. It is at war with the Crimson Compact, and the Northmarch clans hold the north under truces
-that will not last. Brigands roam between them all.
+You are a free captain sworn to the Azure Crown in the west. It is at war with the Northmarch clans of the cold north, its long
+border; the Crimson Compact in the east fights the Khaganate of the Grass, horse archers from the eastern steppe. The Sunward
+Emirates hold the dry south, the Saltmarsh League the fens and canals of the south-west, and the knight-brothers of the Order of the
+Ashen Sun the highlands in the middle. Brigands, goblins and worse roam between them all. The land is about 930 km across, with
+mountain ridges you cross by road at the passes.
 - **Map:** click to march, click a town or village to enter it, and click a party to chase it. P opens the party screen, Space pauses,
   1-3 set the speed (x1, x3, x8), F follows you, F5 saves, F9 loads, and Esc opens the menu. The camera works as in command view (WASD, Q/E, wheel,
   middle-drag), and the overview (top right) jumps the camera. Hover anything for details.
@@ -100,7 +103,9 @@ that will not last. Brigands roam between them all.
 - **Prisoners** follow you (they slow you and eat): sell, recruit or free them. Lords you beat may be captured and ransomed.
 - **Officers:** sergeants with traits (Stubborn, Steady, Drillmaster, Hothead, Sharpshooter, Surgeon, Veteran) that show in battle; they can fall.
 - **Seasons and food:** winter slows the march, slows healing and doubles rations; starving men lose cohesion and desert. Your liege's towns feed you.
-- **Three realms:** wars and truces are per pair; a realm that grows too strong unites the others against it.
+- **Seven realms:** wars and truces are per pair; a realm that grows too strong unites the others against it. Each realm has its own
+  heraldry and its own troops in two lines; the four younger realms borrow their other lines from kin cultures, and their men may
+  train as their kin's troops (a Sunward man may become a Crimson greatsword, never an Azure man-at-arms).
 - **Encounters:** attack (the battle opens in a **deployment phase**: arrange your lines in your third of the field, then Space or START), auto-resolve,
   retreat (a rearguard pays), or pay brigands off. Esc in a campaign battle lets you **withdraw**.
 - **Duels:** meeting a lord, **CHALLENGE** him to single combat between the armies (on foot, the two of you, a fall is a yield). A cautious lord refuses, and one whose army is half again as strong as yours sees no need unless he is reckless or honourable. Win: +10 renown and his men start the battle 15 morale down. Lose: you are wounded and lead the battle from the rear. One duel an encounter.
@@ -214,7 +219,7 @@ the player rides a courser.
   **upgrades to**, campaign cost and upgrade XP, its horse, and its **look** (head, body, legs, feet, hands, shield, weapon,
   tabard, plume, cape). The self-test checks the tree: links exist, every upgrade raises the tier and is a better soldier,
   and every troop can be reached from Levies or Clansmen.
-- **The tree:** 107 troops (and the captain) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact (`levies`) and Northmarch (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
+- **The tree:** 146 troops (and the captain) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a
   role stand side by side), and the enemy general commands any mix.
@@ -300,7 +305,7 @@ For a detailed developer guide (how each system works, data formats, worked exam
 | `Squad.cs` | Squad orders (Hold/Follow/Charge, optional attack `Target`), formation slots (anchor = centre of the front rank), flank `Pressure`. |
 | `Units.cs` | `UnitType` (a troop from the data), `Look`, `Mount`, the `Unit` state (incl. heading/speed when mounted), loose and dead horses. |
 | `Troops.cs` | Loads and validates `Data/troops.json` (troops, upgrade trees, mounts); `ArmySpec`/`Company`; `Armies` builds armies by level. |
-| `Factions.cs` | Loads and validates `Data/factions.json`: the three realms (name, palette, culture, the troop each role fields per tier) and the cultures (each one's village recruit). |
+| `Factions.cs` | Loads and validates `Data/factions.json`: the seven realms (name, palette, culture, home on the map, the troop each role fields per tier), the cultures (each one's village recruit, kin, town flavour) and the opening wars and truces. |
 | `Style.cs` | Design tokens: side heraldry, materials, horse coats, sprite light and density, UI colours, grid, type scale. |
 | `Terrain.cs` | Headless heightmap (noise, hills, rim, road), foliage placement and solid obstacles. |
 | `ScreenHost.cs` | The MonoGame `Game`: shared art, audio and settings; switches between `TitleScreen`, `MapScreen` and `BattleScreen`, with the `SettingsScreen` overlay. |

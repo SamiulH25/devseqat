@@ -82,6 +82,7 @@ public static class Troops
     /// Data checks: links exist, upgrades raise the tier, every look part has sprites, cavalry has horses.
     public static IEnumerable<string> Validate()
     {
+        if (troops == null) Load();
         foreach (var t in troops!.Values)
         {
             foreach (var u in t.UpgradesTo)
