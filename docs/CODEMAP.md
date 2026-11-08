@@ -74,8 +74,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Orders.cs (177 lines)
 - **BattleScreen** (class, L8): Targets:12, Issue:15, Send:26, GiveGoal:36, GoalCommand:38, Command:59, OrderKeys:110, NextDivision:122, LineAt:132, Distribute:149, PreviewSlots:168
 
-## BattleScreen.Shots.cs (128 lines)
-- **BattleScreen** (class, L8): ShotScript:10, Gallery:104
+## BattleScreen.Shots.cs (144 lines)
+- **BattleScreen** (class, L8): ShotScript:10, readonly:111, Gallery:120
 
 ## BattleSiege.cs (162 lines)
 - **Battle** (class, L7): DeployDefenders:18, Via:48, MayCross:75, EnforceWall:82, Batter:95, SiegeDefend:121, SiegeAttack:144
@@ -312,8 +312,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Program.cs (46 lines)
 
-## Puppet.cs (503 lines)
-- **Puppet** (class, L13): Puppet:28, Begin:30, Rad:39, W:40, Frame:51, Draw:75, Horse:155, Beast:209, WolfBody:219, Warg:248, BeastCorpse:266, DrawLooseHorse:278, DrawDeadHorse:286, RotY:310, Arm:317, Span:328, Pose:335, Key:336, Lerp:338, PoseOf:357, Corpse:391, Particle:407, Banner:419, Quad:438, Bill:448, Axial:459, Long:471, Plane:484, Flat:495
+## Puppet.cs (505 lines)
+- **Puppet** (class, L13): Puppet:28, Begin:30, Rad:39, W:40, Frame:51, Draw:75, Horse:156, Beast:211, WolfBody:221, Warg:250, BeastCorpse:268, DrawLooseHorse:280, DrawDeadHorse:288, RotY:312, Arm:319, Span:330, Pose:337, Key:338, Lerp:340, PoseOf:359, Corpse:393, Particle:409, Banner:421, Quad:440, Bill:450, Axial:461, Long:473, Plane:486, Flat:497
 
 ## Replay.cs (152 lines)
 - **Replay** (class, L8): Serialize:51, Deserialize:52, Save:56, Play:63, Matches:92, Run:95
@@ -340,15 +340,15 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Sky.cs (63 lines)
 - **Sky** (class, L7): Sky:21, Set:29
 
-## SpriteSheet.cs (876 lines)
-- **SpriteSheet** (class, L12): SpriteSheet:27, Add:35, Pack:40, Side:65, InEl:113, Head:115, GoblinHead:142, TrollHead:172, SkullHead:202, GhoulHead:228, Helm:253, Torso:346, Ribs:396, Tabard:411, Emblem:427, Cape:467, Sleeve:475, Leg:497, Boot:516, Hand:534, Shield:542, Weapon:575, Blade:641, Polearm:652, Bow:667, Arrow:681, Quiver:690, Plume:699, Flag:707, Blood:716, Horse:727, Wolf:786, BodyShape:827, HorseGear:830, Saddle:864
+## SpriteSheet.cs (930 lines)
+- **SpriteSheet** (class, L12): SpriteSheet:27, Add:35, Pack:40, Side:65, InEl:113, Head:115, GoblinHead:142, TrollHead:172, SkullHead:202, GhoulHead:228, Helm:253, Torso:367, Ribs:432, Tabard:447, Emblem:463, Cape:503, Sleeve:511, Leg:536, Boot:555, Hand:573, Shield:581, Weapon:624, Blade:690, Polearm:701, Bow:716, Arrow:730, Quiver:739, Plume:748, Flag:756, Blood:765, Horse:776, Wolf:840, BodyShape:881, HorseGear:884, Saddle:918
 
 ## Squad.cs (150 lines)
 - **Order** (enum, L5)
 - **Formation** (enum, L10)
 - **Squad** (class, L13): Squad:50, Choices:64, FaceAt:69, Slot:76, Centroid:105, SetLine:114, Shift:134, HoldInPlace:142
 
-## Style.cs (86 lines)
+## Style.cs (89 lines)
 - **Emblem** (enum, L5)
 - **Heraldry** (record, L8)
 - **Style** (class, L11): ColorBlind:22, Standard:35, PaletteOf:49
@@ -373,7 +373,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/CreatureTests.cs (577 lines)
 - **SelfTest** (class, L6): HoldoutTrace:11, Holdouts:23, GoblinBattle:91, WolfTrace:138, Wolves:156, WolfRiders:221, Trolls:243, TrollsAbroad:308, UndeadAbroad:338, PlayerCreatures:386, TrollTrace:458, Undead:483, UndeadTrace:542, GraveTrace:565
 
-## Tests/MapTests.cs (121 lines)
+## Tests/MapTests.cs (129 lines)
 - **SelfTest** (class, L6): MapIndexMatches:10, RealmsFromData:32, ClimatesAndRidges:77, SevenRealms:105
 
 ## Tests/WorldTests.cs (333 lines)
@@ -408,18 +408,18 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## UiLab.Scenes.cs (427 lines)
 - **UiLab** (class, L6): HudPage:12, Field:81, readonly:115, DockCard:121, CaptainPage:149, RealmsPage:237, EventPage:336, Burning:400
 
-## Units.cs (159 lines)
+## Units.cs (162 lines)
 - **UnitClass** (enum, L5)
 - **UnitAction** (enum, L6)
 - **AttackDir** (enum, L10)
 - **CavState** (enum, L13)
 - **Dirs** (class, L15): Mirror:17
-- **Mount** (record, L23)
-- **Look** (record, L31): Ranged:48
-- **UnitType** (class, L52): Has:82, Clone:92, ToString:93
-- **Unit** (class, L104): Face:147
-- **LooseHorse** (class, L151)
-- **DeadHorse** (struct, L159)
+- **Mount** (record, L24)
+- **Look** (record, L32): Ranged:51
+- **UnitType** (class, L55): Has:85, Clone:95, ToString:96
+- **Unit** (class, L107): Face:150
+- **LooseHorse** (class, L154)
+- **DeadHorse** (struct, L162)
 
 ## Verts.cs (13 lines)
 - **Verts<T>** (class, L4): Add:8

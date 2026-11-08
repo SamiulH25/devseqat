@@ -5,8 +5,7 @@
   // A realm's "home" is where its land grows from on a new map ([x, z] from -1 to 1; -1 z is the north) and "reach" lets
   // it grow further (map units on the original map) before its neighbours stop it (docs/WORLD.md W1). "relations" are the
   // wars and truces a new campaign opens with; realms not listed start at peace. A culture's "kin" are the cultures whose
-  // troops its lines may borrow (and its men may train as); the four realms of docs/WORLD.md W3 field their own troops in
-  // two roles and borrow the other two.
+  // troops its men may also train as (docs/WORLD.md W3); since W4 every realm's four lines are its own culture's troops.
   "cultures": [
     { "id": "azure", "name": "Azure", "root": "levies", "text": "heavy foot, crossbows and lances", "flavour": "Blue roofs and quiet bells" },
     { "id": "crimson", "name": "Crimson", "root": "levies", "text": "greatswords, halberds, longbows and heavy horse", "flavour": "Red banners and loud markets" },
@@ -47,8 +46,8 @@
     {
       "name": "Sunward Emirates", "palette": 5, "culture": "southern", "home": [0.1, 0.85],
       "lines": {
-        "infantry": ["levies", "shieldmen", "greatswords", "zweihanders", "blademasters", "grand_blademasters", "sword_saints"],
-        "archers": ["bowmen", "bowmen", "rangers", "woodland_stalkers", "shadow_hunters", "highland_marksmen", "sky_piercers"],
+        "infantry": ["levies", "shieldmen", "ghazis", "jandars", "dervish_blades", "emir_guard", "lions_of_the_sun"],
+        "archers": ["bowmen", "bowmen", "sand_archers", "oasis_bows", "emir_archers", "falcon_eyes", "sultans_bows"],
         "spears": ["levies", "spearrunners", "sun_javelins", "dune_spears", "sun_guard", "emir_spears", "golden_spears"],
         "horse": ["outriders", "outriders", "desert_riders", "mamluks", "sun_lancers", "emir_mamluks", "sultans_guard"]
       }
@@ -56,28 +55,28 @@
     {
       "name": "Khaganate of the Grass", "palette": 6, "culture": "steppe", "home": [0.88, -0.3],
       "lines": {
-        "infantry": ["clansmen", "axemen", "huscarls", "varangians", "einherjar", "thane_champions", "high_king_chosen"],
+        "infantry": ["clansmen", "axemen", "yurt_guards", "torguud", "wolf_axes", "noyan_guard", "khagans_axes"],
         "archers": ["bowmen", "bowmen", "steppe_archers", "yurt_archers", "tengri_bows", "sky_wolf_archers", "eternal_sky_archers"],
-        "spears": ["clansmen", "spearrunners", "billmen", "glaivemen", "vanguard_glaives", "dragon_glaives", "tempest_spears"],
+        "spears": ["clansmen", "spearrunners", "grass_spears", "horde_spears", "tumen_spears", "sky_spears", "eternal_spears"],
         "horse": ["outriders", "outriders", "steppe_bows", "kheshig_riders", "noyan_bows", "kheshig", "khagans_own"]
       }
     },
     {
       "name": "Saltmarsh League", "palette": 7, "culture": "league", "home": [-0.8, 0.8],
       "lines": {
-        "infantry": ["levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries", "immortals"],
+        "infantry": ["levies", "shieldmen", "canal_guards", "guild_swords", "brigandiers", "doge_guard", "lion_guard"],
         "archers": ["bowmen", "bowmen", "league_crossbows", "pavisiers", "guild_arbalesters", "doge_arbalesters", "lion_crossbows"],
         "spears": ["levies", "spearrunners", "league_pikes", "guild_pikes", "marsh_wardens", "doge_pikes", "lagoon_guard"],
-        "horse": ["outriders", "outriders", "lancers", "demi_lancers", "banner_knights", "paladin_knights", "grail_knights"]
+        "horse": ["outriders", "outriders", "stradiots", "condottieri", "guild_lances", "doge_lances", "lion_knights"]
       }
     },
     {
       "name": "Order of the Ashen Sun", "palette": 8, "culture": "order", "home": [0, 0], "reach": -25,
       "lines": {
         "infantry": ["levies", "shieldmen", "order_sergeants", "sun_brothers", "ashen_brothers", "sun_templars", "ashen_saints"],
-        "archers": ["bowmen", "bowmen", "crossbowmen", "arbalests", "heavy_arbalests", "guild_sharpshooters", "grand_arbalests"],
-        "spears": ["levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx", "imperial_pikemen"],
-        "horse": ["outriders", "outriders", "lancers", "knight_brothers", "sun_knights", "ashen_knights", "grand_masters"]
+        "archers": ["bowmen", "bowmen", "order_crossbows", "chapter_arbalests", "ashen_arbalests", "sun_arbalests", "dawn_watch"],
+        "spears": ["levies", "spearrunners", "order_spears", "chapter_pikes", "ashen_pikes", "pilgrim_guard", "dawn_pikes"],
+        "horse": ["outriders", "outriders", "order_riders", "knight_brothers", "sun_knights", "ashen_knights", "grand_masters"]
       }
     }
   ],

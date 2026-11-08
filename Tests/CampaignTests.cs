@@ -361,11 +361,9 @@ public static partial class SelfTest
                 foreach (var u in t.UpgradesTo)
                     if (Factions.Open(cul.Id, Troops.Get(u).Culture)) open.Enqueue(u);
             }
-            // A culture with kin borrows some line ends from them until its own trees are full (docs/WORLD.md W3).
-            var top = seen.Select(Troops.Get).Where(t => t.Tier == 7 && t.Culture != Factions.Common && Factions.Open(cul.Id, t.Culture)).ToList();
-            var own = top.Count(t => t.Culture == cul.Id);
+            var top = seen.Select(Troops.Get).Where(t => t.Tier == 7 && t.Culture == cul.Id).ToList();
             Console.WriteLine($"culture {cul.Id}: {seen.Count} troops open from {cul.Root}, tier VII: {string.Join(", ", top.Select(t => t.Id))}");
-            Check(own >= (cul.Kin.Length == 0 ? 3 : 2) && top.Count >= 3, $"{cul.Id} men can climb from {cul.Root} to tier VII lines of their own");
+            Check(top.Count >= 3, $"{cul.Id} men can climb from {cul.Root} to tier VII lines of their own");
             foreach (var role in new[] { "infantry", "archers", "horse" })
                 Check(top.Any(t => Rules.TroopRole(t.Id) == role), $"{cul.Id} has a tier VII {role} line");
         }
@@ -406,11 +404,13 @@ public static partial class SelfTest
         for (int h = 0; h < 60 * 24; h++) { w.Tick(1); w.Encounter = null; w.Arrived = null; }
         for (int f = 0; f < w.S.Factions.Count; f++)
         {
-            var stacks = w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).SelectMany(p => p.Companies).SelectMany(k => k.Stacks).Where(st => st.Type.Culture != Factions.Common).ToList();
+            // Lords seated in the realm's own lands: one seated in a conquered town raises that town's people (4.2).
+            var homeLords = w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f && p.HomeId >= 0 && w.SettlementById(p.HomeId) is { } h && h.Culture == Factions.CultureOf(f)).ToList();
+            var stacks = homeLords.SelectMany(p => p.Companies).SelectMany(k => k.Stacks).Where(st => st.Type.Culture != Factions.Common).ToList();
             // Its own culture's troops or its kin's (the realms of docs/WORLD.md W3 borrow two of their four lines).
             int own = stacks.Where(st => Factions.Open(Factions.CultureOf(f), st.Type.Culture)).Sum(st => st.Men), all = stacks.Sum(st => st.Men);
             Console.WriteLine($"realm {f} ({Factions.CultureOf(f)}): {own}/{all} of its lords' cultured men are its own or its kin's");
-            Console.WriteLine("  " + string.Join(", ", w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).SelectMany(p => p.Companies).SelectMany(k => k.Stacks).GroupBy(st => st.Troop).Select(g => $"{g.Key}:{g.Sum(st => st.Men)}")));
+            Console.WriteLine("  " + string.Join(", ", homeLords.SelectMany(p => p.Companies).SelectMany(k => k.Stacks).GroupBy(st => st.Troop).Select(g => $"{g.Key}:{g.Sum(st => st.Men)}")));
             Check(all > 0 && own >= all * 0.85f, $"realm {f}'s army is recognisably {Factions.CultureOf(f)}");
         }
     }

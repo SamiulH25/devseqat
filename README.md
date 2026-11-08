@@ -59,7 +59,7 @@ mountain ridges you cross by road at the passes.
   1, 5 or every ready man into any branch. A man promoted out of the company's role joins a company of his new role, or founds one.
   A mixed company fights as one squad. Companies keep an origin, a banner, a ledger of their last fights and up to three **honours**
   (Unbroken, Horse-breakers, Old Hands, Stormers, Bloodied) that change how they fight. Saves from before this (version 3 and older) are refused.
-- **Cultures:** every troop is Azure, Crimson, Northern or common (`Data/troops.json`), and each realm has a culture (`Data/factions.json`).
+- **Cultures:** every troop is of one of the seven cultures or common (`Data/troops.json`), and each realm has a culture (`Data/factions.json`).
   A village raises its own culture's men whoever holds it (clansmen in the north, levies in the south), and they form companies of their own
   people. Men train into common troops or their own culture's lines only, and a culture's elite lines (tier V and up) need one of its towns
   in your realm. Foreign mercenaries are the other way to field another culture's elites.
@@ -104,8 +104,9 @@ mountain ridges you cross by road at the passes.
 - **Officers:** sergeants with traits (Stubborn, Steady, Drillmaster, Hothead, Sharpshooter, Surgeon, Veteran) that show in battle; they can fall.
 - **Seasons and food:** winter slows the march, slows healing and doubles rations; starving men lose cohesion and desert. Your liege's towns feed you.
 - **Seven realms:** wars and truces are per pair; a realm that grows too strong unites the others against it. Each realm has its own
-  heraldry and its own troops in two lines; the four younger realms borrow their other lines from kin cultures, and their men may
-  train as their kin's troops (a Sunward man may become a Crimson greatsword, never an Azure man-at-arms).
+  heraldry and its own troops in all four lines, in its own kit: turbans, lamellar and camel riders in the south, fur-brimmed helms and
+  long deel coats on the steppe, brigandines and tall pavises in the Saltmarsh League, white surcoats in the Order. The four younger
+  realms' men may also train as their kin's troops (a Sunward man may become a Crimson greatsword, never an Azure man-at-arms).
 - **Encounters:** attack (the battle opens in a **deployment phase**: arrange your lines in your third of the field, then Space or START), auto-resolve,
   retreat (a rearguard pays), or pay brigands off. Esc in a campaign battle lets you **withdraw**.
 - **Duels:** meeting a lord, **CHALLENGE** him to single combat between the armies (on foot, the two of you, a fall is a yield). A cautious lord refuses, and one whose army is half again as strong as yours sees no need unless he is reckless or honourable. Win: +10 renown and his men start the battle 15 morale down. Lose: you are wounded and lead the battle from the rear. One duel an encounter.

@@ -148,6 +148,18 @@ provinces. The stand-in captain (`Pilot`) now counts a den's or the night's edge
 - New parts are painted in `SpriteSheet.cs`, and mounts go in `troops.json` (camel, steppe pony).
 - `SelfTest.TroopTree` and `Factions.Validate` already enforce that the trees join up.
 
+**As built (W4).** 41 more troops (`Data/troops.json`, 202 in all; 80 of the four new cultures): every new realm's four lines are
+its own culture's from tier III to VII (Sunward Ghazis to Lions of the Sun and Sand Archers to Sultan's Bows; Khaganate Yurt Guards
+to Khagan's Axes and Grass Spears to Eternal Spears; Saltmarsh Canal Guards to Lion Guard and Stradiots to Lion Knights; Order
+Crossbows to the Dawn Watch, Order Spears to Dawn Pikes, and Order Riders at tier III of its horse line). New look parts painted in
+`SpriteSheet.cs` for every palette: heads `turban` and `steppe` (fur brim, tassel), bodies `lamellar`, `deel` and `brigandine` (with
+sleeves), shield `pavise` (tall; ranged men sling a shield on their back). The W3 troops took the new kit too. Mounts `steppe_pony`
+and `camel`: a camel is the horse rig with barding `camel` (a sand coat, `Style.CamelCoat`, and a hump part `hhump`); Desert
+Riders ride camels, Steppe Bows ponies. The Order's white surcoat is its tabard in its own palette. Kin stays: the new cultures'
+men may still train as their kin's troops. Tests: `SevenRealms` (the new realms' lines are all their own, no realm fields a stranger's
+troops, the new kit and mounts are used), `Cultures` (every culture climbs to three tier VII lines of its own; lords seated in their
+realm's own lands field its culture). Staged shots `gallery-sunward`, `-khaganate`, `-saltmarsh`, `-order` (IRONFIELD_SHOTS).
+
 ### W5: seven realms that behave
 - **Neighbour-aware wars**: a realm wants war mostly with realms it borders. `ProposeWar`/council motions weigh
   border length, the target's strength, and wars it already fights. This stops seven realms all fighting everyone.

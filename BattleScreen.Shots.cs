@@ -96,9 +96,25 @@ partial class BattleScreen
                 shotFrames = 0; shotIndex++; break;
             case 29 when shotFrames > 20:
                 pendingShot = "gallery-undead-side"; shotIndex++; break;
-            case 30 when pendingShot == null: Exit(); break;
+            case >= 30 and <= 37 when pendingShot == null && shotIndex % 2 == 0:
+                // The four realms of docs/WORLD.md W3-W4, each in its own colours.
+                Gallery(NewRealms[(shotIndex - 30) / 2].Troops, NewRealms[(shotIndex - 30) / 2].Palette);
+                zoom = 19; camYaw = MathHelper.PiOver2 + 0.5f; camPitch = 0.14f;
+                foreach (var u in battle.Units.Where(u => !u.IsLeader)) u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = -0.9f; // three-quarter view
+                shotFrames = 0; shotIndex++; break;
+            case >= 31 and <= 37 when shotFrames > 20 && shotIndex % 2 == 1:
+                pendingShot = $"gallery-{NewRealms[(shotIndex - 31) / 2].Name}"; shotIndex++; break;
+            case 38 when pendingShot == null: Exit(); break;
         }
     }
+
+    static readonly (string Name, int Palette, string[] Troops)[] NewRealms =
+    {
+        ("sunward", 5, new[] { "sun_javelins", "ghazis", "jandars", "lions_of_the_sun", "sand_archers", "sultans_bows", "desert_riders", "mamluks", "sultans_guard" }),
+        ("khaganate", 6, new[] { "yurt_guards", "torguud", "khagans_axes", "grass_spears", "eternal_spears", "steppe_archers", "steppe_bows", "kheshig", "khagans_own" }),
+        ("saltmarsh", 7, new[] { "canal_guards", "brigandiers", "lion_guard", "league_pikes", "league_crossbows", "pavisiers", "lion_crossbows", "stradiots", "lion_knights" }),
+        ("order", 8, new[] { "order_sergeants", "ashen_brothers", "ashen_saints", "order_spears", "dawn_pikes", "order_crossbows", "dawn_watch", "order_riders", "grand_masters" }),
+    };
 
     /// Debug lineup of every troop, left to right along each upgrade line, facing the camera.
     void Gallery(string[]? only = null, int palette = 0)

@@ -62,6 +62,9 @@ public static class Style
         new(0.74f, 0.5f, 0.32f), new(0.86f, 0.52f, 0.3f), new(0.34f, 0.31f, 0.31f), new(0.9f, 0.9f, 0.92f), new(0.88f, 0.74f, 0.52f),
     };
 
+    /// A camel's sand coat, the same kind of multiplier (docs/WORLD.md W4).
+    public static readonly Vector3 CamelCoat = new(0.94f, 0.8f, 0.56f);
+
     /// Light for sprites, in sprite space (x right, y down, z toward the viewer): from the upper left, like the sun.
     public static readonly Vector3 SpriteLight = Vector3.Normalize(new Vector3(-0.55f, -0.6f, 0.62f));
 

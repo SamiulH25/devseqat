@@ -110,7 +110,7 @@ public static class Troops
             if (!Look.Weapons.Contains(l.Weapon)) yield return $"{t.Id}: unknown weapon {l.Weapon}";
         }
         foreach (var m in mounts!.Values)
-            if (m.Barding is not ("saddle" or "caparison" or "wolf")) yield return $"{m.Id}: unknown barding {m.Barding}";
+            if (m.Barding is not ("saddle" or "caparison" or "wolf" or "camel")) yield return $"{m.Id}: unknown barding {m.Barding}";
     }
 
     /// Every troop reachable from `id` by upgrading (including itself).

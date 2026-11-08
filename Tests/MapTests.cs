@@ -108,12 +108,20 @@ public static partial class SelfTest
         var palettes = Factions.All.Select(f => f.Palette).ToList();
         Check(palettes.Distinct().Count() == 7 && palettes.All(p => p != 2 && p != 3 && p < Style.Sides.Length), "each realm has its own palette (not yours, not the brigands')");
         Check(palettes.Select(p => Style.Sides[p].Charge).Distinct().Count() == 7, "each realm has its own charge, so colour is never the only difference");
+        // W4: the new realms' four lines are their own culture's from tier III up (tiers I-II are the shared or kin recruits);
+        // no realm fields a stranger's troops.
+        foreach (var f in Factions.All)
+            Check(f.Lines.Values.All(l => l.All(t => Factions.Open(f.Culture, Troops.Get(t).Culture))), $"{f.Name} fields no stranger's troops");
         foreach (var f in Factions.All.Skip(3))
         {
-            int ownLines = f.Lines.Values.Count(l => l.Skip(2).All(t => Troops.Get(t).Culture == f.Culture || Troops.Get(t).Culture == Factions.Common) && l.Skip(2).Any(t => Troops.Get(t).Culture == f.Culture));
-            Check(ownLines >= 2, $"{f.Name} fields its own troops in two lines ({ownLines})");
-            Check(Factions.Culture(f.Culture)!.Kin.Length > 0, $"{f.Name} borrows from kin");
+            int ownLines = f.Lines.Values.Count(l => l.Skip(2).All(t => Troops.Get(t).Culture == f.Culture));
+            Check(ownLines == 4, $"{f.Name} fields its own troops in all four lines ({ownLines})");
         }
+        Check(Factions.All.Skip(3).All(f => Factions.Culture(f.Culture)!.Kin.Length > 0), "the new realms' men may still train as their kin's troops");
+        var looks = Troops.All.Where(t => t.Culture is "southern" or "steppe" or "league").Select(t => t.Look).ToList();
+        Check(looks.Any(l => l.Head == "turban") && looks.Any(l => l.Head == "steppe") && looks.Any(l => l.Body == "lamellar") && looks.Any(l => l.Body == "deel")
+            && looks.Any(l => l.Body == "brigandine") && looks.Any(l => l.Shield == "pavise"), "the new cultures wear their own kit");
+        Check(Troops.All.Any(t => t.Mount?.Barding == "camel") && Troops.All.Any(t => t.Mount?.Id == "steppe_pony"), "the south rides camels, the grass ponies");
         Check(Factions.Open("southern", "crimson") && Factions.Open("order", "azure") && !Factions.Open("azure", "southern") && !Factions.Open("league", "northern"),
             "men train as their kin's troops, not a stranger's");
         Console.WriteLine("realms: " + string.Join("; ", Factions.All.Select(f => $"{f.Name} ({Style.Sides[f.Palette].Name}, {Style.Sides[f.Palette].Charge})")));
