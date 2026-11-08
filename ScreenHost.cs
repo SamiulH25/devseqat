@@ -263,6 +263,8 @@ sealed class ScreenHost : Game
         using var file = File.Create(Path.Combine(dir, name + ".png"));
         tex.SaveAsPng(file, w, h);
         Overflow.Flush(dir, name);
+        // What the frame cost to draw, so a heavy effect shows up between runs (docs/VISUALS.md V8).
+        if (mode == Mode.Battle) File.AppendAllText(Path.Combine(dir, "render.txt"), $"{name}: {battle.RenderCost}\n");
         pendingShot = null;
         battle.PendingShot = null;
         lab.PendingShot = null;

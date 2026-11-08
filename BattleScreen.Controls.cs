@@ -172,13 +172,16 @@ partial class BattleScreen
                 if (click && PickSquad(mouseGround, 1) is Squad tf) GiveGoal(dv, new Goal(GoalKind.Attack, Target: tf));
                 else if (click && PickSquad(mouseGround, 0) is Squad fr && fr.Division != dv) GiveGoal(dv, new Goal(GoalKind.Screen, Target: fr));
                 else GiveGoal(dv, new Goal(GoalKind.Take, mouseGround));
+                foreach (var ds in dv.Squads.Where(q => q.Alive > 0)) arrows.Add((ds.Centroid(), mouseGround, Ui.Now));
                 return;
             }
             if (click && PickSquad(mouseGround, 1) is Squad foe)
             {
+                OrderArrows(foe.Centroid());
                 Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }); // click an enemy: attack it
                 return;
             }
+            OrderArrows(click ? mouseGround : (a + mouseGround) / 2);
             if (click) LineAt(mouseGround, enemy);    // click: move, keep width
             else Distribute(a, mouseGround, enemy);   // drag: draw the line
             battle.Log(selected.Count == 0 ? "All troops: move" : "Squads moving");

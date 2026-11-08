@@ -44,7 +44,7 @@ Rendering without a display (works in the cloud container, software GL via Mesa 
 ```bash
 IRONFIELD_SAVES=/tmp/ifs IRONFIELD_SHOTS=/tmp/shots xvfb-run -a -s "-screen 0 1280x720x24" dotnet run -c Release --no-build
 ```
-Saves ~20 staged battle PNGs (field-view.png, command-overview.png, gallery-*.png...) and quits. `IRONFIELD_CAMPAIGN_SHOTS=/dir`
+Saves ~30 staged battle PNGs (field-view.png, command-overview.png, gallery-*.png, pose-sheet*.png, pose-horses.png...) and quits, with `render.txt` (sprite triangles, lines and marks drawn per shot). `IRONFIELD_CAMPAIGN_SHOTS=/dir`
 does the same for campaign screens, `IRONFIELD_LAB_SHOTS=/dir` for every UI lab page. Each run also writes `overflow.txt` (text that runs out of its panel; aim for none). ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
 
 Other env vars: `IRONFIELD_SAVES` (save dir; settings go to its parent), `IRONFIELD_QUALITY=High|Medium|Low`,
@@ -167,12 +167,13 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Realms and cultures data: lines, heraldry palette, home on the map, town flavour, opening wars (`relations`) | `Factions.cs` + `Data/factions.json` (founded realms come from the save via `Factions.Bind`); `WorldMap.GrowRealms` lays them out; a realm's temper (aggression, garrison, siege, tribute, hunts) is read in `Diplomacy.cs` (`WarAppeal`, `AlliancesDaily`, `Leading`), `CampaignAI.LordThink` and `CampaignSiege` |
 | Campaign map screen: 3D map, input, camera | `MapScreen.cs` + `Ui.cs` (immediate-mode kit: `Button`, `Panel`, `Text`) |
 | Campaign panels | `MapScreen.Hud.cs` (top bar, cards, tooltips, `Modal`), `.Settlement.cs` (town header + one `XTab` method per tab), `.Muster.cs` (party P as a muster roll), `.Captain.cs` (skills K as the captain sheet), `.Party.cs` (characters, upgrade, divisions V), `.Realm.cs` (R: realms, relations, chronicle; career tab), `.Atlas.cs` (M: realm map, province colours and borders, legend), `.Report.cs` (battle results), `.Event.cs` (illustrated event dialog), `.Dialogs.cs` (encounter, siege, beats, game over, menu) |
-| Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` (orders, goals, `Send`) + `.Draw.cs` (render, particles, culling, detail) + `Hud.cs` (2D drawing + hit-testing) + `Hud.Overlays.cs` (menu, after-action result, controls) + `Hud.Divisions.cs` |
+| Battle UI, camera, input, orders, effects | `BattleScreen.cs` (update) + `.Controls.cs` (input, camera) + `.Orders.cs` (orders, goals, `Send`) + `.Draw.cs` (render, particles, culling, detail, order arrows) + `.Effects.cs` (camera kick, hit pause, ground marks, trample map, falling banners; docs/VISUALS.md) + `.Shots.cs` (staged shots, pose sheets) + `Hud.cs` (2D drawing + hit-testing) + `Hud.Overlays.cs` (menu, after-action result, controls) + `Hud.Divisions.cs` |
 | Keys / rebinding | `Controls.cs` (`Act` enum + `Defaults` dict) |
 | 3D meshes (terrain, trees, towns, grass) | `World.cs` |
 | Shader pipeline / GLSL loader | `Shading.cs`, `GlslEffect.cs`, `Shaders/*.glsl`, `Sky.cs` (light by hour/weather) |
 | Unit drawing (puppets of part sprites) | `Puppet.cs` (poses, skeleton), `SpriteSheet.cs` (paints parts), `Painter.cs` (materials), `Art.cs` (atlas) |
 | Colours, heraldry, UI tokens | `Style.cs` |
+| Motion: easing curves, per-man phase / UI animation (`Ui.Anim`, `AnimLag`, `Since`, `Count`; `Ui.Now`, `Ui.Instant` freezes it for shots) / soldier and horse poses (`PoseOf`, `Fallen`, `Banner`) | `Ease.cs` / `Ui.cs` / `Puppet.cs`; rules in docs/DESIGN.md section 5 |
 | The interface kit: every widget (`Plate`, `PlateBody`, `Ribbon`, `Shield`, `Banner`, `Icon`, `Ring`, `Pips`, `Gauge`, `Chip`, `Tabs`, `Gilded`, `Toast`...; `Fit`/`TextFit` cut text to a width) | `UiKit.cs` (static class `Kit`, extension methods on `Ui`; `Ui.Panel`/`Button`/`Bar` and the battle HUD draw through it) |
 | UI lab (F3 on the title): gallery of interface concepts with mock data | `UiLab.cs` (screen, pages list, shots) + `.Pages.cs` / `.Scenes.cs` (one method per page) |
 | Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`; ground footsteps and their splashes, mud and leaves come from `BattleScreen.GroundSteps`) |

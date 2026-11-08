@@ -74,14 +74,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleRescue.cs (45 lines)
 - **Battle** (class, L8): NameOf:19, Rescuable:22, UpdateRescue:25, KillForTest:41, GoalText:44
 
-## BattleScreen.Controls.cs (270 lines)
-- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:78, CommandControls:86, BoxOf:188, OnScreen:190, PickSquad:197, GroundUnderMouse:211, UpdateCamera:233
+## BattleScreen.Controls.cs (273 lines)
+- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:78, CommandControls:86, BoxOf:191, OnScreen:193, PickSquad:200, GroundUnderMouse:214, UpdateCamera:236
 
 ## BattleScreen.cs (370 lines)
 - **BattleScreen** (class, L10): Exit:16, GroundTips:34, BattleScreen:78, Load:90, QuickGround:109, BeginCampaign:119, StartDeployment:143, StageCommandView:158, FinishCampaignBattle:166, NewBattle:174, SetWorld:207, SetCommand:217, Pressed:226, Update:234, PlaySounds:297, Soundscape:307, SyncHud:331, MenuChoice:356
 
-## BattleScreen.Draw.cs (437 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:51, DrawBlobs:86, EaseFacings:115, Spray:131, Effects:144, GroundSteps:174, BuildSprites:228, SpriteStates:281, DrawSpritesBasic:289, DrawSpritesShaded:299, Line:309, G:310, Ring:312, Precipitation:322, Stakes:346, RouteDots:371, DrawLines:382
+## BattleScreen.Draw.cs (469 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:51, DrawBlobs:86, EaseFacings:115, Spray:131, Effects:144, GroundSteps:174, BuildSprites:228, SpriteStates:281, DrawSpritesBasic:289, DrawSpritesShaded:299, Line:309, G:310, OrderArrows:319, OrderArrowLines:321, Ring:337, Precipitation:347, Stakes:371, RouteDots:396, DrawLines:407
 
 ## BattleScreen.Effects.cs (160 lines)
 - **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:76, Stamp:101, Trample:110, TrampleTexture:120, BannerFalls:139, DrawFallingBanners:150
@@ -291,12 +291,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## GpuReport.cs (64 lines)
 - **GpuReport** (class, L9): GpuReport:20, Frame:33, Next:49, Write:57
 
-## Hud.cs (665 lines)
+## Hud.cs (698 lines)
 - **Cmd** (enum, L7)
 - **MenuItem** (enum, L9)
-- **Hud** (class, L13): StartAt:39, Hud:62, U:64, Layout:69, CardAt:111, ButtonAt:112, MenuAt:113, MinimapAt:114, Over:116, Rect:120, Panel:123, Frame:125, Line:133, Bar:139, Text:142, TW:147, TextC:148, TextR:149, MoraleColor:151, AvgMorale:160, Draw:168, Strength:220, SideArms:223, GoalLines:227, Balance:239, Feed:271, MinimapPanel:295, PlayerPanel:331, Cards:381, Icon:434, Portrait:436, Crosshair:472, CommandPanel:518, Wheel:540, Hints:567, Banners:579, StateOf:612, FormationName:615, SquadTooltip:618, Detail:640
+- **Hud** (class, L13): StartAt:39, Hud:62, U:64, Layout:69, CardAt:111, ButtonAt:112, MenuAt:113, MinimapAt:114, Over:116, Rect:120, Panel:123, Frame:125, Line:133, Bar:139, Text:142, TW:147, TextC:148, TextR:149, MoraleColor:151, AvgMorale:160, Draw:168, Strength:220, SideArms:223, GoalLines:227, Balance:239, Feed:271, MinimapPanel:295, PlayerPanel:331, Cards:381, Icon:434, Portrait:436, Crosshair:472, CommandPanel:518, Wheel:540, Hints:567, Banners:579, Banner:609, StateOf:645, FormationName:648, SquadTooltip:651, Detail:673
 
-## Hud.Divisions.cs (242 lines)
+## Hud.Divisions.cs (253 lines)
 - **Hud** (class, L8): readonly:14, readonly:22, LayoutDivisions:28, LayoutGoals:42, DivisionAt:50, DivisionTag:54, GoalTag:61, DivisionCards:63, GoalPanel:86, GoalWheel:103, SergeantPennants:125, NamedMarks:143, BannerMark:179, DivisionMarkers:202
 
 ## Hud.Ground.cs (69 lines)
@@ -361,8 +361,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:55, Deserialize:56, Save:60, Play:67, Matches:97, Run:100
 - **Battle** (class, L114): StartRecording:121, RecordFrame:126, FinishRecording:155
 
-## ScreenHost.cs (553 lines)
-- **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:103, ContinueCampaign:116, OpenLab:129, QuickBattle:131, StartCampaignBattle:138, FinishCampaignBattle:148, CycleQuality:156, Update:160, Draw:189, Fade:221, CaptureShot:251, CampaignShots:271
+## ScreenHost.cs (555 lines)
+- **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:103, ContinueCampaign:116, OpenLab:129, QuickBattle:131, StartCampaignBattle:138, FinishCampaignBattle:148, CycleQuality:156, Update:160, Draw:189, Fade:221, CaptureShot:251, CampaignShots:273
 
 ## SelfTest.cs (204 lines)
 - **SelfTest** (class, L6): Run:8, RunOne:156, Lancer:164, Run:173, Scaled:175, MakeWanderer:178, Days:186, Ids:198, Check:200

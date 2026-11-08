@@ -580,33 +580,66 @@ sealed partial class Hud
     {
         var vp = new Viewport(0, 0, W, H);
         var mine = Mine;
-        foreach (var s in B.Squads)
+        // Place the chosen and hovered flags first so they keep their spot; a flag that would sit on another steps up, and if
+        // there is still no room it shrinks to a plain small flag. Drawn in reverse, so the chosen ones are in front (V7).
+        var order = B.Squads.Where(s => s.Alive > 0).OrderBy(s => Selected.Contains(s) || s == HoverSquad ? 0 : s.Team == 0 ? 1 : 2).ToList();
+        var placed = new List<(Squad S, int X, int Y, bool Small, Rectangle R)>();
+        foreach (var s in order)
         {
-            if (s.Alive == 0) continue;
             bool seen = B.Visible(s, 0);
             var c = seen ? s.Centroid() : s.LastSeen; // an enemy you cannot see: its flag stays where you last saw it, faded
             var sp = vp.Project(new Vector3(c.X, B.Terrain.Height(c) + 3.4f, c.Y), Proj, View, Matrix.Identity);
             if (sp.Z < 0 || sp.Z > 1) continue;
-            bool own = s.Team == 0, sel = Selected.Contains(s);
-            var col = own ? Friendly : seen ? Foe : Color.Lerp(Foe, Dim, 0.6f);
             int x = (int)sp.X, y = (int)sp.Y;
-            Rect(new Rectangle(x, y - U(24), U(2), U(26)), Color.Black * 0.7f); // pole
-            var flag = new Rectangle(x + U(2), y - U(24), U(24), U(15));
-            Rect(flag, col * 0.9f);
-            Frame(flag, sel ? Gold : Color.Black * 0.6f, U(sel ? 2 : 1));
-            string label = !own ? s.Name[..1] : s.Division != null ? DivisionTag(s.Division) : $"{mine.IndexOf(s) + 1}";
-            if (own && s.Division != null && s.Division == Div) Frame(new Rectangle(flag.X - U(1), flag.Y - U(1), flag.Width + U(2), flag.Height + U(2)), Gold, U(1));
-            TextC(label, flag.X + flag.Width / 2f, flag.Y + U(4), Color.White, 1);
-            int morale = AvgMorale(s.Units);
-            // The company's history on its flag (L5): a gold fringe after ten battles, a streamer for each battle honour.
-            if (own && s.Company is Company co)
+            bool small = false;
+            Rectangle R(int yy) => new(x, yy - U(24), U(26), U(22));
+            for (int step = 0; ; step++)
             {
-                if (co.Fringe) Rect(new Rectangle(flag.X, flag.Bottom - U(2), flag.Width, U(2)), Gold);
-                for (int i = 0; i < Math.Min(3, co.Streamers); i++) Rect(new Rectangle(flag.Right, flag.Y + U(2) + i * U(4), U(6 - i), U(2)), Gold);
+                var r = R(y);
+                if (!placed.Any(o => o.R.Intersects(r))) break;
+                if (step == 2) { small = true; y = (int)sp.Y; break; }
+                y -= U(12);
             }
-            Bar(new Rectangle(flag.X, flag.Bottom + U(2), flag.Width, U(3)), morale / 100f, MoraleColor(morale));
-            if (s.Target != null && own) Text("ATK", flag.Right + U(3), flag.Y + U(4), Foe, 1);
+            placed.Add((s, x, y, small, small ? new Rectangle(x, y - U(12), U(12), U(12)) : R(y)));
         }
+        for (int i = placed.Count - 1; i >= 0; i--) Banner(placed[i].S, placed[i].X, placed[i].Y, placed[i].Small, mine);
+    }
+
+    /// One company's flag on its pole: colour, number or letter, morale bar, honours. Wavering flags shake; routed ones droop grey.
+    void Banner(Squad s, int x, int y, bool small, List<Squad> mine)
+    {
+        bool seen = B.Visible(s, 0), own = s.Team == 0, sel = Selected.Contains(s);
+        int morale = AvgMorale(s.Units);
+        bool routed = s.Units.Count(u => u.Active && u.Routing) * 2 > s.Alive, wavering = !routed && morale < 35;
+        var col = own ? Friendly : seen ? Foe : Color.Lerp(Foe, Dim, 0.6f);
+        if (routed) { col = Color.Lerp(col, Dim, 0.65f); y += U(8); }
+        if (wavering) x += (int)(MathF.Sin(Ironfield.Ui.Now * 11 + s.GetHashCode()) * U(1.5f));
+        if (small)
+        {
+            Rect(new Rectangle(x, y - U(12), U(1), U(13)), Color.Black * 0.6f);
+            Rect(new Rectangle(x + U(1), y - U(12), U(8), U(5)), col * 0.8f);
+            return;
+        }
+        Rect(new Rectangle(x, y - U(24), U(2), U(26)), Color.Black * 0.7f); // pole
+        var flag = new Rectangle(x + U(2), y - U(24), U(24), U(15));
+        if (routed) // the flag hangs: a narrow drooping cloth, no letter
+        {
+            Rect(new Rectangle(flag.X, flag.Y, U(9), U(18)), col * 0.8f);
+            return;
+        }
+        Rect(flag, col * 0.9f);
+        Frame(flag, sel ? Gold : Color.Black * 0.6f, U(sel ? 2 : 1));
+        string label = !own ? s.Name[..1] : s.Division != null ? DivisionTag(s.Division) : $"{mine.IndexOf(s) + 1}";
+        if (own && s.Division != null && s.Division == Div) Frame(new Rectangle(flag.X - U(1), flag.Y - U(1), flag.Width + U(2), flag.Height + U(2)), Gold, U(1));
+        if (flag.X >= 0 && flag.Right <= W) TextC(label, flag.X + flag.Width / 2f, flag.Y + U(4), Color.White, 1); // cut by the edge: no letter
+        // The company's history on its flag (L5): a gold fringe after ten battles, a streamer for each battle honour.
+        if (own && s.Company is Company co)
+        {
+            if (co.Fringe) Rect(new Rectangle(flag.X, flag.Bottom - U(2), flag.Width, U(2)), Gold);
+            for (int i = 0; i < Math.Min(3, co.Streamers); i++) Rect(new Rectangle(flag.Right, flag.Y + U(2) + i * U(4), U(6 - i), U(2)), Gold);
+        }
+        Bar(new Rectangle(flag.X, flag.Bottom + U(2), flag.Width, U(3)), morale / 100f, MoraleColor(morale));
+        if (s.Target != null && own) Text("ATK", flag.Right + U(3), flag.Y + U(4), Foe, 1);
     }
 
     static string StateOf(Squad s) => s.Alive == 0 ? "BROKEN" : s.Units.Count(u => u.Active && u.Routing) > s.Alive ? "ROUTING"

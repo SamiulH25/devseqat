@@ -309,6 +309,31 @@ partial class BattleScreen
     void Line(Vector3 a, Vector3 b, Color c) { lines.Add(new(a, c)); lines.Add(new(b, c)); }
     Vector3 G(Vector2 p, float y = 0.08f) => new(p.X, battle.Terrain.Height(p) + y, p.Y);
 
+    /// The last frame's draw load: sprite triangles, line segments, ground marks, units on the field (shots runs log it).
+    public string RenderCost => $"{sprites.N / 3} sprite tris, {lines.N / 2} lines, {markCount} marks, {battle.Units.Count(u => u.Active)} men";
+
+    readonly Dictionary<Squad, float> selectedAt = new();
+    /// Orders just given: an arrow from each company to where it was sent, drawn out and then drawn in over a second (V7).
+    readonly List<(Vector2 From, Vector2 To, float At)> arrows = new();
+
+    void OrderArrows(Vector2 to) { foreach (var s in Targets()) arrows.Add((s.Centroid(), to, Ui.Now)); }
+
+    void OrderArrowLines()
+    {
+        arrows.RemoveAll(a => Ui.Now - a.At > 1.1f || Ui.Now < a.At);
+        foreach (var (from, to, at) in arrows)
+        {
+            float t = (Ui.Now - at) / 1.1f;
+            var head = Vector2.Lerp(from, to, Ease.OutCubic(Math.Min(1, t / 0.35f)));
+            var tail = Vector2.Lerp(from, to, Ease.In(Math.Max(0, (t - 0.45f) / 0.55f)));
+            if (Vector2.DistanceSquared(head, tail) < 0.25f) continue;
+            Line(G(tail, 0.2f), G(head, 0.2f), Sel);
+            var d = Vector2.Normalize(head - tail); var n = new Vector2(-d.Y, d.X);
+            Line(G(head, 0.2f), G(head - d * 1.6f + n, 0.2f), Sel);
+            Line(G(head, 0.2f), G(head - d * 1.6f - n, 0.2f), Sel);
+        }
+    }
+
     void Ring(Vector2 p, float r, Color c, int seg = 12)
     {
         for (int i = 0; i < seg; i++)
@@ -392,8 +417,15 @@ partial class BattleScreen
         Stakes();
         RouteDots();
         foreach (var s in selected)
+        {
+            // A company just chosen: its rings swell once, so you see which it was.
+            if (!selectedAt.TryGetValue(s, out float at)) selectedAt[s] = at = Ui.Now;
+            float swell = 1 + 0.7f * Ease.Kick((Ui.Now - at) / 0.45f);
             foreach (var u in s.Units)
-                if (u.Active) Ring(u.Pos, u.Mounted ? 1.05f : 0.45f, Sel, 8);
+                if (u.Active) Ring(u.Pos, (u.Mounted ? 1.05f : 0.45f) * swell, Sel, 8);
+        }
+        foreach (var gone in selectedAt.Keys.Where(k => !selected.Contains(k)).ToList()) selectedAt.Remove(gone);
+        OrderArrowLines();
         if (command)
         {
             if (battle.Player.Active) Ring(battle.Player.Pos, 0.8f, Gold);

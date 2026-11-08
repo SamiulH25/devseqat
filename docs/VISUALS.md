@@ -196,3 +196,37 @@ no more than +10% at High, none at Low).
 - Skeletal or 3D men; sprite parts on the puppet stay the format.
 - Gameplay or balance changes, even ones that look better (a dropped shield does not change armour).
 - Music and sound beyond the cues a new moment needs (cheer, banner sweep, transition swoosh).
+
+## 7. As built (2026-11-08)
+
+All eight phases shipped on the view side only: the battle sim, replays and the self-test battle numbers are unchanged
+(`SelfTest.ReplayExact`, `SelfTest.Animation` checks the curves and poses).
+
+- **V1:** `Ease.cs` (`In`, `Out`, `OutCubic`, `InOut`, `OutBack`, `Spring`, `Kick`, `Hash`); pose sheet shots `pose-sheet`,
+  `pose-sheet2`, `pose-horses` in `BattleScreen.Shots.cs`. `Unit.DiedFrom` (set in `Kill`) is the only new unit field.
+- **V2:** `Puppet.PoseOf` builds every pose from the unit's state plus its phase: eased windups that hold, overshooting
+  strikes, arm swing and bob, idle breathing, flinch, stagger, routers unarmed, cheering winners, archers' nock-draw-release,
+  skeleton rattle, troll lumber. Deaths fall away from the blow (two variants) and lie along it with the weapon beside them.
+  Horses walk, trot and gallop by speed. Banners are three rippling strips.
+- **V3:** `BattleScreen.Effects.cs`: camera kick and shake (`Settings.CameraShake`), 45 ms hit pause (`Settings.HitPause`),
+  a ring buffer of ground marks (700 High / 250 Medium / none Low), a trample texture fed to the world shader, banners that
+  topple when their bearer falls, arrow streaks, router dust.
+- **V4:** the world shader's near detail, trampled earth, puddles and wet sheen, snow, cloud shadows (also on sprites),
+  rippling rivers; post grade by `Sky.Grade` and a cheap bloom on High. Map: smaller trees (`World` `treeScale`), lighter
+  nights, chimney smoke, marching dust, labels kept on screen.
+- **V5:** `Ui.Anim`/`AnimLag`/`Since`/`Count`; sliding bars with a pale lost segment, hover fades, the tab mark slides, gauges
+  and rings ease, tooltips wait 0.25 s, modals rise out of the dark with a ribbon shine, spoils count up. `Ui.Instant`
+  (any shots run) freezes all of it so shots stay comparable.
+- **V6:** fade from black between screens and a battle name plate (`ScreenHost.Fade`); the opening sweep and the closing beat
+  (`BattleScreen` `intro`/`ending`); the result fades in; the title scene and event pictures move; career beats sound a horn.
+- **V7:** flag stacking and shrinking, chosen flag in front, wavering and routed flags; division tags kept off panels and
+  dimmed when crowded; selection rings swell once; order arrows draw out and in; couriers fly a flag.
+- **V8:** effects are gated by quality (marks, hit pause, streaks, bloom, shader effects are off on Low); shots runs write
+  `render.txt`; docs/DESIGN.md sections 2-6 and CLAUDE.md updated.
+
+Simplified or left out:
+- No horse rearing or falling-horse animation (the dead horse still lies flat).
+- Tab contents do not cross-fade; buttons do not press down; modals fade in but not out.
+- `--bench` has no render figure: the render cost is logged per shot in `render.txt` instead.
+- The order panel does not collapse to icons on narrow screens; the tip already sits above the cards at 1280x720.
+- Bloom is a single-pass ring of taps, not a blurred bright pass; the map uses the grade but no bloom.

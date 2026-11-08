@@ -215,8 +215,12 @@ sealed partial class Hud
                 var col = c.Div.Team == 0 ? Gold : Foe;
                 Rect(new Rectangle((int)cp.X - U(3), (int)cp.Y - U(3), U(6), U(6)), Color.Black * 0.7f);
                 Rect(new Rectangle((int)cp.X - U(2), (int)cp.Y - U(2), U(4), U(4)), col);
+                // A little flag on a staff that flutters as he rides, so you can watch the order travel.
+                Rect(new Rectangle((int)cp.X, (int)cp.Y - U(14), Math.Max(1, U(1)), U(12)), Color.Black * 0.7f);
+                for (int i = 0; i < 4; i++) Rect(new Rectangle((int)cp.X + U(1), (int)cp.Y - U(14) + i * U(1) + (int)(MathF.Sin(Ironfield.Ui.Now * 12 + i) * U(0.6f)), U(7 - i), Math.Max(1, U(1))), col);
                 if (c.Div.Team == 0) Text("RIDER", cp.X + U(5), cp.Y - U(4), col, 1);
             }
+        var tags = new List<Rectangle>();
         foreach (var d in B.DivisionsOf(0))
         {
             if (d.Alive == 0) continue;
@@ -236,7 +240,14 @@ sealed partial class Hud
                 }
             }
             string tag = (d.Leader is { Active: true } ? "" : "! ") + d.Name.ToUpperInvariant() + ": " + GoalTag(d.Goal);
-            TextC(tag, from.X, from.Y - U(26), col, 1);
+            // The tag stays off the HUD's panels, and one that would cover another division's is dimmed.
+            int tw = TW(tag, 1);
+            var tr = new Rectangle((int)from.X - tw / 2, (int)from.Y - U(26), tw, U(9));
+            if (Over(tr.Location) || Over(new Point(tr.Right, tr.Y)) || Over(new Point(tr.X, tr.Bottom)) || Over(new Point(tr.Right, tr.Bottom))) continue;
+            bool crowded = tags.Any(o => o.Intersects(tr));
+            tags.Add(tr);
+            if (crowded) Rect(new Rectangle(tr.X - U(2), tr.Y - U(1), tr.Width + U(4), tr.Height + U(2)), Color.Black * 0.35f);
+            TextC(tag, from.X, from.Y - U(26), crowded ? col * 0.55f : col, 1);
         }
     }
 }
