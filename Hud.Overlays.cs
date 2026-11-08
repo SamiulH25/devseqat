@@ -51,9 +51,11 @@ sealed partial class Hud
     {
         bool won = B.Winner == 0;
         var r = ResultBox;
-        Rect(new Rectangle(0, 0, W, H), Color.Black * 0.5f);
+        float since = Ironfield.Ui.Since(9001);
+        Rect(new Rectangle(0, 0, W, H), Color.Black * (0.5f * Math.Clamp(since / 0.4f, 0, 1)));
         kit.PlateBody(r, won ? Kit.Gilt : Bad);
         kit.Ribbon(r.Center.X, r.Y - U(16), won ? "VICTORY" : "DEFEAT", Kit.Mul(won ? Kit.Gilt : Bad, 0.66f), 3);
+        if (since < 1) Kit.Shine(kit, new Rectangle(r.X, r.Y - U(30), r.Width, U(30)), since);
         int pad = U(16), lw = U(420);
         var tally = Well(new Rectangle(r.X + pad, r.Y + U(28), lw, U(160)), "THE TALLY", Gold);
         Tally(tally);

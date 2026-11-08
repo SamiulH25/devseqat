@@ -145,7 +145,14 @@ sealed partial class BattleScreen
         deploying = true;
         SetCommand(true);
         blend = 1;
+        intro = shotDir == null && !Ui.Instant ? 0 : -1;
     }
+
+    // The opening sweep over the field (seconds into it; -1 = done) and the closing beat (seconds since the winner was known).
+    float intro = -1, ending = -1;
+    const float IntroTime = 4.5f, EndBeat = 1.6f;
+    /// The battle is decided but the result is not up yet: the field plays on at half speed and the camera rises.
+    bool Ending => ending >= 0 && ending < EndBeat && shotDir == null;
 
     /// Debug staging for the host's campaign screenshots.
     public void StageCommandView(Vector2 focus, float camPitch2, float zoom2, bool startFight)
@@ -201,7 +208,7 @@ sealed partial class BattleScreen
     {
         Sky.Set(battle.Weather, nightFloor: 0.3f); // moonlight: dark, but you can still fight
         motes.Clear();
-        markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = 0; lastHitAt = lastPlayerHp = -1;
+        markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
         world = new World(GraphicsDevice, battle.Terrain);
@@ -253,8 +260,8 @@ sealed partial class BattleScreen
         {
             battle.Input = new PlayerInput { Dir = aimDir };
             wheelOpen = false;
-            if (battle.Winner >= 0 && Pressed(Keys.Enter)) { if (campaignBattle != null) FinishCampaignBattle(); else NewBattle(); }
-            else if (LmbPressed && hud.MenuAt(ms.Position) is MenuItem m) MenuChoice(m);
+            if (battle.Winner >= 0 && !Ending && Pressed(Keys.Enter)) { if (campaignBattle != null) FinishCampaignBattle(); else NewBattle(); }
+            else if (!Ending && LmbPressed && hud.MenuAt(ms.Position) is MenuItem m) MenuChoice(m);
         }
         else
         {
@@ -272,7 +279,11 @@ sealed partial class BattleScreen
         IsMouseVisible = command || Overlay;
         battle.Commanding = command;
 
+        // The opening sweep runs until it ends or you press anything.
+        if (intro >= 0) { intro += dt; if (intro > IntroTime || LmbPressed || Keyboard.GetState().GetPressedKeyCount() > 0) intro = -1; }
+        if (battle.Winner >= 0) ending = ending < 0 ? 0 : ending + dt;
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
+        if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
         if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
         if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
         Soundscape();
@@ -329,7 +340,7 @@ sealed partial class BattleScreen
         }
         else { route = null; routeAt = null; }
         hud.Command = command; hud.Paused = paused; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
-        hud.ShowResult = battle.Winner >= 0 && !helpOpen;
+        hud.ShowResult = battle.Winner >= 0 && !helpOpen && !Ending;
         hud.InCampaign = campaignBattle != null;
         hud.Deploying = deploying;
         if (selectedDivision != null && selectedDivision.Alive == 0) selectedDivision = null;

@@ -21,6 +21,12 @@ sealed class ScreenHost : Game
 
     enum Mode { Title, Map, Battle, Lab }
     Mode mode = Mode.Title;
+    // The screen last drawn and when it changed: each new screen rises out of black (docs/VISUALS.md V6).
+    Mode shown = Mode.Title;
+    float fadeAt = -10;
+    // The plate over a battle's opening fade: its name, then the ground and weather.
+    string plateName = "", plateNote = "";
+    Ui fadeUi = null!;
     BattleScreen battle = null!;
     MapScreen map = null!;
     TitleScreen title = null!;
@@ -70,6 +76,7 @@ sealed class ScreenHost : Game
             Art.Atlas.SaveAsPng(file, Art.Atlas.Width, Art.Atlas.Height);
         }
         Font = new PixelFont(GraphicsDevice);
+        fadeUi = new Ui(Sb, Art, Font);
         if (Environment.GetEnvironmentVariable("IRONFIELD_QUALITY") is { Length: > 0 } q && Enum.TryParse<Quality>(q, true, out var qv)) Quality = qv;
         string? shaderError = null;
         try { Shading = new Shading(GraphicsDevice); }
@@ -134,6 +141,8 @@ sealed class ScreenHost : Game
         setup = s;
         battle.BeginCampaign(s);
         mode = Mode.Battle;
+        plateName = s.Field != "" ? $"THE BATTLE OF {s.Field.ToUpperInvariant()}" : s.Tournament >= 0 ? "THE LISTS" : $"AGAINST {s.EnemyName.ToUpperInvariant()}";
+        plateNote = $"{(s.Options.Ground?.Name ?? "open").ToUpperInvariant()} GROUND, {s.Options.Weather.Describe.ToUpperInvariant()}";
     }
 
     void FinishCampaignBattle(BattleResult r)
@@ -197,6 +206,7 @@ sealed class ScreenHost : Game
                 break;
             default: battle.Draw(); break;
         }
+        Fade();
         if (SettingsPanel.Open) SettingsPanel.Draw();
         CaptureShot();
         if (gpuReport != null)
@@ -205,6 +215,37 @@ sealed class ScreenHost : Game
             else if (gpuReport.Frame(Quality)) Exit();
         }
         base.Draw(gameTime);
+    }
+
+    /// Black over a screen that just came up, lifting over 0.35 s (a battle holds it longer under its name plate).
+    void Fade()
+    {
+        if (mode != shown)
+        {
+            if (mode != Mode.Battle) plateName = "";
+            shown = mode;
+            fadeAt = Ui.Now;
+        }
+        if (Ui.Instant) return;
+        bool plate = plateName != "" && mode == Mode.Battle;
+        float hold = plate ? 1.1f : 0, lift = plate ? 0.7f : 0.35f;
+        float t = (Ui.Now - fadeAt - hold) / lift;
+        if (t >= 1) { plateName = ""; return; }
+        float a = 1 - Ease.InOut(Math.Clamp(t, 0, 1));
+        var ui = fadeUi;
+        ui.Begin(GraphicsDevice.Viewport, Point.Zero, false);
+        ui.Rect(new Rectangle(0, 0, ui.W, ui.H), Color.Black * a);
+        if (plate)
+        {
+            // The name comes up first, then a gilt rule draws out under it, then the ground and weather.
+            float since = Ui.Now - fadeAt, ta = Ease.OutCubic(Math.Clamp(since / 0.4f, 0, 1)) * a;
+            int cx = ui.W / 2, y = ui.H / 2 - ui.U(24) + (int)((1 - ta) * ui.U(6));
+            ui.TextC(plateName, cx, y, Kit.Gilt * ta, 3);
+            int w = (int)(ui.TW(plateName, 3) * Ease.OutCubic(Math.Clamp((since - 0.2f) / 0.5f, 0, 1)));
+            ui.Rect(new Rectangle(cx - w / 2, y + ui.U(30), w, Math.Max(1, ui.U(1))), Kit.Gilt * (0.7f * a));
+            ui.TextC(plateNote, cx, y + ui.U(40), Kit.Parchment * (Math.Clamp((since - 0.4f) / 0.4f, 0, 1) * a), 1);
+        }
+        ui.End();
     }
 
     void CaptureShot()

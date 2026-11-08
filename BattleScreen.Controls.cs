@@ -243,6 +243,19 @@ partial class BattleScreen
         var focus = Vector3.Lerp(fieldFocus, cmdFocus, k);
         float y = yaw + MathHelper.WrapAngle(camYaw - yaw) * k; // shortest way round
         float pt = MathHelper.Lerp(pitch, camPitch, k), dist = MathHelper.Lerp(fieldDist + (mounted ? 1.5f : 0), zoom, k);
+        if (intro >= 0)
+        {
+            // The opening: from high over the far side the camera swings round and down to where you deploy.
+            float e = Ease.InOut(intro / IntroTime), o = 1 - e;
+            focus = Vector3.Lerp(new Vector3(0, t.Height(Vector2.Zero), 0), focus, e);
+            y += 2.2f * o; pt = MathHelper.Lerp(pt, 0.85f, 0.5f * o); dist *= 1 + 0.9f * o;
+        }
+        if (ending >= 0 && shotDir == null)
+        {
+            // The fight is decided: the camera draws up and back to show the field.
+            float r = Ease.InOut(Math.Clamp(ending / 2.5f, 0, 1)) * (1 - k);
+            dist += 7 * r; pt += 0.3f * r;
+        }
         var look = new Vector3(MathF.Cos(y) * MathF.Cos(pt), -MathF.Sin(pt), MathF.Sin(y) * MathF.Cos(pt));
         var shake = Shake();
         eye = focus - look * dist + shake;
