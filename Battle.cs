@@ -88,6 +88,7 @@ public sealed partial class Battle
         foreach (var u in Units) if (u.Team == 1 && !u.IsLeader) u.Morale = Math.Clamp(u.Morale + Options.EnemyMorale, 5, 100);
         if (Options.Duel) SetupDuel();
         UpdateCentroids();
+        DrawGoals(seed);
     }
 
     /// Single combat (P2): the two leaders face each other on foot a few paces apart.
@@ -438,7 +439,10 @@ public sealed partial class Battle
         var captain = Player.Dead || Options.PlayerWounded ? (Winner == 1 && !blunt ? LeaderFate.Captured : LeaderFate.Wounded) : LeaderFate.Unhurt;
         var foeLeader = EnemyCaptain.Dead ? (Options.Tournament ? LeaderFate.Unhurt : Options.Duel ? LeaderFate.Wounded : LeaderFate.Slain) : LeaderFate.Unhurt;
         int horses = LooseHorses.Count(h => h.Team == 1);
-        return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills, SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes);
+        return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills, SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes)
+        {
+            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(),
+        };
     }
 
     /// The gap between squad s and the nearest active man of `team`. Exact, but squads whose bounding circles

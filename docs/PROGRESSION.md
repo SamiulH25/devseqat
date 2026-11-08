@@ -273,7 +273,7 @@ Give the captain something to do in each fight beyond "win".
 - P4 (step 2, earned traits and age): `Campaign/Traits.cs`. Each week `TraitsWeekly` works the captain's traits out again
   from the tally (`TraitsEarned`), so they come and go: Lionheart (2 duels won or 8 battles with 5+ of your own kills,
   tally `frontline`), Steadfast (4 battles won at 1.5x odds or worse, `outnumbered`), Merciful (3 lords or prisoner bands
-  freed, `freed`) or Ruthless (3 caravans robbed), whichever leads by two, and Coward (4 retreats, `fled`, and more than
+  freed, `freed`) or Ruthless (3 caravans robbed), whichever leads by two, and Coward (4 retreats from a weaker foe, `fled`, and more than
   half as many as victories). They sit on the captain's `Character` and colour lords' opinion (`RegardOfTraits`: e.g.
   Lionheart +5 to all and +5 more from the Reckless, Ruthless -15 from the Honourable, Coward -10 to all), and each is an
   event trigger `trait:Name` (five events in `Data/events.json`). Age: a year is 120 days (`DaysPerYear`); past 45
@@ -303,3 +303,15 @@ Give the captain something to do in each fight beyond "win".
   the Lionheart, the Cruel, the Merciful, the Steadfast), else deeds (the Champion for 3 duels, of the Lists for 3
   tournaments, Goblin-Bane for 3 holdouts, the Hammer for 20 victories), else the Bold. Shown under the name on the
   captain card and in the end summary. `SelfTest.FreeCrown`. The pilot always hands the town over (first choice).
+- P6 (step 1, personal goals): `BattleDeeds.cs` (headless). With `BattleOptions.Goals` (the campaign's field battles and
+  assaults) the battle draws two goals from `GoalKinds` with its own seeded generator, so the sim's random numbers do not
+  move: slay their captain, fell five with your own hand, break their horse (only if they have any), no company of yours
+  routs, win within three minutes (not in sieges). `GoalState` is live (open, met, lost) and the HUD lists them under the
+  balance bar (`Hud.GoalLines`); `BattleResult.Goals`/`GoalsMet` hand them back, and each met pays 5 renown and 1.5 of its
+  skill (`GoalRenown`, `GoalPractice`; Arms, Tactics or Leadership). The report lists them. `SelfTest.BattleGoals`.
+  Not done: hold the hill (no marked high ground), take the gate first.
+- Pacing check after P5/P6a (`--pacing 4`; the report now prints each run's traits, title, retreats, wounds and perks):
+  the stand-in captain dodges many encounters, so counting every retreat made it a Coward (-10 with every lord) and lords
+  refused its fealty by one point; `fled` now counts only retreats from a weaker foe. After the fix 2 of 4 seeds reach
+  Vassal (days 81 and 193) and one reaches Marshal (day 218); the end-of-P3 build gave 2 of 3 (days 51, 91). The misses
+  stall at 99-119 renown of the 120 fealty needs. Retune in P8.

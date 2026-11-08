@@ -178,6 +178,16 @@ partial class MapScreen
             ui.Text("TRAIN THEM UP IN A TOWN.", c.X, y, Style.Dim, 1);
             y += ui.U(16);
         }
+        // Your goals for the battle (P6): met in gilt, missed in grey.
+        foreach (var (text, met) in rep.Goals)
+        {
+            if (y + ui.U(11) > c.Bottom) break;
+            ui.Icon(met ? "star" : "scroll", c.X, y, met ? Kit.Gilt : Style.Dim, 1);
+            ui.Text(text, c.X + ui.U(14), y, met ? Kit.Gilt : Style.Dim, 1);
+            if (met) ui.TextR($"+{Campaign.GoalRenown:0}", c.Right, y, Kit.Gilt, 1);
+            y += ui.U(11);
+        }
+        if (rep.Goals.Count > 0) y += ui.U(4);
         // What your own hands and head learned (P3): one line a skill, gilt when a perk opened.
         foreach (var rise in rep.Rises)
         {

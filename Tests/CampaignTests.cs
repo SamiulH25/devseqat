@@ -758,6 +758,18 @@ public static partial class SelfTest
         var res = Rules.AutoResolve(setup.Side0, setup.Side1, new Rng(new CampaignState { Seed = 4 }));
         var rep = c.FinishBattle(res with { Winner = 0, Duration = 120, PlayerKills = 8, Parries = 12 }, setup);
         Check(rep.Rises.Any(l => l.StartsWith("ARMS ")), "the battle report says how far Arms rose");
+        // Personal goals met pay renown and appear in the report (P6).
+        var g = Campaign.New(33);
+        var gb = g.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
+        gb.Pos = g.Player.Pos;
+        g.Encounter = gb;
+        var gs = g.PrepareBattle(gb);
+        Check(gs.Options.Goals, "campaign battles have goals");
+        var gr = Rules.AutoResolve(gs.Side0, gs.Side1, new Rng(new CampaignState { Seed = 4 }));
+        float renown0 = g.Captain.Renown;
+        var grep = g.FinishBattle(gr with { Winner = 0, Duration = 120, Goals = new[] { "hand", "quick" }, GoalsMet = new[] { "hand" } }, gs);
+        Check(grep.Goals.Count == 2 && grep.Goals.Count(x => x.Met) == 1 && grep.Renown >= Campaign.GoalRenown && MathF.Abs(g.Captain.Renown - renown0 - grep.Renown) < 0.01f,
+            $"a goal met is renown in the report ({grep.Renown:0}, {g.Captain.Renown - renown0:0}, {grep.Goals.Count} goals)");
         // A cheap win is worth a point of Tactics more than a costly one.
         float Tactics(float share)
         {

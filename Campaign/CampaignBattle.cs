@@ -129,6 +129,13 @@ public partial class Campaign
         if (won && (playerTeam == 0 ? startStrength1 / MathF.Max(1, startStrength0) : startStrength0 / MathF.Max(1, startStrength1)) >= 1.5f) Count("outnumbered");
         float bounty = 0, renown = 0;
         int horses = 0;
+        // Personal goals met (P6): renown and a lesson each.
+        foreach (var id in r.GoalsMet)
+        {
+            Captain.Renown += GoalRenown;
+            renown += GoalRenown;
+            Practise(Battle.Goal(id).Skill, GoalPractice);
+        }
         if (won)
         {
             foreach (var e in losers.Where(e => e.Lair || e.Kind == PartyKind.Caravan)) loot += e.Gold; // a holdout's hoard, a caravan's purse
@@ -137,11 +144,11 @@ public partial class Campaign
                     : e.Lair ? B.BountyHoldout + Rules.PerMan(Rules.Strength(e) / 10)
                     : Outlaw(e) ? B.BountyBandits + Rules.PerMan(Rules.Strength(e) / 10)
                     : Captain.Contract >= 0 ? B.BountyLord + Rules.PerMan((startStrength1 + startStrength0) / 20) : 0;
-            renown = B.RenownPerVictory + (playerTeam == 0 ? startStrength1 : startStrength0) / (B.RenownStrengthDivisor * B.ArmyScale);
+            renown += B.RenownPerVictory + (playerTeam == 0 ? startStrength1 : startStrength0) / (B.RenownStrengthDivisor * B.ArmyScale);
             horses = r.HorsesTaken;
             S.Gold += loot + ransom + bounty;
             foreach (var e in losers) S.LastBattleFoe = e.Id;
-            Captain.Renown += renown;
+            Captain.Renown += renown - GoalRenown * r.GoalsMet.Count;
             Player.Horses += horses;
         }
         else if (Player.Men > 0)
@@ -171,7 +178,8 @@ public partial class Campaign
             Log($"You are taken, and ransomed. Your men regroup at {refuge.Name}.");
         }
         string spoil = won ? BattleSpoil(losers, r) : "";
-        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting };
+        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting,
+            Goals = r.Goals.Select(id => (Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList() };
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
         return Report;
     }
@@ -199,6 +207,7 @@ public partial class Campaign
         {
             AuraRadius = (Has("Bannerman") ? 16 : 12) + (Rank >= Rank.Lord ? LordBanner : 0), // a lord's banner reaches further (P5)
             KingsCharge = Rank == Rank.King,
+            Goals = true, // personal goals (P6)
             RallyBonus = Has("WarCry") ? 35 : 25,
             RallyCooldown = Has("WarCry") ? 9 : 12,
             IronWill = Has("IronWill"),
@@ -247,8 +256,8 @@ public partial class Campaign
     public void Retreat()
     {
         duelWith = -1;
-        Count("fled");
         var e = Encounter!;
+        if (Rules.Strength(e) < Rules.Strength(Player)) Count("fled"); // running from a weaker foe is what makes a coward (P4)
         var rear = Player.Companies.Where(c => c.Men > 0).OrderBy(c => c.Type.Mount != null ? 1 : 0).ThenByDescending(c => c.Men).FirstOrDefault();
         if (rear != null)
         {

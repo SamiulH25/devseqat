@@ -49,6 +49,7 @@ public static class BalanceReport
                 + $"{pilot.Promotions} promoted ({pilot.Promotions / (float)Math.Max(1, pilot.Battles):0.0} a battle), first tier V day {pilot.FirstT5Day}, {pilot.Taken} seats stormed, vassal renown day {pilot.RenownForVassalDay}, "
                 + string.Join(", ", pilot.StageDay.Select(kv => $"{kv.Key} day {kv.Value}")));
             if (c.Rank == Rank.SwornSword && !c.CanSwearFealty(out string why)) Console.WriteLine($"  fealty refused: {why}");
+            Console.WriteLine($"  name: {string.Join(" ", c.Me.Traits)} {c.Title}; fled {c.Tally("fled")}, wounds {string.Join(" ", c.Captain.Wounds)}, perks {string.Join(" ", c.Captain.Perks)}");
             foreach (var (stage, from, to) in Targets)
             {
                 string got = pilot.StageDay.TryGetValue(stage, out int d) ? $"day {d} ({Hours(d):0.0} h)" : "not reached";

@@ -23,7 +23,7 @@ partial class Campaign
 
     /// The traits the tally earns now: Lionheart for duels won or battles fought at the front (5+ of your own kills),
     /// Steadfast for battles won outnumbered, Merciful or Ruthless for mercy or robbery (whichever leads by two),
-    /// Coward for battles fled more than half as often as won.
+    /// Coward for fleeing weaker foes (`Retreat`) more than half as often as winning.
     public List<string> TraitsEarned()
     {
         var t = new List<string>();

@@ -169,6 +169,7 @@ sealed partial class Hud
         SergeantPennants();
         if (Command) Banners();
         Balance();
+        GoalLines();
         Feed();
         MinimapPanel();
         PlayerPanel();
@@ -209,6 +210,19 @@ sealed partial class Hud
     Heraldry SideArms(int team) => Style.Sides[Math.Clamp(B.Options.Palette[Math.Clamp(team, 0, 1)], 0, Style.Sides.Length - 1)];
 
     /// Top centre: the two sides' strength pulling on one bar between their shields, the men standing and the clock.
+    /// Your personal goals for this battle (P6), under the balance bar: open in white, met in gold, lost struck grey.
+    void GoalLines()
+    {
+        int y = U(58);
+        foreach (var g in B.Goals)
+        {
+            int st = B.GoalState(g);
+            string mark = st > 0 ? "DONE: " : st < 0 ? "LOST: " : "GOAL: ";
+            TextC(mark + g.Text, W / 2f, y, st > 0 ? Gold : st < 0 ? Dim * 0.6f : Color.White, 1);
+            y += U(11);
+        }
+    }
+
     void Balance()
     {
         float s0 = Strength(0), s1 = Strength(1), f = s0 + s1 > 0 ? s0 / (s0 + s1) : 0.5f;

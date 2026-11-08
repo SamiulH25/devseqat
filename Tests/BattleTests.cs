@@ -322,6 +322,28 @@ public static partial class SelfTest
     }
 
     /// Single combat (P2): the two leaders alone on foot; the lord comes for you; a fall is a yield.
+    static void BattleGoals()
+    {
+        Battle Make(bool goals) => new(51, Armies.Standard(0), Armies.Standard(1), new BattleOptions { Goals = goals, AutoPlayer = true, Cap = 200 });
+        var b = Make(true);
+        Check(b.Goals.Count == 2 && b.Goals.Distinct().Count() == 2, "a field battle draws two personal goals");
+        Check(Make(true).Goals.SequenceEqual(b.Goals), "the same battle draws the same goals");
+        Check(Make(false).Goals.Count == 0, "no goals unless asked for");
+        Check(new Battle(51, Armies.Standard(0), Armies.Standard(1), new BattleOptions { Goals = true, Duel = true }).Goals.Count == 0, "none in single combat");
+        // Live state: the hand goal fills with your kills; the quick win lapses after three minutes.
+        Check(b.GoalState(Battle.Goal("hand")) == 0, "a goal starts open");
+        b.PlayerKills = Battle.HandKills;
+        Check(b.GoalState(Battle.Goal("hand")) == 1, "five by your own hand");
+        b.Time = Battle.QuickWin + 1;
+        Check(b.GoalState(Battle.Goal("quick")) == -1, "too late for a quick win");
+        // To the end: the result names the goals and those met.
+        var c = Make(true);
+        for (int i = 0; i < 60 * 600 && c.Winner < 0; i++) c.Update(1 / 60f);
+        var r = c.Result();
+        Check(r.Goals.SequenceEqual(c.Goals.Select(g => g.Id)) && r.GoalsMet.All(r.Goals.Contains) && c.Goals.All(g => c.GoalState(g) != 0),
+            $"every goal is settled at the end ({string.Join(",", r.GoalsMet)} of {string.Join(",", r.Goals)})");
+    }
+
     static void DuelFight()
     {
         int won = 0;

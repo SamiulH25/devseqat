@@ -17,6 +17,8 @@ public sealed class BattleOptions
     public bool IronWill;
     /// A king's first rally of the battle calls every broken company back, wherever it runs (P5).
     public bool KingsCharge;
+    /// Draw personal goals for the captain (P6; the campaign's field battles and assaults).
+    public bool Goals;
     /// You are wounded: you command from the rear (command view only).
     public bool PlayerWounded;
     /// An AI general commands your side too (headless tests and auto-resolve calibration).
@@ -89,4 +91,9 @@ public sealed record StackResult(string Troop, int Start, int Standing, int Fled
 /// PlayerKills counts all your kills; of them SaddleKills from horseback and ArrowKills with your bow. LanceHits, ArrowHits,
 /// Parries and Ripostes are what you did with your own hands (P3: each feeds a skill).
 public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<CompanyResult> Companies, LeaderFate Captain, LeaderFate EnemyLeader, int HorsesTaken,
-    int PlayerKills = 0, int SaddleKills = 0, int ArrowKills = 0, int LanceHits = 0, int ArrowHits = 0, int Parries = 0, int Ripostes = 0);
+    int PlayerKills = 0, int SaddleKills = 0, int ArrowKills = 0, int LanceHits = 0, int ArrowHits = 0, int Parries = 0, int Ripostes = 0)
+{
+    /// The battle's personal goals (P6, `Battle.GoalKinds` ids) and those met.
+    public IReadOnlyList<string> Goals { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> GoalsMet { get; init; } = Array.Empty<string>();
+}

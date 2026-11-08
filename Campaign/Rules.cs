@@ -14,6 +14,8 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
     public IReadOnlyList<string> Rises { get; init; } = Array.Empty<string>();
     /// A lasting wound the captain took in this battle (P4), or "".
     public string LastingWound { get; init; } = "";
+    /// The battle's personal goals and whether each was met (P6).
+    public IReadOnlyList<(string Text, bool Met)> Goals { get; init; } = Array.Empty<(string, bool)>();
 }
 
 /// A battle about to be fought between map parties: the armies, options, and how its companies map back to campaign records.

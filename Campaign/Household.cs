@@ -19,6 +19,9 @@ partial class Campaign
         _ => (40, 5, true),
     };
 
+    /// Renown and skill practice for each personal goal met in a battle (P6).
+    public const float GoalRenown = 5, GoalPractice = 1.5f;
+
     /// Metres a Lord's banner adds to the captain's aura.
     public const float LordBanner = 4;
 

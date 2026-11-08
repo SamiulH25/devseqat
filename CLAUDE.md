@@ -125,6 +125,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Formations, orders, slots | `Squad.cs` (`Order`, `Formation`, `Slot`, `SetLine`) |
 | Sieges in battle / on the map | `BattleSiege.cs` (wall, ladders, gate `Via`) / `Campaign/CampaignSiege.cs` (garrisons, capture, fiefs) |
 | Captain combat (bash, swap, horse call), fatigue, supply | `BattleCaptain.cs` |
+| Personal goals in a battle (draw, live state, result) | `BattleDeeds.cs` (`DrawGoals`, `GoalState`); HUD `Hud.GoalLines` |
 | Spatial grid (`Near`, `Separate`) | `BattleGrid.cs` |
 | Divisions: goals, order delay, sergeant brain, AI goals / couriers | `BattleDivision.cs` (`IssueGoal`, `OrderDelay`, `Direct`, `Brain`, `AiCommand`) / `BattleCourier.cs` |
 | Unit/troop types, look, mounts | `Units.cs`, `Troops.cs` (+ `Armies` presets, `Large`, `Divide`), `Data/troops.json` |
