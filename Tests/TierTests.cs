@@ -68,15 +68,15 @@ public static partial class SelfTest
         Console.WriteLine($"tiers: {links} upgrade links fought against their parents, every upgrade won");
     }
 
-    /// D0: the gap is felt: a tier VII company beats twice as many tier IV men of its culture and class (horse: one and a
-    /// half times as many, since in the open the many ride round the few; T1's charge styles should let this tighten).
+    /// D0: the gap is felt: a tier VII company beats twice as many tier IV men of its culture and class (heavy horse
+    /// needed T1's Ride down for this: before it, 40 lancers riding round 20 knights was a coin flip).
     static void TierGap()
     {
         foreach (var (culture, cls) in new[] { ("northern", UnitClass.Infantry), ("azure", UnitClass.Cavalry), ("crimson", UnitClass.Archer), ("azure", UnitClass.Skirmisher) })
         {
             var top = Troops.All.Where(t => t.Culture == culture && t.Class == cls && t.Tier == 7).OrderBy(t => t.Id).First();
             var low = Troops.All.Where(t => t.Culture == culture && t.Class == cls && t.Tier == 4 && (t.Ammo > 0) == (top.Ammo > 0)).OrderBy(t => t.Id).First();
-            int many = cls == UnitClass.Cavalry ? 30 : 40;
+            const int many = 40;
             var (a, b) = TierFight(top.Id, low.Id, 920, 20, many);
             Console.WriteLine($"tiers: 20 {top.Name} against {many} {low.Name}: {a:P0} against {b:P0} standing");
             Check(a * 20 > b * many, $"20 {top.Name} (VII) beat {many} {low.Name} (IV)");

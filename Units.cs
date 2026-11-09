@@ -92,6 +92,10 @@ public sealed class UnitType
     public bool Leader;
     /// A spear that only thrusts (the captain's boar spear): every swing is a thrust.
     public bool ThrustOnly;
+    /// How this troop's blows land (docs/COMPANIONS_MAGIC.md D2): tiers V-VII only, from the weapon unless troops.json
+    /// names one (`attack`); StyleRank 1-3 for tiers V-VII (0: no style).
+    public AttackStyle Style;
+    public int StyleRank;
     public Mount? Mount;
     public Look Look = null!;
 
@@ -166,6 +170,9 @@ public sealed class Unit
     /// His guard is up on purpose against a blow he saw coming (a drilled man's choice, BattleRanks.Guard): he blocks
     /// better, and strikes back at once if it holds.
     public bool Guard;
+    /// Attack styles (BattleStyles.cs): blows struck so far (every third is a shield bash), and a riposte owed after a block.
+    public int Blows;
+    public bool RiposteReady;
 
     public bool Active => !Dead && !Fled;
     public bool Mounted => Horse != null;

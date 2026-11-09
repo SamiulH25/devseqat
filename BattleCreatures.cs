@@ -13,25 +13,28 @@ public partial class Battle
     static float BodyRadius(Unit u) => u.Mounted ? 1.0f : u.Type.Huge ? 0.375f * u.Type.Size : 0.375f;
     static float BodyMass(Unit u) => u.Mounted ? 6 : u.Type.Huge ? 8 : 1;
 
-    /// A sweeping blow lands on its target and carries on into the men beside it (up to two more).
-    void Sweep(Unit a, Unit first, float dmg, float reach)
+    /// A sweeping blow lands on its target and carries on into the men beside it (a troll: up to two more at 0.8;
+    /// a greatsword's sweep, BattleStyles.cs, fewer and lighter).
+    void Sweep(Unit a, Unit first, float dmg, float reach, int count = 2, float share = 0.8f)
     {
         int more = 0;
         foreach (var t in Near(a.Pos, reach + 1, nearBrace).Where(t => t != first && t.Team != a.Team && t.Active)
                      .OrderBy(t => Vector2.DistanceSquared(t.Pos, a.Pos)).ThenBy(t => t.Index).ToList())
-            if (InArc(a, t, reach, 0.1f) && more++ < 2) Hit(a, t, dmg * 0.8f, false);
+            if (InArc(a, t, reach, 0.1f) && more++ < count) Hit(a, t, dmg * share, false);
     }
 
-    /// A blow from something huge throws a man off his feet and back, and shakes the men around him.
-    void Knock(Unit a, Unit t)
+    /// A blow from something huge throws a man off his feet and back, and shakes the men around him. Men's styles
+    /// (a shield bash, a lance, a close bolt: BattleStyles.cs) throw him less far and shake less.
+    void Knock(Unit a, Unit t, float distance = 1.3f, float stagger = 1.0f, float shake = 1.5f)
     {
         if (!t.Active || t.Type.Huge || t.Mounted || Wall != null) return; // no throwing men through a siege wall
         var away = t.Pos - a.Pos;
         if (away.LengthSquared() < 1e-4f) away = a.Dir;
-        t.Pos += Vector2.Normalize(away) * 1.3f;
-        Stagger(t, 1.0f);
-        foreach (var u in Near(t.Pos, 4, nearBrace))
-            if (u.Active && u.Team == t.Team && Vector2.DistanceSquared(u.Pos, t.Pos) < 16) u.Morale -= 1.5f;
+        t.Pos += Vector2.Normalize(away) * distance;
+        Stagger(t, stagger);
+        if (shake > 0)
+            foreach (var u in Near(t.Pos, 4, nearBrace))
+                if (u.Active && u.Team == t.Team && Vector2.DistanceSquared(u.Pos, t.Pos) < 16) u.Morale -= shake;
     }
 
     /// A troll heals while nothing has hurt it for a few seconds, but not under the sun.

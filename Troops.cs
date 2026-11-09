@@ -36,6 +36,7 @@ public static class Troops
         public string[] UpgradesTo = Array.Empty<string>();
         public float Hp, Damage, Armor, Reach, Windup, Recover, Speed, Block, Range, VsMounted = 1, VsMonster = 1, Pierce, Reload = 1, Size = 1, Drill = -1;
         public string[] Traits = Array.Empty<string>();
+        public string? Attack;
         public bool Leader;
         public LookDto Look = new();
     }
@@ -74,6 +75,9 @@ public static class Troops
                 Leader = d.Leader, Size = d.Size, Drill = d.Drill, Traits = d.Traits, Mount = d.Mount == null ? null : mounts[d.Mount],
                 Look = new Look(l.Head, l.Body, l.Legs, l.Feet, l.Hands, l.Shield, l.Weapon, l.Tabard, l.Plume, l.Cape, l.Face),
             };
+            var t = troops[d.Id];
+            t.StyleRank = t.Wild || t.Leader ? 0 : Math.Clamp(t.Tier - 4, 0, 3);
+            t.Style = t.StyleRank == 0 ? AttackStyle.None : d.Attack != null ? Enum.Parse<AttackStyle>(d.Attack, true) : Battle.StyleFor(t);
         }
         var problems = Validate().ToList();
         if (problems.Count > 0) throw new InvalidDataException("troops.json: " + string.Join("; ", problems));

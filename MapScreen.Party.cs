@@ -103,13 +103,18 @@ partial class MapScreen
             ui.TextC(t.Name.ToUpperInvariant(), card.X + cw / 2f, card.Y + ui.U(86), Style.Text, t.Name.Length > 16 ? 1 : 2);
             ui.TextC($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]}  {t.Class.ToString().ToUpperInvariant()}  {t.Culture.ToUpperInvariant()}", card.X + cw / 2f, card.Y + ui.U(106), Style.Accent, 1);
             int sy = card.Y + ui.U(122);
-            foreach (var (label, value) in new[] { ("HEALTH", $"{t.MaxHp:0}"), ("ARMOUR", $"{t.Armor:0}"), ("DAMAGE", $"{t.Damage:0}"), ("REACH", $"{t.Reach:0.0} M"),
-                         t.Range > 0 ? ("RANGE", $"{t.Range:0} M") : ("SPEED", $"{t.Speed:0.0}"), ("HORSE", t.Mount?.Name.ToUpperInvariant() ?? "-") })
+            var rows = new List<(string label, string value)> { ("HEALTH", $"{t.MaxHp:0}"), ("ARMOUR", $"{t.Armor:0}"), ("DAMAGE", $"{t.Damage:0}"), ("REACH", $"{t.Reach:0.0} M"),
+                t.Range > 0 ? ("RANGE", $"{t.Range:0} M") : ("SPEED", $"{t.Speed:0.0}"), ("HORSE", t.Mount?.Name.ToUpperInvariant() ?? "-") };
+            var (style, styleLine) = Battle.StyleText(t.Style);
+            if (style != "") rows.Add(("STYLE", style.ToUpperInvariant())); // the way his blows land (BattleStyles.cs)
+            int step = ui.U(rows.Count > 6 ? 12 : 14);
+            foreach (var (label, value) in rows)
             {
                 ui.Text(label, card.X + ui.U(14), sy, Style.Dim, 1);
-                ui.TextR(value, card.Right - ui.U(14), sy, Style.Text, 1);
-                sy += ui.U(14);
+                ui.TextR(value, card.Right - ui.U(14), sy, label == "STYLE" ? Style.Accent : Style.Text, 1);
+                sy += step;
             }
+            if (style != "" && ui.Hover(card)) note = $"{style.ToUpperInvariant()}: {styleLine.ToUpperInvariant()}";
             if (Rules.TroopRole(to) != Rules.RoleOf(c)) ui.TextC($"JOINS A {Rules.TroopRole(to).ToUpperInvariant()} COMPANY", card.X + cw / 2f, card.Y + ui.U(210), Style.Warn, 1);
             ui.TextC(one > 0 ? $"{cost1} CROWNS A MAN" : reason, card.X + cw / 2f, card.Y + ui.U(226), one > 0 ? Style.Text : Style.Warn, 1);
             int bw = (cw - ui.U(28) - 2 * ui.U(4)) / 3, by = card.Bottom - ui.U(56);

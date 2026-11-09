@@ -551,7 +551,18 @@ sealed class ScreenHost : Game
                 Shot("campaign-results-roll");
                 break;
             }
-            case 45: Exit(); break;
+            case 45:
+            {
+                // The upgrade cards of a tier IV company: tier V choices show their attack style (docs/COMPANIONS_MAGIC.md D2).
+                var st = c.Player.Companies[0].Main!;
+                st.Troop = "fjord_veterans";
+                st.Xp = st.PoolCap;
+                c.S.Gold = 5000;
+                map.Stage("upgrade");
+                Shot("campaign-upgrade-elite");
+                break;
+            }
+            case 46: Exit(); break;
         }
     }
 }

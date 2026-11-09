@@ -34,7 +34,7 @@ public partial class Battle
 
     void Strike(Unit a)
     {
-        float dmg = a.Type.Damage * a.Power;
+        float dmg = StyleBlow(a, a.Type.Damage * a.Power);
         if (!a.IsPlayer)
         {
             if (a.Target is not { Active: true } t) return;
@@ -108,7 +108,7 @@ public partial class Battle
     }
 
     /// One blow (melee, arrow or lance) from a at t: horse hits, blocks and parries, then damage multipliers.
-    internal void Hit(Unit a, Unit t, float dmg, bool ranged, bool lance = false)
+    internal void Hit(Unit a, Unit t, float dmg, bool ranged, bool lance = false, bool plunge = false)
     {
         if (a.Team == 1) dmg *= Options.EnemyDamage;
         if (ranged && Wall != null && SiegeWall.Inside(t.Pos) && !SiegeWall.Inside(a.Pos) && Terrain.Height(t.Pos) > Terrain.Height(a.Pos) + 2) dmg *= 0.6f; // merlons
@@ -159,10 +159,12 @@ public partial class Battle
             if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && (t.Type.Tier <= 3 || Perk("Champion")) ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
             if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t)) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
             if (!ranged) chance *= RankGuard(t) * RankEdge(a); // friends at the shoulders, foes all round (docs/MELEE.md D3.7)
+            chance *= StyleGuard(a, t, ranged, plunge); // a crush, a bash, an arrow from above a shield (BattleStyles.cs)
             if (t.Guard && !ranged && t.Squad != null) chance = MathF.Min(0.92f, chance + (1 - chance) * 0.5f * t.Squad.Drill); // he saw it coming
             if (rng.NextSingle() < chance)
             {
                 if (t.Guard) t.Cooldown = 0; // a held guard opens the way for his own blow
+                if (!ranged) StyleBlocked(t);
                 t.Action = UnitAction.Block;
                 t.ActionTimer = 0.35f;
                 if (ranged && t.Type.HasShield && t.StuckArrows < 4) t.StuckArrows++;
@@ -196,6 +198,7 @@ public partial class Battle
         if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? a.Type.Pierce : 0); // your mace or axe bites through armour too
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
+        StyleLanded(a, t, dmg, ranged, lance);
         if (a.IsPlayer) CountDeed(t, ranged, lance);
         Sound(ranged ? Cue.ArrowHit : t.Type.Armor >= 8 ? Cue.Clash : Cue.Hit, t.Pos);
         if (a.IsPlayer)
@@ -312,7 +315,7 @@ public partial class Battle
 
     void Shoot(Unit u, Unit t)
     {
-        u.Cooldown = (u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f) * u.Type.Reload; // a crossbow takes long to span
+        u.Cooldown = (u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f) * u.Type.Reload * StyleReload(u); // a crossbow takes long to span
         float spread = (u.Squad?.Company?.Has("Sharpshooter") == true ? 0.65f : 1);
         Loose(u, t.Pos, t, u.Type.Damage, spread);
     }
@@ -343,6 +346,9 @@ public partial class Battle
 
     float Gauss() => MathF.Sqrt(-2 * MathF.Log(1 - rng.NextSingle())) * MathF.Cos(MathF.Tau * rng.NextSingle());
 
+    /// Past this share of a bow's range an arrow comes down from above (a longbow's plunging shot, BattleStyles.cs).
+    const float Plunging = 0.6f;
+
     void UpdateArrows(float dt)
     {
         for (int i = Arrows.Count - 1; i >= 0; i--)
@@ -366,7 +372,7 @@ public partial class Battle
                 if (t.Team == p.Shooter.Team || !t.Active) continue;
                 float r = t.Mounted ? 0.8f : 0.4f;
                 if ((!t.Mounted && p.Pos.Y > ground + 2) || Vector2.DistanceSquared(t.Pos, flat) > r * r) continue;
-                Hit(p.Shooter, t, p.Damage, true);
+                Hit(p.Shooter, t, p.Damage, true, plunge: Vector2.DistanceSquared(p.Shooter.Pos, flat) > Plunging * Plunging * p.Shooter.Type.Range * p.Shooter.Type.Range); // a long shot drops from above
                 Arrows.RemoveAt(i);
                 break;
             }

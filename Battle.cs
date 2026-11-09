@@ -421,9 +421,10 @@ public sealed partial class Battle
         u.Action = UnitAction.Windup;
         u.ActionTimer = u.Type.Windup;
         u.Target = target;
-        u.Swing = RandomSwing(u);
+        u.Swing = StyleSwing(u) ?? RandomSwing(u);
         u.Face(target.Pos - u.Pos);
         u.Stamina = MathF.Max(0, u.Stamina - 3);
+        StyleSwingStarts(u);
     }
 
     /// Reserves march on when the side's strength on the field drops: from behind its own lines.

@@ -1,6 +1,6 @@
 # Companions, magic, abilities, buffs and auras (plan)
 
-Status: plan, being built. Done: T0 (see the build order). Read docs/LEGACY.md first: the fantasy is that your company is your legacy.
+Status: plan, being built. Done: T0, T1 (see the build order). Read docs/LEGACY.md first: the fantasy is that your company is your legacy.
 Everything below must serve that. Companions are the named heart of the company. Mages are rare, costly and real: they
 fight in battle, cast buffs on your companies and strike the enemy. The best troops (tiers V-VII) fight differently: their
 blows sweep, knock back or thrust through, and they carry passive traits. Buffs, auras, spells and abilities are one system, so every bonus reads the same way everywhere.
@@ -307,7 +307,7 @@ how many, how far), and adds the rest in the same place, called from `Strike` ->
 | Dane axe (10 troops) | **Crush** | an overhead blow: half the target's block is ignored, a hit staggers him (`Stagger`) and may break his shield | shield walls, heavy foot |
 | Greatsword (5) | **Sweep** | a wide cut: carries into one man beside the target (two at VII) at 0.6 of the damage | dense ranks, rabble |
 | Longsword and shield (17) | **Riposte** | after a block or parry the next blow comes at once (no windup) and gets +30 % | duels in the front rank, other elite foot |
-| Sword or axe and shield (6) | **Shield bash** | every third blow is a bash: little damage, but the man is knocked back a step (`Knock`, small) and his guard is open | holding a line, pushing a gap open |
+| Sword or axe and shield (6) | **Shield bash** | every third blow is a bash: it gets past half his guard, shoves him and staggers him (he loses his turn) | holding a line, pushing a gap open |
 | Pike (12) | **Thrust through** | a thrust that kills or wounds carries on to the man behind (the second rank) at 0.5 | columns, charging horse |
 | Spear (9) | **Hold off** | a hit on a man coming at them knocks him back to spear's length; horse struck while braced rear and throw riders | horse, men trying to close |
 | Lance (17 horse) | **Ride down** | a lance hit knocks the man down (`Knock`, large) and the horse tramples one more behind; at VII the lance can go through two | foot in the open |
@@ -514,6 +514,17 @@ armour and block; Pavisiers' block was an outlier above the next tier's). The fi
 same-role links, three seeds, ~4 min) found every upgrade already beats its parent. Tests in `Tests/TierTests.cs`:
 `UpgradeNeverWorse` (plus `Might` rises along every link), `HigherTierWins` (25 links, one per class and tier step, two
 seeds), `TierGap`.
+
+**As built, T1:** `BattleStyles.cs`. Styles come from the weapon (`Battle.StyleFor`), so no troop entry changed; an `attack`
+field in troops.json can override. No `Data/styles.json`: the per-rank numbers sit in `StyleLanded`/`StyleGuard`, one place.
+Visible difference comes from the swing each style favours (axes overhead, greatswords from the side, pikes and spears thrust,
+`StyleSwing`), which the existing poses draw; poses of their own (a shield shove) are left for the polish step. Findings while
+tuning: a knockback that pushes a man out of reach makes a style *worse* (the bash first lost fights to the same men without
+it), so the bash now shoves 0.15 m and staggers; `StylesOnlyAdd` holds every melee style to "no worse than without it" in
+close fights. Plunging shot keys on distance (past 60 % of range), since arrows here fly flat. With Ride down, 20 Grail
+Knights now beat 40 Demi-Lancers, so `TierGap` holds horse to 2:1 too. Bench: 5.16 ms a tick (was 5.07). Tests in
+`Tests/StyleTests.cs`: `StylesByTier`, `SweepHitsBeside`, `KnockThrowsBack`, `ThrustThrough`, `CrushBeatsShields`,
+`PlungingShot`, `StylesOnlyAdd`; shot `campaign-upgrade-elite.png` shows the style on the upgrade card.
 
 | Step | What | Main files | Done when |
 |---|---|---|---|

@@ -26,6 +26,13 @@ public static partial class SelfTest
         UpgradeNeverWorse();
         HigherTierWins();
         TierGap();
+        StylesByTier();
+        SweepHitsBeside();
+        KnockThrowsBack();
+        ThrustThrough();
+        CrushBeatsShields();
+        PlungingShot();
+        StylesOnlyAdd();
         Sprites();
         TroopVariety();
         BigBattle();

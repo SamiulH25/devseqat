@@ -279,6 +279,14 @@ the player rides a courser.
   **upgrades to**, campaign cost and upgrade XP, its horse, and its **look** (head, body, legs, feet, hands, shield, weapon,
   tabard, plume, cape). The self-test checks the tree: links exist, every upgrade raises the tier and is a better soldier,
   and every troop can be reached from Levies or Clansmen.
+- **A higher tier is always better.** An upgrade that keeps its weapon never loses health, damage, armour or block and gains in
+  at least two; every upgrade beats the troop it came from in a fight, and a tier VII company beats twice as many tier IV men.
+- **Attack styles (tiers V-VII):** the best troops land their blows in their own way, on their own (nothing to press). Dane axes
+  **crush** (overhead, past the guard, staggering); greatswords **sweep** into the man beside; longsword-and-shield men
+  **riposte** at once after a block; other shield men **bash** every third blow; pikes **thrust through** to the second rank;
+  spears **hold off** men rushing in; lances **ride down** a man and trample the next; mounted swords **cut and wheel**;
+  longbows' long shots **plunge** past front shields; bows **loose quickly**; crossbows **punch** men back at close range and can
+  bring a horse down. Tier VI and VII do it harder than tier V. The upgrade cards show each troop's style.
 - **The tree:** 188 troops (and the captain, plus 13 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a
