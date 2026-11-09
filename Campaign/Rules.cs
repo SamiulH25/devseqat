@@ -65,7 +65,9 @@ public static class Rules
     public static float TierWeight(int tier) => tier switch { <= 1 => 0.8f, 2 => 1f, 3 => 1.15f, 4 => 1.3f, 5 => 1.4f, 6 => 1.5f, _ => 1.6f };
 
     /// A company's places, from its role (shared by all its stacks).
-    public static float Cap(string role) => B.ArmyScale * role switch { "archers" => 16, "spears" => 12, "horse" => 10, "casters" => 4, _ => 24 };
+    /// Mages are a circle of a few, not a company of many (super units): three or four at ArmyScale 3, one or two at 1.
+    public static float Cap(string role) => role == "casters" ? B.ArmyScale * 1.2f + 1
+        : B.ArmyScale * role switch { "archers" => 16, "spears" => 12, "horse" => 10, _ => 24 };
 
     /// A price per man (wage, levy, loot, ransom, promotion): the troop price spread over ArmyScale men.
     public static float PerMan(float cost) => cost / B.ArmyScale;

@@ -96,11 +96,13 @@ public sealed partial class Campaign
         return army with { Companies = list };
     }
 
-    /// An enemy lord of standing brings a champion (B4): a named hero with a calling, at the head of his best company. A
-    /// companion who left you on bad terms may be the man.
+    /// A great lord brings a champion (B4): a named hero with a calling, at the head of his best company. Champions are rare:
+    /// a lord of tier 4 up, one in three (no dice), or wherever a companion who left you on bad terms has gone.
     ArmySpec WithChampion(ArmySpec army, Party enemy)
     {
-        if (enemy.Kind != PartyKind.Lord || enemy.Tier < 2 || CharacterOf(enemy) is not Character lord) return army;
+        if (enemy.Kind != PartyKind.Lord || CharacterOf(enemy) is not Character lord) return army;
+        bool turnedHere = S.Characters.Any(c => c.Kind == "gone" && c.Faction == enemy.Faction);
+        if (!turnedHere && (enemy.Tier < 4 || lord.Id % 3 != 0)) return army;
         int at = army.Companies.ToList().FindIndex(co => co.Hero == "" && co.Role is "infantry" or "horse");
         if (at < 0) return army;
         var turned = S.Characters.FirstOrDefault(c => c.Kind == "gone" && c.Faction == enemy.Faction);

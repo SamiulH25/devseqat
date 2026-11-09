@@ -23,6 +23,7 @@ public sealed partial class Campaign
         int room = Rules.MenLimit(Captain) - Player.Men - Player.Wounded;
         if (room <= 0) return "PARTY IS FULL";
         string role = Rules.TroopRole(g.Troop);
+        if (role == "casters" && HasCircle) return OneCircle;
         int n = Math.Min(g.Count, Math.Min(room, Rules.CapOf(g.Troop, role)));
         if (Player.Companies.Count >= Rules.CompanySlots(Captain)) return "NO FREE COMPANY";
         var c = NewCompany(g.Troop, role, n, 0);

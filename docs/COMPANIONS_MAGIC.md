@@ -590,6 +590,16 @@ province). The relic is a field on the save, not a charm slot: found in a ruin, 
 falls a point a day, and from 12 the `dark_omens` events come (three, each with a `calm:N` choice). The necromancer casts
 `dread`. Test `RitesWork`.
 
+**Change after play review: mages and champions are super units.** Mages were too common (a company of nine from any
+chapel town, Acolytes drilled from Levies). Now: `Rules.Cap("casters")` = 1.2 x ArmyScale + 1 places, so a circle is three
+or four (one or two at ArmyScale 1); mage stats rose to tier VII levels and above (tier IV 230 hp, 12 armour; VI 310 hp,
+18 armour) with prices and upgrade XP to match (Acolytes 320, VI 1350); Levies no longer upgrade to Acolytes (mages rise only
+from hired Acolytes; `TroopTree` checks it); a captain keeps one circle (`Campaign.HasCircle`: Hire, Split and recruiting
+prisoners refuse a second); towns offer a circle one week in six (`(town id + week) % 6`, no dice); only lords of army level 5
+up and id % 5 bring one. Spell power does not depend on the circle's size, so three men cast as strongly as nine did, and each
+death costs a third of the circle's Will. Champions come only with lords of tier 4 up and one in three (or where a companion
+who left you went). Test `SuperMages`; `MagesHelp` now pits a circle of three against eight levies.
+
 | Step | What | Main files | Done when |
 |---|---|---|---|
 | **E1** | Effect core: data, `Mods`, battle reads, auras by company; move the three auras and battle perks onto it | new `Effects.cs`, `BattleEffects.cs`, `Data/effects.json`; `BattleMorale`, `BattleDrill`, `BattleCombat` | `EffectsMatchOld`, `AuraReachesCompanies`, bench within 10 % |

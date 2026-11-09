@@ -26,8 +26,9 @@ public partial class Campaign
             string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, 7), faction);
             lord.Companies.Add(NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.7f, 1f)), 0, home));
         }
-        // From army level 3 up, one lord in three brings a company of his realm's mages (E1); no dice, so the campaign's draws stay as they were.
-        if (tier >= 4 && lord.Id % 3 == 0)
+        // Mages are super units: only a great lord (army level 5 up), one in five, brings a circle of his realm's mages (E1); no
+        // dice, so the campaign's draws stay as they were.
+        if (tier >= 5 && lord.Id % 5 == 0)
         {
             string mage = Armies.MageTroop(Factions.CultureOf(faction), tier - 1);
             lord.Companies.Add(NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0, home));
@@ -82,8 +83,9 @@ public partial class Campaign
             m.Name = Rules.CompanyName(rng, role);
             t.Mercenaries.Add(m);
         }
-        // A town with a chapel, or a shrine or hermit near it, has Acolytes to hire; from day 60 its culture's mages (E1).
-        if (Level(t, "chapel") > 0 || Sites.Any(x => x.Kind is "shrine" or "hermit" && Vector2.Distance(x.Pos, t.Pos) < 40))
+        // Mages are rare: a town with a chapel, or a shrine or hermit near it, has a circle to hire one week in six (its own
+        // week, no dice); Acolytes at first, from day 60 its culture's mages (E1).
+        if ((Level(t, "chapel") > 0 || Sites.Any(x => x.Kind is "shrine" or "hermit" && Vector2.Distance(x.Pos, t.Pos) < 40)) && (t.Id + Day / 7) % 6 == 0)
         {
             string mage = Day >= 60 ? Armies.MageTroop(t.Culture, 4) : "acolytes";
             var m = NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0);

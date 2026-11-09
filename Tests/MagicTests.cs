@@ -28,7 +28,7 @@ public static partial class SelfTest
         Check(mages.Where(t => t.Tier < 6).All(t => !t.Spells.Any(id => Abilities.Get(id).Great)), "and none below");
         foreach (var c in Factions.All.Select(f => f.Culture).Distinct())
             Check(Troops.Get("acolytes").UpgradesTo.Any(id => Troops.Get(id).Culture == c), $"Acolytes can rise into the {c} mage line");
-        Check(Troops.Get("levies").UpgradesTo.Contains("acolytes"), "levies can become Acolytes");
+        Check(!Troops.Get("levies").UpgradesTo.Contains("acolytes"), "levies cannot become Acolytes: mages are hired, rare");
         Console.WriteLine($"magic: {mages.Count} mage troops, {Abilities.All.Count} spells and abilities");
     }
 
@@ -36,7 +36,7 @@ public static partial class SelfTest
     static (Battle b, Squad mages, Squad foes) MageScene(string troop, int seed = 71, int foes = 12, BattleOptions? options = null)
     {
         var b = options == null ? Battle.Empty(seed) : Battle.Empty(seed, options);
-        var m = b.AddSquad(0, Troops.Get(troop), 8, new(0, 0), 4, Vector2.UnitY);
+        var m = b.AddSquad(0, Troops.Get(troop), 3, new(0, 0), 3, Vector2.UnitY); // a circle: mages are few
         var f = b.AddSquad(1, Troops.Get("levies"), foes, new(0, 25), 6, -Vector2.UnitY);
         m.Order = f.Order = Order.Hold;
         return (b, m, f);
@@ -79,8 +79,10 @@ public static partial class SelfTest
         Check(b.Casts.Count == 0 && m.Will < 20, "a drained company cannot cast");
 
         (b, m, f) = MageScene("battle_priests");
-        foreach (var (u, i) in m.Units.Select((u, i) => (u, i))) f.Units[i].Pos = u.Pos + new Vector2(0, 1.2f); // a foe at every mage's throat
-        Run(b, 6);
+        var guard = b.AddSquad(1, Troops.Get("ashen_saints"), m.Units.Count, new(0, 1.2f), m.Units.Count, -Vector2.UnitY); // mages kill levies now: tier VII at every throat
+        guard.Order = Order.Hold;
+        foreach (var (u, i) in m.Units.Select((u, i) => (u, i))) guard.Units[i].Pos = u.Pos + new Vector2(0, 1.2f);
+        Run(b, 3);
         Check(!b.Casts.Any(c => c.By == m) && m.Will >= 100 - 1e-3f, "a mage in melee does not cast");
     }
 
@@ -192,7 +194,7 @@ public static partial class SelfTest
                 {
                     var b = Battle.Empty(980 + seed);
                     var sa = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new(0, -10), 10, Vector2.UnitY);
-                    var back = b.AddSquad(0, Troops.Get(behind), 8, new(0, -22), 4, Vector2.UnitY);
+                    var back = b.AddSquad(0, Troops.Get(behind), behind == "levies" ? 8 : 3, new(0, -22), 4, Vector2.UnitY);
                     var sb = b.AddSquad(1, Troops.Get("men_at_arms"), 24, new(0, 14), 12, -Vector2.UnitY);
                     sa.Order = sb.Order = Order.Charge;
                     back.Order = Order.Hold;
@@ -203,8 +205,8 @@ public static partial class SelfTest
                 return score;
             }
             float with = Score(mage), without = Score("levies");
-            Console.WriteLine($"magic: 20 men-at-arms against 24 with {Troops.Get(mage).Name} behind: {with:0}; with levies there: {without:0}");
-            Check(with > without, $"{Troops.Get(mage).Name} behind the line help it win");
+            Console.WriteLine($"magic: 20 men-at-arms against 24 with three {Troops.Get(mage).Name} behind: {with:0}; with eight levies there: {without:0}");
+            Check(with > without, $"a circle of three {Troops.Get(mage).Name} behind the line helps more than eight levies");
         }
     }
 }
@@ -269,5 +271,24 @@ public static partial class SelfTest
         var setup = c.PrepareBattle(bandit);
         Check(setup.Options.Standing.Contains("relic"), "the relic goes into battle");
         Check(Troops.Get("necromancer").Spells.Contains("dread"), "the necromancer casts dread");
+    }
+
+    /// Mages are super units: a circle of a few, each worth more than any soldier of his tier; one circle a captain; hired, rarely.
+    static void SuperMages()
+    {
+        foreach (var t in Troops.All.Where(t => t.Class == UnitClass.Caster))
+        {
+            int n = Rules.CapOf(t.Id, "casters");
+            Check(n is >= 1 and <= 4, $"a circle of {t.Name} is a few men ({n})");
+            float best = Troops.All.Where(o => o.Tier == t.Tier && o.Class != UnitClass.Caster && !o.Wild && !o.Leader).Select(o => Rules.Strength(o, 1)).DefaultIfEmpty(0).Max();
+            Check(Rules.Strength(t, 1) > best, $"one {t.Name} is worth more than any soldier of tier {Style.Numerals[t.Tier]}");
+        }
+        var c = Campaign.New(56);
+        c.S.Gold = 100000;
+        var town = c.S.Settlements.First(s => { c.Player.Pos = s.Pos; return c.InTown(c.Player); });
+        CompanyRecord Circle() { var m = c.NewCompany("chaplains", "casters", Rules.CapOf("chaplains", "casters"), 0); town.Mercenaries.Add(m); return m; }
+        Check(c.Hire(town, Circle()) == null && c.HasCircle, "a captain can hire a circle");
+        Check(c.Hire(town, Circle()) == Campaign.OneCircle, "but only one");
+        Check(c.Split(c.Player.Companies.First(x => Rules.RoleOf(x) == "casters")) == Campaign.OneCircle, "and cannot split it in two");
     }
 }

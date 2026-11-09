@@ -61,12 +61,23 @@ public static partial class SelfTest
     static void EnemyChampions()
     {
         var c = Campaign.New(54);
-        var lord = c.S.Parties.First(p => p.Kind == PartyKind.Lord);
-        lord.Tier = 3;
-        lord.Pos = c.Player.Pos;
-        c.Encounter = lord;
-        var setup = c.PrepareBattle(lord);
-        Check(setup.Enemy.Companies.Any(co => co.Hero != "" && co.HeroGifts is { Length: > 0 } && co.HeroLevel >= 3), "an enemy lord brings a champion with abilities");
+        var lords = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && c.CharacterOf(p) != null).ToList();
+        bool Champion(Party lord)
+        {
+            lord.Pos = c.Player.Pos;
+            c.Encounter = lord;
+            var setup = c.PrepareBattle(lord);
+            c.Encounter = null;
+            return setup.Enemy.Companies.Any(co => co.Hero != "" && co.HeroGifts is { Length: > 0 } && co.HeroLevel >= 3);
+        }
+        var great = lords.First(p => c.CharacterOf(p)!.Id % 3 == 0);
+        great.Tier = 5;
+        Check(Champion(great), "a great lord brings a champion with abilities");
+        var small = lords.First(p => c.CharacterOf(p)!.Id % 3 != 0);
+        small.Tier = 5;
+        Check(!Champion(small), "most lords bring none: champions are rare");
+        great.Tier = 2;
+        Check(!Champion(great), "nor does a small lord");
     }
 
     /// B4, B5: two companions who fight five battles together swear brotherhood (an aura when both lead); a companion at level 4

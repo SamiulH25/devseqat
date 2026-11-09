@@ -1058,7 +1058,9 @@ public static partial class SelfTest
         }
         Check(Troops.All.Count(t => !t.Leader && !t.Wild) >= 80, $"massive 7-tier troop tree ({Troops.All.Count(t => !t.Leader)} troops)");
         var reachable = Troops.Tree("levies").Concat(Troops.Tree("clansmen")).Select(t => t.Id).ToHashSet();
-        Check(Troops.All.Where(t => !t.Leader && !t.Wild).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
+        Check(Troops.All.Where(t => !t.Leader && !t.Wild && t.Class != UnitClass.Caster).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
+        var magi = Troops.Tree("acolytes").Select(t => t.Id).ToHashSet(); // mages are super units: hired as Acolytes, never drilled from recruits
+        Check(Troops.All.Where(t => t.Class == UnitClass.Caster).All(t => magi.Contains(t.Id) && !reachable.Contains(t.Id)), "every mage rises from Acolytes, and no recruit becomes one");
     }
 
     /// Every sprite any troop's look can ask for exists, for every side.

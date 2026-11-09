@@ -50,6 +50,7 @@ public static partial class SelfTest
         MagesHelp();
         StandingEffectsCarry();
         RitesWork();
+        SuperMages();
         CompanionGrows();
         HoldTheLine();
         EnemyChampions();
