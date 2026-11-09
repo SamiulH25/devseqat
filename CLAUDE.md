@@ -172,6 +172,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | 3D meshes (terrain, trees, towns, grass) | `World.cs` |
 | Shader pipeline / GLSL loader | `Shading.cs`, `GlslEffect.cs`, `Shaders/*.glsl`, `Sky.cs` (light by hour/weather) |
 | Unit drawing (puppets of part sprites) | `Puppet.cs` (poses, skeleton), `SpriteSheet.cs` (paints parts), `Painter.cs` (materials), `Art.cs` (atlas) |
+| Per-man looks: two men of one troop look different (face = skin x hair x beard, painted once as `head.v{n}.f/n`; kin helms and one-handed weapons; height). Drawing only, seeded by Soldier id or place in the battle | `Variety.cs` (`Of`, `Stature`, `Seed`); read in `Puppet.Draw`; `Look.Visage`; shots `gallery-variety*.png` |
 | Colours, heraldry, UI tokens | `Style.cs` |
 | Motion: easing curves, per-man phase / UI animation (`Ui.Anim`, `AnimLag`, `Since`, `Count`; `Ui.Now`, `Ui.Instant` freezes it for shots) / soldier and horse poses (`PoseOf`, `Fallen`, `Banner`) | `Ease.cs` / `Ui.cs` / `Puppet.cs`; rules in docs/DESIGN.md section 5 |
 | The interface kit: every widget (`Plate`, `PlateBody`, `Ribbon`, `Shield`, `Banner`, `Icon`, `Ring`, `Pips`, `Gauge`, `Chip`, `Tabs`, `Gilded`, `Toast`...; `Fit`/`TextFit` cut text to a width) | `UiKit.cs` (static class `Kit`, extension methods on `Ui`; `Ui.Panel`/`Button`/`Bar` and the battle HUD draw through it) |

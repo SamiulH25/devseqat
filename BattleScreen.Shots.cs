@@ -111,7 +111,14 @@ partial class BattleScreen
                 PoseSheet((shotIndex - 38) / 2); shotFrames = 0; shotIndex++; break;
             case 39 or 41 or 43 when shotFrames > 3:
                 pendingShot = new[] { "pose-sheet", "pose-sheet2", "pose-horses" }[(shotIndex - 39) / 2]; shotIndex++; break;
-            case 44 when pendingShot == null: Exit(); break;
+            case 44 or 46 when pendingShot == null:
+                // Variety: a row of one troop, every man with his own face, and some another helm or weapon.
+                Gallery(Enumerable.Repeat(shotIndex == 44 ? "shieldmen" : "levies", 7).ToArray());
+                zoom = 12f; camPitch = 0.06f;
+                shotFrames = 0; shotIndex++; break;
+            case 45 or 47 when shotFrames > 20:
+                pendingShot = shotIndex == 45 ? "gallery-variety" : "gallery-variety2"; shotIndex++; break;
+            case 48 when pendingShot == null: Exit(); break;
         }
     }
 

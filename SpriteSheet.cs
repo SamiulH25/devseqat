@@ -19,7 +19,7 @@ public sealed class SpriteSheet
     public static readonly Dictionary<string, float> Grip = new()
     {
         ["sword"] = 0.233f, ["longsword"] = 0.17f, ["axe"] = 0.2f, ["spear"] = 0.3f, ["pike"] = 0.3f, ["lance"] = 0.3f, ["bow"] = 0.5f, ["longbow"] = 0.5f,
-        ["crossbow"] = 0.55f, ["greatsword"] = 0.12f, ["daneaxe"] = 0.3f, ["club"] = 0.22f, ["staff"] = 0.55f,
+        ["crossbow"] = 0.55f, ["greatsword"] = 0.12f, ["daneaxe"] = 0.3f, ["club"] = 0.22f, ["staff"] = 0.55f, ["mace"] = 0.2f,
     };
 
     static readonly string[] Views = { "f", "s", "b" };
@@ -29,6 +29,7 @@ public sealed class SpriteSheet
         for (int p = 0; p < Style.Sides.Length; p++) Side(p);
         Horse();
         Wolf();
+        Visages();
         Pack();
     }
 
@@ -113,27 +114,60 @@ public sealed class SpriteSheet
 
     static bool InEl(float x, float y, float cx, float cy, float rx, float ry) => (x - cx) * (x - cx) / (rx * rx) + (y - cy) * (y - cy) / (ry * ry) <= 1;
 
-    Canvas Head(string v)
+    Canvas Head(string v) => Head(v, skin, hair, 0);
+
+    /// Every man's face (Variety): each skin with each hair colour and each beard, painted once in the neutral palette.
+    void Visages()
+    {
+        var keep = (skin, hair);
+        for (int i = 0; i < Variety.Visages; i++)
+        {
+            var (sk, hr, style) = Variety.Parts(i);
+            skin = new(Variety.Skins[sk]);
+            hair = new(Variety.Hairs[hr], Pattern.Hair);
+            foreach (var v in Views) Add($"head.v{i}.{v}/n", Head(v, skin, hair, style));
+        }
+        (skin, hair) = keep;
+    }
+
+    /// A man's head. `style`: 0 clean-shaven, 1 full beard, 2 moustache, 3 bald and bearded.
+    Canvas Head(string v, Mat sk, Mat hr, int style)
     {
         var c = new Canvas(15, 15);
-        c.Ellipse(7.5f, 7.5f, 7f, 7.3f, skin);
+        bool bald = style == 3, beard = style is 1 or 3;
+        bool Skull(float x, float y) => InEl(x, y, 7.5f, 7.5f, 7f, 7.3f);
+        c.Ellipse(7.5f, 7.5f, 7f, 7.3f, sk);
         switch (v)
         {
             case "f":
-                c.Area((x, y) => InEl(x, y, 7.5f, 7.5f, 7f, 7.3f) && y < 4.2f, hair);
+                if (!bald) c.Area((x, y) => Skull(x, y) && y < 4.2f, hr);
+                else c.Area((x, y) => Skull(x, y) && y > 3.5f && y < 7 && (x < 1.6f || x > 13.4f), hr); // a fringe over the ears
                 foreach (int ex in new[] { 4, 10 }) { c.Set(ex, 7, ink); c.Set(ex, 8, ink); }
                 c.Shade(7, 9, -0.35f); c.Shade(7, 10, -0.45f);
-                for (int x = 6; x <= 8; x++) c.Shade(x, 12, -0.35f);
+                if (beard)
+                {
+                    c.Area((x, y) => Skull(x, y) && y > 9.8f && !(y < 12 && x > 5.6f && x < 9.4f), hr);
+                    c.Area((x, y) => Skull(x, y) && y > 7.5f && y <= 9.8f && (x < 2.4f || x > 12.6f), hr);
+                    for (int x = 6; x <= 8; x++) c.Set(x, 11, hr, 0.2f);
+                    c.Set(7, 12, ink, 0.3f);
+                }
+                else if (style == 2) { for (int x = 5; x <= 9; x++) c.Set(x, 11, hr); c.Set(4, 12, hr); c.Set(10, 12, hr); }
+                else for (int x = 6; x <= 8; x++) c.Shade(x, 12, -0.35f);
                 break;
             case "s":
-                c.Area((x, y) => InEl(x, y, 7.5f, 7.5f, 7f, 7.3f) && (x < 6.5f || y < 4.2f), hair);
-                c.Ellipse(6.5f, 8.5f, 1.6f, 2.2f, skin, -0.15f);
+                if (!bald) c.Area((x, y) => Skull(x, y) && (x < 6.5f || y < 4.2f), hr);
+                else c.Area((x, y) => Skull(x, y) && x < 6.5f && y > 5, hr);
+                c.Ellipse(6.5f, 8.5f, 1.6f, 2.2f, sk, -0.15f);
                 c.Set(11, 7, ink); c.Set(11, 8, ink);
-                c.Set(14, 9, skin, 0.5f);
-                c.Shade(12, 12, -0.3f); c.Shade(13, 12, -0.3f);
+                c.Set(14, 9, sk, 0.5f);
+                if (beard) c.Area((x, y) => Skull(x, y) && (y > 10.5f || (x > 5 && x < 9 && y > 8.5f)) && !(x > 12 && y < 12), hr);
+                else if (style == 2) { c.Set(13, 11, hr); c.Set(12, 11, hr); c.Set(12, 12, hr); }
+                else { c.Shade(12, 12, -0.3f); c.Shade(13, 12, -0.3f); }
                 break;
             default:
-                c.Area((x, y) => InEl(x, y, 7.5f, 7.5f, 7f, 7.3f) && y < 12.5f, hair);
+                if (!bald) c.Area((x, y) => Skull(x, y) && y < 12.5f, hr);
+                else c.Area((x, y) => Skull(x, y) && y > 6 && y < 12.5f, hr);
+                if (beard) { c.Set(1, 11, hr); c.Set(13, 11, hr); c.Set(1, 12, hr); c.Set(13, 12, hr); }
                 break;
         }
         return c;
@@ -322,6 +356,18 @@ public sealed class SpriteSheet
                 for (int x = 0; x < 20; x++) for (int y = 4; y < 13; y++) if ((y + x / 3) % 3 == 0) c.Shade(x, y, -0.22f);
                 c.Body(0.3f, 4.5f, y => (10 - 0.4f - y * 0.55f, 10 + 0.4f + y * 0.55f), steel);
                 if (v != "b") c.Set(v == "s" ? 15 : 10, 8, brass, 0.7f);
+                return c;
+            }
+            case "coif":
+            {
+                // A mail hood: rings over the crown and down to the shoulders, open for the face.
+                var c = new Canvas(18, 15);
+                c.Ellipse(9, 7.5f, 8.4f, 7.4f, mail);
+                c.Rect(0.6f, 7, 17.4f, 15, mail, -0.05f);
+                if (v == "f") for (int y = 4; y < 14; y++) for (int x = 0; x < 18; x++) { if (InEl(x + 0.5f, y + 0.5f, 9, 9.6f, 5.4f, 5.4f)) c.Clear(x, y); }
+                if (v == "s") for (int y = 4; y < 14; y++) for (int x = 9; x < 18; x++) { if (InEl(x + 0.5f, y + 0.5f, 15.6f, 9.8f, 4.4f, 5.4f)) c.Clear(x, y); }
+                for (int x = 1; x < 17; x++) c.Shade(x, 14, -0.3f);
+                if (v != "b") for (int x = 3; x < 15; x++) c.Set(x, 3, leather, 0.35f); // the band that ties it at the brow
                 return c;
             }
             case "steppe":
@@ -661,6 +707,19 @@ public sealed class SpriteSheet
                 foreach (var (kx, ky) in new[] { (2, 5), (11, 9), (3, 15), (10, 19) }) { c.Ellipse(kx, ky, 1.6f, 1.6f, wood, -0.25f); c.Shade(kx, ky, -0.4f); }
                 for (int y = 0; y < 22; y++) c.Shade(1, y, 0.35f);
                 c.Rect(4.6f, 36, 9.4f, 44, leather);
+                return c;
+            }
+            case "mace":
+            {
+                // A flanged mace: a steel head of fins on a short haft, an iron spike on top.
+                var c = new Canvas(9, 30);
+                c.Rect(3.5f, 8, 5.5f, 30, wood);
+                c.Ellipse(4.5f, 5, 3.0f, 3.6f, steel);
+                for (int y = 2; y < 9; y += 2) { c.Set(0, y, plate, 0.6f); c.Set(8, y, plate, 0.3f); }
+                for (int y = 2; y < 8; y++) c.Shade(4, y, 0.4f);
+                c.Rect(3.5f, 0, 5.5f, 1.8f, iron);
+                c.Rect(3.2f, 9, 5.8f, 10.5f, iron);
+                c.Rect(3.3f, 22, 5.7f, 28, leather);
                 return c;
             }
             case "staff":

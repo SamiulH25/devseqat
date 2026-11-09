@@ -1097,6 +1097,41 @@ public static partial class SelfTest
         Console.WriteLine($"sprites: {sheet.Rects.Count} parts for {Style.Sides.Length} palettes, atlas {sheet.Filled * 100 / SpriteSheet.H}% full");
     }
 
+    /// Two men of one troop can look different (face, helm, weapon, height), the same man always looks the same,
+    /// the player and creatures are drawn as their look says, and every varied look has its sprites.
+    static void TroopVariety()
+    {
+        var sheet = new SpriteSheet();
+        var b = Battle.Empty(3);
+        var men = b.AddSquad(1, Troops.Get("shieldmen"), 40, new(0, 20), 8, -Vector2.UnitY).Units;
+        var looks = men.Select(Variety.Of).ToList();
+        Check(looks.Select(l => l.Visage).Distinct().Count() >= 12, $"forty shieldmen show many faces ({looks.Select(l => l.Visage).Distinct().Count()})");
+        Check(looks.Select(l => l.Head).Distinct().Count() > 1 && looks.Select(l => l.Weapon).Distinct().Count() > 1, "some wear another helm or carry another weapon");
+        Check(looks.Count(l => l.Head == men[0].Type.Look.Head) > 15, "most keep the troop's own helm");
+        Check(men.All(u => ReferenceEquals(Variety.Of(u), Variety.Of(u))), "a man's look is the same every frame");
+        Check(men.Select(Variety.Stature).All(s => s >= 0.95f && s <= 1.05f), "heights stay within five in a hundred");
+        var player = b.Units.First(u => u.IsPlayer);
+        Check(Variety.Of(player) == player.Type.Look && Variety.Stature(player) == 1, "the player is drawn exactly as his kit");
+        var wolf = Troops.All.First(t => t.Look.Beast);
+        Check(Variety.Of(wolf, 5) == wolf.Look, "a creature is drawn as its troop");
+        var named = men[0];
+        named.SoldierId = 42;
+        var first = Variety.Of(named);
+        named.Index = 999;
+        Check(Variety.Of(named) == first, "a named man keeps his looks wherever he stands");
+        int missing = 0;
+        foreach (var t in Troops.All)
+            for (int seed = 0; seed < 60; seed++)
+            {
+                var l = Variety.Of(t, seed);
+                if (l.NeutralHead) foreach (var v in new[] { "f", "s", "b" }) if (!sheet.Rects.ContainsKey($"{l.HeadKey}.{v}/n")) missing++;
+                if (l.Head != "none" && !sheet.Rects.ContainsKey($"helm.{l.Head}.f/0")) missing++;
+                if (!sheet.Rects.ContainsKey(l.Weapon + "/0") || !SpriteSheet.Grip.ContainsKey(l.Weapon)) missing++;
+            }
+        Check(missing == 0, $"every varied look has its sprites ({missing} missing)");
+        Console.WriteLine($"variety: {Variety.Visages} faces, {looks.Select(l => (l.Visage, l.Head, l.Weapon)).Distinct().Count()} looks among 40 shieldmen");
+    }
+
     // ---------- campaign (docs/CAMPAIGN.md section 11) ----------
 
     /// A battle bigger than the field holds: reserves wait, march on, and every man is accounted for; 200 men run in real time.

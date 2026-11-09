@@ -94,13 +94,13 @@ sealed class Puppet
     {
         if (u.Fled || u.Raised) return; // a raised corpse walks again as a new man
         tilt = 0;
-        look = u.Type.Look;
+        look = Variety.Of(u);
         pal = "/" + (u.IsPlayer ? 2 : u.Palette);
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         float lift = ground;
         if (u.Mounted && !u.Dead && u.Horse!.Barding == "wolf") lift = ground + Warg(u, ground);
         else if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true)) * Scale;
-        float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * u.Type.Size * Scale;
+        float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * u.Type.Size * Scale * Variety.Stature(u);
         float phase = Ease.Hash(u.Index);
         if (u.Dead) { Fallen(u, lift, size, phase); return; }
         if (look.Face == "wolf") { Frame(u.Pos, u.ViewFacing, lift, size); Beast(u, ground); return; }
@@ -130,7 +130,7 @@ sealed class Puppet
         if (look.Cape && Detail == 0) Bill(new(0, 0.92f, -0.17f), "cape", false);
         Bill(new(0, 1.0f, 0), $"torso.{look.Body}", true);
         if (look.Tabard && Detail == 0) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
-        Bill(new(0, 1.53f, 0.02f), look.HeadKey, true);
+        HeadBill();
         if (look.Head != "none")
         {
             // Every helmet's crown sits just above the head, whatever its height.
@@ -520,7 +520,7 @@ sealed class Puppet
         }
         Bill(new(0, 1.0f, 0), $"torso.{look.Body}", true);
         if (look.Tabard && Detail == 0) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
-        Bill(new(0, 1.53f, 0.02f), look.HeadKey, true);
+        HeadBill();
         if (look.Head != "none") Bill(new(0, 1.81f - art[$"helm.{look.Head}.f{pal}"].Height * Art.Px / 2, 0.02f), $"helm.{look.Head}", true, 0.04f);
         var hand = Arm(1, p.ArmA, 0);
         Arm(-1, p.OffA, 0);
@@ -538,7 +538,8 @@ sealed class Puppet
         Flat(new(-0.12f - j2, 0.08f, -0.2f + j), $"leg.{look.Legs}", false);
         Flat(new(0, 0.09f, -0.75f), $"torso.{look.Body}.f", false);
         if (look.Tabard) Flat(new(0, 0.1f, -0.75f), "tabard.f", false);
-        Flat(new(j, 0.11f, -1.25f), look.Head == "none" ? look.HeadKey + ".b" : $"helm.{look.Head}.b", false);
+        if (look.Head != "none") Flat(new(j, 0.11f, -1.25f), $"helm.{look.Head}.b", false);
+        else { var side = pal; if (look.NeutralHead) pal = "/n"; Flat(new(j, 0.11f, -1.25f), look.HeadKey + ".b", false); pal = side; }
         if (look.Shield != "none") Flat(new(-0.5f - j, 0.12f, -0.6f + j2 * 2), $"shield.{look.Shield}", true);
         Flat(new(0.55f + j2 * 2, 0.105f, -0.55f + j * 3), look.Weapon, true); // the weapon thrown down beside him
     }
@@ -623,6 +624,15 @@ sealed class Puppet
         if (mirror) (u0, u1) = (u1, u0);
         verts.Add(new(tl, tint, new(u0, v0))); verts.Add(new(tr, tint, new(u1, v0))); verts.Add(new(bl, tint, new(u0, v1)));
         verts.Add(new(tr, tint, new(u1, v0))); verts.Add(new(br, tint, new(u1, v1))); verts.Add(new(bl, tint, new(u0, v1)));
+    }
+
+    /// The bare head; a man's own visage is painted in the neutral palette.
+    void HeadBill()
+    {
+        var side = pal;
+        if (look.NeutralHead) pal = "/n";
+        Bill(new(0, 1.53f, 0.02f), look.HeadKey, true);
+        pal = side;
     }
 
     // Camera-facing sprite; `bias` moves it toward (+) or away from (-) the camera so layered parts never z-fight.
