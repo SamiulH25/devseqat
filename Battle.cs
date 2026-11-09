@@ -385,6 +385,7 @@ public sealed partial class Battle
         PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
         Close(s, dt);   // a charging company closes as a body
         UpdateFormed(s, dt); // its order: lost and won back (BattleDrill.cs)
+        if (tick % 60 == 0) BreakRanks(s); // rabble that will not wait
     }
 
     /// Nearest active, non-routing enemy; restricted to squad `only` when given.

@@ -129,4 +129,27 @@ public partial class Battle
         }
         return left && right ? 1 - 0.2f * s.Drill : 1;
     }
+
+    /// Rabble (and a company under a hothead) holding with an enemy company close by may charge without orders: each
+    /// second a roll against (0.3 - drill) x 2 (a hothead at least 1 in 4, from 22 m), unless a sergeant or your banner
+    /// is near. Your companies too: the price of levies (docs/MELEE.md D4).
+    void BreakRanks(Squad s)
+    {
+        if (s.BrokeRanks && !s.Broken && !s.InContact) s.BrokeRanks = false; // re-formed: back under orders
+        if (s.Order != Order.Hold || s.BrokeRanks || s.Swarm || s.Cavalry || Wall != null || s.Alive == 0 || s.Units.Count == 0) return;
+        var t = s.Units[0].Type;
+        if (t.Ammo > 0 || t.Wild || t.Has("raised") || t.Leader) return;
+        bool hot = s.Company?.Has("Hothead") == true;
+        if (s.Grade != Grade.Rabble && !hot) return;
+        var foe = NearestFoe(s);
+        if (foe == null || Vector2.Distance(foe.Center, s.Center) - foe.Radius - s.Radius > (hot ? 22 : 12) || Steadied(s)) return;
+        if (rng.NextSingle() >= MathF.Max(hot ? 0.25f : 0, (0.3f - s.Drill) * 2)) return;
+        s.Order = Order.Charge;
+        s.Target = foe;
+        s.Formed = MathF.Min(s.Formed, 0.3f);
+        s.BrokeRanks = true;
+        string name = s.Company?.Name is { Length: > 0 } n ? n : s.Name;
+        Log(s.Team == 0 ? $"{name} break ranks and charge!" : $"The enemy {name} break ranks!");
+        Sound(Cue.Shout, s.Center);
+    }
 }

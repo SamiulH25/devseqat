@@ -115,6 +115,8 @@ public static partial class SelfTest
         FightsItsTarget();
         LeviesLoseRanks();
         TierWins();
+        PartsByCompany();
+        LeviesBreakRanks();
         Holdouts();
         GoblinBattle();
         Wolves();

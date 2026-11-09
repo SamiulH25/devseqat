@@ -411,6 +411,7 @@ public partial class Battle
     /// One company to its place: an order to hold there (moved only when the place changes, so the men do not shuffle).
     static void Place(Squad s, Vector2 anchor, Vector2 front)
     {
+        if (s.BrokeRanks) return; // it has broken ranks and charged: it comes back when it has re-formed
         if (s.Order != Order.Hold || Vector2.DistanceSquared(s.Anchor, anchor) > 2.25f || Vector2.Dot(s.Front, front) < 0.98f)
         {
             s.Order = Order.Hold;

@@ -40,15 +40,17 @@ public partial class Battle
             s.LayoutForm = s.Formation;
             s.LayoutN = n;
         }
-        var front = Vector2.Zero;
-        int nf = 0;
+        Vector2 front = Vector2.Zero, all = Vector2.Zero;
+        int nf = 0, na = 0;
         foreach (var u in placing)
         {
             u.Rank = s.Formation switch { Formation.Square => 0, Formation.Wedge => (int)MathF.Sqrt(u.Place), _ => u.Place / cols };
             u.Slot = s.Slot(u.Place, n);
-            if (u.Rank == 0) { front += u.Pos; nf++; }
+            if (u.Rank != 0) continue;
+            all += u.Pos; na++;
+            if (Vector2.DistanceSquared(u.Pos, u.Slot) < 36) { front += u.Pos; nf++; } // a man caught far behind (on a house) does not hold the line back
         }
-        s.FrontPos = nf > 0 ? front / nf : s.Anchor;
+        s.FrontPos = nf > 0 ? front / nf : na > 0 ? all / na : s.Anchor;
     }
 
     /// Places 0..n-1 in the order the men already stood (new men last).

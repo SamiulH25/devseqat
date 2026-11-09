@@ -147,4 +147,47 @@ public static partial class SelfTest
             Check(won >= 2, $"drilled men clearly beat as many rabble of the same troop ({won} of 3)");
         }
     }
+
+    /// M3: the AI line goes in company by company, each when it nears the company opposite, not all at once.
+    static void PartsByCompany()
+    {
+        var rng = new Random(5);
+        var mine = Armies.Random(rng, 3, 0);
+        var theirs = Armies.Random(rng, 3, 1);
+        theirs = theirs with { Companies = theirs.Companies.Concat(new[] { new Company("men_at_arms", 16, "infantry"), new Company("men_at_arms", 16, "infantry") }).ToList() };
+        var b = new Battle(21, mine, theirs, new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+        var first = new Dictionary<Squad, float>();
+        for (int step = 0; b.Winner < 0 && step < 60 * 240; step++)
+        {
+            b.Update(1 / 60f);
+            foreach (var s in b.SquadsOf(1))
+                if (s.Company != null && Armies.RoleOf(s.Company) is "infantry" or "spears" && s.Order == Order.Charge && !first.ContainsKey(s)) first[s] = b.Time;
+        }
+        var times = first.Values.OrderBy(t => t).ToList();
+        Console.WriteLine($"melee: enemy line companies charge at {string.Join(", ", times.Select(t => t.ToString("0.0")))} s");
+        Check(times.Count >= 3 && times[^1] - times[0] > 1.5f, "the line's companies charge at different times");
+    }
+
+    /// M3: levies holding near the enemy break ranks and charge on their own; a sergeant beside them keeps them in hand.
+    static void LeviesBreakRanks()
+    {
+        bool Breaks(bool sergeant)
+        {
+            var b = Battle.Empty(47);
+            var lev = b.AddSquad(0, Troops.Get("levies"), 20, new(0, -6), 10, Vector2.UnitY);
+            b.AddSquad(1, Troops.Get("men_at_arms"), 20, new(0, 6), 10, -Vector2.UnitY);
+            if (sergeant) b.AddDivision(0, "Sergeant Test", new[] { lev }, Temper.Cautious, 3, new Goal(GoalKind.Hold, new Vector2(0, -6)));
+            for (int i = 0; i < 60 * 15 && lev.Order == Order.Hold; i++) b.Update(1 / 60f);
+            return lev.Order == Order.Charge && lev.BrokeRanks;
+        }
+        bool alone = Breaks(false), led = Breaks(true);
+        Console.WriteLine($"melee: levies 10 m from the enemy break ranks alone {alone}, with a sergeant {led}");
+        Check(alone, "levies near the enemy break ranks and charge");
+        Check(!led, "a sergeant beside them holds them");
+        var c = Battle.Empty(48);
+        var drilled = c.AddSquad(0, Troops.Get("men_at_arms"), 20, new(0, -6), 10, Vector2.UnitY);
+        c.AddSquad(1, Troops.Get("men_at_arms"), 20, new(0, 6), 10, -Vector2.UnitY);
+        Run(c, 15);
+        Check(drilled.Order == Order.Hold, "trained men hold until told");
+    }
 }
