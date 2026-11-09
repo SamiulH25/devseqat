@@ -71,7 +71,8 @@ sealed partial class BattleScreen
 
     // Debug: IRONFIELD_SHOTS=/dir stages a few camera shots, saves them as PNGs and quits.
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
-    int shotIndex, shotFrames;
+    // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/MELEE.md), skipping the rest.
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") == "clash" ? 53 : 0, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
 

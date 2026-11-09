@@ -62,6 +62,16 @@ public sealed class Squad
     /// How much the ground where it stands opens its ranks (1 on open ground; more in a wood or water; Battle.UpdateSquad sets it).
     public float Loosen = 1;
 
+    /// Training (docs/MELEE.md D1, 0-1) and how well the ranks hold right now (D2, 0-1); men read their product.
+    public float Drill = 0.6f, Formed = 1;
+    public float Discipline => Drill * Formed;
+    /// The enemy company it is closing with or fighting (BattleRanks.cs; the ordered Target, else the nearest).
+    public Squad? Foe;
+    /// Where its front rank stands now (mean of the rank-0 men), and the layout its places were last dealt for.
+    public Vector2 FrontPos;
+    public int LayoutCols, LayoutN;
+    public Formation LayoutForm;
+
     public float Spacing => Loosen * Formation switch
     {
         Formation.Loose => Cavalry ? 4.5f : 2.6f,

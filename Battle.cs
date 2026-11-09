@@ -251,6 +251,8 @@ public sealed partial class Battle
             h.Heading = h.Facing;
             s.Units.Add(h);
         }
+        s.Drill = DrillOf(s);
+        s.Alive = s.Units.Count; // standing from the start, so a charge ordered before the first tick keeps its target
         if (s.Swarm) s.Formation = Formation.Loose; // goblins come on as a mob
         if (team == 0 && company?.Has("Household") == true) s.Order = Order.Follow; // the household guard keeps at your side (P5)
         Squads.Add(s);
@@ -261,7 +263,7 @@ public sealed partial class Battle
     public Unit Spawn(UnitType t, int team, Squad? s, Vector2 pos)
     {
         var u = new Unit { Type = t, Index = Units.Count, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
-            Palette = Options.Palette[Math.Clamp(team, 0, 1)] };
+            Palette = Options.Palette[Math.Clamp(team, 0, 1)], Grit = GritOf(Units.Count) };
         if (t.Mount != null && !Options.Siege) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; } // assaults are fought on foot
         Units.Add(u);
         return u;
@@ -380,8 +382,8 @@ public sealed partial class Battle
         foreach (var u in s.Units) if (u.Active && !u.Routing) n++;
         s.Alive = n;
         if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); }
-        int i = 0;
-        foreach (var u in s.Units) if (u.Active && !u.Routing) { u.Slot = s.Slot(i++, n); }
+        PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
+        Close(s, dt);   // a charging company closes as a body
     }
 
     /// Nearest active, non-routing enemy; restricted to squad `only` when given.

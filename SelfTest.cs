@@ -109,6 +109,10 @@ public static partial class SelfTest
         ReplayExact();
         ScaleBattle();
         DivisionGoals();
+        HoldsRanks();
+        RearRanksWait();
+        StepsUp();
+        FightsItsTarget();
         Holdouts();
         GoblinBattle();
         Wolves();

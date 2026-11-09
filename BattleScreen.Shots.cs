@@ -134,7 +134,12 @@ partial class BattleScreen
                 shotFrames = 0; shotIndex++; break;
             case 52 when shotFrames > 20:
                 pendingShot = "gallery-armour-side"; shotIndex++; break;
-            case 53 when pendingShot == null: Exit(); break;
+            case 53 or 55 when pendingShot == null:
+                // Melee (docs/MELEE.md): three companies a side, 14 s after they charged; levies, then elites.
+                Clash(shotIndex == 53 ? "levies" : "immortals"); shotFrames = 0; shotIndex++; break;
+            case 54 or 56 when shotFrames > 20:
+                pendingShot = shotIndex == 54 ? "clash-levies" : "clash-elites"; shotIndex++; break;
+            case 57 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -215,6 +220,32 @@ partial class BattleScreen
         camYaw = MathHelper.PiOver2;
         camPitch = 0.1f;
         zoom = x * 0.8f;
+    }
+
+    /// Three companies of `troop` a side charge each other; the sim runs 14 s, then the view is held from above one flank.
+    void Clash(string troop)
+    {
+        battle = Battle.Empty(7);
+        SetWorld();
+        var b = battle;
+        var t = Troops.Get(troop);
+        var mine = new List<Squad>();
+        var theirs = new List<Squad>();
+        for (int i = -1; i <= 1; i++)
+        {
+            mine.Add(b.AddSquad(0, t, 24, new Vector2(i * 14, -14), 8, Vector2.UnitY));
+            theirs.Add(b.AddSquad(1, t, 24, new Vector2(i * 14, 14), 8, -Vector2.UnitY));
+        }
+        for (int i = 0; i < 3; i++) { mine[i].Order = theirs[i].Order = Order.Charge; mine[i].Target = theirs[i]; theirs[i].Target = mine[i]; }
+        for (int i = 0; i < 60 * 14; i++) b.Update(1 / 60f);
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = hudHidden = true;
+        SetCommand(true);
+        blend = 1;
+        camFocus = Vector2.Zero;
+        camYaw = MathHelper.PiOver2 + 0.35f;
+        camPitch = 0.6f;
+        zoom = 19;
     }
 
     /// Debug lineup of every troop, left to right along each upgrade line, facing the camera.

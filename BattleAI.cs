@@ -78,6 +78,10 @@ public partial class Battle
             return;
         }
 
+        // A company in the field fights from its ranks (BattleRanks.cs); leaders, heroes, pursuers, mobs and a charge with no
+        // company left to hit (it goes for the captain) fight free.
+        if (Ranked(s) && !(charge && s.Foe == null) && !u.IsLeader && !u.Hero && !(s.Pursue && charge)) { FightFromRanks(u, s, enemy, d, dt); return; }
+
         bool leashed = !charge && toSlot > 14;
         if (enemy != null && !leashed && (charge || d < 6))
         {

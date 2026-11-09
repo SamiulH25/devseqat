@@ -50,7 +50,7 @@ does the same for campaign screens, `IRONFIELD_LAB_SHOTS=/dir` for every UI lab 
 
 Other env vars: `IRONFIELD_SAVES` (save dir; settings go to its parent), `IRONFIELD_QUALITY=High|Medium|Low`,
 `IRONFIELD_LEVELS=4,2` (quick-battle army levels), `IRONFIELD_MEN=750` (quick-battle men a side; default half the Battle size setting), `IRONFIELD_WEATHER=hour,rain,fog`, `IRONFIELD_GROUND=river` or `=Hills,river` (a `TerrainParams` preset), `IRONFIELD_LAYOUT=Ridge` (a `FieldLayout`),
-`IRONFIELD_DUMP_ATLAS=/x.png`, `IRONFIELD_GPU_REPORT=1` (same as `--gpu-report`).
+`IRONFIELD_SHOTS_FROM=clash` (shots: only the melee clashes), `IRONFIELD_DUMP_ATLAS=/x.png`, `IRONFIELD_GPU_REPORT=1` (same as `--gpu-report`).
 Default save/settings location: `$XDG_CONFIG_HOME|~/.config/Ironfield/` (ApplicationData). Set `IRONFIELD_SAVES` when running so you do not touch real saves.
 
 ## Environment
@@ -127,6 +127,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Melee, damage, kills, arrows, braced spears, lances / creatures (troll sweep, knockback, healing, sun; the necromancer raising the dead) | `BattleCombat.cs` (`Strike`, `Hit`, `Damage`, `HitHorse`, `Kill`, `Shoot`, `UpdateArrows`) / `BattleCreatures.cs` (`Sunlit`, `Sweep`, `Knock`, `Regen`, `BodyRadius`, `RaiseDead`, `MasterFalls`) |
 | Unit movement and collisions / morale / your own unit | `BattleMove.cs` (`Move`, `Impact`) / `BattleMorale.cs` (`UpdateMorale`) / `BattlePlayer.cs` (`UpdatePlayer`) |
 | Formations, orders, slots | `Squad.cs` (`Order`, `Formation`, `Slot`, `SetLine`) |
+| Melee from the ranks (docs/MELEE.md): places kept for the battle, gaps filled from behind, a charge closing as a body, front rank fights while the rest wait / drill by tier | `BattleRanks.cs` (`PlaceMen`, `CloseFiles`, `Close`, `FightFromRanks`, `RankError`, `Intermix`) / `BattleDrill.cs` (`DrillOf`); tests `Tests/MeleeTests.cs` |
 | Sieges in battle / on the map | `BattleSiege.cs` (wall, ladders, gate `Via`) / `Campaign/CampaignSiege.cs` (garrisons, capture, fiefs) |
 | Captain combat (bash, swap, horse call), fatigue, supply | `BattleCaptain.cs` |
 | Personal goals in a battle (draw, live state, result) / your banner and the last stand | `BattleDeeds.cs` (`DrawGoals`, `GoalState`); HUD `Hud.GoalLines` / `BattleBanner.cs` (`UpdateBanner`, `LastStand`, `UpdateLastStand`) |
@@ -181,7 +182,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Sound + music synthesis | `Audio.cs` (`Cue` enum; battle emits cues via `Battle.Sounds`; ground footsteps and their splashes, mud and leaves come from `BattleScreen.GroundSteps`) |
 | Settings, crash log | `Settings.cs`, `SettingsScreen.cs`; tips: `Tips.cs` |
 | Tools | `Replay.cs`, `BalanceReport.cs` (`Run`, `Pacing`, `Realms`, `Grounds`), `GpuReport.cs`, `Bench.cs`; `Overflow.cs` (shots runs: text leaving its panel -> `overflow.txt`) |
-| Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs`, `Tests/CreatureTests.cs`, `Tests/MapTests.cs` |
+| Tests | `SelfTest.cs` (runner: `Run`, helpers, `Check`) + `Tests/BattleTests.cs`, `Tests/MeleeTests.cs`, `Tests/CampaignTests.cs`, `Tests/CareerTests.cs`, `Tests/CreatureTests.cs`, `Tests/MapTests.cs` |
 | Developer guide (systems in depth, worked examples) | `docs/DEVELOPING.md` |
 | Design docs | `README.md` (player-facing rules + architecture + gotchas), `docs/LEGACY.md` (THE player fantasy: your company is your legacy; plan L0-L8, read first when choosing work), `docs/DESIGN.md` (art/UI language), `docs/CAMPAIGN.md` (campaign spec, "As built" at end), `docs/ROADMAP.md` (phases A-E all built; "As built" lists simplifications), `docs/COMBAT_OVERHAUL.md` (plan: sergeant divisions + battle scale), `docs/MELEE.md` (plan: companies fight from their ranks, drill and order by tier, company wits: pin, wrap, pincer), `docs/CREATURES.md` (plan: monsters, creature encounters and troops), `docs/SIDE_CONTENT.md` (plan: sites, side quests, caravans, town life, events, polish), `docs/PROGRESSION.md` (plan: captain gear, combat, skill tree, rank rewards, battle goals), `docs/WORLD.md` (plan: bigger world, seven realms), `docs/TERRAIN.md` (plan: ground kinds, battlefield layouts, sight and cover, pathing, terrain-aware AI), `docs/POLISH.md` (plan: polish pass Q1-Q7: bugs, tips, text that fits, map keys, story, continuity tests), `docs/VISUALS.md` (plan: visuals and motion pass V1-V8: animation, effects, world, UI motion, big moments) |
 

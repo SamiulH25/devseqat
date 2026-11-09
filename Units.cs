@@ -156,6 +156,11 @@ public sealed class Unit
     public float CavTimer, Bogged, ImpactCd, BraceCd;
     /// Last tick's ground and slope on his pace (1 = level grass), and the slope along his way (rise a metre, negative downhill; BattleMove.cs).
     public float GroundPace = 1, Slope;
+    /// His place in the company's ranks (BattleRanks.cs): kept for the battle, so a death moves only the man behind
+    /// into the gap. Rank 0 is the front. -1: not placed (new, or back from a rout).
+    public int Place = -1, Rank;
+    /// A fixed 0-1 draw for this man: how readily he leaves the ranks when discipline is poor (low = first to go).
+    public float Grit;
 
     public bool Active => !Dead && !Fled;
     public bool Mounted => Horse != null;
