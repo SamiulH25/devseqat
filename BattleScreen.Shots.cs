@@ -14,10 +14,10 @@ partial class BattleScreen
         switch (shotIndex)
         {
             case 0 when b.Time > 0.5f:
-                b.Player.Pos = new(17, -37); b.Player.Heading = 0.35f; yaw = 0.35f; pitch = 0.12f; // beside our own lancers
+                b.Player.Pos = new(17, -37 - Battle.Stand); b.Player.Heading = 0.35f; yaw = 0.35f; pitch = 0.12f; // beside our own lancers
                 pendingShot = "field-horses"; shotIndex++; break;
             case 1 when b.Time > 2f:
-                b.Player.Pos = new(0, -34); yaw = MathHelper.PiOver2; pitch = 0.2f; aimDir = AttackDir.Right; // looking across the field
+                b.Player.Pos = new(0, -34 - Battle.Stand); yaw = MathHelper.PiOver2; pitch = 0.2f; aimDir = AttackDir.Right; // looking across the field
                 pendingShot = "field-view"; shotIndex++; break;
             case 2 when b.Time > 3f:
                 shotWheel = wheelOpen = true; wheelVec = new Vector2(60, -60);

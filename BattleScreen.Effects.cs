@@ -135,7 +135,7 @@ partial class BattleScreen
         Array.Clear(men);
         foreach (var u in battle.Units)
         {
-            if (!u.Active || u.Team == 1 && !u.IsLeader && !battle.Visible(u.Squad, 0)) continue;
+            if (!u.Active || u.Team == 1 && !u.IsLeader && !battle.Shown(u.Squad)) continue;
             int x = (int)((u.Pos.X / TrampleSize + 0.5f) * TrampleN), y = (int)((u.Pos.Y / TrampleSize + 0.5f) * TrampleN);
             for (int dy = -1; dy <= 1; dy++)
                 for (int dx = -1; dx <= 1; dx++)
