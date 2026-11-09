@@ -13,8 +13,14 @@ public sealed partial class Campaign
         ("bones", "READ THE BONES", "craft", 0, 3, "SEE TWICE AS FAR FOR A DAY"),
         ("rain", "CALL RAIN", "craft", 0, 4, "SOAKS THIS PROVINCE: HEAVY GOING FOR HORSE"),
         ("marks", "CRAFT MARKS", "craft", 0, 3, "NEXT BATTLE YOUR AURA BLADE LEAVES FEVER"),
+        ("cleanse", "CLEANSE", "faith", 100, 0, "IN A TOWN: THE OMEN FALLS BY 10"),
     };
     public const float OmenEvents = 12, RelicCharges = 3;
+    /// The Omen's teeth (docs/MAGIC_AURA.md 3.6, MA8): from OmenStirs the dead rise sooner and in greater numbers, from OmenShuns
+    /// one village in three bars its gates; a Cleanse takes CleanseOmen off it.
+    public const float OmenStirs = 20, OmenShuns = 30, CleanseOmen = 10;
+    /// Does this village bar its gates to you for what you work (a third of them, while the Omen is high)?
+    public bool OmenShunned(Settlement s) => s.Kind == SettlementKind.Village && S.Omen >= OmenShuns && s.Id % 3 == 0;
 
     /// Can someone in your company work this tradition: a companion of its calling, or a mage company that casts it?
     public bool CanWork(string tradition) =>
@@ -30,6 +36,8 @@ public sealed partial class Campaign
         if (S.RiteDay == Day + 1) return "ONE RITE A DAY";
         if (S.Gold < r.Gold) return $"NEEDS {r.Gold} CROWNS";
         if (id == "mend_core" && !Captain.Wounds.Contains("core")) return "YOUR CORE IS WHOLE";
+        if (id == "cleanse" && !InTown(Player)) return "IN A TOWN, AT ITS CHAPEL";
+        if (id == "cleanse" && S.Omen <= 0) return "THERE IS NO OMEN TO CLEANSE";
         S.Gold -= r.Gold;
         if (r.Tradition == "craft") BreakVow("no_craft", "work the craft");
         S.Omen += r.Omen;
@@ -41,6 +49,7 @@ public sealed partial class Campaign
             case "mend_core": MendCore("Your priest's prayers close the crack in you."); break;
             case "bones": S.FarSightUntil = (float)S.Hours + 24; break;
             case "marks": AddBuff("craft_marks", 7); break;
+            case "cleanse": S.Omen = MathF.Max(0, S.Omen - CleanseOmen); break;
             case "rain":
                 var pr = S.Provinces.FirstOrDefault(p => p.Id == Map.ProvinceAt(Player.Pos).Id);
                 if (pr != null) pr.Wet = MathF.Min(1, pr.Wet + 0.5f);
@@ -54,6 +63,7 @@ public sealed partial class Campaign
             "mend_core" => "Candles and long prayers through the night.",
             "bones" => "The bones are read. Far parties show themselves.",
             "marks" => "Old marks are cut into your blade and painted on your brow.",
+            "cleanse" => "Candles, salt and water at the chapel. The air feels clean again.",
             _ => "Rain comes on as the old words are spoken.",
         });
         return null;

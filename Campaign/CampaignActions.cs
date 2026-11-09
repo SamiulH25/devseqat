@@ -18,6 +18,7 @@ public partial class Campaign
     {
         // Only some of them will follow you: how many depends on what their lord thinks of you (4.2).
         if (s.Kind == SettlementKind.Village && Captain.Corruption >= HuntedAt) return "THE VILLAGE BARS ITS GATES TO YOU"; // the Black Flame (K7)
+        if (OmenShunned(s)) return "THE VILLAGE FEARS WHAT YOU WORK: IT BARS ITS GATES"; // the Omen's teeth (MA8)
         n = Math.Min(n, RecruitsForYou(s));
         if (n <= 0) return s.Recruits > 0 ? "THEY WILL NOT FOLLOW YOU: THEIR LORD THINKS ILL OF YOU" : "NO RECRUITS";
         string levy = RecruitTroopFor(s);

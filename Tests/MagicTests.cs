@@ -411,4 +411,95 @@ public static partial class SelfTest
         c.CircleDaily();
         Check(Campaign.MasterOf(circle) is Soldier next && next.Id != m.Id, "after a while another rises");
     }
+
+    /// MA8 (docs/MAGIC_AURA.md 3.5): a company inside called mist is seen only close.
+    static void MistHides()
+    {
+        var flat = TerrainParams.Meadow with { Layouts = null, HillsMin = 0, HillsMax = 0, Road = false, Woods = 0, LoneTrees = 0 };
+        var none = new ArmySpec("a", 1, new List<Company>());
+        var b = new Battle(15, none, none, new BattleOptions { Ground = flat, PlayerWounded = true });
+        var hid = b.AddSquad(1, UnitType.Shieldman, 12, new(0, 20), 6, -Vector2.UnitY);
+        var eyes = b.AddSquad(0, UnitType.Shieldman, 12, new(0, -40), 6, Vector2.UnitY);
+        Run(b, 1.2f);
+        Check(b.Visible(hid, 0), "in the open they are seen from afar");
+        b.AddField(Abilities.Get("mist"), "mist", 1, hid.Units[0], hid.Center, 15, 60, 1, 0);
+        Run(b, 5);
+        Check(!b.Visible(hid, 0), "in the mist they are not");
+        foreach (var u in eyes.Units) u.Pos += new Vector2(0, 42);
+        eyes.Anchor += new Vector2(0, 42);
+        Run(b, 1.2f);
+        Check(b.Visible(hid, 0), $"close up ({Battle.MistSight:0} m) the mist hides nothing");
+    }
+
+    /// MA8: a mirage draws the enemy's arrows from the company it shields.
+    static void MirageDrawsArrows()
+    {
+        int Hurt(bool mirage)
+        {
+            var b = Battle.Empty(16);
+            var bows = b.AddSquad(1, UnitType.Bowman, 12, new(0, 28), 6, -Vector2.UnitY);
+            var mark = b.AddSquad(0, UnitType.Shieldman, 12, new(0, 0), 6, Vector2.UnitY);
+            bows.Target = mark;
+            foreach (var u in mark.Units) u.Hp = 100000;
+            if (mirage) b.AddField(Abilities.Get("mirage"), "mirage", 0, mark.Units[0], new Vector2(Battle.MirageOffset, 0), 5, 60, 1, 0);
+            Run(b, 15);
+            return mark.Units.Sum(u => (int)(100000 - u.Hp));
+        }
+        int plain = Hurt(false), drawn = Hurt(true);
+        Check(drawn < plain * 0.4f, $"a mirage draws the arrows ({drawn} hurt against {plain})");
+        Check(Abilities.Get("mirage").Tradition == "craft" && !Abilities.Get("mirage").Great, "a circle of the craft can learn it");
+    }
+
+    /// MA8: a Ward breaks an enemy working cast on a spot inside it.
+    static void WardBreaksCast()
+    {
+        bool Fevered(bool ward)
+        {
+            var b = Battle.Empty(17);
+            var men = b.AddSquad(0, Troops.Get("levies"), 8, new(0, 0), 4, Vector2.UnitY);
+            var witches = b.AddSquad(1, Troops.Get("war_witches"), 3, new(0, 80), 3, -Vector2.UnitY);
+            witches.HoldSpells = true;
+            if (ward) b.AddField(Abilities.Get("ward"), "warded", 0, men.Units[0], men.Center, 12, 60, 1, 0);
+            b.Casts.Add(new Cast { A = Abilities.Get("fever"), By = witches, At = men.Center, Started = b.Time, FireAt = b.Time, Power = 1 });
+            b.Update(1 / 60f);
+            return men.Timed.Any(x => x.Effect.Id == "fever");
+        }
+        Check(Fevered(false) && !Fevered(true), "a Ward breaks the curse cast on the men inside it");
+    }
+
+    /// MA8 (3.6): a high Omen stirs the dead sooner and raises more of them, and a third of the villages bar their gates;
+    /// a Cleanse in town brings it down.
+    static void OmenTeeth()
+    {
+        var c = Campaign.New(95);
+        var village = c.S.Settlements.First(s => s.Kind == SettlementKind.Village && s.Id % 3 == 0);
+        c.S.Gold = 10000;
+        c.S.Omen = Campaign.OmenShuns;
+        Check(c.RecruitLevies(village, 1) == "THE VILLAGE FEARS WHAT YOU WORK: IT BARS ITS GATES", "at a high Omen a village bars its gates");
+        Check(c.S.Settlements.Where(s => s.Kind == SettlementKind.Village).Count(c.OmenShunned) * 2 < c.S.Settlements.Count(s => s.Kind == SettlementKind.Village), "but not most of them");
+        var grave = new Grave { Pos = village.Pos, Dead = 300, Hours = c.S.Hours };
+        c.S.Omen = 0;
+        int calm = c.RaiseHost(grave).Companies[0].Men;
+        c.S.Omen = Campaign.OmenStirs;
+        int stirred = c.RaiseHost(grave).Companies[0].Men;
+        Check(stirred > calm, $"a high Omen raises more of the dead ({stirred} against {calm})");
+        c.S.Characters.Add(new Character { Id = c.S.NextId++, Kind = "companion", Name = "Sister Test", Culture = "common", Calling = "Priest", PartyId = c.Player.Id, CompanyId = c.Player.Companies[0].Id });
+        c.S.Settlements.First(s => { c.Player.Pos = s.Pos; return c.InTown(c.Player); });
+        c.S.Omen = 25;
+        Check(c.Rite("cleanse") == null && MathF.Abs(c.S.Omen - 15) < 0.01f && c.S.Gold == 9900, "a Cleanse in town takes 10 off the Omen for 100 crowns");
+    }
+
+    /// MA8 (4.3): lords of your realm think better of an aura captain; brigands dread an Aura Master.
+    static void AuraIsKnown()
+    {
+        var c = Campaign.New(96);
+        var lord = c.S.Characters.First(ch => ch.Kind == "lord" && !ch.Dead);
+        c.Captain.Contract = lord.Faction;
+        float plain = c.OpinionOfYou(lord);
+        c.Captain.AuraTier = 4;
+        Check(MathF.Abs(c.OpinionOfYou(lord) - Math.Min(100, plain + 10)) < 0.01f, "a lord of your realm thinks better of an Aura Master");
+        Check(c.Dread(c.Player) == Campaign.AuraDread, "brigands dread him");
+        c.Captain.AuraTier = 2;
+        Check(c.Dread(c.Player) == 1 && MathF.Abs(c.OpinionOfYou(lord) - plain) < 0.01f, "not an Aura Knight");
+    }
 }

@@ -55,6 +55,11 @@ public static partial class SelfTest
         SpellbookCarries();
         SpellbookByTier();
         CircleMaster();
+        MistHides();
+        MirageDrawsArrows();
+        WardBreaksCast();
+        OmenTeeth();
+        AuraIsKnown();
         CompanionGrows();
         HoldTheLine();
         EnemyChampions();

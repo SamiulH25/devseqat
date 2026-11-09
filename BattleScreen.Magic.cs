@@ -158,7 +158,7 @@ partial class BattleScreen
         {
             string id = f.Effect?.Id ?? "";
             // Motes a square metre a second: fire is thick, mist and smoke are few but large and long-lived.
-            float rate = id switch { "burning" => 1.2f, "mist" or "smoke" => 0.5f, "warded" => 0.5f, "storm" => 0.6f, _ => 0.15f };
+            float rate = id switch { "burning" => 1.2f, "mist" or "smoke" => 0.5f, "warded" => 0.5f, "storm" => 0.6f, "mirage" => 1.2f, _ => 0.15f };
             if (id == "burning" && f.Dps <= 0) rate = 0;
             float want = MathF.Min(600, MathF.PI * f.Radius * f.Radius) * rate * dt;
             int n = (int)want + (fx.NextSingle() < want % 1 ? 1 : 0);
@@ -178,6 +178,9 @@ partial class BattleScreen
                         break;
                     case "warded":
                         if (r > f.Radius * 0.8f) Spray(p, 0.2f, 1, new Color(255, 246, 210), 0.2f, 1.5f, 0.07f, false, 0, -1.2f);
+                        break;
+                    case "mirage": // the faint shapes of men that are not there (MA8): a shimmer at head height, never a sprite
+                        Spray(p, 0.9f + fx.NextSingle() * 0.8f, 1, new Color(200, 190, 255), 0.05f, 0.7f, 0.06f, false, 0, -0.2f);
                         break;
                     case "storm":
                         Spray(p, 6f, 1, new Color(170, 190, 210), 0.1f, 0.6f, 0.05f, false, 0, 9f);

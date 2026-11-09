@@ -1,6 +1,6 @@
 # Magic and aura for the player: plan
 
-Status: being built (2026-11-09). Done: MA1-MA7. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
+Status: being built (2026-11-09). Done: MA1-MA8. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
 through M4 + P) and docs/KNIGHT_ORDERS.md (aura and orders: built K1-K8). Read docs/LEGACY.md first: your company is
 your legacy, and every change here must serve that.
 
@@ -357,3 +357,16 @@ change touches every later number.
   debuff does not land on your companies within it (`InLight`); with the blade lit, an arrow coming at you from within
   30 degrees of your facing falls short half the time (`CutsArrow`, seeded rng, `ArrowsCut`). Tests `BreakInBattle`,
   `ClashRing`, `TranscendentLight`.
+- **MA8 (the spells left out, the Omen's teeth, lords know your aura):** mist: `BattleSight.Sees` refuses a company whose
+  centre is inside a `mist` field beyond `MistSight` (25 m; checked before `CloseSight`). Mirage: a new craft spell in
+  Data/abilities.json (`mirage`, field, effect `mirage` with no numbers, when `shot`), learned through the spellbook
+  rather than added to a line (each tier still knows one more spell). Its field stands `MirageOffset` (15 m) to the side
+  of the shielded company, square to the enemy (`MirageSpot`); an enemy bowman with a mirage in reach looses at it
+  (`MirageFor` in `Shoot`). It turns bows only, not the enemy general; drawn as a shimmer at head height. Counterspell:
+  `Fire` drops a working whose spot lies inside an enemy `warded` field (`Warded`; flash `broken`; the Will stays spent).
+  Omen: `OmenStirs` (20) halves `GraveRiseDays` and adds a third to a raised host's bones; `OmenShuns` (30) makes a third
+  of villages (`Id % 3 == 0`, `OmenShunned`) refuse levies while it lasts; the faith rite `cleanse` (100 crowns, in a
+  town) takes `CleanseOmen` (10) off. Lords: `AuraRegard` adds +5 (Aura Expert) or +10 (Master) to the opinion of lords
+  of your contract realm; brigands weigh an Aura Master's party at `AuraDread` (1.5) in `BanditThink`, so they flee him
+  and do not prey on him; a won duel's renown x1.5 at tier 3+. The council's baton is left for later. Tests `MistHides`,
+  `MirageDrawsArrows`, `WardBreaksCast`, `OmenTeeth`, `AuraIsKnown`.

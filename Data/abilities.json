@@ -33,6 +33,8 @@
       "line": "One of your companies in a fight sees the blows coming.", "range": 40, "radius": 6, "duration": 20, "cooldown": 35, "will": 20, "warn": 0.5, "omen": 0.5 },
     { "id": "mist", "name": "Call the mist", "icon": "rain", "tradition": "craft", "kind": "field", "effect": "mist", "on": "all", "when": "shot",
       "line": "A bank of mist over a company under arrows: shots into it and out of it go wide.", "range": 40, "radius": 15, "duration": 40, "cooldown": 50, "will": 20, "omen": 1 },
+    { "id": "mirage", "name": "Mirage", "icon": "star", "tradition": "craft", "kind": "field", "effect": "mirage", "on": "foes", "when": "shot",
+      "line": "A false company shimmers beside the one under arrows: the enemy's bows loose at it for a while.", "range": 40, "radius": 5, "duration": 30, "cooldown": 60, "will": 25, "omen": 1 },
     // Craft: curses
     { "id": "evil_eye", "name": "Evil eye", "icon": "skull", "tradition": "craft", "kind": "debuff", "effect": "evil_eye", "when": "officer",
       "line": "The company of an enemy officer in sight falters.", "range": 40, "radius": 4, "duration": 20, "cooldown": 40, "will": 20, "omen": 1 },

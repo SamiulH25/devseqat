@@ -271,6 +271,8 @@ The core tension: **you are strongest as a leader when you are in the fight, but
   rises for the rest of the fight, your aura fills and the men near you rally. Two lit blades within 3 m start a **clash
   of champions**: the men give you a ring, and blows between you land harder for up to 8 s. A Transcendent's light
   reaches 20 m and turns curses from the companies in it, and his lit blade cuts arrows from the air in front of him.
+  Lords of your realm think better of an Aura Expert (+5) or Master (+10); brigands dread an Aura Master and run from
+  him; a won duel brings half again the renown from an Aura Expert up.
 - **Morale and routing:** below 12 morale a unit routs and flees off the map (radius 95). It rallies again above 32, and a man who has
   broken twice stays broken. A side loses when it has no active, non-routing units.
 - **Melee:** windup, strike, recover. Hits interrupt windups. AI units block hits from the front by chance (Shieldmen 55%). A player block staggers the attacker; if stamina runs out, the guard breaks. Player swings cleave up to 3 targets.
@@ -330,7 +332,11 @@ the player rides a courser.
   dead casters lower it. Enemy veteran horse and elite bows hunt mages first.
   **You can direct them:** in command view select the circle (or a company a companion leads) and press P to pick a spell,
   then click the ground to cast it there. The order rides out like any other, and costs 5 more Will. X makes casters
-  hold their spells for your word (and press X again to let them cast at will). Craft (not faith) raises the **Omen**; from 12, dark omens follow.
+  hold their spells for your word (and press X again to let them cast at will). Craft (not faith) raises the **Omen**; from 12, dark omens follow;
+  from 20 the dead rise sooner and in greater numbers; from 30 a third of the villages bar their gates to you. A priest or
+  a faith circle can **Cleanse** in a town (100 crowns): the Omen falls by 10. Called mist hides a company (it is seen only
+  within 25 m), a **Mirage** (a craft spell a circle can learn) draws the enemy's arrows to a false company, and a Ward
+  breaks any enemy working cast inside it.
   **The spellbook:** on the circle's roll (P, then its roll) choose which spells it prepares for the next battle (as many as
   its tier knows), and teach it up to two more of its tradition: a priest (faith) or cunning one (craft) among your
   companions, a shrine, standing stones or a hermit can teach, for 150 crowns, then 300. The encounter panel names the

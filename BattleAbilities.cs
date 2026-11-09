@@ -334,6 +334,7 @@ public partial class Battle
         if (by == null) return; // the caster fell: the working dies with him
         if (a.Needs != "" && !(a.Needs == "dry" ? Dry(c.At) : Raining(c.At))) return;
         int team = c.By.Team;
+        if (Warded(c.At, team)) { Flash("broken", c.At, a.Radius, team, a.Tradition); return; } // a ward breaks the working (MA8)
         Flash("spell:" + a.Kind, c.At, a.Radius, team, a.Tradition);
         if (a.Tradition == "faith" && (a.Kind is "attack" or "rally" || a.Great)) Sound(Cue.Holy, c.At);
         if (a.Effect == "burning" || a.Burn > 0) Sound(Cue.Flame, c.At);
@@ -349,7 +350,7 @@ public partial class Battle
                 CurseCaptain(a, c.At, team);
                 break;
             case "field":
-                AddField(a, a.Effect, team, by, c.At, a.Radius, a.Duration, c.Power, a.Dps);
+                AddField(a, a.Effect, team, by, a.Effect == "mirage" ? MirageSpot(c.At, team) : c.At, a.Radius, a.Duration, c.Power, a.Dps);
                 break;
             case "attack":
                 foreach (var t in Near(c.At, a.Radius + 0.5f, nearKill).Where(t => t.Active && t.Team != team && Vector2.DistanceSquared(t.Pos, c.At) < a.Radius * a.Radius)
