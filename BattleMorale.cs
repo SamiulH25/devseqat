@@ -46,7 +46,7 @@ public partial class Battle
             }
             else
             {
-                if (u.Squad!.Alive < u.Squad.StartCount * 0.4f) m -= 1.5f;
+                if (u.Squad!.Alive < u.Squad.StartCount * 0.4f && u.Mods.Fury <= 0) m -= 1.5f; // battle fury: losses only anger them
                 if (u.EnemyDist > 12 && u.Morale < 60) m += 1.5f;
                 // A company that still has most of its men steadies itself.
                 if (u.Morale < 45 && u.Squad.Alive > u.Squad.StartCount * 0.6f) m += 1.5f;
@@ -73,6 +73,7 @@ public partial class Battle
             u.Morale = Math.Clamp(u.Morale + m * step, 0, 100);
             // Iron Will: near you, a company that still has a third of its men will not break.
             if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);
+            if (u.Mods.Holdfast > 0 && !u.Routing && lost[u.Team] < 0.5f) u.Morale = MathF.Max(u.Morale, 16); // paid in full: they stand while the day is not lost
             if (u.Team == 0 && inspired && Player.Active && Perk("Warlord")) u.Morale = MathF.Max(u.Morale, 16); // Warlord: none break while you stand
             float routAt = (u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? RoutAt - 4 : RoutAt) - (u.Squad.Company?.RoutBonus ?? 0) // officer trait; walls; honours
                 + (u.Type.Has("craven") ? CravenRout : 0);

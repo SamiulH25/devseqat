@@ -289,8 +289,11 @@ the player rides a courser.
   bring a horse down. Tier VI and VII do it harder than tier V. The upgrade cards show each troop's style.
 - **Passive traits (tiers V-VII):** each also carries traits from its kind: Unshakeable, Iron skin, Tireless, Locked shields,
   Set spears, Fearsome, Steady aim, Pavise, Swift, Heavy charge, Sure-footed. Tier V has its first trait in part, tier VI the
-  first in full and the second in part, tier VII both in full. A culture's tier VII troops add its signature: the Order's
-  **Zeal** heartens every company of their side within 20 m. Hover an upgrade card to read them. Auto-resolve counts styles
+  first in full and the second in part, tier VII both in full. A culture's tier VII troops add its signature where it fits:
+  Northern **Battle fury** (the fewer, the fiercer), Azure **Testudo** (halted under arrows, shields all round), Crimson
+  **Headsmen** (double against officers), Southern **Whirlwind** (every blow sweeps), Steppe **Ghost riders** (steady shots
+  from the gallop), League **Paid in full** (no running while the day is not lost), the Order's **Zeal** (heartens every
+  company of their side within 20 m). Hover an upgrade card to read them. Auto-resolve counts styles
   and traits too (`TraitWeight` in `Data/campaign.json`).
 - **The tree:** 188 troops (and the captain, plus 13 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map

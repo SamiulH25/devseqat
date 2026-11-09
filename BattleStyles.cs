@@ -101,7 +101,7 @@ public partial class Battle
     /// A styled blow landed on t (after its damage): what it does beyond the damage.
     void StyleLanded(Unit a, Unit t, float dmg, bool ranged, bool lance)
     {
-        if (followUp || a.IsPlayer || a.Type.StyleRank == 0) return;
+        if (followUp || a.IsPlayer || (a.Type.StyleRank == 0 && a.Mods.Whirl <= 0)) return;
         int r = a.Type.StyleRank;
         followUp = true;
         switch (a.Type.Style)
@@ -137,6 +137,9 @@ public partial class Battle
                 else Knock(a, t, 0.4f + 0.2f * r, 0.4f, 0.5f);
                 break;
         }
+        // Whirlwind (a signature, D4): every blow carries into the man beside, on top of the style.
+        if (!ranged && !lance && a.Mods.Whirl > 0 && a.Type.Style is not (AttackStyle.Sweep or AttackStyle.CutWheel))
+            Sweep(a, t, dmg, ReachOf(a) + 0.4f, 1, a.Mods.Whirl);
         followUp = false;
     }
 

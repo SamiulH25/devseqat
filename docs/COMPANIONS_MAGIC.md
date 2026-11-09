@@ -1,6 +1,6 @@
 # Companions, magic, abilities, buffs and auras (plan)
 
-Status: plan, being built. Done: T0, T1, E1 core, T2 passives (see the build order). Next: T2b signatures, E1b, E2. Read docs/LEGACY.md first: the fantasy is that your company is your legacy.
+Status: plan, being built. Done: T0, T1, E1 core, T2 (passives and signatures; see the build order). Next: E1b, E2, then mages (M1). Read docs/LEGACY.md first: the fantasy is that your company is your legacy.
 Everything below must serve that. Companions are the named heart of the company. Mages are rare, costly and real: they
 fight in battle, cast buffs on your companies and strike the enemy. The best troops (tiers V-VII) fight differently: their
 blows sweep, knock back or thrust through, and they carry passive traits. Buffs, auras, spells and abilities are one system, so every bonus reads the same way everywhere.
@@ -347,8 +347,8 @@ its neighbours (the three Northern Dane-axe lines should not feel the same).
 | Northern | **Battle fury** | the more of them fall, the harder the rest strike (+damage as the company shrinks, no morale loss from losses) |
 | Azure | **Testudo** | under arrow fire, a halted company raises shields overhead on its own: arrows from any side mostly stop, half speed |
 | Crimson | **Headsmen** | blows against officers, sergeants and heroes do double damage |
-| Southern | **Whirlwind** | every blow is a sweep (D2) on top of the weapon's style; they block a little less, never below their tier VI |
-| Steppe | **Ghost riders** | horse that are charged fall back out of reach on their own and shoot as they go; chasers lose order (`Formed`) |
+| Southern | **Whirlwind** | every blow is a sweep (D2) on top of the weapon's style (as built: no block malus, so it only adds) |
+| Steppe | **Ghost riders** | (as built) they shoot from the gallop as steadily as standing; falling back from a charge is the horse archers' existing habit |
 | League | **Paid in full** | do not rout while their side holds the field (they rout only when the battle is lost) |
 | Order | **Zeal** | holy (tag): fear nothing; companies within 20 m take heart; the undead take +50 % from them |
 
@@ -539,6 +539,12 @@ field effects, moving the three old auras onto effects (E1b), HUD icons (E2). Au
 (1 + `TraitWeight` x style rank); at 0.1, `--agree` gives the higher tier 58/65/56/58 % at gaps 1-4 (it was 58/65/44/42
 before T1, and 63/70/69/75 with styles but no weight). Bench 5.3-5.5 ms (5.07 before T1). Tests in `Tests/EffectTests.cs`:
 `EffectsValidate`, `PassivesByTier`, `PassivesBite`, `AuraReachesCompanies`, `PassivesOnlyAdd`.
+
+**As built, T2b signatures:** six more effects, each a stat with one hook: `fury` (Hit, morale), `testudo` (Hit, before the
+side), `headsman` (Hit), `whirl` (StyleLanded), `gallop` (Loose), `holdfast` (morale). A signature goes only where it fits
+(`SignatureOf(t)`): Battle fury and Headsmen to melee troops, Testudo to shield foot, Whirlwind to melee foot, Ghost riders
+to horse archers, Paid in full and Zeal to all. So some tier VII troops (Steppe foot, Northern archers) have none yet.
+Test `SignaturesBite`.
 
 | Step | What | Main files | Done when |
 |---|---|---|---|

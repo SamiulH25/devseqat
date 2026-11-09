@@ -31,16 +31,27 @@ public partial class Battle
         };
     }
 
-    /// A culture's signature (D4): a third passive for its tier VII troops. Null: none yet (the rest come in T2b).
-    public static string? SignatureOf(string culture) => culture switch
+    /// A culture's signature (D4): a third passive for its tier VII troops, where it fits the troop (a testudo needs
+    /// shields, ghost riders a bow on horseback). Null: none for this troop.
+    public static string? SignatureOf(UnitType t)
     {
-        "order" => "zeal",
-        _ => null,
-    };
+        bool melee = t.Ammo == 0, foot = t.Mount == null;
+        return t.Culture switch
+        {
+            "northern" when melee => "battle_fury",
+            "azure" when foot && t.HasShield => "testudo",
+            "crimson" when melee => "headsmen",
+            "southern" when melee && foot => "whirlwind",
+            "steppe" when !foot && !melee => "ghost_riders",
+            "league" => "paid_in_full",
+            "order" => "zeal",
+            _ => null,
+        };
+    }
 
     /// A troop's passives: its archetype's two, and its culture's signature at tier VII.
     public static string[] PassivesWithSignature(UnitType t) =>
-        t.Tier >= 7 && SignatureOf(t.Culture) is string sig ? PassivesFor(t).Append(sig).ToArray() : PassivesFor(t);
+        t.Tier >= 7 && SignatureOf(t) is string sig ? PassivesFor(t).Append(sig).ToArray() : PassivesFor(t);
 
     /// How strongly a troop of this tier has its i-th passive: tier V its first at 0.7; VI the first in full and the
     /// second at 0.7; VII all three (the third is its culture's signature) in full. Never falls as the tier rises (D0).

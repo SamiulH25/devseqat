@@ -38,6 +38,10 @@ public static partial class SelfTest
             for (int i = 0; i < 3; i++)
                 Check(Battle.PassiveWeight(tier + 1, i) >= Battle.PassiveWeight(tier, i), $"passive {i} is no weaker at tier {tier + 1} than at {tier}");
         Check(Troops.All.Where(t => t.Culture == "order" && t.Tier == 7).All(t => t.Passives.Contains("zeal")), "the Order's tier VII troops carry Zeal");
+        foreach (var (troop, sig) in new[] { ("blood_jarls", "battle_fury"), ("immortals", "testudo"), ("sword_saints", "headsmen"), ("lions_of_the_sun", "whirlwind"),
+                     ("khagans_own", "ghost_riders"), ("lion_crossbows", "paid_in_full") })
+            Check(Troops.Get(troop).Passives.Contains(sig), $"{Troops.Get(troop).Name} carry their culture's signature, {Effects.Get(sig).Name}");
+        Check(!Troops.Get("grail_knights").Passives.Contains("testudo") && !Troops.Get("sky_piercers").Passives.Contains("battle_fury"), "a signature only goes where it fits (no testudo on horseback, no fury for archers)");
         Console.WriteLine($"effects: {Troops.All.Count(t => t.Passives.Length > 0)} troops with passive traits");
     }
 
@@ -66,6 +70,67 @@ public static partial class SelfTest
             return m - foes[0].Morale;
         }
         Check(Shaken(Troops.Get("doomcleavers")) > Shaken(NoPassives("doomcleavers")), "a fearsome man's blow shakes the man he strikes more");
+    }
+
+    /// D4: each culture signature does what it says.
+    static void SignaturesBite()
+    {
+        // Testudo: a halted shield man stops most arrows even from behind.
+        int Landed(UnitType target)
+        {
+            var (b, a, _) = StyleScene("bowmen");
+            var t = b.AddSquad(1, target, 1, new(0, 20), 1, Vector2.UnitY).Units[0]; // his back to the archer
+            b.Update(0);
+            int got = 0;
+            for (int i = 0; i < 200; i++)
+            {
+                t.Pos = new(0, 20); t.Vel = Vector2.Zero; t.Hp = t.Type.MaxHp; t.Action = UnitAction.None;
+                b.Hit(a, t, 1, true);
+                if (t.Hp < t.Type.MaxHp) got++;
+            }
+            return got;
+        }
+        int testudo = Landed(Troops.Get("immortals")), open = Landed(NoPassives("immortals"));
+        Check(testudo < open * 0.7f, $"a testudo stops arrows from behind ({testudo} of 200 land, {open} without)");
+
+        // Headsmen: a blow on a sergeant falls harder than on a common man.
+        float Blow(string troop, bool sergeant)
+        {
+            var (b, a, foes) = StyleScene(troop, new Vector2(0, 1.3f));
+            foes[0].Sergeant = sergeant;
+            float hp = foes[0].Hp = 999;
+            b.Hit(a, foes[0], 30, false);
+            return hp - foes[0].Hp;
+        }
+        Check(Blow("sword_saints", true) > Blow("sword_saints", false) * 1.5f, "headsmen strike an officer far harder");
+        Check(MathF.Abs(Blow("grand_blademasters", true) - Blow("grand_blademasters", false)) < 0.01f, "other men do not");
+
+        // Battle fury: the same blow is harder once half the company has fallen.
+        float Fury(int alive)
+        {
+            var (b, a, foes) = StyleScene("blood_jarls", new Vector2(0, 1.3f));
+            a.Squad!.StartCount = 20;
+            a.Squad.Alive = alive;
+            float hp = foes[0].Hp = 999;
+            b.Hit(a, foes[0], 30, false);
+            return hp - foes[0].Hp;
+        }
+        Check(Fury(10) > Fury(20) * 1.2f, "battle fury: the fewer they are, the harder they strike");
+
+        // Whirlwind: a spear blow carries into the man beside.
+        var (wb, wa, wfoes) = StyleScene("lions_of_the_sun", new(0, 1.3f), new(0.9f, 1.2f));
+        float beside = wfoes[1].Hp;
+        wb.Hit(wa, wfoes[0], 20, false);
+        Check(wfoes[1].Hp < beside, "a whirlwind's blow carries into the man beside");
+
+        // Ghost riders shoot from the saddle as from the ground; paid in full stand while the day is not lost.
+        Check(Troops.Get("khagans_own").Mods.Gallop > 0, "ghost riders shoot steadily from the gallop");
+        var pb = Battle.Empty(81);
+        var paid = pb.AddSquad(0, Troops.Get("lion_crossbows"), 6, new(0, 0), 3, Vector2.UnitY);
+        pb.AddSquad(1, Troops.Get("levies"), 6, new(0, 60), 3, -Vector2.UnitY);
+        foreach (var u in paid.Units) u.Morale = 2;
+        Run(pb, 0.2f);
+        Check(paid.Units.All(u => !u.Routing && u.Morale >= 16), "paid in full: they do not run while their side holds");
     }
 
     /// Part A: an aura reaches the companies of its side within its radius and no others, and stops when its bearer falls.

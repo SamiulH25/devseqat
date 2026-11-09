@@ -29,8 +29,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleCaptain.cs (256 lines)
 - **Battle** (class, L7): Perk:24, ReleaseSwing:29, SetupCaptain:56, SwapWeapon:73, WeaponName:90, PlayerBow:97, AimTarget:121, Bash:140, CallHorse:165, UpdateCalledHorse:173, Fatigue:186, Tire:188, Strain:201, Resupply:208, ArcherSupply:224, SoftTarget:234, SoundRetreat:243
 
-## BattleCombat.cs (452 lines)
-- **Battle** (class, L6): TickAction:8, Strike:35, CountDeed:65, InArc:73, HighGround:83, SpeedBonus:86, SideOf:100, Hit:111, Damage:217, HitHorse:231, Stagger:249, BossFalls:260, Kill:269, Shoot:318, Loose:326, Gauss:349, UpdateArrows:354, Covered:387, Braces:395, Lances:422, DistToSegment:446
+## BattleCombat.cs (461 lines)
+- **Battle** (class, L6): TickAction:8, Strike:35, CountDeed:65, InArc:73, HighGround:83, SpeedBonus:86, SideOf:100, Hit:111, Damage:226, HitHorse:240, Stagger:258, BossFalls:269, Kill:278, Shoot:327, Loose:335, Gauss:358, UpdateArrows:363, Covered:396, Braces:404, Lances:431, DistToSegment:455
 
 ## BattleCourier.cs (77 lines)
 - **Courier** (class, L9)
@@ -54,8 +54,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Grade** (enum, L6)
 - **Battle** (class, L10): DrillOf:17, DrillOf:21, DrillOf:40, GradeOf:53, GradeName:54, FellFromRanks:57, Flanked:64, UpdateFormed:68, Steadied:96, RankGuard:108, RankEdge:132, BreakRanks:151
 
-## BattleEffects.cs (104 lines)
-- **Battle** (class, L8): PassivesFor:12, SignatureOf:35, PassivesWithSignature:42, PassiveWeight:47, TroopMods:56, UpdateEffects:73, AurasOn:89
+## BattleEffects.cs (115 lines)
+- **Battle** (class, L8): PassivesFor:12, SignatureOf:36, PassivesWithSignature:53, PassiveWeight:58, TroopMods:67, UpdateEffects:84, AurasOn:100
 
 ## BattleGrid.cs (133 lines)
 - **Battle** (class, L7): CellOf:14, BuildGrid:16, Near:28, Separate:104
@@ -65,7 +65,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Place** (struct, L9)
 - **Battle** (class, L13): Survey:19, Thin:69, BestPlace:78, SnapToGround:93, Patience:105, GoodGround:109, HoldsGround:119, DryAnchor:141, HorseGoing:149, GroundWarning:178, CrossesWater:193, CannotStake:207, PlantStakes:218
 
-## BattleMorale.cs (87 lines)
+## BattleMorale.cs (88 lines)
 - **Battle** (class, L6): UpdateMorale:11
 
 ## BattleMove.cs (103 lines)
@@ -108,10 +108,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleSight.cs (97 lines)
 - **Battle** (class, L8): Visible:20, Visible:21, Shown:25, UpdateSight:27, Sees:52, ClearLine:67, Ambush:86
 
-## BattleStyles.cs (178 lines)
+## BattleStyles.cs (181 lines)
 - **AttackStyle** (enum, L6)
-- **Battle** (class, L10): StyleFor:13, static:29, Styled:48, StyleSwing:52, StyleSwingStarts:61, StyleBlow:69, Bashing:76, StyleGuard:80, StyleBlocked:94, StyleLanded:102, Closing:144, Behind:152, StyleReload:171
-- **StyleExtensions** (class, L174): Mounted:177
+- **Battle** (class, L10): StyleFor:13, static:29, Styled:48, StyleSwing:52, StyleSwingStarts:61, StyleBlow:69, Bashing:76, StyleGuard:80, StyleBlocked:94, StyleLanded:102, Closing:147, Behind:155, StyleReload:174
+- **StyleExtensions** (class, L177): Mounted:180
 
 ## BattleTactics.cs (254 lines)
 - **Plan** (enum, L6)
@@ -294,10 +294,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Ease.cs (22 lines)
 - **Ease** (class, L4): C:6, In:8, Out:10, OutCubic:11, InOut:13, OutBack:15, Spring:17, Kick:19, Hash:21
 
-## Effects.cs (99 lines)
+## Effects.cs (109 lines)
 - **EffectDef** (class, L8)
-- **Mods** (struct, L36): Add:40
-- **Effects** (class, L57): Get:63, Has:64, Load:68, Validate:87
+- **Mods** (struct, L41): Add:46
+- **Effects** (class, L66): Get:72, Has:73, Load:77, Validate:96
 
 ## Factions.cs (157 lines)
 - **CultureDef** (class, L6)
@@ -391,8 +391,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (568 lines)
 - **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:103, ContinueCampaign:116, OpenLab:129, QuickBattle:131, StartCampaignBattle:138, FinishCampaignBattle:148, CycleQuality:156, Update:160, Draw:190, Fade:223, CaptureShot:253, CampaignShots:275
 
-## SelfTest.cs (236 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:188, Lancer:196, Run:205, Scaled:207, MakeWanderer:210, Days:218, Ids:230, Check:232
+## SelfTest.cs (237 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:189, Lancer:197, Run:206, Scaled:208, MakeWanderer:211, Days:219, Ids:231, Check:233
 
 ## Settings.cs (76 lines)
 - **Difficulty** (enum, L5)
@@ -460,8 +460,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/CreatureTests.cs (577 lines)
 - **SelfTest** (class, L6): HoldoutTrace:11, Holdouts:23, GoblinBattle:91, WolfTrace:138, Wolves:156, WolfRiders:221, Trolls:243, TrollsAbroad:308, UndeadAbroad:338, PlayerCreatures:386, TrollTrace:458, Undead:483, UndeadTrace:542, GraveTrace:565
 
-## Tests/EffectTests.cs (117 lines)
-- **SelfTest** (class, L6): NoPassives:9, EffectsValidate:19, PassivesByTier:28, PassivesBite:45, AuraReachesCompanies:72, PassivesOnlyAdd:91
+## Tests/EffectTests.cs (182 lines)
+- **SelfTest** (class, L6): NoPassives:9, EffectsValidate:19, PassivesByTier:28, PassivesBite:49, SignaturesBite:76, AuraReachesCompanies:137, PassivesOnlyAdd:156
 
 ## Tests/MapTests.cs (199 lines)
 - **SelfTest** (class, L6): MapIndexMatches:10, RealmsFromData:32, ClimatesAndRidges:77, SevenRealms:105, RealmTempers:132

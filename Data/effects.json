@@ -27,6 +27,18 @@
       "footing": 0.5 },
     // Culture signatures (D4): a third passive for a culture's tier VII troops (BattleEffects.SignatureOf).
     { "id": "zeal", "name": "Zeal", "icon": "sun", "line": "Holy fire: companies of their side within 20 m fear little and take heart.",
-      "tags": ["holy"], "radius": 20, "shock": -0.6, "moralePerSec": 1.0 }
+      "tags": ["holy"], "radius": 20, "shock": -0.6, "moralePerSec": 1.0 },
+    { "id": "battle_fury", "name": "Battle fury", "icon": "fire", "line": "The more of them fall, the harder the rest strike; losses do not frighten them.",
+      "fury": 0.6 },
+    { "id": "testudo", "name": "Testudo", "icon": "shield", "line": "Halted under arrows, they raise shields all round: most arrows stop.",
+      "testudo": 0.5 },
+    { "id": "headsmen", "name": "Headsmen", "icon": "skull", "line": "Their blows fall twice as hard on officers, sergeants and heroes.",
+      "headsman": 1.0 },
+    { "id": "whirlwind", "name": "Whirlwind", "icon": "star", "line": "Every blow carries on into the man beside.",
+      "whirl": 0.5 },
+    { "id": "ghost_riders", "name": "Ghost riders", "icon": "horse", "line": "They shoot from the gallop as steadily as standing.",
+      "gallop": 1 },
+    { "id": "paid_in_full", "name": "Paid in full", "icon": "coin", "line": "They do not run while their side has lost less than half its men.",
+      "holdfast": 1 }
   ]
 }

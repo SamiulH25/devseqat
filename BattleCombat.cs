@@ -119,6 +119,13 @@ public partial class Battle
             return;
         }
 
+        // Testudo (D4): a halted company of shield men under arrows raises its shields all round.
+        if (ranged && t.Mods.Testudo > 0 && t.Type.HasShield && !t.IsPlayer && t.Vel.LengthSquared() < 1 && rng.NextSingle() < t.Mods.Testudo)
+        {
+            if (t.StuckArrows < 4) t.StuckArrows++;
+            Sound(Cue.Block, t.Pos);
+            return;
+        }
         var side = t.Squad?.Formation == Formation.Square && !t.Routing ? Side.Front : SideOf(a, t); // a square has no flank
         bool facing = side == Side.Front;
         if (ranged && t.Squad?.Formation == Formation.Loose && rng.NextSingle() < 0.3f) return; // open ranks: the arrow finds a gap
@@ -191,7 +198,9 @@ public partial class Battle
         if (ranged && t.Squad?.Formation == Formation.Square) officer *= 1.25f;                    // a packed square is an easy mark
         if (!ranged && a.Squad is { Formation: Formation.Wedge, Order: Order.Charge }) officer *= 1.15f; // a wedge drives in
         if (!ranged && a.Squad is { Broken: true, Swarm: false } && Ranked(a.Squad) && !Overwhelms(a.Squad)) officer *= BrokenBlow; // a crowd has no room to swing (round a beast it needs none)
-        float mult = officer * (1 + a.Mods.Damage) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
+        float fury = a.Mods.Fury > 0 && a.Squad is { StartCount: > 0 } fs ? a.Mods.Fury * (1 - fs.Alive / (float)fs.StartCount) : 0; // battle fury: the fewer, the fiercer
+        float headsman = !ranged && (t.IsLeader || t.Hero || t.Sergeant) ? a.Mods.Headsman : 0;                                    // headsmen seek the officers
+        float mult = officer * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1); // arrows pass between a skeleton's ribs
         if (t.Squad != null) t.Squad.HitsTaken++;
@@ -305,7 +314,7 @@ public partial class Battle
         {
             if (!u.Active) continue;
             float d = Vector2.Distance(u.Pos, t.Pos);
-            if (u.Team == t.Team) { if (t.IsLeader) u.Morale -= 16; else if (d < 8) u.Morale -= 3; }
+            if (u.Team == t.Team) { if (t.IsLeader) u.Morale -= 16; else if (d < 8 && u.Mods.Fury <= 0) u.Morale -= 3; } // battle fury: a friend's fall only angers
             else if (d < 10) u.Morale += killer.IsPlayer ? 6 : 2; // heroics inspire more
         }
         if (t.Type.Has("boss") && !BossDown[t.Team]) BossFalls(t);
@@ -332,7 +341,7 @@ public partial class Battle
         u.ActionTimer = 0.25f;
         float d = Vector2.Distance(u.Pos, at);
         var aim = at + (t?.Vel ?? Vector2.Zero) * (d / ArrowSpeed); // lead the target
-        aim += new Vector2(Gauss(), Gauss()) * d * 0.035f * spread * (u.Mounted && !(u.IsPlayer && Perk("HorseArcher")) ? 1.5f : 1) * Weather.Spread;
+        aim += new Vector2(Gauss(), Gauss()) * d * 0.035f * spread * (u.Mounted && !(u.IsPlayer && Perk("HorseArcher")) && u.Mods.Gallop <= 0 ? 1.5f : 1) * Weather.Spread; // ghost riders shoot from the gallop as if standing
         float time = MathF.Max(0.1f, Vector2.Distance(u.Pos, aim) / ArrowSpeed);
         var h = (aim - u.Pos) / time;
         float from = Terrain.Height(u.Pos) + 1.5f, land = Terrain.Height(aim) + (t?.Mounted == true ? 1.5f : 1.0f);

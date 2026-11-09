@@ -36,6 +36,7 @@ public static partial class SelfTest
         EffectsValidate();
         PassivesByTier();
         PassivesBite();
+        SignaturesBite();
         AuraReachesCompanies();
         PassivesOnlyAdd();
         Sprites();
