@@ -24,6 +24,7 @@ public static partial class SelfTest
         HoldFire();
         TroopTree();
         Sprites();
+        TroopVariety();
         BigBattle();
         SpearsStopHorse();
         CampaignMap();

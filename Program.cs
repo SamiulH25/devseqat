@@ -1,4 +1,10 @@
-﻿if (args.Contains("--write-controls"))
+﻿if (args.Contains("--sprites"))
+{
+    var rest = args.SkipWhile(a => a != "--sprites").Skip(1).ToArray();
+    Ironfield.SpriteDump.Run(rest.FirstOrDefault() ?? "sprites.png", rest.Skip(1).ToArray());
+    return;
+}
+if (args.Contains("--write-controls"))
 {
     Ironfield.Controls.WriteDefaults(Ironfield.Controls.FileName);
     Console.WriteLine("wrote " + Ironfield.Controls.FileName);

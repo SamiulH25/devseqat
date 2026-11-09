@@ -260,7 +260,7 @@ public sealed partial class Battle
 
     public Unit Spawn(UnitType t, int team, Squad? s, Vector2 pos)
     {
-        var u = new Unit { Type = t, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
+        var u = new Unit { Type = t, Index = Units.Count, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
             Palette = Options.Palette[Math.Clamp(team, 0, 1)] };
         if (t.Mount != null && !Options.Siege) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; } // assaults are fought on foot
         Units.Add(u);

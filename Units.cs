@@ -29,15 +29,18 @@ public sealed record Mount(string Id, string Name, float Hp, float Trot, float G
 
 /// What a troop wears and carries; every field names a sprite family in Art (e.g. Head "kettle" = "helm.kettle.f/s/b").
 /// Face is whose head it is ("man", or a creature's: "goblin" = "head.goblin.f/s/b").
+/// Visage is one man's own face (skin, hair, beard; see Variety), -1 for the troop's plain head. Drawing only.
 public sealed record Look(string Head, string Body, string Legs, string Feet, string Hands, string Shield, string Weapon,
-    bool Tabard, bool Plume, bool Cape, string Face = "man")
+    bool Tabard, bool Plume, bool Cape, string Face = "man", int Visage = -1)
 {
     /// "wolf" is a whole beast: the puppet draws it on four legs from the w* sprites, ignoring the rest of the look.
     public static readonly string[] Faces = { "man", "goblin", "wolf", "troll", "skull", "ghoul" };
     public bool Beast => Face == "wolf";
-    /// The sprite family of the bare head.
-    public string HeadKey => Face == "man" ? "head" : "head." + Face;
-    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen", "turban", "steppe" };
+    /// The sprite family of the bare head. A man's own visage is painted once, in the neutral palette ("head.v12.f/n").
+    public string HeadKey => Face != "man" ? "head." + Face : Visage >= 0 ? "head.v" + Visage : "head";
+    public bool NeutralHead => Face == "man" && Visage >= 0;
+    // "coif": a mail hood.
+    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen", "turban", "steppe", "coif" };
     // Goblin kit: "rags" (bare green arms), "hide" (bare green legs), "bare" feet, "claw" hands.
     // Undead kit: "bones" (a ribcage and bare bone), "shroud" (a ghoul's grave wrappings over grey skin), "robe" (a necromancer's), "bone" feet and hands.
     // The new realms (docs/WORLD.md W4): "lamellar" (rows of small plates), "deel" (a long wrapped steppe coat), "brigandine"
@@ -47,7 +50,7 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public static readonly string[] FeetKinds = { "boots", "sabatons", "bare", "bone" };
     public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw", "bone" };
     public static readonly string[] Shields = { "none", "round", "kite", "heater", "pavise" };
-    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff" };
+    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff", "mace" };
     public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
 }
 
