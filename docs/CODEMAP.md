@@ -89,8 +89,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Orders.cs (192 lines)
 - **BattleScreen** (class, L8): Targets:12, Issue:15, Send:26, GiveGoal:36, GoalCommand:38, Command:60, OrderKeys:111, PlantStakes:125, NextDivision:137, LineAt:147, Distribute:164, PreviewSlots:183
 
-## BattleScreen.Shots.cs (229 lines)
-- **BattleScreen** (class, L8): ShotScript:10, readonly:125, PoseSheet:135, Gallery:205
+## BattleScreen.Shots.cs (245 lines)
+- **BattleScreen** (class, L8): ShotScript:10, readonly:141, PoseSheet:151, Gallery:221
 
 ## BattleSiege.cs (162 lines)
 - **Battle** (class, L7): DeployDefenders:18, Via:48, MayCross:75, EnforceWall:82, Batter:95, SiegeDefend:121, SiegeAttack:144
@@ -344,15 +344,15 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Overflow.cs (46 lines)
 - **Overflow** (class, L8): Frame:19, Box:22, Text:25, Flush:38
 
-## Painter.cs (160 lines)
+## Painter.cs (162 lines)
 - **Pattern** (enum, L6)
 - **Mat** (class, L10): Mat:15, Flat:32
-- **Canvas** (class, L37): Canvas:43, In:45, Has:46, Set:47, Clear:48, Shade:49, Fill:52, Dome:63, Ellipse:66, Body:70, Rect:81, Columns:84, Area:97, Line:99, Border:110, Sq:119, readonly:120, Tone:122, Patterned:124, Render:137
+- **Canvas** (class, L37): Canvas:43, In:45, Has:46, Set:47, Clear:48, Shade:49, Fill:52, Dome:63, Ellipse:66, Body:70, Rect:81, Columns:84, Area:97, Line:99, Border:110, Sq:119, readonly:120, Tone:122, Patterned:124, Render:139
 
 ## PixelFont.cs (59 lines)
 - **PixelFont** (class, L7): PixelFont:26, Width:41, Draw:43, DrawRun:49
 
-## Program.cs (58 lines)
+## Program.cs (64 lines)
 
 ## Puppet.cs (694 lines)
 - **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Lean:62, Frame:69, Draw:93, Horse:181, Beast:249, WolfBody:259, Warg:288, BeastCorpse:306, DrawLooseHorse:318, DrawDeadHorse:327, RotY:363, Arm:370, Span:381, Pose:390, Key:392, Lerp:394, static:398, PoseOf:415, Fallen:490, Corpse:531, Particle:550, Banner:563, Decal:608, Quad:620, HeadBill:630, Bill:639, Axial:650, Long:662, Plane:675, Flat:686
@@ -382,8 +382,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Sky.cs (76 lines)
 - **Sky** (class, L7): Sky:28, Set:36
 
-## SpriteSheet.cs (1007 lines)
-- **SpriteSheet** (class, L12): SpriteSheet:27, Add:36, Pack:41, Side:66, InEl:115, Head:117, Visages:120, Head:134, GoblinHead:177, TrollHead:207, SkullHead:237, GhoulHead:263, Helm:288, Torso:414, Ribs:479, Tabard:494, Emblem:510, Cape:550, Sleeve:558, Leg:583, Boot:602, Hand:620, Shield:628, Weapon:671, Blade:750, Polearm:761, Bow:776, Arrow:790, Quiver:799, Plume:808, Flag:816, Blood:825, Splat:834, Horse:847, Wolf:917, BodyShape:958, HorseGear:961, Saddle:995
+## SpriteDump.cs (77 lines)
+- **SpriteDump** (class, L9): Run:13, Png:44, Crc:71
+
+## SpriteSheet.cs (1135 lines)
+- **SpriteSheet** (class, L12): SpriteSheet:27, Add:36, Pack:41, Side:66, InEl:115, Head:117, Visages:120, Head:134, GoblinHead:177, TrollHead:207, SkullHead:237, GhoulHead:263, Helm:288, Torso:414, PlateTorso:568, PixelMap:571, Ribs:587, Tabard:602, Emblem:619, Cape:659, Sleeve:667, Leg:703, Boot:730, Hand:748, Shield:756, Weapon:799, Blade:878, Polearm:889, Bow:904, Arrow:918, Quiver:927, Plume:936, Flag:944, Blood:953, Splat:962, Horse:975, Wolf:1045, BodyShape:1086, HorseGear:1089, Saddle:1123
 
 ## Squad.cs (163 lines)
 - **Order** (enum, L5)

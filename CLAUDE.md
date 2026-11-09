@@ -34,6 +34,7 @@ dotnet run -- --balance 4                                # N headless campaigns+
 dotnet run -c Release -- --pacing 8                      # stand-in captain only: career stage days vs targets (~10 min)
 dotnet run -- --replay [file]                            # replay replays/last-battle.json, check same outcome
 dotnet run -- --write-controls                           # write default controls.json
+dotnet run -c Release --no-build -- --sprites out.png torso.plate helm   # headless: chosen sprite parts 6x on one PNG (pixel-art check)
 dotnet run -c Release -- --bench 1500                    # headless 1500-a-side battle: ms per tick by stage (3000 men ~3.6 ms)
 dotnet run -c Release -- --realms 8                      # snowball guard: N campaigns x 240 days, realm shares -> balance/realms.csv (~3 min)
 dotnet run -c Release -- --grounds 24                    # same army both sides on each field layout, ground chosen by each in turn -> balance/grounds.csv (~2 min)
@@ -171,7 +172,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Keys / rebinding | `Controls.cs` (`Act` enum + `Defaults` dict) |
 | 3D meshes (terrain, trees, towns, grass) | `World.cs` |
 | Shader pipeline / GLSL loader | `Shading.cs`, `GlslEffect.cs`, `Shaders/*.glsl`, `Sky.cs` (light by hour/weather) |
-| Unit drawing (puppets of part sprites) | `Puppet.cs` (poses, skeleton), `SpriteSheet.cs` (paints parts), `Painter.cs` (materials), `Art.cs` (atlas) |
+| Unit drawing (puppets of part sprites) | `Puppet.cs` (poses, skeleton), `SpriteSheet.cs` (paints parts; the plate torso is a hand-made pixel map, `PlateFront`/`PixelMap`), `Painter.cs` (materials, surface patterns), `Art.cs` (atlas), `SpriteDump.cs` (`--sprites`) |
 | Per-man looks: two men of one troop look different (face = skin x hair x beard, painted once as `head.v{n}.f/n`; kin helms and one-handed weapons; height). Drawing only, seeded by Soldier id or place in the battle | `Variety.cs` (`Of`, `Stature`, `Seed`); read in `Puppet.Draw`; `Look.Visage`; shots `gallery-variety*.png` |
 | Colours, heraldry, UI tokens | `Style.cs` |
 | Motion: easing curves, per-man phase / UI animation (`Ui.Anim`, `AnimLag`, `Since`, `Count`; `Ui.Now`, `Ui.Instant` freezes it for shots) / soldier and horse poses (`PoseOf`, `Fallen`, `Banner`) | `Ease.cs` / `Ui.cs` / `Puppet.cs`; rules in docs/DESIGN.md section 5 |

@@ -124,8 +124,10 @@ public sealed class Canvas
     static int Patterned(Pattern p, int tone, int x, int y) => p switch
     {
         Pattern.Flat => 2,
-        Pattern.Mail => (x + y) % 2 == 0 ? tone - 1 : tone,
-        Pattern.Quilt => (x + y) % 4 == 0 || (x - y + 400) % 4 == 0 ? tone - 1 : tone,
+        // Rows of rings: a glint on every other ring, staggered row on row, and a dark seam between the rows.
+        Pattern.Mail => y % 2 == 1 ? tone - 1 : (x + y / 2) % 2 == 0 ? tone + 1 : tone,
+        // Quilted in long channels, stitched across every few rows.
+        Pattern.Quilt => x % 3 == 0 || y % 5 == 0 ? tone - 1 : tone,
         Pattern.Plate => Math.Clamp((int)MathF.Round((tone - 2) * 1.5f + 2), 0, 4),
         Pattern.Wood => y % 5 == 0 && x % 2 == 0 ? tone - 1 : tone,
         Pattern.Cloth => x % 6 == 3 && y % 3 != 0 ? tone - 1 : tone,
