@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ironfield: lead a free company in person</title>
+<meta name="description" content="Ironfield is a 2.5D medieval battle and campaign game. Fight in the front rank, command 3,000 men from above, and lead a company whose named men you will remember.">
+<meta property="og:title" content="Ironfield">
+<meta property="og:description" content="Every man you lose was someone you knew, and every honour on the banner is one you earned.">
+<meta property="og:image" content="images/field-horses.jpg">
+<meta name="theme-color" content="#0f1117">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cpath d='M2 1h12v8l-2 4-4 2-4-2-2-4z' fill='%23d2a836' stroke='%232c242c'/%3E%3Cpath d='M8 4l3 4-3 4-3-4z' fill='%232c242c'/%3E%3C/svg%3E">
+<style>
+:root{
+  --iron:#1e222c; --iron-dark:#0f1117; --night:#0c1020; --rivet:#787060;
+  --gilt:#d6ac46; --gilt-dark:#785822; --accent:#f0c83c;
+  --parchment:#e2d2ac; --text:#eeece4; --dim:#aaaeb6; --prose:#cbc6b6;
+  --ok:#6ec468; --warn:#ecba3c; --bad:#e2483c; --ember:#ec7830;
+  --friend:#70a0ff; --foe:#ec5846; --edge:rgba(255,255,255,.16);
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+}
+html.flame{ --gilt:#a274ff; --gilt-dark:#4a2c8c; --accent:#c9a2ff; --parchment:#d9c8f2; --ember:#b05cff; --iron:#1d1828; --iron-dark:#0c0912; }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;background:var(--iron-dark)}
+body{margin:0;background:
+  radial-gradient(1200px 600px at 50% 0,rgba(64,44,70,.25),transparent 70%),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.012) 0 1px,transparent 1px 3px),
+  var(--iron-dark);
+  color:var(--prose);font:18px/1.62 var(--serif);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img,canvas{display:block;max-width:100%}
+a{color:var(--gilt)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.pix{image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* pixel font (the game's own 5x7 glyphs, drawn as SVG) */
+.px{height:1em;width:auto;shape-rendering:crispEdges;fill:currentColor;vertical-align:-.12em;overflow:visible}
+.px .sh{fill:#000;opacity:.75}
+.px .g1{fill:#f8e08a}.px .g2{fill:var(--gilt)}.px .g3{fill:#a07a2c}
+html.flame .px .g1{fill:#e2c8ff}html.flame .px .g3{fill:#5a34a8}
+.pxw{display:inline-block;margin-right:.55em;white-space:nowrap}
+.pxw:last-child{margin-right:0}
+
+.label{font:600 11.5px/1.3 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.gold{color:var(--gilt)}
+
+/* the iron plate */
+.plate{position:relative;background:linear-gradient(var(--iron),var(--iron-dark));border:1px solid #000;
+  box-shadow:inset 0 0 0 1px var(--edge),inset 0 2px 0 -1px rgba(255,255,255,.18),0 10px 30px rgba(0,0,0,.55)}
+.plate.main{box-shadow:inset 0 0 0 1px var(--gilt-dark),inset 0 2px 0 -1px rgba(255,255,255,.2),0 10px 30px rgba(0,0,0,.55)}
+.rivet{position:absolute;width:11px;height:11px;padding:3px;border:0;background:none;z-index:2}
+.rivet::before{content:"";display:block;width:5px;height:5px;background:var(--rivet);box-shadow:inset 1px 1px 0 rgba(255,255,255,.35),inset -1px -1px 0 rgba(0,0,0,.5)}
+.rivet.tl{top:3px;left:3px}.rivet.tr{top:3px;right:3px}.rivet.bl{bottom:3px;left:3px}.rivet.br{bottom:3px;right:3px}
+.rivet.gone::before{background:#07080b;box-shadow:inset 1px 1px 0 #000}
+
+.btn{display:inline-flex;align-items:center;gap:.6em;padding:.85em 1.25em;text-decoration:none;
+  font:700 13px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--text);
+  background:linear-gradient(var(--iron),var(--iron-dark));border:1px solid #000;
+  box-shadow:inset 0 0 0 1px var(--edge),inset 0 2px 0 -1px rgba(255,255,255,.2),0 4px 0 rgba(0,0,0,.5);
+  transition:transform .12s,background .12s,color .12s}
+.btn:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1px var(--gilt),0 6px 0 rgba(0,0,0,.5)}
+.btn:active{transform:translateY(2px);box-shadow:inset 0 0 0 1px var(--gilt),0 1px 0 rgba(0,0,0,.5)}
+.btn.go{color:#1a1408;background:linear-gradient(#f4d672,var(--gilt));box-shadow:inset 0 0 0 1px #fff3,inset 0 -3px 0 var(--gilt-dark),0 4px 0 rgba(0,0,0,.5)}
+html.flame .btn.go{background:linear-gradient(#d9c0ff,var(--gilt))}
+.btn.sm{padding:.6em .8em;font-size:11px}
+.btn kbd{font:inherit;opacity:.6}
+
+/* HUD */
+.hud{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.mark{display:flex;align-items:center;gap:10px;color:var(--gilt);font-size:15px;text-decoration:none}
+.mark canvas{width:24px}
+.tally{display:flex;align-items:center;gap:10px;padding:7px 12px;background:linear-gradient(rgba(30,34,44,.9),rgba(15,17,23,.9));backdrop-filter:blur(4px)}
+.tally canvas{width:18px}
+.tally b{font:700 15px/1 var(--mono);min-width:3ch;text-align:center}
+#nf{color:var(--friend)}#ne{color:var(--foe)}
+.bar{position:relative;width:min(26vw,300px);height:8px;background:var(--foe);box-shadow:0 0 0 1px #000}
+.bar i{position:absolute;inset:0 auto 0 0;width:50%;background:var(--friend);transition:width .4s}
+.bar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:#fff}
+#clock{position:absolute;left:50%;top:-17px;transform:translateX(-50%);font:600 10px/1 var(--mono);color:var(--dim);letter-spacing:.1em}
+.tally{padding-top:18px}
+.hudr{display:flex;gap:8px;align-items:center}
+#honb b{color:var(--gilt)}
+
+/* the road (section rail) */
+.rail{position:fixed;left:22px;top:50%;transform:translateY(-50%);z-index:40;height:min(52vh,420px);width:20px}
+.rail::before{content:"";position:absolute;left:9px;top:0;bottom:0;border-left:2px dotted rgba(214,172,70,.35)}
+.rail a{position:absolute;left:5px;width:10px;height:10px;margin-top:-5px;background:var(--iron);border:1px solid var(--rivet);transform:rotate(45deg);transition:background .2s}
+.rail a:hover,.rail a.on{background:var(--gilt);border-color:#000}
+.rail a span{position:absolute;left:22px;top:-4px;transform:rotate(-45deg);transform-origin:0 50%;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;background:#000c;padding:4px 7px}
+.rail a:hover span,.rail a:focus-visible span{opacity:1}
+#you{position:absolute;left:0;width:20px;margin-top:-22px;transition:top .15s linear;pointer-events:none}
+@media (max-width:1240px){.rail{display:none}}
+
+/* feed (top-left, like the battle feed) */
+#feed{position:fixed;left:14px;bottom:14px;z-index:45;display:flex;flex-direction:column-reverse;gap:4px;pointer-events:none;max-width:min(90vw,560px)}
+#feed div{font:600 12px/1.35 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--text);background:rgba(8,9,13,.78);padding:5px 9px;border-left:3px solid var(--gilt);animation:feed 6.5s forwards}
+#feed div.bad{border-color:var(--bad)}#feed div.ok{border-color:var(--ok)}
+@keyframes feed{0%{opacity:0;transform:translateX(-12px)}6%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0}}
+
+/* hero */
+#top{position:relative;height:100vh;height:100svh;min-height:600px;overflow:hidden;border-bottom:1px solid #000;box-shadow:0 1px 0 var(--gilt-dark);background:#365e9a}
+#field{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.herotext{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:15vh 20px 0;text-align:center;pointer-events:none}
+.herotext h1{margin:0;font-size:min(11.5vw,19vh,150px);line-height:1;color:var(--gilt);filter:drop-shadow(0 6px 0 rgba(0,0,0,.28))}
+.herotext p{margin:1.5em auto 0;max-width:33ch;font:italic clamp(19px,2.5vw,29px)/1.35 var(--serif);color:#fff;text-shadow:0 1px 0 #000,0 0 18px rgba(0,0,0,.65),0 0 3px #000}
+.cta{margin-top:1.7em;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
+.keys{position:absolute;right:12px;bottom:10px;display:flex;gap:6px;z-index:3}
+.keys button{background:rgba(8,9,13,.72);border:0;padding:5px 8px;color:var(--dim)}
+.keys button:hover{color:var(--gilt)}
+#tip{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);width:min(92vw,620px);padding:14px 18px 16px;z-index:4;text-align:left}
+#tip[hidden]{display:none}
+#tip p{margin:.4em 0 .9em;font:600 13px/1.6 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text)}
+
+/* sections */
+main section{position:relative;padding:clamp(72px,11vw,140px) 20px}
+.wrap{max-width:1120px;margin:0 auto}
+.lede{margin:0 0 .7em;font:400 clamp(30px,4.6vw,58px)/1.12 var(--serif);color:var(--parchment);letter-spacing:-.01em;max-width:19ch;text-wrap:balance}
+.lede em{color:var(--gilt);font-style:italic}
+.sub{max-width:56ch;margin:0 0 2.2em;font-size:clamp(17px,1.5vw,20px)}
+.sub b,.beat b{color:var(--text);font-weight:600}
+.rule{display:flex;align-items:center;gap:14px;max-width:1120px;margin:0 auto;padding:0 20px;color:var(--gilt-dark)}
+.rule::before,.rule::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gilt-dark))}
+.rule::after{transform:scaleX(-1)}
+.rule i{width:9px;height:9px;background:var(--gilt);transform:rotate(45deg);box-shadow:0 0 0 1px #000}
+
+html.js .rv{opacity:0;transform:translateY(22px);transition:opacity .7s,transform .7s cubic-bezier(.2,.7,.2,1)}
+html.js .rv.in{opacity:1;transform:none}
+
+/* screenshots */
+.shot{display:block;width:100%;padding:7px;border:1px solid #000;text-align:left;
+  background:linear-gradient(var(--iron),var(--iron-dark));box-shadow:inset 0 0 0 1px var(--edge),0 14px 40px rgba(0,0,0,.6);transition:transform .25s,box-shadow .25s;position:relative}
+.shot img{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;box-shadow:0 0 0 1px #000}
+.shot:hover{transform:translateY(-4px) rotate(-.25deg);box-shadow:inset 0 0 0 1px var(--gilt),0 22px 50px rgba(0,0,0,.7)}
+.shot figcaption,.shot .cap{display:block;padding:8px 4px 2px}
+.beat{display:grid;grid-template-columns:1.45fr 1fr;gap:clamp(24px,4vw,60px);align-items:center;margin-top:clamp(40px,7vw,96px)}
+.beat:nth-of-type(even){grid-template-columns:1fr 1.45fr}
+.beat:nth-of-type(even) .shot{order:2}
+.beat p{margin:0;font-size:clamp(18px,1.6vw,22px)}
+.beat p+p{margin-top:.9em;color:var(--dim);font-size:16px}
+@media (max-width:820px){.beat,.beat:nth-of-type(even){grid-template-columns:1fr}.beat:nth-of-type(even) .shot{order:0}}
+
+/* company */
+#company{background:linear-gradient(transparent,rgba(64,44,70,.2) 40%,transparent)}
+.muster{padding:26px clamp(16px,3vw,34px) 28px}
+.mrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.mrow input{flex:1 1 240px;min-width:0;padding:.75em .9em;font:600 15px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--gilt);background:#07080b;border:1px solid #000;box-shadow:inset 0 0 0 1px var(--edge)}
+.cgrid{display:grid;grid-template-columns:190px 1fr 1fr;gap:clamp(18px,3vw,36px);margin-top:26px}
+@media (max-width:860px){.cgrid{grid-template-columns:1fr}}
+.banner{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.banner canvas{width:168px;animation:sway 5s ease-in-out infinite;transform-origin:0 0}
+@keyframes sway{50%{transform:skewY(2.2deg) scaleX(.985)}}
+.hon{font:700 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--gilt)}
+.hon s{color:var(--dim);text-decoration-color:var(--bad)}
+.hon small{display:block;color:var(--dim);font-weight:500;letter-spacing:.06em;text-transform:none;font-size:11px}
+.roll{list-style:none;margin:8px 0 0;padding:0}
+.roll li{padding:9px 0;border-top:1px solid rgba(255,255,255,.08);animation:rise .5s both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.roll b{color:var(--text);font-weight:600;font-size:18px}
+.roll b::before{content:"";display:inline-block;width:7px;height:7px;background:var(--gilt);transform:rotate(45deg);margin:0 10px 3px 2px}
+.roll small{display:block;color:var(--dim);font-size:14.5px;line-height:1.4;padding-left:21px}
+.fallen b{color:var(--parchment);font-style:italic}.fallen b::before{background:none;box-shadow:inset 0 0 0 1px var(--dim)}
+.empty{color:var(--dim);font-style:italic;font-size:15.5px;padding:9px 0}
+#chron{margin:22px 0 0;padding:12px 14px;background:#07080b;box-shadow:inset 0 0 0 1px var(--edge);font:500 12px/1.75 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--dim);min-height:5.6em;max-height:11em;overflow:auto}
+#chron div:first-child{color:var(--text)}
+#chron .w{color:var(--ok)}#chron .l{color:var(--bad)}
+.hit{animation:hit .35s}
+@keyframes hit{20%{transform:translate(-5px,3px)}45%{transform:translate(4px,-3px)}70%{transform:translate(-2px,1px)}}
+
+/* realms */
+.shields{display:flex;gap:clamp(6px,1.4vw,16px);flex-wrap:wrap;margin:8px 0 22px}
+.shields button{flex:0 0 auto;padding:12px 10px 8px;background:none;border:1px solid transparent;display:flex;flex-direction:column;align-items:center;gap:8px;transition:transform .15s}
+.shields canvas{width:clamp(48px,7.4vw,84px);filter:drop-shadow(0 6px 0 rgba(0,0,0,.4))}
+.shields button:hover{transform:translateY(-5px)}
+.shields button[aria-pressed=true]{border-color:#000;background:linear-gradient(var(--iron),var(--iron-dark));box-shadow:inset 0 0 0 1px var(--rc,var(--gilt))}
+.shields button[aria-pressed=true] canvas{animation:swell .4s}
+@keyframes swell{40%{transform:scale(1.14)}}
+.shields .label{font-size:9.5px;max-width:11ch;text-align:center}
+.realm{display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(20px,4vw,48px);padding:28px clamp(18px,3vw,36px)}
+@media (max-width:820px){.realm{grid-template-columns:1fr}}
+.realm h3{margin:0 0 .15em;font:400 clamp(26px,3.2vw,38px)/1.1 var(--serif);color:var(--rc,var(--parchment))}
+.realm p{margin:.5em 0}
+.realm i{color:var(--parchment)}
+.chip{display:inline-block;padding:3px 8px;margin:6px 6px 0 0;font:700 10.5px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;border:1px solid currentColor}
+.chip.war{color:var(--bad)}.chip.peace{color:var(--ok)}.chip.you{color:var(--gilt)}
+.lines{margin:0;display:grid;grid-template-columns:auto 1fr;gap:7px 16px;align-content:start}
+.lines dt{font:700 10.5px/1.9 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.lines dd{margin:0;color:var(--text)}
+.lines dd small{color:var(--dim)}
+
+/* ranks */
+.tabs{display:flex;gap:0;flex-wrap:wrap;margin-bottom:6px}
+.tabs button{padding:.7em 1.1em;font:700 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;background:var(--iron-dark);border:1px solid #000;color:var(--dim);box-shadow:inset 0 0 0 1px var(--edge)}
+.tabs button[aria-pressed=true]{color:var(--gilt);box-shadow:inset 0 0 0 1px var(--gilt-dark),inset 0 -3px 0 var(--gilt)}
+.ladder{display:flex;align-items:flex-end;gap:2px;overflow-x:auto;padding:26px 6px 0;background:linear-gradient(transparent 55%,rgba(110,150,80,.16) 55%,rgba(110,150,80,.05));border-bottom:2px solid rgba(110,150,80,.35)}
+.ladder button{flex:1 0 auto;background:none;border:0;padding:0 2px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.5;transition:opacity .2s,transform .2s;transform-origin:50% 100%}
+.ladder button:hover{opacity:.85}
+.ladder button[aria-pressed=true]{opacity:1;transform:scale(1.12)}
+.ladder button[aria-pressed=true] .label{color:var(--gilt)}
+.ladder canvas{height:clamp(120px,17vw,190px);width:auto;max-width:none}
+.tier{display:flex;gap:18px 40px;flex-wrap:wrap;align-items:baseline;margin-top:22px}
+.tier h3{margin:0;font:400 clamp(24px,3vw,36px)/1.1 var(--serif);color:var(--parchment)}
+.tier p{margin:0;flex:1 1 320px}
+
+/* world */
+.mosaic{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:30px}
+.mosaic .shot{grid-column:span 2}
+.mosaic .shot.big{grid-column:span 3}
+@media (max-width:820px){.mosaic{grid-template-columns:1fr 1fr}.mosaic .shot,.mosaic .shot.big{grid-column:span 1}}
+@media (max-width:520px){.mosaic{grid-template-columns:1fr}}
+.career{display:flex;flex-wrap:wrap;gap:0;margin:34px 0 0;padding:0;list-style:none;counter-reset:r}
+.career li{flex:1 1 130px;padding:14px 10px 12px;border-top:2px solid var(--gilt-dark);position:relative;font:700 11.5px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.career li::before{content:"";position:absolute;top:-6px;left:0;width:9px;height:9px;background:var(--iron-dark);border:1px solid var(--gilt);transform:rotate(45deg)}
+.career li:last-child{color:var(--gilt)}.career li:last-child::before{background:var(--gilt)}
+.career small{display:block;font:400 14px/1.4 var(--serif);letter-spacing:0;text-transform:none;color:var(--prose);margin-top:5px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:26px 18px;margin-top:clamp(40px,6vw,80px)}
+.stats div{font-size:clamp(34px,4.6vw,54px);color:var(--gilt);line-height:1}
+.stats span{display:block;margin-top:12px}
+.ticker{margin-top:34px;padding:14px 18px;overflow:hidden}
+.ticker div{font:600 12.5px/1.9 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ticker div:first-child{color:var(--text);animation:rise .5s both}
+.ticker div b{color:var(--gilt);font-weight:600;margin-right:1.2em}
+
+/* camp */
+.term{padding:0;overflow:hidden}
+.term pre{margin:0;padding:16px 18px 6px;height:250px;overflow:auto;font:500 13px/1.6 var(--mono);color:#b9c4b0;white-space:pre-wrap}
+.term pre .o{color:var(--ok)}.term pre .g{color:var(--gilt)}.term pre .d{color:#6f7780}
+.term form{display:flex;align-items:center;gap:8px;padding:8px 18px 14px;font:500 13px/1.6 var(--mono);color:#6f7780}
+.term input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit;caret-color:var(--gilt)}
+.camp{display:grid;grid-template-columns:1fr 1.1fr;gap:clamp(24px,4vw,56px);align-items:start}
+@media (max-width:820px){.camp{grid-template-columns:1fr}}
+footer{padding:36px 20px 60px;text-align:center}
+footer p{margin:.5em 0}
+
+/* dialogs */
+dialog{color:var(--prose);padding:0;border:0;background:none;max-width:min(94vw,1180px);max-height:92vh}
+dialog::backdrop{background:rgba(4,5,8,.82)}
+#lb .plate{padding:10px}
+#lb img{max-height:78vh;width:auto;margin:0 auto}
+#lb p{margin:10px 6px 4px}
+#help .plate{padding:26px clamp(18px,3vw,34px);width:min(94vw,720px);max-height:88vh;overflow:auto}
+#help h2{margin:0 0 14px;font-size:22px;color:var(--gilt)}
+#help ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 26px}
+@media (max-width:600px){#help ul{grid-template-columns:1fr}}
+#help li{padding:9px 0;border-top:1px solid rgba(255,255,255,.08);font-size:15px;line-height:1.4;color:var(--dim)}
+#help li b{display:block;font:700 11.5px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#5d626b}
+#help li.got b{color:var(--gilt)}#help li.got{color:var(--prose)}
+#help .x{position:absolute;right:16px;top:14px}
+
+#fx{position:fixed;inset:0;width:100%;height:100%;z-index:60;pointer-events:none}
+html.flame #top::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 120%,rgba(160,90,255,.35),transparent 60%);pointer-events:none}
+@media (max-width:700px){.tally b,.tally canvas,.mark .pxw{display:none}.bar{width:30vw}#hornb{display:none}.hud{padding:6px 8px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js')</script>
+
+<header class="hud">
+  <a class="mark" href="#top" aria-label="Ironfield, back to the top"><canvas id="markshield" class="pix" width="18" height="20"></canvas><span data-px>IRONFIELD</span></a>
+  <div class="tally plate" title="Your company against the host. Time on the field.">
+    <canvas id="hs0" class="pix" width="18" height="20"></canvas><b id="nf">755</b>
+    <div class="bar"><i id="barf"></i><span id="clock">0:00</span></div>
+    <b id="ne">760</b><canvas id="hs1" class="pix" width="18" height="20"></canvas>
+  </div>
+  <div class="hudr">
+    <button class="btn sm" id="hornb" title="Sound is made in code, like the game's">HORN</button>
+    <button class="btn sm" id="honb" title="Honours sewn on your banner (F1)">HONOURS <b id="honn">0</b>/10</button>
+  </div>
+</header>
+
+<nav class="rail" aria-label="The road">
+  <canvas id="you" class="pix" width="10" height="12"></canvas>
+  <a href="#top"><span class="label">The field</span></a>
+  <a href="#fight"><span class="label">The front rank</span></a>
+  <a href="#company"><span class="label">Your company</span></a>
+  <a href="#realms"><span class="label">Seven realms</span></a>
+  <a href="#ranks"><span class="label">The ranks</span></a>
+  <a href="#world"><span class="label">The world</span></a>
+  <a href="#camp"><span class="label">The camp</span></a>
+</nav>
+
+<div id="feed" aria-live="polite"></div>
+
+<main>
+<section id="top" style="padding:0">
+  <canvas id="field" aria-label="A battle line drawn in code: your company in the foreground, the enemy host across the field."></canvas>
+  <div class="herotext">
+    <h1 data-px data-gild>IRONFIELD</h1>
+    <p>Every man you lose was someone you knew, and every honour on the banner is one you earned.</p>
+    <div class="cta">
+      <a class="btn go" href="#company">Muster your company</a>
+      <a class="btn" href="#camp">Get the game</a>
+    </div>
+  </div>
+  <div id="tip" class="plate main" hidden>
+    <span class="label gold">Tip</span>
+    <p id="tiptext"></p>
+    <button class="btn sm" id="tipok">Got it <kbd>(Enter)</kbd></button>
+  </div>
+  <div class="keys"><button class="label" id="f1b">F1 Keys</button><button class="label" id="hourb" title="Hour of the day">Day</button></div>
+</section>
+
+<section id="fight">
+  <div class="wrap">
+    <h2 class="lede rv">You fight in the front rank. Then you rise above the field and <em>command it.</em></h2>
+    <p class="sub rv">Ironfield is a medieval battle and campaign game where the general is also a soldier. You lead a free company through a war of seven realms, and you stand in the line with it.</p>
+
+    <figure class="beat rv" style="margin-inline:0">
+      <button class="shot" data-cap="Field view. On horseback, before the lines meet."><img src="images/field-horses.jpg" width="1280" height="720" alt="Seen from the saddle behind a line of blue shieldmen, the red host across the field."></button>
+      <figcaption><p><b>Blows have a direction, and so do parries.</b> Swing from the side your enemy has left open. Match his cut to turn it. Couch a lance at the gallop and feel the camera kick when it lands.</p><p>When a named man goes down, stand over him and pull him out alive.</p></figcaption>
+    </figure>
+    <figure class="beat rv" style="margin-inline:0">
+      <button class="shot" data-cap="Command view. About 750 men a side, divisions on the right."><img loading="lazy" src="images/landscape.jpg" width="1280" height="720" alt="The battle from above with stacked company flags."></button>
+      <figcaption><p><b>Tab lifts you over the field and slows time.</b> Up to 3,000 men stand on it at once. Hand a wing to a sergeant and give him a goal: hold, flank, screen, harass. He fights it in his own temper.</p><p>Orders travel by courier. A courier can be cut down.</p></figcaption>
+    </figure>
+    <figure class="beat rv" style="margin-inline:0">
+      <button class="shot" data-cap="Ground map (M). Every kind of ground in its colour, with height lines."><img loading="lazy" src="images/ground-map.jpg" width="1280" height="720" alt="The ground map overlay showing woods, fens and height lines."></button>
+      <figcaption><p><b>Ground decides battles.</b> Ridges, woods, fens, river lines, villages and hedgerows. A wood hides men and halves a horse's pace. A crest hides what waits behind it.</p><p>The enemy reads the field too. He will take the hill if you do not.</p></figcaption>
+    </figure>
+  </div>
+</section>
+
+<div class="rule" aria-hidden="true"><i></i></div>
+
+<section id="company">
+  <div class="wrap">
+    <h2 class="lede rv">The company is <em>your legacy.</em></h2>
+    <p class="sub rv">Each company keeps a roll of named men. They earn their names in battle: first over a wall, a horseman brought down, standing when half the company fell. Those you lose are kept for ever. <b>Raise a company here and see how long you can keep them.</b></p>
+
+    <div class="plate main muster rv" id="muster">
+      <form class="mrow" id="mform">
+        <label class="sr" for="cname">Company name</label>
+        <input id="cname" maxlength="28" autocomplete="off" spellcheck="false" placeholder="Name your company">
+        <button class="btn go" id="mbtn" type="submit">Muster</button>
+        <button class="btn" id="fbtn" type="button" hidden>Fight a battle</button>
+        <button class="btn sm" id="dbtn" type="button" hidden>Disband</button>
+      </form>
+      <div class="cgrid" id="cgrid" hidden>
+        <div class="banner"><canvas id="cbanner" class="pix" width="28" height="40"></canvas><div class="hon" id="hon"></div></div>
+        <div><span class="label gold">The roll</span><ul class="roll" id="roll"></ul></div>
+        <div><span class="label">The fallen</span><ul class="roll fallen" id="fallen"></ul></div>
+      </div>
+      <div id="chron" hidden></div>
+    </div>
+  </div>
+</section>
+
+<div class="rule" aria-hidden="true"><i></i></div>
+
+<section id="realms">
+  <div class="wrap">
+    <h2 class="lede rv">Seven realms are at war. <em>Choose who you ride for.</em></h2>
+    <p class="sub rv">Each has its own heraldry, its own temper and four lines of troops in its own kit. Pick a shield. This page will wear its colours.</p>
+    <div class="shields rv" id="shields" role="group" aria-label="Realms"></div>
+    <div class="plate realm rv" id="realm"></div>
+  </div>
+</section>
+
+<section id="ranks" style="padding-top:0">
+  <div class="wrap">
+    <h2 class="lede rv">A man's worth <em>is visible.</em></h2>
+    <p class="sub rv">Men are promoted one at a time. Each step up adds metal, then heraldry, then a cape and a plume, so a veteran company looks hard-won from across the field.</p>
+    <div class="rv">
+      <div class="tabs" id="roles" role="group" aria-label="Line"></div>
+      <div class="ladder" id="ladder"></div>
+      <div class="tier"><h3 id="tname"></h3><p id="tdesc"></p></div>
+    </div>
+  </div>
+</section>
+
+<div class="rule" aria-hidden="true"><i></i></div>
+
+<section id="world">
+  <div class="wrap">
+    <h2 class="lede rv">The world runs <em>without you.</em></h2>
+    <p class="sub rv">Lords recruit, patrol, besiege and hold grudges. Councils vote. Winter doubles the rations. Brigands crown kings, goblins dig in, and after a great battle the dead do not always stay where they fell.</p>
+
+    <div class="plate ticker rv" id="ticker" aria-hidden="true"></div>
+
+    <div class="mosaic">
+      <button class="shot big rv" data-cap="The campaign map. 115 provinces, about 930 km across."><img loading="lazy" src="images/campaign-map.jpg" width="1280" height="720" alt="The campaign map with towns, roads and parties."><span class="cap label">The map</span></button>
+      <button class="shot big rv" data-cap="The realm map (M). Seven realms and their borders."><img loading="lazy" src="images/campaign-atlas.jpg" width="1280" height="720" alt="The realm map in seven colours."><span class="cap label">The realms</span></button>
+      <button class="shot rv" data-cap="A siege assault at night. Climb at the ladders or batter the gate."><img loading="lazy" src="images/campaign-siege.jpg" width="1280" height="720" alt="An assault on a town wall at night."><span class="cap label">Sieges</span></button>
+      <button class="shot rv" data-cap="Winter. Snow on the map; the march slows and rations double."><img loading="lazy" src="images/campaign-winter.jpg" width="1280" height="720" alt="The campaign map under snow."><span class="cap label">Winter</span></button>
+      <button class="shot rv" data-cap="Creatures. Trolls, goblins and wolves fight by their own rules."><img loading="lazy" src="images/gallery-troll.jpg" width="1280" height="720" alt="A troll among goblins and wolves."><span class="cap label">Worse things</span></button>
+      <button class="shot rv" data-cap="Events. An illustrated scene with choices, and consequences weeks later."><img loading="lazy" src="images/campaign-event.jpg" width="1280" height="720" alt="An illustrated event dialog."><span class="cap label">Events</span></button>
+      <button class="shot rv" data-cap="The captain sheet (K). Ten skills that rise by doing what they name."><img loading="lazy" src="images/campaign-skills.jpg" width="1280" height="720" alt="The captain sheet with the skill tree."><span class="cap label">Your captain</span></button>
+      <button class="shot rv" data-cap="After the battle. The tally, the spoils, and the named men first."><img loading="lazy" src="images/campaign-results.jpg" width="1280" height="720" alt="The battle report after a victory."><span class="cap label">The reckoning</span></button>
+    </div>
+
+    <ol class="career rv" aria-label="The career">
+      <li>Free Company<small>A hired sword with a contract.</small></li>
+      <li>Sworn Sword<small>A month in one realm's service.</small></li>
+      <li>Vassal<small>Land, and a vote in council.</small></li>
+      <li>Lord<small>Two fiefs. Propose wars.</small></li>
+      <li>Marshal<small>Elected. You lead the hosts.</small></li>
+      <li>King<small>Or found a realm of your own.</small></li>
+    </ol>
+
+    <div class="stats rv" id="stats">
+      <div><span data-px data-n="3000">3,000</span><span class="label">men on one field</span></div>
+      <div><span data-px data-n="115">115</span><span class="label">provinces</span></div>
+      <div><span data-px data-n="188">188</span><span class="label">troops in seven cultures</span></div>
+      <div><span data-px data-n="13">13</span><span class="label">creatures</span></div>
+      <div><span data-px data-n="0">0</span><span class="label">art files</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="rule" aria-hidden="true"><i></i></div>
+
+<section id="camp">
+  <div class="wrap camp">
+    <div>
+      <h2 class="lede rv">Nothing here was <em>drawn by hand.</em></h2>
+      <p class="sub rv" style="margin-bottom:1.4em">Every sprite, mesh, sound and tune in Ironfield is generated in code. So is every soldier, shield and banner on this page. The game is one C# project on .NET 10 and MonoGame, for Windows, Linux and macOS.</p>
+      <div class="cta rv" style="justify-content:flex-start;margin:0 0 1.4em">
+        <a class="btn go" href="https://github.com/SamiulH25/devseqat/actions">Get a build</a>
+        <a class="btn" href="https://github.com/SamiulH25/devseqat">Read the source</a>
+      </div>
+      <p class="label rv">Or: git clone, then dotnet run</p>
+    </div>
+    <div class="plate term rv" id="term">
+      <pre id="tout" aria-live="polite"></pre>
+      <form id="tform"><span>$ dotnet run --</span><label class="sr" for="tin">Command</label><input id="tin" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="help"></form>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <p class="label">Ironfield. An original setting. No names, assets or factions from other games.</p>
+  <p class="label" style="color:#5d626b">Press F1. The banner has room for ten honours.</p>
+</footer>
+
+<dialog id="lb"><div class="plate main"><img alt=""><p class="label" id="lbcap"></p></div></dialog>
+<dialog id="help"><div class="plate main">
+  <button class="btn sm x" id="helpx">Close <kbd>Esc</kbd></button>
+  <h2 data-px>YOUR BANNER</h2>
+  <p style="margin:0 0 14px;font-size:15.5px">Honours are sewn on for what you find here. Some are found with the mouse and some are typed anywhere on the page.</p>
+  <ul id="hlist"></ul>
+</div></dialog>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script>
+(()=>{'use strict';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,k)=>a+(b-a)*k;
+const pick=a=>a[Math.random()*a.length|0], rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ---------- the game's 5x7 font ---------- */
+const CH="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,:-/()!%+[]=><?'";
+const GL=("0E11111F111111 1E11111E11111E 0E11101010110E 1E11111111111E 1F10101E10101F 1F10101E101010 0E11101711110F 1111111F111111 0E04040404040E 0702020202120C 11121418141211 1010101010101F "+
+"111B1515111111 11111915131111 0E11111111110E 1E11111E101010 0E11111115120D 1E11111E141211 0F10100E01011E 1F040404040404 1111111111110E 11111111110A04 1111111515150A 11110A040A1111 1111110A040404 1F01020408101F "+
+"0E11131519110E 040C040404040E 0E11010204081F 1F02040201110E 02060A121F0202 1F101E0101110E 0608101E11110E 1F010204080808 0E11110E11110E 0E11110F01020C "+
+"00000000000000 00000000000C0C 000000000C0408 000C0C000C0C00 0000001F000000 01010204081010 02040808080402 08040202020408 04040404040004 18190204081303 0004041F040400 0E08080808080E 0E02020202020E 00001F001F0000 08040201020408 02040810080402 0E110102040004 04040800000000").split(' ');
+function pxSvg(word,gild){
+  const w=word.length*6; let main='',sh='';
+  [...word.toUpperCase()].forEach((ch,ci)=>{let gi=CH.indexOf(ch); if(gi<0)gi=CH.indexOf(' ');
+    for(let r=0;r<7;r++){const bits=parseInt(GL[gi].substr(r*2,2),16); let b=0;
+      while(b<5){ if(bits>>(4-b)&1){let e=b; while(e<5&&(bits>>(4-e)&1))e++;
+          const x=ci*6+b, cls=gild?(r<2?'g1':r<5?'g2':'g3'):'';
+          main+=`<rect x="${x}" y="${r}" width="${e-b}" height="1"${cls?` class="${cls}"`:''}/>`;
+          sh+=`<rect x="${x+.6}" y="${r+.6}" width="${e-b}" height="1"/>`; b=e } else b++ } } });
+  return `<svg class="px" viewBox="0 0 ${w} 8" style="aspect-ratio:${w}/8" aria-hidden="true"><g class="sh">${sh}</g>${main}</svg>`;
+}
+function pxText(el,text){
+  text=text??el.textContent; const gild=el.hasAttribute('data-gild');
+  el.innerHTML=`<span class="sr">${text}</span>`+text.trim().split(/\s+/).map(w=>`<span class="pxw">${pxSvg(w,gild)}</span>`).join('');
+}
+$$('[data-px]').forEach(el=>pxText(el));
+
+/* ---------- the painter: banded tones, hue-shifted ramps, selective outline ---------- */
+const mix=(a,b,k)=>[0,1,2].map(i=>Math.round(a[i]+(b[i]-a[i])*k));
+const css=(c,a=1)=>`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
+const tone=(c,s)=>{s=clamp(s,-2,2); return s<0?mix(mix(c,[0,0,0],-.2*s),[44,40,100],-.13*s):s>0?mix(c,[255,244,214],.2*s):c};
+const STEEL=[172,178,190],IRON=[96,100,112],SKIN=[226,180,140],HAIR=[96,64,40],LEATHER=[118,80,48],WOOD=[140,98,58],BRASS=[214,172,70],LINEN=[222,214,190],SLIT=[26,26,36];
+class Buf{
+  constructor(w,h){this.w=w;this.h=h;this.d=new Array(w*h).fill(null);this.ox=0;this.oy=0}
+  set(x,y,c){x=(x+this.ox)|0;y=(y+this.oy)|0;if(x>=0&&y>=0&&x<this.w&&y<this.h)this.d[y*this.w+x]=c}
+  raw(x,y){return x>=0&&y>=0&&x<this.w&&y<this.h?this.d[y*this.w+x]:null}
+  box(x,y,w,h,c,pat){for(let j=0;j<h;j++)for(let i=0;i<w;i++){const X=x+i,Y=y+j;let s=0;
+    if((i==w-1&&w>1)||(j==h-1&&h>2))s=-1; if(i==0||j==0)s=(i==w-1&&w>2)?0:1;
+    if(pat=='plate')s*=2; else if(pat=='mail'){if((X+Y)&1)s-=1} else if(pat=='quilt'){if((X+Y)%4==0||(X-Y+64)%4==0)s-=1}
+    else if(pat=='cloth'){if(X%3==0&&j>0)s-=1} else if(pat=='wood'){if((X*7+Y*3)%5==0)s-=1} else if(pat=='hair'){if((X+Y)%3==0)s-=1}
+    this.set(X,Y,tone(c,s))}}
+  seg(x0,y0,x1,y1,c,t=2){const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));for(let i=0;i<=n;i++){const x=Math.round(lerp(x0,x1,i/n)),y=Math.round(lerp(y0,y1,i/n));for(let k=0;k<t;k++)this.set(x+k,y,tone(c,k?-1:0))}}
+  outline(){const o=[];for(let y=0;y<this.h;y++)for(let x=0;x<this.w;x++)if(!this.raw(x,y)){const n=this.raw(x-1,y)||this.raw(x+1,y)||this.raw(x,y-1)||this.raw(x,y+1);if(n)o.push(y*this.w+x,mix(n,[10,8,26],.66))}
+    for(let i=0;i<o.length;i+=2)this.d[o[i]]=o[i+1];return this}
+  mirror(){for(let y=0;y<this.h;y++){const r=this.d.slice(y*this.w,(y+1)*this.w).reverse();for(let x=0;x<this.w;x++)this.d[y*this.w+x]=r[x]}return this}
+  canvas(into){const c=into||document.createElement('canvas');c.width=this.w;c.height=this.h;const g=c.getContext('2d'),im=g.createImageData(this.w,this.h);
+    this.d.forEach((p,i)=>{if(p){im.data[i*4]=p[0];im.data[i*4+1]=p[1];im.data[i*4+2]=p[2];im.data[i*4+3]=255}});g.putImageData(im,0,0);return c}
+}
+
+/* heraldry: Style.Sides */
+const P=(cloth,dark,trim,charge,ui)=>({cloth,dark,trim,charge,ui});
+const PAL={
+  azure:P([54,94,176],[30,50,108],[230,218,178],'chevron','#70a0ff'),
+  crimson:P([172,48,42],[98,26,28],[222,178,72],'saltire','#ec5846'),
+  gold:P([210,168,54],[126,88,30],[44,36,44],'lozenge','#f0c83c'),
+  brigands:P([112,98,78],[70,62,52],[160,150,128],'none','#beaa82'),
+  northern:P([46,104,74],[24,58,42],[226,228,220],'bend','#60c88c'),
+  southern:P([206,128,40],[124,70,20],[246,232,190],'sun','#f4a046'),
+  steppe:P([40,130,140],[20,74,80],[236,214,120],'fess','#50c4ce'),
+  league:P([110,64,150],[62,34,90],[216,220,228],'pale','#aa78dc'),
+  order:P([230,228,220],[150,146,140],[150,30,28],'cross','#f0eee6'),
+  hollow:P([44,32,62],[20,14,30],[168,120,255],'crown','#a878ff'),
+};
+function chargeAt(t,u,v){const a=Math.abs(u),b=Math.abs(v);switch(t){
+  case'chevron':return Math.abs(v+2.5-a)<=1.1&&a<6.6;
+  case'saltire':return Math.abs(a-b)<=1;
+  case'bend':return Math.abs(u-v)<=1.6;
+  case'cross':return a<=1||b<=1;
+  case'pale':return a<=2;
+  case'fess':return b<=2;
+  case'lozenge':return a+b<=4.2;
+  case'sun':return u*u+v*v<=7||((a<.6||b<.6||Math.abs(a-b)<.6)&&u*u+v*v<=26&&u*u+v*v>=11);
+  case'crown':return (v>=0&&v<=2&&a<=4.6)||(v<0&&v>=-3&&(a>=3.6&&a<=4.6||a<=.6||(v>=-1&&a<=4.6&&Math.abs(a-2)<=.6)));
+  default:return false}}
+function paintShield(pal){
+  const b=new Buf(18,20),rows=[14,14,14,14,14,14,14,14,14,14,12,12,10,8,6,4,2];
+  rows.forEach((w,r)=>{const x0=9-w/2;for(let i=0;i<w;i++){const x=x0+i,u=x-8.5,v=r-6.5;
+    let c=chargeAt(pal.charge,u,v)?pal.trim:pal.cloth; let s=i<2||r==0?1:i>=w-2?-1:0; b.set(x,r+1,tone(c,s))}});
+  return b.outline();
+}
+function paintFlag(pal,w=24,h=14){
+  const b=new Buf(w,h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const u=(x-w/2+.5)*.62,v=(y-h/2+.5)*.95;
+    b.d[y*w+x]=tone(chargeAt(pal.charge,u,v)?pal.trim:pal.cloth,(y==0?1:y>=h-2?-1:0)+(x%6==5?-1:0))}
+  return b;
+}
+function shieldRows(b,cx,y,rows,pal,quarters){rows.forEach((w,r)=>{const x0=cx-(w>>1);for(let i=0;i<w;i++){const u=x0+i-cx,v=r-3;
+  let c=quarters?((u<0)!=(v<1)?pal.trim:pal.cloth):(pal.charge!='none'&&rows.length>7&&(Math.abs(v-Math.abs(u)+1)<1)?pal.trim:pal.cloth);
+  if(quarters&&u==0&&v==0)c=IRON; b.set(x0+i,y+r,tone(c,i==0||r==0?1:i==w-1?-1:0))}})}
+
+/** One man, as the tier table in docs/DESIGN.md: metal, then heraldry, then cape and plume. */
+function paintMan(pal,tier,role,back){
+  const b=new Buf(26,36);b.ox=1;b.oy=4;
+  const B=(...a)=>b.box(...a), mail=tier==3, plate=tier>=4;
+  const metal=plate?'plate':'mail';
+  if(tier>=5&&!back)B(7,13,11,13,pal.dark,'cloth');
+  // legs and boots
+  for(const x of[9,13]){ if(tier<=2)B(x,22,3,6,pal.dark,'cloth'); else B(x,22,3,6,STEEL,metal); B(x,27,3,2,plate?IRON:LEATHER) }
+  // torso
+  if(tier==1)B(8,13,9,10,pal.cloth,'cloth'); else if(tier==2)B(8,13,9,10,pal.cloth,'quilt'); else B(8,13,9,10,STEEL,metal);
+  if(tier<=2)B(8,20,9,1,LEATHER);
+  if(tier>=3){B(10,13,5,10,pal.cloth,'cloth'); if(!back){b.set(12,16,pal.trim);b.set(11,17,pal.trim);b.set(13,17,pal.trim)}}
+  if(tier>=7)B(8,13,9,1,BRASS);
+  // arms
+  for(const x of[6,17]){ if(tier==1)B(x,13,2,8,pal.cloth,'cloth'); else if(tier==2)B(x,13,2,8,pal.dark,'quilt'); else B(x,13,2,8,STEEL,metal);
+    b.set(x,21,plate?IRON:SKIN);b.set(x+1,21,plate?IRON:tone(SKIN,-1)) }
+  if(tier>=4){B(5,12,3,3,STEEL,'plate');B(17,12,3,3,STEEL,'plate')}
+  // head
+  if(back)B(9,5,7,7,HAIR,'hair'); else{B(9,5,7,7,SKIN);b.set(11,8,SLIT);b.set(13,8,SLIT);b.set(12,10,tone(SKIN,-2))}
+  if(tier==1){B(9,3,7,3,LINEN); if(back)B(9,3,7,5,LINEN)}
+  else if(tier==2){B(9,2,7,3,STEEL,'plate');B(7,5,11,1,STEEL)}
+  else if(tier==3){B(9,2,7,4,STEEL,'plate'); if(back)B(8,6,9,7,STEEL,'mail'); else{B(8,6,1,6,STEEL,'mail');B(16,6,1,6,STEEL,'mail');B(8,11,9,2,STEEL,'mail');b.set(12,6,tone(STEEL,-1));b.set(12,7,tone(STEEL,-1));b.set(12,8,tone(STEEL,-1))}}
+  else if(tier<=5){ if(back)B(8,2,9,9,STEEL,'plate'); else{B(8,2,9,5,STEEL,'plate');for(let x=10;x<=14;x++)b.set(x,6,SLIT);B(8,7,9,1,STEEL);b.set(11,8,SKIN);b.set(13,8,SKIN);b.set(11,9,SLIT);b.set(13,9,SLIT)} }
+  else{B(8,2,9,10,STEEL,'plate'); if(!back){for(let x=9;x<=15;x++)b.set(x,6,SLIT);for(let y=7;y<=10;y++)b.set(12,y,tone(tier>=7?BRASS:STEEL,1));b.set(10,9,SLIT);b.set(14,9,SLIT)} if(tier>=7)B(8,5,9,1,BRASS)}
+  if(tier>=6){B(11,-1,3,3,pal.cloth,'hair');b.set(14,0,pal.cloth);b.set(14,1,tone(pal.cloth,-1));b.set(12,-2,tone(pal.cloth,1))}
+  if(tier>=5&&back){B(8,13,9,12,pal.cloth,'cloth');B(8,13,9,1,pal.trim)}
+  // what he carries (viewer's left hand side is his weapon)
+  if(role=='foot'){B(4,8,2,11,STEEL,'plate');B(3,19,4,1,BRASS);B(4,20,2,2,LEATHER)}
+  if(role=='spears'){B(4,-2,1,31,WOOD,'wood');B(4,-4,1,3,STEEL,'plate');b.set(3,-2,STEEL);b.set(5,-2,tone(STEEL,-1))}
+  if(role=='bows'){for(let y=9;y<=21;y++){b.set(3,y,tone(WOOD,y%3?0:-1));b.set(5,y,[200,194,176])}b.set(4,8,WOOD);b.set(4,22,WOOD);b.set(5,7,WOOD);b.set(5,23,WOOD);B(17,10,2,6,LEATHER);b.set(17,9,LINEN);b.set(18,9,LINEN)}
+  if(role=='foot'||(role=='spears'&&tier<=3)){
+    if(tier==1)shieldRows(b,19,14,[3,5,7,7,7,5,3],pal,true);
+    else if(tier==2)shieldRows(b,19,13,[6,6,6,6,6,6,4,4,2,2],pal);
+    else shieldRows(b,19,13,[7,7,7,7,7,7,5,3,1],pal);
+  }
+  if(back)b.mirror();
+  return b.outline();
+}
+/** A horse and rider, side on. Coats are a tint on one grey, as Style.Coats. */
+const COATS=[[.74,.5,.32],[.86,.52,.3],[.34,.31,.31],[.9,.9,.92],[.88,.74,.52]];
+function paintHorse(pal,tier,frame,coat){
+  const b=new Buf(44,36);b.ox=1;b.oy=12;const B=(...a)=>b.box(...a);
+  const m=COATS[coat%5],c=[208*m[0],208*m[1],208*m[2]].map(Math.round),mane=mix(c,[30,26,26],.6),dk=tone(c,-1);
+  // legs
+  const L=frame?[[22,18,20,25],[20,18,17,24],[8,18,11,25],[10,18,14,24]]:[[22,18,27,24],[20,18,24,25],[8,18,3,24],[10,18,6,25]];
+  L.forEach(([x0,y0,x1,y1],i)=>{b.seg(x0,y0,x1,y1,i%2?dk:c);b.set(x1,y1+1,[50,46,44]);b.set(x1+1,y1+1,[50,46,44])});
+  B(3,11,3,6+frame,mane,'hair');
+  B(6,10,18,8,c);
+  if(tier>=4){B(6,10,18,7,pal.cloth,'cloth');B(6,17,18,1,pal.trim);b.set(21,13,pal.trim);b.set(20,14,pal.trim);b.set(22,14,pal.trim)} else if(tier>=2)B(11,10,8,5,pal.cloth,'cloth');
+  B(22,5,5,8,c);B(24,3,4,5,c);B(26,2,7,5,c);B(31,4,3,3,dk);b.set(26,1,c);b.set(27,1,dk);b.set(29,4,SLIT);
+  B(22,4,2,8,mane,'hair');
+  if(tier>=4)B(27,2,6,2,STEEL,'plate');
+  // rider
+  const metal=tier>=4?'plate':tier==3?'mail':null;
+  B(14,12,3,7,metal?STEEL:pal.dark,metal||'cloth');B(14,18,4,2,tier>=4?IRON:LEATHER);
+  if(metal)B(13,2,6,9,STEEL,metal); else B(13,2,6,9,pal.cloth,tier==2?'quilt':'cloth');
+  if(tier>=3)B(14,2,4,9,pal.cloth,'cloth');
+  if(tier>=5)B(11,3,3,9,pal.dark,'cloth');
+  B(17,4,2,6,metal?STEEL:pal.dark,metal||'cloth');
+  if(tier<=1){B(14,-3,5,5,SKIN);B(14,-4,5,2,LINEN);b.set(17,-1,SLIT)}
+  else if(tier<=3){B(14,-3,5,5,SKIN);B(14,-5,5,3,STEEL,'plate');B(13,-2,7,1,STEEL);b.set(17,-1,SLIT)}
+  else{B(14,-5,6,7,STEEL,'plate');b.set(17,-2,SLIT);b.set(18,-2,SLIT);b.set(19,-2,SLIT)}
+  if(tier>=6){B(15,-8,3,3,pal.cloth,'hair');b.set(14,-7,pal.cloth);b.set(13,-6,tone(pal.cloth,-1))}
+  if(tier>=3){B(17,7,24,1,WOOD,'wood');b.set(41,7,STEEL);b.set(42,7,STEEL);b.set(20,6,pal.trim);b.set(21,6,pal.cloth)} else {B(19,-2,1,10,WOOD);b.set(19,-3,STEEL)}
+  return b.outline();
+}
+function paintTroll(frame){
+  const b=new Buf(36,44);b.ox=1;b.oy=3;const B=(...a)=>b.box(...a),S=[104,122,98],D=[84,100,84];
+  B(9,30-frame,6,9+frame,D);B(19,30-(1-frame),6,9+(1-frame),S);B(8,38,8,2,D);B(18,38,8,2,D);
+  B(8,12,18,17,S);B(12,17,10,9,tone(S,1));B(9,27,16,4,LEATHER);
+  B(3,13,5,18+frame,S);B(2,30+frame,6,4,D);B(26,13,5,12,S);B(26,9,5,5,D);
+  B(28,-2,4,14,WOOD,'wood');B(27,-2,6,5,WOOD,'wood');
+  B(13,3,9,9,S);B(13,6,9,1,tone(S,-2));b.set(15,7,[240,210,60]);b.set(19,7,[240,210,60]);b.set(15,11,LINEN);b.set(19,11,LINEN);B(15,10,5,1,tone(S,-2));
+  return b.outline().mirror();
+}
+const cache=new Map();
+function sprite(key,make){let c=cache.get(key);if(!c){c=make().canvas();cache.set(key,c)}return c}
+const man=(pk,t,role,back)=>sprite(`m|${pk}|${t}|${role}|${back?1:0}`,()=>paintMan(PAL[pk],t,role,back));
+const horse=(pk,t,f,coat)=>sprite(`h|${pk}|${t}|${f}|${coat}`,()=>paintHorse(PAL[pk],t,f,coat));
+const troll=f=>sprite('t|'+f,()=>paintTroll(f));
+const flag=pk=>sprite('f|'+pk,()=>paintFlag(PAL[pk]));
+
+/* ---------- realms (Data/factions.json) ---------- */
+const REALMS=[
+ {id:'azure',name:'Azure Crown',where:'The west',text:'Heavy foot, crossbows and lances.',flav:'Blue roofs and quiet bells.',temper:'Patient at a siege, and good at one.',war:'northern',
+  lines:{foot:['Levies','Shieldmen','Men-at-Arms','Ironguard','Paladins','Iron Legionaries','Immortals'],spears:['Levies','Spearrunners','Pikemen','Phalanx Pikemen','Silver Pikes','Grand Phalanx','Imperial Pikemen'],bows:['Bowmen','Bowmen','Crossbowmen','Arbalests','Heavy Arbalests','Guild Sharpshooters','Grand Arbalests'],horse:['Outriders','Outriders','Lancers','Demi-Lancers','Banner Knights','Paladin Knights','Grail Knights']}},
+ {id:'crimson',name:'Crimson Compact',where:'The east',text:'Greatswords, halberds, longbows and heavy horse.',flav:'Red banners and loud markets.',temper:'Quick to declare war and slow to take terms.',war:'steppe',
+  lines:{foot:['Levies','Shieldmen','Greatswords','Zweihanders','Blademasters','Grand Blademasters','Sword Saints'],spears:['Levies','Spearrunners','Billmen','Halberdiers','Heavy Halberdiers','Royal Halberdiers','Sovereign Halberdiers'],bows:['Bowmen','Bowmen','Longbowmen','Yeoman Archers','Master Longbowmen','Royal Yeomen','Sovereign Longbowmen'],horse:['Outriders','Outriders','Lancers','Knights','Cataphracts','Iron Cataphracts','Imperial Cataphracts']}},
+ {id:'northern',name:'Northmarch',where:'The cold north',text:'Axes, round shields, glaives and light horse.',flav:'Timber halls and smoke.',temper:'Quick to war. Fur and round shields at every tier.',war:'azure',
+  lines:{foot:['Clansmen','Axemen','Huscarls','Varangians','Einherjar','Thane Champions',"High King's Chosen"],spears:['Clansmen','Spearrunners','Billmen','Glaivemen','Vanguard Glaives','Dragon Glaives','Tempest Spears'],bows:['Bowmen','Bowmen','Rangers','Woodland Stalkers','Shadow Hunters','Highland Marksmen','Sky Piercers'],horse:['Outriders','Outriders','Horse Archers','Nomad Bows','Steppe Marksmen',"Khan's Guard",'Golden Horde Masters']}},
+ {id:'southern',name:'Sunward Emirates',where:'The dry south',text:'Spears and javelins, light horse and mamluks.',flav:'White walls, palms and a call to prayer.',temper:'Full garrisons. Takes terms readily.',
+  lines:{foot:['Levies','Shieldmen','Ghazis','Jandars','Dervish Blades',"Emir's Guard",'Lions of the Sun'],spears:['Levies','Spearrunners','Sun Javelins','Dune Spears','Sun Guard',"Emir's Spears",'Golden Spears'],bows:['Bowmen','Bowmen','Sand Archers','Oasis Bows',"Emir's Archers",'Falcon Eyes',"Sultan's Bows"],horse:['Outriders','Outriders','Desert Riders','Mamluks','Sun Lancers',"Emir's Mamluks","Sultan's Guard"]}},
+ {id:'steppe',name:'Khaganate of the Grass',where:'The eastern steppe',text:'Horse archers first, bows on foot, axes and spears.',flav:'Felt tents around a wooden hall.',temper:'The quickest to war. Dislikes a siege.',war:'crimson',
+  lines:{foot:['Clansmen','Axemen','Yurt Guards','Torguud','Wolf Axes',"Noyan's Guard","Khagan's Axes"],spears:['Clansmen','Spearrunners','Grass Spears','Horde Spears','Tumen Spears','Sky Spears','Eternal Spears'],bows:['Bowmen','Bowmen','Steppe Archers','Yurt Archers','Tengri Bows','Sky Wolf Archers','Eternal Sky Archers'],horse:['Outriders','Outriders','Steppe Bows','Kheshig Riders','Noyan Bows','Kheshig',"Khagan's Own"]}},
+ {id:'league',name:'Saltmarsh League',where:'The fens and canals of the south-west',text:'Pikes and pavise crossbows, hired steel.',flav:'Canals, cranes and counting houses.',temper:'Slow to war. Would rather pay tribute than bleed.',
+  lines:{foot:['Levies','Shieldmen','Canal Guards','Guild Swords','Brigandiers',"Doge's Guard",'Lion Guard'],spears:['Levies','Spearrunners','League Pikes','Guild Pikes','Marsh Wardens',"Doge's Pikes",'Lagoon Guard'],bows:['Bowmen','Bowmen','League Crossbows','Pavisiers','Guild Arbalesters',"Doge's Arbalesters",'Lion Crossbows'],horse:['Outriders','Outriders','Stradiots','Condottieri','Guild Lances',"Doge's Lances",'Lion Knights']}},
+ {id:'order',name:'Order of the Ashen Sun',where:'The highlands in the middle',text:'Sworn brothers on foot and knight-brothers.',flav:'Bells, banners and a great grey chapter house.',temper:'Hunts goblins, beasts and the dead before it hunts men.',
+  lines:{foot:['Levies','Shieldmen','Order Sergeants','Sun Brothers','Ashen Brothers','Sun Templars','Ashen Saints'],spears:['Levies','Spearrunners','Order Spears','Chapter Pikes','Ashen Pikes','Pilgrim Guard','Dawn Pikes'],bows:['Bowmen','Bowmen','Order Crossbows','Chapter Arbalests','Ashen Arbalests','Sun Arbalests','Dawn Watch'],horse:['Outriders','Outriders','Order Riders','Knight Brothers','Sun Knights','Ashen Knights','Grand Masters']}},
+ {id:'hollow',hidden:true,name:'The Hollow Crown',where:'Nowhere you can ride to',text:'It offers a pact: power now, and a price later.',flav:'The price is you.',temper:'Corruption has thresholds. Madness follows. There are two endings.',war:'order',
+  lines:{foot:['?','?','?','?','?','?','The Hollow'],spears:['?','?','?','?','?','?','?'],bows:['?','?','?','?','?','?','?'],horse:['?','?','?','?','?','?','?']}},
+];
+const realmOf=id=>REALMS.find(r=>r.id==id);
+let liege=store.get('ironfield.liege'); if(!realmOf(liege)||liege=='hollow')liege='azure';
+const foeOf=()=>realmOf(liege).war||'brigands';
+const foeName=()=>realmOf(liege).war?realmOf(realmOf(liege).war).name:'brigands';
+
+/* ---------- feed, honours ---------- */
+function feed(msg,cls){const d=document.createElement('div');d.textContent=msg;if(cls)d.className=cls;$('#feed').prepend(d);setTimeout(()=>d.remove(),6600);while($('#feed').children.length>4)$('#feed').lastChild.remove()}
+const HON=[
+ ['light','Light by the hour','The sun is not painted on.','You changed the hour.'],
+ ['knew','Someone you knew','Your own men stand in the front rank.','You cut down one of your own. He had a name.'],
+ ['idle','An idle captain','Stand still before the enemy for half a minute.','You stood idle and the enemy came on.'],
+ ['rivet','Loose rivet','Not every plate is well made.','You worked a rivet loose.'],
+ ['old','Blooded','Lead a company of your own through ten battles.','Your company came through ten battles.'],
+ ['test','Selftest ok','The camp has a terminal. Run the suite.','You ran the suite. It ended green.'],
+ ['ride','Ride down','An old code. Up, up, down, down...','Your horse rode down the page.'],
+ ['troll','Under the bridge','Type the name of the thing under the bridge.','You called a troll.'],
+ ['rain','Weather','Type what darkens the ground.','You called the rain.'],
+ ['flame','The Black Flame','Type what the Hollow Crown offers. You should not.','You took the pact.'],
+];
+let honours=new Set(store.get('ironfield.honours')||[]);
+function drawHonours(){
+  $('#honn').textContent=honours.size;
+  $('#hlist').innerHTML=HON.map(h=>honours.has(h[0])?`<li class="got"><b>${h[1]}</b>${h[3]}</li>`:`<li><b>? ? ?</b>${h[2]}</li>`).join('');
+}
+function honour(id){
+  if(honours.has(id))return; honours.add(id); store.set('ironfield.honours',[...honours]); drawHonours();
+  const h=HON.find(h=>h[0]==id); feed(`Honour sewn on your banner: ${h[1]}`,'ok'); fanfare();
+  if(honours.size==HON.length)setTimeout(()=>feed('The banner is full. Retire in glory, captain.','ok'),1800);
+}
+drawHonours();
+
+/* ---------- sound, synthesised (as the game's is) ---------- */
+let AC=null,soundOn=false;
+function note(f,t0,d,type='sawtooth',vol=.09,cut=1100){ if(!soundOn)return; const t=AC.currentTime+t0,o=AC.createOscillator(),g=AC.createGain(),lp=AC.createBiquadFilter();
+  o.type=type;o.frequency.setValueAtTime(f,t);lp.type='lowpass';lp.frequency.value=cut;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.04);g.gain.setValueAtTime(vol,t+d*.7);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(lp).connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.05)}
+function horn(){[[196,0,.5],[196,.5,.22],[261.6,.72,.5],[392,1.22,1.1]].forEach(([f,t,d])=>{note(f,t,d);note(f*1.005,t,d,'square',.035,700)})}
+function fanfare(){note(392,0,.16,'square',.05);note(523,.14,.16,'square',.05);note(659,.28,.4,'square',.05)}
+function clang(){note(1700+Math.random()*500,0,.13,'triangle',.07,6000);note(2600,0,.08,'square',.025,7000)}
+function thud(){note(58,0,.3,'sine',.3,300)}
+$('#hornb').onclick=()=>{ if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return}} soundOn=true;AC.resume();horn();feed('The horn sounds. Sound is on.') };
+
+/* ---------- hero: the field ---------- */
+const HOURS=[
+ {n:'Day',top:[52,104,188],bot:[178,208,230],sun:[255,248,220],sx:.9,sy:.11,land:[1,1,1],tint:[0,0,0,0],cloud:[255,255,255,.92]},
+ {n:'Dusk',top:[46,40,92],bot:[244,150,84],sun:[255,196,120],sx:.84,sy:.5,land:[.8,.62,.5],tint:[130,50,20,.24],cloud:[255,186,140,.8]},
+ {n:'Night',top:[6,10,28],bot:[28,42,84],sun:[226,232,246],sx:.1,sy:.12,land:[.26,.34,.5],tint:[8,14,48,.64],cloud:[52,64,104,.55]},
+ {n:'Dawn',top:[66,92,160],bot:[252,200,170],sun:[255,226,196],sx:.15,sy:.49,land:[.92,.82,.76],tint:[150,80,90,.15],cloud:[255,228,214,.88]},
+];
+const F={cv:$('#field'),W:0,H:0,dpr:1,hz:0,hour:0,bg:null,prev:null,fade:1,tint:[0,0,0,0],clouds:[],friends:[],foes:[],banners:[],adv:0,advTo:0,bits:[],run:false,last:0,idleAt:performance.now(),lostF:0,lostE:0};
+F.g=F.cv.getContext('2d'); F.layer=document.createElement('canvas'); F.L=F.layer.getContext('2d');
+const NAMES=['Wat','Hob','Tam','Osric','Giles','Perrin','Aldous','Bran','Corin','Edric','Fulk','Garrick','Hamo','Ivo','Jory','Kit','Lambert','Merrick','Ned','Odo','Piers','Rolf','Sim','Tobias','Ulric','Warin','Hugh','Robin','Adam','Colin','Astrid','Hilda','Edith','Maud'];
+const BY=['the Tall','Redhand','Longshanks','the Quiet','One-Eye','Greycloak','Ironside','Halfhelm','the Younger','Blackwood','the Lucky','Stonehand'];
+const PLACES=['Ashford','Brackmoor','Dunmere','Fallowby','Greywater','Harrowgate','Kettleby','Larkhill','Netherby','Oakhollow','Redmarsh','Stonebridge','Thornwick','Coldharbour','Gallowmere','Hallowell','Kingsfold','Millbeck','Ravensey','Barrowden','Cinderford','Hawkridge','Ironwell','Moorcross','Odda','Ludlow'];
+const newName=()=>pick(NAMES)+' '+(Math.random()<.5?pick(BY):'of '+pick(PLACES));
+
+function buildBg(){
+  const {W,H,dpr}=F,h=HOURS[F.hour],c=document.createElement('canvas');c.width=W*dpr;c.height=H*dpr;const g=c.getContext('2d');g.scale(dpr,dpr);
+  const hz=F.hz,G=H-hz,r=rng(7),flame=document.documentElement.classList.contains('flame');
+  const top=flame?mix(h.top,[40,10,70],.6):h.top,bot=flame?mix(h.bot,[120,60,170],.5):h.bot;
+  const sky=g.createLinearGradient(0,0,0,hz);sky.addColorStop(0,css(top));sky.addColorStop(1,css(bot));g.fillStyle=sky;g.fillRect(0,0,W,hz+2);
+  if(F.hour==2){for(let i=0;i<110;i++){g.fillStyle=`rgba(255,255,255,${.25+r()*.7})`;const s=r()<.12?2:1;g.fillRect(r()*W|0,r()*hz*.9|0,s,s)}}
+  const sx=h.sx*W,sy=h.sy*H,gl=g.createRadialGradient(sx,sy,0,sx,sy,Math.max(160,W*.22));gl.addColorStop(0,css(h.sun,.75));gl.addColorStop(.25,css(h.sun,.22));gl.addColorStop(1,css(h.sun,0));
+  g.fillStyle=gl;g.fillRect(0,0,W,hz+2);g.fillStyle=css(h.sun);g.beginPath();g.arc(sx,sy,F.hour==2?17:24,0,7);g.fill();
+  if(F.hour==2){g.fillStyle=css(top);g.beginPath();g.arc(sx+8,sy-5,15,0,7);g.fill()}
+  F.sun=[sx,sy];
+  const lit=(c,fog=0)=>css(mix([c[0]*h.land[0],c[1]*h.land[1],c[2]*h.land[2]],bot,fog)),side=h.sx>.5?1:-1;
+  const poly=(pts,col)=>{g.fillStyle=col;g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.fill()};
+  // far ridges, faceted
+  [[11,hz-G*.02,G*.34,9,[92,112,120],.62],[23,hz+2,G*.2,13,[84,116,84],.36],[37,hz+4,G*.1,17,[92,132,74],.14]].forEach(([seed,base,amp,n,col,fog])=>{
+    const q=rng(seed),pts=[];for(let i=0;i<=n;i++)pts.push([-20+(W+40)*i/n,base-amp*(.2+.8*q())*(.55+.45*Math.sin(i*1.7+seed))]);
+    for(let i=0;i<n;i++){const[x0,y0]=pts[i],[x1,y1]=pts[i+1],sl=(y1-y0)/(x1-x0),k=clamp(.5+sl*side*1.6,0,1),sh=lerp(.8,1.16,k);
+      poly([[x0,y0],[x1,y1],[x1,H],[x0,H]],lit(col.map(v=>v*sh),fog));
+      poly([[x0,y0],[x1,y1],[(x0+x1)/2+(q()-.5)*30,Math.max(y0,y1)+amp*.5]],lit(col.map(v=>v*sh*1.07),fog))}});
+  // the field
+  const gr=g.createLinearGradient(0,hz,0,H);gr.addColorStop(0,lit([124,152,86],.22));gr.addColorStop(.35,lit([104,144,72]));gr.addColorStop(1,lit([70,112,50]));g.fillStyle=gr;g.fillRect(0,hz+G*.06,W,H);
+  for(let i=0;i<46;i++){const x=r()*W,y=hz+G*.08+r()*r()*G,s=30+(y-hz)*.5,k=.9+r()*.2;g.globalAlpha=.3;
+    poly([[x,y],[x+s*(1+r()),y+s*.12*r()],[x+s*.5*r(),y+s*.3]],lit([104*k,144*k,72*k]));g.globalAlpha=1}
+  poly([[W*.575,hz+G*.06],[W*.588,hz+G*.06],[W*.47,H],[W*.3,H]],lit([150,120,84],.05));
+  poly([[W*.588,hz+G*.06],[W*.47,H],[W*.455,H]],lit([120,94,66],.05));
+  // woods frame the flanks
+  const trees=[];for(let i=0;i<70;i++){const left=i%2,u=r()*r(),x=left?u*W*.3-10:W-u*W*.3+10,z=r();trees.push([x,hz+G*(.03+z*.13),14+z*30,r()])}
+  trees.sort((a,b)=>a[1]-b[1]).forEach(([x,y,s,k])=>{const fog=clamp(.34-(y-hz)/G*2,0,.34),A=[38+k*14,84+k*20,52],Bc=[26,60,42];
+    g.fillStyle=lit([70,50,36],fog);g.fillRect(x-s*.05,y-s*.12,s*.1,s*.14);
+    for(let t=0;t<3;t++){const yt=y-s+t*s*.24,yb=yt+s*.44,w=s*(.2+t*.09);
+      poly([[x,yt],[x-w,yb],[x,yb]],lit(side>0?Bc:A,fog));poly([[x,yt],[x+w,yb],[x,yb]],lit(side>0?A:Bc,fog))}});
+  for(let i=0;i<260;i++){const y=hz+G*(.3+r()*.7),x=r()*W,k=r()<.5?.8:1.18;g.fillStyle=lit([92*k,134*k,62*k]);g.fillRect(x|0,y|0,2,3+r()*4|0)}
+  return c;
+}
+function layoutField(){
+  const {W,H}=F,G=H-F.hz,r=rng(3),fk=foeOf(); F.friends=[];F.foes=[];F.banners=[];
+  // the host, across the field
+  const blocks=W<700?3:5,files=W<700?6:9,roles=['spears','foot','bows','foot','spears'];
+  for(let k=0;k<blocks;k++){const cx=(k-(blocks-1)/2)*(files*9+16);
+    F.banners.push({foe:1,x:cx,row:2});
+    for(let row=2;row>=0;row--)for(let f=0;f<files;f++)
+      F.foes.push({x:cx+(f-(files-1)/2)*9+(row%2)*3,row,spr:man(fk,2+(r()*2.4|0),roles[k%5],false),ph:r()*6.3,fall:0})}
+  // your company, backs to the camera
+  const S=F.S=clamp(Math.round(H/150),4,7),sp=17*S,n=Math.ceil(W/sp)+1,mid=Math.round(n/2)-1;
+  for(let rank=1;rank>=0;rank--){const s=S-rank,off=rank?sp/2:0;
+    for(let i=-1;i<n;i++){const you=!rank&&i==mid,t=you?6:rank?3+(r()*2|0):4+(r()*3|0);
+      F.friends.push({x:(W-(n-1)*sp)/2+i*sp+off,y:H+S*5-rank*S*13,s,you,spr:man(you?'gold':liege,t,you?'foot':rank?'spears':'foot',true),ph:r()*6.3,fall:0})}
+    if(rank)[.07,.9].forEach(u=>F.banners.push({foe:0,x:u*W,y:H-S*26,s:W<700?S-2:S}))}
+  F.cap=F.friends.find(m=>m.you);
+}
+function resizeField(){
+  const cv=F.cv;F.W=cv.clientWidth;F.H=cv.clientHeight;F.dpr=Math.min(window.devicePixelRatio||1,2);F.hz=Math.round(F.H*.56);
+  cv.width=F.layer.width=F.W*F.dpr;cv.height=F.layer.height=F.H*F.dpr;
+  F.bg=buildBg();F.prev=null;F.fade=1;layoutField();
+  const r=rng(5);F.clouds=[];for(let i=0;i<6;i++){const parts=[];for(let k=0;k<5;k++){const cx=(k-2)*26+r()*14,cy=r()*10-(k==2?10:0),rx=26+r()*22,ry=9+r()*8,p=[];for(let a=0;a<7;a++)p.push([cx+Math.cos(a/7*6.283)*rx*(.8+r()*.3),cy+Math.sin(a/7*6.283)*ry]);parts.push(p)}
+    F.clouds.push({x:r()*F.W,y:F.H*(.07+r()*.3),v:4+r()*7,s:.7+r()*.9,parts})}
+  drawField(performance.now());
+}
+function setHour(i){F.prev=F.bg;F.hour=(i+4)%4;F.bg=buildBg();F.fade=0;$('#hourb').textContent=HOURS[F.hour].n;kick()}
+function foePos(m){const {W,H,hz}=F,G=H-hz,a=F.adv,s=(W<700?1.6:2.2)*(1+a*.9);return{s,x:W/2+m.x*s-13*s,y:hz+G*(.25+a*.16)+(2-m.row)*-4*s+m.row*0}}
+function drawSprite(L,m,x,y,s,t){
+  const w=m.spr.width*s,h=m.spr.height*s;
+  if(m.fall){const k=clamp((t-m.fall)/.4,0,1);L.save();L.translate(x+w/2,y+h-2*s);L.rotate((m.dir||1)*k*k*1.5);L.globalAlpha=1-k*.25;L.drawImage(m.spr,-w/2,-h+2*s,w,h);L.restore()}
+  else L.drawImage(m.spr,Math.round(x),Math.round(y+(reduce?0:Math.round(Math.sin(t*1.7+m.ph)*.6)*s)),w,h);
+}
+function drawBanner(L,pk,x,y,s,t,ph,pole=38){
+  const f=flag(pk);L.fillStyle='#3a2a1c';L.fillRect(x-s,y,s,pole*s);L.fillStyle='#d6ac46';L.fillRect(x-s,y-s,s,s);
+  for(let i=0;i<24;i++){const dy=reduce?0:Math.round(Math.sin(t*2.4+i*.42+ph)*(i/24)*1.7);L.drawImage(f,i,0,1,14,x+i*s,y+s+dy*s,s,14*s)}
+}
+function drawField(ts){
+  const {g,L,W,H,dpr}=F,t=ts/1000,dt=Math.min(.05,t-F.last||0);F.last=t;
+  const h=HOURS[F.hour],flame=document.documentElement.classList.contains('flame');
+  g.setTransform(dpr,0,0,dpr,0,0);g.drawImage(F.bg,0,0,W,H);
+  if(F.fade<1&&F.prev){F.fade=Math.min(1,F.fade+dt/1.1);g.globalAlpha=1-F.fade;g.drawImage(F.prev,0,0,W,H);g.globalAlpha=1}
+  const want=flame?[70,10,110,.42]:fx.rain?[h.tint[0]*.5+20,h.tint[1]*.5+30,h.tint[2]*.5+50,Math.max(h.tint[3],.28)]:h.tint;
+  F.tint=F.tint.map((v,i)=>lerp(v,want[i],reduce?1:Math.min(1,dt*3)));
+  g.fillStyle=css(h.cloud,h.cloud[3]*(fx.rain?.6:1));
+  F.clouds.forEach(c=>{c.x+=c.v*dt;if(c.x>W+200)c.x=-200;c.parts.forEach(p=>{g.beginPath();p.forEach((q,i)=>{const X=c.x+q[0]*c.s,Y=c.y+q[1]*c.s;i?g.lineTo(X,Y):g.moveTo(X,Y)});g.fill()})});
+  if(F.adv!=F.advTo)F.adv=reduce?F.advTo:Math.min(F.advTo,F.adv+dt/9);
+  L.setTransform(dpr,0,0,dpr,0,0);L.clearRect(0,0,W,H);L.imageSmoothingEnabled=false;L.globalCompositeOperation='source-over';
+  const fk=foeOf();
+  F.banners.filter(b=>b.foe).forEach((b,i)=>{const p=foePos(b);drawBanner(L,fk,p.x+13*p.s,p.y-18*p.s,p.s,t,i)});
+  for(const m of F.foes){const p=foePos(m);m.hx=p.x;m.hy=p.y;m.hs=p.s;L.fillStyle='rgba(0,0,0,.22)';L.fillRect(p.x+6*p.s,p.y+34*p.s,14*p.s,2*p.s);drawSprite(L,m,p.x,p.y,p.s,t)}
+  let rear=true;
+  for(const m of F.friends){ if(rear&&m.s==F.S){rear=false;F.banners.filter(b=>!b.foe).forEach((b,i)=>drawBanner(L,liege,b.x,b.y-b.s*52,b.s,t,i*2,90))}
+    drawSprite(L,m,m.x-13*m.s,m.y-36*m.s,m.s,t)}
+  F.bits=F.bits.filter(p=>(p.l-=dt)>0);for(const p of F.bits){p.vy+=500*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;L.fillStyle=p.c;L.fillRect(p.x|0,p.y|0,p.s,p.s)}
+  if(F.tint[3]>.01){L.globalCompositeOperation='source-atop';L.fillStyle=css(F.tint,F.tint[3]);L.fillRect(0,0,W,H);L.globalCompositeOperation='source-over'}
+  g.drawImage(F.layer,0,0,W,H);
+  if(!F.tipped&&ts-F.idleAt>30000)idleTip();
+}
+function loop(ts){ if(!F.run)return; drawField(ts); requestAnimationFrame(loop) }
+function kick(){ if(reduce||!F.run)requestAnimationFrame(drawField) }
+new IntersectionObserver(e=>{const on=e[0].isIntersecting;if(on&&!F.run&&!reduce){F.run=true;requestAnimationFrame(loop)}else if(!on)F.run=false}).observe(F.cv);
+addEventListener('resize',()=>{clearTimeout(F.rt);F.rt=setTimeout(resizeField,120)});
+function tally(){const a=755-F.lostF,b=760-F.lostE;$('#nf').textContent=a;$('#ne').textContent=b;$('#barf').style.width=(a/(a+b)*100).toFixed(1)+'%'}
+function blood(x,y){for(let i=0;i<10;i++)F.bits.push({x,y,vx:(Math.random()-.5)*220,vy:-60-Math.random()*200,l:.5+Math.random()*.4,s:3,c:'#801616'})}
+F.cv.addEventListener('click',e=>{
+  const b=F.cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top,t=performance.now()/1000;
+  if(Math.hypot(x-F.sun[0],y-F.sun[1])<44){setHour(F.hour+1);feed(HOURS[F.hour].n+'. The light is graded by the hour.');honour('light');return}
+  for(let i=F.friends.length-1;i>=0;i--){const m=F.friends[i];if(m.fall)continue;
+    if(Math.abs(x-m.x)<7*m.s&&y>m.y-33*m.s&&y<m.y){
+      if(m.you){feed('That is you. You are always gold, so you can be found in any crowd.');return}
+      m.fall=t;m.dir=x<m.x?1:-1;F.lostF++;tally();blood(x,y);clang();feed(newName()+' fell. You knew him.','bad');honour('knew');kick();return}}
+  for(let i=F.foes.length-1;i>=0;i--){const m=F.foes[i];if(m.fall)continue;
+    if(x>m.hx+5*m.hs&&x<m.hx+21*m.hs&&y>m.hy&&y<m.hy+36*m.hs){m.fall=t;m.dir=Math.random()<.5?1:-1;F.lostE++;tally();blood(x,y);clang();
+      if(F.lostE==1)feed('A blow landed. Keep at it.');else if(F.lostE%10==0)feed(F.lostE+' of the host are down.','ok');kick();return}}
+});
+function idleTip(){F.tipped=true;F.advTo=1;$('#tiptext').textContent='With an idle captain the enemy wins in about thirty seconds. That is expected: the balance assumes you fight. Click the host.';$('#tip').hidden=false;honour('idle')}
+$('#tipok').onclick=()=>{$('#tip').hidden=true};
+['pointerdown','keydown','wheel','touchstart'].forEach(ev=>addEventListener(ev,()=>{F.idleAt=performance.now()},{passive:true}));
+addEventListener('scroll',()=>{F.idleAt=performance.now()},{passive:true});
+$('#hourb').onclick=()=>{setHour(F.hour+1);honour('light')};
+
+/* ---------- fx overlay: horse, troll, rain, rivets ---------- */
+const fx={cv:$('#fx'),run:false,rain:false,riders:[],troll:null,bits:[],drops:[],last:0};
+fx.g=fx.cv.getContext('2d');
+function fxStart(){ if(fx.run)return; fx.run=true; fx.cv.width=innerWidth;fx.cv.height=innerHeight; fx.last=performance.now(); requestAnimationFrame(fxLoop) }
+function fxLoop(ts){
+  const g=fx.g,W=fx.cv.width,H=fx.cv.height,dt=Math.min(.05,(ts-fx.last)/1000),t=ts/1000;fx.last=ts;
+  if(W!=innerWidth||H!=innerHeight){fx.cv.width=innerWidth;fx.cv.height=innerHeight}
+  g.clearRect(0,0,W,H);g.imageSmoothingEnabled=false;
+  if(fx.rain){ while(fx.drops.length<(W*H/9000|0))fx.drops.push({x:Math.random()*(W+200),y:Math.random()*H,v:700+Math.random()*500});
+    g.strokeStyle='rgba(190,210,235,.42)';g.lineWidth=1;g.beginPath();for(const d of fx.drops){d.y+=d.v*dt;d.x-=d.v*.22*dt;if(d.y>H){d.y=-20;d.x=Math.random()*(W+200)}g.moveTo(d.x,d.y);g.lineTo(d.x+5,d.y-22)}g.stroke() } else fx.drops.length=0;
+  for(const r of fx.riders){r.x+=r.v*dt;const f=(t*11+r.ph|0)%2,s=r.s,sp=horse(liege,r.tier,f,r.coat);
+    g.fillStyle='rgba(0,0,0,.25)';g.fillRect(r.x+6*s,r.y+34*s,30*s,2*s);g.drawImage(sp,r.x|0,(r.y+(f?-s:0))|0,sp.width*s,sp.height*s);
+    if(Math.random()<.5)fx.bits.push({x:r.x+4*s,y:r.y+33*s,vx:-80-Math.random()*90,vy:-40-Math.random()*90,l:.6,s:4,c:'rgba(150,130,100,.7)',g:300})}
+  fx.riders=fx.riders.filter(r=>r.x<W+60);
+  if(fx.troll){const T=fx.troll;T.x-=T.v*dt;const step=(t*2.2|0);if(step!=T.step){T.step=step;thud();if(!reduce)$('main').animate([{transform:'translateY(0)'},{transform:'translateY(7px)'},{transform:'translateY(-2px)'},{transform:'translateY(0)'}],{duration:230})}
+    const sp=troll(step%2),s=T.s;g.fillStyle='rgba(0,0,0,.3)';g.fillRect(T.x+4*s,H-3*s,28*s,3*s);g.drawImage(sp,T.x|0,H-sp.height*s+(step%2?0:-s),sp.width*s,sp.height*s);if(T.x<-sp.width*s)fx.troll=null}
+  fx.bits=fx.bits.filter(p=>(p.l-=dt)>0);for(const p of fx.bits){p.vy+=(p.g||1400)*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.b&&p.y>H-6){p.y=H-6;p.vy*=-.45;p.vx*=.7}g.fillStyle=p.c;g.fillRect(p.x|0,p.y|0,p.s,p.s)}
+  if(fx.rain||fx.riders.length||fx.troll||fx.bits.length)requestAnimationFrame(fxLoop);else{fx.run=false;g.clearRect(0,0,W,H)}
+}
+function charge(){const n=innerWidth<700?5:9;for(let i=0;i<n;i++)fx.riders.push({x:-220-Math.random()*520,y:innerHeight*(.3+.55*i/n)-80,v:620+Math.random()*160,s:innerWidth<700?3:4,tier:3+(Math.random()*5|0),coat:i,ph:Math.random()*2});
+  fx.riders.sort((a,b)=>a.y-b.y);fxStart();feed('Your horse ride down the page.','ok');if(soundOn)horn();honour('ride')}
+function callTroll(){ if(fx.troll)return; fx.troll={x:innerWidth+20,v:innerWidth/7,s:innerWidth<700?4:6,step:0};fxStart();feed('A troll. Blades do little. Horses will not face it.','bad');honour('troll')}
+function toggleRain(){fx.rain=!fx.rain;if(fx.rain)fxStart();feed(fx.rain?'Rain. The ground darkens and bowstrings slacken.':'The rain passes.');honour('rain');kick()}
+function toggleFlame(){const on=document.documentElement.classList.toggle('flame');$$('[data-hollow]').forEach(e=>e.hidden=!on);
+  if(!on&&liege=='hollow')setLiege('azure',true);
+  F.bg=buildBg();kick();feed(on?'The Hollow Crown offers a pact. You take it.':'Purged. It cost you.',on?'bad':'ok');if(on)honour('flame')}
+
+/* rivets on every plate */
+$$('.plate').forEach(p=>{ if(p.id=='tip'||p.classList.contains('tally'))return; ['tl','tr','bl','br'].forEach(k=>{const r=document.createElement('button');r.className='rivet '+k;r.tabIndex=-1;r.setAttribute('aria-hidden','true');p.append(r)}) });
+document.addEventListener('click',e=>{const r=e.target.closest('.rivet');if(!r||r.classList.contains('gone'))return;e.stopPropagation();r.classList.add('gone');const b=r.getBoundingClientRect();
+  fx.bits.push({x:b.left+3,y:b.top+3,vx:(Math.random()-.5)*160,vy:-220,l:3.2,s:5,c:'#a09880',b:1});fxStart();clang();honour('rivet')},true);
+
+/* typed words and the old code */
+let typed='',kon=0;const KON=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+addEventListener('keydown',e=>{
+  if(e.key=='F1'||(e.key=='?'&&!/INPUT|TEXTAREA/.test(e.target.tagName))){e.preventDefault();openHelp();return}
+  if(e.key=='Enter'&&!$('#tip').hidden&&!/INPUT|BUTTON|A/.test(e.target.tagName)){$('#tip').hidden=true;return}
+  kon=e.key.toLowerCase()==KON[kon].toLowerCase()?kon+1:(e.key=='ArrowUp'?1:0); if(kon==KON.length){kon=0;charge()}
+  if(/INPUT|TEXTAREA/.test(e.target.tagName)||e.key.length!=1)return;
+  typed=(typed+e.key.toLowerCase()).slice(-8);
+  if(typed.endsWith('troll')){typed='';callTroll()} else if(typed.endsWith('flame')||typed.endsWith('pact')){typed='';toggleFlame()} else if(typed.endsWith('rain')){typed='';toggleRain()} else if(typed.endsWith('charge')){typed='';charge()}
+});
+function openHelp(){drawHonours();const d=$('#help');if(!d.open)d.showModal()}
+$('#honb').onclick=$('#f1b').onclick=openHelp; $('#helpx').onclick=()=>$('#help').close();
+$$('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target==d)d.close()}));
+
+/* ---------- realms ---------- */
+function setLiege(id,quiet){
+  liege=id; if(id!='hollow')store.set('ironfield.liege',id);
+  const R=realmOf(id),p=PAL[id],root=document.documentElement.style;
+  root.setProperty('--friend',p.ui);root.setProperty('--foe',PAL[foeOf()].ui);
+  paintShield(p).canvas($('#hs0'));paintShield(PAL[foeOf()]).canvas($('#hs1'));
+  $$('#shields button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.id==id);b.style.setProperty('--rc',PAL[b.dataset.id].ui)});
+  const rel=R.war?`<span class="chip war">At war with ${realmOf(R.war).name}</span>`:`<span class="chip peace">At peace, for now</span>`;
+  $('#realm').style.setProperty('--rc',p.ui);
+  $('#realm').querySelectorAll(':scope>:not(.rivet)').forEach(n=>n.remove());
+  $('#realm').insertAdjacentHTML('afterbegin',`<div><span class="label">${R.where}</span><h3>${R.name}</h3><p>${R.text} <i>${R.flav}</i></p><p>${R.temper}</p><span class="chip you">Your liege</span>${rel}</div>
+   <dl class="lines">${[['foot','Foot'],['spears','Spears'],['bows','Bows'],['horse','Horse']].map(([k,n])=>`<dt>${n}</dt><dd><small>${R.lines[k][0]} to </small>${R.lines[k][6]}</dd>`).join('')}</dl>`);
+  layoutField();kick();drawLadder();drawCompany();drawTicker(true);
+  if(!quiet)feed(`You ride for ${/^The|^Order|^Khag/.test(R.name)?'the '+R.name.replace(/^The /,''):'the '+R.name}.`);
+}
+REALMS.forEach(R=>{const b=document.createElement('button');b.dataset.id=R.id;if(R.hidden){b.hidden=true;b.dataset.hollow=1}
+  const c=paintShield(PAL[R.id]).canvas();c.className='pix';b.append(c);b.insertAdjacentHTML('beforeend',`<span class="label">${R.name}</span>`);b.onclick=()=>setLiege(R.id);$('#shields').append(b)});
+
+/* ---------- the ranks ---------- */
+const TIERS=[['I','Levy','A linen cap, a dyed tunic and a round wooden shield with painted quarters.'],['II','Regular','A kettle hat, a quilted gambeson in the realm\'s colour and a kite shield.'],['III','Veteran','A nasal helm, mail, and a tabard with the charge.'],['IV','Elite','A sallet, and plate on the heaviest lines. Destriers go caparisoned.'],['V','Champion','Plate and a cape. From here a line fights in its own style: crush, sweep, riposte, ride down.'],['VI','Household','A great helm, cape and plume. Needs one of the culture\'s own towns in your realm.'],['VII','Legend','Plume and cape on every man. You will not field many. You will remember each.']];
+let role='foot',tier=3;
+[['foot','Foot'],['spears','Spears'],['bows','Bows'],['horse','Horse']].forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{role=k;drawLadder()};b.dataset.k=k;$('#roles').append(b)});
+function drawLadder(){
+  $$('#roles button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k==role));
+  const L=$('#ladder');L.innerHTML='';
+  TIERS.forEach((T,i)=>{const b=document.createElement('button'),src=role=='horse'?horse(liege,i+1,0,i):man(liege,i+1,role,false),c=document.createElement('canvas');
+    c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);c.className='pix';
+    b.append(c);b.insertAdjacentHTML('beforeend',`<span class="label">${T[0]}</span>`);b.setAttribute('aria-pressed',i==tier);b.setAttribute('aria-label','Tier '+T[0]);b.onclick=()=>{tier=i;drawLadder()};L.append(b)});
+  const T=TIERS[tier];$('#tname').innerHTML=`<span class="label gold">Tier ${T[0]} · ${T[1]}</span><br>${realmOf(liege).lines[role][tier]}`;$('#tdesc').textContent=T[2];
+}
+
+/* ---------- your company ---------- */
+const HONS={bloodied:['Bloodied','won a battle that cost half its men'],unbroken:['Unbroken','10 battles without a rout'],oldhands:['Old Hands','25 battles'],stormers:['Stormers','3 assaults on walls'],horsebreakers:['Horse-breakers','40 riders killed']};
+let Co=store.get('ironfield.company');
+const ADJ=['Grey','Iron','Black','Red','White','Old','Free','Broken','Ashen','Salt','Winter','Long'],NOUN=['Lances','Shields','Company','Hounds','Wolves','Pikes','Bows','Brothers','Swords','Ravens','Watch','Hands'];
+$('#cname').value=Co?Co.name:`The ${pick(ADJ)} ${pick(NOUN)}`;
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function log(html){Co.log.unshift(html);Co.log.length=Math.min(Co.log.length,12)}
+function muster(){
+  const name=($('#cname').value.trim()||`The ${pick(ADJ)} ${pick(NOUN)}`).slice(0,28);
+  Co={name,day:1,battles:0,sinceRout:0,assaults:0,riders:0,hon:[],names:[],roll:[{n:newName(),b:0,d:'Named when the company was raised.'}],fallen:[],log:[]};
+  log(`<b>Day 1</b> ${esc(name)} is raised. 72 men, one of them named.`);save();drawCompany();feed(`${name} is raised. ${Co.roll[0].n} is first on the roll.`,'ok');
+}
+function save(){store.set('ironfield.company',Co)}
+function fight(){
+  const C=Co,place=pick(PLACES),assault=Math.random()<.22,r=Math.random(),rout=r<(C.hon.includes('unbroken')?.09:.15),costly=!rout&&r<.3;
+  C.day+=rnd(3,9);C.battles++;const lost=rout?rnd(20,34):costly?rnd(36,44):rnd(3,14),riders=assault?0:rnd(0,9);C.riders+=riders;
+  C.sinceRout=rout?0:C.sinceRout+1;if(assault&&!rout)C.assaults++;
+  const where=assault?`the walls of ${place}`:place,foe=foeName(),news=[];
+  // the named share the company's losses
+  const pFall=rout?.24:costly?.3:.07;
+  C.roll=C.roll.filter(m=>{ if(Math.random()<pFall){C.fallen.unshift({n:m.n,d:`Fell at ${where}, day ${C.day}, after ${m.b+1} battle${m.b?'s':''}.`});news.push([`${m.n} fell at ${where}.`,'bad']);return false}
+    m.b++; const x=Math.random(); if(!rout&&x<.1)m.d=`Cut down a captain at ${place}.`;else if(!rout&&x<.24)m.d=`Killed ${rnd(5,9)} at ${place}.`;else if(x>.93)m.d=`Pulled from the press by the captain at ${place}.`; return true});
+  // new names are earned
+  if(C.roll.length<6&&(!C.roll.length||Math.random()<(costly?.8:rout?.2:.5))){
+    const d=!C.roll.length?`Took up the roll after ${place}. The old names were gone.`:costly?`Stood when half the company fell at ${place}.`:assault&&!rout?`First over the wall at ${place}.`:riders>3?`Brought down a horseman at ${place}.`:`Held the line at ${place} when it bent.`;
+    const m={n:newName(),b:1,d};C.roll.push(m);news.push([`${m.n} earns a name.`,'ok'])}
+  // honours on the banner (three at most)
+  const earn=id=>{if(!C.hon.includes(id)&&C.hon.length<3){C.hon.push(id);news.push([`${C.name} are now ${HONS[id][0]}.`,'ok'])}};
+  if(costly)earn('bloodied');if(C.sinceRout>=10)earn('unbroken');if(C.battles>=25)earn('oldhands');if(C.assaults>=3)earn('stormers');if(C.riders>=40)earn('horsebreakers');
+  // great battles are named; a rout can lose one to the enemy
+  let title=assault?`The assault on ${place}`:`A fight near ${place}`;
+  if(!rout&&(costly||Math.random()<.22)){title=assault?`The Walls of ${place}`:pick([`The Battle of ${place}`,`${place} Field`,`The Ford at ${place}`]);C.names.unshift({n:title,lost:false});C.names.length=Math.min(C.names.length,4);news.push([`It will be called ${title}.`,'ok'])}
+  else if(rout){const b=C.names.find(b=>!b.lost);if(b){b.lost=true;news.push([`The honour of ${b.n} is lost to the enemy.`,'bad'])}}
+  else{const b=C.names.find(b=>b.lost);if(b&&Math.random()<.5){b.lost=false;news.push([`You win back the honour of ${b.n}.`,'ok'])}}
+  log(`<b>Day ${C.day}</b> ${esc(title)}, against ${esc(foe)}. <span class="${rout?'l':'w'}">${rout?'Routed':costly?'Won, dearly':'Won'}</span>. Lost ${lost}.`);
+  save();drawCompany();news.slice(0,3).forEach((n,i)=>setTimeout(()=>feed(n[0],n[1]),i*450));
+  const M=$('#muster');M.classList.remove('hit');void M.offsetWidth;M.classList.add('hit');clang();
+  if(C.battles>=10)honour('old');
+}
+function drawCompany(){
+  const has=!!Co;$('#cgrid').hidden=$('#chron').hidden=$('#fbtn').hidden=$('#dbtn').hidden=!has;$('#mbtn').hidden=has;$('#cname').readOnly=has;
+  // the banner
+  const p=PAL[liege],b=new Buf(28,40),f=paintFlag(p,22,16);b.box(2,1,1,38,WOOD);b.set(2,0,BRASS);
+  for(let y=0;y<16;y++)for(let x=0;x<22;x++)b.d[(y+2)*28+x+4]=f.d[y*22+x];
+  if(has)Co.hon.forEach((h,i)=>{for(let x=0;x<16;x++)b.d[(20+i*3)*28+x+4]=tone(BRASS,x%5==4?-1:0)});
+  b.outline().canvas($('#cbanner'));
+  if(!has)return;
+  $('#hon').innerHTML=`${esc(Co.name)}<small>${Co.battles} battle${Co.battles==1?'':'s'}, day ${Co.day}</small>`+
+    Co.hon.map(h=>`<div title="${HONS[h][1]}">${HONS[h][0]}<small>${HONS[h][1]}</small></div>`).join('')+
+    Co.names.map(n=>n.lost?`<div><s>${esc(n.n)}</s><small>lost to the enemy</small></div>`:`<div>${esc(n.n)}</div>`).join('');
+  $('#roll').innerHTML=Co.roll.map(m=>`<li><b>${m.n}</b><small>${m.d} ${m.b?m.b+' battle'+(m.b>1?'s':'')+'.':''}</small></li>`).join('')||'<li class="empty">No named men stand. Someone will have to earn it.</li>';
+  $('#fallen').innerHTML=Co.fallen.map(m=>`<li><b>${m.n}</b><small>${m.d}</small></li>`).join('')||'<li class="empty">No one yet. It will not last.</li>';
+  $('#chron').innerHTML=Co.log.map(l=>`<div>${l}</div>`).join('');
+}
+$('#mform').onsubmit=e=>{e.preventDefault();if(!Co)muster()};
+$('#fbtn').onclick=fight;
+$('#dbtn').onclick=()=>{ if(Co.fallen.length&&!confirm('Disband the company? The fallen will be forgotten.'))return; Co=null;store.del('ironfield.company');$('#cname').value=`The ${pick(ADJ)} ${pick(NOUN)}`;drawCompany() };
+
+/* ---------- the chronicle ticker ---------- */
+const TICK=()=>{const L=realmOf(liege).name.replace(/^The /,''),E=foeName();return[
+ `You sign on with the ${L} as a free captain. Their steward pays 85% of your upkeep.`,`Lord Hilda Greycloak defeats Grey Pack near Ludlow.`,`You lay siege to Odda. Ladders will be ready by morning.`,
+ `A wanderer in the tavern at Stonebridge asks to join your household.`,`${E.replace(/^b/,'B')} burn a village in your liege's land.`,`A brigand king is crowned in the hills.`,`Lord Amaury Ironside remembers that you set him free without ransom.`,
+ `The council sits. A captured seat is granted to you.`,`Winter comes. The march slows and rations double.`,`Goblins dig in near Oakhollow. They will raid if left alone.`,`The dead rise at an old battlefield.`,
+ `A sergeant of fifteen battles joins your household.`,`A tournament is called at Kingsfold: blunt weapons, no deaths, a purse.`,`The marshal musters a host. You are summoned: come within four days.`,`A weary realm sues for peace on the winner's terms.`]};
+let tk=0,tday=1;
+function drawTicker(reset){const T=TICK(),el=$('#ticker');if(reset){tk=0;tday=1;el.querySelectorAll('div').forEach(d=>d.remove())}
+  const d=document.createElement('div');d.innerHTML=`<b>Day ${tday}</b>${T[tk%T.length]}`;el.prepend(d);tk++;tday+=rnd(2,11);const ds=el.querySelectorAll('div');if(ds.length>4)ds[4].remove()}
+setInterval(()=>{if(!document.hidden)drawTicker()},3400);
+
+/* ---------- terminal ---------- */
+const out=$('#tout');
+function say(html,cls){const s=document.createElement('span');if(cls)s.className=cls;s.innerHTML=html+'\n';out.append(s);out.scrollTop=out.scrollHeight}
+function slow(lines,done,ms=110){let i=0;(function next(){if(i<lines.length){say(...[].concat(lines[i++]));setTimeout(next,reduce?0:ms)}else done&&done()})()}
+say('Ironfield. Switches work here as they do in the game.','g');say('Try: help','d');
+const TESTS=['Parry','TroopTree','SevenRealms','Armoury','BalanceMatchesData','MapIndexMatches','RefuseOldSave','EventsAndQuests','TierFight','SiegeBattle','ReplayExact','CampaignRun'];
+function run(cmd){
+  say('$ dotnet run -- '+esc(cmd),'d');const a=cmd.trim().replace(/^--/,'').split(/\s+/),c=(a[0]||'').toLowerCase();
+  if(c=='help'||c=='')slow([['--selftest [name]   the test suite, headless'],['--bench 1500       a 1,500-a-side battle, ms per tick'],['--balance 4        headless campaigns and battles'],['--replay           play back your last battle'],['--sprites          show a soldier, painted now'],['muster | horn | clear','d'],['There are other words. The game is full of things.','d']],0,30);
+  else if(c=='selftest'){const one=a[1]&&TESTS.find(t=>t.toLowerCase()==a[1].toLowerCase());const list=one?[one]:a[1]?[]:TESTS;
+    if(!list.length)return say('No test named '+esc(a[1])+'.');
+    slow(list.map(t=>[`${t.padEnd(22,'.')} <span class="o">ok</span>${t=='SiegeBattle'?'  (idle player: the enemy wins in 31 s, as expected)':t=='ReplayExact'?'  (same seed, same battle)':''}`]),()=>{say('selftest ok','o');if(!one)honour('test')},160)}
+  else if(c=='bench')slow([['3,000 men on the field'],['grid 0.4  think 1.3  move 0.9  combat 0.6  morale 0.2'],['<span class="o">3.6 ms per tick</span>']]);
+  else if(c=='balance')slow([['campaign 1: 240 days. Azure 19%, Northmarch 17%...'],['campaign 2: 240 days. No realm past 30%.'],['wrote balance/realms.csv','d']]);
+  else if(c=='replay')slow([['replays/last-battle.json'],['tick 0 ... tick 5,412'],['<span class="o">same outcome</span>']]);
+  else if(c=='sprites'){const s=man(liege,rnd(1,7),pick(['foot','spears','bows']),false),cv=document.createElement('canvas');cv.width=s.width;cv.height=s.height;cv.getContext('2d').drawImage(s,0,0);cv.className='pix';cv.style.cssText='width:104px;display:inline-block;margin:6px 0';out.append(cv);say('');say('Painted just now, from one description. No two runs need agree.','d')}
+  else if(c=='muster'){$('#company').scrollIntoView();say('To the muster field.')}
+  else if(c=='horn'){$('#hornb').click();say('...')}
+  else if(c=='clear')out.innerHTML='';
+  else if(c=='troll'){callTroll();say('You should not have.','d')}
+  else if(c=='flame'||c=='pact'){toggleFlame();say('...','d')}
+  else if(c=='rain'){toggleRain();say('Weather set.','d')}
+  else if(c=='charge'){charge();say('Lances couched.','d')}
+  else if(c=='gpu-report')say('Mesa llvmpipe. No MSAA. FXAA in post. It runs.');
+  else if(c=='write-controls')say('wrote controls.json. Everything can be rebound.');
+  else say(`Unknown switch: ${esc(a[0])}. Try help.`);
+}
+$('#tform').onsubmit=e=>{e.preventDefault();const v=$('#tin').value;$('#tin').value='';run(v)};
+$('#term').addEventListener('click',e=>{if(!e.target.closest('.rivet')&&!getSelection().toString())$('#tin').focus({preventScroll:true})});
+
+/* ---------- page furniture ---------- */
+// lightbox
+$$('.shot').forEach(s=>s.onclick=()=>{const i=s.querySelector('img');$('#lb img').src=i.src;$('#lb img').alt=i.alt;$('#lbcap').textContent=s.dataset.cap||'';$('#lb').showModal()});
+$('#lb').addEventListener('click',()=>$('#lb').close());
+// reveal, count up
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);
+  if(e.target.id=='stats'&&!reduce)$$('[data-n]',e.target).forEach(el=>{const n=+el.dataset.n,t0=performance.now();(function f(t){const k=clamp((t-t0)/1100,0,1),v=Math.round(n*(1-Math.pow(1-k,3)));pxText(el,v.toLocaleString('en-GB'));if(k<1)requestAnimationFrame(f)})(t0)})}}),{threshold:.12});
+$$('.rv').forEach(e=>io.observe(e));
+// the road
+const stops=$$('.rail a'),secs=stops.map(a=>$(a.getAttribute('href')));
+stops.forEach((a,i)=>a.style.top=(i/(stops.length-1)*100)+'%');
+(()=>{const b=new Buf(10,12);b.box(1,1,1,10,WOOD);const f=paintFlag(PAL.gold,6,5);for(let y=0;y<5;y++)for(let x=0;x<6;x++)b.d[(y+1)*10+x+2]=f.d[y*6+x];b.outline().canvas($('#you'))})();
+function road(){const y=scrollY+innerHeight*.4;let k=0;secs.forEach((s,i)=>{if(s.offsetTop<=y)k=i});
+  const a=secs[k],b=secs[k+1],p=b?clamp((y-a.offsetTop)/(b.offsetTop-a.offsetTop),0,1):0;
+  $('#you').style.top=((k+p)/(stops.length-1)*100)+'%';stops.forEach((s,i)=>s.classList.toggle('on',i==k))}
+addEventListener('scroll',road,{passive:true});
+// the clock
+const t0=Date.now();setInterval(()=>{const s=(Date.now()-t0)/1000|0;$('#clock').textContent=(s/60|0)+':'+String(s%60).padStart(2,'0')},1000);
+// the tab
+const title=document.title;document.addEventListener('visibilitychange',()=>{document.title=document.hidden?'Your men are waiting, captain':title});
+
+paintShield(PAL.gold).canvas($('#markshield'));
+resizeField();setLiege(liege,true);tally();road();
+if(reduce)drawField(performance.now());
+window.ironfield={charge,troll:callTroll,rain:toggleRain,selftest:()=>run('--selftest')};
+console.log('%c IRONFIELD %c\nNo art files. Every pixel on this page was painted by the code you are reading.\nTry: ironfield.selftest()','background:#d6ac46;color:#1a1408;font:700 16px monospace;padding:4px 10px','color:#aaaeb6;font:12px monospace');
+})();
+</script>
+</body>
+</html>
