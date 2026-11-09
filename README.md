@@ -315,6 +315,12 @@ the player rides a courser.
   **You can direct them:** in command view select the circle (or a company a companion leads) and press P to pick a spell,
   then click the ground to cast it there. The order rides out like any other, and costs 5 more Will. X makes casters
   hold their spells for your word (and press X again to let them cast at will). Craft (not faith) raises the **Omen**; from 12, dark omens follow.
+  **The spellbook:** on the circle's roll (P, then its roll) choose which spells it prepares for the next battle (as many as
+  its tier knows), and teach it up to two more of its tradition: a priest (faith) or cunning one (craft) among your
+  companions, a shrine, standing stones or a hermit can teach, for 150 crowns, then 300. The encounter panel names the
+  prepared spells and any the weather makes useless. The circle has a **master**, a named man (Father of the Circle or
+  Stormcaller) who rises with battles: more Will, and at rank 3 a cheaper great working. If he falls the circle is
+  leaderless for ten days, with no great working, until another rises.
 - **Companions' callings:** each companion is a Sword, Shield, Banner, Bow, Lance, Priest or Cunning one. He gains levels
   (to 10) in battles his company fights, a talent each level and a second ability at 5, and he uses his abilities on his own,
   like mages. Companions like or dislike what you do, quarrel, swear brotherhood, have a story to settle, take a student, and

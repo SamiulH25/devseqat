@@ -52,6 +52,9 @@ public static partial class SelfTest
         RitesWork();
         SuperMages();
         CastOnOrder();
+        SpellbookCarries();
+        SpellbookByTier();
+        CircleMaster();
         CompanionGrows();
         HoldTheLine();
         EnemyChampions();

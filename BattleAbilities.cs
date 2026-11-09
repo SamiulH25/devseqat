@@ -42,8 +42,12 @@ public partial class Battle
     {
         var ids = new List<(string id, bool hero)>();
         var best = s.Units.Where(u => u.Type.Spells.Length > 0).OrderByDescending(u => u.Type.Tier).FirstOrDefault();
-        if (best != null) ids.AddRange(best.Type.Spells.OrderByDescending(id => Abilities.Get(id).Great).Select(id => (id, false))); // a great working when it is time, before the rest
+        var book = company?.Spells is { Length: > 0 } prepared ? prepared.Where(Abilities.Has).ToArray() : best?.Type.Spells; // the spells you prepared (MA4)
+        if (best != null && book != null) ids.AddRange(book.OrderByDescending(id => Abilities.Get(id).Great).Select(id => (id, false))); // a great working when it is time, before the rest
         s.CasterStart = s.Units.Count(u => u.Type.Spells.Length > 0);
+        s.MasterRank = company?.MasterRank ?? 0;
+        s.Will = WillCap(s);
+        if (company?.Leaderless == true) s.GreatDone = true; // no great working without a master
         if (company is { HeroGifts.Length: > 0 } && s.Units.Any(u => u.Hero)) ids.AddRange(company.HeroGifts.Where(Abilities.Has).Select(id => (id, true)));
         if (ids.Count == 0) return;
         s.Spells = ids.Select(x => Abilities.Get(x.id)).ToArray();
@@ -54,6 +58,11 @@ public partial class Battle
     }
 
     static bool IsCaster(Unit u) => u.Type.Spells.Length > 0;
+
+    /// A circle's full Will: 100, and 10 more for each rank of its master (MA4).
+    static float WillCap(Squad s) => 100 + 10 * s.MasterRank;
+    /// What a spell costs this company: a master of rank 3 works the great working for 15 less.
+    static float WillCost(Squad s, AbilityDef a) => a.Will - (a.Great && s.MasterRank >= 3 ? 15 : 0);
     public static bool CasterCompany(Squad s) => s.Units.Count > 0 && s.Units[0].Type.Class == UnitClass.Caster;
 
     /// How strong a company's spells land: a caster's tier (0.6 at II, 1 at IV, 1.4 at VI) and how many of them still stand;
@@ -87,7 +96,7 @@ public partial class Battle
         bool still = true;
         foreach (var u in s.Units)
             if (u.Active && !u.Routing && IsCaster(u)) { casters++; tier = Math.Max(tier, u.Type.Tier); if (u.Vel.LengthSquared() > 1) still = false; }
-        float cap = s.CasterStart == 0 ? 0 : 100f * casters / s.CasterStart; // it is the men who cast
+        float cap = s.CasterStart == 0 ? 0 : WillCap(s) * casters / s.CasterStart; // it is the men who cast
         s.Will = MathF.Min(cap, s.Will + (0.5f + 0.5f * Math.Max(0, tier - 2)) * (still ? 2 : 1) * dt);
         if (Casts.Any(c => c.By == s)) return;
         bool engaged = casters > 0 && s.Units.Any(u => u.Active && IsCaster(u) && u.EnemyDist < 3); // a mage with a blade at him cannot work
@@ -98,11 +107,11 @@ public partial class Battle
             var a = s.Spells[i];
             bool hero = s.ByHero[i];
             if (Time < s.SpellReady[i] || (a.Great && s.GreatDone)) continue;
-            if (hero ? Speaker(s, true) == null : casters == 0 || engaged || s.Will < a.Will || s.Will < 20) continue; // under 20 Will a company is drained
+            if (hero ? Speaker(s, true) == null : casters == 0 || engaged || s.Will < WillCost(s, a) || s.Will < 20) continue; // under 20 Will a company is drained
             if (Target(s, a, out var at, out var on) is false) continue;
             float power = SpellPower(s, hero);
             if (power <= 0) continue;
-            if (!hero) s.Will -= a.Will;
+            if (!hero) s.Will -= WillCost(s, a);
             s.SpellReady[i] = Time + a.Cooldown;
             if (a.Great) s.GreatDone = true;
             Casts.Add(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power });
@@ -128,7 +137,7 @@ public partial class Battle
         if (Speaker(s, hero) == null) return hero ? "HE IS DOWN" : "THE CASTERS ARE DOWN";
         if (a.Great && s.GreatDone) return "SPENT";
         if (Time < s.SpellReady[i]) return $"IN {s.SpellReady[i] - Time:0}";
-        if (!hero && (s.Will < a.Will + OrderedWill || s.Will < 20)) return "NO WILL";
+        if (!hero && (s.Will < WillCost(s, a) + OrderedWill || s.Will < 20)) return "NO WILL";
         return null;
     }
 
@@ -143,7 +152,7 @@ public partial class Battle
         if (a.Great && s.GreatDone) { DropCast(s, "that working is spent"); return false; }
         var me = Speaker(s, hero);
         if (me == null || Time < s.SpellReady[i]) return true;
-        if (!hero && (casters == 0 || engaged || s.Will < a.Will + OrderedWill || s.Will < 20)) return true;
+        if (!hero && (casters == 0 || engaged || s.Will < WillCost(s, a) + OrderedWill || s.Will < 20)) return true;
         var at = a.Self ? s.Center : s.CastAt;
         if (!a.Self && Vector2.Distance(me.Pos, at) > a.Range)
         {
@@ -162,7 +171,7 @@ public partial class Battle
         }
         float power = SpellPower(s, hero);
         if (power <= 0) return true;
-        if (!hero) s.Will -= a.Will + OrderedWill;
+        if (!hero) s.Will -= WillCost(s, a) + OrderedWill;
         s.SpellReady[i] = Time + a.Cooldown;
         if (a.Great) s.GreatDone = true;
         s.CastSpell = -1;

@@ -57,6 +57,8 @@ public sealed class Squad
     /// Your orders to a caster (docs/MAGIC_AURA.md 3.1): hold all spells for your word; the spell (index into Spells, -1 =
     /// none) you told it to cast, on which spot, and when the order reached it.
     public bool HoldSpells;
+    /// The rank of a circle's master (0-3, MA4): more Will, a cheaper great working.
+    public int MasterRank;
     public int CastSpell = -1;
     public Vector2 CastAt;
     public float CastSince;

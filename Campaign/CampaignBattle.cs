@@ -82,6 +82,7 @@ public partial class Campaign
             CompanionsReact(won ? "won" : "lost");
             if (r.Omen > 0) { S.Omen += r.Omen; CompanionsReact("craft"); } // craft draws Omen (C2)
             FormsAfterBattle(r);
+            CircleDaily(); // a fallen master leaves the circle leaderless (Circle.cs)
         }
 
         // Aftermath for each party.
@@ -243,7 +244,7 @@ public partial class Campaign
             else if (Hostile(p, Player) && !Hostile(p, enemy)) setup.Side1.Add(p);
         }
         bool unpaid = S.UnpaidWeeks > 0;
-        setup.Player = WithHeroes(WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0)))); // callings (Callings.cs)
+        setup.Player = WithCircle(WithHeroes(WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0))))); // callings (Callings.cs), the circle (Circle.cs)
         setup.Enemy = WithChampion(Armies.Divide(Rules.Army(enemy.Name, setup.Side1)), enemy);
         setup.Seed = BattleSeed(enemy);
         bool scouts = setup.Side0.SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
@@ -263,7 +264,7 @@ public partial class Campaign
             Ground = GroundFor(enemy, GroundChooser(enemy, setup.Side0)), // the map's field, the rain, who chose it (Ground.cs)
             EnemyAggression = SideOf(enemy) >= 0 ? Factions.Get(SideOf(enemy)).Aggression : 1.5f, // a realm's temper; brigands do not wait long
             EnemyAura = ChampionAura(enemy), EnemyForms = ChampionFormsOf(enemy), Madness = MadnessInBattle, // an order knight leads with his aura (K6)
-            Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
+            Weather = WeatherFor(enemy),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
             Standing = ActiveBuffs.Concat(RelicReady ? new[] { "relic" } : Array.Empty<string>()).ToArray(), // a shrine's blessing, a feast, hunger (Buffs.cs); your relic (Rites.cs)
         }.WithCaptain(Captain);

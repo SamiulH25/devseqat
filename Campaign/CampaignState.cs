@@ -40,6 +40,11 @@ public sealed class CompanyRecord
     public const int LedgerSize = 8;
     /// Your companies' named men (docs/LEGACY.md L1): the few who earned a name, each one of the men of his stack.
     public List<Soldier> Roll = new();
+    /// A circle of mages (docs/MAGIC_AURA.md 3.2-3.3): spells learned beyond its line's, those you prepared for battle
+    /// (empty = its line's), its master (a Soldier id on the roll, 0 = none) and until when it is leaderless (hours).
+    public List<string> Spells = new(), Prepared = new();
+    public int Master;
+    public double LeaderlessUntil;
     /// The roll has been started (a new company names its first man once).
     public bool RollStarted;
     /// Battle honours (L5): the names of notable wins sewn on its banner, kept for ever; and those a realm took when the

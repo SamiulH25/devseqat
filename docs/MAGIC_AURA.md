@@ -1,6 +1,6 @@
 # Magic and aura for the player: plan
 
-Status: being built (2026-11-09). Done: MA1-MA3. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
+Status: being built (2026-11-09). Done: MA1-MA4. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
 through M4 + P) and docs/KNIGHT_ORDERS.md (aura and orders: built K1-K8). Read docs/LEGACY.md first: your company is
 your legacy, and every change here must serve that.
 
@@ -299,3 +299,18 @@ change touches every later number.
   `Inspire`: every 0.5 s while you fight at tier 2+ and are not spent, your companies within `InspireRadius` (10 m) get
   the `inspired` effect for 1.5 s (block +0.05, morale +1/s; Data/effects.json). HUD: the AURA row reads SURGE n. Test
   `AuraPool`; `AuraBound` holds (an expert wins 3/8 against four men-at-arms felling 12, none against sixteen).
+- **MA4 (spellbook and the circle's master):** `Campaign/Circle.cs`. `Circle` is your one company of casters; its line is
+  its best caster troop (`CircleTroop`), its tradition the line's spells' (`CircleTradition`). It learns up to `MaxLearned`
+  (2) spells of its tradition beyond its line (never a great working), at `LearnCost` (150) crowns times how many it has
+  learned plus one, with a teacher: a fit companion of the matching calling (Priest for faith, Cunning for craft), a
+  shrine, standing stones or a hermit where you stand, or (faith) the relic. Learning the craft breaks the `no_craft` vow.
+  It prepares as many spells as its tier knows by its line (`PrepareSlots`); `Prepared` is your choice while it still
+  holds, else the line's. Save `CompanyRecord.Spells` / `Prepared`; empty plays as before. Into battle through
+  `WithCircle` -> `Company.Spells` -> `LearnSpells`. Master: `CircleDaily` (daily and after each battle) names the most
+  seasoned fit named caster, else names a new man (`NameMan`), as Father of the Circle (faith) or Stormcaller (craft).
+  Rank 1-3 at 3 / 8 / 15 battles (`MasterRank`): Will cap +10 a rank (`WillCap`), the great working 15 Will cheaper at
+  rank 3 (`WillCost`). If he falls the circle is leaderless for `LeaderlessDays` (10): `Company.Leaderless` sets
+  `GreatDone`. The companion step at rank 3 is left for later. UI: THE SPELLBOOK on the circle's roll (P, click the
+  company's roll): master line, prepared toggles, learn buttons with the reason when refused; the encounter panel names
+  the prepared spells and those the weather makes useless (`SpellNote`, using the battle's own weather roll
+  `WeatherFor`). Tests `SpellbookCarries`, `SpellbookByTier`, `CircleMaster`.

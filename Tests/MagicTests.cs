@@ -335,4 +335,80 @@ public static partial class SelfTest
         Run(b2, 1);
         Check(m2.CastSpell == -1, "an order that could not be done in time lapses");
     }
+
+    /// A campaign with a circle of chaplains and a priest to teach them; a bandit stands ready to fight.
+    static (Campaign c, CompanyRecord circle) CircleCampaign(int seed)
+    {
+        var c = Campaign.New(seed);
+        var circle = c.NewCompany("chaplains", "casters", Rules.CapOf("chaplains", "casters"), 0);
+        c.Player.Companies.Add(circle);
+        c.S.Characters.Add(new Character { Id = c.S.NextId++, Kind = "companion", Name = "Brother Test", Culture = "common", Calling = "Priest", PartyId = c.Player.Id, CompanyId = circle.Id });
+        c.S.Gold = 10000;
+        return (c, circle);
+    }
+
+    /// MA4 (docs/MAGIC_AURA.md 3.2): the spells you prepare, and only those, go into battle with the circle.
+    static void SpellbookCarries()
+    {
+        var (c, circle) = CircleCampaign(91);
+        var why = c.LearnSpell("smite");
+        Check(why == null && Campaign.Known(circle).Contains("smite"), $"the circle learns smite from a priest ({why})");
+        Check(c.Prepare("blessing", false) == null && c.Prepare("smite", true) == null, "and prepares it in place of the blessing");
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
+        bandit.Pos = c.Player.Pos; c.Encounter = bandit;
+        var setup = c.PrepareBattle(bandit);
+        var co = setup.Player.Companies.First(x => x.Id == circle.Id);
+        Check(co.Spells != null && co.Spells.Contains("smite") && !co.Spells.Contains("blessing"), "the prepared spells go with the company");
+        var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+        var s = b.Squads.First(q => q.Company?.Id == circle.Id);
+        Check(s.Spells.Any(a => a.Id == "smite") && !s.Spells.Any(a => a.Id == "blessing"), "and the circle casts them in battle, not what it set aside");
+        Check(c.SpellNote(true).Contains("Smite"), "the encounter panel names the prepared spells");
+    }
+
+    /// MA4: never more prepared than the tier's slots; learning needs a teacher and crowns, costs more each time, stops at two.
+    static void SpellbookByTier()
+    {
+        var (c, circle) = CircleCampaign(92);
+        int slots = Campaign.PrepareSlots(circle);
+        Check(slots == Troops.Get("chaplains").Spells.Length, $"chaplains prepare as many as their tier knows ({slots})");
+        foreach (var k in c.Companions.ToList()) k.Calling = "Sword";
+        c.Player.Pos = c.S.Settlements[0].Pos;
+        if (c.SiteAt(c.Player.Pos) == null) Check(c.CannotLearn("smite") != null, "no teacher, no new spell");
+        foreach (var k in c.Companions.ToList()) k.Calling = "Priest";
+        Check(c.CannotLearn("storm") != null, "a faith circle cannot learn the craft");
+        c.S.Gold = 100;
+        Check(c.CannotLearn("smite") == $"NEEDS {Campaign.LearnCost} CROWNS", "a spell costs crowns");
+        c.S.Gold = 10000;
+        Check(c.LearnSpell("smite") == null && c.S.Gold == 10000 - Campaign.LearnCost, "the first costs its price");
+        Check(c.LearnSpell("ward") == null && c.S.Gold == 10000 - 3 * Campaign.LearnCost, "the second costs twice as much");
+        Check(Campaign.Learnable(circle).Any() ? c.LearnSpell(Campaign.Learnable(circle).First().Id) != null : true, "no more than two beyond the line");
+        Check(c.Prepare("smite", true) != null && Campaign.Prepared(circle).Length == slots, "a full spellbook must set one aside first");
+        Check(c.Prepare("mend", false) == null && c.Prepare("smite", true) == null && Campaign.Prepared(circle).Length == slots, "then the new one takes its place");
+        Check(Campaign.Learnable(circle).All(a => !a.Great), "great workings are never learned");
+    }
+
+    /// MA4 (3.3): the circle names a master, who rises with battles; his fall leaves it leaderless (no great working), then another rises.
+    static void CircleMaster()
+    {
+        var (c, circle) = CircleCampaign(93);
+        c.CircleDaily();
+        var m = Campaign.MasterOf(circle);
+        Check(m != null && m.Deeds.Any(d => d.Contains(Campaign.MasterTitle(circle))), "the circle names a master");
+        Check(Campaign.MasterRank(m) == 0, "a new master has no rank");
+        m!.Battles = Campaign.MasterBattles[2];
+        Check(Campaign.MasterRank(m) == 3, "fifteen battles make him a master of rank 3");
+        var b = Battle.Empty(94);
+        var co = new Company("saints_militant", 3, "casters", circle.Id, MasterRank: 3);
+        var s = b.AddSquad(0, Troops.Get("saints_militant"), 3, new(0, 0), 3, Vector2.UnitY, co);
+        Check(s.Will > 100 && s.MasterRank == 3, $"his circle gathers more Will ({s.Will:0})");
+        circle.Roll.Remove(m);
+        c.CircleDaily();
+        Check(Campaign.MasterOf(circle) == null && c.Leaderless(circle), "his fall leaves the circle leaderless");
+        var lead = new Company("saints_militant", 3, "casters", circle.Id, Leaderless: true);
+        var t = b.AddSquad(0, Troops.Get("saints_militant"), 3, new(10, 0), 3, Vector2.UnitY, lead);
+        Check(t.GreatDone, "a leaderless circle has no great working");
+        c.S.Hours += Campaign.LeaderlessDays * 24 + 1;
+        c.CircleDaily();
+        Check(Campaign.MasterOf(circle) is Soldier next && next.Id != m.Id, "after a while another rises");
+    }
 }
