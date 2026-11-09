@@ -32,8 +32,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleAI.cs (351 lines)
 - **Battle** (class, L6): PackApproach:11, HeightRange:25, Think:27, ThinkCav:105, Ride:206, Approach:214, TurnRate:216, Steer:219, Led:238, General:242, Opposite:335
 
-## BattleAura.cs (85 lines)
-- **Battle** (class, L7): SetupAura:26, UpdateAura:31, Presence:53, BladeLanded:69, AuraSoak:76
+## BattleAura.cs (112 lines)
+- **Battle** (class, L7): SetupAura:26, UpdateAura:44, Inspire:63, Presence:79, BladeLanded:95, AuraSoak:103
 
 ## BattleBanner.cs (109 lines)
 - **Battle** (class, L10): SetupBanner:24, UpdateBanner:32, BannerFalls:47, RaiseBanner:58, LastStand:75, UpdateLastStand:89
@@ -75,9 +75,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleFlame.cs (40 lines)
 - **Battle** (class, L7): Madness:17
 
-## BattleForms.cs (241 lines)
+## BattleForms.cs (243 lines)
 - **PendingForm** (record, L6)
-- **Battle** (class, L10): FormWait:26, SetupForms:33, FormPower:46, CannotForm:49, UpdateForms:65, TryForm:75, Use:90, AsAbility:118, FoesNear:121, FormBlow:126, Land:133, InCone:154, InLine:164, Shout:171, Leap:184, AuraShot:214, Drain:225, CounterStrike:237
+- **Battle** (class, L10): FormWait:26, SetupForms:33, FormPower:46, CannotForm:49, UpdateForms:65, TryForm:75, Use:92, AsAbility:120, FoesNear:123, FormBlow:128, Land:135, InCone:156, InLine:166, Shout:173, Leap:186, AuraShot:216, Drain:227, CounterStrike:239
 
 ## BattleGrid.cs (133 lines)
 - **Battle** (class, L7): CellOf:14, BuildGrid:16, Near:28, Separate:104
@@ -461,8 +461,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (612 lines)
 - **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:103, ContinueCampaign:116, OpenLab:129, QuickBattle:131, StartCampaignBattle:138, FinishCampaignBattle:148, CycleQuality:156, Update:160, Draw:190, Fade:223, CaptureShot:253, CampaignShots:275
 
-## SelfTest.cs (271 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:223, Lancer:231, Run:240, Scaled:242, MakeWanderer:245, Days:253, Ids:265, Check:267
+## SelfTest.cs (272 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:224, Lancer:232, Run:241, Scaled:243, MakeWanderer:246, Days:254, Ids:266, Check:268
 
 ## Settings.cs (76 lines)
 - **Difficulty** (enum, L5)
@@ -536,8 +536,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/EffectTests.cs (182 lines)
 - **SelfTest** (class, L6): NoPassives:9, EffectsValidate:19, PassivesByTier:28, PassivesBite:49, SignaturesBite:76, AuraReachesCompanies:137, PassivesOnlyAdd:156
 
-## Tests/KnightTests.cs (719 lines)
-- **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:464, ChampionsUseAura:495, OrderPolitics:533, BlackFlame:596, FlameTakesYou:651, OwnOrderFounded:674
+## Tests/KnightTests.cs (788 lines)
+- **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:464, ChampionsUseAura:495, OrderPolitics:533, BlackFlame:596, FlameTakesYou:651, OwnOrderFounded:674, AuraPool:722
 
 ## Tests/MagicTests.cs (338 lines)
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186

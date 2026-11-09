@@ -1,6 +1,6 @@
 # Magic and aura for the player: plan
 
-Status: being built (2026-11-09). Done: MA1, MA2. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
+Status: being built (2026-11-09). Done: MA1-MA3. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
 through M4 + P) and docs/KNIGHT_ORDERS.md (aura and orders: built K1-K8). Read docs/LEGACY.md first: your company is
 your legacy, and every change here must serve that.
 
@@ -292,3 +292,10 @@ change touches every later number.
   kick the camera. Motes larger than 0.15 m are round (`puff` sprite). Sounds: `Cue.Thunder` (lightning), `Holy` (faith
   attacks and rallies), `Flame` (fire), `Aura` (bursts, howls, buffs and great forms). Shots `magic-spells`,
   `magic-aura` (after the clash shots; `IRONFIELD_SHOTS_FROM=clash` reaches them quickly). Drawing only: no test moved.
+- **MA3 (the pool matters, men see it):** `BattleAura`: out of a fight aura comes back at `RegenOut` (1/s), at `RegenStill`
+  (2/s) standing still with no foe within `StillFoe` (30 m); in a fight as before. `Surge` (0-`SurgeMax` 20): each blow you
+  land at full aura without the blade lit banks `SurgePerBlow` (4); `TryForm` spends the surge first, and `CannotForm` counts
+  it. Spent (under 20): `SpentEdge` x0.9 on your blows (`BattleCaptain`), `SpentBreath` x0.75 on breath (`AuraBreath`).
+  `Inspire`: every 0.5 s while you fight at tier 2+ and are not spent, your companies within `InspireRadius` (10 m) get
+  the `inspired` effect for 1.5 s (block +0.05, morale +1/s; Data/effects.json). HUD: the AURA row reads SURGE n. Test
+  `AuraPool`; `AuraBound` holds (an expert wins 3/8 against four men-at-arms felling 12, none against sixteen).

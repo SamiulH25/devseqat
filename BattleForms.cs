@@ -55,7 +55,7 @@ public partial class Battle
         if (AuraTier < f.Tier) return $"NEEDS AURA TIER {f.Tier}";
         if (f.Great && greatUsed) return "THE GREAT FORM IS SPENT";
         if (Time < formReady[i]) return $"{f.Name.ToUpperInvariant()} IN {formReady[i] - Time:0}";
-        if (Aura < f.Aura) return "NOT ENOUGH AURA";
+        if (Aura + Surge < f.Aura) return "NOT ENOUGH AURA";
         if (p.Action is UnitAction.Windup or UnitAction.Recover or UnitAction.Stagger) return "BUSY";
         if (f.Kind == "shot" && (p.Type.Ammo == 0 || p.Ammo <= 0)) return "TAKE UP A BOW";
         if (f.Kind == "leap" && p.Mounted) return "NOT FROM THE SADDLE";
@@ -76,7 +76,9 @@ public partial class Battle
     {
         if (CannotForm(i) is string why) { PlayerHit = (why, Time); return; }
         var f = FormSlot[i]!;
-        Aura -= f.Aura;
+        float fromSurge = MathF.Min(Surge, f.Aura); // the surge goes first (MA3)
+        Surge -= fromSurge;
+        Aura -= f.Aura - fromSurge;
         formReady[i] = Time + f.Cooldown;
         if (f.Great) greatUses++;
         FormUses[f.Id] = FormUses.GetValueOrDefault(f.Id) + 1;

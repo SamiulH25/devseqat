@@ -35,7 +35,7 @@ public sealed partial class Battle
         bool tired = p.Stamina < cost;
         p.Stamina = MathF.Max(0, p.Stamina - cost);
         p.Power = (0.6f + p.Charge) * p.Swing switch { AttackDir.Overhead => 1.2f, AttackDir.Thrust => 1f, _ => 0.95f }
-            * (tired ? 0.6f : 1) * (riposteSwing ? 1.25f : 1) * FocusEdge; // Focus (K2)
+            * (tired ? 0.6f : 1) * (riposteSwing ? 1.25f : 1) * FocusEdge * SpentEdge; // Focus (K2); spent, weaker (MA3)
         p.Charge = 0;
         p.Action = UnitAction.Windup;
         p.ActionTimer = (p.Swing == AttackDir.Overhead ? 0.2f : 0.15f) * p.Type.Windup / 0.4f // your weapon sets your pace (P1)

@@ -376,7 +376,7 @@ sealed partial class Hud
         }
         Row("heart", "HEALTH", p.Hp / p.Type.MaxHp, Bad);
         Row("boot", "STAMINA", p.Stamina / 100, Ok);
-        if (B.AuraTier > 0) Row("star", B.AuraBlade ? "BLADE" : B.Spent ? "SPENT" : "AURA", B.Aura / Battle.AuraMax, B.Spent ? Dim : Style.Aura);
+        if (B.AuraTier > 0) Row("star", B.AuraBlade ? "BLADE" : B.Spent ? "SPENT" : B.Surge >= 1 ? $"SURGE {B.Surge:0}" : "AURA", B.Aura / Battle.AuraMax, B.Spent ? Dim : Style.Aura);
         if (p.Mounted) Row("horse", "HORSE", p.HorseHp / p.Horse!.Hp, HorseCol);
         else Text("NO HORSE", x + U(12), y + U(1), Dim, 1);
         int rx = r.Right - U(10);

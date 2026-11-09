@@ -81,6 +81,7 @@ public static partial class SelfTest
         AuraBlade();
         AuraArmour();
         AuraBound();
+        AuraPool();
         AuraGrows();
         FormsWork();
         FormsLearned();

@@ -69,6 +69,8 @@
       "spread": 0.5, "reload": 0.2, "speed": -0.08 },
     { "id": "burning", "name": "Burning", "icon": "fire", "line": "The ground is on fire.",
       "moralePerSec": -2, "speed": 0.1 },
+    { "id": "inspired", "name": "Inspired", "icon": "star", "line": "Your captain's aura burns beside them.",
+      "block": 0.05, "moralePerSec": 1 },
     { "id": "held", "name": "Hold the line", "icon": "shield", "line": "The ranks will not break.",
       "shock": -0.8, "block": 0.15, "holdfast": 1 },
     { "id": "wheel", "name": "Wheel", "icon": "horse", "line": "They re-form and charge again.",

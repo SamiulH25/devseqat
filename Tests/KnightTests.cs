@@ -715,5 +715,74 @@ public static partial class SelfTest
         lone.S.Characters.Add(new Character { Id = lone.S.Characters.Max(k => k.Id) + 1, Name = "Bran Hale", Kind = "companion", Faction = -1 });
         Check(lone.HandOver() == null && lone.Captain.AuraTier == 2, "with no order to teach him, he starts two tiers below you");
     }
+
+    /// MA3 (docs/MAGIC_AURA.md 4.1-4.2): aura comes back slower on the move than standing still with no foe near; at full,
+    /// blows bank a surge that a form spends first; spent, your breath comes back slower than a plain man's; from tier 2
+    /// your company near you takes heart while you fight, one far off does not, and a plain captain inspires nobody.
+    static void AuraPool()
+    {
+        var b = Battle.Empty(31, new BattleOptions { AuraTier = 3 });
+        b.EnemyCaptain.Pos = new Vector2(0, 400);
+        b.Aura = 40;
+        Run(b, 5);
+        float still = b.Aura - 40;
+        b.Aura = 40;
+        b.Input = new PlayerInput { Move = new Vector2(0, 1) };
+        Run(b, 5);
+        float moving = b.Aura - 40;
+        Check(still > moving * 1.5f && moving > 2, $"aura comes back faster standing still ({still:0.0}) than on the move ({moving:0.0})");
+
+        b = Battle.Empty(32, new BattleOptions { AuraTier = 3, Forms = new[] { "aura_slash" } });
+        b.EnemyCaptain.Pos = new Vector2(0, 400);
+        b.Aura = Battle.AuraMax;
+        var foes = b.AddSquad(1, Troops.Get("levies"), 6, b.Player.Pos + new Vector2(0, 2.2f), 6, -Vector2.UnitY).Units;
+        for (int i = 0; i < 20 * 60 && b.Surge < Battle.SurgeMax; i++)
+        {
+            b.Aura = Battle.AuraMax;
+            var t = foes.Where(f => f.Active).OrderBy(f => Vector2.DistanceSquared(f.Pos, b.Player.Pos)).FirstOrDefault();
+            if (t == null) break;
+            t.Hp = t.Type.MaxHp; // a foe that will not fall, to strike again and again
+            var d = t.Pos - b.Player.Pos;
+            b.Input = new PlayerInput { Attack = i % 40 < 20, Facing = MathF.Atan2(d.Y, d.X), Move = d.Length() > 1.6f ? Vector2.Normalize(d) : Vector2.Zero };
+            b.Update(1 / 60f);
+        }
+        Check(b.Surge > 0, $"blows landed at full aura bank a surge ({b.Surge:0})");
+        float surge = b.Surge, aura = b.Aura = 60;
+        b.Input = new PlayerInput { Form1 = true };
+        for (int i = 0; i < 30 && b.Input.Form1; i++) { b.Update(1 / 60f); if (b.FormWait(0) > 0) b.Input = new PlayerInput(); }
+        var cost = Forms.Get("aura_slash").Aura;
+        Check(b.FormWait(0) > 0 && b.Surge < surge && aura - b.Aura < cost, $"a form spends the surge first (aura {aura - b.Aura:0} of {cost:0})");
+
+        b = Battle.Empty(33, new BattleOptions { AuraTier = 3 });
+        b.Aura = 5;
+        b.Player.Stamina = 20;
+        Run(b, 1);
+        float spentBreath = b.Player.Stamina - 20;
+        var plain = Battle.Empty(33);
+        plain.Player.Stamina = 20;
+        Run(plain, 1);
+        Check(spentBreath < plain.Player.Stamina - 20, "a spent captain gets his breath back slower than a plain one");
+
+        bool Inspires(int tier, float away)
+        {
+            var g = Battle.Empty(34, new BattleOptions { AuraTier = tier });
+            g.EnemyCaptain.Pos = new Vector2(0, 400);
+            g.Player.Horse = null;
+            var mine = g.AddSquad(0, Troops.Get("shieldmen"), 8, g.Player.Pos + new Vector2(away, -4), 8, Vector2.UnitY);
+            mine.Order = Order.Hold;
+            var foe = g.AddSquad(1, Troops.Get("levies"), 3, g.Player.Pos + new Vector2(0, 2.2f), 3, -Vector2.UnitY);
+            foe.Order = Order.Hold;
+            for (int i = 0; i < 4 * 60; i++)
+            {
+                var t = foe.Units.FirstOrDefault(f => f.Active);
+                if (t != null) { var d = t.Pos - g.Player.Pos; g.Input = new PlayerInput { Attack = i % 40 < 20, Facing = MathF.Atan2(d.Y, d.X) }; }
+                g.Update(1 / 60f);
+            }
+            return mine.Timed.Any(t => t.Effect.Id == "inspired" && t.Until > g.Time);
+        }
+        Check(Inspires(2, 0), "an aura knight fighting beside his company inspires it");
+        Check(!Inspires(2, 60), "a company far off is not inspired");
+        Check(!Inspires(0, 0), "a plain captain inspires nobody");
+    }
 }
 
