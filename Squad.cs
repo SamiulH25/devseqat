@@ -45,6 +45,8 @@ public sealed class Squad
     public bool Pursue;
     /// A circle round every active man (routing too), refreshed at the start of each tick: cheap squad-to-squad distance bounds.
     public Vector2 Center;
+    /// Effects on the whole company: its side's auras that reach it (BattleEffects.cs).
+    public Mods Mods;
     public float Radius;
 
     public Squad(string name, int team) { Name = name; Team = team; }

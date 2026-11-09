@@ -51,7 +51,9 @@ public partial class Battle
                 // A company that still has most of its men steadies itself.
                 if (u.Morale < 45 && u.Squad.Alive > u.Squad.StartCount * 0.6f) m += 1.5f;
             }
-            m -= MathF.Min(3, u.Squad!.Pressure * 0.6f); // attacked in the flank or rear
+            float shock = MathF.Max(0, 1 + u.Mods.Shock); // unshakeable men feel it less (BattleEffects.cs)
+            m += u.Mods.MoralePerSec;
+            m -= MathF.Min(3, u.Squad!.Pressure * 0.6f) * shock; // attacked in the flank or rear
             if (lost[u.Team] > 0.5f) m -= 0.5f;          // the army is losing
             // Neighbours running away, and horsemen thundering at you, are frightening.
             int routing = 0;
@@ -65,9 +67,9 @@ public partial class Battle
                 else if (!u.Mounted && o.Mounted && o.Speed > 7 && d2 < 64 && !Braced(u)
                     && Vector2.Dot(o.HeadingDir, Vector2.Normalize(u.Pos - o.Pos)) > 0.85f) charged = true;
             }
-            m -= MathF.Min(2, routing * 0.3f);
-            if (charged) m -= 2.5f;
-            if (feared) m -= 2.5f; // a troll looming over you
+            m -= MathF.Min(2, routing * 0.3f) * shock;
+            if (charged) m -= 2.5f * shock;
+            if (feared) m -= 2.5f * shock; // a troll looming over you
             u.Morale = Math.Clamp(u.Morale + m * step, 0, 100);
             // Iron Will: near you, a company that still has a third of its men will not break.
             if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);

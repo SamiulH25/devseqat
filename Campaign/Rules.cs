@@ -90,7 +90,10 @@ public static class Rules
     public static float Strength(CompanyRecord c) => c.Stacks.Sum(s => Strength(s.Type, s.Men));
 
     /// Strength with drill weighed in, as a fought battle weighs it (docs/MELEE.md D8, --agree): who wins an auto-resolve.
-    public static float Might(UnitType t, int men) => Strength(t, men) * (1 + B.DrillWeight * Battle.DrillOf(t));
+    public static float Might(UnitType t, int men) => MightAt(t, men, B.DrillWeight, B.TraitWeight);
+    /// Might at a chosen drill and trait weight (--agree tries other weights): drill, and a tier V-VII troop's style and traits.
+    public static float MightAt(UnitType t, int men, float drillWeight, float traitWeight) =>
+        Strength(t, men) * (1 + drillWeight * Battle.DrillOf(t)) * (1 + traitWeight * t.StyleRank);
     public static float Might(Party p) => p.Companies.Sum(c => c.Stacks.Sum(s => Might(s.Type, s.Men)));
     public static float Strength(Party p) => p.Companies.Sum(Strength);
 

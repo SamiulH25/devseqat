@@ -37,6 +37,7 @@ public static class Troops
         public float Hp, Damage, Armor, Reach, Windup, Recover, Speed, Block, Range, VsMounted = 1, VsMonster = 1, Pierce, Reload = 1, Size = 1, Drill = -1;
         public string[] Traits = Array.Empty<string>();
         public string? Attack;
+        public string[]? Passives;
         public bool Leader;
         public LookDto Look = new();
     }
@@ -78,9 +79,11 @@ public static class Troops
             var t = troops[d.Id];
             t.StyleRank = t.Wild || t.Leader ? 0 : Math.Clamp(t.Tier - 4, 0, 3);
             t.Style = t.StyleRank == 0 ? AttackStyle.None : d.Attack != null ? Enum.Parse<AttackStyle>(d.Attack, true) : Battle.StyleFor(t);
+            t.Passives = t.StyleRank == 0 ? Array.Empty<string>() : d.Passives ?? Battle.PassivesWithSignature(t);
         }
         var problems = Validate().ToList();
         if (problems.Count > 0) throw new InvalidDataException("troops.json: " + string.Join("; ", problems));
+        foreach (var t in troops.Values) { t.Mods = Battle.TroopMods(t); t.HasAura = t.Passives.Any(p => Effects.Get(p).Radius > 0); }
     }
 
     /// Data checks: links exist, upgrades raise the tier, every look part has sprites, cavalry has horses.
@@ -105,6 +108,7 @@ public static class Troops
             if (!Look.Heads.Contains(l.Head)) yield return $"{t.Id}: unknown head {l.Head}";
             if (!Look.Faces.Contains(l.Face)) yield return $"{t.Id}: unknown face {l.Face}";
             foreach (var tr in t.Traits) if (!UnitType.KnownTraits.Contains(tr)) yield return $"{t.Id}: unknown trait {tr}";
+            foreach (var p in t.Passives) if (!Effects.Has(p)) yield return $"{t.Id}: unknown passive {p}";
             if (t.Drill > 1) yield return $"{t.Id}: drill {t.Drill} above 1";
             if (t.Size is < 0.5f or > 3f) yield return $"{t.Id}: size {t.Size} out of range";
             if (l.Beast && (t.Mount != null || t.Ammo > 0 || l.Shield != "none")) yield return $"{t.Id}: a beast rides nothing, shoots nothing and carries no shield";

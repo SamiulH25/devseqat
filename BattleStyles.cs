@@ -33,7 +33,7 @@ public partial class Battle
         AttackStyle.Riposte => ("Riposte", "After a block, strikes back at once and harder."),
         AttackStyle.Bash => ("Shield bash", "Every third blow is a bash that gets past his guard and staggers him."),
         AttackStyle.Thrust => ("Thrust through", "A thrust that lands carries on to the man behind."),
-        AttackStyle.HoldOff => ("Hold off", "Men rushing in are struck back to spear's length."),
+        AttackStyle.HoldOff => ("Hold off", "A horse coming on shies from the point; a man struck mid-swing loses his blow."),
         AttackStyle.RideDown => ("Ride down", "A lance hit throws the man down and the horse tramples the next."),
         AttackStyle.CutWheel => ("Cut and wheel", "From the saddle each cut carries into the man beside."),
         AttackStyle.Plunge => ("Plunging shot", "At long range arrows drop past shields held to the front."),
@@ -47,12 +47,13 @@ public partial class Battle
 
     static bool Styled(Unit a, AttackStyle s) => a.Type.Style == s && !a.IsPlayer;
 
-    /// The swing a styled man favours: an axe comes down overhead, a greatsword cuts from the side, a pike or spear thrusts.
+    /// The swing a styled man favours: an axe comes down overhead, a greatsword cuts from the side, a pike thrusts (a spear
+    /// keeps his mix: thrusting only made spearmen worse, StylesOnlyAdd).
     AttackDir? StyleSwing(Unit u) => u.IsPlayer ? null : u.Type.Style switch
     {
         AttackStyle.Crush => AttackDir.Overhead,
         AttackStyle.Sweep => rng.Next(2) == 0 ? AttackDir.Left : AttackDir.Right,
-        AttackStyle.Thrust or AttackStyle.HoldOff => AttackDir.Thrust,
+        AttackStyle.Thrust => AttackDir.Thrust,
         _ => null,
     };
 
@@ -120,8 +121,11 @@ public partial class Battle
             case AttackStyle.Thrust when !ranged:
                 if (Behind(a, t, 1.6f) is Unit next) Hit(a, next, dmg * (0.3f + 0.1f * r), false);
                 break;
-            case AttackStyle.HoldOff when !ranged && Closing(t, a) > 1:
-                Knock(a, t, 0.5f + 0.2f * r, 0.4f, 0);
+            case AttackStyle.HoldOff when !ranged && t.Active:
+                // Only what the point stops: a horse coming on shies, a man mid-swing loses his blow. Pushing or
+                // staggering every man struck only broke the spearmen's own line (StylesOnlyAdd).
+                if (t.Mounted && Closing(t, a) > 1) { Stagger(t, 0.3f + 0.1f * r); t.Speed *= 0.5f; }
+                else if (!t.Mounted && t.Action == UnitAction.Stagger) t.ActionTimer = MathF.Max(t.ActionTimer, 0.5f + 0.15f * r); // his blow was cut off (Damage): he stays off balance longer
                 break;
             case AttackStyle.RideDown when lance:
                 var trampled = Behind(a, t, 2.2f); // found before the man is thrown back past him

@@ -114,7 +114,11 @@ partial class MapScreen
                 ui.TextR(value, card.Right - ui.U(14), sy, label == "STYLE" ? Style.Accent : Style.Text, 1);
                 sy += step;
             }
-            if (style != "" && ui.Hover(card)) note = $"{style.ToUpperInvariant()}: {styleLine.ToUpperInvariant()}";
+            if (style != "" && ui.Hover(card))
+            {
+                var traits = t.Passives.Select((p, i) => (e: Effects.Get(p), k: Battle.PassiveWeight(t.Tier, i))).Where(x => x.k > 0).Select(x => x.e.Name.ToUpperInvariant());
+                note = $"{style.ToUpperInvariant()}: {styleLine.ToUpperInvariant()} TRAITS: {string.Join(", ", traits)}.";
+            }
             if (Rules.TroopRole(to) != Rules.RoleOf(c)) ui.TextC($"JOINS A {Rules.TroopRole(to).ToUpperInvariant()} COMPANY", card.X + cw / 2f, card.Y + ui.U(210), Style.Warn, 1);
             ui.TextC(one > 0 ? $"{cost1} CROWNS A MAN" : reason, card.X + cw / 2f, card.Y + ui.U(226), one > 0 ? Style.Text : Style.Warn, 1);
             int bw = (cw - ui.U(28) - 2 * ui.U(4)) / 3, by = card.Bottom - ui.U(56);

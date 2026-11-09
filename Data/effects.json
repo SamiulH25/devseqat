@@ -1,0 +1,32 @@
+{
+  // Effects (docs/COMPANIONS_MAGIC.md Part A, loaded by Effects.cs). Fractions add: +0.1 is 10 % more, -0.5 half.
+  // armour, arrowArmour and moralePerSec are flat. radius > 0 makes it an aura on companies of the bearer's side.
+  // The first eleven are the passive traits of tier V-VII troops (D3), given by archetype in BattleEffects.PassivesFor.
+  "effects": [
+    { "id": "unshakeable", "name": "Unshakeable", "icon": "heart", "line": "Flank hits, routing friends and charging horse shake them half as much.",
+      "shock": -0.5 },
+    { "id": "iron_skin", "name": "Iron skin", "icon": "chain", "line": "Heavy mail: arrows and bolts do less.",
+      "arrowArmour": 4 },
+    { "id": "tireless", "name": "Tireless", "icon": "boot", "line": "They tire a third slower.",
+      "tire": -0.35 },
+    { "id": "locked_shields", "name": "Locked shields", "icon": "shield", "line": "Standing, the line blocks far more.",
+      "blockStill": 0.3 },
+    { "id": "set_spears", "name": "Set spears", "icon": "up", "line": "Braced points reach further and hurt horses more.",
+      "brace": 0.4 },
+    { "id": "fearsome", "name": "Fearsome", "icon": "skull", "line": "Their blows shake the men they strike.",
+      "shockDealt": 0.5 },
+    { "id": "steady_aim", "name": "Steady aim", "icon": "arrow", "line": "Their arrows scatter less.",
+      "spread": -0.25 },
+    { "id": "pavise", "name": "Pavise", "icon": "tower", "line": "Big shields cover them: arrows do less.",
+      "arrowArmour": 5 },
+    { "id": "swift", "name": "Swift", "icon": "horse", "line": "They move faster.",
+      "speed": 0.06 },
+    { "id": "heavy_charge", "name": "Heavy charge", "icon": "horse", "line": "Couched lances strike much harder.",
+      "charge": 0.3 },
+    { "id": "sure_footed", "name": "Sure-footed", "icon": "boot", "line": "Mud, fords and slopes slow them half as much.",
+      "footing": 0.5 },
+    // Culture signatures (D4): a third passive for a culture's tier VII troops (BattleEffects.SignatureOf).
+    { "id": "zeal", "name": "Zeal", "icon": "sun", "line": "Holy fire: companies of their side within 20 m fear little and take heart.",
+      "tags": ["holy"], "radius": 20, "shock": -0.6, "moralePerSec": 1.0 }
+  ]
+}

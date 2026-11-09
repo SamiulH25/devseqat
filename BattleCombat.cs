@@ -161,6 +161,7 @@ public partial class Battle
             if (!ranged) chance *= RankGuard(t) * RankEdge(a); // friends at the shoulders, foes all round (docs/MELEE.md D3.7)
             chance *= StyleGuard(a, t, ranged, plunge); // a crush, a bash, an arrow from above a shield (BattleStyles.cs)
             if (t.Guard && !ranged && t.Squad != null) chance = MathF.Min(0.92f, chance + (1 - chance) * 0.5f * t.Squad.Drill); // he saw it coming
+            chance = MathF.Min(0.95f, chance * (1 + t.Mods.Block + (t.Vel.LengthSquared() < 1 ? t.Mods.BlockStill : 0))); // passives: locked shields (BattleEffects.cs)
             if (rng.NextSingle() < chance)
             {
                 if (t.Guard) t.Cooldown = 0; // a held guard opens the way for his own blow
@@ -190,13 +191,13 @@ public partial class Battle
         if (ranged && t.Squad?.Formation == Formation.Square) officer *= 1.25f;                    // a packed square is an easy mark
         if (!ranged && a.Squad is { Formation: Formation.Wedge, Order: Order.Charge }) officer *= 1.15f; // a wedge drives in
         if (!ranged && a.Squad is { Broken: true, Swarm: false } && Ranked(a.Squad) && !Overwhelms(a.Squad)) officer *= BrokenBlow; // a crowd has no room to swing (round a beast it needs none)
-        float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
+        float mult = officer * (1 + a.Mods.Damage) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1); // arrows pass between a skeleton's ribs
         if (t.Squad != null) t.Squad.HitsTaken++;
         if (side != Side.Front && a.Squad != null && !ranged) a.Squad.FlankHits++;
         if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
-        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? a.Type.Pierce : 0); // your mace or axe bites through armour too
+        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? a.Type.Pierce : 0, ranged); // your mace or axe bites through armour too
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
         StyleLanded(a, t, dmg, ranged, lance);
         if (a.IsPlayer) CountDeed(t, ranged, lance);
@@ -213,13 +214,14 @@ public partial class Battle
     }
 
     /// Armour, then hp, morale shock and interrupts. Returns the damage dealt.
-    float Damage(Unit a, Unit t, float dmg, float extraShock, float pierce = 0)
+    float Damage(Unit a, Unit t, float dmg, float extraShock, float pierce = 0, bool ranged = false)
     {
-        float real = MathF.Max(dmg * 0.25f, dmg - t.Type.Armor * (1 - pierce)); // bolts punch through part of the armour
+        float armour = t.Type.Armor + t.Mods.Armour + (ranged ? t.Mods.ArrowArmour : 0); // iron skin, a pavise (BattleEffects.cs)
+        float real = MathF.Max(dmg * 0.25f, dmg - armour * (1 - pierce)); // bolts punch through part of the armour
         t.Hp -= real;
         t.HitFlash = 0.15f;
         t.HurtAt = Time;
-        t.Morale -= real * 0.16f + extraShock * 0.7f;
+        t.Morale -= (real * 0.16f + extraShock * 0.7f) * (1 + a.Mods.ShockDealt); // a fearsome man's blows shake more
         // Hits interrupt swings, but not a rhythm he has read: past your second chained blow he swings through it (P2).
         if ((t.Action == UnitAction.Windup || t.Charging) && !(a.IsPlayer && Chain >= 2)) Stagger(t, 0.3f);
         if (t.Hp <= 0) Kill(t, a);
@@ -315,8 +317,8 @@ public partial class Battle
 
     void Shoot(Unit u, Unit t)
     {
-        u.Cooldown = (u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f) * u.Type.Reload * StyleReload(u); // a crossbow takes long to span
-        float spread = (u.Squad?.Company?.Has("Sharpshooter") == true ? 0.65f : 1);
+        u.Cooldown = (u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f) * u.Type.Reload * StyleReload(u) * (1 + u.Mods.Reload); // a crossbow takes long to span
+        float spread = (u.Squad?.Company?.Has("Sharpshooter") == true ? 0.65f : 1) * MathF.Max(0.2f, 1 + u.Mods.Spread); // steady aim
         Loose(u, t.Pos, t, u.Type.Damage, spread);
     }
 
@@ -395,7 +397,7 @@ public partial class Battle
         foreach (var b in Units)
         {
             if (!b.Active || b.BraceCd > 0 || !Braced(b)) continue;
-            float reach = ReachOf(b) + BraceExtra;
+            float reach = ReachOf(b) + BraceExtra * (1 + b.Mods.Brace); // set spears reach further
             foreach (var u in Near(b.Pos, reach + 0.5f, nearBrace))
             {
                 if (!u.Active || !u.Mounted || u.Team == b.Team) continue;
@@ -409,7 +411,7 @@ public partial class Battle
                 b.Action = UnitAction.Recover; // shows the thrust
                 b.Swing = AttackDir.Thrust;
                 b.ActionTimer = b.Type.Recover;
-                HitHorse(u, closing * (b.Type.Class == UnitClass.Skirmisher ? 8 : 4.5f), b);
+                HitHorse(u, closing * (b.Type.Class == UnitClass.Skirmisher ? 8 : 4.5f) * (1 + b.Mods.Brace), b);
                 if (u.Mounted) { u.Speed *= 0.25f; Stagger(u, 0.6f); }
                 break;
             }
@@ -432,7 +434,7 @@ public partial class Battle
                 float closing = Vector2.Dot(u.Vel - t.Vel, hd);
                 if (closing < 4) continue;
                 u.Swing = AttackDir.Thrust;
-                Hit(u, t, (10 + closing * 4.2f * Terrain.GroundDefAt(t.Pos).Charge) * (u.IsPlayer ? (1 + 0.2f * RidingEdge) * (Perk("Lancer") ? 1.25f : 1) : 1), false, lance: true);
+                Hit(u, t, (10 + closing * 4.2f * Terrain.GroundDefAt(t.Pos).Charge) * (u.IsPlayer ? (1 + 0.2f * RidingEdge) * (Perk("Lancer") ? 1.25f : 1) : 1) * (1 + u.Mods.Charge), false, lance: true);
                 u.Couched = false;
                 u.Cooldown = 1.8f;
                 u.Contact = true;

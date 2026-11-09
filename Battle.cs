@@ -264,8 +264,9 @@ public sealed partial class Battle
     public Unit Spawn(UnitType t, int team, Squad? s, Vector2 pos)
     {
         var u = new Unit { Type = t, Index = Units.Count, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
-            Palette = Options.Palette[Math.Clamp(team, 0, 1)], Grit = GritOf(Units.Count) };
+            Palette = Options.Palette[Math.Clamp(team, 0, 1)], Grit = GritOf(Units.Count), Mods = t.Mods };
         if (t.Mount != null && !Options.Siege) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; } // assaults are fought on foot
+        anyAura |= t.HasAura;
         Units.Add(u);
         return u;
     }
@@ -296,6 +297,7 @@ public sealed partial class Battle
             if (Options.AutoPlayer || Squads.Any(q => q.AiControlled && q.Alive > 0)) General(0);
         }
         UpdateDivisions();
+        UpdateEffects();
         Batter(dt);
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
         RaiseDead(dt);

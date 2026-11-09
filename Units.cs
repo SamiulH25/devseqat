@@ -96,6 +96,11 @@ public sealed class UnitType
     /// names one (`attack`); StyleRank 1-3 for tiers V-VII (0: no style).
     public AttackStyle Style;
     public int StyleRank;
+    /// Passive traits (effect ids, docs/COMPANIONS_MAGIC.md D3): from the archetype unless troops.json names them
+    /// (`passives`); weighed by tier (`Battle.PassiveWeight`). Mods = their fixed totals; HasAura: one reaches companies.
+    public string[] Passives = Array.Empty<string>();
+    public Mods Mods;
+    public bool HasAura;
     public Mount? Mount;
     public Look Look = null!;
 
@@ -173,6 +178,8 @@ public sealed class Unit
     /// Attack styles (BattleStyles.cs): blows struck so far (every third is a shield bash), and a riposte owed after a block.
     public int Blows;
     public bool RiposteReady;
+    /// His effect totals: his troop's passives plus his company's auras (BattleEffects.cs, rebuilt every 0.5 s).
+    public Mods Mods;
 
     public bool Active => !Dead && !Fled;
     public bool Mounted => Horse != null;

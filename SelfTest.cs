@@ -33,6 +33,11 @@ public static partial class SelfTest
         CrushBeatsShields();
         PlungingShot();
         StylesOnlyAdd();
+        EffectsValidate();
+        PassivesByTier();
+        PassivesBite();
+        AuraReachesCompanies();
+        PassivesOnlyAdd();
         Sprites();
         TroopVariety();
         BigBattle();

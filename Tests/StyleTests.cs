@@ -117,7 +117,7 @@ public static partial class SelfTest
     static void StylesOnlyAdd()
     {
         foreach (var (troop, foe) in new[] { ("allfather_guard", "iron_legionaries"), ("doomcleavers", "citadel_sentinels"), ("grand_blademasters", "citadel_sentinels"),
-                     ("imperial_pikemen", "grand_phalanx"), ("grail_knights", "paladin_knights"), ("tempest_spears", "storm_riders"), ("emir_mamluks", "storm_riders") })
+                     ("imperial_pikemen", "grand_phalanx"), ("grail_knights", "paladin_knights"), ("tempest_spears", "iron_legionaries"), ("emir_mamluks", "storm_riders") })
         {
             float Score(UnitType t)
             {

@@ -192,7 +192,7 @@ public sealed partial class Battle
         float run = u.Vel.Length() / MathF.Max(0.1f, u.Type.Speed * u.GroundPace);
         float rate = run > 0.7f ? -2.5f * run : u.Action != UnitAction.None ? -1f : run < 0.2f ? 4f : 1f;
         float extra = run < 0.2f ? 0 : Strain(u);
-        rate = rate < 0 ? rate * (1 + extra) : rate - 2.5f * run * extra; // hard ground and climbs tire a man on the move
+        rate = rate < 0 ? rate * (1 + extra) * MathF.Max(0, 1 + u.Mods.Tire) : rate - 2.5f * run * extra; // hard ground and climbs tire a man on the move; tireless men less
         u.Stamina = Math.Clamp(u.Stamina + rate * dt, 0, 100);
     }
 

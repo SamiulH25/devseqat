@@ -205,9 +205,11 @@ public static partial class SelfTest
         foreign.Unrest = 69;
         Party? rebels = null;
         bool rose = false;
-        // A rising can be put down the same day it starts (the log still tells of it).
+        // A rising can be put down the same day it starts (the log still tells of it). Kept at the brink each day: the
+        // world's own doings (a holdout burnt out nearby, a lord's victory) can calm it a few points first.
         for (int d = 0; d < 40 && rebels == null && !rose; d++)
         {
+            foreign.Unrest = MathF.Max(foreign.Unrest, Campaign.RevoltAt);
             Days(c, 1);
             rebels = c.Rebels(foreign);
             rose = c.S.Log.Any(e => e.At >= c.S.Hours - 24 && e.Text.Contains($"{foreign.Name} rises in revolt"));

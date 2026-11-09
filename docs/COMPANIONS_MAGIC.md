@@ -1,6 +1,6 @@
 # Companions, magic, abilities, buffs and auras (plan)
 
-Status: plan, being built. Done: T0, T1 (see the build order). Read docs/LEGACY.md first: the fantasy is that your company is your legacy.
+Status: plan, being built. Done: T0, T1, E1 core, T2 passives (see the build order). Next: T2b signatures, E1b, E2. Read docs/LEGACY.md first: the fantasy is that your company is your legacy.
 Everything below must serve that. Companions are the named heart of the company. Mages are rare, costly and real: they
 fight in battle, cast buffs on your companies and strike the enemy. The best troops (tiers V-VII) fight differently: their
 blows sweep, knock back or thrust through, and they carry passive traits. Buffs, auras, spells and abilities are one system, so every bonus reads the same way everywhere.
@@ -309,7 +309,7 @@ how many, how far), and adds the rest in the same place, called from `Strike` ->
 | Longsword and shield (17) | **Riposte** | after a block or parry the next blow comes at once (no windup) and gets +30 % | duels in the front rank, other elite foot |
 | Sword or axe and shield (6) | **Shield bash** | every third blow is a bash: it gets past half his guard, shoves him and staggers him (he loses his turn) | holding a line, pushing a gap open |
 | Pike (12) | **Thrust through** | a thrust that kills or wounds carries on to the man behind (the second rank) at 0.5 | columns, charging horse |
-| Spear (9) | **Hold off** | a hit on a man coming at them knocks him back to spear's length; horse struck while braced rear and throw riders | horse, men trying to close |
+| Spear (9) | **Hold off** | a horse coming on shies from the point (staggered, slowed); a man whose blow the point cuts off stays off balance longer | horse, men trying to close |
 | Lance (17 horse) | **Ride down** | a lance hit knocks the man down (`Knock`, large) and the horse tramples one more behind; at VII the lance can go through two | foot in the open |
 | Sword on horse (1) | **Cut and wheel** | riding past, strikes every man in reach once without slowing | routing men, archers |
 | Longbow (10) | **Plunging shot** | at long range arrows drop from above: shields to the front do not stop them | static foot, shield walls |
@@ -512,8 +512,8 @@ are built first: the troops change at once, and every later step is held to "hig
 a stat or gains in fewer than two. Three links failed and were fixed in the data (Valhalla Reavers and Blood Jarls lost
 armour and block; Pavisiers' block was an outlier above the next tier's). The fight survey (`--selftest TierSurvey`, all
 same-role links, three seeds, ~4 min) found every upgrade already beats its parent. Tests in `Tests/TierTests.cs`:
-`UpgradeNeverWorse` (plus `Might` rises along every link), `HigherTierWins` (25 links, one per class and tier step, two
-seeds), `TierGap`.
+`UpgradeNeverWorse` (plus `Might` rises along every link), `HigherTierWins` (25 links, one per class and tier step, at least two
+of three seeds won), `TierGap`.
 
 **As built, T1:** `BattleStyles.cs`. Styles come from the weapon (`Battle.StyleFor`), so no troop entry changed; an `attack`
 field in troops.json can override. No `Data/styles.json`: the per-rank numbers sit in `StyleLanded`/`StyleGuard`, one place.
@@ -521,10 +521,24 @@ Visible difference comes from the swing each style favours (axes overhead, great
 `StyleSwing`), which the existing poses draw; poses of their own (a shield shove) are left for the polish step. Findings while
 tuning: a knockback that pushes a man out of reach makes a style *worse* (the bash first lost fights to the same men without
 it), so the bash now shoves 0.15 m and staggers; `StylesOnlyAdd` holds every melee style to "no worse than without it" in
-close fights. Plunging shot keys on distance (past 60 % of range), since arrows here fly flat. With Ride down, 20 Grail
+close fights. The same held for spears: pushing or staggering every man struck, or thrusting only, made them worse; Hold off now
+lengthens the stagger of a man whose swing the point cut off, and shies horses. Plunging shot keys on distance (past 60 % of range), since arrows here fly flat. With Ride down, 20 Grail
 Knights now beat 40 Demi-Lancers, so `TierGap` holds horse to 2:1 too. Bench: 5.16 ms a tick (was 5.07). Tests in
 `Tests/StyleTests.cs`: `StylesByTier`, `SweepHitsBeside`, `KnockThrowsBack`, `ThrustThrough`, `CrushBeatsShields`,
 `PlungingShot`, `StylesOnlyAdd`; shot `campaign-upgrade-elite.png` shows the style on the upgrade card.
+
+**As built, E1 core + T2 passives:** split from the full E1 so the passives could land first. `Effects.cs` loads
+`Data/effects.json` (unknown keys refused, so a misspelt stat fails); only stats with a hook exist (damage, block, blockStill,
+armour, arrowArmour, speed, footing, tire, shock, shockDealt, moralePerSec, spread, reload, brace, charge; radius makes an
+aura). A man reads one cached `Unit.Mods` = his troop's fixed passives + his company's auras, rebuilt every 0.5 s per company
+(`BattleEffects.UpdateEffects`), skipped entirely when no aura bearer is on the field. Passives come by archetype
+(`PassivesFor`, no troop entry changed; `passives` in troops.json overrides), weighed by tier (`PassiveWeight`: V 0.7 of the
+first; VI the first, 0.7 of the second; VII both and the signature). One signature so far: the Order's **Zeal** (aura, 20 m),
+which also proves the aura path; the other six signatures need code beyond stats and are T2b. Not yet done from E1: timed and
+field effects, moving the three old auras onto effects (E1b), HUD icons (E2). Auto-resolve: `Rules.MightAt` multiplies by
+(1 + `TraitWeight` x style rank); at 0.1, `--agree` gives the higher tier 58/65/56/58 % at gaps 1-4 (it was 58/65/44/42
+before T1, and 63/70/69/75 with styles but no weight). Bench 5.3-5.5 ms (5.07 before T1). Tests in `Tests/EffectTests.cs`:
+`EffectsValidate`, `PassivesByTier`, `PassivesBite`, `AuraReachesCompanies`, `PassivesOnlyAdd`.
 
 | Step | What | Main files | Done when |
 |---|---|---|---|

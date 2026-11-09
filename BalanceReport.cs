@@ -224,7 +224,7 @@ public static class BalanceReport
     /// Prints the higher tier's share of wins by tier gap, at the current weight and with weight `w` tried in its place.
     public static void Agree(int seeds, float w)
     {
-        float Per(UnitType t, float weight) => Rules.Strength(t, 1) * (1 + weight * Battle.DrillOf(t)); // Rules.Might at that weight
+        float Per(UnitType t, float weight) => Rules.MightAt(t, 1, weight, Balance.Get().TraitWeight); // Rules.Might at that drill weight
         foreach (float weight in new[] { Balance.Get().DrillWeight, w })
         {
             var byGap = new Dictionary<int, (int won, int n)>();

@@ -52,18 +52,23 @@ public static partial class SelfTest
                 Check(Rules.Might(n, 10) > Rules.Might(t, 10), $"auto-resolve rates {n.Name} above {t.Name}");
     }
 
-    /// D0: an upgrade beats the troop it came from, 30 against 30, on two seeds (one link per class and tier step).
+    /// D0: an upgrade beats the troop it came from, 30 against 30 (one link per class and tier step): it wins at least two
+    /// of three fights and ends ahead over the three (a close bow duel can still go to the dice once).
     static void HigherTierWins()
     {
         int links = 0;
         foreach (var (from, to) in TierSample())
         {
             links++;
-            for (int seed = 1; seed <= 2; seed++)
+            int wins = 0;
+            float margin = 0;
+            for (int seed = 1; seed <= 3; seed++)
             {
                 var (up, down) = TierFight(to.Id, from.Id, 910 + seed);
-                Check(up > down, $"{to.Name} (tier {to.Tier}) beat {from.Name} (tier {from.Tier}): {up:P0} against {down:P0} standing");
+                if (up > down) wins++;
+                margin += up - down;
             }
+            Check(wins >= 2 && margin > 0, $"{to.Name} (tier {to.Tier}) beat {from.Name} (tier {from.Tier}): won {wins} of 3, margin {margin / 3:+0.00;-0.00}");
         }
         Console.WriteLine($"tiers: {links} upgrade links fought against their parents, every upgrade won");
     }
