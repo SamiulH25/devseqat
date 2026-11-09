@@ -41,6 +41,7 @@ public sealed partial class Campaign
     {
         var o = OrderById(order);
         if (o == null || o.Gone) return "THAT ORDER IS GONE";
+        if (S.OwnOrder != null) return "YOU LEAD AN ORDER OF YOUR OWN";
         string name = KnightOrders.Get(order).Short.ToUpperInvariant();
         if (Captain.Order == order) return "YOU ARE SWORN TO IT ALREADY";
         if (Captain.Order != "") return $"YOU ARE SWORN TO {MyOrder!.Short.ToUpperInvariant()}";
@@ -174,13 +175,14 @@ public sealed partial class Campaign
     // ---- the creed ----
 
     /// Does your creed hold this vow?
-    public bool Vowed(string vow) => MyOrder?.Vows.Contains(vow) == true;
+    public bool Vowed(string vow) => MyOrder?.Vows.Contains(vow) == true || S.OwnOrder?.Vows.Contains(vow) == true;
 
     /// You did what your creed forbids: standing falls and you owe a penance; break a vow again before atoning and you are
     /// cast out.
     internal void BreakVow(string vow, string what)
     {
-        if (!Vowed(vow) || MyOrder is not OrderDef def) return;
+        if (S.OwnOrder?.Vows.Contains(vow) == true) OwnVowBroken(what); // your own creed (K8)
+        if (MyOrder?.Vows.Contains(vow) != true || MyOrder is not OrderDef def) return;
         RaiseStanding(def.Id, -VowCost);
         if (Captain.Penance)
         {

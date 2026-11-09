@@ -50,6 +50,8 @@ public sealed partial class Campaign
             $"{N(Tally("quests"), "CONTRACT")} AND QUESTS DONE, {N(Tally("sites"), "PLACE")} FOUND, {N(Tally("tournaments"), "TOURNAMENT")} WON.",
         });
         if (Tally("holdouts") + Tally("robbed") > 0) lines.Add($"{N(Tally("holdouts"), "GOBLIN HOLE")} BURNT OUT. {N(Tally("robbed"), "CARAVAN")} ROBBED.");
+        if (S.OwnOrder is FoundedOrder own)
+            lines.Add($"THE {own.Name.ToUpperInvariant()}: FOUNDED DAY {own.Day}, {N(KnightsAlive, "KNIGHT")}, {N(own.Masters, "GRAND MASTER")}.");
         if (BestCompany is CompanyRecord best) lines.Add($"YOUR BEST: {best.Name.ToUpperInvariant()}, {N(best.Battles, "BATTLE")}" + (best.Honours.Count > 0 ? $", {N(best.Honours.Count, "HONOUR")}." : "."));
         return lines;
     }

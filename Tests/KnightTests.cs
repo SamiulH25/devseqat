@@ -668,5 +668,52 @@ public static partial class SelfTest
         Check(a == again, "the same seed, the same madness");
         Check(calm.spells == 0 && calm.hurt == 0, "without the flame you never turn on your own");
     }
+
+    /// K8: your own order. Founding needs its gates (aura, rank or fame, a seat, no other oath); its creed binds you; your
+    /// named men are knighted into it; its troops are yours to train; and your successor leads it a tier below you, with its form.
+    static void OwnOrderFounded()
+    {
+        var c = Campaign.New(150);
+        Check(c.CannotFound() != null, "a new captain cannot found an order");
+        c.Captain.AuraTier = Campaign.FoundAura;
+        Check(c.CannotFound()!.Contains("LORD"), "an Aura Expert with neither rank nor fame cannot");
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Battles = 60;
+        co.BattleHonours.AddRange(new[] { "Ashby Ford", "Hollin Hill", "Wyck Moor", "Oxlade", "Greyfen", "Stour Bridge" });
+        Check(c.Fame >= Campaign.FoundFame && c.CannotFound()!.Contains("SEAT"), "fame enough, but no seat of your own");
+        c.S.Settlements.First(t => t.Kind != SettlementKind.Village).Owner = c.Player.Id;
+        Check(c.CannotFound() == null, "an expert with fame and a seat may found an order");
+        var form = Forms.Generic.Where(f => f.Tier <= Campaign.FoundAura).Last();
+        c.LearnForm(form.Id);
+        Check(c.FoundOrder(new[] { "no_rob", "no_rob", "no_slaves" }) != null, "its creed needs three different vows");
+        Check(c.FoundOrder(new[] { "no_rob", "no_slaves", "contract" }) == null && c.S.OwnOrder!.Name == Campaign.OrderNameOf(co.Name) && c.S.OwnOrder.Form == form.Id,
+            "the order is founded from your company and teaches your form");
+        Check(c.CannotFound() != null && c.CannotSeekTrial(c.S.Orders[0].Id) != null, "one order of your own, and no other oath beside it");
+        Check(c.Vowed("no_rob") && !c.Vowed("no_auto"), "your own creed binds you");
+        Check(c.CanEnterLine(c.Player, co, "ironguard", "sworn_brothers", out _), "your order trains its Sworn Brothers from a tier IV line");
+        var other = Campaign.New(151);
+        Check(!other.CanEnterLine(other.Player, other.Player.Companies[0], "ironguard", "sworn_brothers", out _), "no one else trains them");
+        // Knighting a named man.
+        var m = c.NameMan(co, "test")!;
+        m.Battles = 1;
+        Check(c.Knight(m) != null, "a man of one battle is not knighted");
+        m.Battles = 5;
+        int fame = c.Fame;
+        Check(c.Knight(m) == null && m.Knight && c.KnightsAlive == 1 && c.Fame == fame + 10, "a veteran is knighted, and the order's fame grows");
+        Check(c.Knight(m) != null, "but only once");
+        // Handing on: your successor leads the order a tier lower, with its form.
+        var heir = new Character { Id = c.S.Characters.Max(k => k.Id) + 1, Name = "Aldo Fenn", Kind = "companion", Faction = -1 };
+        c.S.Characters.Add(heir);
+        Check(c.HandOver() == null && c.Captain.AuraTier == Campaign.FoundAura - 1 && c.Captain.Forms.Contains(form.Id) && c.S.OwnOrder.Masters == 2,
+            "your successor is grand master a tier below you, with the order's form");
+        Check(c.Summary().Any(l => l.Contains(c.S.OwnOrder.Name.ToUpperInvariant())), "the order goes into the story");
+        // Without an order he starts two tiers below.
+        var lone = Campaign.New(152);
+        lone.Captain.AuraTier = 4;
+        var lc = lone.Player.Companies.OrderByDescending(k => k.Men).First();
+        lc.Battles = 60; lc.BattleHonours.AddRange(new[] { "Ashby Ford", "Hollin Hill", "Wyck Moor" });
+        lone.S.Characters.Add(new Character { Id = lone.S.Characters.Max(k => k.Id) + 1, Name = "Bran Hale", Kind = "companion", Faction = -1 });
+        Check(lone.HandOver() == null && lone.Captain.AuraTier == 2, "with no order to teach him, he starts two tiers below you");
+    }
 }
 

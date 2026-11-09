@@ -231,7 +231,8 @@
    "tier": 4,
    "upgradesTo": [
     "aegis_wardens",
-    "paladins"
+    "paladins",
+    "sworn_brothers"
    ],
    "cost": 75,
    "upgradeXp": 400,
@@ -262,7 +263,8 @@
    "tier": 4,
    "upgradesTo": [
     "paladins",
-    "sword_brethren"
+    "sword_brethren",
+    "sworn_brothers"
    ],
    "cost": 78,
    "upgradeXp": 400,
@@ -570,7 +572,8 @@
    "tier": 4,
    "upgradesTo": [
     "blademasters",
-    "executioners"
+    "executioners",
+    "sworn_brothers"
    ],
    "cost": 78,
    "upgradeXp": 400,
@@ -850,7 +853,8 @@
    "tier": 4,
    "upgradesTo": [
     "aegis_wardens",
-    "banner_sergeants"
+    "banner_sergeants",
+    "sworn_brothers"
    ],
    "cost": 72,
    "upgradeXp": 390,
@@ -1128,7 +1132,8 @@
    "tier": 4,
    "upgradesTo": [
     "einherjar",
-    "jarl_guard"
+    "jarl_guard",
+    "sworn_brothers"
    ],
    "cost": 80,
    "upgradeXp": 410,
@@ -1160,7 +1165,8 @@
    "tier": 4,
    "upgradesTo": [
     "einherjar",
-    "doomcleavers"
+    "doomcleavers",
+    "sworn_brothers"
    ],
    "cost": 78,
    "upgradeXp": 410,
@@ -1190,7 +1196,8 @@
    "culture": "northern",
    "tier": 4,
    "upgradesTo": [
-    "doomcleavers"
+    "doomcleavers",
+    "sworn_brothers"
    ],
    "cost": 76,
    "upgradeXp": 400,
@@ -1220,7 +1227,8 @@
    "culture": "northern",
    "tier": 4,
    "upgradesTo": [
-    "jarl_guard"
+    "jarl_guard",
+    "sworn_brothers"
    ],
    "cost": 74,
    "upgradeXp": 400,
@@ -6166,7 +6174,8 @@
    "culture": "southern",
    "tier": 4,
    "upgradesTo": [
-    "dervish_blades"
+    "dervish_blades",
+    "sworn_brothers"
    ],
    "cost": 75,
    "upgradeXp": 400,
@@ -6481,7 +6490,8 @@
    "culture": "steppe",
    "tier": 4,
    "upgradesTo": [
-    "wolf_axes"
+    "wolf_axes",
+    "sworn_brothers"
    ],
    "cost": 80,
    "upgradeXp": 410,
@@ -6791,7 +6801,8 @@
    "culture": "league",
    "tier": 4,
    "upgradesTo": [
-    "brigandiers"
+    "brigandiers",
+    "sworn_brothers"
    ],
    "cost": 75,
    "upgradeXp": 400,
@@ -8070,6 +8081,77 @@
     "battle_fury"
    ],
    "order": "hollow"
+  },
+  {
+   "id": "sworn_brothers",
+   "name": "Sworn Brothers",
+   "class": "Infantry",
+   "culture": "common",
+   "tier": 5,
+   "upgradesTo": [
+    "sworn_masters"
+   ],
+   "cost": 155,
+   "upgradeXp": 560,
+   "hp": 170,
+   "damage": 44,
+   "armor": 19.5,
+   "reach": 1.9,
+   "windup": 0.37,
+   "recover": 0.5,
+   "speed": 3.5,
+   "block": 0.72,
+   "look": {
+    "head": "greathelm",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "heater",
+    "weapon": "longsword",
+    "tabard": true,
+    "plume": true,
+    "cape": true
+   },
+   "passives": [
+    "unshakeable",
+    "duellist"
+   ],
+   "order": "own"
+  },
+  {
+   "id": "sworn_masters",
+   "name": "Masters of the Order",
+   "class": "Infantry",
+   "culture": "common",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 215,
+   "hp": 190,
+   "damage": 50,
+   "armor": 22,
+   "reach": 1.9,
+   "windup": 0.37,
+   "recover": 0.5,
+   "speed": 3.5,
+   "block": 0.75,
+   "look": {
+    "head": "sallet",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "heater",
+    "weapon": "longsword",
+    "tabard": true,
+    "plume": true,
+    "cape": true
+   },
+   "passives": [
+    "unshakeable",
+    "duellist"
+   ],
+   "order": "own"
   }
  ]
 }

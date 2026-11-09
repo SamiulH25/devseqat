@@ -1,6 +1,6 @@
 # Knight orders and the captain's aura: plan
 
-Status: **being built** (built steps are under "As built" at the end). Read docs/LEGACY.md first: the fantasy is that your company is your legacy. This plan adds
+Status: **built** (K0-K8; what was built, and simplified, is under "As built" at the end). Read docs/LEGACY.md first: the fantasy is that your company is your legacy. This plan adds
 a second thread that feeds it: **the captain is a knight who awakens an aura, rises through a knight order, and can end
 by founding an order of their own that outlives them.** Numbers marked *(tune)* are starting values.
 
@@ -486,3 +486,26 @@ the two endings of the road and can be built in either order.
   `campaign-flame`. Tests: `BlackFlame` (no corruption from a month of the world; the pact, forms and troops; burning a
   wall; each threshold; the purge, once; the ending, once) and `FlameTakesYou` (madness hurts your own men, the same seed
   gives the same madness, and without the flame you never turn on your own).
+- **K8 (your own order):** `Campaign/OwnOrder.cs`, save `CampaignState.OwnOrder` (`FoundedOrder`: name, company, creed,
+  form, day, knights, grand masters). **Founding** (`CannotFound`, `FoundOrder`, on THE LEGEND tab) needs:
+  - an aura of Aura Expert (tier 3);
+  - the rank of Lord, or fame 150;
+  - a seat (a town or castle of your own);
+  - no oath to another order, and no pact with the flame (or corruption under 50).
+  The order is named after your legend company, else your best company: the Tamsworth Pikes found the Order of the
+  Tamsworth Pikes (`OrderNameOf`). You choose three vows for its creed, and it teaches your great form, else your highest
+  slotted form (`OrderFormNow`). Its creed binds you like a sworn order's (`Vowed`). A broken vow costs 10 renown
+  (`OwnVowBroken`). While you lead it you swear to no other order. **Knights** (`Knight`, `NextKnight`): a named man of 3
+  battles or more is knighted (`Soldier.Knight`, a deed on his roll). The order holds 2 + your aura tier living knights, and
+  each one adds 10 fame. **Signature troops**: Sworn Brothers (V) and Masters of the Order (VI) (order `own`; passives
+  unshakeable and duellist) rise from every tier IV foot line. Only your own order trains them (`TrainsOrder`). They wear your
+  colours like every troop of your side. **Handing on** (`HandOnAura` in `HandOver`): the new captain is another man.
+  - With your order he leads it a tier below you, with its form (`FoundedOrder.Masters` +1).
+  - Without one he starts two tiers below you.
+  - Either way his aura is never below his own.
+  - Your flame, oaths, rival and cracked core do not pass to him.
+  The order goes into the legend tab and the end summary. Simplified from the plan: the name comes from the company (no
+  free text), the banner charge is unchanged, and the order does not ride the map as a minor faction in later generations.
+  Shots `campaign-legend-found`, `campaign-legend-order`. Test: `OwnOrderFounded` (the gates one by one, three different
+  vows, its creed, its troops yours alone, knighting after three battles and once only, a successor a tier lower with the
+  form, two tiers lower without an order).

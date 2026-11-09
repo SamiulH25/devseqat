@@ -137,11 +137,23 @@ public sealed class TroopStack
 /// A named man of one of your companies (docs/LEGACY.md L1). He is one of the men of the stack of his troop: hurt while
 /// among its wounded. When he leaves the roll he goes to CampaignState.Fallen with how (Fate), where (DiedAt) and his
 /// company (Company, CompanyName), so he is remembered after the company itself is gone.
+/// Your own knight order (docs/KNIGHT_ORDERS.md 8, K8): founded from your company. Its creed (three vows), the form it
+/// teaches, the day it was founded, its knights (named men's ids) and how many grand masters it has had.
+public sealed class FoundedOrder
+{
+    public string Name = "", Form = "", Company = "";
+    public List<string> Vows = new();
+    public List<int> Knights = new();
+    public int Day, Masters = 1;
+}
+
 public sealed class Soldier
 {
     public int Id, Battles, Kills, Wounds, Joined, DiedDay, Company = -1;
     public string Name = "", Troop = "", Fate = "", DiedAt = "", CompanyName = "";
     public bool Hurt;
+    /// Knighted into your own order (docs/KNIGHT_ORDERS.md 8, K8).
+    public bool Knight;
     /// What he is known for, newest last (at most MaxDeeds).
     public List<string> Deeds = new();
     public const int MaxDeeds = 4;
@@ -471,6 +483,8 @@ public sealed class CampaignState
     public ulong OrderRng;
     /// The knight orders (docs/KNIGHT_ORDERS.md 4), made on load for saves from before them.
     public List<OrderState> Orders = new();
+    /// The order you founded (K8); null until then.
+    public FoundedOrder? OwnOrder;
     public float Gold, LastWeekBalance;
     public bool Ironman, GameOver;
     /// Why the campaign ended ("" = the Ironman captain was not ransomed), and whether it was won (5.5; play may go on).

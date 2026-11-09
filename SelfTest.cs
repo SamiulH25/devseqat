@@ -93,6 +93,7 @@ public static partial class SelfTest
         OrderPolitics();
         BlackFlame();
         FlameTakesYou();
+        OwnOrderFounded();
         DuelFight();
         BattleGoals();
         BannerAndLastStand();

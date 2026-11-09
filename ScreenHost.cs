@@ -586,7 +586,27 @@ sealed class ScreenHost : Game
                 Shot("campaign-flame");
                 break;
             }
-            case 49: Exit(); break;
+            case 49:
+            {
+                // Your own order (docs/KNIGHT_ORDERS.md K8): the legend tab before founding (the vows to choose), then after.
+                c.LeaveOrder();
+                c.Captain.Pact = false; c.Captain.Corruption = 0; c.Captain.AuraTier = 3;
+                var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+                co.Battles = Math.Max(co.Battles, 60);
+                if (co.BattleHonours.Count < 3) co.BattleHonours.AddRange(new[] { "Ashby Ford", "Hollin Hill", "Wyck Moor" });
+                map.Stage("legend");
+                Shot("campaign-legend-found");
+                break;
+            }
+            case 50:
+            {
+                c.FoundOrder(new[] { "no_rob", "no_slaves", "contract" });
+                foreach (var m in c.Player.Companies.SelectMany(k => k.Roll).OrderByDescending(m => m.Battles).Take(2)) { m.Battles = Math.Max(m.Battles, 5); c.Knight(m); }
+                map.Stage("legend");
+                Shot("campaign-legend-order");
+                break;
+            }
+            case 51: Exit(); break;
         }
     }
 }

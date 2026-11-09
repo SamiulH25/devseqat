@@ -200,7 +200,8 @@ public sealed partial class Campaign
     {
         reason = "";
         if (p.KnightOrder == t.Order) return true;
-        if (p == Player && t.Order == "hollow") { reason = Captain.Pact ? "" : "ONLY THE HOLLOW CROWN TRAIN THESE"; return Captain.Pact; } // K7
+        if (p == Player && t.Order == "own") { reason = S.OwnOrder != null ? "" : "FOUND YOUR ORDER FIRST"; return S.OwnOrder != null; } // K8
+        if (p == Player && t.Order == "hollow") { reason = Captain.Pact ? "" : "ONLY THE HOLLOW CROWN"; return Captain.Pact; } // K7
         int realm = p == Player ? Captain.Contract : p.Faction;
         if (realm >= 0 && Factions.Get(realm).Lines.Values.Any(l => l.Contains(t.Id))) return true;
         if (p == Player && SwornTo(t.Order, t.Tier - 3)) return true; // Knight-Brother: tier IV, Captain: V, Commander: VI

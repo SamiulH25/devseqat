@@ -65,7 +65,7 @@ public sealed partial class Campaign
     public static int CompanyFame(CompanyRecord c) => c.Battles + 10 * c.Honours.Count + 15 * c.BattleHonours.Count;
 
     /// Your fame: your three most famous companies.
-    public int Fame => Player.Companies.Select(CompanyFame).OrderByDescending(f => f).Take(3).Sum();
+    public int Fame => Player.Companies.Select(CompanyFame).OrderByDescending(f => f).Take(3).Sum() + 10 * KnightsAlive; // your order's knights (K8)
 
     /// What fame brings: contracts pay more (up to half again), lords think better of you (up to +10), more of a place's
     /// men will follow you (up to a quarter more), and a famous company's own people join it knowing the work.
@@ -115,6 +115,7 @@ public sealed partial class Campaign
         Me.Name = heir.Name;
         Me.Age = heir.Age;
         Me.Traits = heir.Traits.ToList();
+        HandOnAura(heir); // K8: another man's aura; your order's form goes to him
         heir.Dead = true; // he is the captain now, not a companion
         heir.Kind = "retired";
         foreach (var co in Player.Companies.Where(co => co.Id == heir.CompanyId)) co.Hero = "";
