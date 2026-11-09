@@ -35,6 +35,21 @@ public partial class Battle
         return Math.Clamp(d, 0, 1);
     }
 
+    /// The drill a campaign company takes into battle, as DrillOf(Squad, Company) will make it: its fit men's (by count),
+    /// cohesion, officer and companion (for the muster roll).
+    public static float DrillOf(CompanyRecord c)
+    {
+        float sum = 0;
+        int n = 0;
+        foreach (var t in c.Stacks) if (t.Men > 0) { sum += DrillOf(t.Type) * t.Men; n += t.Men; }
+        if (n == 0) return 0;
+        float d = sum / n + Math.Clamp(c.Cohesion, 0, 30) / 30f * 0.1f;
+        if (c.Traits.Contains("Veteran")) d += 0.05f;
+        if (c.Traits.Contains("Hothead")) d -= 0.05f;
+        if (c.Hero.Length > 0) d += 0.05f;
+        return Math.Clamp(d, 0, 1);
+    }
+
     public static Grade GradeOf(float drill) => drill < 0.30f ? Grade.Rabble : drill < 0.56f ? Grade.Trained : drill < 0.85f ? Grade.Veteran : Grade.Elite;
     public static string GradeName(Grade g) => g switch { Grade.Rabble => "Rabble", Grade.Trained => "Trained", Grade.Veteran => "Veteran", _ => "Elite" };
 

@@ -74,6 +74,8 @@ partial class MapScreen
         ui.Pips(new Rectangle(x, y, w, ui.U(6)), Rules.Places(c) / MathF.Max(1, Rules.Cap(Rules.RoleOf(c))), Style.Sides[2].Ui, 10);
         y += ui.U(9);
         ui.Text("COHESION", x, y, Style.Dim * 0.8f, 1);
+        var grade = Battle.GradeOf(Battle.DrillOf(c)); // what its drill makes it in battle (docs/MELEE.md D1)
+        ui.TextR(Battle.GradeName(grade).ToUpperInvariant(), r.Right - ui.U(7), y, grade >= Grade.Veteran ? Kit.Gilt : grade == Grade.Trained ? Style.Text : Style.Dim, 1);
         y += ui.U(9);
         ui.Gauge(new Rectangle(x, y, w, ui.U(5)), c.Cohesion / 30f, c.Cohesion >= 15 ? Style.Ok : c.Cohesion >= 8 ? Style.Warn : Style.Bad);
         y += ui.U(9);

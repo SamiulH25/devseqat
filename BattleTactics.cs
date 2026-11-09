@@ -141,7 +141,7 @@ public partial class Battle
 
     /// The point a flanking company makes for (where its front rank should stand, and which way it then faces): beside the
     /// foe's end, coming round it wide while still in front of his line.
-    static (Vector2 at, Vector2 face) FlankPoint(Squad s, Squad foe, float standoff)
+    public static (Vector2 at, Vector2 face) FlankPoint(Squad s, Squad foe, float standoff)
     {
         var perp = new Vector2(-foe.Front.Y, foe.Front.X) * s.FlankSide;
         var at = foe.Center + perp * (foe.Radius * 0.8f + standoff + 0.5f);

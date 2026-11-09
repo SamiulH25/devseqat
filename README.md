@@ -407,13 +407,34 @@ The visuals pass (`docs/VISUALS.md`) changed nothing in the simulation: replays 
 - **Scale:** men near the enemy think every tick, others every 2nd or 4th tick, so 3,000 men cost about 3.6 ms a tick
   (`--bench`). Far men are drawn with fewer parts, and the roar of a big melee rises with the men in contact.
 
+## Design: drill, ranks and company wits (docs/MELEE.md)
+
+- **Companies fight from their ranks.** Two companies meet as two lines: the front rank fights, the men behind wait and step into
+  a gap when a man falls. A charge closes as a body, and at blows a line holds where it stands.
+- **Drill by tier:** every company has a grade, shown on its card (RAB / TRN / VET / ELT), its tooltip and the muster roll.
+  Tier 1-2 troops are Rabble, 3-4 Trained, 5-6 Veteran, 7 Elite; cohesion (up to +0.1), a Veteran officer and a companion at its
+  head raise it, a Hothead lowers it.
+- **Order:** a long run, a melee (for rabble), losses, a flank attack and bad ground shake a company's ranks; under 40 % they break
+  (card: RANKS BROKEN) and its men fight each for himself, blocking worse and striking at 0.7. Drilled men re-form, even at
+  blows; a sergeant or your banner near makes it half as quick again.
+- **Rabble:** levies near the enemy may break ranks and charge without orders, yours too, unless a sergeant or your banner is
+  near. Rabble chase the broken.
+- **Wits by grade:** Trained companies wheel to face a flank attack and re-form after a win. Veterans also take a foe your other
+  company is fighting in the flank, bend their ends round a narrower line, step back to re-form when broken and rotate tired
+  men; veteran horse rally behind your line and charge again together, veteran bows fall back behind your foot and hold their
+  shot at a melee. Elites also go round in a pincer, pick the decisive target and roll up the line. Select a company to see
+  its plan as a dashed hook on the ground.
+- Hold means hold: a company you hold only wheels to face a threat (and bows step back behind the foot); everything else
+  happens on a charge.
+
 ## Design: Total War morale and flanks
 
-- **Flanks and rear:** blows from the side deal x1.2, from behind x1.5, and only frontal blows can be blocked.
+- **Flanks and rear:** blows from the side deal x1.2, from behind x1.5, and only frontal blows can be blocked. A man fighting
+  one foe sees a second only straight ahead: blows from the side of his eye count as flank blows.
   Each flank/rear hit adds to the squad's `Pressure`, which drains morale until it decays (HUD: FLANKED).
 - **Fear:** horsemen galloping straight at an unbraced footman drain his morale. Nearby routing friends drain it too (rout spreads),
   and so does an army that has lost over half its men.
-- HUD unit cards show STEADY / FLANKED / WAVERING (morale under 30) / ROUTING.
+- HUD unit cards show STEADY / FLANKED / WAVERING (morale under 30) / ROUTING, and RANKS BROKEN / RE-FORMING.
 
 ## Architecture
 

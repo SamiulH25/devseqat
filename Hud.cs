@@ -157,7 +157,20 @@ sealed partial class Hud
         : routing * 2 > active ? ("ROUTING", Bad)
         : morale < Battle.RallyAt ? ("WAVERING", Warn)
         : s.Pressure > 1.5f ? ("FLANKED", Orange)
+        : s.Plan == Plan.Reform ? ("RE-FORMING", Warn)
+        : s.Broken && !s.Cavalry ? ("RANKS BROKEN", Warn)
         : ("STEADY", Ok);
+
+    /// A company's grade as a card tag, its colour (the higher, the brighter), and its ranks in a word or two.
+    static string GradeTag(Grade g) => g switch { Grade.Rabble => "RAB", Grade.Trained => "TRN", Grade.Veteran => "VET", _ => "ELT" };
+    static Color GradeColor(Grade g) => g switch { Grade.Rabble => Dim, Grade.Trained => Color.White, Grade.Veteran => Gold, _ => Orange };
+    static string RanksOf(Squad s) => s.Cavalry || s.Swarm ? "" : s.Plan == Plan.Reform ? "RE-FORMING" : s.Broken ? "RANKS BROKEN" : s.Formed < 0.7f ? "WAVERING RANKS" : "FORMED";
+    static string PlanOf(Squad s) => s.Plan switch
+    {
+        Plan.Refuse => "FACING THE FLANK", Plan.Flank => s.Bend > 0 ? "WRAPPING THEIR FLANK" : "SWINGING ONTO A FLANK", Plan.Pin => "PINNING",
+        Plan.Regroup => "RE-FORMING AFTER A WIN", Plan.RollUp => "ROLLING UP THE LINE", Plan.Pursue => "CHASING THE BROKEN", Plan.Shelter => "FALLING BACK BEHIND THE FOOT",
+        _ => s.Rallying ? "RALLYING" : "",
+    };
 
     static int AvgMorale(IEnumerable<Unit> us)
     {
@@ -408,6 +421,7 @@ sealed partial class Hud
             Rect(new Rectangle(r.X + U(3), r.Y + U(3), bw, U(13)), sel ? Gold : Color.Black * 0.75f);
             Text($"{idx}", r.X + U(5), r.Y + U(6), sel ? Kit.IronDark : Color.White, 1);
             Text(Style.Numerals[Math.Clamp(type.Tier, 0, 7)], r.X + U(4), r.Y + U(20), Gold, 1); // tier
+            if (!s.Swarm) { Rect(new Rectangle(r.X + U(3), r.Y + U(28), TW(GradeTag(s.Grade), 1) + U(3), U(10)), Color.Black * 0.6f); Text(GradeTag(s.Grade), r.X + U(4), r.Y + U(29), GradeColor(s.Grade), 1); } // drill grade
             string tag = s.Order switch { Order.Follow => "FLW", Order.Charge => s.Target != null ? "ATK" : "CHG", _ => "HLD" };
             TextR(tag, r.Right - U(4), r.Y + U(5), s.Order == Order.Charge ? Orange : Dim, 1);
             if (s.Formation != Formation.Line)
@@ -672,6 +686,7 @@ sealed partial class Hud
             ((s.Company?.Name is { Length: > 0 } n ? n + ": " : "") + t.Name.ToUpperInvariant(), s.Team == 0 ? Friendly : Foe),
             ($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]} {t.Class.ToString().ToUpperInvariant()}   {s.Alive}/{s.StartCount} MEN", Color.White),
             ($"{StateOf(s)}   {FormationName(s.Formation)}", Dim),
+            ((s.Swarm ? "A MOB" : Battle.GradeName(s.Grade).ToUpperInvariant() + (RanksOf(s) is { Length: > 0 } rk ? "   " + rk : "")) + (PlanOf(s) is { Length: > 0 } pl ? "   " + pl : ""), s.Swarm ? Dim : GradeColor(s.Grade)),
             ($"MORALE {morale}   STAMINA {stamina}" + (t.Ammo > 0 ? $"   ARROWS {act.Sum(u => u.Ammo)}" : ""), morale < 30 ? Bad : Dim),
             ($"ARMOUR {t.Armor:0}  DAMAGE {t.Damage:0}" + (t.Range > 0 ? $"  RANGE {t.Range:0} M" : ""), Dim),
         };
@@ -699,7 +714,7 @@ sealed partial class Hud
         y += U(14);
         Text($"HP {t.MaxHp:0}  ARMOUR {t.Armor:0}  DMG {t.Damage:0}  REACH {t.Reach:0.0}", x, y, Dim, 1);
         y += U(14);
-        Text($"{StateOf(s)}, {FormationName(s.Formation)}" + (t.Ammo > 0 ? $", {act.Sum(u => u.Ammo)} ARROWS" : ""), x, y, Dim, 1);
+        Text($"{(s.Swarm ? "" : Battle.GradeName(s.Grade).ToUpperInvariant() + ", ")}{StateOf(s)}, {FormationName(s.Formation)}" + (t.Ammo > 0 ? $", {act.Sum(u => u.Ammo)} ARROWS" : ""), x, y, Dim, 1);
         y += U(14);
         float morale = act.Count == 0 ? 0 : act.Average(u => u.Morale) / 100, stamina = act.Count == 0 ? 0 : act.Average(u => u.Stamina) / 100;
         Text("MORALE", x, y, Dim, 1); Bar(new Rectangle(x + U(60), y + U(1), U(170), U(5)), morale, morale < 0.3f ? Bad : Ok);

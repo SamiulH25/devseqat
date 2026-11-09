@@ -425,6 +425,38 @@ partial class BattleScreen
         }
     }
 
+    /// A company's own plan on the ground (docs/MELEE.md D7): swinging onto a flank, a dashed hook to where its front will
+    /// stand; wrapping, a dashed hook forward from each end of its line.
+    void PlanHook(Squad s)
+    {
+        if (s.Plan != Plan.Flank || s.Foe is not { Alive: > 0 } foe || s.Alive == 0) return;
+        void Dashes(Vector2 a, Vector2 b, Vector2 c)
+        {
+            // A curve a -> c bending through b, every other step drawn; an arrowhead at c.
+            Vector2 At(float t) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * b + t * t * c;
+            for (int i = 0; i < 10; i += 2) Line(G(At(i / 10f), 0.25f), G(At((i + 1) / 10f), 0.25f), RouteGilt);
+            var d = c - At(0.9f);
+            if (d.LengthSquared() < 1e-4f) return;
+            d = Vector2.Normalize(d);
+            var n = new Vector2(-d.Y, d.X);
+            Line(G(c, 0.25f), G(c - d * 1.2f + n * 0.7f, 0.25f), RouteGilt);
+            Line(G(c, 0.25f), G(c - d * 1.2f - n * 0.7f, 0.25f), RouteGilt);
+        }
+        if (s.Bend > 0)
+        {
+            var rt = new Vector2(-s.Front.Y, s.Front.X);
+            float half = (Math.Clamp(s.Columns, 1, Math.Max(1, s.Alive)) - 1) / 2f * s.Spacing;
+            foreach (float side in new[] { -1f, 1f })
+            {
+                var end = s.Anchor + rt * side * half;
+                Dashes(end, end + s.Front * 3, end + s.Front * 3.5f - rt * side * 2.5f);
+            }
+            return;
+        }
+        var (at, face) = Battle.FlankPoint(s, foe, 1.5f);
+        Dashes(s.FrontPos, Vector2.Lerp(s.FrontPos, at, 0.5f) - face * 4, at + face * 1.5f);
+    }
+
     void DrawLines()
     {
         lines.N = 0;
@@ -437,6 +469,7 @@ partial class BattleScreen
         }
         Stakes();
         RouteDots();
+        foreach (var s in selected) PlanHook(s);
         foreach (var s in selected)
         {
             // A company just chosen: its rings swell once, so you see which it was.

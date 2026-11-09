@@ -123,6 +123,7 @@ public static partial class SelfTest
         Reforms();
         HorseRegroup();
         BowsFallBack();
+        MusterGrade();
         Holdouts();
         GoblinBattle();
         Wolves();

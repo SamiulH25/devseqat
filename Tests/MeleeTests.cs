@@ -376,4 +376,18 @@ public static partial class SelfTest
         Check(vet.behind > 3 && trained.behind < 3, "veteran bows fall back behind their foot; trained ones stand");
         Check(!vet.shotIntoMelee && trained.shotIntoMelee, "veteran bows hold fire into a melee their men are in");
     }
+
+    /// M6: the grade the muster roll shows for a company is the one it fights at.
+    static void MusterGrade()
+    {
+        var rec = new CompanyRecord { Cohesion = 24, Traits = new() { "Veteran" }, Stacks = new() { new TroopStack { Troop = "men_at_arms", Men = 12 }, new TroopStack { Troop = "ironguard", Men = 6 } } };
+        var b = Battle.Empty(58);
+        var co = new Company("men_at_arms", 18, "infantry", Traits: rec.Traits.ToArray(), Cohesion: rec.Cohesion);
+        var types = rec.Stacks.SelectMany(k => Enumerable.Repeat(k.Type, k.Men)).ToList();
+        var s = b.AddSquad(0, types[0], 18, Vector2.Zero, 6, Vector2.UnitY, co);
+        for (int i = 0; i < s.Units.Count; i++) s.Units[i].Type = types[i];
+        s.Drill = Battle.DrillOf(s, co);
+        Console.WriteLine($"melee: muster grade {Battle.GradeName(Battle.GradeOf(Battle.DrillOf(rec)))} ({Battle.DrillOf(rec):0.00}), in battle {s.Drill:0.00}");
+        Check(MathF.Abs(Battle.DrillOf(rec) - s.Drill) < 0.001f, "the muster roll's grade is the battle's");
+    }
 }
