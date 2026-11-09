@@ -143,6 +143,14 @@ partial class MapScreen
             ui.Text("NO WANDERER IS DRINKING HERE TONIGHT. THEY MOVE BETWEEN TOWNS.", body.X, y + ui.U(4), Style.Dim, 1);
             y += ui.U(24);
         }
+        // A feast (A5): three days in good heart, carried into battle.
+        var feast = new Rectangle(body.X, y, body.Width, ui.U(34));
+        TownRow(feast);
+        string fl = C.HasBuff("feasted") ? $"FEASTED: {C.BuffDays("feasted"):0.0} DAYS LEFT" : "HOLD A FEAST: THREE DAYS STRONGER AND STEADIER, IN BATTLE TOO";
+        ui.Text(ui.Fit(fl, feast.Width - ui.U(220)), feast.X + ui.U(8), feast.Y + ui.U(12), Kit.Parchment, 1);
+        if (ui.Button(new Rectangle(feast.Right - ui.U(200), feast.Y + ui.U(5), ui.U(194), ui.U(24)), "FEAST THE COMPANY", C.S.Gold >= C.FeastPrice && !C.HasBuff("feasted"), $"{C.FeastPrice} CROWNS"))
+            note = C.Feast(s) ?? "THE COMPANY FEASTS";
+        y += ui.U(40);
         ui.Text("TALK IN THE TAVERN", body.X, y + ui.U(4), Style.Accent, 1);
         y += ui.U(22);
         foreach (var talk in C.Rumours(s))

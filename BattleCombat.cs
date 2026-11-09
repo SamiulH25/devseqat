@@ -126,6 +126,7 @@ public partial class Battle
             Sound(Cue.Block, t.Pos);
             return;
         }
+        if (ranged && t.Mods.Veil > 0 && rng.NextSingle() < t.Mods.Veil) return; // lost in mist or smoke, turned by a ward
         var side = t.Squad?.Formation == Formation.Square && !t.Routing ? Side.Front : SideOf(a, t); // a square has no flank
         bool facing = side == Side.Front;
         if (ranged && t.Squad?.Formation == Formation.Loose && rng.NextSingle() < 0.3f) return; // open ranks: the arrow finds a gap

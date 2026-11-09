@@ -436,6 +436,7 @@ sealed partial class Hud
             kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(76), r.Width - U(8), U(6)), active / (float)Math.Max(1, s.StartCount), cloth.Ui);
             kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(84), r.Width - U(8), U(6)), morale / 100f, MoraleColor(morale));
             if (state != "STEADY") kit.Chip(r.X + r.Width / 2 - (TW(state, 1) + U(10)) / 2, r.Y - U(20), state, sc);
+            EffectMarks(s, r);
         }
         if (hiddenCards > 0 && cards.Count > 0)
         {
@@ -444,6 +445,21 @@ sealed partial class Hud
         }
     }
     int hiddenCards;
+
+    /// The effects on a company (docs/COMPANIONS_MAGIC.md A6): up to four icons along the foot of its portrait, gold for
+    /// a blessing, red for a curse; a mage company's Will as a thin bar under it.
+    void EffectMarks(Squad s, Rectangle r)
+    {
+        int x = r.Right - U(4);
+        foreach (var e in s.Timed.Select(t => t.Effect).Concat(s.StandingIds.Select(Effects.Get)).Distinct().Take(4))
+        {
+            x -= U(11);
+            Rect(new Rectangle(x - U(1), r.Y + U(37), U(11), U(11)), Color.Black * 0.6f);
+            kit.Icon(e.Icon, x, r.Y + U(38), e.Harmful ? Style.Bad : Gold, 1);
+        }
+        if (Battle.CasterCompany(s))
+            kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(91), r.Width - U(8), U(3)), s.Will / 100f, new Color(120, 150, 255));
+    }
 
     /// A portrait built from the troop's own part sprites, laid out by the same body metrics as the 3D puppet
     /// (so every loadout and tier is drawn correctly), cropped to `box`.

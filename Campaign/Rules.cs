@@ -65,7 +65,7 @@ public static class Rules
     public static float TierWeight(int tier) => tier switch { <= 1 => 0.8f, 2 => 1f, 3 => 1.15f, 4 => 1.3f, 5 => 1.4f, 6 => 1.5f, _ => 1.6f };
 
     /// A company's places, from its role (shared by all its stacks).
-    public static float Cap(string role) => B.ArmyScale * role switch { "archers" => 16, "spears" => 12, "horse" => 10, _ => 24 };
+    public static float Cap(string role) => B.ArmyScale * role switch { "archers" => 16, "spears" => 12, "horse" => 10, "casters" => 4, _ => 24 };
 
     /// A price per man (wage, levy, loot, ransom, promotion): the troop price spread over ArmyScale men.
     public static float PerMan(float cost) => cost / B.ArmyScale;
@@ -82,7 +82,7 @@ public static class Rules
 
     public static float Strength(UnitType t, int men)
     {
-        float cls = t.Class switch { UnitClass.Cavalry => 1.35f, UnitClass.Archer => 0.9f, _ => 1f };
+        float cls = t.Class switch { UnitClass.Cavalry => 1.35f, UnitClass.Archer => 0.9f, UnitClass.Caster => 1 + 0.35f * t.Spells.Length, _ => 1f }; // a mage is worth his spells, not his staff
         if (t.Huge) cls *= 2f; // a troll's blows sweep through several men, and it heals
         return men * (t.MaxHp + 5 * t.Armor + 2 * t.Damage) * cls / 100f;
     }

@@ -60,16 +60,16 @@ public partial class Battle
 
     /// What rallied horse go for next: an elite's first choice is enemy archers with no foot company near them; then a foot
     /// company already fighting (its flank is open), nearest first.
-    Squad? HorsePrey(Squad s)
+    internal Squad? HorsePrey(Squad s)
     {
         Squad? best = null;
         float bd = 80;
         foreach (var e in Squads)
         {
             if (e.Team == s.Team || e.Alive == 0 || e.Cavalry) continue;
-            bool open = s.Grade == Grade.Elite && e.Units[0].Type.Ammo > 0 && !Squads.Any(o => o.Team == e.Team && o != e && o.Alive > 0 && !o.Cavalry && o.Units[0].Type.Ammo == 0 && Vector2.Distance(o.Center, e.Center) < o.Radius + e.Radius + 12);
+            bool open = CasterCompany(e) || s.Grade == Grade.Elite && e.Units[0].Type.Ammo > 0 && !Squads.Any(o => o.Team == e.Team && o != e && o.Alive > 0 && !o.Cavalry && o.Units[0].Type.Ammo == 0 && Vector2.Distance(o.Center, e.Center) < o.Radius + e.Radius + 12);
             if (!open && !e.InContact) continue;
-            float d = Vector2.Distance(e.Center, s.Center) - (open ? 30 : 0);
+            float d = Vector2.Distance(e.Center, s.Center) - (CasterCompany(e) ? 60 : open ? 30 : 0); // mages are the softest prey of all (E4)
             if (d < bd) { bd = d; best = e; }
         }
         return best;
@@ -123,5 +123,5 @@ public partial class Battle
     }
 
     /// An elite archer company's pick of the companies in reach: wavering ones first, then the enemy's own archers.
-    static int Focus(Squad archers, Squad e) => archers.Grade != Grade.Elite ? 0 : AvgMorale(e) < 45 ? 0 : e.Units[0].Type.Ammo > 0 ? 1 : 2;
+    static int Focus(Squad archers, Squad e) => archers.Grade != Grade.Elite ? 0 : CasterCompany(e) || AvgMorale(e) < 45 ? 0 : e.Units[0].Type.Ammo > 0 ? 1 : 2; // casters first (E4)
 }

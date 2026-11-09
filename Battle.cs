@@ -252,6 +252,11 @@ public sealed partial class Battle
             s.Units.Add(h);
         }
         s.Drill = DrillOf(s, company);
+        LearnSpells(s, company);
+        // Standing effects for the battle: the campaign's on your side (A5), and the company's own (its hero's calling, C1).
+        if (team == 0) foreach (var id in Options.Standing) StandEffect(s, id);
+        foreach (var id in company?.Standing ?? Array.Empty<string>()) StandEffect(s, id);
+        if (s.StandingIds.Count > 0) { anyAura = true; RefreshMods(s); }
         s.Id = Squads.Count;
         s.Alive = s.Units.Count; // standing from the start, so a charge ordered before the first tick keeps its target
         if (s.Swarm) s.Formation = Formation.Loose; // goblins come on as a mob
@@ -298,6 +303,7 @@ public sealed partial class Battle
         }
         UpdateDivisions();
         UpdateEffects();
+        UpdateAbilities(dt);
         Batter(dt);
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
         RaiseDead(dt);
@@ -486,7 +492,7 @@ public sealed partial class Battle
         int horses = LooseHorses.Count(h => h.Team == 1);
         return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills, SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes)
         {
-            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(), GoalTexts = Goals.Select(GoalText).ToList(),
+            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(), GoalTexts = Goals.Select(GoalText).ToList(), Omen = OmenRaised,
         };
     }
 

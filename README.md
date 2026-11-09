@@ -295,6 +295,20 @@ the player rides a courser.
   from the gallop), League **Paid in full** (no running while the day is not lost), the Order's **Zeal** (heartens every
   company of their side within 20 m). Hover an upgrade card to read them. Auto-resolve counts styles
   and traits too (`TraitWeight` in `Data/campaign.json`).
+- **Mages:** Acolytes (tier II, from Levies) become one of seven culture mage lines at tier IV (chaplains, lectors, rune
+  singers, drummers, star readers, hedge witches, apothecaries), rising to tier VI. Each tier knows one more spell, and tier VI
+  a great working once a battle. Mages cast on their own when a spell fits (bless a company about to clash, mend the hurt, call
+  lightning in rain, wildfire in dry weather, mist over men under arrows, fire pots on a packed crowd). Each cast glows on the
+  ground first, so you can move away. A mage company has **Will**: it refills over time, faster when they stand still, and
+  dead casters lower it. Enemy veteran horse and elite bows hunt mages first. Hire Acolytes in towns with a chapel or near a
+  shrine (from day 60); some lords bring mages too. Craft (not faith) raises the **Omen**; from 12, dark omens follow.
+- **Companions' callings:** each companion is a Sword, Shield, Banner, Bow, Lance, Priest or Cunning one. He gains levels
+  (to 10) in battles his company fights, a talent each level and a second ability at 5, and he uses his abilities on his own,
+  like mages. Companions like or dislike what you do, quarrel, swear brotherhood, have a story to settle, take a student, and
+  may leave you. Enemy lords bring champions.
+- **Blessings and rites:** a shrine visit, a feast in a tavern (TAVERN tab) or a camp rite (party screen: bless, poultices,
+  read the bones, call rain; needs a Priest or Cunning companion or mages) give buffs that go into your next battles. Hunger
+  hurts. A relic found in a ruin blesses three battles; a shrine fills it again. Chips above the captain's panel show them.
 - **The tree:** 188 troops (and the captain, plus 13 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a

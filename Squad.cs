@@ -47,6 +47,18 @@ public sealed class Squad
     public Vector2 Center;
     /// Effects on the whole company: its side's auras that reach it (BattleEffects.cs).
     public Mods Mods;
+    /// Spells (BattleAbilities.cs): what the company can cast (its casters' spells, or its hero's abilities) and when each
+    /// is ready again; its Will (0-100, casters only); the great working spent; casters it started with; its hero's level.
+    public AbilityDef[] Spells = Array.Empty<AbilityDef>();
+    public float[] SpellReady = Array.Empty<float>();
+    public bool[] ByHero = Array.Empty<bool>();
+    public float Will = 100;
+    public bool GreatDone;
+    public int CasterStart, HeroLevel;
+    /// Timed effects on the company (spells, abilities), and standing ones for the whole battle (campaign buffs, a hero's calling).
+    public readonly List<TimedEffect> Timed = new();
+    public Mods Standing;
+    public readonly List<string> StandingIds = new();
     public float Radius;
 
     public Squad(string name, int team) { Name = name; Team = team; }

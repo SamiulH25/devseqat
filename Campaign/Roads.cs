@@ -150,6 +150,7 @@ public sealed partial class Campaign
     /// own realm; robbing pilgrims costs renown too).
     public void Rob()
     {
+        CompanionsReact("rob");
         if (Encounter is not Party e || e.Kind != PartyKind.Caravan) return;
         e.Prey = true;
         float hit = e.Faction == Captain.Contract ? -14 : -6;

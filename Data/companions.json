@@ -1,0 +1,21 @@
+{
+  // Companion callings (docs/COMPANIONS_MAGIC.md B1-B3; loaded by Campaign/Callings.cs). A companion's calling is fixed when
+  // he joins. In battle his company carries the calling's aura, and he uses its ability on his own (Data/abilities.json);
+  // from level 5 a second one. Each level from 1 to 10 adds the next talent: an effect on the company he leads.
+  "callings": [
+    { "id": "Sword", "line": "A duellist: he seeks out the enemy's officers.", "aura": "duellist", "ability": "challenge", "second": "hold_the_line",
+      "talents": ["duellist", "fearsome", "duellist", "tireless", "duellist", "fearsome", "duellist", "sure_footed", "duellist", "fearsome"] },
+    { "id": "Shield", "line": "He stands in the front rank and holds it.", "aura": "shieldwall", "ability": "hold_the_line", "second": "rally_to_me",
+      "talents": ["shieldwall", "unshakeable", "shieldwall", "locked_shields", "shieldwall", "unshakeable", "shieldwall", "iron_skin", "shieldwall", "locked_shields"] },
+    { "id": "Banner", "line": "He carries a standard of his own: men steady round it.", "aura": "standard", "ability": "rally_to_me", "second": "hold_the_line",
+      "talents": ["standard", "unshakeable", "standard", "tireless", "standard", "unshakeable", "standard", "sure_footed", "standard", "unshakeable"] },
+    { "id": "Bow", "line": "A marksman: he calls the range and marks the foe.", "aura": "marksman", "ability": "mark", "second": "fair_wind",
+      "talents": ["marksman", "steady_aim", "marksman", "sure_footed", "marksman", "steady_aim", "marksman", "tireless", "marksman", "steady_aim"] },
+    { "id": "Lance", "line": "He leads horse: they re-form and charge again.", "aura": "horse_lord", "ability": "wheel", "second": "rally_to_me",
+      "talents": ["horse_lord", "heavy_charge", "horse_lord", "swift", "horse_lord", "heavy_charge", "horse_lord", "iron_skin", "horse_lord", "heavy_charge"] },
+    { "id": "Priest", "line": "A man of faith: he blesses the company and wards it.", "aura": "faithful", "ability": "blessing", "second": "ward",
+      "talents": ["faithful", "unshakeable", "faithful", "tireless", "faithful", "unshakeable", "faithful", "sure_footed", "faithful", "unshakeable"] },
+    { "id": "Cunning", "line": "A cunning one: hedge-craft, mist and fever. The pious keep away.", "aura": "", "ability": "mist", "second": "fever",
+      "talents": ["sure_footed", "tireless", "sure_footed", "steady_aim", "tireless", "sure_footed", "tireless", "steady_aim", "sure_footed", "tireless"] }
+  ]
+}

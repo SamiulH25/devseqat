@@ -45,6 +45,7 @@ public sealed partial class Campaign
         int gold = PrisonerValue;
         S.Gold += gold;
         Log($"You sell {PrisonerCount} prisoners for {gold} crowns.");
+        CompanionsReact("sell_prisoners");
         Player.Prisoners.Clear();
         AudioEngine.Current?.Play(Cue.Coin);
         return null;
@@ -198,6 +199,7 @@ public sealed partial class Campaign
             c.Prune();
         }
         Player.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
+        AddBuff("hungry", 1); // into battle weak and tired (A5)
         Log("Your men are starving. Buy food in a town or village.");
     }
 

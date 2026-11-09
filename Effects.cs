@@ -32,23 +32,30 @@ public sealed class EffectDef
     /// sergeants and heroes. Whirl: every blow carries into the man beside at this share. Gallop: shoot from the saddle as
     /// steadily as standing. Holdfast: will not rout while his side has lost less than half its men.
     public float Fury, Testudo, Headsman, Whirl, Gallop, Holdfast;
+    /// Mist, smoke or a ward over him: the chance an arrow or bolt loses him and misses.
+    public float Veil;
     /// > 0: an aura of this radius (m) round its bearer, on the companies of his side whose centre is inside it.
     public float Radius;
+    /// Bad for those who carry it (drawn red): a curse, hunger, a storm over them.
+    public bool Harmful => Damage < 0 || MoralePerSec < 0 || Shock > 0 || Tire > 0 || Speed < 0 || ArrowArmour < 0 || Block < 0 || Spread > 0;
 }
+
+/// A timed effect on a company (a spell, an ability): its effect, strength and end (battle seconds); `From` names its source.
+public readonly record struct TimedEffect(EffectDef Effect, float K, float Until, string From);
 
 /// A man's effect totals: his troop's passives plus his company's auras and timed effects (BattleEffects.cs).
 /// Read in the damage path, morale, movement, fatigue and shooting: one field each, no look-ups.
 public struct Mods
 {
     public float Damage, Block, BlockStill, Armour, ArrowArmour, Speed, Footing, Tire, Shock, ShockDealt, MoralePerSec, Spread, Reload, Brace, Charge;
-    public float Fury, Testudo, Headsman, Whirl, Gallop, Holdfast;
+    public float Fury, Testudo, Headsman, Whirl, Gallop, Holdfast, Veil;
 
     public void Add(EffectDef e, float k = 1)
     {
         Damage += e.Damage * k; Block += e.Block * k; BlockStill += e.BlockStill * k; Armour += e.Armour * k; ArrowArmour += e.ArrowArmour * k;
         Speed += e.Speed * k; Footing += e.Footing * k; Tire += e.Tire * k; Shock += e.Shock * k; ShockDealt += e.ShockDealt * k;
         MoralePerSec += e.MoralePerSec * k; Spread += e.Spread * k; Reload += e.Reload * k; Brace += e.Brace * k; Charge += e.Charge * k;
-        Fury += e.Fury * k; Testudo += e.Testudo * k; Headsman += e.Headsman * k; Whirl += e.Whirl * k; Gallop += e.Gallop * k; Holdfast += e.Holdfast * k;
+        Fury += e.Fury * k; Testudo += e.Testudo * k; Headsman += e.Headsman * k; Whirl += e.Whirl * k; Gallop += e.Gallop * k; Holdfast += e.Holdfast * k; Veil += e.Veil * k;
     }
 
     public static Mods operator +(Mods a, Mods b) => new()
@@ -58,7 +65,7 @@ public struct Mods
         Shock = a.Shock + b.Shock, ShockDealt = a.ShockDealt + b.ShockDealt, MoralePerSec = a.MoralePerSec + b.MoralePerSec,
         Spread = a.Spread + b.Spread, Reload = a.Reload + b.Reload, Brace = a.Brace + b.Brace, Charge = a.Charge + b.Charge,
         Fury = a.Fury + b.Fury, Testudo = a.Testudo + b.Testudo, Headsman = a.Headsman + b.Headsman, Whirl = a.Whirl + b.Whirl,
-        Gallop = a.Gallop + b.Gallop, Holdfast = a.Holdfast + b.Holdfast,
+        Gallop = a.Gallop + b.Gallop, Holdfast = a.Holdfast + b.Holdfast, Veil = a.Veil + b.Veil,
     };
 }
 
@@ -103,7 +110,7 @@ public static class Effects
             if (e.Footing is < 0 or > 1) yield return $"{e.Id}: footing {e.Footing} outside 0-1";
             if (e.Shock < -1 || e.Tire < -1 || e.Spread < -1 || e.Reload < -1) yield return $"{e.Id}: a reduction past -1";
             if (e.Radius is < 0 or > 60) yield return $"{e.Id}: radius {e.Radius} out of range";
-            if (e.Testudo is < 0 or > 0.9f || e.Whirl is < 0 or > 1) yield return $"{e.Id}: testudo or whirl out of range";
+            if (e.Testudo is < 0 or > 0.9f || e.Whirl is < 0 or > 1 || e.Veil is < 0 or > 0.9f) yield return $"{e.Id}: testudo, whirl or veil out of range";
         }
     }
 }

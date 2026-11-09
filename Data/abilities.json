@@ -1,0 +1,67 @@
+{
+  // Spells and abilities (docs/COMPANIONS_MAGIC.md B3, C3, E3; loaded by Abilities.cs, cast by BattleAbilities.cs).
+  // A caster uses each on its own when its rule ("when") finds a target: nobody presses a button. Will is spent from
+  // a mage company's pool; a companion's ("arms", and a priest's or cunning one's) costs none, only the cooldown.
+  // Attacks warn first (warn, seconds): a company that moves off the glow takes nothing.
+  "abilities": [
+    // Faith
+    { "id": "mend", "name": "Mend", "icon": "heart", "tradition": "faith", "kind": "heal", "when": "hurt",
+      "line": "Wounded men nearby stop bleeding and regain some strength.", "range": 30, "radius": 12, "heal": 25, "cooldown": 25, "will": 15, "warn": 0.5 },
+    { "id": "blessing", "name": "Blessing", "icon": "sun", "tradition": "faith", "kind": "buff", "effect": "blessed", "when": "closing",
+      "line": "Your companies near the caster take heart and raise their shields.", "range": 40, "radius": 20, "duration": 20, "cooldown": 45, "will": 25 },
+    { "id": "ward", "name": "Ward", "icon": "shield", "tradition": "faith", "kind": "field", "effect": "warded", "on": "own", "when": "shot",
+      "line": "A circle of protection: arrows turn aside, and it burns the dead who enter.", "range": 40, "radius": 12, "duration": 30, "dps": 6, "tag": "undead", "cooldown": 50, "will": 25 },
+    { "id": "smite", "name": "Smite", "icon": "sun", "tradition": "faith", "kind": "attack", "when": "massed",
+      "line": "A pillar of light on one spot: heavy against the dead and beasts, and men there are shaken.", "range": 45, "radius": 3, "damage": 30, "tag": "undead", "vsTag": 3, "maxHit": 6, "shock": 8, "cooldown": 20, "will": 20, "warn": 2 },
+    { "id": "miracle", "name": "Miracle", "icon": "crown", "tradition": "faith", "kind": "rally", "effect": "miracle", "when": "losing", "great": true,
+      "line": "Once a battle: every company of yours rallies and takes heart.", "range": 300, "radius": 300, "duration": 15, "cooldown": 300, "will": 60, "warn": 1.5 },
+    // Craft: runes and spirits
+    { "id": "war_song", "name": "War song", "icon": "flag", "tradition": "craft", "kind": "buff", "effect": "war_song", "when": "closing",
+      "line": "Your companies nearby strike harder and tire slower.", "range": 40, "radius": 25, "duration": 30, "cooldown": 50, "will": 25, "omen": 0.5 },
+    { "id": "storm", "name": "Call the storm", "icon": "rain", "tradition": "craft", "kind": "field", "effect": "storm", "when": "archers",
+      "line": "Rain and wind over the enemy: bows weak, feet slow, and lightning can strike there.", "range": 70, "radius": 20, "duration": 60, "cooldown": 70, "will": 30, "warn": 2, "omen": 1 },
+    { "id": "lightning", "name": "Lightning", "icon": "fire", "tradition": "craft", "kind": "bolt", "when": "massed", "needs": "rain",
+      "line": "In rain, lightning strikes the tallest man near the glow.", "range": 60, "radius": 8, "damage": 70, "shock": 12, "cooldown": 12, "will": 15, "warn": 1.5, "omen": 0.5 },
+    { "id": "fair_wind", "name": "Fair wind", "icon": "arrow", "tradition": "craft", "kind": "buff", "effect": "fair_wind", "when": "archers",
+      "line": "Your bows nearby shoot straighter and faster.", "range": 40, "radius": 25, "duration": 30, "cooldown": 45, "will": 20, "warn": 0.5, "omen": 0.5 },
+    { "id": "dread_drums", "name": "Dread drums", "icon": "skull", "tradition": "craft", "kind": "debuff", "effect": "dread", "when": "foes",
+      "line": "Enemy companies near the drums lose heart.", "range": 45, "radius": 25, "duration": 20, "cooldown": 40, "will": 25, "omen": 0.5 },
+    { "id": "tempest", "name": "Tempest", "icon": "rain", "tradition": "craft", "kind": "field", "effect": "storm", "when": "losing", "great": true,
+      "line": "Once a battle: a storm over the enemy's whole army for two minutes.", "range": 300, "radius": 80, "duration": 120, "cooldown": 300, "will": 60, "warn": 2, "omen": 4 },
+    // Craft: stars
+    { "id": "foresight", "name": "Foresight", "icon": "star", "tradition": "craft", "kind": "buff", "effect": "foresight", "when": "fighting",
+      "line": "One of your companies in a fight sees the blows coming.", "range": 40, "radius": 6, "duration": 20, "cooldown": 35, "will": 20, "warn": 0.5, "omen": 0.5 },
+    { "id": "mist", "name": "Call the mist", "icon": "rain", "tradition": "craft", "kind": "field", "effect": "mist", "on": "all", "when": "shot",
+      "line": "A bank of mist over a company under arrows: shots into it and out of it go wide.", "range": 40, "radius": 15, "duration": 40, "cooldown": 50, "will": 20, "omen": 1 },
+    // Craft: curses
+    { "id": "evil_eye", "name": "Evil eye", "icon": "skull", "tradition": "craft", "kind": "debuff", "effect": "evil_eye", "when": "officer",
+      "line": "The company of an enemy officer in sight falters.", "range": 40, "radius": 4, "duration": 20, "cooldown": 40, "will": 20, "omen": 1 },
+    { "id": "fever", "name": "Fever", "icon": "heart", "tradition": "craft", "kind": "debuff", "effect": "fever", "when": "massed",
+      "line": "One enemy company tires fast and slows.", "range": 45, "radius": 5, "duration": 30, "cooldown": 40, "will": 20, "warn": 1.5, "omen": 1 },
+    { "id": "wildfire", "name": "Wildfire", "icon": "fire", "tradition": "craft", "kind": "field", "effect": "burning", "on": "all", "when": "massed", "needs": "dry",
+      "line": "Sets dry grass, scrub or wood alight under the enemy: men in it burn. Useless in rain or on wet ground.", "range": 45, "radius": 6, "duration": 20, "dps": 10, "cooldown": 45, "will": 30, "warn": 2.5, "omen": 2 },
+    { "id": "crows", "name": "Plague of crows", "icon": "skull", "tradition": "craft", "kind": "debuff", "effect": "crows", "when": "losing", "great": true,
+      "line": "Once a battle: crows fall on every enemy company: no order and no heart.", "range": 300, "radius": 300, "duration": 30, "cooldown": 300, "will": 60, "warn": 1.5, "omen": 4 },
+    // Craft: alchemy
+    { "id": "fire_pots", "name": "Fire pots", "icon": "fire", "tradition": "craft", "kind": "attack", "when": "massed",
+      "line": "Pots of burning oil thrown into a company: a burst, then burning ground.", "range": 30, "radius": 3, "damage": 18, "maxHit": 5, "burn": 10, "dps": 8, "shock": 5, "cooldown": 18, "will": 15, "warn": 1.5, "omen": 0.5 },
+    { "id": "smoke", "name": "Smoke", "icon": "rain", "tradition": "craft", "kind": "field", "effect": "smoke", "on": "all", "when": "shot",
+      "line": "A bank of smoke over a company under arrows: no aimed shots through it.", "range": 40, "radius": 12, "duration": 30, "cooldown": 50, "will": 20, "omen": 0.5 },
+    { "id": "greek_fire", "name": "Greek fire", "icon": "fire", "tradition": "craft", "kind": "attack", "when": "losing", "great": true,
+      "line": "Once a battle: a great burst of fire that burns on where it falls.", "range": 45, "radius": 7, "damage": 40, "maxHit": 14, "burn": 15, "dps": 10, "shock": 15, "cooldown": 300, "will": 60, "warn": 2.5, "omen": 3 },
+    // Necromancy (the enemy's only)
+    { "id": "dread", "name": "Dread", "icon": "skull", "tradition": "necromancy", "kind": "debuff", "effect": "dread", "when": "foes",
+      "line": "Living men near the necromancer lose heart.", "range": 30, "radius": 20, "duration": 20, "cooldown": 30, "will": 20 },
+    // A companion's (his calling, Data/companions.json): no Will, only the cooldown.
+    { "id": "challenge", "name": "Challenge", "icon": "sword", "tradition": "arms", "kind": "officer", "when": "officer",
+      "line": "He calls out the nearest enemy officer and strikes at him; if the man falls, his company is shaken.", "range": 15, "radius": 15, "damage": 60, "shock": 15, "cooldown": 60, "warn": 0.5 },
+    { "id": "hold_the_line", "name": "Hold the line", "icon": "shield", "tradition": "arms", "kind": "buff", "effect": "held", "when": "self", "self": true,
+      "line": "His company's ranks cannot break for 20 seconds.", "range": 1, "radius": 1, "duration": 20, "cooldown": 60, "warn": 0.3 },
+    { "id": "rally_to_me", "name": "Rally to me", "icon": "flag", "tradition": "arms", "kind": "rally", "when": "routing",
+      "line": "Routing men of your side near him turn and rally.", "range": 25, "radius": 25, "cooldown": 60, "warn": 0.5 },
+    { "id": "mark", "name": "Mark", "icon": "arrow", "tradition": "arms", "kind": "debuff", "effect": "marked", "when": "foes",
+      "line": "He marks an enemy company: arrows find it more easily for 30 seconds.", "range": 60, "radius": 4, "duration": 30, "cooldown": 50, "warn": 0.3 },
+    { "id": "wheel", "name": "Wheel", "icon": "horse", "tradition": "arms", "kind": "buff", "effect": "wheel", "when": "self", "self": true,
+      "line": "His horse re-form and charge again, harder.", "range": 1, "radius": 1, "duration": 15, "cooldown": 45, "warn": 0.3 }
+  ]
+}

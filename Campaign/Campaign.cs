@@ -328,6 +328,7 @@ public sealed partial class Campaign
     void Daily()
     {
         AgeDaily();
+        BuffsDaily();
         foreach (var v in S.Settlements.Where(v => v.ThreatUntil <= S.Hours))
         {
             int more = (v.Owner == Player.Id && Has("JustRuler") ? 2 : 1) * (v.Prosperity >= 70 ? 2 : 1);
@@ -343,7 +344,7 @@ public sealed partial class Campaign
                 {
                     if (st.Wounded > 0)
                     {
-                        float surgeon = p == Player ? (HasCompanion("Surgeon") ? 1.3f : 1) * (!town && Has("FieldHospital") ? 1.5f : 1) : 1;
+                        float surgeon = p == Player ? (HasCompanion("Surgeon") ? 1.3f : 1) * (!town && Has("FieldHospital") ? 1.5f : 1) * (HasBuff("poultices") ? 1.5f : 1) : 1;
                         int heal = Math.Min(st.Wounded, Math.Max(1, (int)MathF.Round(st.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1) * surgeon)));
                         if (p == Player) Practise("Medicine", Rules.PerMan(heal * 0.1f));
                         st.Wounded -= heal;
@@ -403,6 +404,7 @@ public sealed partial class Campaign
     void Weekly()
     {
         RelationsWeekly();
+        CompanionsWeekly();
         WanderersWeekly();
         TraitsWeekly();
         GuardWeekly();

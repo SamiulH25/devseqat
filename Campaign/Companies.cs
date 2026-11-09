@@ -124,7 +124,7 @@ public sealed partial class Campaign
         return stand;
     }
 
-    static string RoleWord(string role) => role switch { "archers" => "BOW", "spears" => "SPEAR", "horse" => "HORSE", _ => "FOOT" };
+    static string RoleWord(string role) => role switch { "archers" => "BOW", "spears" => "SPEAR", "horse" => "HORSE", "casters" => "MAGE", _ => "FOOT" };
 
     /// The culture a company's men train as (4.2): their troop's own culture, else the company's origin. Men of no known
     /// culture (brigands, a company with no home) count as common and may enter any line.

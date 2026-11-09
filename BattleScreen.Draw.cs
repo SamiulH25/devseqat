@@ -411,6 +411,32 @@ partial class BattleScreen
         }
     }
 
+    /// Spell colours by tradition: faith gold, craft violet, necromancy sick green, a companion's steel.
+    static Color SpellColor(string tradition) => tradition switch
+    {
+        "faith" => new Color(250, 222, 130), "craft" => new Color(190, 130, 255), "necromancy" => new Color(140, 230, 120), _ => new Color(220, 228, 240),
+    };
+
+    /// Casts on their way (a ring closing on the spot, your warning to move) and spell fields (a slow ring at their edge).
+    void Spells()
+    {
+        float t = battle.Time;
+        foreach (var c in battle.Casts)
+        {
+            float k = Math.Clamp((t - c.Started) / MathF.Max(0.1f, c.FireAt - c.Started), 0, 1);
+            float r = MathF.Max(1, c.A.Radius) * (1.6f - 0.6f * k);
+            var col = Color.Lerp(SpellColor(c.A.Tradition), Color.White, k);
+            Ring(c.At, r, col, 16);
+            if (c.A.Kind is "attack" or "bolt") Ring(c.At, r * 0.5f, col, 10);
+        }
+        foreach (var f in battle.Fields)
+        {
+            var col = f.Effect?.Harmful == true ? new Color(240, 120, 80) : SpellColor(f.A.Tradition);
+            float pulse = 0.96f + 0.04f * MathF.Sin((t - f.Started) * 2);
+            Ring(f.Pos, f.Radius * pulse, col, 20);
+        }
+    }
+
     static readonly Color RouteGilt = new(244, 214, 120);
 
     /// The order's way round as a dotted line on the ground: short dashes every other step.
@@ -468,6 +494,7 @@ partial class BattleScreen
             if (a.Stuck < 0 && quality != Quality.Low) Line(a.Pos - dir * 0.8f, a.Pos - dir * 2.4f, ArrowStreak); // a faint streak behind it in flight
         }
         Stakes();
+        Spells();
         RouteDots();
         foreach (var s in selected) PlanHook(s);
         foreach (var s in selected)

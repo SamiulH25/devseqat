@@ -28,7 +28,7 @@ public static partial class SelfTest
     /// D2: every tier V-VII troop has a style, from its weapon or named in the data; tiers I-IV have none; rank follows tier.
     static void StylesByTier()
     {
-        foreach (var t in Troops.All.Where(t => !t.Wild && !t.Leader))
+        foreach (var t in Troops.All.Where(t => !t.Wild && !t.Leader && t.Class != UnitClass.Caster)) // a mage's tier shows in his spells (MagesByTier)
         {
             if (t.Tier < 5) Check(t.Style == AttackStyle.None && t.StyleRank == 0, $"{t.Name} (tier {t.Tier}) has no attack style");
             else Check(t.StyleRank == t.Tier - 4, $"{t.Name}'s style rank follows its tier");
@@ -36,7 +36,7 @@ public static partial class SelfTest
                 Check(n.Style == t.Style && n.StyleRank > t.StyleRank, $"{n.Name} keeps {t.Name}'s style and raises it");
         }
         int styled = Troops.All.Count(t => t.Style != AttackStyle.None);
-        Check(Troops.All.Where(t => !t.Wild && !t.Leader && t.Tier >= 5).All(t => t.Style != AttackStyle.None), "every tier V-VII troop has an attack style");
+        Check(Troops.All.Where(t => !t.Wild && !t.Leader && t.Tier >= 5 && t.Class != UnitClass.Caster).All(t => t.Style != AttackStyle.None), "every tier V-VII troop has an attack style");
         Check(Enum.GetValues<AttackStyle>().Skip(1).All(s => Battle.StyleText(s).name != ""), "every style has a name for the tooltip");
         Console.WriteLine($"styles: {styled} troops with an attack style");
     }

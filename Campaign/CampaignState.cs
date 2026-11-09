@@ -387,6 +387,13 @@ public sealed class LogEntry
     public string Text = "";
 }
 
+/// A campaign buff: an effect id (Data/effects.json) and the hour it ends.
+public sealed class Buff
+{
+    public string Effect = "";
+    public double Until;
+}
+
 public sealed class CampaignState
 {
     /// Version 4 is the campaign overhaul (troop stacks and everything after): older saves are refused, not migrated.
@@ -447,6 +454,14 @@ public sealed class CampaignState
     /// Your deeds for the chronicle and the end summary (S7), what you did counted by kind, and a watchtower's long view.
     public List<LogEntry> Deeds = new();
     public List<int> SitesVisited = new();
+    /// Effects on your company for a while (docs/COMPANIONS_MAGIC.md A5): a shrine's blessing, a feast, hunger, a rite.
+    /// Carried into every battle until they end (Campaign/Buffs.cs).
+    public List<Buff> Buffs = new();
+    /// Omen (C2): craft draws it; it fades a point a day and, past thresholds, draws ill events.
+    public float Omen;
+    /// The day after your last camp rite (one a day), and the relic you carry with its charges (Campaign/Rites.cs).
+    public int RiteDay, RelicCharges;
+    public bool Relic;
     public Dictionary<string, int> Tally = new();
     public float FarSightUntil;
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
@@ -566,6 +581,8 @@ public sealed class Balance
     /// How much a tier V-VII troop's attack style and passive traits add to its strength in auto-resolve, per style rank
     /// (1-3 at tiers V-VII): x(1 + this x rank). --agree measures it (docs/COMPANIONS_MAGIC.md D5).
     public float TraitWeight = 0.1f;
+    /// A feast in town, crowns a man (docs/COMPANIONS_MAGIC.md A5).
+    public float FeastPerMan = 6;
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).
     public int RollSize = 6;
     public float VeteranSurvival = 0.6f;

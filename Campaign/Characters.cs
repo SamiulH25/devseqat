@@ -32,6 +32,18 @@ public sealed class Character
     /// A companion who rose from the ranks (docs/LEGACY.md L4): his record as a named man and the company he came from (-1: none).
     public Soldier? Ranks;
     public int FromCompany = -1;
+    /// His calling in the field (docs/COMPANIONS_MAGIC.md B1; Data/companions.json), fixed when he joins; his XP from deeds and
+    /// level (1-10: one talent each, a second ability at 5; Campaign/Callings.cs).
+    public string Calling = "";
+    public int Xp, Level;
+    /// Battles fought alongside each other companion (by id), and his sworn brother (-1: none; B4).
+    public Dictionary<int, int> Together = new();
+    public int Sworn = -1;
+    /// His story (B4): 0 untold, 1 open (since StoryDay, wins so far), 2 done, 3 let go.
+    public int Story, StoryWins, StoryDay;
+    /// A named man of his company he teaches (B5; Soldier id, 0: none); warned you once that he may leave.
+    public int Student;
+    public bool Warned;
 }
 
 /// Something a character remembers about another (3.2): shown as the reasons behind an opinion; fades with time.
@@ -280,6 +292,7 @@ public sealed partial class Campaign
     /// Each company's hero for battle: the fit companion who leads it (2.4 / 3.3), shown in battle as a hero unit.
     public void RefreshHeroes()
     {
+        EnsureCallings();
         foreach (var c in Player.Companies)
             c.Hero = Companions.FirstOrDefault(k => k.CompanyId == c.Id && S.Hours >= k.WoundedUntil)?.Name ?? "";
         // A companion whose company is gone takes the first company without one.
@@ -292,7 +305,7 @@ public sealed partial class Campaign
     void HeroFell(CompanyRecord c, string foe = "")
     {
         if (Companions.FirstOrDefault(k => k.CompanyId == c.Id) is not Character k) return;
-        if (!Has("Triage") && rng.Chance(0.1f)) { k.Dead = true; Log($"{k.Name}, your {k.Role.ToLowerInvariant()}, has fallen leading {c.Name}."); CompanionFell(k, foe); }
+        if (!Has("Triage") && rng.Chance(0.1f)) { k.Dead = true; Log($"{k.Name}, your {k.Role.ToLowerInvariant()}, has fallen leading {c.Name}."); CompanionFell(k, foe); BrotherFell(k); StudentRises(k); }
         else { k.WoundedUntil = (float)S.Hours + 5 * 24; Log($"{k.Name} is carried from the field, wounded."); }
         RefreshHeroes();
     }

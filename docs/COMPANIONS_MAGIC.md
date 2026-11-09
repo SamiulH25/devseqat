@@ -546,6 +546,50 @@ side), `headsman` (Hit), `whirl` (StyleLanded), `gallop` (Loose), `holdfast` (mo
 to horse archers, Paid in full and Zeal to all. So some tier VII troops (Steppe foot, Northern archers) have none yet.
 Test `SignaturesBite`.
 
+**As built, E1b + E2 (lean):** timed effects (`Squad.Timed`, `TimedEffect`) and field effects (`Battle.Fields`) join auras
+in one rebuild: `RefreshMods` = auras + timed + fields + standing. New stat `veil` (an arrow into it may go wide, checked in
+`Hit` before the side) for mist and smoke; `harmful` marks a debuff. The three old hard-coded auras (banner, horn, captain)
+were *not* moved onto effects: they work and have their own tests, so moving them was left out of the sprint. Map buffs are
+`CampaignState.Buffs` (`Campaign/Buffs.cs`: shrine blessing 3 days, a feast in a tavern, hunger when food runs out, the camp
+rites, the relic) and go into battle as `BattleOptions.Standing` on every company of yours; auto-resolve multiplies by
+`BuffEdge` (0.85-1.2). HUD: up to four effect icons on a company card (red when harmful) and a Will bar for casters; buff
+chips above the captain's panel on the map. Test `StandingEffectsCarry`.
+
+**As built, M1-M3:** `Abilities.cs` + `Data/abilities.json` (26 entries: 20 spells, dread, five companion abilities) and
+`BattleAbilities.cs`. A company with spells thinks every 0.5 s; the first spell ready, affordable and whose `when` rule finds a
+target starts a `Cast`, drawn as a ring closing on the spot (your warning to move, `BattleScreen.Spells`) that fires at
+`FireAt` if the casters still stand. Will is the company's: it comes back faster at higher tier and standing still, its cap
+falls as casters die, and under 20 nobody casts. Power falls with losses too. Great workings fire once a battle. Mages are
+`UnitClass.Caster`, role "casters" (cap 4 x ArmyScale); Acolytes (tier II, from levies) branch to seven culture lines of three
+(IV-VI), each tier knowing one more spell, so higher tier is always better (`HigherTierWins` covers the caster links). Lords
+with tier 4+ and every third id field a mage company (no dice used); towns with a chapel, or a shrine or hermit near, offer
+Acolytes from day 60. Counterplay is rules, not buttons: veteran horse and elite bows go for casters first (`HorsePrey`,
+`Focus`), a ward stops the dead, mist and smoke cover against arrows, lightning needs rain and wildfire dry weather. Sound
+`Cue.Spell`. Simplifications: no mirage; mist does not shorten sight; mage sprites reuse robe, staff and tabard parts.
+Tests in `Tests/MagicTests.cs`: `AbilitiesValidate`, `MagesByTier`, `MageScene`, `SpellWarns`, `MageWill`, `BlessingBuffs`,
+`MistCoversArrows`, `WildfireNeedsDry`, `HorseHuntsMages`, `MagesHelp`.
+
+**As built, C1-C3:** `Data/companions.json` (seven callings: Sword, Shield, Banner, Bow, Lance, Priest, Cunning; each an aura,
+an ability, a second ability from level 5, ten talents) and `Campaign/Callings.cs`: a companion takes his calling from his
+traits on joining (no dice), earns XP in battles his company fights (5, +3 for a win, + kills), and rises to level 10, a talent
+a level. Talents are a fixed track, not a choice. In battle his company carries the aura and talents as standing effects and
+he uses his abilities by the same `when` rules as mages, at no Will: **there is no ability key** (the order wheel slot and
+`Act.Ability` were dropped), in keeping with "passive, not activated". Enemy lords of tier 2+ bring a champion; a companion who
+left you may be him. `Campaign/Bonds.cs`: companions react to your deeds by trait and calling (robbing, selling prisoners,
+burying the dead, craft, feasts, wins), quarrel on a fixed day of each pair's fortnight (no player choice), swear brotherhood
+after five battles together (the `sworn` aura when both lead), tell their story at level 3 (three wins with him leading
+settle it; sixty days unsettled sours him), take a student at level 4 who rises in his place if he falls, and leave after a
+warning when their opinion of you falls below -30. Tests in `Tests/CompanionTests.cs`: `WithCompanion`, `CompanionGrows`,
+`HoldTheLine`, `EnemyChampions`, `CompanionLeaves`.
+
+**As built, M4 + P:** `Campaign/Rites.cs`. Camp rites from the party screen, one a day, each needing someone who can work
+it (a companion of the calling, or a mage company of the tradition): bless the company (50 crowns, 3 days), poultices (40,
+the wounded heal 1.5x for a week), read the bones (Omen +3, see twice as far for a day), call rain (Omen +4, soaks the
+province). The relic is a field on the save, not a charm slot: found in a ruin, it goes into each fought battle as the
+`relic` standing effect and spends a charge (three); a shrine fills it. Omen rises with craft cast in battle and in camp,
+falls a point a day, and from 12 the `dark_omens` events come (three, each with a `calm:N` choice). The necromancer casts
+`dread`. Test `RitesWork`.
+
 | Step | What | Main files | Done when |
 |---|---|---|---|
 | **E1** | Effect core: data, `Mods`, battle reads, auras by company; move the three auras and battle perks onto it | new `Effects.cs`, `BattleEffects.cs`, `Data/effects.json`; `BattleMorale`, `BattleDrill`, `BattleCombat` | `EffectsMatchOld`, `AuraReachesCompanies`, bench within 10 % |

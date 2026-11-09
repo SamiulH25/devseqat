@@ -2,7 +2,8 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-public enum UnitClass { Infantry, Archer, Skirmisher, Captain, Cavalry }
+/// Caster: a mage (docs/COMPANIONS_MAGIC.md E1): poor in melee, casts the spells in `UnitType.Spells` (BattleAbilities.cs).
+public enum UnitClass { Infantry, Archer, Skirmisher, Captain, Cavalry, Caster }
 public enum UnitAction { None, Windup, Recover, Block, Stagger }
 
 /// Swing direction, named from the attacker's side (Left = the blade comes from the attacker's left).
@@ -101,6 +102,9 @@ public sealed class UnitType
     public string[] Passives = Array.Empty<string>();
     public Mods Mods;
     public bool HasAura;
+    /// A caster's spells (ability ids from Data/abilities.json, BattleAbilities.cs): tier IV knows one, V two, VI all three
+    /// and its tradition's great working.
+    public string[] Spells = Array.Empty<string>();
     public Mount? Mount;
     public Look Look = null!;
 

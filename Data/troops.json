@@ -102,7 +102,8 @@
     "shieldmen",
     "spearrunners",
     "bowmen",
-    "outriders"
+    "outriders",
+    "acolytes"
    ],
    "cost": 10,
    "upgradeXp": 60,
@@ -3578,6 +3579,793 @@
    }
   },
   {
+   "id": "acolytes",
+   "name": "Acolytes",
+   "class": "Caster",
+   "culture": "common",
+   "tier": 2,
+   "upgradesTo": [
+    "chaplains",
+    "lectors",
+    "rune_singers",
+    "drummers",
+    "star_readers",
+    "hedge_witches",
+    "apothecaries"
+   ],
+   "cost": 30,
+   "upgradeXp": 160,
+   "hp": 75,
+   "damage": 13,
+   "armor": 1,
+   "reach": 1.7,
+   "windup": 0.55,
+   "recover": 0.7,
+   "speed": 3.5,
+   "block": 0.25,
+   "spells": [
+    "mend"
+   ],
+   "look": {
+    "head": "hood",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff"
+   }
+  },
+  {
+   "id": "chaplains",
+   "name": "Chaplains",
+   "class": "Caster",
+   "culture": "order",
+   "tier": 4,
+   "upgradesTo": [
+    "battle_priests"
+   ],
+   "cost": 110,
+   "upgradeXp": 420,
+   "hp": 95,
+   "damage": 15,
+   "armor": 3,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.65,
+   "speed": 3.6,
+   "block": 0.3,
+   "spells": [
+    "mend",
+    "blessing"
+   ],
+   "look": {
+    "head": "hood",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": false,
+    "cape": false
+   }
+  },
+  {
+   "id": "battle_priests",
+   "name": "Battle Priests",
+   "class": "Caster",
+   "culture": "order",
+   "tier": 5,
+   "upgradesTo": [
+    "saints_militant"
+   ],
+   "cost": 160,
+   "upgradeXp": 600,
+   "hp": 110,
+   "damage": 17,
+   "armor": 4,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.62,
+   "speed": 3.65,
+   "block": 0.33,
+   "spells": [
+    "mend",
+    "blessing",
+    "smite"
+   ],
+   "look": {
+    "head": "hood",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": false
+   }
+  },
+  {
+   "id": "saints_militant",
+   "name": "Saints Militant",
+   "class": "Caster",
+   "culture": "order",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 220,
+   "upgradeXp": 0,
+   "hp": 125,
+   "damage": 19,
+   "armor": 5,
+   "reach": 1.8,
+   "windup": 0.48,
+   "recover": 0.6,
+   "speed": 3.7,
+   "block": 0.36,
+   "spells": [
+    "mend",
+    "blessing",
+    "smite",
+    "ward",
+    "miracle"
+   ],
+   "look": {
+    "head": "hood",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": true
+   }
+  },
+  {
+   "id": "lectors",
+   "name": "Lectors",
+   "class": "Caster",
+   "culture": "azure",
+   "tier": 4,
+   "upgradesTo": [
+    "magisters"
+   ],
+   "cost": 110,
+   "upgradeXp": 420,
+   "hp": 95,
+   "damage": 15,
+   "armor": 3,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.65,
+   "speed": 3.6,
+   "block": 0.3,
+   "spells": [
+    "mend",
+    "ward"
+   ],
+   "look": {
+    "head": "coif",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": false,
+    "cape": false
+   }
+  },
+  {
+   "id": "magisters",
+   "name": "Magisters",
+   "class": "Caster",
+   "culture": "azure",
+   "tier": 5,
+   "upgradesTo": [
+    "grand_magisters"
+   ],
+   "cost": 160,
+   "upgradeXp": 600,
+   "hp": 110,
+   "damage": 17,
+   "armor": 4,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.62,
+   "speed": 3.65,
+   "block": 0.33,
+   "spells": [
+    "mend",
+    "ward",
+    "foresight"
+   ],
+   "look": {
+    "head": "coif",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": false
+   }
+  },
+  {
+   "id": "grand_magisters",
+   "name": "Grand Magisters",
+   "class": "Caster",
+   "culture": "azure",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 220,
+   "upgradeXp": 0,
+   "hp": 125,
+   "damage": 19,
+   "armor": 5,
+   "reach": 1.8,
+   "windup": 0.48,
+   "recover": 0.6,
+   "speed": 3.7,
+   "block": 0.36,
+   "spells": [
+    "mend",
+    "ward",
+    "foresight",
+    "smite",
+    "miracle"
+   ],
+   "look": {
+    "head": "coif",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": true
+   }
+  },
+  {
+   "id": "rune_singers",
+   "name": "Rune-singers",
+   "class": "Caster",
+   "culture": "northern",
+   "tier": 4,
+   "upgradesTo": [
+    "skalds"
+   ],
+   "cost": 110,
+   "upgradeXp": 420,
+   "hp": 95,
+   "damage": 15,
+   "armor": 3,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.65,
+   "speed": 3.6,
+   "block": 0.3,
+   "spells": [
+    "mend",
+    "war_song"
+   ],
+   "look": {
+    "head": "none",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": false,
+    "cape": false
+   }
+  },
+  {
+   "id": "skalds",
+   "name": "Skalds",
+   "class": "Caster",
+   "culture": "northern",
+   "tier": 5,
+   "upgradesTo": [
+    "galdr_masters"
+   ],
+   "cost": 160,
+   "upgradeXp": 600,
+   "hp": 110,
+   "damage": 17,
+   "armor": 4,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.62,
+   "speed": 3.65,
+   "block": 0.33,
+   "spells": [
+    "mend",
+    "war_song",
+    "storm"
+   ],
+   "look": {
+    "head": "none",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": false
+   }
+  },
+  {
+   "id": "galdr_masters",
+   "name": "Galdr-masters",
+   "class": "Caster",
+   "culture": "northern",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 220,
+   "upgradeXp": 0,
+   "hp": 125,
+   "damage": 19,
+   "armor": 5,
+   "reach": 1.8,
+   "windup": 0.48,
+   "recover": 0.6,
+   "speed": 3.7,
+   "block": 0.36,
+   "spells": [
+    "mend",
+    "war_song",
+    "storm",
+    "lightning",
+    "tempest"
+   ],
+   "look": {
+    "head": "none",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": true
+   }
+  },
+  {
+   "id": "drummers",
+   "name": "Drummers",
+   "class": "Caster",
+   "culture": "steppe",
+   "tier": 4,
+   "upgradesTo": [
+    "shamans"
+   ],
+   "cost": 110,
+   "upgradeXp": 420,
+   "hp": 95,
+   "damage": 15,
+   "armor": 3,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.65,
+   "speed": 3.6,
+   "block": 0.3,
+   "spells": [
+    "mend",
+    "fair_wind"
+   ],
+   "look": {
+    "head": "steppe",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": false,
+    "cape": false
+   }
+  },
+  {
+   "id": "shamans",
+   "name": "Shamans",
+   "class": "Caster",
+   "culture": "steppe",
+   "tier": 5,
+   "upgradesTo": [
+    "sky_callers"
+   ],
+   "cost": 160,
+   "upgradeXp": 600,
+   "hp": 110,
+   "damage": 17,
+   "armor": 4,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.62,
+   "speed": 3.65,
+   "block": 0.33,
+   "spells": [
+    "mend",
+    "fair_wind",
+    "dread_drums"
+   ],
+   "look": {
+    "head": "steppe",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": false
+   }
+  },
+  {
+   "id": "sky_callers",
+   "name": "Sky-callers",
+   "class": "Caster",
+   "culture": "steppe",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 220,
+   "upgradeXp": 0,
+   "hp": 125,
+   "damage": 19,
+   "armor": 5,
+   "reach": 1.8,
+   "windup": 0.48,
+   "recover": 0.6,
+   "speed": 3.7,
+   "block": 0.36,
+   "spells": [
+    "mend",
+    "fair_wind",
+    "dread_drums",
+    "storm",
+    "tempest"
+   ],
+   "look": {
+    "head": "steppe",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": true
+   }
+  },
+  {
+   "id": "star_readers",
+   "name": "Star-readers",
+   "class": "Caster",
+   "culture": "southern",
+   "tier": 4,
+   "upgradesTo": [
+    "astrologers"
+   ],
+   "cost": 110,
+   "upgradeXp": 420,
+   "hp": 95,
+   "damage": 15,
+   "armor": 3,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.65,
+   "speed": 3.6,
+   "block": 0.3,
+   "spells": [
+    "mend",
+    "foresight"
+   ],
+   "look": {
+    "head": "turban",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": false,
+    "cape": false
+   }
+  },
+  {
+   "id": "astrologers",
+   "name": "Astrologers",
+   "class": "Caster",
+   "culture": "southern",
+   "tier": 5,
+   "upgradesTo": [
+    "sages_of_the_sun"
+   ],
+   "cost": 160,
+   "upgradeXp": 600,
+   "hp": 110,
+   "damage": 17,
+   "armor": 4,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.62,
+   "speed": 3.65,
+   "block": 0.33,
+   "spells": [
+    "mend",
+    "foresight",
+    "fair_wind"
+   ],
+   "look": {
+    "head": "turban",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": false
+   }
+  },
+  {
+   "id": "sages_of_the_sun",
+   "name": "Sages of the Sun",
+   "class": "Caster",
+   "culture": "southern",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 220,
+   "upgradeXp": 0,
+   "hp": 125,
+   "damage": 19,
+   "armor": 5,
+   "reach": 1.8,
+   "windup": 0.48,
+   "recover": 0.6,
+   "speed": 3.7,
+   "block": 0.36,
+   "spells": [
+    "mend",
+    "foresight",
+    "fair_wind",
+    "mist",
+    "tempest"
+   ],
+   "look": {
+    "head": "turban",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": true
+   }
+  },
+  {
+   "id": "hedge_witches",
+   "name": "Hedge-witches",
+   "class": "Caster",
+   "culture": "crimson",
+   "tier": 4,
+   "upgradesTo": [
+    "war_witches"
+   ],
+   "cost": 110,
+   "upgradeXp": 420,
+   "hp": 95,
+   "damage": 15,
+   "armor": 3,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.65,
+   "speed": 3.6,
+   "block": 0.3,
+   "spells": [
+    "mend",
+    "evil_eye"
+   ],
+   "look": {
+    "head": "hood",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": false,
+    "cape": false
+   }
+  },
+  {
+   "id": "war_witches",
+   "name": "War-witches",
+   "class": "Caster",
+   "culture": "crimson",
+   "tier": 5,
+   "upgradesTo": [
+    "crimson_crones"
+   ],
+   "cost": 160,
+   "upgradeXp": 600,
+   "hp": 110,
+   "damage": 17,
+   "armor": 4,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.62,
+   "speed": 3.65,
+   "block": 0.33,
+   "spells": [
+    "mend",
+    "evil_eye",
+    "fever"
+   ],
+   "look": {
+    "head": "hood",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": false
+   }
+  },
+  {
+   "id": "crimson_crones",
+   "name": "Crimson Crones",
+   "class": "Caster",
+   "culture": "crimson",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 220,
+   "upgradeXp": 0,
+   "hp": 125,
+   "damage": 19,
+   "armor": 5,
+   "reach": 1.8,
+   "windup": 0.48,
+   "recover": 0.6,
+   "speed": 3.7,
+   "block": 0.36,
+   "spells": [
+    "mend",
+    "evil_eye",
+    "fever",
+    "wildfire",
+    "crows"
+   ],
+   "look": {
+    "head": "hood",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": true
+   }
+  },
+  {
+   "id": "apothecaries",
+   "name": "Apothecaries",
+   "class": "Caster",
+   "culture": "league",
+   "tier": 4,
+   "upgradesTo": [
+    "alchemists"
+   ],
+   "cost": 110,
+   "upgradeXp": 420,
+   "hp": 95,
+   "damage": 15,
+   "armor": 3,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.65,
+   "speed": 3.6,
+   "block": 0.3,
+   "spells": [
+    "mend",
+    "fire_pots"
+   ],
+   "look": {
+    "head": "cap",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": false,
+    "cape": false
+   }
+  },
+  {
+   "id": "alchemists",
+   "name": "Alchemists",
+   "class": "Caster",
+   "culture": "league",
+   "tier": 5,
+   "upgradesTo": [
+    "guild_alchemists"
+   ],
+   "cost": 160,
+   "upgradeXp": 600,
+   "hp": 110,
+   "damage": 17,
+   "armor": 4,
+   "reach": 1.8,
+   "windup": 0.5,
+   "recover": 0.62,
+   "speed": 3.65,
+   "block": 0.33,
+   "spells": [
+    "mend",
+    "fire_pots",
+    "smoke"
+   ],
+   "look": {
+    "head": "cap",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": false
+   }
+  },
+  {
+   "id": "guild_alchemists",
+   "name": "Guild Alchemists",
+   "class": "Caster",
+   "culture": "league",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 220,
+   "upgradeXp": 0,
+   "hp": 125,
+   "damage": 19,
+   "armor": 5,
+   "reach": 1.8,
+   "windup": 0.48,
+   "recover": 0.6,
+   "speed": 3.7,
+   "block": 0.36,
+   "spells": [
+    "mend",
+    "fire_pots",
+    "smoke",
+    "wildfire",
+    "greek_fire"
+   ],
+   "look": {
+    "head": "cap",
+    "body": "robe",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "staff",
+    "tabard": true,
+    "cape": true
+   }
+  },
+  {
    "id": "goblin",
    "name": "Goblins",
    "class": "Infantry",
@@ -4018,6 +4806,7 @@
   {
    "id": "necromancer",
    "name": "Necromancer",
+   "spells": ["dread"],
    "class": "Infantry",
    "culture": "wild",
    "breed": "undead",

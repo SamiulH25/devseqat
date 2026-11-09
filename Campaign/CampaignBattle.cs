@@ -75,6 +75,13 @@ public partial class Campaign
             if (p == Player) SyncRoll(c, true, foe);
         }
         foreach (var p in side0.Concat(side1)) p.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
+        if (playerIn)
+        {
+            if (r.Duration > 0) RelicSpent(); // a fought battle (an auto-resolve has no length)
+            CompanionsAfterBattle(r, playerTeam); // XP, levels, bonds (Callings.cs, Bonds.cs)
+            CompanionsReact(won ? "won" : "lost");
+            if (r.Omen > 0) { S.Omen += r.Omen; CompanionsReact("craft"); } // craft draws Omen (C2)
+        }
 
         // Aftermath for each party.
         var winners = r.Winner == 0 ? side0 : side1;
@@ -233,8 +240,8 @@ public partial class Campaign
             else if (Hostile(p, Player) && !Hostile(p, enemy)) setup.Side1.Add(p);
         }
         bool unpaid = S.UnpaidWeeks > 0;
-        setup.Player = WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0)));
-        setup.Enemy = Armies.Divide(Rules.Army(enemy.Name, setup.Side1));
+        setup.Player = WithHeroes(WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0)))); // callings (Callings.cs)
+        setup.Enemy = WithChampion(Armies.Divide(Rules.Army(enemy.Name, setup.Side1)), enemy);
         setup.Seed = BattleSeed(enemy);
         bool scouts = setup.Side0.SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
         setup.Options = new BattleOptions
@@ -254,6 +261,7 @@ public partial class Campaign
             EnemyAggression = SideOf(enemy) >= 0 ? Factions.Get(SideOf(enemy)).Aggression : 1.5f, // a realm's temper; brigands do not wait long
             Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
+            Standing = ActiveBuffs.Concat(RelicReady ? new[] { "relic" } : Array.Empty<string>()).ToArray(), // a shrine's blessing, a feast, hunger (Buffs.cs); your relic (Rites.cs)
         }.WithCaptain(Captain);
         return setup;
     }
@@ -273,7 +281,7 @@ public partial class Campaign
     public BattleReport AutoResolveEncounter()
     {
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed), Edge(Encounter!));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge * BuffEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed), Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }

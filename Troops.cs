@@ -38,6 +38,7 @@ public static class Troops
         public string[] Traits = Array.Empty<string>();
         public string? Attack;
         public string[]? Passives;
+        public string[] Spells = Array.Empty<string>();
         public bool Leader;
         public LookDto Look = new();
     }
@@ -73,7 +74,7 @@ public static class Troops
                 Id = d.Id, Name = d.Name, Culture = d.Culture, Breed = d.Breed, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
                 UpgradesTo = d.UpgradesTo, MaxHp = d.Hp, Damage = d.Damage, Armor = d.Armor, Reach = d.Reach, Windup = d.Windup,
                 Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, VsMonster = d.VsMonster, Pierce = d.Pierce, Reload = d.Reload,
-                Leader = d.Leader, Size = d.Size, Drill = d.Drill, Traits = d.Traits, Mount = d.Mount == null ? null : mounts[d.Mount],
+                Leader = d.Leader, Size = d.Size, Drill = d.Drill, Traits = d.Traits, Spells = d.Spells, Mount = d.Mount == null ? null : mounts[d.Mount],
                 Look = new Look(l.Head, l.Body, l.Legs, l.Feet, l.Hands, l.Shield, l.Weapon, l.Tabard, l.Plume, l.Cape, l.Face),
             };
             var t = troops[d.Id];
@@ -109,6 +110,11 @@ public static class Troops
             if (!Look.Faces.Contains(l.Face)) yield return $"{t.Id}: unknown face {l.Face}";
             foreach (var tr in t.Traits) if (!UnitType.KnownTraits.Contains(tr)) yield return $"{t.Id}: unknown trait {tr}";
             foreach (var p in t.Passives) if (!Effects.Has(p)) yield return $"{t.Id}: unknown passive {p}";
+            foreach (var sp in t.Spells) if (!Abilities.Has(sp)) yield return $"{t.Id}: unknown spell {sp}";
+            if ((t.Class == UnitClass.Caster) != (t.Spells.Length > 0) && !t.Wild) yield return $"{t.Id}: a caster needs spells, and only casters have them";
+            foreach (var u in t.UpgradesTo)
+                if (troops.TryGetValue(u, out var nx) && nx.Class == UnitClass.Caster && t.Class == UnitClass.Caster && !t.Spells.All(nx.Spells.Contains))
+                    yield return $"{t.Id} -> {u} forgets a spell";
             if (t.Drill > 1) yield return $"{t.Id}: drill {t.Drill} above 1";
             if (t.Size is < 0.5f or > 3f) yield return $"{t.Id}: size {t.Size} out of range";
             if (l.Beast && (t.Mount != null || t.Ammo > 0 || l.Shield != "none")) yield return $"{t.Id}: a beast rides nothing, shoots nothing and carries no shield";
@@ -160,7 +166,7 @@ public sealed record NamedSpec(int Id, string Troop, string Name);
 
 public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,
     StackSpec[]? Mix = null, float RoutBonus = 0, float VsMounted = 1, int Banner = -1, string Hero = "", int Division = -1, NamedSpec[]? Named = null,
-    int Streamers = 0, bool Fringe = false, float Cohesion = 0)
+    int Streamers = 0, bool Fringe = false, float Cohesion = 0, string HeroCalling = "", string[]? HeroGifts = null, int HeroLevel = 0, string[]? Standing = null)
 {
     public bool Has(string trait) => Traits?.Contains(trait) == true;
     /// The men to spawn, largest stack first (so a squad's first man is its majority troop).
@@ -252,11 +258,16 @@ public static class Armies
     static ArmySpec Make(string name, int level, int[] tiers, bool enemy) =>
         new(name, level, Lines.Select((l, i) => new Company(l.ByTier[tiers[i] - 1], Count(l.Base, l.ByTier[tiers[i] - 1], enemy), l.Role)).ToList());
 
+    /// A culture's mage at a tier (IV-VI, clamped; docs/COMPANIONS_MAGIC.md E1); Acolytes where it has no line.
+    public static string MageTroop(string culture, int tier) =>
+        Troops.All.Where(t => t.Class == UnitClass.Caster && t.Culture == culture && t.Tier == Math.Clamp(tier, 4, 6)).Select(t => t.Id).FirstOrDefault() ?? "acolytes";
+
     /// The troop a line fields at a tier (1-7).
     public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 7) - 1];
 
     public static string RoleOf(Company c) => c.Role is { Length: > 0 } r ? r : Troops.Get(c.Troop).Has("raise") ? "casters" : Troops.Get(c.Troop).Class switch
     {
+        UnitClass.Caster => "casters",
         UnitClass.Archer => "archers", UnitClass.Skirmisher => "spears", UnitClass.Cavalry => "horse", _ => "infantry",
     };
 }

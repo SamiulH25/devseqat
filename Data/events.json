@@ -5,6 +5,30 @@
   // you cannot pay. "scene" picks the picture. A "flag:name" effect is followed a week later by the event whose trigger is "flag:name".
   "events": [
     {
+      "id": "omen_birds", "trigger": "dark_omens", "cooldown": 14, "scene": "camp", "title": "CROWS OVER THE CAMP",
+      "text": "Since the old craft was worked in your camp the crows have not left it. The men cross themselves and mutter.",
+      "choices": [
+        { "label": "PAY A PRIEST TO SAY MASS", "need": "gold:60", "effects": ["gold:-60", "calm:6", "cohesion:1"] },
+        { "label": "TELL THEM CROWS ARE CROWS", "effects": ["cohesion:-2", "calm:2"] }
+      ]
+    },
+    {
+      "id": "omen_sickness", "trigger": "dark_omens", "cooldown": 20, "scene": "camp", "title": "A SICKNESS IN THE RANKS",
+      "text": "Men wake with fever and blame the witchery. A few talk of leaving before the curse takes them all.",
+      "choices": [
+        { "label": "BURN THE CHARMS AND HERBS", "effects": ["calm:8", "renown:-2"] },
+        { "label": "LET IT RUN ITS COURSE", "effects": ["sick:5", "calm:3"] }
+      ]
+    },
+    {
+      "id": "omen_village", "trigger": "dark_omens", "cooldown": 25, "scene": "town", "title": "THE VILLAGE SHUTS ITS DOORS",
+      "text": "Word of your company's craft has run ahead of you. The village bars its gate and the priest rings the bell.",
+      "choices": [
+        { "label": "GIVE ALMS TO THE CHURCH", "need": "gold:100", "effects": ["gold:-100", "calm:10", "renown:1"] },
+        { "label": "RIDE ON", "effects": ["calm:2", "renown:-1"] }
+      ]
+    },
+    {
       "id": "start_road", "trigger": "start", "cooldown": 9999, "scene": "camp", "title": "THE ROAD YOU CAME BY",
       "text": "Your company is young, but you are not. Before you took up the captain's staff you made your name one way. Which?",
       "choices": [

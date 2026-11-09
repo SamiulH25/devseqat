@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Audio;
 namespace Ironfield;
 
 /// Sound cues the headless battle reports (Battle.Sounds); the audio engine turns them into positional sound.
-public enum Cue { Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin, Splash, Squelch, Rustle, Hollow }
+public enum Cue { Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin, Splash, Squelch, Rustle, Hollow, Spell }
 
 public enum MusicTrack { None, Map, Battle, Victory, Defeat }
 
@@ -42,6 +42,7 @@ sealed class AudioEngine
             cues[Cue.Squelch] = Make(Squelch());
             cues[Cue.Rustle] = Make(Rustle());
             cues[Cue.Hollow] = Make(Thud(118, 0.32f, 0.25f));
+            cues[Cue.Spell] = Make(Spell());
             music[MusicTrack.Map] = Make(MapTheme());
             music[MusicTrack.Battle] = Make(Drums());
             music[MusicTrack.Victory] = Make(Fanfare(true));
@@ -297,6 +298,20 @@ sealed class AudioEngine
         var b = Buf(0.3f);
         foreach (var (at, f) in new[] { (0f, 2600f), (0.08f, 3300f) })
             for (int i = (int)(at * Rate); i < b.Length; i++) { float t = i / (float)Rate - at; b[i] += MathF.Sin(MathF.Tau * f * t) * MathF.Exp(-t * 25) * 0.4f; }
+        return b;
+    }
+
+    /// A spell: a rising shimmer of three soft tones over a breath of noise.
+    static float[] Spell()
+    {
+        var b = Buf(0.9f);
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = i / (float)Rate, env = MathF.Sin(MathF.PI * t / 0.9f);
+            float rise = 1 + 0.4f * t;
+            b[i] = env * (0.18f * MathF.Sin(MathF.Tau * 440 * rise * t) + 0.12f * MathF.Sin(MathF.Tau * 660 * rise * t + 0.3f * MathF.Sin(t * 40))
+                + 0.08f * MathF.Sin(MathF.Tau * 990 * rise * t) + 0.05f * Rnd());
+        }
         return b;
     }
 

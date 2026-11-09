@@ -6,6 +6,8 @@ public sealed class BattleOptions
     /// Most men on the field at once (both sides together); the rest wait as reinforcements.
     public int Cap = 400;
     public float AuraRadius = 12, RallyBonus = 25, RallyCooldown = 12;
+    /// Effects on every company of your side for the whole battle (campaign buffs: a shrine's blessing, a feast, hunger; A5).
+    public string[] Standing = Array.Empty<string>();
     /// Your Arms skill (0-100; a new captain has 15): quicker blows, a wider parry window, less stamina a swing (P2).
     public float Arms = 15;
     /// Your Riding and Bowcraft skills (P3; a new captain has 5) and the perks you hold that act in battle.
@@ -108,4 +110,6 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     public IReadOnlyList<string> GoalsMet { get; init; } = Array.Empty<string>();
     /// Each goal's text as shown (a goal about a named man carries his name), in the order of Goals.
     public IReadOnlyList<string> GoalTexts { get; init; } = Array.Empty<string>();
+    /// Omen your side's craft raised (docs/COMPANIONS_MAGIC.md C2).
+    public float Omen { get; init; }
 }

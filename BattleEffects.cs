@@ -80,7 +80,7 @@ public partial class Battle
     /// Some man on the field bears an aura (set at Spawn). Without one, a man's totals are his troop's and nothing is rebuilt.
     bool anyAura;
 
-    /// Every 0.5 s per company (staggered): its auras from bearers of its side in reach, then each man's totals.
+    /// Every 0.5 s per company (staggered): its totals rebuilt (RefreshMods). Skipped while nothing on the field can change them.
     void UpdateEffects()
     {
         if (!anyAura) return;
@@ -88,12 +88,23 @@ public partial class Battle
         foreach (var u in Units)
             if (u.Active && u.Type.HasAura) auraBearers.Add(u);
         for (int i = 0; i < Squads.Count; i++)
-        {
-            var s = Squads[i];
-            if ((tick + i) % 30 != 0) continue;
-            s.Mods = AurasOn(s);
-            foreach (var u in s.Units) u.Mods = u.Type.Mods + s.Mods;
-        }
+            if ((tick + i) % 30 == 0) RefreshMods(Squads[i]);
+    }
+
+    /// A company's totals now: auras of its side's bearers in reach, its timed effects, the fields over it and its standing
+    /// effects (campaign buffs, its hero's calling); then each man's (his troop's passives plus these).
+    void RefreshMods(Squad s)
+    {
+        s.Mods = AurasOn(s) + TimedOn(s) + FieldsOn(s) + s.Standing;
+        foreach (var u in s.Units) u.Mods = u.Type.Mods + s.Mods;
+    }
+
+    /// Standing effects on a company for the whole battle (BattleOptions.Standing for your side, a hero's calling aura).
+    void StandEffect(Squad s, string id, float k = 1)
+    {
+        if (!Effects.Has(id)) return;
+        s.Standing.Add(Effects.Get(id), k);
+        s.StandingIds.Add(id);
     }
 
     /// The auras on a company: each bearer of its side whose aura reaches the company's centre (its radius plus the company's).
