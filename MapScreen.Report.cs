@@ -239,6 +239,11 @@ partial class MapScreen
             y += ui.U(11);
         }
         if (rep.Rises.Count > 0) y += ui.U(4);
+        if (rep.Aura != "")
+        {
+            foreach (var l in ui.Wrap(rep.Aura, c.Width - ui.U(14), 1)) { if (y + ui.U(11) > c.Bottom) break; ui.Icon("star", c.X, y, Style.Aura, 1); ui.Text(l, c.X + ui.U(14), y, Style.Aura, 1); y += ui.U(11); }
+            y += ui.U(4);
+        }
         if (Campaign.WoundOf(rep.LastingWound) is WoundDef lw)
         {
             foreach (var l in ui.Wrap($"A LASTING WOUND: {lw.Name.ToUpperInvariant()}. {lw.Text}.", c.Width - ui.U(14), 1)) { ui.Text(l, c.X + ui.U(14), y, Style.Bad, 1); y += ui.U(11); }

@@ -77,6 +77,10 @@ public static partial class SelfTest
         CaptainCombat();
         CaptainKit();
         SkillBouts();
+        AuraBlade();
+        AuraArmour();
+        AuraBound();
+        AuraGrows();
         DuelFight();
         BattleGoals();
         BannerAndLastStand();

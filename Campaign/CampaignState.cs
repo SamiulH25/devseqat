@@ -370,6 +370,10 @@ public sealed class CaptainState
     /// Perk choices given by rank, free of any branch's 25-point marks (P5: one at Sworn Sword), and the perks taken with them.
     public int FreePerks;
     public List<string> BonusPerks = new();
+    /// The aura (docs/KNIGHT_ORDERS.md 5): tier 0-5, XP towards the next, and the wall (XP full, a trial needed).
+    public int AuraTier;
+    public float AuraXp;
+    public bool AuraWall;
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought

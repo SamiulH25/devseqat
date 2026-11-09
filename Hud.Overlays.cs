@@ -144,7 +144,7 @@ sealed partial class Hud
         Overlay(r, "CONTROLS", Gold);
         var cols = new (string Title, (string Label, string Key)[] Rows)[]
         {
-            ("IN THE FIELD", new[] { Act.Forward, Act.Back, Act.Left, Act.Right, Act.Sprint, Act.Attack, Act.Block, Act.Bash, Act.SwapWeapon, Act.Couch, Act.Interact, Act.Rally, Act.OrderWheel }
+            ("IN THE FIELD", new[] { Act.Forward, Act.Back, Act.Left, Act.Right, Act.Sprint, Act.Attack, Act.Block, Act.Bash, Act.SwapWeapon, Act.AuraBlade, Act.Couch, Act.Interact, Act.Rally, Act.OrderWheel }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Append(("SWING / BLOCK DIRECTION", "MOVE MOUSE"))
                 .Append(("FEINT", "BLOCK IN WINDUP"))

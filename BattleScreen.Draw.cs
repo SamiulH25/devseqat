@@ -435,6 +435,25 @@ partial class BattleScreen
             float pulse = 0.96f + 0.04f * MathF.Sin((t - f.Started) * 2);
             Ring(f.Pos, f.Radius * pulse, col, 20);
         }
+        AuraGlow();
+    }
+
+    /// The captain's aura (docs/KNIGHT_ORDERS.md K1): the lit blade as a streak along the facing, aura armour as a shimmer.
+    void AuraGlow()
+    {
+        var p = battle.Player;
+        if (battle.AuraTier <= 0 || !p.Active) return;
+        float t = battle.Time, pulse = 0.85f + 0.15f * MathF.Sin(t * 9);
+        if (battle.AuraBlade)
+        {
+            float lift = p.Mounted ? 1.2f : 0;
+            var from = p.Pos + p.Dir * 0.35f;
+            var to = p.Pos + p.Dir * (p.Type.Reach + 0.3f);
+            var col = Color.Lerp(Style.Aura, Color.White, 0.3f * pulse);
+            Line(G(from, 1.25f + lift), G(to, 1.0f + lift), col);
+            Line(G(from, 1.2f + lift), G(to, 0.95f + lift), col);
+        }
+        if (battle.AuraTier >= 3 && !battle.Spent) Ring(p.Pos, 0.9f * pulse, Color.Lerp(Style.Aura, Color.Black, 0.35f), 12);
     }
 
     static readonly Color RouteGilt = new(244, 214, 120);

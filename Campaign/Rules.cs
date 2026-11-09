@@ -14,6 +14,8 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
     public IReadOnlyList<string> Rises { get; init; } = Array.Empty<string>();
     /// A lasting wound the captain took in this battle (P4), or "".
     public string LastingWound { get; init; } = "";
+    /// What the battle did to your aura (docs/KNIGHT_ORDERS.md K1): a wall reached, a breakthrough, or "".
+    public string Aura { get; init; } = "";
     /// The battle's personal goals and whether each was met (P6).
     public IReadOnlyList<(string Text, bool Met)> Goals { get; init; } = Array.Empty<(string, bool)>();
     /// Your named men in this battle (docs/LEGACY.md L3): the fallen and missing first, then the hurt, then new names.
@@ -198,6 +200,7 @@ public static class Rules
         o.Bowcraft = Skills.Level(c, "Bowcraft");
         o.Perks = c.Perks.ToHashSet();
         o.Wounds = c.Wounds.ToHashSet();
+        o.AuraTier = Math.Max(0, c.AuraTier - (c.Wounds.Contains("core") ? 1 : 0)); // a cracked core holds you a tier down (K5)
         o.PlayerType = CaptainType(c);
         o.PlayerSide = c.Kit.Side != "" ? CaptainType(c, side: true) : null;
         o.PlayerMount = CaptainMount(c);

@@ -13,6 +13,8 @@ public sealed class BattleOptions
     /// Your Riding and Bowcraft skills (P3; a new captain has 5) and the perks you hold that act in battle.
     public float Riding = 5, Bowcraft = 5;
     public HashSet<string> Perks = new();
+    /// The captain's aura tier (docs/KNIGHT_ORDERS.md 5.1): 0 unawakened, 1 kindled, 2 aura blade, 3 aura armour, 4 master, 5 transcendent.
+    public int AuraTier;
     /// The captain's lasting wounds (P4); the battle reads "eye" (a shorter parry window).
     public HashSet<string> Wounds = new();
     /// Iron Will perk: companies near you will not rout while a third of them stand.

@@ -167,6 +167,7 @@ public partial class Battle
             if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && (t.Type.Tier <= 3 || Perk("Champion")) ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
             if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t)) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
             if (!ranged) chance *= RankGuard(t) * RankEdge(a); // friends at the shoulders, foes all round (docs/MELEE.md D3.7)
+            if (a.IsPlayer && AuraBlade && !ranged) chance *= BladeGuard; // aura cuts through a guard (K1)
             chance *= StyleGuard(a, t, ranged, plunge); // a crush, a bash, an arrow from above a shield (BattleStyles.cs)
             if (t.Guard && !ranged && t.Squad != null) chance = MathF.Min(0.92f, chance + (1 - chance) * 0.5f * t.Squad.Drill); // he saw it coming
             chance = MathF.Min(0.95f, chance * (1 + t.Mods.Block + (t.Vel.LengthSquared() < 1 ? t.Mods.BlockStill : 0))); // passives: locked shields (BattleEffects.cs)
@@ -203,11 +204,13 @@ public partial class Battle
         float headsman = !ranged && (t.IsLeader || t.Hero || t.Sergeant) ? a.Mods.Headsman : 0;                                    // headsmen seek the officers
         float mult = officer * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
-            * (ranged && t.Type.Has("bones") ? 0.3f : 1); // arrows pass between a skeleton's ribs
+            * (ranged && t.Type.Has("bones") ? 0.3f : 1) // arrows pass between a skeleton's ribs
+            * (a.IsPlayer && AuraBlade && !ranged ? BladeDamage : 1); // the aura blade (K1)
         if (t.Squad != null) t.Squad.HitsTaken++;
         if (side != Side.Front && a.Squad != null && !ranged) a.Squad.FlankHits++;
         if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
-        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? a.Type.Pierce : 0, ranged); // your mace or axe bites through armour too
+        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? MathF.Min(0.9f, a.Type.Pierce + (a.IsPlayer && AuraBlade && !ranged ? BladePierce : 0)) : 0, ranged); // your mace or axe bites through armour too, and the aura blade more
+        if (a.IsPlayer && !ranged) BladeLanded();
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
         StyleLanded(a, t, dmg, ranged, lance);
         if (a.IsPlayer) CountDeed(t, ranged, lance);
@@ -228,6 +231,7 @@ public partial class Battle
     {
         float armour = t.Type.Armor + t.Mods.Armour + (ranged ? t.Mods.ArrowArmour : 0); // iron skin, a pavise (BattleEffects.cs)
         float real = MathF.Max(dmg * 0.25f, dmg - armour * (1 - pierce)); // bolts punch through part of the armour
+        if (a.IsPlayer || t.IsPlayer) real = AuraSoak(a, t, real, ranged); // aura armour (K1)
         t.Hp -= real;
         t.HitFlash = 0.15f;
         t.HurtAt = Time;

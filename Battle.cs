@@ -10,6 +10,7 @@ public struct PlayerInput
     public float Facing;      // where the player looks (and strikes)
     public AttackDir Dir;     // attack / block direction, picked by mouse movement
     public bool Sprint, Attack, Block, Rally, Couch, Mount, Bash, Swap;
+    public bool Aura;         // held: the aura blade burns (docs/KNIGHT_ORDERS.md K1)
 }
 
 public sealed class Projectile
@@ -210,6 +211,7 @@ public sealed partial class Battle
         Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34 - Back));
         Player.IsPlayer = Player.IsLeader = true;
         SetupCaptain();
+        SetupAura();
         Player.Facing = Player.Heading = MathHelper.PiOver2;
         eGuard = AddSquad(1, Options.EnemyLeader ?? UnitType.Captain, 1, new(0, scripted ? 80 : 34 + Back), 1, -Vector2.UnitY);
         EnemyCaptain = eGuard.Units[0];

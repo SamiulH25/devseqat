@@ -83,7 +83,8 @@ sealed partial class Hud
         for (int i = 0; i < shown; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), H - ch - U(10), cw, ch), mine[i]));
         hiddenCards = mine.Count - shown;
 
-        player = new Rectangle(U(10), H - U(104), U(280), U(94));
+        int ph = B.AuraTier > 0 ? U(108) : U(94); // a row more for the aura (docs/KNIGHT_ORDERS.md K1)
+        player = new Rectangle(U(10), H - ph - U(10), U(280), ph);
         int ms = U(150);
         minimap = new Rectangle(W - ms - U(10), U(10), ms, ms);
         LayoutDivisions();
@@ -370,6 +371,7 @@ sealed partial class Hud
         }
         Row("heart", "HEALTH", p.Hp / p.Type.MaxHp, Bad);
         Row("boot", "STAMINA", p.Stamina / 100, Ok);
+        if (B.AuraTier > 0) Row("star", B.AuraBlade ? "BLADE" : B.Spent ? "SPENT" : "AURA", B.Aura / Battle.AuraMax, B.Spent ? Dim : Style.Aura);
         if (p.Mounted) Row("horse", "HORSE", p.HorseHp / p.Horse!.Hp, HorseCol);
         else Text("NO HORSE", x + U(12), y + U(1), Dim, 1);
         int rx = r.Right - U(10);

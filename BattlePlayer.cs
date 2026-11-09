@@ -11,6 +11,7 @@ public partial class Battle
         if (Commanding) { inp = default; inp.Dir = Input.Dir; p.Charging = false; p.Charge = 0; }
         else p.Facing = inp.Facing;
 
+        UpdateAura(p, inp.Aura, dt);
         if (inp.Mount) ToggleMount(p);
         if (inp.Swap) SwapWeapon(p);
         if (inp.Bash) Bash(p);
@@ -57,7 +58,7 @@ public partial class Battle
             }
             else if (inp.Couch && p.Couched) p.Couched = false;
             if (p.Couched && p.Speed < 4.5f) p.Couched = false;
-            p.Stamina = Math.Clamp(p.Stamina + (p.Action == UnitAction.Block ? 4 : 15) * dt, 0, 100);
+            p.Stamina = Math.Clamp(p.Stamina + (p.Action == UnitAction.Block ? 4 : 15) * AuraBreath * dt, 0, 100);
         }
         else
         {
@@ -67,7 +68,7 @@ public partial class Battle
                 * (p.Action == UnitAction.Stagger ? 0 : busy ? 0.3f : 1);
             p.Wish = inp.Move * speed;
             // Breath comes back between blows, not while swinging (P2): a captain who never pauses runs dry.
-            p.Stamina = Math.Clamp(p.Stamina + (sprint ? -20 : p.Action == UnitAction.Block ? 4 : busy || p.Charging ? 0 : 15) * dt, 0, 100);
+            p.Stamina = Math.Clamp(p.Stamina + (sprint ? -20 : (p.Action == UnitAction.Block ? 4 : busy || p.Charging ? 0 : 15) * AuraBreath) * dt, 0, 100);
         }
         if (inp.Rally && RallyCooldown <= 0 && p.Stamina >= 30) Rally(p);
     }

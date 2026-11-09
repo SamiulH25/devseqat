@@ -1,6 +1,6 @@
 # Knight orders and the captain's aura: plan
 
-Status: **plan, nothing built.** Read docs/LEGACY.md first: the fantasy is that your company is your legacy. This plan adds
+Status: **being built** (built steps are under "As built" at the end). Read docs/LEGACY.md first: the fantasy is that your company is your legacy. This plan adds
 a second thread that feeds it: **the captain is a knight who awakens an aura, rises through a knight order, and can end
 by founding an order of their own that outlives them.** Numbers marked *(tune)* are starting values.
 
@@ -373,3 +373,19 @@ the two endings of the road and can be built in either order.
 5. **Does the AI get aura on its lords?** Proposed: lords stay as now; only order characters and a few named champions
    (brigand kings, the Hollow Crown) carry aura, so a lord with aura is a known name, not a common sight.
 6. **Names.** Order names, aura tier names and form names above are placeholders in the house voice.
+
+## As built
+
+- **K1 (the captain's aura):** `CaptainState.AuraTier`, `AuraXp`, `AuraWall`; `BattleOptions.AuraTier` (from `WithCaptain`, a
+  tier less with the `core` wound). Battle (`BattleAura.cs`): a 0-100 pool, full at the start; it comes back 2/s out of a
+  fight and 0.5/s in one (none while the blade burns). Tier 1: breath 25% faster. Tier 2: hold ALT (`Act.AuraBlade`,
+  `PlayerInput.Aura`) for the aura blade: blows x1.3, +0.4 pierce, an AI guard holds half as often; it burns 5 aura a second
+  and 2 a blow, lights only at 20+ (`AuraLow`) and goes out at 0. Tier 3: aura armour soaks 40% of a blow (20% of an
+  arrow), 0.35 aura a point soaked; off while spent. HUD: an AURA row on the captain panel (BLADE, SPENT); the blade is a
+  streak along your facing and aura armour a ring (`BattleScreen.AuraGlow`). Campaign (`Campaign/Aura.cs`): XP from kills
+  (0.5), parries (0.6), ripostes (0.8) and the result; duels and tournaments give more. `AuraNeeds` 30/80/180/400/900.
+  Full XP is a wall (logged once); K1's trials: a won duel breaks the walls below Aura Knight, holding against two to one
+  with 3+ kills those below Aura Expert. A breakthrough is a deed, renown 5 a tier, and a line on the battle report
+  (`BattleReport.Aura`). The captain sheet (K) shows the tier, XP, the wall and the tier's gift.
+  Tests: `AuraBlade`, `AuraArmour`, `AuraBound` (against four men-at-arms a plain captain fells 0 and wins 0/8, an aura
+  expert fells 13 and wins 3/8; against sixteen he wins none), `AuraGrows`.

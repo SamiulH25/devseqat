@@ -123,6 +123,7 @@ public partial class Campaign
         if (playerIn) RelationsAfterBattle(winners, losers, won);
         var skillsBefore = new Dictionary<string, float>(Captain.Skills);
         if (playerIn) SkillsAfterBattle(r, won, playerTeam == 0 ? startStrength0 : startStrength1, playerTeam == 0 ? startStrength1 : startStrength0, before[Player], playerTeam);
+        if (playerIn) AuraAfterBattle(r, won, (playerTeam == 0 ? startStrength1 : startStrength0) / MathF.Max(1, playerTeam == 0 ? startStrength0 : startStrength1));
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, Rules.PerMan(lostStrength));
         AfterTheBattle(r, lookup, winners, losers, playerIn);
@@ -186,7 +187,7 @@ public partial class Campaign
             Log($"You are taken, and ransomed. Your men regroup at {refuge.Name}.");
         }
         string spoil = won ? BattleSpoil(losers, r) : "";
-        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting,
+        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting, Aura = TakeAuraNews(),
             Goals = r.Goals.Select((id, i) => (i < r.GoalTexts.Count ? r.GoalTexts[i] : Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
             Roll = RollNewsOrdered().Where(n => n.Item1 is not ("HONOUR" or "LOST")).ToList(),
             Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field };

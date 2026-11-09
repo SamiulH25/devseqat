@@ -149,6 +149,21 @@ partial class MapScreen
         }
     }
 
+    /// The aura (docs/KNIGHT_ORDERS.md 5): tier, XP to the next, the wall and what the tier gives. Returns the next y.
+    int AuraBlock(Rectangle c, int y)
+    {
+        var cap = C.Captain;
+        ui.Divider(c.X, y, c.Width, Kit.Gilt * 0.6f); y += ui.U(12);
+        ui.Text("AURA", c.X, y, Style.Dim, 1);
+        ui.TextR(Campaign.AuraName(cap.AuraTier).ToUpperInvariant(), c.Right, y, cap.AuraTier > 0 ? Style.Aura : Style.Dim, 1); y += ui.U(11);
+        float need = C.AuraNeed;
+        ui.Pips(new Rectangle(c.X, y, c.Width, ui.U(7)), need <= 0 ? 1 : cap.AuraXp / need, cap.AuraWall ? Style.Warn : Style.Aura, 10); y += ui.U(12);
+        string line = cap.AuraWall ? "A WALL. A TRIAL WILL BREAK IT: WIN A DUEL, OR HOLD AGAINST TWO TO ONE." : Campaign.AuraGifts[Math.Clamp(cap.AuraTier, 0, Campaign.AuraTop)].ToUpperInvariant();
+        if (cap.Wounds.Contains("core")) line = "YOUR CORE IS CRACKED: YOU FIGHT A TIER LOWER. " + line;
+        foreach (var l in ui.Wrap(line, c.Width)) { ui.Text(l, c.X, y, cap.AuraWall ? Style.Warn : Style.Dim * 0.8f, 1); y += ui.U(11); }
+        return y + ui.U(4);
+    }
+
     /// The captain's record: days, fights, kills, holdings, health, and how each skill rises.
     void CaptainRecord(Rectangle c)
     {
@@ -174,6 +189,7 @@ partial class MapScreen
         ui.Text("HEALTH", c.X, y, Style.Dim, 1);
         ui.TextR(hurt > 0 ? $"WOUNDED {hurt:0.0} DAYS" : "HALE", c.Right, y, hurt > 0 ? Style.Warn : Style.Ok, 1); y += ui.U(11);
         ui.Gauge(new Rectangle(c.X, y, c.Width, ui.U(7)), hurt > 0 ? 0.35f : 1, hurt > 0 ? Style.Warn : Style.Ok); y += ui.U(16);
+        y = AuraBlock(c, y);
         ui.Divider(c.X, y, c.Width, Kit.Gilt * 0.6f); y += ui.U(12);
         ui.Text("PERKS TAKEN", c.X, y, Kit.Gilt, 1); y += ui.U(13);
         foreach (var id in cap.Perks)

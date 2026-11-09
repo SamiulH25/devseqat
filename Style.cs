@@ -75,6 +75,8 @@ public static class Style
 
     public static readonly Color Accent = new(240, 200, 60);          // gold: you, the selection, the highlighted choice
     public static readonly Color Friendly = Sides[0].Ui, Foe = Sides[1].Ui;
+    /// The captain's aura (gauge, blade glow; docs/KNIGHT_ORDERS.md).
+    public static readonly Color Aura = new(120, 200, 255);
     public static readonly Color Ok = new(110, 196, 104), Warn = new(236, 186, 60), Bad = new(226, 72, 60), Orange = new(240, 140, 50);
     public static readonly Color Text = new(238, 236, 228), Dim = new(170, 174, 182), HorseBar = new(168, 116, 70);
     public static readonly Color Panel = new Color(16, 18, 24) * 0.82f, PanelEdge = Color.White * 0.16f;

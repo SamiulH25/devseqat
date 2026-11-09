@@ -314,7 +314,7 @@ public static partial class SelfTest
 
     /// A scripted captain fights `foes` on foot for up to a minute: parrying and riposting, or only swinging.
     /// True if he is standing when the last of them falls.
-    static bool Fight(Battle b, IReadOnlyList<Unit> foes, bool parry)
+    static bool Fight(Battle b, IReadOnlyList<Unit> foes, bool parry, bool aura = false)
     {
         var p = b.Player;
         float hold = 0;
@@ -340,6 +340,7 @@ public static partial class SelfTest
                 if (!inp.Attack) hold = 0;
                 inp.Dir = (AttackDir)(i / 40 % 4);
             }
+            inp.Aura = aura && (b.AuraBlade ? b.Aura > Battle.AuraLow + 10 : b.Aura > 60); // light the blade when full, let it rest before the pool is spent
             b.Input = inp;
             b.Update(1 / 60f);
         }
