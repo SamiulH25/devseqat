@@ -28,6 +28,7 @@ public sealed partial class Campaign
         if (S.RiteDay == Day + 1) return "ONE RITE A DAY";
         if (S.Gold < r.Gold) return $"NEEDS {r.Gold} CROWNS";
         S.Gold -= r.Gold;
+        if (r.Tradition == "craft") BreakVow("no_craft", "work the craft");
         S.Omen += r.Omen;
         S.RiteDay = Day + 1;
         switch (id)

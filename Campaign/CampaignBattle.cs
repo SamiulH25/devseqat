@@ -124,6 +124,7 @@ public partial class Campaign
         if (playerIn) RelationsAfterBattle(winners, losers, won);
         var skillsBefore = new Dictionary<string, float>(Captain.Skills);
         if (playerIn) SkillsAfterBattle(r, won, playerTeam == 0 ? startStrength0 : startStrength1, playerTeam == 0 ? startStrength1 : startStrength0, before[Player], playerTeam);
+        if (playerIn) OrderAfterBattle(won, playerTeam == 0 ? side1.ToList() : side0.ToList());
         if (playerIn) AuraAfterBattle(r, won, (playerTeam == 0 ? startStrength1 : startStrength0) / MathF.Max(1, playerTeam == 0 ? startStrength0 : startStrength1));
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, Rules.PerMan(lostStrength));
@@ -272,6 +273,7 @@ public partial class Campaign
     {
         if (setup.Tournament >= 0) return FinishTournament(r, S.Settlements[setup.Tournament]);
         if (setup.Duel >= 0 && PartyById(setup.Duel) is Party foe) return FinishDuel(r, foe);
+        if (setup.Trial != "") return FinishTrial(r, setup.Trial);
         Encounter = null;
         duelWith = -1;
         var report = Apply(r, setup.Side0, setup.Side1, setup.EnemyName, setup.SiegeOf >= 0);
@@ -282,6 +284,7 @@ public partial class Campaign
 
     public BattleReport AutoResolveEncounter()
     {
+        BreakVow("no_auto", "send your men to fight without you at their head");
         var setup = PrepareBattle(Encounter!);
         var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge * BuffEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed), Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
@@ -303,6 +306,7 @@ public partial class Campaign
         duelWith = -1;
         var e = Encounter!;
         if (Rules.Strength(e) < Rules.Strength(Player)) Count("fled"); // running from a weaker foe is what makes a coward (P4)
+        BreakVow("no_desert", "flee from battle");
         var rear = Player.Companies.Where(c => c.Men > 0).OrderBy(c => c.Type.Mount != null ? 1 : 0).ThenByDescending(c => c.Men).FirstOrDefault();
         if (rear != null)
         {

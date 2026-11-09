@@ -42,12 +42,13 @@ partial class MapScreen
     void RealmPanel()
     {
         var r = Modal(1060, 620, "THE REALMS");
-        var tabs = new[] { "THE REALMS", "YOUR CAREER", "THE LEGEND" };
-        int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(24), ui.U(390), ui.U(22)), tabs, realmTab);
+        var tabs = new[] { "THE REALMS", "YOUR CAREER", "THE LEGEND", "THE ORDERS" };
+        int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(24), ui.U(520), ui.U(22)), tabs, realmTab);
         if (pick >= 0) { realmTab = pick; note = ""; }
         var body = new Rectangle(r.X + ui.U(20), r.Y + ui.U(56), r.Width - ui.U(40), r.Height - ui.U(122));
         if (realmTab == 0) Realms(body);
         else if (realmTab == 2) Legend(body);
+        else if (realmTab == 3) OrdersTab(body);
         else
         {
             var rank = C.Rank;

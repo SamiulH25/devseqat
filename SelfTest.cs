@@ -84,6 +84,9 @@ public static partial class SelfTest
         FormsWork();
         FormsLearned();
         OrdersOnMap();
+        OrderOath();
+        CreedBroken();
+        OrderRankGate();
         DuelFight();
         BattleGoals();
         BannerAndLastStand();

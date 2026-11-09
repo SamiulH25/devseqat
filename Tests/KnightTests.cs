@@ -291,4 +291,114 @@ public static partial class SelfTest
         string json = back.S.Serialize();
         Check(CampaignState.Deserialize(json).Serialize() == json, "orders save and load");
     }
+
+    static BattleResult Bout(bool won) => new(won ? 0 : 1, 30, new List<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Unhurt, 0);
+
+    /// K4: an order sets its trial only once you are known to it; won, you swear and learn its first form; lost, you are hurt
+    /// and a little better thought of. A squire may not take its brothers; a knight-brother takes the tier IV troop.
+    static void OrderOath()
+    {
+        var c = Campaign.New(93);
+        var o = c.OrderById("lily")!;
+        Check(c.CannotSeekTrial("lily") is string w && w.Contains("STANDING"), "an order that does not know you sets no trial");
+        c.RaiseStanding("lily", Campaign.TrialStanding + 1);
+        Check(c.CannotSeekTrial("lily") == null, "known to it, you may seek the trial: " + c.CannotSeekTrial("lily"));
+        float before = o.Standing;
+        c.FinishBattle(Bout(false), c.PrepareTrial("lily"));
+        Check(c.Captain.Order == "" && o.Standing > before && c.S.Hours < c.Captain.WoundedUntil, "a lost trial: unsworn, hurt, a little respected");
+        Check(c.CannotSeekTrial("lily") is string hurt && hurt.Contains("HURT"), "no second trial while hurt");
+        c.Captain.WoundedUntil = 0;
+        var report = c.FinishBattle(Bout(true), c.PrepareTrial("lily"));
+        Check(report.Won && c.Captain.Order == "lily" && c.Captain.OrderRank == 0 && c.OrderRankName == "Squire", "a won trial: you swear as a squire");
+        Check(c.Captain.Forms.Contains("unbroken_wall"), "the squire learns the order's first form");
+        Check(c.CannotSeekTrial("rose") is string sworn && sworn.Contains("SWORN"), "one order at a time");
+        var co = c.Player.Companies.First();
+        string from = Troops.All.First(t => t.UpgradesTo.Contains("lily_squires")).Id;
+        Check(!c.CanEnterLine(c.Player, co, from, "lily_squires", out _), "a squire may not train the order's brothers");
+        c.Captain.OrderRank = 1;
+        Check(c.CanEnterLine(c.Player, co, from, "lily_squires", out _), "a knight-brother trains its tier IV troop");
+        Check(!c.CanEnterLine(c.Player, co, "lily_squires", "lily_knights", out _), "but not its tier V troop yet");
+    }
+
+    /// K4: a broken vow costs standing and a penance; atone by winning in the order's name; break one again before atoning
+    /// and you are cast out. Vows your creed lacks cost nothing. Some orders never take back one who left.
+    static void CreedBroken()
+    {
+        var c = Campaign.New(94);
+        c.Swear("lily"); // never sell prisoners, never rob the road
+        var o = c.OrderById("lily")!;
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town);
+        float st = o.Standing;
+        c.Player.Prisoners.Add(new PrisonerGroup { Troop = "levies", Count = 5 });
+        c.SellPrisoners(town);
+        Check(c.Captain.Penance && o.Standing <= st - Campaign.VowCost + 0.01f, "selling prisoners breaks the Lily's vow: a penance");
+        Check(c.CannotRise() is string pen && pen.Contains("ATONE"), "no rising with a penance owed");
+        var foe = new Party { Kind = PartyKind.Lord, Faction = Enumerable.Range(0, c.S.Factions.Count).FirstOrDefault(f => c.FactionsAtWar(o.Patron, f), -1) };
+        if (foe.Faction >= 0)
+        {
+            c.OrderAfterBattle(true, new List<Party> { foe });
+            Check(!c.Captain.Penance, "a battle won against the patron's foe atones");
+            c.BreakVow("no_rob", "rob travellers on the road");
+            Check(c.Captain.Penance, "a second vow broken: penance again");
+        }
+        else c.BreakVow("no_rob", "rob travellers on the road");
+        c.BreakVow("no_rob", "rob travellers on the road");
+        Check(c.Captain.Order == "" && c.Captain.Forsworn.Contains("lily"), "broken again before atoning: cast out");
+        c.Swear("rose"); // meet every foe in person, never rob the road: selling prisoners is no sin to the Rose
+        c.Player.Prisoners.Add(new PrisonerGroup { Troop = "levies", Count = 5 });
+        c.SellPrisoners(town);
+        Check(!c.Captain.Penance && c.Captain.Order == "rose", "a vow your creed lacks costs nothing");
+        c.LeaveOrder();
+        c.Swear("wolf");
+        c.LeaveOrder();
+        c.RaiseStanding("wolf", 200);
+        Check(c.CannotSeekTrial("wolf") is string never && never.Contains("NEVER"), "the Wolfsworn never take back one who left");
+        // Winning against what an order hunts makes it know you, sworn or not.
+        float rose = c.StandingWith("rose");
+        c.OrderAfterBattle(true, new List<Party> { new() { Kind = PartyKind.Bandit, Faction = -1 } });
+        Check(c.StandingWith("rose") > rose, "beating brigands raises the Rose's regard");
+        c.OrderAfterBattle(false, new List<Party> { c.OrderParties("falcon").First() });
+        Check(c.StandingWith("falcon") < 0, "fighting an order's army turns it against you");
+    }
+
+    /// K4: each rank needs aura, standing and order deeds; rising teaches the order's second and great forms; the chapter
+    /// spares brothers once a week; the grand master is chosen, not made.
+    static void OrderRankGate()
+    {
+        var c = Campaign.New(95);
+        c.Swear("rose");
+        var cap = c.Captain;
+        Check(c.CannotRise() is string a && a.Contains("AURA"), "Knight-Brother needs a kindled aura");
+        cap.AuraTier = 1;
+        Check(c.CannotRise() is string b && b.Contains("STANDING"), "...and standing 30");
+        c.RaiseStanding("rose", 30);
+        Check(c.RiseInOrder() == null && cap.OrderRank == 1, "you rise to Knight-Brother");
+        cap.AuraTier = 2;
+        c.RaiseStanding("rose", 30);
+        Check(c.CannotRise() is string d && d.Contains("DEEDS"), "Knight-Captain needs an order deed");
+        cap.OrderDeeds = 1;
+        Check(c.RiseInOrder() == null && cap.OrderRank == 2 && cap.Forms.Contains("rose_cut"), "Knight-Captain learns the second form");
+        cap.AuraTier = 3; cap.OrderDeeds = 2;
+        c.RaiseStanding("rose", 30);
+        Check(c.RiseInOrder() == null && cap.Forms.Contains("red_rose_bloom") && c.OrderRankName == "Knight-Commander", "Knight-Commander learns the great form");
+        cap.AuraTier = 5; cap.OrderDeeds = 9;
+        Check(c.CannotRise() is string gm && gm.Contains("CHOSEN"), "the grand master is chosen, not made");
+        var chapter = c.SettlementById(c.OrderById("rose")!.Chapter)!;
+        c.S.Gold = 100000;
+        c.Player.Companies.RemoveAll(x => x != c.Player.Companies[0]);
+        Check(c.RecruitBrothers(chapter) == null && c.Player.Companies.Any(x => x.Troop == "thorn_knights"), "a knight-commander takes the tier VI brothers: " + c.RecruitBrothers(chapter));
+        Check(c.RecruitBrothers(chapter) is string spare && spare.Contains("SPARE"), "the chapter spares brothers once a week");
+        Check(c.TakeOrderContract(chapter) == null && c.S.Contracts.Any(k => k.Order == "rose"), "the chapter gives an order contract");
+        var other = c.S.Settlements.First(t => c.ChapterAt(t) is OrderState os && os.Id != "rose");
+        Check(c.RecruitBrothers(other) != null, "only your own order's chapter");
+        // War between your realm and the patron ends the oath.
+        int patron = c.OrderById("rose")!.Patron;
+        if (patron != c.Captain.Contract && c.Captain.Contract >= 0)
+        {
+            c.S.Wars.RemoveAll(x => x.A == patron && x.B == c.Captain.Contract || x.B == patron && x.A == c.Captain.Contract);
+            c.S.Wars.Add(new War { A = patron, B = c.Captain.Contract, Active = true });
+            Days(c, 1);
+            Check(c.Captain.Order == "" && !c.Captain.Forsworn.Contains("rose"), "your realm at war with the patron ends the oath, without blame");
+        }
+    }
 }

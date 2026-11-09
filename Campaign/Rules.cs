@@ -42,6 +42,8 @@ public sealed class BattleSetup
     public int Tournament = -1;
     /// A duel with this party's lord (P2), -1 = none.
     public int Duel = -1;
+    /// A trial of entry to this knight order (K4): a duel with one of its knights ("" = none).
+    public string Trial = "";
 }
 
 /// Company rules (caps, strength, XP, upgrades), auto-resolve, and the battle bridge (docs/CAMPAIGN.md 4-6).

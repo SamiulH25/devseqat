@@ -47,6 +47,7 @@ public sealed partial class Campaign
         S.Gold += gold;
         Log($"You sell {PrisonerCount} prisoners for {gold} crowns.");
         CompanionsReact("sell_prisoners");
+        BreakVow("no_slaves", "sell men in chains");
         Player.Prisoners.Clear();
         AudioEngine.Current?.Play(Cue.Coin);
         return null;
@@ -277,6 +278,7 @@ public sealed partial class Campaign
                 if (c.Then == null) Deed($"Contract done: {c.Text} (+{c.Reward:0} crowns).", "quests");
                 else Log($"Done: {c.Text}");
                 QuestStepDone(c);
+                OrderContractDone(c);
                 AudioEngine.Current?.Play(Cue.Coin);
             }
             else if (S.Hours > c.Deadline || (c.Kind is "hunt" or "clear" && PartyById(c.Target) is null or { Down: true } && S.LastBattleFoe != c.Target) || QuestLost(c))
@@ -285,6 +287,7 @@ public sealed partial class Campaign
                 S.Contracts.Remove(c);
                 if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you failed me", -8);
                 Log($"Contract failed: {c.Text}");
+                OrderContractLost(c);
             }
         }
     }

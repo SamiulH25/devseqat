@@ -19,7 +19,7 @@ partial class MapScreen
             SettlementKind.Village => new[] { "RECRUIT", "FOOD", "FORAGE", "REST", "ELDERS" },
             SettlementKind.Castle => new[] { "REST", "FOOD", "CAPTIVES", "CONTRACT" },
             _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "TAVERN", "MARKET", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
-        }).Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
+        }).Concat(C.ChapterAt(s) != null ? new[] { "CHAPTER" } : Array.Empty<string>()).Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
         int tw = Math.Min(ui.U(104), (r.Width - ui.U(40)) / tabs.Length);
         int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(80), tw * tabs.Length, ui.U(22)), tabs, Array.IndexOf(tabs, tab));
         if (pick >= 0) { tab = tabs[pick]; note = ""; }
@@ -42,6 +42,7 @@ partial class MapScreen
             case "FIEF": FiefTab(s, body); break;
             case "CONTRACT": ContractTab(s, body); break;
             case "ELDERS": EldersTab(s, body); break;
+            case "CHAPTER": ChapterTab(s, body); break;
         }
         Note(r);
         // The purse, and the way out.

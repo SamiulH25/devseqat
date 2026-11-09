@@ -562,7 +562,20 @@ sealed class ScreenHost : Game
                 Shot("campaign-upgrade-elite");
                 break;
             }
-            case 46: Exit(); break;
+            case 46:
+            {
+                // The knight orders (docs/KNIGHT_ORDERS.md K4): sworn to one, at its chapter house; then THE ORDERS on the realm screen.
+                var o = c.S.Orders.FirstOrDefault(x => x.Patron == c.Captain.Contract) ?? c.S.Orders[0];
+                c.RaiseStanding(o.Id, 35);
+                c.Swear(o.Id);
+                c.Captain.AuraTier = 2;
+                c.Captain.OrderRank = 1;
+                map.Stage("chapter", c.SettlementById(o.Chapter));
+                Shot("campaign-chapter");
+                break;
+            }
+            case 47: map.Stage("orders"); Shot("campaign-orders"); break;
+            case 48: Exit(); break;
         }
     }
 }

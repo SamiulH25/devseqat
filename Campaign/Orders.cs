@@ -192,18 +192,17 @@ public sealed partial class Campaign
         if (p.KnightOrder == t.Order) return true;
         int realm = p == Player ? Captain.Contract : p.Faction;
         if (realm >= 0 && Factions.Get(realm).Lines.Values.Any(l => l.Contains(t.Id))) return true;
-        if (p == Player && SwornTo(t.Order)) return true;
+        if (p == Player && SwornTo(t.Order, t.Tier - 3)) return true; // Knight-Brother: tier IV, Captain: V, Commander: VI
         reason = $"ONLY {KnightOrders.Find(t.Order)?.Short.ToUpperInvariant() ?? "ITS ORDER"} TRAIN THESE";
         return false;
     }
-
-    /// Are you sworn to this order and risen far enough to train its brothers (K4 fills this in)?
-    bool SwornTo(string order) => false;
 
     /// Each day: an order whose patron fell goes to whoever holds its chapter; a lost chapter moves to a patron town; fallen
     /// commanders' armies are raised again after a while.
     void OrdersDaily()
     {
+        ChapterTraining();
+        OathAndWar();
         foreach (var o in S.Orders.Where(o => !o.Gone))
         {
             var chapter = SettlementById(o.Chapter);

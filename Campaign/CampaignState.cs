@@ -185,6 +185,8 @@ public sealed class Contract
     public int From = -1;
     /// The next step of a quest of more than one step, put on your list when this one is done.
     public Contract? Then;
+    /// A knight order's contract (K4): the order that gave it ("" = none); done, it raises your standing with the order.
+    public string Order = "";
 }
 
 /// One of your divisions: led by a companion (LeaderChar) or by a company's sergeant (LeaderCompany).
@@ -302,8 +304,8 @@ public sealed class OrderState
     /// A crusade it has called (docs/KNIGHT_ORDERS.md 4.6): the party it rides against, until when.
     public int CrusadeOn = -1;
     public float CrusadeUntil;
-    /// When it next raises a knight-commander's army (campaign hours).
-    public float NextArmy;
+    /// When it next raises a knight-commander's army, and when its chapter next has brothers to spare you (campaign hours).
+    public float NextArmy, NextLevy;
 }
 
 public sealed class FactionState
@@ -402,6 +404,13 @@ public sealed class CaptainState
     public List<string> Forms = new();
     public Dictionary<string, int> FormUses = new();
     public float Corruption;
+    /// Your knight order (docs/KNIGHT_ORDERS.md 4.5, K4): its id ("" = unsworn), your rank in it (Campaign.OrderRanks, granted
+    /// and so stored), the order deeds you have done, a vow broken and not yet atoned for, and the orders you left or were cast
+    /// out of.
+    public string Order = "";
+    public int OrderRank, OrderDeeds;
+    public bool Penance;
+    public List<string> Forsworn = new();
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought

@@ -416,3 +416,21 @@ the two endings of the road and can be built in either order.
   patron town; a missing army is raised again after 10 days. Only the order (and a realm whose line it is: the Ashen Sun)
   trains its brothers (`TrainsOrder` in `CanEnterLine`; you once sworn, K4). Map: the party label reads the order and its
   patron. Test: `OrdersOnMap`.
+- **K4 (joining, rising, creeds):** `Campaign/Oath.cs`. Standing: +3 for a won battle against what an order hunts (undead,
+  monsters, brigands), +2 against its patron's enemies, -10 for fighting its army (`OrderAfterBattle`, sworn or not). At
+  standing 10 an order sets its **trial of entry** at its chapter house (CHAPTER tab on the town): a duel in the yard with
+  a knight-brother (`PrepareTrial`, `BattleSetup.Trial`, `FinishTrial`; `AutoTrial` without a fight). Won, you **swear**
+  (`CaptainState.Order`, `OrderRank` 0 = Squire) and learn the order's first form; lost, you are hurt two days and it thinks
+  2 better of you. No trial while sworn elsewhere, hurt, or serving a realm at war with the patron; a forsworn knight needs
+  20 more standing, and the Wolfsworn and Sky-Sworn never take one back. **Ranks** (`RiseInOrder`, `CannotRise`):
+  Knight-Brother (aura 1, standing 30), Knight-Captain (aura 2, 50, one order deed; the second form), Knight-Commander
+  (aura 3, 70, two deeds; the great form); Grand Master is chosen (K6). **Order deeds** (`OrderDeeds`): an order contract
+  done, or breaking a host of 30+ of what it hunts. **Vows** (`BreakVow`): no_rob (`Rob`), no_slaves (`SellPrisoners`),
+  no_auto (`AutoResolveEncounter`), no_desert (`Retreat`), contract (a failed contract), no_craft (a craft rite). A broken
+  vow costs 15 standing and a **penance** (no rising) until you win a battle in the order's name; a second before atoning
+  casts you out (`Forsworn`). `LeaveOrder` costs 40 standing. Your realm at war with the patron ends the oath without blame.
+  **Chapter house:** rest there and the aura grows 1.5 XP a day (`ChapterTraining`); a Knight-Brother takes 4 (scaled)
+  brothers of the troop of his rank once a week (`RecruitBrothers`) and may train men into it (`TrainsOrder`); an order
+  contract (`TakeOrderContract`, `Contract.Order`) names the nearest foe it hunts or its patron fights. UI: THE ORDERS tab
+  on the realm screen (R; every order, its creed, vows, brothers and standing); `MapScreen.Orders.cs`. Shots
+  `campaign-chapter`, `campaign-orders`. Tests: `OrderOath`, `CreedBroken`, `OrderRankGate`.

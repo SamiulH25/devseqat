@@ -152,6 +152,7 @@ public sealed partial class Campaign
     {
         CompanionsReact("rob");
         if (Encounter is not Party e || e.Kind != PartyKind.Caravan) return;
+        BreakVow("no_rob", "rob travellers on the road");
         e.Prey = true;
         float hit = e.Faction == Captain.Contract ? -14 : -6;
         foreach (var l in S.Characters.Where(x => x.Kind == "lord" && !x.Dead && x.Faction == e.Faction))
