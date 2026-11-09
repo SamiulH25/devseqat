@@ -161,7 +161,25 @@ partial class MapScreen
         string line = cap.AuraWall ? $"A WALL. A TRIAL WILL BREAK IT: {Campaign.TrialsFor(cap.AuraTier)}." : Campaign.AuraGifts[Math.Clamp(cap.AuraTier, 0, Campaign.AuraTop)].ToUpperInvariant();
         if (cap.Wounds.Contains("core")) line = "YOUR CORE IS CRACKED: YOU FIGHT A TIER LOWER. " + line;
         foreach (var l in ui.Wrap(line, c.Width)) { ui.Text(l, c.X, y, cap.AuraWall ? Style.Warn : Style.Dim * 0.8f, 1); y += ui.U(11); }
-        return FormList(c, FlameBlock(c, y));
+        return FormList(c, OwnFormBlock(c, FlameBlock(c, y)));
+    }
+
+    /// Your own form on offer (docs/MAGIC_AURA.md 4.4): the two styles you fight in most, one button each. Returns the next y.
+    int OwnFormBlock(Rectangle c, int y)
+    {
+        var cap = C.Captain;
+        if (cap.OwnFormOffer.Count == 0 || !C.MayMakeForm) return y;
+        ui.Text("A FORM OF YOUR OWN", c.X, y, Style.Aura, 1); y += ui.U(11);
+        int w = (c.Width - ui.U(6)) / 2, h = ui.U(18);
+        for (int i = 0; i < cap.OwnFormOffer.Count; i++)
+        {
+            string style = cap.OwnFormOffer[i];
+            var f = C.MakeOwnForm(style);
+            var b = new Rectangle(c.X + i * (w + ui.U(6)), y, w, h);
+            if (ui.Button(b, ui.Fit(f.Name.ToUpperInvariant(), w - ui.U(8)), true)) note = C.ChooseOwnForm(style) ?? "";
+            if (ui.Hover(b)) ui.Tooltip(b.Center.X, b.Y - ui.U(2), f.Name.ToUpperInvariant(), ui.Wrap(f.Line.ToUpperInvariant() + " YOUR ORDER WOULD TEACH IT. YOU CHOOSE ONCE.", ui.U(180)).ToArray());
+        }
+        return y + h + ui.U(6);
     }
 
     /// The Black Flame (docs/KNIGHT_ORDERS.md 7, K7): corruption, and the buttons to burn through a wall or purge it. Returns the next y.
@@ -207,11 +225,24 @@ partial class MapScreen
             if (hover) ui.Rect(row, Kit.Mul(Style.Aura, 0.15f));
             ui.Text(key, c.X, y, Kit.Gilt, 1);
             int rank = Campaign.FormRank(cap, id);
-            ui.TextFit($"{f.Name.ToUpperInvariant()}{(rank > 1 ? $" {Style.Numerals[rank]}" : "")}", c.X + ui.U(14), y, c.Width - ui.U(40), on ? Style.Aura : Style.Dim, 1);
+            string asp = cap.FormAspects.TryGetValue(id, out var aid) && Forms.Aspect(aid) is { } ad ? $" ({ad.Name.ToUpperInvariant()})" : "";
+            ui.TextFit($"{f.Name.ToUpperInvariant()}{(rank > 1 ? $" {Style.Numerals[rank]}" : "")}{asp}", c.X + ui.U(14), y, c.Width - ui.U(40), on ? Style.Aura : Style.Dim, 1);
             ui.TextR($"{f.Aura:0}", c.Right, y, Style.Dim, 1);
             if (hover) ui.Tooltip(row.Center.X, row.Y - ui.U(2), f.Name.ToUpperInvariant(), ui.Wrap(f.Line.ToUpperInvariant() + (on ? "" : " CLICK TO PUT IT IN THE FIRST SLOT."), ui.U(180)).ToArray());
             if (ui.Clicked(row)) note = C.SlotForm(id) ?? "";
             y += ui.U(12);
+            var aspects = Forms.AspectsFor(f).ToList();
+            if (aspects.Count == 2 && C.CannotTakeAspect(id, aspects[0].Id) == null && y < c.Bottom - ui.U(30))
+            {
+                int aw = (c.Width - ui.U(20)) / 2;
+                for (int i = 0; i < 2; i++)
+                {
+                    var b = new Rectangle(c.X + ui.U(14) + i * (aw + ui.U(6)), y, aw, ui.U(14));
+                    if (ui.Button(b, ui.Fit(aspects[i].Name.ToUpperInvariant(), aw - ui.U(6)), true)) note = C.TakeAspect(id, aspects[i].Id) ?? "";
+                    if (ui.Hover(b)) ui.Tooltip(b.Center.X, b.Y - ui.U(2), $"{f.Name.ToUpperInvariant()}: {aspects[i].Name.ToUpperInvariant()}", ui.Wrap(aspects[i].Line.ToUpperInvariant() + " FOR GOOD: ONE OF THE TWO.", ui.U(180)).ToArray());
+                }
+                y += ui.U(17);
+            }
         }
         return y + ui.U(4);
     }

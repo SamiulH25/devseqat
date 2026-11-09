@@ -13,6 +13,25 @@ public sealed class FormDef
     public float Aura, Cooldown = 20, Warn, Range, Radius, Duration, Damage, Shock, Dps;
     /// Black Flame forms: corruption each use adds (docs/KNIGHT_ORDERS.md 7).
     public float Corruption;
+    public FormDef Clone() => (FormDef)MemberwiseClone();
+}
+
+/// An aspect a form of rank 3 can take (docs/MAGIC_AURA.md 4.5): one of two per kind, chosen once. Each number multiplies
+/// the form's own (1 = unchanged); MaxHit and Count add.
+public sealed class AspectDef
+{
+    public string Id = "", Kind = "", Name = "", Line = "";
+    public float Radius = 1, Range = 1, Duration = 1, Damage = 1, Shock = 1, Cooldown = 1, Aura = 1;
+    public int MaxHit, Count;
+
+    /// The form with this aspect: a copy with its numbers changed.
+    public FormDef On(FormDef f)
+    {
+        var g = f.Clone();
+        g.Radius *= Radius; g.Range *= Range; g.Duration *= Duration; g.Damage *= Damage; g.Shock *= Shock;
+        g.Cooldown *= Cooldown; g.Aura *= Aura; g.MaxHit += MaxHit; g.Count += Count;
+        return g;
+    }
 }
 
 /// The form registry, loaded once from Data/forms.json.
@@ -29,9 +48,19 @@ public static class Forms
     /// An order's forms, in tier order.
     public static IEnumerable<FormDef> OfOrder(string order) => All.Where(f => f.Order == order).OrderBy(f => f.Tier);
 
+    /// Your own form (MA6) is made in play, not read from the file: the campaign registers it under this id.
+    public const string OwnId = "own";
+    public static void Register(FormDef f) { Load(); all![f.Id] = f; }
+
+    static List<AspectDef>? aspects;
+    /// Every aspect, and the two a form's kind offers.
+    public static IReadOnlyList<AspectDef> Aspects { get { Load(); return aspects!; } }
+    public static IEnumerable<AspectDef> AspectsFor(FormDef f) => Aspects.Where(a => a.Kind == f.Kind);
+    public static AspectDef? Aspect(string id) => Aspects.FirstOrDefault(a => a.Id == id);
+
     public static readonly string[] Kinds = { "focus", "slash", "guard", "edge", "shout", "leap", "shot", "counter", "buff", "burst", "volley", "burn", "drain" };
 
-    sealed class FileDto { public List<FormDef> Forms = new(); }
+    sealed class FileDto { public List<FormDef> Forms = new(); public List<AspectDef> Aspects = new(); }
 
     static void Load()
     {
@@ -45,6 +74,7 @@ public static class Forms
         };
         var file = JsonSerializer.Deserialize<FileDto>(File.ReadAllText(path), opts)!;
         all = file.Forms.ToDictionary(f => f.Id);
+        aspects = file.Aspects;
         var problems = Validate().ToList();
         if (problems.Count > 0) throw new InvalidDataException("forms.json: " + string.Join("; ", problems));
     }
@@ -64,6 +94,13 @@ public static class Forms
             if (f.Tier is < 1 or > 5 || f.Aura is <= 0 or > 80 || f.Cooldown < 5) yield return $"{f.Id}: tier, aura or cooldown out of range";
             if (f.Great && f.Tier < 3) yield return $"{f.Id}: a great form needs tier 3 or more";
             if (f.Corruption > 0 != (f.Order == "hollow")) yield return $"{f.Id}: only Black Flame forms feed corruption";
+        }
+        foreach (var k in Kinds)
+            if (aspects!.Count(a => a.Kind == k) != 2) yield return $"the {k} kind needs two aspects";
+        foreach (var a in aspects!)
+        {
+            if (a.Name == "" || a.Line == "") yield return $"aspect {a.Id}: needs a name and a line";
+            if (aspects.Count(b => b.Id == a.Id) > 1) yield return $"aspect {a.Id}: twice";
         }
     }
 }

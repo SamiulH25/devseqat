@@ -885,5 +885,61 @@ public static partial class SelfTest
         Check(b.Result().RelicRaised, "the campaign hears of it");
         Check(AuraField(86, 3).CannotRaise(b.Player) == "YOU CARRY NO RELIC", "no relic, nothing to raise");
     }
+
+    /// MA6 (docs/MAGIC_AURA.md 4.4): an unsworn Aura Expert who parries a lot is offered his own counter, a lancer his own
+    /// leap (the one leap from the saddle); the form is named for his company, slots, and goes into battle.
+    static void OwnFormFromStyle()
+    {
+        var c = Campaign.New(87);
+        c.Captain.AuraTier = 3;
+        var fight = new BattleResult(0, 60, Array.Empty<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Unhurt, 0, Parries: 20, Ripostes: 8, LanceHits: 3);
+        c.StyleAfterBattle(fight);
+        Check(c.Captain.OwnFormOffer.Count == 2 && c.Captain.OwnFormOffer[0] == "answer" && c.Captain.OwnFormOffer[1] == "charge",
+            $"a parrying captain is offered his Answer, then his Charge ({string.Join(",", c.Captain.OwnFormOffer)})");
+        Check(c.ChooseOwnForm("mark") != null, "only a style he fights in");
+        Check(c.ChooseOwnForm("answer") == null && c.Captain.OwnForm is { Kind: "counter" } f && f.Name.EndsWith("Answer"), "his Answer is a counter named for his company");
+        Check(Campaign.SlottedForms(c.Captain)[0] == Forms.OwnId && !c.MayMakeForm, "it goes in the first slot; one form of his own");
+        Check(c.Captain.OwnForm!.Damage > Forms.Get("measured_blade").Damage, "a tenth stronger than the form it grew from");
+        var o = new BattleOptions().WithCaptain(c.Captain);
+        var b = new Battle(5, Armies.Standard(0), Armies.Standard(1), o);
+        Check(b.FormSlot[0] is { Id: Forms.OwnId, Kind: "counter" }, "it goes into battle");
+        Check(c.OrderFormNow == Forms.OwnId, "and it is what his own order would teach");
+        var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        Check(back.Captain.OwnForm?.Name == c.Captain.OwnForm.Name && Forms.Has(Forms.OwnId), "it keeps through a save");
+
+        var l = Campaign.New(88);
+        l.Captain.AuraTier = 3;
+        l.StyleAfterBattle(new BattleResult(0, 60, Array.Empty<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Unhurt, 0, SaddleKills: 10, LanceHits: 20));
+        Check(l.Captain.OwnFormOffer.FirstOrDefault() == "charge" && l.MakeOwnForm("charge").Kind == "leap", "a lancer is offered his Charge, a leap");
+        var sworn = Campaign.New(89);
+        sworn.Captain.AuraTier = 3; sworn.Captain.Order = "rose";
+        sworn.StyleAfterBattle(fight);
+        Check(sworn.Captain.OwnFormOffer.Count == 0, "a sworn knight fights in his order's forms");
+    }
+
+    /// MA6 (4.5): each aspect moves its number and only that; a form takes one at rank 3, once, and the battle feels it.
+    static void AspectChanges()
+    {
+        string[] fields = { "Radius", "Range", "Duration", "Damage", "Shock", "Cooldown", "Aura", "MaxHit", "Count" };
+        float Get(FormDef f, string n) => Convert.ToSingle(typeof(FormDef).GetField(n)!.GetValue(f));
+        foreach (var a in Forms.Aspects)
+        {
+            var meant = fields.Where(n => Convert.ToSingle(typeof(AspectDef).GetField(n)!.GetValue(a)) != (n is "MaxHit" or "Count" ? 0 : 1)).ToList();
+            var f = Forms.All.Where(x => x.Kind == a.Kind).FirstOrDefault(x => meant.All(n => n is "MaxHit" or "Count" || Get(x, n) != 0));
+            Check(f != null && meant.Count > 0, $"aspect {a.Id} has a form whose number it moves");
+            if (f == null) continue;
+            var moved = fields.Where(n => MathF.Abs(Get(a.On(f), n) - Get(f, n)) > 1e-4f).ToList();
+            Check(moved.SequenceEqual(meant), $"aspect {a.Id} moves {string.Join(",", meant)} only ({string.Join(",", moved)})");
+        }
+        var c = Campaign.New(90);
+        c.Captain.AuraTier = 3;
+        c.Captain.Forms = new() { "aura_slash" };
+        Check(c.TakeAspect("aura_slash", "slash_wide") == "AT RANK III", "an aspect waits for rank III");
+        c.Captain.FormUses["aura_slash"] = Campaign.FormRankUses * 2;
+        Check(c.TakeAspect("aura_slash", "leap_far") != null, "only an aspect of its kind");
+        Check(c.TakeAspect("aura_slash", "slash_wide") == null && c.TakeAspect("aura_slash", "slash_far") != null, "one aspect, for good");
+        var b = new Battle(6, Armies.Standard(0), Armies.Standard(1), new BattleOptions { AuraTier = 3 }.WithCaptain(c.Captain));
+        Check(b.FormSlot[0] is { } s && MathF.Abs(s.Radius - Forms.Get("aura_slash").Radius * 1.5f) < 1e-4f, "the wide slash is wider in battle");
+    }
 }
 

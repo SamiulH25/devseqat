@@ -42,6 +42,7 @@ public sealed partial class Campaign
         Map = WorldMap.Generate(state.Seed, state.MapExtent, state.Layout, state.DataRealms);
         rng = new Rng(state);
         Factions.Bind(S.Factions);
+        RegisterOwnForm(); // your own form is made in play (MA6)
         MigrateGear();
         LearnForms();
         SyncOrders();

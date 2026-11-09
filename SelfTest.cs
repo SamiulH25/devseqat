@@ -89,6 +89,8 @@ public static partial class SelfTest
         CurseOnCaptain();
         BladeBreaksCast();
         RelicRaised();
+        OwnFormFromStyle();
+        AspectChanges();
         AuraGrows();
         FormsWork();
         FormsLearned();

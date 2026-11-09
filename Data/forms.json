@@ -88,5 +88,35 @@
       "line": "Tear the life out of the men around you and take it for your own." },
     { "id": "hollow_crown", "name": "Hollow Crown", "icon": "crown", "kind": "burst", "order": "hollow", "tier": 3, "great": true, "aura": 50, "cooldown": 300, "radius": 8, "maxHit": 20, "damage": 70, "shock": 30, "corruption": 4,
       "line": "Once a battle: the black flame bursts from you. Every man near you burns." }
+  ],
+  // Aspects (docs/MAGIC_AURA.md 4.5): at rank 3 a form takes one of the two its kind offers, for good. Numbers multiply the
+  // form's own (radius, range, duration, damage, shock, cooldown, aura); maxHit and count add.
+  "aspects": [
+    { "id": "focus_deep", "kind": "focus", "name": "Deep", "line": "Your blows land harder still.", "damage": 1.4 },
+    { "id": "focus_long", "kind": "focus", "name": "Long", "line": "The focus lasts half again as long.", "duration": 1.5 },
+    { "id": "slash_wide", "kind": "slash", "name": "Wide", "line": "The cut is half again as wide.", "radius": 1.5 },
+    { "id": "slash_far", "kind": "slash", "name": "Far", "line": "The cut flies two fifths further.", "range": 1.4 },
+    { "id": "guard_long", "kind": "guard", "name": "Long", "line": "Your guard holds two seconds longer.", "duration": 1.5 },
+    { "id": "guard_ready", "kind": "guard", "name": "Ready", "line": "Your guard comes back sooner.", "cooldown": 0.7 },
+    { "id": "edge_more", "kind": "edge", "name": "More", "line": "Two more blows go through armour.", "count": 2 },
+    { "id": "edge_keen", "kind": "edge", "name": "Keen", "line": "The edge bites harder.", "damage": 1.5 },
+    { "id": "shout_loud", "kind": "shout", "name": "Loud", "line": "Your shout carries a third further.", "radius": 1.3 },
+    { "id": "shout_dread", "kind": "shout", "name": "Dread", "line": "Your shout shakes them harder.", "shock": 1.5 },
+    { "id": "leap_shock", "kind": "leap", "name": "Shock", "line": "Your landing throws more men off their feet.", "radius": 1.5 },
+    { "id": "leap_far", "kind": "leap", "name": "Far", "line": "You leap a third further.", "range": 1.3 },
+    { "id": "shot_through", "kind": "shot", "name": "Through", "line": "The arrow goes through two more men.", "maxHit": 2 },
+    { "id": "shot_heavy", "kind": "shot", "name": "Heavy", "line": "The arrow strikes harder.", "damage": 1.3 },
+    { "id": "counter_long", "kind": "counter", "name": "Patient", "line": "Your counter waits longer.", "duration": 1.5 },
+    { "id": "counter_hard", "kind": "counter", "name": "Hard", "line": "Your answer strikes harder.", "damage": 1.3 },
+    { "id": "buff_broad", "kind": "buff", "name": "Broad", "line": "It reaches a third further.", "radius": 1.3 },
+    { "id": "buff_lasting", "kind": "buff", "name": "Lasting", "line": "It lasts half again as long.", "duration": 1.5 },
+    { "id": "burst_broad", "kind": "burst", "name": "Broad", "line": "The burst reaches a third further.", "radius": 1.3 },
+    { "id": "burst_fierce", "kind": "burst", "name": "Fierce", "line": "The burst strikes harder.", "damage": 1.25 },
+    { "id": "volley_broad", "kind": "volley", "name": "Broad", "line": "The rain falls over a wider ground.", "radius": 1.3 },
+    { "id": "volley_far", "kind": "volley", "name": "Far", "line": "The rain falls further off.", "range": 1.4 },
+    { "id": "burn_broad", "kind": "burn", "name": "Broad", "line": "The black fire spreads wider.", "radius": 1.3 },
+    { "id": "burn_long", "kind": "burn", "name": "Long", "line": "The black fire burns longer.", "duration": 1.5 },
+    { "id": "drain_broad", "kind": "drain", "name": "Broad", "line": "It drains men further off.", "radius": 1.3 },
+    { "id": "drain_deep", "kind": "drain", "name": "Deep", "line": "It drains more from each man.", "damage": 1.3 }
   ]
 }

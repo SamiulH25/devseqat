@@ -1,6 +1,6 @@
 # Magic and aura for the player: plan
 
-Status: being built (2026-11-09). Done: MA1-MA5. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
+Status: being built (2026-11-09). Done: MA1-MA6. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
 through M4 + P) and docs/KNIGHT_ORDERS.md (aura and orders: built K1-K8). Read docs/LEGACY.md first: your company is
 your legacy, and every change here must serve that.
 
@@ -328,3 +328,19 @@ change touches every later number.
   Champions: `ChampionWants` throws a volley or burn at a spot holding one of your casters even with fewer than three
   men there, and a leap picks a caster first. Tests `BlessingFeedsAura`, `CurseOnCaptain`, `BladeBreaksCast`,
   `RelicRaised`.
+- **MA6 (your own form, aspects):** `Campaign/OwnForm.cs`. `StyleAfterBattle` (each fought battle you were in) adds to
+  `CaptainState.StyleTally`: answer = parries + 2 x ripostes, charge = 2 x lance hits + saddle kills, mark = arrow hits,
+  and 2 x your other kills to ruin (a two-handed weapon) or wall (a shield). Once the tally reaches `OwnFormAt` (40) and
+  `MayMakeForm` (Aura Expert, never sworn, none yet), the top two styles go in `OwnFormOffer` with a beat; the K sheet shows
+  one button each (`OwnFormBlock`). `MakeOwnForm` copies the form it grows from (`Styles`: measured_blade counter,
+  falcon_dive leap, sky_arrow shot, ashen_smite burst, ashen_guard guard), id `Forms.OwnId`, tier 3, damage and duration
+  x`OwnFormEdge` (1.1), named for your legend company or best company ("The Red Lions Answer"). `ChooseOwnForm` saves
+  it in `CaptainState.OwnForm`, registers it (`Forms.Register`, again on load in the `Campaign` constructor), learns and
+  slots it. The battle gets it whole (`BattleOptions.OwnForm`), so replays need no registry. Your own leap is the one
+  allowed from the saddle. `OrderFormNow` prefers it. The offer comes as a beat and the K sheet, not an events.json
+  event (the names are made in play). Aspects: `Data/forms.json` `aspects` (two per kind, `AspectDef`: multipliers on
+  radius, range, duration, damage, shock, cooldown, aura; maxHit and count add; `Forms.Validate` wants two per kind).
+  `TakeAspect` at rank III, once (`CaptainState.FormAspects`); `BattleOptions.FormAspects` -> `SetupForms` uses
+  `AspectDef.On(f)`. The K sheet shows two aspect buttons under a form that may take one, and the aspect's name after the
+  form's. The guard's Riposte and the leap's Return from 4.5 became plain numbers (Ready: cooldown x0.7; Far: range
+  x1.3). Tests `OwnFormFromStyle`, `AspectChanges`.

@@ -35,8 +35,9 @@ public partial class Battle
         int n = 0;
         foreach (var id in Options.Forms)
         {
-            if (!Forms.Has(id)) continue;
-            var f = Forms.Get(id);
+            var f = id == Forms.OwnId && Options.OwnForm != null ? Options.OwnForm : Forms.Has(id) ? Forms.Get(id) : null;
+            if (f == null) continue;
+            if (Options.FormAspects.TryGetValue(id, out var asp) && Forms.Aspect(asp) is { } a && a.Kind == f.Kind) f = a.On(f); // its aspect (MA6)
             if (f.Great) FormSlot[3] ??= f;
             else if (n < 3) FormSlot[n++] = f;
         }
@@ -58,7 +59,7 @@ public partial class Battle
         if (Aura + Surge < f.Aura) return "NOT ENOUGH AURA";
         if (p.Action is UnitAction.Windup or UnitAction.Recover or UnitAction.Stagger) return "BUSY";
         if (f.Kind == "shot" && (p.Type.Ammo == 0 || p.Ammo <= 0)) return "TAKE UP A BOW";
-        if (f.Kind == "leap" && p.Mounted) return "NOT FROM THE SADDLE";
+        if (f.Kind == "leap" && p.Mounted && f.Id != Forms.OwnId) return "NOT FROM THE SADDLE"; // your own Charge leaps from the saddle (MA6)
         return null;
     }
 

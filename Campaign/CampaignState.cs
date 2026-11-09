@@ -437,6 +437,12 @@ public sealed class CaptainState
     public List<string> Forsworn = new();
     /// Your rival in the order (a knight character id, -1 = none; docs/KNIGHT_ORDERS.md 6.2).
     public int Rival = -1;
+    /// Your own form (docs/MAGIC_AURA.md 4.4, MA6): how you fight, battle by battle (style -> points), the two styles offered
+    /// once you may make one, and the form you made (registered as Forms.OwnId). The aspect each form took at rank 3 (4.5).
+    public Dictionary<string, float> StyleTally = new();
+    public List<string> OwnFormOffer = new();
+    public FormDef? OwnForm;
+    public Dictionary<string, string> FormAspects = new();
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought

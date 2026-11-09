@@ -19,6 +19,10 @@ public sealed class BattleOptions
     /// great one on L. Their ranks (1-3) by id.
     public string[] Forms = Array.Empty<string>();
     public Dictionary<string, int> FormRanks = new();
+    /// The aspect each form has taken (form id -> aspect id, docs/MAGIC_AURA.md 4.5).
+    public Dictionary<string, string> FormAspects = new();
+    /// Your own form (MA6), carried whole so the battle (and its replay) does not need the campaign's registry.
+    public FormDef? OwnForm;
     /// The enemy leader's aura tier and forms (an order knight, a champion: docs/KNIGHT_ORDERS.md 6.1, K6; BattleChampion.cs).
     public int EnemyAura;
     public string[] EnemyForms = Array.Empty<string>();

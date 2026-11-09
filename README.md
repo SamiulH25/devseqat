@@ -261,6 +261,12 @@ The core tension: **you are strongest as a leader when you are in the fight, but
   (his Will is spent). Enemy champions throw their forms at your circle first. Carry the relic and raise it once a battle
   (SPACE, a slot after your forms; it costs a charge): a Blessing round you and +30 aura, the overflow as surge. The craft
   rite **Craft marks** (Omen +3) makes your lit blade leave fever on the companies it strikes, for one battle.
+  **Your own form:** a captain who never swore to an order makes a form from how he fights once he is an Aura Expert.
+  The battles keep a tally (parries and ripostes, lance and saddle, the bow, a heavy weapon, sword and shield); when it
+  is full, the captain sheet (K) offers your top two: an Answer (counter), a Charge (a leap you can make from the
+  saddle), a Mark (shot), a Ruin (burst) or a Wall (guard), named for your company and a little stronger than the form it
+  grew from. Your own order teaches it. **Aspects:** a form at rank III takes one of two aspects on the K sheet, for good
+  (a slash Wide or Far, a guard Long or Ready, a buff Broad or Lasting, and so on).
 - **Morale and routing:** below 12 morale a unit routs and flees off the map (radius 95). It rallies again above 32, and a man who has
   broken twice stays broken. A side loses when it has no active, non-routing units.
 - **Melee:** windup, strike, recover. Hits interrupt windups. AI units block hits from the front by chance (Shieldmen 55%). A player block staggers the attacker; if stamina runs out, the guard breaks. Player swings cleave up to 3 targets.
