@@ -84,6 +84,7 @@ public sealed partial class Campaign
     {
         foreach (var f in Forms.Generic)
             if (f.Tier <= Captain.AuraTier) LearnForm(f.Id);
+        LearnFlameForms();
     }
 
     /// Learn a form (an order's, your own); it goes to the back of the slots. False if known already.
@@ -117,7 +118,8 @@ public sealed partial class Campaign
             Captain.FormUses[id] = Captain.FormUses.GetValueOrDefault(id) + n;
             if (FormRank(Captain, id) > before && Forms.Has(id)) Log($"Your {Forms.Get(id).Name} grows stronger (rank {FormRank(Captain, id)}).");
         }
-        if (r.Corruption > 0) Captain.Corruption = MathF.Min(100, Captain.Corruption + r.Corruption);
+        if (r.Corruption > 0) Corrupt(r.Corruption);
+        if (r.MadSpells > 0) Log(r.MadSpells == 1 ? "In the battle the black flame took you, and you do not know whose blood is on your blade." : $"In the battle the black flame took you {r.MadSpells} times.");
     }
 
     // ---- the higher trials and the cracked core (5.5, K5) ----
@@ -156,6 +158,7 @@ public sealed partial class Campaign
         if (!Captain.Wounds.Contains("core")) Captain.Wounds.Add("core");
         Captain.CoreUntil = (float)S.Hours + CoreDays * 24;
         Log("Your core is cracked: your aura fights a tier lower until it mends (a month, rest in a town, a priest, a spring).");
+        TemptFlame(); // a cracked core is where the Hollow Crown finds you (K7)
     }
 
     /// Mend a cracked core (time, a rite, a spring).

@@ -463,3 +463,26 @@ the two endings of the road and can be built in either order.
   `RivalBout`: 40% + Arms/300 + 10% an aura tier of difference) -> `rival_end` (`RivalFate`): a friend rises beside you, or
   a rival who hates you leaves for the Black Flame (flag `rival_fallen`, for K7). Tests: `ChampionsUseAura` (a tier 3 knight
   lights his blade and uses forms; a tier 0 one does not), `OrderPolitics`.
+- **K7 (the Black Flame):** `Campaign/BlackFlame.cs`. The Hollow Crown is a hidden order in orders.json (no patron, no
+  chapter, never on the map) with three troops: Hollow Squires, Hollow Knights and Lords of the Hollow Crown, tier IV-VI.
+  Billmen can train into them, but only with the pact (`TrainsOrder`). **The pact** (`TemptFlame`) is offered when your core
+  cracks, and by your rival who went over (`flag:rival_fallen` -> event `flame_rival`). Events `flame_bargain` / `flame_rival`
+  apply verb `pact` (`TakePact`): corruption +5, and the Black Flame forms up to your tier, learned again as you rise
+  (`LearnFlameForms` in `LearnForms`). Pious, priest and honourable companions think less of you (deed `flame`). **Burn the
+  wall** (`BurnWall`, K sheet): a tier with no trial, corruption +10. Corruption (`Corrupt`) rises only from the flame: the
+  forms, a burnt wall, the pact and grief in anger. It never falls by itself. **Thresholds** (`FlameDaily`, `FlameThreshold`,
+  `CaptainState.FlameSeen`):
+  - 25: the men notice, and the first pious or priest companion leaves.
+  - 50: you are hunted. You leave your order, every order's standing drops to -50 or lower, and villages refuse you levies.
+  - 75: madness. On the map, 5% a day the flame chooses for you (`MadDay`: gold, cohesion or renown lost). In battle,
+    `BattleOptions.Madness` (`MadnessInBattle`: 0.02 a second at 75, rising to 0.04 at 100) takes you for 3 s
+    (`BattleFlame.cs`, `Madness`, from the battle's rng only). You turn on the nearest man, friend or foe, and your cuts hit
+    your own side. The HUD reads THE FLAME HAS YOU, and the report says how often it happened (`BattleResult.MadSpells`).
+  - 100: the ending (event `flame_end`, `EndFlame`). Take the Hollow Crown (the world unites against you) or burn out. Either
+    one closes the campaign with a deed and an end reason, once (`CaptainState.FlameEnd`).
+
+  **The way back** (`Purge`, K sheet) works once, in a town, with a priest companion or the relic. The pact and its forms
+  go, corruption falls by 50, and the aura drops a tier. After a purge the Hollow Crown never asks again. Shot
+  `campaign-flame`. Tests: `BlackFlame` (no corruption from a month of the world; the pact, forms and troops; burning a
+  wall; each threshold; the purge, once; the ending, once) and `FlameTakesYou` (madness hurts your own men, the same seed
+  gives the same madness, and without the flame you never turn on your own).

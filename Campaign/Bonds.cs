@@ -16,6 +16,7 @@ public sealed partial class Campaign
         ("bury", "Pious", 5, "you buried the dead"), ("bury", "Priest", 6, "you gave the dead their rites"),
         ("craft", "Pious", -4, "you used hedge-craft"), ("craft", "Priest", -5, "you used hedge-craft"), ("craft", "Cunning", 2, "you let the old ways work"),
         ("won", "Reckless", 2, "a good fight, won"), ("won", "Sword", 2, "a good fight, won"), ("lost", "Ambitious", -3, "a defeat under you"),
+        ("flame", "Pious", -10, "you took the black flame"), ("flame", "Priest", -12, "you took the black flame"), ("flame", "Honourable", -5, "you took the black flame"),
         ("feast", "Generous", 3, "you feasted the men"), ("feast", "Greedy", -1, "you wasted coin on a feast"),
     };
 

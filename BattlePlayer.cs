@@ -7,8 +7,8 @@ public partial class Battle
 {
     void UpdatePlayer(Unit p, float dt)
     {
-        var inp = Input;
-        if (Commanding) { inp = default; inp.Dir = Input.Dir; p.Charging = false; p.Charge = 0; }
+        var inp = Madness(p, Input, dt);
+        if (Commanding && !Mad) { inp = default; inp.Dir = Input.Dir; p.Charging = false; p.Charge = 0; }
         else p.Facing = inp.Facing;
 
         UpdateAura(p, inp.Aura, dt);

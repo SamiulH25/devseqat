@@ -575,7 +575,18 @@ sealed class ScreenHost : Game
                 break;
             }
             case 47: map.Stage("orders"); Shot("campaign-orders"); break;
-            case 48: Exit(); break;
+            case 48:
+            {
+                // The Black Flame on the captain sheet (docs/KNIGHT_ORDERS.md K7): the pact, corruption, a wall to burn.
+                c.S.GameOver = false; // set for the summary shot above
+                c.TakePact();
+                c.Captain.Corruption = 35;
+                c.Captain.AuraWall = true;
+                map.Stage("skills");
+                Shot("campaign-flame");
+                break;
+            }
+            case 49: Exit(); break;
         }
     }
 }

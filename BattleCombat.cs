@@ -57,7 +57,7 @@ public partial class Battle
         };
         if (a.Mounted) { reach += 0.4f; dmg *= 1 + 0.1f * RidingEdge; } // the player rides high in the saddle and can swing further
         int hits = 0;
-        foreach (var t in Near(a.Pos, reach + 1, nearBrace).Where(t => t.Team != a.Team && t.Active).OrderBy(t => Vector2.DistanceSquared(t.Pos, a.Pos)).ThenBy(t => t.Index).ToList())
+        foreach (var t in Near(a.Pos, reach + 1, nearBrace).Where(t => (t.Team != a.Team || Mad) && t != a && t.Active).OrderBy(t => Vector2.DistanceSquared(t.Pos, a.Pos)).ThenBy(t => t.Index).ToList())
             if (InArc(a, t, reach + (t.Mounted ? 0.6f : 0), minDot) && hits++ < cleave) Hit(a, t, dmg, false);
     }
 

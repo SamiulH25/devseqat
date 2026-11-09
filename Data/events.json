@@ -210,6 +210,30 @@
       ]
     },
     {
+      "id": "flame_bargain", "trigger": "flame_bargain", "cooldown": 0, "scene": "camp", "title": "THE HOLLOW CROWN",
+      "text": "A knight in black armour sits at your fire as if he had always been there. He says the walls in you are a lie told by old men. He holds out his hand, and it burns with a dark fire that gives no light.",
+      "choices": [
+        { "label": "TAKE HIS HAND", "effects": ["pact"] },
+        { "label": "SEND HIM AWAY", "effects": ["renown:2"] }
+      ]
+    },
+    {
+      "id": "flame_rival", "trigger": "flag:rival_fallen", "cooldown": 0, "scene": "camp", "title": "{rival}",
+      "text": "{rival} comes to your camp by night. He burns black now, and he is stronger than you. He says he can give you what he found, if you are not too proud to take it from him.",
+      "choices": [
+        { "label": "TAKE WHAT HE OFFERS", "effects": ["pact"] },
+        { "label": "DRIVE HIM OFF", "effects": ["renown:3"] }
+      ]
+    },
+    {
+      "id": "flame_end", "trigger": "flame_end", "cooldown": 0, "scene": "camp", "title": "THE BLACK FLAME",
+      "text": "There is nothing left in you but the fire. The Hollow Crown waits for a master, and the world waits to see what you become. Or you can let the fire take the last of you, and go out.",
+      "choices": [
+        { "label": "TAKE THE HOLLOW CROWN", "effects": ["hollow_crown"] },
+        { "label": "BURN OUT", "effects": ["burn_out"] }
+      ]
+    },
+    {
       "id": "aura_mourned", "trigger": "flag:grief_mourn", "cooldown": 0, "scene": "camp", "title": "AFTER THE MOURNING",
       "text": "Weeks have passed. You find you can think of the dead without the old weight, and something in you is quieter, and stronger.",
       "choices": [

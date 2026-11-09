@@ -22,6 +22,8 @@ public sealed class BattleOptions
     /// The enemy leader's aura tier and forms (an order knight, a champion: docs/KNIGHT_ORDERS.md 6.1, K6; BattleChampion.cs).
     public int EnemyAura;
     public string[] EnemyForms = Array.Empty<string>();
+    /// The Black Flame's hold on you (docs/KNIGHT_ORDERS.md 7, K7): a chance a second that it takes you (0 = never; BattleFlame.cs).
+    public float Madness;
     /// The captain's lasting wounds (P4); the battle reads "eye" (a shorter parry window).
     public HashSet<string> Wounds = new();
     /// Iron Will perk: companies near you will not rout while a third of them stand.
@@ -124,4 +126,6 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     /// Uses of each of your forms (they rank up on the map) and the Black Flame's corruption raised (docs/KNIGHT_ORDERS.md).
     public IReadOnlyDictionary<string, int> FormUses { get; init; } = new Dictionary<string, int>();
     public float Corruption { get; init; }
+    /// How often the Black Flame took you this battle (K7).
+    public int MadSpells { get; init; }
 }

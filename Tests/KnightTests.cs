@@ -590,4 +590,83 @@ public static partial class SelfTest
             Check(o.Standing >= before + 10 && c.Captain.OrderDeeds > deeds && o.CrusadeOn == -1, "breaking the crusade's host: standing and a deed");
         }
     }
+
+    /// K7: the Black Flame. Corruption rises only from its own sources; the pact comes after a cracked core; it burns a wall,
+    /// opens the Hollow Crown's forms and troops; each threshold draws its price; purging is a way back, once; the ending fires once.
+    static void BlackFlame()
+    {
+        var c = Campaign.New(130);
+        Days(c, 30);
+        Check(c.Captain.Corruption == 0 && !c.Captain.Pact, "a month of the world leaves no corruption in you");
+        Check(!c.CanEnterLine(c.Player, c.Player.Companies[0], "billmen", "hollow_squires", out _), "without the pact the Hollow Crown trains none of your men");
+        c.S.Event = null;
+        c.Captain.AuraTier = 2;
+        c.CrackCore();
+        Check(c.S.Event?.Id == "flame_bargain", "a cracked core: the Hollow Crown comes to you");
+        c.Choose(0);
+        Check(c.Captain.Pact && c.Captain.Corruption == Campaign.PactCost && c.Captain.Forms.Contains("black_flame") && c.Captain.Forms.Contains("devour"),
+            "the pact: its price, and the Black Flame forms your aura can hold");
+        Check(c.CanEnterLine(c.Player, c.Player.Companies[0], "billmen", "hollow_squires", out _), "with the pact the Hollow Crown's troops are yours to train");
+        c.Captain.AuraWall = true;
+        Check(c.BurnWall() == null && c.Captain.AuraTier == 3 && c.Captain.Corruption == Campaign.PactCost + Campaign.BurnCost && c.Captain.Forms.Contains("hollow_crown"),
+            "the flame burns through a wall with no trial, at a price");
+        Check(c.BurnWall() != null, "but only a wall that is there");
+        c.Captain.Corruption = 30;
+        Days(c, 1);
+        Check(c.Captain.FlameSeen == 1 && c.MadnessInBattle == 0, "at 25 the men notice; no madness yet");
+        c.Captain.Corruption = 55;
+        Days(c, 1);
+        var village = c.S.Settlements.First(t => t.Kind == SettlementKind.Village);
+        Check(c.Captain.FlameSeen == 2 && c.S.Orders.All(o => o.Standing <= -50), "at 50 every order turns against you");
+        Check(c.RecruitLevies(village, 5) == "THE VILLAGE BARS ITS GATES TO YOU", "and villages bar their gates");
+        Days(c, 10);
+        Check(c.Captain.Corruption == 55, "corruption neither fades nor grows by itself");
+        c.Captain.Corruption = 80;
+        Days(c, 1);
+        Check(c.Captain.FlameSeen == 3 && c.MadnessInBattle > 0, "at 75 the flame can take you in battle");
+        // The way back: in a town, with the relic; once only.
+        Check(c.Purge() != null, "no purge out in the field");
+        c.Player.Pos = c.S.Settlements.First(t => t.Kind == SettlementKind.Town).Pos;
+        c.S.Relic = true; c.S.RelicCharges = 1;
+        Check(c.Purge() == null && !c.Captain.Pact && c.Captain.Corruption == 30 && c.Captain.AuraTier == 2
+            && !c.Captain.Forms.Any(id => Forms.Get(id).Order == "hollow"), "purging: the pact and its forms go, corruption falls, a tier is lost");
+        Check(c.Purge() != null && c.S.RelicCharges == 0, "there is no second purge");
+        c.S.Event = null;
+        c.CrackCore();
+        Check(c.S.Event?.Id != "flame_bargain", "once purged, the Hollow Crown does not ask again");
+        // The ending at 100: offered, taken once, and the campaign closes.
+        var e = Campaign.New(131);
+        e.Captain.Pact = true; e.Captain.Corruption = 100; e.S.Event = null;
+        Days(e, 1);
+        Check(e.S.Event?.Id == "flame_end", "at 100 the black flame comes for its ending");
+        e.Choose(1);
+        Check(e.S.GameOver && e.Captain.FlameEnd == "burnt" && e.S.Event == null, "burnt out: the campaign is over");
+        int deeds = e.S.Deeds.Count;
+        Days(e, 3);
+        Check(e.S.Event?.Id != "flame_end" && e.S.Deeds.Count == deeds, "the ending fires once");
+    }
+
+    /// K7: at 75 corruption the flame takes you in battle for a few seconds; you cut at whoever is nearest, your own men too.
+    /// It draws only on the battle's seeded dice, so the same seed gives the same madness.
+    static void FlameTakesYou()
+    {
+        (int spells, float hurt) Mad(float chance)
+        {
+            var b = Battle.Empty(140, new BattleOptions { Madness = chance });
+            b.Player.Horse = null;
+            b.EnemyCaptain.Pos = new Vector2(0, 400);
+            var own = b.AddSquad(0, Troops.Get("men_at_arms"), 4, b.Player.Pos + new Vector2(0, 1.6f), 4, Vector2.UnitY);
+            own.Order = Order.Hold;
+            float hp = own.Units.Sum(u => u.Hp);
+            Run(b, 20);
+            return (b.MadSpells, hp - own.Units.Sum(u => u.Dead ? 0 : u.Hp));
+        }
+        var a = Mad(0.3f);
+        var again = Mad(0.3f);
+        var calm = Mad(0);
+        Check(a.spells > 0 && a.hurt > 0, $"the flame takes you and you cut your own men ({a.spells} times, {a.hurt:0} hp)");
+        Check(a == again, "the same seed, the same madness");
+        Check(calm.spells == 0 && calm.hurt == 0, "without the flame you never turn on your own");
+    }
 }
+

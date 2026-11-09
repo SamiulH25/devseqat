@@ -161,7 +161,31 @@ partial class MapScreen
         string line = cap.AuraWall ? $"A WALL. A TRIAL WILL BREAK IT: {Campaign.TrialsFor(cap.AuraTier)}." : Campaign.AuraGifts[Math.Clamp(cap.AuraTier, 0, Campaign.AuraTop)].ToUpperInvariant();
         if (cap.Wounds.Contains("core")) line = "YOUR CORE IS CRACKED: YOU FIGHT A TIER LOWER. " + line;
         foreach (var l in ui.Wrap(line, c.Width)) { ui.Text(l, c.X, y, cap.AuraWall ? Style.Warn : Style.Dim * 0.8f, 1); y += ui.U(11); }
-        return FormList(c, y + ui.U(4));
+        return FormList(c, FlameBlock(c, y));
+    }
+
+    /// The Black Flame (docs/KNIGHT_ORDERS.md 7, K7): corruption, and the buttons to burn through a wall or purge it. Returns the next y.
+    int FlameBlock(Rectangle c, int y)
+    {
+        var cap = C.Captain;
+        if (!cap.Pact && cap.Corruption <= 0) return y + ui.U(4);
+        y += ui.U(4);
+        ui.Text("BLACK FLAME", c.X, y, Style.Bad, 1);
+        ui.TextR($"{cap.Corruption:0} OF 100", c.Right, y, Style.Bad, 1); y += ui.U(11);
+        ui.Pips(new Rectangle(c.X, y, c.Width, ui.U(5)), cap.Corruption / 100f, Style.Bad, 4); y += ui.U(9);
+        int w = (c.Width - ui.U(6)) / 2, h = ui.U(18);
+        if (cap.Pact)
+        {
+            string? burn = C.CannotBurnWall();
+            var br = new Rectangle(c.X, y, w, h);
+            if (ui.Button(br, "BURN THE WALL", burn == null)) note = C.BurnWall() ?? "";
+            if (ui.Hover(br)) ui.Tooltip(br.Center.X, br.Y - ui.U(2), "BURN THROUGH THE WALL", ui.Wrap($"NO TRIAL: A TIER NOW, AND {Campaign.BurnCost:0} MORE CORRUPTION. {burn ?? "YOU CAN DO IT NOW"}.", ui.U(180)).ToArray());
+        }
+        string? purge = C.CannotPurge();
+        var pr = new Rectangle(c.Right - w, y, w, h);
+        if (ui.Button(pr, "PURGE IT", purge == null)) note = C.Purge() ?? "";
+        if (ui.Hover(pr)) ui.Tooltip(pr.Center.X, pr.Y - ui.U(2), "PURGE THE FLAME", ui.Wrap($"ONCE ONLY. THE PACT AND ITS FORMS GO, CORRUPTION FALLS BY {Campaign.PurgeOff:0}, AND YOUR AURA DROPS A TIER. {purge ?? "YOU CAN DO IT NOW"}.", ui.U(180)).ToArray());
+        return y + h + ui.U(6);
     }
 
     /// The forms you know (K2): those in battle slots with their keys, the rest dim. Click one to put it in the first slot.

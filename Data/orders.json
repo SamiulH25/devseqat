@@ -27,6 +27,9 @@
       "creed": "A contract is holy. A broken one is death.", "text": "Pikes and lanterns from the canal cities. They are paid, and they are never bought." },
     { "id": "ashen", "name": "Knights of the Ashen Sun", "short": "the Ashen Sun", "patron": "Order of the Ashen Sun", "hunts": "undead",
       "troops": ["sun_brothers", "ashen_brothers", "sun_templars"], "vows": ["no_craft", "no_slaves"],
-      "creed": "The grey light over all; no craft, no chains.", "text": "The mother order, whose chapter became a realm. Its knight-brothers still ride out." }
+      "creed": "The grey light over all; no craft, no chains.", "text": "The mother order, whose chapter became a realm. Its knight-brothers still ride out." },
+    { "id": "hollow", "name": "The Hollow Crown", "short": "the Hollow Crown", "patron": "", "hunts": "", "hidden": true,
+      "troops": ["hollow_squires", "hollow_knights", "hollow_lords"], "vows": [],
+      "creed": "Power is owed to whoever takes it.", "text": "Knights in black who burn from within. No realm owns them, and no realm will have them." }
   ]
 }

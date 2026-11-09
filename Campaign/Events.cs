@@ -40,11 +40,12 @@ public sealed partial class Campaign
         "peace_offer", "site_ruin", "site_shrine", "site_stones", "site_battlefield", "site_mine", "site_hermit", "site_watchtower", "site_spring", "site_mill",
         "start", "crown", "fallen", "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night", "dark_omens",
         "aura_vigil", "aura_grief", // raised by Campaign/Aura.cs only, never drawn at random (K5)
+        "flame_bargain", "flame_end", // raised by Campaign/BlackFlame.cs only (K7)
     };
     /// Days after a "flag:name" effect before the "flag:name" event follows.
     public const int FlagDays = 7;
     /// Flags the code sets itself (not an event's choice): swearing to an order starts the rival's chain (K6).
-    static readonly string[] CodeFlags = { "rival_meet" };
+    static readonly string[] CodeFlags = { "rival_meet", "rival_fallen" };
     /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
     internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" or "start" or "crown" or "fallen" || trigger.StartsWith("site_");
     static readonly string[] Verbs =
@@ -52,9 +53,9 @@ public sealed partial class Campaign
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
         "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown", "calm",
-        "vigil", "breakthrough", "corrupt", "rival", "rival_bout", "rival_fate",
+        "vigil", "breakthrough", "corrupt", "rival", "rival_bout", "rival_fate", "pact", "hollow_crown", "burn_out",
     };
-    static readonly string[] NoNumber = { "vigil", "breakthrough", "rival_bout", "rival_fate", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
+    static readonly string[] NoNumber = { "vigil", "breakthrough", "rival_bout", "rival_fate", "pact", "hollow_crown", "burn_out", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
     static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man", "rival" };
 
     static List<EventDef>? events;
@@ -254,7 +255,10 @@ public sealed partial class Campaign
         switch (verb)
         {
             case "breakthrough": BreakThrough(pe.Id == "aura_grief" ? "In your rage the wall gives way." : "Your mourning is done, and you rise from it."); break;
-            case "corrupt": Captain.Corruption = Math.Clamp(Captain.Corruption + n, 0, 100); break;
+            case "corrupt": Corrupt(n); break;
+            case "pact": return TakePact();
+            case "hollow_crown": return EndFlame(true);
+            case "burn_out": return EndFlame(false);
             case "rival": if (CharacterById(Captain.Rival) is Character rv) Remember(rv, Me, n >= 0 ? "you were a brother to me" : "you looked down on me", n); break;
             case "rival_bout": return RivalBout();
             case "rival_fate": return RivalFate();

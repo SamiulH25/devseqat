@@ -380,6 +380,7 @@ public sealed partial class Campaign
         FiefsDaily();
         OrdersDaily();
         CoreDaily();
+        FlameDaily();
         CareerDaily();
         EventsDaily();
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous.

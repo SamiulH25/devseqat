@@ -17,6 +17,7 @@ public partial class Campaign
     public string? RecruitLevies(Settlement s, int n)
     {
         // Only some of them will follow you: how many depends on what their lord thinks of you (4.2).
+        if (s.Kind == SettlementKind.Village && Captain.Corruption >= HuntedAt) return "THE VILLAGE BARS ITS GATES TO YOU"; // the Black Flame (K7)
         n = Math.Min(n, RecruitsForYou(s));
         if (n <= 0) return s.Recruits > 0 ? "THEY WILL NOT FOLLOW YOU: THEIR LORD THINKS ILL OF YOU" : "NO RECRUITS";
         string levy = RecruitTroopFor(s);

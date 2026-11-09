@@ -1595,7 +1595,8 @@
    "tier": 3,
    "upgradesTo": [
     "halberdiers",
-    "glaivemen"
+    "glaivemen",
+    "hollow_squires"
    ],
    "cost": 42,
    "upgradeXp": 250,
@@ -7971,6 +7972,104 @@
     "cape": true
    },
    "order": "lantern"
+  },
+  {
+   "id": "hollow_squires",
+   "name": "Hollow Squires",
+   "class": "Infantry",
+   "culture": "common",
+   "tier": 4,
+   "upgradesTo": [
+    "hollow_knights"
+   ],
+   "cost": 95,
+   "upgradeXp": 400,
+   "hp": 140,
+   "damage": 38,
+   "armor": 15,
+   "reach": 2.0,
+   "windup": 0.4,
+   "recover": 0.55,
+   "speed": 3.5,
+   "block": 0.55,
+   "look": {
+    "head": "greathelm",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "greatsword",
+    "cape": true
+   },
+   "order": "hollow"
+  },
+  {
+   "id": "hollow_knights",
+   "name": "Hollow Knights",
+   "class": "Infantry",
+   "culture": "common",
+   "tier": 5,
+   "upgradesTo": [
+    "hollow_lords"
+   ],
+   "cost": 150,
+   "upgradeXp": 560,
+   "hp": 158,
+   "damage": 46,
+   "armor": 17.5,
+   "reach": 2.0,
+   "windup": 0.4,
+   "recover": 0.55,
+   "speed": 3.5,
+   "block": 0.55,
+   "look": {
+    "head": "greathelm",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "greatsword",
+    "cape": true
+   },
+   "passives": [
+    "fearsome",
+    "battle_fury"
+   ],
+   "order": "hollow"
+  },
+  {
+   "id": "hollow_lords",
+   "name": "Lords of the Hollow Crown",
+   "class": "Infantry",
+   "culture": "common",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 210,
+   "hp": 178,
+   "damage": 52,
+   "armor": 20,
+   "reach": 2.0,
+   "windup": 0.4,
+   "recover": 0.55,
+   "speed": 3.5,
+   "block": 0.55,
+   "look": {
+    "head": "sallet",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "greatsword",
+    "cape": true
+   },
+   "passives": [
+    "fearsome",
+    "battle_fury"
+   ],
+   "order": "hollow"
   }
  ]
 }

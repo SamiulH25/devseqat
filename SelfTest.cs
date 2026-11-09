@@ -91,6 +91,8 @@ public static partial class SelfTest
         PresenceShakes();
         ChampionsUseAura();
         OrderPolitics();
+        BlackFlame();
+        FlameTakesYou();
         DuelFight();
         BattleGoals();
         BannerAndLastStand();

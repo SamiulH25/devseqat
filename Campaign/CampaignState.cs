@@ -406,6 +406,11 @@ public sealed class CaptainState
     public List<string> Forms = new();
     public Dictionary<string, int> FormUses = new();
     public float Corruption;
+    /// The Black Flame (docs/KNIGHT_ORDERS.md 7, K7): the Hollow Crown's pact taken; the highest threshold (25 each) whose
+    /// price you have paid; purged once (no second bargain); how it ended ("" = it has not; "crown" or "burnt").
+    public bool Pact, Purged;
+    public int FlameSeen;
+    public string FlameEnd = "";
     /// Your knight order (docs/KNIGHT_ORDERS.md 4.5, K4): its id ("" = unsworn), your rank in it (Campaign.OrderRanks, granted
     /// and so stored), the order deeds you have done, a vow broken and not yet atoned for, and the orders you left or were cast
     /// out of.
