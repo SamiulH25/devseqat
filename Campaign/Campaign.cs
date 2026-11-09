@@ -8,7 +8,7 @@ public sealed partial class Campaign
 {
     public readonly CampaignState S;
     public readonly WorldMap Map;
-    readonly Rng rng;
+    Rng rng; // swapped for the orders' stream while they raise men (Campaign/Orders.cs OnOrderDice)
     static Balance B => Balance.Get();
 
     /// Raised for the UI: a hostile party has caught you (or you it); you arrived where you were heading; a battle report.
@@ -43,6 +43,8 @@ public sealed partial class Campaign
         rng = new Rng(state);
         Factions.Bind(S.Factions);
         MigrateGear();
+        LearnForms();
+        SyncOrders();
         MigrateSkills();
         // Saves from before F6 have no buildings: give their towns the barracks their elite lines need.
         if (S.Settlements.Count > 0 && S.Settlements.All(t => t.Buildings.Count == 0)) SeedBuildings();
@@ -105,6 +107,7 @@ public sealed partial class Campaign
         for (int i = 0; i < c.RaresWanted; i++) c.SpawnTroll();
         c.WanderersWeekly();
         c.EnsureRulers();
+        c.SyncOrders();
         // The guided first fight: a weak band close by, coming for you.
         var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
         first.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(9), 0));
@@ -288,7 +291,7 @@ public sealed partial class Campaign
             return;
         }
         if (a.Lair || a.Breed is "troll" or "undead") (a, b) = (b, a); // a holdout fights dug in, from side 1; so do a troll and the dead
-        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, 1, Edge(b));
+        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, 1 + B.AuraWeight * ChampionAura(a), Edge(b));
         var winner = r.Winner == 0 ? a : b;
         var loser = r.Winner == 0 ? b : a;
         AiBattles++;
@@ -300,7 +303,8 @@ public sealed partial class Campaign
     /// How much harder a party fights than its strength says, on the defending side of an auto-resolve: a holdout dug in,
     /// a troll in the dark (and the sun makes it slow and weak, as in a battle); the dead by night (by day they lie in the earth).
     /// How much harder a party fights than its strength says: a holdout's den, a troll by night, the dead by night.
-    public float Edge(Party p) => p.Lair ? B.HoldoutDefence : p.Breed == "troll" ? (Night ? B.TrollNight : B.TrollDay) : p.Breed == "undead" ? (Night ? B.UndeadNight : B.UndeadDay) : 1;
+    public float Edge(Party p) => (1 + B.AuraWeight * ChampionAura(p)) * EdgeOfKind(p);
+    float EdgeOfKind(Party p) => p.Lair ? B.HoldoutDefence : p.Breed == "troll" ? (Night ? B.TrollNight : B.TrollDay) : p.Breed == "undead" ? (Night ? B.UndeadNight : B.UndeadDay) : 1;
 
     void Hourly()
     {
@@ -328,6 +332,7 @@ public sealed partial class Campaign
     void Daily()
     {
         AgeDaily();
+        BuffsDaily();
         foreach (var v in S.Settlements.Where(v => v.ThreatUntil <= S.Hours))
         {
             int more = (v.Owner == Player.Id && Has("JustRuler") ? 2 : 1) * (v.Prosperity >= 70 ? 2 : 1);
@@ -343,7 +348,7 @@ public sealed partial class Campaign
                 {
                     if (st.Wounded > 0)
                     {
-                        float surgeon = p == Player ? (HasCompanion("Surgeon") ? 1.3f : 1) * (!town && Has("FieldHospital") ? 1.5f : 1) : 1;
+                        float surgeon = p == Player ? (HasCompanion("Surgeon") ? 1.3f : 1) * (!town && Has("FieldHospital") ? 1.5f : 1) * (HasBuff("poultices") ? 1.5f : 1) : 1;
                         int heal = Math.Min(st.Wounded, Math.Max(1, (int)MathF.Round(st.Wounded * (town ? B.HealTown : B.HealField) * (Winter ? 0.5f : 1) * surgeon)));
                         if (p == Player) Practise("Medicine", Rules.PerMan(heal * 0.1f));
                         st.Wounded -= heal;
@@ -373,6 +378,9 @@ public sealed partial class Campaign
         SiegesDaily();
         RainDaily();
         FiefsDaily();
+        OrdersDaily();
+        CoreDaily();
+        FlameDaily();
         CareerDaily();
         EventsDaily();
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous.
@@ -403,6 +411,7 @@ public sealed partial class Campaign
     void Weekly()
     {
         RelationsWeekly();
+        CompanionsWeekly();
         WanderersWeekly();
         TraitsWeekly();
         GuardWeekly();

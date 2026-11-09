@@ -314,7 +314,7 @@ public static partial class SelfTest
 
     /// A scripted captain fights `foes` on foot for up to a minute: parrying and riposting, or only swinging.
     /// True if he is standing when the last of them falls.
-    static bool Fight(Battle b, IReadOnlyList<Unit> foes, bool parry)
+    static bool Fight(Battle b, IReadOnlyList<Unit> foes, bool parry, bool aura = false)
     {
         var p = b.Player;
         float hold = 0;
@@ -340,6 +340,7 @@ public static partial class SelfTest
                 if (!inp.Attack) hold = 0;
                 inp.Dir = (AttackDir)(i / 40 % 4);
             }
+            inp.Aura = aura && (b.AuraBlade ? b.Aura > Battle.AuraLow + 10 : b.Aura > 60); // light the blade when full, let it rest before the pool is spent
             b.Input = inp;
             b.Update(1 / 60f);
         }
@@ -1058,7 +1059,9 @@ public static partial class SelfTest
         }
         Check(Troops.All.Count(t => !t.Leader && !t.Wild) >= 80, $"massive 7-tier troop tree ({Troops.All.Count(t => !t.Leader)} troops)");
         var reachable = Troops.Tree("levies").Concat(Troops.Tree("clansmen")).Select(t => t.Id).ToHashSet();
-        Check(Troops.All.Where(t => !t.Leader && !t.Wild).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
+        Check(Troops.All.Where(t => !t.Leader && !t.Wild && t.Class != UnitClass.Caster).All(t => reachable.Contains(t.Id)), "every troop can be reached by upgrading a culture's recruits");
+        var magi = Troops.Tree("acolytes").Select(t => t.Id).ToHashSet(); // mages are super units: hired as Acolytes, never drilled from recruits
+        Check(Troops.All.Where(t => t.Class == UnitClass.Caster).All(t => magi.Contains(t.Id) && !reachable.Contains(t.Id)), "every mage rises from Acolytes, and no recruit becomes one");
     }
 
     /// Every sprite any troop's look can ask for exists, for every side.

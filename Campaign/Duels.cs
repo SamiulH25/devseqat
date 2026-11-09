@@ -48,6 +48,7 @@ public sealed partial class Campaign
         {
             Duel = true, Couriers = false, Cap = 10, Scouted = true,
             EnemyLeader = LordChampion(e), EnemyDamage = Settings.Current.EnemyDamage,
+            EnemyAura = ChampionAura(e), EnemyForms = ChampionFormsOf(e), Madness = MadnessInBattle, // an order knight's aura and forms (K6)
             Ground = TerrainParams.Lists, Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, e.Id)),
             Palette = new[] { mine, his == mine ? 3 : his },
         }.WithCaptain(Captain);
@@ -63,13 +64,16 @@ public sealed partial class Campaign
         string name = CharacterOf(e)?.Name ?? e.Name;
         var skillsBefore = new Dictionary<string, float>(Captain.Skills);
         Practise("Arms", (won ? 2.5f : 1) + (r.Parries + r.Ripostes) * 0.15f);
+        if (won && ChampionAbove(e)) BreakThrough($"You beat {name}, a champion above you, in single combat."); // K5
+        AuraAfterDuel(r, won, CharacterOf(e)?.Name ?? e.Name);
+        FormsAfterBattle(r);
         float renown = won ? DuelRenown : 0;
         Captain.Renown += renown;
         var fate = won ? LeaderFate.Unhurt : LeaderFate.Wounded;
         if (!won) Captain.WoundedUntil = MathF.Max(Captain.WoundedUntil, (float)S.Hours + 24 * 3);
         if (won) Deed($"You beat {name} in single combat before his army.", "duels");
         else Log($"{name} beats you in single combat. You will lead the battle from the rear.");
-        Report = new BattleReport(won, $"{name} in single combat", new List<CompanyReport>(), 0, 0, 0, renown, 0, fate) { Rises = Skills.Rises(Captain, skillsBefore) };
+        Report = new BattleReport(won, $"{name} in single combat", new List<CompanyReport>(), 0, 0, 0, renown, 0, fate) { Rises = Skills.Rises(Captain, skillsBefore), Aura = TakeAuraNews() };
         return Report;
     }
 

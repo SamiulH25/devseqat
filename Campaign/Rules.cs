@@ -14,6 +14,8 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
     public IReadOnlyList<string> Rises { get; init; } = Array.Empty<string>();
     /// A lasting wound the captain took in this battle (P4), or "".
     public string LastingWound { get; init; } = "";
+    /// What the battle did to your aura (docs/KNIGHT_ORDERS.md K1): a wall reached, a breakthrough, or "".
+    public string Aura { get; init; } = "";
     /// The battle's personal goals and whether each was met (P6).
     public IReadOnlyList<(string Text, bool Met)> Goals { get; init; } = Array.Empty<(string, bool)>();
     /// Your named men in this battle (docs/LEGACY.md L3): the fallen and missing first, then the hurt, then new names.
@@ -40,6 +42,8 @@ public sealed class BattleSetup
     public int Tournament = -1;
     /// A duel with this party's lord (P2), -1 = none.
     public int Duel = -1;
+    /// A trial of entry to this knight order (K4): a duel with one of its knights ("" = none).
+    public string Trial = "";
 }
 
 /// Company rules (caps, strength, XP, upgrades), auto-resolve, and the battle bridge (docs/CAMPAIGN.md 4-6).
@@ -65,7 +69,9 @@ public static class Rules
     public static float TierWeight(int tier) => tier switch { <= 1 => 0.8f, 2 => 1f, 3 => 1.15f, 4 => 1.3f, 5 => 1.4f, 6 => 1.5f, _ => 1.6f };
 
     /// A company's places, from its role (shared by all its stacks).
-    public static float Cap(string role) => B.ArmyScale * role switch { "archers" => 16, "spears" => 12, "horse" => 10, _ => 24 };
+    /// Mages are a circle of a few, not a company of many (super units): three or four at ArmyScale 3, one or two at 1.
+    public static float Cap(string role) => role == "casters" ? B.ArmyScale * 1.2f + 1
+        : B.ArmyScale * role switch { "archers" => 16, "spears" => 12, "horse" => 10, _ => 24 };
 
     /// A price per man (wage, levy, loot, ransom, promotion): the troop price spread over ArmyScale men.
     public static float PerMan(float cost) => cost / B.ArmyScale;
@@ -82,12 +88,19 @@ public static class Rules
 
     public static float Strength(UnitType t, int men)
     {
-        float cls = t.Class switch { UnitClass.Cavalry => 1.35f, UnitClass.Archer => 0.9f, _ => 1f };
+        float cls = t.Class switch { UnitClass.Cavalry => 1.35f, UnitClass.Archer => 0.9f, UnitClass.Caster => 1 + 0.35f * t.Spells.Length, _ => 1f }; // a mage is worth his spells, not his staff
         if (t.Huge) cls *= 2f; // a troll's blows sweep through several men, and it heals
         return men * (t.MaxHp + 5 * t.Armor + 2 * t.Damage) * cls / 100f;
     }
 
     public static float Strength(CompanyRecord c) => c.Stacks.Sum(s => Strength(s.Type, s.Men));
+
+    /// Strength with drill weighed in, as a fought battle weighs it (docs/MELEE.md D8, --agree): who wins an auto-resolve.
+    public static float Might(UnitType t, int men) => MightAt(t, men, B.DrillWeight, B.TraitWeight);
+    /// Might at a chosen drill and trait weight (--agree tries other weights): drill, and a tier V-VII troop's style and traits.
+    public static float MightAt(UnitType t, int men, float drillWeight, float traitWeight) =>
+        Strength(t, men) * (1 + drillWeight * Battle.DrillOf(t)) * (1 + traitWeight * t.StyleRank);
+    public static float Might(Party p) => p.Companies.Sum(c => c.Stacks.Sum(s => Might(s.Type, s.Men)));
     public static float Strength(Party p) => p.Companies.Sum(Strength);
 
     public static int Upkeep(CompanyRecord c) => (int)MathF.Ceiling(c.Stacks.Sum(s => (s.Men + s.Wounded) * PerMan(s.Type.Cost) * B.UpkeepRate));
@@ -189,6 +202,9 @@ public static class Rules
         o.Bowcraft = Skills.Level(c, "Bowcraft");
         o.Perks = c.Perks.ToHashSet();
         o.Wounds = c.Wounds.ToHashSet();
+        o.AuraTier = Math.Max(0, c.AuraTier - (c.Wounds.Contains("core") ? 1 : 0)); // a cracked core holds you a tier down (K5)
+        o.Forms = c.Forms.Where(Forms.Has).ToArray();
+        o.FormRanks = c.Forms.ToDictionary(id => id, id => Campaign.FormRank(c, id));
         o.PlayerType = CaptainType(c);
         o.PlayerSide = c.Kit.Side != "" ? CaptainType(c, side: true) : null;
         o.PlayerMount = CaptainMount(c);
@@ -214,8 +230,8 @@ public static class Rules
     /// `wall` multiplies side 1's strength: defenders behind walls (1.4 against ladders, more without them).
     public static BattleResult AutoResolve(IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, Rng rng, float edge0 = 1, float wall = 1)
     {
-        float s0 = side0.Sum(Strength) * edge0 * rng.Range(0.85f, 1.15f);
-        float s1 = side1.Sum(Strength) * wall * rng.Range(0.85f, 1.15f);
+        float s0 = side0.Sum(Might) * edge0 * rng.Range(0.85f, 1.15f);
+        float s1 = side1.Sum(Might) * wall * rng.Range(0.85f, 1.15f);
         int t0 = side0.Max(p => p.Tier), t1 = side1.Max(p => p.Tier);
         s0 *= 1 + 0.1f * (t0 - t1);
         int winner = s0 >= s1 ? 0 : 1;
@@ -279,7 +295,7 @@ public static class Rules
                     Math.Clamp(70 + c.Cohesion + moraleBonus + (c.Traits.Contains("Steady") ? 8 : 0) + h.Morale + (siege ? h.SiegeMorale : 0), 20, 100), c.Traits.ToArray(),
                     Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord, Mix: mix.Length > 1 ? mix : null,
                     RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero,
-                    Streamers: c.BattleHonours.Count, Fringe: c.Battles >= 10,
+                    Streamers: c.BattleHonours.Count, Fringe: c.Battles >= 10, Cohesion: c.Cohesion,
                     Named: c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).Select(m => new NamedSpec(m.Id, m.Troop, m.Name)).ToArray() : null);
             }).ToList());
 }

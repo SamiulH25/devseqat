@@ -75,6 +75,14 @@ public partial class Campaign
             if (p == Player) SyncRoll(c, true, foe);
         }
         foreach (var p in side0.Concat(side1)) p.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
+        if (playerIn)
+        {
+            if (r.Duration > 0) RelicSpent(); // a fought battle (an auto-resolve has no length)
+            CompanionsAfterBattle(r, playerTeam); // XP, levels, bonds (Callings.cs, Bonds.cs)
+            CompanionsReact(won ? "won" : "lost");
+            if (r.Omen > 0) { S.Omen += r.Omen; CompanionsReact("craft"); } // craft draws Omen (C2)
+            FormsAfterBattle(r);
+        }
 
         // Aftermath for each party.
         var winners = r.Winner == 0 ? side0 : side1;
@@ -116,6 +124,8 @@ public partial class Campaign
         if (playerIn) RelationsAfterBattle(winners, losers, won);
         var skillsBefore = new Dictionary<string, float>(Captain.Skills);
         if (playerIn) SkillsAfterBattle(r, won, playerTeam == 0 ? startStrength0 : startStrength1, playerTeam == 0 ? startStrength1 : startStrength0, before[Player], playerTeam);
+        if (playerIn) OrderAfterBattle(won, playerTeam == 0 ? side1.ToList() : side0.ToList());
+        if (playerIn) AuraAfterBattle(r, won, (playerTeam == 0 ? startStrength1 : startStrength0) / MathF.Max(1, playerTeam == 0 ? startStrength0 : startStrength1));
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, Rules.PerMan(lostStrength));
         AfterTheBattle(r, lookup, winners, losers, playerIn);
@@ -179,7 +189,7 @@ public partial class Campaign
             Log($"You are taken, and ransomed. Your men regroup at {refuge.Name}.");
         }
         string spoil = won ? BattleSpoil(losers, r) : "";
-        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting,
+        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting, Aura = TakeAuraNews(),
             Goals = r.Goals.Select((id, i) => (i < r.GoalTexts.Count ? r.GoalTexts[i] : Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
             Roll = RollNewsOrdered().Where(n => n.Item1 is not ("HONOUR" or "LOST")).ToList(),
             Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field };
@@ -233,8 +243,8 @@ public partial class Campaign
             else if (Hostile(p, Player) && !Hostile(p, enemy)) setup.Side1.Add(p);
         }
         bool unpaid = S.UnpaidWeeks > 0;
-        setup.Player = WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0)));
-        setup.Enemy = Armies.Divide(Rules.Army(enemy.Name, setup.Side1));
+        setup.Player = WithHeroes(WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0)))); // callings (Callings.cs)
+        setup.Enemy = WithChampion(Armies.Divide(Rules.Army(enemy.Name, setup.Side1)), enemy);
         setup.Seed = BattleSeed(enemy);
         bool scouts = setup.Side0.SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
         setup.Options = new BattleOptions
@@ -252,8 +262,10 @@ public partial class Campaign
             EnemyDamage = Settings.Current.EnemyDamage, EnemyMorale = DuelMoraleFor(enemy),
             Ground = GroundFor(enemy, GroundChooser(enemy, setup.Side0)), // the map's field, the rain, who chose it (Ground.cs)
             EnemyAggression = SideOf(enemy) >= 0 ? Factions.Get(SideOf(enemy)).Aggression : 1.5f, // a realm's temper; brigands do not wait long
+            EnemyAura = ChampionAura(enemy), EnemyForms = ChampionFormsOf(enemy), Madness = MadnessInBattle, // an order knight leads with his aura (K6)
             Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
+            Standing = ActiveBuffs.Concat(RelicReady ? new[] { "relic" } : Array.Empty<string>()).ToArray(), // a shrine's blessing, a feast, hunger (Buffs.cs); your relic (Rites.cs)
         }.WithCaptain(Captain);
         return setup;
     }
@@ -262,6 +274,7 @@ public partial class Campaign
     {
         if (setup.Tournament >= 0) return FinishTournament(r, S.Settlements[setup.Tournament]);
         if (setup.Duel >= 0 && PartyById(setup.Duel) is Party foe) return FinishDuel(r, foe);
+        if (setup.Trial != "") return FinishTrial(r, setup.Trial);
         Encounter = null;
         duelWith = -1;
         var report = Apply(r, setup.Side0, setup.Side1, setup.EnemyName, setup.SiegeOf >= 0);
@@ -272,8 +285,9 @@ public partial class Campaign
 
     public BattleReport AutoResolveEncounter()
     {
+        BreakVow("no_auto", "send your men to fight without you at their head");
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed), Edge(Encounter!));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, (1 + B.AuraWeight * AuraInBattle) * TacticsEdge * BuffEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed), Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }
@@ -293,6 +307,7 @@ public partial class Campaign
         duelWith = -1;
         var e = Encounter!;
         if (Rules.Strength(e) < Rules.Strength(Player)) Count("fled"); // running from a weaker foe is what makes a coward (P4)
+        BreakVow("no_desert", "flee from battle");
         var rear = Player.Companies.Where(c => c.Men > 0).OrderBy(c => c.Type.Mount != null ? 1 : 0).ThenByDescending(c => c.Men).FirstOrDefault();
         if (rear != null)
         {

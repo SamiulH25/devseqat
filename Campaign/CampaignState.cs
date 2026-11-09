@@ -137,11 +137,23 @@ public sealed class TroopStack
 /// A named man of one of your companies (docs/LEGACY.md L1). He is one of the men of the stack of his troop: hurt while
 /// among its wounded. When he leaves the roll he goes to CampaignState.Fallen with how (Fate), where (DiedAt) and his
 /// company (Company, CompanyName), so he is remembered after the company itself is gone.
+/// Your own knight order (docs/KNIGHT_ORDERS.md 8, K8): founded from your company. Its creed (three vows), the form it
+/// teaches, the day it was founded, its knights (named men's ids) and how many grand masters it has had.
+public sealed class FoundedOrder
+{
+    public string Name = "", Form = "", Company = "";
+    public List<string> Vows = new();
+    public List<int> Knights = new();
+    public int Day, Masters = 1;
+}
+
 public sealed class Soldier
 {
     public int Id, Battles, Kills, Wounds, Joined, DiedDay, Company = -1;
     public string Name = "", Troop = "", Fate = "", DiedAt = "", CompanyName = "";
     public bool Hurt;
+    /// Knighted into your own order (docs/KNIGHT_ORDERS.md 8, K8).
+    public bool Knight;
     /// What he is known for, newest last (at most MaxDeeds).
     public List<string> Deeds = new();
     public const int MaxDeeds = 4;
@@ -185,6 +197,8 @@ public sealed class Contract
     public int From = -1;
     /// The next step of a quest of more than one step, put on your list when this one is done.
     public Contract? Then;
+    /// A knight order's contract (K4): the order that gave it ("" = none); done, it raises your standing with the order.
+    public string Order = "";
 }
 
 /// One of your divisions: led by a companion (LeaderChar) or by a company's sergeant (LeaderCompany).
@@ -224,6 +238,8 @@ public sealed class Party
     /// A holdout whose raiders plundered a realm's village is hunted by that realm's lords until HuntedUntil.
     public int HuntedBy = -1;
     public float HuntedUntil;
+    /// A knight order's army (docs/KNIGHT_ORDERS.md 4.3): the order's id, "" for every other party.
+    public string KnightOrder = "";
 
     public int Men => Companies.Sum(c => c.Men);
     public int Wounded => Companies.Sum(c => c.Wounded);
@@ -280,6 +296,28 @@ public sealed class Province
     public List<int> Neighbors = new();
     /// How wet its ground is from recent rain, 0-1 (docs/TERRAIN.md T7; Campaign.RainDaily).
     public float Wet;
+}
+
+/// A knight order on the map (docs/KNIGHT_ORDERS.md 4): its patron realm, chapter house, grand master and commanders,
+/// its standing with you, and how it fares.
+public sealed class OrderState
+{
+    public string Id = "";
+    /// The realm it rides for (-1: none, a free order you can hire) and its chapter house (a settlement id).
+    public int Patron = -1, Chapter = -1;
+    /// Character ids: the grand master and the knight-commanders who lead its armies.
+    public int GrandMaster = -1;
+    public List<int> Commanders = new();
+    /// What the order thinks of you (-100..100) and of the other orders (by order id).
+    public float Standing;
+    public Dictionary<string, float> Regard = new();
+    /// It died out (its patron fell and nobody took it in, or the Black Flame took it).
+    public bool Gone;
+    /// A crusade it has called (docs/KNIGHT_ORDERS.md 4.6): the party it rides against, until when.
+    public int CrusadeOn = -1;
+    public float CrusadeUntil;
+    /// When it next raises a knight-commander's army, and when its chapter next has brothers to spare you (campaign hours).
+    public float NextArmy, NextLevy;
 }
 
 public sealed class FactionState
@@ -370,6 +408,30 @@ public sealed class CaptainState
     /// Perk choices given by rank, free of any branch's 25-point marks (P5: one at Sworn Sword), and the perks taken with them.
     public int FreePerks;
     public List<string> BonusPerks = new();
+    /// The aura (docs/KNIGHT_ORDERS.md 5): tier 0-5, XP towards the next, and the wall (XP full, a trial needed).
+    public int AuraTier;
+    public float AuraXp;
+    public bool AuraWall;
+    /// When a cracked core (the `core` wound, K5) mends of itself.
+    public float CoreUntil;
+    /// The forms you know, in slot order (5.6), and how often each was used (its rank); the Black Flame in you (7).
+    public List<string> Forms = new();
+    public Dictionary<string, int> FormUses = new();
+    public float Corruption;
+    /// The Black Flame (docs/KNIGHT_ORDERS.md 7, K7): the Hollow Crown's pact taken; the highest threshold (25 each) whose
+    /// price you have paid; purged once (no second bargain); how it ended ("" = it has not; "crown" or "burnt").
+    public bool Pact, Purged;
+    public int FlameSeen;
+    public string FlameEnd = "";
+    /// Your knight order (docs/KNIGHT_ORDERS.md 4.5, K4): its id ("" = unsworn), your rank in it (Campaign.OrderRanks, granted
+    /// and so stored), the order deeds you have done, a vow broken and not yet atoned for, and the orders you left or were cast
+    /// out of.
+    public string Order = "";
+    public int OrderRank, OrderDeeds;
+    public bool Penance;
+    public List<string> Forsworn = new();
+    /// Your rival in the order (a knight character id, -1 = none; docs/KNIGHT_ORDERS.md 6.2).
+    public int Rival = -1;
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought
@@ -385,6 +447,13 @@ public sealed class LogEntry
 {
     public double At;
     public string Text = "";
+}
+
+/// A campaign buff: an effect id (Data/effects.json) and the hour it ends.
+public sealed class Buff
+{
+    public string Effect = "";
+    public double Until;
 }
 
 public sealed class CampaignState
@@ -410,6 +479,12 @@ public sealed class CampaignState
     public ulong Rng;
     /// The roll's own stream (L1), so naming men never moves the campaign's main draws.
     public ulong RollRng;
+    /// The knight orders' own random stream (docs/KNIGHT_ORDERS.md), so they move nothing else's draws.
+    public ulong OrderRng;
+    /// The knight orders (docs/KNIGHT_ORDERS.md 4), made on load for saves from before them.
+    public List<OrderState> Orders = new();
+    /// The order you founded (K8); null until then.
+    public FoundedOrder? OwnOrder;
     public float Gold, LastWeekBalance;
     public bool Ironman, GameOver;
     /// Why the campaign ended ("" = the Ironman captain was not ransomed), and whether it was won (5.5; play may go on).
@@ -447,6 +522,14 @@ public sealed class CampaignState
     /// Your deeds for the chronicle and the end summary (S7), what you did counted by kind, and a watchtower's long view.
     public List<LogEntry> Deeds = new();
     public List<int> SitesVisited = new();
+    /// Effects on your company for a while (docs/COMPANIONS_MAGIC.md A5): a shrine's blessing, a feast, hunger, a rite.
+    /// Carried into every battle until they end (Campaign/Buffs.cs).
+    public List<Buff> Buffs = new();
+    /// Omen (C2): craft draws it; it fades a point a day and, past thresholds, draws ill events.
+    public float Omen;
+    /// The day after your last camp rite (one a day), and the relic you carry with its charges (Campaign/Rites.cs).
+    public int RiteDay, RelicCharges;
+    public bool Relic;
     public Dictionary<string, int> Tally = new();
     public float FarSightUntil;
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
@@ -519,16 +602,24 @@ public sealed class CampaignState
 public sealed class Rng
 {
     readonly CampaignState s;
-    readonly bool roll;
+    readonly bool roll, orders;
     public Rng(CampaignState state) { s = state; if (s.Rng == 0) s.Rng = 0x9E3779B97F4A7C15UL ^ (ulong)(uint)s.Seed; }
     /// The roll's stream (CampaignState.RollRng), seeded apart from the main one.
     public Rng(CampaignState state, bool roll) : this(state) { this.roll = roll; if (roll && s.RollRng == 0) s.RollRng = 0xD1B54A32D192ED03UL ^ (ulong)(uint)s.Seed; }
+    /// The knight orders' stream (CampaignState.OrderRng).
+    public static Rng Orders(CampaignState state)
+    {
+        var r = new Rng(state, false, true);
+        if (state.OrderRng == 0) state.OrderRng = 0xA0761D6478BD642FUL ^ (ulong)(uint)state.Seed;
+        return r;
+    }
+    Rng(CampaignState state, bool roll, bool orders) : this(state) { this.roll = roll; this.orders = orders; }
 
     public ulong NextU()
     {
-        ulong x = roll ? s.RollRng : s.Rng;
+        ulong x = orders ? s.OrderRng : roll ? s.RollRng : s.Rng;
         x ^= x >> 12; x ^= x << 25; x ^= x >> 27;
-        if (roll) s.RollRng = x; else s.Rng = x;
+        if (orders) s.OrderRng = x; else if (roll) s.RollRng = x; else s.Rng = x;
         return x * 0x2545F4914F6CDD1DUL;
     }
 
@@ -560,6 +651,17 @@ public sealed class Balance
     public float CompanySlotsBase = 10, MenBase = 40, MenRenownDivisor = 5;
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
     public float ArmyScale = 3;
+    /// How much drill adds to a company's strength in auto-resolve (Rules.Might): x(1 + this x drill). Fought battles
+    /// reward drill (docs/MELEE.md D8); --agree measures it (5: equal-might fights one to four tiers apart near a coin toss).
+    public float DrillWeight = 5;
+    /// How much a tier V-VII troop's attack style and passive traits add to its strength in auto-resolve, per style rank
+    /// (1-3 at tiers V-VII): x(1 + this x rank). --agree measures it (docs/COMPANIONS_MAGIC.md D5).
+    public float TraitWeight = 0.1f;
+    /// What an aura tier adds to the side its holder leads in auto-resolve (you, or an order knight leading his army): x(1 +
+    /// this x tier). Worth a company, never an army (docs/KNIGHT_ORDERS.md 5.7, K6).
+    public float AuraWeight = 0.03f;
+    /// A feast in town, crowns a man (docs/COMPANIONS_MAGIC.md A5).
+    public float FeastPerMan = 6;
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).
     public int RollSize = 6;
     public float VeteranSurvival = 0.6f;

@@ -10,6 +10,8 @@ public struct PlayerInput
     public float Facing;      // where the player looks (and strikes)
     public AttackDir Dir;     // attack / block direction, picked by mouse movement
     public bool Sprint, Attack, Block, Rally, Couch, Mount, Bash, Swap;
+    public bool Aura;         // held: the aura blade burns (docs/KNIGHT_ORDERS.md K1)
+    public bool Form1, Form2, Form3, Great; // pressed: a form (K2)
 }
 
 public sealed class Projectile
@@ -210,6 +212,9 @@ public sealed partial class Battle
         Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34 - Back));
         Player.IsPlayer = Player.IsLeader = true;
         SetupCaptain();
+        SetupAura();
+        SetupForms();
+        SetupChampion();
         Player.Facing = Player.Heading = MathHelper.PiOver2;
         eGuard = AddSquad(1, Options.EnemyLeader ?? UnitType.Captain, 1, new(0, scripted ? 80 : 34 + Back), 1, -Vector2.UnitY);
         EnemyCaptain = eGuard.Units[0];
@@ -251,6 +256,14 @@ public sealed partial class Battle
             h.Heading = h.Facing;
             s.Units.Add(h);
         }
+        s.Drill = DrillOf(s, company);
+        LearnSpells(s, company);
+        // Standing effects for the battle: the campaign's on your side (A5), and the company's own (its hero's calling, C1).
+        if (team == 0) foreach (var id in Options.Standing) StandEffect(s, id);
+        foreach (var id in company?.Standing ?? Array.Empty<string>()) StandEffect(s, id);
+        if (s.StandingIds.Count > 0) { anyAura = true; RefreshMods(s); }
+        s.Id = Squads.Count;
+        s.Alive = s.Units.Count; // standing from the start, so a charge ordered before the first tick keeps its target
         if (s.Swarm) s.Formation = Formation.Loose; // goblins come on as a mob
         if (team == 0 && company?.Has("Household") == true) s.Order = Order.Follow; // the household guard keeps at your side (P5)
         Squads.Add(s);
@@ -261,8 +274,9 @@ public sealed partial class Battle
     public Unit Spawn(UnitType t, int team, Squad? s, Vector2 pos)
     {
         var u = new Unit { Type = t, Index = Units.Count, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
-            Palette = Options.Palette[Math.Clamp(team, 0, 1)] };
+            Palette = Options.Palette[Math.Clamp(team, 0, 1)], Grit = GritOf(Units.Count), Mods = t.Mods };
         if (t.Mount != null && !Options.Siege) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; } // assaults are fought on foot
+        anyAura |= t.HasAura;
         Units.Add(u);
         return u;
     }
@@ -293,6 +307,8 @@ public sealed partial class Battle
             if (Options.AutoPlayer || Squads.Any(q => q.AiControlled && q.Alive > 0)) General(0);
         }
         UpdateDivisions();
+        UpdateEffects();
+        UpdateAbilities(dt);
         Batter(dt);
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
         RaiseDead(dt);
@@ -321,6 +337,7 @@ public sealed partial class Battle
         Braces();
         Lances();
         Mark(6);
+        UpdateChampion(dt);
         UpdateArrows(dt);
         Mark(7);
         UpdateMorale(dt);
@@ -380,8 +397,11 @@ public sealed partial class Battle
         foreach (var u in s.Units) if (u.Active && !u.Routing) n++;
         s.Alive = n;
         if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); }
-        int i = 0;
-        foreach (var u in s.Units) if (u.Active && !u.Routing) { u.Slot = s.Slot(i++, n); }
+        Tactics(s);     // its own wits: refuse a flank, wrap, re-form (BattleTactics.cs)
+        PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
+        Close(s, dt);   // a charging company closes as a body
+        UpdateFormed(s, dt); // its order: lost and won back (BattleDrill.cs)
+        if (tick % 60 == 0) BreakRanks(s); // rabble that will not wait
     }
 
     /// Nearest active, non-routing enemy; restricted to squad `only` when given.
@@ -415,9 +435,10 @@ public sealed partial class Battle
         u.Action = UnitAction.Windup;
         u.ActionTimer = u.Type.Windup;
         u.Target = target;
-        u.Swing = RandomSwing(u);
+        u.Swing = StyleSwing(u) ?? RandomSwing(u);
         u.Face(target.Pos - u.Pos);
         u.Stamina = MathF.Max(0, u.Stamina - 3);
+        StyleSwingStarts(u);
     }
 
     /// Reserves march on when the side's strength on the field drops: from behind its own lines.
@@ -477,7 +498,7 @@ public sealed partial class Battle
         int horses = LooseHorses.Count(h => h.Team == 1);
         return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills, SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes)
         {
-            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(), GoalTexts = Goals.Select(GoalText).ToList(),
+            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(), GoalTexts = Goals.Select(GoalText).ToList(), Omen = OmenRaised, FormUses = new Dictionary<string, int>(FormUses), Corruption = CorruptionRaised, MadSpells = MadSpells,
         };
     }
 

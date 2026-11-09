@@ -72,6 +72,8 @@ partial class BattleScreen
             Rally = ctl.Pressed(Act.Rally),
             Bash = ctl.Pressed(Act.Bash),
             Swap = ctl.Pressed(Act.SwapWeapon),
+            Aura = IsActive && !wheelOpen && ctl.Down(Act.AuraBlade),
+            Form1 = ctl.Pressed(Act.Form1), Form2 = ctl.Pressed(Act.Form2), Form3 = ctl.Pressed(Act.Form3), Great = ctl.Pressed(Act.GreatForm),
         };
     }
 

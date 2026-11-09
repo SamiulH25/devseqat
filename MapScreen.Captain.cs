@@ -149,6 +149,73 @@ partial class MapScreen
         }
     }
 
+    /// The aura (docs/KNIGHT_ORDERS.md 5): tier, XP to the next, the wall and what the tier gives. Returns the next y.
+    int AuraBlock(Rectangle c, int y)
+    {
+        var cap = C.Captain;
+        ui.Divider(c.X, y, c.Width, Kit.Gilt * 0.6f); y += ui.U(12);
+        ui.Text("AURA", c.X, y, Style.Dim, 1);
+        ui.TextR(Campaign.AuraName(cap.AuraTier).ToUpperInvariant(), c.Right, y, cap.AuraTier > 0 ? Style.Aura : Style.Dim, 1); y += ui.U(11);
+        float need = C.AuraNeed;
+        ui.Pips(new Rectangle(c.X, y, c.Width, ui.U(7)), need <= 0 ? 1 : cap.AuraXp / need, cap.AuraWall ? Style.Warn : Style.Aura, 10); y += ui.U(12);
+        string line = cap.AuraWall ? $"A WALL. A TRIAL WILL BREAK IT: {Campaign.TrialsFor(cap.AuraTier)}." : Campaign.AuraGifts[Math.Clamp(cap.AuraTier, 0, Campaign.AuraTop)].ToUpperInvariant();
+        if (cap.Wounds.Contains("core")) line = "YOUR CORE IS CRACKED: YOU FIGHT A TIER LOWER. " + line;
+        foreach (var l in ui.Wrap(line, c.Width)) { ui.Text(l, c.X, y, cap.AuraWall ? Style.Warn : Style.Dim * 0.8f, 1); y += ui.U(11); }
+        return FormList(c, FlameBlock(c, y));
+    }
+
+    /// The Black Flame (docs/KNIGHT_ORDERS.md 7, K7): corruption, and the buttons to burn through a wall or purge it. Returns the next y.
+    int FlameBlock(Rectangle c, int y)
+    {
+        var cap = C.Captain;
+        if (!cap.Pact && cap.Corruption <= 0) return y + ui.U(4);
+        y += ui.U(4);
+        ui.Text("BLACK FLAME", c.X, y, Style.Bad, 1);
+        ui.TextR($"{cap.Corruption:0} OF 100", c.Right, y, Style.Bad, 1); y += ui.U(11);
+        ui.Pips(new Rectangle(c.X, y, c.Width, ui.U(5)), cap.Corruption / 100f, Style.Bad, 4); y += ui.U(9);
+        int w = (c.Width - ui.U(6)) / 2, h = ui.U(18);
+        if (cap.Pact)
+        {
+            string? burn = C.CannotBurnWall();
+            var br = new Rectangle(c.X, y, w, h);
+            if (ui.Button(br, "BURN THE WALL", burn == null)) note = C.BurnWall() ?? "";
+            if (ui.Hover(br)) ui.Tooltip(br.Center.X, br.Y - ui.U(2), "BURN THROUGH THE WALL", ui.Wrap($"NO TRIAL: A TIER NOW, AND {Campaign.BurnCost:0} MORE CORRUPTION. {burn ?? "YOU CAN DO IT NOW"}.", ui.U(180)).ToArray());
+        }
+        string? purge = C.CannotPurge();
+        var pr = new Rectangle(c.Right - w, y, w, h);
+        if (ui.Button(pr, "PURGE IT", purge == null)) note = C.Purge() ?? "";
+        if (ui.Hover(pr)) ui.Tooltip(pr.Center.X, pr.Y - ui.U(2), "PURGE THE FLAME", ui.Wrap($"ONCE ONLY. THE PACT AND ITS FORMS GO, CORRUPTION FALLS BY {Campaign.PurgeOff:0}, AND YOUR AURA DROPS A TIER. {purge ?? "YOU CAN DO IT NOW"}.", ui.U(180)).ToArray());
+        return y + h + ui.U(6);
+    }
+
+    /// The forms you know (K2): those in battle slots with their keys, the rest dim. Click one to put it in the first slot.
+    int FormList(Rectangle c, int y)
+    {
+        var cap = C.Captain;
+        if (cap.Forms.Count == 0) return y;
+        var slotted = Campaign.SlottedForms(cap);
+        var keys = new[] { Act.Form1, Act.Form2, Act.Form3 };
+        int n = 0;
+        foreach (var id in cap.Forms.Where(Forms.Has))
+        {
+            if (y > c.Bottom - ui.U(24)) break;
+            var f = Forms.Get(id);
+            bool on = slotted.Contains(id);
+            string key = !on ? "" : f.Great ? ctl.Name(Act.GreatForm) : ctl.Name(keys[Math.Min(2, n++)]);
+            var row = new Rectangle(c.X, y - ui.U(1), c.Width, ui.U(11));
+            bool hover = ui.Hover(row);
+            if (hover) ui.Rect(row, Kit.Mul(Style.Aura, 0.15f));
+            ui.Text(key, c.X, y, Kit.Gilt, 1);
+            int rank = Campaign.FormRank(cap, id);
+            ui.TextFit($"{f.Name.ToUpperInvariant()}{(rank > 1 ? $" {Style.Numerals[rank]}" : "")}", c.X + ui.U(14), y, c.Width - ui.U(40), on ? Style.Aura : Style.Dim, 1);
+            ui.TextR($"{f.Aura:0}", c.Right, y, Style.Dim, 1);
+            if (hover) ui.Tooltip(row.Center.X, row.Y - ui.U(2), f.Name.ToUpperInvariant(), ui.Wrap(f.Line.ToUpperInvariant() + (on ? "" : " CLICK TO PUT IT IN THE FIRST SLOT."), ui.U(180)).ToArray());
+            if (ui.Clicked(row)) note = C.SlotForm(id) ?? "";
+            y += ui.U(12);
+        }
+        return y + ui.U(4);
+    }
+
     /// The captain's record: days, fights, kills, holdings, health, and how each skill rises.
     void CaptainRecord(Rectangle c)
     {
@@ -174,6 +241,7 @@ partial class MapScreen
         ui.Text("HEALTH", c.X, y, Style.Dim, 1);
         ui.TextR(hurt > 0 ? $"WOUNDED {hurt:0.0} DAYS" : "HALE", c.Right, y, hurt > 0 ? Style.Warn : Style.Ok, 1); y += ui.U(11);
         ui.Gauge(new Rectangle(c.X, y, c.Width, ui.U(7)), hurt > 0 ? 0.35f : 1, hurt > 0 ? Style.Warn : Style.Ok); y += ui.U(16);
+        y = AuraBlock(c, y);
         ui.Divider(c.X, y, c.Width, Kit.Gilt * 0.6f); y += ui.U(12);
         ui.Text("PERKS TAKEN", c.X, y, Kit.Gilt, 1); y += ui.U(13);
         foreach (var id in cap.Perks)

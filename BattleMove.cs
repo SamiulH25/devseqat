@@ -18,7 +18,9 @@ public partial class Battle
             }
             else u.Vel = u.Wish * (u.Squad is { } fs && !u.Routing && fs.Order != Order.Charge ? fs.Pace : 1) * (u.Mounted ? 1 : Fatigue(u));
             u.Slope = Slope(Terrain, u.Pos, u.Vel);
-            u.GroundPace = SlopeFactor(u.Slope, u.Mounted) * GroundSpeed(u); // the ground and the slope set the pace
+            float pace = SlopeFactor(u.Slope, u.Mounted) * GroundSpeed(u); // the ground and the slope set the pace
+            if (pace < 1) pace += (1 - pace) * u.Mods.Footing;              // sure-footed men shrug off part of it
+            u.GroundPace = pace * (1 + u.Mods.Speed);
             if (u.Mounted) Stumble(u, dt);
             u.Vel *= u.GroundPace;
             u.Pos += u.Vel * dt;

@@ -18,7 +18,10 @@ partial class Campaign
         new("eye", "Lost Eye", "PARRY WINDOW 0.05 S SHORTER"),
     };
 
-    public static WoundDef? WoundOf(string id) => LastingWounds.FirstOrDefault(w => w.Id == id);
+    /// A trial failed (K5): the aura held a tier down until it mends (Campaign/Aura.cs); not drawn from a fall.
+    public static readonly WoundDef CoreWound = new("core", "Cracked Core", "YOUR AURA FIGHTS A TIER LOWER UNTIL IT MENDS");
+
+    public static WoundDef? WoundOf(string id) => id == "core" ? CoreWound : LastingWounds.FirstOrDefault(w => w.Id == id);
 
     /// Medicine lowers the odds (to half at 100), and so does a surgeon riding with you.
     public float LastingWoundOdds => LastingWoundChance * (1 - Skill("Medicine") / 200f) * (HasCompanion("Surgeon") ? 0.5f : 1);

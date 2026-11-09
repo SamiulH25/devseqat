@@ -117,6 +117,8 @@ public sealed partial class Battle
                 if (l2 >= r * r) continue;
                 if (l2 < 1e-6f) { d = new Vector2(0.01f, 0); l2 = 1e-4f; }
                 float l = MathF.Sqrt(l2), mb = BodyMass(b);
+                if (a.Team != b.Team) { ma = BodyMass(a) * Footing(a); mb *= Footing(b); } // a man holding his place in the ranks is hard to shove
+                else ma = BodyMass(a);
                 var n = d / l;
                 var push = n * (r - l);
                 a.Pos -= push * (mb / (ma + mb));

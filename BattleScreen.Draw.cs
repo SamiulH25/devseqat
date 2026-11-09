@@ -411,6 +411,96 @@ partial class BattleScreen
         }
     }
 
+    /// Spell colours by tradition: faith gold, craft violet, necromancy sick green, a companion's steel.
+    static Color SpellColor(string tradition) => tradition switch
+    {
+        "faith" => new Color(250, 222, 130), "craft" => new Color(190, 130, 255), "necromancy" => new Color(140, 230, 120), _ => new Color(220, 228, 240),
+    };
+
+    /// Casts on their way (a ring closing on the spot, your warning to move) and spell fields (a slow ring at their edge).
+    void Spells()
+    {
+        float t = battle.Time;
+        foreach (var c in battle.Casts)
+        {
+            float k = Math.Clamp((t - c.Started) / MathF.Max(0.1f, c.FireAt - c.Started), 0, 1);
+            float r = MathF.Max(1, c.A.Radius) * (1.6f - 0.6f * k);
+            var col = Color.Lerp(SpellColor(c.A.Tradition), Color.White, k);
+            Ring(c.At, r, col, 16);
+            if (c.A.Kind is "attack" or "bolt") Ring(c.At, r * 0.5f, col, 10);
+        }
+        foreach (var f in battle.Fields)
+        {
+            var col = f.Effect?.Harmful == true ? new Color(240, 120, 80) : SpellColor(f.A.Tradition);
+            float pulse = 0.96f + 0.04f * MathF.Sin((t - f.Started) * 2);
+            Ring(f.Pos, f.Radius * pulse, col, 20);
+        }
+        AuraGlow();
+    }
+
+    /// The captain's aura (docs/KNIGHT_ORDERS.md K1): the lit blade as a streak along the facing, aura armour as a shimmer.
+    void AuraGlow()
+    {
+        var p = battle.Player;
+        float t = battle.Time, pulse = 0.85f + 0.15f * MathF.Sin(t * 9);
+        ChampionGlow(pulse);
+        if (battle.AuraTier > 0 && p.Active) PlayerGlow(p, t, pulse);
+        PendingFormsDrawn(t);
+    }
+
+    /// An enemy champion's aura (K6): his lit blade in a cold colour, his aura armour as a ring.
+    void ChampionGlow(float pulse)
+    {
+        var c = battle.EnemyCaptain;
+        if (battle.FoeTier <= 0 || !c.Active) return;
+        var col = Color.Lerp(Style.Foe, Color.White, 0.35f * pulse);
+        if (battle.FoeTier >= 2 && battle.FoeAura >= Battle.AuraLow && c.EnemyDist < 4)
+        {
+            float lift = c.Mounted ? 1.2f : 0;
+            Line(G(c.Pos + c.Dir * 0.35f, 1.25f + lift), G(c.Pos + c.Dir * (c.Type.Reach + 0.3f), 1.0f + lift), col);
+        }
+        if (battle.FoeTier >= 3 && battle.FoeAura >= Battle.AuraLow) Ring(c.Pos, 0.9f * pulse, Color.Lerp(Style.Foe, Color.Black, 0.35f), 12);
+    }
+
+    void PlayerGlow(Unit p, float t, float pulse)
+    {
+        if (battle.AuraBlade)
+        {
+            float lift = p.Mounted ? 1.2f : 0;
+            var from = p.Pos + p.Dir * 0.35f;
+            var to = p.Pos + p.Dir * (p.Type.Reach + 0.3f);
+            var col = Color.Lerp(Style.Aura, Color.White, 0.3f * pulse);
+            Line(G(from, 1.25f + lift), G(to, 1.0f + lift), col);
+            Line(G(from, 1.2f + lift), G(to, 0.95f + lift), col);
+        }
+        if (battle.AuraTier >= 3 && !battle.Spent) Ring(p.Pos, 0.9f * pulse, Color.Lerp(Style.Aura, Color.Black, 0.35f), 12);
+        if (battle.Guarding) Ring(p.Pos + p.Dir * 0.7f, 0.6f, Color.White, 8);
+        if (battle.AuraTier >= 4 && !battle.Spent) Ring(p.Pos, Battle.PresenceRadius * (0.96f + 0.04f * MathF.Sin(t * 2)), Color.Lerp(Style.Aura, Color.Black, 0.6f), 40);
+    }
+
+    /// Thrown forms on their way, yours and a champion's (K2, K6).
+    void PendingFormsDrawn(float t)
+    {
+        // Thrown forms on their way (K2): a slash as a fan of streaks closing ahead, a volley as a ring on its spot, a shot as a line.
+        foreach (var pf in battle.PendingForms)
+        {
+            float k = Math.Clamp((t - pf.Started) / MathF.Max(0.05f, pf.At - pf.Started), 0, 1);
+            var col = Color.Lerp(pf.Foe ? Style.Foe : Style.Aura, Color.White, k);
+            var side = new Vector2(-pf.Dir.Y, pf.Dir.X);
+            switch (pf.F.Kind)
+            {
+                case "volley": Ring(pf.From + pf.Dir * pf.F.Range, pf.F.Radius * (1.5f - 0.5f * k), col, 16); break;
+                case "shot": Line(G(pf.From, 1.3f), G(pf.From + pf.Dir * pf.F.Range, 1.0f), col); break;
+                default:
+                    float reach = pf.F.Range * k, w = pf.F.Radius + reach * 0.25f;
+                    var tip = pf.From + pf.Dir * reach;
+                    Line(G(tip - side * w, 1.0f), G(tip + side * w, 1.0f), col);
+                    Line(G(pf.From, 1.1f), G(tip, 1.0f), Color.Lerp(col, Color.Black, 0.4f));
+                    break;
+            }
+        }
+    }
+
     static readonly Color RouteGilt = new(244, 214, 120);
 
     /// The order's way round as a dotted line on the ground: short dashes every other step.
@@ -425,6 +515,38 @@ partial class BattleScreen
         }
     }
 
+    /// A company's own plan on the ground (docs/MELEE.md D7): swinging onto a flank, a dashed hook to where its front will
+    /// stand; wrapping, a dashed hook forward from each end of its line.
+    void PlanHook(Squad s)
+    {
+        if (s.Plan != Plan.Flank || s.Foe is not { Alive: > 0 } foe || s.Alive == 0) return;
+        void Dashes(Vector2 a, Vector2 b, Vector2 c)
+        {
+            // A curve a -> c bending through b, every other step drawn; an arrowhead at c.
+            Vector2 At(float t) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * b + t * t * c;
+            for (int i = 0; i < 10; i += 2) Line(G(At(i / 10f), 0.25f), G(At((i + 1) / 10f), 0.25f), RouteGilt);
+            var d = c - At(0.9f);
+            if (d.LengthSquared() < 1e-4f) return;
+            d = Vector2.Normalize(d);
+            var n = new Vector2(-d.Y, d.X);
+            Line(G(c, 0.25f), G(c - d * 1.2f + n * 0.7f, 0.25f), RouteGilt);
+            Line(G(c, 0.25f), G(c - d * 1.2f - n * 0.7f, 0.25f), RouteGilt);
+        }
+        if (s.Bend > 0)
+        {
+            var rt = new Vector2(-s.Front.Y, s.Front.X);
+            float half = (Math.Clamp(s.Columns, 1, Math.Max(1, s.Alive)) - 1) / 2f * s.Spacing;
+            foreach (float side in new[] { -1f, 1f })
+            {
+                var end = s.Anchor + rt * side * half;
+                Dashes(end, end + s.Front * 3, end + s.Front * 3.5f - rt * side * 2.5f);
+            }
+            return;
+        }
+        var (at, face) = Battle.FlankPoint(s, foe, 1.5f);
+        Dashes(s.FrontPos, Vector2.Lerp(s.FrontPos, at, 0.5f) - face * 4, at + face * 1.5f);
+    }
+
     void DrawLines()
     {
         lines.N = 0;
@@ -436,7 +558,9 @@ partial class BattleScreen
             if (a.Stuck < 0 && quality != Quality.Low) Line(a.Pos - dir * 0.8f, a.Pos - dir * 2.4f, ArrowStreak); // a faint streak behind it in flight
         }
         Stakes();
+        Spells();
         RouteDots();
+        foreach (var s in selected) PlanHook(s);
         foreach (var s in selected)
         {
             // A company just chosen: its rings swell once, so you see which it was.

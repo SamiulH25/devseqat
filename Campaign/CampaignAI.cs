@@ -26,6 +26,13 @@ public partial class Campaign
             string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, 7), faction);
             lord.Companies.Add(NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.7f, 1f)), 0, home));
         }
+        // Mages are super units: only a great lord (army level 5 up), one in five, brings a circle of his realm's mages (E1); no
+        // dice, so the campaign's draws stay as they were.
+        if (tier >= 5 && lord.Id % 5 == 0)
+        {
+            string mage = Armies.MageTroop(Factions.CultureOf(faction), tier - 1);
+            lord.Companies.Add(NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0, home));
+        }
         S.Parties.Add(lord);
     }
 
@@ -76,6 +83,15 @@ public partial class Campaign
             m.Name = Rules.CompanyName(rng, role);
             t.Mercenaries.Add(m);
         }
+        // Mages are rare: a town with a chapel, or a shrine or hermit near it, has a circle to hire one week in six (its own
+        // week, no dice); Acolytes at first, from day 60 its culture's mages (E1).
+        if ((Level(t, "chapel") > 0 || Sites.Any(x => x.Kind is "shrine" or "hermit" && Vector2.Distance(x.Pos, t.Pos) < 40)) && (t.Id + Day / 7) % 6 == 0)
+        {
+            string mage = Day >= 60 ? Armies.MageTroop(t.Culture, 4) : "acolytes";
+            var m = NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0);
+            m.Name = Day >= 60 ? $"The {t.Name} {Troops.Get(mage).Name}" : $"Acolytes of {t.Name}";
+            t.Mercenaries.Add(m);
+        }
         // Now and then a few ogres sell their clubs (docs/CREATURES.md phase 4): costly, and the only big beasts for hire.
         if (rng.Chance(B.OgreOfferChance))
         {
@@ -88,7 +104,8 @@ public partial class Campaign
     IEnumerable<Party> Visible(Party p, float range) => S.Parties.Where(q => q != p && !q.Down && Vector2.Distance(p.Pos, q.Pos) < range);
 
     /// Lords of a realm whose temper sends them after monsters first (docs/WORLD.md W5).
-    bool MonsterHunter(Party p) => p.Faction >= 0 && Factions.Get(p.Faction).Hunts == "monsters";
+    /// A knight order's armies hunt what their order hunts: monsters and the dead (docs/KNIGHT_ORDERS.md 4.4).
+    bool MonsterHunter(Party p) => p.Faction >= 0 && Factions.Get(p.Faction).Hunts == "monsters" || OrderOf(p)?.Hunts is "monsters" or "undead";
 
     internal void LordThink(Party p)
     {
@@ -110,6 +127,7 @@ public partial class Campaign
             p.SiegeTarget = -1;
             p.Task = "flee"; p.ChaseId = -1; p.Goal = home.Pos; p.Moving = true; p.TaskUntil = (float)S.Hours + 3;
         }
+        else if (!needsRefit && OrderMarches(p)) { } // a crusade, or riding with you as its grand master (K6)
         else if (p.SiegeTarget >= 0)
         {
             p.Task = "siege"; p.ChaseId = -1; p.Moving = false; p.TaskUntil = (float)S.Hours + 4;
@@ -180,6 +198,7 @@ public partial class Campaign
         float budget = Math.Clamp(share, 0, 250 * Map.PartyScale);
         string levy = RecruitTroop(p.Faction);
         if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", Scaled(12), 0, home)); // the lord's household, raised again
+        if (p.KnightOrder != "") RefitOrder(p, home); // a knight order's own brothers come from its chapter
         foreach (var v in S.Settlements.Where(v => v.Province == home.Province))
         {
             int affordable = (int)((p.Gold + budget) / Rules.PerMan(10));
@@ -243,13 +262,14 @@ public partial class Campaign
             float income = S.Settlements.Where(t => t.Faction == f && t.Owner != Player.Id).Sum(Income);
             fs.Treasury += income / 7;
             var lords = S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).ToList();
+            int orderArmies = lords.Count(p => p.KnightOrder != ""); // the knight orders' armies ride with the realm but are not its lords
             // A realm raises lords with the ground it holds: more provinces, more armies, but never more than the seats (and
             // their villages' recruits) can actually pay for, or the chest is bled dry fielding companies that starve.
             int seatsHeld = S.Settlements.Count(s => s.Faction == f && s.Kind != SettlementKind.Village && s.Owner != Player.Id);
             int affordable = Math.Max(1, seatsHeld * 2 + 2);
             int wanted = Math.Min(LordsWanted, affordable);
             // Keep a reserve in the chest before a new lord is raised, so a run of defeats does not leave the realm broke.
-            if (lords.Count < wanted && fs.Treasury >= 600 + 400) { SpawnLord(f); fs.Treasury -= 600; }
+            if (lords.Count - orderArmies < wanted && fs.Treasury >= 600 + 400) { SpawnLord(f); fs.Treasury -= 600; }
             var front = S.Provinces.Where(p => p.Faction == f && p.Neighbors.Any(n => FactionsAtWar(f, S.Provinces[n].Faction))).ToList();
             var enemyFront = S.Provinces.Where(p => FactionsAtWar(f, p.Faction) && p.Neighbors.Any(n => S.Provinces[n].Faction == f)).ToList();
             var idle = lords.Where(l => !l.Down && l.Task == "patrol" && !(IsVassal(l) && l.Order is "defend" or "follow")).ToList();

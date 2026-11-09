@@ -78,7 +78,7 @@ public partial class Battle
         var list = squads.ToList();
         var at = list.Count > 0 ? list.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / list.Count : centroid[team];
         var d = new Division(team, Divisions.Count, name, temper, skill, goal ?? new Goal(GoalKind.Hold, at));
-        foreach (var s in list) { d.Squads.Add(s); s.Division = d; }
+        foreach (var s in list) { d.Squads.Add(s); s.Division = d; if (!s.Swarm) s.Drill = MathF.Min(1, s.Drill + Math.Clamp(skill, 0, 10) * 0.01f); } // a sergeant drills his men
         d.Leader = leader ?? PickLeader(d);
         if (d.Leader != null) d.Leader.Sergeant = true;
         Divisions.Add(d);
@@ -411,6 +411,7 @@ public partial class Battle
     /// One company to its place: an order to hold there (moved only when the place changes, so the men do not shuffle).
     static void Place(Squad s, Vector2 anchor, Vector2 front)
     {
+        if (s.BrokeRanks) return; // it has broken ranks and charged: it comes back when it has re-formed
         if (s.Order != Order.Hold || Vector2.DistanceSquared(s.Anchor, anchor) > 2.25f || Vector2.Dot(s.Front, front) < 0.98f)
         {
             s.Order = Order.Hold;

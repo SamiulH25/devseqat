@@ -6,11 +6,24 @@ public sealed class BattleOptions
     /// Most men on the field at once (both sides together); the rest wait as reinforcements.
     public int Cap = 400;
     public float AuraRadius = 12, RallyBonus = 25, RallyCooldown = 12;
+    /// Effects on every company of your side for the whole battle (campaign buffs: a shrine's blessing, a feast, hunger; A5).
+    public string[] Standing = Array.Empty<string>();
     /// Your Arms skill (0-100; a new captain has 15): quicker blows, a wider parry window, less stamina a swing (P2).
     public float Arms = 15;
     /// Your Riding and Bowcraft skills (P3; a new captain has 5) and the perks you hold that act in battle.
     public float Riding = 5, Bowcraft = 5;
     public HashSet<string> Perks = new();
+    /// The captain's aura tier (docs/KNIGHT_ORDERS.md 5.1): 0 unawakened, 1 kindled, 2 aura blade, 3 aura armour, 4 master, 5 transcendent.
+    public int AuraTier;
+    /// The captain's forms in slot order (docs/KNIGHT_ORDERS.md 5.6): the first three that are not great go on U, I, O; the first
+    /// great one on L. Their ranks (1-3) by id.
+    public string[] Forms = Array.Empty<string>();
+    public Dictionary<string, int> FormRanks = new();
+    /// The enemy leader's aura tier and forms (an order knight, a champion: docs/KNIGHT_ORDERS.md 6.1, K6; BattleChampion.cs).
+    public int EnemyAura;
+    public string[] EnemyForms = Array.Empty<string>();
+    /// The Black Flame's hold on you (docs/KNIGHT_ORDERS.md 7, K7): a chance a second that it takes you (0 = never; BattleFlame.cs).
+    public float Madness;
     /// The captain's lasting wounds (P4); the battle reads "eye" (a shorter parry window).
     public HashSet<string> Wounds = new();
     /// Iron Will perk: companies near you will not rout while a third of them stand.
@@ -108,4 +121,11 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     public IReadOnlyList<string> GoalsMet { get; init; } = Array.Empty<string>();
     /// Each goal's text as shown (a goal about a named man carries his name), in the order of Goals.
     public IReadOnlyList<string> GoalTexts { get; init; } = Array.Empty<string>();
+    /// Omen your side's craft raised (docs/COMPANIONS_MAGIC.md C2).
+    public float Omen { get; init; }
+    /// Uses of each of your forms (they rank up on the map) and the Black Flame's corruption raised (docs/KNIGHT_ORDERS.md).
+    public IReadOnlyDictionary<string, int> FormUses { get; init; } = new Dictionary<string, int>();
+    public float Corruption { get; init; }
+    /// How often the Black Flame took you this battle (K7).
+    public int MadSpells { get; init; }
 }

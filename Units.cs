@@ -2,7 +2,8 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-public enum UnitClass { Infantry, Archer, Skirmisher, Captain, Cavalry }
+/// Caster: a mage (docs/COMPANIONS_MAGIC.md E1): poor in melee, casts the spells in `UnitType.Spells` (BattleAbilities.cs).
+public enum UnitClass { Infantry, Archer, Skirmisher, Captain, Cavalry, Caster }
 public enum UnitAction { None, Windup, Recover, Block, Stagger }
 
 /// Swing direction, named from the attacker's side (Left = the blade comes from the attacker's left).
@@ -61,6 +62,8 @@ public sealed class UnitType
     /// A culture id from Data/factions.json, "common" (open to every culture) or "wild" (creatures).
     /// "wild" is a creature (docs/CREATURES.md): never recruited from a village and outside every upgrade tree.
     public string Culture = "common";
+    /// A knight order's signature troop (docs/KNIGHT_ORDERS.md 4.1): its order id, "" for every other troop.
+    public string Order = "";
     /// What a wild troop is ("goblin"); empty for men.
     public string Breed = "";
     public UnitClass Class;
@@ -69,6 +72,8 @@ public sealed class UnitType
     public float MaxHp, Damage, Armor, Reach, Windup, Recover, Speed, BlockChance, Range, VsMounted = 1, Pierce, Reload = 1;
     /// Damage against creatures (wild troops), like VsMounted against riders. Above 1, a monster's fear does not reach them.
     public float VsMonster = 1;
+    /// Drill (docs/MELEE.md D1) when the troop data sets it (0-1); -1: from its tier.
+    public float Drill = -1;
     /// Drawn size (1 = a man). Goblins are small, bosses and trolls big.
     public float Size = 1;
     /// Creature traits (docs/CREATURES.md): "craven" (breaks early, rallies again and again while its boss lives),
@@ -90,6 +95,18 @@ public sealed class UnitType
     public bool Leader;
     /// A spear that only thrusts (the captain's boar spear): every swing is a thrust.
     public bool ThrustOnly;
+    /// How this troop's blows land (docs/COMPANIONS_MAGIC.md D2): tiers V-VII only, from the weapon unless troops.json
+    /// names one (`attack`); StyleRank 1-3 for tiers V-VII (0: no style).
+    public AttackStyle Style;
+    public int StyleRank;
+    /// Passive traits (effect ids, docs/COMPANIONS_MAGIC.md D3): from the archetype unless troops.json names them
+    /// (`passives`); weighed by tier (`Battle.PassiveWeight`). Mods = their fixed totals; HasAura: one reaches companies.
+    public string[] Passives = Array.Empty<string>();
+    public Mods Mods;
+    public bool HasAura;
+    /// A caster's spells (ability ids from Data/abilities.json, BattleAbilities.cs): tier IV knows one, V two, VI all three
+    /// and its tradition's great working.
+    public string[] Spells = Array.Empty<string>();
     public Mount? Mount;
     public Look Look = null!;
 
@@ -156,6 +173,19 @@ public sealed class Unit
     public float CavTimer, Bogged, ImpactCd, BraceCd;
     /// Last tick's ground and slope on his pace (1 = level grass), and the slope along his way (rise a metre, negative downhill; BattleMove.cs).
     public float GroundPace = 1, Slope;
+    /// His place in the company's ranks (BattleRanks.cs): kept for the battle, so a death moves only the man behind
+    /// into the gap. Rank 0 is the front. -1: not placed (new, or back from a rout).
+    public int Place = -1, Rank;
+    /// A fixed 0-1 draw for this man: how readily he leaves the ranks when discipline is poor (low = first to go).
+    public float Grit;
+    /// His guard is up on purpose against a blow he saw coming (a drilled man's choice, BattleRanks.Guard): he blocks
+    /// better, and strikes back at once if it holds.
+    public bool Guard;
+    /// Attack styles (BattleStyles.cs): blows struck so far (every third is a shield bash), and a riposte owed after a block.
+    public int Blows;
+    public bool RiposteReady;
+    /// His effect totals: his troop's passives plus his company's auras (BattleEffects.cs, rebuilt every 0.5 s).
+    public Mods Mods;
 
     public bool Active => !Dead && !Fled;
     public bool Mounted => Horse != null;

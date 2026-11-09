@@ -62,7 +62,7 @@ public partial class Battle
             if (tu != null && td < u.Type.Range) (enemy, d) = (tu, td);
         }
         float range = MathF.Min(Weather.Vision, u.Type.Range * (enemy != null ? HeightRange(Terrain.Height(u.Pos) - Terrain.Height(enemy.Pos)) : 1)); // fog and night hide targets
-        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < range && (charge || toSlot < 2.5f) && Visible(enemy, u.Team)) // only at what your side can see
+        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < range && (charge || toSlot < 2.5f) && Visible(enemy, u.Team) && !HoldsFire(s, enemy)) // only at what your side can see
         {
             u.Face(enemy.Pos - u.Pos);
             if (u.Cooldown <= 0) Shoot(u, enemy);
@@ -77,6 +77,10 @@ public partial class Battle
             if (d <= reach && u.Cooldown <= 0 && enemy.Speed < 4) StartSwing(u, enemy);
             return;
         }
+
+        // A company in the field fights from its ranks (BattleRanks.cs); leaders, heroes, pursuers, mobs, broken ranks, a
+        // charge with no company left to hit (it goes for the captain) and one swarming a beast or a handful fight free.
+        if (Ranked(s) && !s.Broken && !(charge && (s.Foe == null || Overwhelms(s))) && !u.IsLeader && !u.Hero && !(s.Pursue && charge)) { FightFromRanks(u, s, enemy, d, dt); return; }
 
         bool leashed = !charge && toSlot > 14;
         if (enemy != null && !leashed && (charge || d < 6))
@@ -146,10 +150,12 @@ public partial class Battle
         if (t == null) { (t, td) = (enemy, d); }
         if (t == null) { Ride(u, u.Slot, h.Trot); return; }
 
+        if (s.Rallying && u.Cav != CavState.Withdraw && td > 6 && Rallies(s)) u.Cav = CavState.Withdraw; // the company is rallying: off the chase, back to it
         switch (u.Cav)
         {
             case CavState.Withdraw:
             {
+                if (Rallies(s)) { RideToRally(u, s); return; } // veterans re-form as a body before they go again
                 // Ride out, away from the enemy mass, then turn for another charge.
                 u.CavTimer -= dt;
                 u.Couched = false;
@@ -172,6 +178,13 @@ public partial class Battle
             default:
             {
                 // Charge: aim a few metres past the target to ride through it.
+                if (!u.Contact && ChargeLane(u, s, t) is Vector2 lane)
+                {
+                    // Round to its open side first: a charge lands on a flank, not on its points.
+                    u.Couched = false;
+                    Ride(u, Via(u, lane), h.Gallop);
+                    return;
+                }
                 var to = (t.Pos - u.Pos) / MathF.Max(td, 0.01f);
                 var aimAt = Via(u, t.Pos + to * 6);
                 u.Wish = (aimAt - u.Pos).LengthSquared() > 1e-4f ? Vector2.Normalize(aimAt - u.Pos) * h.Gallop : Vector2.Zero;
@@ -184,7 +197,7 @@ public partial class Battle
                     u.Contact = false;
                 }
                 u.Bogged = u.Speed < 2.5f && td < 4 ? u.Bogged + dt : 0;
-                if (u.Bogged > 1.2f) { u.Cav = CavState.Melee; u.CavTimer = 5f; u.Bogged = 0; u.Couched = false; }
+                if (u.Bogged > 1.2f) { u.Cav = CavState.Melee; u.CavTimer = MeleeTime(s); u.Bogged = 0; u.Couched = false; }
                 return;
             }
         }
@@ -238,7 +251,7 @@ public partial class Battle
         var reserve = reserveSquad[team];
         if (reserve != null)
         {
-            bool needed = reserve.Alive == 0 || (charged[team] && (Time - chargedAt[team] > 18 || inf.Any(s => s != reserve && s.Alive < s.StartCount * 0.5f)));
+            bool needed = reserve.Alive == 0 || reserve.BrokeRanks || (charged[team] && (Time - chargedAt[team] > 18 || inf.Any(s => s != reserve && s.Alive < s.StartCount * 0.5f)));
             if (needed)
             {
                 reserveSquad[team] = null;
@@ -257,23 +270,29 @@ public partial class Battle
         var hold = HoldsGround(team, front, foe);
         var basis = hold ?? front;
         float step = hold != null ? 0 : 6;
-        if (reserveSquad[team] is Squad r && r.Alive > 0) { r.Order = Order.Hold; r.Front = dir; r.Anchor = front - dir * 14; }
-        if (!charged[team])
+        if (reserveSquad[team] is Squad { BrokeRanks: false } r && r.Alive > 0) { r.Order = Order.Hold; r.Front = dir; r.Anchor = front - dir * 14; }
+        // The line advances company by company: each goes in when it is close to the enemy company opposite it
+        // (docs/MELEE.md D4); 20 s after the first charge the rest follow.
+        foreach (var s in inf) if (s.Order != Order.Charge) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * lateral.GetValueOrDefault(s)); }
+        // With several companies, the outermost swings out to take the end of the enemy line in the flank.
+        if (inf.Count >= 3 && inf.OrderBy(s => lateral.GetValueOrDefault(s)).Last() is { Order: not Order.Charge } wing) wing.Anchor = DryAnchor(basis + dir * (step - 4 - depth.GetValueOrDefault(wing)) + side * (lateral.GetValueOrDefault(wing) + 14));
+        foreach (var s in spears) if (s.Order != Order.Charge) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * (16 + flankOut[team].Spears + lateral.GetValueOrDefault(s))); } // swing wide on a flank
+        bool late = charged[team] && Time - chargedAt[team] > 20;
+        foreach (var s in inf.Concat(spears))
         {
-            foreach (var s in inf) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * lateral.GetValueOrDefault(s)); }
-            // With several companies, the outermost swings out to take the enemy line in the flank.
-            if (inf.Count >= 3) { var wing = inf.OrderBy(s => lateral.GetValueOrDefault(s)).Last(); wing.Anchor = DryAnchor(basis + dir * (step - 4 - depth.GetValueOrDefault(wing)) + side * (lateral.GetValueOrDefault(wing) + 14)); }
-            foreach (var s in spears) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * (16 + flankOut[team].Spears + lateral.GetValueOrDefault(s))); } // swing wide on a flank
-            if (inf.Any(s => GapTo(s, foe) < 16) || spears.Any(s => s.Alive > 0 && GapTo(s, foe) < 10))
-            {
-                charged[team] = true;
-                chargedAt[team] = Time;
-                foreach (var s in inf.Concat(spears)) s.Order = Order.Charge;
-                Log(team == 1 ? "The enemy line charges!" : "Your line charges!");
-                Sound(Cue.Shout, front);
-            }
+            if (s.Order == Order.Charge || s.Alive == 0) continue;
+            var opp = Opposite(s, foe, dir, side);
+            float trigger = (spears.Contains(s) ? 10 : 16) + (s.Company?.Has("Hothead") == true ? 6 : 0);
+            float gap = opp == null ? float.MaxValue : Vector2.Distance(s.Center, opp.Center) - s.Radius - opp.Radius;
+            if (!late && gap >= trigger && GapTo(s, foe) >= trigger) continue;
+            s.Order = Order.Charge;
+            s.Target = gap < trigger * 1.5f ? opp : null; // its opposite number, or whatever came close
+            if (charged[team]) continue;
+            charged[team] = true;
+            chargedAt[team] = Time;
+            Log(team == 1 ? "The enemy line charges!" : "Your line charges!");
+            Sound(Cue.Shout, front);
         }
-        else foreach (var s in inf.Concat(spears)) s.Order = Order.Charge; // late arrivals join the charge
         foreach (var s in Led(team, "casters").Where(s => s.Alive > 0)) { s.Front = dir; s.Anchor = front - dir * 15; s.Order = Order.Hold; } // a necromancer works from behind his dead
         // With no one left to hold a line, archers shoot what they carry and then go in: no trips back to the wagon.
         bool bowsAlone = !Units.Any(u => u.Team == team && u.Active && !u.Routing && u.Type.Ammo == 0);
@@ -312,6 +331,21 @@ public partial class Battle
             if (charged[1] && Time - chargedAt[1] > 12 && eGuard.Order != Order.Charge) { eGuard.Order = Order.Charge; Log("The enemy captain joins the fight!"); }
         }
     }
+    /// The enemy company opposite a line company: nearest along the line (sideways counts more than depth), foot first.
+    Squad? Opposite(Squad s, int foe, Vector2 dir, Vector2 side)
+    {
+        Squad? best = null;
+        float bs = float.MaxValue;
+        foreach (var e in Squads)
+        {
+            if (e.Team != foe || e.Alive == 0) continue;
+            var d = e.Center - s.Center;
+            float score = MathF.Abs(Vector2.Dot(d, side)) + 0.3f * MathF.Abs(Vector2.Dot(d, dir)) + (e.Cavalry ? 30 : 0);
+            if (score < bs) { bs = score; best = e; }
+        }
+        return best;
+    }
+
     readonly Squad?[] reserveSquad = new Squad?[2];
     readonly float[] chargedAt = new float[2];
 }

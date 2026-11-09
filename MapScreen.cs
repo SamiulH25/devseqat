@@ -171,6 +171,8 @@ sealed partial class MapScreen
         if (panel == PanelKind.None && C.S.Event != null && C.Encounter == null) { panel = PanelKind.Event; speed = 0; note = ""; }
         // You entered a tournament (S5): the fight in the lists starts at once.
         if (panel == PanelKind.None && C.Lists is Settlement lists) { C.Lists = null; speed = 0; OnBattle?.Invoke(C.PrepareTournament(lists)); }
+        // ...and so does a knight order's trial of entry (K4).
+        if (panel == PanelKind.None && C.TrialPending is string trial) { C.TrialPending = null; speed = 0; OnBattle?.Invoke(C.PrepareTrial(trial)); }
         if (panel == PanelKind.None && C.Besieging is Settlement besieged && C.Player.SiegeTarget >= 0 && !C.Player.Moving && C.Encounter == null && ctl.Pressed(Act.SiegeScreen)) { at = besieged; panel = PanelKind.Siege; }
         if (follow) focus = Vector2.Lerp(focus, C.Player.Pos, MathF.Min(1, dt * 4));
     }
@@ -505,6 +507,9 @@ sealed partial class MapScreen
             case "realm": realmTab = 0; panel = PanelKind.Realm; note = ""; break;
             case "atlas": panel = PanelKind.Atlas; note = ""; break;
             case "career": realmTab = 1; panel = PanelKind.Realm; note = ""; break;
+            case "orders": realmTab = 3; panel = PanelKind.Realm; note = ""; break;
+            case "legend": realmTab = 2; panel = PanelKind.Realm; note = ""; break;
+            case "chapter": at = s; tab = "CHAPTER"; panel = PanelKind.Settlement; note = ""; break;
             case "fief": at = s; tab = "FIEF"; panel = PanelKind.Settlement; note = ""; break;
             case "household": charTab = C.S.Factions.Count; panel = PanelKind.Characters; note = ""; break;
             case "beat": panel = PanelKind.Beat; break;

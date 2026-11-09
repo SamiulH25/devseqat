@@ -17,6 +17,7 @@ public partial class Campaign
     public string? RecruitLevies(Settlement s, int n)
     {
         // Only some of them will follow you: how many depends on what their lord thinks of you (4.2).
+        if (s.Kind == SettlementKind.Village && Captain.Corruption >= HuntedAt) return "THE VILLAGE BARS ITS GATES TO YOU"; // the Black Flame (K7)
         n = Math.Min(n, RecruitsForYou(s));
         if (n <= 0) return s.Recruits > 0 ? "THEY WILL NOT FOLLOW YOU: THEIR LORD THINKS ILL OF YOU" : "NO RECRUITS";
         string levy = RecruitTroopFor(s);
@@ -60,12 +61,17 @@ public partial class Campaign
 
     public int MercenaryPrice(CompanyRecord m) => (int)(m.Stacks.Sum(x => x.Men * Rules.PerMan(x.Type.Cost)) * B.MercMarkup * (Has("Haggler") ? 0.85f : 1));
 
+    /// Mages are super units: a captain keeps one circle of them at most.
+    public bool HasCircle => Player.Companies.Any(c => Rules.RoleOf(c) == "casters");
+    public const string OneCircle = "YOU CAN KEEP ONLY ONE CIRCLE OF MAGES";
+
     public string? Hire(Settlement s, CompanyRecord m)
     {
         int price = MercenaryPrice(m);
         if (S.Gold < price) return $"NEEDS {price} CROWNS";
         if (Player.Companies.Count >= Slots) return "NO FREE COMPANY";
         if (m.Men > RoomForMen) return "PARTY IS FULL";
+        if (Rules.RoleOf(m) == "casters" && HasCircle) return OneCircle;
         S.Gold -= price;
         s.Mercenaries.Remove(m);
         Player.Companies.Add(m);
@@ -121,6 +127,7 @@ public partial class Campaign
     {
         if (Player.Companies.Count >= Slots) return "NO FREE COMPANY";
         if (c.Men < 2) return "TOO FEW MEN";
+        if (Rules.RoleOf(c) == "casters") return OneCircle;
         var n = NewCompany(c.Troop, Rules.RoleOf(c), 0, 0);
         n.Stacks.Clear();
         n.Cohesion = c.Cohesion; n.Culture = c.Culture; n.Home = c.Home;

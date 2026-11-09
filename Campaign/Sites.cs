@@ -67,12 +67,14 @@ public sealed partial class Campaign
 
     /// You reach a site: the first visit is remembered, and a ready site raises its event (one of the events whose trigger
     /// is "site_" + its kind).
-    void ArriveAtSite(Site site)
+    internal void ArriveAtSite(Site site)
     {
         if (!S.SitesSeen.Contains(site.Id)) S.SitesSeen.Add(site.Id);
         if (!S.SitesVisited.Contains(site.Id)) { S.SitesVisited.Add(site.Id); Deed($"You come to the {site.Name}.", "sites"); }
         SiteQuests(site);
         if (!SiteReady(site)) { Log($"{site.Name}: {SiteWait(site).ToLowerInvariant()}."); return; }
+        if (site.Kind == "shrine") { AddBuff("shrine_blessing", 3); RelicFilled(); Log($"The men pray at the {site.Name}. They march on blessed."); }
+        if (VigilAt(site)) { Raise(new PendingEvent { Id = "aura_vigil", Site = site.Id, Settlement = SettlementNear(site.Pos)?.Id ?? -1 }); return; } // a trial for your aura (K5)
         var fits = Events.Where(e => e.Trigger == "site_" + site.Kind).ToList();
         if (fits.Count == 0 || S.Event != null) return;
         var pe = new PendingEvent { Site = site.Id, Settlement = SettlementNear(site.Pos)?.Id ?? -1 };
@@ -111,6 +113,7 @@ public sealed partial class Campaign
                 return got > 0 ? $"{got} men join you." : "You have no room for them.";
             case "search": return Search(site);
             case "mend": return MendWound();
+            case "vigil": return KeepVigil(site);
             case "omen": return Omen();
             case "spy": return Spy(site?.Pos ?? Player.Pos);
         }
@@ -123,7 +126,12 @@ public sealed partial class Campaign
     {
         float roll = rng.Float();
         if (roll < 0.35f) { int g = (int)rng.Range(120, 260); S.Gold += g; return $"Under the rubble: a rotted chest and {g} crowns."; }
-        if (roll < 0.55f) { S.Gold += 100; Captain.Renown += 8; return "You find a saint's relic in a fallen chapel. The tale of it spreads."; }
+        if (roll < 0.55f)
+        {
+            S.Gold += 100; Captain.Renown += 8;
+            if (!S.Relic) { S.Relic = true; S.RelicCharges = (int)RelicCharges; return "You find a saint's relic in a fallen chapel. You carry it before the company now."; }
+            return "You find a saint's relic in a fallen chapel. The tale of it spreads.";
+        }
         if (roll < 0.70f) { foreach (var c in Player.Companies) c.Cohesion = Math.Clamp(c.Cohesion + 4, 0, 30); return "An old war banner, still bright under the dust. The men cheer it."; }
         if (roll < 0.85f || site == null || !Lurkers(site)) return "Only bones and nettles.";
         return "Goblins have made the ruin their den, and they do not want visitors!";

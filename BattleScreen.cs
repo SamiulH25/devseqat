@@ -71,7 +71,8 @@ sealed partial class BattleScreen
 
     // Debug: IRONFIELD_SHOTS=/dir stages a few camera shots, saves them as PNGs and quits.
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
-    int shotIndex, shotFrames;
+    // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/MELEE.md), skipping the rest.
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") == "clash" ? 53 : 0, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
 
@@ -185,11 +186,16 @@ sealed partial class BattleScreen
             : shotDir != null ? Weather.Clear : Weather.For(rng.NextSingle() < 0.7f ? 9 + rng.Next(8) : rng.Next(2) == 0 ? 6.5f : 18.5f, rng.Next(3), seed);
         // A quick battle fills the field: about half the battle size a side (IRONFIELD_MEN=n sets the men a side).
         int men = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MEN"), out var m) ? m : Settings.Current.BattleSize / 2;
+        // IRONFIELD_AURA=tier[,order] gives the quick battle's captain an aura and forms (docs/KNIGHT_ORDERS.md), e.g. 4,rose.
+        var aura = (Environment.GetEnvironmentVariable("IRONFIELD_AURA") ?? "").Split(',');
+        int auraTier = int.TryParse(aura[0], out var at) ? Math.Clamp(at, 0, 5) : 0;
+        var forms = Forms.Generic.Concat(aura.Length > 1 ? Forms.OfOrder(aura[1]) : Enumerable.Empty<FormDef>()).Where(f => f.Tier <= auraTier)
+            .OrderBy(f => f.Order == "" ? 1 : 0).Select(f => f.Id).ToArray();
         battle = new Battle(seed, Armies.Divide(Armies.Large(rng, Math.Clamp(mine, 1, 4), 0, men)), Armies.Divide(Armies.Large(rng, Math.Clamp(theirs, 1, 4), 1, men)),
             new BattleOptions
             {
                 EnemyDamage = Settings.Current.EnemyDamage, Weather = weather, Cap = Math.Max(Settings.Current.BattleSize, men * 2 + 20),
-                Ground = QuickGround(rng),
+                Ground = QuickGround(rng), AuraTier = auraTier, Forms = forms,
             });
         battle.StartRecording(seed);
         replaySaved = false;

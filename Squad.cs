@@ -45,6 +45,20 @@ public sealed class Squad
     public bool Pursue;
     /// A circle round every active man (routing too), refreshed at the start of each tick: cheap squad-to-squad distance bounds.
     public Vector2 Center;
+    /// Effects on the whole company: its side's auras that reach it (BattleEffects.cs).
+    public Mods Mods;
+    /// Spells (BattleAbilities.cs): what the company can cast (its casters' spells, or its hero's abilities) and when each
+    /// is ready again; its Will (0-100, casters only); the great working spent; casters it started with; its hero's level.
+    public AbilityDef[] Spells = Array.Empty<AbilityDef>();
+    public float[] SpellReady = Array.Empty<float>();
+    public bool[] ByHero = Array.Empty<bool>();
+    public float Will = 100;
+    public bool GreatDone;
+    public int CasterStart, HeroLevel;
+    /// Timed effects on the company (spells, abilities), and standing ones for the whole battle (campaign buffs, a hero's calling).
+    public readonly List<TimedEffect> Timed = new();
+    public Mods Standing;
+    public readonly List<string> StandingIds = new();
     public float Radius;
 
     public Squad(string name, int team) { Name = name; Team = team; }
@@ -61,6 +75,41 @@ public sealed class Squad
 
     /// How much the ground where it stands opens its ranks (1 on open ground; more in a wood or water; Battle.UpdateSquad sets it).
     public float Loosen = 1;
+
+    /// Training (docs/MELEE.md D1, 0-1) and how well the ranks hold right now (D2, 0-1); men read their product.
+    public float Drill = 0.6f, Formed = 1;
+    /// Ranks broken (Formed fell under 0.4; re-formed at 0.55): its men fight each for himself. InContact: a man is at blows.
+    public bool Broken, InContact;
+    /// Charged without orders (rabble or a hothead, docs/MELEE.md D4): a sergeant leaves it be until it has re-formed.
+    public bool BrokeRanks;
+    public Grade Grade => Battle.GradeOf(Drill);
+    public float Discipline => Drill * Formed;
+    /// The enemy company it is closing with or fighting (BattleRanks.cs; the ordered Target, else the nearest).
+    public Squad? Foe;
+    /// Where its front rank stands now (mean of the rank-0 men), and the layout its places were last dealt for.
+    public Vector2 FrontPos;
+    public int LayoutCols, LayoutN;
+    public Formation LayoutForm;
+
+    /// Its place in Battle.Squads (staggers when each company thinks).
+    public int Id;
+    /// Company wits (docs/MELEE.md D5, BattleTactics.cs): what it is doing, which of the foe's flanks it takes (+1 his
+    /// left, -1 his right), the enemy coming at its own flank, the company it fought (to know when it broke) and the
+    /// one to go back at once re-formed.
+    public Plan Plan;
+    public int FlankSide;
+    public Squad? Threat, Fought, Resume;
+    /// Wrapping: the outer files beyond BendFrom metres from the centre swing forward by Bend x 90 degrees (Slot).
+    public float Bend, BendFrom;
+    public float PlanSaid = -99;
+    public Plan PlanSaidOf;
+    /// Horse rallying between charges (BattleWings.cs): where, since when, and how many times it has charged again from one.
+    public bool Rallying;
+    public Vector2 RallyAt;
+    public float RallySince;
+    public int Rallied;
+    /// Blows landed in an enemy's flank or rear, and blows taken (for the self-tests and the after-action count).
+    public int FlankHits, HitsTaken;
 
     public float Spacing => Loosen * Formation switch
     {
@@ -112,7 +161,16 @@ public sealed class Squad
         }
         int cols = Math.Clamp(Columns, 1, Math.Max(1, count));
         int row = i / cols, col = i % cols;
-        return Anchor + rt * (col - (cols - 1) / 2f) * Spacing - Front * row * Spacing;
+        float x = (col - (cols - 1) / 2f) * Spacing, y = -row * Spacing;
+        if (Bend > 0 && MathF.Abs(x) > BendFrom)
+        {
+            // The outer files wheel forward round the pivot at BendFrom, closing round the foe's end.
+            float sign = MathF.Sign(x), px = x - sign * BendFrom, a = Bend * MathHelper.PiOver2 * sign;
+            float c = MathF.Cos(a), sn = MathF.Sin(a);
+            x = sign * BendFrom + px * c - y * sn;
+            y = px * sn + y * c;
+        }
+        return Anchor + rt * x + Front * y;
     }
 
     public Vector2 Centroid()

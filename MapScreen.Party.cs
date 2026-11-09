@@ -42,7 +42,7 @@ partial class MapScreen
             ui.Rect(box, Color.White * 0.04f);
             float op = C.OpinionOfYou(ch);
             var party = ch.PartyId >= 0 ? C.PartyById(ch.PartyId) : null;
-            string state = ch.Kind == "companion" ? $"{ch.Role.ToUpperInvariant()} ({RoleTextOf(ch.Role)})"
+            string state = ch.Kind == "companion" ? $"{ch.Calling.ToUpperInvariant()} LV {ch.Level}, {ch.Role.ToUpperInvariant()}"
                 : party == null ? "" : party.Captive ? "YOUR PRISONER" : party.Down ? "SCATTERED" : $"{party.Men} MEN, {party.Task.ToUpperInvariant()}";
             ui.Text(ch.Name.ToUpperInvariant(), box.X + ui.U(6), box.Y + ui.U(4), Style.Text, 1);
             ui.TextR(state, box.Right - ui.U(6), box.Y + ui.U(4), ch.Kind == "companion" && C.S.Hours < ch.WoundedUntil ? Style.Warn : Style.Dim, 1);
@@ -58,12 +58,29 @@ partial class MapScreen
             {
                 var why = C.MemoriesOf(ch, C.Me).Take(3).Select(m => $"{m.What.ToUpperInvariant()} ({m.Weight:+0;-0}, DAY {m.Day})").ToList();
                 note = $"THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})" + (why.Count > 0 ? ": " + string.Join("; ", why) : "");
+                if (ch.Kind == "companion") note = CompanionNote(ch) + ". " + note;
             }
             i2++;
         }
         if (charTab == realms) Vassals(r, r.Y + ui.U(82) + ((list.Count + 1) / 2) * (rowH + ui.U(4)) + ui.U(12));
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.LordsScreen))) panel = CameFrom(PanelKind.Characters);
+    }
+
+    /// A companion's sheet in one line (docs/COMPANIONS_MAGIC.md B1-B5): calling and what it does, abilities, talents,
+    /// XP to the next level, his story, his sworn brother and his student.
+    string CompanionNote(Character ch)
+    {
+        var parts = new List<string> { $"{ch.Role.ToUpperInvariant()}: {RoleTextOf(ch.Role)}" };
+        if (Callings.Get(ch.Calling) is CallingDef cd) parts.Add($"{cd.Id.ToUpperInvariant()}: {cd.Line.ToUpperInvariant()}");
+        parts.Add("ABILITIES: " + string.Join(", ", Campaign.GiftsOf(ch).Select(a => Abilities.Get(a).Name.ToUpperInvariant())));
+        var talents = Campaign.TalentsOf(ch).Select(t => Effects.Get(t).Name.ToUpperInvariant()).Distinct().ToList();
+        if (talents.Count > 0) parts.Add("BRINGS: " + string.Join(", ", talents));
+        parts.Add(ch.Level >= Campaign.MaxCompanionLevel ? "TOP LEVEL" : $"{Campaign.XpToNext(ch)} XP TO LEVEL {ch.Level + 1}");
+        if (ch.Story == 1) parts.Add($"STORY: {Campaign.StoryOf(ch).ToUpperInvariant()} ({ch.StoryWins}/{Campaign.StoryWinsNeeded} WINS)");
+        if (ch.Sworn >= 0 && C.CharacterById(ch.Sworn) is Character b) parts.Add($"SWORN BROTHER OF {b.Name.ToUpperInvariant()}");
+        if (ch.Warned) parts.Add("MAY LEAVE YOU");
+        return string.Join(". ", parts);
     }
 
     /// A company's story for the party screen: origin, honours, and its last fights.
@@ -103,13 +120,25 @@ partial class MapScreen
             ui.TextC(t.Name.ToUpperInvariant(), card.X + cw / 2f, card.Y + ui.U(86), Style.Text, t.Name.Length > 16 ? 1 : 2);
             ui.TextC($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]}  {t.Class.ToString().ToUpperInvariant()}  {t.Culture.ToUpperInvariant()}", card.X + cw / 2f, card.Y + ui.U(106), Style.Accent, 1);
             int sy = card.Y + ui.U(122);
-            foreach (var (label, value) in new[] { ("HEALTH", $"{t.MaxHp:0}"), ("ARMOUR", $"{t.Armor:0}"), ("DAMAGE", $"{t.Damage:0}"), ("REACH", $"{t.Reach:0.0} M"),
-                         t.Range > 0 ? ("RANGE", $"{t.Range:0} M") : ("SPEED", $"{t.Speed:0.0}"), ("HORSE", t.Mount?.Name.ToUpperInvariant() ?? "-") })
+            var rows = new List<(string label, string value)> { ("HEALTH", $"{t.MaxHp:0}"), ("ARMOUR", $"{t.Armor:0}"), ("DAMAGE", $"{t.Damage:0}"), ("REACH", $"{t.Reach:0.0} M"),
+                t.Range > 0 ? ("RANGE", $"{t.Range:0} M") : ("SPEED", $"{t.Speed:0.0}"), ("HORSE", t.Mount?.Name.ToUpperInvariant() ?? "-") };
+            var (style, styleLine) = Battle.StyleText(t.Style);
+            if (style != "") rows.Add(("STYLE", style.ToUpperInvariant())); // the way his blows land (BattleStyles.cs)
+            if (t.Spells.Length > 0) rows.Add(("SPELLS", $"{t.Spells.Length}")); // a mage's spells (Data/abilities.json)
+            int step = ui.U(rows.Count > 6 ? 12 : 14);
+            foreach (var (label, value) in rows)
             {
                 ui.Text(label, card.X + ui.U(14), sy, Style.Dim, 1);
-                ui.TextR(value, card.Right - ui.U(14), sy, Style.Text, 1);
-                sy += ui.U(14);
+                ui.TextR(value, card.Right - ui.U(14), sy, label == "STYLE" ? Style.Accent : Style.Text, 1);
+                sy += step;
             }
+            if (style != "" && ui.Hover(card))
+            {
+                var traits = t.Passives.Select((p, i) => (e: Effects.Get(p), k: Battle.PassiveWeight(t.Tier, i))).Where(x => x.k > 0).Select(x => x.e.Name.ToUpperInvariant());
+                note = $"{style.ToUpperInvariant()}: {styleLine.ToUpperInvariant()} TRAITS: {string.Join(", ", traits)}.";
+            }
+            else if (t.Spells.Length > 0 && ui.Hover(card))
+                note = "SPELLS: " + string.Join(", ", t.Spells.Select(id => Abilities.Get(id).Name.ToUpperInvariant())) + ". " + Abilities.Get(t.Spells[^1]).Line.ToUpperInvariant();
             if (Rules.TroopRole(to) != Rules.RoleOf(c)) ui.TextC($"JOINS A {Rules.TroopRole(to).ToUpperInvariant()} COMPANY", card.X + cw / 2f, card.Y + ui.U(210), Style.Warn, 1);
             ui.TextC(one > 0 ? $"{cost1} CROWNS A MAN" : reason, card.X + cw / 2f, card.Y + ui.U(226), one > 0 ? Style.Text : Style.Warn, 1);
             int bw = (cw - ui.U(28) - 2 * ui.U(4)) / 3, by = card.Bottom - ui.U(56);

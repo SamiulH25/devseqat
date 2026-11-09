@@ -23,6 +23,7 @@ public sealed partial class Campaign
         int room = Rules.MenLimit(Captain) - Player.Men - Player.Wounded;
         if (room <= 0) return "PARTY IS FULL";
         string role = Rules.TroopRole(g.Troop);
+        if (role == "casters" && HasCircle) return OneCircle;
         int n = Math.Min(g.Count, Math.Min(room, Rules.CapOf(g.Troop, role)));
         if (Player.Companies.Count >= Rules.CompanySlots(Captain)) return "NO FREE COMPANY";
         var c = NewCompany(g.Troop, role, n, 0);
@@ -45,6 +46,8 @@ public sealed partial class Campaign
         int gold = PrisonerValue;
         S.Gold += gold;
         Log($"You sell {PrisonerCount} prisoners for {gold} crowns.");
+        CompanionsReact("sell_prisoners");
+        BreakVow("no_slaves", "sell men in chains");
         Player.Prisoners.Clear();
         AudioEngine.Current?.Play(Cue.Coin);
         return null;
@@ -198,6 +201,7 @@ public sealed partial class Campaign
             c.Prune();
         }
         Player.Companies.RemoveAll(c => c.Men + c.Wounded <= 0);
+        AddBuff("hungry", 1); // into battle weak and tired (A5)
         Log("Your men are starving. Buy food in a town or village.");
     }
 
@@ -274,6 +278,7 @@ public sealed partial class Campaign
                 if (c.Then == null) Deed($"Contract done: {c.Text} (+{c.Reward:0} crowns).", "quests");
                 else Log($"Done: {c.Text}");
                 QuestStepDone(c);
+                OrderContractDone(c);
                 AudioEngine.Current?.Play(Cue.Coin);
             }
             else if (S.Hours > c.Deadline || (c.Kind is "hunt" or "clear" && PartyById(c.Target) is null or { Down: true } && S.LastBattleFoe != c.Target) || QuestLost(c))
@@ -282,6 +287,7 @@ public sealed partial class Campaign
                 S.Contracts.Remove(c);
                 if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you failed me", -8);
                 Log($"Contract failed: {c.Text}");
+                OrderContractLost(c);
             }
         }
     }

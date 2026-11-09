@@ -23,7 +23,7 @@ public sealed partial class Battle
     public float BowEdge => Math.Clamp((Options.Bowcraft - 5) / 95f, 0, 1);
     bool Perk(string id) => Options.Perks.Contains(id);
     bool secondWind;
-    float ParryTime => ParryWindow + 0.1f * ArmsEdge - (Options.Wounds.Contains("eye") ? 0.05f : 0);
+    float ParryTime => ParryWindow + 0.1f * ArmsEdge - (Options.Wounds.Contains("eye") ? 0.05f : 0) + (Countering ? 0.25f : 0); // Measured Blade (K2)
 
     /// You release a swing (P2): its stamina cost, power and windup from the chain, a riposte, tiredness and Arms.
     void ReleaseSwing(Unit p)
@@ -35,7 +35,7 @@ public sealed partial class Battle
         bool tired = p.Stamina < cost;
         p.Stamina = MathF.Max(0, p.Stamina - cost);
         p.Power = (0.6f + p.Charge) * p.Swing switch { AttackDir.Overhead => 1.2f, AttackDir.Thrust => 1f, _ => 0.95f }
-            * (tired ? 0.6f : 1) * (riposteSwing ? 1.25f : 1);
+            * (tired ? 0.6f : 1) * (riposteSwing ? 1.25f : 1) * FocusEdge; // Focus (K2)
         p.Charge = 0;
         p.Action = UnitAction.Windup;
         p.ActionTimer = (p.Swing == AttackDir.Overhead ? 0.2f : 0.15f) * p.Type.Windup / 0.4f // your weapon sets your pace (P1)
@@ -192,7 +192,7 @@ public sealed partial class Battle
         float run = u.Vel.Length() / MathF.Max(0.1f, u.Type.Speed * u.GroundPace);
         float rate = run > 0.7f ? -2.5f * run : u.Action != UnitAction.None ? -1f : run < 0.2f ? 4f : 1f;
         float extra = run < 0.2f ? 0 : Strain(u);
-        rate = rate < 0 ? rate * (1 + extra) : rate - 2.5f * run * extra; // hard ground and climbs tire a man on the move
+        rate = rate < 0 ? rate * (1 + extra) * MathF.Max(0, 1 + u.Mods.Tire) : rate - 2.5f * run * extra; // hard ground and climbs tire a man on the move; tireless men less
         u.Stamina = Math.Clamp(u.Stamina + rate * dt, 0, 100);
     }
 
@@ -236,7 +236,7 @@ public sealed partial class Battle
         var at = archers.Centroid();
         float range = archers.Units.FirstOrDefault()?.Type.Range ?? 30;
         return SquadsOf(foe).Where(s => s.Alive > 0 && Visible(s, archers.Team) && Vector2.Distance(s.Centroid(), at) < range * 1.1f)
-            .OrderBy(s => s.Units.First().Type.Armor + (s.Cavalry ? 3 : 0)).ThenBy(s => Vector2.Distance(s.Centroid(), at)).FirstOrDefault();
+            .OrderBy(s => Focus(archers, s)).ThenBy(s => s.Units.First().Type.Armor + (s.Cavalry ? 3 : 0)).ThenBy(s => Vector2.Distance(s.Centroid(), at)).FirstOrDefault();
     }
 
     /// A beaten side sounds the retreat instead of dying to the last man (either side, so it is not an escape only the AI has).

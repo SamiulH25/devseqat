@@ -279,6 +279,40 @@ the player rides a courser.
   **upgrades to**, campaign cost and upgrade XP, its horse, and its **look** (head, body, legs, feet, hands, shield, weapon,
   tabard, plume, cape). The self-test checks the tree: links exist, every upgrade raises the tier and is a better soldier,
   and every troop can be reached from Levies or Clansmen.
+- **A higher tier is always better.** An upgrade that keeps its weapon never loses health, damage, armour or block and gains in
+  at least two; every upgrade beats the troop it came from in a fight, and a tier VII company beats twice as many tier IV men.
+- **Attack styles (tiers V-VII):** the best troops land their blows in their own way, on their own (nothing to press). Dane axes
+  **crush** (overhead, past the guard, staggering); greatswords **sweep** into the man beside; longsword-and-shield men
+  **riposte** at once after a block; other shield men **bash** every third blow; pikes **thrust through** to the second rank;
+  spears **hold off** men rushing in; lances **ride down** a man and trample the next; mounted swords **cut and wheel**;
+  longbows' long shots **plunge** past front shields; bows **loose quickly**; crossbows **punch** men back at close range and can
+  bring a horse down. Tier VI and VII do it harder than tier V. The upgrade cards show each troop's style.
+- **Passive traits (tiers V-VII):** each also carries traits from its kind: Unshakeable, Iron skin, Tireless, Locked shields,
+  Set spears, Fearsome, Steady aim, Pavise, Swift, Heavy charge, Sure-footed. Tier V has its first trait in part, tier VI the
+  first in full and the second in part, tier VII both in full. A culture's tier VII troops add its signature where it fits:
+  Northern **Battle fury** (the fewer, the fiercer), Azure **Testudo** (halted under arrows, shields all round), Crimson
+  **Headsmen** (double against officers), Southern **Whirlwind** (every blow sweeps), Steppe **Ghost riders** (steady shots
+  from the gallop), League **Paid in full** (no running while the day is not lost), the Order's **Zeal** (heartens every
+  company of their side within 20 m). Hover an upgrade card to read them. Auto-resolve counts styles
+  and traits too (`TraitWeight` in `Data/campaign.json`).
+- **Mages are super units:** rare, costly, and few. A company of mages is a **circle** of three or four (one or two at the
+  smallest army scale), each one tougher and worth more than any soldier of his tier. You can keep **one circle** only, and it
+  cannot be split. No recruit is ever drilled into a mage: a town with a chapel, or a shrine or hermit near it, has a circle to
+  hire about one week in six. Only great lords (army level 5 up, one in five) bring a circle.
+  Acolytes (tier II) become one of seven culture mage lines at tier IV (chaplains, lectors, rune
+  singers, drummers, star readers, hedge witches, apothecaries), rising to tier VI. Each tier knows one more spell, and tier VI
+  a great working once a battle. Mages cast on their own when a spell fits (bless a company about to clash, mend the hurt, call
+  lightning in rain, wildfire in dry weather, mist over men under arrows, fire pots on a packed crowd). Each cast glows on the
+  ground first, so you can move away. A mage company has **Will**: it refills over time, faster when they stand still, and
+  dead casters lower it. Enemy veteran horse and elite bows hunt mages first. Craft (not faith) raises the **Omen**; from 12, dark omens follow.
+- **Companions' callings:** each companion is a Sword, Shield, Banner, Bow, Lance, Priest or Cunning one. He gains levels
+  (to 10) in battles his company fights, a talent each level and a second ability at 5, and he uses his abilities on his own,
+  like mages. Companions like or dislike what you do, quarrel, swear brotherhood, have a story to settle, take a student, and
+  may leave you. Champions are rare: only a great lord (tier 4 up, one in three) brings one, or the lord a companion who left you
+  now serves.
+- **Blessings and rites:** a shrine visit, a feast in a tavern (TAVERN tab) or a camp rite (party screen: bless, poultices,
+  read the bones, call rain; needs a Priest or Cunning companion or mages) give buffs that go into your next battles. Hunger
+  hurts. A relic found in a ruin blesses three battles; a shrine fills it again. Chips above the captain's panel show them.
 - **The tree:** 188 troops (and the captain, plus 13 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a
@@ -407,13 +441,34 @@ The visuals pass (`docs/VISUALS.md`) changed nothing in the simulation: replays 
 - **Scale:** men near the enemy think every tick, others every 2nd or 4th tick, so 3,000 men cost about 3.6 ms a tick
   (`--bench`). Far men are drawn with fewer parts, and the roar of a big melee rises with the men in contact.
 
+## Design: drill, ranks and company wits (docs/MELEE.md)
+
+- **Companies fight from their ranks.** Two companies meet as two lines: the front rank fights, the men behind wait and step into
+  a gap when a man falls. A charge closes as a body, and at blows a line holds where it stands.
+- **Drill by tier:** every company has a grade, shown on its card (RAB / TRN / VET / ELT), its tooltip and the muster roll.
+  Tier 1-2 troops are Rabble, 3-4 Trained, 5-6 Veteran, 7 Elite; cohesion (up to +0.1), a Veteran officer and a companion at its
+  head raise it, a Hothead lowers it.
+- **Order:** a long run, a melee (for rabble), losses, a flank attack and bad ground shake a company's ranks; under 40 % they break
+  (card: RANKS BROKEN) and its men fight each for himself, blocking worse and striking at 0.7. Drilled men re-form, even at
+  blows; a sergeant or your banner near makes it half as quick again.
+- **Rabble:** levies near the enemy may break ranks and charge without orders, yours too, unless a sergeant or your banner is
+  near. Rabble chase the broken.
+- **Wits by grade:** Trained companies wheel to face a flank attack and re-form after a win. Veterans also take a foe your other
+  company is fighting in the flank, bend their ends round a narrower line, step back to re-form when broken and rotate tired
+  men; veteran horse rally behind your line and charge again together, veteran bows fall back behind your foot and hold their
+  shot at a melee. Elites also go round in a pincer, pick the decisive target and roll up the line. Select a company to see
+  its plan as a dashed hook on the ground.
+- Hold means hold: a company you hold only wheels to face a threat (and bows step back behind the foot); everything else
+  happens on a charge.
+
 ## Design: Total War morale and flanks
 
-- **Flanks and rear:** blows from the side deal x1.2, from behind x1.5, and only frontal blows can be blocked.
+- **Flanks and rear:** blows from the side deal x1.2, from behind x1.5, and only frontal blows can be blocked. A man fighting
+  one foe sees a second only straight ahead: blows from the side of his eye count as flank blows.
   Each flank/rear hit adds to the squad's `Pressure`, which drains morale until it decays (HUD: FLANKED).
 - **Fear:** horsemen galloping straight at an unbraced footman drain his morale. Nearby routing friends drain it too (rout spreads),
   and so does an army that has lost over half its men.
-- HUD unit cards show STEADY / FLANKED / WAVERING (morale under 30) / ROUTING.
+- HUD unit cards show STEADY / FLANKED / WAVERING (morale under 30) / ROUTING, and RANKS BROKEN / RE-FORMING.
 
 ## Architecture
 

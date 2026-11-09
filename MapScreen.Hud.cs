@@ -17,6 +17,7 @@ partial class MapScreen
         PartyKind.Player => "YOU",
         PartyKind.Caravan => p.Breed == "pilgrims" ? "PILGRIMS" : $"MERCHANTS OF THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
         PartyKind.Monster => p.Lair ? $"{p.Breed.ToUpperInvariant()} HOLDOUT" : Campaign.Plural(p.Breed).ToUpperInvariant(),
+        _ when C.OrderOf(p) is OrderDef o => $"{o.Name.ToUpperInvariant()}, FOR THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
         _ => C.FactionNames[p.Faction].ToUpperInvariant(),
     };
     Color PartyColor(Party p) => p.Kind == PartyKind.Player ? Style.Accent : SideColor(C.SideOf(p));
@@ -268,6 +269,7 @@ partial class MapScreen
         var cap = C.Captain;
         var r = new Rectangle(ui.U(10), ui.H - ui.U(146), ui.U(300), ui.U(136));
         ui.Panel(r);
+        BuffChips(r);
         int x = r.X + ui.U(10), y = r.Y + ui.U(8);
         string renown = $"RENOWN {cap.Renown:0}", title = "CAPTAIN  " + C.Stage;
         int room = r.Width - ui.U(28) - ui.TW(renown, 1), ts = ui.FitScale(title, room);
@@ -301,6 +303,24 @@ partial class MapScreen
             var lines = ui.Wrap(C.NextStep().Text.ToUpperInvariant(), r.Width - ui.U(20));
             for (int i = 0; i < Math.Min(2, lines.Count); i++)
                 ui.Text(i == 1 && lines.Count > 2 ? ui.Fit(lines[1] + " " + lines[2], r.Width - ui.U(20)) : lines[i], x, y + i * ui.U(10), Style.Accent, 1);
+        }
+    }
+
+    /// What the company carries into its next battle (Buffs.cs, Rites.cs): a chip each above the captain's panel, red when it hurts;
+    /// hover one for what it does and the days left.
+    void BuffChips(Rectangle r)
+    {
+        int x = r.X, y = r.Y - ui.U(17);
+        var ids = C.ActiveBuffs.ToList();
+        if (C.RelicReady) ids.Add("relic");
+        foreach (var id in ids)
+        {
+            var e = Effects.Get(id);
+            string text = e.Name.ToUpperInvariant() + (id == "relic" ? $" {C.S.RelicCharges}" : $" {C.BuffDays(id):0}D");
+            if (x + ui.TW(text, 1) + ui.U(20) > r.Right) break;
+            int w = ui.Chip(x, y, text, e.Harmful ? Style.Bad : Kit.Gilt, e.Icon == "" ? null : e.Icon);
+            if (ui.Hover(new Rectangle(x, y, w, ui.U(13)))) note = e.Line.ToUpperInvariant();
+            x += w + ui.U(4);
         }
     }
 

@@ -42,12 +42,13 @@ partial class MapScreen
     void RealmPanel()
     {
         var r = Modal(1060, 620, "THE REALMS");
-        var tabs = new[] { "THE REALMS", "YOUR CAREER", "THE LEGEND" };
-        int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(24), ui.U(390), ui.U(22)), tabs, realmTab);
+        var tabs = new[] { "THE REALMS", "YOUR CAREER", "THE LEGEND", "THE ORDERS" };
+        int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(24), ui.U(520), ui.U(22)), tabs, realmTab);
         if (pick >= 0) { realmTab = pick; note = ""; }
         var body = new Rectangle(r.X + ui.U(20), r.Y + ui.U(56), r.Width - ui.U(40), r.Height - ui.U(122));
         if (realmTab == 0) Realms(body);
         else if (realmTab == 2) Legend(body);
+        else if (realmTab == 3) OrdersTab(body);
         else
         {
             var rank = C.Rank;
@@ -78,7 +79,7 @@ partial class MapScreen
         y += ui.U(18);
         foreach (var c in C.Player.Companies.OrderByDescending(Campaign.CompanyFame))
         {
-            if (y > a.Bottom - ui.U(130)) break;
+            if (y > a.Bottom - ui.U(176)) break;
             var row = new Rectangle(x - ui.U(4), y - ui.U(3), w + ui.U(8), ui.U(30));
             ui.Rect(row, Color.White * 0.04f);
             ui.Text(c.Name.ToUpperInvariant(), x, y, Style.Text, 1);
@@ -88,6 +89,7 @@ partial class MapScreen
             ui.Text(Cut(hon), x, y + ui.U(11), c.BattleHonours.Count > 0 ? Kit.Gilt : Style.Dim, 1);
             y += ui.U(34);
         }
+        OwnOrderBlock(x, Math.Max(y, a.Bottom - ui.U(168)), w, Cut);
         y = Math.Max(y, a.Bottom - ui.U(122));
         ui.Divider(x, y, w, Kit.Gilt * 0.5f);
         y += ui.U(10);
@@ -98,10 +100,49 @@ partial class MapScreen
         ui.Text(Cut(why == null ? $"{C.LegendCompany!.Name.ToUpperInvariant()} IS A LEGEND. YOU MAY END YOUR STORY." : $"TO END YOUR STORY: {why}."), x, y, why == null ? Kit.Gilt : Style.Dim, 1);
         y += ui.U(16);
         var heir = C.Successor;
-        if (ui.Button(new Rectangle(x, y, ui.U(220), ui.U(26)), "RETIRE ON THE LEGEND", why == null)) { note = C.Retire() ?? ""; if (C.S.GameOver) panel = PanelKind.GameOver; }
-        if (ui.Button(new Rectangle(x + ui.U(230), y, ui.U(280), ui.U(26)), heir != null ? $"HAND OVER TO {heir.Name.ToUpperInvariant()}" : "HAND OVER (NO COMPANION)", why == null && heir != null)) note = C.HandOver() ?? "";
+        if (ui.Button(new Rectangle(x, y, ui.U(220), ui.U(20)), "RETIRE ON THE LEGEND", why == null)) { note = C.Retire() ?? ""; if (C.S.GameOver) panel = PanelKind.GameOver; }
+        if (ui.Button(new Rectangle(x + ui.U(230), y, ui.U(280), ui.U(20)), heir != null ? $"HAND OVER TO {heir.Name.ToUpperInvariant()}" : "HAND OVER (NO COMPANION)", why == null && heir != null)) note = C.HandOver() ?? "";
         if (ui.Hover(new Rectangle(x, y, ui.U(510), ui.U(26))))
             note = "RETIRE ENDS THE CAMPAIGN AS A WIN AND TELLS THE COMPANY'S STORY. HANDING OVER GIVES THE COMPANY TO A COMPANION (ONE WHO ROSE FROM ITS RANKS FIRST): YOU PLAY ON AS HIM, WITH HALF YOUR RENOWN.";
+    }
+
+    /// The three vows chosen for an order you are about to found (K8).
+    readonly List<string> foundVows = new();
+
+    /// Your own order (docs/KNIGHT_ORDERS.md 8, K8): founded, its creed, form and knights, and the button to knight the next
+    /// named man; or what founding needs, the vows to choose and the button to found it.
+    void OwnOrderBlock(int x, int y, int w, Func<string, string> cut)
+    {
+        ui.Divider(x, y, w, Kit.Gilt * 0.5f);
+        y += ui.U(8);
+        int bw = ui.U(170), bh = ui.U(20);
+        if (C.S.OwnOrder is FoundedOrder own)
+        {
+            string form = Forms.Has(own.Form) ? Forms.Get(own.Form).Name.ToUpperInvariant() : "NONE";
+            ui.Text(cut($"THE {own.Name.ToUpperInvariant()}. FOUNDED DAY {own.Day}. GRAND MASTERS: {own.Masters}. FORM: {form}."), x, y, Kit.Gilt, 1);
+            y += ui.U(12);
+            ui.Text(cut("CREED: " + string.Join(", ", own.Vows.Select(VowWord)) + "."), x, y, Style.Dim, 1);
+            y += ui.U(12);
+            var knights = own.Knights.Select(C.NamedMan).Where(m => m != null).Select(m => "SIR " + m!.Name.ToUpperInvariant()).ToList();
+            ui.Text(cut($"KNIGHTS {knights.Count}/{C.KnightsMax}: " + (knights.Count == 0 ? "NONE YET." : string.Join(", ", knights) + ".")), x, y, Style.Text, 1);
+            var next = C.NextKnight;
+            string? why = C.CannotKnight(next);
+            if (ui.Button(new Rectangle(x + w - bw, y - ui.U(26), bw, bh), next != null ? $"KNIGHT {next.Name.ToUpperInvariant()}" : "KNIGHT A MAN", why == null)) note = C.Knight(next) ?? "";
+            return;
+        }
+        string? cannot = C.CannotFound();
+        if (cannot == null && ui.Button(new Rectangle(x + w - bw, y - ui.U(4), bw, bh), "FOUND THE ORDER", foundVows.Count == 3)) note = C.FoundOrder(foundVows) ?? "";
+        ui.Text(cut(cannot == null ? $"YOU MAY FOUND THE {Campaign.OrderNameOf((C.LegendCompany ?? C.BestCompany)!.Name).ToUpperInvariant()}. CHOOSE THREE VOWS FOR ITS CREED." : $"TO FOUND YOUR OWN ORDER: {cannot}."), x, y, cannot == null ? Kit.Gilt : Style.Dim, 1);
+        y += ui.U(13);
+        if (cannot != null) return;
+        int cx = x;
+        foreach (var v in KnightOrders.VowKinds)
+        {
+            bool on = foundVows.Contains(v);
+            int cw = ui.Chip(cx, y, VowWord(v), on ? Kit.Gilt : Style.Dim);
+            if (ui.Clicked(new Rectangle(cx, y - ui.U(2), cw, ui.U(12)))) { if (on) foundVows.Remove(v); else if (foundVows.Count < 3) foundVows.Add(v); }
+            cx += cw + ui.U(4);
+        }
     }
 
     /// Every living realm as a card, then the relations between them and the chronicle of the war.

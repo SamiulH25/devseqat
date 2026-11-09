@@ -64,6 +64,7 @@ public sealed partial class Campaign
         Captain.Renown += renown;
         var skillsBefore = new Dictionary<string, float>(Captain.Skills);
         Practise("Arms", (won ? 2 : 1) + (r.Parries + r.Ripostes) * 0.15f);
+        GainAura((won ? 3 : 1) + r.Parries * 0.3f);
         if (won) { S.Gold += TournamentPurse; t.Unrest = Math.Clamp(t.Unrest - 3, 0, 100); }
         var fate = r.Captain == LeaderFate.Unhurt ? LeaderFate.Unhurt : LeaderFate.Wounded;
         if (fate == LeaderFate.Wounded) Captain.WoundedUntil = MathF.Max(Captain.WoundedUntil, (float)S.Hours + 24);

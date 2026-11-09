@@ -218,4 +218,31 @@ public static class BalanceReport
         File.WriteAllText("balance/grounds.csv", csv.ToString());
         Console.WriteLine("wrote balance/grounds.csv");
     }
+
+    /// Fought against auto-resolved (docs/MELEE.md D8): one infantry company of each tier 1-6 against one of a higher tier,
+    /// the numbers set so Rules.Might calls them even. If auto-resolve weighs drill right, each pair is a coin toss.
+    /// Prints the higher tier's share of wins by tier gap, at the current weight and with weight `w` tried in its place.
+    public static void Agree(int seeds, float w)
+    {
+        float Per(UnitType t, float weight) => Rules.MightAt(t, 1, weight, Balance.Get().TraitWeight); // Rules.Might at that drill weight
+        foreach (float weight in new[] { Balance.Get().DrillWeight, w })
+        {
+            var byGap = new Dictionary<int, (int won, int n)>();
+            for (int lo = 1; lo <= 6; lo++)
+                for (int hi = lo + 1; hi <= 7; hi++)
+                    for (int seed = 0; seed < seeds; seed++)
+                    {
+                        string a = Armies.LineTroop("infantry", lo), b = Armies.LineTroop("infantry", hi);
+                        int na = 60, nb = Math.Max(4, (int)MathF.Round(na * Per(Troops.Get(a), weight) / Per(Troops.Get(b), weight)));
+                        bool swap = seed % 2 == 1; // the higher tier on each side in turn (the captains differ)
+                        var low = new ArmySpec("low", lo, new[] { new Company(a, na, "infantry") });
+                        var high = new ArmySpec("high", hi, new[] { new Company(b, nb, "infantry") });
+                        var battle = new Battle(seed * 31 + lo * 7 + hi, swap ? high : low, swap ? low : high, new BattleOptions { AutoPlayer = true, PlayerWounded = true });
+                        for (int step = 0; battle.Winner < 0 && step < 60 * 300; step++) battle.Update(1 / 60f);
+                        var (won, n) = byGap.GetValueOrDefault(hi - lo);
+                        byGap[hi - lo] = (won + (battle.Winner == (swap ? 0 : 1) ? 1 : 0), n + 1);
+                    }
+            Console.WriteLine($"agree: drill weight {weight:0.00}: the higher tier wins " + string.Join(", ", byGap.OrderBy(k => k.Key).Select(k => $"gap {k.Key} {100f * k.Value.won / k.Value.n:0}% of {k.Value.n}")));
+        }
+    }
 }

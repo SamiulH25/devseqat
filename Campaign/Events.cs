@@ -38,20 +38,25 @@ public sealed partial class Campaign
         "fief_unrest", "fief_poor", "fief_rich", "lord_friend", "lord_hates_liege", "big_band", "veterans", "hungry_winter",
         "unpaid", "prisoners", "war_weary", "in_town", "brigand_king", "pretender", "graves",
         "peace_offer", "site_ruin", "site_shrine", "site_stones", "site_battlefield", "site_mine", "site_hermit", "site_watchtower", "site_spring", "site_mill",
-        "start", "crown", "fallen", "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night",
+        "start", "crown", "fallen", "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night", "dark_omens",
+        "aura_vigil", "aura_grief", // raised by Campaign/Aura.cs only, never drawn at random (K5)
+        "flame_bargain", "flame_end", // raised by Campaign/BlackFlame.cs only (K7)
     };
     /// Days after a "flag:name" effect before the "flag:name" event follows.
     public const int FlagDays = 7;
+    /// Flags the code sets itself (not an event's choice): swearing to an order starts the rival's chain (K6).
+    static readonly string[] CodeFlags = { "rival_meet", "rival_fallen" };
     /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
     internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" or "start" or "crown" or "fallen" || trigger.StartsWith("site_");
     static readonly string[] Verbs =
     {
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
-        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown",
+        "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown", "calm",
+        "vigil", "breakthrough", "corrupt", "rival", "rival_bout", "rival_fate", "pact", "hollow_crown", "burn_out",
     };
-    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
-    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man" };
+    static readonly string[] NoNumber = { "vigil", "breakthrough", "rival_bout", "rival_fate", "pact", "hollow_crown", "burn_out", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
+    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man", "rival" };
 
     static List<EventDef>? events;
     public static IReadOnlyList<EventDef> Events
@@ -82,7 +87,7 @@ public sealed partial class Campaign
             if (Events.Count(x => x.Id == e.Id) > 1) yield return $"{e.Id}: duplicate id";
             if (!Triggers.Contains(e.Trigger) && !e.Trigger.StartsWith("flag:") && !(e.Trigger.StartsWith("trait:") && EarnedTraits.Contains(e.Trigger[6..])))
                 yield return $"{e.Id}: unknown trigger {e.Trigger}";
-            if (e.Trigger.StartsWith("flag:") && !Events.Any(x => x.Choices.Any(c => c.Effects.Contains(e.Trigger)))) yield return $"{e.Id}: nothing sets {e.Trigger}";
+            if (e.Trigger.StartsWith("flag:") && !CodeFlags.Contains(e.Trigger[5..]) && !Events.Any(x => x.Choices.Any(c => c.Effects.Contains(e.Trigger)))) yield return $"{e.Id}: nothing sets {e.Trigger}";
             if (e.Choices.Count is < 2 or > 3) yield return $"{e.Id}: needs two or three choices";
             foreach (var text in new[] { e.Title, e.Text }.Concat(e.Choices.Select(c => c.Label)))
                 foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text, @"\{(\w+)\}"))
@@ -141,6 +146,7 @@ public sealed partial class Campaign
             case "prisoners": return PrisonerCount >= Scaled(25) ? ev : null;
             case "war_weary": return Captain.Contract >= 0 && Exhaustion(Captain.Contract) >= 40 ? ev : null;
             case "spring" or "summer" or "autumn" or "winter": return Season.ToLowerInvariant() == trigger ? ev : null;
+            case "dark_omens": return S.Omen >= OmenEvents ? ev : null;
             case "night": return S.Hours % 24 is >= 20 or < 5 && SettlementAt(Player.Pos) == null ? ev : null;
             case "forest" or "hills": return SettlementAt(Player.Pos) == null && Map.ProvinceAt(Player.Pos).Kind.Equals(trigger, StringComparison.OrdinalIgnoreCase) ? ev : null;
             case "river": return SettlementAt(Player.Pos) == null && Map.RiverDist(Player.Pos) < 6 * Map.Spread ? ev : null;
@@ -212,6 +218,7 @@ public sealed partial class Campaign
             .Replace("{liege}", RulerOf(Captain.Contract)?.Name ?? "your liege")
             .Replace("{site}", SiteById(pe.Site)?.Name ?? "the place")
             .Replace("{companion}", CharacterById(pe.Lord)?.Name ?? "your companion")
+            .Replace("{rival}", CharacterById(Captain.Rival)?.Name ?? "your rival")
             .Replace("{man}", S.Fallen.FirstOrDefault(m => m.Id == pe.Soldier)?.Name ?? "one of your men");
     }
 
@@ -247,6 +254,14 @@ public sealed partial class Campaign
         if (siteVerb) return said;
         switch (verb)
         {
+            case "breakthrough": BreakThrough(pe.Id == "aura_grief" ? "In your rage the wall gives way." : "Your mourning is done, and you rise from it."); break;
+            case "corrupt": Corrupt(n); break;
+            case "pact": return TakePact();
+            case "hollow_crown": return EndFlame(true);
+            case "burn_out": return EndFlame(false);
+            case "rival": if (CharacterById(Captain.Rival) is Character rv) Remember(rv, Me, n >= 0 ? "you were a brother to me" : "you looked down on me", n); break;
+            case "rival_bout": return RivalBout();
+            case "rival_fate": return RivalFate();
             case "gold": S.Gold = MathF.Max(0, S.Gold + n); break;
             case "renown": Captain.Renown = MathF.Max(0, Captain.Renown + n); break;
             case "food": Player.Food = MathF.Max(0, Player.Food + n); break;
@@ -265,6 +280,7 @@ public sealed partial class Campaign
             case "exhaustion":
                 foreach (var w in S.Wars.Where(w => w.Active && (w.A == Captain.Contract || w.B == Captain.Contract))) AddExhaustion(w, Captain.Contract, n);
                 break;
+            case "calm": S.Omen = MathF.Max(0, S.Omen - n); break;
             case "flag": S.Flags[fx[5..]] = (float)S.Hours; break;
             case "farsight": S.FarSightUntil = (float)S.Hours + n * 24; return $"For {n:0} days you will see much further.";
             case "peace": return lord != null ? AcceptPeace(lord.Faction) : null;
@@ -298,7 +314,7 @@ public sealed partial class Campaign
             case "prisoners_recruit":
                 foreach (var g in Player.Prisoners.ToList()) RecruitPrisoners(g);
                 break;
-            case "bury": Bury(pe.Grave); break;
+            case "bury": Bury(pe.Grave); CompanionsReact("bury"); break;
             case "disband":
                 if (s != null && Rebels(s) is Party reb) { reb.Down = true; S.Parties.Remove(reb); return "The pretender takes your gold and is gone."; }
                 break;

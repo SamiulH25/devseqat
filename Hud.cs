@@ -83,7 +83,8 @@ sealed partial class Hud
         for (int i = 0; i < shown; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), H - ch - U(10), cw, ch), mine[i]));
         hiddenCards = mine.Count - shown;
 
-        player = new Rectangle(U(10), H - U(104), U(280), U(94));
+        int ph = B.AuraTier > 0 ? U(108) : U(94); // a row more for the aura (docs/KNIGHT_ORDERS.md K1)
+        player = new Rectangle(U(10), H - ph - U(10), U(280), ph);
         int ms = U(150);
         minimap = new Rectangle(W - ms - U(10), U(10), ms, ms);
         LayoutDivisions();
@@ -157,7 +158,20 @@ sealed partial class Hud
         : routing * 2 > active ? ("ROUTING", Bad)
         : morale < Battle.RallyAt ? ("WAVERING", Warn)
         : s.Pressure > 1.5f ? ("FLANKED", Orange)
+        : s.Plan == Plan.Reform ? ("RE-FORMING", Warn)
+        : s.Broken && !s.Cavalry ? ("RANKS BROKEN", Warn)
         : ("STEADY", Ok);
+
+    /// A company's grade as a card tag, its colour (the higher, the brighter), and its ranks in a word or two.
+    static string GradeTag(Grade g) => g switch { Grade.Rabble => "RAB", Grade.Trained => "TRN", Grade.Veteran => "VET", _ => "ELT" };
+    static Color GradeColor(Grade g) => g switch { Grade.Rabble => Dim, Grade.Trained => Color.White, Grade.Veteran => Gold, _ => Orange };
+    static string RanksOf(Squad s) => s.Cavalry || s.Swarm ? "" : s.Plan == Plan.Reform ? "RE-FORMING" : s.Broken ? "RANKS BROKEN" : s.Formed < 0.7f ? "WAVERING RANKS" : "FORMED";
+    static string PlanOf(Squad s) => s.Plan switch
+    {
+        Plan.Refuse => "FACING THE FLANK", Plan.Flank => s.Bend > 0 ? "WRAPPING THEIR FLANK" : "SWINGING ONTO A FLANK", Plan.Pin => "PINNING",
+        Plan.Regroup => "RE-FORMING AFTER A WIN", Plan.RollUp => "ROLLING UP THE LINE", Plan.Pursue => "CHASING THE BROKEN", Plan.Shelter => "FALLING BACK BEHIND THE FOOT",
+        _ => s.Rallying ? "RALLYING" : "",
+    };
 
     static int AvgMorale(IEnumerable<Unit> us)
     {
@@ -181,6 +195,7 @@ sealed partial class Hud
         Feed();
         MinimapPanel();
         PlayerPanel();
+        FormBar();
         if (Command) DivisionMarkers(); // under the cards and panels
         Cards();
         DivisionCards();
@@ -357,6 +372,7 @@ sealed partial class Hud
         }
         Row("heart", "HEALTH", p.Hp / p.Type.MaxHp, Bad);
         Row("boot", "STAMINA", p.Stamina / 100, Ok);
+        if (B.AuraTier > 0) Row("star", B.AuraBlade ? "BLADE" : B.Spent ? "SPENT" : "AURA", B.Aura / Battle.AuraMax, B.Spent ? Dim : Style.Aura);
         if (p.Mounted) Row("horse", "HORSE", p.HorseHp / p.Horse!.Hp, HorseCol);
         else Text("NO HORSE", x + U(12), y + U(1), Dim, 1);
         int rx = r.Right - U(10);
@@ -374,8 +390,35 @@ sealed partial class Hud
         // The swing (P2): a riposte window open, a chain of blows under way.
         if (!Command)
         {
-            if (B.Riposting) TextC("RIPOSTE!", W / 2f, H / 2f + U(36), Gold, 2);
+            if (B.Mad) TextC("THE FLAME HAS YOU", W / 2f, H / 2f + U(36), Bad, 2);
+            else if (B.Riposting) TextC("RIPOSTE!", W / 2f, H / 2f + U(36), Gold, 2);
             else if (B.Chain >= 1 && p.Action is UnitAction.Windup or UnitAction.Recover) TextC($"CHAIN X{B.Chain + 1}", W / 2f, H / 2f + U(36), B.Chain >= 3 ? Bad : Color.White, 1);
+        }
+    }
+
+    /// Above your panel: your form slots (docs/KNIGHT_ORDERS.md K2): key, name, and the wait or the aura it lacks.
+    void FormBar()
+    {
+        if (Command || !B.Player.Active || B.FormSlot.All(f => f == null)) return;
+        var keys = new[] { Act.Form1, Act.Form2, Act.Form3, Act.GreatForm };
+        int bw = U(68), bh = U(22), x = player.X, y = player.Y - bh - U(4);
+        for (int i = 0; i < 4; i++)
+        {
+            var f = B.FormSlot[i];
+            if (f == null) continue;
+            var r = new Rectangle(x, y, bw, bh);
+            x += bw + U(3);
+            string? why = B.CannotForm(i);
+            bool ready = why == null, spent = i == 3 && B.GreatUsed;
+            Rect(r, ready ? Kit.Mul(Style.Aura, 0.3f) : Color.Black * 0.5f);
+            Frame(r, ready ? Style.Aura : Color.White * 0.15f, U(1));
+            if (!ready && !spent && f.Cooldown > 0) Rect(new Rectangle(r.X, r.Bottom - U(2), (int)(r.Width * (1 - B.FormWait(i) / f.Cooldown)), U(2)), Style.Aura * 0.6f);
+            Text(Ctl.Name(keys[i]), r.X + U(4), r.Y + U(3), ready ? Gold : Dim, 1);
+            string name = f.Name.ToUpperInvariant();
+            while (name.Length > 2 && TW(name, 1) > bw - U(8)) name = name[..^1];
+            Text(name, r.X + U(4), r.Y + U(12), ready ? Color.White : Dim, 1);
+            string cost = spent ? "SPENT" : B.FormWait(i) > 0 ? $"{B.FormWait(i):0}" : $"{f.Aura:0}";
+            TextR(cost, r.Right - U(4), r.Y + U(3), ready ? Style.Aura : Dim, 1);
         }
     }
 
@@ -408,6 +451,7 @@ sealed partial class Hud
             Rect(new Rectangle(r.X + U(3), r.Y + U(3), bw, U(13)), sel ? Gold : Color.Black * 0.75f);
             Text($"{idx}", r.X + U(5), r.Y + U(6), sel ? Kit.IronDark : Color.White, 1);
             Text(Style.Numerals[Math.Clamp(type.Tier, 0, 7)], r.X + U(4), r.Y + U(20), Gold, 1); // tier
+            if (!s.Swarm) { Rect(new Rectangle(r.X + U(3), r.Y + U(28), TW(GradeTag(s.Grade), 1) + U(3), U(10)), Color.Black * 0.6f); Text(GradeTag(s.Grade), r.X + U(4), r.Y + U(29), GradeColor(s.Grade), 1); } // drill grade
             string tag = s.Order switch { Order.Follow => "FLW", Order.Charge => s.Target != null ? "ATK" : "CHG", _ => "HLD" };
             TextR(tag, r.Right - U(4), r.Y + U(5), s.Order == Order.Charge ? Orange : Dim, 1);
             if (s.Formation != Formation.Line)
@@ -422,6 +466,7 @@ sealed partial class Hud
             kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(76), r.Width - U(8), U(6)), active / (float)Math.Max(1, s.StartCount), cloth.Ui);
             kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(84), r.Width - U(8), U(6)), morale / 100f, MoraleColor(morale));
             if (state != "STEADY") kit.Chip(r.X + r.Width / 2 - (TW(state, 1) + U(10)) / 2, r.Y - U(20), state, sc);
+            EffectMarks(s, r);
         }
         if (hiddenCards > 0 && cards.Count > 0)
         {
@@ -430,6 +475,21 @@ sealed partial class Hud
         }
     }
     int hiddenCards;
+
+    /// The effects on a company (docs/COMPANIONS_MAGIC.md A6): up to four icons along the foot of its portrait, gold for
+    /// a blessing, red for a curse; a mage company's Will as a thin bar under it.
+    void EffectMarks(Squad s, Rectangle r)
+    {
+        int x = r.Right - U(4);
+        foreach (var e in s.Timed.Select(t => t.Effect).Concat(s.StandingIds.Select(Effects.Get)).Distinct().Take(4))
+        {
+            x -= U(11);
+            Rect(new Rectangle(x - U(1), r.Y + U(37), U(11), U(11)), Color.Black * 0.6f);
+            kit.Icon(e.Icon, x, r.Y + U(38), e.Harmful ? Style.Bad : Gold, 1);
+        }
+        if (Battle.CasterCompany(s))
+            kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(91), r.Width - U(8), U(3)), s.Will / 100f, new Color(120, 150, 255));
+    }
 
     /// A portrait built from the troop's own part sprites, laid out by the same body metrics as the 3D puppet
     /// (so every loadout and tier is drawn correctly), cropped to `box`.
@@ -672,6 +732,7 @@ sealed partial class Hud
             ((s.Company?.Name is { Length: > 0 } n ? n + ": " : "") + t.Name.ToUpperInvariant(), s.Team == 0 ? Friendly : Foe),
             ($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]} {t.Class.ToString().ToUpperInvariant()}   {s.Alive}/{s.StartCount} MEN", Color.White),
             ($"{StateOf(s)}   {FormationName(s.Formation)}", Dim),
+            ((s.Swarm ? "A MOB" : Battle.GradeName(s.Grade).ToUpperInvariant() + (RanksOf(s) is { Length: > 0 } rk ? "   " + rk : "")) + (PlanOf(s) is { Length: > 0 } pl ? "   " + pl : ""), s.Swarm ? Dim : GradeColor(s.Grade)),
             ($"MORALE {morale}   STAMINA {stamina}" + (t.Ammo > 0 ? $"   ARROWS {act.Sum(u => u.Ammo)}" : ""), morale < 30 ? Bad : Dim),
             ($"ARMOUR {t.Armor:0}  DAMAGE {t.Damage:0}" + (t.Range > 0 ? $"  RANGE {t.Range:0} M" : ""), Dim),
         };
@@ -699,7 +760,7 @@ sealed partial class Hud
         y += U(14);
         Text($"HP {t.MaxHp:0}  ARMOUR {t.Armor:0}  DMG {t.Damage:0}  REACH {t.Reach:0.0}", x, y, Dim, 1);
         y += U(14);
-        Text($"{StateOf(s)}, {FormationName(s.Formation)}" + (t.Ammo > 0 ? $", {act.Sum(u => u.Ammo)} ARROWS" : ""), x, y, Dim, 1);
+        Text($"{(s.Swarm ? "" : Battle.GradeName(s.Grade).ToUpperInvariant() + ", ")}{StateOf(s)}, {FormationName(s.Formation)}" + (t.Ammo > 0 ? $", {act.Sum(u => u.Ammo)} ARROWS" : ""), x, y, Dim, 1);
         y += U(14);
         float morale = act.Count == 0 ? 0 : act.Average(u => u.Morale) / 100, stamina = act.Count == 0 ? 0 : act.Average(u => u.Stamina) / 100;
         Text("MORALE", x, y, Dim, 1); Bar(new Rectangle(x + U(60), y + U(1), U(170), U(5)), morale, morale < 0.3f ? Bad : Ok);

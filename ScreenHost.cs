@@ -551,7 +551,62 @@ sealed class ScreenHost : Game
                 Shot("campaign-results-roll");
                 break;
             }
-            case 45: Exit(); break;
+            case 45:
+            {
+                // The upgrade cards of a tier IV company: tier V choices show their attack style (docs/COMPANIONS_MAGIC.md D2).
+                var st = c.Player.Companies[0].Main!;
+                st.Troop = "fjord_veterans";
+                st.Xp = st.PoolCap;
+                c.S.Gold = 5000;
+                map.Stage("upgrade");
+                Shot("campaign-upgrade-elite");
+                break;
+            }
+            case 46:
+            {
+                // The knight orders (docs/KNIGHT_ORDERS.md K4): sworn to one, at its chapter house; then THE ORDERS on the realm screen.
+                var o = c.S.Orders.FirstOrDefault(x => x.Patron == c.Captain.Contract) ?? c.S.Orders[0];
+                c.RaiseStanding(o.Id, 35);
+                c.Swear(o.Id);
+                c.Captain.AuraTier = 2;
+                c.Captain.OrderRank = 1;
+                map.Stage("chapter", c.SettlementById(o.Chapter));
+                Shot("campaign-chapter");
+                break;
+            }
+            case 47: map.Stage("orders"); Shot("campaign-orders"); break;
+            case 48:
+            {
+                // The Black Flame on the captain sheet (docs/KNIGHT_ORDERS.md K7): the pact, corruption, a wall to burn.
+                c.S.GameOver = false; // set for the summary shot above
+                c.TakePact();
+                c.Captain.Corruption = 35;
+                c.Captain.AuraWall = true;
+                map.Stage("skills");
+                Shot("campaign-flame");
+                break;
+            }
+            case 49:
+            {
+                // Your own order (docs/KNIGHT_ORDERS.md K8): the legend tab before founding (the vows to choose), then after.
+                c.LeaveOrder();
+                c.Captain.Pact = false; c.Captain.Corruption = 0; c.Captain.AuraTier = 3;
+                var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+                co.Battles = Math.Max(co.Battles, 60);
+                if (co.BattleHonours.Count < 3) co.BattleHonours.AddRange(new[] { "Ashby Ford", "Hollin Hill", "Wyck Moor" });
+                map.Stage("legend");
+                Shot("campaign-legend-found");
+                break;
+            }
+            case 50:
+            {
+                c.FoundOrder(new[] { "no_rob", "no_slaves", "contract" });
+                foreach (var m in c.Player.Companies.SelectMany(k => k.Roll).OrderByDescending(m => m.Battles).Take(2)) { m.Battles = Math.Max(m.Battles, 5); c.Knight(m); }
+                map.Stage("legend");
+                Shot("campaign-legend-order");
+                break;
+            }
+            case 51: Exit(); break;
         }
     }
 }

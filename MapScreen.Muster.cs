@@ -74,6 +74,8 @@ partial class MapScreen
         ui.Pips(new Rectangle(x, y, w, ui.U(6)), Rules.Places(c) / MathF.Max(1, Rules.Cap(Rules.RoleOf(c))), Style.Sides[2].Ui, 10);
         y += ui.U(9);
         ui.Text("COHESION", x, y, Style.Dim * 0.8f, 1);
+        var grade = Battle.GradeOf(Battle.DrillOf(c)); // what its drill makes it in battle (docs/MELEE.md D1)
+        ui.TextR(Battle.GradeName(grade).ToUpperInvariant(), r.Right - ui.U(7), y, grade >= Grade.Veteran ? Kit.Gilt : grade == Grade.Trained ? Style.Text : Style.Dim, 1);
         y += ui.U(9);
         ui.Gauge(new Rectangle(x, y, w, ui.U(5)), c.Cohesion / 30f, c.Cohesion >= 15 ? Style.Ok : c.Cohesion >= 8 ? Style.Warn : Style.Bad);
         y += ui.U(9);
@@ -190,7 +192,7 @@ partial class MapScreen
     {
         var c = Well(box, "THE COMPANY", Kit.Gilt);
         var list = C.Player.Companies;
-        var roles = new (string Role, string Label, Color Col)[] { ("infantry", "FOOT", Style.Sides[2].Ui), ("spears", "SPEARS", Style.Friendly), ("archers", "BOWS", Style.Ok), ("horse", "HORSE", Style.Orange) };
+        var roles = new (string Role, string Label, Color Col)[] { ("infantry", "FOOT", Style.Sides[2].Ui), ("spears", "SPEARS", Style.Friendly), ("archers", "BOWS", Style.Ok), ("horse", "HORSE", Style.Orange), ("casters", "MAGES", Kit.Gilt) };
         int total = Math.Max(1, list.Sum(k => k.Men)), bx = c.X;
         foreach (var (role, _, col) in roles)
         {
@@ -204,7 +206,7 @@ partial class MapScreen
             int n = list.Where(k => Rules.RoleOf(k) == role).Sum(k => k.Men);
             ui.Rect(new Rectangle(lx, y + ui.U(2), ui.U(5), ui.U(5)), col);
             ui.Text($"{label} {n}", lx + ui.U(9), y, n > 0 ? Style.Text : Style.Dim * 0.6f, 1);
-            lx += c.Width / 4;
+            lx += c.Width / roles.Length;
         }
         y += ui.U(18);
         float bal = C.S.LastWeekBalance, coh = list.Count == 0 ? 0 : list.Average(k => k.Cohesion);
@@ -282,6 +284,21 @@ partial class MapScreen
         y += ui.U(25);
         if (ui.Button(new Rectangle(x, y, w, ui.U(22)), $"DIVISIONS ({C.S.Divisions.Count})", true, ctl.Name(Act.DivisionsScreen))) OpenScreen(PanelKind.Divisions);
         y += ui.U(30);
+        // Camp rites (Rites.cs): only those someone in the company can work, two to a row.
+        var rites = Campaign.RiteList.Where(rt => C.CanWork(rt.Tradition)).ToList();
+        if (rites.Count > 0)
+        {
+            ui.Text(C.S.Relic ? $"CAMP RITES   RELIC {C.S.RelicCharges}/{Campaign.RelicCharges:0}" : "CAMP RITES", x, y, Kit.Gilt, 1);
+            y += ui.U(13);
+            for (int i = 0; i < rites.Count; i++)
+            {
+                var rt = rites[i];
+                var rb = new Rectangle(x + i % 2 * (w / 2 + ui.U(2)), y + i / 2 * ui.U(21), w / 2 - ui.U(2), ui.U(18));
+                if (ui.Button(rb, ui.Fit(rt.Name, rb.Width - ui.U(8)), C.S.Gold >= rt.Gold))
+                    note = C.Rite(rt.Id) ?? rt.Line;
+            }
+            y += (rites.Count + 1) / 2 * ui.U(21) + ui.U(6);
+        }
         // Prisoners: turn them to your cause (green, cohesion 0) or let them go.
         ui.Icon("chain", x, y, Kit.Gilt, 1);
         ui.Text($"PRISONERS {C.PrisonerCount}", x + ui.U(12), y, Kit.Gilt, 1);
