@@ -64,6 +64,9 @@ public sealed class Squad
 
     /// Training (docs/MELEE.md D1, 0-1) and how well the ranks hold right now (D2, 0-1); men read their product.
     public float Drill = 0.6f, Formed = 1;
+    /// Ranks broken (Formed fell under 0.4; re-formed at 0.55): its men fight each for himself. InContact: a man is at blows.
+    public bool Broken, InContact;
+    public Grade Grade => Battle.GradeOf(Drill);
     public float Discipline => Drill * Formed;
     /// The enemy company it is closing with or fighting (BattleRanks.cs; the ordered Target, else the nearest).
     public Squad? Foe;

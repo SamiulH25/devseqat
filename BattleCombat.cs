@@ -24,6 +24,7 @@ public partial class Battle
                 break;
             default:
                 u.Action = UnitAction.None;
+                u.Guard = false;
                 break;
         }
     }
@@ -153,8 +154,11 @@ public partial class Battle
             if (ranged && !t.Type.HasShield) chance *= 0.3f;
             if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && (t.Type.Tier <= 3 || Perk("Champion")) ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
             if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t)) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
+            if (!ranged) chance *= RankGuard(t) * RankEdge(a); // friends at the shoulders, foes all round (docs/MELEE.md D3.7)
+            if (t.Guard && !ranged && t.Squad != null) chance = MathF.Min(0.92f, chance + (1 - chance) * 0.5f * t.Squad.Drill); // he saw it coming
             if (rng.NextSingle() < chance)
             {
+                if (t.Guard) t.Cooldown = 0; // a held guard opens the way for his own blow
                 t.Action = UnitAction.Block;
                 t.ActionTimer = 0.35f;
                 if (ranged && t.Type.HasShield && t.StuckArrows < 4) t.StuckArrows++;
@@ -182,7 +186,7 @@ public partial class Battle
         float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1); // arrows pass between a skeleton's ribs
-        if (side != Side.Front && t.Squad != null) t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f;
+        if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? a.Type.Pierce : 0); // your mace or axe bites through armour too
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
         if (a.IsPlayer) CountDeed(t, ranged, lance);
@@ -264,6 +268,7 @@ public partial class Battle
         }
         if (LastStand(t, killer)) return; // P6
         t.Dead = true;
+        FellFromRanks(t);
         t.DiedAt = Time;
         t.DiedFrom = killer.Pos;
         t.Hp = 0;

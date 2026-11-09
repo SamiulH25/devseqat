@@ -90,12 +90,13 @@ public partial class Battle
             for (int r = 0; r < files[f].Count; r++) files[f][r].Place = r * cols + f;
     }
 
-    /// Fights from its ranks: foot companies of trained men (Drill 0.3 and up) in the open field. Rabble, swarms (goblins,
-    /// packs, trolls) fight as mobs, and a siege's walls and ladders take men one by one.
-    bool Ranked(Squad s) => !s.Swarm && !s.Cavalry && Wall == null && s.Drill >= 0.3f;
+    /// Fights from its ranks: foot companies of men in the open field (rabble too, until their ranks break: BattleDrill.cs),
+    /// and the raised dead. Beasts and swarms (goblins, packs, trolls, ghouls) fight as mobs, and a siege's walls and
+    /// ladders take men one by one.
+    bool Ranked(Squad s) => !s.Swarm && !s.Cavalry && Wall == null && (s.Units.Count == 0 || !s.Units[0].Type.Wild || DrillOf(s.Units[0].Type) > 0);
 
     /// A charging company closes with its foe as a body: its front-rank line walks up to a sword's length short of the foe's
-    /// nearest man, turning to face him, never more than a few metres ahead of where the front rank is.
+    /// nearest man, turning to face him, never more than a few metres ahead of where the front rank is. In contact it holds.
     void Close(Squad s, float dt)
     {
         if (s.Order != Order.Charge || !Ranked(s) || s.Alive == 0) { s.Foe = null; return; }
@@ -117,14 +118,20 @@ public partial class Battle
         var dir = Vector2.Normalize(toC);
         // On a route round water or hedges, the front follows the route until it is near.
         if (s.Path != null && nd > 100 && s.Path.Dir(f) is var pd && pd != Vector2.Zero) dir = pd;
-        float turn = 1.5f * dt;
+        float turn = (s.InContact ? 0.15f : 1.5f) * dt; // at blows a line barely turns: wheeling would open it
         float a = MathF.Atan2(s.Front.Y, s.Front.X), b = MathF.Atan2(dir.Y, dir.X);
         a += Math.Clamp(MathHelper.WrapAngle(b - a), -turn, turn);
         s.Front = new Vector2(MathF.Cos(a), MathF.Sin(a));
+        // At blows the line holds where it stands (it never gives ground by itself); otherwise it walks on to a sword's
+        // length short of the foe.
+        if (s.InContact) return;
         float standoff = MathF.Max(1, s.Units[0].Type.Reach * 0.8f);
-        float ahead = Math.Clamp(Vector2.Dot(near.Pos - f, dir) - standoff, -1, 3);
+        float ahead = Math.Clamp(Vector2.Dot(near.Pos - f, dir) - standoff, 0, 3);
         s.Anchor = f + dir * ahead;
     }
+
+    /// Its foe is a huge beast or a handful of men (a quarter of its own number or fewer): ranks are no use, it closes round them.
+    static bool Overwhelms(Squad s) => s.Foe is { } f && (f.Alive * 4 <= s.Alive || f.Units.Count > 0 && f.Units[0].Type.Huge);
 
     /// The enemy company whose edge is nearest (routed companies left out).
     Squad? NearestFoe(Squad s)
@@ -140,13 +147,17 @@ public partial class Battle
         return best;
     }
 
-    /// How far a man of this company steps off his place to strike: little in a drilled company, far in a rabble.
-    static float Lunge(Squad s) => 1 + 3 * (1 - s.Discipline);
+    /// How far a man of this company steps off his place to strike: half a pace in an elite company, far in a rabble.
+    static float Lunge(Squad s) => 0.4f + 3.4f * MathF.Pow(1 - s.Discipline, 1.5f);
+
+    /// How hard a man is to shove (x his body's mass): up to 4x for a man on his place in a well-ordered company.
+    float Footing(Unit u) => u.Squad is { } s && !u.Routing && !s.Broken && Ranked(s) && Vector2.DistanceSquared(u.Pos, u.Slot) < 1 ? 1 + 3 * s.Discipline : 1;
 
     /// One man of a ranked company (Think has already handled routing, swings, arrows and braced spears).
-    /// He fights whoever is within reach where he stands; a front-rank man (or a long spear in the second rank) also steps
-    /// a short way off his place to reach a foe; the rest keep their places. In a poorly drilled company some men in the
-    /// back ranks cannot wait and go looking for a fight.
+    /// He fights whoever is within reach where he stands, and keeps his guard toward a foe close by; a front-rank man (or a
+    /// long spear in the second rank) steps a short way off his place to reach a foe, the second rank a shorter way through
+    /// the gaps, and anyone a step toward a foe at arm's length from his place; the rest keep their places. In a poorly
+    /// drilled company some men in the back ranks cannot wait and go looking for a fight.
     void FightFromRanks(Unit u, Squad s, Unit? enemy, float d, float dt)
     {
         bool charge = s.Order == Order.Charge;
@@ -162,12 +173,14 @@ public partial class Battle
         {
             if (d <= reach)
             {
+                if (u.Action == UnitAction.Block) { if (u.Target is { } th) u.Face(th.Pos - u.Pos); return; } // guard up
+                if (Guard(u, s)) return;
                 u.Face(enemy.Pos - u.Pos);
                 if (u.Cooldown <= 0) StartSwing(u, enemy);
                 return;
             }
-            float allowed = spill && d < 8 ? 99 : front ? Lunge(s) : 0;
-            if (allowed > 0 && Vector2.Distance(u.Slot, enemy.Pos) < allowed + reach)
+            float allowed = spill && d < 8 ? 99 : front ? Lunge(s) : u.Rank == 1 ? Lunge(s) * 0.6f : 0.8f;
+            if (Vector2.Distance(u.Slot, enemy.Pos) < allowed + reach)
             {
                 var to = Via(u, enemy.Pos) - u.Pos;
                 u.Face(to);
@@ -180,9 +193,28 @@ public partial class Battle
         {
             var to = Via(u, u.Slot) - u.Pos;
             u.Wish = to / MathF.Max(0.01f, to.Length()) * MathF.Min(u.Type.Speed, s.MarchSpeed) * MathF.Min(1, toSlot);
-            u.Face(charge && toSlot < 2 ? s.Front : to);
+            u.Face(enemy != null && d < 3 ? enemy.Pos - u.Pos : charge && toSlot < 2 ? s.Front : to);
         }
-        else u.Face(s.FaceAt(u.Slot));
+        else u.Face(enemy != null && d < 3 ? enemy.Pos - u.Pos : s.FaceAt(u.Slot)); // guard toward a foe close by
+    }
+
+    readonly List<Unit> nearThreat = new(16);
+
+    /// A man who sees a foe winding up a blow at him may raise his guard instead of swinging: a trained company's men
+    /// do it as often as their discipline allows, rabble almost never. The guard is held until the blow falls.
+    bool Guard(Unit u, Squad s)
+    {
+        if (u.Action != UnitAction.None || s.Grade == Grade.Rabble) return false;
+        Unit? threat = null;
+        foreach (var o in Near(u.Pos, 3.5f, nearThreat))
+            if (o.Team != u.Team && o.Active && o.Action == UnitAction.Windup && o.Target == u && (threat == null || o.ActionTimer < threat.ActionTimer)) threat = o;
+        if (threat == null || threat == u.Target && u.Guard || rng.NextSingle() >= s.Discipline * 0.8f) return false;
+        u.Action = UnitAction.Block;
+        u.ActionTimer = threat.ActionTimer + 0.15f;
+        u.Guard = true;
+        u.Target = threat;
+        u.Face(threat.Pos - u.Pos);
+        return true;
     }
 
     /// Mean distance of a company's standing men from their places (0 = a perfect formation).

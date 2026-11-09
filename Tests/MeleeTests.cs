@@ -40,7 +40,7 @@ public static partial class SelfTest
     static void RearRanksWait()
     {
         var (b, a, e) = Clash(42, "ironguard", "ironguard");
-        a.Drill = 0.95f; // a well drilled company: none of its back ranks break out
+        a.Drill = e.Drill = 0.95f; // well drilled on both sides: no stragglers come round to the back ranks
         bool contact = false;
         float since = 0;
         int rearBlows = 0, frontBlows = 0;
@@ -95,5 +95,56 @@ public static partial class SelfTest
         float share = own / (float)Math.Max(1, own + other);
         Console.WriteLine($"melee: {own} swings at their own targets, {other} at others ({share:P0})");
         Check(own > 0 && share > 0.9f, $"companies fight the company they were sent at ({share:P0})");
+    }
+
+    /// Rank error and intermix of a clash of `troop`, averaged from 8 s to 25 s.
+    static (float err, float mix) ClashOrder(int seed, string troop)
+    {
+        var (b, a, e) = Clash(seed, troop, troop);
+        float err = 0, mix = 0;
+        int n = 0;
+        for (int i = 0; i < 60 * 25; i++)
+        {
+            b.Update(1 / 60f);
+            if (i >= 60 * 8 && i % 30 == 0) { err += Battle.RankError(a) + Battle.RankError(e); mix += Battle.Intermix(a, e) + Battle.Intermix(e, a); n += 2; }
+        }
+        return (err / n, mix / n);
+    }
+
+    /// M2: levies start in a line but cannot keep it at blows; drilled men can.
+    static void LeviesLoseRanks()
+    {
+        var levies = ClashOrder(45, "levies");
+        var drilled = ClashOrder(45, "ironguard");
+        Console.WriteLine($"melee: levies rank error {levies.err:0.00} m, intermix {levies.mix:P0}; ironguard {drilled.err:0.00} m, {drilled.mix:P0}");
+        Check(Battle.GradeOf(Battle.DrillOf(Troops.Get("levies"))) == Grade.Rabble && Battle.GradeOf(Battle.DrillOf(Troops.Get("immortals"))) == Grade.Elite, "levies are rabble, tier 7 elite");
+        Check(levies.err > drilled.err * 1.5f && levies.mix > drilled.mix, "levies end up a crowd, drilled men a line");
+        var (b, a, _) = Clash(46, "levies", "levies");
+        for (int i = 0; i < 60 * 20 && !a.Broken; i++) b.Update(1 / 60f);
+        Check(a.Broken, "a rabble's ranks break in a long melee");
+    }
+
+    /// M2: drill wins fights. The same men, one side drilled like elites, the other like rabble: at even numbers the
+    /// drilled side wins, and clearly (a fifth of its men or more still standing). Outnumbered: ElitePincer (M4).
+    static void TierWins()
+    {
+        foreach (int foes in new[] { 24 })
+        {
+            int won = 0;
+            for (int seed = 0; seed < 3; seed++)
+            {
+                var b = Battle.Empty(50 + seed);
+                var a = b.AddSquad(0, Troops.Get("men_at_arms"), 24, new(0, -12), 8, Vector2.UnitY);
+                var e = b.AddSquad(1, Troops.Get("men_at_arms"), foes, new(0, 12), 8, -Vector2.UnitY);
+                a.Drill = 0.92f;
+                e.Drill = 0.22f;
+                a.Order = e.Order = Order.Charge;
+                a.Target = e; e.Target = a;
+                for (int i = 0; i < 60 * 120 && a.Alive > 0 && e.Alive > 0; i++) b.Update(1 / 60f);
+                Console.WriteLine($"melee: drilled 24 vs rabble {foes} (seed {seed}): {a.Alive} vs {e.Alive} standing after {b.Time:0} s");
+                if (a.Alive > e.Alive && a.Alive >= 5) won++;
+            }
+            Check(won >= 2, $"drilled men clearly beat as many rabble of the same troop ({won} of 3)");
+        }
     }
 }

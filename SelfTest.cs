@@ -113,6 +113,8 @@ public static partial class SelfTest
         RearRanksWait();
         StepsUp();
         FightsItsTarget();
+        LeviesLoseRanks();
+        TierWins();
         Holdouts();
         GoblinBattle();
         Wolves();

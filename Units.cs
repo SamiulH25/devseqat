@@ -69,6 +69,8 @@ public sealed class UnitType
     public float MaxHp, Damage, Armor, Reach, Windup, Recover, Speed, BlockChance, Range, VsMounted = 1, Pierce, Reload = 1;
     /// Damage against creatures (wild troops), like VsMounted against riders. Above 1, a monster's fear does not reach them.
     public float VsMonster = 1;
+    /// Drill (docs/MELEE.md D1) when the troop data sets it (0-1); -1: from its tier.
+    public float Drill = -1;
     /// Drawn size (1 = a man). Goblins are small, bosses and trolls big.
     public float Size = 1;
     /// Creature traits (docs/CREATURES.md): "craven" (breaks early, rallies again and again while its boss lives),
@@ -161,6 +163,9 @@ public sealed class Unit
     public int Place = -1, Rank;
     /// A fixed 0-1 draw for this man: how readily he leaves the ranks when discipline is poor (low = first to go).
     public float Grit;
+    /// His guard is up on purpose against a blow he saw coming (a drilled man's choice, BattleRanks.Guard): he blocks
+    /// better, and strikes back at once if it holds.
+    public bool Guard;
 
     public bool Active => !Dead && !Fled;
     public bool Mounted => Horse != null;

@@ -78,7 +78,7 @@ public partial class Battle
         var list = squads.ToList();
         var at = list.Count > 0 ? list.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / list.Count : centroid[team];
         var d = new Division(team, Divisions.Count, name, temper, skill, goal ?? new Goal(GoalKind.Hold, at));
-        foreach (var s in list) { d.Squads.Add(s); s.Division = d; }
+        foreach (var s in list) { d.Squads.Add(s); s.Division = d; if (!s.Swarm) s.Drill = MathF.Min(1, s.Drill + Math.Clamp(skill, 0, 10) * 0.01f); } // a sergeant drills his men
         d.Leader = leader ?? PickLeader(d);
         if (d.Leader != null) d.Leader.Sergeant = true;
         Divisions.Add(d);
