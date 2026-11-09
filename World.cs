@@ -342,6 +342,8 @@ sealed partial class World : IDisposable
         alwaysStart = m.V.Count;
         Water(m);
         Features(m);
+        if (t.Wall != null) Torches(m, t);
+        if (!t.Grass) Skirt(m);
         Grass(m);
         if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
         alwaysTris = (m.V.Count - alwaysStart) / 3;
@@ -605,29 +607,62 @@ sealed partial class World : IDisposable
 
     // ---------- a besieged town (Terrain.SiegeWall) ----------
 
-    static readonly Color WallStone = new(150, 146, 136), Timber = new(104, 72, 44);
+    static readonly Color WallStone = new(150, 146, 136), Timber = new(104, 72, 44), Footing = new(112, 110, 100);
+    /// Foliage UV tags the world shader reads (leafiness below zero): dressed stone (courses drawn in the shader) and
+    /// flames (unlit, flickering).
+    static readonly Vector2 MasonryTag = new(0, -1), FlameTag = new(0, -2);
 
-    /// A length of wall: its top is the walkway (the terrain carries the units), faced in stone, with merlons on the outer edge.
+    /// A length of wall: its top is the walkway (the terrain carries the units), faced in stone, with merlons on the outer edge
+    /// and a darker battered footing where the rain splashes and the moss grows.
     static void WallStones(Mesh m, Vector3 b, float len, Random r)
     {
-        m.Tag = Vector2.Zero;
+        m.Tag = MasonryTag;
         const float h = SiegeWall.Height, d = SiegeWall.Top1 - SiegeWall.Outer;
         var c = new Vector3(b.X, b.Y - h - 2, SiegeWall.Outer + d / 2);
         m.Box(c, len + 0.05f, d, h + 2.04f, 0, Jitter(WallStone, r, 0.05f));
+        m.Box(c - Vector3.UnitZ * 0.25f, len + 0.06f, d + 0.5f, 3.1f, 0, Jitter(Footing, r, 0.04f));
         for (float x = -len / 2 + 0.5f; x < len / 2; x += 1.6f)
             m.Box(new Vector3(b.X + x, b.Y, SiegeWall.Outer + 0.3f), 0.8f, 0.6f, 0.75f, 0, Jitter(WallStone, r, 0.06f));
+        m.Tag = Vector2.Zero;
     }
 
     static void Tower(Mesh m, Vector3 b, Random r)
     {
-        m.Tag = Vector2.Zero;
+        m.Tag = MasonryTag;
         var foot = new Vector3(b.X, b.Y - SiegeWall.Height - 2, SiegeWall.Outer + 1.5f);
         m.Box(foot, 4.2f, 5.4f, SiegeWall.Height + 5.5f, 0, Jitter(WallStone, r, 0.04f));
+        m.Box(foot, 4.7f, 5.9f, 3.2f, 0, Jitter(Footing, r, 0.04f));
         for (int i = 0; i < 4; i++)
         {
             float x = (i % 2 * 2 - 1) * 1.7f, z = (i / 2 * 2 - 1) * 2.3f;
             m.Box(foot + new Vector3(x, SiegeWall.Height + 5.5f, z), 0.8f, 0.8f, 0.8f, 0, WallStone);
         }
+        m.Tag = Vector2.Zero;
+    }
+
+    /// Torches every `TorchSpacing` m along the outer face of the wall (and over the gate). The world and sprite shaders
+    /// light the wall, the ground and the men from the same fixed row (`Shading.Torch`), so no light list is needed.
+    public const float TorchSpacing = 10;
+    static readonly float[] TowerXs = { SiegeWall.GateX - 5.2f, SiegeWall.GateX + 5.2f, -60, -30, 30, 60, -95, 95 };
+
+    static void Torches(Mesh m, Terrain t)
+    {
+        var rng = new Random(5);
+        for (float x = -240; x <= 240; x += TorchSpacing)
+        {
+            bool gate = t.Wall!.AtGate(x), tower = TowerXs.Any(tx => MathF.Abs(tx - x) < 2.4f);
+            float top = t.Height(new Vector2(gate ? x + TorchSpacing : x, 15.25f));
+            float z = tower ? SiegeWall.Outer - 1.25f : gate ? SiegeWall.Outer + 0.25f : SiegeWall.Outer - 0.02f;
+            var a = new Vector3(x, top - 1.3f, z);
+            var head = new Vector3(x, top + 0.35f, z - 0.45f);
+            m.Tag = Vector2.Zero;
+            m.Frustum(a, head, 0.05f, 0.06f, 4, Timber, rng);
+            m.Box(head - Vector3.Up * 0.12f, 0.2f, 0.2f, 0.16f, 0, new Color(50, 46, 44)); // the iron cup
+            m.Tag = FlameTag;
+            m.Frustum(head + Vector3.Up * 0.02f, head + Vector3.Up * 0.62f, 0.15f, 0, 5, new Color(255, 170, 60), rng);
+            m.Frustum(head + Vector3.Up * 0.02f, head + Vector3.Up * 0.38f, 0.09f, 0, 4, new Color(255, 236, 150), rng);
+        }
+        m.Tag = Vector2.Zero;
     }
 
     static void GateDoor(Mesh m, Vector3 b, bool broken, Random r)
@@ -635,13 +670,25 @@ sealed partial class World : IDisposable
         m.Tag = Vector2.Zero;
         if (!broken)
         {
-            m.Box(b, SiegeWall.GateHalf * 2 + 0.6f, 0.5f, SiegeWall.Height - 0.4f, 0, Timber);
-            for (int i = 0; i < 3; i++) m.Box(b + new Vector3(0, 0.8f + i * 1.3f, -0.3f), SiegeWall.GateHalf * 2 + 0.4f, 0.12f, 0.2f, 0, new Color(70, 72, 80));
+            // Planks of slightly different wood, iron bands and studs across them.
+            float w = SiegeWall.GateHalf * 2 + 0.6f;
+            m.Box(b, w, 0.5f, SiegeWall.Height - 0.4f, 0, new Color(Timber.ToVector3() * 0.7f));
+            int planks = 9;
+            for (int i = 0; i < planks; i++)
+                m.Box(b + new Vector3(-w / 2 + (i + 0.5f) * w / planks, 0, -0.27f), w / planks - 0.06f, 0.06f, SiegeWall.Height - 0.45f - r.NextSingle() * 0.15f, 0, Jitter(Timber, r, 0.1f));
+            for (int i = 0; i < 3; i++)
+            {
+                var band = b + new Vector3(0, 0.8f + i * 1.3f, -0.33f);
+                m.Box(band, SiegeWall.GateHalf * 2 + 0.4f, 0.08f, 0.2f, 0, new Color(70, 72, 80));
+                for (float x = -w / 2 + 0.4f; x < w / 2; x += 0.65f) m.Box(band + new Vector3(x, 0.05f, -0.05f), 0.08f, 0.06f, 0.1f, 0, new Color(96, 98, 104));
+            }
         }
         else
             for (int i = 0; i < 5; i++) // splintered planks on the ground
                 m.Box(b + new Vector3(r.NextSingle() * 5 - 2.5f, 0, 1 + r.NextSingle() * 3), 1.6f, 0.3f, 0.12f, r.NextSingle() * MathF.Tau, Timber);
+        m.Tag = MasonryTag;
         m.Box(b + new Vector3(0, SiegeWall.Height - 0.4f, 0.9f), SiegeWall.GateHalf * 2 + 2, 2.4f, 1.2f, 0, WallStone); // the arch over the way
+        m.Tag = Vector2.Zero;
     }
 
     /// Two rails leaning from the ground to the wall top, with rungs.
@@ -695,7 +742,7 @@ sealed partial class World : IDisposable
     void Grass(Mesh m)
     {
         var r = new Random(t.Seed + 13);
-        int count = t.IsFlat || !t.Grass ? 0 : 14000;
+        int count = !t.Grass ? 0 : 9000; // clumps of 2-4 tufts
         var flowers = new[] { new Color(236, 214, 80), new Color(240, 240, 232), new Color(176, 120, 200) };
         for (int i = 0; i < count; i++)
         {
@@ -705,24 +752,68 @@ sealed partial class World : IDisposable
             var ground = GroundColor(p);
             var baseCol = new Color(ground * 0.78f);
             var tip = new Color(Vector3.Lerp(ground, new Vector3(0.62f, 0.72f, 0.36f), 0.5f));
-            var b = new Vector3(p.X, t.Height(p) - 0.02f, p.Y);
-            for (int k = 0; k < 3; k++)
+            int tufts = 2 + r.Next(3);
+            for (int c = 0; c < tufts; c++)
             {
-                float ang = r.NextSingle() * MathF.Tau, w = 0.04f + r.NextSingle() * 0.04f, h = 0.22f + r.NextSingle() * 0.3f;
-                var side = new Vector3(MathF.Cos(ang), 0, MathF.Sin(ang)) * w;
-                var lean = new Vector3(r.NextSingle() - 0.5f, 0, r.NextSingle() - 0.5f) * 0.25f;
-                var o = new Vector3(r.NextSingle() - 0.5f, 0, r.NextSingle() - 0.5f) * 0.25f;
-                m.TriUp(b + o - side, b + o + side, b + o + Vector3.Up * h + lean, baseCol, baseCol, tip);
+                var q = c == 0 ? p : p + new Vector2(r.NextSingle() - 0.5f, r.NextSingle() - 0.5f) * 1.1f;
+                var b = new Vector3(q.X, t.Height(q) - 0.02f, q.Y);
+                for (int k = 0; k < 3; k++)
+                {
+                    float ang = r.NextSingle() * MathF.Tau, w = 0.04f + r.NextSingle() * 0.04f, h = 0.22f + r.NextSingle() * 0.3f;
+                    var side = new Vector3(MathF.Cos(ang), 0, MathF.Sin(ang)) * w;
+                    var lean = new Vector3(r.NextSingle() - 0.5f, 0, r.NextSingle() - 0.5f) * 0.25f;
+                    var o = new Vector3(r.NextSingle() - 0.5f, 0, r.NextSingle() - 0.5f) * 0.25f;
+                    m.TriUp(b + o - side, b + o + side, b + o + Vector3.Up * h + lean, baseCol, baseCol, tip);
+                }
             }
-            if (r.Next(22) == 0)
+            var b0 = new Vector3(p.X, t.Height(p) - 0.02f, p.Y);
+            if (r.Next(14) == 0)
             {
-                var top = b + Vector3.Up * (0.3f + r.NextSingle() * 0.15f);
+                var top = b0 + Vector3.Up * (0.3f + r.NextSingle() * 0.15f);
                 var col = flowers[r.Next(flowers.Length)];
                 float f = 0.06f;
                 m.TriUp(top + new Vector3(-f, 0, 0), top + new Vector3(f, 0, 0), top + new Vector3(0, f, 0), col, col, col, 0.9f);
                 m.TriUp(top + new Vector3(0, 0, -f), top + new Vector3(0, 0, f), top + new Vector3(0, f, 0), col, col, col, 0.9f);
             }
         }
+    }
+
+    /// Beyond the campaign map's edge: rings of rock and snow peaks running out to the haze, so the world does not end in
+    /// the sky's colour when you look over the mountain rim. The inner ring meets the terrain's own edge.
+    void Skirt(Mesh m)
+    {
+        const int Rings = 7, Around = 48;
+        float half = t.Half - 0.5f;
+        var r = new Random(t.Seed + 21);
+        var pts = new Vector3[Rings + 1, Around * 4];
+        int n = Around * 4;
+        for (int i = 0; i < n; i++)
+        {
+            // Walk the square edge: four sides of `Around` steps each.
+            int side = i / Around;
+            float u = (i % Around) / (float)Around * 2 - 1;
+            var edge = side switch { 0 => new Vector2(u, -1), 1 => new Vector2(1, u), 2 => new Vector2(-u, 1), _ => new Vector2(-1, -u) } * half;
+            var outward = Vector2.Normalize(edge);
+            float h0 = t.Height(edge);
+            pts[0, i] = new Vector3(edge.X, h0, edge.Y);
+            for (int k = 1; k <= Rings; k++)
+            {
+                var p = edge + outward * (k * k * 22 + k * 30);
+                float peak = Terrain.Noise(p.X * 0.012f, p.Y * 0.012f, t.Seed + 22) * 55 + Terrain.Noise(p.X * 0.04f, p.Y * 0.04f, t.Seed + 23) * 18;
+                pts[k, i] = new Vector3(p.X, h0 + 12 * k + peak * MathF.Min(1, k / 2f), p.Y);
+            }
+        }
+        var rock = new Color(118, 114, 108);
+        for (int k = 0; k < Rings; k++)
+            for (int i = 0; i < n; i++)
+            {
+                int j = (i + 1) % n;
+                Vector3 a = pts[k, i], b = pts[k, j], c = pts[k + 1, j], d = pts[k + 1, i];
+                var below = (a + b + c + d) / 4 - Vector3.Up * 50;
+                Color Col(Vector3 q) => q.Y > 62 ? Jitter(new Color(226, 230, 236), r, 0.04f) : Jitter(rock, r, 0.08f);
+                m.Tri(a, b, c, Col((a + b + c) / 3), below);
+                m.Tri(a, c, d, Col((a + c + d) / 3), below);
+            }
     }
 
     /// Flat-shaded triangle soup with a few low-poly primitives.

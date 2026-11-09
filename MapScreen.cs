@@ -319,7 +319,7 @@ sealed partial class MapScreen
     public void Draw(Quality quality)
     {
         // Day and night on the map follow the campaign clock (kept readable at night); autumn and winter skies are greyer.
-        Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0), nightFloor: 0.62f);
+        Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0), nightFloor: 0.7f);
         var look = new Vector3(MathF.Cos(yaw) * MathF.Cos(pitch), -MathF.Sin(pitch), MathF.Sin(yaw) * MathF.Cos(pitch));
         var f3 = new Vector3(focus.X, terrain.Height(focus), focus.Y);
         eye = f3 - look * zoom;
@@ -409,9 +409,12 @@ sealed partial class MapScreen
                 if (!Campaign.Outlaw(p) && p.Breed != "pilgrims") { u.Horse = p.Kind == PartyKind.Player ? Rules.CaptainMount(C.Captain) : type.Mount ?? Mount.Courser; u.HorseHp = u.Horse.Hp; }
                 bearers[p.Id] = u;
             }
-            var moved = p.Pos - u.Pos;
-            bool moving = moved.LengthSquared() > 1e-6f;
-            u.Pos = p.Pos;
+            // A party in a town stands before its gate (on the near side as the map first faces), not on the roofs.
+            var at = p.Pos;
+            if (!p.Moving && C.SettlementAt(p.Pos, 3) is { } s) at = s.Pos + new Vector2(0, s.Kind == SettlementKind.Village ? -5.5f : -9.5f);
+            var moved = at - u.Pos;
+            bool moving = moved.LengthSquared() > 1e-6f && moved.LengthSquared() < 4;
+            u.Pos = at;
             u.Facing = u.Heading = p.Facing;
             u.ViewFacing += MathHelper.WrapAngle(u.Facing - u.ViewFacing) * 0.2f;
             u.ViewHeading = u.ViewFacing;

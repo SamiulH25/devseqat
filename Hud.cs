@@ -91,11 +91,13 @@ sealed partial class Hud
         if (Command && Div != null) LayoutGoals();
         else if (Command)
         {
-            int bw = U(112), bh = U(24);
+            // On a narrow screen the keys shrink to icon and key in three columns (the order's name shows on hover).
+            int cols = CompactOrders ? 3 : 2, bw = CompactOrders ? U(62) : U(112), bh = U(24);
             var order = new[] { Cmd.Charge, Cmd.Hold, Cmd.Advance, Cmd.FallBack, Cmd.Follow, Cmd.FormHere, Cmd.Spacing, Cmd.FireAtWill, Cmd.Formation };
-            int x0 = W - 2 * bw - U(16), y0 = H - (order.Length + 1) / 2 * (bh + U(4)) - U(10);
+            int rows = (order.Length + cols - 1) / cols;
+            int x0 = W - cols * bw - (cols - 1) * U(4) - U(12), y0 = H - rows * (bh + U(4)) - U(10);
             for (int i = 0; i < order.Length; i++)
-                buttons.Add((new Rectangle(x0 + (i % 2) * (bw + U(4)), y0 + (i / 2) * (bh + U(4)), bw, bh), order[i]));
+                buttons.Add((new Rectangle(x0 + (i % cols) * (bw + U(4)), y0 + (i / cols) * (bh + U(4)), bw, bh), order[i]));
         }
 
         var items = ShowResult ? (InCampaign ? new[] { MenuItem.Continue } : new[] { MenuItem.NewBattle, MenuItem.Title })
@@ -514,6 +516,9 @@ sealed partial class Hud
         [Cmd.FireAtWill] = "arrow", [Cmd.Hold] = "shield", [Cmd.Follow] = "flag", [Cmd.Formation] = "star",
     };
 
+    /// Order keys as icons only: below about 1440 wide (at this interface scale) the full panel crowds the cards.
+    bool CompactOrders => W < U(1440);
+
     /// The order keys in command view: an icon, the order and its key on each.
     void CommandPanel()
     {
@@ -532,8 +537,16 @@ sealed partial class Hud
             Rect(new Rectangle(r.X + U(1), r.Y + U(1), r.Width - U(2), U(1)), Color.White * (hover ? 0.3f : 0.1f));
             var (label, act) = Orders[c];
             kit.Icon(OrderIcons[c], r.X + U(5), r.Y + U(8), hover ? Color.White : Style.Text, 1);
-            Text(label, r.X + U(17), r.Y + U(9), hover ? Color.White : Style.Text, 1);
+            if (!CompactOrders) Text(label, r.X + U(17), r.Y + U(9), hover ? Color.White : Style.Text, 1);
             TextR(Ctl.Name(act), r.Right - U(5), r.Y + U(9), hover ? Kit.Parchment : Dim, 1);
+        }
+        if (CompactOrders && buttons.FirstOrDefault(b => b.R.Contains(Mouse)) is { R.Width: > 0 } h)
+        {
+            string label = Orders[h.C].Label;
+            int lw = TW(label, 1) + U(12);
+            var tr = new Rectangle(Math.Min(h.R.Center.X - lw / 2, W - lw - U(4)), area.Y - U(22), lw, U(18));
+            Panel(tr);
+            TextC(label, tr.Center.X, tr.Y + U(5), Color.White, 1);
         }
     }
 

@@ -796,9 +796,12 @@ public sealed class SpriteSheet
         BodyShape(body, coat);
         Add("hbody/n", body);
 
+        // The neck arches at the crest and narrows to the throat; the mane hangs in uneven locks along it.
         var neck = new Canvas(23, 13);
-        neck.Columns(0, 23, x => { float h = 6 - x * 0.1f, cy = 6.6f + x * 0.03f; return (cy - h, cy + h); }, coat);
-        neck.Area((x, y) => { float h = 6 - x * 0.1f, cy = 6.6f + x * 0.03f; return y >= cy - h && y < cy - h + 2.6f; }, mane);
+        static float NeckTop(float x) => 6.6f + x * 0.03f - (6.2f - x * 0.13f) - MathF.Sin(x / 23 * MathF.PI) * 0.9f;
+        static float NeckBottom(float x) => 6.6f + x * 0.03f + 6.0f - x * 0.15f;
+        neck.Columns(0, 23, x => (NeckTop(x), NeckBottom(x)), coat);
+        neck.Area((x, y) => y >= NeckTop(x) && y < NeckTop(x) + 2.3f + ((int)x * 7 % 3) * 0.7f, mane);
         Add("hneck/n", neck);
 
         var head = new Canvas(20, 10);
@@ -829,15 +832,18 @@ public sealed class SpriteSheet
         Add("hface/n", face);
 
         var leg = new Canvas(5, 30);
-        leg.Rect(0.5f, 0, 4.5f, 3, hoof);
-        leg.Rect(1, 3, 4, 5, mane);
-        leg.Rect(1, 5, 4, 15, coat);
+        leg.Body(0, 3, y => (0.2f + y * 0.15f, 4.8f - y * 0.15f), hoof);
+        leg.Body(3, 5.5f, y => (0.6f, 4.4f), mane); // the fetlock's feather
+        leg.Rect(1.4f, 5.5f, 3.6f, 15, coat);
         leg.Ellipse(2.5f, 15.5f, 2.2f, 2, coat, 0.05f);
         leg.Body(17, 30, y => (0.4f - (y - 17) * 0.02f, 4.6f + (y - 17) * 0.02f), coat);
         Add("hleg/n", leg);
 
-        var tail = new Canvas(5, 20);
-        tail.Body(0, 20, y => { float half = 2.4f - y * 0.06f; return (2.5f - half, 2.5f + half); }, mane);
+        // A full tail: thick at the dock, spreading into locks toward the end, with a gentle wave.
+        var tail = new Canvas(7, 22);
+        tail.Body(0, 22, y => { float half = 1.6f + MathF.Sin(MathF.Min(1, y / 18) * MathF.PI * 0.8f) * 1.7f, c = 3.5f + MathF.Sin(y * 0.35f) * 0.5f; return (c - half, c + half); }, mane);
+        for (int x = 1; x < 6; x += 2) tail.Clear(x, 0); // ragged ends
+        tail.Clear(2, 1); tail.Clear(5, 1);
         Add("htail/n", tail);
 
         // A camel (docs/WORLD.md W4) is the horse rig in a sand coat with a hump over the back.

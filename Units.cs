@@ -170,4 +170,5 @@ public sealed class LooseHorse
     public int Team, Coat;
 }
 
-public readonly record struct DeadHorse(Vector2 Pos, float Heading, int Team, int Coat, string Barding);
+/// A horse killed under its rider; `At` is the battle time it fell (the screen animates it going down).
+public readonly record struct DeadHorse(Vector2 Pos, float Heading, int Team, int Coat, string Barding, float At = 0);
