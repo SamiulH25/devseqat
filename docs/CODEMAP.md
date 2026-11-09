@@ -378,8 +378,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (557 lines)
 - **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:103, ContinueCampaign:116, OpenLab:129, QuickBattle:131, StartCampaignBattle:138, FinishCampaignBattle:148, CycleQuality:156, Update:160, Draw:190, Fade:223, CaptureShot:253, CampaignShots:275
 
-## SelfTest.cs (221 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:173, Lancer:181, Run:190, Scaled:192, MakeWanderer:195, Days:203, Ids:215, Check:217
+## SelfTest.cs (224 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:176, Lancer:184, Run:193, Scaled:195, MakeWanderer:198, Days:206, Ids:218, Check:220
 
 ## Settings.cs (76 lines)
 - **Difficulty** (enum, L5)
@@ -453,6 +453,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/MeleeTests.cs (405 lines)
 - **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, LeviesBreakRanks:172, RefusesFlank:195, VeteransWrap:234, ElitePincer:247, Reforms:278, HorseRegroup:299, BowsFallBack:343, MusterGrade:381, MightWeighsDrill:396
 
+## Tests/TierTests.cs (107 lines)
+- **SelfTest** (class, L6): Standing:9, SameRole:31, UpgradeNeverWorse:42, HigherTierWins:56, TierGap:73, TierSurvey:87
+
 ## Tests/WorldTests.cs (333 lines)
 - **SelfTest** (class, L6): WorldNames:9, Sites:32, Roads:85, Quests:138, TownLife:220, EventSpread:254, Polish:294
 
@@ -462,14 +465,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## TitleScreen.cs (196 lines)
 - **TitleScreen** (class, L7): SaveCard:19, TitleScreen:21, Update:23, U:33, Draw:35, ChooseRealm:82, Scene:101, Shifted:126, Clouds:129, Birds:146, Embers:160, Card:172, Fit:195
 
-## Troops.cs (236 lines)
-- **Troops** (class, L7): Get:14, HasMount:15, Mount:16, Path:49, Load:59, Validate:83, Tree:118
-- **NamedSpec** (record, L133)
-- **Company** (record, L135): Has:139
-- **StackSpec** (record, L145)
-- **ArmySpec** (record, L147)
-- **DivisionSpec** (record, L153)
-- **Armies** (class, L157): LineTroop:160, readonly:162, Count:170, Standard:178, Random:181, Large:188, Divide:200, Make:226, LineTroop:230, RoleOf:232
+## Troops.cs (254 lines)
+- **Troops** (class, L7): Get:14, HasMount:15, Mount:16, Path:49, Load:59, Validate:83, WorseUpgrade:122, Tree:136
+- **NamedSpec** (record, L151)
+- **Company** (record, L153): Has:157
+- **StackSpec** (record, L163)
+- **ArmySpec** (record, L165)
+- **DivisionSpec** (record, L171)
+- **Armies** (class, L175): LineTroop:178, readonly:180, Count:188, Standard:196, Random:199, Large:206, Divide:218, Make:244, LineTroop:248, RoleOf:250
 
 ## Ui.cs (186 lines)
 - **Ui** (class, L8): Ui:23, Anim:42, static:53, Since:66, Count:76, Key:83, Reset:86, Begin:88, End:98, Blocks:101, Block:102, U:103, Rect:105, Frame:109, Panel:118, Dim:121, Text:124, TW:129, TextC:130, TextR:131, Bar:135, Hover:148, Clicked:151, Button:160, Portrait:185
