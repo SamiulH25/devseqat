@@ -41,9 +41,12 @@ with its own UI (or none). The player cannot see why a company is fighting well 
    gives warning before it lands, and heavy use brings bad omens on the map. No spell wipes a company.
 4. **The best troops fight like the best.** A tier V-VII company has its own attack style (sweep, crush, knockback,
    thrust through) and passive traits. All passive: the men fight this way on their own; you choose it by what you raise.
-5. **Readable on the field.** An aura is a faint ring on the ground when its bearer's company is selected. A working shows
+5. **A higher tier is always better.** Every upgrade beats the troop it came from: in its stats, its style, its traits
+   and in a fight. A style or trait is added *on top of* better stats, never paid for with worse ones, and no malus may
+   make a tier VII company lose to its own tier VI at equal numbers. Tests hold this (D0, Part G).
+6. **Readable on the field.** An aura is a faint ring on the ground when its bearer's company is selected. A working shows
    as a colour (gold for faith, green-grey for craft, violet for the dead) and a feed line. Counterplay is always visible.
-6. **The rules that keep the game honest still hold:** headless sim, seeded `rng` only, replays exact, `--bench` within
+7. **The rules that keep the game honest still hold:** headless sim, seeded `rng` only, replays exact, `--bench` within
    10 %, old saves load, auto-resolve agrees with fought battles (`--agree`).
 
 ---
@@ -257,6 +260,28 @@ differently**: their blows land in their own way (a sweep, a knockback, a thrust
 traits. **Nothing here is activated by the player and nothing has a cooldown**: it is how these men fight, every blow, on
 their own. You see it on the field and read it in the troop tooltip; you choose it by what you recruit and upgrade.
 
+### D0. Higher tier is better (the hard rule)
+
+Everything in this part sits on one rule: **an upgrade is better than the troop it came from, and a tier beats the tier
+below it.** Today `SelfTest.TroopTree` only checks `hp + armour x 5 + damage` rises along each upgrade. That stays, and grows:
+
+- **Stats never go down.** Along every upgrade link that keeps its weapon: hp, damage, armour and block do not fall, and at
+  least two of them rise; for bows, range and pierce do not fall. (`Troops.Validate`, so a bad edit to troops.json fails
+  at once.) A link that changes role (levies to bowmen, shieldmen to greatswords: block falls by design) is judged on a
+  role-aware power score and on the fight test below instead. Today 23 of 235 links have a stat that falls; nearly all
+  are such role changes (22 of them are block), and T0 sorts out the few that are not.
+- **Styles and traits only add.** An upgrade keeps its parent's style at the same or higher rank and keeps every passive.
+  Nothing is traded: a troop never gets a style in place of stats.
+- **Maluses are bounded.** A style or signature with a cost (Whirlwind blocks less; Testudo moves slower) is measured with
+  the cost on: the troop must still be better than its parent with the malus counted.
+- **They win the fight.** A new test fights each upgrade link: 30 men of the troop against 30 of its parent, same ground,
+  several seeds, and the higher tier must win clearly (most seeds, more men left). Across lines, a tier N+1 company beats a
+  tier N company of a like class from the same culture at equal numbers.
+- **The gap is felt but not absurd.** A tier step should be worth roughly 1.3-1.6x the men; a tier VII company should beat
+  a tier IV company of twice its size. `--agree` reports `Might` by tier so auto-resolve tells the same story.
+- **Same for mages and companions.** A tier VI mage company out-casts a tier V one (more Will, stronger spells, never fewer);
+  a companion's talents only add.
+
 ### D1. The rule by tier
 
 | Tier | What the company gets |
@@ -321,7 +346,7 @@ its neighbours (the three Northern Dane-axe lines should not feel the same).
 | Northern | **Battle fury** | the more of them fall, the harder the rest strike (+damage as the company shrinks, no morale loss from losses) |
 | Azure | **Testudo** | under arrow fire, a halted company raises shields overhead on its own: arrows from any side mostly stop, half speed |
 | Crimson | **Headsmen** | blows against officers, sergeants and heroes do double damage |
-| Southern | **Whirlwind** | every blow is a sweep (D2) on top of the weapon's style, but they block less |
+| Southern | **Whirlwind** | every blow is a sweep (D2) on top of the weapon's style; they block a little less, never below their tier VI |
 | Steppe | **Ghost riders** | horse that are charged fall back out of reach on their own and shoot as they go; chasers lose order (`Formed`) |
 | League | **Paid in full** | do not rout while their side holds the field (they rout only when the battle is lost) |
 | Order | **Zeal** | holy (tag): fear nothing; companies within 20 m take heart; the undead take +50 % from them |
@@ -454,6 +479,9 @@ rest of the battle and add much Omen.
 | `OmenDraws` | heavy craft use raises Omen and draws an omen event; it fades with days |
 | `CompanionLeaves` | very low opinion gives a warning event, then he leaves with his relic |
 | `EffectsValidate` | every effect, talent, ability, spell and relic in the data is valid |
+| `UpgradeNeverWorse` | along every upgrade link no stat falls, at least two rise, the style's rank and the passives only grow |
+| `HigherTierWins` | 30 of each troop against 30 of its parent, several seeds: the upgrade wins clearly, malus included |
+| `TierGap` | tier VII beats twice as many tier IV of a like class; `Might` rises with every tier |
 | `StylesByTier` | every tier V-VII troop has an attack style and passives that fit its weapon; upgrades keep or improve them |
 | `SweepHitsBeside` | a greatsword blow carries into the man beside; a plain sword blow does not |
 | `KnockThrowsBack` | a bash, a lance hit and a close bolt throw a man back and stagger him; the men behind him are shaken |
@@ -482,8 +510,9 @@ Each step ends with `tools/check.sh` green and a commit, as the melee work did.
 |---|---|---|---|
 | **E1** | Effect core: data, `Mods`, battle reads, auras by company; move the three auras and battle perks onto it | new `Effects.cs`, `BattleEffects.cs`, `Data/effects.json`; `BattleMorale`, `BattleDrill`, `BattleCombat` | `EffectsMatchOld`, `AuraReachesCompanies`, bench within 10 % |
 | **E2** | Effects on the map and into battle; HUD icons and rings | `CampaignState.Buffs`, `Campaign/Sites.cs`, `Town.cs`, `Events.cs`, `PrepareBattle`, `Hud.cs`, `MapScreen.Hud.cs` | `StandingEffectsCarry`, shots |
+| **T0** | The "higher tier is better" rule first: stricter `Troops.Validate`, `UpgradeNeverWorse`, `HigherTierWins`, `TierGap`; fix any troop in the data that fails today | `Troops.cs`, `Data/troops.json`, `Tests/BattleTests.cs` | the three tests, before any style exists |
 | **T1** | Attack styles: `attack` in troops.json, `Data/styles.json`; Sweep and Knock made general from the creature code; Crush, Riposte, Bash, Thrust through, Ride down, Hold off, Plunging shot, Punch; swing poses | new `BattleStyles.cs`, `BattleCreatures.cs`, `BattleCombat.cs`, `Puppet.cs`, `Troops.cs` | `SweepHitsBeside`, `KnockThrowsBack`, `ThrustThrough`, `CrushBeatsShields`, `PlungingShot`, shots |
-| **T2** | Passive traits and culture signatures as Part A effects; tooltips in muster, recruiter and upgrade panels; `Might` weights | `Data/troops.json`, `BattleEffects.cs`, `MapScreen.Muster.cs`, `Rules.cs` | `StylesByTier`, `NoTroopActives`, `--agree` with styles |
+| **T2** | Passive traits and culture signatures as Part A effects; tooltips in muster, recruiter and upgrade panels; `Might` weights | `Data/troops.json`, `BattleEffects.cs`, `MapScreen.Muster.cs`, `Rules.cs` | `StylesByTier`, `NoTroopActives`, the T0 tests still pass, `--agree` with styles |
 | **M1** | Magic core: the ability engine (cooldowns, `when` rules) for casters, Will, Omen, the `Caster` class, field effects (mist, smoke, mud, rain, burning ground), warning glows | new `BattleAbilities.cs`, `BattleSight.cs`, `TerrainGround.cs`, `CampaignState` | `MageWill`, `SpellWarns`, `MistCoversArrows`, `OmenDraws` |
 | **M2** | Mage troops: Acolytes and the seven mage lines, sprites (robes, staves, drums, censers), hiring at shrines and temples, AI armies field them, `Might` | `Data/troops.json`, `SpriteSheet.cs`, `Campaign/Companies.cs`, `CampaignAI.cs`, `Rules.cs` | `MageLineReachable`, `--agree` with mages |
 | **M3** | Spells: buffs first (Blessing, War song, Fair wind, Mend), then attacks (Smite, Lightning, Wildfire, Fire pots), then great workings; AI casting and counterplay | `Data/abilities.json`, `BattleAbilities.cs`, `BattleAI.General`, `BattleWings.cs` | `WildfireNeedsDry`, `HorseHuntsMages`, `WardStopsTheDead` |
@@ -493,7 +522,7 @@ Each step ends with `tools/check.sh` green and a commit, as the melee work did.
 | **M4** | Faith and craft on the map: relics in a charm slot, shrines refill, camp rituals, omen events; the necromancer on the same system | `Data/gear.json`, `Armoury.cs`, `BattleCreatures.cs`, `Data/events.json`, `MapScreen.Muster.cs` | rituals tested |
 | **P** | Polish: glows and motes (docs/VISUALS.md), sounds, tooltips, README, `--agree` with companions, bench | `BattleScreen.Effects.cs`, `Audio.cs`, `README.md` | shots, `overflow.txt` empty, bench |
 
-E1 alone pays for itself: it removes three hard-coded auras and gives every later step its language. T1-T2 come next
+E1 alone pays for itself: it removes three hard-coded auras and gives every later step its language. T0-T2 come next (T0 first, so every later step is held to "higher tier is better")
 because the troops already exist: every veteran army fights differently at once, with no new controls. Mages (M1-M3)
 build the ability engine for casters; companions (C1-C3) reuse it: a Priest companion casts the same Blessing a Battle
 Priest company does.
