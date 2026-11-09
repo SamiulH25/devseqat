@@ -454,6 +454,25 @@ partial class BattleScreen
             Line(G(from, 1.2f + lift), G(to, 0.95f + lift), col);
         }
         if (battle.AuraTier >= 3 && !battle.Spent) Ring(p.Pos, 0.9f * pulse, Color.Lerp(Style.Aura, Color.Black, 0.35f), 12);
+        if (battle.Guarding) Ring(p.Pos + p.Dir * 0.7f, 0.6f, Color.White, 8);
+        // Thrown forms on their way (K2): a slash as a fan of streaks closing ahead, a volley as a ring on its spot, a shot as a line.
+        foreach (var pf in battle.PendingForms)
+        {
+            float k = Math.Clamp((t - pf.Started) / MathF.Max(0.05f, pf.At - pf.Started), 0, 1);
+            var col = Color.Lerp(Style.Aura, Color.White, k);
+            var side = new Vector2(-pf.Dir.Y, pf.Dir.X);
+            switch (pf.F.Kind)
+            {
+                case "volley": Ring(pf.From + pf.Dir * pf.F.Range, pf.F.Radius * (1.5f - 0.5f * k), col, 16); break;
+                case "shot": Line(G(pf.From, 1.3f), G(pf.From + pf.Dir * pf.F.Range, 1.0f), col); break;
+                default:
+                    float reach = pf.F.Range * k, w = pf.F.Radius + reach * 0.25f;
+                    var tip = pf.From + pf.Dir * reach;
+                    Line(G(tip - side * w, 1.0f), G(tip + side * w, 1.0f), col);
+                    Line(G(pf.From, 1.1f), G(tip, 1.0f), Color.Lerp(col, Color.Black, 0.4f));
+                    break;
+            }
+        }
     }
 
     static readonly Color RouteGilt = new(244, 214, 120);

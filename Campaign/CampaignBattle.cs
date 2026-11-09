@@ -81,6 +81,7 @@ public partial class Campaign
             CompanionsAfterBattle(r, playerTeam); // XP, levels, bonds (Callings.cs, Bonds.cs)
             CompanionsReact(won ? "won" : "lost");
             if (r.Omen > 0) { S.Omen += r.Omen; CompanionsReact("craft"); } // craft draws Omen (C2)
+            FormsAfterBattle(r);
         }
 
         // Aftermath for each party.

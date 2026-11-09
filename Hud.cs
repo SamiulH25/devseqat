@@ -195,6 +195,7 @@ sealed partial class Hud
         Feed();
         MinimapPanel();
         PlayerPanel();
+        FormBar();
         if (Command) DivisionMarkers(); // under the cards and panels
         Cards();
         DivisionCards();
@@ -391,6 +392,32 @@ sealed partial class Hud
         {
             if (B.Riposting) TextC("RIPOSTE!", W / 2f, H / 2f + U(36), Gold, 2);
             else if (B.Chain >= 1 && p.Action is UnitAction.Windup or UnitAction.Recover) TextC($"CHAIN X{B.Chain + 1}", W / 2f, H / 2f + U(36), B.Chain >= 3 ? Bad : Color.White, 1);
+        }
+    }
+
+    /// Above your panel: your form slots (docs/KNIGHT_ORDERS.md K2): key, name, and the wait or the aura it lacks.
+    void FormBar()
+    {
+        if (Command || !B.Player.Active || B.FormSlot.All(f => f == null)) return;
+        var keys = new[] { Act.Form1, Act.Form2, Act.Form3, Act.GreatForm };
+        int bw = U(68), bh = U(22), x = player.X, y = player.Y - bh - U(4);
+        for (int i = 0; i < 4; i++)
+        {
+            var f = B.FormSlot[i];
+            if (f == null) continue;
+            var r = new Rectangle(x, y, bw, bh);
+            x += bw + U(3);
+            string? why = B.CannotForm(i);
+            bool ready = why == null, spent = i == 3 && B.GreatUsed;
+            Rect(r, ready ? Kit.Mul(Style.Aura, 0.3f) : Color.Black * 0.5f);
+            Frame(r, ready ? Style.Aura : Color.White * 0.15f, U(1));
+            if (!ready && !spent && f.Cooldown > 0) Rect(new Rectangle(r.X, r.Bottom - U(2), (int)(r.Width * (1 - B.FormWait(i) / f.Cooldown)), U(2)), Style.Aura * 0.6f);
+            Text(Ctl.Name(keys[i]), r.X + U(4), r.Y + U(3), ready ? Gold : Dim, 1);
+            string name = f.Name.ToUpperInvariant();
+            while (name.Length > 2 && TW(name, 1) > bw - U(8)) name = name[..^1];
+            Text(name, r.X + U(4), r.Y + U(12), ready ? Color.White : Dim, 1);
+            string cost = spent ? "SPENT" : B.FormWait(i) > 0 ? $"{B.FormWait(i):0}" : $"{f.Aura:0}";
+            TextR(cost, r.Right - U(4), r.Y + U(3), ready ? Style.Aura : Dim, 1);
         }
     }
 

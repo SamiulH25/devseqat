@@ -161,6 +161,34 @@ partial class MapScreen
         string line = cap.AuraWall ? "A WALL. A TRIAL WILL BREAK IT: WIN A DUEL, OR HOLD AGAINST TWO TO ONE." : Campaign.AuraGifts[Math.Clamp(cap.AuraTier, 0, Campaign.AuraTop)].ToUpperInvariant();
         if (cap.Wounds.Contains("core")) line = "YOUR CORE IS CRACKED: YOU FIGHT A TIER LOWER. " + line;
         foreach (var l in ui.Wrap(line, c.Width)) { ui.Text(l, c.X, y, cap.AuraWall ? Style.Warn : Style.Dim * 0.8f, 1); y += ui.U(11); }
+        return FormList(c, y + ui.U(4));
+    }
+
+    /// The forms you know (K2): those in battle slots with their keys, the rest dim. Click one to put it in the first slot.
+    int FormList(Rectangle c, int y)
+    {
+        var cap = C.Captain;
+        if (cap.Forms.Count == 0) return y;
+        var slotted = Campaign.SlottedForms(cap);
+        var keys = new[] { Act.Form1, Act.Form2, Act.Form3 };
+        int n = 0;
+        foreach (var id in cap.Forms.Where(Forms.Has))
+        {
+            if (y > c.Bottom - ui.U(24)) break;
+            var f = Forms.Get(id);
+            bool on = slotted.Contains(id);
+            string key = !on ? "" : f.Great ? ctl.Name(Act.GreatForm) : ctl.Name(keys[Math.Min(2, n++)]);
+            var row = new Rectangle(c.X, y - ui.U(1), c.Width, ui.U(11));
+            bool hover = ui.Hover(row);
+            if (hover) ui.Rect(row, Kit.Mul(Style.Aura, 0.15f));
+            ui.Text(key, c.X, y, Kit.Gilt, 1);
+            int rank = Campaign.FormRank(cap, id);
+            ui.TextFit($"{f.Name.ToUpperInvariant()}{(rank > 1 ? $" {Style.Numerals[rank]}" : "")}", c.X + ui.U(14), y, c.Width - ui.U(40), on ? Style.Aura : Style.Dim, 1);
+            ui.TextR($"{f.Aura:0}", c.Right, y, Style.Dim, 1);
+            if (hover) ui.Tooltip(row.Center.X, row.Y - ui.U(2), f.Name.ToUpperInvariant(), ui.Wrap(f.Line.ToUpperInvariant() + (on ? "" : " CLICK TO PUT IT IN THE FIRST SLOT."), ui.U(180)).ToArray());
+            if (ui.Clicked(row)) note = C.SlotForm(id) ?? "";
+            y += ui.U(12);
+        }
         return y + ui.U(4);
     }
 

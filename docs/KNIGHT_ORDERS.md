@@ -389,3 +389,15 @@ the two endings of the road and can be built in either order.
   (`BattleReport.Aura`). The captain sheet (K) shows the tier, XP, the wall and the tier's gift.
   Tests: `AuraBlade`, `AuraArmour`, `AuraBound` (against four men-at-arms a plain captain fells 0 and wins 0/8, an aura
   expert fells 13 and wins 3/8; against sixteen he wins none), `AuraGrows`.
+- **K2 (forms):** `Data/forms.json` (loaded and checked by `Forms.cs`): 3 generic forms (Focus at Kindled, Aura Slash at
+  Expert, the great Aura Burst at Master), 3 per order (lily, rose, wolf, falcon, sky, lantern, ashen) and 3 Black Flame
+  forms (order `hollow`, each with `corruption`). Thirteen kinds, each a small rule in `BattleForms.cs`: focus, slash,
+  guard, edge, shout, leap, shot, counter, buff, burst, volley, burn, drain; buffs and burns go through the spell engine
+  (`AddTimed`, `AddField`) as a form-made `AbilityDef`. Keys U, I, O and L (`Act.Form1-3`, `Act.GreatForm`;
+  `PlayerInput.Form1-3`, `Great`). `CannotForm` gates on tier, aura, cooldown, the great form once a battle, a bow for a shot
+  and foot for a leap. Thrown forms (slash, volley) land after `warn` and are drawn closing on their spot. A form ranks up
+  every 15 uses (`Campaign.FormRank`, 1-3, +15% each). Six new effects for the great forms (lily_bastion, pack_fury,
+  sworn_contract, ashen_dawn, falcon_wind, black_dread). Map: `CaptainState.Forms` (slot order), `FormUses`, `Corruption`;
+  generic forms learned by tier (`LearnForms`, also on load); the K sheet lists your forms with their keys (click: first
+  slot). HUD: the form bar over your panel (key, name, aura or wait). `IRONFIELD_AURA=tier[,order]` arms the quick battle's
+  captain. Tests: `FormsWork`, `FormsLearned`.

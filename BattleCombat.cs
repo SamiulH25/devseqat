@@ -132,6 +132,13 @@ public partial class Battle
         if (ranged && t.Squad?.Formation == Formation.Loose && rng.NextSingle() < 0.3f) return; // open ranks: the arrow finds a gap
         if (t.IsPlayer)
         {
+            if (facing && Guarding) // Unbroken Wall (K2): nothing from the front gets through
+            {
+                if (!ranged && !lance) Stagger(a, 0.8f);
+                Sound(Cue.Block, t.Pos);
+                PlayerHit = ("UNBROKEN", Time);
+                return;
+            }
             if (facing && t.Action == UnitAction.Block)
             {
                 // Matching the incoming direction just as the blow comes is a parry: free, and it throws the attacker off balance.
@@ -141,7 +148,8 @@ public partial class Battle
                     t.Stamina = MathF.Max(0, t.Stamina - 2);
                     RiposteUntil = Time + RiposteTime * (Perk("Champion") ? 1.5f : 1); // the opening: a swing started now is quick and hard to stop (P2)
                     Parries++;
-                    PlayerHit = ("PARRY! RIPOSTE", Time);
+                    CounterStrike(t, a);
+                    PlayerHit = (Countering ? "PARRY! COUNTER" : "PARRY! RIPOSTE", Time);
                     Sound(Cue.Clash, t.Pos);
                     return;
                 }
@@ -205,11 +213,12 @@ public partial class Battle
         float mult = officer * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1) // arrows pass between a skeleton's ribs
-            * (a.IsPlayer && AuraBlade && !ranged ? BladeDamage : 1); // the aura blade (K1)
+            * (a.IsPlayer && AuraBlade && !ranged ? BladeDamage : 1) // the aura blade (K1)
+            * (a.IsPlayer && edgeLeft > 0 && !ranged ? 1 + edgeK : 1); // Thorn Edge (K2)
         if (t.Squad != null) t.Squad.HitsTaken++;
         if (side != Side.Front && a.Squad != null && !ranged) a.Squad.FlankHits++;
         if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
-        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? MathF.Min(0.9f, a.Type.Pierce + (a.IsPlayer && AuraBlade && !ranged ? BladePierce : 0)) : 0, ranged); // your mace or axe bites through armour too, and the aura blade more
+        float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? MathF.Min(0.9f, a.Type.Pierce + (a.IsPlayer && AuraBlade && !ranged ? BladePierce : 0) + (a.IsPlayer && edgeLeft > 0 && !ranged ? 0.9f : 0)) : 0, ranged); // your mace or axe bites through armour too, and the aura blade more
         if (a.IsPlayer && !ranged) BladeLanded();
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
         StyleLanded(a, t, dmg, ranged, lance);

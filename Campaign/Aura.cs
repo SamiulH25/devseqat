@@ -49,6 +49,7 @@ public sealed partial class Campaign
         Deed(Captain.AuraTier == 1 ? $"{how} Your aura wakes: you are Kindled." : $"{how} Your aura breaks through: you are an {name}.", "aura");
         auraNews = $"BREAKTHROUGH: {name.ToUpperInvariant()}. {AuraGifts[Captain.AuraTier].ToUpperInvariant()}";
         Captain.Renown += 5 * Captain.AuraTier;
+        LearnForms();
         return true;
     }
 
@@ -70,6 +71,53 @@ public sealed partial class Campaign
     {
         if (won && Captain.AuraTier < DuelBreaksBelow) BreakThrough($"You beat {foe} in single combat.");
         GainAura((won ? 6 : 2) + r.Parries * 0.6f + r.Ripostes * 0.8f);
+    }
+
+    // ---- forms (5.6, K2) ----
+
+    /// Uses that raise a form a rank (ranks 1-3).
+    public const int FormRankUses = 15;
+    public static int FormRank(CaptainState c, string id) => 1 + Math.Min(2, c.FormUses.GetValueOrDefault(id) / FormRankUses);
+
+    /// Learn the forms anyone may at your tier (Focus when kindled, Aura Slash as an expert, Aura Burst as a master).
+    void LearnForms()
+    {
+        foreach (var f in Forms.Generic)
+            if (f.Tier <= Captain.AuraTier) LearnForm(f.Id);
+    }
+
+    /// Learn a form (an order's, your own); it goes to the back of the slots. False if known already.
+    internal bool LearnForm(string id)
+    {
+        if (!Forms.Has(id) || Captain.Forms.Contains(id)) return false;
+        Captain.Forms.Add(id);
+        if (S.Hours > 0) Log($"You learn the form {Forms.Get(id).Name}.");
+        return true;
+    }
+
+    /// Put a form you know in the first slot of its kind (a great form in the great slot); returns null or why not.
+    public string? SlotForm(string id)
+    {
+        if (!Captain.Forms.Contains(id)) return "you do not know that form";
+        Captain.Forms.Remove(id);
+        Captain.Forms.Insert(0, id);
+        return null;
+    }
+
+    /// The forms in battle slots now: the first three that are not great, and the first great one.
+    public static List<string> SlottedForms(CaptainState c) =>
+        c.Forms.Where(Forms.Has).Where(id => !Forms.Get(id).Great).Take(3).Concat(c.Forms.Where(Forms.Has).Where(id => Forms.Get(id).Great).Take(1)).ToList();
+
+    /// After a battle: forms used rank up; the Black Flame's corruption stays in you.
+    void FormsAfterBattle(BattleResult r)
+    {
+        foreach (var (id, n) in r.FormUses)
+        {
+            int before = FormRank(Captain, id);
+            Captain.FormUses[id] = Captain.FormUses.GetValueOrDefault(id) + n;
+            if (FormRank(Captain, id) > before && Forms.Has(id)) Log($"Your {Forms.Get(id).Name} grows stronger (rank {FormRank(Captain, id)}).");
+        }
+        if (r.Corruption > 0) Captain.Corruption = MathF.Min(100, Captain.Corruption + r.Corruption);
     }
 
     /// The aura news for this report, cleared once read.

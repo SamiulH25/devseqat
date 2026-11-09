@@ -81,6 +81,8 @@ public static partial class SelfTest
         AuraArmour();
         AuraBound();
         AuraGrows();
+        FormsWork();
+        FormsLearned();
         DuelFight();
         BattleGoals();
         BannerAndLastStand();

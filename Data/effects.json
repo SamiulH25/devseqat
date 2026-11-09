@@ -104,6 +104,19 @@
     { "id": "poultices", "name": "Poultices", "icon": "heart", "line": "Herbs and dressings: the wounded heal faster.",
       "armour": 0 },
     { "id": "relic", "name": "Relic", "icon": "crown", "line": "A saint's relic carried before them.", "tags": ["holy"],
-      "shock": -0.3, "block": 0.05 }
+      "shock": -0.3, "block": 0.05 },
+    // The captain's great forms on your companies (docs/KNIGHT_ORDERS.md 5.6).
+    { "id": "lily_bastion", "name": "Lily's Bastion", "icon": "shield", "line": "They hold like a wall: shields up, hearts steady.",
+      "block": 0.5, "shock": -0.5, "moralePerSec": 2 },
+    { "id": "pack_fury", "name": "The pack", "icon": "skull", "line": "They fight like wolves: harder blows, no fear of losses.",
+      "damage": 0.2, "fury": 0.3, "shock": -0.3 },
+    { "id": "sworn_contract", "name": "Sworn contract", "icon": "coin", "line": "They will not break while half of them stand.",
+      "holdfast": 1, "shock": -0.4 },
+    { "id": "ashen_dawn", "name": "Ashen dawn", "icon": "sun", "line": "A grey light over them: steady and quick to rally.", "tags": ["holy"],
+      "moralePerSec": 4, "shock": -0.3, "tire": -0.3 },
+    { "id": "falcon_wind", "name": "Falcon wind", "icon": "arrow", "line": "They move like the wind.",
+      "speed": 0.25, "tire": -0.3 },
+    { "id": "black_dread", "name": "Black dread", "icon": "skull", "line": "A cold black fire eats their nerve.",
+      "moralePerSec": -3, "shock": 0.4 }
   ]
 }

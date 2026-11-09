@@ -41,7 +41,11 @@ public partial class Battle
     }
 
     /// Your blow lands with the blade lit: its cost.
-    void BladeLanded() { if (AuraBlade) Aura = MathF.Max(0, Aura - BladeHitCost); }
+    void BladeLanded()
+    {
+        if (AuraBlade) Aura = MathF.Max(0, Aura - BladeHitCost);
+        if (edgeLeft > 0) edgeLeft--; // Thorn Edge (K2): one blow spent
+    }
 
     /// Aura armour (tier 3+): the share of a blow on you that aura takes instead of flesh, paid from the pool.
     float AuraSoak(Unit a, Unit t, float real, bool ranged)

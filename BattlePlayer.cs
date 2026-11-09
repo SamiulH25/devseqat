@@ -12,6 +12,7 @@ public partial class Battle
         else p.Facing = inp.Facing;
 
         UpdateAura(p, inp.Aura, dt);
+        UpdateForms(p, inp);
         if (inp.Mount) ToggleMount(p);
         if (inp.Swap) SwapWeapon(p);
         if (inp.Bash) Bash(p);

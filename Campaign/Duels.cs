@@ -64,6 +64,7 @@ public sealed partial class Campaign
         var skillsBefore = new Dictionary<string, float>(Captain.Skills);
         Practise("Arms", (won ? 2.5f : 1) + (r.Parries + r.Ripostes) * 0.15f);
         AuraAfterDuel(r, won, CharacterOf(e)?.Name ?? e.Name);
+        FormsAfterBattle(r);
         float renown = won ? DuelRenown : 0;
         Captain.Renown += renown;
         var fate = won ? LeaderFate.Unhurt : LeaderFate.Wounded;

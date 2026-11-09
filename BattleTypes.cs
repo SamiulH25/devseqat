@@ -15,6 +15,10 @@ public sealed class BattleOptions
     public HashSet<string> Perks = new();
     /// The captain's aura tier (docs/KNIGHT_ORDERS.md 5.1): 0 unawakened, 1 kindled, 2 aura blade, 3 aura armour, 4 master, 5 transcendent.
     public int AuraTier;
+    /// The captain's forms in slot order (docs/KNIGHT_ORDERS.md 5.6): the first three that are not great go on U, I, O; the first
+    /// great one on L. Their ranks (1-3) by id.
+    public string[] Forms = Array.Empty<string>();
+    public Dictionary<string, int> FormRanks = new();
     /// The captain's lasting wounds (P4); the battle reads "eye" (a shorter parry window).
     public HashSet<string> Wounds = new();
     /// Iron Will perk: companies near you will not rout while a third of them stand.
@@ -114,4 +118,7 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     public IReadOnlyList<string> GoalTexts { get; init; } = Array.Empty<string>();
     /// Omen your side's craft raised (docs/COMPANIONS_MAGIC.md C2).
     public float Omen { get; init; }
+    /// Uses of each of your forms (they rank up on the map) and the Black Flame's corruption raised (docs/KNIGHT_ORDERS.md).
+    public IReadOnlyDictionary<string, int> FormUses { get; init; } = new Dictionary<string, int>();
+    public float Corruption { get; init; }
 }

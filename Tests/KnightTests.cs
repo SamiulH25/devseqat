@@ -116,4 +116,130 @@ public static partial class SelfTest
         var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
         Check(back.Captain.AuraTier == cap.AuraTier && back.Captain.AuraXp == cap.AuraXp, "the aura is saved");
     }
+
+    /// A scripted fight field for forms: the captain on foot at an aura tier with these forms, and men-at-arms ahead.
+    static (Battle B, List<Unit> Foes) FormField(int seed, int tier, string[] forms, int men = 3, float dist = 3)
+    {
+        var b = Battle.Empty(seed, new BattleOptions { AuraTier = tier, Forms = forms });
+        b.Player.Horse = null;
+        b.EnemyCaptain.Pos = new Vector2(0, 400);
+        var foes = b.AddSquad(1, Troops.Get("men_at_arms"), men, b.Player.Pos + new Vector2(0, dist), men, -Vector2.UnitY).Units.ToList();
+        foreach (var f in foes) f.Squad!.Order = Order.Hold;
+        b.Input = new PlayerInput { Facing = MathHelper.PiOver2 };
+        b.Update(1 / 60f);
+        return (b, foes);
+    }
+
+    static void Press(Battle b, int slot)
+    {
+        b.Input = new PlayerInput { Facing = MathHelper.PiOver2, Form1 = slot == 0, Form2 = slot == 1, Form3 = slot == 2, Great = slot == 3 };
+        b.Update(1 / 60f);
+        b.Input = new PlayerInput { Facing = MathHelper.PiOver2 };
+    }
+
+    /// K2: forms load, sit in their slots, are gated by tier, aura, cooldown and once a battle, and each kind does its work.
+    static void FormsWork()
+    {
+        Check(!Forms.Validate().Any(), "forms.json is valid: " + string.Join("; ", Forms.Validate()));
+        var (b, foes) = FormField(41, 3, new[] { "aura_burst", "focus", "aura_slash" });
+        Check(b.FormSlot[0]?.Id == "focus" && b.FormSlot[1]?.Id == "aura_slash" && b.FormSlot[3]?.Id == "aura_burst" && b.FormSlot[2] == null, "forms take their slots: three, and the great one apart");
+        Check(b.CannotForm(3) != null, "a great form needs its tier (master)");
+        // Focus: breath back, harder blows, aura spent, then a cooldown.
+        b.Player.Stamina = 10;
+        Press(b, 0);
+        Check(b.Player.Stamina == 100 && b.Focused && b.Aura < Battle.AuraMax, "Focus brings breath back and costs aura");
+        Check(b.CannotForm(0) != null, "and then waits out its cooldown");
+        // Aura Slash: after its warning, the men in front take it.
+        float hp0 = foes.Sum(f => f.Hp);
+        Press(b, 1);
+        Check(b.PendingForms.Count == 1 && foes.Sum(f => f.Hp) == hp0, "a thrown slash warns before it lands");
+        Run(b, 0.5f);
+        Check(foes.Sum(f => f.Hp) < hp0 - 60, "then it cuts the men in front");
+        var behind = b.AddSquad(1, Troops.Get("men_at_arms"), 1, b.Player.Pos + new Vector2(0, -3), 1, Vector2.UnitY).Units[0];
+        b.Aura = Battle.AuraMax;
+        Run(b, 13);
+        b.Aura = Battle.AuraMax;
+        float back = behind.Hp;
+        Press(b, 1);
+        Run(b, 0.5f);
+        Check(behind.Hp == back, "but not the man behind you");
+        var low = FormField(42, 2, new[] { "aura_slash" }).B;
+        Check(low.CannotForm(0)!.StartsWith("NEEDS AURA TIER"), "a form waits for its tier");
+
+        // Unbroken Wall: nothing from the front gets through, and the striker reels.
+        var (g, gf) = FormField(43, 1, new[] { "unbroken_wall" }, 1, 1.5f);
+        Press(g, 0);
+        float ghp = g.Player.Hp;
+        g.Hit(gf[0], g.Player, 40, false);
+        Check(g.Player.Hp == ghp && gf[0].Action == UnitAction.Stagger, "Unbroken Wall stops a blow from the front and the striker reels");
+
+        // Thorn Edge: the next blows go through armour, three of them.
+        var (e, ef) = FormField(44, 1, new[] { "thorn_edge" }, 1, 1.5f);
+        ef[0].Action = UnitAction.Stagger;
+        float before = ef[0].Hp;
+        e.Hit(e.Player, ef[0], 20, false);
+        float plain = before - ef[0].Hp;
+        Press(e, 0);
+        ef[0].Action = UnitAction.Stagger;
+        before = ef[0].Hp;
+        e.Hit(e.Player, ef[0], 20, false);
+        Check(before - ef[0].Hp > plain * 1.5f && e.EdgeLeft == 2, "Thorn Edge cuts through armour, one blow spent");
+
+        // Wolf Leap: onto the foe ahead, who takes a heavy blow.
+        var (l, lf) = FormField(45, 3, new[] { "winter_howl", "wolf_leap" }, 1, 7);
+        var from = l.Player.Pos;
+        Press(l, 1);
+        Check(Vector2.Distance(l.Player.Pos, lf[0].Pos) < 2 && Vector2.Distance(from, l.Player.Pos) > 4 && lf[0].Hp < lf[0].Type.MaxHp, "Wolf Leap springs onto the foe and strikes");
+        // Winter Howl: the men around lose heart.
+        float m = lf[0].Morale;
+        Press(l, 0);
+        Check(lf[0].Morale < m - 8, "Winter Howl shakes the men near you");
+
+        // A great form: once a battle; Lily's Bastion steadies your companies near you.
+        var (k, _) = FormField(46, 4, new[] { "lily_bastion" });
+        var mine = k.AddSquad(0, Troops.Get("shieldmen"), 6, k.Player.Pos + new Vector2(4, 0), 6, Vector2.UnitY);
+        Press(k, 3);
+        Check(mine.Mods.Block > 0.3f, "Lily's Bastion raises your companies' shields");
+        Check(k.GreatUsed && k.CannotForm(3) != null, "and a great form is spent for the battle");
+        k.Aura = Battle.AuraMax;
+        Run(k, 400);
+        Check(k.CannotForm(3) == "THE GREAT FORM IS SPENT", "even long after");
+
+        // Devour: life torn from the men around you comes back to you. Black Flame forms raise corruption.
+        var (d, df) = FormField(47, 2, new[] { "devour" }, 3, 1.5f);
+        d.Player.Hp = 40;
+        Press(d, 0);
+        Check(d.Player.Hp > 40 && d.CorruptionRaised > 0 && d.Result().Corruption > 0, "Devour heals you from your foes and feeds the black flame");
+        Check(d.Result().FormUses["devour"] == 1, "the battle counts each form's uses");
+
+        // Measured Blade: a parry strikes back.
+        var (c, cf) = FormField(48, 1, new[] { "measured_blade" }, 1, 1.6f);
+        Press(c, 0);
+        cf[0].Swing = AttackDir.Left;
+        c.Input = new PlayerInput { Facing = MathHelper.PiOver2, Block = true, Dir = Dirs.Mirror(cf[0].Swing) };
+        c.Update(1 / 60f);
+        float chp = cf[0].Hp;
+        c.Hit(cf[0], c.Player, 26, false);
+        Check(cf[0].Hp < chp, "under Measured Blade a parry strikes back");
+    }
+
+    /// K2 on the map: forms learned by tier, slot order, ranks from use, and the battle reads them.
+    static void FormsLearned()
+    {
+        var c = Campaign.New(89);
+        var cap = c.Captain;
+        Check(cap.Forms.Count == 0, "an unawakened captain knows no form");
+        c.GainAura(1000);
+        var duel = new BattleResult(0, 30, new List<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Wounded, 0);
+        c.AuraAfterDuel(duel, won: true, "Sir Test");
+        Check(cap.Forms.SequenceEqual(new[] { "focus" }), "the kindled captain learns Focus");
+        Check(c.LearnForm("thorn_edge") && !c.LearnForm("thorn_edge"), "a form is learned once");
+        Check(Campaign.SlottedForms(cap).SequenceEqual(new[] { "focus", "thorn_edge" }), "forms fill the slots in the order learned");
+        c.SlotForm("thorn_edge");
+        Check(Campaign.SlottedForms(cap)[0] == "thorn_edge", "a chosen form takes the first slot");
+        var o = new BattleOptions().WithCaptain(cap);
+        Check(o.Forms.SequenceEqual(cap.Forms) && o.FormRanks["focus"] == 1, "the battle gets your forms and their ranks");
+        cap.FormUses["focus"] = Campaign.FormRankUses * 2;
+        Check(Campaign.FormRank(cap, "focus") == 3 && new Battle(1, Armies.Standard(0), Armies.Standard(1), new BattleOptions().WithCaptain(cap)).FormSlot.Any(f => f?.Id == "focus"), "forms rank up with use, to three");
+    }
 }

@@ -201,6 +201,8 @@ public static class Rules
         o.Perks = c.Perks.ToHashSet();
         o.Wounds = c.Wounds.ToHashSet();
         o.AuraTier = Math.Max(0, c.AuraTier - (c.Wounds.Contains("core") ? 1 : 0)); // a cracked core holds you a tier down (K5)
+        o.Forms = c.Forms.Where(Forms.Has).ToArray();
+        o.FormRanks = c.Forms.ToDictionary(id => id, id => Campaign.FormRank(c, id));
         o.PlayerType = CaptainType(c);
         o.PlayerSide = c.Kit.Side != "" ? CaptainType(c, side: true) : null;
         o.PlayerMount = CaptainMount(c);

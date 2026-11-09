@@ -374,6 +374,10 @@ public sealed class CaptainState
     public int AuraTier;
     public float AuraXp;
     public bool AuraWall;
+    /// The forms you know, in slot order (5.6), and how often each was used (its rank); the Black Flame in you (7).
+    public List<string> Forms = new();
+    public Dictionary<string, int> FormUses = new();
+    public float Corruption;
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought

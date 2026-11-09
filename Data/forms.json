@@ -1,0 +1,92 @@
+{
+  // The captain's forms (docs/KNIGHT_ORDERS.md 5.6; loaded by Forms.cs, used by BattleForms.cs). Forms are the only
+  // techniques the player presses: three slots (U, I, O) and a great form (L, once a battle). Each costs aura and has
+  // a cooldown. "tier" is the aura tier that opens it; "order" the knight order that teaches it ("" = anyone, "hollow"
+  // = the Black Flame). Kinds:
+  //   focus  breath back in full; your next blows land harder for `duration` s (damage = the share more)
+  //   slash  a cut of aura thrown ahead: after `warn` s, up to `maxHit` foes in a `radius`-wide cone out to `range` m
+  //   guard  for `duration` s every blow from the front stops on your guard, and the striker reels
+  //   edge   your next `count` blows go through armour (pierce) and harder by `damage`
+  //   shout  foes within `radius` lose `shock` morale and reel; `effect` on enemy companies there
+  //   leap   to a foe in front within `range`, a heavy blow on landing, those within `radius` reel
+  //   shot   (a bow in hand) an arrow of aura through up to `maxHit` men along a line out to `range`
+  //   counter for `duration` s your parry window is wider and a parry strikes back for `damage` x your weapon
+  //   buff   `effect` on your companies within `radius` for `duration` s (and routing men there rally)
+  //   burst  up to `maxHit` foes within `radius` round you take `damage`; `shock` morale
+  //   volley after `warn` s, up to `maxHit` foes within `radius` of a spot `range` m ahead take `damage`
+  //   burn   a field of black fire `range` m ahead: `dps` to foes in `radius` for `duration` s, `effect` on them
+  //   drain  foes within `radius` lose `damage` health; you gain half of it back as health and aura
+  // Ranks: a form grows with use (Campaign.FormRank: 1-3, +15% a rank).
+  "forms": [
+    { "id": "focus", "name": "Focus", "icon": "star", "kind": "focus", "tier": 1, "aura": 15, "cooldown": 20, "duration": 6, "damage": 0.3,
+      "line": "Breathe in the aura: your breath comes back and your next blows land harder." },
+    { "id": "aura_slash", "name": "Aura Slash", "icon": "sword", "kind": "slash", "tier": 3, "aura": 25, "cooldown": 12, "warn": 0.35, "range": 7, "radius": 0.6, "maxHit": 4, "damage": 45, "shock": 6,
+      "line": "Throw a cut of aura ahead of you: it strikes up to four men in front." },
+    { "id": "aura_burst", "name": "Aura Burst", "icon": "sun", "kind": "burst", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "radius": 6, "maxHit": 12, "damage": 60, "shock": 20,
+      "line": "Once a battle: your aura bursts out and throws down every foe around you." },
+
+    // Order of the Silver Lily (Azure Crown)
+    { "id": "unbroken_wall", "name": "Unbroken Wall", "icon": "shield", "kind": "guard", "order": "lily", "tier": 1, "aura": 25, "cooldown": 25, "duration": 4,
+      "line": "For four breaths no blow from the front gets past your guard, and each striker reels." },
+    { "id": "lily_ward", "name": "Lily Ward", "icon": "shield", "kind": "buff", "order": "lily", "tier": 3, "aura": 35, "cooldown": 60, "radius": 12, "duration": 15, "effect": "blessed",
+      "line": "The company beside you takes heart and raises its shields." },
+    { "id": "lily_bastion", "name": "Lily's Bastion", "icon": "tower", "kind": "buff", "order": "lily", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "radius": 30, "duration": 15, "effect": "lily_bastion",
+      "line": "Once a battle: every company of yours near you holds like a wall." },
+
+    // Brotherhood of the Red Rose (Crimson Compact)
+    { "id": "thorn_edge", "name": "Thorn Edge", "icon": "sword", "kind": "edge", "order": "rose", "tier": 1, "aura": 20, "cooldown": 18, "count": 3, "damage": 0.25,
+      "line": "Your next three blows go through armour like thorns through cloth." },
+    { "id": "rose_cut", "name": "Rose Cut", "icon": "sword", "kind": "slash", "order": "rose", "tier": 3, "aura": 30, "cooldown": 14, "warn": 0.35, "range": 8, "radius": 0.8, "maxHit": 5, "damage": 55, "shock": 8,
+      "line": "A red arc of aura cuts through the men in front of you." },
+    { "id": "red_rose_bloom", "name": "Red Rose Bloom", "icon": "sun", "kind": "burst", "order": "rose", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "radius": 5, "maxHit": 14, "damage": 75, "shock": 25,
+      "line": "Once a battle: a whirl of cuts in a ring of red light." },
+
+    // The Wolfsworn (Northmarch)
+    { "id": "winter_howl", "name": "Winter Howl", "icon": "skull", "kind": "shout", "order": "wolf", "tier": 1, "aura": 25, "cooldown": 30, "radius": 10, "shock": 14, "duration": 12, "effect": "dread",
+      "line": "A howl that freezes the men around you: they lose heart and reel." },
+    { "id": "wolf_leap", "name": "Wolf Leap", "icon": "arrow", "kind": "leap", "order": "wolf", "tier": 3, "aura": 30, "cooldown": 15, "range": 9, "radius": 2, "damage": 50,
+      "line": "Spring onto a foe up to nine paces off; those around him reel." },
+    { "id": "pack_howl", "name": "The Pack", "icon": "flag", "kind": "buff", "order": "wolf", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "radius": 30, "duration": 25, "effect": "pack_fury",
+      "line": "Once a battle: your companies near you fight like a wolf pack." },
+
+    // Order of the Burning Falcon (Sunward Emirates)
+    { "id": "falcon_dive", "name": "Falcon Dive", "icon": "arrow", "kind": "leap", "order": "falcon", "tier": 1, "aura": 25, "cooldown": 16, "range": 10, "radius": 1.5, "damage": 45,
+      "line": "Leap ten paces onto a foe and strike as you land." },
+    { "id": "sun_feather", "name": "Sun Feather", "icon": "sun", "kind": "focus", "order": "falcon", "tier": 3, "aura": 20, "cooldown": 20, "duration": 8, "damage": 0.4,
+      "line": "Light as a feather: breath back in full and quicker, harder blows." },
+    { "id": "falcon_wind", "name": "Falcon Wind", "icon": "horse", "kind": "buff", "order": "falcon", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "radius": 30, "duration": 30, "effect": "falcon_wind",
+      "line": "Once a battle: your companies near you move like the wind." },
+
+    // Sworn of the Eternal Sky (Khaganate of the Grass)
+    { "id": "sky_arrow", "name": "Sky Arrow", "icon": "arrow", "kind": "shot", "order": "sky", "tier": 1, "aura": 25, "cooldown": 12, "range": 70, "radius": 0.9, "maxHit": 5, "damage": 60, "shock": 6,
+      "line": "With a bow in hand: an arrow of aura that goes through a file of men." },
+    { "id": "eye_of_heaven", "name": "Eye of Heaven", "icon": "star", "kind": "focus", "order": "sky", "tier": 3, "aura": 20, "cooldown": 20, "duration": 8, "damage": 0.3,
+      "line": "The sky steadies your hand: breath back, and harder blows and shots." },
+    { "id": "rain_of_sky", "name": "Rain of Heaven", "icon": "rain", "kind": "volley", "order": "sky", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "warn": 1.5, "range": 40, "radius": 8, "maxHit": 16, "damage": 55, "shock": 10,
+      "line": "Once a battle: arrows of light fall on a spot forty paces ahead." },
+
+    // The Lantern Company (Saltmarsh League)
+    { "id": "measured_blade", "name": "Measured Blade", "icon": "shield", "kind": "counter", "order": "lantern", "tier": 1, "aura": 20, "cooldown": 20, "duration": 5, "damage": 1.5,
+      "line": "For five breaths your parries come easier and every parry strikes back hard." },
+    { "id": "lantern_light", "name": "Lantern Light", "icon": "sun", "kind": "shout", "order": "lantern", "tier": 3, "aura": 25, "cooldown": 30, "radius": 12, "shock": 10, "duration": 12, "effect": "evil_eye",
+      "line": "A hard light: the foes around you falter and reel." },
+    { "id": "sworn_contract", "name": "Sworn Contract", "icon": "coin", "kind": "buff", "order": "lantern", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "radius": 30, "duration": 40, "effect": "sworn_contract",
+      "line": "Once a battle: your companies near you will not break while half of them stand." },
+
+    // The Ashen Sun (the mother order)
+    { "id": "ashen_guard", "name": "Ashen Guard", "icon": "shield", "kind": "guard", "order": "ashen", "tier": 1, "aura": 25, "cooldown": 25, "duration": 3.5,
+      "line": "A grey guard that no blow from the front gets through." },
+    { "id": "ashen_smite", "name": "Ashen Smite", "icon": "sun", "kind": "burst", "order": "ashen", "tier": 3, "aura": 35, "cooldown": 25, "radius": 3.5, "maxHit": 6, "damage": 45, "shock": 12,
+      "line": "A burst of grey light round you strikes the nearest foes." },
+    { "id": "ashen_dawn", "name": "Ashen Dawn", "icon": "sun", "kind": "buff", "order": "ashen", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "radius": 40, "duration": 30, "effect": "ashen_dawn",
+      "line": "Once a battle: your companies near you rally and take heart." },
+
+    // The Black Flame (the Hollow Crown): stronger, and every use feeds the flame (docs/KNIGHT_ORDERS.md 7)
+    { "id": "black_flame", "name": "Black Flame", "icon": "fire", "kind": "burn", "order": "hollow", "tier": 1, "aura": 20, "cooldown": 15, "range": 8, "radius": 4, "duration": 10, "dps": 8, "effect": "black_dread", "corruption": 1,
+      "line": "Black fire on the ground ahead: it burns the foes in it and eats their nerve." },
+    { "id": "devour", "name": "Devour", "icon": "skull", "kind": "drain", "order": "hollow", "tier": 2, "aura": 15, "cooldown": 20, "radius": 4, "maxHit": 6, "damage": 25, "corruption": 1.5,
+      "line": "Tear the life out of the men around you and take it for your own." },
+    { "id": "hollow_crown", "name": "Hollow Crown", "icon": "crown", "kind": "burst", "order": "hollow", "tier": 3, "great": true, "aura": 50, "cooldown": 300, "radius": 8, "maxHit": 20, "damage": 70, "shock": 30, "corruption": 4,
+      "line": "Once a battle: the black flame bursts from you. Every man near you burns." }
+  ]
+}
