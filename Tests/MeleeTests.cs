@@ -390,4 +390,16 @@ public static partial class SelfTest
         Console.WriteLine($"melee: muster grade {Battle.GradeName(Battle.GradeOf(Battle.DrillOf(rec)))} ({Battle.DrillOf(rec):0.00}), in battle {s.Drill:0.00}");
         Check(MathF.Abs(Battle.DrillOf(rec) - s.Drill) < 0.001f, "the muster roll's grade is the battle's");
     }
+
+    /// M7: auto-resolve weighs drill as fought battles do (--agree): of two companies of equal Strength, the drilled one has
+    /// the greater Might.
+    static void MightWeighsDrill()
+    {
+        var lev = Troops.Get("levies");
+        var elite = Troops.Get(Armies.LineTroop("infantry", 7));
+        int n = (int)MathF.Round(60 * Rules.Strength(lev, 1) / Rules.Strength(elite, 1));
+        float ratio = Rules.Might(elite, n) / Rules.Might(lev, 60), even = Rules.Strength(elite, n) / Rules.Strength(lev, 60);
+        Console.WriteLine($"melee: {n} tier 7 against 60 levies: strength {even:0.00}, might {ratio:0.00}");
+        Check(ratio > even * 2, "auto-resolve counts drill: the elites' might is far above their raw strength");
+    }
 }

@@ -88,6 +88,10 @@ public static class Rules
     }
 
     public static float Strength(CompanyRecord c) => c.Stacks.Sum(s => Strength(s.Type, s.Men));
+
+    /// Strength with drill weighed in, as a fought battle weighs it (docs/MELEE.md D8, --agree): who wins an auto-resolve.
+    public static float Might(UnitType t, int men) => Strength(t, men) * (1 + B.DrillWeight * Battle.DrillOf(t));
+    public static float Might(Party p) => p.Companies.Sum(c => c.Stacks.Sum(s => Might(s.Type, s.Men)));
     public static float Strength(Party p) => p.Companies.Sum(Strength);
 
     public static int Upkeep(CompanyRecord c) => (int)MathF.Ceiling(c.Stacks.Sum(s => (s.Men + s.Wounded) * PerMan(s.Type.Cost) * B.UpkeepRate));
@@ -214,8 +218,8 @@ public static class Rules
     /// `wall` multiplies side 1's strength: defenders behind walls (1.4 against ladders, more without them).
     public static BattleResult AutoResolve(IReadOnlyList<Party> side0, IReadOnlyList<Party> side1, Rng rng, float edge0 = 1, float wall = 1)
     {
-        float s0 = side0.Sum(Strength) * edge0 * rng.Range(0.85f, 1.15f);
-        float s1 = side1.Sum(Strength) * wall * rng.Range(0.85f, 1.15f);
+        float s0 = side0.Sum(Might) * edge0 * rng.Range(0.85f, 1.15f);
+        float s1 = side1.Sum(Might) * wall * rng.Range(0.85f, 1.15f);
         int t0 = side0.Max(p => p.Tier), t1 = side1.Max(p => p.Tier);
         s0 *= 1 + 0.1f * (t0 - t1);
         int winner = s0 >= s1 ? 0 : 1;

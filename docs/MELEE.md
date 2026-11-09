@@ -276,3 +276,33 @@ M1 alone fixes the look you raised. M2-M4 add the tiered thinking.
    only wheel to face a flank threat. Wrapping happens on Charge (or in a division whose goal is to attack).
 3. **Stamina rotation (Veteran+)**: worth having? It shows well, but it is the most fiddly piece. Proposed: last in M4,
    dropped if it costs too much.
+
+Answered: yes (your levies break ranks too, a banner or sergeant stops it); hold means hold; rotation was built.
+
+---
+
+## As built
+
+All seven steps are in. Where the build left the plan:
+
+- **M1-M2.** The campaign passes `Company.Cohesion` (and the officer, companion) rather than a `Company.Drill`; a troop may set
+  `drill` in `troops.json` to override its tier. The raised dead have drill 0.25 and their order never breaks; beasts and
+  swarms (wolves, trolls, goblins, ghouls) fight as mobs. A company that swarms a huge beast, or a foe a quarter its size,
+  fights free of its ranks (`Overwhelms`). Drilled men raise their guard against a blow they see wound up (`Guard`), and a
+  blow from a man in good order is harder to block (`RankEdge`); the shove of a man on his slot counts up to 4x (`Footing`).
+  `TierWins` checks even numbers; the 1 : 1.3 case moved to `ElitePincer`.
+- **M3.** The trigger is any enemy within 16 m of the company, not only the paired one. The front-rank line is measured from
+  the men near their places, so a man caught on a house corner no longer holds a whole company back (the Village stall).
+- **M4.** `Wits` (BattleTactics.cs). Two combat rules were needed for drill to win against numbers: a man squared up to one
+  foe sees a second at his side as a flank attacker (not for beasts), and a broken company's blows do x0.7 (`BrokenBlow`).
+  With them 24 elites beat 31 rabble of the same troop (3 of 3 seeds) and drilled men beat as many rabble with half or
+  more standing. `Wait for support` and `BattleDivision.Engage` were not needed: divisions' companies run the same wits.
+- **M5.** BattleWings.cs. Rabble bows drawing blades at 7 m was already the general's rule. Elite bows do not move to
+  shoot along the line.
+- **M6.** Card tag RAB / TRN / VET / ELT, chips RANKS BROKEN and RE-FORMING, tooltip line (grade, ranks, plan), a dashed
+  hook for a selected company's flank or wrap, grade on the muster roll (`Battle.DrillOf(CompanyRecord)`).
+- **M7.** Auto-resolve uses `Rules.Might` = Strength x (1 + 5 x drill) (`Balance.DrillWeight`), measured with `--agree`:
+  at equal might, fights one to four tiers apart go to the higher tier 58 / 65 / 44 / 42 % of the time (at weight 0 it won
+  92-100 %). Five or six tiers apart the few elites are swarmed (rare in a campaign). `Strength` itself is unchanged, so AI
+  judgement, monster sizes and renown are as before. `--realms 8`: largest realm 26 % (23 % before), no flags.
+  `--bench 1500`: 5.07 ms a tick (4.91 before the melee work, +3 %).

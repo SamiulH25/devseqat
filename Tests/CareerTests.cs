@@ -223,7 +223,13 @@ public static partial class SelfTest
 
         // Vassals: a lord with two fiefs raises a companion to land and gives him orders.
         c.Captain.Renown = 400;
-        foreach (var t in c.S.Settlements.Where(s => s.Faction == 0 && s.Kind == SettlementKind.Castle && s.Owner < 0).Take(1)) t.Owner = c.Player.Id;
+        // Two fiefs again (one went over to its people, and the wars may have taken others): castles of the realm, unheld
+        // ones first.
+        foreach (var t in c.S.Settlements.Where(s => s.Faction == 0 && s.Kind == SettlementKind.Castle && s.Owner != c.Player.Id).OrderBy(s => s.Owner < 0 ? 0 : 1).ToList())
+        {
+            if (c.FiefSeats >= Campaign.LordFiefs) break;
+            t.Owner = c.Player.Id;
+        }
         Check(c.Rank >= Rank.Lord, "two fiefs and renown make a lord");
         c.S.Gold += 1000;
         var town2 = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction == 0);

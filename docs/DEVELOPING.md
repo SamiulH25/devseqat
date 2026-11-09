@@ -192,7 +192,7 @@ Tests run it at a fixed `1/60` s. Each step, with the file it lives in:
 | siege gate battering | `Batter` | `BattleSiege.cs` |
 | reinforcements, every 1 s | `Reinforce` | `Battle.cs` |
 | called horse, supply wagons | `UpdateCalledHorse`, `Resupply` | `BattleCaptain.cs` |
-| per squad: pressure decay, alive count, slots | `UpdateSquad` | `Battle.cs` |
+| per squad: pressure decay, alive count, the company's wits, places in the ranks and slots, closing as a body, its order, rabble breaking ranks | `UpdateSquad` -> `Tactics`, `PlaceMen`, `Close`, `UpdateFormed`, `BreakRanks` | `Battle.cs`, `BattleTactics.cs`, `BattleRanks.cs`, `BattleDrill.cs` |
 | per unit: decide (`UpdatePlayer` for you, `Think` for others), act, tire | `UpdatePlayer` / `Think` / `TickAction` / `Tire` | `BattlePlayer.cs` / `BattleAI.cs` / `BattleCombat.cs` / `BattleCaptain.cs` |
 | move everyone | `Move` | `BattleMove.cs` |
 | braced spears vs riders, couched lances | `Braces`, `Lances` | `BattleCombat.cs` |
@@ -214,14 +214,31 @@ separation, terrain and walls. Keep that split when adding behaviour.
 1. A routing man runs away from the enemy centroid; past `MapRadius` he has fled.
 2. A man mid-swing stands still (a rider keeps riding).
 3. Find the nearest enemy (`Nearest`). Riders go to `ThinkCav`.
-4. Foot: archers shoot from formation at the squad's target; otherwise hold the slot, or close and fight when charging.
+4. Foot: archers shoot from formation at the squad's target (veterans hold their shot at a man fighting their own side);
+   a man of a ranked company that is not broken fights from the ranks (`FightFromRanks`, BattleRanks.cs): the front rank
+   lunges a little (rabble far), the second rank less, the rest hold their places and step up when a man falls; a drilled man
+   raises his guard against a blow he sees coming (`Guard`). Broken companies, mobs and beasts close and fight each for himself.
+
+**Drill and order (docs/MELEE.md, BattleDrill.cs).** `Squad.Drill` (0-1, from the troop tier, cohesion, officer, companion,
+sergeant) is fixed for the battle and gives the `Grade` (Rabble < 0.30 < Trained < 0.56 < Veteran < 0.85 < Elite).
+`Squad.Formed` (0-1) falls with a long run, losses, flank hits, a melee (rabble only) and bad ground, and comes back out of
+contact (veterans also in it); under 0.4 the company is `Broken` until 0.55. Men read `Discipline = Drill x Formed`.
+In `Hit`, `RankGuard` (ganged: worse; a friend at each shoulder: better) and `RankEdge` (a blow from a man in good order) scale
+the block; a broken company's blows do x0.7 (`BrokenBlow`).
+
+**Company wits (BattleTactics.cs, BattleWings.cs).** `Tactics(s)` runs `Wits(s)` every 2 s (rabble), 1 s (trained) or
+0.5 s (veteran, elite), staggered by `Squad.Id`, and sets `Squad.Plan`: Refuse (wheel to face a flank threat), Flank (take a
+pinned foe in the flank: `Close` walks the front to `FlankPoint`; or wrap: `Squad.Bend` swings the outer files of the
+`Slot` forward), Reform, Regroup, RollUp, Pursue, Shelter (bows behind the foot). Horse: `HorseWits` and the rally
+(`Squad.Rallying`, `RideToRally`); a veteran's or elite's charge goes round a foot company's front (`ChargeLane`).
 
 `ThinkCav(u, s, enemy, d, dt)` is a small state machine on `u.Cav`:
 - passing strikes at anything in reach; horse archers shoot from the saddle and skirmish when charging;
 - not charging: hold the slot, but counter-charge anything within 15 m;
 - `Charge`: aim 6 m past the target to ride through, couch the lance at speed; once through, `Withdraw`;
-- `Withdraw`: ride away from the enemy mass for 4 s, then `Charge` again;
-- `Melee`: bogged down (slow and close for 1.2 s) -> stand and hack for 5 s, then withdraw.
+- `Withdraw`: ride away from the enemy mass for 4 s, then `Charge` again (veteran horse instead ride to the company's rally
+  point and charge again together once 70 % are in, or after 15 s);
+- `Melee`: bogged down (slow and close for 1.2 s) -> stand and hack for 5 s (rabble 8 s), then withdraw.
 
 ### 4.5 The AI general (`General(team)` in `BattleAI.cs`)
 
@@ -230,7 +247,9 @@ Otherwise:
 - keep the smallest of three or more infantry companies back as a reserve, committing it 18 s after the charge or when a line
   company falls under half strength;
 - form the infantry line facing the enemy; the outermost company swings wide for a flank; spears go wide on one flank;
-- charge when any infantry company is within 16 m of the enemy (or spears within 10 m);
+- the line goes in company by company: each charges the company opposite it (`Opposite`) when it, or any enemy, is within
+  16 m (spears 10 m, a hothead's 22 m), and 20 s after the first charge the rest go in; holding rabble near the enemy may
+  break ranks on their own (`BreakRanks`);
 - archers advance into range, shoot the softest company (`SoftTarget`), resupply from the wagon (`ArcherSupply`), and join the
   melee when the enemy is within 7 m or arrows are gone;
 - horse waits on the other flank, then charges when the line does, after 35 s, or when the enemy is within 20 m, aiming
@@ -244,10 +263,12 @@ Otherwise:
 
 1. Enemy blows are scaled by `Options.EnemyDamage`. Archers shooting up at a wall lose 40%.
 2. A mounted target: arrows and skirmishers hit the horse 55% of the time, others 18% -> `HitHorse`.
-3. Side of the hit: `SideOf` gives Front, Flank or Rear. A square has no flank. Loose ranks let 30% of arrows through.
+3. Side of the hit: `SideOf` gives Front, Flank or Rear (a man fighting someone else sees a second foe as front only within
+   about 40 degrees; not for beasts). A square has no flank. Loose ranks let 30% of arrows through.
 4. **You, blocking:** a block in the mirrored direction within `ParryWindow` (0.35 s) is a parry (attacker staggers). Without a
    shield, a block from the wrong side halves the blow. With a shield, any block works at a stamina cost; at 0 stamina the guard breaks.
-5. **AI, facing:** a block roll on `BlockChance`, adjusted for shield, swing direction, lance, arrows, shield wall.
+5. **AI, facing:** a block roll on `BlockChance`, adjusted for shield, swing direction, lance, arrows, shield wall, the ranks
+   (`RankGuard` x `RankEdge`) and a drilled man's raised guard.
 6. **Chambering:** you striking into the enemy blow from the mirrored side turns it aside.
 7. Multipliers: speed bonus (charges), high ground (+-15%), fatigue, officer traits, square vs arrows (+25%), wedge on charge
    (+15%), rear (x1.5) / flank (x1.2), `VsMounted` against riders. Flank and rear hits add `Squad.Pressure`.
@@ -374,7 +395,8 @@ waiting for your choice).
    `Rules.Army(...)` (each `CompanyRecord` -> a battle `Company`, morale from cohesion, traits, honours), `BattleOptions`
    from your perks, gear, the weather (`Weather.For`), the ground (`WorldMap.BattleGround`), and a seed.
 2. The screen fights it; `FinishBattle(result, setup)` -> `Apply(result, side0, side1, ...)`.
-3. Or `AutoResolveEncounter()` -> `Rules.AutoResolve(...)`: compares `Strength` with +-15% luck and a tier edge, spreads
+3. Or `AutoResolveEncounter()` -> `Rules.AutoResolve(...)`: compares `Might` (Strength x (1 + `DrillWeight` x drill), so drill
+   counts as in a fought battle: `--agree N` measures it) with +-15% luck and a tier edge, spreads
    losses toward lower tiers, and produces the same `BattleResult` shape -> the same `Apply`.
 4. `Apply` turns the result into state: fallen men become wounded or killed (by armour), XP into stack pools, loot, ransom,
    prisoners, renown, officers, honours, skills; returns a `BattleReport` for the results panel.

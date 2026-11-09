@@ -12,8 +12,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **MusicTrack** (enum, L9)
 - **AudioEngine** (class, L13): AudioEngine:26, Play:72, PlayAt:82, Beds:92, Music:101, Update:119, Make:134, Buf:146, Rnd:147, Clash:150, Splash:164, Squelch:178, Rustle:193, Thud:208, Click:222, Pluck:234, Bow:247, Shout:257, Horn:279, Coin:295, Wind:304, Gallop:318, Din:331, Roar:349, MapTheme:372, Drums:393, Fanfare:411, Loop:425
 
-## BalanceReport.cs (221 lines)
-- **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Realms:68, Csv:110, Run:112, Grounds:183
+## BalanceReport.cs (248 lines)
+- **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Realms:68, Csv:110, Run:112, Grounds:183, Agree:225
 
 ## Battle.cs (527 lines)
 - **PlayerInput** (struct, L5)
@@ -145,7 +145,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/CampaignSiege.cs (270 lines)
 - **Campaign** (class, L6): RecruitTroop:9, RecruitTroop:11, Income:14, RaiseGarrison:25, GarrisonTemper:39, GarrisonParty:42, GarrisonMen:48, MaxSupplies:51, GarrisonsWeekly:54, Station:74, Withdraw:84, CanBesiege:98, Besiege:108, LiftSiege:118, LaddersIn:127, PrepareAssault:129, AutoResolveAssault:145, AfterAssault:153, Capture:177, TryBesiege:209, SiegeHourly:234, SiegesDaily:240
 
-## Campaign/CampaignState.cs (664 lines)
+## Campaign/CampaignState.cs (667 lines)
 - **SettlementKind** (enum, L10)
 - **PartyKind** (enum, L12)
 - **CompanyRecord** (class, L16): Stack:62, Prune:69
@@ -171,9 +171,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **LogEntry** (class, L384)
 - **CampaignState** (class, L390): Serialize:460, Deserialize:462, Save:478, Load:493, Exists:515
 - **Rng** (class, L519): Rng:523, Rng:525, NextU:527, Float:535, Next:536, Next:537, Range:538, Chance:539, Pick:540
-- **Balance** (class, L544): Get:618
-- **CultureNames** (class, L634)
-- **Names** (class, L640): PlacesOf:647, LordsOf:648, MenOf:650, Get:653
+- **Balance** (class, L544): Get:621
+- **CultureNames** (class, L637)
+- **Names** (class, L643): PlacesOf:650, LordsOf:651, MenOf:653, Get:656
 
 ## Campaign/CampaignWar.cs (291 lines)
 - **Campaign** (class, L6): TakePrisoners:10, RecruitPrisoners:21, SellPrisoners:41, FreePrisoners:53, LordRansom:61, RansomLord:63, FreeLord:75, Release:84, PrisonersWeekly:92, WithOfficer:107, OfficerAfterBattle:113, FoodPrice:144, BuyFood:147, Forage:158, EatDaily:180, Offers:207, OfferValid:215, RefreshOffers:222, Accept:241, CheckContracts:253, SergeantName:290
@@ -243,11 +243,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Roll.cs (264 lines)
 - **Campaign** (class, L6): RaiseBurial:18, Known:26, FallenOf:30, FitNamed:33, ManName:36, UnnamedTroop:51, NameMan:61, Lose:73, Hurt:91, RollFates:99, RollFought:117, RollAfterBattle:138, SyncRoll:168, RollDaily:189, RollPromoted:193, MoveNamed:208, RoseFrom:218, RiseToSergeant:223, SergeantFell:238, CompanionFell:247, LoseRecord:258
 
-## Campaign/Rules.cs (285 lines)
+## Campaign/Rules.cs (289 lines)
 - **CompanyReport** (record, L6)
 - **BattleReport** (record, L10)
 - **BattleSetup** (class, L28)
-- **Rules** (class, L46): RoleOf:50, TroopRole:53, Fits:57, TierWeight:65, Cap:68, PerMan:71, Places:74, Room:77, CapOf:81, Strength:83, Strength:90, Strength:91, Upkeep:93, UpgradeReady:96, PromoteCost:100, NeedsHorse:109, AddMen:112, CanMerge:118, Merge:121, CompanyName:142, CaptainType:152, CaptainMount:177, WithCaptain:185, CompanySlots:198, MenLimit:200, static:204, AutoResolve:215, Army:272
+- **Rules** (class, L46): RoleOf:50, TroopRole:53, Fits:57, TierWeight:65, Cap:68, PerMan:71, Places:74, Room:77, CapOf:81, Strength:83, Strength:90, Might:93, Might:94, Strength:95, Upkeep:97, UpgradeReady:100, PromoteCost:104, NeedsHorse:113, AddMen:116, CanMerge:122, Merge:125, CompanyName:146, CaptainType:156, CaptainMount:181, WithCaptain:189, CompanySlots:202, MenLimit:204, static:208, AutoResolve:219, Army:276
 
 ## Campaign/Sites.cs (204 lines)
 - **Site** (class, L7): NameFor:18
@@ -366,7 +366,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## PixelFont.cs (59 lines)
 - **PixelFont** (class, L7): PixelFont:26, Width:41, Draw:43, DrawRun:49
 
-## Program.cs (64 lines)
+## Program.cs (70 lines)
 
 ## Puppet.cs (694 lines)
 - **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Lean:62, Frame:69, Draw:93, Horse:181, Beast:249, WolfBody:259, Warg:288, BeastCorpse:306, DrawLooseHorse:318, DrawDeadHorse:327, RotY:363, Arm:370, Span:381, Pose:390, Key:392, Lerp:394, static:398, PoseOf:415, Fallen:490, Corpse:531, Particle:550, Banner:563, Decal:608, Quad:620, HeadBill:630, Bill:639, Axial:650, Long:662, Plane:675, Flat:686
@@ -378,8 +378,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (557 lines)
 - **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:103, ContinueCampaign:116, OpenLab:129, QuickBattle:131, StartCampaignBattle:138, FinishCampaignBattle:148, CycleQuality:156, Update:160, Draw:190, Fade:223, CaptureShot:253, CampaignShots:275
 
-## SelfTest.cs (220 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:172, Lancer:180, Run:189, Scaled:191, MakeWanderer:194, Days:202, Ids:214, Check:216
+## SelfTest.cs (221 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:173, Lancer:181, Run:190, Scaled:192, MakeWanderer:195, Days:203, Ids:215, Check:217
 
 ## Settings.cs (76 lines)
 - **Difficulty** (enum, L5)
@@ -441,8 +441,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/CampaignTests.cs (1494 lines)
 - **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:41, CampaignRun:52, Progression:94, Economy:121, Bridge:133, Calibration:155, RiverRoadGivesBridge:180, RainMakesMud:206, DefenderChoosesGround:231, AutoResolveGroundEdge:247, SiegeBattle:258, CampaignWar:296, RefuseOldSave:357, RollEarnsNames:383, FallenRemembered:453, RisesFromRanks:497, BannerHonours:536, FameDraws:575, RetireAndSucceed:601, BuryNamed:631, Stacks:659, Cultures:704, Characters:777, CampaignDivisions:882, Armoury:928, Duels:999, RidingAndBowcraft:1032, PerkTiers:1081, SkillRises:1108, LastingWounds:1161, CaptainTraits:1184, HouseholdGuard:1223, RankRewards:1251, StartingRoad:1279, SkillTree:1299, BalanceMatchesData:1382, HorsesCostGold:1394, SaveMidRun:1405, Drive:1425, CheckSound:1438, ReportMatchesRecord:1453
 
-## Tests/CareerTests.cs (410 lines)
-- **SelfTest** (class, L6): PilotTrace:9, Career:24, PilotCareer:120, FreeCrown:138, FiefLife:169, WarAndPeace:264, EventsAndQuests:345
+## Tests/CareerTests.cs (416 lines)
+- **SelfTest** (class, L6): PilotTrace:9, Career:24, PilotCareer:120, FreeCrown:138, FiefLife:169, WarAndPeace:270, EventsAndQuests:351
 
 ## Tests/CreatureTests.cs (577 lines)
 - **SelfTest** (class, L6): HoldoutTrace:11, Holdouts:23, GoblinBattle:91, WolfTrace:138, Wolves:156, WolfRiders:221, Trolls:243, TrollsAbroad:308, UndeadAbroad:338, PlayerCreatures:386, TrollTrace:458, Undead:483, UndeadTrace:542, GraveTrace:565
@@ -450,8 +450,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/MapTests.cs (199 lines)
 - **SelfTest** (class, L6): MapIndexMatches:10, RealmsFromData:32, ClimatesAndRidges:77, SevenRealms:105, RealmTempers:132
 
-## Tests/MeleeTests.cs (393 lines)
-- **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, LeviesBreakRanks:172, RefusesFlank:195, VeteransWrap:234, ElitePincer:247, Reforms:278, HorseRegroup:299, BowsFallBack:343, MusterGrade:381
+## Tests/MeleeTests.cs (405 lines)
+- **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, LeviesBreakRanks:172, RefusesFlank:195, VeteransWrap:234, ElitePincer:247, Reforms:278, HorseRegroup:299, BowsFallBack:343, MusterGrade:381, MightWeighsDrill:396
 
 ## Tests/WorldTests.cs (333 lines)
 - **SelfTest** (class, L6): WorldNames:9, Sites:32, Roads:85, Quests:138, TownLife:220, EventSpread:254, Polish:294

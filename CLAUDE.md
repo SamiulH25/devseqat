@@ -38,6 +38,7 @@ dotnet run -c Release --no-build -- --sprites out.png torso.plate helm   # headl
 dotnet run -c Release -- --bench 1500                    # headless 1500-a-side battle: ms per tick by stage (3000 men ~3.6 ms)
 dotnet run -c Release -- --realms 8                      # snowball guard: N campaigns x 240 days, realm shares -> balance/realms.csv (~3 min)
 dotnet run -c Release -- --grounds 24                    # same army both sides on each field layout, ground chosen by each in turn -> balance/grounds.csv (~2 min)
+dotnet run -c Release -- --agree 4 5                     # fought vs auto-resolved: equal-Might fights by tier gap, at DrillWeight and at 5 (~2 min)
 dotnet run -c Release -- --campaign-bench 30             # headless campaign for N days: ms a day by tick stage (~76 ms on the 115-province map)
 ```
 
@@ -150,7 +151,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | The captain's gear: kit (`CaptainState.Kit`), buy/sell/wear, armourer stock, old-save tiers -> kit | `Gear.cs` (`GearDef`, loads `Data/gear.json`, `Validate`) / `Campaign/Armoury.cs` (`BuyGear`, `Equip`, `SellGear`, `ArmourerStock`, `MigrateGear`); `Rules.CaptainType(c, side)` builds the battle unit; UI `MapScreen.Armoury.cs` (MARKET tab) |
 | Duels before a battle: who accepts, the lord's fighting form, the fight (`BattleSetup.Duel`, `BattleOptions.Duel`), what it does to the battle | `Campaign/Duels.cs` (`CannotChallenge`, `LordChampion`, `PrepareDuel`, `FinishDuel`); `Battle.SetupDuel`; CHALLENGE in `MapScreen.Dialogs.cs` `EncounterPanel` |
 | Lord/bandit/realm AI, spawning | `Campaign/CampaignAI.cs` (`LordThink`, `BanditThink`, `FactionAI`) |
-| Company math, auto-resolve, army building | `Campaign/Rules.cs` |
+| Company math, auto-resolve (`Might`: strength with drill weighed in, `Balance.DrillWeight`), army building | `Campaign/Rules.cs` |
 | World generation, provinces, rivers, roads / the look-up grid behind `ProvinceAt`, `RoadDist`, `RiverDist` | `Campaign/WorldMap.cs` / `Campaign/MapIndex.cs` (exact: must answer as the full scans do, `SelfTest.MapIndexMatches`) |
 | Prisoners, officers, food, contracts | `Campaign/CampaignWar.cs` |
 | Career ranks, fealty, realm council, founding a realm, win/loss (F5) | `Campaign/Career.cs` (`Rank`, `Council`, `DeclareIndependence`, `CheckEnd`) |

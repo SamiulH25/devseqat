@@ -124,6 +124,7 @@ public static partial class SelfTest
         HorseRegroup();
         BowsFallBack();
         MusterGrade();
+        MightWeighsDrill();
         Holdouts();
         GoblinBattle();
         Wolves();

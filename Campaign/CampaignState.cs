@@ -560,6 +560,9 @@ public sealed class Balance
     public float CompanySlotsBase = 10, MenBase = 40, MenRenownDivisor = 5;
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
     public float ArmyScale = 3;
+    /// How much drill adds to a company's strength in auto-resolve (Rules.Might): x(1 + this x drill). Fought battles
+    /// reward drill (docs/MELEE.md D8); --agree measures it (5: equal-might fights one to four tiers apart near a coin toss).
+    public float DrillWeight = 5;
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).
     public int RollSize = 6;
     public float VeteranSurvival = 0.6f;
