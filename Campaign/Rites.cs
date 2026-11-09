@@ -12,6 +12,7 @@ public sealed partial class Campaign
         ("mend_core", "MEND THE CORE", "faith", 80, 0, "A CRACKED CORE MENDS: YOUR AURA IS WHOLE AGAIN"),
         ("bones", "READ THE BONES", "craft", 0, 3, "SEE TWICE AS FAR FOR A DAY"),
         ("rain", "CALL RAIN", "craft", 0, 4, "SOAKS THIS PROVINCE: HEAVY GOING FOR HORSE"),
+        ("marks", "CRAFT MARKS", "craft", 0, 3, "NEXT BATTLE YOUR AURA BLADE LEAVES FEVER"),
     };
     public const float OmenEvents = 12, RelicCharges = 3;
 
@@ -39,6 +40,7 @@ public sealed partial class Campaign
             case "poultices": AddBuff("poultices", 7); break;
             case "mend_core": MendCore("Your priest's prayers close the crack in you."); break;
             case "bones": S.FarSightUntil = (float)S.Hours + 24; break;
+            case "marks": AddBuff("craft_marks", 7); break;
             case "rain":
                 var pr = S.Provinces.FirstOrDefault(p => p.Id == Map.ProvinceAt(Player.Pos).Id);
                 if (pr != null) pr.Wet = MathF.Min(1, pr.Wet + 0.5f);
@@ -51,6 +53,7 @@ public sealed partial class Campaign
             "poultices" => "Herbs and dressings for the wounded.",
             "mend_core" => "Candles and long prayers through the night.",
             "bones" => "The bones are read. Far parties show themselves.",
+            "marks" => "Old marks are cut into your blade and painted on your brow.",
             _ => "Rain comes on as the old words are spoken.",
         });
         return null;

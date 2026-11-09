@@ -25,8 +25,8 @@ public partial class Battle
 
     void SetupAura() => Aura = AuraTier > 0 ? AuraMax : 0;
 
-    /// Breath comes back faster to a kindled captain (tier 1+); a spent one breathes slower than a plain man (MA3).
-    float AuraBreath => AuraTier < 1 ? 1 : Spent ? SpentBreath : 1.25f;
+    /// Breath comes back faster to a kindled captain (tier 1+); a spent one breathes slower than a plain man (MA3); Fever slows it (MA5).
+    float AuraBreath => (AuraTier < 1 ? 1 : Spent ? SpentBreath : 1.25f) * (Fevered ? FeverBreath : 1);
 
     /// The pool that matters (docs/MAGIC_AURA.md 4.1): aura comes back slowly out of a fight and twice as fast standing still
     /// with no foe near; at full, blows you land bank a surge that your next form spends first; spent, your blows and breath fail.
@@ -48,7 +48,7 @@ public partial class Battle
         // A burning blade takes, it does not gather; a Master's aura comes back as he fights (K5).
         bool still = !fighting && p.Vel.LengthSquared() < 0.25f && p.EnemyDist > StillFoe;
         if (!AuraBlade) Aura = MathF.Min(AuraMax, Aura + (fighting ? (AuraTier >= 4 ? 1.5f : 0.5f) : still ? RegenStill : RegenOut) * dt);
-        if (hold && AuraTier >= 2 && !AuraBlade && Aura >= AuraLow && p.Active)
+        if (hold && AuraTier >= 2 && !AuraBlade && Aura >= AuraLow && p.Active && Time >= QuenchedUntil)
         {
             AuraBlade = true;
             PlayerHit = ("AURA BLADE", Time);

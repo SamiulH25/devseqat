@@ -255,6 +255,12 @@ The core tension: **you are strongest as a leader when you are in the fight, but
   **surge** (up to 20) that your next form spends first. Under 20 you are **spent**: your blows land 10% lighter and your breath
   comes back slowly. From Aura Knight, your companies within 10 m of you while you fight are **inspired** (steadier, a
   better guard).
+  **Aura and magic meet:** a Blessing or War song from your own circle over you gives +10 aura. The foe's curses reach you:
+  an Evil eye quenches your blade for 6 s and Fever slows your breath; aura armour (Aura Expert) halves them and a
+  Transcendent captain turns them. Your lit blade, or a slash or leap form, breaks a working an enemy caster has begun
+  (his Will is spent). Enemy champions throw their forms at your circle first. Carry the relic and raise it once a battle
+  (SPACE, a slot after your forms; it costs a charge): a Blessing round you and +30 aura, the overflow as surge. The craft
+  rite **Craft marks** (Omen +3) makes your lit blade leave fever on the companies it strikes, for one battle.
 - **Morale and routing:** below 12 morale a unit routs and flees off the map (radius 95). It rallies again above 32, and a man who has
   broken twice stays broken. A side loses when it has no active, non-routing units.
 - **Melee:** windup, strike, recover. Hits interrupt windups. AI units block hits from the front by chance (Shieldmen 55%). A player block staggers the attacker; if stamina runs out, the guard breaks. Player swings cleave up to 3 targets.

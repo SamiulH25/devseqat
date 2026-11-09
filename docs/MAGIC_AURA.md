@@ -1,6 +1,6 @@
 # Magic and aura for the player: plan
 
-Status: being built (2026-11-09). Done: MA1-MA4. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
+Status: being built (2026-11-09). Done: MA1-MA5. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
 through M4 + P) and docs/KNIGHT_ORDERS.md (aura and orders: built K1-K8). Read docs/LEGACY.md first: your company is
 your legacy, and every change here must serve that.
 
@@ -314,3 +314,17 @@ change touches every later number.
   company's roll): master line, prepared toggles, learn buttons with the reason when refused; the encounter panel names
   the prepared spells and those the weather makes useless (`SpellNote`, using the battle's own weather roll
   `WeatherFor`). Tests `SpellbookCarries`, `SpellbookByTier`, `CircleMaster`.
+- **MA5 (aura and magic together):** `BattleAuraMagic.cs`. `FeedOnBuff`: a Blessing or War song of your side landing
+  within its radius of you gives `FeedAura` (+10). `CurseCaptain`: an enemy Evil eye or Fever landing on you; `CurseShare`
+  is 1, 0.5 at tier 3+, 0 at tier 5 ("YOUR AURA TURNS THE CURSE"). Evil eye sets `QuenchedUntil` (`QuenchTime` 6 s times
+  the share; the blade will not light and goes out), Fever sets `FeverUntil` (its duration times the share; breath
+  x`FeverBreath` 0.6 in `AuraBreath`). `BreakCast`: a blow with the blade lit (`BladeMarks`, from `Hit`) or a slash or leap
+  form's blow (`FormBlow`) on an enemy caster removes his company's pending casts (flash `broken`, a shatter of motes).
+  Craft marks: the rite `marks` (craft, Omen +3) lays the buff `craft_marks` (no stats; 7 days, removed after a fought
+  battle); in battle (`Marks`, from `Options.Standing`) the lit blade lays Fever (power 0.6) on the struck company.
+  Relic: `PlayerInput.Relic` (`Act.Relic`, SPACE; F1 help) calls `RaiseRelic` once a battle when `Standing` holds `relic`:
+  Blessing on your companies within `RelicRadius` (12 m) and `RelicAura` (+30) with the overflow into the surge;
+  `BattleResult.RelicRaised` makes the campaign spend a second charge. HUD: `Hud.RelicSlot` after the form bar.
+  Champions: `ChampionWants` throws a volley or burn at a spot holding one of your casters even with fewer than three
+  men there, and a leap picks a caster first. Tests `BlessingFeedsAura`, `CurseOnCaptain`, `BladeBreaksCast`,
+  `RelicRaised`.

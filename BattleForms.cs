@@ -68,6 +68,7 @@ public partial class Battle
         if (inp.Form2) TryForm(p, 1);
         if (inp.Form3) TryForm(p, 2);
         if (inp.Great) TryForm(p, 3);
+        if (inp.Relic) RaiseRelic(p);
         for (int i = PendingForms.Count - 1; i >= 0; i--)
             if (Time >= PendingForms[i].At && !PendingForms[i].Foe) { var pf = PendingForms[i]; PendingForms.RemoveAt(i); if (p.Active) Land(p, pf); }
     }
@@ -127,6 +128,7 @@ public partial class Battle
     /// A form's blow: aura goes through most of a man's armour and no guard holds it.
     void FormBlow(Unit p, Unit t, FormDef f, float k, float scale = 1)
     {
+        if (p == Player && f.Kind is "slash" or "leap") BreakCast(t); // a thrown form breaks a working (MA5)
         Damage(p, t, f.Damage * k * scale, f.Shock, 0.5f);
         if (t.Active) Stagger(t, 0.4f);
     }

@@ -403,9 +403,10 @@ sealed partial class Hud
     /// Above your panel: your form slots (docs/KNIGHT_ORDERS.md K2): key, name, and the wait or the aura it lacks.
     void FormBar()
     {
-        if (Command || !B.Player.Active || B.FormSlot.All(f => f == null)) return;
+        if (Command || !B.Player.Active || B.FormSlot.All(f => f == null) && !B.HasRelic) return;
         var keys = new[] { Act.Form1, Act.Form2, Act.Form3, Act.GreatForm };
         int bw = U(68), bh = U(22), x = player.X, y = player.Y - bh - U(4);
+        if (B.HasRelic) RelicSlot(new Rectangle(x + 4 * (bw + U(3)), y, bw, bh));
         for (int i = 0; i < 4; i++)
         {
             var f = B.FormSlot[i];
@@ -424,6 +425,18 @@ sealed partial class Hud
             string cost = spent ? "SPENT" : B.FormWait(i) > 0 ? $"{B.FormWait(i):0}" : $"{f.Aura:0}";
             TextR(cost, r.Right - U(4), r.Y + U(3), ready ? Style.Aura : Dim, 1);
         }
+    }
+
+    /// The relic's slot after the forms (docs/MAGIC_AURA.md 3.4): ready once a battle.
+    void RelicSlot(Rectangle r)
+    {
+        bool ready = B.CannotRaise(B.Player) == null;
+        var holy = new Color(255, 230, 150);
+        Rect(r, ready ? Kit.Mul(holy, 0.3f) : Color.Black * 0.5f);
+        Frame(r, ready ? holy : Color.White * 0.15f, U(1));
+        Text(Ctl.Name(Act.Relic), r.X + U(4), r.Y + U(3), ready ? Gold : Dim, 1);
+        Text("RELIC", r.X + U(4), r.Y + U(12), ready ? Color.White : Dim, 1);
+        TextR(ready ? "+30" : "SPENT", r.Right - U(4), r.Y + U(3), ready ? holy : Dim, 1);
     }
 
     /// The spells of the caster you are directing (docs/MAGIC_AURA.md 3.1): the picked one bright, the rest with why not.

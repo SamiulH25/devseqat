@@ -101,6 +101,7 @@
       "damage": 0.04, "tire": -0.15 },
     { "id": "hungry", "name": "Hungry", "icon": "bread", "line": "No food: weak and tired.",
       "damage": -0.08, "tire": 0.4 },
+    { "id": "craft_marks", "name": "Craft marks", "icon": "skull", "line": "Your aura blade leaves fever on those it strikes. One battle." },
     { "id": "bless_rite", "name": "Blessed company", "icon": "sun", "line": "Your priest blessed the company.", "tags": ["holy"],
       "shock": -0.3, "moralePerSec": 0.5 },
     { "id": "poultices", "name": "Poultices", "icon": "heart", "line": "Herbs and dressings: the wounded heal faster.",

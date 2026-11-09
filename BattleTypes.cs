@@ -128,4 +128,6 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     public float Corruption { get; init; }
     /// How often the Black Flame took you this battle (K7).
     public int MadSpells { get; init; }
+    /// You raised the relic in this battle (docs/MAGIC_AURA.md 3.4): it costs a charge more.
+    public bool RelicRaised { get; init; }
 }

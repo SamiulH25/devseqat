@@ -220,6 +220,7 @@ public partial class Battle
         if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
         bool foeBlade = FoeBlade(a, ranged);
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer || foeBlade ? MathF.Min(0.9f, a.Type.Pierce + (a.IsPlayer && AuraBlade && !ranged || foeBlade ? BladePierce : 0) + (a.IsPlayer && edgeLeft > 0 && !ranged ? 0.9f : 0)) : 0, ranged); // your mace or axe bites through armour too, and the aura blade more
+        if (a.IsPlayer && !ranged && AuraBlade) BladeMarks(t); // breaks a working, leaves craft marks (MA5)
         if (a.IsPlayer && !ranged) BladeLanded();
         if (foeBlade) FoeAura = MathF.Max(0, FoeAura - BladeHitCost);
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);

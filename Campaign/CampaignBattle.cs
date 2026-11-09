@@ -78,6 +78,8 @@ public partial class Campaign
         if (playerIn)
         {
             if (r.Duration > 0) RelicSpent(); // a fought battle (an auto-resolve has no length)
+            if (r.RelicRaised) RelicSpent(); // raised in the fight (MA5)
+            if (r.Duration > 0) S.Buffs.RemoveAll(b => b.Effect == "craft_marks"); // craft marks last one battle
             CompanionsAfterBattle(r, playerTeam); // XP, levels, bonds (Callings.cs, Bonds.cs)
             CompanionsReact(won ? "won" : "lost");
             if (r.Omen > 0) { S.Omen += r.Omen; CompanionsReact("craft"); } // craft draws Omen (C2)

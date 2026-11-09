@@ -73,7 +73,7 @@ partial class BattleScreen
             Bash = ctl.Pressed(Act.Bash),
             Swap = ctl.Pressed(Act.SwapWeapon),
             Aura = IsActive && !wheelOpen && ctl.Down(Act.AuraBlade),
-            Form1 = ctl.Pressed(Act.Form1), Form2 = ctl.Pressed(Act.Form2), Form3 = ctl.Pressed(Act.Form3), Great = ctl.Pressed(Act.GreatForm),
+            Form1 = ctl.Pressed(Act.Form1), Form2 = ctl.Pressed(Act.Form2), Form3 = ctl.Pressed(Act.Form3), Great = ctl.Pressed(Act.GreatForm), Relic = ctl.Pressed(Act.Relic),
         };
     }
 

@@ -82,6 +82,7 @@ partial class BattleScreen
         switch (what)
         {
             case "cast": Rise(at, 0.8f, 8, col, 0.07f, 0.9f); AddRipple(at, 2.2f, 0.4f, 0.6f, col); break;
+            case "broken": Spray(at, 1.2f, 24, col, 5f, 0.5f, 0.06f, false); AddRipple(at, radius, 0.3f, 0.35f, Color.White); break; // a working shattered (MA5)
             case "spell:attack":
                 if (tag == "faith") { beams.Add(new Beam { At = at, Born = battle.Time, Life = 0.7f, Radius = MathF.Max(1, radius), Col = col }); Spray(at, 0.4f, 24, new Color(255, 244, 200), 3f, 0.7f, 0.08f, true); }
                 else { Spray(at, 0.3f, 26, new Color(255, 140, 40), 3.2f, 0.9f, 0.1f, true); Spray(at, 0.6f, 10, new Color(60, 52, 46), 0.8f, 2.2f, 0.4f, false, 0.9f); }

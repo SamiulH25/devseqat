@@ -22,7 +22,7 @@ public enum Act
     // the captain's aura and forms (docs/KNIGHT_ORDERS.md)
     AuraBlade, Form1, Form2, Form3, GreatForm,
     // magic for the player (docs/MAGIC_AURA.md)
-    Cast,
+    Cast, Relic,
     // campaign map panels (later additions)
     LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen,
 }
@@ -98,7 +98,7 @@ public sealed class Controls
         [Act.FollowParty] = new[] { "F" }, [Act.QuickSave] = new[] { "F5" }, [Act.QuickLoad] = new[] { "F9" },
         [Act.Formation] = new[] { "J" }, [Act.Bash] = new[] { "CTRL" }, [Act.SwapWeapon] = new[] { "N" },
         [Act.NextDivision] = new[] { "Y" }, [Act.GroundView] = new[] { "M" }, [Act.Stakes] = new[] { "K" },
-        [Act.AuraBlade] = new[] { "ALT" }, [Act.Form1] = new[] { "U" }, [Act.Form2] = new[] { "I" }, [Act.Form3] = new[] { "O" }, [Act.GreatForm] = new[] { "L" },
+        [Act.AuraBlade] = new[] { "ALT" }, [Act.Form1] = new[] { "U" }, [Act.Form2] = new[] { "I" }, [Act.Form3] = new[] { "O" }, [Act.GreatForm] = new[] { "L" }, [Act.Relic] = new[] { "SPACE" },
         [Act.Cast] = new[] { "P" },
         [Act.LordsScreen] = new[] { "L" }, [Act.SkillsScreen] = new[] { "K" }, [Act.RealmScreen] = new[] { "R" },
         [Act.DivisionsScreen] = new[] { "V" }, [Act.AtlasScreen] = new[] { "M" }, [Act.SiegeScreen] = new[] { "B" },
@@ -118,7 +118,7 @@ public sealed class Controls
         [Act.FollowParty] = "FOLLOW YOUR PARTY (MAP)", [Act.QuickSave] = "QUICK SAVE", [Act.QuickLoad] = "QUICK LOAD",
         [Act.Formation] = "CYCLE FORMATION", [Act.Bash] = "SHIELD BASH / KICK", [Act.SwapWeapon] = "SWAP WEAPON",
         [Act.NextDivision] = "NEXT DIVISION (GOALS)", [Act.GroundView] = "GROUND MAP", [Act.Stakes] = "PLANT STAKES (LONGBOWMEN)",
-        [Act.AuraBlade] = "AURA BLADE (HOLD)", [Act.Form1] = "FORM 1", [Act.Form2] = "FORM 2", [Act.Form3] = "FORM 3", [Act.GreatForm] = "GREAT FORM",
+        [Act.AuraBlade] = "AURA BLADE (HOLD)", [Act.Form1] = "FORM 1", [Act.Form2] = "FORM 2", [Act.Form3] = "FORM 3", [Act.GreatForm] = "GREAT FORM", [Act.Relic] = "RAISE THE RELIC (ONCE A BATTLE)",
         [Act.Cast] = "CAST (CASTERS, COMMAND VIEW)",
         [Act.LordsScreen] = "LORDS AND COMPANIONS (MAP)", [Act.SkillsScreen] = "THE CAPTAIN (MAP)", [Act.RealmScreen] = "THE REALMS (MAP)",
         [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)",

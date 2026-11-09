@@ -73,13 +73,16 @@ public partial class Battle
         switch (f.Kind)
         {
             case "burst" or "shout" or "drain": return FoesNear(c.Pos, f.Radius, 99, c.Team).Count >= 3;
-            case "volley" or "burn": return FoesNear(c.Pos + c.Dir * f.Range, f.Radius, 99, c.Team).Count >= 3;
+            case "volley" or "burn":
+                var hit = FoesNear(c.Pos + c.Dir * f.Range, f.Radius, 99, c.Team);
+                return hit.Count >= 3 || hit.Any(IsCaster); // a circle is worth a throw on its own (MA5)
             case "buff": return c.EnemyDist < 15;
             case "slash":
                 return Near(c.Pos, f.Range + 1, nearKill).Count(t => t.Active && t.Team != c.Team && InCone(c.Pos, c.Dir, t.Pos, f.Range, f.Radius)) >= 2;
             case "leap":
                 if (c.Mounted) return false;
-                var prey = FoesNear(c.Pos, f.Range, 1, c.Team).FirstOrDefault(t => Vector2.DistanceSquared(t.Pos, c.Pos) > 4);
+                var prey = FoesNear(c.Pos, f.Range, 99, c.Team).Where(t => Vector2.DistanceSquared(t.Pos, c.Pos) > 4)
+                    .OrderByDescending(IsCaster).FirstOrDefault(); // he leaps at your mages first (MA5)
                 if (prey == null) return false;
                 c.Face(prey.Pos - c.Pos);
                 return true;

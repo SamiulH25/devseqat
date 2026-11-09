@@ -12,6 +12,7 @@ public struct PlayerInput
     public bool Sprint, Attack, Block, Rally, Couch, Mount, Bash, Swap;
     public bool Aura;         // held: the aura blade burns (docs/KNIGHT_ORDERS.md K1)
     public bool Form1, Form2, Form3, Great; // pressed: a form (K2)
+    public bool Relic;        // pressed: raise the relic (docs/MAGIC_AURA.md 3.4)
 }
 
 public sealed class Projectile
@@ -503,7 +504,7 @@ public sealed partial class Battle
         int horses = LooseHorses.Count(h => h.Team == 1);
         return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills, SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes)
         {
-            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(), GoalTexts = Goals.Select(GoalText).ToList(), Omen = OmenRaised, FormUses = new Dictionary<string, int>(FormUses), Corruption = CorruptionRaised, MadSpells = MadSpells,
+            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(), GoalTexts = Goals.Select(GoalText).ToList(), Omen = OmenRaised, FormUses = new Dictionary<string, int>(FormUses), Corruption = CorruptionRaised, MadSpells = MadSpells, RelicRaised = RelicRaised,
         };
     }
 

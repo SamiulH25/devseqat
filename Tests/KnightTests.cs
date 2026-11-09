@@ -784,5 +784,106 @@ public static partial class SelfTest
         Check(!Inspires(2, 60), "a company far off is not inspired");
         Check(!Inspires(0, 0), "a plain captain inspires nobody");
     }
+
+    /// A captain with aura at this tier, the foe's captain sent far off.
+    static Battle AuraField(int seed, int tier, params string[] standing)
+    {
+        var b = Battle.Empty(seed, new BattleOptions { AuraTier = tier, Standing = standing });
+        b.EnemyCaptain.Pos = new Vector2(0, 400);
+        return b;
+    }
+
+    /// A spell lands now, worked by this company, on this spot.
+    static Cast CastNow(Battle b, Squad by, string spell, Vector2 at, float after = 0)
+    {
+        var c = new Cast { A = Abilities.Get(spell), By = by, At = at, Started = b.Time, FireAt = b.Time + after, Power = 1 };
+        b.Casts.Add(c);
+        return c;
+    }
+
+    /// MA5 (docs/MAGIC_AURA.md 5): a Blessing or War song over you feeds your aura; one far off does not.
+    static void BlessingFeedsAura()
+    {
+        var b = AuraField(81, 3);
+        var mages = b.AddSquad(0, Troops.Get("chaplains"), 3, b.Player.Pos + new Vector2(4, 0), 3, Vector2.UnitY);
+        mages.HoldSpells = true;
+        b.Aura = 50;
+        CastNow(b, mages, "blessing", b.Player.Pos);
+        b.Update(1 / 60f);
+        Check(b.Aura >= 50 + Battle.FeedAura - 0.5f, $"a blessing over you feeds your aura ({b.Aura:0})");
+        b.Aura = 50;
+        CastNow(b, mages, "war_song", b.Player.Pos + new Vector2(80, 0));
+        b.Update(1 / 60f);
+        Check(b.Aura < 52, "one far off does not");
+    }
+
+    /// MA5: an Evil eye on you quenches your blade (half as long behind aura armour, not at all at tier 5); Fever takes your breath.
+    static void CurseOnCaptain()
+    {
+        float Quenched(int tier)
+        {
+            var b = AuraField(82, tier);
+            var witches = b.AddSquad(1, Troops.Get("hedge_witches"), 3, new Vector2(0, 80), 3, -Vector2.UnitY);
+            witches.HoldSpells = true;
+            CastNow(b, witches, "evil_eye", b.Player.Pos);
+            b.Update(1 / 60f);
+            b.Input = new PlayerInput { Aura = true };
+            float t0 = b.Time;
+            for (int i = 0; i < 10 * 60 && !b.AuraBlade; i++) { b.Aura = Battle.AuraMax; b.Update(1 / 60f); }
+            return b.Time - t0;
+        }
+        float plain = Quenched(2), armoured = Quenched(3), master = Quenched(5);
+        Check(plain > Battle.QuenchTime - 0.5f, $"an Evil eye quenches the blade ({plain:0.0} s)");
+        Check(armoured < plain * 0.7f && armoured > 1, $"aura armour halves it ({armoured:0.0} s)");
+        Check(master < 0.2f, "at tier 5 the curse is turned");
+
+        var f = AuraField(83, 2);
+        var crones = f.AddSquad(1, Troops.Get("war_witches"), 3, new Vector2(0, 80), 3, -Vector2.UnitY);
+        crones.HoldSpells = true;
+        CastNow(f, crones, "fever", f.Player.Pos);
+        f.Update(1 / 60f);
+        Check(f.FeverUntil > f.Time + 2, "Fever on you takes your breath for a while");
+    }
+
+    /// MA5: your lit blade breaks a working of the caster it strikes (an unlit blow does not); with craft marks it leaves fever.
+    static void BladeBreaksCast()
+    {
+        bool Breaks(bool lit)
+        {
+            var b = AuraField(84, 2, "craft_marks");
+            var priests = b.AddSquad(1, Troops.Get("battle_priests"), 1, b.Player.Pos + new Vector2(0, 1.8f), 1, -Vector2.UnitY);
+            priests.HoldSpells = true;
+            priests.Order = Order.Hold;
+            var cast = CastNow(b, priests, "smite", new Vector2(0, -60), after: 6);
+            var t = priests.Units[0];
+            for (int i = 0; i < 5 * 60 && b.Casts.Contains(cast); i++)
+            {
+                b.Aura = Battle.AuraMax;
+                t.Hp = t.Type.MaxHp; // he stands to take blow after blow
+                var d = t.Pos - b.Player.Pos;
+                b.Input = new PlayerInput { Aura = lit, Attack = i % 40 < 20, Facing = MathF.Atan2(d.Y, d.X), Move = d.Length() > 1.6f ? Vector2.Normalize(d) : Vector2.Zero };
+                b.Update(1 / 60f);
+            }
+            if (lit) Check(priests.Timed.Any(x => x.Effect.Id == "fever"), "craft marks leave fever on the company the blade strikes");
+            return !b.Casts.Contains(cast) && b.Time < cast.FireAt;
+        }
+        Check(Breaks(true), "the lit blade breaks the caster's working");
+        Check(!Breaks(false), "a plain blow does not");
+    }
+
+    /// MA5 (3.4): the relic raised once a battle blesses the companies round you and gives aura, over the top into the surge.
+    static void RelicRaised()
+    {
+        var b = AuraField(85, 3, "relic");
+        var men = b.AddSquad(0, Troops.Get("levies"), 8, b.Player.Pos + new Vector2(5, 0), 4, Vector2.UnitY);
+        b.Aura = 90;
+        b.Input = new PlayerInput { Relic = true };
+        b.Update(1 / 60f);
+        Check(b.RelicRaised && b.Aura >= Battle.AuraMax - 0.1f && b.Surge >= 19, $"the relic gives aura, the rest as surge ({b.Surge:0})");
+        Check(men.Timed.Any(x => x.Effect.Id == "blessed"), "and blesses the company beside you");
+        Check(b.CannotRaise(b.Player) != null, "once a battle");
+        Check(b.Result().RelicRaised, "the campaign hears of it");
+        Check(AuraField(86, 3).CannotRaise(b.Player) == "YOU CARRY NO RELIC", "no relic, nothing to raise");
+    }
 }
 

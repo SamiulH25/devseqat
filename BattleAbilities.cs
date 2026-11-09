@@ -342,9 +342,11 @@ public partial class Battle
             case "buff":
                 if (a.Self) AddTimed(c.By, a, c.Power);
                 else foreach (var o in Squads) if (o.Team == team && o.Alive > 0 && Vector2.Distance(o.Center, c.At) < a.Radius + o.Radius) AddTimed(o, a, c.Power);
+                FeedOnBuff(a, a.Self ? c.By.Center : c.At, team);
                 break;
             case "debuff":
                 foreach (var e in Squads) if (e.Team != team && e.Alive > 0 && Vector2.Distance(e.Center, c.At) < a.Radius + e.Radius) AddTimed(e, a, c.Power);
+                CurseCaptain(a, c.At, team);
                 break;
             case "field":
                 AddField(a, a.Effect, team, by, c.At, a.Radius, a.Duration, c.Power, a.Dps);

@@ -85,6 +85,10 @@ public static partial class SelfTest
         AuraArmour();
         AuraBound();
         AuraPool();
+        BlessingFeedsAura();
+        CurseOnCaptain();
+        BladeBreaksCast();
+        RelicRaised();
         AuraGrows();
         FormsWork();
         FormsLearned();
