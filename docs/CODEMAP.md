@@ -11,28 +11,28 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Art.cs (56 lines)
 - **Art** (class, L8): Art:16, Mipped:36
 
-## Audio.cs (448 lines)
+## Audio.cs (512 lines)
 - **Cue** (enum, L7)
 - **MusicTrack** (enum, L9)
-- **AudioEngine** (class, L13): AudioEngine:26, Play:73, PlayAt:83, Beds:93, Music:102, Update:120, Make:135, Buf:147, Rnd:148, Clash:151, Splash:165, Squelch:179, Rustle:194, Thud:209, Click:223, Pluck:235, Bow:248, Shout:258, Horn:280, Coin:296, Spell:305, Wind:319, Gallop:333, Din:346, Roar:364, MapTheme:387, Drums:408, Fanfare:426, Loop:440
+- **AudioEngine** (class, L13): AudioEngine:26, Play:77, PlayAt:87, Beds:97, Music:106, Update:124, Make:139, Buf:151, Rnd:152, Clash:155, Splash:169, Squelch:183, Rustle:198, Thud:213, Click:227, Pluck:239, Bow:252, Shout:262, Horn:284, Coin:300, Spell:309, Thunder:323, Holy:340, Flame:354, AuraThrum:370, Wind:383, Gallop:397, Din:410, Roar:428, MapTheme:451, Drums:472, Fanfare:490, Loop:504
 
 ## BalanceReport.cs (248 lines)
 - **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Realms:68, Csv:110, Run:112, Grounds:183, Agree:225
 
-## Battle.cs (542 lines)
+## Battle.cs (547 lines)
 - **PlayerInput** (struct, L5)
 - **Projectile** (class, L17)
-- **Battle** (class, L25): Sound:35, Battle:72, Battle:75, SetupDuel:98, Role:108, Deploy:112, Ranks:175, ColumnsFor:176, Empty:196, Empty:197, FieldScale:200, Battle:206, SquadsOf:225, Centroid:226, Log:227, AddSquad:231, Spawn:274, Mark:288, Update:290, Bounds:353, ThinkNow:368, UpdateCentroids:371, UpdateSquad:383, CanBrace:411, Braced:416, InOrder:420, ReachOf:423, RandomSwing:429, StartSwing:433, Reinforce:445, Result:472, GapTo:507, Withdraw:522, CheckEnd:531
+- **Battle** (class, L25): Sound:35, Flash:40, Battle:77, Battle:80, SetupDuel:103, Role:113, Deploy:117, Ranks:180, ColumnsFor:181, Empty:201, Empty:202, FieldScale:205, Battle:211, SquadsOf:230, Centroid:231, Log:232, AddSquad:236, Spawn:279, Mark:293, Update:295, Bounds:358, ThinkNow:373, UpdateCentroids:376, UpdateSquad:388, CanBrace:416, Braced:421, InOrder:425, ReachOf:428, RandomSwing:434, StartSwing:438, Reinforce:450, Result:477, GapTo:512, Withdraw:527, CheckEnd:536
 
-## BattleAbilities.cs (437 lines)
+## BattleAbilities.cs (443 lines)
 - **Cast** (class, L7)
 - **Field** (class, L18)
-- **Battle** (class, L31): LearnSpells:41, IsCaster:56, CasterCompany:57, SpellPower:61, Speaker:70, UpdateAbilities:73, ThinkSpells:84, CannotCast:122, OrderedCast:136, DropCast:175, Target:183, Own:253, Foe:267, FoeGap:280, Engaged:288, Carries:289, Covered:290, OwnNear:291, Losing:294, Ready:306, Dry:313, Raining:315, Fire:319, Blast:373, AddTimed:380, AddField:390, UpdateFields:398, FieldsOn:418, TimedOn:430
+- **Battle** (class, L31): LearnSpells:41, IsCaster:56, CasterCompany:57, SpellPower:61, Speaker:70, UpdateAbilities:73, ThinkSpells:84, CannotCast:123, OrderedCast:137, DropCast:177, Target:185, Own:255, Foe:269, FoeGap:282, Engaged:290, Carries:291, Covered:292, OwnNear:293, Losing:296, Ready:308, Dry:315, Raining:317, Fire:321, Blast:379, AddTimed:386, AddField:396, UpdateFields:404, FieldsOn:424, TimedOn:436
 
 ## BattleAI.cs (351 lines)
 - **Battle** (class, L6): PackApproach:11, HeightRange:25, Think:27, ThinkCav:105, Ride:206, Approach:214, TurnRate:216, Steer:219, Led:238, General:242, Opposite:335
 
-## BattleAura.cs (84 lines)
+## BattleAura.cs (85 lines)
 - **Battle** (class, L7): SetupAura:26, UpdateAura:31, Presence:53, BladeLanded:69, AuraSoak:76
 
 ## BattleBanner.cs (109 lines)
@@ -75,9 +75,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleFlame.cs (40 lines)
 - **Battle** (class, L7): Madness:17
 
-## BattleForms.cs (235 lines)
+## BattleForms.cs (241 lines)
 - **PendingForm** (record, L6)
-- **Battle** (class, L10): FormWait:26, SetupForms:33, FormPower:46, CannotForm:49, UpdateForms:65, TryForm:75, Use:90, AsAbility:116, FoesNear:119, FormBlow:124, Land:131, InCone:150, InLine:160, Shout:167, Leap:180, AuraShot:208, Drain:219, CounterStrike:231
+- **Battle** (class, L10): FormWait:26, SetupForms:33, FormPower:46, CannotForm:49, UpdateForms:65, TryForm:75, Use:90, AsAbility:118, FoesNear:121, FormBlow:126, Land:133, InCone:154, InLine:164, Shout:171, Leap:184, AuraShot:214, Drain:225, CounterStrike:237
 
 ## BattleGrid.cs (133 lines)
 - **Battle** (class, L7): CellOf:14, BuildGrid:16, Near:28, Separate:104
@@ -112,17 +112,20 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.cs (377 lines)
 - **BattleScreen** (class, L10): Exit:16, GroundTips:34, BattleScreen:79, Load:91, QuickGround:110, BeginCampaign:120, StartDeployment:144, StageCommandView:159, FinishCampaignBattle:167, NewBattle:175, SetWorld:213, SetCommand:223, Pressed:232, Update:240, PlaySounds:303, Soundscape:313, SyncHud:337, MenuChoice:363
 
-## BattleScreen.Draw.cs (614 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:51, DrawBlobs:90, EaseFacings:119, Spray:135, Effects:148, GroundSteps:178, BuildSprites:232, SpriteStates:287, DrawSpritesBasic:295, DrawSpritesShaded:305, Line:315, G:316, OrderArrows:325, OrderArrowLines:327, Ring:343, TorchRow:353, Precipitation:362, Fall:373, Stakes:392, SpellColor:415, Spells:421, AuraGlow:442, ChampionGlow:452, PlayerGlow:465, PendingFormsDrawn:482, RouteDots:507, PlanHook:520, DrawLines:550
+## BattleScreen.Draw.cs (613 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:51, DrawBlobs:90, EaseFacings:119, Spray:135, Effects:148, GroundSteps:179, BuildSprites:233, SpriteStates:288, DrawSpritesBasic:296, DrawSpritesShaded:306, Line:316, G:317, OrderArrows:326, OrderArrowLines:328, Ring:344, TorchRow:354, Precipitation:363, Fall:374, Stakes:393, SpellColor:416, Spells:422, AuraGlow:444, ChampionGlow:454, PlayerGlow:467, PendingFormsDrawn:481, RouteDots:506, PlanHook:519, DrawLines:549
 
 ## BattleScreen.Effects.cs (214 lines)
 - **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:76, Stamp:101, Trample:110, MenMap:125, TrampleTexture:148, RearOf:169, BannerFalls:193, DrawFallingBanners:204
 
+## BattleScreen.Magic.cs (300 lines)
+- **BattleScreen** (class, L8): OrderColour:32, FlashColour:41, ResetMagicFx:52, AddRipple:54, Rise:58, MagicFx:68, FlashFx:78, FieldFx:146, BuffFx:185, AuraFx:200, MagicLines:229
+
 ## BattleScreen.Orders.cs (231 lines)
 - **BattleScreen** (class, L8): Targets:12, Issue:15, Send:26, GiveGoal:36, GoalCommand:38, Command:60, OrderKeys:119, NextSpell:138, CastAt:150, PlantStakes:164, NextDivision:176, LineAt:186, Distribute:203, PreviewSlots:222
 
-## BattleScreen.Shots.cs (276 lines)
-- **BattleScreen** (class, L8): ShotScript:10, readonly:146, PoseSheet:156, Clash:226, Gallery:252
+## BattleScreen.Shots.cs (325 lines)
+- **BattleScreen** (class, L8): ShotScript:10, readonly:150, PoseSheet:160, Clash:230, MagicScene:257, Gallery:301
 
 ## BattleSiege.cs (162 lines)
 - **Battle** (class, L7): DeployDefenders:18, Via:48, MayCross:75, EnforceWall:82, Batter:95, SiegeDefend:121, SiegeAttack:144
@@ -479,8 +482,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteDump.cs (77 lines)
 - **SpriteDump** (class, L9): Run:13, Png:44, Crc:71
 
-## SpriteSheet.cs (1135 lines)
-- **SpriteSheet** (class, L12): SpriteSheet:27, Add:36, Pack:41, Side:66, InEl:115, Head:117, Visages:120, Head:134, GoblinHead:177, TrollHead:207, SkullHead:237, GhoulHead:263, Helm:288, Torso:414, PlateTorso:568, PixelMap:571, Ribs:587, Tabard:602, Emblem:619, Cape:659, Sleeve:667, Leg:703, Boot:730, Hand:748, Shield:756, Weapon:799, Blade:878, Polearm:889, Bow:904, Arrow:918, Quiver:927, Plume:936, Flag:944, Blood:953, Splat:962, Horse:975, Wolf:1045, BodyShape:1086, HorseGear:1089, Saddle:1123
+## SpriteSheet.cs (1139 lines)
+- **SpriteSheet** (class, L12): SpriteSheet:27, Add:36, Pack:41, Side:66, InEl:119, Head:121, Visages:124, Head:138, GoblinHead:181, TrollHead:211, SkullHead:241, GhoulHead:267, Helm:292, Torso:418, PlateTorso:572, PixelMap:575, Ribs:591, Tabard:606, Emblem:623, Cape:663, Sleeve:671, Leg:707, Boot:734, Hand:752, Shield:760, Weapon:803, Blade:882, Polearm:893, Bow:908, Arrow:922, Quiver:931, Plume:940, Flag:948, Blood:957, Splat:966, Horse:979, Wolf:1049, BodyShape:1090, HorseGear:1093, Saddle:1127
 
 ## Squad.cs (227 lines)
 - **Order** (enum, L5)

@@ -213,7 +213,7 @@ sealed partial class BattleScreen
     void SetWorld()
     {
         Sky.Set(battle.Weather, nightFloor: 0.42f); // moonlight: dark, but you can still see who is who
-        motes.Clear();
+        ResetMagicFx();
         markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();

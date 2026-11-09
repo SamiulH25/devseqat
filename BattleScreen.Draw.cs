@@ -156,6 +156,7 @@ partial class BattleScreen
                 case Cue.Impact: Spray(at, 0.2f, 10, new Color(168, 150, 116), 1.6f, 1.3f, 0.25f, false, 0.6f); break;
             }
         GroundSteps(dt);
+        MagicFx(dt);
         for (int i = motes.Count - 1; i >= 0; i--)
         {
             var m = motes[i];
@@ -436,6 +437,7 @@ partial class BattleScreen
             Ring(f.Pos, f.Radius * pulse, col, 20);
         }
         AuraGlow();
+        MagicLines();
     }
 
     /// The captain's aura (docs/KNIGHT_ORDERS.md K1): the lit blade as a streak along the facing, aura armour as a shimmer.
@@ -464,18 +466,15 @@ partial class BattleScreen
 
     void PlayerGlow(Unit p, float t, float pulse)
     {
-        if (battle.AuraBlade)
+        // The lit blade and its trail are drawn with the rest of the magic (BattleScreen.Magic.cs).
+        var aura = AuraColour;
+        if (battle.AuraTier >= 3 && !battle.Spent)
         {
-            float lift = p.Mounted ? 1.2f : 0;
-            var from = p.Pos + p.Dir * 0.35f;
-            var to = p.Pos + p.Dir * (p.Type.Reach + 0.3f);
-            var col = Color.Lerp(Style.Aura, Color.White, 0.3f * pulse);
-            Line(G(from, 1.25f + lift), G(to, 1.0f + lift), col);
-            Line(G(from, 1.2f + lift), G(to, 0.95f + lift), col);
+            Ring(p.Pos, 0.9f * pulse, Color.Lerp(aura, Color.Black, 0.35f), 12);
+            Ring(p.Pos, 0.7f * pulse, Color.Lerp(aura, Color.Black, 0.55f), 10); // a shimmer, two rings breathing out of step
         }
-        if (battle.AuraTier >= 3 && !battle.Spent) Ring(p.Pos, 0.9f * pulse, Color.Lerp(Style.Aura, Color.Black, 0.35f), 12);
         if (battle.Guarding) Ring(p.Pos + p.Dir * 0.7f, 0.6f, Color.White, 8);
-        if (battle.AuraTier >= 4 && !battle.Spent) Ring(p.Pos, Battle.PresenceRadius * (0.96f + 0.04f * MathF.Sin(t * 2)), Color.Lerp(Style.Aura, Color.Black, 0.6f), 40);
+        if (battle.AuraTier >= 4 && !battle.Spent) Ring(p.Pos, Battle.PresenceRadius * (0.96f + 0.04f * MathF.Sin(t * 2)), Color.Lerp(aura, Color.Black, 0.6f), 40);
     }
 
     /// Thrown forms on their way, yours and a champion's (K2, K6).

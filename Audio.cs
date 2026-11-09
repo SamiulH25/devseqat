@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Audio;
 namespace Ironfield;
 
 /// Sound cues the headless battle reports (Battle.Sounds); the audio engine turns them into positional sound.
-public enum Cue { Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin, Splash, Squelch, Rustle, Hollow, Spell }
+public enum Cue { Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin, Splash, Squelch, Rustle, Hollow, Spell, Thunder, Holy, Flame, Aura }
 
 public enum MusicTrack { None, Map, Battle, Victory, Defeat }
 
@@ -43,6 +43,10 @@ sealed class AudioEngine
             cues[Cue.Rustle] = Make(Rustle());
             cues[Cue.Hollow] = Make(Thud(118, 0.32f, 0.25f));
             cues[Cue.Spell] = Make(Spell());
+            cues[Cue.Thunder] = Make(Thunder());
+            cues[Cue.Holy] = Make(Holy());
+            cues[Cue.Flame] = Make(Flame());
+            cues[Cue.Aura] = Make(AuraThrum());
             music[MusicTrack.Map] = Make(MapTheme());
             music[MusicTrack.Battle] = Make(Drums());
             music[MusicTrack.Victory] = Make(Fanfare(true));
@@ -311,6 +315,66 @@ sealed class AudioEngine
             float rise = 1 + 0.4f * t;
             b[i] = env * (0.18f * MathF.Sin(MathF.Tau * 440 * rise * t) + 0.12f * MathF.Sin(MathF.Tau * 660 * rise * t + 0.3f * MathF.Sin(t * 40))
                 + 0.08f * MathF.Sin(MathF.Tau * 990 * rise * t) + 0.05f * Rnd());
+        }
+        return b;
+    }
+
+    /// Thunder after lightning: a sharp crack, then a long low rumble of filtered noise.
+    static float[] Thunder()
+    {
+        var b = Buf(2.2f);
+        float lp = 0, lp2 = 0;
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = i / (float)Rate;
+            lp += (Rnd() - lp) * 0.04f;
+            lp2 += (lp - lp2) * 0.03f;
+            float crack = Rnd() * MathF.Exp(-t * 30) * 0.8f;
+            float rumble = lp2 * 4f * MathF.Min(1, t * 6) * MathF.Exp(-t * 1.4f) * (0.8f + 0.2f * MathF.Sin(t * 13));
+            b[i] = crack + rumble;
+        }
+        return b;
+    }
+
+    /// A holy chord (smite, miracle): three bright voices swelling and fading.
+    static float[] Holy()
+    {
+        var b = Buf(1.6f);
+        float[] f = { 523, 659, 784, 1046 };
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = i / (float)Rate, env = MathF.Min(1, t * 4) * MathF.Exp(-t * 1.6f), s = 0;
+            for (int v = 0; v < f.Length; v++) s += MathF.Sin(MathF.Tau * f[v] * t + 0.4f * MathF.Sin(t * 6 + v)) / (v + 1.5f);
+            b[i] = s * env * 0.35f;
+        }
+        return b;
+    }
+
+    /// Fire catching: a soft whoosh of noise rising and falling, with crackles.
+    static float[] Flame()
+    {
+        var b = Buf(1.1f);
+        float lp = 0;
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = i / (float)Rate;
+            lp += (Rnd() - lp) * (0.05f + 0.15f * MathF.Min(1, t * 3));
+            float env = MathF.Sin(MathF.PI * MathF.Min(1, t / 1.1f));
+            float crackle = Rnd() > 0.995f ? Rnd() * 0.6f : 0;
+            b[i] = (lp * 1.2f + crackle) * env;
+        }
+        return b;
+    }
+
+    /// The aura let loose (a burst, a howl, a great form, a breakthrough): a deep thrum with a ringing edge.
+    static float[] AuraThrum()
+    {
+        var b = Buf(1.3f);
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = i / (float)Rate, env = MathF.Min(1, t * 12) * MathF.Exp(-t * 2.2f);
+            b[i] = env * (0.45f * MathF.Sin(MathF.Tau * 55 * t + 2 * MathF.Sin(MathF.Tau * 2 * t)) + 0.2f * MathF.Sin(MathF.Tau * 110 * t)
+                + 0.08f * MathF.Sin(MathF.Tau * 880 * t * (1 + 0.02f * t)) * MathF.Exp(-t * 4));
         }
         return b;
     }

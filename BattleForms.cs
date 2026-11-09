@@ -89,6 +89,8 @@ public partial class Battle
 
     void Use(Unit p, FormDef f, float k)
     {
+        Flash("form:" + f.Kind, p.Pos, f.Kind is "burst" or "shout" or "buff" or "drain" ? f.Radius : 1, p.Team, f.Order, p.Dir);
+        if (f.Great || f.Kind is "burst" or "shout" or "buff") Sound(Cue.Aura, p.Pos);
         switch (f.Kind)
         {
             case "focus": p.Stamina = 100; focusUntil = Time + f.Duration; focusK = f.Damage * k; break;
@@ -137,6 +139,7 @@ public partial class Battle
             var at = pf.From + pf.Dir * f.Range;
             foreach (var t in FoesNear(at, f.Radius, f.MaxHit, p.Team)) FormBlow(p, t, f, pf.Power);
             Sound(Cue.Impact, at);
+            Flash("land:volley", at, f.Radius, p.Team, f.Order);
             return;
         }
         var hits = Near(pf.From + pf.Dir * (f.Range / 2), f.Range / 2 + 1, nearKill)
@@ -144,6 +147,7 @@ public partial class Battle
             .OrderBy(t => Vector2.DistanceSquared(t.Pos, pf.From)).ThenBy(t => t.Index).Take(f.MaxHit).ToList();
         foreach (var t in hits) FormBlow(p, t, f, pf.Power);
         Sound(Cue.Clash, pf.From + pf.Dir * 2);
+        Flash("land:slash", pf.From, f.Range, p.Team, f.Order, pf.Dir);
     }
 
     /// Within a cone from `from` along `dir`: ahead, out to `range`, and no further aside than `width` plus a quarter of the way out.
@@ -197,7 +201,9 @@ public partial class Battle
             Aura += f.Aura; formReady[Array.IndexOf(FormSlot, f)] = Time; PlayerHit = ("NO FOE TO LEAP AT", Time); return; // nothing spent
         }
         var dir = Vector2.Normalize(best.Pos - p.Pos);
+        var from = p.Pos;
         p.Pos = best.Pos - dir * 1.1f;
+        Flash("land:leap", p.Pos, Vector2.Distance(from, p.Pos), p.Team, f.Order, dir);
         p.Facing = MathF.Atan2(dir.Y, dir.X);
         FormBlow(p, best, f, k);
         foreach (var t in FoesNear(p.Pos, f.Radius, 8, p.Team)) if (t != best) Stagger(t, 0.6f);

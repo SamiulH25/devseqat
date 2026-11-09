@@ -68,7 +68,7 @@ public partial class Battle
     /// Your blow lands with the blade lit: its cost.
     void BladeLanded()
     {
-        if (AuraBlade) Aura = MathF.Max(0, Aura - BladeHitCost);
+        if (AuraBlade) { Aura = MathF.Max(0, Aura - BladeHitCost); Flash("blade", Player.Pos + Player.Dir * Player.Type.Reach, 1, 0); }
         if (edgeLeft > 0) edgeLeft--; // Thorn Edge (K2): one blow spent
     }
 
@@ -78,6 +78,7 @@ public partial class Battle
         if (a.IsPlayer || t.IsPlayer) lastFought = Time;
         if (!t.IsPlayer || AuraTier < 3 || Spent) return real;
         float soaked = real * (ranged ? ArrowSoak : ArmourSoak);
+        Flash("soak", t.Pos, 1, t.Team);
         Aura = MathF.Max(0, Aura - soaked * SoakCost);
         return real - soaked;
     }

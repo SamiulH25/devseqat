@@ -106,6 +106,7 @@ public partial class Battle
             s.SpellReady[i] = Time + a.Cooldown;
             if (a.Great) s.GreatDone = true;
             Casts.Add(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power });
+            Flash("cast", Speaker(s, hero)?.Pos ?? s.Center, 1, s.Team, a.Tradition);
             if (s.Team == 0 && a.Tradition == "craft") OmenRaised += a.Omen;
             if (a.Great) Log(s.Team == 0 ? $"Your {s.Name} call down {a.Name}!" : $"The enemy's casters call down {a.Name}!");
             Sound(hero ? Cue.Shout : Cue.Spell, Speaker(s, hero)?.Pos ?? s.Center);
@@ -166,6 +167,7 @@ public partial class Battle
         if (a.Great) s.GreatDone = true;
         s.CastSpell = -1;
         Casts.Add(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power });
+        Flash("cast", me.Pos, 1, s.Team, a.Tradition);
         if (s.Team == 0 && a.Tradition == "craft") OmenRaised += a.Omen;
         if (s.Team == 0) Log($"{s.Name}: {a.Name}!");
         Sound(hero ? Cue.Shout : Cue.Spell, me.Pos);
@@ -323,6 +325,9 @@ public partial class Battle
         if (by == null) return; // the caster fell: the working dies with him
         if (a.Needs != "" && !(a.Needs == "dry" ? Dry(c.At) : Raining(c.At))) return;
         int team = c.By.Team;
+        Flash("spell:" + a.Kind, c.At, a.Radius, team, a.Tradition);
+        if (a.Tradition == "faith" && (a.Kind is "attack" or "rally" || a.Great)) Sound(Cue.Holy, c.At);
+        if (a.Effect == "burning" || a.Burn > 0) Sound(Cue.Flame, c.At);
         switch (a.Kind)
         {
             case "buff":
@@ -347,7 +352,8 @@ public partial class Battle
                 var bolt = Near(c.At, a.Radius + 0.5f, nearKill).Where(t => t.Active && t.Team != team && Vector2.DistanceSquared(t.Pos, c.At) < a.Radius * a.Radius)
                     .OrderByDescending(t => t.Mounted).ThenByDescending(t => t.Sergeant || t.Hero || t.IsLeader).ThenBy(t => Vector2.DistanceSquared(t.Pos, c.At)).ThenBy(t => t.Index).FirstOrDefault();
                 if (bolt != null) { Blast(by, bolt, a, c.Power); if (bolt.Mounted) HitHorse(bolt, a.Damage * c.Power * 0.5f, by); }
-                Sound(Cue.Impact, c.At);
+                Flash("bolt", bolt?.Pos ?? c.At, 1, team, a.Tradition);
+                Sound(Cue.Thunder, c.At);
                 break;
             case "heal":
                 foreach (var u in Units)

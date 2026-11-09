@@ -1,6 +1,6 @@
 # Magic and aura for the player: plan
 
-Status: being built (2026-11-09). Done: MA1. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
+Status: being built (2026-11-09). Done: MA1, MA2. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
 through M4 + P) and docs/KNIGHT_ORDERS.md (aura and orders: built K1-K8). Read docs/LEGACY.md first: your company is
 your legacy, and every change here must serve that.
 
@@ -281,3 +281,14 @@ change touches every later number.
   abilities) in command view; left click casts on the ground (`CastAt`, through `Send`, so a division company gets it
   late); right click cancels. X (FIRE / HOLD) toggles `HoldSpells` on selected circles. HUD `Hud.SpellFan` lists the
   spells with Will cost or why not (`CannotCast`); cards read HOLD. Test `CastOnOrder`.
+- **MA2 (the look and sound):** the sim marks moments in `Battle.Flashes` (`Flash(what, at, radius, team, tag, dir)`:
+  `cast`, `spell:<kind>`, `bolt`, `form:<kind>`, `land:slash|leap|volley`, `soak`, `blade`); nothing in the sim reads
+  them and the screen empties the list as it draws. `BattleScreen.Magic.cs` turns them into motes, `Ripple`s (rings that
+  spread and darken: lines are opaque) and `Beam`s (a smite's pillar of light, lightning's jagged bolt), and draws the
+  steady effects: fire and smoke over burning ground, low mist and smoke banks, light at a ward's edge, rain in a storm,
+  glitter over blessed companies and dark motes over cursed ones, sparks and a fading trail on the lit blade, dust stirred
+  outward by a Master's presence with a pressure ripple every 2 s. Colours: a tradition's (`SpellColor`), an order's for
+  forms (`OrderColour`; yours from the first order form you carry, `AuraColour`), the foe's run towards red. Big moments
+  kick the camera. Motes larger than 0.15 m are round (`puff` sprite). Sounds: `Cue.Thunder` (lightning), `Holy` (faith
+  attacks and rallies), `Flame` (fire), `Aura` (bursts, howls, buffs and great forms). Shots `magic-spells`,
+  `magic-aura` (after the clash shots; `IRONFIELD_SHOTS_FROM=clash` reaches them quickly). Drawing only: no test moved.

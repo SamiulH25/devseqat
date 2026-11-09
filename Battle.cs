@@ -33,6 +33,11 @@ public sealed partial class Battle
     /// Sound cues from the last Update (the screen plays them; headless runs ignore them).
     public readonly List<(Cue Cue, Vector2 Pos)> Sounds = new();
     void Sound(Cue c, Vector2 at) { if (Sounds.Count < 64) Sounds.Add((c, at)); }
+    /// Moments of magic and aura for the screen to draw (docs/MAGIC_AURA.md 6): what ("cast", "spell:attack", "form:burst",
+    /// "land:leap", "soak", "blade"...), where, which way, how far it reaches, whose, and a tag (a tradition or an order).
+    /// The screen takes them as it draws; nothing in the sim reads them, so it stays at most 64 long without one.
+    public readonly List<(string What, Vector2 At, Vector2 Dir, float Radius, int Team, string Tag)> Flashes = new();
+    internal void Flash(string what, Vector2 at, float radius, int team, string tag = "", Vector2 dir = default) { if (Flashes.Count < 64) Flashes.Add((what, at, dir, radius, team, tag)); }
     const float LanceFrom = 1.0f, LanceTip = 2.7f, BraceExtra = 0.8f;
 
     public readonly List<Unit> Units = new();

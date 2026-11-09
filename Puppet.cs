@@ -549,7 +549,7 @@ sealed class Puppet
     /// A solid-colour square facing the camera: dust, blood and sparks (pixel-art particles).
     public void Particle(Vector3 c, float size, Color col)
     {
-        var src = art["white/0"];
+        var src = art[size > 0.15f ? "puff/0" : "white/0"]; // a large mote is round
         var hw = camRight * size / 2;
         var hh = camUp * size / 2;
         var keep = tint;

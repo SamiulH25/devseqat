@@ -139,7 +139,11 @@ partial class BattleScreen
                 Clash(shotIndex == 53 ? "levies" : "immortals"); shotFrames = 0; shotIndex++; break;
             case 54 or 56 when shotFrames > 20:
                 pendingShot = shotIndex == 54 ? "clash-levies" : "clash-elites"; shotIndex++; break;
-            case 57 when pendingShot == null: Exit(); break;
+            case 57 or 59 when pendingShot == null:
+                MagicScene(shotIndex == 57); shotFrames = 0; shotIndex++; break;
+            case 58 or 60 when shotFrames > 12:
+                pendingShot = shotIndex == 58 ? "magic-spells" : "magic-aura"; shotIndex++; break;
+            case 61 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -246,6 +250,51 @@ partial class BattleScreen
         camYaw = MathHelper.PiOver2 + 0.35f;
         camPitch = 0.6f;
         zoom = 19;
+    }
+
+    /// Magic and aura staged for a shot (docs/MAGIC_AURA.md 6): spells (a smite's pillar, lightning, burning ground, mist, a
+    /// ward, a blessing) or the captain's aura (the blade lit, a burst, a slash, presence).
+    void MagicScene(bool spells)
+    {
+        battle = Battle.Empty(9, new BattleOptions { AuraTier = 4, Forms = new[] { "red_rose_bloom", "rose_cut", "thorn_edge" } });
+        SetWorld();
+        var b = battle;
+        var circle = b.AddSquad(0, Troops.Get("saints_militant"), 3, new Vector2(-6, -14), 3, Vector2.UnitY);
+        var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 16, new Vector2(6, -10), 8, Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("levies"), 24, new Vector2(0, 12), 8, -Vector2.UnitY);
+        var foes2 = b.AddSquad(1, Troops.Get("bowmen"), 16, new Vector2(-18, 16), 8, -Vector2.UnitY);
+        circle.Order = mine.Order = foes.Order = foes2.Order = Order.Hold;
+        b.Player.Pos = new Vector2(0, 2);
+        b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+        b.Input = new PlayerInput { Aura = !spells, Dir = AttackDir.Right, Facing = MathHelper.PiOver2 };
+        for (int i = 0; i < 30; i++) b.Update(1 / 60f);
+        var by = circle.Units[0];
+        for (int i = 0; i < 110; i++) Effects(1 / 60f); // the steady effects (fire, mist, presence) build up first
+        if (spells)
+        {
+            b.AddField(Abilities.Get("wildfire"), "burning", 0, by, new Vector2(-18, 16), 6, 60, 1, 10);
+            b.AddField(Abilities.Get("mist"), "mist", 0, by, new Vector2(18, 14), 9, 60, 1, 0);
+            b.AddField(Abilities.Get("ward"), "warded", 0, by, new Vector2(6, -10), 8, 60, 1, 6);
+            b.AddTimed(mine, Abilities.Get("blessing"), 1);
+            b.Flash("spell:attack", new Vector2(0, 12), 3, 0, "faith");
+            b.Flash("bolt", new Vector2(8, 13), 1, 0, "craft");
+            b.Flash("cast", by.Pos, 1, 0, "faith");
+            b.Flash("spell:buff", mine.Center, 10, 0, "faith");
+        }
+        else
+        {
+            b.Flash("form:burst", b.Player.Pos, 5, 0, "rose");
+            b.Flash("land:slash", b.Player.Pos, 8, 0, "rose", Vector2.UnitY);
+        }
+        for (int i = 0; i < 14; i++) { b.Update(1 / 60f); Effects(1 / 60f); } // a moment on: rings spread, sparks fly
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = hudHidden = true;
+        SetCommand(true);
+        blend = 1;
+        camFocus = spells ? new Vector2(0, 4) : b.Player.Pos;
+        camYaw = MathHelper.PiOver2 + 0.5f;
+        camPitch = spells ? 0.55f : 0.45f;
+        zoom = spells ? 46 : 16;
     }
 
     /// Debug lineup of every troop, left to right along each upgrade line, facing the camera.
