@@ -174,6 +174,16 @@ public sealed partial class Campaign
         return p;
     }
 
+    /// The aura of the man leading this party: an order knight's (lords have none, docs/KNIGHT_ORDERS.md 11).
+    public int ChampionAura(Party p) => CharacterOf(p) is { Kind: "knight", Dead: false } k ? k.Aura : 0;
+
+    /// The forms he fights with: his order's within his tier, then the generic ones.
+    public string[] ChampionFormsOf(Party p)
+    {
+        if (CharacterOf(p) is not { Kind: "knight" } k || k.Aura <= 0) return Array.Empty<string>();
+        return Forms.OfOrder(k.Order).Concat(Forms.Generic).Where(f => f.Tier <= k.Aura).Select(f => f.Id).ToArray();
+    }
+
     /// A beaten order army refits at its chapter: the brothers' company is raised again if it was cut down.
     void RefitOrder(Party p, Settlement home)
     {
@@ -203,6 +213,7 @@ public sealed partial class Campaign
     {
         ChapterTraining();
         OathAndWar();
+        OrderPoliticsDaily();
         foreach (var o in S.Orders.Where(o => !o.Gone))
         {
             var chapter = SettlementById(o.Chapter);

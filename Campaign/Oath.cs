@@ -121,6 +121,7 @@ public sealed partial class Campaign
         Captain.Forsworn.Remove(order);
         if (OrderById(order) is OrderState o) o.Standing = MathF.Max(o.Standing, TrialStanding);
         LearnOrderForms();
+        DrawRival(def);
         Deed($"You take the oath of {def.Short} as its squire. {def.Creed}", "oaths");
     }
 
@@ -209,6 +210,7 @@ public sealed partial class Campaign
             if (hunted) RaiseStanding(o.Id, 3);
             else if (patronsFoe) RaiseStanding(o.Id, 2);
         }
+        CrusadeWon(won, foes);
         if (!won || MyOrder is not OrderDef mine) return;
         bool inName = foes.Any(f => Hunted(mine, f) || FactionsAtWar(MyOrderState!.Patron, SideOf(f)));
         if (Captain.Penance && inName) { Captain.Penance = false; Log($"Your penance is done. {mine.Short} welcome you back."); }

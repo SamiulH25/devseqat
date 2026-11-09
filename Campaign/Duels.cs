@@ -48,6 +48,7 @@ public sealed partial class Campaign
         {
             Duel = true, Couriers = false, Cap = 10, Scouted = true,
             EnemyLeader = LordChampion(e), EnemyDamage = Settings.Current.EnemyDamage,
+            EnemyAura = ChampionAura(e), EnemyForms = ChampionFormsOf(e), // an order knight's aura and forms (K6)
             Ground = TerrainParams.Lists, Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, e.Id)),
             Palette = new[] { mine, his == mine ? 3 : his },
         }.WithCaptain(Captain);

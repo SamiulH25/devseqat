@@ -218,6 +218,30 @@
       ]
     },
     {
+      "id": "rival_meet", "trigger": "flag:rival_meet", "cooldown": 0, "scene": "camp", "title": "{rival}",
+      "text": "{rival} was sworn the same season as you. He trains when you train, rides when you ride, and watches you the way a man watches a horse he means to beat.",
+      "choices": [
+        { "label": "OFFER HIM YOUR HAND", "effects": ["rival:12", "flag:rival_lists"] },
+        { "label": "MEASURE HIM COLDLY", "effects": ["rival:-8", "renown:2", "flag:rival_lists"] }
+      ]
+    },
+    {
+      "id": "rival_lists", "trigger": "flag:rival_lists", "cooldown": 0, "scene": "camp", "title": "AT THE LISTS",
+      "text": "{rival} calls you out before the whole chapter. Blunted steel, but no one watching thinks it is a game.",
+      "choices": [
+        { "label": "FIGHT IN EARNEST", "effects": ["rival_bout", "flag:rival_end"] },
+        { "label": "YIELD WITH GRACE", "effects": ["rival:10", "renown:-2", "flag:rival_end"] }
+      ]
+    },
+    {
+      "id": "rival_end", "trigger": "flag:rival_end", "cooldown": 0, "scene": "camp", "title": "{rival}",
+      "text": "Word comes from the chapter about {rival}. Whatever is between you two has come to its end.",
+      "choices": [
+        { "label": "GO TO HIM", "effects": ["rival_fate"] },
+        { "label": "HEAR IT FROM A DISTANCE", "effects": ["rival_fate"] }
+      ]
+    },
+    {
       "id": "bury_named", "trigger": "fallen", "cooldown": 0, "scene": "camp", "title": "{man}",
       "text": "{man} of {company} lies with the dead of the field. The men who stood beside him wait to see what you will do.",
       "choices": [

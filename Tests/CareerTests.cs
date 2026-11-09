@@ -206,8 +206,9 @@ public static partial class SelfTest
         Party? rebels = null;
         bool rose = false;
         // A rising can be put down the same day it starts (the log still tells of it). Kept at the brink each day: the
-        // world's own doings (a holdout burnt out nearby, a lord's victory) can calm it a few points first.
-        for (int d = 0; d < 40 && rebels == null && !rose; d++)
+        // world's own doings (a holdout burnt out nearby, a lord's victory) can calm it a few points first. A rising is a 10%
+        // roll a day, so 60 days leave about one run in five hundred without one.
+        for (int d = 0; d < 60 && rebels == null && !rose; d++)
         {
             foreign.Unrest = MathF.Max(foreign.Unrest, Campaign.RevoltAt);
             Days(c, 1);
@@ -219,8 +220,12 @@ public static partial class SelfTest
         if (rebels != null) c.S.Parties.Remove(rebels); // left in the field, the rebels could be beaten and calm the place
         // Set it at the brink just before the day turns, so nothing in the world (a holdout burnt out nearby: -3) calms it first.
         while (c.S.Hours % 24 < 23) { c.Tick(0.5f); c.Encounter = null; c.Arrived = null; }
-        foreign.Unrest = 99.9f;
-        Days(c, 1);
+        // Held at the brink: the daily drift (small by now, but upward) carries it over the edge within a few days.
+        for (int d = 0; d < 5 && foreign.Faction != kin; d++)
+        {
+            foreign.Unrest = MathF.Max(foreign.Unrest, 99.9f);
+            Days(c, 1);
+        }
         Check(foreign.Faction == kin && foreign.Owner != c.Player.Id, "at the end of its patience a fief goes over to its own people");
 
         // Vassals: a lord with two fiefs raises a companion to land and gives him orders.

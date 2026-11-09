@@ -291,7 +291,7 @@ public sealed partial class Campaign
             return;
         }
         if (a.Lair || a.Breed is "troll" or "undead") (a, b) = (b, a); // a holdout fights dug in, from side 1; so do a troll and the dead
-        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, 1, Edge(b));
+        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, 1 + B.AuraWeight * ChampionAura(a), Edge(b));
         var winner = r.Winner == 0 ? a : b;
         var loser = r.Winner == 0 ? b : a;
         AiBattles++;
@@ -303,7 +303,8 @@ public sealed partial class Campaign
     /// How much harder a party fights than its strength says, on the defending side of an auto-resolve: a holdout dug in,
     /// a troll in the dark (and the sun makes it slow and weak, as in a battle); the dead by night (by day they lie in the earth).
     /// How much harder a party fights than its strength says: a holdout's den, a troll by night, the dead by night.
-    public float Edge(Party p) => p.Lair ? B.HoldoutDefence : p.Breed == "troll" ? (Night ? B.TrollNight : B.TrollDay) : p.Breed == "undead" ? (Night ? B.UndeadNight : B.UndeadDay) : 1;
+    public float Edge(Party p) => (1 + B.AuraWeight * ChampionAura(p)) * EdgeOfKind(p);
+    float EdgeOfKind(Party p) => p.Lair ? B.HoldoutDefence : p.Breed == "troll" ? (Night ? B.TrollNight : B.TrollDay) : p.Breed == "undead" ? (Night ? B.UndeadNight : B.UndeadDay) : 1;
 
     void Hourly()
     {

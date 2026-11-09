@@ -262,6 +262,7 @@ public partial class Campaign
             EnemyDamage = Settings.Current.EnemyDamage, EnemyMorale = DuelMoraleFor(enemy),
             Ground = GroundFor(enemy, GroundChooser(enemy, setup.Side0)), // the map's field, the rain, who chose it (Ground.cs)
             EnemyAggression = SideOf(enemy) >= 0 ? Factions.Get(SideOf(enemy)).Aggression : 1.5f, // a realm's temper; brigands do not wait long
+            EnemyAura = ChampionAura(enemy), EnemyForms = ChampionFormsOf(enemy), // an order knight leads with his aura (K6)
             Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
             Standing = ActiveBuffs.Concat(RelicReady ? new[] { "relic" } : Array.Empty<string>()).ToArray(), // a shrine's blessing, a feast, hunger (Buffs.cs); your relic (Rites.cs)
@@ -286,7 +287,7 @@ public partial class Campaign
     {
         BreakVow("no_auto", "send your men to fight without you at their head");
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge * BuffEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed), Edge(Encounter!));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, (1 + B.AuraWeight * AuraInBattle) * TacticsEdge * BuffEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed), Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }

@@ -127,6 +127,7 @@ public partial class Campaign
             p.SiegeTarget = -1;
             p.Task = "flee"; p.ChaseId = -1; p.Goal = home.Pos; p.Moving = true; p.TaskUntil = (float)S.Hours + 3;
         }
+        else if (!needsRefit && OrderMarches(p)) { } // a crusade, or riding with you as its grand master (K6)
         else if (p.SiegeTarget >= 0)
         {
             p.Task = "siege"; p.ChaseId = -1; p.Moving = false; p.TaskUntil = (float)S.Hours + 4;

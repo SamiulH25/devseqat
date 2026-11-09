@@ -43,6 +43,8 @@ public sealed partial class Campaign
     };
     /// Days after a "flag:name" effect before the "flag:name" event follows.
     public const int FlagDays = 7;
+    /// Flags the code sets itself (not an event's choice): swearing to an order starts the rival's chain (K6).
+    static readonly string[] CodeFlags = { "rival_meet" };
     /// Triggers that only fire when the world forces them (a brigand king rises, a pretender appears).
     internal static bool Forced(string trigger) => trigger is "brigand_king" or "pretender" or "graves" or "peace_offer" or "start" or "crown" or "fallen" || trigger.StartsWith("site_");
     static readonly string[] Verbs =
@@ -50,10 +52,10 @@ public sealed partial class Campaign
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
         "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown", "calm",
-        "vigil", "breakthrough", "corrupt",
+        "vigil", "breakthrough", "corrupt", "rival", "rival_bout", "rival_fate",
     };
-    static readonly string[] NoNumber = { "vigil", "breakthrough", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
-    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man" };
+    static readonly string[] NoNumber = { "vigil", "breakthrough", "rival_bout", "rival_fate", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
+    static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man", "rival" };
 
     static List<EventDef>? events;
     public static IReadOnlyList<EventDef> Events
@@ -84,7 +86,7 @@ public sealed partial class Campaign
             if (Events.Count(x => x.Id == e.Id) > 1) yield return $"{e.Id}: duplicate id";
             if (!Triggers.Contains(e.Trigger) && !e.Trigger.StartsWith("flag:") && !(e.Trigger.StartsWith("trait:") && EarnedTraits.Contains(e.Trigger[6..])))
                 yield return $"{e.Id}: unknown trigger {e.Trigger}";
-            if (e.Trigger.StartsWith("flag:") && !Events.Any(x => x.Choices.Any(c => c.Effects.Contains(e.Trigger)))) yield return $"{e.Id}: nothing sets {e.Trigger}";
+            if (e.Trigger.StartsWith("flag:") && !CodeFlags.Contains(e.Trigger[5..]) && !Events.Any(x => x.Choices.Any(c => c.Effects.Contains(e.Trigger)))) yield return $"{e.Id}: nothing sets {e.Trigger}";
             if (e.Choices.Count is < 2 or > 3) yield return $"{e.Id}: needs two or three choices";
             foreach (var text in new[] { e.Title, e.Text }.Concat(e.Choices.Select(c => c.Label)))
                 foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text, @"\{(\w+)\}"))
@@ -215,6 +217,7 @@ public sealed partial class Campaign
             .Replace("{liege}", RulerOf(Captain.Contract)?.Name ?? "your liege")
             .Replace("{site}", SiteById(pe.Site)?.Name ?? "the place")
             .Replace("{companion}", CharacterById(pe.Lord)?.Name ?? "your companion")
+            .Replace("{rival}", CharacterById(Captain.Rival)?.Name ?? "your rival")
             .Replace("{man}", S.Fallen.FirstOrDefault(m => m.Id == pe.Soldier)?.Name ?? "one of your men");
     }
 
@@ -252,6 +255,9 @@ public sealed partial class Campaign
         {
             case "breakthrough": BreakThrough(pe.Id == "aura_grief" ? "In your rage the wall gives way." : "Your mourning is done, and you rise from it."); break;
             case "corrupt": Captain.Corruption = Math.Clamp(Captain.Corruption + n, 0, 100); break;
+            case "rival": if (CharacterById(Captain.Rival) is Character rv) Remember(rv, Me, n >= 0 ? "you were a brother to me" : "you looked down on me", n); break;
+            case "rival_bout": return RivalBout();
+            case "rival_fate": return RivalFate();
             case "gold": S.Gold = MathF.Max(0, S.Gold + n); break;
             case "renown": Captain.Renown = MathF.Max(0, Captain.Renown + n); break;
             case "food": Player.Food = MathF.Max(0, Player.Food + n); break;

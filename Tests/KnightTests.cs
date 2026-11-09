@@ -489,4 +489,105 @@ public static partial class SelfTest
         t4.Aura = Battle.AuraMax; Press(t4, 3);
         Check(t4.CannotForm(3) == "THE GREAT FORM IS SPENT", "a Master once a battle");
     }
+
+    /// K6: an enemy champion with aura lights his blade, wears aura armour and fires his forms by rule (a burst when men
+    /// crowd him, a leap at a foe ahead); one without aura does none of it.
+    static void ChampionsUseAura()
+    {
+        Battle Field(int seed, int aura, string[] forms, Vector2[] men)
+        {
+            var b = Battle.Empty(seed, new BattleOptions { EnemyAura = aura, EnemyForms = forms });
+            b.Player.Pos = new Vector2(0, -300);
+            var c = b.EnemyCaptain;
+            c.Horse = null;
+            foreach (var at in men)
+            {
+                var sq = b.AddSquad(0, Troops.Get("men_at_arms"), 1, c.Pos + at, 1, Vector2.UnitY);
+                sq.Order = Order.Hold;
+            }
+            b.Input = new PlayerInput();
+            return b;
+        }
+        var ring = new[] { new Vector2(2, 0), new Vector2(-2, 0), new Vector2(0, 2), new Vector2(0, -2), new Vector2(1.5f, 1.5f) };
+        var burst = Field(130, 4, new[] { "aura_burst", "winter_howl" }, ring);
+        float hp0 = burst.Units.Where(u => u.Team == 0 && !u.IsPlayer).Sum(u => u.Hp);
+        Run(burst, 2.5f);
+        Check(burst.FoeFormsUsed.Count > 0, "a crowded champion fires a form");
+        Check(burst.Units.Where(u => u.Team == 0 && !u.IsPlayer).Sum(u => u.Hp) < hp0, "and it hurts the men round him");
+        var plain = Field(130, 0, new[] { "aura_burst", "winter_howl" }, ring);
+        Run(plain, 2.5f);
+        Check(plain.FoeFormsUsed.Count == 0 && plain.FoeAura == 0, "a champion without aura has none of it");
+        var leap = Field(131, 1, new[] { "falcon_dive" }, new[] { new Vector2(0, -7) });
+        Run(leap, 1.5f);
+        Check(leap.FoeFormsUsed.Contains("falcon_dive"), "a champion leaps at a foe in reach");
+        // Aura armour: blows on him cost his pool.
+        var armour = Field(132, 3, Array.Empty<string>(), Array.Empty<Vector2>());
+        var striker = armour.AddSquad(0, Troops.Get("men_at_arms"), 1, armour.EnemyCaptain.Pos + new Vector2(0, 1.2f), 1, -Vector2.UnitY).Units[0];
+        for (int i = 0; i < 12; i++) { armour.EnemyCaptain.Action = UnitAction.Stagger; armour.Hit(striker, armour.EnemyCaptain, 30, false); }
+        Check(armour.FoeAura < Battle.AuraMax, "blows on an aura expert champion drain his pool");
+    }
+
+    /// K6 on the map: order knights bring their aura and forms to duels and battles and weigh in auto-resolve; the rival's
+    /// chain ends in a brother or a black flame; a grand master is chosen (you, if you have earned it), and then the order rides
+    /// with you; crusades march on a great host of what an order hunts.
+    static void OrderPolitics()
+    {
+        var c = Campaign.New(97);
+        var army = c.OrderParties("rose").First();
+        var knight = c.CharacterOf(army)!;
+        knight.Aura = 3;
+        var duel = c.PrepareDuel(army);
+        Check(duel.Options.EnemyAura == 3 && duel.Options.EnemyForms.Contains("thorn_edge") && duel.Options.EnemyForms.Contains("rose_cut"), "a knight duels with his aura and his order's forms");
+        var lord = c.S.Parties.First(p => p.Kind == PartyKind.Lord && p.KnightOrder == "");
+        Check(c.ChampionAura(lord) == 0 && c.PrepareDuel(lord).Options.EnemyAura == 0, "lords have no aura");
+        Check(MathF.Abs(c.Edge(army) - (1 + Balance.Get().AuraWeight * 3)) < 1e-4f, "a knight's aura weighs in auto-resolve");
+        // The rival.
+        c.Swear("lily");
+        var rival = c.CharacterById(c.Captain.Rival);
+        Check(rival != null && rival.Order == "lily" && c.S.Flags.ContainsKey("rival_meet"), "swearing draws a rival and starts his chain");
+        c.S.Event = new PendingEvent { Id = "rival_meet" };
+        c.Choose(0);
+        Check(c.OpinionOf(rival!, c.Me) > 0 && c.S.Flags.ContainsKey("rival_lists"), "offering your hand warms him; the lists come next");
+        c.S.Event = new PendingEvent { Id = "rival_end" };
+        c.Choose(0);
+        Check(rival!.OrderRank == 1 && rival.Order == "lily", "a friend is knighted beside you");
+        var c2 = Campaign.New(98);
+        c2.Swear("wolf");
+        var foe = c2.CharacterById(c2.Captain.Rival)!;
+        c2.S.Event = new PendingEvent { Id = "rival_meet" };
+        c2.Choose(1);
+        c2.S.Event = new PendingEvent { Id = "rival_end" };
+        c2.Choose(0);
+        Check(foe.Order == "hollow" && c2.S.Flags.ContainsKey("rival_fallen"), "a rival who hates you goes to the Black Flame");
+        // An election you win.
+        var o = c.OrderById("lily")!;
+        c.Captain.OrderRank = 3; c.Captain.AuraTier = 4; o.Standing = 85;
+        c.CharacterById(o.GrandMaster)!.Dead = true;
+        Days(c, 1);
+        Check(o.GrandMaster == c.S.CaptainChar && c.Captain.OrderRank == 4 && c.OrderRankName == "Grand Master", "the commanders choose you as Grand Master");
+        var mine = c.OrderParties("lily").First();
+        mine.Pos = c.Player.Pos + new Vector2(30, 0);
+        mine.Down = false;
+        c.LordThink(mine);
+        Check(mine.Task == "escort" && mine.Goal == c.Player.Pos, "your order's armies ride with their grand master");
+        // An election you do not stand in.
+        var other = c.OrderById("falcon")!;
+        int old = other.GrandMaster;
+        c.CharacterById(old)!.Dead = true;
+        Days(c, 1);
+        Check(other.GrandMaster != old && other.GrandMaster != c.S.CaptainChar && c.CharacterById(other.GrandMaster)!.OrderRank == 4, "an order chooses a commander when you do not stand");
+        // A crusade against a great host of the dead.
+        var host = new Party { Id = c.S.NextId++, Kind = PartyKind.Monster, Breed = "undead", Name = "The Test Dead", Faction = -1, Pos = c.Player.Pos + new Vector2(40, 0) };
+        host.Goal = host.Pos;
+        host.Companies.Add(c.NewCompany("skeleton", "infantry", c.CrusadeHost, 0));
+        c.S.Parties.Add(host);
+        Days(c, 1);
+        Check(o.CrusadeOn == host.Id || host.Down, "the Lily calls a crusade against the dead");
+        if (o.CrusadeOn == host.Id)
+        {
+            float before = o.Standing; int deeds = c.Captain.OrderDeeds;
+            c.OrderAfterBattle(true, new List<Party> { host });
+            Check(o.Standing >= before + 10 && c.Captain.OrderDeeds > deeds && o.CrusadeOn == -1, "breaking the crusade's host: standing and a deed");
+        }
+    }
 }

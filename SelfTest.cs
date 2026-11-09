@@ -89,6 +89,8 @@ public static partial class SelfTest
         OrderRankGate();
         CoreAndTrials();
         PresenceShakes();
+        ChampionsUseAura();
+        OrderPolitics();
         DuelFight();
         BattleGoals();
         BannerAndLastStand();

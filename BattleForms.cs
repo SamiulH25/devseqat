@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// A thrown form on its way (an aura slash, a rain of light): it lands at `At` if you still stand. The screen draws it.
-public sealed record PendingForm(FormDef F, float Started, float At, Vector2 From, Vector2 Dir, float Power);
+public sealed record PendingForm(FormDef F, float Started, float At, Vector2 From, Vector2 Dir, float Power, bool Foe = false);
 
 /// Battle: the captain's forms (docs/KNIGHT_ORDERS.md 5.6, K2). Three slots and a great form, pressed by the player,
 /// paid in aura. Each kind is a small rule here; buffs and fields go through the spell engine (BattleAbilities.cs).
@@ -69,7 +69,7 @@ public partial class Battle
         if (inp.Form3) TryForm(p, 2);
         if (inp.Great) TryForm(p, 3);
         for (int i = PendingForms.Count - 1; i >= 0; i--)
-            if (Time >= PendingForms[i].At) { var pf = PendingForms[i]; PendingForms.RemoveAt(i); if (p.Active) Land(p, pf); }
+            if (Time >= PendingForms[i].At && !PendingForms[i].Foe) { var pf = PendingForms[i]; PendingForms.RemoveAt(i); if (p.Active) Land(p, pf); }
     }
 
     void TryForm(Unit p, int i)
@@ -191,7 +191,11 @@ public partial class Battle
             float s = l * (2 - Vector2.Dot(d / l, p.Dir));
             if (s < bs) { bs = s; best = t; }
         }
-        if (best == null) { Aura += f.Aura; formReady[Array.IndexOf(FormSlot, f)] = Time; PlayerHit = ("NO FOE TO LEAP AT", Time); return; } // nothing spent
+        if (best == null)
+        {
+            if (p != Player) { FoeAura += f.Aura; return; }
+            Aura += f.Aura; formReady[Array.IndexOf(FormSlot, f)] = Time; PlayerHit = ("NO FOE TO LEAP AT", Time); return; // nothing spent
+        }
         var dir = Vector2.Normalize(best.Pos - p.Pos);
         p.Pos = best.Pos - dir * 1.1f;
         p.Facing = MathF.Atan2(dir.Y, dir.X);

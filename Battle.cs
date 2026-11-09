@@ -214,6 +214,7 @@ public sealed partial class Battle
         SetupCaptain();
         SetupAura();
         SetupForms();
+        SetupChampion();
         Player.Facing = Player.Heading = MathHelper.PiOver2;
         eGuard = AddSquad(1, Options.EnemyLeader ?? UnitType.Captain, 1, new(0, scripted ? 80 : 34 + Back), 1, -Vector2.UnitY);
         EnemyCaptain = eGuard.Units[0];
@@ -336,6 +337,7 @@ public sealed partial class Battle
         Braces();
         Lances();
         Mark(6);
+        UpdateChampion(dt);
         UpdateArrows(dt);
         Mark(7);
         UpdateMorale(dt);

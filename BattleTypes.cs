@@ -19,6 +19,9 @@ public sealed class BattleOptions
     /// great one on L. Their ranks (1-3) by id.
     public string[] Forms = Array.Empty<string>();
     public Dictionary<string, int> FormRanks = new();
+    /// The enemy leader's aura tier and forms (an order knight, a champion: docs/KNIGHT_ORDERS.md 6.1, K6; BattleChampion.cs).
+    public int EnemyAura;
+    public string[] EnemyForms = Array.Empty<string>();
     /// The captain's lasting wounds (P4); the battle reads "eye" (a shorter parry window).
     public HashSet<string> Wounds = new();
     /// Iron Will perk: companies near you will not rout while a third of them stand.

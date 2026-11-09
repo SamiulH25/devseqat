@@ -447,3 +447,19 @@ the two endings of the road and can be built in either order.
   takes 3 morale a second from foes (not below 10) and gives your men 1.5 (up to 90); drawn as a slow ring. Tier 5 may
   use the great form twice a battle. Tests: `CoreAndTrials`, `PresenceShakes` (after 6 s: the company in front loses
   morale, the one 60 m off is untouched, your own men near you steady).
+- **K6 (champions, rivals, grand masters, crusades):** Battle (`BattleChampion.cs`): an enemy led by an order knight, or a
+  champion met in a duel, carries `BattleOptions.EnemyAura` and `EnemyForms` (set in `PrepareBattle`/`PrepareDuel` from
+  `ChampionAura`/`ChampionFormsOf`). He has a pool like yours (`SetupChampion`, `UpdateChampion`). His blade burns while
+  a foe is in reach (tier 2+, `FoeBlade`), and his aura armour takes a share of blows (tier 3+, `FoeSoak`). He fires his
+  order's forms by simple rules (`ChampionWants`: foes in reach, a foe ahead to leap at), at most one a second. Thrown forms
+  warn on the ground as yours do (`PendingForm.Foe`). Forms that need a player's timing (focus, guard, edge, counter, shot)
+  he never uses. Drawn by `ChampionGlow`. Auto-resolve: `Balance.AuraWeight` (0.03) a tier on a side's edge (`Edge`, the
+  player's `AuraInBattle`, AI-vs-AI fights). Politics (`Campaign/OrderPolitics.cs`, on the order dice): an old grand
+  master dies (1 in 2000 a day), and the commanders elect a new one (`Elect`). You win if you are a Knight-Commander with
+  standing 80 and an aura no commander passes. Once you lead (`LeadsOrder`), its armies ride with you (`OrderMarches`).
+  **Crusades** (`Crusade`) go against a host of `Scaled(40)` or more of what the order hunts. Its armies march for 20 days,
+  and if you are sworn you are summoned. Breaking the host with you in the field (`CrusadeWon`) gives standing and a deed.
+  **The rival** (`DrawRival` on swearing): a squire of your season. Events `rival_meet` -> `rival_lists` (a bout,
+  `RivalBout`: 40% + Arms/300 + 10% an aura tier of difference) -> `rival_end` (`RivalFate`): a friend rises beside you, or
+  a rival who hates you leaves for the Black Flame (flag `rival_fallen`, for K7). Tests: `ChampionsUseAura` (a tier 3 knight
+  lights his blade and uses forms; a tier 0 one does not), `OrderPolitics`.

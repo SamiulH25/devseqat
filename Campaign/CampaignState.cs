@@ -413,6 +413,8 @@ public sealed class CaptainState
     public int OrderRank, OrderDeeds;
     public bool Penance;
     public List<string> Forsworn = new();
+    /// Your rival in the order (a knight character id, -1 = none; docs/KNIGHT_ORDERS.md 6.2).
+    public int Rival = -1;
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought
@@ -636,6 +638,9 @@ public sealed class Balance
     /// How much a tier V-VII troop's attack style and passive traits add to its strength in auto-resolve, per style rank
     /// (1-3 at tiers V-VII): x(1 + this x rank). --agree measures it (docs/COMPANIONS_MAGIC.md D5).
     public float TraitWeight = 0.1f;
+    /// What an aura tier adds to the side its holder leads in auto-resolve (you, or an order knight leading his army): x(1 +
+    /// this x tier). Worth a company, never an army (docs/KNIGHT_ORDERS.md 5.7, K6).
+    public float AuraWeight = 0.03f;
     /// A feast in town, crowns a man (docs/COMPANIONS_MAGIC.md A5).
     public float FeastPerMan = 6;
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).
