@@ -89,6 +89,11 @@ public sealed class Squad
     public float Bend, BendFrom;
     public float PlanSaid = -99;
     public Plan PlanSaidOf;
+    /// Horse rallying between charges (BattleWings.cs): where, since when, and how many times it has charged again from one.
+    public bool Rallying;
+    public Vector2 RallyAt;
+    public float RallySince;
+    public int Rallied;
     /// Blows landed in an enemy's flank or rear, and blows taken (for the self-tests and the after-action count).
     public int FlankHits, HitsTaken;
 

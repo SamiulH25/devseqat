@@ -236,7 +236,7 @@ public sealed partial class Battle
         var at = archers.Centroid();
         float range = archers.Units.FirstOrDefault()?.Type.Range ?? 30;
         return SquadsOf(foe).Where(s => s.Alive > 0 && Visible(s, archers.Team) && Vector2.Distance(s.Centroid(), at) < range * 1.1f)
-            .OrderBy(s => s.Units.First().Type.Armor + (s.Cavalry ? 3 : 0)).ThenBy(s => Vector2.Distance(s.Centroid(), at)).FirstOrDefault();
+            .OrderBy(s => Focus(archers, s)).ThenBy(s => s.Units.First().Type.Armor + (s.Cavalry ? 3 : 0)).ThenBy(s => Vector2.Distance(s.Centroid(), at)).FirstOrDefault();
     }
 
     /// A beaten side sounds the retreat instead of dying to the last man (either side, so it is not an escape only the AI has).

@@ -293,4 +293,87 @@ public static partial class SelfTest
         Check(fellBack, "broken veterans stop to re-form");
         Check(a.Order == Order.Charge && a.Target == e && !a.Broken, "then go in again at the same foe");
     }
+
+    /// M5: veteran horse rally as a body behind their own side after a charge, and go again together; trained horse
+    /// come back man by man.
+    static void HorseRegroup()
+    {
+        (int rallied, float spread) Charges(float drill)
+        {
+            var b = Battle.Empty(55);
+            var foot = b.AddSquad(0, Troops.Get("levies"), 24, new(0, -10), 8, Vector2.UnitY);
+            foot.HoldInPlace();
+            var horse = b.AddSquad(1, Troops.Get("lancers"), 12, new(0, 50), 6, -Vector2.UnitY);
+            horse.Drill = drill;
+            horse.Order = Order.Charge;
+            horse.Target = foot;
+            float spread = -1;
+            int was = 0;
+            for (int i = 0; i < 60 * 60 && spread < 0; i++)
+            {
+                b.Update(1 / 60f);
+                if (horse.Rallied > was || drill < 0.56f && i > 60 * 10 && horse.Units.Count(u => u.Active && u.Cav == CavState.Charge && !u.Contact) == horse.Alive)
+                {
+                    // The moment it goes again: how far apart are its riders?
+                    var live = horse.Units.Where(u => u.Active && !u.Routing).ToList();
+                    var c = live.Aggregate(Vector2.Zero, (a, u) => a + u.Pos) / live.Count;
+                    spread = live.Average(u => Vector2.Distance(u.Pos, c));
+                }
+                was = horse.Rallied;
+            }
+            return (horse.Rallied, spread);
+        }
+        var vet = Charges(0.75f);
+        Console.WriteLine($"melee: veteran lancers rally {vet.rallied} times, {vet.spread:0.0} m apart when they go again");
+        Check(vet.rallied >= 1, "veteran horse rally behind their side after a charge");
+        Check(vet.spread is > 0 and < 10, $"and go again together ({vet.spread:0.0} m from their centre)");
+        var b2 = Battle.Empty(55);
+        var f2 = b2.AddSquad(0, Troops.Get("levies"), 24, new(0, -10), 8, Vector2.UnitY);
+        f2.HoldInPlace();
+        var h2 = b2.AddSquad(1, Troops.Get("lancers"), 12, new(0, 50), 6, -Vector2.UnitY);
+        h2.Drill = 0.45f;
+        h2.Order = Order.Charge;
+        h2.Target = f2;
+        Run(b2, 40);
+        Check(h2.Rallied == 0 && !h2.Rallying, "trained horse do not stop to rally");
+    }
+
+    /// M5: veteran bows standing out on their own fall back behind their foot when enemy foot come at them, and hold their
+    /// shot at men already fighting their own side; trained bows do neither.
+    static void BowsFallBack()
+    {
+        (float behind, bool shotIntoMelee) Bows(float drill)
+        {
+            var b = Battle.Empty(56);
+            var foot = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new(0, 0), 10, Vector2.UnitY);
+            foot.HoldInPlace();
+            var bows = b.AddSquad(0, Troops.Get("bowmen"), 12, new(22, -2), 6, Vector2.UnitY);
+            bows.HoldInPlace();
+            bows.Drill = drill;
+            var e = b.AddSquad(1, Troops.Get("men_at_arms"), 16, new(22, 40), 8, -Vector2.UnitY);
+            e.Order = Order.Charge;
+            e.Target = bows;
+            for (int i = 0; i < 60 * 12 && !bows.InContact; i++) b.Update(1 / 60f);
+            float behind = Vector2.Dot(foot.Center - bows.Center, Vector2.UnitY); // how far behind the foot (towards our side)
+            // Then a melee in front of the bows, their own foot in it: do they shoot into it?
+            var c = Battle.Empty(57);
+            var f2 = c.AddSquad(0, Troops.Get("men_at_arms"), 16, new(0, 14), 8, Vector2.UnitY);
+            var e2 = c.AddSquad(1, Troops.Get("men_at_arms"), 16, new(0, 18), 8, -Vector2.UnitY);
+            f2.Order = e2.Order = Order.Charge;
+            f2.Target = e2; e2.Target = f2;
+            var b2 = c.AddSquad(0, Troops.Get("bowmen"), 12, new(0, -14), 6, Vector2.UnitY);
+            b2.HoldInPlace();
+            b2.Drill = drill;
+            b2.Target = e2;
+            Run(c, 3);
+            float since = c.Time;
+            Run(c, 5);
+            return (behind, b2.LooseAt > since);
+        }
+        var vet = Bows(0.75f);
+        var trained = Bows(0.45f);
+        Console.WriteLine($"melee: bows charged by foot end {vet.behind:0.0} m behind their foot (veterans), {trained.behind:0.0} m (trained); shoot into a melee: veterans {vet.shotIntoMelee}, trained {trained.shotIntoMelee}");
+        Check(vet.behind > 3 && trained.behind < 3, "veteran bows fall back behind their foot; trained ones stand");
+        Check(!vet.shotIntoMelee && trained.shotIntoMelee, "veteran bows hold fire into a melee their men are in");
+    }
 }

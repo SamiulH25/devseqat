@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// What a company's own wits have it doing (docs/MELEE.md D5): set by Battle.Tactics, read by Close and the HUD.
-public enum Plan { None, Hold, Advance, Pin, Flank, Refuse, Reform, Regroup, RollUp, Pursue }
+public enum Plan { None, Hold, Advance, Pin, Flank, Refuse, Reform, Regroup, RollUp, Pursue, Shelter }
 
 /// Battle: company wits (docs/MELEE.md D5). The commander says what (Order, Target, Anchor); the company decides how,
 /// as well as its grade allows. Rabble go straight in and chase the broken. Trained companies keep their ranks, wheel to
@@ -31,6 +31,8 @@ public partial class Battle
     void Wits(Squad s)
     {
         var g = s.Grade;
+        if (s.Cavalry) { HorseWits(s); return; }
+        if (s.Alive > 0 && s.Units[0].Type.Ammo > 0) BowsWits(s);
         if (!Ranked(s) || s.Alive == 0) { s.Plan = Plan.None; s.Bend = 0; s.Threat = null; return; }
         if (g == Grade.Rabble)
         {
@@ -241,6 +243,7 @@ public partial class Battle
             Plan.Refuse => $"{name} wheel to face the flank.",
             Plan.Reform => $"{name} fall back to re-form.",
             Plan.RollUp => $"{name} roll up the line!",
+            Plan.Shelter => $"{name} fall back behind the foot.",
             _ => null,
         };
         if (line == null) return;

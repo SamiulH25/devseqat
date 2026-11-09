@@ -62,7 +62,7 @@ public partial class Battle
             if (tu != null && td < u.Type.Range) (enemy, d) = (tu, td);
         }
         float range = MathF.Min(Weather.Vision, u.Type.Range * (enemy != null ? HeightRange(Terrain.Height(u.Pos) - Terrain.Height(enemy.Pos)) : 1)); // fog and night hide targets
-        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < range && (charge || toSlot < 2.5f) && Visible(enemy, u.Team)) // only at what your side can see
+        if (enemy != null && u.Ammo > 0 && s.FireAtWill && d > 4 && d < range && (charge || toSlot < 2.5f) && Visible(enemy, u.Team) && !HoldsFire(s, enemy)) // only at what your side can see
         {
             u.Face(enemy.Pos - u.Pos);
             if (u.Cooldown <= 0) Shoot(u, enemy);
@@ -150,10 +150,12 @@ public partial class Battle
         if (t == null) { (t, td) = (enemy, d); }
         if (t == null) { Ride(u, u.Slot, h.Trot); return; }
 
+        if (s.Rallying && u.Cav != CavState.Withdraw && td > 6 && Rallies(s)) u.Cav = CavState.Withdraw; // the company is rallying: off the chase, back to it
         switch (u.Cav)
         {
             case CavState.Withdraw:
             {
+                if (Rallies(s)) { RideToRally(u, s); return; } // veterans re-form as a body before they go again
                 // Ride out, away from the enemy mass, then turn for another charge.
                 u.CavTimer -= dt;
                 u.Couched = false;
@@ -176,6 +178,13 @@ public partial class Battle
             default:
             {
                 // Charge: aim a few metres past the target to ride through it.
+                if (!u.Contact && ChargeLane(u, s, t) is Vector2 lane)
+                {
+                    // Round to its open side first: a charge lands on a flank, not on its points.
+                    u.Couched = false;
+                    Ride(u, Via(u, lane), h.Gallop);
+                    return;
+                }
                 var to = (t.Pos - u.Pos) / MathF.Max(td, 0.01f);
                 var aimAt = Via(u, t.Pos + to * 6);
                 u.Wish = (aimAt - u.Pos).LengthSquared() > 1e-4f ? Vector2.Normalize(aimAt - u.Pos) * h.Gallop : Vector2.Zero;
@@ -188,7 +197,7 @@ public partial class Battle
                     u.Contact = false;
                 }
                 u.Bogged = u.Speed < 2.5f && td < 4 ? u.Bogged + dt : 0;
-                if (u.Bogged > 1.2f) { u.Cav = CavState.Melee; u.CavTimer = 5f; u.Bogged = 0; u.Couched = false; }
+                if (u.Bogged > 1.2f) { u.Cav = CavState.Melee; u.CavTimer = MeleeTime(s); u.Bogged = 0; u.Couched = false; }
                 return;
             }
         }

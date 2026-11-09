@@ -121,6 +121,8 @@ public static partial class SelfTest
         VeteransWrap();
         ElitePincer();
         Reforms();
+        HorseRegroup();
+        BowsFallBack();
         Holdouts();
         GoblinBattle();
         Wolves();
