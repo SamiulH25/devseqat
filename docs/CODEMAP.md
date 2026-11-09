@@ -15,10 +15,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BalanceReport.cs (221 lines)
 - **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Realms:68, Csv:110, Run:112, Grounds:183
 
-## Battle.cs (525 lines)
+## Battle.cs (527 lines)
 - **PlayerInput** (struct, L5)
 - **Projectile** (class, L15)
-- **Battle** (class, L23): Sound:33, Battle:70, Battle:73, SetupDuel:96, Role:106, Deploy:110, Ranks:173, ColumnsFor:174, Empty:194, Empty:195, FieldScale:198, Battle:204, SquadsOf:220, Centroid:221, Log:222, AddSquad:226, Spawn:263, Mark:276, Update:278, Bounds:338, ThinkNow:353, UpdateCentroids:356, UpdateSquad:368, CanBrace:395, Braced:400, InOrder:404, ReachOf:407, RandomSwing:413, StartSwing:417, Reinforce:428, Result:455, GapTo:490, Withdraw:505, CheckEnd:514
+- **Battle** (class, L23): Sound:33, Battle:70, Battle:73, SetupDuel:96, Role:106, Deploy:110, Ranks:173, ColumnsFor:174, Empty:194, Empty:195, FieldScale:198, Battle:204, SquadsOf:220, Centroid:221, Log:222, AddSquad:226, Spawn:264, Mark:277, Update:279, Bounds:339, ThinkNow:354, UpdateCentroids:357, UpdateSquad:369, CanBrace:397, Braced:402, InOrder:406, ReachOf:409, RandomSwing:415, StartSwing:419, Reinforce:430, Result:457, GapTo:492, Withdraw:507, CheckEnd:516
 
 ## BattleAI.cs (342 lines)
 - **Battle** (class, L6): PackApproach:11, HeightRange:25, Think:27, ThinkCav:105, Ride:197, Approach:205, TurnRate:207, Steer:210, Led:229, General:233, Opposite:326
@@ -29,8 +29,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleCaptain.cs (256 lines)
 - **Battle** (class, L7): Perk:24, ReleaseSwing:29, SetupCaptain:56, SwapWeapon:73, WeaponName:90, PlayerBow:97, AimTarget:121, Bash:140, CallHorse:165, UpdateCalledHorse:173, Fatigue:186, Tire:188, Strain:201, Resupply:208, ArcherSupply:224, SoftTarget:234, SoundRetreat:243
 
-## BattleCombat.cs (437 lines)
-- **Battle** (class, L6): TickAction:8, Strike:35, CountDeed:65, InArc:73, HighGround:83, SpeedBonus:86, SideOf:98, Hit:107, Damage:206, HitHorse:219, Stagger:237, BossFalls:248, Kill:257, Shoot:306, Loose:314, Gauss:337, UpdateArrows:339, Covered:372, Braces:380, Lances:407, DistToSegment:431
+## BattleCombat.cs (444 lines)
+- **Battle** (class, L6): TickAction:8, Strike:35, CountDeed:65, InArc:73, HighGround:83, SpeedBonus:86, SideOf:100, Hit:111, Damage:213, HitHorse:226, Stagger:244, BossFalls:255, Kill:264, Shoot:313, Loose:321, Gauss:344, UpdateArrows:346, Covered:379, Braces:387, Lances:414, DistToSegment:438
 
 ## BattleCourier.cs (77 lines)
 - **Courier** (class, L9)
@@ -75,8 +75,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattlePlayer.cs (140 lines)
 - **Battle** (class, L6): UpdatePlayer:8, ToggleMount:76, Rally:111, KingsCharge:129
 
-## BattleRanks.cs (245 lines)
-- **Battle** (class, L7): GritOf:13, PlaceMen:22, Redeal:57, CloseFiles:65, Ranked:98, Close:102, Overwhelms:136, NearestFoe:139, Lunge:153, Footing:156, FightFromRanks:163, Guard:207, RankError:223, Intermix:233
+## BattleRanks.cs (255 lines)
+- **Battle** (class, L7): GritOf:13, PlaceMen:22, Redeal:57, CloseFiles:65, Ranked:98, Close:102, Overwhelms:146, NearestFoe:149, Lunge:163, Footing:166, FightFromRanks:173, Guard:217, RankError:233, Intermix:243
 
 ## BattleRescue.cs (45 lines)
 - **Battle** (class, L8): NameOf:19, Rescuable:22, UpdateRescue:25, KillForTest:41, GoalText:44
@@ -104,6 +104,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## BattleSight.cs (97 lines)
 - **Battle** (class, L8): Visible:20, Visible:21, Shown:25, UpdateSight:27, Sees:52, ClearLine:67, Ambush:86
+
+## BattleTactics.cs (251 lines)
+- **Plan** (enum, L6)
+- **Battle** (class, L13): TacticsEvery:16, SightOf:17, Tactics:20, Wits:31, FlankThreat:98, Pinner:118, FlankSide:132, Wrap:152, Rotate:172, Choose:191, NextVictim:210, AvgMorale:223, SetPlan:232
 
 ## BattleTypes.cs (111 lines)
 - **BattleOptions** (class, L4)
@@ -371,8 +375,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (557 lines)
 - **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:103, ContinueCampaign:116, OpenLab:129, QuickBattle:131, StartCampaignBattle:138, FinishCampaignBattle:148, CycleQuality:156, Update:160, Draw:190, Fade:223, CaptureShot:253, CampaignShots:275
 
-## SelfTest.cs (213 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:165, Lancer:173, Run:182, Scaled:184, MakeWanderer:187, Days:195, Ids:207, Check:209
+## SelfTest.cs (217 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:169, Lancer:177, Run:186, Scaled:188, MakeWanderer:191, Days:199, Ids:211, Check:213
 
 ## Settings.cs (76 lines)
 - **Difficulty** (enum, L5)
@@ -395,10 +399,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteSheet.cs (1135 lines)
 - **SpriteSheet** (class, L12): SpriteSheet:27, Add:36, Pack:41, Side:66, InEl:115, Head:117, Visages:120, Head:134, GoblinHead:177, TrollHead:207, SkullHead:237, GhoulHead:263, Helm:288, Torso:414, PlateTorso:568, PixelMap:571, Ribs:587, Tabard:602, Emblem:619, Cape:659, Sleeve:667, Leg:703, Boot:730, Hand:748, Shield:756, Weapon:799, Blade:878, Polearm:889, Bow:904, Arrow:918, Quiver:927, Plume:936, Flag:944, Blood:953, Splat:962, Horse:975, Wolf:1045, BodyShape:1086, HorseGear:1089, Saddle:1123
 
-## Squad.cs (178 lines)
+## Squad.cs (202 lines)
 - **Order** (enum, L5)
 - **Formation** (enum, L10)
-- **Squad** (class, L13): Squad:50, Choices:92, FaceAt:97, Slot:104, Centroid:133, SetLine:142, Shift:162, HoldInPlace:170
+- **Squad** (class, L13): Squad:50, Choices:107, FaceAt:112, Slot:119, Centroid:157, SetLine:166, Shift:186, HoldInPlace:194
 
 ## Style.cs (86 lines)
 - **Emblem** (enum, L5)
@@ -443,8 +447,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/MapTests.cs (199 lines)
 - **SelfTest** (class, L6): MapIndexMatches:10, RealmsFromData:32, ClimatesAndRidges:77, SevenRealms:105, RealmTempers:132
 
-## Tests/MeleeTests.cs (193 lines)
-- **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, LeviesBreakRanks:172
+## Tests/MeleeTests.cs (296 lines)
+- **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, LeviesBreakRanks:172, RefusesFlank:195, VeteransWrap:234, ElitePincer:247, Reforms:278
 
 ## Tests/WorldTests.cs (333 lines)
 - **SelfTest** (class, L6): WorldNames:9, Sites:32, Roads:85, Quests:138, TownLife:220, EventSpread:254, Polish:294

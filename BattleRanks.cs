@@ -118,6 +118,17 @@ public partial class Battle
         if (toC.LengthSquared() < 0.01f) toC = near.Pos - f;
         if (toC.LengthSquared() < 0.01f) return;
         var dir = Vector2.Normalize(toC);
+        float standoff = MathF.Max(1, s.Units[0].Type.Reach * 0.8f);
+        // Taking the foe in the flank (BattleTactics.cs): the front makes for a point beside his end, then turns in on him.
+        float walk = -1;
+        if (s.Plan == Plan.Flank && s.Bend == 0 && !s.InContact)
+        {
+            var (at, face) = FlankPoint(s, s.Foe, standoff);
+            var to = at - f;
+            float dist = to.Length();
+            if (dist > 2) { dir = to / dist; walk = MathF.Min(dist, 3); }
+            else dir = face;
+        }
         // On a route round water or hedges, the front follows the route until it is near.
         if (s.Path != null && nd > 100 && s.Path.Dir(f) is var pd && pd != Vector2.Zero) dir = pd;
         float turn = (s.InContact ? 0.15f : 1.5f) * dt; // at blows a line barely turns: wheeling would open it
@@ -127,8 +138,7 @@ public partial class Battle
         // At blows the line holds where it stands (it never gives ground by itself); otherwise it walks on to a sword's
         // length short of the foe.
         if (s.InContact) return;
-        float standoff = MathF.Max(1, s.Units[0].Type.Reach * 0.8f);
-        float ahead = Math.Clamp(Vector2.Dot(near.Pos - f, dir) - standoff, 0, 3);
+        float ahead = walk >= 0 ? walk : Math.Clamp(Vector2.Dot(near.Pos - f, dir) - standoff, 0, 3);
         s.Anchor = f + dir * ahead;
     }
 

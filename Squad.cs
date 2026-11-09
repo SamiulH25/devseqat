@@ -77,6 +77,21 @@ public sealed class Squad
     public int LayoutCols, LayoutN;
     public Formation LayoutForm;
 
+    /// Its place in Battle.Squads (staggers when each company thinks).
+    public int Id;
+    /// Company wits (docs/MELEE.md D5, BattleTactics.cs): what it is doing, which of the foe's flanks it takes (+1 his
+    /// left, -1 his right), the enemy coming at its own flank, the company it fought (to know when it broke) and the
+    /// one to go back at once re-formed.
+    public Plan Plan;
+    public int FlankSide;
+    public Squad? Threat, Fought, Resume;
+    /// Wrapping: the outer files beyond BendFrom metres from the centre swing forward by Bend x 90 degrees (Slot).
+    public float Bend, BendFrom;
+    public float PlanSaid = -99;
+    public Plan PlanSaidOf;
+    /// Blows landed in an enemy's flank or rear, and blows taken (for the self-tests and the after-action count).
+    public int FlankHits, HitsTaken;
+
     public float Spacing => Loosen * Formation switch
     {
         Formation.Loose => Cavalry ? 4.5f : 2.6f,
@@ -127,7 +142,16 @@ public sealed class Squad
         }
         int cols = Math.Clamp(Columns, 1, Math.Max(1, count));
         int row = i / cols, col = i % cols;
-        return Anchor + rt * (col - (cols - 1) / 2f) * Spacing - Front * row * Spacing;
+        float x = (col - (cols - 1) / 2f) * Spacing, y = -row * Spacing;
+        if (Bend > 0 && MathF.Abs(x) > BendFrom)
+        {
+            // The outer files wheel forward round the pivot at BendFrom, closing round the foe's end.
+            float sign = MathF.Sign(x), px = x - sign * BendFrom, a = Bend * MathHelper.PiOver2 * sign;
+            float c = MathF.Cos(a), sn = MathF.Sin(a);
+            x = sign * BendFrom + px * c - y * sn;
+            y = px * sn + y * c;
+        }
+        return Anchor + rt * x + Front * y;
     }
 
     public Vector2 Centroid()

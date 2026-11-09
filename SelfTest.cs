@@ -117,6 +117,10 @@ public static partial class SelfTest
         TierWins();
         PartsByCompany();
         LeviesBreakRanks();
+        RefusesFlank();
+        VeteransWrap();
+        ElitePincer();
+        Reforms();
         Holdouts();
         GoblinBattle();
         Wolves();

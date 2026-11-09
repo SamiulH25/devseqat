@@ -94,13 +94,17 @@ public partial class Battle
     }
 
     enum Side { Front, Flank, Rear }
+    /// A blow from a man of a broken company (a crowd, not a line) does this much.
+    const float BrokenBlow = 0.7f;
 
     static Side SideOf(Unit a, Unit t)
     {
         var from = a.Pos - t.Pos;
         if (from.LengthSquared() < 1e-4f) return Side.Front;
         float dot = Vector2.Dot(Vector2.Normalize(from), t.Dir);
-        return dot > 0.4f ? Side.Front : dot < -0.4f ? Side.Rear : Side.Flank;
+        // A man squared up to another foe has only the corner of his eye for a second one off to his side (a beast is no such man: its sweep is no aimed blow, and it towers over all round it).
+        float front = !a.Type.Huge && !t.Type.Huge && t.Target != null && t.Target != a && t.Target.Active ? 0.75f : 0.4f;
+        return dot > front ? Side.Front : dot < -0.4f ? Side.Rear : Side.Flank;
     }
 
     /// One blow (melee, arrow or lance) from a at t: horse hits, blocks and parries, then damage multipliers.
@@ -183,9 +187,12 @@ public partial class Battle
         float officer = tired * (a.Squad?.Company is Company oc ? (oc.Has("Hothead") ? 1.1f : 1) * (oc.Has("Veteran") ? 1.05f : 1) : 1);
         if (ranged && t.Squad?.Formation == Formation.Square) officer *= 1.25f;                    // a packed square is an easy mark
         if (!ranged && a.Squad is { Formation: Formation.Wedge, Order: Order.Charge }) officer *= 1.15f; // a wedge drives in
+        if (!ranged && a.Squad is { Broken: true, Swarm: false } && Ranked(a.Squad) && !Overwhelms(a.Squad)) officer *= BrokenBlow; // a crowd has no room to swing (round a beast it needs none)
         float mult = officer * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1); // arrows pass between a skeleton's ribs
+        if (t.Squad != null) t.Squad.HitsTaken++;
+        if (side != Side.Front && a.Squad != null && !ranged) a.Squad.FlankHits++;
         if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer ? a.Type.Pierce : 0); // your mace or axe bites through armour too
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);

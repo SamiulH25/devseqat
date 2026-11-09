@@ -252,6 +252,7 @@ public sealed partial class Battle
             s.Units.Add(h);
         }
         s.Drill = DrillOf(s, company);
+        s.Id = Squads.Count;
         s.Alive = s.Units.Count; // standing from the start, so a charge ordered before the first tick keeps its target
         if (s.Swarm) s.Formation = Formation.Loose; // goblins come on as a mob
         if (team == 0 && company?.Has("Household") == true) s.Order = Order.Follow; // the household guard keeps at your side (P5)
@@ -382,6 +383,7 @@ public sealed partial class Battle
         foreach (var u in s.Units) if (u.Active && !u.Routing) n++;
         s.Alive = n;
         if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); }
+        Tactics(s);     // its own wits: refuse a flank, wrap, re-form (BattleTactics.cs)
         PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
         Close(s, dt);   // a charging company closes as a body
         UpdateFormed(s, dt); // its order: lost and won back (BattleDrill.cs)
