@@ -54,6 +54,12 @@ public sealed class Squad
     public bool[] ByHero = Array.Empty<bool>();
     public float Will = 100;
     public bool GreatDone;
+    /// Your orders to a caster (docs/MAGIC_AURA.md 3.1): hold all spells for your word; the spell (index into Spells, -1 =
+    /// none) you told it to cast, on which spot, and when the order reached it.
+    public bool HoldSpells;
+    public int CastSpell = -1;
+    public Vector2 CastAt;
+    public float CastSince;
     public int CasterStart, HeroLevel;
     /// Timed effects on the company (spells, abilities), and standing ones for the whole battle (campaign buffs, a hero's calling).
     public readonly List<TimedEffect> Timed = new();

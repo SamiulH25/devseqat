@@ -345,6 +345,7 @@ sealed partial class BattleScreen
             if (routeAt == null || Vector2.DistanceSquared(routeAt.Value, mouseGround) > 4) { route = battle.Route(ts[0], mouseGround); routeAt = mouseGround; }
         }
         else { route = null; routeAt = null; }
+        hud.CastBy = castBy; hud.CastPick = castPick;
         hud.Command = command; hud.Paused = paused; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
         hud.ShowResult = battle.Winner >= 0 && !helpOpen && !Ending;
         hud.InCampaign = campaignBattle != null;

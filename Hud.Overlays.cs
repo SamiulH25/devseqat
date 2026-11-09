@@ -157,7 +157,7 @@ sealed partial class Hud
                 ("FOCUS SQUAD", "DOUBLE-CLICK CARD"), ("WHAT THE GROUND DOES", "HOVER IT"), (Controls.Labels[Act.GroundView], Ctl.Name(Act.GroundView)),
                 (Controls.Labels[Act.Stakes], Ctl.Name(Act.Stakes)),
             }),
-            ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.SelectAll, Act.NextDivision,
+            ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.Cast, Act.SelectAll, Act.NextDivision,
                     Act.CommandView, Act.Pause, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Prepend(("SELECT SQUAD", "1-0")).ToArray()),

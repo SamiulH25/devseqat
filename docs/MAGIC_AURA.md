@@ -1,6 +1,6 @@
 # Magic and aura for the player: plan
 
-Status: plan (2026-11-09), nothing built yet. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
+Status: being built (2026-11-09). Done: MA1. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
 through M4 + P) and docs/KNIGHT_ORDERS.md (aura and orders: built K1-K8). Read docs/LEGACY.md first: your company is
 your legacy, and every change here must serve that.
 
@@ -269,3 +269,15 @@ change touches every later number.
 4. **Clash of champions (4.7)**: should the camera move by itself? Proposed: only if you have not touched it for 3 s, and
    a setting turns it off.
 5. **Aura colours**: by order, or by your banner? Proposed: order if sworn, banner if not.
+
+## As built
+
+- **MA1 (command the circle):** `Squad.HoldSpells`, `CastSpell` (-1 = none), `CastAt`, `CastSince`, recorded in replays
+  like any order. `Battle.OrderedCast` runs first in `ThinkSpells`: it waits for the spell's cooldown and Will
+  (`OrderedWill` 5 more), shifts the circle's anchor once to close within range, gives up a spell whose `needs` the spot
+  does not meet, a spell it does not know, or an order older than `OrderLasts` (30 s), and picks an officer within 8 m of
+  the spot for officer spells. An ordered cast is a normal `Cast` (it warns). `HoldSpells` stops casting by the `when`
+  rules. Screen: `Act.Cast` (P) picks the next spell of a selected caster (a circle first, else a company whose hero has
+  abilities) in command view; left click casts on the ground (`CastAt`, through `Send`, so a division company gets it
+  late); right click cancels. X (FIRE / HOLD) toggles `HoldSpells` on selected circles. HUD `Hud.SpellFan` lists the
+  spells with Will cost or why not (`CannotCast`); cards read HOLD. Test `CastOnOrder`.

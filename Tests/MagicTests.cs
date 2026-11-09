@@ -291,4 +291,48 @@ public static partial class SelfTest
         Check(c.Hire(town, Circle()) == Campaign.OneCircle, "but only one");
         Check(c.Split(c.Player.Companies.First(x => Rules.RoleOf(x) == "casters")) == Campaign.OneCircle, "and cannot split it in two");
     }
+
+    /// MA1 (docs/MAGIC_AURA.md 3.1): a circle holding its spells casts nothing on its own; an ordered spell is cast on your spot,
+    /// still warns first, and costs more Will; out of range the circle closes in; a spell that needs rain is given up in the dry.
+    static void CastOnOrder()
+    {
+        var (b, m, f) = MageScene("battle_priests");
+        m.HoldSpells = true;
+        Run(b, 10);
+        Check(b.Casts.Count == 0 && m.Will >= 99, "a circle that holds its spells casts nothing on its own");
+        int smite = Array.FindIndex(m.Spells, a => a.Id == "smite");
+        var spot = f.Center + new Vector2(2, 0);
+        m.CastSpell = smite; m.CastAt = spot; m.CastSince = b.Time;
+        float will = m.Will;
+        for (int i = 0; i < 3 * 60 && b.Casts.Count == 0; i++) b.Update(1 / 60f);
+        var c = b.Casts.FirstOrDefault();
+        Check(c != null && c.A.Id == "smite" && Vector2.Distance(c.At, spot) < 0.01f, "the ordered spell is cast on your spot");
+        Check(c != null && c.FireAt > b.Time + 0.5f, "an ordered attack still glows before it falls");
+        Check(will - m.Will >= m.Spells[smite].Will + Battle.OrderedWill - 1, $"an ordered spell costs more Will ({will - m.Will:0} spent)");
+        Check(m.CastSpell == -1, "the order is done once cast");
+        float hp = f.Units.Sum(u => u.Hp);
+        Run(b, 3);
+        Check(f.Units.Sum(u => u.Hp) < hp - 10, "the ordered smite strikes the men under it");
+
+        (b, m, f) = MageScene("battle_priests");
+        m.HoldSpells = true;
+        Run(b, 8);
+        smite = Array.FindIndex(m.Spells, a => a.Id == "smite");
+        var far = new Vector2(0, 120);
+        m.CastSpell = smite; m.CastAt = far; m.CastSince = b.Time;
+        float before = Vector2.Distance(m.Anchor, far);
+        Run(b, 1);
+        Check(Vector2.Distance(m.Anchor, far) < before - 20 && b.Casts.Count == 0, "out of range, the circle closes in before it casts");
+
+        (b, m, f) = MageScene("skalds");
+        m.HoldSpells = true;
+        Run(b, 8);
+        var (b2, m2, f2) = (b, m, f);
+        m2.CastSpell = 99; m2.CastSince = b2.Time;
+        Run(b2, 1);
+        Check(m2.CastSpell == -1 && b2.Casts.Count == 0, "an order for a spell the circle does not know is given up");
+        m2.CastSpell = Array.FindIndex(m2.Spells, a => a.Id == "storm"); m2.CastAt = f2.Center; m2.CastSince = b2.Time - Battle.OrderLasts - 1;
+        Run(b2, 1);
+        Check(m2.CastSpell == -1, "an order that could not be done in time lapses");
+    }
 }

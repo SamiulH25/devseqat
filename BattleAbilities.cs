@@ -91,6 +91,8 @@ public partial class Battle
         s.Will = MathF.Min(cap, s.Will + (0.5f + 0.5f * Math.Max(0, tier - 2)) * (still ? 2 : 1) * dt);
         if (Casts.Any(c => c.By == s)) return;
         bool engaged = casters > 0 && s.Units.Any(u => u.Active && IsCaster(u) && u.EnemyDist < 3); // a mage with a blade at him cannot work
+        if (s.CastSpell >= 0 && OrderedCast(s, casters, engaged)) return;
+        if (s.HoldSpells) return; // they keep their Will for your word
         for (int i = 0; i < s.Spells.Length; i++)
         {
             var a = s.Spells[i];
@@ -109,6 +111,71 @@ public partial class Battle
             Sound(hero ? Cue.Shout : Cue.Spell, Speaker(s, hero)?.Pos ?? s.Center);
             return;
         }
+    }
+
+    // ---- casts you order (docs/MAGIC_AURA.md 3.1) ----
+
+    /// An ordered cast costs this much more Will (they break their rhythm for you), and the order lapses after this long.
+    public const float OrderedWill = 5, OrderLasts = 30;
+
+    /// Why the company cannot cast spell i now, or null (the HUD's spell fan; the spot is not known yet).
+    public string? CannotCast(Squad s, int i)
+    {
+        if (i < 0 || i >= s.Spells.Length) return "NO SUCH SPELL";
+        var a = s.Spells[i];
+        bool hero = s.ByHero[i];
+        if (Speaker(s, hero) == null) return hero ? "HE IS DOWN" : "THE CASTERS ARE DOWN";
+        if (a.Great && s.GreatDone) return "SPENT";
+        if (Time < s.SpellReady[i]) return $"IN {s.SpellReady[i] - Time:0}";
+        if (!hero && (s.Will < a.Will + OrderedWill || s.Will < 20)) return "NO WILL";
+        return null;
+    }
+
+    /// Cast the spell you ordered: walk into range, wait for it to be ready, then cast on your spot. True while the order
+    /// stands (nothing else is cast meanwhile); false once it is given up.
+    bool OrderedCast(Squad s, int casters, bool engaged)
+    {
+        int i = s.CastSpell;
+        if (i >= s.Spells.Length || Time - s.CastSince > OrderLasts) { DropCast(s, "the working could not be done"); return false; }
+        var a = s.Spells[i];
+        bool hero = s.ByHero[i];
+        if (a.Great && s.GreatDone) { DropCast(s, "that working is spent"); return false; }
+        var me = Speaker(s, hero);
+        if (me == null || Time < s.SpellReady[i]) return true;
+        if (!hero && (casters == 0 || engaged || s.Will < a.Will + OrderedWill || s.Will < 20)) return true;
+        var at = a.Self ? s.Center : s.CastAt;
+        if (!a.Self && Vector2.Distance(me.Pos, at) > a.Range)
+        {
+            float gap = Vector2.Distance(s.Anchor, at);
+            if (gap > a.Range * 0.9f && !Engaged(s)) s.Shift(at, gap - a.Range * 0.8f); // close in once; the anchor then stays
+            return true;
+        }
+        if (a.Needs != "" && !(a.Needs == "dry" ? Dry(at) : Raining(at))) { DropCast(s, a.Needs == "dry" ? $"{a.Name} needs dry ground" : $"{a.Name} needs rain"); return false; }
+        Unit? on = null;
+        if (a.When == "officer" || a.Kind == "officer")
+        {
+            on = Units.Where(u => u.Active && u.Team != s.Team && (u.Sergeant || u.Hero || u.IsLeader) && Vector2.DistanceSquared(u.Pos, at) < 64)
+                .OrderBy(u => Vector2.DistanceSquared(u.Pos, at)).ThenBy(u => u.Index).FirstOrDefault();
+            if (on == null) { DropCast(s, "no officer there"); return false; }
+            at = on.Pos;
+        }
+        float power = SpellPower(s, hero);
+        if (power <= 0) return true;
+        if (!hero) s.Will -= a.Will + OrderedWill;
+        s.SpellReady[i] = Time + a.Cooldown;
+        if (a.Great) s.GreatDone = true;
+        s.CastSpell = -1;
+        Casts.Add(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power });
+        if (s.Team == 0 && a.Tradition == "craft") OmenRaised += a.Omen;
+        if (s.Team == 0) Log($"{s.Name}: {a.Name}!");
+        Sound(hero ? Cue.Shout : Cue.Spell, me.Pos);
+        return true;
+    }
+
+    void DropCast(Squad s, string why)
+    {
+        s.CastSpell = -1;
+        if (s.Team == 0) Log($"{s.Name}: {why}.");
     }
 
     // ---- the rules (`when`) ----

@@ -47,7 +47,10 @@ public sealed class Replay
         public Order Order;
         public Vector2 Anchor, Front;
         public Formation Formation;
-        public bool FireAtWill, Override, Pursue;
+        public bool FireAtWill, Override, Pursue, HoldSpells;
+        public int CastSpell = -1;
+        public Vector2 CastAt;
+        public float CastSince;
     }
 
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true };
@@ -79,6 +82,7 @@ public sealed class Replay
                 {
                     var s = b.Squads[o.Squad];
                     s.Order = o.Order; s.Anchor = o.Anchor; s.Front = o.Front; s.Columns = o.Columns; s.Formation = o.Formation; s.FireAtWill = o.FireAtWill; s.Override = o.Override; s.Pursue = o.Pursue;
+                    s.HoldSpells = o.HoldSpells; s.CastSpell = o.CastSpell; s.CastAt = o.CastAt; s.CastSince = o.CastSince;
                     s.Target = o.Target >= 0 ? b.Squads[o.Target] : null;
                 }
             if (f.Goals != null)
@@ -140,12 +144,13 @@ public sealed partial class Battle
             var s = Squads[i];
             if (s.Team != 0 || s.AiControlled || Options.AutoPlayer) continue;
             int target = s.Target != null ? Squads.IndexOf(s.Target) : -1;
-            string sig = $"{s.Order}|{target}|{s.Anchor.X:R},{s.Anchor.Y:R}|{s.Front.X:R},{s.Front.Y:R}|{s.Columns}|{s.Formation}|{s.FireAtWill}|{s.Override}|{s.Pursue}";
+            string sig = $"{s.Order}|{target}|{s.Anchor.X:R},{s.Anchor.Y:R}|{s.Front.X:R},{s.Front.Y:R}|{s.Columns}|{s.Formation}|{s.FireAtWill}|{s.Override}|{s.Pursue}|{s.HoldSpells}|{s.CastSpell}|{s.CastAt.X:R},{s.CastAt.Y:R}|{s.CastSince:R}";
             if (lastOrders.TryGetValue(i, out var last) && last == sig) continue;
             lastOrders[i] = sig;
             (f.Orders ??= new()).Add(new Replay.SquadOrder
             {
                 Squad = i, Target = target, Order = s.Order, Anchor = s.Anchor, Front = s.Front, Columns = s.Columns, Formation = s.Formation, FireAtWill = s.FireAtWill, Override = s.Override, Pursue = s.Pursue,
+                HoldSpells = s.HoldSpells, CastSpell = s.CastSpell, CastAt = s.CastAt, CastSince = s.CastSince,
             });
         }
         r.Frames.Add(f);

@@ -51,6 +51,7 @@ public static partial class SelfTest
         StandingEffectsCarry();
         RitesWork();
         SuperMages();
+        CastOnOrder();
         CompanionGrows();
         HoldTheLine();
         EnemyChampions();

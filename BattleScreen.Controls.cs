@@ -114,6 +114,9 @@ partial class BattleScreen
         bool add = ctl.Down(Act.AddToSelection);
 
         // Left button: HUD first (buttons, cards, minimap), then the field (click or box select).
+        if (castBy != null && (castBy.Alive == 0 || !selected.Contains(castBy) && selected.Count > 0)) { castBy = null; castPick = -1; }
+        if (castBy != null && ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released) { castBy = null; castPick = -1; return; }
+        if (castBy != null && LmbPressed && !hud.Over(ms.Position)) { CastAt(mouseGround); return; }
         if (LmbPressed)
         {
             if (selectedDivision != null && hud.GoalAt(ms.Position) is var (gk, gs)) GoalCommand(selectedDivision, gk, gs);

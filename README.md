@@ -304,7 +304,10 @@ the player rides a courser.
   a great working once a battle. Mages cast on their own when a spell fits (bless a company about to clash, mend the hurt, call
   lightning in rain, wildfire in dry weather, mist over men under arrows, fire pots on a packed crowd). Each cast glows on the
   ground first, so you can move away. A mage company has **Will**: it refills over time, faster when they stand still, and
-  dead casters lower it. Enemy veteran horse and elite bows hunt mages first. Craft (not faith) raises the **Omen**; from 12, dark omens follow.
+  dead casters lower it. Enemy veteran horse and elite bows hunt mages first.
+  **You can direct them:** in command view select the circle (or a company a companion leads) and press P to pick a spell,
+  then click the ground to cast it there. The order rides out like any other, and costs 5 more Will. X makes casters
+  hold their spells for your word (and press X again to let them cast at will). Craft (not faith) raises the **Omen**; from 12, dark omens follow.
 - **Companions' callings:** each companion is a Sword, Shield, Banner, Bow, Lance, Priest or Cunning one. He gains levels
   (to 10) in battles his company fights, a talent each level and a second ability at 5, and he uses his abilities on his own,
   like mages. Companions like or dislike what you do, quarrel, swear brotherhood, have a story to settle, take a student, and
