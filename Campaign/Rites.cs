@@ -9,6 +9,7 @@ public sealed partial class Campaign
     {
         ("bless", "BLESS THE COMPANY", "faith", 50, 0, "THREE DAYS STEADIER, IN BATTLE TOO"),
         ("poultices", "POULTICES", "faith", 40, 0, "THE WOUNDED HEAL HALF AGAIN AS FAST FOR A WEEK"),
+        ("mend_core", "MEND THE CORE", "faith", 80, 0, "A CRACKED CORE MENDS: YOUR AURA IS WHOLE AGAIN"),
         ("bones", "READ THE BONES", "craft", 0, 3, "SEE TWICE AS FAR FOR A DAY"),
         ("rain", "CALL RAIN", "craft", 0, 4, "SOAKS THIS PROVINCE: HEAVY GOING FOR HORSE"),
     };
@@ -27,6 +28,7 @@ public sealed partial class Campaign
         if (!CanWork(r.Tradition)) return r.Tradition == "faith" ? "NEEDS A PRIEST OR MAGES OF THE FAITH" : "NEEDS A CUNNING ONE OR MAGES OF THE CRAFT";
         if (S.RiteDay == Day + 1) return "ONE RITE A DAY";
         if (S.Gold < r.Gold) return $"NEEDS {r.Gold} CROWNS";
+        if (id == "mend_core" && !Captain.Wounds.Contains("core")) return "YOUR CORE IS WHOLE";
         S.Gold -= r.Gold;
         if (r.Tradition == "craft") BreakVow("no_craft", "work the craft");
         S.Omen += r.Omen;
@@ -35,6 +37,7 @@ public sealed partial class Campaign
         {
             case "bless": AddBuff("bless_rite", 3); break;
             case "poultices": AddBuff("poultices", 7); break;
+            case "mend_core": MendCore("Your priest's prayers close the crack in you."); break;
             case "bones": S.FarSightUntil = (float)S.Hours + 24; break;
             case "rain":
                 var pr = S.Provinces.FirstOrDefault(p => p.Id == Map.ProvinceAt(Player.Pos).Id);
@@ -46,6 +49,7 @@ public sealed partial class Campaign
         {
             "bless" => "Your priest blesses the company.",
             "poultices" => "Herbs and dressings for the wounded.",
+            "mend_core" => "Candles and long prayers through the night.",
             "bones" => "The bones are read. Far parties show themselves.",
             _ => "Rain comes on as the old words are spoken.",
         });

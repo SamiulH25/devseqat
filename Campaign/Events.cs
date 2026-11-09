@@ -39,6 +39,7 @@ public sealed partial class Campaign
         "unpaid", "prisoners", "war_weary", "in_town", "brigand_king", "pretender", "graves",
         "peace_offer", "site_ruin", "site_shrine", "site_stones", "site_battlefield", "site_mine", "site_hermit", "site_watchtower", "site_spring", "site_mill",
         "start", "crown", "fallen", "spring", "summer", "autumn", "winter", "forest", "hills", "river", "near_site", "after_battle", "companion", "culture", "night", "dark_omens",
+        "aura_vigil", "aura_grief", // raised by Campaign/Aura.cs only, never drawn at random (K5)
     };
     /// Days after a "flag:name" effect before the "flag:name" event follows.
     public const int FlagDays = 7;
@@ -49,8 +50,9 @@ public sealed partial class Campaign
         "gold", "renown", "food", "horses", "opinion", "opinion_liege", "opinion_realm", "unrest", "prosperity", "tax", "cohesion", "xp",
         "exhaustion", "gamble", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury",
         "spent", "heal", "find", "learn", "men", "search", "omen", "spy", "lists", "sick", "reveal", "flag", "man", "farsight", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown", "calm",
+        "vigil", "breakthrough", "corrupt",
     };
-    static readonly string[] NoNumber = { "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
+    static readonly string[] NoNumber = { "vigil", "breakthrough", "quest", "bounty", "revolt", "prisoners_free", "prisoners_recruit", "disband", "bury", "search", "omen", "spy", "lists", "reveal", "man", "peace", "mend", "road_sword", "road_lance", "road_bow", "crown" };
     static readonly string[] Holes = { "settlement", "lord", "band", "company", "realm", "liege", "site", "companion", "man" };
 
     static List<EventDef>? events;
@@ -248,6 +250,8 @@ public sealed partial class Campaign
         if (siteVerb) return said;
         switch (verb)
         {
+            case "breakthrough": BreakThrough(pe.Id == "aura_grief" ? "In your rage the wall gives way." : "Your mourning is done, and you rise from it."); break;
+            case "corrupt": Captain.Corruption = Math.Clamp(Captain.Corruption + n, 0, 100); break;
             case "gold": S.Gold = MathF.Max(0, S.Gold + n); break;
             case "renown": Captain.Renown = MathF.Max(0, Captain.Renown + n); break;
             case "food": Player.Food = MathF.Max(0, Player.Food + n); break;

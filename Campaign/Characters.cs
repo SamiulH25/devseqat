@@ -308,7 +308,7 @@ public sealed partial class Campaign
     void HeroFell(CompanyRecord c, string foe = "")
     {
         if (Companions.FirstOrDefault(k => k.CompanyId == c.Id) is not Character k) return;
-        if (!Has("Triage") && rng.Chance(0.1f)) { k.Dead = true; Log($"{k.Name}, your {k.Role.ToLowerInvariant()}, has fallen leading {c.Name}."); CompanionFell(k, foe); BrotherFell(k); StudentRises(k); }
+        if (!Has("Triage") && rng.Chance(0.1f)) { k.Dead = true; Log($"{k.Name}, your {k.Role.ToLowerInvariant()}, has fallen leading {c.Name}."); CompanionFell(k, foe); BrotherFell(k); StudentRises(k); GriefTrial(k); }
         else { k.WoundedUntil = (float)S.Hours + 5 * 24; Log($"{k.Name} is carried from the field, wounded."); }
         RefreshHeroes();
     }

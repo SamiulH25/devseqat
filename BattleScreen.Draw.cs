@@ -455,6 +455,8 @@ partial class BattleScreen
         }
         if (battle.AuraTier >= 3 && !battle.Spent) Ring(p.Pos, 0.9f * pulse, Color.Lerp(Style.Aura, Color.Black, 0.35f), 12);
         if (battle.Guarding) Ring(p.Pos + p.Dir * 0.7f, 0.6f, Color.White, 8);
+        // A Master's presence (K5): a slow pressure ring at its reach.
+        if (battle.AuraTier >= 4 && !battle.Spent) Ring(p.Pos, Battle.PresenceRadius * (0.96f + 0.04f * MathF.Sin(t * 2)), Color.Lerp(Style.Aura, Color.Black, 0.6f), 40);
         // Thrown forms on their way (K2): a slash as a fan of streaks closing ahead, a volley as a ring on its spot, a shot as a line.
         foreach (var pf in battle.PendingForms)
         {

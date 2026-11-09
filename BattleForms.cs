@@ -16,7 +16,9 @@ public partial class Battle
     public readonly Dictionary<string, int> FormUses = new();
     public float CorruptionRaised;
     public readonly List<PendingForm> PendingForms = new();
-    bool greatUsed;
+    int greatUses;
+    /// The great form once a battle; twice for a Transcendent (aura tier 5, K5).
+    bool greatUsed => greatUses >= (AuraTier >= 5 ? 2 : 1);
     float focusUntil, focusK, guardUntil, counterUntil, counterK, edgeK;
     int edgeLeft;
 
@@ -76,7 +78,7 @@ public partial class Battle
         var f = FormSlot[i]!;
         Aura -= f.Aura;
         formReady[i] = Time + f.Cooldown;
-        if (f.Great) greatUsed = true;
+        if (f.Great) greatUses++;
         FormUses[f.Id] = FormUses.GetValueOrDefault(f.Id) + 1;
         CorruptionRaised += f.Corruption;
         PlayerHit = (f.Name.ToUpperInvariant() + "!", Time);

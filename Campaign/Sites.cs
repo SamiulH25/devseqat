@@ -67,13 +67,14 @@ public sealed partial class Campaign
 
     /// You reach a site: the first visit is remembered, and a ready site raises its event (one of the events whose trigger
     /// is "site_" + its kind).
-    void ArriveAtSite(Site site)
+    internal void ArriveAtSite(Site site)
     {
         if (!S.SitesSeen.Contains(site.Id)) S.SitesSeen.Add(site.Id);
         if (!S.SitesVisited.Contains(site.Id)) { S.SitesVisited.Add(site.Id); Deed($"You come to the {site.Name}.", "sites"); }
         SiteQuests(site);
         if (!SiteReady(site)) { Log($"{site.Name}: {SiteWait(site).ToLowerInvariant()}."); return; }
         if (site.Kind == "shrine") { AddBuff("shrine_blessing", 3); RelicFilled(); Log($"The men pray at the {site.Name}. They march on blessed."); }
+        if (VigilAt(site)) { Raise(new PendingEvent { Id = "aura_vigil", Site = site.Id, Settlement = SettlementNear(site.Pos)?.Id ?? -1 }); return; } // a trial for your aura (K5)
         var fits = Events.Where(e => e.Trigger == "site_" + site.Kind).ToList();
         if (fits.Count == 0 || S.Event != null) return;
         var pe = new PendingEvent { Site = site.Id, Settlement = SettlementNear(site.Pos)?.Id ?? -1 };
@@ -112,6 +113,7 @@ public sealed partial class Campaign
                 return got > 0 ? $"{got} men join you." : "You have no room for them.";
             case "search": return Search(site);
             case "mend": return MendWound();
+            case "vigil": return KeepVigil(site);
             case "omen": return Omen();
             case "spy": return Spy(site?.Pos ?? Player.Pos);
         }

@@ -434,3 +434,16 @@ the two endings of the road and can be built in either order.
   contract (`TakeOrderContract`, `Contract.Order`) names the nearest foe it hunts or its patron fights. UI: THE ORDERS tab
   on the realm screen (R; every order, its creed, vows, brothers and standing); `MapScreen.Orders.cs`. Shots
   `campaign-chapter`, `campaign-orders`. Tests: `OrderOath`, `CreedBroken`, `OrderRankGate`.
+- **K5 (trials, the cracked core, the master tier):** `Campaign/Aura.cs`. Higher trials: a **vigil** (`VigilAt`, event
+  `aura_vigil`, verb `vigil`, `KeepVigil`) at a shrine, stones, old battlefield or hermit while the aura stands at a wall
+  below Aura Master: 50% + Arms/400 + 10% sworn (-20% cracked) to break through, else the core **cracks**. **Grief**
+  (`GriefTrial`, event `aura_grief`) when a companion falls at a wall: break it now in anger (corruption +5, verb `corrupt`)
+  or mourn (`flag:grief_mourn` -> `aura_mourned`, verb `breakthrough`); grief breaks any wall. A **duel won against a
+  champion above you** (`ChampionAbove`: an order knight of your aura or more, or a lord whose army is three tiers above
+  your aura) breaks any wall. The **cracked core** (`Wounds.CoreWound`, `CaptainState.CoreUntil`): the aura a tier lower
+  in battle; it mends in 30 days (each day resting in a town counts three), with the faith rite MEND THE CORE, or at a
+  healing spring (`MendWound`). The K sheet lists the trials open at your tier (`TrialsFor`). Battle (`BattleAura.cs`):
+  at tier 4 aura comes back 1.5/s in a fight (0.5 below) and a **presence** (`Presence`) every half second within 14 m
+  takes 3 morale a second from foes (not below 10) and gives your men 1.5 (up to 90); drawn as a slow ring. Tier 5 may
+  use the great form twice a battle. Tests: `CoreAndTrials`, `PresenceShakes` (after 6 s: the company in front loses
+  morale, the one 60 m off is untouched, your own men near you steady).

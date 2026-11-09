@@ -401,4 +401,92 @@ public static partial class SelfTest
             Check(c.Captain.Order == "" && !c.Captain.Forsworn.Contains("rose"), "your realm at war with the patron ends the oath, without blame");
         }
     }
+
+    /// K5: a vigil at a shrine, stones, old battlefield or hermit is a trial for a wall below Aura Master: it breaks the wall
+    /// or cracks the core. A cracked core holds the aura a tier down until it mends (a month; less resting in a town). Grief
+    /// breaks a wall in anger (at a cost) or later in mourning. A duel won against a champion above you breaks any wall.
+    static void CoreAndTrials()
+    {
+        int broke = 0, cracked = 0;
+        for (int seed = 0; seed < 12; seed++)
+        {
+            var c = Campaign.New(96 + seed);
+            var cap = c.Captain;
+            cap.AuraTier = 3; cap.AuraWall = true; cap.AuraXp = Campaign.AuraNeeds[3];
+            var site = c.Sites.First(x => x.Kind is "shrine" or "stones" or "battlefield" or "hermit");
+            c.S.Event = null;
+            c.S.SiteUntil.Remove(site.Id);
+            c.ArriveAtSite(site);
+            Check(c.S.Event?.Id == "aura_vigil", "a wall and a holy place: a vigil is offered");
+            c.Choose(0);
+            if (cap.AuraTier == 4) broke++;
+            if (cap.Wounds.Contains("core")) { cracked++; Check(cap.AuraTier == 3 && cap.AuraWall && c.AuraInBattle == 2, "a failed vigil cracks the core: a tier lower in battle"); }
+        }
+        Check(broke > 0 && cracked > 0 && broke + cracked == 12, $"a vigil breaks through or cracks the core ({broke} broke, {cracked} cracked)");
+        // Mending: a month, or sooner resting in a town.
+        var m = Campaign.New(110);
+        m.Captain.AuraTier = 2;
+        m.CrackCore();
+        Check(new BattleOptions().WithCaptain(m.Captain).AuraTier == 1, "the battle gets the lower tier");
+        Days(m, 15);
+        Check(m.Captain.Wounds.Contains("core"), "half a month: still cracked");
+        Days(m, 16);
+        Check(!m.Captain.Wounds.Contains("core") && m.AuraInBattle == 2, "a month: the core mends");
+        var r = Campaign.New(111);
+        r.CrackCore();
+        var town = r.S.Settlements.First(t => t.Kind == SettlementKind.Town);
+        r.Player.Pos = town.Pos;
+        for (int d = 0; d < 11 && r.Captain.Wounds.Contains("core"); d++) { r.Rest(24); r.Encounter = null; r.Arrived = null; }
+        Check(!r.Captain.Wounds.Contains("core"), "resting in a town mends it in a third of the time");
+        // Grief, in anger: through at once, with a mark of the Black Flame.
+        var g = Campaign.New(112);
+        g.Captain.AuraTier = 4; g.Captain.AuraWall = true;
+        g.S.Event = new PendingEvent { Id = "aura_grief" };
+        g.Choose(0);
+        Check(g.Captain.AuraTier == 5 && g.Captain.Corruption >= 5, "grief in anger breaks even the last wall, and leaves a mark");
+        // A duel won against a knight of your aura or more breaks the wall; against a lesser one it does not.
+        var d2 = Campaign.New(113);
+        d2.Captain.AuraTier = 3; d2.Captain.AuraWall = true;
+        var army = d2.OrderParties("wolf").First();
+        var knight = d2.CharacterOf(army)!;
+        knight.Aura = 1;
+        army.Tier = 3;
+        d2.FinishBattle(new BattleResult(0, 20, new List<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Wounded, 0), d2.PrepareDuel(army));
+        Check(d2.Captain.AuraTier == 3, "beating a lesser knight breaks no high wall");
+        var army2 = d2.OrderParties("wolf").Last();
+        d2.CharacterOf(army2)!.Aura = 3;
+        d2.FinishBattle(new BattleResult(0, 20, new List<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Wounded, 0), d2.PrepareDuel(army2));
+        Check(d2.Captain.AuraTier == 4, "beating a knight of your aura breaks the wall");
+    }
+
+    /// K5: a Master's presence shakes the foes near him and steadies his own, and does not reach the far end of the field;
+    /// an Expert has none. A Transcendent may use the great form twice.
+    static void PresenceShakes()
+    {
+        (float near, float far, float own) Shake(int tier)
+        {
+            var b = Battle.Empty(120, new BattleOptions { AuraTier = tier, Forms = new[] { "aura_burst" } });
+            b.Player.Horse = null;
+            b.EnemyCaptain.Pos = new Vector2(0, 400);
+            var near = b.AddSquad(1, Troops.Get("men_at_arms"), 6, b.Player.Pos + new Vector2(0, 9), 6, -Vector2.UnitY);
+            var far = b.AddSquad(1, Troops.Get("men_at_arms"), 6, b.Player.Pos + new Vector2(60, 9), 6, -Vector2.UnitY);
+            var own = b.AddSquad(0, Troops.Get("men_at_arms"), 6, b.Player.Pos + new Vector2(0, -6), 6, Vector2.UnitY);
+            foreach (var q in new[] { near, far, own }) q.Order = Order.Hold;
+            foreach (var u in near.Units.Concat(far.Units).Concat(own.Units)) u.Morale = 50;
+            b.Input = new PlayerInput { Facing = MathHelper.PiOver2 };
+            Run(b, 6);
+            return (near.Units.Average(u => u.Morale), far.Units.Average(u => u.Morale), own.Units.Average(u => u.Morale));
+        }
+        var master = Shake(4);
+        var expert = Shake(3);
+        Check(master.near < expert.near - 8, $"a Master shakes the company in front of him ({master.near:0} against {expert.near:0})");
+        Check(MathF.Abs(master.far - expert.far) < 1, $"but not the one across the field ({master.far:0} against {expert.far:0})");
+        Check(master.own > expert.own + 4, $"and steadies his own men near him ({master.own:0} against {expert.own:0})");
+        var t5 = FormField(121, 5, new[] { "aura_burst" }).B;
+        t5.Aura = Battle.AuraMax; Press(t5, 3);
+        Check(t5.CannotForm(3) != "THE GREAT FORM IS SPENT", "a Transcendent may use the great form again");
+        var t4 = FormField(122, 4, new[] { "aura_burst" }).B;
+        t4.Aura = Battle.AuraMax; Press(t4, 3);
+        Check(t4.CannotForm(3) == "THE GREAT FORM IS SPENT", "a Master once a battle");
+    }
 }

@@ -400,6 +400,8 @@ public sealed class CaptainState
     public int AuraTier;
     public float AuraXp;
     public bool AuraWall;
+    /// When a cracked core (the `core` wound, K5) mends of itself.
+    public float CoreUntil;
     /// The forms you know, in slot order (5.6), and how often each was used (its rank); the Black Flame in you (7).
     public List<string> Forms = new();
     public Dictionary<string, int> FormUses = new();

@@ -63,6 +63,7 @@ public sealed partial class Campaign
         string name = CharacterOf(e)?.Name ?? e.Name;
         var skillsBefore = new Dictionary<string, float>(Captain.Skills);
         Practise("Arms", (won ? 2.5f : 1) + (r.Parries + r.Ripostes) * 0.15f);
+        if (won && ChampionAbove(e)) BreakThrough($"You beat {name}, a champion above you, in single combat."); // K5
         AuraAfterDuel(r, won, CharacterOf(e)?.Name ?? e.Name);
         FormsAfterBattle(r);
         float renown = won ? DuelRenown : 0;

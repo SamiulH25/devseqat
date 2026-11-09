@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+
 namespace Ironfield;
 
 /// Battle: the captain's aura (docs/KNIGHT_ORDERS.md 5.1-5.2, K1). A pool beside stamina that the aura blade and aura
@@ -30,7 +32,8 @@ public partial class Battle
     {
         if (AuraTier <= 0) return;
         bool fighting = Time - lastFought < 4;
-        if (!AuraBlade) Aura = MathF.Min(AuraMax, Aura + (fighting ? 0.5f : 2f) * dt); // a burning blade takes, it does not gather
+        // A burning blade takes, it does not gather; a Master's aura comes back as he fights (K5).
+        if (!AuraBlade) Aura = MathF.Min(AuraMax, Aura + (fighting ? (AuraTier >= 4 ? 1.5f : 0.5f) : 2f) * dt);
         if (hold && AuraTier >= 2 && !AuraBlade && Aura >= AuraLow && p.Active)
         {
             AuraBlade = true;
@@ -38,6 +41,28 @@ public partial class Battle
         }
         if (AuraBlade && (!hold || Aura <= 0 || !p.Active)) AuraBlade = false;
         if (AuraBlade) Aura = MathF.Max(0, Aura - BladeDrain * dt);
+        Presence(p, dt);
+    }
+
+    /// A Master's presence (tier 4+, not spent, K5): foes within reach lose heart, your own men near you steady. It can
+    /// break the company in front of you; it never reaches the whole field.
+    public const float PresenceRadius = 14, PresenceShake = 3f, PresenceSteady = 1.5f, PresenceFloor = 10;
+    float presenceTick;
+    readonly List<Unit> presenceNear = new();
+
+    void Presence(Unit p, float dt)
+    {
+        if (AuraTier < 4 || Spent || !p.Active) return;
+        presenceTick += dt;
+        if (presenceTick < 0.5f) return;
+        float step = presenceTick;
+        presenceTick = 0;
+        foreach (var u in Near(p.Pos, PresenceRadius, presenceNear))
+        {
+            if (u == p || Vector2.DistanceSquared(u.Pos, p.Pos) > PresenceRadius * PresenceRadius) continue;
+            if (u.Team != p.Team) { if (u.Morale > PresenceFloor) u.Morale = MathF.Max(PresenceFloor, u.Morale - PresenceShake * step); }
+            else u.Morale = MathF.Min(90, u.Morale + PresenceSteady * step);
+        }
     }
 
     /// Your blow lands with the blade lit: its cost.

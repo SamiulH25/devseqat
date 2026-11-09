@@ -194,6 +194,30 @@
       ]
     },
     {
+      "id": "aura_vigil", "trigger": "aura_vigil", "cooldown": 0, "scene": "camp", "title": "A VIGIL AT {site}",
+      "text": "Your aura stands at a wall. The old knights broke theirs on nights like this one: alone, unsleeping, in a place that remembers. If you keep the vigil and fail, the strain may crack you.",
+      "choices": [
+        { "label": "KEEP THE VIGIL", "effects": ["vigil", "spent:20"] },
+        { "label": "NOT TONIGHT", "effects": [] }
+      ]
+    },
+    {
+      "id": "aura_grief", "trigger": "aura_grief", "cooldown": 0, "scene": "camp", "title": "{companion}",
+      "text": "{companion} is dead. Something in you that stood at a wall is shaking. You can let it break now, in anger, and carry the mark of it. Or you can mourn, and rise from it later.",
+      "choices": [
+        { "label": "LET IT BREAK IN ANGER", "effects": ["breakthrough", "corrupt:5"] },
+        { "label": "MOURN", "effects": ["cohesion:2", "flag:grief_mourn"] }
+      ]
+    },
+    {
+      "id": "aura_mourned", "trigger": "flag:grief_mourn", "cooldown": 0, "scene": "camp", "title": "AFTER THE MOURNING",
+      "text": "Weeks have passed. You find you can think of the dead without the old weight, and something in you is quieter, and stronger.",
+      "choices": [
+        { "label": "RISE", "effects": ["breakthrough"] },
+        { "label": "RAISE A CUP TO THE DEAD", "effects": ["breakthrough", "cohesion:2"] }
+      ]
+    },
+    {
       "id": "bury_named", "trigger": "fallen", "cooldown": 0, "scene": "camp", "title": "{man}",
       "text": "{man} of {company} lies with the dead of the field. The men who stood beside him wait to see what you will do.",
       "choices": [

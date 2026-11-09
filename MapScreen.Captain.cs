@@ -158,7 +158,7 @@ partial class MapScreen
         ui.TextR(Campaign.AuraName(cap.AuraTier).ToUpperInvariant(), c.Right, y, cap.AuraTier > 0 ? Style.Aura : Style.Dim, 1); y += ui.U(11);
         float need = C.AuraNeed;
         ui.Pips(new Rectangle(c.X, y, c.Width, ui.U(7)), need <= 0 ? 1 : cap.AuraXp / need, cap.AuraWall ? Style.Warn : Style.Aura, 10); y += ui.U(12);
-        string line = cap.AuraWall ? "A WALL. A TRIAL WILL BREAK IT: WIN A DUEL, OR HOLD AGAINST TWO TO ONE." : Campaign.AuraGifts[Math.Clamp(cap.AuraTier, 0, Campaign.AuraTop)].ToUpperInvariant();
+        string line = cap.AuraWall ? $"A WALL. A TRIAL WILL BREAK IT: {Campaign.TrialsFor(cap.AuraTier)}." : Campaign.AuraGifts[Math.Clamp(cap.AuraTier, 0, Campaign.AuraTop)].ToUpperInvariant();
         if (cap.Wounds.Contains("core")) line = "YOUR CORE IS CRACKED: YOU FIGHT A TIER LOWER. " + line;
         foreach (var l in ui.Wrap(line, c.Width)) { ui.Text(l, c.X, y, cap.AuraWall ? Style.Warn : Style.Dim * 0.8f, 1); y += ui.U(11); }
         return FormList(c, y + ui.U(4));

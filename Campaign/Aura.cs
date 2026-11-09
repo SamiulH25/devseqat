@@ -120,6 +120,73 @@ public sealed partial class Campaign
         if (r.Corruption > 0) Captain.Corruption = MathF.Min(100, Captain.Corruption + r.Corruption);
     }
 
+    // ---- the higher trials and the cracked core (5.5, K5) ----
+
+    /// The trials that can break the wall at this tier, for the captain sheet.
+    public static string TrialsFor(int tier) => string.Join(", ", new[]
+    {
+        tier < DuelBreaksBelow ? "WIN A DUEL" : "BEAT A CHAMPION ABOVE YOU IN A DUEL",
+        tier < OddsBreakBelow ? "HOLD AGAINST TWO TO ONE" : "",
+        tier < VigilBreaksBelow ? "KEEP A VIGIL AT A SHRINE, STONES, OLD BATTLEFIELD OR HERMIT" : "",
+        "GRIEF",
+    }.Where(s => s != ""));
+
+    /// A vigil breaks the walls below Aura Master; grief and a duel with a champion above you break any wall.
+    public const int VigilBreaksBelow = 4;
+    /// Days a cracked core takes to mend of itself (resting in a town counts three times).
+    public const float CoreDays = 30;
+    static readonly string[] VigilSites = { "shrine", "stones", "battlefield", "hermit" };
+
+    /// Will a night at this site be a trial for your aura?
+    bool VigilAt(Site site) => Captain.AuraWall && Captain.AuraTier < VigilBreaksBelow && VigilSites.Contains(site.Kind) && S.Event == null && Events.Any(e => e.Id == "aura_vigil");
+
+    /// The night's vigil: your aura breaks through, or the strain cracks your core. Arms and an order's teaching help.
+    string KeepVigil(Site? site)
+    {
+        if (!Captain.AuraWall) return "The night passes quietly.";
+        float odds = 0.5f + Skill("Arms") / 400f + (Captain.Order != "" ? 0.1f : 0) - (Captain.Wounds.Contains("core") ? 0.2f : 0);
+        if (rng.Chance(odds)) { BreakThrough($"You keep the vigil at the {site?.Name ?? "stones"}."); return "At dawn something in you gives way, and the world is sharper."; }
+        CrackCore();
+        return "Near dawn the strain is too much. Something in you cracks.";
+    }
+
+    /// A trial failed: the core cracks (a lasting wound that holds the aura a tier down) until it mends.
+    internal void CrackCore()
+    {
+        if (!Captain.Wounds.Contains("core")) Captain.Wounds.Add("core");
+        Captain.CoreUntil = (float)S.Hours + CoreDays * 24;
+        Log("Your core is cracked: your aura fights a tier lower until it mends (a month, rest in a town, a priest, a spring).");
+    }
+
+    /// Mend a cracked core (time, a rite, a spring).
+    internal bool MendCore(string how)
+    {
+        if (!Captain.Wounds.Remove("core")) return false;
+        Captain.CoreUntil = 0;
+        Log($"{how} Your core is whole again.");
+        return true;
+    }
+
+    /// Each day: a cracked core mends with time, faster while you rest in a town.
+    void CoreDaily()
+    {
+        if (!Captain.Wounds.Contains("core")) return;
+        if (Player.Resting && SettlementAt(Player.Pos) is { Kind: not SettlementKind.Village }) Captain.CoreUntil -= 48;
+        if (S.Hours >= Captain.CoreUntil) MendCore("Time and rest do their work.");
+    }
+
+    /// A companion falls while your aura stands at a wall: grief is a trial (rage now, at a cost; or mourning, later).
+    void GriefTrial(Character k)
+    {
+        if (!Captain.AuraWall || S.Event != null || !Events.Any(e => e.Id == "aura_grief")) return;
+        Raise(new PendingEvent { Id = "aura_grief", Lord = k.Id });
+    }
+
+    /// A duel won against a champion above you breaks any wall: an order knight of your aura or more, or a lord whose
+    /// army stands three tiers above your aura.
+    bool ChampionAbove(Party e) =>
+        CharacterOf(e) is Character ch && (ch.Kind == "knight" && ch.Aura >= Captain.AuraTier || e.Tier >= Captain.AuraTier + 3);
+
     /// The aura news for this report, cleared once read.
     string TakeAuraNews() { var s = auraNews; auraNews = ""; return s; }
 }

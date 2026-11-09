@@ -87,6 +87,8 @@ public static partial class SelfTest
         OrderOath();
         CreedBroken();
         OrderRankGate();
+        CoreAndTrials();
+        PresenceShakes();
         DuelFight();
         BattleGoals();
         BannerAndLastStand();
