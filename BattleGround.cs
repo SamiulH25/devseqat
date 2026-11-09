@@ -45,6 +45,13 @@ public partial class Battle
                     if (open >= 2) edges.Add(new Place(PlaceKind.WoodEdge, p, 1.5f, 0.5f, 2));
                 }
             }
+        if (t.Layout == FieldLayout.Ridge) // the ridge's crest always counts, even where its back slope is too gentle to stand out
+            for (float x = -60; x <= 60; x += 20)
+            {
+                var p = new Vector2(x, t.RidgeCrest(x));
+                float rise = MathF.Max(1.2f, t.Height(p) - t.Height(p + new Vector2(0, MathF.Sign(-t.RidgeZ) * 14)));
+                rises.Add(new Place(PlaceKind.Crest, p, rise, rise, 0));
+            }
         found.AddRange(Thin(rises, 22));
         found.AddRange(Thin(edges, 25));
         foreach (var r in t.Rivers)

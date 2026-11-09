@@ -307,7 +307,7 @@ sealed partial class Hud
         bool Inside(Vector2 p) => r.Contains((int)p.X, (int)p.Y);
         foreach (var u in B.Units)
         {
-            if (!u.Active || u.IsPlayer || u.Team == 1 && !u.IsLeader && !B.Visible(u.Squad, 0)) continue;
+            if (!u.Active || u.IsPlayer || u.Team == 1 && !u.IsLeader && !B.Shown(u.Squad)) continue;
             var p = M(u.Pos);
             if (!Inside(p)) continue;
             var c = u.Routing ? Dim : u.Team == 1 ? Foe : u.Squad != null && Selected.Contains(u.Squad) ? Gold : Friendly;
@@ -599,7 +599,7 @@ sealed partial class Hud
         var placed = new List<(Squad S, int X, int Y, bool Small, Rectangle R)>();
         foreach (var s in order)
         {
-            bool seen = B.Visible(s, 0);
+            bool seen = B.Shown(s);
             var c = seen ? s.Centroid() : s.LastSeen; // an enemy you cannot see: its flag stays where you last saw it, faded
             var sp = vp.Project(new Vector3(c.X, B.Terrain.Height(c) + 3.4f, c.Y), Proj, View, Matrix.Identity);
             if (sp.Z < 0 || sp.Z > 1) continue;
@@ -621,7 +621,7 @@ sealed partial class Hud
     /// One company's flag on its pole: colour, number or letter, morale bar, honours. Wavering flags shake; routed ones droop grey.
     void Banner(Squad s, int x, int y, bool small, List<Squad> mine)
     {
-        bool seen = B.Visible(s, 0), own = s.Team == 0, sel = Selected.Contains(s);
+        bool seen = B.Shown(s), own = s.Team == 0, sel = Selected.Contains(s);
         int morale = AvgMorale(s.Units);
         bool routed = s.Units.Count(u => u.Active && u.Routing) * 2 > s.Alive, wavering = !routed && morale < 35;
         var col = own ? Friendly : seen ? Foe : Color.Lerp(Foe, Dim, 0.6f);

@@ -362,7 +362,7 @@ public sealed partial class Terrain
     }
 
     /// The open ground where the armies deploy and meet: no trees or boulders here. It grows with the battle (`Scale`).
-    public bool Core(Vector2 p) => MathF.Abs(p.X) < 50 * Params.Scale && MathF.Abs(p.Y) < 54 * Params.Scale;
+    public bool Core(Vector2 p) => MathF.Abs(p.X) < 50 * Params.Scale && MathF.Abs(p.Y) < (54 + Battle.Stand) * Params.Scale;
 
     void PlaceFoliage(Random rng)
     {

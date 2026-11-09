@@ -29,8 +29,8 @@ sealed partial class Hud
         Vector2 M(Vector2 w) { var m = World.WorldToMinimap(w); return new Vector2(r.X + m.X * r.Width, r.Y + m.Y * r.Height); }
         foreach (var s in B.Squads)
         {
-            if (s.Alive == 0 || s.Team == 1 && !B.Visible(s, 0)) continue;
-            var p = M(s.Team == 1 ? s.LastSeen : s.Center);
+            if (s.Alive == 0 || s.Team == 1 && !B.Shown(s)) continue;
+            var p = M(s.Team == 1 && !B.Visible(s, 0) ? s.LastSeen : s.Center);
             if (!r.Contains((int)p.X, (int)p.Y)) continue;
             int d = U(s.Cavalry ? 6 : 5);
             Rect(new Rectangle((int)p.X - d / 2, (int)p.Y - d / 2, d, d), s.Team == 1 ? Foe : Selected.Contains(s) ? Gold : Friendly);

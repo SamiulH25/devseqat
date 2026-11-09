@@ -16,6 +16,8 @@ public sealed partial class Terrain
     public float RidgeZ { get; private set; }
     public int RidgeSide { get; private set; } = -1;
     float ridgeH, ridgeW, ridgePhase;
+    /// Ridge: the crest's Z at this X (it bends a little).
+    public float RidgeCrest(float x) => RidgeZ + MathF.Sin(x * 0.015f + ridgePhase) * 5;
     /// Pass: the floor's centre (X), its half-width before the sides rise, and how high they climb.
     float passX, passFloor, passH;
     /// Village: where it stands and how far it spreads (an ellipse, wider than deep).
@@ -34,7 +36,7 @@ public sealed partial class Terrain
                 // A long crest just in front of one army's line, with a gentle reverse slope behind it.
                 RidgeSide = rng.Next(2);
                 if (p.Favour >= 0) RidgeSide = p.Favour; // the side that chose its ground stands on the crest
-                RidgeZ = (RidgeSide == 0 ? -1 : 1) * (24 + rng.NextSingle() * 6);
+                RidgeZ = (RidgeSide == 0 ? -1 : 1) * (24 + Battle.Stand + rng.NextSingle() * 6);
                 ridgeH = (4 + rng.NextSingle() * 2.5f) * MathF.Max(1, p.HillHeight * 0.8f);
                 ridgeW = 14 + rng.NextSingle() * 5;
                 ridgePhase = rng.NextSingle() * MathF.Tau;
@@ -91,7 +93,7 @@ public sealed partial class Terrain
             return 0.8f * (1 - SmoothStep(0.6f, 1.6f, v));
         }
         if (Layout != FieldLayout.Ridge) return 0;
-        float crest = RidgeZ + MathF.Sin(x * 0.015f + ridgePhase) * 5;
+        float crest = RidgeCrest(x);
         float dz = (z - crest) / ridgeW;
         // The face toward the enemy is steeper than the reverse slope behind the crest.
         bool behind = RidgeSide == 0 ? dz < 0 : dz > 0;

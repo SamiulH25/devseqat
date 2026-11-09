@@ -134,7 +134,7 @@ public sealed partial class Battle
             var spot = role switch
             {
                 "archers" => new Vector2(0, -38 - infDepth), "casters" => new Vector2(0, -44 - infDepth), "spears" => new Vector2(-spearsX, -31), "horse" => new Vector2(horseX, -33), _ => new Vector2(0, -30),
-            };
+            } - new Vector2(0, Back);
             float back = 0;
             foreach (var row in rows)
             {
@@ -153,9 +153,13 @@ public sealed partial class Battle
                 back += deep + 5;
             }
         }
-        rearLine[team] = MathF.Max(48, 44 + infDepth);
+        rearLine[team] = MathF.Max(48, 44 + infDepth) + Back;
     }
 
+    /// How much further back than the old 30 m line each side deploys, so the armies start about 90 m apart.
+    public const float Stand = 15;
+    /// Stand on a field; assaults keep the old distance from the wall.
+    float Back => Options.Siege ? 0 : Stand;
     /// The widest a role's line may stand before its companies form a second line behind (the infantry's; flanks half).
     const float MaxLine = 110;
     /// How far each side's flanks were pushed out by a wide infantry line (the general keeps them there).
@@ -203,11 +207,11 @@ public sealed partial class Battle
         this.scripted = scripted;
         Options = options ?? new BattleOptions();
         Terrain = scripted ? Terrain.Flat() : new Terrain(seed, (Options.Ground ?? TerrainParams.Meadow) with { Scale = scale }, Options.Siege ? new SiegeWall(Options.Ladders, Options.GateHp) : null);
-        Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34));
+        Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34 - Back));
         Player.IsPlayer = Player.IsLeader = true;
         SetupCaptain();
         Player.Facing = Player.Heading = MathHelper.PiOver2;
-        eGuard = AddSquad(1, Options.EnemyLeader ?? UnitType.Captain, 1, new(0, scripted ? 80 : 34), 1, -Vector2.UnitY);
+        eGuard = AddSquad(1, Options.EnemyLeader ?? UnitType.Captain, 1, new(0, scripted ? 80 : 34 + Back), 1, -Vector2.UnitY);
         EnemyCaptain = eGuard.Units[0];
         EnemyCaptain.IsLeader = true;
         UpdateCentroids();
@@ -429,7 +433,7 @@ public sealed partial class Battle
             float f = team == 0 ? 1 : -1;
             var t = Troops.Get(c.Troop);
             var s = AddSquad(team, t, c.Count, new Vector2(lateral.Count % 3 * 12 - 12, -rearLine[team]) * f, ColumnsFor(c.Count), new Vector2(0, f), c);
-            s.Anchor = new Vector2(0, -30) * f;
+            s.Anchor = new Vector2(0, -30 - Back) * f;
             Role(team, role).Add(s);
             lateral[s] = 0;
             if (Divisions.FirstOrDefault(d => d.Team == team && d.SpecId >= 0 && d.SpecId == c.Division) is Division div)

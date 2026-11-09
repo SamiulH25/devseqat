@@ -15,10 +15,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BalanceReport.cs (221 lines)
 - **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Realms:68, Csv:110, Run:112, Grounds:183
 
-## Battle.cs (517 lines)
+## Battle.cs (521 lines)
 - **PlayerInput** (struct, L5)
 - **Projectile** (class, L15)
-- **Battle** (class, L23): Sound:33, Battle:70, Battle:73, SetupDuel:96, Role:106, Deploy:110, Ranks:169, ColumnsFor:170, Empty:190, Empty:191, FieldScale:194, Battle:200, SquadsOf:216, Centroid:217, Log:218, AddSquad:222, Spawn:257, Mark:270, Update:272, Bounds:332, ThinkNow:347, UpdateCentroids:350, UpdateSquad:362, CanBrace:387, Braced:392, InOrder:396, ReachOf:399, RandomSwing:405, StartSwing:409, Reinforce:420, Result:447, GapTo:482, Withdraw:497, CheckEnd:506
+- **Battle** (class, L23): Sound:33, Battle:70, Battle:73, SetupDuel:96, Role:106, Deploy:110, Ranks:173, ColumnsFor:174, Empty:194, Empty:195, FieldScale:198, Battle:204, SquadsOf:220, Centroid:221, Log:222, AddSquad:226, Spawn:261, Mark:274, Update:276, Bounds:336, ThinkNow:351, UpdateCentroids:354, UpdateSquad:366, CanBrace:391, Braced:396, InOrder:400, ReachOf:403, RandomSwing:409, StartSwing:413, Reinforce:424, Result:451, GapTo:486, Withdraw:501, CheckEnd:510
 
 ## BattleAI.cs (317 lines)
 - **Battle** (class, L6): PackApproach:11, HeightRange:25, Think:27, ThinkCav:101, Ride:193, Approach:201, TurnRate:203, Steer:206, Led:225, General:229
@@ -53,10 +53,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleGrid.cs (131 lines)
 - **Battle** (class, L7): CellOf:14, BuildGrid:16, Near:28, Separate:104
 
-## BattleGround.cs (227 lines)
+## BattleGround.cs (234 lines)
 - **PlaceKind** (enum, L6)
 - **Place** (struct, L9)
-- **Battle** (class, L13): Survey:19, Thin:62, BestPlace:71, SnapToGround:86, Patience:98, GoodGround:102, HoldsGround:112, DryAnchor:134, HorseGoing:142, GroundWarning:171, CrossesWater:186, CannotStake:200, PlantStakes:211
+- **Battle** (class, L13): Survey:19, Thin:69, BestPlace:78, SnapToGround:93, Patience:105, GoodGround:109, HoldsGround:119, DryAnchor:141, HorseGoing:149, GroundWarning:178, CrossesWater:193, CannotStake:207, PlantStakes:218
 
 ## BattleMorale.cs (85 lines)
 - **Battle** (class, L6): UpdateMorale:11
@@ -95,8 +95,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleSiege.cs (162 lines)
 - **Battle** (class, L7): DeployDefenders:18, Via:48, MayCross:75, EnforceWall:82, Batter:95, SiegeDefend:121, SiegeAttack:144
 
-## BattleSight.cs (89 lines)
-- **Battle** (class, L8): Visible:20, Visible:21, UpdateSight:23, Sees:48, ClearLine:59, Ambush:78
+## BattleSight.cs (97 lines)
+- **Battle** (class, L8): Visible:20, Visible:21, Shown:25, UpdateSight:27, Sees:52, ClearLine:67, Ambush:86
 
 ## BattleTypes.cs (111 lines)
 - **BattleOptions** (class, L4)
@@ -414,9 +414,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Grounds** (class, L20): Get:25, Name:28, Describe:35, Load:57, Validate:71, Check:73
 - **Terrain** (class, L93): CellOf:102, GroundAt:109, CoverAt:111, GroundDefAt:113, PaintGround:117, Paint:137, InWood:149, GroundHash:156
 
-## TerrainLayouts.cs (213 lines)
+## TerrainLayouts.cs (215 lines)
 - **FieldLayout** (enum, L7)
-- **Terrain** (class, L11): ShapeLayout:28, LayoutHeight:84, GroundOf:105, ShapeGround:120, Sq:153, PlaceVillage:156, PlaceHedges:185, HedgeLine:201
+- **Terrain** (class, L11): RidgeCrest:20, ShapeLayout:30, LayoutHeight:86, GroundOf:107, ShapeGround:122, Sq:155, PlaceVillage:158, PlaceHedges:187, HedgeLine:203
 
 ## Tests/BattleTests.cs (1468 lines)
 - **SelfTest** (class, L6): Animation:10, Charge:34, CavalryBalance:54, Flanks:95, Parry:111, Formations:139, CaptainCombat:169, CaptainKit:195, SkillBouts:253, Bout:303, Fight:317, BattleGoals:350, BannerAndLastStand:372, DuelFight:409, RangedRoles:430, FatigueAndSupply:450, GroundLayer:468, GroundMoves:493, GroundFights:524, Layouts:561, HedgesAndBridges:592, EveryLayoutResolves:640, SightAndCover:661, Rivers:703, HoldsTheCrest:731, HorseAvoidsBadGround:757, AmbushWaits:774, TakesTheFord:794, GroundForThePlayer:816, Stakes:835, Pathfinder:873, GoesToFord:893, FilesThroughGap:922, ChargeFindsCaptain:947, FlowCacheBound:962, Generals:977, HorseDown:994, Ground:1003, HoldFire:1027, TroopTree:1041, Sprites:1065, BigBattle:1103, StackBattle:1133, NamedMenFight:1168, AutoResolveNamedMen:1210, PullBack:1236, ReplayExact:1267, SpearsStopHorse:1300, ScaleBattle:1311, Couriers:1349, DivisionGoals:1370
