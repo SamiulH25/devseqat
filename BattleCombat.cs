@@ -219,7 +219,7 @@ public partial class Battle
         if (by.IsPlayer) PlayerHit = ($"HORSE HIT {dmg:0}", Time);
         if (r.HorseHp > 0) return;
         // The horse goes down and throws its rider.
-        DeadHorses.Add(new DeadHorse(r.Pos, r.Heading, r.Team, r.Coat, r.Horse!.Barding));
+        DeadHorses.Add(new DeadHorse(r.Pos, r.Heading, r.Team, r.Coat, r.Horse!.Barding, Time));
         r.Horse = null;
         r.Speed = 0;
         r.Vel = Vector2.Zero;

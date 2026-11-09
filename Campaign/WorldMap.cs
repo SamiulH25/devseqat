@@ -442,6 +442,9 @@ public sealed class WorldMap
         float edge = MathF.Max(MathF.Abs(x), MathF.Abs(z));
         float t = Math.Clamp((edge - (ExtentUsed - 10)) / (GroundHalf - ExtentUsed + 10), 0, 1);
         h += t * t * (3 - 2 * t) * (24 + 10 * Terrain.Noise(x * 0.02f, z * 0.02f, Seed + 2)); // mountains close the world
+        float rim = RimAt(edge);
+        if (rim > 0) // crags and peaks on the rim, beyond where anyone goes (the land in play keeps its heights)
+            h += rim * rim * (18 * Ridged(x * 0.045f, z * 0.045f, Seed + 4) + 7 * Ridged(x * 0.11f, z * 0.11f, Seed + 5));
         if (Ridges.Count > 0) h += RidgeHeight(new Vector2(x, z)) * (0.85f + 0.3f * Terrain.Noise(x * 0.05f, z * 0.05f, Seed + 3));
         foreach (var r in Rivers)
         {
@@ -452,10 +455,23 @@ public sealed class WorldMap
         return h;
     }
 
-    /// Ground tint: patchwork fields in farmland, dark forest floor, dry hills (visual only).
+    /// How far out on the mountain rim a point is: 0 at the edge of the land in play (and inside it), 1 at the world's end.
+    float RimAt(float edge) => Math.Clamp((edge - ExtentUsed - 4) / (GroundHalf - ExtentUsed - 4), 0, 1);
+    /// Sharp-crested noise (0..1): ridges where plain noise crosses its middle.
+    static float Ridged(float x, float z, int seed) => 1 - MathF.Abs(Terrain.Noise(x, z, seed) * 2 - 1);
+
+    /// Ground tint: patchwork fields in farmland, dark forest floor, dry hills, grey rock and snow on the rim (visual only).
     public Vector3 Tint(Vector2 p, Vector3 ground)
     {
         var c = ground * KindTint(p);
+        float rim = RimAt(MathF.Max(MathF.Abs(p.X), MathF.Abs(p.Y)));
+        if (rim > 0)
+        {
+            float n = Terrain.Noise(p.X * 0.08f, p.Y * 0.08f, Seed + 6);
+            c = Vector3.Lerp(c, new Vector3(0.5f, 0.49f, 0.47f) * (0.8f + 0.4f * n), MathHelper.SmoothStep(0, 1, rim * 3));
+            float snow = Math.Clamp((Height(p.X, p.Y) - 30) / 10, 0, 1) * MathHelper.SmoothStep(0, 1, rim * 1.6f);
+            c = Vector3.Lerp(c, new Vector3(0.9f, 0.92f, 0.95f), snow);
+        }
         if (Ridges.Count > 0 && RidgeDist(p) is float rd && rd < Ridges[0].Width) c = Vector3.Lerp(c, new Vector3(0.62f, 0.6f, 0.58f), 0.6f * (1 - rd / Ridges[0].Width)); // bare rock
         // Summer dries the grass, autumn browns it, winter lies white (more so on high ground; roads show through).
         return Season switch
@@ -518,7 +534,9 @@ public sealed class WorldMap
                 if (!Clear(pos) || ProvinceAt(pos) != p) continue;
                 if (OnRidge(pos)) continue;
                 bool pine = p.Kind == "Hills" || rng.NextSingle() < 0.25f;
-                foliage.Add(new Foliage(pine ? FoliageKind.Pine : FoliageKind.Broadleaf, pos, (2.2f + rng.NextSingle() * 1.2f) * grow, 0, rng.Next()));
+                // Trees by a town are smaller, so the town stands out among them rather than under them.
+                float town = Settlements.Min(s => Vector2.Distance(s.Pos, pos)), near = 0.55f + 0.45f * Math.Clamp((town - 9 * span) / (16 * span), 0, 1);
+                foliage.Add(new Foliage(pine ? FoliageKind.Pine : FoliageKind.Broadleaf, pos, (2.2f + rng.NextSingle() * 1.2f) * grow * near, 0, rng.Next()));
             }
             if (p.Kind == "Farmland")
                 for (int i = 0; i < 24; i++) // hedgerows

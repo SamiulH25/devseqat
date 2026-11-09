@@ -135,12 +135,13 @@ partial class MapScreen
         if (zoom < 240) Life();
         foreach (var p in C.S.Parties)
         {
-            if (p.Down || Screen(G(p.Pos, 9)) is not Vector2 sp) continue;
+            if (p.Down || Screen(G(bearers.TryGetValue(p.Id, out var bu) ? bu.Pos : p.Pos, 9)) is not Vector2 sp) continue;
             bool mine = p == pl || p.Id == target || p == C.Encounter;
             // Far out, travellers' labels drop out unless they are your business.
             if (!mine && zoom > 260 && p.Kind == PartyKind.Caravan) continue;
             // Beyond your sight you see banners on the move, not whose (S7).
             bool seen = mine || C.InSight(p.Pos);
+            if (!seen && zoom > 200) continue; // far out, unknown banners are only clutter
             string label = seen ? $"{p.Name.ToUpperInvariant()} {p.Men}" : "?";
             int w = ui.TW(label, 1) + ui.U(8);
             all.Add(new Label

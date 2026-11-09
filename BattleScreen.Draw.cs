@@ -72,13 +72,17 @@ partial class BattleScreen
         gd.Textures[1] = null;
         gd.SetRenderTarget(sh.Scene());
         gd.Clear(World.Horizon);
+        MenMap(blend);
         sh.GroundMap = TrampleTexture(); sh.GroundSize = TrampleSize; sh.NearDetail = true;
+        sh.Torch = TorchRow();
+        sh.Cut = MathHelper.SmoothStep(0, 1, blend);
         world.DrawShaded(sh, view, proj, eye, realTime, shadows);
-        sh.GroundMap = null; sh.NearDetail = false;
+        sh.GroundMap = null; sh.NearDetail = false; sh.Cut = 0;
         DrawBlobs(shadows ? 0.4f : 1); // with real shadows the blobs only add contact darkening
         BuildSprites(view, false);
         sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
         DrawSpritesShaded(sh.Sprite, "Sprite");
+        sh.Torch = Vector4.Zero;
         DrawLines();
         sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0);
     }
@@ -270,9 +274,11 @@ partial class BattleScreen
             if (deploying && !battle.Options.Scouted && u.Team == 1 && !u.IsLeader) continue; // unscouted: banners only
             if (u.Team == 1 && !u.IsLeader && !battle.Visible(u.Squad, 0)) continue; // hidden by a crest or a wood
             float h = t.Height(u.Pos);
+            puppet.Rear = RearOf(u, !forSun);
             if (!Seen(u.Pos, h, u.Mounted ? 2.5f : 1.5f)) continue;
             puppet.Draw(u, h);
         }
+        puppet.Rear = 0;
         foreach (var h in battle.LooseHorses) if (Seen(h.Pos, t.Height(h.Pos), 2.5f)) puppet.DrawLooseHorse(h, t.Height(h.Pos));
         foreach (var h in battle.DeadHorses) if (Seen(h.Pos, t.Height(h.Pos), 2.5f)) puppet.DrawDeadHorse(h, t.Height(h.Pos));
         puppet.Detail = 0;
@@ -343,24 +349,39 @@ partial class BattleScreen
         }
     }
 
-    /// Rain streaks (or snowflakes) in a box around the camera, falling on a fixed pattern so nothing is stored.
+    /// The siege wall's torches light the night (none by day or without a wall): see `World.Torches`.
+    Vector4 TorchRow()
+    {
+        if (battle.Terrain.Wall == null || Sky.Night <= 0.05f) return Vector4.Zero;
+        float top = battle.Terrain.Height(new Vector2(World.TorchSpacing, 15.25f)) + 0.7f;
+        return new Vector4(SiegeWall.Outer - 0.5f, top, Math.Clamp(Sky.Night * 1.8f, 0, 1), World.TorchSpacing);
+    }
+
+    /// Rain streaks (or snowflakes) in a box around the camera, falling on a fixed pattern so nothing is stored. From the high
+    /// command camera a second, wider box falls round the point you look at, so the field itself is seen in the rain.
     void Precipitation()
     {
         var w = battle.Weather;
         if (w.Rain < 0.05f) return;
-        int n = (int)(700 * w.Rain);
-        var c = eye;
-        float t = realTime;
-        var col = w.Snow ? new Color(236, 238, 244) : new Color(150, 162, 178);
+        // Rain is grey streaks, dimmer at night (bright white lines read as scratches on a dark field).
+        var col = w.Snow ? new Color(236, 238, 244) : Color.Lerp(new Color(150, 162, 178), new Color(70, 80, 98), Sky.Night);
+        Fall(eye, 25, (int)(1100 * w.Rain), 0, w, col);
+        if (eye.Y - focusPoint.Y > 30) Fall(focusPoint + new Vector3(0, 8, 0), 60, (int)(1400 * w.Rain), 1, w, col);
+    }
+
+    /// Drops in a box of half-width `half` centred on `c`, on their own pattern (`salt`).
+    void Fall(Vector3 c, float half, int n, int salt, Weather w, Color col)
+    {
+        float t = realTime, size = half * 2;
         for (int i = 0; i < n; i++)
         {
-            uint h = (uint)i * 2654435761u;
-            float x = (h & 1023) / 1023f * 50 - 25, z = (h >> 10 & 1023) / 1023f * 50 - 25, ph = (h >> 20 & 1023) / 1023f;
-            float fall = w.Snow ? 1.2f : 9f, y = 18 - (ph * 18 + t * fall) % 18;
-            var p = new Vector3(MathF.Floor(c.X / 50) * 50 + x, c.Y - 6 + y, MathF.Floor(c.Z / 50) * 50 + z);
-            if (p.X < c.X - 25) p.X += 50; if (p.X > c.X + 25) p.X -= 50;
-            if (p.Z < c.Z - 25) p.Z += 50; if (p.Z > c.Z + 25) p.Z -= 50;
-            var drift = w.Snow ? new Vector3(MathF.Sin(t + i) * 0.05f, -0.08f, 0) : new Vector3(0.05f, -0.7f, 0.02f);
+            uint h = (uint)(i + salt * 7919) * 2654435761u;
+            float x = (h & 1023) / 1023f * size - half, z = (h >> 10 & 1023) / 1023f * size - half, ph = (h >> 20 & 1023) / 1023f;
+            float fall = w.Snow ? 1.2f : 11f, y = 18 - (ph * 18 + t * fall) % 18;
+            var p = new Vector3(MathF.Floor(c.X / size) * size + x, c.Y - 6 + y, MathF.Floor(c.Z / size) * size + z);
+            if (p.X < c.X - half) p.X += size; if (p.X > c.X + half) p.X -= size;
+            if (p.Z < c.Z - half) p.Z += size; if (p.Z > c.Z + half) p.Z -= size;
+            var drift = w.Snow ? new Vector3(MathF.Sin(t + i) * 0.05f, -0.08f, 0) : new Vector3(0.04f, -0.45f, 0.015f);
             Line(p, p + drift, col);
         }
     }

@@ -116,17 +116,71 @@ partial class BattleScreen
         foreach (var (cue, at) in battle.Sounds) if (cue == Cue.Impact) Stamp(at, 60);
     }
 
+    /// Where men stand (green channel), for the command view: the foliage shader thins the leaves that lie between the
+    /// camera and them, so a company in a wood is not lost under the canopy. Enemies you have not seen stay hidden.
+    readonly byte[] men = new byte[TrampleN * TrampleN];
+    bool menOn;
+    float menAt = -1;
+
+    void MenMap(float cut)
+    {
+        if (cut <= 0.01f)
+        {
+            if (menOn) { Array.Clear(men); menOn = false; trampleDirty = true; }
+            return;
+        }
+        if (menOn && realTime - menAt < 0.1f) return;
+        menAt = realTime;
+        menOn = true;
+        Array.Clear(men);
+        foreach (var u in battle.Units)
+        {
+            if (!u.Active || u.Team == 1 && !u.IsLeader && !battle.Visible(u.Squad, 0)) continue;
+            int x = (int)((u.Pos.X / TrampleSize + 0.5f) * TrampleN), y = (int)((u.Pos.Y / TrampleSize + 0.5f) * TrampleN);
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dx = -1; dx <= 1; dx++)
+                    if ((uint)(x + dx) < TrampleN && (uint)(y + dy) < TrampleN) men[(y + dy) * TrampleN + x + dx] = 255;
+        }
+        trampleDirty = true;
+    }
+
     /// The trample map as a texture for the world shader (uploaded only when it changed).
     Microsoft.Xna.Framework.Graphics.Texture2D TrampleTexture()
     {
         trampleTex ??= new Microsoft.Xna.Framework.Graphics.Texture2D(GraphicsDevice, TrampleN, TrampleN);
         if (trampleDirty)
         {
-            for (int i = 0; i < trample.Length; i++) tramplePx[i] = new Color((int)trample[i], 0, 0, 255);
+            for (int i = 0; i < trample.Length; i++) tramplePx[i] = new Color((int)trample[i], (int)men[i], 0, 255);
             trampleTex.SetData(tramplePx);
             trampleDirty = false;
         }
         return trampleTex;
+    }
+
+    // ---------- rearing horses ----------
+
+    /// Each rider's recent top speed and when his horse last reared: a horse brought from a gallop to a near stop in a
+    /// moment (a charge hitting home, a collision) rears for about a second. View only.
+    readonly Dictionary<Unit, (float Peak, float At)> rears = new();
+
+    /// Riders whose horses are held at the top of a rear (the pose sheet shot).
+    readonly HashSet<Unit> frozenRear = new();
+
+    float RearOf(Unit u, bool update)
+    {
+        if (!u.Mounted || u.Dead || u.Horse!.Barding == "wolf") return 0;
+        if (frozenRear.Contains(u)) return 1;
+        if (!rears.TryGetValue(u, out var r)) r = (0, -99);
+        if (update)
+        {
+            float sp = MathF.Abs(u.Speed);
+            if (r.Peak > 7.5f && sp < 2.5f && realTime - r.At > 3) r.At = realTime;
+            r.Peak = MathF.Max(sp, r.Peak - frameDt * 24);
+            rears[u] = r;
+        }
+        float k = (realTime - r.At) / 1.1f;
+        if (k < 0 || k >= 1) return 0;
+        return k < 0.3f ? Ease.Out(k / 0.3f) : 1 - Ease.InOut((k - 0.3f) / 0.7f);
     }
 
     // ---------- banners ----------

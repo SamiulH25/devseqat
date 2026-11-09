@@ -124,7 +124,7 @@ partial class BattleScreen
     };
 
     /// The pose sheet (docs/VISUALS.md V1): one man frozen at each moment of each action along a row, so every pose can be
-    /// checked in one still. Sheet 0: the melee and the march; 1: the bow, the fall and the cheer; 2: riders at a stand, walk, trot, canter and gallop, the last with his lance couched.
+    /// checked in one still. Sheet 0: the melee and the march; 1: the bow, the fall and the cheer; 2: riders at a stand, walk, trot, canter and gallop, the last with his lance couched, then a horse rearing, one falling and one dead.
     void PoseSheet(int sheet)
     {
         battle = Battle.Empty(1);
@@ -149,6 +149,13 @@ partial class BattleScreen
                 var u = Add("knights");
                 u.Speed = speed; u.Anim = anim; u.Vel = u.HeadingDir * speed;
                 if (speed > 8) u.Couched = anim > 0.5f;
+            }
+            frozenRear.Add(Add("knights")); // a horse rearing at the top
+            foreach (var k in new[] { 0.8f, 2f }) // a horse going down, and one lying dead
+            {
+                x += 2.4f;
+                b.DeadHorses.Add(new DeadHorse(new Vector2(-x, 0), -MathHelper.PiOver2 - 0.6f, 0, 1, "", b.Time - k * 0.7f));
+                x += 2.4f;
             }
         }
         else if (sheet == 0)

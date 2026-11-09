@@ -175,6 +175,7 @@ sealed class ScreenHost : Game
             if (mode == Mode.Battle) battle.Battle.Log("Graphics: " + Quality switch { Quality.High => "high (shadows, post)", Quality.Medium => "medium (no shadows)", _ => "low (basic)" });
         }
         Audio?.Update(dt);
+        Tips.InBattle = mode == Mode.Battle;
         switch (mode)
         {
             case Mode.Title: IsMouseVisible = true; title.Update(); Audio?.Music(MusicTrack.Map); Audio?.Beds(0.6f, 0, 0); break;
@@ -191,6 +192,7 @@ sealed class ScreenHost : Game
         Ui.Now = (float)gameTime.TotalGameTime.TotalSeconds;
         Ui.Instant = campaignShots != null || lab.ShotsDir != null || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("IRONFIELD_SHOTS"));
         Overflow.Frame(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
+        Tips.InBattle = mode == Mode.Battle;
         switch (mode)
         {
             case Mode.Title: title.Draw(); break;

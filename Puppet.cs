@@ -13,6 +13,7 @@ namespace Ironfield;
 sealed class Puppet
 {
     const float Saddle = 0.87f; // rider origin height when mounted
+    const float RearDeg = 32;   // how far a horse rears
 
     readonly Art art;
     readonly Verts<VertexPositionColorTexture> verts;
@@ -51,6 +52,8 @@ sealed class Puppet
 
     /// The battle clock (falls are animated after death; 0 = draw the dead lying at once, as the campaign map does).
     public float Now;
+    /// How far the next mounted unit's horse is reared up (0..1; set by the battle screen just before drawing it).
+    public float Rear;
     /// The winning team once the battle is over (its men cheer), else -1.
     public int Winner = -1;
     float tilt, tiltX, tiltZ;
@@ -102,8 +105,18 @@ sealed class Puppet
         if (u.Dead) { Fallen(u, lift, size, phase); return; }
         if (look.Face == "wolf") { Frame(u.Pos, u.ViewFacing, lift, size); Beast(u, ground); return; }
         var p = PoseOf(u, Now, phase, Winner);
-        Frame(u.Pos, u.ViewFacing, lift + p.Bob * size, size);
-        Lean(p.LeanX, p.LeanZ);
+        var at = u.Pos;
+        float leanBack = 0;
+        if (u.Mounted && Rear > 0)
+        {
+            // The rider goes up and back with the horse: the saddle swings round the hind hooves.
+            float a = Rad(RearDeg * Rear);
+            at -= new Vector2(MathF.Cos(u.ViewHeading), MathF.Sin(u.ViewHeading)) * Saddle * MathF.Sin(a) * Scale * 0.6f;
+            lift += (MathF.Sin(a) * 0.7f - Saddle * (1 - MathF.Cos(a))) * Scale;
+            leanBack = RearDeg * Rear * 0.8f;
+        }
+        Frame(at, u.ViewFacing, lift + p.Bob * size, size);
+        Lean(p.LeanX, p.LeanZ - leanBack);
 
         if (!u.Mounted)
             for (int side = -1; side <= 1; side += 2)
@@ -168,6 +181,8 @@ sealed class Puppet
     float Horse(Vector2 pos, float ground, float heading, float anim, float speed, int coat, string barding, bool riderLegs)
     {
         Frame(pos, heading, ground, Scale);
+        // Rearing: the horse pivots back onto its hind legs, lifted so the hind hooves stay on the ground.
+        if (Rear > 0) { Lean(0, -RearDeg * Rear); origin.Y += MathF.Sin(Rad(RearDeg * Rear)) * 0.7f * Scale; }
         var side = pal;
         var plain = tint;
         bool caparison = barding == "caparison", camel = barding == "camel";
@@ -193,6 +208,7 @@ sealed class Puppet
             float sd = i % 2 == 0 ? -1 : 1;
             float ph = MathHelper.Lerp(MathHelper.Lerp(walkP[i], trotP[i], trot), gallopP[i], gallop);
             float a = Rad(amp) * MathF.Sin(anim * MathF.PI + ph * MathF.Tau);
+            if (front && Rear > 0) a = MathHelper.Lerp(a, Rad(sd < 0 ? 75 : 55), Rear); // forelegs pawing the air
             var hip = new Vector3(sd * 0.2f, 1.0f + bob + (front ? rock : -rock), front ? 0.6f : -0.6f);
             Axial(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), "hleg");
         }
@@ -204,7 +220,8 @@ sealed class Puppet
         Long(new(0, y + rock + 0.17f, 0.62f), new(0, y + rock + 0.73f + nod - neckOut, 1.0f + neckOut), "hneck");
         Long(new(0, y + rock + 0.73f + nod - neckOut, 0.95f + neckOut), new(0, y + rock + 0.37f + nod * 1.5f - neckOut, 1.42f + neckOut * 1.4f), "hhead");
         if (Detail == 0) Bill(new(0, y + rock + 0.6f + nod * 1.2f - neckOut, 1.15f + neckOut), "hface", false, -0.04f);
-        if (Detail == 0) Axial(new(0, y + 0.2f, -0.82f), new(0, 0.85f + bob + gait * 0.4f, -1.05f - gait * 0.35f), "htail");
+        float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.07f * (1 - gait); // a standing horse flicks its tail
+        if (Detail == 0) Axial(new(0, y + 0.2f, -0.82f), new(swish, 0.85f + bob + gait * 0.4f, -1.05f - gait * 0.35f), "htail");
 
         // Gear over the coat.
         pal = side;
@@ -310,6 +327,17 @@ sealed class Puppet
     public void DrawDeadHorse(DeadHorse h, float ground)
     {
         tilt = 0;
+        // Going down: the knees buckle and it rolls onto its side, then lies flat (below).
+        float k = Now > 0 && h.Barding != "wolf" ? (Now - h.At) / 0.7f : 1;
+        if (k < 1)
+        {
+            pal = "/" + h.Team;
+            tint = Color.White;
+            Lean(90 * Ease.In(MathF.Max(0, k * 1.25f - 0.25f)), 0);
+            Horse(h.Pos, ground - Ease.Out(MathF.Min(1, k * 2)) * 0.3f * Scale, h.Heading, 0, 0, h.Coat, h.Barding, false);
+            tilt = 0;
+            return;
+        }
         Frame(h.Pos, h.Heading, ground, h.Barding == "wolf" ? 1.5f : 1);
         pal = "/" + h.Team;
         tint = Color.White;

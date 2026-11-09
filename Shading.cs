@@ -52,7 +52,7 @@ sealed class Shading : IDisposable
         {
             Uniform.Mat4("ViewProj"), Uniform.Mat4("LightViewProj"), Uniform.Vec3("CameraPos"), Uniform.Vec3("SunDir"), Uniform.Vec3("SunColor"),
             Uniform.Vec3("SkyColor"), Uniform.Vec3("GroundColor"), Uniform.Vec3("FogColor"), Uniform.Vec4("FogParams"), Uniform.Vec4("ShadowParams"),
-            Uniform.Float("Time"), Uniform.Vec4("Wind"), Uniform.Vec2("SpriteLight"), Uniform.Vec4("Field"), Uniform.Vec4("Look"),
+            Uniform.Float("Time"), Uniform.Vec4("Wind"), Uniform.Vec2("SpriteLight"), Uniform.Vec4("Field"), Uniform.Vec4("Look"), Uniform.Vec4("Torch"), Uniform.Float("Cut"),
         };
         var shadowTex = new TextureSlot("ShadowMap", 1, ShadowSampler);
 
@@ -109,6 +109,11 @@ sealed class Shading : IDisposable
     public float GroundSize = 1;
     /// Close-up ground detail (the battle's field camera; off on the campaign map's far view).
     public bool NearDetail;
+    /// A besieged town's torch row (docs/VISUALS.md): x = its z, y = its height, z = strength (0 = none), w = spacing.
+    /// Set by the battle screen while it draws a siege at night; zero everywhere else.
+    public Vector4 Torch;
+    /// How far leaves over men are cut away (the command view's blend, 0 = none); reads the ground map's green channel.
+    public float Cut;
     /// Fog start and end (the campaign map pushes them out for its far camera).
     public Vector2 Fog = new(Ironfield.World.FogStart, Ironfield.World.FogEnd);
 
@@ -131,7 +136,9 @@ sealed class Shading : IDisposable
         p["SpriteLight"]?.SetValue(SpriteLight);
         p["ShadowMap"]?.SetValue(ShadowMap);
         p["Field"]?.SetValue(new Vector4(1f / GroundSize, GroundMap != null ? 1 : 0, Ironfield.Sky.Clouds, Ironfield.Sky.Wet));
-        p["Look"]?.SetValue(new Vector4(Ironfield.Sky.Snow, NearDetail ? 1 : 0, 0, 0));
+        p["Torch"]?.SetValue(Torch);
+        p["Cut"]?.SetValue(Cut);
+        p["Look"]?.SetValue(new Vector4(Ironfield.Sky.Snow, NearDetail ? 1 : 0, Ironfield.Sky.Night, Ironfield.Sky.Rain));
         if (p["GroundMap"] is { } gm) gm.SetValue(GroundMap ?? Blank(gd));
     }
 

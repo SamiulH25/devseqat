@@ -225,8 +225,32 @@ All eight phases shipped on the view side only: the battle sim, replays and the 
   `render.txt`; docs/DESIGN.md sections 2-6 and CLAUDE.md updated.
 
 Simplified or left out:
-- No horse rearing or falling-horse animation (the dead horse still lies flat).
 - Tab contents do not cross-fade; buttons do not press down; modals fade in but not out.
 - `--bench` has no render figure: the render cost is logged per shot in `render.txt` instead.
-- The order panel does not collapse to icons on narrow screens; the tip already sits above the cards at 1280x720.
 - Bloom is a single-pass ring of taps, not a blurred bright pass; the map uses the grade but no bloom.
+
+## 8. Follow-up pass (2026-11-09)
+
+A review of the shots after V1-V8 found these weak spots; all fixed on the view side (sim and replays unchanged):
+
+- **Night and rain:** brighter moon (`Sky` `MoonSun`, battle night floor 0.42); sprites get a cool lift at night and in rain
+  (`Look.z`/`Look.w` in `sprite.glsl`) so men stand out from the dark grass; rain is thinner and denser, dimmer at night, and
+  from the command camera a second box falls round the point in view (`BattleScreen.Fall`).
+- **Siege walls:** masonry is tagged (`World.MasonryTag`, foliage UV leafiness -1) and drawn with stone courses, mortar and
+  streaks (`Masonry` in `common.glsl`); darker battered footings; a gate of planks, bands and studs; torches every 10 m
+  (`World.Torches`, flames tagged -2: unlit and flickering) that light the wall, the ground and the men at night from the same
+  fixed row (`Shading.Torch`, `TorchLight` in `common.glsl`; no light list).
+- **Trees over troops:** in command view the ground map's green channel marks where men stand (`BattleScreen.MenMap`; enemies
+  you have not seen stay unmarked) and the foliage shader dithers away leaves on the view ray above them (`Shading.Cut`).
+- **Close-up ground:** blade-sized speckle, soil specks and tiny flowers within 20 m; grass grows in clumps (also on the flat
+  test field), so the gallery shots are no longer a green smear.
+- **Horses:** an arched neck with a ragged mane, a full wavy tail that flicks when standing, slimmer legs with fetlock
+  feathers; a horse rears for a second when brought from a gallop to a stop (`BattleScreen.RearOf`, `Puppet.Rear`; the rider
+  goes up and back with it); a horse killed under its rider buckles and rolls over (`DeadHorse.At`). Pose sheet `pose-horses`
+  shows a rear, a fall and a dead horse.
+- **Campaign map:** the mountain rim has crags and grey rock with snow on the peaks (outside the land in play, so battle
+  grounds keep their heights), and rings of peaks run out to the haze past the world's edge (`World.Skirt`); nights are
+  lighter (floor 0.7); trees by towns are smaller; a party in a town stands before its gate; unknown "?" banners are hidden
+  when zoomed out past 200.
+- **HUD:** the order keys shrink to icon + key in three columns below 1440 px wide (`Hud.CompactOrders`), naming the order
+  on hover. Tips belong to the screen that raised them (`Tips.InBattle`): the campaign's welcome no longer covers a battle.

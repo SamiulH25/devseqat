@@ -58,14 +58,51 @@ void main()
     vec3 albedo = vColor.rgb;
     vec3 n = normalize(vNormal);
     float puddle = 0.0;
+    float leaf = max(vUV.y, 0.0);
+#ifdef FOLIAGE
+    if (vUV.y < -1.5) // a torch flame: unlit, flickering
+    {
+        float fl = 0.85 + 0.25 * sin(Time * 17.0 + vWorld.x * 3.0) * sin(Time * 9.0 + vWorld.y * 5.0);
+        gl_FragColor = vec4(Fog(vColor.rgb * fl * 1.25, vWorld), 1.0);
+        return;
+    }
+    if (vUV.y < -0.5) albedo *= Masonry(vWorld, n, length(vWorld - CameraPos));
+    // Command view: leaves on the line of sight to men below are thinned away (dithered), so they show through the wood.
+    // The ground map's green channel marks the men; look down the view ray from this leaf to the ground for any.
+    if (Cut > 0.0 && Field.y > 0.5 && leaf > 0.05 && n.y < 0.999)
+    {
+        vec3 r = normalize(vWorld - CameraPos);
+        if (r.y < -0.15)
+        {
+            float men = 0.0;
+            for (int i = 0; i < 5; i++)
+            {
+                vec3 q = vWorld + r * (float(i) * 2.2 / -r.y);
+                men = max(men, texture2D(GroundMap, q.xz * Field.x + 0.5).g);
+            }
+            if (Hash2(floor(gl_FragCoord.xy)) < men * Cut * 0.88) discard;
+        }
+    }
+#endif
 #ifdef TERRAIN
     albedo *= texture2D(Detail, vUV).rgb * 1.05;
     // Close up, the ground breaks into mottled grass and patches of clover and dry stalks (faded in within ~40 m).
-    float near = Look.y * (1.0 - smoothstep(16.0, 42.0, length(vWorld - CameraPos)));
+    float eyeDist = length(vWorld - CameraPos);
+    float near = Look.y * (1.0 - smoothstep(20.0, 55.0, eyeDist));
     if (near > 0.0)
     {
         float m = Noise2(vWorld.xz * 3.1) * 0.6 + Noise2(vWorld.xz * 9.0) * 0.4;
-        albedo *= 1.0 + (m - 0.5) * 0.4 * near;
+        albedo *= 1.0 + (m - 0.5) * 0.45 * near;
+        // At your feet: blade-sized speckle, specks of bare soil and tiny flowers (only very close: finer would shimmer).
+        float feet = Look.y * (1.0 - smoothstep(5.0, 20.0, eyeDist));
+        if (feet > 0.0)
+        {
+            float fine = Noise2(vWorld.xz * 27.0) * 0.55 + Noise2(vWorld.xz * 61.0 + 5.0) * 0.45;
+            albedo *= 1.0 + (fine - 0.5) * 0.55 * feet;
+            albedo = mix(albedo, vec3(0.3, 0.25, 0.17), smoothstep(0.8, 0.88, Noise2(vWorld.xz * 6.5 + 2.0)) * 0.45 * feet);
+            float fleck = smoothstep(0.9, 0.95, Noise2(vWorld.xz * 15.0 + 17.0)) * smoothstep(0.55, 0.7, Noise2(vWorld.xz * 0.6 + 4.0));
+            albedo = mix(albedo, mix(vec3(0.95, 0.88, 0.4), vec3(0.95, 0.95, 0.92), step(0.5, Hash2(floor(vWorld.xz * 15.0)))), fleck * 0.7 * feet);
+        }
         float patch = Noise2(vWorld.xz * 0.35 + 3.0);
         albedo = mix(albedo, albedo * vec3(1.1, 1.05, 0.78), smoothstep(0.6, 0.78, patch) * 0.7 * near);
         albedo = mix(albedo, albedo * vec3(0.82, 0.95, 0.8), smoothstep(0.62, 0.8, 1.0 - patch) * 0.6 * near);
@@ -84,11 +121,11 @@ void main()
     float ndl = dot(n, l);
     float diffuse = max(ndl, 0.0);
 #ifdef FOLIAGE
-    diffuse = mix(diffuse, ndl * 0.5 + 0.5, vUV.y * 0.6); // leaves scatter light: softer terminator
+    diffuse = mix(diffuse, ndl * 0.5 + 0.5, leaf * 0.6); // leaves scatter light: softer terminator
 #endif
     float shadow = ShadowAt(vWorld + n * ShadowParams.w) * CloudAt(vWorld);
     vec3 ambient = mix(GroundColor, SkyColor, n.y * 0.5 + 0.5);
-    vec3 col = albedo * (ambient + SunColor * diffuse * shadow);
+    vec3 col = albedo * (ambient + SunColor * diffuse * shadow + TorchLight(vWorld + n * 0.3));
     if (Field.w > 0.0)
     {
         // A wet sheen toward the sun, and puddles that mirror the sky.
@@ -99,7 +136,7 @@ void main()
     }
 #ifdef FOLIAGE
     // Rivers (flat, blue, no UVs) ripple and glint as the water moves.
-    if (vUV.x + vUV.y < 0.001 && n.y > 0.99 && vColor.b - vColor.r > 0.12)
+    if (vUV.x + vUV.y < 0.001 && vUV.y > -0.5 && n.y > 0.99 && vColor.b - vColor.r > 0.12)
     {
         float rip = Noise2(vWorld.xz * 0.7 + vec2(Time * 0.45, Time * 0.3)) * 0.6 + Noise2(vWorld.xz * 2.3 - vec2(Time * 0.2, Time * 0.6)) * 0.4;
         col *= 0.9 + rip * 0.22;
@@ -109,7 +146,7 @@ void main()
     }
     // Backlit leaves glow.
     vec3 toCam = normalize(CameraPos - vWorld);
-    col += albedo * SunColor * pow(max(dot(-toCam, l), 0.0), 4.0) * vUV.y * 0.6 * shadow;
+    col += albedo * SunColor * pow(max(dot(-toCam, l), 0.0), 4.0) * leaf * 0.6 * shadow;
 #endif
     gl_FragColor = vec4(Fog(col, vWorld), 1.0);
 #endif
