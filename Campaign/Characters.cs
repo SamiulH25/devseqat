@@ -7,8 +7,11 @@ public sealed class Character
 {
     public int Id;
     public string Name = "", Culture = "common";
-    /// "lord", "companion", "wanderer" or "captain".
+    /// "lord", "companion", "wanderer", "captain" or "knight" (a knight order's, docs/KNIGHT_ORDERS.md 6.1).
     public string Kind = "lord";
+    /// A knight's order and rank in it (OrderRanks index), and his aura tier (0-5).
+    public string Order = "";
+    public int OrderRank, Aura;
     public int Faction = -1, Age = 30;
     public List<string> Traits = new();
     /// What this character thinks of others, by character id, from events (the base from culture and traits is added on read).
@@ -208,8 +211,8 @@ public sealed partial class Campaign
         if (CharacterOf(p) is not Character old) return;
         old.Dead = true;
         old.PartyId = -1;
-        var heir = MakeLord(p);
-        heir.Name = old.Name.Split(' ') is var parts && parts.Length >= 2 ? $"Lord {rng.Pick(Names.Get().LordsOf(old.Culture))} {string.Join(' ', parts.Skip(2))}".Trim() : heir.Name;
+        var heir = p.KnightOrder != "" ? KnightHeir(p) : MakeLord(p);
+        if (p.KnightOrder == "") heir.Name = old.Name.Split(' ') is var parts && parts.Length >= 2 ? $"Lord {rng.Pick(Names.Get().LordsOf(old.Culture))} {string.Join(' ', parts.Skip(2))}".Trim() : heir.Name;
         p.Name = heir.Name;
         heir.Age = 18 + rng.Next(10);
         // The heir inherits his father's view of you, and adds his own if you were the one who killed him.

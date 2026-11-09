@@ -224,6 +224,8 @@ public sealed class Party
     /// A holdout whose raiders plundered a realm's village is hunted by that realm's lords until HuntedUntil.
     public int HuntedBy = -1;
     public float HuntedUntil;
+    /// A knight order's army (docs/KNIGHT_ORDERS.md 4.3): the order's id, "" for every other party.
+    public string KnightOrder = "";
 
     public int Men => Companies.Sum(c => c.Men);
     public int Wounded => Companies.Sum(c => c.Wounded);
@@ -280,6 +282,28 @@ public sealed class Province
     public List<int> Neighbors = new();
     /// How wet its ground is from recent rain, 0-1 (docs/TERRAIN.md T7; Campaign.RainDaily).
     public float Wet;
+}
+
+/// A knight order on the map (docs/KNIGHT_ORDERS.md 4): its patron realm, chapter house, grand master and commanders,
+/// its standing with you, and how it fares.
+public sealed class OrderState
+{
+    public string Id = "";
+    /// The realm it rides for (-1: none, a free order you can hire) and its chapter house (a settlement id).
+    public int Patron = -1, Chapter = -1;
+    /// Character ids: the grand master and the knight-commanders who lead its armies.
+    public int GrandMaster = -1;
+    public List<int> Commanders = new();
+    /// What the order thinks of you (-100..100) and of the other orders (by order id).
+    public float Standing;
+    public Dictionary<string, float> Regard = new();
+    /// It died out (its patron fell and nobody took it in, or the Black Flame took it).
+    public bool Gone;
+    /// A crusade it has called (docs/KNIGHT_ORDERS.md 4.6): the party it rides against, until when.
+    public int CrusadeOn = -1;
+    public float CrusadeUntil;
+    /// When it next raises a knight-commander's army (campaign hours).
+    public float NextArmy;
 }
 
 public sealed class FactionState
@@ -425,6 +449,10 @@ public sealed class CampaignState
     public ulong Rng;
     /// The roll's own stream (L1), so naming men never moves the campaign's main draws.
     public ulong RollRng;
+    /// The knight orders' own random stream (docs/KNIGHT_ORDERS.md), so they move nothing else's draws.
+    public ulong OrderRng;
+    /// The knight orders (docs/KNIGHT_ORDERS.md 4), made on load for saves from before them.
+    public List<OrderState> Orders = new();
     public float Gold, LastWeekBalance;
     public bool Ironman, GameOver;
     /// Why the campaign ended ("" = the Ironman captain was not ransomed), and whether it was won (5.5; play may go on).
@@ -542,16 +570,24 @@ public sealed class CampaignState
 public sealed class Rng
 {
     readonly CampaignState s;
-    readonly bool roll;
+    readonly bool roll, orders;
     public Rng(CampaignState state) { s = state; if (s.Rng == 0) s.Rng = 0x9E3779B97F4A7C15UL ^ (ulong)(uint)s.Seed; }
     /// The roll's stream (CampaignState.RollRng), seeded apart from the main one.
     public Rng(CampaignState state, bool roll) : this(state) { this.roll = roll; if (roll && s.RollRng == 0) s.RollRng = 0xD1B54A32D192ED03UL ^ (ulong)(uint)s.Seed; }
+    /// The knight orders' stream (CampaignState.OrderRng).
+    public static Rng Orders(CampaignState state)
+    {
+        var r = new Rng(state, false, true);
+        if (state.OrderRng == 0) state.OrderRng = 0xA0761D6478BD642FUL ^ (ulong)(uint)state.Seed;
+        return r;
+    }
+    Rng(CampaignState state, bool roll, bool orders) : this(state) { this.roll = roll; this.orders = orders; }
 
     public ulong NextU()
     {
-        ulong x = roll ? s.RollRng : s.Rng;
+        ulong x = orders ? s.OrderRng : roll ? s.RollRng : s.Rng;
         x ^= x >> 12; x ^= x << 25; x ^= x >> 27;
-        if (roll) s.RollRng = x; else s.Rng = x;
+        if (orders) s.OrderRng = x; else if (roll) s.RollRng = x; else s.Rng = x;
         return x * 0x2545F4914F6CDD1DUL;
     }
 

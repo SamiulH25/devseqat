@@ -30,7 +30,7 @@ public static class Troops
 
     sealed class TroopDto
     {
-        public string Id = "", Name = "", Class = "Infantry", Culture = "common", Breed = "";
+        public string Id = "", Name = "", Class = "Infantry", Culture = "common", Breed = "", Order = "";
         public string? Mount;
         public int Tier, Cost, UpgradeXp, Ammo;
         public string[] UpgradesTo = Array.Empty<string>();
@@ -71,7 +71,7 @@ public static class Troops
             var l = d.Look;
             troops[d.Id] = new UnitType
             {
-                Id = d.Id, Name = d.Name, Culture = d.Culture, Breed = d.Breed, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
+                Id = d.Id, Name = d.Name, Culture = d.Culture, Breed = d.Breed, Order = d.Order, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
                 UpgradesTo = d.UpgradesTo, MaxHp = d.Hp, Damage = d.Damage, Armor = d.Armor, Reach = d.Reach, Windup = d.Windup,
                 Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, VsMonster = d.VsMonster, Pierce = d.Pierce, Reload = d.Reload,
                 Leader = d.Leader, Size = d.Size, Drill = d.Drill, Traits = d.Traits, Spells = d.Spells, Mount = d.Mount == null ? null : mounts[d.Mount],

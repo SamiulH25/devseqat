@@ -104,7 +104,8 @@ public partial class Campaign
     IEnumerable<Party> Visible(Party p, float range) => S.Parties.Where(q => q != p && !q.Down && Vector2.Distance(p.Pos, q.Pos) < range);
 
     /// Lords of a realm whose temper sends them after monsters first (docs/WORLD.md W5).
-    bool MonsterHunter(Party p) => p.Faction >= 0 && Factions.Get(p.Faction).Hunts == "monsters";
+    /// A knight order's armies hunt what their order hunts: monsters and the dead (docs/KNIGHT_ORDERS.md 4.4).
+    bool MonsterHunter(Party p) => p.Faction >= 0 && Factions.Get(p.Faction).Hunts == "monsters" || OrderOf(p)?.Hunts is "monsters" or "undead";
 
     internal void LordThink(Party p)
     {
@@ -196,6 +197,7 @@ public partial class Campaign
         float budget = Math.Clamp(share, 0, 250 * Map.PartyScale);
         string levy = RecruitTroop(p.Faction);
         if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", Scaled(12), 0, home)); // the lord's household, raised again
+        if (p.KnightOrder != "") RefitOrder(p, home); // a knight order's own brothers come from its chapter
         foreach (var v in S.Settlements.Where(v => v.Province == home.Province))
         {
             int affordable = (int)((p.Gold + budget) / Rules.PerMan(10));
@@ -259,13 +261,14 @@ public partial class Campaign
             float income = S.Settlements.Where(t => t.Faction == f && t.Owner != Player.Id).Sum(Income);
             fs.Treasury += income / 7;
             var lords = S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).ToList();
+            int orderArmies = lords.Count(p => p.KnightOrder != ""); // the knight orders' armies ride with the realm but are not its lords
             // A realm raises lords with the ground it holds: more provinces, more armies, but never more than the seats (and
             // their villages' recruits) can actually pay for, or the chest is bled dry fielding companies that starve.
             int seatsHeld = S.Settlements.Count(s => s.Faction == f && s.Kind != SettlementKind.Village && s.Owner != Player.Id);
             int affordable = Math.Max(1, seatsHeld * 2 + 2);
             int wanted = Math.Min(LordsWanted, affordable);
             // Keep a reserve in the chest before a new lord is raised, so a run of defeats does not leave the realm broke.
-            if (lords.Count < wanted && fs.Treasury >= 600 + 400) { SpawnLord(f); fs.Treasury -= 600; }
+            if (lords.Count - orderArmies < wanted && fs.Treasury >= 600 + 400) { SpawnLord(f); fs.Treasury -= 600; }
             var front = S.Provinces.Where(p => p.Faction == f && p.Neighbors.Any(n => FactionsAtWar(f, S.Provinces[n].Faction))).ToList();
             var enemyFront = S.Provinces.Where(p => FactionsAtWar(f, p.Faction) && p.Neighbors.Any(n => S.Provinces[n].Faction == f)).ToList();
             var idle = lords.Where(l => !l.Down && l.Task == "patrol" && !(IsVassal(l) && l.Order is "defend" or "follow")).ToList();

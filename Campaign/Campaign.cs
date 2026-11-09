@@ -8,7 +8,7 @@ public sealed partial class Campaign
 {
     public readonly CampaignState S;
     public readonly WorldMap Map;
-    readonly Rng rng;
+    Rng rng; // swapped for the orders' stream while they raise men (Campaign/Orders.cs OnOrderDice)
     static Balance B => Balance.Get();
 
     /// Raised for the UI: a hostile party has caught you (or you it); you arrived where you were heading; a battle report.
@@ -44,6 +44,7 @@ public sealed partial class Campaign
         Factions.Bind(S.Factions);
         MigrateGear();
         LearnForms();
+        SyncOrders();
         MigrateSkills();
         // Saves from before F6 have no buildings: give their towns the barracks their elite lines need.
         if (S.Settlements.Count > 0 && S.Settlements.All(t => t.Buildings.Count == 0)) SeedBuildings();
@@ -106,6 +107,7 @@ public sealed partial class Campaign
         for (int i = 0; i < c.RaresWanted; i++) c.SpawnTroll();
         c.WanderersWeekly();
         c.EnsureRulers();
+        c.SyncOrders();
         // The guided first fight: a weak band close by, coming for you.
         var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
         first.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(9), 0));
@@ -375,6 +377,7 @@ public sealed partial class Campaign
         SiegesDaily();
         RainDaily();
         FiefsDaily();
+        OrdersDaily();
         CareerDaily();
         EventsDaily();
         // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous.

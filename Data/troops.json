@@ -199,7 +199,8 @@
    "tier": 3,
    "upgradesTo": [
     "ironguard",
-    "foot_knights"
+    "foot_knights",
+    "lily_squires"
    ],
    "cost": 45,
    "upgradeXp": 260,
@@ -537,7 +538,8 @@
    "tier": 3,
    "upgradesTo": [
     "zweihanders",
-    "sword_brethren"
+    "sword_brethren",
+    "rose_blades"
    ],
    "cost": 48,
    "upgradeXp": 260,
@@ -1032,7 +1034,8 @@
    "tier": 3,
    "upgradesTo": [
     "varangians",
-    "shieldbreakers"
+    "shieldbreakers",
+    "wolf_thegns"
    ],
    "cost": 50,
    "upgradeXp": 270,
@@ -4805,7 +4808,9 @@
   {
    "id": "necromancer",
    "name": "Necromancer",
-   "spells": ["dread"],
+   "spells": [
+    "dread"
+   ],
    "class": "Infantry",
    "culture": "wild",
    "breed": "undead",
@@ -4999,7 +5004,8 @@
    "culture": "southern",
    "tier": 3,
    "upgradesTo": [
-    "mamluks"
+    "mamluks",
+    "falcon_riders"
    ],
    "mount": "camel",
    "cost": 68,
@@ -5157,7 +5163,8 @@
    "culture": "steppe",
    "tier": 3,
    "upgradesTo": [
-    "kheshig_riders"
+    "kheshig_riders",
+    "sky_riders"
    ],
    "mount": "steppe_pony",
    "cost": 64,
@@ -5491,7 +5498,8 @@
    "culture": "league",
    "tier": 3,
    "upgradesTo": [
-    "guild_pikes"
+    "guild_pikes",
+    "lantern_pikes"
    ],
    "cost": 44,
    "upgradeXp": 250,
@@ -5865,7 +5873,8 @@
     "shield": "heater",
     "weapon": "sword",
     "tabard": true
-   }
+   },
+   "order": "ashen"
   },
   {
    "id": "ashen_brothers",
@@ -5896,7 +5905,8 @@
     "weapon": "longsword",
     "tabard": true,
     "plume": true
-   }
+   },
+   "order": "ashen"
   },
   {
    "id": "sun_templars",
@@ -5928,7 +5938,8 @@
     "tabard": true,
     "plume": true,
     "cape": true
-   }
+   },
+   "order": "ashen"
   },
   {
    "id": "ashen_saints",
@@ -7375,6 +7386,591 @@
     "plume": true,
     "cape": true
    }
+  },
+  {
+   "id": "lily_squires",
+   "name": "Lily Squires",
+   "class": "Infantry",
+   "culture": "azure",
+   "tier": 4,
+   "upgradesTo": [
+    "lily_knights"
+   ],
+   "cost": 98,
+   "upgradeXp": 400,
+   "hp": 146,
+   "damage": 32,
+   "armor": 16.5,
+   "reach": 1.85,
+   "windup": 0.4,
+   "recover": 0.55,
+   "speed": 3.3,
+   "block": 0.68,
+   "look": {
+    "head": "greathelm",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "heater",
+    "weapon": "longsword",
+    "tabard": true,
+    "plume": true
+   },
+   "order": "lily"
+  },
+  {
+   "id": "lily_knights",
+   "name": "Lily Knights",
+   "class": "Infantry",
+   "culture": "azure",
+   "tier": 5,
+   "upgradesTo": [
+    "lily_wardens"
+   ],
+   "cost": 150,
+   "upgradeXp": 560,
+   "hp": 162,
+   "damage": 40,
+   "armor": 18.5,
+   "reach": 1.9,
+   "windup": 0.38,
+   "recover": 0.52,
+   "speed": 3.4,
+   "block": 0.69,
+   "look": {
+    "head": "greathelm",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "heater",
+    "weapon": "longsword",
+    "tabard": true,
+    "plume": true
+   },
+   "order": "lily"
+  },
+  {
+   "id": "lily_wardens",
+   "name": "Wardens of the Lily",
+   "class": "Infantry",
+   "culture": "azure",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 208,
+   "hp": 184,
+   "damage": 44,
+   "armor": 21.5,
+   "reach": 1.9,
+   "windup": 0.36,
+   "recover": 0.5,
+   "speed": 3.4,
+   "block": 0.73,
+   "look": {
+    "head": "sallet",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "heater",
+    "weapon": "longsword",
+    "tabard": true,
+    "plume": true,
+    "cape": true
+   },
+   "order": "lily"
+  },
+  {
+   "id": "rose_blades",
+   "name": "Rose Blades",
+   "class": "Infantry",
+   "culture": "crimson",
+   "tier": 4,
+   "upgradesTo": [
+    "rose_swordmasters"
+   ],
+   "cost": 101,
+   "upgradeXp": 400,
+   "hp": 132,
+   "damage": 47,
+   "armor": 12.5,
+   "reach": 2.1,
+   "windup": 0.52,
+   "recover": 0.65,
+   "speed": 3.5,
+   "block": 0.33,
+   "look": {
+    "head": "sallet",
+    "body": "plate",
+    "legs": "mail",
+    "feet": "boots",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "greatsword",
+    "tabard": true,
+    "plume": true
+   },
+   "order": "rose"
+  },
+  {
+   "id": "rose_swordmasters",
+   "name": "Rose Swordmasters",
+   "class": "Infantry",
+   "culture": "crimson",
+   "tier": 5,
+   "upgradesTo": [
+    "thorn_knights"
+   ],
+   "cost": 150,
+   "upgradeXp": 560,
+   "hp": 147,
+   "damage": 54,
+   "armor": 15.5,
+   "reach": 2.15,
+   "windup": 0.48,
+   "recover": 0.6,
+   "speed": 3.6,
+   "block": 0.38,
+   "look": {
+    "head": "sallet",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "greatsword",
+    "tabard": true,
+    "plume": true
+   },
+   "order": "rose"
+  },
+  {
+   "id": "thorn_knights",
+   "name": "Thorn Knights",
+   "class": "Infantry",
+   "culture": "crimson",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 211,
+   "hp": 171,
+   "damage": 62,
+   "armor": 18.5,
+   "reach": 2.2,
+   "windup": 0.45,
+   "recover": 0.56,
+   "speed": 3.65,
+   "block": 0.43,
+   "look": {
+    "head": "sallet",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "greatsword",
+    "tabard": true,
+    "plume": true,
+    "cape": true
+   },
+   "order": "rose"
+  },
+  {
+   "id": "wolf_thegns",
+   "name": "Wolf Thegns",
+   "class": "Infantry",
+   "culture": "northern",
+   "tier": 4,
+   "upgradesTo": [
+    "wolfsworn"
+   ],
+   "cost": 104,
+   "upgradeXp": 410,
+   "hp": 146,
+   "damage": 47,
+   "armor": 14.5,
+   "reach": 2.05,
+   "windup": 0.48,
+   "recover": 0.62,
+   "speed": 3.5,
+   "block": 0.38,
+   "look": {
+    "head": "spangen",
+    "body": "mail",
+    "legs": "plate",
+    "feet": "boots",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "daneaxe",
+    "tabard": true,
+    "cape": true,
+    "plume": true
+   },
+   "order": "wolf"
+  },
+  {
+   "id": "wolfsworn",
+   "name": "Wolfsworn",
+   "class": "Infantry",
+   "culture": "northern",
+   "tier": 5,
+   "upgradesTo": [
+    "winter_wolves"
+   ],
+   "cost": 151,
+   "upgradeXp": 570,
+   "hp": 164,
+   "damage": 54,
+   "armor": 17.5,
+   "reach": 2.1,
+   "windup": 0.46,
+   "recover": 0.58,
+   "speed": 3.55,
+   "block": 0.41,
+   "look": {
+    "head": "spangen",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "daneaxe",
+    "tabard": true,
+    "plume": true,
+    "cape": true
+   },
+   "order": "wolf"
+  },
+  {
+   "id": "winter_wolves",
+   "name": "Winter Wolves",
+   "class": "Infantry",
+   "culture": "northern",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 213,
+   "hp": 186,
+   "damage": 62,
+   "armor": 20.5,
+   "reach": 2.15,
+   "windup": 0.44,
+   "recover": 0.56,
+   "speed": 3.6,
+   "block": 0.45,
+   "look": {
+    "head": "spangen",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "daneaxe",
+    "tabard": true,
+    "plume": true,
+    "cape": true
+   },
+   "order": "wolf"
+  },
+  {
+   "id": "falcon_riders",
+   "name": "Falcon Riders",
+   "class": "Cavalry",
+   "culture": "southern",
+   "tier": 4,
+   "upgradesTo": [
+    "falcon_knights"
+   ],
+   "mount": "steppe_horse",
+   "cost": 136,
+   "upgradeXp": 460,
+   "hp": 123,
+   "damage": 30,
+   "armor": 11.5,
+   "reach": 2.7,
+   "windup": 0.4,
+   "recover": 0.75,
+   "speed": 3.5,
+   "block": 0.33,
+   "look": {
+    "head": "turban",
+    "body": "lamellar",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "round",
+    "weapon": "sword",
+    "tabard": true,
+    "plume": true
+   },
+   "order": "falcon"
+  },
+  {
+   "id": "falcon_knights",
+   "name": "Falcon Knights",
+   "class": "Cavalry",
+   "culture": "southern",
+   "tier": 5,
+   "upgradesTo": [
+    "sun_hawks"
+   ],
+   "mount": "warhorse",
+   "cost": 195,
+   "upgradeXp": 620,
+   "hp": 147,
+   "damage": 32,
+   "armor": 15.5,
+   "reach": 2.7,
+   "windup": 0.39,
+   "recover": 0.72,
+   "speed": 3.45,
+   "block": 0.43,
+   "look": {
+    "head": "turban",
+    "body": "lamellar",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "round",
+    "weapon": "sword",
+    "tabard": true,
+    "cape": true,
+    "plume": true
+   },
+   "order": "falcon"
+  },
+  {
+   "id": "sun_hawks",
+   "name": "Sun Hawks",
+   "class": "Cavalry",
+   "culture": "southern",
+   "tier": 6,
+   "upgradesTo": [],
+   "mount": "destrier",
+   "cost": 260,
+   "hp": 171,
+   "damage": 37,
+   "armor": 18.5,
+   "reach": 2.75,
+   "windup": 0.37,
+   "recover": 0.68,
+   "speed": 3.45,
+   "block": 0.49,
+   "look": {
+    "head": "turban",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "round",
+    "weapon": "sword",
+    "tabard": true,
+    "cape": true,
+    "plume": true
+   },
+   "order": "falcon"
+  },
+  {
+   "id": "sky_riders",
+   "name": "Sky Riders",
+   "class": "Cavalry",
+   "culture": "steppe",
+   "tier": 4,
+   "upgradesTo": [
+    "sky_archers"
+   ],
+   "mount": "steppe_horse",
+   "cost": 120,
+   "upgradeXp": 440,
+   "hp": 108,
+   "damage": 20,
+   "armor": 6.5,
+   "reach": 1.65,
+   "windup": 0.38,
+   "recover": 0.75,
+   "speed": 3.9,
+   "block": 0.18,
+   "range": 35,
+   "ammo": 32,
+   "look": {
+    "head": "steppe",
+    "body": "deel",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "bow",
+    "plume": true,
+    "tabard": true
+   },
+   "order": "sky"
+  },
+  {
+   "id": "sky_archers",
+   "name": "Sky Archers",
+   "class": "Cavalry",
+   "culture": "steppe",
+   "tier": 5,
+   "upgradesTo": [
+    "sky_sworn"
+   ],
+   "mount": "steppe_horse",
+   "cost": 169,
+   "upgradeXp": 590,
+   "hp": 121,
+   "damage": 23,
+   "armor": 8.5,
+   "reach": 1.7,
+   "windup": 0.36,
+   "recover": 0.72,
+   "speed": 3.9,
+   "block": 0.23,
+   "range": 38,
+   "ammo": 34,
+   "pierce": 0.15,
+   "look": {
+    "head": "steppe",
+    "body": "lamellar",
+    "legs": "mail",
+    "feet": "boots",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "bow",
+    "plume": true,
+    "cape": true,
+    "tabard": true
+   },
+   "order": "sky"
+  },
+  {
+   "id": "sky_sworn",
+   "name": "Sky-Sworn",
+   "class": "Cavalry",
+   "culture": "steppe",
+   "tier": 6,
+   "upgradesTo": [],
+   "mount": "steppe_horse",
+   "cost": 234,
+   "hp": 138,
+   "damage": 27,
+   "armor": 11.5,
+   "reach": 1.75,
+   "windup": 0.35,
+   "recover": 0.68,
+   "speed": 3.9,
+   "block": 0.28,
+   "range": 41,
+   "ammo": 38,
+   "pierce": 0.25,
+   "look": {
+    "head": "steppe",
+    "body": "plate",
+    "legs": "mail",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "bow",
+    "tabard": true,
+    "plume": true,
+    "cape": true
+   },
+   "order": "sky"
+  },
+  {
+   "id": "lantern_pikes",
+   "name": "Lantern Pikes",
+   "class": "Skirmisher",
+   "culture": "league",
+   "tier": 4,
+   "upgradesTo": [
+    "lantern_guards"
+   ],
+   "cost": 94,
+   "upgradeXp": 390,
+   "hp": 123,
+   "damage": 34,
+   "armor": 13.5,
+   "reach": 3.1,
+   "windup": 0.44,
+   "recover": 0.78,
+   "speed": 3.6,
+   "block": 0.23,
+   "vsMounted": 2.5,
+   "look": {
+    "head": "sallet",
+    "body": "brigandine",
+    "legs": "mail",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "pike",
+    "tabard": true,
+    "plume": true
+   },
+   "order": "lantern"
+  },
+  {
+   "id": "lantern_guards",
+   "name": "Lantern Guards",
+   "class": "Skirmisher",
+   "culture": "league",
+   "tier": 5,
+   "upgradesTo": [
+    "lantern_knights"
+   ],
+   "cost": 140,
+   "upgradeXp": 550,
+   "hp": 143,
+   "damage": 38,
+   "armor": 17.5,
+   "reach": 3.2,
+   "windup": 0.42,
+   "recover": 0.75,
+   "speed": 3.5,
+   "block": 0.28,
+   "vsMounted": 2.7,
+   "look": {
+    "head": "kettle",
+    "body": "plate",
+    "legs": "mail",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "pike",
+    "tabard": true,
+    "plume": true
+   },
+   "order": "lantern"
+  },
+  {
+   "id": "lantern_knights",
+   "name": "Lantern Knights",
+   "class": "Skirmisher",
+   "culture": "league",
+   "tier": 6,
+   "upgradesTo": [],
+   "cost": 198,
+   "hp": 164,
+   "damage": 44,
+   "armor": 20.5,
+   "reach": 3.3,
+   "windup": 0.4,
+   "recover": 0.72,
+   "speed": 3.5,
+   "block": 0.33,
+   "vsMounted": 2.9,
+   "look": {
+    "head": "sallet",
+    "body": "plate",
+    "legs": "plate",
+    "feet": "sabatons",
+    "hands": "gauntlets",
+    "shield": "none",
+    "weapon": "pike",
+    "tabard": true,
+    "plume": true,
+    "cape": true
+   },
+   "order": "lantern"
   }
  ]
 }

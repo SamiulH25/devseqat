@@ -83,6 +83,7 @@ public static partial class SelfTest
         AuraGrows();
         FormsWork();
         FormsLearned();
+        OrdersOnMap();
         DuelFight();
         BattleGoals();
         BannerAndLastStand();

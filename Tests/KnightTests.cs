@@ -242,4 +242,53 @@ public static partial class SelfTest
         cap.FormUses["focus"] = Campaign.FormRankUses * 2;
         Check(Campaign.FormRank(cap, "focus") == 3 && new Battle(1, Armies.Standard(0), Armies.Standard(1), new BattleOptions().WithCaptain(cap)).FormSlot.Any(f => f?.Id == "focus"), "forms rank up with use, to three");
     }
+
+    /// K3: the knight orders stand on a new map with chapters, grand masters and two mixed armies each; an old save gets them on
+    /// load; they keep their own dice, train their own brothers, and a fallen commander's army is raised again.
+    static void OrdersOnMap()
+    {
+        Check(KnightOrders.Validate().ToList() is var bad && bad.Count == 0, "orders.json is valid: " + string.Join("; ", KnightOrders.Validate()));
+        var c = Campaign.New(91);
+        Check(c.S.Orders.Count >= 6, $"the orders stand on a new map ({c.S.Orders.Count})");
+        foreach (var o in c.S.Orders)
+        {
+            var def = KnightOrders.Get(o.Id);
+            Check(c.SettlementById(o.Chapter) is Settlement ch && ch.Faction == o.Patron, $"{o.Id}: its chapter is a patron town");
+            Check(c.CharacterById(o.GrandMaster) is Character gm && gm.Kind == "knight" && gm.Order == o.Id && gm.Aura >= 3, $"{o.Id}: a grand master with aura");
+            var armies = c.OrderParties(o.Id).ToList();
+            Check(armies.Count == Campaign.OrderArmies && armies.All(p => p.Faction == o.Patron && p.Kind == PartyKind.Lord), $"{o.Id}: two armies of the patron");
+            foreach (var p in armies)
+            {
+                int sig = p.Companies.Where(co => co.Type.Order == o.Id).Sum(co => co.Men);
+                float share = sig / (float)p.Men;
+                Check(share is > 0.3f and < 0.55f, $"{o.Id}: about two in five are brothers ({share:0.00})");
+                Check(c.CharacterOf(p) is Character k && k.Kind == "knight" && o.Commanders.Contains(k.Id), $"{o.Id}: led by a knight-commander");
+            }
+        }
+        Check(c.S.Characters.Where(ch => ch.Kind == "knight").All(k => k.Faction >= 0), "knights serve a realm");
+        // The player may not train an order's brothers; the order's own army may.
+        var lily = c.OrderParties("lily").FirstOrDefault();
+        if (lily != null)
+        {
+            var co = lily.Companies.First(x => x.Type.Order == "");
+            Check(c.CanEnterLine(lily, co, co.Troop, "lily_squires", out _), "an order trains its own brothers");
+            Check(!c.CanEnterLine(c.Player, co, co.Troop, "lily_squires", out var why) && why.Contains("LILY"), "you may not, unsworn: " + why);
+        }
+        // Old save: no orders yet; loading adds them without touching the main dice.
+        var old = Campaign.New(92);
+        old.S.Parties.RemoveAll(p => p.KnightOrder != "");
+        old.S.Characters.RemoveAll(ch => ch.Kind == "knight");
+        old.S.Orders.Clear();
+        old.S.OrderRng = 0;
+        ulong main = old.S.Rng;
+        var back = new Campaign(CampaignState.Deserialize(old.S.Serialize()));
+        Check(back.S.Orders.Count == c.S.Orders.Count && back.S.Rng == main, "an old save gets the orders on load, the main dice untouched");
+        // A fallen commander's army comes back after a while.
+        var army = back.OrderParties("wolf").First();
+        back.S.Parties.Remove(army);
+        Days(back, (int)Campaign.OrderRespawnDays + 3);
+        Check(back.OrderParties("wolf").Count() == Campaign.OrderArmies, "the order raises a fallen commander's army again");
+        string json = back.S.Serialize();
+        Check(CampaignState.Deserialize(json).Serialize() == json, "orders save and load");
+    }
 }

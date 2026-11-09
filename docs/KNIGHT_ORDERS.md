@@ -401,3 +401,18 @@ the two endings of the road and can be built in either order.
   generic forms learned by tier (`LearnForms`, also on load); the K sheet lists your forms with their keys (click: first
   slot). HUD: the form bar over your panel (key, name, aura or wait). `IRONFIELD_AURA=tier[,order]` arms the quick battle's
   captain. Tests: `FormsWork`, `FormsLearned`.
+- **K3 (orders on the map):** `Data/orders.json` (loaded and checked by `KnightOrders` in `Campaign/Orders.cs`): six orders
+  plus the Ashen Sun's knight-brothers, each with a patron realm, three signature troops at tiers IV-VI (`order` in
+  troops.json, `UnitType.Order`; eighteen new troops, each a third upgrade branch of a patron tier III troop), a hunt, vows
+  and a creed. Save: `CampaignState.Orders` (`OrderState`: patron, chapter, grand master, commanders, standing, regard,
+  gone, crusade, next army), `OrderRng` (their own dice: `OnOrderDice` swaps it in while they raise men, so the rest of the
+  campaign draws as before), `Party.KnightOrder`, and on `Character` `Order`, `OrderRank`, `Aura` (Kind `knight`, outside
+  fiefs and councils). `SyncOrders` (new campaign and every load, so old saves gain them): the chapter is the patron's
+  first town; a grand master (aura 3-4) and two knight-commanders (aura 1-2), each leading a `PartyKind.Lord` army of the
+  patron, about two in five of them the order's brothers and the rest the patron's line. Order armies don't count towards
+  the realm's lords (`FactionAI`), refit their brothers' company at the chapter (`RefitOrder`), hunt monsters or the dead
+  first when their order does (`MonsterHunter`), and a fallen commander's banner goes to a brother knight (`KnightHeir`).
+  `OrdersDaily`: an order whose patron falls kneels to whoever holds its chapter (or is gone); a lost chapter moves to a
+  patron town; a missing army is raised again after 10 days. Only the order (and a realm whose line it is: the Ashen Sun)
+  trains its brothers (`TrainsOrder` in `CanEnterLine`; you once sworn, K4). Map: the party label reads the order and its
+  patron. Test: `OrdersOnMap`.

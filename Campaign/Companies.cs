@@ -142,6 +142,7 @@ public sealed partial class Campaign
     {
         reason = "";
         var t = Troops.Get(to);
+        if (t.Order != "" && !TrainsOrder(p, t, out reason)) return false; // a knight order trains only its own (docs/KNIGHT_ORDERS.md 4.5)
         if (t.Culture == Factions.Common) return true;
         string man = ManCulture(c, from);
         if (man != Factions.Common && !Factions.Open(man, t.Culture)) { reason = $"{CultureWord(man)} MEN CANNOT TRAIN AS {CultureWord(t.Culture)} TROOPS"; return false; }

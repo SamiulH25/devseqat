@@ -1,0 +1,32 @@
+{
+  // Knight orders (docs/KNIGHT_ORDERS.md 4; loaded by Campaign/Orders.cs). Minor factions: no land of their own, a patron
+  // realm whose wars they fight, a chapter house in one of its towns, two knight-commanders' armies (signature troops
+  // and the patron's own line troops), a creed of vows, and forms (Data/forms.json, by order id).
+  //   troops  the order's signature troops at tiers IV, V and VI (troops.json, "order" = this id)
+  //   vows    what a sworn knight must keep (Campaign.Vows): no_rob, no_slaves, no_auto, no_desert, contract, no_craft
+  //   hunts   what its knights ride after first: "undead", "monsters", "bandits" or ""
+  //   hidden  not on the map until met (the Hollow Crown, the Black Flame; docs/KNIGHT_ORDERS.md 7)
+  "orders": [
+    { "id": "lily", "name": "Order of the Silver Lily", "short": "the Lily", "patron": "Azure Crown", "hunts": "undead",
+      "troops": ["lily_squires", "lily_knights", "lily_wardens"], "vows": ["no_rob", "no_slaves"],
+      "creed": "Never leave a wounded brother on the field.", "text": "Heavy foot in white and blue. They hold where others break." },
+    { "id": "rose", "name": "Brotherhood of the Red Rose", "short": "the Rose", "patron": "Crimson Compact", "hunts": "bandits",
+      "troops": ["rose_blades", "rose_swordmasters", "thorn_knights"], "vows": ["no_auto", "no_rob"],
+      "creed": "A challenge is never refused; every foe is met in person.", "text": "Greatswords and pride. They fight to be seen fighting." },
+    { "id": "wolf", "name": "The Wolfsworn", "short": "the Wolfsworn", "patron": "Northmarch", "hunts": "monsters",
+      "troops": ["wolf_thegns", "wolfsworn", "winter_wolves"], "vows": ["no_auto", "no_desert"],
+      "creed": "The pack eats together. Who leaves the pack is prey.", "text": "Axes in the snow. They hunt what hunts men." },
+    { "id": "falcon", "name": "Order of the Burning Falcon", "short": "the Falcon", "patron": "Sunward Emirates", "hunts": "bandits",
+      "troops": ["falcon_riders", "falcon_knights", "sun_hawks"], "vows": ["no_rob", "no_slaves"],
+      "creed": "Strike fast, and never at a man's back.", "text": "Riders in gold and white who strike like falling birds." },
+    { "id": "sky", "name": "Sworn of the Eternal Sky", "short": "the Sky-Sworn", "patron": "Khaganate of the Grass", "hunts": "monsters",
+      "troops": ["sky_riders", "sky_archers", "sky_sworn"], "vows": ["no_desert", "contract"],
+      "creed": "The oath binds beyond death.", "text": "Horse archers sworn under the open sky. Their arrows do not miss twice." },
+    { "id": "lantern", "name": "The Lantern Company", "short": "the Lanterns", "patron": "Saltmarsh League", "hunts": "bandits",
+      "troops": ["lantern_pikes", "lantern_guards", "lantern_knights"], "vows": ["contract", "no_desert"],
+      "creed": "A contract is holy. A broken one is death.", "text": "Pikes and lanterns from the canal cities. They are paid, and they are never bought." },
+    { "id": "ashen", "name": "Knights of the Ashen Sun", "short": "the Ashen Sun", "patron": "Order of the Ashen Sun", "hunts": "undead",
+      "troops": ["sun_brothers", "ashen_brothers", "sun_templars"], "vows": ["no_craft", "no_slaves"],
+      "creed": "The grey light over all; no craft, no chains.", "text": "The mother order, whose chapter became a realm. Its knight-brothers still ride out." }
+  ]
+}

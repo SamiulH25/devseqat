@@ -17,6 +17,7 @@ partial class MapScreen
         PartyKind.Player => "YOU",
         PartyKind.Caravan => p.Breed == "pilgrims" ? "PILGRIMS" : $"MERCHANTS OF THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
         PartyKind.Monster => p.Lair ? $"{p.Breed.ToUpperInvariant()} HOLDOUT" : Campaign.Plural(p.Breed).ToUpperInvariant(),
+        _ when C.OrderOf(p) is OrderDef o => $"{o.Name.ToUpperInvariant()}, FOR THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
         _ => C.FactionNames[p.Faction].ToUpperInvariant(),
     };
     Color PartyColor(Party p) => p.Kind == PartyKind.Player ? Style.Accent : SideColor(C.SideOf(p));

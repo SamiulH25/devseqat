@@ -62,6 +62,8 @@ public sealed class UnitType
     /// A culture id from Data/factions.json, "common" (open to every culture) or "wild" (creatures).
     /// "wild" is a creature (docs/CREATURES.md): never recruited from a village and outside every upgrade tree.
     public string Culture = "common";
+    /// A knight order's signature troop (docs/KNIGHT_ORDERS.md 4.1): its order id, "" for every other troop.
+    public string Order = "";
     /// What a wild troop is ("goblin"); empty for men.
     public string Breed = "";
     public UnitClass Class;
