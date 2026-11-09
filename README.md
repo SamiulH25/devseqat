@@ -6,6 +6,41 @@ A 2.5D (2D sprites in a 3D world) medieval battle game in C# + MonoGame (Desktop
 You fight in person as a soldier while you command your army as a general, and between battles you lead a mercenary company
 through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contracts, seasons and the rest of `docs/ROADMAP.md`.
 
+![In the ranks: field view on horseback before the lines meet](docs/images/field-horses.jpg)
+
+**At a glance (November 2026)**
+- **Battles of up to 3,000 men** on the field at once (Battle size setting), more waiting as reinforcements. You fight in the
+  front rank (directional blows, parries, couched lances) and command from above in slowed time, or hand wings to sergeants'
+  **divisions** that follow a goal.
+- **A war of seven realms** on a map of 115 provinces, each realm with its own heraldry, temper and four lines of troops:
+  188 troops across seven cultures and common, plus 13 creatures (goblins, wolves, trolls, the dead).
+- **A company that is your legacy:** named men on the roll, the fallen remembered, banner honours won and lost, a career from
+  hired sword to king, and a captain with gear, skills, wounds and a name.
+- **Ground that matters:** ridges, woods, fens, river lines, villages and hedgerows, with sight, cover, ambushes and an enemy
+  that reads the field.
+- **It moves:** animated men and horses, blows with weight, trampled earth, weather and light by the hour, fades and battle
+  names (see "Design: motion and feel").
+- **No art files:** every sprite, mesh, sound and tune is generated in code.
+
+### Screenshots
+
+Taken in the game at 1280x720 with `IRONFIELD_SHOTS` and `IRONFIELD_CAMPAIGN_SHOTS` (software rendering, High quality).
+
+| | |
+|---|---|
+| ![Command view of a big battle with stacked company flags](docs/images/landscape.jpg) | ![A pine wood seen from the command camera](docs/images/command-cav-charge.jpg) |
+| **Command view:** about 750 men a side, divisions on the right, an ambush in the feed. | **Woods:** low-poly pines; a wood hides men and halves a horse's pace. |
+| ![A troll and goblins with wolves](docs/images/gallery-troll.jpg) | ![The ground map overlay in command view](docs/images/ground-map.jpg) |
+| **Creatures:** trolls, goblins and wolves fight by their own rules. | **Ground map (M):** every kind of ground in its colour, with height lines. |
+| ![The campaign map](docs/images/campaign-map.jpg) | ![The realm map with seven realms in colour](docs/images/campaign-atlas.jpg) |
+| **Campaign map:** towns, brigands and your company. | **Realm map (M):** seven realms and their borders. |
+| ![The realms screen with seven banners](docs/images/campaign-realm.jpg) | ![An illustrated event](docs/images/campaign-event.jpg) |
+| **Realms (R):** heraldry, troops and relations. | **Events:** an illustrated scene with choices. |
+| ![The battle report after a victory](docs/images/campaign-results.jpg) | ![The captain sheet with the skill tree](docs/images/campaign-skills.jpg) |
+| **After the battle:** the tally, spoils, your companies and skills that rose. | **Captain sheet (K):** ten skills, their perks and your record. |
+| ![A winter campaign map under snow](docs/images/campaign-winter.jpg) | ![A siege assault at a town wall at night](docs/images/campaign-siege.jpg) |
+| **Winter:** snow on the map; the march slows and rations double. | **Sieges:** an assault on a town wall; climb at the ladders or batter the gate. |
+
 ## Build / run / test
 
 ```sh
@@ -24,6 +59,10 @@ The game needs no art files: sprites, terrain and the font are all generated in 
 **Design language:** see [`docs/DESIGN.md`](docs/DESIGN.md) (art direction, unit painting rules, heraldry, tiers, UI tokens).
 **Roadmap:** see [`docs/ROADMAP.md`](docs/ROADMAP.md) (what comes next, in what order, and why).
 **Campaign:** see [`docs/CAMPAIGN.md`](docs/CAMPAIGN.md) (map, companies, XP and upgrades, economy, AI, battle hand-off; "As built" at the end).
+**The player fantasy:** see [`docs/LEGACY.md`](docs/LEGACY.md) (your company is your legacy). **Other plans, all built:**
+[`COMBAT_OVERHAUL`](docs/COMBAT_OVERHAUL.md), [`CREATURES`](docs/CREATURES.md), [`SIDE_CONTENT`](docs/SIDE_CONTENT.md),
+[`PROGRESSION`](docs/PROGRESSION.md), [`WORLD`](docs/WORLD.md), [`TERRAIN`](docs/TERRAIN.md), [`POLISH`](docs/POLISH.md),
+[`VISUALS`](docs/VISUALS.md). **Developers:** [`docs/DEVELOPING.md`](docs/DEVELOPING.md) and [`CLAUDE.md`](CLAUDE.md).
 
 The game opens on a **title screen**: New Campaign, Continue (latest save), Quick Battle (one random battle), Quit.
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
@@ -240,7 +279,7 @@ the player rides a courser.
   **upgrades to**, campaign cost and upgrade XP, its horse, and its **look** (head, body, legs, feet, hands, shield, weapon,
   tabard, plume, cape). The self-test checks the tree: links exist, every upgrade raises the tier and is a better soldier,
   and every troop can be reached from Levies or Clansmen.
-- **The tree:** 146 troops (and the captain) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
+- **The tree:** 188 troops (and the captain, plus 13 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a
   role stand side by side), and the enemy general commands any mix.
@@ -300,7 +339,7 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   lone trees, bushes along wood edges, rocks and boulders, and ~14,000 3D grass tufts with a few flowers. All low-poly, flat-shaded and lit by one sun.
   Tree trunks and boulders are **solid**: units are pushed out of them and a horse that rides into one pulls up hard.
   The deployment ground (`Terrain.Core`) is kept clear of anything solid.
-- **Sky:** a gradient dome; fog fades the world into the horizon colour.
+- **Sky:** a gradient dome with sun and drifting clouds, lit by the hour and weather (`Sky.cs`); fog fades the world into the horizon colour.
 
 ## Shaders
 
@@ -314,14 +353,18 @@ so `GlslEffect` writes that binary itself (layout as read by MonoGame 3.8.6's `E
 - Anything sampled from a render target is upside down on GL, so use `uv.y = 0.5 - 0.5 * ndc.y`.
 - Parameters are set by name from C# (`effect.Parameters["SunDir"].SetValue(...)`). Sampler states travel with the effect.
 
-The pipeline (`Shading.cs`, driven from `BattleGame.DrawShaded`):
+The pipeline (`Shading.cs`, driven from `BattleScreen.DrawShaded` and `MapScreen`):
 1. **Sun shadow map:** a 2048² R32F target. An orthographic sun camera is aimed at what you look at (90 m in the field, more as the
    command camera zooms out) and snapped to texels so shadows do not shimmer. Terrain, foliage and units cast shadows. Units
    are rebuilt as puppets **facing the sun** for this pass, so a horse's shadow has legs.
 2. **Scene into an off-screen target:** the sky (gradient, sun disc and glow, drifting fbm clouds), terrain and foliage (per-pixel
    sun and hemispheric sky light, 3x3 PCF shadows, wind on grass and leaves, backlit leaves glow, distance and height fog), contact blobs,
    lit and shadowed unit sprites, then arrows and markers.
-3. **Post:** FXAA (the game runs without MSAA), a gentle colour grade with split toning (warm highlights, cool shadows), and a vignette.
+3. **Post:** FXAA (the game runs without MSAA), a colour grade that follows the hour and the weather (`Sky.Grade`: warm dawns,
+   grey rain, blue nights) with split toning, a cheap bloom on High, and a vignette.
+
+The world shader also adds near ground detail, trampled earth where men have fought (a trample texture fed from the battle),
+puddles and a wet sheen in rain, snow in winter, drifting cloud shadows (on the men too) and rippling rivers.
 
 If a driver rejects the GLSL, the game logs it and **falls back to the fixed-function path** (Low) instead of failing.
 
@@ -333,6 +376,25 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 - Field view: directional crosshair chevrons, damage text (speed bonus, flank, rear, high ground, parry), context prompts.
 - Command view: squad **banners** with morale bars, order buttons, box select, formation preview, attack lines.
 - Overlays: order wheel, F1 controls, Esc menu, and a result screen with both armies' losses.
+- In a big battle flags stack and shrink instead of piling up, the chosen flag comes to the front, and wavering and routed
+  companies' flags show it. Division tags keep off the panels.
+- The interface moves, a little: bars slide and leave a pale strip for what was just lost, hovers fade, tabs slide their mark,
+  tooltips wait a quarter second, modals rise out of the dark, and spoils count up (`Ui.Anim`; rules in `docs/DESIGN.md` section 5).
+
+## Design: motion and feel
+
+The visuals pass (`docs/VISUALS.md`) changed nothing in the simulation: replays and the self-test numbers are the same.
+- **Men move like men** (`Puppet.PoseOf`): windups ease in and hold, strikes overshoot, arms swing on the march, a standing
+  line breathes, men flinch and stagger when hit, routers drop their weapons, winners cheer, and archers nock, draw and loose.
+  The dead fall away from the blow that killed them. Horses walk, trot and gallop by speed; banners ripple.
+- **Blows land** (`BattleScreen.Effects.cs`): the camera kicks on your hits and shakes under a charge, a 45 ms hit pause
+  marks a heavy blow, the ground keeps blood, hoof prints and churned earth, and a banner topples when its bearer falls.
+  **Camera shake** (off / soft / full) and **hit pause** are in Settings.
+- **Big moments** (`ScreenHost.Fade`): screens fade through black, a battle opens with a sweep over the field and its name on a
+  plate, ends with a closing beat before the result, and career steps sound a horn. The title scene and event pictures move.
+- **The map lives:** chimneys smoke, marching parties raise dust, trees are scaled below the towns, nights are lighter, and
+  labels stay on screen.
+- **Quality** gates the cost: Low turns off ground marks, hit pause, arrow streaks, bloom and the shader effects.
 
 ## Design: divisions and scale
 
@@ -445,5 +507,7 @@ the game falls back to Low by itself.
 
 ## Next steps
 
-The roadmap (`docs/ROADMAP.md`) is built; its "As built" section lists what was simplified. Next: play-testing and balance
-(`--balance` CSVs), real-GPU reports, animated water, torch light at night, and bridge models on the map.
+Every plan in `docs/` is built: the roadmap, combat overhaul, creatures, side content, progression, world, terrain, legacy,
+polish (Q1-Q7) and visuals (V1-V8). Each plan's "As built" section lists what was simplified. Next: play-testing and balance
+(`--balance` CSVs), real-GPU reports, torch light at night, bridge models on the map, and the visuals left out (falling
+horses, tab cross-fades, a blurred bloom).
