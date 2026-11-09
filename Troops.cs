@@ -88,6 +88,7 @@ public static class Troops
             foreach (var u in t.UpgradesTo)
                 if (!troops.TryGetValue(u, out var next)) yield return $"{t.Id} upgrades to unknown {u}";
                 else if (next.Tier <= t.Tier) yield return $"{t.Id} -> {u} does not raise the tier";
+                else if (WorseUpgrade(t, next) is string why) yield return $"{t.Id} -> {u} is worse: {why}";
             if ((t.Class == UnitClass.Cavalry) != (t.Mount != null)) yield return $"{t.Id}: cavalry needs a mount and only cavalry has one";
             if (t.Culture is not ("common" or "wild") && Factions.Culture(t.Culture) == null) yield return $"{t.Id}: unknown culture {t.Culture}";
             if (t.Wild != (t.Breed != "")) yield return $"{t.Id}: a wild troop needs a breed, and only wild troops have one";
@@ -112,6 +113,23 @@ public static class Troops
         }
         foreach (var m in mounts!.Values)
             if (m.Barding is not ("saddle" or "caparison" or "wolf" or "camel")) yield return $"{m.Id}: unknown barding {m.Barding}";
+    }
+
+    /// A higher tier is always better (docs/COMPANIONS_MAGIC.md D0). An upgrade that keeps its class, weapon and shield
+    /// must lose no hp, damage, armour or block (nor range or pierce, for a bow) and gain in at least two of the four.
+    /// An upgrade that changes role (levies to bowmen, shieldmen to greatswords) is held to SelfTest.TroopTree's power sum
+    /// and the fight in SelfTest.HigherTierWins instead. Null = fine, else what fell.
+    public static string? WorseUpgrade(UnitType t, UnitType next)
+    {
+        if (next.Class != t.Class || next.Look.Weapon != t.Look.Weapon || next.HasShield != t.HasShield) return null;
+        var stats = new List<(string name, float was, float now)>
+        {
+            ("hp", t.MaxHp, next.MaxHp), ("damage", t.Damage, next.Damage), ("armour", t.Armor, next.Armor), ("block", t.BlockChance, next.BlockChance),
+        };
+        int rose = stats.Count(s => s.now > s.was);
+        if (t.Ammo > 0) stats.AddRange(new[] { ("range", t.Range, next.Range), ("pierce", t.Pierce, next.Pierce) });
+        var fell = stats.Where(s => s.now < s.was).Select(s => s.name).ToList();
+        return fell.Count > 0 ? string.Join(", ", fell) + " fall" : rose < 2 ? "fewer than two of hp, damage, armour, block rise" : null;
     }
 
     /// Every troop reachable from `id` by upgrading (including itself).

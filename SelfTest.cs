@@ -23,6 +23,9 @@ public static partial class SelfTest
         Ground();
         HoldFire();
         TroopTree();
+        UpgradeNeverWorse();
+        HigherTierWins();
+        TierGap();
         Sprites();
         TroopVariety();
         BigBattle();

@@ -1,6 +1,6 @@
 # Companions, magic, abilities, buffs and auras (plan)
 
-Status: plan. Nothing here is built yet. Read docs/LEGACY.md first: the fantasy is that your company is your legacy.
+Status: plan, being built. Done: T0 (see the build order). Read docs/LEGACY.md first: the fantasy is that your company is your legacy.
 Everything below must serve that. Companions are the named heart of the company. Mages are rare, costly and real: they
 fight in battle, cast buffs on your companies and strike the enemy. The best troops (tiers V-VII) fight differently: their
 blows sweep, knock back or thrust through, and they carry passive traits. Buffs, auras, spells and abilities are one system, so every bonus reads the same way everywhere.
@@ -278,7 +278,8 @@ below it.** Today `SelfTest.TroopTree` only checks `hp + armour x 5 + damage` ri
   several seeds, and the higher tier must win clearly (most seeds, more men left). Across lines, a tier N+1 company beats a
   tier N company of a like class from the same culture at equal numbers.
 - **The gap is felt but not absurd.** A tier step should be worth roughly 1.3-1.6x the men; a tier VII company should beat
-  a tier IV company of twice its size. `--agree` reports `Might` by tier so auto-resolve tells the same story.
+  a tier IV company of twice its size (horse: one and a half times, for now: in the open the many ride round the few, and
+  20 Grail Knights against 40 Demi-Lancers is a coin flip; tighten after T1's charge styles). `--agree` reports `Might` by tier so auto-resolve tells the same story.
 - **Same for mages and companions.** A tier VI mage company out-casts a tier V one (more Will, stronger spells, never fewer);
   a companion's talents only add.
 
@@ -504,7 +505,15 @@ mage troops in a pose sheet (`--sprites`), a companion sheet in
 
 ## Build order
 
-Each step ends with `tools/check.sh` green and a commit, as the melee work did.
+Each step ends with `tools/check.sh` green and a commit, as the melee work did. T0 and T1 need nothing from E1, so they
+are built first: the troops change at once, and every later step is held to "higher tier is better".
+
+**As built, T0:** `Troops.WorseUpgrade` (run by `Validate`) refuses an upgrade that keeps class, weapon and shield but loses
+a stat or gains in fewer than two. Three links failed and were fixed in the data (Valhalla Reavers and Blood Jarls lost
+armour and block; Pavisiers' block was an outlier above the next tier's). The fight survey (`--selftest TierSurvey`, all
+same-role links, three seeds, ~4 min) found every upgrade already beats its parent. Tests in `Tests/TierTests.cs`:
+`UpgradeNeverWorse` (plus `Might` rises along every link), `HigherTierWins` (25 links, one per class and tier step, two
+seeds), `TierGap`.
 
 | Step | What | Main files | Done when |
 |---|---|---|---|
