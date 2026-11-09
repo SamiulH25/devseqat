@@ -2,11 +2,12 @@
 
 Status: plan. Nothing here is built yet. Read docs/LEGACY.md first: the fantasy is that your company is your legacy.
 Everything below must serve that. Companions are the named heart of the company. Mages are rare, costly and real: they
-fight in battle, cast buffs on your companies and strike the enemy. The best troops (tiers V-VII) earn drills of their own
-that you can call on. Buffs, auras, spells and abilities are one system, so every bonus reads the same way everywhere.
+fight in battle, cast buffs on your companies and strike the enemy. The best troops (tiers V-VII) fight differently: their
+blows sweep, knock back or thrust through, and they carry passive traits. Buffs, auras, spells and abilities are one system, so every bonus reads the same way everywhere.
 
 ("are systems" in the first request is read as **aura systems**. The second request asked for: mages who use magic in battle
-and give buffs (Part E), and special abilities, buffs or attacks, for high-tier units (Part D).)
+and give buffs (Part E), and special abilities, buffs or attacks, for high-tier units (Part D). A third note made those passive, never activated by
+the player, with attacks that differ: sweeping, knockback and so on.)
 
 ## What exists today
 
@@ -38,8 +39,8 @@ with its own UI (or none). The player cannot see why a company is fighting well 
    Casters are people who can be killed: companions, enemy champions, and small companies of mages (Part E). Spells buff
    your side and some strike the enemy (lightning in a storm, wildfire in dry grass, smiting the dead), but each costs Will,
    gives warning before it lands, and heavy use brings bad omens on the map. No spell wipes a company.
-4. **The best troops fight like the best.** A tier V-VII company has a drill only it knows: a shield wall, a volley of
-   fire arrows, a wedge charge. It is an ability with a cooldown, used by its sergeant by grade, or by you.
+4. **The best troops fight like the best.** A tier V-VII company has its own attack style (sweep, crush, knockback,
+   thrust through) and passive traits. All passive: the men fight this way on their own; you choose it by what you raise.
 5. **Readable on the field.** An aura is a faint ring on the ground when its bearer's company is selected. A working shows
    as a colour (gold for faith, green-grey for craft, violet for the dead) and a feed line. Counterplay is always visible.
 6. **The rules that keep the game honest still hold:** headless sim, seeded `rng` only, replays exact, `--bench` within
@@ -249,67 +250,92 @@ time, Will and Omen:
 
 ---
 
-## Part D. Troop abilities (tiers V-VII)
+## Part D. Troop traits and attack styles (tiers V-VII)
 
-Today a tier VII company is a tier IV company with bigger numbers. Here the top three tiers of every line earn a drill of
-their own, so a company of Allfather Guard *does* something no levy can, and keeping such a company alive across a career
-(docs/LEGACY.md) is worth the trouble.
+Today a tier VII company is a tier IV company with bigger numbers. Here the top three tiers of every line **fight
+differently**: their blows land in their own way (a sweep, a knockback, a thrust through two men) and they carry passive
+traits. **Nothing here is activated by the player and nothing has a cooldown**: it is how these men fight, every blow, on
+their own. You see it on the field and read it in the troop tooltip; you choose it by what you recruit and upgrade.
 
 ### D1. The rule by tier
 
 | Tier | What the company gets |
 |---|---|
-| V | one **passive** (an effect that is always on, Part A) |
-| VI | the passive plus one **active** ability |
-| VII | a stronger passive (same id, `rank: 2`) and the active with a shorter cooldown or a bigger effect |
+| V | its weapon's **attack style** (D2) and one **passive trait** (D3) |
+| VI | the attack style stronger (`rank: 2`: wider arc, harder knock, more chance) and a second passive |
+| VII | both at full strength, plus its culture's **signature** (D4) |
 
-Abilities sit in `Data/abilities.json` and a troop names them in a new `abilities` field in `Data/troops.json`
-(`Troops.Validate` checks the ids; `SelfTest.TroopTree` checks that an upgrade keeps or improves its parent's abilities).
-Most come from the troop's **archetype** (class and weapon), and each culture adds **one signature** for its top line.
+Data: two new fields in `Data/troops.json`, `attack` (one style id) and `passives` (trait ids), with the numbers per rank in a
+new `Data/styles.json`. They sit beside the creature `traits` that already exist (`sweep`, `knockback`, `fearless`...),
+and reuse their code. `Troops.Validate` checks the ids; `SelfTest.TroopTree` checks that an upgrade keeps or improves its
+parent's style and passives.
 
-### D2. Archetype abilities
+### D2. Attack styles (by weapon)
 
-| Archetype (class + weapon) | Passive (V) | Active (VI-VII) | What the active does |
+The battle already has two of these for creatures: `BattleCreatures.Sweep` (a blow carries into the men beside) and
+`Knock` (a man thrown back and staggered, his neighbours shaken). D2 makes them general, sized for men (`rank` sets reach,
+how many, how far), and adds the rest in the same place, called from `Strike` -> `Hit`.
+
+| Weapon (tier V+ troops) | Style | How a blow lands | Good against |
 |---|---|---|---|
-| Shield foot (sword/axe + shield) | *Locked shields*: +block against arrows from the front | **Shield wall** | stand, front rank blocks +40 %, arrows from the front mostly stop; cannot move for 15 s |
-| Great weapons (two-handers) | *Heavy blows*: +pierce | **Cleave** | for 10 s each blow may hit a second man beside the target (the troll's `Sweep`, smaller) |
-| Spears and pikes (Skirmisher class) | *Set spears*: braces form faster (`Braces`) | **Push of pike** | the company steps forward together 4 m; men struck are knocked back (`Knock`), ranks behind them disorder |
-| Bows | *Steady draw*: less spread | **Volley** | every man looses at once at a marked spot; the next reload is slow. VII: **Fire arrows** (burns in dry ground, horses panic) |
-| Crossbows | *Pavise*: men reloading take less from arrows | **Aimed bolt** | 10 s: bolts pierce +50 %, made for knights and captains |
-| Heavy horse (lance) | *Weight*: more knock-down in `Lances` | **Wedge** | the company forms a wedge and charges through: rear-rank men in the target are disordered, front ones knocked down |
-| Horse archers | *Saddle shot*: shoot while moving | **Parthian shot** | ride away from a closing foe and shoot back at full rate for 12 s |
-| Light horse (no lance) | *Swift*: faster re-forming (M5's rally) | **Ride them down** | +speed and +damage against routing men for 15 s |
+| Dane axe (10 troops) | **Crush** | an overhead blow: half the target's block is ignored, a hit staggers him (`Stagger`) and may break his shield | shield walls, heavy foot |
+| Greatsword (5) | **Sweep** | a wide cut: carries into one man beside the target (two at VII) at 0.6 of the damage | dense ranks, rabble |
+| Longsword and shield (17) | **Riposte** | after a block or parry the next blow comes at once (no windup) and gets +30 % | duels in the front rank, other elite foot |
+| Sword or axe and shield (6) | **Shield bash** | every third blow is a bash: little damage, but the man is knocked back a step (`Knock`, small) and his guard is open | holding a line, pushing a gap open |
+| Pike (12) | **Thrust through** | a thrust that kills or wounds carries on to the man behind (the second rank) at 0.5 | columns, charging horse |
+| Spear (9) | **Hold off** | a hit on a man coming at them knocks him back to spear's length; horse struck while braced rear and throw riders | horse, men trying to close |
+| Lance (17 horse) | **Ride down** | a lance hit knocks the man down (`Knock`, large) and the horse tramples one more behind; at VII the lance can go through two | foot in the open |
+| Sword on horse (1) | **Cut and wheel** | riding past, strikes every man in reach once without slowing | routing men, archers |
+| Longbow (10) | **Plunging shot** | at long range arrows drop from above: shields to the front do not stop them | static foot, shield walls |
+| Bow (3 foot, 4 horse) | **Quick loose** | shorter reload; horse archers shoot while moving | skirmishing, wearing down |
+| Crossbow (12 foot, 3 horse) | **Punch** | a bolt within 20 m knocks a man back (`Knock`, small) and unhorses a rider on a bad roll; pierces plate | knights, captains |
 
-### D3. Culture signatures (top line of each culture, VII only, on top of the archetype)
+Readability: each style has its own swing pose in `Puppet.cs` (overhead chop, wide arc, thrust, bash), a sound, and a visible
+result (men thrown back, a second man falling, a rider unhorsed). In a pose sheet (`gallery-styles.png`) each style is shown.
 
-| Culture | Signature | Kind | Effect |
-|---|---|---|---|
-| Northern | **Battle fury** | active | 15 s: +damage, ignore fear and wounds slow; afterwards *Spent* (slow, tired) for 20 s |
-| Azure | **Testudo** | active | shields overhead: arrows from every side mostly stop; half speed |
-| Crimson | **Executioner's blow** | active | the front rank's next blow against an officer, sergeant or hero kills if it lands |
-| Southern | **Dervish whirl** | active | 10 s: men spin through the press, hitting all round, but block nothing |
-| Steppe | **Feigned flight** | active | the company turns and runs; enemy companies that chase lose order (`Formed` falls) and can be caught |
-| League | **Pavise line** | passive | crossbows plant pavises when they halt: cover like a hedge (`CoverAt`) until they move |
-| Order | **Zeal** | aura | holy (tag): companies within 20 m fear nothing, and the undead take +50 % from them |
+### D3. Passive traits
 
-### D4. Who uses them
+Always on; each is an effect (Part A) on the company, so it shows as an icon on the company card with a tooltip.
 
-- **Sergeants by grade** (docs/MELEE.md D5, `BattleTactics.Wits`): a Rabble or Trained company never uses an active on its
-  own; a Veteran one uses it when its rule fires (shield wall when arrows fall on it and no foot is near; volley when an
-  enemy company bunches in range; wedge when a charge lane is clear); an Elite one also times it (volley into a company
-  that is crossing a ford, push of pike when the enemy is pinned). Rules live in the ability's data (`when`), read in a new
-  `BattleAbilities.cs`.
-- **You**: the order wheel gets an **Ability** slot (shared with companions, Part B3) showing the selected company's
-  active and its cooldown; `Act.Ability` key, listed in F1. Ordering it through a sergeant's division goes by courier as
-  any order does (`Direct`).
-- **The enemy** uses the same rules: veteran and elite enemy companies feel different from the first battle you meet them.
+| Trait | Who (examples) | Effect |
+|---|---|---|
+| **Unshakeable** | guard foot, Order foot | morale loss from flank hits and nearby routs halved |
+| **Iron skin** | heavy foot, cataphracts | arrows from the front do less (+armour against pierce) |
+| **Tireless** | spears, steppe foot | stamina drains slower (`staminaPerSec`) |
+| **Locked shields** | shield foot | standing still: the front rank blocks more and arrows from the front mostly stop |
+| **Set spears** | pikes, spears | braces form faster (`Braces`), horse fear them more |
+| **Fearsome** | Dane axes, greatswords | enemy companies they fight lose morale faster |
+| **Steady aim** | longbows, crossbows | less spread, keep shooting calmly when charged (shorter panic) |
+| **Pavise** | crossbows with a pavise | reloading men take less from arrows; when halted, plant pavises as cover (`CoverAt`) |
+| **Swift** | light horse, horse archers | re-form faster after a charge (M5's rally) and faster on the move |
+| **Heavy charge** | heavy horse | more knock-downs and morale shock on the first impact (`Lances`) |
+| **Sure-footed** | highland, marsh and steppe troops | no slow from mud, slopes or fords (`GroundAt`) |
 
-### D5. What it costs and how it shows
+Each troop gets traits that fit its look and its culture; at VI the second one is chosen to make the line distinct from
+its neighbours (the three Northern Dane-axe lines should not feel the same).
 
-- Each active has a cooldown (40-120 s) and most leave a short malus after (slow, tired, slow reload), so it is a choice.
-- On the HUD: the company card shows the ability icon with a cooldown ring; when it fires, a feed line ("The Allfather Guard
-  rage") and its effect icon. On the field: a cue (`Cue.Horn`-like, one per archetype) and a pose (shields up, spears level).
-- Troop tooltips in the muster roll and at the recruiter list the abilities, so upgrading toward one is a goal.
+### D4. Culture signatures (tier VII, passive)
+
+| Culture | Signature | Effect |
+|---|---|---|
+| Northern | **Battle fury** | the more of them fall, the harder the rest strike (+damage as the company shrinks, no morale loss from losses) |
+| Azure | **Testudo** | under arrow fire, a halted company raises shields overhead on its own: arrows from any side mostly stop, half speed |
+| Crimson | **Headsmen** | blows against officers, sergeants and heroes do double damage |
+| Southern | **Whirlwind** | every blow is a sweep (D2) on top of the weapon's style, but they block less |
+| Steppe | **Ghost riders** | horse that are charged fall back out of reach on their own and shoot as they go; chasers lose order (`Formed`) |
+| League | **Paid in full** | do not rout while their side holds the field (they rout only when the battle is lost) |
+| Order | **Zeal** | holy (tag): fear nothing; companies within 20 m take heart; the undead take +50 % from them |
+
+### D5. How it reaches the battle and the campaign
+
+- At `AddSquad` each man's style and traits are read once into his `UnitType` (no lookups per blow). Styles hook into
+  `Strike`/`Hit` (Crush, Riposte, Bash, Thrust through, Punch), `Lances` (Ride down), `UpdateArrows` (Plunging shot) and
+  `Braces` (Hold off); traits are Part A effects on the company.
+- The AI does not decide anything new: the men simply fight this way. The general may value it (send Dane axes at a
+  shield wall, pikes at horse) through the existing matchup weights.
+- Tooltips in the muster roll, at the recruiter and in the upgrade panel list the style and traits, so "upgrade to tier V"
+  reads as "these men will now cut through two ranks".
+- Auto-resolve: styles and traits add a weight per tier to `Rules.Might`; `--agree` checks fought and auto-resolved still match.
 
 ---
 
@@ -349,7 +375,7 @@ a handful of casters you can hire, drill and lose, as you do any troops.
 
 ### E3. Spells: buffs and attacks
 
-Each spell is an ability (B3, D4) built from Part A's effects. Tier IV knows the first, V the second, VI all three plus its
+Each spell is an ability (B3) built from Part A's effects. Tier IV knows the first, V the second, VI all three plus its
 tradition's great working. Every attack spell shows a **warning** first (a glow on the ground or the target, 1.5-3 s), so
 the target can move or the player can react, and never hits more than a part of one company.
 
@@ -389,8 +415,9 @@ rest of the battle and add much Omen.
 
 - The enemy general (`General`) keeps its mages behind its foot, casts buffs as the lines close, and aims attack spells at
   bunched, slow or static companies (braced pikes, a shield wall: magic is the answer to turtles, horse the answer to
-  magic). Its rules are the spell's `when` in the data, as D4.
-- Your own mages cast on their own by the same rules unless the company is set to "abilities on my order".
+  magic). Its rules are the spell's `when` in the data.
+- Your own mage companies cast on their own by the same rules, like any troops' traits (Part D): you do not trigger
+  spells. You steer them the usual way, by where you place the company and what you order it to do.
 
 ---
 
@@ -404,12 +431,12 @@ rest of the battle and add much Omen.
 - **Saves:** all new state is plain fields with defaults (`Character.Calling`, `Talents`, `Xp`, `Will`; `CampaignState.Buffs`,
   `Omen`). Old saves load: a companion without a calling gets one from his role and traits on load.
 - **Idle player still loses in ~30 s:** enemy champions and casters must not change that at level 1-2.
-- **Troop abilities and mages in `Might`:** a tier V-VII company's abilities add a fixed weight per tier; a mage company
-  counts by tier, not its melee stats. `--agree` gets "with abilities" and "with mages" runs; fought and auto-resolved
+- **Troop styles, traits and mages in `Might`:** a tier V-VII company's style and traits add a fixed weight per tier; a mage company
+  counts by tier, not its melee stats. `--agree` gets "with styles" and "with mages" runs; fought and auto-resolved
   must still agree within today's margins.
 - **Attack spells are capped:** a spell hits at most a part of one company (a 3-6 m spot or the target's front), so the
   `--balance` casualty share by spells stays under ~10 % of a battle's dead. `BalanceReport` gains a "killed by" column.
-- **Bench:** an ability's `when` rule runs on the wits cadence (every 0.5 s, staggered by `Squad.Id`); burning ground is
+- **Bench:** styles add a branch per blow (Sweep and Thrust through do one `Near` query only on a hit); an ability's `when` rule runs on the wits cadence (every 0.5 s, staggered by `Squad.Id`); burning ground is
   one more field list. Wildfire spread is ticked on a coarse grid (the trample map's), not per man.
 
 ## Part G. Tests
@@ -427,10 +454,13 @@ rest of the battle and add much Omen.
 | `OmenDraws` | heavy craft use raises Omen and draws an omen event; it fades with days |
 | `CompanionLeaves` | very low opinion gives a warning event, then he leaves with his relic |
 | `EffectsValidate` | every effect, talent, ability, spell and relic in the data is valid |
-| `AbilitiesByTier` | every tier V troop has a passive, VI and VII an active; upgrades keep their parent's abilities |
-| `ShieldWallStopsArrows` | a company in shield wall loses far fewer men to the same volley; it cannot move while it lasts |
-| `VeteransUseAbilities` | a Veteran company fires its ability when its rule holds; a Rabble one never does on its own |
-| `VolleyThenSlow` | a volley looses every man at once and the next reload is slow |
+| `StylesByTier` | every tier V-VII troop has an attack style and passives that fit its weapon; upgrades keep or improve them |
+| `SweepHitsBeside` | a greatsword blow carries into the man beside; a plain sword blow does not |
+| `KnockThrowsBack` | a bash, a lance hit and a close bolt throw a man back and stagger him; the men behind him are shaken |
+| `ThrustThrough` | a pike kill carries on to the man behind |
+| `CrushBeatsShields` | Dane axes kill shield foot faster than plain axes of the same stats |
+| `PlungingShot` | longbow arrows at long range get past shields to the front; at short range they do not |
+| `NoTroopActives` | no troop has an ability to trigger: the order wheel shows none for a plain company |
 | `MageWill` | each spell spends Will; under 20 the company is Drained and cannot cast; it refills overnight |
 | `SpellWarns` | an attack spell glows before it lands; a company that steps off the glow takes nothing |
 | `WildfireNeedsDry` | wildfire burns and spreads in dry grass and does nothing on wet ground or in rain |
@@ -438,7 +468,7 @@ rest of the battle and add much Omen.
 | `MageLineReachable` | every mage troop is reachable from levies through Acolytes; upgrading needs a shrine or temple |
 
 Plus shots: `gallery-auras.png` (rings and glows), `gallery-workings.png` (mist, ward, mud), `gallery-spells.png`
-(warning glows, smite, lightning, wildfire, smoke), `gallery-abilities.png` (shield wall, testudo, wedge, volley), the
+(warning glows, smite, lightning, wildfire, smoke), `gallery-styles.png` (crush, sweep, bash, thrust, ride down, a man thrown back), the
 mage troops in a pose sheet (`--sprites`), a companion sheet in
 `IRONFIELD_CAMPAIGN_SHOTS`, and `overflow.txt` empty.
 
@@ -452,21 +482,21 @@ Each step ends with `tools/check.sh` green and a commit, as the melee work did.
 |---|---|---|---|
 | **E1** | Effect core: data, `Mods`, battle reads, auras by company; move the three auras and battle perks onto it | new `Effects.cs`, `BattleEffects.cs`, `Data/effects.json`; `BattleMorale`, `BattleDrill`, `BattleCombat` | `EffectsMatchOld`, `AuraReachesCompanies`, bench within 10 % |
 | **E2** | Effects on the map and into battle; HUD icons and rings | `CampaignState.Buffs`, `Campaign/Sites.cs`, `Town.cs`, `Events.cs`, `PrepareBattle`, `Hud.cs`, `MapScreen.Hud.cs` | `StandingEffectsCarry`, shots |
-| **T1** | Troop abilities, passives: `abilities` in troops.json, `Data/abilities.json`, every tier V-VII troop gets its archetype passive; tooltips | `Troops.cs`, `Units.cs`, `BattleEffects.cs`, `MapScreen.Muster.cs` | `AbilitiesByTier` |
-| **T2** | Troop abilities, actives: the ability engine (cooldowns, `when` rules by grade), the wheel slot and `Act.Ability`, archetype actives, then culture signatures | new `BattleAbilities.cs`, `BattleTactics.cs`, `BattleScreen.Orders.cs`, `Controls.cs`, `Hud.cs` | `ShieldWallStopsArrows`, `VeteransUseAbilities`, `VolleyThenSlow`, shots |
-| **M1** | Magic core: Will, Omen, the `Caster` class, field effects (mist, smoke, mud, rain, burning ground), warning glows | `BattleAbilities.cs`, `BattleSight.cs`, `TerrainGround.cs`, `CampaignState` | `MageWill`, `SpellWarns`, `MistCoversArrows`, `OmenDraws` |
+| **T1** | Attack styles: `attack` in troops.json, `Data/styles.json`; Sweep and Knock made general from the creature code; Crush, Riposte, Bash, Thrust through, Ride down, Hold off, Plunging shot, Punch; swing poses | new `BattleStyles.cs`, `BattleCreatures.cs`, `BattleCombat.cs`, `Puppet.cs`, `Troops.cs` | `SweepHitsBeside`, `KnockThrowsBack`, `ThrustThrough`, `CrushBeatsShields`, `PlungingShot`, shots |
+| **T2** | Passive traits and culture signatures as Part A effects; tooltips in muster, recruiter and upgrade panels; `Might` weights | `Data/troops.json`, `BattleEffects.cs`, `MapScreen.Muster.cs`, `Rules.cs` | `StylesByTier`, `NoTroopActives`, `--agree` with styles |
+| **M1** | Magic core: the ability engine (cooldowns, `when` rules) for casters, Will, Omen, the `Caster` class, field effects (mist, smoke, mud, rain, burning ground), warning glows | new `BattleAbilities.cs`, `BattleSight.cs`, `TerrainGround.cs`, `CampaignState` | `MageWill`, `SpellWarns`, `MistCoversArrows`, `OmenDraws` |
 | **M2** | Mage troops: Acolytes and the seven mage lines, sprites (robes, staves, drums, censers), hiring at shrines and temples, AI armies field them, `Might` | `Data/troops.json`, `SpriteSheet.cs`, `Campaign/Companies.cs`, `CampaignAI.cs`, `Rules.cs` | `MageLineReachable`, `--agree` with mages |
 | **M3** | Spells: buffs first (Blessing, War song, Fair wind, Mend), then attacks (Smite, Lightning, Wildfire, Fire pots), then great workings; AI casting and counterplay | `Data/abilities.json`, `BattleAbilities.cs`, `BattleAI.General`, `BattleWings.cs` | `WildfireNeedsDry`, `HorseHuntsMages`, `WardStopsTheDead` |
 | **C1** | Companion callings, XP, talents, the companion sheet | `Characters.cs`, `Data/companions.json`, `MapScreen.Party.cs` | `CompanionGrows` |
-| **C2** | Companion abilities on the T2 engine (Priest and Cunning callings use M3's spells), enemy champions | `BattleAbilities.cs`, `Campaign/CampaignBattle.cs` | `HoldTheLine`, `RallyToMe` |
+| **C2** | Companion abilities on the M1 engine, the order wheel slot and `Act.Ability` (Priest and Cunning callings use M3's spells), enemy champions | `BattleAbilities.cs`, `Campaign/CampaignBattle.cs` | `HoldTheLine`, `RallyToMe` |
 | **C3** | Approval, quarrels, sworn brothers, personal quests, leaving, students | `Characters.cs`, `Data/events.json`, `Legacy.cs`, `Roll.cs` | `CompanionLeaves` |
 | **M4** | Faith and craft on the map: relics in a charm slot, shrines refill, camp rituals, omen events; the necromancer on the same system | `Data/gear.json`, `Armoury.cs`, `BattleCreatures.cs`, `Data/events.json`, `MapScreen.Muster.cs` | rituals tested |
 | **P** | Polish: glows and motes (docs/VISUALS.md), sounds, tooltips, README, `--agree` with companions, bench | `BattleScreen.Effects.cs`, `Audio.cs`, `README.md` | shots, `overflow.txt` empty, bench |
 
 E1 alone pays for itself: it removes three hard-coded auras and gives every later step its language. T1-T2 come next
-because the troops already exist: every veteran army changes at once, and T2 builds the ability engine that mages and
-companions then share. Mages (M1-M3) follow on that engine. Companions (C1-C3) come after and reuse both: a Priest
-companion casts the same Blessing a Battle Priest company does.
+because the troops already exist: every veteran army fights differently at once, with no new controls. Mages (M1-M3)
+build the ability engine for casters; companions (C1-C3) reuse it: a Priest companion casts the same Blessing a Battle
+Priest company does.
 
 ## Open questions
 
@@ -485,5 +515,7 @@ companion casts the same Blessing a Battle Priest company does.
 6. **Mages as troops or only as companions?** Proposed: both. Companies of mages are what an army fields; a named Priest
    or Cunning companion is the one you grow and grieve. Mage companies are small and capped (one per lord) so the
    game stays a battle of men.
-7. **Troop abilities for tier IV?** Proposed: no. V-VII only, so reaching tier V is a moment. Tier IV could get the
-   passive later if the climb feels flat.
+7. **Attack styles for tier IV?** Proposed: no. V-VII only, so reaching tier V is a moment. Tier IV could get a weak
+   rank of its weapon's style later if the climb feels flat.
+8. **Who presses buttons?** Troops: never (Part D is all passive). Mage companies: cast on their own by their rules (E5).
+   Companions: on their own by default, with your order wheel slot as an option (B3, question 5).
