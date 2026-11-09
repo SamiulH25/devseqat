@@ -35,8 +35,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleAura.cs (113 lines)
 - **Battle** (class, L7): SetupAura:26, UpdateAura:44, Inspire:63, Presence:79, BladeLanded:96, AuraSoak:104
 
-## BattleAuraMagic.cs (93 lines)
-- **Battle** (class, L8): FeedOnBuff:26, CurseCaptain:35, BreakCast:55, BladeMarks:66, CannotRaise:73, RaiseRelic:75
+## BattleAuraMagic.cs (94 lines)
+- **Battle** (class, L8): FeedOnBuff:27, CurseCaptain:36, BreakCast:56, BladeMarks:67, CannotRaise:74, RaiseRelic:76
 
 ## BattleBanner.cs (109 lines)
 - **Battle** (class, L10): SetupBanner:24, UpdateBanner:32, BannerFalls:47, RaiseBanner:58, LastStand:75, UpdateLastStand:89
@@ -115,8 +115,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (278 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:80, CommandControls:88, BoxOf:196, OnScreen:198, PickSquad:205, GroundUnderMouse:219, UpdateCamera:241
 
-## BattleScreen.cs (377 lines)
-- **BattleScreen** (class, L10): Exit:16, GroundTips:34, BattleScreen:79, Load:91, QuickGround:110, BeginCampaign:120, StartDeployment:144, StageCommandView:159, FinishCampaignBattle:167, NewBattle:175, SetWorld:213, SetCommand:223, Pressed:232, Update:240, PlaySounds:303, Soundscape:313, SyncHud:337, MenuChoice:363
+## BattleScreen.cs (397 lines)
+- **BattleScreen** (class, L10): Exit:16, GroundTips:34, MagicTips:46, BattleScreen:98, Load:110, QuickGround:129, BeginCampaign:139, StartDeployment:163, StageCommandView:178, FinishCampaignBattle:186, NewBattle:194, SetWorld:232, SetCommand:242, Pressed:251, Update:259, PlaySounds:323, Soundscape:333, SyncHud:357, MenuChoice:383
 
 ## BattleScreen.Draw.cs (613 lines)
 - **BattleScreen** (class, L8): Draw:12, DrawShaded:51, DrawBlobs:90, EaseFacings:119, Spray:135, Effects:148, GroundSteps:179, BuildSprites:233, SpriteStates:288, DrawSpritesBasic:296, DrawSpritesShaded:306, Line:316, G:317, OrderArrows:326, OrderArrowLines:328, Ring:344, TorchRow:354, Precipitation:363, Fall:374, Stakes:393, SpellColor:416, Spells:422, AuraGlow:444, ChampionGlow:454, PlayerGlow:467, PendingFormsDrawn:481, RouteDots:506, PlanHook:519, DrawLines:549
@@ -130,8 +130,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Orders.cs (231 lines)
 - **BattleScreen** (class, L8): Targets:12, Issue:15, Send:26, GiveGoal:36, GoalCommand:38, Command:60, OrderKeys:119, NextSpell:138, CastAt:150, PlantStakes:164, NextDivision:176, LineAt:186, Distribute:203, PreviewSlots:222
 
-## BattleScreen.Shots.cs (325 lines)
-- **BattleScreen** (class, L8): ShotScript:10, readonly:150, PoseSheet:160, Clash:230, MagicScene:257, Gallery:301
+## BattleScreen.Shots.cs (329 lines)
+- **BattleScreen** (class, L8): ShotScript:10, readonly:150, PoseSheet:160, Clash:230, MagicScene:257, Gallery:305
 
 ## BattleSiege.cs (162 lines)
 - **Battle** (class, L7): DeployDefenders:18, Via:48, MayCross:75, EnforceWall:82, Batter:95, SiegeDefend:121, SiegeAttack:144
@@ -359,11 +359,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **WoundDef** (record, L4)
 - **Campaign** (class, L7): WoundOf:24, MaybeLastingWound:30, MendWound:43
 
-## Controls.cs (233 lines)
+## Controls.cs (235 lines)
 - **Act** (enum, L8)
 - **MouseButton** (enum, L30)
-- **Bind** (struct, L33): ToString:35, Parse:50
-- **Controls** (class, L72): Controls:127, SaveUser:135, ResetDefaults:144, AnyPressed:152, FindFile:160, Load:170, WriteDefaults:197, Update:206, IsDown:212, Down:222, WasDown:223, Pressed:224, Released:225, Axis:226, First:229, Name:232
+- **Bind** (struct, L33): ToString:35, Parse:51
+- **Controls** (class, L74): Controls:129, SaveUser:137, ResetDefaults:146, AnyPressed:154, FindFile:162, Load:172, WriteDefaults:199, Update:208, IsDown:214, Down:224, WasDown:225, Pressed:226, Released:227, Axis:228, First:231, Name:234
 
 ## Ease.cs (22 lines)
 - **Ease** (class, L4): C:6, In:8, Out:10, OutCubic:11, InOut:13, OutBack:15, Spring:17, Kick:19, Hash:21
@@ -418,8 +418,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Atlas.cs (120 lines)
 - **MapScreen** (class, L7): AtlasIds:14, AtlasTexture:29, AtlasPanel:58, AtlasLegend:91
 
-## MapScreen.Captain.cs (288 lines)
-- **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:84, AuraBlock:153, OwnFormBlock:168, FlameBlock:186, FormList:210, CaptainRecord:251
+## MapScreen.Captain.cs (297 lines)
+- **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:84, AuraBlock:153, OwnFormBlock:168, FlameBlock:195, FormList:219, CaptainRecord:260
 
 ## MapScreen.cs (534 lines)
 - **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:84, Pressed:92, Update:96, readonly:181, LaterTips:194, Pan:218, ScreenKeys:220, OpenScreen:228, CameFrom:235, Camera:237, Rename:261, Trails:274, ClickWorld:286, Ground:298, Draw:321, UpdateBearers:392, BuildSprites:432, DrawSprites:439, G:451, DrawLines:453, Stage:492
@@ -598,8 +598,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## UiLab.Pages.cs (489 lines)
 - **UiLab** (class, L6): U:14, T:15, Side:16, Caption:19, KitPage:28, TitlePage:137, readonly:186, MusterPage:193, CompanyCard:250, ReportPage:304, MarketPage:408
 
-## UiLab.Scenes.cs (427 lines)
-- **UiLab** (class, L6): HudPage:12, Field:81, readonly:115, DockCard:121, CaptainPage:149, RealmsPage:237, EventPage:336, Burning:400
+## UiLab.Scenes.cs (490 lines)
+- **UiLab** (class, L6): HudPage:12, Field:81, readonly:115, DockCard:121, CaptainPage:149, RealmsPage:237, EventPage:336, Burning:400, MagicPage:430
 
 ## Units.cs (207 lines)
 - **UnitClass** (enum, L6)

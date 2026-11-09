@@ -269,13 +269,17 @@ partial class BattleScreen
         b.Input = new PlayerInput { Aura = !spells, Dir = AttackDir.Right, Facing = MathHelper.PiOver2 };
         for (int i = 0; i < 30; i++) b.Update(1 / 60f);
         var by = circle.Units[0];
-        for (int i = 0; i < 110; i++) Effects(1 / 60f); // the steady effects (fire, mist, presence) build up first
         if (spells)
         {
             b.AddField(Abilities.Get("wildfire"), "burning", 0, by, new Vector2(-18, 16), 6, 60, 1, 10);
             b.AddField(Abilities.Get("mist"), "mist", 0, by, new Vector2(18, 14), 9, 60, 1, 0);
             b.AddField(Abilities.Get("ward"), "warded", 0, by, new Vector2(6, -10), 8, 60, 1, 6);
+            b.AddField(Abilities.Get("mirage"), "mirage", 0, by, new Vector2(20, -6), 5, 60, 1, 0);
             b.AddTimed(mine, Abilities.Get("blessing"), 1);
+        }
+        for (int i = 0; i < 110; i++) Effects(1 / 60f); // the steady effects (fire, mist, presence) build up first
+        if (spells)
+        {
             b.Flash("spell:attack", new Vector2(0, 12), 3, 0, "faith");
             b.Flash("bolt", new Vector2(8, 13), 1, 0, "craft");
             b.Flash("cast", by.Pos, 1, 0, "faith");

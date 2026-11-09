@@ -159,7 +159,7 @@ partial class MapScreen
         if (c.Spells.Count < Campaign.MaxLearned && learn.Count > 0)
         {
             int cost = Campaign.LearnCost * (c.Spells.Count + 1);
-            ui.Text($"LEARN ONE MORE ({cost} CROWNS; A TEACHER: {(Campaign.CircleTradition(c) == "faith" ? "A PRIEST" : "A CUNNING ONE")}, A SHRINE, STONES OR A HERMIT)", x, y, Style.Dim, 1);
+            ui.TextFit($"LEARN ONE MORE: {cost} CROWNS, WITH A TEACHER ({(Campaign.CircleTradition(c) == "faith" ? "A PRIEST" : "A CUNNING ONE")}, A SHRINE, STONES OR A HERMIT)", x, y, w, Style.Dim, 1);
             y += ui.U(12);
             for (int i = 0; i < learn.Count && i < 6; i++)
             {

@@ -424,4 +424,67 @@ sealed partial class UiLab
         ui.Rect(new Rectangle(p.X + (int)(p.Width * 0.38f), ground - U(24), U(4), U(24)), new Color(20, 12, 14)); // church tower
         ui.Rect(new Rectangle(p.X + (int)(p.Width * 0.38f) - U(2), ground - U(28), U(8), U(4)), new Color(20, 12, 14));
     }
+
+    // ---------- 10. magic and aura (docs/MAGIC_AURA.md 7) ----------
+
+    void MagicPage(Rectangle a)
+    {
+        Field();
+        // Centre: the spell fan of a circle you are directing (P in command view).
+        int bw = U(150), bh = U(16);
+        var spells = new[] { ("MEND", "12", true), ("BLESSING", "20", true), ("SMITE", "25", false), ("WARD", "NEEDS 25 WILL", false) };
+        int x = ui.W / 2 - bw / 2, y = a.Y + U(70);
+        var fan = new Rectangle(x - U(6), y - U(20), bw + U(12), (spells.Length + 1) * bh + U(26));
+        ui.Rect(fan, Color.Black * 0.6f);
+        ui.Frame(fan, Style.Aura * 0.6f, U(1));
+        ui.Text("PRIESTS: CAST", x, y - U(14), Kit.Gilt, 1);
+        ui.TextR("WILL 64", x + bw, y - U(14), new Color(120, 150, 255), 1);
+        for (int i = 0; i < spells.Length; i++)
+        {
+            var (name, cost, ready) = spells[i];
+            var r = new Rectangle(x, y + i * bh, bw, bh - U(2));
+            if (i == 1) ui.Rect(r, Kit.Mul(Style.Aura, 0.35f));
+            ui.Text(name, r.X + U(4), r.Y + U(3), ready ? Color.White : Style.Dim, 1);
+            ui.TextR(cost, r.Right - U(4), r.Y + U(3), ready ? Style.Aura : Style.Warn, 1);
+        }
+        ui.TextC("CLICK THE GROUND TO CAST. RMB CANCELS.", ui.W / 2f, y + spells.Length * bh + U(4), Style.Dim, 1);
+
+        // Bottom left: the captain's rows with a curse on him, and the form bar with the relic's slot after it.
+        var pr = ui.Plate(new Rectangle(a.X, a.Bottom - U(96), U(230), U(92)), solid: false);
+        int ry = pr.Y;
+        foreach (var (icon, label, frac, col) in new[] { ("heart", "HEALTH", 0.8f, Style.Bad), ("boot", "FEVER", 0.4f, Style.Bad), ("star", "QUENCHED", 0.7f, Style.Bad) })
+        {
+            ui.Icon(icon, pr.X, ry, col, 1);
+            ui.Text(label, pr.X + U(12), ry + U(1), Style.Dim, 1);
+            ui.Gauge(new Rectangle(pr.X + U(70), ry, pr.Width - U(74), U(8)), frac, col);
+            ry += U(14);
+        }
+        int fx = a.X, fy = pr.Y - U(40), fw = U(68), fh = U(22);
+        foreach (var (key, name, cost, on) in new[] { ("U", "FOCUS", "15", true), ("I", "THE RED LIONS ANSWER", "20", true), ("O", "AURA SLASH (WIDE)", "9", false), ("L", "AURA BURST", "60", true), ("BKSP", "RELIC", "+30", true) })
+        {
+            var r = new Rectangle(fx, fy, fw, fh);
+            var col = name == "RELIC" ? new Color(255, 230, 150) : Style.Aura;
+            ui.Rect(r, on ? Kit.Mul(col, 0.3f) : Color.Black * 0.5f);
+            ui.Frame(r, on ? col : Color.White * 0.15f, U(1));
+            ui.Text(key, r.X + U(4), r.Y + U(3), on ? Kit.Gilt : Style.Dim, 1);
+            ui.Text(ui.Fit(name, fw - U(8)), r.X + U(4), r.Y + U(12), on ? Color.White : Style.Dim, 1);
+            ui.TextR(cost, r.Right - U(4), r.Y + U(3), on ? col : Style.Dim, 1);
+            fx += fw + U(3);
+        }
+
+        // Right: the circle's spellbook on its roll.
+        var sb = ui.Plate(new Rectangle(a.Right - U(300), a.Y + U(200), U(300), U(150)), solid: true);
+        int sy = sb.Y;
+        ui.Text("THE SPELLBOOK", sb.X, sy, Kit.Gilt, 2);
+        ui.TextR("OSRIC, FATHER OF THE CIRCLE, RANK 2", sb.Right, sy + U(22), Kit.Gilt, 1);
+        sy += U(36);
+        ui.Text("PREPARED 3 OF 3. CLICK TO PREPARE OR SET ASIDE.", sb.X, sy, Style.Dim, 1);
+        sy += U(14);
+        int cw = (sb.Width - U(8)) / 3;
+        string[] known = { "* MEND", "* SMITE", "* WARD", "BLESSING" };
+        for (int i = 0; i < known.Length; i++)
+            ui.Button(new Rectangle(sb.X + i % 3 * (cw + U(4)), sy + i / 3 * U(21), cw, U(18)), known[i], true);
+        sy += 2 * U(21) + U(4);
+        ui.Text("LEARN ONE MORE: 300 CROWNS, WITH A TEACHER", sb.X, sy, Style.Dim, 1);
+    }
 }

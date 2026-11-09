@@ -158,7 +158,7 @@ partial class BattleScreen
         {
             string id = f.Effect?.Id ?? "";
             // Motes a square metre a second: fire is thick, mist and smoke are few but large and long-lived.
-            float rate = id switch { "burning" => 1.2f, "mist" or "smoke" => 0.5f, "warded" => 0.5f, "storm" => 0.6f, "mirage" => 1.2f, _ => 0.15f };
+            float rate = id switch { "burning" => 1.2f, "mist" or "smoke" => 0.12f, "warded" => 0.5f, "storm" => 0.6f, "mirage" => 1.2f, _ => 0.15f };
             if (id == "burning" && f.Dps <= 0) rate = 0;
             float want = MathF.Min(600, MathF.PI * f.Radius * f.Radius) * rate * dt;
             int n = (int)want + (fx.NextSingle() < want % 1 ? 1 : 0);
@@ -170,11 +170,11 @@ partial class BattleScreen
                 {
                     case "burning":
                         bool black = f.A.Tradition == "necromancy";
-                        Spray(p, 0.1f, 1, black ? new Color(110, 40, 150) : fx.Next(3) == 0 ? new Color(255, 220, 110) : new Color(255, 120, 30), 0.4f, 0.8f, 0.18f, false, -0.12f, -1.8f);
+                        Spray(p, 0.1f, 1, black ? new Color(110, 40, 150) : fx.Next(3) == 0 ? new Color(255, 220, 110) : new Color(255, 120, 30), 0.4f, 0.9f, 0.3f, false, -0.2f, -1.8f);
                         if (fx.Next(5) == 0) Spray(p, 1.4f, 1, new Color(84, 78, 72), 0.3f, 2f, 0.18f, false, 0.2f, -0.9f);
                         break;
                     case "mist" or "smoke":
-                        Spray(p, 0.2f + fx.NextSingle() * 0.8f, 1, id == "mist" ? new Color(214, 220, 226) : new Color(120, 118, 114), 0.1f, 3f, 0.4f, false, 0.1f);
+                        Spray(p, 0.3f + fx.NextSingle() * 1.2f, 1, id == "mist" ? new Color(196, 206, 204) : new Color(120, 118, 114), 0.1f, 4f, 0.9f, false, 0.35f);
                         break;
                     case "warded":
                         if (r > f.Radius * 0.8f) Spray(p, 0.2f, 1, new Color(255, 246, 210), 0.2f, 1.5f, 0.07f, false, 0, -1.2f);

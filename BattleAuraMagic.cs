@@ -20,7 +20,8 @@ public partial class Battle
     public bool Marks => Options.Standing.Contains("craft_marks");
     /// The share of a curse that reaches you: all of it, half behind aura armour (tier 3+), none at tier 5.
     float CurseShare => AuraTier >= 5 ? 0 : AuraTier >= 3 ? 0.5f : 1;
-    bool Fevered => Time < FeverUntil;
+    public bool Fevered => Time < FeverUntil;
+    public bool Quenched => Time < QuenchedUntil;
 
     /// A buff of your side lands: a Blessing or War song over you feeds your aura.
     void FeedOnBuff(AbilityDef a, Vector2 at, int team)

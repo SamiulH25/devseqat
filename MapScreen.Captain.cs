@@ -168,6 +168,15 @@ partial class MapScreen
     int OwnFormBlock(Rectangle c, int y)
     {
         var cap = C.Captain;
+        if (cap.OwnFormOffer.Count == 0 && cap.OwnForm == null && cap.Order == "" && cap.Forsworn.Count == 0 && cap.AuraTier > 0)
+        {
+            // The road to your own form (MA9): how far the tally has come, and what else it needs.
+            float t = cap.StyleTally.Values.Sum();
+            string top = cap.StyleTally.Count == 0 ? "" : $" MOSTLY {Campaign.Styles.First(s => s.Style == cap.StyleTally.MaxBy(kv => kv.Value).Key).Word.ToUpperInvariant()}.";
+            string line = $"YOUR STYLE: {MathF.Min(t, Campaign.OwnFormAt):0} OF {Campaign.OwnFormAt:0} TOWARD A FORM OF YOUR OWN.{top}" + (cap.AuraTier < 3 ? " AT AURA EXPERT." : "");
+            foreach (var l in ui.Wrap(line, c.Width)) { ui.Text(l, c.X, y, Style.Dim * 0.8f, 1); y += ui.U(11); }
+            return y + ui.U(2);
+        }
         if (cap.OwnFormOffer.Count == 0 || !C.MayMakeForm) return y;
         ui.Text("A FORM OF YOUR OWN", c.X, y, Style.Aura, 1); y += ui.U(11);
         int w = (c.Width - ui.U(6)) / 2, h = ui.U(18);

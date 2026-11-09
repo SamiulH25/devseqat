@@ -259,7 +259,7 @@ The core tension: **you are strongest as a leader when you are in the fight, but
   an Evil eye quenches your blade for 6 s and Fever slows your breath; aura armour (Aura Expert) halves them and a
   Transcendent captain turns them. Your lit blade, or a slash or leap form, breaks a working an enemy caster has begun
   (his Will is spent). Enemy champions throw their forms at your circle first. Carry the relic and raise it once a battle
-  (SPACE, a slot after your forms; it costs a charge): a Blessing round you and +30 aura, the overflow as surge. The craft
+  (BACKSPACE, a slot after your forms; it costs a charge): a Blessing round you and +30 aura, the overflow as surge. The craft
   rite **Craft marks** (Omen +3) makes your lit blade leave fever on the companies it strikes, for one battle.
   **Your own form:** a captain who never swore to an order makes a form from how he fights once he is an Aura Expert.
   The battles keep a tally (parries and ripostes, lance and saddle, the bow, a heavy weapon, sword and shield); when it

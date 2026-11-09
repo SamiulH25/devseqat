@@ -42,6 +42,25 @@ sealed partial class BattleScreen
             Tips.Show("height", "High ground. Men fighting downhill hit harder, archers shoot further, and a crest hides what is behind it.\nAn enemy on good ground may wait for you to come to him.");
     }
 
+    /// First times with aura and magic (docs/MAGIC_AURA.md 7): your forms, the blade, being spent, a curse, the relic, your circle.
+    void MagicTips()
+    {
+        var b = battle;
+        if (!b.Player.Active) return;
+        if (b.Fevered || b.Quenched)
+            Tips.Show("cursed", "An enemy curse is on you: an Evil eye quenches your blade, Fever slows your breath.\nAura armour (Aura Expert) halves a curse. Their mages are worth hunting: your lit blade breaks a working.");
+        else if (b.Spent)
+            Tips.Show("spent", "Your aura is spent (under 20): your blows land lighter and your breath comes back slowly.\nIt returns twice as fast standing still with no foe within 30 m.");
+        else if (b.AuraTier >= 2)
+            Tips.Show("blade", $"Hold {ctl.First(Act.AuraBlade)} to light the aura blade: harder blows through armour, paid from your aura.\nAt full aura, blows you land bank a surge that your next form spends first.");
+        else if (b.FormSlot.Any(f => f != null))
+            Tips.Show("forms", $"Your aura is awake. {ctl.First(Act.Form1)}, {ctl.First(Act.Form2)}, {ctl.First(Act.Form3)}: your forms; {ctl.First(Act.GreatForm)}: the great form, once a battle.\nEach costs aura. The aura row by your health shows the pool.");
+        if (b.HasRelic && !b.RelicRaised)
+            Tips.Show("relic", $"You carry the relic. Press {ctl.First(Act.Relic)} once this battle to raise it: a Blessing on the companies\naround you and aura for you. It costs a charge.");
+        if (b.Squads.Any(s => s.Team == 0 && s.Spells.Length > 0 && s.Units.Any(u => u.Active && u.Type.Spells.Length > 0)))
+            Tips.Show("circle", $"Your circle casts on its own when a spell fits. In command view select it and press {ctl.First(Act.Cast)}\nto pick a spell, then click the ground to cast it there.");
+    }
+
     /// The ground map, as you last set it (null: shown while deploying only).
     bool? groundView;
     Vector3 focusPoint;                        // what the camera looks at (the shadow map is centred here)
@@ -256,6 +275,7 @@ sealed partial class BattleScreen
         else if (!command && battle.Player.Active) Tips.Show("field", $"Field view: you fight. On horseback {ctl.First(Act.Forward)}/{ctl.First(Act.Back)} rein, {ctl.First(Act.Left)}/{ctl.First(Act.Right)} turn, {ctl.First(Act.Sprint)} gallops.\nMove the mouse to choose a swing direction, {ctl.First(Act.Attack)} to attack, {ctl.First(Act.Block)} to block (match the red mark to parry).\n{ctl.First(Act.CommandView)}: command view. Hold {ctl.Name(Act.OrderWheel)}: the order wheel. {ctl.First(Act.Help)}: all the keys.");
         else if (command && !deploying) Tips.Show("command", $"Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. {ctl.First(Act.CommandView)} returns to your body: you inspire the men near you.");
         if (deploying) GroundTips();
+        else MagicTips();
 
         if (ctl.Pressed(Act.Menu)) { if (helpOpen) helpOpen = false; else if (battle.Winner < 0) menuOpen = !menuOpen; skipMouse = true; }
         if (ctl.Pressed(Act.Help)) { helpOpen = !helpOpen; skipMouse = true; }

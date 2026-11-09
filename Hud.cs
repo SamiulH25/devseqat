@@ -375,8 +375,8 @@ sealed partial class Hud
             y += U(14);
         }
         Row("heart", "HEALTH", p.Hp / p.Type.MaxHp, Bad);
-        Row("boot", "STAMINA", p.Stamina / 100, Ok);
-        if (B.AuraTier > 0) Row("star", B.AuraBlade ? "BLADE" : B.Spent ? "SPENT" : B.Surge >= 1 ? $"SURGE {B.Surge:0}" : "AURA", B.Aura / Battle.AuraMax, B.Spent ? Dim : Style.Aura);
+        Row("boot", B.Fevered ? "FEVER" : "STAMINA", p.Stamina / 100, B.Fevered ? Bad : Ok); // a curse on you shows in red (MA9)
+        if (B.AuraTier > 0) Row("star", B.AuraBlade ? "BLADE" : B.Quenched ? "QUENCHED" : B.Spent ? "SPENT" : B.Surge >= 1 ? $"SURGE {B.Surge:0}" : "AURA", B.Aura / Battle.AuraMax, B.Quenched ? Bad : B.Spent ? Dim : Style.Aura);
         if (p.Mounted) Row("horse", "HORSE", p.HorseHp / p.Horse!.Hp, HorseCol);
         else Text("NO HORSE", x + U(12), y + U(1), Dim, 1);
         int rx = r.Right - U(10);
@@ -434,7 +434,7 @@ sealed partial class Hud
         var holy = new Color(255, 230, 150);
         Rect(r, ready ? Kit.Mul(holy, 0.3f) : Color.Black * 0.5f);
         Frame(r, ready ? holy : Color.White * 0.15f, U(1));
-        Text(Ctl.Name(Act.Relic), r.X + U(4), r.Y + U(3), ready ? Gold : Dim, 1);
+        Text(kit.Fit(Ctl.Name(Act.Relic) == "BACKSPACE" ? "BKSP" : Ctl.Name(Act.Relic), r.Width - U(32)), r.X + U(4), r.Y + U(3), ready ? Gold : Dim, 1);
         Text("RELIC", r.X + U(4), r.Y + U(12), ready ? Color.White : Dim, 1);
         TextR(ready ? "+30" : "SPENT", r.Right - U(4), r.Y + U(3), ready ? holy : Dim, 1);
     }

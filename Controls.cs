@@ -42,6 +42,7 @@ public readonly record struct Bind(Keys? Key, MouseButton? Mouse)
             Keys.LeftAlt or Keys.RightAlt => "ALT",
             Keys.OemTilde => "TILDE",
             Keys.Escape => "ESC",
+            Keys.Back => "BACKSPACE",
             >= Keys.D0 and <= Keys.D9 => ((int)Key - (int)Keys.D0).ToString(),
             _ => Key?.ToString().ToUpperInvariant() ?? "",
         },
@@ -61,6 +62,7 @@ public readonly record struct Bind(Keys? Key, MouseButton? Mouse)
             case "ALT": return new(Keys.LeftAlt, null);
             case "ESC": return new(Keys.Escape, null);
             case "TILDE": return new(Keys.OemTilde, null);
+            case "BACKSPACE": return new(Keys.Back, null);
         }
         if (s.Length == 1 && char.IsDigit(s[0])) return new(Keys.D0 + (s[0] - '0'), null);
         return Enum.TryParse<Keys>(s.Trim(), true, out var k) ? new(k, null) : null;
@@ -98,7 +100,7 @@ public sealed class Controls
         [Act.FollowParty] = new[] { "F" }, [Act.QuickSave] = new[] { "F5" }, [Act.QuickLoad] = new[] { "F9" },
         [Act.Formation] = new[] { "J" }, [Act.Bash] = new[] { "CTRL" }, [Act.SwapWeapon] = new[] { "N" },
         [Act.NextDivision] = new[] { "Y" }, [Act.GroundView] = new[] { "M" }, [Act.Stakes] = new[] { "K" },
-        [Act.AuraBlade] = new[] { "ALT" }, [Act.Form1] = new[] { "U" }, [Act.Form2] = new[] { "I" }, [Act.Form3] = new[] { "O" }, [Act.GreatForm] = new[] { "L" }, [Act.Relic] = new[] { "SPACE" },
+        [Act.AuraBlade] = new[] { "ALT" }, [Act.Form1] = new[] { "U" }, [Act.Form2] = new[] { "I" }, [Act.Form3] = new[] { "O" }, [Act.GreatForm] = new[] { "L" }, [Act.Relic] = new[] { "BACKSPACE" },
         [Act.Cast] = new[] { "P" },
         [Act.LordsScreen] = new[] { "L" }, [Act.SkillsScreen] = new[] { "K" }, [Act.RealmScreen] = new[] { "R" },
         [Act.DivisionsScreen] = new[] { "V" }, [Act.AtlasScreen] = new[] { "M" }, [Act.SiegeScreen] = new[] { "B" },
