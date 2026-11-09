@@ -15,7 +15,7 @@ public partial class Battle
 
     /// The pool now (0 while unawakened).
     public float Aura;
-    public int AuraTier => Options.AuraTier;
+    public int AuraTier => Math.Min(5, Options.AuraTier + brokeTier); // a breakthrough in the field lifts it at once (MA7)
     /// The blade burns now (hold the aura key, tier 2+, at least AuraLow to light it).
     public bool AuraBlade { get; private set; }
     /// Under AuraLow: the blade will not light and aura armour fails.
@@ -83,9 +83,10 @@ public partial class Battle
         if (presenceTick < 0.5f) return;
         float step = presenceTick;
         presenceTick = 0;
-        foreach (var u in Near(p.Pos, PresenceRadius, presenceNear))
+        float reach = AuraTier >= 5 ? LightRadius : PresenceRadius; // a Transcendent's presence reaches further (MA7)
+        foreach (var u in Near(p.Pos, reach, presenceNear))
         {
-            if (u == p || Vector2.DistanceSquared(u.Pos, p.Pos) > PresenceRadius * PresenceRadius) continue;
+            if (u == p || Vector2.DistanceSquared(u.Pos, p.Pos) > reach * reach) continue;
             if (u.Team != p.Team) { if (u.Morale > PresenceFloor) u.Morale = MathF.Max(PresenceFloor, u.Morale - PresenceShake * step); }
             else u.Morale = MathF.Min(90, u.Morale + PresenceSteady * step);
         }

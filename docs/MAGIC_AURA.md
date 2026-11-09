@@ -1,6 +1,6 @@
 # Magic and aura for the player: plan
 
-Status: being built (2026-11-09). Done: MA1-MA6. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
+Status: being built (2026-11-09). Done: MA1-MA7. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
 through M4 + P) and docs/KNIGHT_ORDERS.md (aura and orders: built K1-K8). Read docs/LEGACY.md first: your company is
 your legacy, and every change here must serve that.
 
@@ -344,3 +344,16 @@ change touches every later number.
   `AspectDef.On(f)`. The K sheet shows two aspect buttons under a form that may take one, and the aspect's name after the
   form's. The guard's Riposte and the leap's Return from 4.5 became plain numbers (Ready: cooldown x0.7; Far: range
   x1.3). Tests `OwnFormFromStyle`, `AspectChanges`.
+- **MA7 (moments):** `BattleMoments.cs`. Breakthrough: `BattleOptions.AtWall` (from `CaptainState.AuraWall`); felling
+  the enemy champion (`Kill` -> `ChampionFelled`) when his `FoeTier` is at least yours breaks the wall now: `AuraTier`
+  rises by one for the rest of the battle (`brokeTier`), the pool fills, your men within `BreakRally` (30 m) rally (a
+  man broken twice stays broken), flash `breakthrough` (a white shock, a rising column, a held moment through
+  `hitPause`). `BattleResult.BrokeThrough` -> `Campaign.BreakThrough` after the battle. Holding at two to one stays an
+  after-battle trial. Clash: `UpdateClash` (each tick after `UpdateAura`) starts one when your blade and the champion's
+  are lit within `ClashRadius` (3 m): `ClashAt` the midpoint, `ClashTime` 8 s at most, ended by a fall or more than
+  `ClashOut` (5 m) between you, then 10 s before another. `KeepRing` (after `Separate` in `Move`) puts any other man
+  inside the ring back on its edge; blows between the two land x`ClashBlow` (1.2, `ClashMult` in `Hit`). The camera
+  drift was left out: the ring shows as a long-lived ripple. Tier 5: presence reaches `LightRadius` (20 m); an enemy
+  debuff does not land on your companies within it (`InLight`); with the blade lit, an arrow coming at you from within
+  30 degrees of your facing falls short half the time (`CutsArrow`, seeded rng, `ArrowsCut`). Tests `BreakInBattle`,
+  `ClashRing`, `TranscendentLight`.

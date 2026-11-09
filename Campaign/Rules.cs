@@ -207,6 +207,7 @@ public static class Rules
         o.FormRanks = c.Forms.ToDictionary(id => id, id => Campaign.FormRank(c, id));
         o.FormAspects = new Dictionary<string, string>(c.FormAspects);
         o.OwnForm = c.OwnForm;
+        o.AtWall = c.AuraWall;
         o.PlayerType = CaptainType(c);
         o.PlayerSide = c.Kit.Side != "" ? CaptainType(c, side: true) : null;
         o.PlayerMount = CaptainMount(c);

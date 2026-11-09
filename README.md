@@ -267,6 +267,10 @@ The core tension: **you are strongest as a leader when you are in the fight, but
   saddle), a Mark (shot), a Ruin (burst) or a Wall (guard), named for your company and a little stronger than the form it
   grew from. Your own order teaches it. **Aspects:** a form at rank III takes one of two aspects on the K sheet, for good
   (a slash Wide or Far, a guard Long or Ready, a buff Broad or Lasting, and so on).
+  **Moments:** at your wall, fell an enemy champion of your tier or above and the wall breaks there and then: your tier
+  rises for the rest of the fight, your aura fills and the men near you rally. Two lit blades within 3 m start a **clash
+  of champions**: the men give you a ring, and blows between you land harder for up to 8 s. A Transcendent's light
+  reaches 20 m and turns curses from the companies in it, and his lit blade cuts arrows from the air in front of him.
 - **Morale and routing:** below 12 morale a unit routs and flees off the map (radius 95). It rallies again above 32, and a man who has
   broken twice stays broken. A side loses when it has no active, non-routing units.
 - **Melee:** windup, strike, recover. Hits interrupt windups. AI units block hits from the front by chance (Shieldmen 55%). A player block staggers the attacker; if stamina runs out, the guard breaks. Player swings cleave up to 3 targets.

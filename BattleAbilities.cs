@@ -345,7 +345,7 @@ public partial class Battle
                 FeedOnBuff(a, a.Self ? c.By.Center : c.At, team);
                 break;
             case "debuff":
-                foreach (var e in Squads) if (e.Team != team && e.Alive > 0 && Vector2.Distance(e.Center, c.At) < a.Radius + e.Radius) AddTimed(e, a, c.Power);
+                foreach (var e in Squads) if (e.Team != team && e.Alive > 0 && Vector2.Distance(e.Center, c.At) < a.Radius + e.Radius && !InLight(e)) AddTimed(e, a, c.Power); // not in a Transcendent's light (MA7)
                 CurseCaptain(a, c.At, team);
                 break;
             case "field":

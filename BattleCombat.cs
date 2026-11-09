@@ -214,7 +214,8 @@ public partial class Battle
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1) // arrows pass between a skeleton's ribs
             * (a.IsPlayer && AuraBlade && !ranged || FoeBlade(a, ranged) ? BladeDamage : 1) // the aura blade (K1; a champion's, K6)
-            * (a.IsPlayer && edgeLeft > 0 && !ranged ? 1 + edgeK : 1); // Thorn Edge (K2)
+            * (a.IsPlayer && edgeLeft > 0 && !ranged ? 1 + edgeK : 1) // Thorn Edge (K2)
+            * ClashMult(a, t); // a clash of champions (MA7)
         if (t.Squad != null) t.Squad.HitsTaken++;
         if (side != Side.Front && a.Squad != null && !ranged) a.Squad.FlankHits++;
         if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
@@ -322,6 +323,7 @@ public partial class Battle
             t.Pos -= new Vector2(-t.HeadingDir.Y, t.HeadingDir.X) * 1.0f; // the rider falls off to the side
         }
         if (killer.IsPlayer && t != killer) PlayerKills++;
+        if (killer.IsPlayer && t == EnemyCaptain) ChampionFelled(); // a breakthrough in the field (MA7)
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 7)]++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;
         if (killer.Team != t.Team) { killer.Kills++; if (t.IsLeader || t.Hero) killer.FelledLeader = true; }
@@ -401,6 +403,7 @@ public partial class Battle
                 if (t.Team == p.Shooter.Team || !t.Active) continue;
                 float r = t.Mounted ? 0.8f : 0.4f;
                 if ((!t.Mounted && p.Pos.Y > ground + 2) || Vector2.DistanceSquared(t.Pos, flat) > r * r) continue;
+                if (CutsArrow(t, p.Vel)) { p.Pos.Y = ground; p.Stuck = 0; break; } // a Transcendent's blade cuts it from the air (MA7)
                 Hit(p.Shooter, t, p.Damage, true, plunge: Vector2.DistanceSquared(p.Shooter.Pos, flat) > Plunging * Plunging * p.Shooter.Type.Range * p.Shooter.Type.Range); // a long shot drops from above
                 Arrows.RemoveAt(i);
                 break;

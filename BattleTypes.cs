@@ -23,6 +23,8 @@ public sealed class BattleOptions
     public Dictionary<string, string> FormAspects = new();
     /// Your own form (MA6), carried whole so the battle (and its replay) does not need the campaign's registry.
     public FormDef? OwnForm;
+    /// You stand at your aura's wall: felling a champion of your tier or above breaks it in the field (MA7).
+    public bool AtWall;
     /// The enemy leader's aura tier and forms (an order knight, a champion: docs/KNIGHT_ORDERS.md 6.1, K6; BattleChampion.cs).
     public int EnemyAura;
     public string[] EnemyForms = Array.Empty<string>();
@@ -134,4 +136,6 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     public int MadSpells { get; init; }
     /// You raised the relic in this battle (docs/MAGIC_AURA.md 3.4): it costs a charge more.
     public bool RelicRaised { get; init; }
+    /// Your wall broke in the fight (docs/MAGIC_AURA.md 4.6).
+    public bool BrokeThrough { get; init; }
 }

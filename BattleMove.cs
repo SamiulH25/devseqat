@@ -27,6 +27,7 @@ public partial class Battle
             u.Anim += dt * u.Vel.Length() * (u.Mounted ? 0.45f : 0.9f); // stride-locked walk / gallop cycle
         }
         Separate(dt); // near pairs only, through the spatial grid (BattleGrid.cs)
+        KeepRing(); // the men give two clashing champions room (MA7)
         // Trees and boulders are solid; a horse that rides into one pulls up hard.
         foreach (var u in Units)
         {

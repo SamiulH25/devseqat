@@ -128,6 +128,7 @@ public partial class Campaign
         var skillsBefore = new Dictionary<string, float>(Captain.Skills);
         if (playerIn) SkillsAfterBattle(r, won, playerTeam == 0 ? startStrength0 : startStrength1, playerTeam == 0 ? startStrength1 : startStrength0, before[Player], playerTeam);
         if (playerIn) OrderAfterBattle(won, playerTeam == 0 ? side1.ToList() : side0.ToList());
+        if (playerIn && r.BrokeThrough) BreakThrough("You felled a champion in the field, and the wall broke as he fell."); // MA7
         if (playerIn) StyleAfterBattle(r); // how you fought: your own form (MA6)
         if (playerIn) AuraAfterBattle(r, won, (playerTeam == 0 ? startStrength1 : startStrength0) / MathF.Max(1, playerTeam == 0 ? startStrength0 : startStrength1));
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);

@@ -91,6 +91,9 @@ public static partial class SelfTest
         RelicRaised();
         OwnFormFromStyle();
         AspectChanges();
+        BreakInBattle();
+        ClashRing();
+        TranscendentLight();
         AuraGrows();
         FormsWork();
         FormsLearned();

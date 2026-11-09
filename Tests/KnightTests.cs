@@ -941,5 +941,92 @@ public static partial class SelfTest
         var b = new Battle(6, Armies.Standard(0), Armies.Standard(1), new BattleOptions { AuraTier = 3 }.WithCaptain(c.Captain));
         Check(b.FormSlot[0] is { } s && MathF.Abs(s.Radius - Forms.Get("aura_slash").Radius * 1.5f) < 1e-4f, "the wide slash is wider in battle");
     }
+
+    /// MA7 (docs/MAGIC_AURA.md 4.6): at your wall, felling a champion of your tier breaks it on the spot: the tier rises in the
+    /// fight, the pool fills, the men near you rally, and the campaign hears of it. Not at the wall, nothing.
+    static void BreakInBattle()
+    {
+        Battle Field(bool wall)
+        {
+            var b = Battle.Empty(91, new BattleOptions { AuraTier = 3, EnemyAura = 3, AtWall = wall });
+            b.EnemyCaptain.Pos = b.Player.Pos + new Vector2(0, 3);
+            return b;
+        }
+        var b = Field(true);
+        var men = b.AddSquad(0, Troops.Get("levies"), 6, b.Player.Pos + new Vector2(6, 0), 3, Vector2.UnitY);
+        foreach (var u in men.Units) { u.Routing = true; u.Morale = 5; }
+        b.Aura = 30;
+        b.Kill(b.EnemyCaptain, b.Player);
+        Check(b.BrokeThrough && b.AuraTier == 4 && b.Aura >= Battle.AuraMax, $"felling a champion at the wall breaks it in the field (tier {b.AuraTier})");
+        Check(men.Units.All(u => !u.Routing && u.Morale > Battle.RallyAt), "the men near you rally");
+        Check(b.Result().BrokeThrough, "the campaign hears of it");
+        var n = Field(false);
+        n.Kill(n.EnemyCaptain, n.Player);
+        Check(!n.BrokeThrough && n.AuraTier == 3, "away from the wall, no breakthrough");
+    }
+
+    /// MA7 (4.7): two lit blades close start a clash: the men keep out of the ring, and it ends within its time.
+    static void ClashRing()
+    {
+        var b = Battle.Empty(92, new BattleOptions { AuraTier = 3, EnemyAura = 3 });
+        b.EnemyCaptain.Pos = b.Player.Pos + new Vector2(0, 2.2f);
+        b.AddSquad(0, Troops.Get("levies"), 12, b.Player.Pos + new Vector2(0, -4), 6, Vector2.UnitY);
+        b.AddSquad(1, Troops.Get("levies"), 12, b.Player.Pos + new Vector2(0, 7), 6, -Vector2.UnitY);
+        float started = -1, worst = 99;
+        for (int i = 0; i < 14 * 60; i++)
+        {
+            b.Aura = Battle.AuraMax;
+            b.Player.Hp = b.Player.Type.MaxHp; b.EnemyCaptain.Hp = b.EnemyCaptain.Type.MaxHp; // both stand to the end
+            var d = b.EnemyCaptain.Pos - b.Player.Pos;
+            b.Input = new PlayerInput { Aura = true, Facing = MathF.Atan2(d.Y, d.X), Attack = i % 40 < 20 };
+            b.Update(1 / 60f);
+            if (b.ClashOn && started < 0) started = b.Time;
+            if (b.ClashOn)
+                foreach (var u in b.Units)
+                    if (u.Active && !u.IsPlayer && u != b.EnemyCaptain) worst = MathF.Min(worst, Vector2.Distance(u.Pos, b.ClashAt));
+        }
+        Check(started >= 0, "two lit blades close start a clash");
+        Check(worst >= Battle.ClashRadius - 0.6f, $"the men keep out of the ring (nearest {worst:0.0} m)");
+        Check(!b.ClashOn && b.ClashUntil <= started + Battle.ClashTime + 0.01f, "it ends within its time");
+    }
+
+    /// MA7 (4.8): a Transcendent's light turns curses from the companies near him, and his lit blade cuts arrows from the air.
+    static void TranscendentLight()
+    {
+        bool Cursed(int tier)
+        {
+            var b = AuraField(93, tier);
+            var men = b.AddSquad(0, Troops.Get("levies"), 8, b.Player.Pos + new Vector2(5, 0), 4, Vector2.UnitY);
+            var witches = b.AddSquad(1, Troops.Get("war_witches"), 3, new Vector2(0, 80), 3, -Vector2.UnitY);
+            witches.HoldSpells = true;
+            CastNow(b, witches, "fever", men.Center);
+            b.Update(1 / 60f);
+            return men.Timed.Any(x => x.Effect.Id == "fever");
+        }
+        Check(Cursed(4) && !Cursed(5), "a Transcendent's light turns a curse from the company beside him");
+
+        int Cut(bool lit)
+        {
+            var a = AuraField(94, 5);
+            var bows = a.AddSquad(1, Troops.Get("bowmen"), 4, a.Player.Pos + new Vector2(0, 40), 4, -Vector2.UnitY);
+            int hits = 0;
+            for (int i = 0; i < 40; i++)
+            {
+                a.Aura = Battle.AuraMax;
+                a.Player.Hp = a.Player.Type.MaxHp;
+                a.Input = new PlayerInput { Aura = lit, Facing = MathF.PI / 2 }; // facing the shots
+                var p = a.Player.Pos;
+                a.Arrows.Add(new Projectile { Pos = new Vector3(p.X, a.Terrain.Height(p) + 1.2f, p.Y + 3), Vel = new Vector3(0, 0, -25), Shooter = bows.Units[0], Damage = 1 });
+                float hp = a.Player.Hp;
+                for (int k = 0; k < 15; k++) a.Update(1 / 60f);
+                if (a.Player.Hp < hp) hits++;
+            }
+            Check(!lit || hits > 5, $"some arrows still get through ({hits} of 40)");
+            return a.ArrowsCut;
+        }
+        int cut = Cut(true);
+        Check(cut is > 8 and < 32, $"his lit blade cuts about half the arrows from the air ({cut} of 40)");
+        Check(Cut(false) == 0, "an unlit blade cuts none");
+    }
 }
 

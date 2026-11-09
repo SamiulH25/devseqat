@@ -82,6 +82,14 @@ partial class BattleScreen
         switch (what)
         {
             case "cast": Rise(at, 0.8f, 8, col, 0.07f, 0.9f); AddRipple(at, 2.2f, 0.4f, 0.6f, col); break;
+            case "breakthrough": // the wall breaks in the field (MA7): a white shock, a rising column, a moment held
+                AddRipple(at, 0.5f, radius, 1.4f, Color.White, 0.4f);
+                AddRipple(at, 0.5f, radius * 0.6f, 1.0f, col);
+                Rise(at, 2.5f, 80, col, 0.12f, 1.6f);
+                Kick(0.6f);
+                if (Settings.Current.HitPause && quality != Quality.Low) hitPause = 0.3f;
+                break;
+            case "clash": AddRipple(at, radius, radius, 8f, col, 0.08f); AddRipple(at, 0.3f, radius * 1.6f, 0.6f, Color.White, 0.5f); Kick(0.3f); break; // the ring the men give (MA7)
             case "broken": Spray(at, 1.2f, 24, col, 5f, 0.5f, 0.06f, false); AddRipple(at, radius, 0.3f, 0.35f, Color.White); break; // a working shattered (MA5)
             case "spell:attack":
                 if (tag == "faith") { beams.Add(new Beam { At = at, Born = battle.Time, Life = 0.7f, Radius = MathF.Max(1, radius), Col = col }); Spray(at, 0.4f, 24, new Color(255, 244, 200), 3f, 0.7f, 0.08f, true); }
