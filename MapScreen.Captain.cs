@@ -35,13 +35,14 @@ partial class MapScreen
         ui.VGrad(port, Kit.Mul(Style.Sides[2].Cloth, 0.6f), new Color(18, 16, 14), 2);
         ui.Stars(new Rectangle(port.X, port.Y, port.Width, port.Height / 2), (float)C.S.Hours, 20);
         ui.Hills(port, port.Bottom - ui.U(20), ui.U(8), 1.5f, new Color(30, 24, 20));
-        ui.Portrait(UnitType.Captain, new Rectangle(port.X, port.Y + ui.U(4), port.Width, port.Height - ui.U(4)), 3 * ui.S);
+        ui.Portrait(Rules.CaptainType(cap), new Rectangle(port.X, port.Y + ui.U(4), port.Width, port.Height - ui.U(4)), 3 * ui.S); // your kit and face
         ui.Frame(port, Color.Black * 0.6f, ui.U(1));
         ui.Shield(new Rectangle(port.X + ui.U(6), port.Bottom - ui.U(42), ui.U(30), ui.U(36)), Style.Sides[2]);
         int y = port.Bottom + ui.U(10);
         string name = (me?.Name ?? "The Captain").ToUpperInvariant();
         ui.Text(name, c.X, y, Style.Text, ui.TW(name, 2) <= c.Width ? 2 : 1); y += ui.U(20);
         if (C.Title is { Length: > 0 } title) { ui.Text(title.ToUpperInvariant(), c.X, y - ui.U(4), Kit.Gilt, 1); y += ui.U(10); } // P5
+        if (C.OriginNote is { Length: > 0 } origin) { ui.TextFit(origin.ToUpperInvariant(), c.X, y - ui.U(4), c.Width, Style.Dim, 1); y += ui.U(10); } // the creator
         int cx = c.X;
         cx += ui.Chip(cx, y, Campaign.RankName(C.Rank).ToUpperInvariant(), Kit.Gilt, "crown") + ui.U(4);
         if (me != null) ui.Chip(cx, y, $"AGE {me.Age}", Style.Dim);

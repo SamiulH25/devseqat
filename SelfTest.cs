@@ -164,6 +164,7 @@ public static partial class SelfTest
         HouseholdGuard();
         RankRewards();
         StartingRoad();
+        CharacterCreator();
         BalanceMatchesData();
         HorsesCostGold();
         Career();

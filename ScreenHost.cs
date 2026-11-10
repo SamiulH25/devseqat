@@ -101,10 +101,11 @@ sealed class ScreenHost : Game
 
     // ---------- modes ----------
 
-    public void StartCampaign(int seed, int realm = 0)
+    /// A new campaign; `making` is the captain from the character creator (it also chose the road, so no road event).
+    public void StartCampaign(int seed, int realm = 0, CaptainMaking? making = null)
     {
-        campaign = Campaign.New(seed, realm);
-        if (campaignShots == null) campaign.OfferRoad(); // the first choice: how the captain fights (P5)
+        campaign = Campaign.New(seed, realm, making);
+        if (campaignShots == null && making == null) campaign.OfferRoad(); // the first choice: how the captain fights (P5)
         map.Open(campaign);
         mode = Mode.Map;
     }
@@ -191,7 +192,7 @@ sealed class ScreenHost : Game
     protected override void Draw(GameTime gameTime)
     {
         Ui.Now = (float)gameTime.TotalGameTime.TotalSeconds;
-        Ui.Instant = campaignShots != null || lab.ShotsDir != null || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("IRONFIELD_SHOTS"));
+        Ui.Instant = campaignShots != null || lab.ShotsDir != null || title.ShotsDir != null || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("IRONFIELD_SHOTS"));
         Overflow.Frame(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
         Tips.InBattle = mode == Mode.Battle;
         switch (mode)
@@ -254,8 +255,8 @@ sealed class ScreenHost : Game
 
     void CaptureShot()
     {
-        string? name = pendingShot ?? battle.PendingShot ?? lab.PendingShot;
-        string? dir = campaignShots ?? lab.ShotsDir ?? Environment.GetEnvironmentVariable("IRONFIELD_SHOTS");
+        string? name = pendingShot ?? battle.PendingShot ?? lab.PendingShot ?? title.PendingShot;
+        string? dir = campaignShots ?? lab.ShotsDir ?? title.ShotsDir ?? Environment.GetEnvironmentVariable("IRONFIELD_SHOTS");
         if (name == null || string.IsNullOrEmpty(dir)) return;
         var gd = GraphicsDevice;
         int w = gd.PresentationParameters.BackBufferWidth, h = gd.PresentationParameters.BackBufferHeight;
@@ -272,6 +273,7 @@ sealed class ScreenHost : Game
         pendingShot = null;
         battle.PendingShot = null;
         lab.PendingShot = null;
+        title.PendingShot = null;
     }
 
     void CampaignShots()

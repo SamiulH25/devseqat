@@ -443,6 +443,10 @@ public sealed class CaptainState
     public List<string> OwnFormOffer = new();
     public FormDef? OwnForm;
     public Dictionary<string, string> FormAspects = new();
+    /// Who the captain was before the company (the character creator, Data/origins.json): birth and past ids ("" = a save
+    /// from before origins, or a campaign started without the creator), and the face chosen (a Variety visage, -1 = the plain head).
+    public string Birth = "", Origin = "";
+    public int Visage = -1;
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought

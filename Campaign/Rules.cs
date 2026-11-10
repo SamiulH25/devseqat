@@ -171,7 +171,7 @@ public static class Rules
         var shield = Gear.Get(w.TwoHanded ? "no_shield" : k.Shield);
         GearDef body = Gear.Get(k.Body), helm = Gear.Get(k.Helm);
         var t = Troops.Get("captain").Clone();
-        t.Look = t.Look with { Weapon = w.Look, Shield = shield.Look, Body = body.Look, Legs = body.Legs, Feet = body.Feet, Head = helm.Look };
+        t.Look = t.Look with { Weapon = w.Look, Shield = shield.Look, Body = body.Look, Legs = body.Legs, Feet = body.Feet, Head = helm.Look, Visage = c.Visage }; // the face from the creator
         (t.Damage, t.Reach, t.Windup, t.Recover, t.Pierce) = (w.Damage, w.Reach, w.Windup, w.Recover, w.Pierce);
         (t.Ammo, t.Range, t.Reload, t.ThrustOnly) = (w.Ammo, w.Range, w.Reload, w.Thrust);
         t.BlockChance = shield.Block;

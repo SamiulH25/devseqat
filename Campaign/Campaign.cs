@@ -58,12 +58,14 @@ public sealed partial class Campaign
     // ---------- a new campaign ----------
 
     /// A new campaign; `realm` is the realm you start in (docs/archive/WORLD.md W5): its capital, its villages' recruits.
-    public static Campaign New(int seed, int realm = 0)
+    /// A new campaign; `making` is the captain from the character creator (null: the plain captain, who picks a road by event).
+    public static Campaign New(int seed, int realm = 0, CaptainMaking? making = null)
     {
         var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent,
             Layout = WorldMap.CurrentLayout, DataRealms = Factions.All.Count };
         s.Captain.Renown = B.StartRenown;
         StartingSkills(s.Captain);
+        if (making != null) { Origins.Shape(s.Captain, making); if (Origins.Free(making)) s.Captain.Contract = -1; }
         var map = WorldMap.Generate(seed, s.MapExtent, s.Layout, s.DataRealms);
         s.Provinces = map.Provinces;
         s.Settlements = map.Settlements;
@@ -113,8 +115,10 @@ public sealed partial class Campaign
         var first = new Party { Id = s.NextId++, Kind = PartyKind.Bandit, Name = "Ditch Wolves", Pos = player.Pos + new Vector2(0, 16), Tier = 1, ChaseId = player.Id, Moving = true, TaskUntil = 72 };
         first.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(9), 0));
         s.Parties.Add(first);
-        c.Log($"You sign on with the {c.FactionNames[0]} as a free captain. Their steward pays 85% of your upkeep each week.");
+        if (s.Captain.Contract >= 0) c.Log($"You sign on with the {c.FactionNames[realm]} as a free captain. Their steward pays 85% of your upkeep each week.");
+        else c.Log("You fly your own banner. No steward pays your upkeep: take contracts, loot and ransoms.");
         c.Log("Levies upgrade after a battle or two: visit a town's training yard.");
+        if (making != null) c.ApplyMaking(making, capital);
         return c;
     }
 

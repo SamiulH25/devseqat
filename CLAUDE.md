@@ -48,7 +48,7 @@ Rendering without a display (works in the cloud container, software GL via Mesa 
 IRONFIELD_SAVES=/tmp/ifs IRONFIELD_SHOTS=/tmp/shots xvfb-run -a -s "-screen 0 1280x720x24" dotnet run -c Release --no-build
 ```
 Saves ~30 staged battle PNGs (field-view.png, command-overview.png, gallery-*.png, pose-sheet*.png, pose-horses.png...) and quits, with `render.txt` (sprite triangles, lines and marks drawn per shot). `IRONFIELD_CAMPAIGN_SHOTS=/dir`
-does the same for campaign screens, `IRONFIELD_LAB_SHOTS=/dir` for every UI lab page. Each run also writes `overflow.txt` (text that runs out of its panel; aim for none). ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
+does the same for campaign screens, `IRONFIELD_LAB_SHOTS=/dir` for every UI lab page, `IRONFIELD_CREATOR_SHOTS=/dir` for each character creator step. Each run also writes `overflow.txt` (text that runs out of its panel; aim for none). ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
 
 Other env vars: `IRONFIELD_SAVES` (save dir; settings go to its parent), `IRONFIELD_QUALITY=High|Medium|Low`,
 `IRONFIELD_LEVELS=4,2` (quick-battle army levels), `IRONFIELD_MEN=750` (quick-battle men a side; default half the Battle size setting), `IRONFIELD_WEATHER=hour,rain,fog`, `IRONFIELD_GROUND=river` or `=Hills,river` (a `TerrainParams` preset), `IRONFIELD_LAYOUT=Ridge` (a `FieldLayout`), `IRONFIELD_AURA=4,rose` (quick battle: captain aura tier and an order's forms),
@@ -66,7 +66,7 @@ CI: `.github/workflows/ci.yml` builds, runs `--selftest`, and on push publishes 
 ```
 Program.cs  CLI switches (--selftest/--balance/--replay/--write-controls) else runs ScreenHost
 ScreenHost  MonoGame Game. Mode {Title, Map, Battle, Lab}; owns Art, Audio, Settings, Controls (Ctl), Shading, Quality
-  TitleScreen ── New/Continue/QuickBattle ──┐
+  TitleScreen ── New/Continue/QuickBattle ──┐   New opens CreatorScreen (the character creator)
   MapScreen (campaign UI + 3D map) ◄────────┤   SettingsScreen overlay on any mode
   BattleScreen (battle UI, camera, render) ◄┘
 
@@ -158,6 +158,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Unit/troop types, look, mounts | `Units.cs`, `Troops.cs` (+ `Armies` presets, `Large`, `Divide`), `Data/troops.json` |
 | Battle inputs/outputs | `BattleTypes.cs` (`BattleOptions`, `Weather`, `BattleResult`, `CompanyResult`) |
 | Terrain, rivers, foliage placement, siege wall geometry / the ground layer (kinds of ground, cover) / field layouts (ridge, two hills, broken, fen, river line, wooded flank, forest clearing, village, hedgerows, pass) / hedges, fences, bridges | `Terrain.cs` (headless) / `TerrainGround.cs` (`GroundKind`, `Grounds` <- `Data/ground.json`, `GroundAt`, `CoverAt`, `Paint`) / `TerrainLayouts.cs` (`FieldLayout`, `ShapeLayout`, `LayoutHeight`, `GroundOf`, `PlaceVillage`, `PlaceHedges`) / `TerrainFeatures.cs` (`Feature`, `AddFeature`, `GoRound`, `CrossesFeature`, `BridgeTheRoad`); drawn in `World.Features.cs`; docs/archive/TERRAIN.md |
+| The character creator (NEW CAMPAIGN): homeland, birth, past, fighting road, face, names, the oath; origins and their effects, origin events (`origin:<id>` trigger) | `CreatorScreen.cs` (UI, opened from `TitleScreen`; `IRONFIELD_CREATOR_SHOTS=/dir` saves each step) / `Origins.cs` (`OriginDef`, `CaptainMaking`, loads `Data/origins.json`, `Shape`, `Preview`, `Describe`, `Validate`) / `Campaign/Making.cs` (`ApplyMaking`: world effects at the end of `Campaign.New(seed, realm, making)`, `OriginNote`); save `CaptainState.Birth`/`Origin`/`Visage` (the face, read by `Rules.CaptainType`); test `Tests/OriginTests.cs` |
 | Campaign data model + save/load/migration | `Campaign/CampaignState.cs` (also `Rng`, `Balance` <- `Data/campaign.json`, `Names`) |
 | Campaign time, movement, encounters, hourly/daily/weekly ticks | `Campaign/Campaign.cs` |
 | Battles from the campaign: prepare, finish, auto-resolve, apply results | `Campaign/CampaignBattle.cs` (`PrepareBattle`, `FinishBattle`, `Apply`) |
@@ -234,6 +235,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
   in `Campaign.Find` / `ApplyEffect` plus its name in `Triggers` / `Verbs` (`SelfTest.EventsAndQuests` validates the file).
   `"scene"` picks the picture; a follow-up weeks later is a `flag:name` effect plus an event with trigger `flag:name`.
 - **Try a new UI look:** add a page method in `UiLab.Pages.cs`/`.Scenes.cs`, list it in the `pages` array in `UiLab.cs`, build widgets in `UiKit.cs` (shared with the real screens); check with `IRONFIELD_LAB_SHOTS`.
+- **Add an origin:** an entry under `births` or `pasts` in `Data/origins.json` (effects: gold, renown, food, horses, opinion_realm, skill:Id:N, gear:id, wear:id, men:troop:N, free; a `perk`; `age`; an `icon` from `Kit.IconNames`) and a story event with trigger `origin:<id>` in `Data/events.json`. `SelfTest.CharacterCreator` validates it.
 - **Add a sound:** add a `Cue`, a case in `Synth.Make` (AudioSynth.cs) built from its `Random` and a level in `Synth.Peak`; emit from the sim with `Sound(Cue.X, pos)`; listen with `--sounds`.
 
 ## Invariants and gotchas (break these and things fail subtly)

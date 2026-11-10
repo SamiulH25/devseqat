@@ -85,7 +85,8 @@ public sealed partial class Campaign
         foreach (var e in Events)
         {
             if (Events.Count(x => x.Id == e.Id) > 1) yield return $"{e.Id}: duplicate id";
-            if (!Triggers.Contains(e.Trigger) && !e.Trigger.StartsWith("flag:") && !(e.Trigger.StartsWith("trait:") && EarnedTraits.Contains(e.Trigger[6..])))
+            if (!Triggers.Contains(e.Trigger) && !e.Trigger.StartsWith("flag:") && !(e.Trigger.StartsWith("trait:") && EarnedTraits.Contains(e.Trigger[6..]))
+                && !(e.Trigger.StartsWith("origin:") && Origins.Births.Concat(Origins.Pasts).Any(o => o.Id == e.Trigger[7..])))
                 yield return $"{e.Id}: unknown trigger {e.Trigger}";
             if (e.Trigger.StartsWith("flag:") && !CodeFlags.Contains(e.Trigger[5..]) && !Events.Any(x => x.Choices.Any(c => c.Effects.Contains(e.Trigger)))) yield return $"{e.Id}: nothing sets {e.Trigger}";
             if (e.Choices.Count is < 2 or > 3) yield return $"{e.Id}: needs two or three choices";
@@ -157,6 +158,8 @@ public sealed partial class Campaign
                 return Pick(S.Settlements.Where(v => v.Kind == SettlementKind.Village && v.Culture != Me.Culture && v.Culture != "common" && !Refuses(v)
                     && Vector2.Distance(v.Pos, Player.Pos) < 14 * Map.Spread), v => ev.Settlement = v.Id, ev);
             case var tr when tr.StartsWith("trait:"): return Me.Traits.Contains(tr[6..]) ? ev : null;
+            // The captain's own past catches up with them (the character creator): only after the first fortnight.
+            case var o when o.StartsWith("origin:"): return S.Hours >= 14 * 24 && (Captain.Birth == o[7..] || Captain.Origin == o[7..]) ? ev : null;
             case var f when f.StartsWith("flag:"): return S.Flags.TryGetValue(f[5..], out float set) && S.Hours - set >= FlagDays * 24 ? ev : null;
             case "in_town": return SettlementAt(Player.Pos) is { Kind: SettlementKind.Town } town && !Refuses(town) ? (ev.Settlement = town.Id) >= 0 ? ev : null : null;
             default: return null;

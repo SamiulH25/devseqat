@@ -644,6 +644,81 @@
       ]
     },
     {
+      "id": "origin_sellsword", "trigger": "origin:sellsword", "cooldown": 9999, "scene": "camp", "title": "AN OLD PAYMASTER",
+      "text": "A fat man rides into camp: the paymaster of your last company, who still owes your old file a season's wages. He has heard you are doing well.",
+      "choices": [
+        { "label": "SHAKE IT OUT OF HIM", "effects": ["gold:180", "renown:-2"] },
+        { "label": "TAKE HIS MEN INSTEAD", "effects": ["men:4"] },
+        { "label": "FORGIVE THE DEBT", "effects": ["renown:4", "cohesion:3"] }
+      ]
+    },
+    {
+      "id": "origin_hedge_knight", "trigger": "origin:hedge_knight", "cooldown": 9999, "scene": "town", "title": "A HERALD REMEMBERS",
+      "text": "A herald in the square knows your arms from the old tourney circuit. He offers to cry your deeds in every town he visits, for a fee.",
+      "choices": [
+        { "label": "PAY HIM WELL", "need": "gold:80", "effects": ["gold:-80", "renown:12"] },
+        { "label": "ASK FOR THE LISTS INSTEAD", "effects": ["renown:3", "farsight:3"] }
+      ]
+    },
+    {
+      "id": "origin_disinherited", "trigger": "origin:disinherited", "cooldown": 9999, "scene": "court", "title": "YOUR UNCLE'S LETTER",
+      "text": "A letter under your uncle's seal: he hears you lead men now, and offers gold if you keep away from the old lands. Your father's riders watch you read it.",
+      "choices": [
+        { "label": "TAKE THE GOLD", "effects": ["gold:300", "cohesion:-4"] },
+        { "label": "BURN IT IN FRONT OF THEM", "effects": ["cohesion:5", "renown:5", "opinion_realm:-2"] }
+      ]
+    },
+    {
+      "id": "origin_deserter", "trigger": "origin:deserter", "cooldown": 9999, "scene": "camp", "title": "A FACE FROM THE OLD WAR",
+      "text": "One of the new men stares at you over the fire. He was in the company you walked out of, and he remembers why you left.",
+      "choices": [
+        { "label": "TELL THE MEN THE TRUTH", "effects": ["cohesion:4", "renown:2"] },
+        { "label": "PAY FOR HIS SILENCE", "need": "gold:60", "effects": ["gold:-60"] },
+        { "label": "SEND HIM AWAY", "effects": ["cohesion:-2", "opinion_realm:-2"] }
+      ]
+    },
+    {
+      "id": "origin_poacher", "trigger": "origin:poacher", "cooldown": 9999, "scene": "camp", "title": "THE KING'S DEER",
+      "text": "Your scouts find a royal herd in the woods ahead. Your men are hungry, and you have not forgotten how it is done.",
+      "choices": [
+        { "label": "ONE LAST HUNT", "effects": ["food:40", "opinion_realm:-2"] },
+        { "label": "TEACH THE LADS THE WOODS", "effects": ["xp:6"] }
+      ]
+    },
+    {
+      "id": "origin_outlaw", "trigger": "origin:outlaw", "cooldown": 9999, "scene": "camp", "title": "YOUR OLD BAND",
+      "text": "Three of your old band step out of the trees with their hands open. They have a hoard they cannot spend, and they want to come in from the cold.",
+      "choices": [
+        { "label": "TAKE THEM AND THE HOARD", "effects": ["men:3", "gold:150", "renown:-4"] },
+        { "label": "TAKE THE HOARD, HANG THEM", "effects": ["gold:150", "renown:4", "cohesion:-3"] },
+        { "label": "SEND THEM ON THEIR WAY", "effects": ["renown:1"] }
+      ]
+    },
+    {
+      "id": "origin_surgeon", "trigger": "origin:surgeon", "cooldown": 9999, "scene": "camp", "title": "A FEVER IN THE VILLAGE",
+      "text": "A village on your road has the bloody flux. They know a surgeon leads this company, and they beg you to come.",
+      "choices": [
+        { "label": "TREAT THEM", "effects": ["renown:6", "heal:20"] },
+        { "label": "MARCH ON", "effects": ["cohesion:-1"] }
+      ]
+    },
+    {
+      "id": "origin_drillmaster", "trigger": "origin:drillmaster", "cooldown": 9999, "scene": "camp", "title": "THE PARADE GROUND VOICE",
+      "text": "The men are slack. You still have the voice that broke a thousand recruits, and a free morning.",
+      "choices": [
+        { "label": "DRILL THEM TILL THEY DROP", "effects": ["xp:10", "cohesion:-2"] },
+        { "label": "DRILL THEM, THEN ALE", "need": "gold:40", "effects": ["gold:-40", "xp:6", "cohesion:3"] }
+      ]
+    },
+    {
+      "id": "origin_highborn", "trigger": "origin:highborn", "cooldown": 9999, "scene": "court", "title": "A COUSIN AT COURT",
+      "text": "A cousin you have not seen since childhood writes from court: a word from your family could warm a lord or two, if you remember them in turn.",
+      "choices": [
+        { "label": "SEND A GIFT", "need": "gold:100", "effects": ["gold:-100", "opinion_realm:6"] },
+        { "label": "WRITE BACK WARMLY", "effects": ["opinion_realm:2"] }
+      ]
+    },
+    {
       "id": "trait_lionheart", "trigger": "trait:Lionheart", "cooldown": 90, "scene": "town", "title": "A SONG ABOUT YOU",
       "text": "A minstrel at the inn sings of a captain who fights in the front rank and calls out lords to single combat. Heads turn your way.",
       "choices": [

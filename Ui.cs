@@ -198,5 +198,5 @@ sealed class Ui
     }
 
     /// A troop portrait cropped to `box`; `k` is the pixel scale (default: the UI scale).
-    public void Portrait(UnitType t, Rectangle box, int k = 0) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S);
+    public void Portrait(UnitType t, Rectangle box, int k = 0, float top = 1.92f) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S, top);
 }
