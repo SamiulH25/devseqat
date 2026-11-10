@@ -25,6 +25,8 @@ sealed partial class Puppet
         public float Crouch { get; init; }
         /// Down on one knee (a front-rank shooter).
         public bool Kneel { get; init; }
+        /// The head turned from the body (degrees, + to his right): a man looking round.
+        public float Look { get; init; }
     }
     internal record struct Key(float Alpha, float Pitch, float Yaw);
 
@@ -113,8 +115,23 @@ sealed partial class Puppet
         if (t.Size > 1.5f && moving) leanX += stride * 5; // a troll or an ogre lumbers from foot to foot
         float turning = MathF.Abs(MathHelper.WrapAngle(u.Facing - u.ViewFacing));
         if (!moving && !u.Mounted && turning > 0.12f) leg = MathF.Sin(now * 14 + phase * 6) * 16 * MathF.Min(1, turning * 3); // he steps round, not slides
-        float hurt = u.HitFlash > 0 ? Ease.Kick(1 - u.HitFlash / 0.15f) : 0; // a flinch away from the blow
-        leanZ -= hurt * 12;
+        float hurt = u.HitFlash > 0 ? Ease.Kick(1 - u.HitFlash / 0.15f) : 0; // a flinch away from the blow, the way it came
+        var from = u.Pos - u.HitFrom;
+        if (hurt > 0 && u.HitFrom != Vector2.Zero && from.LengthSquared() > 1e-4f)
+        {
+            from.Normalize();
+            Vector2 f = new(MathF.Cos(u.ViewFacing), MathF.Sin(u.ViewFacing)), r = new(-f.Y, f.X);
+            leanX += Vector2.Dot(from, r) * hurt * 14;
+            leanZ += Vector2.Dot(from, f) * hurt * 12;
+        }
+        else leanZ -= hurt * 12;
+        float unhorsed = (now - u.ThrownAt) / 1.2f;
+        if (!u.Mounted && now > 0 && unhorsed >= 0 && unhorsed < 1)
+        {
+            // His horse fell under him (A6): pitched forward onto his hands, then back on his feet.
+            float up = Ease.InOut(unhorsed);
+            return new Pose(0, 115 - 70 * up, 0, 0, 115 - 70 * up, false, false, 0, 70 * (1 - up), 0, 0, unhorsed > 0.6f) { Crouch = 0.8f * (1 - up) };
+        }
         if (u.Routing)
             return new Pose(leg * 1.2f, 150 + swing * 2, 0, 0, 140 - swing * 2, false, false, leanX, 14, bob, 0, false); // arms up, running for his life
         if (winner >= 0 && u.Team == winner && !moving && u.Action == UnitAction.None && now > 0)
@@ -130,7 +147,8 @@ sealed partial class Puppet
         if (t.Class == UnitClass.Archer)
         {
             bool aim = u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving);
-            if (!aim) return new Pose(leg, 15 + swing - leg * 0.3f, 0, 0, 10 - swing + leg * 0.3f, false, false, leanX, leanZ, bob);
+            if (!aim) return Life(u, new Pose(leg, 15 + swing - leg * 0.3f, 0, 0, 10 - swing + leg * 0.3f, false, false, leanX, leanZ, bob), now, phase, moving);
+            if (u.Mounted) leanZ -= 9 * MathF.Max(0, -MathF.Cos(MathHelper.WrapAngle(u.ViewFacing - u.ViewHeading))); // shooting back over the horse's tail, he sits back
             bool kneel = FrontOfShooters(u, moving);
             if (u.Action == UnitAction.Recover) return new Pose(leg, 100, 0, 0, 92, false, true, leanX, leanZ - 2, bob, 0) { Kneel = kneel }; // the release: the hand flies back
             float draw = Ease.InOut(1 - u.Cooldown / 1.1f); // nock low, then draw as the next shot comes up
@@ -184,6 +202,13 @@ sealed partial class Puppet
             default:
                 if (u.Charging) { arm = Lerp(idle, raise, Ease.Out(u.Charge)); leanZ -= 4 * u.Charge; }
                 else if (moving) arm = arm with { Alpha = arm.Alpha + swing * (two ? 0.25f : 0.6f) };
+                else if (Idle(u, moving) && IdleOf(u.Index, now) is (1, var w) && w > 0)
+                {
+                    // At ease (A5): a pole stood on its butt, a two-hander leant on point down, a sword rested on the shoulder.
+                    var rest = grip is Grip.Pole && two ? new Key(22, 90, 0) : two ? new Key(26, -80, 0) : new Key(78, 140, -30);
+                    arm = Lerp(arm, rest, w);
+                    leanX += 3 * w;
+                }
                 break;
         }
         if (t.Look.Body == "bones") arm = arm with { Alpha = arm.Alpha + MathF.Sin(now * 23 + phase * 40) * 3 }; // dry joints rattle
@@ -201,8 +226,38 @@ sealed partial class Puppet
             }
         }
         if (u.Action == UnitAction.Recover && two) crouch = MathF.Max(crouch, 0.25f); // the weight goes down into a big blow
-        return new Pose(leg, arm.Alpha, arm.Pitch, arm.Yaw, shield ? 85 : 15 + leg * 0.4f - swing * 0.6f, shield, false, leanX, leanZ, bob)
-        { TwoHand = two && u.Action != UnitAction.Stagger, Crouch = crouch };
+        return Life(u, new Pose(leg, arm.Alpha, arm.Pitch, arm.Yaw, shield ? 85 : 15 + leg * 0.4f - swing * 0.6f, shield, false, leanX, leanZ, bob)
+        { TwoHand = two && u.Action != UnitAction.Stagger, Crouch = crouch }, now, phase, moving);
+    }
+
+    /// A man at ease: standing, on foot, doing nothing, with no foe within 25 m.
+    static bool Idle(Unit u, bool moving) =>
+        !moving && !u.Mounted && !u.IsPlayer && !u.Charging && u.Action == UnitAction.None && u.EnemyDist > 25 && !u.Routing && u.Type.Size < 1.5f;
+
+    /// Idle life (docs/ANIMATION_ROSTER.md A5): every 8 s each man may take up one of the idles, eased in and out:
+    /// 1 his grip's rest, 2 a look round, 3 a roll of the shoulders (0: none). Returns the idle and how far into it (0..1).
+    internal static (int Kind, float W) IdleOf(int index, float now)
+    {
+        const float Period = 8;
+        float t = now / Period + Ease.Hash(index * 13 + 3) * 10;
+        int slot = (int)MathF.Floor(t);
+        float f = t - slot;
+        int kind = (int)(Ease.Hash(index * 7919 + slot * 31) * 6);
+        return (kind < 3 ? 0 : kind - 2, Ease.InOut(Math.Clamp(MathF.Min(f, 1 - f) * Period / 1.2f, 0, 1)));
+    }
+
+    /// The idles every kind of man shares: a look round and a roll of the shoulders.
+    static Pose Life(Unit u, Pose p, float now, float phase, bool moving)
+    {
+        if (!Idle(u, moving)) return p;
+        var (kind, w) = IdleOf(u.Index, now);
+        if (kind == 2) return p with { Look = MathF.Sin(now * 0.8f + phase * 5) * 60 * w };
+        if (kind == 3)
+        {
+            float roll = MathF.Sin(now * 3 + phase * 4) * w;
+            return p with { ArmA = p.ArmA + roll * 8, OffA = p.OffA - roll * 8, LeanX = p.LeanX + roll * 2, Bob = p.Bob + MathF.Abs(roll) * 0.015f };
+        }
+        return p;
     }
 
     /// The front rank of a company of bows or crossbows with men behind it goes down on one knee to shoot.

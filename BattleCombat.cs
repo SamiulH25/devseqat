@@ -248,6 +248,7 @@ public partial class Battle
         if (FoeTier > 0 && (a == EnemyCaptain || t == EnemyCaptain)) real = FoeSoak(a, t, real, ranged); // a champion's (K6)
         t.Hp -= real;
         t.HitFlash = 0.15f;
+        t.HitFrom = a.Pos;
         t.HurtAt = Time;
         t.Morale -= (real * 0.16f + extraShock * 0.7f) * (1 + a.Mods.ShockDealt); // a fearsome man's blows shake more
         // Hits interrupt swings, but not a rhythm he has read: past your second chained blow he swings through it (P2).
@@ -266,6 +267,7 @@ public partial class Battle
         if (r.Horse!.Barding != "wolf") Sound(Cue.Neigh, r.Pos);
         DeadHorses.Add(new DeadHorse(r.Pos, r.Heading, r.Team, r.Coat, r.Horse!.Barding, Time));
         r.Horse = null;
+        r.ThrownAt = Time;
         r.Speed = 0;
         r.Vel = Vector2.Zero;
         r.Couched = false;
@@ -312,6 +314,9 @@ public partial class Battle
         FellFromRanks(t);
         t.DiedAt = Time;
         t.DiedFrom = killer.Pos;
+        t.DiedFall = t.Mounted ? Fall.Saddle : killer.Type.Huge || killer.Type.Size > 1.5f ? Fall.Flung
+            : Vector2.DistanceSquared(killer.Pos, t.Pos) > 16 ? Fall.Plain
+            : killer.Swing == AttackDir.Thrust ? Fall.Thrust : killer.Swing is AttackDir.Left or AttackDir.Right ? Fall.Cut : Fall.Plain;
         t.Hp = 0;
         t.Action = UnitAction.None;
         t.Vel = t.Wish = Vector2.Zero;

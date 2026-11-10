@@ -10,6 +10,10 @@ public enum UnitAction { None, Windup, Recover, Block, Stagger }
 /// The defender sees Left/Right mirrored, see <see cref="Dirs.Mirror"/>.
 public enum AttackDir { Overhead, Thrust, Left, Right }
 
+/// How the killing blow felled a man (drawing only): a plain fall away, spun round by a cut, folded over a thrust,
+/// flung by a huge blow, or slid from the saddle.
+public enum Fall { Plain, Cut, Thrust, Flung, Saddle }
+
 /// How a weapon is held, which picks the man's poses (Puppet.Keys). Drawing only, except Thrown and Sling, which are shot.
 public enum Grip { One, Two, Pole, Lance, Bow, Crossbow, Staff, Thrown, Sling }
 
@@ -181,6 +185,10 @@ public sealed class Unit
     public int Routs;        // how many times this man has broken (a second rout is final)
     public float DiedAt;     // battle time of death (the fall is animated)
     public Vector2 DiedFrom; // where the killing blow came from (the body falls away from it; drawing only)
+    /// Drawing only: how the killing blow felled him, where the last blow came from, when his horse fell under him.
+    public Fall DiedFall;
+    public Vector2 HitFrom;
+    public float ThrownAt = -99;
     public int StuckArrows;  // arrows caught in the shield (drawn)
     public int Index;        // place in Battle.Units (the spatial grid orders pairs by it)
 

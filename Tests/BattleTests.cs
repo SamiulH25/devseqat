@@ -60,6 +60,28 @@ public static partial class SelfTest
         var foe = b.AddSquad(1, UnitType.Shieldman, 1, new Vector2(0, 2), 1, -Vector2.UnitY).Units[0];
         b.Kill(foe, u);
         Check(foe.Dead && foe.DiedFrom == u.Pos, "a dead man remembers where the blow came from");
+        // Idle life, reactions, riders and falls (A5-A6).
+        var kinds = new HashSet<int>();
+        for (int i = 0; i < 200; i++) kinds.Add(Puppet.IdleOf(i, 30).Kind);
+        Check(kinds.SetEquals(new[] { 0, 1, 2, 3 }), "men at ease take up every idle, and some none");
+        var ease = b.AddSquad(0, Troops.Get("men_at_arms"), 1, new Vector2(24, 0), 1, Vector2.UnitY).Units[0];
+        ease.EnemyDist = float.MaxValue;
+        int look = Enumerable.Range(0, 5000).First(i => Puppet.IdleOf(i, 30) is (2, > 0.99f));
+        ease.Index = look;
+        Check(Puppet.PoseOf(ease, 30, 0.5f).Look != 0, "a man at ease looks round");
+        ease.EnemyDist = 10;
+        Check(Puppet.PoseOf(ease, 30, 0.5f).Look == 0, "but not with a foe close");
+        ease.HitFlash = 0.09f; ease.HitFrom = ease.Pos + new Vector2(-3, 0);
+        Check(Puppet.PoseOf(ease, 30, 0.5f).LeanX != 0, "a blow from the side knocks him sideways");
+        ease.HitFlash = 0; ease.ThrownAt = 29.8f;
+        Check(Puppet.PoseOf(ease, 30, 0.5f).LeanZ > 40, "a man whose horse fell is pitched forward");
+        var knight = b.AddSquad(1, Troops.Get("knights"), 1, new Vector2(26, 0), 1, -Vector2.UnitY).Units[0];
+        b.Kill(knight, u);
+        Check(knight.DiedFall == Fall.Saddle, "a rider killed in the saddle slides from it");
+        var cut = b.AddSquad(1, UnitType.Shieldman, 1, u.Pos + new Vector2(1, 0), 1, -Vector2.UnitY).Units[0];
+        u.Swing = AttackDir.Left;
+        b.Kill(cut, u);
+        Check(cut.DiedFall == Fall.Cut, "a man killed by a side cut is spun round");
     }
 
     /// Javelin men throw what they carry as the foe comes on, then close with the last one in hand (docs/ANIMATION_ROSTER.md R1).

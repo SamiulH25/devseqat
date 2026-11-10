@@ -163,7 +163,11 @@ partial class BattleScreen
                 shotFrames = 0; shotIndex++; break;
             case >= 89 and < 97 when shotIndex % 2 == 0 && shotFrames > 20:
                 pendingShot = $"gallery-{RosterShots[(shotIndex - 90) / 2].Name}"; shotIndex++; break;
-            case 97 when pendingShot == null: Exit(); break;
+            case 97 when pendingShot == null:
+                PoseSheet(6); shotFrames = 0; shotIndex++; break;
+            case 98 when shotFrames > (shotIndex > 97 ? 20 : 30):
+                pendingShot = "pose-life"; shotIndex++; break;
+            case 99 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -221,6 +225,7 @@ partial class BattleScreen
         else if (sheet == 3) GripSheet(Add);
         else if (sheet == 4) ShooterSheet(Add);
         else if (sheet == 5) StanceSheet(Add);
+        else if (sheet == 6) LifeSheet(Add);
         else if (sheet == 0)
         {
             const string foot = "men_at_arms";
@@ -330,6 +335,41 @@ partial class BattleScreen
         w = add("greatswords", 0); w.Action = UnitAction.Recover; w.Swing = AttackDir.Overhead; w.ActionTimer = w.Type.Recover * 0.85f; // the weight goes down into it
         w = add("men_at_arms", 0); w.Vel = w.Dir * 4.5f; w.Anim = 0.5f; // running: the knee comes up behind
         w = add("men_at_arms", 0); w.Vel = w.Dir * 4.5f; w.Anim = 1.5f;
+    }
+
+    /// Sheet 6: idle life, reactions, riders and falls (docs/ANIMATION_ROSTER.md A5-A6): the three idles, a flinch from a blow on
+    /// his left, a rider thrown as his horse falls, a horse archer shooting back, a horse pawing, then a man spun by a cut,
+    /// folded over a thrust, flung by a troll, and a rider sliding from the saddle.
+    void LifeSheet(Func<string, int, Unit> add)
+    {
+        var b = battle;
+        Unit AtEase(string troop, int kind)
+        {
+            var u = add(troop, 0);
+            u.EnemyDist = float.MaxValue;
+            for (int i = 1000; i < 100000; i++) // find a man whose idle at this moment is `kind`, fully taken up
+                if (Puppet.IdleOf(i, b.Time) is var (k, w) && k == kind && w > 0.99f) { u.Index = i; break; }
+            return u;
+        }
+        AtEase("pikemen", 1);
+        AtEase("greatswords", 1);
+        AtEase("men_at_arms", 1);
+        AtEase("men_at_arms", 2);
+        AtEase("men_at_arms", 3);
+        var w = add("men_at_arms", 0); w.HitFlash = 0.09f; w.HitFrom = w.Pos + new Vector2(MathF.Sin(w.Facing), -MathF.Cos(w.Facing)) * 2; // struck from his left
+        w = add("men_at_arms", 0); w.ThrownAt = b.Time - 0.25f; // his horse fell under him
+        w = add("horse_archers", 0); w.Ammo = 10; w.EnemyDist = 20; w.Cooldown = 0.05f; w.Facing = w.ViewFacing = w.Heading + 2.6f; // a shot back over the tail
+        w = add("knights", 0); // a horse pawing the ground
+        for (int i = 1000; i < 100000; i++) if (Puppet.HorseIdle(Ease.Hash(i), b.Time) is (2, > 0.05f and < 0.09f)) { w.Index = i; break; }
+        foreach (var (fall, k) in new[] { (Ironfield.Fall.Cut, 0.5f), (Ironfield.Fall.Thrust, 0.6f), (Ironfield.Fall.Flung, 0.5f), (Ironfield.Fall.Saddle, 0.5f) })
+        {
+            var d = add(fall == Ironfield.Fall.Saddle ? "knights" : "men_at_arms", 0);
+            d.DiedFall = fall;
+            d.DiedFrom = fall == Ironfield.Fall.Cut ? d.Pos + new Vector2(-MathF.Sin(d.Facing), MathF.Cos(d.Facing)) * 2 : d.Pos + d.Dir * 2;
+            if (fall == Ironfield.Fall.Saddle) { d.Horse = null; d.Pos -= new Vector2(-d.HeadingDir.Y, d.HeadingDir.X); }
+            d.Dead = true;
+            d.DiedAt = b.Time - k * (fall switch { Ironfield.Fall.Saddle => 0.75f, Ironfield.Fall.Flung => 0.6f, _ => 0.45f + Ease.Hash(d.Index) * 0.3f });
+        }
     }
 
     /// Three companies of `troop` a side charge each other; the sim runs 14 s, then the view is held from above one flank.

@@ -92,12 +92,18 @@ sealed partial class Puppet
         origin = new Vector3(pos.X, y, pos.Y);
         fwd = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
         right = new Vector3(-fwd.Z, 0, fwd.X);
+        View(fwd);
+    }
+
+    /// Which way a part facing `f` is seen from the camera: front, back or side, and whether a side sprite is mirrored.
+    void View(Vector3 f)
+    {
         var toCam = camPos - origin;
         toCam.Y = 0;
         if (toCam.LengthSquared() < 1e-4f) toCam = new Vector3(-camFwd.X, 0, -camFwd.Z);
-        float facing = Vector3.Dot(fwd, Vector3.Normalize(toCam));
+        float facing = Vector3.Dot(f, Vector3.Normalize(toCam));
         view = facing > 0.7f ? "f" : facing < -0.7f ? "b" : "s";
-        flip = Vector3.Dot(fwd, camRight) < 0; // side sprites face right
+        flip = Vector3.Dot(f, camRight) < 0; // side sprites face right
     }
 
     Look look = null!;
@@ -119,7 +125,7 @@ sealed partial class Puppet
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         float lift = ground;
         if (u.Mounted && !u.Dead && u.Horse!.Barding == "wolf") lift = ground + Warg(u, ground);
-        else if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true)) * Scale;
+        else if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true, Ease.Hash(u.Index))) * Scale;
         float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * u.Type.Size * Scale * Variety.Stature(u);
         float phase = Ease.Hash(u.Index);
         if (u.Dead) { Fallen(u, lift, size, phase); return; }
@@ -144,6 +150,8 @@ sealed partial class Puppet
         if (look.Cape && Detail == 0) Bill(new(0, 0.92f, -0.17f), "cape", false);
         Bill(new(0, 1.0f, 0), $"torso.{look.Body}", true);
         if (look.Tabard && Detail == 0) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
+        var (bodyView, bodyFlip) = (view, flip);
+        if (p.Look != 0) View(RotY(fwd, p.Look)); // he looks round: the head turns, the body stays
         HeadBill();
         if (look.Head != "none")
         {
@@ -152,6 +160,7 @@ sealed partial class Puppet
             Bill(new(0, 1.81f - h / 2, 0.02f), $"helm.{look.Head}", true, 0.04f);
         }
         if (look.Plume && Detail == 0) Bill(new(0, 1.81f + art["plume" + pal].Height * Art.Px / 2 - 0.06f, -0.03f), "plume", false, 0.05f);
+        (view, flip) = (bodyView, bodyFlip);
 
         if (p.Armed && (p.Haul >= 0 || p.Aim && look.Weapon == "crossbow" && !u.Mounted)) { Crossbow(u, p); return; }
         var hand = Arm(1, p.ArmA, p.Yaw);
@@ -224,8 +233,8 @@ sealed partial class Puppet
     }
 
     /// A horse (with the rider's legs when `riderLegs`): coat parts tinted by `coat`, gear in the side's colours.
-    /// Returns the gait bob height.
-    float Horse(Vector2 pos, float ground, float heading, float anim, float speed, int coat, string barding, bool riderLegs)
+    /// Returns the gait bob height. A standing horse with an `idle` phase (0..1) shifts its weight, tosses its head and paws.
+    float Horse(Vector2 pos, float ground, float heading, float anim, float speed, int coat, string barding, bool riderLegs, float idle = -1)
     {
         Frame(pos, heading, ground, Scale);
         // Rearing: the horse pivots back onto its hind legs, lifted so the hind hooves stay on the ground.
@@ -246,6 +255,11 @@ sealed partial class Puppet
         ReadOnlySpan<float> gallopP = stackalloc float[] { 0.45f, 0.55f, 0, 0.1f };
         float rock = MathF.Sin(anim * MathF.PI * 2 + 1.2f) * 0.09f * gallop; // front end rises as the hind legs push
         float nod = MathF.Sin(anim * MathF.PI * 2 + 0.6f) * (0.05f + 0.07f * gallop) * MathF.Min(1, sp / 2); // the head nods with the stride
+        var (still, stillK) = idle >= 0 && sp < 0.3f && Now > 0 && Rear <= 0 ? HorseIdle(idle, Now) : (0, 0f);
+        {
+            if (still == 1) nod += 0.14f * MathF.Sin(Math.Clamp(stillK * 5, 0, 1) * MathF.PI);
+            if (still == 3) rock -= 0.04f * MathF.Sin(stillK * MathF.PI);
+        }
 
         pal = "/n";
         tint = coatTint;
@@ -256,6 +270,7 @@ sealed partial class Puppet
             float ph = MathHelper.Lerp(MathHelper.Lerp(walkP[i], trotP[i], trot), gallopP[i], gallop);
             float a = Rad(amp) * MathF.Sin(anim * MathF.PI + ph * MathF.Tau);
             if (front && Rear > 0) a = MathHelper.Lerp(a, Rad(sd < 0 ? 75 : 55), Rear); // forelegs pawing the air
+            if (i == 1 && still == 2 && stillK < 0.5f) a = Rad(35) * MathF.Max(0, MathF.Sin(stillK * MathF.PI * 6)); // pawing the ground
             var hip = new Vector3(sd * 0.2f, 1.0f + bob + (front ? rock : -rock), front ? 0.6f : -0.6f);
             Axial(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), "hleg");
         }
@@ -290,6 +305,15 @@ sealed partial class Puppet
                 if (Detail == 0) Bill(foot, $"boot.{look.Feet}", true);
             }
         return bob;
+    }
+
+    /// What a standing horse with idle phase `idle` is doing at `now` (A5): 0 nothing, 1 a toss of the head, 2 pawing with a
+    /// foreleg, 3 the weight shifted back; and how far into it (0..1). A new choice every 4 s or so.
+    internal static (int Kind, float K) HorseIdle(float idle, float now)
+    {
+        float cyc = now * 0.23f + idle * 7;
+        int slot = (int)cyc;
+        return ((int)(Ease.Hash((int)(idle * 1000) + slot * 17) * 4), cyc - slot);
     }
 
     /// A wolf on four legs: it trots, and lunges with its head in the strike (docs/archive/CREATURES.md).
@@ -368,7 +392,7 @@ sealed partial class Puppet
         pal = "/" + h.Team;
         tint = Color.White;
         if (h.Mount.Barding == "wolf") { WolfBody(h.Pos, ground, h.Heading, 0, 0, 1.5f, 0, true); return; }
-        Horse(h.Pos, ground, h.Heading, 0, 0, h.Coat, h.Mount.Barding, false);
+        Horse(h.Pos, ground, h.Heading, 0, 0, h.Coat, h.Mount.Barding, false, Ease.Hash((int)(h.Pos.X * 7) + (int)(h.Pos.Y * 13) * 31));
     }
 
     public void DrawDeadHorse(DeadHorse h, float ground)
@@ -476,7 +500,8 @@ sealed partial class Puppet
     }
 
     /// A dead man: he topples away from the killing blow (a stagger back, a crumple at the knees, or a twist to the side),
-    /// then lies where he fell, laid out along that line with his weapon thrown beside him.
+    /// then lies where he fell, laid out along that line with his weapon thrown beside him. By the blow (A6, `Unit.DiedFall`):
+    /// a side cut spins him round, a thrust folds him forward onto it, a huge blow flings him, a rider slides from the saddle.
     void Fallen(Unit u, float ground, float size, float phase)
     {
         // Which way he goes: away from his killer, turned a little by chance, in his own frame.
@@ -484,9 +509,13 @@ sealed partial class Puppet
         float yaw = u.ViewFacing;
         Vector2 fwd2 = new(MathF.Cos(yaw), MathF.Sin(yaw)), right2 = new(-fwd2.Y, fwd2.X);
         Vector2 dir = u.DiedFrom == Vector2.Zero || away.LengthSquared() < 1e-4f ? -fwd2 : Vector2.Normalize(away);
-        float turn = (phase - 0.5f) * 1.2f;
+        var fall = look.Face == "wolf" ? Fall.Plain : u.DiedFall;
+        Vector2 saddleSide = new(MathF.Sin(u.Heading), -MathF.Cos(u.Heading)); // Kill moved him a metre this way off the horse
+        if (fall == Fall.Thrust) dir = -dir; // folded over the blade, he falls toward it
+        if (fall == Fall.Saddle) dir = saddleSide;
+        float turn = (phase - 0.5f) * (fall == Fall.Saddle ? 0.5f : 1.2f);
         dir = new Vector2(dir.X * MathF.Cos(turn) - dir.Y * MathF.Sin(turn), dir.X * MathF.Sin(turn) + dir.Y * MathF.Cos(turn));
-        float time = 0.45f + phase * 0.3f;
+        float time = fall switch { Fall.Saddle => 0.75f, Fall.Flung => 0.6f, _ => 0.45f + phase * 0.3f };
         float k = Now > 0 ? (Now - u.DiedAt) / time : 1;
         if (k >= 1)
         {
@@ -495,10 +524,28 @@ sealed partial class Puppet
             if (look.Face == "wolf") BeastCorpse(u); else Corpse(phase);
             return;
         }
-        bool crumple = phase < 0.3f;
+        bool crumple = fall == Fall.Thrust || fall == Fall.Plain && phase < 0.3f;
         float sink = crumple ? Ease.Out(MathF.Min(1, k * 2)) * 0.35f : 0; // the knees go first
-        Frame(u.Pos, yaw, ground - sink * size, size);
-        float a = 85 * (crumple ? Ease.In(MathF.Max(0, k * 1.4f - 0.4f)) : Ease.In(k));
+        var at = u.Pos;
+        float y = ground - sink * size;
+        if (fall == Fall.Cut)
+        {
+            // Spun round by the cut, the way the blade went, as he goes down.
+            yaw += MathF.Sign(Vector2.Dot(dir, right2) + 0.01f) * 1.4f * Ease.Out(k);
+            fwd2 = new(MathF.Cos(yaw), MathF.Sin(yaw)); right2 = new(-fwd2.Y, fwd2.X);
+        }
+        else if (fall == Fall.Flung)
+        {
+            at -= dir * 2.2f * (1 - Ease.Out(k)); // he lands where he lies, thrown from where he stood
+            y += MathF.Sin(k * MathF.PI) * 0.5f * size;
+        }
+        else if (fall == Fall.Saddle)
+        {
+            at -= saddleSide * (1 - Ease.In(k)); // from the saddle to the ground beside the horse
+            y += Saddle * (1 - Ease.In(k)) * size;
+        }
+        Frame(at, yaw, y, size);
+        float a = 85 * (fall == Fall.Flung ? Ease.Out(k) : crumple ? Ease.In(MathF.Max(0, k * 1.4f - 0.4f)) : Ease.In(k));
         Lean(Vector2.Dot(dir, right2) * a, Vector2.Dot(dir, fwd2) * a);
         if (look.Face == "wolf") { Beast(u, ground); return; }
         var p = new Pose(crumple ? 30 * k : 10, 40 + 60 * k, 20, 0, 50 + 40 * k, false, false);
