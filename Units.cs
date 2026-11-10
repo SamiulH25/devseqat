@@ -151,6 +151,8 @@ public sealed class Unit
     public UnitType Type = null!;
     public int Team;
     public Squad? Squad;
+    /// The company he started the battle in (his results go back to it even after it folds into another, Battle.Merge).
+    public Squad? Home;
     public bool IsPlayer, IsLeader;
     /// A companion leading his company (F3): fights in its ranks but is not one of its men (not counted in its results).
     public bool Hero;

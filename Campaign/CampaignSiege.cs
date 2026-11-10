@@ -176,10 +176,11 @@ public sealed partial class Campaign
     /// took it; the grant itself comes from GrantOnCapture (at once, or at the next council).
     void Capture(Settlement s, int f, int owner, int captor = -1)
     {
-        int old = s.Faction;
+        int old = s.Faction, oldOwner = s.Owner;
         owner = GrantOnCapture(s, f, owner, captor);
         s.Faction = f;
         s.Owner = owner;
+        SeatTaken(s, oldOwner, owner); // its old holder remembers (LD2)
         s.Besieged = false;
         s.Supplies = 15;
         s.Offers.Clear();

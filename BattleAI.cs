@@ -52,6 +52,11 @@ public partial class Battle
         u.Wish = Vector2.Zero;
 
         float toSlot = Vector2.Distance(u.Pos, u.Slot);
+        if (s.BreakOffUntil > Time) // relieved (BattleRelief.cs): back through the fresh ranks, not a blow more
+        {
+            if (toSlot > 0.4f) { var back = Via(u, u.Slot) - u.Pos; u.Wish = back / MathF.Max(0.01f, back.Length()) * u.Type.Speed; u.Face(back); }
+            return;
+        }
         bool charge = s.Order == Order.Charge;
         if (charge && s.Target != null && d > 3) (enemy, d) = Nearest(u, s.Target); // go for the ordered target
 
@@ -237,7 +242,7 @@ public partial class Battle
     /// The companies a side's AI general leads: all of the enemy's; of yours, only allies' (or all, in headless runs).
     List<Squad> Led(int team, string role) => Role(team, role).Where(s => s.Division == null && (team == 1 || Options.AutoPlayer || s.AiControlled)).ToList();
     /// Your companies that take your orders at once: not an ally's, not in a division.
-    public IEnumerable<Squad> Commanded => SquadsOf(0).Where(s => !s.AiControlled && s.Division == null);
+    public IEnumerable<Squad> Commanded => SquadsOf(0).Where(s => !s.AiControlled && s.Division == null && s.FoldedInto == null);
 
     void General(int team)
     {

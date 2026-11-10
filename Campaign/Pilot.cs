@@ -14,7 +14,9 @@ public sealed class Pilot
     public int Promotions, FirstT5Day = -1, Taken, RenownForVassalDay = -1;
     /// The day each career stage was first reached (stage name -> day).
     public readonly Dictionary<string, int> StageDay = new();
-    float nextThink;
+    float nextThink, nextTalk;
+    /// Talk telemetry (LD7): topics raised and how many went its way.
+    public int Talks, TalksWon;
 
     /// The realm the company started in (docs/archive/WORLD.md W5): the pilot takes service there.
     readonly int StartRealm;
@@ -53,6 +55,7 @@ public sealed class Pilot
     void Fight()
     {
         var e = c.Encounter!;
+        if (c.Meeting(e)) { if (c.CharacterOf(e) is { Kind: "lord" } met) Talk(met); c.Part(); return; } // a friendly meeting, not a fight
         var setup = c.PrepareBattle(e);
         float me = setup.Side0.Sum(Rules.Strength), them = setup.Side1.Sum(Rules.Strength) * c.Edge(e); // a den or the night fights for them
         // Auto-resolve swings 15% either way: take anything close to even, and pay off brigands rather than bleed.
@@ -163,6 +166,9 @@ public sealed class Pilot
     void Think()
     {
         TakePerks();
+        if (c.S.Hours >= nextTalk && c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && !c.Hostile(Me, p) && Vector2.Distance(p.Pos, Me.Pos) <= Campaign.TalkReach)
+                .Select(c.CharacterOf).FirstOrDefault(l => l != null && c.CannotTalk(l) == null) is Character talkTo)
+        { Talk(talkTo); nextTalk = (float)c.S.Hours + 5 * 24; }
         if (c.Captain.Contract < 0) c.SignContract(c.S.Factions.Count > 0 ? StartRealm : -1);
         if (c.CanSwearFealty(out _)) c.SwearFealty(); // the career (F5): kneel as soon as the liege will have us
         float mine = Rules.Strength(Me);
@@ -234,6 +240,22 @@ public sealed class Pilot
         if (Vector2.Distance(target.Pos, Me.Pos) > 6) { c.MoveTo(target.Pos + Vector2.Normalize(Me.Pos - target.Pos + new Vector2(0.01f, 0)) * 4); return true; }
         c.Besiege(target);
         return true;
+    }
+
+    /// A word with a lord (LD7): the news, work when it has little, a gift to a lord of its own realm when it is rich, and a
+    /// request that he back it in council once it is sworn.
+    void Talk(Character lord)
+    {
+        void Ask(string topic, params string[] args)
+        {
+            if (c.CannotAsk(lord, topic) != null || !c.TopicsFor(lord).Any(t => t.Id == topic)) return;
+            Talks++;
+            if (c.Say(lord, topic, args).Ok) TalksWon++;
+        }
+        Ask("news");
+        if (c.S.Contracts.Count < 2) Ask("work");
+        if (c.S.Gold > Reserve + 500 && lord.Faction == c.Captain.Contract) Ask("gift");
+        if (c.Captain.Fealty && lord.Faction == c.Captain.Contract && c.Odds(lord, "council") > 0.5f) Ask("council", "honour");
     }
 
     static IEnumerable<Party> S(IEnumerable<Party?> list) => list.Where(p => p != null)!;

@@ -47,6 +47,22 @@ public sealed class Character
     /// A named man of his company he teaches (B5; Soldier id, 0: none); warned you once that he may leave.
     public int Student;
     public bool Warned;
+    /// His house and kin (docs/archive/LORDS.md LD0; Campaign/Houses.cs): ids of characters, -1 for none.
+    public int House = -1, Father = -1, Mother = -1, Spouse = -1;
+    public List<int> Children = new();
+    public bool Female;
+    /// Talk (LD3): the day you last raised each topic with him (asking again too soon annoys).
+    public SortedDictionary<string, int> Asked = new();
+    /// What he wants (LD4; Campaign/Wants.cs): "fief", "revenge", "peace", "marshal", "wealth", "match", "glory", "monster" or "";
+    /// and who or what it is about (a house, character or settlement id; -1: none). Known to you once he told you.
+    public string Want = "";
+    public int WantOn = -1;
+    public bool WantKnown;
+    /// A promise you made him to help his want (the want and the day; "": none), and how far you have courted her (LD6, 0-3).
+    public string Promise = "";
+    public int PromiseDay, Courted, CourtedDay;
+    /// The given name alone ("Aldric"), for titles and heirs; "" for characters from before houses.
+    public string First = "";
 }
 
 /// Something a character remembers about another (3.2): shown as the reasons behind an opinion; fades with time.
@@ -111,14 +127,23 @@ public sealed partial class Campaign
     }
 
     /// A lord for a new party: 2-3 traits, his realm's culture; a lord of your liege starts warm towards you (you are sworn to the same crown).
+    /// He founds a house with a family around him; once the campaign runs, a grown younger son of the realm's houses may get the banner instead.
     Character MakeLord(Party p)
     {
-        var n = Names.Get();
-        var ch = NewCharacter("lord", "Lord " + PersonName(Factions.CultureOf(p.Faction)), p.Faction, Factions.CultureOf(p.Faction), 2 + rng.Next(2));
+        if (Day > 1 && p.KnightOrder == "" && SpareKin(p.Faction) is Character spare && KRng.Chance(0.5f))
+        {
+            Raise(spare, p);
+            return spare;
+        }
+        string culture = Factions.CultureOf(p.Faction);
+        var ch = NewCharacter("lord", "Lord " + PersonName(culture), p.Faction, culture, 2 + rng.Next(2));
+        ch.First = FirstOf(ch);
+        if (Names.Get().LadiesOf(culture).Contains(ch.First)) { ch.Female = true; ch.Name = "Lady" + ch.Name[4..]; }
         ch.PartyId = p.Id;
         p.CharId = ch.Id;
         p.Name = ch.Name;
         if (S.CaptainChar >= 0 && Captain.Contract >= 0 && p.Faction == Captain.Contract) ch.Opinion[S.CaptainChar] = 15;
+        if (p.KnightOrder == "") SeedFamily(ch, FoundHouse(ch));
         return ch;
     }
 
@@ -131,7 +156,7 @@ public sealed partial class Campaign
         if (a.Culture != b.Culture && a.Culture != Factions.Common && b.Culture != Factions.Common) o -= 10;
         foreach (var (x, y) in TraitClashes)
             if (a.Traits.Contains(x) && b.Traits.Contains(y) || a.Traits.Contains(y) && b.Traits.Contains(x)) o -= 15;
-        return o;
+        return o + BondRegard(a, b); // kin and feuds (LordBonds.cs)
     }
 
     /// What `a` thinks of `b`, -100..100.
@@ -204,24 +229,30 @@ public sealed partial class Campaign
     }
 
     /// A lord routed in the field may fall (3.1): he is gone, and an heir takes up his banner, house and grudges.
-    void MaybeSlain(Party p, bool byPlayer)
+    void MaybeSlain(Party p, bool byPlayer, Character? killer = null)
     {
-        if (CharacterOf(p) != null && rng.Chance(LordSlainPercent / 100f)) SlayLord(p, byPlayer);
+        if (CharacterOf(p) != null && rng.Chance(LordSlainPercent / 100f)) SlayLord(p, byPlayer, killer: killer);
     }
 
-    internal void SlayLord(Party p, bool byPlayer)
+    /// A lord dies (in battle, or of old age with `cause`): the next of his house takes up the banner and grudges; a house with
+    /// nobody left to ride gives the banner to a new lord.
+    internal void SlayLord(Party p, bool byPlayer, string cause = "falls in battle", Character? killer = null)
     {
         if (CharacterOf(p) is not Character old) return;
         old.Dead = true;
         old.PartyId = -1;
-        var heir = p.KnightOrder != "" ? KnightHeir(p) : MakeLord(p);
-        if (p.KnightOrder == "") heir.Name = old.Name.Split(' ') is var parts && parts.Length >= 2 ? $"Lord {rng.Pick(Names.Get().LordsOf(old.Culture))} {string.Join(' ', parts.Skip(2))}".Trim() : heir.Name;
+        if (killer != null && !byPlayer) StartFeud(old, killer); // a blood debt between houses (LD2)
+        if (byPlayer) HelpedWant("revenge", c => c.WantOn == old.House && old.House >= 0, "you avenged my house");
+        Character heir;
+        string kin = "";
+        if (p.KnightOrder != "") heir = KnightHeir(p);
+        else if (HouseHeir(old) is Character next) { kin = KinWord(old, next); Raise(next, p); heir = next; }
+        else { heir = MakeLord(p); if (heir.Age < 18) heir.Age = 18; }
         p.Name = heir.Name;
-        heir.Age = 18 + rng.Next(10);
         // The heir inherits his father's view of you, and adds his own if you were the one who killed him.
-        foreach (var (k, v) in old.Opinion) heir.Opinion[k] = v * 0.5f;
-        if (byPlayer) Remember(heir, Me, "you slew my father", -30);
-        Log($"{old.Name} falls in battle. {heir.Name} takes up his banner.");
+        foreach (var (k, v) in old.Opinion) heir.Opinion[k] = heir.Opinion.GetValueOrDefault(k) + v * 0.5f;
+        if (byPlayer) Remember(heir, Me, $"you slew my {(kin == "" ? "lord" : kin)}", -30);
+        Log(kin == "" ? $"{old.Name} {cause}. {heir.Name} takes up {His(old)} banner." : $"{old.Name} {cause}. {His(old).ToUpperInvariant()[0]}{His(old)[1..]} {KinWord(heir, old)} {heir.Name} takes up the banner.");
     }
 
     // ---------- companions (3.3) ----------

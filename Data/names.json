@@ -193,6 +193,21 @@
     "Gilles",
     "Pons",
     "Roland"
+   ],
+   "ladies": [
+    "Heloise",
+    "Alienor",
+    "Blanche",
+    "Clemence",
+    "Ermengarde",
+    "Isabeau",
+    "Mahaut",
+    "Sybille",
+    "Aelis",
+    "Delphine",
+    "Jehanne",
+    "Oriane",
+    "Yolande"
    ]
   },
   "crimson": {
@@ -325,6 +340,20 @@
     "Hereward",
     "Osbert",
     "Wulfstan"
+   ],
+   "ladies": [
+    "Aethel",
+    "Edith",
+    "Eadgyth",
+    "Godiva",
+    "Hilda",
+    "Mildred",
+    "Wynflaed",
+    "Cecily",
+    "Eleanor",
+    "Gytha",
+    "Margery",
+    "Rohesia"
    ]
   },
   "northern": {
@@ -457,6 +486,20 @@
     "Malcolm",
     "Niall",
     "Ruairi"
+   ],
+   "ladies": [
+    "Vigdis",
+    "Astrid",
+    "Freydis",
+    "Gudrun",
+    "Helga",
+    "Ingrid",
+    "Ragnhild",
+    "Sigrid",
+    "Brynja",
+    "Dagny",
+    "Solveig",
+    "Thora"
    ]
   },
   "southern": {
@@ -589,6 +632,20 @@
     "Samira",
     "Yasmin",
     "Nadira"
+   ],
+   "ladies": [
+    "Layla",
+    "Zainab",
+    "Amira",
+    "Samira",
+    "Yasmin",
+    "Nadira",
+    "Dalila",
+    "Farida",
+    "Jamila",
+    "Rania",
+    "Shirin",
+    "Zahra"
    ]
   },
   "steppe": {
@@ -721,6 +778,20 @@
     "Altani",
     "Mandukhai",
     "Yesui"
+   ],
+   "ladies": [
+    "Khutulun",
+    "Borte",
+    "Sorghag",
+    "Toregene",
+    "Oghul",
+    "Alaqa",
+    "Checheg",
+    "Altani",
+    "Mandukhai",
+    "Yesui",
+    "Khulan",
+    "Saran"
    ]
   },
   "league": {
@@ -853,6 +924,20 @@
     "Lotte",
     "Bianca",
     "Agnese"
+   ],
+   "ladies": [
+    "Caterina",
+    "Lucrezia",
+    "Isabella",
+    "Beatrice",
+    "Margriet",
+    "Aleid",
+    "Fenna",
+    "Lotte",
+    "Bianca",
+    "Agnese",
+    "Ginevra",
+    "Violante"
    ]
   },
   "order": {
@@ -981,6 +1066,20 @@
     "Siegfried",
     "Albrecht",
     "Dietrich"
+   ],
+   "ladies": [
+    "Adelheid",
+    "Benedicta",
+    "Clara",
+    "Gertrud",
+    "Hildegard",
+    "Irmgard",
+    "Juliana",
+    "Mechthild",
+    "Odilia",
+    "Petronilla",
+    "Scholastica",
+    "Walburga"
    ]
   }
  },
@@ -1011,6 +1110,20 @@
   "Isolde",
   "Matilda",
   "Rohese"
+ ],
+ "ladies": [
+  "Adela",
+  "Beatrix",
+  "Cecily",
+  "Isolde",
+  "Matilda",
+  "Rohese",
+  "Alys",
+  "Avice",
+  "Emma",
+  "Ida",
+  "Mabel",
+  "Maud"
  ],
  "epithets": [
   "the Bold",

@@ -141,7 +141,7 @@ sealed class ScreenHost : Game
     {
         campaign!.S.Save("autosave");
         setup = s;
-        battle.BeginCampaign(s);
+        battle.BeginCampaign(s, campaign!.S);
         mode = Mode.Battle;
         plateName = s.Field != "" ? $"THE BATTLE OF {s.Field.ToUpperInvariant()}" : s.Tournament >= 0 ? "THE LISTS" : $"AGAINST {s.EnemyName.ToUpperInvariant()}";
         plateNote = $"{(s.Options.Ground?.Name ?? "open").ToUpperInvariant()} GROUND, {s.Options.Weather.Describe.ToUpperInvariant()}";
@@ -610,7 +610,21 @@ sealed class ScreenHost : Game
                 Shot("campaign-legend-order");
                 break;
             }
-            case 51: Exit(); break;
+            case 51:
+                // Lords' faces and houses (docs/archive/LORDS.md LD1).
+                map.Stage("lords");
+                Shot("campaign-lords");
+                break;
+            case 52:
+                // Talking to a lord, and a hall (docs/archive/LORDS.md LD3, LD5).
+                map.Stage("talk");
+                Shot("campaign-talk");
+                break;
+            case 53:
+                map.Stage("hall");
+                Shot("campaign-hall");
+                break;
+            case 54: Exit(); break;
         }
     }
 }

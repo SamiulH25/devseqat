@@ -405,6 +405,8 @@ public sealed class Summons
 public sealed class CaptainState
 {
     public float Renown = 50, WoundedUntil;
+    /// The captain is a woman (LD6: whom you may court); the creator does not ask yet, so false.
+    public bool Female;
     /// Before the armoury (P1) gear was three tiers; a save that still has them is moved onto the kit when loaded (`Campaign.MigrateGear`).
     public int ArmorTier, HelmTier, HorseTier, Contract = 0; // Contract: faction you serve, -1 = none
     /// What the captain wears and carries (docs/archive/PROGRESSION.md P1).
@@ -495,6 +497,11 @@ public sealed class CampaignState
     /// You retired on the company's legend (L7), and how many captains have led it since you began (handing over).
     public bool Retired;
     public int Generation;
+    /// Your last fought battle's deployment, by company (docs/archive/COMBAT_QOL.md Q6), whether to start the next one from it, and
+    /// your control groups in battle (digit -> company ids).
+    public List<DeploySpot> LastDeploy = new();
+    public bool DeployAsLast = true;
+    public Dictionary<int, List<int>> ControlGroups = new();
     /// How far the provinces of this save's map reach (WorldMap.Extent for new campaigns; older saves have their own).
     public float MapExtent = WorldMap.PreviousExtent;
     /// How the map lays out its realms (WorldMap.Layout): saves from before docs/archive/WORLD.md W1 have none and keep the old bands.
@@ -507,6 +514,10 @@ public sealed class CampaignState
     public ulong RollRng;
     /// The knight orders' own random stream (docs/archive/KNIGHT_ORDERS.md), so they move nothing else's draws.
     public ulong OrderRng;
+    /// The houses' stream (families, births, deaths, marriages; Campaign/Houses.cs).
+    public ulong KinRng;
+    /// The noble houses (Campaign/Houses.cs).
+    public List<House> Houses = new();
     /// The knight orders (docs/archive/KNIGHT_ORDERS.md 4), made on load for saves from before them.
     public List<OrderState> Orders = new();
     /// The order you founded (K8); null until then.
@@ -632,7 +643,7 @@ public sealed class CampaignState
 public sealed class Rng
 {
     readonly CampaignState s;
-    readonly bool roll, orders;
+    readonly bool roll, orders, kin;
     public Rng(CampaignState state) { s = state; if (s.Rng == 0) s.Rng = 0x9E3779B97F4A7C15UL ^ (ulong)(uint)s.Seed; }
     /// The roll's stream (CampaignState.RollRng), seeded apart from the main one.
     public Rng(CampaignState state, bool roll) : this(state) { this.roll = roll; if (roll && s.RollRng == 0) s.RollRng = 0xD1B54A32D192ED03UL ^ (ulong)(uint)s.Seed; }
@@ -644,12 +655,20 @@ public sealed class Rng
         return r;
     }
     Rng(CampaignState state, bool roll, bool orders) : this(state) { this.roll = roll; this.orders = orders; }
+    /// The houses' stream (CampaignState.KinRng).
+    public static Rng Kin(CampaignState state)
+    {
+        var r = new Rng(state, false, false) { kinStream = true };
+        if (state.KinRng == 0) state.KinRng = 0xE7037ED1A0B428DBUL ^ (ulong)(uint)state.Seed;
+        return r;
+    }
+    bool kinStream { init => kin = value; }
 
     public ulong NextU()
     {
-        ulong x = orders ? s.OrderRng : roll ? s.RollRng : s.Rng;
+        ulong x = kin ? s.KinRng : orders ? s.OrderRng : roll ? s.RollRng : s.Rng;
         x ^= x >> 12; x ^= x << 25; x ^= x >> 27;
-        if (orders) s.OrderRng = x; else if (roll) s.RollRng = x; else s.Rng = x;
+        if (kin) s.KinRng = x; else if (orders) s.OrderRng = x; else if (roll) s.RollRng = x; else s.Rng = x;
         return x * 0x2545F4914F6CDD1DUL;
     }
 
@@ -765,13 +784,13 @@ public sealed class Balance
 /// One culture's name pools.
 public sealed class CultureNames
 {
-    public List<string> Places = new(), Lords = new(), Men = new();
+    public List<string> Places = new(), Lords = new(), Men = new(), Ladies = new();
 }
 
 /// Name lists (Data/names.json).
 public sealed class Names
 {
-    public List<string> Places = new(), Lords = new(), Epithets = new(), Bandits = new(), Sergeants = new(), Prefixes = new(), Suffixes = new();
+    public List<string> Places = new(), Lords = new(), Epithets = new(), Bandits = new(), Sergeants = new(), Prefixes = new(), Suffixes = new(), Ladies = new();
     public Dictionary<string, List<string>> Nouns = new();
     /// Each culture's own places and lords (docs/archive/SIDE_CONTENT.md S1).
     public Dictionary<string, CultureNames> Cultures = new();
@@ -780,6 +799,8 @@ public sealed class Names
     public List<string> LordsOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Lords.Count > 0 ? c.Lords : Lords;
     /// Common soldiers' names of a culture (L1); the sergeants' list when it has none.
     public List<string> MenOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Men.Count > 0 ? c.Men : Sergeants;
+    /// Women's names of a culture (docs/archive/LORDS.md LD0); the common list when it has none.
+    public List<string> LadiesOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Ladies.Count > 0 ? c.Ladies : Ladies;
 
     static Names? loaded;
     public static Names Get()

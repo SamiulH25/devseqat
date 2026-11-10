@@ -41,6 +41,23 @@ public sealed class Squad
     public Division? Division;
     /// A division's company following your direct order: its sergeant leaves it alone until his next goal arrives.
     public bool Override;
+    /// Folded into another company (Battle.Merge): its standing men now fight there; only its fallen and fled remain here.
+    public Squad? FoldedInto;
+    /// The company this one was split from (Battle.Split): both report under its campaign company.
+    public Squad? SplitFrom;
+    /// Queued orders (BattleQueue.cs): the next step starts when the current one is done; the company a queued attack
+    /// went for (it is done when that one breaks).
+    public readonly List<OrderStep> Queue = new();
+    public Squad? StepTarget;
+    /// Its standing rule (BattleQueue.cs), whether a once-only rule has fired, and when it may act again.
+    public StandingRule Rule;
+    public bool RuleFired;
+    public float RuleAt;
+    /// A relief under way (BattleRelief.cs): the fresh company coming up, where this one goes back to, when it began, and
+    /// until when its men break off (they walk back, ignoring the enemy; 0 = not yet).
+    public Squad? RelievedBy;
+    public Vector2 ReliefTo;
+    public float ReliefAt, BreakOffUntil;
     /// Charging men also cut down routers (a division told to pursue).
     public bool Pursue;
     /// A circle round every active man (routing too), refreshed at the start of each tick: cheap squad-to-squad distance bounds.

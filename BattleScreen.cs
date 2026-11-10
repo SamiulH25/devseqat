@@ -22,6 +22,19 @@ sealed partial class BattleScreen
     Quality quality { get => host.Quality; set => host.Quality = value; }
 
     const float CommandTimeScale = 0.25f, BlendTime = 0.45f, DoubleClick = 0.35f;
+    /// Battle speeds ([ and ], docs/archive/COMBAT_QOL.md Q4), and the one chosen (1 = normal).
+    static readonly float[] Speeds = { 0.5f, 1, 2, 3 };
+    int speed = 1;
+    /// Alerts already looked at for pausing (Settings.PauseOnAlerts).
+    int alertsSeen;
+    /// Campaign memory (docs/archive/COMBAT_QOL.md Q6): the save the battle came from, the layout before the remembered one was
+    /// laid on, the layout as the fight began, and control groups (digit -> company keys; one-off squads are negative).
+    CampaignState? memory;
+    List<DeploySpot> defaultDeploy = new();
+    List<DeploySpot>? deployed;
+    readonly Dictionary<int, List<int>> groups = new();
+    int lastGroup = -1;
+    float lastGroupAt;
     static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30), ArrowStreak = new(150, 146, 132), StoneColor = new(60, 58, 54);
 
     Puppet puppet = null!;
@@ -137,10 +150,17 @@ sealed partial class BattleScreen
     }
 
     /// A battle handed over by the campaign map: it opens in the deployment phase.
-    public void BeginCampaign(BattleSetup s)
+    public void BeginCampaign(BattleSetup s, CampaignState? keep = null)
     {
         campaignBattle = s;
+        memory = keep;
+        deployed = null;
         battle = new Battle(s.Seed, s.Player, s.Enemy, s.Options);
+        groups.Clear();
+        if (keep != null) foreach (var (k, v) in keep.ControlGroups) groups[k] = v.ToList();
+        defaultDeploy = battle.DeploymentOf();
+        if (keep is { DeployAsLast: true, LastDeploy.Count: > 0 } && !s.Options.Duel && battle.ApplyDeployment(keep.LastDeploy) > 0)
+            battle.Log("Your companies stand as they did in your last battle.");
         battle.StartRecording(s.Seed);
         replaySaved = false;
         SetWorld();
@@ -187,6 +207,13 @@ sealed partial class BattleScreen
     void FinishCampaignBattle()
     {
         var r = battle.Result();
+        if (memory != null)
+        {
+            // Remember this battle's deployment and your groups for the next (docs/archive/COMBAT_QOL.md Q6).
+            if (deployed is { Count: > 0 }) memory.LastDeploy = deployed;
+            memory.ControlGroups = groups.ToDictionary(g => g.Key, g => g.Value.Where(id => id > 0).ToList());
+            memory = null;
+        }
         campaignBattle = null;
         deploying = false;
         OnCampaignBattleOver?.Invoke(r);
@@ -298,9 +325,12 @@ sealed partial class BattleScreen
             if (deploying && (ctl.Pressed(Act.Pause) || (LmbPressed && hud.StartAt(ms.Position))))
             {
                 deploying = false;
+                deployed = battle.DeploymentOf(); // how you drew them up, for the next battle (Q6)
                 battle.Log("The battle begins!");
             }
             else if (ctl.Pressed(Act.Pause)) paused = !paused;
+            if (ctl.Pressed(Act.Slower) && speed > 0) speed--;
+            if (ctl.Pressed(Act.Faster) && speed < Speeds.Length - 1) speed++;
             OrderKeys();
             if (command) CommandControls(dt); else FieldControls();
         }
@@ -311,10 +341,14 @@ sealed partial class BattleScreen
         if (intro >= 0) { intro += dt; if (intro > IntroTime || LmbPressed || Keyboard.GetState().GetPressedKeyCount() > 0) intro = -1; }
         if (battle.Winner >= 0) ending = ending < 0 ? 0 : ending + dt;
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
+        scale *= Speeds[speed];
         if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
         if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
         scale *= BeatScale; // the battle's cinematic beat slows the view (docs/archive/SPECTACLE.md S1); each tick's step is recorded
-        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
+        if (scale > 0 && Settings.Current.PauseOnAlerts && battle.Alerts.Count > alertsSeen
+            && battle.Alerts.Skip(alertsSeen).Any(a => a.Kind is "breaking" or "horse" or "leaderless")) { paused = true; scale = 0; battle.Log("Paused: see the alert."); }
+        alertsSeen = battle.Alerts.Count;
+        if (scale > 0) { battle.Advance(dt * scale); PlaySounds(); Effects(dt * scale); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
@@ -378,10 +412,11 @@ sealed partial class BattleScreen
         }
         else { route = null; routeAt = null; }
         hud.CastBy = castBy; hud.CastPick = castPick;
-        hud.Command = command; hud.Paused = paused; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
+        hud.Command = command; hud.Paused = paused; hud.Speed = Speeds[speed]; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
         hud.ShowResult = battle.Winner >= 0 && !helpOpen && !Ending;
         hud.InCampaign = campaignBattle != null;
         hud.Deploying = deploying;
+        hud.DeployLast = memory is { LastDeploy.Count: > 0 } && !battle.Options.Siege && !battle.Options.Tournament ? memory.DeployAsLast : null;
         if (selectedDivision != null && selectedDivision.Alive == 0) selectedDivision = null;
         hud.Div = selectedDivision;
         hud.WheelOpen = wheelOpen; hud.WheelSector = WheelSector() ?? -1;

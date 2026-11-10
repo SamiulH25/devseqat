@@ -10,9 +10,14 @@ partial class MapScreen
     void EncounterPanel()
     {
         var e = C.Encounter!;
-        if (C.Meeting(e)) { MeetingPanel(e); return; }
+        if (C.Meeting(e))
+        {
+            if (e.Kind == PartyKind.Lord && C.CharacterOf(e) is { Kind: "lord" } met) OpenTalk(met, PanelKind.Encounter); // a friendly lord: talk (LD3)
+            else MeetingPanel(e);
+            return;
+        }
         bool lord = e.Kind == PartyKind.Lord;
-        var r = Modal(lord ? 780 : 680, 440, "ENCOUNTER", Style.Foe);
+        var r = Modal(lord ? 840 : 680, 440, "ENCOUNTER", Style.Foe);
         int x = r.X + ui.U(24), y = r.Y + ui.U(52);
         ui.Text(e.Name.ToUpperInvariant(), x, y, PartyColor(e));
         ui.Text(Allegiance(e), x, y + ui.U(20), Style.Dim, 1);
@@ -22,8 +27,15 @@ partial class MapScreen
             ui.Text($"{string.Join(", ", ech.Traits).ToUpperInvariant()}   THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})", x + ui.U(170), y + ui.U(20), OpinionColor(op), 1);
         }
         float me = Rules.Strength(C.Player), them = Rules.Strength(e);
-        ui.TextR($"YOU {C.Player.Men}   THEM {e.Men}", r.Right - ui.U(24), y + ui.U(2), Style.Text);
-        var bar = new Rectangle(x, y + ui.U(36), r.Width - ui.U(48), ui.U(10));
+        // His face, top right, on his house's arms (docs/archive/LORDS.md LD1).
+        int face = 0;
+        if (C.CharacterOf(e) is Character fch)
+        {
+            face = ui.U(104);
+            ui.Face(PortraitPainter.Of(C, fch), new Rectangle(r.Right - ui.U(24) - ui.U(96), r.Y + ui.U(40), ui.U(96), ui.U(120)));
+        }
+        ui.TextR($"YOU {C.Player.Men}   THEM {e.Men}", r.Right - ui.U(24) - face, y + ui.U(2), Style.Text);
+        var bar = new Rectangle(x, y + ui.U(36), r.Width - ui.U(48) - face, ui.U(10));
         ui.Rect(bar, Style.Foe);
         ui.Rect(new Rectangle(bar.X, bar.Y, (int)(bar.Width * me / MathF.Max(1, me + them)), bar.Height), Style.Friendly);
         ui.Text(C.GroundNote(e), x, bar.Bottom + ui.U(8), Kit.Gilt, 1); // the ground and who holds it (docs/archive/TERRAIN.md T7)
@@ -35,11 +47,12 @@ partial class MapScreen
             ui.Text($"{c.Men} {c.Type.Name.ToUpperInvariant()}", x + ui.U(40), y + ui.U(4), Style.Text, 1);
             ui.Text($"TIER {Style.Numerals[c.Type.Tier]}", x + ui.U(40), y + ui.U(16), Style.Dim, 1);
             x += ui.U(190);
-            if (x > r.Right - ui.U(180)) { x = r.X + ui.U(24); y += ui.U(36); }
+            if (x > r.Right - ui.U(180) - face) { x = r.X + ui.U(24); y += ui.U(36); }
         }
         EncounterOwnSide(r, x == r.X + ui.U(24) ? y : y + ui.U(36), me, them);
         Note(r);
-        int n = lord ? 5 : 4, bw = ui.U(lord ? 140 : 156), by = r.Bottom - ui.U(40), bx = r.X + (r.Width - n * bw - (n - 1) * ui.U(8)) / 2;
+        bool talk = lord && C.CharacterOf(e) is { Kind: "lord" };
+        int n = lord ? (talk ? 6 : 5) : 4, bw = ui.U(lord ? (talk ? 124 : 140) : 156), by = r.Bottom - ui.U(40), bx = r.X + (r.Width - n * bw - (n - 1) * ui.U(8)) / 2;
         bool fit = C.Player.Men > 0;
         if (ui.Button(new Rectangle(bx, by, bw, ui.U(30)), "ATTACK", fit)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareBattle(e)); }
         if (ui.Button(new Rectangle(bx + bw + ui.U(8), by, bw, ui.U(30)), "AUTO-RESOLVE", fit)) { C.AutoResolveEncounter(); ShowResults(); }
@@ -58,6 +71,11 @@ partial class MapScreen
         string? cant = C.CannotChallenge(e);
         if (ui.Button(duel, "CHALLENGE", cant == null)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareDuel(e)); }
         if (ui.Hover(duel)) note = cant ?? "MEET HIS LORD IN SINGLE COMBAT. WIN AND HIS MEN START THE BATTLE SHAKEN.";
+        if (!talk) return;
+        // Talk before steel (LD3): threaten, sue for peace, insult him.
+        var tb = new Rectangle(bx + 5 * (bw + ui.U(8)), by, bw, ui.U(30));
+        if (ui.Button(tb, "TALK")) OpenTalk(C.CharacterOf(e)!, PanelKind.Encounter);
+        if (ui.Hover(tb)) note = "SPEAK WITH HIM BEFORE THE FIGHT: DEMAND HE YIELD, SUE FOR PEACE, OR INSULT HIM.";
     }
 
     /// Under the enemy's companies: the odds in words, the field's name, and your own companies, so the choice is made

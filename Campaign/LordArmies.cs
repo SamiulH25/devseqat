@@ -45,7 +45,8 @@ public partial class Campaign
         var leader = ready.FirstOrDefault(l => marshal != null && CharacterOf(l) == marshal) ?? ready.OrderByDescending(Rules.Strength).First();
         var chief = CharacterOf(leader);
         var come = new List<Party> { leader };
-        foreach (var l in ready.Where(l => l != leader).OrderBy(l => Vector2.Distance(l.Pos, leader.Pos)))
+        // His friends come first, then the nearest (LD2).
+        foreach (var l in ready.Where(l => l != leader).OrderBy(l => chief != null && CharacterOf(l) is Character fr && BondOf(fr, chief) is "friend" or "kin" ? 0 : 1).ThenBy(l => Vector2.Distance(l.Pos, leader.Pos)))
         {
             if (come.Count >= ArmyMax) break;
             if (chief != null && CharacterOf(l) is Character ch && OpinionOf(ch, chief) < -20) continue; // he stays home
@@ -113,7 +114,10 @@ public partial class Campaign
             .OrderByDescending(s => s.Kind == SettlementKind.Town).FirstOrDefault();
         if (besieged != null)
         {
-            var near = free.Where(l => Vector2.Distance(l.Pos, besieged.Pos) < 150 * Map.Spread).ToList();
+            // The holder's friends and kin ride to his relief first (LD2).
+            var holder = besieged.Owner >= 0 && PartyById(besieged.Owner) is Party hp ? CharacterOf(hp) : null;
+            var near = free.Where(l => Vector2.Distance(l.Pos, besieged.Pos) < 150 * Map.Spread)
+                .OrderBy(l => holder != null && CharacterOf(l) is Character fr && BondOf(fr, holder) is "friend" or "kin" ? 0 : 1).ToList();
             if (FormArmy(f, besieged, "relieve", near) != null) return true;
         }
         int cap = 1 + lords.Count / 8;

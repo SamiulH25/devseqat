@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed partial class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -533,6 +533,20 @@ sealed partial class MapScreen
             case "chapter": at = s; tab = "CHAPTER"; panel = PanelKind.Settlement; note = ""; break;
             case "fief": at = s; tab = "FIEF"; panel = PanelKind.Settlement; note = ""; break;
             case "household": charTab = C.S.Factions.Count; panel = PanelKind.Characters; note = ""; break;
+            case "lords": charTab = 0; panel = PanelKind.Characters; note = ""; break;
+            case "talk":
+                if (C.S.Characters.Where(c => c.Kind == "lord" && !c.Dead && c.Faction >= 0).OrderByDescending(c => c.Children.Count).FirstOrDefault() is Character lord)
+                {
+                    if (lord.Want == "") { lord.Want = "wealth"; }
+                    lord.WantKnown = true;
+                    OpenTalk(lord, PanelKind.None);
+                    talkTopic = "council"; talkArgs.Add("honour");
+                }
+                break;
+            case "hall":
+                at = C.S.Settlements.Where(s => s.Kind != SettlementKind.Village).OrderByDescending(s => C.HallFolk(s).Count).First();
+                C.Player.Pos = at.Pos; C.Player.Moving = false;
+                tab = "HALL"; panel = PanelKind.Settlement; note = ""; break;
             case "beat": panel = PanelKind.Beat; break;
             case "gameover": panel = PanelKind.GameOver; break;
             case "event": panel = PanelKind.Event; note = ""; break;

@@ -277,6 +277,7 @@ public sealed partial class Campaign
         ch.CompanyId = -1;
         ch.PartyId = p.Id;
         ch.Name = ch.Name.StartsWith("Lord ") ? ch.Name : "Lord " + ch.Name;
+        if (ch.House < 0) FoundHouse(ch);
         p.CharId = ch.Id;
         p.Name = ch.Name;
         fief.Owner = p.Id;

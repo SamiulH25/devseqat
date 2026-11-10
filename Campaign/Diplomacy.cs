@@ -125,7 +125,7 @@ public sealed partial class Campaign
             float strengthA = Rules.PerMan(Strength(w.A) / 1500) - w.ExhA / 40, strengthB = Rules.PerMan(Strength(w.B) / 1500) - w.ExhB / 40;
             int win = w.ScoreA / 1500 - w.ExhA / 40 >= w.ScoreB / 1500 - w.ExhB / 40 ? w.A : w.B, lose = win == w.A ? w.B : w.A;
             // A realm that takes terms readily (its temper's "tribute", W5) feels the war sooner.
-            float le = ExhaustionOf(w, lose) * Factions.Get(lose).Tribute, we = ExhaustionOf(w, win);
+            float le = ExhaustionOf(w, lose) * Factions.Get(lose).Tribute + PeaceWanted(lose), we = ExhaustionOf(w, win) + PeaceWanted(win);
             bool allied = S.Pacts.Any(p => p.Until > S.Hours && (p.A == lose || p.B == lose) && FactionsAtWar(p.A == lose ? p.B : p.A, win));
             bool wants = le > (allied ? 70 : 50) || le > 30 && Margin(w, win, lose) > 0.5f || we > 60 && le > 40;
             if (wants && rng.Chance(0.3f)) MakePeace(w, win, lose, BestTerms(w, win, lose));
@@ -285,6 +285,7 @@ public sealed partial class Campaign
         if (WarBetween(me, them) is not { Active: true } w) return "The war is already over.";
         var terms = Margin(w, me, them) > 0.35f && Spare(them) > 100 ? Terms.Gold : Terms.White;
         MakePeace(w, me, them, terms);
+        HelpedWant("peace", c => c.Faction == me || c.Faction == them, "you brought peace");
         return terms == Terms.Gold ? "They pay to end it." : "The war is over.";
     }
 

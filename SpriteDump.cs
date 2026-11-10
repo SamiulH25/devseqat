@@ -40,8 +40,34 @@ public static class SpriteDump
         Console.WriteLine($"{places.Count} sprites -> {path}: " + string.Join(", ", places.Select(p => p.Key)));
     }
 
+    /// `--portraits out.png [seed]`: the faces of a new campaign's lords and kin (each in all four moods for the first row),
+    /// 3x on one PNG, for checking portrait variety (docs/archive/LORDS.md LD1).
+    public static void Portraits(string path, int seed)
+    {
+        const int Z = 3, Cols = 12;
+        var c = Campaign.New(seed);
+        var faces = new List<Face>();
+        var lords = c.S.Characters.Where(x => !x.Dead && x.Kind is "lord" or "kin" or "knight").GroupBy(x => x.Faction)
+            .SelectMany(g => g.Select((x, i) => (x, i))).OrderBy(p => p.i).ThenBy(p => p.x.Faction).Select(p => p.x).ToList();
+        var first = PortraitPainter.Of(c, lords[0]);
+        for (int m = 0; m < 4; m++) faces.Add(first with { Mood = m });
+        foreach (var ch in lords.Skip(1).Take(Cols * 5 - 4)) faces.Add(PortraitPainter.Of(c, ch));
+        int cw = PortraitPainter.W * Z + Gap, ch2 = PortraitPainter.H * Z + Gap, rows = (faces.Count + Cols - 1) / Cols;
+        int w = Cols * cw + Gap, h = rows * ch2 + Gap;
+        var px = Enumerable.Repeat(new Color(60, 60, 64), w * h).ToArray();
+        for (int i = 0; i < faces.Count; i++)
+        {
+            var src = PortraitPainter.Paint(faces[i]);
+            int ox = Gap + i % Cols * cw, oy = Gap + i / Cols * ch2;
+            for (int y = 0; y < PortraitPainter.H * Z; y++)
+                for (int x = 0; x < PortraitPainter.W * Z; x++) px[(oy + y) * w + ox + x] = src[y / Z * PortraitPainter.W + x / Z];
+        }
+        File.WriteAllBytes(path, Png(px, w, h));
+        Console.WriteLine($"{faces.Count} portraits -> {path}");
+    }
+
     /// A minimal PNG encoder (8-bit RGB, no filtering).
-    static byte[] Png(Color[] px, int w, int h)
+    internal static byte[] Png(Color[] px, int w, int h)
     {
         var raw = new MemoryStream();
         for (int y = 0; y < h; y++)

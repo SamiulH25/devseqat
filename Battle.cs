@@ -281,7 +281,7 @@ public sealed partial class Battle
 
     public Unit Spawn(UnitType t, int team, Squad? s, Vector2 pos)
     {
-        var u = new Unit { Type = t, Index = Units.Count, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
+        var u = new Unit { Type = t, Index = Units.Count, Team = team, Squad = s, Home = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
             Palette = Options.Palette[Math.Clamp(team, 0, 1)], Grit = GritOf(Units.Count), Mods = t.Mods };
         if (t.Mount != null && !Options.Siege) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; } // assaults are fought on foot
         anyAura |= t.HasAura;
@@ -294,6 +294,15 @@ public sealed partial class Battle
     public Action<int>? Probe;
     public static readonly string[] Stages = { "grid", "general", "sight", "squads", "think", "move", "lances", "arrows", "morale", "end" };
     void Mark(int stage) => Probe?.Invoke(stage);
+
+    /// Run the battle on by `seconds` in steps of at most a sixtieth (fast forward runs several ticks a frame, so the sim
+    /// keeps its usual step; docs/archive/COMBAT_QOL.md Q4). At most 8 steps: a long hitch is cut short rather than run in full.
+    public void Advance(float seconds)
+    {
+        if (seconds <= 0) return;
+        int steps = Math.Clamp((int)MathF.Ceiling(seconds * 60 - 0.01f), 1, 8);
+        for (int i = 0; i < steps; i++) Update(seconds / steps);
+    }
 
     public void Update(float dt)
     {
@@ -325,6 +334,7 @@ public sealed partial class Battle
         Mark(2);
         UpdateCalledHorse(dt);
         Resupply(dt);
+        UpdateReliefs();
         foreach (var s in Squads) UpdateSquad(s, dt);
         Mark(3);
         foreach (var u in Units)
@@ -349,6 +359,7 @@ public sealed partial class Battle
         UpdateArrows(dt);
         Mark(7);
         UpdateMorale(dt);
+        UpdateAlerts(dt); // what needs you (BattleAlerts.cs): reads the sim, changes nothing
         UpdateBanner();
         UpdateRescue(dt);
         Mark(8);
@@ -404,6 +415,7 @@ public sealed partial class Battle
         int n = 0;
         foreach (var u in s.Units) if (u.Active && !u.Routing) n++;
         s.Alive = n;
+        UpdateOrders(s); // queued steps and the standing rule (BattleQueue.cs)
         if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); if (s.Team == 1) Sound(Cue.Cheer, s.Centroid()); }
         Tactics(s);     // its own wits: refuse a flank, wrap, re-form (BattleTactics.cs)
         PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
@@ -480,20 +492,24 @@ public sealed partial class Battle
     public BattleResult Result()
     {
         var list = new List<CompanyResult>();
-        foreach (var s in Squads.Where(s => s.Company != null))
+        foreach (var s in Squads.Where(s => s.Company != null && s.SplitFrom == null)) // a split half reports with its company
         {
-            var men = s.Units.Where(u => !u.Hero).ToList();
+            var men = Units.Where(u => u.Home == s && !u.Hero).ToList();
+            var kin = Squads.Where(o => Root(o) == s).ToList();
+            var byTier = new int[8];
+            foreach (var o in kin) for (int i = 0; i < 8; i++) byTier[i] += o.KillsByTier[i];
             var stacks = men.GroupBy(u => u.Type.Id).Select(g => new StackResult(g.Key, g.Count(),
                 Standing: g.Count(u => u.Active && !u.Routing), Fled: g.Count(u => u.Fled || (u.Active && u.Routing)), Fallen: g.Count(u => u.Dead))).ToList();
             int fled = men.Count(u => u.Fled || (u.Active && u.Routing));
             var named = men.Where(u => u.SoldierId != 0).Select(u => new NamedResult(u.SoldierId, u.Kills, u.Dead, u.Fled || (u.Active && u.Routing), u.FelledLeader, u.Saved)).ToList();
             var best = men.Where(u => u.SoldierId == 0).MaxBy(u => u.Kills);
-            list.Add(new CompanyResult(s.Team, s.Company!.Id, s.StartCount,
+            int start = men.Count; // StartCount moves with a fold; the men who began in it do not
+            list.Add(new CompanyResult(s.Team, s.Company!.Id, start,
                 Standing: men.Count(u => u.Active && !u.Routing),
                 Fled: fled,
                 Fallen: men.Count(u => u.Dead),
-                Kills: s.KillsByTier.Sum(), KillsByTier: (int[])s.KillsByTier.Clone(), Deployed: true, Stacks: stacks, HorseKills: s.HorseKills,
-                Routed: fled * 2 > s.StartCount || s.RoutSounded, HeroFell: s.Units.Any(u => u.Hero && u.Dead),
+                Kills: byTier.Sum(), KillsByTier: byTier, Deployed: true, Stacks: stacks, HorseKills: kin.Sum(o => o.HorseKills),
+                Routed: fled * 2 > start || kin.Any(o => o.RoutSounded), HeroFell: s.Units.Any(u => u.Hero && u.Dead),
                 Named: named, BestKills: best?.Kills ?? 0, BestTroop: best?.Type.Id ?? "", BestFelledLeader: best?.FelledLeader == true));
         }
         for (int team = 0; team < 2; team++)

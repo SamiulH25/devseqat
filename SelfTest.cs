@@ -170,6 +170,9 @@ public static partial class SelfTest
         HorsesCostGold();
         GoodsSell();
         LordArmies();
+        HousesAndKin();
+        PortraitsVary();
+        TalkBondsWants();
         Career();
         PilotCareer();
         FreeCrown();
@@ -181,6 +184,12 @@ public static partial class SelfTest
         AutoResolveNamedMen();
         PullBack();
         ReplayExact();
+        FoldCompanies();
+        AdvanceSteps();
+        RelieveAndSplit();
+        QueuedAndStanding();
+        AlertsRaise();
+        DeploymentMemory();
         ScaleBattle();
         DivisionGoals();
         HoldsRanks();

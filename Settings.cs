@@ -17,6 +17,8 @@ public sealed class Settings
     /// The battle's one cinematic moment (docs/archive/SPECTACLE.md): a great working, a breakthrough or a clash slows the view
     /// for a breath and draws bars top and bottom.
     public bool Cinematics = true;
+    /// Pause the battle when a company breaks, enemy horse reaches a flank, or a division loses its sergeant (docs/archive/COMBAT_QOL.md Q5).
+    public bool PauseOnAlerts;
     public Difficulty Difficulty = Difficulty.Normal;
     /// Most men on a battlefield at once, both sides together (the rest wait as reinforcements).
     public int BattleSize = 1500;

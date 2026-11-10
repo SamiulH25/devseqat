@@ -833,7 +833,7 @@ public static partial class SelfTest
         c.SlayLord(victim, true);
         var heir = c.CharacterOf(victim)!;
         Check(father.Dead && heir != father && !heir.Dead && victim.Name == heir.Name, "a slain lord's heir takes up his banner");
-        Check(c.MemoriesOf(heir, c.Me).Any(m => m.What == "you slew my father"), "and remembers who killed his father");
+        Check(c.MemoriesOf(heir, c.Me).Any(m => m.What.StartsWith("you slew my ")), "and remembers who killed his kin");
         // Companions: a sergeant of 15 battles joins your household and leads his company as a hero.
         var co = c.Player.Companies[0];
         co.Officer = "Sgt Test";
@@ -1392,6 +1392,116 @@ public static partial class SelfTest
 
     /// Lords' armies and priorities (LordArmies.cs): lords gather under a leader and march at the slowest one's pace, a lord with
     /// a job rides past brigands, an army's lords fight side by side; rabble is slow and robber knights quick.
+    /// LD0: lords have houses and kin; heirs come from the house; people age; a house with nobody left dies out; old saves get houses.
+    static void HousesAndKin()
+    {
+        var c = Campaign.New(4243);
+        var lords = c.S.Characters.Where(x => x.Kind == "lord" && !x.Dead && x.Order == "" && x.Faction >= 0).ToList();
+        Check(lords.All(l => c.HouseOf(l) != null), "every lord belongs to a house");
+        Check(c.S.Characters.Count(x => x.Kind == "kin") > lords.Count, "houses have families around their lords");
+        Check(lords.Any(l => l.Female && l.Name.StartsWith("Lady ")) || lords.Count < 20, "some houses are led by ladies");
+        var father = lords.FirstOrDefault(l => l.Children.Select(c.CharacterById).Any(k => k is { Female: false, Dead: false } && k.Age >= Campaign.ComeOfAge));
+        Check(father != null, "some lord has a grown son");
+        var son = father!.Children.Select(c.CharacterById).OfType<Character>().Where(k => !k.Female && k.Age >= Campaign.ComeOfAge).OrderByDescending(k => k.Age).First();
+        var party = c.PartyById(father.PartyId)!;
+        c.SlayLord(party, false);
+        Check(father.Dead && c.CharacterOf(party) == son && son.Kind == "lord" && party.Name == son.Name && son.Name.StartsWith("Lord "), "the eldest grown son takes up his father's banner");
+
+        int age = son.Age;
+        c.HousesYearly();
+        Check(son.Dead || son.Age == age + 1, "people age with the years");
+
+        // A house whose every member is gone dies out at the year's end.
+        var h = c.S.Houses.First(x => !x.Extinct && x.Id != son.House);
+        foreach (var m in c.Members(h).ToList()) { m.Dead = true; if (c.PartyById(m.PartyId) is Party p) { p.CharId = -1; m.PartyId = -1; } }
+        c.HousesYearly();
+        Check(h.Extinct, "a house with nobody left dies out");
+        Check(c.S.Characters.Where(x => !x.Dead && x.Kind == "lord" && x.Order == "" && x.Faction >= 0 && x.PartyId >= 0).All(l => c.HouseOf(l) != null), "lords made in play have houses too");
+
+        // A save from before houses: lords without a house get one (and a family) on load.
+        var old = Campaign.New(4244).S;
+        old.Houses.Clear();
+        old.Characters.RemoveAll(x => x.Kind == "kin");
+        foreach (var x in old.Characters) { x.House = -1; x.Spouse = -1; x.Children.Clear(); x.First = ""; }
+        var loaded = new Campaign(CampaignState.Deserialize(old.Serialize()));
+        Check(loaded.S.Characters.Where(x => x.Kind == "lord" && !x.Dead && x.Order == "" && x.Faction >= 0).All(l => loaded.HouseOf(l) != null), "an old save's lords get houses on load");
+    }
+
+    /// LD1: every lord's painted face is his own, opaque, and shows his mood towards you; a ruler wears a circlet.
+    static void PortraitsVary()
+    {
+        var c = Campaign.New(4246);
+        var lords = c.S.Characters.Where(x => x.Kind == "lord" && !x.Dead).Take(40).ToList();
+        var faces = lords.Select(l => PortraitPainter.Of(c, l)).ToList();
+        Check(faces.Distinct().Count() == faces.Count, "no two lords share a face");
+        var px = PortraitPainter.Paint(faces[0]);
+        Check(px.Length == PortraitPainter.W * PortraitPainter.H && px.All(p => p.A == 255), "a portrait is a whole opaque picture");
+        Check(!PortraitPainter.Paint(faces[0] with { Mood = 0 }).SequenceEqual(PortraitPainter.Paint(faces[0] with { Mood = 3 })), "a warm face and a hostile one differ");
+        var ruler = c.RulerOf(lords[0].Faction)!;
+        Check(PortraitPainter.Of(c, ruler).Crown, "a ruler wears a circlet");
+        Check(PortraitPainter.Of(c, lords[0]).Age == lords[0].Age, "the face ages with him");
+    }
+
+    /// LD3, LD2, LD4, LD6: talking to a lord (topics, cooldowns, arguments, gifts, insults), bonds between lords (kin, feuds
+    /// passed to heirs), wants (met by your help, promises broken), and marrying into a house.
+    static void TalkBondsWants()
+    {
+        foreach (var e in Campaign.ValidateTalk()) Check(false, "talk.json: " + e);
+        var c = Campaign.New(4247);
+        c.S.Gold = 5000;
+        var party = c.S.Parties.First(p => p.Kind == PartyKind.Lord && p.KnightOrder == "" && !p.Down && c.CharacterOf(p) != null && !c.Hostile(c.Player, p));
+        var lord = c.CharacterOf(party)!;
+        Check(c.CannotTalk(lord) != null, "a lord far away cannot be talked to");
+        c.Player.Pos = party.Pos + new Vector2(2, 0);
+        Check(c.CannotTalk(lord) == null && c.Greeting(lord) != "", "a lord beside you greets you");
+        var (ok, said) = c.Say(lord, "news");
+        Check(ok && said != "", "he tells you the news");
+        Check(c.CannotAsk(lord, "news") != null, "asking again at once is refused");
+        float before = c.OpinionOfYou(lord);
+        c.Say(lord, "gift");
+        Check(c.OpinionOfYou(lord) > before && c.S.Gold == 4900, "a gift of gold warms him and costs 100 crowns");
+        lord.Traits = new() { "Greedy", "Reckless" };
+        Check(c.Odds(lord, "ride", new[] { "gold" }) > c.Odds(lord, "ride") && c.Odds(lord, "ride", new[] { "faith" }) < c.Odds(lord, "ride", new[] { "gold" }),
+            "the argument that suits him moves him most");
+        before = c.OpinionOfYou(lord);
+        c.Say(lord, "insult");
+        Check(c.OpinionOfYou(lord) < before - 15, "an insult is remembered");
+
+        // Bonds: kin within a house, a feud that outlives the lord.
+        var house = c.HouseOf(lord)!;
+        var kin = c.Members(house).FirstOrDefault(m => m != lord);
+        if (kin != null) Check(c.BondOf(kin, lord) == "kin", "members of a house are kin");
+        var other = c.CharacterOf(c.S.Parties.First(p => p.Kind == PartyKind.Lord && p.KnightOrder == "" && !p.Down && c.CharacterOf(p) is Character x && x.House != lord.House))!;
+        float warm = c.OpinionOf(lord, other);
+        var otherParty = c.PartyById(other.PartyId)!;
+        c.SlayLord(otherParty, false, killer: lord);
+        var heir = c.CharacterOf(otherParty)!;
+        if (heir.House == other.House) Check(c.BondOf(heir, lord) == "feud" && c.OpinionOf(heir, lord) < warm, "a slain lord's heir carries his house's feud");
+
+        // Wants: gold for a greedy lord's want; a broken promise.
+        lord.Want = "wealth"; lord.Asked.Clear();
+        c.Say(lord, "gift");
+        Check(lord.Want == "" && c.MemoriesOf(lord, c.Me).Any(m => m.What == "you filled my purse"), "helping his want wins him");
+        lord.Want = "marshal"; lord.Promise = "marshal"; lord.PromiseDay = 1;
+        c.S.Hours = 24 * (Campaign.WantDays * 4 - 1) + 1;
+        if (c.MarshalOf(lord.Faction) != lord) { c.WantsDaily(); Check(c.MemoriesOf(lord, c.Me).Any(m => m.What == "you broke your word"), "a broken promise is remembered"); }
+
+        // Marriage: court three times, then ask the head of her house.
+        var bride = c.S.Characters.First(x => c.Suitor(x) && c.HeadOf(x) is Character hd && hd != x);
+        var head = c.HeadOf(bride)!;
+        bride.Courted = 3;
+        head.Opinion[c.S.CaptainChar] = 100;
+        for (int k = 0; k < 20 && c.Me.Spouse < 0; k++)
+        {
+            bride.Asked.Clear(); bride.Courted = 3; bride.Opinion[c.S.CaptainChar] = 100;
+            c.Player.Pos = c.PartyById(head.PartyId)?.Pos ?? c.Player.Pos;
+            if (c.CannotTalk(bride) != null) { bride.Kind = "lord"; bride.PartyId = head.PartyId >= 0 ? head.PartyId : party.Id; }
+            c.Say(bride, "hand");
+        }
+        Check(c.Me.Spouse == bride.Id && bride.Spouse == c.Me.Id, "you can marry into a house");
+        Check(c.Members(c.HouseOf(bride)!).Where(m => m != bride).All(m => c.BondOf(m, c.Me) == "kin"), "her house is kin to you");
+    }
+
     static void LordArmies()
     {
         var c = Campaign.New(4242);

@@ -437,6 +437,8 @@ The campaign was built in steps F1-F9 (see `docs/archive/CAMPAIGN_OVERHAUL.md`);
 | Fiefs (F6) | `Fiefs.cs` | Prosperity and unrest, taxes, buildings, revolts at unrest 70+, defection at 100; vassals with standing orders. |
 | Diplomacy (F7) | `Diplomacy.cs` | War exhaustion, peace terms (`Terms`), alliances, tribute, hosts and summons. |
 | Events (F8) | `Events.cs`, `Data/events.json` | Triggers find a subject; choices apply effect verbs. See 8.3. |
+| Houses, bonds, wants (LD0, LD2, LD4) | `Houses.cs`, `LordBonds.cs`, `Wants.cs` | Every lord has a house and kin; heirs come from the house. Bonds (kin, feud, friend, rival) add to `OpinionOf` and steer armies. Each lord wants one thing (`WantsDaily`); `HelpedWant` credits you when you bring it about. All on the kin dice `KRng`. |
+| Talk, halls, marriage (LD3, LD5, LD6) | `Talk.cs`, `Data/talk.json` | `TopicsFor` lists what can be raised, `CannotAsk` why not, `Odds` the chance, `Say` rolls it and `Grant` applies it. Lines are data (see 8.6). |
 | Pacing (F9) | `Pilot.cs`, `BalanceReport.cs` | A scripted captain plays headless; `--pacing` reports days per career stage. |
 
 ### 5.7 Balance values
@@ -586,6 +588,15 @@ defaults are used when empty). `BalanceMatchesData` fails if a number here diffe
 ### 8.5 `names.json`
 
 Name lists for lords, companies and places (`Names.Get()`).
+
+### 8.6 `talk.json`
+
+What lords say (`TalkLines`, read by `Campaign.Line`). Each entry in `lines` has a `topic` (an id from `Campaign.Topics`, or
+`greet`) and `text`, and may narrow it with `mood` (warm, even, cold, hostile: from his opinion of you, as on his portrait),
+`temper` (one of his traits), `outcome` (yes, no) and `war` (true: only when his realm fights yours). Among the lines that fit, those
+naming his temper or the war come first, then those naming his mood; the pick among equals is fixed for the day. `{name}`, `{house}`, `{realm}`, `{you}` and
+`{other}` (what the granted topic adds, such as the news) are filled in. `ValidateTalk` refuses unknown values and needs a
+greeting for each mood and a yes line for every topic (and a no line for checked ones).
 
 ---
 

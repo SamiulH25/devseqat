@@ -151,7 +151,7 @@ public partial class Battle
     void BreakRanks(Squad s)
     {
         if (s.BrokeRanks && !s.Broken && !s.InContact) s.BrokeRanks = false; // re-formed: back under orders
-        if (s.Order != Order.Hold || s.BrokeRanks || s.Swarm || s.Cavalry || Wall != null || s.Alive == 0 || s.Units.Count == 0) return;
+        if (s.Order != Order.Hold || s.BrokeRanks || s.BreakOffUntil > Time || s.Swarm || s.Cavalry || Wall != null || s.Alive == 0 || s.Units.Count == 0) return;
         var t = s.Units[0].Type;
         if (t.Ammo > 0 || t.Wild || t.Has("raised") || t.Leader) return;
         bool hot = s.Company?.Has("Hothead") == true;
