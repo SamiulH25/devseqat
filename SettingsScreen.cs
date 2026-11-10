@@ -7,7 +7,9 @@ namespace Ironfield;
 sealed class SettingsScreen
 {
     readonly ScreenHost host;
-    readonly Ui ui;
+    Ui? uiMade;
+    /// Made on first use: the screen is built in the host's constructor, before the sprite batch, art and font exist.
+    Ui ui => uiMade ??= new Ui(host.Sb, host.Art, host.Font);
     string tab = "VIDEO";
     Act? listening;
     int page;
@@ -17,7 +19,7 @@ sealed class SettingsScreen
 
     static readonly (int W, int H)[] Resolutions = { (1280, 720), (1600, 900), (1920, 1080), (2560, 1440) };
 
-    public SettingsScreen(ScreenHost host) { this.host = host; ui = new Ui(host.Sb, host.Art, host.Font); }
+    public SettingsScreen(ScreenHost host) => this.host = host;
 
     public void Update()
     {
@@ -95,6 +97,10 @@ sealed class SettingsScreen
                 Label("HIT PAUSE");
                 if (Choice(0, "OFF", !s.HitPause)) s.HitPause = false;
                 if (Choice(1, "ON", s.HitPause)) s.HitPause = true;
+                Row();
+                Label("CINEMATIC MOMENTS");
+                if (Choice(0, "OFF", !s.Cinematics)) s.Cinematics = false;
+                if (Choice(1, "ON", s.Cinematics)) s.Cinematics = true;
                 Row();
                 ui.Text("HIGH: SHADERS, SUN SHADOWS, POST. MEDIUM: NO SHADOWS. LOW: BASIC (ALSO THE FALLBACK).", body.X, y + ui.U(6), Style.Dim, 1);
                 break;
