@@ -130,7 +130,19 @@ partial class BattleScreen
                 }
                 lastCardClick = realTime;
             }
+            else if (hud.DeployToggleAt(ms.Position) && memory != null)
+            {
+                memory.DeployAsLast = !memory.DeployAsLast;
+                battle.ApplyDeployment(memory.DeployAsLast ? memory.LastDeploy : defaultDeploy);
+                battle.Log(memory.DeployAsLast ? "As in your last battle." : "The usual array.");
+            }
             else if (hud.ButtonAt(ms.Position) is Cmd cmd) Command(cmd);
+            else if (hud.AlertAt(ms.Position) is Alert al)
+            {
+                // An alert: look there, and pick the company if it is yours to command.
+                camFocus = al.Squad is { Alive: > 0 } aq ? aq.Centroid() : al.At;
+                if (al.Squad is { } q && Selectable.Contains(q)) { selected.Clear(); selected.Add(q); selectedDivision = null; }
+            }
             else if (hud.CardAt(ms.Position) is Squad card)
             {
                 if (card == lastCardSquad && realTime - lastCardClick < DoubleClick) camFocus = card.Centroid(); // double-click: look at it
@@ -183,13 +195,13 @@ partial class BattleScreen
             if (click && PickSquad(mouseGround, 1) is Squad foe)
             {
                 OrderArrows(foe.Centroid());
-                Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }); // click an enemy: attack it
+                Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }, move: true); // click an enemy: attack it
                 return;
             }
             OrderArrows(click ? mouseGround : (a + mouseGround) / 2);
             if (click) LineAt(mouseGround, enemy);    // click: move, keep width
             else Distribute(a, mouseGround, enemy);   // drag: draw the line
-            battle.Log(selected.Count == 0 ? "All troops: move" : "Squads moving");
+            battle.Log((selected.Count == 0 ? "All troops: " : "Squads: ") + (queueing ? "then move there" : "move"));
         }
     }
 

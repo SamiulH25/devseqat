@@ -19,6 +19,7 @@ public partial class Battle
     /// The company's half-second (to two-second) think; a threat on its flank turns a holding company every tick.
     void Tactics(Squad s)
     {
+        if (s.BreakOffUntil > Time) return; // relieved: walking back, no wits until it stands again
         if ((tick + s.Id * 7) % TacticsEvery(s.Grade) == 0) Wits(s);
         if (s.Threat != null && s.Order != Order.Charge)
         {

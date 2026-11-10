@@ -581,6 +581,16 @@ partial class BattleScreen
             foreach (var s in battle.Commanded)
             {
                 if (s.Alive == 0) continue;
+                // Queued orders (docs/archive/COMBAT_QOL.md Q3): a line from step to step, a tick at each place.
+                var at = s.Order == Order.Hold ? s.Anchor : s.Centroid();
+                foreach (var st in s.Queue)
+                {
+                    var to = st.Target >= 0 && st.Target < battle.Squads.Count ? battle.Squads[st.Target].Centroid() : st.Anchor;
+                    var qc = selected.Contains(s) ? Sel : Friendly;
+                    Line(G(at, 0.2f), G(to, 0.2f), st.Target >= 0 ? Foe : qc);
+                    Line(G(to, 0.2f), G(to + st.Front * 2, 0.2f), qc);
+                    at = to;
+                }
                 if (s.Order == Order.Charge && s.Target is { Alive: > 0 } tgt)
                 {
                     Line(G(s.Centroid(), 0.15f), G(tgt.Centroid(), 0.15f), Foe); // attack order

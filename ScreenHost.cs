@@ -141,7 +141,7 @@ sealed class ScreenHost : Game
     {
         campaign!.S.Save("autosave");
         setup = s;
-        battle.BeginCampaign(s);
+        battle.BeginCampaign(s, campaign!.S);
         mode = Mode.Battle;
         plateName = s.Field != "" ? $"THE BATTLE OF {s.Field.ToUpperInvariant()}" : s.Tournament >= 0 ? "THE LISTS" : $"AGAINST {s.EnemyName.ToUpperInvariant()}";
         plateNote = $"{(s.Options.Ground?.Name ?? "open").ToUpperInvariant()} GROUND, {s.Options.Weather.Describe.ToUpperInvariant()}";

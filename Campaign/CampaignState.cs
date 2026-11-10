@@ -497,6 +497,11 @@ public sealed class CampaignState
     /// You retired on the company's legend (L7), and how many captains have led it since you began (handing over).
     public bool Retired;
     public int Generation;
+    /// Your last fought battle's deployment, by company (docs/archive/COMBAT_QOL.md Q6), whether to start the next one from it, and
+    /// your control groups in battle (digit -> company ids).
+    public List<DeploySpot> LastDeploy = new();
+    public bool DeployAsLast = true;
+    public Dictionary<int, List<int>> ControlGroups = new();
     /// How far the provinces of this save's map reach (WorldMap.Extent for new campaigns; older saves have their own).
     public float MapExtent = WorldMap.PreviousExtent;
     /// How the map lays out its realms (WorldMap.Layout): saves from before docs/archive/WORLD.md W1 have none and keep the old bands.

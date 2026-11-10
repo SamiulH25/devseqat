@@ -52,6 +52,11 @@ public partial class Battle
         u.Wish = Vector2.Zero;
 
         float toSlot = Vector2.Distance(u.Pos, u.Slot);
+        if (s.BreakOffUntil > Time) // relieved (BattleRelief.cs): back through the fresh ranks, not a blow more
+        {
+            if (toSlot > 0.4f) { var back = Via(u, u.Slot) - u.Pos; u.Wish = back / MathF.Max(0.01f, back.Length()) * u.Type.Speed; u.Face(back); }
+            return;
+        }
         bool charge = s.Order == Order.Charge;
         if (charge && s.Target != null && d > 3) (enemy, d) = Nearest(u, s.Target); // go for the ordered target
 

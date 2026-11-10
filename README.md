@@ -445,6 +445,25 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
   lost men, must not be at blows, and must be within 120 m; companies in different divisions, allies' companies, mage
   circles and a company a companion leads (it can only take men in) cannot fold. After the battle each man still counts
   for the company he started in.
+- **Relieve and split:** select a tired company in the line and a fresh one near it (within 60 m) and press **.** (RELIEVE):
+  the fresh company marches onto the tired one's line, and when it is close behind, the tired men break off and walk back
+  to where the fresh ones stood (foot only). **/** (SPLIT) turns a company of ten or more into two halves side by side;
+  FOLD IN joins them again, and after the battle both halves count as the one company.
+- **Queued and standing orders:** hold **Shift** while giving a move or attack order and it waits until the company's last
+  order is done (it stands formed where it was sent, or the company it attacked broke); the card shows **+N** orders queued.
+  **=** cycles a standing order on the selected companies, kept until you change it: *charge when they close* (hold, then
+  charge whoever comes within 25 m), *fall back when worn* (under half strength or shaken, walk 30 m out of the fight),
+  *skirmish* (bows keep 35 m from foot and horse coming at them) and *do not chase* (hold once the company it fought breaks).
+- **Battle speed:** **[** and **]** run the battle at half, normal, double or triple speed. While paused you can give every
+  order; they go out when the battle runs on.
+- **Alerts and the enemy glass:** under the event feed, short alerts say what needs you (a company wavering, breaking,
+  hit in the flank, tiring, badly worn, out of arrows; enemy horse at a flank; a division without its sergeant). In the
+  command view click one to look there and pick the company. Settings can pause the battle on the worst of them.
+  Hovering an enemy company shows what your side can tell: about how many, how steady, its attack and traits; one not
+  seen of late shows "?" men.
+- **Control groups and remembered deployment:** Ctrl and a number keeps the selected companies as a group; the number
+  picks them again, twice quickly looks at them. In the campaign your groups carry on to the next battle, and each
+  company starts where it stood when your last battle began (the deployment banner switches between that and the usual array).
 - **Perks on the ground:** Pathfinder (woods, scrub and marsh slow your men half as much), Tactician (your side sees a quarter
   further and further into woods), Ambusher (your ambushes shake the enemy more).
 - **The campaign picks the field** (`Campaign/Ground.cs`): where you meet decides the ground. A road over a river gives a river

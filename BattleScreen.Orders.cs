@@ -12,12 +12,13 @@ partial class BattleScreen
     List<Squad> Targets() =>
         (selected.Count > 0 ? selected : battle.Commanded).Where(s => s.Alive > 0).ToList();
 
-    void Issue(string what, Action<Squad> act)
+    void Issue(string what, Action<Squad> act, bool move = false)
     {
         var list = Targets();
         if (list.Count == 0) return;
         float late = 0;
-        foreach (var s in list) late = MathF.Max(late, Send(s, act));
+        foreach (var s in list) late = MathF.Max(late, move ? Move(s, act) : Send(s, act));
+        if (move && queueing) what = "then " + what;
         host.Audio?.Play(Cue.Order, 0.6f); // the horn calls the order
         battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
     }
@@ -28,6 +29,37 @@ partial class BattleScreen
     {
         if (deploying || s.Division == null) { act(s); return 0; }
         return battle.Direct(s, act);
+    }
+
+    /// Shift held as a movement order is given: it is queued after the company's other orders (docs/archive/COMBAT_QOL.md Q3).
+    bool queueing;
+
+    /// A movement order: queued behind the company's orders while Shift is held, else it replaces them.
+    float Move(Squad s, Action<Squad> act)
+    {
+        if (!queueing || deploying) return Send(s, q => { q.Queue.Clear(); q.StepTarget = null; act(q); });
+        // Work the order out on a stand-in, then queue the result as a step.
+        var last = s.Queue.Count > 0 ? s.Queue[^1] : battle.StepOf(s);
+        var ghost = new Squad(s.Name, s.Team) { Cavalry = s.Cavalry, Formation = s.Formation, Columns = last.Columns, Front = last.Front, Anchor = last.Anchor, Order = last.Order };
+        act(ghost);
+        var step = new OrderStep(ghost.Order, ghost.Anchor, ghost.Front, ghost.Columns, ghost.Target != null ? battle.Squads.IndexOf(ghost.Target) : -1);
+        return Send(s, q => q.Queue.Add(step));
+    }
+
+    /// Cycle the standing rule of the selected companies (docs/archive/COMBAT_QOL.md Q3); each takes the next rule it can keep.
+    void NextRule()
+    {
+        var list = Targets();
+        if (list.Count == 0) return;
+        var first = Battle.RulesFor(list[0]);
+        var next = first[(Array.IndexOf(first, list[0].Rule) + 1) % first.Length];
+        foreach (var s in list)
+        {
+            var r = Battle.RulesFor(s).Contains(next) ? next : StandingRule.None;
+            Send(s, q => { q.Rule = r; q.RuleFired = false; });
+        }
+        battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + Battle.RuleText(next));
+        Tips.Show("rules", "A standing order holds until you change it. Charge when they close: hold, then charge whoever comes within 25 m.\nFall back when worn: under half strength or shaken, walk out of the fight. Skirmish: bows keep their distance.");
     }
 
     /// Companies you can pick: your retinue and the companies of your divisions (their orders arrive late).
@@ -63,13 +95,16 @@ partial class BattleScreen
         var enemy = battle.Centroid(1);
         switch (c)
         {
-            case Cmd.Charge: Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }); break;
-            case Cmd.Follow: Issue("follow me!", s => { s.Order = Order.Follow; s.Target = null; }); break;
-            case Cmd.Hold: Issue("hold position!", s => s.HoldInPlace()); break;
-            case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15)); break;
-            case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20)); break;
+            case Cmd.Charge: Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }, move: true); break;
+            case Cmd.Follow: Issue("follow me!", s => { s.Order = Order.Follow; s.Target = null; }, move: true); break;
+            case Cmd.Hold: Issue("hold position!", s => s.HoldInPlace(), move: true); break;
+            case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15), move: true); break;
+            case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20), move: true); break;
+            case Cmd.Rule: NextRule(); break;
             case Cmd.Spacing: Issue("change spacing", s => s.Loose = !s.Loose); break;
             case Cmd.Merge: MergeSelected(); break;
+            case Cmd.Relieve: RelieveSelected(); break;
+            case Cmd.Split: SplitSelected(); break;
             case Cmd.Formation:
             {
                 var list = Targets();
@@ -118,7 +153,7 @@ partial class BattleScreen
         }
     }
 
-    /// Fold the selected companies into one (docs/COMBAT_QOL.md Q1): the fullest takes in the rest (a company a
+    /// Fold the selected companies into one (docs/archive/COMBAT_QOL.md Q1): the fullest takes in the rest (a company a
     /// companion leads always takes them in). A company in a division folds when the rider reaches it.
     void MergeSelected()
     {
@@ -139,12 +174,74 @@ partial class BattleScreen
         Tips.Show("merge", "Folded companies fight as one: the newcomers fill the ranks from behind.\nThe fallen keep their own colours, so each company's men still go home to it after the battle.");
     }
 
+    /// Relieve the line (docs/archive/COMBAT_QOL.md Q2): of two selected companies, the one fighting (else the more tired) is
+    /// relieved by the other, which takes its line; the tired one falls back to the fresh one's place.
+    void RelieveSelected()
+    {
+        var list = selected.Where(s => s.Alive > 0 && s.FoldedInto == null).ToList();
+        if (list.Count != 2) { battle.Log("Select two companies: a tired one in the line and a fresh one to take its place."); return; }
+        static float Weary(Squad s) => (s.InContact ? 1000 : 0) - s.Units.Where(u => u.Active).Select(u => u.Stamina).DefaultIfEmpty(100).Average();
+        var tired = list.MaxBy(Weary)!;
+        var fresh = list.First(s => s != tired);
+        if (battle.CannotRelieve(tired, fresh) is string why) { battle.Log($"{fresh.Name} cannot relieve {tired.Name}: {why.ToLowerInvariant()}."); return; }
+        float late = Send(fresh, q => battle.Relieve(tired, q));
+        if (late > 0) battle.Log($"{fresh.Name}: relieve {tired.Name}! (a rider takes {late:0} s)");
+        host.Audio?.Play(Cue.Order, 0.6f);
+        Tips.Show("relieve", "The fresh company marches onto the tired one's line. When it is close behind, the tired men\nbreak off and walk back to where the fresh ones stood. Tired men fight badly: relieve them before they break.");
+    }
+
+    /// Split each selected company in two, side by side (docs/archive/COMBAT_QOL.md Q2). FOLD IN joins them again.
+    void SplitSelected()
+    {
+        var list = Targets();
+        if (selected.Count == 0) { battle.Log("Select the company to split."); return; }
+        foreach (var s in list)
+        {
+            if (battle.CannotSplit(s) is string why) { battle.Log($"{s.Name} cannot split: {why.ToLowerInvariant()}."); continue; }
+            Send(s, q => battle.Split(q));
+        }
+        host.Audio?.Play(Cue.Order, 0.6f);
+        Tips.Show("split", "A split company stands as two halves side by side, each with its own card.\nAfter the battle both count as the one company. FOLD IN joins the halves again.");
+    }
+
+    /// A company's key in a control group: its campaign company id, else its place in the battle (negative).
+    int GroupKey(Squad s) => s.Company is { Id: > 0 } c && s.SplitFrom == null ? c.Id : -(battle.Squads.IndexOf(s) + 1);
+
+    /// Ctrl+digit keeps the selection as a group; the digit picks it again, twice quickly looks at it (docs/archive/COMBAT_QOL.md Q6).
+    void Group(int digit, bool save)
+    {
+        if (save)
+        {
+            if (selected.Count == 0) { groups.Remove(digit); battle.Log($"Group {digit} cleared."); return; }
+            groups[digit] = selected.Select(GroupKey).ToList();
+            battle.Log($"Group {digit}: " + string.Join(", ", selected.Select(s => s.Name)));
+            Tips.Show("groups", "Ctrl and a number keeps the companies you have selected as a group; the number picks them again.\nPress it twice to look at them. In the campaign your groups carry on to the next battle.");
+            return;
+        }
+        var keys = groups[digit];
+        var members = Selectable.Where(s => s.Alive > 0 && keys.Contains(GroupKey(s))).ToList();
+        if (members.Count == 0) { battle.Log($"Group {digit} has no one left."); return; }
+        if (lastGroup == digit && realTime - lastGroupAt < DoubleClick) camFocus = members.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / members.Count;
+        lastGroup = digit;
+        lastGroupAt = realTime;
+        selected.Clear();
+        selectedDivision = null;
+        foreach (var s in members) selected.Add(s);
+    }
+
     void OrderKeys()
     {
         selected.RemoveWhere(s => s.FoldedInto != null);
+        queueing = ctl.Down(Act.AddToSelection);
         var mine = battle.Commanded.ToList();
-        for (int i = 0; i < mine.Count && i < 10; i++)
-            if (Pressed(i == 9 ? Keys.D0 : Keys.D1 + i) && !selected.Remove(mine[i])) selected.Add(mine[i]);
+        bool ctrl = kb.IsKeyDown(Keys.LeftControl) || kb.IsKeyDown(Keys.RightControl);
+        for (int i = 0; i < 10; i++)
+        {
+            if (!Pressed(i == 9 ? Keys.D0 : Keys.D1 + i)) continue;
+            int digit = (i + 1) % 10;
+            if (digit > 0 && (ctrl || groups.ContainsKey(digit))) { Group(digit, ctrl); continue; } // control groups (Q6)
+            if (i < mine.Count && !selected.Remove(mine[i])) selected.Add(mine[i]);
+        }
         if (ctl.Pressed(Act.SelectAll)) { selected.Clear(); selectedDivision = null; }
         if (ctl.Pressed(Act.NextDivision)) NextDivision();
         if (ctl.Pressed(Act.GroundView)) groundView = !(groundView ?? deploying);
@@ -227,7 +324,7 @@ partial class BattleScreen
     void Distribute(Vector2 a, Vector2 b, Vector2 toward)
     {
         if (deploying) { a.Y = MathF.Min(a.Y, -12); b.Y = MathF.Min(b.Y, -12); } // your third of the field
-        foreach (var (s, a1, b1) in Split(a, b).ToList()) Send(s, q => q.SetLine(a1, b1, toward));
+        foreach (var (s, a1, b1) in Split(a, b).ToList()) Move(s, q => q.SetLine(a1, b1, toward));
     }
 
     IEnumerable<(Squad S, Vector2 A, Vector2 B)> Split(Vector2 a, Vector2 b)

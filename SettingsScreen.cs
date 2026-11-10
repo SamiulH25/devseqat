@@ -102,6 +102,10 @@ sealed class SettingsScreen
                 if (Choice(0, "OFF", !s.Cinematics)) s.Cinematics = false;
                 if (Choice(1, "ON", s.Cinematics)) s.Cinematics = true;
                 Row();
+                Label("PAUSE ON ALERTS");
+                if (Choice(0, "OFF", !s.PauseOnAlerts)) s.PauseOnAlerts = false;
+                if (Choice(1, "ON", s.PauseOnAlerts)) s.PauseOnAlerts = true;
+                Row();
                 ui.Text("HIGH: SHADERS, SUN SHADOWS, POST. MEDIUM: NO SHADOWS. LOW: BASIC (ALSO THE FALLBACK).", body.X, y + ui.U(6), Style.Dim, 1);
                 break;
             case "AUDIO":

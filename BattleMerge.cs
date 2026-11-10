@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Folding a company into another in battle (docs/COMBAT_QOL.md Q1): a worn company's standing men join a fuller one and
+/// Folding a company into another in battle (docs/archive/COMBAT_QOL.md Q1): a worn company's standing men join a fuller one and
 /// fill its ranks from behind. The fallen and the fled stay with their own colours, so each company's result still goes back to it.
 public sealed partial class Battle
 {
@@ -29,7 +29,7 @@ public sealed partial class Battle
         if (from.Units[0].Type.Ammo > 0 != into.Units[0].Type.Ammo > 0) return "ARCHERS AND MEN AT ARMS FIGHT APART";
         if (from.Units.Any(u => u.Hero && u.Active)) return $"A COMPANION LEADS {from.Name.ToUpperInvariant()}: FOLD THE OTHER INTO IT";
         if (from.InContact) return $"{from.Name.ToUpperInvariant()} IS AT BLOWS: PULL IT OUT FIRST";
-        if (Movers(from).Count() == from.Units.Count) return $"{from.Name.ToUpperInvariant()} HAS LOST NO MEN";
+        if (Movers(from).Count() == from.Units.Count && Root(from) != Root(into)) return $"{from.Name.ToUpperInvariant()} HAS LOST NO MEN"; // halves of a split company may rejoin whole
         float d = Vector2.Distance(from.Center, into.Center);
         if (d > MergeReach) return $"TOO FAR APART ({d:0} M): BRING THEM WITHIN {MergeReach:0} M";
         return null;
@@ -61,6 +61,9 @@ public sealed partial class Battle
             u.Mods = u.Type.Mods + into.Mods;
             into.MarchSpeed = MathF.Min(into.MarchSpeed, u.Type.Speed);
         }
+        // Two unhurt halves rejoining leave one empty: it keeps a stand-in (not on the field, never active) so the
+        // company is never without a first man.
+        if (from.Units.Count == 0) from.Units.Add(new Unit { Type = movers[0].Type, Team = from.Team, Squad = from, Fled = true, Index = -1, Palette = movers[0].Palette });
         into.StartCount += n;
         from.StartCount -= n;
         into.Alive += n;

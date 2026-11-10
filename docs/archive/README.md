@@ -9,6 +9,7 @@ The living docs are `CLAUDE.md`, `docs/DEVELOPING.md`, `docs/DESIGN.md`, `docs/C
 | [`ANIMATION_ROSTER.md`](ANIMATION_ROSTER.md) | Animation and roster pass: poses by grip, knees, idles and falls; branch troops for the thin realms |
 | [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md) | Ironfield campaign overhaul (roadmap phase F) |
 | [`COMBAT_OVERHAUL.md`](COMBAT_OVERHAUL.md) | Combat overhaul: plan |
+| [`COMBAT_QOL.md`](COMBAT_QOL.md) | Combat quality of life (Q1-Q6): fold, relieve and split, queued and standing orders, speed, alerts, groups and remembered deployment |
 | [`COMPANIONS_MAGIC.md`](COMPANIONS_MAGIC.md) | Companions, magic, abilities, buffs and auras (plan) |
 | [`CREATURES.md`](CREATURES.md) | Creatures and monsters: brainstorm and plan |
 | [`KNIGHT_ORDERS.md`](KNIGHT_ORDERS.md) | Knight orders and the captain's aura: plan |

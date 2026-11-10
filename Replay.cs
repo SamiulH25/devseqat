@@ -32,6 +32,9 @@ public sealed class Replay
         public List<int>? Stakes;
         /// Companies folded into others this tick (from, into; Battle.Merge).
         public List<int[]>? Merges;
+        /// Reliefs (tired, fresh) and splits (company) started this tick (BattleRelief.cs).
+        public List<int[]>? Reliefs;
+        public List<int>? Splits;
     }
 
     /// A goal you sent one of your divisions (it then rides to him inside the sim, so it replays exactly).
@@ -53,6 +56,9 @@ public sealed class Replay
         public int CastSpell = -1;
         public Vector2 CastAt;
         public float CastSince;
+        public List<OrderStep>? Queue;
+        public StandingRule Rule;
+        public bool RuleFired;
     }
 
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true };
@@ -79,6 +85,10 @@ public sealed class Replay
         }
         foreach (var f in Frames)
         {
+            // Folds, reliefs and splits first: the orders recorded on the same tick already see the companies they made.
+            if (f.Merges != null) foreach (var m in f.Merges) b.ReplayMerge(m[0], m[1]);
+            if (f.Reliefs != null) foreach (var m in f.Reliefs) b.ReplayRelief(m[0], m[1]);
+            if (f.Splits != null) foreach (int i in f.Splits) b.ReplaySplit(i);
             if (f.Orders != null)
                 foreach (var o in f.Orders)
                 {
@@ -86,12 +96,14 @@ public sealed class Replay
                     s.Order = o.Order; s.Anchor = o.Anchor; s.Front = o.Front; s.Columns = o.Columns; s.Formation = o.Formation; s.FireAtWill = o.FireAtWill; s.Override = o.Override; s.Pursue = o.Pursue;
                     s.HoldSpells = o.HoldSpells; s.CastSpell = o.CastSpell; s.CastAt = o.CastAt; s.CastSince = o.CastSince;
                     s.Target = o.Target >= 0 ? b.Squads[o.Target] : null;
+                    s.Queue.Clear();
+                    if (o.Queue != null) s.Queue.AddRange(o.Queue);
+                    s.Rule = o.Rule; s.RuleFired = o.RuleFired;
                 }
             if (f.Goals != null)
                 foreach (var g in f.Goals)
                     b.IssueGoal(b.Divisions[g.Division], new Goal(g.Kind, g.Point, g.Target >= 0 ? b.Squads[g.Target] : null, g.Side));
             if (f.Stakes != null) foreach (int i in f.Stakes) b.PlantStakes(b.Squads[i]);
-            if (f.Merges != null) foreach (var m in f.Merges) b.ReplayMerge(m[0], m[1]);
             b.Input = f.Input;
             b.Commanding = f.Commanding;
             if (f.Withdraw) b.Withdraw();
@@ -140,6 +152,10 @@ public sealed partial class Battle
         }
         var f = new Replay.Frame { Dt = dt, Input = Input, Commanding = Commanding, Withdraw = withdrawRequested, Goals = goalRecords, Stakes = stakeRecords, Merges = mergeRecords?.Select(m => new[] { m.From, m.Into }).ToList() };
         mergeRecords = null;
+        f.Reliefs = reliefRecords?.Select(m => new[] { m.Tired, m.Fresh }).ToList();
+        f.Splits = splitRecords;
+        reliefRecords = null;
+        splitRecords = null;
         goalRecords = null;
         stakeRecords = null;
         withdrawRequested = false;
@@ -148,13 +164,14 @@ public sealed partial class Battle
             var s = Squads[i];
             if (s.Team != 0 || s.AiControlled || Options.AutoPlayer) continue;
             int target = s.Target != null ? Squads.IndexOf(s.Target) : -1;
-            string sig = $"{s.Order}|{target}|{s.Anchor.X:R},{s.Anchor.Y:R}|{s.Front.X:R},{s.Front.Y:R}|{s.Columns}|{s.Formation}|{s.FireAtWill}|{s.Override}|{s.Pursue}|{s.HoldSpells}|{s.CastSpell}|{s.CastAt.X:R},{s.CastAt.Y:R}|{s.CastSince:R}";
+            string sig = $"{s.Order}|{target}|{s.Anchor.X:R},{s.Anchor.Y:R}|{s.Front.X:R},{s.Front.Y:R}|{s.Columns}|{s.Formation}|{s.FireAtWill}|{s.Override}|{s.Pursue}|{s.HoldSpells}|{s.CastSpell}|{s.CastAt.X:R},{s.CastAt.Y:R}|{s.CastSince:R}|{s.Rule}|{s.RuleFired}|{string.Join(";", s.Queue)}";
             if (lastOrders.TryGetValue(i, out var last) && last == sig) continue;
             lastOrders[i] = sig;
             (f.Orders ??= new()).Add(new Replay.SquadOrder
             {
                 Squad = i, Target = target, Order = s.Order, Anchor = s.Anchor, Front = s.Front, Columns = s.Columns, Formation = s.Formation, FireAtWill = s.FireAtWill, Override = s.Override, Pursue = s.Pursue,
                 HoldSpells = s.HoldSpells, CastSpell = s.CastSpell, CastAt = s.CastAt, CastSince = s.CastSince,
+                Queue = s.Queue.Count > 0 ? s.Queue.ToList() : null, Rule = s.Rule, RuleFired = s.RuleFired,
             });
         }
         r.Frames.Add(f);

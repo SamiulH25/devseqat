@@ -1,6 +1,6 @@
 # Combat quality of life (Q1-Q6)
 
-Sprint plan. Goal: fewer fiddly clicks in a battle, more of the player's attention on the decisions that matter.
+Sprint plan (all phases built; see "As built" at the end). Goal: fewer fiddly clicks in a battle, more of the player's attention on the decisions that matter.
 Each phase stands alone and ships on its own. Q1 is built; Q2-Q6 are planned below in the order I would build them.
 
 Rules for every phase:
@@ -176,4 +176,25 @@ company missing from the save gets its default slot; a group saved by company id
 | Q5 alerts and enemy glass | medium | tells you when Q1-Q3 are needed |
 | Q6 groups and remembered deployment | medium | campaign save fields; best once the others settle |
 
-Move this file to `docs/archive/` when Q6 ships.
+
+## As built
+
+All six phases shipped. Where the build differs from the plan above:
+
+- **Keys:** fold `,`, relieve `.`, split `/`, standing order `=`, slower `[`, faster `]` (all rebindable). Each order also
+  has a button in the command view's order panel (FOLD IN, RELIEVE, SPLIT, STANDING).
+- **Q1:** the AI general and sergeants do not fold their own companies yet. Two unhurt halves of a split company may rejoin;
+  the emptied half keeps an inactive stand-in so no company is ever without a first man.
+- **Q2:** relief is foot only (horse rally on their own). The tired company holds until the fresh ranks are close behind
+  (or 25 s pass), then the whole company breaks off together for up to 10 s, ignoring the enemy, rather than man by man.
+  Rabble do not break ranks and company wits pause while a company breaks off.
+- **Q3:** standing orders are cycled with a key and button, not a second ring on the order wheel; *fall back when worn* fires
+  once and does not offer to fold in. *Do not chase* holds a company once the company it fought breaks. A plain charge or
+  follow order never counts as done, so steps queued behind one wait until you give another order.
+- **Q4:** the sim runs fast forward as several normal ticks a frame (`Battle.Advance`, at most 8). Slow motion simply runs
+  smaller ticks, so no extra smoothing was needed. Pending orders are not drawn as ghosts; the pause banner says how many
+  are still with the riders. Speed applies in the field view too.
+- **Q5:** "enemy reserve committed" stays a log line, not an alert. The company card also shows FALLING BACK, TIRING and
+  NO ARROWS. Pause on alerts pauses for a company breaking, enemy horse at a flank and a division losing its sergeant.
+- **Q6:** remembered places are kept as positions on your side of the field (your side always deploys toward -Y), kept to
+  your third of the new field; not used for assaults, the lists or single combat. Named layouts were not built.

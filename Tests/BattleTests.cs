@@ -1403,7 +1403,7 @@ public static partial class SelfTest
         Check(back6.Matches(back6.Play()), "and with a banner, a last stand and goals");
     }
 
-    /// Folding a worn company into a fuller one (docs/COMBAT_QOL.md Q1): its standing men join, the fallen stay home, each
+    /// Folding a worn company into a fuller one (docs/archive/COMBAT_QOL.md Q1): its standing men join, the fallen stay home, each
     /// company's result still counts its own men, refusals have reasons, and a replay repeats the fold.
     static void FoldCompanies()
     {
@@ -1445,6 +1445,173 @@ public static partial class SelfTest
         var rec = c.FinishRecording()!;
         var again = Replay.Deserialize(rec.Serialize()).Play();
         Check(at >= 0 && Of(again, 1).FoldedInto == Of(again, 2) && rec.Matches(again), $"a replay repeats the fold (folded at tick {at})");
+    }
+
+    /// Battle speed (docs/archive/COMBAT_QOL.md Q4): fast forward runs the sim in its usual small steps, so three sixtieths at once
+    /// play exactly as three ticks one by one.
+    static void AdvanceSteps()
+    {
+        var rng = new Random(4);
+        var (a, e) = (Armies.Random(rng, 2, 0), Armies.Random(rng, 2, 1));
+        var one = new Battle(51, a, e, new BattleOptions());
+        var fast = new Battle(51, a, e, new BattleOptions());
+        foreach (var s in one.Commanded) s.Order = Order.Charge;
+        foreach (var s in fast.Commanded) s.Order = Order.Charge;
+        for (int i = 0; i < 60 * 20; i++) one.Update(1 / 60f);
+        for (int i = 0; i < 20 * 20; i++) fast.Advance(3 / 60f);
+        Check(MathF.Abs(one.Time - fast.Time) < 1e-3f && one.Units.Count(u => u.Dead) == fast.Units.Count(u => u.Dead)
+            && one.Units.Zip(fast.Units).All(p => Vector2.DistanceSquared(p.First.Pos, p.Second.Pos) < 1e-6f), "three ticks at once play as three ticks one by one");
+    }
+
+    /// Relieving the line and splitting a company (docs/archive/COMBAT_QOL.md Q2).
+    static void RelieveAndSplit()
+    {
+        // A tired company at blows is relieved: the fresh one takes the line, the tired one ends behind it.
+        var b = Battle.Empty(61);
+        var tired = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, 0), 8, Vector2.UnitY);
+        var fresh = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, -18), 8, Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("levies"), 30, new(0, 8), 10, -Vector2.UnitY);
+        var horse = b.AddSquad(0, Troops.Get("outriders"), 8, new(20, -10), 8, Vector2.UnitY);
+        tired.Order = Order.Charge;
+        tired.Target = foe;
+        for (int i = 0; i < 60 * 20 && !tired.InContact; i++) b.Update(1 / 60f);
+        Check(tired.InContact, "the tired company is at blows");
+        Check(b.CannotRelieve(tired, horse) != null, "horse cannot relieve foot");
+        Check(b.Relieve(tired, fresh) == null && fresh.Anchor == tired.Anchor, $"a fresh company takes the tired one's line ({b.CannotRelieve(tired, fresh)})");
+        bool broke = false;
+        for (int i = 0; i < 60 * 40 && b.Winner < 0; i++) { b.Update(1 / 60f); broke |= tired.BreakOffUntil > 0; }
+        float behind = Vector2.Dot(tired.Centroid() - fresh.Centroid(), Vector2.UnitY);
+        Check(broke && tired.RelievedBy == null && behind < -4, $"the tired men broke off and stand behind the fresh line ({behind:0.0} m)");
+
+        // A split company stands as two halves that report as one, and rejoin whole.
+        var c = new Battle(62, new ArmySpec("mine", 0, new List<Company> { new("shieldmen", 20, "infantry", 5) }), new ArmySpec("theirs", 0, new List<Company> { new("levies", 20, "infantry", 9) }), new BattleOptions());
+        c.StartRecording(62);
+        var s = c.Squads.First(q => q.Company?.Id == 5);
+        var h = c.Split(s)!;
+        Check(h != null && s.Alive == 10 && h.Alive == 10 && c.Commanded.Contains(h), "a company splits into two halves of ten");
+        var r = c.Result().Companies.Where(x => x.Id == 5).ToList();
+        Check(r.Count == 1 && r[0].Start == 20 && r[0].Standing == 20, "and still reports as one company of twenty");
+        for (int i = 0; i < 60 * 3; i++) c.Update(1 / 60f);
+        Check(c.CannotMerge(h, s) == null && c.Merge(h, s) == 10 && s.Alive == 20 && h.Units.Count == 1 && !h.Units[0].Active, "the unhurt halves rejoin whole");
+        for (int i = 0; i < 60 * 5; i++) c.Update(1 / 60f);
+        var rec = c.FinishRecording()!;
+        var again = Replay.Deserialize(rec.Serialize()).Play();
+        Check(rec.Matches(again) && again.Squads.Count == c.Squads.Count, "a replay repeats the split and the rejoining");
+    }
+
+    /// Queued and standing orders (docs/archive/COMBAT_QOL.md Q3).
+    static void QueuedAndStanding()
+    {
+        // A queue of two marches: the company walks the first leg, then the second.
+        var b = Battle.Empty(71);
+        var s = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, 0), 8, Vector2.UnitY);
+        s.Queue.Add(new OrderStep(Order.Hold, new(0, -20), Vector2.UnitY, 8));
+        s.Queue.Add(new OrderStep(Order.Hold, new(20, -20), Vector2.UnitY, 8));
+        bool firstLeg = false;
+        for (int i = 0; i < 60 * 40; i++) { b.Update(1 / 60f); firstLeg |= s.Queue.Count == 1 && s.Anchor == new Vector2(0, -20); }
+        Check(firstLeg && s.Queue.Count == 0 && Vector2.Distance(s.Center, new(20, -20)) < 5, $"a queued march walks both legs (now at {s.Center})");
+
+        // Charge when they close: it holds until the enemy is near, then charges.
+        var c = Battle.Empty(72);
+        var w = c.AddSquad(0, Troops.Get("spearrunners"), 16, new(0, 0), 8, Vector2.UnitY);
+        var foe = c.AddSquad(1, Troops.Get("levies"), 16, new(0, 70), 8, -Vector2.UnitY);
+        w.Rule = StandingRule.ChargeWhenClose;
+        foe.Order = Order.Charge;
+        foe.Target = w;
+        float gapAtCharge = -1;
+        for (int i = 0; i < 60 * 30 && gapAtCharge < 0; i++)
+        {
+            c.Update(1 / 60f);
+            if (w.Order == Order.Charge) gapAtCharge = Vector2.Distance(foe.Center, w.Center) - foe.Radius - w.Radius;
+        }
+        Check(gapAtCharge > 0 && gapAtCharge <= Battle.CloseCharge + 1, $"charge when they close waits for the enemy, then charges ({gapAtCharge:0.0} m)");
+
+        // Skirmish: bows walk back from foot coming at them.
+        var d = Battle.Empty(73);
+        var bows = d.AddSquad(0, Troops.Get("bowmen"), 12, new(0, 0), 6, Vector2.UnitY);
+        var rush = d.AddSquad(1, Troops.Get("levies"), 20, new(0, 45), 10, -Vector2.UnitY);
+        bows.Rule = StandingRule.Skirmish;
+        rush.Order = Order.Charge;
+        rush.Target = bows;
+        for (int i = 0; i < 60 * 8; i++) d.Update(1 / 60f);
+        Check(bows.Center.Y < -8, $"skirmishing bows give ground ({bows.Center.Y:0.0})");
+
+        // Fall back when worn: half the company down, it walks out of the fight.
+        var e = Battle.Empty(74);
+        var worn = e.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, 0), 8, Vector2.UnitY);
+        var killer = e.AddSquad(1, Troops.Get("levies"), 4, new(0, 60), 4, -Vector2.UnitY).Units[0];
+        worn.Rule = StandingRule.FallBackWhenWorn;
+        foreach (var u in worn.Units.Take(9).ToList()) e.KillForTest(u, killer);
+        e.Update(1 / 60f);
+        Check(worn.RuleFired && worn.BreakOffUntil > e.Time && worn.Anchor.Y < -20, $"a worn company falls back ({worn.Anchor})");
+
+        // A recorded battle with a queue and a rule replays.
+        var rng = new Random(7);
+        var f = new Battle(75, Armies.Random(rng, 2, 0), Armies.Random(rng, 2, 1), new BattleOptions());
+        f.StartRecording(75);
+        var mine = f.Commanded.ToList();
+        mine[0].Queue.Add(new OrderStep(Order.Hold, mine[0].Anchor + new Vector2(0, 10), Vector2.UnitY, mine[0].Columns));
+        mine[0].Queue.Add(new OrderStep(Order.Charge, Vector2.Zero, Vector2.UnitY, mine[0].Columns, f.Squads.IndexOf(f.SquadsOf(1).First())));
+        mine[^1].Rule = Battle.RulesFor(mine[^1])[1];
+        for (int i = 0; i < 60 * 60 && f.Winner < 0; i++) f.Update(1 / 60f);
+        var rec = f.FinishRecording()!;
+        Check(rec.Matches(Replay.Deserialize(rec.Serialize()).Play()), "a battle with queued and standing orders replays");
+    }
+
+    /// Alerts (docs/archive/COMBAT_QOL.md Q5): each fires once while its state holds, and again only after it clears.
+    static void AlertsRaise()
+    {
+        var b = Battle.Empty(81);
+        var bows = b.AddSquad(0, Troops.Get("bowmen"), 10, new(-20, 0), 5, Vector2.UnitY);
+        var foot = b.AddSquad(0, Troops.Get("shieldmen"), 20, new(20, 0), 10, Vector2.UnitY);
+        var killer = b.AddSquad(1, Troops.Get("levies"), 4, new(0, 80), 4, -Vector2.UnitY).Units[0];
+        foreach (var u in bows.Units) u.Ammo = 0;
+        foreach (var u in foot.Units.Take(14).ToList()) b.KillForTest(u, killer);
+        for (int i = 0; i < 60 * 3; i++) b.Update(1 / 60f);
+        int Count(string kind, Squad s) => b.Alerts.Count(a => a.Kind == kind && a.Squad == s);
+        Check(Count("arrows", bows) == 1, $"an archer company out of arrows raises one alert ({Count("arrows", bows)})");
+        Check(Count("worn", foot) == 1 && b.RecentAlerts().Any(a => a.Squad == foot), "a badly worn company raises one, and it is shown");
+        Check(Count("flank", foot) == 0, "no flank alert without flank blows");
+        foot.Pressure = 3;
+        b.Update(1 / 60f);
+        for (int i = 0; i < 40; i++) { foot.Pressure = 3; b.Update(1 / 60f); }
+        Check(Count("flank", foot) == 1, "blows in the flank raise one");
+        foreach (var u in bows.Units) u.Ammo = 5;
+        for (int i = 0; i < 40; i++) b.Update(1 / 60f);
+        foreach (var u in bows.Units) u.Ammo = 0;
+        for (int i = 0; i < 40; i++) b.Update(1 / 60f);
+        Check(Count("arrows", bows) == 2, "once the state clears it can fire again");
+    }
+
+    /// Remembered deployments and control groups (docs/archive/COMBAT_QOL.md Q6).
+    static void DeploymentMemory()
+    {
+        ArmySpec Mine(params int[] ids) => new("mine", 0, ids.Select(i => new Company(i == 3 ? "bowmen" : "shieldmen", 12, i == 3 ? "archers" : "infantry", i)).ToList());
+        var theirs = new ArmySpec("theirs", 0, new List<Company> { new("levies", 20, "infantry", 9) });
+        var a = new Battle(91, Mine(1, 2, 3), theirs, new BattleOptions());
+        // Draw them up out of the usual: the foot on the right wing (one company a shield wall), the bows on the left.
+        Squad Of(Battle x, int id) => x.Squads.First(s => s.Company?.Id == id);
+        Of(a, 1).SetLine(new(10, -30), new(16, -30), Vector2.UnitY);
+        Of(a, 2).SetLine(new(18, -30), new(24, -30), Vector2.UnitY);
+        Of(a, 2).Formation = Formation.ShieldWall;
+        Of(a, 3).SetLine(new(-30, -20), new(-20, -20), Vector2.UnitY);
+        var spots = a.DeploymentOf();
+        Check(spots.Count == 3, "each campaign company's line is read");
+        // The next battle: a new company has joined (id 4) and company 2 is gone.
+        var b = new Battle(92, Mine(1, 3, 4), theirs, new BattleOptions());
+        var fresh = Of(b, 4).Anchor;
+        Check(b.ApplyDeployment(spots) == 2, "the companies still with you are placed");
+        Check(Vector2.Distance(Of(b, 1).Anchor, Of(a, 1).Anchor) < 1 && Vector2.Distance(Of(b, 3).Anchor, Of(a, 3).Anchor) < 1, "each where it stood last time");
+        Check(Of(b, 4).Anchor == fresh, "a new company keeps its usual place");
+        // An enemy-side spot is kept out of the enemy's part of the field.
+        var c = new Battle(93, Mine(1), theirs, new BattleOptions());
+        c.ApplyDeployment(new[] { new DeploySpot { Company = 1, X = 0, Y = 50, FX = 0, FY = 1, Columns = 6 } });
+        Check(Of(c, 1).Anchor.Y <= -12, "a remembered line never stands in the enemy's third");
+        // The save keeps both.
+        var st = new CampaignState { LastDeploy = spots, DeployAsLast = false };
+        st.ControlGroups[2] = new List<int> { 1, 3 };
+        var back = CampaignState.Deserialize(st.Serialize());
+        Check(back.LastDeploy.Count == 3 && back.LastDeploy[2].X == spots[2].X && !back.DeployAsLast && back.ControlGroups[2].SequenceEqual(new[] { 1, 3 }), "the save keeps the deployment and the groups");
     }
 
     /// Braced spears hurt a lancer charging into them (also the example in docs/DEVELOPING.md 9).

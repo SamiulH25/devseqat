@@ -185,6 +185,11 @@ public static partial class SelfTest
         PullBack();
         ReplayExact();
         FoldCompanies();
+        AdvanceSteps();
+        RelieveAndSplit();
+        QueuedAndStanding();
+        AlertsRaise();
+        DeploymentMemory();
         ScaleBattle();
         DivisionGoals();
         HoldsRanks();
