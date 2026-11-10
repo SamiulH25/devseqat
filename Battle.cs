@@ -281,7 +281,7 @@ public sealed partial class Battle
 
     public Unit Spawn(UnitType t, int team, Squad? s, Vector2 pos)
     {
-        var u = new Unit { Type = t, Index = Units.Count, Team = team, Squad = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
+        var u = new Unit { Type = t, Index = Units.Count, Team = team, Squad = s, Home = s, Pos = pos, Hp = t.MaxHp, Ammo = t.Ammo, Anim = rng.NextSingle() * 2, Coat = rng.Next(Style.Coats.Length),
             Palette = Options.Palette[Math.Clamp(team, 0, 1)], Grit = GritOf(Units.Count), Mods = t.Mods };
         if (t.Mount != null && !Options.Siege) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; } // assaults are fought on foot
         anyAura |= t.HasAura;
@@ -482,18 +482,19 @@ public sealed partial class Battle
         var list = new List<CompanyResult>();
         foreach (var s in Squads.Where(s => s.Company != null))
         {
-            var men = s.Units.Where(u => !u.Hero).ToList();
+            var men = Units.Where(u => u.Home == s && !u.Hero).ToList();
             var stacks = men.GroupBy(u => u.Type.Id).Select(g => new StackResult(g.Key, g.Count(),
                 Standing: g.Count(u => u.Active && !u.Routing), Fled: g.Count(u => u.Fled || (u.Active && u.Routing)), Fallen: g.Count(u => u.Dead))).ToList();
             int fled = men.Count(u => u.Fled || (u.Active && u.Routing));
             var named = men.Where(u => u.SoldierId != 0).Select(u => new NamedResult(u.SoldierId, u.Kills, u.Dead, u.Fled || (u.Active && u.Routing), u.FelledLeader, u.Saved)).ToList();
             var best = men.Where(u => u.SoldierId == 0).MaxBy(u => u.Kills);
-            list.Add(new CompanyResult(s.Team, s.Company!.Id, s.StartCount,
+            int start = men.Count; // StartCount moves with a fold; the men who began in it do not
+            list.Add(new CompanyResult(s.Team, s.Company!.Id, start,
                 Standing: men.Count(u => u.Active && !u.Routing),
                 Fled: fled,
                 Fallen: men.Count(u => u.Dead),
                 Kills: s.KillsByTier.Sum(), KillsByTier: (int[])s.KillsByTier.Clone(), Deployed: true, Stacks: stacks, HorseKills: s.HorseKills,
-                Routed: fled * 2 > s.StartCount || s.RoutSounded, HeroFell: s.Units.Any(u => u.Hero && u.Dead),
+                Routed: fled * 2 > start || s.RoutSounded, HeroFell: s.Units.Any(u => u.Hero && u.Dead),
                 Named: named, BestKills: best?.Kills ?? 0, BestTroop: best?.Type.Id ?? "", BestFelledLeader: best?.FelledLeader == true));
         }
         for (int team = 0; team < 2; team++)

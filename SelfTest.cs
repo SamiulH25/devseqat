@@ -184,6 +184,7 @@ public static partial class SelfTest
         AutoResolveNamedMen();
         PullBack();
         ReplayExact();
+        FoldCompanies();
         ScaleBattle();
         DivisionGoals();
         HoldsRanks();

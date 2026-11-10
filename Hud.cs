@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ironfield;
 
 /// Orders the player can give, from hotkeys, the order wheel or the command-view buttons.
-public enum Cmd { Charge, Advance, FormHere, Spacing, FallBack, FireAtWill, Hold, Follow, Formation }
+public enum Cmd { Charge, Advance, FormHere, Spacing, FallBack, FireAtWill, Hold, Follow, Formation, Merge }
 
 public enum MenuItem { Resume, Controls, NewBattle, Quit, Withdraw, Continue, Title, Settings }
 
@@ -22,6 +22,7 @@ sealed partial class Hud
         [Cmd.Charge] = ("CHARGE", Act.Charge), [Cmd.Advance] = ("ADVANCE", Act.Advance), [Cmd.FormHere] = ("FORM ON ME", Act.FormHere),
         [Cmd.Spacing] = ("SPACING", Act.Spacing), [Cmd.FallBack] = ("FALL BACK", Act.FallBack), [Cmd.FireAtWill] = ("FIRE / HOLD", Act.FireAtWill),
         [Cmd.Hold] = ("HOLD", Act.HoldPosition), [Cmd.Follow] = ("FOLLOW ME", Act.Follow), [Cmd.Formation] = ("FORMATION", Act.Formation),
+        [Cmd.Merge] = ("FOLD IN", Act.Merge),
     };
 
     readonly SpriteBatch sb;
@@ -97,7 +98,7 @@ sealed partial class Hud
         {
             // On a narrow screen the keys shrink to icon and key in three columns (the order's name shows on hover).
             int cols = CompactOrders ? 3 : 2, bw = CompactOrders ? U(62) : U(112), bh = U(24);
-            var order = new[] { Cmd.Charge, Cmd.Hold, Cmd.Advance, Cmd.FallBack, Cmd.Follow, Cmd.FormHere, Cmd.Spacing, Cmd.FireAtWill, Cmd.Formation };
+            var order = new[] { Cmd.Charge, Cmd.Hold, Cmd.Advance, Cmd.FallBack, Cmd.Follow, Cmd.FormHere, Cmd.Spacing, Cmd.FireAtWill, Cmd.Formation, Cmd.Merge };
             int rows = (order.Length + cols - 1) / cols;
             int x0 = W - cols * bw - (cols - 1) * U(4) - U(12), y0 = H - rows * (bh + U(4)) - U(10);
             for (int i = 0; i < order.Length; i++)
@@ -615,7 +616,7 @@ sealed partial class Hud
     static readonly Dictionary<Cmd, string> OrderIcons = new()
     {
         [Cmd.Charge] = "sword", [Cmd.Advance] = "up", [Cmd.FormHere] = "crown", [Cmd.Spacing] = "chain", [Cmd.FallBack] = "boot",
-        [Cmd.FireAtWill] = "arrow", [Cmd.Hold] = "shield", [Cmd.Follow] = "flag", [Cmd.Formation] = "star",
+        [Cmd.FireAtWill] = "arrow", [Cmd.Hold] = "shield", [Cmd.Follow] = "flag", [Cmd.Formation] = "star", [Cmd.Merge] = "chain",
     };
 
     /// Order keys as icons only: below about 1440 wide (at this interface scale) the full panel crowds the cards.

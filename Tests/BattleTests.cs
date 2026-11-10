@@ -1403,6 +1403,50 @@ public static partial class SelfTest
         Check(back6.Matches(back6.Play()), "and with a banner, a last stand and goals");
     }
 
+    /// Folding a worn company into a fuller one (docs/COMBAT_QOL.md Q1): its standing men join, the fallen stay home, each
+    /// company's result still counts its own men, refusals have reasons, and a replay repeats the fold.
+    static void FoldCompanies()
+    {
+        ArmySpec Mine() => new("mine", 0, new List<Company> { new("shieldmen", 16, "infantry", 1, "Full"), new("shieldmen", 12, "infantry", 2, "Worn",
+            Named: new[] { new NamedSpec(9, "shieldmen", "Wat") }), new("outriders", 8, "cavalry", 3, "Horse") });
+        ArmySpec Theirs() => new("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9) });
+        var b = new Battle(41, Mine(), Theirs(), new BattleOptions());
+        b.StartRecording(41);
+        Squad Of(Battle x, int id) => x.Squads.First(s => s.Company?.Id == id);
+        var (full, worn, horse) = (Of(b, 1), Of(b, 2), Of(b, 3));
+        Check(b.CannotMerge(worn, full)?.Contains("LOST NO MEN") == true, "an unhurt company has no gaps to bring");
+        var killer = b.SquadsOf(1).First().Units[0];
+        foreach (var u in worn.Units.Where(u => u.SoldierId == 0).Take(8).ToList()) b.KillForTest(u, killer);
+        b.Update(1 / 60f);
+        Check(b.CannotMerge(horse, full) != null && b.CannotMerge(worn, horse) != null, "horse and foot do not fold together");
+        Check(b.CannotMerge(worn, full) == null, $"a worn company can fold into a full one ({b.CannotMerge(worn, full)})");
+        int n = b.Merge(worn, full);
+        Check(n == 4 && full.Alive == 20 && full.Units.Count(u => u.Active) == 20, $"its four standing men join the full company ({n}, {full.Alive})");
+        Check(worn.FoldedInto == full && worn.Alive == 0 && !b.Commanded.Contains(worn), "the worn company leaves your command");
+        Check(b.CannotMerge(full, worn) != null, "and cannot take men in");
+        for (int i = 0; i < 60 * 4 && b.Winner < 0; i++) b.Update(1 / 60f);
+        Check(b.Units.First(u => u.SoldierId == 9).Squad == full, "the named man fights in his new company");
+        var res = b.Result().Companies;
+        var r1 = res.First(r => r.Id == 1);
+        var r2 = res.First(r => r.Id == 2);
+        Check(r1.Start == 16 && r2.Start == 12 && r2.Fallen >= 8, $"each company's result counts its own men (full {r1.Start}, worn {r2.Start}, worn fallen {r2.Fallen})");
+        Check(r2.Named!.Any(m => m.Id == 9) && r1.Named!.All(m => m.Id != 9), "the named man's deeds go home to his own company");
+        // A replay: archers thin a company (hand-made kills are not recorded), then it folds in.
+        var levies = new ArmySpec("mine", 0, new List<Company> { new("levies", 16, "infantry", 1), new("levies", 12, "infantry", 2) });
+        var c = new Battle(42, levies, new ArmySpec("theirs", 0, new List<Company> { new("crossbowmen", 30, "archers", 9) }), new BattleOptions());
+        c.StartRecording(42);
+        var (cFull, cWorn) = (Of(c, 1), Of(c, 2));
+        int at = -1;
+        for (int i = 0; i < 60 * 120 && c.Winner < 0 && (at < 0 || i < at + 60 * 5); i++)
+        {
+            if (at < 0 && cFull.Units.Any(u => u.Dead) && c.Merge(cFull, cWorn) > 0) at = i; // the front company is shot first
+            c.Update(1 / 60f);
+        }
+        var rec = c.FinishRecording()!;
+        var again = Replay.Deserialize(rec.Serialize()).Play();
+        Check(at >= 0 && Of(again, 1).FoldedInto == Of(again, 2) && rec.Matches(again), $"a replay repeats the fold (folded at tick {at})");
+    }
+
     /// Braced spears hurt a lancer charging into them (also the example in docs/DEVELOPING.md 9).
     static void SpearsStopHorse()
     {

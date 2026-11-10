@@ -69,6 +69,7 @@ partial class BattleScreen
             case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15)); break;
             case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20)); break;
             case Cmd.Spacing: Issue("change spacing", s => s.Loose = !s.Loose); break;
+            case Cmd.Merge: MergeSelected(); break;
             case Cmd.Formation:
             {
                 var list = Targets();
@@ -117,8 +118,30 @@ partial class BattleScreen
         }
     }
 
+    /// Fold the selected companies into one (docs/COMBAT_QOL.md Q1): the fullest takes in the rest (a company a
+    /// companion leads always takes them in). A company in a division folds when the rider reaches it.
+    void MergeSelected()
+    {
+        var list = selected.Where(s => s.Alive > 0 && s.FoldedInto == null).ToList();
+        if (list.Count < 2) { battle.Log("Select two or more companies to fold together: the weaker fall in with the fullest."); return; }
+        var into = list.OrderByDescending(s => s.Units.Any(u => u.Hero && u.Active)).ThenByDescending(s => s.Alive).First();
+        int sent = 0;
+        foreach (var s in list.Where(s => s != into))
+        {
+            if (battle.CannotMerge(s, into) is string why) { battle.Log($"{s.Name} cannot fold in: {why.ToLowerInvariant()}."); continue; }
+            float late = Send(s, q => battle.Merge(q, into));
+            if (late > 0) battle.Log($"{s.Name}: fall in with {into.Name}! (a rider takes {late:0} s)");
+            sent++;
+        }
+        selected.RemoveWhere(s => s.FoldedInto != null);
+        if (sent == 0) return;
+        host.Audio?.Play(Cue.Order, 0.6f);
+        Tips.Show("merge", "Folded companies fight as one: the newcomers fill the ranks from behind.\nThe fallen keep their own colours, so each company's men still go home to it after the battle.");
+    }
+
     void OrderKeys()
     {
+        selected.RemoveWhere(s => s.FoldedInto != null);
         var mine = battle.Commanded.ToList();
         for (int i = 0; i < mine.Count && i < 10; i++)
             if (Pressed(i == 9 ? Keys.D0 : Keys.D1 + i) && !selected.Remove(mine[i])) selected.Add(mine[i]);

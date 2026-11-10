@@ -30,6 +30,8 @@ public sealed class Replay
         public List<GoalOrder>? Goals;
         /// Companies (by index) that planted stakes this tick.
         public List<int>? Stakes;
+        /// Companies folded into others this tick (from, into; Battle.Merge).
+        public List<int[]>? Merges;
     }
 
     /// A goal you sent one of your divisions (it then rides to him inside the sim, so it replays exactly).
@@ -89,6 +91,7 @@ public sealed class Replay
                 foreach (var g in f.Goals)
                     b.IssueGoal(b.Divisions[g.Division], new Goal(g.Kind, g.Point, g.Target >= 0 ? b.Squads[g.Target] : null, g.Side));
             if (f.Stakes != null) foreach (int i in f.Stakes) b.PlantStakes(b.Squads[i]);
+            if (f.Merges != null) foreach (var m in f.Merges) b.ReplayMerge(m[0], m[1]);
             b.Input = f.Input;
             b.Commanding = f.Commanding;
             if (f.Withdraw) b.Withdraw();
@@ -135,7 +138,8 @@ public sealed partial class Battle
             r.Start = Units.Select(u => u.Pos).ToList();
             r.StartFacing = Units.Select(u => u.Facing).ToList();
         }
-        var f = new Replay.Frame { Dt = dt, Input = Input, Commanding = Commanding, Withdraw = withdrawRequested, Goals = goalRecords, Stakes = stakeRecords };
+        var f = new Replay.Frame { Dt = dt, Input = Input, Commanding = Commanding, Withdraw = withdrawRequested, Goals = goalRecords, Stakes = stakeRecords, Merges = mergeRecords?.Select(m => new[] { m.From, m.Into }).ToList() };
+        mergeRecords = null;
         goalRecords = null;
         stakeRecords = null;
         withdrawRequested = false;

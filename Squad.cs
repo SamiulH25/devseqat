@@ -41,6 +41,8 @@ public sealed class Squad
     public Division? Division;
     /// A division's company following your direct order: its sergeant leaves it alone until his next goal arrives.
     public bool Override;
+    /// Folded into another company (Battle.Merge): its standing men now fight there; only its fallen and fled remain here.
+    public Squad? FoldedInto;
     /// Charging men also cut down routers (a division told to pursue).
     public bool Pursue;
     /// A circle round every active man (routing too), refreshed at the start of each tick: cheap squad-to-squad distance bounds.

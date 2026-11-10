@@ -440,6 +440,11 @@ The world is 3D; only the units (and horses) are 2D sprite puppets.
 - **Stakes:** longbowmen (the longbow line) plant a row of sharpened stakes in front of their line with **K**. A company does
   it once, while holding with no enemy within 30 m. Horse cannot cross stakes; men on foot slip between them. The enemy's
   longbowmen plant them too when you have horse.
+- **Folding companies:** select two or more companies of the same kind (foot, horse or archers) and press **,** (FOLD IN). The
+  fullest takes in the others: their standing men walk over and fill its ranks from behind. The company folding in must have
+  lost men, must not be at blows, and must be within 120 m; companies in different divisions, allies' companies, mage
+  circles and a company a companion leads (it can only take men in) cannot fold. After the battle each man still counts
+  for the company he started in.
 - **Perks on the ground:** Pathfinder (woods, scrub and marsh slow your men half as much), Tactician (your side sees a quarter
   further and further into woods), Ambusher (your ambushes shake the enemy more).
 - **The campaign picks the field** (`Campaign/Ground.cs`): where you meet decides the ground. A road over a river gives a river

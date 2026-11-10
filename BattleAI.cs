@@ -237,7 +237,7 @@ public partial class Battle
     /// The companies a side's AI general leads: all of the enemy's; of yours, only allies' (or all, in headless runs).
     List<Squad> Led(int team, string role) => Role(team, role).Where(s => s.Division == null && (team == 1 || Options.AutoPlayer || s.AiControlled)).ToList();
     /// Your companies that take your orders at once: not an ally's, not in a division.
-    public IEnumerable<Squad> Commanded => SquadsOf(0).Where(s => !s.AiControlled && s.Division == null);
+    public IEnumerable<Squad> Commanded => SquadsOf(0).Where(s => !s.AiControlled && s.Division == null && s.FoldedInto == null);
 
     void General(int team)
     {
