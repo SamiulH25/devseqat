@@ -214,6 +214,15 @@ public sealed class DivisionRecord
     public string Goal = "Hold";
 }
 
+/// A realm's army: lords who ride together under a leader against a seat ("siege") or to relieve one of their own ("relieve").
+public sealed class LordArmy
+{
+    public int Id, Faction, Leader, Target = -1;
+    public string Aim = "siege";
+    public float Since, Until;
+    public List<int> Members = new();
+}
+
 public sealed class Party
 {
     public int Id, Faction = -1, HomeId = -1, ChaseId = -1, GoalSettlement = -1, PatrolProvince = -1, Horses, Tier = 1;
@@ -245,6 +254,8 @@ public sealed class Party
     public float HuntedUntil;
     /// A knight order's army (docs/archive/KNIGHT_ORDERS.md 4.3): the order's id, "" for every other party.
     public string KnightOrder = "";
+    /// The army this lord rides in (CampaignState.Armies, LordArmies.cs); -1 for none.
+    public int ArmyId = -1;
 
     public int Men => Companies.Sum(c => c.Men);
     public int Wounded => Companies.Sum(c => c.Wounded);
@@ -508,6 +519,8 @@ public sealed class CampaignState
     public string EndReason = "";
     public bool Won;
     public List<War> Wars = new();
+    /// Lords' armies in the field (LordArmies.cs).
+    public List<LordArmy> Armies = new();
     public CaptainState Captain = new();
     public List<Party> Parties = new();
     /// Sites (docs/archive/SIDE_CONTENT.md S2): when each can be used again (campaign hours; absent = now), the ones you have

@@ -95,6 +95,7 @@ public static partial class SelfTest
         var dest = c.SettlementById(car.GoalSettlement);
         dest.Prosperity = 50;
         car.Pos = dest.Pos + new Vector2(0.5f, 0);
+        foreach (var q in c.S.Parties.Where(q => q != car && c.Hostile(car, q) && Vector2.Distance(q.Pos, car.Pos) < 40)) q.Pos += new Vector2(200, 0); // a clear road: nothing to run from
         int arrived = c.CaravansArrived;
         c.Tick(1.5f);
         Check(c.CaravansArrived > arrived && dest.Prosperity > 50 && c.PartyById(car.Id) == null, $"a caravan that arrives makes its town richer ({dest.Prosperity:0})");

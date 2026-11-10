@@ -306,20 +306,15 @@ public sealed partial class Campaign
 
     // ---------- hosts and summons (7.1) ----------
 
-    /// The realm raises a host against a province: lords who think well enough of the marshal answer; if you are a vassal you
-    /// are summoned too. Returns how many came.
+    /// The realm raises a host against a province: an army forms against its seat (LordArmies.cs) from the lords who think well
+    /// enough of its leader; if you are a vassal you are summoned too. Returns how many came.
     int MusterHost(int f, Province target, List<Party> idle)
     {
         var marshal = MarshalOf(f);
         int came = 0;
-        foreach (var l in idle.Take(6))
-        {
-            if (marshal != null && CharacterOf(l) is Character ch && ch != marshal && OpinionOf(ch, marshal) < -20) continue; // he stays home
-            l.PatrolProvince = target.Id;
-            l.TaskUntil = 0;
-            came++;
-        }
-        if (came > 0) Log($"The {FactionNames[f]} musters a host of {came} lords against {target.Name}.");
+        if (S.Settlements.Where(s => s.Province == target.Id && s.Kind != SettlementKind.Village).OrderByDescending(s => s.Kind == SettlementKind.Town).FirstOrDefault() is Settlement goal
+            && FormArmy(f, goal, "siege", idle) is LordArmy army)
+            came = army.Members.Count;
         // Summon you, if you are sworn to the realm and do not lead it.
         if (f == Captain.Contract && Captain.Fealty && Rank is Rank.Vassal or Rank.Lord && S.Summons == null && S.Hours - S.LastSummons > 7 * 24
             && marshal != null && S.Settlements.FirstOrDefault(s => s.Province == target.Id && s.Kind != SettlementKind.Village) is Settlement seat)

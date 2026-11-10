@@ -175,7 +175,13 @@ mountain ridges you cross by road at the passes.
 - **The world runs without you.** Lords recruit, refit, upgrade (same rules and prices), patrol, hunt, flee and muster hosts, and
   march for the front rather than idling at home, so realms fight each other whether or not you are there. Brigands are very
   common — around 190 bands on the enlarged map, spawning in several a day — and grow with the campaign: a late band is a real
-  fight, not loot. Villages get threatened, the war score moves,
+  fight, not loot. At war a realm gathers its lords into **armies** of up to six under one leader (the marshal when he can ride):
+  they muster, march at the pace of the slowest, fight side by side, and besiege an enemy seat (turning on a weaker one if it is too
+  strong), or ride to relieve a seat of their own under siege. Lords put their work first: one in an army, at a siege, going to
+  refit or following you rides past brigands and goblins unless they fall on him, and a free lord at war only hunts rabble on
+  his own realm's land. Rabble is slow (brigand bands of tier II and below, goblins); trained bands (tier IV and up) are quicker
+  than lords' men, and from tier III a band may be **robber knights**, all on horse and quicker still. Hover a lord to see
+  whose army he rides in. Villages get threatened, the war score moves,
   the losing side sues for a 30-day truce, and the war resumes when it ends. Upkeep is weekly, a contract pays 85% of it, and unpaid men desert.
 - **A career, from hired sword to king.** Your **rank** rises: Free Company → Sworn Sword (a month in one realm's service; its recruits
   cost you half, and your liege pays a weekly retainer) → Vassal (swear fealty at 120 renown when your liege trusts you; hold land, vote in council) → Lord (two fiefs and 350

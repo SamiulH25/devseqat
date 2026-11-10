@@ -465,6 +465,8 @@ partial class MapScreen
                 linesOut.Add((ratio > 1.25f ? "STRONGER THAN YOU" : ratio < 0.8f ? "WEAKER THAN YOU" : "A FAIR MATCH", ratio > 1.25f ? Style.Bad : ratio < 0.8f ? Style.Ok : Style.Warn));
                 linesOut.Add((C.Hostile(p, C.Player) ? "HOSTILE" : "NOT HOSTILE", C.Hostile(p, C.Player) ? Style.Foe : Style.Dim));
                 if (p.Kind == PartyKind.Lord) linesOut.Add(($"TASK: {p.Task.ToUpperInvariant()}", Style.Dim));
+                if (C.ArmyOf(p) is LordArmy army && C.PartyById(army.Leader) is Party chief && C.S.Settlements.FirstOrDefault(s => s.Id == army.Target) is Settlement goal)
+                    linesOut.Add(((chief == p ? $"LEADS AN ARMY OF {army.Members.Count}" : $"RIDES IN {chief.Name.ToUpperInvariant()}'S ARMY") + (army.Aim == "relieve" ? $" TO RELIEVE {goal.Name.ToUpperInvariant()}" : $" ON {goal.Name.ToUpperInvariant()}"), Style.Warn));
                 if (C.CharacterOf(p) is Character pc)
                 {
                     float op = C.OpinionOfYou(pc);

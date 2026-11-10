@@ -169,6 +169,7 @@ public static partial class SelfTest
         BalanceMatchesData();
         HorsesCostGold();
         GoodsSell();
+        LordArmies();
         Career();
         PilotCareer();
         FreeCrown();

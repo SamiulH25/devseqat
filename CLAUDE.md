@@ -113,7 +113,7 @@ or wall-clock time in the sim; `SelfTest.ReplayExact` checks it.
 ### Campaign tick (`Campaign.Tick(hours)`, 0.25 h steps, stops on `Encounter`/`Arrived`)
 Ticks live in `Campaign.cs`; the AI they call (`LordThink`, `BanditThink`, `FactionAI`) in `CampaignAI.cs`.
 `Hourly` (lord/bandit AI: `LordThink`, `BanditThink`, contracts, `SiegeHourly`) / `Daily` (healing, drill, food `EatDaily`,
-`FactionAI`, sieges, truces) / `Weekly` (upkeep, income, garrisons, prisoners, desertion) -> `Move` -> `Encounters`.
+`ArmiesDaily`, `FactionAI`, sieges, truces) / `Weekly` (upkeep, income, garrisons, prisoners, desertion) -> `Move` -> `Encounters`.
 Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` returning `string?` (null = success, else the reason shown in the UI):
 `Hire`, `RecruitLevies`, `BuyHorses`, `BuyGear`, `Upgrade`, `Split`, `Rest`, `SignContract`, `Besiege`, `Station`, `SellPrisoners`,
 `SwearFealty`, `ProposeWar`, `SetObjective`, `DeclareIndependence`, `DeclareWar`, `OfferPeace`...
@@ -166,6 +166,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | The captain's gear: kit (`CaptainState.Kit`), buy/sell/wear, armourer stock, old-save tiers -> kit | `Gear.cs` (`GearDef`, loads `Data/gear.json`, `Validate`) / `Campaign/Armoury.cs` (`BuyGear`, `Equip`, `SellGear`, `ArmourerStock`, `MigrateGear`); `Rules.CaptainType(c, side)` builds the battle unit; UI `MapScreen.Armoury.cs` (MARKET tab) |
 | Duels before a battle: who accepts, the lord's fighting form, the fight (`BattleSetup.Duel`, `BattleOptions.Duel`), what it does to the battle | `Campaign/Duels.cs` (`CannotChallenge`, `LordChampion`, `PrepareDuel`, `FinishDuel`); `Battle.SetupDuel`; CHALLENGE in `MapScreen.Dialogs.cs` `EncounterPanel` |
 | Lord/bandit/realm AI, spawning | `Campaign/CampaignAI.cs` (`LordThink`, `BanditThink`, `FactionAI`) |
+| Lords' armies and priorities: forming (`FormArmy`, from `MusterHost` and `RealmArmies`), leader and members (`ArmyThink`), breaking up (`ArmiesDaily`), fighting side by side (`Comrades`, used by `Campaign.Clash`), pace of the slowest (`ArmyPace`); a lord on duty ignores rabble (`OnDuty`, `Rabble`); rabble/trained/robber-knight pace `Campaign.PaceOf` | `Campaign/LordArmies.cs`; save `CampaignState.Armies` (`LordArmy`), `Party.ArmyId` |
 | Company math, auto-resolve (`Might`: strength with drill weighed in, `Balance.DrillWeight`), army building | `Campaign/Rules.cs` |
 | World generation, provinces, rivers, roads / the look-up grid behind `ProvinceAt`, `RoadDist`, `RiverDist` | `Campaign/WorldMap.cs` / `Campaign/MapIndex.cs` (exact: must answer as the full scans do, `SelfTest.MapIndexMatches`) |
 | Prisoners, officers, food, contracts | `Campaign/CampaignWar.cs` |
