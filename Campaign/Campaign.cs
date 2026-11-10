@@ -202,10 +202,18 @@ public sealed partial class Campaign
     public Action<int>? Probe;
     public static readonly string[] Stages = { "hourly", "daily", "weekly", "move", "encounters" };
 
-    public float Speed(Party p)
+    public float Speed(Party p) => ArmyPace(p, BaseSpeed(p));
+
+    /// Rabble is slow (brigand bands of tier II and below, goblins); trained brigands (tier IV and up) and robber knights are quick.
+    public const float RabblePace = 0.8f, TrainedPace = 1.1f, RobberPace = 1.15f, RobberKnightChance = 0.15f;
+    public static float PaceOf(Party p) => p.Kind == PartyKind.Bandit ? (p.Breed == "robbers" ? RobberPace : p.Tier >= 4 ? TrainedPace : p.Tier <= 2 ? RabblePace : 0.9f)
+        : p.Kind == PartyKind.Monster && p.Breed == "goblin" ? RabblePace : 1;
+
+    /// A party's own speed, before an army's pace holds it back.
+    float BaseSpeed(Party p)
     {
         bool mounted = p.Breed == "wolf" || p.Companies.Count > 0 && p.Companies.All(c => c.Men == 0 || c.Type.Mount != null); // wolves run as fast as horses
-        float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1);
+        float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1) * PaceOf(p);
         if (p.Kind == PartyKind.Player) s *= 1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f);
         if (p.Kind == PartyKind.Player)
             s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1) * (Has("ForcedMarch") ? 1.1f : 1);
@@ -273,7 +281,7 @@ public sealed partial class Campaign
     }
 
     /// Resolve a meeting between two parties (an AI fight happens at once; a fight with you opens the encounter panel).
-    void Clash(Party a, Party b)
+    internal void Clash(Party a, Party b)
     {
         if (a == b || a.Cooldown > 0 || b.Cooldown > 0) return;
         bool playerInvolved = a.Kind == PartyKind.Player || b.Kind == PartyKind.Player;
@@ -285,6 +293,8 @@ public sealed partial class Campaign
             return;
         }
         if (!Hostile(a, b)) return;
+        // A lord with a job rides past rabble that is not after him (LordArmies.cs).
+        if (!playerInvolved && a.ChaseId != b.Id && b.ChaseId != a.Id && (OnDuty(a) && Rabble(b) || OnDuty(b) && Rabble(a))) return;
         // AI parties are a little slower to close than the player is, so the field is not one long chain of fights.
         float radius = playerInvolved ? B.EncounterRadius : B.AiClashRadius;
         if (Vector2.DistanceSquared(a.Pos, b.Pos) > radius * radius) return;
@@ -296,11 +306,14 @@ public sealed partial class Campaign
             return;
         }
         if (a.Lair || a.Breed is "troll" or "undead") (a, b) = (b, a); // a holdout fights dug in, from side 1; so do a troll and the dead
-        var r = Rules.AutoResolve(new[] { a }, new[] { b }, rng, 1 + B.AuraWeight * ChampionAura(a), Edge(b));
+        // An army's lords close by fight beside the one who met the enemy.
+        var sideA = Comrades(a);
+        var sideB = Comrades(b);
+        var r = Rules.AutoResolve(sideA, sideB, rng, 1 + B.AuraWeight * ChampionAura(a), Edge(b));
         var winner = r.Winner == 0 ? a : b;
         var loser = r.Winner == 0 ? b : a;
         AiBattles++;
-        Apply(r, new[] { a }, new[] { b }, "");
+        Apply(r, sideA, sideB, "");
         if (winner.Kind == PartyKind.Lord || loser.Kind == PartyKind.Lord)
             Log($"{winner.Name} defeats {loser.Name} near {Map.ProvinceAt(loser.Pos).Name}.");
     }
@@ -380,6 +393,7 @@ public sealed partial class Campaign
             Player.Companies.Add(NewCompany(RecruitTroop(Math.Max(0, Captain.Contract)), "infantry", Scaled(10), 0));
             Log($"Your company is gone. Ten loyal men gather to your banner{(refuge != null ? " at " + refuge.Name : "")}.");
         }
+        ArmiesDaily();
         FactionAI();
         SiegesDaily();
         RainDaily();

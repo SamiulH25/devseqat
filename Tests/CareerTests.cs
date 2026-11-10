@@ -286,7 +286,7 @@ public static partial class SelfTest
             peakShare = MathF.Max(peakShare, Enumerable.Range(0, c.S.Factions.Count).Max(f => c.S.Provinces.Count(p => p.Faction == f)) / (float)c.S.Provinces.Count);
             if (d < 120) fellEarly = Math.Max(fellEarly, Enumerable.Range(0, c.S.Factions.Count).Count(f => !c.Alive(f)));
             peakExh = MathF.Max(peakExh, c.S.Wars.Where(w => w.Active).Select(w => MathF.Max(w.ExhA, w.ExhB)).DefaultIfEmpty(0).Max());
-            hosts += c.S.Log.Count(e => e.At >= c.S.Hours - 24 && e.Text.Contains("musters a host"));
+            hosts += c.S.Log.Count(e => e.At >= c.S.Hours - 24 && e.Text.Contains("gathers an army"));
         }
         int moved = c.S.Settlements.Count(s => s.Kind != SettlementKind.Village && s.Faction != owners[s.Id]);
         var terms = c.S.Treaties.Where(t => t.Contains("sue")).ToList();

@@ -1390,6 +1390,53 @@ public static partial class SelfTest
         Check(off.Count == 0, "campaign.json and Balance defaults differ: " + string.Join(", ", off));
     }
 
+    /// Lords' armies and priorities (LordArmies.cs): lords gather under a leader and march at the slowest one's pace, a lord with
+    /// a job rides past brigands, an army's lords fight side by side; rabble is slow and robber knights quick.
+    static void LordArmies()
+    {
+        var c = Campaign.New(4242);
+        int f = -1, g = -1;
+        for (int a = 0; a < c.S.Factions.Count && f < 0; a++) for (int b = 0; b < c.S.Factions.Count; b++) if (c.FactionsAtWar(a, b)) { f = a; g = b; break; }
+        Check(f >= 0, "a new campaign has a war to march in");
+        var seat = c.S.Settlements.First(s => s.Faction == g && s.Kind != SettlementKind.Village);
+        var lords = c.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f && p.KnightOrder == "" && !p.Down).Take(3).ToList();
+        var at = lords[0].Pos;
+        foreach (var l in lords) { l.Pos = at + new Vector2(l.Id % 3, 0); l.SiegeTarget = -1; l.Task = "patrol"; while (l.Men < c.Scaled(45)) l.Companies[0].Stacks[0].Men += c.Scaled(10); }
+        foreach (var ch in lords.Select(c.CharacterOf).OfType<Character>()) foreach (var o in lords.Select(c.CharacterOf).OfType<Character>()) if (ch != o) ch.Opinion[o.Id] = 10;
+        var army = c.FormArmy(f, seat, "siege", lords);
+        Check(army != null && army.Members.Count == lords.Count && lords.All(l => l.ArmyId == army.Id), "free lords gather into an army");
+        var leader = c.PartyById(army!.Leader)!;
+        Check(lords.All(l => c.Speed(leader) <= c.Speed(l) + 1e-4f), "an army marches at its slowest lord's pace");
+        var member = lords.First(l => l != leader);
+        Check(Campaign.OnDuty(member), "a lord in an army is on duty");
+
+        // A brigand band beside a lord on duty, not after him: no fight.
+        var band = new Party { Id = c.S.NextId++, Kind = PartyKind.Bandit, Name = "Test Band", Tier = 1, Pos = member.Pos };
+        band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(10), 0));
+        c.S.Parties.Add(band);
+        int men = band.Men;
+        c.Clash(member, band);
+        Check(band.Men == men && !band.Down, "a lord with a job rides past brigands that leave him alone");
+        band.ChaseId = member.Id;
+        c.Clash(member, band);
+        Check(band.Down || band.Men < men, "brigands who fall on a lord get their fight");
+
+        // Rabble is slow, trained brigands quick.
+        var foot = new Party { Kind = PartyKind.Lord };
+        foot.Companies.Add(c.NewCompany("levies", "infantry", 30, 0));
+        var rabble = new Party { Kind = PartyKind.Bandit, Tier = 1 };
+        rabble.Companies.Add(c.NewCompany("levies", "infantry", 30, 0));
+        var trained = new Party { Kind = PartyKind.Bandit, Tier = 5 };
+        trained.Companies.Add(c.NewCompany("levies", "infantry", 30, 0));
+        Check(c.Speed(rabble) < c.Speed(foot) && c.Speed(trained) > c.Speed(foot), "rabble is slower than a lord's men, trained brigands quicker");
+
+        // The leader falls: the army breaks up.
+        leader.Down = true;
+        c.ArmiesDaily();
+        Check(c.S.Armies.Count(a => a.Id == army.Id) == 0 && lords.All(l => l.ArmyId < 0), "an army whose leader falls breaks up");
+        Console.WriteLine($"armies: {lords.Count} lords, leader {c.Speed(leader):0.0}, rabble {c.Speed(rabble):0.0}, foot {c.Speed(foot):0.0}, trained {c.Speed(trained):0.0}");
+    }
+
     /// Buying a horse costs HorsePrice (also the example in docs/DEVELOPING.md 9).
     static void HorsesCostGold()
     {

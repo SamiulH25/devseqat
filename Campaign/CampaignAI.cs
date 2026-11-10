@@ -59,6 +59,15 @@ public partial class Campaign
         };
         band.Pos = at.Pos + new Vector2(rng.Range(-14, 14), rng.Range(-14, 14)) * Map.Spread;
         band.Goal = band.Pos;
+        if (tier >= 3 && rng.Chance(RobberKnightChance))
+        {
+            // Robber knights: trained men gone bad, all on horse, fewer and quicker than any rabble.
+            band.Breed = "robbers";
+            band.Name = $"Robber Knights of {at.Name}";
+            band.Companies.Add(NewCompany(Armies.LineTroop("horse", tier, rng.Next(3)), "horse", Math.Max(Scaled(4), men / 2), 0));
+            S.Parties.Add(band);
+            return;
+        }
         band.Companies.Add(NewCompany(foot, "infantry", men, 0));
         if (rng.Chance(0.6f))
             band.Companies.Add(NewCompany(Armies.LineTroop(rng.Chance(0.6f) ? "archers" : "horse", tier, rng.Next(3)), rng.Chance(0.6f) ? "archers" : "horse", Scaled(rng.Next(5, 10) + Day / 20), 0));
@@ -110,13 +119,13 @@ public partial class Campaign
     internal void LordThink(Party p)
     {
         var home = SettlementById(p.HomeId);
-        float me = Rules.Strength(p);
+        float me = Rules.Strength(p), side = p.ArmyId >= 0 ? SideStrength(p) : me; // an army's lord stands with the lords beside him
         var hostiles = Visible(p, B.Vision).Where(q => Hostile(p, q)).ToList();
         // Traits drive the odds a lord takes (3.1): the Reckless stand against worse, the Cautious run sooner and hunt only easy prey.
         var who = CharacterOf(p);
         float runAt = who?.Traits.Contains("Reckless") == true ? 1.7f : who?.Traits.Contains("Cautious") == true ? 1.1f : 1.3f;
         float preyAt = who?.Traits.Contains("Reckless") == true ? 1.25f : who?.Traits.Contains("Cautious") == true ? 0.75f : 1f;
-        var threat = hostiles.Where(q => !q.Lair && Rules.Strength(q) > me * runAt && Vector2.Distance(q.Pos, p.Pos) < 25).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault();
+        var threat = hostiles.Where(q => !q.Lair && Rules.Strength(q) > side * runAt && Vector2.Distance(q.Pos, p.Pos) < 25).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault();
         // Go home to refit when the company is thin, or to spend an upgrade it can already pay for. Refit buys what the
         // purse allows and the faction treasury covers the rest, so a lord who has lost men goes home even when it is poor.
         bool needsRefit = p.Men < Scaled(45) || p.Companies.Count < 3
@@ -127,6 +136,7 @@ public partial class Campaign
             p.SiegeTarget = -1;
             p.Task = "flee"; p.ChaseId = -1; p.Goal = home.Pos; p.Moving = true; p.TaskUntil = (float)S.Hours + 3;
         }
+        else if (p.ArmyId >= 0 && ArmyThink(p, p.Men < Scaled(30) || p.Companies.Count == 0, hostiles)) { } // only a badly thinned lord leaves for home // riding in an army comes before anything of his own
         else if (!needsRefit && OrderMarches(p)) { } // a crusade, or riding with you as its grand master (K6)
         else if (p.SiegeTarget >= 0)
         {
@@ -144,9 +154,12 @@ public partial class Campaign
         }
         // A holdout is dug in: a lord goes after one only when its raiders have plundered his realm, and he is clearly the stronger.
         // A realm that hunts monsters (the Order, W5) digs out any holdout it outweighs and goes after beasts before men.
-        else if (hostiles.Where(q => !q.Lair || (q.HuntedBy == p.Faction && S.Hours < q.HuntedUntil || MonsterHunter(p)) && Rules.Strength(q) * B.HoldoutDefence * 1.2f < me * preyAt)
+        // What a free lord hunts comes in order: beasts first for a realm that hunts them, then enemy lords, then rabble. At war he
+        // leaves rabble alone unless it is on his own realm's land (or has plundered it).
+        else if (hostiles.Where(q => !Rabble(q) || !AtWarWithAnyone(p.Faction) || q.HuntedBy == p.Faction || MonsterHunter(p) || Map.ProvinceAt(q.Pos).Faction == p.Faction)
+                     .Where(q => !q.Lair || (q.HuntedBy == p.Faction && S.Hours < q.HuntedUntil || MonsterHunter(p)) && Rules.Strength(q) * B.HoldoutDefence * 1.2f < me * preyAt)
                      .Where(q => Rules.Strength(q) * (q.Breed is "troll" or "undead" ? 2 : 1) < me * preyAt * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f)) // a troll only with twice its weight
-                     .OrderBy(q => MonsterHunter(p) && q.Kind == PartyKind.Monster ? 0 : 1).ThenBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
+                     .OrderBy(q => MonsterHunter(p) && q.Kind == PartyKind.Monster ? 0 : Rabble(q) ? 2 : 1).ThenBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
         {
             p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 6;
         }
@@ -276,16 +289,14 @@ public partial class Campaign
             if (lords.Count - orderArmies < wanted && fs.Treasury >= 600 + 400) { SpawnLord(f); fs.Treasury -= 600; }
             var front = S.Provinces.Where(p => p.Faction == f && p.Neighbors.Any(n => FactionsAtWar(f, S.Provinces[n].Faction))).ToList();
             var enemyFront = S.Provinces.Where(p => FactionsAtWar(f, p.Faction) && p.Neighbors.Any(n => S.Provinces[n].Faction == f)).ToList();
-            var idle = lords.Where(l => !l.Down && l.Task == "patrol" && !(IsVassal(l) && l.Order is "defend" or "follow")).ToList();
+            var idle = lords.Where(l => !l.Down && l.Task == "patrol" && l.ArmyId < 0 && !(IsVassal(l) && l.Order is "defend" or "follow")).ToList();
             // The marshal's objective (F5) draws the host; without one the realm picks a province on the front.
             // An ally's host marches on your objective when it has none of its own (joint hosts, F7).
             var objective = ObjectiveOf(f) ?? S.Pacts.Where(p => p.Until > S.Hours && (p.A == f || p.B == f)).Select(p => ObjectiveOf(p.A == f ? p.B : p.A))
                 .FirstOrDefault(o => o != null && FactionsAtWar(f, o.Faction));
-            if (idle.Count >= 2 && (objective != null || enemyFront.Count > 0) && rng.Chance(objective != null ? 0.5f : 0.35f))
-            {
-                var target = objective != null ? S.Provinces[objective.Province] : rng.Pick(enemyFront);
-                MusterHost(f, target, idle);
-            }
+            // Armies: relieve a besieged seat first, then march on the objective or the front (LordArmies.cs).
+            var target = objective != null ? S.Provinces[objective.Province] : enemyFront.Count > 0 ? rng.Pick(enemyFront) : null;
+            if (RealmArmies(f, lords, idle, rng.Chance(objective != null ? 0.5f : 0.35f) ? target : null)) { }
             else
                 foreach (var l in idle.Where(l => l.PatrolProvince < 0 || rng.Chance(0.15f)))
                     l.PatrolProvince = front.Count > 0 ? rng.Pick(front).Id : S.Settlements[l.HomeId].Province;
