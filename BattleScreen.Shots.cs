@@ -266,9 +266,35 @@ partial class BattleScreen
     }
 
     /// Sheet 4: crossbows, casters, javelins and slings (A3).
-    static void ShooterSheet(Func<string, int, Unit> add)
+    void ShooterSheet(Func<string, int, Unit> add)
     {
-        add("crossbowmen", 0);
+        float now = battle.Time;
+        Unit Shot(string troop, float cooldown, bool loosed = false)
+        {
+            var u = add(troop, 0);
+            u.Ammo = 5; u.EnemyDist = 18; u.Cooldown = cooldown;
+            if (loosed) { u.Action = UnitAction.Recover; u.ActionTimer = 0.12f; }
+            return u;
+        }
+        add("crossbowmen", 0); // carried
+        Shot("crossbowmen", 3.0f); // spanning
+        Shot("crossbowmen", 0.5f); // coming up
+        Shot("crossbowmen", 0.02f); // aimed
+        Shot("crossbowmen", 4f, true); // the kick
+        add("sun_javelins", 0);
+        Shot("sun_javelins", 0.25f); // drawn back
+        Shot("sun_javelins", 2f, true); // thrown
+        foreach (var (from, fire) in new[] { (-99f, -99f), (-1f, 1.2f), (-2.2f, -0.12f) }) // standing, gathering, the release
+        {
+            var c = add("hedge_witches", 0);
+            c.CastStart = now + from; c.CastFire = now + fire;
+        }
+        if (Troops.All.Any(t => t.Id == "slingers"))
+        {
+            Shot("slingers", 1.5f); // ready
+            Shot("slingers", 0.3f); // whirling
+            Shot("slingers", 2f, true); // let fly
+        }
     }
 
     /// Sheet 5: stances in a line (A2, A4).

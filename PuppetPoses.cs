@@ -13,6 +13,14 @@ sealed partial class Puppet
     {
         /// The off hand holds the weapon too, below the weapon hand.
         public bool TwoHand { get; init; }
+        /// A crossbowman spanning: how far up the stock his hands have hauled the string (0..1), else -1.
+        public float Haul { get; init; } = -1;
+        /// A slinger whirls the sling over his head.
+        public bool Whirl { get; init; }
+        /// The javelin or stone has left his hand.
+        public bool Empty { get; init; }
+        /// A caster gathering a spell (0..1 up to the release), then 1..2 through the release; 0 when not casting.
+        public float Cast { get; init; }
     }
     internal record struct Key(float Alpha, float Pitch, float Yaw);
 
@@ -51,7 +59,14 @@ sealed partial class Puppet
                     ? (upright, new(5, 5, -15), new(75, 0, -10)) // drawn back level, then driven in
                     : (upright, new(10, 10, swing == AttackDir.Right ? 40 : -60), new(70, 0, swing == AttackDir.Right ? -30 : 20)); // a thrust slanting in
         }
-        if (grip is Grip.Two or Grip.Staff)
+        if (grip is Grip.Staff)
+        {
+            var planted = new Key(22, 90, 0); // the staff's foot on the ground beside him
+            return swing == AttackDir.Thrust
+                ? (planted, new(35, 5, 10), new(95, 0, 0))
+                : (planted, new(160, 150, 0), new(75, -35, 0)); // a staff knocks down
+        }
+        if (grip is Grip.Two)
         {
             var guard = new Key(35, 55, -25); // across the body, point up and forward
             return swing switch
@@ -103,6 +118,9 @@ sealed partial class Puppet
             return new Pose(0, 140 + c * 30, 60 + c * 40, 0, t.HasShield ? 40 + c * 50 : 20, false, false, 0, -4 * c, c * 0.06f);
         }
         var grip = Look.GripOf(t.Look.Weapon);
+        if (grip is Grip.Crossbow && !u.Mounted && t.Class == UnitClass.Archer) return CrossbowPose(u, now, phase, moving, leg, swing, leanX, leanZ, bob);
+        if (grip is Grip.Thrown or Grip.Sling && !u.Mounted && ThrowPose(u, now, phase, grip, moving, leg, leanX, leanZ, bob) is { } thrown) return thrown;
+        if (t.Class == UnitClass.Caster && CastPose(u, now, leg, leanX, leanZ, bob) is { } cast) return cast;
         if (t.Class == UnitClass.Archer)
         {
             bool aim = u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving);
@@ -112,7 +130,9 @@ sealed partial class Puppet
             return new Pose(leg, 62 + 28 * draw, 0, 0, 88, false, true, leanX, leanZ - 3 * draw, bob, draw);
         }
         bool two = TwoHanded(grip, t.HasShield, u.Mounted);
-        var (idle, raise, strike) = Keys(grip, u.Swing, u.Mounted, t.HasShield, phase > 0.5f);
+        var (idle, raise, strike) = grip is Grip.Thrown
+            ? Keys(Grip.Pole, u.Swing, u.Mounted, true, phase > 0.5f) // out of javelins, he fights with the last one like a spear
+            : Keys(grip, u.Swing, u.Mounted, t.HasShield, phase > 0.5f);
         idle = idle with { Alpha = idle.Alpha + (phase - 0.5f) * 14 + MathF.Sin(now * 0.4f + phase * 11) * 3 }; // each man rests his weapon his own way
         var arm = idle;
         bool shield = false;
@@ -162,5 +182,68 @@ sealed partial class Puppet
         if (t.Look.Body == "bones") arm = arm with { Alpha = arm.Alpha + MathF.Sin(now * 23 + phase * 40) * 3 }; // dry joints rattle
         return new Pose(leg, arm.Alpha, arm.Pitch, arm.Yaw, shield ? 85 : 15 + leg * 0.4f - swing * 0.6f, shield, false, leanX, leanZ, bob)
         { TwoHand = two && u.Action != UnitAction.Stagger };
+    }
+
+    /// A crossbowman (docs/ANIMATION_ROSTER.md A3): the bow levelled at the shoulder, a kick on the shot, then bent over it with
+    /// a foot in the stirrup hauling the string up the stock, and over the last second raising it again. `Draw` is how level
+    /// the bow is (0 nose down, 1 aimed); `Aim` holds it up.
+    static Pose CrossbowPose(Unit u, float now, float phase, bool moving, float leg, float swing, float leanX, float leanZ, float bob)
+    {
+        var t = u.Type;
+        bool shooting = u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving);
+        if (!shooting) return new Pose(leg, 15 + swing - leg * 0.3f, 0, 0, 10 - swing + leg * 0.3f, false, false, leanX, leanZ, bob);
+        if (u.Action == UnitAction.Recover)
+            return new Pose(leg, 0, 0, 0, 0, false, true, leanX, leanZ - 6 * Ease.Kick(1 - u.ActionTimer / 0.25f), bob, 1); // the kick
+        if (u.Cooldown > 1)
+        {
+            // Spanning: two hands drag the string up from the stirrup, again and again, each man at his own pace.
+            float haul = 0.5f - 0.5f * MathF.Cos(now * 3.2f + phase * 9);
+            return new Pose(0, 0, 0, 0, 0, false, false, leanX * 0.3f, leanZ + 16 - 6 * haul, bob - 0.04f) { Haul = haul };
+        }
+        float up = Ease.InOut(1 - MathF.Max(0, u.Cooldown)); // bolt laid; up to the shoulder
+        return new Pose(leg, 0, 0, 0, 0, false, true, leanX, leanZ - 2 * up, bob, up);
+    }
+
+    /// A javelin man or a slinger with something to throw at a foe in range: the javelin drawn back over the shoulder or the
+    /// sling whirled overhead as the shot comes up, then the arm whips through (docs/ANIMATION_ROSTER.md A3). Null when he is
+    /// not throwing, so he walks or fights as usual.
+    static Pose? ThrowPose(Unit u, float now, float phase, Grip grip, bool moving, float leg, float leanX, float leanZ, float bob)
+    {
+        var t = u.Type;
+        bool released = u.Action == UnitAction.Recover && u.ActionTimer <= 0.25f && u.EnemyDist > 3;
+        if (released)
+        {
+            float k = Ease.Out(1 - u.ActionTimer / 0.25f);
+            return new Pose(leg, MathHelper.Lerp(200, 70, k), grip is Grip.Sling ? 20 : 10, 0, MathHelper.Lerp(110, 30, k), false, true, leanX, leanZ + 10 * k, bob)
+            { Empty = grip is Grip.Thrown };
+        }
+        if (u.Ammo <= 0 || moving || u.Action != UnitAction.None || u.EnemyDist > t.Range || u.EnemyDist < 4) return null;
+        float ready = Math.Clamp(1 - u.Cooldown / 0.8f, 0, 1);
+        if (grip is Grip.Sling)
+        {
+            // The sling goes round faster as the shot comes; before that it hangs ready from the raised hand.
+            return ready <= 0
+                ? new Pose(0, 30, -90, 0, 20, false, false, leanX, leanZ, bob)
+                : new Pose(0, 165, 0, 0, 40, false, true, leanX, leanZ - 3 * ready, bob, ready) { Whirl = true };
+        }
+        float back = Ease.InOut(ready); // the javelin drawn back level, the off arm pointing at the mark
+        return new Pose(leg * 0.3f, MathHelper.Lerp(25, 205, back), MathHelper.Lerp(80, 8, back), 0, MathHelper.Lerp(20, 105, back), false, true,
+            leanX, leanZ - 7 * back, bob);
+    }
+
+    /// A caster gathering a spell: the staff lifted high and the free hand reaching toward where it will land, leaning back
+    /// from the weight of it; on the release the staff drives forward. Idle casters stand on their staffs. Null when he is not casting.
+    static Pose? CastPose(Unit u, float now, float leg, float leanX, float leanZ, float bob)
+    {
+        if (u.CastFire < 0 || now < u.CastStart || now > u.CastFire + 0.4f || u.Action != UnitAction.None) return null;
+        if (now < u.CastFire)
+        {
+            float k = Ease.Out(Math.Clamp((now - u.CastStart) / MathF.Max(0.1f, u.CastFire - u.CastStart), 0, 1));
+            float tremble = MathF.Sin(now * 31) * 2 * k;
+            return new Pose(leg, MathHelper.Lerp(22, 160, MathF.Min(1, k * 2.5f)) + tremble, MathHelper.Lerp(90, 105, k), 0, MathHelper.Lerp(15, 100, k), false, false,
+                leanX, leanZ - 7 * k, bob + 0.02f * k) { Cast = k };
+        }
+        float f = Ease.OutBack((now - u.CastFire) / 0.4f);
+        return new Pose(leg, MathHelper.Lerp(160, 105, f), MathHelper.Lerp(105, 15, f), 0, MathHelper.Lerp(100, 40, f), false, false, leanX, leanZ + 9 * f, bob) { Cast = 1 + f };
     }
 }

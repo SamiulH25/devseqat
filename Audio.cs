@@ -7,7 +7,7 @@ namespace Ironfield;
 public enum Cue
 {
     Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin, Splash, Squelch, Rustle, Hollow, Spell, Thunder, Holy, Flame, Aura, Gather,
-    Death, Neigh, Volley, Ram, Crash, Cheer, Order, Hover, Page,
+    Death, Neigh, Volley, Ram, Crash, Cheer, Order, Hover, Page, Throw,
 }
 
 public enum MusicTrack { None, Map, Battle, Victory, Defeat, Deploy }

@@ -20,6 +20,8 @@ public sealed class Projectile
     public Vector3 Pos, Vel;
     public Unit Shooter = null!;
     public float Damage, Stuck = -1; // Stuck >= 0: seconds spent lying in the ground
+    /// What flies: an arrow or bolt, a javelin or a sling stone (drawn and heard differently; the flight is the same).
+    public Grip Kind = Grip.Bow;
 }
 
 /// Headless battle simulation. No graphics, so the self-test can run it.

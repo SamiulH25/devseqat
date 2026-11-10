@@ -32,9 +32,37 @@ public static partial class SelfTest
         var rider = b.AddSquad(0, Troops.Get("mamluks"), 1, new Vector2(8, 0), 1, Vector2.UnitY).Units[0];
         rider.Action = UnitAction.Recover; rider.Swing = AttackDir.Thrust; rider.ActionTimer = rider.Type.Recover * 0.8f;
         Check(Puppet.PoseOf(rider, 1, 0.2f).WeapB < 0, "a sword in the saddle cuts down, it does not thrust");
+        var xbow = b.AddSquad(0, Troops.Get("crossbowmen"), 1, new Vector2(10, 0), 1, Vector2.UnitY).Units[0];
+        xbow.Ammo = 5; xbow.EnemyDist = 20; xbow.Cooldown = 3;
+        Check(Puppet.PoseOf(xbow, 1, 0.5f).Haul >= 0, "a crossbowman spans his bow between shots");
+        xbow.Cooldown = 0.01f;
+        Check(Puppet.PoseOf(xbow, 1, 0.5f) is { Aim: true, Draw: > 0.95f, Haul: < 0 }, "then levels it at the shoulder");
+        var jav = b.AddSquad(0, Troops.Get("sun_javelins"), 1, new Vector2(12, 0), 1, Vector2.UnitY).Units[0];
+        jav.Ammo = 3; jav.EnemyDist = 15; jav.Cooldown = 0.1f;
+        Check(Puppet.PoseOf(jav, 1, 0.5f).ArmA > 160, "a javelin is drawn back over the shoulder");
+        jav.Action = UnitAction.Recover; jav.ActionTimer = 0.1f;
+        Check(Puppet.PoseOf(jav, 1, 0.5f).Empty, "and leaves the hand");
+        var mage = b.AddSquad(0, Troops.Get("hedge_witches"), 1, new Vector2(14, 0), 1, Vector2.UnitY).Units[0];
+        mage.CastStart = 0.5f; mage.CastFire = 2;
+        Check(Puppet.PoseOf(mage, 1.5f, 0.5f) is { Cast: > 0 and < 1, ArmA: > 120 }, "a caster lifts his staff as he gathers a spell");
         var foe = b.AddSquad(1, UnitType.Shieldman, 1, new Vector2(0, 2), 1, -Vector2.UnitY).Units[0];
         b.Kill(foe, u);
         Check(foe.Dead && foe.DiedFrom == u.Pos, "a dead man remembers where the blow came from");
+    }
+
+    /// Javelin men throw what they carry as the foe comes on, then close with the last one in hand (docs/ANIMATION_ROSTER.md R1).
+    static void Javelins()
+    {
+        var b = Battle.Empty(3);
+        var jav = b.AddSquad(0, Troops.Get("sun_javelins"), 12, new Vector2(0, -12), 6, Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("levies"), 12, new Vector2(0, 12), 6, -Vector2.UnitY);
+        jav.Order = foe.Order = Order.Charge; jav.Target = foe; foe.Target = jav;
+        bool flew = false;
+        for (int i = 0; i < 60 * 20 && !flew; i++) { b.Update(1 / 60f); flew |= b.Arrows.Any(a => a.Kind == Grip.Thrown && a.Stuck < 0); }
+        Check(flew, "javelins fly as javelins");
+        for (int i = 0; i < 60 * 25; i++) b.Update(1 / 60f);
+        Check(jav.Units.Where(u => u.Active).All(u => u.Ammo < jav.Units[0].Type.Ammo), "every javelin man has thrown");
+        Check(b.Units.Any(u => u.Team == 1 && u.Dead), "the javelins and the spears kill");
     }
 
     /// A gallop into loose infantry hurts it; a braced spear line hurts the horse instead.

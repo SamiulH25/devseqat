@@ -124,7 +124,7 @@ static partial class Synth
     static float Peak(Cue c) => c switch
     {
         Cue.Hover => 0.22f, Cue.Click => 0.45f, Cue.Page => 0.5f, Cue.Coin => 0.55f, Cue.Order => 0.6f,
-        Cue.Death => 0.6f, Cue.Volley => 0.55f, Cue.Neigh => 0.6f, Cue.ArrowHit => 0.6f, Cue.Bow => 0.6f,
+        Cue.Death => 0.6f, Cue.Volley => 0.55f, Cue.Neigh => 0.6f, Cue.ArrowHit => 0.6f, Cue.Bow => 0.6f, Cue.Throw => 0.5f,
         Cue.Splash or Cue.Squelch or Cue.Rustle or Cue.Hollow => 0.55f,
         Cue.Horn or Cue.Rout => 0.5f, // a horn is all body: at a lower peak it is still the loudest thing on the field
         _ => 0.85f,
@@ -150,6 +150,7 @@ static partial class Synth
         Cue.Block => Block(r),
         Cue.Hit => Hit(r, v),
         Cue.Bow => Bow(r),
+        Cue.Throw => Throw(r),
         Cue.ArrowHit => ArrowHit(r, v),
         Cue.Impact => Impact(r),
         Cue.Shout => Shout(r, v),
@@ -238,6 +239,22 @@ static partial class Synth
             swish.Set(2400 - 3600 * MathF.Min(t, 0.4f), 2.5f);
             b[i] += swish.Run(N(r)) * MathF.Sin(MathF.PI * MathF.Min(1, t / 0.3f)) * 0.9f;
         }
+        return b;
+    }
+
+    /// A javelin or a sling stone thrown: a grunt of breath and a low whoosh falling away.
+    static float[] Throw(Random r)
+    {
+        var b = Buf(0.45f);
+        var air = new Band(900, 2);
+        float top = R(r, 800, 1100);
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = T(i);
+            air.Set(top - 900 * MathF.Min(t, 0.4f), 2);
+            b[i] += air.Run(N(r)) * MathF.Sin(MathF.PI * MathF.Min(1, t / 0.4f)) * 1.1f;
+        }
+        Mix(b, Thud(R(r, 110, 150), 0.06f, 0.25f, r), 0, 0.5f);
         return b;
     }
 

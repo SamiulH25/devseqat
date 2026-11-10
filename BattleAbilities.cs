@@ -79,6 +79,15 @@ public partial class Battle
     Unit? Speaker(Squad s, bool hero) => hero ? s.Units.FirstOrDefault(u => u.Hero && u.Active)
         : s.Units.Where(u => u.Active && !u.Routing && IsCaster(u)).OrderByDescending(u => u.Type.Tier).ThenBy(u => u.Index).FirstOrDefault();
 
+    Cast AddCast(Cast c) { Casts.Add(c); return c; }
+
+    /// The men who gather a cast raise their staffs for it (drawing only, Puppet.PoseOf).
+    void MarkCast(Cast c)
+    {
+        foreach (var u in c.By.Units)
+            if (u.Active && (c.Hero ? u.Hero : IsCaster(u))) { u.CastStart = c.Started; u.CastFire = c.FireAt; u.CastAim = c.At; }
+    }
+
     void UpdateAbilities(float dt)
     {
         if (!anyCaster && Casts.Count == 0 && Fields.Count == 0) return;
@@ -114,7 +123,7 @@ public partial class Battle
             if (!hero) s.Will -= WillCost(s, a);
             s.SpellReady[i] = Time + a.Cooldown;
             if (a.Great) s.GreatDone = true;
-            Casts.Add(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power });
+            MarkCast(AddCast(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power }));
             Flash("cast", Speaker(s, hero)?.Pos ?? s.Center, 1, s.Team, a.Tradition);
             if (s.Team == 0 && a.Tradition == "craft") OmenRaised += a.Omen;
             if (a.Great) Log(s.Team == 0 ? $"Your {s.Name} call down {a.Name}!" : $"The enemy's casters call down {a.Name}!");
@@ -175,7 +184,7 @@ public partial class Battle
         s.SpellReady[i] = Time + a.Cooldown;
         if (a.Great) s.GreatDone = true;
         s.CastSpell = -1;
-        Casts.Add(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power });
+        MarkCast(AddCast(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power }));
         Flash("cast", me.Pos, 1, s.Team, a.Tradition);
         if (s.Team == 0 && a.Tradition == "craft") OmenRaised += a.Omen;
         if (s.Team == 0) Log($"{s.Name}: {a.Name}!");

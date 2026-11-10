@@ -1624,7 +1624,7 @@
     "feet": "boots",
     "hands": "skin",
     "shield": "none",
-    "weapon": "spear"
+    "weapon": "glaive"
    }
   },
   {
@@ -1687,7 +1687,7 @@
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "pike",
+    "weapon": "halberd",
     "tabard": true
    }
   },
@@ -1718,7 +1718,7 @@
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "spear",
+    "weapon": "glaive",
     "cape": true
    }
   },
@@ -1781,7 +1781,7 @@
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "pike",
+    "weapon": "halberd",
     "tabard": true,
     "plume": true
    }
@@ -1814,7 +1814,7 @@
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "spear",
+    "weapon": "glaive",
     "tabard": true,
     "cape": true
    }
@@ -1879,7 +1879,7 @@
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "pike",
+    "weapon": "halberd",
     "tabard": true,
     "plume": true,
     "cape": true
@@ -1912,7 +1912,7 @@
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "spear",
+    "weapon": "glaive",
     "tabard": true,
     "plume": true,
     "cape": true
@@ -1972,7 +1972,7 @@
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "pike",
+    "weapon": "halberd",
     "tabard": true,
     "plume": true,
     "cape": true
@@ -4878,9 +4878,11 @@
     "legs": "cloth",
     "feet": "boots",
     "hands": "skin",
-    "shield": "round",
-    "weapon": "spear"
-   }
+    "shield": "dhal",
+    "weapon": "javelin"
+   },
+   "range": 24,
+   "ammo": 4
   },
   {
    "id": "dune_spears",
@@ -4909,9 +4911,11 @@
     "feet": "boots",
     "hands": "skin",
     "shield": "round",
-    "weapon": "spear",
+    "weapon": "javelin",
     "tabard": true
-   }
+   },
+   "range": 26,
+   "ammo": 5
   },
   {
    "id": "sun_guard",
@@ -4934,7 +4938,7 @@
    "block": 0.4,
    "vsMounted": 2.7,
    "look": {
-    "head": "turban",
+    "head": "spike",
     "body": "lamellar",
     "legs": "mail",
     "feet": "sabatons",
@@ -4965,7 +4969,7 @@
    "block": 0.45,
    "vsMounted": 2.9,
    "look": {
-    "head": "turban",
+    "head": "spike",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -4994,7 +4998,7 @@
    "block": 0.5,
    "vsMounted": 3.2,
    "look": {
-    "head": "turban",
+    "head": "spike",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -5033,7 +5037,7 @@
     "legs": "mail",
     "feet": "boots",
     "hands": "skin",
-    "shield": "round",
+    "shield": "dhal",
     "weapon": "spear",
     "tabard": true,
     "plume": true
@@ -5066,7 +5070,7 @@
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "sword",
+    "weapon": "scimitar",
     "tabard": true,
     "plume": true
    }
@@ -5124,13 +5128,13 @@
    "speed": 3.45,
    "block": 0.46,
    "look": {
-    "head": "turban",
+    "head": "spike",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "sword",
+    "weapon": "scimitar",
     "tabard": true,
     "cape": true
    }
@@ -5153,7 +5157,7 @@
    "speed": 3.5,
    "block": 0.52,
    "look": {
-    "head": "turban",
+    "head": "spike",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -5189,7 +5193,7 @@
    "range": 32,
    "ammo": 28,
    "look": {
-    "head": "steppe",
+    "head": "furcap",
     "body": "deel",
     "legs": "cloth",
     "feet": "boots",
@@ -5358,7 +5362,7 @@
    "range": 38,
    "ammo": 38,
    "look": {
-    "head": "steppe",
+    "head": "furcap",
     "body": "deel",
     "legs": "cloth",
     "feet": "boots",
@@ -5391,7 +5395,7 @@
    "ammo": 42,
    "pierce": 0.15,
    "look": {
-    "head": "steppe",
+    "head": "furcap",
     "body": "deel",
     "legs": "cloth",
     "feet": "boots",
@@ -5552,7 +5556,7 @@
    "block": 0.2,
    "vsMounted": 2.5,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "brigandine",
     "legs": "mail",
     "feet": "boots",
@@ -5614,7 +5618,7 @@
    "block": 0.3,
    "vsMounted": 2.9,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -5643,7 +5647,7 @@
    "block": 0.35,
    "vsMounted": 3.2,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -5746,7 +5750,7 @@
    "pierce": 0.7,
    "reload": 1.9,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "brigandine",
     "legs": "mail",
     "feet": "boots",
@@ -5780,7 +5784,7 @@
    "pierce": 0.75,
    "reload": 1.85,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "plate",
     "legs": "mail",
     "feet": "sabatons",
@@ -5812,7 +5816,7 @@
    "pierce": 0.8,
    "reload": 1.8,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -5844,13 +5848,13 @@
    "speed": 3.5,
    "block": 0.6,
    "look": {
-    "head": "nasal",
+    "head": "bucket",
     "body": "mail",
     "legs": "mail",
     "feet": "boots",
     "hands": "skin",
     "shield": "heater",
-    "weapon": "sword",
+    "weapon": "mace",
     "tabard": true
    }
   },
@@ -5880,7 +5884,7 @@
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater",
-    "weapon": "sword",
+    "weapon": "mace",
     "tabard": true
    },
    "order": "ashen"
@@ -6000,7 +6004,7 @@
    "speed": 3.8,
    "block": 0.2,
    "look": {
-    "head": "nasal",
+    "head": "bucket",
     "body": "mail",
     "legs": "mail",
     "feet": "boots",
@@ -6162,8 +6166,8 @@
     "legs": "mail",
     "feet": "boots",
     "hands": "skin",
-    "shield": "round",
-    "weapon": "sword",
+    "shield": "dhal",
+    "weapon": "scimitar",
     "tabard": true
    }
   },
@@ -6188,13 +6192,13 @@
    "speed": 3.6,
    "block": 0.65,
    "look": {
-    "head": "turban",
+    "head": "spike",
     "body": "lamellar",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "sword",
+    "weapon": "scimitar",
     "tabard": true
    }
   },
@@ -6218,13 +6222,13 @@
    "speed": 3.7,
    "block": 0.66,
    "look": {
-    "head": "turban",
+    "head": "spike",
     "body": "lamellar",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "longsword",
+    "weapon": "scimitar",
     "tabard": true,
     "plume": true
    }
@@ -6249,13 +6253,13 @@
    "speed": 3.7,
    "block": 0.7,
    "look": {
-    "head": "turban",
+    "head": "spike",
     "body": "lamellar",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "longsword",
+    "weapon": "scimitar",
     "tabard": true,
     "plume": true
    }
@@ -6277,13 +6281,13 @@
    "speed": 3.7,
    "block": 0.78,
    "look": {
-    "head": "turban",
+    "head": "spike",
     "body": "lamellar",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "longsword",
+    "weapon": "scimitar",
     "tabard": true,
     "plume": true,
     "cape": true
@@ -6629,7 +6633,7 @@
    "block": 0.2,
    "vsMounted": 2.0,
    "look": {
-    "head": "steppe",
+    "head": "furcap",
     "body": "deel",
     "legs": "cloth",
     "feet": "boots",
@@ -6659,7 +6663,7 @@
    "block": 0.25,
    "vsMounted": 2.1,
    "look": {
-    "head": "steppe",
+    "head": "furcap",
     "body": "deel",
     "legs": "cloth",
     "feet": "boots",
@@ -6790,7 +6794,7 @@
     "feet": "boots",
     "hands": "skin",
     "shield": "heater",
-    "weapon": "sword",
+    "weapon": "falchion",
     "tabard": true
    }
   },
@@ -6815,7 +6819,7 @@
    "speed": 3.2,
    "block": 0.65,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "brigandine",
     "legs": "plate",
     "feet": "sabatons",
@@ -6845,7 +6849,7 @@
    "speed": 3.3,
    "block": 0.66,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "brigandine",
     "legs": "plate",
     "feet": "sabatons",
@@ -6876,7 +6880,7 @@
    "speed": 3.3,
    "block": 0.7,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -6904,7 +6908,7 @@
    "speed": 3.3,
    "block": 0.78,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -6969,7 +6973,7 @@
    "speed": 3.9,
    "block": 0.3,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "brigandine",
     "legs": "plate",
     "feet": "boots",
@@ -7000,7 +7004,7 @@
    "speed": 3.7,
    "block": 0.38,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -7032,7 +7036,7 @@
    "speed": 3.7,
    "block": 0.45,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -7062,7 +7066,7 @@
    "speed": 3.75,
    "block": 0.52,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
@@ -7265,7 +7269,7 @@
    "block": 0.15,
    "vsMounted": 2.3,
    "look": {
-    "head": "nasal",
+    "head": "bucket",
     "body": "mail",
     "legs": "cloth",
     "feet": "boots",
@@ -7296,7 +7300,7 @@
    "block": 0.2,
    "vsMounted": 2.5,
    "look": {
-    "head": "nasal",
+    "head": "bucket",
     "body": "mail",
     "legs": "mail",
     "feet": "boots",
@@ -7710,7 +7714,7 @@
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "sword",
+    "weapon": "scimitar",
     "tabard": true,
     "plume": true
    },
@@ -7743,7 +7747,7 @@
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "sword",
+    "weapon": "scimitar",
     "tabard": true,
     "cape": true,
     "plume": true
@@ -7768,13 +7772,13 @@
    "speed": 3.45,
    "block": 0.49,
    "look": {
-    "head": "turban",
+    "head": "spike",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "sword",
+    "weapon": "scimitar",
     "tabard": true,
     "cape": true,
     "plume": true
@@ -7908,7 +7912,7 @@
    "block": 0.23,
    "vsMounted": 2.5,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "brigandine",
     "legs": "mail",
     "feet": "boots",
@@ -7971,7 +7975,7 @@
    "block": 0.33,
    "vsMounted": 2.9,
    "look": {
-    "head": "sallet",
+    "head": "barbute",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",

@@ -57,6 +57,8 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff", "mace",
         "halberd", "glaive", "javelin", "sling", "scimitar", "falchion", "warhammer" };
     public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
+    /// Anything that is shot or thrown, so needs ammo: bows, javelins and slings.
+    public static bool Missile(string weapon) => Ranged(weapon) || weapon is "javelin" or "sling";
     public static Grip GripOf(string weapon) => weapon switch
     {
         "greatsword" or "daneaxe" or "club" or "warhammer" => Grip.Two,
@@ -169,6 +171,9 @@ public sealed class Unit
     public UnitAction Action;
     public AttackDir Swing;
     public float ActionTimer, Cooldown, Charge, Power = 1, HitFlash, Anim;
+    /// Drawing only (the sim never reads them): when the cast this man is gathering began and fires, and where it goes.
+    public float CastStart = -99, CastFire = -99;
+    public Vector2 CastAim;
     public bool Charging; // player holding the attack button
     public float BlockStart; // when the player raised the guard (parries need fresh timing)
     public Unit? Target;

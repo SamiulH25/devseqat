@@ -550,8 +550,15 @@ partial class BattleScreen
         foreach (var a in battle.Arrows)
         {
             var dir = a.Vel.LengthSquared() > 0 ? Vector3.Normalize(a.Vel) : Vector3.Down;
-            Line(a.Pos, a.Pos - dir * (a.Stuck >= 0 ? 0.5f : 0.8f), ArrowColor);
-            if (a.Stuck < 0 && quality != Quality.Low) Line(a.Pos - dir * 0.8f, a.Pos - dir * 2.4f, ArrowStreak); // a faint streak behind it in flight
+            if (a.Kind == Grip.Sling)
+            {
+                if (a.Stuck < 0) Line(a.Pos, a.Pos - dir * 0.12f, StoneColor); // a stone: a dark speck, gone once it lands
+                continue;
+            }
+            float len = a.Kind == Grip.Thrown ? 1.5f : a.Kind == Grip.Crossbow ? 0.45f : 0.8f; // a javelin is long, a bolt short
+            Line(a.Pos, a.Pos - dir * (a.Stuck >= 0 ? len * 0.6f : len), ArrowColor);
+            if (a.Kind == Grip.Thrown) Line(a.Pos + Vector3.Up * 0.02f, a.Pos - dir * len + Vector3.Up * 0.02f, ArrowColor); // thicker in the shaft
+            if (a.Stuck < 0 && quality != Quality.Low) Line(a.Pos - dir * len, a.Pos - dir * (len + 1.6f), ArrowStreak); // a faint streak behind it in flight
         }
         Stakes();
         Spells();

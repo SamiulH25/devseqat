@@ -957,9 +957,9 @@ public sealed class SpriteSheet
             {
                 // Two cords and a leather pouch, hanging from the hand with a stone in it.
                 var c = new Canvas(6, 20);
-                for (int y = 0; y < 16; y++) { c.Set(1 + y / 8, y, leather, 0.2f); c.Set(4 - y / 8, y, leather, 0.4f); }
-                c.Ellipse(3, 17, 2.4f, 2.2f, leather);
-                c.Set(3, 17, Mat.Flat(new Color(150, 146, 136)));
+                for (int y = 4; y < 20; y++) { c.Set(2 - (19 - y) / 8, y, leather, 0.2f); c.Set(3 + (19 - y) / 8, y, leather, 0.4f); }
+                c.Ellipse(3, 2.6f, 2.4f, 2.2f, leather);
+                c.Set(3, 3, Mat.Flat(new Color(150, 146, 136)));
                 return c;
             }
             case "scimitar":

@@ -22,7 +22,7 @@ sealed partial class BattleScreen
     Quality quality { get => host.Quality; set => host.Quality = value; }
 
     const float CommandTimeScale = 0.25f, BlendTime = 0.45f, DoubleClick = 0.35f;
-    static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30), ArrowStreak = new(150, 146, 132);
+    static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30), ArrowStreak = new(150, 146, 132), StoneColor = new(60, 58, 54);
 
     Puppet puppet = null!;
     Hud hud = null!;

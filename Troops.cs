@@ -105,7 +105,7 @@ public static class Troops
             foreach (var u in t.UpgradesTo)
                 if (troops.TryGetValue(u, out var up) && up.Wild) yield return $"{t.Id}: men do not upgrade into {u}";
             if (t.Class == UnitClass.Archer && (t.Ammo <= 0 || t.Range <= 0)) yield return $"{t.Id}: archers need ammo and range";
-            if (Look.Ranged(t.Look.Weapon) != t.Ammo > 0) yield return $"{t.Id}: a bow needs ammo, and only bows have it";
+            if (Look.Missile(t.Look.Weapon) != t.Ammo > 0) yield return $"{t.Id}: a bow, javelin or sling needs ammo, and only they have it";
             var l = t.Look;
             if (!Look.Heads.Contains(l.Head)) yield return $"{t.Id}: unknown head {l.Head}";
             if (!Look.Faces.Contains(l.Face)) yield return $"{t.Id}: unknown face {l.Face}";

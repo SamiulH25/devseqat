@@ -160,6 +160,7 @@ sealed partial class Puppet
         }
         if (look.Plume && Detail == 0) Bill(new(0, 1.81f + art["plume" + pal].Height * Art.Px / 2 - 0.06f, -0.03f), "plume", false, 0.05f);
 
+        if (p.Armed && (p.Haul >= 0 || p.Aim && look.Weapon == "crossbow" && !u.Mounted)) { Crossbow(u, p); return; }
         var hand = Arm(1, p.ArmA, p.Yaw);
         var dir = RotY(new Vector3(0, MathF.Sin(Rad(p.WeapB)), MathF.Cos(Rad(p.WeapB))), p.Yaw);
         var off = p.TwoHand && p.Armed ? ArmTo(-1, hand - dir * 0.2f) : Arm(-1, p.OffA, 0); // both hands on the haft
@@ -193,8 +194,40 @@ sealed partial class Puppet
             if (p.Aim && u.Action != UnitAction.Recover) Span(hand, Vector3.UnitZ, "arrow", 0.2f);
             return;
         }
-        Span(hand, dir, look.Weapon, SpriteSheet.Grip[look.Weapon]);
+        var grip = Look.GripOf(look.Weapon);
+        if (grip == Grip.Thrown && u.Ammo > 1 && Detail == 0) // the rest of his javelins across his back
+            for (int i = 0; i < 2; i++) Span(new(-0.06f + i * 0.08f, 1.05f, -0.2f), Vector3.Normalize(new Vector3(0.3f - i * 0.15f, 1, -0.1f)), "javelin", 0.5f);
+        if (p.Whirl)
+        {
+            float w = Now * (9 + 9 * p.Draw) + Ease.Hash(u.Index) * 6; // round and round over his head, faster as he lets fly
+            dir = Vector3.Normalize(new Vector3(MathF.Cos(w), 0.2f, MathF.Sin(w)));
+        }
+        if (!p.Empty) Span(hand, dir, look.Weapon, SpriteSheet.Grip[look.Weapon]);
         ShieldOnArm();
+    }
+
+    /// A crossbowman's hands and bow (docs/ANIMATION_ROSTER.md A3): spanning with the prod at his feet, or the stock at his
+    /// shoulder coming up level (`Draw`), a bolt laid along it when he is aimed.
+    void Crossbow(Unit u, Pose p)
+    {
+        if (Detail == 0) Bill(new(-0.1f, 1.15f, -0.2f), "quiver", false);
+        if (u.Type.HasShield && Detail == 0 && look.Shield != "pavise") Plane(new(0.05f, 1.0f, -0.24f), -Vector3.UnitZ, $"shield.{look.Shield}");
+        if (p.Haul >= 0)
+        {
+            var down = Vector3.Normalize(new Vector3(0, -1, 0.08f)); // the prod and its stirrup at his feet, the butt at his belly
+            var butt = new Vector3(0.02f, 0.92f, 0.42f);
+            float y = MathHelper.Lerp(0.35f, 0.82f, p.Haul);
+            ArmTo(1, new Vector3(0.07f, y, 0.44f));
+            ArmTo(-1, new Vector3(-0.05f, y, 0.44f));
+            Axial(butt + down * art["crossbow" + pal].Height * Art.Px, butt, "crossbow");
+            return;
+        }
+        var dir = Vector3.Normalize(Vector3.Lerp(new Vector3(0, -0.9f, 0.45f), Vector3.UnitZ, p.Draw));
+        var at = Vector3.Lerp(new Vector3(0.12f, 0.95f, 0.15f), new Vector3(0.12f, 1.36f, 0.05f), p.Draw); // the butt to his cheek
+        ArmTo(1, at + dir * 0.12f);
+        ArmTo(-1, at + dir * 0.42f);
+        Span(at, dir, "crossbow", 0);
+        if (p.Draw > 0.95f && u.Action != UnitAction.Recover) Span(at + dir * 0.3f + Vector3.Up * 0.03f, dir, "arrow", 0);
     }
 
     /// A horse (with the rider's legs when `riderLegs`): coat parts tinted by `coat`, gear in the side's colours.

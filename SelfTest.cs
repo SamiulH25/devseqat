@@ -16,6 +16,7 @@ public static partial class SelfTest
         Check(s.Front.Y < -0.99f, "drawn line flips to face a target behind it");
 
         Charge();
+        Javelins();
         CavalryBalance();
         Flanks();
         Parry();

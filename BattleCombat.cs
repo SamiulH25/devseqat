@@ -360,7 +360,8 @@ public partial class Battle
         u.Ammo--;
         if (u.Squad != null && Time - u.Squad.LooseAt > 2.5f) Sound(Cue.Volley, Vector2.Lerp(u.Pos, at, 0.5f)); // a volley whistles overhead
         if (u.Squad != null) u.Squad.LooseAt = Time;
-        Sound(Cue.Bow, u.Pos);
+        var kind = Look.GripOf(u.Type.Look.Weapon);
+        Sound(kind is Grip.Thrown or Grip.Sling ? Cue.Throw : Cue.Bow, u.Pos);
         u.Action = UnitAction.Recover; // shows the release pose
         u.ActionTimer = 0.25f;
         float d = Vector2.Distance(u.Pos, at);
@@ -376,6 +377,7 @@ public partial class Battle
             Vel = new(h.X, 0.5f * Gravity * time + (land - from) / time, h.Y),
             Shooter = u,
             Damage = damage,
+            Kind = kind is Grip.Thrown or Grip.Sling or Grip.Crossbow ? kind : Grip.Bow,
         });
     }
 
