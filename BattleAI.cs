@@ -272,7 +272,7 @@ public partial class Battle
         float step = hold != null ? 0 : 6;
         if (reserveSquad[team] is Squad { BrokeRanks: false } r && r.Alive > 0) { r.Order = Order.Hold; r.Front = dir; r.Anchor = front - dir * 14; }
         // The line advances company by company: each goes in when it is close to the enemy company opposite it
-        // (docs/MELEE.md D4); 20 s after the first charge the rest follow.
+        // (docs/archive/MELEE.md D4); 20 s after the first charge the rest follow.
         foreach (var s in inf) if (s.Order != Order.Charge) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * lateral.GetValueOrDefault(s)); }
         // With several companies, the outermost swings out to take the end of the enemy line in the flank.
         if (inf.Count >= 3 && inf.OrderBy(s => lateral.GetValueOrDefault(s)).Last() is { Order: not Order.Charge } wing) wing.Anchor = DryAnchor(basis + dir * (step - 4 - depth.GetValueOrDefault(wing)) + side * (lateral.GetValueOrDefault(wing) + 14));

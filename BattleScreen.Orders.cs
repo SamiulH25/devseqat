@@ -94,7 +94,7 @@ partial class BattleScreen
                 var casters = Targets().Where(Battle.CasterCompany).ToList();
                 if (casters.Count > 0)
                 {
-                    // Casters hold their spells for your word, or cast at will again (docs/MAGIC_AURA.md 3.1).
+                    // Casters hold their spells for your word, or cast at will again (docs/archive/MAGIC_AURA.md 3.1).
                     bool hold = !casters[0].HoldSpells;
                     foreach (var s in casters) Send(s, q => q.HoldSpells = hold);
                     battle.Log(hold ? "Casters: hold your spells for my word!" : "Casters: cast at will!");
@@ -131,7 +131,7 @@ partial class BattleScreen
             if (ctl.Pressed(act)) Command(cmd);
     }
 
-    /// The caster you direct and the spell picked (docs/MAGIC_AURA.md 3.1). The next left click on the field casts it there.
+    /// The caster you direct and the spell picked (docs/archive/MAGIC_AURA.md 3.1). The next left click on the field casts it there.
     Squad? castBy;
     int castPick = -1;
 
@@ -161,7 +161,7 @@ partial class BattleScreen
         castPick = -1;
     }
 
-    /// Your selected longbowmen (or all of them) plant their stakes in front of their line (docs/TERRAIN.md T6).
+    /// Your selected longbowmen (or all of them) plant their stakes in front of their line (docs/archive/TERRAIN.md T6).
     void PlantStakes()
     {
         var bows = Targets().Where(s => s.Units[0].Type.Has("stakes")).ToList();

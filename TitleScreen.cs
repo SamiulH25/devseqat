@@ -78,7 +78,7 @@ sealed class TitleScreen
         ui.End();
     }
 
-    /// Where the company starts (docs/WORLD.md W5): one row per realm, its shield, its name and how its people fight.
+    /// Where the company starts (docs/archive/WORLD.md W5): one row per realm, its shield, its name and how its people fight.
     void ChooseRealm(int cx)
     {
         int rowH = U(34), w = U(420), h = U(46) + rowH * Factions.All.Count + U(40);

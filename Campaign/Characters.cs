@@ -7,7 +7,7 @@ public sealed class Character
 {
     public int Id;
     public string Name = "", Culture = "common";
-    /// "lord", "companion", "wanderer", "captain" or "knight" (a knight order's, docs/KNIGHT_ORDERS.md 6.1).
+    /// "lord", "companion", "wanderer", "captain" or "knight" (a knight order's, docs/archive/KNIGHT_ORDERS.md 6.1).
     public string Kind = "lord";
     /// A knight's order and rank in it (OrderRanks index), and his aura tier (0-5).
     public string Order = "";
@@ -32,10 +32,10 @@ public sealed class Character
     public int Command = 2, CommandBattles;
     /// How he leads a division: "Bold", "Steady" or "Cautious" ("" = from his traits).
     public string Temper = "";
-    /// A companion who rose from the ranks (docs/LEGACY.md L4): his record as a named man and the company he came from (-1: none).
+    /// A companion who rose from the ranks (docs/archive/LEGACY.md L4): his record as a named man and the company he came from (-1: none).
     public Soldier? Ranks;
     public int FromCompany = -1;
-    /// His calling in the field (docs/COMPANIONS_MAGIC.md B1; Data/companions.json), fixed when he joins; his XP from deeds and
+    /// His calling in the field (docs/archive/COMPANIONS_MAGIC.md B1; Data/companions.json), fixed when he joins; his XP from deeds and
     /// level (1-10: one talent each, a second ability at 5; Campaign/Callings.cs).
     public string Calling = "";
     public int Xp, Level;
@@ -137,7 +137,7 @@ public sealed partial class Campaign
     /// What `a` thinks of `b`, -100..100.
     public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar ? (Has("Kingmaker") ? 10 : 0) + RegardOfTraits(a) + FameRegard + AuraRegard(a) : 0), -100, 100);
 
-    /// Lords of your own realm know your aura (docs/MAGIC_AURA.md 4.3, MA8): +5 for an Aura Expert, +10 for a Master.
+    /// Lords of your own realm know your aura (docs/archive/MAGIC_AURA.md 4.3, MA8): +5 for an Aura Expert, +10 for a Master.
     float AuraRegard(Character a) => Captain.Contract < 0 || a.Faction != Captain.Contract ? 0 : Captain.AuraTier >= 4 ? 10 : Captain.AuraTier >= 3 ? 5 : 0;
 
     /// What a character thinks of you.

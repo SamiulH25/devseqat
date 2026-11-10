@@ -206,7 +206,7 @@ partial class MapScreen
         ui.Text("OR PAY FOR ONE WHEN PROMOTED.", c.X, row.Bottom + ui.U(22), Style.Dim, 1);
         if (s.Owner == C.Player.Id && Campaign.Level(s, "kennel") > 0)
         {
-            // Your kennel: war hounds join your company as a pack (docs/CREATURES.md phase 4).
+            // Your kennel: war hounds join your company as a pack (docs/archive/CREATURES.md phase 4).
             var k = new Rectangle(c.X, row.Bottom + ui.U(40), c.Width, ui.U(70));
             TownRow(k);
             PortraitWell(Troops.Get("war_hounds"), new Rectangle(k.X + ui.U(4), k.Y + ui.U(4), k.Height - ui.U(8), k.Height - ui.U(8)), 2);

@@ -5,7 +5,7 @@ namespace Ironfield;
 /// A piece of tavern talk (S5) about something real on the map: where it is, and the site it names (-1 = none).
 public sealed record Rumour(string Text, Vector2 At, int Site = -1);
 
-/// Town life (docs/SIDE_CONTENT.md S5): the tavern's rumours, tournaments fought as small real battles with blunt
+/// Town life (docs/archive/SIDE_CONTENT.md S5): the tavern's rumours, tournaments fought as small real battles with blunt
 /// weapons, and the line that says what a town is like.
 public sealed partial class Campaign
 {

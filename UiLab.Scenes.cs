@@ -425,7 +425,7 @@ sealed partial class UiLab
         ui.Rect(new Rectangle(p.X + (int)(p.Width * 0.38f) - U(2), ground - U(28), U(8), U(4)), new Color(20, 12, 14));
     }
 
-    // ---------- 10. magic and aura (docs/MAGIC_AURA.md 7) ----------
+    // ---------- 10. magic and aura (docs/archive/MAGIC_AURA.md 7) ----------
 
     void MagicPage(Rectangle a)
     {

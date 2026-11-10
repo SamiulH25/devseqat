@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: an enemy champion's aura (docs/KNIGHT_ORDERS.md 6.1, K6): an order knight leading his army, or met in a duel,
+/// Battle: an enemy champion's aura (docs/archive/KNIGHT_ORDERS.md 6.1, K6): an order knight leading his army, or met in a duel,
 /// with a pool like yours, a blade he lights when he is in reach of a foe, aura armour from tier 3, and his order's forms,
 /// fired by simple rules as mages cast (enough foes in reach, a foe ahead to leap at). Thrown forms warn as yours do.
 public partial class Battle

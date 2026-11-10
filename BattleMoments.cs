@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: moments of the aura (docs/MAGIC_AURA.md 4.6-4.8, MA7). A captain at his wall who fells an enemy champion of his
+/// Battle: moments of the aura (docs/archive/MAGIC_AURA.md 4.6-4.8, MA7). A captain at his wall who fells an enemy champion of his
 /// tier or above breaks through on the spot; two lit blades meeting start a clash of champions that the men give room to;
 /// a Transcendent's light turns curses and his blade cuts arrows from the air.
 public partial class Battle
@@ -20,7 +20,7 @@ public partial class Battle
     float clashAgain;
     public bool ClashOn => Time < ClashUntil;
 
-    /// The wonders seen in this battle, as the report tells them (docs/SPECTACLE.md S7): great workings, a wall broken, a
+    /// The wonders seen in this battle, as the report tells them (docs/archive/SPECTACLE.md S7): great workings, a wall broken, a
     /// clash of champions. Words only; at most a few, each once.
     public readonly List<string> Wonders = new();
     internal void Wonder(string line) { if (Wonders.Count < 4 && !Wonders.Contains(line)) Wonders.Add(line); }

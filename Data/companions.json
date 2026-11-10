@@ -1,5 +1,5 @@
 {
-  // Companion callings (docs/COMPANIONS_MAGIC.md B1-B3; loaded by Campaign/Callings.cs). A companion's calling is fixed when
+  // Companion callings (docs/archive/COMPANIONS_MAGIC.md B1-B3; loaded by Campaign/Callings.cs). A companion's calling is fixed when
   // he joins. In battle his company carries the calling's aura, and he uses its ability on his own (Data/abilities.json);
   // from level 5 a second one. Each level from 1 to 10 adds the next talent: an effect on the company he leads.
   "callings": [

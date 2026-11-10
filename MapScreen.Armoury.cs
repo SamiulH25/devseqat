@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// MapScreen: the armourer in a town's market (docs/PROGRESSION.md P1): this week's stock and your own gear by slot,
+/// MapScreen: the armourer in a town's market (docs/archive/PROGRESSION.md P1): this week's stock and your own gear by slot,
 /// to buy, wear, carry as a second weapon, or sell.
 partial class MapScreen
 {

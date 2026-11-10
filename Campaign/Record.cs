@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Your record (docs/SIDE_CONTENT.md S7): deeds worth remembering go in the chronicle for good (the log keeps only the last
+/// Your record (docs/archive/SIDE_CONTENT.md S7): deeds worth remembering go in the chronicle for good (the log keeps only the last
 /// sixty lines), a tally of what you did, and the summary shown when the war ends.
 public sealed partial class Campaign
 {

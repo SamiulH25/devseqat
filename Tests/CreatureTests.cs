@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Self-tests of creatures and monsters (docs/CREATURES.md): goblin holdouts on the map.
+/// Self-tests of creatures and monsters (docs/archive/CREATURES.md): goblin holdouts on the map.
 public static partial class SelfTest
 {
     /// Goblin holdouts: raised in the wilds away from settlements, hostile to all men, they grow, raid and plunder

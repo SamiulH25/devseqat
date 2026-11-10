@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// You and a knight order (docs/KNIGHT_ORDERS.md 4.4-4.5, K4): standing earned in the field, the trial of entry, the oath,
+/// You and a knight order (docs/archive/KNIGHT_ORDERS.md 4.4-4.5, K4): standing earned in the field, the trial of entry, the oath,
 /// rising through the ranks, the creed's vows, penance and casting out, the chapter's brothers and training, order contracts.
 public sealed partial class Campaign
 {

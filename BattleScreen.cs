@@ -30,7 +30,7 @@ sealed partial class BattleScreen
     AlphaTestEffect spriteFx = null!;
     BattleSetup? campaignBattle;               // the battle in progress came from the campaign map
     bool deploying;
-    /// First times on the ground (docs/TERRAIN.md T6): a river, a wood, a field with places to hide.
+    /// First times on the ground (docs/archive/TERRAIN.md T6): a river, a wood, a field with places to hide.
     void GroundTips()
     {
         var t = battle.Terrain;
@@ -42,7 +42,7 @@ sealed partial class BattleScreen
             Tips.Show("height", "High ground. Men fighting downhill hit harder, archers shoot further, and a crest hides what is behind it.\nAn enemy on good ground may wait for you to come to him.");
     }
 
-    /// First times with aura and magic (docs/MAGIC_AURA.md 7): your forms, the blade, being spent, a curse, the relic, your circle.
+    /// First times with aura and magic (docs/archive/MAGIC_AURA.md 7): your forms, the blade, being spent, a curse, the relic, your circle.
     void MagicTips()
     {
         var b = battle;
@@ -90,8 +90,8 @@ sealed partial class BattleScreen
 
     // Debug: IRONFIELD_SHOTS=/dir stages a few camera shots, saves them as PNGs and quits.
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
-    // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/MELEE.md), =magic at the magic scenes,
-    // =spectacle at the spectacle scenes (docs/SPECTACLE.md), skipping the rest.
+    // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/archive/MELEE.md), =magic at the magic scenes,
+    // =spectacle at the spectacle scenes (docs/archive/SPECTACLE.md), skipping the rest.
     int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
@@ -206,7 +206,7 @@ sealed partial class BattleScreen
             : shotDir != null ? Weather.Clear : Weather.For(rng.NextSingle() < 0.7f ? 9 + rng.Next(8) : rng.Next(2) == 0 ? 6.5f : 18.5f, rng.Next(3), seed);
         // A quick battle fills the field: about half the battle size a side (IRONFIELD_MEN=n sets the men a side).
         int men = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MEN"), out var m) ? m : Settings.Current.BattleSize / 2;
-        // IRONFIELD_AURA=tier[,order] gives the quick battle's captain an aura and forms (docs/KNIGHT_ORDERS.md), e.g. 4,rose.
+        // IRONFIELD_AURA=tier[,order] gives the quick battle's captain an aura and forms (docs/archive/KNIGHT_ORDERS.md), e.g. 4,rose.
         var aura = (Environment.GetEnvironmentVariable("IRONFIELD_AURA") ?? "").Split(',');
         int auraTier = int.TryParse(aura[0], out var at) ? Math.Clamp(at, 0, 5) : 0;
         var forms = Forms.Generic.Concat(aura.Length > 1 ? Forms.OfOrder(aura[1]) : Enumerable.Empty<FormDef>()).Where(f => f.Tier <= auraTier)
@@ -313,7 +313,7 @@ sealed partial class BattleScreen
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
         if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
         if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
-        scale *= BeatScale; // the battle's cinematic beat slows the view (docs/SPECTACLE.md S1); each tick's step is recorded
+        scale *= BeatScale; // the battle's cinematic beat slows the view (docs/archive/SPECTACLE.md S1); each tick's step is recorded
         if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);

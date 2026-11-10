@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// What a sergeant can be told to do (docs/COMBAT_OVERHAUL.md 1.2).
+/// What a sergeant can be told to do (docs/archive/COMBAT_OVERHAUL.md 1.2).
 public enum GoalKind { Hold, Take, Attack, Flank, Screen, Guard, Reserve, Harass, Pursue, FallBack, Ambush }
 
 /// How a sergeant fights: Bold charges early and chases far; Steady keeps formation and waits for contact;
@@ -62,7 +62,7 @@ public sealed class Division
     public bool Leaderless => LeaderlessSince >= 0;
 }
 
-/// Battle: divisions (docs/COMBAT_OVERHAUL.md 1.3-1.4). Each sergeant thinks every half second or so (quicker with
+/// Battle: divisions (docs/archive/COMBAT_OVERHAUL.md 1.3-1.4). Each sergeant thinks every half second or so (quicker with
 /// skill) and sets his companies' orders from his goal; the unit AI does the rest. Goals and your direct orders to his
 /// companies arrive after a delay that grows with the distance from you.
 public partial class Battle

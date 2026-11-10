@@ -107,7 +107,7 @@ public sealed class SpriteSheet
         var white = new Canvas(4, 4);
         white.Area((_, _) => true, Mat.Flat(Color.White));
         Add($"white{s}", white);
-        // A round puff for dust, smoke and mist motes (docs/MAGIC_AURA.md 6): squares read as boxes when they are large.
+        // A round puff for dust, smoke and mist motes (docs/archive/MAGIC_AURA.md 6): squares read as boxes when they are large.
         var puff = new Canvas(16, 16);
         puff.Area((x, y) => (x - 8) * (x - 8) + (y - 8) * (y - 8) <= 56, Mat.Flat(Color.White));
         Add($"puff{s}", puff);
@@ -1037,13 +1037,13 @@ public sealed class SpriteSheet
         tail.Clear(2, 1); tail.Clear(5, 1);
         Add("htail/n", tail);
 
-        // A camel (docs/WORLD.md W4) is the horse rig in a sand coat with a hump over the back.
+        // A camel (docs/archive/WORLD.md W4) is the horse rig in a sand coat with a hump over the back.
         var hump = new Canvas(24, 12);
         hump.Fill((x, y) => InEl(x, y, 12, 12, 11.5f, 11.5f), (x, y) => new Vector3((x - 12) / 12, (y - 12) / 12, 0.7f), new Mat(Style.Coat, Pattern.Hair));
         Add("hhump/n", hump);
     }
 
-    // ---------- beasts (docs/CREATURES.md) ----------
+    // ---------- beasts (docs/archive/CREATURES.md) ----------
 
     /// A wolf's parts in grey fur ("/n"); the puppet tints a dire wolf darker. Long parts run tail to nose.
     void Wolf()

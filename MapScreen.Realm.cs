@@ -66,7 +66,7 @@ partial class MapScreen
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.RealmScreen))) panel = CameFrom(PanelKind.Realm);
     }
 
-    /// THE LEGEND (docs/LEGACY.md L5-L7): each company's fame and battle honours, the honours realms have taken, the dead
+    /// THE LEGEND (docs/archive/LEGACY.md L5-L7): each company's fame and battle honours, the honours realms have taken, the dead
     /// it remembers, and the two ways to end the story once a company is legend enough.
     void Legend(Rectangle a)
     {
@@ -109,7 +109,7 @@ partial class MapScreen
     /// The three vows chosen for an order you are about to found (K8).
     readonly List<string> foundVows = new();
 
-    /// Your own order (docs/KNIGHT_ORDERS.md 8, K8): founded, its creed, form and knights, and the button to knight the next
+    /// Your own order (docs/archive/KNIGHT_ORDERS.md 8, K8): founded, its creed, form and knights, and the button to knight the next
     /// named man; or what founding needs, the vows to choose and the button to found it.
     void OwnOrderBlock(int x, int y, int w, Func<string, string> cut)
     {

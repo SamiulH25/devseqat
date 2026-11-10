@@ -3,12 +3,12 @@
   // promote along; "lines" are the troop each role fields at tiers I-VII (each entry must be an upgrade of the one before, or
   // the same troop). Troops carry their culture in troops.json; "common" troops are open to every culture.
   // A realm's "home" is where its land grows from on a new map ([x, z] from -1 to 1; -1 z is the north) and "reach" lets
-  // it grow further (map units on the original map) before its neighbours stop it (docs/WORLD.md W1). "relations" are the
-  // wars and truces a new campaign opens with. A realm's temper (docs/WORLD.md W5) multiplies the shared rules (1 = as before):
+  // it grow further (map units on the original map) before its neighbours stop it (docs/archive/WORLD.md W1). "relations" are the
+  // wars and truces a new campaign opens with. A realm's temper (docs/archive/WORLD.md W5) multiplies the shared rules (1 = as before):
   // "aggression" (wars declared, lords marching for the front), "garrison" (how full its seats are kept), "siege" (how readily its
   // lords lay siege), "tribute" (how soon it takes terms); "hunts": "monsters" sends its lords after goblins, beasts and the dead
   // first. Realms not listed in "relations" start at peace. A culture's "kin" are the cultures whose troops its men may also
-  // train as (docs/WORLD.md W3); since W4 every realm's four lines are its own culture's troops.
+  // train as (docs/archive/WORLD.md W3); since W4 every realm's four lines are its own culture's troops.
   "cultures": [
     { "id": "azure", "name": "Azure", "root": "levies", "text": "heavy foot, crossbows and lances", "flavour": "Blue roofs and quiet bells" },
     { "id": "crimson", "name": "Crimson", "root": "levies", "text": "greatswords, halberds, longbows and heavy horse", "flavour": "Red banners and loud markets" },

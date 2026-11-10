@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Campaign: the captain's household guard, the reward of rank (docs/PROGRESSION.md P5). It comes with the first oath of
+/// Campaign: the captain's household guard, the reward of rank (docs/archive/PROGRESSION.md P5). It comes with the first oath of
 /// fealty and grows with the captain's best rank: it takes no company slot and no room under the men limit, never
 /// deserts, refills itself a little each week, and follows the captain in battle.
 partial class Campaign

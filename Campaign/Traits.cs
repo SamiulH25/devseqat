@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Campaign: traits the captain earns from what they have done, and growing old (docs/PROGRESSION.md P4).
+/// Campaign: traits the captain earns from what they have done, and growing old (docs/archive/PROGRESSION.md P4).
 /// Earned traits sit on the captain's own `Character` beside nothing else; they are worked out again each week from the
 /// tally (`Record.cs`), so they can be lost as well as won.
 partial class Campaign

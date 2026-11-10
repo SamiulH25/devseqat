@@ -8,7 +8,7 @@ campaign map. The tokens it names live in code in `Style.cs`. When this document
 > **You lead a free company in person. Every man you lose was someone you knew, and every honour on the banner is one
 > you earned.**
 
-This is the one main fantasy, and everything below serves it (the plan is `docs/LEGACY.md`). The test for a feature: does it
+This is the one main fantasy, and everything below serves it (the plan is `docs/archive/LEGACY.md`). The test for a feature: does it
 make the player care more about *their* men, or let them see what they have built? Work that passes comes first.
 
 ## 1. Pillars
@@ -124,7 +124,7 @@ keep fur, spangenhelms and round shields at every tier.
   to where it was sent and draws it in again over a second; a rider carrying an order flies a little flag.
 - Hit: a brief red tint and a flinch (0.15 s). Routing: desaturated grey, arms up, weapon gone. Dead: a fall away from the blow, then the parts laid flat with blood and the weapon beside them.
 - The player's own troops never fill the camera lens (friendly sprites within 6 m of the field camera are hidden).
-- Magic and aura are rare and must read as awe (docs/SPECTACLE.md): a great working gathers (sigil, column, dark sky) and lands
+- Magic and aura are rare and must read as awe (docs/archive/SPECTACLE.md): a great working gathers (sigil, column, dark sky) and lands
   in the battle's one slowed beat; each strong working has its own strike and aftermath (scars stay all battle); each aura
   tier shows clearly more than the last. Common spells keep a light touch so the great ones stand out. Off on Low quality
   and with CINEMATIC MOMENTS off.
@@ -192,7 +192,7 @@ All widgets are extension methods on `Ui` in `UiKit.cs` (the UI lab, F3 on the t
 ## 5. Motion
 
 Motion has a job: it shows cause and effect, draws the eye to what changed, or makes a moment land. Nothing idles or wobbles
-for its own sake on the HUD, and nothing bounces. All of it is in the view: the sim never knows (docs/VISUALS.md section 3).
+for its own sake on the HUD, and nothing bounces. All of it is in the view: the sim never knows (docs/archive/VISUALS.md section 3).
 
 - **Curves:** `Ease` (Ease.cs). Windups ease in and hold at the top; strikes snap through and overshoot (`OutBack`); returns
   are `InOut`. Hit reactions are a `Kick` (fast out, slow back).

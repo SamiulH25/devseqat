@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Campaign: the ground a battle is fought on (docs/TERRAIN.md T7). The map cell gives the field's shape, the weather of the
+/// Campaign: the ground a battle is fought on (docs/archive/TERRAIN.md T7). The map cell gives the field's shape, the weather of the
 /// last days how wet it is, the season its fields; the side that was attacked, or the better scout, chooses where to stand.
 public sealed partial class Campaign
 {

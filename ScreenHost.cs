@@ -21,7 +21,7 @@ sealed class ScreenHost : Game
 
     enum Mode { Title, Map, Battle, Lab }
     Mode mode = Mode.Title;
-    // The screen last drawn and when it changed: each new screen rises out of black (docs/VISUALS.md V6).
+    // The screen last drawn and when it changed: each new screen rises out of black (docs/archive/VISUALS.md V6).
     Mode shown = Mode.Title;
     float fadeAt = -10;
     // The plate over a battle's opening fade: its name, then the ground and weather.
@@ -267,7 +267,7 @@ sealed class ScreenHost : Game
         using var file = File.Create(Path.Combine(dir, name + ".png"));
         tex.SaveAsPng(file, w, h);
         Overflow.Flush(dir, name);
-        // What the frame cost to draw, so a heavy effect shows up between runs (docs/VISUALS.md V8).
+        // What the frame cost to draw, so a heavy effect shows up between runs (docs/archive/VISUALS.md V8).
         if (mode == Mode.Battle) File.AppendAllText(Path.Combine(dir, "render.txt"), $"{name}: {battle.RenderCost}\n");
         pendingShot = null;
         battle.PendingShot = null;
@@ -445,7 +445,7 @@ sealed class ScreenHost : Game
             }
             case 29:
             {
-                // A goblin holdout (docs/CREATURES.md) at your feet.
+                // A goblin holdout (docs/archive/CREATURES.md) at your feet.
                 map.Stage("map");
                 var lair = c.Holdouts.OrderByDescending(h => h.Men).First();
                 c.Player.Pos = lair.Pos + new Vector2(2, 0);
@@ -475,7 +475,7 @@ sealed class ScreenHost : Game
             }
             case 32:
             {
-                // Sites (docs/SIDE_CONTENT.md S2): the country around a ruin, then the ruin's event.
+                // Sites (docs/archive/SIDE_CONTENT.md S2): the country around a ruin, then the ruin's event.
                 c.Encounter = null;
                 foreach (var p in c.S.Parties.Where(p => p != c.Player && p.Kind != PartyKind.Lord)) p.Down = true; // a clear view
                 var ruin = c.Sites.OrderByDescending(x => c.Sites.Count(y => Vector2.Distance(x.Pos, y.Pos) < 60)).First();
@@ -534,7 +534,7 @@ sealed class ScreenHost : Game
             case 42 when battle.Battle.Time > 3: Shot("campaign-duel"); break;
             case 43:
             {
-                // The roll (docs/LEGACY.md L1-L3): a company's named men and its fallen.
+                // The roll (docs/archive/LEGACY.md L1-L3): a company's named men and its fallen.
                 mode = Mode.Map;
                 var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
                 for (int i = 0; i < 6; i++) if (c.NameMan(co, i % 2 == 0 ? "Killed 6 against the Red Lances." : "Stood when half the company fell.") is Soldier m) { m.Battles = 3 + i * 2; m.Kills = i * 3; }
@@ -555,7 +555,7 @@ sealed class ScreenHost : Game
             }
             case 45:
             {
-                // The upgrade cards of a tier IV company: tier V choices show their attack style (docs/COMPANIONS_MAGIC.md D2).
+                // The upgrade cards of a tier IV company: tier V choices show their attack style (docs/archive/COMPANIONS_MAGIC.md D2).
                 var st = c.Player.Companies[0].Main!;
                 st.Troop = "fjord_veterans";
                 st.Xp = st.PoolCap;
@@ -566,7 +566,7 @@ sealed class ScreenHost : Game
             }
             case 46:
             {
-                // The knight orders (docs/KNIGHT_ORDERS.md K4): sworn to one, at its chapter house; then THE ORDERS on the realm screen.
+                // The knight orders (docs/archive/KNIGHT_ORDERS.md K4): sworn to one, at its chapter house; then THE ORDERS on the realm screen.
                 var o = c.S.Orders.FirstOrDefault(x => x.Patron == c.Captain.Contract) ?? c.S.Orders[0];
                 c.RaiseStanding(o.Id, 35);
                 c.Swear(o.Id);
@@ -579,7 +579,7 @@ sealed class ScreenHost : Game
             case 47: map.Stage("orders"); Shot("campaign-orders"); break;
             case 48:
             {
-                // The Black Flame on the captain sheet (docs/KNIGHT_ORDERS.md K7): the pact, corruption, a wall to burn.
+                // The Black Flame on the captain sheet (docs/archive/KNIGHT_ORDERS.md K7): the pact, corruption, a wall to burn.
                 c.S.GameOver = false; // set for the summary shot above
                 c.TakePact();
                 c.Captain.Corruption = 35;
@@ -590,7 +590,7 @@ sealed class ScreenHost : Game
             }
             case 49:
             {
-                // Your own order (docs/KNIGHT_ORDERS.md K8): the legend tab before founding (the vows to choose), then after.
+                // Your own order (docs/archive/KNIGHT_ORDERS.md K8): the legend tab before founding (the vows to choose), then after.
                 c.LeaveOrder();
                 c.Captain.Pact = false; c.Captain.Corruption = 0; c.Captain.AuraTier = 3;
                 var co = c.Player.Companies.OrderByDescending(k => k.Men).First();

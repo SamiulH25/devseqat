@@ -37,7 +37,7 @@ sealed class Ui
 
     public Ui(SpriteBatch sb, Art art, PixelFont font) { Sb = sb; this.art = art; this.font = font; }
 
-    // ---------- motion (docs/VISUALS.md V5) ----------
+    // ---------- motion (docs/archive/VISUALS.md V5) ----------
 
     /// Real time in seconds (not the sim's), set by the host each frame; every interface animation runs on it.
     public static float Now;

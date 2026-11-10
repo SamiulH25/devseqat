@@ -13,22 +13,22 @@ public sealed class BattleOptions
     /// Your Riding and Bowcraft skills (P3; a new captain has 5) and the perks you hold that act in battle.
     public float Riding = 5, Bowcraft = 5;
     public HashSet<string> Perks = new();
-    /// The captain's aura tier (docs/KNIGHT_ORDERS.md 5.1): 0 unawakened, 1 kindled, 2 aura blade, 3 aura armour, 4 master, 5 transcendent.
+    /// The captain's aura tier (docs/archive/KNIGHT_ORDERS.md 5.1): 0 unawakened, 1 kindled, 2 aura blade, 3 aura armour, 4 master, 5 transcendent.
     public int AuraTier;
-    /// The captain's forms in slot order (docs/KNIGHT_ORDERS.md 5.6): the first three that are not great go on U, I, O; the first
+    /// The captain's forms in slot order (docs/archive/KNIGHT_ORDERS.md 5.6): the first three that are not great go on U, I, O; the first
     /// great one on L. Their ranks (1-3) by id.
     public string[] Forms = Array.Empty<string>();
     public Dictionary<string, int> FormRanks = new();
-    /// The aspect each form has taken (form id -> aspect id, docs/MAGIC_AURA.md 4.5).
+    /// The aspect each form has taken (form id -> aspect id, docs/archive/MAGIC_AURA.md 4.5).
     public Dictionary<string, string> FormAspects = new();
     /// Your own form (MA6), carried whole so the battle (and its replay) does not need the campaign's registry.
     public FormDef? OwnForm;
     /// You stand at your aura's wall: felling a champion of your tier or above breaks it in the field (MA7).
     public bool AtWall;
-    /// The enemy leader's aura tier and forms (an order knight, a champion: docs/KNIGHT_ORDERS.md 6.1, K6; BattleChampion.cs).
+    /// The enemy leader's aura tier and forms (an order knight, a champion: docs/archive/KNIGHT_ORDERS.md 6.1, K6; BattleChampion.cs).
     public int EnemyAura;
     public string[] EnemyForms = Array.Empty<string>();
-    /// The Black Flame's hold on you (docs/KNIGHT_ORDERS.md 7, K7): a chance a second that it takes you (0 = never; BattleFlame.cs).
+    /// The Black Flame's hold on you (docs/archive/KNIGHT_ORDERS.md 7, K7): a chance a second that it takes you (0 = never; BattleFlame.cs).
     public float Madness;
     /// The captain's lasting wounds (P4); the battle reads "eye" (a shorter parry window).
     public HashSet<string> Wounds = new();
@@ -108,7 +108,7 @@ public sealed record CompanyResult(int Team, int Id, int Start, int Standing, in
     IReadOnlyList<StackResult>? Stacks = null, int HorseKills = 0, bool Routed = false, bool HeroFell = false,
     IReadOnlyList<NamedResult>? Named = null, int BestKills = 0, string BestTroop = "", bool BestFelledLeader = false);
 
-/// What one named man did in a fought battle (docs/LEGACY.md L2): his kills, and whether he fell or fled. Null on a
+/// What one named man did in a fought battle (docs/archive/LEGACY.md L2): his kills, and whether he fell or fled. Null on a
 /// CompanyResult when the battle was not fought (auto-resolve): then named men share their stack's odds instead.
 /// BestKills/BestTroop on the CompanyResult are the company's best unnamed man, who may earn a name.
 public sealed record NamedResult(int Id, int Kills, bool Fell, bool Fled, bool FelledLeader, bool Saved = false);
@@ -127,17 +127,17 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     public IReadOnlyList<string> GoalsMet { get; init; } = Array.Empty<string>();
     /// Each goal's text as shown (a goal about a named man carries his name), in the order of Goals.
     public IReadOnlyList<string> GoalTexts { get; init; } = Array.Empty<string>();
-    /// Omen your side's craft raised (docs/COMPANIONS_MAGIC.md C2).
+    /// Omen your side's craft raised (docs/archive/COMPANIONS_MAGIC.md C2).
     public float Omen { get; init; }
-    /// Uses of each of your forms (they rank up on the map) and the Black Flame's corruption raised (docs/KNIGHT_ORDERS.md).
+    /// Uses of each of your forms (they rank up on the map) and the Black Flame's corruption raised (docs/archive/KNIGHT_ORDERS.md).
     public IReadOnlyDictionary<string, int> FormUses { get; init; } = new Dictionary<string, int>();
     public float Corruption { get; init; }
     /// How often the Black Flame took you this battle (K7).
     public int MadSpells { get; init; }
-    /// You raised the relic in this battle (docs/MAGIC_AURA.md 3.4): it costs a charge more.
+    /// You raised the relic in this battle (docs/archive/MAGIC_AURA.md 3.4): it costs a charge more.
     public bool RelicRaised { get; init; }
-    /// Your wall broke in the fight (docs/MAGIC_AURA.md 4.6).
+    /// Your wall broke in the fight (docs/archive/MAGIC_AURA.md 4.6).
     public bool BrokeThrough { get; init; }
-    /// The wonders the men saw (docs/SPECTACLE.md S7): great workings, a wall broken, a clash. Lines for the report.
+    /// The wonders the men saw (docs/archive/SPECTACLE.md S7): great workings, a wall broken, a clash. Lines for the report.
     public IReadOnlyList<string> Wonders { get; init; } = Array.Empty<string>();
 }

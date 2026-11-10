@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Single combat before a battle (docs/PROGRESSION.md P2): challenge a lord to meet you between the armies. Win and his men
+/// Single combat before a battle (docs/archive/PROGRESSION.md P2): challenge a lord to meet you between the armies. Win and his men
 /// start the battle shaken; lose and you fight it wounded, commanding from the rear.
 public sealed partial class Campaign
 {

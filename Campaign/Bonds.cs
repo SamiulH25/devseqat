@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Companions as people (docs/COMPANIONS_MAGIC.md B4, B5): they approve or not of what you do (their opinion of you, with
+/// Companions as people (docs/archive/COMPANIONS_MAGIC.md B4, B5): they approve or not of what you do (their opinion of you, with
 /// its memories as the reasons), quarrel, swear brotherhood, have a story to settle, teach a student, and may leave.
 /// No dice here: quarrels come on a fixed day of each pair's fortnight, so the campaign's draws stay as they were.
 public sealed partial class Campaign

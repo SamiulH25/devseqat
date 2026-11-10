@@ -16,7 +16,7 @@ public sealed class Pilot
     public readonly Dictionary<string, int> StageDay = new();
     float nextThink;
 
-    /// The realm the company started in (docs/WORLD.md W5): the pilot takes service there.
+    /// The realm the company started in (docs/archive/WORLD.md W5): the pilot takes service there.
     readonly int StartRealm;
 
     public Pilot(Campaign campaign)

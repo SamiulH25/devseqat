@@ -2,7 +2,7 @@
 
 Status: **built (F0-F9).** This spec replaces the campaign's play and progression layer: how companies are built and
 grown, how the captain rises, how lords, fiefs and realms behave, and what ends a campaign. The world map itself (generation,
-terrain, rendering) is out of scope. Where this text and [`CAMPAIGN.md`](CAMPAIGN.md) disagree, this text wins once the
+terrain, rendering) is out of scope. Where this text and [`CAMPAIGN.md`](../CAMPAIGN.md) disagree, this text wins once the
 matching F step is built; until then `CAMPAIGN.md` describes the game as it is. Numbers marked *(tune)* are starting values.
 
 **All steps built** (`ROADMAP.md` phase F). F0 added pacing telemetry: `--balance` runs a scripted stand-in captain

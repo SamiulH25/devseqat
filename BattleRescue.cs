@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: fighting for your named men (docs/LEGACY.md L8). A named man of yours who falls can be got out of the press:
+/// Battle: fighting for your named men (docs/archive/LEGACY.md L8). A named man of yours who falls can be got out of the press:
 /// stand over him (within RescueReach) for RescueTime while the fighting goes on, within RescueWindow of his fall, and he is
 /// carried off wounded instead of dying. One of them may be the battle's ward: the goal "bring him home".
 partial class Battle

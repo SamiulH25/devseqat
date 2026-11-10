@@ -3,7 +3,7 @@
 // Field: x = 1 / ground-map size in metres, y = ground map on (1), z = cloud shadow strength, w = wetness.
 // Look: x = snow cover, y = close-up ground detail on (1), z = night (0 day .. 1 full night), w = rain.
 
-// Cheap value noise (docs/VISUALS.md V4): mottled ground, patches, puddles, cloud shadows.
+// Cheap value noise (docs/archive/VISUALS.md V4): mottled ground, patches, puddles, cloud shadows.
 float Hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float Noise2(vec2 p)
 {
@@ -56,7 +56,7 @@ vec3 TorchLight(vec3 w)
     return vec3(1.0, 0.6, 0.28) * Torch.z * flick * 7.0 / (d2 + 3.0) * (1.0 - smoothstep(60.0, 150.0, d2));
 }
 
-// Moving lights (docs/SPECTACLE.md S1): up to four a frame, picked by the battle screen (a smite's pillar, a bolt, fire,
+// Moving lights (docs/archive/SPECTACLE.md S1): up to four a frame, picked by the battle screen (a smite's pillar, a bolt, fire,
 // a Transcendent captain). Glow: xyz = place, w = strength (negative takes light away: the Black Flame). GlowCol: rgb =
 // colour, w = reach in metres; the light falls off smoothly and is gone by three times the reach.
 vec3 OneGlow(vec3 w, vec4 g, vec4 c)

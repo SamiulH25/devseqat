@@ -67,7 +67,7 @@ partial class MapScreen
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "CLOSE", note: ctl.Name(Act.LordsScreen))) panel = CameFrom(PanelKind.Characters);
     }
 
-    /// A companion's sheet in one line (docs/COMPANIONS_MAGIC.md B1-B5): calling and what it does, abilities, talents,
+    /// A companion's sheet in one line (docs/archive/COMPANIONS_MAGIC.md B1-B5): calling and what it does, abilities, talents,
     /// XP to the next level, his story, his sworn brother and his student.
     string CompanionNote(Character ch)
     {
@@ -174,7 +174,7 @@ partial class MapScreen
 
     static string GoalText(string g) => g switch { "FlankLeft" => "FLANK LEFT", "FlankRight" => "FLANK RIGHT", _ => g.ToUpperInvariant() };
 
-    /// Divisions (docs/COMBAT_OVERHAUL.md 1.5): group companies under a companion or a sergeant, who leads them in battle
+    /// Divisions (docs/archive/COMBAT_OVERHAUL.md 1.5): group companies under a companion or a sergeant, who leads them in battle
     /// by goals and hears your orders late. Companies in no division are your retinue: they obey you at once.
     void DivisionsPanel()
     {

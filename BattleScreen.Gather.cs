@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// BattleScreen: the gathering (docs/SPECTACLE.md S2). Every cast with a warning gathers before it lands: a circle of its
+/// BattleScreen: the gathering (docs/archive/SPECTACLE.md S2). Every cast with a warning gathers before it lands: a circle of its
 /// tradition's marks draws itself round the spot and spins up at the end (the warning stays honest: its radius is the
 /// working's), motes and dust are pulled in to the caster and a column of light rises over him. A great working also
 /// darkens the sky, stills the wind, swells a low tone and asks for the battle's beat so it lands in slow time.

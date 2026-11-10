@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Effects on the map (docs/COMPANIONS_MAGIC.md A5): buffs your company carries for a few days and into every battle
+/// Effects on the map (docs/archive/COMPANIONS_MAGIC.md A5): buffs your company carries for a few days and into every battle
 /// (`BattleOptions.Standing`), and the Omen that craft draws (C2).
 public sealed partial class Campaign
 {

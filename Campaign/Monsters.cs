@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Campaign: creatures of the wild (docs/CREATURES.md). Goblin holdouts sit in forest and hill country, grow, hoard
+/// Campaign: creatures of the wild (docs/archive/CREATURES.md). Goblin holdouts sit in forest and hill country, grow, hoard
 /// and send raiders at villages; a holdout is a monster party that never moves (Party.Lair), so fighting it is a field
 /// battle and auto-resolve like any other. Wolf packs roam the forests and hunt by night. Trolls are the rare monsters:
 /// a few in the world, each sleeping out the day and hunting anything it can beat by night. MonstersDaily runs from

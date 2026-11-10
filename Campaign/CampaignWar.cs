@@ -28,7 +28,7 @@ public sealed partial class Campaign
         if (Player.Companies.Count >= Rules.CompanySlots(Captain)) return "NO FREE COMPANY";
         var c = NewCompany(g.Troop, role, n, 0);
         c.Cohesion = 0;
-        bool thralls = Troops.Get(g.Troop).Wild; // captured goblins, put to work (docs/CREATURES.md phase 4)
+        bool thralls = Troops.Get(g.Troop).Wild; // captured goblins, put to work (docs/archive/CREATURES.md phase 4)
         c.Name = thralls ? "Goblin Thralls" : "Turncoat " + c.Name.Split(' ').Last();
         Player.Companies.Add(c);
         g.Count -= n;

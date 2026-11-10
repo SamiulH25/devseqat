@@ -130,7 +130,7 @@ public static class Troops
             if (m.Barding is not ("saddle" or "caparison" or "wolf" or "camel")) yield return $"{m.Id}: unknown barding {m.Barding}";
     }
 
-    /// A higher tier is always better (docs/COMPANIONS_MAGIC.md D0). An upgrade that keeps its class, weapon and shield
+    /// A higher tier is always better (docs/archive/COMPANIONS_MAGIC.md D0). An upgrade that keeps its class, weapon and shield
     /// must lose no hp, damage, armour or block (nor range or pierce, for a bow) and gain in at least two of the four.
     /// An upgrade that changes role (levies to bowmen, shieldmen to greatswords) is held to SelfTest.TroopTree's power sum
     /// and the fight in SelfTest.HigherTierWins instead. Null = fine, else what fell.
@@ -162,7 +162,7 @@ public static class Troops
 /// Id and Name tie it to the campaign's CompanyRecord (0 = a one-off battle); Morale is its starting morale.
 /// Troop is the company's face (its largest stack) and Count its total; Mix lists every stack (troop, men) when the company
 /// holds more than one troop type (CAMPAIGN_OVERHAUL.md 2.3). RoutBonus and VsMounted come from its honours.
-/// A named man of a company (docs/LEGACY.md L2): placed as a real unit of his troop, his fate handed back by id.
+/// A named man of a company (docs/archive/LEGACY.md L2): placed as a real unit of his troop, his fate handed back by id.
 public sealed record NamedSpec(int Id, string Troop, string Name);
 
 public sealed record Company(string Troop, int Count, string Role = "", int Id = 0, string Name = "", float Morale = 70, string[]? Traits = null, bool Allied = false,
@@ -180,7 +180,7 @@ public sealed record StackSpec(string Troop, int Count);
 
 public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Companies, IReadOnlyList<DivisionSpec>? Divisions = null);
 
-/// A division (docs/COMBAT_OVERHAUL.md 1): companies whose Company.Division is Id, led by a sergeant who pursues a goal.
+/// A division (docs/archive/COMBAT_OVERHAUL.md 1): companies whose Company.Division is Id, led by a sergeant who pursues a goal.
 /// Leader names the companion fighting as a company's Hero, if one leads it; Temper is "Bold", "Steady" or "Cautious";
 /// Skill (0-10) is his Command skill; Goal is the goal he starts the battle with (a GoalKind name); LeadCompany, when
 /// Leader is empty, is the company his best man is picked from (a sergeant leading from his own company).
@@ -228,7 +228,7 @@ public static class Armies
         return new ArmySpec(team == 1 ? "Crimson host" : "Azure company", level, list);
     }
 
-    /// Split a big army into divisions under sergeants (docs/COMBAT_OVERHAUL.md 1.6): the horse rides a wing, the foot
+    /// Split a big army into divisions under sergeants (docs/archive/COMBAT_OVERHAUL.md 1.6): the horse rides a wing, the foot
     /// is cut into a left and a right battle, and the middle of the foot, the bows and the allies stay with the captain.
     /// Armies under 240 men or 6 companies are left whole; an army that already has divisions is not touched.
     public static ArmySpec Divide(ArmySpec army)
@@ -260,7 +260,7 @@ public static class Armies
     static ArmySpec Make(string name, int level, int[] tiers, bool enemy) =>
         new(name, level, Lines.Select((l, i) => new Company(l.ByTier[tiers[i] - 1], Count(l.Base, l.ByTier[tiers[i] - 1], enemy), l.Role)).ToList());
 
-    /// A culture's mage at a tier (IV-VI, clamped; docs/COMPANIONS_MAGIC.md E1); Acolytes where it has no line.
+    /// A culture's mage at a tier (IV-VI, clamped; docs/archive/COMPANIONS_MAGIC.md E1); Acolytes where it has no line.
     public static string MageTroop(string culture, int tier) =>
         Troops.All.Where(t => t.Class == UnitClass.Caster && t.Culture == culture && t.Tier == Math.Clamp(tier, 4, 6)).Select(t => t.Id).FirstOrDefault() ?? "acolytes";
 

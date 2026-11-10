@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Your circle of mages on the map (docs/MAGIC_AURA.md 3.2-3.3): its spellbook (spells known beyond its line's, the ones
+/// Your circle of mages on the map (docs/archive/MAGIC_AURA.md 3.2-3.3): its spellbook (spells known beyond its line's, the ones
 /// prepared for the next battle) and its master, a named man who rises with battles and whose fall leaves it leaderless.
 public sealed partial class Campaign
 {

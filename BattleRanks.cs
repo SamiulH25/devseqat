@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: companies fight from their ranks (docs/MELEE.md D3). Each man keeps his place for the battle; a death moves the
+/// Battle: companies fight from their ranks (docs/archive/MELEE.md D3). Each man keeps his place for the battle; a death moves the
 /// man behind into the gap; a charging company closes as a body; the front rank fights while the ranks behind wait.
 public partial class Battle
 {

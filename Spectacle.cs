@@ -2,10 +2,10 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The kinds of cinematic beat, lowest first: a higher one may cut into a lower one that is running (docs/SPECTACLE.md S1).
+/// The kinds of cinematic beat, lowest first: a higher one may cut into a lower one that is running (docs/archive/SPECTACLE.md S1).
 public enum BeatKind { None, Charge, FoeWorking, OwnWorking, Clash, Breakthrough }
 
-/// The battle's one cinematic beat (docs/SPECTACLE.md rule 6): a slowed view, bars top and bottom, a quieter field.
+/// The battle's one cinematic beat (docs/archive/SPECTACLE.md rule 6): a slowed view, bars top and bottom, a quieter field.
 /// Drawing only; it runs on the screen's real clock. One beat a battle, first come first served, except that a higher kind
 /// may take over a lower one while it runs. Headless so the self-test can check the rule.
 public sealed class Beats

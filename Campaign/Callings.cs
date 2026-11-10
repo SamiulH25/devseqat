@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Ironfield;
 
-/// A companion's calling from Data/companions.json (docs/COMPANIONS_MAGIC.md B1-B3): the aura on the company he leads, his
+/// A companion's calling from Data/companions.json (docs/archive/COMPANIONS_MAGIC.md B1-B3): the aura on the company he leads, his
 /// ability (and a second from level 5), and one talent (an effect on his company) for each level.
 public sealed class CallingDef
 {
@@ -42,7 +42,7 @@ public static class Callings
     }
 }
 
-/// Companions in the field (docs/COMPANIONS_MAGIC.md B1-B3): callings, XP and levels, what a companion brings into battle,
+/// Companions in the field (docs/archive/COMPANIONS_MAGIC.md B1-B3): callings, XP and levels, what a companion brings into battle,
 /// and the champions enemy lords bring.
 public sealed partial class Campaign
 {

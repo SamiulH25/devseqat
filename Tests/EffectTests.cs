@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Self-tests of effects and passive traits (docs/COMPANIONS_MAGIC.md Part A, D3; Effects.cs, BattleEffects.cs).
+/// Self-tests of effects and passive traits (docs/archive/COMPANIONS_MAGIC.md Part A, D3; Effects.cs, BattleEffects.cs).
 public static partial class SelfTest
 {
     /// A troop with its stats and style but no passive traits.

@@ -35,7 +35,7 @@ public sealed partial class Campaign
         }
     }
 
-    /// How full a realm keeps its garrisons (its temper, docs/WORLD.md W5); towns and castles of no realm as the rule says.
+    /// How full a realm keeps its garrisons (its temper, docs/archive/WORLD.md W5); towns and castles of no realm as the rule says.
     static float GarrisonTemper(Settlement s) => s.Faction >= 0 ? Factions.Get(s.Faction).Garrison : 1;
 
     /// The garrison as a party for a battle; it shares the settlement's company list, so losses stick.

@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The captain's armoury (docs/PROGRESSION.md P1): owning, buying, selling and wearing gear from Data/gear.json.
+/// The captain's armoury (docs/archive/PROGRESSION.md P1): owning, buying, selling and wearing gear from Data/gear.json.
 public sealed partial class Campaign
 {
     /// What the armourer pays back for a piece you sell.

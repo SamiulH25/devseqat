@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// How the blows of the best troops land (docs/COMPANIONS_MAGIC.md D2). All passive: the men fight this way on their own.
+/// How the blows of the best troops land (docs/archive/COMPANIONS_MAGIC.md D2). All passive: the men fight this way on their own.
 public enum AttackStyle { None, Crush, Sweep, Riposte, Bash, Thrust, HoldOff, RideDown, CutWheel, Plunge, QuickLoose, Punch }
 
 /// Battle: attack styles of tier V-VII troops. Each style hooks one place in the damage path (BattleCombat.cs) and

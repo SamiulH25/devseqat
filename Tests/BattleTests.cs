@@ -5,7 +5,7 @@ namespace Ironfield;
 /// Self-tests of the battle sim: mechanics scenarios (charges, parries, flanks, cavalry, ranged), troops, sprites, full battles, replays.
 public static partial class SelfTest
 {
-    /// Animation curves and poses (docs/VISUALS.md V1-V2): easing keeps its ends, a windup ends raised, a strike overshoots,
+    /// Animation curves and poses (docs/archive/VISUALS.md V1-V2): easing keeps its ends, a windup ends raised, a strike overshoots,
     /// and the drawn pose never touches the sim (a killed man only remembers where the blow came from).
     static void Animation()
     {
@@ -464,7 +464,7 @@ public static partial class SelfTest
         Check(w.Night && w.Vision <= 40 && w.Spread > 1.5f && w.MudFactor < 1, "night and rain blind archers and bog horses");
     }
 
-    /// The ground layer (docs/TERRAIN.md T0): the data validates, the same seed gives the same ground, and the layer marks
+    /// The ground layer (docs/archive/TERRAIN.md T0): the data validates, the same seed gives the same ground, and the layer marks
     /// what is on the field: water and fords on the river, the road, the woods; grass on a flat test field.
     static void GroundLayer()
     {
@@ -489,7 +489,7 @@ public static partial class SelfTest
         Check(b.Recording!.TerrainVersion == Terrain.Version && Replay.Deserialize("{\"Seed\":1}").TerrainVersion == 0, "a replay keeps the ground version it was made on");
     }
 
-    /// Ground that changes how men move (docs/TERRAIN.md T1): a wood slows horse far more than foot, a road is quick,
+    /// Ground that changes how men move (docs/archive/TERRAIN.md T1): a wood slows horse far more than foot, a road is quick,
     /// mud tires an armoured man, a slope tells on a horse more than on a man.
     static void GroundMoves()
     {
@@ -519,7 +519,7 @@ public static partial class SelfTest
         Check(Battle.SlopeFactor(t, steep, up, true) < Battle.SlopeFactor(t, steep, up), "a horse feels a climb more than a man");
     }
 
-    /// Ground that changes how men fight (docs/TERRAIN.md T1): spears in a wood cannot brace, a horse on stones stumbles
+    /// Ground that changes how men fight (docs/archive/TERRAIN.md T1): spears in a wood cannot brace, a horse on stones stumbles
     /// (and the same seed stumbles the same way), high ground is a smooth curve, a downhill charge hits harder,
     /// height carries arrows further.
     static void GroundFights()
@@ -557,7 +557,7 @@ public static partial class SelfTest
         Check(Battle.HeightRange(0) == 1 && Battle.HeightRange(-5) == 1 && Battle.HeightRange(3) > 1 && Battle.HeightRange(50) == 1.25f, "height carries arrows further, up to a quarter");
     }
 
-    /// Fields built to a layout (docs/TERRAIN.md T2): the deployment ground stays clear at every size of battle, a ridge
+    /// Fields built to a layout (docs/archive/TERRAIN.md T2): the deployment ground stays clear at every size of battle, a ridge
     /// rises in front of one army, two hills stand on the wings, broken ground is stony and the fen is mud.
     static void Layouts()
     {
@@ -587,7 +587,7 @@ public static partial class SelfTest
         Check(new Terrain(13, TerrainParams.Meadow with { Layouts = null }).Layout == FieldLayout.Open, "no layouts means an open field");
     }
 
-    /// Line features and the rest of the layouts (docs/TERRAIN.md T2): a hedge stops a man except at its gaps, a road over
+    /// Line features and the rest of the layouts (docs/archive/TERRAIN.md T2): a hedge stops a man except at its gaps, a road over
     /// a river gets a bridge you can walk across dry-shod, a village has houses and fences, a pass has high sides, and a
     /// company in a wood opens its ranks.
     static void HedgesAndBridges()
@@ -657,7 +657,7 @@ public static partial class SelfTest
         }
     }
 
-    /// Sight and cover (docs/TERRAIN.md T3): a wood soaks up arrows, a hedge stops flat shots, a crest hides what is behind
+    /// Sight and cover (docs/archive/TERRAIN.md T3): a wood soaks up arrows, a hedge stops flat shots, a crest hides what is behind
     /// it, men in a wood are unseen from afar, and a hidden company that is found close to the enemy is an ambush.
     static void SightAndCover()
     {
@@ -727,7 +727,7 @@ public static partial class SelfTest
         Check(m.Settlements.All(s => m.RiverDist(s.Pos) > 4), "no settlement stands in a river");
     }
 
-    /// The AI reads the ground (docs/TERRAIN.md T5): on a ridge, the side on the crest lets the other come up to it, and
+    /// The AI reads the ground (docs/archive/TERRAIN.md T5): on a ridge, the side on the crest lets the other come up to it, and
     /// still fights to a result.
     static void HoldsTheCrest()
     {
@@ -813,7 +813,7 @@ public static partial class SelfTest
         Check(b.Winner >= 0, "a battle on a river line resolves");
     }
 
-    /// Tools for the player (docs/TERRAIN.md T6): the ground's line, order warnings, stakes, and the Pathfinder perk.
+    /// Tools for the player (docs/archive/TERRAIN.md T6): the ground's line, order warnings, stakes, and the Pathfinder perk.
     static void GroundForThePlayer()
     {
         Check(Grounds.Describe(GroundKind.Grass) == "GRASS. GOOD GOING.", "plain grass is good going");
@@ -890,7 +890,7 @@ public static partial class SelfTest
         Check(finder < plain * 0.93f, "Pathfinder men cross a wood quicker");
     }
 
-    /// Pathing (docs/TERRAIN.md T4): an order across a river goes by the ford when one is near, rather than wading the deep.
+    /// Pathing (docs/archive/TERRAIN.md T4): an order across a river goes by the ford when one is near, rather than wading the deep.
     static void GoesToFord()
     {
         var g = TerrainParams.Meadow with { River = true, Road = false, Layouts = new[] { FieldLayout.Open } };
@@ -1201,7 +1201,7 @@ public static partial class SelfTest
         Console.WriteLine($"stack battle: {(report.Won ? "won" : "lost")}, {co.Name} {before} -> {co.Men}+{co.Wounded}W [{string.Join(", ", cr.Stacks.Select(st => $"{st.Troop} {st.Start}->{st.Standing}"))}]");
     }
 
-    /// Named men in battle (docs/LEGACY.md L2): placed as real units, their kills and fates come back by id and reach the roll,
+    /// Named men in battle (docs/archive/LEGACY.md L2): placed as real units, their kills and fates come back by id and reach the roll,
     /// the company's best man may earn a name, and a battle with named men replays exactly.
     static void NamedMenFight()
     {
@@ -1269,7 +1269,7 @@ public static partial class SelfTest
         Check(lost > 0, "auto-resolving a lost fight costs named men too");
     }
 
-    /// Fighting for your men (docs/LEGACY.md L8): a fallen named man you stand over is got out (saved), which the result
+    /// Fighting for your men (docs/archive/LEGACY.md L8): a fallen named man you stand over is got out (saved), which the result
     /// carries; the "bring him home" goal names him and is lost if he dies; your named men are heard in the log.
     static void PullBack()
     {
@@ -1344,7 +1344,7 @@ public static partial class SelfTest
         Check(l.Dead || l.Hp < l.Type.MaxHp, "braced spears hurt a charging lancer");
     }
 
-    /// Battle scale (docs/COMBAT_OVERHAUL.md 2.7): a 1,200-man battle deploys without companies on top of each other,
+    /// Battle scale (docs/archive/COMBAT_OVERHAUL.md 2.7): a 1,200-man battle deploys without companies on top of each other,
     /// stays on a wider field, runs well under a frame per tick, and replays exactly.
     static void ScaleBattle()
     {
@@ -1379,10 +1379,10 @@ public static partial class SelfTest
         Check(rec.Winner == again.Winner && again.Units.Count(u => u.Dead) == rec.Dead, "a big battle replays exactly");
     }
 
-    /// Divisions (docs/COMBAT_OVERHAUL.md 1.8): goals arrive late and a newer one cancels an older; a Hold goal keeps the
+    /// Divisions (docs/archive/COMBAT_OVERHAUL.md 1.8): goals arrive late and a newer one cancels an older; a Hold goal keeps the
     /// division near its ground; Flank swings wide and hits a side; a fallen sergeant is replaced; direct orders wait
     /// for the delay too; and a battle with divisions and goals replays exactly.
-    /// Orders ride out as couriers (docs/COMBAT_OVERHAUL.md 1.4): a rider who meets the enemy on the road is cut down and
+    /// Orders ride out as couriers (docs/archive/COMBAT_OVERHAUL.md 1.4): a rider who meets the enemy on the road is cut down and
     /// the order lands later; with couriers off the same order lands on time.
     static void Couriers()
     {

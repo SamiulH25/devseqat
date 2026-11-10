@@ -219,7 +219,7 @@ separation, terrain and walls. Keep that split when adding behaviour.
    lunges a little (rabble far), the second rank less, the rest hold their places and step up when a man falls; a drilled man
    raises his guard against a blow he sees coming (`Guard`). Broken companies, mobs and beasts close and fight each for himself.
 
-**Drill and order (docs/MELEE.md, BattleDrill.cs).** `Squad.Drill` (0-1, from the troop tier, cohesion, officer, companion,
+**Drill and order (docs/archive/MELEE.md, BattleDrill.cs).** `Squad.Drill` (0-1, from the troop tier, cohesion, officer, companion,
 sergeant) is fixed for the battle and gives the `Grade` (Rabble < 0.30 < Trained < 0.56 < Veteran < 0.85 < Elite).
 `Squad.Formed` (0-1) falls with a long run, losses, flank hits, a melee (rabble only) and bad ground, and comes back out of
 contact (veterans also in it); under 0.4 the company is `Broken` until 0.55. Men read `Discipline = Drill x Formed`.
@@ -310,7 +310,7 @@ A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a 
 - **Replays:** goals you give are recorded (`Frame.Goals`) and re-issued on playback; the AI's are recomputed. Direct orders
   are recorded when they land, as ordinary order changes.
 
-### 4.10 Ground (docs/TERRAIN.md)
+### 4.10 Ground (docs/archive/TERRAIN.md)
 
 The field has three layers on top of the height map. Each 2.5 m cell has a `GroundKind` (`TerrainGround.cs`, rules per
 kind in `Data/ground.json`: pace for foot and horse, tiring, formation order, charge, reach, cover, stumbling). Line features
@@ -425,7 +425,7 @@ The UI calls it as `note = C.BuyHorses(s, 1) ?? "BOUGHT";`.
 
 ### 5.6 The layers
 
-The campaign was built in steps F1-F9 (see `docs/CAMPAIGN_OVERHAUL.md`); each layer is one file:
+The campaign was built in steps F1-F9 (see `docs/archive/CAMPAIGN_OVERHAUL.md`); each layer is one file:
 
 | Layer | File | Core ideas |
 |---|---|---|

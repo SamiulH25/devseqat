@@ -7,7 +7,7 @@ namespace Ironfield;
 /// plus what changes (ownership, recruits, parties).
 public sealed class WorldMap
 {
-    /// Where provinces live on a new map; mountains fill the rim out to the terrain's edge (about 930 km across, docs/WORLD.md W2).
+    /// Where provinces live on a new map; mountains fill the rim out to the terrain's edge (about 930 km across, docs/archive/WORLD.md W2).
     public const float Extent = 620;
     /// The extent of the map before W2 (about 590 km across): saves made on it keep it (CampaignState.MapExtent).
     public const float PreviousExtent = 392;
@@ -37,7 +37,7 @@ public sealed class WorldMap
     public readonly List<(Vector2 A, Vector2 B)> Roads = new();
     /// Rivers wind across the land (two; four on a layout-2 map); where a road meets one there is a bridge (a ford on the battlefield).
     public readonly List<River> Rivers = new();
-    /// Places of interest between the settlements (docs/SIDE_CONTENT.md S2): ruins, shrines, mines and the rest.
+    /// Places of interest between the settlements (docs/archive/SIDE_CONTENT.md S2): ruins, shrines, mines and the rest.
     public readonly List<Site> Sites = new();
     /// Mountain ridges inside the land (layout 2): high, slow ground, crossed by road at passes (Path = the crest, Width =
     /// how far its slopes reach, Fords = the passes). Old maps have none.
@@ -52,7 +52,7 @@ public sealed class WorldMap
     public float ProvinceScale => MathF.Max(0.1f, Provinces.Count / (float)LegacyProvinces);
     /// How many parties (lords, brigands, pilgrims) the world raises against the original map. Up to the pre-W2 map it is
     /// ProvinceScale; past it the count follows the land's area, so a bigger map is as crowded per league as that one was
-    /// (provinces spread out as the map grows, and parties counted by province grew sparse; docs/WORLD.md W2).
+    /// (provinces spread out as the map grows, and parties counted by province grew sparse; docs/archive/WORLD.md W2).
     public float PartyScale => ExtentUsed <= PreviousExtent + 1 ? ProvinceScale
         : PreviousProvinces / (float)LegacyProvinces * (ExtentUsed / PreviousExtent) * (ExtentUsed / PreviousExtent);
     /// About how many provinces the pre-W2 map had (the anchor PartyScale grows from).
@@ -73,7 +73,7 @@ public sealed class WorldMap
 
     /// The map a fresh campaign uses. `extent` is half the side the provinces may use (Extent for new campaigns,
     /// LegacyExtent for saves made before the map grew), so a save keeps the geography it was played on.
-    /// How the map is laid out: 0 = the original three realms by fixed bands (every save from before docs/WORLD.md W1 keeps it),
+    /// How the map is laid out: 0 = the original three realms by fixed bands (every save from before docs/archive/WORLD.md W1 keeps it),
     /// 1 = each data realm grows from its home in Data/factions.json, 2 = that plus climates, ridges and more rivers (W2),
     /// 3 = all the data realms (seven, W3) at their homes in the data. Layouts 1-2 keep the three homes they were made with.
     public const int LegacyLayout = 0, CurrentLayout = 3;
@@ -419,7 +419,7 @@ public sealed class WorldMap
             "Marsh" => TerrainParams.Marsh, "Steppe" => TerrainParams.Steppe, "Badlands" => TerrainParams.Badlands, _ => TerrainParams.Meadow,
         };
         bool road = RoadDist(p) < 6, river = RiverDist(p) < 12;
-        // The field's shape from what is on the map here (docs/TERRAIN.md T7): a road meeting a river is a river line
+        // The field's shape from what is on the map here (docs/archive/TERRAIN.md T7): a road meeting a river is a river line
         // with its bridge, a village gives a village between the lines, a ridge a crest or (near a road) a pass.
         var layouts = t.Layouts;
         if (road && river && t != TerrainParams.Marsh) layouts = new[] { FieldLayout.RiverLine };

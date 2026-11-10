@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// BattleScreen: the aura ladder and the aura's moments (docs/SPECTACLE.md S4-S6). Each tier shows more: tier 2 leaves
+/// BattleScreen: the aura ladder and the aura's moments (docs/archive/SPECTACLE.md S4-S6). Each tier shows more: tier 2 leaves
 /// footprints of light, tier 3 stirs the dust and the air wavers round a lit blade, tier 4 presses the grass flat in a ring
 /// and the foe flinch from it, tier 5 stands in a column of light. A high tier's cut hangs in the air as a crescent; an
 /// order's aura leaves its own mark (petals, frost, feathers, embers). A clash dims the field; the Black Flame burns at the

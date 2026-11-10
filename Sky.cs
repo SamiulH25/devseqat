@@ -18,7 +18,7 @@ public static class Sky
     public static float Night { get; private set; }
     public static float Rain { get; private set; }
     /// How strong cloud shadows are over the land (thin on a clear day, none under full overcast or at night), how wet the
-    /// ground is, and snow cover (docs/VISUALS.md V4).
+    /// ground is, and snow cover (docs/archive/VISUALS.md V4).
     public static float Clouds { get; private set; }
     public static float Wet { get; private set; }
     public static float Snow { get; private set; }
@@ -76,7 +76,7 @@ public static class Sky
         OmenDark = 0; Swirl = Vector2.Zero;
     }
 
-    /// A tempest over the field (docs/SPECTACLE.md S3): x = how hard the clouds turn, y = how much more sky they cover.
+    /// A tempest over the field (docs/archive/SPECTACLE.md S3): x = how hard the clouds turn, y = how much more sky they cover.
     /// Set by the battle screen each frame; `Set` clears it.
     public static Vector2 Swirl;
 
@@ -85,7 +85,7 @@ public static class Sky
     /// How far an omen has darkened the sky now (0 = none).
     public static float OmenDark { get; private set; }
 
-    /// An omen over the light (docs/SPECTACLE.md S1): `dark` 0..1 dims the sun, sky and horizon (a great working gathering),
+    /// An omen over the light (docs/archive/SPECTACLE.md S1): `dark` 0..1 dims the sun, sky and horizon (a great working gathering),
     /// `bright` 0..1 pulls them toward `tint` instead (a miracle's dawn). Laid over the values `Set` gave, so calling it
     /// with zeros puts the plain light back. Drawing only.
     public static void Omen(float dark, Vector3 tint, float bright = 0)

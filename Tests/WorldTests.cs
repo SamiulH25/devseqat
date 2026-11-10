@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Self-tests of the side content (docs/SIDE_CONTENT.md): names, sites, quests, roads, town life, events.
+/// Self-tests of the side content (docs/archive/SIDE_CONTENT.md): names, sites, quests, roads, town life, events.
 public static partial class SelfTest
 {
     /// S1: no place name repeats on a map, and a realm's lords carry its culture's names.

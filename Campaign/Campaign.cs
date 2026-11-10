@@ -30,7 +30,7 @@ public sealed partial class Campaign
     /// Lords spread thinner than brigands: a realm with four times the ground raises about twice the armies, not four
     /// times (village recruits are the bottleneck, and a crowd of lords starves all of them).
     /// LordsPerFaction is quoted for the three realms of the original map: more realms share the same land, so each raises
-    /// fewer lords and the world's total follows the size of the map, not the number of realms (docs/WORLD.md W0).
+    /// fewer lords and the world's total follows the size of the map, not the number of realms (docs/archive/WORLD.md W0).
     public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale * LegacyRealms / Math.Max(1, S.DataRealms));
     public const int LegacyRealms = 3;
     public int BanditsWanted => (int)MathF.Round(B.BanditsMax * ProvinceScale);
@@ -57,7 +57,7 @@ public sealed partial class Campaign
 
     // ---------- a new campaign ----------
 
-    /// A new campaign; `realm` is the realm you start in (docs/WORLD.md W5): its capital, its villages' recruits.
+    /// A new campaign; `realm` is the realm you start in (docs/archive/WORLD.md W5): its capital, its villages' recruits.
     public static Campaign New(int seed, int realm = 0)
     {
         var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent,

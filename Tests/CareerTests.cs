@@ -295,7 +295,7 @@ public static partial class SelfTest
         Check(peakExh > 30, "wars wear realms down");
         Check(terms.Count > 0, "a long war ends in peace on terms");
         Check(moved > 0 && hosts > 0, "hosts march and seats change hands");
-        // The snowball guard (docs/WORLD.md W5; --realms runs it on more seeds): no realm falls in the first year, none runs away.
+        // The snowball guard (docs/archive/WORLD.md W5; --realms runs it on more seeds): no realm falls in the first year, none runs away.
         Console.WriteLine($"  largest realm {peakShare * 100:0}% of the provinces, {fellEarly} fallen in year one");
         Check(fellEarly == 0 && peakShare <= 0.4f, "no realm falls in the first year and none holds over 40% of the map");
         for (int f = 0; f < c.S.Factions.Count; f++)

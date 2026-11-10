@@ -1,6 +1,6 @@
 # Companions, magic, abilities, buffs and auras (plan)
 
-Status: plan, being built. Done: T0, T1, E1 core, T2 (passives and signatures; see the build order). Next: E1b, E2, then mages (M1). Read docs/LEGACY.md first: the fantasy is that your company is your legacy.
+Status: plan, being built. Done: T0, T1, E1 core, T2 (passives and signatures; see the build order). Next: E1b, E2, then mages (M1). Read docs/archive/LEGACY.md first: the fantasy is that your company is your legacy.
 Everything below must serve that. Companions are the named heart of the company. Mages are rare, costly and real: they
 fight in battle, cast buffs on your companies and strike the enemy. The best troops (tiers V-VII) fight differently: their
 blows sweep, knock back or thrust through, and they carry passive traits. Buffs, auras, spells and abilities are one system, so every bonus reads the same way everywhere.
@@ -184,7 +184,7 @@ bolder: feeds his `Temper`).
 ### B5. Legacy
 
 - When a companion dies, his company keeps a memory (cohesion and a banner honour, as named men's deaths already do:
-  docs/LEGACY.md L2-L5), and his gear and relic return to the armoury.
+  docs/archive/LEGACY.md L2-L5), and his gear and relic return to the armoury.
 - A companion may take one named man of his company as **his student**. When the companion dies or retires, the student
   can rise as a new companion with the same calling and half his talents.
 
@@ -614,7 +614,7 @@ who left you went). Test `SuperMages`; `MagesHelp` now pits a circle of three ag
 | **C2** | Companion abilities on the M1 engine, the order wheel slot and `Act.Ability` (Priest and Cunning callings use M3's spells), enemy champions | `BattleAbilities.cs`, `Campaign/CampaignBattle.cs` | `HoldTheLine`, `RallyToMe` |
 | **C3** | Approval, quarrels, sworn brothers, personal quests, leaving, students | `Characters.cs`, `Data/events.json`, `Legacy.cs`, `Roll.cs` | `CompanionLeaves` |
 | **M4** | Faith and craft on the map: relics in a charm slot, shrines refill, camp rituals, omen events; the necromancer on the same system | `Data/gear.json`, `Armoury.cs`, `BattleCreatures.cs`, `Data/events.json`, `MapScreen.Muster.cs` | rituals tested |
-| **P** | Polish: glows and motes (docs/VISUALS.md), sounds, tooltips, README, `--agree` with companions, bench | `BattleScreen.Effects.cs`, `Audio.cs`, `README.md` | shots, `overflow.txt` empty, bench |
+| **P** | Polish: glows and motes (docs/archive/VISUALS.md), sounds, tooltips, README, `--agree` with companions, bench | `BattleScreen.Effects.cs`, `Audio.cs`, `README.md` | shots, `overflow.txt` empty, bench |
 
 E1 alone pays for itself: it removes three hard-coded auras and gives every later step its language. T0-T2 come next (T0 first, so every later step is held to "higher tier is better")
 because the troops already exist: every veteran army fights differently at once, with no new controls. Mages (M1-M3)

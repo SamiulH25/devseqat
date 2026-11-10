@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The Black Flame in battle (docs/KNIGHT_ORDERS.md 7, K7): past 75 corruption the flame can take you for a few seconds.
+/// The Black Flame in battle (docs/archive/KNIGHT_ORDERS.md 7, K7): past 75 corruption the flame can take you for a few seconds.
 /// You lose the reins: you turn on the nearest man, friend or foe, and cut at him. Drawn from the battle's seeded rng only.
 public sealed partial class Battle
 {

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Ironfield;
 
-/// One spell or ability from Data/abilities.json (docs/COMPANIONS_MAGIC.md B3, C3, E3): what it does, when its caster
+/// One spell or ability from Data/abilities.json (docs/archive/COMPANIONS_MAGIC.md B3, C3, E3): what it does, when its caster
 /// uses it (`When`, the AI rule; casters never wait for an order) and what it costs. Cast by BattleAbilities.cs.
 public sealed class AbilityDef
 {
@@ -29,7 +29,7 @@ public sealed class AbilityDef
     public int MaxHit = 8;
     /// A great working: once a battle, tier VI only, most of the pool.
     public bool Great;
-    /// Omen a cast adds on the map (craft workings, docs/COMPANIONS_MAGIC.md C2).
+    /// Omen a cast adds on the map (craft workings, docs/archive/COMPANIONS_MAGIC.md C2).
     public float Omen;
     /// The cast only moves the caster's own company (Hold the line, Wheel).
     public bool Self;

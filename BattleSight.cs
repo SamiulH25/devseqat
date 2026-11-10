@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: sight (docs/TERRAIN.md T3). Every half second each company is checked against the other side's companies:
+/// Battle: sight (docs/archive/TERRAIN.md T3). Every half second each company is checked against the other side's companies:
 /// a crest or a deep wood between them hides it, and men inside a wood are seen only close up or when they shoot.
 /// What a side has not seen it cannot shoot at, and a company that strikes from hiding is an ambush.
 public partial class Battle
@@ -55,7 +55,7 @@ public partial class Battle
     bool Sees(Vector2 eye, Squad s, bool keen = false)
     {
         float d = MathF.Max(0, Vector2.Distance(eye, s.Center) - s.Radius), far = keen ? 1.25f : 1;
-        if (d > MistSight && InMist(s.Center)) return false; // a company in the mist is seen only close (docs/MAGIC_AURA.md 3.5)
+        if (d > MistSight && InMist(s.Center)) return false; // a company in the mist is seen only close (docs/archive/MAGIC_AURA.md 3.5)
         if (d < CloseSight) return true;
         if (d > Weather.Vision * far) return false;
         if (Time - s.LooseAt < 2) return true; // a volley gives you away
@@ -99,7 +99,7 @@ public partial class Battle
         Sound(Cue.Shout, s.Center);
     }
 
-    // ---- the spells left out (docs/MAGIC_AURA.md 3.5, MA8) ----
+    // ---- the spells left out (docs/archive/MAGIC_AURA.md 3.5, MA8) ----
 
     /// A mirage stands this far to the side of the company it shields, across the line to the enemy.
     public const float MirageOffset = 15;

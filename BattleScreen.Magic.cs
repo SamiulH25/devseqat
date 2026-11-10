@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// BattleScreen: the look of magic and aura (docs/MAGIC_AURA.md 6). Drawn only: it reads `Battle.Flashes` (moments the sim
+/// BattleScreen: the look of magic and aura (docs/archive/MAGIC_AURA.md 6). Drawn only: it reads `Battle.Flashes` (moments the sim
 /// marks) and the live state (fields, timed effects, the blade, presence), and turns them into motes, ripples, pillars and
 /// bolts. Lines are opaque, so a ripple fades by darkening.
 partial class BattleScreen

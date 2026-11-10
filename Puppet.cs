@@ -56,7 +56,7 @@ sealed class Puppet
     public float Rear;
     /// The winning team once the battle is over (its men cheer), else -1.
     public int Winner = -1;
-    /// Sources of awe this frame (docs/SPECTACLE.md S1): a place, a reach and how strong it is now (0..1). Set by the battle
+    /// Sources of awe this frame (docs/archive/SPECTACLE.md S1): a place, a reach and how strong it is now (0..1). Set by the battle
     /// screen; men within reach lean back and raise an arm against it. Drawing only.
     public readonly List<(Vector2 At, float Radius, float Strength, int Team)> Awe = new(); // Team -1: everyone; else only that side
 
@@ -266,7 +266,7 @@ sealed class Puppet
         return bob;
     }
 
-    /// A wolf on four legs: it trots, and lunges with its head in the strike (docs/CREATURES.md).
+    /// A wolf on four legs: it trots, and lunges with its head in the strike (docs/archive/CREATURES.md).
     void Beast(Unit u, float ground)
     {
         float lunge = u.Action == UnitAction.Windup ? -0.12f : u.Action == UnitAction.Recover ? 0.28f : 0;
@@ -430,7 +430,7 @@ sealed class Puppet
         };
     }
 
-    /// Continuous pose from the unit's action state (docs/VISUALS.md V2). `now` is the battle clock and `phase` a per-man
+    /// Continuous pose from the unit's action state (docs/archive/VISUALS.md V2). `now` is the battle clock and `phase` a per-man
     /// 0..1 number, so idles and strides never move in step; `winner` is the team that has won (it cheers), or -1.
     /// Windups ease in and hold at the top; the strike snaps through and overshoots (follow-through); the body leans into it.
     internal static Pose PoseOf(Unit u, float now, float phase, int winner = -1)

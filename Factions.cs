@@ -8,7 +8,7 @@ public sealed class CultureDef
     public string Id = "", Name = "", Root = "levies", Text = "";
     /// One line on what its towns look like (the town screen's flavour line).
     public string Flavour = "Thatch and mud lanes";
-    /// Cultures whose troops this culture's lines may borrow and its men may train as (docs/WORLD.md W3).
+    /// Cultures whose troops this culture's lines may borrow and its men may train as (docs/archive/WORLD.md W3).
     public string[] Kin = { };
 }
 
@@ -26,10 +26,10 @@ public sealed class FactionDef
     public string Name = "", Culture = "common";
     public int Palette;
     public Dictionary<string, string[]> Lines = new();
-    /// Where the realm's land grows from on a new map ([x, z], each -1 to 1) and how much further it reaches (docs/WORLD.md W1).
+    /// Where the realm's land grows from on a new map ([x, z], each -1 to 1) and how much further it reaches (docs/archive/WORLD.md W1).
     public float[] Home = { 0, 0 };
     public float Reach;
-    /// The realm's temper (docs/WORLD.md W5), each a multiplier on the shared rule (1 = as before): how readily it goes to war
+    /// The realm's temper (docs/archive/WORLD.md W5), each a multiplier on the shared rule (1 = as before): how readily it goes to war
     /// and marches for the front, how full it keeps its garrisons, how readily its lords lay siege, how soon it takes terms.
     public float Aggression = 1, Garrison = 1, Siege = 1, Tribute = 1;
     /// What its lords hunt first: "" (whatever is hostile in reach) or "monsters" (goblins, beasts and the dead before men).
@@ -61,7 +61,7 @@ public static class Factions
     {
         Load();
         // A realm founded in play is known by its flag, not by its id: an old save's founded realm keeps its look when
-        // factions.json gains realms at the same id (docs/WORLD.md 6).
+        // factions.json gains realms at the same id (docs/archive/WORLD.md 6).
         if (bound != null && faction >= 0 && faction < bound.Count && bound[faction].Founded)
         {
             if (!founded.TryGetValue(faction, out var d))

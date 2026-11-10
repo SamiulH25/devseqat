@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Hud: the ground for the player (docs/TERRAIN.md T6): the ground map (Act.GroundView, shown while deploying), the line
+/// Hud: the ground for the player (docs/archive/TERRAIN.md T6): the ground map (Act.GroundView, shown while deploying), the line
 /// under the mouse saying what the ground does, and a warning on an order that sends men onto bad ground.
 sealed partial class Hud
 {

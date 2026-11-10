@@ -177,7 +177,7 @@ partial class BattleScreen
 
     readonly float[] stepTimer = new float[4];
 
-    /// What the ground does under moving men (docs/TERRAIN.md T8): dust under galloping hooves, splashes at fords and in water,
+    /// What the ground does under moving men (docs/archive/TERRAIN.md T8): dust under galloping hooves, splashes at fords and in water,
     /// mud thrown up, leaves shaken down in woods; and near the camera, their sounds (splash, squelch, rustle, the bridge's beat).
     void GroundSteps(float dt)
     {
@@ -426,7 +426,7 @@ partial class BattleScreen
     void Spells()
     {
         float t = battle.Time;
-        foreach (var c in battle.Casts) Sigil(c); // the gathering (docs/SPECTACLE.md S2)
+        foreach (var c in battle.Casts) Sigil(c); // the gathering (docs/archive/SPECTACLE.md S2)
         foreach (var f in battle.Fields)
         {
             var col = f.Effect?.Harmful == true ? new Color(240, 120, 80) : SpellColor(f.A.Tradition);
@@ -437,7 +437,7 @@ partial class BattleScreen
         MagicLines();
     }
 
-    /// The captain's aura (docs/KNIGHT_ORDERS.md K1): the lit blade as a streak along the facing, aura armour as a shimmer.
+    /// The captain's aura (docs/archive/KNIGHT_ORDERS.md K1): the lit blade as a streak along the facing, aura armour as a shimmer.
     void AuraGlow()
     {
         var p = battle.Player;
@@ -511,7 +511,7 @@ partial class BattleScreen
         }
     }
 
-    /// A company's own plan on the ground (docs/MELEE.md D7): swinging onto a flank, a dashed hook to where its front will
+    /// A company's own plan on the ground (docs/archive/MELEE.md D7): swinging onto a flank, a dashed hook to where its front will
     /// stand; wrapping, a dashed hook forward from each end of its line.
     void PlanHook(Squad s)
     {

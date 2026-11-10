@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// BattleScreen: the spectacle pass's groundwork (docs/SPECTACLE.md S1). The battle's one cinematic beat (`Beats`), moving
+/// BattleScreen: the spectacle pass's groundwork (docs/archive/SPECTACLE.md S1). The battle's one cinematic beat (`Beats`), moving
 /// lights, the omen over the sky, the post pass's colour drain, shimmer and flash, scars that last the battle, and men who
 /// react to a working. Drawing only: nothing here touches the battle, and the slowed view replays exactly (each tick's step
 /// is recorded).

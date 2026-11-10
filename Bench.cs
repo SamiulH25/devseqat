@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace Ironfield;
 
 /// `dotnet run -c Release -- --bench [men per side]`: a headless battle at scale, printing ms per tick for each stage.
-/// The check for every change that touches the battle's hot path (docs/COMBAT_OVERHAUL.md 2.2).
+/// The check for every change that touches the battle's hot path (docs/archive/COMBAT_OVERHAUL.md 2.2).
 public static class Bench
 {
     public static void Run(int men, int seconds = 60)
@@ -39,7 +39,7 @@ public static class Bench
     }
 
     /// `dotnet run -c Release -- --campaign-bench [days]`: a headless campaign for some days (the player idles, encounters
-    /// are waved through), printing ms per day for each tick stage. The check for every change that grows the world (docs/WORLD.md W0).
+    /// are waved through), printing ms per day for each tick stage. The check for every change that grows the world (docs/archive/WORLD.md W0).
     public static void Campaign(int days)
     {
         var clock = Stopwatch.StartNew();

@@ -4,7 +4,7 @@ A 2.5D (2D sprites in a 3D world) medieval battle game in C# + MonoGame (Desktop
 "lead your army in person" genre. This is an original setting: no names, assets or factions from other games.
 
 You fight in person as a soldier while you command your army as a general, and between battles you lead a mercenary company
-through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contracts, seasons and the rest of `docs/ROADMAP.md`.
+through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contracts, seasons and the rest of `docs/archive/ROADMAP.md`.
 
 ![In the ranks: field view on horseback before the lines meet](docs/images/field-horses.jpg)
 
@@ -57,12 +57,12 @@ dotnet run -c Release -- --bench 1500  # headless N-a-side battle: ms per tick f
 You need .NET SDK 10 (`net10.0`). On Ubuntu 24.04 `apt-get install dotnet-sdk-10.0` works (no Microsoft feed needed).
 The game needs no art files: sprites, terrain and the font are all generated in code. Troops come from `Data/troops.json`.
 **Design language:** see [`docs/DESIGN.md`](docs/DESIGN.md) (art direction, unit painting rules, heraldry, tiers, UI tokens).
-**Roadmap:** see [`docs/ROADMAP.md`](docs/ROADMAP.md) (what comes next, in what order, and why).
+**Roadmap:** see [`docs/archive/ROADMAP.md`](docs/archive/ROADMAP.md) (what comes next, in what order, and why).
 **Campaign:** see [`docs/CAMPAIGN.md`](docs/CAMPAIGN.md) (map, companies, XP and upgrades, economy, AI, battle hand-off; "As built" at the end).
-**The player fantasy:** see [`docs/LEGACY.md`](docs/LEGACY.md) (your company is your legacy). **Other plans, all built:**
-[`COMBAT_OVERHAUL`](docs/COMBAT_OVERHAUL.md), [`CREATURES`](docs/CREATURES.md), [`SIDE_CONTENT`](docs/SIDE_CONTENT.md),
-[`PROGRESSION`](docs/PROGRESSION.md), [`WORLD`](docs/WORLD.md), [`TERRAIN`](docs/TERRAIN.md), [`POLISH`](docs/POLISH.md),
-[`VISUALS`](docs/VISUALS.md). **Developers:** [`docs/DEVELOPING.md`](docs/DEVELOPING.md) and [`CLAUDE.md`](CLAUDE.md).
+**The player fantasy:** see [`docs/archive/LEGACY.md`](docs/archive/LEGACY.md) (your company is your legacy). **Other plans, all built:**
+[`COMBAT_OVERHAUL`](docs/archive/COMBAT_OVERHAUL.md), [`CREATURES`](docs/archive/CREATURES.md), [`SIDE_CONTENT`](docs/archive/SIDE_CONTENT.md),
+[`PROGRESSION`](docs/archive/PROGRESSION.md), [`WORLD`](docs/archive/WORLD.md), [`TERRAIN`](docs/archive/TERRAIN.md), [`POLISH`](docs/archive/POLISH.md),
+[`VISUALS`](docs/archive/VISUALS.md). **Developers:** [`docs/DEVELOPING.md`](docs/DEVELOPING.md) and [`CLAUDE.md`](CLAUDE.md).
 
 The game opens on a **title screen**: New Campaign, Continue (latest save), Quick Battle (one random battle), Quit.
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
@@ -77,7 +77,7 @@ Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, 
 ## The campaign
 
 **The heart of it:** you lead a free company in person. Every man you lose was someone you knew, and every honour on the
-banner is one you earned (`docs/LEGACY.md`).
+banner is one you earned (`docs/archive/LEGACY.md`).
 
 You are a free captain sworn to the Azure Crown in the west. It is at war with the Northmarch clans of the cold north, its long
 border; the Crimson Compact in the east fights the Khaganate of the Grass, horse archers from the eastern steppe. The Sunward
@@ -455,7 +455,7 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 
 ## Design: motion and feel
 
-The visuals pass (`docs/VISUALS.md`) changed nothing in the simulation: replays and the self-test numbers are the same.
+The visuals pass (`docs/archive/VISUALS.md`) changed nothing in the simulation: replays and the self-test numbers are the same.
 - **Men move like men** (`Puppet.PoseOf`): windups ease in and hold, strikes overshoot, arms swing on the march, a standing
   line breathes, men flinch and stagger when hit, routers drop their weapons, winners cheer, and archers nock, draw and loose.
   The dead fall away from the blow that killed them. Horses walk, trot and gallop by speed; banners ripple.
@@ -479,7 +479,7 @@ The visuals pass (`docs/VISUALS.md`) changed nothing in the simulation: replays 
 - **Scale:** men near the enemy think every tick, others every 2nd or 4th tick, so 3,000 men cost about 3.6 ms a tick
   (`--bench`). Far men are drawn with fewer parts, and the roar of a big melee rises with the men in contact.
 
-## Design: drill, ranks and company wits (docs/MELEE.md)
+## Design: drill, ranks and company wits (docs/archive/MELEE.md)
 
 - **Companies fight from their ranks.** Two companies meet as two lines: the front rank fights, the men behind wait and step into
   a gap when a man falls. A charge closes as a body, and at blows a line holds where it stands.

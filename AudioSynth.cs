@@ -602,7 +602,7 @@ static partial class Synth
         return b;
     }
 
-    /// A great working gathering (docs/SPECTACLE.md S2): a low drone and a rising hum that swell for two seconds, then
+    /// A great working gathering (docs/archive/SPECTACLE.md S2): a low drone and a rising hum that swell for two seconds, then
     /// stop dead as it lands.
     static float[] Gather(Random r)
     {

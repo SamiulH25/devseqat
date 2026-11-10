@@ -1,5 +1,5 @@
 {
-  "_comment": "The captain's gear (docs/PROGRESSION.md P1). slot: weapon, shield, body, helm, horse. A weapon sets damage, reach, windup and recover; armour adds to the captain troop's armour and speed; a shield sets the block chance; a horse names a mount in troops.json. needs = the level of `skill` (Arms unless named) to use it, rank = the career rank to buy it (0 free company, 1 sworn sword, 2 vassal, 3 lord). look = the sprite part (weapon, shield, body or head).",
+  "_comment": "The captain's gear (docs/archive/PROGRESSION.md P1). slot: weapon, shield, body, helm, horse. A weapon sets damage, reach, windup and recover; armour adds to the captain troop's armour and speed; a shield sets the block chance; a horse names a mount in troops.json. needs = the level of `skill` (Arms unless named) to use it, rank = the career rank to buy it (0 free company, 1 sworn sword, 2 vassal, 3 lord). look = the sprite part (weapon, shield, body or head).",
   "gear": [
     { "id": "arming_sword", "slot": "weapon", "name": "Arming Sword", "cost": 0, "look": "sword", "damage": 30, "reach": 2.1, "windup": 0.4, "recover": 0.5,
       "text": "A plain, quick blade. Good with a shield." },

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A map of the cheapest way to one goal from every cell of the field (docs/TERRAIN.md T4): each cell holds its cost to the goal.
+/// A map of the cheapest way to one goal from every cell of the field (docs/archive/TERRAIN.md T4): each cell holds its cost to the goal.
 public sealed class FlowField
 {
     public readonly Vector2 Goal;
@@ -43,7 +43,7 @@ public sealed class FlowField
     }
 }
 
-/// Battle: pathing (docs/TERRAIN.md T4). On open ground men steer straight, as ever. When the straight line from a company to its
+/// Battle: pathing (docs/archive/TERRAIN.md T4). On open ground men steer straight, as ever. When the straight line from a company to its
 /// goal is blocked (deep water, a hedge or fence, a house; thick wood for horse), the company follows a flow field to the goal
 /// until its men are close. Fields are built on the terrain's 2.5 m cells and kept in a small cache.
 public partial class Battle

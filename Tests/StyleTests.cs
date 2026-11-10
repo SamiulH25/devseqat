@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Self-tests of the attack styles of tier V-VII troops (docs/COMPANIONS_MAGIC.md D2, BattleStyles.cs).
+/// Self-tests of the attack styles of tier V-VII troops (docs/archive/COMPANIONS_MAGIC.md D2, BattleStyles.cs).
 public static partial class SelfTest
 {
     /// One man of `troop` at the origin facing +Y, and enemy levies at `foes`, their backs to him (no block), after one

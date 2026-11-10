@@ -1,6 +1,6 @@
 # Knight orders and the captain's aura: plan
 
-Status: **built** (K0-K8; what was built, and simplified, is under "As built" at the end). Read docs/LEGACY.md first: the fantasy is that your company is your legacy. This plan adds
+Status: **built** (K0-K8; what was built, and simplified, is under "As built" at the end). Read docs/archive/LEGACY.md first: the fantasy is that your company is your legacy. This plan adds
 a second thread that feeds it: **the captain is a knight who awakens an aura, rises through a knight order, and can end
 by founding an order of their own that outlives them.** Numbers marked *(tune)* are starting values.
 
@@ -25,7 +25,7 @@ There is a darker way up: the **Black Flame**, forbidden power that skips the wa
 ## 2. Where we stand (2026-11-09)
 
 Found by reading `Data/factions.json`, `Campaign/CampaignState.cs`, `Data/abilities.json`, `Data/effects.json`,
-docs/PROGRESSION.md and docs/COMPANIONS_MAGIC.md:
+docs/archive/PROGRESSION.md and docs/archive/COMPANIONS_MAGIC.md:
 
 - **Seven realms**, one of them already an order: the *Order of the Ashen Sun* (culture `order`: sworn brothers on foot and
   knight-brothers), a full realm at the centre of the map. There are no minor factions: every army belongs to a realm,

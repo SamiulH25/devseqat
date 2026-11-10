@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The company's legend (docs/LEGACY.md L5-L7): named battles and battle honours on the banner (lost when a company
+/// The company's legend (docs/archive/LEGACY.md L5-L7): named battles and battle honours on the banner (lost when a company
 /// breaks before a realm's army, won back by beating that realm), the company's fame and what it brings, and the ways
 /// the story ends: retiring, or handing the company to a man who rose from its ranks.
 public sealed partial class Campaign

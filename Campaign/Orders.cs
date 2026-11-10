@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// One knight order from Data/orders.json (docs/KNIGHT_ORDERS.md 4).
+/// One knight order from Data/orders.json (docs/archive/KNIGHT_ORDERS.md 4).
 public sealed class OrderDef
 {
     public string Id = "", Name = "", Short = "", Patron = "", Hunts = "", Creed = "", Text = "";
@@ -65,7 +65,7 @@ public static class KnightOrders
     }
 }
 
-/// Knight orders on the map (docs/KNIGHT_ORDERS.md 4, K3): each has a chapter house in a patron town, a grand master and two
+/// Knight orders on the map (docs/archive/KNIGHT_ORDERS.md 4, K3): each has a chapter house in a patron town, a grand master and two
 /// knight-commanders whose armies ride with the patron's lords, their ranks part signature troops, part the patron's line.
 /// Their dice come from their own stream (CampaignState.OrderRng), so adding them leaves the rest of the campaign's draws alone.
 public sealed partial class Campaign
@@ -174,7 +174,7 @@ public sealed partial class Campaign
         return p;
     }
 
-    /// The aura of the man leading this party: an order knight's (lords have none, docs/KNIGHT_ORDERS.md 11).
+    /// The aura of the man leading this party: an order knight's (lords have none, docs/archive/KNIGHT_ORDERS.md 11).
     public int ChampionAura(Party p) => CharacterOf(p) is { Kind: "knight", Dead: false } k ? k.Aura : 0;
 
     /// The forms he fights with: his order's within his tier, then the generic ones.

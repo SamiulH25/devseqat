@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// A wound the captain carries for good (docs/PROGRESSION.md P4).
+/// A wound the captain carries for good (docs/archive/PROGRESSION.md P4).
 public sealed record WoundDef(string Id, string Name, string Text);
 
 /// Campaign: lasting wounds. When the captain falls there is a chance of one; a healing spring may mend it.

@@ -35,7 +35,7 @@ partial class BattleScreen
                 pendingShot = "landscape"; shotIndex++; break;
             case 6 when b.Time > 21f && groundView != true:
                 groundView = true; camFocus = b.Centroid(0) + new Vector2(0, 25); zoom = 50; camPitch = 0.7f;
-                pendingShot = "ground-map"; break; // the ground map (docs/TERRAIN.md T6)
+                pendingShot = "ground-map"; break; // the ground map (docs/archive/TERRAIN.md T6)
             case 6 when groundView == true && pendingShot == null:
                 groundView = false; helpOpen = true;
                 pendingShot = "controls"; shotIndex++; break;
@@ -72,7 +72,7 @@ partial class BattleScreen
                 zoom = 8.5f; camPitch = 0.08f; camFocus = new Vector2(-9.8f, 0.6f);
                 pendingShot = "gallery-north-close"; shotIndex++; break;
             case 20 when pendingShot == null:
-                Gallery(new[] { "goblin", "goblin_archer", "hobgoblin", "goblin_boss", "goblin_wolf_rider", "wolf", "dire_wolf", "troll", "war_hounds", "ogre", "beast_hunters", "shieldmen" }, 3); // creatures (docs/CREATURES.md), a man for scale
+                Gallery(new[] { "goblin", "goblin_archer", "hobgoblin", "goblin_boss", "goblin_wolf_rider", "wolf", "dire_wolf", "troll", "war_hounds", "ogre", "beast_hunters", "shieldmen" }, 3); // creatures (docs/archive/CREATURES.md), a man for scale
                 shotFrames = 0; shotIndex++; break;
             case 21 when shotFrames > 20:
                 zoom = 11f; camPitch = 0.1f; camFocus = new Vector2(-9.8f, 0.6f);
@@ -100,7 +100,7 @@ partial class BattleScreen
             case 29 when shotFrames > 20:
                 pendingShot = "gallery-undead-side"; shotIndex++; break;
             case >= 30 and <= 37 when pendingShot == null && shotIndex % 2 == 0:
-                // The four realms of docs/WORLD.md W3-W4, each in its own colours.
+                // The four realms of docs/archive/WORLD.md W3-W4, each in its own colours.
                 Gallery(NewRealms[(shotIndex - 30) / 2].Troops, NewRealms[(shotIndex - 30) / 2].Palette);
                 zoom = 19; camYaw = MathHelper.PiOver2 + 0.5f; camPitch = 0.14f;
                 foreach (var u in battle.Units.Where(u => !u.IsLeader)) u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = -0.9f; // three-quarter view
@@ -135,7 +135,7 @@ partial class BattleScreen
             case 52 when shotFrames > 20:
                 pendingShot = "gallery-armour-side"; shotIndex++; break;
             case 53 or 55 when pendingShot == null:
-                // Melee (docs/MELEE.md): three companies a side, 14 s after they charged; levies, then elites.
+                // Melee (docs/archive/MELEE.md): three companies a side, 14 s after they charged; levies, then elites.
                 Clash(shotIndex == 53 ? "levies" : "immortals"); shotFrames = 0; shotIndex++; break;
             case 54 or 56 when shotFrames > 20:
                 pendingShot = shotIndex == 54 ? "clash-levies" : "clash-elites"; shotIndex++; break;
@@ -163,7 +163,7 @@ partial class BattleScreen
         ("order", 8, new[] { "order_sergeants", "ashen_brothers", "ashen_saints", "order_spears", "dawn_pikes", "order_crossbows", "dawn_watch", "order_riders", "grand_masters" }),
     };
 
-    /// The pose sheet (docs/VISUALS.md V1): one man frozen at each moment of each action along a row, so every pose can be
+    /// The pose sheet (docs/archive/VISUALS.md V1): one man frozen at each moment of each action along a row, so every pose can be
     /// checked in one still. Sheet 0: the melee and the march; 1: the bow, the fall and the cheer; 2: riders at a stand, walk, trot, canter and gallop, the last with his lance couched, then a horse rearing, one falling and one dead.
     void PoseSheet(int sheet)
     {
@@ -260,7 +260,7 @@ partial class BattleScreen
         zoom = 19;
     }
 
-    /// Magic and aura staged for a shot (docs/MAGIC_AURA.md 6): spells (a smite's pillar, lightning, burning ground, mist, a
+    /// Magic and aura staged for a shot (docs/archive/MAGIC_AURA.md 6): spells (a smite's pillar, lightning, burning ground, mist, a
     /// ward, a blessing) or the captain's aura (the blade lit, a burst, a slash, presence).
     void MagicScene(bool spells)
     {
@@ -309,7 +309,7 @@ partial class BattleScreen
         zoom = spells ? 46 : 16;
     }
 
-    /// The spectacle pass (docs/SPECTACLE.md). 0: a smite falling at night beside a burning field, a Transcendent captain
+    /// The spectacle pass (docs/archive/SPECTACLE.md). 0: a smite falling at night beside a burning field, a Transcendent captain
     /// shining, to show the moving lights and the glass and scorch scars. 1: a breakthrough at its height, the colour drained
     /// from all but the captain, the beat's bars drawn, the men near him leaning back. 2: a great working (the Tempest) at
     /// 70% gathered beside a smite at half (S2): the sigils, the pull, the column and the darkened sky.
@@ -362,7 +362,7 @@ partial class BattleScreen
 
     static readonly string[] WorkShots = { "smite-strike", "miracle", "tempest", "wildfire", "crows", "aura-ladder", "clash-beat", "black-flame" };
 
-    /// The strong workings and the aura's moments, each caught a moment after it lands (docs/SPECTACLE.md S3-S5).
+    /// The strong workings and the aura's moments, each caught a moment after it lands (docs/archive/SPECTACLE.md S3-S5).
     void WorkScene(int which)
     {
         string shot = WorkShots[which];

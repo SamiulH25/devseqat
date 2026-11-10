@@ -1,4 +1,4 @@
-# Build, self-test and package Ironfield (docs/ROADMAP.md A2).
+# Build, self-test and package Ironfield (docs/archive/ROADMAP.md A2).
 # Every push and pull request: build and run the headless self-test on Linux.
 # Pushes also publish self-contained builds for Windows, Linux and macOS as downloadable artifacts (no .NET SDK needed to play).
 name: ci

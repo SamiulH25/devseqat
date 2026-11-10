@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A spell or ability on its way (docs/COMPANIONS_MAGIC.md E3): it fires at `FireAt` on the spot it glowed on, if its
+/// A spell or ability on its way (docs/archive/COMPANIONS_MAGIC.md E3): it fires at `FireAt` on the spot it glowed on, if its
 /// caster still stands. The screen draws the glow (BattleScreen.Draw).
 public sealed class Cast
 {
@@ -25,7 +25,7 @@ public sealed class Field
     public float Radius, Until, Power, Dps, Started;
 }
 
-/// Battle: casters and their spells (docs/COMPANIONS_MAGIC.md E1-E5, B3). A company with spells (mage troops, or a
+/// Battle: casters and their spells (docs/archive/COMPANIONS_MAGIC.md E1-E5, B3). A company with spells (mage troops, or a
 /// companion's abilities) thinks every 0.5 s: Will comes back, and the first spell that is ready, affordable and whose
 /// rule finds a target starts a cast. Nobody presses a button: the player steers casters by where he puts them.
 public partial class Battle
@@ -123,7 +123,7 @@ public partial class Battle
         }
     }
 
-    // ---- casts you order (docs/MAGIC_AURA.md 3.1) ----
+    // ---- casts you order (docs/archive/MAGIC_AURA.md 3.1) ----
 
     /// An ordered cast costs this much more Will (they break their rhythm for you), and the order lapses after this long.
     public const float OrderedWill = 5, OrderLasts = 30;

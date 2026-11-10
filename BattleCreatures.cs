@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: the rules of creatures (docs/CREATURES.md): a troll's sweeping, throwing blows, its healing and the sun (phase 3);
+/// Battle: the rules of creatures (docs/archive/CREATURES.md): a troll's sweeping, throwing blows, its healing and the sun (phase 3);
 /// the undead's necromancer, who raises the fallen and whose death drops them all (phase 5).
 public partial class Battle
 {

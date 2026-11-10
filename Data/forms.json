@@ -1,5 +1,5 @@
 {
-  // The captain's forms (docs/KNIGHT_ORDERS.md 5.6; loaded by Forms.cs, used by BattleForms.cs). Forms are the only
+  // The captain's forms (docs/archive/KNIGHT_ORDERS.md 5.6; loaded by Forms.cs, used by BattleForms.cs). Forms are the only
   // techniques the player presses: three slots (U, I, O) and a great form (L, once a battle). Each costs aura and has
   // a cooldown. "tier" is the aura tier that opens it; "order" the knight order that teaches it ("" = anyone, "hollow"
   // = the Black Flame). Kinds:
@@ -81,7 +81,7 @@
     { "id": "ashen_dawn", "name": "Ashen Dawn", "icon": "sun", "kind": "buff", "order": "ashen", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "radius": 40, "duration": 30, "effect": "ashen_dawn",
       "line": "Once a battle: your companies near you rally and take heart." },
 
-    // The Black Flame (the Hollow Crown): stronger, and every use feeds the flame (docs/KNIGHT_ORDERS.md 7)
+    // The Black Flame (the Hollow Crown): stronger, and every use feeds the flame (docs/archive/KNIGHT_ORDERS.md 7)
     { "id": "black_flame", "name": "Black Flame", "icon": "fire", "kind": "burn", "order": "hollow", "tier": 1, "aura": 20, "cooldown": 15, "range": 8, "radius": 4, "duration": 10, "dps": 8, "effect": "black_dread", "corruption": 1,
       "line": "Black fire on the ground ahead: it burns the foes in it and eats their nerve." },
     { "id": "devour", "name": "Devour", "icon": "skull", "kind": "drain", "order": "hollow", "tier": 2, "aura": 15, "cooldown": 20, "radius": 4, "maxHit": 6, "damage": 25, "corruption": 1.5,
@@ -89,7 +89,7 @@
     { "id": "hollow_crown", "name": "Hollow Crown", "icon": "crown", "kind": "burst", "order": "hollow", "tier": 3, "great": true, "aura": 50, "cooldown": 300, "radius": 8, "maxHit": 20, "damage": 70, "shock": 30, "corruption": 4,
       "line": "Once a battle: the black flame bursts from you. Every man near you burns." }
   ],
-  // Aspects (docs/MAGIC_AURA.md 4.5): at rank 3 a form takes one of the two its kind offers, for good. Numbers multiply the
+  // Aspects (docs/archive/MAGIC_AURA.md 4.5): at rank 3 a form takes one of the two its kind offers, for good. Numbers multiply the
   // form's own (radius, range, duration, damage, shock, cooldown, aura); maxHit and count add.
   "aspects": [
     { "id": "focus_deep", "kind": "focus", "name": "Deep", "line": "Your blows land harder still.", "damage": 1.4 },

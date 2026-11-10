@@ -32,7 +32,7 @@ sealed partial class Hud
     public int Ui = 1;
     public Battle B = null!;
     public HashSet<Squad> Selected = null!;
-    /// The caster you are directing and the spell you picked for it (-1 = none; docs/MAGIC_AURA.md 3.1).
+    /// The caster you are directing and the spell you picked for it (-1 = none; docs/archive/MAGIC_AURA.md 3.1).
     public Squad? CastBy;
     public int CastPick = -1;
     public Controls Ctl = null!;
@@ -86,7 +86,7 @@ sealed partial class Hud
         for (int i = 0; i < shown; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), H - ch - U(10), cw, ch), mine[i]));
         hiddenCards = mine.Count - shown;
 
-        int ph = B.AuraTier > 0 ? U(108) : U(94); // a row more for the aura (docs/KNIGHT_ORDERS.md K1)
+        int ph = B.AuraTier > 0 ? U(108) : U(94); // a row more for the aura (docs/archive/KNIGHT_ORDERS.md K1)
         player = new Rectangle(U(10), H - ph - U(10), U(280), ph);
         int ms = U(150);
         minimap = new Rectangle(W - ms - U(10), U(10), ms, ms);
@@ -400,7 +400,7 @@ sealed partial class Hud
         }
     }
 
-    /// Above your panel: your form slots (docs/KNIGHT_ORDERS.md K2): key, name, and the wait or the aura it lacks.
+    /// Above your panel: your form slots (docs/archive/KNIGHT_ORDERS.md K2): key, name, and the wait or the aura it lacks.
     void FormBar()
     {
         if (Command || !B.Player.Active || B.FormSlot.All(f => f == null) && !B.HasRelic) return;
@@ -427,7 +427,7 @@ sealed partial class Hud
         }
     }
 
-    /// The relic's slot after the forms (docs/MAGIC_AURA.md 3.4): ready once a battle.
+    /// The relic's slot after the forms (docs/archive/MAGIC_AURA.md 3.4): ready once a battle.
     void RelicSlot(Rectangle r)
     {
         bool ready = B.CannotRaise(B.Player) == null;
@@ -439,7 +439,7 @@ sealed partial class Hud
         TextR(ready ? "+30" : "SPENT", r.Right - U(4), r.Y + U(3), ready ? holy : Dim, 1);
     }
 
-    /// The spells of the caster you are directing (docs/MAGIC_AURA.md 3.1): the picked one bright, the rest with why not.
+    /// The spells of the caster you are directing (docs/archive/MAGIC_AURA.md 3.1): the picked one bright, the rest with why not.
     void SpellFan()
     {
         if (!Command || CastBy is not { } s || s.Spells.Length == 0) return;
@@ -518,7 +518,7 @@ sealed partial class Hud
     }
     int hiddenCards;
 
-    /// The effects on a company (docs/COMPANIONS_MAGIC.md A6): up to four icons along the foot of its portrait, gold for
+    /// The effects on a company (docs/archive/COMPANIONS_MAGIC.md A6): up to four icons along the foot of its portrait, gold for
     /// a blessing, red for a curse; a mage company's Will as a thin bar under it.
     void EffectMarks(Squad s, Rectangle r)
     {

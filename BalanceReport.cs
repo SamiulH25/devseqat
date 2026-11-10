@@ -62,7 +62,7 @@ public static class BalanceReport
 
     }
 
-    /// `--realms [n]`: the snowball guard (docs/WORLD.md W5). n campaigns run two years (240 days) with your company out of
+    /// `--realms [n]`: the snowball guard (docs/archive/WORLD.md W5). n campaigns run two years (240 days) with your company out of
     /// the way; each realm's share of the provinces at the end of each year, and the day any realm falls. Flags a realm gone
     /// in the first year or one holding more than 40% of the map. Writes balance/realms.csv.
     public static void Realms(int campaigns)
@@ -141,7 +141,7 @@ public static class BalanceReport
 
         // 2. Battle win rates by army level (AI against AI), and how long they take. Each side is built by the same
         // rule (Armies.Random), so a fair system should sit near 50% on the diagonal; drift shows a balance problem.
-        // Each seed fights on a different ground, so the columns show who wins on which field (docs/TERRAIN.md T7).
+        // Each seed fights on a different ground, so the columns show who wins on which field (docs/archive/TERRAIN.md T7).
         var grounds = new[] { TerrainParams.Meadow, TerrainParams.Farmland, TerrainParams.Forest, TerrainParams.Hills, TerrainParams.Marsh, TerrainParams.Badlands };
         var battles = new StringBuilder("level_a,level_b,seed,winner,seconds,dead,ground,layout,ridge_side\n");
         for (int a = 1; a <= 4; a++)
@@ -177,7 +177,7 @@ public static class BalanceReport
         Console.WriteLine("wrote balance/economy.csv, balance/pacing.csv, balance/pacing_weekly.csv, balance/battles.csv, balance/troops.csv");
     }
 
-    /// `--grounds [n]` (docs/TERRAIN.md T8): the same army on both sides, AI against AI, n seeds on each field layout, each fought
+    /// `--grounds [n]` (docs/archive/TERRAIN.md T8): the same army on both sides, AI against AI, n seeds on each field layout, each fought
     /// twice with the ground chosen by each side in turn. A fair layout gives the chooser an edge but not a sure
     /// win; writes balance/grounds.csv and prints a line per layout.
     public static void Grounds(int seeds)
@@ -219,7 +219,7 @@ public static class BalanceReport
         Console.WriteLine("wrote balance/grounds.csv");
     }
 
-    /// Fought against auto-resolved (docs/MELEE.md D8): one infantry company of each tier 1-6 against one of a higher tier,
+    /// Fought against auto-resolved (docs/archive/MELEE.md D8): one infantry company of each tier 1-6 against one of a higher tier,
     /// the numbers set so Rules.Might calls them even. If auto-resolve weighs drill right, each pair is a coin toss.
     /// Prints the higher tier's share of wins by tier gap, at the current weight and with weight `w` tried in its place.
     public static void Agree(int seeds, float w)

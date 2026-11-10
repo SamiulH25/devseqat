@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// MapScreen: the knight orders (docs/KNIGHT_ORDERS.md 4.5, K4): THE ORDERS tab on the realm screen (R) and the CHAPTER tab
+/// MapScreen: the knight orders (docs/archive/KNIGHT_ORDERS.md 4.5, K4): THE ORDERS tab on the realm screen (R) and the CHAPTER tab
 /// on an order's chapter town (the trial, rising, brothers, contracts, leaving).
 partial class MapScreen
 {

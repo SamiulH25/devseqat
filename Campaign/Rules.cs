@@ -14,17 +14,17 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
     public IReadOnlyList<string> Rises { get; init; } = Array.Empty<string>();
     /// A lasting wound the captain took in this battle (P4), or "".
     public string LastingWound { get; init; } = "";
-    /// What the battle did to your aura (docs/KNIGHT_ORDERS.md K1): a wall reached, a breakthrough, or "".
+    /// What the battle did to your aura (docs/archive/KNIGHT_ORDERS.md K1): a wall reached, a breakthrough, or "".
     public string Aura { get; init; } = "";
     /// The battle's personal goals and whether each was met (P6).
     public IReadOnlyList<(string Text, bool Met)> Goals { get; init; } = Array.Empty<(string, bool)>();
-    /// Your named men in this battle (docs/LEGACY.md L3): the fallen and missing first, then the hurt, then new names.
+    /// Your named men in this battle (docs/archive/LEGACY.md L3): the fallen and missing first, then the hurt, then new names.
     public IReadOnlyList<(string Kind, string Text)> Roll { get; init; } = Array.Empty<(string, string)>();
     /// The battle's name ("Ashby Ford", L5), "" when it has none (a duel, the lists).
     public string Field { get; init; } = "";
     /// Banner honours this battle won, lost or won back (L5): HONOUR or LOST, and the line.
     public IReadOnlyList<(string Kind, string Text)> Honours { get; init; } = Array.Empty<(string, string)>();
-    /// The wonders the men saw (docs/SPECTACLE.md S7): great workings, a wall broken, a clash of champions.
+    /// The wonders the men saw (docs/archive/SPECTACLE.md S7): great workings, a wall broken, a clash of champions.
     public IReadOnlyList<string> Wonders { get; init; } = Array.Empty<string>();
 }
 
@@ -97,7 +97,7 @@ public static class Rules
 
     public static float Strength(CompanyRecord c) => c.Stacks.Sum(s => Strength(s.Type, s.Men));
 
-    /// Strength with drill weighed in, as a fought battle weighs it (docs/MELEE.md D8, --agree): who wins an auto-resolve.
+    /// Strength with drill weighed in, as a fought battle weighs it (docs/archive/MELEE.md D8, --agree): who wins an auto-resolve.
     public static float Might(UnitType t, int men) => MightAt(t, men, B.DrillWeight, B.TraitWeight);
     /// Might at a chosen drill and trait weight (--agree tries other weights): drill, and a tier V-VII troop's style and traits.
     public static float MightAt(UnitType t, int men, float drillWeight, float traitWeight) =>

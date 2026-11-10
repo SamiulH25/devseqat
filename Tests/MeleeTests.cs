@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Self-tests of melee from the ranks and company tactics (docs/MELEE.md): lines that hold, rear ranks that wait,
+/// Self-tests of melee from the ranks and company tactics (docs/archive/MELEE.md): lines that hold, rear ranks that wait,
 /// men stepping into gaps, companies fighting their own foe.
 public static partial class SelfTest
 {

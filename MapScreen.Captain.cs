@@ -149,7 +149,7 @@ partial class MapScreen
         }
     }
 
-    /// The aura (docs/KNIGHT_ORDERS.md 5): tier, XP to the next, the wall and what the tier gives. Returns the next y.
+    /// The aura (docs/archive/KNIGHT_ORDERS.md 5): tier, XP to the next, the wall and what the tier gives. Returns the next y.
     int AuraBlock(Rectangle c, int y)
     {
         var cap = C.Captain;
@@ -164,7 +164,7 @@ partial class MapScreen
         return FormList(c, OwnFormBlock(c, FlameBlock(c, y)));
     }
 
-    /// Your own form on offer (docs/MAGIC_AURA.md 4.4): the two styles you fight in most, one button each. Returns the next y.
+    /// Your own form on offer (docs/archive/MAGIC_AURA.md 4.4): the two styles you fight in most, one button each. Returns the next y.
     int OwnFormBlock(Rectangle c, int y)
     {
         var cap = C.Captain;
@@ -191,7 +191,7 @@ partial class MapScreen
         return y + h + ui.U(6);
     }
 
-    /// The Black Flame (docs/KNIGHT_ORDERS.md 7, K7): corruption, and the buttons to burn through a wall or purge it. Returns the next y.
+    /// The Black Flame (docs/archive/KNIGHT_ORDERS.md 7, K7): corruption, and the buttons to burn through a wall or purge it. Returns the next y.
     int FlameBlock(Rectangle c, int y)
     {
         var cap = C.Captain;

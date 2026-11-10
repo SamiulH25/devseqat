@@ -1,6 +1,6 @@
 # Ironfield campaign specification
 
-Status: **implemented (M0-M5)**; roadmap phase F will replace much of it (see [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md)), with the open questions in section 13 settled by the proposals; see "As built" at the end
+Status: **implemented (M0-M5)**; roadmap phase F will replace much of it (see [`CAMPAIGN_OVERHAUL.md`](archive/CAMPAIGN_OVERHAUL.md)), with the open questions in section 13 settled by the proposals; see "As built" at the end
 for where the build differs from this text. This document specifies the campaign layer that wraps the battles: what the player does between
 fights, how armies persist and improve, and how the map hands a battle over and takes the result back.
 Look and interface follow [`DESIGN.md`](DESIGN.md). Numbers marked *(tune)* are starting values for play-testing, not promises.
@@ -54,12 +54,12 @@ Section 12 sequences the work; section 13 lists the decisions still open.
 - **Generated from a seed**, like battle terrain: the same seed always gives the same map (useful for saves and bug reports).
   A hand-authored map can replace it later without code changes (it is data).
 - **Size.** The provinces span +-`WorldMap.Extent` (620 units, ~930 km across, about 115 provinces; maps from before
-  docs/WORLD.md W2 keep 392); the rendered ground reaches +-`GroundHalf`, the
+  docs/archive/WORLD.md W2 keep 392); the rendered ground reaches +-`GroundHalf`, the
   difference being a rim of mountains that closes the world in. The ground is drawn on a 4 m grid (`WorldMap.Step`), which is
   coarser than a battlefield's 2.5 m because it covers a much larger area; the mesh uses 32-bit indices past 65k vertices.
   A save records the extent it was made with (`CampaignState.MapExtent`), so campaigns started on the original small map keep
   that geography after the map was enlarged.
-- **Climates and ridges (layout 2, docs/WORLD.md W2).** Province kinds follow climate bands: forest and hills in the north,
+- **Climates and ridges (layout 2, docs/archive/WORLD.md W2).** Province kinds follow climate bands: forest and hills in the north,
   Steppe in the east, Badlands in the south, Marsh (fens) in the south-west, highlands in the middle. Two to five mountain
   ridges cross the land (`WorldMap.Ridges`): slow going (x0.45) and Hills battlefields, except at the passes where roads cross.
   Four rivers instead of two.
@@ -101,7 +101,7 @@ wood count and distance, and road on or off. Today's `Terrain(seed)` becomes `Me
 
 ### 4.1 Company (the persistent unit)
 
-> **Superseded by F1** ([`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md) section 2): a company now holds stacks of troops with an XP
+> **Superseded by F1** ([`CAMPAIGN_OVERHAUL.md`](archive/CAMPAIGN_OVERHAUL.md) section 2): a company now holds stacks of troops with an XP
 > pool each, and men are promoted one at a time. The text below describes the pre-overhaul whole-company model.
 The battle's `Company(Troop, Count, Role)` becomes the battle-time view of a persistent **CompanyRecord**:
 
@@ -203,7 +203,7 @@ Applying the result (`Campaign.Apply`):
 
 ## 6. Progression: XP and upgrades
 
-> **Superseded by F1** ([`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md) section 2): a company now holds stacks of troops with an XP
+> **Superseded by F1** ([`CAMPAIGN_OVERHAUL.md`](archive/CAMPAIGN_OVERHAUL.md) section 2): a company now holds stacks of troops with an XP
 > pool each, and men are promoted one at a time. The text below describes the pre-overhaul whole-company model.
 
 ### 6.1 Experience
@@ -286,7 +286,7 @@ Currency: **crowns**. Starting purse: 300 *(tune)*. Sources and sinks:
 ## 8. Factions and AI
 
 ### 8.1 Factions
-- **Azure Crown** (palette 0, chevron) and **Crimson Compact** (palette 1, saltire) start at war (with seven realms, docs/WORLD.md
+- **Azure Crown** (palette 0, chevron) and **Crimson Compact** (palette 1, saltire) start at war (with seven realms, docs/archive/WORLD.md
   W3: the Crown fights the Northmarch and the Compact the Khaganate, their neighbours). You start as a free captain who
   signs a contract with the Azure Crown in the tutorial (13.1).
 - **Bandits** (a new heraldry row: grey-brown cloth, no charge, a tattered banner) are hostile to all.
@@ -436,11 +436,11 @@ build differs:
 - **Code layout:** `ScreenHost` hosts `TitleScreen`, `MapScreen`, `BattleScreen` and `SettingsScreen` (top level rather than `Screens/`).
   The campaign sim, rules, map and state live in `Campaign/`, as specified.
 - **Renaming** works (click a company's name in the party screen). Merge and split, reordering, disbanding and the rest of section 9 work.
-- **The realm map** (M, docs/WORLD.md W6) shows every province in its realm's colour with the borders between realms and a legend.
+- **The realm map** (M, docs/archive/WORLD.md W6) shows every province in its realm's colour with the borders between realms and a legend.
 - **Map keys** are rebindable like every other key (settings screen or `controls.json`).
 - **Later additions** (roadmap phase B): sieges and fiefs, a third faction (the Northmarch) with per-pair wars, prisoners, contracts,
   officers, seasons and food. Saves are version 3 (version 2 added the third realm's wars, version 3 the map extent); older saves
-  are migrated on load, keeping the small map they were played on. See `docs/ROADMAP.md`, "As built".
+  are migrated on load, keeping the small map they were played on. See `docs/archive/ROADMAP.md`, "As built".
 - **Progression is surfaced, not inferred** (roadmap A5). `Campaign.NextStep()` (`Campaign/CampaignProgression.cs`) is the single
   answer to "what should I do now", in priority order: unpaid men, no food, a wounded captain, a free company slot with men to fill
   it, a perk to choose, a company with upgrade XP, no contract, too many wounded, and finally the next renown rung. The map HUD shows it

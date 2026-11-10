@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: horse and bows by grade (docs/MELEE.md D6). Rabble horse bog down; veteran horse rally as a body behind their
+/// Battle: horse and bows by grade (docs/archive/MELEE.md D6). Rabble horse bog down; veteran horse rally as a body behind their
 /// own side before charging again, and take a fighting company in the flank; elite horse ride a lane round to a foe's
 /// open side and go for archers left open. Veteran bows fall back behind their own foot when foot come at them and hold
 /// fire into a melee their own men are in; elite bows shoot wavering companies and the enemy's archers first.

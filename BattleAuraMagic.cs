@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: aura and magic together (docs/MAGIC_AURA.md 5, 3.4, MA5). Your own blessings feed your aura; the foe's curses reach
+/// Battle: aura and magic together (docs/archive/MAGIC_AURA.md 5, 3.4, MA5). Your own blessings feed your aura; the foe's curses reach
 /// you (aura armour halves them, tier 5 turns them); the lit blade or a thrown form breaks an enemy caster's working; the
 /// relic raised once a battle; craft marks that make your blade leave fever.
 public partial class Battle

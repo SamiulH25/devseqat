@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Ironfield;
 
-/// One effect from Data/effects.json (docs/COMPANIONS_MAGIC.md Part A): a named bonus or malus that reads the same
+/// One effect from Data/effects.json (docs/archive/COMPANIONS_MAGIC.md Part A): a named bonus or malus that reads the same
 /// everywhere. Fractions add (+0.1 = 10 % more); armour and morale a second are flat. A stat with no hook is not here.
 public sealed class EffectDef
 {
