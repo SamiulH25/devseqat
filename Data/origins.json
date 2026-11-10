@@ -1,0 +1,90 @@
+{
+  "_comment": "The captain's origins (character creator, Origins.cs). A birth (how you were raised) and a past (what you did before the company) each carry effects applied once when a campaign starts, an age added to 20, an optional free perk, and the line the log shows. Effects: gold:N, renown:N, food:N, horses:N, opinion_realm:N (lords of your homeland), skill:Id:N, gear:id (owned), wear:id (owned and worn), men:troop:N (base men, scaled by ArmyScale), free (no contract: a free company). Events with trigger origin:<id> come only to captains of that birth or past.",
+  "births": [
+    {
+      "id": "highborn", "name": "Born in the Hall", "icon": "crown", "age": 6,
+      "text": "A younger child of a minor house. You learned your letters, your manners and which lords hate which.",
+      "effects": ["renown:15", "gold:150", "skill:Charm:10", "skill:Leadership:5", "opinion_realm:5"],
+      "line": "Your father's name still opens a door or two."
+    },
+    {
+      "id": "yeoman", "name": "Born to the Plough", "icon": "bread", "age": 4,
+      "text": "Free farmers on good land. You walked behind oxen, shot at the butts every Sunday and know what men eat.",
+      "effects": ["skill:Bowcraft:10", "skill:Logistics:10", "food:20", "men:levies:5"],
+      "line": "Lads from your old parish walked out after you."
+    },
+    {
+      "id": "guild", "name": "Born in the Market", "icon": "coin", "age": 5,
+      "text": "Your family kept a counting house. You can read a ledger, smell a bad coin and talk a price down.",
+      "effects": ["gold:450", "skill:Charm:5", "skill:Stewardship:10"],
+      "line": "Your mother's last letter came with a purse in it."
+    },
+    {
+      "id": "camp", "name": "Born in the Baggage Train", "icon": "fire", "age": 3,
+      "text": "A camp follower's child. You grew up between wagons, sutlers and surgeons, and saw your first battle at eight.",
+      "effects": ["skill:Arms:5", "skill:Tactics:10", "skill:Medicine:5", "horses:4"],
+      "line": "You have never slept anywhere but a camp."
+    },
+    {
+      "id": "cloister", "name": "Raised in the Cloister", "icon": "scroll", "age": 5,
+      "text": "Left at a chapter house's gate. The brothers taught you herbs, Latin and patience before you ran off.",
+      "effects": ["skill:Medicine:15", "skill:Stewardship:5", "renown:5", "opinion_realm:3"],
+      "line": "You still know the old prayers for the dying."
+    }
+  ],
+  "pasts": [
+    {
+      "id": "sellsword", "name": "Sellsword", "icon": "coin", "age": 12, "perk": "Quartermaster",
+      "text": "Twelve years in other men's companies. You know what a soldier costs and how to make him cost less.",
+      "effects": ["skill:Arms:10", "skill:Tactics:5", "skill:Logistics:5", "gold:200", "men:shieldmen:6"],
+      "line": "Six of your old file signed on the day you raised your banner."
+    },
+    {
+      "id": "hedge_knight", "name": "Hedge Knight", "icon": "horse", "age": 9, "perk": "MountedLord",
+      "text": "A knight with no land, only a horse, a name and a long road between tourneys.",
+      "effects": ["skill:Riding:15", "renown:25", "gear:warhorse", "wear:warhorse", "gold:-100"],
+      "line": "Heralds still know your arms from the lists."
+    },
+    {
+      "id": "disinherited", "name": "Disinherited Heir", "icon": "crown", "age": 6, "perk": "Bannerman",
+      "text": "The land was yours until your uncle bought the judge. Now you have a name, a grudge and men who remember your father.",
+      "effects": ["skill:Leadership:10", "skill:Charm:5", "renown:10", "men:outriders:3"],
+      "line": "Three of your father's riders came with you. They want the land back."
+    },
+    {
+      "id": "deserter", "name": "Deserter", "icon": "flag", "age": 8, "perk": "Ambusher",
+      "text": "You walked away from a lord's war when it turned to murder. Nobody pays a deserter, so you are your own master now.",
+      "effects": ["free", "skill:Tactics:10", "skill:Arms:5", "gold:250", "men:spearrunners:6", "opinion_realm:-10"],
+      "line": "You fly no realm's colours. Some lords have not forgotten whose you once wore."
+    },
+    {
+      "id": "poacher", "name": "Poacher", "icon": "arrow", "age": 7, "perk": "Pathfinder",
+      "text": "The king's deer fed your village for six winters. You know every deer path, ford and hollow tree in the forest.",
+      "effects": ["skill:Bowcraft:15", "skill:Logistics:5", "gear:hunting_bow", "food:30", "men:bowmen:4"],
+      "line": "The woods are as good as a road to you."
+    },
+    {
+      "id": "outlaw", "name": "Reformed Outlaw", "icon": "skull", "age": 10, "perk": "Pursuit",
+      "text": "You held up the north road for years and bought a pardon with the takings. Old habits: you never let a beaten man get away.",
+      "effects": ["skill:Arms:10", "skill:Tactics:5", "gold:500", "renown:-15", "opinion_realm:-5"],
+      "line": "Your pardon is sealed, but the roads still whisper your old name."
+    },
+    {
+      "id": "surgeon", "name": "Barber-Surgeon", "icon": "heart", "age": 11, "perk": "Surgeon",
+      "text": "You sewed up other captains' men for a decade, then decided you could lead them better than the fools who got them cut.",
+      "effects": ["skill:Medicine:20", "skill:Charm:5", "gold:100"],
+      "line": "Your saws and needles ride in the first wagon."
+    },
+    {
+      "id": "drillmaster", "name": "Drill Sergeant", "icon": "shield", "age": 16, "perk": "Drillmaster",
+      "text": "Twenty years shouting at recruits on a lord's parade ground. You can make a soldier out of almost anything.",
+      "effects": ["skill:Training:20", "skill:Leadership:5", "skill:Arms:5", "men:levies:6"],
+      "line": "You have turned worse rabble than this into a line."
+    }
+  ],
+  "roads": [
+    { "id": "sword", "name": "Sword and Shield", "icon": "shield", "text": "On foot behind a kite shield. Arms 20." },
+    { "id": "lance", "name": "Lance and Saddle", "icon": "horse", "text": "A warhorse and a boar spear for the charge. Riding 20." },
+    { "id": "bow", "name": "The Bow", "icon": "arrow", "text": "A hunting bow in hand, the sword at your side. Bowcraft 20." }
+  ]
+}

@@ -5,7 +5,7 @@ namespace Ironfield;
 /// How well a company is trained (Grade, from its Drill).
 public enum Grade { Rabble, Trained, Veteran, Elite }
 
-/// Battle: drill and order (docs/MELEE.md D1-D2). Drill is a company's training, fixed for the battle; Formed is how
+/// Battle: drill and order (docs/archive/MELEE.md D1-D2). Drill is a company's training, fixed for the battle; Formed is how
 /// well its ranks hold right now. Men read Drill x Formed (Squad.Discipline); below Formed 0.4 the ranks are broken.
 public partial class Battle
 {
@@ -147,7 +147,7 @@ public partial class Battle
 
     /// Rabble (and a company under a hothead) holding with an enemy company close by may charge without orders: each
     /// second a roll against (0.3 - drill) x 2 (a hothead at least 1 in 4, from 22 m), unless a sergeant or your banner
-    /// is near. Your companies too: the price of levies (docs/MELEE.md D4).
+    /// is near. Your companies too: the price of levies (docs/archive/MELEE.md D4).
     void BreakRanks(Squad s)
     {
         if (s.BrokeRanks && !s.Broken && !s.InContact) s.BrokeRanks = false; // re-formed: back under orders

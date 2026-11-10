@@ -233,7 +233,7 @@ partial class MapScreen
         }
     }
 
-    /// A site as a silhouette against the sky: each kind its own shape (docs/SIDE_CONTENT.md S2).
+    /// A site as a silhouette against the sky: each kind its own shape (docs/archive/SIDE_CONTENT.md S2).
     void SiteScene(Rectangle p, int ground, Color c, float t, string kind)
     {
         int cx = p.X + p.Width / 2, u = ui.U(1);

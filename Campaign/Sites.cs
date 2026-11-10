@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A place of interest between the settlements (docs/SIDE_CONTENT.md S2). Sites are made with the map from its seed, so a save
+/// A place of interest between the settlements (docs/archive/SIDE_CONTENT.md S2). Sites are made with the map from its seed, so a save
 /// holds only what you did at them (CampaignState.SiteUntil, SitesSeen).
 public sealed class Site
 {

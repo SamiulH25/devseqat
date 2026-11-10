@@ -1,5 +1,5 @@
 {
-  // How each kind of battlefield ground plays (docs/TERRAIN.md 3). Speeds, fatigue, charge and reach are multipliers (1 = no change).
+  // How each kind of battlefield ground plays (docs/archive/TERRAIN.md 3). Speeds, fatigue, charge and reach are multipliers (1 = no change).
   // order: how well a formation keeps its shape (1 = parade ground); below 0.6 no bracing and no shield wall.
   // cover: how much it hides men and stops arrows (T3). stumble: chance a second that a galloping horse stumbles.
   "ground": [

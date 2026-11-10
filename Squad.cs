@@ -54,7 +54,7 @@ public sealed class Squad
     public bool[] ByHero = Array.Empty<bool>();
     public float Will = 100;
     public bool GreatDone;
-    /// Your orders to a caster (docs/MAGIC_AURA.md 3.1): hold all spells for your word; the spell (index into Spells, -1 =
+    /// Your orders to a caster (docs/archive/MAGIC_AURA.md 3.1): hold all spells for your word; the spell (index into Spells, -1 =
     /// none) you told it to cast, on which spot, and when the order reached it.
     public bool HoldSpells;
     /// The rank of a circle's master (0-3, MA4): more Will, a cheaper great working.
@@ -84,11 +84,11 @@ public sealed class Squad
     /// How much the ground where it stands opens its ranks (1 on open ground; more in a wood or water; Battle.UpdateSquad sets it).
     public float Loosen = 1;
 
-    /// Training (docs/MELEE.md D1, 0-1) and how well the ranks hold right now (D2, 0-1); men read their product.
+    /// Training (docs/archive/MELEE.md D1, 0-1) and how well the ranks hold right now (D2, 0-1); men read their product.
     public float Drill = 0.6f, Formed = 1;
     /// Ranks broken (Formed fell under 0.4; re-formed at 0.55): its men fight each for himself. InContact: a man is at blows.
     public bool Broken, InContact;
-    /// Charged without orders (rabble or a hothead, docs/MELEE.md D4): a sergeant leaves it be until it has re-formed.
+    /// Charged without orders (rabble or a hothead, docs/archive/MELEE.md D4): a sergeant leaves it be until it has re-formed.
     public bool BrokeRanks;
     public Grade Grade => Battle.GradeOf(Drill);
     public float Discipline => Drill * Formed;
@@ -101,7 +101,7 @@ public sealed class Squad
 
     /// Its place in Battle.Squads (staggers when each company thinks).
     public int Id;
-    /// Company wits (docs/MELEE.md D5, BattleTactics.cs): what it is doing, which of the foe's flanks it takes (+1 his
+    /// Company wits (docs/archive/MELEE.md D5, BattleTactics.cs): what it is doing, which of the foe's flanks it takes (+1 his
     /// left, -1 his right), the enemy coming at its own flank, the company it fought (to know when it broke) and the
     /// one to go back at once re-formed.
     public Plan Plan;

@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The captain's aura on the map (docs/KNIGHT_ORDERS.md 5.1-5.5, K1): XP from how you fought, the wall that stops it at
+/// The captain's aura on the map (docs/archive/KNIGHT_ORDERS.md 5.1-5.5, K1): XP from how you fought, the wall that stops it at
 /// each tier, and the trials that break the wall. The battle side is BattleAura.cs.
 public sealed partial class Campaign
 {

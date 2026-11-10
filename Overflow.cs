@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The layout guard for staged screenshots (docs/POLISH.md Q3): while a shots run is on, every panel, plate and button drawn
+/// The layout guard for staged screenshots (docs/archive/POLISH.md Q3): while a shots run is on, every panel, plate and button drawn
 /// this frame is remembered, and any text that runs past the one it starts in (or past the screen) is noted.
 /// `Flush` writes the notes for each shot to overflow.txt next to the PNGs; the aim is an empty file at 1280x720.
 static class Overflow

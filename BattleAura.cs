@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: the captain's aura (docs/KNIGHT_ORDERS.md 5.1-5.2, K1). A pool beside stamina that the aura blade and aura
+/// Battle: the captain's aura (docs/archive/KNIGHT_ORDERS.md 5.1-5.2, K1). A pool beside stamina that the aura blade and aura
 /// armour spend; it refills slowly in a fight and quickly out of one. Only the player has it (champions: K6).
 public partial class Battle
 {
@@ -28,7 +28,7 @@ public partial class Battle
     /// Breath comes back faster to a kindled captain (tier 1+); a spent one breathes slower than a plain man (MA3); Fever slows it (MA5).
     float AuraBreath => (AuraTier < 1 ? 1 : Spent ? SpentBreath : 1.25f) * (Fevered ? FeverBreath : 1);
 
-    /// The pool that matters (docs/MAGIC_AURA.md 4.1): aura comes back slowly out of a fight and twice as fast standing still
+    /// The pool that matters (docs/archive/MAGIC_AURA.md 4.1): aura comes back slowly out of a fight and twice as fast standing still
     /// with no foe near; at full, blows you land bank a surge that your next form spends first; spent, your blows and breath fail.
     public const float RegenOut = 1, RegenStill = 2, StillFoe = 30, SurgeMax = 20, SurgePerBlow = 4, SpentBlow = 0.9f, SpentBreath = 0.75f;
     /// Aura banked over the top (0-SurgeMax), spent first by a form.

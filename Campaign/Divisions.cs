@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Your divisions (docs/COMBAT_OVERHAUL.md 1.5): companies grouped under a companion or a company's sergeant, who
+/// Your divisions (docs/archive/COMBAT_OVERHAUL.md 1.5): companies grouped under a companion or a company's sergeant, who
 /// leads them in battle by goals. Companies in no division are your retinue.
 public partial class Campaign
 {

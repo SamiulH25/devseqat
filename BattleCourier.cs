@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A rider carrying an order from the general to a division's sergeant (docs/COMBAT_OVERHAUL.md 1.4). He is not a unit:
+/// A rider carrying an order from the general to a division's sergeant (docs/archive/COMBAT_OVERHAUL.md 1.4). He is not a unit:
 /// he rides the straight line so that he arrives when the order delay says, and an enemy within reach of the road cuts
 /// him down. Then the order is lost and a new rider sets out from the general, so the order lands later; each new rider
 /// swings wider round the danger (alternate sides), so a blocked road slows orders but does not stop them.

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Self-tests of companions in the field and as people (docs/COMPANIONS_MAGIC.md B1-B5; Callings.cs, Bonds.cs).
+/// Self-tests of companions in the field and as people (docs/archive/COMPANIONS_MAGIC.md B1-B5; Callings.cs, Bonds.cs).
 public static partial class SelfTest
 {
     /// A campaign with one companion leading the first company: (campaign, companion).

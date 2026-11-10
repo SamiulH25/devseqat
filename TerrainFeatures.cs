@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A line across the field that men cannot walk through (docs/TERRAIN.md 3): a hedge, a fence, a bridge's rail; or a row of
+/// A line across the field that men cannot walk through (docs/archive/TERRAIN.md 3): a hedge, a fence, a bridge's rail; or a row of
 /// sharpened stakes, which only stops horse (T6). Gaps are simply the spaces between segments.
 public enum FeatureKind { Hedge, Fence, Rail, Stakes }
 

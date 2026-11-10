@@ -174,7 +174,7 @@ public partial class Battle
             if (ranged && !t.Type.HasShield) chance *= 0.3f;
             if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && (t.Type.Tier <= 3 || Perk("Champion")) ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
             if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t)) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
-            if (!ranged) chance *= RankGuard(t) * RankEdge(a); // friends at the shoulders, foes all round (docs/MELEE.md D3.7)
+            if (!ranged) chance *= RankGuard(t) * RankEdge(a); // friends at the shoulders, foes all round (docs/archive/MELEE.md D3.7)
             if (a.IsPlayer && AuraBlade && !ranged || FoeBlade(a, ranged)) chance *= BladeGuard; // aura cuts through a guard (K1; a champion's, K6)
             chance *= StyleGuard(a, t, ranged, plunge); // a crush, a bash, an arrow from above a shield (BattleStyles.cs)
             if (t.Guard && !ranged && t.Squad != null) chance = MathF.Min(0.92f, chance + (1 - chance) * 0.5f * t.Squad.Drill); // he saw it coming
@@ -248,6 +248,7 @@ public partial class Battle
         if (FoeTier > 0 && (a == EnemyCaptain || t == EnemyCaptain)) real = FoeSoak(a, t, real, ranged); // a champion's (K6)
         t.Hp -= real;
         t.HitFlash = 0.15f;
+        t.HitFrom = a.Pos;
         t.HurtAt = Time;
         t.Morale -= (real * 0.16f + extraShock * 0.7f) * (1 + a.Mods.ShockDealt); // a fearsome man's blows shake more
         // Hits interrupt swings, but not a rhythm he has read: past your second chained blow he swings through it (P2).
@@ -263,8 +264,10 @@ public partial class Battle
         if (by.IsPlayer) PlayerHit = ($"HORSE HIT {dmg:0}", Time);
         if (r.HorseHp > 0) return;
         // The horse goes down and throws its rider.
+        if (r.Horse!.Barding != "wolf") Sound(Cue.Neigh, r.Pos);
         DeadHorses.Add(new DeadHorse(r.Pos, r.Heading, r.Team, r.Coat, r.Horse!.Barding, Time));
         r.Horse = null;
+        r.ThrownAt = Time;
         r.Speed = 0;
         r.Vel = Vector2.Zero;
         r.Couched = false;
@@ -311,9 +314,13 @@ public partial class Battle
         FellFromRanks(t);
         t.DiedAt = Time;
         t.DiedFrom = killer.Pos;
+        t.DiedFall = t.Mounted ? Fall.Saddle : killer.Type.Huge || killer.Type.Size > 1.5f ? Fall.Flung
+            : Vector2.DistanceSquared(killer.Pos, t.Pos) > 16 ? Fall.Plain
+            : killer.Swing == AttackDir.Thrust ? Fall.Thrust : killer.Swing is AttackDir.Left or AttackDir.Right ? Fall.Cut : Fall.Plain;
         t.Hp = 0;
         t.Action = UnitAction.None;
         t.Vel = t.Wish = Vector2.Zero;
+        if (!t.Type.Has("bones")) Sound(Cue.Death, t.Pos);
         if (t.Mounted)
         {
             if (t.Horse!.Barding != "wolf") // a warg whose rider falls runs off into the wild; nobody else can ride it
@@ -356,8 +363,10 @@ public partial class Battle
     void Loose(Unit u, Vector2 at, Unit? t, float damage, float spread)
     {
         u.Ammo--;
+        if (u.Squad != null && Time - u.Squad.LooseAt > 2.5f) Sound(Cue.Volley, Vector2.Lerp(u.Pos, at, 0.5f)); // a volley whistles overhead
         if (u.Squad != null) u.Squad.LooseAt = Time;
-        Sound(Cue.Bow, u.Pos);
+        var kind = Look.GripOf(u.Type.Look.Weapon);
+        Sound(kind is Grip.Thrown or Grip.Sling ? Cue.Throw : Cue.Bow, u.Pos);
         u.Action = UnitAction.Recover; // shows the release pose
         u.ActionTimer = 0.25f;
         float d = Vector2.Distance(u.Pos, at);
@@ -373,6 +382,7 @@ public partial class Battle
             Vel = new(h.X, 0.5f * Gravity * time + (land - from) / time, h.Y),
             Shooter = u,
             Damage = damage,
+            Kind = kind is Grip.Thrown or Grip.Sling or Grip.Crossbow ? kind : Grip.Bow,
         });
     }
 

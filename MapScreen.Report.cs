@@ -132,7 +132,7 @@ partial class MapScreen
     /// Every company of yours: men before and after, the fallen, wounded and lost, and the drill it earned.
     void ReportCompanies(BattleReport rep, Rectangle box)
     {
-        // Your named men first (docs/LEGACY.md L3): who fell, who is missing, who is hurt, who earned a name.
+        // Your named men first (docs/archive/LEGACY.md L3): who fell, who is missing, who is hurt, who earned a name.
         if (rep.Roll.Count > 0)
         {
             // Each man's line wraps to two rows; at most eight rows, the rest pointed to the roll.
@@ -239,7 +239,7 @@ partial class MapScreen
             y += ui.U(11);
         }
         if (rep.Rises.Count > 0) y += ui.U(4);
-        foreach (var w in rep.Wonders) // what the men will tell of (docs/SPECTACLE.md S7)
+        foreach (var w in rep.Wonders) // what the men will tell of (docs/archive/SPECTACLE.md S7)
             foreach (var l in ui.Wrap(w, c.Width - ui.U(14), 1)) { if (y + ui.U(11) > c.Bottom) break; ui.Icon("star", c.X, y, Kit.Gilt, 1); ui.Text(l, c.X + ui.U(14), y, Kit.Gilt, 1); y += ui.U(11); }
         if (rep.Wonders.Count > 0) y += ui.U(4);
         if (rep.Aura != "")

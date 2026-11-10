@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Self-tests of spells and mage companies (docs/COMPANIONS_MAGIC.md E1-E5; Abilities.cs, BattleAbilities.cs).
+/// Self-tests of spells and mage companies (docs/archive/COMPANIONS_MAGIC.md E1-E5; Abilities.cs, BattleAbilities.cs).
 public static partial class SelfTest
 {
     /// The spell data is sound and its icons can be drawn; every caster's spells exist.
@@ -211,7 +211,7 @@ public static partial class SelfTest
     }
 }
 
-/// Campaign side of effects and magic (docs/COMPANIONS_MAGIC.md A5, E1).
+/// Campaign side of effects and magic (docs/archive/COMPANIONS_MAGIC.md A5, E1).
 public static partial class SelfTest
 {
     /// A5: a buff laid on the map rides into the next battle on every company of yours, ends after its days, and a feast
@@ -292,7 +292,7 @@ public static partial class SelfTest
         Check(c.Split(c.Player.Companies.First(x => Rules.RoleOf(x) == "casters")) == Campaign.OneCircle, "and cannot split it in two");
     }
 
-    /// MA1 (docs/MAGIC_AURA.md 3.1): a circle holding its spells casts nothing on its own; an ordered spell is cast on your spot,
+    /// MA1 (docs/archive/MAGIC_AURA.md 3.1): a circle holding its spells casts nothing on its own; an ordered spell is cast on your spot,
     /// still warns first, and costs more Will; out of range the circle closes in; a spell that needs rain is given up in the dry.
     static void CastOnOrder()
     {
@@ -347,7 +347,7 @@ public static partial class SelfTest
         return (c, circle);
     }
 
-    /// MA4 (docs/MAGIC_AURA.md 3.2): the spells you prepare, and only those, go into battle with the circle.
+    /// MA4 (docs/archive/MAGIC_AURA.md 3.2): the spells you prepare, and only those, go into battle with the circle.
     static void SpellbookCarries()
     {
         var (c, circle) = CircleCampaign(91);
@@ -412,7 +412,7 @@ public static partial class SelfTest
         Check(Campaign.MasterOf(circle) is Soldier next && next.Id != m.Id, "after a while another rises");
     }
 
-    /// MA8 (docs/MAGIC_AURA.md 3.5): a company inside called mist is seen only close.
+    /// MA8 (docs/archive/MAGIC_AURA.md 3.5): a company inside called mist is seen only close.
     static void MistHides()
     {
         var flat = TerrainParams.Meadow with { Layouts = null, HillsMin = 0, HillsMax = 0, Road = false, Woods = 0, LoneTrees = 0 };
@@ -503,7 +503,7 @@ public static partial class SelfTest
         Check(c.Dread(c.Player) == 1 && MathF.Abs(c.OpinionOfYou(lord) - plain) < 0.01f, "not an Aura Knight");
     }
 
-    /// docs/SPECTACLE.md rule 6: one cinematic beat a battle, first come first served, but a higher kind may take over a
+    /// docs/archive/SPECTACLE.md rule 6: one cinematic beat a battle, first come first served, but a higher kind may take over a
     /// lower one while it runs; the view slows at its height and is back to normal after it.
     static void SpectacleBeat()
     {
@@ -519,7 +519,7 @@ public static partial class SelfTest
         Check(b.Ask(BeatKind.Charge, Vector2.Zero, 0), "a new battle has its beat again");
     }
 
-    /// S7 (docs/SPECTACLE.md): a great working the men saw is told in the battle's result (and so the report), once; a
+    /// S7 (docs/archive/SPECTACLE.md): a great working the men saw is told in the battle's result (and so the report), once; a
     /// plain spell is not, and each tells which side worked it.
     static void WondersReported()
     {

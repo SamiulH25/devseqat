@@ -74,13 +74,13 @@ partial class MapScreen
         ui.Pips(new Rectangle(x, y, w, ui.U(6)), Rules.Places(c) / MathF.Max(1, Rules.Cap(Rules.RoleOf(c))), Style.Sides[2].Ui, 10);
         y += ui.U(9);
         ui.Text("COHESION", x, y, Style.Dim * 0.8f, 1);
-        var grade = Battle.GradeOf(Battle.DrillOf(c)); // what its drill makes it in battle (docs/MELEE.md D1)
+        var grade = Battle.GradeOf(Battle.DrillOf(c)); // what its drill makes it in battle (docs/archive/MELEE.md D1)
         ui.TextR(Battle.GradeName(grade).ToUpperInvariant(), r.Right - ui.U(7), y, grade >= Grade.Veteran ? Kit.Gilt : grade == Grade.Trained ? Style.Text : Style.Dim, 1);
         y += ui.U(9);
         ui.Gauge(new Rectangle(x, y, w, ui.U(5)), c.Cohesion / 30f, c.Cohesion >= 15 ? Style.Ok : c.Cohesion >= 8 ? Style.Warn : Style.Bad);
         y += ui.U(9);
         if (ui.Hover(info) || ui.Hover(port)) note = CompanyNote(c);
-        // The roll (docs/LEGACY.md L1): click for the named men and the fallen.
+        // The roll (docs/archive/LEGACY.md L1): click for the named men and the fallen.
         var roll = new Rectangle(x - ui.U(2), y - ui.U(1), w + ui.U(4), ui.U(12));
         bool rh = ui.Hover(roll);
         if (rh) ui.Rect(roll, Color.White * 0.06f);
@@ -129,8 +129,8 @@ partial class MapScreen
     /// The company the roll panel shows.
     CompanyRecord? rollOf;
 
-    /// A company's roll (docs/LEGACY.md L1): its named men, what each is known for, and the men it has lost.
-    /// A circle's spellbook and master on its roll (docs/MAGIC_AURA.md 3.2-3.3): click a known spell to prepare it or set it
+    /// A company's roll (docs/archive/LEGACY.md L1): its named men, what each is known for, and the men it has lost.
+    /// A circle's spellbook and master on its roll (docs/archive/MAGIC_AURA.md 3.2-3.3): click a known spell to prepare it or set it
     /// aside, click one it could learn to learn it. Returns the y below it.
     int Spellbook(CompanyRecord c, int x, int y, int w)
     {

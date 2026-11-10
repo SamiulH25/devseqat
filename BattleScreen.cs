@@ -22,7 +22,7 @@ sealed partial class BattleScreen
     Quality quality { get => host.Quality; set => host.Quality = value; }
 
     const float CommandTimeScale = 0.25f, BlendTime = 0.45f, DoubleClick = 0.35f;
-    static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30), ArrowStreak = new(150, 146, 132);
+    static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30), ArrowStreak = new(150, 146, 132), StoneColor = new(60, 58, 54);
 
     Puppet puppet = null!;
     Hud hud = null!;
@@ -30,7 +30,7 @@ sealed partial class BattleScreen
     AlphaTestEffect spriteFx = null!;
     BattleSetup? campaignBattle;               // the battle in progress came from the campaign map
     bool deploying;
-    /// First times on the ground (docs/TERRAIN.md T6): a river, a wood, a field with places to hide.
+    /// First times on the ground (docs/archive/TERRAIN.md T6): a river, a wood, a field with places to hide.
     void GroundTips()
     {
         var t = battle.Terrain;
@@ -42,7 +42,7 @@ sealed partial class BattleScreen
             Tips.Show("height", "High ground. Men fighting downhill hit harder, archers shoot further, and a crest hides what is behind it.\nAn enemy on good ground may wait for you to come to him.");
     }
 
-    /// First times with aura and magic (docs/MAGIC_AURA.md 7): your forms, the blade, being spent, a curse, the relic, your circle.
+    /// First times with aura and magic (docs/archive/MAGIC_AURA.md 7): your forms, the blade, being spent, a curse, the relic, your circle.
     void MagicTips()
     {
         var b = battle;
@@ -90,9 +90,9 @@ sealed partial class BattleScreen
 
     // Debug: IRONFIELD_SHOTS=/dir stages a few camera shots, saves them as PNGs and quits.
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
-    // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/MELEE.md), =magic at the magic scenes,
-    // =spectacle at the spectacle scenes (docs/SPECTACLE.md), skipping the rest.
-    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, _ => 0 }, shotFrames;
+    // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/archive/MELEE.md), =magic at the magic scenes,
+    // =spectacle at the spectacle scenes (docs/archive/SPECTACLE.md), skipping the rest.
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
 
@@ -206,7 +206,7 @@ sealed partial class BattleScreen
             : shotDir != null ? Weather.Clear : Weather.For(rng.NextSingle() < 0.7f ? 9 + rng.Next(8) : rng.Next(2) == 0 ? 6.5f : 18.5f, rng.Next(3), seed);
         // A quick battle fills the field: about half the battle size a side (IRONFIELD_MEN=n sets the men a side).
         int men = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MEN"), out var m) ? m : Settings.Current.BattleSize / 2;
-        // IRONFIELD_AURA=tier[,order] gives the quick battle's captain an aura and forms (docs/KNIGHT_ORDERS.md), e.g. 4,rose.
+        // IRONFIELD_AURA=tier[,order] gives the quick battle's captain an aura and forms (docs/archive/KNIGHT_ORDERS.md), e.g. 4,rose.
         var aura = (Environment.GetEnvironmentVariable("IRONFIELD_AURA") ?? "").Split(',');
         int auraTier = int.TryParse(aura[0], out var at) ? Math.Clamp(at, 0, 5) : 0;
         var forms = Forms.Generic.Concat(aura.Length > 1 ? Forms.OfOrder(aura[1]) : Enumerable.Empty<FormDef>()).Where(f => f.Tier <= auraTier)
@@ -313,7 +313,7 @@ sealed partial class BattleScreen
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
         if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
         if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
-        scale *= BeatScale; // the battle's cinematic beat slows the view (docs/SPECTACLE.md S1); each tick's step is recorded
+        scale *= BeatScale; // the battle's cinematic beat slows the view (docs/archive/SPECTACLE.md S1); each tick's step is recorded
         if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
@@ -329,7 +329,7 @@ sealed partial class BattleScreen
         if (audio == null || !audio.Enabled) return;
         var right = Matrix.Invert(view).Right;
         foreach (var (cue, p) in battle.Sounds)
-            audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, cue is Cue.Shout or Cue.Horn or Cue.Rout ? 160 : 70);
+            audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, cue switch { Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer => 160, Cue.Crash => 200, Cue.Ram => 120, Cue.Volley => 90, _ => 70 });
     }
 
     /// Ambient beds and music: galloping and melee din by how much is near the camera; drums once the fighting starts.
@@ -339,19 +339,27 @@ sealed partial class BattleScreen
         if (audio == null) return;
         var ear = new Vector2(focusPoint.X, focusPoint.Z);
         float range = 25 + 30 * blend;
-        int horses = 0, fighting = 0, field = 0;
+        int horses = 0, fighting = 0, field = 0, marching = 0, men = 0;
         foreach (var u in battle.Units)
         {
-            if (u.Active && u.EnemyDist < 4) field++; // men in contact anywhere: the roar of the whole battle
-            if (!u.Active || Vector2.DistanceSquared(u.Pos, ear) > range * range) continue;
+            if (!u.Active) continue;
+            men++;
+            if (u.EnemyDist < 4) field++; // men in contact anywhere: the roar of the whole battle
+            if (Vector2.DistanceSquared(u.Pos, ear) > range * range) continue;
             if (u.Mounted && MathF.Abs(u.Speed) > 5) horses++;
+            else if (!u.Mounted && MathF.Abs(u.Speed) > 0.8f && u.EnemyDist > 4) marching++;
             if (u.Action is UnitAction.Windup or UnitAction.Recover && u.Type.Ammo == 0) fighting++;
         }
         bool quiet = paused || menuOpen || deploying;
         float hush = 1 - 0.6f * MathF.Max(BeatAmount, Sky.OmenDark); // a beat or a gathering working quiets the field
-        audio.Beds(0.7f * (1 - Sky.OmenDark * 0.8f), quiet ? 0 : MathF.Min(1, horses / 5f) * hush, quiet ? 0 : MathF.Min(1, fighting / 14f) * hush, quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)) * hush);
-        audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Map : MusicTrack.Battle);
+        audio.Beds(0.7f * (1 - Sky.OmenDark * 0.8f), quiet ? 0 : MathF.Min(1, horses / 5f) * hush, quiet ? 0 : MathF.Min(1, fighting / 14f) * hush,
+            quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)) * hush, quiet ? 0 : MathF.Min(1, marching / 30f) * hush, battle.Weather.Snow ? 0 : battle.Weather.Rain);
+        audio.Intensity(men == 0 ? 0 : MathF.Min(1, 3f * field / men)); // a third of the field in contact is the full score
+        audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Deploy : MusicTrack.Battle);
+        if (battle.Winner == 0 && !cheered) { cheered = true; audio.Play(Cue.Cheer, 0.9f); } // your men cheer the day
+        if (battle.Winner < 0) cheered = false;
     }
+    bool cheered;
 
     /// The dotted way the first chosen company would take while you draw an order (round a river by the ford, through a hedge's gap).
     List<Vector2>? route;

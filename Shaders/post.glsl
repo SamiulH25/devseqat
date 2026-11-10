@@ -1,7 +1,7 @@
 // Full-screen pass over the rendered scene: FXAA (the game runs without MSAA), colour grade, vignette.
 // Grade: x = saturation, y = contrast, z = vignette strength, w = FXAA on (1) / off (0). Texel = 1 / screen size.
 // Tint: rgb = the light's colour grade by hour and weather (1,1,1 = none), w = bloom strength (0 = off).
-// Awe (docs/SPECTACLE.md S1): colour drains outside a circle: xy = its centre (uv), z = radius (in screen heights), w = amount.
+// Awe (docs/archive/SPECTACLE.md S1): colour drains outside a circle: xy = its centre (uv), z = radius (in screen heights), w = amount.
 // Time: seconds, for the shimmer. Awe.z < 0 drains inside the circle (a dread). Warp: the Black Flame at the screen's edge.
 // Moment: x = letterbox bars (fraction of the height each), y = heat shimmer strength, z = white flash, w = shimmer top (uv y).
 varying vec2 vUV;

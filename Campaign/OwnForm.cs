@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Your own form and the aspects of forms (docs/MAGIC_AURA.md 4.4-4.5, MA6). A captain who never swore to an order makes a
+/// Your own form and the aspects of forms (docs/archive/MAGIC_AURA.md 4.4-4.5, MA6). A captain who never swore to an order makes a
 /// form from how he fights once he is an Aura Expert: the battles keep a tally of his style, and the top two are offered.
 /// A form at rank 3 takes one of two aspects, for good.
 public sealed partial class Campaign

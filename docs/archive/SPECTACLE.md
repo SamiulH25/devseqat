@@ -1,6 +1,6 @@
 # Spectacle pass: plan
 
-Plan for the next visual pass after docs/VISUALS.md (V1-V8) and docs/MAGIC_AURA.md 6 (MA2). Those made blows land and gave
+Plan for the next visual pass after docs/archive/VISUALS.md (V1-V8) and docs/archive/MAGIC_AURA.md 6 (MA2). Those made blows land and gave
 magic a look; this pass makes the *big* things feel big. Magic and aura come first: they are meant to be rare and awe
 inspiring, and today a Smite and a Mend differ mostly in colour. When a phase ships, add its "As built" note at the end.
 
@@ -152,7 +152,7 @@ So the field around the magic is alive too (keep each small):
   ("Your circle called down the Tempest"). Needs `BattleResult.Wonders` (a list of strings): a result field, not sim logic.
 - **On the map (later):** a great working leaves a mark in the province for a season (a scorched or blooming patch drawn by
   `World` at the battle cell). Needs a save field (`CampaignState.Scars`: cell, kind, until) and a site hook in
-  `Campaign/Sites.cs`; plan it with docs/SIDE_CONTENT.md, not in this pass.
+  `Campaign/Sites.cs`; plan it with docs/archive/SIDE_CONTENT.md, not in this pass.
 
 ### S8: Quality, speed and checks
 
@@ -181,7 +181,7 @@ So the field around the magic is alive too (keep each small):
 ## 5. Out of scope
 
 - Any change to what spells or aura *do*. If a look suggests a rule ("men really should rout from the light"), write it in
-  docs/MAGIC_AURA.md as a question instead.
+  docs/archive/MAGIC_AURA.md as a question instead.
 - New art direction: faceted world and pixel puppets stay; birds and petals are painted parts in `SpriteSheet.cs`.
 - A general particle system rewrite: motes and `Spray` stay; S1 only adds lights, sky, post and scars.
 

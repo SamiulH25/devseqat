@@ -170,7 +170,7 @@ public sealed partial class Campaign
     bool LeaderWar(War w) => Leading(w.A) || Leading(w.B);
 
     /// The share of the seats that unites the other realms against one: 45% of three realms' seats, less with more realms
-    /// (30% of seven), so no realm runs away with the map (docs/WORLD.md W5).
+    /// (30% of seven), so no realm runs away with the map (docs/archive/WORLD.md W5).
     public float LeaderShare
     {
         get

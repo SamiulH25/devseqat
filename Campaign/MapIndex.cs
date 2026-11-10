@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A bucket grid over the campaign map (docs/WORLD.md W0), so "which province is this", "how far to a road" and "how far to a
+/// A bucket grid over the campaign map (docs/archive/WORLD.md W0), so "which province is this", "how far to a road" and "how far to a
 /// river" look at a cell's few candidates and not at every province, road and river bend. Each cell keeps every item that could
 /// give the answer for some point inside it, so the results are exactly the full scan's (old saves rebuild their map from the
 /// seed, and sites placed with these queries must not move). Points off the grid fall back to the full scan.

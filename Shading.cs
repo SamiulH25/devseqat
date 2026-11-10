@@ -111,12 +111,12 @@ sealed class Shading : IDisposable
     public float GroundSize = 1;
     /// Close-up ground detail (the battle's field camera; off on the campaign map's far view).
     public bool NearDetail;
-    /// A besieged town's torch row (docs/VISUALS.md): x = its z, y = its height, z = strength (0 = none), w = spacing.
+    /// A besieged town's torch row (docs/archive/VISUALS.md): x = its z, y = its height, z = strength (0 = none), w = spacing.
     /// Set by the battle screen while it draws a siege at night; zero everywhere else.
     public Vector4 Torch;
     /// How still the air is (0 = the usual breeze, 1 = dead calm): a great working gathering holds its breath.
     public float Calm;
-    /// Moving lights (docs/SPECTACLE.md S1): xyz place, w strength (negative takes light); colours rgb + reach in w.
+    /// Moving lights (docs/archive/SPECTACLE.md S1): xyz place, w strength (negative takes light); colours rgb + reach in w.
     /// Set by the battle screen each frame; all zero elsewhere.
     public readonly Vector4[] Glow = new Vector4[4], GlowCol = new Vector4[4];
     static readonly string[] GlowNames = { "Glow0", "Glow1", "Glow2", "Glow3", "GlowCol0", "GlowCol1", "GlowCol2", "GlowCol3" };
@@ -174,7 +174,7 @@ sealed class Shading : IDisposable
     /// Draw the scene target to the screen through the post shader: `tint` grades the light by hour and weather
     /// (Sky.Grade; One = none), `bloom` lets bright highlights glow (0 = off; High quality only). `awe` drains colour
     /// outside a circle (xy its centre in screen uv, z its radius, w how much); `moment`: x = letterbox bars (fraction of the
-    /// height each), y = heat shimmer, z = a white flash, w = the shimmer's height on screen (docs/SPECTACLE.md S1).
+    /// height each), y = heat shimmer, z = a white flash, w = the shimmer's height on screen (docs/archive/SPECTACLE.md S1).
     public void PostToScreen(bool fxaa, Vector3? tint = null, float bloom = 0, Vector4 awe = default, Vector4 moment = default, float warp = 0)
     {
         var s = Scene();

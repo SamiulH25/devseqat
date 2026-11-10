@@ -92,7 +92,7 @@ public partial class Campaign
             m.Name = Day >= 60 ? $"The {t.Name} {Troops.Get(mage).Name}" : $"Acolytes of {t.Name}";
             t.Mercenaries.Add(m);
         }
-        // Now and then a few ogres sell their clubs (docs/CREATURES.md phase 4): costly, and the only big beasts for hire.
+        // Now and then a few ogres sell their clubs (docs/archive/CREATURES.md phase 4): costly, and the only big beasts for hire.
         if (rng.Chance(B.OgreOfferChance))
         {
             var o = NewCompany("ogre", Rules.TroopRole("ogre"), Scaled(B.OgreMen), 0);
@@ -103,8 +103,8 @@ public partial class Campaign
 
     IEnumerable<Party> Visible(Party p, float range) => S.Parties.Where(q => q != p && !q.Down && Vector2.Distance(p.Pos, q.Pos) < range);
 
-    /// Lords of a realm whose temper sends them after monsters first (docs/WORLD.md W5).
-    /// A knight order's armies hunt what their order hunts: monsters and the dead (docs/KNIGHT_ORDERS.md 4.4).
+    /// Lords of a realm whose temper sends them after monsters first (docs/archive/WORLD.md W5).
+    /// A knight order's armies hunt what their order hunts: monsters and the dead (docs/archive/KNIGHT_ORDERS.md 4.4).
     bool MonsterHunter(Party p) => p.Faction >= 0 && Factions.Get(p.Faction).Hunts == "monsters" || OrderOf(p)?.Hunts is "monsters" or "undead";
 
     internal void LordThink(Party p)

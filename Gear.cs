@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Ironfield;
 
-/// One piece of the captain's kit from Data/gear.json (docs/PROGRESSION.md P1).
+/// One piece of the captain's kit from Data/gear.json (docs/archive/PROGRESSION.md P1).
 public sealed class GearDef
 {
     public string Id = "", Slot = "", Name = "", Look = "", Legs = "cloth", Feet = "boots", Mount = "", Text = "";

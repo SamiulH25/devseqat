@@ -140,7 +140,7 @@ Controls.cs             rebindable actions (Act enum), defaults, controls.json
 ── Rendering and sound ────────────────────────────────────────────────────────────────────────────────
 World.cs (3D meshes), Shading.cs + GlslEffect.cs + Shaders/*.glsl (shader pipeline), Sky.cs (light by hour/weather),
 Puppet.cs (units as part-sprite puppets), SpriteSheet.cs + Painter.cs (paint the sprite atlas in code), Art.cs (atlas upload),
-PixelFont.cs (the HUD font), Style.cs (colours, heraldry, UI tokens), Verts.cs (growable vertex array), Audio.cs (synthesised sound)
+PixelFont.cs (the HUD font), Style.cs (colours, heraldry, UI tokens), Verts.cs (growable vertex array), Audio.cs (plays sound), AudioSynth.cs + AudioMusic.cs (make it), SoundDump.cs (`--sounds`)
 
 ── Tests and tools ────────────────────────────────────────────────────────────────────────────────────
 SelfTest.cs             test runner (Run, RunOne), shared helpers, Check
@@ -219,7 +219,7 @@ separation, terrain and walls. Keep that split when adding behaviour.
    lunges a little (rabble far), the second rank less, the rest hold their places and step up when a man falls; a drilled man
    raises his guard against a blow he sees coming (`Guard`). Broken companies, mobs and beasts close and fight each for himself.
 
-**Drill and order (docs/MELEE.md, BattleDrill.cs).** `Squad.Drill` (0-1, from the troop tier, cohesion, officer, companion,
+**Drill and order (docs/archive/MELEE.md, BattleDrill.cs).** `Squad.Drill` (0-1, from the troop tier, cohesion, officer, companion,
 sergeant) is fixed for the battle and gives the `Grade` (Rabble < 0.30 < Trained < 0.56 < Veteran < 0.85 < Elite).
 `Squad.Formed` (0-1) falls with a long run, losses, flank hits, a melee (rabble only) and bad ground, and comes back out of
 contact (veterans also in it); under 0.4 the company is `Broken` until 0.55. Men read `Discipline = Drill x Formed`.
@@ -310,7 +310,7 @@ A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a 
 - **Replays:** goals you give are recorded (`Frame.Goals`) and re-issued on playback; the AI's are recomputed. Direct orders
   are recorded when they land, as ordinary order changes.
 
-### 4.10 Ground (docs/TERRAIN.md)
+### 4.10 Ground (docs/archive/TERRAIN.md)
 
 The field has three layers on top of the height map. Each 2.5 m cell has a `GroundKind` (`TerrainGround.cs`, rules per
 kind in `Data/ground.json`: pace for foot and horse, tiring, formation order, charge, reach, cover, stumbling). Line features
@@ -425,7 +425,7 @@ The UI calls it as `note = C.BuyHorses(s, 1) ?? "BOUGHT";`.
 
 ### 5.6 The layers
 
-The campaign was built in steps F1-F9 (see `docs/CAMPAIGN_OVERHAUL.md`); each layer is one file:
+The campaign was built in steps F1-F9 (see `docs/archive/CAMPAIGN_OVERHAUL.md`); each layer is one file:
 
 | Layer | File | Core ideas |
 |---|---|---|
@@ -520,9 +520,16 @@ There are no image, model or sound files: everything is generated at startup.
   are in the README "Shaders" section: render targets sample upside down on GL, vertex shaders end with `FIXUP_POSITION`,
   no MSAA (breaks Mesa/Xvfb).
 - **Light:** `Sky.cs` sets sun, ambient and fog from the hour and weather.
-- **Sound:** `Audio.cs` synthesises every `Cue` (Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin; the ground's Splash, Squelch, Rustle, Hollow)
-  and the music. The sim emits cues with `Sound(Cue.X, pos)` into `Battle.Sounds`; the screen plays them. No audio device
-  means silence, not a crash.
+- **Sound:** `AudioSynth.cs` (static class `Synth`, pure maths, headless) makes every `Cue` in 3-4 versions plus a far
+  version (`Far`: muffled, more echo), the ambient beds (`Bed`: battle wind, gallop, din, roar, march, rain; map birds,
+  crickets, town) and, in `AudioMusic.cs`, the music: three map themes that take turns with quiet between, the deployment
+  piece, the battle score in two layers (the second rises with `AudioEngine.Intensity`, the share of the field in contact),
+  victory and defeat. `Audio.cs` (`AudioEngine`) makes it all on a background thread at startup, picks a version at random
+  (never the same twice), plays the far version past a third of a cue's range, and fades out any bed no screen asked for this
+  frame (`SetBed`). The sim emits cues with `Sound(Cue.X, pos)` into `Battle.Sounds`; the screen plays them; buttons tick on
+  hover (`Ui.OnHover`) and a page turns when a map screen opens. No audio device means silence, not a crash.
+  `--sounds dir` writes every cue, bed and piece as WAV files to listen to; `SelfTest.SoundsMade` checks they are audible,
+  never clip and loop cleanly.
 
 Check visual changes with the screenshot commands in section 1 and look at the PNGs.
 
@@ -693,8 +700,10 @@ stand-in captain and reports career stage days against targets (slow: ~10 min fo
 3. List it in the F1 help (`Hud.Help`).
 
 ### 10.10 Add a sound
-1. Add a value to `Cue` in `Audio.cs` and synthesise it in the `AudioEngine` constructor (see how others use `Make`).
-2. Emit it from the sim with `Sound(Cue.MyCue, pos)`.
+1. Add a value to `Cue` in `Audio.cs`, a case in `Synth.Make` (AudioSynth.cs) that builds it from a `Random` (so each
+   version differs), and its loudness in `Synth.Peak`.
+2. Emit it from the sim with `Sound(Cue.MyCue, pos)` (its hearing range is in `BattleScreen.PlaySounds`).
+3. Listen: `dotnet run -c Release --no-build -- --sounds /tmp/snd` writes `cue-mycue.wav`.
 
 ---
 

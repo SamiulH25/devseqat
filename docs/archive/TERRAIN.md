@@ -36,7 +36,7 @@ What it does **not** do:
   Division goals (`Hold`, `Take`) go to points the player or `AiCommand` picked, with no idea of high ground,
   woods or water.
 - **The field does not scale.** `Terrain.Core` keeps ±50 × ±54 m clear, but `MapRadius` grows to 230 m for big battles
-  (docs/COMBAT_OVERHAUL.md). A 3,000-man battle spills into random woods, and features never sit where the fight is.
+  (docs/archive/COMBAT_OVERHAUL.md). A 3,000-man battle spills into random woods, and features never sit where the fight is.
 - **The ground has no story.** Features are scattered at random. There is no "the ridge between us", no "the village
   in the middle", no "the bridge we must hold". A battle on Forest ground plays like one on Meadow ground with more trees.
 - **The player cannot read it.** No tooltip, no overlay, and a minimap with no contours. Deployment does not show
@@ -243,7 +243,7 @@ army, which replaces the fixed `Core`.
 - **Field works.** Archers with the `Stakes` trait (data, in troops.json) can plant stakes in front of their line
   during deployment or when they are not under attack (an order, `Act.Stakes`). Stakes are a Feature that horse
   cannot cross. Siege engineers' pavises give cover. These make use of T2's features. Keep this small.
-- **Captain perks** in the skill tree (docs/PROGRESSION.md), wired through `BattleOptions`: *Pathfinder*
+- **Captain perks** in the skill tree (docs/archive/PROGRESSION.md), wired through `BattleOptions`: *Pathfinder*
   (your men lose less speed in woods and marsh), *Eye for Ground* (your side sees 25% further and sees through
   the edge of woods), *Ambusher* (it already exists on the map; it now also lets your Ambush goal hit harder).
 - Tips (`Tips.cs`) for the first wood, first river, first ambush. Lines in the F1 help (`Hud.Help`).

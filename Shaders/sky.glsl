@@ -1,5 +1,5 @@
 // Sky dome: horizon-to-zenith gradient, sun disc and glow, and drifting procedural clouds.
-// Swirl (docs/SPECTACLE.md S3): x = how hard the clouds turn round the zenith, y = how much more of the sky they cover.
+// Swirl (docs/archive/SPECTACLE.md S3): x = how hard the clouds turn round the zenith, y = how much more of the sky they cover.
 varying vec3 vDir;
 
 #ifdef VERTEX

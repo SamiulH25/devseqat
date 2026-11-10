@@ -8,7 +8,7 @@ namespace Ironfield;
 // Nothing here references MonoGame graphics: the self-test runs whole campaigns headless.
 
 public enum SettlementKind { Village, Town, Castle }
-/// Monster: creatures of the wild (docs/CREATURES.md), hostile to every party of men; Party.Breed says what they are.
+/// Monster: creatures of the wild (docs/archive/CREATURES.md), hostile to every party of men; Party.Breed says what they are.
 public enum PartyKind { Player, Lord, Bandit, Garrison, Monster, Caravan }
 
 /// A persistent company (CAMPAIGN_OVERHAUL.md 2): a banner with a role, a history and an officer, holding troop stacks of any
@@ -38,9 +38,9 @@ public sealed class CompanyRecord
     /// Its last battles, newest last (at most LedgerSize).
     public List<LedgerEntry> Ledger = new();
     public const int LedgerSize = 8;
-    /// Your companies' named men (docs/LEGACY.md L1): the few who earned a name, each one of the men of his stack.
+    /// Your companies' named men (docs/archive/LEGACY.md L1): the few who earned a name, each one of the men of his stack.
     public List<Soldier> Roll = new();
-    /// A circle of mages (docs/MAGIC_AURA.md 3.2-3.3): spells learned beyond its line's, those you prepared for battle
+    /// A circle of mages (docs/archive/MAGIC_AURA.md 3.2-3.3): spells learned beyond its line's, those you prepared for battle
     /// (empty = its line's), its master (a Soldier id on the roll, 0 = none) and until when it is leaderless (hours).
     public List<string> Spells = new(), Prepared = new();
     public int Master;
@@ -139,10 +139,10 @@ public sealed class TroopStack
     }
 }
 
-/// A named man of one of your companies (docs/LEGACY.md L1). He is one of the men of the stack of his troop: hurt while
+/// A named man of one of your companies (docs/archive/LEGACY.md L1). He is one of the men of the stack of his troop: hurt while
 /// among its wounded. When he leaves the roll he goes to CampaignState.Fallen with how (Fate), where (DiedAt) and his
 /// company (Company, CompanyName), so he is remembered after the company itself is gone.
-/// Your own knight order (docs/KNIGHT_ORDERS.md 8, K8): founded from your company. Its creed (three vows), the form it
+/// Your own knight order (docs/archive/KNIGHT_ORDERS.md 8, K8): founded from your company. Its creed (three vows), the form it
 /// teaches, the day it was founded, its knights (named men's ids) and how many grand masters it has had.
 public sealed class FoundedOrder
 {
@@ -157,7 +157,7 @@ public sealed class Soldier
     public int Id, Battles, Kills, Wounds, Joined, DiedDay, Company = -1;
     public string Name = "", Troop = "", Fate = "", DiedAt = "", CompanyName = "";
     public bool Hurt;
-    /// Knighted into your own order (docs/KNIGHT_ORDERS.md 8, K8).
+    /// Knighted into your own order (docs/archive/KNIGHT_ORDERS.md 8, K8).
     public bool Knight;
     /// What he is known for, newest last (at most MaxDeeds).
     public List<string> Deeds = new();
@@ -234,7 +234,7 @@ public sealed class Party
     public bool Captive;                 // a lord held by you
     public float Food = 10;              // days of food (yours; lords are fed by their faction)
     public int SiegeTarget = -1;         // the settlement this party is besieging
-    /// Monsters (docs/CREATURES.md): what they are ("goblin"); a holdout is a Lair party that never moves, its Gold the
+    /// Monsters (docs/archive/CREATURES.md): what they are ("goblin"); a holdout is a Lair party that never moves, its Gold the
     /// hoard; a raiding band names its holdout (LairId, a party id) and the village it is going to plunder (RaidOn).
     public string Breed = "";
     public bool Lair;
@@ -243,7 +243,7 @@ public sealed class Party
     /// A holdout whose raiders plundered a realm's village is hunted by that realm's lords until HuntedUntil.
     public int HuntedBy = -1;
     public float HuntedUntil;
-    /// A knight order's army (docs/KNIGHT_ORDERS.md 4.3): the order's id, "" for every other party.
+    /// A knight order's army (docs/archive/KNIGHT_ORDERS.md 4.3): the order's id, "" for every other party.
     public string KnightOrder = "";
 
     public int Men => Companies.Sum(c => c.Men);
@@ -253,7 +253,7 @@ public sealed class Party
 public sealed class Settlement
 {
     public int Id, Province, Faction, Recruits, Horses;
-    /// War hounds ready at this place's kennel (docs/CREATURES.md phase 4).
+    /// War hounds ready at this place's kennel (docs/archive/CREATURES.md phase 4).
     public int Hounds;
     public string Name = "";
     /// The culture its people belong to (F2): it keeps it when the settlement changes hands, so its recruits do too.
@@ -299,11 +299,11 @@ public sealed class Province
     };
     public Vector2 Center;
     public List<int> Neighbors = new();
-    /// How wet its ground is from recent rain, 0-1 (docs/TERRAIN.md T7; Campaign.RainDaily).
+    /// How wet its ground is from recent rain, 0-1 (docs/archive/TERRAIN.md T7; Campaign.RainDaily).
     public float Wet;
 }
 
-/// A knight order on the map (docs/KNIGHT_ORDERS.md 4): its patron realm, chapter house, grand master and commanders,
+/// A knight order on the map (docs/archive/KNIGHT_ORDERS.md 4): its patron realm, chapter house, grand master and commanders,
 /// its standing with you, and how it fares.
 public sealed class OrderState
 {
@@ -318,7 +318,7 @@ public sealed class OrderState
     public Dictionary<string, float> Regard = new();
     /// It died out (its patron fell and nobody took it in, or the Black Flame took it).
     public bool Gone;
-    /// A crusade it has called (docs/KNIGHT_ORDERS.md 4.6): the party it rides against, until when.
+    /// A crusade it has called (docs/archive/KNIGHT_ORDERS.md 4.6): the party it rides against, until when.
     public int CrusadeOn = -1;
     public float CrusadeUntil;
     /// When it next raises a knight-commander's army, and when its chapter next has brothers to spare you (campaign hours).
@@ -396,7 +396,7 @@ public sealed class CaptainState
     public float Renown = 50, WoundedUntil;
     /// Before the armoury (P1) gear was three tiers; a save that still has them is moved onto the kit when loaded (`Campaign.MigrateGear`).
     public int ArmorTier, HelmTier, HorseTier, Contract = 0; // Contract: faction you serve, -1 = none
-    /// What the captain wears and carries (docs/PROGRESSION.md P1).
+    /// What the captain wears and carries (docs/archive/PROGRESSION.md P1).
     public CaptainKit Kit = new();
     /// Career (F5): you swore fealty to the realm you serve (a vassal, not a hired sword); when this contract began;
     /// and the highest rank reached so far (an int of Rank), so each career beat is shown once.
@@ -413,7 +413,7 @@ public sealed class CaptainState
     /// Perk choices given by rank, free of any branch's 25-point marks (P5: one at Sworn Sword), and the perks taken with them.
     public int FreePerks;
     public List<string> BonusPerks = new();
-    /// The aura (docs/KNIGHT_ORDERS.md 5): tier 0-5, XP towards the next, and the wall (XP full, a trial needed).
+    /// The aura (docs/archive/KNIGHT_ORDERS.md 5): tier 0-5, XP towards the next, and the wall (XP full, a trial needed).
     public int AuraTier;
     public float AuraXp;
     public bool AuraWall;
@@ -423,26 +423,30 @@ public sealed class CaptainState
     public List<string> Forms = new();
     public Dictionary<string, int> FormUses = new();
     public float Corruption;
-    /// The Black Flame (docs/KNIGHT_ORDERS.md 7, K7): the Hollow Crown's pact taken; the highest threshold (25 each) whose
+    /// The Black Flame (docs/archive/KNIGHT_ORDERS.md 7, K7): the Hollow Crown's pact taken; the highest threshold (25 each) whose
     /// price you have paid; purged once (no second bargain); how it ended ("" = it has not; "crown" or "burnt").
     public bool Pact, Purged;
     public int FlameSeen;
     public string FlameEnd = "";
-    /// Your knight order (docs/KNIGHT_ORDERS.md 4.5, K4): its id ("" = unsworn), your rank in it (Campaign.OrderRanks, granted
+    /// Your knight order (docs/archive/KNIGHT_ORDERS.md 4.5, K4): its id ("" = unsworn), your rank in it (Campaign.OrderRanks, granted
     /// and so stored), the order deeds you have done, a vow broken and not yet atoned for, and the orders you left or were cast
     /// out of.
     public string Order = "";
     public int OrderRank, OrderDeeds;
     public bool Penance;
     public List<string> Forsworn = new();
-    /// Your rival in the order (a knight character id, -1 = none; docs/KNIGHT_ORDERS.md 6.2).
+    /// Your rival in the order (a knight character id, -1 = none; docs/archive/KNIGHT_ORDERS.md 6.2).
     public int Rival = -1;
-    /// Your own form (docs/MAGIC_AURA.md 4.4, MA6): how you fight, battle by battle (style -> points), the two styles offered
+    /// Your own form (docs/archive/MAGIC_AURA.md 4.4, MA6): how you fight, battle by battle (style -> points), the two styles offered
     /// once you may make one, and the form you made (registered as Forms.OwnId). The aspect each form took at rank 3 (4.5).
     public Dictionary<string, float> StyleTally = new();
     public List<string> OwnFormOffer = new();
     public FormDef? OwnForm;
     public Dictionary<string, string> FormAspects = new();
+    /// Who the captain was before the company (the character creator, Data/origins.json): birth and past ids ("" = a save
+    /// from before origins, or a campaign started without the creator), and the face chosen (a Variety visage, -1 = the plain head).
+    public string Birth = "", Origin = "";
+    public int Visage = -1;
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought
@@ -482,7 +486,7 @@ public sealed class CampaignState
     public int Generation;
     /// How far the provinces of this save's map reach (WorldMap.Extent for new campaigns; older saves have their own).
     public float MapExtent = WorldMap.PreviousExtent;
-    /// How the map lays out its realms (WorldMap.Layout): saves from before docs/WORLD.md W1 have none and keep the old bands.
+    /// How the map lays out its realms (WorldMap.Layout): saves from before docs/archive/WORLD.md W1 have none and keep the old bands.
     public int Layout = WorldMap.LegacyLayout;
     /// How many realms Data/factions.json held when the campaign began (older saves: three). Realms past it are founded in play.
     public int DataRealms = 3;
@@ -490,9 +494,9 @@ public sealed class CampaignState
     public ulong Rng;
     /// The roll's own stream (L1), so naming men never moves the campaign's main draws.
     public ulong RollRng;
-    /// The knight orders' own random stream (docs/KNIGHT_ORDERS.md), so they move nothing else's draws.
+    /// The knight orders' own random stream (docs/archive/KNIGHT_ORDERS.md), so they move nothing else's draws.
     public ulong OrderRng;
-    /// The knight orders (docs/KNIGHT_ORDERS.md 4), made on load for saves from before them.
+    /// The knight orders (docs/archive/KNIGHT_ORDERS.md 4), made on load for saves from before them.
     public List<OrderState> Orders = new();
     /// The order you founded (K8); null until then.
     public FoundedOrder? OwnOrder;
@@ -504,7 +508,7 @@ public sealed class CampaignState
     public List<War> Wars = new();
     public CaptainState Captain = new();
     public List<Party> Parties = new();
-    /// Sites (docs/SIDE_CONTENT.md S2): when each can be used again (campaign hours; absent = now), the ones you have
+    /// Sites (docs/archive/SIDE_CONTENT.md S2): when each can be used again (campaign hours; absent = now), the ones you have
     /// been to, and the site you are riding to (-1 = none).
     public Dictionary<int, float> SiteUntil = new();
     public List<int> SitesSeen = new();
@@ -523,7 +527,7 @@ public sealed class CampaignState
     public PendingEvent? Event;
     public float NextEvent = 72;
     public Dictionary<string, float> EventsFired = new();
-    /// Grave fields of big battles whose dead were not buried (docs/CREATURES.md phase 5): one may rise as an undead host.
+    /// Grave fields of big battles whose dead were not buried (docs/archive/CREATURES.md phase 5): one may rise as an undead host.
     public List<Grave> Graves = new();
     public float LastSummons = -1000;
     public int LastBattleFoe = -1;             // the last party you defeated (for hunt contracts)
@@ -533,7 +537,7 @@ public sealed class CampaignState
     /// Your deeds for the chronicle and the end summary (S7), what you did counted by kind, and a watchtower's long view.
     public List<LogEntry> Deeds = new();
     public List<int> SitesVisited = new();
-    /// Effects on your company for a while (docs/COMPANIONS_MAGIC.md A5): a shrine's blessing, a feast, hunger, a rite.
+    /// Effects on your company for a while (docs/archive/COMPANIONS_MAGIC.md A5): a shrine's blessing, a feast, hunger, a rite.
     /// Carried into every battle until they end (Campaign/Buffs.cs).
     public List<Buff> Buffs = new();
     /// Omen (C2): craft draws it; it fades a point a day and, past thresholds, draws ill events.
@@ -546,7 +550,7 @@ public sealed class CampaignState
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
     public List<Character> Characters = new();
     public int CaptainChar = -1;
-    /// Your divisions (docs/COMBAT_OVERHAUL.md 1.5): who leads each and the goal it starts a battle with.
+    /// Your divisions (docs/archive/COMBAT_OVERHAUL.md 1.5): who leads each and the goal it starts a battle with.
     public List<DivisionRecord> Divisions = new();
 
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true, WriteIndented = true };
@@ -663,15 +667,15 @@ public sealed class Balance
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
     public float ArmyScale = 3;
     /// How much drill adds to a company's strength in auto-resolve (Rules.Might): x(1 + this x drill). Fought battles
-    /// reward drill (docs/MELEE.md D8); --agree measures it (5: equal-might fights one to four tiers apart near a coin toss).
+    /// reward drill (docs/archive/MELEE.md D8); --agree measures it (5: equal-might fights one to four tiers apart near a coin toss).
     public float DrillWeight = 5;
     /// How much a tier V-VII troop's attack style and passive traits add to its strength in auto-resolve, per style rank
-    /// (1-3 at tiers V-VII): x(1 + this x rank). --agree measures it (docs/COMPANIONS_MAGIC.md D5).
+    /// (1-3 at tiers V-VII): x(1 + this x rank). --agree measures it (docs/archive/COMPANIONS_MAGIC.md D5).
     public float TraitWeight = 0.1f;
     /// What an aura tier adds to the side its holder leads in auto-resolve (you, or an order knight leading his army): x(1 +
-    /// this x tier). Worth a company, never an army (docs/KNIGHT_ORDERS.md 5.7, K6).
+    /// this x tier). Worth a company, never an army (docs/archive/KNIGHT_ORDERS.md 5.7, K6).
     public float AuraWeight = 0.03f;
-    /// A feast in town, crowns a man (docs/COMPANIONS_MAGIC.md A5).
+    /// A feast in town, crowns a man (docs/archive/COMPANIONS_MAGIC.md A5).
     public float FeastPerMan = 6;
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).
     public int RollSize = 6;
@@ -696,7 +700,7 @@ public sealed class Balance
     public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 1, DrillTown = 2;
     public float TownIncome = 150, CastleIncome = 90, VillageIncome = 40, LordWage = 1.3f;
     public float TruceDays = 30, BountyBandits = 50, BountyLord = 120;
-    /// Goblin holdouts (docs/CREATURES.md): how many per forest or hill province, the daily chance one is raised while
+    /// Goblin holdouts (docs/archive/CREATURES.md): how many per forest or hill province, the daily chance one is raised while
     /// under that, how far from any settlement, and (in base men, times ArmyScale) their size when raised, their cap,
     /// daily growth and when a boss appears. Raids leave every HoldoutRaidDays once the holdout has HoldoutRaidMen,
     /// with HoldoutRaidBand men, at a village within HoldoutRaidRange. Gold: hoard to start, per day and per raid.
@@ -711,7 +715,7 @@ public sealed class Balance
     /// men (times ArmyScale; a wolf more for every 30 days), plus the dire wolf that leads each.
     public float WolfPacksPerForest = 0.3f, WolfSpawnChance = 0.3f, WolfPackMin = 4, WolfPackMax = 9;
     public float HoldoutStartHoard = 60, HoldoutHoardPerDay = 4, HoldoutRaidLoot = 40, BountyHoldout = 80;
-    // Rare monsters (docs/CREATURES.md phase 3): how many trolls, how many in each, the bounty on one.
+    // Rare monsters (docs/archive/CREATURES.md phase 3): how many trolls, how many in each, the bounty on one.
     public float RareStart = 2, RareEvery = 60, RareMax = 6, RareSpawnChance = 0.25f, TrollMen = 2, BountyTroll = 300;
     /// A troll's weight in an auto-resolve by night and by day (a battle at night or noon shows the same).
     public float TrollNight = 1.6f, TrollDay = 0.8f;
@@ -754,7 +758,7 @@ public sealed class Names
 {
     public List<string> Places = new(), Lords = new(), Epithets = new(), Bandits = new(), Sergeants = new(), Prefixes = new(), Suffixes = new();
     public Dictionary<string, List<string>> Nouns = new();
-    /// Each culture's own places and lords (docs/SIDE_CONTENT.md S1).
+    /// Each culture's own places and lords (docs/archive/SIDE_CONTENT.md S1).
     public Dictionary<string, CultureNames> Cultures = new();
 
     public List<string> PlacesOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Places.Count > 0 ? c.Places : Places;

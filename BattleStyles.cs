@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// How the blows of the best troops land (docs/COMPANIONS_MAGIC.md D2). All passive: the men fight this way on their own.
+/// How the blows of the best troops land (docs/archive/COMPANIONS_MAGIC.md D2). All passive: the men fight this way on their own.
 public enum AttackStyle { None, Crush, Sweep, Riposte, Bash, Thrust, HoldOff, RideDown, CutWheel, Plunge, QuickLoose, Punch }
 
 /// Battle: attack styles of tier V-VII troops. Each style hooks one place in the damage path (BattleCombat.cs) and
@@ -12,12 +12,14 @@ public partial class Battle
     /// The style a troop's weapon gives it, when troops.json names none.
     public static AttackStyle StyleFor(UnitType t) => t.Look.Weapon switch
     {
-        "daneaxe" => AttackStyle.Crush,
+        "daneaxe" or "warhammer" => AttackStyle.Crush,
         "greatsword" => AttackStyle.Sweep,
         "longsword" => t.HasShield ? AttackStyle.Riposte : AttackStyle.Sweep,
-        "sword" or "axe" or "mace" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Bash : AttackStyle.None,
-        "pike" => AttackStyle.Thrust,
-        "spear" => AttackStyle.HoldOff,
+        "scimitar" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Riposte : AttackStyle.Sweep, // the curved blade turns a blow and cuts back
+        "sword" or "axe" or "mace" or "falchion" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Bash : AttackStyle.None,
+        "pike" or "halberd" => AttackStyle.Thrust,
+        "spear" or "glaive" or "javelin" => AttackStyle.HoldOff,
+        "sling" => AttackStyle.QuickLoose,
         "lance" => AttackStyle.RideDown,
         "longbow" => AttackStyle.Plunge,
         "bow" => AttackStyle.QuickLoose,

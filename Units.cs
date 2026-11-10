@@ -2,13 +2,20 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Caster: a mage (docs/COMPANIONS_MAGIC.md E1): poor in melee, casts the spells in `UnitType.Spells` (BattleAbilities.cs).
+/// Caster: a mage (docs/archive/COMPANIONS_MAGIC.md E1): poor in melee, casts the spells in `UnitType.Spells` (BattleAbilities.cs).
 public enum UnitClass { Infantry, Archer, Skirmisher, Captain, Cavalry, Caster }
 public enum UnitAction { None, Windup, Recover, Block, Stagger }
 
 /// Swing direction, named from the attacker's side (Left = the blade comes from the attacker's left).
 /// The defender sees Left/Right mirrored, see <see cref="Dirs.Mirror"/>.
 public enum AttackDir { Overhead, Thrust, Left, Right }
+
+/// How the killing blow felled a man (drawing only): a plain fall away, spun round by a cut, folded over a thrust,
+/// flung by a huge blow, or slid from the saddle.
+public enum Fall { Plain, Cut, Thrust, Flung, Saddle }
+
+/// How a weapon is held, which picks the man's poses (Puppet.Keys). Drawing only, except Thrown and Sling, which are shot.
+public enum Grip { One, Two, Pole, Lance, Bow, Crossbow, Staff, Thrown, Sling }
 
 /// Cavalry charge cycle: ride in, (bog down and fight), ride out, turn, ride in again.
 public enum CavState { Charge, Melee, Withdraw }
@@ -20,8 +27,8 @@ public static class Dirs
 
 /// A horse. Speeds in m/s, Accel in m/s^2, TurnRate in rad/s at a standstill (it falls as speed rises).
 /// Barding is what it wears: "saddle" (saddle cloth) or "caparison" (full cloth barding and a steel chanfron);
-/// "wolf" is not a horse at all but a warg, drawn with the wolf rig (docs/CREATURES.md).
-/// "camel" is the horse rig in a sand coat with a hump (docs/WORLD.md W4).
+/// "wolf" is not a horse at all but a warg, drawn with the wolf rig (docs/archive/CREATURES.md).
+/// "camel" is the horse rig in a sand coat with a hump (docs/archive/WORLD.md W4).
 public sealed record Mount(string Id, string Name, float Hp, float Trot, float Gallop, float Accel, float TurnRate, string Barding)
 {
     public static Mount Courser => Troops.Mount("courser");
@@ -41,18 +48,33 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public string HeadKey => Face != "man" ? "head." + Face : Visage >= 0 ? "head.v" + Visage : "head";
     public bool NeutralHead => Face == "man" && Visage >= 0;
     // "coif": a mail hood.
-    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen", "turban", "steppe", "coif" };
+    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen", "turban", "steppe", "coif", "spike", "barbute", "furcap", "bucket" };
     // Goblin kit: "rags" (bare green arms), "hide" (bare green legs), "bare" feet, "claw" hands.
     // Undead kit: "bones" (a ribcage and bare bone), "shroud" (a ghoul's grave wrappings over grey skin), "robe" (a necromancer's), "bone" feet and hands.
-    // The new realms (docs/WORLD.md W4): "lamellar" (rows of small plates), "deel" (a long wrapped steppe coat), "brigandine"
+    // The new realms (docs/archive/WORLD.md W4): "lamellar" (rows of small plates), "deel" (a long wrapped steppe coat), "brigandine"
     // (cloth over riveted plates); the "turban" wound over a spiked cap, the fur-brimmed "steppe" helm; the tall "pavise".
     public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate", "fur", "rags", "bones", "shroud", "robe", "lamellar", "deel", "brigandine" };
     public static readonly string[] LegsKinds = { "cloth", "mail", "plate", "hide", "bones", "shroud" };
     public static readonly string[] FeetKinds = { "boots", "sabatons", "bare", "bone" };
     public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw", "bone" };
-    public static readonly string[] Shields = { "none", "round", "kite", "heater", "pavise" };
-    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff", "mace" };
+    public static readonly string[] Shields = { "none", "round", "kite", "heater", "pavise", "buckler", "targe", "dhal" };
+    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff", "mace",
+        "halberd", "glaive", "javelin", "sling", "scimitar", "falchion", "warhammer" };
     public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
+    /// Anything that is shot or thrown, so needs ammo: bows, javelins and slings.
+    public static bool Missile(string weapon) => Ranged(weapon) || weapon is "javelin" or "sling";
+    public static Grip GripOf(string weapon) => weapon switch
+    {
+        "greatsword" or "daneaxe" or "club" or "warhammer" => Grip.Two,
+        "spear" or "pike" or "halberd" or "glaive" => Grip.Pole,
+        "lance" => Grip.Lance,
+        "bow" or "longbow" => Grip.Bow,
+        "crossbow" => Grip.Crossbow,
+        "staff" => Grip.Staff,
+        "javelin" => Grip.Thrown,
+        "sling" => Grip.Sling,
+        _ => Grip.One,
+    };
 }
 
 /// A troop type from Data/troops.json: stats, place in the upgrade tree, and look.
@@ -60,9 +82,9 @@ public sealed class UnitType
 {
     public string Id = "", Name = "";
     /// A culture id from Data/factions.json, "common" (open to every culture) or "wild" (creatures).
-    /// "wild" is a creature (docs/CREATURES.md): never recruited from a village and outside every upgrade tree.
+    /// "wild" is a creature (docs/archive/CREATURES.md): never recruited from a village and outside every upgrade tree.
     public string Culture = "common";
-    /// A knight order's signature troop (docs/KNIGHT_ORDERS.md 4.1): its order id, "" for every other troop.
+    /// A knight order's signature troop (docs/archive/KNIGHT_ORDERS.md 4.1): its order id, "" for every other troop.
     public string Order = "";
     /// What a wild troop is ("goblin"); empty for men.
     public string Breed = "";
@@ -72,18 +94,18 @@ public sealed class UnitType
     public float MaxHp, Damage, Armor, Reach, Windup, Recover, Speed, BlockChance, Range, VsMounted = 1, Pierce, Reload = 1;
     /// Damage against creatures (wild troops), like VsMounted against riders. Above 1, a monster's fear does not reach them.
     public float VsMonster = 1;
-    /// Drill (docs/MELEE.md D1) when the troop data sets it (0-1); -1: from its tier.
+    /// Drill (docs/archive/MELEE.md D1) when the troop data sets it (0-1); -1: from its tier.
     public float Drill = -1;
     /// Drawn size (1 = a man). Goblins are small, bosses and trolls big.
     public float Size = 1;
-    /// Creature traits (docs/CREATURES.md): "craven" (breaks early, rallies again and again while its boss lives),
+    /// Creature traits (docs/archive/CREATURES.md): "craven" (breaks early, rallies again and again while its boss lives),
     /// "pack" (wolves: circle to a foe's flank before they bite), "boss" (his fall shakes every craven or pack
     /// creature of his side and stops their rallies: a goblin boss, a pack's alpha). A troll's: "sweep" (a blow hits
     /// the men beside its target too), "knockback" (throws men down and back), "fear" (unnerves foes near it),
     /// "regen" (heals when left alone a moment), "daylight" (slow and weak in sunlight, no healing), "fearless" (never routs).
     /// The undead's: "bones" (arrows do little to a skeleton), "raise" (a necromancer: raises the fallen around him
     /// to fight for him), "raised" (held up by a necromancer: falls apart when the last one of its side falls),
-    /// "feed" (a ghoul: a kill heals it). Men's: "stakes" (longbowmen carry stakes to plant before their line, docs/TERRAIN.md T6).
+    /// "feed" (a ghoul: a kill heals it). Men's: "stakes" (longbowmen carry stakes to plant before their line, docs/archive/TERRAIN.md T6).
     public string[] Traits = Array.Empty<string>();
     public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless", "bones", "raised", "raise", "feed", "stakes" };
     /// A body big enough to take more room, shove men aside and stand up to a horse (a troll).
@@ -95,11 +117,11 @@ public sealed class UnitType
     public bool Leader;
     /// A spear that only thrusts (the captain's boar spear): every swing is a thrust.
     public bool ThrustOnly;
-    /// How this troop's blows land (docs/COMPANIONS_MAGIC.md D2): tiers V-VII only, from the weapon unless troops.json
+    /// How this troop's blows land (docs/archive/COMPANIONS_MAGIC.md D2): tiers V-VII only, from the weapon unless troops.json
     /// names one (`attack`); StyleRank 1-3 for tiers V-VII (0: no style).
     public AttackStyle Style;
     public int StyleRank;
-    /// Passive traits (effect ids, docs/COMPANIONS_MAGIC.md D3): from the archetype unless troops.json names them
+    /// Passive traits (effect ids, docs/archive/COMPANIONS_MAGIC.md D3): from the archetype unless troops.json names them
     /// (`passives`); weighed by tier (`Battle.PassiveWeight`). Mods = their fixed totals; HasAura: one reaches companies.
     public string[] Passives = Array.Empty<string>();
     public Mods Mods;
@@ -134,7 +156,7 @@ public sealed class Unit
     public bool Hero;
     /// Leads a division (drawn with a pennant; his fall leaves the division without orders for a while).
     public bool Sergeant;
-    /// A named man of his company (docs/LEGACY.md L2): his Soldier id, 0 for the rest.
+    /// A named man of his company (docs/archive/LEGACY.md L2): his Soldier id, 0 for the rest.
     public int SoldierId;
     /// Enemies he has killed this battle, and whether one was a captain or a hero.
     public int Kills;
@@ -153,6 +175,9 @@ public sealed class Unit
     public UnitAction Action;
     public AttackDir Swing;
     public float ActionTimer, Cooldown, Charge, Power = 1, HitFlash, Anim;
+    /// Drawing only (the sim never reads them): when the cast this man is gathering began and fires, and where it goes.
+    public float CastStart = -99, CastFire = -99;
+    public Vector2 CastAim;
     public bool Charging; // player holding the attack button
     public float BlockStart; // when the player raised the guard (parries need fresh timing)
     public Unit? Target;
@@ -160,6 +185,10 @@ public sealed class Unit
     public int Routs;        // how many times this man has broken (a second rout is final)
     public float DiedAt;     // battle time of death (the fall is animated)
     public Vector2 DiedFrom; // where the killing blow came from (the body falls away from it; drawing only)
+    /// Drawing only: how the killing blow felled him, where the last blow came from, when his horse fell under him.
+    public Fall DiedFall;
+    public Vector2 HitFrom;
+    public float ThrownAt = -99;
     public int StuckArrows;  // arrows caught in the shield (drawn)
     public int Index;        // place in Battle.Units (the spatial grid orders pairs by it)
 

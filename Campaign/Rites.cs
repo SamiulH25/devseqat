@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Faith and craft on the map (docs/COMPANIONS_MAGIC.md C2, C4, M4): camp rites a priest or a cunning one (a companion of
+/// Faith and craft on the map (docs/archive/COMPANIONS_MAGIC.md C2, C4, M4): camp rites a priest or a cunning one (a companion of
 /// that calling, or a mage company of that tradition) can work, the relic you carry into battle, and the Omen craft draws.
 public sealed partial class Campaign
 {
@@ -16,7 +16,7 @@ public sealed partial class Campaign
         ("cleanse", "CLEANSE", "faith", 100, 0, "IN A TOWN: THE OMEN FALLS BY 10"),
     };
     public const float OmenEvents = 12, RelicCharges = 3;
-    /// The Omen's teeth (docs/MAGIC_AURA.md 3.6, MA8): from OmenStirs the dead rise sooner and in greater numbers, from OmenShuns
+    /// The Omen's teeth (docs/archive/MAGIC_AURA.md 3.6, MA8): from OmenStirs the dead rise sooner and in greater numbers, from OmenShuns
     /// one village in three bars its gates; a Cleanse takes CleanseOmen off it.
     public const float OmenStirs = 20, OmenShuns = 30, CleanseOmen = 10;
     /// Does this village bar its gates to you for what you work (a third of them, while the Omen is high)?

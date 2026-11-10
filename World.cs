@@ -32,7 +32,7 @@ sealed partial class World : IDisposable
     const int Chunk = 60000; // primitives per draw call
 
     public readonly Texture2D Minimap;
-    /// The ground map (Act.GroundView, docs/TERRAIN.md T6): each kind of ground in its own flat colour, height contours every
+    /// The ground map (Act.GroundView, docs/archive/TERRAIN.md T6): each kind of ground in its own flat colour, height contours every
     /// 2 m, hedges, fences and houses. Same framing as the minimap.
     public readonly Texture2D GroundMap;
     readonly GraphicsDevice gd;
@@ -48,7 +48,7 @@ sealed partial class World : IDisposable
         Filter = TextureFilter.LinearMipPoint, AddressU = TextureAddressMode.Wrap, AddressV = TextureAddressMode.Wrap,
     };
 
-    /// Trees and bushes drawn at this share of their size: the campaign map shrinks them so towns stand out (docs/VISUALS.md V4).
+    /// Trees and bushes drawn at this share of their size: the campaign map shrinks them so towns stand out (docs/archive/VISUALS.md V4).
     readonly float treeScale;
 
     public World(GraphicsDevice gd, Terrain terrain, float treeScale = 1)
@@ -502,7 +502,7 @@ sealed partial class World : IDisposable
         m.Frustum(b + new Vector3(0.6f * s, 2.2f * s, 0), b + new Vector3(0.6f * s, 3.0f * s, 0), 0.36f * s, 0, 6, Slate, r, capBottom: true);
     }
 
-    // ---------- sites (campaign map, docs/SIDE_CONTENT.md S2) ----------
+    // ---------- sites (campaign map, docs/archive/SIDE_CONTENT.md S2) ----------
 
     static readonly Color Moss = new(96, 110, 78), Earth = new(96, 78, 58), Iron = new(70, 72, 80);
 

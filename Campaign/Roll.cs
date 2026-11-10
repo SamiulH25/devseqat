@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The roll of named men in your companies (docs/LEGACY.md L1): who earns a name, how a named man shares his stack's
+/// The roll of named men in your companies (docs/archive/LEGACY.md L1): who earns a name, how a named man shares his stack's
 /// fortune in battle, and how the roll follows its men when they are promoted, moved, split or merged. The roll draws
 /// on its own stream (`RollRng`), so it never moves the campaign's main draws.
 public sealed partial class Campaign

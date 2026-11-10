@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The captain's armoury (docs/PROGRESSION.md P1): owning, buying, selling and wearing gear from Data/gear.json.
+/// The captain's armoury (docs/archive/PROGRESSION.md P1): owning, buying, selling and wearing gear from Data/gear.json.
 public sealed partial class Campaign
 {
     /// What the armourer pays back for a piece you sell.
@@ -24,24 +24,27 @@ public sealed partial class Campaign
     /// The road the captain came by (P5, the Free Company's reward), chosen once at the start: the sword (Arms 20 and a
     /// kite shield), the lance (Riding 20, a warhorse, a boar spear as the second weapon) or the bow (Bowcraft 20, a
     /// hunting bow in hand and the sword at the side). Returns the line the event shows.
-    public string ChooseRoad(string road)
+    public string ChooseRoad(string road) => TakeRoad(Captain, road);
+
+    /// The road on any captain: the event above, and the character creator's preview (Origins.Shape).
+    public static string TakeRoad(CaptainState c, string road)
     {
-        var k = Captain.Kit;
+        var k = c.Kit;
         switch (road)
         {
             case "lance":
-                Captain.Skills["Riding"] = MathF.Max(Skill("Riding"), 20);
-                Own("warhorse"); Own("boar_spear");
+                c.Skills["Riding"] = MathF.Max(Skills.Level(c, "Riding"), 20);
+                Own(c, "warhorse"); Own(c, "boar_spear");
                 (k.Horse, k.Side) = ("warhorse", "boar_spear");
                 return "You ride a warhorse and know how to couch a lance.";
             case "bow":
-                Captain.Skills["Bowcraft"] = MathF.Max(Skill("Bowcraft"), 20);
-                Own("hunting_bow");
+                c.Skills["Bowcraft"] = MathF.Max(Skills.Level(c, "Bowcraft"), 20);
+                Own(c, "hunting_bow");
                 (k.Weapon, k.Side) = ("hunting_bow", "arming_sword");
                 return "You carry a hunting bow and the eye to use it.";
             default:
-                Captain.Skills["Arms"] = MathF.Max(Skill("Arms"), 20);
-                Own("kite_shield");
+                c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 20);
+                Own(c, "kite_shield");
                 k.Shield = "kite_shield";
                 return "You fight on foot behind a kite shield, as you always have.";
         }
@@ -50,7 +53,8 @@ public sealed partial class Campaign
     /// Offer the starting road as the first event of a new campaign (the title screen calls it).
     public void OfferRoad() => Force("start_road", new PendingEvent());
 
-    void Own(string id) { if (!Gear.Get(id).Free && !Captain.Kit.Owned.Contains(id)) Captain.Kit.Owned.Add(id); }
+    void Own(string id) => Own(Captain, id);
+    internal static void Own(CaptainState c, string id) { if (!Gear.Get(id).Free && !c.Kit.Owned.Contains(id)) c.Kit.Owned.Add(id); }
 
     /// A worn piece the data no longer has goes back to the free piece of its slot.
     void Unequip(string id)

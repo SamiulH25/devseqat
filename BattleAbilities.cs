@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A spell or ability on its way (docs/COMPANIONS_MAGIC.md E3): it fires at `FireAt` on the spot it glowed on, if its
+/// A spell or ability on its way (docs/archive/COMPANIONS_MAGIC.md E3): it fires at `FireAt` on the spot it glowed on, if its
 /// caster still stands. The screen draws the glow (BattleScreen.Draw).
 public sealed class Cast
 {
@@ -25,7 +25,7 @@ public sealed class Field
     public float Radius, Until, Power, Dps, Started;
 }
 
-/// Battle: casters and their spells (docs/COMPANIONS_MAGIC.md E1-E5, B3). A company with spells (mage troops, or a
+/// Battle: casters and their spells (docs/archive/COMPANIONS_MAGIC.md E1-E5, B3). A company with spells (mage troops, or a
 /// companion's abilities) thinks every 0.5 s: Will comes back, and the first spell that is ready, affordable and whose
 /// rule finds a target starts a cast. Nobody presses a button: the player steers casters by where he puts them.
 public partial class Battle
@@ -79,6 +79,15 @@ public partial class Battle
     Unit? Speaker(Squad s, bool hero) => hero ? s.Units.FirstOrDefault(u => u.Hero && u.Active)
         : s.Units.Where(u => u.Active && !u.Routing && IsCaster(u)).OrderByDescending(u => u.Type.Tier).ThenBy(u => u.Index).FirstOrDefault();
 
+    Cast AddCast(Cast c) { Casts.Add(c); return c; }
+
+    /// The men who gather a cast raise their staffs for it (drawing only, Puppet.PoseOf).
+    void MarkCast(Cast c)
+    {
+        foreach (var u in c.By.Units)
+            if (u.Active && (c.Hero ? u.Hero : IsCaster(u))) { u.CastStart = c.Started; u.CastFire = c.FireAt; u.CastAim = c.At; }
+    }
+
     void UpdateAbilities(float dt)
     {
         if (!anyCaster && Casts.Count == 0 && Fields.Count == 0) return;
@@ -114,7 +123,7 @@ public partial class Battle
             if (!hero) s.Will -= WillCost(s, a);
             s.SpellReady[i] = Time + a.Cooldown;
             if (a.Great) s.GreatDone = true;
-            Casts.Add(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power });
+            MarkCast(AddCast(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power }));
             Flash("cast", Speaker(s, hero)?.Pos ?? s.Center, 1, s.Team, a.Tradition);
             if (s.Team == 0 && a.Tradition == "craft") OmenRaised += a.Omen;
             if (a.Great) Log(s.Team == 0 ? $"Your {s.Name} call down {a.Name}!" : $"The enemy's casters call down {a.Name}!");
@@ -123,7 +132,7 @@ public partial class Battle
         }
     }
 
-    // ---- casts you order (docs/MAGIC_AURA.md 3.1) ----
+    // ---- casts you order (docs/archive/MAGIC_AURA.md 3.1) ----
 
     /// An ordered cast costs this much more Will (they break their rhythm for you), and the order lapses after this long.
     public const float OrderedWill = 5, OrderLasts = 30;
@@ -175,7 +184,7 @@ public partial class Battle
         s.SpellReady[i] = Time + a.Cooldown;
         if (a.Great) s.GreatDone = true;
         s.CastSpell = -1;
-        Casts.Add(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power });
+        MarkCast(AddCast(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power }));
         Flash("cast", me.Pos, 1, s.Team, a.Tradition);
         if (s.Team == 0 && a.Tradition == "craft") OmenRaised += a.Omen;
         if (s.Team == 0) Log($"{s.Name}: {a.Name}!");

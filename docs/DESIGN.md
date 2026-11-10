@@ -8,7 +8,7 @@ campaign map. The tokens it names live in code in `Style.cs`. When this document
 > **You lead a free company in person. Every man you lose was someone you knew, and every honour on the banner is one
 > you earned.**
 
-This is the one main fantasy, and everything below serves it (the plan is `docs/LEGACY.md`). The test for a feature: does it
+This is the one main fantasy, and everything below serves it (the plan is `docs/archive/LEGACY.md`). The test for a feature: does it
 make the player care more about *their* men, or let them see what they have built? Work that passes comes first.
 
 ## 1. Pillars
@@ -124,7 +124,7 @@ keep fur, spangenhelms and round shields at every tier.
   to where it was sent and draws it in again over a second; a rider carrying an order flies a little flag.
 - Hit: a brief red tint and a flinch (0.15 s). Routing: desaturated grey, arms up, weapon gone. Dead: a fall away from the blow, then the parts laid flat with blood and the weapon beside them.
 - The player's own troops never fill the camera lens (friendly sprites within 6 m of the field camera are hidden).
-- Magic and aura are rare and must read as awe (docs/SPECTACLE.md): a great working gathers (sigil, column, dark sky) and lands
+- Magic and aura are rare and must read as awe (docs/archive/SPECTACLE.md): a great working gathers (sigil, column, dark sky) and lands
   in the battle's one slowed beat; each strong working has its own strike and aftermath (scars stay all battle); each aura
   tier shows clearly more than the last. Common spells keep a light touch so the great ones stand out. Off on Low quality
   and with CINEMATIC MOMENTS off.
@@ -192,7 +192,7 @@ All widgets are extension methods on `Ui` in `UiKit.cs` (the UI lab, F3 on the t
 ## 5. Motion
 
 Motion has a job: it shows cause and effect, draws the eye to what changed, or makes a moment land. Nothing idles or wobbles
-for its own sake on the HUD, and nothing bounces. All of it is in the view: the sim never knows (docs/VISUALS.md section 3).
+for its own sake on the HUD, and nothing bounces. All of it is in the view: the sim never knows (docs/archive/VISUALS.md section 3).
 
 - **Curves:** `Ease` (Ease.cs). Windups ease in and hold at the top; strikes snap through and overshoot (`OutBack`); returns
   are `InOut`. Hit reactions are a `Kick` (fast out, slow back).
@@ -201,6 +201,15 @@ for its own sake on the HUD, and nothing bounces. All of it is in the view: the 
   swing and flinches away from a blow. The dead fall away from the killing blow (`Unit.DiedFrom`) in 0.45-0.75 s, stumbling
   back or crumpling at the knees, and lie along that line with their weapon beside them. Routers throw down weapon and shield.
   When the battle is won, the winners cheer.
+- **Grips and stances** (`PuppetPoses.cs`, `Look.GripOf`): a man moves like the weapon in his hands. Two-handers swing wide with
+  both hands on the grip; polearms thrust and chop; riders cut from the saddle; crossbows level at the shoulder and span at the
+  feet; javelins are thrown overarm and slings whirl; casters raise the staff as a spell gathers. Legs bend at the knee: a shield
+  wall crouches, the front two ranks of pikes set their points while the rear hold theirs up, front-rank shooters kneel, and a
+  man turning on the spot steps round.
+- **Idle life and falls:** a man with no foe within 25 m takes up an idle now and then (his weapon at rest, a look round, a roll of
+  the shoulders); a standing horse tosses its head, paws or shifts back. A flinch leans away from where the blow came from
+  (`Unit.HitFrom`). A man whose horse falls is pitched onto his hands. The dead fall by the blow (`Unit.DiedFall`): spun by a side
+  cut, folded over a thrust, flung by a huge blow, slid from the saddle.
 - **Horses:** a four-beat walk, a trot on diagonal pairs and a gallop that rocks front to back, the head nodding with the stride.
 - **Camera:** transitions ease (smoothstep, 0.45 s). Facing changes ease too, so turning is a sweep. A battle opens with a 4.5 s
   sweep from over the far side down to your lines (any key skips it); when it is decided the field plays on at half speed for
@@ -210,7 +219,8 @@ for its own sake on the HUD, and nothing bounces. All of it is in the view: the 
   pictures breathe (moon glow, clouds, fire flicker).
 - **Interface:** panels fade in and rise a few pixels (120 ms in, 80 ms out); hover brightens over 80 ms; bars and counts slide
   to their new value. Text in the event feed holds for 4.5 s and fades over 1.5 s. Hit text holds for 1.2 s.
-- **Check it:** the pose sheet shots (`pose-sheet`, `pose-sheet2`, `pose-horses`) freeze every pose in one still.
+- **Check it:** the pose sheet shots (`pose-sheet`, `pose-sheet2`, `pose-horses`, `pose-grips`, `pose-shooters`, `pose-stances`,
+  `pose-life`; `IRONFIELD_SHOTS_FROM=poses` or `=life`) freeze every pose in one still.
 
 ## 6. Campaign map (direction)
 

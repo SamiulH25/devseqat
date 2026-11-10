@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The Black Flame (docs/KNIGHT_ORDERS.md 7, K7): the Hollow Crown's pact, found and never offered on the main road. It burns
+/// The Black Flame (docs/archive/KNIGHT_ORDERS.md 7, K7): the Hollow Crown's pact, found and never offered on the main road. It burns
 /// through a wall with no trial and opens the Black Flame forms; corruption (`CaptainState.Corruption`) only rises from it
 /// (the forms, a wall burnt, the pact, grief in anger) and draws a price at each 25: the men notice, the orders hunt you,
 /// madness, and at 100 an ending. One hard way back: purging it, once, drops you an aura tier.

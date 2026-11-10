@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// What a piece of battlefield is underfoot (docs/TERRAIN.md 3). The sim reads it through `Terrain.GroundAt`.
+/// What a piece of battlefield is underfoot (docs/archive/TERRAIN.md 3). The sim reads it through `Terrain.GroundAt`.
 public enum GroundKind : byte { Grass, Road, Crops, Scrub, Stony, Mud, Wood, DenseWood, Ford, Water, Bridge, Street, Sand }
 
 /// How one kind of ground plays, from Data/ground.json. Speeds, fatigue, charge and reach are multipliers (1 = no change);
@@ -31,7 +31,7 @@ public static class Grounds
         _ => k.ToString().ToUpperInvariant(),
     };
 
-    /// What the ground does, in one short line (docs/TERRAIN.md T6): "WOOD. COVER FROM ARROWS. HORSE SLOWED. NO FORMATION."
+    /// What the ground does, in one short line (docs/archive/TERRAIN.md T6): "WOOD. COVER FROM ARROWS. HORSE SLOWED. NO FORMATION."
     public static string Describe(GroundKind k)
     {
         var g = Get(k);
@@ -89,7 +89,7 @@ public static class Grounds
     }
 }
 
-/// Terrain: the ground layer, one kind and one cover value per vertex cell (docs/TERRAIN.md 3).
+/// Terrain: the ground layer, one kind and one cover value per vertex cell (docs/archive/TERRAIN.md 3).
 public sealed partial class Terrain
 {
     /// Bump when battlefield generation changes, so replays made on older ground refuse to play (Replay.TerrainVersion).

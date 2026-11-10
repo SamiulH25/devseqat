@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Knight orders and the captain's aura (docs/KNIGHT_ORDERS.md).
+/// Knight orders and the captain's aura (docs/archive/KNIGHT_ORDERS.md).
 public static partial class SelfTest
 {
     /// K1: the aura blade lights only from tier 2 and with aura enough, bites through armour and guards, and burns the pool.
@@ -716,7 +716,7 @@ public static partial class SelfTest
         Check(lone.HandOver() == null && lone.Captain.AuraTier == 2, "with no order to teach him, he starts two tiers below you");
     }
 
-    /// MA3 (docs/MAGIC_AURA.md 4.1-4.2): aura comes back slower on the move than standing still with no foe near; at full,
+    /// MA3 (docs/archive/MAGIC_AURA.md 4.1-4.2): aura comes back slower on the move than standing still with no foe near; at full,
     /// blows bank a surge that a form spends first; spent, your breath comes back slower than a plain man's; from tier 2
     /// your company near you takes heart while you fight, one far off does not, and a plain captain inspires nobody.
     static void AuraPool()
@@ -801,7 +801,7 @@ public static partial class SelfTest
         return c;
     }
 
-    /// MA5 (docs/MAGIC_AURA.md 5): a Blessing or War song over you feeds your aura; one far off does not.
+    /// MA5 (docs/archive/MAGIC_AURA.md 5): a Blessing or War song over you feeds your aura; one far off does not.
     static void BlessingFeedsAura()
     {
         var b = AuraField(81, 3);
@@ -886,7 +886,7 @@ public static partial class SelfTest
         Check(AuraField(86, 3).CannotRaise(b.Player) == "YOU CARRY NO RELIC", "no relic, nothing to raise");
     }
 
-    /// MA6 (docs/MAGIC_AURA.md 4.4): an unsworn Aura Expert who parries a lot is offered his own counter, a lancer his own
+    /// MA6 (docs/archive/MAGIC_AURA.md 4.4): an unsworn Aura Expert who parries a lot is offered his own counter, a lancer his own
     /// leap (the one leap from the saddle); the form is named for his company, slots, and goes into battle.
     static void OwnFormFromStyle()
     {
@@ -942,7 +942,7 @@ public static partial class SelfTest
         Check(b.FormSlot[0] is { } s && MathF.Abs(s.Radius - Forms.Get("aura_slash").Radius * 1.5f) < 1e-4f, "the wide slash is wider in battle");
     }
 
-    /// MA7 (docs/MAGIC_AURA.md 4.6): at your wall, felling a champion of your tier breaks it on the spot: the tier rises in the
+    /// MA7 (docs/archive/MAGIC_AURA.md 4.6): at your wall, felling a champion of your tier breaks it on the spot: the tier rises in the
     /// fight, the pool fills, the men near you rally, and the campaign hears of it. Not at the wall, nothing.
     static void BreakInBattle()
     {

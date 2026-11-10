@@ -2,10 +2,10 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// What a company's own wits have it doing (docs/MELEE.md D5): set by Battle.Tactics, read by Close and the HUD.
+/// What a company's own wits have it doing (docs/archive/MELEE.md D5): set by Battle.Tactics, read by Close and the HUD.
 public enum Plan { None, Hold, Advance, Pin, Flank, Refuse, Reform, Regroup, RollUp, Pursue, Shelter }
 
-/// Battle: company wits (docs/MELEE.md D5). The commander says what (Order, Target, Anchor); the company decides how,
+/// Battle: company wits (docs/archive/MELEE.md D5). The commander says what (Order, Target, Anchor); the company decides how,
 /// as well as its grade allows. Rabble go straight in and chase the broken. Trained companies keep their ranks, wheel to
 /// face a threat on the flank and re-form after a win. Veterans also take a pinned enemy in the flank, wrap the ends of a
 /// narrower line, step back to re-form when broken and rotate tired men out of the front rank. Elites also plan pincers

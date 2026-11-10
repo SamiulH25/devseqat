@@ -79,9 +79,9 @@ so **no save change**.
 | Elite | >= 0.85 | tier 7, or a well-kept tier 6 with a Veteran officer |
 
 So a tier 6 company you look after can fight as Elite, and a neglected tier 7 one slips to Veteran. That ties
-the battle to the campaign's legacy theme (docs/LEGACY.md).
+the battle to the campaign's legacy theme (docs/archive/LEGACY.md).
 
-**Creatures** keep their own behaviour (docs/CREATURES.md): `Swarm` companies (goblins, packs, trolls) get `drill` 0
+**Creatures** keep their own behaviour (docs/archive/CREATURES.md): `Swarm` companies (goblins, packs, trolls) get `drill` 0
 and fight as a mob as they do now, and the pack's circling stays. Raised undead get 0.3 and never lose order
 (they feel nothing). Skeleton warriors, if wanted, could take a data `drill` of 0.6: the dead in good order.
 

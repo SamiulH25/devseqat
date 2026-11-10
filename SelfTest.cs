@@ -16,6 +16,7 @@ public static partial class SelfTest
         Check(s.Front.Y < -0.99f, "drawn line flips to face a target behind it");
 
         Charge();
+        Javelins();
         CavalryBalance();
         Flanks();
         Parry();
@@ -164,6 +165,7 @@ public static partial class SelfTest
         HouseholdGuard();
         RankRewards();
         StartingRoad();
+        CharacterCreator();
         BalanceMatchesData();
         HorsesCostGold();
         Career();
@@ -211,6 +213,7 @@ public static partial class SelfTest
         RealmsFromData();
         ClimatesAndRidges();
         SevenRealms();
+        SoundsMade();
         RealmTempers();
         Roads();
         Quests();

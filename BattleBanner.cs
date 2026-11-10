@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: your banner and your last stand (docs/PROGRESSION.md P6).
+/// Battle: your banner and your last stand (docs/archive/PROGRESSION.md P6).
 /// With `BattleOptions.Banner` a man near you carries your banner; while it is down your aura is gone, and the fall costs
 /// every man of yours some heart. You pick it up by reaching it; after a moment the nearest man of yours does.
 /// With `BattleOptions.LastStand`, the first time you fall you lie down for a few seconds: rally (R) to fight on at a

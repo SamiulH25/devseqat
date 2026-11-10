@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Hud: your divisions (docs/COMBAT_OVERHAUL.md 1.7): a card per division above the player panel, the goal buttons that
+/// Hud: your divisions (docs/archive/COMBAT_OVERHAUL.md 1.7): a card per division above the player panel, the goal buttons that
 /// replace the order buttons while one is picked, the goal wheel, and goal lines on the field in command view.
 sealed partial class Hud
 {
@@ -138,7 +138,7 @@ sealed partial class Hud
         }
     }
 
-    /// Your named men (docs/LEGACY.md L2): a small gold mark over each within 25 m of you (any distance in command view), and
+    /// Your named men (docs/archive/LEGACY.md L2): a small gold mark over each within 25 m of you (any distance in command view), and
     /// his name when he is close (10 m) or under the cursor.
     void NamedMarks()
     {

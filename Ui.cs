@@ -17,12 +17,27 @@ sealed class Ui
 
     /// Every button click calls this (the host plays a click).
     public static Action? OnClick;
+    /// Called when the mouse comes onto a new button (a soft tick).
+    public static Action? OnHover;
+    static Rectangle hoverWas;
+    static bool hoverSeen;
+
+    /// The mouse is on button `r` this frame: tick once when it arrives on a new one.
+    static void Hovered(Rectangle r)
+    {
+        if (hoverSeen) return;
+        hoverSeen = true;
+        if (r != hoverWas) { hoverWas = r; OnHover?.Invoke(); }
+    }
+
+    /// End of a frame: forget the hovered button once the mouse has left every button.
+    public static void FrameEnd() { if (!hoverSeen) hoverWas = Rectangle.Empty; hoverSeen = false; }
     /// Characters typed since the last frame (the window's text input), for renaming companies.
     public static readonly Queue<char> Typed = new();
 
     public Ui(SpriteBatch sb, Art art, PixelFont font) { Sb = sb; this.art = art; this.font = font; }
 
-    // ---------- motion (docs/VISUALS.md V5) ----------
+    // ---------- motion (docs/archive/VISUALS.md V5) ----------
 
     /// Real time in seconds (not the sim's), set by the host each frame; every interface animation runs on it.
     public static float Now;
@@ -160,6 +175,7 @@ sealed class Ui
     public bool Button(Rectangle r, string label, bool enabled = true, string note = "", bool active = false)
     {
         bool hover = enabled && Hover(r);
+        if (hover) Hovered(r);
         float h = Anim(Key(r, 0xb7), hover ? 1 : 0, 25); // hover brightens over about 80 ms
         Overflow.Box(r);
         if (r.Height >= U(18)) Rect(new Rectangle(r.X + U(1), r.Y + U(2), r.Width, r.Height), Color.Black * 0.35f);
@@ -182,5 +198,5 @@ sealed class Ui
     }
 
     /// A troop portrait cropped to `box`; `k` is the pixel scale (default: the UI scale).
-    public void Portrait(UnitType t, Rectangle box, int k = 0) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S);
+    public void Portrait(UnitType t, Rectangle box, int k = 0, float top = 1.92f) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S, top);
 }

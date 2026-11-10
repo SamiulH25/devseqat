@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// BattleScreen: blows that land (docs/VISUALS.md V3): the camera's kick, the hit pause, marks left on the ground, falling
+/// BattleScreen: blows that land (docs/archive/VISUALS.md V3): the camera's kick, the hit pause, marks left on the ground, falling
 /// banners. All of it is drawing only: nothing here touches the battle.
 partial class BattleScreen
 {

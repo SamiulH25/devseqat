@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wall, Tower, Gate, Ladder, House, Wagon,
-    // Sites on the campaign map (docs/SIDE_CONTENT.md S2).
+    // Sites on the campaign map (docs/archive/SIDE_CONTENT.md S2).
     Ruin, Shrine, Stones, Field, Mine, Hut, Watch, Spring, Mill }
 
 /// A river (roadmap C5): a centre line, its width, and the fords where it runs shallow.
@@ -86,12 +86,12 @@ public sealed class SiegeWall
 public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale, float Radius, int Seed);
 
 /// How a battlefield is generated: set from the campaign map cell where the fight happens (docs/CAMPAIGN.md 3.2).
-/// `Layouts` are the field shapes this ground may take (docs/TERRAIN.md T2; null = open field), picked by the seed.
+/// `Layouts` are the field shapes this ground may take (docs/archive/TERRAIN.md T2; null = open field), picked by the seed.
 /// `Scale` grows the clear deployment ground and the flank woods with the size of the battle (1 up to 450 men).
 public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, float HillHeight, float Roll, float FlankWoodDist,
     int Woods, int LoneTrees, int Bushes, bool Road, bool River = false, FieldLayout[]? Layouts = null, float Scale = 1)
 {
-    /// From the campaign (docs/TERRAIN.md T7): how wet the ground is from recent rain (0-1: low ground turns to mud),
+    /// From the campaign (docs/archive/TERRAIN.md T7): how wet the ground is from recent rain (0-1: low ground turns to mud),
     /// the season (0 spring .. 3 winter; -1 any: winter fields lie bare), and the team that chose where to stand
     /// (-1 nobody: the seed decides; it gets the crest, the village, the hills on its side).
     public float Wet { get; init; }

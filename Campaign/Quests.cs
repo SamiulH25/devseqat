@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// More quests (docs/SIDE_CONTENT.md S3), on the contract machinery (CampaignWar.cs): village elders' jobs, escorting a
+/// More quests (docs/archive/SIDE_CONTENT.md S3), on the contract machinery (CampaignWar.cs): village elders' jobs, escorting a
 /// caravan, carrying a ransom, rescuing a captive, a lord's lost sword, and quests of more than one step (Contract.Then).
 public sealed partial class Campaign
 {

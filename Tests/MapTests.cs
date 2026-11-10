@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Self-tests of the world map at scale (docs/WORLD.md).
+/// Self-tests of the world map at scale (docs/archive/WORLD.md).
 public static partial class SelfTest
 {
     /// W0: the look-up grid gives exactly the full scans' answers (on and off the grid, new and legacy maps), so a map

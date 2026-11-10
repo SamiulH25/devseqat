@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: effects (docs/COMPANIONS_MAGIC.md Part A). A man's totals (`Unit.Mods`) are his troop's passives
+/// Battle: effects (docs/archive/COMPANIONS_MAGIC.md Part A). A man's totals (`Unit.Mods`) are his troop's passives
 /// (`UnitType.Mods`, fixed at load) plus his company's (`Squad.Mods`: auras of his side's bearers), rebuilt every 0.5 s,
 /// a quarter of the companies each tick-group so the cost stays per company, not per man.
 public partial class Battle

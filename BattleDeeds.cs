@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// A personal goal for one battle (docs/PROGRESSION.md P6): what it asks, and the skill it teaches when met.
+/// A personal goal for one battle (docs/archive/PROGRESSION.md P6): what it asks, and the skill it teaches when met.
 public sealed record BattleGoal(string Id, string Text, string Skill);
 
 /// Battle: up to two personal goals drawn for a field battle (`BattleOptions.Goals`), tracked live for the HUD and handed

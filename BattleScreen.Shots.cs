@@ -35,7 +35,7 @@ partial class BattleScreen
                 pendingShot = "landscape"; shotIndex++; break;
             case 6 when b.Time > 21f && groundView != true:
                 groundView = true; camFocus = b.Centroid(0) + new Vector2(0, 25); zoom = 50; camPitch = 0.7f;
-                pendingShot = "ground-map"; break; // the ground map (docs/TERRAIN.md T6)
+                pendingShot = "ground-map"; break; // the ground map (docs/archive/TERRAIN.md T6)
             case 6 when groundView == true && pendingShot == null:
                 groundView = false; helpOpen = true;
                 pendingShot = "controls"; shotIndex++; break;
@@ -72,7 +72,7 @@ partial class BattleScreen
                 zoom = 8.5f; camPitch = 0.08f; camFocus = new Vector2(-9.8f, 0.6f);
                 pendingShot = "gallery-north-close"; shotIndex++; break;
             case 20 when pendingShot == null:
-                Gallery(new[] { "goblin", "goblin_archer", "hobgoblin", "goblin_boss", "goblin_wolf_rider", "wolf", "dire_wolf", "troll", "war_hounds", "ogre", "beast_hunters", "shieldmen" }, 3); // creatures (docs/CREATURES.md), a man for scale
+                Gallery(new[] { "goblin", "goblin_archer", "hobgoblin", "goblin_boss", "goblin_wolf_rider", "wolf", "dire_wolf", "troll", "war_hounds", "ogre", "beast_hunters", "shieldmen" }, 3); // creatures (docs/archive/CREATURES.md), a man for scale
                 shotFrames = 0; shotIndex++; break;
             case 21 when shotFrames > 20:
                 zoom = 11f; camPitch = 0.1f; camFocus = new Vector2(-9.8f, 0.6f);
@@ -100,7 +100,7 @@ partial class BattleScreen
             case 29 when shotFrames > 20:
                 pendingShot = "gallery-undead-side"; shotIndex++; break;
             case >= 30 and <= 37 when pendingShot == null && shotIndex % 2 == 0:
-                // The four realms of docs/WORLD.md W3-W4, each in its own colours.
+                // The four realms of docs/archive/WORLD.md W3-W4, each in its own colours.
                 Gallery(NewRealms[(shotIndex - 30) / 2].Troops, NewRealms[(shotIndex - 30) / 2].Palette);
                 zoom = 19; camYaw = MathHelper.PiOver2 + 0.5f; camPitch = 0.14f;
                 foreach (var u in battle.Units.Where(u => !u.IsLeader)) u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = -0.9f; // three-quarter view
@@ -135,7 +135,7 @@ partial class BattleScreen
             case 52 when shotFrames > 20:
                 pendingShot = "gallery-armour-side"; shotIndex++; break;
             case 53 or 55 when pendingShot == null:
-                // Melee (docs/MELEE.md): three companies a side, 14 s after they charged; levies, then elites.
+                // Melee (docs/archive/MELEE.md): three companies a side, 14 s after they charged; levies, then elites.
                 Clash(shotIndex == 53 ? "levies" : "immortals"); shotFrames = 0; shotIndex++; break;
             case 54 or 56 when shotFrames > 20:
                 pendingShot = shotIndex == 54 ? "clash-levies" : "clash-elites"; shotIndex++; break;
@@ -151,9 +151,33 @@ partial class BattleScreen
                 WorkScene((shotIndex - 67) / 2); shotFrames = 0; shotIndex++; break;
             case >= 67 and < 83 when shotIndex % 2 == 0 && shotFrames > 12:
                 pendingShot = WorkShots[(shotIndex - 68) / 2]; shotIndex++; break;
-            case 83 when pendingShot == null: Exit(); break;
+            case 83 or 85 or 87 when pendingShot == null && (shotIndex > 83 || shotFrames > 30): // the first waits for the window to settle
+                PoseSheet(3 + (shotIndex - 83) / 2); shotFrames = 0; shotIndex++; break;
+            case 84 or 86 or 88 when shotFrames > 20:
+                pendingShot = new[] { "pose-grips", "pose-shooters", "pose-stances" }[(shotIndex - 84) / 2]; shotIndex++; break;
+            case >= 89 and < 97 when shotIndex % 2 == 1 && pendingShot == null:
+                // The roster pass (docs/archive/ANIMATION_ROSTER.md R3-R4): each realm's own recruits and its new branches.
+                Gallery(RosterShots[(shotIndex - 89) / 2].Troops, RosterShots[(shotIndex - 89) / 2].Palette);
+                zoom = 24; camPitch = 0.12f;
+                foreach (var u in battle.Units.Where(u => !u.IsLeader)) u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = -MathHelper.PiOver2 - 0.6f; // three-quarter view
+                shotFrames = 0; shotIndex++; break;
+            case >= 89 and < 97 when shotIndex % 2 == 0 && shotFrames > 20:
+                pendingShot = $"gallery-{RosterShots[(shotIndex - 90) / 2].Name}"; shotIndex++; break;
+            case 97 when pendingShot == null:
+                PoseSheet(6); shotFrames = 0; shotIndex++; break;
+            case 98 when shotFrames > (shotIndex > 97 ? 20 : 30):
+                pendingShot = "pose-life"; shotIndex++; break;
+            case 99 when pendingShot == null: Exit(); break;
         }
     }
+
+    static readonly (string Name, int Palette, string[] Troops)[] RosterShots =
+    {
+        ("recruits", 0, new[] { "town_crossbows", "crown_squires", "commons_bowmen", "hobilars", "hunters", "fell_riders", "herd_boys", "herd_riders", "militia_crossbows", "light_horse" }),
+        ("sunward-branches", 5, new[] { "slingers", "storm_slingers", "camel_scouts", "camel_guard", "naffatun", "sun_fire", "dervishes", "saints_of_the_sand" }),
+        ("steppe-league-branches", 6, new[] { "steppe_lancers", "ironclad_khans", "wolf_runners", "tug_lords", "marines", "admirals_guard", "lagoon_wall", "lords_of_fortune" }),
+        ("order-wild-branches", 8, new[] { "pilgrim_bows", "pilgrim_riders", "hammer_brothers", "ashen_hammers", "chapter_turcopoles", "goblin_warlord", "wight", "death_knight" }),
+    };
 
     static readonly (string Name, int Palette, string[] Troops)[] NewRealms =
     {
@@ -163,7 +187,7 @@ partial class BattleScreen
         ("order", 8, new[] { "order_sergeants", "ashen_brothers", "ashen_saints", "order_spears", "dawn_pikes", "order_crossbows", "dawn_watch", "order_riders", "grand_masters" }),
     };
 
-    /// The pose sheet (docs/VISUALS.md V1): one man frozen at each moment of each action along a row, so every pose can be
+    /// The pose sheet (docs/archive/VISUALS.md V1): one man frozen at each moment of each action along a row, so every pose can be
     /// checked in one still. Sheet 0: the melee and the march; 1: the bow, the fall and the cheer; 2: riders at a stand, walk, trot, canter and gallop, the last with his lance couched, then a horse rearing, one falling and one dead.
     void PoseSheet(int sheet)
     {
@@ -198,6 +222,10 @@ partial class BattleScreen
                 x += 2.4f;
             }
         }
+        else if (sheet == 3) GripSheet(Add);
+        else if (sheet == 4) ShooterSheet(Add);
+        else if (sheet == 5) StanceSheet(Add);
+        else if (sheet == 6) LifeSheet(Add);
         else if (sheet == 0)
         {
             const string foot = "men_at_arms";
@@ -234,6 +262,116 @@ partial class BattleScreen
         zoom = x * 0.8f;
     }
 
+    /// Sheet 3: how each grip swings (docs/archive/ANIMATION_ROSTER.md A1): a two-hander, a pike, a spear over a shield, a sword from the saddle.
+    static void GripSheet(Func<string, int, Unit> add)
+    {
+        void Swing(string troop, AttackDir dir, UnitAction act, float k)
+        {
+            var w = add(troop, 0); w.Action = act; w.Swing = dir;
+            w.ActionTimer = (act == UnitAction.Windup ? w.Type.Windup : w.Type.Recover) * k;
+        }
+        add("greatswords", 0);
+        Swing("greatswords", AttackDir.Right, UnitAction.Windup, 0.1f);
+        Swing("greatswords", AttackDir.Right, UnitAction.Recover, 0.88f);
+        Swing("greatswords", AttackDir.Overhead, UnitAction.Windup, 0.05f);
+        Swing("greatswords", AttackDir.Overhead, UnitAction.Recover, 0.85f);
+        add("greatswords", 0).Action = UnitAction.Block;
+        add("pikemen", 0);
+        Swing("pikemen", AttackDir.Thrust, UnitAction.Windup, 0.1f);
+        Swing("pikemen", AttackDir.Thrust, UnitAction.Recover, 0.85f);
+        Swing("halberdiers", AttackDir.Overhead, UnitAction.Windup, 0.05f);
+        Swing("halberdiers", AttackDir.Overhead, UnitAction.Recover, 0.85f);
+        Swing("dune_spears", AttackDir.Overhead, UnitAction.Recover, 0.85f);
+        Swing("mamluks", AttackDir.Thrust, UnitAction.Windup, 0.1f);
+        Swing("mamluks", AttackDir.Thrust, UnitAction.Recover, 0.85f);
+    }
+
+    /// Sheet 4: crossbows, casters, javelins and slings (A3).
+    void ShooterSheet(Func<string, int, Unit> add)
+    {
+        float now = battle.Time;
+        Unit Shot(string troop, float cooldown, bool loosed = false)
+        {
+            var u = add(troop, 0);
+            u.Ammo = 5; u.EnemyDist = 18; u.Cooldown = cooldown;
+            if (loosed) { u.Action = UnitAction.Recover; u.ActionTimer = 0.12f; }
+            return u;
+        }
+        add("crossbowmen", 0); // carried
+        Shot("crossbowmen", 3.0f); // spanning
+        Shot("crossbowmen", 0.5f); // coming up
+        Shot("crossbowmen", 0.02f); // aimed
+        Shot("crossbowmen", 4f, true); // the kick
+        add("sun_javelins", 0);
+        Shot("sun_javelins", 0.25f); // drawn back
+        Shot("sun_javelins", 2f, true); // thrown
+        foreach (var (from, fire) in new[] { (-99f, -99f), (-1f, 1.2f), (-2.2f, -0.12f) }) // standing, gathering, the release
+        {
+            var c = add("hedge_witches", 0);
+            c.CastStart = now + from; c.CastFire = now + fire;
+        }
+        if (Troops.All.Any(t => t.Id == "slingers"))
+        {
+            Shot("slingers", 1.5f); // ready
+            Shot("slingers", 0.3f); // whirling
+            Shot("slingers", 2f, true); // let fly
+        }
+    }
+
+    /// Sheet 5: stances in a line (A2, A4).
+    void StanceSheet(Func<string, int, Unit> add)
+    {
+        var w = add("men_at_arms", 0); w.Squad!.Formation = Formation.ShieldWall; // locked behind the shield
+        w = add("pikemen", 0); w.EnemyDist = 7; w.Rank = 0; // points set, front rank
+        w = add("pikemen", 0); w.EnemyDist = 7; w.Rank = 3; // a rear rank holds his pike up
+        w = add("halberdiers", 0); w.EnemyDist = 7; w.Rank = 0;
+        foreach (var troop in new[] { "longbowmen", "crossbowmen" })
+        {
+            w = add(troop, 0); w.Ammo = 10; w.EnemyDist = 20; w.Cooldown = troop == "crossbowmen" ? 0.02f : 0.1f;
+            var sq = w.Squad!; sq.Columns = 2; // one of a front rank of two with men behind: he kneels
+            sq.Alive = 4; w.Rank = 0;
+        }
+        w = add("men_at_arms", 0); w.Facing = w.ViewFacing + 1.2f; // turning on the spot: he steps round
+        w = add("greatswords", 0); w.Action = UnitAction.Recover; w.Swing = AttackDir.Overhead; w.ActionTimer = w.Type.Recover * 0.85f; // the weight goes down into it
+        w = add("men_at_arms", 0); w.Vel = w.Dir * 4.5f; w.Anim = 0.5f; // running: the knee comes up behind
+        w = add("men_at_arms", 0); w.Vel = w.Dir * 4.5f; w.Anim = 1.5f;
+    }
+
+    /// Sheet 6: idle life, reactions, riders and falls (docs/archive/ANIMATION_ROSTER.md A5-A6): the three idles, a flinch from a blow on
+    /// his left, a rider thrown as his horse falls, a horse archer shooting back, a horse pawing, then a man spun by a cut,
+    /// folded over a thrust, flung by a troll, and a rider sliding from the saddle.
+    void LifeSheet(Func<string, int, Unit> add)
+    {
+        var b = battle;
+        Unit AtEase(string troop, int kind)
+        {
+            var u = add(troop, 0);
+            u.EnemyDist = float.MaxValue;
+            for (int i = 1000; i < 100000; i++) // find a man whose idle at this moment is `kind`, fully taken up
+                if (Puppet.IdleOf(i, b.Time) is var (k, w) && k == kind && w > 0.99f) { u.Index = i; break; }
+            return u;
+        }
+        AtEase("pikemen", 1);
+        AtEase("greatswords", 1);
+        AtEase("men_at_arms", 1);
+        AtEase("men_at_arms", 2);
+        AtEase("men_at_arms", 3);
+        var w = add("men_at_arms", 0); w.HitFlash = 0.09f; w.HitFrom = w.Pos + new Vector2(MathF.Sin(w.Facing), -MathF.Cos(w.Facing)) * 2; // struck from his left
+        w = add("men_at_arms", 0); w.ThrownAt = b.Time - 0.25f; // his horse fell under him
+        w = add("horse_archers", 0); w.Ammo = 10; w.EnemyDist = 20; w.Cooldown = 0.05f; w.Facing = w.ViewFacing = w.Heading + 2.6f; // a shot back over the tail
+        w = add("knights", 0); // a horse pawing the ground
+        for (int i = 1000; i < 100000; i++) if (Puppet.HorseIdle(Ease.Hash(i), b.Time) is (2, > 0.05f and < 0.09f)) { w.Index = i; break; }
+        foreach (var (fall, k) in new[] { (Ironfield.Fall.Cut, 0.5f), (Ironfield.Fall.Thrust, 0.6f), (Ironfield.Fall.Flung, 0.5f), (Ironfield.Fall.Saddle, 0.5f) })
+        {
+            var d = add(fall == Ironfield.Fall.Saddle ? "knights" : "men_at_arms", 0);
+            d.DiedFall = fall;
+            d.DiedFrom = fall == Ironfield.Fall.Cut ? d.Pos + new Vector2(-MathF.Sin(d.Facing), MathF.Cos(d.Facing)) * 2 : d.Pos + d.Dir * 2;
+            if (fall == Ironfield.Fall.Saddle) { d.Horse = null; d.Pos -= new Vector2(-d.HeadingDir.Y, d.HeadingDir.X); }
+            d.Dead = true;
+            d.DiedAt = b.Time - k * (fall switch { Ironfield.Fall.Saddle => 0.75f, Ironfield.Fall.Flung => 0.6f, _ => 0.45f + Ease.Hash(d.Index) * 0.3f });
+        }
+    }
+
     /// Three companies of `troop` a side charge each other; the sim runs 14 s, then the view is held from above one flank.
     void Clash(string troop)
     {
@@ -260,7 +398,7 @@ partial class BattleScreen
         zoom = 19;
     }
 
-    /// Magic and aura staged for a shot (docs/MAGIC_AURA.md 6): spells (a smite's pillar, lightning, burning ground, mist, a
+    /// Magic and aura staged for a shot (docs/archive/MAGIC_AURA.md 6): spells (a smite's pillar, lightning, burning ground, mist, a
     /// ward, a blessing) or the captain's aura (the blade lit, a burst, a slash, presence).
     void MagicScene(bool spells)
     {
@@ -309,7 +447,7 @@ partial class BattleScreen
         zoom = spells ? 46 : 16;
     }
 
-    /// The spectacle pass (docs/SPECTACLE.md). 0: a smite falling at night beside a burning field, a Transcendent captain
+    /// The spectacle pass (docs/archive/SPECTACLE.md). 0: a smite falling at night beside a burning field, a Transcendent captain
     /// shining, to show the moving lights and the glass and scorch scars. 1: a breakthrough at its height, the colour drained
     /// from all but the captain, the beat's bars drawn, the men near him leaning back. 2: a great working (the Tempest) at
     /// 70% gathered beside a smite at half (S2): the sigils, the pull, the column and the darkened sky.
@@ -362,7 +500,7 @@ partial class BattleScreen
 
     static readonly string[] WorkShots = { "smite-strike", "miracle", "tempest", "wildfire", "crows", "aura-ladder", "clash-beat", "black-flame" };
 
-    /// The strong workings and the aura's moments, each caught a moment after it lands (docs/SPECTACLE.md S3-S5).
+    /// The strong workings and the aura's moments, each caught a moment after it lands (docs/archive/SPECTACLE.md S3-S5).
     void WorkScene(int which)
     {
         string shot = WorkShots[which];

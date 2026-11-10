@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// BattleScreen: each strong working lands in its own way (docs/SPECTACLE.md S3). The sim marks which one fired with a
+/// BattleScreen: each strong working lands in its own way (docs/archive/SPECTACLE.md S3). The sim marks which one fired with a
 /// `work:<id>` flash (its Dir points back to the caster); this turns it into a lasting moment: smite's shaft from the sky,
 /// a miracle's dawn and petals, a tempest turning the clouds, wildfire's front and its smoke, pots of Greek fire in the
 /// air, a flock of crows, a mist rolling out, a dread that drains the colour from the cursed, a ward's dome. Drawing only.

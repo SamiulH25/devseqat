@@ -14,7 +14,7 @@ public static class Style
 
     /// Palette index: 0 = the Azure Crown, 1 = the Crimson Compact, 2 = you (gold, so you can always find yourself), 3 = bandits,
     /// 4 = the Northmarch clans, 5 = the Sunward Emirates, 6 = the Khaganate, 7 = the Saltmarsh League, 8 = the Order of the
-    /// Ashen Sun (docs/WORLD.md W3). Every palette paints a full set of sprite parts (the atlas holds them).
+    /// Ashen Sun (docs/archive/WORLD.md W3). Every palette paints a full set of sprite parts (the atlas holds them).
     public static readonly Heraldry[] Sides = Settings.Current.ColorBlind ? ColorBlind() : Standard();
 
     /// Colour-blind-safe sides (roadmap D3): blue against vermilion and reddish purple (Okabe-Ito hues), which stay apart
@@ -62,7 +62,7 @@ public static class Style
         new(0.74f, 0.5f, 0.32f), new(0.86f, 0.52f, 0.3f), new(0.34f, 0.31f, 0.31f), new(0.9f, 0.9f, 0.92f), new(0.88f, 0.74f, 0.52f),
     };
 
-    /// A camel's sand coat, the same kind of multiplier (docs/WORLD.md W4).
+    /// A camel's sand coat, the same kind of multiplier (docs/archive/WORLD.md W4).
     public static readonly Vector3 CamelCoat = new(0.94f, 0.8f, 0.56f);
 
     /// Light for sprites, in sprite space (x right, y down, z toward the viewer): from the upper left, like the sun.
@@ -75,7 +75,7 @@ public static class Style
 
     public static readonly Color Accent = new(240, 200, 60);          // gold: you, the selection, the highlighted choice
     public static readonly Color Friendly = Sides[0].Ui, Foe = Sides[1].Ui;
-    /// The captain's aura (gauge, blade glow; docs/KNIGHT_ORDERS.md).
+    /// The captain's aura (gauge, blade glow; docs/archive/KNIGHT_ORDERS.md).
     public static readonly Color Aura = new(120, 200, 255);
     public static readonly Color Ok = new(110, 196, 104), Warn = new(236, 186, 60), Bad = new(226, 72, 60), Orange = new(240, 140, 50);
     public static readonly Color Text = new(238, 236, 228), Dim = new(170, 174, 182), HorseBar = new(168, 116, 70);

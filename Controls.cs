@@ -19,9 +19,9 @@ public enum Act
     PartyScreen, Speed1, Speed2, Speed3, FollowParty, QuickSave, QuickLoad,
     // battle (later additions)
     Formation, Bash, SwapWeapon, NextDivision, GroundView, Stakes,
-    // the captain's aura and forms (docs/KNIGHT_ORDERS.md)
+    // the captain's aura and forms (docs/archive/KNIGHT_ORDERS.md)
     AuraBlade, Form1, Form2, Form3, GreatForm,
-    // magic for the player (docs/MAGIC_AURA.md)
+    // magic for the player (docs/archive/MAGIC_AURA.md)
     Cast, Relic,
     // campaign map panels (later additions)
     LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen,

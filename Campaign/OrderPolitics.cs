@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The orders' people and politics (docs/KNIGHT_ORDERS.md 4.6, 6.2, K6): your rival, grand masters who die and are chosen
+/// The orders' people and politics (docs/archive/KNIGHT_ORDERS.md 4.6, 6.2, K6): your rival, grand masters who die and are chosen
 /// (you may be), crusades against what an order hunts, and an order that rides with you once you lead it.
 public sealed partial class Campaign
 {

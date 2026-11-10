@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Ironfield;
 
-/// One of the captain's forms from Data/forms.json (docs/KNIGHT_ORDERS.md 5.6): a technique the player presses, paid in
+/// One of the captain's forms from Data/forms.json (docs/archive/KNIGHT_ORDERS.md 5.6): a technique the player presses, paid in
 /// aura. Used by BattleForms.cs; learned in Campaign/Aura.cs and Campaign/Orders.cs.
 public sealed class FormDef
 {
@@ -11,12 +11,12 @@ public sealed class FormDef
     public int Tier = 1, MaxHit = 1, Count;
     public bool Great;
     public float Aura, Cooldown = 20, Warn, Range, Radius, Duration, Damage, Shock, Dps;
-    /// Black Flame forms: corruption each use adds (docs/KNIGHT_ORDERS.md 7).
+    /// Black Flame forms: corruption each use adds (docs/archive/KNIGHT_ORDERS.md 7).
     public float Corruption;
     public FormDef Clone() => (FormDef)MemberwiseClone();
 }
 
-/// An aspect a form of rank 3 can take (docs/MAGIC_AURA.md 4.5): one of two per kind, chosen once. Each number multiplies
+/// An aspect a form of rank 3 can take (docs/archive/MAGIC_AURA.md 4.5): one of two per kind, chosen once. Each number multiplies
 /// the form's own (1 = unchanged); MaxHit and Count add.
 public sealed class AspectDef
 {

@@ -1,7 +1,7 @@
 # Magic and aura for the player: plan
 
-Status: built (2026-11-09), MA1-MA9. See "As built" at the end. Builds on docs/COMPANIONS_MAGIC.md (effects, mages, companions: built
-through M4 + P) and docs/KNIGHT_ORDERS.md (aura and orders: built K1-K8). Read docs/LEGACY.md first: your company is
+Status: built (2026-11-09), MA1-MA9. See "As built" at the end. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages, companions: built
+through M4 + P) and docs/archive/KNIGHT_ORDERS.md (aura and orders: built K1-K8). Read docs/archive/LEGACY.md first: your company is
 your legacy, and every change here must serve that.
 
 ## 1. Why this pass

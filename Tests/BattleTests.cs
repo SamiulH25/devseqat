@@ -5,7 +5,7 @@ namespace Ironfield;
 /// Self-tests of the battle sim: mechanics scenarios (charges, parries, flanks, cavalry, ranged), troops, sprites, full battles, replays.
 public static partial class SelfTest
 {
-    /// Animation curves and poses (docs/VISUALS.md V1-V2): easing keeps its ends, a windup ends raised, a strike overshoots,
+    /// Animation curves and poses (docs/archive/VISUALS.md V1-V2): easing keeps its ends, a windup ends raised, a strike overshoots,
     /// and the drawn pose never touches the sim (a killed man only remembers where the blow came from).
     static void Animation()
     {
@@ -17,7 +17,7 @@ public static partial class SelfTest
         Check(Ease.Hash(1) != Ease.Hash(2) && Ease.Hash(7) == Ease.Hash(7), "the per-man phase is stable and varied");
         var b = Battle.Empty(1);
         var u = b.AddSquad(0, UnitType.Shieldman, 1, Vector2.Zero, 1, Vector2.UnitY).Units[0];
-        var (_, raise, strike) = Puppet.Keys(u.Type.Class, AttackDir.Right);
+        var (_, raise, strike) = Puppet.Keys(Look.GripOf(u.Type.Look.Weapon), AttackDir.Right);
         u.Action = UnitAction.Windup; u.Swing = AttackDir.Right; u.ActionTimer = u.Type.Windup * 0.1f;
         Check(MathF.Abs(Puppet.PoseOf(u, 1, 0.5f).ArmA - raise.Alpha) < 1, "the windup holds at the top");
         u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - 0.15f);
@@ -25,9 +25,78 @@ public static partial class SelfTest
         Check(through < strike.Yaw, $"the strike swings past its mark ({through:0} < {strike.Yaw:0})");
         u.Action = UnitAction.None; u.Routing = true;
         Check(!Puppet.PoseOf(u, 1, 0.5f).Armed, "a routed man has thrown his weapon away");
+        var two = b.AddSquad(0, Troops.Get("greatswords"), 1, new Vector2(4, 0), 1, Vector2.UnitY).Units[0];
+        Check(Puppet.PoseOf(two, 1, 0.5f).TwoHand, "a greatsword is held in both hands");
+        Check(!Puppet.PoseOf(b.AddSquad(0, Troops.Get("dune_spears"), 1, new Vector2(6, 0), 1, Vector2.UnitY).Units[0], 1, 0.5f).TwoHand,
+            "a spear with a shield is held in one hand");
+        var rider = b.AddSquad(0, Troops.Get("mamluks"), 1, new Vector2(8, 0), 1, Vector2.UnitY).Units[0];
+        rider.Action = UnitAction.Recover; rider.Swing = AttackDir.Thrust; rider.ActionTimer = rider.Type.Recover * 0.8f;
+        Check(Puppet.PoseOf(rider, 1, 0.2f).WeapB < 0, "a sword in the saddle cuts down, it does not thrust");
+        var xbow = b.AddSquad(0, Troops.Get("crossbowmen"), 1, new Vector2(10, 0), 1, Vector2.UnitY).Units[0];
+        xbow.Ammo = 5; xbow.EnemyDist = 20; xbow.Cooldown = 3;
+        Check(Puppet.PoseOf(xbow, 1, 0.5f).Haul >= 0, "a crossbowman spans his bow between shots");
+        xbow.Cooldown = 0.01f;
+        Check(Puppet.PoseOf(xbow, 1, 0.5f) is { Aim: true, Draw: > 0.95f, Haul: < 0 }, "then levels it at the shoulder");
+        var jav = b.AddSquad(0, Troops.Get("sun_javelins"), 1, new Vector2(12, 0), 1, Vector2.UnitY).Units[0];
+        jav.Ammo = 3; jav.EnemyDist = 15; jav.Cooldown = 0.1f;
+        Check(Puppet.PoseOf(jav, 1, 0.5f).ArmA > 160, "a javelin is drawn back over the shoulder");
+        jav.Action = UnitAction.Recover; jav.ActionTimer = 0.1f;
+        Check(Puppet.PoseOf(jav, 1, 0.5f).Empty, "and leaves the hand");
+        var mage = b.AddSquad(0, Troops.Get("hedge_witches"), 1, new Vector2(14, 0), 1, Vector2.UnitY).Units[0];
+        mage.CastStart = 0.5f; mage.CastFire = 2;
+        Check(Puppet.PoseOf(mage, 1.5f, 0.5f) is { Cast: > 0 and < 1, ArmA: > 120 }, "a caster lifts his staff as he gathers a spell");
+        var wall = b.AddSquad(0, UnitType.Shieldman, 1, new Vector2(16, 0), 1, Vector2.UnitY).Units[0];
+        wall.Squad!.Formation = Formation.ShieldWall;
+        Check(Puppet.PoseOf(wall, 1, 0.5f) is { ShieldUp: true, Crouch: > 0 }, "a shield wall crouches behind its shields");
+        var pike = b.AddSquad(0, Troops.Get("pikemen"), 1, new Vector2(18, 0), 1, Vector2.UnitY).Units[0];
+        float upright = Puppet.PoseOf(pike, 1, 0.5f).WeapB;
+        pike.EnemyDist = 7; pike.Rank = 0;
+        Check(Puppet.PoseOf(pike, 1, 0.5f).WeapB < upright - 40, "the front rank sets its pikes at a foe close by");
+        pike.Rank = 4;
+        Check(Puppet.PoseOf(pike, 1, 0.5f).WeapB > upright - 10, "the ranks behind hold theirs up");
+        var bow = b.AddSquad(0, Troops.Get("longbowmen"), 4, new Vector2(20, 0), 2, Vector2.UnitY).Units[0];
+        bow.Ammo = 5; bow.EnemyDist = 20; bow.Rank = 0; bow.Squad!.Alive = 4;
+        Check(Puppet.PoseOf(bow, 1, 0.5f).Kneel, "the front rank of bows kneels to shoot");
         var foe = b.AddSquad(1, UnitType.Shieldman, 1, new Vector2(0, 2), 1, -Vector2.UnitY).Units[0];
         b.Kill(foe, u);
         Check(foe.Dead && foe.DiedFrom == u.Pos, "a dead man remembers where the blow came from");
+        // Idle life, reactions, riders and falls (A5-A6).
+        var kinds = new HashSet<int>();
+        for (int i = 0; i < 200; i++) kinds.Add(Puppet.IdleOf(i, 30).Kind);
+        Check(kinds.SetEquals(new[] { 0, 1, 2, 3 }), "men at ease take up every idle, and some none");
+        var ease = b.AddSquad(0, Troops.Get("men_at_arms"), 1, new Vector2(24, 0), 1, Vector2.UnitY).Units[0];
+        ease.EnemyDist = float.MaxValue;
+        int look = Enumerable.Range(0, 5000).First(i => Puppet.IdleOf(i, 30) is (2, > 0.99f));
+        ease.Index = look;
+        Check(Puppet.PoseOf(ease, 30, 0.5f).Look != 0, "a man at ease looks round");
+        ease.EnemyDist = 10;
+        Check(Puppet.PoseOf(ease, 30, 0.5f).Look == 0, "but not with a foe close");
+        ease.HitFlash = 0.09f; ease.HitFrom = ease.Pos + new Vector2(-3, 0);
+        Check(Puppet.PoseOf(ease, 30, 0.5f).LeanX != 0, "a blow from the side knocks him sideways");
+        ease.HitFlash = 0; ease.ThrownAt = 29.8f;
+        Check(Puppet.PoseOf(ease, 30, 0.5f).LeanZ > 40, "a man whose horse fell is pitched forward");
+        var knight = b.AddSquad(1, Troops.Get("knights"), 1, new Vector2(26, 0), 1, -Vector2.UnitY).Units[0];
+        b.Kill(knight, u);
+        Check(knight.DiedFall == Fall.Saddle, "a rider killed in the saddle slides from it");
+        var cut = b.AddSquad(1, UnitType.Shieldman, 1, u.Pos + new Vector2(1, 0), 1, -Vector2.UnitY).Units[0];
+        u.Swing = AttackDir.Left;
+        b.Kill(cut, u);
+        Check(cut.DiedFall == Fall.Cut, "a man killed by a side cut is spun round");
+    }
+
+    /// Javelin men throw what they carry as the foe comes on, then close with the last one in hand (docs/archive/ANIMATION_ROSTER.md R1).
+    static void Javelins()
+    {
+        var b = Battle.Empty(3);
+        var jav = b.AddSquad(0, Troops.Get("sun_javelins"), 12, new Vector2(0, -12), 6, Vector2.UnitY);
+        var foe = b.AddSquad(1, Troops.Get("levies"), 12, new Vector2(0, 12), 6, -Vector2.UnitY);
+        jav.Order = foe.Order = Order.Charge; jav.Target = foe; foe.Target = jav;
+        bool flew = false;
+        for (int i = 0; i < 60 * 20 && !flew; i++) { b.Update(1 / 60f); flew |= b.Arrows.Any(a => a.Kind == Grip.Thrown && a.Stuck < 0); }
+        Check(flew, "javelins fly as javelins");
+        for (int i = 0; i < 60 * 25; i++) b.Update(1 / 60f);
+        Check(jav.Units.Where(u => u.Active).All(u => u.Ammo < jav.Units[0].Type.Ammo), "every javelin man has thrown");
+        Check(b.Units.Any(u => u.Team == 1 && u.Dead), "the javelins and the spears kill");
     }
 
     /// A gallop into loose infantry hurts it; a braced spear line hurts the horse instead.
@@ -464,7 +533,7 @@ public static partial class SelfTest
         Check(w.Night && w.Vision <= 40 && w.Spread > 1.5f && w.MudFactor < 1, "night and rain blind archers and bog horses");
     }
 
-    /// The ground layer (docs/TERRAIN.md T0): the data validates, the same seed gives the same ground, and the layer marks
+    /// The ground layer (docs/archive/TERRAIN.md T0): the data validates, the same seed gives the same ground, and the layer marks
     /// what is on the field: water and fords on the river, the road, the woods; grass on a flat test field.
     static void GroundLayer()
     {
@@ -489,7 +558,7 @@ public static partial class SelfTest
         Check(b.Recording!.TerrainVersion == Terrain.Version && Replay.Deserialize("{\"Seed\":1}").TerrainVersion == 0, "a replay keeps the ground version it was made on");
     }
 
-    /// Ground that changes how men move (docs/TERRAIN.md T1): a wood slows horse far more than foot, a road is quick,
+    /// Ground that changes how men move (docs/archive/TERRAIN.md T1): a wood slows horse far more than foot, a road is quick,
     /// mud tires an armoured man, a slope tells on a horse more than on a man.
     static void GroundMoves()
     {
@@ -519,7 +588,7 @@ public static partial class SelfTest
         Check(Battle.SlopeFactor(t, steep, up, true) < Battle.SlopeFactor(t, steep, up), "a horse feels a climb more than a man");
     }
 
-    /// Ground that changes how men fight (docs/TERRAIN.md T1): spears in a wood cannot brace, a horse on stones stumbles
+    /// Ground that changes how men fight (docs/archive/TERRAIN.md T1): spears in a wood cannot brace, a horse on stones stumbles
     /// (and the same seed stumbles the same way), high ground is a smooth curve, a downhill charge hits harder,
     /// height carries arrows further.
     static void GroundFights()
@@ -557,7 +626,7 @@ public static partial class SelfTest
         Check(Battle.HeightRange(0) == 1 && Battle.HeightRange(-5) == 1 && Battle.HeightRange(3) > 1 && Battle.HeightRange(50) == 1.25f, "height carries arrows further, up to a quarter");
     }
 
-    /// Fields built to a layout (docs/TERRAIN.md T2): the deployment ground stays clear at every size of battle, a ridge
+    /// Fields built to a layout (docs/archive/TERRAIN.md T2): the deployment ground stays clear at every size of battle, a ridge
     /// rises in front of one army, two hills stand on the wings, broken ground is stony and the fen is mud.
     static void Layouts()
     {
@@ -587,7 +656,7 @@ public static partial class SelfTest
         Check(new Terrain(13, TerrainParams.Meadow with { Layouts = null }).Layout == FieldLayout.Open, "no layouts means an open field");
     }
 
-    /// Line features and the rest of the layouts (docs/TERRAIN.md T2): a hedge stops a man except at its gaps, a road over
+    /// Line features and the rest of the layouts (docs/archive/TERRAIN.md T2): a hedge stops a man except at its gaps, a road over
     /// a river gets a bridge you can walk across dry-shod, a village has houses and fences, a pass has high sides, and a
     /// company in a wood opens its ranks.
     static void HedgesAndBridges()
@@ -657,7 +726,7 @@ public static partial class SelfTest
         }
     }
 
-    /// Sight and cover (docs/TERRAIN.md T3): a wood soaks up arrows, a hedge stops flat shots, a crest hides what is behind
+    /// Sight and cover (docs/archive/TERRAIN.md T3): a wood soaks up arrows, a hedge stops flat shots, a crest hides what is behind
     /// it, men in a wood are unseen from afar, and a hidden company that is found close to the enemy is an ambush.
     static void SightAndCover()
     {
@@ -727,7 +796,7 @@ public static partial class SelfTest
         Check(m.Settlements.All(s => m.RiverDist(s.Pos) > 4), "no settlement stands in a river");
     }
 
-    /// The AI reads the ground (docs/TERRAIN.md T5): on a ridge, the side on the crest lets the other come up to it, and
+    /// The AI reads the ground (docs/archive/TERRAIN.md T5): on a ridge, the side on the crest lets the other come up to it, and
     /// still fights to a result.
     static void HoldsTheCrest()
     {
@@ -813,7 +882,7 @@ public static partial class SelfTest
         Check(b.Winner >= 0, "a battle on a river line resolves");
     }
 
-    /// Tools for the player (docs/TERRAIN.md T6): the ground's line, order warnings, stakes, and the Pathfinder perk.
+    /// Tools for the player (docs/archive/TERRAIN.md T6): the ground's line, order warnings, stakes, and the Pathfinder perk.
     static void GroundForThePlayer()
     {
         Check(Grounds.Describe(GroundKind.Grass) == "GRASS. GOOD GOING.", "plain grass is good going");
@@ -890,7 +959,7 @@ public static partial class SelfTest
         Check(finder < plain * 0.93f, "Pathfinder men cross a wood quicker");
     }
 
-    /// Pathing (docs/TERRAIN.md T4): an order across a river goes by the ford when one is near, rather than wading the deep.
+    /// Pathing (docs/archive/TERRAIN.md T4): an order across a river goes by the ford when one is near, rather than wading the deep.
     static void GoesToFord()
     {
         var g = TerrainParams.Meadow with { River = true, Road = false, Layouts = new[] { FieldLayout.Open } };
@@ -1201,7 +1270,7 @@ public static partial class SelfTest
         Console.WriteLine($"stack battle: {(report.Won ? "won" : "lost")}, {co.Name} {before} -> {co.Men}+{co.Wounded}W [{string.Join(", ", cr.Stacks.Select(st => $"{st.Troop} {st.Start}->{st.Standing}"))}]");
     }
 
-    /// Named men in battle (docs/LEGACY.md L2): placed as real units, their kills and fates come back by id and reach the roll,
+    /// Named men in battle (docs/archive/LEGACY.md L2): placed as real units, their kills and fates come back by id and reach the roll,
     /// the company's best man may earn a name, and a battle with named men replays exactly.
     static void NamedMenFight()
     {
@@ -1269,7 +1338,7 @@ public static partial class SelfTest
         Check(lost > 0, "auto-resolving a lost fight costs named men too");
     }
 
-    /// Fighting for your men (docs/LEGACY.md L8): a fallen named man you stand over is got out (saved), which the result
+    /// Fighting for your men (docs/archive/LEGACY.md L8): a fallen named man you stand over is got out (saved), which the result
     /// carries; the "bring him home" goal names him and is lost if he dies; your named men are heard in the log.
     static void PullBack()
     {
@@ -1344,7 +1413,7 @@ public static partial class SelfTest
         Check(l.Dead || l.Hp < l.Type.MaxHp, "braced spears hurt a charging lancer");
     }
 
-    /// Battle scale (docs/COMBAT_OVERHAUL.md 2.7): a 1,200-man battle deploys without companies on top of each other,
+    /// Battle scale (docs/archive/COMBAT_OVERHAUL.md 2.7): a 1,200-man battle deploys without companies on top of each other,
     /// stays on a wider field, runs well under a frame per tick, and replays exactly.
     static void ScaleBattle()
     {
@@ -1379,10 +1448,10 @@ public static partial class SelfTest
         Check(rec.Winner == again.Winner && again.Units.Count(u => u.Dead) == rec.Dead, "a big battle replays exactly");
     }
 
-    /// Divisions (docs/COMBAT_OVERHAUL.md 1.8): goals arrive late and a newer one cancels an older; a Hold goal keeps the
+    /// Divisions (docs/archive/COMBAT_OVERHAUL.md 1.8): goals arrive late and a newer one cancels an older; a Hold goal keeps the
     /// division near its ground; Flank swings wide and hits a side; a fallen sergeant is replaced; direct orders wait
     /// for the delay too; and a battle with divisions and goals replays exactly.
-    /// Orders ride out as couriers (docs/COMBAT_OVERHAUL.md 1.4): a rider who meets the enemy on the road is cut down and
+    /// Orders ride out as couriers (docs/archive/COMBAT_OVERHAUL.md 1.4): a rider who meets the enemy on the road is cut down and
     /// the order lands later; with couriers off the same order lands on time.
     static void Couriers()
     {

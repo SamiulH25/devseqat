@@ -18,6 +18,7 @@ partial class BattleScreen
         if (list.Count == 0) return;
         float late = 0;
         foreach (var s in list) late = MathF.Max(late, Send(s, act));
+        host.Audio?.Play(Cue.Order, 0.6f); // the horn calls the order
         battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
     }
 
@@ -33,7 +34,7 @@ partial class BattleScreen
     IEnumerable<Squad> Selectable => battle.SquadsOf(0).Where(s => !s.AiControlled);
 
     /// Give a division a goal (it reaches the sergeant after a delay; before the battle starts, at once).
-    void GiveGoal(Division d, Goal g) => battle.IssueGoal(d, g, now: deploying);
+    void GiveGoal(Division d, Goal g) { battle.IssueGoal(d, g, now: deploying); host.Audio?.Play(Cue.Order, 0.6f); }
 
     void GoalCommand(Division d, GoalKind kind, int side)
     {
@@ -93,7 +94,7 @@ partial class BattleScreen
                 var casters = Targets().Where(Battle.CasterCompany).ToList();
                 if (casters.Count > 0)
                 {
-                    // Casters hold their spells for your word, or cast at will again (docs/MAGIC_AURA.md 3.1).
+                    // Casters hold their spells for your word, or cast at will again (docs/archive/MAGIC_AURA.md 3.1).
                     bool hold = !casters[0].HoldSpells;
                     foreach (var s in casters) Send(s, q => q.HoldSpells = hold);
                     battle.Log(hold ? "Casters: hold your spells for my word!" : "Casters: cast at will!");
@@ -130,7 +131,7 @@ partial class BattleScreen
             if (ctl.Pressed(act)) Command(cmd);
     }
 
-    /// The caster you direct and the spell picked (docs/MAGIC_AURA.md 3.1). The next left click on the field casts it there.
+    /// The caster you direct and the spell picked (docs/archive/MAGIC_AURA.md 3.1). The next left click on the field casts it there.
     Squad? castBy;
     int castPick = -1;
 
@@ -160,7 +161,7 @@ partial class BattleScreen
         castPick = -1;
     }
 
-    /// Your selected longbowmen (or all of them) plant their stakes in front of their line (docs/TERRAIN.md T6).
+    /// Your selected longbowmen (or all of them) plant their stakes in front of their line (docs/archive/TERRAIN.md T6).
     void PlantStakes()
     {
         var bows = Targets().Where(s => s.Units[0].Type.Has("stakes")).ToList();

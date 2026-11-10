@@ -173,7 +173,7 @@ partial class MapScreen
         foreach (var l in placed.AsEnumerable().Reverse()) l.Draw(l);
     }
 
-    /// The land lives: thin smoke from town chimneys, and dust kicked up behind parties on the move (docs/VISUALS.md V4).
+    /// The land lives: thin smoke from town chimneys, and dust kicked up behind parties on the move (docs/archive/VISUALS.md V4).
     void Life()
     {
         float fade = Math.Clamp((240 - zoom) / 80, 0, 1);

@@ -2,13 +2,13 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A named place on the battlefield worth fighting for (docs/TERRAIN.md T5).
+/// A named place on the battlefield worth fighting for (docs/archive/TERRAIN.md T5).
 public enum PlaceKind { Crest, Knoll, WoodEdge, Ford, Bridge, Hedge, Village }
 
 /// A place and how good it is to hold, to shoot from and to hide in (0 = no use).
 public readonly record struct Place(PlaceKind Kind, Vector2 Pos, float Hold, float Shoot, float Hide);
 
-/// Battle: the ground survey (docs/TERRAIN.md T5). Built once, the first time the AI or a sergeant asks, from the heights,
+/// Battle: the ground survey (docs/archive/TERRAIN.md T5). Built once, the first time the AI or a sergeant asks, from the heights,
 /// the ground layer, the rivers and the features. The general and the sergeants pick their ground from it.
 public partial class Battle
 {

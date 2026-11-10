@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Campaign: creatures of the wild (docs/CREATURES.md). Goblin holdouts sit in forest and hill country, grow, hoard
+/// Campaign: creatures of the wild (docs/archive/CREATURES.md). Goblin holdouts sit in forest and hill country, grow, hoard
 /// and send raiders at villages; a holdout is a monster party that never moves (Party.Lair), so fighting it is a field
 /// battle and auto-resolve like any other. Wolf packs roam the forests and hunt by night. Trolls are the rare monsters:
 /// a few in the world, each sleeping out the day and hunting anything it can beat by night. MonstersDaily runs from
@@ -176,6 +176,13 @@ public partial class Campaign
     void Grow(Party lair)
     {
         int cap = Scaled(B.HoldoutMaxMen);
+        if (lair.Men >= cap && lair.Tier == 4 && rng.Chance(0.05f) && lair.Companies.Any(c => c.Stacks.Any(st => st.Troop == "goblin_boss" && st.Men > 0)))
+        {
+            // A full holdout left alone long enough crowns a warlord (docs/archive/ANIMATION_ROSTER.md R3).
+            Recruit(lair, "goblin_warlord", "infantry", 1);
+            lair.Tier = 6;
+            Log($"The goblins of {lair.Name} have raised a warlord.");
+        }
         if (lair.Men >= cap) return;
         Recruit(lair, "goblin", "infantry", Math.Min(cap - lair.Men, Math.Max(1, Scaled(B.HoldoutGrowPerDay))));
         if (lair.Men >= cap) return;

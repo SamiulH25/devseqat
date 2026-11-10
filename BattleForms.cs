@@ -5,7 +5,7 @@ namespace Ironfield;
 /// A thrown form on its way (an aura slash, a rain of light): it lands at `At` if you still stand. The screen draws it.
 public sealed record PendingForm(FormDef F, float Started, float At, Vector2 From, Vector2 Dir, float Power, bool Foe = false);
 
-/// Battle: the captain's forms (docs/KNIGHT_ORDERS.md 5.6, K2). Three slots and a great form, pressed by the player,
+/// Battle: the captain's forms (docs/archive/KNIGHT_ORDERS.md 5.6, K2). Three slots and a great form, pressed by the player,
 /// paid in aura. Each kind is a small rule here; buffs and fields go through the spell engine (BattleAbilities.cs).
 public partial class Battle
 {

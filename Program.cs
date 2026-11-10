@@ -4,6 +4,11 @@
     Ironfield.SpriteDump.Run(rest.FirstOrDefault() ?? "sprites.png", rest.Skip(1).ToArray());
     return;
 }
+if (args.Contains("--sounds"))
+{
+    Ironfield.SoundDump.Run(args.SkipWhile(a => a != "--sounds").Skip(1).FirstOrDefault() ?? "sounds");
+    return;
+}
 if (args.Contains("--write-controls"))
 {
     Ironfield.Controls.WriteDefaults(Ironfield.Controls.FileName);

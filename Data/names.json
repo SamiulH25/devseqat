@@ -1,5 +1,5 @@
 {
- "_comment": "Names (docs/SIDE_CONTENT.md S1). Each culture has its own places and lords; 'places' and 'lords' are the common fallback, and a map that runs out builds names from 'prefixes' + 'suffixes', so no place name repeats.",
+ "_comment": "Names (docs/archive/SIDE_CONTENT.md S1). Each culture has its own places and lords; 'places' and 'lords' are the common fallback, and a map that runs out builds names from 'prefixes' + 'suffixes', so no place name repeats.",
  "places": [
   "Ashford",
   "Brackmoor",

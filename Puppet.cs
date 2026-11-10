@@ -10,7 +10,7 @@ namespace Ironfield;
 /// - Shields are flat quads fixed in the world.
 /// Parts move in 3D, so turning and swings stay continuous from any camera angle.
 /// Unit space: +X right hand, +Y up, +Z facing; metres.
-sealed class Puppet
+sealed partial class Puppet
 {
     const float Saddle = 0.87f; // rider origin height when mounted
     const float RearDeg = 32;   // how far a horse rears
@@ -56,7 +56,7 @@ sealed class Puppet
     public float Rear;
     /// The winning team once the battle is over (its men cheer), else -1.
     public int Winner = -1;
-    /// Sources of awe this frame (docs/SPECTACLE.md S1): a place, a reach and how strong it is now (0..1). Set by the battle
+    /// Sources of awe this frame (docs/archive/SPECTACLE.md S1): a place, a reach and how strong it is now (0..1). Set by the battle
     /// screen; men within reach lean back and raise an arm against it. Drawing only.
     public readonly List<(Vector2 At, float Radius, float Strength, int Team)> Awe = new(); // Team -1: everyone; else only that side
 
@@ -92,12 +92,18 @@ sealed class Puppet
         origin = new Vector3(pos.X, y, pos.Y);
         fwd = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
         right = new Vector3(-fwd.Z, 0, fwd.X);
+        View(fwd);
+    }
+
+    /// Which way a part facing `f` is seen from the camera: front, back or side, and whether a side sprite is mirrored.
+    void View(Vector3 f)
+    {
         var toCam = camPos - origin;
         toCam.Y = 0;
         if (toCam.LengthSquared() < 1e-4f) toCam = new Vector3(-camFwd.X, 0, -camFwd.Z);
-        float facing = Vector3.Dot(fwd, Vector3.Normalize(toCam));
+        float facing = Vector3.Dot(f, Vector3.Normalize(toCam));
         view = facing > 0.7f ? "f" : facing < -0.7f ? "b" : "s";
-        flip = Vector3.Dot(fwd, camRight) < 0; // side sprites face right
+        flip = Vector3.Dot(f, camRight) < 0; // side sprites face right
     }
 
     Look look = null!;
@@ -119,7 +125,7 @@ sealed class Puppet
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         float lift = ground;
         if (u.Mounted && !u.Dead && u.Horse!.Barding == "wolf") lift = ground + Warg(u, ground);
-        else if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true)) * Scale;
+        else if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true, Ease.Hash(u.Index))) * Scale;
         float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * u.Type.Size * Scale * Variety.Stature(u);
         float phase = Ease.Hash(u.Index);
         if (u.Dead) { Fallen(u, lift, size, phase); return; }
@@ -136,21 +142,16 @@ sealed class Puppet
             lift += (MathF.Sin(a) * 0.7f - Saddle * (1 - MathF.Cos(a))) * Scale;
             leanBack = RearDeg * Rear * 0.8f;
         }
-        Frame(at, u.ViewFacing, lift + p.Bob * size, size);
+        Frame(at, u.ViewFacing, lift + (p.Bob - (u.Mounted ? 0 : Sink(p))) * size, size);
         Lean(p.LeanX, p.LeanZ - leanBack);
 
         if (!u.Mounted)
-            for (int side = -1; side <= 1; side += 2)
-            {
-                var hip = new Vector3(side * 0.12f, 0.68f, 0);
-                float s = Rad(p.Leg * side);
-                var foot = hip + new Vector3(0, -0.6f * MathF.Cos(s), 0.6f * MathF.Sin(s));
-                Axial(hip, foot, $"leg.{look.Legs}");
-                if (Detail == 0) Bill(foot + new Vector3(0, 0.02f, 0.03f), $"boot.{look.Feet}", true);
-            }
+            for (int side = -1; side <= 1; side += 2) Leg(side, p);
         if (look.Cape && Detail == 0) Bill(new(0, 0.92f, -0.17f), "cape", false);
         Bill(new(0, 1.0f, 0), $"torso.{look.Body}", true);
         if (look.Tabard && Detail == 0) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
+        var (bodyView, bodyFlip) = (view, flip);
+        if (p.Look != 0) View(RotY(fwd, p.Look)); // he looks round: the head turns, the body stays
         HeadBill();
         if (look.Head != "none")
         {
@@ -159,10 +160,12 @@ sealed class Puppet
             Bill(new(0, 1.81f - h / 2, 0.02f), $"helm.{look.Head}", true, 0.04f);
         }
         if (look.Plume && Detail == 0) Bill(new(0, 1.81f + art["plume" + pal].Height * Art.Px / 2 - 0.06f, -0.03f), "plume", false, 0.05f);
+        (view, flip) = (bodyView, bodyFlip);
 
+        if (p.Armed && (p.Haul >= 0 || p.Aim && look.Weapon == "crossbow" && !u.Mounted)) { Crossbow(u, p); return; }
         var hand = Arm(1, p.ArmA, p.Yaw);
-        var off = Arm(-1, p.OffA, 0);
         var dir = RotY(new Vector3(0, MathF.Sin(Rad(p.WeapB)), MathF.Cos(Rad(p.WeapB))), p.Yaw);
+        var off = p.TwoHand && p.Armed ? ArmTo(-1, hand - dir * 0.2f) : Arm(-1, p.OffA, 0); // both hands on the haft
         void ShieldOnArm()
         {
             if (!u.Type.HasShield) return;
@@ -193,13 +196,45 @@ sealed class Puppet
             if (p.Aim && u.Action != UnitAction.Recover) Span(hand, Vector3.UnitZ, "arrow", 0.2f);
             return;
         }
-        Span(hand, dir, look.Weapon, SpriteSheet.Grip[look.Weapon]);
+        var grip = Look.GripOf(look.Weapon);
+        if (grip == Grip.Thrown && u.Ammo > 1 && Detail == 0) // the rest of his javelins across his back
+            for (int i = 0; i < 2; i++) Span(new(-0.06f + i * 0.08f, 1.05f, -0.2f), Vector3.Normalize(new Vector3(0.3f - i * 0.15f, 1, -0.1f)), "javelin", 0.5f);
+        if (p.Whirl)
+        {
+            float w = Now * (9 + 9 * p.Draw) + Ease.Hash(u.Index) * 6; // round and round over his head, faster as he lets fly
+            dir = Vector3.Normalize(new Vector3(MathF.Cos(w), 0.2f, MathF.Sin(w)));
+        }
+        if (!p.Empty) Span(hand, dir, look.Weapon, SpriteSheet.Grip[look.Weapon]);
         ShieldOnArm();
     }
 
+    /// A crossbowman's hands and bow (docs/archive/ANIMATION_ROSTER.md A3): spanning with the prod at his feet, or the stock at his
+    /// shoulder coming up level (`Draw`), a bolt laid along it when he is aimed.
+    void Crossbow(Unit u, Pose p)
+    {
+        if (Detail == 0) Bill(new(-0.1f, 1.15f, -0.2f), "quiver", false);
+        if (u.Type.HasShield && Detail == 0 && look.Shield != "pavise") Plane(new(0.05f, 1.0f, -0.24f), -Vector3.UnitZ, $"shield.{look.Shield}");
+        if (p.Haul >= 0)
+        {
+            var down = Vector3.Normalize(new Vector3(0, -1, 0.08f)); // the prod and its stirrup at his feet, the butt at his belly
+            var butt = new Vector3(0.02f, 0.92f, 0.42f);
+            float y = MathHelper.Lerp(0.35f, 0.82f, p.Haul);
+            ArmTo(1, new Vector3(0.07f, y, 0.44f));
+            ArmTo(-1, new Vector3(-0.05f, y, 0.44f));
+            Axial(butt + down * art["crossbow" + pal].Height * Art.Px, butt, "crossbow");
+            return;
+        }
+        var dir = Vector3.Normalize(Vector3.Lerp(new Vector3(0, -0.9f, 0.45f), Vector3.UnitZ, p.Draw));
+        var at = Vector3.Lerp(new Vector3(0.12f, 0.95f, 0.15f), new Vector3(0.12f, 1.36f, 0.05f), p.Draw); // the butt to his cheek
+        ArmTo(1, at + dir * 0.12f);
+        ArmTo(-1, at + dir * 0.42f);
+        Span(at, dir, "crossbow", 0);
+        if (p.Draw > 0.95f && u.Action != UnitAction.Recover) Span(at + dir * 0.3f + Vector3.Up * 0.03f, dir, "arrow", 0);
+    }
+
     /// A horse (with the rider's legs when `riderLegs`): coat parts tinted by `coat`, gear in the side's colours.
-    /// Returns the gait bob height.
-    float Horse(Vector2 pos, float ground, float heading, float anim, float speed, int coat, string barding, bool riderLegs)
+    /// Returns the gait bob height. A standing horse with an `idle` phase (0..1) shifts its weight, tosses its head and paws.
+    float Horse(Vector2 pos, float ground, float heading, float anim, float speed, int coat, string barding, bool riderLegs, float idle = -1)
     {
         Frame(pos, heading, ground, Scale);
         // Rearing: the horse pivots back onto its hind legs, lifted so the hind hooves stay on the ground.
@@ -220,6 +255,11 @@ sealed class Puppet
         ReadOnlySpan<float> gallopP = stackalloc float[] { 0.45f, 0.55f, 0, 0.1f };
         float rock = MathF.Sin(anim * MathF.PI * 2 + 1.2f) * 0.09f * gallop; // front end rises as the hind legs push
         float nod = MathF.Sin(anim * MathF.PI * 2 + 0.6f) * (0.05f + 0.07f * gallop) * MathF.Min(1, sp / 2); // the head nods with the stride
+        var (still, stillK) = idle >= 0 && sp < 0.3f && Now > 0 && Rear <= 0 ? HorseIdle(idle, Now) : (0, 0f);
+        {
+            if (still == 1) nod += 0.14f * MathF.Sin(Math.Clamp(stillK * 5, 0, 1) * MathF.PI);
+            if (still == 3) rock -= 0.04f * MathF.Sin(stillK * MathF.PI);
+        }
 
         pal = "/n";
         tint = coatTint;
@@ -230,6 +270,7 @@ sealed class Puppet
             float ph = MathHelper.Lerp(MathHelper.Lerp(walkP[i], trotP[i], trot), gallopP[i], gallop);
             float a = Rad(amp) * MathF.Sin(anim * MathF.PI + ph * MathF.Tau);
             if (front && Rear > 0) a = MathHelper.Lerp(a, Rad(sd < 0 ? 75 : 55), Rear); // forelegs pawing the air
+            if (i == 1 && still == 2 && stillK < 0.5f) a = Rad(35) * MathF.Max(0, MathF.Sin(stillK * MathF.PI * 6)); // pawing the ground
             var hip = new Vector3(sd * 0.2f, 1.0f + bob + (front ? rock : -rock), front ? 0.6f : -0.6f);
             Axial(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), "hleg");
         }
@@ -266,7 +307,16 @@ sealed class Puppet
         return bob;
     }
 
-    /// A wolf on four legs: it trots, and lunges with its head in the strike (docs/CREATURES.md).
+    /// What a standing horse with idle phase `idle` is doing at `now` (A5): 0 nothing, 1 a toss of the head, 2 pawing with a
+    /// foreleg, 3 the weight shifted back; and how far into it (0..1). A new choice every 4 s or so.
+    internal static (int Kind, float K) HorseIdle(float idle, float now)
+    {
+        float cyc = now * 0.23f + idle * 7;
+        int slot = (int)cyc;
+        return ((int)(Ease.Hash((int)(idle * 1000) + slot * 17) * 4), cyc - slot);
+    }
+
+    /// A wolf on four legs: it trots, and lunges with its head in the strike (docs/archive/CREATURES.md).
     void Beast(Unit u, float ground)
     {
         float lunge = u.Action == UnitAction.Windup ? -0.12f : u.Action == UnitAction.Recover ? 0.28f : 0;
@@ -342,7 +392,7 @@ sealed class Puppet
         pal = "/" + h.Team;
         tint = Color.White;
         if (h.Mount.Barding == "wolf") { WolfBody(h.Pos, ground, h.Heading, 0, 0, 1.5f, 0, true); return; }
-        Horse(h.Pos, ground, h.Heading, 0, 0, h.Coat, h.Mount.Barding, false);
+        Horse(h.Pos, ground, h.Heading, 0, 0, h.Coat, h.Mount.Barding, false, Ease.Hash((int)(h.Pos.X * 7) + (int)(h.Pos.Y * 13) * 31));
     }
 
     public void DrawDeadHorse(DeadHorse h, float ground)
@@ -398,6 +448,49 @@ sealed class Puppet
         return hand;
     }
 
+    const float Shank = 0.3f; // thigh and shin, each half the leg
+
+    /// The thigh's swing forward and the knee's bend, in degrees: a stride (the knee bends as the foot comes up behind),
+    /// a crouch, or down on one knee (the right knee up, the left on the ground).
+    static (float Thigh, float Bend) Knee(int side, Pose p)
+    {
+        if (p.Kneel) return side > 0 ? (85, 85) : (-5, 92);
+        float a = p.Leg * side + p.Crouch * 50;
+        return (a, p.Crouch * 95 + MathF.Max(0, -p.Leg * side) * 0.7f);
+    }
+
+    /// How far a bent-kneed man's hips sink so his feet stay on the ground (metres, unscaled).
+    static float Sink(Pose p)
+    {
+        if (p.Kneel) return Shank;
+        if (p.Crouch <= 0) return 0;
+        var (a, bend) = Knee(1, p with { Leg = 0 });
+        return 2 * Shank - Shank * (MathF.Cos(Rad(a)) + MathF.Cos(Rad(a - bend)));
+    }
+
+    /// One leg in two pieces (docs/archive/ANIMATION_ROSTER.md A2): the thigh is the lower half of the leg sprite, the shin the upper.
+    void Leg(int side, Pose p)
+    {
+        var (a, bend) = Knee(side, p);
+        var hip = new Vector3(side * 0.12f, 0.68f, 0);
+        var knee = hip + new Vector3(0, -Shank * MathF.Cos(Rad(a)), Shank * MathF.Sin(Rad(a)));
+        var foot = knee + new Vector3(0, -Shank * MathF.Cos(Rad(a - bend)), Shank * MathF.Sin(Rad(a - bend)));
+        var src = art[$"leg.{look.Legs}{pal}"];
+        int half = src.Height / 2;
+        AxialSrc(hip, knee, new Rectangle(src.X, src.Y + half, src.Width, src.Height - half));
+        AxialSrc(knee, foot, new Rectangle(src.X, src.Y, src.Width, half + 1));
+        if (Detail == 0) Bill(foot + new Vector3(0, 0.02f, 0.03f), $"boot.{look.Feet}", true);
+    }
+
+    // The arm from its shoulder straight to `hand` (the off hand on a two-handed grip).
+    Vector3 ArmTo(int side, Vector3 hand)
+    {
+        if (Detail >= 2) return hand;
+        Axial(new Vector3(side * 0.3f, 1.31f, 0), hand, $"sleeve.{look.Body}");
+        Bill(hand, $"hand.{look.Hands}", false, 0.01f);
+        return hand;
+    }
+
     // A long sprite through `grip` along `dir`; `gripFrac` = how far up the sprite the hand holds it.
     void Span(Vector3 grip, Vector3 dir, string name, float gripFrac)
     {
@@ -406,108 +499,9 @@ sealed class Puppet
         Axial(a, a + dir * len, name);
     }
 
-    /// A body pose: leg swing, weapon arm (alpha, weapon pitch, swing-plane yaw), shield arm, the lean (degrees, x right, z forward),
-    /// the bob (metres), and for archers how far the string is drawn.
-    internal record struct Pose(float Leg, float ArmA, float WeapB, float Yaw, float OffA, bool ShieldUp, bool Aim,
-        float LeanX = 0, float LeanZ = 0, float Bob = 0, float Draw = 0, bool Armed = true);
-    internal record struct Key(float Alpha, float Pitch, float Yaw);
-
-    static Key Lerp(Key x, Key y, float t) =>
-        new(MathHelper.Lerp(x.Alpha, y.Alpha, t), MathHelper.Lerp(x.Pitch, y.Pitch, t), MathHelper.Lerp(x.Yaw, y.Yaw, t));
-
-    /// Key poses (idle, raised, struck) for a weapon class and swing direction.
-    internal static (Key idle, Key raise, Key strike) Keys(UnitClass cls, AttackDir swing)
-    {
-        if (cls is UnitClass.Skirmisher or UnitClass.Cavalry)
-            return (new(15, 80, 0), new(-25, 5, 0), new(65, -5, 0)); // polearms always thrust
-        var idle = new Key(20, 60, 0);
-        return swing switch
-        {
-            AttackDir.Right => (idle, new(95, 15, 75), new(85, 0, -45)),
-            AttackDir.Left => (idle, new(115, 20, -75), new(85, 0, 50)),
-            AttackDir.Thrust => (idle, new(35, 5, 10), new(95, 0, 0)),
-            _ => (idle, new(160, 150, 0), new(75, -35, 0)),
-        };
-    }
-
-    /// Continuous pose from the unit's action state (docs/VISUALS.md V2). `now` is the battle clock and `phase` a per-man
-    /// 0..1 number, so idles and strides never move in step; `winner` is the team that has won (it cheers), or -1.
-    /// Windups ease in and hold at the top; the strike snaps through and overshoots (follow-through); the body leans into it.
-    internal static Pose PoseOf(Unit u, float now, float phase, int winner = -1)
-    {
-        float speed = u.Vel.Length();
-        bool moving = speed > 0.32f;
-        float run = Math.Clamp((speed - 2.2f) / 2.5f, 0, 1); // 0 walking, 1 running
-        float stride = MathF.Sin(u.Anim * MathF.PI);
-        float leg = moving && !u.Mounted ? stride * (24 + 12 * run) : 0;
-        float swing = moving && !u.Mounted ? -stride * (10 + 14 * run) : 0; // arms swing against the legs
-        float bob = moving && !u.Mounted ? MathF.Abs(stride) * (0.025f + 0.03f * run) : 0;
-        float leanZ = moving ? 3 + 7 * run : 0, leanX = 0;
-        var t = u.Type;
-        if (!moving && !u.Mounted)
-        {
-            bob = MathF.Sin(now * 1.7f + phase * 9) * 0.008f; // breathing
-            leanX = MathF.Sin(now * 0.31f + phase * 17) * 1.6f; // shifting his weight
-        }
-        if (t.Size > 1.5f && moving) leanX += stride * 5; // a troll or an ogre lumbers from foot to foot
-        float hurt = u.HitFlash > 0 ? Ease.Kick(1 - u.HitFlash / 0.15f) : 0; // a flinch away from the blow
-        leanZ -= hurt * 12;
-        if (u.Routing)
-            return new Pose(leg * 1.2f, 150 + swing * 2, 0, 0, 140 - swing * 2, false, false, leanX, 14, bob, 0, false); // arms up, running for his life
-        if (winner >= 0 && u.Team == winner && !moving && u.Action == UnitAction.None && now > 0)
-        {
-            // The battle is won: the men raise their weapons and cheer, each in his own time.
-            float c = MathF.Max(0, MathF.Sin(now * 4.5f + phase * 6.3f));
-            return new Pose(0, 140 + c * 30, 60 + c * 40, 0, t.HasShield ? 40 + c * 50 : 20, false, false, 0, -4 * c, c * 0.06f);
-        }
-        if (t.Class == UnitClass.Archer)
-        {
-            bool aim = u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving);
-            if (!aim) return new Pose(leg, 15 + swing - leg * 0.3f, 0, 0, 10 - swing + leg * 0.3f, false, false, leanX, leanZ, bob);
-            if (u.Action == UnitAction.Recover) return new Pose(leg, 100, 0, 0, 92, false, true, leanX, leanZ - 2, bob, 0); // the release: the hand flies back
-            float draw = Ease.InOut(1 - u.Cooldown / 1.1f); // nock low, then draw as the next shot comes up
-            return new Pose(leg, 62 + 28 * draw, 0, 0, 88, false, true, leanX, leanZ - 3 * draw, bob, draw);
-        }
-        var (idle, raise, strike) = Keys(t.Class, u.Swing);
-        idle = idle with { Alpha = idle.Alpha + (phase - 0.5f) * 14 + MathF.Sin(now * 0.4f + phase * 11) * 3 }; // each man rests his weapon his own way
-        var arm = idle;
-        bool shield = false;
-        switch (u.Action)
-        {
-            case UnitAction.Windup:
-            {
-                float k = 1 - u.ActionTimer / (u.IsPlayer ? (u.Swing == AttackDir.Overhead ? 0.2f : 0.15f) : t.Windup);
-                if (u.IsPlayer) arm = Lerp(raise, strike, Ease.In(k)); // player already raised while charging: the blow accelerates
-                else { float up = Ease.InOut(k / 0.85f); arm = Lerp(idle, raise, up); leanZ -= 5 * up; } // held at the top for the last moment
-                break;
-            }
-            case UnitAction.Recover:
-            {
-                float k = 1 - u.ActionTimer / (u.IsPlayer ? 0.3f : t.Recover);
-                const float hit = 0.25f;
-                if (!u.IsPlayer && k < hit) { float f = Ease.OutBack(k / hit); arm = Lerp(raise, strike, f); leanZ += 9 * f; }
-                else { float f = Ease.InOut(u.IsPlayer ? k : (k - hit) / (1 - hit)); arm = Lerp(strike, idle, f); leanZ += 9 * (1 - f); }
-                break;
-            }
-            case UnitAction.Block: arm = new(30, 70, 0); shield = t.HasShield; leanZ -= 3; break;
-            case UnitAction.Stagger:
-            {
-                arm = new(-10 + 25 * hurt, 90, 0);
-                leanZ -= 10 + MathF.Sin(now * 9 + phase) * 3; // stumbling back
-                break;
-            }
-            default:
-                if (u.Charging) { arm = Lerp(idle, raise, Ease.Out(u.Charge)); leanZ -= 4 * u.Charge; }
-                else if (moving) arm = arm with { Alpha = arm.Alpha + swing * 0.6f };
-                break;
-        }
-        if (look(u) == "bones") arm = arm with { Alpha = arm.Alpha + MathF.Sin(now * 23 + phase * 40) * 3 }; // dry joints rattle
-        return new Pose(leg, arm.Alpha, arm.Pitch, arm.Yaw, shield ? 85 : 15 + leg * 0.4f - swing * 0.6f, shield, false, leanX, leanZ, bob);
-        static string look(Unit u) => u.Type.Look.Body;
-    }
-
     /// A dead man: he topples away from the killing blow (a stagger back, a crumple at the knees, or a twist to the side),
-    /// then lies where he fell, laid out along that line with his weapon thrown beside him.
+    /// then lies where he fell, laid out along that line with his weapon thrown beside him. By the blow (A6, `Unit.DiedFall`):
+    /// a side cut spins him round, a thrust folds him forward onto it, a huge blow flings him, a rider slides from the saddle.
     void Fallen(Unit u, float ground, float size, float phase)
     {
         // Which way he goes: away from his killer, turned a little by chance, in his own frame.
@@ -515,9 +509,13 @@ sealed class Puppet
         float yaw = u.ViewFacing;
         Vector2 fwd2 = new(MathF.Cos(yaw), MathF.Sin(yaw)), right2 = new(-fwd2.Y, fwd2.X);
         Vector2 dir = u.DiedFrom == Vector2.Zero || away.LengthSquared() < 1e-4f ? -fwd2 : Vector2.Normalize(away);
-        float turn = (phase - 0.5f) * 1.2f;
+        var fall = look.Face == "wolf" ? Fall.Plain : u.DiedFall;
+        Vector2 saddleSide = new(MathF.Sin(u.Heading), -MathF.Cos(u.Heading)); // Kill moved him a metre this way off the horse
+        if (fall == Fall.Thrust) dir = -dir; // folded over the blade, he falls toward it
+        if (fall == Fall.Saddle) dir = saddleSide;
+        float turn = (phase - 0.5f) * (fall == Fall.Saddle ? 0.5f : 1.2f);
         dir = new Vector2(dir.X * MathF.Cos(turn) - dir.Y * MathF.Sin(turn), dir.X * MathF.Sin(turn) + dir.Y * MathF.Cos(turn));
-        float time = 0.45f + phase * 0.3f;
+        float time = fall switch { Fall.Saddle => 0.75f, Fall.Flung => 0.6f, _ => 0.45f + phase * 0.3f };
         float k = Now > 0 ? (Now - u.DiedAt) / time : 1;
         if (k >= 1)
         {
@@ -526,10 +524,28 @@ sealed class Puppet
             if (look.Face == "wolf") BeastCorpse(u); else Corpse(phase);
             return;
         }
-        bool crumple = phase < 0.3f;
+        bool crumple = fall == Fall.Thrust || fall == Fall.Plain && phase < 0.3f;
         float sink = crumple ? Ease.Out(MathF.Min(1, k * 2)) * 0.35f : 0; // the knees go first
-        Frame(u.Pos, yaw, ground - sink * size, size);
-        float a = 85 * (crumple ? Ease.In(MathF.Max(0, k * 1.4f - 0.4f)) : Ease.In(k));
+        var at = u.Pos;
+        float y = ground - sink * size;
+        if (fall == Fall.Cut)
+        {
+            // Spun round by the cut, the way the blade went, as he goes down.
+            yaw += MathF.Sign(Vector2.Dot(dir, right2) + 0.01f) * 1.4f * Ease.Out(k);
+            fwd2 = new(MathF.Cos(yaw), MathF.Sin(yaw)); right2 = new(-fwd2.Y, fwd2.X);
+        }
+        else if (fall == Fall.Flung)
+        {
+            at -= dir * 2.2f * (1 - Ease.Out(k)); // he lands where he lies, thrown from where he stood
+            y += MathF.Sin(k * MathF.PI) * 0.5f * size;
+        }
+        else if (fall == Fall.Saddle)
+        {
+            at -= saddleSide * (1 - Ease.In(k)); // from the saddle to the ground beside the horse
+            y += Saddle * (1 - Ease.In(k)) * size;
+        }
+        Frame(at, yaw, y, size);
+        float a = 85 * (fall == Fall.Flung ? Ease.Out(k) : crumple ? Ease.In(MathF.Max(0, k * 1.4f - 0.4f)) : Ease.In(k));
         Lean(Vector2.Dot(dir, right2) * a, Vector2.Dot(dir, fwd2) * a);
         if (look.Face == "wolf") { Beast(u, ground); return; }
         var p = new Pose(crumple ? 30 * k : 10, 40 + 60 * k, 20, 0, 50 + 40 * k, false, false);
@@ -668,9 +684,10 @@ sealed class Puppet
     }
 
     // Sprite stretched from a (bottom of sprite) to b (top), rotated about that axis to face the camera.
-    void Axial(Vector3 aLocal, Vector3 bLocal, string name)
+    void Axial(Vector3 aLocal, Vector3 bLocal, string name) => AxialSrc(aLocal, bLocal, art[name + pal]);
+
+    void AxialSrc(Vector3 aLocal, Vector3 bLocal, Rectangle src)
     {
-        var src = art[name + pal];
         Vector3 a = W(aLocal), b = W(bLocal), axis = b - a;
         var side = Vector3.Cross(axis, camPos - (a + b) / 2);
         side = side.LengthSquared() < 1e-8f ? camRight : Vector3.Normalize(side);

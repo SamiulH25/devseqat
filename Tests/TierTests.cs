@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Self-tests of the rule "a higher tier is always better" (docs/COMPANIONS_MAGIC.md D0).
+/// Self-tests of the rule "a higher tier is always better" (docs/archive/COMPANIONS_MAGIC.md D0).
 public static partial class SelfTest
 {
     /// Men of a squad still in the fight: alive, on the field and not running.

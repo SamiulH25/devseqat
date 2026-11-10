@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The shape a battlefield is built to (docs/TERRAIN.md T2): what lies between and around the two armies.
+/// The shape a battlefield is built to (docs/archive/TERRAIN.md T2): what lies between and around the two armies.
 /// The armies meet along Z = 0; team 0 deploys at negative Z, team 1 at positive Z.
 public enum FieldLayout { Open, Ridge, TwoHills, Broken, Fen, RiverLine, WoodedFlank, ForestClearing, Village, Hedgerows, Pass }
 

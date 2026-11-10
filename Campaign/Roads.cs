@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Life on the roads (docs/SIDE_CONTENT.md S4): merchant caravans between towns and pilgrims bound for shrines. They are
+/// Life on the roads (docs/archive/SIDE_CONTENT.md S4): merchant caravans between towns and pilgrims bound for shrines. They are
 /// PartyKind.Caravan parties ("caravan" or "pilgrims" in Breed) with a few guards. A caravan that arrives makes both towns
 /// richer; one that is robbed makes them poorer. Brigands, monsters and lords at war with its realm hunt it; you may buy
 /// from it, ask it for news, or rob it.

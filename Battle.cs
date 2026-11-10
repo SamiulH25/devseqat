@@ -10,9 +10,9 @@ public struct PlayerInput
     public float Facing;      // where the player looks (and strikes)
     public AttackDir Dir;     // attack / block direction, picked by mouse movement
     public bool Sprint, Attack, Block, Rally, Couch, Mount, Bash, Swap;
-    public bool Aura;         // held: the aura blade burns (docs/KNIGHT_ORDERS.md K1)
+    public bool Aura;         // held: the aura blade burns (docs/archive/KNIGHT_ORDERS.md K1)
     public bool Form1, Form2, Form3, Great; // pressed: a form (K2)
-    public bool Relic;        // pressed: raise the relic (docs/MAGIC_AURA.md 3.4)
+    public bool Relic;        // pressed: raise the relic (docs/archive/MAGIC_AURA.md 3.4)
 }
 
 public sealed class Projectile
@@ -20,6 +20,8 @@ public sealed class Projectile
     public Vector3 Pos, Vel;
     public Unit Shooter = null!;
     public float Damage, Stuck = -1; // Stuck >= 0: seconds spent lying in the ground
+    /// What flies: an arrow or bolt, a javelin or a sling stone (drawn and heard differently; the flight is the same).
+    public Grip Kind = Grip.Bow;
 }
 
 /// Headless battle simulation. No graphics, so the self-test can run it.
@@ -34,7 +36,7 @@ public sealed partial class Battle
     /// Sound cues from the last Update (the screen plays them; headless runs ignore them).
     public readonly List<(Cue Cue, Vector2 Pos)> Sounds = new();
     void Sound(Cue c, Vector2 at) { if (Sounds.Count < 64) Sounds.Add((c, at)); }
-    /// Moments of magic and aura for the screen to draw (docs/MAGIC_AURA.md 6): what ("cast", "spell:attack", "form:burst",
+    /// Moments of magic and aura for the screen to draw (docs/archive/MAGIC_AURA.md 6): what ("cast", "spell:attack", "form:burst",
     /// "land:leap", "soak", "blade"...), where, which way, how far it reaches, whose, and a tag (a tradition or an order).
     /// The screen takes them as it draws; nothing in the sim reads them, so it stays at most 64 long without one.
     public readonly List<(string What, Vector2 At, Vector2 Dir, float Radius, int Team, string Tag)> Flashes = new();
@@ -69,7 +71,7 @@ public sealed partial class Battle
     bool enemyCharged, enemyHorseCharged;
     float generalTimer, reinforceTimer;
     readonly bool[] charged = new bool[2], horseCharged = new bool[2];
-    /// A side whose boss has fallen (docs/CREATURES.md): its craven creatures no longer rally.
+    /// A side whose boss has fallen (docs/archive/CREATURES.md): its craven creatures no longer rally.
     public readonly bool[] BossDown = new bool[2];
     readonly Queue<(Company C, string Role)>[] reserves = { new(), new() };
     readonly List<(Company C, int Team)> heldBack = new(); // companies that never reached the field
@@ -249,7 +251,7 @@ public sealed partial class Battle
             u.Heading = u.Facing;
             s.Units.Add(u);
         }
-        // Named men (docs/LEGACY.md L2) are the first men of their troop, so they stand in its front rank.
+        // Named men (docs/archive/LEGACY.md L2) are the first men of their troop, so they stand in its front rank.
         foreach (var m in company?.Named ?? Array.Empty<NamedSpec>())
             if (s.Units.FirstOrDefault(x => x.SoldierId == 0 && x.Type.Id == m.Troop) is Unit nu) { nu.SoldierId = m.Id; anyNamed = true; }
         // A companion fights at the head of his company as a hero (CAMPAIGN_OVERHAUL.md 3.3): the captain's kit, the AI's hands.
@@ -389,7 +391,7 @@ public sealed partial class Battle
     void UpdateSquad(Squad s, float dt)
     {
         s.Pressure *= MathF.Exp(-0.6f * dt);
-        s.Loosen = 1 + (1 - Terrain.GroundDefAt(s.Anchor).Order) * 0.5f; // bad ground opens the ranks (docs/TERRAIN.md T2)
+        s.Loosen = 1 + (1 - Terrain.GroundDefAt(s.Anchor).Order) * 0.5f; // bad ground opens the ranks (docs/archive/TERRAIN.md T2)
         UpdatePath(s, dt);
         if (s.Target is { Alive: 0 }) s.Target = null; // target broken: fall back to the nearest enemy
         if (s.Order == Order.Follow && Player.Active)
@@ -402,7 +404,7 @@ public sealed partial class Battle
         int n = 0;
         foreach (var u in s.Units) if (u.Active && !u.Routing) n++;
         s.Alive = n;
-        if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); }
+        if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); if (s.Team == 1) Sound(Cue.Cheer, s.Centroid()); }
         Tactics(s);     // its own wits: refuse a flank, wrap, re-form (BattleTactics.cs)
         PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
         Close(s, dt);   // a charging company closes as a body

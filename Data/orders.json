@@ -1,11 +1,11 @@
 {
-  // Knight orders (docs/KNIGHT_ORDERS.md 4; loaded by Campaign/Orders.cs). Minor factions: no land of their own, a patron
+  // Knight orders (docs/archive/KNIGHT_ORDERS.md 4; loaded by Campaign/Orders.cs). Minor factions: no land of their own, a patron
   // realm whose wars they fight, a chapter house in one of its towns, two knight-commanders' armies (signature troops
   // and the patron's own line troops), a creed of vows, and forms (Data/forms.json, by order id).
   //   troops  the order's signature troops at tiers IV, V and VI (troops.json, "order" = this id)
   //   vows    what a sworn knight must keep (Campaign.Vows): no_rob, no_slaves, no_auto, no_desert, contract, no_craft
   //   hunts   what its knights ride after first: "undead", "monsters", "bandits" or ""
-  //   hidden  not on the map until met (the Hollow Crown, the Black Flame; docs/KNIGHT_ORDERS.md 7)
+  //   hidden  not on the map until met (the Hollow Crown, the Black Flame; docs/archive/KNIGHT_ORDERS.md 7)
   "orders": [
     { "id": "lily", "name": "Order of the Silver Lily", "short": "the Lily", "patron": "Azure Crown", "hunts": "undead",
       "troops": ["lily_squires", "lily_knights", "lily_wardens"], "vows": ["no_rob", "no_slaves"],

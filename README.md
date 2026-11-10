@@ -4,7 +4,7 @@ A 2.5D (2D sprites in a 3D world) medieval battle game in C# + MonoGame (Desktop
 "lead your army in person" genre. This is an original setting: no names, assets or factions from other games.
 
 You fight in person as a soldier while you command your army as a general, and between battles you lead a mercenary company
-through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contracts, seasons and the rest of `docs/ROADMAP.md`.
+through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contracts, seasons and the rest of `docs/archive/ROADMAP.md`.
 
 ![In the ranks: field view on horseback before the lines meet](docs/images/field-horses.jpg)
 
@@ -13,7 +13,7 @@ through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contr
   front rank (directional blows, parries, couched lances) and command from above in slowed time, or hand wings to sergeants'
   **divisions** that follow a goal.
 - **A war of seven realms** on a map of 115 provinces, each realm with its own heraldry, temper and four lines of troops:
-  188 troops across seven cultures and common, plus 13 creatures (goblins, wolves, trolls, the dead).
+  287 troops across seven cultures and common, plus 16 creatures (goblins, wolves, trolls, the dead).
 - **A company that is your legacy:** named men on the roll, the fallen remembered, banner honours won and lost, a career from
   hired sword to king, and a captain with gear, skills, wounds and a name.
 - **Ground that matters:** ridges, woods, fens, river lines, villages and hedgerows, with sight, cover, ambushes and an enemy
@@ -57,12 +57,12 @@ dotnet run -c Release -- --bench 1500  # headless N-a-side battle: ms per tick f
 You need .NET SDK 10 (`net10.0`). On Ubuntu 24.04 `apt-get install dotnet-sdk-10.0` works (no Microsoft feed needed).
 The game needs no art files: sprites, terrain and the font are all generated in code. Troops come from `Data/troops.json`.
 **Design language:** see [`docs/DESIGN.md`](docs/DESIGN.md) (art direction, unit painting rules, heraldry, tiers, UI tokens).
-**Roadmap:** see [`docs/ROADMAP.md`](docs/ROADMAP.md) (what comes next, in what order, and why).
+**Roadmap:** see [`docs/archive/ROADMAP.md`](docs/archive/ROADMAP.md) (what comes next, in what order, and why).
 **Campaign:** see [`docs/CAMPAIGN.md`](docs/CAMPAIGN.md) (map, companies, XP and upgrades, economy, AI, battle hand-off; "As built" at the end).
-**The player fantasy:** see [`docs/LEGACY.md`](docs/LEGACY.md) (your company is your legacy). **Other plans, all built:**
-[`COMBAT_OVERHAUL`](docs/COMBAT_OVERHAUL.md), [`CREATURES`](docs/CREATURES.md), [`SIDE_CONTENT`](docs/SIDE_CONTENT.md),
-[`PROGRESSION`](docs/PROGRESSION.md), [`WORLD`](docs/WORLD.md), [`TERRAIN`](docs/TERRAIN.md), [`POLISH`](docs/POLISH.md),
-[`VISUALS`](docs/VISUALS.md). **Developers:** [`docs/DEVELOPING.md`](docs/DEVELOPING.md) and [`CLAUDE.md`](CLAUDE.md).
+**The player fantasy:** see [`docs/archive/LEGACY.md`](docs/archive/LEGACY.md) (your company is your legacy). **Other plans, all built:**
+[`COMBAT_OVERHAUL`](docs/archive/COMBAT_OVERHAUL.md), [`CREATURES`](docs/archive/CREATURES.md), [`SIDE_CONTENT`](docs/archive/SIDE_CONTENT.md),
+[`PROGRESSION`](docs/archive/PROGRESSION.md), [`WORLD`](docs/archive/WORLD.md), [`TERRAIN`](docs/archive/TERRAIN.md), [`POLISH`](docs/archive/POLISH.md),
+[`VISUALS`](docs/archive/VISUALS.md). **Developers:** [`docs/DEVELOPING.md`](docs/DEVELOPING.md) and [`CLAUDE.md`](CLAUDE.md).
 
 The game opens on a **title screen**: New Campaign, Continue (latest save), Quick Battle (one random battle), Quit.
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
@@ -77,7 +77,7 @@ Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, 
 ## The campaign
 
 **The heart of it:** you lead a free company in person. Every man you lose was someone you knew, and every honour on the
-banner is one you earned (`docs/LEGACY.md`).
+banner is one you earned (`docs/archive/LEGACY.md`).
 
 You are a free captain sworn to the Azure Crown in the west. It is at war with the Northmarch clans of the cold north, its long
 border; the Crimson Compact in the east fights the Khaganate of the Grass, horse archers from the eastern steppe. The Sunward
@@ -162,6 +162,11 @@ mountain ridges you cross by road at the passes.
   heraldry and its own troops in all four lines, in its own kit: turbans, lamellar and camel riders in the south, fur-brimmed helms and
   long deel coats on the steppe, brigandines and tall pavises in the Saltmarsh League, white surcoats in the Order. The four younger
   realms' men may also train as their kin's troops (a Sunward man may become a Crimson greatsword, never an Azure man-at-arms).
+  Every realm starts its bows and horse with its own tier II men (the Crown's town crossbows and squires, Northmarch hunters and
+  fell riders, Sunward slingers and camel scouts, steppe herd boys and riders, League militia crossbows and light horse, Order
+  pilgrims). Off the lines each realm has branches to promote into: Sunward slingers, camel lancers, naffatun fire-throwers and
+  dervishes; steppe lancers, wolf scouts and tug bearers; League marines, pavise spears and free companions; the Order's hammer
+  brothers and turcopoles. The upgrade panel shows only the branches your men's culture may enter.
 - **Encounters:** attack (the battle opens in a **deployment phase**: arrange your lines in your third of the field, then Space or START), auto-resolve,
   retreat (a rearguard pays), or pay brigands off. Esc in a campaign battle lets you **withdraw**.
 - **Duels:** meeting a lord, **CHALLENGE** him to single combat between the armies (on foot, the two of you, a fall is a yield). A cautious lord refuses, and one whose army is half again as strong as yours sees no need unless he is reckless or honourable. Win: +10 renown and his men start the battle 15 morale down. Lose: you are wounded and lead the battle from the rear. One duel an encounter.
@@ -188,7 +193,7 @@ mountain ridges you cross by road at the passes.
   they name: commanding, winning against the odds, marching, promoting men, healing them, ruling fiefs, winning goodwill and ransoms,
   your own kills and parries on foot, your kills and lance hits from the saddle, and your arrows. Every 25 points opens a perk on that branch, in tiers: tier I at 25, II at 50, III at 75, and at 100 a crowned capstone that needs two other perks of the branch (50 in all: Bannerman, Iron Will, Tactician, Siegecraft,
   Quartermaster, Drillmaster, Cheap Steel, Surgeon, Tax Roll, Silver Tongue, Ransom Broker, War Cry, Duellist, Lancer, Marksman, ... and the capstones Warlord, Master of War, Champion, Deadeye ...). Heavy
-  gear needs Arms, great horses Riding, the war bow Bowcraft. K opens the skill tree; in a friendly town you can forget a taken perk (click it twice) for 150 crowns, 150 more each time. The battle report lists each skill that rose. A fall in battle may leave a lasting wound (a scar, a bad knee, a broken hand, a lost eye); Medicine and a surgeon make it rarer, and resting at a healing spring mends all but scars. What you do earns you a name: Lionheart, Steadfast, Merciful, Ruthless or Coward. Names come and go with your record, lords like or dislike them by their own nature, and each brings its own events. A year is 120 days; past 45 your arm weakens each season but you learn to lead faster. A new campaign first asks how you made your name: with sword and shield, with the lance or with the bow (the skill at 20 and the kit to match). Each rank gives you something: a free perk as a Sworn Sword; from Vassal a household guard in your colours (15 men of tier III; 25 of tier IV as a Lord; mounted as Marshal; 40 tier V knights as King) that takes no slot, never deserts, refills itself and follows you in battle; a Lord's banner reaches further; a King's first rally in a battle, the King's Charge, calls every broken company back. A free company with 400 renown that storms a town under contract may keep it and crown itself, at war with its paymaster. Past 300 renown people give you a title (the Bold, the Lionheart, Goblin-Bane...). Each battle from the campaign sets you two personal goals (slay their captain, fell five with your own hand, break their horse, no company routs, a quick win), shown under the top bar; each met is worth renown and skill. A man of yours carries your banner: if he falls, your men lose heart and your aura is gone until you or one of them picks it up. The first time you fall in a battle you are down, not out: rally (R) within four seconds to fight on at a quarter of your health. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
+  gear needs Arms, great horses Riding, the war bow Bowcraft. K opens the skill tree; in a friendly town you can forget a taken perk (click it twice) for 150 crowns, 150 more each time. The battle report lists each skill that rose. A fall in battle may leave a lasting wound (a scar, a bad knee, a broken hand, a lost eye); Medicine and a surgeon make it rarer, and resting at a healing spring mends all but scars. What you do earns you a name: Lionheart, Steadfast, Merciful, Ruthless or Coward. Names come and go with your record, lords like or dislike them by their own nature, and each brings its own events. A year is 120 days; past 45 your arm weakens each season but you learn to lead faster. A new campaign opens the **character creator** (six steps beside your captain, who acts out each step: stands for the homeland, marches out, lives the past, shows how they fight, turns their face to you and raises the blade for the oath, and cheers each choice; and a ledger of what each choice gives): your homeland (the realm you start in), your birth (Born in the Hall, to the Plough, in the Market, in the Baggage Train, Raised in the Cloister), your past (Sellsword, Hedge Knight, Disinherited Heir, Deserter, Poacher, Reformed Outlaw, Barber-Surgeon, Drill Sergeant; each with a free perk, skills, men or gear, and a story event of its own after the first fortnight; a Deserter flies no realm's colours), how you fight (sword and shield, the lance or the bow: the skill at 20 and the kit to match), your face (skin, hair, beard: it is yours in every battle) and names for you and your company, then the oath. ROLL THE DICE draws it all at random. Origins live in `Data/origins.json`. Each rank gives you something: a free perk as a Sworn Sword; from Vassal a household guard in your colours (15 men of tier III; 25 of tier IV as a Lord; mounted as Marshal; 40 tier V knights as King) that takes no slot, never deserts, refills itself and follows you in battle; a Lord's banner reaches further; a King's first rally in a battle, the King's Charge, calls every broken company back. A free company with 400 renown that storms a town under contract may keep it and crown itself, at war with its paymaster. Past 300 renown people give you a title (the Bold, the Lionheart, Goblin-Bane...). Each battle from the campaign sets you two personal goals (slay their captain, fell five with your own hand, break their horse, no company routs, a quick win), shown under the top bar; each met is worth renown and skill. A man of yours carries your banner: if he falls, your men lose heart and your aura is gone until you or one of them picks it up. The first time you fall in a battle you are down, not out: rally (R) within four seconds to fight on at a quarter of your health. Balance numbers live in `Data/campaign.json`; names in `Data/names.json`.
 
 ## Controls
 
@@ -351,7 +356,7 @@ the player rides a courser.
 - **Blessings and rites:** a shrine visit, a feast in a tavern (TAVERN tab) or a camp rite (party screen: bless, poultices,
   read the bones, call rain; needs a Priest or Cunning companion or mages) give buffs that go into your next battles. Hunger
   hurts. A relic found in a ruin blesses three battles; a shrine fills it again. Chips above the captain's panel show them.
-- **The tree:** 188 troops (and the captain, plus 13 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
+- **The tree:** 287 troops (and the captain, plus 16 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons; javelin men and slingers throw (few shots, short range, hard hits).
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a
   role stand side by side), and the enemy general commands any mix.
@@ -455,7 +460,7 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
 
 ## Design: motion and feel
 
-The visuals pass (`docs/VISUALS.md`) changed nothing in the simulation: replays and the self-test numbers are the same.
+The visuals pass (`docs/archive/VISUALS.md`) changed nothing in the simulation: replays and the self-test numbers are the same.
 - **Men move like men** (`Puppet.PoseOf`): windups ease in and hold, strikes overshoot, arms swing on the march, a standing
   line breathes, men flinch and stagger when hit, routers drop their weapons, winners cheer, and archers nock, draw and loose.
   The dead fall away from the blow that killed them. Horses walk, trot and gallop by speed; banners ripple.
@@ -479,7 +484,7 @@ The visuals pass (`docs/VISUALS.md`) changed nothing in the simulation: replays 
 - **Scale:** men near the enemy think every tick, others every 2nd or 4th tick, so 3,000 men cost about 3.6 ms a tick
   (`--bench`). Far men are drawn with fewer parts, and the roar of a big melee rises with the men in contact.
 
-## Design: drill, ranks and company wits (docs/MELEE.md)
+## Design: drill, ranks and company wits (docs/archive/MELEE.md)
 
 - **Companies fight from their ranks.** Two companies meet as two lines: the front rank fights, the men behind wait and step into
   a gap when a man falls. A charge closes as a body, and at blows a line holds where it stands.

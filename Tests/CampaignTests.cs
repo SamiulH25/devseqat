@@ -11,7 +11,7 @@ public static partial class SelfTest
         var lm = legacy.BuildTerrain();
         Console.WriteLine($"legacy map: {lm.N} vertices, {lm.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine)} trees");
         // Saves regenerate their map from the seed: the geography of a seed must never drift (names may). This is the map
-        // saves made before docs/WORLD.md W2 were played on.
+        // saves made before docs/archive/WORLD.md W2 were played on.
         var saved = WorldMap.Generate(11, WorldMap.PreviousExtent, WorldMap.LegacyLayout);
         float geo = saved.Settlements.Sum(s => s.Pos.X * 3 + s.Pos.Y), river = saved.Rivers.Sum(r => r.Path.Sum(p => p.X));
         Check(saved.Settlements.Count == 215 && MathF.Abs(geo + 3773.913f) < 0.5f && MathF.Abs(river + 18550.46f) < 0.5f,
@@ -151,7 +151,7 @@ public static partial class SelfTest
     }
 
     /// Auto-resolve picks the same winner as the battle simulation at least 75% of the time. On open ground: auto-resolve does
-    /// not yet weigh the field (a ridge gives one side an edge); docs/TERRAIN.md T7 adds that, and this test then varies the ground.
+    /// not yet weigh the field (a ridge gives one side an edge); docs/archive/TERRAIN.md T7 adds that, and this test then varies the ground.
     static void Calibration()
     {
         int agree = 0, n = 0;
@@ -175,7 +175,7 @@ public static partial class SelfTest
         Check(agree >= n * 0.75f, $"auto-resolve calibration ({agree}/{n})");
     }
 
-    /// The campaign chooses the ground (docs/TERRAIN.md T7): a road over a river is a river line with its bridge, a village
+    /// The campaign chooses the ground (docs/archive/TERRAIN.md T7): a road over a river is a river line with its bridge, a village
     /// gives a village field, a ridge a crest or a pass.
     static void RiverRoadGivesBridge()
     {
@@ -378,7 +378,7 @@ public static partial class SelfTest
         finally { Environment.SetEnvironmentVariable("IRONFIELD_SAVES", was); Directory.Delete(dir, true); }
     }
 
-    /// The roll (docs/LEGACY.md L1): each company names a first man, names fit its culture, battles add names up to the cap, the
+    /// The roll (docs/archive/LEGACY.md L1): each company names a first man, names fit its culture, battles add names up to the cap, the
     /// roll always fits its stacks, a named man is promoted first, naming draws nothing from the main stream, old saves load.
     static void RollEarnsNames()
     {
@@ -448,7 +448,7 @@ public static partial class SelfTest
         Check(back.Companies.Sum(k => k.Roll.Count) == c.Player.Companies.Sum(k => k.Roll.Count), "the roll is saved");
     }
 
-    /// The fallen (docs/LEGACY.md L3): a named man lost costs his company cohesion; the report names him; a long-serving man
+    /// The fallen (docs/archive/LEGACY.md L3): a named man lost costs his company cohesion; the report names him; a long-serving man
     /// is written in the chronicle; the dead are kept after their company is gone.
     static void FallenRemembered()
     {
@@ -531,7 +531,7 @@ public static partial class SelfTest
         Check(co.Officer != "" && co.OfficerMan == null, "with no veteran on the roll a sergeant comes from elsewhere");
     }
 
-    /// The banner's history (docs/LEGACY.md L5): battles get names; a notable win sews one on the banner; a company that breaks
+    /// The banner's history (docs/archive/LEGACY.md L5): battles get names; a notable win sews one on the banner; a company that breaks
     /// before a realm loses its newest to that realm, and wins it back by beating the realm; your flag shows them.
     static void BannerHonours()
     {
@@ -763,7 +763,7 @@ public static partial class SelfTest
             // Lords seated in the realm's own lands: one seated in a conquered town raises that town's people (4.2).
             var homeLords = w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f && p.HomeId >= 0 && w.SettlementById(p.HomeId) is { } h && h.Culture == Factions.CultureOf(f)).ToList();
             var stacks = homeLords.SelectMany(p => p.Companies).SelectMany(k => k.Stacks).Where(st => st.Type.Culture != Factions.Common).ToList();
-            // Its own culture's troops or its kin's (the realms of docs/WORLD.md W3 borrow two of their four lines).
+            // Its own culture's troops or its kin's (the realms of docs/archive/WORLD.md W3 borrow two of their four lines).
             int own = stacks.Where(st => Factions.Open(Factions.CultureOf(f), st.Type.Culture)).Sum(st => st.Men), all = stacks.Sum(st => st.Men);
             Console.WriteLine($"realm {f} ({Factions.CultureOf(f)}): {own}/{all} of its lords' cultured men are its own or its kin's");
             Console.WriteLine("  " + string.Join(", ", homeLords.SelectMany(p => p.Companies).SelectMany(k => k.Stacks).GroupBy(st => st.Troop).Select(g => $"{g.Key}:{g.Sum(st => st.Men)}")));
@@ -877,7 +877,7 @@ public static partial class SelfTest
     /// A mixed company fights as one squad and gets its casualties back per stack (F1).
     /// F4: two captains who fight differently for 20 battles end with different skills and perks; perks gate on skill, skills
     /// rise with diminishing returns and stay in 0-100, perk effects reach the captain and the economy, and all of it saves.
-    /// Divisions on the map (docs/COMBAT_OVERHAUL.md 1.5): make one under a sergeant, assign a company, keep it in the
+    /// Divisions on the map (docs/archive/COMBAT_OVERHAUL.md 1.5): make one under a sergeant, assign a company, keep it in the
     /// save, take it into battle; an old save without divisions loads with everyone in your retinue.
     static void CampaignDivisions()
     {
@@ -924,7 +924,7 @@ public static partial class SelfTest
         Check(c.S.Divisions.Count == 0 && c.Player.Companies.All(x => x.Division == -1), "a division without its leader breaks up");
     }
 
-    /// The captain's kit (docs/PROGRESSION.md P1): data checks, old saves moved onto it, buying, wearing, selling, stats.
+    /// The captain's kit (docs/archive/PROGRESSION.md P1): data checks, old saves moved onto it, buying, wearing, selling, stats.
     static void Armoury()
     {
         Check(!Gear.Validate().Any(), "gear.json validates: " + string.Join("; ", Gear.Validate()));

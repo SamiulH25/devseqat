@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// Your own order (docs/KNIGHT_ORDERS.md 8, K8): where the knight thread meets the legacy. Founded from your company once your
+/// Your own order (docs/archive/KNIGHT_ORDERS.md 8, K8): where the knight thread meets the legacy. Founded from your company once your
 /// aura, rank or fame and a seat allow; its creed is three vows you keep; your named men are knighted into it; its two
 /// signature troops (Sworn Brothers, Masters of the Order) rise from any tier IV foot line; and when you hand over, your
 /// successor leads it a tier below you, with the form it teaches.
