@@ -10,7 +10,7 @@ namespace Ironfield;
 /// - Shields are flat quads fixed in the world.
 /// Parts move in 3D, so turning and swings stay continuous from any camera angle.
 /// Unit space: +X right hand, +Y up, +Z facing; metres.
-sealed class Puppet
+sealed partial class Puppet
 {
     const float Saddle = 0.87f; // rider origin height when mounted
     const float RearDeg = 32;   // how far a horse rears
@@ -161,8 +161,8 @@ sealed class Puppet
         if (look.Plume && Detail == 0) Bill(new(0, 1.81f + art["plume" + pal].Height * Art.Px / 2 - 0.06f, -0.03f), "plume", false, 0.05f);
 
         var hand = Arm(1, p.ArmA, p.Yaw);
-        var off = Arm(-1, p.OffA, 0);
         var dir = RotY(new Vector3(0, MathF.Sin(Rad(p.WeapB)), MathF.Cos(Rad(p.WeapB))), p.Yaw);
+        var off = p.TwoHand && p.Armed ? ArmTo(-1, hand - dir * 0.2f) : Arm(-1, p.OffA, 0); // both hands on the haft
         void ShieldOnArm()
         {
             if (!u.Type.HasShield) return;
@@ -398,112 +398,21 @@ sealed class Puppet
         return hand;
     }
 
+    // The arm from its shoulder straight to `hand` (the off hand on a two-handed grip).
+    Vector3 ArmTo(int side, Vector3 hand)
+    {
+        if (Detail >= 2) return hand;
+        Axial(new Vector3(side * 0.3f, 1.31f, 0), hand, $"sleeve.{look.Body}");
+        Bill(hand, $"hand.{look.Hands}", false, 0.01f);
+        return hand;
+    }
+
     // A long sprite through `grip` along `dir`; `gripFrac` = how far up the sprite the hand holds it.
     void Span(Vector3 grip, Vector3 dir, string name, float gripFrac)
     {
         float len = art[name + pal].Height * Art.Px;
         var a = grip - dir * len * gripFrac;
         Axial(a, a + dir * len, name);
-    }
-
-    /// A body pose: leg swing, weapon arm (alpha, weapon pitch, swing-plane yaw), shield arm, the lean (degrees, x right, z forward),
-    /// the bob (metres), and for archers how far the string is drawn.
-    internal record struct Pose(float Leg, float ArmA, float WeapB, float Yaw, float OffA, bool ShieldUp, bool Aim,
-        float LeanX = 0, float LeanZ = 0, float Bob = 0, float Draw = 0, bool Armed = true);
-    internal record struct Key(float Alpha, float Pitch, float Yaw);
-
-    static Key Lerp(Key x, Key y, float t) =>
-        new(MathHelper.Lerp(x.Alpha, y.Alpha, t), MathHelper.Lerp(x.Pitch, y.Pitch, t), MathHelper.Lerp(x.Yaw, y.Yaw, t));
-
-    /// Key poses (idle, raised, struck) for a weapon class and swing direction.
-    internal static (Key idle, Key raise, Key strike) Keys(UnitClass cls, AttackDir swing)
-    {
-        if (cls is UnitClass.Skirmisher or UnitClass.Cavalry)
-            return (new(15, 80, 0), new(-25, 5, 0), new(65, -5, 0)); // polearms always thrust
-        var idle = new Key(20, 60, 0);
-        return swing switch
-        {
-            AttackDir.Right => (idle, new(95, 15, 75), new(85, 0, -45)),
-            AttackDir.Left => (idle, new(115, 20, -75), new(85, 0, 50)),
-            AttackDir.Thrust => (idle, new(35, 5, 10), new(95, 0, 0)),
-            _ => (idle, new(160, 150, 0), new(75, -35, 0)),
-        };
-    }
-
-    /// Continuous pose from the unit's action state (docs/archive/VISUALS.md V2). `now` is the battle clock and `phase` a per-man
-    /// 0..1 number, so idles and strides never move in step; `winner` is the team that has won (it cheers), or -1.
-    /// Windups ease in and hold at the top; the strike snaps through and overshoots (follow-through); the body leans into it.
-    internal static Pose PoseOf(Unit u, float now, float phase, int winner = -1)
-    {
-        float speed = u.Vel.Length();
-        bool moving = speed > 0.32f;
-        float run = Math.Clamp((speed - 2.2f) / 2.5f, 0, 1); // 0 walking, 1 running
-        float stride = MathF.Sin(u.Anim * MathF.PI);
-        float leg = moving && !u.Mounted ? stride * (24 + 12 * run) : 0;
-        float swing = moving && !u.Mounted ? -stride * (10 + 14 * run) : 0; // arms swing against the legs
-        float bob = moving && !u.Mounted ? MathF.Abs(stride) * (0.025f + 0.03f * run) : 0;
-        float leanZ = moving ? 3 + 7 * run : 0, leanX = 0;
-        var t = u.Type;
-        if (!moving && !u.Mounted)
-        {
-            bob = MathF.Sin(now * 1.7f + phase * 9) * 0.008f; // breathing
-            leanX = MathF.Sin(now * 0.31f + phase * 17) * 1.6f; // shifting his weight
-        }
-        if (t.Size > 1.5f && moving) leanX += stride * 5; // a troll or an ogre lumbers from foot to foot
-        float hurt = u.HitFlash > 0 ? Ease.Kick(1 - u.HitFlash / 0.15f) : 0; // a flinch away from the blow
-        leanZ -= hurt * 12;
-        if (u.Routing)
-            return new Pose(leg * 1.2f, 150 + swing * 2, 0, 0, 140 - swing * 2, false, false, leanX, 14, bob, 0, false); // arms up, running for his life
-        if (winner >= 0 && u.Team == winner && !moving && u.Action == UnitAction.None && now > 0)
-        {
-            // The battle is won: the men raise their weapons and cheer, each in his own time.
-            float c = MathF.Max(0, MathF.Sin(now * 4.5f + phase * 6.3f));
-            return new Pose(0, 140 + c * 30, 60 + c * 40, 0, t.HasShield ? 40 + c * 50 : 20, false, false, 0, -4 * c, c * 0.06f);
-        }
-        if (t.Class == UnitClass.Archer)
-        {
-            bool aim = u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving);
-            if (!aim) return new Pose(leg, 15 + swing - leg * 0.3f, 0, 0, 10 - swing + leg * 0.3f, false, false, leanX, leanZ, bob);
-            if (u.Action == UnitAction.Recover) return new Pose(leg, 100, 0, 0, 92, false, true, leanX, leanZ - 2, bob, 0); // the release: the hand flies back
-            float draw = Ease.InOut(1 - u.Cooldown / 1.1f); // nock low, then draw as the next shot comes up
-            return new Pose(leg, 62 + 28 * draw, 0, 0, 88, false, true, leanX, leanZ - 3 * draw, bob, draw);
-        }
-        var (idle, raise, strike) = Keys(t.Class, u.Swing);
-        idle = idle with { Alpha = idle.Alpha + (phase - 0.5f) * 14 + MathF.Sin(now * 0.4f + phase * 11) * 3 }; // each man rests his weapon his own way
-        var arm = idle;
-        bool shield = false;
-        switch (u.Action)
-        {
-            case UnitAction.Windup:
-            {
-                float k = 1 - u.ActionTimer / (u.IsPlayer ? (u.Swing == AttackDir.Overhead ? 0.2f : 0.15f) : t.Windup);
-                if (u.IsPlayer) arm = Lerp(raise, strike, Ease.In(k)); // player already raised while charging: the blow accelerates
-                else { float up = Ease.InOut(k / 0.85f); arm = Lerp(idle, raise, up); leanZ -= 5 * up; } // held at the top for the last moment
-                break;
-            }
-            case UnitAction.Recover:
-            {
-                float k = 1 - u.ActionTimer / (u.IsPlayer ? 0.3f : t.Recover);
-                const float hit = 0.25f;
-                if (!u.IsPlayer && k < hit) { float f = Ease.OutBack(k / hit); arm = Lerp(raise, strike, f); leanZ += 9 * f; }
-                else { float f = Ease.InOut(u.IsPlayer ? k : (k - hit) / (1 - hit)); arm = Lerp(strike, idle, f); leanZ += 9 * (1 - f); }
-                break;
-            }
-            case UnitAction.Block: arm = new(30, 70, 0); shield = t.HasShield; leanZ -= 3; break;
-            case UnitAction.Stagger:
-            {
-                arm = new(-10 + 25 * hurt, 90, 0);
-                leanZ -= 10 + MathF.Sin(now * 9 + phase) * 3; // stumbling back
-                break;
-            }
-            default:
-                if (u.Charging) { arm = Lerp(idle, raise, Ease.Out(u.Charge)); leanZ -= 4 * u.Charge; }
-                else if (moving) arm = arm with { Alpha = arm.Alpha + swing * 0.6f };
-                break;
-        }
-        if (look(u) == "bones") arm = arm with { Alpha = arm.Alpha + MathF.Sin(now * 23 + phase * 40) * 3 }; // dry joints rattle
-        return new Pose(leg, arm.Alpha, arm.Pitch, arm.Yaw, shield ? 85 : 15 + leg * 0.4f - swing * 0.6f, shield, false, leanX, leanZ, bob);
-        static string look(Unit u) => u.Type.Look.Body;
     }
 
     /// A dead man: he topples away from the killing blow (a stagger back, a crumple at the knees, or a twist to the side),

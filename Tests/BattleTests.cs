@@ -17,7 +17,7 @@ public static partial class SelfTest
         Check(Ease.Hash(1) != Ease.Hash(2) && Ease.Hash(7) == Ease.Hash(7), "the per-man phase is stable and varied");
         var b = Battle.Empty(1);
         var u = b.AddSquad(0, UnitType.Shieldman, 1, Vector2.Zero, 1, Vector2.UnitY).Units[0];
-        var (_, raise, strike) = Puppet.Keys(u.Type.Class, AttackDir.Right);
+        var (_, raise, strike) = Puppet.Keys(Look.GripOf(u.Type.Look.Weapon), AttackDir.Right);
         u.Action = UnitAction.Windup; u.Swing = AttackDir.Right; u.ActionTimer = u.Type.Windup * 0.1f;
         Check(MathF.Abs(Puppet.PoseOf(u, 1, 0.5f).ArmA - raise.Alpha) < 1, "the windup holds at the top");
         u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - 0.15f);
@@ -25,6 +25,13 @@ public static partial class SelfTest
         Check(through < strike.Yaw, $"the strike swings past its mark ({through:0} < {strike.Yaw:0})");
         u.Action = UnitAction.None; u.Routing = true;
         Check(!Puppet.PoseOf(u, 1, 0.5f).Armed, "a routed man has thrown his weapon away");
+        var two = b.AddSquad(0, Troops.Get("greatswords"), 1, new Vector2(4, 0), 1, Vector2.UnitY).Units[0];
+        Check(Puppet.PoseOf(two, 1, 0.5f).TwoHand, "a greatsword is held in both hands");
+        Check(!Puppet.PoseOf(b.AddSquad(0, Troops.Get("dune_spears"), 1, new Vector2(6, 0), 1, Vector2.UnitY).Units[0], 1, 0.5f).TwoHand,
+            "a spear with a shield is held in one hand");
+        var rider = b.AddSquad(0, Troops.Get("mamluks"), 1, new Vector2(8, 0), 1, Vector2.UnitY).Units[0];
+        rider.Action = UnitAction.Recover; rider.Swing = AttackDir.Thrust; rider.ActionTimer = rider.Type.Recover * 0.8f;
+        Check(Puppet.PoseOf(rider, 1, 0.2f).WeapB < 0, "a sword in the saddle cuts down, it does not thrust");
         var foe = b.AddSquad(1, UnitType.Shieldman, 1, new Vector2(0, 2), 1, -Vector2.UnitY).Units[0];
         b.Kill(foe, u);
         Check(foe.Dead && foe.DiedFrom == u.Pos, "a dead man remembers where the blow came from");

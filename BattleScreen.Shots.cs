@@ -151,7 +151,11 @@ partial class BattleScreen
                 WorkScene((shotIndex - 67) / 2); shotFrames = 0; shotIndex++; break;
             case >= 67 and < 83 when shotIndex % 2 == 0 && shotFrames > 12:
                 pendingShot = WorkShots[(shotIndex - 68) / 2]; shotIndex++; break;
-            case 83 when pendingShot == null: Exit(); break;
+            case 83 or 85 or 87 when pendingShot == null && (shotIndex > 83 || shotFrames > 30): // the first waits for the window to settle
+                PoseSheet(3 + (shotIndex - 83) / 2); shotFrames = 0; shotIndex++; break;
+            case 84 or 86 or 88 when shotFrames > 20:
+                pendingShot = new[] { "pose-grips", "pose-shooters", "pose-stances" }[(shotIndex - 84) / 2]; shotIndex++; break;
+            case 89 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -198,6 +202,9 @@ partial class BattleScreen
                 x += 2.4f;
             }
         }
+        else if (sheet == 3) GripSheet(Add);
+        else if (sheet == 4) ShooterSheet(Add);
+        else if (sheet == 5) StanceSheet(Add);
         else if (sheet == 0)
         {
             const string foot = "men_at_arms";
@@ -232,6 +239,42 @@ partial class BattleScreen
         camYaw = MathHelper.PiOver2;
         camPitch = 0.1f;
         zoom = x * 0.8f;
+    }
+
+    /// Sheet 3: how each grip swings (docs/ANIMATION_ROSTER.md A1): a two-hander, a pike, a spear over a shield, a sword from the saddle.
+    static void GripSheet(Func<string, int, Unit> add)
+    {
+        void Swing(string troop, AttackDir dir, UnitAction act, float k)
+        {
+            var w = add(troop, 0); w.Action = act; w.Swing = dir;
+            w.ActionTimer = (act == UnitAction.Windup ? w.Type.Windup : w.Type.Recover) * k;
+        }
+        add("greatswords", 0);
+        Swing("greatswords", AttackDir.Right, UnitAction.Windup, 0.1f);
+        Swing("greatswords", AttackDir.Right, UnitAction.Recover, 0.88f);
+        Swing("greatswords", AttackDir.Overhead, UnitAction.Windup, 0.05f);
+        Swing("greatswords", AttackDir.Overhead, UnitAction.Recover, 0.85f);
+        add("greatswords", 0).Action = UnitAction.Block;
+        add("pikemen", 0);
+        Swing("pikemen", AttackDir.Thrust, UnitAction.Windup, 0.1f);
+        Swing("pikemen", AttackDir.Thrust, UnitAction.Recover, 0.85f);
+        Swing("halberdiers", AttackDir.Overhead, UnitAction.Windup, 0.05f);
+        Swing("halberdiers", AttackDir.Overhead, UnitAction.Recover, 0.85f);
+        Swing("dune_spears", AttackDir.Overhead, UnitAction.Recover, 0.85f);
+        Swing("mamluks", AttackDir.Thrust, UnitAction.Windup, 0.1f);
+        Swing("mamluks", AttackDir.Thrust, UnitAction.Recover, 0.85f);
+    }
+
+    /// Sheet 4: crossbows, casters, javelins and slings (A3).
+    static void ShooterSheet(Func<string, int, Unit> add)
+    {
+        add("crossbowmen", 0);
+    }
+
+    /// Sheet 5: stances in a line (A2, A4).
+    static void StanceSheet(Func<string, int, Unit> add)
+    {
+        add("pikemen", 0);
     }
 
     /// Three companies of `troop` a side charge each other; the sim runs 14 s, then the view is held from above one flank.

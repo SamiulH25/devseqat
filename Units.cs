@@ -10,6 +10,9 @@ public enum UnitAction { None, Windup, Recover, Block, Stagger }
 /// The defender sees Left/Right mirrored, see <see cref="Dirs.Mirror"/>.
 public enum AttackDir { Overhead, Thrust, Left, Right }
 
+/// How a weapon is held, which picks the man's poses (Puppet.Keys). Drawing only, except Thrown and Sling, which are shot.
+public enum Grip { One, Two, Pole, Lance, Bow, Crossbow, Staff, Thrown, Sling }
+
 /// Cavalry charge cycle: ride in, (bog down and fight), ride out, turn, ride in again.
 public enum CavState { Charge, Melee, Withdraw }
 
@@ -53,6 +56,18 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public static readonly string[] Shields = { "none", "round", "kite", "heater", "pavise" };
     public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff", "mace" };
     public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
+    public static Grip GripOf(string weapon) => weapon switch
+    {
+        "greatsword" or "daneaxe" or "club" or "warhammer" => Grip.Two,
+        "spear" or "pike" or "halberd" or "glaive" => Grip.Pole,
+        "lance" => Grip.Lance,
+        "bow" or "longbow" => Grip.Bow,
+        "crossbow" => Grip.Crossbow,
+        "staff" => Grip.Staff,
+        "javelin" => Grip.Thrown,
+        "sling" => Grip.Sling,
+        _ => Grip.One,
+    };
 }
 
 /// A troop type from Data/troops.json: stats, place in the upgrade tree, and look.
