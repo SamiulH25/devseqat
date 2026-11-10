@@ -35,6 +35,7 @@ dotnet run -c Release -- --pacing 8                      # stand-in captain only
 dotnet run -- --replay [file]                            # replay replays/last-battle.json, check same outcome
 dotnet run -- --write-controls                           # write default controls.json
 dotnet run -c Release --no-build -- --sprites out.png torso.plate helm   # headless: chosen sprite parts 6x on one PNG (pixel-art check)
+dotnet run -c Release --no-build -- --portraits out.png [seed]   # headless: lords' and kin's painted faces 3x on one PNG (first four: one face in each mood)
 dotnet run -c Release --no-build -- --sounds /tmp/snd    # headless: every cue (all versions, near then far), bed and piece of music as WAV
 dotnet run -c Release -- --bench 1500                    # headless 1500-a-side battle: ms per tick by stage (3000 men ~3.6 ms)
 dotnet run -c Release -- --realms 8                      # snowball guard: N campaigns x 240 days, realm shares -> balance/realms.csv (~3 min)
@@ -195,6 +196,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | 3D meshes (terrain, trees, towns, grass) | `World.cs` |
 | Shader pipeline / GLSL loader | `Shading.cs`, `GlslEffect.cs`, `Shaders/*.glsl`, `Sky.cs` (light by hour/weather) |
 | Unit drawing (puppets of part sprites) | `Puppet.cs` (skeleton, two-piece legs, falls by `Unit.DiedFall`, horse idles) + `PuppetPoses.cs` (`Pose`, `Keys` by `Grip` (`Look.GripOf`), `PoseOf`, stances, crossbow/throw/cast poses, idles `IdleOf`/`Life`; drawing only), `SpriteSheet.cs` (paints parts; the plate torso is a hand-made pixel map, `PlateFront`/`PixelMap`), `Painter.cs` (materials, surface patterns), `Art.cs` (atlas), `SpriteDump.cs` (`--sprites`) |
+| Lords' painted bust portraits (docs/LORDS.md LD1): a `Face` derived from the character (id, culture, age, traits, rank, his opinion of you = mood), painted 48x60 on his house's arms; textures cached per face (a 24x30 averaged copy for small wells). Drawing only | `PortraitPainter.cs` (`Face`, `PortraitPainter.Of`, `Paint`, `MoodOf`; `Portraits.Of`); drawn with `Ui.Face`; used in the L screen rows (`MapScreen.Party.cs`) and the encounter panel (`MapScreen.Dialogs.cs`); `--portraits` in `SpriteDump.cs`; shot `campaign-lords.png`; test `PortraitsVary` |
 | Per-man looks: two men of one troop look different (face = skin x hair x beard, painted once as `head.v{n}.f/n`; kin helms and one-handed weapons; height). Drawing only, seeded by Soldier id or place in the battle | `Variety.cs` (`Of`, `Stature`, `Seed`); read in `Puppet.Draw`; `Look.Visage`; shots `gallery-variety*.png` |
 | Colours, heraldry, UI tokens | `Style.cs` |
 | Motion: easing curves, per-man phase / UI animation (`Ui.Anim`, `AnimLag`, `Since`, `Count`; `Ui.Now`, `Ui.Instant` freezes it for shots) / soldier and horse poses (`PoseOf`, `Fallen`, `Banner`) | `Ease.cs` / `Ui.cs` / `Puppet.cs`; rules in docs/DESIGN.md section 5 |

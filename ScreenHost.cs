@@ -610,7 +610,12 @@ sealed class ScreenHost : Game
                 Shot("campaign-legend-order");
                 break;
             }
-            case 51: Exit(); break;
+            case 51:
+                // Lords' faces and houses (docs/LORDS.md LD1).
+                map.Stage("lords");
+                Shot("campaign-lords");
+                break;
+            case 52: Exit(); break;
         }
     }
 }

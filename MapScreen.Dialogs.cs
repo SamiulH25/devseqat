@@ -22,8 +22,15 @@ partial class MapScreen
             ui.Text($"{string.Join(", ", ech.Traits).ToUpperInvariant()}   THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})", x + ui.U(170), y + ui.U(20), OpinionColor(op), 1);
         }
         float me = Rules.Strength(C.Player), them = Rules.Strength(e);
-        ui.TextR($"YOU {C.Player.Men}   THEM {e.Men}", r.Right - ui.U(24), y + ui.U(2), Style.Text);
-        var bar = new Rectangle(x, y + ui.U(36), r.Width - ui.U(48), ui.U(10));
+        // His face, top right, on his house's arms (docs/LORDS.md LD1).
+        int face = 0;
+        if (C.CharacterOf(e) is Character fch)
+        {
+            face = ui.U(104);
+            ui.Face(PortraitPainter.Of(C, fch), new Rectangle(r.Right - ui.U(24) - ui.U(96), r.Y + ui.U(40), ui.U(96), ui.U(120)));
+        }
+        ui.TextR($"YOU {C.Player.Men}   THEM {e.Men}", r.Right - ui.U(24) - face, y + ui.U(2), Style.Text);
+        var bar = new Rectangle(x, y + ui.U(36), r.Width - ui.U(48) - face, ui.U(10));
         ui.Rect(bar, Style.Foe);
         ui.Rect(new Rectangle(bar.X, bar.Y, (int)(bar.Width * me / MathF.Max(1, me + them)), bar.Height), Style.Friendly);
         ui.Text(C.GroundNote(e), x, bar.Bottom + ui.U(8), Kit.Gilt, 1); // the ground and who holds it (docs/archive/TERRAIN.md T7)
@@ -35,7 +42,7 @@ partial class MapScreen
             ui.Text($"{c.Men} {c.Type.Name.ToUpperInvariant()}", x + ui.U(40), y + ui.U(4), Style.Text, 1);
             ui.Text($"TIER {Style.Numerals[c.Type.Tier]}", x + ui.U(40), y + ui.U(16), Style.Dim, 1);
             x += ui.U(190);
-            if (x > r.Right - ui.U(180)) { x = r.X + ui.U(24); y += ui.U(36); }
+            if (x > r.Right - ui.U(180) - face) { x = r.X + ui.U(24); y += ui.U(36); }
         }
         EncounterOwnSide(r, x == r.X + ui.U(24) ? y : y + ui.U(36), me, them);
         Note(r);

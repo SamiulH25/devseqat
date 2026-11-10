@@ -1427,6 +1427,21 @@ public static partial class SelfTest
         Check(loaded.S.Characters.Where(x => x.Kind == "lord" && !x.Dead && x.Order == "" && x.Faction >= 0).All(l => loaded.HouseOf(l) != null), "an old save's lords get houses on load");
     }
 
+    /// LD1: every lord's painted face is his own, opaque, and shows his mood towards you; a ruler wears a circlet.
+    static void PortraitsVary()
+    {
+        var c = Campaign.New(4246);
+        var lords = c.S.Characters.Where(x => x.Kind == "lord" && !x.Dead).Take(40).ToList();
+        var faces = lords.Select(l => PortraitPainter.Of(c, l)).ToList();
+        Check(faces.Distinct().Count() == faces.Count, "no two lords share a face");
+        var px = PortraitPainter.Paint(faces[0]);
+        Check(px.Length == PortraitPainter.W * PortraitPainter.H && px.All(p => p.A == 255), "a portrait is a whole opaque picture");
+        Check(!PortraitPainter.Paint(faces[0] with { Mood = 0 }).SequenceEqual(PortraitPainter.Paint(faces[0] with { Mood = 3 })), "a warm face and a hostile one differ");
+        var ruler = c.RulerOf(lords[0].Faction)!;
+        Check(PortraitPainter.Of(c, ruler).Crown, "a ruler wears a circlet");
+        Check(PortraitPainter.Of(c, lords[0]).Age == lords[0].Age, "the face ages with him");
+    }
+
     static void LordArmies()
     {
         var c = Campaign.New(4242);

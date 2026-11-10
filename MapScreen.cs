@@ -533,6 +533,7 @@ sealed partial class MapScreen
             case "chapter": at = s; tab = "CHAPTER"; panel = PanelKind.Settlement; note = ""; break;
             case "fief": at = s; tab = "FIEF"; panel = PanelKind.Settlement; note = ""; break;
             case "household": charTab = C.S.Factions.Count; panel = PanelKind.Characters; note = ""; break;
+            case "lords": charTab = 0; panel = PanelKind.Characters; note = ""; break;
             case "beat": panel = PanelKind.Beat; break;
             case "gameover": panel = PanelKind.GameOver; break;
             case "event": panel = PanelKind.Event; note = ""; break;

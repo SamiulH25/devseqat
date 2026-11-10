@@ -121,7 +121,8 @@ mountain ridges you cross by road at the passes.
   sister. Some houses are led by ladies. A lord who falls in battle or dies of old age passes his banner and half his grudges to
   the next of his house (eldest grown son, then daughter, then brother or sister, then widow); a house with nobody left dies out
   and a new lord takes the banner. People age each year (120 days), marry within their realm and have children. The L screen
-  shows each lord's house, and his family on hover. Sergeants who live through 15 battles, and wanderers found in town taverns, join your household as **companions**
+  shows each lord's face, house, and his family on hover. Every lord has a painted portrait on his house's arms: it greys and
+  lines with age, carries his scars, crowns a ruler, and its brows and mouth show what he thinks of you. Sergeants who live through 15 battles, and wanderers found in town taverns, join your household as **companions**
   (quartermaster, surgeon, scout, drillmaster or steward) and lead a company into battle as a hero. L opens the lords and companions screen.
 - **Towns:** train, hire mercenaries, buy horses and food, kit yourself out at the armourer (MARKET tab: weapons from spear to crossbow, shields, armour, helms and horses; stock changes weekly, heavy pieces need the Arms skill, the best need a rank; worn gear can be swapped, spare gear sold back at 40%), rest to heal, sell prisoners
   and ransom lords, sign or end contracts, and take work from the steward's board (hunt a lord, clear brigands, guard a village, scout a town,

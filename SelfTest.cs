@@ -171,6 +171,7 @@ public static partial class SelfTest
         GoodsSell();
         LordArmies();
         HousesAndKin();
+        PortraitsVary();
         Career();
         PilotCareer();
         FreeCrown();

@@ -42,6 +42,9 @@ partial class MapScreen
             ui.Rect(box, Color.White * 0.04f);
             float op = C.OpinionOfYou(ch);
             var party = ch.PartyId >= 0 ? C.PartyById(ch.PartyId) : null;
+            // His face at the left of the row (docs/LORDS.md LD1); the rest of the row moves over.
+            ui.Face(PortraitPainter.Of(C, ch), new Rectangle(box.X + ui.U(2), box.Y + ui.U(2), ui.U(28), rowH - ui.U(4)));
+            box = new Rectangle(box.X + ui.U(30), box.Y, box.Width - ui.U(30), box.Height);
             string state = ch.Kind == "companion" ? $"{ch.Calling.ToUpperInvariant()} LV {ch.Level}, {ch.Role.ToUpperInvariant()}"
                 : party == null ? "" : party.Captive ? "YOUR PRISONER" : party.Down ? "SCATTERED" : $"{party.Men} MEN, {party.Task.ToUpperInvariant()}";
             ui.Text(ch.Name.ToUpperInvariant(), box.X + ui.U(6), box.Y + ui.U(4), Style.Text, 1);

@@ -197,6 +197,18 @@ sealed class Ui
         return hit;
     }
 
+    /// A painted bust portrait (docs/LORDS.md LD1) fitted into `box`, whole pixels when it is big enough, centred at the bottom.
+    public void Face(Face f, Rectangle box)
+    {
+        float k = MathF.Min(box.Width / (float)PortraitPainter.W, box.Height / (float)PortraitPainter.H);
+        bool half = k < 1;
+        var tex = Portraits.Of(Sb.GraphicsDevice, f, half);
+        if (half) k *= 2;
+        if (k >= 1) k = MathF.Floor(k);
+        int w = (int)(tex.Width * k), h = (int)(tex.Height * k);
+        Sb.Draw(tex, new Rectangle(box.Center.X - w / 2, box.Bottom - h, w, h), Color.White);
+    }
+
     /// A troop portrait cropped to `box`; `k` is the pixel scale (default: the UI scale).
     public void Portrait(UnitType t, Rectangle box, int k = 0, float top = 1.92f) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S, top);
 }

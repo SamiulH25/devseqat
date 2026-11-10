@@ -62,7 +62,7 @@ public static class Variety
     }
 
     /// A face: skin leans by the troop's culture (fair in the north, darker in the south and on the steppe), hair by skin.
-    static int Visage(string culture, int seed)
+    internal static int Visage(string culture, int seed)
     {
         float[] skinW = culture switch
         {

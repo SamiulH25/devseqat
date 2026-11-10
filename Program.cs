@@ -4,6 +4,12 @@
     Ironfield.SpriteDump.Run(rest.FirstOrDefault() ?? "sprites.png", rest.Skip(1).ToArray());
     return;
 }
+if (args.Contains("--portraits"))
+{
+    var rest = args.SkipWhile(a => a != "--portraits").Skip(1).ToArray();
+    Ironfield.SpriteDump.Portraits(rest.FirstOrDefault() ?? "portraits.png", rest.Length > 1 && int.TryParse(rest[1], out int ps) ? ps : 7);
+    return;
+}
 if (args.Contains("--sounds"))
 {
     Ironfield.SoundDump.Run(args.SkipWhile(a => a != "--sounds").Skip(1).FirstOrDefault() ?? "sounds");

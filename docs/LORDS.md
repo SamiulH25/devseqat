@@ -58,6 +58,12 @@ any of them. It builds on what exists; nothing here replaces a system.
   the council, the battle report (the enemy commander), the map tooltip.
 - `--portraits out.png` headless sheet (like `--sprites`) to check variety; a UI lab page; campaign shots.
 - The captain's own portrait from the creator's face, so you sit across the table from them.
+- **As built (first pass):** `Face` is derived each frame (`PortraitPainter.Of`), not stored, and textures are cached by
+  face, so a change of age, rank or mood repaints by itself. Painted: skin/hair from `Variety` (the captain's from
+  `CaptainState.Visage`), five cuts, four beards, brows, eyes, nose, jaw, grey and lines with age, scars (Cruel, Reckless,
+  age), dress (cloth for kin, robe with collar, mail, plate under a tabard for knights), a circlet for rulers, and the house
+  arms (its realm's colours, its own charge and field). Shown in the L screen and the encounter panel so far; the talk
+  screen (LD3), events, council and report come with their phases. No UI lab page yet.
 
 ### LD2: bonds between lords (headless)
 
