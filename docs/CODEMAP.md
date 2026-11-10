@@ -387,8 +387,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Bind** (struct, L33): ToString:35, Parse:51
 - **Controls** (class, L74): Controls:129, SaveUser:137, ResetDefaults:146, AnyPressed:154, FindFile:162, Load:172, WriteDefaults:199, Update:208, IsDown:214, Down:224, WasDown:225, Pressed:226, Released:227, Axis:228, First:231, Name:234
 
-## CreatorScreen.cs (523 lines)
-- **CreatorScreen** (class, L9): CreatorScreen:33, Show:36, U:47, RandomName:50, RandomCompany:58, Randomise:61, Go:72, Refresh:81, Keys:93, Begin:118, Draw:125, Likeness:168, Ledger:220, Homeland:290, Choices:345, Detail:374, Face:416, Field:452, Swatches:466, Oath:482, Footer:515
+## CreatorScreen.cs (571 lines)
+- **CreatorScreen** (class, L9): CreatorScreen:38, Prepare:58, Show:66, U:77, RandomName:80, RandomCompany:88, Randomise:91, Go:102, Refresh:111, Keys:125, Begin:150, Draw:157, Likeness:200, Ledger:268, Homeland:338, Choices:393, Detail:422, Face:464, Field:500, Swatches:514, Oath:530, Footer:563
+
+## CreatorStage.cs (207 lines)
+- **CreatorStage** (class, L10): CreatorStage:41, React:49, Render:52, Build:95, Perform:116, readonly:143, Drill:152, Shoot:165, Salute:177, Camera:188
 
 ## Ease.cs (22 lines)
 - **Ease** (class, L4): C:6, In:8, Out:10, OutCubic:11, InOut:13, OutBack:15, Spring:17, Kick:19, Hash:21
@@ -617,8 +620,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tips.cs (57 lines)
 - **Tips** (class, L6): Show:14, Dismiss:28, Draw:37, Height:43, DrawAt:46
 
-## TitleScreen.cs (208 lines)
-- **TitleScreen** (class, L7): SaveCard:24, TitleScreen:26, Update:34, U:44, Draw:46, Shots:99, Scene:113, Shifted:138, Clouds:141, Birds:158, Embers:172, Card:184, Fit:207
+## TitleScreen.cs (209 lines)
+- **TitleScreen** (class, L7): SaveCard:24, TitleScreen:26, Update:34, U:44, Draw:46, Shots:100, Scene:114, Shifted:139, Clouds:142, Birds:159, Embers:173, Card:185, Fit:208
 
 ## Troops.cs (275 lines)
 - **Troops** (class, L7): Has:14, Get:15, HasMount:16, Mount:17, Path:53, Load:63, Validate:92, WorseUpgrade:137, Tree:151

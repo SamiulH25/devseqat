@@ -30,7 +30,37 @@ sealed class CreatorScreen
     static readonly string[] CompanyFirst = { "GREY", "IRON", "BLACK", "RED", "ASHEN", "WOLF", "SILVER", "LANTERN", "THORN", "RAVEN", "BROKEN SPEAR", "WHITE" };
     static readonly string[] CompanyLast = { "COMPANY", "LANCES", "BAND", "BROTHERHOOD", "BANNER", "FREE COMPANY", "HOST", "COMPANY" };
 
-    public CreatorScreen(Ui ui, Action<CaptainMaking> begin) { this.ui = ui; this.begin = begin; }
+    // The living captain in the well (null: the still portrait), the well's size last frame, and the choices last seen.
+    readonly CreatorStage? stage;
+    Rectangle well;
+    string choiceKey = "";
+
+    public CreatorScreen(Ui ui, Action<CaptainMaking> begin, CreatorStage? stage = null) { this.ui = ui; this.begin = begin; this.stage = stage; }
+
+    /// What the captain does on this step: stands for the homeland, marches out, acts out the past, shows the road,
+    /// turns its face to you, raises its blade for the oath.
+    CreatorStage.Act Act => Step switch
+    {
+        0 => CreatorStage.Act.Stand,
+        1 => CreatorStage.Act.March,
+        2 => M.Past switch
+        {
+            "hedge_knight" => CreatorStage.Act.Ride, "poacher" => CreatorStage.Act.Shoot, "deserter" => CreatorStage.Act.Leave,
+            "disinherited" => CreatorStage.Act.Salute, "surgeon" => CreatorStage.Act.Stand, "drillmaster" => CreatorStage.Act.Guard, _ => CreatorStage.Act.Drill,
+        },
+        3 => M.Road switch { "lance" => CreatorStage.Act.Charge, "bow" => CreatorStage.Act.Shoot, _ => CreatorStage.Act.Drill },
+        4 => CreatorStage.Act.Turn,
+        _ => CreatorStage.Act.Salute,
+    };
+
+    /// Draw the living captain into its texture; called before the frame's sprites begin (a render target cannot change
+    /// in the middle of them). Uses the well's size from the last frame.
+    public void Prepare(float dt)
+    {
+        if (!Open || stage == null || well.Width <= 0) return;
+        Refresh();
+        stage.Render(well.Width, well.Height, preview, !helm, Act, dt);
+    }
 
     /// Open on a fresh, randomly named captain of the first realm.
     public void Show()
@@ -80,7 +110,9 @@ sealed class CreatorScreen
 
     void Refresh()
     {
-        string key = $"{M.Realm}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}|{helm}";
+        string choices = $"{M.Realm}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}";
+        if (choices != choiceKey) { if (choiceKey != "") stage?.React(); choiceKey = choices; } // a choice made: the captain cheers
+        string key = $"{choices}|{helm}";
         if (key == previewKey) return;
         previewKey = key;
         preview = Origins.Preview(M);
@@ -184,9 +216,25 @@ sealed class CreatorScreen
             var p = new Vector2(well.X + well.Width * ((i * 0.618f) % 1) + MathF.Sin(f * 5 + i) * U(6), well.Bottom - well.Height * 0.8f * f);
             ui.Disc(p, Math.Max(1, U(1.5f)), Color.Lerp(new Color(255, 200, 120), Kit.Ember, f) * (1 - f) * 0.7f);
         }
-        int k = Math.Max(1, (int)(well.Height / (1.75f / Art.Px)));
-        int breathe = Ui.Instant ? 0 : (int)MathF.Round(MathF.Sin(time * 1.6f) * U(1));
-        ui.Portrait(look, new Rectangle(well.X, well.Y + U(4) + breathe, well.Width, well.Height - U(4)), k, 2.3f);
+        if (stage?.Texture is { } tex && this.well.Size == well.Size)
+        {
+            // The living captain: a soft shadow at their feet, then the puppet drawn into the stage's texture.
+            var f = stage.Feet + well.Location.ToVector2();
+            for (int i = 0; i < 6; i++)
+            {
+                float t = i / 6f, hw = stage.ShadowW * 0.5f * MathF.Sqrt(1 - t * t);
+                ui.Rect(new Rectangle((int)(f.X - hw), (int)(f.Y - U(3) + i * U(1)), (int)(hw * 2), U(1)), Color.Black * 0.22f);
+                ui.Rect(new Rectangle((int)(f.X - hw), (int)(f.Y - U(3) - i * U(1)), (int)(hw * 2), U(1)), Color.Black * 0.12f);
+            }
+            ui.Sb.Draw(tex, well, Color.White);
+        }
+        else
+        {
+            int k = Math.Max(1, (int)(well.Height / (1.75f / Art.Px)));
+            int breathe = Ui.Instant ? 0 : (int)MathF.Round(MathF.Sin(time * 1.6f) * U(1));
+            ui.Portrait(look, new Rectangle(well.X, well.Y + U(4) + breathe, well.Width, well.Height - U(4)), k, 2.3f);
+        }
+        this.well = well;
         ui.Frame(well, Color.Black * 0.6f, U(1));
         ui.Shield(new Rectangle(well.X + U(6), well.Bottom - U(46), U(32), U(40)), colours);
 

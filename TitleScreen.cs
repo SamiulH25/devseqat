@@ -27,7 +27,7 @@ sealed class TitleScreen
     {
         this.host = host;
         ui = new Ui(host.Sb, host.Art, host.Font);
-        creator = new CreatorScreen(ui, m => host.StartCampaign(Environment.TickCount & 0xFFFF, m.Realm, m));
+        creator = new CreatorScreen(ui, m => host.StartCampaign(Environment.TickCount & 0xFFFF, m.Realm, m), new CreatorStage(host.GraphicsDevice, host.Art));
         if (ShotsDir != null || Environment.GetEnvironmentVariable("IRONFIELD_TITLE_PICK") != null) creator.Show();
     }
 
@@ -46,6 +46,7 @@ sealed class TitleScreen
     public void Draw()
     {
         var gd = host.GraphicsDevice;
+        creator.Prepare(1 / 60f); // the living captain, drawn to its texture before the frame's sprites begin
         gd.Clear(Kit.Night);
         ui.Begin(gd.Viewport, ms.Position, click);
         click = false;
