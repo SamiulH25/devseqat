@@ -12,6 +12,8 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
 {
     /// The captain's skills that rose in this battle, one line each (P3).
     public IReadOnlyList<string> Rises { get; init; } = Array.Empty<string>();
+    /// Lots of goods taken from the field (kind, count), to sell in a town's market.
+    public IReadOnlyList<(string Kind, int Count)> Goods { get; init; } = Array.Empty<(string, int)>();
     /// A lasting wound the captain took in this battle (P4), or "".
     public string LastingWound { get; init; } = "";
     /// What the battle did to your aura (docs/archive/KNIGHT_ORDERS.md K1): a wall reached, a breakthrough, or "".

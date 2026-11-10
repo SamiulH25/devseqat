@@ -19,6 +19,7 @@ public partial class Campaign
         int playerTeam = side0.Contains(Player) ? 0 : 1;
         bool won = r.Winner == playerTeam;
         float loot = 0, ransom = 0;
+        var worth = new Dictionary<string, float>(); // the loot by kind of goods, before it is split into crowns and goods
         var reports = new List<CompanyReport>();
         rollNews.Clear();
         rollFell.Clear();
@@ -47,7 +48,10 @@ public partial class Campaign
                 killedAll += killed; woundedAll += wounded; capturedAll += captured; fledLostAll += sr.Fled - fledBack;
                 if (playerIn && team != playerTeam && won)
                 {
-                    loot += (sr.Fallen + sr.Fled) * Rules.PerMan(st.Type.Cost) * B.LootRate;
+                {
+                    string kind = GoodsFrom(st.Type);
+                    worth[kind] = worth.GetValueOrDefault(kind) + (sr.Fallen + sr.Fled) * Rules.PerMan(st.Type.Cost) * B.LootRate;
+                }
                     if (!st.Type.Wild || st.Type.Breed == "goblin" && !st.Type.Has("boss")) // of the creatures, only goblins are taken alive (as thralls)
                         TakePrisoners(st.Troop, Has("Pursuit") ? (int)MathF.Round(captured * 1.25f) : captured); // held, not ransomed at once (B3)
                 }
@@ -145,6 +149,7 @@ public partial class Campaign
         if (won && (playerTeam == 0 ? startStrength1 / MathF.Max(1, startStrength0) : startStrength0 / MathF.Max(1, startStrength1)) >= 1.5f) Count("outnumbered");
         float bounty = 0, renown = 0;
         int horses = 0;
+        List<(string Kind, int Count)> goods = new();
         // Personal goals met (P6): renown and a lesson each.
         foreach (var id in r.GoalsMet)
         {
@@ -155,6 +160,13 @@ public partial class Campaign
         if (won)
         {
             foreach (var e in losers.Where(e => e.Lair || e.Kind == PartyKind.Caravan)) loot += e.Gold; // a holdout's hoard, a caravan's purse
+            // A lord's baggage holds silver plate, a brigand's his trinkets: a fifth of the arms and armour comes as those instead.
+            string? rich = losers.Any(e => e.Kind == PartyKind.Lord) ? "silver" : losers.Any(e => e.Kind == PartyKind.Bandit) ? "trinkets" : null;
+            if (rich != null)
+                foreach (var k in new[] { "arms", "armour" })
+                    if (worth.TryGetValue(k, out float w)) { worth[k] = w * 0.8f; worth[rich] = worth.GetValueOrDefault(rich) + w * 0.2f; }
+            (float coin, goods) = TakeLoot(worth);
+            loot += coin;
             foreach (var e in losers)
                 bounty += e.Breed == "troll" ? B.BountyTroll : e.Breed == "undead" ? B.BountyUndead
                     : e.Lair ? B.BountyHoldout + Rules.PerMan(Rules.Strength(e) / 10)
@@ -194,7 +206,7 @@ public partial class Campaign
             Log($"You are taken, and ransomed. Your men regroup at {refuge.Name}.");
         }
         string spoil = won ? BattleSpoil(losers, r) : "";
-        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting, Aura = TakeAuraNews(),
+        Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Goods = goods, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting, Aura = TakeAuraNews(),
             Goals = r.Goals.Select((id, i) => (i < r.GoalTexts.Count ? r.GoalTexts[i] : Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
             Roll = RollNewsOrdered().Where(n => n.Item1 is not ("HONOUR" or "LOST")).ToList(),
             Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field, Wonders = r.Wonders };

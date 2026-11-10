@@ -429,7 +429,7 @@ build differs:
 - **Allies** who join a battle fight on your side under a team-0 AI general (`Squad.AiControlled`); only your own companies take your orders.
 - **Map movement** is straight-line steering with terrain and road speed factors. There is no A* yet, because nothing on the map is impassable.
 - **Battle size:** the cap is 400 men, served by a spatial grid (roadmap E1).
-- **Drill (new):** companies gain 1 XP a day in camp and 2 in a friendly town (`DrillCamp`, `DrillTown`). Without it the AI lords
+- **Drill (new):** companies gain 0.6 XP a day in camp and 1.2 in a friendly town (`DrillCamp`, `DrillTown`). Without it the AI lords
   rarely grew past tier II.
 - **Lord wages** are 1.3× upkeep plus a 2% share of the faction's war chest each week, so lords can afford upgrades.
 - **Prisoners** are held (roadmap B3): sold in towns and castles at the ransom rate, recruited, or freed. **Fled men** return at once (all on a victory, 70% on a defeat).

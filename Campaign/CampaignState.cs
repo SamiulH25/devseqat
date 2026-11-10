@@ -501,6 +501,8 @@ public sealed class CampaignState
     /// The order you founded (K8); null until then.
     public FoundedOrder? OwnOrder;
     public float Gold, LastWeekBalance;
+    /// Goods from the field you carry to sell (kind id -> lots; Campaign/Goods.cs).
+    public SortedDictionary<string, int> Goods = new();
     public bool Ironman, GameOver;
     /// Why the campaign ended ("" = the Ironman captain was not ransomed), and whether it was won (5.5; play may go on).
     public string EndReason = "";
@@ -659,9 +661,9 @@ public sealed class Balance
     /// How much closer two AI parties must be before they fight (the player's own encounters use EncounterRadius).
     public float AiClashRadius = 5.5f;
     public float StartGold = 300, StartRenown = 50;
-    public float UpkeepRate = 0.1f, ContractPay = 0.85f, LootRate = 0.25f, RansomRate = 1, MercMarkup = 1.5f;
+    public float UpkeepRate = 0.1f, ContractPay = 0.85f, LootRate = 0.25f, LootCoinShare = 0.3f, RansomRate = 1, MercMarkup = 1.5f;
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;
-    public float XpParticipation = 20, XpVictory = 1.5f, XpPerKillTier = 12;
+    public float XpParticipation = 10, XpVictory = 1.5f, XpPerKillTier = 6;
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
     public float CompanySlotsBase = 10, MenBase = 40, MenRenownDivisor = 5;
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
@@ -697,7 +699,7 @@ public sealed class Balance
     /// Daily chance (0-1) that a lord who sees no enemy province to raid marches to a neighbouring faction's front instead:
     /// how often the AI picks a fight on its own.
     public float LordAggression = 0.35f;
-    public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 1, DrillTown = 2;
+    public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 0.6f, DrillTown = 1.2f;
     public float TownIncome = 150, CastleIncome = 90, VillageIncome = 40, LordWage = 1.3f;
     public float TruceDays = 30, BountyBandits = 50, BountyLord = 120;
     /// Goblin holdouts (docs/archive/CREATURES.md): how many per forest or hill province, the daily chance one is raised while
