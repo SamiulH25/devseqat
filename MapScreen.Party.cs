@@ -104,7 +104,8 @@ partial class MapScreen
         var c = upgrading!;
         var st = upStack;
         if (st == null || !c.Stacks.Contains(st) || !C.Player.Companies.Contains(c)) { panel = PanelKind.Party; upStack = null; return; }
-        var options = st.Type.UpgradesTo;
+        string man = Campaign.ManCulture(c, st.Troop); // only the lines these men may enter by culture (a stranger's are not shown)
+        var options = st.Type.UpgradesTo.Where(to => Troops.Get(to) is var t && (t.Culture == Factions.Common || man == Factions.Common || Factions.Open(man, t.Culture))).ToArray();
         var r = Modal(Math.Max(860, options.Length * 190 + 60), 470, $"{st.Type.Name.ToUpperInvariant()} OF {c.Name.ToUpperInvariant()}");
         ui.TextC($"{st.Men} FIT, {st.Wounded} WOUNDED. POOL {st.Xp:0} / {st.PoolCap:0} XP: {st.Ready} READY ({st.Type.UpgradeXp} XP A MAN). EACH MAN PROMOTED SPENDS HIS SHARE.",
             r.X + r.Width / 2f, r.Y + ui.U(44), Style.Dim, 1);

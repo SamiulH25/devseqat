@@ -348,6 +348,9 @@ public static partial class SelfTest
             band.Companies.Clear();
             band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(70), 0));
             band.Pos = c.Player.Pos;
+            foreach (var p in c.S.Parties) // no passer-by joins: the test wants a fight of this size
+                if (p != c.Player && p != band && Vector2.Distance(p.Pos, c.Player.Pos) < Balance.Get().JoinRadius * 2)
+                    p.Pos += Vector2.Normalize(p.Pos - c.Player.Pos + new Vector2(0.01f, 0)) * Balance.Get().JoinRadius * 3;
             c.Encounter = band;
             c.S.Event = null;
             c.AutoResolveEncounter();

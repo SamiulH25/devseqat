@@ -62,6 +62,8 @@ public partial class Campaign
         host.Companies.Add(NewCompany("skeleton", "infantry", bones, 0));
         host.Companies.Add(NewCompany("ghoul", "infantry", Math.Max(1, bones / 6), 0));
         host.Companies.Add(NewCompany("necromancer", "casters", 1, 0));
+        if (bones >= Scaled(B.UndeadMaxMen) * 2 / 3) host.Companies.Add(NewCompany("wight", "infantry", Math.Max(1, bones / 10), 0)); // a great field raises its knights as wights
+        if (S.Omen >= OmenStirs) { host.Companies.Add(NewCompany("death_knight", "infantry", 1, 0)); host.Tier = 6; } // and under a high Omen, one who leads them
         S.Parties.Add(host);
         Log($"The dead of the battle in {prov.Name} rise from their graves.");
         return host;

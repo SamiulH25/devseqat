@@ -143,8 +143,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Orders.cs (232 lines)
 - **BattleScreen** (class, L8): Targets:12, Issue:15, Send:27, GiveGoal:37, GoalCommand:39, Command:61, OrderKeys:120, NextSpell:139, CastAt:151, PlantStakes:165, NextDivision:177, LineAt:187, Distribute:204, PreviewSlots:223
 
-## BattleScreen.Shots.cs (536 lines)
-- **BattleScreen** (class, L8): ShotScript:10, readonly:162, PoseSheet:172, GripSheet:245, ShooterSheet:269, StanceSheet:301, Clash:320, MagicScene:347, SpectacleScene:398, WorkScene:448, StageCast:504, Gallery:512
+## BattleScreen.Shots.cs (552 lines)
+- **BattleScreen** (class, L8): ShotScript:10, readonly:170, readonly:178, PoseSheet:188, GripSheet:261, ShooterSheet:285, StanceSheet:317, Clash:336, MagicScene:363, SpectacleScene:414, WorkScene:464, StageCast:520, Gallery:528
 
 ## BattleScreen.Spectacle.cs (190 lines)
 - **BattleScreen** (class, L9): ResetSpectacle:32, Beat:40, AddGlow:49, AddAwe:52, AddScar:55, SpectacleFrame:66, Omen:94, Brighten:96, Drain:99, Shimmer:100, Flash:101, SetGlows:105, Weight:121, ScarColour:138, DrawScars:147, LightsFx:166
@@ -309,8 +309,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/MapIndex.cs (119 lines)
 - **MapIndex** (class, L9): MapIndex:20, Within:54, SegDist:56, CellOf:63, ProvinceAt:70, RoadDist:85, RiverDist:101
 
-## Campaign/Monsters.cs (302 lines)
-- **Campaign** (class, L10): Wild:18, Plural:24, SpawnWolfPack:31, WolfThink:54, SpawnTroll:85, TrollThink:109, SpawnHoldout:134, MonstersDaily:157, Grow:176, Recruit:192, SendRaiders:201, MonsterThink:227, Plunder:272, Rejoin:284, HoldoutCleared:294
+## Campaign/Monsters.cs (309 lines)
+- **Campaign** (class, L10): Wild:18, Plural:24, SpawnWolfPack:31, WolfThink:54, SpawnTroll:85, TrollThink:109, SpawnHoldout:134, MonstersDaily:157, Grow:176, Recruit:199, SendRaiders:208, MonsterThink:234, Plunder:279, Rejoin:291, HoldoutCleared:301
 
 ## Campaign/Oath.cs (306 lines)
 - **Campaign** (class, L7): StandingWith:26, SwornTo:27, RaiseStanding:29, ChapterAt:35, CannotSeekTrial:40, TrialKnight:57, PrepareTrial:68, AutoTrial:88, FinishTrial:95, Swear:116, CannotRise:130, RiseInOrder:143, LearnOrderForms:154, LeaveOrder:163, Vowed:178, BreakVow:182, OrderAfterBattle:203, Hunted:223, RecruitBrothers:234, TakeOrderContract:259, OrderContractDone:277, OrderContractLost:284, OathAndWar:291, ChapterTraining:301
@@ -370,8 +370,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Traits.cs (91 lines)
 - **Campaign** (class, L6): readonly:11, RegardOfTraits:21, TraitsEarned:27, TraitsWeekly:40, AgeDaily:78, AgeEdge:90
 
-## Campaign/Undead.cs (88 lines)
-- **Campaign** (class, L9): AfterTheBattle:15, Bury:35, GravesDaily:39, RaiseHost:52, UndeadThink:72
+## Campaign/Undead.cs (90 lines)
+- **Campaign** (class, L9): AfterTheBattle:15, Bury:35, GravesDaily:39, RaiseHost:52, UndeadThink:74
 
 ## Campaign/WorldMap.cs (594 lines)
 - **WorldMap** (class, L8): WorldMap:72, readonly:81, Generate:85, Climate:197, RaiseRidges:211, AddRidge:242, RidgeDist:254, RidgeHeight:257, OnRidge:275, HomeOf:278, ReachOf:280, GrowRealms:285, SiteKindsFor:327, PlaceSites:340, Cross:365, RiverDist:374, RiverScan:375, ProvinceAt:379, ProvinceScan:382, RoadDist:394, RoadScan:396, SpeedFactor:409, BattleGround:414, Height:434, RimAt:459, Ridged:461, Tint:464, KindTint:486, BuildTerrain:506
@@ -467,8 +467,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Orders.cs (109 lines)
 - **MapScreen** (class, L7): OrdersTab:10, VowWord:49, ChapterTab:61
 
-## MapScreen.Party.cs (249 lines)
-- **MapScreen** (class, L8): OpinionWord:10, OpinionColor:11, RoleTextOf:12, CharactersPanel:19, CompanionNote:72, CompanyNote:87, UpgradePanel:102, GoalText:175, DivisionsPanel:179
+## MapScreen.Party.cs (250 lines)
+- **MapScreen** (class, L8): OpinionWord:10, OpinionColor:11, RoleTextOf:12, CharactersPanel:19, CompanionNote:72, CompanyNote:87, UpgradePanel:102, GoalText:176, DivisionsPanel:180
 
 ## MapScreen.Realm.cs (398 lines)
 - **MapScreen** (class, L8): Vassals:11, RealmPanel:42, Legend:71, OwnOrderBlock:114, Realms:149, RealmCard:173, Relations:244, Chronicle:274, RankLadder:293, RealmColumn:310, KingDiplomacy:373
@@ -589,8 +589,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/CompanionTests.cs (111 lines)
 - **SelfTest** (class, L6): CompanionGrows:21, HoldTheLine:41, EnemyChampions:61, CompanionLeaves:85
 
-## Tests/CreatureTests.cs (577 lines)
-- **SelfTest** (class, L6): HoldoutTrace:11, Holdouts:23, GoblinBattle:91, WolfTrace:138, Wolves:156, WolfRiders:221, Trolls:243, TrollsAbroad:308, UndeadAbroad:338, PlayerCreatures:386, TrollTrace:458, Undead:483, UndeadTrace:542, GraveTrace:565
+## Tests/CreatureTests.cs (580 lines)
+- **SelfTest** (class, L6): HoldoutTrace:11, Holdouts:23, GoblinBattle:91, WolfTrace:138, Wolves:156, WolfRiders:221, Trolls:243, TrollsAbroad:308, UndeadAbroad:338, PlayerCreatures:389, TrollTrace:461, Undead:486, UndeadTrace:545, GraveTrace:568
 
 ## Tests/EffectTests.cs (182 lines)
 - **SelfTest** (class, L6): NoPassives:9, EffectsValidate:19, PassivesByTier:28, PassivesBite:49, SignaturesBite:76, AuraReachesCompanies:137, PassivesOnlyAdd:156

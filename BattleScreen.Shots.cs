@@ -155,9 +155,25 @@ partial class BattleScreen
                 PoseSheet(3 + (shotIndex - 83) / 2); shotFrames = 0; shotIndex++; break;
             case 84 or 86 or 88 when shotFrames > 20:
                 pendingShot = new[] { "pose-grips", "pose-shooters", "pose-stances" }[(shotIndex - 84) / 2]; shotIndex++; break;
-            case 89 when pendingShot == null: Exit(); break;
+            case >= 89 and < 97 when shotIndex % 2 == 1 && pendingShot == null:
+                // The roster pass (docs/ANIMATION_ROSTER.md R3-R4): each realm's own recruits and its new branches.
+                Gallery(RosterShots[(shotIndex - 89) / 2].Troops, RosterShots[(shotIndex - 89) / 2].Palette);
+                zoom = 24; camPitch = 0.12f;
+                foreach (var u in battle.Units.Where(u => !u.IsLeader)) u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = -MathHelper.PiOver2 - 0.6f; // three-quarter view
+                shotFrames = 0; shotIndex++; break;
+            case >= 89 and < 97 when shotIndex % 2 == 0 && shotFrames > 20:
+                pendingShot = $"gallery-{RosterShots[(shotIndex - 90) / 2].Name}"; shotIndex++; break;
+            case 97 when pendingShot == null: Exit(); break;
         }
     }
+
+    static readonly (string Name, int Palette, string[] Troops)[] RosterShots =
+    {
+        ("recruits", 0, new[] { "town_crossbows", "crown_squires", "commons_bowmen", "hobilars", "hunters", "fell_riders", "herd_boys", "herd_riders", "militia_crossbows", "light_horse" }),
+        ("sunward-branches", 5, new[] { "slingers", "storm_slingers", "camel_scouts", "camel_guard", "naffatun", "sun_fire", "dervishes", "saints_of_the_sand" }),
+        ("steppe-league-branches", 6, new[] { "steppe_lancers", "ironclad_khans", "wolf_runners", "tug_lords", "marines", "admirals_guard", "lagoon_wall", "lords_of_fortune" }),
+        ("order-wild-branches", 8, new[] { "pilgrim_bows", "pilgrim_riders", "hammer_brothers", "ashen_hammers", "chapter_turcopoles", "goblin_warlord", "wight", "death_knight" }),
+    };
 
     static readonly (string Name, int Palette, string[] Troops)[] NewRealms =
     {

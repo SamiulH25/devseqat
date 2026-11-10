@@ -24,9 +24,9 @@
       "siege": 1.1,
       "lines": {
         "infantry": ["levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries", "immortals"],
-        "archers": ["bowmen", "bowmen", "crossbowmen", "arbalests", "heavy_arbalests", "guild_sharpshooters", "grand_arbalests"],
+        "archers": ["town_crossbows", "town_crossbows", "crossbowmen", "arbalests", "heavy_arbalests", "guild_sharpshooters", "grand_arbalests"],
         "spears": ["levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx", "imperial_pikemen"],
-        "horse": ["outriders", "outriders", "lancers", "demi_lancers", "banner_knights", "paladin_knights", "grail_knights"]
+        "horse": ["crown_squires", "crown_squires", "lancers", "demi_lancers", "banner_knights", "paladin_knights", "grail_knights"]
       }
     },
     {
@@ -34,9 +34,9 @@
       "aggression": 1.2, "siege": 1.2, "tribute": 0.8,
       "lines": {
         "infantry": ["levies", "shieldmen", "greatswords", "zweihanders", "blademasters", "grand_blademasters", "sword_saints"],
-        "archers": ["bowmen", "bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen", "sovereign_longbowmen"],
+        "archers": ["commons_bowmen", "commons_bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen", "sovereign_longbowmen"],
         "spears": ["levies", "spearrunners", "billmen", "halberdiers", "heavy_halberdiers", "royal_halberdiers", "sovereign_halberdiers"],
-        "horse": ["outriders", "outriders", "lancers", "knights", "cataphracts", "iron_cataphracts", "imperial_cataphracts"]
+        "horse": ["hobilars", "hobilars", "lancers", "knights", "cataphracts", "iron_cataphracts", "imperial_cataphracts"]
       }
     },
     {
@@ -44,9 +44,9 @@
       "aggression": 1.3, "garrison": 0.85, "tribute": 0.7,
       "lines": {
         "infantry": ["clansmen", "axemen", "huscarls", "varangians", "einherjar", "thane_champions", "high_king_chosen"],
-        "archers": ["bowmen", "bowmen", "rangers", "woodland_stalkers", "shadow_hunters", "highland_marksmen", "sky_piercers"],
+        "archers": ["hunters", "hunters", "rangers", "woodland_stalkers", "shadow_hunters", "highland_marksmen", "sky_piercers"],
         "spears": ["clansmen", "spearrunners", "billmen", "glaivemen", "vanguard_glaives", "dragon_glaives", "tempest_spears"],
-        "horse": ["outriders", "outriders", "horse_archers", "nomad_bows", "steppe_marksmen", "khan_guard", "golden_horde_masters"]
+        "horse": ["fell_riders", "fell_riders", "horse_archers", "nomad_bows", "steppe_marksmen", "khan_guard", "golden_horde_masters"]
       }
     },
     {
@@ -54,9 +54,9 @@
       "garrison": 1.2, "tribute": 1.4,
       "lines": {
         "infantry": ["levies", "shieldmen", "ghazis", "jandars", "dervish_blades", "emir_guard", "lions_of_the_sun"],
-        "archers": ["bowmen", "bowmen", "sand_archers", "oasis_bows", "emir_archers", "falcon_eyes", "sultans_bows"],
+        "archers": ["slingers", "slingers", "sand_archers", "oasis_bows", "emir_archers", "falcon_eyes", "sultans_bows"],
         "spears": ["levies", "spearrunners", "sun_javelins", "dune_spears", "sun_guard", "emir_spears", "golden_spears"],
-        "horse": ["outriders", "outriders", "desert_riders", "mamluks", "sun_lancers", "emir_mamluks", "sultans_guard"]
+        "horse": ["camel_scouts", "camel_scouts", "desert_riders", "mamluks", "sun_lancers", "emir_mamluks", "sultans_guard"]
       }
     },
     {
@@ -64,9 +64,9 @@
       "aggression": 1.4, "garrison": 0.8, "siege": 0.6,
       "lines": {
         "infantry": ["clansmen", "axemen", "yurt_guards", "torguud", "wolf_axes", "noyan_guard", "khagans_axes"],
-        "archers": ["bowmen", "bowmen", "steppe_archers", "yurt_archers", "tengri_bows", "sky_wolf_archers", "eternal_sky_archers"],
+        "archers": ["herd_boys", "herd_boys", "steppe_archers", "yurt_archers", "tengri_bows", "sky_wolf_archers", "eternal_sky_archers"],
         "spears": ["clansmen", "spearrunners", "grass_spears", "horde_spears", "tumen_spears", "sky_spears", "eternal_spears"],
-        "horse": ["outriders", "outriders", "steppe_bows", "kheshig_riders", "noyan_bows", "kheshig", "khagans_own"]
+        "horse": ["herd_riders", "herd_riders", "steppe_bows", "kheshig_riders", "noyan_bows", "kheshig", "khagans_own"]
       }
     },
     {
@@ -74,9 +74,9 @@
       "aggression": 0.7, "garrison": 1.25, "tribute": 1.5,
       "lines": {
         "infantry": ["levies", "shieldmen", "canal_guards", "guild_swords", "brigandiers", "doge_guard", "lion_guard"],
-        "archers": ["bowmen", "bowmen", "league_crossbows", "pavisiers", "guild_arbalesters", "doge_arbalesters", "lion_crossbows"],
+        "archers": ["militia_crossbows", "militia_crossbows", "league_crossbows", "pavisiers", "guild_arbalesters", "doge_arbalesters", "lion_crossbows"],
         "spears": ["levies", "spearrunners", "league_pikes", "guild_pikes", "marsh_wardens", "doge_pikes", "lagoon_guard"],
-        "horse": ["outriders", "outriders", "stradiots", "condottieri", "guild_lances", "doge_lances", "lion_knights"]
+        "horse": ["light_horse", "light_horse", "stradiots", "condottieri", "guild_lances", "doge_lances", "lion_knights"]
       }
     },
     {
@@ -84,9 +84,9 @@
       "aggression": 0.8, "garrison": 1.2, "hunts": "monsters",
       "lines": {
         "infantry": ["levies", "shieldmen", "order_sergeants", "sun_brothers", "ashen_brothers", "sun_templars", "ashen_saints"],
-        "archers": ["bowmen", "bowmen", "order_crossbows", "chapter_arbalests", "ashen_arbalests", "sun_arbalests", "dawn_watch"],
+        "archers": ["pilgrim_bows", "pilgrim_bows", "order_crossbows", "chapter_arbalests", "ashen_arbalests", "sun_arbalests", "dawn_watch"],
         "spears": ["levies", "spearrunners", "order_spears", "chapter_pikes", "ashen_pikes", "pilgrim_guard", "dawn_pikes"],
-        "horse": ["outriders", "outriders", "order_riders", "knight_brothers", "sun_knights", "ashen_knights", "grand_masters"]
+        "horse": ["pilgrim_riders", "pilgrim_riders", "order_riders", "knight_brothers", "sun_knights", "ashen_knights", "grand_masters"]
       }
     }
   ],
