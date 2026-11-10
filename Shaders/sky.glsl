@@ -1,4 +1,5 @@
 // Sky dome: horizon-to-zenith gradient, sun disc and glow, and drifting procedural clouds.
+// Swirl (docs/SPECTACLE.md S3): x = how hard the clouds turn round the zenith, y = how much more of the sky they cover.
 varying vec3 vDir;
 
 #ifdef VERTEX
@@ -38,8 +39,14 @@ void main()
     col += SunColor * (pow(sd, 900.0) * 6.0 + pow(sd, 24.0) * 0.18 + pow(sd, 4.0) * 0.05);
     if (h > 0.0)
     {
-        vec2 uv = d.xz / (h + 0.12) * 0.9 + Time * vec2(0.006, 0.002);
-        float c = smoothstep(0.5, 0.82, fbm(uv * 1.4)) * smoothstep(0.0, 0.18, h);
+        vec2 uv = d.xz / (h + 0.12) * 0.9;
+        if (Swirl.x > 0.0) // a tempest: the clouds turn round the zenith, faster near it
+        {
+            float a = Swirl.x * (2.5 / (1.0 + length(uv)) + Time * 0.35);
+            uv = mat2(cos(a), -sin(a), sin(a), cos(a)) * uv;
+        }
+        uv += Time * vec2(0.006, 0.002);
+        float c = smoothstep(0.5 - 0.25 * Swirl.y, 0.82 - 0.2 * Swirl.y, fbm(uv * 1.4)) * smoothstep(0.0, 0.18, h);
         vec3 cloud = mix(vec3(1.0, 0.99, 0.96), Horizon * 0.8, smoothstep(0.5, 0.9, fbm(uv * 1.4 + 0.37)));
         cloud += SunColor * pow(sd, 6.0) * 0.35;
         col = mix(col, cloud, c * 0.85);

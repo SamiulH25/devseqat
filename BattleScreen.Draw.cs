@@ -87,7 +87,7 @@ partial class BattleScreen
         Array.Clear(sh.Glow); // the lights are this battle's alone (the map shares the shaders)
         DrawLines();
         var (awe, moment) = PostMoment();
-        sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0, awe, moment);
+        sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0, awe, moment, warpNow);
     }
 
     void DrawBlobs(float alpha)

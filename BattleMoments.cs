@@ -20,6 +20,11 @@ public partial class Battle
     float clashAgain;
     public bool ClashOn => Time < ClashUntil;
 
+    /// The wonders seen in this battle, as the report tells them (docs/SPECTACLE.md S7): great workings, a wall broken, a
+    /// clash of champions. Words only; at most a few, each once.
+    public readonly List<string> Wonders = new();
+    internal void Wonder(string line) { if (Wonders.Count < 4 && !Wonders.Contains(line)) Wonders.Add(line); }
+
     /// A Transcendent's light: curses do not land on your companies within it; the blade cuts arrows in a cone ahead.
     public const float LightRadius = 20, ArrowCut = 0.5f, CutCone = 0.866f;
     public int ArrowsCut { get; private set; }
@@ -42,6 +47,7 @@ public partial class Battle
         Sound(Cue.Aura, p.Pos);
         PlayerHit = ("BREAKTHROUGH", Time);
         Log($"The wall breaks! You stand {Campaign.AuraName(AuraTier)} now.");
+        Wonder("Your wall broke in the field.");
     }
 
     /// Each tick: two lit blades within the ring's reach start a clash; it ends when one falls, steps away, or the time runs out.
@@ -60,6 +66,16 @@ public partial class Battle
         Flash("clash", ClashAt, ClashRadius, p.Team);
         Sound(Cue.Aura, ClashAt);
         Log("A clash of champions! The men fall back to give you room.");
+        Wonder("Two champions clashed and the men gave them room.");
+    }
+
+    /// A clash staged for a shot: the enemy champion set before you and the ring drawn (drawing checks only).
+    internal void StageClash()
+    {
+        EnemyCaptain.Pos = Player.Pos + new Vector2(0, 1.6f);
+        ClashAt = (Player.Pos + EnemyCaptain.Pos) / 2;
+        ClashUntil = Time + ClashTime;
+        clashAgain = ClashUntil + 10;
     }
 
     /// Blows between the two champions in a clash.

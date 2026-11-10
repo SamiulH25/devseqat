@@ -58,15 +58,17 @@ sealed class Puppet
     public int Winner = -1;
     /// Sources of awe this frame (docs/SPECTACLE.md S1): a place, a reach and how strong it is now (0..1). Set by the battle
     /// screen; men within reach lean back and raise an arm against it. Drawing only.
-    public readonly List<(Vector2 At, float Radius, float Strength)> Awe = new();
+    public readonly List<(Vector2 At, float Radius, float Strength, int Team)> Awe = new(); // Team -1: everyone; else only that side
 
     /// A man near a working leans back from it and lifts his free arm against the light. Men in a swing or a parry keep
     /// fighting; the rest react fully, each a moment apart (his phase).
     Pose Awed(Unit u, Pose p, float phase)
     {
         float k = 0;
-        foreach (var (at, r, str) in Awe)
+        if (u.IsPlayer) return p; // the source of it does not flinch
+        foreach (var (at, r, str, team) in Awe)
         {
+            if (team >= 0 && u.Team != team) continue;
             float d = Vector2.Distance(at, u.Pos);
             if (d < r) k = MathF.Max(k, str * (1 - d / r) * 1.6f);
         }

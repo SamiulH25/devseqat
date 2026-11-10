@@ -24,10 +24,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Projectile** (class, L18)
 - **Battle** (class, L26): Sound:36, Flash:41, Battle:78, Battle:81, SetupDuel:104, Role:114, Deploy:118, Ranks:181, ColumnsFor:182, Empty:202, Empty:203, FieldScale:206, Battle:212, SquadsOf:231, Centroid:232, Log:233, AddSquad:237, Spawn:280, Mark:294, Update:296, Bounds:359, ThinkNow:374, UpdateCentroids:377, UpdateSquad:389, CanBrace:417, Braced:422, InOrder:426, ReachOf:429, RandomSwing:435, StartSwing:439, Reinforce:451, Result:478, GapTo:513, Withdraw:528, CheckEnd:537
 
-## BattleAbilities.cs (455 lines)
+## BattleAbilities.cs (457 lines)
 - **Cast** (class, L7)
 - **Field** (class, L18)
-- **Battle** (class, L31): LearnSpells:41, IsCaster:60, WillCap:63, WillCost:65, CasterCompany:66, SpellPower:70, Speaker:79, UpdateAbilities:82, ThinkSpells:93, CannotCast:132, OrderedCast:146, DropCast:186, Target:194, Own:264, Foe:278, FoeGap:291, Engaged:299, Carries:300, Covered:301, OwnNear:302, Losing:305, Ready:317, Dry:324, Raining:326, Fire:330, Blast:391, AddTimed:398, AddField:408, UpdateFields:416, FieldsOn:436, TimedOn:448
+- **Battle** (class, L31): LearnSpells:41, IsCaster:60, WillCap:63, WillCost:65, CasterCompany:66, SpellPower:70, Speaker:79, UpdateAbilities:82, ThinkSpells:93, CannotCast:132, OrderedCast:146, DropCast:186, Target:194, Own:264, Foe:278, FoeGap:291, Engaged:299, Carries:300, Covered:301, OwnNear:302, Losing:305, Ready:317, Dry:324, Raining:326, Fire:330, Blast:393, AddTimed:400, AddField:410, UpdateFields:418, FieldsOn:438, TimedOn:450
 
 ## BattleAI.cs (351 lines)
 - **Battle** (class, L6): PackApproach:11, HeightRange:25, Think:27, ThinkCav:105, Ride:206, Approach:214, TurnRate:216, Steer:219, Led:238, General:242, Opposite:335
@@ -90,8 +90,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Place** (struct, L9)
 - **Battle** (class, L13): Survey:19, Thin:69, BestPlace:78, SnapToGround:93, Patience:105, GoodGround:109, HoldsGround:119, DryAnchor:141, HorseGoing:149, GroundWarning:178, CrossesWater:193, CannotStake:207, PlantStakes:218
 
-## BattleMoments.cs (95 lines)
-- **Battle** (class, L8): ChampionFelled:28, UpdateClash:48, ClashMult:66, KeepRing:69, InLight:83, CutsArrow:86
+## BattleMoments.cs (111 lines)
+- **Battle** (class, L8): Wonder:26, ChampionFelled:33, UpdateClash:54, StageClash:73, ClashMult:82, KeepRing:85, InLight:99, CutsArrow:102
 
 ## BattleMorale.cs (88 lines)
 - **Battle** (class, L6): UpdateMorale:11
@@ -124,20 +124,26 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Effects.cs (214 lines)
 - **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:76, Stamp:101, Trample:110, MenMap:125, TrampleTexture:148, RearOf:169, BannerFalls:193, DrawFallingBanners:204
 
-## BattleScreen.Gather.cs (127 lines)
-- **BattleScreen** (class, L9): Gathered:15, CasterOf:18, GatherFx:22, PlayCue:52, Sigil:61, Arc:104, GatherLights:118
+## BattleScreen.Gather.cs (128 lines)
+- **BattleScreen** (class, L9): Gathered:15, CasterOf:18, GatherFx:22, PlayCue:52, Sigil:61, Arc:105, GatherLights:119
 
-## BattleScreen.Magic.cs (320 lines)
-- **BattleScreen** (class, L8): OrderColour:32, FlashColour:41, ResetMagicFx:52, AddRipple:54, Rise:58, MagicFx:68, FlashFx:79, FieldFx:163, BuffFx:205, AuraFx:220, MagicLines:249
+## BattleScreen.Ladder.cs (148 lines)
+- **BattleScreen** (class, L10): ResetLadder:31, LadderFx:34, ClashFx:64, ChargeBeat:80, Motif:102, LadderLines:119, Column:137
+
+## BattleScreen.Magic.cs (346 lines)
+- **BattleScreen** (class, L8): OrderColour:31, FlashColour:40, ResetMagicFx:54, AddRipple:56, Rise:60, MagicFx:70, FlashFx:83, FieldFx:170, BuffFx:212, AuraFx:227, MagicLines:262
 
 ## BattleScreen.Orders.cs (231 lines)
 - **BattleScreen** (class, L8): Targets:12, Issue:15, Send:26, GiveGoal:36, GoalCommand:38, Command:60, OrderKeys:119, NextSpell:138, CastAt:150, PlantStakes:164, NextDivision:176, LineAt:186, Distribute:203, PreviewSlots:222
 
-## BattleScreen.Shots.cs (392 lines)
-- **BattleScreen** (class, L8): ShotScript:10, readonly:154, PoseSheet:164, Clash:234, MagicScene:261, SpectacleScene:312, StageCast:360, Gallery:368
+## BattleScreen.Shots.cs (454 lines)
+- **BattleScreen** (class, L8): ShotScript:10, readonly:158, PoseSheet:168, Clash:238, MagicScene:265, SpectacleScene:316, WorkScene:366, StageCast:422, Gallery:430
 
-## BattleScreen.Spectacle.cs (183 lines)
-- **BattleScreen** (class, L9): ResetSpectacle:31, Beat:39, AddGlow:48, AddAwe:51, AddScar:54, SpectacleFrame:65, Omen:91, Brighten:93, Drain:95, Shimmer:96, Flash:97, SetGlows:101, Weight:117, ScarColour:134, DrawScars:143, LightsFx:162
+## BattleScreen.Spectacle.cs (190 lines)
+- **BattleScreen** (class, L9): ResetSpectacle:32, Beat:40, AddGlow:49, AddAwe:52, AddScar:55, SpectacleFrame:66, Omen:94, Brighten:96, Drain:99, Shimmer:100, Flash:101, SetGlows:105, Weight:121, ScarColour:138, DrawScars:147, LightsFx:166
+
+## BattleScreen.Workings.cs (298 lines)
+- **BattleScreen** (class, L9): ResetWorkings:18, Age:20, Linger:22, WorkFx:26, Jitter:64, WorkingsFx:71, FieldLook:130, SkyBolt:153, StormSky:162, WorkingLines:185, Flock:224, Hash:245, Bird:248, WardDome:260, PotArcs:281
 
 ## BattleSiege.cs (162 lines)
 - **Battle** (class, L7): DeployDefenders:18, Via:48, MayCross:75, EnforceWall:82, Batter:95, SiegeDefend:121, SiegeAttack:144
@@ -154,7 +160,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Plan** (enum, L6)
 - **Battle** (class, L13): TacticsEvery:16, SightOf:17, Tactics:20, Wits:31, FlankThreat:100, Pinner:120, FlankSide:134, static:144, Wrap:154, Rotate:174, Choose:193, NextVictim:212, AvgMorale:225, SetPlan:234
 
-## BattleTypes.cs (141 lines)
+## BattleTypes.cs (143 lines)
 - **BattleOptions** (class, L4)
 - **Weather** (record, L80): For:83
 - **LeaderFate** (enum, L103)
@@ -331,11 +337,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Roll.cs (264 lines)
 - **Campaign** (class, L6): RaiseBurial:18, Known:26, FallenOf:30, FitNamed:33, ManName:36, UnnamedTroop:51, NameMan:61, Lose:73, Hurt:91, RollFates:99, RollFought:117, RollAfterBattle:138, SyncRoll:168, RollDaily:189, RollPromoted:193, MoveNamed:208, RoseFrom:218, RiseToSergeant:223, SergeantFell:238, CompanionFell:247, LoseRecord:258
 
-## Campaign/Rules.cs (304 lines)
+## Campaign/Rules.cs (306 lines)
 - **CompanyReport** (record, L6)
 - **BattleReport** (record, L10)
-- **BattleSetup** (class, L30)
-- **Rules** (class, L50): RoleOf:54, TroopRole:57, Fits:61, TierWeight:69, Cap:73, PerMan:77, Places:80, Room:83, CapOf:87, Strength:89, Strength:96, Might:99, MightAt:101, Might:103, Strength:104, Upkeep:106, UpgradeReady:109, PromoteCost:113, NeedsHorse:122, AddMen:125, CanMerge:131, Merge:134, CompanyName:155, CaptainType:165, CaptainMount:190, WithCaptain:198, CompanySlots:217, MenLimit:219, static:223, AutoResolve:234, Army:291
+- **BattleSetup** (class, L32)
+- **Rules** (class, L52): RoleOf:56, TroopRole:59, Fits:63, TierWeight:71, Cap:75, PerMan:79, Places:82, Room:85, CapOf:89, Strength:91, Strength:98, Might:101, MightAt:103, Might:105, Strength:106, Upkeep:108, UpgradeReady:111, PromoteCost:115, NeedsHorse:124, AddMen:127, CanMerge:133, Merge:136, CompanyName:157, CaptainType:167, CaptainMount:192, WithCaptain:200, CompanySlots:219, MenLimit:221, static:225, AutoResolve:236, Army:293
 
 ## Campaign/Sites.cs (212 lines)
 - **Site** (class, L7): NameFor:18
@@ -451,7 +457,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Realm.cs (398 lines)
 - **MapScreen** (class, L8): Vassals:11, RealmPanel:42, Legend:71, OwnOrderBlock:114, Realms:149, RealmCard:173, Relations:244, Chronicle:274, RankLadder:293, RealmColumn:310, KingDiplomacy:373
 
-## MapScreen.Report.cs (264 lines)
+## MapScreen.Report.cs (267 lines)
 - **MapScreen** (class, L7): ResultsPanel:9, Well:29, Tally:40, Spoils:95, ReportCompanies:133, Progress:191
 
 ## MapScreen.Settlement.cs (446 lines)
@@ -470,8 +476,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Program.cs (70 lines)
 
-## Puppet.cs (713 lines)
-- **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:80, Frame:87, Draw:111, Horse:200, Beast:268, WolfBody:278, Warg:307, BeastCorpse:325, DrawLooseHorse:337, DrawDeadHorse:346, RotY:382, Arm:389, Span:400, Pose:409, Key:411, Lerp:413, static:417, PoseOf:434, Fallen:509, Corpse:550, Particle:569, Banner:582, Decal:627, Quad:639, HeadBill:649, Bill:658, Axial:669, Long:681, Plane:694, Flat:705
+## Puppet.cs (715 lines)
+- **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:82, Frame:89, Draw:113, Horse:202, Beast:270, WolfBody:280, Warg:309, BeastCorpse:327, DrawLooseHorse:339, DrawDeadHorse:348, RotY:384, Arm:391, Span:402, Pose:411, Key:413, Lerp:415, static:419, PoseOf:436, Fallen:511, Corpse:552, Particle:571, Banner:584, Decal:629, Quad:641, HeadBill:651, Bill:660, Axial:671, Long:683, Plane:696, Flat:707
 
 ## Replay.cs (168 lines)
 - **Replay** (class, L8): Serialize:58, Deserialize:59, Save:63, Play:70, Matches:101, Run:104
@@ -480,8 +486,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (612 lines)
 - **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:103, ContinueCampaign:116, OpenLab:129, QuickBattle:131, StartCampaignBattle:138, FinishCampaignBattle:148, CycleQuality:156, Update:160, Draw:190, Fade:223, CaptureShot:253, CampaignShots:275
 
-## SelfTest.cs (290 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:242, Lancer:250, Run:259, Scaled:261, MakeWanderer:264, Days:272, Ids:284, Check:286
+## SelfTest.cs (291 lines)
+- **SelfTest** (class, L6): Run:8, RunOne:243, Lancer:251, Run:260, Scaled:262, MakeWanderer:265, Days:273, Ids:285, Check:287
 
 ## Settings.cs (79 lines)
 - **Difficulty** (enum, L5)
@@ -491,12 +497,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SettingsScreen.cs (178 lines)
 - **SettingsScreen** (class, L7): readonly:20, SettingsScreen:22, Update:24, Close:42, Draw:50
 
-## Shading.cs (201 lines)
+## Shading.cs (202 lines)
 - **Quality** (enum, L8)
-- **Shading** (class, L12): Source:37, Shading:47, AimSun:90, Setup:129, Blank:156, Scene:163, PostToScreen:178, Dispose:196
+- **Shading** (class, L12): Source:37, Shading:47, AimSun:90, Setup:129, Blank:156, Scene:163, PostToScreen:178, Dispose:197
 
-## Sky.cs (98 lines)
-- **Sky** (class, L7): Sky:28, Set:36, Omen:87
+## Sky.cs (102 lines)
+- **Sky** (class, L7): Sky:28, Set:36, Omen:91
 
 ## Spectacle.cs (48 lines)
 - **BeatKind** (enum, L6)
@@ -562,9 +568,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/KnightTests.cs (1032 lines)
 - **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:464, ChampionsUseAura:495, OrderPolitics:533, BlackFlame:596, FlameTakesYou:651, OwnOrderFounded:674, AuraPool:722, AuraField:789, CastNow:797, BlessingFeedsAura:805, CurseOnCaptain:821, BladeBreaksCast:849, RelicRaised:875, OwnFormFromStyle:891, AspectChanges:921, BreakInBattle:947, ClashRing:969, TranscendentLight:994
 
-## Tests/MagicTests.cs (521 lines)
+## Tests/MagicTests.cs (540 lines)
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
-- **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508
+- **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524
 
 ## Tests/MapTests.cs (199 lines)
 - **SelfTest** (class, L6): MapIndexMatches:10, RealmsFromData:32, ClimatesAndRidges:77, SevenRealms:105, RealmTempers:132
@@ -630,9 +636,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Verts.cs (13 lines)
 - **Verts<T>** (class, L4): Add:8
 
-## World.cs (924 lines)
+## World.cs (925 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): World:54, RebuildFoliage:72, Lit:78, Draw:96, SetFog:123, DrawShaded:130, DrawShadowCasters:155, DrawGeometry:164, Dispose:177, Smooth:186, GroundColor:193, BuildDetail:253, BuildMinimap:265, WorldToMinimap:298, MinimapToWorld:299, DrawFoliage:385, Jitter:399, Broadleaf:405, Pine:422, Bush:436, Rock:445, House:457, Village:464, Town:475, SiteModel:509, Water:590, WallStones:617, Tower:629, Torches:648, GateDoor:668, Ladder:695, Wagon:708, TownHouse:718, Castle:725, Grass:742, Skirt:783
+- **World** (class, L25): World:54, RebuildFoliage:72, Lit:78, Draw:96, SetFog:123, DrawShaded:130, DrawShadowCasters:156, DrawGeometry:165, Dispose:178, Smooth:187, GroundColor:194, BuildDetail:254, BuildMinimap:266, WorldToMinimap:299, MinimapToWorld:300, DrawFoliage:386, Jitter:400, Broadleaf:406, Pine:423, Bush:437, Rock:446, House:458, Village:465, Town:476, SiteModel:510, Water:591, WallStones:618, Tower:630, Torches:649, GateDoor:669, Ladder:696, Wagon:709, TownHouse:719, Castle:726, Grass:743, Skirt:784
 
 ## World.Features.cs (117 lines)
 - **World** (class, L7): Features:11

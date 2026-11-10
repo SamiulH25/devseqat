@@ -73,8 +73,12 @@ public static class Sky
         var cool = new Vector3(0.94f, 0.98f, 1.05f);
         Grade = Vector3.Lerp(Vector3.Lerp(Vector3.Lerp(gold, Vector3.One, k), cool, Math.Clamp(w.Rain + w.Fog * 0.5f, 0, 1)), new Vector3(0.9f, 0.95f, 1.1f), n);
         baseSun = SunColor; baseSky = SkyColor; baseGround = GroundColor; baseHorizon = Horizon; baseZenith = Zenith; baseGrade = Grade;
-        OmenDark = 0;
+        OmenDark = 0; Swirl = Vector2.Zero;
     }
+
+    /// A tempest over the field (docs/SPECTACLE.md S3): x = how hard the clouds turn, y = how much more sky they cover.
+    /// Set by the battle screen each frame; `Set` clears it.
+    public static Vector2 Swirl;
 
     static Vector3 baseSun, baseSky, baseGround, baseGrade = Vector3.One;
     static Color baseHorizon, baseZenith;

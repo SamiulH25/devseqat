@@ -336,6 +336,8 @@ public partial class Battle
         int team = c.By.Team;
         if (Warded(c.At, team)) { Flash("broken", c.At, a.Radius, team, a.Tradition); return; } // a ward breaks the working (MA8)
         Flash("spell:" + a.Kind, c.At, a.Radius, team, a.Tradition);
+        Flash("work:" + a.Id, c.At, a.Radius, team, a.Tradition, by.Pos - c.At); // which working, and where from: the screen's spectacle reads it
+        if (a.Great) Wonder(team == 0 ? a.Name + " was worked for us." : "The foe worked " + a.Name + ".");
         if (a.Tradition == "faith" && (a.Kind is "attack" or "rally" || a.Great)) Sound(Cue.Holy, c.At);
         if (a.Effect == "burning" || a.Burn > 0) Sound(Cue.Flame, c.At);
         switch (a.Kind)

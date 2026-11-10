@@ -138,4 +138,6 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     public bool RelicRaised { get; init; }
     /// Your wall broke in the fight (docs/MAGIC_AURA.md 4.6).
     public bool BrokeThrough { get; init; }
+    /// The wonders the men saw (docs/SPECTACLE.md S7): great workings, a wall broken, a clash. Lines for the report.
+    public IReadOnlyList<string> Wonders { get; init; } = Array.Empty<string>();
 }

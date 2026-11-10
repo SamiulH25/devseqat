@@ -212,3 +212,54 @@ Drawing only: the sim, replays and the self-test numbers are unchanged (`Spectac
   beat at 55% gathered. Shots: `spectacle-night`, `spectacle-breakthrough`, `gather-great`
   (`IRONFIELD_SHOTS_FROM=spectacle`); `StageCast` freezes a cast part-way for a shot.
 - Not done from the plan yet: the grass leaning toward the caster (`Pull` uniform), the caster's cloak lifting.
+
+### S3 - S8 (2026-11-10)
+
+Drawing only, except two words-only hooks: the sim marks which working fired (`work:<id>` flash, Dir back to the caster)
+and keeps `Battle.Wonders` for the report. Replays and the self-test numbers are unchanged.
+
+- **The workings (S3):** `BattleScreen.Workings.cs`. `WorkFx` on landing, `Working`s that linger (battle seconds),
+  `WorkingsFx` each frame, `WorkingLines` for strokes.
+  - Smite: a shaft falls from 48 m in 0.12 s, and the light warms.
+  - Miracle: a warm dawn over 6.5 s, petals of light, Bloom scars, a tall pillar.
+  - Lightning: a bolt with two forks that branch again.
+  - Tempest: the clouds turn round the zenith (`Swirl` in `sky.glsl`, via `Sky.Swirl`), rain driven sideways, the wind
+    howling (negative `Calm`), lightning seen and heard in the storm (`SkyBolt`: no harm).
+  - Wildfire: a fire front running out over 2.4 s, scorch scars, a smoke column, heat shimmer near the eye.
+  - Greek fire and fire pots: arcs of pots in the air during the gathering's last 40% (`PotArcs`), then a fireball and
+    scorch scars.
+  - Crows: a flock that gathers high, wheels, funnels and dives (parametric birds, no boid), then a few circle over the
+    cursed company while the curse lasts.
+  - Mist and smoke: a tide rolling outward.
+  - Mirage and Ward: break into sparkles when they end.
+  - Dread: the colour drains *inside* a circle round the cursed (`Awe.z < 0`), and the cursed flinch.
+  - Ward: a dome of faint meridians, bright as it rises.
+  - Fading pillars fade into the sky's colour, not to black.
+- **The ladder (S4):** `BattleScreen.Ladder.cs`.
+  - Tier 2: footprints of light.
+  - Tier 3: dust, and shimmer round a lit blade near the eye.
+  - Tier 4: the presence pulse also presses the grass flat in a ring and makes the foe near you flinch (`AddAwe` takes a
+    team).
+  - Tier 5: a column of light with motes climbing it.
+  - The blade's trail lingers 0.12 s more per tier past 3 (`TrailLife`).
+  - Order motifs (`Motif`) where a lit blade lands or a form lands: Lily and Rose petals, Wolf frost (Frost scars),
+    Falcon feathers, Sky sparks, Lantern lamp sparks, Ashen embers, Hollow black fire.
+  - A foe champion of tier 3+ glows from afar; at tier 5 he has his own column.
+- **Moments (S5):**
+  - Breakthrough: the colour floods back in a widening ring, and the men roar.
+  - Clash: the sky dims, sparks and short beams where the blades meet, and a two-colour ring (yours on your side).
+  - The Black Flame (`Battle.Mad`): your aura turns purple, black fire comes off you, it takes the light (negative glow),
+    and the screen's edge burns dark and wavers (`Warp` in `post.glsl`).
+- **Mundane (S6):**
+  - The charge beat: your charging horse at speed within 14 m of a formed foe company, within 70 m of the eye or selected.
+  - Heavy rain: far lightning every 9-21 s with thunder, the wind in gusts.
+  - Not built: the camera turning toward a beat (it would fight the player's camera), and the instant replay (as planned:
+    only if the beats feel short).
+- **The report (S7):** `BattleResult.Wonders` (great workings, a wall broken, a clash) -> `BattleReport.Wonders` -> gilded
+  lines in `MapScreen.Report.cs`. Map scars are still for later.
+- **Checks (S8):**
+  - Low quality: no beat, sky bolts, swirl, warp, omen or scars. Medium: half the flock and two lights.
+  - Shots (`IRONFIELD_SHOTS_FROM=workings`, after the spectacle shots in a full run): `smite-strike`, `miracle`,
+    `tempest`, `wildfire`, `crows`, `aura-ladder`, `clash-beat`, `black-flame` (`WorkScene`; `Battle.StageClash` sets
+    up a clash for a shot).
+  - Test: `WondersReported`.

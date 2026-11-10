@@ -2,7 +2,7 @@
 // Grade: x = saturation, y = contrast, z = vignette strength, w = FXAA on (1) / off (0). Texel = 1 / screen size.
 // Tint: rgb = the light's colour grade by hour and weather (1,1,1 = none), w = bloom strength (0 = off).
 // Awe (docs/SPECTACLE.md S1): colour drains outside a circle: xy = its centre (uv), z = radius (in screen heights), w = amount.
-// Time: seconds, for the shimmer.
+// Time: seconds, for the shimmer. Awe.z < 0 drains inside the circle (a dread). Warp: the Black Flame at the screen's edge.
 // Moment: x = letterbox bars (fraction of the height each), y = heat shimmer strength, z = white flash, w = shimmer top (uv y).
 varying vec2 vUV;
 
@@ -78,9 +78,15 @@ void main()
     if (Awe.w > 0.0)
     {
         vec2 d = vec2((vUV.x - Awe.x) * (Texel.y / Texel.x), vUV.y - Awe.y); // in screen heights, so the circle is round
-        float outside = smoothstep(Awe.z * 0.7, Awe.z, length(d));
+        float r = abs(Awe.z), outside = smoothstep(r * 0.7, r, length(d));
+        if (Awe.z < 0.0) outside = 1.0 - outside; // a dread: the colour drains from inside the circle instead
         float g = dot(col, Luma);
         col = mix(col, vec3(g) * vec3(0.92, 0.95, 1.0), Awe.w * outside);
+    }
+    if (Warp > 0.0) // the Black Flame: the edges of the world burn dark and waver
+    {
+        float e = smoothstep(0.28, 0.85, length(c) + sin(vUV.y * 23.0 + Time * 3.0) * 0.04 * Warp);
+        col = mix(col, vec3(0.16, 0.04, 0.22) * (0.6 + 0.4 * sin(Time * 5.0 + vUV.x * 9.0)), e * Warp * 0.85);
     }
     col = mix(col, vec3(1.0), Moment.z);
     gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);

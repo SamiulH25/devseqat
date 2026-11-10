@@ -72,12 +72,12 @@ sealed class Shading : IDisposable
             new GlslEffect.Technique("Sprite"), new GlslEffect.Technique("SpriteShadow", "SHADOW"));
 
         Sky = GlslEffect.Create(gd, "sky", Source("sky.glsl"),
-            new[] { Uniform.Mat4("ViewProj"), Uniform.Vec3("SunDir"), Uniform.Vec3("SunColor"), Uniform.Vec3("Horizon"), Uniform.Vec3("Zenith"), Uniform.Float("Time") },
+            new[] { Uniform.Mat4("ViewProj"), Uniform.Vec3("SunDir"), Uniform.Vec3("SunColor"), Uniform.Vec3("Horizon"), Uniform.Vec3("Zenith"), Uniform.Float("Time"), Uniform.Vec2("Swirl") },
             Array.Empty<TextureSlot>(), new[] { new Attribute("aPos", VertexElementUsage.Position) },
             new GlslEffect.Technique("Sky"));
 
         Post = GlslEffect.Create(gd, "post", Source("post.glsl"),
-            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade"), Uniform.Vec4("Tint"), Uniform.Vec4("Awe"), Uniform.Vec4("Moment"), Uniform.Float("Time") },
+            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade"), Uniform.Vec4("Tint"), Uniform.Vec4("Awe"), Uniform.Vec4("Moment"), Uniform.Float("Time"), Uniform.Float("Warp") },
             new[] { new TextureSlot("Scene", 0, SamplerState.LinearClamp) },
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
             new GlslEffect.Technique("Post"));
@@ -175,7 +175,7 @@ sealed class Shading : IDisposable
     /// (Sky.Grade; One = none), `bloom` lets bright highlights glow (0 = off; High quality only). `awe` drains colour
     /// outside a circle (xy its centre in screen uv, z its radius, w how much); `moment`: x = letterbox bars (fraction of the
     /// height each), y = heat shimmer, z = a white flash, w = the shimmer's height on screen (docs/SPECTACLE.md S1).
-    public void PostToScreen(bool fxaa, Vector3? tint = null, float bloom = 0, Vector4 awe = default, Vector4 moment = default)
+    public void PostToScreen(bool fxaa, Vector3? tint = null, float bloom = 0, Vector4 awe = default, Vector4 moment = default, float warp = 0)
     {
         var s = Scene();
         gd.SetRenderTarget(null);
@@ -188,6 +188,7 @@ sealed class Shading : IDisposable
         Post.Parameters["Tint"].SetValue(new Vector4(tint ?? Vector3.One, bloom));
         Post.Parameters["Awe"].SetValue(awe);
         Post.Parameters["Moment"].SetValue(moment);
+        Post.Parameters["Warp"]?.SetValue(warp);
         Post.Parameters["Time"].SetValue((float)(Environment.TickCount64 % 100000) / 1000f);
         Post.CurrentTechnique.Passes[0].Apply();
         gd.DrawUserPrimitives(PrimitiveType.TriangleList, quad, 0, 2);

@@ -23,9 +23,8 @@ partial class BattleScreen
     {
         get
         {
-            foreach (var id in battle.Options.Forms)
-                if (Forms.Has(id) && Forms.Get(id).Order is { Length: > 0 } o) return OrderColour(o);
-            return Style.Aura;
+            var o = AuraOrder;
+            return o != "" ? OrderColour(o) : Style.Aura;
         }
     }
 
@@ -48,8 +47,11 @@ partial class BattleScreen
         return SpellColor(tag);
     }
 
+    /// What fading light turns into: the sky's own colour, so a dying beam does not leave dark poles in daylight.
+    static Color Fade => Color.Lerp(Sky.Horizon, Color.Black, 0.15f);
+
     /// A new battle: nothing of the last one's magic stays on screen.
-    void ResetMagicFx() { ripples.Clear(); beams.Clear(); bladeTrail.Clear(); motes.Clear(); presencePulse = 0; breakAt = -10; }
+    void ResetMagicFx() { ripples.Clear(); beams.Clear(); bladeTrail.Clear(); motes.Clear(); presencePulse = 0; breakAt = -10; ResetWorkings(); ResetLadder(); }
 
     void AddRipple(Vector2 at, float r0, float r1, float life, Color col, float y = 0.12f) =>
         ripples.Add(new Ripple { At = at, R0 = r0, R1 = r1, Born = battle.Time, Life = life, Col = col, Y = y });
@@ -70,6 +72,8 @@ partial class BattleScreen
         foreach (var f in battle.Flashes) FlashFx(f.What, f.At, f.Dir, f.Radius, f.Team, f.Tag);
         battle.Flashes.Clear();
         GatherFx(dt);
+        WorkingsFx(dt);
+        LadderFx(dt);
         if (motes.Count > 1200) return; // a crowded sky: the steady effects wait
         FieldFx(dt);
         BuffFx(dt);
@@ -90,6 +94,7 @@ partial class BattleScreen
                 Kick(0.6f);
                 AddScar(at, 4.5f, ScarKind.Crack);
                 AddAwe(at, radius * 1.5f, 1.6f);
+                PlayCue(Cue.Shout, at, 160); // the men roar
                 if (Beat(BeatKind.Breakthrough, at, 3.2f)) breakAt = realTime; // colour drains from all but him, then floods back
                 else if (Settings.Current.HitPause && quality != Quality.Low) hitPause = 0.3f;
                 break;
@@ -155,8 +160,10 @@ partial class BattleScreen
             }
             case "land:volley": Spray(at, 0.6f, 30, col, 4f, 0.6f, 0.08f, true); AddRipple(at, 0.5f, radius * 1.3f, 0.5f, col); break;
             case "soak": Spray(at, 1.2f, 7, col, 2.6f, 0.3f, 0.06f, true); AddRipple(at, 0.6f, 1.4f, 0.25f, col, 1.0f); break;
-            case "blade": Spray(at, 1.1f, 6, Color.Lerp(col, Color.White, 0.4f), 3f, 0.3f, 0.06f, true); break;
+            case "blade": Spray(at, 1.1f, 6, Color.Lerp(col, Color.White, 0.4f), 3f, 0.3f, 0.06f, true); if (team == 0) Motif(AuraOrder, at, false); break;
+            default: if (what.StartsWith("work:")) WorkFx(what[5..], at, at + dir, radius, team); break;
         }
+        if (team == 0 && what is "land:slash" or "land:leap" or "form:burst") Motif(tag != "" ? tag : AuraOrder, at, true);
     }
 
     /// Fields burn, drift or shine: fire and smoke over burning ground, grey banks of mist and smoke, light at a ward's edge.
@@ -230,7 +237,7 @@ partial class BattleScreen
             for (int i = 0; i < 3; i++) // a haze of sparks along the edge, thicker at a higher tier
                 if (fx.NextSingle() < dt * (8 + 6 * battle.AuraTier)) motes.Add(new Mote { Pos = Vector3.Lerp(root, tip, fx.NextSingle()) + new Vector3(fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f) * 0.12f, Vel = new Vector3(0, 0.6f, 0), Life = 0.45f, Max = 0.45f, Size = 0.06f, Col = Color.Lerp(col, Color.White, fx.NextSingle() * 0.5f) });
         }
-        bladeTrail.RemoveAll(b => battle.Time - b.At > 0.22f || battle.Time < b.At);
+        bladeTrail.RemoveAll(b => battle.Time - b.At > TrailLife || battle.Time < b.At);
         if (battle.AuraTier >= 4 && !battle.Spent && p.Active)
         {
             for (int i = 0; i < 2; i++)
@@ -241,7 +248,13 @@ partial class BattleScreen
                 motes.Add(new Mote { Pos = G(p.Pos + d * r, 0.1f), Vel = new Vector3(d.X, 0.2f, d.Y) * 1.6f, Life = 1f, Max = 1f, Size = 0.07f, Grow = 0.05f, Col = new Color(196, 184, 150) });
             }
             presencePulse += dt;
-            if (presencePulse > 2) { presencePulse = 0; AddRipple(p.Pos, 1, Battle.PresenceRadius, 1.4f, Color.Lerp(col, Color.Black, 0.3f)); }
+            if (presencePulse > 2)
+            {
+                presencePulse = 0;
+                AddRipple(p.Pos, 1, Battle.PresenceRadius, 1.4f, Color.Lerp(col, Color.Black, 0.3f));
+                for (int i = 0; i < 16; i++) { float a = i * MathF.Tau / 16; Stamp(p.Pos + new Vector2(MathF.Cos(a), MathF.Sin(a)) * 3.2f, 40); } // the grass pressed flat round him (S4)
+                AddAwe(p.Pos, 8, 1.1f, 1 - p.Team); // the foe near him flinch
+            }
         }
     }
 
@@ -266,7 +279,7 @@ partial class BattleScreen
         foreach (var b in beams)
         {
             float k = (now - b.Born) / b.Life;
-            var c = Color.Lerp(b.Col, Color.Black, k * k * 0.7f);
+            var c = Color.Lerp(b.Col, b.Bolt ? Color.Black : Fade, k * k * 0.7f); // light fades into the sky behind it, not to black poles
             if (b.Bolt)
             {
                 // A jagged bolt from the sky: the same shape every frame of its life, a fork half way down.
@@ -279,7 +292,18 @@ partial class BattleScreen
                     var next = i == 8 ? G(b.At, 0.2f) : G(b.At + new Vector2(rnd.NextSingle() - 0.5f, rnd.NextSingle() - 0.5f) * 3.5f, y);
                     Line(prev, next, c);
                     Line(prev + Vector3.Right * 0.08f, next + Vector3.Right * 0.08f, c);
-                    if (i == 4) Line(next, next + new Vector3(rnd.NextSingle() * 6 - 3, -6, rnd.NextSingle() * 6 - 3), Color.Lerp(c, Color.Black, 0.3f));
+                    if (i is 3 or 5) // a fork that branches again (S3)
+                    {
+                        var f = next;
+                        var dir = new Vector3(rnd.NextSingle() * 6 - 3, -5, rnd.NextSingle() * 6 - 3);
+                        for (int j = 0; j < 3; j++)
+                        {
+                            var g = f + dir * (0.6f - j * 0.1f) + new Vector3(rnd.NextSingle() - 0.5f, 0, rnd.NextSingle() - 0.5f) * 1.5f;
+                            Line(f, g, Color.Lerp(c, Color.Black, 0.25f + j * 0.15f));
+                            if (j == 1) Line(g, g + new Vector3(rnd.NextSingle() * 3 - 1.5f, -2.5f, rnd.NextSingle() * 3 - 1.5f), Color.Lerp(c, Color.Black, 0.5f));
+                            f = g;
+                        }
+                    }
                     prev = next;
                 }
             }
@@ -293,7 +317,7 @@ partial class BattleScreen
                     float a = i * MathF.Tau / n + now;
                     var foot = b.At + new Vector2(MathF.Cos(a), MathF.Sin(a)) * rad * (0.7f + 0.3f * (i % 2));
                     for (int j = 0; j < 4; j++)
-                        Line(G(foot, 0.1f + h * j / 4), G(foot, 0.1f + h * (j + 1) / 4), Color.Lerp(Color.Lerp(c, Color.White, 0.3f), Color.Black, 0.18f * j + 0.5f * k));
+                        Line(G(foot, 0.1f + h * j / 4), G(foot, 0.1f + h * (j + 1) / 4), Color.Lerp(Color.Lerp(c, Color.White, 0.3f), Fade, 0.18f * j + 0.5f * k));
                 }
                 Line(G(b.At, 0.1f), G(b.At, h * 1.3f), Color.White);
             }
@@ -311,10 +335,12 @@ partial class BattleScreen
         }
         for (int i = 1; i < bladeTrail.Count; i++)
         {
-            float k = (now - bladeTrail[i].At) / 0.22f;
+            float k = (now - bladeTrail[i].At) / TrailLife;
             var c = Color.Lerp(col, Color.Black, 0.3f + 0.7f * k);
             Line(bladeTrail[i - 1].Tip, bladeTrail[i].Tip, c);
             Line(Vector3.Lerp(bladeTrail[i - 1].Base, bladeTrail[i - 1].Tip, 0.6f), Vector3.Lerp(bladeTrail[i].Base, bladeTrail[i].Tip, 0.6f), Color.Lerp(c, Color.Black, 0.3f));
         }
+        WorkingLines();
+        LadderLines();
     }
 }

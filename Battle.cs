@@ -504,7 +504,7 @@ public sealed partial class Battle
         int horses = LooseHorses.Count(h => h.Team == 1);
         return new BattleResult(Winner, Time, list, captain, foeLeader, Winner == 0 ? horses : 0, PlayerKills, SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes)
         {
-            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(), GoalTexts = Goals.Select(GoalText).ToList(), Omen = OmenRaised, FormUses = new Dictionary<string, int>(FormUses), Corruption = CorruptionRaised, MadSpells = MadSpells, RelicRaised = RelicRaised, BrokeThrough = BrokeThrough,
+            Goals = Goals.Select(g => g.Id).ToList(), GoalsMet = GoalsMet(), GoalTexts = Goals.Select(GoalText).ToList(), Omen = OmenRaised, FormUses = new Dictionary<string, int>(FormUses), Corruption = CorruptionRaised, MadSpells = MadSpells, RelicRaised = RelicRaised, BrokeThrough = BrokeThrough, Wonders = Wonders.ToList(),
         };
     }
 

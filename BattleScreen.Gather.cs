@@ -93,6 +93,7 @@ partial class BattleScreen
             }
         }
         if (c.A.Kind is "attack" or "bolt") Ring(c.At, r * (0.8f - 0.5f * g), col, 12);
+        PotArcs(c, g);
         // The column over the caster: taller for a great working, so the whole field sees it gather.
         var by = CasterOf(c);
         float tall = (c.A.Great ? 28 : c.A.Warn >= 1 ? 6 : 2.5f) * Ease.Out(g);

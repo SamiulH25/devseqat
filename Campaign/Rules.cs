@@ -24,6 +24,8 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
     public string Field { get; init; } = "";
     /// Banner honours this battle won, lost or won back (L5): HONOUR or LOST, and the line.
     public IReadOnlyList<(string Kind, string Text)> Honours { get; init; } = Array.Empty<(string, string)>();
+    /// The wonders the men saw (docs/SPECTACLE.md S7): great workings, a wall broken, a clash of champions.
+    public IReadOnlyList<string> Wonders { get; init; } = Array.Empty<string>();
 }
 
 /// A battle about to be fought between map parties: the armies, options, and how its companies map back to campaign records.

@@ -518,4 +518,23 @@ public static partial class SelfTest
         b.Reset();
         Check(b.Ask(BeatKind.Charge, Vector2.Zero, 0), "a new battle has its beat again");
     }
+
+    /// S7 (docs/SPECTACLE.md): a great working the men saw is told in the battle's result (and so the report), once; a
+    /// plain spell is not, and each tells which side worked it.
+    static void WondersReported()
+    {
+        var b = Battle.Empty(23);
+        var saints = b.AddSquad(0, Troops.Get("saints_militant"), 3, new(0, -10), 3, Vector2.UnitY);
+        saints.HoldSpells = true;
+        b.Casts.Add(new Cast { A = Abilities.Get("blessing"), By = saints, At = saints.Center, Started = b.Time, FireAt = b.Time, Power = 1 });
+        b.Update(1 / 60f);
+        Check(b.Result().Wonders.Count == 0, "a plain blessing is no wonder");
+        for (int i = 0; i < 2; i++)
+        {
+            b.Casts.Add(new Cast { A = Abilities.Get("miracle"), By = saints, At = saints.Center, Started = b.Time, FireAt = b.Time, Power = 1 });
+            b.Update(1 / 60f);
+        }
+        var w = b.Result().Wonders;
+        Check(w.Count == 1 && w[0].Contains("Miracle") && w[0].Contains("us"), $"a great working is told once, as ours ({string.Join(" / ", w)})");
+    }
 }

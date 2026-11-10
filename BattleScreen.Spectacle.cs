@@ -14,13 +14,14 @@ partial class BattleScreen
     readonly List<(Vector3 At, Color Col, float Strength, float Reach)> glows = new();
 
     /// A source of awe: men within reach lean back from it while it lasts (real seconds).
-    struct AweSource { public Vector2 At; public float Radius, Born, Life; }
+    struct AweSource { public Vector2 At; public float Radius, Born, Life; public int Team; }
     readonly List<AweSource> awes = new();
 
     /// What the light, the post pass and the omen are asked for this frame (the largest asker wins), and their eased values.
     float omenWant, omenNow, brightWant, brightNow, drainWant, drainNow, shimmerWant, shimmerNow, flash;
     Vector3 brightTint = Vector3.One;
     Vector2 drainAt;
+    float drainR = 0.16f, drainRWant = 0.16f;
 
     enum ScarKind { Glass, Scorch, Frost, Bloom, Crack }
     struct Scar { public Vector2 Pos; public float Size, Rot, Born; public ScarKind Kind; }
@@ -31,7 +32,7 @@ partial class BattleScreen
     void ResetSpectacle()
     {
         beats.Reset(); glows.Clear(); awes.Clear(); puppet.Awe.Clear();
-        scarNext = scarCount = 0; gathering.Clear(); calm = calmWant = 0;
+        scarNext = scarCount = 0; gathering.Clear(); calm = calmWant = 0; drainR = drainRWant = 0.16f;
         omenWant = omenNow = brightWant = brightNow = drainWant = drainNow = shimmerWant = shimmerNow = flash = 0;
     }
 
@@ -48,7 +49,7 @@ partial class BattleScreen
     void AddGlow(Vector2 at, float height, Color col, float strength, float reach) =>
         glows.Add((new Vector3(at.X, battle.Terrain.Height(at) + height, at.Y), col, strength, reach));
 
-    void AddAwe(Vector2 at, float radius, float life) => awes.Add(new AweSource { At = at, Radius = radius, Born = realTime, Life = life });
+    void AddAwe(Vector2 at, float radius, float life, int team = -1) => awes.Add(new AweSource { At = at, Radius = radius, Born = realTime, Life = life, Team = team });
 
     /// A mark that lasts the whole battle (rule 4): not evicted by blood and hoofprints.
     void AddScar(Vector2 at, float size, ScarKind kind)
@@ -65,11 +66,13 @@ partial class BattleScreen
     void SpectacleFrame(float dt)
     {
         float since = realTime - breakAt;
-        if (since < 3.2f && battle.Player.Active) Drain(since < 1.2f ? 1 : 1 - (since - 1.2f) / 2f, battle.Player.Pos); // the world holds its breath, then floods back
+        // The world holds its breath, then the colour floods back out from him in a widening ring (S5).
+        if (since < 3.2f && battle.Player.Active) Drain(since < 1.2f ? 1 : 1 - Ease.In((since - 1.2f) / 2f), battle.Player.Pos, since < 1.2f ? 0.16f : 0.16f + 1.6f * Ease.Out((since - 1.2f) / 2f));
         float k = MathF.Min(1, dt * 2.5f);
         omenNow += (omenWant - omenNow) * k;
         brightNow += (brightWant - brightNow) * k;
         drainNow += (drainWant - drainNow) * MathF.Min(1, dt * 5);
+        drainR = drainRWant;
         shimmerNow += (shimmerWant - shimmerNow) * k;
         omenWant = brightWant = drainWant = shimmerWant = 0;
         flash = MathF.Max(0, flash - dt * 6);
@@ -83,7 +86,7 @@ partial class BattleScreen
         {
             float t = (realTime - awes[i].Born) / awes[i].Life;
             if (t >= 1) { awes.RemoveAt(i); continue; }
-            puppet.Awe.Add((awes[i].At, awes[i].Radius, Ease.Kick(t)));
+            puppet.Awe.Add((awes[i].At, awes[i].Radius, Ease.Kick(t), awes[i].Team));
         }
     }
 
@@ -92,7 +95,8 @@ partial class BattleScreen
     /// Ask the light to turn toward `tint` this frame (a miracle's dawn).
     void Brighten(float amount, Vector3 tint) { if (amount > brightWant) { brightWant = amount; brightTint = tint; } }
     /// Ask the colour to drain from everything but a circle round `at` this frame.
-    void Drain(float amount, Vector2 at) { if (amount > drainWant) { drainWant = amount; drainAt = at; } }
+    /// `radius` is in screen heights; a negative one drains inside the circle instead (a dread on the men it falls on).
+    void Drain(float amount, Vector2 at, float radius = 0.16f) { if (amount > drainWant) { drainWant = amount; drainAt = at; drainRWant = radius; } }
     void Shimmer(float amount) => shimmerWant = MathF.Max(shimmerWant, amount);
     void Flash(float amount) { if (quality != Quality.Low) flash = MathF.Max(flash, amount); }
 
@@ -125,8 +129,8 @@ partial class BattleScreen
             var vp = GraphicsDevice.Viewport;
             var p = vp.Project(new Vector3(drainAt.X, battle.Terrain.Height(drainAt) + 1, drainAt.Y), proj, view, Matrix.Identity);
             awe = p.Z is > 0 and < 1
-                ? new Vector4(p.X / vp.Width, p.Y / vp.Height, 0.16f, drainNow)
-                : new Vector4(0.5f, 0.5f, 0, drainNow); // behind the camera: all of it drains
+                ? new Vector4(p.X / vp.Width, p.Y / vp.Height, drainR, drainNow)
+                : new Vector4(0.5f, 0.5f, drainR < 0 ? -0.01f : 0, drainR < 0 ? 0 : drainNow); // behind the camera: all of it drains (a dread, none)
         }
         return (awe, new Vector4(BeatAmount * 0.085f, shimmerNow, flash * 0.55f, 0.7f));
     }
@@ -177,6 +181,9 @@ partial class BattleScreen
                 AddGlow(f.Pos, 1.2f, black ? new Color(120, 60, 170) : new Color(255, 140, 60), (black ? -0.6f : 0.9f) * flick, f.Radius * 0.8f);
             }
         var p = battle.Player;
+        if (p.Active && battle.Mad) AddGlow(p.Pos, 1.4f, new Color(150, 90, 200), -0.9f, 6); // the Black Flame takes the light round you
+        var e = battle.EnemyCaptain;
+        if (e.Active && battle.FoeTier >= 3) AddGlow(e.Pos, 1.8f, Color.Lerp(Style.Foe, Color.White, 0.3f), 0.35f * (battle.FoeTier - 2), 4 + battle.FoeTier); // a champion seen from afar
         if (p.Active && battle.AuraTier >= 5 && !battle.Spent) AddGlow(p.Pos, 2.2f, AuraColour, 0.8f, 6);
         else if (p.Active && battle.AuraBlade && battle.AuraTier >= 3) AddGlow(p.Pos + p.Dir, 1.2f, AuraColour, 0.5f * (battle.AuraTier - 2), 3);
     }

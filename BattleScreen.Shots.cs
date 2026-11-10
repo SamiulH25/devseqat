@@ -147,7 +147,11 @@ partial class BattleScreen
                 SpectacleScene((shotIndex - 61) / 2); shotFrames = 0; shotIndex++; break;
             case 62 or 64 or 66 when shotFrames > 12:
                 pendingShot = shotIndex switch { 62 => "spectacle-night", 64 => "spectacle-breakthrough", _ => "gather-great" }; shotIndex++; break;
-            case 67 when pendingShot == null: Exit(); break;
+            case >= 67 and < 83 when shotIndex % 2 == 1 && pendingShot == null:
+                WorkScene((shotIndex - 67) / 2); shotFrames = 0; shotIndex++; break;
+            case >= 67 and < 83 when shotIndex % 2 == 0 && shotFrames > 12:
+                pendingShot = WorkShots[(shotIndex - 68) / 2]; shotIndex++; break;
+            case 83 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -354,6 +358,64 @@ partial class BattleScreen
         camYaw = MathHelper.PiOver2 + 0.4f;
         camPitch = 0.42f;
         zoom = 34;
+    }
+
+    static readonly string[] WorkShots = { "smite-strike", "miracle", "tempest", "wildfire", "crows", "aura-ladder", "clash-beat", "black-flame" };
+
+    /// The strong workings and the aura's moments, each caught a moment after it lands (docs/SPECTACLE.md S3-S5).
+    void WorkScene(int which)
+    {
+        string shot = WorkShots[which];
+        bool aura = shot is "aura-ladder" or "clash-beat" or "black-flame";
+        var opt = new BattleOptions
+        {
+            AuraTier = aura ? (shot == "aura-ladder" ? 5 : 4) : 2, EnemyAura = shot == "clash-beat" ? 4 : 0,
+            Forms = new[] { shot == "aura-ladder" ? "lily_ward" : "red_rose_bloom" },
+            Weather = shot == "wildfire" ? new Weather(20.5f) : shot == "tempest" ? new Weather(15, 0.5f) : Weather.Clear,
+        };
+        battle = Battle.Empty(12 + which, opt);
+        SetWorld();
+        var b = battle;
+        var circle = b.AddSquad(0, Troops.Get(shot is "miracle" or "smite-strike" ? "saints_militant" : "sky_callers"), 3, new Vector2(-10, -16), 3, Vector2.UnitY);
+        var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new Vector2(4, -6), 10, Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("levies"), 30, new Vector2(0, 12), 10, -Vector2.UnitY);
+        circle.Order = mine.Order = foes.Order = Order.Hold;
+        foreach (var s in b.Squads) s.Will = 0; // no casts of their own in the shot
+        b.Player.Pos = shot == "aura-ladder" ? new Vector2(-6, 2) : Vector2.Zero;
+        b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+        b.Input = new PlayerInput { Aura = true, Dir = AttackDir.Right, Facing = MathHelper.PiOver2 };
+        var by = circle.Units[0];
+        var at = new Vector2(0, 13);
+        float run = 0.3f;
+        void Work(string id, string kind, float r)
+        {
+            b.Flash("spell:" + kind, at, r, 0, Abilities.Get(id).Tradition);
+            b.Flash("work:" + id, at, r, 0, Abilities.Get(id).Tradition, by.Pos - at);
+        }
+        switch (shot)
+        {
+            case "smite-strike": Work("smite", "attack", 3); run = 0.1f; break;
+            case "miracle": Work("miracle", "rally", 16); run = 1.4f; break;
+            case "tempest": Work("tempest", "field", 14); b.AddField(Abilities.Get("tempest"), "storm", 0, by, at, 14, 30, 1, 0); run = 2.5f; break;
+            case "wildfire": Work("wildfire", "field", 7); b.AddField(Abilities.Get("wildfire"), "burning", 0, by, at, 7, 30, 1, 10); run = 1.2f; break;
+            case "crows": Work("crows", "debuff", 9); run = 3.2f; break;
+            case "aura-ladder": run = 1.5f; break;
+            case "clash-beat": b.StageClash(); beats.Ask(BeatKind.Clash, b.ClashAt, realTime - 1f, 30); run = 1f; break;
+            case "black-flame": b.MadUntil = 30; run = 1f; break;
+        }
+        for (int i = 0; i < (int)(run * 60); i++)
+        {
+            if (shot == "aura-ladder") b.Player.Pos += new Vector2(0.06f, 0.03f); // walking, so he leaves his footprints
+            b.Update(1 / 60f); Effects(1 / 60f); SpectacleFrame(1 / 60f);
+        }
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = hudHidden = true;
+        SetCommand(true);
+        blend = 1;
+        camFocus = shot is "tempest" or "crows" or "smite-strike" ? new Vector2(0, 9) : new Vector2(0, 4);
+        camYaw = MathHelper.PiOver2 + 0.4f;
+        camPitch = shot is "tempest" or "crows" or "smite-strike" or "miracle" ? 0.16f : 0.42f;
+        zoom = shot is "tempest" or "crows" ? 40 : 30;
     }
 
     /// A cast frozen part-way through its gathering, for a shot (S1.7): `g` of its warning gone, so the frozen frame shows it.

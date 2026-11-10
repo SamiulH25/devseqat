@@ -197,7 +197,7 @@ public partial class Campaign
         Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting, Aura = TakeAuraNews(),
             Goals = r.Goals.Select((id, i) => (i < r.GoalTexts.Count ? r.GoalTexts[i] : Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
             Roll = RollNewsOrdered().Where(n => n.Item1 is not ("HONOUR" or "LOST")).ToList(),
-            Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field };
+            Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field, Wonders = r.Wonders };
         if (won) RaiseBurial();
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
         return Report;

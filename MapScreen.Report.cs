@@ -239,6 +239,9 @@ partial class MapScreen
             y += ui.U(11);
         }
         if (rep.Rises.Count > 0) y += ui.U(4);
+        foreach (var w in rep.Wonders) // what the men will tell of (docs/SPECTACLE.md S7)
+            foreach (var l in ui.Wrap(w, c.Width - ui.U(14), 1)) { if (y + ui.U(11) > c.Bottom) break; ui.Icon("star", c.X, y, Kit.Gilt, 1); ui.Text(l, c.X + ui.U(14), y, Kit.Gilt, 1); y += ui.U(11); }
+        if (rep.Wonders.Count > 0) y += ui.U(4);
         if (rep.Aura != "")
         {
             foreach (var l in ui.Wrap(rep.Aura, c.Width - ui.U(14), 1)) { if (y + ui.U(11) > c.Bottom) break; ui.Icon("star", c.X, y, Style.Aura, 1); ui.Text(l, c.X + ui.U(14), y, Style.Aura, 1); y += ui.U(11); }
