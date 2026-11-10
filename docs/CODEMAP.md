@@ -538,8 +538,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteDump.cs (77 lines)
 - **SpriteDump** (class, L9): Run:13, Png:44, Crc:71
 
-## SpriteSheet.cs (1139 lines)
-- **SpriteSheet** (class, L12): SpriteSheet:27, Add:36, Pack:41, Side:66, InEl:119, Head:121, Visages:124, Head:138, GoblinHead:181, TrollHead:211, SkullHead:241, GhoulHead:267, Helm:292, Torso:418, PlateTorso:572, PixelMap:575, Ribs:591, Tabard:606, Emblem:623, Cape:663, Sleeve:671, Leg:707, Boot:734, Hand:752, Shield:760, Weapon:803, Blade:882, Polearm:893, Bow:908, Arrow:922, Quiver:931, Plume:940, Flag:948, Blood:957, Splat:966, Horse:979, Wolf:1049, BodyShape:1090, HorseGear:1093, Saddle:1127
+## SpriteSheet.cs (1296 lines)
+- **SpriteSheet** (class, L12): SpriteSheet:28, Add:37, Pack:42, Side:67, InEl:120, Head:122, Visages:125, Head:139, GoblinHead:182, TrollHead:212, SkullHead:242, GhoulHead:268, Helm:293, Torso:468, PlateTorso:622, PixelMap:625, Ribs:641, Tabard:656, Emblem:673, Cape:713, Sleeve:721, Leg:757, Boot:784, Hand:802, Shield:810, Weapon:881, Blade:1039, Polearm:1050, Bow:1065, Arrow:1079, Quiver:1088, Plume:1097, Flag:1105, Blood:1114, Splat:1123, Horse:1136, Wolf:1206, BodyShape:1247, HorseGear:1250, Saddle:1284
 
 ## Squad.cs (229 lines)
 - **Order** (enum, L5)
@@ -650,7 +650,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## UiLab.Scenes.cs (490 lines)
 - **UiLab** (class, L6): HudPage:12, Field:81, readonly:115, DockCard:121, CaptainPage:149, RealmsPage:237, EventPage:336, Burning:400, MagicPage:430
 
-## Units.cs (222 lines)
+## Units.cs (223 lines)
 - **UnitClass** (enum, L6)
 - **UnitAction** (enum, L7)
 - **AttackDir** (enum, L11)
@@ -658,11 +658,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **CavState** (enum, L17)
 - **Dirs** (class, L19): Mirror:21
 - **Mount** (record, L28)
-- **Look** (record, L37): Ranged:58, GripOf:59
-- **UnitType** (class, L74): Has:108, Clone:130, ToString:131
-- **Unit** (class, L142): Face:209
-- **LooseHorse** (class, L213)
-- **DeadHorse** (struct, L222)
+- **Look** (record, L37): Ranged:59, GripOf:60
+- **UnitType** (class, L75): Has:109, Clone:131, ToString:132
+- **Unit** (class, L143): Face:210
+- **LooseHorse** (class, L214)
+- **DeadHorse** (struct, L223)
 
 ## Variety.cs (87 lines)
 - **Variety** (class, L9): static:16, Seed:26, Of:29, Of:31, Stature:51, Kin:53, Pick:56, Visage:65, Weighted:81

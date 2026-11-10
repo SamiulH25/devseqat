@@ -20,6 +20,7 @@ public sealed class SpriteSheet
     {
         ["sword"] = 0.233f, ["longsword"] = 0.17f, ["axe"] = 0.2f, ["spear"] = 0.3f, ["pike"] = 0.3f, ["lance"] = 0.3f, ["bow"] = 0.5f, ["longbow"] = 0.5f,
         ["crossbow"] = 0.55f, ["greatsword"] = 0.12f, ["daneaxe"] = 0.3f, ["club"] = 0.22f, ["staff"] = 0.55f, ["mace"] = 0.2f,
+        ["halberd"] = 0.35f, ["glaive"] = 0.35f, ["javelin"] = 0.45f, ["sling"] = 0.1f, ["scimitar"] = 0.22f, ["falchion"] = 0.24f, ["warhammer"] = 0.3f,
     };
 
     static readonly string[] Views = { "f", "s", "b" };
@@ -383,6 +384,55 @@ public sealed class SpriteSheet
                 for (int x = 1; x < 19; x += 2) c.Shade(x, 15, -0.3f);
                 c.Body(0, 2.5f, y => (9.2f - y * 0.2f, 10.8f + y * 0.2f), trim);
                 for (int y = 4; y < 11; y++) c.Set(10, y, brass, 0.4f);
+                return c;
+            }
+            case "spike":
+            {
+                // A tall onion-pointed steel helm with a mail veil over the neck and cheeks (the south).
+                var c = new Canvas(18, 18);
+                c.Fill((x, y) => InEl(x, y, 9, 10, 7.4f, 6.6f) && y < 10.5f && y > 3.5f, (x, y) => new Vector3((x - 9) / 8, (y - 9) / 8, 0.6f), plate);
+                c.Body(0.3f, 4.5f, y => (9 - 0.3f - y * 0.4f, 9 + 0.3f + y * 0.4f), steel);
+                c.Rect(1.4f, 10, 16.6f, 11.5f, brass);
+                if (v == "f") { c.Rect(1.6f, 11.5f, 4.5f, 18, mail); c.Rect(13.5f, 11.5f, 16.4f, 18, mail); }
+                else c.Rect(v == "s" ? 1.6f : 1.6f, 11.5f, v == "s" ? 12 : 16.4f, 18, mail);
+                return c;
+            }
+            case "barbute":
+            {
+                // A close steel helm down to the jaw with a T-shaped opening for the eyes and mouth (the League).
+                var c = new Canvas(18, 19);
+                c.Fill((x, y) => InEl(x, y, 9, 9.5f, 8.2f, 9.2f) && y > 0.3f, (x, y) => new Vector3((x - 9) / 9, (y - 8) / 10, 0.6f), plate);
+                if (v == "f") { for (int x = 4; x < 14; x++) c.Set(x, 8, ink); for (int y = 8; y < 17; y++) { c.Set(8, y, ink); c.Set(9, y, ink); } }
+                else if (v == "s") for (int y = 8; y < 17; y++) c.Set(16, y, ink);
+                for (int y = 1; y < 8; y++) c.Set(9, y, iron, 0.3f); // the ridge
+                return c;
+            }
+            case "furcap":
+            {
+                // A round fur cap with flaps over the ears, a small steel crown on top (the steppe's poor riders).
+                var c = new Canvas(20, 15);
+                c.Ellipse(10, 8, 9.2f, 7, fur);
+                c.Rect(0.8f, 7, 19.2f, 11, fur);
+                if (v == "f") { c.Rect(0.8f, 11, 4, 15, fur, -0.1f); c.Rect(16, 11, 19.2f, 15, fur, -0.1f); }
+                else if (v == "s") c.Rect(5, 11, 9, 15, fur, -0.1f);
+                c.Ellipse(10, 4, 4.2f, 3.4f, plate);
+                for (int x = 1; x < 19; x += 2) c.Shade(x, 10, -0.3f);
+                return c;
+            }
+            case "bucket":
+            {
+                // A flat-topped helm with a cross of brass over the eye slit (the Order).
+                var c = new Canvas(18, 20);
+                c.Rect(1.6f, 0.3f, 16.4f, 20, plate);
+                for (int x = 0; x < 18; x++) c.Shade(x, 1, -0.4f);
+                if (v == "f")
+                {
+                    for (int x = 3; x < 15; x++) if (x is not (8 or 9)) c.Set(x, 8, ink);
+                    c.Rect(8, 3, 10, 18, brass, 0.1f);
+                    c.Rect(3, 10, 15, 11.6f, brass, 0.1f);
+                }
+                else if (v == "s") for (int x = 10; x < 17; x++) c.Set(x, 8, ink);
+                else c.Rect(8, 3, 10, 18, brass, 0.3f);
                 return c;
             }
             default: // greathelm
@@ -781,6 +831,34 @@ public sealed class SpriteSheet
                 c.Ellipse(10, 12.5f, 2.8f, 2.8f, steel, 0.15f);
                 return c;
             }
+            case "buckler":
+            {
+                // A small steel fist-shield with a boss.
+                var b = new Canvas(11, 11);
+                b.Fill((x, y) => InEl(x, y, 5.5f, 5.5f, 5.2f, 5.2f), (x, y) => new Vector3((x - 5.5f) / 7, (y - 5.5f) / 7, 1), plate);
+                b.Border(iron);
+                b.Ellipse(5.5f, 5.5f, 1.8f, 1.8f, steel, 0.25f);
+                return b;
+            }
+            case "targe":
+            {
+                // A round hide-covered board with studs in rings and a steel boss.
+                var t = new Canvas(17, 17);
+                t.Fill((x, y) => InEl(x, y, 8.5f, 8.5f, 8.2f, 8.2f), (x, y) => new Vector3((x - 8.5f) / 12, (y - 8.5f) / 12, 1), leather);
+                for (int i = 0; i < 12; i++) { float a = i * MathF.Tau / 12; t.Set((int)(8.5f + MathF.Cos(a) * 5.6f), (int)(8.5f + MathF.Sin(a) * 5.6f), brass, 0.3f); }
+                t.Ellipse(8.5f, 8.5f, 2.4f, 2.4f, steel, 0.2f);
+                t.Border(trim);
+                return t;
+            }
+            case "dhal":
+            {
+                // A small round domed shield in the side's cloth, four brass bosses round the centre (the south).
+                var d = new Canvas(15, 15);
+                d.Fill((x, y) => InEl(x, y, 7.5f, 7.5f, 7.2f, 7.2f), (x, y) => new Vector3((x - 7.5f) / 8, (y - 7.5f) / 8, 1), cloth);
+                d.Border(brass);
+                foreach (var (bx, by) in new[] { (6, 6), (9, 6), (6, 9), (9, 9) }) d.Set(bx, by, brass, 0.4f);
+                return d;
+            }
             case "kite":
             {
                 float Half(float y) => y < 7 ? 9.6f - (7 - y) * (7 - y) * 0.06f : 9.6f * MathF.Pow(MathF.Max(0, 1 - (y - 7) / 18f), 0.85f);
@@ -839,6 +917,85 @@ public sealed class SpriteSheet
                 foreach (var (kx, ky) in new[] { (2, 5), (11, 9), (3, 15), (10, 19) }) { c.Ellipse(kx, ky, 1.6f, 1.6f, wood, -0.25f); c.Shade(kx, ky, -0.4f); }
                 for (int y = 0; y < 22; y++) c.Shade(1, y, 0.35f);
                 c.Rect(4.6f, 36, 9.4f, 44, leather);
+                return c;
+            }
+            case "halberd":
+            {
+                // An axe blade, a back spike and a point on a shaft a man's height and a half (docs/ANIMATION_ROSTER.md R1).
+                var c = new Canvas(14, 72);
+                c.Rect(6, 4, 8, 72, wood);
+                c.Body(0, 6, y => (7 - 0.3f - y * 0.18f, 7 + 0.3f + y * 0.18f), steel); // the point
+                c.Area((x, y) => y >= 7 && y < 17 && x >= 8 && x < 8 + 5.6f - MathF.Abs(y - 11.5f) * 0.25f + (y > 11 ? (y - 11) * 0.12f : 0), steel); // the blade, bearded below
+                for (int y = 7; y < 17; y++) c.Shade(13, y, 0.45f);
+                c.Area((x, y) => y >= 10 && y < 13 && x >= 7 - (13 - y) * 1.3f && x < 6, iron); // the back spike
+                c.Rect(5.5f, 17, 8.5f, 19, iron);
+                c.Rect(5.6f, 50, 8.4f, 55, leather);
+                return c;
+            }
+            case "glaive":
+            {
+                // A long single-edged blade, curved at the tip, with a lug on the back, on a long shaft.
+                var c = new Canvas(10, 68);
+                c.Rect(4, 18, 6, 68, wood);
+                c.Body(0, 18, y => (4 - (y < 4 ? y * 0.3f : 1.2f), 6 + MathF.Min(2.6f, 0.3f + y * 0.25f) - (y > 14 ? (y - 14) * 0.5f : 0)), steel);
+                for (int y = 2; y < 17; y++) c.Shade(4, y, 0.4f);
+                c.Rect(1.5f, 12, 4, 14, iron); // the lug that catches a blade
+                c.Rect(3.6f, 18, 6.4f, 20, iron);
+                c.Rect(3.6f, 48, 6.4f, 53, leather);
+                return c;
+            }
+            case "javelin":
+            {
+                // A light throwing spear: a long thin iron head on a short shaft, a cord loop for the fingers.
+                var c = new Canvas(6, 44);
+                c.Rect(2.5f, 9, 3.5f, 44, wood);
+                c.Body(0, 9, y => (3 - MathF.Min(1.1f, 0.3f + y * 0.3f), 3 + MathF.Min(1.1f, 0.3f + y * 0.3f)), iron);
+                c.Rect(1.8f, 24, 4.2f, 26, leather);
+                return c;
+            }
+            case "sling":
+            {
+                // Two cords and a leather pouch, hanging from the hand with a stone in it.
+                var c = new Canvas(6, 20);
+                for (int y = 0; y < 16; y++) { c.Set(1 + y / 8, y, leather, 0.2f); c.Set(4 - y / 8, y, leather, 0.4f); }
+                c.Ellipse(3, 17, 2.4f, 2.2f, leather);
+                c.Set(3, 17, Mat.Flat(new Color(150, 146, 136)));
+                return c;
+            }
+            case "scimitar":
+            {
+                // A curved blade widening toward the tip, the hilt with a short cross and a pommel cap (the south).
+                var c = new Canvas(10, 32);
+                c.Body(0, 23, y => { float bend = (23 - y) * (23 - y) * 0.006f; float half = MathF.Min(1.9f, 0.6f + (23 - MathF.Abs(y - 7)) * 0.07f); return (4 - half + bend * 1.6f, 4 + half + bend * 1.6f); }, steel);
+                for (int y = 2; y < 22; y++) c.Shade(4 + (int)((23 - y) * (23 - y) * 0.01f), y, 0.35f);
+                c.Rect(1, 23, 8, 24.8f, brass);
+                c.Rect(3, 24.8f, 5, 30.5f, leather);
+                c.Ellipse(4, 31, 1.6f, 1.0f, brass, 0.1f);
+                return c;
+            }
+            case "falchion":
+            {
+                // A short heavy chopper: broad near the clipped point, straight in the back.
+                var c = new Canvas(9, 30);
+                c.Body(0, 21, y => (2.5f, 5.5f + MathF.Min(1.8f, y < 4 ? y * 0.45f : 1.8f - (y - 4) * 0.06f)), steel);
+                for (int y = 2; y < 20; y++) c.Shade(3, y, 0.35f);
+                c.Rect(0.5f, 21, 8.5f, 22.8f, iron);
+                c.Rect(3, 22.8f, 5, 28.5f, leather);
+                c.Ellipse(4, 29, 1.6f, 1.0f, iron, 0.1f);
+                return c;
+            }
+            case "warhammer":
+            {
+                // A long-hafted hammer: a squared face one side, a curved beak the other, a spike on top.
+                var c = new Canvas(14, 52);
+                c.Rect(6, 3, 8, 52, wood);
+                c.Body(0, 4, y => (6.4f - y * 0.1f, 7.6f + y * 0.1f), iron);
+                c.Rect(2, 5, 12, 10, steel);
+                c.Area((x, y) => y >= 5 && y < 13 && x >= 12 && x < 14 - (y - 5) * 0.2f, steel); // the beak
+                c.Rect(0.5f, 5.5f, 2.5f, 9.5f, plate); // the face
+                for (int x = 2; x < 12; x++) c.Shade(x, 9, -0.3f);
+                c.Rect(5.6f, 10, 8.4f, 12, iron);
+                c.Rect(5.6f, 38, 8.4f, 44, leather);
                 return c;
             }
             case "mace":

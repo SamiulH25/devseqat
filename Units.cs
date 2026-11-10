@@ -44,7 +44,7 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public string HeadKey => Face != "man" ? "head." + Face : Visage >= 0 ? "head.v" + Visage : "head";
     public bool NeutralHead => Face == "man" && Visage >= 0;
     // "coif": a mail hood.
-    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen", "turban", "steppe", "coif" };
+    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen", "turban", "steppe", "coif", "spike", "barbute", "furcap", "bucket" };
     // Goblin kit: "rags" (bare green arms), "hide" (bare green legs), "bare" feet, "claw" hands.
     // Undead kit: "bones" (a ribcage and bare bone), "shroud" (a ghoul's grave wrappings over grey skin), "robe" (a necromancer's), "bone" feet and hands.
     // The new realms (docs/archive/WORLD.md W4): "lamellar" (rows of small plates), "deel" (a long wrapped steppe coat), "brigandine"
@@ -53,8 +53,9 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public static readonly string[] LegsKinds = { "cloth", "mail", "plate", "hide", "bones", "shroud" };
     public static readonly string[] FeetKinds = { "boots", "sabatons", "bare", "bone" };
     public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw", "bone" };
-    public static readonly string[] Shields = { "none", "round", "kite", "heater", "pavise" };
-    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff", "mace" };
+    public static readonly string[] Shields = { "none", "round", "kite", "heater", "pavise", "buckler", "targe", "dhal" };
+    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff", "mace",
+        "halberd", "glaive", "javelin", "sling", "scimitar", "falchion", "warhammer" };
     public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
     public static Grip GripOf(string weapon) => weapon switch
     {
