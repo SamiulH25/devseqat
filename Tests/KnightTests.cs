@@ -715,5 +715,318 @@ public static partial class SelfTest
         lone.S.Characters.Add(new Character { Id = lone.S.Characters.Max(k => k.Id) + 1, Name = "Bran Hale", Kind = "companion", Faction = -1 });
         Check(lone.HandOver() == null && lone.Captain.AuraTier == 2, "with no order to teach him, he starts two tiers below you");
     }
+
+    /// MA3 (docs/MAGIC_AURA.md 4.1-4.2): aura comes back slower on the move than standing still with no foe near; at full,
+    /// blows bank a surge that a form spends first; spent, your breath comes back slower than a plain man's; from tier 2
+    /// your company near you takes heart while you fight, one far off does not, and a plain captain inspires nobody.
+    static void AuraPool()
+    {
+        var b = Battle.Empty(31, new BattleOptions { AuraTier = 3 });
+        b.EnemyCaptain.Pos = new Vector2(0, 400);
+        b.Aura = 40;
+        Run(b, 5);
+        float still = b.Aura - 40;
+        b.Aura = 40;
+        b.Input = new PlayerInput { Move = new Vector2(0, 1) };
+        Run(b, 5);
+        float moving = b.Aura - 40;
+        Check(still > moving * 1.5f && moving > 2, $"aura comes back faster standing still ({still:0.0}) than on the move ({moving:0.0})");
+
+        b = Battle.Empty(32, new BattleOptions { AuraTier = 3, Forms = new[] { "aura_slash" } });
+        b.EnemyCaptain.Pos = new Vector2(0, 400);
+        b.Aura = Battle.AuraMax;
+        var foes = b.AddSquad(1, Troops.Get("levies"), 6, b.Player.Pos + new Vector2(0, 2.2f), 6, -Vector2.UnitY).Units;
+        for (int i = 0; i < 20 * 60 && b.Surge < Battle.SurgeMax; i++)
+        {
+            b.Aura = Battle.AuraMax;
+            var t = foes.Where(f => f.Active).OrderBy(f => Vector2.DistanceSquared(f.Pos, b.Player.Pos)).FirstOrDefault();
+            if (t == null) break;
+            t.Hp = t.Type.MaxHp; // a foe that will not fall, to strike again and again
+            var d = t.Pos - b.Player.Pos;
+            b.Input = new PlayerInput { Attack = i % 40 < 20, Facing = MathF.Atan2(d.Y, d.X), Move = d.Length() > 1.6f ? Vector2.Normalize(d) : Vector2.Zero };
+            b.Update(1 / 60f);
+        }
+        Check(b.Surge > 0, $"blows landed at full aura bank a surge ({b.Surge:0})");
+        float surge = b.Surge, aura = b.Aura = 60;
+        b.Input = new PlayerInput { Form1 = true };
+        for (int i = 0; i < 30 && b.Input.Form1; i++) { b.Update(1 / 60f); if (b.FormWait(0) > 0) b.Input = new PlayerInput(); }
+        var cost = Forms.Get("aura_slash").Aura;
+        Check(b.FormWait(0) > 0 && b.Surge < surge && aura - b.Aura < cost, $"a form spends the surge first (aura {aura - b.Aura:0} of {cost:0})");
+
+        b = Battle.Empty(33, new BattleOptions { AuraTier = 3 });
+        b.Aura = 5;
+        b.Player.Stamina = 20;
+        Run(b, 1);
+        float spentBreath = b.Player.Stamina - 20;
+        var plain = Battle.Empty(33);
+        plain.Player.Stamina = 20;
+        Run(plain, 1);
+        Check(spentBreath < plain.Player.Stamina - 20, "a spent captain gets his breath back slower than a plain one");
+
+        bool Inspires(int tier, float away)
+        {
+            var g = Battle.Empty(34, new BattleOptions { AuraTier = tier });
+            g.EnemyCaptain.Pos = new Vector2(0, 400);
+            g.Player.Horse = null;
+            var mine = g.AddSquad(0, Troops.Get("shieldmen"), 8, g.Player.Pos + new Vector2(away, -4), 8, Vector2.UnitY);
+            mine.Order = Order.Hold;
+            var foe = g.AddSquad(1, Troops.Get("levies"), 3, g.Player.Pos + new Vector2(0, 2.2f), 3, -Vector2.UnitY);
+            foe.Order = Order.Hold;
+            for (int i = 0; i < 4 * 60; i++)
+            {
+                var t = foe.Units.FirstOrDefault(f => f.Active);
+                if (t != null) { var d = t.Pos - g.Player.Pos; g.Input = new PlayerInput { Attack = i % 40 < 20, Facing = MathF.Atan2(d.Y, d.X) }; }
+                g.Update(1 / 60f);
+            }
+            return mine.Timed.Any(t => t.Effect.Id == "inspired" && t.Until > g.Time);
+        }
+        Check(Inspires(2, 0), "an aura knight fighting beside his company inspires it");
+        Check(!Inspires(2, 60), "a company far off is not inspired");
+        Check(!Inspires(0, 0), "a plain captain inspires nobody");
+    }
+
+    /// A captain with aura at this tier, the foe's captain sent far off.
+    static Battle AuraField(int seed, int tier, params string[] standing)
+    {
+        var b = Battle.Empty(seed, new BattleOptions { AuraTier = tier, Standing = standing });
+        b.EnemyCaptain.Pos = new Vector2(0, 400);
+        return b;
+    }
+
+    /// A spell lands now, worked by this company, on this spot.
+    static Cast CastNow(Battle b, Squad by, string spell, Vector2 at, float after = 0)
+    {
+        var c = new Cast { A = Abilities.Get(spell), By = by, At = at, Started = b.Time, FireAt = b.Time + after, Power = 1 };
+        b.Casts.Add(c);
+        return c;
+    }
+
+    /// MA5 (docs/MAGIC_AURA.md 5): a Blessing or War song over you feeds your aura; one far off does not.
+    static void BlessingFeedsAura()
+    {
+        var b = AuraField(81, 3);
+        var mages = b.AddSquad(0, Troops.Get("chaplains"), 3, b.Player.Pos + new Vector2(4, 0), 3, Vector2.UnitY);
+        mages.HoldSpells = true;
+        b.Aura = 50;
+        CastNow(b, mages, "blessing", b.Player.Pos);
+        b.Update(1 / 60f);
+        Check(b.Aura >= 50 + Battle.FeedAura - 0.5f, $"a blessing over you feeds your aura ({b.Aura:0})");
+        b.Aura = 50;
+        CastNow(b, mages, "war_song", b.Player.Pos + new Vector2(80, 0));
+        b.Update(1 / 60f);
+        Check(b.Aura < 52, "one far off does not");
+    }
+
+    /// MA5: an Evil eye on you quenches your blade (half as long behind aura armour, not at all at tier 5); Fever takes your breath.
+    static void CurseOnCaptain()
+    {
+        float Quenched(int tier)
+        {
+            var b = AuraField(82, tier);
+            var witches = b.AddSquad(1, Troops.Get("hedge_witches"), 3, new Vector2(0, 80), 3, -Vector2.UnitY);
+            witches.HoldSpells = true;
+            CastNow(b, witches, "evil_eye", b.Player.Pos);
+            b.Update(1 / 60f);
+            b.Input = new PlayerInput { Aura = true };
+            float t0 = b.Time;
+            for (int i = 0; i < 10 * 60 && !b.AuraBlade; i++) { b.Aura = Battle.AuraMax; b.Update(1 / 60f); }
+            return b.Time - t0;
+        }
+        float plain = Quenched(2), armoured = Quenched(3), master = Quenched(5);
+        Check(plain > Battle.QuenchTime - 0.5f, $"an Evil eye quenches the blade ({plain:0.0} s)");
+        Check(armoured < plain * 0.7f && armoured > 1, $"aura armour halves it ({armoured:0.0} s)");
+        Check(master < 0.2f, "at tier 5 the curse is turned");
+
+        var f = AuraField(83, 2);
+        var crones = f.AddSquad(1, Troops.Get("war_witches"), 3, new Vector2(0, 80), 3, -Vector2.UnitY);
+        crones.HoldSpells = true;
+        CastNow(f, crones, "fever", f.Player.Pos);
+        f.Update(1 / 60f);
+        Check(f.FeverUntil > f.Time + 2, "Fever on you takes your breath for a while");
+    }
+
+    /// MA5: your lit blade breaks a working of the caster it strikes (an unlit blow does not); with craft marks it leaves fever.
+    static void BladeBreaksCast()
+    {
+        bool Breaks(bool lit)
+        {
+            var b = AuraField(84, 2, "craft_marks");
+            var priests = b.AddSquad(1, Troops.Get("battle_priests"), 1, b.Player.Pos + new Vector2(0, 1.8f), 1, -Vector2.UnitY);
+            priests.HoldSpells = true;
+            priests.Order = Order.Hold;
+            var cast = CastNow(b, priests, "smite", new Vector2(0, -60), after: 6);
+            var t = priests.Units[0];
+            for (int i = 0; i < 5 * 60 && b.Casts.Contains(cast); i++)
+            {
+                b.Aura = Battle.AuraMax;
+                t.Hp = t.Type.MaxHp; // he stands to take blow after blow
+                var d = t.Pos - b.Player.Pos;
+                b.Input = new PlayerInput { Aura = lit, Attack = i % 40 < 20, Facing = MathF.Atan2(d.Y, d.X), Move = d.Length() > 1.6f ? Vector2.Normalize(d) : Vector2.Zero };
+                b.Update(1 / 60f);
+            }
+            if (lit) Check(priests.Timed.Any(x => x.Effect.Id == "fever"), "craft marks leave fever on the company the blade strikes");
+            return !b.Casts.Contains(cast) && b.Time < cast.FireAt;
+        }
+        Check(Breaks(true), "the lit blade breaks the caster's working");
+        Check(!Breaks(false), "a plain blow does not");
+    }
+
+    /// MA5 (3.4): the relic raised once a battle blesses the companies round you and gives aura, over the top into the surge.
+    static void RelicRaised()
+    {
+        var b = AuraField(85, 3, "relic");
+        var men = b.AddSquad(0, Troops.Get("levies"), 8, b.Player.Pos + new Vector2(5, 0), 4, Vector2.UnitY);
+        b.Aura = 90;
+        b.Input = new PlayerInput { Relic = true };
+        b.Update(1 / 60f);
+        Check(b.RelicRaised && b.Aura >= Battle.AuraMax - 0.1f && b.Surge >= 19, $"the relic gives aura, the rest as surge ({b.Surge:0})");
+        Check(men.Timed.Any(x => x.Effect.Id == "blessed"), "and blesses the company beside you");
+        Check(b.CannotRaise(b.Player) != null, "once a battle");
+        Check(b.Result().RelicRaised, "the campaign hears of it");
+        Check(AuraField(86, 3).CannotRaise(b.Player) == "YOU CARRY NO RELIC", "no relic, nothing to raise");
+    }
+
+    /// MA6 (docs/MAGIC_AURA.md 4.4): an unsworn Aura Expert who parries a lot is offered his own counter, a lancer his own
+    /// leap (the one leap from the saddle); the form is named for his company, slots, and goes into battle.
+    static void OwnFormFromStyle()
+    {
+        var c = Campaign.New(87);
+        c.Captain.AuraTier = 3;
+        var fight = new BattleResult(0, 60, Array.Empty<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Unhurt, 0, Parries: 20, Ripostes: 8, LanceHits: 3);
+        c.StyleAfterBattle(fight);
+        Check(c.Captain.OwnFormOffer.Count == 2 && c.Captain.OwnFormOffer[0] == "answer" && c.Captain.OwnFormOffer[1] == "charge",
+            $"a parrying captain is offered his Answer, then his Charge ({string.Join(",", c.Captain.OwnFormOffer)})");
+        Check(c.ChooseOwnForm("mark") != null, "only a style he fights in");
+        Check(c.ChooseOwnForm("answer") == null && c.Captain.OwnForm is { Kind: "counter" } f && f.Name.EndsWith("Answer"), "his Answer is a counter named for his company");
+        Check(Campaign.SlottedForms(c.Captain)[0] == Forms.OwnId && !c.MayMakeForm, "it goes in the first slot; one form of his own");
+        Check(c.Captain.OwnForm!.Damage > Forms.Get("measured_blade").Damage, "a tenth stronger than the form it grew from");
+        var o = new BattleOptions().WithCaptain(c.Captain);
+        var b = new Battle(5, Armies.Standard(0), Armies.Standard(1), o);
+        Check(b.FormSlot[0] is { Id: Forms.OwnId, Kind: "counter" }, "it goes into battle");
+        Check(c.OrderFormNow == Forms.OwnId, "and it is what his own order would teach");
+        var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        Check(back.Captain.OwnForm?.Name == c.Captain.OwnForm.Name && Forms.Has(Forms.OwnId), "it keeps through a save");
+
+        var l = Campaign.New(88);
+        l.Captain.AuraTier = 3;
+        l.StyleAfterBattle(new BattleResult(0, 60, Array.Empty<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Unhurt, 0, SaddleKills: 10, LanceHits: 20));
+        Check(l.Captain.OwnFormOffer.FirstOrDefault() == "charge" && l.MakeOwnForm("charge").Kind == "leap", "a lancer is offered his Charge, a leap");
+        var sworn = Campaign.New(89);
+        sworn.Captain.AuraTier = 3; sworn.Captain.Order = "rose";
+        sworn.StyleAfterBattle(fight);
+        Check(sworn.Captain.OwnFormOffer.Count == 0, "a sworn knight fights in his order's forms");
+    }
+
+    /// MA6 (4.5): each aspect moves its number and only that; a form takes one at rank 3, once, and the battle feels it.
+    static void AspectChanges()
+    {
+        string[] fields = { "Radius", "Range", "Duration", "Damage", "Shock", "Cooldown", "Aura", "MaxHit", "Count" };
+        float Get(FormDef f, string n) => Convert.ToSingle(typeof(FormDef).GetField(n)!.GetValue(f));
+        foreach (var a in Forms.Aspects)
+        {
+            var meant = fields.Where(n => Convert.ToSingle(typeof(AspectDef).GetField(n)!.GetValue(a)) != (n is "MaxHit" or "Count" ? 0 : 1)).ToList();
+            var f = Forms.All.Where(x => x.Kind == a.Kind).FirstOrDefault(x => meant.All(n => n is "MaxHit" or "Count" || Get(x, n) != 0));
+            Check(f != null && meant.Count > 0, $"aspect {a.Id} has a form whose number it moves");
+            if (f == null) continue;
+            var moved = fields.Where(n => MathF.Abs(Get(a.On(f), n) - Get(f, n)) > 1e-4f).ToList();
+            Check(moved.SequenceEqual(meant), $"aspect {a.Id} moves {string.Join(",", meant)} only ({string.Join(",", moved)})");
+        }
+        var c = Campaign.New(90);
+        c.Captain.AuraTier = 3;
+        c.Captain.Forms = new() { "aura_slash" };
+        Check(c.TakeAspect("aura_slash", "slash_wide") == "AT RANK III", "an aspect waits for rank III");
+        c.Captain.FormUses["aura_slash"] = Campaign.FormRankUses * 2;
+        Check(c.TakeAspect("aura_slash", "leap_far") != null, "only an aspect of its kind");
+        Check(c.TakeAspect("aura_slash", "slash_wide") == null && c.TakeAspect("aura_slash", "slash_far") != null, "one aspect, for good");
+        var b = new Battle(6, Armies.Standard(0), Armies.Standard(1), new BattleOptions { AuraTier = 3 }.WithCaptain(c.Captain));
+        Check(b.FormSlot[0] is { } s && MathF.Abs(s.Radius - Forms.Get("aura_slash").Radius * 1.5f) < 1e-4f, "the wide slash is wider in battle");
+    }
+
+    /// MA7 (docs/MAGIC_AURA.md 4.6): at your wall, felling a champion of your tier breaks it on the spot: the tier rises in the
+    /// fight, the pool fills, the men near you rally, and the campaign hears of it. Not at the wall, nothing.
+    static void BreakInBattle()
+    {
+        Battle Field(bool wall)
+        {
+            var b = Battle.Empty(91, new BattleOptions { AuraTier = 3, EnemyAura = 3, AtWall = wall });
+            b.EnemyCaptain.Pos = b.Player.Pos + new Vector2(0, 3);
+            return b;
+        }
+        var b = Field(true);
+        var men = b.AddSquad(0, Troops.Get("levies"), 6, b.Player.Pos + new Vector2(6, 0), 3, Vector2.UnitY);
+        foreach (var u in men.Units) { u.Routing = true; u.Morale = 5; }
+        b.Aura = 30;
+        b.Kill(b.EnemyCaptain, b.Player);
+        Check(b.BrokeThrough && b.AuraTier == 4 && b.Aura >= Battle.AuraMax, $"felling a champion at the wall breaks it in the field (tier {b.AuraTier})");
+        Check(men.Units.All(u => !u.Routing && u.Morale > Battle.RallyAt), "the men near you rally");
+        Check(b.Result().BrokeThrough, "the campaign hears of it");
+        var n = Field(false);
+        n.Kill(n.EnemyCaptain, n.Player);
+        Check(!n.BrokeThrough && n.AuraTier == 3, "away from the wall, no breakthrough");
+    }
+
+    /// MA7 (4.7): two lit blades close start a clash: the men keep out of the ring, and it ends within its time.
+    static void ClashRing()
+    {
+        var b = Battle.Empty(92, new BattleOptions { AuraTier = 3, EnemyAura = 3 });
+        b.EnemyCaptain.Pos = b.Player.Pos + new Vector2(0, 2.2f);
+        b.AddSquad(0, Troops.Get("levies"), 12, b.Player.Pos + new Vector2(0, -4), 6, Vector2.UnitY);
+        b.AddSquad(1, Troops.Get("levies"), 12, b.Player.Pos + new Vector2(0, 7), 6, -Vector2.UnitY);
+        float started = -1, worst = 99;
+        for (int i = 0; i < 14 * 60; i++)
+        {
+            b.Aura = Battle.AuraMax;
+            b.Player.Hp = b.Player.Type.MaxHp; b.EnemyCaptain.Hp = b.EnemyCaptain.Type.MaxHp; // both stand to the end
+            var d = b.EnemyCaptain.Pos - b.Player.Pos;
+            b.Input = new PlayerInput { Aura = true, Facing = MathF.Atan2(d.Y, d.X), Attack = i % 40 < 20 };
+            b.Update(1 / 60f);
+            if (b.ClashOn && started < 0) started = b.Time;
+            if (b.ClashOn)
+                foreach (var u in b.Units)
+                    if (u.Active && !u.IsPlayer && u != b.EnemyCaptain) worst = MathF.Min(worst, Vector2.Distance(u.Pos, b.ClashAt));
+        }
+        Check(started >= 0, "two lit blades close start a clash");
+        Check(worst >= Battle.ClashRadius - 0.6f, $"the men keep out of the ring (nearest {worst:0.0} m)");
+        Check(!b.ClashOn && b.ClashUntil <= started + Battle.ClashTime + 0.01f, "it ends within its time");
+    }
+
+    /// MA7 (4.8): a Transcendent's light turns curses from the companies near him, and his lit blade cuts arrows from the air.
+    static void TranscendentLight()
+    {
+        bool Cursed(int tier)
+        {
+            var b = AuraField(93, tier);
+            var men = b.AddSquad(0, Troops.Get("levies"), 8, b.Player.Pos + new Vector2(5, 0), 4, Vector2.UnitY);
+            var witches = b.AddSquad(1, Troops.Get("war_witches"), 3, new Vector2(0, 80), 3, -Vector2.UnitY);
+            witches.HoldSpells = true;
+            CastNow(b, witches, "fever", men.Center);
+            b.Update(1 / 60f);
+            return men.Timed.Any(x => x.Effect.Id == "fever");
+        }
+        Check(Cursed(4) && !Cursed(5), "a Transcendent's light turns a curse from the company beside him");
+
+        int Cut(bool lit)
+        {
+            var a = AuraField(94, 5);
+            var bows = a.AddSquad(1, Troops.Get("bowmen"), 4, a.Player.Pos + new Vector2(0, 40), 4, -Vector2.UnitY);
+            int hits = 0;
+            for (int i = 0; i < 40; i++)
+            {
+                a.Aura = Battle.AuraMax;
+                a.Player.Hp = a.Player.Type.MaxHp;
+                a.Input = new PlayerInput { Aura = lit, Facing = MathF.PI / 2 }; // facing the shots
+                var p = a.Player.Pos;
+                a.Arrows.Add(new Projectile { Pos = new Vector3(p.X, a.Terrain.Height(p) + 1.2f, p.Y + 3), Vel = new Vector3(0, 0, -25), Shooter = bows.Units[0], Damage = 1 });
+                float hp = a.Player.Hp;
+                for (int k = 0; k < 15; k++) a.Update(1 / 60f);
+                if (a.Player.Hp < hp) hits++;
+            }
+            Check(!lit || hits > 5, $"some arrows still get through ({hits} of 40)");
+            return a.ArrowsCut;
+        }
+        int cut = Cut(true);
+        Check(cut is > 8 and < 32, $"his lit blade cuts about half the arrows from the air ({cut} of 40)");
+        Check(Cut(false) == 0, "an unlit blade cuts none");
+    }
 }
 

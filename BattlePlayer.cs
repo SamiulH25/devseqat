@@ -12,6 +12,7 @@ public partial class Battle
         else p.Facing = inp.Facing;
 
         UpdateAura(p, inp.Aura, dt);
+        UpdateClash(p); // a clash of champions (MA7)
         UpdateForms(p, inp);
         if (inp.Mount) ToggleMount(p);
         if (inp.Swap) SwapWeapon(p);

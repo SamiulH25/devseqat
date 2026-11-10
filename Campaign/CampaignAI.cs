@@ -226,19 +226,23 @@ public partial class Campaign
         if (p.Companies.Count > 0) p.Tier = Math.Clamp((int)MathF.Round((float)p.Companies.Average(c => c.Type.Tier)), 1, 7);
     }
 
+    /// How much bigger brigands think a party is: an Aura Master's name goes before him (MA8), so they flee one up to half again their weight.
+    public const float AuraDread = 1.5f;
+    internal float Dread(Party q) => q.Kind == PartyKind.Player && Captain.AuraTier >= 4 ? AuraDread : 1;
+
     void BanditThink(Party p)
     {
         float me = Rules.Strength(p);
         var near = Visible(p, 25).Where(q => Hostile(p, q)).ToList();
         // Brigands are opportunists, not soldiers: they run from anything near their own weight and only fall on a
         // clearly weaker party. With many more bands on the big map they would otherwise grind the lords to nothing.
-        if (near.FirstOrDefault(q => !q.Lair && Rules.Strength(q) > me * 1.05f) is Party threat)
+        if (near.FirstOrDefault(q => !q.Lair && Rules.Strength(q) * Dread(q) > me * 1.05f) is Party threat)
         {
             var away = p.Pos - threat.Pos;
             p.Goal = p.Pos + (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 20 * Map.Spread;
             p.ChaseId = -1; p.Moving = true; p.TaskUntil = (float)S.Hours + 2;
         }
-        else if (near.Where(q => !q.Lair && q.Breed is not ("troll" or "undead") && Rules.Strength(q) < me * 0.9f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
+        else if (near.Where(q => !q.Lair && q.Breed is not ("troll" or "undead") && Rules.Strength(q) * Dread(q) < me * 0.9f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
         {
             p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 4;
         }

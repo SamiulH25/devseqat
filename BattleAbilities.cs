@@ -42,8 +42,12 @@ public partial class Battle
     {
         var ids = new List<(string id, bool hero)>();
         var best = s.Units.Where(u => u.Type.Spells.Length > 0).OrderByDescending(u => u.Type.Tier).FirstOrDefault();
-        if (best != null) ids.AddRange(best.Type.Spells.OrderByDescending(id => Abilities.Get(id).Great).Select(id => (id, false))); // a great working when it is time, before the rest
+        var book = company?.Spells is { Length: > 0 } prepared ? prepared.Where(Abilities.Has).ToArray() : best?.Type.Spells; // the spells you prepared (MA4)
+        if (best != null && book != null) ids.AddRange(book.OrderByDescending(id => Abilities.Get(id).Great).Select(id => (id, false))); // a great working when it is time, before the rest
         s.CasterStart = s.Units.Count(u => u.Type.Spells.Length > 0);
+        s.MasterRank = company?.MasterRank ?? 0;
+        s.Will = WillCap(s);
+        if (company?.Leaderless == true) s.GreatDone = true; // no great working without a master
         if (company is { HeroGifts.Length: > 0 } && s.Units.Any(u => u.Hero)) ids.AddRange(company.HeroGifts.Where(Abilities.Has).Select(id => (id, true)));
         if (ids.Count == 0) return;
         s.Spells = ids.Select(x => Abilities.Get(x.id)).ToArray();
@@ -54,6 +58,11 @@ public partial class Battle
     }
 
     static bool IsCaster(Unit u) => u.Type.Spells.Length > 0;
+
+    /// A circle's full Will: 100, and 10 more for each rank of its master (MA4).
+    static float WillCap(Squad s) => 100 + 10 * s.MasterRank;
+    /// What a spell costs this company: a master of rank 3 works the great working for 15 less.
+    static float WillCost(Squad s, AbilityDef a) => a.Will - (a.Great && s.MasterRank >= 3 ? 15 : 0);
     public static bool CasterCompany(Squad s) => s.Units.Count > 0 && s.Units[0].Type.Class == UnitClass.Caster;
 
     /// How strong a company's spells land: a caster's tier (0.6 at II, 1 at IV, 1.4 at VI) and how many of them still stand;
@@ -87,28 +96,97 @@ public partial class Battle
         bool still = true;
         foreach (var u in s.Units)
             if (u.Active && !u.Routing && IsCaster(u)) { casters++; tier = Math.Max(tier, u.Type.Tier); if (u.Vel.LengthSquared() > 1) still = false; }
-        float cap = s.CasterStart == 0 ? 0 : 100f * casters / s.CasterStart; // it is the men who cast
+        float cap = s.CasterStart == 0 ? 0 : WillCap(s) * casters / s.CasterStart; // it is the men who cast
         s.Will = MathF.Min(cap, s.Will + (0.5f + 0.5f * Math.Max(0, tier - 2)) * (still ? 2 : 1) * dt);
         if (Casts.Any(c => c.By == s)) return;
         bool engaged = casters > 0 && s.Units.Any(u => u.Active && IsCaster(u) && u.EnemyDist < 3); // a mage with a blade at him cannot work
+        if (s.CastSpell >= 0 && OrderedCast(s, casters, engaged)) return;
+        if (s.HoldSpells) return; // they keep their Will for your word
         for (int i = 0; i < s.Spells.Length; i++)
         {
             var a = s.Spells[i];
             bool hero = s.ByHero[i];
             if (Time < s.SpellReady[i] || (a.Great && s.GreatDone)) continue;
-            if (hero ? Speaker(s, true) == null : casters == 0 || engaged || s.Will < a.Will || s.Will < 20) continue; // under 20 Will a company is drained
+            if (hero ? Speaker(s, true) == null : casters == 0 || engaged || s.Will < WillCost(s, a) || s.Will < 20) continue; // under 20 Will a company is drained
             if (Target(s, a, out var at, out var on) is false) continue;
             float power = SpellPower(s, hero);
             if (power <= 0) continue;
-            if (!hero) s.Will -= a.Will;
+            if (!hero) s.Will -= WillCost(s, a);
             s.SpellReady[i] = Time + a.Cooldown;
             if (a.Great) s.GreatDone = true;
             Casts.Add(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power });
+            Flash("cast", Speaker(s, hero)?.Pos ?? s.Center, 1, s.Team, a.Tradition);
             if (s.Team == 0 && a.Tradition == "craft") OmenRaised += a.Omen;
             if (a.Great) Log(s.Team == 0 ? $"Your {s.Name} call down {a.Name}!" : $"The enemy's casters call down {a.Name}!");
             Sound(hero ? Cue.Shout : Cue.Spell, Speaker(s, hero)?.Pos ?? s.Center);
             return;
         }
+    }
+
+    // ---- casts you order (docs/MAGIC_AURA.md 3.1) ----
+
+    /// An ordered cast costs this much more Will (they break their rhythm for you), and the order lapses after this long.
+    public const float OrderedWill = 5, OrderLasts = 30;
+
+    /// Why the company cannot cast spell i now, or null (the HUD's spell fan; the spot is not known yet).
+    public string? CannotCast(Squad s, int i)
+    {
+        if (i < 0 || i >= s.Spells.Length) return "NO SUCH SPELL";
+        var a = s.Spells[i];
+        bool hero = s.ByHero[i];
+        if (Speaker(s, hero) == null) return hero ? "HE IS DOWN" : "THE CASTERS ARE DOWN";
+        if (a.Great && s.GreatDone) return "SPENT";
+        if (Time < s.SpellReady[i]) return $"IN {s.SpellReady[i] - Time:0}";
+        if (!hero && (s.Will < WillCost(s, a) + OrderedWill || s.Will < 20)) return "NO WILL";
+        return null;
+    }
+
+    /// Cast the spell you ordered: walk into range, wait for it to be ready, then cast on your spot. True while the order
+    /// stands (nothing else is cast meanwhile); false once it is given up.
+    bool OrderedCast(Squad s, int casters, bool engaged)
+    {
+        int i = s.CastSpell;
+        if (i >= s.Spells.Length || Time - s.CastSince > OrderLasts) { DropCast(s, "the working could not be done"); return false; }
+        var a = s.Spells[i];
+        bool hero = s.ByHero[i];
+        if (a.Great && s.GreatDone) { DropCast(s, "that working is spent"); return false; }
+        var me = Speaker(s, hero);
+        if (me == null || Time < s.SpellReady[i]) return true;
+        if (!hero && (casters == 0 || engaged || s.Will < WillCost(s, a) + OrderedWill || s.Will < 20)) return true;
+        var at = a.Self ? s.Center : s.CastAt;
+        if (!a.Self && Vector2.Distance(me.Pos, at) > a.Range)
+        {
+            float gap = Vector2.Distance(s.Anchor, at);
+            if (gap > a.Range * 0.9f && !Engaged(s)) s.Shift(at, gap - a.Range * 0.8f); // close in once; the anchor then stays
+            return true;
+        }
+        if (a.Needs != "" && !(a.Needs == "dry" ? Dry(at) : Raining(at))) { DropCast(s, a.Needs == "dry" ? $"{a.Name} needs dry ground" : $"{a.Name} needs rain"); return false; }
+        Unit? on = null;
+        if (a.When == "officer" || a.Kind == "officer")
+        {
+            on = Units.Where(u => u.Active && u.Team != s.Team && (u.Sergeant || u.Hero || u.IsLeader) && Vector2.DistanceSquared(u.Pos, at) < 64)
+                .OrderBy(u => Vector2.DistanceSquared(u.Pos, at)).ThenBy(u => u.Index).FirstOrDefault();
+            if (on == null) { DropCast(s, "no officer there"); return false; }
+            at = on.Pos;
+        }
+        float power = SpellPower(s, hero);
+        if (power <= 0) return true;
+        if (!hero) s.Will -= WillCost(s, a) + OrderedWill;
+        s.SpellReady[i] = Time + a.Cooldown;
+        if (a.Great) s.GreatDone = true;
+        s.CastSpell = -1;
+        Casts.Add(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power });
+        Flash("cast", me.Pos, 1, s.Team, a.Tradition);
+        if (s.Team == 0 && a.Tradition == "craft") OmenRaised += a.Omen;
+        if (s.Team == 0) Log($"{s.Name}: {a.Name}!");
+        Sound(hero ? Cue.Shout : Cue.Spell, me.Pos);
+        return true;
+    }
+
+    void DropCast(Squad s, string why)
+    {
+        s.CastSpell = -1;
+        if (s.Team == 0) Log($"{s.Name}: {why}.");
     }
 
     // ---- the rules (`when`) ----
@@ -256,17 +334,25 @@ public partial class Battle
         if (by == null) return; // the caster fell: the working dies with him
         if (a.Needs != "" && !(a.Needs == "dry" ? Dry(c.At) : Raining(c.At))) return;
         int team = c.By.Team;
+        if (Warded(c.At, team)) { Flash("broken", c.At, a.Radius, team, a.Tradition); return; } // a ward breaks the working (MA8)
+        Flash("spell:" + a.Kind, c.At, a.Radius, team, a.Tradition);
+        Flash("work:" + a.Id, c.At, a.Radius, team, a.Tradition, by.Pos - c.At); // which working, and where from: the screen's spectacle reads it
+        if (a.Great) Wonder(team == 0 ? a.Name + " was worked for us." : "The foe worked " + a.Name + ".");
+        if (a.Tradition == "faith" && (a.Kind is "attack" or "rally" || a.Great)) Sound(Cue.Holy, c.At);
+        if (a.Effect == "burning" || a.Burn > 0) Sound(Cue.Flame, c.At);
         switch (a.Kind)
         {
             case "buff":
                 if (a.Self) AddTimed(c.By, a, c.Power);
                 else foreach (var o in Squads) if (o.Team == team && o.Alive > 0 && Vector2.Distance(o.Center, c.At) < a.Radius + o.Radius) AddTimed(o, a, c.Power);
+                FeedOnBuff(a, a.Self ? c.By.Center : c.At, team);
                 break;
             case "debuff":
-                foreach (var e in Squads) if (e.Team != team && e.Alive > 0 && Vector2.Distance(e.Center, c.At) < a.Radius + e.Radius) AddTimed(e, a, c.Power);
+                foreach (var e in Squads) if (e.Team != team && e.Alive > 0 && Vector2.Distance(e.Center, c.At) < a.Radius + e.Radius && !InLight(e)) AddTimed(e, a, c.Power); // not in a Transcendent's light (MA7)
+                CurseCaptain(a, c.At, team);
                 break;
             case "field":
-                AddField(a, a.Effect, team, by, c.At, a.Radius, a.Duration, c.Power, a.Dps);
+                AddField(a, a.Effect, team, by, a.Effect == "mirage" ? MirageSpot(c.At, team) : c.At, a.Radius, a.Duration, c.Power, a.Dps);
                 break;
             case "attack":
                 foreach (var t in Near(c.At, a.Radius + 0.5f, nearKill).Where(t => t.Active && t.Team != team && Vector2.DistanceSquared(t.Pos, c.At) < a.Radius * a.Radius)
@@ -280,7 +366,8 @@ public partial class Battle
                 var bolt = Near(c.At, a.Radius + 0.5f, nearKill).Where(t => t.Active && t.Team != team && Vector2.DistanceSquared(t.Pos, c.At) < a.Radius * a.Radius)
                     .OrderByDescending(t => t.Mounted).ThenByDescending(t => t.Sergeant || t.Hero || t.IsLeader).ThenBy(t => Vector2.DistanceSquared(t.Pos, c.At)).ThenBy(t => t.Index).FirstOrDefault();
                 if (bolt != null) { Blast(by, bolt, a, c.Power); if (bolt.Mounted) HitHorse(bolt, a.Damage * c.Power * 0.5f, by); }
-                Sound(Cue.Impact, c.At);
+                Flash("bolt", bolt?.Pos ?? c.At, 1, team, a.Tradition);
+                Sound(Cue.Thunder, c.At);
                 break;
             case "heal":
                 foreach (var u in Units)

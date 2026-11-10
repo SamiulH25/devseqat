@@ -35,8 +35,9 @@ public partial class Battle
         int n = 0;
         foreach (var id in Options.Forms)
         {
-            if (!Forms.Has(id)) continue;
-            var f = Forms.Get(id);
+            var f = id == Forms.OwnId && Options.OwnForm != null ? Options.OwnForm : Forms.Has(id) ? Forms.Get(id) : null;
+            if (f == null) continue;
+            if (Options.FormAspects.TryGetValue(id, out var asp) && Forms.Aspect(asp) is { } a && a.Kind == f.Kind) f = a.On(f); // its aspect (MA6)
             if (f.Great) FormSlot[3] ??= f;
             else if (n < 3) FormSlot[n++] = f;
         }
@@ -55,10 +56,10 @@ public partial class Battle
         if (AuraTier < f.Tier) return $"NEEDS AURA TIER {f.Tier}";
         if (f.Great && greatUsed) return "THE GREAT FORM IS SPENT";
         if (Time < formReady[i]) return $"{f.Name.ToUpperInvariant()} IN {formReady[i] - Time:0}";
-        if (Aura < f.Aura) return "NOT ENOUGH AURA";
+        if (Aura + Surge < f.Aura) return "NOT ENOUGH AURA";
         if (p.Action is UnitAction.Windup or UnitAction.Recover or UnitAction.Stagger) return "BUSY";
         if (f.Kind == "shot" && (p.Type.Ammo == 0 || p.Ammo <= 0)) return "TAKE UP A BOW";
-        if (f.Kind == "leap" && p.Mounted) return "NOT FROM THE SADDLE";
+        if (f.Kind == "leap" && p.Mounted && f.Id != Forms.OwnId) return "NOT FROM THE SADDLE"; // your own Charge leaps from the saddle (MA6)
         return null;
     }
 
@@ -68,6 +69,7 @@ public partial class Battle
         if (inp.Form2) TryForm(p, 1);
         if (inp.Form3) TryForm(p, 2);
         if (inp.Great) TryForm(p, 3);
+        if (inp.Relic) RaiseRelic(p);
         for (int i = PendingForms.Count - 1; i >= 0; i--)
             if (Time >= PendingForms[i].At && !PendingForms[i].Foe) { var pf = PendingForms[i]; PendingForms.RemoveAt(i); if (p.Active) Land(p, pf); }
     }
@@ -76,7 +78,9 @@ public partial class Battle
     {
         if (CannotForm(i) is string why) { PlayerHit = (why, Time); return; }
         var f = FormSlot[i]!;
-        Aura -= f.Aura;
+        float fromSurge = MathF.Min(Surge, f.Aura); // the surge goes first (MA3)
+        Surge -= fromSurge;
+        Aura -= f.Aura - fromSurge;
         formReady[i] = Time + f.Cooldown;
         if (f.Great) greatUses++;
         FormUses[f.Id] = FormUses.GetValueOrDefault(f.Id) + 1;
@@ -89,6 +93,8 @@ public partial class Battle
 
     void Use(Unit p, FormDef f, float k)
     {
+        Flash("form:" + f.Kind, p.Pos, f.Kind is "burst" or "shout" or "buff" or "drain" ? f.Radius : 1, p.Team, f.Order, p.Dir);
+        if (f.Great || f.Kind is "burst" or "shout" or "buff") Sound(Cue.Aura, p.Pos);
         switch (f.Kind)
         {
             case "focus": p.Stamina = 100; focusUntil = Time + f.Duration; focusK = f.Damage * k; break;
@@ -123,6 +129,7 @@ public partial class Battle
     /// A form's blow: aura goes through most of a man's armour and no guard holds it.
     void FormBlow(Unit p, Unit t, FormDef f, float k, float scale = 1)
     {
+        if (p == Player && f.Kind is "slash" or "leap") BreakCast(t); // a thrown form breaks a working (MA5)
         Damage(p, t, f.Damage * k * scale, f.Shock, 0.5f);
         if (t.Active) Stagger(t, 0.4f);
     }
@@ -137,6 +144,7 @@ public partial class Battle
             var at = pf.From + pf.Dir * f.Range;
             foreach (var t in FoesNear(at, f.Radius, f.MaxHit, p.Team)) FormBlow(p, t, f, pf.Power);
             Sound(Cue.Impact, at);
+            Flash("land:volley", at, f.Radius, p.Team, f.Order);
             return;
         }
         var hits = Near(pf.From + pf.Dir * (f.Range / 2), f.Range / 2 + 1, nearKill)
@@ -144,6 +152,7 @@ public partial class Battle
             .OrderBy(t => Vector2.DistanceSquared(t.Pos, pf.From)).ThenBy(t => t.Index).Take(f.MaxHit).ToList();
         foreach (var t in hits) FormBlow(p, t, f, pf.Power);
         Sound(Cue.Clash, pf.From + pf.Dir * 2);
+        Flash("land:slash", pf.From, f.Range, p.Team, f.Order, pf.Dir);
     }
 
     /// Within a cone from `from` along `dir`: ahead, out to `range`, and no further aside than `width` plus a quarter of the way out.
@@ -197,7 +206,9 @@ public partial class Battle
             Aura += f.Aura; formReady[Array.IndexOf(FormSlot, f)] = Time; PlayerHit = ("NO FOE TO LEAP AT", Time); return; // nothing spent
         }
         var dir = Vector2.Normalize(best.Pos - p.Pos);
+        var from = p.Pos;
         p.Pos = best.Pos - dir * 1.1f;
+        Flash("land:leap", p.Pos, Vector2.Distance(from, p.Pos), p.Team, f.Order, dir);
         p.Facing = MathF.Atan2(dir.Y, dir.X);
         FormBlow(p, best, f, k);
         foreach (var t in FoesNear(p.Pos, f.Radius, 8, p.Team)) if (t != best) Stagger(t, 0.6f);

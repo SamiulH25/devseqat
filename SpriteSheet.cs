@@ -107,6 +107,10 @@ public sealed class SpriteSheet
         var white = new Canvas(4, 4);
         white.Area((_, _) => true, Mat.Flat(Color.White));
         Add($"white{s}", white);
+        // A round puff for dust, smoke and mist motes (docs/MAGIC_AURA.md 6): squares read as boxes when they are large.
+        var puff = new Canvas(16, 16);
+        puff.Area((x, y) => (x - 8) * (x - 8) + (y - 8) * (y - 8) <= 56, Mat.Flat(Color.White));
+        Add($"puff{s}", puff);
         HorseGear(s);
     }
 

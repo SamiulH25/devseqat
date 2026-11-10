@@ -78,10 +78,13 @@ public partial class Campaign
         if (playerIn)
         {
             if (r.Duration > 0) RelicSpent(); // a fought battle (an auto-resolve has no length)
+            if (r.RelicRaised) RelicSpent(); // raised in the fight (MA5)
+            if (r.Duration > 0) S.Buffs.RemoveAll(b => b.Effect == "craft_marks"); // craft marks last one battle
             CompanionsAfterBattle(r, playerTeam); // XP, levels, bonds (Callings.cs, Bonds.cs)
             CompanionsReact(won ? "won" : "lost");
             if (r.Omen > 0) { S.Omen += r.Omen; CompanionsReact("craft"); } // craft draws Omen (C2)
             FormsAfterBattle(r);
+            CircleDaily(); // a fallen master leaves the circle leaderless (Circle.cs)
         }
 
         // Aftermath for each party.
@@ -125,6 +128,8 @@ public partial class Campaign
         var skillsBefore = new Dictionary<string, float>(Captain.Skills);
         if (playerIn) SkillsAfterBattle(r, won, playerTeam == 0 ? startStrength0 : startStrength1, playerTeam == 0 ? startStrength1 : startStrength0, before[Player], playerTeam);
         if (playerIn) OrderAfterBattle(won, playerTeam == 0 ? side1.ToList() : side0.ToList());
+        if (playerIn && r.BrokeThrough) BreakThrough("You felled a champion in the field, and the wall broke as he fell."); // MA7
+        if (playerIn) StyleAfterBattle(r); // how you fought: your own form (MA6)
         if (playerIn) AuraAfterBattle(r, won, (playerTeam == 0 ? startStrength1 : startStrength0) / MathF.Max(1, playerTeam == 0 ? startStrength0 : startStrength1));
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, Rules.PerMan(lostStrength));
@@ -192,7 +197,7 @@ public partial class Campaign
         Report = report with { Loot = loot, Ransom = ransom, Bounty = bounty, Renown = renown, Horses = horses, Spoil = spoil, Rises = Skills.Rises(Captain, skillsBefore), LastingWound = lasting, Aura = TakeAuraNews(),
             Goals = r.Goals.Select((id, i) => (i < r.GoalTexts.Count ? r.GoalTexts[i] : Battle.Goal(id).Text, r.GoalsMet.Contains(id))).ToList(),
             Roll = RollNewsOrdered().Where(n => n.Item1 is not ("HONOUR" or "LOST")).ToList(),
-            Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field };
+            Honours = RollNewsOrdered().Where(n => n.Item1 is "HONOUR" or "LOST").ToList(), Field = field, Wonders = r.Wonders };
         if (won) RaiseBurial();
         Log(won ? $"Victory over {enemyName}." : $"Defeat against {enemyName}.");
         return Report;
@@ -243,7 +248,7 @@ public partial class Campaign
             else if (Hostile(p, Player) && !Hostile(p, enemy)) setup.Side1.Add(p);
         }
         bool unpaid = S.UnpaidWeeks > 0;
-        setup.Player = WithHeroes(WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0)))); // callings (Callings.cs)
+        setup.Player = WithCircle(WithHeroes(WithDivisions(Rules.Army("Your company", setup.Side0, (unpaid ? -15 : 0) + (Has("Rallying") ? 5 : 0))))); // callings (Callings.cs), the circle (Circle.cs)
         setup.Enemy = WithChampion(Armies.Divide(Rules.Army(enemy.Name, setup.Side1)), enemy);
         setup.Seed = BattleSeed(enemy);
         bool scouts = setup.Side0.SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
@@ -263,7 +268,7 @@ public partial class Campaign
             Ground = GroundFor(enemy, GroundChooser(enemy, setup.Side0)), // the map's field, the rain, who chose it (Ground.cs)
             EnemyAggression = SideOf(enemy) >= 0 ? Factions.Get(SideOf(enemy)).Aggression : 1.5f, // a realm's temper; brigands do not wait long
             EnemyAura = ChampionAura(enemy), EnemyForms = ChampionFormsOf(enemy), Madness = MadnessInBattle, // an order knight leads with his aura (K6)
-            Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id)),
+            Weather = WeatherFor(enemy),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
             Standing = ActiveBuffs.Concat(RelicReady ? new[] { "relic" } : Array.Empty<string>()).ToArray(), // a shrine's blessing, a feast, hunger (Buffs.cs); your relic (Rites.cs)
         }.WithCaptain(Captain);

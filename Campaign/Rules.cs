@@ -24,6 +24,8 @@ public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyR
     public string Field { get; init; } = "";
     /// Banner honours this battle won, lost or won back (L5): HONOUR or LOST, and the line.
     public IReadOnlyList<(string Kind, string Text)> Honours { get; init; } = Array.Empty<(string, string)>();
+    /// The wonders the men saw (docs/SPECTACLE.md S7): great workings, a wall broken, a clash of champions.
+    public IReadOnlyList<string> Wonders { get; init; } = Array.Empty<string>();
 }
 
 /// A battle about to be fought between map parties: the armies, options, and how its companies map back to campaign records.
@@ -203,8 +205,11 @@ public static class Rules
         o.Perks = c.Perks.ToHashSet();
         o.Wounds = c.Wounds.ToHashSet();
         o.AuraTier = Math.Max(0, c.AuraTier - (c.Wounds.Contains("core") ? 1 : 0)); // a cracked core holds you a tier down (K5)
-        o.Forms = c.Forms.Where(Forms.Has).ToArray();
+        o.Forms = c.Forms.Where(id => Forms.Has(id) || id == Forms.OwnId && c.OwnForm != null).ToArray();
         o.FormRanks = c.Forms.ToDictionary(id => id, id => Campaign.FormRank(c, id));
+        o.FormAspects = new Dictionary<string, string>(c.FormAspects);
+        o.OwnForm = c.OwnForm;
+        o.AtWall = c.AuraWall;
         o.PlayerType = CaptainType(c);
         o.PlayerSide = c.Kit.Side != "" ? CaptainType(c, side: true) : null;
         o.PlayerMount = CaptainMount(c);

@@ -31,9 +31,9 @@ public sealed partial class Campaign
         return rest.StartsWith("Order", StringComparison.OrdinalIgnoreCase) ? rest : $"Order of the {rest}";
     }
 
-    /// The form your order would teach: your great form, else your highest form in a slot (never the Black Flame's).
+    /// The form your order would teach: your own form (MA6), else your great form, else your highest form in a slot (never the Black Flame's).
     public string OrderFormNow => SlottedForms(Captain).Where(Forms.Has).Select(Forms.Get).Where(f => f.Order != "hollow")
-        .OrderByDescending(f => f.Great).ThenByDescending(f => f.Tier).Select(f => f.Id).FirstOrDefault() ?? "";
+        .OrderByDescending(f => f.Id == Forms.OwnId).ThenByDescending(f => f.Great).ThenByDescending(f => f.Tier).Select(f => f.Id).FirstOrDefault() ?? "";
 
     /// Found your order from your company (the legend's, else your best), with a creed of three vows.
     public string? FoundOrder(IEnumerable<string> vows)

@@ -140,6 +140,7 @@ sealed partial class World : IDisposable
         sky["Horizon"].SetValue(Horizon.ToVector3());
         sky["Zenith"].SetValue(Zenith.ToVector3());
         sky["Time"].SetValue(time);
+        sky["Swirl"]?.SetValue(Sky.Swirl);
         sh.Sky.CurrentTechnique.Passes[0].Apply();
         gd.SetVertexBuffer(skyVb);
         gd.DrawPrimitives(PrimitiveType.TriangleList, 0, skyTris);

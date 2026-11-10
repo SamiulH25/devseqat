@@ -42,6 +42,7 @@ public sealed partial class Campaign
         Map = WorldMap.Generate(state.Seed, state.MapExtent, state.Layout, state.DataRealms);
         rng = new Rng(state);
         Factions.Bind(S.Factions);
+        RegisterOwnForm(); // your own form is made in play (MA6)
         MigrateGear();
         LearnForms();
         SyncOrders();
@@ -364,6 +365,7 @@ public sealed partial class Campaign
         }
         RefreshHeroes();
         RollDaily();
+        CircleDaily();
         EatDaily();
         // A company bled out away from battle (rearguards, desertion, hunger) does not leave you with nothing to command:
         // a handful of loyal men gather at the nearest friendly town, as they do after a lost battle.

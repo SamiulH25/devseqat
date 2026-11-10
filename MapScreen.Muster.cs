@@ -130,6 +130,50 @@ partial class MapScreen
     CompanyRecord? rollOf;
 
     /// A company's roll (docs/LEGACY.md L1): its named men, what each is known for, and the men it has lost.
+    /// A circle's spellbook and master on its roll (docs/MAGIC_AURA.md 3.2-3.3): click a known spell to prepare it or set it
+    /// aside, click one it could learn to learn it. Returns the y below it.
+    int Spellbook(CompanyRecord c, int x, int y, int w)
+    {
+        y += ui.U(3);
+        var master = Campaign.MasterOf(c);
+        string head = master != null ? $"{master.Name.ToUpperInvariant()}, {Campaign.MasterTitle(c).ToUpperInvariant()}, RANK {Campaign.MasterRank(master)}"
+            : C.Leaderless(c) ? $"LEADERLESS FOR {(c.LeaderlessUntil - C.S.Hours) / 24:0} MORE DAYS: NO GREAT WORKING" : "NO MASTER YET";
+        ui.Text("THE SPELLBOOK", x, y, Kit.Gilt, 2);
+        ui.TextR(ui.Fit(head, w - ui.U(150)), x + w, y + ui.U(4), master != null ? Kit.Gilt : Style.Warn, 1);
+        y += ui.U(20);
+        var prep = Campaign.Prepared(c);
+        ui.Text($"PREPARED {prep.Length} OF {Campaign.PrepareSlots(c)}. CLICK TO PREPARE OR SET ASIDE.", x, y, Style.Dim, 1);
+        y += ui.U(12);
+        var known = Campaign.Known(c);
+        int bw = (w - ui.U(8)) / 3;
+        for (int i = 0; i < known.Count; i++)
+        {
+            var a = Abilities.Get(known[i]);
+            bool on = prep.Contains(a.Id);
+            var b = new Rectangle(x + i % 3 * (bw + ui.U(4)), y + i / 3 * ui.U(21), bw, ui.U(18));
+            if (ui.Button(b, ui.Fit((on ? "* " : "") + a.Name.ToUpperInvariant(), b.Width - ui.U(8)), true)) note = C.Prepare(a.Id, !on) ?? a.Line.ToUpperInvariant();
+            if (ui.Hover(b)) note = a.Line.ToUpperInvariant() + (a.Great ? " ONCE A BATTLE." : "");
+        }
+        y += (known.Count + 2) / 3 * ui.U(21) + ui.U(4);
+        var learn = Campaign.Learnable(c).ToList();
+        if (c.Spells.Count < Campaign.MaxLearned && learn.Count > 0)
+        {
+            int cost = Campaign.LearnCost * (c.Spells.Count + 1);
+            ui.TextFit($"LEARN ONE MORE: {cost} CROWNS, WITH A TEACHER ({(Campaign.CircleTradition(c) == "faith" ? "A PRIEST" : "A CUNNING ONE")}, A SHRINE, STONES OR A HERMIT)", x, y, w, Style.Dim, 1);
+            y += ui.U(12);
+            for (int i = 0; i < learn.Count && i < 6; i++)
+            {
+                var a = learn[i];
+                var b = new Rectangle(x + i % 3 * (bw + ui.U(4)), y + i / 3 * ui.U(21), bw, ui.U(18));
+                if (ui.Button(b, ui.Fit("LEARN " + a.Name.ToUpperInvariant(), b.Width - ui.U(8)), C.CannotLearn(a.Id) == null)) note = C.LearnSpell(a.Id) ?? $"{c.Name.ToUpperInvariant()} LEARN {a.Name.ToUpperInvariant()}.";
+                if (ui.Hover(b)) note = (C.CannotLearn(a.Id) is string why ? why + ". " : "") + a.Line.ToUpperInvariant();
+            }
+            y += (Math.Min(6, learn.Count) + 2) / 3 * ui.U(21);
+        }
+        ui.Divider(x, y + ui.U(2), w, Kit.Gilt * 0.5f);
+        return y + ui.U(10);
+    }
+
     void RollPanel()
     {
         var c = rollOf;
@@ -148,6 +192,7 @@ partial class MapScreen
             ui.Text(Cut(hon.ToUpperInvariant(), fit), x, y, Kit.Gilt, 1);
             y += ui.U(11);
         }
+        if (Rules.RoleOf(c) == "casters") y = Spellbook(c, x, y, w);
         y += ui.U(3);
         ui.Text("THE ROLL", x, y, Kit.Gilt, 2);
         ui.TextR($"{c.Roll.Count} OF {Balance.Get().RollSize} NAMED", x + w, y + ui.U(4), Style.Dim, 1);

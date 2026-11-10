@@ -144,7 +144,7 @@ sealed partial class Hud
         Overlay(r, "CONTROLS", Gold);
         var cols = new (string Title, (string Label, string Key)[] Rows)[]
         {
-            ("IN THE FIELD", new[] { Act.Forward, Act.Back, Act.Left, Act.Right, Act.Sprint, Act.Attack, Act.Block, Act.Bash, Act.SwapWeapon, Act.AuraBlade, Act.Form1, Act.Form2, Act.Form3, Act.GreatForm, Act.Couch, Act.Interact, Act.Rally, Act.OrderWheel }
+            ("IN THE FIELD", new[] { Act.Forward, Act.Back, Act.Left, Act.Right, Act.Sprint, Act.Attack, Act.Block, Act.Bash, Act.SwapWeapon, Act.AuraBlade, Act.Form1, Act.Form2, Act.Form3, Act.GreatForm, Act.Relic, Act.Couch, Act.Interact, Act.Rally, Act.OrderWheel }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Append(("SWING / BLOCK DIRECTION", "MOVE MOUSE"))
                 .Append(("FEINT", "BLOCK IN WINDUP"))
@@ -157,7 +157,7 @@ sealed partial class Hud
                 ("FOCUS SQUAD", "DOUBLE-CLICK CARD"), ("WHAT THE GROUND DOES", "HOVER IT"), (Controls.Labels[Act.GroundView], Ctl.Name(Act.GroundView)),
                 (Controls.Labels[Act.Stakes], Ctl.Name(Act.Stakes)),
             }),
-            ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.SelectAll, Act.NextDivision,
+            ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.Cast, Act.SelectAll, Act.NextDivision,
                     Act.CommandView, Act.Pause, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Prepend(("SELECT SQUAD", "1-0")).ToArray()),

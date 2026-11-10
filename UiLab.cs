@@ -33,7 +33,7 @@ sealed partial class UiLab
         pages = new (string, Action<Rectangle>)[]
         {
             ("KIT", KitPage), ("TITLE", TitlePage), ("MUSTER", MusterPage), ("AFTER ACTION", ReportPage), ("MARKET", MarketPage),
-            ("BATTLE HUD", HudPage), ("CAPTAIN", CaptainPage), ("REALMS", RealmsPage), ("EVENT", EventPage),
+            ("BATTLE HUD", HudPage), ("CAPTAIN", CaptainPage), ("REALMS", RealmsPage), ("EVENT", EventPage), ("MAGIC", MagicPage),
         };
     }
 

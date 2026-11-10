@@ -214,12 +214,14 @@ public partial class Battle
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1) // arrows pass between a skeleton's ribs
             * (a.IsPlayer && AuraBlade && !ranged || FoeBlade(a, ranged) ? BladeDamage : 1) // the aura blade (K1; a champion's, K6)
-            * (a.IsPlayer && edgeLeft > 0 && !ranged ? 1 + edgeK : 1); // Thorn Edge (K2)
+            * (a.IsPlayer && edgeLeft > 0 && !ranged ? 1 + edgeK : 1) // Thorn Edge (K2)
+            * ClashMult(a, t); // a clash of champions (MA7)
         if (t.Squad != null) t.Squad.HitsTaken++;
         if (side != Side.Front && a.Squad != null && !ranged) a.Squad.FlankHits++;
         if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
         bool foeBlade = FoeBlade(a, ranged);
         float real = Damage(a, t, dmg * mult, side == Side.Rear ? 4 : side == Side.Flank ? 1.5f : 0, ranged || a.IsPlayer || foeBlade ? MathF.Min(0.9f, a.Type.Pierce + (a.IsPlayer && AuraBlade && !ranged || foeBlade ? BladePierce : 0) + (a.IsPlayer && edgeLeft > 0 && !ranged ? 0.9f : 0)) : 0, ranged); // your mace or axe bites through armour too, and the aura blade more
+        if (a.IsPlayer && !ranged && AuraBlade) BladeMarks(t); // breaks a working, leaves craft marks (MA5)
         if (a.IsPlayer && !ranged) BladeLanded();
         if (foeBlade) FoeAura = MathF.Max(0, FoeAura - BladeHitCost);
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
@@ -321,6 +323,7 @@ public partial class Battle
             t.Pos -= new Vector2(-t.HeadingDir.Y, t.HeadingDir.X) * 1.0f; // the rider falls off to the side
         }
         if (killer.IsPlayer && t != killer) PlayerKills++;
+        if (killer.IsPlayer && t == EnemyCaptain) ChampionFelled(); // a breakthrough in the field (MA7)
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 7)]++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;
         if (killer.Team != t.Team) { killer.Kills++; if (t.IsLeader || t.Hero) killer.FelledLeader = true; }
@@ -345,6 +348,7 @@ public partial class Battle
     {
         u.Cooldown = (u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f) * u.Type.Reload * StyleReload(u) * (1 + u.Mods.Reload); // a crossbow takes long to span
         float spread = (u.Squad?.Company?.Has("Sharpshooter") == true ? 0.65f : 1) * MathF.Max(0.2f, 1 + u.Mods.Spread); // steady aim
+        if (MirageFor(u) is { } m) { Loose(u, m.Pos, null, u.Type.Damage, spread); return; } // a mirage draws their arrows (MA8)
         Loose(u, t.Pos, t, u.Type.Damage, spread);
     }
 
@@ -400,6 +404,7 @@ public partial class Battle
                 if (t.Team == p.Shooter.Team || !t.Active) continue;
                 float r = t.Mounted ? 0.8f : 0.4f;
                 if ((!t.Mounted && p.Pos.Y > ground + 2) || Vector2.DistanceSquared(t.Pos, flat) > r * r) continue;
+                if (CutsArrow(t, p.Vel)) { p.Pos.Y = ground; p.Stuck = 0; break; } // a Transcendent's blade cuts it from the air (MA7)
                 Hit(p.Shooter, t, p.Damage, true, plunge: Vector2.DistanceSquared(p.Shooter.Pos, flat) > Plunging * Plunging * p.Shooter.Type.Range * p.Shooter.Type.Range); // a long shot drops from above
                 Arrows.RemoveAt(i);
                 break;

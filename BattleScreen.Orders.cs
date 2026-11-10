@@ -90,7 +90,15 @@ partial class BattleScreen
             case Cmd.FireAtWill:
             {
                 var archers = Targets().Where(s => s.Units.Any(u => u.Type.Ammo > 0)).ToList();
-                if (archers.Count == 0) { battle.Log("No archers selected."); break; }
+                var casters = Targets().Where(Battle.CasterCompany).ToList();
+                if (casters.Count > 0)
+                {
+                    // Casters hold their spells for your word, or cast at will again (docs/MAGIC_AURA.md 3.1).
+                    bool hold = !casters[0].HoldSpells;
+                    foreach (var s in casters) Send(s, q => q.HoldSpells = hold);
+                    battle.Log(hold ? "Casters: hold your spells for my word!" : "Casters: cast at will!");
+                }
+                if (archers.Count == 0) { if (casters.Count == 0) battle.Log("No archers selected."); break; }
                 bool fire = !archers[0].FireAtWill;
                 foreach (var s in archers) Send(s, q => q.FireAtWill = fire);
                 battle.Log(fire ? "Archers: fire at will!" : "Archers: hold your arrows!");
@@ -117,8 +125,39 @@ partial class BattleScreen
         if (ctl.Pressed(Act.NextDivision)) NextDivision();
         if (ctl.Pressed(Act.GroundView)) groundView = !(groundView ?? deploying);
         if (ctl.Pressed(Act.Stakes)) PlantStakes();
+        if (ctl.Pressed(Act.Cast)) NextSpell();
         foreach (var (cmd, (_, act)) in Hud.Orders)
             if (ctl.Pressed(act)) Command(cmd);
+    }
+
+    /// The caster you direct and the spell picked (docs/MAGIC_AURA.md 3.1). The next left click on the field casts it there.
+    Squad? castBy;
+    int castPick = -1;
+
+    /// Pick the next spell of a selected caster (a mage circle, or a company whose hero has abilities); past the last, none.
+    void NextSpell()
+    {
+        var who = Targets().Where(s => s.Spells.Length > 0 && s.Team == 0).OrderByDescending(Battle.CasterCompany).FirstOrDefault();
+        if (who == null) { battle.Log("Select a circle of mages, or a company led by a companion, to cast."); castBy = null; castPick = -1; return; }
+        if (!command) { battle.Log($"Open the command view ({ctl.Name(Act.CommandView)}) to direct your casters."); return; }
+        if (castBy != who) { castBy = who; castPick = -1; }
+        castPick = castPick + 1 >= who.Spells.Length ? -1 : castPick + 1;
+        if (castPick < 0) castBy = null;
+        else Tips.Show("cast", "Click the ground to cast the spell there; attacks still glow before they land.\nAn ordered spell costs more Will. X makes your casters hold their spells for your word.");
+    }
+
+    /// Cast the picked spell on a spot: the order reaches a company in a division late, like any order.
+    void CastAt(Vector2 spot)
+    {
+        if (castBy is not { } s || castPick < 0) return;
+        int i = castPick;
+        var a = s.Spells[i];
+        float late = Send(s, q => { q.CastSpell = i; q.CastAt = spot; q.CastSince = battle.Time; });
+        if (battle.CannotCast(s, i) is string why) battle.Log($"{s.Name} will cast {a.Name} when they can ({why.ToLowerInvariant()}).");
+        else battle.Log($"{s.Name}: cast {a.Name} there!" + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
+        arrows.Add((s.Centroid(), spot, Ui.Now));
+        castBy = null;
+        castPick = -1;
     }
 
     /// Your selected longbowmen (or all of them) plant their stakes in front of their line (docs/TERRAIN.md T6).

@@ -67,7 +67,7 @@ public sealed partial class Campaign
         if (won && ChampionAbove(e)) BreakThrough($"You beat {name}, a champion above you, in single combat."); // K5
         AuraAfterDuel(r, won, CharacterOf(e)?.Name ?? e.Name);
         FormsAfterBattle(r);
-        float renown = won ? DuelRenown : 0;
+        float renown = won ? DuelRenown * (Captain.AuraTier >= 3 ? 1.5f : 1) : 0; // an aura captain's duels are talked of more (MA8)
         Captain.Renown += renown;
         var fate = won ? LeaderFate.Unhurt : LeaderFate.Wounded;
         if (!won) Captain.WoundedUntil = MathF.Max(Captain.WoundedUntil, (float)S.Hours + 24 * 3);

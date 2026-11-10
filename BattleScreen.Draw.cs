@@ -76,6 +76,7 @@ partial class BattleScreen
         sh.GroundMap = TrampleTexture(); sh.GroundSize = TrampleSize; sh.NearDetail = true;
         sh.Torch = TorchRow();
         sh.Cut = MathHelper.SmoothStep(0, 1, blend);
+        SetGlows(sh);
         world.DrawShaded(sh, view, proj, eye, realTime, shadows);
         sh.GroundMap = null; sh.NearDetail = false; sh.Cut = 0;
         DrawBlobs(shadows ? 0.4f : 1); // with real shadows the blobs only add contact darkening
@@ -83,8 +84,10 @@ partial class BattleScreen
         sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
         DrawSpritesShaded(sh.Sprite, "Sprite");
         sh.Torch = Vector4.Zero;
+        Array.Clear(sh.Glow); // the lights are this battle's alone (the map shares the shaders)
         DrawLines();
-        sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0);
+        var (awe, moment) = PostMoment();
+        sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0, awe, moment, warpNow);
     }
 
     void DrawBlobs(float alpha)
@@ -156,6 +159,7 @@ partial class BattleScreen
                 case Cue.Impact: Spray(at, 0.2f, 10, new Color(168, 150, 116), 1.6f, 1.3f, 0.25f, false, 0.6f); break;
             }
         GroundSteps(dt);
+        MagicFx(dt);
         for (int i = motes.Count - 1; i >= 0; i--)
         {
             var m = motes[i];
@@ -253,6 +257,7 @@ partial class BattleScreen
         if (!forSun)
         {
             DrawMarks();
+            DrawScars();
             foreach (var m in motes) puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
         }
         var eye2 = new Vector2(eye.X, eye.Z);
@@ -417,18 +422,11 @@ partial class BattleScreen
         "faith" => new Color(250, 222, 130), "craft" => new Color(190, 130, 255), "necromancy" => new Color(140, 230, 120), _ => new Color(220, 228, 240),
     };
 
-    /// Casts on their way (a ring closing on the spot, your warning to move) and spell fields (a slow ring at their edge).
+    /// Casts on their way (a circle of marks drawing itself round the spot, your warning to move) and spell fields (a slow ring at their edge).
     void Spells()
     {
         float t = battle.Time;
-        foreach (var c in battle.Casts)
-        {
-            float k = Math.Clamp((t - c.Started) / MathF.Max(0.1f, c.FireAt - c.Started), 0, 1);
-            float r = MathF.Max(1, c.A.Radius) * (1.6f - 0.6f * k);
-            var col = Color.Lerp(SpellColor(c.A.Tradition), Color.White, k);
-            Ring(c.At, r, col, 16);
-            if (c.A.Kind is "attack" or "bolt") Ring(c.At, r * 0.5f, col, 10);
-        }
+        foreach (var c in battle.Casts) Sigil(c); // the gathering (docs/SPECTACLE.md S2)
         foreach (var f in battle.Fields)
         {
             var col = f.Effect?.Harmful == true ? new Color(240, 120, 80) : SpellColor(f.A.Tradition);
@@ -436,6 +434,7 @@ partial class BattleScreen
             Ring(f.Pos, f.Radius * pulse, col, 20);
         }
         AuraGlow();
+        MagicLines();
     }
 
     /// The captain's aura (docs/KNIGHT_ORDERS.md K1): the lit blade as a streak along the facing, aura armour as a shimmer.
@@ -464,18 +463,15 @@ partial class BattleScreen
 
     void PlayerGlow(Unit p, float t, float pulse)
     {
-        if (battle.AuraBlade)
+        // The lit blade and its trail are drawn with the rest of the magic (BattleScreen.Magic.cs).
+        var aura = AuraColour;
+        if (battle.AuraTier >= 3 && !battle.Spent)
         {
-            float lift = p.Mounted ? 1.2f : 0;
-            var from = p.Pos + p.Dir * 0.35f;
-            var to = p.Pos + p.Dir * (p.Type.Reach + 0.3f);
-            var col = Color.Lerp(Style.Aura, Color.White, 0.3f * pulse);
-            Line(G(from, 1.25f + lift), G(to, 1.0f + lift), col);
-            Line(G(from, 1.2f + lift), G(to, 0.95f + lift), col);
+            Ring(p.Pos, 0.9f * pulse, Color.Lerp(aura, Color.Black, 0.35f), 12);
+            Ring(p.Pos, 0.7f * pulse, Color.Lerp(aura, Color.Black, 0.55f), 10); // a shimmer, two rings breathing out of step
         }
-        if (battle.AuraTier >= 3 && !battle.Spent) Ring(p.Pos, 0.9f * pulse, Color.Lerp(Style.Aura, Color.Black, 0.35f), 12);
         if (battle.Guarding) Ring(p.Pos + p.Dir * 0.7f, 0.6f, Color.White, 8);
-        if (battle.AuraTier >= 4 && !battle.Spent) Ring(p.Pos, Battle.PresenceRadius * (0.96f + 0.04f * MathF.Sin(t * 2)), Color.Lerp(Style.Aura, Color.Black, 0.6f), 40);
+        if (battle.AuraTier >= 4 && !battle.Spent) Ring(p.Pos, Battle.PresenceRadius * (0.96f + 0.04f * MathF.Sin(t * 2)), Color.Lerp(aura, Color.Black, 0.6f), 40);
     }
 
     /// Thrown forms on their way, yours and a champion's (K2, K6).

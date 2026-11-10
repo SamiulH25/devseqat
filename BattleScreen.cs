@@ -42,6 +42,25 @@ sealed partial class BattleScreen
             Tips.Show("height", "High ground. Men fighting downhill hit harder, archers shoot further, and a crest hides what is behind it.\nAn enemy on good ground may wait for you to come to him.");
     }
 
+    /// First times with aura and magic (docs/MAGIC_AURA.md 7): your forms, the blade, being spent, a curse, the relic, your circle.
+    void MagicTips()
+    {
+        var b = battle;
+        if (!b.Player.Active) return;
+        if (b.Fevered || b.Quenched)
+            Tips.Show("cursed", "An enemy curse is on you: an Evil eye quenches your blade, Fever slows your breath.\nAura armour (Aura Expert) halves a curse. Their mages are worth hunting: your lit blade breaks a working.");
+        else if (b.Spent)
+            Tips.Show("spent", "Your aura is spent (under 20): your blows land lighter and your breath comes back slowly.\nIt returns twice as fast standing still with no foe within 30 m.");
+        else if (b.AuraTier >= 2)
+            Tips.Show("blade", $"Hold {ctl.First(Act.AuraBlade)} to light the aura blade: harder blows through armour, paid from your aura.\nAt full aura, blows you land bank a surge that your next form spends first.");
+        else if (b.FormSlot.Any(f => f != null))
+            Tips.Show("forms", $"Your aura is awake. {ctl.First(Act.Form1)}, {ctl.First(Act.Form2)}, {ctl.First(Act.Form3)}: your forms; {ctl.First(Act.GreatForm)}: the great form, once a battle.\nEach costs aura. The aura row by your health shows the pool.");
+        if (b.HasRelic && !b.RelicRaised)
+            Tips.Show("relic", $"You carry the relic. Press {ctl.First(Act.Relic)} once this battle to raise it: a Blessing on the companies\naround you and aura for you. It costs a charge.");
+        if (b.Squads.Any(s => s.Team == 0 && s.Spells.Length > 0 && s.Units.Any(u => u.Active && u.Type.Spells.Length > 0)))
+            Tips.Show("circle", $"Your circle casts on its own when a spell fits. In command view select it and press {ctl.First(Act.Cast)}\nto pick a spell, then click the ground to cast it there.");
+    }
+
     /// The ground map, as you last set it (null: shown while deploying only).
     bool? groundView;
     Vector3 focusPoint;                        // what the camera looks at (the shadow map is centred here)
@@ -71,8 +90,9 @@ sealed partial class BattleScreen
 
     // Debug: IRONFIELD_SHOTS=/dir stages a few camera shots, saves them as PNGs and quits.
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
-    // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/MELEE.md), skipping the rest.
-    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") == "clash" ? 53 : 0, shotFrames;
+    // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/MELEE.md), =magic at the magic scenes,
+    // =spectacle at the spectacle scenes (docs/SPECTACLE.md), skipping the rest.
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
 
@@ -213,7 +233,8 @@ sealed partial class BattleScreen
     void SetWorld()
     {
         Sky.Set(battle.Weather, nightFloor: 0.42f); // moonlight: dark, but you can still see who is who
-        motes.Clear();
+        ResetMagicFx();
+        ResetSpectacle();
         markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
@@ -256,6 +277,7 @@ sealed partial class BattleScreen
         else if (!command && battle.Player.Active) Tips.Show("field", $"Field view: you fight. On horseback {ctl.First(Act.Forward)}/{ctl.First(Act.Back)} rein, {ctl.First(Act.Left)}/{ctl.First(Act.Right)} turn, {ctl.First(Act.Sprint)} gallops.\nMove the mouse to choose a swing direction, {ctl.First(Act.Attack)} to attack, {ctl.First(Act.Block)} to block (match the red mark to parry).\n{ctl.First(Act.CommandView)}: command view. Hold {ctl.Name(Act.OrderWheel)}: the order wheel. {ctl.First(Act.Help)}: all the keys.");
         else if (command && !deploying) Tips.Show("command", $"Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. {ctl.First(Act.CommandView)} returns to your body: you inspire the men near you.");
         if (deploying) GroundTips();
+        else MagicTips();
 
         if (ctl.Pressed(Act.Menu)) { if (helpOpen) helpOpen = false; else if (battle.Winner < 0) menuOpen = !menuOpen; skipMouse = true; }
         if (ctl.Pressed(Act.Help)) { helpOpen = !helpOpen; skipMouse = true; }
@@ -291,7 +313,8 @@ sealed partial class BattleScreen
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
         if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
         if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
-        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
+        scale *= BeatScale; // the battle's cinematic beat slows the view (docs/SPECTACLE.md S1); each tick's step is recorded
+        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
@@ -325,7 +348,8 @@ sealed partial class BattleScreen
             if (u.Action is UnitAction.Windup or UnitAction.Recover && u.Type.Ammo == 0) fighting++;
         }
         bool quiet = paused || menuOpen || deploying;
-        audio.Beds(0.7f, quiet ? 0 : MathF.Min(1, horses / 5f), quiet ? 0 : MathF.Min(1, fighting / 14f), quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)));
+        float hush = 1 - 0.6f * MathF.Max(BeatAmount, Sky.OmenDark); // a beat or a gathering working quiets the field
+        audio.Beds(0.7f * (1 - Sky.OmenDark * 0.8f), quiet ? 0 : MathF.Min(1, horses / 5f) * hush, quiet ? 0 : MathF.Min(1, fighting / 14f) * hush, quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)) * hush);
         audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Map : MusicTrack.Battle);
     }
 
@@ -345,6 +369,7 @@ sealed partial class BattleScreen
             if (routeAt == null || Vector2.DistanceSquared(routeAt.Value, mouseGround) > 4) { route = battle.Route(ts[0], mouseGround); routeAt = mouseGround; }
         }
         else { route = null; routeAt = null; }
+        hud.CastBy = castBy; hud.CastPick = castPick;
         hud.Command = command; hud.Paused = paused; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
         hud.ShowResult = battle.Winner >= 0 && !helpOpen && !Ending;
         hud.InCampaign = campaignBattle != null;

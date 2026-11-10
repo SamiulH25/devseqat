@@ -53,6 +53,8 @@ sealed class Shading : IDisposable
             Uniform.Mat4("ViewProj"), Uniform.Mat4("LightViewProj"), Uniform.Vec3("CameraPos"), Uniform.Vec3("SunDir"), Uniform.Vec3("SunColor"),
             Uniform.Vec3("SkyColor"), Uniform.Vec3("GroundColor"), Uniform.Vec3("FogColor"), Uniform.Vec4("FogParams"), Uniform.Vec4("ShadowParams"),
             Uniform.Float("Time"), Uniform.Vec4("Wind"), Uniform.Vec2("SpriteLight"), Uniform.Vec4("Field"), Uniform.Vec4("Look"), Uniform.Vec4("Torch"), Uniform.Float("Cut"),
+            Uniform.Vec4("Glow0"), Uniform.Vec4("Glow1"), Uniform.Vec4("Glow2"), Uniform.Vec4("Glow3"),
+            Uniform.Vec4("GlowCol0"), Uniform.Vec4("GlowCol1"), Uniform.Vec4("GlowCol2"), Uniform.Vec4("GlowCol3"),
         };
         var shadowTex = new TextureSlot("ShadowMap", 1, ShadowSampler);
 
@@ -70,12 +72,12 @@ sealed class Shading : IDisposable
             new GlslEffect.Technique("Sprite"), new GlslEffect.Technique("SpriteShadow", "SHADOW"));
 
         Sky = GlslEffect.Create(gd, "sky", Source("sky.glsl"),
-            new[] { Uniform.Mat4("ViewProj"), Uniform.Vec3("SunDir"), Uniform.Vec3("SunColor"), Uniform.Vec3("Horizon"), Uniform.Vec3("Zenith"), Uniform.Float("Time") },
+            new[] { Uniform.Mat4("ViewProj"), Uniform.Vec3("SunDir"), Uniform.Vec3("SunColor"), Uniform.Vec3("Horizon"), Uniform.Vec3("Zenith"), Uniform.Float("Time"), Uniform.Vec2("Swirl") },
             Array.Empty<TextureSlot>(), new[] { new Attribute("aPos", VertexElementUsage.Position) },
             new GlslEffect.Technique("Sky"));
 
         Post = GlslEffect.Create(gd, "post", Source("post.glsl"),
-            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade"), Uniform.Vec4("Tint") },
+            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade"), Uniform.Vec4("Tint"), Uniform.Vec4("Awe"), Uniform.Vec4("Moment"), Uniform.Float("Time"), Uniform.Float("Warp") },
             new[] { new TextureSlot("Scene", 0, SamplerState.LinearClamp) },
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
             new GlslEffect.Technique("Post"));
@@ -112,6 +114,12 @@ sealed class Shading : IDisposable
     /// A besieged town's torch row (docs/VISUALS.md): x = its z, y = its height, z = strength (0 = none), w = spacing.
     /// Set by the battle screen while it draws a siege at night; zero everywhere else.
     public Vector4 Torch;
+    /// How still the air is (0 = the usual breeze, 1 = dead calm): a great working gathering holds its breath.
+    public float Calm;
+    /// Moving lights (docs/SPECTACLE.md S1): xyz place, w strength (negative takes light); colours rgb + reach in w.
+    /// Set by the battle screen each frame; all zero elsewhere.
+    public readonly Vector4[] Glow = new Vector4[4], GlowCol = new Vector4[4];
+    static readonly string[] GlowNames = { "Glow0", "Glow1", "Glow2", "Glow3", "GlowCol0", "GlowCol1", "GlowCol2", "GlowCol3" };
     /// How far leaves over men are cut away (the command view's blend, 0 = none); reads the ground map's green channel.
     public float Cut;
     /// Fog start and end (the campaign map pushes them out for its far camera).
@@ -132,12 +140,13 @@ sealed class Shading : IDisposable
         p["FogParams"]?.SetValue(new Vector4(Fog.X * Ironfield.Sky.FogScale, Fog.Y * Ironfield.Sky.FogScale, 0.55f, 0));
         p["ShadowParams"]?.SetValue(new Vector4(ShadowTexel, ShadowBias, shadows ? 1 : 0, normalOffset));
         p["Time"]?.SetValue(time);
-        p["Wind"]?.SetValue(Wind);
+        p["Wind"]?.SetValue(new Vector4(Wind.X, Wind.Y, Wind.Z * (1 - Calm * 0.9f), Wind.W * (1 - Calm * 0.6f)));
         p["SpriteLight"]?.SetValue(SpriteLight);
         p["ShadowMap"]?.SetValue(ShadowMap);
         p["Field"]?.SetValue(new Vector4(1f / GroundSize, GroundMap != null ? 1 : 0, Ironfield.Sky.Clouds, Ironfield.Sky.Wet));
         p["Torch"]?.SetValue(Torch);
         p["Cut"]?.SetValue(Cut);
+        for (int i = 0; i < 4; i++) { p[GlowNames[i]]?.SetValue(Glow[i]); p[GlowNames[i + 4]]?.SetValue(GlowCol[i]); }
         p["Look"]?.SetValue(new Vector4(Ironfield.Sky.Snow, NearDetail ? 1 : 0, Ironfield.Sky.Night, Ironfield.Sky.Rain));
         if (p["GroundMap"] is { } gm) gm.SetValue(GroundMap ?? Blank(gd));
     }
@@ -163,8 +172,10 @@ sealed class Shading : IDisposable
     }
 
     /// Draw the scene target to the screen through the post shader: `tint` grades the light by hour and weather
-    /// (Sky.Grade; One = none), `bloom` lets bright highlights glow (0 = off; High quality only).
-    public void PostToScreen(bool fxaa, Vector3? tint = null, float bloom = 0)
+    /// (Sky.Grade; One = none), `bloom` lets bright highlights glow (0 = off; High quality only). `awe` drains colour
+    /// outside a circle (xy its centre in screen uv, z its radius, w how much); `moment`: x = letterbox bars (fraction of the
+    /// height each), y = heat shimmer, z = a white flash, w = the shimmer's height on screen (docs/SPECTACLE.md S1).
+    public void PostToScreen(bool fxaa, Vector3? tint = null, float bloom = 0, Vector4 awe = default, Vector4 moment = default, float warp = 0)
     {
         var s = Scene();
         gd.SetRenderTarget(null);
@@ -175,6 +186,10 @@ sealed class Shading : IDisposable
         Post.Parameters["Texel"].SetValue(new Vector2(1f / s.Width, 1f / s.Height));
         Post.Parameters["Grade"].SetValue(new Vector4(0.96f, 1.05f, 0.26f, fxaa ? 1 : 0)); // saturation, contrast, vignette, FXAA
         Post.Parameters["Tint"].SetValue(new Vector4(tint ?? Vector3.One, bloom));
+        Post.Parameters["Awe"].SetValue(awe);
+        Post.Parameters["Moment"].SetValue(moment);
+        Post.Parameters["Warp"]?.SetValue(warp);
+        Post.Parameters["Time"].SetValue((float)(Environment.TickCount64 % 100000) / 1000f);
         Post.CurrentTechnique.Passes[0].Apply();
         gd.DrawUserPrimitives(PrimitiveType.TriangleList, quad, 0, 2);
     }

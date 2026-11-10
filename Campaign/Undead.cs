@@ -42,7 +42,7 @@ public partial class Campaign
         {
             double days = (S.Hours - g.Hours) / 24;
             if (days > B.GraveDays) { S.Graves.Remove(g); continue; }
-            if (days < B.GraveRiseDays || UndeadHosts.Count() >= B.UndeadMax || !rng.Chance(B.GraveRiseChance)) continue;
+            if (days < B.GraveRiseDays * (S.Omen >= OmenStirs ? 0.5f : 1) || UndeadHosts.Count() >= B.UndeadMax || !rng.Chance(B.GraveRiseChance)) continue;
             S.Graves.Remove(g);
             RaiseHost(g);
         }
@@ -53,6 +53,7 @@ public partial class Campaign
     {
         var prov = Map.ProvinceAt(g.Pos);
         int bones = Math.Clamp((int)MathF.Round(g.Dead * B.UndeadShare), Scaled(B.UndeadMinMen), Scaled(B.UndeadMaxMen));
+        if (S.Omen >= OmenStirs) bones += bones / 3; // a high Omen raises another rank (MA8)
         var host = new Party
         {
             Id = S.NextId++, Kind = PartyKind.Monster, Breed = "undead", Name = $"The Dead of {prov.Name}", Pos = g.Pos, Goal = g.Pos,

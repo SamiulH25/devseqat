@@ -56,6 +56,26 @@ sealed class Puppet
     public float Rear;
     /// The winning team once the battle is over (its men cheer), else -1.
     public int Winner = -1;
+    /// Sources of awe this frame (docs/SPECTACLE.md S1): a place, a reach and how strong it is now (0..1). Set by the battle
+    /// screen; men within reach lean back and raise an arm against it. Drawing only.
+    public readonly List<(Vector2 At, float Radius, float Strength, int Team)> Awe = new(); // Team -1: everyone; else only that side
+
+    /// A man near a working leans back from it and lifts his free arm against the light. Men in a swing or a parry keep
+    /// fighting; the rest react fully, each a moment apart (his phase).
+    Pose Awed(Unit u, Pose p, float phase)
+    {
+        float k = 0;
+        if (u.IsPlayer) return p; // the source of it does not flinch
+        foreach (var (at, r, str, team) in Awe)
+        {
+            if (team >= 0 && u.Team != team) continue;
+            float d = Vector2.Distance(at, u.Pos);
+            if (d < r) k = MathF.Max(k, str * (1 - d / r) * 1.6f);
+        }
+        if (k <= 0 || u.Routing) return p;
+        k = Math.Clamp(k - phase * 0.25f, 0, 1) * (u.Action == UnitAction.None ? 1 : 0.3f);
+        return p with { LeanZ = p.LeanZ - 9 * k, OffA = MathHelper.Lerp(p.OffA, 125, k * 0.8f), ShieldUp = p.ShieldUp || k > 0.6f };
+    }
     float tilt, tiltX, tiltZ;
 
     /// Lean the body by a vector in degrees (x = to the right, z = forward).
@@ -105,6 +125,7 @@ sealed class Puppet
         if (u.Dead) { Fallen(u, lift, size, phase); return; }
         if (look.Face == "wolf") { Frame(u.Pos, u.ViewFacing, lift, size); Beast(u, ground); return; }
         var p = PoseOf(u, Now, phase, Winner);
+        if (Awe.Count > 0) p = Awed(u, p, phase);
         var at = u.Pos;
         float leanBack = 0;
         if (u.Mounted && Rear > 0)
@@ -549,7 +570,7 @@ sealed class Puppet
     /// A solid-colour square facing the camera: dust, blood and sparks (pixel-art particles).
     public void Particle(Vector3 c, float size, Color col)
     {
-        var src = art["white/0"];
+        var src = art[size > 0.15f ? "puff/0" : "white/0"]; // a large mote is round
         var hw = camRight * size / 2;
         var hh = camUp * size / 2;
         var keep = tint;

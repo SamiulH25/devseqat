@@ -139,7 +139,19 @@ partial class BattleScreen
                 Clash(shotIndex == 53 ? "levies" : "immortals"); shotFrames = 0; shotIndex++; break;
             case 54 or 56 when shotFrames > 20:
                 pendingShot = shotIndex == 54 ? "clash-levies" : "clash-elites"; shotIndex++; break;
-            case 57 when pendingShot == null: Exit(); break;
+            case 57 or 59 when pendingShot == null:
+                MagicScene(shotIndex == 57); shotFrames = 0; shotIndex++; break;
+            case 58 or 60 when shotFrames > 12:
+                pendingShot = shotIndex == 58 ? "magic-spells" : "magic-aura"; shotIndex++; break;
+            case 61 or 63 or 65 when pendingShot == null:
+                SpectacleScene((shotIndex - 61) / 2); shotFrames = 0; shotIndex++; break;
+            case 62 or 64 or 66 when shotFrames > 12:
+                pendingShot = shotIndex switch { 62 => "spectacle-night", 64 => "spectacle-breakthrough", _ => "gather-great" }; shotIndex++; break;
+            case >= 67 and < 83 when shotIndex % 2 == 1 && pendingShot == null:
+                WorkScene((shotIndex - 67) / 2); shotFrames = 0; shotIndex++; break;
+            case >= 67 and < 83 when shotIndex % 2 == 0 && shotFrames > 12:
+                pendingShot = WorkShots[(shotIndex - 68) / 2]; shotIndex++; break;
+            case 83 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -246,6 +258,172 @@ partial class BattleScreen
         camYaw = MathHelper.PiOver2 + 0.35f;
         camPitch = 0.6f;
         zoom = 19;
+    }
+
+    /// Magic and aura staged for a shot (docs/MAGIC_AURA.md 6): spells (a smite's pillar, lightning, burning ground, mist, a
+    /// ward, a blessing) or the captain's aura (the blade lit, a burst, a slash, presence).
+    void MagicScene(bool spells)
+    {
+        battle = Battle.Empty(9, new BattleOptions { AuraTier = 4, Forms = new[] { "red_rose_bloom", "rose_cut", "thorn_edge" } });
+        SetWorld();
+        var b = battle;
+        var circle = b.AddSquad(0, Troops.Get("saints_militant"), 3, new Vector2(-6, -14), 3, Vector2.UnitY);
+        var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 16, new Vector2(6, -10), 8, Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("levies"), 24, new Vector2(0, 12), 8, -Vector2.UnitY);
+        var foes2 = b.AddSquad(1, Troops.Get("bowmen"), 16, new Vector2(-18, 16), 8, -Vector2.UnitY);
+        circle.Order = mine.Order = foes.Order = foes2.Order = Order.Hold;
+        b.Player.Pos = new Vector2(0, 2);
+        b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+        b.Input = new PlayerInput { Aura = !spells, Dir = AttackDir.Right, Facing = MathHelper.PiOver2 };
+        for (int i = 0; i < 30; i++) b.Update(1 / 60f);
+        var by = circle.Units[0];
+        if (spells)
+        {
+            b.AddField(Abilities.Get("wildfire"), "burning", 0, by, new Vector2(-18, 16), 6, 60, 1, 10);
+            b.AddField(Abilities.Get("mist"), "mist", 0, by, new Vector2(18, 14), 9, 60, 1, 0);
+            b.AddField(Abilities.Get("ward"), "warded", 0, by, new Vector2(6, -10), 8, 60, 1, 6);
+            b.AddField(Abilities.Get("mirage"), "mirage", 0, by, new Vector2(20, -6), 5, 60, 1, 0);
+            b.AddTimed(mine, Abilities.Get("blessing"), 1);
+        }
+        for (int i = 0; i < 110; i++) Effects(1 / 60f); // the steady effects (fire, mist, presence) build up first
+        if (spells)
+        {
+            b.Flash("spell:attack", new Vector2(0, 12), 3, 0, "faith");
+            b.Flash("bolt", new Vector2(8, 13), 1, 0, "craft");
+            b.Flash("cast", by.Pos, 1, 0, "faith");
+            b.Flash("spell:buff", mine.Center, 10, 0, "faith");
+        }
+        else
+        {
+            b.Flash("form:burst", b.Player.Pos, 5, 0, "rose");
+            b.Flash("land:slash", b.Player.Pos, 8, 0, "rose", Vector2.UnitY);
+        }
+        for (int i = 0; i < 14; i++) { b.Update(1 / 60f); Effects(1 / 60f); SpectacleFrame(1 / 60f); } // a moment on: rings spread, sparks fly
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = hudHidden = true;
+        SetCommand(true);
+        blend = 1;
+        camFocus = spells ? new Vector2(0, 4) : b.Player.Pos;
+        camYaw = MathHelper.PiOver2 + 0.5f;
+        camPitch = spells ? 0.55f : 0.45f;
+        zoom = spells ? 46 : 16;
+    }
+
+    /// The spectacle pass (docs/SPECTACLE.md). 0: a smite falling at night beside a burning field, a Transcendent captain
+    /// shining, to show the moving lights and the glass and scorch scars. 1: a breakthrough at its height, the colour drained
+    /// from all but the captain, the beat's bars drawn, the men near him leaning back. 2: a great working (the Tempest) at
+    /// 70% gathered beside a smite at half (S2): the sigils, the pull, the column and the darkened sky.
+    void SpectacleScene(int which)
+    {
+        bool night = which == 0;
+        var opt = new BattleOptions { AuraTier = night ? 5 : 3, Forms = new[] { "red_rose_bloom" }, Weather = night ? new Weather(23.5f) : Weather.Clear };
+        battle = Battle.Empty(11, opt);
+        SetWorld();
+        var b = battle;
+        var circle = b.AddSquad(0, Troops.Get("saints_militant"), 3, new Vector2(-8, -14), 3, Vector2.UnitY);
+        var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new Vector2(4, -6), 10, Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("levies"), 30, new Vector2(0, 12), 10, -Vector2.UnitY);
+        circle.Order = mine.Order = foes.Order = Order.Hold;
+        b.Player.Pos = new Vector2(0, 0);
+        b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+        b.Input = new PlayerInput { Aura = true, Dir = AttackDir.Right, Facing = MathHelper.PiOver2 };
+        for (int i = 0; i < 30; i++) b.Update(1 / 60f);
+        var by = circle.Units[0];
+        if (night)
+        {
+            b.AddField(Abilities.Get("wildfire"), "burning", 0, by, new Vector2(-14, 14), 5, 60, 1, 10);
+            AddScar(new Vector2(14, 6), 3, ScarKind.Glass); // an earlier smite
+            AddScar(new Vector2(-4, 18), 2, ScarKind.Scorch);
+        }
+        for (int i = 0; i < 90; i++) { Effects(1 / 60f); SpectacleFrame(1 / 60f); }
+        if (night) b.Flash("spell:attack", new Vector2(6, 13), 3, 0, "faith");
+        else if (which == 2)
+        {
+            StageCast("tempest", circle, new Vector2(0, 14), 0.7f);
+            StageCast("smite", circle, new Vector2(14, 8), 0.5f);
+            for (int i = 0; i < 120; i++) { Effects(1 / 60f); SpectacleFrame(1 / 60f); } // the sky darkens, the pull builds
+        }
+        else
+        {
+            b.Flash("breakthrough", b.Player.Pos, Battle.BreakRally, 0);
+            beats.Ask(BeatKind.Breakthrough, b.Player.Pos, realTime - 1f, 30); // held at its height for the shot
+            breakAt = realTime - 0.3f;
+        }
+        for (int i = 0; i < 10; i++) { b.Update(1 / 60f); Effects(1 / 60f); SpectacleFrame(1 / 60f); }
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = hudHidden = true;
+        SetCommand(true);
+        blend = 1;
+        camFocus = new Vector2(0, 5);
+        camYaw = MathHelper.PiOver2 + 0.4f;
+        camPitch = 0.42f;
+        zoom = 34;
+    }
+
+    static readonly string[] WorkShots = { "smite-strike", "miracle", "tempest", "wildfire", "crows", "aura-ladder", "clash-beat", "black-flame" };
+
+    /// The strong workings and the aura's moments, each caught a moment after it lands (docs/SPECTACLE.md S3-S5).
+    void WorkScene(int which)
+    {
+        string shot = WorkShots[which];
+        bool aura = shot is "aura-ladder" or "clash-beat" or "black-flame";
+        var opt = new BattleOptions
+        {
+            AuraTier = aura ? (shot == "aura-ladder" ? 5 : 4) : 2, EnemyAura = shot == "clash-beat" ? 4 : 0,
+            Forms = new[] { shot == "aura-ladder" ? "lily_ward" : "red_rose_bloom" },
+            Weather = shot == "wildfire" ? new Weather(20.5f) : shot == "tempest" ? new Weather(15, 0.5f) : Weather.Clear,
+        };
+        battle = Battle.Empty(12 + which, opt);
+        SetWorld();
+        var b = battle;
+        var circle = b.AddSquad(0, Troops.Get(shot is "miracle" or "smite-strike" ? "saints_militant" : "sky_callers"), 3, new Vector2(-10, -16), 3, Vector2.UnitY);
+        var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new Vector2(4, -6), 10, Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("levies"), 30, new Vector2(0, 12), 10, -Vector2.UnitY);
+        circle.Order = mine.Order = foes.Order = Order.Hold;
+        foreach (var s in b.Squads) s.Will = 0; // no casts of their own in the shot
+        b.Player.Pos = shot == "aura-ladder" ? new Vector2(-6, 2) : Vector2.Zero;
+        b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+        b.Input = new PlayerInput { Aura = true, Dir = AttackDir.Right, Facing = MathHelper.PiOver2 };
+        var by = circle.Units[0];
+        var at = new Vector2(0, 13);
+        float run = 0.3f;
+        void Work(string id, string kind, float r)
+        {
+            b.Flash("spell:" + kind, at, r, 0, Abilities.Get(id).Tradition);
+            b.Flash("work:" + id, at, r, 0, Abilities.Get(id).Tradition, by.Pos - at);
+        }
+        switch (shot)
+        {
+            case "smite-strike": Work("smite", "attack", 3); run = 0.1f; break;
+            case "miracle": Work("miracle", "rally", 16); run = 1.4f; break;
+            case "tempest": Work("tempest", "field", 14); b.AddField(Abilities.Get("tempest"), "storm", 0, by, at, 14, 30, 1, 0); run = 2.5f; break;
+            case "wildfire": Work("wildfire", "field", 7); b.AddField(Abilities.Get("wildfire"), "burning", 0, by, at, 7, 30, 1, 10); run = 1.2f; break;
+            case "crows": Work("crows", "debuff", 9); run = 3.2f; break;
+            case "aura-ladder": run = 1.5f; break;
+            case "clash-beat": b.StageClash(); beats.Ask(BeatKind.Clash, b.ClashAt, realTime - 1f, 30); run = 1f; break;
+            case "black-flame": b.MadUntil = 30; run = 1f; break;
+        }
+        for (int i = 0; i < (int)(run * 60); i++)
+        {
+            if (shot == "aura-ladder") b.Player.Pos += new Vector2(0.06f, 0.03f); // walking, so he leaves his footprints
+            b.Update(1 / 60f); Effects(1 / 60f); SpectacleFrame(1 / 60f);
+        }
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = hudHidden = true;
+        SetCommand(true);
+        blend = 1;
+        camFocus = shot is "tempest" or "crows" or "smite-strike" ? new Vector2(0, 9) : new Vector2(0, 4);
+        camYaw = MathHelper.PiOver2 + 0.4f;
+        camPitch = shot is "tempest" or "crows" or "smite-strike" or "miracle" ? 0.16f : 0.42f;
+        zoom = shot is "tempest" or "crows" ? 40 : 30;
+    }
+
+    /// A cast frozen part-way through its gathering, for a shot (S1.7): `g` of its warning gone, so the frozen frame shows it.
+    void StageCast(string id, Squad by, Vector2 at, float g)
+    {
+        var a = Abilities.Get(id);
+        float warn = MathF.Max(0.5f, a.Warn);
+        battle.Casts.Add(new Cast { A = a, By = by, At = at, Started = battle.Time - warn * g, FireAt = battle.Time + warn * (1 - g), Power = 1 });
     }
 
     /// Debug lineup of every troop, left to right along each upgrade line, facing the camera.

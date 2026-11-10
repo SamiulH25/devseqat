@@ -32,6 +32,9 @@ sealed partial class Hud
     public int Ui = 1;
     public Battle B = null!;
     public HashSet<Squad> Selected = null!;
+    /// The caster you are directing and the spell you picked for it (-1 = none; docs/MAGIC_AURA.md 3.1).
+    public Squad? CastBy;
+    public int CastPick = -1;
     public Controls Ctl = null!;
     public Texture2D? Minimap;
     public bool Command, Paused, MenuOpen, HelpOpen, WheelOpen, ShowResult, InCampaign, Deploying;
@@ -196,6 +199,7 @@ sealed partial class Hud
         MinimapPanel();
         PlayerPanel();
         FormBar();
+        SpellFan();
         if (Command) DivisionMarkers(); // under the cards and panels
         Cards();
         DivisionCards();
@@ -371,8 +375,8 @@ sealed partial class Hud
             y += U(14);
         }
         Row("heart", "HEALTH", p.Hp / p.Type.MaxHp, Bad);
-        Row("boot", "STAMINA", p.Stamina / 100, Ok);
-        if (B.AuraTier > 0) Row("star", B.AuraBlade ? "BLADE" : B.Spent ? "SPENT" : "AURA", B.Aura / Battle.AuraMax, B.Spent ? Dim : Style.Aura);
+        Row("boot", B.Fevered ? "FEVER" : "STAMINA", p.Stamina / 100, B.Fevered ? Bad : Ok); // a curse on you shows in red (MA9)
+        if (B.AuraTier > 0) Row("star", B.AuraBlade ? "BLADE" : B.Quenched ? "QUENCHED" : B.Spent ? "SPENT" : B.Surge >= 1 ? $"SURGE {B.Surge:0}" : "AURA", B.Aura / Battle.AuraMax, B.Quenched ? Bad : B.Spent ? Dim : Style.Aura);
         if (p.Mounted) Row("horse", "HORSE", p.HorseHp / p.Horse!.Hp, HorseCol);
         else Text("NO HORSE", x + U(12), y + U(1), Dim, 1);
         int rx = r.Right - U(10);
@@ -399,9 +403,10 @@ sealed partial class Hud
     /// Above your panel: your form slots (docs/KNIGHT_ORDERS.md K2): key, name, and the wait or the aura it lacks.
     void FormBar()
     {
-        if (Command || !B.Player.Active || B.FormSlot.All(f => f == null)) return;
+        if (Command || !B.Player.Active || B.FormSlot.All(f => f == null) && !B.HasRelic) return;
         var keys = new[] { Act.Form1, Act.Form2, Act.Form3, Act.GreatForm };
         int bw = U(68), bh = U(22), x = player.X, y = player.Y - bh - U(4);
+        if (B.HasRelic) RelicSlot(new Rectangle(x + 4 * (bw + U(3)), y, bw, bh));
         for (int i = 0; i < 4; i++)
         {
             var f = B.FormSlot[i];
@@ -420,6 +425,43 @@ sealed partial class Hud
             string cost = spent ? "SPENT" : B.FormWait(i) > 0 ? $"{B.FormWait(i):0}" : $"{f.Aura:0}";
             TextR(cost, r.Right - U(4), r.Y + U(3), ready ? Style.Aura : Dim, 1);
         }
+    }
+
+    /// The relic's slot after the forms (docs/MAGIC_AURA.md 3.4): ready once a battle.
+    void RelicSlot(Rectangle r)
+    {
+        bool ready = B.CannotRaise(B.Player) == null;
+        var holy = new Color(255, 230, 150);
+        Rect(r, ready ? Kit.Mul(holy, 0.3f) : Color.Black * 0.5f);
+        Frame(r, ready ? holy : Color.White * 0.15f, U(1));
+        Text(kit.Fit(Ctl.Name(Act.Relic) == "BACKSPACE" ? "BKSP" : Ctl.Name(Act.Relic), r.Width - U(32)), r.X + U(4), r.Y + U(3), ready ? Gold : Dim, 1);
+        Text("RELIC", r.X + U(4), r.Y + U(12), ready ? Color.White : Dim, 1);
+        TextR(ready ? "+30" : "SPENT", r.Right - U(4), r.Y + U(3), ready ? holy : Dim, 1);
+    }
+
+    /// The spells of the caster you are directing (docs/MAGIC_AURA.md 3.1): the picked one bright, the rest with why not.
+    void SpellFan()
+    {
+        if (!Command || CastBy is not { } s || s.Spells.Length == 0) return;
+        int bw = U(150), bh = U(16), n = s.Spells.Length;
+        int x = W / 2 - bw / 2, y = H / 3 - (n + 1) * bh / 2;
+        var r = new Rectangle(x - U(6), y - U(20), bw + U(12), (n + 1) * bh + U(26));
+        Rect(r, Color.Black * 0.6f);
+        Frame(r, Style.Aura * 0.6f, U(1));
+        Text($"{kit.Fit(s.Name.ToUpperInvariant(), bw - U(60))}: CAST", x, y - U(14), Gold, 1);
+        TextR($"WILL {s.Will:0}", x + bw, y - U(14), new Color(120, 150, 255), 1);
+        for (int i = 0; i < n; i++)
+        {
+            var a = s.Spells[i];
+            string? why = B.CannotCast(s, i);
+            bool pick = i == CastPick;
+            var row = new Rectangle(x - U(2), y + i * bh, bw + U(4), bh - U(2));
+            if (pick) Rect(row, Kit.Mul(Style.Aura, 0.35f));
+            Text(kit.Fit(a.Name.ToUpperInvariant(), bw - U(56)), x, y + i * bh + U(3), why == null ? Color.White : Dim, 1);
+            string cost = why ?? (s.ByHero[i] ? "READY" : $"{a.Will + Battle.OrderedWill:0} WILL");
+            TextR(cost, x + bw, y + i * bh + U(3), why == null ? Style.Aura : Warn, 1);
+        }
+        TextC($"CLICK THE GROUND.  {Ctl.Name(Act.Cast)} NEXT SPELL, RMB CANCEL", W / 2f, y + n * bh + U(3), Dim, 1);
     }
 
     /// The unit cards as a dock along the bottom: portrait in its side's cloth, number, tier, order, men and morale gauges.
@@ -456,7 +498,7 @@ sealed partial class Hud
             TextR(tag, r.Right - U(4), r.Y + U(5), s.Order == Order.Charge ? Orange : Dim, 1);
             if (s.Formation != Formation.Line)
                 TextR(s.Formation switch { Formation.ShieldWall => "WALL", Formation.Square => "SQUARE", Formation.Wedge => "WEDGE", _ => "LOOSE" }, r.Right - U(4), r.Y + U(14), Dim, 1);
-            if (!s.FireAtWill) TextR("HOLD", r.Right - U(4), r.Y + U(23), Warn, 1);
+            if (!s.FireAtWill || s.HoldSpells) TextR("HOLD", r.Right - U(4), r.Y + U(23), Warn, 1);
 
             // The troop's name by measured width; too long, its last word ("YEOMAN ARCHERS" -> "ARCHERS"), then cut.
             string nm = s.Name.ToUpperInvariant();

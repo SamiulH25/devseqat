@@ -12,6 +12,9 @@ public partial class Battle
     bool sightStarted;
     /// How long a sighting lasts, and how near you must be to see men in a wood (or anyone, when fighting them).
     const float SightMemory = 4, WoodSight = 30, CloseSight = 30;
+    /// How far a company inside a bank of called mist is seen (MA8).
+    public const float MistSight = 25;
+    bool InMist(Vector2 p) => Fields.Any(f => f.Effect?.Id == "mist" && Vector2.DistanceSquared(f.Pos, p) < f.Radius * f.Radius);
 
     /// Sight is on in field battles; duels, tournaments and test fields see everything.
     bool SightOn => !scripted && !Options.Duel && !Options.Tournament;
@@ -52,6 +55,7 @@ public partial class Battle
     bool Sees(Vector2 eye, Squad s, bool keen = false)
     {
         float d = MathF.Max(0, Vector2.Distance(eye, s.Center) - s.Radius), far = keen ? 1.25f : 1;
+        if (d > MistSight && InMist(s.Center)) return false; // a company in the mist is seen only close (docs/MAGIC_AURA.md 3.5)
         if (d < CloseSight) return true;
         if (d > Weather.Vision * far) return false;
         if (Time - s.LooseAt < 2) return true; // a volley gives you away
@@ -94,4 +98,24 @@ public partial class Battle
         Log(s.Team == 0 ? "Your men burst from cover!" : "Ambush! The enemy bursts from cover!");
         Sound(Cue.Shout, s.Center);
     }
+
+    // ---- the spells left out (docs/MAGIC_AURA.md 3.5, MA8) ----
+
+    /// A mirage stands this far to the side of the company it shields, across the line to the enemy.
+    public const float MirageOffset = 15;
+
+    /// Where a mirage shimmers: beside the spot, square to the way the enemy lies.
+    Vector2 MirageSpot(Vector2 at, int team)
+    {
+        var toFoe = centroid[1 - team] - at;
+        var side = toFoe.LengthSquared() > 0.01f ? new Vector2(-toFoe.Y, toFoe.X) / toFoe.Length() : Vector2.UnitX;
+        return at + side * MirageOffset;
+    }
+
+    /// The enemy mirage a bowman of this side would loose at instead: the nearest within his reach, if any.
+    Field? MirageFor(Unit u) => Fields.Where(f => f.Effect?.Id == "mirage" && f.Team != u.Team && Vector2.Distance(f.Pos, u.Pos) < u.Type.Range)
+        .OrderBy(f => Vector2.DistanceSquared(f.Pos, u.Pos)).FirstOrDefault();
+
+    /// A working cast on this spot by `team` breaks on an enemy Ward over it (faith answers craft; the Will is spent).
+    bool Warded(Vector2 at, int team) => Fields.Any(f => f.Effect?.Id == "warded" && f.Team != team && Vector2.DistanceSquared(f.Pos, at) < f.Radius * f.Radius);
 }

@@ -124,6 +124,10 @@ keep fur, spangenhelms and round shields at every tier.
   to where it was sent and draws it in again over a second; a rider carrying an order flies a little flag.
 - Hit: a brief red tint and a flinch (0.15 s). Routing: desaturated grey, arms up, weapon gone. Dead: a fall away from the blow, then the parts laid flat with blood and the weapon beside them.
 - The player's own troops never fill the camera lens (friendly sprites within 6 m of the field camera are hidden).
+- Magic and aura are rare and must read as awe (docs/SPECTACLE.md): a great working gathers (sigil, column, dark sky) and lands
+  in the battle's one slowed beat; each strong working has its own strike and aftermath (scars stay all battle); each aura
+  tier shows clearly more than the last. Common spells keep a light touch so the great ones stand out. Off on Low quality
+  and with CINEMATIC MOMENTS off.
 
 ## 4. Interface
 

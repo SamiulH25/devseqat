@@ -291,4 +291,250 @@ public static partial class SelfTest
         Check(c.Hire(town, Circle()) == Campaign.OneCircle, "but only one");
         Check(c.Split(c.Player.Companies.First(x => Rules.RoleOf(x) == "casters")) == Campaign.OneCircle, "and cannot split it in two");
     }
+
+    /// MA1 (docs/MAGIC_AURA.md 3.1): a circle holding its spells casts nothing on its own; an ordered spell is cast on your spot,
+    /// still warns first, and costs more Will; out of range the circle closes in; a spell that needs rain is given up in the dry.
+    static void CastOnOrder()
+    {
+        var (b, m, f) = MageScene("battle_priests");
+        m.HoldSpells = true;
+        Run(b, 10);
+        Check(b.Casts.Count == 0 && m.Will >= 99, "a circle that holds its spells casts nothing on its own");
+        int smite = Array.FindIndex(m.Spells, a => a.Id == "smite");
+        var spot = f.Center + new Vector2(2, 0);
+        m.CastSpell = smite; m.CastAt = spot; m.CastSince = b.Time;
+        float will = m.Will;
+        for (int i = 0; i < 3 * 60 && b.Casts.Count == 0; i++) b.Update(1 / 60f);
+        var c = b.Casts.FirstOrDefault();
+        Check(c != null && c.A.Id == "smite" && Vector2.Distance(c.At, spot) < 0.01f, "the ordered spell is cast on your spot");
+        Check(c != null && c.FireAt > b.Time + 0.5f, "an ordered attack still glows before it falls");
+        Check(will - m.Will >= m.Spells[smite].Will + Battle.OrderedWill - 1, $"an ordered spell costs more Will ({will - m.Will:0} spent)");
+        Check(m.CastSpell == -1, "the order is done once cast");
+        float hp = f.Units.Sum(u => u.Hp);
+        Run(b, 3);
+        Check(f.Units.Sum(u => u.Hp) < hp - 10, "the ordered smite strikes the men under it");
+
+        (b, m, f) = MageScene("battle_priests");
+        m.HoldSpells = true;
+        Run(b, 8);
+        smite = Array.FindIndex(m.Spells, a => a.Id == "smite");
+        var far = new Vector2(0, 120);
+        m.CastSpell = smite; m.CastAt = far; m.CastSince = b.Time;
+        float before = Vector2.Distance(m.Anchor, far);
+        Run(b, 1);
+        Check(Vector2.Distance(m.Anchor, far) < before - 20 && b.Casts.Count == 0, "out of range, the circle closes in before it casts");
+
+        (b, m, f) = MageScene("skalds");
+        m.HoldSpells = true;
+        Run(b, 8);
+        var (b2, m2, f2) = (b, m, f);
+        m2.CastSpell = 99; m2.CastSince = b2.Time;
+        Run(b2, 1);
+        Check(m2.CastSpell == -1 && b2.Casts.Count == 0, "an order for a spell the circle does not know is given up");
+        m2.CastSpell = Array.FindIndex(m2.Spells, a => a.Id == "storm"); m2.CastAt = f2.Center; m2.CastSince = b2.Time - Battle.OrderLasts - 1;
+        Run(b2, 1);
+        Check(m2.CastSpell == -1, "an order that could not be done in time lapses");
+    }
+
+    /// A campaign with a circle of chaplains and a priest to teach them; a bandit stands ready to fight.
+    static (Campaign c, CompanyRecord circle) CircleCampaign(int seed)
+    {
+        var c = Campaign.New(seed);
+        var circle = c.NewCompany("chaplains", "casters", Rules.CapOf("chaplains", "casters"), 0);
+        c.Player.Companies.Add(circle);
+        c.S.Characters.Add(new Character { Id = c.S.NextId++, Kind = "companion", Name = "Brother Test", Culture = "common", Calling = "Priest", PartyId = c.Player.Id, CompanyId = circle.Id });
+        c.S.Gold = 10000;
+        return (c, circle);
+    }
+
+    /// MA4 (docs/MAGIC_AURA.md 3.2): the spells you prepare, and only those, go into battle with the circle.
+    static void SpellbookCarries()
+    {
+        var (c, circle) = CircleCampaign(91);
+        var why = c.LearnSpell("smite");
+        Check(why == null && Campaign.Known(circle).Contains("smite"), $"the circle learns smite from a priest ({why})");
+        Check(c.Prepare("blessing", false) == null && c.Prepare("smite", true) == null, "and prepares it in place of the blessing");
+        var bandit = c.S.Parties.First(p => p.Kind == PartyKind.Bandit);
+        bandit.Pos = c.Player.Pos; c.Encounter = bandit;
+        var setup = c.PrepareBattle(bandit);
+        var co = setup.Player.Companies.First(x => x.Id == circle.Id);
+        Check(co.Spells != null && co.Spells.Contains("smite") && !co.Spells.Contains("blessing"), "the prepared spells go with the company");
+        var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
+        var s = b.Squads.First(q => q.Company?.Id == circle.Id);
+        Check(s.Spells.Any(a => a.Id == "smite") && !s.Spells.Any(a => a.Id == "blessing"), "and the circle casts them in battle, not what it set aside");
+        Check(c.SpellNote(true).Contains("Smite"), "the encounter panel names the prepared spells");
+    }
+
+    /// MA4: never more prepared than the tier's slots; learning needs a teacher and crowns, costs more each time, stops at two.
+    static void SpellbookByTier()
+    {
+        var (c, circle) = CircleCampaign(92);
+        int slots = Campaign.PrepareSlots(circle);
+        Check(slots == Troops.Get("chaplains").Spells.Length, $"chaplains prepare as many as their tier knows ({slots})");
+        foreach (var k in c.Companions.ToList()) k.Calling = "Sword";
+        c.Player.Pos = c.S.Settlements[0].Pos;
+        if (c.SiteAt(c.Player.Pos) == null) Check(c.CannotLearn("smite") != null, "no teacher, no new spell");
+        foreach (var k in c.Companions.ToList()) k.Calling = "Priest";
+        Check(c.CannotLearn("storm") != null, "a faith circle cannot learn the craft");
+        c.S.Gold = 100;
+        Check(c.CannotLearn("smite") == $"NEEDS {Campaign.LearnCost} CROWNS", "a spell costs crowns");
+        c.S.Gold = 10000;
+        Check(c.LearnSpell("smite") == null && c.S.Gold == 10000 - Campaign.LearnCost, "the first costs its price");
+        Check(c.LearnSpell("ward") == null && c.S.Gold == 10000 - 3 * Campaign.LearnCost, "the second costs twice as much");
+        Check(Campaign.Learnable(circle).Any() ? c.LearnSpell(Campaign.Learnable(circle).First().Id) != null : true, "no more than two beyond the line");
+        Check(c.Prepare("smite", true) != null && Campaign.Prepared(circle).Length == slots, "a full spellbook must set one aside first");
+        Check(c.Prepare("mend", false) == null && c.Prepare("smite", true) == null && Campaign.Prepared(circle).Length == slots, "then the new one takes its place");
+        Check(Campaign.Learnable(circle).All(a => !a.Great), "great workings are never learned");
+    }
+
+    /// MA4 (3.3): the circle names a master, who rises with battles; his fall leaves it leaderless (no great working), then another rises.
+    static void CircleMaster()
+    {
+        var (c, circle) = CircleCampaign(93);
+        c.CircleDaily();
+        var m = Campaign.MasterOf(circle);
+        Check(m != null && m.Deeds.Any(d => d.Contains(Campaign.MasterTitle(circle))), "the circle names a master");
+        Check(Campaign.MasterRank(m) == 0, "a new master has no rank");
+        m!.Battles = Campaign.MasterBattles[2];
+        Check(Campaign.MasterRank(m) == 3, "fifteen battles make him a master of rank 3");
+        var b = Battle.Empty(94);
+        var co = new Company("saints_militant", 3, "casters", circle.Id, MasterRank: 3);
+        var s = b.AddSquad(0, Troops.Get("saints_militant"), 3, new(0, 0), 3, Vector2.UnitY, co);
+        Check(s.Will > 100 && s.MasterRank == 3, $"his circle gathers more Will ({s.Will:0})");
+        circle.Roll.Remove(m);
+        c.CircleDaily();
+        Check(Campaign.MasterOf(circle) == null && c.Leaderless(circle), "his fall leaves the circle leaderless");
+        var lead = new Company("saints_militant", 3, "casters", circle.Id, Leaderless: true);
+        var t = b.AddSquad(0, Troops.Get("saints_militant"), 3, new(10, 0), 3, Vector2.UnitY, lead);
+        Check(t.GreatDone, "a leaderless circle has no great working");
+        c.S.Hours += Campaign.LeaderlessDays * 24 + 1;
+        c.CircleDaily();
+        Check(Campaign.MasterOf(circle) is Soldier next && next.Id != m.Id, "after a while another rises");
+    }
+
+    /// MA8 (docs/MAGIC_AURA.md 3.5): a company inside called mist is seen only close.
+    static void MistHides()
+    {
+        var flat = TerrainParams.Meadow with { Layouts = null, HillsMin = 0, HillsMax = 0, Road = false, Woods = 0, LoneTrees = 0 };
+        var none = new ArmySpec("a", 1, new List<Company>());
+        var b = new Battle(15, none, none, new BattleOptions { Ground = flat, PlayerWounded = true });
+        var hid = b.AddSquad(1, UnitType.Shieldman, 12, new(0, 20), 6, -Vector2.UnitY);
+        var eyes = b.AddSquad(0, UnitType.Shieldman, 12, new(0, -40), 6, Vector2.UnitY);
+        Run(b, 1.2f);
+        Check(b.Visible(hid, 0), "in the open they are seen from afar");
+        b.AddField(Abilities.Get("mist"), "mist", 1, hid.Units[0], hid.Center, 15, 60, 1, 0);
+        Run(b, 5);
+        Check(!b.Visible(hid, 0), "in the mist they are not");
+        foreach (var u in eyes.Units) u.Pos += new Vector2(0, 42);
+        eyes.Anchor += new Vector2(0, 42);
+        Run(b, 1.2f);
+        Check(b.Visible(hid, 0), $"close up ({Battle.MistSight:0} m) the mist hides nothing");
+    }
+
+    /// MA8: a mirage draws the enemy's arrows from the company it shields.
+    static void MirageDrawsArrows()
+    {
+        int Hurt(bool mirage)
+        {
+            var b = Battle.Empty(16);
+            var bows = b.AddSquad(1, UnitType.Bowman, 12, new(0, 28), 6, -Vector2.UnitY);
+            var mark = b.AddSquad(0, UnitType.Shieldman, 12, new(0, 0), 6, Vector2.UnitY);
+            bows.Target = mark;
+            foreach (var u in mark.Units) u.Hp = 100000;
+            if (mirage) b.AddField(Abilities.Get("mirage"), "mirage", 0, mark.Units[0], new Vector2(Battle.MirageOffset, 0), 5, 60, 1, 0);
+            Run(b, 15);
+            return mark.Units.Sum(u => (int)(100000 - u.Hp));
+        }
+        int plain = Hurt(false), drawn = Hurt(true);
+        Check(drawn < plain * 0.4f, $"a mirage draws the arrows ({drawn} hurt against {plain})");
+        Check(Abilities.Get("mirage").Tradition == "craft" && !Abilities.Get("mirage").Great, "a circle of the craft can learn it");
+    }
+
+    /// MA8: a Ward breaks an enemy working cast on a spot inside it.
+    static void WardBreaksCast()
+    {
+        bool Fevered(bool ward)
+        {
+            var b = Battle.Empty(17);
+            var men = b.AddSquad(0, Troops.Get("levies"), 8, new(0, 0), 4, Vector2.UnitY);
+            var witches = b.AddSquad(1, Troops.Get("war_witches"), 3, new(0, 80), 3, -Vector2.UnitY);
+            witches.HoldSpells = true;
+            if (ward) b.AddField(Abilities.Get("ward"), "warded", 0, men.Units[0], men.Center, 12, 60, 1, 0);
+            b.Casts.Add(new Cast { A = Abilities.Get("fever"), By = witches, At = men.Center, Started = b.Time, FireAt = b.Time, Power = 1 });
+            b.Update(1 / 60f);
+            return men.Timed.Any(x => x.Effect.Id == "fever");
+        }
+        Check(Fevered(false) && !Fevered(true), "a Ward breaks the curse cast on the men inside it");
+    }
+
+    /// MA8 (3.6): a high Omen stirs the dead sooner and raises more of them, and a third of the villages bar their gates;
+    /// a Cleanse in town brings it down.
+    static void OmenTeeth()
+    {
+        var c = Campaign.New(95);
+        var village = c.S.Settlements.First(s => s.Kind == SettlementKind.Village && s.Id % 3 == 0);
+        c.S.Gold = 10000;
+        c.S.Omen = Campaign.OmenShuns;
+        Check(c.RecruitLevies(village, 1) == "THE VILLAGE FEARS WHAT YOU WORK: IT BARS ITS GATES", "at a high Omen a village bars its gates");
+        Check(c.S.Settlements.Where(s => s.Kind == SettlementKind.Village).Count(c.OmenShunned) * 2 < c.S.Settlements.Count(s => s.Kind == SettlementKind.Village), "but not most of them");
+        var grave = new Grave { Pos = village.Pos, Dead = 300, Hours = c.S.Hours };
+        c.S.Omen = 0;
+        int calm = c.RaiseHost(grave).Companies[0].Men;
+        c.S.Omen = Campaign.OmenStirs;
+        int stirred = c.RaiseHost(grave).Companies[0].Men;
+        Check(stirred > calm, $"a high Omen raises more of the dead ({stirred} against {calm})");
+        c.S.Characters.Add(new Character { Id = c.S.NextId++, Kind = "companion", Name = "Sister Test", Culture = "common", Calling = "Priest", PartyId = c.Player.Id, CompanyId = c.Player.Companies[0].Id });
+        c.S.Settlements.First(s => { c.Player.Pos = s.Pos; return c.InTown(c.Player); });
+        c.S.Omen = 25;
+        Check(c.Rite("cleanse") == null && MathF.Abs(c.S.Omen - 15) < 0.01f && c.S.Gold == 9900, "a Cleanse in town takes 10 off the Omen for 100 crowns");
+    }
+
+    /// MA8 (4.3): lords of your realm think better of an aura captain; brigands dread an Aura Master.
+    static void AuraIsKnown()
+    {
+        var c = Campaign.New(96);
+        var lord = c.S.Characters.First(ch => ch.Kind == "lord" && !ch.Dead);
+        c.Captain.Contract = lord.Faction;
+        float plain = c.OpinionOfYou(lord);
+        c.Captain.AuraTier = 4;
+        Check(MathF.Abs(c.OpinionOfYou(lord) - Math.Min(100, plain + 10)) < 0.01f, "a lord of your realm thinks better of an Aura Master");
+        Check(c.Dread(c.Player) == Campaign.AuraDread, "brigands dread him");
+        c.Captain.AuraTier = 2;
+        Check(c.Dread(c.Player) == 1 && MathF.Abs(c.OpinionOfYou(lord) - plain) < 0.01f, "not an Aura Knight");
+    }
+
+    /// docs/SPECTACLE.md rule 6: one cinematic beat a battle, first come first served, but a higher kind may take over a
+    /// lower one while it runs; the view slows at its height and is back to normal after it.
+    static void SpectacleBeat()
+    {
+        var b = new Beats();
+        Check(b.Scale(0) == 1 && !b.Ask(BeatKind.None, Vector2.Zero, 0), "no beat: the view runs at full speed");
+        Check(b.Ask(BeatKind.FoeWorking, Vector2.Zero, 1), "the first beat is granted");
+        Check(!b.Ask(BeatKind.Charge, Vector2.Zero, 1.2f), "a lower kind cannot cut in");
+        Check(b.Ask(BeatKind.Breakthrough, Vector2.One, 1.5f) && b.Kind == BeatKind.Breakthrough, "a higher kind takes over a running beat");
+        Check(MathF.Abs(b.Scale(2.5f) - Beats.Slow) < 0.01f, $"the view slows at the beat's height ({b.Scale(2.5f):0.00})");
+        Check(b.Scale(10) == 1 && !b.Running(10), "the view is back to normal after the beat");
+        Check(!b.Ask(BeatKind.Breakthrough, Vector2.Zero, 20), "only one beat a battle");
+        b.Reset();
+        Check(b.Ask(BeatKind.Charge, Vector2.Zero, 0), "a new battle has its beat again");
+    }
+
+    /// S7 (docs/SPECTACLE.md): a great working the men saw is told in the battle's result (and so the report), once; a
+    /// plain spell is not, and each tells which side worked it.
+    static void WondersReported()
+    {
+        var b = Battle.Empty(23);
+        var saints = b.AddSquad(0, Troops.Get("saints_militant"), 3, new(0, -10), 3, Vector2.UnitY);
+        saints.HoldSpells = true;
+        b.Casts.Add(new Cast { A = Abilities.Get("blessing"), By = saints, At = saints.Center, Started = b.Time, FireAt = b.Time, Power = 1 });
+        b.Update(1 / 60f);
+        Check(b.Result().Wonders.Count == 0, "a plain blessing is no wonder");
+        for (int i = 0; i < 2; i++)
+        {
+            b.Casts.Add(new Cast { A = Abilities.Get("miracle"), By = saints, At = saints.Center, Started = b.Time, FireAt = b.Time, Power = 1 });
+            b.Update(1 / 60f);
+        }
+        var w = b.Result().Wonders;
+        Check(w.Count == 1 && w[0].Contains("Miracle") && w[0].Contains("us"), $"a great working is told once, as ours ({string.Join(" / ", w)})");
+    }
 }

@@ -56,6 +56,21 @@ vec3 TorchLight(vec3 w)
     return vec3(1.0, 0.6, 0.28) * Torch.z * flick * 7.0 / (d2 + 3.0) * (1.0 - smoothstep(60.0, 150.0, d2));
 }
 
+// Moving lights (docs/SPECTACLE.md S1): up to four a frame, picked by the battle screen (a smite's pillar, a bolt, fire,
+// a Transcendent captain). Glow: xyz = place, w = strength (negative takes light away: the Black Flame). GlowCol: rgb =
+// colour, w = reach in metres; the light falls off smoothly and is gone by three times the reach.
+vec3 OneGlow(vec3 w, vec4 g, vec4 c)
+{
+    if (g.w == 0.0) return vec3(0.0);
+    vec3 d = w - g.xyz;
+    float k = dot(d, d) / (c.w * c.w);
+    return c.rgb * g.w / (1.0 + k * 6.0) * (1.0 - smoothstep(2.0, 9.0, k));
+}
+vec3 GlowLight(vec3 w)
+{
+    return OneGlow(w, Glow0, GlowCol0) + OneGlow(w, Glow1, GlowCol1) + OneGlow(w, Glow2, GlowCol2) + OneGlow(w, Glow3, GlowCol3);
+}
+
 // Dressed stone: courses 0.55 m high of blocks 1.1 m long, alternate courses offset, darker mortar, each block its own
 // shade, and rain streaks down the face; fades to plain far away (the lines would shimmer).
 float Masonry(vec3 w, vec3 n, float dist)

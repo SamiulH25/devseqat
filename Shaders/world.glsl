@@ -125,7 +125,7 @@ void main()
 #endif
     float shadow = ShadowAt(vWorld + n * ShadowParams.w) * CloudAt(vWorld);
     vec3 ambient = mix(GroundColor, SkyColor, n.y * 0.5 + 0.5);
-    vec3 col = albedo * (ambient + SunColor * diffuse * shadow + TorchLight(vWorld + n * 0.3));
+    vec3 col = albedo * max(ambient + SunColor * diffuse * shadow + TorchLight(vWorld + n * 0.3) + GlowLight(vWorld + n * 0.3), vec3(0.0));
     if (Field.w > 0.0)
     {
         // A wet sheen toward the sun, and puddles that mirror the sky.

@@ -248,6 +248,31 @@ The core tension: **you are strongest as a leader when you are in the fight, but
 - **Heroics:** your kills give nearby allies more morale than ordinary kills.
 - **Leaders matter:** if you or the enemy captain dies, every unit on that side loses 16 morale. The enemy captain (red ring in command view) stays just behind his line, so killing him is a real tactical goal.
 - **If you fall,** the battle continues and you command from afar at normal speed, without an aura.
+- **The captain's aura** (a knight's power, distinct from leadership): it wakes after a won duel and rises through five tiers
+  (Kindled, Aura Knight, Aura Expert, Aura Master, Transcendent), each wall broken by a trial. The pool on your panel pays
+  for the aura blade (hold ALT) and your forms (U, I, O, and L for the great form). It comes back slowly as you move, twice as
+  fast standing still with no foe within 30 m, and only a little in a fight. Land blows at full aura and the overflow banks a
+  **surge** (up to 20) that your next form spends first. Under 20 you are **spent**: your blows land 10% lighter and your breath
+  comes back slowly. From Aura Knight, your companies within 10 m of you while you fight are **inspired** (steadier, a
+  better guard).
+  **Aura and magic meet:** a Blessing or War song from your own circle over you gives +10 aura. The foe's curses reach you:
+  an Evil eye quenches your blade for 6 s and Fever slows your breath; aura armour (Aura Expert) halves them and a
+  Transcendent captain turns them. Your lit blade, or a slash or leap form, breaks a working an enemy caster has begun
+  (his Will is spent). Enemy champions throw their forms at your circle first. Carry the relic and raise it once a battle
+  (BACKSPACE, a slot after your forms; it costs a charge): a Blessing round you and +30 aura, the overflow as surge. The craft
+  rite **Craft marks** (Omen +3) makes your lit blade leave fever on the companies it strikes, for one battle.
+  **Your own form:** a captain who never swore to an order makes a form from how he fights once he is an Aura Expert.
+  The battles keep a tally (parries and ripostes, lance and saddle, the bow, a heavy weapon, sword and shield); when it
+  is full, the captain sheet (K) offers your top two: an Answer (counter), a Charge (a leap you can make from the
+  saddle), a Mark (shot), a Ruin (burst) or a Wall (guard), named for your company and a little stronger than the form it
+  grew from. Your own order teaches it. **Aspects:** a form at rank III takes one of two aspects on the K sheet, for good
+  (a slash Wide or Far, a guard Long or Ready, a buff Broad or Lasting, and so on).
+  **Moments:** at your wall, fell an enemy champion of your tier or above and the wall breaks there and then: your tier
+  rises for the rest of the fight, your aura fills and the men near you rally. Two lit blades within 3 m start a **clash
+  of champions**: the men give you a ring, and blows between you land harder for up to 8 s. A Transcendent's light
+  reaches 20 m and turns curses from the companies in it, and his lit blade cuts arrows from the air in front of him.
+  Lords of your realm think better of an Aura Expert (+5) or Master (+10); brigands dread an Aura Master and run from
+  him; a won duel brings half again the renown from an Aura Expert up.
 - **Morale and routing:** below 12 morale a unit routs and flees off the map (radius 95). It rallies again above 32, and a man who has
   broken twice stays broken. A side loses when it has no active, non-routing units.
 - **Melee:** windup, strike, recover. Hits interrupt windups. AI units block hits from the front by chance (Shieldmen 55%). A player block staggers the attacker; if stamina runs out, the guard breaks. Player swings cleave up to 3 targets.
@@ -304,7 +329,20 @@ the player rides a courser.
   a great working once a battle. Mages cast on their own when a spell fits (bless a company about to clash, mend the hurt, call
   lightning in rain, wildfire in dry weather, mist over men under arrows, fire pots on a packed crowd). Each cast glows on the
   ground first, so you can move away. A mage company has **Will**: it refills over time, faster when they stand still, and
-  dead casters lower it. Enemy veteran horse and elite bows hunt mages first. Craft (not faith) raises the **Omen**; from 12, dark omens follow.
+  dead casters lower it. Enemy veteran horse and elite bows hunt mages first.
+  **You can direct them:** in command view select the circle (or a company a companion leads) and press P to pick a spell,
+  then click the ground to cast it there. The order rides out like any other, and costs 5 more Will. X makes casters
+  hold their spells for your word (and press X again to let them cast at will). Craft (not faith) raises the **Omen**; from 12, dark omens follow;
+  from 20 the dead rise sooner and in greater numbers; from 30 a third of the villages bar their gates to you. A priest or
+  a faith circle can **Cleanse** in a town (100 crowns): the Omen falls by 10. Called mist hides a company (it is seen only
+  within 25 m), a **Mirage** (a craft spell a circle can learn) draws the enemy's arrows to a false company, and a Ward
+  breaks any enemy working cast inside it.
+  **The spellbook:** on the circle's roll (P, then its roll) choose which spells it prepares for the next battle (as many as
+  its tier knows), and teach it up to two more of its tradition: a priest (faith) or cunning one (craft) among your
+  companions, a shrine, standing stones or a hermit can teach, for 150 crowns, then 300. The encounter panel names the
+  prepared spells and any the weather makes useless. The circle has a **master**, a named man (Father of the Circle or
+  Stormcaller) who rises with battles: more Will, and at rank 3 a cheaper great working. If he falls the circle is
+  leaderless for ten days, with no great working, until another rises.
 - **Companions' callings:** each companion is a Sword, Shield, Banner, Bow, Lance, Priest or Cunning one. He gains levels
   (to 10) in battles his company fights, a talent each level and a second ability at 5, and he uses his abilities on his own,
   like mages. Companions like or dislike what you do, quarrel, swear brotherhood, have a story to settle, take a student, and

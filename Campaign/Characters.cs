@@ -135,7 +135,10 @@ public sealed partial class Campaign
     }
 
     /// What `a` thinks of `b`, -100..100.
-    public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar ? (Has("Kingmaker") ? 10 : 0) + RegardOfTraits(a) + FameRegard : 0), -100, 100);
+    public float OpinionOf(Character a, Character b) => Math.Clamp(BaseOpinion(a, b) + a.Opinion.GetValueOrDefault(b.Id) + (b.Id == S.CaptainChar ? (Has("Kingmaker") ? 10 : 0) + RegardOfTraits(a) + FameRegard + AuraRegard(a) : 0), -100, 100);
+
+    /// Lords of your own realm know your aura (docs/MAGIC_AURA.md 4.3, MA8): +5 for an Aura Expert, +10 for a Master.
+    float AuraRegard(Character a) => Captain.Contract < 0 || a.Faction != Captain.Contract ? 0 : Captain.AuraTier >= 4 ? 10 : Captain.AuraTier >= 3 ? 5 : 0;
 
     /// What a character thinks of you.
     public float OpinionOfYou(Character a) => OpinionOf(a, Me);

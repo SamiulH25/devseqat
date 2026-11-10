@@ -40,6 +40,11 @@ public sealed class CompanyRecord
     public const int LedgerSize = 8;
     /// Your companies' named men (docs/LEGACY.md L1): the few who earned a name, each one of the men of his stack.
     public List<Soldier> Roll = new();
+    /// A circle of mages (docs/MAGIC_AURA.md 3.2-3.3): spells learned beyond its line's, those you prepared for battle
+    /// (empty = its line's), its master (a Soldier id on the roll, 0 = none) and until when it is leaderless (hours).
+    public List<string> Spells = new(), Prepared = new();
+    public int Master;
+    public double LeaderlessUntil;
     /// The roll has been started (a new company names its first man once).
     public bool RollStarted;
     /// Battle honours (L5): the names of notable wins sewn on its banner, kept for ever; and those a realm took when the
@@ -432,6 +437,12 @@ public sealed class CaptainState
     public List<string> Forsworn = new();
     /// Your rival in the order (a knight character id, -1 = none; docs/KNIGHT_ORDERS.md 6.2).
     public int Rival = -1;
+    /// Your own form (docs/MAGIC_AURA.md 4.4, MA6): how you fight, battle by battle (style -> points), the two styles offered
+    /// once you may make one, and the form you made (registered as Forms.OwnId). The aspect each form took at rank 3 (4.5).
+    public Dictionary<string, float> StyleTally = new();
+    public List<string> OwnFormOffer = new();
+    public FormDef? OwnForm;
+    public Dictionary<string, string> FormAspects = new();
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought
