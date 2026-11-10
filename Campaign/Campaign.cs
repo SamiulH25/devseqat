@@ -117,7 +117,7 @@ public sealed partial class Campaign
         s.Parties.Add(first);
         if (s.Captain.Contract >= 0) c.Log($"You sign on with the {c.FactionNames[realm]} as a free captain. Their steward pays 85% of your upkeep each week.");
         else c.Log("You fly your own banner. No steward pays your upkeep: take contracts, loot and ransoms.");
-        c.Log("Levies upgrade after a battle or two: visit a town's training yard.");
+        c.Log("Levies upgrade after a few battles: visit a town's training yard.");
         if (making != null) c.ApplyMaking(making, capital);
         return c;
     }

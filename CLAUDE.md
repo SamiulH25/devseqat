@@ -169,6 +169,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Company math, auto-resolve (`Might`: strength with drill weighed in, `Balance.DrillWeight`), army building | `Campaign/Rules.cs` |
 | World generation, provinces, rivers, roads / the look-up grid behind `ProvinceAt`, `RoadDist`, `RiverDist` | `Campaign/WorldMap.cs` / `Campaign/MapIndex.cs` (exact: must answer as the full scans do, `SelfTest.MapIndexMatches`) |
 | Prisoners, officers, food, contracts | `Campaign/CampaignWar.cs` |
+| Goods from the field: loot split into crowns and goods (`TakeLoot`, `Balance.LootCoinShare`), selling them in a town's MARKET (`GoodsPrice`, `WantedGoods`, `SellGoods`) | `Campaign/Goods.cs`; save `CampaignState.Goods`; report `BattleReport.Goods`; UI `MapScreen.GoodsList` (Settlement.cs) |
 | Career ranks, fealty, realm council, founding a realm, win/loss (F5) | `Campaign/Career.cs` (`Rank`, `Council`, `DeclareIndependence`, `CheckEnd`) |
 | Fief prosperity/unrest/taxes, buildings, revolts, vassals and orders, defection (F6) | `Campaign/Fiefs.cs` (`FiefsDaily`, `Build`, `RaiseVassal`, `OrderedProvince`) |
 | War exhaustion, peace terms, war declarations, tribute, alliances, hosts, summons (F7) | `Campaign/Diplomacy.cs` (`DiplomacyDaily`, `MakePeace`, `OfferPeace`, `MusterHost`) |

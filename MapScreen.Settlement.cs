@@ -204,7 +204,8 @@ partial class MapScreen
         if (ui.Button(new Rectangle(row.Right - ui.U(84), row.Y + ui.U(38), ui.U(78), ui.U(24)), "BUY 5", s.Horses > 0)) note = C.BuyHorses(s, 5) ?? "BOUGHT";
         ui.Text("MEN PROMOTED INTO CAVALRY NEED A HORSE EACH,", c.X, row.Bottom + ui.U(10), Style.Dim, 1);
         ui.Text("OR PAY FOR ONE WHEN PROMOTED.", c.X, row.Bottom + ui.U(22), Style.Dim, 1);
-        if (s.Owner == C.Player.Id && Campaign.Level(s, "kennel") > 0)
+        bool kennel = s.Owner == C.Player.Id && Campaign.Level(s, "kennel") > 0;
+        if (kennel)
         {
             // Your kennel: war hounds join your company as a pack (docs/archive/CREATURES.md phase 4).
             var k = new Rectangle(c.X, row.Bottom + ui.U(40), c.Width, ui.U(70));
@@ -217,8 +218,34 @@ partial class MapScreen
             if (ui.Button(new Rectangle(k.Right - ui.U(84), k.Y + ui.U(8), ui.U(78), ui.U(24)), "TAKE 3", s.Hounds > 0)) note = C.RaiseHounds(s, 3) ?? "THE HOUNDS JOIN YOU";
             if (ui.Button(new Rectangle(k.Right - ui.U(84), k.Y + ui.U(38), ui.U(78), ui.U(24)), "TAKE ALL", s.Hounds > 0)) note = C.RaiseHounds(s, s.Hounds) ?? "THE HOUNDS JOIN YOU";
         }
+        GoodsList(s, new Rectangle(c.X, row.Bottom + ui.U(kennel ? 120 : 44), c.Width, c.Bottom - row.Bottom - ui.U(kennel ? 120 : 44)));
 
         ArmourerWell(s, Well(new Rectangle(body.X + half + ui.U(12), y, half, body.Height), "THE ARMOURER", Kit.Gilt));
+    }
+
+    /// The goods from the field you carry: a line a kind, its price here, and a button to sell it; then SELL ALL.
+    void GoodsList(Settlement s, Rectangle c)
+    {
+        var want = Campaign.GoodsOf(C.WantedGoods(s));
+        ui.Text("GOODS FROM THE FIELD", c.X, c.Y, Kit.Gilt, 1);
+        ui.TextR($"WANTED HERE: {want.Name.ToUpperInvariant()}", c.Right, c.Y, Style.Dim, 1);
+        int y = c.Y + ui.U(14), rh = ui.U(22);
+        if (C.GoodsCount == 0) { ui.Text("NONE. WIN A BATTLE AND BRING ITS GOODS HERE.", c.X, y + ui.U(4), Style.Dim, 1); return; }
+        int total = 0;
+        foreach (var k in Campaign.GoodsKinds)
+        {
+            int n = C.S.Goods.GetValueOrDefault(k.Id), price = C.GoodsPrice(k, s);
+            if (n <= 0) continue;
+            total += n * price;
+            if (y + rh * 2 > c.Bottom) continue;
+            var row = new Rectangle(c.X, y, c.Width, rh - ui.U(2));
+            TownRow(row);
+            ui.Text($"{n} {k.Name.ToUpperInvariant()}", row.X + ui.U(6), row.Y + ui.U(6), k == want ? Kit.Gilt : Style.Text, 1);
+            ui.TextR($"{price} A LOT", row.Right - ui.U(66), row.Y + ui.U(6), Kit.Gilt, 1);
+            if (ui.Button(new Rectangle(row.Right - ui.U(60), row.Y + ui.U(2), ui.U(56), row.Height - ui.U(4)), "SELL")) note = C.SellGoods(s, k.Id) ?? "SOLD";
+            y += rh;
+        }
+        if (ui.Button(new Rectangle(c.X, y + ui.U(2), c.Width, ui.U(20)), $"SELL ALL FOR {total} CROWNS")) note = C.SellGoods(s) ?? "SOLD";
     }
 
     /// Train tab: promote men with enough XP up their line.

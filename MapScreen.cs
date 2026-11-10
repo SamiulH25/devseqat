@@ -546,6 +546,7 @@ sealed partial class MapScreen
             case "armourer":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
                 C.S.Gold = 2000;
+                foreach (var (k, n) in new[] { ("arms", 14), ("armour", 3), ("silver", 2) }) C.S.Goods[k] = n; // goods to sell, staged
                 tab = "MARKET"; panel = PanelKind.Settlement; note = ""; break;
             case "upgrade": upgrading = C.Player.Companies[0]; upStack = upgrading.Main; panel = PanelKind.Upgrade; break;
             case "encounter": panel = PanelKind.Encounter; break;

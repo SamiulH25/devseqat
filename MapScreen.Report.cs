@@ -104,7 +104,8 @@ partial class MapScreen
         var rows = new (string Icon, string Label, string Value, Color Col)[]
         {
             // The spoils count up as the report opens.
-            ("coin", "LOOT", $"+{Ui.Count(1, (int)rep.Loot)}", Kit.Gilt), ("chain", "RANSOMS", $"+{Ui.Count(2, (int)rep.Ransom)}", Kit.Gilt),
+            ("coin", "LOOT", $"+{Ui.Count(1, (int)rep.Loot)}", Kit.Gilt),
+            ("sword", "GOODS TO SELL", $"{Ui.Count(6, rep.Goods.Sum(g => g.Count))} LOTS", Kit.Gilt), ("chain", "RANSOMS", $"+{Ui.Count(2, (int)rep.Ransom)}", Kit.Gilt),
             ("scroll", "BOUNTY", $"+{Ui.Count(3, (int)rep.Bounty)}", Kit.Gilt), ("star", "RENOWN", $"+{Ui.Count(4, (int)rep.Renown)}", Kit.Gilt),
             ("horse", "HORSES TAKEN", $"{Ui.Count(5, rep.Horses)}", Style.Text),
         };

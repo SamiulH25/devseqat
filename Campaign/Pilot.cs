@@ -91,6 +91,7 @@ public sealed class Pilot
         if (c.Refuses(s)) return;
         if (Me.Food < 10) c.BuyFood(14 - (int)Me.Food);
         if (s.Kind != SettlementKind.Village && c.PrisonerCount > 0) c.SellPrisoners(s);
+        if (s.Kind == SettlementKind.Town && c.GoodsCount > 0) c.SellGoods(s);
         foreach (int id in Me.Captives.ToList()) if (c.PartyById(id) is Party lord && s.Kind != SettlementKind.Village) c.RansomLord(lord, s);
         if (c.InTown(Me)) Promote();
         // Recruit while there is room and a reserve of gold for a few weeks' upkeep.

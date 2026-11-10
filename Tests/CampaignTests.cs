@@ -1400,6 +1400,23 @@ public static partial class SelfTest
         Check(c.S.Gold == gold - c.HorsePrice, "a horse costs HorsePrice");
     }
 
+    /// Goods from the field sell in a friendly town's market at GoodsPrice, and nowhere else.
+    static void GoodsSell()
+    {
+        var c = Campaign.New(3);
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && !c.Refuses(s));
+        var village = c.S.Settlements.First(s => s.Kind == SettlementKind.Village && !c.Refuses(s));
+        c.S.Goods["arms"] = 5;
+        c.S.Goods["silver"] = 2;
+        Check(c.SellGoods(village) != null && c.GoodsCount == 7, "a village does not buy goods");
+        float gold = c.S.Gold;
+        int arms = 5 * c.GoodsPrice(Campaign.GoodsOf("arms"), town);
+        Check(c.SellGoods(town, "arms") == null && c.S.Gold == gold + arms && c.GoodsCount == 2, "one kind sells at its price");
+        Check(c.SellGoods(town) == null && c.GoodsCount == 0 && c.SellGoods(town) != null, "SELL ALL empties the pack");
+        string want = c.WantedGoods(town);
+        Check(c.GoodsPrice(Campaign.GoodsOf(want), town) > Campaign.GoodsOf(want).Value, "the town pays more for the goods it wants");
+    }
+
     /// Polish Q6: a game saved in the middle of a long run and loaded again goes on exactly as one that never saved
     /// (no state kept only in memory), and a long run leaves nothing broken behind it.
     static void SaveMidRun()
