@@ -47,7 +47,8 @@ partial class MapScreen
             ui.Text(ch.Name.ToUpperInvariant(), box.X + ui.U(6), box.Y + ui.U(4), Style.Text, 1);
             ui.TextR(state, box.Right - ui.U(6), box.Y + ui.U(4), ch.Kind == "companion" && C.S.Hours < ch.WoundedUntil ? Style.Warn : Style.Dim, 1);
             string rose = C.RoseFrom(ch);
-            ui.Text(string.Join(", ", ch.Traits).ToUpperInvariant() + $"  AGE {ch.Age}" + (rose != "" ? "  . " + rose : ""), box.X + ui.U(6), box.Y + ui.U(16), rose != "" ? Kit.Gilt : Style.Dim, 1);
+            string house = C.HouseOf(ch) is House hs ? hs.Name.ToUpperInvariant() + "  . " : "";
+            ui.Text(house + string.Join(", ", ch.Traits).ToUpperInvariant() + $"  AGE {ch.Age}" + (rose != "" ? "  . " + rose : ""), box.X + ui.U(6), box.Y + ui.U(16), rose != "" ? Kit.Gilt : Style.Dim, 1);
             // The opinion bar: centre is indifference.
             var bar = new Rectangle(box.X + ui.U(6), box.Y + ui.U(29), box.Width - ui.U(12), ui.U(4));
             ui.Rect(bar, Color.White * 0.08f);
@@ -59,6 +60,7 @@ partial class MapScreen
                 var why = C.MemoriesOf(ch, C.Me).Take(3).Select(m => $"{m.What.ToUpperInvariant()} ({m.Weight:+0;-0}, DAY {m.Day})").ToList();
                 note = $"THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})" + (why.Count > 0 ? ": " + string.Join("; ", why) : "");
                 if (ch.Kind == "companion") note = CompanionNote(ch) + ". " + note;
+                else if (C.FamilyLine(ch) is var fam && fam != "") note = fam.ToUpperInvariant() + ". " + note;
             }
             i2++;
         }

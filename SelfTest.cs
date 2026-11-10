@@ -170,6 +170,7 @@ public static partial class SelfTest
         HorsesCostGold();
         GoodsSell();
         LordArmies();
+        HousesAndKin();
         Career();
         PilotCareer();
         FreeCrown();

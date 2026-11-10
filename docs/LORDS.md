@@ -40,6 +40,11 @@ any of them. It builds on what exists; nothing here replaces a system.
 - Ladies: daughters and widows can lead a house (and a party) when no man is left; some realms' cultures allow women lords
   from the start (a culture flag in factions.json). Names: female name lists per culture in names.json.
 - Tests: heirs come from the house, ages advance, houses die out cleanly, old saves load (lords without a house get one on load).
+- **As built:** `Female`/`First` instead of `Gender`/`Title`, and `Age` still counts up each year (`HousesYearly`) rather than
+  deriving from a `Born` day. A lord whose given name is in his culture's `ladies` list (names.json) is a lady, so women lead
+  houses from the start in every realm (no culture flag). The house's family name is the founder's epithet ("the Grim"); the
+  seat is derived (`SeatOf`: what the head's party holds). A house with no heir gives the party's banner to a new lord of a new
+  house (or, once the campaign runs, a grown younger son of the realm's houses: `SpareKin`); the fief stays with the party.
 
 ### LD1: portraits (drawing)
 

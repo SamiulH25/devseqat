@@ -116,8 +116,12 @@ mountain ridges you cross by road at the passes.
   in your realm. Foreign mercenaries are the other way to field another culture's elites.
 - **Lords and companions:** every lord is a character with traits (Honourable, Cruel, Cautious, Reckless, Greedy, ...) that drive what he
   does, and an opinion of you with the memories behind it ("you beat me in the field", "you set me free without ransom"); opinions fade
-  with time. A lord who thinks ill of you keeps his villages' recruits from you. A lord can fall in battle and his heir takes up his banner
-  and his grudges. Sergeants who live through 15 battles, and wanderers found in town taverns, join your household as **companions**
+  with time. A lord who thinks ill of you keeps his villages' recruits from you. Every lord belongs to a **house** (House Vael: its members
+  share a family name such as "the Grim") with a family around him: a wife or husband, children who grow up, maybe a brother or
+  sister. Some houses are led by ladies. A lord who falls in battle or dies of old age passes his banner and half his grudges to
+  the next of his house (eldest grown son, then daughter, then brother or sister, then widow); a house with nobody left dies out
+  and a new lord takes the banner. People age each year (120 days), marry within their realm and have children. The L screen
+  shows each lord's house, and his family on hover. Sergeants who live through 15 battles, and wanderers found in town taverns, join your household as **companions**
   (quartermaster, surgeon, scout, drillmaster or steward) and lead a company into battle as a hero. L opens the lords and companions screen.
 - **Towns:** train, hire mercenaries, buy horses and food, kit yourself out at the armourer (MARKET tab: weapons from spear to crossbow, shields, armour, helms and horses; stock changes weekly, heavy pieces need the Arms skill, the best need a rank; worn gear can be swapped, spare gear sold back at 40%), rest to heal, sell prisoners
   and ransom lords, sign or end contracts, and take work from the steward's board (hunt a lord, clear brigands, guard a village, scout a town,
