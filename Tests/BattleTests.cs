@@ -84,7 +84,7 @@ public static partial class SelfTest
         Check(cut.DiedFall == Fall.Cut, "a man killed by a side cut is spun round");
     }
 
-    /// Javelin men throw what they carry as the foe comes on, then close with the last one in hand (docs/ANIMATION_ROSTER.md R1).
+    /// Javelin men throw what they carry as the foe comes on, then close with the last one in hand (docs/archive/ANIMATION_ROSTER.md R1).
     static void Javelins()
     {
         var b = Battle.Empty(3);

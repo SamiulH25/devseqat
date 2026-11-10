@@ -921,7 +921,7 @@ public sealed class SpriteSheet
             }
             case "halberd":
             {
-                // An axe blade, a back spike and a point on a shaft a man's height and a half (docs/ANIMATION_ROSTER.md R1).
+                // An axe blade, a back spike and a point on a shaft a man's height and a half (docs/archive/ANIMATION_ROSTER.md R1).
                 var c = new Canvas(14, 72);
                 c.Rect(6, 4, 8, 72, wood);
                 c.Body(0, 6, y => (7 - 0.3f - y * 0.18f, 7 + 0.3f + y * 0.18f), steel); // the point

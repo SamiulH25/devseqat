@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// The poses: where a man's limbs and weapon are at each moment, from his action state and how he holds his weapon
-/// (docs/archive/VISUALS.md V2, docs/ANIMATION_ROSTER.md). Headless and drawing only: the sim never reads a pose.
+/// (docs/archive/VISUALS.md V2, docs/archive/ANIMATION_ROSTER.md). Headless and drawing only: the sim never reads a pose.
 sealed partial class Puppet
 {
     /// A body pose: leg swing, weapon arm (alpha, weapon pitch, swing-plane yaw), shield arm, the lean (degrees, x right, z forward),
@@ -215,7 +215,7 @@ sealed partial class Puppet
         float crouch = u.Action == UnitAction.Stagger ? 0.3f : 0;
         if (!moving && !u.Mounted && u.Action is UnitAction.None or UnitAction.Block && u.Squad is { } sq && t.Size < 1.5f)
         {
-            // Stances in a line (docs/ANIMATION_ROSTER.md A4): a shield wall crouches behind its shields, the first two ranks
+            // Stances in a line (docs/archive/ANIMATION_ROSTER.md A4): a shield wall crouches behind its shields, the first two ranks
             // of a pike or halberd company set their points at a foe close by while the ranks behind hold theirs up.
             if (sq.Formation == Formation.ShieldWall && t.HasShield) { shield = true; crouch = 0.35f; }
             else if (two && grip is Grip.Pole && u.Rank <= 1 && u.EnemyDist < 12 && u.Action == UnitAction.None)
@@ -234,7 +234,7 @@ sealed partial class Puppet
     static bool Idle(Unit u, bool moving) =>
         !moving && !u.Mounted && !u.IsPlayer && !u.Charging && u.Action == UnitAction.None && u.EnemyDist > 25 && !u.Routing && u.Type.Size < 1.5f;
 
-    /// Idle life (docs/ANIMATION_ROSTER.md A5): every 8 s each man may take up one of the idles, eased in and out:
+    /// Idle life (docs/archive/ANIMATION_ROSTER.md A5): every 8 s each man may take up one of the idles, eased in and out:
     /// 1 his grip's rest, 2 a look round, 3 a roll of the shoulders (0: none). Returns the idle and how far into it (0..1).
     internal static (int Kind, float W) IdleOf(int index, float now)
     {
@@ -263,7 +263,7 @@ sealed partial class Puppet
     /// The front rank of a company of bows or crossbows with men behind it goes down on one knee to shoot.
     static bool FrontOfShooters(Unit u, bool moving) => !moving && !u.Mounted && u.Rank == 0 && u.Squad is { } sq && sq.Alive > sq.Columns && sq.Columns > 1;
 
-    /// A crossbowman (docs/ANIMATION_ROSTER.md A3): the bow levelled at the shoulder, a kick on the shot, then bent over it with
+    /// A crossbowman (docs/archive/ANIMATION_ROSTER.md A3): the bow levelled at the shoulder, a kick on the shot, then bent over it with
     /// a foot in the stirrup hauling the string up the stock, and over the last second raising it again. `Draw` is how level
     /// the bow is (0 nose down, 1 aimed); `Aim` holds it up.
     static Pose CrossbowPose(Unit u, float now, float phase, bool moving, float leg, float swing, float leanX, float leanZ, float bob)
@@ -284,7 +284,7 @@ sealed partial class Puppet
     }
 
     /// A javelin man or a slinger with something to throw at a foe in range: the javelin drawn back over the shoulder or the
-    /// sling whirled overhead as the shot comes up, then the arm whips through (docs/ANIMATION_ROSTER.md A3). Null when he is
+    /// sling whirled overhead as the shot comes up, then the arm whips through (docs/archive/ANIMATION_ROSTER.md A3). Null when he is
     /// not throwing, so he walks or fights as usual.
     static Pose? ThrowPose(Unit u, float now, float phase, Grip grip, bool moving, float leg, float leanX, float leanZ, float bob)
     {

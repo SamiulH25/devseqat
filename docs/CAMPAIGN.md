@@ -469,3 +469,8 @@ build differs:
   treasury to `balance/economy.csv`. `SelfTest.CampaignRun` fails if bandits stop appearing, AI parties stop fighting, lord companies
   shrink below 18 men, or a treasury cannot afford a lord.
 - **Debug:** `IRONFIELD_CAMPAIGN_SHOTS=/dir` walks through the campaign screens and saves a PNG of each; `IRONFIELD_SAVES` moves the save folder.
+- **Each realm's own recruits and branches** (docs/archive/ANIMATION_ROSTER.md R3-R4). A realm's archer and horse lines start
+  with its own tier II troop rather than the shared Bowmen and Outriders, and the four younger realms carry two or three branch
+  chains each (tiers III-VII) reached by `upgradesTo` from their line troops, as the Crown and the Northmarch already had. Goblin
+  holdouts at full strength may be led by a warlord (tier VI), and a great host of the dead raises wights, with a death knight once
+  the Omen stirs.

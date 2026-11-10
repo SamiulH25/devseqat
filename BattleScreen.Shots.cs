@@ -156,7 +156,7 @@ partial class BattleScreen
             case 84 or 86 or 88 when shotFrames > 20:
                 pendingShot = new[] { "pose-grips", "pose-shooters", "pose-stances" }[(shotIndex - 84) / 2]; shotIndex++; break;
             case >= 89 and < 97 when shotIndex % 2 == 1 && pendingShot == null:
-                // The roster pass (docs/ANIMATION_ROSTER.md R3-R4): each realm's own recruits and its new branches.
+                // The roster pass (docs/archive/ANIMATION_ROSTER.md R3-R4): each realm's own recruits and its new branches.
                 Gallery(RosterShots[(shotIndex - 89) / 2].Troops, RosterShots[(shotIndex - 89) / 2].Palette);
                 zoom = 24; camPitch = 0.12f;
                 foreach (var u in battle.Units.Where(u => !u.IsLeader)) u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = -MathHelper.PiOver2 - 0.6f; // three-quarter view
@@ -262,7 +262,7 @@ partial class BattleScreen
         zoom = x * 0.8f;
     }
 
-    /// Sheet 3: how each grip swings (docs/ANIMATION_ROSTER.md A1): a two-hander, a pike, a spear over a shield, a sword from the saddle.
+    /// Sheet 3: how each grip swings (docs/archive/ANIMATION_ROSTER.md A1): a two-hander, a pike, a spear over a shield, a sword from the saddle.
     static void GripSheet(Func<string, int, Unit> add)
     {
         void Swing(string troop, AttackDir dir, UnitAction act, float k)
@@ -337,7 +337,7 @@ partial class BattleScreen
         w = add("men_at_arms", 0); w.Vel = w.Dir * 4.5f; w.Anim = 1.5f;
     }
 
-    /// Sheet 6: idle life, reactions, riders and falls (docs/ANIMATION_ROSTER.md A5-A6): the three idles, a flinch from a blow on
+    /// Sheet 6: idle life, reactions, riders and falls (docs/archive/ANIMATION_ROSTER.md A5-A6): the three idles, a flinch from a blow on
     /// his left, a rider thrown as his horse falls, a horse archer shooting back, a horse pawing, then a man spun by a cut,
     /// folded over a thrust, flung by a troll, and a rider sliding from the saddle.
     void LifeSheet(Func<string, int, Unit> add)

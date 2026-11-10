@@ -201,6 +201,15 @@ for its own sake on the HUD, and nothing bounces. All of it is in the view: the 
   swing and flinches away from a blow. The dead fall away from the killing blow (`Unit.DiedFrom`) in 0.45-0.75 s, stumbling
   back or crumpling at the knees, and lie along that line with their weapon beside them. Routers throw down weapon and shield.
   When the battle is won, the winners cheer.
+- **Grips and stances** (`PuppetPoses.cs`, `Look.GripOf`): a man moves like the weapon in his hands. Two-handers swing wide with
+  both hands on the grip; polearms thrust and chop; riders cut from the saddle; crossbows level at the shoulder and span at the
+  feet; javelins are thrown overarm and slings whirl; casters raise the staff as a spell gathers. Legs bend at the knee: a shield
+  wall crouches, the front two ranks of pikes set their points while the rear hold theirs up, front-rank shooters kneel, and a
+  man turning on the spot steps round.
+- **Idle life and falls:** a man with no foe within 25 m takes up an idle now and then (his weapon at rest, a look round, a roll of
+  the shoulders); a standing horse tosses its head, paws or shifts back. A flinch leans away from where the blow came from
+  (`Unit.HitFrom`). A man whose horse falls is pitched onto his hands. The dead fall by the blow (`Unit.DiedFall`): spun by a side
+  cut, folded over a thrust, flung by a huge blow, slid from the saddle.
 - **Horses:** a four-beat walk, a trot on diagonal pairs and a gallop that rocks front to back, the head nodding with the stride.
 - **Camera:** transitions ease (smoothstep, 0.45 s). Facing changes ease too, so turning is a sweep. A battle opens with a 4.5 s
   sweep from over the far side down to your lines (any key skips it); when it is decided the field plays on at half speed for
@@ -210,7 +219,8 @@ for its own sake on the HUD, and nothing bounces. All of it is in the view: the 
   pictures breathe (moon glow, clouds, fire flicker).
 - **Interface:** panels fade in and rise a few pixels (120 ms in, 80 ms out); hover brightens over 80 ms; bars and counts slide
   to their new value. Text in the event feed holds for 4.5 s and fades over 1.5 s. Hit text holds for 1.2 s.
-- **Check it:** the pose sheet shots (`pose-sheet`, `pose-sheet2`, `pose-horses`) freeze every pose in one still.
+- **Check it:** the pose sheet shots (`pose-sheet`, `pose-sheet2`, `pose-horses`, `pose-grips`, `pose-shooters`, `pose-stances`,
+  `pose-life`; `IRONFIELD_SHOTS_FROM=poses` or `=life`) freeze every pose in one still.
 
 ## 6. Campaign map (direction)
 

@@ -208,7 +208,7 @@ sealed partial class Puppet
         ShieldOnArm();
     }
 
-    /// A crossbowman's hands and bow (docs/ANIMATION_ROSTER.md A3): spanning with the prod at his feet, or the stock at his
+    /// A crossbowman's hands and bow (docs/archive/ANIMATION_ROSTER.md A3): spanning with the prod at his feet, or the stock at his
     /// shoulder coming up level (`Draw`), a bolt laid along it when he is aimed.
     void Crossbow(Unit u, Pose p)
     {
@@ -468,7 +468,7 @@ sealed partial class Puppet
         return 2 * Shank - Shank * (MathF.Cos(Rad(a)) + MathF.Cos(Rad(a - bend)));
     }
 
-    /// One leg in two pieces (docs/ANIMATION_ROSTER.md A2): the thigh is the lower half of the leg sprite, the shin the upper.
+    /// One leg in two pieces (docs/archive/ANIMATION_ROSTER.md A2): the thigh is the lower half of the leg sprite, the shin the upper.
     void Leg(int side, Pose p)
     {
         var (a, bend) = Knee(side, p);

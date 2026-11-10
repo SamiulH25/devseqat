@@ -6,6 +6,7 @@ The living docs are `CLAUDE.md`, `docs/DEVELOPING.md`, `docs/DESIGN.md`, `docs/C
 
 | Plan | What it covered |
 |---|---|
+| [`ANIMATION_ROSTER.md`](ANIMATION_ROSTER.md) | Animation and roster pass: poses by grip, knees, idles and falls; branch troops for the thin realms |
 | [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md) | Ironfield campaign overhaul (roadmap phase F) |
 | [`COMBAT_OVERHAUL.md`](COMBAT_OVERHAUL.md) | Combat overhaul: plan |
 | [`COMPANIONS_MAGIC.md`](COMPANIONS_MAGIC.md) | Companions, magic, abilities, buffs and auras (plan) |

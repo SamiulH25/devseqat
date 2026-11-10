@@ -139,3 +139,22 @@ Recommendation: 2, since it also answers "every realm's recruits look the same".
 
 Each step ends with `tools/check.sh` passing and, for A steps, a look at the pose sheets.
 Move this file to `docs/archive/` when the last phase ships.
+
+## As built
+
+All phases shipped. Differences from the plan:
+- **A1/A2:** the leg is not repainted as two sprites: the one `leg.*` sprite is cut in halves at draw time (`Puppet.AxialSrc`).
+  `Fallen` keeps straight legs.
+- **A3:** javelins and slings are `Grip.Thrown`/`Grip.Sling` and shoot through the bow code (`Projectile.Kind`, `Cue.Throw`);
+  any troop with ammo shoots, so a javelin troop is just ammo and range. Naffatun throw javelins; there is no burn effect yet.
+- **A4:** no extra loosing phase for archers in a line. No `formations.png`: the stances are on
+  `pose-stances`.
+- **A5:** idles are picked per man every 8 s (`Puppet.IdleOf`); hit reactions read `Unit.HitFrom`, set in `Damage`.
+- **A6:** the dying horse's rider uses `Unit.ThrownAt`; deaths read `Unit.DiedFall` (set in `Kill`). All three are written by the
+  sim and never read by it. Horse archers do not get a separate twist: the rider already faces his target, and sits back to shoot behind.
+- **R1:** heads `spike`, `barbute`, `furcap`, `bucket` (no mail veil or lamellar dome); shields `buckler`, `targe`, `dhal`.
+- **R3:** no hospitaller casters (the Order's mages stay as they were); instead hammer brothers and turcopoles. 57 troops added,
+  304 in all (16 wild). The upgrade panel lists only the branches the men's culture may enter.
+- **R4:** option 2: every realm has its own tier II archer and rider at the head of those lines.
+- **R5:** `--agree 4 5` gives the same numbers before and after R3 (the line troops it fights are unchanged); `--balance 4`:
+  even fights 38% before and after, career pacing on target 8 of 12 times after against 5 of 12 before.

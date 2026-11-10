@@ -178,7 +178,7 @@ public partial class Campaign
         int cap = Scaled(B.HoldoutMaxMen);
         if (lair.Men >= cap && lair.Tier == 4 && rng.Chance(0.05f) && lair.Companies.Any(c => c.Stacks.Any(st => st.Troop == "goblin_boss" && st.Men > 0)))
         {
-            // A full holdout left alone long enough crowns a warlord (docs/ANIMATION_ROSTER.md R3).
+            // A full holdout left alone long enough crowns a warlord (docs/archive/ANIMATION_ROSTER.md R3).
             Recruit(lair, "goblin_warlord", "infantry", 1);
             lair.Tier = 6;
             Log($"The goblins of {lair.Name} have raised a warlord.");

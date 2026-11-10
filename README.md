@@ -13,7 +13,7 @@ through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contr
   front rank (directional blows, parries, couched lances) and command from above in slowed time, or hand wings to sergeants'
   **divisions** that follow a goal.
 - **A war of seven realms** on a map of 115 provinces, each realm with its own heraldry, temper and four lines of troops:
-  188 troops across seven cultures and common, plus 13 creatures (goblins, wolves, trolls, the dead).
+  287 troops across seven cultures and common, plus 16 creatures (goblins, wolves, trolls, the dead).
 - **A company that is your legacy:** named men on the roll, the fallen remembered, banner honours won and lost, a career from
   hired sword to king, and a captain with gear, skills, wounds and a name.
 - **Ground that matters:** ridges, woods, fens, river lines, villages and hedgerows, with sight, cover, ambushes and an enemy
@@ -162,6 +162,11 @@ mountain ridges you cross by road at the passes.
   heraldry and its own troops in all four lines, in its own kit: turbans, lamellar and camel riders in the south, fur-brimmed helms and
   long deel coats on the steppe, brigandines and tall pavises in the Saltmarsh League, white surcoats in the Order. The four younger
   realms' men may also train as their kin's troops (a Sunward man may become a Crimson greatsword, never an Azure man-at-arms).
+  Every realm starts its bows and horse with its own tier II men (the Crown's town crossbows and squires, Northmarch hunters and
+  fell riders, Sunward slingers and camel scouts, steppe herd boys and riders, League militia crossbows and light horse, Order
+  pilgrims). Off the lines each realm has branches to promote into: Sunward slingers, camel lancers, naffatun fire-throwers and
+  dervishes; steppe lancers, wolf scouts and tug bearers; League marines, pavise spears and free companions; the Order's hammer
+  brothers and turcopoles. The upgrade panel shows only the branches your men's culture may enter.
 - **Encounters:** attack (the battle opens in a **deployment phase**: arrange your lines in your third of the field, then Space or START), auto-resolve,
   retreat (a rearguard pays), or pay brigands off. Esc in a campaign battle lets you **withdraw**.
 - **Duels:** meeting a lord, **CHALLENGE** him to single combat between the armies (on foot, the two of you, a fall is a yield). A cautious lord refuses, and one whose army is half again as strong as yours sees no need unless he is reckless or honourable. Win: +10 renown and his men start the battle 15 morale down. Lose: you are wounded and lead the battle from the rear. One duel an encounter.
@@ -351,7 +356,7 @@ the player rides a courser.
 - **Blessings and rites:** a shrine visit, a feast in a tavern (TAVERN tab) or a camp rite (party screen: bless, poultices,
   read the bones, call rain; needs a Priest or Cunning companion or mages) give buffs that go into your next battles. Hunger
   hurts. A relic found in a ruin blesses three battles; a shrine fills it again. Chips above the captain's panel show them.
-- **The tree:** 188 troops (and the captain, plus 13 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons.
+- **The tree:** 287 troops (and the captain, plus 16 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons; javelin men and slingers throw (few shots, short range, hard hits).
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a
   role stand side by side), and the enemy general commands any mix.
