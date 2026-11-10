@@ -45,6 +45,18 @@ public static partial class SelfTest
         var mage = b.AddSquad(0, Troops.Get("hedge_witches"), 1, new Vector2(14, 0), 1, Vector2.UnitY).Units[0];
         mage.CastStart = 0.5f; mage.CastFire = 2;
         Check(Puppet.PoseOf(mage, 1.5f, 0.5f) is { Cast: > 0 and < 1, ArmA: > 120 }, "a caster lifts his staff as he gathers a spell");
+        var wall = b.AddSquad(0, UnitType.Shieldman, 1, new Vector2(16, 0), 1, Vector2.UnitY).Units[0];
+        wall.Squad!.Formation = Formation.ShieldWall;
+        Check(Puppet.PoseOf(wall, 1, 0.5f) is { ShieldUp: true, Crouch: > 0 }, "a shield wall crouches behind its shields");
+        var pike = b.AddSquad(0, Troops.Get("pikemen"), 1, new Vector2(18, 0), 1, Vector2.UnitY).Units[0];
+        float upright = Puppet.PoseOf(pike, 1, 0.5f).WeapB;
+        pike.EnemyDist = 7; pike.Rank = 0;
+        Check(Puppet.PoseOf(pike, 1, 0.5f).WeapB < upright - 40, "the front rank sets its pikes at a foe close by");
+        pike.Rank = 4;
+        Check(Puppet.PoseOf(pike, 1, 0.5f).WeapB > upright - 10, "the ranks behind hold theirs up");
+        var bow = b.AddSquad(0, Troops.Get("longbowmen"), 4, new Vector2(20, 0), 2, Vector2.UnitY).Units[0];
+        bow.Ammo = 5; bow.EnemyDist = 20; bow.Rank = 0; bow.Squad!.Alive = 4;
+        Check(Puppet.PoseOf(bow, 1, 0.5f).Kneel, "the front rank of bows kneels to shoot");
         var foe = b.AddSquad(1, UnitType.Shieldman, 1, new Vector2(0, 2), 1, -Vector2.UnitY).Units[0];
         b.Kill(foe, u);
         Check(foe.Dead && foe.DiedFrom == u.Pos, "a dead man remembers where the blow came from");

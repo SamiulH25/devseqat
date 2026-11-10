@@ -21,6 +21,10 @@ sealed partial class Puppet
         public bool Empty { get; init; }
         /// A caster gathering a spell (0..1 up to the release), then 1..2 through the release; 0 when not casting.
         public float Cast { get; init; }
+        /// How far he bends his knees (0 standing, 1 deep): the body sinks so his feet stay on the ground.
+        public float Crouch { get; init; }
+        /// Down on one knee (a front-rank shooter).
+        public bool Kneel { get; init; }
     }
     internal record struct Key(float Alpha, float Pitch, float Yaw);
 
@@ -107,6 +111,8 @@ sealed partial class Puppet
             leanX = MathF.Sin(now * 0.31f + phase * 17) * 1.6f; // shifting his weight
         }
         if (t.Size > 1.5f && moving) leanX += stride * 5; // a troll or an ogre lumbers from foot to foot
+        float turning = MathF.Abs(MathHelper.WrapAngle(u.Facing - u.ViewFacing));
+        if (!moving && !u.Mounted && turning > 0.12f) leg = MathF.Sin(now * 14 + phase * 6) * 16 * MathF.Min(1, turning * 3); // he steps round, not slides
         float hurt = u.HitFlash > 0 ? Ease.Kick(1 - u.HitFlash / 0.15f) : 0; // a flinch away from the blow
         leanZ -= hurt * 12;
         if (u.Routing)
@@ -125,9 +131,10 @@ sealed partial class Puppet
         {
             bool aim = u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving);
             if (!aim) return new Pose(leg, 15 + swing - leg * 0.3f, 0, 0, 10 - swing + leg * 0.3f, false, false, leanX, leanZ, bob);
-            if (u.Action == UnitAction.Recover) return new Pose(leg, 100, 0, 0, 92, false, true, leanX, leanZ - 2, bob, 0); // the release: the hand flies back
+            bool kneel = FrontOfShooters(u, moving);
+            if (u.Action == UnitAction.Recover) return new Pose(leg, 100, 0, 0, 92, false, true, leanX, leanZ - 2, bob, 0) { Kneel = kneel }; // the release: the hand flies back
             float draw = Ease.InOut(1 - u.Cooldown / 1.1f); // nock low, then draw as the next shot comes up
-            return new Pose(leg, 62 + 28 * draw, 0, 0, 88, false, true, leanX, leanZ - 3 * draw, bob, draw);
+            return new Pose(leg, 62 + 28 * draw, 0, 0, 88, false, true, leanX, leanZ - 3 * draw, bob, draw) { Kneel = kneel };
         }
         bool two = TwoHanded(grip, t.HasShield, u.Mounted);
         var (idle, raise, strike) = grip is Grip.Thrown
@@ -180,9 +187,26 @@ sealed partial class Puppet
                 break;
         }
         if (t.Look.Body == "bones") arm = arm with { Alpha = arm.Alpha + MathF.Sin(now * 23 + phase * 40) * 3 }; // dry joints rattle
+        float crouch = u.Action == UnitAction.Stagger ? 0.3f : 0;
+        if (!moving && !u.Mounted && u.Action is UnitAction.None or UnitAction.Block && u.Squad is { } sq && t.Size < 1.5f)
+        {
+            // Stances in a line (docs/ANIMATION_ROSTER.md A4): a shield wall crouches behind its shields, the first two ranks
+            // of a pike or halberd company set their points at a foe close by while the ranks behind hold theirs up.
+            if (sq.Formation == Formation.ShieldWall && t.HasShield) { shield = true; crouch = 0.35f; }
+            else if (two && grip is Grip.Pole && u.Rank <= 1 && u.EnemyDist < 12 && u.Action == UnitAction.None)
+            {
+                float set = Math.Clamp((12 - u.EnemyDist) / 4, 0, 1);
+                arm = Lerp(arm, new Key(12, 10, -12), set);
+                crouch = 0.45f * set * (u.Rank == 0 ? 1 : 0.5f);
+            }
+        }
+        if (u.Action == UnitAction.Recover && two) crouch = MathF.Max(crouch, 0.25f); // the weight goes down into a big blow
         return new Pose(leg, arm.Alpha, arm.Pitch, arm.Yaw, shield ? 85 : 15 + leg * 0.4f - swing * 0.6f, shield, false, leanX, leanZ, bob)
-        { TwoHand = two && u.Action != UnitAction.Stagger };
+        { TwoHand = two && u.Action != UnitAction.Stagger, Crouch = crouch };
     }
+
+    /// The front rank of a company of bows or crossbows with men behind it goes down on one knee to shoot.
+    static bool FrontOfShooters(Unit u, bool moving) => !moving && !u.Mounted && u.Rank == 0 && u.Squad is { } sq && sq.Alive > sq.Columns && sq.Columns > 1;
 
     /// A crossbowman (docs/ANIMATION_ROSTER.md A3): the bow levelled at the shoulder, a kick on the shot, then bent over it with
     /// a foot in the stirrup hauling the string up the stock, and over the last second raising it again. `Draw` is how level
@@ -193,15 +217,15 @@ sealed partial class Puppet
         bool shooting = u.Action == UnitAction.Recover || (u.Ammo > 0 && u.EnemyDist < t.Range && !moving);
         if (!shooting) return new Pose(leg, 15 + swing - leg * 0.3f, 0, 0, 10 - swing + leg * 0.3f, false, false, leanX, leanZ, bob);
         if (u.Action == UnitAction.Recover)
-            return new Pose(leg, 0, 0, 0, 0, false, true, leanX, leanZ - 6 * Ease.Kick(1 - u.ActionTimer / 0.25f), bob, 1); // the kick
+            return new Pose(leg, 0, 0, 0, 0, false, true, leanX, leanZ - 6 * Ease.Kick(1 - u.ActionTimer / 0.25f), bob, 1) { Kneel = FrontOfShooters(u, moving) }; // the kick
         if (u.Cooldown > 1)
         {
             // Spanning: two hands drag the string up from the stirrup, again and again, each man at his own pace.
             float haul = 0.5f - 0.5f * MathF.Cos(now * 3.2f + phase * 9);
-            return new Pose(0, 0, 0, 0, 0, false, false, leanX * 0.3f, leanZ + 16 - 6 * haul, bob - 0.04f) { Haul = haul };
+            return new Pose(0, 0, 0, 0, 0, false, false, leanX * 0.3f, leanZ + 16 - 6 * haul, bob) { Haul = haul, Crouch = 0.3f + 0.15f * (1 - haul) };
         }
         float up = Ease.InOut(1 - MathF.Max(0, u.Cooldown)); // bolt laid; up to the shoulder
-        return new Pose(leg, 0, 0, 0, 0, false, true, leanX, leanZ - 2 * up, bob, up);
+        return new Pose(leg, 0, 0, 0, 0, false, true, leanX, leanZ - 2 * up, bob, up) { Kneel = FrontOfShooters(u, moving) && up > 0.5f };
     }
 
     /// A javelin man or a slinger with something to throw at a foe in range: the javelin drawn back over the shoulder or the

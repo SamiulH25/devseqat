@@ -136,18 +136,11 @@ sealed partial class Puppet
             lift += (MathF.Sin(a) * 0.7f - Saddle * (1 - MathF.Cos(a))) * Scale;
             leanBack = RearDeg * Rear * 0.8f;
         }
-        Frame(at, u.ViewFacing, lift + p.Bob * size, size);
+        Frame(at, u.ViewFacing, lift + (p.Bob - (u.Mounted ? 0 : Sink(p))) * size, size);
         Lean(p.LeanX, p.LeanZ - leanBack);
 
         if (!u.Mounted)
-            for (int side = -1; side <= 1; side += 2)
-            {
-                var hip = new Vector3(side * 0.12f, 0.68f, 0);
-                float s = Rad(p.Leg * side);
-                var foot = hip + new Vector3(0, -0.6f * MathF.Cos(s), 0.6f * MathF.Sin(s));
-                Axial(hip, foot, $"leg.{look.Legs}");
-                if (Detail == 0) Bill(foot + new Vector3(0, 0.02f, 0.03f), $"boot.{look.Feet}", true);
-            }
+            for (int side = -1; side <= 1; side += 2) Leg(side, p);
         if (look.Cape && Detail == 0) Bill(new(0, 0.92f, -0.17f), "cape", false);
         Bill(new(0, 1.0f, 0), $"torso.{look.Body}", true);
         if (look.Tabard && Detail == 0) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
@@ -431,6 +424,40 @@ sealed partial class Puppet
         return hand;
     }
 
+    const float Shank = 0.3f; // thigh and shin, each half the leg
+
+    /// The thigh's swing forward and the knee's bend, in degrees: a stride (the knee bends as the foot comes up behind),
+    /// a crouch, or down on one knee (the right knee up, the left on the ground).
+    static (float Thigh, float Bend) Knee(int side, Pose p)
+    {
+        if (p.Kneel) return side > 0 ? (85, 85) : (-5, 92);
+        float a = p.Leg * side + p.Crouch * 50;
+        return (a, p.Crouch * 95 + MathF.Max(0, -p.Leg * side) * 0.7f);
+    }
+
+    /// How far a bent-kneed man's hips sink so his feet stay on the ground (metres, unscaled).
+    static float Sink(Pose p)
+    {
+        if (p.Kneel) return Shank;
+        if (p.Crouch <= 0) return 0;
+        var (a, bend) = Knee(1, p with { Leg = 0 });
+        return 2 * Shank - Shank * (MathF.Cos(Rad(a)) + MathF.Cos(Rad(a - bend)));
+    }
+
+    /// One leg in two pieces (docs/ANIMATION_ROSTER.md A2): the thigh is the lower half of the leg sprite, the shin the upper.
+    void Leg(int side, Pose p)
+    {
+        var (a, bend) = Knee(side, p);
+        var hip = new Vector3(side * 0.12f, 0.68f, 0);
+        var knee = hip + new Vector3(0, -Shank * MathF.Cos(Rad(a)), Shank * MathF.Sin(Rad(a)));
+        var foot = knee + new Vector3(0, -Shank * MathF.Cos(Rad(a - bend)), Shank * MathF.Sin(Rad(a - bend)));
+        var src = art[$"leg.{look.Legs}{pal}"];
+        int half = src.Height / 2;
+        AxialSrc(hip, knee, new Rectangle(src.X, src.Y + half, src.Width, src.Height - half));
+        AxialSrc(knee, foot, new Rectangle(src.X, src.Y, src.Width, half + 1));
+        if (Detail == 0) Bill(foot + new Vector3(0, 0.02f, 0.03f), $"boot.{look.Feet}", true);
+    }
+
     // The arm from its shoulder straight to `hand` (the off hand on a two-handed grip).
     Vector3 ArmTo(int side, Vector3 hand)
     {
@@ -610,9 +637,10 @@ sealed partial class Puppet
     }
 
     // Sprite stretched from a (bottom of sprite) to b (top), rotated about that axis to face the camera.
-    void Axial(Vector3 aLocal, Vector3 bLocal, string name)
+    void Axial(Vector3 aLocal, Vector3 bLocal, string name) => AxialSrc(aLocal, bLocal, art[name + pal]);
+
+    void AxialSrc(Vector3 aLocal, Vector3 bLocal, Rectangle src)
     {
-        var src = art[name + pal];
         Vector3 a = W(aLocal), b = W(bLocal), axis = b - a;
         var side = Vector3.Cross(axis, camPos - (a + b) / 2);
         side = side.LengthSquared() < 1e-8f ? camRight : Vector3.Normalize(side);

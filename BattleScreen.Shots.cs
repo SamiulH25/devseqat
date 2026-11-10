@@ -298,9 +298,22 @@ partial class BattleScreen
     }
 
     /// Sheet 5: stances in a line (A2, A4).
-    static void StanceSheet(Func<string, int, Unit> add)
+    void StanceSheet(Func<string, int, Unit> add)
     {
-        add("pikemen", 0);
+        var w = add("men_at_arms", 0); w.Squad!.Formation = Formation.ShieldWall; // locked behind the shield
+        w = add("pikemen", 0); w.EnemyDist = 7; w.Rank = 0; // points set, front rank
+        w = add("pikemen", 0); w.EnemyDist = 7; w.Rank = 3; // a rear rank holds his pike up
+        w = add("halberdiers", 0); w.EnemyDist = 7; w.Rank = 0;
+        foreach (var troop in new[] { "longbowmen", "crossbowmen" })
+        {
+            w = add(troop, 0); w.Ammo = 10; w.EnemyDist = 20; w.Cooldown = troop == "crossbowmen" ? 0.02f : 0.1f;
+            var sq = w.Squad!; sq.Columns = 2; // one of a front rank of two with men behind: he kneels
+            sq.Alive = 4; w.Rank = 0;
+        }
+        w = add("men_at_arms", 0); w.Facing = w.ViewFacing + 1.2f; // turning on the spot: he steps round
+        w = add("greatswords", 0); w.Action = UnitAction.Recover; w.Swing = AttackDir.Overhead; w.ActionTimer = w.Type.Recover * 0.85f; // the weight goes down into it
+        w = add("men_at_arms", 0); w.Vel = w.Dir * 4.5f; w.Anim = 0.5f; // running: the knee comes up behind
+        w = add("men_at_arms", 0); w.Vel = w.Dir * 4.5f; w.Anim = 1.5f;
     }
 
     /// Three companies of `troop` a side charge each other; the sim runs 14 s, then the view is held from above one flank.
