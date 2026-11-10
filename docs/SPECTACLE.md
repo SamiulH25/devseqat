@@ -184,3 +184,31 @@ So the field around the magic is alive too (keep each small):
   docs/MAGIC_AURA.md as a question instead.
 - New art direction: faceted world and pixel puppets stay; birds and petals are painted parts in `SpriteSheet.cs`.
 - A general particle system rewrite: motes and `Spray` stay; S1 only adds lights, sky, post and scars.
+
+## 6. As built
+
+### S1 + S2 (2026-11-10)
+
+Drawing only: the sim, replays and the self-test numbers are unchanged (`SpectacleBeat` checks the beat rule).
+
+- **The beat:** `Beats` (Spectacle.cs, headless) holds the battle's one beat (`BeatKind`: Charge < FoeWorking < OwnWorking <
+  Clash < Breakthrough). `BattleScreen.Beat` asks for it (off with `Settings.Cinematics`, on Low, and in shots runs);
+  `BeatScale` slows the view to 0.35 through the same `scale` as the ending beat, the post pass draws the bars, the field's
+  sound beds duck. The camera does not turn yet (left for S3, when there is a strike worth turning to).
+- **Moving lights:** `Glow0-3`/`GlowCol0-3` in `Shading` and `GlowLight` in `common.glsl`, added in `world.glsl` and
+  `sprite.glsl` (men catch 1.3x). `BattleScreen.LightsFx` picks them at draw time: smite pillars and bolts, burning ground
+  (necromantic fire takes light), a Transcendent captain, a lit blade at tier 3+, casts gathering. High 4, Medium 2, Low 0.
+- **Omen:** `Sky.Omen(dark, tint, bright)` lays a darkening (or a tinted brightening) over what `Sky.Set` gave.
+  `Shading.Calm` stills the wind in the grass.
+- **Post:** `Awe` (drain colour outside a circle round a screen point), `Moment` (bars, heat shimmer, white flash), `Time`.
+  Lightning flashes the field; a breakthrough takes the beat and drains the world for 1.2 s, then floods back over 2 s.
+- **Scars:** `AddScar` keeps 64 marks for the battle (Glass from a smite, Scorch from fire and lightning with embers for
+  20 s, Crack from a breakthrough; Frost and Bloom ready for S3/S4). Drawn with the `splat` decal.
+- **Awe:** `Puppet.Awe` sources; `Puppet.Awed` leans men back and lifts the free arm (men mid-swing react at 30%).
+- **The gathering (S2):** `BattleScreen.Gather.cs`. `Sigil` replaces the warning ring: the tradition's marks (faith rays,
+  craft runes, necromantic hooks) draw round the spot as it gathers, an inner ring turns the other way, both spin up in the
+  last fifth; attacks keep an inner ring closing on the spot. A column of light rises over the caster (28 m for a great
+  working). Motes and dust are pulled in. Great workings darken the sky, still the wind, play `Cue.Gather` and ask for the
+  beat at 55% gathered. Shots: `spectacle-night`, `spectacle-breakthrough`, `gather-great`
+  (`IRONFIELD_SHOTS_FROM=spectacle`); `StageCast` freezes a cast part-way for a shot.
+- Not done from the plan yet: the grass leaning toward the caster (`Pull` uniform), the caster's cloak lifting.

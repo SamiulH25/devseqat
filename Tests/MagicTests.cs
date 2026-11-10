@@ -502,4 +502,20 @@ public static partial class SelfTest
         c.Captain.AuraTier = 2;
         Check(c.Dread(c.Player) == 1 && MathF.Abs(c.OpinionOfYou(lord) - plain) < 0.01f, "not an Aura Knight");
     }
+
+    /// docs/SPECTACLE.md rule 6: one cinematic beat a battle, first come first served, but a higher kind may take over a
+    /// lower one while it runs; the view slows at its height and is back to normal after it.
+    static void SpectacleBeat()
+    {
+        var b = new Beats();
+        Check(b.Scale(0) == 1 && !b.Ask(BeatKind.None, Vector2.Zero, 0), "no beat: the view runs at full speed");
+        Check(b.Ask(BeatKind.FoeWorking, Vector2.Zero, 1), "the first beat is granted");
+        Check(!b.Ask(BeatKind.Charge, Vector2.Zero, 1.2f), "a lower kind cannot cut in");
+        Check(b.Ask(BeatKind.Breakthrough, Vector2.One, 1.5f) && b.Kind == BeatKind.Breakthrough, "a higher kind takes over a running beat");
+        Check(MathF.Abs(b.Scale(2.5f) - Beats.Slow) < 0.01f, $"the view slows at the beat's height ({b.Scale(2.5f):0.00})");
+        Check(b.Scale(10) == 1 && !b.Running(10), "the view is back to normal after the beat");
+        Check(!b.Ask(BeatKind.Breakthrough, Vector2.Zero, 20), "only one beat a battle");
+        b.Reset();
+        Check(b.Ask(BeatKind.Charge, Vector2.Zero, 0), "a new battle has its beat again");
+    }
 }

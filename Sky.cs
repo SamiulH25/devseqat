@@ -72,5 +72,27 @@ public static class Sky
         var gold = new Vector3(1.06f, 0.98f, 0.86f);
         var cool = new Vector3(0.94f, 0.98f, 1.05f);
         Grade = Vector3.Lerp(Vector3.Lerp(Vector3.Lerp(gold, Vector3.One, k), cool, Math.Clamp(w.Rain + w.Fog * 0.5f, 0, 1)), new Vector3(0.9f, 0.95f, 1.1f), n);
+        baseSun = SunColor; baseSky = SkyColor; baseGround = GroundColor; baseHorizon = Horizon; baseZenith = Zenith; baseGrade = Grade;
+        OmenDark = 0;
+    }
+
+    static Vector3 baseSun, baseSky, baseGround, baseGrade = Vector3.One;
+    static Color baseHorizon, baseZenith;
+    /// How far an omen has darkened the sky now (0 = none).
+    public static float OmenDark { get; private set; }
+
+    /// An omen over the light (docs/SPECTACLE.md S1): `dark` 0..1 dims the sun, sky and horizon (a great working gathering),
+    /// `bright` 0..1 pulls them toward `tint` instead (a miracle's dawn). Laid over the values `Set` gave, so calling it
+    /// with zeros puts the plain light back. Drawing only.
+    public static void Omen(float dark, Vector3 tint, float bright = 0)
+    {
+        OmenDark = dark;
+        float d = Math.Clamp(dark, 0, 1), b = Math.Clamp(bright, 0, 1);
+        SunColor = Vector3.Lerp(baseSun * (1 - d * 0.75f), tint * 1.1f, b);
+        SkyColor = Vector3.Lerp(baseSky * (1 - d * 0.5f), Vector3.Lerp(baseSky, tint, 0.5f), b);
+        GroundColor = baseGround * (1 - d * 0.4f);
+        Horizon = Color.Lerp(Color.Lerp(baseHorizon, new Color(baseHorizon.ToVector3() * 0.45f), d), new Color(tint), b * 0.5f);
+        Zenith = Color.Lerp(baseZenith, new Color(baseZenith.ToVector3() * 0.35f), d);
+        Grade = Vector3.Lerp(Vector3.Lerp(baseGrade, baseGrade * new Vector3(0.92f, 0.94f, 1.04f), d), baseGrade * Vector3.Lerp(Vector3.One, tint, 0.25f), b);
     }
 }

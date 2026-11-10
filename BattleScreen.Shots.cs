@@ -143,7 +143,11 @@ partial class BattleScreen
                 MagicScene(shotIndex == 57); shotFrames = 0; shotIndex++; break;
             case 58 or 60 when shotFrames > 12:
                 pendingShot = shotIndex == 58 ? "magic-spells" : "magic-aura"; shotIndex++; break;
-            case 61 when pendingShot == null: Exit(); break;
+            case 61 or 63 or 65 when pendingShot == null:
+                SpectacleScene((shotIndex - 61) / 2); shotFrames = 0; shotIndex++; break;
+            case 62 or 64 or 66 when shotFrames > 12:
+                pendingShot = shotIndex switch { 62 => "spectacle-night", 64 => "spectacle-breakthrough", _ => "gather-great" }; shotIndex++; break;
+            case 67 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -290,7 +294,7 @@ partial class BattleScreen
             b.Flash("form:burst", b.Player.Pos, 5, 0, "rose");
             b.Flash("land:slash", b.Player.Pos, 8, 0, "rose", Vector2.UnitY);
         }
-        for (int i = 0; i < 14; i++) { b.Update(1 / 60f); Effects(1 / 60f); } // a moment on: rings spread, sparks fly
+        for (int i = 0; i < 14; i++) { b.Update(1 / 60f); Effects(1 / 60f); SpectacleFrame(1 / 60f); } // a moment on: rings spread, sparks fly
         foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
         paused = hudHidden = true;
         SetCommand(true);
@@ -299,6 +303,65 @@ partial class BattleScreen
         camYaw = MathHelper.PiOver2 + 0.5f;
         camPitch = spells ? 0.55f : 0.45f;
         zoom = spells ? 46 : 16;
+    }
+
+    /// The spectacle pass (docs/SPECTACLE.md). 0: a smite falling at night beside a burning field, a Transcendent captain
+    /// shining, to show the moving lights and the glass and scorch scars. 1: a breakthrough at its height, the colour drained
+    /// from all but the captain, the beat's bars drawn, the men near him leaning back. 2: a great working (the Tempest) at
+    /// 70% gathered beside a smite at half (S2): the sigils, the pull, the column and the darkened sky.
+    void SpectacleScene(int which)
+    {
+        bool night = which == 0;
+        var opt = new BattleOptions { AuraTier = night ? 5 : 3, Forms = new[] { "red_rose_bloom" }, Weather = night ? new Weather(23.5f) : Weather.Clear };
+        battle = Battle.Empty(11, opt);
+        SetWorld();
+        var b = battle;
+        var circle = b.AddSquad(0, Troops.Get("saints_militant"), 3, new Vector2(-8, -14), 3, Vector2.UnitY);
+        var mine = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new Vector2(4, -6), 10, Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("levies"), 30, new Vector2(0, 12), 10, -Vector2.UnitY);
+        circle.Order = mine.Order = foes.Order = Order.Hold;
+        b.Player.Pos = new Vector2(0, 0);
+        b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+        b.Input = new PlayerInput { Aura = true, Dir = AttackDir.Right, Facing = MathHelper.PiOver2 };
+        for (int i = 0; i < 30; i++) b.Update(1 / 60f);
+        var by = circle.Units[0];
+        if (night)
+        {
+            b.AddField(Abilities.Get("wildfire"), "burning", 0, by, new Vector2(-14, 14), 5, 60, 1, 10);
+            AddScar(new Vector2(14, 6), 3, ScarKind.Glass); // an earlier smite
+            AddScar(new Vector2(-4, 18), 2, ScarKind.Scorch);
+        }
+        for (int i = 0; i < 90; i++) { Effects(1 / 60f); SpectacleFrame(1 / 60f); }
+        if (night) b.Flash("spell:attack", new Vector2(6, 13), 3, 0, "faith");
+        else if (which == 2)
+        {
+            StageCast("tempest", circle, new Vector2(0, 14), 0.7f);
+            StageCast("smite", circle, new Vector2(14, 8), 0.5f);
+            for (int i = 0; i < 120; i++) { Effects(1 / 60f); SpectacleFrame(1 / 60f); } // the sky darkens, the pull builds
+        }
+        else
+        {
+            b.Flash("breakthrough", b.Player.Pos, Battle.BreakRally, 0);
+            beats.Ask(BeatKind.Breakthrough, b.Player.Pos, realTime - 1f, 30); // held at its height for the shot
+            breakAt = realTime - 0.3f;
+        }
+        for (int i = 0; i < 10; i++) { b.Update(1 / 60f); Effects(1 / 60f); SpectacleFrame(1 / 60f); }
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = hudHidden = true;
+        SetCommand(true);
+        blend = 1;
+        camFocus = new Vector2(0, 5);
+        camYaw = MathHelper.PiOver2 + 0.4f;
+        camPitch = 0.42f;
+        zoom = 34;
+    }
+
+    /// A cast frozen part-way through its gathering, for a shot (S1.7): `g` of its warning gone, so the frozen frame shows it.
+    void StageCast(string id, Squad by, Vector2 at, float g)
+    {
+        var a = Abilities.Get(id);
+        float warn = MathF.Max(0.5f, a.Warn);
+        battle.Casts.Add(new Cast { A = a, By = by, At = at, Started = battle.Time - warn * g, FireAt = battle.Time + warn * (1 - g), Power = 1 });
     }
 
     /// Debug lineup of every troop, left to right along each upgrade line, facing the camera.

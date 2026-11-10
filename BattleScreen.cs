@@ -90,8 +90,9 @@ sealed partial class BattleScreen
 
     // Debug: IRONFIELD_SHOTS=/dir stages a few camera shots, saves them as PNGs and quits.
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
-    // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/MELEE.md), skipping the rest.
-    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") == "clash" ? 53 : 0, shotFrames;
+    // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/MELEE.md), =magic at the magic scenes,
+    // =spectacle at the spectacle scenes (docs/SPECTACLE.md), skipping the rest.
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
 
@@ -233,6 +234,7 @@ sealed partial class BattleScreen
     {
         Sky.Set(battle.Weather, nightFloor: 0.42f); // moonlight: dark, but you can still see who is who
         ResetMagicFx();
+        ResetSpectacle();
         markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
@@ -311,7 +313,8 @@ sealed partial class BattleScreen
         float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
         if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
         if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
-        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
+        scale *= BeatScale; // the battle's cinematic beat slows the view (docs/SPECTACLE.md S1); each tick's step is recorded
+        if (scale > 0) { battle.Update(dt * scale); PlaySounds(); Effects(dt * scale); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
@@ -345,7 +348,8 @@ sealed partial class BattleScreen
             if (u.Action is UnitAction.Windup or UnitAction.Recover && u.Type.Ammo == 0) fighting++;
         }
         bool quiet = paused || menuOpen || deploying;
-        audio.Beds(0.7f, quiet ? 0 : MathF.Min(1, horses / 5f), quiet ? 0 : MathF.Min(1, fighting / 14f), quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)));
+        float hush = 1 - 0.6f * MathF.Max(BeatAmount, Sky.OmenDark); // a beat or a gathering working quiets the field
+        audio.Beds(0.7f * (1 - Sky.OmenDark * 0.8f), quiet ? 0 : MathF.Min(1, horses / 5f) * hush, quiet ? 0 : MathF.Min(1, fighting / 14f) * hush, quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)) * hush);
         audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Map : MusicTrack.Battle);
     }
 

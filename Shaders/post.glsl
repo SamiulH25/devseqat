@@ -1,6 +1,9 @@
 // Full-screen pass over the rendered scene: FXAA (the game runs without MSAA), colour grade, vignette.
 // Grade: x = saturation, y = contrast, z = vignette strength, w = FXAA on (1) / off (0). Texel = 1 / screen size.
 // Tint: rgb = the light's colour grade by hour and weather (1,1,1 = none), w = bloom strength (0 = off).
+// Awe (docs/SPECTACLE.md S1): colour drains outside a circle: xy = its centre (uv), z = radius (in screen heights), w = amount.
+// Time: seconds, for the shimmer.
+// Moment: x = letterbox bars (fraction of the height each), y = heat shimmer strength, z = white flash, w = shimmer top (uv y).
 varying vec2 vUV;
 
 #ifdef VERTEX
@@ -55,7 +58,14 @@ vec3 Bloom(vec2 uv)
 
 void main()
 {
-    vec3 col = Grade.w > 0.5 ? Fxaa(vUV) : texture2D(Scene, vUV).rgb;
+    if (vUV.y < Moment.x || vUV.y > 1.0 - Moment.x) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; } // the beat's bars
+    vec2 uv = vUV;
+    if (Moment.y > 0.0) // heat over fire: the air wavers, more toward the bottom of the screen
+    {
+        float rise = smoothstep(Moment.w - 0.25, Moment.w + 0.2, uv.y);
+        uv.x += sin(uv.y * 90.0 + uv.x * 13.0 - Time * 7.0) * 0.0025 * Moment.y * rise;
+    }
+    vec3 col = Grade.w > 0.5 ? Fxaa(uv) : texture2D(Scene, uv).rgb;
     if (Tint.w > 0.0) col += Bloom(vUV) * Tint.w;
     col *= mix(vec3(1.0), Tint.rgb, 0.6);
     float l = dot(col, Luma);
@@ -65,6 +75,14 @@ void main()
     col += vec3(0.035, 0.018, -0.02) * smoothstep(0.45, 1.0, l) + vec3(-0.02, 0.0, 0.03) * (1.0 - smoothstep(0.0, 0.45, l));
     vec2 c = (vUV - 0.5) * vec2(1.3, 1.0);
     col *= 1.0 - Grade.z * smoothstep(0.35, 0.95, length(c));
+    if (Awe.w > 0.0)
+    {
+        vec2 d = vec2((vUV.x - Awe.x) * (Texel.y / Texel.x), vUV.y - Awe.y); // in screen heights, so the circle is round
+        float outside = smoothstep(Awe.z * 0.7, Awe.z, length(d));
+        float g = dot(col, Luma);
+        col = mix(col, vec3(g) * vec3(0.92, 0.95, 1.0), Awe.w * outside);
+    }
+    col = mix(col, vec3(1.0), Moment.z);
     gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 #endif

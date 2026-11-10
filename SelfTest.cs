@@ -58,6 +58,7 @@ public static partial class SelfTest
         MistHides();
         MirageDrawsArrows();
         WardBreaksCast();
+        SpectacleBeat();
         OmenTeeth();
         AuraIsKnown();
         CompanionGrows();

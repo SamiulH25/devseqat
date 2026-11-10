@@ -49,7 +49,7 @@ partial class BattleScreen
     }
 
     /// A new battle: nothing of the last one's magic stays on screen.
-    void ResetMagicFx() { ripples.Clear(); beams.Clear(); bladeTrail.Clear(); motes.Clear(); presencePulse = 0; }
+    void ResetMagicFx() { ripples.Clear(); beams.Clear(); bladeTrail.Clear(); motes.Clear(); presencePulse = 0; breakAt = -10; }
 
     void AddRipple(Vector2 at, float r0, float r1, float life, Color col, float y = 0.12f) =>
         ripples.Add(new Ripple { At = at, R0 = r0, R1 = r1, Born = battle.Time, Life = life, Col = col, Y = y });
@@ -69,6 +69,7 @@ partial class BattleScreen
     {
         foreach (var f in battle.Flashes) FlashFx(f.What, f.At, f.Dir, f.Radius, f.Team, f.Tag);
         battle.Flashes.Clear();
+        GatherFx(dt);
         if (motes.Count > 1200) return; // a crowded sky: the steady effects wait
         FieldFx(dt);
         BuffFx(dt);
@@ -87,13 +88,17 @@ partial class BattleScreen
                 AddRipple(at, 0.5f, radius * 0.6f, 1.0f, col);
                 Rise(at, 2.5f, 80, col, 0.12f, 1.6f);
                 Kick(0.6f);
-                if (Settings.Current.HitPause && quality != Quality.Low) hitPause = 0.3f;
+                AddScar(at, 4.5f, ScarKind.Crack);
+                AddAwe(at, radius * 1.5f, 1.6f);
+                if (Beat(BeatKind.Breakthrough, at, 3.2f)) breakAt = realTime; // colour drains from all but him, then floods back
+                else if (Settings.Current.HitPause && quality != Quality.Low) hitPause = 0.3f;
                 break;
-            case "clash": AddRipple(at, radius, radius, 8f, col, 0.08f); AddRipple(at, 0.3f, radius * 1.6f, 0.6f, Color.White, 0.5f); Kick(0.3f); break; // the ring the men give (MA7)
+            case "clash": AddRipple(at, radius, radius, 8f, col, 0.08f); AddRipple(at, 0.3f, radius * 1.6f, 0.6f, Color.White, 0.5f); Kick(0.3f); Beat(BeatKind.Clash, at); break; // the ring the men give (MA7)
             case "broken": Spray(at, 1.2f, 24, col, 5f, 0.5f, 0.06f, false); AddRipple(at, radius, 0.3f, 0.35f, Color.White); break; // a working shattered (MA5)
             case "spell:attack":
-                if (tag == "faith") { beams.Add(new Beam { At = at, Born = battle.Time, Life = 0.7f, Radius = MathF.Max(1, radius), Col = col }); Spray(at, 0.4f, 24, new Color(255, 244, 200), 3f, 0.7f, 0.08f, true); }
-                else { Spray(at, 0.3f, 26, new Color(255, 140, 40), 3.2f, 0.9f, 0.1f, true); Spray(at, 0.6f, 10, new Color(60, 52, 46), 0.8f, 2.2f, 0.4f, false, 0.9f); }
+                if (tag == "faith") { beams.Add(new Beam { At = at, Born = battle.Time, Life = 0.7f, Radius = MathF.Max(1, radius), Col = col }); Spray(at, 0.4f, 24, new Color(255, 244, 200), 3f, 0.7f, 0.08f, true); AddScar(at, MathF.Max(2, radius * 0.9f), ScarKind.Glass); }
+                else { Spray(at, 0.3f, 26, new Color(255, 140, 40), 3.2f, 0.9f, 0.1f, true); Spray(at, 0.6f, 10, new Color(60, 52, 46), 0.8f, 2.2f, 0.4f, false, 0.9f); AddScar(at, MathF.Max(2, radius), ScarKind.Scorch); }
+                AddAwe(at, MathF.Max(6, radius * 3), 1.3f);
                 AddRipple(at, 0.5f, radius * 1.4f, 0.5f, col);
                 if (near < 60) Kick(0.12f);
                 break;
@@ -102,6 +107,9 @@ partial class BattleScreen
                 Spray(at, 0.5f, 18, new Color(220, 235, 255), 4f, 0.4f, 0.07f, true);
                 AddRipple(at, 0.3f, 3f, 0.3f, Color.White);
                 if (near < 80) Kick(0.25f);
+                Flash(near < 150 ? 1 : 0.5f); // the whole field lights for a moment
+                AddScar(at, 1.8f, ScarKind.Scorch);
+                AddAwe(at, 10, 0.9f);
                 break;
             case "spell:heal": Rise(at, radius, 26, new Color(150, 240, 150)); break;
             case "spell:buff": case "spell:rally": Rise(at, radius * 0.8f, 30, col); AddRipple(at, 1, radius, 0.9f, col); break;

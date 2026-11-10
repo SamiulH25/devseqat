@@ -41,6 +41,7 @@ void main()
     // At night and in rain men catch the moon and the wet sheen more than the grass does, so they stand out from the
     // dark field: a cool lift, strongest on their bright parts (steel, faces, tabards).
     light += TorchLight(vWorld);
+    light = max(light + GlowLight(vWorld + vec3(0.0, 0.6, 0.0)) * 1.3, vec3(0.0)); // spell light catches men more than grass
     float lum = dot(t.rgb, vec3(0.3, 0.55, 0.15));
     light += vec3(0.16, 0.19, 0.27) * (Look.z * 0.9 + Look.w * 0.35) * (0.6 + lum * 0.8);
     gl_FragColor = vec4(Fog(t.rgb * vColor.rgb * light, vWorld), 1.0);

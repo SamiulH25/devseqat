@@ -31,7 +31,7 @@ partial class BattleScreen
     void ResetSpectacle()
     {
         beats.Reset(); glows.Clear(); awes.Clear(); puppet.Awe.Clear();
-        scarNext = scarCount = 0;
+        scarNext = scarCount = 0; gathering.Clear(); calm = calmWant = 0;
         omenWant = omenNow = brightWant = brightNow = drainWant = drainNow = shimmerWant = shimmerNow = flash = 0;
     }
 
@@ -73,6 +73,8 @@ partial class BattleScreen
         shimmerNow += (shimmerWant - shimmerNow) * k;
         omenWant = brightWant = drainWant = shimmerWant = 0;
         flash = MathF.Max(0, flash - dt * 6);
+        calm += (calmWant - calm) * MathF.Min(1, dt * 1.5f);
+        if (shading != null) shading.Calm = calm;
         if (quality == Quality.Low) omenNow = brightNow = 0;
         Sky.Omen(omenNow, brightTint, brightNow);
 
@@ -160,6 +162,7 @@ partial class BattleScreen
     void LightsFx()
     {
         glows.Clear(); // asked anew each frame
+        GatherLights();
         float t = battle.Time;
         foreach (var b in beams)
         {

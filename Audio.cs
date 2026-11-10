@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Audio;
 namespace Ironfield;
 
 /// Sound cues the headless battle reports (Battle.Sounds); the audio engine turns them into positional sound.
-public enum Cue { Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin, Splash, Squelch, Rustle, Hollow, Spell, Thunder, Holy, Flame, Aura }
+public enum Cue { Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin, Splash, Squelch, Rustle, Hollow, Spell, Thunder, Holy, Flame, Aura, Gather }
 
 public enum MusicTrack { None, Map, Battle, Victory, Defeat }
 
@@ -47,6 +47,7 @@ sealed class AudioEngine
             cues[Cue.Holy] = Make(Holy());
             cues[Cue.Flame] = Make(Flame());
             cues[Cue.Aura] = Make(AuraThrum());
+            cues[Cue.Gather] = Make(Gather());
             music[MusicTrack.Map] = Make(MapTheme());
             music[MusicTrack.Battle] = Make(Drums());
             music[MusicTrack.Victory] = Make(Fanfare(true));
@@ -337,6 +338,24 @@ sealed class AudioEngine
     }
 
     /// A holy chord (smite, miracle): three bright voices swelling and fading.
+    /// A great working gathering (docs/SPECTACLE.md S2): a low drone and a rising hum that swell for two seconds, then
+    /// stop dead as it lands.
+    static float[] Gather()
+    {
+        var b = Buf(2.4f);
+        var rng = new Random(17);
+        float lp = 0;
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = i / (float)Rate, env = MathF.Pow(MathF.Min(1, t / 2.2f), 2.2f) * (t > 2.25f ? MathF.Max(0, 1 - (t - 2.25f) / 0.12f) : 1);
+            float rise = 110 + 220 * t / 2.4f;
+            lp += ((float)rng.NextDouble() * 2 - 1 - lp) * 0.02f;
+            float s = MathF.Sin(MathF.Tau * 55 * t) * 0.5f + MathF.Sin(MathF.Tau * 82.5f * t) * 0.3f + MathF.Sin(MathF.Tau * rise * t) * 0.18f + lp * 1.4f;
+            b[i] = s * env * 0.5f;
+        }
+        return b;
+    }
+
     static float[] Holy()
     {
         var b = Buf(1.6f);
