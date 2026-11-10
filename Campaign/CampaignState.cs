@@ -405,6 +405,8 @@ public sealed class Summons
 public sealed class CaptainState
 {
     public float Renown = 50, WoundedUntil;
+    /// The captain is a woman (LD6: whom you may court); the creator does not ask yet, so false.
+    public bool Female;
     /// Before the armoury (P1) gear was three tiers; a save that still has them is moved onto the kit when loaded (`Campaign.MigrateGear`).
     public int ArmorTier, HelmTier, HorseTier, Contract = 0; // Contract: faction you serve, -1 = none
     /// What the captain wears and carries (docs/archive/PROGRESSION.md P1).
@@ -792,7 +794,7 @@ public sealed class Names
     public List<string> LordsOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Lords.Count > 0 ? c.Lords : Lords;
     /// Common soldiers' names of a culture (L1); the sergeants' list when it has none.
     public List<string> MenOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Men.Count > 0 ? c.Men : Sergeants;
-    /// Women's names of a culture (docs/LORDS.md LD0); the common list when it has none.
+    /// Women's names of a culture (docs/archive/LORDS.md LD0); the common list when it has none.
     public List<string> LadiesOf(string culture) => Cultures.TryGetValue(culture, out var c) && c.Ladies.Count > 0 ? c.Ladies : Ladies;
 
     static Names? loaded;

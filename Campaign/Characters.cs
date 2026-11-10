@@ -47,10 +47,20 @@ public sealed class Character
     /// A named man of his company he teaches (B5; Soldier id, 0: none); warned you once that he may leave.
     public int Student;
     public bool Warned;
-    /// His house and kin (docs/LORDS.md LD0; Campaign/Houses.cs): ids of characters, -1 for none.
+    /// His house and kin (docs/archive/LORDS.md LD0; Campaign/Houses.cs): ids of characters, -1 for none.
     public int House = -1, Father = -1, Mother = -1, Spouse = -1;
     public List<int> Children = new();
     public bool Female;
+    /// Talk (LD3): the day you last raised each topic with him (asking again too soon annoys).
+    public SortedDictionary<string, int> Asked = new();
+    /// What he wants (LD4; Campaign/Wants.cs): "fief", "revenge", "peace", "marshal", "wealth", "match", "glory", "monster" or "";
+    /// and who or what it is about (a house, character or settlement id; -1: none). Known to you once he told you.
+    public string Want = "";
+    public int WantOn = -1;
+    public bool WantKnown;
+    /// A promise you made him to help his want (the want and the day; "": none), and how far you have courted her (LD6, 0-3).
+    public string Promise = "";
+    public int PromiseDay, Courted, CourtedDay;
     /// The given name alone ("Aldric"), for titles and heirs; "" for characters from before houses.
     public string First = "";
 }
@@ -146,7 +156,7 @@ public sealed partial class Campaign
         if (a.Culture != b.Culture && a.Culture != Factions.Common && b.Culture != Factions.Common) o -= 10;
         foreach (var (x, y) in TraitClashes)
             if (a.Traits.Contains(x) && b.Traits.Contains(y) || a.Traits.Contains(y) && b.Traits.Contains(x)) o -= 15;
-        return o;
+        return o + BondRegard(a, b); // kin and feuds (LordBonds.cs)
     }
 
     /// What `a` thinks of `b`, -100..100.
@@ -219,18 +229,20 @@ public sealed partial class Campaign
     }
 
     /// A lord routed in the field may fall (3.1): he is gone, and an heir takes up his banner, house and grudges.
-    void MaybeSlain(Party p, bool byPlayer)
+    void MaybeSlain(Party p, bool byPlayer, Character? killer = null)
     {
-        if (CharacterOf(p) != null && rng.Chance(LordSlainPercent / 100f)) SlayLord(p, byPlayer);
+        if (CharacterOf(p) != null && rng.Chance(LordSlainPercent / 100f)) SlayLord(p, byPlayer, killer: killer);
     }
 
     /// A lord dies (in battle, or of old age with `cause`): the next of his house takes up the banner and grudges; a house with
     /// nobody left to ride gives the banner to a new lord.
-    internal void SlayLord(Party p, bool byPlayer, string cause = "falls in battle")
+    internal void SlayLord(Party p, bool byPlayer, string cause = "falls in battle", Character? killer = null)
     {
         if (CharacterOf(p) is not Character old) return;
         old.Dead = true;
         old.PartyId = -1;
+        if (killer != null && !byPlayer) StartFeud(old, killer); // a blood debt between houses (LD2)
+        if (byPlayer) HelpedWant("revenge", c => c.WantOn == old.House && old.House >= 0, "you avenged my house");
         Character heir;
         string kin = "";
         if (p.KnightOrder != "") heir = KnightHeir(p);

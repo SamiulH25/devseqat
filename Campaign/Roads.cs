@@ -115,7 +115,8 @@ public sealed partial class Campaign
     // ---------- meeting travellers on the road (you ride up to one that is not your enemy) ----------
 
     /// True when the encounter is a peaceful meeting with travellers, not a fight.
-    public bool Meeting(Party e) => e.Kind == PartyKind.Caravan && !Hostile(Player, e);
+    /// Riding up to travellers or a lord who is not your enemy is a meeting (a lord's opens the talk screen, LD3).
+    public bool Meeting(Party e) => e.Kind is PartyKind.Caravan or PartyKind.Lord && !Hostile(Player, e);
 
     /// Buy provisions from a caravan: four days of food.
     public string? BuyFromCaravan()

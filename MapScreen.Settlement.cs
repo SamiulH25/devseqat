@@ -17,8 +17,8 @@ partial class MapScreen
         {
             SettlementKind.Village when C.Refuses(s) => new[] { "FORAGE" },
             SettlementKind.Village => new[] { "RECRUIT", "FOOD", "FORAGE", "REST", "ELDERS" },
-            SettlementKind.Castle => new[] { "REST", "FOOD", "CAPTIVES", "CONTRACT" },
-            _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "TAVERN", "MARKET", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
+            SettlementKind.Castle => new[] { "HALL", "REST", "FOOD", "CAPTIVES", "CONTRACT" },
+            _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "TAVERN", "HALL", "MARKET", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
         }).Concat(C.ChapterAt(s) != null ? new[] { "CHAPTER" } : Array.Empty<string>()).Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
         int tw = Math.Min(ui.U(104), (r.Width - ui.U(40)) / tabs.Length);
         int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(80), tw * tabs.Length, ui.U(22)), tabs, Array.IndexOf(tabs, tab));
@@ -32,6 +32,7 @@ partial class MapScreen
             case "RECRUIT": RecruitTab(s, body); break;
             case "MERCENARIES": MercenariesTab(s, body); break;
             case "TAVERN": TavernTab(s, body); break;
+            case "HALL": HallTab(s, body); break;
             case "MARKET": MarketTab(s, body); break;
             case "TRAIN": TrainTab(s, body); break;
             case "REST": RestTab(s, body); break;

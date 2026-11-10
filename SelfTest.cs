@@ -172,6 +172,7 @@ public static partial class SelfTest
         LordArmies();
         HousesAndKin();
         PortraitsVary();
+        TalkBondsWants();
         Career();
         PilotCareer();
         FreeCrown();

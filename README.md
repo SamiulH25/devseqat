@@ -124,6 +124,34 @@ mountain ridges you cross by road at the passes.
   shows each lord's face, house, and his family on hover. Every lord has a painted portrait on his house's arms: it greys and
   lines with age, carries his scars, crowns a ruler, and its brows and mouth show what he thinks of you. Sergeants who live through 15 battles, and wanderers found in town taverns, join your household as **companions**
   (quartermaster, surgeon, scout, drillmaster or steward) and lead a company into battle as a hero. L opens the lords and companions screen.
+- **Talking to lords:** ride up to a friendly lord on the map, press TALK in an encounter, click a lord on the L screen when he
+  is near, or find him in a town's or castle's **HALL** tab. His portrait, house, family, bonds and memories of you sit on the
+  left; on the right he speaks, and you raise topics. **Ask** (the war news, what he thinks of the other lords, what he wants)
+  is free. **Request** (work, ride with me for three days), **Persuade** (back me in council, make peace, swear to my realm),
+  **Threaten** (yield or fight, when you meet a foe) and **Ask for her hand** are checks: the chance comes from his opinion of
+  you, your Charm and the size of the ask, and you may bring up to three **arguments** (100 crowns, honour, glory, faith, fear,
+  or a promise to help what he wants). Each fits some tempers and puts off others: the honourable scorn gold and fear, the pious
+  heed faith, the greedy take the crowns. A refusal sours him a little; a refused threat means battle. **Gifts** of gold or a
+  horse warm him; an **insult** he will not forget. You can raise the same topic again only after a few days.
+- **Lords among themselves:** lords remember each other as they remember you (fought side by side, slew my kin, took my seat,
+  married into my house, came to blows). On top of that sit **bonds**: kin (one house, or by marriage), **feud** (a lord slain by
+  another lord's men sets his house against the killer's; heirs inherit it, and a marriage between the houses ends it), friend
+  and rival. Friends ride in each other's armies and relieve each other first; feuding lords of one realm who meet come to blows.
+  The L screen and the talk screen show a lord's bonds.
+- **What lords want:** each lord wants one thing at a time, from his nature and his lot: land of his own, revenge on a house,
+  an end to the war, the marshal's staff, gold, a match for his daughter, a great battle won, or a monster gone from his land.
+  Ask him to learn it. Bring it about (win the battle, clear the lair, make the peace, slay his enemy, wed his daughter) and he
+  thinks much better of you. A want drives him too: revenge picks his prey, lords who want peace press their realm for it, and
+  a lord who wants land votes for himself at the council. Promise to help and fail within 40 days, and he remembers you broke
+  your word.
+- **Halls and feasts:** a town's or castle's HALL shows who is there: the lords resting at it and the kin of the house whose seat
+  it is, each with TALK. In a hall of your own you can **hold a feast** (once a month; 80 crowns and 40 a guest) for up to five
+  friendly lords near enough to come: each thinks better of you and the guests warm to each other, but rivals or feuding lords
+  at one table may quarrel.
+- **Marriage:** while you are unwed, an unwed grown woman of a house (lord or kin) can be courted: COURT HER three times, on
+  different days, then ASK FOR HER HAND from her father or the head of her house. The match brings a dowry, makes her whole
+  house your kin (they think much better of you), raises the house's prestige and pleases her realm's lords. Lords' houses marry
+  among themselves each year too.
 - **Towns:** train, hire mercenaries, buy horses and food, kit yourself out at the armourer (MARKET tab: weapons from spear to crossbow, shields, armour, helms and horses; stock changes weekly, heavy pieces need the Arms skill, the best need a rank; worn gear can be swapped, spare gear sold back at 40%), rest to heal, sell prisoners
   and ransom lords, sign or end contracts, and take work from the steward's board (hunt a lord, clear brigands, guard a village, scout a town,
   take a castle). **Villages:** recruit (levies, or clansmen in the north), buy or forage food. **Castles:** rest, prisoners and contracts.

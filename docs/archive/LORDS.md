@@ -143,3 +143,37 @@ LD4 (they give talking something to be about), then LD5, LD6, LD7. LD3 can ship 
 2. Talk: topic menu with persuasion checks and data lines (recommended), or longer hand-written branching conversations.
 3. Women lords and ladies: in from LD0 (recommended: houses need wives and daughters for heirs and marriage anyway).
 4. Marriage for the captain (LD6): in scope or later.
+
+## As built
+
+All eight phases shipped. What was built, and where it differs from the plan:
+
+- **LD0 houses and kin** (`Campaign/Houses.cs`): as planned. Houses keep at most 8 living members and a birth comes with a 25%
+  chance a year, so families stay readable. Kin have their own dice (`KRng`) so a run's battles do not shift when a child is born.
+- **LD1 portraits** (`PortraitPainter.cs`): painted 48x60 busts on the house's arms, derived from the character and never saved.
+  Shown on the L screen rows, the encounter panel, the talk screen and the hall.
+- **LD2 bonds** (`Campaign/LordBonds.cs`): kin +20 and feud -40 sit in `BaseOpinion`; friend and rival are read from opinion (40 and
+  -35). A feud starts only when a lord falls to another lord's men (not yours: you get the memory instead), passes to heirs with
+  the house, and ends with a marriage between the houses. Seats taken and battles won together are remembered. Friends and kin
+  are asked first into armies and relief armies; feuding lords of one realm who meet come to blows (weekly, 30%). A rival does not
+  yet refuse to ride in an army; the order of asking does most of that work.
+- **LD3 talk** (`Campaign/Talk.cs`, `Data/talk.json`, `MapScreen.Talk.cs`): 15 topics in 7 groups. Checked topics (ride, council,
+  peace, defect, demand, hand) roll against a base for the ask plus opinion/160, Charm/300 and up to three arguments, clamped to
+  2-95%; each topic has a cooldown (3 days for questions, 7 for gifts, 30 for an insult, 14 for the rest). Lines are chosen by how
+  well they fit (topic, mood, temper, outcome, war) and are the same all day, so reopening the screen does not reroll them.
+  "Back me in council" leaves a memory worth +10, so he votes for you rather than being bound to.
+- **LD4 wants** (`Campaign/Wants.cs`): 8 wants, chosen every 15 days by weight from traits and his lot. Met by you: winning a
+  battle against a lord (glory), clearing a lair (monster), making peace, slaying the enemy of his house (revenge), a gift
+  (wealth), wedding his daughter (match). Wealth and glory lapse by chance. A broken promise (-15) shows after 40 days. In the
+  AI: revenge orders prey, each peace-wanting lord adds 4 to his realm's wish for peace, and a lord who wants land adds 15 to his
+  own vote at the council.
+- **LD5 halls** (HALL tab on towns and castles): lords at the settlement plus the kin of the holder's house. Feasts in your own
+  hall once every 30 days, 80 crowns plus 40 a guest, up to 5 guests; rivals and feuding guests quarrel half the time.
+  Lords' own visits to each other and the hall's dialogue scenes were left out.
+- **LD6 marriage**: court three times on different days, then ask her father or her house's head. A dowry of 150 plus 5 per point
+  of house prestige. `CaptainState.Female` exists, but the creator does not set it yet, so the captain courts women. Heirs for
+  your company's legend do not yet come from the marriage.
+- **LD7**: the pilot talks to a friendly lord it passes every 5 days and to lords it meets (news, work, gifts when rich, council
+  once sworn), and the pacing line prints its talks won. Test `TalkBondsWants` covers the talk rules, bonds, inherited feuds,
+  wants, broken promises and marriage; `HousesAndKin` checks that houses carry on.
+

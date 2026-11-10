@@ -41,7 +41,7 @@ public static class SpriteDump
     }
 
     /// `--portraits out.png [seed]`: the faces of a new campaign's lords and kin (each in all four moods for the first row),
-    /// 3x on one PNG, for checking portrait variety (docs/LORDS.md LD1).
+    /// 3x on one PNG, for checking portrait variety (docs/archive/LORDS.md LD1).
     public static void Portraits(string path, int seed)
     {
         const int Z = 3, Cols = 12;

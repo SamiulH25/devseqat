@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// How a person's face is painted (docs/LORDS.md LD1). Derived, never saved: from the character's id, culture, age, traits,
+/// How a person's face is painted (docs/archive/LORDS.md LD1). Derived, never saved: from the character's id, culture, age, traits,
 /// rank and his opinion of you, so it ages, scars and changes mood with him.
 public sealed record Face(int Seed, int Skin, int Hair, int Cut, int Beard, int Eye, int Brow, int Nose, int Jaw, bool Female, int Age,
     int Scar, int Dress, bool Crown, int Mood, int Palette, Emblem Charge, int Field);

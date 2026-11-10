@@ -159,7 +159,7 @@ public partial class Campaign
         else if (hostiles.Where(q => !Rabble(q) || !AtWarWithAnyone(p.Faction) || q.HuntedBy == p.Faction || MonsterHunter(p) || Map.ProvinceAt(q.Pos).Faction == p.Faction)
                      .Where(q => !q.Lair || (q.HuntedBy == p.Faction && S.Hours < q.HuntedUntil || MonsterHunter(p)) && Rules.Strength(q) * B.HoldoutDefence * 1.2f < me * preyAt)
                      .Where(q => Rules.Strength(q) * (q.Breed is "troll" or "undead" ? 2 : 1) < me * preyAt * (p.PatrolProvince >= 0 && S.Provinces[p.PatrolProvince].Faction != p.Faction ? 1.3f : 1f)) // a troll only with twice its weight
-                     .OrderBy(q => MonsterHunter(p) && q.Kind == PartyKind.Monster ? 0 : Rabble(q) ? 2 : 1).ThenBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
+                     .OrderBy(q => Revenge(p, q) ? -1 : MonsterHunter(p) && q.Kind == PartyKind.Monster ? 0 : Rabble(q) ? 2 : 1).ThenBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey) // a lord on campaign takes even fights
         {
             p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true; p.TaskUntil = (float)S.Hours + 6;
         }

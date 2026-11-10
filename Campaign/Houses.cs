@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// A noble house (docs/LORDS.md LD0): its lords and kin share its name ("the Grim" after their given names), its arms and its fate.
+/// A noble house (docs/archive/LORDS.md LD0): its lords and kin share its name ("the Grim" after their given names), its arms and its fate.
 /// Its seat is whatever its head's party holds (`SeatOf`).
 public sealed class House
 {
@@ -9,6 +9,8 @@ public sealed class House
     public string Name = "", Epithet = "", Culture = "";
     public float Prestige;
     public bool Extinct;
+    /// Houses this one is at feud with (LD2): kin slain; heirs inherit it, as the house does not die with a lord.
+    public List<int> Feuds = new();
 }
 
 /// Campaign: houses and kin. Every lord belongs to a house with a family around him (a wife, children, maybe a brother);
@@ -248,6 +250,9 @@ public sealed partial class Campaign
                 .OrderBy(c => Math.Abs(c.Age - a.Age)).FirstOrDefault();
             if (b == null) continue;
             Wed(a, b);
+            // A match between houses ends a feud between them and warms the two families (LD2).
+            if (HouseOf(a) is House ha && HouseOf(b) is House hb) { ha.Feuds.Remove(hb.Id); hb.Feuds.Remove(ha.Id); }
+            Remember(a, b, "married into my house", 10); Remember(b, a, "married into my house", 10);
             bool aLeads = a.PartyId >= 0, bLeads = b.PartyId >= 0;
             if (!bLeads) b.House = a.House;
             else if (!aLeads) a.House = b.House;

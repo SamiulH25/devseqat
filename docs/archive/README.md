@@ -13,6 +13,7 @@ The living docs are `CLAUDE.md`, `docs/DEVELOPING.md`, `docs/DESIGN.md`, `docs/C
 | [`CREATURES.md`](CREATURES.md) | Creatures and monsters: brainstorm and plan |
 | [`KNIGHT_ORDERS.md`](KNIGHT_ORDERS.md) | Knight orders and the captain's aura: plan |
 | [`LEGACY.md`](LEGACY.md) | The company is the legacy: plan |
+| [`LORDS.md`](LORDS.md) | Lords: faces, houses, bonds and talk (LD0-LD7) |
 | [`MAGIC_AURA.md`](MAGIC_AURA.md) | Magic and aura for the player: plan |
 | [`MELEE.md`](MELEE.md) | Melee and company tactics: plan |
 | [`POLISH.md`](POLISH.md) | Polish pass: plan |

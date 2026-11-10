@@ -46,7 +46,7 @@ public static class BalanceReport
                     (cos.Count > 0 ? cos.Average(co => co.Type.Tier) : 0).ToString("0.00", inv), c.S.Gold.ToString("0", inv), pilot.Battles, pilot.Won));
             }
             Console.WriteLine($"pacing {seed}: day {c.Day}, {c.Stage}, renown {c.Captain.Renown:0}, {pilot.Battles} battles ({pilot.Won} won), "
-                + $"{pilot.Promotions} promoted ({pilot.Promotions / (float)Math.Max(1, pilot.Battles):0.0} a battle), first tier V day {pilot.FirstT5Day}, {pilot.Taken} seats stormed, vassal renown day {pilot.RenownForVassalDay}, "
+                + $"{pilot.Promotions} promoted ({pilot.Promotions / (float)Math.Max(1, pilot.Battles):0.0} a battle), first tier V day {pilot.FirstT5Day}, {pilot.Taken} seats stormed, {pilot.TalksWon}/{pilot.Talks} talks won, vassal renown day {pilot.RenownForVassalDay}, "
                 + string.Join(", ", pilot.StageDay.Select(kv => $"{kv.Key} day {kv.Value}")));
             if (c.Rank == Rank.SwornSword && !c.CanSwearFealty(out string why)) Console.WriteLine($"  fealty refused: {why}");
             Console.WriteLine($"  name: {string.Join(" ", c.Me.Traits)} {c.Title}; fled {c.Tally("fled")}, wounds {string.Join(" ", c.Captain.Wounds)}, perks {string.Join(" ", c.Captain.Perks)}");

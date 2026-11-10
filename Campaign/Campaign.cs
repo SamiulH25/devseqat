@@ -287,7 +287,7 @@ public sealed partial class Campaign
         if (a == b || a.Cooldown > 0 || b.Cooldown > 0) return;
         bool playerInvolved = a.Kind == PartyKind.Player || b.Kind == PartyKind.Player;
         // Riding up to travellers who are not your enemy is a meeting, not a fight (S4).
-        if (playerInvolved && (a.Kind == PartyKind.Player ? b : a) is { Kind: PartyKind.Caravan } trav && Player.ChaseId == trav.Id && !Hostile(a, b))
+        if (playerInvolved && (a.Kind == PartyKind.Player ? b : a) is { Kind: PartyKind.Caravan or PartyKind.Lord } trav && Player.ChaseId == trav.Id && !Hostile(a, b))
         {
             if (Vector2.DistanceSquared(a.Pos, b.Pos) > B.EncounterRadius * B.EncounterRadius) return;
             Encounter = trav; Player.Moving = false;
@@ -395,6 +395,7 @@ public sealed partial class Campaign
             Log($"Your company is gone. Ten loyal men gather to your banner{(refuge != null ? " at " + refuge.Name : "")}.");
         }
         ArmiesDaily();
+        WantsDaily(); // lords' wants (Wants.cs)
         FactionAI();
         SiegesDaily();
         RainDaily();
@@ -432,6 +433,7 @@ public sealed partial class Campaign
     void Weekly()
     {
         RelationsWeekly();
+        BondsWeekly(); // feuding lords come to blows (LordBonds.cs)
         CompanionsWeekly();
         WanderersWeekly();
         TraitsWeekly();

@@ -42,7 +42,7 @@ partial class MapScreen
             ui.Rect(box, Color.White * 0.04f);
             float op = C.OpinionOfYou(ch);
             var party = ch.PartyId >= 0 ? C.PartyById(ch.PartyId) : null;
-            // His face at the left of the row (docs/LORDS.md LD1); the rest of the row moves over.
+            // His face at the left of the row (docs/archive/LORDS.md LD1); the rest of the row moves over.
             ui.Face(PortraitPainter.Of(C, ch), new Rectangle(box.X + ui.U(2), box.Y + ui.U(2), ui.U(28), rowH - ui.U(4)));
             box = new Rectangle(box.X + ui.U(30), box.Y, box.Width - ui.U(30), box.Height);
             string state = ch.Kind == "companion" ? $"{ch.Calling.ToUpperInvariant()} LV {ch.Level}, {ch.Role.ToUpperInvariant()}"
@@ -58,12 +58,18 @@ partial class MapScreen
             int mid = bar.X + bar.Width / 2, len = (int)(bar.Width / 2f * MathF.Abs(op) / 100f);
             ui.Rect(new Rectangle(op >= 0 ? mid : mid - len, bar.Y, len, bar.Height), OpinionColor(op));
             ui.Rect(new Rectangle(mid, bar.Y - 1, 1, bar.Height + 2), Style.Text);
+            if (ch.Kind == "lord" && ui.Clicked(box))
+            {
+                if (C.CannotTalk(ch) is string cant) note = cant;
+                else { OpenTalk(ch, PanelKind.Characters); return; }
+            }
             if (ui.Hover(box))
             {
                 var why = C.MemoriesOf(ch, C.Me).Take(3).Select(m => $"{m.What.ToUpperInvariant()} ({m.Weight:+0;-0}, DAY {m.Day})").ToList();
                 note = $"THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})" + (why.Count > 0 ? ": " + string.Join("; ", why) : "");
                 if (ch.Kind == "companion") note = CompanionNote(ch) + ". " + note;
                 else if (C.FamilyLine(ch) is var fam && fam != "") note = fam.ToUpperInvariant() + ". " + note;
+                if (ch.Kind == "lord" && C.CannotTalk(ch) == null) note = "CLICK TO TALK. " + note;
             }
             i2++;
         }

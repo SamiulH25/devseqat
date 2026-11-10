@@ -197,7 +197,7 @@ sealed class Ui
         return hit;
     }
 
-    /// A painted bust portrait (docs/LORDS.md LD1) fitted into `box`, whole pixels when it is big enough, centred at the bottom.
+    /// A painted bust portrait (docs/archive/LORDS.md LD1) fitted into `box`, whole pixels when it is big enough, centred at the bottom.
     public void Face(Face f, Rectangle box)
     {
         float k = MathF.Min(box.Width / (float)PortraitPainter.W, box.Height / (float)PortraitPainter.H);

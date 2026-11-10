@@ -300,7 +300,7 @@ public sealed partial class Campaign
                     .OrderBy(SeatsOf).ThenBy(c => c.Id).Take(2).ToList();
                 if (captor != null && !cands.Contains(captor) && (captor != Me || Captain.Fealty)) cands.Add(captor);
                 if (mine && Captain.Fealty && !cands.Contains(Me)) cands.Add(Me);
-                winner = Vote(f, cands, (v, c) => Liking(v, c) + (c == captor ? 20 : 0) - 10 * SeatsOf(c), out _);
+                winner = Vote(f, cands, (v, c) => Liking(v, c) + (c == captor ? 20 : 0) - 10 * SeatsOf(c) + (c.Want == "fief" && v == c ? 15 : 0), out _);
                 if (winner != null && ruler != null)
                     foreach (var lost in cands.Where(c => c != winner && c != Me)) Remember(lost, ruler, "the council passed me over", -4);
             }

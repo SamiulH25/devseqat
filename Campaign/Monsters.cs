@@ -303,7 +303,7 @@ public partial class Campaign
         foreach (var band in S.Parties.Where(b => b.LairId == lair.Id)) { band.LairId = -1; if (band.Task == "home") band.Task = "roam"; }
         foreach (var v in S.Settlements.Where(v => v.Kind == SettlementKind.Village && Vector2.Distance(v.Pos, lair.Pos) < B.HoldoutRaidRange * Map.Spread))
             SeatOf(v).Unrest = MathF.Max(0, SeatOf(v).Unrest - 3);
-        if (taker == Player) Deed($"You burn out {lair.Name}.", "holdouts");
+        if (taker == Player) { Deed($"You burn out {lair.Name}.", "holdouts"); HelpedWant("monster", c => c.WantOn == lair.Id, "you cleared the beasts from our land"); }
         else Log(taker != null ? $"{taker.Name} burns out {lair.Name}." : $"{lair.Name} is overrun.");
     }
 }

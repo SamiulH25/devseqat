@@ -96,6 +96,8 @@ public partial class Campaign
         var losers = r.Winner == 0 ? side1 : side0;
         float lostStrength = (r.Winner == 0 ? startStrength1 - side1.Sum(Rules.Strength) : startStrength0 - side0.Sum(Rules.Strength));
         foreach (var p in winners) { p.Cooldown = 6; if (p.Kind is PartyKind.Lord) p.Gold += Rules.PerMan(lostStrength * 2); }
+        FoughtTogether(winners); // lords remember who stood by them (LD2)
+        if (playerIn && won && losers.Any(p => p.Kind == PartyKind.Lord)) HelpedWant("glory", c => PartyById(c.PartyId) is Party gp && winners.Contains(gp), "we won a great battle together");
         foreach (var p in losers)
         {
             p.Cooldown = 12;
@@ -124,7 +126,7 @@ public partial class Campaign
                     Player.Captives.Add(p.Id);
                     Log($"{p.Name} is your prisoner.");
                 }
-                else { Log($"{p.Name}'s army is scattered."); MaybeSlain(p, playerIn && won); }
+                else { Log($"{p.Name}'s army is scattered."); MaybeSlain(p, playerIn && won, winners.Select(CharacterOf).FirstOrDefault(c => c is { Kind: "lord" })); }
                 if (p.Captive && CharacterOf(p) is Character held) Remember(held, Me, "you took me captive", -8);
             }
         }

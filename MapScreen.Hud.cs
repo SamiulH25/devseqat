@@ -50,6 +50,7 @@ partial class MapScreen
             case PanelKind.GameOver: GameOverPanel(); break;
             case PanelKind.Siege: SiegePanel(); break;
             case PanelKind.Characters: CharactersPanel(); break;
+            case PanelKind.Talk: TalkPanel(); break;
             case PanelKind.Skills: SkillsPanel(); break;
             case PanelKind.Realm: RealmPanel(); break;
             case PanelKind.Beat: BeatPanel(); break;
