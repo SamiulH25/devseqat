@@ -18,6 +18,7 @@ partial class BattleScreen
         if (list.Count == 0) return;
         float late = 0;
         foreach (var s in list) late = MathF.Max(late, Send(s, act));
+        host.Audio?.Play(Cue.Order, 0.6f); // the horn calls the order
         battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
     }
 
@@ -33,7 +34,7 @@ partial class BattleScreen
     IEnumerable<Squad> Selectable => battle.SquadsOf(0).Where(s => !s.AiControlled);
 
     /// Give a division a goal (it reaches the sergeant after a delay; before the battle starts, at once).
-    void GiveGoal(Division d, Goal g) => battle.IssueGoal(d, g, now: deploying);
+    void GiveGoal(Division d, Goal g) { battle.IssueGoal(d, g, now: deploying); host.Audio?.Play(Cue.Order, 0.6f); }
 
     void GoalCommand(Division d, GoalKind kind, int side)
     {

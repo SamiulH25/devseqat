@@ -402,7 +402,7 @@ public sealed partial class Battle
         int n = 0;
         foreach (var u in s.Units) if (u.Active && !u.Routing) n++;
         s.Alive = n;
-        if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); }
+        if (!s.RoutSounded && n > 0 && s.Units.Count(u => u.Active && u.Routing) > n) { s.RoutSounded = true; Sound(Cue.Rout, s.Centroid()); if (s.Team == 1) Sound(Cue.Cheer, s.Centroid()); }
         Tactics(s);     // its own wits: refuse a flank, wrap, re-form (BattleTactics.cs)
         PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
         Close(s, dt);   // a charging company closes as a body

@@ -329,7 +329,7 @@ sealed partial class BattleScreen
         if (audio == null || !audio.Enabled) return;
         var right = Matrix.Invert(view).Right;
         foreach (var (cue, p) in battle.Sounds)
-            audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, cue is Cue.Shout or Cue.Horn or Cue.Rout ? 160 : 70);
+            audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, cue switch { Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer => 160, Cue.Crash => 200, Cue.Ram => 120, Cue.Volley => 90, _ => 70 });
     }
 
     /// Ambient beds and music: galloping and melee din by how much is near the camera; drums once the fighting starts.
@@ -339,19 +339,27 @@ sealed partial class BattleScreen
         if (audio == null) return;
         var ear = new Vector2(focusPoint.X, focusPoint.Z);
         float range = 25 + 30 * blend;
-        int horses = 0, fighting = 0, field = 0;
+        int horses = 0, fighting = 0, field = 0, marching = 0, men = 0;
         foreach (var u in battle.Units)
         {
-            if (u.Active && u.EnemyDist < 4) field++; // men in contact anywhere: the roar of the whole battle
-            if (!u.Active || Vector2.DistanceSquared(u.Pos, ear) > range * range) continue;
+            if (!u.Active) continue;
+            men++;
+            if (u.EnemyDist < 4) field++; // men in contact anywhere: the roar of the whole battle
+            if (Vector2.DistanceSquared(u.Pos, ear) > range * range) continue;
             if (u.Mounted && MathF.Abs(u.Speed) > 5) horses++;
+            else if (!u.Mounted && MathF.Abs(u.Speed) > 0.8f && u.EnemyDist > 4) marching++;
             if (u.Action is UnitAction.Windup or UnitAction.Recover && u.Type.Ammo == 0) fighting++;
         }
         bool quiet = paused || menuOpen || deploying;
         float hush = 1 - 0.6f * MathF.Max(BeatAmount, Sky.OmenDark); // a beat or a gathering working quiets the field
-        audio.Beds(0.7f * (1 - Sky.OmenDark * 0.8f), quiet ? 0 : MathF.Min(1, horses / 5f) * hush, quiet ? 0 : MathF.Min(1, fighting / 14f) * hush, quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)) * hush);
-        audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Map : MusicTrack.Battle);
+        audio.Beds(0.7f * (1 - Sky.OmenDark * 0.8f), quiet ? 0 : MathF.Min(1, horses / 5f) * hush, quiet ? 0 : MathF.Min(1, fighting / 14f) * hush,
+            quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)) * hush, quiet ? 0 : MathF.Min(1, marching / 30f) * hush, battle.Weather.Snow ? 0 : battle.Weather.Rain);
+        audio.Intensity(men == 0 ? 0 : MathF.Min(1, 3f * field / men)); // a third of the field in contact is the full score
+        audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Deploy : MusicTrack.Battle);
+        if (battle.Winner == 0 && !cheered) { cheered = true; audio.Play(Cue.Cheer, 0.9f); } // your men cheer the day
+        if (battle.Winner < 0) cheered = false;
     }
+    bool cheered;
 
     /// The dotted way the first chosen company would take while you draw an order (round a river by the ford, through a hedge's gap).
     List<Vector2>? route;

@@ -263,6 +263,7 @@ public partial class Battle
         if (by.IsPlayer) PlayerHit = ($"HORSE HIT {dmg:0}", Time);
         if (r.HorseHp > 0) return;
         // The horse goes down and throws its rider.
+        if (r.Horse!.Barding != "wolf") Sound(Cue.Neigh, r.Pos);
         DeadHorses.Add(new DeadHorse(r.Pos, r.Heading, r.Team, r.Coat, r.Horse!.Barding, Time));
         r.Horse = null;
         r.Speed = 0;
@@ -314,6 +315,7 @@ public partial class Battle
         t.Hp = 0;
         t.Action = UnitAction.None;
         t.Vel = t.Wish = Vector2.Zero;
+        if (!t.Type.Has("bones")) Sound(Cue.Death, t.Pos);
         if (t.Mounted)
         {
             if (t.Horse!.Barding != "wolf") // a warg whose rider falls runs off into the wild; nobody else can ride it
@@ -356,6 +358,7 @@ public partial class Battle
     void Loose(Unit u, Vector2 at, Unit? t, float damage, float spread)
     {
         u.Ammo--;
+        if (u.Squad != null && Time - u.Squad.LooseAt > 2.5f) Sound(Cue.Volley, Vector2.Lerp(u.Pos, at, 0.5f)); // a volley whistles overhead
         if (u.Squad != null) u.Squad.LooseAt = Time;
         Sound(Cue.Bow, u.Pos);
         u.Action = UnitAction.Recover; // shows the release pose

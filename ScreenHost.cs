@@ -86,6 +86,7 @@ sealed class ScreenHost : Game
         Audio = new AudioEngine();
         AudioEngine.Current = Audio;
         Ui.OnClick = () => Audio.Play(Cue.Click, 0.6f);
+        Ui.OnHover = () => Audio.Play(Cue.Hover, 0.5f);
         battle = new BattleScreen(this);
         battle.Load();
         battle.OnCampaignBattleOver = FinishCampaignBattle;
@@ -180,7 +181,7 @@ sealed class ScreenHost : Game
         {
             case Mode.Title: IsMouseVisible = true; title.Update(); Audio?.Music(MusicTrack.Map); Audio?.Beds(0.6f, 0, 0); break;
             case Mode.Lab: IsMouseVisible = true; lab.Update(dt); Audio?.Music(MusicTrack.Map); break;
-            case Mode.Map: IsMouseVisible = true; map.Update(dt, IsActive); Audio?.Music(MusicTrack.Map); Audio?.Beds(1, 0, 0); break;
+            case Mode.Map: IsMouseVisible = true; map.Update(dt, IsActive); Audio?.Music(MusicTrack.Map); map.Soundscape(Audio); break;
             default: battle.Update(dt); break;
         }
         if (campaignShots != null) { shotFrames++; CampaignShots(); }
@@ -216,6 +217,7 @@ sealed class ScreenHost : Game
             if (mode != Mode.Battle) QuickBattle();
             else if (gpuReport.Frame(Quality)) Exit();
         }
+        Ui.FrameEnd();
         base.Draw(gameTime);
     }
 

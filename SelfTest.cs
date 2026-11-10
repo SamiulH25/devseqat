@@ -211,6 +211,7 @@ public static partial class SelfTest
         RealmsFromData();
         ClimatesAndRidges();
         SevenRealms();
+        SoundsMade();
         RealmTempers();
         Roads();
         Quests();

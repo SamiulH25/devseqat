@@ -107,11 +107,12 @@ public sealed partial class Battle
         if (Player.Active && !Player.Mounted && w.AtGate(Player.Pos.X) && Player.Pos.Y > SiegeWall.Outer - 2 && Player.Pos.Y < SiegeWall.Outer && Player.Action == UnitAction.Recover) rams += 2;
         if (rams == 0) return;
         w.GateHp -= MathF.Min(12, rams) * 5 * dt;
-        if ((ramSound -= dt) <= 0) { ramSound = 1.1f; Sound(Cue.Impact, new Vector2(SiegeWall.GateX, SiegeWall.Outer)); }
+        if ((ramSound -= dt) <= 0) { ramSound = 1.1f; Sound(Cue.Ram, new Vector2(SiegeWall.GateX, SiegeWall.Outer)); }
         if (w.GateOpen)
         {
             GateBroke = true;
             Log("The gate gives way!");
+            Sound(Cue.Crash, new Vector2(SiegeWall.GateX, SiegeWall.Outer));
             Sound(Cue.Horn, new Vector2(SiegeWall.GateX, SiegeWall.Outer));
             foreach (var u in Units) if (u.Team == 1 && u.Active) u.Morale -= 10;
         }

@@ -231,6 +231,27 @@ sealed partial class MapScreen
         panel = kind; note = "";
     }
 
+    /// The map's ambience: wind, birdsong by day and crickets by night (hushed by rain), the bustle of a town as you
+    /// come near one; and a page turning whenever a screen opens or closes.
+    public void Soundscape(AudioEngine? audio)
+    {
+        if (audio == null) return;
+        if (panel != heardPanel) { if (heardPanel != PanelKind.Menu || panel != PanelKind.None) audio.Play(Cue.Page, 0.7f); heardPanel = panel; }
+        float day = 1 - Sky.Night, dry = 1 - MathF.Min(1, Sky.Rain * 3);
+        float town = 0;
+        foreach (var s in C.S.Settlements)
+        {
+            float d = Vector2.Distance(s.Pos, C.Player.Pos), size = s.Kind == SettlementKind.Village ? 6 : 10;
+            town = MathF.Max(town, 1 - d / size);
+        }
+        audio.SetBed(Bed.Wind, 0.8f + 0.4f * Sky.Rain);
+        audio.SetBed(Bed.Birds, day * dry * (1 - town * 0.5f));
+        audio.SetBed(Bed.Crickets, Sky.Night * dry);
+        audio.SetBed(Bed.Rain, MathF.Min(1, Sky.Rain * 2.5f));
+        audio.SetBed(Bed.Town, town * (0.4f + 0.6f * day));
+    }
+    PanelKind heardPanel;
+
     /// Where closing `kind` goes: back to the party screen if it was opened from there.
     PanelKind CameFrom(PanelKind kind) => kind != PanelKind.Party && from == PanelKind.Party ? PanelKind.Party : PanelKind.None;
 
