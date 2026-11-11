@@ -280,6 +280,34 @@ sealed class AudioEngine
         }
     }
 
+    /// Contextual 4-stem battle & outcome music director (AU5): deploying plays stem 0 of `suiteId` so deployment flows
+    /// seamlessly into combat on the same score; victory/defeat switch to the chosen outcome piece.
+    public void UpdateBattleMusic(string suiteId, bool victory, bool defeat, string outcomeId, float s0, float s1, float s2, float s3)
+    {
+        if (!Enabled) return;
+        if (victory || defeat)
+        {
+            var mode = victory ? MusicTrack.Victory : MusicTrack.Defeat;
+            string fallback = victory ? "victory" : "defeat";
+            string id = !string.IsNullOrEmpty(outcomeId) && MusicLibrary.Has(outcomeId) ? outcomeId : fallback;
+            if (track == mode && requestedPiece == id) return;
+            track = mode;
+            activeInterior = "";
+            mapGap = 0;
+            requestedPiece = id;
+            StartPiece(id);
+            return;
+        }
+        SetStemWeights(s0, s1, s2, s3);
+        string target = !string.IsNullOrEmpty(suiteId) && MusicLibrary.Has(suiteId) ? suiteId : "battle";
+        if (track == MusicTrack.Battle && requestedPiece == target && streamer is not { CurrentFinished: true }) return;
+        track = MusicTrack.Battle;
+        activeInterior = "";
+        mapGap = 0;
+        requestedPiece = target;
+        StartPiece(target);
+    }
+
     public void Music(MusicTrack t)
     {
         if (!Enabled || t == track) return;

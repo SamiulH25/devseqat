@@ -555,6 +555,7 @@ public sealed partial class Campaign
         if (target == Captain.Contract || target < 0 || target >= S.Factions.Count || !Alive(target)) return "NO SUCH REALM";
         if (FactionsAtWar(Captain.Contract, target)) return "ALREADY AT WAR";
         DeclareWarBetween(Captain.Contract, target);
+        AudioEngine.Current?.PlayStinger("sting_war");
         return null;
     }
 

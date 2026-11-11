@@ -44,12 +44,14 @@ public static partial class SelfTest
         Check(bank.LoadedFromDisk && bank.VoiceIds.Count >= 28, $"instrument bank loaded ({bank.VoiceIds.Count} voices)");
         var errs = MusicLibrary.Validate();
         Check(errs.Count == 0, "music scores validate: " + string.Join("; ", errs));
-        Check(MusicLibrary.All.Count >= 43, $"music library loaded {MusicLibrary.All.Count} scores (expected >= 43)");
+        Check(MusicLibrary.All.Count >= 68, $"music library loaded {MusicLibrary.All.Count} scores (expected >= 68)");
 
-        // Fast window verification across every JSON score (opening, midpoint and loop seam) + chunk-boundary identity
-        int winFrames = Synth.Rate; // 1.0 s window
+        // Fast window verification across every JSON score (opening, midpoint, 4-stem escalation and loop seam)
+        int winFrames = Synth.Rate * 2; // 2.0 s window
         var winBuf = new float[winFrames * 2];
+        var deployBuf = new float[winFrames * 2];
         ReadOnlySpan<float> allStems = stackalloc float[] { 1f, 1f, 1f, 1f };
+        ReadOnlySpan<float> deployOnly = stackalloc float[] { 1f, 0f, 0f, 0f };
         foreach (var s in MusicLibrary.All.Values)
         {
             Array.Clear(winBuf);
@@ -59,10 +61,19 @@ public static partial class SelfTest
             var (p, rms, ok) = Level(winBuf);
             Check(ok && p > 0.015f && p <= 1f && rms > 0.002f, $"score {s.Id} sounds clean (peak {p:0.00}, rms {rms:0.000})");
 
+            if (s.Category == "battle" && s.Id != "creator_hearth")
+            {
+                Array.Clear(deployBuf);
+                s.RenderStereoWindow(bank, deployBuf, winFrames, Synth.Rate, mid, deployOnly);
+                var depLvl = Level(deployBuf);
+                Check(depLvl is { Finite: true, Rms: > 0.0015f }, $"battle score {s.Id} deploy stem is audible (rms {depLvl.Rms:0.000})");
+                Check(rms > depLvl.Rms * 1.25f, $"battle score {s.Id} swells from deploy ({depLvl.Rms:0.000}) to full fight ({rms:0.000})");
+            }
+
             if (s.Loop)
             {
                 Array.Clear(winBuf);
-                s.RenderStereoWindow(bank, winBuf, winFrames, Synth.Rate, Math.Max(0, s.DurationSec - 0.5), allStems);
+                s.RenderStereoWindow(bank, winBuf, winFrames, Synth.Rate, Math.Max(0, s.DurationSec - 1.0), allStems);
                 MusicScore.SoftLimitStereo(winBuf, winBuf.Length);
                 var seamLvl = Level(winBuf);
                 Check(seamLvl is { Finite: true, Peak: <= 1f }, $"looped score {s.Id} crosses seam cleanly");

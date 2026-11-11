@@ -435,6 +435,7 @@ public sealed partial class Campaign
         h.Prestige += 5;
         Log($"You wed {ch.Name} of {h.Name}. The dowry is {dowry} crowns.");
         Deed($"wed {ch.Name} of {h.Name}");
+        AudioEngine.Current?.PlayStinger("sting_marriage");
         return $"The dowry is {dowry} crowns.";
     }
 }

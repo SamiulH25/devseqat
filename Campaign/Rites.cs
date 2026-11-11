@@ -40,7 +40,9 @@ public sealed partial class Campaign
         if (id == "cleanse" && S.Omen <= 0) return "THERE IS NO OMEN TO CLEANSE";
         S.Gold -= r.Gold;
         if (r.Tradition == "craft") BreakVow("no_craft", "work the craft");
+        float prevOmen = S.Omen;
         S.Omen += r.Omen;
+        if (prevOmen < OmenStirs && S.Omen >= OmenStirs) AudioEngine.Current?.PlayStinger("sting_omen");
         S.RiteDay = Day + 1;
         switch (id)
         {
