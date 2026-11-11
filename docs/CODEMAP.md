@@ -293,10 +293,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Rank** (enum, L6)
 - **Campaign** (class, L9): RankName:38, readonly:45, RulerOf:61, MarshalOf:62, Pct:92, ProvinceShare:95, CanSwearFealty:99, SwearFealty:113, LeaveRealm:125, GrantOnCapture:142, EnsureRulers:168, CareerDaily:195, SeatsOf:221, Vote:229, Liking:244, Council:248, CouncilFiefs:286, CouncilMarshal:319, CouncilWarMotion:343, RealmStrength:372, ObjectiveOf:376, PickObjective:384, ObjectiveChoices:395, SetObjective:400, ProposeWar:411, CanDeclareIndependence:425, DeclareIndependence:436, CannotClaimCrown:448, ClaimCrown:456, FoundRealm:467, TakeOver:514, Defect:523, DeclareWarBetween:540, DeclareWar:552, CheckRank:573, CheckEnd:584, RecruitPriceFactor:610
 
-## Campaign/Characters.cs (369 lines)
+## Campaign/Characters.cs (373 lines)
 - **Character** (class, L6)
 - **Memory** (class, L69)
-- **Campaign** (class, L77): readonly:80, CharacterById:90, CharacterOf:91, NewCharacter:94, MakeCaptainCharacter:107, PersonName:116, MakeLord:131, BaseOpinion:153, OpinionOf:163, AuraRegard:166, OpinionOfYou:169, OpinionOfYou:172, Remember:175, MemoriesOf:194, RelationsWeekly:198, RelationsAfterBattle:216, MaybeSlain:232, SlayLord:239, HasCompanion:261, OfficerToCompanion:264, WanderersWeekly:286, WandererAt:299, WandererPrice:300, HireWanderer:303, AssignCompanion:322, RefreshHeroes:330, HeroFell:342, HolderOf:353, RecruitShare:358, RecruitsForYou:368
+- **Campaign** (class, L77): readonly:80, CharacterById:90, CharacterOf:91, NewCharacter:94, MakeCaptainCharacter:107, PersonName:116, MakeLord:131, BaseOpinion:153, OpinionOf:163, AuraRegard:166, OpinionOfYou:169, OpinionOfYou:172, Remember:175, MemoriesOf:194, RelationsWeekly:198, RelationsAfterBattle:220, MaybeSlain:236, SlayLord:243, HasCompanion:265, OfficerToCompanion:268, WanderersWeekly:290, WandererAt:303, WandererPrice:304, HireWanderer:307, AssignCompanion:326, RefreshHeroes:334, HeroFell:346, HolderOf:357, RecruitShare:362, RecruitsForYou:372
 
 ## Campaign/Circle.cs (147 lines)
 - **Campaign** (class, L5): CircleTroop:18, CircleTradition:22, Known:26, PrepareSlots:29, Prepared:32, Learnable:40, CannotLearn:49, LearnSpell:64, Prepare:76, WeatherFor:90, SpellNote:94, SpellNote:96, MasterOf:108, MasterRank:111, MasterTitle:114, Leaderless:116, CircleDaily:120, WithCircle:140
