@@ -31,6 +31,9 @@ void main()
         p.y -= vTrample * 0.32 * aUV.x;
         p.xz += Wind.xy * vTrample * 0.22 * aUV.x;
     }
+    // Grass right at the lens would fill the view as big flat spikes: inside ~5 m the blade tips sink into the ground.
+    if (aNormal.y > 0.999 && aUV.y > 0.99 && aUV.x > 0.0)
+        p.y -= (1.0 - smoothstep(1.5, 5.0, length(p - CameraPos))) * 0.6;
 #else
     vTrample = 0.0;
 #endif
