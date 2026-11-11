@@ -226,6 +226,22 @@ public static partial class SelfTest
         Check(b.Blows.Count == 1, "old blows are let go");
     }
 
+    /// A company's fight is read from its men: the foe they are at blows with, where they meet; none while it stands off.
+    static void FightsRead()
+    {
+        var b = Battle.Empty(5);
+        var mine = b.AddSquad(0, UnitType.Shieldman, 12, new Vector2(0, -3), 6, Vector2.UnitY);
+        var theirs = b.AddSquad(1, UnitType.Shieldman, 12, new Vector2(0, 3), 6, -Vector2.UnitY);
+        var far = b.AddSquad(1, UnitType.Shieldman, 12, new Vector2(80, 60), 6, -Vector2.UnitY);
+        Check(b.FightOf(mine) == null, "no fight before they meet");
+        mine.Order = Order.Charge;
+        for (int i = 0; i < 60 * 8 && b.FightOf(mine) == null; i++) b.Update(1 / 60f);
+        var f = b.FightOf(mine);
+        Check(f is { Shooting: false } && f.Value.Foe == theirs && f.Value.Engaged > 0, "the company fights the foe its men strike");
+        Check(f != null && MathF.Abs(f.Value.Front.Y) < 6, "they meet between the two");
+        Check(b.FightOf(far) == null, "a company far off fights nobody");
+    }
+
     /// Roadmap C1-C7 mechanics, each in a small scenario.
     static void Formations()
     {
