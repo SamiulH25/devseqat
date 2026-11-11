@@ -120,6 +120,7 @@ sealed class SettingsScreen
                 }
                 Volume("MASTER", () => s.MasterVolume, v => s.MasterVolume = v);
                 Volume("EFFECTS", () => s.SfxVolume, v => s.SfxVolume = v);
+                Volume("AMBIENCE", () => s.AmbienceVolume, v => s.AmbienceVolume = v);
                 Volume("MUSIC", () => s.MusicVolume, v => s.MusicVolume = v);
                 if (host.Audio == null || !host.Audio.Enabled) ui.Text("NO AUDIO DEVICE FOUND: THE GAME IS SILENT.", body.X, y + ui.U(6), Style.Warn, 1);
                 break;

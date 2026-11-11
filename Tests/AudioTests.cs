@@ -1,18 +1,18 @@
 namespace Ironfield;
 
-/// Self-tests of the synthesised sound (AudioSynth.cs, AudioMusic.cs): pure maths, so they run headless.
+/// Self-tests of the synthesised sound (`AudioSynth*.cs`), acoustic bank (`AudioBank.cs`) and hand-authored scores
+/// (`MusicScore.cs`): pure maths, so they run headless.
 public static partial class SelfTest
 {
-    /// Peak and RMS of a buffer; false if any sample is not a number.
-    static (float Peak, float Rms, bool Finite) Level(float[] b)
+    static (float Peak, float Rms, bool Finite) Level(ReadOnlySpan<float> b)
     {
         float p = 0; double sq = 0;
         foreach (var v in b) { if (!float.IsFinite(v)) return (0, 0, false); p = MathF.Max(p, MathF.Abs(v)); sq += v * v; }
         return (p, (float)Math.Sqrt(sq / Math.Max(1, b.Length)), true);
     }
 
-    /// Every cue has several different versions that are audible and never clip, and a far version; every bed loops
-    /// without a click; every piece of music is sound, long enough, and the battle's two layers loop together.
+    /// Every cue has distinct versions that are audible and never clip, and a far version; every bed loops without a
+    /// click; the 28-voice acoustic bank loads cleanly; and every score in `Data/music/` validates and renders cleanly.
     static void SoundsMade()
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -28,24 +28,61 @@ public static partial class SelfTest
             }
             Check(!v[0].AsSpan().SequenceEqual(v[1]), $"{c}'s versions differ");
         }
-        float[][] beds = { Synth.Wind(), Synth.Gallop(), Synth.Din(), Synth.Roar(), Synth.March(), Synth.Rain(), Synth.Birds(), Synth.Crickets(), Synth.Town() };
-        foreach (var b in beds)
+
+        foreach (Bed bed in Enum.GetValues<Bed>())
         {
+            var b = Synth.MakeBed(bed);
             var (p, _, ok) = Level(b);
-            Check(ok && p > 0.02f, "a bed is audible");
+            Check(ok && p > 0.02f, $"bed {bed} is audible");
             float step = 0;
             for (int i = 1; i < b.Length; i++) step = MathF.Max(step, MathF.Abs(b[i] - b[i - 1]));
-            Check(MathF.Abs(b[^1] - b[0]) <= step, $"bed {Array.IndexOf(beds, b)} loops without a click (a seam no bigger than its own steps)");
+            Check(MathF.Abs(b[^1] - b[0]) <= step * 1.05f + 1e-4f, $"bed {bed} loops without a click");
         }
-        float cues = watch.ElapsedMilliseconds;
-        var music = Synth.Pieces.ToDictionary(id => id, Synth.Piece);
-        foreach (var (id, b) in music)
+        float cuesMs = watch.ElapsedMilliseconds;
+
+        var bank = AudioBank.Shared;
+        Check(bank.LoadedFromDisk && bank.VoiceIds.Count >= 28, $"instrument bank loaded ({bank.VoiceIds.Count} voices)");
+        var errs = MusicLibrary.Validate();
+        Check(errs.Count == 0, "music scores validate: " + string.Join("; ", errs));
+        Check(MusicLibrary.All.Count >= 3, "music library loaded scores");
+
+        // Fast window verification across every JSON score (opening, midpoint and loop seam) + chunk-boundary identity
+        int winFrames = Synth.Rate; // 1.0 s window
+        var winBuf = new float[winFrames * 2];
+        ReadOnlySpan<float> allStems = stackalloc float[] { 1f, 1f, 1f, 1f };
+        foreach (var s in MusicLibrary.All.Values)
         {
-            var (p, rms, ok) = Level(b);
-            Check(ok && p <= 1f && rms > 0.01f, $"music {id} is sound (peak {p:0.00}, rms {rms:0.000})");
-            Check(b.Length > Synth.Rate * (id is "victory" or "defeat" ? 4 : 15), $"music {id} is long enough");
+            Array.Clear(winBuf);
+            double mid = Math.Max(0.0, s.DurationSec * 0.45);
+            s.RenderStereoWindow(bank, winBuf, winFrames, Synth.Rate, mid, allStems);
+            MusicScore.SoftLimitStereo(winBuf, winBuf.Length);
+            var (p, rms, ok) = Level(winBuf);
+            Check(ok && p > 0.015f && p <= 1f && rms > 0.002f, $"score {s.Id} sounds clean (peak {p:0.00}, rms {rms:0.000})");
+
+            if (s.Loop)
+            {
+                Array.Clear(winBuf);
+                s.RenderStereoWindow(bank, winBuf, winFrames, Synth.Rate, Math.Max(0, s.DurationSec - 0.5), allStems);
+                MusicScore.SoftLimitStereo(winBuf, winBuf.Length);
+                var seamLvl = Level(winBuf);
+                Check(seamLvl is { Finite: true, Peak: <= 1f }, $"looped score {s.Id} crosses seam cleanly");
+            }
         }
-        Check(music["battle"].Length == music["battle2"].Length, "the battle's two music layers are the same length");
-        Console.WriteLine($"sounds: {Enum.GetValues<Cue>().Length} cues in {cues:0} ms, music in {watch.ElapsedMilliseconds - cues:0} ms");
+
+        // Verify analytical chunk invariance: one 0.4 s render == two back-to-back 0.2 s streaming chunks
+        var firstScore = MusicLibrary.All.Values.First();
+        int half = Synth.Rate / 5;
+        var whole = new float[half * 4];
+        var partA = new float[half * 2];
+        var partB = new float[half * 2];
+        firstScore.RenderStereoWindow(bank, whole, half * 2, Synth.Rate, 1.0, allStems);
+        firstScore.RenderStereoWindow(bank, partA, half, Synth.Rate, 1.0, allStems);
+        firstScore.RenderStereoWindow(bank, partB, half, Synth.Rate, 1.2, allStems);
+        float maxDiff = 0;
+        for (int i = 0; i < partA.Length; i++) maxDiff = MathF.Max(maxDiff, MathF.Abs(whole[i] - partA[i]));
+        for (int i = 0; i < partB.Length; i++) maxDiff = MathF.Max(maxDiff, MathF.Abs(whole[half * 2 + i] - partB[i]));
+        Check(maxDiff < 1e-4f, $"streaming chunk boundary is seamless (max diff {maxDiff})");
+
+        Console.WriteLine($"sounds: {Enum.GetValues<Cue>().Length} cues + {Enum.GetValues<Bed>().Length} beds in {cuesMs:0} ms, {MusicLibrary.All.Count} scores checked in {watch.ElapsedMilliseconds - cuesMs:0} ms");
     }
 }

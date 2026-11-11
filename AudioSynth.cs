@@ -5,7 +5,7 @@ namespace Ironfield;
 /// self-test can check it (`Tests/AudioTests.cs`). Music is in AudioMusic.cs.
 static partial class Synth
 {
-    public const int Rate = 22050;
+    public const int Rate = 44100;
 
     // ---------- tools ----------
 
@@ -13,6 +13,8 @@ static partial class Synth
     static float N(Random r) => r.NextSingle() * 2 - 1;
     static float R(Random r, float a, float b) => a + r.NextSingle() * (b - a);
     static float T(int i) => i / (float)Rate;
+    /// Convert a 22.05 kHz one-pole coefficient `k` to the current `Rate` so filter cutoffs stay identical at 44.1 kHz.
+    public static float Pole(float k22) => 1f - MathF.Pow(Math.Clamp(1f - k22, 1e-5f, 1f), 22050f / Rate);
 
     /// Add `src` into `dst` from `at` seconds, scaled by `gain`.
     static void Mix(float[] dst, float[] src, float at, float gain = 1)
@@ -56,8 +58,10 @@ static partial class Synth
     {
         int tail = (int)(decay * Rate * 0.7f);
         var o = new float[b.Length + tail];
-        int[] combs = { 558, 594, 638, 678 };
+        int scale = Math.Max(1, Rate / 22050);
+        int[] combs = { 558 * scale + 1, 594 * scale + 1, 638 * scale + 1, 678 * scale + 1 };
         var wetBuf = new float[o.Length];
+        float dampRate = Pole(1 - damp);
         foreach (int d in combs)
         {
             var line = new float[d];
@@ -65,12 +69,12 @@ static partial class Synth
             for (int i = 0, j = 0; i < o.Length; i++, j = (j + 1) % d)
             {
                 float y = line[j];
-                lp += (y - lp) * (1 - damp);
+                lp += (y - lp) * dampRate;
                 line[j] = (i < b.Length ? b[i] : 0) + lp * g;
                 wetBuf[i] += y * 0.25f;
             }
         }
-        foreach (int d in new[] { 278, 110 })
+        foreach (int d in new[] { 278 * scale + 1, 110 * scale + 1 })
         {
             var line = new float[d];
             for (int i = 0, j = 0; i < o.Length; i++, j = (j + 1) % d)
@@ -88,8 +92,8 @@ static partial class Synth
     public static float[] Far(float[] b)
     {
         var o = new float[b.Length];
-        float lp = 0, lp2 = 0;
-        for (int i = 0; i < b.Length; i++) { lp += (b[i] - lp) * 0.16f; lp2 += (lp - lp2) * 0.22f; o[i] = lp2 * 1.6f; }
+        float lp = 0, lp2 = 0, k1 = Pole(0.16f), k2 = Pole(0.22f);
+        for (int i = 0; i < b.Length; i++) { lp += (b[i] - lp) * k1; lp2 += (lp - lp2) * k2; o[i] = lp2 * 1.6f; }
         return Space(o, 0.55f, 1.4f, 0.6f);
     }
 
@@ -280,12 +284,12 @@ static partial class Synth
     static float[] Thud(float freq, float len, float noise, Random r)
     {
         var b = Buf(len);
-        float lp = 0, ph = 0;
+        float lp = 0, ph = 0, kp = Pole(0.15f);
         for (int i = 0; i < b.Length; i++)
         {
             float t = T(i);
             ph += MathF.Tau * freq * (1 - t * 1.2f) / Rate;
-            lp += (N(r) - lp) * 0.15f;
+            lp += (N(r) - lp) * kp;
             b[i] = (MathF.Sin(ph) * 0.8f + lp * noise * 1.5f) * MathF.Exp(-t * 18);
         }
         return b;
@@ -638,17 +642,24 @@ static partial class Synth
 
     // ---------- ambient beds (looped) ----------
 
+    public static float[] MakeBed(Bed b) => b switch
+    {
+        Bed.Wind => Wind(), Bed.Gallop => Gallop(), Bed.Din => Din(), Bed.Roar => Roar(),
+        Bed.March => March(), Bed.Rain => Rain(), Bed.Birds => Birds(), Bed.Crickets => Crickets(),
+        _ => Town(),
+    };
+
     /// Wind: slowly breathing filtered noise.
     public static float[] Wind()
     {
         var r = new Random(2);
         var b = Buf(8.5f);
-        float lp = 0, lp2 = 0;
+        float lp = 0, lp2 = 0, k1 = Pole(0.02f), k2 = Pole(0.05f);
         for (int i = 0; i < b.Length; i++)
         {
             float t = T(i);
-            lp += (N(r) - lp) * 0.02f;
-            lp2 += (lp - lp2) * 0.05f;
+            lp += (N(r) - lp) * k1;
+            lp2 += (lp - lp2) * k2;
             b[i] = lp2 * 4 * (0.6f + 0.4f * MathF.Sin(t * MathF.Tau / 8 * 2) * MathF.Sin(t * 1.3f));
         }
         return Loop(b, 0.5f);
@@ -737,8 +748,8 @@ static partial class Synth
     {
         var r = new Random(7);
         var b = Buf(6.5f);
-        float lp = 0;
-        for (int i = 0; i < b.Length; i++) { float n = N(r); lp += (n - lp) * 0.5f; b[i] = (n - lp) * 0.5f; }
+        float lp = 0, kp = Pole(0.5f);
+        for (int i = 0; i < b.Length; i++) { float n = N(r); lp += (n - lp) * kp; b[i] = (n - lp) * 0.5f; }
         for (int k = 0; k < 120; k++) Mix(b, Click(0.02f, R(r, 3000, 6000), 0.4f, r), R(r, 0, 6.4f), R(r, 0.05f, 0.2f));
         return Loop(b, 0.5f);
     }

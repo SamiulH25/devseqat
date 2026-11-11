@@ -14,25 +14,26 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Art.cs (56 lines)
 - **Art** (class, L8): Art:16, Mipped:36
 
-## Audio.cs (268 lines)
+## AudioBank.cs (277 lines)
+- **AudioBank** (class, L9): HasVoice:34, Get:35, Load:37, BuildFallback:94, TailSeconds:126, RenderNoteSlice:130, PickZone:225, OrnamentIntegral:233, WrapIdx:246, SampleLinear:254, SampleHermite:263
+
+## Audio.cs (308 lines)
 - **Cue** (enum, L7)
 - **MusicTrack** (enum, L13)
 - **Bed** (enum, L17)
-- **AudioEngine** (class, L22): AudioEngine:44, MakeAll:62, Ready:85, Chance:101, Cap:104, Play:106, PlayAt:123, SetBed:134, BedGain:148, Beds:156, Intensity:163, Music:167, Start:180, TryStart:190, Sound:210, Update:219, NextMapTheme:247, Make:257
+- **AudioEngine** (class, L22): AudioEngine:42, MakeAll:60, Ready:84, Chance:100, Cap:102, Family:105, FamilyCap:113, TriggersDuck:115, Duck:118, Play:124, PlayAt:149, SetBed:160, BedGain:173, Beds:179, Intensity:188, SetStemWeights:194, PlayStinger:197, RequestPiece:204, Music:214, PickMapPiece:236, StartPiece:238, Update:263, AdvancePlaylist:286, Make:297
 
 ## AudioMusic.cs (316 lines)
 - **Synth** (class, L5): Piece:11, Hz:26, Deg:31, Fit:34, Flute:37, Fiddle:52, Drone:68, Drum:79, Snare:81, Jingle:89, Cymbal:97, Chord:150, Roads:155, Hearth:176, Banners:195, Fade:214, Deploy:226, BattleBase:241, BattleHigh:256, Victory:284, Defeat:302
 
-## AudioSynth.cs (811 lines)
-- **Synth** (class, L6): Buf:12, N:13, R:14, T:15, Mix:18, Normalize:43, Space:55, Far:88, Loop:97, Wrap:107, Versions:118, InWorld:121, Peak:124, Cues:134, Make:147, Clash:184, Block:203, Hit:216, Bow:231, Throw:246, ArrowHit:262, Impact:271, Thud:280, Click:294, Pluck:302, Voices:318, readonly:343, Shout:346, Death:355, Neigh:365, Volley:379, Ram:400, Crash:413, Cheer:430, Order:438, Horn:454, Coin:472, Page:485, Splash:501, Squelch:515, Rustle:531, Spell:546, Thunder:560, Holy:578, Flame:593, AuraThrum:609, Gather:624, Wind:642, Gallop:658, Din:673, Roar:692, March:717, Rain:736, Birds:747, Crickets:769, Town:788
+## AudioStreamer.cs (244 lines)
+- **AudioStreamer** (class, L9): AudioStreamer:38, SetVolume:50, SetStems:52, PlayPiece:63, PlayStinger:90, Pump:103, WorkerLoop:117, RenderNextChunk:138, RenderSlot:199, ApplyRamp:226, Dispose:237
+
+## AudioSynth.cs (822 lines)
+- **Synth** (class, L6): Buf:12, N:13, R:14, T:15, Pole:17, Mix:20, Normalize:45, Space:57, Far:92, Loop:101, Wrap:111, Versions:122, InWorld:125, Peak:128, Cues:138, Make:151, Clash:188, Block:207, Hit:220, Bow:235, Throw:250, ArrowHit:266, Impact:275, Thud:284, Click:298, Pluck:306, Voices:322, readonly:347, Shout:350, Death:359, Neigh:369, Volley:383, Ram:404, Crash:417, Cheer:434, Order:442, Horn:458, Coin:476, Page:489, Splash:505, Squelch:519, Rustle:535, Spell:550, Thunder:564, Holy:582, Flame:597, AuraThrum:613, Gather:628, MakeBed:645, Wind:653, Gallop:669, Din:684, Roar:703, March:728, Rain:747, Birds:758, Crickets:780, Town:799
 
 ## BalanceReport.cs (248 lines)
 - **BalanceReport** (class, L8): Hours:16, readonly:20, Pacing:26, Realms:68, Csv:110, Run:112, Grounds:183, Agree:225
-
-## Battle.cs (572 lines)
-- **PlayerInput** (struct, L5)
-- **Projectile** (class, L18)
-- **Battle** (class, L28): Sound:38, Flash:43, Battle:82, Battle:85, SetupDuel:108, Role:118, Deploy:122, Ranks:185, ColumnsFor:186, Empty:206, Empty:207, FieldScale:210, Battle:216, SquadsOf:235, Centroid:236, Log:237, AddSquad:241, Spawn:284, Mark:300, Advance:304, Update:311, Bounds:378, ThinkNow:393, UpdateCentroids:396, UpdateSquad:408, CanBrace:437, Braced:442, InOrder:446, ReachOf:449, RandomSwing:455, StartSwing:459, Reinforce:471, Result:498, GapTo:537, Withdraw:552, CheckEnd:561
 
 ## BattleAbilities.cs (466 lines)
 - **Cast** (class, L7)
@@ -70,6 +71,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## BattleCreatures.cs (107 lines)
 - **Battle** (class, L7): BodyRadius:13, BodyMass:14, Sweep:18, Knock:28, Regen:41, RaiseDead:55, Raisable:68, Rise:70, MasterFalls:90, Collapse:99
+
+## Battle.cs (572 lines)
+- **PlayerInput** (struct, L5)
+- **Projectile** (class, L18)
+- **Battle** (class, L28): Sound:38, Flash:43, Battle:82, Battle:85, SetupDuel:108, Role:118, Deploy:122, Ranks:185, ColumnsFor:186, Empty:206, Empty:207, FieldScale:210, Battle:216, SquadsOf:235, Centroid:236, Log:237, AddSquad:241, Spawn:284, Mark:300, Advance:304, Update:311, Bounds:378, ThinkNow:393, UpdateCentroids:396, UpdateSquad:408, CanBrace:437, Braced:442, InOrder:446, ReachOf:449, RandomSwing:455, StartSwing:459, Reinforce:471, Result:498, GapTo:537, Withdraw:552, CheckEnd:561
 
 ## BattleDeeds.cs (79 lines)
 - **BattleGoal** (record, L4)
@@ -238,9 +244,6 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Callings** (class, L13): Get:19, Load:23, Validate:33
 - **Campaign** (class, L47): LevelFor:53, XpToNext:55, CallingFor:59, EnsureCallings:72, GiftsOf:78, TalentsOf:82, WithHeroes:86, WithChampion:101, CompanionsAfterBattle:119, GainXp:135
 
-## Campaign/Campaign.cs (507 lines)
-- **Campaign** (class, L7): Campaign:39, New:63, Log:131, PartyById:137, SettlementById:138, SideOf:142, Outlaw:144, Hostile:146, WarBetween:155, FactionsAtWar:156, AtWarWithAnyone:157, Score:160, Refuses:171, InSight:176, SettlementAt:178, InTown:179, Tick:184, Speed:211, PaceOf:215, BaseSpeed:219, Move:231, Encounters:262, Clash:290, Edge:332, EdgeOfKind:333, Hourly:335, Daily:358, Weekly:440, Desert:497
-
 ## Campaign/CampaignActions.cs (187 lines)
 - **Campaign** (class, L6): MoveTo:10, Chase:11, GoTo:12, RecruitLevies:17, LevyPrice:61, MercenaryPrice:63, Hire:69, BuyHorses:86, RaiseHounds:100, Merge:124, Split:127, Disband:152, MoveUp:154, SignContract:162, Rest:180
 
@@ -249,6 +252,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Campaign/CampaignBattle.cs (360 lines)
 - **Campaign** (class, L6): Apply:11, PrepareBattle:253, FinishBattle:293, AutoResolveEncounter:306, CanRetreat:315, Retreat:326, ParleyPrice:347, Parley:349
+
+## Campaign/Campaign.cs (507 lines)
+- **Campaign** (class, L7): Campaign:39, New:63, Log:131, PartyById:137, SettlementById:138, SideOf:142, Outlaw:144, Hostile:146, WarBetween:155, FactionsAtWar:156, AtWarWithAnyone:157, Score:160, Refuses:171, InSight:176, SettlementAt:178, InTown:179, Tick:184, Speed:211, PaceOf:215, BaseSpeed:219, Move:231, Encounters:262, Clash:290, Edge:332, EdgeOfKind:333, Hourly:335, Daily:358, Weekly:440, Desert:497
 
 ## Campaign/CampaignProgression.cs (62 lines)
 - **Campaign** (class, L7): PromotableAnywhere:52, Rand:61
@@ -552,6 +558,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Talk.cs (172 lines)
 - **MapScreen** (class, L7): OpenTalk:15, LeaveTalk:26, TalkPanel:38, Arguments:96, Speak:124, HallTab:138
 
+## MusicScore.cs (398 lines)
+- **MusicScore** (class, L7): CompiledNote:28, Compile:38, StableHash:102, RenderStereoWindow:114, RenderSlicePass:149, UpperBoundStart:167, RenderFullStereo:180, SoftLimitStereo:219
+- **StereoHall** (class, L232): StereoHall:246, ProcessInPlace:259
+- **MusicLibrary** (class, L312): Get:363, Has:364, ByCategory:366, Validate:371
+
 ## Origins.cs (190 lines)
 - **OriginDef** (class, L6)
 - **CaptainMaking** (class, L15)
@@ -573,13 +584,13 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **PortraitPainter** (class, L12): MoodOf:16, Of:20, Captain:51, Of:55, Paint:58, Background:193, Shade:220
 - **Portraits** (class, L224): Of:229
 
-## Program.cs (86 lines)
-
-## Puppet.cs (799 lines)
-- **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:82, Frame:89, View:99, Draw:119, Crossbow:222, Bow:246, Horse:275, static:350, Beast:358, WolfBody:370, Warg:399, BeastCorpse:417, DrawLooseHorse:430, DrawDeadHorse:439, RotY:475, Shoulder:486, Arm:490, ArmTo:497, Elbow:511, Sink:538, Leg:547, Span:561, Fallen:571, Corpse:635, Particle:654, Banner:667, Decal:712, Quad:724, HeadBill:734, Bill:743, Axial:754, AxialSrc:756, Long:767, Plane:780, Flat:791
+## Program.cs (87 lines)
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, Sheet:133, OtherBeastCorpse:136
+
+## Puppet.cs (799 lines)
+- **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:82, Frame:89, View:99, Draw:119, Crossbow:222, Bow:246, Horse:275, static:350, Beast:358, WolfBody:370, Warg:399, BeastCorpse:417, DrawLooseHorse:430, DrawDeadHorse:439, RotY:475, Shoulder:486, Arm:490, ArmTo:497, Elbow:511, Sink:538, Leg:547, Span:561, Fallen:571, Corpse:635, Particle:654, Banner:667, Decal:712, Quad:724, HeadBill:734, Bill:743, Axial:754, AxialSrc:756, Long:767, Plane:780, Flat:791
 
 ## PuppetPoses.cs (341 lines)
 - **Puppet** (class, L7): Pose:11, Key:40, Lerp:42, TwistOf:46, TwoHanded:49, static:54, PoseOf:111, Idle:247, static:252, Life:263, FrontOfShooters:277, CrossbowPose:282, ThrowPose:302, CastPose:328
@@ -602,7 +613,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Settings** (class, L8): Load:35, Save:42, UiFor:49, FirstTime:56
 - **CrashLog** (class, L65): Install:67, Write:69
 
-## SettingsScreen.cs (182 lines)
+## SettingsScreen.cs (183 lines)
 - **SettingsScreen** (class, L7): readonly:20, SettingsScreen:22, Update:24, Close:42, Draw:50
 
 ## Shading.cs (202 lines)
@@ -612,8 +623,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Sky.cs (102 lines)
 - **Sky** (class, L7): Sky:28, Set:36, Omen:91
 
-## SoundDump.cs (37 lines)
-- **SoundDump** (class, L5): Run:7, Write:28
+## SoundDump.cs (76 lines)
+- **SoundDump** (class, L4): Run:6, WriteMono:55, WriteStereo:66
 
 ## Spectacle.cs (48 lines)
 - **BeatKind** (enum, L6)
@@ -658,8 +669,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **FieldLayout** (enum, L7)
 - **Terrain** (class, L11): RidgeCrest:20, ShapeLayout:30, LayoutHeight:86, GroundOf:107, ShapeGround:122, Sq:155, PlaceVillage:158, PlaceHedges:187, HedgeLine:203
 
-## Tests/AudioTests.cs (51 lines)
-- **SelfTest** (class, L4): SoundsMade:16
+## Tests/AudioTests.cs (88 lines)
+- **SelfTest** (class, L5): SoundsMade:16
 
 ## Tests/BattleTests.cs (1824 lines)
 - **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, CavalryBalance:123, Flanks:164, Parry:180, BlowsShown:208, FightsRead:230, Formations:246, CaptainCombat:276, CaptainKit:302, SkillBouts:360, Bout:410, Fight:424, BattleGoals:458, BannerAndLastStand:480, DuelFight:517, RangedRoles:538, FatigueAndSupply:558, GroundLayer:576, GroundMoves:601, GroundFights:632, Layouts:669, HedgesAndBridges:700, EveryLayoutResolves:748, SightAndCover:769, Rivers:811, HoldsTheCrest:839, HorseAvoidsBadGround:865, AmbushWaits:882, TakesTheFord:902, GroundForThePlayer:924, Stakes:943, Pathfinder:981, GoesToFord:1001, FilesThroughGap:1030, ChargeFindsCaptain:1055, FlowCacheBound:1070, Generals:1085, HorseDown:1102, Ground:1111, HoldFire:1135, TroopTree:1149, Sprites:1175, TroopVariety:1212, BigBattle:1248, StackBattle:1278, NamedMenFight:1313, AutoResolveNamedMen:1355, PullBack:1381, ReplayExact:1412, FoldCompanies:1446, AdvanceSteps:1490, RelieveAndSplit:1505, QueuedAndStanding:1541, AlertsRaise:1600, DeploymentMemory:1625, SpearsStopHorse:1656, ScaleBattle:1667, Couriers:1705, DivisionGoals:1726
@@ -710,8 +721,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tips.cs (57 lines)
 - **Tips** (class, L6): Show:14, Dismiss:28, Draw:37, Height:43, DrawAt:46
 
-## TitleScreen.cs (209 lines)
-- **TitleScreen** (class, L7): SaveCard:24, TitleScreen:26, Update:34, U:44, Draw:46, Shots:100, Scene:114, Shifted:139, Clouds:142, Birds:159, Embers:173, Card:185, Fit:208
+## TitleScreen.cs (210 lines)
+- **TitleScreen** (class, L7): SaveCard:25, TitleScreen:27, Update:35, U:45, Draw:47, Shots:101, Scene:115, Shifted:140, Clouds:143, Birds:160, Embers:174, Card:186, Fit:209
 
 ## Troops.cs (276 lines)
 - **Troops** (class, L7): Has:14, Get:15, HasMount:16, Mount:17, Path:53, Load:63, Validate:93, WorseUpgrade:138, Tree:152

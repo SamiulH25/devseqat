@@ -17,6 +17,7 @@ sealed class TitleScreen
     public string? PendingShot;
     int shotStep = -1, shotFrames;
     float time;
+    public bool InCreator => creator.Open;
     // The latest save, read once per file change, for the continue card.
     DateTime saveStamp;
     SaveCard? card;
