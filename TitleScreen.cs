@@ -18,6 +18,7 @@ sealed class TitleScreen
     int shotStep = -1, shotFrames;
     float time;
     public bool InCreator => creator.Open;
+    public string CreatorCulture => creator.CurrentCulture;
     // The latest save, read once per file change, for the continue card.
     DateTime saveStamp;
     SaveCard? card;

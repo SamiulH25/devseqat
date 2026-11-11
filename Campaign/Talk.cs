@@ -395,6 +395,7 @@ public sealed partial class Campaign
             }
         Log($"You feast {guests.Count} lords in {s.Name}.");
         Practise("Charm", guests.Count);
+        AudioEngine.Current?.Play(Cue.FeastToast, 0.85f);
         return null;
     }
 

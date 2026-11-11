@@ -420,6 +420,10 @@ sealed partial class BattleScreen
         float hush = 1 - 0.6f * MathF.Max(BeatAmount, Sky.OmenDark); // a beat or a gathering working quiets the field
         audio.Beds(0.7f * (1 - Sky.OmenDark * 0.8f), quiet ? 0 : MathF.Min(1, horses / 5f) * hush, quiet ? 0 : MathF.Min(1, fighting / 14f) * hush,
             quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)) * hush, quiet ? 0 : MathF.Min(1, marching / 30f) * hush, battle.Weather.Snow ? 0 : battle.Weather.Rain);
+        if (battle.Weather.Snow) audio.SetBed(Bed.Blizzard, 0.65f);
+        if (battle.Terrain.WaterDepth(ear) > 0.01f) audio.SetBed(Bed.River, 0.55f);
+        if (battle.Terrain.GroundAt(ear) is GroundKind.Wood or GroundKind.DenseWood) audio.SetBed(Bed.Forest, 0.5f);
+        if (Sky.OmenDark > 0.05f) audio.SetBed(Bed.OmenDrone, Sky.OmenDark);
         audio.Intensity(men == 0 ? 0 : MathF.Min(1, 3f * field / men)); // a third of the field in contact is the full score
         audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Deploy : MusicTrack.Battle);
         if (battle.Winner == 0 && !cheered) { cheered = true; audio.Play(Cue.Cheer, 0.9f); } // your men cheer the day

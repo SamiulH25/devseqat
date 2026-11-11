@@ -123,12 +123,16 @@ static partial class Synth
 
     /// Cues heard in the world (positioned, given a far version); the rest are the interface's or captain close-mic.
     public static bool InWorld(Cue c) => c is not (Cue.Click or Cue.Coin or Cue.Hover or Cue.Page or Cue.Order
-        or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat or Cue.LowHpPulse);
+        or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat or Cue.LowHpPulse
+        or Cue.RecruitCheer or Cue.EquipBlade or Cue.EquipArmor or Cue.HorseTack or Cue.AnvilRing
+        or Cue.WaxSeal or Cue.RiteDrum or Cue.FeastToast or Cue.ScrollUnroll);
 
     /// Loudest sample of each cue: the one place the mix is set.
     static float Peak(Cue c) => c switch
     {
-        Cue.Hover => 0.22f, Cue.Click => 0.45f, Cue.Page => 0.5f, Cue.Coin => 0.55f,
+        Cue.Hover => 0.22f, Cue.Click => 0.45f, Cue.Page or Cue.ScrollUnroll => 0.5f, Cue.Coin => 0.55f,
+        Cue.EquipBlade or Cue.EquipArmor or Cue.HorseTack => 0.54f,
+        Cue.AnvilRing or Cue.WaxSeal or Cue.RiteDrum or Cue.RecruitCheer or Cue.FeastToast => 0.62f,
         Cue.Order or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat => 0.58f,
         Cue.SwingOne or Cue.SwingPole => 0.42f, Cue.SwingTwo or Cue.WeaponSwap or Cue.CrossbowSpan => 0.48f,
         Cue.LowHpPulse or Cue.HorseWhistle => 0.55f, Cue.RiposteRing or Cue.AuraIgnite => 0.62f,
@@ -136,7 +140,7 @@ static partial class Synth
         Cue.Volley => 0.55f, Cue.Neigh or Cue.WolfSnarl => 0.6f,
         Cue.ArrowHit or Cue.ArrowShield or Cue.ArrowPlate or Cue.ArrowFlesh => 0.6f,
         Cue.Bow or Cue.LongbowLoose or Cue.CrossbowSnap or Cue.SlingCrack or Cue.JavelinCast => 0.6f, Cue.Throw => 0.5f,
-        Cue.Splash or Cue.Squelch or Cue.Rustle or Cue.Hollow or Cue.LadderHook or Cue.RamSwing => 0.55f,
+        Cue.Splash or Cue.Squelch or Cue.Rustle or Cue.Hollow or Cue.GravelStep or Cue.SnowCrunch or Cue.LadderHook or Cue.RamSwing => 0.55f,
         Cue.Horn or Cue.Rout => 0.5f, // a horn is all body: at a lower peak it is still the loudest thing on the field
         _ => 0.85f,
     };
@@ -242,6 +246,17 @@ static partial class Synth
         Cue.HornHold => HornHold(r),
         Cue.HornRetreat => HornRetreat(r),
         Cue.HorseWhistle => HorseWhistle(r),
+        Cue.GravelStep => GravelStep(r),
+        Cue.SnowCrunch => SnowCrunch(r),
+        Cue.RecruitCheer => RecruitCheer(r),
+        Cue.EquipBlade => EquipBlade(r),
+        Cue.EquipArmor => EquipArmor(r),
+        Cue.HorseTack => HorseTack(r),
+        Cue.AnvilRing => AnvilRing(r),
+        Cue.WaxSeal => WaxSeal(r),
+        Cue.RiteDrum => RiteDrum(r),
+        Cue.FeastToast => FeastToast(r),
+        Cue.ScrollUnroll => ScrollUnroll(r),
         _ => Buf(0.05f),
     };
 
@@ -707,6 +722,8 @@ static partial class Synth
     {
         Bed.Wind => Wind(), Bed.Gallop => Gallop(), Bed.Din => Din(), Bed.Roar => Roar(),
         Bed.March => March(), Bed.Rain => Rain(), Bed.Birds => Birds(), Bed.Crickets => Crickets(),
+        Bed.Surf => Surf(), Bed.River => River(), Bed.Forest => Forest(), Bed.Blizzard => Blizzard(),
+        Bed.Tavern => Tavern(), Bed.Forge => Forge(), Bed.OmenDrone => OmenDrone(),
         _ => Town(),
     };
 

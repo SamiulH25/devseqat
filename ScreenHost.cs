@@ -185,7 +185,17 @@ sealed class ScreenHost : Game
         Tips.InBattle = mode == Mode.Battle;
         switch (mode)
         {
-            case Mode.Title: IsMouseVisible = true; title.Update(); Audio?.Music(title.InCreator ? MusicTrack.Creator : MusicTrack.Title); Audio?.Beds(title.InCreator ? 0.25f : 0.6f, 0, 0); break;
+            case Mode.Title:
+                IsMouseVisible = true;
+                title.Update();
+                Audio?.Music(title.InCreator ? MusicTrack.Creator : MusicTrack.Title);
+                if (title.InCreator)
+                {
+                    string cc = title.CreatorCulture;
+                    Audio?.SetStemWeights(1f, cc is "azure" or "crimson" or "northern" ? 0.9f : 0f, cc is "southern" or "steppe" ? 0.9f : 0f, cc is "league" or "order" ? 0.9f : 0f);
+                }
+                Audio?.Beds(title.InCreator ? 0.25f : 0.6f, 0, 0);
+                break;
             case Mode.Lab: IsMouseVisible = true; lab.Update(dt); Audio?.Music(MusicTrack.Title); break;
             case Mode.Map: IsMouseVisible = true; map.Update(dt, IsActive); Audio?.Music(MusicTrack.Map); map.Soundscape(Audio); break;
             default: battle.Update(dt); break;

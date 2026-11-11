@@ -19,13 +19,18 @@ public enum Cue
     BoneHit, BoneCollapse, RaiseDead,
     CastGaldr, CastHex, CastNecro, WardShatter, CrowSwarm, AuraIgnite, AuraBreakthrough, ChampionClash,
     HornCharge, HornHold, HornRetreat, HorseWhistle,
+    // AU3: ground, world, settlements, armoury, deeds, scrolls & creator
+    GravelStep, SnowCrunch, RecruitCheer, EquipBlade, EquipArmor, HorseTack, AnvilRing, WaxSeal, RiteDrum, FeastToast, ScrollUnroll,
 }
 
 public enum MusicTrack { None, Title, Creator, Map, Battle, Victory, Defeat, Deploy, Chronicle }
 
-/// Looping ambience: battle beds by what is near the camera, map beds by hour and place. Each fades to silence when no
-/// screen asks for it, so going from map to battle needs no bookkeeping.
-public enum Bed { Wind, Gallop, Din, Roar, March, Rain, Birds, Crickets, Town }
+/// Looping ambience: battle beds by what is near the camera, map beds by hour, biome, season and settlement tab.
+public enum Bed
+{
+    Wind, Gallop, Din, Roar, March, Rain, Birds, Crickets, Town,
+    Surf, River, Forest, Blizzard, Tavern, Forge, OmenDrone,
+}
 
 /// Sound and music engine (AU0–AU6): 44.1 kHz procedural cues and looping beds (`AudioSynth.cs`), plus 44.1 kHz stereo
 /// score streaming (`AudioStreamer.cs`, `MusicScore.cs`, `AudioBank.cs`). If there is no audio device, everything
@@ -111,7 +116,8 @@ sealed class AudioEngine
     static float Chance(Cue c) => c switch { Cue.Death or Cue.GoblinShriek => 0.5f, Cue.Neigh or Cue.BoneCollapse => 0.8f, _ => 1f };
 
     static int Cap(Cue c) => c is Cue.Death or Cue.GoblinShriek or Cue.BoneCollapse or Cue.Volley or Cue.Cheer
-        or Cue.Order or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat or Cue.Page or Cue.Hover or Cue.LowHpPulse ? 1 : 4;
+        or Cue.Order or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat or Cue.Page or Cue.ScrollUnroll
+        or Cue.Hover or Cue.LowHpPulse ? 1 : 4;
 
     /// Broad cue family so simultaneous variants (e.g. sword clash + axe clash + block) share a clean frame budget.
     static int Family(Cue c) => c switch
@@ -188,7 +194,8 @@ sealed class AudioEngine
     static float BedGain(Bed b) => b switch
     {
         Bed.Wind => 0.35f, Bed.Gallop => 0.8f, Bed.Din => 0.6f, Bed.Roar => 0.5f, Bed.March => 0.45f, Bed.Rain => 0.4f,
-        Bed.Birds => 0.35f, Bed.Crickets => 0.25f, _ => 0.4f,
+        Bed.Birds => 0.35f, Bed.Crickets => 0.25f, Bed.Surf => 0.38f, Bed.River => 0.36f, Bed.Forest => 0.34f,
+        Bed.Blizzard => 0.44f, Bed.Tavern => 0.42f, Bed.Forge => 0.38f, Bed.OmenDrone => 0.36f, _ => 0.4f,
     };
 
     public void Beds(float windLevel, float gallopLevel, float dinLevel, float roarLevel = 0, float marchLevel = 0, float rain = 0)

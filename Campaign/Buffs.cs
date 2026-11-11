@@ -49,6 +49,7 @@ public sealed partial class Campaign
         foreach (var c in Player.Companies) c.Cohesion = MathF.Min(100, c.Cohesion + 5);
         Log($"You feast the company in {s.Name}. The men are in good heart.");
         CompanionsReact("feast");
+        AudioEngine.Current?.Play(Cue.FeastToast, 0.8f);
         return null;
     }
 }

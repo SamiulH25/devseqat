@@ -66,6 +66,7 @@ public sealed partial class Campaign
             "cleanse" => "Candles, salt and water at the chapel. The air feels clean again.",
             _ => "Rain comes on as the old words are spoken.",
         });
+        AudioEngine.Current?.Play(Cue.RiteDrum, 0.75f);
         return null;
     }
 
