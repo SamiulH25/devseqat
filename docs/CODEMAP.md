@@ -8,6 +8,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **AbilityDef** (class, L8)
 - **Abilities** (class, L39): Get:45, Has:46, Load:53, Validate:70
 
+## AnimSheet.cs (138 lines)
+- **AnimSheet** (class, L10): AnimSheet:20, Clip:29, Swing:31, Write:58, Render:68, Cell:89, Ground:120
+
 ## Art.cs (56 lines)
 - **Art** (class, L8): Art:16, Mipped:36
 
@@ -551,18 +554,18 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Program.cs (81 lines)
 
-## Puppet.cs (732 lines)
-- **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:82, Frame:89, View:99, Draw:119, Crossbow:213, Horse:237, static:312, Beast:320, WolfBody:330, Warg:359, BeastCorpse:377, DrawLooseHorse:389, DrawDeadHorse:398, RotY:434, Arm:441, Sink:463, Leg:472, ArmTo:486, Span:495, Fallen:505, Corpse:568, Particle:587, Banner:600, Decal:645, Quad:657, HeadBill:667, Bill:676, Axial:687, AxialSrc:689, Long:700, Plane:713, Flat:724
+## Puppet.cs (794 lines)
+- **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:82, Frame:89, View:99, Draw:119, Crossbow:220, Bow:244, Horse:273, static:348, Beast:356, WolfBody:366, Warg:395, BeastCorpse:413, DrawLooseHorse:425, DrawDeadHorse:434, RotY:470, Shoulder:481, Arm:485, ArmTo:492, Elbow:506, Sink:533, Leg:542, Span:556, Fallen:566, Corpse:630, Particle:649, Banner:662, Decal:707, Quad:719, HeadBill:729, Bill:738, Axial:749, AxialSrc:751, Long:762, Plane:775, Flat:786
 
-## PuppetPoses.cs (328 lines)
-- **Puppet** (class, L7): Pose:11, Key:31, Lerp:33, TwoHanded:37, static:42, PoseOf:99, Idle:234, static:239, Life:250, FrontOfShooters:264, CrossbowPose:269, ThrowPose:289, CastPose:315
+## PuppetPoses.cs (341 lines)
+- **Puppet** (class, L7): Pose:11, Key:40, Lerp:42, TwistOf:46, TwoHanded:49, static:54, PoseOf:111, Idle:247, static:252, Life:263, FrontOfShooters:277, CrossbowPose:282, ThrowPose:302, CastPose:328
 
 ## Replay.cs (189 lines)
 - **Replay** (class, L8): Serialize:66, Deserialize:67, Save:71, Play:78, Matches:116, Run:119
 - **Battle** (class, L133): StartRecording:140, RecordFrame:145, FinishRecording:181
 
-## ScreenHost.cs (630 lines)
-- **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:105, ContinueCampaign:118, OpenLab:131, QuickBattle:133, StartCampaignBattle:140, FinishCampaignBattle:150, CycleQuality:158, Update:162, Draw:192, Fade:226, CaptureShot:256, CampaignShots:279
+## ScreenHost.cs (635 lines)
+- **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:110, ContinueCampaign:123, OpenLab:136, QuickBattle:138, StartCampaignBattle:145, FinishCampaignBattle:155, CycleQuality:163, Update:167, Draw:197, Fade:231, CaptureShot:261, CampaignShots:284
 
 ## SelfTest.cs (305 lines)
 - **SelfTest** (class, L6): Run:8, RunOne:257, Lancer:265, Run:274, Scaled:276, MakeWanderer:279, Days:287, Ids:299, Check:301

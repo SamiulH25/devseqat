@@ -27,11 +27,23 @@ sealed partial class Puppet
         public bool Kneel { get; init; }
         /// The head turned from the body (degrees, + to his right): a man looking round.
         public float Look { get; init; }
+        /// How far out the weapon hand is (1 the arm straight, less with the elbow bent); the off hand's the same.
+        public float Reach { get; init; } = 0.88f;
+        public float OffReach { get; init; } = 0.88f;
+        /// The shoulders turned (degrees, + toward his right); NaN: follow the weapon arm (Puppet.TwistOf).
+        public float Twist { get; init; } = float.NaN;
+        /// How much the knee folds as the foot comes through behind (more at a run).
+        public float Knees { get; init; } = 0.7f;
     }
-    internal record struct Key(float Alpha, float Pitch, float Yaw);
+    /// A weapon-arm key: the arm's swing (alpha up from hanging, yaw the swing plane turned to his right), the weapon's pitch
+    /// (0 level forward, 90 up, past 90 back over him), and how far out the hand is.
+    internal record struct Key(float Alpha, float Pitch, float Yaw, float Reach = 0.88f);
 
     static Key Lerp(Key x, Key y, float t) =>
-        new(MathHelper.Lerp(x.Alpha, y.Alpha, t), MathHelper.Lerp(x.Pitch, y.Pitch, t), MathHelper.Lerp(x.Yaw, y.Yaw, t));
+        new(MathHelper.Lerp(x.Alpha, y.Alpha, t), MathHelper.Lerp(x.Pitch, y.Pitch, t), MathHelper.Lerp(x.Yaw, y.Yaw, t), MathHelper.Lerp(x.Reach, y.Reach, t));
+
+    /// The shoulders follow the weapon arm: swung out to his right the body turns that way, across to his left it turns back.
+    internal static float TwistOf(Pose p) => float.IsNaN(p.Twist) ? Math.Clamp(p.Yaw * (p.TwoHand ? 0.5f : 0.38f), -32, 32) : p.Twist;
 
     /// Whether a man holds his weapon in both hands: two-handed weapons always, a polearm when he has no shield; never in the saddle.
     internal static bool TwoHanded(Grip grip, bool shield, bool mounted) =>
@@ -42,54 +54,54 @@ sealed partial class Puppet
     internal static (Key idle, Key raise, Key strike) Keys(Grip grip, AttackDir swing, bool mounted = false, bool shield = true, bool backhand = false)
     {
         if (grip is Grip.Lance || mounted && grip is Grip.Pole)
-            return (new(15, 80, 0), new(-25, 5, 0), new(65, -5, 0)); // couched or overarm, it always thrusts
+            return (new(20, 80, 0, 0.8f), new(10, 5, 15, 0.5f), new(70, -5, 0, 1)); // couched or overarm, it always thrusts
         if (mounted && grip is Grip.One or Grip.Two)
         {
-            var rest = new Key(25, 70, 0);
+            var rest = new Key(30, 70, 0, 0.8f);
             return swing == AttackDir.Overhead
-                ? (rest, new(165, 150, 0), new(60, -50, 0)) // a straight chop down at a man on foot
+                ? (rest, new(160, 140, 10, 0.6f), new(60, -50, 0, 1)) // a straight chop down at a man on foot
                 : backhand
-                    ? (rest, new(125, 110, -70), new(70, -35, 45)) // the backhand across the horse's neck
-                    : (rest, new(130, 120, 65), new(70, -40, -35)); // the cut down and across
+                    ? (rest, new(120, 120, -70, 0.55f), new(75, -35, 45, 1)) // the backhand across the horse's neck
+                    : (rest, new(120, 125, 70, 0.6f), new(75, -40, -35, 1)); // the cut down and across
         }
         if (grip is Grip.Pole)
         {
             if (shield)
                 return swing == AttackDir.Overhead
-                    ? (new(15, 80, 0), new(150, -10, 0), new(110, -12, 0)) // overarm over the shield rim, point down
-                    : (new(15, 80, 0), new(-25, 5, 0), new(65, -5, 0)); // underarm
-            var upright = new Key(25, 80, -20); // both hands on the shaft, point up
+                    ? (new(20, 80, 0, 0.8f), new(150, -10, 15, 0.55f), new(110, -12, 0, 1)) // overarm over the shield rim, point down
+                    : (new(20, 80, 0, 0.8f), new(15, 5, 20, 0.45f), new(70, -5, 0, 1)); // underarm, drawn back then driven
+            var upright = new Key(30, 80, -20, 0.75f); // both hands on the shaft, point up
             return swing == AttackDir.Overhead
-                ? (upright, new(150, 130, -10), new(75, -8, -10)) // the chop: a halberd or glaive comes down on a helm
+                ? (upright, new(150, 130, -10, 0.6f), new(75, -8, -10, 1)) // the chop: a halberd or glaive comes down on a helm
                 : swing == AttackDir.Thrust
-                    ? (upright, new(5, 5, -15), new(75, 0, -10)) // drawn back level, then driven in
-                    : (upright, new(10, 10, swing == AttackDir.Right ? 40 : -60), new(70, 0, swing == AttackDir.Right ? -30 : 20)); // a thrust slanting in
+                    ? (upright, new(35, 3, 25, 0.45f), new(80, 0, -10, 1)) // drawn back level at the hip, then driven in
+                    : (upright, new(35, 8, swing == AttackDir.Right ? 45 : -45, 0.45f), new(75, 0, swing == AttackDir.Right ? -25 : 20, 1)); // a thrust slanting in
         }
         if (grip is Grip.Staff)
         {
-            var planted = new Key(22, 90, 0); // the staff's foot on the ground beside him
+            var planted = new Key(25, 90, 0, 0.8f); // the staff's foot on the ground beside him
             return swing == AttackDir.Thrust
-                ? (planted, new(35, 5, 10), new(95, 0, 0))
-                : (planted, new(160, 150, 0), new(75, -35, 0)); // a staff knocks down
+                ? (planted, new(35, 5, 20, 0.4f), new(92, 0, 0, 1))
+                : (planted, new(160, 150, 0, 0.6f), new(75, -35, 0, 1)); // a staff knocks down
         }
         if (grip is Grip.Two)
         {
-            var guard = new Key(35, 55, -25); // across the body, point up and forward
+            var guard = new Key(45, 60, -20, 0.7f); // hands at the belly, the blade up and forward across the body
             return swing switch
             {
-                AttackDir.Right => (guard, new(110, 35, 85), new(80, -15, -65)),
-                AttackDir.Left => (guard, new(125, 30, -80), new(80, -15, 60)),
-                AttackDir.Thrust => (guard, new(25, 0, -15), new(95, -5, -5)),
-                _ => (guard, new(175, 165, -10), new(65, -50, -10)),
+                AttackDir.Right => (guard, new(115, 115, 85, 0.55f), new(80, -10, -65, 1)), // cocked over the right shoulder, swept across
+                AttackDir.Left => (guard, new(120, 115, -75, 0.55f), new(80, -10, 60, 1)),
+                AttackDir.Thrust => (guard, new(40, 5, 15, 0.4f), new(90, -3, -5, 1)),
+                _ => (guard, new(165, 160, -10, 0.55f), new(65, -50, -10, 1)), // raised over the head, brought straight down
             };
         }
-        var idle = new Key(20, 60, 0);
+        var idle = new Key(24, 40, 28, 0.82f); // the sword low at his right side, point up and out
         return swing switch
         {
-            AttackDir.Right => (idle, new(95, 15, 75), new(85, 0, -45)),
-            AttackDir.Left => (idle, new(115, 20, -75), new(85, 0, 50)),
-            AttackDir.Thrust => (idle, new(35, 5, 10), new(95, 0, 0)),
-            _ => (idle, new(160, 150, 0), new(75, -35, 0)),
+            AttackDir.Right => (idle, new(115, 125, 80, 0.55f), new(80, -5, -50, 1)), // the blade cocked by the right ear, then swept across
+            AttackDir.Left => (idle, new(115, 120, -70, 0.5f), new(85, 0, 50, 1)),    // drawn back over the left shoulder, a backhand
+            AttackDir.Thrust => (idle, new(35, 5, 20, 0.35f), new(92, 0, 0, 1)),      // the hand drawn back to the hip, then driven out
+            _ => (idle, new(160, 140, 10, 0.6f), new(72, -38, 0, 1)),                 // raised over the head, brought down
         };
     }
 
@@ -105,7 +117,8 @@ sealed partial class Puppet
         float leg = moving && !u.Mounted ? stride * (24 + 12 * run) : 0;
         float swing = moving && !u.Mounted ? -stride * (10 + 14 * run) : 0; // arms swing against the legs
         float bob = moving && !u.Mounted ? MathF.Abs(stride) * (0.025f + 0.03f * run) : 0;
-        float leanZ = moving ? 3 + 7 * run : 0, leanX = 0;
+        float leanZ = moving ? 3 + 9 * run : 0, leanX = moving && !u.Mounted ? stride * (1.5f + run) : 0; // the hips sway over the planted foot
+        float knees = 0.7f + 1.1f * run;
         var t = u.Type;
         if (!moving && !u.Mounted)
         {
@@ -190,12 +203,12 @@ sealed partial class Puppet
                 break;
             }
             case UnitAction.Block:
-                arm = two ? new(55, 15, -60) : new(30, 70, 0); // a two-hander holds his haft across, a shield man raises it
+                arm = two ? new(75, 20, -55, 0.65f) : t.HasShield ? new(45, 75, 10, 0.75f) : new(95, 70, -30, 0.7f); // a two-hander holds his haft across, a shield man raises it
                 shield = t.HasShield; leanZ -= 3;
                 break;
             case UnitAction.Stagger:
             {
-                arm = new(-10 + 25 * hurt, 90, 0);
+                arm = new(10 + 25 * hurt, 90, 20, 0.75f);
                 leanZ -= 10 + MathF.Sin(now * 9 + phase) * 3; // stumbling back
                 break;
             }
@@ -205,7 +218,7 @@ sealed partial class Puppet
                 else if (Idle(u, moving) && IdleOf(u.Index, now) is (1, var w) && w > 0)
                 {
                     // At ease (A5): a pole stood on its butt, a two-hander leant on point down, a sword rested on the shoulder.
-                    var rest = grip is Grip.Pole && two ? new Key(22, 90, 0) : two ? new Key(26, -80, 0) : new Key(78, 140, -30);
+                    var rest = grip is Grip.Pole && two ? new Key(25, 90, 0, 0.8f) : two ? new Key(35, -80, 0, 0.75f) : new Key(80, 140, -25, 0.45f);
                     arm = Lerp(arm, rest, w);
                     leanX += 3 * w;
                 }
@@ -221,13 +234,13 @@ sealed partial class Puppet
             else if (two && grip is Grip.Pole && u.Rank <= 1 && u.EnemyDist < 12 && u.Action == UnitAction.None)
             {
                 float set = Math.Clamp((12 - u.EnemyDist) / 4, 0, 1);
-                arm = Lerp(arm, new Key(12, 10, -12), set);
+                arm = Lerp(arm, new Key(40, 8, -12, 0.6f), set);
                 crouch = 0.45f * set * (u.Rank == 0 ? 1 : 0.5f);
             }
         }
         if (u.Action == UnitAction.Recover && two) crouch = MathF.Max(crouch, 0.25f); // the weight goes down into a big blow
         return Life(u, new Pose(leg, arm.Alpha, arm.Pitch, arm.Yaw, shield ? 85 : 15 + leg * 0.4f - swing * 0.6f, shield, false, leanX, leanZ, bob)
-        { TwoHand = two && u.Action != UnitAction.Stagger, Crouch = crouch }, now, phase, moving);
+        { TwoHand = two && u.Action != UnitAction.Stagger, Crouch = crouch, Reach = arm.Reach, Knees = knees }, now, phase, moving);
     }
 
     /// A man at ease: standing, on foot, doing nothing, with no foe within 25 m.
