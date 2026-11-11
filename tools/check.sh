@@ -1,7 +1,8 @@
 #!/bin/bash
 # The one command to run before every commit:  tools/check.sh
 # Builds, checks the rules below, and runs the self-test. Ends with "ALL CHECKS PASSED" or stops at the first failure.
-#   tools/check.sh --quick   skip the self-test (about a minute); use while iterating, never as the final check.
+#   tools/check.sh --quick   skip the self-test; use while iterating, never as the final check.
+# The self-test runs on every core (SelfTestShards.cs); IRONFIELD_SELFTEST_SERIAL=1 runs it in one process.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 fail() { echo; echo "CHECK FAILED: $1"; exit 1; }
@@ -26,7 +27,7 @@ echo "== docs/CODEMAP.md is current"
 tools/codemap.sh --check >/dev/null || fail "docs/CODEMAP.md is stale: run tools/codemap.sh and commit it (new files must be 'git add'ed first)"
 
 if [ "${1:-}" != "--quick" ]; then
-  echo "== self-test (about a minute)"
+  echo "== self-test (about two minutes on four cores)"
   dotnet run -c Release --no-build -- --selftest 2>&1 | tee /tmp/ironfield-selftest.log | grep -iE 'fail|exception|selftest ok'
   tail -1 /tmp/ironfield-selftest.log | grep -q 'selftest ok' || fail "self-test failed: see /tmp/ironfield-selftest.log"
 fi

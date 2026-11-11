@@ -26,6 +26,14 @@ public sealed class MapIndex
         this.roads = new int[n * n][];
         this.rivers = new (int, int)[n * n][];
         float h = Cell * 0.70711f + 0.01f; // half the cell's diagonal, and a hair for rounding
+        // Each distance is worked out once per cell (the nearest, then everything within reach of it), in plain loops.
+        var pd = new float[provinces.Count];
+        var rd = new float[roads.Count];
+        var segs = new List<(int River, int Seg, Vector2 A, Vector2 B)>();
+        for (int r = 0; r < rivers.Count; r++)
+            for (int i = 0; i + 1 < rivers[r].Path.Length; i++) segs.Add((r, i, rivers[r].Path[i], rivers[r].Path[i + 1]));
+        var keep = new List<int>();
+        var cand = new List<(float D, int Order)>();
         for (int cy = 0; cy < n; cy++)
             for (int cx = 0; cx < n; cx++)
             {
@@ -33,20 +41,25 @@ public sealed class MapIndex
                 var lo = new Vector2(origin + cx * Cell, origin + cy * Cell);
                 var cc = lo + new Vector2(Cell / 2);
                 // The nearest centre to a point in the cell is within (nearest to the cell's centre) + 2h of the cell's centre.
-                float near = provinces.Count == 0 ? 0 : provinces.Min(p => Vector2.Distance(p.Center, cc));
-                this.provinces[k] = Enumerable.Range(0, provinces.Count).Where(i => Vector2.Distance(provinces[i].Center, cc) <= near + 2 * h).ToArray();
-                float road = roads.Count == 0 ? 0 : roads.Min(r => SegDist(cc, r.A, r.B));
-                this.roads[k] = Enumerable.Range(0, roads.Count).Where(i => SegDist(cc, roads[i].A, roads[i].B) <= road + 2 * h).ToArray();
+                float near = provinces.Count == 0 ? 0 : float.MaxValue;
+                for (int i = 0; i < pd.Length; i++) near = MathF.Min(near, pd[i] = Vector2.Distance(provinces[i].Center, cc));
+                keep.Clear();
+                for (int i = 0; i < pd.Length; i++) if (pd[i] <= near + 2 * h) keep.Add(i);
+                this.provinces[k] = keep.ToArray();
+                float road = roads.Count == 0 ? 0 : float.MaxValue;
+                for (int i = 0; i < rd.Length; i++) road = MathF.Min(road, rd[i] = SegDist(cc, roads[i].A, roads[i].B));
+                keep.Clear();
+                for (int i = 0; i < rd.Length; i++) if (rd[i] <= road + 2 * h) keep.Add(i);
+                this.roads[k] = keep.ToArray();
                 // River.Dist skips a bend whose ends are more than 40 away on both axes; keep every bend it might not skip
-                // for some point in the cell, nearest first, so the look-up can stop once no bend can come closer.
-                var cand = new List<(int, int, float)>();
-                for (int r = 0; r < rivers.Count; r++)
-                {
-                    var path = rivers[r].Path;
-                    for (int i = 0; i + 1 < path.Length; i++)
-                        if (Within(path[i], lo, 40) || Within(path[i + 1], lo, 40)) cand.Add((r, i, SegDist(cc, path[i], path[i + 1])));
-                }
-                this.rivers[k] = cand.OrderBy(c => c.Item3).Select(c => (c.Item1, c.Item2)).ToArray();
+                // for some point in the cell, nearest first (ties in river order), so the look-up can stop once no bend can come closer.
+                cand.Clear();
+                for (int i = 0; i < segs.Count; i++)
+                    if (Within(segs[i].A, lo, 40) || Within(segs[i].B, lo, 40)) cand.Add((SegDist(cc, segs[i].A, segs[i].B), i));
+                cand.Sort((x, y) => x.D != y.D ? x.D.CompareTo(y.D) : x.Order.CompareTo(y.Order));
+                var list = new (int, int)[cand.Count];
+                for (int i = 0; i < list.Length; i++) list[i] = (segs[cand[i].Order].River, segs[cand[i].Order].Seg);
+                this.rivers[k] = list;
             }
     }
 

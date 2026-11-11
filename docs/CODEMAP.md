@@ -344,8 +344,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Making.cs (55 lines)
 - **Campaign** (class, L4): ApplyMaking:8, FollowedYou:40
 
-## Campaign/MapIndex.cs (119 lines)
-- **MapIndex** (class, L9): MapIndex:20, Within:54, SegDist:56, CellOf:63, ProvinceAt:70, RoadDist:85, RiverDist:101
+## Campaign/MapIndex.cs (132 lines)
+- **MapIndex** (class, L9): MapIndex:20, Within:67, SegDist:69, CellOf:76, ProvinceAt:83, RoadDist:98, RiverDist:114
 
 ## Campaign/Monsters.cs (309 lines)
 - **Campaign** (class, L10): Wild:18, Plural:24, SpawnWolfPack:31, WolfThink:54, SpawnTroll:85, TrollThink:109, SpawnHoldout:134, MonstersDaily:157, Grow:176, Recruit:199, SendRaiders:208, MonsterThink:234, Plunder:279, Rejoin:291, HoldoutCleared:301
@@ -553,7 +553,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **PortraitPainter** (class, L12): MoodOf:16, Of:20, Captain:51, Of:55, Paint:58, Background:193, Shade:220
 - **Portraits** (class, L224): Of:229
 
-## Program.cs (81 lines)
+## Program.cs (86 lines)
 
 ## Puppet.cs (794 lines)
 - **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:82, Frame:89, View:99, Draw:119, Crossbow:220, Bow:244, Horse:273, static:348, Beast:356, WolfBody:366, Warg:395, BeastCorpse:413, DrawLooseHorse:425, DrawDeadHorse:434, RotY:470, Shoulder:481, Arm:485, ArmTo:492, Elbow:506, Sink:533, Leg:542, Span:556, Fallen:566, Corpse:630, Particle:649, Banner:662, Decal:707, Quad:719, HeadBill:729, Bill:738, Axial:749, AxialSrc:751, Long:762, Plane:775, Flat:786
@@ -568,8 +568,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (635 lines)
 - **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:110, ContinueCampaign:123, OpenLab:136, QuickBattle:138, StartCampaignBattle:145, FinishCampaignBattle:155, CycleQuality:163, Update:167, Draw:197, Fade:231, CaptureShot:261, CampaignShots:284
 
-## SelfTest.cs (305 lines)
-- **SelfTest** (class, L6): Run:8, RunOne:257, Lancer:265, Run:274, Scaled:276, MakeWanderer:279, Days:287, Ids:299, Check:301
+## SelfTest.cs (104 lines)
+- **SelfTest** (class, L6): Run:14, Slots:21, ResolveBattles:33, RunOne:56, Lancer:64, Run:73, Scaled:75, MakeWanderer:78, Days:86, Ids:98, Check:100
+
+## SelfTestShards.cs (98 lines)
+- **SelfTest** (class, L9): RunParallel:15, RunShard:55, LoadTimes:81, SaveTimes:93
 
 ## Settings.cs (81 lines)
 - **Difficulty** (enum, L5)
@@ -711,7 +714,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## UiScroll.cs (126 lines)
 - **Kit** (class, L8): Paper:14, Scroll:69, Roller:104
 
-## Units.cs (238 lines)
+## Units.cs (237 lines)
 - **UnitClass** (enum, L6)
 - **UnitAction** (enum, L7)
 - **AttackDir** (enum, L11)

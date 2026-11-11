@@ -68,11 +68,16 @@ if (args.Contains("--replay"))
     Ironfield.Replay.Run(args.SkipWhile(a => a != "--replay").Skip(1).FirstOrDefault() ?? Path.Combine(Ironfield.Replay.Folder, "last-battle.json"));
     return;
 }
+if (args.Contains("--selftest-shard"))
+{
+    Ironfield.SelfTest.RunShard(args.SkipWhile(a => a != "--selftest-shard").Skip(1).First()); // one core's share of --selftest
+    return;
+}
 if (args.Contains("--selftest"))
 {
-    // --selftest Name runs one test by its method name (for debugging); no name runs them all.
+    // --selftest Name runs one test by its method name (for debugging); no name runs them all, spread over the cores.
     var only = args.SkipWhile(a => a != "--selftest").Skip(1).FirstOrDefault();
-    if (only != null) Ironfield.SelfTest.RunOne(only); else Ironfield.SelfTest.Run();
+    if (only != null) Ironfield.SelfTest.RunOne(only); else Ironfield.SelfTest.RunParallel();
     return;
 }
 
