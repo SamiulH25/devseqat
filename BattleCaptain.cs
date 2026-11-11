@@ -169,6 +169,7 @@ public sealed partial class Battle
     {
         called = LooseHorses.Where(h => h.Team == p.Team && Vector2.Distance(h.Pos, p.Pos) < 80).OrderBy(h => Vector2.Distance(h.Pos, p.Pos)).FirstOrDefault();
         if (called == null) return false;
+        Sound(Cue.HorseWhistle, p.Pos, priority: true);
         Log("You whistle for a horse.");
         return true;
     }
@@ -252,7 +253,7 @@ public sealed partial class Battle
         retreated[team] = true;
         foreach (var u in Units) if (u.Team == team && u.Active && !u.IsLeader && !u.Type.Has("fearless")) u.Routing = true; // the undead and trolls do not heed a horn
         Log(team == 1 ? "The enemy sounds the retreat!" : "Your men sound the retreat!");
-        Sound(Cue.Horn, centroid[team]);
+        Sound(Cue.HornRetreat, centroid[team]);
         return true;
     }
     readonly bool[] retreated = new bool[2];

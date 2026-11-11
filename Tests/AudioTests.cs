@@ -109,4 +109,25 @@ public static partial class SelfTest
         Check(Synth.DrawsBlood(Cue.SlashLight) && Synth.DrawsBlood(Cue.ArrowFlesh) && !Synth.DrawsBlood(Cue.ArrowShield), "DrawsBlood predicate matches flesh hits");
         Check(Synth.HeavyImpact(Cue.LanceImpact) && !Synth.HeavyImpact(Cue.SlashLight), "HeavyImpact predicate matches heavy charges");
     }
+
+    /// Monsters, beasts and skeletons emit their distinct AU2 vocals, web-spits and bone-clatter cues.
+    static void CreatureAndMagicCues()
+    {
+        var seen = new HashSet<Cue>();
+        var b = Battle.Empty(77);
+        var trolls = b.AddSquad(0, Troops.Get("troll"), 2, new(-8, -3), 2, Microsoft.Xna.Framework.Vector2.UnitY);
+        var spiders = b.AddSquad(0, Troops.Get("spider"), 4, new(8, -10), 2, Microsoft.Xna.Framework.Vector2.UnitY);
+        var wyverns = b.AddSquad(0, Troops.Get("wyvern"), 2, new(0, -14), 2, Microsoft.Xna.Framework.Vector2.UnitY);
+        var skels = b.AddSquad(1, Troops.Get("skeleton"), 14, new(0, 3), 7, -Microsoft.Xna.Framework.Vector2.UnitY);
+        trolls.Order = spiders.Order = wyverns.Order = skels.Order = Order.Charge;
+        for (int i = 0; i < 60 * 10; i++)
+        {
+            b.Update(1 / 60f);
+            foreach (var (cue, _) in b.Sounds) seen.Add(cue);
+        }
+        Check(seen.Contains(Cue.TrollSweep), "trolls emit TrollSweep");
+        Check(seen.Contains(Cue.WebSpit) || seen.Contains(Cue.SpiderChitter), "spiders emit WebSpit/SpiderChitter");
+        Check(seen.Contains(Cue.WyvernScreech) || seen.Contains(Cue.WyvernFlap), "wyverns emit WyvernScreech/WyvernFlap");
+        Check(seen.Contains(Cue.BoneHit) && seen.Contains(Cue.BoneCollapse), "skeletons rattle on hit and collapse on death");
+    }
 }

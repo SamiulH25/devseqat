@@ -14,6 +14,11 @@ public enum Cue
     SwingOne, SwingTwo, SwingPole, RiposteRing, WeaponSwap, LowHpPulse,
     LongbowLoose, CrossbowSnap, CrossbowSpan, SlingCrack, JavelinCast, ArrowShield, ArrowPlate, ArrowFlesh,
     RamSwing, LadderHook, FirePotShatter,
+    // AU2: creatures, beasts, undead, magic traditions, aura moments & order horns
+    TrollRoar, TrollSweep, WolfHowl, WolfSnarl, SpiderChitter, WebSpit, BearRoar, WyvernScreech, WyvernFlap, GoblinShriek,
+    BoneHit, BoneCollapse, RaiseDead,
+    CastGaldr, CastHex, CastNecro, WardShatter, CrowSwarm, AuraIgnite, AuraBreakthrough, ChampionClash,
+    HornCharge, HornHold, HornRetreat, HorseWhistle,
 }
 
 public enum MusicTrack { None, Title, Creator, Map, Battle, Victory, Defeat, Deploy, Chronicle }
@@ -103,24 +108,26 @@ sealed class AudioEngine
 
     // ---------- cues & priority mix ----------
 
-    static float Chance(Cue c) => c switch { Cue.Death => 0.5f, Cue.Neigh => 0.8f, _ => 1f };
+    static float Chance(Cue c) => c switch { Cue.Death or Cue.GoblinShriek => 0.5f, Cue.Neigh or Cue.BoneCollapse => 0.8f, _ => 1f };
 
-    static int Cap(Cue c) => c is Cue.Death or Cue.Volley or Cue.Cheer or Cue.Order or Cue.Page or Cue.Hover or Cue.LowHpPulse ? 1 : 4;
+    static int Cap(Cue c) => c is Cue.Death or Cue.GoblinShriek or Cue.BoneCollapse or Cue.Volley or Cue.Cheer
+        or Cue.Order or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat or Cue.Page or Cue.Hover or Cue.LowHpPulse ? 1 : 4;
 
     /// Broad cue family so simultaneous variants (e.g. sword clash + axe clash + block) share a clean frame budget.
     static int Family(Cue c) => c switch
     {
         Cue.Clash or Cue.Block or Cue.Hit or Cue.SlashLight or Cue.SlashHeavy or Cue.BluntFlesh or Cue.BluntPlate
-            or Cue.PierceHit or Cue.BlockWood or Cue.BlockMetal or Cue.ParrySteel => 1,
+            or Cue.PierceHit or Cue.BlockWood or Cue.BlockMetal or Cue.ParrySteel or Cue.BoneHit => 1,
         Cue.Bow or Cue.Throw or Cue.ArrowHit or Cue.LongbowLoose or Cue.CrossbowSnap or Cue.SlingCrack
-            or Cue.JavelinCast or Cue.ArrowShield or Cue.ArrowPlate or Cue.ArrowFlesh => 2,
-        Cue.Shout or Cue.Death or Cue.Cheer => 3,
+            or Cue.JavelinCast or Cue.ArrowShield or Cue.ArrowPlate or Cue.ArrowFlesh or Cue.WebSpit => 2,
+        Cue.Shout or Cue.Death or Cue.Cheer or Cue.GoblinShriek or Cue.WolfSnarl or Cue.SpiderChitter => 3,
         _ => 0,
     };
 
     static int FamilyCap(int fam) => fam switch { 1 => 6, 2 => 5, 3 => 3, _ => 99 };
 
-    static bool TriggersDuck(Cue c) => c is Cue.Horn or Cue.Rout or Cue.Order or Cue.Gather or Cue.Thunder;
+    static bool TriggersDuck(Cue c) => c is Cue.Horn or Cue.Rout or Cue.Order or Cue.HornCharge or Cue.HornHold
+        or Cue.HornRetreat or Cue.Gather or Cue.Thunder or Cue.AuraBreakthrough or Cue.ChampionClash;
 
     /// Briefly duck ambient beds and music so horns, great workings and cinematic beats cut cleanly through a 3,000-man din.
     public void Duck(float amount = 0.42f, float holdSec = 0.55f)

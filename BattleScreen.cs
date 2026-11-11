@@ -374,7 +374,14 @@ sealed partial class BattleScreen
         var eye2 = new Vector2(eye.X, eye.Z);
         foreach (var (cue, p) in battle.Sounds.OrderBy(s => Vector2.DistanceSquared(s.Pos, eye2)))
         {
-            float range = cue switch { Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer => 160, Cue.Crash => 200, Cue.Ram or Cue.RamSwing => 120, Cue.Volley => 90, _ => 70 };
+            float range = cue switch
+            {
+                Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer or Cue.HornRetreat or Cue.TrollRoar or Cue.WolfHowl or Cue.WyvernScreech or Cue.AuraBreakthrough => 160,
+                Cue.Crash or Cue.CrowSwarm => 200,
+                Cue.Ram or Cue.RamSwing or Cue.RaiseDead or Cue.ChampionClash or Cue.BearRoar => 120,
+                Cue.Volley => 90,
+                _ => 70,
+            };
             bool nearPlayer = battle.Player.Active && Vector2.DistanceSquared(p, battle.Player.Pos) < 9f;
             audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, range, priority: nearPlayer);
         }

@@ -122,15 +122,18 @@ static partial class Synth
     public static int Versions(Cue c) => c switch { Cue.Thunder or Cue.Gather or Cue.Cheer or Cue.Crash => 3, Cue.Click or Cue.Hover => 3, _ => 4 };
 
     /// Cues heard in the world (positioned, given a far version); the rest are the interface's or captain close-mic.
-    public static bool InWorld(Cue c) => c is not (Cue.Click or Cue.Coin or Cue.Hover or Cue.Page or Cue.Order or Cue.LowHpPulse);
+    public static bool InWorld(Cue c) => c is not (Cue.Click or Cue.Coin or Cue.Hover or Cue.Page or Cue.Order
+        or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat or Cue.LowHpPulse);
 
     /// Loudest sample of each cue: the one place the mix is set.
     static float Peak(Cue c) => c switch
     {
-        Cue.Hover => 0.22f, Cue.Click => 0.45f, Cue.Page => 0.5f, Cue.Coin => 0.55f, Cue.Order => 0.6f,
+        Cue.Hover => 0.22f, Cue.Click => 0.45f, Cue.Page => 0.5f, Cue.Coin => 0.55f,
+        Cue.Order or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat => 0.58f,
         Cue.SwingOne or Cue.SwingPole => 0.42f, Cue.SwingTwo or Cue.WeaponSwap or Cue.CrossbowSpan => 0.48f,
-        Cue.LowHpPulse => 0.55f, Cue.RiposteRing => 0.62f,
-        Cue.Death => 0.6f, Cue.Volley => 0.55f, Cue.Neigh => 0.6f,
+        Cue.LowHpPulse or Cue.HorseWhistle => 0.55f, Cue.RiposteRing or Cue.AuraIgnite => 0.62f,
+        Cue.Death or Cue.GoblinShriek or Cue.BoneCollapse or Cue.BoneHit or Cue.SpiderChitter or Cue.WebSpit or Cue.WyvernFlap => 0.6f,
+        Cue.Volley => 0.55f, Cue.Neigh or Cue.WolfSnarl => 0.6f,
         Cue.ArrowHit or Cue.ArrowShield or Cue.ArrowPlate or Cue.ArrowFlesh => 0.6f,
         Cue.Bow or Cue.LongbowLoose or Cue.CrossbowSnap or Cue.SlingCrack or Cue.JavelinCast => 0.6f, Cue.Throw => 0.5f,
         Cue.Splash or Cue.Squelch or Cue.Rustle or Cue.Hollow or Cue.LadderHook or Cue.RamSwing => 0.55f,
@@ -214,6 +217,31 @@ static partial class Synth
         Cue.RamSwing => RamSwing(r),
         Cue.LadderHook => LadderHook(r),
         Cue.FirePotShatter => FirePotShatter(r),
+        Cue.TrollRoar => TrollRoar(r),
+        Cue.TrollSweep => TrollSweep(r),
+        Cue.WolfHowl => WolfHowl(r),
+        Cue.WolfSnarl => WolfSnarl(r),
+        Cue.SpiderChitter => SpiderChitter(r),
+        Cue.WebSpit => WebSpit(r),
+        Cue.BearRoar => BearRoar(r),
+        Cue.WyvernScreech => WyvernScreech(r),
+        Cue.WyvernFlap => WyvernFlap(r),
+        Cue.GoblinShriek => GoblinShriek(r),
+        Cue.BoneHit => BoneHit(r),
+        Cue.BoneCollapse => BoneCollapse(r),
+        Cue.RaiseDead => RaiseDead(r),
+        Cue.CastGaldr => CastGaldr(r),
+        Cue.CastHex => CastHex(r),
+        Cue.CastNecro => CastNecro(r),
+        Cue.WardShatter => WardShatter(r),
+        Cue.CrowSwarm => CrowSwarm(r),
+        Cue.AuraIgnite => AuraIgnite(r),
+        Cue.AuraBreakthrough => AuraBreakthrough(r),
+        Cue.ChampionClash => ChampionClash(r),
+        Cue.HornCharge => HornCharge(r),
+        Cue.HornHold => HornHold(r),
+        Cue.HornRetreat => HornRetreat(r),
+        Cue.HorseWhistle => HorseWhistle(r),
         _ => Buf(0.05f),
     };
 

@@ -44,7 +44,7 @@ public partial class Battle
                 u.Morale = MathF.Max(u.Morale, RallyAt + 12);
             }
         Flash("breakthrough", p.Pos, BreakRally, p.Team);
-        Sound(Cue.Aura, p.Pos);
+        Sound(Cue.AuraBreakthrough, p.Pos, priority: true);
         PlayerHit = ("BREAKTHROUGH", Time);
         Log($"The wall breaks! You stand {Campaign.AuraName(AuraTier)} now.");
         Wonder("Your wall broke in the field.");
@@ -64,7 +64,7 @@ public partial class Battle
         clashAgain = ClashUntil + 10;
         ClashAt = (p.Pos + e.Pos) / 2;
         Flash("clash", ClashAt, ClashRadius, p.Team);
-        Sound(Cue.Aura, ClashAt);
+        Sound(Cue.ChampionClash, ClashAt, priority: true);
         Log("A clash of champions! The men fall back to give you room.");
         Wonder("Two champions clashed and the men gave them room.");
     }

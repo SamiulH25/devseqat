@@ -52,6 +52,7 @@ public partial class Battle
         {
             AuraBlade = true;
             PlayerHit = ("AURA BLADE", Time);
+            Sound(Cue.AuraIgnite, p.Pos, priority: true);
         }
         if (AuraBlade && (!hold || Aura <= 0 || !p.Active)) AuraBlade = false;
         if (AuraBlade) Aura = MathF.Max(0, Aura - BladeDrain * dt);

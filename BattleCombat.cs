@@ -37,7 +37,7 @@ public partial class Battle
         float dmg = StyleBlow(a, a.Type.Damage * a.Power);
         if (!a.IsPlayer)
         {
-            if (a.Type.Flying) Climb(a); // struck or missed, a wyvern climbs away to come again
+            if (a.Type.Flying) { Sound(Cue.WyvernScreech, a.Pos); Climb(a); } // struck or missed, a wyvern climbs away to come again
             if (a.Target is not { Active: true } t) return;
             float extra = t.Mounted ? 0.5f : 0;
             // A rider's blow lands on whatever is beside the horse; a footman needs the target in front.
@@ -45,7 +45,14 @@ public partial class Battle
             bool lands = a.Mounted
                 ? Vector2.Distance(a.Pos, t.Pos) <= aiReach + 0.35f + extra
                 : InArc(a, t, aiReach + 0.4f + extra, 0.5f);
-            if (lands) Hit(a, t, dmg, false);
+            if (lands)
+            {
+                if (a.Type.Look.Face == "troll") Sound(Cue.TrollSweep, a.Pos);
+                else if (a.Type.Look.Face == "wolf") Sound(Cue.WolfSnarl, a.Pos);
+                else if (a.Type.Look.Face == "bear") Sound(Cue.BearRoar, a.Pos);
+                else if (a.Type.Look.Face == "spider") Sound(Cue.SpiderChitter, a.Pos);
+                Hit(a, t, dmg, false);
+            }
             if (lands && a.Type.Has("sweep")) Sweep(a, t, dmg, aiReach + 0.4f);
             return;
         }
@@ -282,7 +289,7 @@ public partial class Battle
         if (by.IsPlayer) PlayerHit = ($"HORSE HIT {dmg:0}", Time);
         if (r.HorseHp > 0) return;
         // The horse goes down and throws its rider.
-        if (r.Horse!.Barding != "wolf") Sound(Cue.Neigh, r.Pos);
+        Sound(r.Horse!.Barding == "wolf" ? Cue.WolfSnarl : Cue.Neigh, r.Pos);
         DeadHorses.Add(new DeadHorse(r.Pos, r.Heading, r.Team, r.Coat, r.Horse!.Barding, Time));
         r.Horse = null;
         r.ThrownAt = Time;
@@ -338,7 +345,7 @@ public partial class Battle
         t.Hp = 0;
         t.Action = UnitAction.None;
         t.Vel = t.Wish = Vector2.Zero;
-        if (!t.Type.Has("bones")) Sound(Cue.Death, t.Pos);
+        Sound(DeathCue(t), t.Pos);
         if (t.Mounted)
         {
             if (t.Horse!.Barding != "wolf") // a warg whose rider falls runs off into the wild; nobody else can ride it
@@ -518,6 +525,7 @@ public partial class Battle
 
     static Cue HitCue(Unit a, Unit t, float rawDmg, bool ranged, bool lance)
     {
+        if (t.Type.Has("bones")) return Cue.BoneHit;
         if (ranged) return t.Type.Armor >= 9 ? Cue.ArrowPlate : Cue.ArrowFlesh;
         if (lance) return rawDmg >= 42 ? Cue.LanceShatter : Cue.LanceImpact;
         var w = a.Type.Look.Weapon;
@@ -526,6 +534,21 @@ public partial class Battle
         if (grip is Grip.Pole or Grip.Lance && a.Swing == AttackDir.Thrust) return t.Type.Armor >= 11 ? Cue.Clash : Cue.PierceHit;
         if (grip == Grip.Two || w is "halberd" or "glaive") return Cue.SlashHeavy;
         return t.Type.Armor >= 10 ? Cue.Clash : Cue.SlashLight;
+    }
+
+    static Cue DeathCue(Unit t)
+    {
+        if (t.Type.Has("bones")) return Cue.BoneCollapse;
+        return t.Type.Look.Face switch
+        {
+            "goblin" => Cue.GoblinShriek,
+            "troll" => Cue.TrollRoar,
+            "wolf" => Cue.WolfHowl,
+            "bear" => Cue.BearRoar,
+            "spider" => Cue.SpiderChitter,
+            "wyvern" => Cue.WyvernScreech,
+            _ => Cue.Death,
+        };
     }
 
     static Cue LooseCue(string weapon, Grip kind) => kind switch
