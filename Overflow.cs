@@ -12,11 +12,13 @@ static class Overflow
         .Any(v => Environment.GetEnvironmentVariable(v) is { Length: > 0 });
 
     static readonly List<Rectangle> boxes = new();
+    /// This frame's text: what it says, where it lies, and how many boxes had been drawn before it.
+    static readonly List<(string S, Rectangle R, int Before, Rectangle? In)> texts = new();
     static readonly SortedSet<string> found = new();
     static int screenW, screenH;
 
     /// A new frame: forget last frame's boxes.
-    public static void Frame(int width, int height) { if (!On) return; boxes.Clear(); screenW = width; screenH = height; }
+    public static void Frame(int width, int height) { if (!On) return; boxes.Clear(); texts.Clear(); screenW = width; screenH = height; }
 
     /// A panel, plate or button text may be drawn inside.
     public static void Box(Rectangle r) { if (On) boxes.Add(r); }
@@ -31,6 +33,7 @@ static class Overflow
         Rectangle? box = null;
         for (int i = boxes.Count - 1; i >= 0 && box == null; i--) if (boxes[i].Contains(at)) box = boxes[i];
         int left = box?.Left ?? 0, right = box?.Right ?? screenW;
+        texts.Add((s, new Rectangle((int)x + 1, (int)y + 1, Math.Max(1, w - 2), 4), boxes.Count, box));
         if (x + w > right + 1 || x < left - 1) found.Add($"\"{s}\" at {x:0},{y:0} ({w} px) leaves {(box == null ? "the screen" : $"the box {box.Value.X},{box.Value.Y} {box.Value.Width}x{box.Value.Height}")}");
     }
 
@@ -38,6 +41,15 @@ static class Overflow
     public static void Flush(string dir, string shot)
     {
         if (!On) return;
+        // Text that runs under a button or plate drawn later inside the same panel (a long line beneath its row's button).
+        foreach (var (s, r, before, home) in texts)
+            for (int i = before; i < boxes.Count; i++)
+            {
+                var b = boxes[i];
+                if (b.Contains(r.Location) || !b.Intersects(r) || home is not Rectangle h || !h.Contains(b)) continue;
+                found.Add($"\"{s}\" at {r.X - 1},{r.Y - 1} runs under the box {b.X},{b.Y} {b.Width}x{b.Height}");
+                break;
+            }
         var path = Path.Combine(dir, "overflow.txt");
         if (found.Count > 0) File.AppendAllLines(path, found.Select(f => $"{shot}: {f}"));
         else if (!File.Exists(path)) File.WriteAllText(path, "");

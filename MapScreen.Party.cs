@@ -152,7 +152,7 @@ partial class MapScreen
             else if (t.Spells.Length > 0 && ui.Hover(card))
                 note = "SPELLS: " + string.Join(", ", t.Spells.Select(id => Abilities.Get(id).Name.ToUpperInvariant())) + ". " + Abilities.Get(t.Spells[^1]).Line.ToUpperInvariant();
             if (Rules.TroopRole(to) != Rules.RoleOf(c)) ui.TextC($"JOINS A {Rules.TroopRole(to).ToUpperInvariant()} COMPANY", card.X + cw / 2f, card.Y + ui.U(210), Style.Warn, 1);
-            ui.TextC(one > 0 ? $"{cost1} CROWNS A MAN" : reason, card.X + cw / 2f, card.Y + ui.U(226), one > 0 ? Style.Text : Style.Warn, 1);
+            ui.TextFitC(one > 0 ? $"{cost1} CROWNS A MAN" : reason, card.X + cw / 2f, card.Y + ui.U(226), cw - ui.U(8), one > 0 ? Style.Text : Style.Warn, 1);
             int bw = (cw - ui.U(28) - 2 * ui.U(4)) / 3, by = card.Bottom - ui.U(56);
             int b = 0;
             foreach (var (label, want) in new[] { ("1", 1), ("5", 5), ("ALL", st.Ready) })

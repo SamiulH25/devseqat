@@ -5,7 +5,7 @@ namespace Ironfield;
 /// The campaign world's geography (docs/CAMPAIGN.md 3): provinces, settlements, roads and terrain, all generated from a seed.
 /// Map units: the ground spans +-TerrainHalf (1 unit = 0.75 km). The same seed always gives the same map, so saves store only the seed
 /// plus what changes (ownership, recruits, parties).
-public sealed class WorldMap
+public sealed partial class WorldMap
 {
     /// Where provinces live on a new map; mountains fill the rim out to the terrain's edge (about 930 km across, docs/archive/WORLD.md W2).
     public const float Extent = 620;
@@ -75,8 +75,9 @@ public sealed class WorldMap
     /// LegacyExtent for saves made before the map grew), so a save keeps the geography it was played on.
     /// How the map is laid out: 0 = the original three realms by fixed bands (every save from before docs/archive/WORLD.md W1 keeps it),
     /// 1 = each data realm grows from its home in Data/factions.json, 2 = that plus climates, ridges and more rivers (W2),
-    /// 3 = all the data realms (seven, W3) at their homes in the data. Layouts 1-2 keep the three homes they were made with.
-    public const int LegacyLayout = 0, CurrentLayout = 3;
+    /// 3 = all the data realms (seven, W3) at their homes in the data, 4 = that plus roads routed over the land, lakes and
+    /// village ponds (docs/WORLD_LIFE.md WL1-WL2). Layouts 1-2 keep the three homes they were made with.
+    public const int LegacyLayout = 0, CurrentLayout = 4;
     /// The three realms' homes (x, z, reach) on layout 1-2 maps, as factions.json had them before the realms became seven.
     static readonly (float X, float Z, float Reach)[] ThreeRealmHomes = { (-0.8f, 0.45f, 0), (0.8f, 0.45f, 0), (0, -0.85f, -20) };
     public int Layout;
@@ -178,7 +179,7 @@ public sealed class WorldMap
             for (int i = 0; i + 1 < path.Length; i++)
                 foreach (var (a, b) in m.Roads)
                     if (Cross(path[i], path[i + 1], a, b) is Vector2 x) bridges.Add(x);
-            m.Rivers.Add(new River(path, 2.6f, bridges.ToArray(), 1.1f));
+            m.Rivers.Add(layout >= 4 ? new River(path, 4.6f, bridges.ToArray(), 1.5f) : new River(path, 2.6f, bridges.ToArray(), 1.1f)); // layout 4: wide enough to read on the map
         }
         // Hill provinces get real hills.
         foreach (var p in m.Provinces.Where(p => p.Kind == "Hills"))
@@ -188,6 +189,9 @@ public sealed class WorldMap
                 m.hills.Add((p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d, (16 + rng.NextSingle() * 14) * span, 5 + rng.NextSingle() * 5));
             }
         if (layout >= 2) m.RaiseRidges(rng, span);
+        // Layout 4 (docs/WORLD_LIFE.md WL1-WL2): lakes and village ponds, then roads routed over the land (WorldRoads.cs).
+        if (layout >= 4) m.PlaceLakes(new Random(seed * 31 + 7), span); // own dice: lakes leave the rest of the map as layout 3 drew it
+        m.LayRoads(layout >= 4);
         m.PlaceSites(namer, span);
         return m;
     }
@@ -407,7 +411,7 @@ public sealed class WorldMap
 
     /// Map travel speed factor at a point (terrain kind, roads).
     public float SpeedFactor(Vector2 p, float roadBonus) =>
-        RoadDist(p) < 2.5f ? roadBonus : RiverDist(p) < 1.6f ? 0.35f : OnRidge(p) ? 0.45f
+        RoadDist(p) < 2.5f ? roadBonus : RiverDist(p) < 1.6f || InLake(p) ? 0.35f : OnRidge(p) ? 0.45f
         : ProvinceAt(p).Kind switch { "Forest" => 0.7f, "Hills" => 0.8f, "Marsh" => 0.6f, "Steppe" => 1.1f, "Badlands" => 0.85f, _ => 1f };
 
     /// Battle ground for a fight at p: the province's kind, with a road if one runs close.
@@ -433,6 +437,20 @@ public sealed class WorldMap
 
     public float Height(float x, float z)
     {
+        float h = LandHeight(x, z);
+        foreach (var r in Rivers)
+        {
+            var at = new Vector2(x, z);
+            float d = r.Dist(at);
+            if (d < r.Width / 2 + 3) h -= r.Carve(at, d);
+        }
+        foreach (var l in Lakes) h -= l.Carve(new Vector2(x, z));
+        return h;
+    }
+
+    /// The land before rivers and lakes cut into it (what roads are routed over: the water is barred to them anyway).
+    float LandHeight(float x, float z)
+    {
         float h = Terrain.Noise(x * 0.012f, z * 0.012f, Seed) * 3 + Terrain.Noise(x * 0.035f, z * 0.035f, Seed + 1) * 0.8f;
         foreach (var (c, r, hh) in hills)
         {
@@ -441,17 +459,14 @@ public sealed class WorldMap
         }
         float edge = MathF.Max(MathF.Abs(x), MathF.Abs(z));
         float t = Math.Clamp((edge - (ExtentUsed - 10)) / (GroundHalf - ExtentUsed + 10), 0, 1);
-        h += t * t * (3 - 2 * t) * (24 + 10 * Terrain.Noise(x * 0.02f, z * 0.02f, Seed + 2)); // mountains close the world
+        if (Layout >= 4) // graded: rolling foothills first, then the range climbing to its peaks (no wall at the edge of the land)
+            h += 7 * MathHelper.SmoothStep(0, 1, Math.Clamp(t / 0.35f, 0, 1)) * (0.6f + 0.8f * Terrain.Noise(x * 0.03f, z * 0.03f, Seed + 12))
+                + MathF.Pow(MathHelper.SmoothStep(0, 1, Math.Clamp((t - 0.2f) / 0.8f, 0, 1)), 1.4f) * (15 + 9 * Terrain.Noise(x * 0.02f, z * 0.02f, Seed + 2));
+        else h += t * t * (3 - 2 * t) * (24 + 10 * Terrain.Noise(x * 0.02f, z * 0.02f, Seed + 2)); // mountains close the world
         float rim = RimAt(edge);
         if (rim > 0) // crags and peaks on the rim, beyond where anyone goes (the land in play keeps its heights)
-            h += rim * rim * (18 * Ridged(x * 0.045f, z * 0.045f, Seed + 4) + 7 * Ridged(x * 0.11f, z * 0.11f, Seed + 5));
+            h += rim * rim * (Layout >= 4 ? 0.5f : 1) * (18 * Ridged(x * 0.045f, z * 0.045f, Seed + 4) + 7 * Ridged(x * 0.11f, z * 0.11f, Seed + 5));
         if (Ridges.Count > 0) h += RidgeHeight(new Vector2(x, z)) * (0.85f + 0.3f * Terrain.Noise(x * 0.05f, z * 0.05f, Seed + 3));
-        foreach (var r in Rivers)
-        {
-            var at = new Vector2(x, z);
-            float d = r.Dist(at);
-            if (d < r.Width / 2 + 3) h -= r.Carve(at, d);
-        }
         return h;
     }
 
@@ -467,9 +482,18 @@ public sealed class WorldMap
         float rim = RimAt(MathF.Max(MathF.Abs(p.X), MathF.Abs(p.Y)));
         if (rim > 0)
         {
-            float n = Terrain.Noise(p.X * 0.08f, p.Y * 0.08f, Seed + 6);
-            c = Vector3.Lerp(c, new Vector3(0.5f, 0.49f, 0.47f) * (0.8f + 0.4f * n), MathHelper.SmoothStep(0, 1, rim * 3));
-            float snow = Math.Clamp((Height(p.X, p.Y) - 30) / 10, 0, 1) * MathHelper.SmoothStep(0, 1, rim * 1.6f);
+            float n = Terrain.Noise(p.X * 0.08f, p.Y * 0.08f, Seed + 6), h = Height(p.X, p.Y);
+            // A graded range: warm brown foothills, warm grey rock, cool blue-grey heights; strata bands, and gullies
+            // (steep ground) darker so the faces read as modelled rock rather than one flat grey.
+            float up = Math.Clamp(h / 34, 0, 1), strata = Ridged(p.X * 0.05f + h * 0.08f, p.Y * 0.05f, Seed + 9);
+            var rock = Vector3.Lerp(new Vector3(0.5f, 0.45f, 0.36f), new Vector3(0.56f, 0.53f, 0.49f), MathHelper.SmoothStep(0, 1, up * 1.6f));
+            rock = Vector3.Lerp(rock, new Vector3(0.5f, 0.54f, 0.6f), MathHelper.SmoothStep(0, 1, (up - 0.5f) * 2));
+            float steep = Math.Clamp((MathF.Abs(Height(p.X + 1, p.Y) - Height(p.X - 1, p.Y)) + MathF.Abs(Height(p.X, p.Y + 1) - Height(p.X, p.Y - 1))) / 3.5f, 0, 1);
+            rock *= (0.82f + 0.3f * n) * (1.04f - 0.3f * steep) * (0.94f + 0.12f * strata);
+            var foot = Vector3.Lerp(c, new Vector3(0.42f, 0.44f, 0.27f), 0.5f); // scrubby foothills between grass and rock
+            c = Vector3.Lerp(c, foot, MathHelper.SmoothStep(0, 1, rim * 6));
+            c = Vector3.Lerp(c, rock, MathHelper.SmoothStep(0, 1, rim * 3 - 0.3f));
+            float snow = Math.Clamp((h - 30 + 4 * n) / 8, 0, 1) * MathHelper.SmoothStep(0, 1, rim * 1.6f) * (1 - 0.6f * steep); // snow slides off the steep faces
             c = Vector3.Lerp(c, new Vector3(0.9f, 0.92f, 0.95f), snow);
         }
         if (Ridges.Count > 0 && RidgeDist(p) is float rd && rd < Ridges[0].Width) c = Vector3.Lerp(c, new Vector3(0.62f, 0.6f, 0.58f), 0.6f * (1 - rd / Ridges[0].Width)); // bare rock
@@ -510,7 +534,7 @@ public sealed class WorldMap
         float span = ExtentUsed / LegacyExtent, grow0 = MathF.Sqrt(span);
         foreach (var s in Settlements)
             foliage.Add(new Foliage(s.Kind switch { SettlementKind.Town => FoliageKind.Town, SettlementKind.Castle => FoliageKind.Castle, _ => FoliageKind.Village },
-                s.Pos, s.Kind == SettlementKind.Village ? 1.6f : 2.1f, 0, s.Id * 31 + Seed));
+                s.Pos, s.Kind == SettlementKind.Village ? 1.8f : 2.5f, 0, s.Id * 31 + Seed)); // a little larger than life beside the trees (WL3)
         foreach (var site in Sites)
             foliage.Add(new Foliage(site.Kind switch
             {
@@ -518,8 +542,18 @@ public sealed class WorldMap
                 "mine" => FoliageKind.Mine, "hermit" => FoliageKind.Hut, "watchtower" => FoliageKind.Watch, "spring" => FoliageKind.Spring, _ => FoliageKind.Mill,
             }, site.Pos, 2.0f, 0, site.Id * 53 + Seed));
         float half = GroundHalf - 6;
-        bool Clear(Vector2 p) => Settlements.All(s => Vector2.Distance(s.Pos, p) > 9 * span) && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3
-            && MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half;
+        var fields = Layout >= 4 ? LayFields(span) : new List<FieldPlot>();
+        var fieldCells = FieldCells(fields);
+        var standRng = new Random(Seed * 5 + 3); // layout 4 woods: their own dice
+        bool Clear(Vector2 p) => Settlements.All(s => Vector2.Distance(s.Pos, p) > 9 * span) && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && !InLake(p, 2)
+            && MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half && !InField(fieldCells, p, 1.5f);
+        foreach (var f in fields.Where(f => f.Kind == FieldKind.Orchard)) // rows of small round fruit trees
+        {
+            var orng = new Random(f.Seed);
+            for (float u = -f.Half.X + 1.6f; u < f.Half.X - 1; u += 3.3f)
+                for (float v = -f.Half.Y + 1.6f; v < f.Half.Y - 1; v += 3.3f)
+                    foliage.Add(new Foliage(FoliageKind.Broadleaf, f.At(u, v), 1.15f + orng.NextSingle() * 0.2f, 0, orng.Next()));
+        }
         foreach (var p in Provinces)
         {
             // Woods scale with the ground they stand on (area), so the bigger map stays as wooded as the old one. Trees grow
@@ -527,6 +561,7 @@ public sealed class WorldMap
             float grow = MathF.Sqrt(span);
             int trees = (int)(p.Kind switch { "Forest" => 90, "Hills" => 26, "Farmland" => 6, "Marsh" => 30, "Steppe" => 2, "Badlands" => 4, _ => 14 } * span * span * 1.4f);
             float radius = (p.Kind == "Forest" ? 48 : 60) * span;
+            if (Layout >= 4) { GrowStands(p, trees, radius, grow, standRng, Clear, foliage); continue; }
             for (int i = 0; i < trees; i++)
             {
                 float a = rng.NextSingle() * MathF.Tau, d = MathF.Sqrt(rng.NextSingle()) * radius;
@@ -559,7 +594,13 @@ public sealed class WorldMap
             if (MathF.Max(MathF.Abs(pos.X), MathF.Abs(pos.Y)) < ExtentUsed - 4) continue;
             foliage.Add(new Foliage(FoliageKind.Pine, pos, 2.4f + rng.NextSingle(), 0, rng.Next()));
         }
-        return new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers);
+        var terrain = new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers);
+        terrain.RoadLines.AddRange(RoadLines);
+        terrain.Lakes.AddRange(Lakes);
+        terrain.MapBridges.AddRange(Bridges);
+        terrain.Fields.AddRange(fields);
+        terrain.MapSeason = Season;
+        return terrain;
     }
 }
 

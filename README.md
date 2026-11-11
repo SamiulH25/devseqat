@@ -626,6 +626,8 @@ dressed from its troop's `Look` (`torso.mail.f`, `helm.greathelm.s`, `shield.hea
 - **Billboards** (head, helm/hood, torso, hands, boots, plume, cape, quiver) always face the camera. View parts swap between `.f`/`.s`/`.b`
   sprites by the angle between the unit's facing and the camera; side sprites face right and are mirrored.
   Layered parts get a small toward-camera `bias` (the helm sits over the head) so they never z-fight.
+  A helm is placed by its brow, not its top: `Puppet.HelmTop` names each helm's brow row (the rim over the forehead, below
+  any cone or spike), which lands just above the eyes. A new helm with a tall crown needs its row there, or its rim falls on the face.
 - **Axial** parts (legs, sleeves, sword, spear, bow, arrow) stretch between two joints and turn about that axis to face the camera.
 - **Planes** (shields) are fixed world quads, so a shield really swings between the front and the side.
 - **Long** parts (horse body, neck, head) span two joints like axial parts but keep their top edge up, so the saddle never flips under the belly.

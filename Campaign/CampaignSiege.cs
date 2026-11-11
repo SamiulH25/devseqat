@@ -61,7 +61,7 @@ public sealed partial class Campaign
             foreach (var c in s.Garrison.Where(c => c.Type.Tier <= 5))
             {
                 int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * (0.8f + 0.07f * Level(s, "walls")) * GarrisonTemper(s)) - c.Men;
-                int n = Math.Min(Math.Min(want, Rules.Room(c, c.Troop)), (int)(fs.Treasury / Rules.PerMan(20)));
+                int n = Math.Min(Math.Min(want, Rules.Room(c, c.Troop)), (int)(MathF.Max(0, fs.Treasury - 300) / Rules.PerMan(20))); // the chest keeps the floor lords' wages keep
                 if (n <= 0) continue;
                 Rules.AddMen(c, c.Troop, n);
                 fs.Treasury -= n * Rules.PerMan(20);

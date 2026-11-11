@@ -99,10 +99,10 @@ partial class BattleScreen
                 AddScar(at, 4.5f, ScarKind.Crack);
                 AddAwe(at, radius * 1.5f, 1.6f);
                 PlayCue(Cue.Shout, at, 160); // the men roar
-                if (Beat(BeatKind.Breakthrough, at, 3.2f)) breakAt = realTime; // colour drains from all but him, then floods back
+                if (Beat(BeatKind.Breakthrough, at, "YOUR AURA BREAKS THROUGH", 3.2f)) breakAt = realTime; // colour drains from all but him, then floods back
                 else if (Settings.Current.HitPause && quality != Quality.Low) hitPause = 0.3f;
                 break;
-            case "clash": AddRipple(at, radius, radius, 8f, col, 0.08f); AddRipple(at, 0.3f, radius * 1.6f, 0.6f, Color.White, 0.5f); Kick(0.3f); Beat(BeatKind.Clash, at); break; // the ring the men give (MA7)
+            case "clash": AddRipple(at, radius, radius, 8f, col, 0.08f); AddRipple(at, 0.3f, radius * 1.6f, 0.6f, Color.White, 0.5f); Kick(0.3f); Beat(BeatKind.Clash, at, "THE CHAMPIONS CLASH"); break; // the ring the men give (MA7)
             case "broken": Spray(at, 1.2f, 24, col, 5f, 0.5f, 0.06f, false); AddRipple(at, radius, 0.3f, 0.35f, Color.White); break; // a working shattered (MA5)
             case "spell:attack":
                 if (tag == "faith") { beams.Add(new Beam { At = at, Born = battle.Time, Life = 0.7f, Radius = MathF.Max(1, radius), Col = col }); Spray(at, 0.4f, 24, new Color(255, 244, 200), 3f, 0.7f, 0.08f, true); AddScar(at, MathF.Max(2, radius * 0.9f), ScarKind.Glass); }

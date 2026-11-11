@@ -41,7 +41,7 @@ partial class BattleScreen
             if (!c.A.Great) continue;
             great = true;
             Omen(Ease.InOut((g - 0.2f) / 0.6f) * 0.7f);
-            if (g > 0.55f) Beat(c.By.Team == 0 ? BeatKind.OwnWorking : BeatKind.FoeWorking, c.At, 2.8f);
+            if (g > 0.55f) Beat(c.By.Team == 0 ? BeatKind.OwnWorking : BeatKind.FoeWorking, c.At, $"{(c.By.Team == 0 ? "YOUR" : "THE ENEMY")} CIRCLE WORKS {c.A.Name.ToUpperInvariant()}", 2.8f);
         }
         calmWant = great ? 1 : 0;
     }

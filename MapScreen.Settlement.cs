@@ -132,17 +132,18 @@ partial class MapScreen
             var row = new Rectangle(body.X, y, body.Width, rh - ui.U(6));
             TownRow(row);
             PortraitWell(UnitType.Captain, new Rectangle(row.X + ui.U(4), row.Y + ui.U(4), row.Height - ui.U(8), row.Height - ui.U(8)), 2);
-            int tx = row.X + row.Height + ui.U(6);
-            ui.Text($"{w.Name.ToUpperInvariant()}, A WANDERER", tx, row.Y + ui.U(8), Kit.Gilt, 2);
-            ui.Text($"{w.Role.ToUpperInvariant()} ({RoleTextOf(w.Role)}). {string.Join(", ", w.Traits).ToUpperInvariant()}. LEADS A COMPANY AS A HERO.", tx, row.Y + ui.U(28), Style.Dim, 1);
+            int tx = row.X + row.Height + ui.U(6), textW = row.Right - ui.U(240) - tx; // clear of the button
+            ui.TextFit($"{w.Name.ToUpperInvariant()}, A WANDERER", tx, row.Y + ui.U(8), textW, Kit.Gilt, 2);
+            string traits = w.Traits.Count > 0 ? string.Join(", ", w.Traits).ToUpperInvariant() + ". " : "";
+            ui.TextFit($"{w.Role.ToUpperInvariant()} ({RoleTextOf(w.Role)}). {traits}LEADS A COMPANY AS A HERO.", tx, row.Y + ui.U(28), textW, Style.Dim, 1);
             int wp = C.WandererPrice(w);
-            if (ui.Button(new Rectangle(row.Right - ui.U(196), row.Center.Y - ui.U(14), ui.U(190), ui.U(28)), "TAKE INTO SERVICE", C.S.Gold >= wp, $"{wp} CROWNS"))
+            if (ui.Button(new Rectangle(row.Right - ui.U(234), row.Center.Y - ui.U(14), ui.U(228), ui.U(28)), "TAKE INTO SERVICE", C.S.Gold >= wp, $"{wp} CROWNS"))
                 note = C.HireWanderer(s) ?? "HE JOINS YOUR HOUSEHOLD";
             y += rh;
         }
         else
         {
-            ui.Text("NO WANDERER IS DRINKING HERE TONIGHT. THEY MOVE BETWEEN TOWNS.", body.X, y + ui.U(4), Style.Dim, 1);
+            ui.TextFit("NO WANDERER IS DRINKING HERE TONIGHT. THEY MOVE BETWEEN TOWNS.", body.X, y + ui.U(4), body.Width, Style.Dim, 1);
             y += ui.U(24);
         }
         // A feast (A5): three days in good heart, carried into battle.
@@ -157,9 +158,10 @@ partial class MapScreen
         y += ui.U(22);
         foreach (var talk in C.Rumours(s))
         {
+            if (y + ui.U(34) > body.Bottom) break; // no rumour drawn past the panel
             var row = new Rectangle(body.X, y, body.Width, ui.U(34));
             TownRow(row);
-            ui.Text("\"" + talk.Text.ToUpperInvariant() + "\"", row.X + ui.U(8), row.Y + ui.U(12), Kit.Parchment, 1);
+            ui.TextFit("\"" + talk.Text.ToUpperInvariant() + "\"", row.X + ui.U(8), row.Y + ui.U(12), row.Width - ui.U(150), Kit.Parchment, 1);
             if (talk.At != s.Pos && ui.Button(new Rectangle(row.Right - ui.U(130), row.Y + ui.U(5), ui.U(124), ui.U(24)), "RIDE THERE"))
             { C.Follow(talk); panel = PanelKind.None; at = null; }
             y += ui.U(38);
@@ -404,7 +406,7 @@ partial class MapScreen
         if (jobs.Count == 0) ui.Text("NOTHING TODAY. COME BACK IN A FEW DAYS.", body.X, y + ui.U(6), Style.Dim, 1);
         foreach (var o in jobs)
         {
-            ui.Text(o.Text.ToUpperInvariant(), body.X, y + ui.U(6), Style.Text, 1);
+            ui.TextFit(o.Text.ToUpperInvariant(), body.X, y + ui.U(6), body.Width - ui.U(212), Style.Text, 1);
             float pay = o.Reward + (o.Then?.Reward ?? 0);
             if (ui.Button(new Rectangle(body.Right - ui.U(200), y, ui.U(200), ui.U(24)), "ACCEPT", C.S.Contracts.Count < 3, $"{pay:0}")) note = C.Accept(s, o) ?? "ACCEPTED";
             y += ui.U(28);

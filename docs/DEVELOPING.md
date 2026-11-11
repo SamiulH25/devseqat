@@ -539,6 +539,11 @@ There are no image, model or pre-rendered WAV/OGG files: sprites and meshes are 
   No audio device means silence, not a crash. `--sounds dir [filter]` writes matching cues, beds and stereo scores as WAV
   files to listen to; `SelfTest.SoundsMade` checks the bank, validates all 68 scores (`MusicLibrary.Validate`), and verifies
   levels and loop seams.
+  Music is kept steady on purpose (`AudioEngine.UpdateMapMusic`): a town tab's piece starts only after the tab has stayed
+  open 0.9 s, open-map pieces play to their end with 12–16 s of quiet between, a host or dread cuts one only after lasting
+  4 s and never within 20 s of the last change, and a battle's victory/defeat piece plays out on the map. Each score's
+  `masterGain` was set so pieces sit near −20 dB RMS (measured from `--sounds` renders); keep new scores near that.
+  Beds of raw noise must be band-limited: plain white noise at 44.1 kHz reads as loud static (the old rain bed did).
 
 Check visual changes with the screenshot commands in section 1 and look at the PNGs.
 

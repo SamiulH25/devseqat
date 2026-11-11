@@ -157,11 +157,11 @@ sealed partial class Puppet
         HeadBill();
         if (look.Head != "none")
         {
-            // Every helmet's crown sits just above the head, whatever its height.
+            // Every helmet's brow sits on the man's brow, whatever rises above it (HelmTop).
             float h = art[$"helm.{look.Head}.f{pal}"].Height * Art.Px;
-            Bill(new(0, 1.81f - h / 2, 0.02f), $"helm.{look.Head}", true, 0.04f);
+            Bill(new(0, HelmTop(look.Head) - h / 2, 0.02f), $"helm.{look.Head}", true, 0.04f);
         }
-        if (look.Plume && Detail == 0) Bill(new(0, 1.81f + art["plume" + pal].Height * Art.Px / 2 - 0.06f, -0.03f), "plume", false, 0.05f);
+        if (look.Plume && Detail == 0) Bill(new(0, HelmTop(look.Head) + art["plume" + pal].Height * Art.Px / 2 - 0.06f, -0.03f), "plume", false, 0.05f);
         (view, flip) = (bodyView, bodyFlip);
 
         if (p.Armed && (p.Haul >= 0 || p.Aim && look.Weapon == "crossbow" && !u.Mounted)) { twist = 0; Crossbow(u, p); return; }
@@ -624,7 +624,7 @@ sealed partial class Puppet
         Bill(new(0, 1.0f, 0), $"torso.{look.Body}", true);
         if (look.Tabard && Detail == 0) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
         HeadBill();
-        if (look.Head != "none") Bill(new(0, 1.81f - art[$"helm.{look.Head}.f{pal}"].Height * Art.Px / 2, 0.02f), $"helm.{look.Head}", true, 0.04f);
+        if (look.Head != "none") Bill(new(0, HelmTop(look.Head) - art[$"helm.{look.Head}.f{pal}"].Height * Art.Px / 2, 0.02f), $"helm.{look.Head}", true, 0.04f);
         twist = 0;
         var hand = Arm(1, p.ArmA, 0);
         Arm(-1, p.OffA, 0);
@@ -729,6 +729,16 @@ sealed partial class Puppet
         verts.Add(new(tl, tint, new(u0, v0))); verts.Add(new(tr, tint, new(u1, v0))); verts.Add(new(bl, tint, new(u0, v1)));
         verts.Add(new(tr, tint, new(u1, v0))); verts.Add(new(br, tint, new(u1, v1))); verts.Add(new(bl, tint, new(u0, v1)));
     }
+
+    /// Height of a helmet sprite's top edge. Each helm names the canvas row of its brow (the lower edge of the rim over the
+    /// forehead, below any cone, spike or crest); that row lands on head row 5, just above the eyes (head rows 7-8), so a
+    /// tall cone rises above the head instead of pushing the rim down over the face. Closed helms and hoods keep row 6.83
+    /// (their top just above the crown). Shared with the HUD's troop card (`Hud`).
+    public static float HelmTop(string kind) => 1.605f + kind switch
+    {
+        "cap" => 8.5f, "kettle" => 9.6f, "nasal" => 10.5f, "sallet" => 9.5f, "spangen" => 11.5f, "turban" => 12f,
+        "steppe" => 15.5f, "spike" => 11.5f, "furcap" => 11f, _ => 6.83f,
+    } * Art.Px;
 
     /// The bare head; a man's own visage is painted in the neutral palette.
     void HeadBill()

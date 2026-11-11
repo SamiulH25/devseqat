@@ -182,6 +182,8 @@ public static partial class SelfTest
         car.Pos = dest.Pos + new Vector2(0.5f, 0);
         c.Player.Pos = car.Pos;
         gold = c.S.Gold;
+        // Nothing hostile near the market (a brigand band there sends the caravan fleeing elsewhere, by chance of the map).
+        c.S.Parties.RemoveAll(q => q.Kind is PartyKind.Bandit or PartyKind.Monster && !q.Lair && Vector2.Distance(q.Pos, dest.Pos) < 40 * c.Map.Spread);
         Hours(2);
         Check(!Holds("escort") && c.S.Gold > gold, $"the escort is paid when the caravan arrives ({c.S.Gold - gold:0})");
         var esc2 = new Contract { Id = c.S.NextId++, Kind = "escort", Target = -1, Faction = -1, Deadline = (float)c.S.Hours + 240 };

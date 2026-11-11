@@ -28,6 +28,10 @@ sealed partial class MapScreen
     readonly AlphaTestEffect spriteFx;
     readonly BasicEffect lineFx;
     readonly Dictionary<int, Unit> bearers = new();
+    /// Birds and beasts round the camera (MapLife.cs, docs/WORLD_LIFE.md WL4); drawing only.
+    MapLife? life;
+    Quality lifeQuality = Quality.High;
+    readonly List<Vector2> partySpots = new();
     World? world;
     Terrain terrain = null!;
     int season;
@@ -56,7 +60,7 @@ sealed partial class MapScreen
     {
         this.gd = gd; this.art = art; this.shading = shading; this.ctl = ctl;
         ui = new Ui(sb, art, font);
-        puppet = new Puppet(art, sprites) { Scale = 3 };
+        puppet = new Puppet(art, sprites) { Scale = 2.5f }; // a little smaller than the towns they ride between (WL3)
         spriteFx = new AlphaTestEffect(gd)
         {
             Texture = art.Atlas, VertexColorEnabled = true, AlphaFunction = CompareFunction.Greater, ReferenceAlpha = 128,
@@ -65,13 +69,23 @@ sealed partial class MapScreen
         lineFx = new BasicEffect(gd) { VertexColorEnabled = true };
     }
 
-    public void Open(Campaign c)
+    /// The headless half of `Open`: the map's terrain for the campaign's season. Safe off the main thread (the loading screen
+    /// runs it beside `Campaign.New`).
+    public static Terrain Prepare(Campaign c)
+    {
+        c.Map.Season = c.SeasonIndex;
+        return c.Map.BuildTerrain();
+    }
+
+    /// Show a campaign; `prepared` is its terrain from `Prepare` if already built.
+    public void Open(Campaign c, Terrain? prepared = null)
     {
         C = c;
         world?.Dispose();
-        c.Map.Season = season = c.SeasonIndex;
-        terrain = c.Map.BuildTerrain();
+        season = c.SeasonIndex;
+        terrain = prepared ?? Prepare(c);
         world = new World(gd, terrain, treeScale: 0.72f);
+        life = new MapLife(terrain, terrain.Seed) { Chimneys = world.Chimneys };
         atlasIds = null;
         world.SetFog(260, 700);
         bearers.Clear();
@@ -98,6 +112,7 @@ sealed partial class MapScreen
         pkb = kb; pms = ms;
         kb = Keyboard.GetState(); ms = Mouse.GetState();
         time += dt;
+        UpdateLife(dt);
         if (ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released) pendingClick = true;
         if (Pressed(Keys.Enter)) Tips.Dismiss();
         Tips.Show("welcome", $"Welcome, captain. Click the map to march; click a town or village to enter it.\nBrigands are close by: click their banner to ride at them, or let them come to you.\n{Pan()} pans, the wheel zooms, {ctl.First(Act.Pause)} pauses. {ctl.First(Act.PartyScreen)} opens your company. {ctl.First(Act.Help)} lists the keys.");
@@ -384,7 +399,9 @@ sealed partial class MapScreen
     public void Draw(Quality quality)
     {
         // Day and night on the map follow the campaign clock (kept readable at night); autumn and winter skies are greyer.
-        Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0), nightFloor: 0.7f);
+        // Winter tells the shaders it snows: fields, hedges, tree tops and roofs whiten and the water freezes (WL3).
+        Looks.Grounded = true;
+        Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0, Snow: C.SeasonIndex == 3), nightFloor: 0.7f);
         var look = new Vector3(MathF.Cos(yaw) * MathF.Cos(pitch), -MathF.Sin(pitch), MathF.Sin(yaw) * MathF.Cos(pitch));
         var f3 = new Vector3(focus.X, terrain.Height(focus), focus.Y);
         eye = f3 - look * zoom;
@@ -401,6 +418,9 @@ sealed partial class MapScreen
         spriteFx.FogEnd = fogEnd;
 
         bool shaded = shading != null && quality != Quality.Low;
+        lifeQuality = quality;
+        if (shaded && life != null) (world.Extra, world.ExtraTris) = life.Build();
+        else world.ExtraTris = 0;
         if (shaded)
         {
             var sh = shading!;
@@ -493,6 +513,17 @@ sealed partial class MapScreen
         foreach (int id in bearers.Keys.Where(id => C.PartyById(id) == null).ToList()) bearers.Remove(id);
     }
 
+    /// The map's birds and beasts move on (they flee the parties near them; crows find the dead).
+    void UpdateLife(float dt)
+    {
+        if (life == null || C == null) return;
+        partySpots.Clear();
+        foreach (var p in C.S.Parties) if (!p.Down) partySpots.Add(p.Pos);
+        var carrion = C.S.Graves.Select(g => g.Pos).Concat(C.Map.Sites.Where(s => s.Kind == "battlefield").Select(s => s.Pos));
+        life.SetCaravans(C.S.Parties.Where(p => p.Kind == PartyKind.Caravan && !p.Down).Select(p => (p.Id, p.Pos, p.Facing, p.Breed == "pilgrims")));
+        life.Update(dt, focus, zoom, partySpots, carrion, (float)(C.S.Hours % 24), lifeQuality);
+    }
+
     void BuildSprites(Matrix viewer)
     {
         sprites.N = 0;
@@ -563,6 +594,24 @@ sealed partial class MapScreen
                 tab = "CONTRACT"; panel = PanelKind.Settlement; break;
             case "map": panel = PanelKind.None; zoom = 330; pitch = 0.95f; break;
             case "close": panel = PanelKind.None; zoom = 60; pitch = 0.7f; break;
+            case "life": // a pasture and its beasts up close (WL4)
+                panel = PanelKind.None; follow = false; zoom = 46; pitch = 0.72f;
+                focus = terrain.Fields.Where(f => f.Kind == FieldKind.Pasture).OrderBy(f => Vector2.Distance(f.Center, C.Player.Pos)).Select(f => f.Center).DefaultIfEmpty(C.Player.Pos).First();
+                break;
+            case "farm": // the fields round a village (WL3)
+                panel = PanelKind.None; follow = false; zoom = 95; pitch = 0.85f;
+                focus = C.S.Settlements.Where(s => s.Kind == SettlementKind.Village).OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).First().Pos;
+                break;
+            case "village": // folk about a village, smoke from its chimneys (WL5); "night" is the same at lamplight
+            case "night":
+                panel = PanelKind.None; follow = false; zoom = 28; pitch = 0.6f;
+                focus = C.S.Settlements.Where(s => s.Kind == SettlementKind.Village).OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).First().Pos + new Vector2(0, 6);
+                break;
+            case "road": // traffic on the roads: a caravan's wagons if one is near, else the busiest road by the player (WL5)
+                panel = PanelKind.None; follow = false; zoom = 52; pitch = 0.66f;
+                focus = C.S.Parties.Where(p => p.Kind == PartyKind.Caravan && !p.Down && p.Breed != "pilgrims").OrderBy(p => Vector2.Distance(p.Pos, C.Player.Pos))
+                    .Select(p => p.Pos).DefaultIfEmpty(C.Player.Pos).First();
+                break;
             case "sites": panel = PanelKind.None; zoom = 120; pitch = 0.85f; focus = C.Player.Pos; follow = true; break;
             case "party": panel = PanelKind.Party; break;
             case "roll": rollOf = C.Player.Companies.OrderByDescending(k => k.Roll.Count).First(); panel = PanelKind.Roll; note = ""; break;

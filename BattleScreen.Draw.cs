@@ -42,6 +42,7 @@ partial class BattleScreen
             hud.Draw();
             if (TipsHeld) return;
             tipUi.Begin(gd.Viewport, ms.Position, false);
+            BeatCaption(tipUi);
             Tips.Draw(tipUi, tipUi.U(124));
             tipUi.End();
         }
@@ -77,6 +78,7 @@ partial class BattleScreen
         sh.Torch = TorchRow();
         sh.Cut = MathHelper.SmoothStep(0, 1, blend);
         SetGlows(sh);
+        FieldLifeMesh();
         world.DrawShaded(sh, view, proj, eye, realTime, shadows);
         sh.GroundMap = null; sh.NearDetail = false; sh.Cut = 0;
         DrawBlobs(shadows ? 0.4f : 1); // with real shadows the blobs only add contact darkening

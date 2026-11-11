@@ -3,6 +3,7 @@
 # Run from anywhere after adding, moving or renaming types or methods:  tools/codemap.sh
 # tools/codemap.sh --check exits 1 if the committed file is out of date.
 set -euo pipefail
+export LC_ALL=C   # sort -f must not depend on the caller's locale
 cd "$(dirname "$0")/.."
 out=docs/CODEMAP.md
 

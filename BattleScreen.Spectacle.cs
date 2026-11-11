@@ -36,9 +36,27 @@ partial class BattleScreen
         omenWant = omenNow = brightWant = brightNow = drainWant = drainNow = shimmerWant = shimmerNow = flash = 0;
     }
 
+    /// What the running beat is about, written in its lower bar so the slowed view is never unexplained.
+    string beatCaption = "";
+
     /// Ask for the battle's cinematic beat (rule 6). The field camera turns toward it a little; off with the Cinematics setting.
-    bool Beat(BeatKind kind, Vector2 at, float length = 2.6f) =>
-        Settings.Current.Cinematics && quality != Quality.Low && shotDir == null && beats.Ask(kind, at, realTime, length);
+    /// `caption` names the moment; it is shown in the bars while the beat runs.
+    bool Beat(BeatKind kind, Vector2 at, string caption, float length = 2.6f)
+    {
+        if (!Settings.Current.Cinematics || quality == Quality.Low || shotDir != null || !beats.Ask(kind, at, realTime, length)) return false;
+        beatCaption = caption;
+        Tips.Show("cinematic", "A great moment slowed the battle for a breath and framed it with bars.\nThe line in the lower bar names it. Turn these off with Cinematics in the settings.");
+        return true;
+    }
+
+    /// The running beat's caption in the lower bar, fading with the bars.
+    void BeatCaption(Ui ui)
+    {
+        float a = BeatAmount;
+        if (a <= 0.05f || beatCaption == "") return;
+        int bar = (int)(ui.H * a * 0.085f);
+        ui.TextC(beatCaption, ui.W / 2f, ui.H - bar / 2f - ui.U(7), Kit.Gilt * Ease.InOut(a), 2);
+    }
 
     /// How far into a beat the view is now (0..1).
     float BeatAmount => beats.Amount(realTime);

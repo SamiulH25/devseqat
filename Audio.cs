@@ -51,9 +51,12 @@ sealed class AudioEngine
 
     AudioStreamer? streamer;
     MusicTrack track = MusicTrack.None;
-    string requestedPiece = "", activeInterior = "", lastCulturePrefix = "azure";
+    string requestedPiece = "", activeInterior = "", wantInterior = "";
     string[] mapPool = { "azure_day", "azure_peace" };
-    float mapGap, duckAmount, duckHold, mapHoldSec;
+    float mapGap, duckAmount, duckHold, mapHoldSec, wantFor, urgeFor;
+    /// Map music pacing: a screen must stay open `Settle` s before its music starts; a host or dread must last `UrgeHold` s
+    /// to cut a piece, and not within `MinHold` s of the last change; between open-map pieces, `MapPause` to +4 s of quiet.
+    const float Settle = 0.9f, UrgeHold = 4f, MinHold = 20f, MapPause = 12f;
     int mapCursor;
 
     public AudioEngine()
@@ -234,23 +237,40 @@ sealed class AudioEngine
         StartPiece(id);
     }
 
-    /// Contextual overworld & settlement music director (AU4): switches immediately for interiors/panels, and rotates
-    /// cultural/seasonal/war/omen suites on the open map with natural breathing gaps and border hysteresis.
+    /// Contextual overworld & settlement music director (AU4). Kept steady on purpose: a screen's music starts only once
+    /// that screen has stayed open for `Settle` seconds (flicking through a town's tabs does not restart the music), an
+    /// open-map piece always plays to its end before the next (after a fixed pause), and only a hostile host or dread that
+    /// has lasted `UrgeHold` seconds may cut one short, never sooner than `MinHold` seconds after the last change. The
+    /// victory or defeat piece from a battle plays out before the map music comes back.
     public void UpdateMapMusic(string? interiorPiece, string culture, bool night, bool winter, bool hostNear, float dread, float dt)
     {
         if (!Enabled) return;
-        if (!string.IsNullOrEmpty(interiorPiece))
+        mapHoldSec += dt;
+        string want = interiorPiece ?? "";
+        if (want != wantInterior) { wantInterior = want; wantFor = 0; }
+        wantFor += dt;
+        if (track is MusicTrack.Victory or MusicTrack.Defeat && want == "" && streamer is { CurrentFinished: false })
         {
-            if (activeInterior != interiorPiece || track != MusicTrack.Map)
+            // Back from a battle: the outcome piece finishes, then AdvancePlaylist brings in the map after its pause.
+            track = MusicTrack.Map;
+            activeInterior = "";
+            mapGap = 0;
+            mapHoldSec = 0;
+        }
+        if (want != "")
+        {
+            if (activeInterior != want && (wantFor >= Settle || track != MusicTrack.Map))
             {
-                activeInterior = interiorPiece;
+                activeInterior = want;
                 track = MusicTrack.Map;
-                requestedPiece = interiorPiece;
+                requestedPiece = want;
                 mapGap = 0;
-                StartPiece(interiorPiece);
+                mapHoldSec = 0;
+                StartPiece(want);
             }
             return;
         }
+        if (activeInterior != "" && wantFor < Settle) return; // a town screen closed for a moment keeps its music
 
         string prefix = culture switch
         {
@@ -263,14 +283,13 @@ sealed class AudioEngine
             : night ? new[] { $"{prefix}_night", $"{prefix}_peace" }
             : new[] { $"{prefix}_day", $"{prefix}_peace" };
 
-        mapHoldSec += dt;
         bool fromInterior = activeInterior != "";
         activeInterior = "";
-        bool urgentShift = (dread >= 0.55f || hostNear) && !mapPool.Contains(requestedPiece);
-        bool realmChanged = prefix != lastCulturePrefix && mapHoldSec > 22f && !mapPool.Contains(requestedPiece);
-        lastCulturePrefix = prefix;
+        bool urge = (dread >= 0.55f || hostNear) && !mapPool.Contains(requestedPiece);
+        urgeFor = urge ? urgeFor + dt : 0;
+        bool urgentShift = urgeFor >= UrgeHold && mapHoldSec >= MinHold;
 
-        if (track != MusicTrack.Map || fromInterior || urgentShift || realmChanged)
+        if (track != MusicTrack.Map || fromInterior || urgentShift)
         {
             track = MusicTrack.Map;
             mapHoldSec = 0;
@@ -392,7 +411,7 @@ sealed class AudioEngine
     void AdvancePlaylist(float dt)
     {
         if (track != MusicTrack.Map || activeInterior != "" || streamer == null || !streamer.CurrentFinished) return;
-        if (mapGap <= 0) mapGap = 6 + pick.NextSingle() * 8;
+        if (mapGap <= 0) mapGap = MapPause + pick.NextSingle() * 4;
         if ((mapGap -= dt) > 0.01f) return;
         mapGap = 0;
         mapHoldSec = 0;

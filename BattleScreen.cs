@@ -268,6 +268,7 @@ sealed partial class BattleScreen
 
     void SetWorld()
     {
+        Looks.Grounded = false;
         Sky.Set(battle.Weather, nightFloor: 0.42f); // moonlight: dark, but you can still see who is who
         ResetMagicFx();
         ResetSpectacle();
@@ -275,6 +276,7 @@ sealed partial class BattleScreen
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
         world?.Dispose();
         world = new World(GraphicsDevice, battle.Terrain);
+        NewFieldLife();
     }
 
     void SetCommand(bool on)
@@ -358,6 +360,7 @@ sealed partial class BattleScreen
             && battle.Alerts.Skip(alertsSeen).Any(a => a.Kind is "breaking" or "horse" or "leaderless")) { paused = true; scale = 0; battle.Log("Paused: see the alert."); }
         alertsSeen = battle.Alerts.Count;
         if (scale > 0) { battle.Advance(dt * scale); PlaySounds(); Effects(dt * scale); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
+        FieldLife(dt * scale);
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;

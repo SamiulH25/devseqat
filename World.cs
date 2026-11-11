@@ -59,7 +59,7 @@ sealed partial class World : IDisposable
         (terrainVb, terrainIb, terrainTris) = BuildTerrain();
         (foliageVb, _) = BuildFoliage();
         (skyVb, skyTris) = BuildSky();
-        detail = BuildDetail();
+        detail = t.Grass ? BuildDetail() : BuildMaterials(); // the campaign map (no grass) gets its ground materials
         Minimap = BuildMinimap();
         GroundMap = BuildGroundMap();
 
@@ -173,7 +173,14 @@ sealed partial class World : IDisposable
         fx.CurrentTechnique = fx.Techniques[foliage];
         fx.CurrentTechnique.Passes[0].Apply();
         DrawFoliage(view);
+        for (int s = 0; s < ExtraTris; s += Chunk) // in chunks like the terrain: one long call is cut short
+            gd.DrawUserPrimitives(PrimitiveType.TriangleList, Extra, s * 3, Math.Min(Chunk, ExtraTris - s));
     }
+
+    /// Moving things lit like the foliage (the map's birds and beasts, MapLife.cs): rebuilt by their owner each frame,
+    /// drawn in the shaded passes only (Low quality has none).
+    public VertexPNCT[] Extra = Array.Empty<VertexPNCT>();
+    public int ExtraTris;
 
     public void Dispose()
     {
@@ -199,7 +206,8 @@ sealed partial class World : IDisposable
         c = Vector3.Lerp(c, new Vector3(0.58f, 0.6f, 0.34f), Smooth(4, 12, t.Height(p)) * 0.6f);           // dry hilltops
         c = Vector3.Lerp(c, new Vector3(0.48f, 0.42f, 0.32f), Smooth(0.35f, 0.7f, t.Gradient(p).Length())); // bare slopes
         float rd = t.RoadDist(p);
-        c = Vector3.Lerp(c, new Vector3(0.56f, 0.47f, 0.34f), 1 - Smooth(1.8f, 3.4f + n2 * 0.6f, rd));      // road
+        if (t.RoadLines.Count > 0) c = Vector3.Lerp(c, new Vector3(0.5f, 0.47f, 0.33f), 0.45f * (1 - Smooth(2.6f, 6f + n2, rd))); // worn verges (the road itself is a ribbon)
+        else c = Vector3.Lerp(c, new Vector3(0.56f, 0.47f, 0.34f), 1 - Smooth(1.8f, 3.4f + n2 * 0.6f, rd));   // road
         c = t.GroundAt(p) switch // the ground layer (TerrainGround.cs): you can see where a wood or a bog starts
         {
             GroundKind.Mud => Vector3.Lerp(c, new Vector3(0.34f, 0.29f, 0.2f), 0.7f + 0.1f * n),
@@ -229,7 +237,9 @@ sealed partial class World : IDisposable
                 float hl = t.GridHeight(Math.Max(0, x - 1), z), hr = t.GridHeight(Math.Min(n - 1, x + 1), z);
                 float hd = t.GridHeight(x, Math.Max(0, z - 1)), hu = t.GridHeight(x, Math.Min(n - 1, z + 1));
                 var normal = Vector3.Normalize(new Vector3(hl - hr, 2 * t.Step, hd - hu));
-                v[z * n + x] = new VertexPNCT(new Vector3(p.X, t.GridHeight(x, z), p.Y), normal, new Color(GroundColor(p)), p / 4);
+                var col = new Color(GroundColor(p));
+                if (!t.Grass) col.A = (byte)(255 * (1 - Cavity(x, z))); // the map's shade in hollows (World.Materials.cs)
+                v[z * n + x] = new VertexPNCT(new Vector3(p.X, t.GridHeight(x, z), p.Y), normal, col, p / 4);
             }
         // A big map needs 32-bit indices (the campaign map has far more than 65536 vertices).
         bool wide = v.Length > ushort.MaxValue;
@@ -329,6 +339,7 @@ sealed partial class World : IDisposable
     {
         var m = new Mesh();
         tiles.Clear();
+        Chimneys.Clear();
         // Foliage is built tile by tile (roadmap E4) so each frame draws only the tiles in view.
         const float TileSize = 48;
         foreach (var tile in t.Foliage.GroupBy(f => ((int)MathF.Floor(f.Pos.X / TileSize), (int)MathF.Floor(f.Pos.Y / TileSize))))
@@ -340,11 +351,14 @@ sealed partial class World : IDisposable
             for (int i = start; i < m.V.Count; i++) { min = Vector3.Min(min, m.V[i].Position); max = Vector3.Max(max, m.V[i].Position); }
             tiles.Add((start, (m.V.Count - start) / 3, new BoundingBox(min - new Vector3(1.5f), max + new Vector3(1.5f)))); // room for wind sway
         }
+        Fields(m); // tiled too (World.Land.cs)
+        Roads(m); // tiled like the foliage, so only the roads in view are drawn (World.Water.cs)
         alwaysStart = m.V.Count;
         Water(m);
         Features(m);
         if (t.Wall != null) Torches(m, t);
         if (!t.Grass) Skirt(m);
+        else if (t.Wall == null) Outskirts(m); // a farmstead out past the fighting (World.Land.cs, WL6)
         Grass(m);
         if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
         alwaysTris = (m.V.Count - alwaysStart) / 3;
@@ -361,6 +375,7 @@ sealed partial class World : IDisposable
                 case FoliageKind.Broadleaf: Broadleaf(m, b, f.Scale * treeScale, rng); break;
                 case FoliageKind.Pine: Pine(m, b, f.Scale * treeScale, rng); break;
                 case FoliageKind.Bush: Bush(m, b, f.Scale * treeScale, rng); break;
+                case FoliageKind.Birch: Birch(m, b, f.Scale * treeScale, rng); break;
                 case FoliageKind.Village: Village(m, b, f.Scale, rng); break;
                 case FoliageKind.Town: Town(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
@@ -460,20 +475,54 @@ sealed partial class World : IDisposable
         m.Tag = Vector2.Zero;
         m.Box(c, w, d, h, yaw, wall);
         m.Gable(c + Vector3.Up * h, w * 1.1f, d * 1.15f, h * 0.7f, yaw, roof);
+        Windows(m, c, w, d, h, yaw);
     }
 
-    static void Village(Mesh m, Vector3 b, float s, Random r)
+    /// Small windows on a house's long walls, tagged so the shader shows them dark by day and lamplit at night (WL5).
+    static void Windows(Mesh m, Vector3 c, float w, float d, float h, float yaw)
     {
-        int n = 4 + r.Next(3);
+        var ax = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
+        var az = new Vector3(-MathF.Sin(yaw), 0, MathF.Cos(yaw));
+        float ww = MathF.Min(w * 0.16f, h * 0.38f), wh = h * 0.34f, y = c.Y + h * 0.36f;
+        var glass = new Color(46, 40, 34);
+        foreach (float side in new[] { -1f, 1f })
+            foreach (float along in new[] { -0.26f, 0.26f })
+            {
+                var n = az * side;
+                var mid = new Vector3(c.X, y, c.Z) + ax * along * w + n * (d / 2 + 0.03f);
+                Vector3 a = mid - ax * ww / 2, b = mid + ax * ww / 2, up = Vector3.Up * wh;
+                var tag = new Vector2(0, -3);
+                m.Raw(a, n, glass, tag); m.Raw(b, n, glass, tag); m.Raw(b + up, n, glass, tag);
+                m.Raw(a, n, glass, tag); m.Raw(b + up, n, glass, tag); m.Raw(a + up, n, glass, tag);
+            }
+    }
+
+    /// Where smoke rises from the map's chimneys (drawn by `MapLife`, WL5).
+    public readonly List<Vector3> Chimneys = new();
+
+    /// A chimney stack at the end of a cottage's ridge.
+    void Chimney(Mesh m, Vector3 c, float w, float h, float yaw)
+    {
+        var at = c + new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw)) * w * 0.32f + Vector3.Up * h * 1.1f;
+        m.Tag = Vector2.Zero;
+        m.Box(at, w * 0.12f, w * 0.12f, h * 0.75f, yaw, Stone);
+        Chimneys.Add(at + Vector3.Up * h * 0.75f);
+    }
+
+    void Village(Mesh m, Vector3 b, float s, Random r)
+    {
+        // Cottages round a green, big enough to hold their own beside the fields and the beasts (WL3).
+        int n = 5 + r.Next(3);
         for (int i = 0; i < n; i++)
         {
-            float a = r.NextSingle() * MathF.Tau, d = (0.8f + r.NextSingle() * 1.6f) * s;
-            House(m, b + new Vector3(MathF.Cos(a) * d, -0.1f, MathF.Sin(a) * d), 0.9f * s, 0.6f * s, 0.5f * s, r.NextSingle() * MathF.Tau,
-                Jitter(Wattle, r, 0.08f), Jitter(Thatch, r, 0.1f));
+            float a = (i + r.NextSingle() * 0.6f) * MathF.Tau / n, d = (1.3f + r.NextSingle() * 1.4f) * s, yaw = a + MathF.PI / 2 + (r.NextSingle() - 0.5f) * 0.6f;
+            var at = b + new Vector3(MathF.Cos(a) * d, -0.1f, MathF.Sin(a) * d);
+            House(m, at, 1.35f * s, 0.9f * s, 0.75f * s, yaw, Jitter(Wattle, r, 0.08f), Jitter(Thatch, r, 0.1f));
+            if (i % 2 == 0) Chimney(m, at, 1.35f * s, 0.75f * s, yaw);
         }
     }
 
-    static void Town(Mesh m, Vector3 b, float s, Random r)
+    void Town(Mesh m, Vector3 b, float s, Random r)
     {
         m.Tag = Vector2.Zero;
         float rad = 3.6f * s, wallH = 1.0f * s;
@@ -493,8 +542,10 @@ sealed partial class World : IDisposable
         for (int i = 0; i < 12; i++)
         {
             float a = r.NextSingle() * MathF.Tau, d = (0.9f + r.NextSingle() * 2.0f) * s;
-            House(m, b + new Vector3(MathF.Cos(a) * d, -0.1f, MathF.Sin(a) * d), 0.8f * s, 0.6f * s, (0.6f + r.NextSingle() * 0.4f) * s, r.NextSingle() * MathF.Tau,
-                Jitter(Wattle, r, 0.06f), Jitter(Tile, r, 0.12f));
+            float hh = (0.6f + r.NextSingle() * 0.4f) * s, yaw = r.NextSingle() * MathF.Tau;
+            var at = b + new Vector3(MathF.Cos(a) * d, -0.1f, MathF.Sin(a) * d);
+            House(m, at, 0.8f * s, 0.6f * s, hh, yaw, Jitter(Wattle, r, 0.06f), Jitter(Tile, r, 0.12f));
+            if (i % 4 == 0) Chimney(m, at, 0.8f * s, hh, yaw);
         }
         // Church or hall in the middle.
         House(m, b, 1.4f * s, 0.8f * s, 1.1f * s, 0.3f, Stone, Slate);
@@ -581,29 +632,6 @@ sealed partial class World : IDisposable
                 }
                 break;
         }
-    }
-
-    // ---------- water ----------
-
-    static readonly Color WaterDeep = new(52, 88, 112), WaterShallow = new(86, 124, 132);
-
-    /// Each river as a flat ribbon a little below its lower bank; shallower and paler over the fords.
-    void Water(Mesh m)
-    {
-        m.Tag = Vector2.Zero;
-        foreach (var r in t.Rivers)
-            for (int i = 0; i + 1 < r.Path.Length; i++)
-            {
-                Vector2 a = r.Path[i], b = r.Path[i + 1], d = Vector2.Normalize(b - a), n = new(-d.Y, d.X);
-                float half = r.Width / 2 + 1.2f, bank = r.Width / 2 + 3.5f;
-                float Level(Vector2 p) => MathF.Min(t.Height(p + n * bank), t.Height(p - n * bank)) - 0.3f;
-                float la = Level(a), lb = Level(b);
-                Color ca = r.AtFord(a) ? WaterShallow : WaterDeep, cb = r.AtFord(b) ? WaterShallow : WaterDeep;
-                Vector3 V(Vector2 p, float y) => new(p.X, y, p.Y);
-                var up = new Vector3((a.X + b.X) / 2, -1000, (a.Y + b.Y) / 2);
-                m.Tri(V(a - n * half, la), V(a + n * half, la), V(b + n * half, lb), ca, up);
-                m.Tri(V(a - n * half, la), V(b + n * half, lb), V(b - n * half, lb), cb, up);
-            }
     }
 
     // ---------- a besieged town (Terrain.SiegeWall) ----------
@@ -779,18 +807,19 @@ sealed partial class World : IDisposable
         }
     }
 
-    /// Beyond the campaign map's edge: rings of rock and snow peaks running out to the haze, so the world does not end in
-    /// the sky's colour when you look over the mountain rim. The inner ring meets the terrain's own edge.
+    /// Beyond the campaign map's edge: the country goes on, rolling then rising into a far range of rock and snow that fades
+    /// into the haze, so the world does not end in the sky's colour. The inner ring meets the terrain's own edge.
     void Skirt(Mesh m)
     {
-        const int Rings = 7, Around = 48;
+        // The land runs on past the map's edge: low rolling country first, rising slowly into a far range that fades into
+        // the haze, smooth-shaded so it reads as land going on rather than a wall (the grounded look, WL4b).
+        const int Rings = 12, Around = 64;
         float half = t.Half - 0.5f;
-        var r = new Random(t.Seed + 21);
-        var pts = new Vector3[Rings + 1, Around * 4];
         int n = Around * 4;
+        var pts = new Vector3[Rings + 1, n];
+        var dist = new float[Rings + 1];
         for (int i = 0; i < n; i++)
         {
-            // Walk the square edge: four sides of `Around` steps each.
             int side = i / Around;
             float u = (i % Around) / (float)Around * 2 - 1;
             var edge = side switch { 0 => new Vector2(u, -1), 1 => new Vector2(1, u), 2 => new Vector2(-u, 1), _ => new Vector2(-1, -u) } * half;
@@ -799,29 +828,53 @@ sealed partial class World : IDisposable
             pts[0, i] = new Vector3(edge.X, h0, edge.Y);
             for (int k = 1; k <= Rings; k++)
             {
-                var p = edge + outward * (k * k * 22 + k * 30);
-                float peak = Terrain.Noise(p.X * 0.012f, p.Y * 0.012f, t.Seed + 22) * 55 + Terrain.Noise(p.X * 0.04f, p.Y * 0.04f, t.Seed + 23) * 18;
-                pts[k, i] = new Vector3(p.X, h0 + 12 * k + peak * MathF.Min(1, k / 2f), p.Y);
+                float d = k * k * 9 + k * 25;
+                dist[k] = d;
+                var p = edge + outward * d;
+                float s = MathHelper.SmoothStep(0, 1, Math.Clamp((d - 60) / 900, 0, 1));
+                float roll = (Terrain.Noise(p.X * 0.03f, p.Y * 0.03f, t.Seed + 24) - 0.5f) * 6 * MathF.Min(1, d / 120);
+                float peak = Terrain.Noise(p.X * 0.008f, p.Y * 0.008f, t.Seed + 22) * 110 + Terrain.Noise(p.X * 0.03f, p.Y * 0.03f, t.Seed + 23) * 28;
+                pts[k, i] = new Vector3(p.X, MathHelper.Lerp(h0, h0 * 0.75f, MathF.Min(1, d / 200)) + roll + 0.03f * d + peak * s, p.Y);
             }
         }
-        var rock = new Color(118, 114, 108);
+        Vector3 Normal(int k, int i)
+        {
+            int kk = Math.Min(k + 1, Rings), kp = Math.Max(k - 1, 0);
+            var across = pts[k, (i + 1) % n] - pts[k, (i + n - 1) % n];
+            var outv = pts[kk, i] - pts[kp, i];
+            var nn = Vector3.Normalize(Vector3.Cross(outv, across));
+            return nn.Y < 0 ? -nn : nn;
+        }
+        var haze = new Color(150, 162, 180);
+        Color Col(int k, int i, Vector3 nn)
+        {
+            var q = pts[k, i];
+            float rise = q.Y - pts[0, i].Y;
+            var near = new Color(GroundColor(new Vector2(pts[0, i].X, pts[0, i].Z)));
+            var hill = Color.Lerp(near, new Color(92, 104, 66), Math.Clamp(dist[k] / 300, 0, 1));
+            var c = Color.Lerp(hill, new Color(112, 108, 100), Math.Clamp((1 - nn.Y) * 3 - 0.4f + rise / 160, 0, 1)); // rock on steep, high ground
+            if (q.Y > 95 + Terrain.Noise(q.X * 0.02f, q.Z * 0.02f, t.Seed + 25) * 25) c = new Color(228, 232, 238);
+            return Color.Lerp(c, haze, MathF.Min(0.82f, dist[k] / 1500));
+        }
+        m.Tag = Vector2.Zero;
         for (int k = 0; k < Rings; k++)
             for (int i = 0; i < n; i++)
             {
                 int j = (i + 1) % n;
-                Vector3 a = pts[k, i], b = pts[k, j], c = pts[k + 1, j], d = pts[k + 1, i];
-                var below = (a + b + c + d) / 4 - Vector3.Up * 50;
-                Color Col(Vector3 q) => q.Y > 62 ? Jitter(new Color(226, 230, 236), r, 0.04f) : Jitter(rock, r, 0.08f);
-                m.Tri(a, b, c, Col((a + b + c) / 3), below);
-                m.Tri(a, c, d, Col((a + c + d) / 3), below);
+                void V(int kk, int ii) { var nn = Normal(kk, ii); m.Raw(pts[kk, ii], nn, Col(kk, ii, nn), Vector2.Zero); }
+                V(k, i); V(k, j); V(k + 1, j);
+                V(k, i); V(k + 1, j); V(k + 1, i);
             }
     }
 
     /// Flat-shaded triangle soup with a few low-poly primitives.
-    sealed class Mesh
+    internal sealed class Mesh
     {
         public readonly List<VertexPNCT> V = new();
         public Vector2 Tag; // goes in the UV of foliage: (wind sway, leafiness) for the world shader
+
+        /// One vertex with its own normal and UV (ribbons: roads, and water whose UV tells the shader where it flows).
+        public void Raw(Vector3 p, Vector3 n, Color c, Vector2 uv) => V.Add(new(p, n, c, uv));
         static readonly (Vector3[] P, int[] F) Sphere = Icosphere();
 
         /// A triangle with its own face normal, flipped to point away from `center` (so closed shapes light from outside).
@@ -887,6 +940,16 @@ sealed partial class World : IDisposable
             var (pts, faces) = Sphere;
             var p = new Vector3[pts.Length];
             for (int i = 0; i < pts.Length; i++) p[i] = c + pts[i] * size * (1 + (rng.NextSingle() * 2 - 1) * lump);
+            if (Tag.Y >= 0.5f) // leaves: normals from the crown's centre, so a canopy shades round and soft, not faceted
+            {
+                var inv = new Vector3(1 / (size.X * size.X), 1 / (size.Y * size.Y), 1 / (size.Z * size.Z));
+                for (int f = 0; f < faces.Length; f += 3)
+                {
+                    var fc = Jitter(col, rng, 0.04f);
+                    for (int k = 0; k < 3; k++) { var q = p[faces[f + k]]; V.Add(new(q, Vector3.Normalize((q - c) * inv), fc, Tag)); }
+                }
+                return;
+            }
             for (int f = 0; f < faces.Length; f += 3)
                 Tri(p[faces[f]], p[faces[f + 1]], p[faces[f + 2]], Jitter(col, rng, 0.07f), c);
         }

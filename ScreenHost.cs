@@ -16,10 +16,10 @@ sealed class ScreenHost : Game
     GpuReport? gpuReport;
     public Quality Quality = Enum.TryParse<Quality>(Settings.Current.Quality, out var q0) ? q0 : Quality.High;
     public AudioEngine? Audio;
-    public readonly SettingsScreen SettingsPanel;
+    public SettingsScreen SettingsPanel = null!;
     readonly GraphicsDeviceManager gdm;
 
-    enum Mode { Title, Map, Battle, Lab }
+    enum Mode { Title, Map, Battle, Lab, Loading }
     Mode mode = Mode.Title;
     // The screen last drawn and when it changed: each new screen rises out of black (docs/archive/VISUALS.md V6).
     Mode shown = Mode.Title;
@@ -51,7 +51,6 @@ sealed class ScreenHost : Game
         Window.AllowUserResizing = true;
         Window.Title = "Ironfield";
         Window.TextInput += (_, e) => { if (Ui.Typed.Count < 32) Ui.Typed.Enqueue(e.Character); };
-        SettingsPanel = new SettingsScreen(this);
     }
 
     /// Apply resolution and fullscreen from the settings.
@@ -81,6 +80,7 @@ sealed class ScreenHost : Game
             Environment.Exit(0);
         }
         Font = new PixelFont(GraphicsDevice);
+        SettingsPanel = new SettingsScreen(this); // needs Sb and Font
         fadeUi = new Ui(Sb, Art, Font);
         if (Environment.GetEnvironmentVariable("IRONFIELD_QUALITY") is { Length: > 0 } q && Enum.TryParse<Quality>(q, true, out var qv)) Quality = qv;
         string? shaderError = null;
@@ -107,12 +107,84 @@ sealed class ScreenHost : Game
     // ---------- modes ----------
 
     /// A new campaign; `making` is the captain from the character creator (it also chose the road, so no road event).
+    /// The world is made on a worker thread behind the loading screen (it takes several seconds); shots runs make it at once.
     public void StartCampaign(int seed, int realm = 0, CaptainMaking? making = null)
     {
-        campaign = Campaign.New(seed, realm, making);
-        if (campaignShots == null && making == null) campaign.OfferRoad(); // the first choice: how the captain fights (P5)
-        map.Open(campaign);
+        Campaign Make()
+        {
+            loadStage = "SHAPING THE LAND AND ITS REALMS";
+            var c = Campaign.New(seed, realm, making);
+            if (campaignShots == null && making == null) c.OfferRoad(); // the first choice: how the captain fights (P5)
+            return c;
+        }
+        if (campaignShots != null)
+        {
+            campaign = Make();
+            if (Environment.GetEnvironmentVariable("IRONFIELD_MAP_HOUR") is { Length: > 0 } hour) campaign.S.Hours = double.Parse(hour, System.Globalization.CultureInfo.InvariantCulture); // shots at a chosen hour
+            map.Open(campaign); mode = Mode.Map; return;
+        }
+        Load("A NEW CAMPAIGN", Make);
+    }
+
+    // ---------- loading ----------
+
+    Task<(Campaign C, Terrain T)>? loading;
+    volatile string loadStage = "";
+    string loadTitle = "";
+    float loadSince;
+
+    /// Make a campaign and its map terrain off the main thread while the loading screen shows; `Update` opens it when done.
+    void Load(string what, Func<Campaign> make)
+    {
+        loadTitle = what;
+        loadStage = "";
+        loadSince = Ui.Now;
+        mode = Mode.Loading;
+        loading = Task.Run(() =>
+        {
+            var c = make();
+            loadStage = "RAISING THE HILLS AND RIVERS";
+            return (c, MapScreen.Prepare(c));
+        });
+    }
+
+    /// The loading task finished: open the map, or go back to the title with the reason it failed.
+    void FinishLoading()
+    {
+        var task = loading!;
+        loading = null;
+        if (task.IsFaulted)
+        {
+            var e = task.Exception!.GetBaseException();
+            Console.WriteLine("campaign failed to load: " + e);
+            TitleNote = ("the campaign could not be made: " + e.Message).ToUpperInvariant();
+            mode = Mode.Title;
+            return;
+        }
+        campaign = task.Result.C;
+        map.Open(campaign, task.Result.T);
         mode = Mode.Map;
+    }
+
+    /// The loading screen: the game's name, what is being made, a gilt bar that sweeps while it works.
+    void DrawLoading()
+    {
+        GraphicsDevice.Clear(new Color(14, 12, 10));
+        var ui = fadeUi;
+        ui.Begin(GraphicsDevice.Viewport, Point.Zero, false);
+        float t = Ui.Now - loadSince;
+        int cx = ui.W / 2, y = ui.H / 2 - ui.U(40);
+        ui.TextC("IRONFIELD", cx, y, Kit.Gilt, 4);
+        ui.TextC(loadTitle, cx, y + ui.U(42), Kit.Parchment, 2);
+        int w = ui.U(260), h = Math.Max(2, ui.U(3)), by = y + ui.U(70);
+        ui.Rect(new Rectangle(cx - w / 2, by, w, h), Kit.Gilt * 0.18f);
+        float sweep = (t * 0.55f) % 1f, seg = 0.28f;
+        int x0 = (int)(cx - w / 2 + w * Math.Clamp(sweep * (1 + seg) - seg, 0, 1)), x1 = (int)(cx - w / 2 + w * Math.Clamp(sweep * (1 + seg), 0, 1));
+        ui.Rect(new Rectangle(x0, by, Math.Max(0, x1 - x0), h), Kit.Gilt);
+        string stage = loadStage;
+        int dots = (int)(t * 2.5f) % 4;
+        if (stage != "") ui.TextC(stage + new string('.', dots) + new string(' ', 3 - dots), cx, by + ui.U(14), Kit.Parchment * 0.7f, 1);
+        ui.End();
     }
 
     /// A message for the title screen (why a save would not load).
@@ -127,9 +199,7 @@ sealed class ScreenHost : Game
         if (latest == null) return;
         if (CampaignState.Load(latest) is not CampaignState s) { TitleNote = (CampaignState.LoadError ?? "the save could not be read").ToUpperInvariant(); return; }
         TitleNote = "";
-        campaign = new Campaign(s);
-        map.Open(campaign);
-        mode = Mode.Map;
+        Load("THE CAMPAIGN GOES ON", () => { loadStage = "READING THE CHRONICLE"; return new Campaign(s); });
     }
 
     /// The UI lab: a gallery of interface concepts (F3 on the title screen).
@@ -198,6 +268,11 @@ sealed class ScreenHost : Game
                 break;
             case Mode.Lab: IsMouseVisible = true; lab.Update(dt); Audio?.Music(MusicTrack.Title); break;
             case Mode.Map: IsMouseVisible = true; map.Update(dt, IsActive); map.Soundscape(Audio, dt); break;
+            case Mode.Loading:
+                IsMouseVisible = true;
+                Audio?.Beds(0.4f, 0, 0);
+                if (loading is { IsCompleted: true }) FinishLoading();
+                break;
             default: battle.Update(dt); break;
         }
         if (campaignShots != null) { shotFrames++; CampaignShots(); }
@@ -214,6 +289,7 @@ sealed class ScreenHost : Game
         {
             case Mode.Title: title.Draw(); break;
             case Mode.Lab: lab.Draw(); break;
+            case Mode.Loading: DrawLoading(); break;
             case Mode.Map:
                 try { map.Draw(Quality); }
                 catch (Exception e) when (Quality != Quality.Low)
@@ -291,11 +367,23 @@ sealed class ScreenHost : Game
         title.PendingShot = null;
     }
 
+    int lifeShots;
+    double dayHours;
+
     void CampaignShots()
     {
         var c = campaign!;
         if (shotFrames < 20 || pendingShot != null) return;
         void Shot(string name) { pendingShot = name; shotFrames = 0; cStage++; }
+        if (cStage == 2 && lifeShots < 6) // the land and its life (docs/WORLD_LIFE.md WL3-WL5), in spring before the year turns
+        {
+            string[] stages = { "farm", "life", "village", "road", "night", "map" };
+            if (lifeShots == 4) { dayHours = c.S.Hours; c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 22.5; } // lamplight
+            if (lifeShots == 5) { c.S.Hours = dayHours; lifeShots++; return; }
+            map.Stage(stages[lifeShots]);
+            pendingShot = "campaign-" + stages[lifeShots]; shotFrames = 0; lifeShots++;
+            return;
+        }
         switch (cStage)
         {
             case 0: map.Stage("map"); Shot("campaign-map"); break;

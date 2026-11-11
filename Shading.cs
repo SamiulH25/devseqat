@@ -52,7 +52,7 @@ sealed class Shading : IDisposable
         {
             Uniform.Mat4("ViewProj"), Uniform.Mat4("LightViewProj"), Uniform.Vec3("CameraPos"), Uniform.Vec3("SunDir"), Uniform.Vec3("SunColor"),
             Uniform.Vec3("SkyColor"), Uniform.Vec3("GroundColor"), Uniform.Vec3("FogColor"), Uniform.Vec4("FogParams"), Uniform.Vec4("ShadowParams"),
-            Uniform.Float("Time"), Uniform.Vec4("Wind"), Uniform.Vec2("SpriteLight"), Uniform.Vec4("Field"), Uniform.Vec4("Look"), Uniform.Vec4("Torch"), Uniform.Float("Cut"),
+            Uniform.Float("Time"), Uniform.Vec4("Wind"), Uniform.Vec2("SpriteLight"), Uniform.Vec4("Field"), Uniform.Vec4("Look"), Uniform.Vec4("Torch"), Uniform.Float("Cut"), Uniform.Vec4("Palette"),
             Uniform.Vec4("Glow0"), Uniform.Vec4("Glow1"), Uniform.Vec4("Glow2"), Uniform.Vec4("Glow3"),
             Uniform.Vec4("GlowCol0"), Uniform.Vec4("GlowCol1"), Uniform.Vec4("GlowCol2"), Uniform.Vec4("GlowCol3"),
         };
@@ -147,6 +147,7 @@ sealed class Shading : IDisposable
         p["Torch"]?.SetValue(Torch);
         p["Cut"]?.SetValue(Cut);
         for (int i = 0; i < 4; i++) { p[GlowNames[i]]?.SetValue(Glow[i]); p[GlowNames[i + 4]]?.SetValue(GlowCol[i]); }
+        p["Palette"]?.SetValue(Looks.Palette);
         p["Look"]?.SetValue(new Vector4(Ironfield.Sky.Snow, NearDetail ? 1 : 0, Ironfield.Sky.Night, Ironfield.Sky.Rain));
         if (p["GroundMap"] is { } gm) gm.SetValue(GroundMap ?? Blank(gd));
     }
@@ -184,7 +185,8 @@ sealed class Shading : IDisposable
         gd.RasterizerState = RasterizerState.CullNone;
         Post.Parameters["Scene"].SetValue(s);
         Post.Parameters["Texel"].SetValue(new Vector2(1f / s.Width, 1f / s.Height));
-        Post.Parameters["Grade"].SetValue(new Vector4(0.96f, 1.05f, 0.26f, fxaa ? 1 : 0)); // saturation, contrast, vignette, FXAA
+        var g = Looks.Grade;
+        Post.Parameters["Grade"].SetValue(new Vector4(g.X, g.Y, g.Z, fxaa ? 1 : 0)); // saturation, contrast, vignette, FXAA (Looks)
         Post.Parameters["Tint"].SetValue(new Vector4(tint ?? Vector3.One, bloom));
         Post.Parameters["Awe"].SetValue(awe);
         Post.Parameters["Moment"].SetValue(moment);

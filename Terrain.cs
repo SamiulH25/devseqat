@@ -4,7 +4,8 @@ namespace Ironfield;
 
 public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wall, Tower, Gate, Ladder, House, Wagon,
     // Sites on the campaign map (docs/archive/SIDE_CONTENT.md S2).
-    Ruin, Shrine, Stones, Field, Mine, Hut, Watch, Spring, Mill }
+    Ruin, Shrine, Stones, Field, Mine, Hut, Watch, Spring, Mill,
+    Birch } // a slim pale-barked tree (campaign map, WL3)
 
 /// A river (roadmap C5): a centre line, its width, and the fords where it runs shallow.
 public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float Depth = 1.3f)
@@ -54,6 +55,58 @@ public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float D
         Vector2 At(float x) => new(x, z0 + MathF.Sin(x * 0.02f + phase) * amp);
         return new River(path, 9, new[] { At(f1), At(f2) });
     }
+}
+
+/// Still water on the campaign map (docs/WORLD_LIFE.md WL2, layout 4): a lake or a village pond. Its shore wanders with
+/// noise round `Radius`; the ground is cut into a basin `Depth` deep inside it.
+public sealed record Lake(Vector2 Center, float Radius, int Seed, float Depth = 1.6f)
+{
+    /// The shore's distance from the centre toward angle `a` (radians).
+    public float Edge(float a) => Radius * (0.82f + 0.36f * Terrain.Noise(MathF.Cos(a) * 1.7f + 5, MathF.Sin(a) * 1.7f + 5, Seed));
+
+    /// Inside the shore (grown by `pad`).
+    public bool Inside(Vector2 p, float pad = 0)
+    {
+        var d = p - Center;
+        float r2 = d.LengthSquared(), reach = Radius * 1.18f + pad;
+        if (r2 > reach * reach) return false;
+        return MathF.Sqrt(r2) < Edge(MathF.Atan2(d.Y, d.X)) + pad;
+    }
+
+    /// How far the ground is lowered at p: the full depth well inside, easing to nothing 3 m past the shore.
+    public float Carve(Vector2 p)
+    {
+        var d = p - Center;
+        float r2 = d.LengthSquared(), reach = Radius * 1.18f + 3;
+        if (r2 > reach * reach) return 0;
+        float r = MathF.Sqrt(r2), e = Edge(MathF.Atan2(d.Y, d.X));
+        float t = Math.Clamp((e + 3 - r) / (3 + e * 0.35f), 0, 1);
+        return Depth * t * t * (3 - 2 * t);
+    }
+}
+
+/// A road on the campaign map, as drawn (docs/WORLD_LIFE.md WL1): its line and half-width (wider between towns than out to a village).
+public readonly record struct RoadLine(Vector2[] Points, float Half, bool Village);
+
+/// A bridge on the campaign map where a road crosses a river: where, the way the road runs, how far it spans, and whether
+/// it is built of stone (between towns) or planks (to a village). Drawing only: the map's crossing is a shallow ford in its heights.
+public readonly record struct MapBridge(Vector2 At, Vector2 Along, float Reach, bool Stone);
+
+/// What a field round a village or town holds (docs/WORLD_LIFE.md WL3). Drawing only.
+public enum FieldKind { Grain, Green, Ploughed, Fallow, Pasture, Orchard }
+
+/// A field plot on the campaign map (layout 4): a rectangle at `Center`, its long side along `Axis` (unit), `Half` its
+/// half length and half width; `Hedged` holds a bit per side (1, 2, 4, 8) that has a hedge (pastures get fences instead).
+public readonly record struct FieldPlot(Vector2 Center, Vector2 Axis, Vector2 Half, FieldKind Kind, int Hedged, int Seed)
+{
+    /// Whether p lies in the plot (grown by `pad` metres).
+    public bool Inside(Vector2 p, float pad = 0)
+    {
+        var d = p - Center;
+        return MathF.Abs(Vector2.Dot(d, Axis)) < Half.X + pad && MathF.Abs(d.X * -Axis.Y + d.Y * Axis.X) < Half.Y + pad;
+    }
+    /// A point of the plot from local coordinates (u along the axis, v across).
+    public Vector2 At(float u, float v) => Center + Axis * u + new Vector2(-Axis.Y, Axis.X) * v;
 }
 
 /// A town wall across the field for an assault (roadmap B1). It runs the whole width at z = 14..16.5 (a walkway on raised
@@ -133,6 +186,13 @@ public sealed partial class Terrain
     public readonly int Seed;
     public readonly bool IsFlat;
     public readonly List<Foliage> Foliage = new();
+    /// The campaign map's roads, lakes and bridges as drawn (docs/WORLD_LIFE.md WL1-WL2); empty on a battlefield.
+    public readonly List<RoadLine> RoadLines = new();
+    public readonly List<Lake> Lakes = new();
+    public readonly List<MapBridge> MapBridges = new();
+    /// Field plots round the settlements (campaign map, layout 4) and the season they were drawn for (-1: a battlefield).
+    public readonly List<FieldPlot> Fields = new();
+    public int MapSeason = -1;
     /// The ground's size: half its side, the spacing of its vertices, and the vertices per side (2 * Half / Step + 1).
     public readonly float Half, Step;
     public readonly int N;

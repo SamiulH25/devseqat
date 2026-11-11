@@ -824,11 +824,20 @@ static partial class Synth
     /// Rain: a hiss of fine drops, with a few heavier ones ticking near.
     public static float[] Rain()
     {
+        // Band-limited noise (about 200 Hz to 3 kHz, two low-pass poles) that swells a little, with soft drops on top.
+        // It used to be high-passed white noise, which at 44.1 kHz was a loud hiss like static.
         var r = new Random(7);
         var b = Buf(6.5f);
-        float lp = 0, kp = Pole(0.5f);
-        for (int i = 0; i < b.Length; i++) { float n = N(r); lp += (n - lp) * kp; b[i] = (n - lp) * 0.5f; }
-        for (int k = 0; k < 120; k++) Mix(b, Click(0.02f, R(r, 3000, 6000), 0.4f, r), R(r, 0, 6.4f), R(r, 0.05f, 0.2f));
+        float lp = 0, lp2 = 0, hp = 0, kl = Pole(0.6f), kh = Pole(0.06f);
+        for (int i = 0; i < b.Length; i++)
+        {
+            float n = N(r), t = T(i);
+            lp += (n - lp) * kl; lp2 += (lp - lp2) * kl; hp += (lp2 - hp) * kh;
+            b[i] = (lp2 - hp) * (0.85f + 0.15f * MathF.Sin(t * MathF.Tau / 3.1f));
+        }
+        for (int k = 0; k < 90; k++) Mix(b, Click(0.025f, R(r, 1400, 3200), 0.25f, r), R(r, 0, 6.4f), R(r, 0.02f, 0.07f));
+        float rms = MathF.Sqrt(b.Sum(x => x * x) / b.Length);
+        for (int i = 0; i < b.Length; i++) b[i] *= 0.09f / MathF.Max(rms, 1e-6f);
         return Loop(b, 0.5f);
     }
 

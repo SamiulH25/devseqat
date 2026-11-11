@@ -11,7 +11,7 @@
       "loop": true,
       "reverbWet": 0.34,
       "reverbDecay": 2.4,
-      "masterGain": 0.86,
+      "masterGain": 0.624,
       "tracks": [
         {
           "voice": "contrabass_drone", "pan": 0.0, "gain": 0.34, "stem": 0, "humanizeMs": 6,
@@ -108,7 +108,7 @@
       "loop": true,
       "reverbWet": 0.32,
       "reverbDecay": 2.1,
-      "masterGain": 0.84,
+      "masterGain": 0.887,
       "tracks": [
         {
           "voice": "harp", "pan": -0.22, "gain": 0.46, "stem": 0, "humanizeMs": 9,
@@ -183,7 +183,7 @@
       "loop": false,
       "reverbWet": 0.38,
       "reverbDecay": 2.8,
-      "masterGain": 0.84,
+      "masterGain": 0.641,
       "tracks": [
         {
           "voice": "harp", "pan": -0.20, "gain": 0.48, "stem": 0, "humanizeMs": 10,

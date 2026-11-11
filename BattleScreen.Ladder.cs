@@ -92,7 +92,7 @@ partial class BattleScreen
             foreach (var f in battle.Squads)
                 if (f.Team == 1 && f.Alive >= 8 && !f.Cavalry && f.Formed > 0.7f && Vector2.Distance(f.Center, s.Center) < 14)
                 {
-                    Beat(BeatKind.Charge, (s.Center + f.Center) / 2, 2.2f);
+                    Beat(BeatKind.Charge, (s.Center + f.Center) / 2, $"{s.Name.ToUpperInvariant()} CHARGE HOME", 2.2f);
                     return;
                 }
         }
