@@ -10,7 +10,7 @@ public sealed class Settings
     public int Width = 1280, Height = 720, UiScale; // UiScale 0 = automatic (by window height)
     public bool Fullscreen, Fxaa = true, Ironman, ColorBlind;
     public string Quality = "High";
-    public float MasterVolume = 0.8f, SfxVolume = 1, MusicVolume = 0.6f;
+    public float MasterVolume = 0.8f, SfxVolume = 1, AmbienceVolume = 0.85f, MusicVolume = 0.6f;
     /// The field camera's kick when blows land (0 off, 0.5 soft, 1 full), and the brief hold when your own blow lands.
     public float CameraShake = 1;
     public bool HitPause = true;

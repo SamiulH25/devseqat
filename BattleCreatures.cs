@@ -84,6 +84,7 @@ public partial class Battle
         s.Units.Add(u);
         s.StartCount++;
         s.MarchSpeed = MathF.Min(s.MarchSpeed, u.Type.Speed);
+        Sound(Cue.RaiseDead, corpse.Pos);
     }
 
     /// The last necromancer of a side is slain: every undead he held up falls where it stands, and his foes take heart.
@@ -103,5 +104,6 @@ public partial class Battle
         u.Hp = 0;
         u.Action = UnitAction.None;
         u.Vel = u.Wish = Vector2.Zero;
+        Sound(Cue.BoneCollapse, u.Pos);
     }
 }

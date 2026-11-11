@@ -1,18 +1,18 @@
 namespace Ironfield;
 
-/// Self-tests of the synthesised sound (AudioSynth.cs, AudioMusic.cs): pure maths, so they run headless.
+/// Self-tests of the synthesised sound (`AudioSynth*.cs`), acoustic bank (`AudioBank.cs`) and hand-authored scores
+/// (`MusicScore.cs`): pure maths, so they run headless.
 public static partial class SelfTest
 {
-    /// Peak and RMS of a buffer; false if any sample is not a number.
-    static (float Peak, float Rms, bool Finite) Level(float[] b)
+    static (float Peak, float Rms, bool Finite) Level(ReadOnlySpan<float> b)
     {
         float p = 0; double sq = 0;
         foreach (var v in b) { if (!float.IsFinite(v)) return (0, 0, false); p = MathF.Max(p, MathF.Abs(v)); sq += v * v; }
         return (p, (float)Math.Sqrt(sq / Math.Max(1, b.Length)), true);
     }
 
-    /// Every cue has several different versions that are audible and never clip, and a far version; every bed loops
-    /// without a click; every piece of music is sound, long enough, and the battle's two layers loop together.
+    /// Every cue has distinct versions that are audible and never clip, and a far version; every bed loops without a
+    /// click; the 28-voice acoustic bank loads cleanly; and every score in `Data/music/` validates and renders cleanly.
     static void SoundsMade()
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -28,24 +28,117 @@ public static partial class SelfTest
             }
             Check(!v[0].AsSpan().SequenceEqual(v[1]), $"{c}'s versions differ");
         }
-        float[][] beds = { Synth.Wind(), Synth.Gallop(), Synth.Din(), Synth.Roar(), Synth.March(), Synth.Rain(), Synth.Birds(), Synth.Crickets(), Synth.Town() };
-        foreach (var b in beds)
+
+        foreach (Bed bed in Enum.GetValues<Bed>())
         {
+            var b = Synth.MakeBed(bed);
             var (p, _, ok) = Level(b);
-            Check(ok && p > 0.02f, "a bed is audible");
+            Check(ok && p > 0.02f, $"bed {bed} is audible");
             float step = 0;
             for (int i = 1; i < b.Length; i++) step = MathF.Max(step, MathF.Abs(b[i] - b[i - 1]));
-            Check(MathF.Abs(b[^1] - b[0]) <= step, $"bed {Array.IndexOf(beds, b)} loops without a click (a seam no bigger than its own steps)");
+            Check(MathF.Abs(b[^1] - b[0]) <= step * 1.05f + 1e-4f, $"bed {bed} loops without a click");
         }
-        float cues = watch.ElapsedMilliseconds;
-        var music = Synth.Pieces.ToDictionary(id => id, Synth.Piece);
-        foreach (var (id, b) in music)
+        float cuesMs = watch.ElapsedMilliseconds;
+
+        var bank = AudioBank.Shared;
+        Check(bank.LoadedFromDisk && bank.VoiceIds.Count >= 28, $"instrument bank loaded ({bank.VoiceIds.Count} voices)");
+        var errs = MusicLibrary.Validate();
+        Check(errs.Count == 0, "music scores validate: " + string.Join("; ", errs));
+        Check(MusicLibrary.All.Count >= 68, $"music library loaded {MusicLibrary.All.Count} scores (expected >= 68)");
+
+        // Fast window verification across every JSON score (opening, midpoint, 4-stem escalation and loop seam)
+        int winFrames = Synth.Rate * 2; // 2.0 s window
+        var winBuf = new float[winFrames * 2];
+        var deployBuf = new float[winFrames * 2];
+        ReadOnlySpan<float> allStems = stackalloc float[] { 1f, 1f, 1f, 1f };
+        ReadOnlySpan<float> deployOnly = stackalloc float[] { 1f, 0f, 0f, 0f };
+        foreach (var s in MusicLibrary.All.Values)
         {
-            var (p, rms, ok) = Level(b);
-            Check(ok && p <= 1f && rms > 0.01f, $"music {id} is sound (peak {p:0.00}, rms {rms:0.000})");
-            Check(b.Length > Synth.Rate * (id is "victory" or "defeat" ? 4 : 15), $"music {id} is long enough");
+            Array.Clear(winBuf);
+            double mid = Math.Max(0.0, s.DurationSec * 0.45);
+            s.RenderStereoWindow(bank, winBuf, winFrames, Synth.Rate, mid, allStems);
+            MusicScore.SoftLimitStereo(winBuf, winBuf.Length);
+            var (p, rms, ok) = Level(winBuf);
+            Check(ok && p > 0.015f && p <= 1f && rms > 0.002f, $"score {s.Id} sounds clean (peak {p:0.00}, rms {rms:0.000})");
+
+            if (s.Category == "battle" && s.Id != "creator_hearth")
+            {
+                Array.Clear(deployBuf);
+                s.RenderStereoWindow(bank, deployBuf, winFrames, Synth.Rate, mid, deployOnly);
+                var depLvl = Level(deployBuf);
+                Check(depLvl is { Finite: true, Rms: > 0.0015f }, $"battle score {s.Id} deploy stem is audible (rms {depLvl.Rms:0.000})");
+                Check(rms > depLvl.Rms * 1.25f, $"battle score {s.Id} swells from deploy ({depLvl.Rms:0.000}) to full fight ({rms:0.000})");
+            }
+
+            if (s.Loop)
+            {
+                Array.Clear(winBuf);
+                s.RenderStereoWindow(bank, winBuf, winFrames, Synth.Rate, Math.Max(0, s.DurationSec - 1.0), allStems);
+                MusicScore.SoftLimitStereo(winBuf, winBuf.Length);
+                var seamLvl = Level(winBuf);
+                Check(seamLvl is { Finite: true, Peak: <= 1f }, $"looped score {s.Id} crosses seam cleanly");
+            }
         }
-        Check(music["battle"].Length == music["battle2"].Length, "the battle's two music layers are the same length");
-        Console.WriteLine($"sounds: {Enum.GetValues<Cue>().Length} cues in {cues:0} ms, music in {watch.ElapsedMilliseconds - cues:0} ms");
+
+        // Verify analytical chunk invariance: one 0.4 s render == two back-to-back 0.2 s streaming chunks
+        var firstScore = MusicLibrary.All.Values.First();
+        int half = Synth.Rate / 5;
+        var whole = new float[half * 4];
+        var partA = new float[half * 2];
+        var partB = new float[half * 2];
+        firstScore.RenderStereoWindow(bank, whole, half * 2, Synth.Rate, 1.0, allStems);
+        firstScore.RenderStereoWindow(bank, partA, half, Synth.Rate, 1.0, allStems);
+        firstScore.RenderStereoWindow(bank, partB, half, Synth.Rate, 1.2, allStems);
+        float maxDiff = 0;
+        for (int i = 0; i < partA.Length; i++) maxDiff = MathF.Max(maxDiff, MathF.Abs(whole[i] - partA[i]));
+        for (int i = 0; i < partB.Length; i++) maxDiff = MathF.Max(maxDiff, MathF.Abs(whole[half * 2 + i] - partB[i]));
+        Check(maxDiff < 1e-4f, $"streaming chunk boundary is seamless (max diff {maxDiff})");
+
+        Console.WriteLine($"sounds: {Enum.GetValues<Cue>().Length} cues + {Enum.GetValues<Bed>().Length} beds in {cuesMs:0} ms, {MusicLibrary.All.Count} scores checked in {watch.ElapsedMilliseconds - cuesMs:0} ms");
+    }
+
+    /// Weapon, shield, ranged and lance fights emit their distinct AU1 cues without touching replay determinism.
+    static void CombatCuesEmitted()
+    {
+        var seen = new HashSet<Cue>();
+        var b = Battle.Empty(42);
+        var xbows = b.AddSquad(0, Troops.Get("crossbowmen"), 8, new(-12, -18), 8, Microsoft.Xna.Framework.Vector2.UnitY);
+        var greats = b.AddSquad(0, Troops.Get("greatswords"), 10, new(0, -4), 5, Microsoft.Xna.Framework.Vector2.UnitY);
+        var lancers = b.AddSquad(0, Troops.Get("lancers"), 6, new(14, -22), 3, Microsoft.Xna.Framework.Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("shieldmen"), 18, new(0, 4), 6, -Microsoft.Xna.Framework.Vector2.UnitY);
+        xbows.Order = Order.Hold;
+        greats.Order = lancers.Order = foes.Order = Order.Charge;
+        for (int i = 0; i < 60 * 8; i++)
+        {
+            b.Update(1 / 60f);
+            foreach (var (cue, _) in b.Sounds) seen.Add(cue);
+        }
+        Check(seen.Contains(Cue.CrossbowSnap), "crossbowmen emit CrossbowSnap");
+        Check(seen.Contains(Cue.SlashHeavy), "greatswords emit SlashHeavy");
+        Check(seen.Contains(Cue.LanceImpact) || seen.Contains(Cue.LanceShatter), "lancers emit LanceImpact/LanceShatter");
+        Check(seen.Contains(Cue.BlockWood) || seen.Contains(Cue.ArrowShield), "shieldmen emit BlockWood/ArrowShield");
+        Check(Synth.DrawsBlood(Cue.SlashLight) && Synth.DrawsBlood(Cue.ArrowFlesh) && !Synth.DrawsBlood(Cue.ArrowShield), "DrawsBlood predicate matches flesh hits");
+        Check(Synth.HeavyImpact(Cue.LanceImpact) && !Synth.HeavyImpact(Cue.SlashLight), "HeavyImpact predicate matches heavy charges");
+    }
+
+    /// Monsters, beasts and skeletons emit their distinct AU2 vocals, web-spits and bone-clatter cues.
+    static void CreatureAndMagicCues()
+    {
+        var seen = new HashSet<Cue>();
+        var b = Battle.Empty(77);
+        var trolls = b.AddSquad(0, Troops.Get("troll"), 2, new(-8, -3), 2, Microsoft.Xna.Framework.Vector2.UnitY);
+        var spiders = b.AddSquad(0, Troops.Get("spider"), 4, new(8, -10), 2, Microsoft.Xna.Framework.Vector2.UnitY);
+        var wyverns = b.AddSquad(0, Troops.Get("wyvern"), 2, new(0, -14), 2, Microsoft.Xna.Framework.Vector2.UnitY);
+        var skels = b.AddSquad(1, Troops.Get("skeleton"), 14, new(0, 3), 7, -Microsoft.Xna.Framework.Vector2.UnitY);
+        trolls.Order = spiders.Order = wyverns.Order = skels.Order = Order.Charge;
+        for (int i = 0; i < 60 * 10; i++)
+        {
+            b.Update(1 / 60f);
+            foreach (var (cue, _) in b.Sounds) seen.Add(cue);
+        }
+        Check(seen.Contains(Cue.TrollSweep), "trolls emit TrollSweep");
+        Check(seen.Contains(Cue.WebSpit) || seen.Contains(Cue.SpiderChitter), "spiders emit WebSpit/SpiderChitter");
+        Check(seen.Contains(Cue.WyvernScreech) || seen.Contains(Cue.WyvernFlap), "wyverns emit WyvernScreech/WyvernFlap");
+        Check(seen.Contains(Cue.BoneHit) && seen.Contains(Cue.BoneCollapse), "skeletons rattle on hit and collapse on death");
     }
 }

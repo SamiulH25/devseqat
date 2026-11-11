@@ -343,11 +343,15 @@ public partial class Battle
         if (by == null) return; // the caster fell: the working dies with him
         if (a.Needs != "" && !(a.Needs == "dry" ? Dry(c.At) : Raining(c.At))) return;
         int team = c.By.Team;
-        if (Warded(c.At, team)) { Flash("broken", c.At, a.Radius, team, a.Tradition); return; } // a ward breaks the working (MA8)
+        if (Warded(c.At, team)) { Flash("broken", c.At, a.Radius, team, a.Tradition); Sound(Cue.WardShatter, c.At); return; } // a ward breaks the working (MA8)
         Flash("spell:" + a.Kind, c.At, a.Radius, team, a.Tradition);
         Flash("work:" + a.Id, c.At, a.Radius, team, a.Tradition, by.Pos - c.At); // which working, and where from: the screen's spectacle reads it
         if (a.Great) Wonder(team == 0 ? a.Name + " was worked for us." : "The foe worked " + a.Name + ".");
         if (a.Tradition == "faith" && (a.Kind is "attack" or "rally" || a.Great)) Sound(Cue.Holy, c.At);
+        else if (a.Tradition == "necromancy") Sound(Cue.CastNecro, c.At);
+        else if (a.Id == "crows") Sound(Cue.CrowSwarm, c.At);
+        else if (a.Id is "evil_eye" or "fever" or "dread_drums") Sound(Cue.CastHex, c.At);
+        else if (a.Id is "storm" or "fair_wind" or "mist" or "tempest" or "war_song" or "foresight" or "mirage") Sound(Cue.CastGaldr, c.At);
         if (a.Effect == "burning" || a.Burn > 0) Sound(Cue.Flame, c.At);
         switch (a.Kind)
         {
@@ -368,7 +372,7 @@ public partial class Battle
                              .OrderBy(t => Vector2.DistanceSquared(t.Pos, c.At)).ThenBy(t => t.Index).Take(a.MaxHit).ToList())
                     Blast(by, t, a, c.Power);
                 if (a.Burn > 0) AddField(a, "burning", team, by, c.At, a.Radius, a.Burn, c.Power, a.Dps);
-                Sound(Cue.Impact, c.At);
+                Sound(a.Id == "fire_pots" ? Cue.FirePotShatter : Cue.Impact, c.At);
                 break;
             case "bolt":
                 // Lightning finds the tallest: a rider, then an officer, then the man nearest the glow.

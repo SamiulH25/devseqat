@@ -262,6 +262,7 @@ public sealed partial class Campaign
         if (terms == Terms.Tributary && (Seats(target) < 3 || S.Factions[target].TributaryOf >= 0)) return "THEY WILL NOT KNEEL";
         foreach (var p in held) { Player.Captives.Remove(p!.Id); p.Captive = false; p.DownUntil = (float)S.Hours + 24; }
         MakePeace(w, me, target, terms);
+        AudioEngine.Current?.PlayStinger("sting_peace");
         return null;
     }
 

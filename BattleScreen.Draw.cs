@@ -175,17 +175,17 @@ partial class BattleScreen
         }
     }
 
-    readonly float[] stepTimer = new float[4];
+    readonly float[] stepTimer = new float[6];
 
     /// What the ground does under moving men (docs/archive/TERRAIN.md T8): dust under galloping hooves, splashes at fords and in water,
-    /// mud thrown up, leaves shaken down in woods; and near the camera, their sounds (splash, squelch, rustle, the bridge's beat).
+    /// mud thrown up, leaves shaken down in woods; and near the camera, their sounds (splash, squelch, rustle, bridge, snow, gravel).
     void GroundSteps(float dt)
     {
         var t = battle.Terrain;
         var ear = new Vector2(focusPoint.X, focusPoint.Z);
         float range = 25 + 30 * blend;
-        Span<int> heard = stackalloc int[4]; // splash, squelch, rustle, hollow
-        Span<Vector2> where = stackalloc Vector2[4];
+        Span<int> heard = stackalloc int[6]; // splash, squelch, rustle, hollow, snow, gravel
+        Span<Vector2> where = stackalloc Vector2[6];
         foreach (var u in battle.Units)
         {
             if (u.Routing && u.Active && !u.Mounted && fx.NextSingle() < dt * 1.5f && u.Vel.LengthSquared() > 4) // men running for their lives kick up dust
@@ -215,6 +215,8 @@ partial class BattleScreen
                         fx.Next(3) == 0 ? new Color(150, 120, 50) : new Color(96, 120, 52), 0.5f, 2.6f, 0.09f, false, 0, 1.2f);
             }
             else if (kind == GroundKind.Bridge) cue = 3;
+            else if (battle.Weather.Snow) cue = 4;
+            else if (kind is GroundKind.Road or GroundKind.Street or GroundKind.Stony) cue = 5;
             else if (u.Mounted && fast && fx.NextSingle() < dt * 9)
                 Spray(u.Pos - u.HeadingDir * 0.8f, 0.1f, 1, battle.Weather.Rain > 0.3f ? new Color(96, 82, 60) : new Color(176, 160, 124), 0.6f, 1.2f, 0.3f, false, 0.7f);
             if (cue >= 0 && Vector2.DistanceSquared(u.Pos, ear) < range * range) { heard[cue] += u.Mounted ? 3 : 1; where[cue] = u.Pos; }
@@ -222,12 +224,12 @@ partial class BattleScreen
         var audio = host.Audio;
         if (audio == null || !audio.Enabled) return;
         var right = Matrix.Invert(view).Right;
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 6; i++)
         {
             stepTimer[i] -= dt;
             if (heard[i] == 0 || stepTimer[i] > 0) continue;
             stepTimer[i] = MathF.Max(0.12f, 0.6f - heard[i] * 0.02f) * (0.7f + fx.NextSingle() * 0.6f);
-            var c = i switch { 0 => Cue.Splash, 1 => Cue.Squelch, 2 => Cue.Rustle, _ => Cue.Hollow };
+            var c = i switch { 0 => Cue.Splash, 1 => Cue.Squelch, 2 => Cue.Rustle, 3 => Cue.Hollow, 4 => Cue.SnowCrunch, _ => Cue.GravelStep };
             audio.PlayAt(c, new Vector3(where[i].X, t.Height(where[i]) + 0.5f, where[i].Y), eye, right, 45);
         }
     }

@@ -233,22 +233,64 @@ sealed partial class MapScreen
 
     /// The map's ambience: wind, birdsong by day and crickets by night (hushed by rain), the bustle of a town as you
     /// come near one; and a page turning whenever a screen opens or closes.
-    public void Soundscape(AudioEngine? audio)
+    public void Soundscape(AudioEngine? audio, float dt = 1 / 60f)
     {
         if (audio == null) return;
-        if (panel != heardPanel) { if (heardPanel != PanelKind.Menu || panel != PanelKind.None) audio.Play(Cue.Page, 0.7f); heardPanel = panel; }
+        if (panel != heardPanel)
+        {
+            if (heardPanel != PanelKind.Menu || panel != PanelKind.None)
+                audio.Play(panel is PanelKind.Atlas or PanelKind.Roll or PanelKind.Event ? Cue.ScrollUnroll : Cue.Page, 0.7f);
+            heardPanel = panel;
+        }
         float day = 1 - Sky.Night, dry = 1 - MathF.Min(1, Sky.Rain * 3);
+        bool winter = C.Map.Season == 3;
+        var prov = C.Map.ProvinceAt(C.Player.Pos);
+        string culture = prov.Faction >= 0 && prov.Faction < C.S.Factions.Count ? C.S.Factions[prov.Faction].Culture : "azure";
         float town = 0;
         foreach (var s in C.S.Settlements)
         {
             float d = Vector2.Distance(s.Pos, C.Player.Pos), size = s.Kind == SettlementKind.Village ? 6 : 10;
             town = MathF.Max(town, 1 - d / size);
         }
-        audio.SetBed(Bed.Wind, 0.8f + 0.4f * Sky.Rain);
-        audio.SetBed(Bed.Birds, day * dry * (1 - town * 0.5f));
-        audio.SetBed(Bed.Crickets, Sky.Night * dry);
-        audio.SetBed(Bed.Rain, MathF.Min(1, Sky.Rain * 2.5f));
+        float river = Math.Clamp(1f - C.Map.RiverDist(C.Player.Pos) / 14f, 0f, 1f);
+        float graveNear = 0;
+        foreach (var g in C.S.Graves) graveNear = MathF.Max(graveNear, Math.Clamp(1f - Vector2.Distance(g.Pos, C.Player.Pos) / 14f, 0f, 1f));
+        float omen = MathF.Max(graveNear, Math.Clamp(MathF.Max(C.S.Omen - 15f, C.Captain.Corruption - 25f) / 35f, 0f, 0.85f));
+        bool feastOn = C.S.Flags.TryGetValue("hall_feast", out float fh) && C.S.Hours - fh < 24;
+        bool inTavern = panel == PanelKind.Settlement && tab == "TAVERN" || panel == PanelKind.Talk && feastOn;
+        bool inForge = panel == PanelKind.Settlement && tab is "MARKET" or "TRAIN";
+
+        bool hostNear = false;
+        foreach (var p in C.S.Parties)
+            if (p.Id != C.Player.Id && p.Men >= 75 && C.Hostile(C.Player, p) && Vector2.DistanceSquared(p.Pos, C.Player.Pos) < 28f * 28f) { hostNear = true; break; }
+
+        string? interior = panel switch
+        {
+            PanelKind.GameOver => "chronicle_end",
+            PanelKind.Talk => feastOn ? "hall_feast" : "lords_hall",
+            PanelKind.Event when C.S.Event is { Site: >= 0 } => "sacred_site",
+            PanelKind.Settlement when tab == "TAVERN" => ((at?.Id ?? 0) % 3) switch { 0 => "tavern_reel_1", 1 => "tavern_reel_2", _ => "tavern_ballad" },
+            PanelKind.Settlement when tab == "HALL" => feastOn ? "hall_feast" : "lords_hall",
+            PanelKind.Settlement when tab == "CHAPTER" => "chapter_house",
+            PanelKind.Settlement => "town_market",
+            _ => null,
+        };
+        float dreadScore = C.Captain.Corruption >= 50 || C.Captain.Pact ? 0.85f : omen;
+        audio.UpdateMapMusic(interior, culture, Sky.Night > 0.5f, winter, hostNear, dreadScore, dt);
+
+        audio.SetBed(Bed.Wind, winter ? 0.45f : 0.75f + 0.4f * Sky.Rain);
+        if (winter) audio.SetBed(Bed.Blizzard, 0.55f + 0.35f * Sky.Rain);
+        else audio.SetBed(Bed.Rain, MathF.Min(1, Sky.Rain * 2.5f));
+        audio.SetBed(Bed.Birds, winter ? 0 : day * dry * (1 - town * 0.5f));
+        audio.SetBed(Bed.Crickets, winter ? 0 : Sky.Night * dry);
         audio.SetBed(Bed.Town, town * (0.4f + 0.6f * day));
+        if (river > 0.02f) audio.SetBed(Bed.River, river * 0.65f);
+        if (prov.Kind == "Marsh" || culture == "league") audio.SetBed(Bed.Surf, prov.Kind == "Marsh" ? 0.55f : 0.35f);
+        if (prov.Kind == "Forest") audio.SetBed(Bed.Forest, 0.55f * (1 - town * 0.5f));
+        if (omen > 0.02f) audio.SetBed(Bed.OmenDrone, omen);
+        if (inTavern) audio.SetBed(Bed.Tavern, 0.85f);
+        if (inForge) audio.SetBed(Bed.Forge, 0.75f);
+        if (panel == PanelKind.None && C.Player.Moving && speed > 0) audio.SetBed(Bed.March, 0.32f);
     }
     PanelKind heardPanel;
 

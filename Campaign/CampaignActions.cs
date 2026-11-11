@@ -54,6 +54,7 @@ public partial class Campaign
         if (took == 0) return $"MAX {Slots} COMPANIES, ALL FULL";
         s.Recruits -= took;
         S.Gold -= MathF.Ceiling(took * each);
+        AudioEngine.Current?.Play(Cue.RecruitCheer, 0.7f);
         return null;
     }
 
@@ -77,6 +78,7 @@ public partial class Campaign
         s.Mercenaries.Remove(m);
         Player.Companies.Add(m);
         Log($"{m.Name} ({m.Men} {m.Type.Name}) take your coin.");
+        AudioEngine.Current?.Play(Cue.RecruitCheer, 0.75f);
         return null;
     }
 
@@ -91,6 +93,7 @@ public partial class Campaign
         S.Gold -= n * HorsePrice;
         s.Horses -= n;
         Player.Horses += n;
+        AudioEngine.Current?.Play(Cue.HorseTack, 0.75f);
         return null;
     }
 
@@ -173,6 +176,7 @@ public partial class Campaign
         Captain.ContractSince = (float)S.Hours;
         Me.Faction = faction;
         Log(faction < 0 ? "You are a free captain again." : $"You sign on with the {FactionNames[faction]}.");
+        AudioEngine.Current?.Play(Cue.WaxSeal, 0.8f);
         return null;
     }
 

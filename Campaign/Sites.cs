@@ -71,6 +71,7 @@ public sealed partial class Campaign
     {
         if (!S.SitesSeen.Contains(site.Id)) S.SitesSeen.Add(site.Id);
         if (!S.SitesVisited.Contains(site.Id)) { S.SitesVisited.Add(site.Id); Deed($"You come to the {site.Name}.", "sites"); }
+        AudioEngine.Current?.Play(site.Kind is "shrine" or "stones" ? Cue.Holy : Cue.ScrollUnroll, 0.65f);
         SiteQuests(site);
         if (!SiteReady(site)) { Log($"{site.Name}: {SiteWait(site).ToLowerInvariant()}."); return; }
         if (site.Kind == "shrine") { AddBuff("shrine_blessing", 3); RelicFilled(); Log($"The men pray at the {site.Name}. They march on blessed."); }

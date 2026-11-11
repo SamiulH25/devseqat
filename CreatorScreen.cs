@@ -126,12 +126,23 @@ sealed class CreatorScreen
         typing = 0;
         stepAt = time;
         helm = Step != 4; // the likeness step shows the face bare
+        AudioEngine.Current?.Play(Cue.ScrollUnroll, 0.65f);
     }
+
+    public string CurrentCulture => Culture;
 
     void Refresh()
     {
         string choices = $"{M.Realm}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}|{M.Arms}";
-        if (choices != choiceKey) { if (choiceKey != "") stage?.React(); choiceKey = choices; } // a choice made: the captain cheers
+        if (choices != choiceKey)
+        {
+            if (choiceKey != "")
+            {
+                stage?.React();
+                AudioEngine.Current?.Play(Step == 3 ? Cue.EquipBlade : Step == 0 ? Cue.RecruitCheer : Cue.Page, 0.55f);
+            }
+            choiceKey = choices;
+        } // a choice made: the captain cheers
         string key = $"{choices}|{helm}";
         if (key == previewKey) return;
         previewKey = key;
@@ -171,6 +182,7 @@ sealed class CreatorScreen
     {
         if (M.Name.Trim() == "") { Go(4); typing = 1; return; }
         Open = false;
+        AudioEngine.Current?.Play(Cue.WaxSeal, 0.85f);
         begin(M);
     }
 

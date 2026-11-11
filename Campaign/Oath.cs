@@ -124,6 +124,7 @@ public sealed partial class Campaign
         LearnOrderForms();
         DrawRival(def);
         Deed($"You take the oath of {def.Short} as its squire. {def.Creed}", "oaths");
+        AudioEngine.Current?.PlayStinger("sting_oath");
     }
 
     /// The next rank's needs not yet met, or null if you may rise.

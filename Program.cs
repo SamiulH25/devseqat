@@ -12,7 +12,8 @@ if (args.Contains("--portraits"))
 }
 if (args.Contains("--sounds"))
 {
-    Ironfield.SoundDump.Run(args.SkipWhile(a => a != "--sounds").Skip(1).FirstOrDefault() ?? "sounds");
+    var rest = args.SkipWhile(a => a != "--sounds").Skip(1).ToArray();
+    Ironfield.SoundDump.Run(rest.FirstOrDefault() ?? "sounds", rest.ElementAtOrDefault(1));
     return;
 }
 if (args.Contains("--write-controls"))

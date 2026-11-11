@@ -365,17 +365,40 @@ sealed partial class BattleScreen
         UpdateCamera();
     }
 
-    /// Battle sound cues, heard from the camera.
+    /// Battle sound cues, heard from the camera (closest first so nearby blows always claim the frame's voice budget).
     void PlaySounds()
     {
         var audio = host.Audio;
         if (audio == null || !audio.Enabled) return;
         var right = Matrix.Invert(view).Right;
-        foreach (var (cue, p) in battle.Sounds)
-            audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, cue switch { Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer => 160, Cue.Crash => 200, Cue.Ram => 120, Cue.Volley => 90, _ => 70 });
+        var eye2 = new Vector2(eye.X, eye.Z);
+        foreach (var (cue, p) in battle.Sounds.OrderBy(s => Vector2.DistanceSquared(s.Pos, eye2)))
+        {
+            float range = cue switch
+            {
+                Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer or Cue.HornRetreat or Cue.TrollRoar or Cue.WolfHowl or Cue.WyvernScreech or Cue.AuraBreakthrough => 160,
+                Cue.Crash or Cue.CrowSwarm => 200,
+                Cue.Ram or Cue.RamSwing or Cue.RaiseDead or Cue.ChampionClash or Cue.BearRoar => 120,
+                Cue.Volley => 90,
+                _ => 70,
+            };
+            bool nearPlayer = battle.Player.Active && Vector2.DistanceSquared(p, battle.Player.Pos) < 9f;
+            audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, range, priority: nearPlayer);
+        }
+        var pl = battle.Player;
+        if (pl.Active && !command && pl.Hp < pl.Type.MaxHp * 0.28f && (pulseTimer -= frameDt) <= 0)
+        {
+            pulseTimer = 0.95f;
+            audio.Play(Cue.LowHpPulse, 0.55f, priority: true);
+        }
+        bool spanning = pl.Active && Look.GripOf(pl.Type.Look.Weapon) == Grip.Crossbow && pl.Cooldown > 0.35f;
+        if (spanning && !wasSpanning) audio.PlayAt(Cue.CrossbowSpan, new Vector3(pl.Pos.X, battle.Terrain.Height(pl.Pos) + 1, pl.Pos.Y), eye, right, 35, priority: true);
+        wasSpanning = spanning;
     }
+    float pulseTimer;
+    bool wasSpanning;
 
-    /// Ambient beds and music: galloping and melee din by how much is near the camera; drums once the fighting starts.
+    /// Ambient beds and music: galloping and melee din by how much is near the camera; 4-stem adaptive battle suites and outcome scores.
     void Soundscape()
     {
         var audio = host.Audio;
@@ -383,10 +406,18 @@ sealed partial class BattleScreen
         var ear = new Vector2(focusPoint.X, focusPoint.Z);
         float range = 25 + 30 * blend;
         int horses = 0, fighting = 0, field = 0, marching = 0, men = 0;
+        float closestEnemyDist = float.MaxValue;
+        bool foeUndead = false, foeWild = false;
         foreach (var u in battle.Units)
         {
+            if (u.Team == 1)
+            {
+                if (u.Type.Has("bones") || u.Type.Has("raise") || u.Type.Look.Face == "ghoul") foeUndead = true;
+                if (u.Type.Wild) foeWild = true;
+            }
             if (!u.Active) continue;
             men++;
+            closestEnemyDist = MathF.Min(closestEnemyDist, u.EnemyDist);
             if (u.EnemyDist < 4) field++; // men in contact anywhere: the roar of the whole battle
             if (Vector2.DistanceSquared(u.Pos, ear) > range * range) continue;
             if (u.Mounted && MathF.Abs(u.Speed) > 5) horses++;
@@ -397,8 +428,48 @@ sealed partial class BattleScreen
         float hush = 1 - 0.6f * MathF.Max(BeatAmount, Sky.OmenDark); // a beat or a gathering working quiets the field
         audio.Beds(0.7f * (1 - Sky.OmenDark * 0.8f), quiet ? 0 : MathF.Min(1, horses / 5f) * hush, quiet ? 0 : MathF.Min(1, fighting / 14f) * hush,
             quiet ? 0 : MathF.Min(1, MathF.Sqrt(field / 600f)) * hush, quiet ? 0 : MathF.Min(1, marching / 30f) * hush, battle.Weather.Snow ? 0 : battle.Weather.Rain);
-        audio.Intensity(men == 0 ? 0 : MathF.Min(1, 3f * field / men)); // a third of the field in contact is the full score
-        audio.Music(battle.Winner == 0 ? MusicTrack.Victory : battle.Winner == 1 ? MusicTrack.Defeat : deploying ? MusicTrack.Deploy : MusicTrack.Battle);
+        if (battle.Weather.Snow) audio.SetBed(Bed.Blizzard, 0.65f);
+        if (battle.Terrain.WaterDepth(ear) > 0.01f) audio.SetBed(Bed.River, 0.55f);
+        if (battle.Terrain.GroundAt(ear) is GroundKind.Wood or GroundKind.DenseWood) audio.SetBed(Bed.Forest, 0.5f);
+        if (Sky.OmenDark > 0.05f) audio.SetBed(Bed.OmenDrone, Sky.OmenDark);
+
+        string suiteId = battle.Options.Duel ? "battle_duel"
+            : battle.Options.Tournament ? "battle_tournament"
+            : battle.Options.Siege ? "battle_siege"
+            : battle.Options.Madness > 0 ? "battle_hollow"
+            : foeUndead ? "battle_undead"
+            : foeWild ? "battle_beasts"
+            : (battle.Armies[1]?.Companies.Select(c => Troops.Get(c.Troop).Culture).FirstOrDefault(c => c is not ("common" or "wild" or "")) ?? "azure") switch
+            {
+                "crimson" => "battle_crimson",
+                "northern" => "battle_north",
+                "southern" => "battle_sunward",
+                "steppe" => "battle_steppe",
+                "league" => "battle_league",
+                "order" => "battle_order",
+                _ => "battle_azure",
+            };
+
+        float s0 = 1f, s1 = 0f, s2 = 0f, s3 = 0f;
+        if (!deploying)
+        {
+            int totalUnits = battle.Units.Count;
+            float casualtyRatio = totalUnits == 0 ? 0f : (totalUnits - men) / (float)totalUnits;
+            s0 = 0.9f;
+            s1 = Math.Clamp(battle.Arrows.Count > 0 || closestEnemyDist < 65f ? 0.35f + 0.65f * MathF.Min(1f, field / 40f + battle.Arrows.Count / 12f) : 0f, 0f, 1f);
+            s2 = men == 0 ? 0f : Math.Clamp(3f * field / men, 0f, 1f);
+            s3 = battle.ClashOn || battle.BrokeThrough || Sky.OmenDark > 0.2f || battle.Wall is { GateOpen: true }
+                ? 1f
+                : Math.Clamp((casualtyRatio - 0.32f) * 2.5f, 0f, 1f);
+        }
+
+        string outcomeId = battle.Winner == 0
+            ? (battle.Options.Duel || battle.Options.Tournament ? "victory_duel" : (battle.Options.Siege || battle.BrokeThrough || battle.Units.Count > 250 ? "victory_heroic" : "victory_field"))
+            : battle.Winner == 1
+                ? (battle.Options.Siege || !battle.Player.Active ? "defeat_fallen" : "defeat_field")
+                : "";
+
+        audio.UpdateBattleMusic(suiteId, battle.Winner == 0, battle.Winner == 1, outcomeId, s0, s1, s2, s3);
         if (battle.Winner == 0 && !cheered) { cheered = true; audio.Play(Cue.Cheer, 0.9f); } // your men cheer the day
         if (battle.Winner < 0) cheered = false;
     }

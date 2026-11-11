@@ -40,7 +40,9 @@ public sealed partial class Campaign
         if (id == "cleanse" && S.Omen <= 0) return "THERE IS NO OMEN TO CLEANSE";
         S.Gold -= r.Gold;
         if (r.Tradition == "craft") BreakVow("no_craft", "work the craft");
+        float prevOmen = S.Omen;
         S.Omen += r.Omen;
+        if (prevOmen < OmenStirs && S.Omen >= OmenStirs) AudioEngine.Current?.PlayStinger("sting_omen");
         S.RiteDay = Day + 1;
         switch (id)
         {
@@ -66,6 +68,7 @@ public sealed partial class Campaign
             "cleanse" => "Candles, salt and water at the chapel. The air feels clean again.",
             _ => "Rain comes on as the old words are spoken.",
         });
+        AudioEngine.Current?.Play(Cue.RiteDrum, 0.75f);
         return null;
     }
 

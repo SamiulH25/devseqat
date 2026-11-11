@@ -69,7 +69,7 @@ public partial class Battle
             if (m.Active && m.Team != u.Team && !m.Type.Huge && !Airborne(m) && Vector2.DistanceSquared(m.Pos, t.Pos) < r * r) m.WebbedUntil = Time + WebTime;
         u.Face(t.Pos - u.Pos);
         Flash("web", t.Pos, r, u.Team, "", t.Pos - u.Pos);
-        Sound(Cue.Throw, u.Pos);
+        Sound(Cue.WebSpit, u.Pos);
     }
 
     /// A flyer's height: high while it climbs away or closes from afar, low as it closes on its prey, down on it in a strike.
@@ -119,6 +119,7 @@ public partial class Battle
     {
         a.Climbing = true;
         a.ClimbUntil = Time + ClimbTime + rng.NextSingle();
+        Sound(Cue.WyvernFlap, a.Pos);
     }
 
     /// Every few seconds each living brood mother with foes near lays two spiderlings beside her, which run at once.
@@ -150,6 +151,7 @@ public partial class Battle
         s.Units.Add(u);
         s.StartCount++;
         s.MarchSpeed = MathF.Min(s.MarchSpeed, u.Type.Speed);
+        Sound(Cue.SpiderChitter, mother.Pos);
     }
 
     /// How hard a creature's blow lands, past what any man's does: a raging bear's harder.

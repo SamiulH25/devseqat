@@ -110,6 +110,7 @@ public sealed partial class Campaign
         S.Gold -= g.Cost;
         Own(g.Id);
         Log($"You buy a {g.Name.ToLowerInvariant()}.");
+        AudioEngine.Current?.Play(Cue.AnvilRing, 0.7f);
         return Equip(g.Id);
     }
 
@@ -135,6 +136,7 @@ public sealed partial class Campaign
             case "helm": k.Helm = id; break;
             default: k.Horse = id; break;
         }
+        AudioEngine.Current?.Play(g.Slot == "weapon" ? Cue.EquipBlade : g.Slot == "horse" ? Cue.HorseTack : Cue.EquipArmor, 0.7f);
         return null;
     }
 

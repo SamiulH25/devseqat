@@ -5,7 +5,7 @@ namespace Ironfield;
 /// self-test can check it (`Tests/AudioTests.cs`). Music is in AudioMusic.cs.
 static partial class Synth
 {
-    public const int Rate = 22050;
+    public const int Rate = 44100;
 
     // ---------- tools ----------
 
@@ -13,6 +13,8 @@ static partial class Synth
     static float N(Random r) => r.NextSingle() * 2 - 1;
     static float R(Random r, float a, float b) => a + r.NextSingle() * (b - a);
     static float T(int i) => i / (float)Rate;
+    /// Convert a 22.05 kHz one-pole coefficient `k` to the current `Rate` so filter cutoffs stay identical at 44.1 kHz.
+    public static float Pole(float k22) => 1f - MathF.Pow(Math.Clamp(1f - k22, 1e-5f, 1f), 22050f / Rate);
 
     /// Add `src` into `dst` from `at` seconds, scaled by `gain`.
     static void Mix(float[] dst, float[] src, float at, float gain = 1)
@@ -56,8 +58,10 @@ static partial class Synth
     {
         int tail = (int)(decay * Rate * 0.7f);
         var o = new float[b.Length + tail];
-        int[] combs = { 558, 594, 638, 678 };
+        int scale = Math.Max(1, Rate / 22050);
+        int[] combs = { 558 * scale + 1, 594 * scale + 1, 638 * scale + 1, 678 * scale + 1 };
         var wetBuf = new float[o.Length];
+        float dampRate = Pole(1 - damp);
         foreach (int d in combs)
         {
             var line = new float[d];
@@ -65,12 +69,12 @@ static partial class Synth
             for (int i = 0, j = 0; i < o.Length; i++, j = (j + 1) % d)
             {
                 float y = line[j];
-                lp += (y - lp) * (1 - damp);
+                lp += (y - lp) * dampRate;
                 line[j] = (i < b.Length ? b[i] : 0) + lp * g;
                 wetBuf[i] += y * 0.25f;
             }
         }
-        foreach (int d in new[] { 278, 110 })
+        foreach (int d in new[] { 278 * scale + 1, 110 * scale + 1 })
         {
             var line = new float[d];
             for (int i = 0, j = 0; i < o.Length; i++, j = (j + 1) % d)
@@ -88,8 +92,8 @@ static partial class Synth
     public static float[] Far(float[] b)
     {
         var o = new float[b.Length];
-        float lp = 0, lp2 = 0;
-        for (int i = 0; i < b.Length; i++) { lp += (b[i] - lp) * 0.16f; lp2 += (lp - lp2) * 0.22f; o[i] = lp2 * 1.6f; }
+        float lp = 0, lp2 = 0, k1 = Pole(0.16f), k2 = Pole(0.22f);
+        for (int i = 0; i < b.Length; i++) { lp += (b[i] - lp) * k1; lp2 += (lp - lp2) * k2; o[i] = lp2 * 1.6f; }
         return Space(o, 0.55f, 1.4f, 0.6f);
     }
 
@@ -117,15 +121,26 @@ static partial class Synth
     /// How many versions each cue has: picked at random so a fight never repeats one clang.
     public static int Versions(Cue c) => c switch { Cue.Thunder or Cue.Gather or Cue.Cheer or Cue.Crash => 3, Cue.Click or Cue.Hover => 3, _ => 4 };
 
-    /// Cues heard in the world (positioned, given a far version); the rest are the interface's.
-    public static bool InWorld(Cue c) => c is not (Cue.Click or Cue.Coin or Cue.Hover or Cue.Page or Cue.Order);
+    /// Cues heard in the world (positioned, given a far version); the rest are the interface's or captain close-mic.
+    public static bool InWorld(Cue c) => c is not (Cue.Click or Cue.Coin or Cue.Hover or Cue.Page or Cue.Order
+        or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat or Cue.LowHpPulse
+        or Cue.RecruitCheer or Cue.EquipBlade or Cue.EquipArmor or Cue.HorseTack or Cue.AnvilRing
+        or Cue.WaxSeal or Cue.RiteDrum or Cue.FeastToast or Cue.ScrollUnroll);
 
     /// Loudest sample of each cue: the one place the mix is set.
     static float Peak(Cue c) => c switch
     {
-        Cue.Hover => 0.22f, Cue.Click => 0.45f, Cue.Page => 0.5f, Cue.Coin => 0.55f, Cue.Order => 0.6f,
-        Cue.Death => 0.6f, Cue.Volley => 0.55f, Cue.Neigh => 0.6f, Cue.ArrowHit => 0.6f, Cue.Bow => 0.6f, Cue.Throw => 0.5f,
-        Cue.Splash or Cue.Squelch or Cue.Rustle or Cue.Hollow => 0.55f,
+        Cue.Hover => 0.22f, Cue.Click => 0.45f, Cue.Page or Cue.ScrollUnroll => 0.5f, Cue.Coin => 0.55f,
+        Cue.EquipBlade or Cue.EquipArmor or Cue.HorseTack => 0.54f,
+        Cue.AnvilRing or Cue.WaxSeal or Cue.RiteDrum or Cue.RecruitCheer or Cue.FeastToast => 0.62f,
+        Cue.Order or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat => 0.58f,
+        Cue.SwingOne or Cue.SwingPole => 0.42f, Cue.SwingTwo or Cue.WeaponSwap or Cue.CrossbowSpan => 0.48f,
+        Cue.LowHpPulse or Cue.HorseWhistle => 0.55f, Cue.RiposteRing or Cue.AuraIgnite => 0.62f,
+        Cue.Death or Cue.GoblinShriek or Cue.BoneCollapse or Cue.BoneHit or Cue.SpiderChitter or Cue.WebSpit or Cue.WyvernFlap => 0.6f,
+        Cue.Volley => 0.55f, Cue.Neigh or Cue.WolfSnarl => 0.6f,
+        Cue.ArrowHit or Cue.ArrowShield or Cue.ArrowPlate or Cue.ArrowFlesh => 0.6f,
+        Cue.Bow or Cue.LongbowLoose or Cue.CrossbowSnap or Cue.SlingCrack or Cue.JavelinCast => 0.6f, Cue.Throw => 0.5f,
+        Cue.Splash or Cue.Squelch or Cue.Rustle or Cue.Hollow or Cue.GravelStep or Cue.SnowCrunch or Cue.LadderHook or Cue.RamSwing => 0.55f,
         Cue.Horn or Cue.Rout => 0.5f, // a horn is all body: at a lower peak it is still the loudest thing on the field
         _ => 0.85f,
     };
@@ -177,6 +192,71 @@ static partial class Synth
         Cue.Cheer => Cheer(r),
         Cue.Order => Order(r, v),
         Cue.Page => Page(r),
+        Cue.SlashLight => SlashLight(r),
+        Cue.SlashHeavy => SlashHeavy(r),
+        Cue.BluntFlesh => BluntFlesh(r),
+        Cue.BluntPlate => BluntPlate(r),
+        Cue.PierceHit => PierceHit(r),
+        Cue.LanceImpact => LanceImpact(r),
+        Cue.LanceShatter => LanceShatter(r),
+        Cue.BlockWood => BlockWood(r),
+        Cue.BlockMetal => BlockMetal(r),
+        Cue.ParrySteel => ParrySteel(r),
+        Cue.ShieldSplinter => ShieldSplinter(r),
+        Cue.BashThud => BashThud(r),
+        Cue.SwingOne => SwingOne(r),
+        Cue.SwingTwo => SwingTwo(r),
+        Cue.SwingPole => SwingPole(r),
+        Cue.RiposteRing => RiposteRing(r),
+        Cue.WeaponSwap => WeaponSwap(r),
+        Cue.LowHpPulse => LowHpPulse(r),
+        Cue.LongbowLoose => LongbowLoose(r),
+        Cue.CrossbowSnap => CrossbowSnap(r),
+        Cue.CrossbowSpan => CrossbowSpan(r),
+        Cue.SlingCrack => SlingCrack(r),
+        Cue.JavelinCast => JavelinCast(r),
+        Cue.ArrowShield => ArrowShield(r),
+        Cue.ArrowPlate => ArrowPlate(r),
+        Cue.ArrowFlesh => ArrowFlesh(r),
+        Cue.RamSwing => RamSwing(r),
+        Cue.LadderHook => LadderHook(r),
+        Cue.FirePotShatter => FirePotShatter(r),
+        Cue.TrollRoar => TrollRoar(r),
+        Cue.TrollSweep => TrollSweep(r),
+        Cue.WolfHowl => WolfHowl(r),
+        Cue.WolfSnarl => WolfSnarl(r),
+        Cue.SpiderChitter => SpiderChitter(r),
+        Cue.WebSpit => WebSpit(r),
+        Cue.BearRoar => BearRoar(r),
+        Cue.WyvernScreech => WyvernScreech(r),
+        Cue.WyvernFlap => WyvernFlap(r),
+        Cue.GoblinShriek => GoblinShriek(r),
+        Cue.BoneHit => BoneHit(r),
+        Cue.BoneCollapse => BoneCollapse(r),
+        Cue.RaiseDead => RaiseDead(r),
+        Cue.CastGaldr => CastGaldr(r),
+        Cue.CastHex => CastHex(r),
+        Cue.CastNecro => CastNecro(r),
+        Cue.WardShatter => WardShatter(r),
+        Cue.CrowSwarm => CrowSwarm(r),
+        Cue.AuraIgnite => AuraIgnite(r),
+        Cue.AuraBreakthrough => AuraBreakthrough(r),
+        Cue.ChampionClash => ChampionClash(r),
+        Cue.HornCharge => HornCharge(r),
+        Cue.HornHold => HornHold(r),
+        Cue.HornRetreat => HornRetreat(r),
+        Cue.HorseWhistle => HorseWhistle(r),
+        Cue.GravelStep => GravelStep(r),
+        Cue.SnowCrunch => SnowCrunch(r),
+        Cue.RecruitCheer => RecruitCheer(r),
+        Cue.EquipBlade => EquipBlade(r),
+        Cue.EquipArmor => EquipArmor(r),
+        Cue.HorseTack => HorseTack(r),
+        Cue.AnvilRing => AnvilRing(r),
+        Cue.WaxSeal => WaxSeal(r),
+        Cue.RiteDrum => RiteDrum(r),
+        Cue.FeastToast => FeastToast(r),
+        Cue.ScrollUnroll => ScrollUnroll(r),
         _ => Buf(0.05f),
     };
 
@@ -280,12 +360,12 @@ static partial class Synth
     static float[] Thud(float freq, float len, float noise, Random r)
     {
         var b = Buf(len);
-        float lp = 0, ph = 0;
+        float lp = 0, ph = 0, kp = Pole(0.15f);
         for (int i = 0; i < b.Length; i++)
         {
             float t = T(i);
             ph += MathF.Tau * freq * (1 - t * 1.2f) / Rate;
-            lp += (N(r) - lp) * 0.15f;
+            lp += (N(r) - lp) * kp;
             b[i] = (MathF.Sin(ph) * 0.8f + lp * noise * 1.5f) * MathF.Exp(-t * 18);
         }
         return b;
@@ -638,17 +718,26 @@ static partial class Synth
 
     // ---------- ambient beds (looped) ----------
 
+    public static float[] MakeBed(Bed b) => b switch
+    {
+        Bed.Wind => Wind(), Bed.Gallop => Gallop(), Bed.Din => Din(), Bed.Roar => Roar(),
+        Bed.March => March(), Bed.Rain => Rain(), Bed.Birds => Birds(), Bed.Crickets => Crickets(),
+        Bed.Surf => Surf(), Bed.River => River(), Bed.Forest => Forest(), Bed.Blizzard => Blizzard(),
+        Bed.Tavern => Tavern(), Bed.Forge => Forge(), Bed.OmenDrone => OmenDrone(),
+        _ => Town(),
+    };
+
     /// Wind: slowly breathing filtered noise.
     public static float[] Wind()
     {
         var r = new Random(2);
         var b = Buf(8.5f);
-        float lp = 0, lp2 = 0;
+        float lp = 0, lp2 = 0, k1 = Pole(0.02f), k2 = Pole(0.05f);
         for (int i = 0; i < b.Length; i++)
         {
             float t = T(i);
-            lp += (N(r) - lp) * 0.02f;
-            lp2 += (lp - lp2) * 0.05f;
+            lp += (N(r) - lp) * k1;
+            lp2 += (lp - lp2) * k2;
             b[i] = lp2 * 4 * (0.6f + 0.4f * MathF.Sin(t * MathF.Tau / 8 * 2) * MathF.Sin(t * 1.3f));
         }
         return Loop(b, 0.5f);
@@ -737,8 +826,8 @@ static partial class Synth
     {
         var r = new Random(7);
         var b = Buf(6.5f);
-        float lp = 0;
-        for (int i = 0; i < b.Length; i++) { float n = N(r); lp += (n - lp) * 0.5f; b[i] = (n - lp) * 0.5f; }
+        float lp = 0, kp = Pole(0.5f);
+        for (int i = 0; i < b.Length; i++) { float n = N(r); lp += (n - lp) * kp; b[i] = (n - lp) * 0.5f; }
         for (int k = 0; k < 120; k++) Mix(b, Click(0.02f, R(r, 3000, 6000), 0.4f, r), R(r, 0, 6.4f), R(r, 0.05f, 0.2f));
         return Loop(b, 0.5f);
     }

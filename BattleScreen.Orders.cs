@@ -12,14 +12,14 @@ partial class BattleScreen
     List<Squad> Targets() =>
         (selected.Count > 0 ? selected : battle.Commanded).Where(s => s.Alive > 0).ToList();
 
-    void Issue(string what, Action<Squad> act, bool move = false)
+    void Issue(string what, Action<Squad> act, bool move = false, Cue horn = Cue.Order)
     {
         var list = Targets();
         if (list.Count == 0) return;
         float late = 0;
         foreach (var s in list) late = MathF.Max(late, move ? Move(s, act) : Send(s, act));
         if (move && queueing) what = "then " + what;
-        host.Audio?.Play(Cue.Order, 0.6f); // the horn calls the order
+        host.Audio?.Play(horn, 0.65f);
         battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
     }
 
@@ -66,7 +66,18 @@ partial class BattleScreen
     IEnumerable<Squad> Selectable => battle.SquadsOf(0).Where(s => !s.AiControlled);
 
     /// Give a division a goal (it reaches the sergeant after a delay; before the battle starts, at once).
-    void GiveGoal(Division d, Goal g) { battle.IssueGoal(d, g, now: deploying); host.Audio?.Play(Cue.Order, 0.6f); }
+    void GiveGoal(Division d, Goal g)
+    {
+        battle.IssueGoal(d, g, now: deploying);
+        Cue h = g.Kind switch
+        {
+            GoalKind.Attack or GoalKind.Flank or GoalKind.Pursue or GoalKind.Take => Cue.HornCharge,
+            GoalKind.FallBack => Cue.HornRetreat,
+            GoalKind.Hold or GoalKind.Guard or GoalKind.Screen => Cue.HornHold,
+            _ => Cue.Order,
+        };
+        host.Audio?.Play(h, 0.65f);
+    }
 
     void GoalCommand(Division d, GoalKind kind, int side)
     {
@@ -95,11 +106,11 @@ partial class BattleScreen
         var enemy = battle.Centroid(1);
         switch (c)
         {
-            case Cmd.Charge: Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }, move: true); break;
-            case Cmd.Follow: Issue("follow me!", s => { s.Order = Order.Follow; s.Target = null; }, move: true); break;
-            case Cmd.Hold: Issue("hold position!", s => s.HoldInPlace(), move: true); break;
-            case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15), move: true); break;
-            case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20), move: true); break;
+            case Cmd.Charge: Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }, move: true, Cue.HornCharge); break;
+            case Cmd.Follow: Issue("follow me!", s => { s.Order = Order.Follow; s.Target = null; }, move: true, Cue.Order); break;
+            case Cmd.Hold: Issue("hold position!", s => s.HoldInPlace(), move: true, Cue.HornHold); break;
+            case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge); break;
+            case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20), move: true, Cue.HornRetreat); break;
             case Cmd.Rule: NextRule(); break;
             case Cmd.Spacing: Issue("change spacing", s => s.Loose = !s.Loose); break;
             case Cmd.Merge: MergeSelected(); break;

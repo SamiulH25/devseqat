@@ -200,7 +200,7 @@ partial class MapScreen
     {
         if (C.Beat is not var (title, lines)) { panel = PanelKind.None; return; }
         bool won = title == "THE WAR IS WON";
-        if (!ReferenceEquals(lines, beatHeard)) { beatHeard = lines; AudioEngine.Current?.Play(Cue.Horn); } // a horn as the banner sweeps in
+        if (!ReferenceEquals(lines, beatHeard)) { beatHeard = lines; AudioEngine.Current?.Play(Cue.Horn); AudioEngine.Current?.PlayStinger("sting_rank"); } // a horn as the banner sweeps in
         var r = Modal(640, 150 + 16 * lines.Length + (won ? 40 : 0), title, won ? Style.Accent : Style.Text);
         int y = r.Y + ui.U(62);
         foreach (var line in lines) { ui.TextC(line, r.X + r.Width / 2f, y, Style.Text, 1); y += ui.U(16); }

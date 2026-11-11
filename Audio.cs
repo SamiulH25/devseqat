@@ -8,45 +8,61 @@ public enum Cue
 {
     Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin, Splash, Squelch, Rustle, Hollow, Spell, Thunder, Holy, Flame, Aura, Gather,
     Death, Neigh, Volley, Ram, Crash, Cheer, Order, Hover, Page, Throw,
+    // AU1: combat weapon×armour, defences, captain close-mic, ranged split & siege
+    SlashLight, SlashHeavy, BluntFlesh, BluntPlate, PierceHit, LanceImpact, LanceShatter,
+    BlockWood, BlockMetal, ParrySteel, ShieldSplinter, BashThud,
+    SwingOne, SwingTwo, SwingPole, RiposteRing, WeaponSwap, LowHpPulse,
+    LongbowLoose, CrossbowSnap, CrossbowSpan, SlingCrack, JavelinCast, ArrowShield, ArrowPlate, ArrowFlesh,
+    RamSwing, LadderHook, FirePotShatter,
+    // AU2: creatures, beasts, undead, magic traditions, aura moments & order horns
+    TrollRoar, TrollSweep, WolfHowl, WolfSnarl, SpiderChitter, WebSpit, BearRoar, WyvernScreech, WyvernFlap, GoblinShriek,
+    BoneHit, BoneCollapse, RaiseDead,
+    CastGaldr, CastHex, CastNecro, WardShatter, CrowSwarm, AuraIgnite, AuraBreakthrough, ChampionClash,
+    HornCharge, HornHold, HornRetreat, HorseWhistle,
+    // AU3: ground, world, settlements, armoury, deeds, scrolls & creator
+    GravelStep, SnowCrunch, RecruitCheer, EquipBlade, EquipArmor, HorseTack, AnvilRing, WaxSeal, RiteDrum, FeastToast, ScrollUnroll,
 }
 
-public enum MusicTrack { None, Map, Battle, Victory, Defeat, Deploy }
+public enum MusicTrack { None, Title, Creator, Map, Battle, Victory, Defeat, Deploy, Chronicle }
 
-/// Looping ambience: battle beds by what is near the camera, map beds by hour and place. Each fades to silence when no
-/// screen asks for it, so going from map to battle needs no bookkeeping.
-public enum Bed { Wind, Gallop, Din, Roar, March, Rain, Birds, Crickets, Town }
+/// Looping ambience: battle beds by what is near the camera, map beds by hour, biome, season and settlement tab.
+public enum Bed
+{
+    Wind, Gallop, Din, Roar, March, Rain, Birds, Crickets, Town,
+    Surf, River, Forest, Blizzard, Tavern, Forge, OmenDrone,
+}
 
-/// Sound and music, synthesised in code (Synth, AudioSynth.cs and AudioMusic.cs; no audio files). Cues come in
-/// several versions picked at random, with a far version for distant sounds. Music is made on a background thread at
-/// startup and starts once ready. If there is no audio device, everything here quietly does nothing.
+/// Sound and music engine (AU0–AU6): 44.1 kHz procedural cues and looping beds (`AudioSynth.cs`), plus 44.1 kHz stereo
+/// score streaming (`AudioStreamer.cs`, `MusicScore.cs`, `AudioBank.cs`). If there is no audio device, everything
+/// quietly does nothing.
 sealed class AudioEngine
 {
     public bool Enabled { get; private set; }
     public static AudioEngine? Current;
     readonly Dictionary<Cue, SoundEffect[]> near = new(), far = new();
     readonly Dictionary<Cue, int> playedThisFrame = new(), lastVersion = new();
+    readonly Dictionary<int, int> familyThisFrame = new();
     readonly Dictionary<Bed, (SoundEffectInstance I, float Level, float Want)> beds = new();
-    readonly ConcurrentDictionary<string, float[]> made = new();
-    readonly Dictionary<string, SoundEffect> pieces = new();
+    readonly ConcurrentDictionary<string, float[]> legacyMade = new();
     readonly Random pick = new(1);
-
-    MusicTrack track = MusicTrack.None;
-    Playing? current, previous;
-    float fade = 1, intensity, wantIntensity, mapGap;
-    int mapTheme;
-
-    /// A piece of music sounding: its main instance and, for the battle, the layer that rises with the fighting.
-    sealed class Playing { public SoundEffectInstance? Main, Layer; public string Id = ""; }
 
     readonly ConcurrentDictionary<Cue, (float[][] Near, float[][]? Far)> cueData = new();
     readonly ConcurrentDictionary<Bed, float[]> bedData = new();
+
+    AudioStreamer? streamer;
+    MusicTrack track = MusicTrack.None;
+    string requestedPiece = "", activeInterior = "", lastCulturePrefix = "azure";
+    string[] mapPool = { "azure_day", "azure_peace" };
+    float mapGap, duckAmount, duckHold, mapHoldSec;
+    int mapCursor;
 
     public AudioEngine()
     {
         try
         {
-            using (var probe = new SoundEffect(new byte[64], Synth.Rate, AudioChannels.Mono)) { } // fails here when there is no device
-            mapTheme = pick.Next(3);
+            using (var probe = new SoundEffect(new byte[128], Synth.Rate, AudioChannels.Mono)) { }
+            streamer = new AudioStreamer();
+            mapCursor = pick.Next(3);
             Task.Run(MakeAll);
             Enabled = true;
         }
@@ -57,31 +73,31 @@ sealed class AudioEngine
         }
     }
 
-    /// Make every sound on a background thread, the first heard first: the interface, the title's wind and theme, then
-    /// the rest. A cue asked for before it is made is skipped; a bed or piece starts once ready.
+    /// Build cues and beds on a background thread (UI and title sounds first) and warm up the instrument bank & scores.
     void MakeAll()
     {
         try
         {
-            void Cues(params Cue[] cs) { foreach (var c in cs) { var v = Synth.Cues(c); cueData[c] = (v, Synth.InWorld(c) ? v.Select(Synth.Far).ToArray() : null); } }
-            void Beds(params Bed[] bs) { foreach (var b in bs) bedData[b] = b switch
+            void Cues(params Cue[] cs)
             {
-                Bed.Wind => Synth.Wind(), Bed.Gallop => Synth.Gallop(), Bed.Din => Synth.Din(), Bed.Roar => Synth.Roar(),
-                Bed.March => Synth.March(), Bed.Rain => Synth.Rain(), Bed.Birds => Synth.Birds(), Bed.Crickets => Synth.Crickets(),
-                _ => Synth.Town(),
-            }; }
+                foreach (var c in cs)
+                {
+                    var v = Synth.Cues(c);
+                    cueData[c] = (v, Synth.InWorld(c) ? v.Select(Synth.Far).ToArray() : null);
+                }
+            }
+            void Beds(params Bed[] bs) { foreach (var b in bs) bedData[b] = Synth.MakeBed(b); }
             Cues(Cue.Click, Cue.Hover, Cue.Page, Cue.Coin);
             Beds(Bed.Wind);
-            made["map0"] = Synth.Piece("map0");
+            _ = AudioBank.Shared;
+            _ = MusicLibrary.All;
             Beds(Bed.Birds, Bed.Crickets, Bed.Town, Bed.Rain);
             Cues(Enum.GetValues<Cue>().Where(c => !cueData.ContainsKey(c)).ToArray());
             Beds(Enum.GetValues<Bed>().Where(b => !bedData.ContainsKey(b)).ToArray());
-            foreach (var id in Synth.Pieces) if (!made.ContainsKey(id)) made[id] = Synth.Piece(id);
         }
         catch (Exception e) { Console.WriteLine("audio: " + e.Message); }
     }
 
-    /// A cue's sounds once made (built on the main thread from the background's buffers).
     bool Ready(Cue c)
     {
         if (near.ContainsKey(c)) return true;
@@ -93,44 +109,76 @@ sealed class AudioEngine
 
     static float Master => Settings.Current.MasterVolume;
     static float Sfx => Master * Settings.Current.SfxVolume;
+    static float Amb => Master * Settings.Current.AmbienceVolume;
     static float Mus => Master * Settings.Current.MusicVolume;
 
-    // ---------- cues ----------
+    // ---------- cues & priority mix ----------
 
-    /// Most deaths go quietly in the din; only some are heard as a cry.
-    static float Chance(Cue c) => c switch { Cue.Death => 0.5f, Cue.Neigh => 0.8f, _ => 1 };
+    static float Chance(Cue c) => c switch { Cue.Death or Cue.GoblinShriek => 0.5f, Cue.Neigh or Cue.BoneCollapse => 0.8f, _ => 1f };
 
-    /// Most of one cue in one frame: a crowd of identical sounds is just noise.
-    static int Cap(Cue c) => c is Cue.Death or Cue.Volley or Cue.Cheer or Cue.Order or Cue.Page or Cue.Hover ? 1 : 3;
+    static int Cap(Cue c) => c is Cue.Death or Cue.GoblinShriek or Cue.BoneCollapse or Cue.Volley or Cue.Cheer
+        or Cue.Order or Cue.HornCharge or Cue.HornHold or Cue.HornRetreat or Cue.Page or Cue.ScrollUnroll
+        or Cue.Hover or Cue.LowHpPulse ? 1 : 4;
 
-    public void Play(Cue c, float volume = 1, float pan = 0, bool distant = false)
+    /// Broad cue family so simultaneous variants (e.g. sword clash + axe clash + block) share a clean frame budget.
+    static int Family(Cue c) => c switch
+    {
+        Cue.Clash or Cue.Block or Cue.Hit or Cue.SlashLight or Cue.SlashHeavy or Cue.BluntFlesh or Cue.BluntPlate
+            or Cue.PierceHit or Cue.BlockWood or Cue.BlockMetal or Cue.ParrySteel or Cue.BoneHit => 1,
+        Cue.Bow or Cue.Throw or Cue.ArrowHit or Cue.LongbowLoose or Cue.CrossbowSnap or Cue.SlingCrack
+            or Cue.JavelinCast or Cue.ArrowShield or Cue.ArrowPlate or Cue.ArrowFlesh or Cue.WebSpit => 2,
+        Cue.Shout or Cue.Death or Cue.Cheer or Cue.GoblinShriek or Cue.WolfSnarl or Cue.SpiderChitter => 3,
+        _ => 0,
+    };
+
+    static int FamilyCap(int fam) => fam switch { 1 => 6, 2 => 5, 3 => 3, _ => 99 };
+
+    static bool TriggersDuck(Cue c) => c is Cue.Horn or Cue.Rout or Cue.Order or Cue.HornCharge or Cue.HornHold
+        or Cue.HornRetreat or Cue.Gather or Cue.Thunder or Cue.AuraBreakthrough or Cue.ChampionClash;
+
+    /// Briefly duck ambient beds and music so horns, great workings and cinematic beats cut cleanly through a 3,000-man din.
+    public void Duck(float amount = 0.42f, float holdSec = 0.55f)
+    {
+        duckAmount = MathF.Max(duckAmount, Math.Clamp(amount, 0f, 0.8f));
+        duckHold = MathF.Max(duckHold, holdSec);
+    }
+
+    public void Play(Cue c, float volume = 1, float pan = 0, bool distant = false, bool priority = false)
     {
         if (!Enabled || volume <= 0.01f) return;
         playedThisFrame.TryGetValue(c, out int n);
-        if (n >= Cap(c) || !Ready(c) || pick.NextSingle() > Chance(c)) return;
+        int cap = priority ? Cap(c) + 2 : Cap(c);
+        if (n >= cap || !Ready(c)) return;
+        int fam = Family(c);
+        if (!priority && fam != 0)
+        {
+            familyThisFrame.TryGetValue(fam, out int fn);
+            if (fn >= FamilyCap(fam)) return;
+            familyThisFrame[fam] = fn + 1;
+        }
+        if (!priority && pick.NextSingle() > Chance(c)) return;
         playedThisFrame[c] = n + 1;
+        if (TriggersDuck(c) && !distant) Duck(0.38f, 0.45f);
         var set = distant && far.TryGetValue(c, out var f) ? f : near[c];
         lastVersion.TryGetValue(c, out int last);
         int v = pick.Next(set.Length);
-        if (v == last && set.Length > 1) v = (v + 1) % set.Length; // never the same one twice running
+        if (v == last && set.Length > 1) v = (v + 1) % set.Length;
         lastVersion[c] = v;
         float spread = Synth.InWorld(c) ? 0.12f : 0.04f;
         set[v].Play(Math.Clamp(volume * Sfx, 0, 1), (pick.NextSingle() - 0.5f) * spread, Math.Clamp(pan, -1, 1));
     }
 
-    /// A sound somewhere in the world, heard from the camera: quieter with distance, panned left or right, and past a
-    /// third of its range heard as its far version (muffled, with more echo).
-    public void PlayAt(Cue c, Vector3 at, Vector3 listener, Vector3 right, float range = 70)
+    public void PlayAt(Cue c, Vector3 at, Vector3 listener, Vector3 right, float range = 70, bool priority = false)
     {
         var d = at - listener;
         float dist = d.Length(), x = dist / range;
+        if (x >= 1f) return;
         float v = MathF.Max(0, 1 - x);
-        Play(c, v * v * 1.2f, dist > 0.1f ? Vector3.Dot(d / dist, right) * 0.8f : 0, x > 0.33f);
+        Play(c, v * v * 1.2f, dist > 0.1f ? Vector3.Dot(d / dist, right) * 0.8f : 0, x > 0.33f, priority);
     }
 
     // ---------- beds ----------
 
-    /// Ask for a bed at `level` (0..1) this frame; beds not asked for fade out.
     public void SetBed(Bed b, float level)
     {
         if (!Enabled) return;
@@ -144,114 +192,213 @@ sealed class AudioEngine
         beds[b] = (e.I, e.Level, MathF.Max(e.Want, Math.Clamp(level, 0, 1)));
     }
 
-    /// How loud each bed is at full level, against the cues.
     static float BedGain(Bed b) => b switch
     {
         Bed.Wind => 0.35f, Bed.Gallop => 0.8f, Bed.Din => 0.6f, Bed.Roar => 0.5f, Bed.March => 0.45f, Bed.Rain => 0.4f,
-        Bed.Birds => 0.35f, Bed.Crickets => 0.25f, _ => 0.4f,
+        Bed.Birds => 0.35f, Bed.Crickets => 0.25f, Bed.Surf => 0.38f, Bed.River => 0.36f, Bed.Forest => 0.34f,
+        Bed.Blizzard => 0.44f, Bed.Tavern => 0.42f, Bed.Forge => 0.38f, Bed.OmenDrone => 0.36f, _ => 0.4f,
     };
 
-    /// Battle beds: wind always, galloping, melee din and marching by how much of each is near the camera (0..1), and
-    /// the roar of the whole battle by how many men are fighting anywhere on the field (0..1).
     public void Beds(float windLevel, float gallopLevel, float dinLevel, float roarLevel = 0, float marchLevel = 0, float rain = 0)
     {
         SetBed(Bed.Wind, windLevel); SetBed(Bed.Gallop, gallopLevel); SetBed(Bed.Din, dinLevel);
         SetBed(Bed.Roar, roarLevel); SetBed(Bed.March, marchLevel); SetBed(Bed.Rain, rain);
     }
 
-    /// How hard the battle is going (0 calm .. 1 the whole field fighting): raises the battle music's second layer.
-    public void Intensity(float x) => wantIntensity = Math.Clamp(x, 0, 1);
+    // ---------- music & stems ----------
 
-    // ---------- music ----------
+    /// Legacy 1-parameter battle intensity (maps onto the 4-stem mixer until AU5 wires granular battle stems).
+    public void Intensity(float x)
+    {
+        float k = Math.Clamp(x, 0f, 1f);
+        SetStemWeights(1f, Math.Clamp(k * 1.8f, 0f, 1f), k, Math.Clamp((k - 0.55f) * 2.2f, 0f, 1f));
+    }
+
+    public void SetStemWeights(float deploy, float skirmish, float melee, float crisis) =>
+        streamer?.SetStems(deploy, skirmish, melee, crisis);
+
+    public void PlayStinger(string id, float gain = 0.9f)
+    {
+        if (!Enabled) return;
+        streamer?.PlayStinger(id, gain);
+    }
+
+    /// Play a specific score ID directly (used by contextual map/battle directors in AU4–AU5).
+    public void RequestPiece(string id, MusicTrack mode = MusicTrack.Map)
+    {
+        if (!Enabled || string.IsNullOrEmpty(id)) return;
+        track = mode;
+        if (requestedPiece == id && streamer is { CurrentFinished: false }) return;
+        requestedPiece = id;
+        mapGap = 0;
+        StartPiece(id);
+    }
+
+    /// Contextual overworld & settlement music director (AU4): switches immediately for interiors/panels, and rotates
+    /// cultural/seasonal/war/omen suites on the open map with natural breathing gaps and border hysteresis.
+    public void UpdateMapMusic(string? interiorPiece, string culture, bool night, bool winter, bool hostNear, float dread, float dt)
+    {
+        if (!Enabled) return;
+        if (!string.IsNullOrEmpty(interiorPiece))
+        {
+            if (activeInterior != interiorPiece || track != MusicTrack.Map)
+            {
+                activeInterior = interiorPiece;
+                track = MusicTrack.Map;
+                requestedPiece = interiorPiece;
+                mapGap = 0;
+                StartPiece(interiorPiece);
+            }
+            return;
+        }
+
+        string prefix = culture switch
+        {
+            "crimson" => "crimson", "northern" => "north", "southern" => "sunward",
+            "steppe" => "steppe", "league" => "league", "order" => "order", _ => "azure",
+        };
+        mapPool = dread >= 0.55f ? new[] { dread >= 0.8f ? "black_flame" : "omen_graves", $"{prefix}_night" }
+            : hostNear ? new[] { $"{prefix}_host", $"{prefix}_day" }
+            : winter ? (night ? new[] { "winter_night", $"{prefix}_night" } : new[] { "winter_march", $"{prefix}_day", $"{prefix}_peace" })
+            : night ? new[] { $"{prefix}_night", $"{prefix}_peace" }
+            : new[] { $"{prefix}_day", $"{prefix}_peace" };
+
+        mapHoldSec += dt;
+        bool fromInterior = activeInterior != "";
+        activeInterior = "";
+        bool urgentShift = (dread >= 0.55f || hostNear) && !mapPool.Contains(requestedPiece);
+        bool realmChanged = prefix != lastCulturePrefix && mapHoldSec > 22f && !mapPool.Contains(requestedPiece);
+        lastCulturePrefix = prefix;
+
+        if (track != MusicTrack.Map || fromInterior || urgentShift || realmChanged)
+        {
+            track = MusicTrack.Map;
+            mapHoldSec = 0;
+            mapGap = 0;
+            requestedPiece = PickMapPiece();
+            StartPiece(requestedPiece);
+        }
+    }
+
+    /// Contextual 4-stem battle & outcome music director (AU5): deploying plays stem 0 of `suiteId` so deployment flows
+    /// seamlessly into combat on the same score; victory/defeat switch to the chosen outcome piece.
+    public void UpdateBattleMusic(string suiteId, bool victory, bool defeat, string outcomeId, float s0, float s1, float s2, float s3)
+    {
+        if (!Enabled) return;
+        if (victory || defeat)
+        {
+            var mode = victory ? MusicTrack.Victory : MusicTrack.Defeat;
+            string fallback = victory ? "victory" : "defeat";
+            string id = !string.IsNullOrEmpty(outcomeId) && MusicLibrary.Has(outcomeId) ? outcomeId : fallback;
+            if (track == mode && requestedPiece == id) return;
+            track = mode;
+            activeInterior = "";
+            mapGap = 0;
+            requestedPiece = id;
+            StartPiece(id);
+            return;
+        }
+        SetStemWeights(s0, s1, s2, s3);
+        string target = !string.IsNullOrEmpty(suiteId) && MusicLibrary.Has(suiteId) ? suiteId : "battle";
+        if (track == MusicTrack.Battle && requestedPiece == target && streamer is not { CurrentFinished: true }) return;
+        track = MusicTrack.Battle;
+        activeInterior = "";
+        mapGap = 0;
+        requestedPiece = target;
+        StartPiece(target);
+    }
 
     public void Music(MusicTrack t)
     {
         if (!Enabled || t == track) return;
         track = t;
+        activeInterior = "";
         mapGap = 0;
-        Start(t switch
+        string id = t switch
         {
-            MusicTrack.Map => "map" + mapTheme, MusicTrack.Battle => "battle", MusicTrack.Victory => "victory",
-            MusicTrack.Defeat => "defeat", MusicTrack.Deploy => "deploy", _ => "",
-        });
+            MusicTrack.Title => MusicLibrary.Has("title_ironfield") ? "title_ironfield" : "map0",
+            MusicTrack.Creator => MusicLibrary.Has("creator_hearth") ? "creator_hearth" : "map1",
+            MusicTrack.Chronicle => MusicLibrary.Has("chronicle_end") ? "chronicle_end" : "map1",
+            MusicTrack.Map => PickMapPiece(),
+            MusicTrack.Deploy => "deploy",
+            MusicTrack.Battle => "battle",
+            MusicTrack.Victory => "victory",
+            MusicTrack.Defeat => "defeat",
+            _ => "",
+        };
+        requestedPiece = id;
+        if (t == MusicTrack.Deploy) SetStemWeights(1f, 0f, 0f, 0f);
+        StartPiece(id);
     }
 
-    /// Crossfade to piece `id` ("" = silence). If it is still being made it starts once ready (see Update).
-    void Start(string id)
+    string PickMapPiece()
     {
-        previous?.Main?.Stop(); previous?.Layer?.Stop();
-        previous = current;
-        current = id == "" ? null : new Playing { Id = id };
-        fade = 0;
-        TryStart();
-    }
-
-    /// Start the current piece if its music is ready (it is made on a background thread at startup).
-    void TryStart()
-    {
-        if (current == null || current.Main != null) return;
-        var main = Sound(current.Id);
-        var layer = current.Id == "battle" ? Sound("battle2") : null;
-        if (main == null || current.Id == "battle" && layer == null) return; // the battle waits for both layers so they start together
-        current.Main = main.CreateInstance();
-        current.Main.IsLooped = current.Id is "battle" or "deploy";
-        current.Main.Volume = 0;
-        if (layer != null)
+        if (mapPool.Length > 0)
         {
-            current.Layer = layer.CreateInstance();
-            current.Layer.IsLooped = true;
-            current.Layer.Volume = 0;
-            current.Layer.Play();
+            string candidate = mapPool[mapCursor % mapPool.Length];
+            if (MusicLibrary.Has(candidate)) return candidate;
         }
-        current.Main.Play();
-        fade = 0;
+        return "map" + (mapCursor % 3);
     }
 
-    SoundEffect? Sound(string id)
+    void StartPiece(string id)
     {
-        if (pieces.TryGetValue(id, out var s)) return s;
-        if (!made.TryGetValue(id, out var b)) return null;
-        return pieces[id] = Make(b);
+        if (streamer == null) return;
+        if (id == "") { streamer.PlayPiece(""); return; }
+        if (MusicLibrary.Has(id))
+        {
+            streamer.PlayPiece(id);
+            return;
+        }
+        // Lazy fallback for legacy procedural pieces while AU0–AU3 run
+        if (legacyMade.TryGetValue(id, out var mono))
+        {
+            streamer.PlayPiece(id, mono);
+        }
+        else
+        {
+            Task.Run(() =>
+            {
+                var buf = Synth.Piece(id);
+                legacyMade[id] = buf;
+                if (requestedPiece == id) streamer.PlayPiece(id, buf);
+            });
+        }
     }
 
-    /// Call once per frame: crossfades the music, plays the next map theme after a pause, fades the beds and resets the
-    /// per-frame sound limits.
     public void Update(float dt)
     {
         playedThisFrame.Clear();
+        familyThisFrame.Clear();
         if (!Enabled) return;
-        TryStart();
-        fade = MathF.Min(1, fade + dt / 1.5f);
-        intensity += (wantIntensity - intensity) * MathF.Min(1, dt * 0.6f); // the music swells over a few seconds
-        float vol = Mus * 0.7f;
-        if (current?.Main is { } m) m.Volume = Math.Clamp(fade * vol, 0, 1);
-        if (current?.Layer is { } l) l.Volume = Math.Clamp(fade * vol * intensity, 0, 1);
-        if (previous != null)
-        {
-            float k = Math.Clamp((1 - fade) * vol, 0, 1);
-            if (previous.Main != null) previous.Main.Volume = k;
-            if (previous.Layer != null) previous.Layer.Volume = k * intensity;
-            if (fade >= 1) { previous.Main?.Stop(); previous.Layer?.Stop(); previous = null; }
-        }
-        NextMapTheme(dt);
+
+        if (duckHold > 0) duckHold -= dt;
+        else duckAmount = MathF.Max(0, duckAmount - dt * 0.7f);
+        float bedDuck = 1f - duckAmount;
+        float musDuck = 1f - duckAmount * 0.45f;
+
+        streamer?.Pump(Mus * 0.78f * musDuck);
+        AdvancePlaylist(dt);
+
         foreach (var b in beds.Keys.ToList())
         {
             var (i, level, want) = beds[b];
             level += (want - level) * MathF.Min(1, dt * 2.5f);
-            i.Volume = Math.Clamp(level * BedGain(b) * Sfx, 0, 1);
+            i.Volume = Math.Clamp(level * BedGain(b) * Amb * bedDuck, 0, 1);
             beds[b] = (i, level, 0);
         }
     }
 
-    /// On the map the themes take turns: when one ends, a quiet spell of ambience, then the next.
-    void NextMapTheme(float dt)
+    void AdvancePlaylist(float dt)
     {
-        if (track != MusicTrack.Map || current?.Main == null || current.Main.State != SoundState.Stopped) return;
-        if (mapGap <= 0) mapGap = 8 + pick.NextSingle() * 12;
+        if (track != MusicTrack.Map || activeInterior != "" || streamer == null || !streamer.CurrentFinished) return;
+        if (mapGap <= 0) mapGap = 6 + pick.NextSingle() * 8;
         if ((mapGap -= dt) > 0.01f) return;
         mapGap = 0;
-        mapTheme = (mapTheme + 1) % 3;
-        Start("map" + mapTheme);
+        mapHoldSec = 0;
+        mapCursor++;
+        requestedPiece = PickMapPiece();
+        StartPiece(requestedPiece);
     }
 
     static SoundEffect Make(float[] s)

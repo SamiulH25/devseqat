@@ -45,6 +45,7 @@ public sealed partial class Campaign
         S.OwnOrder = new FoundedOrder { Name = OrderNameOf(co.Name), Company = co.Name, Vows = v, Form = OrderFormNow, Day = Day };
         Captain.Renown += 25;
         Deed($"You found the {S.OwnOrder.Name} from {co.Name}. You are its first grand master.", "orders_founded");
+        AudioEngine.Current?.PlayStinger("sting_found_order");
         return null;
     }
 
