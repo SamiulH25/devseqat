@@ -563,7 +563,7 @@ sealed class CreatorScreen
     void Footer(Rectangle r)
     {
         if (ui.Gilded(new Rectangle(r.X, r.Y, U(150), r.Height), Step == 0 ? "CANCEL" : "BACK", "ESC")) { if (Step == 0) Open = false; else Go(Step - 1); }
-        if (ui.Gilded(new Rectangle(r.Center.X - U(80), r.Y, U(160), r.Height), "ROLL THE DICE")) Randomise();
+        if (ui.Gilded(new Rectangle(r.Center.X - U(96), r.Y, U(192), r.Height), "ROLL THE DICE")) Randomise();
         bool last = Step == Steps.Length - 1;
         if (!last && ui.Gilded(new Rectangle(r.Right - U(150), r.Y, U(150), r.Height), "NEXT", "ENTER")) Go(Step + 1);
         if (last && ui.Gilded(new Rectangle(r.Right - U(150), r.Y, U(150), r.Height), "BEGIN", "ENTER", M.Name.Trim() != "")) Begin();

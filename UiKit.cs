@@ -341,8 +341,10 @@ static class Kit
             bool on = i < frac * n - 0.01f;
             ui.Rect(new Rectangle((int)p.X - sz / 2, (int)p.Y - sz / 2, sz, sz), on ? col : Color.White * 0.08f);
         }
-        if (label != null) ui.TextC(label, c.X, c.Y - ui.U(caption == null ? 7 : 10), Style.Text, 2);
-        if (caption != null) ui.TextC(caption, c.X, c.Y + ui.U(6), Style.Dim, 1);
+        // A caption too wide for the ring's inside, or any on a small ring, goes under it, clear of the dots.
+        bool below = caption != null && (r < ui.U(24) || ui.TW(caption, 1) > r * 1.2f);
+        if (label != null) ui.TextC(label, c.X, c.Y - ui.U(caption == null || below ? 7 : 10), Style.Text, 2);
+        if (caption != null) ui.TextC(caption, c.X, below ? c.Y + r + ui.U(5) : c.Y + ui.U(6), Style.Dim, 1);
     }
 
     /// A bar in separate cells (pips), on a dark trough.
@@ -417,6 +419,7 @@ static class Kit
     {
         bool hover = enabled && ui.Hover(r);
         var t = tone ?? Gilt;
+        Overflow.Box(r);
         ui.Rect(new Rectangle(r.X + ui.U(2), r.Y + ui.U(3), r.Width, r.Height), Color.Black * 0.4f);
         ui.VGrad(r, hover ? Mul(t, 0.55f) : new Color(44, 42, 44), hover ? Mul(t, 0.25f) : new Color(24, 24, 28), 1);
         ui.Frame(r, enabled ? (hover ? Mul(t, 1.2f) : Mul(t, 0.75f)) : Color.White * 0.15f, ui.U(1));

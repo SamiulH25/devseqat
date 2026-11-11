@@ -104,7 +104,7 @@ sealed partial class Hud
             ("STANDING", t => B.Units.Count(u => u.Team == t && u.Active && !u.Routing)),
             ("HORSES LOST", t => B.DeadHorses.Count(h => h.Team == t)),
         };
-        int y = c.Y + U(36), mid = c.Center.X, half = c.Width / 2 - U(44);
+        int y = c.Y + U(36), mid = c.Center.X, half = c.Width / 2 - U(44) - U(30); // room at each end for the number, on the bar's own row
         int max = Math.Max(1, Math.Max(rows[0].F(0), rows[0].F(1)));
         foreach (var (label, f) in rows)
         {
@@ -115,8 +115,8 @@ sealed partial class Hud
             Rect(new Rectangle(mid + U(44), y, half, U(8)), Color.Black * 0.4f);
             kit.VGrad(new Rectangle(mid - U(44) - wa, y, wa, U(8)), Kit.Mul(SideArms(0).Ui, 1.1f), Kit.Mul(SideArms(0).Ui, 0.6f), 1);
             kit.VGrad(new Rectangle(mid + U(44), y, wb, U(8)), Kit.Mul(Foe, 1.1f), Kit.Mul(Foe, 0.6f), 1);
-            Text($"{a}", mid - U(44) - half, y + U(10), Color.White, 1);
-            TextR($"{b}", mid + U(44) + half, y + U(10), Color.White, 1);
+            TextR($"{a}", mid - U(48) - half, y + U(1), a > 0 ? Color.White : Dim, 1);
+            Text($"{b}", mid + U(48) + half, y + U(1), b > 0 ? Color.White : Dim, 1);
             y += U(19);
         }
         int time = (int)B.Time;
@@ -162,19 +162,24 @@ sealed partial class Hud
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
                 .Prepend(("SELECT SQUAD", "1-0")).ToArray()),
         };
-        int cw = (r.Width - U(40)) / 3, most = cols.Max(c => c.Rows.Length);
+        int cw = (r.Width - U(40)) / 3, room = cw - U(16), avail = r.Height - U(56) - U(24) - U(32);
+        // One row per action, its key at the right; a pair too long for one row puts the key on a second line.
+        bool Long((string Label, string Key) row) => TW(row.Label, 1) + U(10) + TW(row.Key, 1) > room;
         // Rows close up so the longest column always fits above the footer line.
-        int step = Math.Clamp((r.Height - U(56) - U(24) - U(32)) / Math.Max(1, most), U(19), U(24));
+        int step = cols.Min(c => Math.Clamp((avail - U(9) * c.Rows.Count(Long)) / Math.Max(1, c.Rows.Length), U(11), U(18)));
         for (int i = 0; i < cols.Length; i++)
         {
             int x = r.X + U(20) + i * cw, y = r.Y + U(56);
             Text(cols[i].Title, x, y, Gold);
             y += U(24);
-            foreach (var (label, key) in cols[i].Rows)
+            for (int k = 0; k < cols[i].Rows.Length; k++)
             {
-                Text(label, x, y, Dim, 1);
-                Text(key, x, y + U(9), Color.White, 1);
-                y += step;
+                var row = cols[i].Rows[k];
+                int h = step + (Long(row) ? U(9) : 0);
+                if (k % 2 == 0) Rect(new Rectangle(x - U(4), y - (step - U(7)) / 2, room + U(8), h), Color.White * 0.035f);
+                Text(row.Label, x, y, Style.Text * 0.8f, 1);
+                TextR(row.Key, x + room, y + (Long(row) ? U(9) : 0), Gold, 1);
+                y += h;
             }
         }
         TextC($"REBIND IN {Controls.FileName.ToUpperInvariant()}  (RUN WITH --WRITE-CONTROLS FOR A TEMPLATE)    {Ctl.Name(Act.Help)} / {Ctl.Name(Act.Menu)} CLOSE",

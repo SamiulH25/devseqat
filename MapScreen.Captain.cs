@@ -123,9 +123,10 @@ partial class MapScreen
                 string icon = cap4 ? "crown" : SkillIcons.TryGetValue(sk.Id, out var si) ? si : "star";
                 ui.Icon(icon, nr.X + (node - ui.U(7 * ic)) / 2, nr.Y + (node - ui.U(7 * ic)) / 2, state == 2 ? Color.White : state == 1 ? Style.Text : Style.Dim * 0.4f, ic);
                 string label = pk.Name.ToUpperInvariant();
-                var shown = ui.Wrap(label, node + gx - ui.U(4));
-                for (int li = 0; li < Math.Min(2, shown.Count); li++)
-                    ui.TextFitC(li == 1 && shown.Count > 2 ? string.Join(" ", shown.Skip(1)) : shown[li], nr.Center.X, nr.Bottom + ui.U(3 + 9 * li), node + gx - ui.U(4),
+                var shown = NameLines(label, node + gx - ui.U(4));
+                int most = cap4 ? 3 : 2; // nothing sits under the capstone, so its name may take a third line
+                for (int li = 0; li < Math.Min(most, shown.Count); li++)
+                    ui.TextFitC(li == most - 1 && shown.Count > most ? string.Join(" ", shown.Skip(li)) : shown[li], nr.Center.X, nr.Bottom + ui.U(3 + 9 * li), node + gx - ui.U(4),
                         state == 0 ? Style.Dim * 0.5f : state == 2 ? Kit.Gilt : Style.Text, 1);
                 if (hover) tip = (nr, pk, sk, state);
                 if (state == 1 && ui.Clicked(nr)) { note = C.TakePerk(pk.Id) ?? $"{label} LEARNED"; Ui.OnClick?.Invoke(); }
@@ -294,5 +295,46 @@ partial class MapScreen
             y += ui.U(3);
         }
         if (cap.Perks.Count == 0) foreach (var l in ui.Wrap("NONE YET. SKILLS RISE BY USE; EVERY 25 POINTS OPENS A PERK ON THAT BRANCH.", c.Width)) { ui.Text(l, c.X, y, Style.Dim * 0.8f, 1); y += ui.U(11); }
+    }
+
+    /// A perk name in lines of `width`, a word too long for one line split with a hyphen (QUARTER- MASTER) rather than cut short.
+    List<string> NameLines(string label, int width)
+    {
+        var lines = new List<string>();
+        string line = "";
+        foreach (var word in label.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            string w = word;
+            while (ui.TW(w, 1) > width && w.Length > 5)
+            {
+                int k = Breaks(w);
+                while (k > 3 && ui.TW(w[..k] + "-", 1) > width) k--;
+                if (line != "") { lines.Add(line); line = ""; }
+                lines.Add(w[k - 1] == '-' ? w[..k] : w[..k] + "-");
+                w = w[k..];
+            }
+            string joined = line == "" ? w : line + " " + w;
+            if (line != "" && ui.TW(joined, 1) > width) { lines.Add(line); line = w; }
+            else line = joined;
+        }
+        if (line != "") lines.Add(line);
+        return lines;
+    }
+
+    static readonly string[] Endings = { "MASTER", "CRAFT", "BREAKER", "KEEPER", "SMITH", "MAKER", "SETTER", "SHIP", "MAN" };
+
+    /// Where to break a long word: after its own hyphen, before a familiar ending, between two consonants near the middle
+    /// (TAC-TICIAN, CASTEL-LAN), else in the middle.
+    static int Breaks(string w)
+    {
+        int dash = w.IndexOf('-');
+        if (dash > 0 && dash < w.Length - 1) return dash + 1;
+        foreach (var e in Endings) if (w.Length > e.Length + 2 && w.EndsWith(e)) return w.Length - e.Length;
+        static bool Consonant(char c) => char.IsLetter(c) && !"AEIOUY".Contains(c);
+        int mid = (w.Length + 1) / 2;
+        for (int d = 0; d <= 2; d++)
+            foreach (int k in new[] { mid - d, mid + d })
+                if (k >= 3 && k <= w.Length - 3 && Consonant(w[k - 1]) && Consonant(w[k])) return k;
+        return mid;
     }
 }

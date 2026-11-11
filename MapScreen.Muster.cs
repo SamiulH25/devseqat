@@ -308,7 +308,7 @@ partial class MapScreen
         int men = C.Player.Men, limit = Math.Max(1, Rules.MenLimit(cap));
         ui.Ring(new Vector2(x + w / 4f, y + rr), rr, men / (float)limit, men > limit * 0.95f ? Style.Warn : Style.Ok, $"{men}", "MEN");
         ui.Ring(new Vector2(x + 3 * w / 4f, y + rr), rr, MathF.Min(1, C.Player.Food / 14f), C.Player.Food < 3 ? Style.Bad : C.Player.Food < 6 ? Style.Warn : Style.Ok, $"{C.Player.Food:0}", "DAYS FOOD");
-        y += (int)(2 * rr) + ui.U(10);
+        y += (int)(2 * rr) + ui.U(20);
         ui.Text($"{C.Player.Companies.Count} OF {Rules.CompanySlots(cap)} COMPANIES, {limit} MEN AT MOST", x, y, Style.Dim, 1);
         y += ui.U(10);
         ui.Divider(x, y + ui.U(2), w, Kit.Gilt * 0.5f);

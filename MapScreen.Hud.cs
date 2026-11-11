@@ -232,8 +232,8 @@ partial class MapScreen
             float age = (float)(C.S.Hours - e.At) / 24;
             var c = Color.White * Math.Clamp(1.4f - age * 0.25f, 0.45f, 1);
             string t = ui.Fit(e.Text.ToUpperInvariant(), room);
-            // Dark enough that map names under the log do not show through it.
-            ui.Rect(new Rectangle(ui.U(10), y - ui.U(3), ui.TW(t, 1) + ui.U(10), ui.U(13)), Color.Black * 0.62f);
+            // Dark enough, and with no gap between lines, that map names under the log do not show through it.
+            ui.Rect(new Rectangle(ui.U(10), y - ui.U(4), ui.TW(t, 1) + ui.U(10), ui.U(15)), Color.Black * 0.75f);
             ui.Text(t, ui.U(15), y, c, 1);
             y += ui.U(15);
         }

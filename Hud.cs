@@ -651,7 +651,8 @@ sealed partial class Hud
     {
         if (buttons.Count == 0) return;
         var first = buttons[0].R;
-        var area = new Rectangle(first.X - U(8), first.Y - U(24), buttons[^1].R.Right - first.X + U(16), buttons[^1].R.Bottom - first.Y + U(32));
+        int right = buttons.Max(b => b.R.Right), bottom = buttons.Max(b => b.R.Bottom); // the keys fill by column, so the last is not the far corner
+        var area = new Rectangle(first.X - U(8), first.Y - U(24), right - first.X + U(16), bottom - first.Y + U(32));
         Panel(area);
         Text(Selected.Count == 0 ? "ORDERS: ALL TROOPS" : "ORDERS: " + string.Join(" ", cards.Select((c, i) => Selected.Contains(c.S) ? $"{i + 1}" : "").Where(x => x != "")),
             area.X + U(8), area.Y + U(8), Gold, 1);
