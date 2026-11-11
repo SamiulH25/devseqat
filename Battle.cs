@@ -60,6 +60,8 @@ public sealed partial class Battle
     public int SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes;
     public float Time, RallyCooldown;
     public (string Text, float At) PlayerHit = ("", -10); // last thing the player's weapon did, shown under the crosshair
+    /// Blows that landed by or on the player in the last two seconds (drawing only: the numbers over the man hit; the sim never reads it).
+    public readonly List<Blow> Blows = new();
 
     readonly Random rng;
     readonly List<Unit> nearArrow = new(32), nearKill = new(64);

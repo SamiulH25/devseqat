@@ -241,7 +241,16 @@ public partial class Battle
             if (side != Side.Front) text += side == Side.Rear ? "  REAR" : "  FLANK";
             if (high >= 0.05f) text += "  HIGH GROUND";
             PlayerHit = (text, Time);
+            if (Blows.Count > 0 && Blows[^1].Target == t && !Blows[^1].OnPlayer) // the number over him says why it bit
+                Blows[^1] = Blows[^1] with { Tag = lance ? "LANCE" : side == Side.Rear ? "REAR" : side == Side.Flank ? "FLANK" : speed >= 0.1f ? "SPEED" : high >= 0.05f ? "HIGH GROUND" : "" };
         }
+    }
+
+    /// Keeps a blow by or on the player for the numbers drawn over the man hit (drawing only).
+    void NoteBlow(Unit t, float real, bool onPlayer)
+    {
+        Blows.RemoveAll(b => b.At < Time - 2);
+        Blows.Add(new Blow(t, real, t.Dead, onPlayer, Time));
     }
 
     /// Armour, then hp, morale shock and interrupts. Returns the damage dealt.
@@ -259,6 +268,7 @@ public partial class Battle
         // Hits interrupt swings, but not a rhythm he has read: past your second chained blow he swings through it (P2).
         if ((t.Action == UnitAction.Windup || t.Charging) && !(a.IsPlayer && Chain >= 2)) Stagger(t, 0.3f);
         if (t.Hp <= 0) Kill(t, a);
+        if (a.IsPlayer || t.IsPlayer) NoteBlow(t, real, !a.IsPlayer);
         return real;
     }
 

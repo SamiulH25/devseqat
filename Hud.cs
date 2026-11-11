@@ -206,6 +206,7 @@ sealed partial class Hud
         if (Command) Banners();
         Balance();
         GoalLines();
+        DuelBars();
         Feed();
         AlertStrip();
         MinimapPanel();
@@ -217,7 +218,7 @@ sealed partial class Hud
         DivisionCards();
         if (Command && Div != null) GoalPanel();
         if (GroundView && !ShowResult && !MenuOpen) GroundPanel();
-        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) { SquadTooltip(); GroundHints(); } } else Crosshair();
+        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) { SquadTooltip(); GroundHints(); } } else { OpponentMark(); BlowNumbers(); Crosshair(); }
         if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
         Hints();
         if (B.DownSince >= 0) // the last stand (P6)
@@ -623,7 +624,8 @@ sealed partial class Hud
         var p = B.Player;
         if (p.Charging) Bar(new Rectangle(cx - U(24), cy + U(40), U(48), U(4)), p.Charge, Gold);
         var (hit, at) = B.PlayerHit;
-        if (B.Time - at < 1.2f) TextC(hit, cx, cy + U(50), hit.StartsWith("PARRY") ? Gold : Color.White);
+        hit = System.Text.RegularExpressions.Regex.Replace(hit, @"\d+ DMG\s*", "").Trim(); // the number itself pops over the man hit (Hud.Melee.cs)
+        if (B.Time - at < 1.2f && hit != "") TextC(hit, cx, cy + U(50), hit.StartsWith("PARRY") ? Gold : Color.White);
 
         // Context prompts.
         string? prompt = null;
