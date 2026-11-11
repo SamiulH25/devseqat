@@ -434,8 +434,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Bind** (struct, L35): ToString:37, Parse:59
 - **Controls** (class, L88): Controls:145, SaveUser:153, ResetDefaults:162, AnyPressed:170, FindFile:178, Load:188, WriteDefaults:215, Update:224, IsDown:230, Down:240, WasDown:241, Pressed:242, Released:243, Axis:244, First:247, Name:250
 
-## CreatorScreen.cs (630 lines)
-- **CreatorScreen** (class, L9): CreatorScreen:46, Prepare:66, Show:74, U:85, RandomName:88, RandomCompany:96, Randomise:99, RandomFace:112, Go:121, Refresh:130, Keys:144, Begin:169, Draw:176, Likeness:219, Ledger:294, Homeland:364, Choices:419, Detail:448, Face:491, Stepper:544, Field:559, Swatches:573, Oath:589, Footer:622
+## CreatorScreen.cs (638 lines)
+- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:67, Show:75, U:86, RandomName:89, RandomCompany:97, Randomise:100, RandomFace:113, Go:122, Refresh:131, Keys:145, Begin:170, Draw:177, Likeness:220, Ledger:295, Homeland:365, Choices:420, Detail:449, Face:493, Stepper:546, Unroll:561, Field:564, Swatches:578, Oath:594, Footer:630
 
 ## CreatorStage.cs (207 lines)
 - **CreatorStage** (class, L10): CreatorStage:41, React:49, Render:52, Build:95, Perform:116, readonly:143, Drill:152, Shoot:165, Salute:177, Camera:188
@@ -707,6 +707,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## UiLab.Scenes.cs (490 lines)
 - **UiLab** (class, L6): HudPage:12, Field:81, readonly:115, DockCard:121, CaptainPage:149, RealmsPage:237, EventPage:336, Burning:400, MagicPage:430
+
+## UiScroll.cs (126 lines)
+- **Kit** (class, L8): Paper:14, Scroll:69, Roller:104
 
 ## Units.cs (238 lines)
 - **UnitClass** (enum, L6)

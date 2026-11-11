@@ -7,7 +7,7 @@ namespace Ironfield;
 /// and a ribbon title, painted heater shields, 7x7 pixel icons, ring gauges, segmented bars, toggles, sliders, chips, charts
 /// and tooltips. Everything is drawn from the 1x1 pixel and the pixel font, so it keeps the hard-edged pixel look.
 /// The UI lab (F3 on the title) shows every widget.
-static class Kit
+static partial class Kit
 {
     // ---------- colours ----------
 

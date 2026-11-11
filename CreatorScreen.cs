@@ -18,7 +18,8 @@ sealed class CreatorScreen
     /// Which text field takes the keyboard: 0 none, 1 the captain's name, 2 the company's.
     int typing;
     bool helm = true;
-    float time, stepAt;
+    float time, stepAt, scrollAt;
+    string scrollKey = "";
     // The preview captain, rebuilt only when the making changes.
     string previewKey = "";
     CaptainState preview = new();
@@ -456,14 +457,15 @@ sealed class CreatorScreen
         ui.Text(chosen ? "CHOSEN" : "CLICK TO CHOOSE", x + U(40), y + U(18), chosen ? Kit.Gilt : Style.Dim, 1);
         y += U(40);
         ui.Divider(x, y, w, Kit.Gilt * 0.5f); y += U(10);
-        // The story on a strip of parchment.
-        int ts = ui.Wrap(o.Text.ToUpperInvariant(), w - U(16), 2).Count * U(18) < pane.Height / 3 ? 2 : 1, lh = U(ts == 2 ? 18 : 10);
-        var lines = ui.Wrap(o.Text.ToUpperInvariant(), w - U(16), ts);
-        var parch = new Rectangle(x, y, w, lines.Count * lh + U(12));
-        ui.VGrad(parch, Kit.Parchment, Kit.Mul(Kit.Parchment, 0.85f), 2);
-        ui.Frame(parch, Kit.Mul(Kit.Ink, 0.8f), U(1));
-        int ly = parch.Y + U(7);
-        foreach (var line in lines) { ui.Text(line, x + U(8), ly, Kit.Ink, ts); ly += lh; }
+        // The story on a scroll that unrolls each time another origin is shown.
+        if (o.Id != scrollKey) { scrollKey = o.Id; scrollAt = time; }
+        int tw = w - U(40);
+        int ts = ui.Wrap(o.Text.ToUpperInvariant(), tw, 2).Count * U(18) < pane.Height / 3 ? 2 : 1, lh = U(ts == 2 ? 18 : 10);
+        var lines = ui.Wrap(o.Text.ToUpperInvariant(), tw, ts);
+        var parch = new Rectangle(x + U(10), y, w - U(20), lines.Count * lh + U(36));
+        int shown = ui.Scroll(parch, Unroll(scrollAt, 0.45f));
+        int ly = parch.Y + U(18);
+        foreach (var line in lines) { if (ly + lh - U(4) <= shown) ui.Text(line, x + U(20), ly, Kit.Ink, ts); ly += lh; }
         y = parch.Bottom + U(12);
         if (o.Age > 0) { ui.Text($"+{o.Age} YEARS", x, y, Style.Dim, 1); y += U(14); }
         ui.Text("GIVES", x, y, Kit.Gilt, 1); y += U(12);
@@ -555,6 +557,9 @@ sealed class CreatorScreen
         return v;
     }
 
+    /// How far a scroll has unrolled, `seconds` after `from` (whole in shots).
+    float Unroll(float from, float seconds) => Ui.Instant ? 1 : Ease.Out(Math.Clamp((time - from) / seconds, 0, 1));
+
     /// A text box with a dice button; click it to type (Enter or Escape ends).
     int Field(int x, int y, int w, int which, string label, string value, Action roll)
     {
@@ -595,27 +600,30 @@ sealed class CreatorScreen
         string service = Origins.Free(M) ? "UNDER NO KING'S COLOURS, ONLY MY OWN" : $"IN THE PAY OF THE {def.Name.ToUpperInvariant()}";
         string text = $"I, {name}, {birth.Name.ToUpperInvariant()} AND ONCE A {past.Name.ToUpperInvariant()}, TAKE UP THE CAPTAIN'S STAFF AT {Origins.Age(M)} YEARS. " +
             $"I FIGHT WITH {road.Name.ToUpperInvariant()}. I LEAD {company}, {Men} MEN, {service}. LET THE ROLL OF THE COMPANY BEGIN WITH ME.";
-        var parch = new Rectangle(r.X + U(10), r.Y + U(6), r.Width - U(20), r.Height - U(60));
-        ui.VGrad(parch, Kit.Parchment, Kit.Mul(Kit.Parchment, 0.82f), 2);
-        ui.Frame(parch, Kit.Mul(Kit.Ink, 0.8f), U(2));
-        ui.Frame(Kit.Inset(parch, U(6)), Kit.Mul(Kit.Ink, 0.4f), U(1));
+        var parch = new Rectangle(r.X + U(24), r.Y + U(6), r.Width - U(48), r.Height - U(60));
+        int shown = ui.Scroll(parch, Unroll(stepAt, 1.1f));
+        bool Seen(int y, int h) => y + h <= shown;
         int sc = parch.Width >= U(420) ? 2 : 1, lh = U(sc == 2 ? 22 : 11);
         var oath = ui.Wrap(text, parch.Width - U(56), sc);
         var tale = ui.Wrap(string.Join(" ", new[] { birth.Line, past.Line }.Where(l => l != "")).ToUpperInvariant(), parch.Width - U(60));
         int height = U(40) + oath.Count * lh + U(16) + tale.Count * U(12);
         int y = Math.Max(parch.Y + U(18), parch.Center.Y - height / 2 - U(10));
-        ui.TextC("THE OATH OF THE COMPANY", parch.Center.X, y, Kit.Ink, 2); y += U(24);
-        ui.Divider(parch.X + U(40), y, parch.Width - U(80), Kit.Mul(Kit.Ink, 0.9f)); y += U(16);
-        foreach (var line in oath) { ui.TextC(line, parch.Center.X, y, Kit.Ink, sc); y += lh; }
+        if (Seen(y, U(14))) ui.TextC("THE OATH OF THE COMPANY", parch.Center.X, y, Kit.Ink, 2);
+        y += U(24);
+        if (Seen(y, U(2))) ui.Divider(parch.X + U(40), y, parch.Width - U(80), Kit.Mul(Kit.Ink, 0.9f));
         y += U(16);
-        foreach (var line in tale) if (y + U(40) < parch.Bottom) { ui.TextC(line, parch.Center.X, y, Kit.Mul(Kit.Ink, 1.5f), 1); y += U(12); }
+        foreach (var line in oath) { if (Seen(y, lh - U(6))) ui.TextC(line, parch.Center.X, y, Kit.Ink, sc); y += lh; }
+        y += U(16);
+        foreach (var line in tale) if (y + U(40) < parch.Bottom) { if (Seen(y, U(8))) ui.TextC(line, parch.Center.X, y, Kit.Mul(Kit.Ink, 1.5f), 1); y += U(12); }
         // A wax seal in the realm's colour.
         var colours = Origins.Free(M) ? Style.Sides[2] : Style.Sides[def.Palette];
-        var seal = new Vector2(parch.Right - U(44), parch.Bottom - U(40));
+        var seal = new Vector2(parch.Right - U(48), parch.Bottom - U(44));
+        if (!Seen((int)seal.Y, U(20))) goto Button;
         ui.Disc(seal + new Vector2(U(2), U(3)), U(20), Color.Black * 0.25f);
         ui.Disc(seal, U(20), Kit.Mul(colours.Cloth, 0.8f));
         ui.Disc(seal, U(15), Kit.Mul(colours.Cloth, 0.6f));
         ui.Shield(new Rectangle((int)seal.X - U(9), (int)seal.Y - U(11), U(18), U(22)), colours with { Charge = (Emblem)M.Arms });
+        Button:
         if (ui.Gilded(new Rectangle(r.Center.X - U(130), parch.Bottom + U(14), U(260), U(34)), "BEGIN THE CAMPAIGN", "", M.Name.Trim() != "")) Begin();
     }
 
