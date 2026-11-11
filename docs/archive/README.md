@@ -17,6 +17,7 @@ The living docs are `CLAUDE.md`, `docs/DEVELOPING.md`, `docs/DESIGN.md`, `docs/C
 | [`LORDS.md`](LORDS.md) | Lords: faces, houses, bonds and talk (LD0-LD7) |
 | [`MAGIC_AURA.md`](MAGIC_AURA.md) | Magic and aura for the player: plan |
 | [`MELEE.md`](MELEE.md) | Melee and company tactics: plan |
+| [`MONSTERS.md`](MONSTERS.md) | Monsters that threaten: monster leaders, spiders, bears, wyverns, more monsters abroad |
 | [`POLISH.md`](POLISH.md) | Polish pass: plan |
 | [`PROGRESSION.md`](PROGRESSION.md) | Captain progression and gameplay: plan |
 | [`ROADMAP.md`](ROADMAP.md) | Ironfield roadmap: what comes next |

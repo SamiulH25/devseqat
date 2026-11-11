@@ -41,9 +41,10 @@ public sealed record Mount(string Id, string Name, float Hp, float Trot, float G
 public sealed record Look(string Head, string Body, string Legs, string Feet, string Hands, string Shield, string Weapon,
     bool Tabard, bool Plume, bool Cape, string Face = "man", int Visage = -1)
 {
-    /// "wolf" is a whole beast: the puppet draws it on four legs from the w* sprites, ignoring the rest of the look.
-    public static readonly string[] Faces = { "man", "goblin", "wolf", "troll", "skull", "ghoul" };
-    public bool Beast => Face == "wolf";
+    /// "wolf", "bear", "spider" and "wyvern" are whole beasts: the puppet draws each with its own rig and sprites
+    /// (w*, b*, s*, y*), ignoring the rest of the look.
+    public static readonly string[] Faces = { "man", "goblin", "wolf", "troll", "skull", "ghoul", "bear", "spider", "wyvern" };
+    public bool Beast => Face is "wolf" or "bear" or "spider" or "wyvern";
     /// The sprite family of the bare head. A man's own visage is painted once, in the neutral palette ("head.v12.f/n").
     public string HeadKey => Face != "man" ? "head." + Face : Visage >= 0 ? "head.v" + Visage : "head";
     public bool NeutralHead => Face == "man" && Visage >= 0;
@@ -105,14 +106,20 @@ public sealed class UnitType
     /// "regen" (heals when left alone a moment), "daylight" (slow and weak in sunlight, no healing), "fearless" (never routs).
     /// The undead's: "bones" (arrows do little to a skeleton), "raise" (a necromancer: raises the fallen around him
     /// to fight for him), "raised" (held up by a necromancer: falls apart when the last one of its side falls),
-    /// "feed" (a ghoul: a kill heals it). Men's: "stakes" (longbowmen carry stakes to plant before their line, docs/archive/TERRAIN.md T6).
+    /// "feed" (a ghoul: a kill heals it). The beasts' (docs/archive/MONSTERS.md): "poison" (a bite or sting that lands keeps
+    /// hurting, through armour), "web" (a spider spits webs that pin the men they land on), "brood" (a brood mother lays
+    /// spiderlings as she fights), "rage" (a wounded bear hits harder and faster), "flying" (a wyvern: out of reach of
+    /// blades while aloft, it dives to strike and climbs away). Men's: "stakes" (longbowmen carry stakes to plant before their line, docs/archive/TERRAIN.md T6).
     public string[] Traits = Array.Empty<string>();
-    public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless", "bones", "raised", "raise", "feed", "stakes" };
+    public static readonly string[] KnownTraits = { "craven", "boss", "pack", "sweep", "knockback", "fear", "regen", "daylight", "fearless", "bones", "raised", "raise", "feed", "stakes",
+        "poison", "web", "brood", "rage", "flying" };
     /// A body big enough to take more room, shove men aside and stand up to a horse (a troll).
     public bool Huge => Size >= 1.6f;
     /// Bound to its boss: loses heart when he falls.
     public bool Bound => Has("craven") || Has("pack");
     public bool Has(string trait) => Traits.Contains(trait);
+    /// Has the "flying" trait (set once on load: the sim asks every tick).
+    public bool Flying;
     public int Ammo;
     public bool Leader;
     /// A spear that only thrusts (the captain's boar spear): every swing is a thrust.
@@ -217,6 +224,14 @@ public sealed class Unit
     public bool RiposteReady;
     /// His effect totals: his troop's passives plus his company's auras (BattleEffects.cs, rebuilt every 0.5 s).
     public Mods Mods;
+    /// Poison still to work (hp, dealt over a few seconds through armour) and who gave it (docs/archive/MONSTERS.md).
+    public float Poison;
+    public Unit? PoisonedBy;
+    /// Caught in a spider's web until then: barely moves, barely guards. Spit: a spider's time until its next web.
+    public float WebbedUntil = -99, Spit;
+    /// A flyer's height above the ground (metres); Climbing: it has struck and is pulling away until ClimbUntil.
+    public float Altitude, ClimbUntil;
+    public bool Climbing;
 
     public bool Active => !Dead && !Fled;
     public bool Mounted => Horse != null;

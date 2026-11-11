@@ -129,7 +129,9 @@ sealed partial class Puppet
         float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * u.Type.Size * Scale * Variety.Stature(u);
         float phase = Ease.Hash(u.Index);
         if (u.Dead) { Fallen(u, lift, size, phase); return; }
-        if (look.Face == "wolf") { Frame(u.Pos, u.ViewFacing, lift, size); Beast(u, ground); return; }
+        if (Now > 0 && Now < u.WebbedUntil) WebOn(u, lift, size);                    // caught in a spider's web
+        if (u.Poison > 0 && u.HitFlash <= 0) tint = Color.Lerp(tint, new Color(150, 230, 110), 0.4f); // green with poison
+        if (look.Beast) { Frame(u.Pos, u.ViewFacing, lift, size); Beast(u, ground); return; }
         var p = PoseOf(u, Now, phase, Winner);
         if (Awe.Count > 0) p = Awed(u, p, phase);
         var at = u.Pos;
@@ -355,6 +357,8 @@ sealed partial class Puppet
     /// A wolf on four legs: it trots, and lunges with its head in the strike (docs/archive/CREATURES.md).
     void Beast(Unit u, float ground)
     {
+        if (OtherBeast(u, ground)) return; // a spider, a bear, a wyvern (PuppetBeasts.cs)
+        if (u.Type.Id == "alpha_wolf") { var keep = tint; tint = Color.Lerp(tint, new Color(250, 250, 255), 0.45f); WolfBody(u.Pos, ground, u.ViewFacing, u.Anim, u.Vel.Length(), u.Type.Size * Scale, u.Action == UnitAction.Recover ? 0.28f : 0, false); tint = keep; return; } // the pack's great white alpha
         float lunge = u.Action == UnitAction.Windup ? -0.12f : u.Action == UnitAction.Recover ? 0.28f : 0;
         var grey = tint;
         if (u.Type.Breed == "hound") tint = Color.Lerp(tint, HoundCoat, 0.6f); // a war hound is a brown dog, not a grey wolf
@@ -413,6 +417,7 @@ sealed partial class Puppet
     void BeastCorpse(Unit u)
     {
         Flat(new(0, 0.04f, -0.2f), "blood", false);
+        if (OtherBeastCorpse(u)) return; // PuppetBeasts.cs
         pal = "/n";
         if (u.Type.Breed == "hound") tint = Color.Lerp(tint, HoundCoat, 0.6f);
         if (u.Type.Size > 1.1f) tint = Color.Lerp(tint, new Color(70, 64, 60), 0.45f);
@@ -570,7 +575,7 @@ sealed partial class Puppet
         float yaw = u.ViewFacing;
         Vector2 fwd2 = new(MathF.Cos(yaw), MathF.Sin(yaw)), right2 = new(-fwd2.Y, fwd2.X);
         Vector2 dir = u.DiedFrom == Vector2.Zero || away.LengthSquared() < 1e-4f ? -fwd2 : Vector2.Normalize(away);
-        var fall = look.Face == "wolf" ? Fall.Plain : u.DiedFall;
+        var fall = look.Beast ? Fall.Plain : u.DiedFall;
         Vector2 saddleSide = new(MathF.Sin(u.Heading), -MathF.Cos(u.Heading)); // Kill moved him a metre this way off the horse
         if (fall == Fall.Thrust) dir = -dir; // folded over the blade, he falls toward it
         if (fall == Fall.Saddle) dir = saddleSide;
@@ -582,7 +587,7 @@ sealed partial class Puppet
         {
             // Lying down: the corpse's "back" points along the fall.
             Frame(u.Pos, MathF.Atan2(-dir.Y, -dir.X), ground, size);
-            if (look.Face == "wolf") BeastCorpse(u); else Corpse(phase);
+            if (look.Beast) BeastCorpse(u); else Corpse(phase);
             return;
         }
         bool crumple = fall == Fall.Thrust || fall == Fall.Plain && phase < 0.3f;
@@ -608,7 +613,7 @@ sealed partial class Puppet
         Frame(at, yaw, y, size);
         float a = 85 * (fall == Fall.Flung ? Ease.Out(k) : crumple ? Ease.In(MathF.Max(0, k * 1.4f - 0.4f)) : Ease.In(k));
         Lean(Vector2.Dot(dir, right2) * a, Vector2.Dot(dir, fwd2) * a);
-        if (look.Face == "wolf") { Beast(u, ground); return; }
+        if (look.Beast) { Beast(u, ground); return; }
         var p = new Pose(crumple ? 30 * k : 10, 40 + 60 * k, 20, 0, 50 + 40 * k, false, false);
         for (int side = -1; side <= 1; side += 2)
         {

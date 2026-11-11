@@ -86,6 +86,10 @@ partial class BattleScreen
         float near = Vector2.Distance(at, new Vector2(eye.X, eye.Z));
         switch (what)
         {
+            case "web": // a spider's web lands (BattleMonsters.cs): strands burst out over the men it pins
+                Spray(at, 0.9f, 18, new Color(236, 236, 242), 2.6f, 0.6f, 0.05f, false);
+                AddRipple(at, radius * 0.3f, radius, 0.45f, new Color(236, 236, 245));
+                break;
             case "cast": Rise(at, 0.8f, 8, col, 0.07f, 0.9f); AddRipple(at, 2.2f, 0.4f, 0.6f, col); break;
             case "breakthrough": // the wall breaks in the field (MA7): a white shock, a rising column, a moment held
                 AddRipple(at, 0.5f, radius, 1.4f, Color.White, 0.4f);

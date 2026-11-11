@@ -566,12 +566,13 @@ sealed partial class Hud
     public static void Portrait(SpriteBatch sb, Art art, UnitType t, Rectangle box, int k, float top = 1.92f)
     {
         var l = t.Look;
-        if (l.Face == "wolf") // a beast's portrait is its head, big
+        if (l.Beast) // a beast's portrait is its head, big
         {
-            var src = art["whead/n"];
+            var src = art[l.Face switch { "spider" => "shead/n", "bear" => "bhead/n", "wyvern" => "yhead/n", _ => "whead/n" }];
             int kk = Math.Max(1, Math.Min(box.Width / src.Width, box.Height / src.Height));
             var dst = new Rectangle(box.Center.X - src.Width * kk / 2, box.Center.Y - src.Height * kk / 2, src.Width * kk, src.Height * kk);
-            sb.Draw(art.Atlas, dst, src, t.Size > 1.1f ? new Color(150, 140, 135) : Color.White);
+            var tint = t.Id == "alpha_wolf" ? new Color(235, 235, 240) : l.Face == "wolf" && t.Size > 1.1f ? new Color(150, 140, 135) : Color.White;
+            sb.Draw(art.Atlas, dst, src, tint);
             return;
         }
         void Part(string key, float xm, float ym, string pal = "/0", Color? tint = null)

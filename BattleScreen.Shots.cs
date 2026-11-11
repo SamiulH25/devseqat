@@ -167,8 +167,47 @@ partial class BattleScreen
                 PoseSheet(6); shotFrames = 0; shotIndex++; break;
             case 98 when shotFrames > (shotIndex > 97 ? 20 : 30):
                 pendingShot = "pose-life"; shotIndex++; break;
-            case 99 when pendingShot == null: Exit(); break;
+            case 99 or 101 when pendingShot == null:
+                // The beasts of docs/archive/MONSTERS.md and the leaders of monster hosts, a man for scale; the wyvern on the wing.
+                Gallery(new[] { "goblin_chief", "alpha_wolf", "spiderling", "spider", "bear", "brood_mother", "troll_elder", "wyvern", "shieldmen" }, 3);
+                zoom = shotIndex == 99 ? 17 : 14; camPitch = shotIndex == 99 ? 0.22f : 0.12f;
+                camFocus = battle.Units.First(u => u.Type.Id == (shotIndex == 99 ? "spider" : "brood_mother")).Pos + new Vector2(shotIndex == 99 ? -1.5f : -3f, 0.6f);
+                foreach (var u in battle.Units.Where(u => !u.IsLeader))
+                {
+                    u.Facing = u.Heading = u.ViewFacing = u.ViewHeading = shotIndex == 99 ? -MathHelper.PiOver2 - 0.6f : 0;
+                    u.Altitude = u.Type.Flying ? 2.5f : 0;
+                }
+                shotFrames = 0; shotIndex++; break;
+            case 100 or 102 when shotFrames > 20:
+                pendingShot = shotIndex == 100 ? "gallery-beasts" : "gallery-beasts-side"; shotIndex++; break;
+            case 103 when pendingShot == null:
+                BeastScene(); shotFrames = 0; shotIndex++; break;
+            case 104 when shotFrames > 150:
+                pendingShot = "beasts-fight"; shotIndex++; break;
+            case 105 when shotFrames > 330:
+                pendingShot = "beasts-fight-late"; shotIndex++; break;
+            case 106 when pendingShot == null: Exit(); break;
         }
+    }
+
+    /// A live fight with the beasts: spiders and their brood mother on a shield line, a wyvern stooping on archers, a bear.
+    void BeastScene()
+    {
+        battle = Battle.Empty(11);
+        SetWorld();
+        battle.AddSquad(0, Troops.Get("shieldmen"), 20, new Vector2(-6, -4), 10, Vector2.UnitY);
+        battle.AddSquad(0, Troops.Get("bowmen"), 12, new Vector2(10, -8), 6, Vector2.UnitY);
+        battle.AddSquad(1, Troops.Get("spider"), 10, new Vector2(-6, 10), 5, -Vector2.UnitY).Order = Order.Charge;
+        battle.AddSquad(1, Troops.Get("brood_mother"), 1, new Vector2(-6, 16), 1, -Vector2.UnitY).Order = Order.Charge;
+        battle.AddSquad(1, Troops.Get("wyvern"), 1, new Vector2(14, 18), 1, -Vector2.UnitY).Order = Order.Charge;
+        battle.AddSquad(1, Troops.Get("bear"), 1, new Vector2(2, 12), 1, -Vector2.UnitY).Order = Order.Charge;
+        paused = false; hudHidden = true;
+        SetCommand(true);
+        blend = 1;
+        camFocus = new Vector2(2, 2);
+        camYaw = MathHelper.PiOver2 + 0.35f;
+        camPitch = 0.42f;
+        zoom = 34;
     }
 
     static readonly (string Name, int Palette, string[] Troops)[] RosterShots =

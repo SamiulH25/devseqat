@@ -309,7 +309,7 @@ public static partial class SelfTest
     {
         var c = Campaign.New(95);
         var trolls = c.Rares.ToList();
-        Check(trolls.Count == 2 && c.RaresWanted == 2, $"the world starts with two trolls ({trolls.Count})");
+        Check(trolls.Count == 3 && c.RaresWanted == 3, $"the world starts with three trolls ({trolls.Count})");
         foreach (var t in trolls)
             Check(Campaign.Wild(c.Map.ProvinceAt(t.Pos)) && t.Companies.All(co => co.Troop == "troll"), $"{t.Name} lives in the wilds");
         var troll = trolls[0];
@@ -324,13 +324,13 @@ public static partial class SelfTest
 
         // More wake over the years, up to the cap.
         c.S.Hours += 24 * 120;
-        Check(c.RaresWanted == 4, $"one more every 60 days ({c.RaresWanted})");
+        Check(c.RaresWanted == 5, $"one more every 60 days ({c.RaresWanted})");
         c.S.Hours += 24 * 1000;
-        Check(c.RaresWanted == 6, "at most six");
+        Check(c.RaresWanted == 8, "at most eight");
         var d = Campaign.New(96);
         Days(d, 120);
         Console.WriteLine($"trolls: after 120 days {d.Rares.Count()} trolls abroad (wanted {d.RaresWanted}): {string.Join(", ", d.Rares.Select(r => $"{r.Name} {r.Men}"))}");
-        Check(d.Rares.Count() >= 2 && d.Rares.Count() <= d.RaresWanted, "the world keeps its rare monsters");
+        Check(d.Rares.Count() >= 3 && d.Rares.Count() <= d.RaresWanted, "the world keeps its rare monsters");
     }
 
     /// Phase 5b: a big battle leaves a grave field; buried it lies quiet, left alone it rises some nights later as an undead
@@ -346,7 +346,7 @@ public static partial class SelfTest
             var band = c.S.Parties.First(p => p.Kind == PartyKind.Bandit && !p.Down);
             foreach (var co in band.Companies) foreach (var st in co.Stacks) st.Men = 0;
             band.Companies.Clear();
-            band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(70), 0));
+            band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(90), 0));
             band.Pos = c.Player.Pos;
             foreach (var p in c.S.Parties) // no passer-by joins: the test wants a fight of this size
                 if (p != c.Player && p != band && Vector2.Distance(p.Pos, c.Player.Pos) < Balance.Get().JoinRadius * 2)

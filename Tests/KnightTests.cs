@@ -568,6 +568,7 @@ public static partial class SelfTest
         var mine = c.OrderParties("lily").First();
         mine.Pos = c.Player.Pos + new Vector2(30, 0);
         mine.Down = false;
+        foreach (var k in mine.Companies) k.Stacks[0].Men += c.Scaled(5); // a fit army, not one that must go home to refit
         c.LordThink(mine);
         Check(mine.Task == "escort" && mine.Goal == c.Player.Pos, "your order's armies ride with their grand master");
         // An election you do not stand in.
