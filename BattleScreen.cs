@@ -222,7 +222,7 @@ sealed partial class BattleScreen
     public void NewBattle()
     {
         // Stand-in for the campaign map: both armies arrive with companies upgraded to some level (1-4).
-        int seed = shotDir != null ? 7 : Environment.TickCount;
+        int seed = shotDir != null ? PressSeed ?? 7 : Environment.TickCount;
         var rng = new Random(seed);
         var levels = (Environment.GetEnvironmentVariable("IRONFIELD_LEVELS") ?? (shotDir != null ? "4,3" : "")).Split(',');
         int mine = int.TryParse(levels[0], out var l0) ? l0 : rng.Next(1, 5);
@@ -238,11 +238,11 @@ sealed partial class BattleScreen
         int auraTier = int.TryParse(aura[0], out var at) ? Math.Clamp(at, 0, 5) : 0;
         var forms = Forms.Generic.Concat(aura.Length > 1 ? Forms.OfOrder(aura[1]) : Enumerable.Empty<FormDef>()).Where(f => f.Tier <= auraTier)
             .OrderBy(f => f.Order == "" ? 1 : 0).Select(f => f.Id).ToArray();
-        battle = new Battle(seed, Armies.Divide(Armies.Large(rng, Math.Clamp(mine, 1, 4), 0, men)), Armies.Divide(Armies.Large(rng, Math.Clamp(theirs, 1, 4), 1, men)),
+        battle = new Battle(seed, Armies.Divide(WithMages(Armies.Large(rng, Math.Clamp(mine, 1, 4), 0, men), 0)), Armies.Divide(WithMages(Armies.Large(rng, Math.Clamp(theirs, 1, 4), 1, men), 1)),
             new BattleOptions
             {
                 EnemyDamage = Settings.Current.EnemyDamage, Weather = weather, Cap = Math.Max(Settings.Current.BattleSize, men * 2 + 20),
-                Ground = QuickGround(rng), AuraTier = auraTier, Forms = forms,
+                Ground = QuickGround(rng), AuraTier = auraTier, Forms = forms, AutoPlayer = PressSeed != null && shotDir != null,
             });
         battle.StartRecording(seed);
         replaySaved = false;
@@ -255,6 +255,15 @@ sealed partial class BattleScreen
         blend = 0;
         paused = menuOpen = helpOpen = wheelOpen = false;
         SetCommand(false);
+    }
+
+    /// IRONFIELD_MAGES=troop:team[:count],... adds companies of mages to the quick battle (e.g. galdr_masters:0,crimson_crones:1).
+    static ArmySpec WithMages(ArmySpec army, int team)
+    {
+        var extra = (Environment.GetEnvironmentVariable("IRONFIELD_MAGES") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(e => e.Split(':')).Where(p => p.Length >= 2 && p[1] == team.ToString() && Troops.All.Any(t => t.Id == p[0]))
+            .Select((p, i) => new Company(p[0], p.Length > 2 && int.TryParse(p[2], out var n) ? n : 12, "casters", team * 1000 + 900 + i)).ToList();
+        return extra.Count == 0 ? army : army with { Companies = army.Companies.Concat(extra).ToList() };
     }
 
     void SetWorld()
@@ -352,7 +361,7 @@ sealed partial class BattleScreen
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
         frameDt = dt;
-        if (shotDir != null) { shotFrames++; ShotScript(); }
+        if (shotDir != null) { shotFrames++; if (PressSeed != null) PressScript(); else ShotScript(); }
         UpdateCamera();
     }
 

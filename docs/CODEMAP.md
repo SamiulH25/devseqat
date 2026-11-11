@@ -144,8 +144,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (290 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:80, CommandControls:88, BoxOf:208, OnScreen:210, PickSquad:217, GroundUnderMouse:231, UpdateCamera:253
 
-## BattleScreen.cs (444 lines)
-- **BattleScreen** (class, L10): Exit:16, GroundTips:47, MagicTips:59, BattleScreen:112, Load:124, QuickGround:143, BeginCampaign:153, StartDeployment:184, StageCommandView:199, FinishCampaignBattle:207, NewBattle:222, SetWorld:260, SetCommand:271, Pressed:280, Update:288, PlaySounds:360, Soundscape:370, SyncHud:403, MenuChoice:430
+## BattleScreen.cs (453 lines)
+- **BattleScreen** (class, L10): Exit:16, GroundTips:47, MagicTips:59, BattleScreen:112, Load:124, QuickGround:143, BeginCampaign:153, StartDeployment:184, StageCommandView:199, FinishCampaignBattle:207, NewBattle:222, WithMages:261, SetWorld:269, SetCommand:280, Pressed:289, Update:297, PlaySounds:369, Soundscape:379, SyncHud:412, MenuChoice:439
 
 ## BattleScreen.Draw.cs (627 lines)
 - **BattleScreen** (class, L8): Draw:12, DrawShaded:51, DrawBlobs:93, EaseFacings:122, Spray:138, Effects:151, GroundSteps:182, BuildSprites:236, SpriteStates:292, DrawSpritesBasic:300, DrawSpritesShaded:310, Line:320, G:321, OrderArrows:330, OrderArrowLines:332, Ring:348, TorchRow:358, Precipitation:367, Fall:378, Stakes:397, SpellColor:420, Spells:426, AuraGlow:441, ChampionGlow:451, PlayerGlow:464, PendingFormsDrawn:478, RouteDots:503, PlanHook:516, DrawLines:546
@@ -164,6 +164,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## BattleScreen.Orders.cs (352 lines)
 - **BattleScreen** (class, L8): Targets:12, Issue:15, Send:28, Move:38, NextRule:50, GiveGoal:69, GoalCommand:71, Command:93, MergeSelected:158, RelieveSelected:179, SplitSelected:194, GroupKey:208, Group:211, OrderKeys:232, NextSpell:259, CastAt:271, PlantStakes:285, NextDivision:297, LineAt:307, Distribute:324, PreviewSlots:343
+
+## BattleScreen.Press.cs (194 lines)
+- **BattleScreen** (class, L8): PressShot:16, PressList:21, PressScript:49, MagicShot:78, Aim:102, Blocked:116, Behind:137, Over:145, Captain:152, Horse:163, Volley:174, Hot:184
 
 ## BattleScreen.Shots.cs (592 lines)
 - **BattleScreen** (class, L8): ShotScript:10, readonly:174, readonly:182, PoseSheet:192, GripSheet:266, ShooterSheet:290, StanceSheet:322, LifeSheet:343, Clash:376, MagicScene:403, SpectacleScene:454, WorkScene:504, StageCast:560, Gallery:568
