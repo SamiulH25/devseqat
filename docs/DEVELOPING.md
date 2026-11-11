@@ -140,7 +140,7 @@ Controls.cs             rebindable actions (Act enum), defaults, controls.json
 ── Rendering and sound ────────────────────────────────────────────────────────────────────────────────
 World.cs (3D meshes), Shading.cs + GlslEffect.cs + Shaders/*.glsl (shader pipeline), Sky.cs (light by hour/weather),
 Puppet.cs (units as part-sprite puppets), SpriteSheet.cs + Painter.cs (paint the sprite atlas in code), Art.cs (atlas upload),
-PixelFont.cs (the HUD font), Style.cs (colours, heraldry, UI tokens), Verts.cs (growable vertex array), Audio.cs (plays sound), AudioSynth.cs + AudioMusic.cs (make it), SoundDump.cs (`--sounds`)
+PixelFont.cs (the HUD font), Style.cs (colours, heraldry, UI tokens), Verts.cs (growable vertex array), Audio.cs + AudioStreamer.cs (play sound & stream stereo music), AudioSynth*.cs + AudioBank.cs + MusicScore.cs (make cues, beds & scores), SoundDump.cs (`--sounds`)
 
 ── Tests and tools ────────────────────────────────────────────────────────────────────────────────────
 SelfTest.cs             test runner (Run, RunOne), shared helpers, Check
@@ -511,7 +511,7 @@ in the F1 help (`Hud.Help`). Some map keys (P, K, L, R) are hard-coded in `MapSc
 
 ## 7. Rendering and sound
 
-There are no image, model or sound files: everything is generated at startup.
+There are no image, model or pre-rendered WAV/OGG files: sprites and meshes are built at startup, SFX and ambient beds are synthesised in code, and music renders live from compact JSON scores through a 28-voice micro-sample bank (`Data/audio/instruments.bank`).
 
 - **Sprites:** `SpriteSheet.cs` paints every body part, for every look, view (front/side/back) and side colour, into a
   1024x1024 atlas, using `Painter.cs` materials. Keys look like `helm.kettle.f`. A new `Look` part needs painting code here.
@@ -522,16 +522,23 @@ There are no image, model or sound files: everything is generated at startup.
   are in the README "Shaders" section: render targets sample upside down on GL, vertex shaders end with `FIXUP_POSITION`,
   no MSAA (breaks Mesa/Xvfb).
 - **Light:** `Sky.cs` sets sun, ambient and fog from the hour and weather.
-- **Sound:** `AudioSynth.cs` (static class `Synth`, pure maths, headless) makes every `Cue` in 3-4 versions plus a far
-  version (`Far`: muffled, more echo), the ambient beds (`Bed`: battle wind, gallop, din, roar, march, rain; map birds,
-  crickets, town) and, in `AudioMusic.cs`, the music: three map themes that take turns with quiet between, the deployment
-  piece, the battle score in two layers (the second rises with `AudioEngine.Intensity`, the share of the field in contact),
-  victory and defeat. `Audio.cs` (`AudioEngine`) makes it all on a background thread at startup, picks a version at random
-  (never the same twice), plays the far version past a third of a cue's range, and fades out any bed no screen asked for this
-  frame (`SetBed`). The sim emits cues with `Sound(Cue.X, pos)` into `Battle.Sounds`; the screen plays them; buttons tick on
-  hover (`Ui.OnHover`) and a page turns when a map screen opens. No audio device means silence, not a crash.
-  `--sounds dir` writes every cue, bed and piece as WAV files to listen to; `SelfTest.SoundsMade` checks they are audible,
-  never clip and loop cleanly.
+- **Sound and music:** Everything runs at 44.1 kHz (`Synth.Rate = 44100`). `AudioSynth.cs` and its partials
+  (`AudioSynth.Combat.cs`, `AudioSynth.Creatures.cs`, `AudioSynth.World.cs` — static class `Synth`, pure maths, headless)
+  synthesise all 96 `Cue`s in 3–4 versions plus a muffled, echoing `Far` copy for world cues, and 16 looping ambient `Bed`s
+  (battle wind, gallop, din, roar, march, rain; world birds, crickets, town, surf, river, forest, blizzard, tavern, forge,
+  omen drone). Music is 68 hand-authored scores in `Data/music/*.json` (`MusicScore.cs` / `MusicLibrary`): front-end themes,
+  7 cultural map suites (day, night, peace, host) plus winter and omen pieces, settlement interiors and sacred sites, 13
+  four-stem adaptive battle suites (`Deploy`, `Skirmish`, `Melee`, `Crisis`), and 12 battle/campaign stingers. Scores render
+  through `AudioBank.cs`, which loads the 28-voice multi-zone instrument bank (`Data/audio/instruments.bank`, built by
+  `tools/build_bank.py`, with procedural oscillator fallback), and stream in 44.1 kHz stereo chunks through one
+  `DynamicSoundEffectInstance` and shared `StereoHall` reverb (`AudioStreamer.cs`). `Audio.cs` (`AudioEngine`) synthesises
+  cues and beds on background workers, sorts `Battle.Sounds` (cap 256, player cues protected) by listener distance with
+  per-family caps, applies horn/spectacle sidechain ducking, scales beds by `Settings.AmbienceVolume` (`SetBed`), and drives
+  contextual map/interior/battle music (`BattleScreen.Soundscape`, `MapScreen.Soundscape`). The sim emits cues with
+  `Sound(Cue.X, pos)` into `Battle.Sounds`; buttons tick on hover (`Ui.OnHover`) and a page turns when a map screen opens.
+  No audio device means silence, not a crash. `--sounds dir [filter]` writes matching cues, beds and stereo scores as WAV
+  files to listen to; `SelfTest.SoundsMade` checks the bank, validates all 68 scores (`MusicLibrary.Validate`), and verifies
+  levels and loop seams.
 
 Check visual changes with the screenshot commands in section 1 and look at the PNGs.
 
@@ -711,10 +718,10 @@ stand-in captain and reports career stage days against targets (slow: ~10 min fo
 3. List it in the F1 help (`Hud.Help`).
 
 ### 10.10 Add a sound
-1. Add a value to `Cue` in `Audio.cs`, a case in `Synth.Make` (AudioSynth.cs) that builds it from a `Random` (so each
-   version differs), and its loudness in `Synth.Peak`.
+1. Add a value to `Cue` in `Audio.cs`, a case in `Synth.Make` (`AudioSynth.cs` or the matching `AudioSynth.*.cs` partial)
+   that builds it from a `Random` (so each version differs), and its loudness in `Synth.Peak`.
 2. Emit it from the sim with `Sound(Cue.MyCue, pos)` (its hearing range is in `BattleScreen.PlaySounds`).
-3. Listen: `dotnet run -c Release --no-build -- --sounds /tmp/snd` writes `cue-mycue.wav`.
+3. Listen: `dotnet run -c Release --no-build -- --sounds /tmp/snd mycue` writes `cue-mycue.wav`.
 
 ---
 

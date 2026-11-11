@@ -7,6 +7,7 @@ The living docs are `CLAUDE.md`, `docs/DEVELOPING.md`, `docs/DESIGN.md`, `docs/C
 | Plan | What it covered |
 |---|---|
 | [`ANIMATION_ROSTER.md`](ANIMATION_ROSTER.md) | Animation and roster pass: poses by grip, knees, idles and falls; branch troops for the thin realms |
+| [`AUDIO.md`](AUDIO.md) | Audio overhaul: combat, world and adaptive soundtrack (plan AU0–AU6) |
 | [`CAMPAIGN_OVERHAUL.md`](CAMPAIGN_OVERHAUL.md) | Ironfield campaign overhaul (roadmap phase F) |
 | [`COMBAT_OVERHAUL.md`](COMBAT_OVERHAUL.md) | Combat overhaul: plan |
 | [`COMBAT_QOL.md`](COMBAT_QOL.md) | Combat quality of life (Q1-Q6): fold, relieve and split, queued and standing orders, speed, alerts, groups and remembered deployment |
