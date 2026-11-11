@@ -121,15 +121,19 @@ static partial class Synth
     /// How many versions each cue has: picked at random so a fight never repeats one clang.
     public static int Versions(Cue c) => c switch { Cue.Thunder or Cue.Gather or Cue.Cheer or Cue.Crash => 3, Cue.Click or Cue.Hover => 3, _ => 4 };
 
-    /// Cues heard in the world (positioned, given a far version); the rest are the interface's.
-    public static bool InWorld(Cue c) => c is not (Cue.Click or Cue.Coin or Cue.Hover or Cue.Page or Cue.Order);
+    /// Cues heard in the world (positioned, given a far version); the rest are the interface's or captain close-mic.
+    public static bool InWorld(Cue c) => c is not (Cue.Click or Cue.Coin or Cue.Hover or Cue.Page or Cue.Order or Cue.LowHpPulse);
 
     /// Loudest sample of each cue: the one place the mix is set.
     static float Peak(Cue c) => c switch
     {
         Cue.Hover => 0.22f, Cue.Click => 0.45f, Cue.Page => 0.5f, Cue.Coin => 0.55f, Cue.Order => 0.6f,
-        Cue.Death => 0.6f, Cue.Volley => 0.55f, Cue.Neigh => 0.6f, Cue.ArrowHit => 0.6f, Cue.Bow => 0.6f, Cue.Throw => 0.5f,
-        Cue.Splash or Cue.Squelch or Cue.Rustle or Cue.Hollow => 0.55f,
+        Cue.SwingOne or Cue.SwingPole => 0.42f, Cue.SwingTwo or Cue.WeaponSwap or Cue.CrossbowSpan => 0.48f,
+        Cue.LowHpPulse => 0.55f, Cue.RiposteRing => 0.62f,
+        Cue.Death => 0.6f, Cue.Volley => 0.55f, Cue.Neigh => 0.6f,
+        Cue.ArrowHit or Cue.ArrowShield or Cue.ArrowPlate or Cue.ArrowFlesh => 0.6f,
+        Cue.Bow or Cue.LongbowLoose or Cue.CrossbowSnap or Cue.SlingCrack or Cue.JavelinCast => 0.6f, Cue.Throw => 0.5f,
+        Cue.Splash or Cue.Squelch or Cue.Rustle or Cue.Hollow or Cue.LadderHook or Cue.RamSwing => 0.55f,
         Cue.Horn or Cue.Rout => 0.5f, // a horn is all body: at a lower peak it is still the loudest thing on the field
         _ => 0.85f,
     };
@@ -181,6 +185,35 @@ static partial class Synth
         Cue.Cheer => Cheer(r),
         Cue.Order => Order(r, v),
         Cue.Page => Page(r),
+        Cue.SlashLight => SlashLight(r),
+        Cue.SlashHeavy => SlashHeavy(r),
+        Cue.BluntFlesh => BluntFlesh(r),
+        Cue.BluntPlate => BluntPlate(r),
+        Cue.PierceHit => PierceHit(r),
+        Cue.LanceImpact => LanceImpact(r),
+        Cue.LanceShatter => LanceShatter(r),
+        Cue.BlockWood => BlockWood(r),
+        Cue.BlockMetal => BlockMetal(r),
+        Cue.ParrySteel => ParrySteel(r),
+        Cue.ShieldSplinter => ShieldSplinter(r),
+        Cue.BashThud => BashThud(r),
+        Cue.SwingOne => SwingOne(r),
+        Cue.SwingTwo => SwingTwo(r),
+        Cue.SwingPole => SwingPole(r),
+        Cue.RiposteRing => RiposteRing(r),
+        Cue.WeaponSwap => WeaponSwap(r),
+        Cue.LowHpPulse => LowHpPulse(r),
+        Cue.LongbowLoose => LongbowLoose(r),
+        Cue.CrossbowSnap => CrossbowSnap(r),
+        Cue.CrossbowSpan => CrossbowSpan(r),
+        Cue.SlingCrack => SlingCrack(r),
+        Cue.JavelinCast => JavelinCast(r),
+        Cue.ArrowShield => ArrowShield(r),
+        Cue.ArrowPlate => ArrowPlate(r),
+        Cue.ArrowFlesh => ArrowFlesh(r),
+        Cue.RamSwing => RamSwing(r),
+        Cue.LadderHook => LadderHook(r),
+        Cue.FirePotShatter => FirePotShatter(r),
         _ => Buf(0.05f),
     };
 

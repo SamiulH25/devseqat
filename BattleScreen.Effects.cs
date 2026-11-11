@@ -24,7 +24,7 @@ partial class BattleScreen
         if (lastPlayerHp >= 0 && p.Hp < lastPlayerHp - 0.5f) Kick(0.4f);
         lastPlayerHp = p.Hp;
         foreach (var (cue, at) in battle.Sounds)
-            if (cue == Cue.Impact) { float d = Vector2.Distance(at, p.Pos); if (d < 16) Kick(0.3f * (1 - d / 16)); }
+            if (Synth.HeavyImpact(cue)) { float d = Vector2.Distance(at, p.Pos); if (d < 16) Kick(0.3f * (1 - d / 16)); }
     }
 
     void Kick(float amount) => trauma = MathF.Min(1, trauma + amount);
@@ -61,15 +61,12 @@ partial class BattleScreen
     {
         bool wet = battle.Weather.Rain > 0.3f;
         foreach (var (cue, at) in battle.Sounds)
-            switch (cue)
+            if (Synth.DrawsBlood(cue) && fx.NextSingle() < 0.45f)
+                AddMark(at + new Vector2(fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f) * 0.8f, 0.6f + fx.NextSingle() * 0.5f, new Color(255, 255, 255), true);
+            else if (Synth.HeavyImpact(cue))
             {
-                case Cue.Hit or Cue.ArrowHit when fx.NextSingle() < 0.45f:
-                    AddMark(at + new Vector2(fx.NextSingle() - 0.5f, fx.NextSingle() - 0.5f) * 0.8f, 0.6f + fx.NextSingle() * 0.5f, new Color(255, 255, 255), true);
-                    break;
-                case Cue.Impact:
-                    AddMark(at, 1.4f + fx.NextSingle() * 0.8f, wet ? new Color(70, 56, 40) : new Color(118, 98, 70), false);
-                    Spray(at, 0.1f, 8, wet ? new Color(96, 82, 60) : new Color(176, 160, 124), 4.5f, 1.6f, 0.35f, false, 1.1f); // the dust wave
-                    break;
+                AddMark(at, 1.4f + fx.NextSingle() * 0.8f, wet ? new Color(70, 56, 40) : new Color(118, 98, 70), false);
+                Spray(at, 0.1f, 8, wet ? new Color(96, 82, 60) : new Color(176, 160, 124), 4.5f, 1.6f, 0.35f, false, 1.1f); // the dust wave
             }
     }
 
@@ -113,7 +110,7 @@ partial class BattleScreen
         trampleAt = battle.Time;
         foreach (var u in battle.Units)
             if (u.Active && u.Vel.LengthSquared() > 0.25f) Stamp(u.Pos, u.Mounted ? 6 : 2);
-        foreach (var (cue, at) in battle.Sounds) if (cue == Cue.Impact) Stamp(at, 60);
+        foreach (var (cue, at) in battle.Sounds) if (Synth.HeavyImpact(cue)) Stamp(at, 60);
     }
 
     /// Where men stand (green channel), for the command view: the foliage shader thins the leaves that lie between the

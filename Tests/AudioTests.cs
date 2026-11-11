@@ -85,4 +85,28 @@ public static partial class SelfTest
 
         Console.WriteLine($"sounds: {Enum.GetValues<Cue>().Length} cues + {Enum.GetValues<Bed>().Length} beds in {cuesMs:0} ms, {MusicLibrary.All.Count} scores checked in {watch.ElapsedMilliseconds - cuesMs:0} ms");
     }
+
+    /// Weapon, shield, ranged and lance fights emit their distinct AU1 cues without touching replay determinism.
+    static void CombatCuesEmitted()
+    {
+        var seen = new HashSet<Cue>();
+        var b = Battle.Empty(42);
+        var xbows = b.AddSquad(0, Troops.Get("crossbowmen"), 8, new(-12, -18), 8, Microsoft.Xna.Framework.Vector2.UnitY);
+        var greats = b.AddSquad(0, Troops.Get("greatswords"), 10, new(0, -4), 5, Microsoft.Xna.Framework.Vector2.UnitY);
+        var lancers = b.AddSquad(0, Troops.Get("lancers"), 6, new(14, -22), 3, Microsoft.Xna.Framework.Vector2.UnitY);
+        var foes = b.AddSquad(1, Troops.Get("shieldmen"), 18, new(0, 4), 6, -Microsoft.Xna.Framework.Vector2.UnitY);
+        xbows.Order = Order.Hold;
+        greats.Order = lancers.Order = foes.Order = Order.Charge;
+        for (int i = 0; i < 60 * 8; i++)
+        {
+            b.Update(1 / 60f);
+            foreach (var (cue, _) in b.Sounds) seen.Add(cue);
+        }
+        Check(seen.Contains(Cue.CrossbowSnap), "crossbowmen emit CrossbowSnap");
+        Check(seen.Contains(Cue.SlashHeavy), "greatswords emit SlashHeavy");
+        Check(seen.Contains(Cue.LanceImpact) || seen.Contains(Cue.LanceShatter), "lancers emit LanceImpact/LanceShatter");
+        Check(seen.Contains(Cue.BlockWood) || seen.Contains(Cue.ArrowShield), "shieldmen emit BlockWood/ArrowShield");
+        Check(Synth.DrawsBlood(Cue.SlashLight) && Synth.DrawsBlood(Cue.ArrowFlesh) && !Synth.DrawsBlood(Cue.ArrowShield), "DrawsBlood predicate matches flesh hits");
+        Check(Synth.HeavyImpact(Cue.LanceImpact) && !Synth.HeavyImpact(Cue.SlashLight), "HeavyImpact predicate matches heavy charges");
+    }
 }

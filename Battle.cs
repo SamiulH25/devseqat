@@ -35,7 +35,11 @@ public sealed partial class Battle
     public readonly BattleOptions Options;
     /// Sound cues from the last Update (the screen plays them; headless runs ignore them).
     public readonly List<(Cue Cue, Vector2 Pos)> Sounds = new();
-    void Sound(Cue c, Vector2 at) { if (Sounds.Count < 64) Sounds.Add((c, at)); }
+    void Sound(Cue c, Vector2 at, bool priority = false)
+    {
+        if (Sounds.Count < 256) Sounds.Add((c, at));
+        else if (priority) Sounds[^1] = (c, at);
+    }
     /// Moments of magic and aura for the screen to draw (docs/archive/MAGIC_AURA.md 6): what ("cast", "spell:attack", "form:burst",
     /// "land:leap", "soak", "blade"...), where, which way, how far it reaches, whose, and a tag (a tradition or an order).
     /// The screen takes them as it draws; nothing in the sim reads them, so it stays at most 64 long without one.

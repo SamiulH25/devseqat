@@ -8,6 +8,12 @@ public enum Cue
 {
     Clash, Block, Hit, Bow, ArrowHit, Impact, Shout, Horn, Rout, Click, Coin, Splash, Squelch, Rustle, Hollow, Spell, Thunder, Holy, Flame, Aura, Gather,
     Death, Neigh, Volley, Ram, Crash, Cheer, Order, Hover, Page, Throw,
+    // AU1: combat weapon×armour, defences, captain close-mic, ranged split & siege
+    SlashLight, SlashHeavy, BluntFlesh, BluntPlate, PierceHit, LanceImpact, LanceShatter,
+    BlockWood, BlockMetal, ParrySteel, ShieldSplinter, BashThud,
+    SwingOne, SwingTwo, SwingPole, RiposteRing, WeaponSwap, LowHpPulse,
+    LongbowLoose, CrossbowSnap, CrossbowSpan, SlingCrack, JavelinCast, ArrowShield, ArrowPlate, ArrowFlesh,
+    RamSwing, LadderHook, FirePotShatter,
 }
 
 public enum MusicTrack { None, Title, Creator, Map, Battle, Victory, Defeat, Deploy, Chronicle }
@@ -99,13 +105,15 @@ sealed class AudioEngine
 
     static float Chance(Cue c) => c switch { Cue.Death => 0.5f, Cue.Neigh => 0.8f, _ => 1f };
 
-    static int Cap(Cue c) => c is Cue.Death or Cue.Volley or Cue.Cheer or Cue.Order or Cue.Page or Cue.Hover ? 1 : 4;
+    static int Cap(Cue c) => c is Cue.Death or Cue.Volley or Cue.Cheer or Cue.Order or Cue.Page or Cue.Hover or Cue.LowHpPulse ? 1 : 4;
 
     /// Broad cue family so simultaneous variants (e.g. sword clash + axe clash + block) share a clean frame budget.
     static int Family(Cue c) => c switch
     {
-        Cue.Clash or Cue.Block or Cue.Hit => 1,
-        Cue.Bow or Cue.Throw or Cue.ArrowHit => 2,
+        Cue.Clash or Cue.Block or Cue.Hit or Cue.SlashLight or Cue.SlashHeavy or Cue.BluntFlesh or Cue.BluntPlate
+            or Cue.PierceHit or Cue.BlockWood or Cue.BlockMetal or Cue.ParrySteel => 1,
+        Cue.Bow or Cue.Throw or Cue.ArrowHit or Cue.LongbowLoose or Cue.CrossbowSnap or Cue.SlingCrack
+            or Cue.JavelinCast or Cue.ArrowShield or Cue.ArrowPlate or Cue.ArrowFlesh => 2,
         Cue.Shout or Cue.Death or Cue.Cheer => 3,
         _ => 0,
     };

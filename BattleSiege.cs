@@ -10,6 +10,7 @@ public sealed partial class Battle
     public bool GateBroke;
     readonly Dictionary<Squad, Vector2> posts = new(); // where each defending company stands guard
     float ramSound;
+    bool ramPhase;
 
     public SiegeWall? Wall => Terrain.Wall;
 
@@ -82,14 +83,22 @@ public sealed partial class Battle
     void EnforceWall(Vector2[] before)
     {
         if (Wall == null) return;
+        ladderSound = MathF.Max(0, ladderSound - 1 / 60f);
         for (int i = 0; i < Units.Count; i++)
         {
             var u = Units[i];
-            if (!u.Active || MayCross(u, before[i])) continue;
+            if (!u.Active) continue;
+            if (MayCross(u, before[i]))
+            {
+                if (SiegeWall.Inside(before[i]) != SiegeWall.Inside(u.Pos) && !Wall.AtGate(u.Pos.X) && ladderSound <= 0)
+                { ladderSound = 1.6f; Sound(Cue.LadderHook, u.Pos); }
+                continue;
+            }
             u.Pos.Y = SiegeWall.Inside(before[i]) ? SiegeWall.Outer + 0.02f : SiegeWall.Outer - 0.02f;
             if (u.Mounted) u.Speed *= 0.5f;
         }
     }
+    float ladderSound;
 
     /// Attackers on foot standing at a closed gate batter it down.
     void Batter(float dt)
@@ -107,7 +116,12 @@ public sealed partial class Battle
         if (Player.Active && !Player.Mounted && w.AtGate(Player.Pos.X) && Player.Pos.Y > SiegeWall.Outer - 2 && Player.Pos.Y < SiegeWall.Outer && Player.Action == UnitAction.Recover) rams += 2;
         if (rams == 0) return;
         w.GateHp -= MathF.Min(12, rams) * 5 * dt;
-        if ((ramSound -= dt) <= 0) { ramSound = 1.1f; Sound(Cue.Ram, new Vector2(SiegeWall.GateX, SiegeWall.Outer)); }
+        if ((ramSound -= dt) <= 0)
+        {
+            ramSound = 0.65f;
+            ramPhase = !ramPhase;
+            Sound(ramPhase ? Cue.Ram : Cue.RamSwing, new Vector2(SiegeWall.GateX, SiegeWall.Outer));
+        }
         if (w.GateOpen)
         {
             GateBroke = true;

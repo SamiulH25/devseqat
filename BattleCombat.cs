@@ -125,7 +125,7 @@ public partial class Battle
         if (ranged && t.Mods.Testudo > 0 && t.Type.HasShield && !t.IsPlayer && t.Vel.LengthSquared() < 1 && rng.NextSingle() < t.Mods.Testudo)
         {
             if (t.StuckArrows < 4) t.StuckArrows++;
-            Sound(Cue.Block, t.Pos);
+            Sound(Cue.ArrowShield, t.Pos);
             return;
         }
         if (ranged && t.Mods.Veil > 0 && rng.NextSingle() < t.Mods.Veil) return; // lost in mist or smoke, turned by a ward
@@ -137,7 +137,7 @@ public partial class Battle
             if (facing && Guarding) // Unbroken Wall (K2): nothing from the front gets through
             {
                 if (!ranged && !lance) Stagger(a, 0.8f);
-                Sound(Cue.Block, t.Pos);
+                Sound(ranged ? Cue.ArrowShield : ShieldCue(t), t.Pos, priority: true);
                 PlayerHit = ("UNBROKEN", Time);
                 return;
             }
@@ -152,7 +152,7 @@ public partial class Battle
                     Parries++;
                     CounterStrike(t, a);
                     PlayerHit = (Countering ? "PARRY! COUNTER" : "PARRY! RIPOSTE", Time);
-                    Sound(Cue.Clash, t.Pos);
+                    Sound(Cue.ParrySteel, t.Pos, priority: true);
                     return;
                 }
                 if (!t.Type.HasShield && !ranged && Input.Dir != Dirs.Mirror(a.Swing))
@@ -161,9 +161,12 @@ public partial class Battle
                     goto Struck;
                 }
                 t.Stamina -= (ranged ? 4 : dmg * (lance ? 1.2f : 0.8f)) * (t.Type.HasShield ? 1 : 1.4f) * (Perk("IronGrip") ? 0.7f : 1); // a shield stops any direction, at a stamina cost
-                Sound(Cue.Block, t.Pos);
-                if (t.Stamina <= 0) { t.Stamina = 0; Stagger(t, 0.8f); Log("Guard broken!"); }
-                else if (!ranged && !lance) Stagger(a, 0.35f);
+                if (t.Stamina <= 0) { t.Stamina = 0; Stagger(t, 0.8f); Sound(Cue.ShieldSplinter, t.Pos, priority: true); Log("Guard broken!"); }
+                else
+                {
+                    Sound(ranged ? Cue.ArrowShield : ShieldCue(t), t.Pos, priority: true);
+                    if (!ranged && !lance) Stagger(a, 0.35f);
+                }
                 return;
             }
         }
@@ -190,7 +193,7 @@ public partial class Battle
                 t.ActionTimer = 0.35f;
                 if (ranged && t.Type.HasShield && t.StuckArrows < 4) t.StuckArrows++;
                 if (a.IsPlayer) PlayerHit = ("BLOCKED", Time);
-                Sound(t.Type.HasShield ? Cue.Block : Cue.Clash, t.Pos);
+                Sound(ranged ? Cue.ArrowShield : ShieldCue(t), t.Pos, priority: a.IsPlayer);
                 return;
             }
         }
@@ -201,7 +204,7 @@ public partial class Battle
         {
             Stagger(a, 1.0f);
             PlayerHit = ("CHAMBER!", Time);
-            Sound(Cue.Clash, t.Pos);
+            Sound(Cue.ParrySteel, t.Pos, priority: true);
             return;
         }
         float speed = ranged || lance ? 0 : SpeedBonus(a, t);
@@ -232,7 +235,7 @@ public partial class Battle
         if (!ranged && a.Type.Wild && a.Type.Has("poison")) Envenom(a, t, dmg * mult); // a bite or sting keeps working
         StyleLanded(a, t, dmg, ranged, lance);
         if (a.IsPlayer) CountDeed(t, ranged, lance);
-        Sound(ranged ? Cue.ArrowHit : t.Type.Armor >= 8 ? Cue.Clash : Cue.Hit, t.Pos);
+        Sound(HitCue(a, t, dmg * mult, ranged, lance), t.Pos, priority: a.IsPlayer || t.IsPlayer);
         if (a.IsPlayer)
         {
             var text = $"{real:0} DMG";
@@ -381,7 +384,7 @@ public partial class Battle
         if (u.Squad != null && Time - u.Squad.LooseAt > 2.5f) Sound(Cue.Volley, Vector2.Lerp(u.Pos, at, 0.5f)); // a volley whistles overhead
         if (u.Squad != null) u.Squad.LooseAt = Time;
         var kind = Look.GripOf(u.Type.Look.Weapon);
-        Sound(kind is Grip.Thrown or Grip.Sling ? Cue.Throw : Cue.Bow, u.Pos);
+        Sound(LooseCue(u.Type.Look.Weapon, kind), u.Pos, priority: u.IsPlayer);
         u.Action = UnitAction.Recover; // shows the release pose
         u.ActionTimer = 0.25f;
         float d = Vector2.Distance(u.Pos, at);
@@ -469,6 +472,7 @@ public partial class Battle
                 b.Swing = AttackDir.Thrust;
                 b.ActionTimer = b.Type.Recover;
                 HitHorse(u, closing * (b.Type.Class == UnitClass.Skirmisher ? 8 : 4.5f) * (1 + b.Mods.Brace), b);
+                Sound(Cue.LanceImpact, u.Pos, priority: u.IsPlayer);
                 if (u.Mounted) { u.Speed *= 0.25f; Stagger(u, 0.6f); }
                 break;
             }
@@ -506,4 +510,29 @@ public partial class Battle
         float k = Math.Clamp(Vector2.Dot(p - a, ab) / ab.LengthSquared(), 0, 1);
         return Vector2.Distance(p, a + ab * k);
     }
+
+    static Cue ShieldCue(Unit t) =>
+        !t.Type.HasShield ? Cue.ParrySteel
+        : t.Type.Look.Shield is "buckler" or "targe" ? Cue.BlockMetal
+        : Cue.BlockWood;
+
+    static Cue HitCue(Unit a, Unit t, float rawDmg, bool ranged, bool lance)
+    {
+        if (ranged) return t.Type.Armor >= 9 ? Cue.ArrowPlate : Cue.ArrowFlesh;
+        if (lance) return rawDmg >= 42 ? Cue.LanceShatter : Cue.LanceImpact;
+        var w = a.Type.Look.Weapon;
+        if (w is "mace" or "warhammer" or "club" or "staff") return t.Type.Armor >= 7 ? Cue.BluntPlate : Cue.BluntFlesh;
+        var grip = Look.GripOf(w);
+        if (grip is Grip.Pole or Grip.Lance && a.Swing == AttackDir.Thrust) return t.Type.Armor >= 11 ? Cue.Clash : Cue.PierceHit;
+        if (grip == Grip.Two || w is "halberd" or "glaive") return Cue.SlashHeavy;
+        return t.Type.Armor >= 10 ? Cue.Clash : Cue.SlashLight;
+    }
+
+    static Cue LooseCue(string weapon, Grip kind) => kind switch
+    {
+        Grip.Crossbow => Cue.CrossbowSnap,
+        Grip.Sling => Cue.SlingCrack,
+        Grip.Thrown => Cue.JavelinCast,
+        _ => weapon == "longbow" ? Cue.LongbowLoose : Cue.Bow,
+    };
 }

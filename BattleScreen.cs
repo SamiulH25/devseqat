@@ -365,15 +365,31 @@ sealed partial class BattleScreen
         UpdateCamera();
     }
 
-    /// Battle sound cues, heard from the camera.
+    /// Battle sound cues, heard from the camera (closest first so nearby blows always claim the frame's voice budget).
     void PlaySounds()
     {
         var audio = host.Audio;
         if (audio == null || !audio.Enabled) return;
         var right = Matrix.Invert(view).Right;
-        foreach (var (cue, p) in battle.Sounds)
-            audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, cue switch { Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer => 160, Cue.Crash => 200, Cue.Ram => 120, Cue.Volley => 90, _ => 70 });
+        var eye2 = new Vector2(eye.X, eye.Z);
+        foreach (var (cue, p) in battle.Sounds.OrderBy(s => Vector2.DistanceSquared(s.Pos, eye2)))
+        {
+            float range = cue switch { Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer => 160, Cue.Crash => 200, Cue.Ram or Cue.RamSwing => 120, Cue.Volley => 90, _ => 70 };
+            bool nearPlayer = battle.Player.Active && Vector2.DistanceSquared(p, battle.Player.Pos) < 9f;
+            audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, range, priority: nearPlayer);
+        }
+        var pl = battle.Player;
+        if (pl.Active && !command && pl.Hp < pl.Type.MaxHp * 0.28f && (pulseTimer -= frameDt) <= 0)
+        {
+            pulseTimer = 0.95f;
+            audio.Play(Cue.LowHpPulse, 0.55f, priority: true);
+        }
+        bool spanning = pl.Active && Look.GripOf(pl.Type.Look.Weapon) == Grip.Crossbow && pl.Cooldown > 0.35f;
+        if (spanning && !wasSpanning) audio.PlayAt(Cue.CrossbowSpan, new Vector3(pl.Pos.X, battle.Terrain.Height(pl.Pos) + 1, pl.Pos.Y), eye, right, 35, priority: true);
+        wasSpanning = spanning;
     }
+    float pulseTimer;
+    bool wasSpanning;
 
     /// Ambient beds and music: galloping and melee din by how much is near the camera; drums once the fighting starts.
     void Soundscape()

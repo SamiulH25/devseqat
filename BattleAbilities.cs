@@ -368,7 +368,7 @@ public partial class Battle
                              .OrderBy(t => Vector2.DistanceSquared(t.Pos, c.At)).ThenBy(t => t.Index).Take(a.MaxHit).ToList())
                     Blast(by, t, a, c.Power);
                 if (a.Burn > 0) AddField(a, "burning", team, by, c.At, a.Radius, a.Burn, c.Power, a.Dps);
-                Sound(Cue.Impact, c.At);
+                Sound(a.Id == "fire_pots" ? Cue.FirePotShatter : Cue.Impact, c.At);
                 break;
             case "bolt":
                 // Lightning finds the tallest: a rider, then an officer, then the man nearest the glow.

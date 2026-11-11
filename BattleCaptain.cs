@@ -41,6 +41,8 @@ public sealed partial class Battle
         p.ActionTimer = (p.Swing == AttackDir.Overhead ? 0.2f : 0.15f) * p.Type.Windup / 0.4f // your weapon sets your pace (P1)
             * (tired ? 1.4f : 1) * (riposteSwing ? 0.5f : 1) * (1 - 0.15f * ArmsEdge);
         if (tired) PlayerHit = ("TOO TIRED: A WEAK BLOW", Time);
+        var grip = Look.GripOf(p.Type.Look.Weapon);
+        Sound(riposteSwing ? Cue.RiposteRing : grip == Grip.Two ? Cue.SwingTwo : grip is Grip.Pole or Grip.Lance ? Cue.SwingPole : Cue.SwingOne, p.Pos, priority: true);
     }
     /// The supply wagon behind each side's lines, and the arrows left in it.
     public readonly Vector2[] Wagons = { new(-8, -52), new(8, 52) };
@@ -80,6 +82,7 @@ public sealed partial class Battle
         (p.Ammo, sideAmmo) = (sideAmmo, p.Ammo);
         p.Action = UnitAction.Stagger; // a moment to change grip
         p.ActionTimer = 0.4f;
+        Sound(Cue.WeaponSwap, p.Pos, priority: true);
         Log(to.Ammo > 0 ? $"You take up the {WeaponName(to)}. {p.Ammo} shots left." : $"You take up the {WeaponName(to)}.");
     }
 
@@ -157,7 +160,7 @@ public sealed partial class Battle
         best.Pos += Vector2.Normalize(best.Pos - p.Pos + new Vector2(1e-4f, 0)) * 1.2f;
         best.Morale -= 3;
         Damage(p, best, 6, 2);
-        Sound(Cue.Block, best.Pos);
+        Sound(Cue.BashThud, best.Pos, priority: true);
         PlayerHit = (TwoHanded ? "KICK!" : "SHIELD BASH!", Time);
     }
 
