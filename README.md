@@ -13,7 +13,7 @@ through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contr
   front rank (directional blows, parries, couched lances) and command from above in slowed time, or hand wings to sergeants'
   **divisions** that follow a goal.
 - **A war of seven realms** on a map of 115 provinces, each realm with its own heraldry, temper and four lines of troops:
-  287 troops across seven cultures and common, plus 16 creatures (goblins, wolves, trolls, the dead).
+  287 troops across seven cultures and common, plus 24 creatures (goblins, wolves, trolls, giant spiders, cave bears, wyverns, the dead).
 - **A company that is your legacy:** named men on the roll, the fallen remembered, banner honours won and lost, a career from
   hired sword to king, and a captain with gear, skills, wounds and a name.
 - **Ground that matters:** ridges, woods, fens, river lines, villages and hedgerows, with sight, cover, ambushes and an enemy
@@ -31,7 +31,7 @@ Taken in the game at 1280x720 with `IRONFIELD_SHOTS` and `IRONFIELD_CAMPAIGN_SHO
 | ![Command view of a big battle with stacked company flags](docs/images/landscape.jpg) | ![A pine wood seen from the command camera](docs/images/command-cav-charge.jpg) |
 | **Command view:** about 750 men a side, divisions on the right, an ambush in the feed. | **Woods:** low-poly pines; a wood hides men and halves a horse's pace. |
 | ![A troll and goblins with wolves](docs/images/gallery-troll.jpg) | ![The ground map overlay in command view](docs/images/ground-map.jpg) |
-| **Creatures:** trolls, goblins and wolves fight by their own rules. | **Ground map (M):** every kind of ground in its colour, with height lines. |
+| **Creatures:** trolls, goblins, wolves, spiders, bears and wyverns fight by their own rules. | **Ground map (M):** every kind of ground in its colour, with height lines. |
 | ![The campaign map](docs/images/campaign-map.jpg) | ![The realm map with seven realms in colour](docs/images/campaign-atlas.jpg) |
 | **Campaign map:** towns, brigands and your company. | **Realm map (M):** seven realms and their borders. |
 | ![The realms screen with seven banners](docs/images/campaign-realm.jpg) | ![An illustrated event](docs/images/campaign-event.jpg) |
@@ -178,6 +178,13 @@ mountain ridges you cross by road at the passes.
   the map; ride to one to search, pray, rest or ask. Merchant caravans and pilgrims travel the roads: buy from them, ask their
   news, or rob them (their realm will not forget). Village elders ask for small jobs anyone may take (wolves, goblins, a
   stolen daughter, grain, militia drill); towns add caravan escorts and ransoms; lords may send you after a lost sword.
+- **Monsters:** the wilds are thick with them, and no monster is led by a man. A goblin holdout is ruled by its Goblin Chieftain;
+  a wolf pack runs behind an alpha; spider nests in the deep woods breed, send hunting bands out at night and are ruled by a
+  Brood Mother who lays spiderlings as she fights; cave bears sleep by night and maul anyone who strays near by day; trolls
+  hunt by night; and wyverns roost in the hills and hunt by day, ravaging villages and carrying off flocks. In battle a spider's
+  bite poisons (it works through armour until it wears off) and its web pins men where they stand; a bear wounded past half its
+  life rages, striking harder and faster; a wyvern flies out of reach of every blade, dives to strike with its sting and climbs
+  away, so bring bows, and you cannot outrun one. Each kind fights for its leader: kill it and the rest waver.
 - **Sight:** you make out who a party is only within a day's sight of your company or your fiefs; further off you see
   banners, not names. A Scout companion sees a quarter further; the top of a watchtower doubles it for two days.
 - **Your record:** your deeds stay in the realm tab's chronicle, and when the war ends a summary tells what you did.
@@ -395,7 +402,7 @@ the player rides a courser.
 - **Blessings and rites:** a shrine visit, a feast in a tavern (TAVERN tab) or a camp rite (party screen: bless, poultices,
   read the bones, call rain; needs a Priest or Cunning companion or mages) give buffs that go into your next battles. Hunger
   hurts. A relic found in a ruin blesses three battles; a shrine fills it again. Chips above the captain's panel show them.
-- **The tree:** 287 troops (and the captain, plus 16 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons; javelin men and slingers throw (few shots, short range, hard hits).
+- **The tree:** 287 troops (and the captain, plus 24 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons; javelin men and slingers throw (few shots, short range, hard hits).
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a
   role stand side by side), and the enemy general commands any mix.

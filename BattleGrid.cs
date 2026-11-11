@@ -106,11 +106,11 @@ public sealed partial class Battle
         BuildGrid();
         foreach (var a in Units)
         {
-            if (!a.Active) continue;
+            if (!a.Active || Airborne(a)) continue; // a wyvern aloft passes over them
             float ra = BodyRadius(a), ma = BodyMass(a);
             foreach (var b in Near(a.Pos, 2.1f, near))
             {
-                if (b.Index <= a.Index || !b.Active) continue;
+                if (b.Index <= a.Index || !b.Active || Airborne(b)) continue;
                 float rb = BodyRadius(b), r = ra + rb;
                 var d = b.Pos - a.Pos;
                 float l2 = d.LengthSquared();

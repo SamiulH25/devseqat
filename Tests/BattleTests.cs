@@ -204,6 +204,44 @@ public static partial class SelfTest
         Check(p.Stamina < st - 5, "a stale guard does not parry (it blocks, at a cost)");
     }
 
+    /// Blows by and on the player are kept for the numbers over the man hit: amount after armour, a kill, why it bit; old ones go.
+    static void BlowsShown()
+    {
+        var b = Battle.Empty(4);
+        var p = b.Player;
+        var foe = b.AddSquad(1, UnitType.Shieldman, 1, p.Pos + new Vector2(0, 1.5f), 1, -Vector2.UnitY).Units[0];
+        p.Facing = MathHelper.PiOver2;
+        foe.Facing = MathHelper.PiOver2; // his back to you
+        b.Hit(p, foe, 10, false);
+        Check(b.Blows.Count == 1 && b.Blows[0].Target == foe && !b.Blows[0].OnPlayer && b.Blows[0].Amount > 0 && b.Blows[0].Tag == "REAR", "your blow is kept, with why it bit");
+        Check(!b.PlayerHit.Text.StartsWith("0") && b.PlayerHit.Text.Contains("DMG"), "the hit line still says it landed");
+        b.Hit(p, foe, 500, false);
+        Check(b.Blows[^1].Fatal && foe.Dead, "a killing blow is marked");
+        var foe2 = b.AddSquad(1, UnitType.Shieldman, 1, p.Pos + new Vector2(0, 1.5f), 1, -Vector2.UnitY).Units[0];
+        p.Action = UnitAction.None;
+        b.Hit(foe2, p, 20, false);
+        Check(b.Blows[^1].OnPlayer && b.Blows[^1].Target == p, "a blow on you is kept too");
+        b.Time += 3;
+        b.Hit(foe2, p, 20, false);
+        Check(b.Blows.Count == 1, "old blows are let go");
+    }
+
+    /// A company's fight is read from its men: the foe they are at blows with, where they meet; none while it stands off.
+    static void FightsRead()
+    {
+        var b = Battle.Empty(5);
+        var mine = b.AddSquad(0, UnitType.Shieldman, 12, new Vector2(0, -3), 6, Vector2.UnitY);
+        var theirs = b.AddSquad(1, UnitType.Shieldman, 12, new Vector2(0, 3), 6, -Vector2.UnitY);
+        var far = b.AddSquad(1, UnitType.Shieldman, 12, new Vector2(80, 60), 6, -Vector2.UnitY);
+        Check(b.FightOf(mine) == null, "no fight before they meet");
+        mine.Order = Order.Charge;
+        for (int i = 0; i < 60 * 8 && b.FightOf(mine) == null; i++) b.Update(1 / 60f);
+        var f = b.FightOf(mine);
+        Check(f is { Shooting: false } && f.Value.Foe == theirs && f.Value.Engaged > 0, "the company fights the foe its men strike");
+        Check(f != null && MathF.Abs(f.Value.Front.Y) < 6, "they meet between the two");
+        Check(b.FightOf(far) == null, "a company far off fights nobody");
+    }
+
     /// Roadmap C1-C7 mechanics, each in a small scenario.
     static void Formations()
     {

@@ -243,7 +243,8 @@ sealed partial class Hud
             // The tag stays off the HUD's panels, and one that would cover another division's is dimmed.
             int tw = TW(tag, 1);
             var tr = new Rectangle((int)from.X - tw / 2, (int)from.Y - U(26), tw, U(9));
-            if (Over(tr.Location) || Over(new Point(tr.Right, tr.Y)) || Over(new Point(tr.X, tr.Bottom)) || Over(new Point(tr.Right, tr.Bottom))) continue;
+            var near = tr; near.Inflate(U(4), U(12)); // a margin, so a tag does not sit on a panel's heading either
+            if (new[] { near.Location, new Point(near.Center.X, near.Y), new Point(near.Right, near.Y), new Point(near.X, near.Bottom), new Point(near.Center.X, near.Bottom), new Point(near.Right, near.Bottom) }.Any(Over)) continue;
             bool crowded = tags.Any(o => o.Intersects(tr));
             tags.Add(tr);
             if (crowded) Rect(new Rectangle(tr.X - U(2), tr.Y - U(1), tr.Width + U(4), tr.Height + U(2)), Color.Black * 0.35f);

@@ -30,6 +30,9 @@ public sealed class SpriteSheet
         for (int p = 0; p < Style.Sides.Length; p++) Side(p);
         Horse();
         Wolf();
+        Spider();
+        Bear();
+        Wyvern();
         Visages();
         Pack();
     }
@@ -1236,6 +1239,157 @@ public sealed class SpriteSheet
         tail.Body(0, 15, y => { float half = 1.2f + MathF.Sin(y / 15 * MathF.PI) * 1.6f; return (3 - half, 3 + half); }, fur);
         tail.Area((x, y) => y > 12, dark);
         Add("wtail/n", tail);
+    }
+
+    // ---------- the beasts of docs/archive/MONSTERS.md (neutral palette; the puppet tints kin apart) ----------
+
+    /// A giant spider: a bulbous banded abdomen ("sabdomen"), the head-and-body with its eyes and fangs ("shead"), a
+    /// jointed hairy leg ("sleg"), and the web that pins men ("web"). Long parts run tail to nose.
+    void Spider()
+    {
+        var hide = new Mat(new Color(52, 42, 46), Pattern.Hair);
+        var dark = new Mat(new Color(30, 24, 28), Pattern.Hair);
+        var band = new Mat(new Color(150, 44, 36), Pattern.Hair);
+        var pale = new Mat(new Color(176, 158, 130), Pattern.Hair);
+        var eye = Mat.Flat(new Color(255, 70, 50));
+        var fang = Mat.Flat(new Color(220, 210, 180));
+
+        var abdomen = new Canvas(24, 18);
+        abdomen.Ellipse(11.5f, 9.5f, 11.2f, 8.2f, hide);
+        abdomen.Area((x, y) => y > 13 && (x - 11.5f) * (x - 11.5f) / 110 + (y - 9.5f) * (y - 9.5f) / 64 <= 1, dark); // the dark underside
+        for (int k = 0; k < 3; k++)                                                                                    // red chevrons down the back
+        {
+            float cx = 6 + k * 5.2f;
+            abdomen.Area((x, y) => y > 2.2f && y < 6.5f && MathF.Abs(x - cx) < 1.6f - (y - 2.2f) * 0.15f, band);
+        }
+        abdomen.Area((x, y) => y > 8.5f && y < 10 && x > 3 && x < 20, pale, 0.3f);                                    // a pale girdle
+        abdomen.Set(0, 9, dark); abdomen.Set(0, 10, dark);                                                            // spinnerets
+        Add("sabdomen/n", abdomen);
+
+        var head = new Canvas(16, 11);
+        head.Columns(0, 13, x => { float h = 3.6f + MathF.Sin(x / 13 * MathF.PI) * 1.2f; return (5 - h, 5.5f + h * 0.7f); }, hide);
+        foreach (var (ex, ey) in new[] { (11, 2), (12, 3), (10, 2), (12, 1), (9, 3) }) head.Set(ex, ey, eye, 0.9f);       // a cluster of red eyes
+        head.Body(6, 11, y => (12 - (y - 6) * 0.2f, 15 - (y - 6) * 0.5f), dark);                                       // the jaws
+        head.Line(14, 7, 13.5f, 10.5f, fang, 0.8f);                                                                   // and the fangs
+        head.Line(12.5f, 7.5f, 12.2f, 10.5f, fang, 0.6f);
+        Add("shead/n", head);
+
+        var leg = new Canvas(2, 20);
+        leg.Rect(0, 0, 2, 20, hide);
+        leg.Area((x, y) => y is > 6 and < 7.5f or > 13 and < 14.5f, pale, 0.4f); // pale joints
+        leg.Area((x, y) => y > 18, dark);
+        Add("sleg/n", leg);
+
+        var web = new Canvas(22, 22);
+        var silk = Mat.Flat(new Color(236, 236, 242));
+        for (int k = 0; k < 8; k++)
+        {
+            float a = k * MathF.Tau / 8 + 0.2f;
+            web.Line(11, 11, 11 + MathF.Cos(a) * 10.5f, 11 + MathF.Sin(a) * 10.5f, silk, 0.6f);
+        }
+        foreach (float r in new[] { 4f, 7f, 10f })
+            for (int k = 0; k < 8; k++) // each ring sags between the spokes
+            {
+                float a0 = k * MathF.Tau / 8 + 0.2f, a1 = a0 + MathF.Tau / 8, rm = r * 0.86f, am = (a0 + a1) / 2;
+                web.Line(11 + MathF.Cos(a0) * r, 11 + MathF.Sin(a0) * r, 11 + MathF.Cos(am) * rm, 11 + MathF.Sin(am) * rm, silk, 0.5f);
+                web.Line(11 + MathF.Cos(am) * rm, 11 + MathF.Sin(am) * rm, 11 + MathF.Cos(a1) * r, 11 + MathF.Sin(a1) * r, silk, 0.5f);
+            }
+        Add("web/n", web);
+    }
+
+    /// A cave bear: a heavy humped body ("bbody"), a broad head with small ears and a pale snout ("bhead"), a thick leg
+    /// with claws ("bleg"). Long parts run tail to nose.
+    void Bear()
+    {
+        var fur = new Mat(new Color(104, 72, 48), Pattern.Hair);
+        var dark = new Mat(new Color(62, 44, 32), Pattern.Hair);
+        var snout = new Mat(new Color(150, 118, 88), Pattern.Hair);
+        var claw = Mat.Flat(new Color(222, 214, 196));
+        var nose = Mat.Flat(new Color(24, 20, 20));
+
+        var body = new Canvas(32, 18);
+        body.Columns(0, 32, x => { float u = (x - 16) / 16f; float top = 3.2f + 2.4f * u * u - (x > 17 && x < 27 ? 1.8f * MathF.Sin((x - 17) / 10 * MathF.PI) : 0), bot = 16.5f - 2.5f * u * u; return (top, bot); }, fur);
+        body.Area((x, y) => y > 13 && x > 5 && x < 28, dark); // the darker belly
+        Add("bbody/n", body);
+
+        var head = new Canvas(20, 16);
+        head.Columns(0, 20, x => { float h = x < 11 ? 6.4f : 6.4f - (x - 11) * 0.5f; float cy = x < 11 ? 8.5f : 8.5f + (x - 11) * 0.3f; return (cy - h, cy + h); }, fur);
+        head.Area((x, y) => x > 12 && y > 8, snout);
+        head.Ellipse(4, 2.4f, 2.4f, 2.2f, fur);                   // a round ear
+        head.Ellipse(4, 2.6f, 1.2f, 1.1f, dark);
+        head.Set(19, 10, nose); head.Set(18, 10, nose); head.Set(19, 11, nose); head.Set(18, 9, nose);
+        head.Set(10, 6, Mat.Flat(new Color(30, 20, 16)), 0.3f);  // a small dark eye
+        head.Set(11, 6, Mat.Flat(new Color(30, 20, 16)), 0.3f);
+        for (int x = 12; x < 19; x++) head.Set(x, 13, ink);       // the jaw line
+        head.Set(14, 14, Mat.Flat(Style.Linen)); head.Set(17, 14, Mat.Flat(Style.Linen)); // fangs
+        Add("bhead/n", head);
+
+        var leg = new Canvas(7, 16);
+        leg.Body(0, 13, y => (0.2f + y * 0.03f, 6.8f - y * 0.05f), fur);
+        leg.Rect(0, 13, 7, 16, dark);
+        foreach (int cx in new[] { 1, 3, 5 }) leg.Set(cx, 15, claw, 0.7f);
+        Add("bleg/n", leg);
+    }
+
+    /// A wyvern: a scaled body ("ybody"), a long neck ("yneck"), a horned head with a toothed jaw ("yhead"), a wing of
+    /// membrane between finger bones ("ywing", leading edge along the top, root at the left), a tail joint ("ytail")
+    /// ending in a sting ("ysting"), and a taloned hind leg ("yleg").
+    void Wyvern()
+    {
+        var scale = new Mat(new Color(70, 96, 58), Pattern.Mail);
+        var dark = new Mat(new Color(40, 54, 36), Pattern.Mail);
+        var belly = new Mat(new Color(196, 170, 104), Pattern.Quilt);
+        var web = new Mat(new Color(122, 58, 46), Pattern.Cloth);
+        var webDk = new Mat(new Color(80, 36, 32), Pattern.Cloth);
+        var bone = new Mat(new Color(206, 196, 168));
+        var eye = Mat.Flat(new Color(255, 196, 40));
+
+        var body = new Canvas(28, 13);
+        body.Columns(0, 28, x => { float u = (x - 15) / 14f; return (2.5f + 2.6f * u * u, 11.5f - 2.8f * u * u); }, scale);
+        body.Area((x, y) => y > 8.5f && x > 4 && x < 25, belly);
+        for (int x = 3; x < 26; x += 3) body.Set(x, (int)(2.5f + 2.6f * ((x - 15) / 14f) * ((x - 15) / 14f)) - 1 + 1, dark, 0.7f); // a ridge of spines
+        Add("ybody/n", body);
+
+        var neck = new Canvas(16, 8);
+        neck.Columns(0, 16, x => { float h = 3.4f - x * 0.1f; return (4 - h, 4 + h); }, scale);
+        neck.Area((x, y) => y > 4.6f, belly);
+        Add("yneck/n", neck);
+
+        var head = new Canvas(18, 10);
+        head.Columns(0, 17, x => { float h = x < 6 ? 3.6f : 3.6f - (x - 6) * 0.22f; return (4.2f - h, 4.6f + h * 0.8f); }, scale);
+        head.Line(1, 2, -1, -1, bone, 0.7f); head.Line(3, 1.5f, 2, -1, bone, 0.6f);  // swept horns
+        head.Body(5.5f, 10, y => (6, 17 - (y - 5.5f) * 0.6f), dark);                // the lower jaw
+        for (int x = 7; x < 16; x += 2) head.Set(x, 6, bone, 0.8f);                 // teeth
+        head.Set(5, 3, eye, 0.9f);
+        Add("yhead/n", head);
+
+        var wing = new Canvas(34, 22);
+        // The membrane: full at the root, cut into scallops between the finger bones along the trailing edge.
+        wing.Fill((x, y) =>
+        {
+            float u = x / 34f, edge = 2 + 18 * (1 - u * 0.75f) - 3.5f * MathF.Abs(MathF.Sin(u * MathF.PI * 3.5f));
+            return y > 1.5f && y < edge;
+        }, (x, y) => new Vector3(0, -0.2f, 1), web);
+        wing.Area((x, y) => y > 1.5f && y < 4 && x < 33, webDk);                    // shade under the arm
+        wing.Line(0, 1.5f, 33.5f, 1, bone, 0.7f, 2);                                 // the arm
+        foreach (float fx in new[] { 10f, 19f, 27f }) wing.Line(fx, 2, fx * 0.55f + 2, 2 + 18 * (1 - fx / 34 * 0.75f) - 1, bone, 0.5f); // the fingers
+        wing.Line(33, 0, 34, 0, bone, 0.9f);                                         // the claw on the wrist
+        Add("ywing/n", wing);
+
+        var tail = new Canvas(4, 16);
+        tail.Body(0, 16, y => (0.3f + y * 0.03f, 3.7f - y * 0.03f), scale);
+        Add("ytail/n", tail);
+
+        var sting = new Canvas(8, 10);
+        sting.Body(0, 10, y => { float h = 3.6f * MathF.Sin(MathF.Min(1, y / 6) * MathF.PI * 0.5f) * (y > 6 ? (10 - y) / 4 : 1); return (4 - h, 4 + h); }, dark);
+        sting.Line(4, 6, 4, 10, bone, 0.8f);
+        Add("ysting/n", sting);
+
+        var leg = new Canvas(5, 14);
+        leg.Body(0, 11, y => (0.4f, 4.6f - y * 0.1f), scale);
+        leg.Rect(0, 11, 5, 14, dark);
+        foreach (int cx in new[] { 0, 2, 4 }) leg.Set(cx, 13, bone, 0.8f);
+        Add("yleg/n", leg);
     }
 
     static (float, float) HorseSpan(float x)

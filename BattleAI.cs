@@ -38,6 +38,7 @@ public partial class Battle
             if (u.Pos.Length() > MapRadius) u.Fled = true;
             return;
         }
+        if (u.Type.Flying) { ThinkFlyer(u, dt); return; } // a wyvern dives and climbs (BattleMonsters.cs)
         if (u.Action != UnitAction.None && u.Action != UnitAction.Block)
         {
             if (!u.Mounted) u.Wish = Vector2.Zero; // committed to a swing; a rider keeps riding
@@ -333,7 +334,7 @@ public partial class Battle
         {
             eGuard.Front = dir;
             eGuard.Anchor = front - dir * 4; // captain leads from just behind the line
-            if (charged[1] && Time - chargedAt[1] > 12 && eGuard.Order != Order.Charge) { eGuard.Order = Order.Charge; Log("The enemy captain joins the fight!"); }
+            if (charged[1] && Time - chargedAt[1] > 12 && eGuard.Order != Order.Charge) { eGuard.Order = Order.Charge; Log(EnemyCaptain.Type.Wild ? $"The {EnemyCaptain.Type.Name.ToLowerInvariant()} joins the fight!" : "The enemy captain joins the fight!"); }
         }
     }
     /// The enemy company opposite a line company: nearest along the line (sideways counts more than depth), foot first.

@@ -15,9 +15,14 @@ public sealed class OriginDef
 public sealed class CaptainMaking
 {
     public string Name = "", Company = "", Birth = "camp", Past = "sellsword", Road = "sword";
-    public int Realm, Skin = 1, Hair = 2, Beard = 1;
-    /// The face as Variety numbers it (skin x hair x beard), painted once in the atlas.
-    public int Visage => Skin + Variety.Skins.Length * (Hair + Variety.Hairs.Length * Beard);
+    public int Realm, Skin = 1, Hair = 2;
+    /// The painted face (CaptainLook numbers) and the charge on your banner (an `Emblem`).
+    public int Cut, Beard = 1, Eye, Brow = 1, Nose = 1, Jaw = 1, Scar, Arms = (int)Emblem.Chevron;
+    /// The battle head's style from the cut and beard: 0 clean, 1 full beard, 2 moustache, 3 bald and bearded.
+    public int Style => Beard == 0 ? 0 : Cut == 4 ? 3 : Beard == 2 ? 2 : 1;
+    /// The face as Variety numbers it (skin x hair x style), painted once in the atlas.
+    public int Visage => Skin + Variety.Skins.Length * (Hair + Variety.Hairs.Length * Style);
+    public CaptainLook Look => new() { Cut = Cut, Beard = Beard, Eye = Eye, Brow = Brow, Nose = Nose, Jaw = Jaw, Scar = Scar };
 }
 
 /// The captain's origins: data, checks and the parts of a making that shape the captain alone (headless).
@@ -74,6 +79,8 @@ public static class Origins
         c.Birth = m.Birth;
         c.Origin = m.Past;
         c.Visage = m.Visage;
+        c.Likeness = m.Look;
+        c.Arms = m.Arms;
         Campaign.TakeRoad(c, m.Road);
         foreach (var o in Chosen(m))
         {
@@ -116,6 +123,7 @@ public static class Origins
     {
         string Signed(float n) => (n >= 0 ? "+" : "") + n.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
         var lines = new List<string>();
+        if (Roads.Contains(o)) lines.AddRange(RoadGives(o.Id));
         if (o.Perk != "" && Skills.Perk(o.Perk) is PerkDef p) lines.Add($"PERK: {p.Name.ToUpperInvariant()}, {p.Text}");
         foreach (var (verb, a) in o.Effects.Select(Parse))
             lines.Add(verb switch
@@ -133,6 +141,21 @@ public static class Origins
             });
         return lines.Distinct().ToList();
         static string fx(string v) => v.ToUpperInvariant();
+    }
+
+    /// What a road gives, read off the captain it makes (roads act in code, `Campaign.TakeRoad`): skills raised and the kit carried.
+    public static List<string> RoadGives(string road)
+    {
+        var (a, b) = (new CaptainState(), new CaptainState());
+        Campaign.TakeRoad(b, road);
+        var lines = Skills.All.Where(s => Skills.Level(b, s.Id) > Skills.Level(a, s.Id)).Select(s => $"{s.Name.ToUpperInvariant()} {Skills.Level(b, s.Id):0}").ToList();
+        void Kit(string slot, string was, string now) { if (now != was && now != "") lines.Add($"{slot}: {Gear.Get(now).Name.ToUpperInvariant()}"); }
+        Kit("IN HAND", a.Kit.Weapon, b.Kit.Weapon);
+        Kit("SHIELD", a.Kit.Shield, b.Kit.Shield);
+        Kit("HORSE", a.Kit.Horse, b.Kit.Horse);
+        Kit("AT YOUR SIDE", a.Kit.Side, b.Kit.Side);
+        if (Gear.Get(b.Kit.Weapon) is { TwoHanded: true, Ranged: false }) lines.Add("TWO HANDS: NO SHIELD");
+        return lines;
     }
 
     /// Data checks: ids unique, known verbs, skills, perks, gear and troops, and numbers where a verb needs them.
@@ -162,6 +185,6 @@ public static class Origins
             }
         }
         foreach (var r in Roads)
-            if (r.Id is not ("sword" or "lance" or "bow")) yield return $"{r.Id}: unknown road";
+            if (r.Id is not ("sword" or "lance" or "bow" or "great" or "pole")) yield return $"{r.Id}: unknown road";
     }
 }

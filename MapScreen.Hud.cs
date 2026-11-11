@@ -16,7 +16,7 @@ partial class MapScreen
         PartyKind.Bandit => "BRIGANDS",
         PartyKind.Player => "YOU",
         PartyKind.Caravan => p.Breed == "pilgrims" ? "PILGRIMS" : $"MERCHANTS OF THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
-        PartyKind.Monster => p.Lair ? $"{p.Breed.ToUpperInvariant()} HOLDOUT" : Campaign.Plural(p.Breed).ToUpperInvariant(),
+        PartyKind.Monster => p.Lair ? $"{p.Breed.ToUpperInvariant()} {Campaign.LairWord(p.Breed)}" : Campaign.Plural(p.Breed).ToUpperInvariant(),
         _ when C.OrderOf(p) is OrderDef o => $"{o.Name.ToUpperInvariant()}, FOR THE {C.FactionNames[p.Faction].ToUpperInvariant()}",
         _ => C.FactionNames[p.Faction].ToUpperInvariant(),
     };
@@ -232,8 +232,8 @@ partial class MapScreen
             float age = (float)(C.S.Hours - e.At) / 24;
             var c = Color.White * Math.Clamp(1.4f - age * 0.25f, 0.45f, 1);
             string t = ui.Fit(e.Text.ToUpperInvariant(), room);
-            // Dark enough that map names under the log do not show through it.
-            ui.Rect(new Rectangle(ui.U(10), y - ui.U(3), ui.TW(t, 1) + ui.U(10), ui.U(13)), Color.Black * 0.62f);
+            // Dark enough, and with no gap between lines, that map names under the log do not show through it.
+            ui.Rect(new Rectangle(ui.U(10), y - ui.U(4), ui.TW(t, 1) + ui.U(10), ui.U(15)), Color.Black * 0.75f);
             ui.Text(t, ui.U(15), y, c, 1);
             y += ui.U(15);
         }
@@ -455,9 +455,12 @@ partial class MapScreen
             linesOut.Add((p.Name.ToUpperInvariant(), PartyColor(p)));
             linesOut.Add((Allegiance(p), Style.Dim));
             if (p.Lair) linesOut.Add(($"A HOARD OF ABOUT {MathF.Round(p.Gold / 50) * 50:0} CROWNS", Style.Warn));
-            else if (p.Breed == "troll") linesOut.Add((p.Task == "rest" ? "ASLEEP UNTIL DUSK" : p.Task == "hunt" ? "ON THE HUNT" : "ABROAD IN THE DARK", Style.Warn));
+            else if (p.Breed == "troll") linesOut.Add((p.Task == "rest" ? "ASLEEP UNTIL DUSK" : p.Task == "hunt" ? "ON THE HUNT" : p.Task == "ravage" && p.RaidOn >= 0 ? $"OUT TO RAVAGE {C.SettlementById(p.RaidOn).Name.ToUpperInvariant()}" : "ABROAD IN THE DARK", Style.Warn));
             else if (p.Breed == "undead") linesOut.Add((p.Task == "rest" ? "LIES IN THE EARTH BY DAY" : p.Task == "hunt" ? "HUNTS THE LIVING" : "WALKS IN THE DARK", Style.Warn));
             else if (p.Breed == "wolf") linesOut.Add((p.Task == "rest" ? "LYING UP IN THE WOODS" : p.Task == "hunt" ? "ON THE HUNT" : "ON THE PROWL", Style.Warn));
+            else if (p.Breed == "wyvern") linesOut.Add((p.Task == "rest" ? "ROOSTING UNTIL DAWN" : p.Task == "hunt" ? "STOOPING ON ITS PREY" : p.Task == "ravage" && p.RaidOn >= 0 ? $"FLYING AT {C.SettlementById(p.RaidOn).Name.ToUpperInvariant()}" : "ON THE WING", Style.Warn));
+            else if (p.Breed == "bear") linesOut.Add((p.Task == "rest" ? "ASLEEP IN ITS DEN" : p.Task == "hunt" ? "CHARGING" : "KEEPS ITS COUNTRY. DO NOT GO NEAR.", Style.Warn));
+            else if (p.Kind == PartyKind.Monster && p.Task == "ravage" && p.RaidOn >= 0) linesOut.Add(($"OUT TO RAVAGE {C.SettlementById(p.RaidOn).Name.ToUpperInvariant()}", Style.Warn));
             else if (p.Kind == PartyKind.Monster && p.Task == "raid" && p.RaidOn >= 0) linesOut.Add(($"OUT TO PLUNDER {C.SettlementById(p.RaidOn).Name.ToUpperInvariant()}", Style.Warn));
             linesOut.Add(($"{p.Men} MEN IN {p.Companies.Count} COMPANIES", Style.Text));
             if (p != C.Player)

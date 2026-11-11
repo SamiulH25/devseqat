@@ -94,6 +94,9 @@ public static class Rules
     {
         float cls = t.Class switch { UnitClass.Cavalry => 1.35f, UnitClass.Archer => 0.9f, UnitClass.Caster => 1 + 0.35f * t.Spells.Length, _ => 1f }; // a mage is worth his spells, not his staff
         if (t.Huge) cls *= 2f; // a troll's blows sweep through several men, and it heals
+        if (t.Flying) cls *= 1.3f; // out of reach of blades while it is aloft (BattleMonsters.cs)
+        if (t.Wild && t.Has("poison")) cls *= 1.15f; // its bite keeps working
+        if (t.Wild && t.Has("brood")) cls *= 1.3f;  // and her young swarm out
         return men * (t.MaxHp + 5 * t.Armor + 2 * t.Damage) * cls / 100f;
     }
 

@@ -109,6 +109,11 @@ public sealed partial class Campaign
             if (c.SpawnHoldout()) for (int d = c.rng.Next(40); d > 0; d--) c.Grow(c.S.Parties[^1]);
         for (int i = 0; i < c.WolfPacksWanted; i++) c.SpawnWolfPack();
         for (int i = 0; i < c.RaresWanted; i++) c.SpawnTroll();
+        // ...and the beasts of docs/archive/MONSTERS.md: spider nests, cave bears, wyverns (Beasts.cs).
+        for (int i = 0; i < c.NestsWanted; i++)
+            if (c.SpawnNest()) for (int d = c.rng.Next(30); d > 0; d--) c.GrowNest(c.S.Parties[^1]);
+        for (int i = 0; i < c.BearsWanted; i++) c.SpawnBears();
+        for (int i = 0; i < c.WyvernsWanted; i++) c.SpawnWyvern();
         c.WanderersWeekly();
         c.EnsureRulers();
         c.SyncOrders();
@@ -213,8 +218,8 @@ public sealed partial class Campaign
     /// A party's own speed, before an army's pace holds it back.
     float BaseSpeed(Party p)
     {
-        bool mounted = p.Breed == "wolf" || p.Companies.Count > 0 && p.Companies.All(c => c.Men == 0 || c.Type.Mount != null); // wolves run as fast as horses
-        float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1) * PaceOf(p);
+        bool mounted = p.Breed is "wolf" or "wyvern" || p.Companies.Count > 0 && p.Companies.All(c => c.Men == 0 || c.Type.Mount != null); // wolves run as fast as horses
+        float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1) * PaceOf(p) * (p.Breed == "wyvern" ? 1.25f : 1); // wings outpace any horse
         if (p.Kind == PartyKind.Player) s *= 1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f);
         if (p.Kind == PartyKind.Player)
             s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1) * (Has("ForcedMarch") ? 1.1f : 1);
@@ -296,6 +301,8 @@ public sealed partial class Campaign
         if (!Hostile(a, b)) return;
         // A lord with a job rides past rabble that is not after him (LordArmies.cs).
         if (!playerInvolved && a.ChaseId != b.Id && b.ChaseId != a.Id && (OnDuty(a) && Rabble(b) || OnDuty(b) && Rabble(a))) return;
+        // Brigands and beasts give each other a wide berth unless one is hunting the other.
+        if (!playerInvolved && a.ChaseId != b.Id && b.ChaseId != a.Id && (a.Kind, b.Kind) is (PartyKind.Monster, PartyKind.Bandit) or (PartyKind.Bandit, PartyKind.Monster)) return;
         // AI parties are a little slower to close than the player is, so the field is not one long chain of fights.
         float radius = playerInvolved ? B.EncounterRadius : B.AiClashRadius;
         if (Vector2.DistanceSquared(a.Pos, b.Pos) > radius * radius) return;
@@ -306,7 +313,7 @@ public sealed partial class Campaign
             Player.ChaseId = -1;
             return;
         }
-        if (a.Lair || a.Breed is "troll" or "undead") (a, b) = (b, a); // a holdout fights dug in, from side 1; so do a troll and the dead
+        if (a.Lair || a.Breed is "troll" or "undead" or "wyvern") (a, b) = (b, a); // a holdout fights dug in, from side 1; so do a troll and the dead
         // An army's lords close by fight beside the one who met the enemy.
         var sideA = Comrades(a);
         var sideB = Comrades(b);

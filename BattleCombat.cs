@@ -37,6 +37,7 @@ public partial class Battle
         float dmg = StyleBlow(a, a.Type.Damage * a.Power);
         if (!a.IsPlayer)
         {
+            if (a.Type.Flying) Climb(a); // struck or missed, a wyvern climbs away to come again
             if (a.Target is not { Active: true } t) return;
             float extra = t.Mounted ? 0.5f : 0;
             // A rider's blow lands on whatever is beside the horse; a footman needs the target in front.
@@ -111,6 +112,7 @@ public partial class Battle
     internal void Hit(Unit a, Unit t, float dmg, bool ranged, bool lance = false, bool plunge = false)
     {
         if (a.Team == 1) dmg *= Options.EnemyDamage;
+        if (OutOfReach(a, t, ranged)) { if (a.IsPlayer) PlayerHit = ("OUT OF REACH", Time); return; } // a wyvern aloft (BattleMonsters.cs)
         if (ranged && Wall != null && SiegeWall.Inside(t.Pos) && !SiegeWall.Inside(a.Pos) && Terrain.Height(t.Pos) > Terrain.Height(a.Pos) + 2) dmg *= 0.6f; // merlons
         // Arrows and spears often take the horse instead of the rider (a footman's blade rarely does).
         if (t.Mounted && rng.NextSingle() < (ranged ? 0.55f : a.Type.Class == UnitClass.Skirmisher ? 0.55f : 0.18f))
@@ -172,6 +174,7 @@ public partial class Battle
                 ? (a.Swing == AttackDir.Thrust ? 0.9f : 1)
                 : a.Swing switch { AttackDir.Thrust => 0.7f, AttackDir.Overhead => 0.85f, _ => 1 });
             if (ranged && !t.Type.HasShield) chance *= 0.3f;
+            if (Webbed(t)) chance *= 0.4f; // caught in a web, he can hardly lift his guard
             if (a.IsPlayer && !ranged && !lance) chance = riposteSwing && (t.Type.Tier <= 3 || Perk("Champion")) ? 0 : MathF.Min(0.95f, chance + 0.08f * Math.Min(Chain, 4)); // a riposte slips the guard; a rhythm is read
             if (t.Squad?.Formation == Formation.ShieldWall && t.Type.HasShield && InOrder(t)) chance = MathF.Min(0.9f, chance * (ranged ? 1.8f : 1.35f)); // locked shields
             if (!ranged) chance *= RankGuard(t) * RankEdge(a); // friends at the shoulders, foes all round (docs/archive/MELEE.md D3.7)
@@ -215,7 +218,8 @@ public partial class Battle
             * (ranged && t.Type.Has("bones") ? 0.3f : 1) // arrows pass between a skeleton's ribs
             * (a.IsPlayer && AuraBlade && !ranged || FoeBlade(a, ranged) ? BladeDamage : 1) // the aura blade (K1; a champion's, K6)
             * (a.IsPlayer && edgeLeft > 0 && !ranged ? 1 + edgeK : 1) // Thorn Edge (K2)
-            * ClashMult(a, t); // a clash of champions (MA7)
+            * ClashMult(a, t) // a clash of champions (MA7)
+            * (a.Type.Wild ? BeastBlow(a) : 1); // a wounded bear's rage (BattleMonsters.cs)
         if (t.Squad != null) t.Squad.HitsTaken++;
         if (side != Side.Front && a.Squad != null && !ranged) a.Squad.FlankHits++;
         if (side != Side.Front && t.Squad != null) { t.Squad.Pressure += side == Side.Rear ? 1 : 0.5f; Flanked(t.Squad, side == Side.Rear); }
@@ -225,6 +229,7 @@ public partial class Battle
         if (a.IsPlayer && !ranged) BladeLanded();
         if (foeBlade) FoeAura = MathF.Max(0, FoeAura - BladeHitCost);
         if (!ranged && a.Type.Has("knockback")) Knock(a, t);
+        if (!ranged && a.Type.Wild && a.Type.Has("poison")) Envenom(a, t, dmg * mult); // a bite or sting keeps working
         StyleLanded(a, t, dmg, ranged, lance);
         if (a.IsPlayer) CountDeed(t, ranged, lance);
         Sound(ranged ? Cue.ArrowHit : t.Type.Armor >= 8 ? Cue.Clash : Cue.Hit, t.Pos);
@@ -236,7 +241,16 @@ public partial class Battle
             if (side != Side.Front) text += side == Side.Rear ? "  REAR" : "  FLANK";
             if (high >= 0.05f) text += "  HIGH GROUND";
             PlayerHit = (text, Time);
+            if (Blows.Count > 0 && Blows[^1].Target == t && !Blows[^1].OnPlayer) // the number over him says why it bit
+                Blows[^1] = Blows[^1] with { Tag = lance ? "LANCE" : side == Side.Rear ? "REAR" : side == Side.Flank ? "FLANK" : speed >= 0.1f ? "SPEED" : high >= 0.05f ? "HIGH GROUND" : "" };
         }
+    }
+
+    /// Keeps a blow by or on the player for the numbers drawn over the man hit (drawing only).
+    void NoteBlow(Unit t, float real, bool onPlayer)
+    {
+        Blows.RemoveAll(b => b.At < Time - 2);
+        Blows.Add(new Blow(t, real, t.Dead, onPlayer, Time));
     }
 
     /// Armour, then hp, morale shock and interrupts. Returns the damage dealt.
@@ -254,6 +268,7 @@ public partial class Battle
         // Hits interrupt swings, but not a rhythm he has read: past your second chained blow he swings through it (P2).
         if ((t.Action == UnitAction.Windup || t.Charging) && !(a.IsPlayer && Chain >= 2)) Stagger(t, 0.3f);
         if (t.Hp <= 0) Kill(t, a);
+        if (a.IsPlayer || t.IsPlayer) NoteBlow(t, real, !a.IsPlayer);
         return real;
     }
 
@@ -348,7 +363,7 @@ public partial class Battle
         if (t.Type.Has("raise") && !Units.Any(u => u.Active && u.Team == t.Team && u.Type.Has("raise"))) MasterFalls(t);
         if (killer.Active && killer.Type.Has("feed")) killer.Hp = MathF.Min(killer.Type.MaxHp, killer.Hp + killer.Type.MaxHp * 0.3f); // a ghoul feeds
         if (t.IsPlayer) Log("You have fallen! Your troops waver.");
-        else if (t.IsLeader) Log("The enemy captain is slain!");
+        else if (t.IsLeader) Log(t.Type.Wild ? $"The {t.Type.Name.ToLowerInvariant()} is slain!" : "The enemy captain is slain!");
     }
 
     void Shoot(Unit u, Unit t)
@@ -374,7 +389,7 @@ public partial class Battle
         aim += new Vector2(Gauss(), Gauss()) * d * 0.035f * spread * (u.Mounted && !(u.IsPlayer && Perk("HorseArcher")) && u.Mods.Gallop <= 0 ? 1.5f : 1) * Weather.Spread; // ghost riders shoot from the gallop as if standing
         float time = MathF.Max(0.1f, Vector2.Distance(u.Pos, aim) / ArrowSpeed);
         var h = (aim - u.Pos) / time;
-        float from = Terrain.Height(u.Pos) + 1.5f, land = Terrain.Height(aim) + (t?.Mounted == true ? 1.5f : 1.0f);
+        float from = Terrain.Height(u.Pos) + 1.5f, land = Terrain.Height(aim) + (t?.Mounted == true ? 1.5f : 1.0f) + (t?.Altitude ?? 0); // up at a flyer
         // Launch 1.5 m above the archer's ground, land at chest height on the target's ground after `time` seconds.
         Arrows.Add(new Projectile
         {
@@ -407,6 +422,7 @@ public partial class Battle
             var flat = new Vector2(p.Pos.X, p.Pos.Z);
             float ground = Terrain.Height(flat);
             if (p.Pos.Y <= ground) { p.Pos.Y = ground; p.Stuck = 0; continue; }
+            if (flyers && FlyerHit(flat, p.Pos.Y - ground, p.Shooter.Team) is Unit flier) { Hit(p.Shooter, flier, p.Damage, true); Arrows.RemoveAt(i); continue; } // a wyvern taken in the air
             if (p.Pos.Y > ground + 2.6f) continue;
             if (Covered(from, flat, p.Pos.Y - ground)) { p.Pos.Y = MathF.Max(ground, p.Pos.Y - 0.5f); p.Stuck = 0; continue; } // into a tree or a hedge
             foreach (var t in Near(flat, 1.5f, nearArrow))

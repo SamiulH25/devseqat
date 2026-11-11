@@ -170,7 +170,7 @@ public partial class Campaign
             (float coin, goods) = TakeLoot(worth);
             loot += coin;
             foreach (var e in losers)
-                bounty += e.Breed == "troll" ? B.BountyTroll : e.Breed == "undead" ? B.BountyUndead
+                bounty += e.Breed == "troll" ? B.BountyTroll : e.Breed == "undead" ? B.BountyUndead : e.Breed == "wyvern" ? B.BountyWyvern : e.Breed == "bear" ? B.BountyBear
                     : e.Lair ? B.BountyHoldout + Rules.PerMan(Rules.Strength(e) / 10)
                     : Outlaw(e) ? B.BountyBandits + Rules.PerMan(Rules.Strength(e) / 10)
                     : Captain.Contract >= 0 ? B.BountyLord + Rules.PerMan((startStrength1 + startStrength0) / 20) : 0;
@@ -281,6 +281,7 @@ public partial class Campaign
             EnemyDamage = Settings.Current.EnemyDamage, EnemyMorale = DuelMoraleFor(enemy),
             Ground = GroundFor(enemy, GroundChooser(enemy, setup.Side0)), // the map's field, the rain, who chose it (Ground.cs)
             EnemyAggression = SideOf(enemy) >= 0 ? Factions.Get(SideOf(enemy)).Aggression : 1.5f, // a realm's temper; brigands do not wait long
+            EnemyLeader = LeaderOf(enemy), // a monster host is led by one of its own, not a man (Beasts.cs)
             EnemyAura = ChampionAura(enemy), EnemyForms = ChampionFormsOf(enemy), Madness = MadnessInBattle, // an order knight leads with his aura (K6)
             Weather = WeatherFor(enemy),
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
@@ -315,7 +316,8 @@ public partial class Campaign
     {
         var e = Encounter!;
         bool horse = e.Companies.Any(c => c.Men > 0 && c.Type.Mount != null);
-        why = e.Breed == "wolf" && Speed(e) > Speed(Player) ? "THE WOLVES WILL RUN YOU DOWN"
+        why = e.Breed == "wyvern" ? "YOU CANNOT OUTRUN WINGS"
+            : e.Breed == "wolf" && Speed(e) > Speed(Player) ? "THE WOLVES WILL RUN YOU DOWN"
             : horse && Speed(e) > Speed(Player) ? "THEIR HORSE WILL RIDE YOU DOWN" : "";
         return why == "";
     }

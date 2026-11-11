@@ -129,7 +129,9 @@ sealed partial class Puppet
         float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * u.Type.Size * Scale * Variety.Stature(u);
         float phase = Ease.Hash(u.Index);
         if (u.Dead) { Fallen(u, lift, size, phase); return; }
-        if (look.Face == "wolf") { Frame(u.Pos, u.ViewFacing, lift, size); Beast(u, ground); return; }
+        if (Now > 0 && Now < u.WebbedUntil) WebOn(u, lift, size);                    // caught in a spider's web
+        if (u.Poison > 0 && u.HitFlash <= 0) tint = Color.Lerp(tint, new Color(150, 230, 110), 0.4f); // green with poison
+        if (look.Beast) { Frame(u.Pos, u.ViewFacing, lift, size); Beast(u, ground); return; }
         var p = PoseOf(u, Now, phase, Winner);
         if (Awe.Count > 0) p = Awed(u, p, phase);
         var at = u.Pos;
@@ -162,16 +164,23 @@ sealed partial class Puppet
         if (look.Plume && Detail == 0) Bill(new(0, 1.81f + art["plume" + pal].Height * Art.Px / 2 - 0.06f, -0.03f), "plume", false, 0.05f);
         (view, flip) = (bodyView, bodyFlip);
 
-        if (p.Armed && (p.Haul >= 0 || p.Aim && look.Weapon == "crossbow" && !u.Mounted)) { Crossbow(u, p); return; }
-        var hand = Arm(1, p.ArmA, p.Yaw);
+        if (p.Armed && (p.Haul >= 0 || p.Aim && look.Weapon == "crossbow" && !u.Mounted)) { twist = 0; Crossbow(u, p); return; }
+        bool ranged = Look.Ranged(look.Weapon);
+        twist = ranged || !p.Armed ? 0 : TwistOf(p);
+        if (ranged && p.Aim) { Bow(u, p); return; }
+        var hand = Arm(1, p.ArmA, p.Yaw - twist, p.Reach);
         var dir = RotY(new Vector3(0, MathF.Sin(Rad(p.WeapB)), MathF.Cos(Rad(p.WeapB))), p.Yaw);
-        var off = p.TwoHand && p.Armed ? ArmTo(-1, hand - dir * 0.2f) : Arm(-1, p.OffA, 0); // both hands on the haft
+        bool shieldArm = p.Armed && u.Type.HasShield && !ranged && !p.TwoHand && !u.Couched;
+        // The shield is carried in front of the left side, the forearm through its straps; raised, it covers the chest.
+        var off = p.TwoHand && p.Armed ? ArmTo(-1, hand - dir * 0.2f) // both hands on the haft
+            : shieldArm ? ArmTo(-1, p.ShieldUp ? new Vector3(-0.08f, 1.2f, 0.36f) : new Vector3(-0.22f, 0.98f, 0.26f) + new Vector3(0, p.OffA * 0.002f, 0))
+            : Arm(-1, p.OffA, -twist, p.OffReach);
         void ShieldOnArm()
         {
             if (!u.Type.HasShield) return;
             var key = $"shield.{look.Shield}";
-            var at = p.ShieldUp ? off + new Vector3(0.2f, 0.02f, 0.1f) : off + new Vector3(-0.06f, 0.2f, 0.08f);
-            var n = p.ShieldUp ? Vector3.UnitZ : Vector3.Normalize(new Vector3(-0.87f, 0, 0.5f));
+            var at = p.ShieldUp ? off + new Vector3(0.04f, -0.02f, 0.1f) : off + new Vector3(-0.04f, 0.05f, 0.08f);
+            var n = Vector3.Normalize(p.ShieldUp ? new Vector3(-0.12f, 0, 1) : new Vector3(-0.55f, 0, 0.84f));
             Plane(at, n, key);
             for (int i = 0; i < (Detail == 0 ? u.StuckArrows : 0); i++) // shafts caught in the shield, sticking out of its face
             {
@@ -188,7 +197,7 @@ sealed partial class Puppet
             ShieldOnArm();
             return;
         }
-        if (Look.Ranged(look.Weapon))
+        if (ranged)
         {
             if (Detail == 0) Bill(new(-0.1f, 1.15f, -0.2f), "quiver", false);
             if (u.Type.HasShield && Detail == 0) Plane(new(0.05f, 1.0f, -0.24f), -Vector3.UnitZ, $"shield.{look.Shield}"); // slung on the back
@@ -230,6 +239,35 @@ sealed partial class Puppet
         ArmTo(-1, at + dir * 0.42f);
         Span(at, dir, "crossbow", 0);
         if (p.Draw > 0.95f && u.Action != UnitAction.Recover) Span(at + dir * 0.3f + Vector3.Up * 0.03f, dir, "arrow", 0);
+    }
+
+    /// A bowman shooting: the bow arm out straight at the mark, the string hand drawn from the bow back to his cheek, the
+    /// elbow high behind; after the loose the hand flies back past the ear.
+    void Bow(Unit u, Pose p)
+    {
+        if (Detail == 0) Bill(new(-0.1f, 1.15f, -0.2f), "quiver", false);
+        if (u.Type.HasShield && Detail == 0) Plane(new(0.05f, 1.0f, -0.24f), -Vector3.UnitZ, $"shield.{look.Shield}");
+        twist = 28; // side-on to the mark, the bow shoulder forward
+        var bowHand = Shoulder(-1) + RotY(Vector3.Normalize(new Vector3(0.12f, 0.08f, 1)), -twist) * (UpperArm + Forearm) * 0.97f;
+        ArmTo(-1, bowHand);
+        Span(bowHand, Vector3.Normalize(new Vector3(0, 1, 0.08f)), look.Weapon, SpriteSheet.Grip[look.Weapon]);
+        bool loosed = u.Action == UnitAction.Recover;
+        var cheek = new Vector3(0.06f, 1.47f, 0.08f);
+        var drawHand = loosed ? cheek + new Vector3(0.08f, 0.02f, -0.12f) : Vector3.Lerp(bowHand + new Vector3(0.02f, -0.02f, -0.08f), cheek, p.Draw);
+        // The string hand's elbow goes up and back as he draws.
+        var shoulder = Shoulder(1);
+        var target = drawHand;
+        var elbow = Elbow(shoulder, ref target, new Vector3(0.6f, 0.15f + 0.5f * p.Draw, -1));
+        if (Detail < 2)
+        {
+            var src = art[$"sleeve.{look.Body}{pal}"];
+            int half = src.Height / 2;
+            AxialSrc(shoulder, elbow, new Rectangle(src.X, src.Y + half, src.Width, src.Height - half));
+            AxialSrc(elbow, target, new Rectangle(src.X, src.Y, src.Width, half + 1));
+            Bill(target, $"hand.{look.Hands}", false, 0.01f);
+        }
+        if (!loosed) Span(drawHand, Vector3.Normalize(bowHand - drawHand), "arrow", 0.1f);
+        twist = 0;
     }
 
     /// A horse (with the rider's legs when `riderLegs`): coat parts tinted by `coat`, gear in the side's colours.
@@ -319,6 +357,8 @@ sealed partial class Puppet
     /// A wolf on four legs: it trots, and lunges with its head in the strike (docs/archive/CREATURES.md).
     void Beast(Unit u, float ground)
     {
+        if (OtherBeast(u, ground)) return; // a spider, a bear, a wyvern (PuppetBeasts.cs)
+        if (u.Type.Id == "alpha_wolf") { var keep = tint; tint = Color.Lerp(tint, new Color(250, 250, 255), 0.45f); WolfBody(u.Pos, ground, u.ViewFacing, u.Anim, u.Vel.Length(), u.Type.Size * Scale, u.Action == UnitAction.Recover ? 0.28f : 0, false); tint = keep; return; } // the pack's great white alpha
         float lunge = u.Action == UnitAction.Windup ? -0.12f : u.Action == UnitAction.Recover ? 0.28f : 0;
         var grey = tint;
         if (u.Type.Breed == "hound") tint = Color.Lerp(tint, HoundCoat, 0.6f); // a war hound is a brown dog, not a grey wolf
@@ -377,6 +417,7 @@ sealed partial class Puppet
     void BeastCorpse(Unit u)
     {
         Flat(new(0, 0.04f, -0.2f), "blood", false);
+        if (OtherBeastCorpse(u)) return; // PuppetBeasts.cs
         pal = "/n";
         if (u.Type.Breed == "hound") tint = Color.Lerp(tint, HoundCoat, 0.6f);
         if (u.Type.Size > 1.1f) tint = Color.Lerp(tint, new Color(70, 64, 60), 0.45f);
@@ -437,15 +478,49 @@ sealed partial class Puppet
         return new Vector3(v.X * c + v.Z * s, v.Y, v.Z * c - v.X * s); // +yaw turns forward toward the right hand
     }
 
-    // Arm swung `alpha` degrees forward from hanging, its swing plane turned `yaw` degrees; returns the hand position.
-    Vector3 Arm(int side, float alpha, float yaw)
+    const float UpperArm = 0.29f, Forearm = 0.28f;
+    /// How far the shoulders are turned this frame (degrees, + toward his right: the right shoulder goes back). A blow is
+    /// wound up by turning the body away and struck by turning it through.
+    float twist;
+
+    Vector3 Shoulder(int side) => RotY(new Vector3(side * 0.28f, 1.31f, 0), twist);
+
+    /// Arm swung `alpha` degrees forward from hanging, its swing plane turned `yaw` degrees, the hand `reach` of the full
+    /// arm's length out (1 straight, less with the elbow bent); returns the hand position.
+    Vector3 Arm(int side, float alpha, float yaw, float reach = 0.88f)
     {
-        var shoulder = new Vector3(side * 0.3f, 1.31f, 0);
-        var hand = shoulder + RotY(new Vector3(side * 0.04f, -0.55f * MathF.Cos(Rad(alpha)), 0.55f * MathF.Sin(Rad(alpha))), yaw);
+        var dir = RotY(new Vector3(side * 0.07f, -MathF.Cos(Rad(alpha)), MathF.Sin(Rad(alpha))), yaw);
+        return ArmTo(side, Shoulder(side) + Vector3.Normalize(dir) * (UpperArm + Forearm) * reach);
+    }
+
+    /// The arm from its shoulder to `hand`, bent at the elbow (two bones, the elbow pointing out, down and back); returns the hand.
+    Vector3 ArmTo(int side, Vector3 hand)
+    {
         if (Detail >= 2) return hand; // far off: the weapon alone shows the arm
-        Axial(shoulder, hand, $"sleeve.{look.Body}");
+        var shoulder = Shoulder(side);
+        var elbow = Elbow(shoulder, ref hand, new Vector3(side * 0.8f, -0.55f, -0.45f));
+        var src = art[$"sleeve.{look.Body}{pal}"];
+        int half = src.Height / 2;
+        AxialSrc(shoulder, elbow, new Rectangle(src.X, src.Y + half, src.Width, src.Height - half));
+        AxialSrc(elbow, hand, new Rectangle(src.X, src.Y, src.Width, half + 1));
         Bill(hand, $"hand.{look.Hands}", false, 0.01f);
         return hand;
+    }
+
+    /// Two-bone reach: where the elbow sits for a hand at `hand` (pulled in if out of reach), bending toward `pole`.
+    static Vector3 Elbow(Vector3 shoulder, ref Vector3 hand, Vector3 pole)
+    {
+        var d = hand - shoulder;
+        float len = d.Length(), most = (UpperArm + Forearm) * 0.999f;
+        if (len < 1e-4f) return shoulder + Vector3.Normalize(pole) * UpperArm;
+        var axis = d / len;
+        if (len > most) { len = most; hand = shoulder + axis * len; }
+        len = MathF.Max(len, MathF.Abs(UpperArm - Forearm) + 0.01f);
+        float along = (UpperArm * UpperArm - Forearm * Forearm + len * len) / (2 * len);
+        float up = MathF.Sqrt(MathF.Max(0, UpperArm * UpperArm - along * along));
+        var bend = pole - axis * Vector3.Dot(pole, axis);
+        bend = bend.LengthSquared() < 1e-6f ? Vector3.Cross(axis, Vector3.Up) : Vector3.Normalize(bend);
+        return shoulder + axis * along + bend * up;
     }
 
     const float Shank = 0.3f; // thigh and shin, each half the leg
@@ -456,7 +531,7 @@ sealed partial class Puppet
     {
         if (p.Kneel) return side > 0 ? (85, 85) : (-5, 92);
         float a = p.Leg * side + p.Crouch * 50;
-        return (a, p.Crouch * 95 + MathF.Max(0, -p.Leg * side) * 0.7f);
+        return (a, p.Crouch * 95 + MathF.Max(0, -p.Leg * side) * p.Knees);
     }
 
     /// How far a bent-kneed man's hips sink so his feet stay on the ground (metres, unscaled).
@@ -482,15 +557,6 @@ sealed partial class Puppet
         if (Detail == 0) Bill(foot + new Vector3(0, 0.02f, 0.03f), $"boot.{look.Feet}", true);
     }
 
-    // The arm from its shoulder straight to `hand` (the off hand on a two-handed grip).
-    Vector3 ArmTo(int side, Vector3 hand)
-    {
-        if (Detail >= 2) return hand;
-        Axial(new Vector3(side * 0.3f, 1.31f, 0), hand, $"sleeve.{look.Body}");
-        Bill(hand, $"hand.{look.Hands}", false, 0.01f);
-        return hand;
-    }
-
     // A long sprite through `grip` along `dir`; `gripFrac` = how far up the sprite the hand holds it.
     void Span(Vector3 grip, Vector3 dir, string name, float gripFrac)
     {
@@ -509,7 +575,7 @@ sealed partial class Puppet
         float yaw = u.ViewFacing;
         Vector2 fwd2 = new(MathF.Cos(yaw), MathF.Sin(yaw)), right2 = new(-fwd2.Y, fwd2.X);
         Vector2 dir = u.DiedFrom == Vector2.Zero || away.LengthSquared() < 1e-4f ? -fwd2 : Vector2.Normalize(away);
-        var fall = look.Face == "wolf" ? Fall.Plain : u.DiedFall;
+        var fall = look.Beast ? Fall.Plain : u.DiedFall;
         Vector2 saddleSide = new(MathF.Sin(u.Heading), -MathF.Cos(u.Heading)); // Kill moved him a metre this way off the horse
         if (fall == Fall.Thrust) dir = -dir; // folded over the blade, he falls toward it
         if (fall == Fall.Saddle) dir = saddleSide;
@@ -521,7 +587,7 @@ sealed partial class Puppet
         {
             // Lying down: the corpse's "back" points along the fall.
             Frame(u.Pos, MathF.Atan2(-dir.Y, -dir.X), ground, size);
-            if (look.Face == "wolf") BeastCorpse(u); else Corpse(phase);
+            if (look.Beast) BeastCorpse(u); else Corpse(phase);
             return;
         }
         bool crumple = fall == Fall.Thrust || fall == Fall.Plain && phase < 0.3f;
@@ -547,7 +613,7 @@ sealed partial class Puppet
         Frame(at, yaw, y, size);
         float a = 85 * (fall == Fall.Flung ? Ease.Out(k) : crumple ? Ease.In(MathF.Max(0, k * 1.4f - 0.4f)) : Ease.In(k));
         Lean(Vector2.Dot(dir, right2) * a, Vector2.Dot(dir, fwd2) * a);
-        if (look.Face == "wolf") { Beast(u, ground); return; }
+        if (look.Beast) { Beast(u, ground); return; }
         var p = new Pose(crumple ? 30 * k : 10, 40 + 60 * k, 20, 0, 50 + 40 * k, false, false);
         for (int side = -1; side <= 1; side += 2)
         {
@@ -559,6 +625,7 @@ sealed partial class Puppet
         if (look.Tabard && Detail == 0) Bill(new(0, 0.98f, 0.01f), "tabard", true, 0.02f);
         HeadBill();
         if (look.Head != "none") Bill(new(0, 1.81f - art[$"helm.{look.Head}.f{pal}"].Height * Art.Px / 2, 0.02f), $"helm.{look.Head}", true, 0.04f);
+        twist = 0;
         var hand = Arm(1, p.ArmA, 0);
         Arm(-1, p.OffA, 0);
         if (k < 0.4f) Span(hand, RotY(new Vector3(0, 0.5f, 0.87f), 20), look.Weapon, SpriteSheet.Grip[look.Weapon]); // still in his hand

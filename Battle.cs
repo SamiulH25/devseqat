@@ -60,6 +60,8 @@ public sealed partial class Battle
     public int SaddleKills, ArrowKills, LanceHits, ArrowHits, Parries, Ripostes;
     public float Time, RallyCooldown;
     public (string Text, float At) PlayerHit = ("", -10); // last thing the player's weapon did, shown under the crosshair
+    /// Blows that landed by or on the player in the last two seconds (drawing only: the numbers over the man hit; the sim never reads it).
+    public readonly List<Blow> Blows = new();
 
     readonly Random rng;
     readonly List<Unit> nearArrow = new(32), nearKill = new(64);
@@ -285,6 +287,8 @@ public sealed partial class Battle
             Palette = Options.Palette[Math.Clamp(team, 0, 1)], Grit = GritOf(Units.Count), Mods = t.Mods };
         if (t.Mount != null && !Options.Siege) { u.Horse = t.Mount; u.HorseHp = t.Mount.Hp; } // assaults are fought on foot
         anyAura |= t.HasAura;
+        if (t.Flying) { flyers = true; u.Altitude = FlyHigh; } // a wyvern takes the field on the wing
+        if (t.Wild && t.Has("web")) u.Spit = 1.5f + Units.Count % 5 * 0.5f; // spiders find their range before they spit
         Units.Add(u);
         return u;
     }
@@ -329,6 +333,7 @@ public sealed partial class Battle
         Batter(dt);
         if ((reinforceTimer -= dt) <= 0) { reinforceTimer = 1; Reinforce(); }
         RaiseDead(dt);
+        UpdateBrood(dt);
         Mark(1);
         UpdateSight(dt);
         Mark(2);
@@ -348,6 +353,7 @@ public sealed partial class Battle
             TickAction(u, dt);
             Tire(u, dt);
             if (u.Type.Has("regen")) Regen(u, dt);
+            if (u.Poison > 0 || u.Type.Wild) UpdateBeast(u, dt); // poison, webs, flight (BattleMonsters.cs)
         }
         Mark(4);
         Move(dt);
@@ -384,7 +390,7 @@ public sealed partial class Battle
     int tick;
     /// Men far from any enemy think every 4th tick (riders, and men within 25 m, every 2nd), spread by index so the work
     /// is even; men within 6 m of the enemy, or mid-action, think every tick. Deterministic, so replays still match.
-    bool ThinkNow(Unit u) => u.EnemyDist < 6 || u.Action is not (UnitAction.None or UnitAction.Block) || u.Routing
+    bool ThinkNow(Unit u) => u.EnemyDist < 6 || u.Action is not (UnitAction.None or UnitAction.Block) || u.Routing || u.Type.Flying
         || (tick + u.Index) % (u.EnemyDist < 25 || u.Mounted ? 2 : 4) == 0;
 
     void UpdateCentroids()
@@ -453,7 +459,7 @@ public sealed partial class Battle
     void StartSwing(Unit u, Unit target)
     {
         u.Action = UnitAction.Windup;
-        u.ActionTimer = u.Type.Windup;
+        u.ActionTimer = u.Type.Windup * (Raging(u) ? RageWindup : 1); // a wounded bear lashes out quicker
         u.Target = target;
         u.Swing = StyleSwing(u) ?? RandomSwing(u);
         u.Face(target.Pos - u.Pos);

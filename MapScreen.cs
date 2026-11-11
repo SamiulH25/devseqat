@@ -421,7 +421,7 @@ sealed partial class MapScreen
                     PartyKind.Player => Rules.CaptainType(C.Captain),
                     PartyKind.Bandit => Troops.Get("levies"),
                     PartyKind.Caravan => Troops.Get(p.Breed == "pilgrims" ? "levies" : "outriders"),
-                    PartyKind.Monster => Troops.Get(p.Breed == "wolf" ? "dire_wolf" : p.Breed == "troll" ? "troll" : p.Breed == "undead" ? "skeleton" : p.Lair ? "hobgoblin" : "goblin"),
+                    PartyKind.Monster => Troops.Get(Campaign.MonsterLeader(p) is { Length: > 0 } lead ? lead : "goblin"), // the beast that leads it
                     _ => Troops.Get(p.Tier >= 3 ? "knights" : "captain"),
                 };
                 u = new Unit
@@ -429,6 +429,7 @@ sealed partial class MapScreen
                     Type = type, Team = 1, IsPlayer = p.Kind == PartyKind.Player, Palette = Style.PaletteOf(C.SideOf(p)),
                     Coat = p.Id % Style.Coats.Length, Facing = p.Facing, ViewFacing = p.Facing, Heading = p.Facing, ViewHeading = p.Facing,
                 };
+                if (type.Flying) u.Altitude = 1.2f; // a wyvern on the wing
                 if (!Campaign.Outlaw(p) && p.Breed != "pilgrims") { u.Horse = p.Kind == PartyKind.Player ? Rules.CaptainMount(C.Captain) : type.Mount ?? Mount.Courser; u.HorseHp = u.Horse.Hp; }
                 bearers[p.Id] = u;
             }

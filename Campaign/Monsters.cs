@@ -13,7 +13,7 @@ public partial class Campaign
 
     /// Goblin holdouts the world keeps: a share of its forest and hill provinces.
     public int HoldoutsWanted => Math.Max(1, (int)MathF.Round(S.Provinces.Count(Wild) * B.HoldoutsPerWildProvince));
-    public IEnumerable<Party> Holdouts => S.Parties.Where(p => p.Lair && !p.Down);
+    public IEnumerable<Party> Holdouts => S.Parties.Where(p => p.Lair && !p.Down && p.Breed == "goblin");
     /// Wild country, where goblins dig in and trolls roam: forest, hills, fens and badlands.
     public static bool Wild(Province p) => p.Kind is "Forest" or "Hills" or "Marsh" or "Badlands";
 
@@ -53,17 +53,17 @@ public partial class Campaign
     /// Wolves keep to their forest. By day they lie up; by night they hunt anything up to a little stronger than the pack.
     void WolfThink(Party p)
     {
-        float me = Rules.Strength(p);
+        float me = Rules.Might(p);
         p.TaskUntil = (float)S.Hours + 2;
         var near = Visible(p, 22).Where(q => Hostile(p, q) && !q.Lair).ToList();
-        if (near.FirstOrDefault(q => Rules.Strength(q) > me * 1.8f && Vector2.Distance(q.Pos, p.Pos) < 12) is Party threat)
+        if (near.FirstOrDefault(q => Rules.Might(q) > me * 1.8f && Vector2.Distance(q.Pos, p.Pos) < 12) is Party threat)
         {
             var away = p.Pos - threat.Pos;
             p.Goal = p.Pos + (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 12 * Map.Spread;
             p.ChaseId = -1; p.Moving = true;
             return;
         }
-        if (Night && near.Where(q => Rules.Strength(q) < me * 1.3f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
+        if (Night && near.Where(q => Rules.Might(q) < me * 1.25f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
         {
             p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true;
             return;
@@ -108,26 +108,24 @@ public partial class Campaign
     /// clear only of a host far stronger than itself.
     void TrollThink(Party p)
     {
-        float me = Rules.Strength(p);
+        float me = Rules.Might(p);
         p.TaskUntil = (float)S.Hours + 2;
-        if (!Night) { p.Task = "rest"; p.ChaseId = -1; p.Moving = false; p.TaskUntil = (float)S.Hours + 3; return; }
+        if (!Night) { p.Task = "rest"; p.ChaseId = -1; p.RaidOn = -1; p.Moving = false; p.TaskUntil = (float)S.Hours + 3; return; }
         var near = Visible(p, 20).Where(q => Hostile(p, q) && !q.Lair).ToList();
-        if (near.FirstOrDefault(q => Rules.Strength(q) > me * 2.5f && Vector2.Distance(q.Pos, p.Pos) < 10) is Party threat)
+        if (near.FirstOrDefault(q => Rules.Might(q) > me * 2.5f && Vector2.Distance(q.Pos, p.Pos) < 10) is Party threat)
         {
             var away = p.Pos - threat.Pos;
             p.Goal = p.Pos + (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 10 * Map.Spread;
-            p.Task = "prowl"; p.ChaseId = -1; p.Moving = true;
+            p.Task = "prowl"; p.ChaseId = -1; p.RaidOn = -1; p.Moving = true;
             return;
         }
-        if (near.Where(q => Rules.Strength(q) < me * 0.9f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
+        if (near.Where(q => Rules.Might(q) < me * 0.9f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
         {
-            p.Task = "hunt"; p.ChaseId = prey.Id; p.Moving = true;
+            p.Task = "hunt"; p.ChaseId = prey.Id; p.RaidOn = -1; p.Moving = true;
             return;
         }
-        p.Task = "prowl"; p.ChaseId = -1;
-        var home = S.Provinces[Math.Clamp(p.PatrolProvince, 0, S.Provinces.Count - 1)];
-        p.Goal = home.Center + new Vector2(rng.Range(-16, 16), rng.Range(-16, 16)) * Map.Spread;
-        p.Moving = true; p.TaskUntil = (float)S.Hours + 4;
+        if (Ravage(p, 20)) return; // nothing to hunt: a village will do (Beasts.cs)
+        Wander(p, 16, "prowl");
     }
 
     /// Raise a small holdout somewhere in the wilds, away from every settlement and from you. False if no ground was found.
@@ -141,7 +139,7 @@ public partial class Campaign
             var at = prov.Center + new Vector2(rng.Range(-18, 18), rng.Range(-18, 18)) * Map.Spread;
             if (Map.ProvinceAt(at).Id != prov.Id) continue;
             if (S.Settlements.Any(s => Vector2.Distance(s.Pos, at) < B.HoldoutClearance * Map.Spread)) continue;
-            if (Vector2.Distance(Player.Pos, at) < 30 * Map.Spread || Holdouts.Any(h => Vector2.Distance(h.Pos, at) < 25 * Map.Spread)) continue;
+            if (Vector2.Distance(Player.Pos, at) < 30 * Map.Spread || Lairs.Any(h => Vector2.Distance(h.Pos, at) < 25 * Map.Spread)) continue;
             var lair = new Party
             {
                 Id = S.NextId++, Kind = PartyKind.Monster, Breed = "goblin", Lair = true, Name = $"{prov.Name} {rng.Pick(LairNames)}",
@@ -156,20 +154,28 @@ public partial class Campaign
 
     internal void MonstersDaily()
     {
-        foreach (var lair in Holdouts.ToList())
+        foreach (var lair in Lairs.ToList())
         {
-            Grow(lair);
+            if (lair.Breed == "spider") GrowNest(lair); else Grow(lair);
             lair.Gold += B.HoldoutHoardPerDay;
-            if (S.Hours >= lair.NextRaid && lair.Men >= Scaled(B.HoldoutRaidMen)) SendRaiders(lair);
+            if (S.Hours >= lair.NextRaid && lair.Men >= Scaled(lair.Breed == "spider" ? B.NestStartMen * 2 : B.HoldoutRaidMen)) SendRaiders(lair);
         }
-        if (WolfPacks.Count() < WolfPacksWanted && rng.Chance(B.WolfSpawnChance)) SpawnWolfPack();
-        // Each missing troll has its own chance to wake: on the crowded big map they fall more often.
+        // Each missing pack or bear has its own chance to come back, so a cleared forest fills again within days.
+        for (int missing = WolfPacksWanted - WolfPacks.Count(); missing > 0; missing--)
+            if (rng.Chance(B.WolfSpawnChance)) SpawnWolfPack();
+        for (int missing = BearsWanted - Bears.Count(); missing > 0; missing--)
+            if (rng.Chance(B.BearSpawnChance)) SpawnBears();
+        // Each missing troll or wyvern has its own chance to wake: on the crowded big map they fall more often.
         for (int missing = RaresWanted - Rares.Count(); missing > 0; missing--)
             if (rng.Chance(B.RareSpawnChance)) SpawnTroll();
+        for (int missing = WyvernsWanted - Wyverns.Count(); missing > 0; missing--)
+            if (rng.Chance(B.WyvernSpawnChance)) SpawnWyvern();
         GravesDaily();
-        // A few tries a day on a big map, so cleared holdouts are replaced at about the same pace everywhere.
+        // A few tries a day on a big map, so cleared holdouts and nests are replaced at about the same pace everywhere.
         for (int n = Math.Max(1, HoldoutsWanted / 6); n > 0; n--)
             if (Holdouts.Count() < HoldoutsWanted && rng.Chance(B.HoldoutSpawnChance)) SpawnHoldout();
+        for (int n = Math.Max(1, NestsWanted / 6); n > 0; n--)
+            if (Nests.Count() < NestsWanted && rng.Chance(B.NestSpawnChance)) SpawnNest();
     }
 
     /// A holdout breeds goblins up to its cap; a big one gains hobgoblins, archers and, once, a boss.
@@ -216,10 +222,11 @@ public partial class Campaign
             Id = S.NextId++, Kind = PartyKind.Monster, Breed = lair.Breed, Name = $"Raiders of {lair.Name}", LairId = lair.Id, RaidOn = village.Id,
             Pos = lair.Pos, Goal = village.Pos, Moving = true, Task = "raid",
         };
-        int want = Math.Min(Scaled(B.HoldoutRaidBand), lair.Men - Scaled(B.HoldoutStartMen));
-        foreach (var c in lair.Companies.Where(c => c.Troop is "goblin" or "goblin_archer").ToList())
+        bool spiders = lair.Breed == "spider";
+        int want = Math.Min(Scaled(B.HoldoutRaidBand), lair.Men - Scaled(spiders ? B.NestStartMen : B.HoldoutStartMen));
+        foreach (var c in lair.Companies.Where(c => c.Troop is "goblin" or "goblin_archer" or "spider").ToList())
         {
-            int n = Math.Min(c.Men, c.Troop == "goblin" ? want * 3 / 4 : want / 4);
+            int n = Math.Min(c.Men, c.Troop is "goblin" ? want * 3 / 4 : c.Troop == "spider" ? want : want / 4);
             if (n <= 0) continue;
             c.Stack(c.Troop).Men -= n;
             Recruit(band, c.Troop, c.Role, n);
@@ -237,17 +244,20 @@ public partial class Campaign
         if (p.Breed == "wolf") { WolfThink(p); return; }
         if (p.Breed == "troll") { TrollThink(p); return; }
         if (p.Breed == "undead") { UndeadThink(p); return; }
-        float me = Rules.Strength(p);
+        if (p.Breed == "bear") { BearThink(p); return; }
+        if (p.Breed == "wyvern") { WyvernThink(p); return; }
+        if (p.Breed == "spider" && !Night) { p.ChaseId = -1; p.Moving = false; p.TaskUntil = (float)S.Hours + 2; return; } // a brood lies still by day
+        float me = Rules.Might(p);
         var near = Visible(p, 25).Where(q => Hostile(p, q) && !q.Lair).ToList();
         p.TaskUntil = (float)S.Hours + 2;
-        if (near.FirstOrDefault(q => Rules.Strength(q) > me * 1.6f) is Party threat)
+        if (near.FirstOrDefault(q => Rules.Might(q) > me * 1.8f) is Party threat)
         {
             var away = p.Pos - threat.Pos;
             p.Goal = p.Pos + (away.LengthSquared() > 0.01f ? Vector2.Normalize(away) : Vector2.UnitX) * 15 * Map.Spread;
             p.ChaseId = -1; p.Moving = true;
             return;
         }
-        if (near.Where(q => Rules.Strength(q) < me * 1.15f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
+        if (near.Where(q => Rules.Might(q) < me * 1.3f).OrderBy(q => Vector2.Distance(q.Pos, p.Pos)).FirstOrDefault() is Party prey)
         {
             p.ChaseId = prey.Id; p.Moving = true;
             return;
@@ -275,16 +285,18 @@ public partial class Campaign
         p.Moving = true; p.TaskUntil = (float)S.Hours + 6;
     }
 
-    /// Goblins plunder a village: it gives no recruits for a week, its prosperity falls and its seat grows restless.
+    /// Monsters plunder a village: it gives no recruits for a week, its prosperity falls and its seat grows restless.
     void Plunder(Party band, Settlement v)
     {
         v.ThreatUntil = (float)S.Hours + 7 * 24;
         v.Recruits = 0;
         Raided(v);
         band.Gold += B.HoldoutRaidLoot;
-        // The realm answers: its lords ride out after the holdout that sent the band, for a while.
-        if (PartyById(band.LairId) is { Lair: true } lair) { lair.HuntedBy = v.Faction; lair.HuntedUntil = (float)S.Hours + B.HoldoutHuntDays * 24; }
-        if (v.Owner == Player.Id || v.Faction == Captain.Contract) Log($"Goblins plunder {v.Name}.");
+        // The realm answers: its lords ride out after the lair that sent the band (or the beast itself), for a while.
+        var hunted = PartyById(band.LairId) is { Lair: true } lair ? lair : band;
+        hunted.HuntedBy = v.Faction; hunted.HuntedUntil = (float)S.Hours + B.HoldoutHuntDays * 24;
+        bool great = band.Breed is "troll" or "wyvern"; // a great beast's ravages are news across the land
+        if (great || v.Owner == Player.Id || v.Faction == Captain.Contract) Log(PlunderNews(band.Breed, v.Name));
     }
 
     /// A raiding band back home: its men and loot go back into the holdout.

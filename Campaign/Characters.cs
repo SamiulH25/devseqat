@@ -199,11 +199,15 @@ public sealed partial class Campaign
     {
         foreach (var ch in S.Characters.Where(c => !c.Dead))
         {
+            bool faded = false;
             foreach (var k in ch.Opinion.Keys.ToList())
             {
                 ch.Opinion[k] *= 0.95f;
-                if (MathF.Abs(ch.Opinion[k]) < 0.5f) ch.Opinion.Remove(k);
+                if (MathF.Abs(ch.Opinion[k]) < 0.5f) faded = ch.Opinion.Remove(k);
             }
+            // Rebuilt without the holes: a later add would fill a removed slot and the opinions would then save in another
+            // order than a loaded game keeps them (SaveMidRun).
+            if (faded) ch.Opinion = new(ch.Opinion);
             foreach (var m in ch.Memories) m.Weight *= 0.95f;
             ch.Memories.RemoveAll(m => MathF.Abs(m.Weight) < 2);
             if (ch.Kind == "lord" && Captain.Contract >= 0 && ch.Faction == Captain.Contract)

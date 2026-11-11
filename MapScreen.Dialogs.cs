@@ -52,28 +52,35 @@ partial class MapScreen
         EncounterOwnSide(r, x == r.X + ui.U(24) ? y : y + ui.U(36), me, them);
         Note(r);
         bool talk = lord && C.CharacterOf(e) is { Kind: "lord" };
-        int n = lord ? (talk ? 6 : 5) : 4, bw = ui.U(lord ? (talk ? 124 : 140) : 156), by = r.Bottom - ui.U(40), bx = r.X + (r.Width - n * bw - (n - 1) * ui.U(8)) / 2;
-        bool fit = C.Player.Men > 0;
-        if (ui.Button(new Rectangle(bx, by, bw, ui.U(30)), "ATTACK", fit)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareBattle(e)); }
-        if (ui.Button(new Rectangle(bx + bw + ui.U(8), by, bw, ui.U(30)), "AUTO-RESOLVE", fit)) { C.AutoResolveEncounter(); ShowResults(); }
-        bool canRetreat = C.CanRetreat(out string why);
-        if (ui.Button(new Rectangle(bx + 2 * (bw + ui.U(8)), by, bw, ui.U(30)), "RETREAT", canRetreat)) { C.Retreat(); panel = PanelKind.None; }
-        if (!canRetreat && ui.Hover(new Rectangle(bx + 2 * (bw + ui.U(8)), by, bw, ui.U(30)))) note = why;
+        int n = lord ? (talk ? 6 : 5) : 4, bw = ui.U(lord ? (talk ? 124 : 140) : 156), by = r.Bottom - ui.U(40);
         int price = C.ParleyPrice(e);
-        if (ui.Button(new Rectangle(bx + 3 * (bw + ui.U(8)), by, bw, ui.U(30)), price > 0 ? $"PAY {price}" : "PARLEY", price > 0 && C.S.Gold >= price))
+        // Each button as wide as its word needs, the spare room shared out, so AUTO-RESOLVE keeps the big letters.
+        string[] words = { "ATTACK", "AUTO-RESOLVE", "RETREAT", price > 0 ? $"PAY {price}" : "PARLEY", "CHALLENGE", "TALK" };
+        var widths = words.Take(n).Select(l => ui.TW(l, 2) + ui.U(24)).ToArray();
+        int spare = (n * bw - widths.Sum()) / n;
+        if (spare > 0) for (int i = 0; i < n; i++) widths[i] += spare;
+        var bts = new Rectangle[n];
+        for (int i = 0, bx = r.X + (r.Width - widths.Sum() - (n - 1) * ui.U(8)) / 2; i < n; bx += widths[i] + ui.U(8), i++) bts[i] = new Rectangle(bx, by, widths[i], ui.U(30));
+        bool fit = C.Player.Men > 0;
+        if (ui.Button(bts[0], "ATTACK", fit)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareBattle(e)); }
+        if (ui.Button(bts[1], "AUTO-RESOLVE", fit)) { C.AutoResolveEncounter(); ShowResults(); }
+        bool canRetreat = C.CanRetreat(out string why);
+        if (ui.Button(bts[2], "RETREAT", canRetreat)) { C.Retreat(); panel = PanelKind.None; }
+        if (!canRetreat && ui.Hover(bts[2])) note = why;
+        if (ui.Button(bts[3], words[3], price > 0 && C.S.Gold >= price))
         {
             if (C.Parley()) panel = PanelKind.None;
         }
-        if (price < 0 && ui.Hover(new Rectangle(bx + 3 * (bw + ui.U(8)), by, bw, ui.U(30)))) note = e.Kind == PartyKind.Monster ? $"{Campaign.Plural(e.Breed).ToUpperInvariant()} DO NOT BARGAIN" : "LORDS AT WAR DO NOT BARGAIN";
+        if (price < 0 && ui.Hover(bts[3])) note = e.Kind == PartyKind.Monster ? $"{Campaign.Plural(e.Breed).ToUpperInvariant()} DO NOT BARGAIN" : "LORDS AT WAR DO NOT BARGAIN";
         if (!lord) return;
         // Single combat between the lines (P2): win and his men start shaken; lose and you lead the battle wounded.
-        var duel = new Rectangle(bx + 4 * (bw + ui.U(8)), by, bw, ui.U(30));
+        var duel = bts[4];
         string? cant = C.CannotChallenge(e);
         if (ui.Button(duel, "CHALLENGE", cant == null)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareDuel(e)); }
         if (ui.Hover(duel)) note = cant ?? "MEET HIS LORD IN SINGLE COMBAT. WIN AND HIS MEN START THE BATTLE SHAKEN.";
         if (!talk) return;
         // Talk before steel (LD3): threaten, sue for peace, insult him.
-        var tb = new Rectangle(bx + 5 * (bw + ui.U(8)), by, bw, ui.U(30));
+        var tb = bts[5];
         if (ui.Button(tb, "TALK")) OpenTalk(C.CharacterOf(e)!, PanelKind.Encounter);
         if (ui.Hover(tb)) note = "SPEAK WITH HIM BEFORE THE FIGHT: DEMAND HE YIELD, SUE FOR PEACE, OR INSULT HIM.";
     }

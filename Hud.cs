@@ -199,13 +199,16 @@ sealed partial class Hud
     {
         kit.Reset(Ui, W, H, Mouse);
         SampleStrength();
+        SampleFights();
         sb.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.AlphaBlend);
         SergeantPennants();
         NamedMarks();
         BannerMark();
+        if (!Deploying) FightMarks();
         if (Command) Banners();
         Balance();
         GoalLines();
+        DuelBars();
         Feed();
         AlertStrip();
         MinimapPanel();
@@ -217,7 +220,7 @@ sealed partial class Hud
         DivisionCards();
         if (Command && Div != null) GoalPanel();
         if (GroundView && !ShowResult && !MenuOpen) GroundPanel();
-        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) { SquadTooltip(); GroundHints(); } } else Crosshair();
+        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) { SquadTooltip(); GroundHints(); } } else { OpponentMark(); BlowNumbers(); Crosshair(); }
         if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
         Hints();
         if (B.DownSince >= 0) // the last stand (P6)
@@ -532,6 +535,7 @@ sealed partial class Hud
             TextC($"{active}/{s.StartCount}", r.X + r.Width / 2f, r.Y + U(61), Color.White);
             kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(76), r.Width - U(8), U(6)), active / (float)Math.Max(1, s.StartCount), cloth.Ui);
             kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(84), r.Width - U(8), U(6)), morale / 100f, MoraleColor(morale));
+            if (state == "STEADY" && fights.TryGetValue(s, out var fight)) (state, sc) = Standing(s, fight); // how its fight goes
             if (state != "STEADY") kit.Chip(r.X + r.Width / 2 - (TW(state, 1) + U(10)) / 2, r.Y - U(20), state, sc);
             EffectMarks(s, r);
         }
@@ -566,12 +570,13 @@ sealed partial class Hud
     public static void Portrait(SpriteBatch sb, Art art, UnitType t, Rectangle box, int k, float top = 1.92f)
     {
         var l = t.Look;
-        if (l.Face == "wolf") // a beast's portrait is its head, big
+        if (l.Beast) // a beast's portrait is its head, big
         {
-            var src = art["whead/n"];
+            var src = art[l.Face switch { "spider" => "shead/n", "bear" => "bhead/n", "wyvern" => "yhead/n", _ => "whead/n" }];
             int kk = Math.Max(1, Math.Min(box.Width / src.Width, box.Height / src.Height));
             var dst = new Rectangle(box.Center.X - src.Width * kk / 2, box.Center.Y - src.Height * kk / 2, src.Width * kk, src.Height * kk);
-            sb.Draw(art.Atlas, dst, src, t.Size > 1.1f ? new Color(150, 140, 135) : Color.White);
+            var tint = t.Id == "alpha_wolf" ? new Color(235, 235, 240) : l.Face == "wolf" && t.Size > 1.1f ? new Color(150, 140, 135) : Color.White;
+            sb.Draw(art.Atlas, dst, src, tint);
             return;
         }
         void Part(string key, float xm, float ym, string pal = "/0", Color? tint = null)
@@ -622,7 +627,8 @@ sealed partial class Hud
         var p = B.Player;
         if (p.Charging) Bar(new Rectangle(cx - U(24), cy + U(40), U(48), U(4)), p.Charge, Gold);
         var (hit, at) = B.PlayerHit;
-        if (B.Time - at < 1.2f) TextC(hit, cx, cy + U(50), hit.StartsWith("PARRY") ? Gold : Color.White);
+        hit = System.Text.RegularExpressions.Regex.Replace(hit, @"\d+ DMG\s*", "").Trim(); // the number itself pops over the man hit (Hud.Melee.cs)
+        if (B.Time - at < 1.2f && hit != "") TextC(hit, cx, cy + U(50), hit.StartsWith("PARRY") ? Gold : Color.White);
 
         // Context prompts.
         string? prompt = null;
@@ -651,7 +657,8 @@ sealed partial class Hud
     {
         if (buttons.Count == 0) return;
         var first = buttons[0].R;
-        var area = new Rectangle(first.X - U(8), first.Y - U(24), buttons[^1].R.Right - first.X + U(16), buttons[^1].R.Bottom - first.Y + U(32));
+        int right = buttons.Max(b => b.R.Right), bottom = buttons.Max(b => b.R.Bottom); // the keys fill by column, so the last is not the far corner
+        var area = new Rectangle(first.X - U(8), first.Y - U(24), right - first.X + U(16), bottom - first.Y + U(32));
         Panel(area);
         Text(Selected.Count == 0 ? "ORDERS: ALL TROOPS" : "ORDERS: " + string.Join(" ", cards.Select((c, i) => Selected.Contains(c.S) ? $"{i + 1}" : "").Where(x => x != "")),
             area.X + U(8), area.Y + U(8), Gold, 1);
@@ -779,7 +786,7 @@ sealed partial class Hud
             for (int i = 0; i < Math.Min(3, co.Streamers); i++) Rect(new Rectangle(flag.Right, flag.Y + U(2) + i * U(4), U(6 - i), U(2)), Gold);
         }
         Bar(new Rectangle(flag.X, flag.Bottom + U(2), flag.Width, U(3)), morale / 100f, MoraleColor(morale));
-        if (s.Target != null && own) Text("ATK", flag.Right + U(3), flag.Y + U(4), Foe, 1);
+        if (s.Target != null && own && !fights.ContainsKey(s)) Text("ATK", flag.Right + U(3), flag.Y + U(4), Foe, 1); // at blows, its fight mark says how it goes
     }
 
     static string StateOf(Squad s) => s.Alive == 0 ? "BROKEN" : s.Units.Count(u => u.Active && u.Routing) > s.Alive ? "ROUTING"
@@ -804,6 +811,7 @@ sealed partial class Hud
             ($"MORALE {morale}   STAMINA {stamina}" + (t.Ammo > 0 ? $"   ARROWS {act.Sum(u => u.Ammo)}" : ""), morale < 30 ? Bad : Dim),
             ($"ARMOUR {t.Armor:0}  DAMAGE {t.Damage:0}" + (t.Range > 0 ? $"  RANGE {t.Range:0} M" : ""), Dim),
         };
+        if (fights.TryGetValue(s, out var fight)) lines.Insert(3, (FightLine(s, fight), Standing(s, fight).Col));
         if (s.Company?.Traits is { Length: > 0 } tr) lines.Add(("OFFICER: " + string.Join(", ", tr).ToUpperInvariant(), Gold));
         int w = lines.Max(l => TW(l.Item1, 1)) + U(16), h = lines.Count * U(13) + U(10);
         var r = new Rectangle(Math.Min(Mouse.X + U(18), W - w - 4), Math.Min(Mouse.Y + U(18), H - h - 4), w, h);

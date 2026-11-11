@@ -12,7 +12,7 @@ public static partial class SelfTest
         Check(Origins.Births.Concat(Origins.Pasts).Concat(Origins.Roads).All(o => icons.Contains(o.Icon)), "every origin has a known icon");
         Check(Origins.Pasts.All(p => Campaign.Events.Any(e => e.Trigger == "origin:" + p.Id)), "every past has its own story event");
 
-        var m = new CaptainMaking { Name = "TESTA OF THE FORD", Company = "THE TEST BAND", Realm = 2, Birth = "guild", Past = "hedge_knight", Road = "lance", Skin = 3, Hair = 5, Beard = 2 };
+        var m = new CaptainMaking { Name = "TESTA OF THE FORD", Company = "THE TEST BAND", Realm = 2, Birth = "guild", Past = "hedge_knight", Road = "lance", Skin = 3, Hair = 5, Beard = 2, Nose = 2, Scar = 1, Arms = (int)Emblem.Sun };
         var c = Campaign.New(77, m.Realm, m);
         var preview = Origins.Preview(m);
         Check(c.Me.Name == m.Name && c.Player.Name == m.Company && c.Me.Age == Origins.Age(m) && c.Me.Age == Origins.BaseAge + 5 + 9, "the name, the company's name and the age are the creator's");
@@ -27,6 +27,15 @@ public static partial class SelfTest
         Check(c.S.Event == null && c.OriginNote == "Born in the Market, once a Hedge Knight", "no road event after the creator, and the K sheet names the origin");
         var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
         Check(back.Captain.Origin == "hedge_knight" && back.Captain.Visage == m.Visage, "origin and face survive a save");
+        var face = PortraitPainter.Of(back, back.Me);
+        Check(face.Beard == 2 && face.Nose == 2 && face.Scar >= 1 && face.Skin == 3 && face.Charge == Emblem.Sun, "the painted face and arms are the creator's, after a save");
+        Check(c.Player.Companies.All(co => co.Banner == (int)Emblem.Sun), "your first companies fly your arms");
+        Check(new CaptainMaking { Cut = 4, Beard = 1 }.Style == 3 && new CaptainMaking { Cut = 4, Beard = 0 }.Style == 0, "a bald, bearded face is the bald battle head");
+        foreach (var road in Origins.Roads)
+        {
+            var rc = Campaign.New(79, 0, new CaptainMaking { Road = road.Id });
+            Check(Origins.RoadGives(road.Id).Count >= 2 && rc.CannotUse(Gear.Get(rc.Captain.Kit.Weapon)) == null, $"the {road.Id} road gives skills and kit you can use");
+        }
         // Origin events: only yours, and only after the first fortnight.
         Check(c.Find("origin:hedge_knight") == null, "the past waits a fortnight");
         c.S.Hours = 15 * 24;

@@ -13,9 +13,10 @@ gen() {
   echo "Format: file (lines), then each type with its members as \`Name:line\`. Overloads repeat the name."
   echo "Members are methods, constructors and local helpers declared at class level; fields and properties are not listed."
   echo
-  for f in $(git ls-files '*.cs' | sort -f); do
-    echo "## $f ($(wc -l < "$f") lines)"
-    awk '
+  # One awk over every file (a process per file was most of the time): each file's lines are kept until the next file
+  # starts, so its heading can carry its line count.
+  git ls-files '*.cs' | sort -f | tr '\n' '\0' | xargs -0 awk '
+      FNR == 1 { if (NR > 1) endfile(); file = FILENAME }
       # type declarations at column 0
       /^(public |internal |static |sealed |partial |readonly |abstract )*(class|struct|enum|record|interface) [A-Za-z_]/ {
         flush()
@@ -23,7 +24,7 @@ gen() {
         n = split(line, w, " "); kind = ""; name = ""
         for (i = 1; i <= n; i++) if (w[i] ~ /^(class|struct|enum|record|interface)$/) { kind = w[i]; name = w[i+1] }
         if (w[n] == "struct" && kind == "record") kind = "record struct"
-        head = "- **" name "** (" kind ", L" NR ")"
+        head = "- **" name "** (" kind ", L" FNR ")"
         next
       }
       # members: 4-space indent, [modifiers] type name(  -- skip statements and assignments
@@ -39,15 +40,15 @@ gen() {
         if (m < 2 && t[1] != head_name()) next               # need a type and a name (constructors excepted)
         nm = t[m]
         if (nm !~ /^[A-Za-z_][A-Za-z0-9_]*$/) next
-        mem = mem (mem == "" ? "" : ", ") nm ":" NR
+        mem = mem (mem == "" ? "" : ", ") nm ":" FNR
         next
       }
       function head_name(   x) { x = head; sub(/^- \*\*/, "", x); sub(/\*\*.*$/, "", x); return x }
-      function flush() { if (head != "") { print head (mem == "" ? "" : ": " mem) }; head = ""; mem = "" }
-      END { flush() }
-    ' "$f"
-    echo
-  done
+      function flush() { if (head != "") { out = out head (mem == "" ? "" : ": " mem) "\n" }; head = ""; mem = "" }
+      function endfile() { flush(); printf "## %s (%d lines)\n%s\n", file, last, out; out = "" }
+      { last = FNR }
+      END { if (NR > 0) endfile() }
+    '
 }
 
 if [ "${1:-}" = "--check" ]; then

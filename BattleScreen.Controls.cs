@@ -282,7 +282,7 @@ partial class BattleScreen
         focus += shake * 0.6f;
         focusPoint = focus;
         eye.Y = MathF.Max(eye.Y, t.Height(new Vector2(eye.X, eye.Z)) + 0.5f); // never under the ground
-        proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(MathHelper.Lerp(62, 45, k)), GraphicsDevice.Viewport.AspectRatio, 0.2f, 700);
+        proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(pressFov is float pf && k > 0.5f ? pf : MathHelper.Lerp(62, 45, k)), GraphicsDevice.Viewport.AspectRatio, 0.2f, 700);
         view = Matrix.CreateLookAt(eye, focus, Vector3.Up);
         hud.CamYaw = y;
         hud.CamFocus = camFocus;

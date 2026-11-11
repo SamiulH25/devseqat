@@ -14,7 +14,7 @@ public static class PortraitPainter
     public const int W = 48, H = 60;
     /// Mood towards you: 0 warm, 1 even, 2 cold, 3 hostile.
     public static int MoodOf(float opinion) => opinion >= 30 ? 0 : opinion > -10 ? 1 : opinion > -40 ? 2 : 3;
-    static readonly Color[] Eyes = { new(70, 96, 140), new(84, 62, 40), new(60, 110, 80), new(46, 40, 36) };
+    public static readonly Color[] EyeColours = { new(70, 96, 140), new(84, 62, 40), new(60, 110, 80), new(46, 40, 36) };
 
     /// A character's face as the campaign sees him now.
     public static Face Of(Campaign c, Character ch)
@@ -40,10 +40,19 @@ public static class PortraitPainter
         var charge = house != null ? (Emblem)(house.Charge % 9) : Style.Sides[palette].Charge;
         if (charge == Emblem.None) charge = Emblem.Fess;
         int mood = ch.Kind == "captain" ? 0 : MoodOf(c.OpinionOfYou(ch));
-        return new Face(seed, skin, hair, cut, beard, (int)(H(6) * Eyes.Length) % Eyes.Length, (int)(H(7) * 3) % 3, (int)(H(8) * 3) % 3,
+        if (ch.Kind == "captain" && c.Captain.Likeness is { } l) // the face chosen in the creator, and your arms behind it
+            return Captain(seed, skin, hair, l, c.Captain.Arms >= 0 ? (Emblem)c.Captain.Arms : charge, ch.Age) with { Scar = Math.Max(l.Scar, scar) };
+        return new Face(seed, skin, hair, cut, beard, (int)(H(6) * EyeColours.Length) % EyeColours.Length, (int)(H(7) * 3) % 3, (int)(H(8) * 3) % 3,
             (int)(H(10) * 3) % 3, female, ch.Age, scar, dress, ruler, mood, palette, charge, house?.Field ?? 0);
     }
     const int ComeOfAgeBeard = 18;
+
+    /// The captain as chosen in the creator: the face on the free companies' colours with your charge.
+    public static Face Captain(int seed, int skin, int hair, CaptainLook l, Emblem arms, int age) =>
+        new(seed, skin, hair, l.Cut, l.Beard, l.Eye, l.Brow, l.Nose, l.Jaw, false, age, l.Scar, 2, false, 0, 2, arms == Emblem.None ? Emblem.Fess : arms, 0);
+
+    /// The creator's preview of a making.
+    public static Face Of(CaptainMaking m) => Captain(7932, m.Skin, m.Hair, m.Look, (Emblem)m.Arms, Origins.Age(m));
 
     /// The face in pixels, W x H, opaque.
     public static Color[] Paint(Face f)
@@ -124,15 +133,15 @@ public static class PortraitPainter
         {
             int ex = k == 0 ? 19 : 28, inner = k == 0 ? 1 : -1;
             int lift = f.Mood == 0 ? -1 : 0;
-            for (int i = -2; i <= 2; i++)
+            for (int i = f.Brow == 0 ? -1 : -2; i <= (f.Brow == 0 ? 1 : 2); i++) // fine brows are short, heavy ones double
             {
                 int dy = f.Mood >= 2 && i * inner > 0 ? (f.Mood == 3 ? 2 : 1) : 0;
                 Put(ex + i, 22 + lift + dy, browC);
                 if (f.Brow == 2 || f.Mood == 3) Put(ex + i, 21 + lift + dy, browC);
             }
             Put(ex - 1, 25, new Color(236, 232, 224));
-            Put(ex, 25, Eyes[f.Eye]);
-            Put(ex + 1, 25, f.Mood == 3 ? Eyes[f.Eye] : new Color(236, 232, 224));
+            Put(ex, 25, EyeColours[f.Eye]);
+            Put(ex + 1, 25, f.Mood == 3 ? EyeColours[f.Eye] : new Color(236, 232, 224));
             Put(ex - 1, 24, line); Put(ex, 24, line); Put(ex + 1, 24, line);
             if (f.Age > 38) { Put(ex + 3 * -inner, 26, line); }
         }

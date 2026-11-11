@@ -79,6 +79,7 @@ public static class Troops
                 Look = new Look(l.Head, l.Body, l.Legs, l.Feet, l.Hands, l.Shield, l.Weapon, l.Tabard, l.Plume, l.Cape, l.Face),
             };
             var t = troops[d.Id];
+            t.Flying = t.Has("flying");
             t.StyleRank = t.Wild || t.Leader ? 0 : Math.Clamp(t.Tier - 4, 0, 3);
             t.Style = t.StyleRank == 0 ? AttackStyle.None : d.Attack != null ? Enum.Parse<AttackStyle>(d.Attack, true) : Battle.StyleFor(t);
             t.Passives = t.StyleRank == 0 ? Array.Empty<string>() : d.Passives ?? Battle.PassivesWithSignature(t);

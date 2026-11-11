@@ -18,9 +18,9 @@ public partial class Battle
             }
             else u.Vel = u.Wish * (u.Squad is { } fs && !u.Routing && fs.Order != Order.Charge ? fs.Pace : 1) * (u.Mounted ? 1 : Fatigue(u));
             u.Slope = Slope(Terrain, u.Pos, u.Vel);
-            float pace = SlopeFactor(u.Slope, u.Mounted) * GroundSpeed(u); // the ground and the slope set the pace
+            float pace = u.Type.Flying ? 1 : SlopeFactor(u.Slope, u.Mounted) * GroundSpeed(u); // the ground and the slope set the pace (not a flyer's)
             if (pace < 1) pace += (1 - pace) * u.Mods.Footing;              // sure-footed men shrug off part of it
-            u.GroundPace = pace * (1 + u.Mods.Speed);
+            u.GroundPace = pace * (1 + u.Mods.Speed) * (Webbed(u) ? WebSlow : u.Poison > 0 ? 0.85f : 1); // a web holds him; poison slows
             if (u.Mounted) Stumble(u, dt);
             u.Vel *= u.GroundPace;
             u.Pos += u.Vel * dt;
@@ -31,7 +31,7 @@ public partial class Battle
         // Trees and boulders are solid; a horse that rides into one pulls up hard.
         foreach (var u in Units)
         {
-            if (!u.Active) continue;
+            if (!u.Active || Airborne(u)) continue; // over the trees
             float r = u.Mounted ? 0.9f : BodyRadius(u) - 0.025f;
             if (Terrain.PushOut(ref u.Pos, r, u.Mounted) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
             // Pressed against a fence or hedge: edge along it toward the nearer end.

@@ -5,7 +5,20 @@ namespace Ironfield;
 /// `dotnet run -- --selftest`: formation math, mechanic scenarios, and full headless battles that must reach a result.
 public static partial class SelfTest
 {
+    /// Every test, in the order a serial run takes them. `Animation` stays last: it builds battles, and the sim draws from shared counters.
+    static readonly Action[] Tests =
+    {
+        Slots, Charge, Javelins, CavalryBalance, Flanks, Parry, BlowsShown, FightsRead, HorseDown, Ground, HoldFire, TroopTree, UpgradeNeverWorse, HigherTierWins, TierGap, StylesByTier, SweepHitsBeside, KnockThrowsBack, ThrustThrough, CrushBeatsShields, PlungingShot, StylesOnlyAdd, EffectsValidate, PassivesByTier, PassivesBite, SignaturesBite, AuraReachesCompanies, PassivesOnlyAdd, AbilitiesValidate, MagesByTier, SpellWarns, MageWill, BlessingBuffs, MistCoversArrows, WildfireNeedsDry, HorseHuntsMages, MagesHelp, StandingEffectsCarry, RitesWork, SuperMages, CastOnOrder, SpellbookCarries, SpellbookByTier, CircleMaster, MistHides, MirageDrawsArrows, WardBreaksCast, SpectacleBeat, WondersReported, OmenTeeth, AuraIsKnown, CompanionGrows, HoldTheLine, EnemyChampions, CompanionLeaves, Sprites, TroopVariety, BigBattle, SpearsStopHorse, CampaignMap, CampaignPersistence, SaveMidRun, ReportMatchesRecord, CampaignRun, Progression, Economy, Bridge, RiverRoadGivesBridge, RainMakesMud, DefenderChoosesGround, AutoResolveGroundEdge, Calibration, SiegeBattle, Formations, CaptainCombat, CaptainKit, SkillBouts, AuraBlade, AuraArmour, AuraBound, AuraPool, BlessingFeedsAura, CurseOnCaptain, BladeBreaksCast, RelicRaised, OwnFormFromStyle, AspectChanges, BreakInBattle, ClashRing, TranscendentLight, AuraGrows, FormsWork, FormsLearned, OrdersOnMap, OrderOath, CreedBroken, OrderRankGate, CoreAndTrials, PresenceShakes, ChampionsUseAura, OrderPolitics, BlackFlame, FlameTakesYou, OwnOrderFounded, DuelFight, BattleGoals, BannerAndLastStand, RangedRoles, FatigueAndSupply, Generals, Rivers, GoesToFord, FilesThroughGap, FlowCacheBound, ChargeFindsCaptain, HoldsTheCrest, HorseAvoidsBadGround, AmbushWaits, TakesTheFord, GroundForThePlayer, Stakes, Pathfinder, GroundLayer, GroundMoves, GroundFights, Layouts, HedgesAndBridges, EveryLayoutResolves, SightAndCover, CampaignWar, RefuseOldSave, Stacks, RollEarnsNames, FallenRemembered, RisesFromRanks, BannerHonours, FameDraws, RetireAndSucceed, BuryNamed, Cultures, Characters, CampaignDivisions, SkillTree, Armoury, Duels, RidingAndBowcraft, PerkTiers, SkillRises, LastingWounds, CaptainTraits, HouseholdGuard, RankRewards, StartingRoad, CharacterCreator, BalanceMatchesData, HorsesCostGold, GoodsSell, LordArmies, HousesAndKin, PortraitsVary, TalkBondsWants, Career, PilotCareer, FreeCrown, FiefLife, WarAndPeace, EventsAndQuests, StackBattle, NamedMenFight, AutoResolveNamedMen, PullBack, ReplayExact, FoldCompanies, AdvanceSteps, RelieveAndSplit, QueuedAndStanding, AlertsRaise, DeploymentMemory, ScaleBattle, DivisionGoals, HoldsRanks, RearRanksWait, StepsUp, FightsItsTarget, LeviesLoseRanks, TierWins, PartsByCompany, LeviesBreakRanks, RefusesFlank, VeteransWrap, ElitePincer, Reforms, HorseRegroup, BowsFallBack, MusterGrade, MightWeighsDrill, Holdouts, GoblinBattle, Wolves, Trolls, TrollsAbroad, PlayerCreatures, WolfRiders, Undead, UndeadAbroad, MonsterLeaders, SpiderVenom, BearRage, WyvernFlight, MonstersAbroad, Couriers, WorldNames, Sites, MapIndexMatches, RealmsFromData, ClimatesAndRidges, SevenRealms, SoundsMade, RealmTempers, Roads, Quests, TownLife, EventSpread, Polish, ResolveBattles, Animation,
+    };
+
     public static void Run()
+    {
+        foreach (var t in Tests) t();
+        Console.WriteLine("selftest ok");
+    }
+
+    /// Formation slots: the front rank centred, a drawn line facing its target.
+    static void Slots()
     {
         var s = new Squad("t", 0) { Anchor = Vector2.Zero, Front = Vector2.UnitY, Columns = 4 };
         Check(Vector2.Distance(s.Slot(0, 8) + s.Slot(3, 8), Vector2.Zero) < 1e-4f, "front rank centred on anchor");
@@ -14,223 +27,11 @@ public static partial class SelfTest
         Check(s.Front.Y > 0.99f && s.Anchor == new Vector2(0, 10), "drawn line faces the target side");
         s.SetLine(new(-5, 10), new(5, 10), new(0, 0));
         Check(s.Front.Y < -0.99f, "drawn line flips to face a target behind it");
+    }
 
-        Charge();
-        Javelins();
-        CavalryBalance();
-        Flanks();
-        Parry();
-        HorseDown();
-        Ground();
-        HoldFire();
-        TroopTree();
-        UpgradeNeverWorse();
-        HigherTierWins();
-        TierGap();
-        StylesByTier();
-        SweepHitsBeside();
-        KnockThrowsBack();
-        ThrustThrough();
-        CrushBeatsShields();
-        PlungingShot();
-        StylesOnlyAdd();
-        EffectsValidate();
-        PassivesByTier();
-        PassivesBite();
-        SignaturesBite();
-        AuraReachesCompanies();
-        PassivesOnlyAdd();
-        AbilitiesValidate();
-        MagesByTier();
-        SpellWarns();
-        MageWill();
-        BlessingBuffs();
-        MistCoversArrows();
-        WildfireNeedsDry();
-        HorseHuntsMages();
-        MagesHelp();
-        StandingEffectsCarry();
-        RitesWork();
-        SuperMages();
-        CastOnOrder();
-        SpellbookCarries();
-        SpellbookByTier();
-        CircleMaster();
-        MistHides();
-        MirageDrawsArrows();
-        WardBreaksCast();
-        SpectacleBeat();
-        WondersReported();
-        OmenTeeth();
-        AuraIsKnown();
-        CompanionGrows();
-        HoldTheLine();
-        EnemyChampions();
-        CompanionLeaves();
-        Sprites();
-        TroopVariety();
-        BigBattle();
-        SpearsStopHorse();
-        CampaignMap();
-        CampaignPersistence();
-        SaveMidRun();
-        ReportMatchesRecord();
-        CampaignRun();
-        Progression();
-        Economy();
-        Bridge();
-        RiverRoadGivesBridge();
-        RainMakesMud();
-        DefenderChoosesGround();
-        AutoResolveGroundEdge();
-        Calibration();
-        SiegeBattle();
-        Formations();
-        CaptainCombat();
-        CaptainKit();
-        SkillBouts();
-        AuraBlade();
-        AuraArmour();
-        AuraBound();
-        AuraPool();
-        BlessingFeedsAura();
-        CurseOnCaptain();
-        BladeBreaksCast();
-        RelicRaised();
-        OwnFormFromStyle();
-        AspectChanges();
-        BreakInBattle();
-        ClashRing();
-        TranscendentLight();
-        AuraGrows();
-        FormsWork();
-        FormsLearned();
-        OrdersOnMap();
-        OrderOath();
-        CreedBroken();
-        OrderRankGate();
-        CoreAndTrials();
-        PresenceShakes();
-        ChampionsUseAura();
-        OrderPolitics();
-        BlackFlame();
-        FlameTakesYou();
-        OwnOrderFounded();
-        DuelFight();
-        BattleGoals();
-        BannerAndLastStand();
-        RangedRoles();
-        FatigueAndSupply();
-        Generals();
-        Rivers();
-        GoesToFord();
-        FilesThroughGap();
-        FlowCacheBound();
-        ChargeFindsCaptain();
-        HoldsTheCrest();
-        HorseAvoidsBadGround();
-        AmbushWaits();
-        TakesTheFord();
-        GroundForThePlayer();
-        Stakes();
-        Pathfinder();
-        GroundLayer();
-        GroundMoves();
-        GroundFights();
-        Layouts();
-        HedgesAndBridges();
-        EveryLayoutResolves();
-        SightAndCover();
-        CampaignWar();
-        RefuseOldSave();
-        Stacks();
-        RollEarnsNames();
-        FallenRemembered();
-        RisesFromRanks();
-        BannerHonours();
-        FameDraws();
-        RetireAndSucceed();
-        BuryNamed();
-        Cultures();
-        Characters();
-        CampaignDivisions();
-        SkillTree();
-        Armoury();
-        Duels();
-        RidingAndBowcraft();
-        PerkTiers();
-        SkillRises();
-        LastingWounds();
-        CaptainTraits();
-        HouseholdGuard();
-        RankRewards();
-        StartingRoad();
-        CharacterCreator();
-        BalanceMatchesData();
-        HorsesCostGold();
-        GoodsSell();
-        LordArmies();
-        HousesAndKin();
-        PortraitsVary();
-        TalkBondsWants();
-        Career();
-        PilotCareer();
-        FreeCrown();
-        FiefLife();
-        WarAndPeace();
-        EventsAndQuests();
-        StackBattle();
-        NamedMenFight();
-        AutoResolveNamedMen();
-        PullBack();
-        ReplayExact();
-        FoldCompanies();
-        AdvanceSteps();
-        RelieveAndSplit();
-        QueuedAndStanding();
-        AlertsRaise();
-        DeploymentMemory();
-        ScaleBattle();
-        DivisionGoals();
-        HoldsRanks();
-        RearRanksWait();
-        StepsUp();
-        FightsItsTarget();
-        LeviesLoseRanks();
-        TierWins();
-        PartsByCompany();
-        LeviesBreakRanks();
-        RefusesFlank();
-        VeteransWrap();
-        ElitePincer();
-        Reforms();
-        HorseRegroup();
-        BowsFallBack();
-        MusterGrade();
-        MightWeighsDrill();
-        Holdouts();
-        GoblinBattle();
-        Wolves();
-        Trolls();
-        TrollsAbroad();
-        PlayerCreatures();
-        WolfRiders();
-        Undead();
-        UndeadAbroad();
-        Couriers();
-        WorldNames();
-        Sites();
-        MapIndexMatches();
-        RealmsFromData();
-        ClimatesAndRidges();
-        SevenRealms();
-        SoundsMade();
-        RealmTempers();
-        Roads();
-        Quests();
-        TownLife();
-        EventSpread();
-        Polish();
+    /// Whole battles, the default armies and campaign-style ones at every level, fight to a result.
+    static void ResolveBattles()
+    {
 
         for (int seed = 1; seed <= 3; seed++)
         {
@@ -250,8 +51,6 @@ public static partial class SelfTest
             Console.WriteLine($"level {level}: {string.Join(", ", b.Armies[0]!.Companies.Select(c => $"{c.Count} {Troops.Get(c.Troop).Name}"))}"
                 + $" vs {string.Join(", ", b.Armies[1]!.Companies.Select(c => $"{c.Count} {Troops.Get(c.Troop).Name}"))}: team {b.Winner} won after {b.Time:0}s");
         }
-        Animation(); // last: it builds battles, and the sim draws from shared counters
-        Console.WriteLine("selftest ok");
     }
 
     public static void RunOne(string name)

@@ -141,3 +141,7 @@ public sealed record BattleResult(int Winner, float Duration, IReadOnlyList<Comp
     /// The wonders the men saw (docs/archive/SPECTACLE.md S7): great workings, a wall broken, a clash. Lines for the report.
     public IReadOnlyList<string> Wonders { get; init; } = Array.Empty<string>();
 }
+
+/// A blow by or on the player, for the numbers over the man hit (Battle.Blows): the damage after armour, whether it felled him,
+/// and what made it hit hard (flank, rear, couched lance...).
+public record struct Blow(Unit Target, float Amount, bool Fatal, bool OnPlayer, float At, string Tag = "");

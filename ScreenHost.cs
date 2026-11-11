@@ -75,6 +75,11 @@ sealed class ScreenHost : Game
             using var file = File.Create(atlasPath); // debug: inspect the generated sprite sheet
             Art.Atlas.SaveAsPng(file, Art.Atlas.Width, Art.Atlas.Height);
         }
+        if (Environment.GetEnvironmentVariable("IRONFIELD_ANIM") is { Length: > 0 } animDir)
+        {
+            AnimSheet.Write(GraphicsDevice, Art, animDir, Environment.GetEnvironmentVariable("IRONFIELD_ANIM_ONLY") ?? ""); // debug: the animation strips
+            Environment.Exit(0);
+        }
         Font = new PixelFont(GraphicsDevice);
         fadeUi = new Ui(Sb, Art, Font);
         if (Environment.GetEnvironmentVariable("IRONFIELD_QUALITY") is { Length: > 0 } q && Enum.TryParse<Quality>(q, true, out var qv)) Quality = qv;

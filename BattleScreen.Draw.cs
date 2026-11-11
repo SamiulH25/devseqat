@@ -280,7 +280,7 @@ partial class BattleScreen
             if (u.Team == 1 && !u.IsLeader && !battle.Shown(u.Squad)) continue; // hidden by a crest or a wood
             float h = t.Height(u.Pos);
             puppet.Rear = RearOf(u, !forSun);
-            if (!Seen(u.Pos, h, u.Mounted ? 2.5f : 1.5f)) continue;
+            if (!Seen(u.Pos, h + (u.Dead ? 0 : u.Altitude), MathF.Max(u.Mounted ? 2.5f : 1.5f, u.Type.Size * (u.Type.Flying ? 3.5f : 1.5f)))) continue; // a wyvern on the wing, a huge beast's bulk
             puppet.Draw(u, h);
         }
         puppet.Rear = 0;

@@ -27,7 +27,7 @@ public sealed class Squad
         set => Formation = value ? Formation.Loose : Formation == Formation.Loose ? Formation.Line : Formation;
     }
     /// A swarm of craven creatures (goblins), a pack, or trolls: it fights as a loose mob and never forms a shield wall.
-    public bool Swarm => Units.Count > 0 && (Units[0].Type.Bound || Units[0].Type.Huge);
+    public bool Swarm => Units.Count > 0 && (Units[0].Type.Bound || Units[0].Type.Huge || Units[0].Type.Look.Beast);
     public float Pressure;                        // recent flank/rear hits; drains morale, decays over time
     public int Kills;                             // enemies this company has killed (campaign XP)
     public readonly int[] KillsByTier = new int[8]; // kills by the victim's tier (0 = leaders, 1-7 = troop tiers)

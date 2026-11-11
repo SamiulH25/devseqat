@@ -42,6 +42,16 @@ public sealed partial class Campaign
                 Own(c, "hunting_bow");
                 (k.Weapon, k.Side) = ("hunting_bow", "arming_sword");
                 return "You carry a hunting bow and the eye to use it.";
+            case "great":
+                c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 20);
+                (k.Weapon, k.Side) = ("greatsword", "arming_sword");
+                return "You fight with the greatsword in both hands, as you always have.";
+            case "pole":
+                c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 15);
+                c.Skills["Tactics"] = MathF.Max(Skills.Level(c, "Tactics"), 15);
+                Own(c, "halberd");
+                (k.Weapon, k.Side) = ("halberd", "arming_sword");
+                return "You carry a halberd, and you learned your trade in the line.";
             default:
                 c.Skills["Arms"] = MathF.Max(Skills.Level(c, "Arms"), 20);
                 Own(c, "kite_shield");

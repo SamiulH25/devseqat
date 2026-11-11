@@ -460,6 +460,16 @@ public sealed class CaptainState
     /// from before origins, or a campaign started without the creator), and the face chosen (a Variety visage, -1 = the plain head).
     public string Birth = "", Origin = "";
     public int Visage = -1;
+    /// The painted face chosen in the creator (null: derived from the captain's id) and the arms on your first banners (-1: none chosen).
+    public CaptainLook? Likeness;
+    public int Arms = -1;
+}
+
+/// The captain's painted face as chosen in the creator (PortraitPainter numbers: cut 0 short .. 4 bald, beard 0 none, 1 full,
+/// 2 moustache, 3 forked; eye, brow, nose, jaw and scar as `Face`).
+public sealed class CaptainLook
+{
+    public int Cut, Beard = 1, Eye, Brow = 1, Nose = 1, Jaw = 1, Scar;
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought
@@ -738,19 +748,19 @@ public sealed class Balance
     /// under that, how far from any settlement, and (in base men, times ArmyScale) their size when raised, their cap,
     /// daily growth and when a boss appears. Raids leave every HoldoutRaidDays once the holdout has HoldoutRaidMen,
     /// with HoldoutRaidBand men, at a village within HoldoutRaidRange. Gold: hoard to start, per day and per raid.
-    public float HoldoutsPerWildProvince = 0.5f, HoldoutSpawnChance = 0.35f, HoldoutClearance = 12;
+    public float HoldoutsPerWildProvince = 0.7f, HoldoutSpawnChance = 0.45f, HoldoutClearance = 12;
     public float HoldoutStartMen = 10, HoldoutMaxMen = 45, HoldoutGrowPerDay = 0.7f, HoldoutBossMen = 35;
-    public float HoldoutRaidDays = 5, HoldoutRaidMen = 18, HoldoutRaidBand = 10, HoldoutRaidRange = 45;
+    public float HoldoutRaidDays = 4, HoldoutRaidMen = 18, HoldoutRaidBand = 10, HoldoutRaidRange = 45;
     /// A holdout's host counts this many times its strength in an auto-resolved fight: it fights from its holes.
     public float HoldoutDefence = 2.5f;
     /// Days a realm's lords hunt a holdout after its raiders plunder one of their villages.
     public float HoldoutHuntDays = 6;
     /// Wolf packs: how many per forest province, the daily chance one appears while under that, and their size in base
     /// men (times ArmyScale; a wolf more for every 30 days), plus the dire wolf that leads each.
-    public float WolfPacksPerForest = 0.3f, WolfSpawnChance = 0.3f, WolfPackMin = 4, WolfPackMax = 9;
+    public float WolfPacksPerForest = 0.45f, WolfSpawnChance = 0.15f, WolfPackMin = 4, WolfPackMax = 9;
     public float HoldoutStartHoard = 60, HoldoutHoardPerDay = 4, HoldoutRaidLoot = 40, BountyHoldout = 80;
     // Rare monsters (docs/archive/CREATURES.md phase 3): how many trolls, how many in each, the bounty on one.
-    public float RareStart = 2, RareEvery = 60, RareMax = 6, RareSpawnChance = 0.25f, TrollMen = 2, BountyTroll = 300;
+    public float RareStart = 3, RareEvery = 60, RareMax = 8, RareSpawnChance = 0.3f, TrollMen = 2, BountyTroll = 300;
     /// A troll's weight in an auto-resolve by night and by day (a battle at night or noon shows the same).
     public float TrollNight = 1.6f, TrollDay = 0.8f;
     /// Creatures for you (phase 4): hounds a kennel breeds a week, and the most it keeps.
@@ -759,10 +769,21 @@ public sealed class Balance
     public float OgreOfferChance = 0.05f, OgreMen = 1;
     /// The dead rise (phase 5): fallen men that make a grave field, how many days until it may rise, its nightly chance,
     /// the days before it rests for good, the chance a realm buries a battle's dead in its lands, the most undead hosts at once.
-    public float GraveMin = 40, GraveRiseDays = 3, GraveRiseChance = 0.35f, GraveDays = 15, RealmBuryChance = 0.92f, UndeadMax = 2;
+    public float GraveMin = 40, GraveRiseDays = 3, GraveRiseChance = 0.45f, GraveDays = 15, RealmBuryChance = 0.92f, UndeadMax = 3;
     /// An undead host: the share of a field's dead that rise as skeletons, its size bounds (times ArmyScale), the share of
     /// the fallen it raises after a win, what it hunts, its auto-resolve weight by night and by day, and its bounty.
     public float UndeadShare = 0.5f, UndeadMinMen = 10, UndeadMaxMen = 50, UndeadGrowShare = 0.3f, UndeadPreyAt = 1.1f, UndeadNight = 1.3f, UndeadDay = 0.8f, BountyUndead = 250;
+    /// Spider nests (docs/archive/MONSTERS.md): how many per forest or fen province, the daily chance a missing one is spun,
+    /// its spiders at first and at most (base men), and how many hatch a day. They raid like holdouts, by night.
+    public float NestsPerWood = 0.2f, NestSpawnChance = 0.35f, NestStartMen = 6, NestMaxMen = 28, NestGrowPerDay = 0.5f;
+    /// Cave bears: how many sleuths per hill or forest province, the daily chance a missing one wakes, bears in each
+    /// (base men, a bear more every 90 days), and the bounty.
+    public float BearsPerWild = 0.12f, BearSpawnChance = 0.1f, BearMen = 2, BountyBear = 120;
+    /// Wyverns: how many at the start, one more every WyvernEvery days up to WyvernMax, the daily chance a missing one comes
+    /// to roost, wyverns in each (base men), and the bounty.
+    public float WyvernStart = 1, WyvernEvery = 75, WyvernMax = 4, WyvernSpawnChance = 0.25f, WyvernMen = 1, BountyWyvern = 450;
+    /// The hourly chance a troll or wyvern with no prey in sight picks a village to ravage.
+    public float MonsterRavageChance = 0.12f;
     public float HorseCostRate = 0.5f;
 
     static Balance? loaded;
