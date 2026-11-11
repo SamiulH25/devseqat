@@ -460,6 +460,16 @@ public sealed class CaptainState
     /// from before origins, or a campaign started without the creator), and the face chosen (a Variety visage, -1 = the plain head).
     public string Birth = "", Origin = "";
     public int Visage = -1;
+    /// The painted face chosen in the creator (null: derived from the captain's id) and the arms on your first banners (-1: none chosen).
+    public CaptainLook? Likeness;
+    public int Arms = -1;
+}
+
+/// The captain's painted face as chosen in the creator (PortraitPainter numbers: cut 0 short .. 4 bald, beard 0 none, 1 full,
+/// 2 moustache, 3 forked; eye, brow, nose, jaw and scar as `Face`).
+public sealed class CaptainLook
+{
+    public int Cut, Beard = 1, Eye, Brow = 1, Nose = 1, Jaw = 1, Scar;
 }
 
 /// The captain's kit: gear ids from Data/gear.json worn in each slot, the second weapon ("" = none), and the gear bought

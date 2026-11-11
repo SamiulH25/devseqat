@@ -24,7 +24,15 @@ sealed class CreatorScreen
     CaptainState preview = new();
     UnitType look = UnitType.Captain;
 
-    static readonly string[] BeardNames = { "CLEAN-SHAVEN", "FULL BEARD", "MOUSTACHE", "BALD, BEARDED" };
+    static readonly string[] CutNames = { "SHORT", "LONG", "TIED", "CROPPED", "BALD" };
+    static readonly string[] BeardNames = { "NONE", "FULL", "MOUSTACHE", "FORKED" };
+    static readonly string[] BrowNames = { "FINE", "PLAIN", "HEAVY" };
+    static readonly string[] NoseNames = { "SHORT", "PLAIN", "LONG" };
+    static readonly string[] JawNames = { "BROAD", "PLAIN", "NARROW" };
+    static readonly string[] ScarNames = { "NONE", "BROW", "CHEEK" };
+    static readonly string[] EyeNames = { "BLUE", "BROWN", "GREEN", "DARK" };
+    /// The charges you may bear on your banner (every one but the plain field).
+    static readonly Emblem[] Charges = Enum.GetValues<Emblem>().Where(e => e != Emblem.None).ToArray();
     static readonly string[] SkinNames = { "FAIR", "OLIVE", "TAWNY", "DARK" };
     static readonly string[] HairNames = { "BLACK", "BROWN", "CHESTNUT", "FLAXEN", "RED", "GREY" };
     static readonly string[] CompanyFirst = { "GREY", "IRON", "BLACK", "RED", "ASHEN", "WOLF", "SILVER", "LANTERN", "THORN", "RAVEN", "BROKEN SPEAR", "WHITE" };
@@ -48,7 +56,7 @@ sealed class CreatorScreen
             "hedge_knight" => CreatorStage.Act.Ride, "poacher" => CreatorStage.Act.Shoot, "deserter" => CreatorStage.Act.Leave,
             "disinherited" => CreatorStage.Act.Salute, "surgeon" => CreatorStage.Act.Stand, "drillmaster" => CreatorStage.Act.Guard, _ => CreatorStage.Act.Drill,
         },
-        3 => M.Road switch { "lance" => CreatorStage.Act.Charge, "bow" => CreatorStage.Act.Shoot, _ => CreatorStage.Act.Drill },
+        3 => M.Road switch { "lance" => CreatorStage.Act.Charge, "bow" => CreatorStage.Act.Shoot, "pole" => CreatorStage.Act.Guard, _ => CreatorStage.Act.Drill },
         4 => CreatorStage.Act.Turn,
         _ => CreatorStage.Act.Salute,
     };
@@ -94,9 +102,20 @@ sealed class CreatorScreen
         M.Birth = Origins.Births[dice.Next(Origins.Births.Count)].Id;
         M.Past = Origins.Pasts[dice.Next(Origins.Pasts.Count)].Id;
         M.Road = Origins.Roads[dice.Next(Origins.Roads.Count)].Id;
-        (M.Skin, M.Hair, M.Beard) = (dice.Next(Variety.Skins.Length), dice.Next(Variety.Hairs.Length), dice.Next(Variety.Styles));
+        RandomFace();
+        M.Arms = (int)Charges[dice.Next(Charges.Length)];
         M.Name = RandomName();
         M.Company = RandomCompany();
+    }
+
+    /// A new face at random: colours and every feature (most captains keep their hair).
+    void RandomFace()
+    {
+        (M.Skin, M.Hair, M.Eye) = (dice.Next(Variety.Skins.Length), dice.Next(Variety.Hairs.Length), dice.Next(EyeNames.Length));
+        M.Cut = dice.Next(10) switch { < 3 => 0, < 5 => 3, < 7 => 1, < 8 => 2, _ => 4 };
+        M.Beard = dice.Next(BeardNames.Length);
+        (M.Brow, M.Nose, M.Jaw) = (dice.Next(3), dice.Next(3), dice.Next(3));
+        M.Scar = dice.Next(3) == 0 ? 1 + dice.Next(2) : 0;
     }
 
     public void Go(int step)
@@ -110,7 +129,7 @@ sealed class CreatorScreen
 
     void Refresh()
     {
-        string choices = $"{M.Realm}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}";
+        string choices = $"{M.Realm}|{M.Birth}|{M.Past}|{M.Road}|{M.Visage}|{M.Arms}";
         if (choices != choiceKey) { if (choiceKey != "") stage?.React(); choiceKey = choices; } // a choice made: the captain cheers
         string key = $"{choices}|{helm}";
         if (key == previewKey) return;
@@ -206,7 +225,8 @@ sealed class CreatorScreen
         var well = new Rectangle(inner.X, inner.Y, inner.Width, wellH);
         ui.VGrad(well, Kit.Mul(colours.Cloth, 0.45f), new Color(16, 12, 14), 2);
         ui.Stars(new Rectangle(well.X, well.Y, well.Width, well.Height / 2), time, 24);
-        ui.Banner(well.Right - U(34), well.Y + U(10), U(34), U(96), colours, time * 1.4f);
+        var arms = colours with { Charge = (Emblem)M.Arms };
+        ui.Banner(well.Right - U(34), well.Y + U(10), U(34), U(96), arms, time * 1.4f);
         ui.Hills(well, well.Bottom - U(30), U(10), 2.3f + M.Realm, new Color(40, 30, 34));
         ui.Hills(well, well.Bottom - U(14), U(6), 5.1f, new Color(22, 18, 20));
         // Embers drifting up through the well.
@@ -236,15 +256,21 @@ sealed class CreatorScreen
         }
         this.well = well;
         ui.Frame(well, Color.Black * 0.6f, U(1));
-        ui.Shield(new Rectangle(well.X + U(6), well.Bottom - U(46), U(32), U(40)), colours);
+        ui.Shield(new Rectangle(well.X + U(6), well.Bottom - U(46), U(32), U(40)), arms);
 
-        int y = well.Bottom + U(10);
+        // The painted face beside the name, as lords will see it.
+        int y = well.Bottom + U(10), fw = PortraitPainter.W * U(1), fh = PortraitPainter.H * U(1);
+        var medal = new Rectangle(inner.X, y, fw, fh);
+        ui.Face(PortraitPainter.Of(M), medal);
+        ui.Frame(Kit.Inset(medal, -U(1)), Kit.Gilt * 0.8f, U(1));
+        int tx = medal.Right + U(8), tw = inner.Right - tx;
         string name = M.Name.Trim() == "" ? "NAMELESS" : M.Name;
-        int sc = ui.FitScale(name, inner.Width);
-        ui.TextFit(name, inner.X, y, inner.Width, M.Name.Trim() == "" ? Style.Dim : Style.Text, sc); y += U(sc == 2 ? 20 : 12);
+        int sc = ui.FitScale(name, tw);
+        ui.TextFit(name, tx, y, tw, M.Name.Trim() == "" ? Style.Dim : Style.Text, sc); y += U(sc == 2 ? 20 : 12);
         var birth = Origins.Find(M.Birth); var past = Origins.Find(M.Past);
-        ui.TextFit($"{(birth?.Name ?? "").ToUpperInvariant()}", inner.X, y, inner.Width, Kit.Gilt, 1); y += U(10);
-        ui.TextFit($"ONCE A {(past?.Name ?? "").ToUpperInvariant()}", inner.X, y, inner.Width, Kit.Gilt, 1); y += U(14);
+        ui.TextFit($"{(birth?.Name ?? "").ToUpperInvariant()}", tx, y, tw, Kit.Gilt, 1); y += U(10);
+        ui.TextFit($"ONCE A {(past?.Name ?? "").ToUpperInvariant()}", tx, y, tw, Kit.Gilt, 1); y += U(14);
+        y = Math.Max(y, medal.Bottom + U(6));
         int cx = inner.X;
         cx += ui.Chip(cx, y, $"AGE {Origins.Age(M)}", Style.Dim, "clock") + U(4);
         ui.Chip(cx, y, Origins.Free(M) ? "FREE COMPANY" : $"FOR THE {def.Name.ToUpperInvariant()}", Origins.Free(M) ? Style.Warn : colours.Ui, "flag");
@@ -460,40 +486,73 @@ sealed class CreatorScreen
             ui.TextC("YOUR PAST MAY CATCH UP WITH YOU.", pane.Center.X, pane.Bottom - U(16), Style.Dim, 1);
     }
 
-    /// The captain's face and names: two fields, skin and hair swatches, the cut of the beard, and the helm on or off.
+    /// The captain's face and names: two fields, then the features on the left and the painted face large on the right,
+    /// with the arms you bear beneath it.
     void Face(Rectangle r)
     {
         int x = r.X, w = r.Width, y = r.Y;
         y = Field(x, y, w, 1, "YOUR NAME", M.Name, () => M.Name = RandomName());
         y = Field(x, y, w, 2, "YOUR COMPANY", M.Company, () => M.Company = RandomCompany());
-        y += U(4);
-        ui.Text("SKIN", x, y, Kit.Gilt, 1); ui.TextR(SkinNames[M.Skin], x + w, y, Style.Dim, 1); y += U(12);
-        M.Skin = Swatches(x, y, w, Variety.Skins, M.Skin); y += U(34);
-        ui.Text("HAIR", x, y, Kit.Gilt, 1); ui.TextR(HairNames[M.Hair], x + w, y, Style.Dim, 1); y += U(12);
-        M.Hair = Swatches(x, y, w, Variety.Hairs, M.Hair); y += U(34);
-        ui.Text("BEARD", x, y, Kit.Gilt, 1); y += U(12);
-        int bw = (w - U(6) * (Variety.Styles - 1)) / Variety.Styles;
-        for (int i = 0; i < Variety.Styles; i++)
-            if (ui.Button(new Rectangle(x + i * (bw + U(6)), y, bw, U(22)), ui.Fit(BeardNames[i], bw - U(6)), active: M.Beard == i)) M.Beard = i;
-        y += U(32);
-        if (ui.Button(new Rectangle(x, y, U(150), U(22)), helm ? "TAKE OFF THE HELM" : "PUT ON THE HELM")) helm = !helm;
-        if (ui.Button(new Rectangle(x + U(160), y, U(150), U(22)), "ANOTHER FACE"))
-            (M.Skin, M.Hair, M.Beard) = (dice.Next(Variety.Skins.Length), dice.Next(Variety.Hairs.Length), dice.Next(Variety.Styles));
-        y += U(34);
-        foreach (var line in ui.Wrap("THE FACE IS YOURS IN EVERY BATTLE. YOUR KIT CHANGES AS YOU BUY BETTER AT THE ARMOURER.", w))
-        { ui.Text(line, x, y, Style.Dim, 1); y += U(10); }
-        y += U(8);
-        // A close look at the face, bare-headed whatever the helm toggle says.
-        int size = Math.Min(r.Bottom - y, w / 2);
-        if (size < U(60)) return;
-        var close = new Rectangle(x + (w - size) / 2, y, size, size);
-        ui.VGrad(close, new Color(60, 46, 40), new Color(20, 16, 16), 2);
-        var bare = look.Clone();
-        bare.Look = bare.Look with { Head = "none", Plume = false, Cape = false };
-        int k = Math.Max(1, (int)(size / (0.62f / Art.Px)));
-        ui.Portrait(bare, close, k, 1.84f);
-        ui.Frame(close, Kit.Gilt * 0.7f, U(1));
-        ui.Frame(Kit.Inset(close, U(3)), Color.Black * 0.5f, U(1));
+        int pw = Math.Min(w * 2 / 5, (r.Bottom - y - U(70)) * PortraitPainter.W / PortraitPainter.H);
+        int lw = w - pw - U(16), px = x + lw + U(16);
+
+        // The features.
+        int ly = y;
+        ui.Text("SKIN", x, ly, Kit.Gilt, 1); ui.TextR(SkinNames[M.Skin], x + lw, ly, Style.Dim, 1); ly += U(11);
+        M.Skin = Swatches(x, ly, lw, Variety.Skins, M.Skin); ly += U(32);
+        ui.Text("HAIR", x, ly, Kit.Gilt, 1); ui.TextR(HairNames[M.Hair], x + lw, ly, Style.Dim, 1); ly += U(11);
+        M.Hair = Swatches(x, ly, lw, Variety.Hairs, M.Hair); ly += U(32);
+        ui.Text("EYES", x, ly, Kit.Gilt, 1); ui.TextR(EyeNames[M.Eye], x + lw, ly, Style.Dim, 1); ly += U(11);
+        M.Eye = Swatches(x, ly, lw, PortraitPainter.EyeColours, M.Eye); ly += U(34);
+        M.Cut = Stepper(x, ly, lw, "HAIR", CutNames, M.Cut); ly += U(26);
+        M.Beard = Stepper(x, ly, lw, "BEARD", BeardNames, M.Beard); ly += U(26);
+        M.Brow = Stepper(x, ly, lw, "BROW", BrowNames, M.Brow); ly += U(26);
+        M.Nose = Stepper(x, ly, lw, "NOSE", NoseNames, M.Nose); ly += U(26);
+        M.Jaw = Stepper(x, ly, lw, "CHIN", JawNames, M.Jaw); ly += U(26);
+        M.Scar = Stepper(x, ly, lw, "SCAR", ScarNames, M.Scar); ly += U(30);
+        int bw = (lw - U(8)) / 2;
+        if (ui.Button(new Rectangle(x, ly, bw, U(22)), ui.Fit(helm ? "TAKE OFF THE HELM" : "PUT ON THE HELM", bw - U(6)))) helm = !helm;
+        if (ui.Button(new Rectangle(x + bw + U(8), ly, bw, U(22)), "ANOTHER FACE")) RandomFace();
+        ly += U(30);
+        foreach (var line in ui.Wrap("YOUR FACE IS YOURS IN EVERY BATTLE AND EVERY HALL. YOUR ARMS FLY OVER YOUR FIRST COMPANIES.", lw))
+        { if (ly + U(10) > r.Bottom) break; ui.Text(line, x, ly, Style.Dim, 1); ly += U(10); }
+
+        // The face, painted, as lords will see it.
+        int ph = pw * PortraitPainter.H / PortraitPainter.W;
+        var frame = new Rectangle(px, y, pw, ph);
+        ui.Rect(frame, Color.Black * 0.5f);
+        ui.Face(PortraitPainter.Of(M), frame);
+        ui.Frame(frame, Kit.Gilt * 0.8f, U(1));
+        ui.Frame(Kit.Inset(frame, U(3)), Color.Black * 0.4f, U(1));
+
+        // The arms you bear: one shield for each charge, on your homeland's colours (or the free companies').
+        int ay = frame.Bottom + U(10);
+        var colours = Origins.Free(M) ? Style.Sides[2] : Style.Sides[Factions.All[M.Realm].Palette];
+        ui.Text("YOUR ARMS", px, ay, Kit.Gilt, 1); ui.TextR(((Emblem)M.Arms).ToString().ToUpperInvariant(), px + pw, ay, Style.Dim, 1); ay += U(12);
+        int per = (Charges.Length + 1) / 2, sw = Math.Min(U(44), (pw - U(6) * (per - 1)) / per), sh = Math.Min(sw * 6 / 5, (r.Bottom - ay - U(6)) / 2);
+        for (int i = 0; i < Charges.Length; i++)
+        {
+            var box = new Rectangle(px + i % per * (sw + U(6)), ay + i / per * (sh + U(6)), sw, sh);
+            bool on = M.Arms == (int)Charges[i];
+            if (on || ui.Hover(box)) ui.Rect(Kit.Inset(box, -U(2)), (on ? Kit.Gilt : Kit.Gilt * 0.4f));
+            ui.Shield(box, colours with { Charge = Charges[i] });
+            if (ui.Clicked(box)) { M.Arms = (int)Charges[i]; Ui.OnClick?.Invoke(); }
+        }
+    }
+
+    /// A feature to step through: its name, then the choice between two arrows (click the name to go round).
+    int Stepper(int x, int y, int w, string label, string[] names, int v)
+    {
+        ui.Text(label, x, y + U(7), Kit.Gilt, 1);
+        int bx = x + U(56), bw = U(22), vw = w - (bx - x) - bw * 2 - U(8);
+        if (ui.Button(new Rectangle(bx, y, bw, U(22)), "<")) v = (v + names.Length - 1) % names.Length;
+        var mid = new Rectangle(bx + bw + U(4), y, vw, U(22));
+        ui.Rect(mid, Color.Black * 0.4f);
+        ui.Frame(mid, ui.Hover(mid) ? Kit.Mul(Kit.Gilt, 0.7f) : Style.PanelEdge, U(1));
+        ui.TextC(names[v], mid.Center.X, y + U(7), Style.Text, 1);
+        if (ui.Clicked(mid)) { v = (v + 1) % names.Length; Ui.OnClick?.Invoke(); }
+        if (ui.Button(new Rectangle(mid.Right + U(4), y, bw, U(22)), ">")) v = (v + 1) % names.Length;
+        return v;
     }
 
     /// A text box with a dice button; click it to type (Enter or Escape ends).
@@ -556,7 +615,7 @@ sealed class CreatorScreen
         ui.Disc(seal + new Vector2(U(2), U(3)), U(20), Color.Black * 0.25f);
         ui.Disc(seal, U(20), Kit.Mul(colours.Cloth, 0.8f));
         ui.Disc(seal, U(15), Kit.Mul(colours.Cloth, 0.6f));
-        ui.Shield(new Rectangle((int)seal.X - U(9), (int)seal.Y - U(11), U(18), U(22)), colours);
+        ui.Shield(new Rectangle((int)seal.X - U(9), (int)seal.Y - U(11), U(18), U(22)), colours with { Charge = (Emblem)M.Arms });
         if (ui.Gilded(new Rectangle(r.Center.X - U(130), parch.Bottom + U(14), U(260), U(34)), "BEGIN THE CAMPAIGN", "", M.Name.Trim() != "")) Begin();
     }
 

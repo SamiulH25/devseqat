@@ -306,6 +306,7 @@ static class Kit
         ["rain"] = new[] { ".XXXX..", "XXXXXX.", "XXXXXXX", ".......", "X.X.X..", ".X.X.X.", "X.X.X.." },
         ["fire"] = new[] { "...X...", "..XX...", "..XXX.X", ".XXoXXX", "XXooXXX", "XXoooXX", ".XXXXX." },
         ["scroll"] = new[] { "XXXXXX.", "XoooooX", ".XoooX.", ".XoooX.", ".XoooX.", "XoooooX", ".XXXXXX" },
+        ["spear"] = new[] { ".....X.", "....XXX", "...XXoX", "..X.XX.", ".X.....", "X......", "......." },
         ["boot"] = new[] { "..XXX..", "..XXX..", "..XXX..", "..XXX..", "..XXXX.", "XXXXXXX", "XXXXXXX" },
     };
 

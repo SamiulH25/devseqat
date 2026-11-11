@@ -83,8 +83,10 @@
     }
   ],
   "roads": [
-    { "id": "sword", "name": "Sword and Shield", "icon": "shield", "text": "On foot behind a kite shield. Arms 20." },
-    { "id": "lance", "name": "Lance and Saddle", "icon": "horse", "text": "A warhorse and a boar spear for the charge. Riding 20." },
-    { "id": "bow", "name": "The Bow", "icon": "arrow", "text": "A hunting bow in hand, the sword at your side. Bowcraft 20." }
+    { "id": "sword", "name": "Sword and Shield", "icon": "shield", "text": "On foot behind a kite shield, as most good soldiers fight. Slow to fall." },
+    { "id": "lance", "name": "Lance and Saddle", "icon": "horse", "text": "A warhorse under you and a boar spear for the charge. Few on foot will stand it." },
+    { "id": "bow", "name": "The Bow", "icon": "arrow", "text": "A hunting bow in hand, the sword at your side. You hit what you aim at." },
+    { "id": "great", "name": "The Greatsword", "icon": "sword", "text": "Both hands on a long blade and no shield. You strike first and hardest, and you take the blows that come back." },
+    { "id": "pole", "name": "Halberd and Line", "icon": "spear", "text": "You learned your trade in the pike line: chop, hook and thrust from out of reach, and know where the next blow will fall." }
   ]
 }

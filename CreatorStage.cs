@@ -184,15 +184,15 @@ sealed class CreatorStage
         u.Charge = u.Charging ? Ease.Out(MathF.Min(1, (2.6f - beatLeft) / 0.6f)) : 0;
     }
 
-    /// Ease the camera toward the act's framing: a rider seen from the side, the face close, the rest three-quarter.
+    /// Ease the camera toward the act's framing: a rider seen from the side, the whole man near for the likeness, the rest three-quarter.
     void Camera(float dt, float aspect, out Matrix view, out Matrix proj)
     {
         var (y, dist, yaw) = act switch
         {
             Act.Ride or Act.Charge => (1.5f, 9.4f, 1.45f),
-            Act.Turn => (1.6f, 3.0f, 0.2f),
-            Act.Leave => (1.2f, 6.8f, 0.4f),
-            _ => (1.2f, 6.6f, 0.55f),
+            Act.Turn => (1.05f, 4.6f, 0.25f),
+            Act.Leave => (1.2f, 6.4f, 0.4f),
+            _ => (1.15f, 5.6f, 0.55f),
         };
         if (aspect < 0.9f) dist *= 0.9f / aspect * 0.95f; // a narrow well needs a step back to fit the width
         float k = started && !Ui.Instant ? 1 - MathF.Exp(-dt * 3.5f) : 1;
