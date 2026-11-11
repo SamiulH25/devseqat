@@ -17,11 +17,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## AudioBank.cs (277 lines)
 - **AudioBank** (class, L9): HasVoice:34, Get:35, Load:37, BuildFallback:94, TailSeconds:126, RenderNoteSlice:130, PickZone:225, OrnamentIntegral:233, WrapIdx:246, SampleLinear:254, SampleHermite:263
 
-## Audio.cs (330 lines)
+## Audio.cs (387 lines)
 - **Cue** (enum, L7)
 - **MusicTrack** (enum, L26)
 - **Bed** (enum, L29)
-- **AudioEngine** (class, L38): AudioEngine:58, MakeAll:76, Ready:100, Chance:116, Cap:118, Family:123, FamilyCap:133, TriggersDuck:135, Duck:139, Play:145, PlayAt:170, SetBed:181, BedGain:194, Beds:201, Intensity:210, SetStemWeights:216, PlayStinger:219, RequestPiece:226, Music:236, PickMapPiece:258, StartPiece:260, Update:285, AdvancePlaylist:308, Make:319
+- **AudioEngine** (class, L38): AudioEngine:59, MakeAll:77, Ready:101, Chance:117, Cap:119, Family:124, FamilyCap:134, TriggersDuck:136, Duck:140, Play:146, PlayAt:171, SetBed:182, BedGain:195, Beds:202, Intensity:211, SetStemWeights:217, PlayStinger:220, RequestPiece:227, UpdateMapMusic:239, Music:283, PickMapPiece:306, StartPiece:316, Update:341, AdvancePlaylist:364, Make:376
 
 ## AudioMusic.cs (316 lines)
 - **Synth** (class, L5): Piece:11, Hz:26, Deg:31, Fit:34, Flute:37, Fiddle:52, Drone:68, Drum:79, Snare:81, Jingle:89, Cymbal:97, Chord:150, Roads:155, Hearth:176, Banners:195, Fade:214, Deploy:226, BattleBase:241, BattleHigh:256, Victory:284, Defeat:302
@@ -534,8 +534,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Captain.cs (340 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:85, AuraBlock:155, OwnFormBlock:170, FlameBlock:197, FormList:221, CaptainRecord:262, NameLines:301, Breaks:328
 
-## MapScreen.cs (595 lines)
-- **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:84, Pressed:92, Update:96, readonly:181, LaterTips:194, Pan:218, ScreenKeys:220, OpenScreen:228, Soundscape:236, CameFrom:280, Camera:282, Rename:306, Trails:319, ClickWorld:331, Ground:343, Draw:366, UpdateBearers:437, BuildSprites:478, DrawSprites:485, G:497, DrawLines:499, Stage:538
+## MapScreen.cs (613 lines)
+- **MapScreen** (class, L9): Save:18, MapScreen:55, Open:68, ShowResults:84, Pressed:92, Update:96, readonly:181, LaterTips:194, Pan:218, ScreenKeys:220, OpenScreen:228, Soundscape:236, CameFrom:298, Camera:300, Rename:324, Trails:337, ClickWorld:349, Ground:361, Draw:384, UpdateBearers:455, BuildSprites:496, DrawSprites:503, G:515, DrawLines:517, Stage:556
 
 ## MapScreen.Dialogs.cs (246 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, EncounterOwnSide:90, MeetingPanel:116, SiegePanel:148, BeatPanel:199, GameOverPanel:216, MenuPanel:231

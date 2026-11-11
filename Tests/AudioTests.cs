@@ -44,7 +44,7 @@ public static partial class SelfTest
         Check(bank.LoadedFromDisk && bank.VoiceIds.Count >= 28, $"instrument bank loaded ({bank.VoiceIds.Count} voices)");
         var errs = MusicLibrary.Validate();
         Check(errs.Count == 0, "music scores validate: " + string.Join("; ", errs));
-        Check(MusicLibrary.All.Count >= 3, "music library loaded scores");
+        Check(MusicLibrary.All.Count >= 43, $"music library loaded {MusicLibrary.All.Count} scores (expected >= 43)");
 
         // Fast window verification across every JSON score (opening, midpoint and loop seam) + chunk-boundary identity
         int winFrames = Synth.Rate; // 1.0 s window

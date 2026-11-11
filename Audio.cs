@@ -51,8 +51,9 @@ sealed class AudioEngine
 
     AudioStreamer? streamer;
     MusicTrack track = MusicTrack.None;
-    string requestedPiece = "";
-    float mapGap, duckAmount, duckHold;
+    string requestedPiece = "", activeInterior = "", lastCulturePrefix = "azure";
+    string[] mapPool = { "azure_day", "azure_peace" };
+    float mapGap, duckAmount, duckHold, mapHoldSec;
     int mapCursor;
 
     public AudioEngine()
@@ -233,10 +234,57 @@ sealed class AudioEngine
         StartPiece(id);
     }
 
+    /// Contextual overworld & settlement music director (AU4): switches immediately for interiors/panels, and rotates
+    /// cultural/seasonal/war/omen suites on the open map with natural breathing gaps and border hysteresis.
+    public void UpdateMapMusic(string? interiorPiece, string culture, bool night, bool winter, bool hostNear, float dread, float dt)
+    {
+        if (!Enabled) return;
+        if (!string.IsNullOrEmpty(interiorPiece))
+        {
+            if (activeInterior != interiorPiece || track != MusicTrack.Map)
+            {
+                activeInterior = interiorPiece;
+                track = MusicTrack.Map;
+                requestedPiece = interiorPiece;
+                mapGap = 0;
+                StartPiece(interiorPiece);
+            }
+            return;
+        }
+
+        string prefix = culture switch
+        {
+            "crimson" => "crimson", "northern" => "north", "southern" => "sunward",
+            "steppe" => "steppe", "league" => "league", "order" => "order", _ => "azure",
+        };
+        mapPool = dread >= 0.55f ? new[] { dread >= 0.8f ? "black_flame" : "omen_graves", $"{prefix}_night" }
+            : hostNear ? new[] { $"{prefix}_host", $"{prefix}_day" }
+            : winter ? (night ? new[] { "winter_night", $"{prefix}_night" } : new[] { "winter_march", $"{prefix}_day", $"{prefix}_peace" })
+            : night ? new[] { $"{prefix}_night", $"{prefix}_peace" }
+            : new[] { $"{prefix}_day", $"{prefix}_peace" };
+
+        mapHoldSec += dt;
+        bool fromInterior = activeInterior != "";
+        activeInterior = "";
+        bool urgentShift = (dread >= 0.55f || hostNear) && !mapPool.Contains(requestedPiece);
+        bool realmChanged = prefix != lastCulturePrefix && mapHoldSec > 22f && !mapPool.Contains(requestedPiece);
+        lastCulturePrefix = prefix;
+
+        if (track != MusicTrack.Map || fromInterior || urgentShift || realmChanged)
+        {
+            track = MusicTrack.Map;
+            mapHoldSec = 0;
+            mapGap = 0;
+            requestedPiece = PickMapPiece();
+            StartPiece(requestedPiece);
+        }
+    }
+
     public void Music(MusicTrack t)
     {
         if (!Enabled || t == track) return;
         track = t;
+        activeInterior = "";
         mapGap = 0;
         string id = t switch
         {
@@ -255,7 +303,15 @@ sealed class AudioEngine
         StartPiece(id);
     }
 
-    string PickMapPiece() => "map" + (mapCursor % 3);
+    string PickMapPiece()
+    {
+        if (mapPool.Length > 0)
+        {
+            string candidate = mapPool[mapCursor % mapPool.Length];
+            if (MusicLibrary.Has(candidate)) return candidate;
+        }
+        return "map" + (mapCursor % 3);
+    }
 
     void StartPiece(string id)
     {
@@ -307,11 +363,12 @@ sealed class AudioEngine
 
     void AdvancePlaylist(float dt)
     {
-        if (track != MusicTrack.Map || streamer == null || !streamer.CurrentFinished) return;
-        if (mapGap <= 0) mapGap = 7 + pick.NextSingle() * 9;
+        if (track != MusicTrack.Map || activeInterior != "" || streamer == null || !streamer.CurrentFinished) return;
+        if (mapGap <= 0) mapGap = 6 + pick.NextSingle() * 8;
         if ((mapGap -= dt) > 0.01f) return;
         mapGap = 0;
-        mapCursor = (mapCursor + 1) % 3;
+        mapHoldSec = 0;
+        mapCursor++;
         requestedPiece = PickMapPiece();
         StartPiece(requestedPiece);
     }

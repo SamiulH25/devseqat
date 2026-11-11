@@ -197,7 +197,7 @@ sealed class ScreenHost : Game
                 Audio?.Beds(title.InCreator ? 0.25f : 0.6f, 0, 0);
                 break;
             case Mode.Lab: IsMouseVisible = true; lab.Update(dt); Audio?.Music(MusicTrack.Title); break;
-            case Mode.Map: IsMouseVisible = true; map.Update(dt, IsActive); Audio?.Music(MusicTrack.Map); map.Soundscape(Audio); break;
+            case Mode.Map: IsMouseVisible = true; map.Update(dt, IsActive); map.Soundscape(Audio, dt); break;
             default: battle.Update(dt); break;
         }
         if (campaignShots != null) { shotFrames++; CampaignShots(); }
