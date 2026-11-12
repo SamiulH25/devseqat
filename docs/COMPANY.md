@@ -1,6 +1,6 @@
 # The men of the company: plan
 
-Status: **planned** (nothing built yet). Phases C1-C8; each ships on its own and `tools/check.sh` must pass after each.
+Status: **planned** (nothing built yet). It follows `docs/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C8; each ships on its own and `tools/check.sh` must pass after each.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 Read `docs/archive/LEGACY.md` first: this plan is its second half.
 
@@ -11,8 +11,10 @@ The one fantasy (`docs/DESIGN.md` section 0):
 > **You lead a free company in person. Every man you lose was someone you knew, and every honour on the banner is one
 > you earned.**
 
-Every plan so far is built. Looking at the game as it stands (the campaign and battle shots of 2026-11-12), the battle is
-strong and the world is full. The weak place is the middle of the fantasy: **the men themselves.**
+The battle is strong, the world is full, and the last two sprints gave it sound (`docs/archive/AUDIO.md`) and a lived-in
+map (`docs/WORLD_LIFE.md`). Looking at the screens (campaign and battle shots rendered 2026-11-12 from the commit before
+those two sprints; neither touched the roll, the report, the household or the legend), the weak place is the middle of the
+fantasy: **the men themselves.**
 
 - **A lord you will never meet is a richer person than a man who has fought beside you for sixty battles.** Lords have a
   painted face, a house, kin, bonds, a want, a temper, memories of you and a talk screen (`docs/archive/LORDS.md`). A named
@@ -57,6 +59,17 @@ named men (C6). A short polish track (C8) fixes what the shots showed.
 - **Six men a company stays** (`RollSize`). Depth comes from knowing six men well, not from more names.
 
 ## 4. Phases
+
+### C0: Green checks first
+Two things are broken at the head of the branch today (2026-11-12), and every later phase needs both tools.
+- `docs/CODEMAP.md` was stale after the world-life commit (six new files missing), so `tools/check.sh` failed.
+  Regenerated with this plan.
+- **The campaign shots run crashes** at the siege step: `ScreenHost.CampaignShots` case 12 calls `c.Besiege(castle)`,
+  ignores a refusal, and case 13 passes a null `c.Besieging` to `PrepareAssault` (`NullReferenceException` in
+  `GarrisonParty`, CampaignSiege.cs:42). Only 16 of about 48 screens are saved. Most likely the staged party no longer
+  stands where `Besiege` accepts it on the layout 4 map. Find the refusal, fix the staging, and make the script stop with
+  the reason when a staged action is refused.
+- **Done when:** `tools/check.sh` ends `ALL CHECKS PASSED` and `IRONFIELD_CAMPAIGN_SHOTS` saves every screen.
 
 ### C1: Faces in the ranks
 The cheapest phase and the biggest change to how the game reads.
@@ -181,6 +194,7 @@ What the 2026-11-12 shots showed, and the tidy-up.
 
 ## 5. Build order and why
 
+0. **C0** before anything: without the shots no screen in this plan can be checked.
 1. **C1** first: a day's work on code that exists, and every later phase is better with faces on it.
 2. **C2, C3**: who a man is and whom he stands with. Headless, well tested, no new screens (lines on the roll).
 3. **C4**: choices. From here the roll is played, not read.
