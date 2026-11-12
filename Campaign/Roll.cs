@@ -80,6 +80,7 @@ public sealed partial class Campaign
         S.Fallen.Add(m);
         bool tied = TiesOnFall(m, fate, where);
         if (!Player.Companies.Contains(c)) return;
+        if (fate == "pensioned") { Log($"{m.Name} of {c.Name} goes home with a pension."); return; }
         if (fate is "fell" or "missing")
         {
             // Losing a man the company knew costs it (L3); a long-serving man is remembered in the chronicle.
@@ -107,10 +108,10 @@ public sealed partial class Campaign
             pw = (wounded + (killed + lost) * (1 - B.VeteranSurvival)) / fitBefore;
         foreach (var m in FitNamed(c, st.Troop).ToList())
         {
-            float u = RollRng.Float();
-            if (u < pk) Lose(c, m, "fell", foe);
-            else if (u < pk + pl) Lose(c, m, "missing", foe);
-            else if (u < pk + pl + pw) Hurt(c, m);
+            float u = RollRng.Float(), k = pk * Armed(m); // armed by you, he dies less often (C4)
+            if (u < k) Lose(c, m, "fell", foe);
+            else if (u < k + pl) Lose(c, m, "missing", foe);
+            else if (u < k + pl + pw) Hurt(c, m);
         }
     }
 
@@ -129,7 +130,7 @@ public sealed partial class Campaign
             if (nr.Fell && nr.Saved) { m.Deed($"Pulled from the press by the captain{against}."); Hurt(c, m); }
             else if (nr.Fell)
             {
-                if (RollRng.Float() >= 1 - (1 - pw) * B.VeteranSurvival) Lose(c, m, "fell", foe);
+                if (RollRng.Float() >= 1 - (1 - pw) * B.VeteranSurvival * Armed(m)) Lose(c, m, "fell", foe);
                 else if (!won && RollRng.Chance(B.CaptureChance * B.VeteranSurvival)) Lose(c, m, "missing", foe);
                 else Hurt(c, m);
             }
@@ -146,6 +147,7 @@ public sealed partial class Campaign
         {
             m.Battles++;
             m.Avenging = false; // he has had his battle (C3)
+            if (won && !m.Hurt) S.MentionPool.Add(m.Id); // a man of the day you may mention (C4)
             if (m.Battles == 1 && m.Deeds.Count > 0 && !m.Deeds[0].StartsWith("Killed") && !m.Deeds[0].StartsWith("Cut down")) m.Deed($"Saw his first battle{(foe != "" ? $" against {foe}" : "")}."); // C2
         }
         string against = foe != "" ? $" against {foe}" : "";
@@ -154,6 +156,7 @@ public sealed partial class Campaign
             && NameMan(c, cr.BestFelledLeader ? $"Cut down a captain{against}." : $"Killed {cr.BestKills}{against}.", cr.BestTroop) is Soldier hand)
         {
             hand.Battles = 1; hand.Kills = cr.BestKills;
+            if (won) S.MentionPool.Add(hand.Id);
             rollNews.Add(("NAMED", $"{hand.Name}, {Troops.Get(hand.Troop).Name}, {c.Name}.{Known(hand)}"));
             return;
         }
@@ -166,6 +169,7 @@ public sealed partial class Campaign
         if (deed != null && NameMan(c, deed) is Soldier named)
         {
             named.Battles = 1;
+            if (won) S.MentionPool.Add(named.Id);
             rollNews.Add(("NAMED", $"{named.Name}, {Troops.Get(named.Troop).Name}, {c.Name}.{Known(named)}"));
         }
     }
@@ -229,7 +233,7 @@ public sealed partial class Campaign
 
     /// A new sergeant for one of your companies: its senior named man (3+ battles) leaves the ranks to take the post. `drawn`
     /// is the name drawn as before (the draw is kept so the main stream does not move), used when no named man is ready.
-    string RiseToSergeant(CompanyRecord c, string drawn)
+    internal string RiseToSergeant(CompanyRecord c, string drawn)
     {
         c.OfficerMan = null;
         if (!Player.Companies.Contains(c)) return drawn;
@@ -240,6 +244,7 @@ public sealed partial class Campaign
         m.Deed($"Made sergeant of {c.Name} on day {Day}.");
         c.OfficerMan = m;
         Log($"{m.Name} rises from the ranks to be sergeant of {c.Name}.");
+        OpenSergeantPick(c, m); // you may choose another (C4)
         return "Sgt " + m.Name;
     }
 

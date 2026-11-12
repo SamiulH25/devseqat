@@ -128,6 +128,8 @@ partial class MapScreen
 
     /// The company the roll panel shows.
     CompanyRecord? rollOf;
+    /// The man picked on the roll (C4): the action bar works on him.
+    Soldier? rollPick;
 
     /// A company's roll (docs/archive/LEGACY.md L1): its named men, what each is known for, and the men it has lost.
     /// A circle's spellbook and master on its roll (docs/archive/MAGIC_AURA.md 3.2-3.3): click a known spell to prepare it or set it
@@ -193,6 +195,7 @@ partial class MapScreen
             y += ui.U(11);
         }
         if (Rules.RoleOf(c) == "casters") y = Spellbook(c, x, y, w);
+        y = SergeantPick(c, x, y, w);
         y += ui.U(3);
         ui.Text("THE ROLL", x, y, Kit.Gilt, 2);
         string count = $"{c.Roll.Count} OF {Balance.Get().RollSize} NAMED";
@@ -206,11 +209,15 @@ partial class MapScreen
         }
         y += ui.U(20);
         if (c.Roll.Count == 0) { ui.Text("NO MAN HAS EARNED A NAME YET. THEY DO IT IN BATTLE.", x, y, Style.Dim, 1); y += ui.U(14); }
-        foreach (var m in c.Roll.OrderByDescending(m => m.Battles))
+        if (rollPick != null && !c.Roll.Contains(rollPick)) rollPick = null;
+        foreach (var m in c.Roll.OrderByDescending(Campaign.OfBanner).ThenByDescending(m => m.Battles)) // the banner's men first (C4)
         {
-            if (y > r.Bottom - ui.U(160)) break;
+            if (y > r.Bottom - ui.U(190)) break;
             var row = new Rectangle(x - ui.U(4), y - ui.U(3), w + ui.U(8), ui.U(42));
-            ui.Rect(row, Color.White * (ui.Hover(row) ? 0.07f : 0.035f));
+            bool picked = rollPick == m;
+            ui.Rect(row, picked ? Kit.Mul(Kit.Gilt, 0.25f) : Color.White * (ui.Hover(row) ? 0.07f : 0.035f));
+            if (picked) ui.Frame(row, Kit.Gilt * 0.7f, ui.U(1));
+            if (ui.Clicked(row)) { rollPick = picked ? null : m; note = ""; }
             // His face (C1): the man the battle draws, his age, his scars, dressed by his tier on the company's charge.
             var fb = new Rectangle(row.X + ui.U(1), row.Y + ui.U(1), ui.U(40), ui.U(40));
             ui.FaceHead(PortraitPainter.Of(m, c), fb);
@@ -224,6 +231,12 @@ partial class MapScreen
                 bool felt = Campaign.Senior(c) == m;
                 ui.Text(m.Nature.ToUpperInvariant(), nx, y, felt ? Kit.Gilt : Style.Friendly, 1);
                 if (felt) ui.Icon("star", nx + ui.TW(m.Nature.ToUpperInvariant(), 1) + ui.U(4), y, Kit.Gilt, 1);
+                if (m.Mentions > 0) // mentioned (C4): a flag each time, the words when he is of the banner
+                {
+                    int mx = nx + ui.TW(m.Nature.ToUpperInvariant(), 1) + ui.U(felt ? 22 : 8);
+                    ui.Icon("flag", mx, y, Kit.Gilt, 1);
+                    ui.Text(Campaign.OfBanner(m) ? "OF THE BANNER" : $"MENTIONED X{m.Mentions}", mx + ui.U(10), y, Kit.Gilt, 1);
+                }
             }
             string stat = $"AGE {Soldier.AgeOf(m)}, {Campaign.N(m.Battles, "BATTLE")}, {Campaign.N(m.Kills, "KILL")}" + (m.Wounds > 0 ? $", {Campaign.N(m.Wounds, "WOUND")}" : "");
             ui.TextR(stat, x + w, y, Style.Dim, 1);
@@ -250,8 +263,8 @@ partial class MapScreen
         if (fallen.Count == 0) ui.Text("NONE YET.", x, y, Style.Dim, 1);
         foreach (var m in fallen)
         {
-            if (y > r.Bottom - ui.U(56)) { ui.Text("AND MORE BEFORE THEM.", x, y, Style.Dim, 1); break; }
-            string how = m.Fate switch { "missing" => "MISSING", "left" => "LEFT THE COMPANY", _ => "FELL" };
+            if (y > r.Bottom - ui.U(96)) { ui.Text("AND MORE BEFORE THEM.", x, y, Style.Dim, 1); break; }
+            string how = m.Fate switch { "missing" => "MISSING", "left" => "LEFT THE COMPANY", "pensioned" => "WENT HOME", _ => "FELL" };
             string at = m.DiedAt != "" ? $" AGAINST {m.DiedAt.ToUpperInvariant()}" : "";
             // The fallen's face, greyed (C1).
             var fb = new Rectangle(x - ui.U(2), y - ui.U(5), ui.U(18), ui.U(18));
@@ -260,8 +273,63 @@ partial class MapScreen
             ui.TextR(Cut($"{how}{at}, DAY {m.DiedDay}. {Campaign.N(m.Battles, "BATTLE")}", fit / 2), x + w, y, m.Fate == "fell" ? Style.Bad : Style.Dim, 1);
             y += ui.U(18);
         }
+        RollActions(c, r, x, w);
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "BACK", note: ctl.Name(Act.Menu))) panel = PanelKind.Party;
+    }
+
+    /// A sergeant just rose and others qualify (C4): their faces as buttons; the risen man is first and gilded.
+    int SergeantPick(CompanyRecord c, int x, int y, int w)
+    {
+        var pick = C.SergeantChoice(c);
+        if (pick.Count == 0) return y;
+        y += ui.U(4);
+        ui.Text("CHOOSE THE SERGEANT", x, y, Kit.Gilt, 1);
+        ui.TextR($"UNTIL THE END OF DAY {c.SergeantPickUntil}, OR {pick[0].Name.ToUpperInvariant()} KEEPS IT", x + w, y, Style.Dim, 1);
+        y += ui.U(12);
+        int bw = (w - ui.U(8) * (pick.Count - 1)) / pick.Count;
+        for (int i = 0; i < pick.Count; i++)
+        {
+            var m = pick[i];
+            var b = new Rectangle(x + i * (bw + ui.U(8)), y, bw, ui.U(30));
+            ui.Rect(b, Color.White * (ui.Hover(b) ? 0.1f : 0.05f));
+            ui.Frame(b, i == 0 ? Kit.Gilt * 0.8f : Style.Dim * 0.6f, ui.U(1));
+            var fb = new Rectangle(b.X + ui.U(1), b.Y + ui.U(1), ui.U(28), ui.U(28));
+            ui.FaceHead(PortraitPainter.Of(m, c), fb);
+            string trait = Campaign.NatureTrait(m.Nature) is string t ? $" -> {t.ToUpperInvariant()}" : "";
+            ui.Text(ui.Fit(m.Name.ToUpperInvariant(), bw - ui.U(36)), b.X + ui.U(34), b.Y + ui.U(5), i == 0 ? Kit.Gilt : Style.Text, 1);
+            ui.Text(ui.Fit($"{m.Nature.ToUpperInvariant()}{trait}, {Campaign.N(m.Battles, "BATTLE")}", bw - ui.U(36)), b.X + ui.U(34), b.Y + ui.U(16), Style.Dim, 1);
+            if (ui.Clicked(b)) note = C.ChooseSergeant(c, m) ?? "";
+        }
+        return y + ui.U(36);
+    }
+
+    /// What you can do with the picked man (C4): mention him, arm him, send him home, move him.
+    void RollActions(CompanyRecord c, Rectangle r, int x, int w)
+    {
+        int y = r.Bottom - ui.U(80);
+        if (rollPick is not Soldier m) { ui.TextC("CLICK A MAN TO MENTION, ARM, PENSION OR MOVE HIM.", r.X + r.Width / 2f, y + ui.U(10), Style.Dim, 1); return; }
+        ui.Divider(x, y - ui.U(22), w, Kit.Gilt * 0.4f);
+        ui.TextFitC($"FOR {m.Name.ToUpperInvariant()}, {Troops.Get(m.Troop).Name.ToUpperInvariant()}" + (m.Carries != "" ? $". CARRIES {m.Carries.ToUpperInvariant()}" : ""), r.X + r.Width / 2f, y - ui.U(14), w, Kit.Gilt, 1);
+        int bw = (w - ui.U(24)) / 4, bh = ui.U(28);
+        Rectangle B(int i) => new(x + i * (bw + ui.U(8)), y, bw, bh);
+        var gift = C.Givable().OrderByDescending(g => g.Quality).FirstOrDefault();
+        if (gift != null && C.CannotArm(m, gift) != null) gift = null;
+        var to = C.Player.Companies.FirstOrDefault(k => C.CannotMoveMan(c, m, k) == null);
+        string? moveWhy = to == null ? C.Player.Companies.Where(k => k != c).Select(k => C.CannotMoveMan(c, m, k)).FirstOrDefault() ?? "NO OTHER COMPANY" : null;
+        var acts = new (string Label, string? Why, string Says, Func<string?> Do)[]
+        {
+            ("MENTION", C.CannotMention(m), $"A PURSE OF {Balance.Get().MentionPurse} CROWNS AND +1 COHESION. THREE MENTIONS MAKE HIM ONE OF THE BANNER.", () => C.Mention(m)),
+            ("ARM", C.CannotArm(m, gift), $"GIVE HIM {(gift != null ? Campaign.ItemName(gift, Gear.Get(gift.Def)).ToUpperInvariant() : "A LOT OF LOOTED ARMS")}. HE DIES LESS OFTEN WHEN HE FALLS; IF HE DIES, IT IS LOST.", () => C.Arm(m, gift)),
+            ("SEND HOME", C.CannotPension(m), $"A PENSION OF {Balance.Get().PensionCost} CROWNS. HIS VILLAGE'S RECRUITS COME READIER.", () => C.Pension(m)),
+            ("MOVE", moveWhy, to != null ? $"TO {to.Name.ToUpperInvariant()}, WITH HIS PLACE IN THE RANKS." : "", () => C.MoveMan(c, m, to!)),
+        };
+        for (int i = 0; i < acts.Length; i++)
+        {
+            var (label, why, says, act) = acts[i];
+            if (ui.Button(B(i), label, why == null)) { note = act() ?? ""; if (i >= 2 && note == "") rollPick = null; }
+            if (ui.Hover(B(i))) ui.Tooltip(B(i).X, B(i).Y - ui.U(4), label, ui.Wrap(why ?? says, ui.U(240)).ToArray());
+        }
     }
 
     /// The whole company in one strip: men by role, and the numbers that keep it in the field.

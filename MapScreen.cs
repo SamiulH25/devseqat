@@ -617,6 +617,8 @@ sealed partial class MapScreen
             case "roll":
                 rollOf = C.Player.Companies.OrderByDescending(k => k.Roll.Count).First(); panel = PanelKind.Roll; note = "";
                 C.StageTies(rollOf); // show the ties (C3) on a fresh campaign's roll
+                rollPick = rollOf.Roll.OrderByDescending(m => m.Battles).Skip(1).FirstOrDefault(); // and the action bar (C4)
+                if (rollPick != null) { C.S.MentionPool.Add(rollPick.Id); rollPick.Mentions = 1; }
                 break;
             case "divisions": panel = PanelKind.Divisions; note = ""; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;

@@ -23,6 +23,7 @@ public partial class Campaign
         var reports = new List<CompanyReport>();
         rollNews.Clear();
         rollFell.Clear();
+        if (playerIn) S.MentionPool.Clear(); // the last battle's men of the day (C4)
         // L5: the battle's name, and whether a win here is worth a battle honour (outnumbered, their captain slain, a wall taken).
         string field = playerIn ? BattleName(Player.Pos, siegeBattle) : "";
         float mine = playerTeam == 0 ? startStrength0 : startStrength1, theirs = playerTeam == 0 ? startStrength1 : startStrength0;

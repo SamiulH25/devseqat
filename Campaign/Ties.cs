@@ -59,7 +59,7 @@ public sealed partial class Campaign
             if (LivingMan(t.Other) is not Soldier o) continue;
             o.Ties.RemoveAll(x => x.Other == gone.Id);
             string at = where != "" ? $" against {where}" : "";
-            if (fate != "fell") { o.Deed(fate == "left" ? $"Saw {gone.Name} leave the company." : $"Lost {gone.Name}{at}."); continue; }
+            if (fate != "fell") { o.Deed(fate == "left" ? $"Saw {gone.Name} leave the company." : fate == "pensioned" ? $"Saw {gone.Name} go home." : $"Lost {gone.Name}{at}."); continue; }
             switch (t.Kind)
             {
                 case "Brothers" or "Kin":
@@ -101,6 +101,6 @@ public sealed partial class Campaign
             string name = LivingMan(t.Other)?.Name ?? "?";
             parts.Add((t.Kind switch { "Brothers" => "BROTHER TO ", "Kin" => "KIN TO ", "Rivals" => "RIVAL TO ", "Master" => "MASTER TO ", _ => "LAD TO " }) + name.ToUpperInvariant());
         }
-        return string.Join("; ", parts) + (m.Avenging ? (parts.Count > 0 ? "; " : "") + "OUT FOR VENGEANCE" : "");
+        return string.Join(", ", parts) + (m.Avenging ? (parts.Count > 0 ? ", " : "") + "OUT FOR VENGEANCE" : "");
     }
 }

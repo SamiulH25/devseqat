@@ -88,6 +88,7 @@ public sealed partial class Campaign
         if (n <= 0) return;
         Rules.AddMen(c, troop, n);
         if (Has("VeteranCadre") && Player.Companies.Contains(c)) c.Stack(troop).AddXp(20 * n); // F4: recruits who know a little
+        if (from != null && Player.Companies.Contains(c) && S.Pensioned.Contains(from.Name)) c.Stack(troop).AddXp(PensionXp * n); // an old man of the company came home here (C4)
         if (from != null)
         {
             string culture = from.Culture;

@@ -52,6 +52,8 @@ public sealed partial class Campaign
         if (Tally("holdouts") + Tally("robbed") > 0) lines.Add($"{N(Tally("holdouts"), "GOBLIN HOLE")} BURNT OUT. {N(Tally("robbed"), "CARAVAN")} ROBBED.");
         if (S.OwnOrder is FoundedOrder own)
             lines.Add($"THE {own.Name.ToUpperInvariant()}: FOUNDED DAY {own.Day}, {N(KnightsAlive, "KNIGHT")}, {N(own.Masters, "GRAND MASTER")}.");
+        var banner = Player.Companies.SelectMany(k => k.Roll).Concat(S.Fallen).Where(OfBanner).Select(m => m.Name.ToUpperInvariant()).Take(4).ToList();
+        if (banner.Count > 0) lines.Add("OF THE BANNER: " + string.Join(", ", banner) + "."); // C4
         if (BestCompany is CompanyRecord best) lines.Add($"YOUR BEST: {best.Name.ToUpperInvariant()}, {N(best.Battles, "BATTLE")}" + (best.Honours.Count > 0 ? $", {N(best.Honours.Count, "HONOUR")}." : "."));
         return lines;
     }

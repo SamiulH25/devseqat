@@ -40,6 +40,9 @@ public sealed class CompanyRecord
     public const int LedgerSize = 8;
     /// Your companies' named men (docs/archive/LEGACY.md L1): the few who earned a name, each one of the men of his stack.
     public List<Soldier> Roll = new();
+    /// A sergeant just risen (C4): the men you may choose instead (the risen man first), until the end of SergeantPickUntil.
+    public List<int> SergeantPick = new();
+    public int SergeantPickUntil;
     /// A circle of mages (docs/archive/MAGIC_AURA.md 3.2-3.3): spells learned beyond its line's, those you prepared for battle
     /// (empty = its line's), its master (a Soldier id on the roll, 0 = none) and until when it is leaderless (hours).
     public List<string> Spells = new(), Prepared = new();
@@ -163,6 +166,10 @@ public sealed class Soldier
     /// Ties to other named men, at most two (docs/COMPANY.md C3), and whether he fights his next battle to avenge one.
     public List<SoldierTie> Ties = new();
     public bool Avenging;
+    /// Your hand on the roll (C4): times you mentioned him after a win (three make him "of the banner"), and what you armed
+    /// him with ("" = his own kit): a name for the deed line, and the gear id or "arms" for a lot of looted arms.
+    public int Mentions;
+    public string Carries = "", CarriesDef = "";
     public bool Hurt;
     /// Knighted into your own order (docs/archive/KNIGHT_ORDERS.md 8, K8).
     public bool Knight;
@@ -524,6 +531,10 @@ public sealed class CampaignState
     public int NextSoldier = 1;
     /// Every named man your companies have lost (L3), never trimmed.
     public List<Soldier> Fallen = new();
+    /// The named men you may mention after the last won battle (C4); emptied by a mention or the next battle.
+    public List<int> MentionPool = new();
+    /// Villages a pensioned man went home to (C4): their recruits come a little readier.
+    public List<string> Pensioned = new();
     /// You retired on the company's legend (L7), and how many captains have led it since you began (handing over).
     public bool Retired;
     public int Generation;
@@ -729,6 +740,8 @@ public sealed class Balance
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
     /// What the captain's baggage carries (docs/COMPANY.md C9): a base, and more for each spare horse (to six).
     public float BaggageBase = 20, BaggagePerHorse = 5;
+    /// Your hand on the roll (C4): the purse for a man you mention, and a pension for a man you send home.
+    public int MentionPurse = 20, PensionCost = 40;
     /// What a company's senior named man's nature adds to its might in auto-resolve (docs/COMPANY.md C2).
     public float NatureWeight = 0.01f;
     public float CompanySlotsBase = 10, MenBase = 40, MenRenownDivisor = 5;

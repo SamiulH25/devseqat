@@ -7,7 +7,7 @@
   "WoundBase": 0.3, "WoundArmor": 40, "WoundMin": 0.25, "WoundMax": 0.7, "CaptureChance": 0.5, "FledReturnOnDefeat": 0.7,
   "XpParticipation": 10, "XpVictory": 1.5, "XpPerKillTier": 6,
   "RenownPerVictory": 5, "RenownStrengthDivisor": 50,
-  "BaggageBase": 20, "BaggagePerHorse": 5, "NatureWeight": 0.01,
+  "BaggageBase": 20, "BaggagePerHorse": 5, "MentionPurse": 20, "PensionCost": 40, "NatureWeight": 0.01,
   "CompanySlotsBase": 10, "MenBase": 40, "MenRenownDivisor": 5,
   "ArmyScale": 3, "DrillWeight": 5, "TraitWeight": 0.1, "AuraWeight": 0.03,
   "FeastPerMan": 6, "RollSize": 6, "VeteranSurvival": 0.6, "FallenCohesion": 1.5, "VillageRecruitsMax": 8, "HealField": 0.08, "HealTown": 0.25, "DrillCamp": 0.6, "DrillTown": 1.2,

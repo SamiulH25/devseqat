@@ -139,4 +139,91 @@ public static partial class SelfTest
         c.Lose(c.Player.Companies.First(k => k.Roll.Contains(vet)), vet, "fell", "");
         Check(lad!.Nature == ways, "a lad whose master fell takes his nature");
     }
+
+    /// C4: your hand on the roll. Each action's refusals and effects; the unanswered sergeant choice falls back to the risen
+    /// man; what you did survives a save.
+    static void RollChoices()
+    {
+        var c = Campaign.New(31);
+        c.S.Gold = 1000;
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Roll.Clear();
+        var men = Enumerable.Range(0, 4).Select(_ => c.NameMan(co, "Stood firm.")!).ToList();
+        foreach (var m in men) { m.Ties.Clear(); m.Battles = 4; }
+        men[3].Battles = 2; // not a candidate: he stays for the pension
+        men[0].Battles = 9;
+
+        // The sergeant: the senior rises, and you may choose another for a day; his nature becomes a trait.
+        co.Officer = ""; co.Traits.Clear();
+        int menBefore = co.Men;
+        co.Officer = c.RiseToSergeant(co, "Sgt Drawn");
+        Check(co.OfficerMan == men[0] && c.SergeantChoice(co).Count >= 2, "the senior man rises and others may be chosen");
+        var other = c.SergeantChoice(co)[1];
+        other.Nature = "Bold";
+        Check(c.CannotChooseSergeant(co, men[3]) == null || c.SergeantChoice(co).Contains(men[3]) == false, "only the candidates may be chosen");
+        Check(c.ChooseSergeant(co, other) == null && co.OfficerMan == other && co.Roll.Contains(men[0]) && !co.Roll.Contains(other), "you choose another sergeant; the risen man goes back to the ranks");
+        Check(co.Men == menBefore - 1 && co.Officer.Contains(other.Name), "one man leaves the ranks for the post, as before");
+        Check(co.Traits.Contains("Hothead"), "a Bold sergeant makes the company Hothead");
+        Check(c.SergeantChoice(co).Count == 0, "the choice is made once");
+        // Unanswered: after the day the risen man keeps it.
+        var co2 = c.Player.Companies.First(k => k != co && k.Men >= 4);
+        co2.Roll.Clear();
+        var a = c.NameMan(co2, "Held.")!; var b = c.NameMan(co2, "Held.")!;
+        a.Battles = 6; b.Battles = 5; co2.Officer = "";
+        co2.Officer = c.RiseToSergeant(co2, "Sgt Drawn");
+        Check(c.SergeantChoice(co2).Count == 2, "a choice opens for the second company");
+        c.S.Hours += 24 * (Campaign.SergeantPickDays + 1);
+        Check(c.SergeantChoice(co2).Count == 0 && co2.OfficerMan == a, "unanswered, the risen man keeps the post");
+
+        // Mention a man: only after a won battle, once a battle; three make him of the banner.
+        var hero = co.Roll.First(m => m == men[0]); // back in the ranks
+        Check(c.CannotMention(hero) == "ONLY AFTER A WON BATTLE", "no mention without a won battle");
+        float coh = co.Cohesion = 10;
+        float gold = c.S.Gold;
+        for (int i = 0; i < 3; i++) { c.S.MentionPool.Add(hero.Id); Check(c.Mention(hero) == null, "mention a man of the day"); }
+        Check(c.S.Gold == gold - 3 * Balance.Get().MentionPurse && co.Cohesion == coh + 3 && c.S.MentionPool.Count == 0, "a mention pays a purse and lifts the company");
+        Check(Campaign.OfBanner(hero) && c.Summary().Any(l => l.Contains(hero.Name.ToUpperInvariant())), "three mentions: of the banner, and in the end summary");
+
+        // Arms: a lot of looted arms, or a piece from your baggage you do not wear.
+        c.S.Goods.Remove("arms");
+        Check(c.CannotArm(hero, null) == "NO LOOTED ARMS", "no arms to give");
+        c.S.Goods["arms"] = 1;
+        Check(c.Arm(hero, null) == null && hero.Carries != "" && !c.S.Goods.ContainsKey("arms"), "a man takes a lot of looted arms");
+        Check(c.CannotArm(hero, null) == "HE IS ARMED ALREADY", "one gift a man");
+        var sword = Gear.All.First(g => g.Slot == "weapon" && !c.Captain.Kit.Worn.Contains(g.Id));
+        var piece = new GearItem { Def = sword.Id, Quality = ItemQuality.Fine };
+        c.Captain.Baggage.Add(piece);
+        Check(c.Arm(men[2], piece) == null && !c.Captain.Baggage.Contains(piece) && men[2].CarriesDef == sword.Id, "a man carries a piece from your baggage");
+
+        // Send him home: only the old or thrice wounded; his village sends readier men.
+        var old = men[3];
+        old.Age = 25; old.Wounds = 0;
+        Check(c.CannotPension(old) == "HE CAN STILL FIGHT", "a young whole man is not sent home");
+        old.Wounds = 3;
+        int stackMen = co.Stacks.First(s => s.Troop == old.Troop).Men;
+        gold = c.S.Gold;
+        Check(c.Pension(old) == null && !co.Roll.Contains(old) && c.S.Fallen.Contains(old) && old.Fate == "pensioned", "a thrice-wounded man goes home");
+        Check(c.S.Gold == gold - Balance.Get().PensionCost && co.Stacks.First(s => s.Troop == old.Troop).Men == stackMen - 1, "his pension is paid and his place is empty");
+        string home = old.Home != "" ? old.Home : co.Home;
+        Check(c.S.Pensioned.Contains(home), "his village is remembered");
+        var troop = co.Stacks[0].Troop;
+        var fresh = c.Player.Companies.First(k => k != co && Rules.Fits(k, troop));
+        var from = new Settlement { Name = home, Culture = fresh.Culture };
+        float xp0 = fresh.Stack(troop).Xp;
+        c.Enlist(fresh, troop, 2, from);
+        Check(fresh.Stack(troop).Xp > xp0, "his village's recruits come readier");
+
+        // Move him: to a company he fits with room.
+        var room = c.Player.Companies.First(k => k != co && Rules.Fits(k, men[2].Troop) && k.Roll.Count < Balance.Get().RollSize);
+        room.Stacks.OrderByDescending(s => s.Men).First().Take(3); // make room in it
+        var to = c.Player.Companies.FirstOrDefault(k => k != co && c.CannotMoveMan(co, men[2], k) == null);
+        Check(to != null, "a company to move him to");
+        int toMen = to!.Men, coMen = co.Men;
+        Check(c.MoveMan(co, men[2], to) == null && to.Roll.Contains(men[2]) && to.Men == toMen + 1 && co.Men == coMen - 1, "a man moves with his place in the ranks");
+
+        // A save keeps it all.
+        var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        var h2 = back.Player.Companies.SelectMany(k => k.Roll).First(m => m.Id == hero.Id);
+        Check(h2.Mentions == 3 && h2.Carries == hero.Carries && back.S.Pensioned.Contains(home), "mentions, arms and pensions survive a save");
+    }
 }

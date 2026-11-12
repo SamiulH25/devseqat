@@ -523,3 +523,25 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
 - The roll shows the ties under the troop line (`TieLine`, amber while he is out for vengeance), and in the row's tooltip.
 - Left out: rivals earning names faster (comes with C5's camp events) and the lad's survival odds using the master's.
   Test `MenHaveTies`.
+
+### C4 (your hand on the roll), as built
+- Campaign/RollChoices.cs, all `string?` actions with a `Cannot...` twin:
+  - **Sergeant:** `RiseToSergeant` still raises the senior man (its draw kept), then `OpenSergeantPick` keeps up to two
+    other fit men of 3+ battles in `CompanyRecord.SergeantPick` until the end of the next day and raises a `Beat`. On the
+    roll, `ChooseSergeant` puts the risen man back in the ranks and raises the chosen one; his nature becomes the officer
+    trait where one fits (`NatureTrait`: Steady/Pious -> Steady, Bold -> Hothead, Grim -> Stubborn, Proud -> Veteran,
+    Sly -> Sharpshooter, Gentle -> Surgeon, Merry -> Drillmaster). Unanswered, the risen man keeps it. The trait comes only
+    when you choose.
+  - **Mention:** a won battle fills `CampaignState.MentionPool` with its fit named men (in `RollAfterBattle`, cleared at
+    the next `Apply`). `Mention` pays `Balance.MentionPurse` (20), gives his company +1 cohesion and a deed; three make him
+    "of the banner" (`OfBanner`): first on the roll and named in `Summary`. One mention a battle; on the report
+    (`MentionRow`: his face, ">" for the next man) or on the roll.
+  - **Arms:** `Arm` gives a piece from your baggage you do not wear (`Givable`) or a lot of looted arms from `Goods`;
+    `Soldier.Carries`/`CarriesDef`. An armed man's chance of death when he falls is 0.8 times (`Armed`, in `RollFates` and
+    `RollFought`); if he dies or leaves, the arms go with him.
+  - **Send home:** `Pension` (`Balance.PensionCost` 40) for a man of 40+ or 3+ wounds: fate "pensioned" (no cohesion
+    lost, his ties remember it), a chronicle deed, one man fewer in his stack, and his village in
+    `CampaignState.Pensioned`: its recruits bring +15 pool XP each (`Enlist`). A man who asks for it comes with C5's camp.
+  - **Move:** `MoveMan` takes one fit named man, his place and his share of drill to a company he fits with room.
+- Roll UI (`RollPanel`): click a man to pick him; the action bar under a divider names him; reasons on hover. The sergeant
+  choice heads the roll (`SergeantPick`, faces as buttons). Test `RollChoices`.

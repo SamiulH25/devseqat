@@ -21,8 +21,28 @@ partial class MapScreen
         Spoils(rep, new Rectangle(tally.Right + gap, top, rw, h1));
         ReportCompanies(rep, new Rectangle(r.X + pad, top + h1 + gap, lw, h2));
         Progress(rep, new Rectangle(tally.Right + gap, top + h1 + gap, rw, h2));
+        MentionRow(new Rectangle(r.X + pad, r.Bottom - ui.U(40), r.Width / 2 - ui.U(110) - pad - gap, ui.U(30)));
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(40), ui.U(220), ui.U(30)), "CONTINUE", active: true))
         { panel = C.S.GameOver ? PanelKind.GameOver : PanelKind.None; C.Report = null; }
+    }
+
+    int mentionAt;
+
+    /// After a win, mention one man of the day (C4): his face and name on a button, ">" for the next man.
+    void MentionRow(Rectangle box)
+    {
+        var men = C.S.MentionPool.Select(id => C.Player.Companies.SelectMany(k => k.Roll.Select(m => (m, k))).FirstOrDefault(x => x.m.Id == id)).Where(x => x.m != null).ToList();
+        if (men.Count == 0) return;
+        var (m, co) = men[mentionAt % men.Count];
+        ui.Text("MENTION A MAN", box.X, box.Y + ui.U(4), Kit.Gilt, 1);
+        ui.Text(men.Count == 1 ? "1 MAN OF THE DAY" : $"{men.Count} MEN OF THE DAY", box.X, box.Y + ui.U(16), Style.Dim, 1);
+        int lx = box.X + ui.U(100);
+        var b = new Rectangle(lx, box.Y, box.Right - lx - (men.Count > 1 ? ui.U(34) : 0), box.Height);
+        string? why = C.CannotMention(m);
+        if (ui.Button(b, "    " + ui.Fit(m.Name.ToUpperInvariant(), b.Width - ui.U(44)), why == null)) note = C.Mention(m) ?? $"YOU MENTION {m.Name.ToUpperInvariant()} BEFORE THE COMPANY";
+        ui.FaceHead(PortraitPainter.Of(m, co), new Rectangle(b.X + ui.U(3), b.Y + ui.U(3), b.Height - ui.U(6), b.Height - ui.U(6)));
+        if (ui.Hover(b)) ui.Tooltip(b.X, b.Y - ui.U(4), m.Name.ToUpperInvariant(), ui.Wrap((why ?? $"A PURSE OF {Balance.Get().MentionPurse} CROWNS, +1 COHESION FOR {co.Name.ToUpperInvariant()}.") + " " + (m.Deeds.Count > 0 ? m.Deeds[^1].ToUpperInvariant() : ""), ui.U(240)).ToArray());
+        if (men.Count > 1 && ui.Button(new Rectangle(b.Right + ui.U(4), b.Y, ui.U(30), b.Height), ">")) mentionAt++;
     }
 
     /// A sunken box inside a modal, with a small heading.
