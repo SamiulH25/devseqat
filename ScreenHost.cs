@@ -37,6 +37,7 @@ sealed class ScreenHost : Game
     // Debug: IRONFIELD_CAMPAIGN_SHOTS=/dir walks through the campaign screens, saving a PNG of each, then quits.
     readonly string? campaignShots = Environment.GetEnvironmentVariable("IRONFIELD_CAMPAIGN_SHOTS") is { Length: > 0 } cs ? cs : null;
     int cStage, shotFrames;
+    bool shotInventory;
     string? pendingShot;
     KeyboardState kb;
     MouseState ms;
@@ -631,7 +632,8 @@ sealed class ScreenHost : Game
                 break;
             }
             case 38: map.Stage("atlas"); Shot("campaign-atlas"); break;
-            case 39: map.Stage("armourer"); Shot("campaign-armourer"); break;
+            case 39: map.Stage("armourer"); Shot("campaign-armourer"); break; // also stages the pieces the inventory shows
+            case 40 when !shotInventory: map.Stage("inventory"); Shot("campaign-inventory"); cStage--; shotInventory = true; break;
             case 40:
             {
                 // Single combat (P2): the encounter with a lord, then the duel itself.

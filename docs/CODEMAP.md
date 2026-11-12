@@ -376,10 +376,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **House** (class, L5)
 - **Campaign** (class, L19): HouseById:27, HouseOf:28, Members:30, SeatOf:32, His:34, KinWord:37, FamilyLine:47, FoundHouse:59, FirstOf:77, EpithetOf:78, Retitle:86, KinName:94, NewKin:106, Wed:121, Parent:124, SeedFamily:135, EnsureHouses:160, SpareKin:171, HouseHeir:177, Raise:189, HousesYearly:201, DiesOld:221, Births:228, Marriages:243
 
-## Campaign/Items.cs (134 lines)
+## Campaign/Items.cs (172 lines)
 - **ItemQuality** (enum, L5)
 - **GearItem** (class, L10)
-- **Campaign** (class, L19): QualityScale:27, QualityPrice:33, QualityName:38, PriceOf:44, MarksFor:47, ItemOf:50, ItemName:53, WornItems:62, MarkMods:65, BaggageRoom:79, BaggageLoad:82, BaggageDrag:91, ItemsAfterBattle:100, MayName:120, NameItem:123
+- **Campaign** (class, L19): QualityScale:27, QualityPrice:33, QualityName:38, PriceOf:44, MarksFor:47, ItemOf:50, ItemName:53, WornItems:62, MarkMods:65, InSlot:82, TakeOff:89, DropItem:100, Wardrobe:112, BaggageRoom:117, BaggageLoad:120, BaggageDrag:129, ItemsAfterBattle:138, MayName:158, NameItem:161
 
 ## Campaign/Legacy.cs (129 lines)
 - **Campaign** (class, L8): BattleName:19, BannerAfterBattle:35, CompanyFame:65, FameXp:75, FameWord:78, CannotRetire:87, Retire:94, HandOver:108
@@ -483,11 +483,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **WoundDef** (record, L4)
 - **Campaign** (class, L7): WoundOf:24, MaybeLastingWound:30, MendWound:43
 
-## Controls.cs (251 lines)
+## Controls.cs (252 lines)
 - **Act** (enum, L8)
 - **MouseButton** (enum, L32)
 - **Bind** (struct, L35): ToString:37, Parse:59
-- **Controls** (class, L88): Controls:145, SaveUser:153, ResetDefaults:162, AnyPressed:170, FindFile:178, Load:188, WriteDefaults:215, Update:224, IsDown:230, Down:240, WasDown:241, Pressed:242, Released:243, Axis:244, First:247, Name:250
+- **Controls** (class, L88): Controls:146, SaveUser:154, ResetDefaults:163, AnyPressed:171, FindFile:179, Load:189, WriteDefaults:216, Update:225, IsDown:231, Down:241, WasDown:242, Pressed:243, Released:244, Axis:245, First:248, Name:251
 
 ## CreatorScreen.cs (650 lines)
 - **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:67, Show:75, U:86, RandomName:89, RandomCompany:97, Randomise:100, RandomFace:113, Go:122, Refresh:134, Keys:156, Begin:181, Draw:189, Likeness:232, Ledger:307, Homeland:377, Choices:432, Detail:461, Face:505, Stepper:558, Unroll:573, Field:576, Swatches:590, Oath:606, Footer:642
@@ -575,7 +575,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Captain.cs (340 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:85, AuraBlock:155, OwnFormBlock:170, FlameBlock:197, FormList:221, CaptainRecord:262, NameLines:301, Breaks:328
 
-## MapScreen.cs (667 lines)
+## MapScreen.cs (668 lines)
 - **MapScreen** (class, L9): Save:18, MapScreen:59, Prepare:74, Open:81, ShowResults:98, Pressed:106, Update:110, readonly:196, LaterTips:209, Pan:233, ScreenKeys:235, OpenScreen:243, Soundscape:251, CameFrom:313, Camera:315, Rename:339, Trails:352, ClickWorld:364, Ground:376, Draw:399, UpdateBearers:475, UpdateLife:517, BuildSprites:527, DrawSprites:534, G:546, DrawLines:548, Stage:587
 
 ## MapScreen.Dialogs.cs (247 lines)
@@ -584,8 +584,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Event.cs (304 lines)
 - **MapScreen** (class, L7): EventPanel:9, EventChoice:42, EffectsText:119, EventScene:125, Village:177, Court:199, Camp:217, SiteScene:237
 
-## MapScreen.Hud.cs (523 lines)
-- **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:23, DrawUi:28, Screen:72, Flags:88, Life:178, TopBar:208, Feed:227, Overview:242, CaptainPanel:268, BuffChips:312, RenownStep:329, Cards:331, Card:346, TierStrip:366, Hints:379, HelpPanel:397, Tooltip:431, Modal:505, Note:519
+## MapScreen.Hud.cs (524 lines)
+- **MapScreen** (class, L8): SideColor:12, Allegiance:14, PartyColor:23, DrawUi:28, Screen:73, Flags:89, Life:179, TopBar:209, Feed:228, Overview:243, CaptainPanel:269, BuffChips:313, RenownStep:330, Cards:332, Card:347, TierStrip:367, Hints:380, HelpPanel:398, Tooltip:432, Modal:506, Note:520
+
+## MapScreen.Inventory.cs (202 lines)
+- **MapScreen** (class, L9): InventoryPanel:14, MakeColour:28, SlotIcon:34, KitDoll:37, PieceDetail:62, KitSlot:96, BaggageGrid:122, BaggageCell:150, GoodsAndLoad:180
 
 ## MapScreen.Muster.cs (361 lines)
 - **MapScreen** (class, L7): PartyPanel:9, MusterCard:34, Spellbook:135, RollPanel:177, MusterSummary:236, OpenSlot:276, MusterSide:287
@@ -649,8 +652,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:66, Deserialize:67, Save:71, Play:78, Matches:116, Run:119
 - **Battle** (class, L133): StartRecording:140, RecordFrame:145, FinishRecording:181
 
-## ScreenHost.cs (741 lines)
-- **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:57, OpenSettings:66, LoadContent:68, StartCampaign:111, Load:137, FinishLoading:152, DrawLoading:170, ContinueCampaign:195, OpenLab:206, QuickBattle:208, StartCampaignBattle:215, FinishCampaignBattle:225, CycleQuality:233, Update:237, Draw:282, Fade:317, CaptureShot:347, StagingRefused:374, CampaignShots:380
+## ScreenHost.cs (743 lines)
+- **ScreenHost** (class, L9): ScreenHost:45, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:112, Load:138, FinishLoading:153, DrawLoading:171, ContinueCampaign:196, OpenLab:207, QuickBattle:209, StartCampaignBattle:216, FinishCampaignBattle:226, CycleQuality:234, Update:238, Draw:283, Fade:318, CaptureShot:348, StagingRefused:375, CampaignShots:381
 
 ## SelfTest.cs (104 lines)
 - **SelfTest** (class, L6): Run:14, Slots:21, ResolveBattles:33, RunOne:56, Lancer:64, Run:73, Scaled:75, MakeWanderer:78, Days:86, Ids:98, Check:100
@@ -748,8 +751,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/EffectTests.cs (182 lines)
 - **SelfTest** (class, L6): NoPassives:9, EffectsValidate:19, PassivesByTier:28, PassivesBite:49, SignaturesBite:76, AuraReachesCompanies:137, PassivesOnlyAdd:156
 
-## Tests/GearTests.cs (68 lines)
-- **SelfTest** (class, L4): GearItems:9
+## Tests/GearTests.cs (94 lines)
+- **SelfTest** (class, L4): GearItems:9, InventoryActions:71
 
 ## Tests/KnightTests.cs (1033 lines)
 - **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:464, ChampionsUseAura:495, OrderPolitics:533, BlackFlame:597, FlameTakesYou:652, OwnOrderFounded:675, AuraPool:723, AuraField:790, CastNow:798, BlessingFeedsAura:806, CurseOnCaptain:822, BladeBreaksCast:850, RelicRaised:876, OwnFormFromStyle:892, AspectChanges:922, BreakInBattle:948, ClashRing:970, TranscendentLight:995

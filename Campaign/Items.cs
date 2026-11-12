@@ -73,6 +73,44 @@ public sealed partial class Campaign
         return m;
     }
 
+    // ---------- the inventory (C10): kit changes anywhere outside a battle ----------
+
+    /// The kit's slots in the order the inventory shows them.
+    public static readonly string[] KitSlots = { "weapon", "side", "shield", "body", "helm", "horse" };
+
+    /// The gear id worn in a kit slot ("" for no second weapon).
+    public static string InSlot(CaptainKit k, string slot) => slot switch
+    {
+        "weapon" => k.Weapon, "side" => k.Side, "shield" => k.Shield, "body" => k.Body, "helm" => k.Helm, _ => k.Horse,
+    };
+
+    /// Take off what a slot holds: the second weapon goes back in the baggage, the rest give way to the plain starting piece.
+    /// The main hand always holds something.
+    public string? TakeOff(string slot)
+    {
+        var k = Captain.Kit;
+        if (slot == "side") { if (k.Side == "") return "NO SECOND WEAPON"; k.Side = ""; return null; }
+        if (slot == "weapon") return "YOUR HAND HOLDS A WEAPON: WEAR ANOTHER";
+        var free = Gear.InSlot(slot).First(g => g.Free).Id;
+        if (InSlot(k, slot) == free) return "NOTHING TO TAKE OFF";
+        return Equip(free);
+    }
+
+    /// Leave a piece behind for good: not one you wear, nor a named one; free starting pieces cannot be lost.
+    public string? DropItem(string def)
+    {
+        if (Gear.Find(def) is not GearDef g) return "NO SUCH GEAR";
+        if (Wears(def)) return "TAKE IT OFF FIRST";
+        if (ItemOf(Captain, def) is not GearItem i) return g.Free ? "YOU KEEP YOUR OLD KIT" : "NOT YOURS";
+        if (i.Name != "") return "A NAMED PIECE IS NOT LEFT BEHIND";
+        Captain.Baggage.Remove(i);
+        Log($"You leave the {ItemName(i, g).ToLowerInvariant()} behind.");
+        return null;
+    }
+
+    /// Everything the captain can put on: the pieces in the baggage and the free starting kit.
+    public IEnumerable<GearDef> Wardrobe() => Gear.All.Where(g => Owns(g.Id)).OrderBy(g => Array.IndexOf(Gear.Slots, g.Slot)).ThenBy(g => g.Cost);
+
     // ---------- baggage ----------
 
     /// What the baggage can carry: a base, ten more for each spare horse you keep (to six), and a fifth more with the Quartermaster.

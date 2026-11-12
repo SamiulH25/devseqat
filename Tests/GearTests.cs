@@ -65,4 +65,30 @@ public static partial class SelfTest
         var again = Campaign.ItemOf(back.Captain, "arming_sword");
         Check(again is { Name: "Wolfsbane", Quality: ItemQuality.Named, Kills: Campaign.NameAtKills } && again.Marks.SequenceEqual(new[] { "keen" }), "pieces survive a save round trip");
     }
+
+    /// C10: the kit changes anywhere: wear, carry second, take off (refused for the main hand), leave behind (refused when worn,
+    /// named or free); every refusal changes nothing.
+    static void InventoryActions()
+    {
+        var c = Campaign.New(26);
+        var cap = c.Captain;
+        var k = cap.Kit;
+        Check(c.Wardrobe().All(g => c.Owns(g.Id)) && c.Wardrobe().Any(g => g.Id == "arming_sword"), "the wardrobe is what you own, the free kit with it");
+        Check(c.TakeOff("weapon") != null && k.Weapon == "arming_sword", "the main hand always holds a weapon");
+        Check(c.TakeOff("side") == null && k.Side == "" && c.TakeOff("side") != null, "the second weapon comes off, once");
+        string free = Gear.InSlot("helm").First(g => g.Free).Id;
+        Campaign.Own(cap, "great_helm");
+        cap.Skills["Arms"] = 60;
+        Check(c.Equip("great_helm") == null && k.Helm == "great_helm", "a piece in the baggage goes on away from any market");
+        Check(c.DropItem("great_helm") == "TAKE IT OFF FIRST" && c.Owns("great_helm"), "a worn piece is not left behind");
+        Check(c.TakeOff("helm") == null && k.Helm == free, "taking off the helm puts the plain one back on");
+        Check(c.TakeOff("helm") == "NOTHING TO TAKE OFF", "nothing more to take off");
+        Check(c.DropItem("great_helm") == null && !c.Owns("great_helm"), "a piece not worn can be left behind");
+        Check(c.DropItem("arming_sword") != null && c.Owns("arming_sword"), "the free kit is never lost");
+        var named = Campaign.Own(cap, "boar_spear")!;
+        named.Kills = Campaign.NameAtKills;
+        c.NameItem(named, "Greyfang");
+        Check(c.DropItem("boar_spear") == "A NAMED PIECE IS NOT LEFT BEHIND", "a named piece is never left behind");
+        Check(c.Equip("boar_spear", side: true) == null && k.Side == "boar_spear", "carry it second from the baggage");
+    }
 }

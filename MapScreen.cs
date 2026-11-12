@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed partial class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -196,14 +196,14 @@ sealed partial class MapScreen
     static readonly (Act Key, PanelKind Panel)[] Screens =
     {
         (Act.PartyScreen, PanelKind.Party), (Act.LordsScreen, PanelKind.Characters), (Act.SkillsScreen, PanelKind.Skills),
-        (Act.RealmScreen, PanelKind.Realm), (Act.DivisionsScreen, PanelKind.Divisions), (Act.AtlasScreen, PanelKind.Atlas),
+        (Act.RealmScreen, PanelKind.Realm), (Act.DivisionsScreen, PanelKind.Divisions), (Act.AtlasScreen, PanelKind.Atlas), (Act.InventoryScreen, PanelKind.Inventory),
     };
     /// The screen the current one was opened from (the map or the party screen), where BACK and its key return.
     PanelKind from;
 
     /// Panels you can leave for another screen without losing a choice (no encounter, town, event or report open).
     bool Browsing => panel is PanelKind.None or PanelKind.Party or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm
-        or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll;
+        or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Inventory;
 
     /// One-time tips for the systems a campaign reaches later: named men, divisions, sites, duels, gear, fiefs, fame, retiring.
     void LaterTips()
@@ -617,6 +617,7 @@ sealed partial class MapScreen
             case "roll": rollOf = C.Player.Companies.OrderByDescending(k => k.Roll.Count).First(); panel = PanelKind.Roll; note = ""; break;
             case "divisions": panel = PanelKind.Divisions; note = ""; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;
+            case "inventory": panel = PanelKind.Inventory; invPick = "boar_spear"; note = ""; break;
             case "realm": realmTab = 0; panel = PanelKind.Realm; note = ""; break;
             case "atlas": panel = PanelKind.Atlas; note = ""; break;
             case "career": realmTab = 1; panel = PanelKind.Realm; note = ""; break;

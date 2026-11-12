@@ -26,7 +26,7 @@ public enum Act
     // battle quality of life (docs/archive/COMBAT_QOL.md)
     Merge, Slower, Faster, Relieve, SplitCompany, StandingOrder,
     // campaign map panels (later additions)
-    LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen,
+    LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen, InventoryScreen,
 }
 
 public enum MouseButton { Left, Right, Middle, X1, X2 }
@@ -119,6 +119,7 @@ public sealed class Controls
         [Act.Relieve] = new[] { "." }, [Act.SplitCompany] = new[] { "/" }, [Act.StandingOrder] = new[] { "=" },
         [Act.LordsScreen] = new[] { "L" }, [Act.SkillsScreen] = new[] { "K" }, [Act.RealmScreen] = new[] { "R" },
         [Act.DivisionsScreen] = new[] { "V" }, [Act.AtlasScreen] = new[] { "M" }, [Act.SiegeScreen] = new[] { "B" },
+        [Act.InventoryScreen] = new[] { "I" },
     };
 
     public static readonly Dictionary<Act, string> Labels = new()
@@ -139,7 +140,7 @@ public sealed class Controls
         [Act.Cast] = "CAST (CASTERS, COMMAND VIEW)", [Act.Merge] = "FOLD SELECTED INTO THE FULLEST",
         [Act.Slower] = "BATTLE SLOWER", [Act.Faster] = "BATTLE FASTER", [Act.Relieve] = "RELIEVE (FRESH TAKES THE TIRED'S PLACE)", [Act.SplitCompany] = "SPLIT A COMPANY IN TWO", [Act.StandingOrder] = "STANDING ORDER (CYCLE)",
         [Act.LordsScreen] = "LORDS AND COMPANIONS (MAP)", [Act.SkillsScreen] = "THE CAPTAIN (MAP)", [Act.RealmScreen] = "THE REALMS (MAP)",
-        [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)",
+        [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)", [Act.InventoryScreen] = "KIT AND BAGGAGE (MAP)",
     };
 
     public Controls()

@@ -59,7 +59,7 @@ partial class MapScreen
         var col = main || second ? Kit.Gilt : Style.Text;
         ui.Icon(icon, r.X + ui.U(8), r.Y + ui.U(8), col, 2);
         string state = main ? (g.Slot == "weapon" ? " . IN HAND" : " . WORN") : second ? " . SECOND" : "";
-        var makeCol = make == ItemQuality.Named ? Kit.Gilt : make == ItemQuality.Masterwork ? new Color(150, 200, 235) : make == ItemQuality.Fine ? new Color(170, 215, 170) : make == ItemQuality.Worn ? Style.Dim : col;
+        var makeCol = make == ItemQuality.Plain ? col : MakeColour(make);
         if (!main && !second) col = makeCol; // the make tints a piece you do not wear; gold stays for what you wear
         string title = name.ToUpperInvariant() + state;
         ui.Text(title, r.X + ui.U(30), r.Y + ui.U(6), col, 1);

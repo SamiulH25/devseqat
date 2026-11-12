@@ -452,3 +452,16 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
 - Not built yet (left for a C9b): the new slots (hands, legs, cloak, harness, keepsakes), the ~90 graded culture pieces and the
   `Gear.Validate` checks for them, renown gating, the Named piece on the portrait line and the end summary.
 - Test `GearItems` (Tests/GearTests.cs).
+
+### C10 (the inventory screen), as built
+- `MapScreen.Inventory.cs`, `Act.InventoryScreen` (I on the map; I stays Form2 in battle), also a KIT button over the captain
+  card and a line in the F1 help. Left: the captain drawn in his kit (`ui.Portrait` of `Rules.CaptainType`, as on the K sheet;
+  not the living `CreatorStage` puppet) with six slots round him (click one to take it off), his battle numbers, and a detail
+  panel for the picked piece (make and what it adds, numbers, the change against what you wear, marks, where it came from).
+  Right: every piece you can put on as a grid (make colour: green fine, blue masterwork, gold named) with WEAR / SECOND /
+  DROP for the picked one; goods lots and the load gauge under it. Kit changes anywhere outside a battle.
+- Actions in Campaign/Items.cs: `TakeOff(slot)` (the main hand refuses; the rest give way to the free plain piece),
+  `DropItem` (refused when worn, named or free), `Wardrobe`. Test `InventoryActions`; shot `campaign-inventory.png`.
+- Not built yet (C10b): companions and named men wearing gear from the baggage, N cycling up to three carried weapons, the
+  armourer as buy/sell on the same grid, a link from the K sheet's doll, a UI lab page, the sprite part painted in each cell
+  (an icon stands for it).

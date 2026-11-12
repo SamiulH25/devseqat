@@ -57,6 +57,7 @@ partial class MapScreen
             case PanelKind.Event: EventPanel(); break;
             case PanelKind.Divisions: DivisionsPanel(); break;
             case PanelKind.Atlas: AtlasPanel(); break;
+            case PanelKind.Inventory: InventoryPanel(); break;
             case PanelKind.Help: HelpPanel(); break;
         }
         if (panel != PanelKind.None && modalIn < 1) ui.Rect(modalRect, Kit.IronDark * (1 - modalIn)); // the panel's entrance: it comes up out of the dark
@@ -380,7 +381,7 @@ partial class MapScreen
     {
         var row = new (string Label, Act Key, PanelKind Panel)[]
         {
-            ("COMPANY", Act.PartyScreen, PanelKind.Party), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("LORDS", Act.LordsScreen, PanelKind.Characters),
+            ("COMPANY", Act.PartyScreen, PanelKind.Party), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("KIT", Act.InventoryScreen, PanelKind.Inventory), ("LORDS", Act.LordsScreen, PanelKind.Characters),
             ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("KEYS", Act.Help, PanelKind.Help),
         };
         int x = ui.U(10), y = ui.H - ui.U(172), h = ui.U(20);
@@ -406,7 +407,7 @@ partial class MapScreen
                 ("ZOOM", "WHEEL"), (Controls.Labels[Act.FollowParty], ctl.Name(Act.FollowParty)), ("PAUSE", ctl.Name(Act.Pause)),
                 ("SPEED X1 / X3 / X8", $"{ctl.First(Act.Speed1)} {ctl.First(Act.Speed2)} {ctl.First(Act.Speed3)}"), ("LOOK THERE", "CLICK THE MINIMAP"),
             }),
-            ("SCREENS", new[] { Act.PartyScreen, Act.SkillsScreen, Act.LordsScreen, Act.RealmScreen, Act.DivisionsScreen, Act.AtlasScreen, Act.SiegeScreen }
+            ("SCREENS", new[] { Act.PartyScreen, Act.SkillsScreen, Act.LordsScreen, Act.RealmScreen, Act.DivisionsScreen, Act.AtlasScreen, Act.InventoryScreen, Act.SiegeScreen }
                 .Select(a => (Controls.Labels[a].Replace(" (MAP)", ""), ctl.Name(a))).ToArray()),
             ("THE GAME", new[] { Act.QuickSave, Act.QuickLoad, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], ctl.Name(a))).Append(("DISMISS A TIP", "ENTER")).ToArray()),
