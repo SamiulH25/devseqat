@@ -220,7 +220,7 @@ public sealed partial class Campaign
     {
         bool mounted = p.Breed is "wolf" or "wyvern" || p.Companies.Count > 0 && p.Companies.All(c => c.Men == 0 || c.Type.Mount != null); // wolves run as fast as horses
         float s = (mounted ? B.HorseSpeed : B.FootSpeed) * (Winter ? 0.75f : 1) * PaceOf(p) * (p.Breed == "wyvern" ? 1.25f : 1); // wings outpace any horse
-        if (p.Kind == PartyKind.Player) s *= 1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f);
+        if (p.Kind == PartyKind.Player) s *= (1 - MathF.Min(0.25f, p.Prisoners.Sum(g => g.Count) / 400f)) * BaggageDrag(); // an overloaded baggage (C9)
         if (p.Kind == PartyKind.Player)
             s *= (1 + Skill("Logistics") / 2000f) * (Has("Horsemaster") ? 1.05f : 1) * (Has("Pathfinder") ? 1.05f : 1) * (Has("ForcedMarch") ? 1.1f : 1);
         int men = p.Men, wounded = p.Wounded;

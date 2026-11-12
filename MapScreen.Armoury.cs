@@ -6,7 +6,7 @@ namespace Ironfield;
 /// to buy, wear, carry as a second weapon, or sell.
 partial class MapScreen
 {
-    int gearSlot;
+    int gearSlot, bladeName;
     static readonly string[] GearTabs = { "WEAPONS", "SHIELDS", "ARMOUR", "HELMS", "HORSES" };
 
     void ArmourerWell(Settlement s, Rectangle c)
@@ -18,32 +18,81 @@ partial class MapScreen
         int y = c.Y + ui.U(26), rh = ui.U(40);
         foreach (var g in list)
         {
-            if (y + rh - ui.U(4) > c.Bottom) break;
-            GearRow(g, new Rectangle(c.X, y, c.Width, rh - ui.U(4)));
+            if (y + rh - ui.U(4) > c.Bottom - ui.U(16)) break; // clear of the baggage line
+            GearRow(g, new Rectangle(c.X, y, c.Width, rh - ui.U(4)), s);
             y += rh;
         }
         if (list.All(g => C.Owns(g.Id)) && y + ui.U(12) < c.Bottom)
             ui.Text("NOTHING MORE OF THIS KIND FOR SALE HERE THIS WEEK.", c.X, y + ui.U(2), Style.Dim, 1);
+        Baggage(new Rectangle(c.X, c.Bottom - ui.U(14), c.Width, ui.U(14)));
     }
 
-    void GearRow(GearDef g, Rectangle r)
+    /// The baggage line under the armourer: what it carries against its room (C9), red when the march is slowed.
+    void Baggage(Rectangle r)
+    {
+        int load = C.BaggageLoad(), room = C.BaggageRoom();
+        bool over = load > room;
+        string text = over ? $"BAGGAGE {load} / {room} . OVERLOADED: THE MARCH IS {(1 - C.BaggageDrag()) * 100:0}% SLOWER" : $"BAGGAGE {load} / {room}";
+        ui.Rect(new Rectangle(r.X, r.Y - ui.U(3), r.Width, 1), Kit.Mul(Kit.Gilt, 0.35f)); // a hairline over it
+        var col = over ? Style.Bad : Style.Text;
+        ui.Icon("horse", r.X, r.Y + ui.U(1), col, 1);
+        ui.Text(text, r.X + ui.U(12), r.Y + ui.U(3), col, 1);
+        // A small bar of the load against the room, red past it.
+        var bar = new Rectangle(r.Right - ui.U(90), r.Y + ui.U(3), ui.U(90), ui.U(7));
+        if (r.X + ui.U(12) + ui.TW(text, 1) + ui.U(8) < bar.X)
+        {
+            ui.Rect(bar, Color.Black * 0.5f);
+            ui.Rect(new Rectangle(bar.X, bar.Y, (int)(bar.Width * MathF.Min(1, load / (float)Math.Max(1, room))), bar.Height), over ? Style.Bad : Kit.Mul(Kit.Gilt, 0.8f));
+        }
+    }
+
+    void GearRow(GearDef g, Rectangle r, Settlement s)
     {
         var k = C.Captain.Kit;
         bool owned = C.Owns(g.Id), main = k.Weapon == g.Id || g.Slot != "weapon" && C.Wears(g.Id), second = k.Side == g.Id;
+        var item = Campaign.ItemOf(C.Captain, g.Id);
+        var (make, mark) = owned ? (item?.Quality ?? ItemQuality.Plain, "") : C.StockMake(s, g);
+        var marks = owned ? item?.Marks ?? new List<string>() : mark == "" ? new List<string>() : new List<string> { mark };
+        string name = owned ? Campaign.ItemName(item, g) : Campaign.ItemName(new GearItem { Def = g.Id, Quality = make }, g);
         TownRow(r);
         string icon = g.Slot switch { "weapon" => g.Ranged ? "arrow" : "sword", "helm" => "crown", "horse" => "horse", _ => "shield" };
         var col = main || second ? Kit.Gilt : Style.Text;
         ui.Icon(icon, r.X + ui.U(8), r.Y + ui.U(8), col, 2);
         string state = main ? (g.Slot == "weapon" ? " . IN HAND" : " . WORN") : second ? " . SECOND" : "";
-        ui.Text(g.Name.ToUpperInvariant() + state, r.X + ui.U(30), r.Y + ui.U(6), col, 1);
+        var makeCol = make == ItemQuality.Named ? Kit.Gilt : make == ItemQuality.Masterwork ? new Color(150, 200, 235) : make == ItemQuality.Fine ? new Color(170, 215, 170) : make == ItemQuality.Worn ? Style.Dim : col;
+        if (!main && !second) col = makeCol; // the make tints a piece you do not wear; gold stays for what you wear
+        string title = name.ToUpperInvariant() + state;
+        ui.Text(title, r.X + ui.U(30), r.Y + ui.U(6), col, 1);
+        // The smith's marks after the name (C9), gold; their line in the tooltip.
+        int mx = r.X + ui.U(30) + ui.TW(title, 1) + ui.U(8);
+        foreach (var m in marks.Where(Effects.Has).Select(Effects.Get))
+        {
+            var mr = new Rectangle(mx, r.Y + ui.U(4), ui.TW(m.Name.ToUpperInvariant(), 1) + ui.U(8), ui.U(11));
+            if (mr.Right > r.Right - ui.U(owned ? 170 : 150)) break; // clear of the price and buttons
+            ui.Rect(mr, Color.Black * 0.35f);
+            ui.Text(m.Name.ToUpperInvariant(), mr.X + ui.U(4), r.Y + ui.U(6), Kit.Gilt, 1);
+            if (ui.Hover(mr)) ui.Tooltip(mr.Center.X, mr.Y - ui.U(2), m.Name.ToUpperInvariant(), ui.Wrap(m.Line.ToUpperInvariant(), ui.U(170)).ToArray());
+            mx = mr.Right + ui.U(4);
+        }
         string stats = GearStats(g);
+        var story = new Rectangle(r.X, r.Y + ui.U(16), r.Width - ui.U(112), r.Height - ui.U(16));
+        if (item != null && item.From != "" && ui.Hover(story))
+            ui.Tooltip(story.X + ui.U(60), story.Y - ui.U(2), name.ToUpperInvariant(), ui.Wrap((item.From + "." + (item.Battles > 0 ? $" {item.Battles} BATTLES." : "")).ToUpperInvariant(), ui.U(190)).ToArray());
         ui.Text(stats, r.X + ui.U(30), r.Y + ui.U(19), Style.Dim, 1);
+        if (item is { Kills: > 0 }) // the blade's tally, as a trophy after its stats
+        {
+            string kills = $"{item.Kills} KILLS";
+            int kx = r.X + ui.U(30) + ui.TW(stats, 1) + ui.U(8);
+            ui.Icon("skull", kx, r.Y + ui.U(18), Kit.Gilt, 1);
+            ui.Text(kills, kx + ui.U(10), r.Y + ui.U(19), Kit.Gilt, 1);
+            stats += "   " + kills + "  ";
+        }
         // Against what you wear now (P7): better in green, worse in red.
         int cx = r.X + ui.U(30) + ui.TW(stats, 1) + ui.U(8);
         if (!main && !second)
             foreach (var (text, good) in Compare(g))
             {
-                if (cx + ui.TW(text, 1) > r.Right - ui.U(112)) break; // clear of the buttons
+                if (cx + ui.TW(text, 1) > r.Right - ui.U(owned ? 170 : 112)) break; // clear of the buttons (an owned piece has three)
                 ui.Text(text, cx, r.Y + ui.U(19), good ? Style.Ok : Style.Bad, 1);
                 cx += ui.TW(text, 1) + ui.U(6);
             }
@@ -53,19 +102,33 @@ partial class MapScreen
         Color infoCol = Kit.Gilt;
         if (!owned)
         {
-            string? why = C.CannotBuy(g);
-            if (ui.Button(B(), "BUY", why == null)) note = C.BuyGear(g) ?? $"YOU WEAR THE {g.Name.ToUpperInvariant()}";
-            (info, infoCol) = why == null || why.Contains("CROWNS") ? ($"{g.Cost} CROWNS", why == null ? Kit.Gilt : Style.Warn) : (why, Style.Warn);
+            string? why = C.CannotBuy(g, make, mark);
+            int cost = Campaign.PriceOf(g, make, mark == "" ? 0 : 1);
+            if (ui.Button(B(), "BUY", why == null)) note = C.BuyGear(g, make, mark) ?? $"YOU WEAR THE {name.ToUpperInvariant()}";
+            (info, infoCol) = why == null || why.Contains("CROWNS") ? ($"{cost} CROWNS", why == null ? Kit.Gilt : Style.Warn) : (why, Style.Warn);
         }
         else
         {
             string? cant = C.CannotUse(g);
             if (second && ui.Button(B(), "DROP")) C.ClearSide();
-            if (!main && !second && !g.Free && ui.Button(B(), "SELL")) note = C.SellGear(g) ?? $"SOLD FOR {Campaign.SellPrice(g)} CROWNS";
+            int sells = Campaign.SellPrice(g, item);
+            if (item != null && Campaign.MayName(item))
+            {
+                string offer = Campaign.BladeNames[bladeName % Campaign.BladeNames.Length];
+                if (ui.Button(B(), "OTHER")) bladeName++;
+                if (ui.Button(B(), "NAME")) note = C.NameItem(item, offer) ?? $"IT IS {offer.ToUpperInvariant()} NOW";
+                ui.TextR($"EARNED A NAME: {offer.ToUpperInvariant()}?", bx + bw, r.Y + ui.U(6), Kit.Gilt, 1);
+                return;
+            }
+            if (!main && !second && (!g.Free || item != null))
+            {
+                var sb = B();
+                if (ui.Button(sb, "SELL")) note = C.SellGear(g) ?? $"SOLD FOR {sells} CROWNS";
+                if (ui.Hover(sb)) ui.Tooltip(sb.Center.X, sb.Y - ui.U(2), "SELL", new[] { $"THE ARMOURER PAYS {sells} CROWNS." });
+            }
             if (g.Slot == "weapon" && !second && !main && ui.Button(B(), "2ND", cant == null)) note = C.Equip(g.Id, true) ?? "";
             if (!main && ui.Button(B(), "WEAR", cant == null)) note = C.Equip(g.Id) ?? "";
             if (cant != null) (info, infoCol) = (cant, Style.Warn);
-            else if (!main && !second && !g.Free) (info, infoCol) = ($"SELLS {Campaign.SellPrice(g)}", Style.Dim);
         }
         if (info != "") ui.TextR(info, bx + bw, r.Y + ui.U(6), infoCol, 1);
     }

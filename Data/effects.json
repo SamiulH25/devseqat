@@ -121,6 +121,19 @@
     { "id": "falcon_wind", "name": "Falcon wind", "icon": "arrow", "line": "They move like the wind.",
       "speed": 0.25, "tire": -0.3 },
     { "id": "black_dread", "name": "Black dread", "icon": "skull", "line": "A cold black fire eats their nerve.",
-      "moralePerSec": -3, "shock": 0.4 }
+      "moralePerSec": -3, "shock": 0.4 },
+    // Smith's marks (docs/COMPANY.md C9): one small effect a fine piece may carry, tagged with the slots it fits.
+    { "id": "keen", "name": "Keen", "icon": "sword", "line": "A keen edge: blows bite a little deeper.", "tags": ["mark", "weapon"],
+      "damage": 0.05 },
+    { "id": "balanced", "name": "Balanced", "icon": "sword", "line": "Well balanced: easier to bring round to block.", "tags": ["mark", "weapon", "shield"],
+      "block": 0.06 },
+    { "id": "well_tempered", "name": "Well-tempered", "icon": "chain", "line": "Good steel: a little more stops at the armour.", "tags": ["mark", "body", "helm", "shield"],
+      "armour": 2 },
+    { "id": "light", "name": "Light", "icon": "boot", "line": "Light for its kind: you tire less in it.", "tags": ["mark", "body", "helm"],
+      "tire": -0.1 },
+    { "id": "sure_seated", "name": "Sure-seated", "icon": "horse", "line": "A deep saddle: the couched lance strikes harder.", "tags": ["mark", "horse"],
+      "charge": 0.1 },
+    { "id": "sure_footed_horse", "name": "Sure-footed", "icon": "horse", "line": "A sure-footed horse: rough ground slows it less.", "tags": ["mark", "horse"],
+      "footing": 0.25 }
   ]
 }

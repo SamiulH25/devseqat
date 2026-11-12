@@ -19,6 +19,10 @@ public sealed partial class Campaign
         foreach (var id in k.Worn.ToList())
             if (Gear.Find(id) == null) Unequip(id);
             else Own(id);
+        // Before pieces were things (C9): each owned id becomes a plain piece.
+        foreach (var id in k.Owned) if (Gear.Find(id) != null) Own(id);
+        k.Owned.Clear();
+        c.Baggage.RemoveAll(i => Gear.Find(i.Def) == null);
     }
 
     /// The road the captain came by (P5, the Free Company's reward), chosen once at the start: the sword (Arms 20 and a
@@ -63,8 +67,22 @@ public sealed partial class Campaign
     /// Offer the starting road as the first event of a new campaign (the title screen calls it).
     public void OfferRoad() => Force("start_road", new PendingEvent());
 
-    void Own(string id) => Own(Captain, id);
-    internal static void Own(CaptainState c, string id) { if (!Gear.Get(id).Free && !c.Kit.Owned.Contains(id)) c.Kit.Owned.Add(id); }
+    GearItem? Own(string id, ItemQuality q = ItemQuality.Plain, string mark = "", string from = "") => Own(Captain, id, q, mark, from);
+    /// Take a piece into the baggage (one of each kind; a better make of one you hold replaces it). Free plain pieces need no item.
+    internal static GearItem? Own(CaptainState c, string id, ItemQuality q = ItemQuality.Plain, string mark = "", string from = "")
+    {
+        var g = Gear.Get(id);
+        if (g.Free && q == ItemQuality.Plain && mark == "") return null;
+        if (ItemOf(c, id) is GearItem had)
+        {
+            if (had.Quality >= q || had.Name != "") return had;
+            c.Baggage.Remove(had);
+        }
+        var i = new GearItem { Def = id, Quality = q, From = from };
+        if (mark != "") i.Marks.Add(mark);
+        c.Baggage.Add(i);
+        return i;
+    }
 
     /// A worn piece the data no longer has goes back to the free piece of its slot.
     void Unequip(string id)
@@ -79,18 +97,32 @@ public sealed partial class Campaign
         if (k.Horse == id) k.Horse = Free("horse");
     }
 
-    public bool Owns(string id) => Gear.Find(id) is GearDef g && (g.Free || Captain.Kit.Owned.Contains(id));
+    public bool Owns(string id) => Gear.Find(id) is GearDef g && (g.Free || ItemOf(Captain, id) != null);
     public bool Wears(string id) => Captain.Kit.Worn.Contains(id);
 
     /// Why the captain may not use this piece (the skill it needs), or null.
     public string? CannotUse(GearDef g) => Skill(g.Skill) < g.Needs ? $"NEEDS {g.Skill.ToUpperInvariant()} {g.Needs}" : null;
 
-    /// Why the captain may not buy it: owned, rank, skill or gold.
-    public string? CannotBuy(GearDef g)
+    /// Why the captain may not buy it: owned (as well made), rank, skill or gold.
+    public string? CannotBuy(GearDef g, ItemQuality q = ItemQuality.Plain, string mark = "")
     {
-        if (Owns(g.Id)) return "OWNED";
+        if (Owns(g.Id) && (ItemOf(Captain, g.Id) is not GearItem had || had.Quality >= q || had.Name != "")) return "OWNED";
         if ((int)Rank < g.Rank) return $"FOR A {RankName((Rank)g.Rank)}";
-        return CannotUse(g) ?? (S.Gold < g.Cost ? $"NEEDS {g.Cost} CROWNS" : null);
+        int cost = PriceOf(g, q, mark == "" ? 0 : 1);
+        return CannotUse(g) ?? (S.Gold < cost ? $"NEEDS {cost} CROWNS" : null);
+    }
+
+    /// The make and mark the armourer of this place offers a piece at this week: mostly plain, some fine (and in a town a few
+    /// masterworks); fine and up carry a mark. Seeded like the stock, so looking again does not reroll it.
+    public (ItemQuality Quality, string Mark) StockMake(Settlement s, GearDef g)
+    {
+        int week = (int)(S.Hours / (24 * 7));
+        uint h = (uint)HashCode.Combine(S.Seed, s.Id, week, g.Id.GetHashCode(StringComparison.Ordinal), 77);
+        int roll = (int)(h % 100);
+        var q = s.Kind == SettlementKind.Town && roll < 8 ? ItemQuality.Masterwork : roll < (s.Kind == SettlementKind.Village ? 10 : 30) ? ItemQuality.Fine : ItemQuality.Plain;
+        var marks = MarksFor(g.Slot).ToList();
+        string mark = q >= ItemQuality.Fine && marks.Count > 0 ? marks[(int)(h / 100 % (uint)marks.Count)].Id : "";
+        return (q, mark);
     }
 
     /// What the armourer of this place has this week: most of the list in a town, less in a castle, little in a village.
@@ -103,13 +135,13 @@ public sealed partial class Campaign
             && (uint)HashCode.Combine(S.Seed, s.Id, week, g.Id.GetHashCode(StringComparison.Ordinal)) % 100 < chance).ToList();
     }
 
-    /// Buy a piece and wear it at once (a weapon goes in the main hand).
-    public string? BuyGear(GearDef g)
+    /// Buy a piece (of a make, with a mark) and wear it at once (a weapon goes in the main hand).
+    public string? BuyGear(GearDef g, ItemQuality q = ItemQuality.Plain, string mark = "")
     {
-        if (CannotBuy(g) is string why) return why;
-        S.Gold -= g.Cost;
-        Own(g.Id);
-        Log($"You buy a {g.Name.ToLowerInvariant()}.");
+        if (CannotBuy(g, q, mark) is string why) return why;
+        S.Gold -= PriceOf(g, q, mark == "" ? 0 : 1);
+        var i = Own(g.Id, q, mark, $"bought in {SettlementAt(Player.Pos)?.Name ?? "a market"}, day {Day}");
+        Log($"You buy a {ItemName(i, g).ToLowerInvariant()}.");
         AudioEngine.Current?.Play(Cue.AnvilRing, 0.7f);
         return Equip(g.Id);
     }
@@ -148,13 +180,15 @@ public sealed partial class Campaign
     {
         if (!Owns(g.Id) || g.Free) return "NOT FOR SALE";
         if (Wears(g.Id)) return "TAKE IT OFF FIRST";
-        Captain.Kit.Owned.Remove(g.Id);
-        S.Gold += SellPrice(g);
-        Log($"You sell your {g.Name.ToLowerInvariant()}.");
+        var i = ItemOf(Captain, g.Id);
+        S.Gold += SellPrice(g, i);
+        Log($"You sell your {ItemName(i, g).ToLowerInvariant()}.");
+        if (i != null) Captain.Baggage.Remove(i);
         return null;
     }
 
-    public static int SellPrice(GearDef g) => (int)(g.Cost * SellBack);
+    /// What the armourer pays for it: part of its price for its make and marks.
+    public static int SellPrice(GearDef g, GearItem? i = null) => (int)(PriceOf(g, i?.Quality ?? ItemQuality.Plain, i?.Marks.Count ?? 0) * SellBack);
 
     // ---------- spoils ----------
 
@@ -182,7 +216,7 @@ public sealed partial class Campaign
     public string? TakeSpoil()
     {
         if (Report is not { Spoil.Length: > 0 } rep || Gear.Find(rep.Spoil) is not GearDef g) return "NOTHING TO TAKE";
-        Own(g.Id);
+        Own(g.Id, from: $"taken from {rep.Enemy}, day {Day}");
         Report = rep with { Spoil = "" };
         Log($"You take the {g.Name.ToLowerInvariant()}. Wear it from the armourer in any market.");
         Count("spoils");

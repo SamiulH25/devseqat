@@ -411,6 +411,8 @@ public sealed class CaptainState
     public int ArmorTier, HelmTier, HorseTier, Contract = 0; // Contract: faction you serve, -1 = none
     /// What the captain wears and carries (docs/archive/PROGRESSION.md P1).
     public CaptainKit Kit = new();
+    /// Every piece the captain owns as a thing (docs/COMPANY.md C9): make, marks, name, story. Free plain pieces need none.
+    public List<GearItem> Baggage = new();
     /// Career (F5): you swore fealty to the realm you serve (a vassal, not a hired sword); when this contract began;
     /// and the highest rank reached so far (an int of Rank), so each career beat is shown once.
     public bool Fealty;
@@ -477,6 +479,7 @@ public sealed class CaptainLook
 public sealed class CaptainKit
 {
     public string Weapon = "arming_sword", Side = "greatsword", Shield = "heater_shield", Body = "mail", Helm = "sallet", Horse = "courser";
+    /// Old saves only: the gear ids owned before pieces were things; `Campaign.MigrateGear` moves them into `CaptainState.Baggage`.
     public List<string> Owned = new();
     public IEnumerable<string> Worn => new[] { Weapon, Side, Shield, Body, Helm, Horse }.Where(id => id != "");
 }
@@ -707,6 +710,8 @@ public sealed class Balance
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;
     public float XpParticipation = 10, XpVictory = 1.5f, XpPerKillTier = 6;
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
+    /// What the captain's baggage carries (docs/COMPANY.md C9): a base, and more for each spare horse (to six).
+    public float BaggageBase = 20, BaggagePerHorse = 5;
     public float CompanySlotsBase = 10, MenBase = 40, MenRenownDivisor = 5;
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
     public float ArmyScale = 3;

@@ -430,3 +430,25 @@ flew, the point sunk; a puff of water, mud or dust where each lands. Low quality
 pavises and walls; the shield knock, plate glance and flinch; the close whistle past the camera; following your own arrow
 and its range; plunging and flat shots drawn differently; fire pots; the flight's shadow; a volley that leaves together
 (that is the sim's timing, out of a drawing-only phase); a frame budget measured at 3,000 men.
+
+### C9 (gear as things), as built
+- `GearItem { Def, Quality, Marks, Name, From, Kills, Battles }` in `CaptainState.Baggage` (Campaign/Items.cs). The kit's
+  slots still hold gear ids (the look and old code read them); a slot's piece is `Campaign.ItemOf(c, def)`. One piece of
+  each kind: a better make bought or taken replaces the one you hold. Free plain starting gear needs no item.
+- `MigrateGear` turns an old save's `CaptainKit.Owned` into plain pieces and empties it; no version bump.
+- Quality Worn / Plain / Fine / Masterwork / Named scales damage (weapon), block (shield), armour (body, helm) and a horse's
+  health by 0.9 / 1 / 1.06 / 1.12 / 1.15, price by 0.6 / 1 / 1.6 / 2.5 / 4, plus a fifth per mark (`PriceOf`).
+- Six marks in `Data/effects.json` tagged `mark` and the slots they fit: Keen, Balanced, Well-tempered, Light, Sure-seated,
+  Sure-footed. `Rules.CaptainType` adds them to the captain's `UnitType.Mods`; a weapon's mark only while it is in hand
+  (`SwapWeapon` resets `Unit.Mods`).
+- The armourer offers some stock fine (a few masterwork in towns) with a mark, seeded by place and week (`StockMake`). Rows show
+  the make (tinted green fine, blue masterwork, gold named), mark chips with their line on hover, the blade's kill tally, where a
+  piece came from on hover, and a baggage line with a bar. Sell price moved to the SELL button's tooltip.
+- Baggage: `BaggageRoom` = `Balance.BaggageBase` 20 + `BaggagePerHorse` 5 per spare horse (to six), +20 % with Quartermaster;
+  `BaggageLoad` = gear not worn (armour 2, horses 0) + goods per ten lots. Over the room the march is 2 % slower a piece, to 25 %.
+- Story: spoils and purchases set `From`; each fought battle adds to worn pieces' `Battles` and your kills to the main weapon's
+  `Kills`. At 50 kills the armourer offers a name from `BladeNames` (NAME, OTHER: there is no keyboard entry yet); a named blade
+  becomes Named quality and is a chronicle deed.
+- Not built yet (left for a C9b): the new slots (hands, legs, cloak, harness, keepsakes), the ~90 graded culture pieces and the
+  `Gear.Validate` checks for them, renown gating, the Named piece on the portrait line and the end summary.
+- Test `GearItems` (Tests/GearTests.cs).

@@ -79,6 +79,7 @@ public sealed partial class Battle
         if (p.Mounted && !to.HasShield && to.Ammo == 0) { Log("Two hands for that: dismount first."); return; }
         if (p.Action != UnitAction.None || p.Charging) return;
         p.Type = to;
+        p.Mods = to.Mods + (p.Squad?.Mods ?? default); // the marks of the weapon now in hand
         (p.Ammo, sideAmmo) = (sideAmmo, p.Ammo);
         p.Action = UnitAction.Stagger; // a moment to change grip
         p.ActionTimer = 0.4f;

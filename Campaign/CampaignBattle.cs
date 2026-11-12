@@ -145,6 +145,7 @@ public partial class Campaign
         var report = new BattleReport(won, enemyName, reports, 0, 0, 0, 0, 0, r.Captain);
         if (!playerIn) return report;
         S.LastBattleAt = (float)S.Hours;
+        ItemsAfterBattle(r);
         Count("battles");
         if (won) Count("victories");
         if (r.PlayerKills >= 5) Count("frontline");
