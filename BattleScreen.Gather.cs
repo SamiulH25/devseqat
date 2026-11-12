@@ -64,8 +64,8 @@ partial class BattleScreen
         var col = Color.Lerp(SpellColor(c.A.Tradition), Color.White, g * g);
         float spin = t * 0.25f + (g > 0.8f ? MathF.Pow((g - 0.8f) / 0.2f, 2) * 2.5f : 0);
         float arc = Math.Clamp(g * 1.25f, 0.08f, 1) * MathF.Tau; // complete at 80%
-        Arc(c.At, r, spin, arc, col);
-        Arc(c.At, r * 0.82f, -spin * 1.3f, arc, Color.Lerp(col, Color.Black, 0.35f));
+        Arc(c.At, r, spin, arc, col * 0.78f);
+        Arc(c.At, r * 0.82f, -spin * 1.3f, arc, col * 0.45f);
         int n = r < 3 ? 8 : 12;
         for (int i = 0; i < n; i++)
         {
@@ -78,27 +78,27 @@ partial class BattleScreen
             switch (c.A.Tradition)
             {
                 case "faith": // rays with a cross-bar
-                    Line(G(c.At + d * r * 0.82f, 0.12f), G(c.At + d * r * 1.08f, 0.12f), col);
-                    Line(G(mid - side * r * 0.05f, 0.12f), G(mid + side * r * 0.05f, 0.12f), col);
+                    Band(G(c.At + d * r * 0.82f, 0.12f), G(c.At + d * r * 1.08f, 0.12f), col * 0.72f, 0.65f);
+                    Band(G(mid - side * r * 0.05f, 0.12f), G(mid + side * r * 0.05f, 0.12f), col * 0.72f, 0.65f);
                     break;
                 case "craft": // a rune: a chevron between the rings
-                    Line(G(mid - side * r * 0.06f - d * r * 0.05f, 0.12f), G(mid + d * r * 0.05f, 0.12f), col);
-                    Line(G(mid + d * r * 0.05f, 0.12f), G(mid + side * r * 0.06f - d * r * 0.05f, 0.12f), col);
+                    Band(G(mid - side * r * 0.06f - d * r * 0.05f, 0.12f), G(mid + d * r * 0.05f, 0.12f), col * 0.72f, 0.65f);
+                    Band(G(mid + d * r * 0.05f, 0.12f), G(mid + side * r * 0.06f - d * r * 0.05f, 0.12f), col * 0.72f, 0.65f);
                     break;
                 case "necromancy": // hooks
-                    Line(G(mid - d * r * 0.06f, 0.12f), G(mid + d * r * 0.04f, 0.12f), col);
-                    Line(G(mid + d * r * 0.04f, 0.12f), G(mid + d * r * 0.04f + side * r * 0.05f, 0.12f), col);
+                    Band(G(mid - d * r * 0.06f, 0.12f), G(mid + d * r * 0.04f, 0.12f), col * 0.72f, 0.65f);
+                    Band(G(mid + d * r * 0.04f, 0.12f), G(mid + d * r * 0.04f + side * r * 0.05f, 0.12f), col * 0.72f, 0.65f);
                     break;
-                default: Line(G(c.At + d * r * 0.88f, 0.12f), G(c.At + d * r, 0.12f), col); break;
+                default: Band(G(c.At + d * r * 0.88f, 0.12f), G(c.At + d * r, 0.12f), col * 0.72f, 0.65f); break;
             }
         }
-        if (c.A.Kind is "attack" or "bolt") Ring(c.At, r * (0.8f - 0.5f * g), col, 12);
+        if (c.A.Kind is "attack" or "bolt") Ring(c.At, r * (0.8f - 0.5f * g), col * 0.75f, 12);
         PotArcs(c, g);
-        // The column over the caster: taller for a great working, so the whole field sees it gather.
+        // The glowing spire over the caster: taller for a great working, so the whole field sees it gather.
         var by = CasterOf(c);
         float tall = (c.A.Great ? 28 : c.A.Warn >= 1 ? 6 : 2.5f) * Ease.Out(g);
-        Line(G(by, 0.2f), G(by, 0.2f + tall), col);
-        if (c.A.Great) Line(G(by + new Vector2(0.15f, 0), 0.2f), G(by + new Vector2(0.15f, 0), 0.2f + tall * 0.7f), Color.Lerp(col, Color.Black, 0.3f));
+        BeamQuad(G(by, 0.15f), G(by, 0.15f + tall), c.A.Great ? 0.55f : 0.25f, 0.08f, col * 0.45f, Color.Transparent);
+        BeamQuad(G(by, 0.15f), G(by, 0.15f + tall * 0.85f), c.A.Great ? 0.16f : 0.08f, 0.03f, Color.Lerp(col, Color.White, 0.6f) * 0.75f, Color.Transparent);
     }
 
     /// Part of a ring on the ground from angle `from`, `sweep` radians round.
@@ -110,7 +110,7 @@ partial class BattleScreen
         {
             float a = from + sweep * i / seg;
             var p = at + new Vector2(MathF.Cos(a), MathF.Sin(a)) * r;
-            Line(G(prev, 0.12f), G(p, 0.12f), col);
+            Band(G(prev, 0.12f), G(p, 0.12f), col, 0.7f);
             prev = p;
         }
     }

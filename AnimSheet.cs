@@ -113,7 +113,7 @@ sealed class AnimSheet
         gd.SamplerStates[0] = SamplerState.PointClamp;
         fx.World = Matrix.Identity; fx.View = view; fx.Projection = proj;
         fx.CurrentTechnique.Passes[0].Apply();
-        gd.DrawUserPrimitives(PrimitiveType.TriangleList, sprites.A, 0, sprites.N / 3);
+        sprites.Draw(gd, PrimitiveType.TriangleList, sprites.N / 3);
     }
 
     /// A flat square of turf under him with a cross at his feet, so drift and sliding feet show.

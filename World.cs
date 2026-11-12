@@ -116,7 +116,8 @@ sealed partial class World : IDisposable
 
         foliageFx.View = view; foliageFx.Projection = proj;
         foliageFx.CurrentTechnique.Passes[0].Apply();
-        DrawFoliage(new BoundingFrustum(view * proj));
+        drawFrustum.Matrix = view * proj;
+        DrawFoliage(drawFrustum, false);
     }
 
     /// Fog distances for the fixed-function path (the campaign map sees much further than a battle).
@@ -149,7 +150,8 @@ sealed partial class World : IDisposable
         var fx = sh.World;
         sh.Setup(fx, view * proj, camPos, time, shadows, 0.15f + sh.ShadowTexelMetres);
         fx.Parameters["Detail"].SetValue(detail);
-        DrawGeometry(fx, "Terrain", "Foliage", new BoundingFrustum(view * proj));
+        drawFrustum.Matrix = view * proj;
+        DrawGeometry(fx, "Terrain", "Foliage", drawFrustum, false);
     }
 
     /// Terrain and foliage into the sun's shadow map (hills and trees cast shadows).
@@ -159,10 +161,11 @@ sealed partial class World : IDisposable
         sh.Setup(fx, Matrix.Identity, sh.LightEye, time, false, 0);
         fx.Parameters["ShadowMap"].SetValue((Texture2D?)null);
         fx.Parameters["Detail"].SetValue(detail);
-        DrawGeometry(fx, "TerrainShadow", "FoliageShadow", new BoundingFrustum(sh.LightViewProj));
+        drawFrustum.Matrix = sh.LightViewProj;
+        DrawGeometry(fx, "TerrainShadow", "FoliageShadow", drawFrustum, true);
     }
 
-    void DrawGeometry(Effect fx, string terrain, string foliage, BoundingFrustum view)
+    void DrawGeometry(Effect fx, string terrain, string foliage, BoundingFrustum view, bool shadow)
     {
         fx.CurrentTechnique = fx.Techniques[terrain];
         fx.CurrentTechnique.Passes[0].Apply();
@@ -172,19 +175,40 @@ sealed partial class World : IDisposable
             gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, s * 3, Math.Min(Chunk, terrainTris - s));
         fx.CurrentTechnique = fx.Techniques[foliage];
         fx.CurrentTechnique.Passes[0].Apply();
-        DrawFoliage(view);
-        for (int s = 0; s < ExtraTris; s += Chunk) // in chunks like the terrain: one long call is cut short
-            gd.DrawUserPrimitives(PrimitiveType.TriangleList, Extra, s * 3, Math.Min(Chunk, ExtraTris - s));
+        DrawFoliage(view, shadow);
+        if (ExtraTris > 0)
+        {
+            int verts = ExtraTris * 3;
+            if (extraVb == null || extraVb.IsDisposed || extraVb.VertexCount < Extra.Length)
+            {
+                extraVb?.Dispose();
+                extraVb = new DynamicVertexBuffer(gd, typeof(VertexPNCT), Extra.Length, BufferUsage.WriteOnly);
+                extraDirty = true;
+            }
+            if (extraDirty)
+            {
+                extraVb.SetData(Extra, 0, verts, SetDataOptions.Discard);
+                extraDirty = false;
+            }
+            gd.SetVertexBuffer(extraVb);
+            for (int s = 0; s < ExtraTris; s += Chunk)
+                gd.DrawPrimitives(PrimitiveType.TriangleList, s * 3, Math.Min(Chunk, ExtraTris - s));
+        }
     }
 
     /// Moving things lit like the foliage (the map's birds and beasts, MapLife.cs): rebuilt by their owner each frame,
     /// drawn in the shaded passes only (Low quality has none).
     public VertexPNCT[] Extra = Array.Empty<VertexPNCT>();
     public int ExtraTris;
+    DynamicVertexBuffer? extraVb;
+    bool extraDirty;
+    readonly BoundingFrustum drawFrustum = new(Matrix.Identity);
+
+    public void SetExtra(VertexPNCT[] v, int tris) { Extra = v; ExtraTris = tris; extraDirty = true; }
 
     public void Dispose()
     {
-        terrainVb.Dispose(); terrainIb.Dispose(); foliageVb.Dispose(); skyVb.Dispose();
+        terrainVb.Dispose(); terrainIb.Dispose(); foliageVb.Dispose(); skyVb.Dispose(); extraVb?.Dispose();
         detail.Dispose(); Minimap.Dispose();
         terrainFx.Dispose(); foliageFx.Dispose(); skyFx.Dispose();
     }
@@ -339,6 +363,7 @@ sealed partial class World : IDisposable
     {
         var m = new Mesh();
         tiles.Clear();
+        grassTiles.Clear();
         Chimneys.Clear();
         // Foliage is built tile by tile (roadmap E4) so each frame draws only the tiles in view.
         const float TileSize = 48;
@@ -359,9 +384,9 @@ sealed partial class World : IDisposable
         if (t.Wall != null) Torches(m, t);
         if (!t.Grass) Skirt(m);
         else if (t.Wall == null) Outskirts(m); // a farmstead out past the fighting (World.Land.cs, WL6)
-        Grass(m);
         if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
         alwaysTris = (m.V.Count - alwaysStart) / 3;
+        Grass(m);
         var vb = new VertexBuffer(gd, VertexPNCT.Decl, Math.Max(3, m.V.Count), BufferUsage.WriteOnly);
         if (m.V.Count > 0) vb.SetData(m.V.ToArray());
         return (vb, m.V.Count / 3);
@@ -393,12 +418,13 @@ sealed partial class World : IDisposable
     }
 
     readonly List<(int Start, int Tris, BoundingBox Box)> tiles = new();
+    readonly List<(int Start, int Tris, BoundingBox Box)> grassTiles = new();
     int alwaysStart, alwaysTris;
     /// Foliage triangles drawn last frame (for the performance check).
     public int FoliageDrawn { get; private set; }
 
     /// Draw the foliage tiles inside `view` (a camera's or the sun's frustum), then the water and grass.
-    void DrawFoliage(BoundingFrustum view)
+    void DrawFoliage(BoundingFrustum view, bool shadow)
     {
         gd.SetVertexBuffer(foliageVb);
         int drawn = 0;
@@ -408,6 +434,7 @@ sealed partial class World : IDisposable
             drawn += tris;
         }
         foreach (var (start, tris, box) in tiles) if (view.Intersects(box)) Range(start, tris);
+        if (!shadow) foreach (var (start, tris, box) in grassTiles) if (view.Intersects(box)) Range(start, tris);
         if (alwaysTris > 0) Range(alwaysStart, alwaysTris);
         FoliageDrawn = drawn;
     }
@@ -469,31 +496,59 @@ sealed partial class World : IDisposable
 
     static readonly Color Stone = new(150, 146, 136), Wattle = new(196, 176, 136), Thatch = new(150, 118, 66), Tile = new(150, 66, 48), Slate = new(84, 92, 106);
 
-    /// A cottage: walls with a gable roof, at `c` on the ground, turned `yaw`.
+    /// A cottage: stone plinth, timber-framed walls, framed door/windows and an overhanging gable roof with ridge beam.
     static void House(Mesh m, Vector3 c, float w, float d, float h, float yaw, Color wall, Color roof)
     {
         m.Tag = Vector2.Zero;
-        m.Box(c, w, d, h, yaw, wall);
-        m.Gable(c + Vector3.Up * h, w * 1.1f, d * 1.15f, h * 0.7f, yaw, roof);
+        float plinth = MathF.Min(h * 0.18f, 0.45f), post = MathF.Max(0.06f, MathF.Min(w, d) * 0.045f);
+        var ax = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
+        var az = new Vector3(-MathF.Sin(yaw), 0, MathF.Cos(yaw));
+        var beam = new Color(Timber.ToVector3() * 0.85f);
+        m.Box(c - Vector3.Up * 0.1f, w * 1.03f, d * 1.03f, plinth + 0.1f, yaw, Stone);
+        m.Box(c + Vector3.Up * plinth, w, d, h - plinth, yaw, wall);
+        foreach (float sx in new[] { -1f, 1f })
+            foreach (float sz in new[] { -1f, 1f })
+                m.Box(c + ax * (sx * (w / 2 - post * 0.35f)) + az * (sz * (d / 2 - post * 0.35f)), post * 1.3f, post * 1.3f, h, yaw, beam);
+        m.Box(c + Vector3.Up * (h - post * 0.9f), w + 0.06f, d + 0.06f, post, yaw, beam);
+        if (w > 3.5f)
+        {
+            m.Box(c + Vector3.Up * (h * 0.52f), w + 0.04f, d + 0.04f, post * 0.85f, yaw, beam);
+            foreach (float sz in new[] { -1f, 1f })
+                m.Box(c + az * (sz * (d / 2 + 0.01f)), post * 0.9f, 0.05f, h - plinth, yaw, beam);
+            float dw = MathF.Min(w * 0.16f, h * 0.42f), dh = h * 0.58f;
+            var doorAt = c + az * (d / 2 + 0.02f);
+            m.Box(doorAt, dw + post * 0.9f, 0.05f, dh + post * 0.5f, yaw, beam);
+            m.Box(doorAt + az * 0.02f, dw, 0.04f, dh, yaw, new Color(Timber.ToVector3() * 0.65f));
+        }
+        m.Gable(c + Vector3.Up * (h - 0.04f), w * 1.14f, d * 1.22f, h * 0.72f, yaw, roof);
+        m.Box(c + Vector3.Up * (h + h * 0.68f - post * 0.5f), w * 1.16f, post * 1.35f, post * 1.2f, yaw, beam);
         Windows(m, c, w, d, h, yaw);
     }
 
-    /// Small windows on a house's long walls, tagged so the shader shows them dark by day and lamplit at night (WL5).
+    /// Small framed windows on a house's long walls, tagged so the shader shows them dark by day and lamplit at night (WL5).
     static void Windows(Mesh m, Vector3 c, float w, float d, float h, float yaw)
     {
         var ax = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
         var az = new Vector3(-MathF.Sin(yaw), 0, MathF.Cos(yaw));
-        float ww = MathF.Min(w * 0.16f, h * 0.38f), wh = h * 0.34f, y = c.Y + h * 0.36f;
+        float ww = MathF.Min(w * 0.16f, h * 0.38f), wh = h * 0.34f, y = c.Y + h * 0.42f;
         var glass = new Color(46, 40, 34);
+        var frame = new Color(Timber.ToVector3() * 0.75f);
         foreach (float side in new[] { -1f, 1f })
             foreach (float along in new[] { -0.26f, 0.26f })
             {
                 var n = az * side;
-                var mid = new Vector3(c.X, y, c.Z) + ax * along * w + n * (d / 2 + 0.03f);
+                var mid = new Vector3(c.X, y, c.Z) + ax * along * w + n * (d / 2 + 0.02f);
+                m.Box(mid - Vector3.Up * (wh * 0.12f), ww + 0.12f, 0.05f, wh + 0.12f, yaw, frame);
                 Vector3 a = mid - ax * ww / 2, b = mid + ax * ww / 2, up = Vector3.Up * wh;
+                var gn = n * 0.028f;
                 var tag = new Vector2(0, -3);
-                m.Raw(a, n, glass, tag); m.Raw(b, n, glass, tag); m.Raw(b + up, n, glass, tag);
-                m.Raw(a, n, glass, tag); m.Raw(b + up, n, glass, tag); m.Raw(a + up, n, glass, tag);
+                m.Raw(a + gn, n, glass, tag); m.Raw(b + gn, n, glass, tag); m.Raw(b + up + gn, n, glass, tag);
+                m.Raw(a + gn, n, glass, tag); m.Raw(b + up + gn, n, glass, tag); m.Raw(a + up + gn, n, glass, tag);
+                if (w > 3.5f)
+                {
+                    m.Box(mid + gn * 1.15f, 0.06f, 0.03f, wh, yaw, frame);
+                    m.Box(mid + Vector3.Up * (wh * 0.48f) + gn * 1.15f, ww, 0.03f, 0.06f, yaw, frame);
+                }
             }
     }
 
@@ -733,15 +788,102 @@ sealed partial class World : IDisposable
             m.Box(Vector3.Lerp(foot, top, k), 0.8f, 0.07f, 0.07f, 0, Timber);
     }
 
-    /// The supply wagon: a bed on four wheels under a canvas tilt, with arrow sheaves.
+    /// An upright spoked wooden wheel with an iron tire, centred at `c` (axle along `yaw`'s cross axis).
+    internal static void Wheel(Mesh m, Vector3 c, float r, float w, float yaw, Color wood, Color iron)
+    {
+        var ax = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
+        var az = new Vector3(-MathF.Sin(yaw), 0, MathF.Cos(yaw)) * (w / 2);
+        const int Segs = 10;
+        float ri = r * 0.78f;
+        void Quad(Vector3 a, Vector3 b, Vector3 c2, Vector3 d, Color col, Vector3 refPt) { m.Tri(a, b, c2, col, refPt); m.Tri(a, c2, d, col, refPt); }
+        for (int i = 0; i < Segs; i++)
+        {
+            float a0 = i * MathF.Tau / Segs, a1 = (i + 1) * MathF.Tau / Segs;
+            Vector3 d0 = ax * MathF.Cos(a0) + Vector3.Up * MathF.Sin(a0);
+            Vector3 d1 = ax * MathF.Cos(a1) + Vector3.Up * MathF.Sin(a1);
+            Vector3 o0 = c + d0 * r, o1 = c + d1 * r, i0 = c + d0 * ri, i1 = c + d1 * ri;
+            var midOut = c + (d0 + d1) * (r * 0.6f);
+            Quad(o0 - az, o1 - az, o1 + az, o0 + az, iron, c);
+            Quad(i0 - az, i1 - az, i1 + az, i0 + az, wood, midOut);
+            Quad(i0 - az, o0 - az, o1 - az, i1 - az, wood, c + az);
+            Quad(i0 + az, i1 + az, o1 + az, o0 + az, wood, c - az);
+        }
+        m.Box(c - Vector3.Up * (r * 0.14f), r * 0.28f, w * 1.4f, r * 0.28f, yaw, iron);
+        for (int i = 0; i < 4; i++)
+        {
+            float a = i * MathHelper.PiOver4;
+            var dir = ax * MathF.Cos(a) + Vector3.Up * MathF.Sin(a);
+            var perp = (-ax * MathF.Sin(a) + Vector3.Up * MathF.Cos(a)) * (r * 0.065f);
+            var sz = az * 0.52f;
+            Vector3 p0 = c - dir * ri, p1 = c + dir * ri;
+            Quad(p0 - perp - sz, p1 - perp - sz, p1 + perp - sz, p0 + perp - sz, wood, c + az);
+            Quad(p0 - perp + sz, p0 + perp + sz, p1 + perp + sz, p1 - perp + sz, wood, c - az);
+            Quad(p0 + perp - sz, p1 + perp - sz, p1 + perp + sz, p0 + perp + sz, wood, c - perp);
+            Quad(p0 - perp - sz, p0 - perp + sz, p1 - perp + sz, p1 - perp - sz, wood, c + perp);
+        }
+    }
+
+    /// The supply wagon: upright spoked wheels, slatted timber bed, hitch shafts, arched hoop tilt over the front, and arrow sheaves in the back.
     static void Wagon(Mesh m, Vector3 b, Random r)
     {
         m.Tag = Vector2.Zero;
-        m.Box(b + Vector3.Up * 0.55f, 3.2f, 1.5f, 0.45f, 0, Timber);
-        foreach (var (x, z) in new[] { (-1.1f, -0.8f), (1.1f, -0.8f), (-1.1f, 0.8f), (1.1f, 0.8f) })
-            m.Frustum(b + new Vector3(x, 0.45f, z - 0.06f), b + new Vector3(x, 0.45f, z + 0.06f), 0.45f, 0.45f, 8, new Color(80, 58, 38), r, capBottom: true);
-        m.Gable(b + Vector3.Up * 1.0f, 3.0f, 1.6f, 0.8f, 0, new Color(214, 204, 176));
-        for (int i = 0; i < 3; i++) m.Box(b + new Vector3(-0.9f + i * 0.6f, 1.0f, 0), 0.25f, 0.25f, 0.6f, 0, new Color(150, 120, 80));
+        float yaw = 0.14f;
+        var ax = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
+        var az = new Vector3(-MathF.Sin(yaw), 0, MathF.Cos(yaw));
+        Vector3 At(float x, float y, float z) => b + ax * x + Vector3.Up * y + az * z;
+        var darkWood = new Color(Timber.ToVector3() * 0.72f);
+        var plankWood = Jitter(Timber, r, 0.06f);
+        var canvas = new Color(204, 194, 166);
+        var canvasShade = new Color(184, 174, 148);
+        const float wr = 0.48f;
+        foreach (float x in new[] { -1.05f, 1.05f })
+        {
+            m.Box(At(x, wr - 0.06f, 0), 0.12f, 1.78f, 0.12f, yaw, darkWood);
+            foreach (float z in new[] { -0.84f, 0.84f })
+                Wheel(m, At(x, wr, z), wr, 0.11f, yaw, plankWood, Iron);
+        }
+        // Bed planks, corner/side stakes and slatted side rails.
+        m.Box(At(0, 0.56f, 0), 3.1f, 1.48f, 0.16f, yaw, darkWood);
+        foreach (float z in new[] { -0.7f, 0.7f })
+        {
+            foreach (float y in new[] { 0.82f, 1.06f }) m.Box(At(0, y, z), 3.05f, 0.07f, 0.12f, yaw, plankWood);
+            for (int i = 0; i < 4; i++) m.Box(At(-1.42f + i * 0.95f, 0.7f, z), 0.09f, 0.09f, 0.52f, yaw, darkWood);
+        }
+        foreach (float y in new[] { 0.82f, 1.04f }) m.Box(At(1.48f, y, 0), 0.08f, 1.44f, 0.12f, yaw, plankWood);
+        // Front shafts resting forward.
+        foreach (float z in new[] { -0.42f, 0.42f })
+            m.Frustum(At(1.5f, 0.62f, z), At(2.55f, 0.34f, z), 0.045f, 0.035f, 5, darkWood, r);
+        m.Box(At(2.35f, 0.36f, 0), 0.07f, 0.92f, 0.07f, yaw, darkWood);
+        // Open-ended arched canvas tilt over the front two-thirds (three curved hoop facets + dark hoop ribs).
+        float x0 = -0.35f, x1 = 1.42f;
+        float[] hoopZ = { -0.74f, -0.58f, -0.22f, 0.22f, 0.58f, 0.74f };
+        float[] hoopY = { 1.12f, 1.66f, 2.02f, 2.02f, 1.66f, 1.12f };
+        for (int i = 0; i < hoopZ.Length - 1; i++)
+        {
+            Vector3 p00 = At(x0, hoopY[i], hoopZ[i]), p01 = At(x1, hoopY[i], hoopZ[i]);
+            Vector3 p10 = At(x0, hoopY[i + 1], hoopZ[i + 1]), p11 = At(x1, hoopY[i + 1], hoopZ[i + 1]);
+            var mid = At((x0 + x1) / 2, 1.1f, 0);
+            var col = i is 0 or 4 ? canvasShade : canvas;
+            m.Tri(p00, p01, p11, col, mid); m.Tri(p00, p11, p10, col, mid);
+        }
+        foreach (float hx in new[] { x0, (x0 + x1) / 2, x1 })
+            for (int i = 0; i < hoopZ.Length - 1; i++)
+                m.Frustum(At(hx, hoopY[i], hoopZ[i]), At(hx, hoopY[i + 1], hoopZ[i + 1]), 0.04f, 0.04f, 5, darkWood, r);
+        // Rear cargo: supply barrels with iron hoops + arrow bundles in a wooden chest.
+        foreach (var (bx, bz) in new[] { (-1.15f, -0.36f), (-1.15f, 0.34f) })
+        {
+            m.Frustum(At(bx, 0.72f, bz), At(bx, 1.38f, bz), 0.26f, 0.24f, 8, plankWood, r, capBottom: true);
+            m.Frustum(At(bx, 0.86f, bz), At(bx, 0.92f, bz), 0.27f, 0.27f, 8, Iron, r);
+            m.Frustum(At(bx, 1.22f, bz), At(bx, 1.28f, bz), 0.26f, 0.26f, 8, Iron, r);
+        }
+        m.Box(At(-0.66f, 0.72f, 0), 0.56f, 1.0f, 0.38f, yaw, darkWood);
+        for (int i = 0; i < 6; i++)
+        {
+            var foot = At(-0.66f + (i % 2 - 0.5f) * 0.22f, 0.78f, (i / 2 - 1) * 0.32f);
+            var tip = foot + ax * -0.18f + Vector3.Up * 0.72f + az * ((i % 2 - 0.5f) * 0.14f);
+            m.Frustum(foot, tip, 0.03f, 0.025f, 4, new Color(172, 146, 98), r);
+            m.Frustum(tip - Vector3.Up * 0.08f, tip + Vector3.Up * 0.04f, 0.045f, 0.02f, 4, Style.Sides[0].Trim, r);
+        }
     }
 
     static void TownHouse(Mesh m, Vector3 b, float s, Random r)
@@ -770,14 +912,18 @@ sealed partial class World : IDisposable
 
     void Grass(Mesh m)
     {
+        if (!t.Grass) return;
         var r = new Random(t.Seed + 13);
-        int count = !t.Grass ? 0 : 9000; // clumps of 2-4 tufts
+        const int count = 9000; // clumps of 2-4 tufts
         var flowers = new[] { new Color(236, 214, 80), new Color(240, 240, 232), new Color(176, 120, 200) };
+        var buckets = new Dictionary<(int, int), Mesh>();
         for (int i = 0; i < count; i++)
         {
             float a = r.NextSingle() * MathF.Tau, d = MathF.Sqrt(r.NextSingle()) * 150;
             var p = new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
             if (t.RoadDist(p) < 2.6f) continue;
+            var key = ((int)MathF.Floor(p.X / 48), (int)MathF.Floor(p.Y / 48));
+            if (!buckets.TryGetValue(key, out var gm)) buckets[key] = gm = new Mesh();
             var ground = GroundColor(p);
             var baseCol = new Color(ground * 0.78f);
             var tip = new Color(Vector3.Lerp(ground, new Vector3(0.62f, 0.72f, 0.36f), 0.5f));
@@ -792,7 +938,7 @@ sealed partial class World : IDisposable
                     var side = new Vector3(MathF.Cos(ang), 0, MathF.Sin(ang)) * w;
                     var lean = new Vector3(r.NextSingle() - 0.5f, 0, r.NextSingle() - 0.5f) * 0.25f;
                     var o = new Vector3(r.NextSingle() - 0.5f, 0, r.NextSingle() - 0.5f) * 0.25f;
-                    m.TriUp(b + o - side, b + o + side, b + o + Vector3.Up * h + lean, baseCol, baseCol, tip);
+                    gm.TriUp(b + o - side, b + o + side, b + o + Vector3.Up * h + lean, baseCol, baseCol, tip);
                 }
             }
             var b0 = new Vector3(p.X, t.Height(p) - 0.02f, p.Y);
@@ -801,9 +947,18 @@ sealed partial class World : IDisposable
                 var top = b0 + Vector3.Up * (0.3f + r.NextSingle() * 0.15f);
                 var col = flowers[r.Next(flowers.Length)];
                 float f = 0.06f;
-                m.TriUp(top + new Vector3(-f, 0, 0), top + new Vector3(f, 0, 0), top + new Vector3(0, f, 0), col, col, col, 0.9f);
-                m.TriUp(top + new Vector3(0, 0, -f), top + new Vector3(0, 0, f), top + new Vector3(0, f, 0), col, col, col, 0.9f);
+                gm.TriUp(top + new Vector3(-f, 0, 0), top + new Vector3(f, 0, 0), top + new Vector3(0, f, 0), col, col, col, 0.9f);
+                gm.TriUp(top + new Vector3(0, 0, -f), top + new Vector3(0, 0, f), top + new Vector3(0, f, 0), col, col, col, 0.9f);
             }
+        }
+        foreach (var gm in buckets.Values)
+        {
+            if (gm.V.Count == 0) continue;
+            int start = m.V.Count;
+            m.V.AddRange(gm.V);
+            var min = new Vector3(float.MaxValue); var max = new Vector3(float.MinValue);
+            for (int i = start; i < m.V.Count; i++) { min = Vector3.Min(min, m.V[i].Position); max = Vector3.Max(max, m.V[i].Position); }
+            grassTiles.Add((start, (m.V.Count - start) / 3, new BoundingBox(min - new Vector3(1.5f), max + new Vector3(1.5f))));
         }
     }
 

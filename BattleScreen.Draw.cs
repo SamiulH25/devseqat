@@ -45,7 +45,7 @@ partial class BattleScreen
             if (TipsHeld) return;
             tipUi.Begin(gd.Viewport, ms.Position, false);
             BeatCaption(tipUi);
-            Tips.Draw(tipUi, tipUi.U(124));
+            Tips.Draw(tipUi, tipUi.U(142));
             tipUi.End();
         }
     }
@@ -96,12 +96,30 @@ partial class BattleScreen
         sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0, awe, moment, warpNow);
     }
 
+    readonly BoundingFrustum spriteFrustum = new(Matrix.Identity);
+    readonly byte[] corpseGrid = new byte[512 * 512];
+    readonly List<int> corpseTouched = new();
+    readonly List<Squad> goneSelected = new();
+
     void DrawBlobs(float alpha)
     {
         shadows.N = 0;
         var t = battle.Terrain;
+        spriteFrustum.Matrix = view * proj;
+        var eye2 = new Vector2(eye.X, eye.Z);
+        float maxD2 = alpha < 0.5f ? 75f * 75f : float.MaxValue;
         void Blob(Vector2 p, float r)
         {
+            if (Vector2.DistanceSquared(p, eye2) > maxD2) return;
+            float h0 = t.Height(p);
+            if (spriteFrustum.Contains(new BoundingSphere(new Vector3(p.X, h0 + 0.5f, p.Y), r + 0.5f)) == ContainmentType.Disjoint) return;
+            if (Vector2.DistanceSquared(p, eye2) > 35f * 35f)
+            {
+                float y = h0 + 0.05f;
+                shadows.Add(new(new(p.X - r, y, p.Y - r), new(0, 0))); shadows.Add(new(new(p.X + r, y, p.Y - r), new(1, 0))); shadows.Add(new(new(p.X - r, y, p.Y + r), new(0, 1)));
+                shadows.Add(new(new(p.X + r, y, p.Y - r), new(1, 0))); shadows.Add(new(new(p.X + r, y, p.Y + r), new(1, 1))); shadows.Add(new(new(p.X - r, y, p.Y + r), new(0, 1)));
+                return;
+            }
             // Corners follow the ground so the blob lies on slopes.
             VertexPositionTexture V(float dx, float dz, float tu, float tv)
             {
@@ -121,7 +139,7 @@ partial class BattleScreen
         shadowFx.Alpha = alpha;
         shadowFx.View = view; shadowFx.Projection = proj;
         shadowFx.CurrentTechnique.Passes[0].Apply();
-        gd.DrawUserPrimitives(PrimitiveType.TriangleList, shadows.A, 0, shadows.N / 3);
+        shadows.Draw(gd, PrimitiveType.TriangleList, shadows.N / 3);
     }
 
     /// Ease every drawn facing toward the real one, once per frame, so turning is a smooth sweep.
@@ -253,7 +271,8 @@ partial class BattleScreen
         {
             if (s.Company == null || s.Alive == 0) continue;
             if (deploying && !battle.Options.Scouted && s.Team == 1) continue;
-            var bearer = s.Units.FirstOrDefault(u => u.Active && !u.Routing);
+            Unit? bearer = null;
+            foreach (var u in s.Units) if (u.Active && !u.Routing) { bearer = u; break; }
             if (!forSun) BannerFalls(s, bearer);
             if (bearer == null) continue;
             if (!battle.Shown(s)) { puppet.Banner(s.LastSeen, t.Height(s.LastSeen), bearer.Palette, 0, s.Company.Banner); continue; } // where you last saw it
@@ -269,21 +288,23 @@ partial class BattleScreen
             soft.N = 0;
             foreach (var m in motes)
                 if (!m.Heavy && (m.Size >= 0.15f || m.Grow >= 0.3f)) // dust and smoke: a soft puff that swells and thins away
-                    puppet.Haze(m.Pos, m.Size * 1.15f, m.Col, 0.6f * MathF.Min(1, m.Life / m.Max * 1.6f), m.Max * 37 + m.Grow * 11 + m.Pos.X);
+                    puppet.Haze(m.Pos, m.Size * 1.15f, m.Col, (m.Size > 1.5f ? 0.24f : 0.55f) * MathF.Min(1, m.Life / m.Max * 1.6f), m.Max * 37 + m.Grow * 11 + m.Pos.X);
                 else puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
         }
         var eye2 = new Vector2(eye.X, eye.Z);
         // Men outside the view (or, for the sun's pass, outside the shadow map) are skipped; men far off
         // are drawn with fewer parts. Low quality brings the detail bands closer.
-        var frustum = new BoundingFrustum(forSun && shading != null ? shading.LightViewProj : view * proj);
+        spriteFrustum.Matrix = forSun && shading != null ? shading.LightViewProj : view * proj;
         float near = quality == Quality.Low ? 25 : 45, far = quality == Quality.Low ? 60 : 100;
         bool Seen(Vector2 p, float h, float r)
         {
-            if (frustum.Contains(new BoundingSphere(new Vector3(p.X, h + 1, p.Y), r)) == ContainmentType.Disjoint) return false;
+            if (spriteFrustum.Contains(new BoundingSphere(new Vector3(p.X, h + 1, p.Y), r)) == ContainmentType.Disjoint) return false;
             float d2 = Vector2.DistanceSquared(p, eye2);
-            puppet.Detail = forSun ? (d2 < near * near ? 0 : 1) : d2 < near * near ? 0 : d2 < far * far ? 1 : 2;
+            puppet.Detail = forSun ? (d2 < 20 * 20 ? 0 : d2 < 45 * 45 ? 1 : 2) : d2 < near * near ? 0 : d2 < far * far ? 1 : 2;
             return true;
         }
+        foreach (int idx in corpseTouched) corpseGrid[idx] = 0;
+        corpseTouched.Clear();
         foreach (var u in battle.Units)
         {
             if (u.Fled) continue;
@@ -291,14 +312,27 @@ partial class BattleScreen
             if (deploying && !battle.Options.Scouted && u.Team == 1 && !u.IsLeader) continue; // unscouted: banners only
             if (u.Team == 1 && !u.IsLeader && !battle.Shown(u.Squad)) continue; // hidden by a crest or a wood
             float h = t.Height(u.Pos);
-            puppet.Rear = RearOf(u, !forSun);
+            float rear = RearOf(u, !forSun);
             if (!Seen(u.Pos, h + (u.Dead ? 0 : u.Altitude), MathF.Max(u.Mounted ? 2.5f : 1.5f, u.Type.Size * (u.Type.Flying ? 3.5f : 1.5f)))) continue; // a wyvern on the wing, a huge beast's bulk
+            puppet.Rear = rear;
+            if (u.Dead && battle.Time - u.DiedAt > 1f)
+            {
+                int cx = Math.Clamp((int)MathF.Floor(u.Pos.X / 0.9f) + 256, 0, 511);
+                int cz = Math.Clamp((int)MathF.Floor(u.Pos.Y / 0.9f) + 256, 0, 511);
+                int cidx = cz * 512 + cx;
+                byte seen = corpseGrid[cidx];
+                if (seen == 0) corpseTouched.Add(cidx);
+                if (seen < 255) corpseGrid[cidx] = (byte)(seen + 1);
+                puppet.SparseCorpse = seen >= 2;
+            }
+            else puppet.SparseCorpse = false;
             puppet.Draw(u, h);
         }
+        puppet.SparseCorpse = false;
         puppet.Rear = 0;
         if (!forSun) DrawMissiles(); // real arrows near the camera (BattleScreen.Arrows.cs)
-        foreach (var h in battle.LooseHorses) if (Seen(h.Pos, t.Height(h.Pos), 2.5f)) puppet.DrawLooseHorse(h, t.Height(h.Pos));
-        foreach (var h in battle.DeadHorses) if (Seen(h.Pos, t.Height(h.Pos), 2.5f)) puppet.DrawDeadHorse(h, t.Height(h.Pos));
+        foreach (var h in battle.LooseHorses) { float hh = t.Height(h.Pos); if (Seen(h.Pos, hh, 2.5f)) puppet.DrawLooseHorse(h, hh); }
+        foreach (var h in battle.DeadHorses) { float hh = t.Height(h.Pos); if (Seen(h.Pos, hh, 2.5f)) puppet.DrawDeadHorse(h, hh); }
         puppet.Detail = 0;
     }
 
@@ -317,7 +351,7 @@ partial class BattleScreen
         GraphicsDevice.SamplerStates[0] = SamplerState.PointClamp;
         spriteFx.View = view; spriteFx.Projection = proj;
         spriteFx.CurrentTechnique.Passes[0].Apply();
-        GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, sprites.A, 0, sprites.N / 3);
+        sprites.Draw(GraphicsDevice, PrimitiveType.TriangleList, sprites.N / 3);
     }
 
     void DrawSpritesShaded(Effect fx, string technique)
@@ -327,7 +361,7 @@ partial class BattleScreen
         fx.Parameters["Atlas"].SetValue(art.Atlas);
         fx.CurrentTechnique = fx.Techniques[technique];
         fx.CurrentTechnique.Passes[0].Apply();
-        GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, sprites.A, 0, sprites.N / 3);
+        sprites.Draw(GraphicsDevice, PrimitiveType.TriangleList, sprites.N / 3);
     }
 
     /// Dust and smoke over the men: blended, depth-tested but not written, so puffs overlap softly.
@@ -340,7 +374,7 @@ partial class BattleScreen
         gd.RasterizerState = RasterizerState.CullNone;
         fx.CurrentTechnique = fx.Techniques["SpriteSoft"];
         fx.CurrentTechnique.Passes[0].Apply();
-        gd.DrawUserPrimitives(PrimitiveType.TriangleList, soft.A, 0, soft.N / 3);
+        soft.Draw(gd, PrimitiveType.TriangleList, soft.N / 3);
         gd.BlendState = BlendState.Opaque;
         gd.DepthStencilState = DepthStencilState.Default;
     }
@@ -373,24 +407,36 @@ partial class BattleScreen
         }
     }
 
-    void Ring(Vector2 p, float r, Color c, int seg = 12)
+    void Ring(Vector2 p, float r, Color c, int seg = 12, float width = 1)
     {
         seg = Math.Max(seg, Math.Min(64, (int)(r * 3))); // a wide ring stays round
         for (int i = 0; i < seg; i++)
         {
             float a0 = i * MathF.Tau / seg, a1 = (i + 1) * MathF.Tau / seg;
-            Band(G(p + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r), G(p + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r), c);
+            Band(G(p + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r), G(p + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r), c, width);
+        }
+    }
+
+    /// Broken arc segments around a circle on the ground (magical field boundaries without hard neon hoops).
+    void DashedRing(Vector2 p, float r, Color c, int dashes = 14, float width = 0.75f)
+    {
+        dashes = Math.Max(dashes, Math.Min(40, (int)(r * 2)));
+        float step = MathF.Tau / dashes;
+        for (int i = 0; i < dashes; i++)
+        {
+            float a0 = i * step, a1 = a0 + step * 0.55f;
+            Band(G(p + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r), G(p + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r), c, width);
         }
     }
 
     /// A mark painted on the ground (rings, order lines): a ribbon a few pixels wide at any distance, its edges a little
     /// see-through, instead of a one-pixel line that reads as an editor gizmo. Drawn blended after the lines.
-    void Band(Vector3 a, Vector3 b, Color c)
+    void Band(Vector3 a, Vector3 b, Color c, float width = 1)
     {
         var d = new Vector2(b.X - a.X, b.Z - a.Z);
         if (d.LengthSquared() < 1e-6f) return;
         d = Vector2.Normalize(d);
-        float W(Vector3 p) => Math.Clamp(Vector3.Distance(p, eye) * 0.0028f, 0.04f, 0.5f);
+        float W(Vector3 p) => Math.Clamp(Vector3.Distance(p, eye) * 0.0028f, 0.04f, 0.5f) * width;
         Vector3 Side(Vector3 p) => new Vector3(-d.Y, 0, d.X) * W(p);
         var core = c * 0.85f; // premultiplied: a touch of the ground shows through
         var edge = c * 0.0f;
@@ -404,6 +450,28 @@ partial class BattleScreen
         Strip(a - sa, a - sa * 0.35f, b - sb, b - sb * 0.35f, edge, core);
         Strip(a - sa * 0.35f, a + sa * 0.35f, b - sb * 0.35f, b + sb * 0.35f, core, core);
         Strip(a + sa * 0.35f, a + sa, b + sb * 0.35f, b + sb, core, edge);
+    }
+
+    /// Camera-facing translucent energy ribbon with soft feathered edges (premultiplied alpha), for magic beams, lightning and light trails.
+    void BeamQuad(Vector3 a, Vector3 b, float wa, float wb, Color ca, Color cb)
+    {
+        var axis = b - a;
+        if (axis.LengthSquared() < 1e-8f) return;
+        var mid = (a + b) * 0.5f;
+        var side = Vector3.Cross(axis, eye - mid);
+        if (side.LengthSquared() < 1e-8f) side = Vector3.Cross(axis, Vector3.UnitZ);
+        if (side.LengthSquared() < 1e-8f) side = Vector3.UnitX;
+        side = Vector3.Normalize(side);
+        Vector3 sa = side * wa, sb = side * wb;
+        Color ea = ca * 0f, eb = cb * 0f;
+        void Strip(Vector3 a0, Vector3 a1, Vector3 b0, Vector3 b1, Color ac0, Color ac1, Color bc0, Color bc1)
+        {
+            bands.Add(new(a0, ac0)); bands.Add(new(b0, bc0)); bands.Add(new(a1, ac1));
+            bands.Add(new(b0, bc0)); bands.Add(new(b1, bc1)); bands.Add(new(a1, ac1));
+        }
+        Strip(a - sa, a - sa * 0.32f, b - sb, b - sb * 0.32f, ea, ca, eb, cb);
+        Strip(a - sa * 0.32f, a + sa * 0.32f, b - sb * 0.32f, b + sb * 0.32f, ca, ca, cb, cb);
+        Strip(a + sa * 0.32f, a + sa, b + sb * 0.32f, b + sb, ca, ea, cb, eb);
     }
 
     /// The siege wall's torches light the night (none by day or without a wall): see `World.Torches`.
@@ -481,9 +549,10 @@ partial class BattleScreen
         foreach (var c in battle.Casts) Sigil(c); // the gathering (docs/archive/SPECTACLE.md S2)
         foreach (var f in battle.Fields)
         {
-            var col = f.Effect?.Harmful == true ? new Color(240, 120, 80) : SpellColor(f.A.Tradition);
+            if (f.Effect?.Id is "mist" or "smoke") continue; // mist and smoke banks read through their haze, not a drawn hoop
+            var col = f.Effect?.Harmful == true ? new Color(235, 115, 75) : SpellColor(f.A.Tradition);
             float pulse = 0.96f + 0.04f * MathF.Sin((t - f.Started) * 2);
-            Ring(f.Pos, f.Radius * pulse, col, 20);
+            DashedRing(f.Pos, f.Radius * pulse, col * 0.48f, 16, 0.72f);
         }
         AuraGlow();
         MagicLines();
@@ -508,9 +577,9 @@ partial class BattleScreen
         if (battle.FoeTier >= 2 && battle.FoeAura >= Battle.AuraLow && c.EnemyDist < 4)
         {
             float lift = c.Mounted ? 1.2f : 0;
-            Line(G(c.Pos + c.Dir * 0.35f, 1.25f + lift), G(c.Pos + c.Dir * (c.Type.Reach + 0.3f), 1.0f + lift), col);
+            BeamQuad(G(c.Pos + c.Dir * 0.35f, 1.25f + lift), G(c.Pos + c.Dir * (c.Type.Reach + 0.3f), 1.0f + lift), 0.12f, 0.06f, col * 0.85f, Color.White * 0.9f);
         }
-        if (battle.FoeTier >= 3 && battle.FoeAura >= Battle.AuraLow) Ring(c.Pos, 0.9f * pulse, Color.Lerp(Style.Foe, Color.Black, 0.35f), 12);
+        if (battle.FoeTier >= 3 && battle.FoeAura >= Battle.AuraLow) Ring(c.Pos, 0.9f * pulse, Style.Foe * 0.55f, 12, 0.8f);
     }
 
     void PlayerGlow(Unit p, float t, float pulse)
@@ -519,17 +588,17 @@ partial class BattleScreen
         var aura = AuraColour;
         if (battle.AuraTier >= 3 && !battle.Spent)
         {
-            Ring(p.Pos, 0.9f * pulse, Color.Lerp(aura, Color.Black, 0.35f), 12);
-            Ring(p.Pos, 0.7f * pulse, Color.Lerp(aura, Color.Black, 0.55f), 10); // a shimmer, two rings breathing out of step
+            Ring(p.Pos, 0.9f * pulse, aura * 0.55f, 12, 0.75f);
+            Ring(p.Pos, 0.7f * pulse, aura * 0.35f, 10, 0.65f); // a shimmer, two rings breathing out of step
         }
-        if (battle.Guarding) Ring(p.Pos + p.Dir * 0.7f, 0.6f, Color.White, 8);
-        if (battle.AuraTier >= 4 && !battle.Spent) Ring(p.Pos, Battle.PresenceRadius * (0.96f + 0.04f * MathF.Sin(t * 2)), Color.Lerp(aura, Color.Black, 0.6f), 40);
+        if (battle.Guarding) Ring(p.Pos + p.Dir * 0.7f, 0.6f, Color.White * 0.8f, 8);
+        if (battle.AuraTier >= 4 && !battle.Spent) DashedRing(p.Pos, Battle.PresenceRadius * (0.96f + 0.04f * MathF.Sin(t * 2)), aura * 0.35f, 24, 0.7f);
     }
 
     /// Thrown forms on their way, yours and a champion's (K2, K6).
     void PendingFormsDrawn(float t)
     {
-        // Thrown forms on their way (K2): a slash as a fan of streaks closing ahead, a volley as a ring on its spot, a shot as a line.
+        // Thrown forms on their way (K2): a slash as a fan of streaks closing ahead, a volley as a ring on its spot, a shot as a glowing bolt.
         foreach (var pf in battle.PendingForms)
         {
             float k = Math.Clamp((t - pf.Started) / MathF.Max(0.05f, pf.At - pf.Started), 0, 1);
@@ -537,13 +606,13 @@ partial class BattleScreen
             var side = new Vector2(-pf.Dir.Y, pf.Dir.X);
             switch (pf.F.Kind)
             {
-                case "volley": Ring(pf.From + pf.Dir * pf.F.Range, pf.F.Radius * (1.5f - 0.5f * k), col, 16); break;
-                case "shot": Line(G(pf.From, 1.3f), G(pf.From + pf.Dir * pf.F.Range, 1.0f), col); break;
+                case "volley": Ring(pf.From + pf.Dir * pf.F.Range, pf.F.Radius * (1.5f - 0.5f * k), col * 0.7f, 16); break;
+                case "shot": BeamQuad(G(pf.From, 1.3f), G(pf.From + pf.Dir * pf.F.Range, 1.0f), 0.14f, 0.07f, col * 0.75f, Color.White * 0.9f); break;
                 default:
                     float reach = pf.F.Range * k, w = pf.F.Radius + reach * 0.25f;
                     var tip = pf.From + pf.Dir * reach;
-                    Line(G(tip - side * w, 1.0f), G(tip + side * w, 1.0f), col);
-                    Line(G(pf.From, 1.1f), G(tip, 1.0f), Color.Lerp(col, Color.Black, 0.4f));
+                    BeamQuad(G(tip - side * w, 1.0f), G(tip + side * w, 1.0f), 0.14f, 0.14f, col * 0.7f, col * 0.7f);
+                    BeamQuad(G(pf.From, 1.1f), G(tip, 1.0f), 0.12f, 0.22f, col * 0.25f, col * 0.65f);
                     break;
             }
         }
@@ -603,59 +672,77 @@ partial class BattleScreen
         MissileLines(); // arrows, bolts, javelins and stones (BattleScreen.Arrows.cs)
         Stakes();
         Spells();
-        RouteDots();
-        foreach (var s in selected) PlanHook(s);
-        foreach (var s in selected)
+        if (!hudHidden)
         {
-            // A company just chosen: its rings swell once, so you see which it was.
-            if (!selectedAt.TryGetValue(s, out float at)) selectedAt[s] = at = Ui.Now;
-            float swell = 1 + 0.7f * Ease.Kick((Ui.Now - at) / 0.45f);
-            foreach (var u in s.Units)
-                if (u.Active) Ring(u.Pos, (u.Mounted ? 1.05f : 0.45f) * swell, Sel, 8);
-        }
-        foreach (var gone in selectedAt.Keys.Where(k => !selected.Contains(k)).ToList()) selectedAt.Remove(gone);
-        OrderArrowLines();
-        if (command)
-        {
-            if (battle.Player.Active) Ring(battle.Player.Pos, 0.8f, Gold);
-            if (battle.EnemyCaptain.Active) Ring(battle.EnemyCaptain.Pos, 0.8f, Foe);
-            foreach (var s in battle.Commanded)
+            RouteDots();
+            foreach (var s in selected) PlanHook(s);
+            foreach (var s in selected)
             {
-                if (s.Alive == 0) continue;
-                // Queued orders (docs/archive/COMBAT_QOL.md Q3): a line from step to step, a tick at each place.
-                var at = s.Order == Order.Hold ? s.Anchor : s.Centroid();
-                foreach (var st in s.Queue)
-                {
-                    var to = st.Target >= 0 && st.Target < battle.Squads.Count ? battle.Squads[st.Target].Centroid() : st.Anchor;
-                    var qc = selected.Contains(s) ? Sel : Friendly;
-                    Band(G(at, 0.2f), G(to, 0.2f), st.Target >= 0 ? Foe : qc);
-                    Band(G(to, 0.2f), G(to + st.Front * 2, 0.2f), qc);
-                    at = to;
-                }
-                if (s.Order == Order.Charge && s.Target is { Alive: > 0 } tgt)
-                {
-                    Band(G(s.Centroid(), 0.15f), G(tgt.Centroid(), 0.15f), Foe); // attack order
-                    continue;
-                }
-                if (s.Order != Order.Hold) continue;
-                // Front-rank marker with a facing tick.
-                var side = new Vector2(-s.Front.Y, s.Front.X) * (Math.Min(s.Columns, s.Alive) - 1) * s.Spacing / 2;
-                var c = selected.Contains(s) ? Sel : Friendly;
-                Band(G(s.Anchor - side + s.Front), G(s.Anchor + side + s.Front), c);
-                Band(G(s.Anchor + s.Front), G(s.Anchor + s.Front * 2.5f), c);
+                // A company just chosen: its rings swell once, so you see which it was.
+                if (!selectedAt.TryGetValue(s, out float at)) selectedAt[s] = at = Ui.Now;
+                float swell = 1 + 0.7f * Ease.Kick((Ui.Now - at) / 0.45f);
+                foreach (var u in s.Units)
+                    if (u.Active) Ring(u.Pos, (u.Mounted ? 1.05f : 0.45f) * swell, Sel * 0.85f, 8);
             }
-            if (!hud.Over(ms.Position) && PickSquad(mouseGround, 1) is Squad hover)
-                foreach (var u in hover.Units) if (u.Active && !u.Routing) Ring(u.Pos, u.Mounted ? 1.1f : 0.5f, Foe, 8);
-            if (dragStart is Vector2 d)
+            if (selectedAt.Count > 0)
             {
-                // Formation preview: where every man will stand.
-                var enemy = battle.Centroid(1);
-                bool click = Vector2.Distance(d, mouseGround) < 2;
-                var (a, b) = click ? LineEnds(mouseGround, enemy) : (d, mouseGround);
-                Band(G(a, 0.12f), G(b, 0.12f), Color.White);
-                foreach (var slot in PreviewSlots(a, b, enemy)) Ring(slot, 0.3f, Color.White * 0.8f, 6);
+                goneSelected.Clear();
+                foreach (var k in selectedAt.Keys) if (!selected.Contains(k)) goneSelected.Add(k);
+                foreach (var k in goneSelected) selectedAt.Remove(k);
             }
-            Ring(mouseGround, 0.4f, Color.White);
+            OrderArrowLines();
+            if (command)
+            {
+                if (battle.Player.Active) Ring(battle.Player.Pos, 0.75f, Gold * 0.65f, 12, 0.75f);
+                if (battle.EnemyCaptain.Active) Ring(battle.EnemyCaptain.Pos, 0.75f, Foe * 0.65f, 12, 0.75f);
+                foreach (var s in battle.Commanded)
+                {
+                    if (s.Alive == 0) continue;
+                    // Queued orders (docs/archive/COMBAT_QOL.md Q3): a line from step to step, a tick at each place.
+                    var at = s.Order == Order.Hold ? s.Anchor : s.Centroid();
+                    foreach (var st in s.Queue)
+                    {
+                        var to = st.Target >= 0 && st.Target < battle.Squads.Count ? battle.Squads[st.Target].Centroid() : st.Anchor;
+                        var qc = (selected.Contains(s) ? Sel : Friendly) * 0.7f;
+                        Band(G(at, 0.2f), G(to, 0.2f), st.Target >= 0 ? Foe * 0.7f : qc, 0.8f);
+                        Band(G(to, 0.2f), G(to + st.Front * 2, 0.2f), qc, 0.8f);
+                        at = to;
+                    }
+                    if (s.Order == Order.Charge && s.Target is { Alive: > 0 } tgt)
+                    {
+                        Band(G(s.Centroid(), 0.15f), G(tgt.Centroid(), 0.15f), Foe * 0.65f, 0.8f); // attack order
+                        continue;
+                    }
+                    if (s.Order != Order.Hold) continue;
+                    // Front-rank bracket ticks with a compact center chevron.
+                    float halfW = Math.Max(0.8f, (Math.Min(s.Columns, s.Alive) - 1) * s.Spacing / 2);
+                    var rt = new Vector2(-s.Front.Y, s.Front.X);
+                    bool isSel = selected.Contains(s);
+                    var c = (isSel ? Sel : Friendly) * (isSel ? 0.78f : 0.42f);
+                    var lineL = s.Anchor - rt * halfW + s.Front;
+                    var lineR = s.Anchor + rt * halfW + s.Front;
+                    float tick = Math.Min(1.2f, halfW * 0.3f);
+                    Band(G(lineL), G(lineL + rt * tick), c, 0.7f);
+                    Band(G(lineL), G(lineL - s.Front * 0.45f), c, 0.7f);
+                    Band(G(lineR), G(lineR - rt * tick), c, 0.7f);
+                    Band(G(lineR), G(lineR - s.Front * 0.45f), c, 0.7f);
+                    var tip = s.Anchor + s.Front * 1.55f;
+                    Band(G(tip - s.Front * 0.5f - rt * 0.45f), G(tip), c, 0.75f);
+                    Band(G(tip - s.Front * 0.5f + rt * 0.45f), G(tip), c, 0.75f);
+                }
+                if (!hud.Over(ms.Position) && PickSquad(mouseGround, 1) is Squad hover)
+                    foreach (var u in hover.Units) if (u.Active && !u.Routing) Ring(u.Pos, u.Mounted ? 1.1f : 0.5f, Foe * 0.8f, 8);
+                if (dragStart is Vector2 d)
+                {
+                    // Formation preview: where every man will stand.
+                    var enemy = battle.Centroid(1);
+                    bool click = Vector2.Distance(d, mouseGround) < 2;
+                    var (a, b) = click ? LineEnds(mouseGround, enemy) : (d, mouseGround);
+                    Band(G(a, 0.12f), G(b, 0.12f), Color.White * 0.8f);
+                    foreach (var slot in PreviewSlots(a, b, enemy)) Ring(slot, 0.3f, Color.White * 0.7f, 6, 0.7f);
+                }
+                Ring(mouseGround, 0.35f, Color.White * 0.55f, 10, 0.65f);
+            }
         }
         var gd = GraphicsDevice;
         lineFx.View = view; lineFx.Projection = proj;
@@ -664,7 +751,7 @@ partial class BattleScreen
             gd.BlendState = BlendState.Opaque;
             gd.DepthStencilState = DepthStencilState.Default;
             lineFx.CurrentTechnique.Passes[0].Apply();
-            gd.DrawUserPrimitives(PrimitiveType.LineList, lines.A, 0, lines.N / 2);
+            lines.Draw(gd, PrimitiveType.LineList, lines.N / 2);
         }
         if (bands.N > 0)
         {
@@ -672,7 +759,7 @@ partial class BattleScreen
             gd.DepthStencilState = DepthStencilState.DepthRead;
             gd.RasterizerState = RasterizerState.CullNone;
             lineFx.CurrentTechnique.Passes[0].Apply();
-            gd.DrawUserPrimitives(PrimitiveType.TriangleList, bands.A, 0, bands.N / 3);
+            bands.Draw(gd, PrimitiveType.TriangleList, bands.N / 3);
             gd.BlendState = BlendState.Opaque;
             gd.DepthStencilState = DepthStencilState.Default;
         }

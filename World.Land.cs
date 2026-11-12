@@ -171,11 +171,13 @@ sealed partial class World
             }
             m.Tag = Vector2.Zero;
             var cart = p + az * 7 + ax * 4;
-            m.Box(On(cart, 0.55f), 2.6f, 1.5f, 0.35f, yaw + 0.3f, Jitter(new Color(110, 84, 58), r, 0.06f));
+            float cyaw = yaw + 0.3f;
+            var cartWood = Jitter(new Color(110, 84, 58), r, 0.06f);
+            m.Box(On(cart, 0.55f), 2.6f, 1.5f, 0.35f, cyaw, cartWood);
             foreach (float s in new[] { -0.85f, 0.85f })
             {
-                var wq = cart + new Vector2(-MathF.Sin(yaw + 0.3f), MathF.Cos(yaw + 0.3f)) * s;
-                m.Box(On(wq), 1.1f, 0.12f, 1.1f, yaw + 0.3f, new Color(70, 56, 42));
+                var wq = cart + new Vector2(-MathF.Sin(cyaw), MathF.Cos(cyaw)) * s;
+                Wheel(m, On(wq, 0.55f), 0.55f, 0.1f, cyaw, cartWood, Iron);
             }
             return;
         }

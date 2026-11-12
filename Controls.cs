@@ -135,7 +135,7 @@ public sealed class Controls
         [Act.PartyScreen] = "PARTY SCREEN (MAP)", [Act.Speed1] = "SPEED X1 (MAP)", [Act.Speed2] = "SPEED X3 (MAP)", [Act.Speed3] = "SPEED X8 (MAP)",
         [Act.FollowParty] = "FOLLOW YOUR PARTY (MAP)", [Act.QuickSave] = "QUICK SAVE", [Act.QuickLoad] = "QUICK LOAD",
         [Act.Formation] = "CYCLE FORMATION", [Act.Bash] = "SHIELD BASH / KICK", [Act.SwapWeapon] = "SWAP WEAPON",
-        [Act.NextDivision] = "NEXT DIVISION (GOALS)", [Act.GroundView] = "GROUND MAP", [Act.Stakes] = "PLANT STAKES (LONGBOWMEN)",
+        [Act.NextDivision] = "CYCLE SERGEANT (GOALS)", [Act.GroundView] = "GROUND MAP", [Act.Stakes] = "PLANT STAKES (LONGBOWMEN)",
         [Act.AuraBlade] = "AURA BLADE (HOLD)", [Act.Form1] = "FORM 1", [Act.Form2] = "FORM 2", [Act.Form3] = "FORM 3", [Act.GreatForm] = "GREAT FORM", [Act.Relic] = "RAISE THE RELIC (ONCE A BATTLE)",
         [Act.Cast] = "CAST (CASTERS, COMMAND VIEW)", [Act.Merge] = "FOLD SELECTED INTO THE FULLEST",
         [Act.Slower] = "BATTLE SLOWER", [Act.Faster] = "BATTLE FASTER", [Act.Relieve] = "RELIEVE (FRESH TAKES THE TIRED'S PLACE)", [Act.SplitCompany] = "SPLIT A COMPANY IN TWO", [Act.StandingOrder] = "STANDING ORDER (CYCLE)",

@@ -16,12 +16,12 @@ sealed partial class Hud
     readonly Dictionary<Squad, Fight> fights = new();
     readonly Dictionary<Squad, List<(float At, int Alive)>> alive = new();
     Battle? fightsOf;
-    float fightsAt = -99;
+    float fightsAt = -99, fightSampledAt = -99;
 
     /// Once a frame: each of your companies' fight, and every half second each company's men standing (for the losses).
     void SampleFights()
     {
-        if (fightsOf != B || B.Time < fightsAt) { alive.Clear(); fightsOf = B; fightsAt = -99; }
+        if (fightsOf != B || B.Time < fightsAt) { alive.Clear(); fightsOf = B; fightsAt = -99; fightSampledAt = -99; }
         if (B.Time - fightsAt >= 0.5f)
         {
             fightsAt = B.Time;
@@ -32,9 +32,13 @@ sealed partial class Hud
                 h.RemoveAll(x => x.At < B.Time - FightWindow - 1);
             }
         }
-        fights.Clear();
-        foreach (var s in B.Squads)
-            if (s.Team == 0 && s.Alive > 0 && B.FightOf(s) is Fight f) fights[s] = f;
+        if (B.Time - fightSampledAt >= 0.2f || fightSampledAt < 0)
+        {
+            fightSampledAt = B.Time;
+            fights.Clear();
+            foreach (var s in B.Squads)
+                if (s.Team == 0 && s.Alive > 0 && B.FightOf(s) is Fight f) fights[s] = f;
+        }
     }
 
     /// Men this company lost (killed, fled or broken) in the last ten seconds.

@@ -206,6 +206,10 @@ public sealed class Unit
     public float ThrownAt = -99;
     public int StuckArrows;  // arrows caught in the shield (drawn)
     public int Index;        // place in Battle.Units (the spatial grid orders pairs by it)
+    internal UnitType? RenderLookFor;
+    internal Look? RenderLook;
+    internal float RenderStature = -1;
+    internal float RearPeak, RearAt = -99;
 
     // Mounted state. The horse moves along Heading at Speed; the rider looks (and strikes) along Facing.
     public Mount? Horse;

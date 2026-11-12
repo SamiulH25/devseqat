@@ -8,7 +8,7 @@ public enum Difficulty { Easy, Normal, Hard }
 public sealed class Settings
 {
     public int Width = 1280, Height = 720, UiScale; // UiScale 0 = automatic (by window height)
-    public bool Fullscreen, Fxaa = true, Ironman, ColorBlind;
+    public bool Fullscreen, Fxaa = true, VSync = true, Ironman, ColorBlind;
     public string Quality = "High";
     public float MasterVolume = 0.8f, SfxVolume = 1, AmbienceVolume = 0.85f, MusicVolume = 0.6f;
     /// The field camera's kick when blows land (0 off, 0.5 soft, 1 full), and the brief hold when your own blow lands.
@@ -45,8 +45,8 @@ public sealed class Settings
         catch (Exception e) { Console.WriteLine("could not save settings: " + e.Message); }
     }
 
-    /// The interface scale for a window height (automatic: 1 at 720p, 2 at 1080p and up), unless overridden.
-    public static int UiFor(int height) => Current.UiScale > 0 ? Current.UiScale : Math.Max(1, (int)MathF.Round(height / 720f));
+    /// The interface scale for a window height (1 below 1440p so 1080p keeps full desktop room, 2 at 1440p, 3 at 4K), unless overridden.
+    public static int UiFor(int height) => Current.UiScale > 0 ? Current.UiScale : (height >= 2050 ? 3 : height >= 1350 ? 2 : 1);
 
     /// Difficulty knobs: how hard enemies hit in battle, and how well contracts pay.
     public float EnemyDamage => Difficulty switch { Difficulty.Easy => 0.8f, Difficulty.Hard => 1.2f, _ => 1f };

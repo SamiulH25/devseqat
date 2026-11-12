@@ -193,7 +193,7 @@ partial class BattleScreen
                         if (fx.Next(5) == 0) Spray(p, 1.4f, 1, new Color(84, 78, 72), 0.3f, 2f, 0.18f, false, 0.2f, -0.9f);
                         break;
                     case "mist" or "smoke":
-                        Spray(p, 0.3f + fx.NextSingle() * 1.2f, 1, id == "mist" ? new Color(196, 206, 204) : new Color(120, 118, 114), 0.1f, 4f, 0.9f, false, 0.35f);
+                        Spray(p, 0.35f + fx.NextSingle() * 1.1f, 1, id == "mist" ? new Color(196, 206, 204) : new Color(118, 116, 112), 0.08f, 4.8f, 2.5f + fx.NextSingle() * 0.8f, false, 0.55f);
                         break;
                     case "warded":
                         if (r > f.Radius * 0.8f) Spray(p, 0.2f, 1, new Color(255, 246, 210), 0.2f, 1.5f, 0.07f, false, 0, -1.2f);
@@ -255,14 +255,14 @@ partial class BattleScreen
             if (presencePulse > 2)
             {
                 presencePulse = 0;
-                AddRipple(p.Pos, 1, Battle.PresenceRadius, 1.4f, Color.Lerp(col, Color.Black, 0.3f));
+                AddRipple(p.Pos, 1, Battle.PresenceRadius, 1.4f, col * 0.75f);
                 for (int i = 0; i < 16; i++) { float a = i * MathF.Tau / 16; Stamp(p.Pos + new Vector2(MathF.Cos(a), MathF.Sin(a)) * 3.2f, 40); } // the grass pressed flat round him (S4)
                 AddAwe(p.Pos, 8, 1.1f, 1 - p.Team); // the foe near him flinch
             }
         }
     }
 
-    /// Lines for the magic: ripples, beams, the blade and its trail.
+    /// Lines and soft ribbons for the magic: ripples, beams, the blade and its trail.
     void MagicLines()
     {
         float now = battle.Time;
@@ -271,40 +271,48 @@ partial class BattleScreen
         {
             if (now < r.Born) continue;
             float k = (now - r.Born) / r.Life, rad = MathHelper.Lerp(r.R0, r.R1, Ease.OutCubic(k));
-            var c = Color.Lerp(r.Col, Color.Black, k * 0.8f);
-            int seg = Math.Clamp((int)(rad * 4), 10, 48);
+            var c = r.Col * ((1 - k) * 0.65f);
+            int seg = Math.Clamp((int)(rad * 4), 12, 48);
             for (int i = 0; i < seg; i++)
             {
                 float a0 = i * MathF.Tau / seg, a1 = (i + 1) * MathF.Tau / seg;
-                Line(G(r.At + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * rad, r.Y), G(r.At + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * rad, r.Y), c);
+                Band(G(r.At + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * rad, r.Y), G(r.At + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * rad, r.Y), c, 0.85f);
             }
         }
         beams.RemoveAll(b => now - b.Born > b.Life || now < b.Born);
         foreach (var b in beams)
         {
             float k = (now - b.Born) / b.Life;
-            var c = Color.Lerp(b.Col, b.Bolt ? Color.Black : Fade, k * k * 0.7f); // light fades into the sky behind it, not to black poles
+            float fade = Math.Clamp(1 - k * k * 0.85f, 0, 1);
             if (b.Bolt)
             {
-                // A jagged bolt from the sky: the same shape every frame of its life, a fork half way down.
+                // A jagged bolt from the sky: glowing energy ribbon with bright core and tapered forks.
                 var rnd = new Random(b.Seed);
+                var glowCol = b.Col * (0.65f * fade);
+                var coreCol = Color.Lerp(b.Col, Color.White, 0.78f) * (0.95f * fade);
                 var top = G(b.At, 32);
                 var prev = top;
                 for (int i = 1; i <= 8; i++)
                 {
                     float y = 32 * (1 - i / 8f);
                     var next = i == 8 ? G(b.At, 0.2f) : G(b.At + new Vector2(rnd.NextSingle() - 0.5f, rnd.NextSingle() - 0.5f) * 3.5f, y);
-                    Line(prev, next, c);
-                    Line(prev + Vector3.Right * 0.08f, next + Vector3.Right * 0.08f, c);
+                    BeamQuad(prev, next, 0.42f * fade, 0.36f * fade, glowCol, glowCol);
+                    BeamQuad(prev, next, 0.13f * fade, 0.10f * fade, coreCol, coreCol);
                     if (i is 3 or 5) // a fork that branches again (S3)
                     {
                         var f = next;
                         var dir = new Vector3(rnd.NextSingle() * 6 - 3, -5, rnd.NextSingle() * 6 - 3);
                         for (int j = 0; j < 3; j++)
                         {
+                            float fj0 = 1 - j * 0.25f, fj1 = MathF.Max(0.05f, 1 - (j + 1) * 0.28f);
                             var g = f + dir * (0.6f - j * 0.1f) + new Vector3(rnd.NextSingle() - 0.5f, 0, rnd.NextSingle() - 0.5f) * 1.5f;
-                            Line(f, g, Color.Lerp(c, Color.Black, 0.25f + j * 0.15f));
-                            if (j == 1) Line(g, g + new Vector3(rnd.NextSingle() * 3 - 1.5f, -2.5f, rnd.NextSingle() * 3 - 1.5f), Color.Lerp(c, Color.Black, 0.5f));
+                            BeamQuad(f, g, 0.20f * fade * fj0, 0.12f * fade * fj1, glowCol * fj0, glowCol * fj1);
+                            BeamQuad(f, g, 0.06f * fade * fj0, 0.03f * fade * fj1, coreCol * fj0, coreCol * fj1);
+                            if (j == 1)
+                            {
+                                var sub = g + new Vector3(rnd.NextSingle() * 3 - 1.5f, -2.5f, rnd.NextSingle() * 3 - 1.5f);
+                                BeamQuad(g, sub, 0.11f * fade, 0.02f * fade, glowCol * 0.55f, Color.Transparent);
+                            }
                             f = g;
                         }
                     }
@@ -313,17 +321,19 @@ partial class BattleScreen
             }
             else
             {
-                // A pillar of light: shafts round its edge from the ground up, bright at the foot and dimming as they rise.
-                int n = 16;
+                // A pillar of light: translucent volumetric shafts from the ground up, bright at the foot and dimming above.
+                int n = 6;
                 float rad = b.Radius * (1 - 0.4f * k), h = 9 * (1 - 0.3f * k);
+                var baseGlow = b.Col * (0.34f * fade);
+                var coreCol = Color.Lerp(b.Col, Color.White, 0.68f) * (0.78f * fade);
+                BeamQuad(G(b.At, 0.05f), G(b.At, h * 1.35f), rad * 0.9f, rad * 0.4f, baseGlow * 0.65f, Color.Transparent);
                 for (int i = 0; i < n; i++)
                 {
-                    float a = i * MathF.Tau / n + now;
-                    var foot = b.At + new Vector2(MathF.Cos(a), MathF.Sin(a)) * rad * (0.7f + 0.3f * (i % 2));
-                    for (int j = 0; j < 4; j++)
-                        Line(G(foot, 0.1f + h * j / 4), G(foot, 0.1f + h * (j + 1) / 4), Color.Lerp(Color.Lerp(c, Color.White, 0.3f), Fade, 0.18f * j + 0.5f * k));
+                    float a = i * MathF.Tau / n + now * 0.9f;
+                    var foot = b.At + new Vector2(MathF.Cos(a), MathF.Sin(a)) * rad * (0.45f + 0.35f * (i % 2));
+                    BeamQuad(G(foot, 0.08f), G(foot, h * (0.85f + 0.15f * (i % 2))), 0.32f, 0.12f, baseGlow, Color.Transparent);
                 }
-                Line(G(b.At, 0.1f), G(b.At, h * 1.3f), Color.White);
+                BeamQuad(G(b.At, 0.08f), G(b.At, h * 1.25f), 0.24f, 0.07f, coreCol, Color.Transparent);
             }
         }
         // The lit blade: a bright edge and a fading ribbon of where its tip has been.
@@ -333,16 +343,15 @@ partial class BattleScreen
             var (tip, root, _) = bladeTrail[^1];
             float pulse = 0.85f + 0.15f * MathF.Sin(now * 9);
             var edge = Color.Lerp(col, Color.White, 0.35f * pulse);
-            Line(root, tip, edge);
-            Line(root + Vector3.Up * 0.05f, tip + Vector3.Up * 0.05f, edge);
-            Line(root - Vector3.Up * 0.05f, tip - Vector3.Up * 0.05f, Color.Lerp(col, Color.Black, 0.2f));
+            BeamQuad(root, tip, 0.14f, 0.07f, edge * 0.85f, Color.White * 0.9f);
         }
         for (int i = 1; i < bladeTrail.Count; i++)
         {
             float k = (now - bladeTrail[i].At) / TrailLife;
-            var c = Color.Lerp(col, Color.Black, 0.3f + 0.7f * k);
-            Line(bladeTrail[i - 1].Tip, bladeTrail[i].Tip, c);
-            Line(Vector3.Lerp(bladeTrail[i - 1].Base, bladeTrail[i - 1].Tip, 0.6f), Vector3.Lerp(bladeTrail[i].Base, bladeTrail[i].Tip, 0.6f), Color.Lerp(c, Color.Black, 0.3f));
+            float fadeT = Math.Clamp(1 - k, 0, 1);
+            var c = col * (0.55f * fadeT);
+            BeamQuad(bladeTrail[i - 1].Tip, bladeTrail[i].Tip, 0.15f * fadeT, 0.15f * fadeT, c, c);
+            BeamQuad(Vector3.Lerp(bladeTrail[i - 1].Base, bladeTrail[i - 1].Tip, 0.6f), Vector3.Lerp(bladeTrail[i].Base, bladeTrail[i].Tip, 0.6f), 0.1f * fadeT, 0.1f * fadeT, c * 0.6f, c * 0.6f);
         }
         WorkingLines();
         LadderLines();

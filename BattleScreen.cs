@@ -316,7 +316,12 @@ sealed partial class BattleScreen
             Tips.Show("rescue", "One of your named men is down (the gold mark). Stand over him while the fight goes on\nand you carry him out alive, if you are quick.");
         if (deploying) Tips.Show("deploy", $"Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press {ctl.First(Act.Pause)} (or START BATTLE) to begin.");
         else if (!command && battle.Player.Active) Tips.Show("field", $"Field view: you fight. On horseback {ctl.First(Act.Forward)}/{ctl.First(Act.Back)} rein, {ctl.First(Act.Left)}/{ctl.First(Act.Right)} turn, {ctl.First(Act.Sprint)} gallops.\nMove the mouse to choose a swing direction, {ctl.First(Act.Attack)} to attack, {ctl.First(Act.Block)} to block (match the red mark to parry).\n{ctl.First(Act.CommandView)}: command view. Hold {ctl.Name(Act.OrderWheel)}: the order wheel. {ctl.First(Act.Help)}: all the keys.");
-        else if (command && !deploying) Tips.Show("command", $"Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. {ctl.First(Act.CommandView)} returns to your body: you inspire the men near you.");
+        else if (command && !deploying)
+        {
+            Tips.Show("command", $"Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. {ctl.First(Act.CommandView)} returns to your body: you inspire the men near you.");
+            if (battle.DivisionsOf(0).Any(d => d.Alive > 0))
+                Tips.Show("divisions", $"Sergeants lead your divisions by goals (Take, Attack, Flank, Screen...).\nClick a Sergeant card on the right (or press {ctl.First(Act.NextDivision)}), then pick a Goal or RMB on ground/enemy/ally.\nOrders ride out and take a few seconds. Click BACK (or a company) to order companies directly.");
+        }
         if (deploying) GroundTips();
         else MagicTips();
 
@@ -371,25 +376,35 @@ sealed partial class BattleScreen
         UpdateCamera();
     }
 
+    readonly List<(Cue Cue, Vector2 Pos)> sortedSounds = new();
+    Battle? suiteFor;
+    string foeCultureSuite = "battle_azure";
+
     /// Battle sound cues, heard from the camera (closest first so nearby blows always claim the frame's voice budget).
     void PlaySounds()
     {
         var audio = host.Audio;
         if (audio == null || !audio.Enabled) return;
         var right = Matrix.Invert(view).Right;
-        var eye2 = new Vector2(eye.X, eye.Z);
-        foreach (var (cue, p) in battle.Sounds.OrderBy(s => Vector2.DistanceSquared(s.Pos, eye2)))
+        if (battle.Sounds.Count > 0)
         {
-            float range = cue switch
+            var eye2 = new Vector2(eye.X, eye.Z);
+            sortedSounds.Clear();
+            sortedSounds.AddRange(battle.Sounds);
+            sortedSounds.Sort((a, b) => Vector2.DistanceSquared(a.Pos, eye2).CompareTo(Vector2.DistanceSquared(b.Pos, eye2)));
+            foreach (var (cue, p) in sortedSounds)
             {
-                Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer or Cue.HornRetreat or Cue.TrollRoar or Cue.WolfHowl or Cue.WyvernScreech or Cue.AuraBreakthrough => 160,
-                Cue.Crash or Cue.CrowSwarm => 200,
-                Cue.Ram or Cue.RamSwing or Cue.RaiseDead or Cue.ChampionClash or Cue.BearRoar => 120,
-                Cue.Volley => 90,
-                _ => 70,
-            };
-            bool nearPlayer = battle.Player.Active && Vector2.DistanceSquared(p, battle.Player.Pos) < 9f;
-            audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, range, priority: nearPlayer);
+                float range = cue switch
+                {
+                    Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer or Cue.HornRetreat or Cue.TrollRoar or Cue.WolfHowl or Cue.WyvernScreech or Cue.AuraBreakthrough => 160,
+                    Cue.Crash or Cue.CrowSwarm => 200,
+                    Cue.Ram or Cue.RamSwing or Cue.RaiseDead or Cue.ChampionClash or Cue.BearRoar => 120,
+                    Cue.Volley => 90,
+                    _ => 70,
+                };
+                bool nearPlayer = battle.Player.Active && Vector2.DistanceSquared(p, battle.Player.Pos) < 9f;
+                audio.PlayAt(cue, new Vector3(p.X, battle.Terrain.Height(p) + 1, p.Y), eye, right, range, priority: nearPlayer);
+            }
         }
         var pl = battle.Player;
         if (pl.Active && !command && pl.Hp < pl.Type.MaxHp * 0.28f && (pulseTimer -= frameDt) <= 0)
@@ -409,6 +424,27 @@ sealed partial class BattleScreen
     {
         var audio = host.Audio;
         if (audio == null) return;
+        if (suiteFor != battle)
+        {
+            suiteFor = battle;
+            string culture = "azure";
+            if (battle.Armies[1] is { } a1)
+                foreach (var c in a1.Companies)
+                {
+                    string cc = Troops.Get(c.Troop).Culture;
+                    if (cc is not ("common" or "wild" or "")) { culture = cc; break; }
+                }
+            foeCultureSuite = culture switch
+            {
+                "crimson" => "battle_crimson",
+                "northern" => "battle_north",
+                "southern" => "battle_sunward",
+                "steppe" => "battle_steppe",
+                "league" => "battle_league",
+                "order" => "battle_order",
+                _ => "battle_azure",
+            };
+        }
         var ear = new Vector2(focusPoint.X, focusPoint.Z);
         float range = 25 + 30 * blend;
         int horses = 0, fighting = 0, field = 0, marching = 0, men = 0;
@@ -445,16 +481,7 @@ sealed partial class BattleScreen
             : battle.Options.Madness > 0 ? "battle_hollow"
             : foeUndead ? "battle_undead"
             : foeWild ? "battle_beasts"
-            : (battle.Armies[1]?.Companies.Select(c => Troops.Get(c.Troop).Culture).FirstOrDefault(c => c is not ("common" or "wild" or "")) ?? "azure") switch
-            {
-                "crimson" => "battle_crimson",
-                "northern" => "battle_north",
-                "southern" => "battle_sunward",
-                "steppe" => "battle_steppe",
-                "league" => "battle_league",
-                "order" => "battle_order",
-                _ => "battle_azure",
-            };
+            : foeCultureSuite;
 
         float s0 = 1f, s1 = 0f, s2 = 0f, s3 = 0f;
         if (!deploying)

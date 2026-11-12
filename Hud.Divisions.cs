@@ -9,6 +9,8 @@ sealed partial class Hud
 {
     readonly List<(Rectangle R, Division D)> divCards = new();
     readonly List<(Rectangle R, GoalKind G, int Side)> goals = new();
+    readonly List<Rectangle> divTags = new();
+    Rectangle goalClose;
 
     /// The goals on the buttons (command view), in order; Side is for Flank.
     public static readonly (GoalKind G, int Side, string Label)[] GoalButtons =
@@ -29,10 +31,9 @@ sealed partial class Hud
     {
         divCards.Clear();
         goals.Clear();
-        var mine = B.DivisionsOf(0).ToList();
         // Right, under the minimap: the battle log is top left and the score bar in the middle.
         int w = U(200), h = U(34), x = W - w - U(10), y = minimap.Bottom + U(22);
-        foreach (var d in mine)
+        foreach (var d in B.DivisionsOf(0))
         {
             divCards.Add((new Rectangle(x, y, w, h), d));
             y += h + U(4);
@@ -41,21 +42,26 @@ sealed partial class Hud
 
     void LayoutGoals()
     {
-        int bw = U(112), bh = U(24), n = GoalButtons.Length;
-        int x0 = W - 2 * bw - U(16), y0 = H - (n + 1) / 2 * (bh + U(4)) - U(10);
+        int bw = U(104), bh = U(21), gap = U(3), n = GoalButtons.Length;
+        int x0 = W - 2 * bw - gap - U(14), y0 = H - (n + 1) / 2 * (bh + gap) - U(26);
         for (int i = 0; i < n; i++)
-            goals.Add((new Rectangle(x0 + (i % 2) * (bw + U(4)), y0 + (i / 2) * (bh + U(4)), bw, bh), GoalButtons[i].G, GoalButtons[i].Side));
+            goals.Add((new Rectangle(x0 + (i % 2) * (bw + gap), y0 + (i / 2) * (bh + gap), bw, bh), GoalButtons[i].G, GoalButtons[i].Side));
+        int right = x0 + 2 * bw + gap;
+        goalClose = new Rectangle(right - U(40), y0 - U(32), U(40), U(13));
     }
 
     public Division? DivisionAt(Point p) => divCards.FirstOrDefault(c => c.R.Contains(p)).D;
     public (GoalKind G, int Side)? GoalAt(Point p) => goals.Where(g => g.R.Contains(p)).Select(g => ((GoalKind, int)?)(g.G, g.Side)).FirstOrDefault();
+    public bool GoalCloseAt(Point p) => Div != null && Command && goalClose.Contains(p);
 
+    readonly Dictionary<string, string> divTagCache = new();
     /// A division's letter on its companies' flags: the first letter of its name, skipping "The".
-    static string DivisionTag(Division d)
+    string DivisionTag(Division d)
     {
+        if (divTagCache.TryGetValue(d.Name, out var tag)) return tag;
         var words = d.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var w = words.Length > 1 && words[0].Equals("the", StringComparison.OrdinalIgnoreCase) ? words[1] : words.FirstOrDefault() ?? "?";
-        return w[..1].ToUpperInvariant();
+        return divTagCache[d.Name] = w[..1].ToUpperInvariant();
     }
 
     static string GoalTag(Goal g) => g.Kind == GoalKind.Flank ? (g.Side > 0 ? "FLANK R" : "FLANK L") : Goal.Label(g.Kind);
@@ -63,18 +69,17 @@ sealed partial class Hud
     void DivisionCards()
     {
         if (divCards.Count == 0) return;
-        Text($"DIVISIONS ({Ctl.Name(Act.NextDivision)})", divCards[0].R.X, divCards[0].R.Y - U(12), Dim, 1);
+        Text($"SERGEANTS ({Ctl.Name(Act.NextDivision)})", divCards[0].R.X, divCards[0].R.Y - U(12), Gold * 0.9f, 1);
         foreach (var (r, d) in divCards)
         {
             bool sel = d == Div, hover = r.Contains(Mouse);
             int alive = d.Alive, start = Math.Max(1, d.Start);
-            int morale = AvgMorale(d.Squads.SelectMany(s => s.Units));
+            int morale = AvgMorale(d.Squads);
             Panel(r, sel ? Gold : d.Leaderless ? Bad : hover && Command ? Color.White * 0.5f : Edge, sel ? 2 : 1);
             if (alive == 0) Rect(r, Color.Black * 0.4f);
-            string name = d.Name.ToUpperInvariant();
-            if (name.Length > 16) name = name[..16];
+            string name = kit.Fit(d.Name.ToUpperInvariant(), r.Width - U(58));
             Text(name, r.X + U(5), r.Y + U(4), sel ? Gold : Color.White, 1);
-            TextR($"{alive}/{d.Start}", r.Right - U(5), r.Y + U(4), Color.White, 1);
+            TextR(sel ? "ACTIVE" : $"{alive}/{d.Start}", r.Right - U(5), r.Y + U(4), sel ? Gold : Color.White, 1);
             string line = d.Leaderless ? "NO ORDERS: SERGEANT DOWN" : d.Pending != null ? $"> {GoalTag(d.Pending)} IN {MathF.Max(0, d.PendingAt - B.Time):0}S" : GoalTag(d.Goal);
             Text(line, r.X + U(5), r.Y + U(15), d.Leaderless ? Bad : d.Pending != null ? Warn : Dim, 1);
             TextR(d.Temper.ToString().ToUpperInvariant(), r.Right - U(5), r.Y + U(15), Dim, 1);
@@ -83,21 +88,82 @@ sealed partial class Hud
         }
     }
 
+    static string GoalExplain(GoalKind g, int side) => g switch
+    {
+        GoalKind.Attack => "CHARGE AND PRESS THE CHOSEN OR NEAREST ENEMY",
+        GoalKind.Hold => "HOLD GROUND; FIGHT FOES THAT COME CLOSE",
+        GoalKind.Take => "ADVANCE TO THE SPOT (OR RMB ON LAND) AND HOLD IT",
+        GoalKind.FallBack => "WITHDRAW FROM THE FIGHT AND RE-FORM BEHIND",
+        GoalKind.Flank => side < 0 ? "SWING AROUND THE ENEMY'S LEFT FLANK" : "SWING AROUND THE ENEMY'S RIGHT FLANK",
+        GoalKind.Screen => "GUARD THE CHOSEN (RMB) OR NEAREST ALLIED COMPANY",
+        GoalKind.Guard => "STAY CLOSE AND PROTECT YOUR CAPTAIN",
+        GoalKind.Reserve => "WAIT BEHIND THE LINE; COMMIT WHEN A FLANK FALTERS",
+        GoalKind.Harass => "SKIRMISH AND KEEP DISTANCE WITH BOWS OR HORSE",
+        GoalKind.Pursue => "RUN DOWN BROKEN AND ROUTING ENEMIES",
+        GoalKind.Ambush => "HIDE IN THE NEAREST WOOD AND STRIKE FROM COVER",
+        _ => "",
+    };
+
     void GoalPanel()
     {
         if (goals.Count == 0 || Div == null) return;
         var first = goals[0].R;
-        var area = new Rectangle(first.X - U(6), first.Y - U(34), goals[^1].R.Right - first.X + U(12) + (goals.Count % 2 == 1 ? first.Width + U(4) : 0), goals[^1].R.Bottom - first.Y + U(40));
+        int right = goals[1].R.Right;
+        var area = new Rectangle(first.X - U(6), first.Y - U(36), right - first.X + U(12), goals[^1].R.Bottom - first.Y + U(54));
         Panel(area, Gold);
-        Text($"GOAL FOR {Div.Name.ToUpperInvariant()}", area.X + U(6), area.Y + U(6), Gold, 1);
-        Text("RMB: GROUND TAKES IT, AN ENEMY ATTACKS IT", area.X + U(6), area.Y + U(18), Dim, 1);
+        Text(kit.Fit($"SERGEANT: {Div.Name.ToUpperInvariant()}", area.Width - U(56)), area.X + U(6), area.Y + U(6), Gold, 1);
+        bool backHover = goalClose.Contains(Mouse);
+        Rect(goalClose, backHover ? Gold * 0.35f : Color.White * 0.08f);
+        Frame(goalClose, backHover ? Gold : Dim, U(1));
+        TextC("BACK", goalClose.Center.X, goalClose.Y + U(3), backHover ? Gold : Color.White, 1);
+        Text("RMB: LAND=TAKE FOE=ATK ALLY=SCREEN", area.X + U(6), area.Y + U(19), Dim, 1);
+        (GoalKind G, int Side)? hovered = null;
         foreach (var (r, g, side) in goals)
         {
             bool hover = r.Contains(Mouse), on = Div.Goal.Kind == g && (g != GoalKind.Flank || Div.Goal.Side == side);
+            if (hover) hovered = (g, side);
             Rect(r, hover ? Gold * 0.35f : on ? Gold * 0.15f : Color.White * 0.06f);
             Frame(r, hover || on ? Gold : Edge, U(1));
-            Text(GoalButtons.First(b => b.G == g && b.Side == side).Label, r.X + U(6), r.Y + U(8), Color.White, 1);
+            Text(GoalButtons.First(b => b.G == g && b.Side == side).Label, r.X + U(6), r.Y + U(7), Color.White, 1);
         }
+        Text("BACK / CLICK CARD: ORDER SQUADS", area.X + U(6), area.Bottom - U(13), Dim, 1);
+        if (hovered is var (hg, hs))
+        {
+            string tip = GoalExplain(hg, hs);
+            int tw = TW(tip, 1) + U(14);
+            var tr = new Rectangle(Math.Min(area.Right - tw, W - tw - U(6)), area.Y - U(22), tw, U(18));
+            Panel(tr, Gold);
+            TextC(tip, tr.Center.X, tr.Y + U(5), Color.White, 1);
+        }
+    }
+
+    void DivisionTooltip()
+    {
+        if (divCards.FirstOrDefault(c => c.R.Contains(Mouse)) is not { R.Width: > 0 } hit) return;
+        var d = hit.D;
+        bool sel = d == Div;
+        string l1 = $"{d.Name.ToUpperInvariant()}  ({d.Temper.ToString().ToUpperInvariant()} SERGEANT, SKILL {d.Skill})";
+        string l2 = $"GOAL: {d.Goal.Describe.ToUpperInvariant()}";
+        string l3 = d.Pending != null ? $"RIDER EN ROUTE: {GoalTag(d.Pending)} ({MathF.Max(0, d.PendingAt - B.Time):0}S)" : $"{d.Squads.Count} COMPANIES   {d.Alive}/{d.Start} MEN";
+        string l4 = sel ? $"CLICK CARD, BACK, OR {Ctl.Name(Act.SelectAll)} TO ORDER COMPANIES" : $"CLICK OR PRESS {Ctl.Name(Act.NextDivision)} TO COMMAND SERGEANT";
+        int w = Math.Max(Math.Max(TW(l1, 1), TW(l2, 1)), Math.Max(TW(l3, 1), TW(l4, 1))) + U(16);
+        int h = U(58);
+        var tr = new Rectangle(Math.Max(U(8), hit.R.X - w - U(8)), Math.Min(hit.R.Y, H - h - U(8)), w, h);
+        Panel(tr, sel ? Gold : Edge);
+        Text(l1, tr.X + U(8), tr.Y + U(6), Gold, 1);
+        Text(l2, tr.X + U(8), tr.Y + U(19), Color.White, 1);
+        Text(l3, tr.X + U(8), tr.Y + U(31), d.Pending != null ? Warn : Dim, 1);
+        Text(l4, tr.X + U(8), tr.Y + U(43), sel ? Gold : Ok, 1);
+    }
+
+    void SergeantFieldBadge()
+    {
+        if (Div == null) return;
+        string s = $"SERGEANT: {Div.Name.ToUpperInvariant()}   {Ctl.Name(Act.OrderWheel)}: GOAL WHEEL   {Ctl.Name(Act.NextDivision)}: NEXT/EXIT";
+        int w = TW(s, 1) + U(14), y = divCards.Count > 0 ? divCards[^1].R.Bottom + U(6) : minimap.Bottom + U(22);
+        var r = new Rectangle(W - w - U(10), y, w, U(18));
+        Panel(r, Gold);
+        TextC(s, r.Center.X, r.Y + U(5), Gold, 1);
     }
 
     void GoalWheel()
@@ -228,16 +294,20 @@ sealed partial class Hud
                 for (int i = 0; i < 4; i++) Rect(new Rectangle((int)cp.X + U(1), (int)cp.Y - U(14) + i * U(1) + (int)(MathF.Sin(Ironfield.Ui.Now * 12 + i) * U(0.6f)), U(7 - i), Math.Max(1, U(1))), col);
                 if (c.Div.Team == 0) Text("RIDER", cp.X + U(5), cp.Y - U(4), col, 1);
             }
-        var tags = new List<Rectangle>();
+        divTags.Clear();
         foreach (var d in B.DivisionsOf(0))
         {
             if (d.Alive == 0) continue;
-            var live = d.Squads.Where(s => s.Alive > 0).ToList();
-            var at = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / live.Count;
+            var sum = Vector2.Zero;
+            int liveCount = 0;
+            foreach (var s in d.Squads) if (s.Alive > 0) { sum += s.Center; liveCount++; }
+            if (liveCount == 0) continue;
+            var at = sum / liveCount;
             if (!Screen(at, out var from)) continue;
             var col = d == Div ? Gold : Friendly;
-            foreach (var g in new[] { d.Goal, d.Pending })
+            for (int gi = 0; gi < 2; gi++)
             {
+                var g = gi == 0 ? d.Goal : d.Pending;
                 if (g == null) continue;
                 Vector2? to = g.Kind is GoalKind.Hold or GoalKind.Take or GoalKind.FallBack or GoalKind.Ambush ? g.Point : g.Target?.Alive > 0 ? g.Target.Center : null;
                 if (to is Vector2 t && Screen(t, out var dst))
@@ -252,9 +322,11 @@ sealed partial class Hud
             int tw = TW(tag, 1);
             var tr = new Rectangle((int)from.X - tw / 2, (int)from.Y - U(26), tw, U(9));
             var near = tr; near.Inflate(U(4), U(12)); // a margin, so a tag does not sit on a panel's heading either
-            if (new[] { near.Location, new Point(near.Center.X, near.Y), new Point(near.Right, near.Y), new Point(near.X, near.Bottom), new Point(near.Center.X, near.Bottom), new Point(near.Right, near.Bottom) }.Any(Over)) continue;
-            bool crowded = tags.Any(o => o.Intersects(tr));
-            tags.Add(tr);
+            if (Over(near.Location) || Over(new Point(near.Center.X, near.Y)) || Over(new Point(near.Right, near.Y))
+                || Over(new Point(near.X, near.Bottom)) || Over(new Point(near.Center.X, near.Bottom)) || Over(new Point(near.Right, near.Bottom))) continue;
+            bool crowded = false;
+            foreach (var o in divTags) if (o.Intersects(tr)) { crowded = true; break; }
+            divTags.Add(tr);
             if (crowded) Rect(new Rectangle(tr.X - U(2), tr.Y - U(1), tr.Width + U(4), tr.Height + U(2)), Color.Black * 0.35f);
             TextC(tag, from.X, from.Y - U(26), crowded ? col * 0.55f : col, 1);
         }

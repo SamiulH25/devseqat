@@ -11,17 +11,22 @@ partial class BattleScreen
     readonly List<Vector2> fieldMen = new();
     readonly List<Vector2> fieldDead = new();
     float deadAt;
+    bool fieldLifeDirty;
+    Quality lastLifeQuality = (Quality)(-1);
 
-    void NewFieldLife() => fieldLife = new MapLife(battle.Terrain, battle.Terrain.Seed, battle: true);
+    void NewFieldLife() { fieldLife = new MapLife(battle.Terrain, battle.Terrain.Seed, battle: true); fieldLifeDirty = true; }
 
     void FieldLife(float dt)
     {
         if (fieldLife == null) return;
+        if (quality != lastLifeQuality) { lastLifeQuality = quality; fieldLifeDirty = true; }
+        if (dt <= 0 && !fieldLifeDirty) return;
         fieldMen.Clear();
         for (int i = 0; i < battle.Units.Count; i += 3) if (battle.Units[i].Active) fieldMen.Add(battle.Units[i].Pos);
         deadAt -= dt;
         if (deadAt <= 0) { deadAt = 2; Carrion(); }
         fieldLife.Update(dt, camFocus, zoom, fieldMen, fieldDead, battle.Weather.Hour, quality);
+        fieldLifeDirty = true;
     }
 
     /// Where crows gather: 16 m cells where a dozen men or more lie dead, the thickest first.
@@ -41,7 +46,10 @@ partial class BattleScreen
 
     void FieldLifeMesh()
     {
-        if (fieldLife != null) (world.Extra, world.ExtraTris) = fieldLife.Build();
-        else world.ExtraTris = 0;
+        if (fieldLife == null) { world.ExtraTris = 0; return; }
+        if (!fieldLifeDirty) return;
+        fieldLifeDirty = false;
+        var (v, n) = fieldLife.Build();
+        world.SetExtra(v, n);
     }
 }

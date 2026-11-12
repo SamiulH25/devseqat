@@ -725,9 +725,16 @@ public sealed class SpriteSheet
 
     Canvas Cape()
     {
-        var c = new Canvas(20, 28);
-        c.Body(0, 28, y => (2.5f - y * 0.08f, 17.5f + y * 0.08f), clothDk);
-        for (int x = 0; x < 20; x += 5) { c.Clear(x, 27); c.Clear(x, 26); }
+        var c = new Canvas(22, 30);
+        c.Body(0, 30, y =>
+        {
+            float w = y < 4 ? 5.0f + y * 0.65f : 7.6f + (y - 4) * 0.12f;
+            return (11f - w, 11f + w);
+        }, clothDk);
+        c.Rect(6.5f, 0, 15.5f, 2.2f, trim); // collar border
+        c.Set(7, 1, steel); c.Set(14, 1, steel); // shoulder clasps
+        for (int y = 4; y < 29; y++) { c.Shade(7, y, -0.35f); c.Shade(11, y, 0.25f); c.Shade(15, y, -0.35f); }
+        for (int x = 2; x < 20; x += 4) { c.Clear(x, 29); if (x % 8 == 2) c.Clear(x, 28); }
         return c;
     }
 
@@ -1091,10 +1098,10 @@ public sealed class SpriteSheet
 
     Canvas Arrow()
     {
-        var c = new Canvas(8, 23);
-        c.Rect(3.5f, 4, 4.5f, 23, wood);
-        c.Body(0, 4, y => (3.5f - y * 0.45f, 4.5f + y * 0.45f), steel);
-        for (int y = 17; y < 22; y++) { c.Set(2, y, trim); c.Set(5, y, trim); }
+        var c = new Canvas(6, 21);
+        c.Rect(2.6f, 4, 3.4f, 21, wood);
+        c.Body(0, 4, y => (2.5f - y * 0.45f, 3.5f + y * 0.45f), steel);
+        for (int y = 16; y < 20; y++) { c.Set(1, y, trim); c.Set(4, y, trim); }
         return c;
     }
 
@@ -1174,14 +1181,14 @@ public sealed class SpriteSheet
         for (int y = 0; y < 10; y++) for (int x = 15; x < 20; x++) head.Shade(x, y, -0.35f);
         Add("hhead/n", head);
 
-        var chest = new Canvas(20, 18);
-        chest.Ellipse(10, 9, 9.6f, 8.6f, coat);
-        for (int y = 4; y < 16; y++) chest.Shade(10, y, -0.3f);
+        var chest = new Canvas(24, 21);
+        chest.Ellipse(12, 10.5f, 11.4f, 9.8f, coat);
+        for (int y = 4; y < 18; y++) chest.Shade(12, y, -0.3f);
         Add("hchest/n", chest);
 
-        var rump = new Canvas(20, 18);
-        rump.Ellipse(10, 9, 9.6f, 8.6f, coat);
-        rump.Rect(8.8f, 3, 11.2f, 18, mane);
+        var rump = new Canvas(24, 21);
+        rump.Ellipse(12, 10.5f, 11.4f, 9.8f, coat);
+        rump.Rect(10.8f, 3, 13.2f, 21, mane);
         Add("hrump/n", rump);
 
         var face = new Canvas(10, 15);
@@ -1192,19 +1199,19 @@ public sealed class SpriteSheet
         face.Rect(4.2f, 3, 5.8f, 11, Mat.Flat(Style.Linen));
         Add("hface/n", face);
 
-        var leg = new Canvas(5, 30);
-        leg.Body(0, 3, y => (0.2f + y * 0.15f, 4.8f - y * 0.15f), hoof);
-        leg.Body(3, 5.5f, y => (0.6f, 4.4f), mane); // the fetlock's feather
-        leg.Rect(1.4f, 5.5f, 3.6f, 15, coat);
-        leg.Ellipse(2.5f, 15.5f, 2.2f, 2, coat, 0.05f);
-        leg.Body(17, 30, y => (0.4f - (y - 17) * 0.02f, 4.6f + (y - 17) * 0.02f), coat);
+        var leg = new Canvas(7, 30);
+        leg.Body(0, 3, y => (0.8f + y * 0.15f, 6.2f - y * 0.15f), hoof);
+        leg.Body(3, 5.5f, y => (1.4f, 5.6f), mane); // the fetlock's feather
+        leg.Rect(2.3f, 5.5f, 4.7f, 14.5f, coat);
+        leg.Ellipse(3.5f, 15.5f, 2.3f, 2.1f, coat, 0.05f);
+        leg.Body(17, 30, y => (1.8f - (y - 17) * 0.11f, 5.2f + (y - 17) * 0.11f), coat);
         Add("hleg/n", leg);
 
         // A full tail: thick at the dock, spreading into locks toward the end, with a gentle wave.
-        var tail = new Canvas(7, 22);
-        tail.Body(0, 22, y => { float half = 1.6f + MathF.Sin(MathF.Min(1, y / 18) * MathF.PI * 0.8f) * 1.7f, c = 3.5f + MathF.Sin(y * 0.35f) * 0.5f; return (c - half, c + half); }, mane);
-        for (int x = 1; x < 6; x += 2) tail.Clear(x, 0); // ragged ends
-        tail.Clear(2, 1); tail.Clear(5, 1);
+        var tail = new Canvas(9, 24);
+        tail.Body(0, 24, y => { float half = 1.9f + MathF.Sin(MathF.Min(1, y / 20) * MathF.PI * 0.8f) * 2.1f, c = 4.5f + MathF.Sin(y * 0.35f) * 0.55f; return (c - half, c + half); }, mane);
+        for (int x = 1; x < 8; x += 2) tail.Clear(x, 0); // ragged ends
+        tail.Clear(2, 1); tail.Clear(6, 1);
         Add("htail/n", tail);
 
         // A camel (docs/archive/WORLD.md W4) is the horse rig in a sand coat with a hump over the back.
@@ -1436,11 +1443,11 @@ public sealed class SpriteSheet
 
         foreach (var part in new[] { "hchest", "hrump" })
         {
-            var c = new Canvas(20, 18);
-            c.Ellipse(10, 9.5f, 9.6f, 8.4f, cloth);
+            var c = new Canvas(24, 21);
+            c.Ellipse(12, 10.8f, 11.4f, 9.6f, cloth);
             c.Border(trim);
-            if (part == "hchest") Emblem(c, 10, 9, 3.6f);
-            else c.Rect(8.8f, 1, 11.2f, 6, Mat.Flat(Style.Mane));
+            if (part == "hchest") Emblem(c, 12, 10.5f, 4.0f);
+            else c.Rect(10.8f, 1, 13.2f, 7, Mat.Flat(Style.Mane));
             Add($"{part}.caparison{s}", c);
         }
     }

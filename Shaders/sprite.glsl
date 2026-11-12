@@ -30,10 +30,11 @@ void main()
 void main()
 {
 #ifdef SOFT
-    // Soft motes (dust, smoke): a round puff with a feathered, ragged edge, blended over the scene (UV = 0..1 across the quad).
+    // Soft motes (dust, smoke, mist): two-octave ragged feather blended over the scene (UV = 0..1 across the quad).
     vec2 d = vUV - 0.5;
-    float edge = length(d) * 2.0 + (Noise2(vUV * 3.0) - 0.5) * 0.35;
-    float a = vColor.a * (1.0 - smoothstep(0.25, 1.0, edge));
+    float n = Noise2(vUV * 3.2) * 0.65 + Noise2(vUV * 7.2 + vec2(1.7, 3.1)) * 0.35;
+    float edge = length(d) * 2.0 + (n - 0.5) * 0.45;
+    float a = vColor.a * (1.0 - smoothstep(0.10, 0.98, edge));
     if (a < 0.01) discard;
     float sh = ShadowAt(vWorld - SunDir * ShadowParams.w) * CloudAt(vWorld);
     vec3 sl = max(SkyColor * SpriteLight.x * 1.1 + SunColor * SpriteLight.y * sh + TorchLight(vWorld) + GlowLight(vWorld), vec3(0.0));
@@ -55,9 +56,11 @@ void main()
     light = max(light + GlowLight(vWorld + vec3(0.0, 0.6, 0.0)) * 1.3, vec3(0.0)); // spell light catches men more than grass
     float lum = dot(t.rgb, vec3(0.3, 0.55, 0.15));
     light += vec3(0.16, 0.19, 0.27) * (Look.z * 0.9 + Look.w * 0.35) * (0.6 + lum * 0.8);
-    // Vertex alpha below 1 marks the fallen: their colours drain toward the earth so the dead sink into the field.
+    // Vertex alpha below 1 marks the fallen: their colours and dark outlines drain toward the earth so heaps sink into the field.
     vec3 base = t.rgb * vColor.rgb;
-    base = mix(base, vec3(dot(base, vec3(0.3, 0.55, 0.15))) * vec3(1.04, 0.96, 0.84), 1.0 - vColor.a);
+    float fade = 1.0 - vColor.a;
+    base = mix(base, max(base, vec3(0.18, 0.15, 0.12)), fade * 0.65);
+    base = mix(base, vec3(dot(base, vec3(0.3, 0.55, 0.15))) * vec3(1.04, 0.96, 0.84), fade);
     gl_FragColor = vec4(Fog(base * light, vWorld), 1.0);
 #endif
 }

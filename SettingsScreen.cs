@@ -53,7 +53,8 @@ sealed class SettingsScreen
         ui.Begin(gd.Viewport, ms.Position, click);
         click = false;
         ui.Dim(0.6f);
-        var r = new Rectangle((ui.W - ui.U(820)) / 2, (ui.H - ui.U(540)) / 2, ui.U(820), ui.U(540));
+        int rw = Math.Min(ui.U(820), ui.W - ui.U(20)), rh = Math.Min(ui.U(540), ui.H - ui.U(20));
+        var r = new Rectangle((ui.W - rw) / 2, (ui.H - rh) / 2, rw, rh);
         ui.Panel(r);
         ui.TextC("SETTINGS", r.X + r.Width / 2f, r.Y + ui.U(12), Style.Accent, 3);
         string[] tabs = { "VIDEO", "AUDIO", "CONTROLS", "GAME" };
@@ -65,7 +66,7 @@ sealed class SettingsScreen
         int y = body.Y;
         void Label(string t) => ui.Text(t, body.X, y + ui.U(6), Style.Text);
         bool Choice(int i, string label, bool on) => ui.Button(new Rectangle(body.X + ui.U(260) + i * ui.U(124), y, ui.U(118), ui.U(26)), label, true, "", on);
-        void Row() => y += ui.U(36);
+        void Row() => y += ui.U(34);
 
         switch (tab)
         {
@@ -85,6 +86,10 @@ sealed class SettingsScreen
                 Label("GRAPHICS");
                 foreach (var (q, i) in new[] { (Quality.High, 0), (Quality.Medium, 1), (Quality.Low, 2) })
                     if (Choice(i, q.ToString().ToUpperInvariant(), host.Quality == q) && (host.Shading != null || q == Quality.Low)) host.Quality = q;
+                Row();
+                Label("VSYNC");
+                if (Choice(0, "OFF", !s.VSync)) { s.VSync = false; host.ApplyVideo(); }
+                if (Choice(1, "ON", s.VSync)) { s.VSync = true; host.ApplyVideo(); }
                 Row();
                 Label("EDGE SMOOTHING (FXAA)");
                 if (Choice(0, "OFF", !s.Fxaa)) s.Fxaa = false;

@@ -26,7 +26,13 @@ public static class Variety
     public static int Seed(Unit u) => u.SoldierId != 0 ? u.SoldierId * 7919 + 1 : u.Index;
 
     /// How a man of troop `t` looks; the player and creatures are drawn exactly as their look says.
-    public static Look Of(Unit u) => u.IsPlayer || u.Type.Look.Face != "man" ? u.Type.Look : Of(u.Type, Seed(u), keepKit: u.IsLeader || u.Hero);
+    public static Look Of(Unit u)
+    {
+        if (u.IsPlayer || u.Type.Look.Face != "man") return u.Type.Look;
+        if (u.RenderLook != null && ReferenceEquals(u.RenderLookFor, u.Type)) return u.RenderLook;
+        u.RenderLookFor = u.Type;
+        return u.RenderLook = Of(u.Type, Seed(u), keepKit: u.IsLeader || u.Hero);
+    }
 
     public static Look Of(UnitType t, int seed, bool keepKit = false)
     {
@@ -48,7 +54,7 @@ public static class Variety
     }
 
     /// Drawn height, 0.95 to 1.05 of the troop's.
-    public static float Stature(Unit u) => u.IsPlayer ? 1 : 0.95f + 0.1f * Ease.Hash(Seed(u) * 31 + 5);
+    public static float Stature(Unit u) => u.IsPlayer ? 1 : (u.RenderStature >= 0 ? u.RenderStature : (u.RenderStature = 0.95f + 0.1f * Ease.Hash(Seed(u) * 31 + 5)));
 
     static string[] Kin(string[][] families, string item) => families.FirstOrDefault(f => f.Contains(item)) ?? Array.Empty<string>();
 

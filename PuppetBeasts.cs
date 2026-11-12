@@ -27,8 +27,8 @@ sealed partial class Puppet
     void SpiderBody(Unit u, float ground)
     {
         Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
-        var side = pal; var plain = tint;
-        pal = "/n";
+        var side = pal; var sidePal = curPal; var plain = tint;
+        pal = "/n"; curPal = neutralPal;
         if (u.Type.Id == "brood_mother") tint = Color.Lerp(tint, new Color(130, 86, 140), 0.35f); // bloated, black-violet
         else if (u.Type.Id == "spiderling") tint = Color.Lerp(tint, new Color(210, 180, 140), 0.5f); // pale young
         float gait = Math.Clamp(u.Vel.Length() / 6, 0, 1);
@@ -46,19 +46,19 @@ sealed partial class Puppet
             var foot = new Vector3(sd * (1.0f - MathF.Abs(1.5f - pair) * 0.08f), lift, z + (1.5f - pair) * 0.42f + swing);
             if (pair == 0) foot = Vector3.Lerp(foot, new Vector3(sd * 0.4f, y + 0.5f, z + 0.55f), rear); // the front legs rise to seize
             var knee = new Vector3((hip.X + foot.X) * 0.7f, y + 0.5f + lift * 0.5f, (hip.Z + foot.Z) / 2);
-            Axial(knee, hip, "sleg");
-            Axial(foot, knee, "sleg");
+            AxialSrc(knee, hip, curPal.SLeg);
+            AxialSrc(foot, knee, curPal.SLeg);
         }
-        Long(new(0, y + 0.06f, -0.85f), new(0, y + 0.12f, -0.12f), "sabdomen");
-        Long(new(0, y + rear * 0.12f, -0.2f + lunge), new(0, y + rear * 0.25f, 0.3f + lunge * 1.3f), "shead");
-        pal = side; tint = plain;
+        LongRect(new(0, y + 0.06f, -0.85f), new(0, y + 0.12f, -0.12f), curPal.SAbdomen);
+        LongRect(new(0, y + rear * 0.12f, -0.2f + lunge), new(0, y + rear * 0.25f, 0.3f + lunge * 1.3f), curPal.SHead);
+        pal = side; curPal = sidePal; tint = plain;
     }
 
     /// A cave bear: a heavy four-legged amble; to strike it rears onto its hind legs and comes down on the blow.
     void BearBody(Unit u, float ground)
     {
         Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
-        var side = pal; pal = "/n";
+        var side = pal; var sidePal = curPal; pal = "/n"; curPal = neutralPal;
         float speed = u.Vel.Length(), gait = Math.Clamp(speed / 6, 0, 1);
         float amp = speed < 0.3f ? 0 : 14 + 22 * gait;
         float y = 0.7f + MathF.Sin(u.Anim * MathF.Tau * 1.2f) * 0.03f * gait;
@@ -74,11 +74,11 @@ sealed partial class Puppet
             var hip = new Vector3(sd * 0.17f, y - 0.08f, front ? 0.36f : -0.4f);
             var foot = hip + new Vector3(0, -0.62f * MathF.Cos(ang), 0.62f * MathF.Sin(ang));
             if (front) { foot = Vector3.Lerp(foot, P(hip + new Vector3(sd * 0.05f, -0.25f, 0.45f)), s); hip = P(hip); } // paws up and out
-            Axial(foot, hip, "bleg");
+            AxialSrc(foot, hip, curPal.BLeg);
         }
-        Long(P(new(0, y, -0.58f)), P(new(0, y + 0.06f, 0.55f)), "bbody");
-        Long(P(new(0, y + 0.14f, 0.42f)), P(new(0, y + 0.04f, 1.0f)), "bhead");
-        pal = side;
+        LongRect(P(new(0, y, -0.58f)), P(new(0, y + 0.06f, 0.55f)), curPal.BBody);
+        LongRect(P(new(0, y + 0.14f, 0.42f)), P(new(0, y + 0.04f, 1.0f)), curPal.BHead);
+        pal = side; curPal = sidePal;
     }
 
     /// A wyvern: aloft it beats its wings with its legs trailing; it flares them high as it stoops and drives them down
@@ -86,7 +86,7 @@ sealed partial class Puppet
     void WyvernBody(Unit u, float ground)
     {
         Frame(u.Pos, u.ViewFacing, ground, u.Type.Size * Scale);
-        var side = pal; pal = "/n";
+        var side = pal; var sidePal = curPal; pal = "/n"; curPal = neutralPal;
         bool aloft = u.Altitude > 0.4f;
         float rear = Rearing(u);
         float flap = MathF.Sin((Now * 1.7f + Ease.Hash(u.Index)) * MathF.Tau);
@@ -99,78 +99,78 @@ sealed partial class Puppet
             Vector3 tip, tipBack;
             if (aloft || rear > 0) { tip = new(sd * 1.75f, y + 0.15f + flap * 0.95f, 0.05f); tipBack = new(sd * 1.45f, y + 0.05f + flap * 0.8f, -0.7f); }
             else { tip = new(sd * 0.45f, y + 0.75f, -0.15f); tipBack = new(sd * 0.4f, y + 0.25f, -0.75f); } // folded
-            Sheet(root, tip, back, tipBack, "ywing");
+            SheetRect(root, tip, back, tipBack, curPal.YWing);
             var hip = new Vector3(sd * 0.14f, y - 0.05f, -0.2f);
             var foot = aloft ? new Vector3(sd * 0.16f, y - 0.4f, -0.7f) : new Vector3(sd * 0.22f, 0, -0.12f);
-            Axial(foot, hip, "yleg");
+            AxialSrc(foot, hip, curPal.YLeg);
         }
-        Long(new(0, y, -0.6f), new(0, y + 0.05f, 0.5f), "ybody");
-        Long(new(0, y + 0.05f, 0.38f + lunge * 0.3f), new(0, y + 0.35f + rear * 0.1f, 0.85f + lunge), "yneck");
-        Long(new(0, y + 0.38f + rear * 0.1f, 0.8f + lunge), new(0, y + 0.3f + rear * 0.1f, 1.3f + lunge * 1.2f), "yhead");
+        LongRect(new(0, y, -0.6f), new(0, y + 0.05f, 0.5f), curPal.YBody);
+        LongRect(new(0, y + 0.05f, 0.38f + lunge * 0.3f), new(0, y + 0.35f + rear * 0.1f, 0.85f + lunge), curPal.YNeck);
+        LongRect(new(0, y + 0.38f + rear * 0.1f, 0.8f + lunge), new(0, y + 0.3f + rear * 0.1f, 1.3f + lunge * 1.2f), curPal.YHead);
         // The tail sways behind; in a strike it curls up over the back, sting first.
         float sway = MathF.Sin(Now * 2.1f + u.Index) * 0.15f;
         var t0 = new Vector3(0, y, -0.55f);
         var t1 = Vector3.Lerp(new Vector3(sway, y - 0.05f, -1.05f), new Vector3(0, y + 0.45f, -0.95f), rear);
         var t2 = Vector3.Lerp(new Vector3(sway * 2, y - 0.1f, -1.5f), new Vector3(0, y + 0.95f, -0.7f), rear);
         var t3 = Vector3.Lerp(new Vector3(sway * 2.4f, y - 0.12f, -1.78f), new Vector3(0, y + 1.1f, -0.38f), rear);
-        Axial(t0, t1, "ytail");
-        Axial(t1, t2, "ytail");
-        Axial(t3, t2, "ysting");
-        pal = side;
+        AxialSrc(t0, t1, curPal.YTail);
+        AxialSrc(t1, t2, curPal.YTail);
+        AxialSrc(t3, t2, curPal.YSting);
+        pal = side; curPal = sidePal;
     }
 
     /// A web over a man caught in it, drawn in front of him.
     void WebOn(Unit u, float ground, float size)
     {
-        var side = pal;
-        pal = "/n";
+        var side = pal; var sidePal = curPal;
+        pal = "/n"; curPal = neutralPal;
         Frame(u.Pos, u.ViewFacing, ground, size);
-        Bill(new(0, u.Mounted ? 1.6f : 0.85f, 0), "web", false, 0.35f);
-        pal = side;
+        BillRect(new(0, u.Mounted ? 1.6f : 0.85f, 0), curPal.Web, false, 0.35f);
+        pal = side; curPal = sidePal;
     }
 
     /// A sprite spread over four points in the unit frame: its top edge from `tl` to `tr`, bottom from `bl` to `br`.
-    void Sheet(Vector3 tl, Vector3 tr, Vector3 bl, Vector3 br, string name) => Quad(W(bl), W(br), W(tl), W(tr), art[name + pal], false);
+    void SheetRect(Vector3 tl, Vector3 tr, Vector3 bl, Vector3 br, Rectangle src) => Quad(W(bl), W(br), W(tl), W(tr), src, false);
 
     /// A dead beast, lying as it fell (the frame is laid along the fall): a spider on its back with its legs curled up.
     bool OtherBeastCorpse(Unit u)
     {
-        var side = pal; var plain = tint;
-        pal = "/n";
+        var side = pal; var sidePal = curPal; var plain = tint;
+        pal = "/n"; curPal = neutralPal;
         switch (look.Face)
         {
             case "spider":
                 if (u.Type.Id == "brood_mother") tint = Color.Lerp(tint, new Color(130, 86, 140), 0.35f);
                 else if (u.Type.Id == "spiderling") tint = Color.Lerp(tint, new Color(210, 180, 140), 0.5f);
-                Flat(new(0, 0.05f, -0.4f), "sabdomen", true);
-                Flat(new(0, 0.06f, 0.1f), "shead", true);
+                FlatRect(new(0, 0.05f, -0.4f), curPal.SAbdomen, true);
+                FlatRect(new(0, 0.06f, 0.1f), curPal.SHead, true);
                 for (int i = 0; i < 8; i++)
                 {
                     float sd = i % 2 == 0 ? -1 : 1, z = 0.15f - i / 2 * 0.12f;
                     var hip = new Vector3(sd * 0.08f, 0.1f, z);
                     var knee = new Vector3(sd * 0.3f, 0.35f, z);
-                    Axial(knee, hip, "sleg");
-                    Axial(new Vector3(sd * 0.08f, 0.5f, z * 0.6f), knee, "sleg");
+                    AxialSrc(knee, hip, curPal.SLeg);
+                    AxialSrc(new Vector3(sd * 0.08f, 0.5f, z * 0.6f), knee, curPal.SLeg);
                 }
                 break;
             case "bear":
-                Flat(new(0, 0.06f, 0), "bbody", true);
-                Flat(new(0.05f, 0.07f, 0.7f), "bhead", true);
-                Flat(new(-0.3f, 0.05f, 0.3f), "bleg", false);
-                Flat(new(-0.3f, 0.05f, -0.3f), "bleg", false);
+                FlatRect(new(0, 0.06f, 0), curPal.BBody, true);
+                FlatRect(new(0.05f, 0.07f, 0.7f), curPal.BHead, true);
+                FlatRect(new(-0.3f, 0.05f, 0.3f), curPal.BLeg, false);
+                FlatRect(new(-0.3f, 0.05f, -0.3f), curPal.BLeg, false);
                 break;
             case "wyvern":
-                Sheet(new(0, 0.05f, 0.2f), new(1.6f, 0.03f, 0.4f), new(0, 0.05f, -0.3f), new(1.4f, 0.03f, -0.5f), "ywing");
-                Sheet(new(0, 0.05f, 0.2f), new(-1.5f, 0.03f, 0.1f), new(0, 0.05f, -0.3f), new(-1.2f, 0.03f, -0.8f), "ywing");
-                Flat(new(0, 0.08f, 0), "ybody", true);
-                Flat(new(0.3f, 0.07f, 0.9f), "yhead", true);
-                Axial(new(0, 0.06f, -0.5f), new(0.3f, 0.05f, -1.1f), "ytail");
+                SheetRect(new(0, 0.05f, 0.2f), new(1.6f, 0.03f, 0.4f), new(0, 0.05f, -0.3f), new(1.4f, 0.03f, -0.5f), curPal.YWing);
+                SheetRect(new(0, 0.05f, 0.2f), new(-1.5f, 0.03f, 0.1f), new(0, 0.05f, -0.3f), new(-1.2f, 0.03f, -0.8f), curPal.YWing);
+                FlatRect(new(0, 0.08f, 0), curPal.YBody, true);
+                FlatRect(new(0.3f, 0.07f, 0.9f), curPal.YHead, true);
+                AxialSrc(new(0, 0.06f, -0.5f), new(0.3f, 0.05f, -1.1f), curPal.YTail);
                 break;
             default:
-                pal = side; tint = plain;
+                pal = side; curPal = sidePal; tint = plain;
                 return false;
         }
-        pal = side; tint = plain;
+        pal = side; curPal = sidePal; tint = plain;
         return true;
     }
 }

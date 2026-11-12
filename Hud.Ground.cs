@@ -18,7 +18,7 @@ sealed partial class Hud
     void GroundPanel()
     {
         if (GroundMap == null) return;
-        int size = Math.Min(H - U(400), U(380)), legend = U(120);
+        int size = Math.Clamp(Math.Min(H - U(380), U(360)), U(160), U(360)), legend = U(120);
         var frame = new Rectangle(U(14), U(146), size + legend + U(24), size + U(40));
         Panel(frame, Gold);
         Text("THE GROUND", frame.X + U(10), frame.Y + U(8), Gold, 1);

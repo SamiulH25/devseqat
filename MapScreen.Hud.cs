@@ -381,14 +381,16 @@ partial class MapScreen
     {
         var row = new (string Label, Act Key, PanelKind Panel)[]
         {
-            ("COMPANY", Act.PartyScreen, PanelKind.Party), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("KIT", Act.InventoryScreen, PanelKind.Inventory), ("LORDS", Act.LordsScreen, PanelKind.Characters),
-            ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("KEYS", Act.Help, PanelKind.Help),
+            ("COMPANY", Act.PartyScreen, PanelKind.Party), ("SERGEANTS", Act.DivisionsScreen, PanelKind.Divisions), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("KIT", Act.InventoryScreen, PanelKind.Inventory),
+            ("LORDS", Act.LordsScreen, PanelKind.Characters), ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("KEYS", Act.Help, PanelKind.Help),
         };
-        int x = ui.U(10), y = ui.H - ui.U(172), h = ui.U(20);
-        foreach (var (label, key, kind) in row)
+        int x0 = ui.U(10), x = x0, y = ui.H - ui.U(194), h = ui.U(20), maxW = ui.U(310);
+        for (int i = 0; i < row.Length; i++)
         {
+            var (label, key, kind) = row[i];
             string k = ctl.First(key);
-            int w = ui.TW(label, 1) + ui.TW(k, 1) + ui.U(20);
+            int w = ui.TW(label, 1) + ui.TW(k, 1) + ui.U(18);
+            if (x > x0 && x + w > x0 + maxW) { x = x0; y += h + ui.U(3); }
             if (ui.Button(new Rectangle(x, y, w, h), label, true, k)) { if (kind == PanelKind.Help) panel = kind; else OpenScreen(kind); }
             x += w + ui.U(4);
         }

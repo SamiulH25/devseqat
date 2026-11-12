@@ -191,8 +191,9 @@ partial class MapScreen
     void DivisionsPanel()
     {
         var r = Modal(1000, 600, "DIVISIONS");
-        int x = r.X + ui.U(20), y = r.Y + ui.U(44), w = ui.U(560);
-        ui.Text("A DIVISION FOLLOWS THE GOAL YOU GIVE ITS LEADER. YOUR ORDERS REACH HIM LATE.", x, y, Style.Dim, 1);
+        int x = r.X + ui.U(20), y = r.Y + ui.U(44);
+        int w = Math.Max(ui.U(360), (r.Width - ui.U(56)) * 58 / 100);
+        ui.Text("A DIVISION FOLLOWS THE GOAL YOU GIVE ITS SERGEANT. YOUR ORDERS REACH HIM LATE.", x, y, Style.Dim, 1);
         y += ui.U(18);
         var divs = C.S.Divisions.ToList();
         foreach (var d in divs)
@@ -205,8 +206,8 @@ partial class MapScreen
             ui.Text($"{temper}, COMMAND {C.CommandOf(d)}" + (rose != "" ? " . " + rose : ""), box.X + ui.U(6), box.Y + ui.U(17), rose != "" ? Kit.Gilt : Style.Dim, 1);
             var comps = C.CompaniesOf(d).ToList();
             string names = string.Join(", ", comps.Select(c => $"{c.Name.ToUpperInvariant()} ({c.Men})"));
-            if (names.Length > 86) names = names[..84] + "..";
-            ui.Text(comps.Count == 0 ? "NO COMPANIES YET: GIVE HIM SOME ON THE RIGHT." : $"{comps.Sum(c => c.Men)} MEN: {names}", box.X + ui.U(6), box.Y + ui.U(31), comps.Count == 0 ? Style.Warn : Style.Text, 1);
+            string line = comps.Count == 0 ? "NO COMPANIES YET: GIVE HIM SOME ON THE RIGHT." : $"{comps.Sum(c => c.Men)} MEN: {names}";
+            ui.TextFit(line, box.X + ui.U(6), box.Y + ui.U(31), box.Width - ui.U(12), comps.Count == 0 ? Style.Warn : Style.Text, 1);
             if (ui.Hover(new Rectangle(box.X, box.Y, ui.U(300), ui.U(28))))
                 note = temper switch { "BOLD" => "BOLD: CHARGES EARLY AND CHASES FAR.", "CAUTIOUS" => "CAUTIOUS: KEEPS A SHORT LEASH AND LETS THE ENEMY COME.", _ => "STEADY: KEEPS FORMATION AND WAITS FOR CONTACT." }
                     + " COMMAND MAKES HIM QUICKER TO ACT AND TO HEAR ORDERS.";
@@ -223,10 +224,10 @@ partial class MapScreen
             y += ui.U(16);
             var leaders = C.DivisionLeaders().ToList();
             if (leaders.Count == 0) ui.Text("NOBODY FREE TO LEAD ONE. COMPANIONS AND COMPANY SERGEANTS CAN.", x, y, Style.Dim, 1);
-            int i = 0;
+            int i = 0, bw = Math.Min(ui.U(182), (w - ui.U(12)) / 3);
             foreach (var (name, ch, co) in leaders)
             {
-                var b = new Rectangle(x + i % 3 * ui.U(188), y + i / 3 * ui.U(26), ui.U(182), ui.U(22));
+                var b = new Rectangle(x + i % 3 * (bw + ui.U(6)), y + i / 3 * ui.U(26), bw, ui.U(22));
                 if (b.Bottom > r.Bottom - ui.U(60)) break;
                 if (ui.Button(b, name.ToUpperInvariant())) note = C.MakeDivision(ch, co) ?? "";
                 if (ui.Hover(b)) note = ch >= 0 ? "A COMPANION: HE GROWS BETTER AT COMMAND WITH EVERY TWO BATTLES." : "A COMPANY SERGEANT: HIS COMMAND GROWS WITH HIS BATTLES (AT MOST 6).";
@@ -234,20 +235,21 @@ partial class MapScreen
             }
         }
         // Every company, and the division it fights in: click to move it to the next one.
-        int cx = r.X + ui.U(600), cy = r.Y + ui.U(44);
+        int cx = x + w + ui.U(16), cy = r.Y + ui.U(44), cw = Math.Max(ui.U(220), r.Right - ui.U(20) - cx);
         ui.Text("COMPANIES", cx, cy, Style.Accent, 1);
         cy += ui.U(18);
         foreach (var c in C.Player.Companies)
         {
             if (cy > r.Bottom - ui.U(80)) break;
-            var row = new Rectangle(cx, cy, ui.U(380), ui.U(24));
+            var row = new Rectangle(cx, cy, cw, ui.U(24));
             ui.Rect(row, Color.White * 0.04f);
-            string nm = c.Name.ToUpperInvariant();
-            ui.Text(nm.Length > 18 ? nm[..18] : nm, row.X + ui.U(6), row.Y + ui.U(7), Style.Text, 1);
-            ui.Text($"{c.Men}", row.X + ui.U(150), row.Y + ui.U(7), Style.Dim, 1);
+            int btnW = Math.Min(ui.U(192), cw / 2);
+            string nm = ui.Fit(c.Name.ToUpperInvariant(), cw - btnW - ui.U(40));
+            ui.Text(nm, row.X + ui.U(6), row.Y + ui.U(7), Style.Text, 1);
+            ui.TextR($"{c.Men}", row.Right - btnW - ui.U(10), row.Y + ui.U(7), Style.Dim, 1);
             var cur = divs.FirstOrDefault(d => d.Id == c.Division);
             string label = cur == null ? "RETINUE (YOU)" : C.DivisionName(cur).ToUpperInvariant();
-            if (ui.Button(new Rectangle(row.Right - ui.U(196), row.Y + ui.U(2), ui.U(192), ui.U(20)), label.Length > 22 ? label[..22] : label, divs.Count > 0, "", cur != null))
+            if (ui.Button(new Rectangle(row.Right - btnW - ui.U(4), row.Y + ui.U(2), btnW, ui.U(20)), ui.Fit(label, btnW - ui.U(10)), divs.Count > 0, "", cur != null))
             {
                 int at = cur == null ? -1 : divs.IndexOf(cur);
                 int next = at + 1 >= divs.Count ? -1 : divs[at + 1].Id;

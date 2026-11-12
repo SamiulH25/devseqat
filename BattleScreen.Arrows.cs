@@ -15,10 +15,11 @@ sealed partial class BattleScreen
     readonly List<Landed> landed = new();
     readonly HashSet<Projectile> seenLanding = new();
     readonly Dictionary<(int, int), int> landedIn = new();
-    /// Most standing arrows kept in one 0.7 m patch of ground.
-    const int LandedPerCell = 3;
+    /// Most standing arrows kept in one 0.95 m patch of ground.
+    const int LandedPerCell = 2;
+    const float LandedCell = 0.95f;
     /// Most arrows left standing in the ground, and the metres within which missiles are sprites rather than streaks.
-    const int LandedCap = 1500;
+    const int LandedCap = 1200;
     const float SpriteNear = 35;
 
     void ResetArrows() { landed.Clear(); seenLanding.Clear(); landedIn.Clear(); }
@@ -33,13 +34,13 @@ sealed partial class BattleScreen
             if (a.Stuck < 0 || a.Kind == Grip.Sling || !seenLanding.Add(a)) continue;
             var dir = a.Vel.LengthSquared() > 1e-4f ? Vector3.Normalize(a.Vel) : Vector3.Down;
             dir = Steep(dir); // it stands in the ground, leaning the way it came
-            var cell = ((int)MathF.Floor(a.Pos.X / 0.7f), (int)MathF.Floor(a.Pos.Z / 0.7f));
+            var cell = ((int)MathF.Floor(a.Pos.X / LandedCell), (int)MathF.Floor(a.Pos.Z / LandedCell));
             int n = landedIn.GetValueOrDefault(cell);
             if (n < LandedPerCell) // a thick fall reads as a thicket, not a mat
             {
                 landedIn[cell] = n + 1;
                 landed.Add(new Landed(a.Pos, dir, a.Kind, a.Shooter.Palette, battle.Time));
-                if (landed.Count > LandedCap) { var old = landed[0]; landed.RemoveAt(0); var oc = ((int)MathF.Floor(old.At.X / 0.7f), (int)MathF.Floor(old.At.Z / 0.7f)); landedIn[oc] = Math.Max(0, landedIn.GetValueOrDefault(oc) - 1); }
+                if (landed.Count > LandedCap) { var old = landed[0]; landed.RemoveAt(0); var oc = ((int)MathF.Floor(old.At.X / LandedCell), (int)MathF.Floor(old.At.Z / LandedCell)); landedIn[oc] = Math.Max(0, landedIn.GetValueOrDefault(oc) - 1); }
             }
             if (quality != Quality.Low) Puff(new Vector2(a.Pos.X, a.Pos.Z));
         }
@@ -68,9 +69,9 @@ sealed partial class BattleScreen
     /// The sprite part, length (m) and thickness scale of each kind of missile.
     static (string Part, float Len, float Thick) MissileLook(Grip kind) => kind switch
     {
-        Grip.Thrown => ("javelin", 1.5f, 0.7f),
-        Grip.Crossbow => ("arrow", 0.5f, 0.75f), // a short thick bolt
-        _ => ("arrow", 0.85f, 0.5f),
+        Grip.Thrown => ("javelin", 1.3f, 0.34f),
+        Grip.Crossbow => ("arrow", 0.38f, 0.28f), // a short thick bolt
+        _ => ("arrow", 0.65f, 0.25f),
     };
 
     /// Missiles near the camera as sprites (in flight and standing), in the sprite pass.
@@ -90,7 +91,8 @@ sealed partial class BattleScreen
         {
             if (Vector2.DistanceSquared(new Vector2(l.At.X, l.At.Z), eye2) > near2) continue;
             var (part, len, thick) = MissileLook(l.Kind);
-            var head = l.At + l.Dir * 0.2f; // the point sunk in the ground
+            float embed = 0.16f + Ease.Hash((int)(l.At.X * 197 + l.At.Z * 503)) * 0.22f;
+            var head = l.At + l.Dir * embed; // the point sunk deep into the turf
             puppet.Missile(head, head - l.Dir * len, part, thick, Style.Sides[Math.Clamp(l.Palette, 0, Style.Sides.Length - 1)].Cloth);
         }
     }
@@ -112,13 +114,13 @@ sealed partial class BattleScreen
             float len = MissileLook(a.Kind).Len;
             bool sprite = Vector2.DistanceSquared(new Vector2(a.Pos.X, a.Pos.Z), eye2) <= near2;
             if (quality == Quality.Low) { Line(a.Pos, a.Pos - dir * len, ArrowColor); continue; }
-            if (!sprite) { Line(a.Pos, a.Pos - dir * 0.18f, ArrowHead); Line(a.Pos - dir * 0.18f, a.Pos - dir * (len + 1.8f), ArrowStreak); } // far: a bright head and its streak
-            else Line(a.Pos - dir * len, a.Pos - dir * (len + 1.2f), ArrowStreak); // the streak behind it
+            if (!sprite) { Line(a.Pos, a.Pos - dir * 0.14f, ArrowHead); Line(a.Pos - dir * 0.14f, a.Pos - dir * (len + 0.9f), ArrowStreak); } // far: a bright head and compact streak
+            else Line(a.Pos - dir * len, a.Pos - dir * (len + 0.35f), ArrowStreak); // subtle tail flicker behind near sprite arrows
         }
         foreach (var l in landed)
         {
             if (Vector2.DistanceSquared(new Vector2(l.At.X, l.At.Z), eye2) <= near2) continue;
-            float len = MissileLook(l.Kind).Len * 0.7f;
+            float len = MissileLook(l.Kind).Len * 0.6f;
             Line(l.At, l.At - l.Dir * len, ArrowColor);
         }
     }

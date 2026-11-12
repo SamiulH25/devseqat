@@ -419,7 +419,7 @@ sealed partial class MapScreen
 
         bool shaded = shading != null && quality != Quality.Low;
         lifeQuality = quality;
-        if (shaded && life != null) (world.Extra, world.ExtraTris) = life.Build();
+        if (shaded && life != null) { var (v, n) = life.Build(); world.SetExtra(v, n); }
         else world.ExtraTris = 0;
         if (shaded)
         {
@@ -464,7 +464,7 @@ sealed partial class MapScreen
                 gd.SamplerStates[0] = SamplerState.PointClamp;
                 spriteFx.View = view; spriteFx.Projection = proj;
                 spriteFx.CurrentTechnique.Passes[0].Apply();
-                gd.DrawUserPrimitives(PrimitiveType.TriangleList, sprites.A, 0, sprites.N / 3);
+                sprites.Draw(gd, PrimitiveType.TriangleList, sprites.N / 3);
             }
             DrawLines();
         }
@@ -540,7 +540,7 @@ sealed partial class MapScreen
         fx.Parameters["Atlas"].SetValue(art.Atlas);
         fx.CurrentTechnique = fx.Techniques[technique];
         fx.CurrentTechnique.Passes[0].Apply();
-        gd.DrawUserPrimitives(PrimitiveType.TriangleList, sprites.A, 0, sprites.N / 3);
+        sprites.Draw(gd, PrimitiveType.TriangleList, sprites.N / 3);
     }
 
     Vector3 G(Vector2 p, float y = 0.6f) => new(p.X, terrain.Height(p) + y, p.Y);
@@ -579,7 +579,7 @@ sealed partial class MapScreen
         gd.DepthStencilState = DepthStencilState.Default;
         lineFx.View = view; lineFx.Projection = proj;
         lineFx.CurrentTechnique.Passes[0].Apply();
-        gd.DrawUserPrimitives(PrimitiveType.LineList, lines.A, 0, lines.N / 2);
+        lines.Draw(gd, PrimitiveType.LineList, lines.N / 2);
     }
 
     // ---------- debug staging (IRONFIELD_CAMPAIGN_SHOTS) ----------

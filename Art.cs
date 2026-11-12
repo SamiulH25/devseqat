@@ -12,6 +12,7 @@ public sealed class Art
     readonly SpriteSheet sheet;
 
     public Rectangle this[string key] => sheet.Rects.TryGetValue(key, out var r) ? r : throw new KeyNotFoundException("no sprite " + key);
+    public bool TryGet(string key, out Rectangle r) => sheet.Rects.TryGetValue(key, out r);
 
     public Art(GraphicsDevice gd)
     {

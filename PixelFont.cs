@@ -22,6 +22,15 @@ public sealed class PixelFont
     };
 
     readonly Texture2D tex;
+    static readonly sbyte[] CharIdx = BuildCharIdx();
+
+    static sbyte[] BuildCharIdx()
+    {
+        var map = new sbyte[128];
+        Array.Fill(map, (sbyte)Chars.IndexOf(' '));
+        for (int i = 0; i < Chars.Length; i++) if (Chars[i] < 128) map[Chars[i]] = (sbyte)i;
+        return map;
+    }
 
     public PixelFont(GraphicsDevice gd)
     {
@@ -48,10 +57,12 @@ public sealed class PixelFont
 
     void DrawRun(SpriteBatch sb, string s, Vector2 pos, Color c, int scale)
     {
-        foreach (char ch in s.ToUpperInvariant())
+        int space = CharIdx[' '];
+        for (int k = 0; k < s.Length; k++)
         {
-            int i = Chars.IndexOf(ch);
-            if (i < 0) i = Chars.IndexOf(' ');
+            char ch = s[k];
+            if (ch is >= 'a' and <= 'z') ch = (char)(ch - 32);
+            int i = ch < 128 ? CharIdx[ch] : space;
             sb.Draw(tex, pos, new Rectangle(i * 6, 0, 6, 8), c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
             pos.X += 6 * scale;
         }

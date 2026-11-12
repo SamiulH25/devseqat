@@ -47,20 +47,27 @@ sealed class ScreenHost : Game
         var s = Settings.Current;
         gdm = new GraphicsDeviceManager(this)
         {
-            PreferredBackBufferWidth = s.Width, PreferredBackBufferHeight = s.Height, GraphicsProfile = GraphicsProfile.HiDef, IsFullScreen = s.Fullscreen,
+            PreferredBackBufferWidth = s.Width, PreferredBackBufferHeight = s.Height, GraphicsProfile = GraphicsProfile.HiDef,
+            IsFullScreen = s.Fullscreen, SynchronizeWithVerticalRetrace = s.VSync,
         };
+        bool anyShots = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 }
+            || Environment.GetEnvironmentVariable("IRONFIELD_CAMPAIGN_SHOTS") is { Length: > 0 }
+            || Environment.GetEnvironmentVariable("IRONFIELD_LAB_SHOTS") is { Length: > 0 }
+            || Environment.GetEnvironmentVariable("IRONFIELD_CREATOR_SHOTS") is { Length: > 0 };
+        IsFixedTimeStep = anyShots;
         Window.AllowUserResizing = true;
         Window.Title = "Ironfield";
         Window.TextInput += (_, e) => { if (Ui.Typed.Count < 32) Ui.Typed.Enqueue(e.Character); };
     }
 
-    /// Apply resolution and fullscreen from the settings.
+    /// Apply resolution, fullscreen and vsync from the settings.
     public void ApplyVideo()
     {
         var s = Settings.Current;
         gdm.PreferredBackBufferWidth = s.Width;
         gdm.PreferredBackBufferHeight = s.Height;
         gdm.IsFullScreen = s.Fullscreen;
+        gdm.SynchronizeWithVerticalRetrace = s.VSync;
         gdm.ApplyChanges();
     }
 
@@ -258,7 +265,7 @@ sealed class ScreenHost : Game
         {
             case Mode.Title:
                 IsMouseVisible = true;
-                title.Update();
+                title.Update(dt);
                 Audio?.Music(title.InCreator ? MusicTrack.Creator : MusicTrack.Title);
                 if (title.InCreator)
                 {

@@ -100,7 +100,7 @@ partial class BattleScreen
                     {
                         float a = fx.NextSingle() * MathF.Tau;
                         var d = new Vector2(MathF.Cos(a), MathF.Sin(a));
-                        motes.Add(new Mote { Pos = G(w.At + d * r, 0.4f + fx.NextSingle()), Vel = new Vector3(d.X, 0, d.Y) * 3, Life = 2.5f, Max = 2.5f, Size = 0.8f, Grow = 0.4f, Col = col });
+                        motes.Add(new Mote { Pos = G(w.At + d * r, 0.45f + fx.NextSingle() * 0.9f), Vel = new Vector3(d.X, 0, d.Y) * 2.5f, Life = 3.2f, Max = 3.2f, Size = 2.0f + fx.NextSingle() * 0.7f, Grow = 0.6f, Col = col });
                     }
                     break;
                 }
@@ -193,16 +193,22 @@ partial class BattleScreen
                 case "smite": // a shaft falls from the sky in a tenth of a second, then burns out
                 {
                     float down = MathF.Min(1, (t - w.Born) / 0.12f), top = 48, bottom = top * (1 - down);
-                    var c = Color.Lerp(Color.White, new Color(255, 214, 120), k);
-                    c = Color.Lerp(c, Fade, k * k * 0.8f);
-                    float r = MathF.Max(0.6f, w.Radius * 0.22f) * (1 - 0.5f * k);
-                    for (int i = 0; i < 6; i++)
+                    float fade = 1 - k * k * 0.85f;
+                    var glow = new Color(255, 214, 120) * (0.38f * fade);
+                    var mid = Color.Lerp(new Color(255, 214, 120), Color.White, 0.55f) * (0.72f * fade);
+                    var core = Color.White * (0.95f * fade);
+                    float r = MathF.Max(0.6f, w.Radius * 0.22f) * (1 - 0.45f * k);
+                    var lo = G(w.At, bottom + 0.05f);
+                    var hi = G(w.At, top);
+                    BeamQuad(lo, hi, r * 2.0f, r * 1.2f, glow, glow * 0.2f);
+                    BeamQuad(lo, hi, r * 0.65f, r * 0.35f, mid, mid * 0.3f);
+                    BeamQuad(lo, hi, 0.18f, 0.10f, core, core * 0.5f);
+                    for (int i = 0; i < 3; i++)
                     {
-                        float a = i * MathF.Tau / 6 + t * 2;
-                        var p = w.At + new Vector2(MathF.Cos(a), MathF.Sin(a)) * r;
-                        Line(G(p, bottom + 0.1f), G(p, top), c);
+                        float a = i * MathF.Tau / 3 + t * 2.2f;
+                        var p = w.At + new Vector2(MathF.Cos(a), MathF.Sin(a)) * r * 0.75f;
+                        BeamQuad(G(p, bottom + 0.1f), G(p, top * 0.85f), 0.24f, 0.08f, glow, Color.Transparent);
                     }
-                    Line(G(w.At, bottom + 0.1f), G(w.At, top), Color.White);
                     break;
                 }
                 case "crows": Flock(w, k); break;
@@ -256,10 +262,10 @@ partial class BattleScreen
         Line(at, at - fwd * 0.25f - side * 0.45f + Vector3.Up * flap, col);
     }
 
-    /// A ward's dome: faint lines of light over the ground it guards, bright as it rises.
+    /// A ward's dome: faint ribs of light over the ground it guards, bright as it rises.
     void WardDome(Vector2 at, float r, float flare)
     {
-        var col = Color.Lerp(new Color(120, 112, 84), new Color(255, 246, 210), flare);
+        var col = Color.Lerp(new Color(180, 168, 120), new Color(255, 246, 210), flare) * (0.28f + 0.45f * flare);
         float rise = flare > 0 ? 1 - flare * flare : 1, h = r * 0.55f * rise;
         const int meridians = 8, steps = 6;
         for (int m = 0; m < meridians; m++)
@@ -271,7 +277,7 @@ partial class BattleScreen
             {
                 float th = s / (float)steps * MathHelper.PiOver2;
                 var next = G(at + d * r * MathF.Cos(th), 0.1f + h * MathF.Sin(th));
-                Line(prev, next, col);
+                BeamQuad(prev, next, 0.09f, 0.09f, col, col);
                 prev = next;
             }
         }

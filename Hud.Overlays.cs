@@ -139,8 +139,8 @@ sealed partial class Hud
 
     void Help()
     {
-        int oh = Math.Min(U(560), H - U(24));
-        var r = new Rectangle(W / 2 - U(420), (H - oh) / 2, U(840), oh);
+        int oh = Math.Min(U(560), H - U(24)), ow = Math.Min(U(840), W - U(24));
+        var r = new Rectangle((W - ow) / 2, (H - oh) / 2, ow, oh);
         Overlay(r, "CONTROLS", Gold);
         var cols = new (string Title, (string Label, string Key)[] Rows)[]
         {
@@ -152,7 +152,9 @@ sealed partial class Hud
             ("COMMAND VIEW", new (string, string)[]
             {
                 ("SELECT SQUAD / BOX", "LMB / DRAG"), ("ADD TO SELECTION", Ctl.Name(Act.AddToSelection)), ("MOVE (KEEP WIDTH)", "RMB"),
-                ("DRAW FORMATION LINE", "RMB DRAG"), ("ATTACK ENEMY SQUAD", "RMB ON ENEMY"), ("QUEUE AN ORDER AFTER THE LAST", $"{Ctl.Name(Act.AddToSelection)} + RMB"), ("DIVISION: GOAL HERE / ATTACK / SCREEN", "PICK CARD, RMB"), ("PAN", $"{Ctl.First(Act.Forward)}{Ctl.First(Act.Left)}{Ctl.First(Act.Back)}{Ctl.First(Act.Right)} / SCREEN EDGES"),
+                ("DRAW FORMATION LINE", "RMB DRAG"), ("ATTACK ENEMY SQUAD", "RMB ON ENEMY"), ("QUEUE AN ORDER AFTER THE LAST", $"{Ctl.Name(Act.AddToSelection)} + RMB"),
+                ("PICK SERGEANT (DIVISION)", $"{Ctl.Name(Act.NextDivision)} / CLICK CARD"), ("SERGEANT: TAKE / ATK / SCREEN", "RMB LAND / FOE / ALLY"), ("SERGEANT IN FIELD VIEW", $"{Ctl.Name(Act.OrderWheel)} (GOAL WHEEL)"), ("EXIT SERGEANT TO SQUADS", $"BACK / {Ctl.Name(Act.SelectAll)}"),
+                ("PAN", $"{Ctl.First(Act.Forward)}{Ctl.First(Act.Left)}{Ctl.First(Act.Back)}{Ctl.First(Act.Right)} / SCREEN EDGES"),
                 ("ROTATE", $"{Ctl.First(Act.RotateLeft)} {Ctl.First(Act.RotateRight)} / MMB DRAG"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"),
                 ("FOCUS SQUAD", "DOUBLE-CLICK CARD"), ("CONTROL GROUP: KEEP / PICK", "CTRL+1-9 / 1-9"), ("JUMP TO AN ALERT", "CLICK IT"), ("WHAT THE GROUND DOES", "HOVER IT"), (Controls.Labels[Act.GroundView], Ctl.Name(Act.GroundView)),
                 (Controls.Labels[Act.Stakes], Ctl.Name(Act.Stakes)),

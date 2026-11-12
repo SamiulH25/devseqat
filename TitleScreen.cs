@@ -33,14 +33,17 @@ sealed class TitleScreen
         if (ShotsDir != null || Environment.GetEnvironmentVariable("IRONFIELD_TITLE_PICK") != null) creator.Show();
     }
 
-    public void Update()
+    float lastDt = 1 / 60f;
+
+    public void Update(float dt = 1 / 60f)
     {
         pms = ms;
         ms = Mouse.GetState();
         if (ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released) click = true;
         pkb = kb; kb = Keyboard.GetState();
         if (kb.IsKeyDown(Keys.F3) && !pkb.IsKeyDown(Keys.F3)) host.OpenLab();
-        time += 1 / 60f;
+        lastDt = dt;
+        time += dt;
     }
 
     int U(float v) => ui.U(v);
@@ -48,7 +51,7 @@ sealed class TitleScreen
     public void Draw()
     {
         var gd = host.GraphicsDevice;
-        creator.Prepare(1 / 60f); // the living captain, drawn to its texture before the frame's sprites begin
+        creator.Prepare(lastDt); // the living captain, drawn to its texture before the frame's sprites begin
         gd.Clear(Kit.Night);
         ui.Begin(gd.Viewport, ms.Position, click);
         click = false;

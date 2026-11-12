@@ -72,7 +72,16 @@ sealed partial class Hud
     public Hud(SpriteBatch sb, Art art, PixelFont font) { this.sb = sb; this.art = art; this.font = font; kit = new Ui(sb, art, font); }
 
     int U(float v) => (int)(v * Ui);
-    List<Squad> Mine => B.Commanded.ToList();
+    readonly List<Squad> mineCache = new();
+    readonly List<Squad> bannerOrder = new();
+    readonly List<(Squad S, int X, int Y, bool Small, Rectangle R)> bannerPlaced = new();
+    const int MiniGrid = 75;
+    readonly byte[] miniGrid = new byte[MiniGrid * MiniGrid];
+    readonly List<EffectDef> cardEffects = new();
+    List<Squad> Mine
+    {
+        get { mineCache.Clear(); foreach (var s in B.Commanded) mineCache.Add(s); return mineCache; }
+    }
 
     // ---------- layout & hit testing ----------
 
@@ -85,7 +94,8 @@ sealed partial class Hud
 
         var mine = Mine;
         // Cards shrink to fit a big retinue; past what fits, the rest are summed up on the last card.
-        int room = W - U(296) - U(250), gap = mine.Count > 8 ? U(4) : U(6), ch = U(94);
+        int rightReserve = Command ? (CompactOrders ? U(210) : U(234)) : U(14);
+        int room = W - U(296) - rightReserve, gap = mine.Count > 8 ? U(4) : U(6), ch = U(94);
         int cw = Math.Clamp((room - gap * Math.Max(0, mine.Count - 1)) / Math.Max(1, mine.Count), U(64), mine.Count > 8 ? U(68) : U(80));
         int fit = Math.Max(1, (room + gap) / (cw + gap));
         int shown = Math.Min(mine.Count, fit), total = shown * cw + Math.Max(0, shown - 1) * gap;
@@ -102,13 +112,13 @@ sealed partial class Hud
         if (Command && Div != null) LayoutGoals();
         else if (Command)
         {
-            // On a narrow screen the keys shrink to icon and key in three columns (the order's name shows on hover).
-            int cols = CompactOrders ? 3 : 2, bw = CompactOrders ? U(62) : U(112), bh = U(24);
+            // Full labeled orders down to ~1120 wide (covers 1280x720 and up); ultra-narrow windows fall back to compact 3-col icons.
+            int cols = CompactOrders ? 3 : 2, bw = CompactOrders ? U(62) : U(104), bh = U(21), bgap = U(3);
             var order = new[] { Cmd.Charge, Cmd.Hold, Cmd.Advance, Cmd.FallBack, Cmd.Follow, Cmd.FormHere, Cmd.Spacing, Cmd.FireAtWill, Cmd.Formation, Cmd.Merge, Cmd.Relieve, Cmd.Split, Cmd.Rule };
             int rows = (order.Length + cols - 1) / cols;
-            int x0 = W - cols * bw - (cols - 1) * U(4) - U(12), y0 = H - rows * (bh + U(4)) - U(10);
+            int x0 = W - cols * bw - (cols - 1) * bgap - U(14), y0 = H - rows * (bh + bgap) - U(10);
             for (int i = 0; i < order.Length; i++)
-                buttons.Add((new Rectangle(x0 + (i % cols) * (bw + U(4)), y0 + (i / cols) * (bh + U(4)), bw, bh), order[i]));
+                buttons.Add((new Rectangle(x0 + (i % cols) * (bw + bgap), y0 + (i / cols) * (bh + bgap), bw, bh), order[i]));
         }
 
         var items = ShowResult ? (InCampaign ? new[] { MenuItem.Continue } : new[] { MenuItem.NewBattle, MenuItem.Title })
@@ -127,7 +137,7 @@ sealed partial class Hud
     public MenuItem? MenuAt(Point p) => menu.Where(m => m.R.Contains(p)).Select(m => (MenuItem?)m.M).FirstOrDefault();
     public Vector2? MinimapAt(Point p) => minimap.Contains(p)
         ? World.MinimapToWorld(new Vector2((p.X - minimap.X) / (float)minimap.Width, (p.Y - minimap.Y) / (float)minimap.Height)) : null;
-    public bool Over(Point p) => AlertAt(p) != null || CardAt(p) != null || ButtonAt(p) != null || DivisionAt(p) != null || GoalAt(p) != null || minimap.Contains(p) || player.Contains(p) || start.Contains(p) || deployToggle.Contains(p);
+    public bool Over(Point p) => AlertAt(p) != null || CardAt(p) != null || ButtonAt(p) != null || DivisionAt(p) != null || GoalAt(p) != null || GoalCloseAt(p) || minimap.Contains(p) || player.Contains(p) || start.Contains(p) || deployToggle.Contains(p);
 
     // ---------- primitives ----------
 
@@ -164,17 +174,28 @@ sealed partial class Hud
 
     static Color MoraleColor(float m) => m < Battle.RoutAt ? Bad : m < Battle.RallyAt ? Warn : Ok;
 
-    static (string Text, Color Col) StateOf(Squad s, int active, int routing, int morale) =>
-        active == 0 ? ("LOST", Dim)
-        : routing * 2 > active ? ("ROUTING", Bad)
-        : morale < Battle.RallyAt ? ("WAVERING", Warn)
-        : s.Pressure > 1.5f ? ("FLANKED", Orange)
-        : s.Plan == Plan.Reform ? ("RE-FORMING", Warn)
-        : s.Broken && !s.Cavalry ? ("RANKS BROKEN", Warn)
-        : s.BreakOffUntil > 0 ? ("FALLING BACK", Dim)
-        : s.InContact && s.Units.Where(u => u.Active).Select(u => u.Stamina).DefaultIfEmpty(100).Average() < 25 ? ("TIRING", Warn)
-        : s.Units.Count > 0 && s.Units[0].Type.Ammo > 0 && s.Units.All(u => !u.Active || u.Ammo == 0) ? ("NO ARROWS", Warn)
-        : ("STEADY", Ok);
+    static (string Text, Color Col) StateOf(Squad s, int active, int routing, int morale)
+    {
+        if (active == 0) return ("LOST", Dim);
+        if (routing * 2 > active) return ("ROUTING", Bad);
+        if (morale < Battle.RallyAt) return ("WAVERING", Warn);
+        if (s.Pressure > 1.5f) return ("FLANKED", Orange);
+        if (s.Plan == Plan.Reform) return ("RE-FORMING", Warn);
+        if (s.Broken && !s.Cavalry) return ("RANKS BROKEN", Warn);
+        if (s.BreakOffUntil > 0) return ("FALLING BACK", Dim);
+        float stamSum = 0; int actN = 0;
+        bool hasAmmo = s.Units.Count > 0 && s.Units[0].Type.Ammo > 0, anyAmmo = false;
+        foreach (var u in s.Units)
+        {
+            if (!u.Active) continue;
+            actN++;
+            stamSum += u.Stamina;
+            if (u.Ammo > 0) anyAmmo = true;
+        }
+        if (s.InContact && (actN == 0 ? 100f : stamSum / actN) < 25) return ("TIRING", Warn);
+        if (hasAmmo && !anyAmmo) return ("NO ARROWS", Warn);
+        return ("STEADY", Ok);
+    }
 
     /// A company's grade as a card tag, its colour (the higher, the brighter), and its ranks in a word or two.
     static string GradeTag(Grade g) => g switch { Grade.Rabble => "RAB", Grade.Trained => "TRN", Grade.Veteran => "VET", _ => "ELT" };
@@ -187,10 +208,18 @@ sealed partial class Hud
         _ => s.Rallying ? "RALLYING" : "",
     };
 
-    static int AvgMorale(IEnumerable<Unit> us)
+    static int AvgMorale(List<Unit> us)
     {
-        var a = us.Where(u => u.Active).ToList();
-        return a.Count == 0 ? 0 : (int)a.Average(u => u.Morale);
+        float sum = 0; int n = 0;
+        foreach (var u in us) if (u.Active) { sum += u.Morale; n++; }
+        return n == 0 ? 0 : (int)(sum / n);
+    }
+
+    static int AvgMorale(IReadOnlyList<Squad> squads)
+    {
+        float sum = 0; int n = 0;
+        foreach (var s in squads) foreach (var u in s.Units) if (u.Active) { sum += u.Morale; n++; }
+        return n == 0 ? 0 : (int)(sum / n);
     }
 
     // ---------- draw ----------
@@ -220,8 +249,9 @@ sealed partial class Hud
         Cards();
         DivisionCards();
         if (Command && Div != null) GoalPanel();
+        if (!Command && Div != null) SergeantFieldBadge();
         if (GroundView && !ShowResult && !MenuOpen) GroundPanel();
-        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) { SquadTooltip(); GroundHints(); } } else { OpponentMark(); BlowNumbers(); MarkedMarks(); Crosshair(); }
+        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) { SquadTooltip(); DivisionTooltip(); GroundHints(); } } else { OpponentMark(); BlowNumbers(); MarkedMarks(); Crosshair(); }
         if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
         Hints();
         if (B.DownSince >= 0) // the last stand (P6)
@@ -264,8 +294,16 @@ sealed partial class Hud
     }
 
     /// The fighting strength of a side: men standing, weighted by health and arm (a rider counts for more than a bowman).
-    float Strength(int team) => B.Units.Where(u => u.Team == team && u.Active && !u.Routing)
-        .Sum(u => u.Hp / u.Type.MaxHp * (u.Type.Class switch { UnitClass.Cavalry => 2.2f, UnitClass.Captain => 3f, UnitClass.Archer => 0.9f, _ => 1f }));
+    float Strength(int team)
+    {
+        float s = 0;
+        foreach (var u in B.Units)
+        {
+            if (u.Team != team || !u.Active || u.Routing) continue;
+            s += u.Hp / u.Type.MaxHp * (u.Type.Class switch { UnitClass.Cavalry => 2.2f, UnitClass.Captain => 3f, UnitClass.Archer => 0.9f, _ => 1f });
+        }
+        return s;
+    }
 
     Heraldry SideArms(int team) => Style.Sides[Math.Clamp(B.Options.Palette[Math.Clamp(team, 0, 1)], 0, Style.Sides.Length - 1)];
 
@@ -273,7 +311,7 @@ sealed partial class Hud
     /// Your personal goals for this battle (P6), under the balance bar: open in white, met in gold, lost struck grey.
     void GoalLines()
     {
-        int y = U(58);
+        int y = Deploying ? (DeployLast != null ? U(166) : U(138)) : U(58);
         foreach (var g in B.Goals)
         {
             int st = B.GoalState(g);
@@ -285,14 +323,20 @@ sealed partial class Hud
 
     void Balance()
     {
-        float s0 = Strength(0), s1 = Strength(1), f = s0 + s1 > 0 ? s0 / (s0 + s1) : 0.5f;
+        float s0 = 0, s1 = 0; int mine = 0, foes = 0;
+        foreach (var u in B.Units)
+        {
+            if (!u.Active || u.Routing) continue;
+            float wt = u.Hp / u.Type.MaxHp * (u.Type.Class switch { UnitClass.Cavalry => 2.2f, UnitClass.Captain => 3f, UnitClass.Archer => 0.9f, _ => 1f });
+            if (u.Team == 0) { s0 += wt; mine++; } else { s1 += wt; foes++; }
+        }
+        float f = s0 + s1 > 0 ? s0 / (s0 + s1) : 0.5f;
         int bw = U(360), x = (W - bw) / 2, y = U(14);
         var panel = new Rectangle(x - U(56), y - U(8), bw + U(112), U(46));
         Panel(panel);
         kit.Shield(new Rectangle(x - U(48), y - U(4), U(30), U(36)), SideArms(0));
         kit.Shield(new Rectangle(x + bw + U(18), y - U(4), U(30), U(36)), SideArms(1));
         kit.TugBar(new Rectangle(x, y + U(20), bw, U(8)), f, SideArms(0).Ui, Foe);
-        int mine = B.Units.Count(u => u.Team == 0 && u.Active && !u.Routing), foes = B.Units.Count(u => u.Team == 1 && u.Active && !u.Routing);
         Text($"{mine}", x, y, SideArms(0).Ui);
         TextR($"{foes}", x + bw, y, Foe);
         int t = (int)B.Time;
@@ -347,18 +391,29 @@ sealed partial class Hud
         Panel(frame);
         if (Minimap != null) sb.Draw(Minimap, r, Color.White);
         Frame(r, Color.Black * 0.7f, U(1));
-        foreach (var (cx, cy) in new[] { (frame.X, frame.Y), (frame.Right - U(4), frame.Y), (frame.X, frame.Bottom - U(4)), (frame.Right - U(4), frame.Bottom - U(4)) })
-            Rect(new Rectangle(cx, cy, U(4), U(4)), Kit.Gilt * 0.8f);
+        int c4 = U(4);
+        var cornerCol = Kit.Gilt * 0.8f;
+        Rect(new Rectangle(frame.X, frame.Y, c4, c4), cornerCol);
+        Rect(new Rectangle(frame.Right - c4, frame.Y, c4, c4), cornerCol);
+        Rect(new Rectangle(frame.X, frame.Bottom - c4, c4, c4), cornerCol);
+        Rect(new Rectangle(frame.Right - c4, frame.Bottom - c4, c4, c4), cornerCol);
         Vector2 M(Vector2 w) { var m = World.WorldToMinimap(w); return new Vector2(r.X + m.X * r.Width, r.Y + m.Y * r.Height); }
-        bool Inside(Vector2 p) => r.Contains((int)p.X, (int)p.Y);
+        Array.Clear(miniGrid);
         foreach (var u in B.Units)
         {
             if (!u.Active || u.IsPlayer || u.Team == 1 && !u.IsLeader && !B.Shown(u.Squad)) continue;
-            var p = M(u.Pos);
-            if (!Inside(p)) continue;
-            var c = u.Routing ? Dim : u.Team == 1 ? Foe : u.Squad != null && Selected.Contains(u.Squad) ? Gold : Friendly;
+            var wm = World.WorldToMinimap(u.Pos);
+            if (wm.X < 0 || wm.X >= 1 || wm.Y < 0 || wm.Y >= 1) continue;
+            int gx = Math.Clamp((int)(wm.X * MiniGrid), 0, MiniGrid - 1);
+            int gy = Math.Clamp((int)(wm.Y * MiniGrid), 0, MiniGrid - 1);
+            byte prio = u.Team == 0 && u.Squad != null && Selected.Contains(u.Squad) ? (byte)3 : u.Routing ? (byte)1 : (byte)2;
+            int idx = gy * MiniGrid + gx;
+            if (miniGrid[idx] >= prio) continue;
+            miniGrid[idx] = prio;
+            int px = (int)(r.X + wm.X * r.Width), py = (int)(r.Y + wm.Y * r.Height);
+            var c = u.Routing ? Dim : u.Team == 1 ? Foe : prio == 3 ? Gold : Friendly;
             int s = U(u.Mounted ? 3 : 2);
-            Rect(new Rectangle((int)p.X - s / 2, (int)p.Y - s / 2, s, s), c);
+            Rect(new Rectangle(px - s / 2, py - s / 2, s, s), c);
         }
         if (B.Player.Active)
         {
@@ -500,9 +555,13 @@ sealed partial class Hud
             kit.PlateBody(dock, Kit.Rivet, 1, 0.8f);
         }
         var cloth = SideArms(0);
-        foreach (var (r, s) in cards)
+        for (int ci = 0; ci < cards.Count; ci++)
         {
-            int active = s.Units.Count(u => u.Active), routing = s.Units.Count(u => u.Active && u.Routing), morale = AvgMorale(s.Units);
+            var (r, s) = cards[ci];
+            int active = 0, routing = 0;
+            float moraleSum = 0;
+            foreach (var u in s.Units) if (u.Active) { active++; if (u.Routing) routing++; moraleSum += u.Morale; }
+            int morale = active == 0 ? 0 : (int)(moraleSum / active);
             var (state, sc) = StateOf(s, active, routing, morale);
             bool sel = Selected.Contains(s);
             bool hover = Command && r.Contains(Mouse);
@@ -510,12 +569,12 @@ sealed partial class Hud
             kit.VGrad(r, sel ? new Color(70, 60, 36) : hover ? new Color(46, 46, 50) : new Color(30, 32, 38), Kit.IronDark, 2);
             var port = new Rectangle(r.X + U(3), r.Y + U(3), r.Width - U(6), U(46));
             kit.VGrad(port, Kit.Mul(cloth.Cloth, 0.5f), Kit.IronDark, 2);
-            var type = s.Units.FirstOrDefault()?.Type ?? UnitType.Shieldman;
+            var type = s.Units.Count > 0 ? s.Units[0].Type : UnitType.Shieldman;
             Icon(type, new Rectangle(port.X + U(12), port.Y + U(1), port.Width - U(24), port.Height - U(1)));
             Frame(r, sel ? Gold : state is "STEADY" ? Color.Black * 0.7f : sc, U(sel ? 2 : 1));
             if (active == 0) Rect(r, Color.Black * 0.45f);
 
-            int idx = cards.FindIndex(c => c.S == s) + 1;
+            int idx = ci + 1;
             int bw = idx >= 10 ? U(18) : U(13);
             Rect(new Rectangle(r.X + U(3), r.Y + U(3), bw, U(13)), sel ? Gold : Color.Black * 0.75f);
             Text($"{idx}", r.X + U(5), r.Y + U(6), sel ? Kit.IronDark : Color.White, 1);
@@ -553,7 +612,10 @@ sealed partial class Hud
     void EffectMarks(Squad s, Rectangle r)
     {
         int x = r.Right - U(4);
-        foreach (var e in s.Timed.Select(t => t.Effect).Concat(s.StandingIds.Select(Effects.Get)).Distinct().Take(4))
+        cardEffects.Clear();
+        foreach (var t in s.Timed) if (cardEffects.Count < 4 && !cardEffects.Contains(t.Effect)) cardEffects.Add(t.Effect);
+        foreach (var id in s.StandingIds) { if (cardEffects.Count >= 4) break; var ef = Effects.Get(id); if (!cardEffects.Contains(ef)) cardEffects.Add(ef); }
+        foreach (var e in cardEffects)
         {
             x -= U(11);
             Rect(new Rectangle(x - U(1), r.Y + U(37), U(11), U(11)), Color.Black * 0.6f);
@@ -650,8 +712,8 @@ sealed partial class Hud
         [Cmd.FireAtWill] = "arrow", [Cmd.Hold] = "shield", [Cmd.Follow] = "flag", [Cmd.Formation] = "star", [Cmd.Merge] = "chain", [Cmd.Relieve] = "heart", [Cmd.Split] = "tower", [Cmd.Rule] = "scroll",
     };
 
-    /// Order keys as icons only: below about 1440 wide (at this interface scale) the full panel crowds the cards.
-    bool CompactOrders => W < U(1440);
+    /// Order keys as icons only below 1120 wide (1280x720 and up show full labeled buttons).
+    bool CompactOrders => W < U(1120);
 
     /// The order keys in command view: an icon, the order and its key on each.
     void CommandPanel()
@@ -715,13 +777,13 @@ sealed partial class Hud
     void Hints()
     {
         string s = Command
-            ? $"{Ctl.Name(Act.Help)} CONTROLS   {Ctl.Name(Act.Pause)} PAUSE   {Ctl.Name(Act.CommandView)} {(B.Player.Active ? "BACK TO BODY" : "")}"
-            : $"{Ctl.Name(Act.Help)} CONTROLS   {Ctl.Name(Act.OrderWheel)} ORDERS   {Ctl.Name(Act.CommandView)} COMMAND   {Ctl.Name(Act.Menu)} MENU";
-        int y = Command && buttons.Count > 0 ? buttons[0].R.Y - U(40) : H - U(18);
-        // Keep off the company cards: if the line would run into them, it sits just above them.
-        s = s.Trim();
-        if (cards.Count > 0 && !(Command && buttons.Count > 0) && W - U(12) - TW(s, 1) < cards[^1].R.Right + U(14)) y = cards[^1].R.Y - U(26);
-        TextR(s, W - U(12), y, Color.White * 0.6f, 1);
+            ? $"{Ctl.Name(Act.Help)} KEYS   {Ctl.Name(Act.Pause)} PAUSE   {Ctl.Name(Act.CommandView)} {(B.Player.Active ? "FIELD" : "BODY")}"
+            : $"{Ctl.Name(Act.Help)} KEYS   {Ctl.Name(Act.OrderWheel)} ORDERS   {Ctl.Name(Act.CommandView)} COMMAND   {Ctl.Name(Act.Menu)} MENU";
+        int panelTop = Command ? (Div != null && goals.Count > 0 ? goals[0].R.Y - U(48) : buttons.Count > 0 ? buttons[0].R.Y - U(36) : H - U(18)) : H - U(18);
+        int y = panelTop;
+        if (cards.Count > 0 && !Command && W - U(12) - TW(s, 1) < cards[^1].R.Right + U(10))
+            y = cards[^1].R.Y - (hiddenCards > 0 ? U(24) : U(14));
+        TextR(s, W - U(10), y, Color.White * 0.65f, 1);
     }
 
     void Banners()
@@ -730,9 +792,16 @@ sealed partial class Hud
         var mine = Mine;
         // Place the chosen and hovered flags first so they keep their spot; a flag that would sit on another steps up, and if
         // there is still no room it shrinks to a plain small flag. Drawn in reverse, so the chosen ones are in front (V7).
-        var order = B.Squads.Where(s => s.Alive > 0).OrderBy(s => Selected.Contains(s) || s == HoverSquad ? 0 : s.Team == 0 ? 1 : 2).ToList();
-        var placed = new List<(Squad S, int X, int Y, bool Small, Rectangle R)>();
-        foreach (var s in order)
+        bannerOrder.Clear();
+        foreach (var s in B.Squads) if (s.Alive > 0) bannerOrder.Add(s);
+        bannerOrder.Sort((a, b) =>
+        {
+            int ka = Selected.Contains(a) || a == HoverSquad ? 0 : a.Team == 0 ? 1 : 2;
+            int kb = Selected.Contains(b) || b == HoverSquad ? 0 : b.Team == 0 ? 1 : 2;
+            return ka.CompareTo(kb);
+        });
+        bannerPlaced.Clear();
+        foreach (var s in bannerOrder)
         {
             bool seen = B.Shown(s);
             var c = seen ? s.Centroid() : s.LastSeen; // an enemy you cannot see: its flag stays where you last saw it, faded
@@ -744,21 +813,26 @@ sealed partial class Hud
             for (int step = 0; ; step++)
             {
                 var r = R(y);
-                if (!placed.Any(o => o.R.Intersects(r))) break;
+                bool hit = false;
+                for (int j = 0; j < bannerPlaced.Count; j++) if (bannerPlaced[j].R.Intersects(r)) { hit = true; break; }
+                if (!hit) break;
                 if (step == 2) { small = true; y = (int)sp.Y; break; }
                 y -= U(12);
             }
-            placed.Add((s, x, y, small, small ? new Rectangle(x, y - U(12), U(12), U(12)) : R(y)));
+            bannerPlaced.Add((s, x, y, small, small ? new Rectangle(x, y - U(12), U(12), U(12)) : R(y)));
         }
-        for (int i = placed.Count - 1; i >= 0; i--) Banner(placed[i].S, placed[i].X, placed[i].Y, placed[i].Small, mine);
+        for (int i = bannerPlaced.Count - 1; i >= 0; i--) Banner(bannerPlaced[i].S, bannerPlaced[i].X, bannerPlaced[i].Y, bannerPlaced[i].Small, mine);
     }
 
     /// One company's flag on its pole: colour, number or letter, morale bar, honours. Wavering flags shake; routed ones droop grey.
     void Banner(Squad s, int x, int y, bool small, List<Squad> mine)
     {
         bool seen = B.Shown(s), own = s.Team == 0, sel = Selected.Contains(s);
-        int morale = AvgMorale(s.Units);
-        bool routed = s.Units.Count(u => u.Active && u.Routing) * 2 > s.Alive, wavering = !routed && morale < 35;
+        int active = 0, routing = 0;
+        float moraleSum = 0;
+        foreach (var u in s.Units) if (u.Active) { active++; if (u.Routing) routing++; moraleSum += u.Morale; }
+        int morale = active == 0 ? 0 : (int)(moraleSum / active);
+        bool routed = routing * 2 > s.Alive, wavering = !routed && morale < 35;
         var col = own ? Friendly : seen ? Foe : Color.Lerp(Foe, Dim, 0.6f);
         if (routed) { col = Color.Lerp(col, Dim, 0.65f); y += U(8); }
         if (wavering) x += (int)(MathF.Sin(Ironfield.Ui.Now * 11 + s.GetHashCode()) * U(1.5f));

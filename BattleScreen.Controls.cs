@@ -119,7 +119,8 @@ partial class BattleScreen
         if (castBy != null && LmbPressed && !hud.Over(ms.Position)) { CastAt(mouseGround); return; }
         if (LmbPressed)
         {
-            if (selectedDivision != null && hud.GoalAt(ms.Position) is var (gk, gs)) GoalCommand(selectedDivision, gk, gs);
+            if (hud.GoalCloseAt(ms.Position)) selectedDivision = null;
+            else if (selectedDivision != null && hud.GoalAt(ms.Position) is var (gk, gs)) GoalCommand(selectedDivision, gk, gs);
             else if (hud.DivisionAt(ms.Position) is Division dc)
             {
                 selectedDivision = selectedDivision == dc ? null : dc;

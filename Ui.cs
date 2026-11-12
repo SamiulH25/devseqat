@@ -98,7 +98,7 @@ sealed class Ui
     public static int Key(Rectangle r, int salt = 0) => HashCode.Combine(r.X, r.Y, r.Width, r.Height, salt);
 
     /// Start a frame for a caller that runs its own SpriteBatch (the battle HUD): scale, size and mouse, no clicks.
-    public void Reset(int scale, int w, int h, Point mouse) { S = scale; W = w; H = h; Mouse = mouse; click = false; blockers = new List<Rectangle>(); }
+    public void Reset(int scale, int w, int h, Point mouse) { S = scale; W = w; H = h; Mouse = mouse; click = false; blockers.Clear(); }
 
     public void Begin(Viewport vp, Point mouse, bool clicked)
     {
@@ -106,11 +106,11 @@ sealed class Ui
         S = Settings.UiFor(H);
         Mouse = mouse;
         click = clicked;
-        blockers = new List<Rectangle>();
+        blockers.Clear();
         Sb.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.AlphaBlend);
     }
 
-    public void End() { Sb.End(); last = blockers; }
+    public void End() { Sb.End(); (last, blockers) = (blockers, last); }
 
     /// Was the interface (as drawn last frame) under p?
     public bool Blocks(Point p) => last.Any(r => r.Contains(p));

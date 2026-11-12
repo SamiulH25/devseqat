@@ -159,10 +159,6 @@ partial class BattleScreen
 
     // ---------- rearing horses ----------
 
-    /// Each rider's recent top speed and when his horse last reared: a horse brought from a gallop to a near stop in a
-    /// moment (a charge hitting home, a collision) rears for about a second. View only.
-    readonly Dictionary<Unit, (float Peak, float At)> rears = new();
-
     /// Riders whose horses are held at the top of a rear (the pose sheet shot).
     readonly HashSet<Unit> frozenRear = new();
 
@@ -170,15 +166,13 @@ partial class BattleScreen
     {
         if (!u.Mounted || u.Dead || u.Horse!.Barding == "wolf") return 0;
         if (frozenRear.Contains(u)) return 1;
-        if (!rears.TryGetValue(u, out var r)) r = (0, -99);
         if (update)
         {
             float sp = MathF.Abs(u.Speed);
-            if (r.Peak > 7.5f && sp < 2.5f && realTime - r.At > 3) r.At = realTime;
-            r.Peak = MathF.Max(sp, r.Peak - frameDt * 24);
-            rears[u] = r;
+            if (u.RearPeak > 7.5f && sp < 2.5f && realTime - u.RearAt > 3) u.RearAt = realTime;
+            u.RearPeak = MathF.Max(sp, u.RearPeak - frameDt * 24);
         }
-        float k = (realTime - r.At) / 1.1f;
+        float k = (realTime - u.RearAt) / 1.1f;
         if (k < 0 || k >= 1) return 0;
         return k < 0.3f ? Ease.Out(k / 0.3f) : 1 - Ease.InOut((k - 0.3f) / 0.7f);
     }
