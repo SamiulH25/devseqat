@@ -63,7 +63,7 @@ public sealed partial class Campaign
         if (c.Roll.Count >= B.RollSize) return null;
         troop ??= UnnamedTroop(c);
         if (troop == null || c.Stacks.FirstOrDefault(s => s.Troop == troop) is not TroopStack st || st.Men <= FitNamed(c, troop).Count()) return null;
-        var m = new Soldier { Id = S.NextSoldier++, Name = ManName(c), Troop = troop, Joined = Day };
+        var m = new Soldier { Id = S.NextSoldier++, Name = ManName(c), Troop = troop, Joined = Day, Age = 17 + RollRng.Next(14) };
         m.Deed(deed);
         c.Roll.Add(m);
         return m;

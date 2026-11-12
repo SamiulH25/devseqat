@@ -77,7 +77,11 @@ partial class Campaign
     /// Daily: a year on the captain at each new year; past `OldAge`, each new season costs a point of Arms.
     internal void AgeDaily()
     {
-        if (Day > 1 && (Day - 1) % DaysPerYear == 0) HousesYearly();
+        if (Day > 1 && (Day - 1) % DaysPerYear == 0)
+        {
+            HousesYearly();
+            foreach (var m in Player.Companies.SelectMany(k => k.Roll)) m.Age = Soldier.AgeOf(m) + 1; // the named men grow older with you (C1)
+        }
         if (CharacterById(S.CaptainChar) is not Character me || Day <= 1) return;
         if ((Day - 1) % DaysPerYear == 0) me.Age++;
         if (me.Age > OldAge && (Day - 1) % 30 == 0 && Skill("Arms") > 1)

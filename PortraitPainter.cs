@@ -47,6 +47,34 @@ public static class PortraitPainter
     }
     const int ComeOfAgeBeard = 18;
 
+    /// The seed of a named man's face: the very seed his battle look comes from (`Variety.Seed`), so the man on the roll is
+    /// the man on the field.
+    public static int SoldierSeed(int soldierId) => soldierId * 7919 + 1;
+
+    /// A named man's face (docs/COMPANY.md C1): his visage as the battle draws it, his age, a scar per two wounds, dress by
+    /// his troop's tier (cap and cloth, mail, a plate collar; a knight of your order wears its mark), his company's charge on
+    /// your colours, and his mood from its cohesion.
+    public static Face Of(Soldier m, CompanyRecord? co) =>
+        OfMan(m.Id, Troops.Get(Troops.Has(m.Troop) ? m.Troop : "levies"), m.Wounds, Soldier.AgeOf(m), m.Knight, co?.Banner ?? 0, co == null ? 1 : CohesionMood(co.Cohesion));
+
+    /// The same for a man on the field, who has only his troop and id (no wounds or age kept in a battle).
+    public static Face OfMan(int soldierId, UnitType t, int wounds, int age, bool knight, int banner, int mood)
+    {
+        int seed = SoldierSeed(soldierId);
+        var (skin, hair, style) = Variety.Parts(Variety.Visage(t.Culture, seed));
+        float H(int salt) => Ease.Hash(seed * 31 + salt * 977);
+        int cut = style == 3 ? 4 : H(1) < 0.45f ? 0 : H(1) < 0.8f ? 3 : H(1) < 0.92f ? 2 : 1;
+        int beard = age < ComeOfAgeBeard ? 0 : style switch { 0 => 0, 1 => 1, 2 => 2, _ => 1 + (H(9) < 0.5f ? 0 : 2) };
+        int dress = knight || t.Tier >= 7 ? 3 : t.Tier >= 5 ? 2 : t.Tier >= 3 ? 1 : 0;
+        var charge = (Emblem)(banner % 9);
+        if (charge == Emblem.None) charge = Style.Sides[2].Charge == Emblem.None ? Emblem.Fess : Style.Sides[2].Charge;
+        return new Face(seed, skin, hair, cut, beard, (int)(H(6) * EyeColours.Length) % EyeColours.Length, (int)(H(7) * 3) % 3, (int)(H(8) * 3) % 3,
+            (int)(H(10) * 3) % 3, false, age, Math.Min(2, wounds / 2), dress, false, mood, 2, charge, 0);
+    }
+
+    /// A company's cohesion as a man's mood: warm when it is high, cold when it frays.
+    public static int CohesionMood(float cohesion) => cohesion >= 18 ? 0 : cohesion >= 7 ? 1 : 2;
+
     /// The captain as chosen in the creator: the face on the free companies' colours with your charge.
     public static Face Captain(int seed, int skin, int hair, CaptainLook l, Emblem arms, int age) =>
         new(seed, skin, hair, l.Cut, l.Beard, l.Eye, l.Brow, l.Nose, l.Jaw, false, age, l.Scar, 2, false, 0, 2, arms == Emblem.None ? Emblem.Fess : arms, 0);
@@ -170,8 +198,9 @@ public static class PortraitPainter
         if (f.Beard is 1 or 2) for (int x = 20; x < 29; x++) { Put(x, my - 1, Shade(hair, 0.85f)); if (f.Beard == 2 && (x == 20 || x == 28)) { Put(x, my, hair); Put(x, my + 1, hair); } }
         if (f.Beard == 3) for (int y = my + 2; y < 40; y++) for (int x = 22; x < 27; x++) Put(x, y, Shade(hair, 0.85f));
         // Scars.
-        if (f.Scar == 1) for (int i = 0; i < 9; i++) Put(28 + i / 3, 21 + i, new Color(196, 120, 110));
-        if (f.Scar == 2) for (int i = 0; i < 7; i++) Put(18 - i / 4, 27 + i, new Color(196, 120, 110));
+        // Scars: a red slash with a pale healed edge beside it, so it reads at small sizes.
+        if (f.Scar == 1) for (int i = 0; i < 11; i++) { Put(28 + i / 3, 20 + i, new Color(176, 92, 84)); Put(29 + i / 3, 20 + i, new Color(232, 196, 180)); }
+        if (f.Scar == 2) for (int i = 0; i < 9; i++) { Put(18 - i / 4, 26 + i, new Color(176, 92, 84)); Put(17 - i / 4, 26 + i, new Color(232, 196, 180)); }
         // A ruler's circlet.
         if (f.Crown)
         {

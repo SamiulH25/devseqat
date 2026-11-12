@@ -155,6 +155,8 @@ public sealed class FoundedOrder
 public sealed class Soldier
 {
     public int Id, Battles, Kills, Wounds, Joined, DiedDay, Company = -1;
+    /// His age (docs/COMPANY.md C1): 17-30 when named, a year older each year; 0 on an old save (`AgeOf` makes one up).
+    public int Age;
     public string Name = "", Troop = "", Fate = "", DiedAt = "", CompanyName = "";
     public bool Hurt;
     /// Knighted into your own order (docs/archive/KNIGHT_ORDERS.md 8, K8).
@@ -162,6 +164,9 @@ public sealed class Soldier
     /// What he is known for, newest last (at most MaxDeeds).
     public List<string> Deeds = new();
     public const int MaxDeeds = 4;
+
+    /// His age, or one made up from his id for a man named before ages were kept.
+    public static int AgeOf(Soldier m) => m.Age > 0 ? m.Age : 18 + m.Id * 37 % 12;
 
     public void Deed(string d) { Deeds.Add(d); if (Deeds.Count > MaxDeeds) Deeds.RemoveAt(1); } // the first, how he got his name, stays
 }

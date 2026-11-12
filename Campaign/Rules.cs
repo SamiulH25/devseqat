@@ -317,6 +317,6 @@ public static class Rules
                     Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord, Mix: mix.Length > 1 ? mix : null,
                     RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero,
                     Streamers: c.BattleHonours.Count, Fringe: c.Battles >= 10, Cohesion: c.Cohesion,
-                    Named: c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).Select(m => new NamedSpec(m.Id, m.Troop, m.Name)).ToArray() : null);
+                    Named: c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).Select(m => new NamedSpec(m.Id, m.Troop, m.Name, m.Wounds, Soldier.AgeOf(m))).ToArray() : null);
             }).ToList());
 }

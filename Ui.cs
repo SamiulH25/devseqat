@@ -199,7 +199,7 @@ sealed class Ui
     }
 
     /// A painted bust portrait (docs/archive/LORDS.md LD1) fitted into `box`, whole pixels when it is big enough, centred at the bottom.
-    public void Face(Face f, Rectangle box)
+    public void Face(Face f, Rectangle box, Color? tint = null)
     {
         float k = MathF.Min(box.Width / (float)PortraitPainter.W, box.Height / (float)PortraitPainter.H);
         bool half = k < 1;
@@ -207,7 +207,19 @@ sealed class Ui
         if (half) k *= 2;
         if (k >= 1) k = MathF.Floor(k);
         int w = (int)(tex.Width * k), h = (int)(tex.Height * k);
-        Sb.Draw(tex, new Rectangle(box.Center.X - w / 2, box.Bottom - h, w, h), Color.White);
+        Sb.Draw(tex, new Rectangle(box.Center.X - w / 2, box.Bottom - h, w, h), tint ?? Color.White);
+    }
+
+    /// The head and shoulders of a painted face (the middle 40x40 of it), at whole pixels: bigger in a short row than the
+    /// whole bust would be (docs/COMPANY.md C1).
+    public void FaceHead(Face f, Rectangle box, Color? tint = null)
+    {
+        var tex = Portraits.Of(Sb.GraphicsDevice, f);
+        var src = new Rectangle(4, 10, 40, 40);
+        int k = Math.Max(1, Math.Min(box.Width, box.Height) / 40);
+        bool small = Math.Min(box.Width, box.Height) < 40;
+        int w = small ? Math.Min(box.Width, box.Height) : 40 * k;
+        Sb.Draw(tex, new Rectangle(box.Center.X - w / 2, box.Center.Y - w / 2, w, w), src, tint ?? Color.White);
     }
 
     /// A troop portrait cropped to `box`; `k` is the pixel scale (default: the UI scale).

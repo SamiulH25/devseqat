@@ -52,11 +52,21 @@ public static class SpriteDump
         var first = PortraitPainter.Of(c, lords[0]);
         for (int m = 0; m < 4; m++) faces.Add(first with { Mood = m });
         foreach (var ch in lords.Skip(1).Take(Cols * 5 - 4)) faces.Add(PortraitPainter.Of(c, ch));
+        // A last row of named men (docs/COMPANY.md C1): tiers I, III, V and VII, fresh and then scarred.
+        while (faces.Count % Cols != 0) faces.Add(faces[0] with { Seed = -1 });
+        int id = 40 + seed;
+        foreach (int tier in new[] { 1, 3, 5, 7 })
+            if (Troops.All.Where(t => t.Tier == tier && !t.Wild && t.Look.Face == "man").OrderBy(t => t.Id).FirstOrDefault() is UnitType t)
+            {
+                faces.Add(PortraitPainter.OfMan(id, t, 0, 19 + tier * 2, false, tier, 0));
+                faces.Add(PortraitPainter.OfMan(id++, t, 4, 30 + tier * 2, false, tier, 1));
+            }
         int cw = PortraitPainter.W * Z + Gap, ch2 = PortraitPainter.H * Z + Gap, rows = (faces.Count + Cols - 1) / Cols;
         int w = Cols * cw + Gap, h = rows * ch2 + Gap;
         var px = Enumerable.Repeat(new Color(60, 60, 64), w * h).ToArray();
         for (int i = 0; i < faces.Count; i++)
         {
+            if (faces[i].Seed == -1) continue; // a gap before the named men's row
             var src = PortraitPainter.Paint(faces[i]);
             int ox = Gap + i % Cols * cw, oy = Gap + i / Cols * ch2;
             for (int y = 0; y < PortraitPainter.H * Z; y++)

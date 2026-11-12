@@ -481,3 +481,17 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
   C9b), Named spoils from grand masters and kings, the smith's days for masterwork, ruins/order/liege/want/caravan/wedding
   gifts, sets, the pilot's gear spend in `--pacing`.
 - Test `GearSources`.
+
+### C1 (faces in the ranks), as built
+- `PortraitPainter.Of(Soldier, CompanyRecord?)` and `OfMan(id, troop, wounds, age, knight, banner, mood)`: the visage from
+  `Variety.Visage(troop culture, SoldierSeed(id))`, the seed the battle's `Variety.Seed` uses, so the man on the roll is the
+  man on the field; a scar per two wounds (scars now have a pale healed edge); dress by tier (I-II cloth, III-IV a collar,
+  V-VI mail, VII or one of your knights the tabard); the company's banner charge on your colours; mood from cohesion
+  (`CohesionMood`: 18+ warm, 7+ even, else cold).
+- `Soldier.Age` (17-30 when named, on `RollRng`; a year older each year in `AgeDaily`; `Soldier.AgeOf` makes one up for old
+  saves). `NamedSpec` carries `Wounds` and `Age` for the battle HUD.
+- Drawn: each roll row (a 40 px head crop, `Ui.FaceHead`, and AGE in the stats), THE FALLEN (greyed), and in battle beside a
+  named man's name (`Hud.NamedMarks`, greyed while he routs). `--portraits` ends with a row of named men at tiers I, III, V
+  and VII, fresh and scarred.
+- Not drawn yet: the report's FALLEN / HURT / NAMED lines (they carry no soldier id yet), the sergeant on the company card,
+  the companion rows. Test `MenHaveFaces` (Tests/CompanyTests.cs).

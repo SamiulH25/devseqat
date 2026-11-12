@@ -155,7 +155,15 @@ sealed partial class Hud
             Rect(new Rectangle(x - s, y - 4 * s, 2 * s, 2 * s), Gold);
             bool hover = Command && Math.Abs(Mouse.X - x) < U(8) && Math.Abs(Mouse.Y - y) < U(12);
             if ((!Command && d < 10 || hover) && u.Squad?.Company?.Named?.FirstOrDefault(m => m.Id == u.SoldierId) is NamedSpec m)
+            {
                 TextC(m.Name.ToUpperInvariant(), x, y - 4 * s - U(10), u.Routing ? Dim : Gold, 1);
+                // His small face beside his name (C1), the same face the roll shows.
+                var face = PortraitPainter.OfMan(m.Id, u.Type, m.Wounds, m.Age > 0 ? m.Age : 25, false, 0, u.Routing ? 2 : 1);
+                var tex = Portraits.Of(sb.GraphicsDevice, face, half: true);
+                int fw = U(12), fh = U(15), fx = x - TW(m.Name.ToUpperInvariant(), 1) / 2 - fw - U(4), fy = y - 4 * s - U(14);
+                Rect(new Rectangle(fx - 1, fy - 1, fw + 2, fh + 2), Color.Black * 0.7f);
+                sb.Draw(tex, new Rectangle(fx, fy, fw, fh), u.Routing ? new Color(130, 128, 120) : Color.White);
+            }
         }
         // Fallen named men you can still get out (L8): a red mark, and close by, what to do and how far along you are.
         foreach (var u in B.Downed)

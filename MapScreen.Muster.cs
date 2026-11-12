@@ -200,16 +200,22 @@ partial class MapScreen
         if (c.Roll.Count == 0) { ui.Text("NO MAN HAS EARNED A NAME YET. THEY DO IT IN BATTLE.", x, y, Style.Dim, 1); y += ui.U(14); }
         foreach (var m in c.Roll.OrderByDescending(m => m.Battles))
         {
-            if (y > r.Bottom - ui.U(150)) break;
-            var row = new Rectangle(x - ui.U(4), y - ui.U(3), w + ui.U(8), ui.U(32));
+            if (y > r.Bottom - ui.U(160)) break;
+            var row = new Rectangle(x - ui.U(4), y - ui.U(3), w + ui.U(8), ui.U(42));
             ui.Rect(row, Color.White * (ui.Hover(row) ? 0.07f : 0.035f));
-            ui.Text(m.Name.ToUpperInvariant(), x, y, Style.Text, 1);
-            string stat = $"{Campaign.N(m.Battles, "BATTLE")}, {Campaign.N(m.Kills, "KILL")}" + (m.Wounds > 0 ? $", {Campaign.N(m.Wounds, "WOUND")}" : "");
+            // His face (C1): the man the battle draws, his age, his scars, dressed by his tier on the company's charge.
+            var fb = new Rectangle(row.X + ui.U(1), row.Y + ui.U(1), ui.U(40), ui.U(40));
+            ui.FaceHead(PortraitPainter.Of(m, c), fb);
+            ui.Frame(fb, Color.Black * 0.5f, ui.U(1));
+            int tx = x + ui.U(42);
+            y += ui.U(5);
+            ui.Text(m.Name.ToUpperInvariant(), tx, y, Style.Text, 1);
+            string stat = $"AGE {Soldier.AgeOf(m)}, {Campaign.N(m.Battles, "BATTLE")}, {Campaign.N(m.Kills, "KILL")}" + (m.Wounds > 0 ? $", {Campaign.N(m.Wounds, "WOUND")}" : "");
             ui.TextR(stat, x + w, y, Style.Dim, 1);
-            ui.Text(Troops.Get(m.Troop).Name.ToUpperInvariant() + (m.Hurt ? " . HURT" : ""), x, y + ui.U(10), m.Hurt ? Style.Warn : Kit.Gilt, 1);
-            ui.Text(Cut((m.Deeds.Count > 0 ? m.Deeds[^1] : "").ToUpperInvariant(), fit - 22), x + ui.U(150), y + ui.U(10), Style.Dim, 1);
+            ui.Text(Troops.Get(m.Troop).Name.ToUpperInvariant() + (m.Hurt ? " . HURT" : ""), tx, y + ui.U(10), m.Hurt ? Style.Warn : Kit.Gilt, 1);
+            ui.Text(Cut((m.Deeds.Count > 0 ? m.Deeds[^1] : "").ToUpperInvariant(), fit - 30), tx + ui.U(150), y + ui.U(10), Style.Dim, 1);
             if (ui.Hover(row)) note = string.Join(" ", m.Deeds).ToUpperInvariant() + $" ON THE ROLL SINCE DAY {m.Joined}.";
-            y += ui.U(36);
+            y += ui.U(41);
         }
         y += ui.U(6);
         ui.Divider(x, y, w, Kit.Gilt * 0.5f);
@@ -224,9 +230,12 @@ partial class MapScreen
             if (y > r.Bottom - ui.U(56)) { ui.Text("AND MORE BEFORE THEM.", x, y, Style.Dim, 1); break; }
             string how = m.Fate switch { "missing" => "MISSING", "left" => "LEFT THE COMPANY", _ => "FELL" };
             string at = m.DiedAt != "" ? $" AGAINST {m.DiedAt.ToUpperInvariant()}" : "";
-            ui.Text(Cut($"{m.Name.ToUpperInvariant()}, {Troops.Get(m.Troop).Name.ToUpperInvariant()}", fit / 2), x, y, Style.Text, 1);
+            // The fallen's face, greyed (C1).
+            var fb = new Rectangle(x - ui.U(2), y - ui.U(5), ui.U(18), ui.U(18));
+            ui.FaceHead(PortraitPainter.Of(m, c) with { Mood = 1 }, fb, new Color(88, 88, 92)); // greyed
+            ui.Text(Cut($"{m.Name.ToUpperInvariant()}, {Troops.Get(m.Troop).Name.ToUpperInvariant()}", fit / 2 - 3), x + ui.U(20), y, Style.Dim, 1);
             ui.TextR(Cut($"{how}{at}, DAY {m.DiedDay}. {Campaign.N(m.Battles, "BATTLE")}", fit / 2), x + w, y, m.Fate == "fell" ? Style.Bad : Style.Dim, 1);
-            y += ui.U(12);
+            y += ui.U(18);
         }
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "BACK", note: ctl.Name(Act.Menu))) panel = PanelKind.Party;
