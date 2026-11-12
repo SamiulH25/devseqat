@@ -91,4 +91,57 @@ public static partial class SelfTest
         Check(c.DropItem("boar_spear") == "A NAMED PIECE IS NOT LEFT BEHIND", "a named piece is never left behind");
         Check(c.Equip("boar_spear", side: true) == null && k.Side == "boar_spear", "carry it second from the baggage");
     }
+
+    /// C11: spoils come better made from greater foes; falling batters a piece (it fights a make lower) and a smith mends it;
+    /// the smith raises a make for crowns and goods, refuses a horse, masterwork outside a great town and an unfit mark.
+    static void GearSources()
+    {
+        var c = Campaign.New(27);
+        float Mean(bool lord, bool great) => (float)Enumerable.Range(0, 400).Average(_ => (int)c.SpoilMake(lord, great, true));
+        float brigand = Mean(false, false), lord = Mean(true, false), champion = Mean(true, true);
+        Check(brigand < lord && lord < champion, $"spoils come better made from greater foes ({brigand:0.00} < {lord:0.00} < {champion:0.00})");
+        Check(Enumerable.Range(0, 200).All(_ => c.SpoilMake(true, true, false) >= ItemQuality.Fine), "a champion's gear is fine or better");
+
+        // Battered: a fine sword battered fights as a plain one, until mended.
+        var cap = c.Captain;
+        var sword = Campaign.Own(cap, "arming_sword", ItemQuality.Fine)!;
+        float fine = Rules.CaptainType(cap).Damage;
+        sword.Battered = true;
+        float battered = Rules.CaptainType(cap).Damage;
+        cap.Baggage.Remove(sword);
+        float plain = Rules.CaptainType(cap).Damage;
+        cap.Baggage.Add(sword);
+        Check(MathF.Abs(battered - plain) < 1e-3f && battered < fine, $"a battered piece fights one make lower ({battered:0.0} against {fine:0.0})");
+
+        // The smith: only where there is one.
+        c.Player.Pos = new Microsoft.Xna.Framework.Vector2(-9999, -9999);
+        Check(c.Mend(sword) == "NO SMITH HERE", "no smith out on the road");
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && !c.Refuses(s));
+        c.Player.Pos = town.Pos;
+        c.S.Gold = 5000;
+        Check(c.Improve(sword) == "MEND IT FIRST", "a battered piece is mended before it is bettered");
+        float gold = c.S.Gold;
+        Check(c.Mend(sword) == null && !sword.Battered && c.S.Gold == gold - Campaign.MendCost(Gear.Get("arming_sword")), "the smith mends it for a tenth of its price");
+        // Improving: goods lots are needed; a great town's smith for masterwork.
+        c.S.Goods.Clear();
+        Check(c.Improve(sword)!.Contains("LOTS OF ARMS"), "raising a make needs lots of arms");
+        c.S.Goods["arms"] = 10;
+        town.Prosperity = 30; town.Buildings.Remove("market");
+        Check(c.Improve(sword) == "MASTERWORK NEEDS A GREAT TOWN'S SMITH", "masterwork needs a great town's smith");
+        town.Prosperity = 80;
+        var (crowns, _, lots) = Campaign.ImproveCost(Gear.Get("arming_sword"), ItemQuality.Fine);
+        gold = c.S.Gold;
+        Check(c.Improve(sword) == null && sword.Quality == ItemQuality.Masterwork && c.S.Gold == gold - crowns && c.S.Goods["arms"] == 10 - lots, "a great town's smith makes it masterwork for crowns and lots");
+        Check(c.Improve(sword) == "NO SMITH CAN BETTER IT", "nothing betters a masterwork");
+        // Marks: one that fits, struck anew; a horse cannot be forged.
+        Check(c.Remark(sword, "sure_seated") == "THAT MARK DOES NOT FIT IT", "a horse's mark does not fit a sword");
+        Check(c.Remark(sword, "keen") == null && c.Remark(sword, "balanced") == null && sword.Marks.Count == 2, "a masterwork takes two marks");
+        Check(c.Remark(sword, "keen") == "IT BEARS THAT MARK", "not the same mark twice");
+        var horse = c.SmithItem(cap.Kit.Horse);
+        Check(c.CannotImprove(horse) == "A HORSE IS BRED, NOT FORGED", "a horse is bred, not forged");
+        // A free starting piece improved becomes a thing in the baggage.
+        var helm = c.SmithItem(cap.Kit.Helm);
+        c.S.Goods["armour"] = 5;
+        Check(c.Improve(helm) == null && Campaign.ItemOf(cap, cap.Kit.Helm) is { Quality: ItemQuality.Fine }, "a plain starting helm made fine joins the baggage");
+    }
 }

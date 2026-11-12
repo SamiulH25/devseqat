@@ -465,3 +465,19 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
 - Not built yet (C10b): companions and named men wearing gear from the baggage, N cycling up to three carried weapons, the
   armourer as buy/sell on the same grid, a link from the K sheet's doll, a UI lab page, the sprite part painted in each cell
   (an icon stands for it).
+
+### C11 (where gear comes from), as built
+- Spoils are items: `BattleSpoil` returns a gear id, a make and a mark (`BattleReport.SpoilMake`/`SpoilMark`). A brigand's
+  gear is often worn; a lord's may be fine (8 % masterwork); an order knight's, a champion's or a brigand king's is fine or
+  better, masterwork half the time when you cut him down (`SpoilMake`). Fine and up carry a mark. Taking it records where it came
+  from. Tournament prizes are fine, sometimes masterwork in a great town. The report names the make and mark in its colour.
+- Battered: falling in a battle (wounded or taken) batters one worn piece half the time (`BatterOne`); `GearItem.CountsAs()` is
+  one make lower until mended. Shown in red on the kit screen's slots and cells.
+- The smith (Campaign/Smith.cs), from the kit screen's piece panel while you stand in a town or castle: MEND (a tenth of the
+  price), MAKE <next make> (the price difference and 2 lots of arms or armour, 4 for masterwork; masterwork needs prosperity
+  60 or a market built, `GreatSmith`; not horses), MARK (strike a fitting mark for a quarter of the price; a masterwork carries
+  two). A free starting piece improved becomes a thing in the baggage. Costs or the refusal show over the buttons.
+- Not built yet (C11b): trophies from monster leaders and their recipes, culture-specific lord drops (the culture kits are
+  C9b), Named spoils from grand masters and kings, the smith's days for masterwork, ruins/order/liege/want/caravan/wedding
+  gifts, sets, the pilot's gear spend in `--pacing`.
+- Test `GearSources`.

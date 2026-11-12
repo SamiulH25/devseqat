@@ -10,6 +10,8 @@ partial class MapScreen
 {
     /// The piece picked in the grid (a gear id), for the WEAR / 2ND / DROP buttons.
     string invPick = "";
+    /// Which fitting mark the smith offers to strike next (cycled with OTHER).
+    int smithMark;
 
     void InventoryPanel()
     {
@@ -81,10 +83,46 @@ partial class MapScreen
         if (item != null)
             foreach (var m in item.Marks.Where(Effects.Has).Select(Effects.Get))
                 foreach (var l in ui.Wrap($"{m.Name.ToUpperInvariant()}: {m.Line.ToUpperInvariant()}", w)) { if (y + ui.U(12) > r.Bottom) return; ui.Text(l, x, y, Kit.Gilt, 1); y += ui.U(12); }
+        if (item is { Battered: true }) { ui.Text("BATTERED: IT FIGHTS ONE MAKE LOWER UNTIL A SMITH MENDS IT.", x, y, Style.Bad, 1); y += ui.U(14); }
         string story = item == null ? g.Text : item.From + (item.Battles > 0 ? $". {item.Battles} battles" : "") + (item.Kills > 0 ? $", {item.Kills} kills" : "") + ".";
         if (item is { From: "" }) story = g.Text;
         y += ui.U(4);
-        foreach (var l in ui.Wrap(story.ToUpperInvariant(), w)) { if (y + ui.U(12) > r.Bottom) return; ui.Text(l, x, y, Style.Dim, 1); y += ui.U(12); }
+        var smith = C.Smithy();
+        int bottom = smith != null ? r.Bottom - ui.U(66) : r.Bottom;
+        foreach (var l in ui.Wrap(story.ToUpperInvariant(), w)) { if (y + ui.U(12) > bottom) break; ui.Text(l, x, y, Style.Dim, 1); y += ui.U(12); }
+        if (smith != null) SmithRow(g, new Rectangle(r.X + ui.U(8), Math.Min(y + ui.U(10), r.Bottom - ui.U(62)), r.Width - ui.U(16), ui.U(56)), smith); // close under the piece
+    }
+
+    /// The smith of the town you stand in (C11): mend, raise the make, strike a mark. Each button says its price.
+    void SmithRow(GearDef g, Rectangle r, Settlement s)
+    {
+        ui.Rect(new Rectangle(r.X, r.Y, r.Width, 1), Kit.Mul(Kit.Gilt, 0.35f));
+        ui.Text($"THE SMITH OF {s.Name.ToUpperInvariant()}" + (C.GreatSmith(s) ? " . WORKS MASTERWORK" : ""), r.X, r.Y + ui.U(5), Kit.Gilt, 1);
+        var i = C.SmithItem(g.Id);
+        int bw = (r.Width - ui.U(12)) / 3, by = r.Y + ui.U(32), bh = ui.U(20);
+        var b1 = new Rectangle(r.X, by, bw, bh); var b2 = new Rectangle(b1.Right + ui.U(6), by, bw, bh); var b3 = new Rectangle(b2.Right + ui.U(6), by, bw, bh);
+        string? mend = C.CannotMend(i), up = C.CannotImprove(i);
+        if (i.Battered && ui.Button(b1, $"MEND {Campaign.MendCost(g)}", mend == null)) note = C.Mend(i) ?? "MENDED";
+        else if (!i.Battered) ui.Button(b1, "WHOLE", false);
+        var (crowns, goods, lots) = i.Quality < ItemQuality.Masterwork ? Campaign.ImproveCost(g, i.Quality) : (0, "", 0);
+        string upLabel = i.Quality >= ItemQuality.Masterwork || g.Slot == "horse" ? "IMPROVE" : $"MAKE {Campaign.QualityName(i.Quality + 1).ToUpperInvariant()}";
+        // What it costs, or why not, in words over the buttons.
+        string costs = up != null ? $"BETTER MAKE: {up}" : $"BETTER MAKE: {crowns} CROWNS" + (lots > 0 ? $" AND {lots} LOTS OF {goods.ToUpperInvariant()}" : "");
+        if (i.Battered) costs = mend != null ? $"MEND: {mend}" : $"MEND: {Campaign.MendCost(g)} CROWNS. " + costs;
+        ui.TextFit(costs, r.X, r.Y + ui.U(18), r.Width, up != null && (!i.Battered || mend != null) ? Style.Warn : Style.Text, 1);
+        if (ui.Button(b2, ui.Fit(upLabel, bw - ui.U(8)), up == null)) note = C.Improve(i) ?? $"IT IS {Campaign.QualityName(i.Quality).ToUpperInvariant()} NOW";
+        if (ui.Hover(b2)) ui.Tooltip(b2.Center.X, b2.Y - ui.U(2), "RAISE ITS MAKE", new[] { up ?? (lots > 0 ? $"{crowns} CROWNS AND {lots} LOTS OF {goods.ToUpperInvariant()}." : $"{crowns} CROWNS.") });
+        var marks = Campaign.MarksFor(g.Slot).ToList();
+        if (marks.Count > 0)
+        {
+            var m = marks[smithMark % marks.Count];
+            string? why = C.CannotRemark(i, m.Id);
+            int nw = ui.U(38);
+            if (ui.Button(new Rectangle(b3.X, b3.Y, b3.Width - nw - ui.U(4), bh), ui.Fit(m.Name.ToUpperInvariant(), b3.Width - nw - ui.U(12)), why == null)) note = C.Remark(i, m.Id) ?? $"MARKED {m.Name.ToUpperInvariant()}";
+            if (ui.Button(new Rectangle(b3.Right - nw, b3.Y, nw, bh), "NEXT")) smithMark++;
+            if (ui.Hover(b3)) ui.Tooltip(b3.Center.X, b3.Y - ui.U(2), m.Name.ToUpperInvariant(), ui.Wrap(m.Line.ToUpperInvariant() + " " + (why ?? $"{Campaign.RemarkCost(g)} CROWNS."), ui.U(200)).ToArray());
+        }
+        if (mend != null && i.Battered && ui.Hover(b1)) ui.Tooltip(b1.Center.X, b1.Y - ui.U(2), "MEND", new[] { mend });
     }
 
     static readonly Dictionary<string, string> SlotNames = new()
@@ -107,7 +145,8 @@ partial class MapScreen
         ui.TextFit(Campaign.ItemName(item, g).ToUpperInvariant(), r.X + ui.U(5), r.Y + ui.U(17), r.Width - ui.U(10), MakeColour(item?.Quality ?? ItemQuality.Plain), 1);
         string sub = item is { Marks.Count: > 0 } ? string.Join(" . ", item.Marks.Where(Effects.Has).Select(m => Effects.Get(m).Name.ToUpperInvariant())) : "";
         if (item is { Kills: > 0 }) sub = (sub == "" ? "" : sub + " . ") + $"{item.Kills} KILLS";
-        if (sub != "") ui.TextFit(sub, r.X + ui.U(5), r.Y + ui.U(30), r.Width - ui.U(10), Kit.Gilt, 1);
+        if (item is { Battered: true }) ui.TextFit("BATTERED" + (sub == "" ? "" : " . " + sub), r.X + ui.U(5), r.Y + ui.U(30), r.Width - ui.U(10), Style.Bad, 1);
+        else if (sub != "") ui.TextFit(sub, r.X + ui.U(5), r.Y + ui.U(30), r.Width - ui.U(10), Kit.Gilt, 1);
         if (hover)
         {
             var lines = new List<string> { GearStats(g) };
@@ -154,14 +193,15 @@ partial class MapScreen
         var q = item?.Quality ?? ItemQuality.Plain;
         bool worn = C.Wears(g.Id), picked = invPick == g.Id, hover = ui.Hover(r);
         ui.Rect(r, picked ? Kit.Mul(Kit.Gilt, 0.28f) : Color.Black * (hover ? 0.5f : 0.35f));
-        ui.Frame(r, picked ? Kit.Gilt : Color.White * (hover ? 0.3f : 0.12f), ui.U(picked ? 2 : 1));
+        ui.Frame(r, picked ? Kit.Gilt : item is { Battered: true } ? Kit.Mul(Style.Bad, 0.8f) : Color.White * (hover ? 0.3f : 0.12f), ui.U(picked ? 2 : 1));
         ui.Icon(SlotIcon(g), r.X + ui.U(5), r.Y + ui.U(6), MakeColour(q), 2);
         int tx = r.X + ui.U(26), tw = r.Right - tx - ui.U(4);
         ui.TextFit(Campaign.ItemName(item, g).ToUpperInvariant(), tx, r.Y + ui.U(5), tw, MakeColour(q), 1);
         string state = k.Weapon == g.Id ? "IN HAND" : k.Side == g.Id ? "SECOND" : worn ? "WORN" : "";
         string marks = item is { Marks.Count: > 0 } ? string.Join(" ", item.Marks.Where(Effects.Has).Select(m => Effects.Get(m).Name.ToUpperInvariant())) : "";
         if (marks != "") ui.TextFit(marks, tx, r.Y + ui.U(17), tw, Kit.Gilt, 1);
-        if (state != "") ui.TextFit(state, tx, r.Y + ui.U(29), tw, Kit.Mul(Kit.Gilt, 0.85f), 1);
+        if (item is { Battered: true }) ui.TextFit(state == "" ? "BATTERED" : state + " . BATTERED", tx, r.Y + ui.U(29), tw, Style.Bad, 1);
+        else if (state != "") ui.TextFit(state, tx, r.Y + ui.U(29), tw, Kit.Mul(Kit.Gilt, 0.85f), 1);
         else if (C.CannotUse(g) is string why) ui.TextFit(why, tx, r.Y + ui.U(29), tw, Style.Warn, 1);
         if (hover)
         {

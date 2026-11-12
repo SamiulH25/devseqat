@@ -617,7 +617,16 @@ sealed partial class MapScreen
             case "roll": rollOf = C.Player.Companies.OrderByDescending(k => k.Roll.Count).First(); panel = PanelKind.Roll; note = ""; break;
             case "divisions": panel = PanelKind.Divisions; note = ""; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;
-            case "inventory": panel = PanelKind.Inventory; invPick = "boar_spear"; note = ""; break;
+            case "inventory":
+            {
+                // Standing in the town so its smith shows (C11); a battered helm from the last fall.
+                var town = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
+                C.Player.Pos = town.Pos + new Vector2(1, 0);
+                var helm = C.SmithItem(C.Captain.Kit.Helm);
+                helm.Battered = true;
+                if (!C.Captain.Baggage.Contains(helm)) C.Captain.Baggage.Add(helm);
+                panel = PanelKind.Inventory; invPick = helm.Def; note = ""; break;
+            }
             case "realm": realmTab = 0; panel = PanelKind.Realm; note = ""; break;
             case "atlas": panel = PanelKind.Atlas; note = ""; break;
             case "career": realmTab = 1; panel = PanelKind.Realm; note = ""; break;

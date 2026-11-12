@@ -126,8 +126,10 @@ partial class MapScreen
         var sr = new Rectangle(c.X - ui.U(4), y, c.Width + ui.U(8), rh - ui.U(2));
         ui.Rect(sr, Kit.Gilt * 0.12f);
         ui.Icon(g.Slot == "horse" ? "horse" : g.Slot == "weapon" ? "sword" : "shield", sr.X + ui.U(5), sr.Y + (sr.Height - ui.U(7)) / 2, Kit.Gilt, 1);
-        ui.Text(g.Name.ToUpperInvariant(), sr.X + ui.U(19), sr.Y + (sr.Height - ui.U(7)) / 2, Kit.Gilt, 1);
-        if (ui.Button(new Rectangle(sr.Right - ui.U(58), sr.Y + ui.U(1), ui.U(54), sr.Height - ui.U(2)), "TAKE")) note = C.TakeSpoil() ?? $"THE {g.Name.ToUpperInvariant()} IS YOURS";
+        string sname = Campaign.ItemName(new GearItem { Def = g.Id, Quality = rep.SpoilMake }, g).ToUpperInvariant()
+            + (rep.SpoilMark != "" && Effects.Has(rep.SpoilMark) ? " . " + Effects.Get(rep.SpoilMark).Name.ToUpperInvariant() : "");
+        ui.TextFit(sname, sr.X + ui.U(19), sr.Y + (sr.Height - ui.U(7)) / 2, sr.Width - ui.U(84), rep.SpoilMake == ItemQuality.Plain ? Kit.Gilt : MakeColour(rep.SpoilMake), 1);
+        if (ui.Button(new Rectangle(sr.Right - ui.U(58), sr.Y + ui.U(1), ui.U(54), sr.Height - ui.U(2)), "TAKE")) note = C.TakeSpoil() ?? $"THE {sname} IS YOURS";
     }
 
     /// Every company of yours: men before and after, the fallen, wounded and lost, and the drill it earned.

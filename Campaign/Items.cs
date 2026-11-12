@@ -13,6 +13,10 @@ public sealed class GearItem
     public ItemQuality Quality = ItemQuality.Plain;
     public List<string> Marks = new();
     public int Kills, Battles;
+    /// Battered when you fell wearing it (C11): it counts one make lower until a smith mends it.
+    public bool Battered;
+    /// The make it counts as in a fight: one step lower while battered.
+    public ItemQuality CountsAs() => Battered && Quality > ItemQuality.Worn ? Quality - 1 : Quality;
 }
 
 /// The captain's pieces as things: quality, marks, the baggage they ride in and the story each one gathers.

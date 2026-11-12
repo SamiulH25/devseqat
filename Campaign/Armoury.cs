@@ -16,11 +16,12 @@ public sealed partial class Campaign
         if (c.HorseTier >= 1) { k.Horse = "warhorse"; Own("warhorse"); }
         if (c.HorseTier >= 2) k.Horse = "destrier";
         c.ArmorTier = c.HelmTier = c.HorseTier = 0;
+        // Runs on every load: only adds what is missing, never touches a piece already held (a worn make stays worn).
         foreach (var id in k.Worn.ToList())
             if (Gear.Find(id) == null) Unequip(id);
-            else Own(id);
+            else if (ItemOf(c, id) == null) Own(id);
         // Before pieces were things (C9): each owned id becomes a plain piece.
-        foreach (var id in k.Owned) if (Gear.Find(id) != null) Own(id);
+        foreach (var id in k.Owned) if (Gear.Find(id) != null && ItemOf(c, id) == null) Own(id);
         k.Owned.Clear();
         c.Baggage.RemoveAll(i => Gear.Find(i.Def) == null);
     }
@@ -195,14 +196,37 @@ public sealed partial class Campaign
     public const float TournamentPrizeChance = 0.5f;
 
     /// After a win: a piece of the beaten leader's gear, sure if you cut him down, likelier from a lord than a brigand.
-    /// Monsters and caravans carry nothing you would wear. Returns a gear id or "".
-    string BattleSpoil(IReadOnlyList<Party> losers, BattleResult r)
+    /// Monsters and caravans carry nothing you would wear. Its make goes by who wore it (C11): a brigand's is often worn, a
+    /// lord's may be fine, an order knight's or a brigand king's is fine or better with a mark.
+    (string Id, ItemQuality Make, string Mark) BattleSpoil(IReadOnlyList<Party> losers, BattleResult r)
     {
         bool lord = losers.Any(p => p.Kind == PartyKind.Lord), brigand = losers.Any(p => p.Kind == PartyKind.Bandit);
-        if (!lord && !brigand) return "";
+        if (!lord && !brigand) return ("", ItemQuality.Plain, "");
         bool downed = r.EnemyLeader != LeaderFate.Unhurt;
         float chance = lord ? (downed ? 1 : 0.35f) : downed ? 0.6f : 0.15f;
-        return rng.Chance(chance) ? SpoilFrom(lord ? 900 : 300) : "";
+        if (!rng.Chance(chance)) return ("", ItemQuality.Plain, "");
+        bool great = losers.Any(p => ChampionAura(p) > 0 || p.Kind == PartyKind.Bandit && CharacterById(p.CharId) is { Kind: "brigand" });
+        string id = SpoilFrom(lord || great ? 900 : 300);
+        if (id == "") return ("", ItemQuality.Plain, "");
+        var make = SpoilMake(lord, great, downed);
+        return (id, make, make >= ItemQuality.Fine ? MarkFor(Gear.Get(id).Slot) : "");
+    }
+
+    /// The make of a spoil: brigands' gear is often worn; a lord's may be fine; a champion's, an order knight's or a brigand
+    /// king's is fine or better, and masterwork more often when you cut him down yourself.
+    internal ItemQuality SpoilMake(bool lord, bool great, bool downed)
+    {
+        float roll = rng.Float();
+        if (great) return roll < (downed ? 0.5f : 0.25f) ? ItemQuality.Masterwork : ItemQuality.Fine;
+        if (lord) return roll < 0.08f ? ItemQuality.Masterwork : roll < 0.4f ? ItemQuality.Fine : ItemQuality.Plain;
+        return roll < 0.45f ? ItemQuality.Worn : roll < 0.9f ? ItemQuality.Plain : ItemQuality.Fine;
+    }
+
+    /// A mark that fits a slot, on the campaign's dice ("" when none fits).
+    string MarkFor(string slot)
+    {
+        var marks = MarksFor(slot).ToList();
+        return marks.Count == 0 ? "" : rng.Pick(marks).Id;
     }
 
     /// A piece you do not own, of no rank, up to a price.
@@ -216,7 +240,7 @@ public sealed partial class Campaign
     public string? TakeSpoil()
     {
         if (Report is not { Spoil.Length: > 0 } rep || Gear.Find(rep.Spoil) is not GearDef g) return "NOTHING TO TAKE";
-        Own(g.Id, from: $"taken from {rep.Enemy}, day {Day}");
+        Own(g.Id, rep.SpoilMake, rep.SpoilMark, $"taken from {rep.Enemy}, day {Day}");
         Report = rep with { Spoil = "" };
         Log($"You take the {g.Name.ToLowerInvariant()}. Wear it from the armourer in any market.");
         Count("spoils");

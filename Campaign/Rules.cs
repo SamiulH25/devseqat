@@ -10,6 +10,9 @@ public sealed record CompanyReport(int Id, string Name, string Troop, int Team, 
 public sealed record BattleReport(bool Won, string Enemy, IReadOnlyList<CompanyReport> Companies, float Loot, float Ransom, float Bounty,
     float Renown, int Horses, LeaderFate Captain, string Spoil = "")
 {
+    /// The spoil's make and smith's mark (docs/COMPANY.md C11).
+    public ItemQuality SpoilMake { get; init; } = ItemQuality.Plain;
+    public string SpoilMark { get; init; } = "";
     /// The captain's skills that rose in this battle, one line each (P3).
     public IReadOnlyList<string> Rises { get; init; } = Array.Empty<string>();
     /// Lots of goods taken from the field (kind, count), to sell in a town's market.
@@ -182,7 +185,7 @@ public static class Rules
         t.BlockChance = shield.Block;
         t.Armor += body.Armor + helm.Armor;
         // How well each piece is made (C9) scales its own numbers; the smith's marks ride on the man's Mods.
-        float Q(GearDef g) => Campaign.QualityScale(Campaign.ItemOf(c, g.Id)?.Quality ?? ItemQuality.Plain);
+        float Q(GearDef g) => Campaign.QualityScale(Campaign.ItemOf(c, g.Id)?.CountsAs() ?? ItemQuality.Plain);
         t.Damage *= Q(w);
         t.BlockChance = MathF.Min(0.95f, t.BlockChance * Q(shield));
         t.Armor += body.Armor * (Q(body) - 1) + helm.Armor * (Q(helm) - 1);
@@ -203,7 +206,7 @@ public static class Rules
     public static Mount CaptainMount(CaptainState c)
     {
         var m = Troops.Mount(Gear.Get(c.Kit.Horse).Mount);
-        float q = Campaign.QualityScale(Campaign.ItemOf(c, c.Kit.Horse)?.Quality ?? ItemQuality.Plain); // a better bred horse (C9)
+        float q = Campaign.QualityScale(Campaign.ItemOf(c, c.Kit.Horse)?.CountsAs() ?? ItemQuality.Plain); // a better bred horse (C9)
         m = m with { Hp = m.Hp * q * (1 + Skills.Level(c, "Riding") / 400f + (c.Perks.Contains("MountedLord") ? 0.3f : 0)) };
         return c.Perks.Contains("SaddleFast") ? m with { Gallop = m.Gallop * 1.1f } : m;
     }

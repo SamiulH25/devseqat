@@ -71,7 +71,10 @@ public sealed partial class Campaign
         if (won) Deed($"You win the tournament at {t.Name} and its purse of {TournamentPurse:0} crowns.", "tournaments");
         else Log($"You are beaten in the lists at {t.Name}. The crowd cheers you anyway.");
         string prize = won && rng.Chance(TournamentPrizeChance) ? SpoilFrom(900) : ""; // the lord of the lists gives a prize (P1)
-        Report = new BattleReport(won, $"Champions of {t.Name}", rows, won ? TournamentPurse : 0, 0, 0, renown, 0, fate, prize) { Rises = Skills.Rises(Captain, skillsBefore) };
+        // The lord of the lists gives a fine piece, a great town's lists sometimes a masterwork (C11).
+        var make = prize == "" ? ItemQuality.Plain : t.Prosperity >= 70 && rng.Chance(0.3f) ? ItemQuality.Masterwork : ItemQuality.Fine;
+        Report = new BattleReport(won, $"Champions of {t.Name}", rows, won ? TournamentPurse : 0, 0, 0, renown, 0, fate, prize)
+            { Rises = Skills.Rises(Captain, skillsBefore), SpoilMake = make, SpoilMark = prize == "" ? "" : MarkFor(Gear.Get(prize).Slot) };
         return Report;
     }
 
