@@ -110,7 +110,7 @@ public static class Rules
     /// Might at a chosen drill and trait weight (--agree tries other weights): drill, and a tier V-VII troop's style and traits.
     public static float MightAt(UnitType t, int men, float drillWeight, float traitWeight) =>
         Strength(t, men) * (1 + drillWeight * Battle.DrillOf(t)) * (1 + traitWeight * t.StyleRank);
-    public static float Might(Party p) => p.Companies.Sum(c => c.Stacks.Sum(s => Might(s.Type, s.Men)));
+    public static float Might(Party p) => p.Companies.Sum(c => c.Stacks.Sum(s => Might(s.Type, s.Men)) * (Campaign.NatureEffect(c) != null ? 1 + B.NatureWeight : 1));
     public static float Strength(Party p) => p.Companies.Sum(Strength);
 
     public static int Upkeep(CompanyRecord c) => (int)MathF.Ceiling(c.Stacks.Sum(s => (s.Men + s.Wounded) * PerMan(s.Type.Cost) * B.UpkeepRate));
@@ -317,6 +317,7 @@ public static class Rules
                     Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord, Mix: mix.Length > 1 ? mix : null,
                     RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero,
                     Streamers: c.BattleHonours.Count, Fringe: c.Battles >= 10, Cohesion: c.Cohesion,
-                    Named: c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).Select(m => new NamedSpec(m.Id, m.Troop, m.Name, m.Wounds, Soldier.AgeOf(m))).ToArray() : null);
+                    Named: c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).Select(m => new NamedSpec(m.Id, m.Troop, m.Name, m.Wounds, Soldier.AgeOf(m))).ToArray() : null,
+                    Standing: Campaign.NatureEffect(c) is string n ? new[] { n } : null); // the senior man's nature (C2)
             }).ToList());
 }

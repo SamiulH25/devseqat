@@ -495,3 +495,17 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
   and VII, fresh and scarred.
 - Not drawn yet: the report's FALLEN / HURT / NAMED lines (they carry no soldier id yet), the sergeant on the company card,
   the companion rows. Test `MenHaveFaces` (Tests/CompanyTests.cs).
+
+### C2 (a man of his own), as built
+- `Soldier.Nature` and `Soldier.Home` (Campaign/Natures.cs). Natures are drawn on naming on the roll's dice (`DrawNature`,
+  tipped by the deed); an old save's men get one from their id on load (`FillNatures`, no dice).
+- One nature a company, its senior man's (`Senior`: most battles among the fit). Six act in battle as the company's standing
+  effect (`nature_*` in effects.json, added in `Rules.Army`, kept by `WithHeroes`): Steady morale over time, Bold a harder
+  charge, Grim less shock, Pious a little of both, Sly a little faster, Proud a little harder blows. Off the field Merry mends
+  cohesion faster in a town and Gentle saves 5 % more of the fallen. Auto-resolve: `Balance.NatureWeight` 0.01.
+  Simplified from the plan: Steady is morale over time rather than a morale floor, Pious is not tied to blessings, Sly is
+  pace rather than ambush, and Proud does not need the banner near.
+- Deeds: "Saw his first battle" and "Was wounded and came back" are added; the first deed still never rolls off. Not yet:
+  "last of the first six", and the man past 50 asking to go home (that is C4).
+- The roll shows the nature after the name (gold with a star for the one the company feels, with a legend) and a tooltip with
+  deeds, home and what the nature does. Test `MenHaveNatures`.

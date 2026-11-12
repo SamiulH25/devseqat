@@ -133,6 +133,19 @@
       "tire": -0.1 },
     { "id": "sure_seated", "name": "Sure-seated", "icon": "horse", "line": "A deep saddle: the couched lance strikes harder.", "tags": ["mark", "horse"],
       "charge": 0.1 },
+    // Natures of named men (docs/COMPANY.md C2): the senior man's nature, felt by his company (Campaign/Natures.cs).
+    { "id": "nature_steady", "name": "Steady", "icon": "shield", "line": "A steady man in the ranks: the company keeps its nerve.", "tags": ["nature"],
+      "moralePerSec": 0.3 },
+    { "id": "nature_bold", "name": "Bold", "icon": "horse", "line": "A bold man leads them in: the company charges harder.", "tags": ["nature"],
+      "charge": 0.12 },
+    { "id": "nature_grim", "name": "Grim", "icon": "skull", "line": "A grim man beside them: losses and flank blows shake them less.", "tags": ["nature"],
+      "shock": -0.25 },
+    { "id": "nature_pious", "name": "Pious", "icon": "sun", "line": "A pious man prays them on: they take heart in the thick of it.", "tags": ["nature"],
+      "moralePerSec": 0.15, "shock": -0.1 },
+    { "id": "nature_sly", "name": "Sly", "icon": "boot", "line": "A sly man knows the ground: the company moves a little quicker.", "tags": ["nature"],
+      "speed": 0.03 },
+    { "id": "nature_proud", "name": "Proud", "icon": "flag", "line": "A proud man will not be outdone: the company strikes a little harder.", "tags": ["nature"],
+      "damage": 0.04 },
     { "id": "sure_footed_horse", "name": "Sure-footed", "icon": "horse", "line": "A sure-footed horse: rough ground slows it less.", "tags": ["mark", "horse"],
       "footing": 0.25 }
   ]

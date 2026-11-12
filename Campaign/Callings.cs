@@ -89,7 +89,7 @@ public sealed partial class Campaign
         var list = army.Companies.Select(co =>
         {
             if (co.Hero == "" || Companions.FirstOrDefault(k => k.CompanyId == co.Id) is not Character k) return co;
-            var standing = TalentsOf(k).ToList();
+            var standing = (co.Standing ?? Array.Empty<string>()).Concat(TalentsOf(k)).ToList(); // keep the senior man's nature (C2)
             if (k.Sworn >= 0 && leading.Contains(k.Sworn)) standing.Add("sworn");
             return co with { HeroCalling = k.Calling, HeroGifts = GiftsOf(k), HeroLevel = k.Level, Standing = standing.ToArray() };
         }).ToList();

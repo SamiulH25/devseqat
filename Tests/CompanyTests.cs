@@ -40,4 +40,39 @@ public static partial class SelfTest
         c.AgeDaily();
         Check(a.Age == age + 1, "named men grow a year older each year");
     }
+
+    /// C2: natures are drawn on the roll's dice (the main stream does not move); a company feels one nature in battle, its
+    /// senior man's; an old save's men get theirs on load; Merry and Gentle act off the field.
+    static void MenHaveNatures()
+    {
+        var c = Campaign.New(29);
+        var co = c.Player.Companies.First(k => k.Men >= 6);
+        ulong main = c.S.Rng;
+        var men = Enumerable.Range(0, 4).Select(i => c.NameMan(co, i % 2 == 0 ? "Stood when half the company fell." : "Killed 5.")).OfType<Soldier>().ToList();
+        Check(men.Count >= 3 && men.All(m => Campaign.Natures.Contains(m.Nature)), "every named man has a nature");
+        Check(c.S.Rng == main, "natures come from the roll's dice: the main stream does not move");
+
+        // One nature a company: the senior man's, carried into battle as the company's standing.
+        foreach (var m in co.Roll) m.Battles = 1;
+        var senior = co.Roll.First(m => m.Nature is not ("Merry" or "Gentle"));
+        senior.Battles = 9;
+        var spec = Rules.Army("you", new[] { c.Player }).Companies.First(k => k.Id == co.Id);
+        Check(spec.Standing is { Length: 1 } st && st[0] == "nature_" + senior.Nature.ToLowerInvariant(), $"the company carries one nature into battle, its senior man's ({senior.Nature})");
+        var b = Battle.Empty(29);
+        var sq = b.AddSquad(0, Troops.Get(co.Troop), 4, new Vector2(0, -10), 4, Vector2.UnitY, spec);
+        Check(sq.StandingIds.Count(id => id.StartsWith("nature_")) == 1, "one nature counted in the battle");
+
+        // Old saves: men without a nature get one on load, the same every time.
+        foreach (var m in co.Roll) m.Nature = "";
+        var a1 = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        var a2 = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        var n1 = a1.Player.Companies.SelectMany(k => k.Roll).Select(m => m.Nature).ToList();
+        Check(n1.All(n => n != "") && n1.SequenceEqual(a2.Player.Companies.SelectMany(k => k.Roll).Select(m => m.Nature)), "an old save's men get natures on load, the same each time");
+
+        // Auto-resolve weighs a nature a little.
+        foreach (var m in co.Roll) m.Nature = "Bold";
+        float with = Rules.Might(c.Player);
+        foreach (var m in co.Roll) m.Nature = "Merry";
+        Check(Rules.Might(c.Player) < with, "auto-resolve weighs a battle nature a little");
+    }
 }

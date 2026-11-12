@@ -195,7 +195,15 @@ partial class MapScreen
         if (Rules.RoleOf(c) == "casters") y = Spellbook(c, x, y, w);
         y += ui.U(3);
         ui.Text("THE ROLL", x, y, Kit.Gilt, 2);
-        ui.TextR($"{c.Roll.Count} OF {Balance.Get().RollSize} NAMED", x + w, y + ui.U(4), Style.Dim, 1);
+        string count = $"{c.Roll.Count} OF {Balance.Get().RollSize} NAMED";
+        ui.TextR(count, x + w, y + ui.U(4), Style.Dim, 1);
+        if (Campaign.Senior(c) is not null) // the legend for the star (C2)
+        {
+            string legend = "THE COMPANY FEELS ITS SENIOR MAN'S NATURE";
+            int lx = x + w - ui.TW(count, 1) - ui.U(24) - ui.TW(legend, 1);
+            ui.Icon("star", lx, y + ui.U(4), Kit.Gilt, 1);
+            ui.Text(legend, lx + ui.U(10), y + ui.U(4), Kit.Mul(Kit.Gilt, 0.8f), 1);
+        }
         y += ui.U(20);
         if (c.Roll.Count == 0) { ui.Text("NO MAN HAS EARNED A NAME YET. THEY DO IT IN BATTLE.", x, y, Style.Dim, 1); y += ui.U(14); }
         foreach (var m in c.Roll.OrderByDescending(m => m.Battles))
@@ -210,11 +218,23 @@ partial class MapScreen
             int tx = x + ui.U(42);
             y += ui.U(5);
             ui.Text(m.Name.ToUpperInvariant(), tx, y, Style.Text, 1);
+            if (m.Nature != "") // his nature beside his name (C2); gold with a star when his company feels it
+            {
+                int nx = tx + ui.TW(m.Name.ToUpperInvariant(), 1) + ui.U(12);
+                bool felt = Campaign.Senior(c) == m;
+                ui.Text(m.Nature.ToUpperInvariant(), nx, y, felt ? Kit.Gilt : Style.Friendly, 1);
+                if (felt) ui.Icon("star", nx + ui.TW(m.Nature.ToUpperInvariant(), 1) + ui.U(4), y, Kit.Gilt, 1);
+            }
             string stat = $"AGE {Soldier.AgeOf(m)}, {Campaign.N(m.Battles, "BATTLE")}, {Campaign.N(m.Kills, "KILL")}" + (m.Wounds > 0 ? $", {Campaign.N(m.Wounds, "WOUND")}" : "");
             ui.TextR(stat, x + w, y, Style.Dim, 1);
             ui.Text(Troops.Get(m.Troop).Name.ToUpperInvariant() + (m.Hurt ? " . HURT" : ""), tx, y + ui.U(10), m.Hurt ? Style.Warn : Kit.Gilt, 1);
             ui.Text(Cut((m.Deeds.Count > 0 ? m.Deeds[^1] : "").ToUpperInvariant(), fit - 30), tx + ui.U(150), y + ui.U(10), Style.Dim, 1);
-            if (ui.Hover(row)) note = string.Join(" ", m.Deeds).ToUpperInvariant() + $" ON THE ROLL SINCE DAY {m.Joined}.";
+            if (ui.Hover(row))
+            {
+                var lines = ui.Wrap(string.Join(" ", m.Deeds).ToUpperInvariant() + $" ON THE ROLL SINCE DAY {m.Joined}." + (m.Home != "" ? $" FROM {m.Home.ToUpperInvariant()}." : ""), ui.U(260)).ToList();
+                if (m.Nature != "") lines.AddRange(ui.Wrap($"{m.Nature.ToUpperInvariant()}: {Campaign.NatureLine(m.Nature).ToUpperInvariant()}" + (Campaign.Senior(c) == m ? " THE COMPANY FEELS IT." : " HIS COMPANY FEELS ITS SENIOR MAN'S NATURE."), ui.U(260)));
+                ui.Tooltip(row.Right - ui.U(150), row.Y - ui.U(2), m.Name.ToUpperInvariant(), lines.ToArray()); // to the right, clear of the names
+            }
             y += ui.U(41);
         }
         y += ui.U(6);

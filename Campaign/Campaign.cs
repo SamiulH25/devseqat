@@ -44,6 +44,7 @@ public sealed partial class Campaign
         Factions.Bind(S.Factions);
         RegisterOwnForm(); // your own form is made in play (MA6)
         MigrateGear();
+        FillNatures();
         LearnForms();
         SyncOrders();
         MigrateSkills();
@@ -385,7 +386,7 @@ public sealed partial class Campaign
                         st.AddXp(st.Men * ((town ? B.DrillTown : B.DrillCamp) + (c.Traits.Contains("Drillmaster") ? 1 : 0)) * Honours.Of(c).DrillMul
                             * (p == Player ? (HasCompanion("Drillmaster") ? 1.25f : 1) * (1 + Skill("Training") / 200f) * (Has("Academy") ? 1.5f : 1) : 1));
                 }
-                if (town && c.Cohesion < 20) c.Cohesion = MathF.Min(20, c.Cohesion + 1);
+                if (town && c.Cohesion < 20) c.Cohesion = MathF.Min(20, c.Cohesion + (SeniorNature(c) == "Merry" ? 2 : 1)); // a merry man lifts the camp (C2)
             }
         }
         RefreshHeroes();

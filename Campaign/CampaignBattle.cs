@@ -226,7 +226,7 @@ public partial class Campaign
     (int Killed, int Wounded, int Captured, int FledBack) StackLosses(Party p, CompanyRecord c, CompanyResult cr, StackResult sr, TroopStack st, bool teamWon, float surgeon, string foe)
     {
         int stBefore = st.Men;
-        float pw = Math.Clamp(B.WoundBase + st.Type.Armor / B.WoundArmor + surgeon, B.WoundMin, B.WoundMax);
+        float pw = Math.Clamp(B.WoundBase + st.Type.Armor / B.WoundArmor + surgeon + (p == Player && SeniorNature(c) == "Gentle" ? 0.05f : 0), B.WoundMin, B.WoundMax); // a gentle man carries the hurt off (C2)
         int wounded = (int)MathF.Round(sr.Fallen * pw), killed = sr.Fallen - wounded;
         int captured = teamWon ? 0 : (int)MathF.Round(wounded * B.CaptureChance);
         wounded -= captured;

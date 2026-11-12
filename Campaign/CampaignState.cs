@@ -158,6 +158,8 @@ public sealed class Soldier
     /// His age (docs/COMPANY.md C1): 17-30 when named, a year older each year; 0 on an old save (`AgeOf` makes one up).
     public int Age;
     public string Name = "", Troop = "", Fate = "", DiedAt = "", CompanyName = "";
+    /// His nature, one word (docs/COMPANY.md C2: Campaign.Natures), and the place he comes from.
+    public string Nature = "", Home = "";
     public bool Hurt;
     /// Knighted into your own order (docs/archive/KNIGHT_ORDERS.md 8, K8).
     public bool Knight;
@@ -717,6 +719,8 @@ public sealed class Balance
     public float RenownPerVictory = 5, RenownStrengthDivisor = 50;
     /// What the captain's baggage carries (docs/COMPANY.md C9): a base, and more for each spare horse (to six).
     public float BaggageBase = 20, BaggagePerHorse = 5;
+    /// What a company's senior named man's nature adds to its might in auto-resolve (docs/COMPANY.md C2).
+    public float NatureWeight = 0.01f;
     public float CompanySlotsBase = 10, MenBase = 40, MenRenownDivisor = 5;
     /// Men per company, party, band and garrison are this many times the base numbers below; per-man prices are divided by it.
     public float ArmyScale = 3;

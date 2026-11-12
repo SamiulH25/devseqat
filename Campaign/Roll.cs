@@ -63,7 +63,8 @@ public sealed partial class Campaign
         if (c.Roll.Count >= B.RollSize) return null;
         troop ??= UnnamedTroop(c);
         if (troop == null || c.Stacks.FirstOrDefault(s => s.Troop == troop) is not TroopStack st || st.Men <= FitNamed(c, troop).Count()) return null;
-        var m = new Soldier { Id = S.NextSoldier++, Name = ManName(c), Troop = troop, Joined = Day, Age = 17 + RollRng.Next(14) };
+        var m = new Soldier { Id = S.NextSoldier++, Name = ManName(c), Troop = troop, Joined = Day, Age = 17 + RollRng.Next(14), Home = c.Home };
+        m.Nature = DrawNature(deed);
         m.Deed(deed);
         c.Roll.Add(m);
         return m;
@@ -138,7 +139,11 @@ public sealed partial class Campaign
     internal void RollAfterBattle(CompanyRecord c, CompanyResult cr, bool won, bool bloodied, bool siege, string foe)
     {
         if (!cr.Deployed || c.Men <= 0) return;
-        foreach (var m in c.Roll) m.Battles++;
+        foreach (var m in c.Roll)
+        {
+            m.Battles++;
+            if (m.Battles == 1 && m.Deeds.Count > 0 && !m.Deeds[0].StartsWith("Killed") && !m.Deeds[0].StartsWith("Cut down")) m.Deed($"Saw his first battle{(foe != "" ? $" against {foe}" : "")}."); // C2
+        }
         string against = foe != "" ? $" against {foe}" : "";
         // In a fought battle the best unnamed man earns his name by his own hand; else by what the company did.
         if (cr.Named != null && cr.BestTroop != "" && (cr.BestFelledLeader || cr.BestKills >= 4)
@@ -174,7 +179,7 @@ public sealed partial class Campaign
             if (st == null) { foreach (var m in g.ToList()) Lose(c, m, surplus, battle ? foe : ""); continue; }
             var hurt = g.Where(m => m.Hurt).ToList();
             var fit = g.Where(m => !m.Hurt).ToList();
-            while (hurt.Count > st.Wounded && fit.Count < st.Men) { var m = hurt[^1]; hurt.RemoveAt(hurt.Count - 1); m.Hurt = false; fit.Add(m); }
+            while (hurt.Count > st.Wounded && fit.Count < st.Men) { var m = hurt[^1]; hurt.RemoveAt(hurt.Count - 1); m.Hurt = false; fit.Add(m); if (m.Wounds == 1) m.Deed("Was wounded and came back."); } // C2
             while (battle && fit.Count > st.Men && hurt.Count < st.Wounded) { var m = fit[^1]; fit.RemoveAt(fit.Count - 1); Hurt(c, m); hurt.Add(m); }
             foreach (var m in hurt.Skip(st.Wounded).Concat(fit.Skip(st.Men)).ToList()) Lose(c, m, surplus, battle ? foe : "");
         }
