@@ -192,6 +192,8 @@ public sealed class Unit
     public Unit? Target;
     /// He holds the enemy captain as his mark (docs/COMPANY.md C12; counted against `Battle.MarkCap`).
     public bool OnCaptain;
+    /// His place in the ring round his own captain (docs/COMPANY.md C13; -1: none).
+    public int GuardSlot = -1;
     public bool Dead, Fled, Routing;
     public int Routs;        // how many times this man has broken (a second rout is final)
     public float DiedAt;     // battle time of death (the fall is animated)

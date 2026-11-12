@@ -51,6 +51,9 @@ public partial class Battle
         else (enemy, d) = Notice(u, enemy, d); // the captain draws the eye (BattleNotice.cs)
         u.EnemyDist = d;
         if (!u.Mounted && GivesGround(u)) return; // rabble who just saw him kill give ground
+        if (HuntThink(u, s, ref enemy, ref d)) return; // sent for you, covering you, guarding their captain (BattleHunt.cs)
+        u.EnemyDist = d;
+        if (u.Ammo > 0 && !u.Mounted && LoosesAtCaptain(u, s)) return; // a volley marked on you
         if (u.Mounted) { ThinkCav(u, s, enemy, d, dt); return; }
         u.Wish = Vector2.Zero;
 
@@ -60,8 +63,9 @@ public partial class Battle
             if (toSlot > 0.4f) { var back = Via(u, u.Slot) - u.Pos; u.Wish = back / MathF.Max(0.01f, back.Length()) * u.Type.Speed; u.Face(back); }
             return;
         }
-        bool charge = s.Order == Order.Charge;
-        if (charge && s.Target != null && d > 3) (enemy, d) = Nearest(u, s.Target); // go for the ordered target
+        bool free = s.HuntCaptain || s.CoverUntil > Time; // sent for the captain, or to cover him: a run, not a line
+        bool charge = s.Order == Order.Charge || free;
+        if (charge && s.Target != null && d > 3 && !free) (enemy, d) = Nearest(u, s.Target); // go for the ordered target
 
         // Archers shoot once settled in formation (or anywhere when charging).
         if (s.Target != null && !charge && u.Ammo > 0)
@@ -88,7 +92,7 @@ public partial class Battle
 
         // A company in the field fights from its ranks (BattleRanks.cs); leaders, heroes, pursuers, mobs, broken ranks, a
         // charge with no company left to hit (it goes for the captain) and one swarming a beast or a handful fight free.
-        if (Ranked(s) && !s.Broken && !(charge && (s.Foe == null || Overwhelms(s))) && !u.IsLeader && !u.Hero && !(s.Pursue && charge)) { FightFromRanks(u, s, enemy, d, dt); return; }
+        if (Ranked(s) && !free && !s.Broken && !(charge && (s.Foe == null || Overwhelms(s))) && !u.IsLeader && !u.Hero && !(s.Pursue && charge)) { FightFromRanks(u, s, enemy, d, dt); return; }
 
         bool leashed = !charge && toSlot > 14;
         if (enemy != null && !leashed && (charge || d < 6))
@@ -337,6 +341,7 @@ public partial class Battle
             eGuard.Front = dir;
             eGuard.Anchor = front - dir * 4; // captain leads from just behind the line
             if (charged[1] && Time - chargedAt[1] > 12 && eGuard.Order != Order.Charge) { eGuard.Order = Order.Charge; Log(EnemyCaptain.Type.Wild ? $"The {EnemyCaptain.Type.Name.ToLowerInvariant()} joins the fight!" : "The enemy captain joins the fight!"); }
+            HuntGeneral(); // he hunts you (BattleHunt.cs)
         }
     }
     /// The enemy company opposite a line company: nearest along the line (sideways counts more than depth), foot first.

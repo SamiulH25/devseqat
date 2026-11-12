@@ -190,7 +190,11 @@ partial class BattleScreen
                 MarkedScene(); shotFrames = 0; shotIndex++; break;
             case 107 when shotFrames > 20:
                 pendingShot = "captain-marked"; shotIndex++; break;
-            case 108 when pendingShot == null: Exit(); break;
+            case 108 when pendingShot == null:
+                HuntedScene(); shotFrames = 0; shotIndex++; break;
+            case 109 when shotFrames > 60:
+                pendingShot = "captain-hunted"; shotIndex++; break;
+            case 110 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -465,6 +469,32 @@ partial class BattleScreen
         blend = 0;
         yaw = MathHelper.PiOver2;
         pitch = 0.18f;
+    }
+
+    /// The enemy hunts you (docs/COMPANY.md C13), staged for a shot: elite bows have marked the captain standing in the open
+    /// (the warning ring on the ground) and the enemy horse is sent for him (the alert). Field view, looking at the bows.
+    void HuntedScene()
+    {
+        battle = Battle.Empty(15, new BattleOptions { Renown = 400 });
+        SetWorld();
+        var b = battle;
+        b.Player.Pos = Vector2.Zero;
+        b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+        b.AddSquad(0, Troops.Get("men_at_arms"), 8, new Vector2(-12, -6), 4, Vector2.UnitY);
+        var bows = b.AddSquad(1, Troops.Get("longbowmen"), 12, new Vector2(4, 30), 6, -Vector2.UnitY);
+        bows.Drill = 0.95f;
+        b.AddSquad(1, Troops.Get("knights"), 6, new Vector2(-24, 40), 3, -Vector2.UnitY);
+        for (int i = 0; i < 40; i++) b.Update(1 / 60f);
+        b.HuntGeneral();
+        b.SendHunterNow();
+        for (int i = 0; i < 15; i++) b.Update(1 / 60f);
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = true;
+        hudHidden = false;
+        SetCommand(false);
+        blend = 0;
+        yaw = MathHelper.PiOver2 + 0.15f;
+        pitch = 0.62f;
     }
 
     /// Magic and aura staged for a shot (docs/archive/MAGIC_AURA.md 6): spells (a smite's pillar, lightning, burning ground, mist, a

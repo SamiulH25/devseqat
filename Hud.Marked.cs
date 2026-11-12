@@ -57,6 +57,47 @@ sealed partial class Hud
         Text(meet, mb.X + U(6), mb.Y + U(4), Gold, 1);
     }
 
+    /// Where a volley marked on you will fall (docs/COMPANY.md C13): a red ring on the ground that tightens as the loose
+    /// comes, and a warning at the top while you stand in it. Both views.
+    void VolleyRings()
+    {
+        var vp = new Viewport(0, 0, W, H);
+        foreach (var s in B.Squads)
+        {
+            if (s.VolleyAt <= 0 || B.Time > s.VolleyAt) continue;
+            float left = s.VolleyAt - B.Time, k = Math.Clamp(left / Battle.VolleyWarn, 0, 1);
+            float rad = Battle.VolleyRadius * (0.55f + 0.45f * k);
+            var edge = Color.Lerp(Bad, Color.White, 0.5f * (1 - k));
+            GroundRing(vp, s.VolleyAim, rad, edge, U(3), false);
+            GroundRing(vp, s.VolleyAim, rad * 0.55f, edge * 0.8f, U(2), true); // a dashed inner ring: ground that will be hit, not a selection
+            if (Vector2.Distance(B.Player.Pos, s.VolleyAim) < Battle.VolleyRadius + 2)
+            {
+                string warn = $"ARROWS IN {left:0.0}: MOVE!";
+                int ww = TW(warn, 2) + U(20);
+                var wr = new Rectangle(W / 2 - ww / 2, U(124), ww, U(24));
+                Rect(wr, Color.Black * 0.75f);
+                Frame(wr, Bad, U(2));
+                Shadowed(warn, W / 2f, wr.Y + U(6), Color.Lerp(Bad, Color.White, 0.35f), 2, 1);
+            }
+        }
+    }
+
+    /// A ring on the ground in screen space: solid or dashed, with a dark edge.
+    void GroundRing(Viewport vp, Vector2 at, float rad, Color c, float w, bool dashed)
+    {
+        Vector2? prev = null;
+        for (int i = 0; i <= 32; i++)
+        {
+            float a = i / 32f * MathHelper.TwoPi;
+            var g = at + new Vector2(MathF.Cos(a), MathF.Sin(a)) * rad;
+            var v = vp.Project(new Vector3(g.X, B.Terrain.Height(g) + 0.1f, g.Y), Proj, View, Matrix.Identity);
+            if (v.Z is <= 0 or >= 1) { prev = null; continue; }
+            var pt = new Vector2(v.X, v.Y);
+            if (prev is Vector2 q && (!dashed || i % 2 == 0)) { Line(q, pt, Color.Black * 0.6f, w + U(2)); Line(q, pt, c, w); }
+            prev = pt;
+        }
+    }
+
     /// A sharp V whose point is at `tip`, pointing along `dir` (screen space): two thick strokes with a dark edge.
     void Chevron(Vector2 tip, Vector2 dir, Color c, float size)
     {

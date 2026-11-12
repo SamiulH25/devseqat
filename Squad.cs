@@ -37,6 +37,11 @@ public sealed class Squad
     public Unit? Meets;
     public int CutByCaptain;
     public bool Heartened;
+    /// The enemy hunts you (docs/COMPANY.md C13): sent for the captain now, ever sent this battle; covering your captain
+    /// until a time; a volley marked on the captain (when it looses, where, when the company may mark again).
+    public bool HuntCaptain, HuntedFor;
+    public float CoverUntil = -1, VolleyAt = -1, VolleyAgain;
+    public Vector2 VolleyAim;
     /// The pace the company keeps in formation: its slowest man's (a mixed company marches together).
     public float MarchSpeed = float.MaxValue;
     public Company? Company;

@@ -205,6 +205,7 @@ sealed partial class Hud
         NamedMarks();
         BannerMark();
         if (!Deploying) FightMarks();
+        VolleyRings(); // a volley marked on you (C13): on the ground, under the panels
         if (Command) Banners();
         Balance();
         GoalLines();

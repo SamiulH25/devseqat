@@ -16,6 +16,8 @@ partial class Battle
         new("quick", "WIN WITHIN THREE MINUTES", "Tactics"),
         new("banner", "KEEP YOUR BANNER FLYING", "Leadership"),
         new("bringhome", "BRING HIM HOME", "Leadership"), // L8: one of your named men lives through it
+        new("hunters", "THE MEN SENT FOR YOU: NONE GET HOME", "Arms"), // C13: added when the general sends for you
+        new("stand", "STAND WHEN FOUR COME FOR YOU", "Arms"), // C13: added when four are on you at once
     };
 
     /// Seconds within which a quick win must come.
@@ -39,6 +41,7 @@ partial class Battle
             "captain" => !scripted,
             "banner" => Options.Banner && Bearer != null,
             "bringhome" => anyNamed,
+            "hunters" or "stand" => false, // never drawn: they come in the fight (BattleHunt.cs)
             _ => true,
         }).ToList();
         var r = new Random(seed * 31 + 7);
@@ -67,6 +70,8 @@ partial class Battle
                 return over ? (Winner == 0 ? 1 : -1) : 0;
             case "banner": return BannerEverFell ? -1 : over ? 1 : 0;
             case "bringhome": return Ward == null ? -1 : Ward.Dead && !Ward.Saved && Time - Ward.DiedAt >= RescueWindow ? -1 : over ? (Ward.Dead && !Ward.Saved ? -1 : 1) : 0;
+            case "hunters": return HuntersState();
+            case "stand": return StandState();
             case "quick":
                 if (over) return Winner == 0 && Time <= QuickWin ? 1 : -1;
                 return Time > QuickWin ? -1 : 0;

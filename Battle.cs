@@ -371,6 +371,7 @@ public sealed partial class Battle
         Mark(7);
         UpdateMorale(dt);
         UpdateAlerts(dt); // what needs you (BattleAlerts.cs): reads the sim, changes nothing
+        UpdateHunt(dt); // your men cover you when they come for you (BattleHunt.cs)
         UpdateBanner();
         UpdateRescue(dt);
         Mark(8);

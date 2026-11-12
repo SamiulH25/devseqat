@@ -404,3 +404,18 @@ wait for a place; the rest keep their fight. Each kill shakes the victim's compa
 the fifth and tenth man you cut out of it); the company that kills you gains 20 morale and a floor of 12. Simplified: the
 "trained turn a file to face you" habit is left to the ranks' existing guard facing. HUD `Hud.Marked.cs`; staged shot
 `captain-marked.png`.
+
+**C13 (2026-11-12).** `BattleHunt.cs`, run from the end of `General(1)`. The general sends for you from 10 s in when you
+have 6 kills (12 for a second time, and so on) or stand 30 m ahead of your line's centre: his nearest horse not at blows
+and outside a division, else his reserve; cooldown 90 / 60 / 40 s by difficulty; the order lapses after 45 s, below 30%
+of the company, or when you fall. The company fights free (not from its ranks) and goes for you unless already at blows.
+Bows: elite, or trained against a lone rider, within range - 5 m, you visible and no man of theirs within 8 m of you;
+warning 1.6 s (`Flashes` "mark", HUD ring and "ARROWS IN"), then every man with arrows looses at you in a 0.6 s window
+unless their own men reach you; 25 s per company; none on Easy. The guard: the enemy captain's six nearest footmen take a
+half ring 1.9 m in front of him while you are within 20 m. A grudge lord (`GrudgeOf`: his want is revenge on your house,
+or his opinion of you is -40 or less) charges from the start and holds back below 35% health; the encounter panel shows
+his line. Cover: with two or more on you (the sent company counts when within 25 m) your household guard on Follow and
+your nearest idle foot company on Hold within 35 m go for the foes on you for 10 s. Goals `hunters` and `stand` are
+added in the fight, not drawn. Not built (left for later): the respected lord's offer of single combat in the field,
+brigand kings and monster leaders hunting by `Prey`, a named man earning a deed for saving you, the report's line, and a
+`--balance` comparison (the self-test's `Calibration` and `CavalryBalance` stay green).

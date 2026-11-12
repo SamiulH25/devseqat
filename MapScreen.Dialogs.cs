@@ -39,6 +39,7 @@ partial class MapScreen
         ui.Rect(bar, Style.Foe);
         ui.Rect(new Rectangle(bar.X, bar.Y, (int)(bar.Width * me / MathF.Max(1, me + them)), bar.Height), Style.Friendly);
         ui.Text(C.GroundNote(e), x, bar.Bottom + ui.U(8), Kit.Gilt, 1); // the ground and who holds it (docs/archive/TERRAIN.md T7)
+        if (C.GrudgeOf(e) is { Length: > 0 } grudge) ui.Text(ui.Fit(grudge.ToUpperInvariant(), bar.Width), x, bar.Bottom + ui.U(20), Style.Bad, 1); // he comes for you (C13)
         if (C.SpellNote(e) is { Length: > 0 } sn) ui.TextR(ui.Fit(sn.ToUpperInvariant(), ui.U(300)), r.Right - ui.U(24), bar.Bottom + ui.U(8), Style.Dim, 1);
         y += ui.U(76);
         foreach (var c in e.Companies.Where(c => c.Men > 0).Take(6))
