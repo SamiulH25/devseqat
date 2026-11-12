@@ -220,7 +220,7 @@ sealed partial class Hud
         DivisionCards();
         if (Command && Div != null) GoalPanel();
         if (GroundView && !ShowResult && !MenuOpen) GroundPanel();
-        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) { SquadTooltip(); GroundHints(); } } else { OpponentMark(); BlowNumbers(); Crosshair(); }
+        if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) { SquadTooltip(); GroundHints(); } } else { OpponentMark(); BlowNumbers(); MarkedMarks(); Crosshair(); }
         if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
         Hints();
         if (B.DownSince >= 0) // the last stand (P6)

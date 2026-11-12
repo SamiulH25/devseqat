@@ -32,6 +32,11 @@ public sealed class Squad
     public int Kills;                             // enemies this company has killed (campaign XP)
     public readonly int[] KillsByTier = new int[8]; // kills by the victim's tier (0 = leaders, 1-7 = troop tiers)
     public int HorseKills;                        // mounted enemies killed (the Horse-breakers honour)
+    /// The enemy sees you (docs/COMPANY.md C12): the man it sends to meet the captain, men the captain has cut out of it,
+    /// and whether it brought the captain down (it takes heart for the rest of the battle).
+    public Unit? Meets;
+    public int CutByCaptain;
+    public bool Heartened;
     /// The pace the company keeps in formation: its slowest man's (a mixed company marches together).
     public float MarchSpeed = float.MaxValue;
     public Company? Company;

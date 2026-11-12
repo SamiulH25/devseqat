@@ -190,6 +190,8 @@ public sealed class Unit
     public bool Charging; // player holding the attack button
     public float BlockStart; // when the player raised the guard (parries need fresh timing)
     public Unit? Target;
+    /// He holds the enemy captain as his mark (docs/COMPANY.md C12; counted against `Battle.MarkCap`).
+    public bool OnCaptain;
     public bool Dead, Fled, Routing;
     public int Routs;        // how many times this man has broken (a second rout is final)
     public float DiedAt;     // battle time of death (the fall is animated)

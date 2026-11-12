@@ -354,7 +354,8 @@ public partial class Battle
             t.Horse = null;
             t.Pos -= new Vector2(-t.HeadingDir.Y, t.HeadingDir.X) * 1.0f; // the rider falls off to the side
         }
-        if (killer.IsPlayer && t != killer) PlayerKills++;
+        if (killer.IsPlayer && t != killer) { PlayerKills++; CaptainKilled(t); } // the enemy sees it (BattleNotice.cs)
+        if (t.IsPlayer) CaptainBroughtDown(killer);
         if (killer.IsPlayer && t == EnemyCaptain) ChampionFelled(); // a breakthrough in the field (MA7)
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.KillsByTier[Math.Clamp(t.Type.Tier, 0, 7)]++;
         if (killer.Squad != null && killer.Team != t.Team) killer.Squad.Kills++;

@@ -393,3 +393,14 @@ reads as static, and you cannot tell a longbow shaft from a crossbow bolt or see
 `Scaled(20)` (60 at ArmyScale 3), so `Besiege` refused silently and `PrepareAssault` got a null target. The staging now
 scales with `Balance.ArmyScale`, and a refused staged step stops the run with its reason (`ScreenHost.StagingRefused`).
 All 53 campaign screens save; `overflow.txt` is empty.
+
+**C12 (2026-11-12).** `BattleNotice.cs`. A foe's nearest target goes through `Notice` (in `Think`, after the router
+check): the captain's distance is multiplied by `1 - 0.5 * Fame()` (renown full at 500 via the new `BattleOptions.Renown`,
+aura tier, kills this battle, mounted, the banner within 8 m); a man within reach of someone else keeps him; leaders keep
+their own logic (`ChampionWants`). `MarkCap` = 2 / 3 / 4 from `EnemyDamage`, +1 at aura tier 4; past it a foe takes your
+nearest man within 10 m instead. Rabble: x0.7 when no man of yours is within 5 m of you, and give ground 1.5 s within 6 m
+of your kill. Veteran and elite: one man (`MeetsCaptain`: highest tier, sergeant, nearest) steps out at x0.6 and does not
+wait for a place; the rest keep their fight. Each kill shakes the victim's company within 25 m by `2 + 4 * Fame` (+10 at
+the fifth and tenth man you cut out of it); the company that kills you gains 20 morale and a floor of 12. Simplified: the
+"trained turn a file to face you" habit is left to the ranks' existing guard facing. HUD `Hud.Marked.cs`; staged shot
+`captain-marked.png`.

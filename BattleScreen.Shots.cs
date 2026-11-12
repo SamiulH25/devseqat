@@ -186,7 +186,11 @@ partial class BattleScreen
                 pendingShot = "beasts-fight"; shotIndex++; break;
             case 105 when shotFrames > 330:
                 pendingShot = "beasts-fight-late"; shotIndex++; break;
-            case 106 when pendingShot == null: Exit(); break;
+            case 106 when pendingShot == null:
+                MarkedScene(); shotFrames = 0; shotIndex++; break;
+            case 107 when shotFrames > 20:
+                pendingShot = "captain-marked"; shotIndex++; break;
+            case 108 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -435,6 +439,32 @@ partial class BattleScreen
         camYaw = MathHelper.PiOver2 + 0.35f;
         camPitch = 0.6f;
         zoom = 19;
+    }
+
+    /// The enemy sees you (docs/COMPANY.md C12), staged for a shot: a famed captain on foot with his men either side, a rabble
+    /// coming at him from the front, a veteran company sending its best man, and one foe behind (an edge mark). Field view.
+    void MarkedScene()
+    {
+        battle = Battle.Empty(14, new BattleOptions { Renown = 500, AuraTier = 3 });
+        SetWorld();
+        var b = battle;
+        b.Player.Pos = Vector2.Zero;
+        b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+        b.AddSquad(0, Troops.Get("men_at_arms"), 8, new Vector2(-7, 0), 4, Vector2.UnitY);
+        b.AddSquad(0, Troops.Get("men_at_arms"), 8, new Vector2(7, 0), 4, Vector2.UnitY);
+        b.AddSquad(1, Troops.Get("levies"), 1, new Vector2(1, -4), 1, Vector2.UnitY).Drill = 0.1f; // behind you: an edge mark
+        var mob = b.AddSquad(1, Troops.Get("levies"), 10, new Vector2(-2, 7), 5, -Vector2.UnitY);
+        mob.Drill = 0.1f;
+        var vets = b.AddSquad(1, Troops.Get("men_at_arms"), 8, new Vector2(5, 9), 4, -Vector2.UnitY);
+        vets.Drill = 0.7f;
+        for (int i = 0; i < 50; i++) b.Update(1 / 60f);
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = true;
+        hudHidden = false;
+        SetCommand(false);
+        blend = 0;
+        yaw = MathHelper.PiOver2;
+        pitch = 0.18f;
     }
 
     /// Magic and aura staged for a shot (docs/archive/MAGIC_AURA.md 6): spells (a smite's pillar, lightning, burning ground, mist, a

@@ -324,6 +324,7 @@ public sealed partial class Battle
         UpdateLastStand();
         RallyCooldown = MathF.Max(0, RallyCooldown - dt);
         UpdateCentroids();
+        CountMarks(); // who holds the captain as his mark (BattleNotice.cs)
         Mark(0);
         if (!scripted && (generalTimer -= dt) <= 0)
         {

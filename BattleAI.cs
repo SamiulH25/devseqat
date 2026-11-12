@@ -48,7 +48,9 @@ public partial class Battle
         var s = u.Squad!;
         var (enemy, d) = Nearest(u);
         if (s.Pursue && s.Order == Order.Charge && NearestRouter(u, d) is (Unit r, float rd)) (enemy, d) = (r, rd); // run down the broken
+        else (enemy, d) = Notice(u, enemy, d); // the captain draws the eye (BattleNotice.cs)
         u.EnemyDist = d;
+        if (!u.Mounted && GivesGround(u)) return; // rabble who just saw him kill give ground
         if (u.Mounted) { ThinkCav(u, s, enemy, d, dt); return; }
         u.Wish = Vector2.Zero;
 

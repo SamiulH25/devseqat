@@ -208,6 +208,7 @@ public static class Rules
         o.Riding = Skills.Level(c, "Riding");
         o.Bowcraft = Skills.Level(c, "Bowcraft");
         o.Perks = c.Perks.ToHashSet();
+        o.Renown = c.Renown;
         o.Wounds = c.Wounds.ToHashSet();
         o.AuraTier = Math.Max(0, c.AuraTier - (c.Wounds.Contains("core") ? 1 : 0)); // a cracked core holds you a tier down (K5)
         o.Forms = c.Forms.Where(id => Forms.Has(id) || id == Forms.OwnId && c.OwnForm != null).ToArray();
