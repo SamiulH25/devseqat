@@ -126,46 +126,104 @@ partial class MapScreen
     /// Tavern tab (S5): a wanderer looking for a captain (3.3), and what people are saying (rumours of real things nearby).
     void TavernTab(Settlement s, Rectangle body)
     {
-        int y = body.Y, rh = ui.U(66);
+        // Every action button on the tab is one size, on one right edge; sections are headed and evenly spaced.
+        int y = body.Y, bw = ui.U(220), bh = ui.U(24), gap = ui.U(10), textW = body.Width - bw - ui.U(28);
+        Rectangle Act(Rectangle row) => new(row.Right - bw - ui.U(6), row.Center.Y - bh / 2, bw, bh);
+        void Head(string title)
+        {
+            ui.Text(title, body.X, y, Kit.Gilt, 1);
+            ui.Divider(body.X + ui.TW(title, 1) + ui.U(8), y + ui.U(3), body.Width - ui.TW(title, 1) - ui.U(8), Kit.Mul(Kit.Gilt, 0.62f));
+            y += ui.U(14);
+        }
+        float hour = (float)(C.S.Hours % 24);
+        bool night = hour is >= 20 or < 5;
+        Head(night ? "TONIGHT" : "TODAY");
         if (C.WandererAt(s) is Character w)
         {
-            var row = new Rectangle(body.X, y, body.Width, rh - ui.U(6));
-            TownRow(row);
-            PortraitWell(UnitType.Captain, new Rectangle(row.X + ui.U(4), row.Y + ui.U(4), row.Height - ui.U(8), row.Height - ui.U(8)), 2);
-            int tx = row.X + row.Height + ui.U(6), textW = row.Right - ui.U(240) - tx; // clear of the button
-            ui.TextFit($"{w.Name.ToUpperInvariant()}, A WANDERER", tx, row.Y + ui.U(8), textW, Kit.Gilt, 2);
+            var row = new Rectangle(body.X, y, body.Width, ui.U(56));
+            TavernRow(row);
+            var port = new Rectangle(row.X + ui.U(4), row.Y + ui.U(4), row.Height - ui.U(8), row.Height - ui.U(8));
+            PortraitWell(UnitType.Captain, port, 2);
+            ui.Frame(port, Kit.GiltDark, ui.U(1));
+            int tx = row.X + row.Height + ui.U(6), tw = row.Right - bw - ui.U(18) - tx; // clear of the button
+            ui.TextFit($"{w.Name.ToUpperInvariant()}, A WANDERER", tx, row.Y + ui.U(10), tw, Kit.Gilt, 2);
             string traits = w.Traits.Count > 0 ? string.Join(", ", w.Traits).ToUpperInvariant() + ". " : "";
-            ui.TextFit($"{w.Role.ToUpperInvariant()} ({RoleTextOf(w.Role)}). {traits}LEADS A COMPANY AS A HERO.", tx, row.Y + ui.U(28), textW, Style.Dim, 1);
+            ui.TextFit($"{w.Role.ToUpperInvariant()} ({RoleTextOf(w.Role)}). {traits}LEADS A COMPANY AS A HERO.", tx, row.Y + ui.U(32), tw, Style.Dim, 1);
             int wp = C.WandererPrice(w);
-            if (ui.Button(new Rectangle(row.Right - ui.U(234), row.Center.Y - ui.U(14), ui.U(228), ui.U(28)), "TAKE INTO SERVICE", C.S.Gold >= wp, $"{wp} CROWNS"))
+            if (ui.Button(Act(row), "TAKE INTO SERVICE", C.S.Gold >= wp, $"{wp} CROWNS"))
                 note = C.HireWanderer(s) ?? "HE JOINS YOUR HOUSEHOLD";
-            y += rh;
+            y = row.Bottom + gap;
         }
         else
         {
-            ui.TextFit("NO WANDERER IS DRINKING HERE TONIGHT. THEY MOVE BETWEEN TOWNS.", body.X, y + ui.U(4), body.Width, Style.Dim, 1);
-            y += ui.U(24);
+            var row = new Rectangle(body.X, y, body.Width, ui.U(30));
+            TavernRow(row);
+            ui.TextFit("NO WANDERER IS DRINKING HERE TONIGHT. THEY MOVE BETWEEN TOWNS.", row.X + ui.U(8), row.Y + ui.U(11), row.Width - ui.U(16), Style.Dim, 1);
+            y = row.Bottom + gap;
         }
         // A feast (A5): three days in good heart, carried into battle.
-        var feast = new Rectangle(body.X, y, body.Width, ui.U(34));
-        TownRow(feast);
+        y -= gap - ui.U(4);
+        var feast = new Rectangle(body.X, y, body.Width, ui.U(30));
+        TavernRow(feast);
+        Goblet(feast.X + ui.U(9), feast.Y + ui.U(4));
         string fl = C.HasBuff("feasted") ? $"FEASTED: {C.BuffDays("feasted"):0.0} DAYS LEFT" : "HOLD A FEAST: THREE DAYS STRONGER AND STEADIER, IN BATTLE TOO";
-        ui.Text(ui.Fit(fl, feast.Width - ui.U(220)), feast.X + ui.U(8), feast.Y + ui.U(12), Kit.Parchment, 1);
-        if (ui.Button(new Rectangle(feast.Right - ui.U(200), feast.Y + ui.U(5), ui.U(194), ui.U(24)), "FEAST THE COMPANY", C.S.Gold >= C.FeastPrice && !C.HasBuff("feasted"), $"{C.FeastPrice} CROWNS"))
+        ui.TextFit(fl, feast.X + ui.U(36), feast.Y + ui.U(11), textW - ui.U(28), Kit.Parchment, 1);
+        if (ui.Button(Act(feast), "FEAST THE COMPANY", C.S.Gold >= C.FeastPrice && !C.HasBuff("feasted"), $"{C.FeastPrice} CROWNS"))
             note = C.Feast(s) ?? "THE COMPANY FEASTS";
-        y += ui.U(40);
-        ui.Text("TALK IN THE TAVERN", body.X, y + ui.U(4), Style.Accent, 1);
-        y += ui.U(22);
+        y = feast.Bottom + gap;
+        Head("TALK IN THE TAVERN");
+        int scene = ui.U(110); // the room the picture below keeps, with its head
         foreach (var talk in C.Rumours(s))
         {
-            if (y + ui.U(34) > body.Bottom) break; // no rumour drawn past the panel
-            var row = new Rectangle(body.X, y, body.Width, ui.U(34));
-            TownRow(row);
-            ui.TextFit("\"" + talk.Text.ToUpperInvariant() + "\"", row.X + ui.U(8), row.Y + ui.U(12), row.Width - ui.U(150), Kit.Parchment, 1);
-            if (talk.At != s.Pos && ui.Button(new Rectangle(row.Right - ui.U(130), row.Y + ui.U(5), ui.U(124), ui.U(24)), "RIDE THERE"))
+            if (y + ui.U(30) > body.Bottom - scene) break; // no rumour drawn over the picture
+            var row = new Rectangle(body.X, y, body.Width, ui.U(30));
+            TavernRow(row);
+            ui.Icon("scroll", row.X + ui.U(7), row.Y + ui.U(5), Color.Black * 0.8f, 3);
+            ui.Icon("scroll", row.X + ui.U(6), row.Y + ui.U(4), Kit.Mul(Kit.Gilt, 0.85f), 3);
+            ui.TextFit("\"" + talk.Text.ToUpperInvariant() + "\"", row.X + ui.U(36), row.Y + ui.U(11), textW - ui.U(28), Kit.Parchment, 1);
+            if (talk.At != s.Pos && ui.Button(Act(row), "RIDE THERE", true, Campaign.Bearing(s.Pos, talk.At).ToUpperInvariant()))
             { C.Follow(talk); panel = PanelKind.None; at = null; }
-            y += ui.U(38);
+            y += ui.U(34);
         }
+        // The town beyond the tavern's door, at the hour it is: the rest of the tab is the place.
+        string when = night ? "NIGHT" : hour < 12 ? "MORNING" : hour < 17 ? "MIDDAY" : "DUSK";
+        if (body.Bottom - y - gap < ui.U(74)) return;
+        y += gap - ui.U(4);
+        Head($"{s.Name.ToUpperInvariant()} AT {when}");
+        y += ui.U(4);
+        var pic = new Rectangle(body.X, y, body.Width, body.Bottom + ui.U(6) - y); // into the well's margin: the picture wants the height
+        Townscape(pic, s, hour);
+        // A gilt frame struck like metal: light on the top and left, shade on the bottom and right.
+        ui.Frame(pic, Kit.GiltDark, ui.U(2));
+        ui.Rect(new Rectangle(pic.X, pic.Y, pic.Width, ui.U(1)), Kit.Gilt);
+        ui.Rect(new Rectangle(pic.X, pic.Y, ui.U(1), pic.Height), Kit.Gilt);
+        ui.Rect(new Rectangle(pic.X, pic.Bottom - ui.U(1), pic.Width, ui.U(1)), Kit.Mul(Kit.GiltDark, 0.6f));
+        ui.Rect(new Rectangle(pic.Right - ui.U(1), pic.Y, ui.U(1), pic.Height), Kit.Mul(Kit.GiltDark, 0.6f));
+    }
+
+    /// A gilt goblet, drawn for the feast row (the icon set has none).
+    void Goblet(int x, int y)
+    {
+        var gold = new Color(255, 214, 120);
+        for (int pass = 0; pass < 2; pass++)
+        {
+            var c = pass == 0 ? Color.Black * 0.8f : gold;
+            int o = pass == 0 ? ui.U(1) : 0;
+            ui.Rect(new Rectangle(x + o, y + o, ui.U(14), ui.U(2)), c);                       // the rim
+            ui.Rect(new Rectangle(x + ui.U(1) + o, y + ui.U(2) + o, ui.U(12), ui.U(5)), c);    // the bowl
+            ui.Rect(new Rectangle(x + ui.U(3) + o, y + ui.U(7) + o, ui.U(8), ui.U(2)), c);
+            ui.Rect(new Rectangle(x + ui.U(6) + o, y + ui.U(9) + o, ui.U(2), ui.U(8)), c);     // the stem
+            ui.Rect(new Rectangle(x + ui.U(3) + o, y + ui.U(17) + o, ui.U(8), ui.U(3)), c);    // the foot
+        }
+        ui.Rect(new Rectangle(x + ui.U(2), y + ui.U(2), ui.U(10), ui.U(2)), new Color(150, 40, 50)); // wine
+        ui.Rect(new Rectangle(x + ui.U(2), y + ui.U(4), ui.U(2), ui.U(3)), Color.White * 0.6f);       // a glint
+    }
+
+    /// A row in the tavern: a plate warm as old wood, a gilt edge on the left, lighter under the mouse.
+    void TavernRow(Rectangle row)
+    {
+        ui.Rect(row, new Color(110, 72, 40) * (ui.Hover(row) ? 0.26f : 0.16f));
+        ui.Rect(new Rectangle(row.X, row.Y, ui.U(2), row.Height), Kit.Mul(Kit.GiltDark, 1.1f));
     }
 
     /// Mercenaries tab: companies for hire.

@@ -618,11 +618,19 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Report.cs (290 lines)
 - **MapScreen** (class, L7): ResultsPanel:9, MentionRow:32, Well:49, Tally:60, Spoils:115, ReportCompanies:156, Progress:214
 
-## MapScreen.Settlement.cs (476 lines)
-- **MapScreen** (class, L8): SettlementPanel:10, TownHeader:58, TownRow:83, PortraitWell:86, TroopStats:94, RecruitTab:101, TavernTab:127, MercenariesTab:172, MarketTab:195, GoodsList:230, TrainTab:255, RestTab:277, FoodTab:296, ForageTab:318, CaptivesTab:327, GarrisonTab:351, ContractTab:374, EldersTab:400, Contracts:417, FiefTab:437
+## MapScreen.Settlement.cs (534 lines)
+- **MapScreen** (class, L8): SettlementPanel:10, TownHeader:58, TownRow:83, PortraitWell:86, TroopStats:94, RecruitTab:101, TavernTab:127, Goblet:205, TavernRow:223, MercenariesTab:230, MarketTab:253, GoodsList:288, TrainTab:313, RestTab:335, FoodTab:354, ForageTab:376, CaptivesTab:385, GarrisonTab:409, ContractTab:432, EldersTab:458, Contracts:475, FiefTab:495
 
 ## MapScreen.Talk.cs (172 lines)
 - **MapScreen** (class, L7): OpenTalk:15, LeaveTalk:26, TalkPanel:38, Arguments:96, Speak:124, HallTab:138
+
+## MapScreen.Townscape.cs (591 lines)
+- **TownLook** (struct, L8)
+- **TownColours** (struct, L14)
+- **MapScreen** (class, L16): LookOf:19, ColoursOf:29, Townscape:76, Orb:127, Country:142, Clouds:175, Pine:194, Palisade:205, Ground:221, Water:245, Boat:271, Snowfall:292, UpperTown:313, TownWall:350, Landmark:367, Gable:443, StepGable:458, Crane:473, Palm:501, Horse:516, Herd:530, Folk:546, Smoke:579
+
+## MapScreen.Townscape.Houses.cs (475 lines)
+- **MapScreen** (class, L7): Glass:41, TimberHouse:50, Openings:71, WhiteHouse:97, LogHouse:116, Yurt:129, Turf:145, Edges:161, Dome:169, HeroWall:201, TavernWindow:204, TavernDoor:216, Lantern:232, TavernSign:240
 
 ## MusicScore.cs (398 lines)
 - **MusicScore** (class, L7): CompiledNote:28, Compile:38, StableHash:102, RenderStereoWindow:114, RenderSlicePass:149, UpperBoundStart:167, RenderFullStereo:180, SoftLimitStereo:219
@@ -665,8 +673,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:66, Deserialize:67, Save:71, Play:78, Matches:116, Run:119
 - **Battle** (class, L133): StartRecording:140, RecordFrame:145, FinishRecording:181
 
-## ScreenHost.cs (743 lines)
-- **ScreenHost** (class, L9): ScreenHost:45, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:112, Load:138, FinishLoading:153, DrawLoading:171, ContinueCampaign:196, OpenLab:207, QuickBattle:209, StartCampaignBattle:216, FinishCampaignBattle:226, CycleQuality:234, Update:238, Draw:283, Fade:318, CaptureShot:348, StagingRefused:375, CampaignShots:381
+## ScreenHost.cs (782 lines)
+- **ScreenHost** (class, L9): ScreenHost:45, ApplyVideo:58, OpenSettings:67, LoadContent:69, StartCampaign:112, Load:138, FinishLoading:153, DrawLoading:171, ContinueCampaign:196, OpenLab:207, QuickBattle:209, StartCampaignBattle:216, FinishCampaignBattle:226, CycleQuality:234, Update:238, Draw:283, Fade:318, CaptureShot:348, readonly:375, RestoreTavernTown:387, StagingRefused:394, CampaignShots:400
 
 ## SelfTest.cs (104 lines)
 - **SelfTest** (class, L6): Run:14, Slots:21, ResolveBattles:33, RunOne:56, Lancer:64, Run:73, Scaled:75, MakeWanderer:78, Days:86, Ids:98, Check:100
@@ -813,8 +821,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **DivisionSpec** (record, L189)
 - **Armies** (class, L193): LineTroop:196, readonly:198, Count:206, Standard:214, Random:217, Large:224, Divide:236, Make:262, MageTroop:266, LineTroop:270, RoleOf:272
 
-## Ui.cs (227 lines)
-- **Ui** (class, L8): Hovered:26, FrameEnd:34, Ui:38, Anim:57, static:68, Since:81, Count:91, Key:98, Reset:101, Begin:103, End:113, Blocks:116, Block:117, U:118, Rect:120, Frame:124, Panel:133, Dim:136, Text:139, TW:144, TextC:145, TextR:146, Bar:150, Hover:163, Clicked:166, Button:175, Face:202, FaceHead:215, Portrait:226
+## Ui.cs (228 lines)
+- **Ui** (class, L8): Hovered:26, FrameEnd:34, Ui:38, Anim:57, static:68, Since:81, Count:91, Key:98, Reset:101, Begin:103, End:113, Blocks:116, Block:117, U:118, Rect:120, Frame:124, Panel:133, Dim:136, Text:139, TW:144, TextC:145, TextR:146, Bar:150, Hover:163, Clicked:166, Button:175, Face:203, FaceHead:216, Portrait:227
 
 ## UiKit.cs (569 lines)
 - **Kit** (class, L10): Mul:18, N:20, VGrad:25, HGrad:32, Line:39, Disc:46, Vignette:57, Hills:71, HillY:82, Stars:89, Castle:102, Plate:125, PlateBody:136, Fit:158, FitScale:171, TextFit:174, TextFitC:176, Inset:179, Shine:183, Ribbon:196, Divider:215, Shield:226, Banner:266, Icon:313, Ring:333, Pips:352, Gauge:366, TugBar:375, Chart:386, Chip:408, Gilded:419, Toggle:440, Check:453, Slider:464, Stepper:480, Tabs:494, Toast:516, OrderKey:526, Tooltip:541, Wrap:556

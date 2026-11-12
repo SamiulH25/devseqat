@@ -188,7 +188,8 @@ sealed class Ui
         if (r.Height >= U(18)) Rect(new Rectangle(r.X + U(1), r.Bottom - U(2), r.Width - U(2), U(1)), Color.Black * 0.35f);
         var c = enabled ? (hover || active ? new Color(255, 246, 222) : Style.Text) : Style.Dim * 0.5f;
         int scale = r.Height >= U(26) ? 2 : 1;
-        if (scale == 2 && note == "" && TW(label, 2) > r.Width - U(8)) scale = 1; // a label too wide for big letters drops to small ones
+        // A label too wide for big letters (beside its note, if it has one) drops to small ones.
+        if (scale == 2 && TW(label, 2) + (note == "" ? 0 : TW(note, 1) + U(12)) > r.Width - U(8)) scale = 1;
         int ty = r.Y + (r.Height - 7 * scale * S) / 2;
         if (note == "") TextC(label, r.X + r.Width / 2f, ty, c, scale);
         else { Text(label, r.X + U(6), ty, c, scale); TextR(note, r.Right - U(6), r.Y + (r.Height - 7 * S) / 2f, Style.Dim, 1); }

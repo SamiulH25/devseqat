@@ -371,6 +371,25 @@ sealed class ScreenHost : Game
     int lifeShots;
     double dayHours;
 
+    /// The tavern pictures in a shots run: (culture, hour, winter) for each; a culture with no town of its own borrows one.
+    static readonly (string Culture, int Hour, bool Winter)[] TavernLooks =
+    {
+        ("league", 23, false), ("league", 11, false), ("azure", 23, false), ("azure", 11, false), ("crimson", 23, false), ("crimson", 18, false),
+        ("order", 23, false), ("order", 11, false), ("northern", 23, false), ("northern", 11, true), ("southern", 23, false), ("southern", 11, false),
+        ("steppe", 23, false), ("steppe", 11, false), ("azure", 23, true),
+    };
+    int tavernShots = -1;
+    double tavernHours;
+    Settlement? tavernTown;
+    string tavernCulture = "";
+
+    /// Gives back the culture a town lent to a tavern picture.
+    void RestoreTavernTown()
+    {
+        if (tavernTown != null) tavernTown.Culture = tavernCulture;
+        tavernTown = null;
+    }
+
     /// A staged step of the shots run was refused by the campaign: stop with the reason instead of crashing later.
     void StagingRefused(string why)
     {
@@ -619,7 +638,27 @@ sealed class ScreenHost : Game
                 Shot("campaign-caravan");
                 break;
             }
-            case 35: c.Encounter = null; map.Stage("tavern"); Shot("campaign-tavern"); break;
+            case 35 when tavernShots < TavernLooks.Length:
+            {
+                // The tavern's picture of one town of each culture, by night and by day, in winter and at dusk (MapScreen.Townscape).
+                if (tavernShots < 0) { tavernHours = c.S.Hours; tavernShots = 0; }
+                RestoreTavernTown();
+                var (cul, hour, winter) = TavernLooks[tavernShots++];
+                var town = c.S.Settlements.FirstOrDefault(s => s.Kind == SettlementKind.Town && s.Culture == cul && !c.Refuses(s))
+                    ?? c.S.Settlements.First(s => s.Kind == SettlementKind.Town && !c.Refuses(s));
+                if (town.Culture != cul) { tavernTown = town; tavernCulture = town.Culture; town.Culture = cul; }
+                double day = Math.Floor(tavernHours / 24);
+                day = Math.Floor(day / 120) * 120 + (winter ? 95 : 40); // a winter day of the same year, or one in summer
+                c.S.Hours = day * 24 + hour;
+                c.Encounter = null; map.Stage("tavern", town);
+                Shot($"tavern-{cul}-{(winter ? "winter-" : "")}{(hour is >= 20 or < 5 ? "night" : hour >= 17 ? "dusk" : "day")}");
+                cStage--;
+                break;
+            }
+            case 35:
+                RestoreTavernTown();
+                c.S.Hours = tavernHours;
+                c.Encounter = null; map.Stage("tavern"); Shot("campaign-tavern"); break;
             case 36: map.Stage("elders"); Shot("campaign-elders"); break;
             case 37:
             {

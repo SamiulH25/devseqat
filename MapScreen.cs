@@ -661,7 +661,7 @@ sealed partial class MapScreen
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
                 tab = "MERCENARIES"; panel = PanelKind.Settlement; break;
             case "tavern" or "elders":
-                at = what == "tavern" ? C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s))
+                at = what == "tavern" ? s ?? C.S.Settlements.First(t => t.Kind == SettlementKind.Town && !C.Refuses(t))
                     : C.S.Settlements.OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).First(s => s.Kind == SettlementKind.Village && !C.Refuses(s));
                 tab = what.ToUpperInvariant(); panel = PanelKind.Settlement; note = ""; break;
             case "armourer":
