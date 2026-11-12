@@ -75,4 +75,68 @@ public static partial class SelfTest
         foreach (var m in co.Roll) m.Nature = "Merry";
         Check(Rules.Might(c.Player) < with, "auto-resolve weighs a battle nature a little");
     }
+
+    /// C3: ties form by the rules (brothers named in one battle, a lad to a veteran), follow men through a merge and a save,
+    /// and the fall of one marks the other: a memory, vengeance for his next battle, and the company misses him more.
+    static void MenHaveTies()
+    {
+        var c = Campaign.New(30);
+        c.S.Hours = 24 * 5; // past the first days, when the starting roll is named
+        var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
+        co.Roll.Clear();
+        var a = c.NameMan(co, "Held the ford.")!;
+        var b = c.NameMan(co, "Held the ford.")!;
+        Check(a != null && b != null && a.Ties.Any(t => t.Other == b.Id && t.Kind == "Brothers") && b.Ties.Any(t => t.Other == a.Id), "two men named in one battle are brothers");
+
+        // A veteran of ten battles takes a newly named man as his lad (one in two: try a few).
+        var vet = c.NameMan(co, "Stood firm.")!;
+        vet.Ties.Clear(); vet.Battles = 12;
+        Soldier? lad = null;
+        for (int i = 0; i < 12 && lad == null; i++)
+        {
+            c.S.Hours += 24; // another day, so not brothers
+            var n = c.NameMan(co, "Killed 3.");
+            if (n != null && n.Ties.Any(t => t.Other == vet.Id && t.Kind == "Lad")) lad = n;
+            else if (n != null) { co.Roll.Remove(n); foreach (var m in co.Roll) m.Ties.RemoveAll(x => x.Other == n.Id); } // not his: try another
+        }
+        Check(lad != null && vet.Ties.Any(t => t.Kind == "Master" && t.Other == lad!.Id), "a veteran takes a newly named man as his lad");
+        Check(co.Roll.All(m => m.Ties.Count <= Campaign.MostTies), "no man has more than two ties");
+
+        // Ties follow men to another company, and through a save.
+        var other = c.Player.Companies.First(k => k != co);
+        Campaign.MoveNamed(co, other, b.Troop);
+        var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        var b2 = back.Player.Companies.SelectMany(k => k.Roll).First(m => m.Id == b.Id);
+        Check(b2.Ties.Any(t => t.Other == a.Id && t.Kind == "Brothers"), "a tie survives a move to another company and a save");
+        Check(back.TieLine(b2).Contains(a.Name.ToUpperInvariant()), "the roll names his brother");
+
+        // The fall of one marks the other.
+        var home = c.Player.Companies.First(k => k.Roll.Contains(a));
+        float coh = home.Cohesion = 50;
+        c.Lose(home, a, "fell", "the Grey Ford");
+        Check(b.Avenging && b.Ties.All(t => t.Other != a.Id) && b.Deeds[^1].Contains(a.Name), "his brother remembers his fall and fights to avenge him");
+        Check(coh - home.Cohesion > Balance.Get().FallenCohesion * 1.2f, "a man with a brother is missed half again");
+        var spec = Rules.Army("you", new[] { c.Player }).Companies.SelectMany(k => k.Named ?? Array.Empty<NamedSpec>()).FirstOrDefault(n => n.Id == b.Id);
+        Check(spec != null && spec.Avenging, "the avenger carries it into battle");
+
+        // In battle an avenger strikes harder.
+        var t = Troops.Get(b.Troop);
+        float dmg(bool av)
+        {
+            var bt = Battle.Empty(30);
+            var us = bt.AddSquad(0, t, 1, new Vector2(0, 0), 1, Vector2.UnitY);
+            var them = bt.AddSquad(1, t, 1, new Vector2(0, 1), 1, Vector2.UnitY); // facing away: a blow from behind is not blocked
+            us.Units[0].Avenging = av;
+            var v = them.Units[0]; float hp = v.Hp;
+            bt.Hit(us.Units[0], v, 10, ranged: false);
+            return hp - v.Hp;
+        }
+        Check(dmg(true) > dmg(false), "an avenger's blows land harder");
+
+        // A master's fall: his lad takes up his ways.
+        string ways = vet.Nature == "Bold" ? "Grim" : "Bold";
+        vet.Nature = ways;
+        c.Lose(c.Player.Companies.First(k => k.Roll.Contains(vet)), vet, "fell", "");
+        Check(lad!.Nature == ways, "a lad whose master fell takes his nature");
+    }
 }

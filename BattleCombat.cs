@@ -223,7 +223,7 @@ public partial class Battle
         if (!ranged && a.Squad is { Broken: true, Swarm: false } && Ranked(a.Squad) && !Overwhelms(a.Squad)) officer *= BrokenBlow; // a crowd has no room to swing (round a beast it needs none)
         float fury = a.Mods.Fury > 0 && a.Squad is { StartCount: > 0 } fs ? a.Mods.Fury * (1 - fs.Alive / (float)fs.StartCount) : 0; // battle fury: the fewer, the fiercer
         float headsman = !ranged && (t.IsLeader || t.Hero || t.Sergeant) ? a.Mods.Headsman : 0;                                    // headsmen seek the officers
-        float mult = officer * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
+        float mult = officer * (a.Avenging ? 1.1f : 1) * (t.Avenging ? 1.1f : 1) * (1 + a.Mods.Damage + fury + headsman) * (1 + speed) * (1 + high) * (side == Side.Rear ? 1.5f : side == Side.Flank ? 1.2f : 1) * (t.Mounted ? a.Type.VsMounted * (a.Squad?.Company?.VsMounted ?? 1) : 1)
             * (t.Type.Wild ? a.Type.VsMonster : 1)  // monster hunters
             * (ranged && t.Type.Has("bones") ? 0.3f : 1) // arrows pass between a skeleton's ribs
             * (a.IsPlayer && AuraBlade && !ranged || FoeBlade(a, ranged) ? BladeDamage : 1) // the aura blade (K1; a champion's, K6)

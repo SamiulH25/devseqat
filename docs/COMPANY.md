@@ -509,3 +509,17 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
   "last of the first six", and the man past 50 asking to go home (that is C4).
 - The roll shows the nature after the name (gold with a star for the one the company feels, with a legend) and a tooltip with
   deeds, home and what the nature does. Test `MenHaveNatures`.
+
+### C3 (ties between the men), as built
+- `Soldier.Ties` (`SoldierTie { Other, Kind }`, at most `Campaign.MostTies` = 2) and `Soldier.Avenging` (Campaign/Ties.cs).
+  On naming (`TieOnNaming`, on the roll's dice): Brothers with a man named the same day in his first battle, else a Lad to a
+  man of 10+ battles with no lad (1 in 2), else Kin with a man of his home (1 in 4; a company is raised in one place, so most
+  men share it), else Rivals with another Proud man. After a battle (`TiesAfterBattle`): men reaching five battles become
+  brothers; two with 5+ kills a kill apart may become rivals (1 in 5).
+- A man leaving the roll (`TiesOnFall`, from `Lose`): each tied living man drops the tie and gets a memory deed. A fallen
+  brother or kin sets `Avenging` for one battle (cleared in `RollAfterBattle`) and the company's cohesion loss is 1.5 times;
+  a fallen master gives his lad his nature. Ties are by soldier id, so moves and merges carry them without help.
+- In battle `NamedSpec.Avenging` -> `Unit.Avenging`: his blows land 10 % harder, and blows on him 10 % harder (`Hit`).
+- The roll shows the ties under the troop line (`TieLine`, amber while he is out for vengeance), and in the row's tooltip.
+- Left out: rivals earning names faster (comes with C5's camp events) and the lad's survival odds using the master's.
+  Test `MenHaveTies`.

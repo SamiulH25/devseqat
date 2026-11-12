@@ -229,9 +229,12 @@ partial class MapScreen
             ui.TextR(stat, x + w, y, Style.Dim, 1);
             ui.Text(Troops.Get(m.Troop).Name.ToUpperInvariant() + (m.Hurt ? " . HURT" : ""), tx, y + ui.U(10), m.Hurt ? Style.Warn : Kit.Gilt, 1);
             ui.Text(Cut((m.Deeds.Count > 0 ? m.Deeds[^1] : "").ToUpperInvariant(), fit - 30), tx + ui.U(150), y + ui.U(10), Style.Dim, 1);
+            string ties = C.TieLine(m); // his ties (C3): brothers, kin, rivals, master and lad
+            if (ties != "") ui.Text(Cut(ties, fit), tx, y + ui.U(20), m.Avenging ? Style.Warn : Kit.Mul(Style.Friendly, 0.7f), 1); // dimmer than the troop; amber, not the fallen's red
             if (ui.Hover(row))
             {
                 var lines = ui.Wrap(string.Join(" ", m.Deeds).ToUpperInvariant() + $" ON THE ROLL SINCE DAY {m.Joined}." + (m.Home != "" ? $" FROM {m.Home.ToUpperInvariant()}." : ""), ui.U(260)).ToList();
+                if (ties != "") lines.AddRange(ui.Wrap("TIES: " + ties + (m.Avenging ? ". HE STRIKES HARDER NEXT BATTLE, AND TAKES MORE RISK." : "."), ui.U(260)));
                 if (m.Nature != "") lines.AddRange(ui.Wrap($"{m.Nature.ToUpperInvariant()}: {Campaign.NatureLine(m.Nature).ToUpperInvariant()}" + (Campaign.Senior(c) == m ? " THE COMPANY FEELS IT." : " HIS COMPANY FEELS ITS SENIOR MAN'S NATURE."), ui.U(260)));
                 ui.Tooltip(row.Right - ui.U(150), row.Y - ui.U(2), m.Name.ToUpperInvariant(), lines.ToArray()); // to the right, clear of the names
             }

@@ -160,6 +160,9 @@ public sealed class Soldier
     public string Name = "", Troop = "", Fate = "", DiedAt = "", CompanyName = "";
     /// His nature, one word (docs/COMPANY.md C2: Campaign.Natures), and the place he comes from.
     public string Nature = "", Home = "";
+    /// Ties to other named men, at most two (docs/COMPANY.md C3), and whether he fights his next battle to avenge one.
+    public List<SoldierTie> Ties = new();
+    public bool Avenging;
     public bool Hurt;
     /// Knighted into your own order (docs/archive/KNIGHT_ORDERS.md 8, K8).
     public bool Knight;
@@ -171,6 +174,13 @@ public sealed class Soldier
     public static int AgeOf(Soldier m) => m.Age > 0 ? m.Age : 18 + m.Id * 37 % 12;
 
     public void Deed(string d) { Deeds.Add(d); if (Deeds.Count > MaxDeeds) Deeds.RemoveAt(1); } // the first, how he got his name, stays
+}
+
+/// A tie between two named men (C3): Brothers, Kin, Rivals, Master (he is the other's master) or Lad (the other is his).
+public sealed class SoldierTie
+{
+    public int Other;
+    public string Kind = "";
 }
 
 /// A battle honour a realm took from a company (L5).

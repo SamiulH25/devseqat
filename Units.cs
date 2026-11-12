@@ -167,6 +167,8 @@ public sealed class Unit
     public bool Sergeant;
     /// A named man of his company (docs/archive/LEGACY.md L2): his Soldier id, 0 for the rest.
     public int SoldierId;
+    /// A named man out to avenge a brother or kin (docs/COMPANY.md C3): his blows land harder, and he takes more risk.
+    public bool Avenging;
     /// Enemies he has killed this battle, and whether one was a captain or a hero.
     public int Kills;
     public bool FelledLeader;

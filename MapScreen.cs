@@ -614,7 +614,10 @@ sealed partial class MapScreen
                 break;
             case "sites": panel = PanelKind.None; zoom = 120; pitch = 0.85f; focus = C.Player.Pos; follow = true; break;
             case "party": panel = PanelKind.Party; break;
-            case "roll": rollOf = C.Player.Companies.OrderByDescending(k => k.Roll.Count).First(); panel = PanelKind.Roll; note = ""; break;
+            case "roll":
+                rollOf = C.Player.Companies.OrderByDescending(k => k.Roll.Count).First(); panel = PanelKind.Roll; note = "";
+                C.StageTies(rollOf); // show the ties (C3) on a fresh campaign's roll
+                break;
             case "divisions": panel = PanelKind.Divisions; note = ""; break;
             case "skills": panel = PanelKind.Skills; note = ""; break;
             case "inventory":

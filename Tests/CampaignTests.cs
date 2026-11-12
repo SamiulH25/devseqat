@@ -458,6 +458,7 @@ public static partial class SelfTest
         var co = c.Player.Companies.OrderByDescending(k => k.Men).First();
         co.Roll.Clear();
         for (int i = 0; i < 5; i++) c.NameMan(co, "test");
+        foreach (var m in co.Roll) m.Ties.Clear(); // the plain cost; a brother's death costs more (C3, MenHaveTies)
         var st = co.Stacks.OrderByDescending(x => x.Men).First();
         int named = Campaign.FitNamed(co, st.Troop).Count(), lost0 = c.S.Fallen.Count;
         co.Cohesion = 20;

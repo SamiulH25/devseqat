@@ -259,7 +259,7 @@ public sealed partial class Battle
         }
         // Named men (docs/archive/LEGACY.md L2) are the first men of their troop, so they stand in its front rank.
         foreach (var m in company?.Named ?? Array.Empty<NamedSpec>())
-            if (s.Units.FirstOrDefault(x => x.SoldierId == 0 && x.Type.Id == m.Troop) is Unit nu) { nu.SoldierId = m.Id; anyNamed = true; }
+            if (s.Units.FirstOrDefault(x => x.SoldierId == 0 && x.Type.Id == m.Troop) is Unit nu) { nu.SoldierId = m.Id; nu.Avenging = m.Avenging; anyNamed = true; }
         // A companion fights at the head of his company as a hero (CAMPAIGN_OVERHAUL.md 3.3): the captain's kit, the AI's hands.
         if (company is { Hero.Length: > 0 })
         {

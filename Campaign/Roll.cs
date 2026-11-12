@@ -67,21 +67,23 @@ public sealed partial class Campaign
         m.Nature = DrawNature(deed);
         m.Deed(deed);
         c.Roll.Add(m);
+        TieOnNaming(c, m);
         return m;
     }
 
     /// A named man leaves the roll for the company's fallen: "fell", "missing" or "left".
-    void Lose(CompanyRecord c, Soldier m, string fate, string where)
+    internal void Lose(CompanyRecord c, Soldier m, string fate, string where)
     {
         c.Roll.Remove(m);
         m.Fate = fate; m.DiedDay = Day; m.DiedAt = where; m.Hurt = false;
         m.Company = c.Id; m.CompanyName = c.Name;
         S.Fallen.Add(m);
+        bool tied = TiesOnFall(m, fate, where);
         if (!Player.Companies.Contains(c)) return;
         if (fate is "fell" or "missing")
         {
             // Losing a man the company knew costs it (L3); a long-serving man is remembered in the chronicle.
-            c.Cohesion = MathF.Max(0, c.Cohesion - B.FallenCohesion);
+            c.Cohesion = MathF.Max(0, c.Cohesion - B.FallenCohesion * (tied ? 1.5f : 1)); // a man with a brother or kin is missed half again (C3)
             if (fate == "fell") rollFell.Add((c.Id, m.Id));
             rollNews.Add((fate == "fell" ? "FELL" : "MISSING", $"{m.Name}, {Troops.Get(m.Troop).Name}, {c.Name}. {N(m.Battles, "battle")}, {N(m.Kills, "kill")}.{Known(m)}"));
             if (fate == "fell" && m.Battles >= 10) Deed($"{m.Name} of {c.Name} fell against {(where != "" ? where : "the enemy")}, after {m.Battles} battles.");
@@ -139,9 +141,11 @@ public sealed partial class Campaign
     internal void RollAfterBattle(CompanyRecord c, CompanyResult cr, bool won, bool bloodied, bool siege, string foe)
     {
         if (!cr.Deployed || c.Men <= 0) return;
+        TiesAfterBattle(c);
         foreach (var m in c.Roll)
         {
             m.Battles++;
+            m.Avenging = false; // he has had his battle (C3)
             if (m.Battles == 1 && m.Deeds.Count > 0 && !m.Deeds[0].StartsWith("Killed") && !m.Deeds[0].StartsWith("Cut down")) m.Deed($"Saw his first battle{(foe != "" ? $" against {foe}" : "")}."); // C2
         }
         string against = foe != "" ? $" against {foe}" : "";
@@ -210,7 +214,7 @@ public sealed partial class Campaign
     }
 
     /// Named men of a troop go with their men to another company: all of them (`share` 1) or a share of the fit ones.
-    static void MoveNamed(CompanyRecord from, CompanyRecord to, string troop, float share = 1)
+    internal static void MoveNamed(CompanyRecord from, CompanyRecord to, string troop, float share = 1)
     {
         var men = share >= 1 ? from.Roll.Where(m => m.Troop == troop).ToList() : FitNamed(from, troop).ToList();
         int k = share >= 1 ? men.Count : (int)MathF.Round(men.Count * share);
