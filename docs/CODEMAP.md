@@ -452,9 +452,15 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Wants.cs (97 lines)
 - **Campaign** (class, L7): WantText:12, WantDone:26, WantsDaily:38, ChooseWant:54, WantMet:79, PeaceWanted:87, Revenge:90, HelpedWant:93
 
+## Campaign/WorldLand.cs (125 lines)
+- **WorldMap** (class, L8): LayFields:12, FieldClear:64, InField:94, GrowStands:99
+
 ## Campaign/WorldMap.cs (635 lines)
 - **WorldMap** (class, L8): WorldMap:72, readonly:82, Generate:86, Climate:201, RaiseRidges:215, AddRidge:246, RidgeDist:258, RidgeHeight:261, OnRidge:279, HomeOf:282, ReachOf:284, GrowRealms:289, SiteKindsFor:331, PlaceSites:344, Cross:369, RiverDist:378, RiverScan:379, ProvinceAt:383, ProvinceScan:386, RoadDist:398, RoadScan:400, SpeedFactor:413, BattleGround:418, Height:438, LandHeight:452, RimAt:474, Ridged:476, Tint:479, KindTint:510, BuildTerrain:530
 - **PlaceNamer** (class, L609): PlaceNamer:616, Pool:618, Next:624
+
+## Campaign/WorldRoads.cs (260 lines)
+- **WorldMap** (class, L9): InLake:19, PlaceLakes:26, LayRoads:55
 
 ## Campaign/Wounds.cs (50 lines)
 - **WoundDef** (record, L4)
@@ -527,6 +533,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Hud.Overlays.cs (188 lines)
 - **Hud** (class, L7): SampleStrength:15, Overlay:24, MenuButtons:31, Menu:38, Result:50, Well:83, Tally:93, StrengthChart:127, Help:140
+
+## Looks.cs (24 lines)
+- **Looks** (class, L10)
+
+## MapLife.cs (386 lines)
+- **MapLife** (class, L11): MapLife:64, WoodEdges:80, Hash:104, Update:109, UpdateHerds:123, Populate:137, Spawn:148, Within:173, Step:178, UpdateBirds:221, NewFlock:247, MakeFlock:257, Rotate:272, DrawFlock:291, Bird:316, DrawBeast:333
 
 ## MapLife.Field.cs (70 lines)
 - **MapLife** (class, L8): BattleHomes:14, FindRoosts:28, UpdateRoosts:47
@@ -803,6 +815,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **World** (class, L7): Features:11
 - **World** (class, L58): KindColor:61, Contour:71, BuildGroundMap:78, MapFeatures:98
 
+## World.Land.cs (198 lines)
+- **World** (class, L9): Fields:32, Plot:43, Hedge:91, Fence:124, Outskirts:144, V3:184, Birch:187
+
 ## World.Materials.cs (78 lines)
 - **World** (class, L10): BuildMaterials:14, Periodic:35, Fbm:52, Cavity:65
+
+## World.Water.cs (254 lines)
+- **World** (class, L9): NormalAt:20, Roads:53, AddTile:88, Water:99, RiverWater:110, Reeds:173, Lake:195, Bridge:229
 
