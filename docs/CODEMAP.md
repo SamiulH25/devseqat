@@ -629,8 +629,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:66, Deserialize:67, Save:71, Play:78, Matches:116, Run:119
 - **Battle** (class, L133): StartRecording:140, RecordFrame:145, FinishRecording:181
 
-## ScreenHost.cs (733 lines)
-- **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:57, OpenSettings:66, LoadContent:68, StartCampaign:111, Load:137, FinishLoading:152, DrawLoading:170, ContinueCampaign:195, OpenLab:206, QuickBattle:208, StartCampaignBattle:215, FinishCampaignBattle:225, CycleQuality:233, Update:237, Draw:282, Fade:317, CaptureShot:347, CampaignShots:373
+## ScreenHost.cs (741 lines)
+- **ScreenHost** (class, L9): ScreenHost:44, ApplyVideo:57, OpenSettings:66, LoadContent:68, StartCampaign:111, Load:137, FinishLoading:152, DrawLoading:170, ContinueCampaign:195, OpenLab:206, QuickBattle:208, StartCampaignBattle:215, FinishCampaignBattle:225, CycleQuality:233, Update:237, Draw:282, Fade:317, CaptureShot:347, StagingRefused:374, CampaignShots:380
 
 ## SelfTest.cs (104 lines)
 - **SelfTest** (class, L6): Run:14, Slots:21, ResolveBattles:33, RunOne:56, Lancer:64, Run:73, Scaled:75, MakeWanderer:78, Days:86, Ids:98, Check:100

@@ -387,4 +387,9 @@ reads as static, and you cannot tell a longbow shaft from a crossbow bolt or see
 
 ## As built
 
-(Nothing yet.)
+
+
+**C0 (2026-11-12).** The siege step of the campaign shots topped each company to 20 men, but `CanBesiege` wants
+`Scaled(20)` (60 at ArmyScale 3), so `Besiege` refused silently and `PrepareAssault` got a null target. The staging now
+scales with `Balance.ArmyScale`, and a refused staged step stops the run with its reason (`ScreenHost.StagingRefused`).
+All 53 campaign screens save; `overflow.txt` is empty.

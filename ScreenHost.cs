@@ -370,6 +370,13 @@ sealed class ScreenHost : Game
     int lifeShots;
     double dayHours;
 
+    /// A staged step of the shots run was refused by the campaign: stop with the reason instead of crashing later.
+    void StagingRefused(string why)
+    {
+        Console.Error.WriteLine($"campaign shots: staged step {cStage} refused ({why})");
+        throw new InvalidOperationException("campaign shots staging refused: " + why);
+    }
+
     void CampaignShots()
     {
         var c = campaign!;
@@ -422,8 +429,9 @@ sealed class ScreenHost : Game
             case 12:
             {
                 var castle = c.S.Settlements.Where(s => s.Kind != SettlementKind.Village && c.FactionsAtWar(c.Captain.Contract, s.Faction)).OrderBy(s => Vector2.Distance(s.Pos, c.Player.Pos)).First();
-                foreach (var co in c.Player.Companies) co.Main!.Men = Math.Max(co.Main!.Men, 20);
+                foreach (var co in c.Player.Companies) co.Main!.Men = Math.Max(co.Main!.Men, (int)(20 * Balance.Get().ArmyScale));
                 c.Player.Pos = castle.Pos + new Vector2(4, 0);
+                if (!c.CanBesiege(castle, out var why)) StagingRefused($"besiege {castle.Name}: {why}");
                 c.Besiege(castle);
                 castle.SiegeSince -= 13;
                 map.Stage("siege", castle);
