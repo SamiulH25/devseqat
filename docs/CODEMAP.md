@@ -160,8 +160,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **StandingRule** (enum, L10)
 - **Battle** (class, L13): RulesFor:19, RuleText:23, RuleTag:30, StepOf:36, StepDone:40, UpdateOrders:51, KeepRule:66
 
-## BattleRanks.cs (255 lines)
-- **Battle** (class, L7): GritOf:13, PlaceMen:22, Redeal:57, CloseFiles:65, Ranked:98, Close:102, Overwhelms:146, NearestFoe:149, Lunge:163, Footing:166, FightFromRanks:173, Guard:217, RankError:233, Intermix:243
+## BattleRanks.cs (256 lines)
+- **Battle** (class, L7): GritOf:13, PlaceMen:22, Redeal:57, CloseFiles:65, Ranked:98, Close:102, Overwhelms:147, NearestFoe:150, Lunge:164, Footing:167, FightFromRanks:174, Guard:218, RankError:234, Intermix:244
 
 ## BattleRelief.cs (161 lines)
 - **Battle** (class, L8): Root:18, CannotRelieve:23, Relieve:41, StartRelief:49, UpdateReliefs:67, EndRelief:93, CannotSplit:98, Split:111, SplitNow:118, ReplayRelief:159, ReplaySplit:160

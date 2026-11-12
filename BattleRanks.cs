@@ -130,7 +130,8 @@ public partial class Battle
             else dir = face;
         }
         // On a route round water or hedges, the front follows the route until it is near.
-        if (s.Path != null && nd > 100 && s.Path.Dir(f) is var pd && pd != Vector2.Zero) dir = pd;
+        bool onRoute = false;
+        if (s.Path != null && nd > 100 && s.Path.Dir(f) is var pd && pd != Vector2.Zero) { dir = pd; onRoute = true; }
         float turn = (s.InContact ? 0.15f : 1.5f) * dt; // at blows a line barely turns: wheeling would open it
         float a = MathF.Atan2(s.Front.Y, s.Front.X), b = MathF.Atan2(dir.Y, dir.X);
         a += Math.Clamp(MathHelper.WrapAngle(b - a), -turn, turn);
@@ -138,7 +139,7 @@ public partial class Battle
         // At blows the line holds where it stands (it never gives ground by itself); otherwise it walks on to a sword's
         // length short of the foe.
         if (s.InContact) return;
-        float ahead = walk >= 0 ? walk : Math.Clamp(Vector2.Dot(near.Pos - f, dir) - standoff, 0, 3);
+        float ahead = walk >= 0 ? walk : onRoute ? 3 : Math.Clamp(Vector2.Dot(near.Pos - f, dir) - standoff, 0, 3);
         s.Anchor = f + dir * ahead;
     }
 
