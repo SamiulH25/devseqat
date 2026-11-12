@@ -1,6 +1,6 @@
 # The men of the company, and their captain: plan
 
-Status: **planned** (nothing built yet). It follows `docs/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C13 (C9-C13, the captain's part, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
+Status: **planned** (nothing built yet). It follows `docs/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 Read `docs/archive/LEGACY.md` first: this plan is its second half.
 
@@ -313,11 +313,45 @@ The general, the bows, the lord, and your own men's answer.
   grudge lord seeks you; the guard closes; your men cover you), `Calibration` and `CavalryBalance` green; `--balance`
   win rate of even fights with the stand-in captain within noise of before.
 
+### C14: Arrows you can see
+Drawing only: `Battle.Arrows` and every hit stay as they are, so replays and the self-test numbers do not move.
+Today an arrow in flight is one thin line with a faint streak behind it (`BattleScreen.Draw.cs`, the loop over
+`battle.Arrows`), a javelin is the same line drawn twice, and a spent arrow is a shorter line. A volley of three hundred
+reads as static, and you cannot tell a longbow shaft from a crossbow bolt or see where the arrows are falling.
+- **A real arrow.** Each missile is a small sprite quad turned along its flight (`Puppet.Axial`, the "arrow" part the
+  bowmen already hold): shaft, head and fletching, the fletching in the shooting side's cloth colour so you can tell
+  whose arrows are in the air. Its own sprite by kind: arrow, short thick crossbow bolt, javelin, sling stone, fire pot.
+  It pitches with its arc: nose up as it climbs, nose down as it falls.
+- **A volley reads.** A company's volley leaves together and is seen as one dark flight against the sky; in command
+  view far arrows thin to a light streak so three hundred do not turn to noise (by distance and Quality, as far men
+  lose parts). A soft shadow of the flight crosses the ground under a big volley on High.
+- **Where they land.** Arrows stand in the ground, at the angle they came down, and stay for the battle (capped, the
+  oldest fading; they join the ground marks in `BattleScreen.Effects.cs`): a beaten zone you can read from above. They
+  stand in shields (already drawn, `Unit.StuckArrows`), and now also in men who live, in horses, in the dead, in
+  pavises, hedges, trees and house walls.
+- **The hit.** A shaft that strikes a shield knocks it back a hand's width and throws splinters; on plate it glances
+  away with a spark and spins off; in flesh the man jerks from the direction of flight (`Unit.HitFrom`). A miss kicks
+  up a puff of dust, mud or water by the ground it lands on.
+- **Being shot at.** In field view an arrow that passes close streaks past the camera with its whistle (the cue
+  exists), and shafts thud into the ground round you. With C13, the warning ring before a volley marked on you is drawn
+  as the shadow of the flight coming.
+- **Your own shot.** When you loose, the camera follows your arrow a moment if you hold the key *(tune)*; it leaves a
+  brighter trail than the rest so you can find where it fell, and a hit shows its range ("84 M").
+- **Special shots show.** A plunging shot (longbows, tier V and up) climbs visibly higher; a punching bolt flies flat and
+  fast with a shorter trail; steppe riders' arrows leave from the gallop; fire pots trail smoke; a Transcendent's blade
+  cutting an arrow leaves two halves falling.
+- **Budget:** at most 0.4 ms a frame for missiles at 3,000 men on High *(tune)*; Low keeps today's lines. Counted in the
+  shots' `render.txt`.
+- **Tests:** none in the sim (nothing changes there); `ReplayExact` and the printed arrow losses must be the same before
+  and after. **Check:** new staged shots `arrows-volley.png` (command view, a volley in the air), `arrows-field.png`
+  (field view under fire), `arrows-ground.png` (a beaten zone after two minutes), and the press shots.
+
 ## 5. Build order and why
 
 0. **C0** before anything: without the shots no screen in this plan can be checked.
 0. **C12, then C13** straight after, as the owner asked: they are battle-only, need nothing else in the plan, and
    change how every fight feels from the first battle.
+0. **C14** any time: it is drawing only and touches nothing else. It goes well beside C13, whose marked volleys it shows.
 0. **C9, C10, C11** next, in that order (data, screen, sources). C10's handing gear to men waits for C4 if C4 is not in
    yet; the rest stands alone.
 1. **C1** first: a day's work on code that exists, and every later phase is better with faces on it.
