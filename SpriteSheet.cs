@@ -450,7 +450,17 @@ public sealed class SpriteSheet
                     foreach (var (bx, by) in new[] { (12, 13), (14, 13), (12, 15), (14, 15), (12, 17), (14, 17) }) c.Set(bx, by, ink);
                 }
                 else if (v == "s") { for (int x = 10; x < 17; x++) { c.Set(x, 8, ink); c.Set(x, 9, ink); } }
-                else for (int x = 3; x < 15; x += 3) c.Set(x, 5, brass, 0.6f);
+                else
+                {
+                    // The back: rounded plates meeting at a riveted seam down the middle, a band round the crown and a
+                    // dark lip over the neck, so a rank seen from behind reads as helms, not as one pale slab.
+                    for (int y = 0; y < 21; y++)
+                        for (int x = 0; x < 18; x++) c.Shade(x, y, -0.18f - MathF.Abs(x - 8.5f) * 0.035f - (y > 12 ? (y - 12) * 0.03f : 0));
+                    for (int y = 2; y < 18; y++) { c.Set(8, y, ink); c.Shade(9, y, 0.35f); }
+                    for (int x = 2; x < 17; x++) { c.Shade(x, 6, -0.35f); c.Shade(x, 7, 0.2f); }
+                    for (int x = 2; x < 17; x++) { c.Set(x, 18, ink); c.Shade(x, 19, -0.5f); c.Shade(x, 20, -0.5f); }
+                    foreach (var (bx, by) in new[] { (4, 6), (13, 6), (10, 10), (10, 14) }) c.Set(bx, by, brass, 0.6f);
+                }
                 return c;
             }
         }

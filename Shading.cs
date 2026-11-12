@@ -52,7 +52,7 @@ sealed class Shading : IDisposable
         {
             Uniform.Mat4("ViewProj"), Uniform.Mat4("LightViewProj"), Uniform.Vec3("CameraPos"), Uniform.Vec3("SunDir"), Uniform.Vec3("SunColor"),
             Uniform.Vec3("SkyColor"), Uniform.Vec3("GroundColor"), Uniform.Vec3("FogColor"), Uniform.Vec4("FogParams"), Uniform.Vec4("ShadowParams"),
-            Uniform.Float("Time"), Uniform.Vec4("Wind"), Uniform.Vec2("SpriteLight"), Uniform.Vec4("Field"), Uniform.Vec4("Look"), Uniform.Vec4("Torch"), Uniform.Float("Cut"), Uniform.Vec4("Palette"),
+            Uniform.Float("Time"), Uniform.Vec4("Wind"), Uniform.Vec2("SpriteLight"), Uniform.Vec4("Field"), Uniform.Vec4("Look"), Uniform.Vec4("Torch"), Uniform.Float("Cut"), Uniform.Vec4("CutEye"), Uniform.Vec4("Palette"),
             Uniform.Vec4("Glow0"), Uniform.Vec4("Glow1"), Uniform.Vec4("Glow2"), Uniform.Vec4("Glow3"),
             Uniform.Vec4("GlowCol0"), Uniform.Vec4("GlowCol1"), Uniform.Vec4("GlowCol2"), Uniform.Vec4("GlowCol3"),
         };
@@ -69,7 +69,7 @@ sealed class Shading : IDisposable
             new[] { new TextureSlot("Atlas", 0, SamplerState.PointClamp), shadowTex },
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aColor", VertexElementUsage.Color),
                     new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
-            new GlslEffect.Technique("Sprite"), new GlslEffect.Technique("SpriteShadow", "SHADOW"));
+            new GlslEffect.Technique("Sprite"), new GlslEffect.Technique("SpriteShadow", "SHADOW"), new GlslEffect.Technique("SpriteSoft", "SOFT"));
 
         Sky = GlslEffect.Create(gd, "sky", Source("sky.glsl"),
             new[] { Uniform.Mat4("ViewProj"), Uniform.Vec3("SunDir"), Uniform.Vec3("SunColor"), Uniform.Vec3("Horizon"), Uniform.Vec3("Zenith"), Uniform.Float("Time"), Uniform.Vec2("Swirl") },
@@ -122,6 +122,8 @@ sealed class Shading : IDisposable
     static readonly string[] GlowNames = { "Glow0", "Glow1", "Glow2", "Glow3", "GlowCol0", "GlowCol1", "GlowCol2", "GlowCol3" };
     /// How far leaves over men are cut away (the command view's blend, 0 = none); reads the ground map's green channel.
     public float Cut;
+    /// Command view: the camera (xyz) and its distance across the ground to what it looks at (w; 0 = off). Trees much nearer are thinned away.
+    public Vector4 CutEye;
     /// Fog start and end (the campaign map pushes them out for its far camera).
     public Vector2 Fog = new(Ironfield.World.FogStart, Ironfield.World.FogEnd);
 
@@ -146,6 +148,7 @@ sealed class Shading : IDisposable
         p["Field"]?.SetValue(new Vector4(1f / GroundSize, GroundMap != null ? 1 : 0, Ironfield.Sky.Clouds, Ironfield.Sky.Wet));
         p["Torch"]?.SetValue(Torch);
         p["Cut"]?.SetValue(Cut);
+        p["CutEye"]?.SetValue(CutEye);
         for (int i = 0; i < 4; i++) { p[GlowNames[i]]?.SetValue(Glow[i]); p[GlowNames[i + 4]]?.SetValue(GlowCol[i]); }
         p["Palette"]?.SetValue(Looks.Palette);
         p["Look"]?.SetValue(new Vector4(Ironfield.Sky.Snow, NearDetail ? 1 : 0, Ironfield.Sky.Night, Ironfield.Sky.Rain));

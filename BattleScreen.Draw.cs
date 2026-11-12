@@ -32,7 +32,9 @@ partial class BattleScreen
             gd.Clear(World.Horizon);
             world.Draw(view, proj, eye);
             DrawBlobs(1);
+            puppet.Soft = null; // no soft pass without the shaders: dust stays in plain motes
             BuildSprites(view, false);
+            puppet.Soft = soft;
             DrawSpritesBasic();
             DrawLines();
         }
@@ -53,6 +55,7 @@ partial class BattleScreen
     {
         var gd = GraphicsDevice;
         bool shadows = quality == Quality.High;
+        sh.CutEye = new Vector4(eye, Vector2.Distance(new(eye.X, eye.Z), new(focusPoint.X, focusPoint.Z)) * MathHelper.SmoothStep(0, 1, blend)); // set before the sun's pass: thinned trees cast no shadow
         if (shadows)
         {
             // Cover what the camera sees: about 90 m around you in the field, more as the command camera zooms out.
@@ -80,11 +83,12 @@ partial class BattleScreen
         SetGlows(sh);
         FieldLifeMesh();
         world.DrawShaded(sh, view, proj, eye, realTime, shadows);
-        sh.GroundMap = null; sh.NearDetail = false; sh.Cut = 0;
+        sh.GroundMap = null; sh.NearDetail = false; sh.Cut = 0; sh.CutEye = Vector4.Zero;
         DrawBlobs(shadows ? 0.4f : 1); // with real shadows the blobs only add contact darkening
         BuildSprites(view, false);
         sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
         DrawSpritesShaded(sh.Sprite, "Sprite");
+        DrawSoft(sh.Sprite);
         sh.Torch = Vector4.Zero;
         Array.Clear(sh.Glow); // the lights are this battle's alone (the map shares the shaders)
         DrawLines();
@@ -155,9 +159,9 @@ partial class BattleScreen
         foreach (var (cue, at) in battle.Sounds)
             switch (cue)
             {
-                case Cue.Clash: Spray(at, 1.3f, 6, new Color(255, 226, 140), 3.5f, 0.25f, 0.05f, true); break;
+                case Cue.Clash: Spray(at, 1.3f, 7, new Color(255, 226, 140), 3.5f, 0.3f, 0.07f, true); Spray(at, 1.3f, 1, new Color(255, 236, 190), 0.3f, 0.14f, 0.3f, false, 2.5f); break; // sparks and a flash
                 case Cue.Block: Spray(at, 1.2f, 3, new Color(220, 200, 160), 2f, 0.2f, 0.05f, true); break;
-                case Cue.Hit: case Cue.ArrowHit: Spray(at, 1.1f, 5, new Color(140, 20, 22), 1.8f, 0.55f, 0.06f, true); break;
+                case Cue.Hit: case Cue.ArrowHit: Spray(at, 1.1f, 6, new Color(140, 20, 22), 1.9f, 0.55f, 0.075f, true); break;
                 case Cue.Impact: Spray(at, 0.2f, 10, new Color(168, 150, 116), 1.6f, 1.3f, 0.25f, false, 0.6f); break;
             }
         GroundSteps(dt);
@@ -172,7 +176,7 @@ partial class BattleScreen
             m.Pos.Y -= m.Fall * dt;
             m.Size += m.Grow * dt;
             float ground = battle.Terrain.Height(new Vector2(m.Pos.X, m.Pos.Z));
-            if (m.Pos.Y < ground) { m.Pos.Y = ground + 0.01f; m.Vel = Vector3.Zero; }
+            if (m.Pos.Y < ground) { m.Pos.Y = ground + 0.01f; m.Vel = Vector3.Zero; if (m.Heavy) m.Life = MathF.Min(m.Life, 0.08f); } // a drop or spark that lands is gone (blood stays as the ground mark)
             motes[i] = m;
         }
     }
@@ -262,7 +266,11 @@ partial class BattleScreen
         {
             DrawMarks();
             DrawScars();
-            foreach (var m in motes) puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
+            soft.N = 0;
+            foreach (var m in motes)
+                if (!m.Heavy && (m.Size >= 0.15f || m.Grow >= 0.3f)) // dust and smoke: a soft puff that swells and thins away
+                    puppet.Haze(m.Pos, m.Size * 1.15f, m.Col, 0.6f * MathF.Min(1, m.Life / m.Max * 1.6f), m.Max * 37 + m.Grow * 11 + m.Pos.X);
+                else puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
         }
         var eye2 = new Vector2(eye.X, eye.Z);
         // Men outside the view (or, for the sun's pass, outside the shadow map) are skipped; men far off
@@ -322,6 +330,21 @@ partial class BattleScreen
         GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, sprites.A, 0, sprites.N / 3);
     }
 
+    /// Dust and smoke over the men: blended, depth-tested but not written, so puffs overlap softly.
+    void DrawSoft(Effect fx)
+    {
+        if (soft.N == 0) return;
+        var gd = GraphicsDevice;
+        gd.BlendState = BlendState.AlphaBlend; // the shader writes premultiplied colour
+        gd.DepthStencilState = DepthStencilState.DepthRead;
+        gd.RasterizerState = RasterizerState.CullNone;
+        fx.CurrentTechnique = fx.Techniques["SpriteSoft"];
+        fx.CurrentTechnique.Passes[0].Apply();
+        gd.DrawUserPrimitives(PrimitiveType.TriangleList, soft.A, 0, soft.N / 3);
+        gd.BlendState = BlendState.Opaque;
+        gd.DepthStencilState = DepthStencilState.Default;
+    }
+
     void Line(Vector3 a, Vector3 b, Color c) { lines.Add(new(a, c)); lines.Add(new(b, c)); }
     Vector3 G(Vector2 p, float y = 0.08f) => new(p.X, battle.Terrain.Height(p) + y, p.Y);
 
@@ -352,11 +375,35 @@ partial class BattleScreen
 
     void Ring(Vector2 p, float r, Color c, int seg = 12)
     {
+        seg = Math.Max(seg, Math.Min(64, (int)(r * 3))); // a wide ring stays round
         for (int i = 0; i < seg; i++)
         {
             float a0 = i * MathF.Tau / seg, a1 = (i + 1) * MathF.Tau / seg;
-            Line(G(p + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r), G(p + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r), c);
+            Band(G(p + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r), G(p + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r), c);
         }
+    }
+
+    /// A mark painted on the ground (rings, order lines): a ribbon a few pixels wide at any distance, its edges a little
+    /// see-through, instead of a one-pixel line that reads as an editor gizmo. Drawn blended after the lines.
+    void Band(Vector3 a, Vector3 b, Color c)
+    {
+        var d = new Vector2(b.X - a.X, b.Z - a.Z);
+        if (d.LengthSquared() < 1e-6f) return;
+        d = Vector2.Normalize(d);
+        float W(Vector3 p) => Math.Clamp(Vector3.Distance(p, eye) * 0.0028f, 0.04f, 0.5f);
+        Vector3 Side(Vector3 p) => new Vector3(-d.Y, 0, d.X) * W(p);
+        var core = c * 0.85f; // premultiplied: a touch of the ground shows through
+        var edge = c * 0.0f;
+        Vector3 sa = Side(a), sb = Side(b);
+        // Three strips across: soft edge, solid core, soft edge.
+        void Strip(Vector3 a0, Vector3 a1, Vector3 b0, Vector3 b1, Color c0, Color c1)
+        {
+            bands.Add(new(a0, c0)); bands.Add(new(b0, c0)); bands.Add(new(a1, c1));
+            bands.Add(new(b0, c0)); bands.Add(new(b1, c1)); bands.Add(new(a1, c1));
+        }
+        Strip(a - sa, a - sa * 0.35f, b - sb, b - sb * 0.35f, edge, core);
+        Strip(a - sa * 0.35f, a + sa * 0.35f, b - sb * 0.35f, b + sb * 0.35f, core, core);
+        Strip(a + sa * 0.35f, a + sa, b + sb * 0.35f, b + sb, core, edge);
     }
 
     /// The siege wall's torches light the night (none by day or without a wall): see `World.Torches`.
@@ -551,6 +598,7 @@ partial class BattleScreen
     void DrawLines()
     {
         lines.N = 0;
+        bands.N = 0;
         Precipitation();
         MissileLines(); // arrows, bolts, javelins and stones (BattleScreen.Arrows.cs)
         Stakes();
@@ -580,21 +628,21 @@ partial class BattleScreen
                 {
                     var to = st.Target >= 0 && st.Target < battle.Squads.Count ? battle.Squads[st.Target].Centroid() : st.Anchor;
                     var qc = selected.Contains(s) ? Sel : Friendly;
-                    Line(G(at, 0.2f), G(to, 0.2f), st.Target >= 0 ? Foe : qc);
-                    Line(G(to, 0.2f), G(to + st.Front * 2, 0.2f), qc);
+                    Band(G(at, 0.2f), G(to, 0.2f), st.Target >= 0 ? Foe : qc);
+                    Band(G(to, 0.2f), G(to + st.Front * 2, 0.2f), qc);
                     at = to;
                 }
                 if (s.Order == Order.Charge && s.Target is { Alive: > 0 } tgt)
                 {
-                    Line(G(s.Centroid(), 0.15f), G(tgt.Centroid(), 0.15f), Foe); // attack order
+                    Band(G(s.Centroid(), 0.15f), G(tgt.Centroid(), 0.15f), Foe); // attack order
                     continue;
                 }
                 if (s.Order != Order.Hold) continue;
                 // Front-rank marker with a facing tick.
                 var side = new Vector2(-s.Front.Y, s.Front.X) * (Math.Min(s.Columns, s.Alive) - 1) * s.Spacing / 2;
                 var c = selected.Contains(s) ? Sel : Friendly;
-                Line(G(s.Anchor - side + s.Front), G(s.Anchor + side + s.Front), c);
-                Line(G(s.Anchor + s.Front), G(s.Anchor + s.Front * 2.5f), c);
+                Band(G(s.Anchor - side + s.Front), G(s.Anchor + side + s.Front), c);
+                Band(G(s.Anchor + s.Front), G(s.Anchor + s.Front * 2.5f), c);
             }
             if (!hud.Over(ms.Position) && PickSquad(mouseGround, 1) is Squad hover)
                 foreach (var u in hover.Units) if (u.Active && !u.Routing) Ring(u.Pos, u.Mounted ? 1.1f : 0.5f, Foe, 8);
@@ -604,17 +652,29 @@ partial class BattleScreen
                 var enemy = battle.Centroid(1);
                 bool click = Vector2.Distance(d, mouseGround) < 2;
                 var (a, b) = click ? LineEnds(mouseGround, enemy) : (d, mouseGround);
-                Line(G(a, 0.12f), G(b, 0.12f), Color.White);
+                Band(G(a, 0.12f), G(b, 0.12f), Color.White);
                 foreach (var slot in PreviewSlots(a, b, enemy)) Ring(slot, 0.3f, Color.White * 0.8f, 6);
             }
             Ring(mouseGround, 0.4f, Color.White);
         }
-        if (lines.N == 0) return;
         var gd = GraphicsDevice;
-        gd.BlendState = BlendState.Opaque;
-        gd.DepthStencilState = DepthStencilState.Default;
         lineFx.View = view; lineFx.Projection = proj;
-        lineFx.CurrentTechnique.Passes[0].Apply();
-        gd.DrawUserPrimitives(PrimitiveType.LineList, lines.A, 0, lines.N / 2);
+        if (lines.N > 0)
+        {
+            gd.BlendState = BlendState.Opaque;
+            gd.DepthStencilState = DepthStencilState.Default;
+            lineFx.CurrentTechnique.Passes[0].Apply();
+            gd.DrawUserPrimitives(PrimitiveType.LineList, lines.A, 0, lines.N / 2);
+        }
+        if (bands.N > 0)
+        {
+            gd.BlendState = BlendState.AlphaBlend;
+            gd.DepthStencilState = DepthStencilState.DepthRead;
+            gd.RasterizerState = RasterizerState.CullNone;
+            lineFx.CurrentTechnique.Passes[0].Apply();
+            gd.DrawUserPrimitives(PrimitiveType.TriangleList, bands.A, 0, bands.N / 3);
+            gd.BlendState = BlendState.Opaque;
+            gd.DepthStencilState = DepthStencilState.Default;
+        }
     }
 }

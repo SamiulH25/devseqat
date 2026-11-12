@@ -29,7 +29,7 @@ void main()
     if (Field.y > 0.5 && aNormal.y > 0.999 && aUV.y > 0.99)
     {
         vTrample = texture2DLod(GroundMap, p.xz * Field.x + 0.5, 0.0).r;
-        p.y -= vTrample * 0.32 * aUV.x;
+        p.y -= min(vTrample * 0.7, 0.45) * aUV.x;
         p.xz += Wind.xy * vTrample * 0.22 * aUV.x;
     }
     // Grass right at the lens would fill the view as big flat spikes: inside ~5 m the blade tips sink into the ground.
@@ -73,7 +73,17 @@ vec3 MapLand(vec3 c, vec2 w)
 #endif
 void main()
 {
+#ifdef FOLIAGE
+    // Command view: how far a tree's leaves are thinned away for lying well in front of the camera's focus (CutEye: xyz =
+    // the camera, w = its distance to the focus across the ground, 0 = off). Shared by the sun's pass, so a thinned tree drops its shadow too.
+    float nearCut = 0.0;
+    if (CutEye.w > 0.0 && Field.y > 0.5 && vUV.y > 0.05 && vUV.x < 50.0 && vNormal.y < 0.999)
+        nearCut = 1.0 - smoothstep(0.6, 0.68, length(vWorld.xz - CutEye.xz) / CutEye.w); // across the ground, so a whole tree goes at once
+#endif
 #ifdef SHADOW
+#ifdef FOLIAGE
+    if (nearCut > 0.5) discard;
+#endif
     gl_FragColor = vec4(vLight.z / vLight.w, 0.0, 0.0, 1.0);
 #else
     vec3 albedo = vColor.rgb;
@@ -132,9 +142,12 @@ void main()
     if (vUV.y < -0.5 && vUV.y > -1.5) albedo *= Masonry(vWorld, n, length(vWorld - CameraPos));
     // Command view: leaves on the line of sight to men below are thinned away (dithered), so they show through the wood.
     // The ground map's green channel marks the men; look down the view ray from this leaf to the ground for any.
+    // Trees well in front of what the camera looks at are thinned away too, so a near pine never fills the view.
+    // An ordered (Bayer) screen-door reads as see-through cloth, not as the sand a random dither makes.
     if (Cut > 0.0 && Field.y > 0.5 && leaf > 0.05 && n.y < 0.999)
     {
         vec3 r = normalize(vWorld - CameraPos);
+        float thin = nearCut;
         if (r.y < -0.15)
         {
             float men = 0.0;
@@ -143,8 +156,12 @@ void main()
                 vec3 q = vWorld + r * (float(i) * 2.2 / -r.y);
                 men = max(men, texture2D(GroundMap, q.xz * Field.x + 0.5).g);
             }
-            if (Hash2(floor(gl_FragCoord.xy)) < men * Cut * 0.88) discard;
+            thin = max(thin, men * Cut * 0.9);
         }
+        vec2 bp = mod(floor(gl_FragCoord.xy), 4.0);
+        vec2 b1 = mod(bp, 2.0), b2 = floor(bp / 2.0);
+        float bayer = (mod(2.0 * b1.x + 3.0 * b1.y, 4.0) * 4.0 + mod(2.0 * b2.x + 3.0 * b2.y, 4.0) + 0.5) / 16.0;
+        if (bayer < thin) discard;
     }
 #endif
 #ifdef TERRAIN
@@ -163,7 +180,16 @@ void main()
         albedo = mix(albedo, vColor.rgb, smoothstep(0.75, 0.9, dot(vColor.rgb, vec3(0.333)))); // snow and pale ground keep their own colour
         albedo *= mix(0.62, 1.0, vColor.a);                                                   // shade in the hollows
     }
-    else albedo *= texture2D(Detail, vUV).rgb * 1.05;
+    else
+    {
+        albedo *= texture2D(Detail, vUV).rgb * 1.05;
+        // Broad swathes tens of metres across, seen from the command view: sun-dried rises, lush dark hollows, a drift in hue.
+        float sw = Noise2(vWorld.xz * 0.016 + 7.0) * 0.65 + Noise2(vWorld.xz * 0.045 + 1.0) * 0.35;
+        float lush = Noise2(vWorld.xz * 0.028 + 13.0);
+        float level = smoothstep(0.8, 0.95, n.y);
+        albedo = mix(albedo, mix(albedo * vec3(0.82, 0.96, 0.8), albedo * vec3(1.14, 1.06, 0.7), smoothstep(0.32, 0.72, sw)), level);
+        albedo *= 0.88 + 0.22 * smoothstep(0.2, 0.8, lush);
+    }
     // Close up, the ground breaks into mottled grass and patches of clover and dry stalks (faded in within ~40 m).
     float eyeDist = length(vWorld - CameraPos);
     float near = Look.y * (1.0 - smoothstep(20.0, 55.0, eyeDist));
@@ -192,8 +218,21 @@ void main()
         float track = (1.0 - smoothstep(0.0, 0.025, abs(Noise2(vWorld.xz * 0.012 + 5.0) - 0.5))) * smoothstep(0.4, 0.6, Noise2(vWorld.xz * 0.02 + 9.0));
         albedo = mix(albedo, vec3(0.4, 0.34, 0.25) * (0.85 + 0.3 * Noise2(vWorld.xz * 1.7)), max(worn * 0.45, track * 0.4) * smoothstep(0.85, 0.97, n.y) * (1.0 - Look.x));
     }
-    // Trampled earth where the fighting has been.
-    if (Field.y > 0.5) albedo = mix(albedo, vec3(0.34, 0.28, 0.2), texture2D(GroundMap, vWorld.xz * Field.x + 0.5).r * 0.5);
+    // Trampled earth where the fighting has been: bruised grass first, then churned mud, broken up so it is not a smooth stain.
+    if (Field.y > 0.5)
+    {
+        float tr = texture2D(GroundMap, vWorld.xz * Field.x + 0.5).r;
+        float clod = Noise2(vWorld.xz * 2.3) * 0.6 + Noise2(vWorld.xz * 7.0 + 3.0) * 0.4;
+        float mud = smoothstep(0.1, 0.4, tr + (clod - 0.5) * 0.5 + (Noise2(vWorld.xz * 0.9 + 8.0) - 0.5) * 0.3);
+        vec3 earth = mix(vec3(0.31, 0.25, 0.17), vec3(0.41, 0.33, 0.23), smoothstep(0.2, 0.8, clod));
+        float wetClod = smoothstep(0.66, 0.72, Noise2(vWorld.xz * 6.5 + 1.0)) * smoothstep(0.3, 0.6, tr);   // dark wet clods
+        float bare = smoothstep(0.7, 0.76, Noise2(vWorld.xz * 7.7 + 9.0));                                   // pale scuffed earth
+        earth = mix(earth, vec3(0.17, 0.13, 0.09), wetClod * 0.55);
+        earth = mix(earth, vec3(0.52, 0.45, 0.33), bare * (1.0 - wetClod) * 0.35);
+        earth *= 1.0 - Field.w * 0.25;
+        albedo = mix(albedo, albedo * vec3(0.86, 0.8, 0.6), smoothstep(0.0, 0.12, tr) * 0.6); // bruised
+        albedo = mix(albedo, earth, mud * 0.88);
+    }
     // Rain: standing water in the low flat places.
     if (Field.w > 0.0) puddle = Field.w * smoothstep(0.8, 0.86, Noise2(vWorld.xz * 0.28 + 11.0) * 0.7 + Noise2(vWorld.xz * 1.3) * 0.3) * smoothstep(0.97, 0.995, n.y);
 #endif

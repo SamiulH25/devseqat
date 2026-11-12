@@ -587,7 +587,14 @@ sealed partial class Puppet
         {
             // Lying down: the corpse's "back" points along the fall.
             Frame(u.Pos, MathF.Atan2(-dir.Y, -dir.X), ground, size);
+            // Lying still, he darkens and his colours drain over a few seconds, so the dead sink into the field
+            // and the living stand out over them (vertex alpha: how far the sprite shader drains the colour).
+            float settle = Now > 0 ? Math.Clamp((Now - u.DiedAt - time) / 3f, 0, 1) : 1;
+            var keepTint = tint;
+            tint = Color.Lerp(tint, new Color(150, 138, 124), 0.25f + 0.55f * settle);
+            tint.A = (byte)(255 - 120 * settle);
             if (look.Beast) BeastCorpse(u); else Corpse(phase);
+            tint = keepTint;
             return;
         }
         bool crumple = fall == Fall.Thrust || fall == Fall.Plain && phase < 0.3f;
@@ -644,15 +651,31 @@ sealed partial class Puppet
         if (look.Tabard) Flat(new(0, 0.1f, -0.75f), "tabard.f", false);
         if (look.Head != "none") Flat(new(j, 0.11f, -1.25f), $"helm.{look.Head}.b", false);
         else { var side = pal; if (look.NeutralHead) pal = "/n"; Flat(new(j, 0.11f, -1.25f), look.HeadKey + ".b", false); pal = side; }
-        if (look.Shield != "none") Flat(new(-0.5f - j, 0.12f, -0.6f + j2 * 2), $"shield.{look.Shield}", true);
+        if (look.Shield != "none") { var keepS = scale; scale *= 0.75f; Flat(new(-0.36f - j, 0.07f, -0.62f + j2 * 2), $"shield.{look.Shield}", true); scale = keepS; } // half under him: a man, not a shield
         Flat(new(0.55f + j2 * 2, 0.105f, -0.55f + j * 3), look.Weapon, true); // the weapon thrown down beside him
     }
 
     // ---------- effects ----------
 
+    /// Soft motes (dust, smoke) go here: drawn after the men, blended, technique "SpriteSoft" (UV 0..1 across each quad).
+    public Verts<VertexPositionColorTexture>? Soft;
+
+    /// A soft round puff facing the camera, `alpha` 0..1, turned by `spin` so no two puffs share an outline.
+    public void Haze(Vector3 c, float size, Color col, float alpha, float spin)
+    {
+        if (Soft == null) { Particle(c, size, col); return; }
+        col.A = (byte)Math.Clamp(alpha * 255, 0, 255);
+        float cs = MathF.Cos(spin) * size / 2, sn = MathF.Sin(spin) * size / 2;
+        Vector3 a = camRight * cs + camUp * sn, b = -camRight * sn + camUp * cs;
+        Vector3 bl = c - a - b, br = c + a - b, tl = c - a + b, tr = c + a + b;
+        Soft.Add(new(tl, col, new(0, 0))); Soft.Add(new(tr, col, new(1, 0))); Soft.Add(new(bl, col, new(0, 1)));
+        Soft.Add(new(tr, col, new(1, 0))); Soft.Add(new(br, col, new(1, 1))); Soft.Add(new(bl, col, new(0, 1)));
+    }
+
     /// A solid-colour square facing the camera: dust, blood and sparks (pixel-art particles).
     public void Particle(Vector3 c, float size, Color col)
     {
+        col.A = 255; // vertex alpha below 1 drains a sprite's colour (the fallen); motes keep theirs
         var src = art[size > 0.15f ? "puff/0" : "white/0"]; // a large mote is round
         var hw = camRight * size / 2;
         var hh = camUp * size / 2;
@@ -713,7 +736,7 @@ sealed partial class Puppet
     {
         tilt = 0;
         var keepTint = tint; var keepPal = pal;
-        tint = col; pal = "/0";
+        tint = col; tint.A = 255; pal = "/0";
         Frame(pos, rot, ground, size);
         Flat(new(0, 0.035f, 0), key, true);
         tint = keepTint; pal = keepPal;

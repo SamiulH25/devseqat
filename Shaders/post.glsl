@@ -78,10 +78,11 @@ void main()
     if (Awe.w > 0.0)
     {
         vec2 d = vec2((vUV.x - Awe.x) * (Texel.y / Texel.x), vUV.y - Awe.y); // in screen heights, so the circle is round
-        float r = abs(Awe.z), outside = smoothstep(r * 0.7, r, length(d));
+        float r = abs(Awe.z), outside = smoothstep(r * 0.7, r * 1.3, length(d));
         if (Awe.z < 0.0) outside = 1.0 - outside; // a dread: the colour drains from inside the circle instead
         float g = dot(col, Luma);
-        col = mix(col, vec3(g) * vec3(0.92, 0.95, 1.0), Awe.w * outside);
+        col = mix(col, vec3(g) * vec3(0.92, 0.95, 1.0), Awe.w * outside * 0.82); // a trace of colour stays: men still read by side
+        if (Awe.z > 0.0) col *= 1.0 + vec3(0.1, 0.07, 0.02) * Awe.w * (1.0 - outside); // the one who matters stands in warm light
     }
     if (Warp > 0.0) // the Black Flame: the edges of the world burn dark and waver
     {

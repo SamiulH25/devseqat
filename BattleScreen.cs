@@ -83,8 +83,10 @@ sealed partial class BattleScreen
     /// The division you are giving goals to (cards on the left, Y cycles), or null for plain orders.
     Division? selectedDivision;
     readonly Verts<VertexPositionColorTexture> sprites = new();
+    readonly Verts<VertexPositionColorTexture> soft = new(); // dust and smoke, blended over the men
     readonly Verts<VertexPositionTexture> shadows = new();
     readonly Verts<VertexPositionColor> lines = new();
+    readonly Verts<VertexPositionColor> bands = new(); // ground marks as soft ribbons (Band)
 
     bool command, paused, menuOpen, helpOpen, wheelOpen, skipMouse = true;
     float yaw, pitch, fieldDist = 5.5f;       // field camera: third person behind the player
@@ -124,7 +126,7 @@ sealed partial class BattleScreen
     public void Load()
     {
         tipUi = new Ui(sb, art, font);
-        puppet = new Puppet(art, sprites);
+        puppet = new Puppet(art, sprites) { Soft = soft };
         hud = new Hud(sb, art, font);
         spriteFx = new AlphaTestEffect(GraphicsDevice)
         {

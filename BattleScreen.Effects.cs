@@ -110,7 +110,10 @@ partial class BattleScreen
         trampleAt = battle.Time;
         foreach (var u in battle.Units)
             if (u.Active && u.Vel.LengthSquared() > 0.25f) Stamp(u.Pos, u.Mounted ? 6 : 2);
+            else if (u.Active && u.Target != null && u.Action != UnitAction.None) Stamp(u.Pos, 4); // men fighting where they stand churn it up
         foreach (var (cue, at) in battle.Sounds) if (Synth.HeavyImpact(cue)) Stamp(at, 60);
+        foreach (var u in battle.Units) // a man going down tears the turf where he falls
+            if (u.Dead && u.DiedAt > battle.Time - 0.5f) Stamp(u.Pos, 30);
     }
 
     /// Where men stand (green channel), for the command view: the foliage shader thins the leaves that lie between the

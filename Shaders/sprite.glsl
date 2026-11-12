@@ -29,6 +29,17 @@ void main()
 #ifdef FRAGMENT
 void main()
 {
+#ifdef SOFT
+    // Soft motes (dust, smoke): a round puff with a feathered, ragged edge, blended over the scene (UV = 0..1 across the quad).
+    vec2 d = vUV - 0.5;
+    float edge = length(d) * 2.0 + (Noise2(vUV * 3.0) - 0.5) * 0.35;
+    float a = vColor.a * (1.0 - smoothstep(0.25, 1.0, edge));
+    if (a < 0.01) discard;
+    float sh = ShadowAt(vWorld - SunDir * ShadowParams.w) * CloudAt(vWorld);
+    vec3 sl = max(SkyColor * SpriteLight.x * 1.1 + SunColor * SpriteLight.y * sh + TorchLight(vWorld) + GlowLight(vWorld), vec3(0.0));
+    gl_FragColor = vec4(Fog(vColor.rgb * sl, vWorld) * a, a);
+    return;
+#endif
     vec4 t = texture2D(Atlas, vUV);
     if (t.a < 0.5) discard;
 #ifdef SHADOW
@@ -44,7 +55,10 @@ void main()
     light = max(light + GlowLight(vWorld + vec3(0.0, 0.6, 0.0)) * 1.3, vec3(0.0)); // spell light catches men more than grass
     float lum = dot(t.rgb, vec3(0.3, 0.55, 0.15));
     light += vec3(0.16, 0.19, 0.27) * (Look.z * 0.9 + Look.w * 0.35) * (0.6 + lum * 0.8);
-    gl_FragColor = vec4(Fog(t.rgb * vColor.rgb * light, vWorld), 1.0);
+    // Vertex alpha below 1 marks the fallen: their colours drain toward the earth so the dead sink into the field.
+    vec3 base = t.rgb * vColor.rgb;
+    base = mix(base, vec3(dot(base, vec3(0.3, 0.55, 0.15))) * vec3(1.04, 0.96, 0.84), 1.0 - vColor.a);
+    gl_FragColor = vec4(Fog(base * light, vWorld), 1.0);
 #endif
 }
 #endif

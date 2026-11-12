@@ -35,10 +35,21 @@ float ShadowAt(vec3 world)
     if (edge > 1.0 || c.z > 1.0) return 1.0;
     vec2 uv = vec2(c.x * 0.5 + 0.5, 0.5 - c.y * 0.5);
     float d = c.z - ShadowParams.y;
+    // A 3x3 tent filter: 4x4 taps weighted by where the point falls inside its texel, so the edge moves smoothly
+    // across texels instead of stepping in blocks.
+    vec2 tc = uv / ShadowParams.x - 0.5;
+    vec2 f = fract(tc);
+    vec2 base = (floor(tc) + 0.5) * ShadowParams.x;
     float s = 0.0;
-    for (int i = -1; i <= 1; i++)
-        for (int j = -1; j <= 1; j++)
-            s += step(d, texture2D(ShadowMap, uv + vec2(float(i), float(j)) * ShadowParams.x).r);
+    for (int i = -1; i <= 2; i++)
+    {
+        float wx = i == -1 ? 1.0 - f.x : (i == 2 ? f.x : 1.0);
+        for (int j = -1; j <= 2; j++)
+        {
+            float wy = j == -1 ? 1.0 - f.y : (j == 2 ? f.y : 1.0);
+            s += step(d, texture2D(ShadowMap, base + vec2(float(i), float(j)) * ShadowParams.x).r) * wx * wy;
+        }
+    }
     s /= 9.0;
     return mix(s, 1.0, smoothstep(0.85, 1.0, edge)); // fade out at the edge of the map
 }

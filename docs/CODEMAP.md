@@ -175,14 +175,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (290 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:80, CommandControls:88, BoxOf:208, OnScreen:210, PickSquad:217, GroundUnderMouse:231, UpdateCamera:253
 
-## BattleScreen.cs (528 lines)
-- **BattleScreen** (class, L10): Exit:16, GroundTips:47, MagicTips:59, BattleScreen:112, Load:124, QuickGround:143, BeginCampaign:153, StartDeployment:184, StageCommandView:199, FinishCampaignBattle:207, NewBattle:222, WithMages:261, SetWorld:269, SetCommand:283, Pressed:292, Update:300, PlaySounds:373, Soundscape:406, SyncHud:487, MenuChoice:514
+## BattleScreen.cs (530 lines)
+- **BattleScreen** (class, L10): Exit:16, GroundTips:47, MagicTips:59, BattleScreen:114, Load:126, QuickGround:145, BeginCampaign:155, StartDeployment:186, StageCommandView:201, FinishCampaignBattle:209, NewBattle:224, WithMages:263, SetWorld:271, SetCommand:285, Pressed:294, Update:302, PlaySounds:375, Soundscape:408, SyncHud:489, MenuChoice:516
 
-## BattleScreen.Draw.cs (620 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:52, DrawBlobs:95, EaseFacings:124, Spray:140, Effects:153, GroundSteps:184, BuildSprites:240, SpriteStates:297, DrawSpritesBasic:305, DrawSpritesShaded:315, Line:325, G:326, OrderArrows:335, OrderArrowLines:337, Ring:353, TorchRow:363, Precipitation:372, Fall:383, Stakes:402, SpellColor:425, Spells:431, AuraGlow:446, ChampionGlow:456, PlayerGlow:469, PendingFormsDrawn:483, RouteDots:508, PlanHook:521, DrawLines:551
+## BattleScreen.Draw.cs (680 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:54, DrawBlobs:99, EaseFacings:128, Spray:144, Effects:157, GroundSteps:188, BuildSprites:244, SpriteStates:305, DrawSpritesBasic:313, DrawSpritesShaded:323, DrawSoft:334, Line:348, G:349, OrderArrows:358, OrderArrowLines:360, Ring:376, Band:388, TorchRow:410, Precipitation:419, Fall:430, Stakes:449, SpellColor:472, Spells:478, AuraGlow:493, ChampionGlow:503, PlayerGlow:516, PendingFormsDrawn:530, RouteDots:555, PlanHook:568, DrawLines:598
 
-## BattleScreen.Effects.cs (211 lines)
-- **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:122, TrampleTexture:145, RearOf:166, BannerFalls:190, DrawFallingBanners:201
+## BattleScreen.Effects.cs (214 lines)
+- **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:125, TrampleTexture:148, RearOf:169, BannerFalls:193, DrawFallingBanners:204
 
 ## BattleScreen.Gather.cs (128 lines)
 - **BattleScreen** (class, L9): Gathered:15, CasterOf:18, GatherFx:22, PlayCue:52, Sigil:61, Arc:105, GatherLights:119
@@ -660,8 +660,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Program.cs (87 lines)
 
-## Puppet.cs (830 lines)
-- **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:82, Frame:89, View:99, Draw:119, Crossbow:222, Bow:246, Horse:275, static:350, Beast:358, WolfBody:370, Warg:399, BeastCorpse:417, DrawLooseHorse:430, DrawDeadHorse:439, RotY:475, Shoulder:486, Arm:490, ArmTo:497, Elbow:511, Sink:538, Leg:547, Span:561, Fallen:571, Corpse:635, Particle:654, Banner:667, Decal:712, Quad:724, HelmTop:737, HeadBill:744, Bill:753, Axial:764, Missile:768, AxialSrc:787, Long:798, Plane:811, Flat:822
+## Puppet.cs (853 lines)
+- **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:82, Frame:89, View:99, Draw:119, Crossbow:222, Bow:246, Horse:275, static:350, Beast:358, WolfBody:370, Warg:399, BeastCorpse:417, DrawLooseHorse:430, DrawDeadHorse:439, RotY:475, Shoulder:486, Arm:490, ArmTo:497, Elbow:511, Sink:538, Leg:547, Span:561, Fallen:571, Corpse:642, Haze:664, Particle:676, Banner:690, Decal:735, Quad:747, HelmTop:760, HeadBill:767, Bill:776, Axial:787, Missile:791, AxialSrc:810, Long:821, Plane:834, Flat:845
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, Sheet:133, OtherBeastCorpse:136
@@ -690,9 +690,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SettingsScreen.cs (183 lines)
 - **SettingsScreen** (class, L7): readonly:20, SettingsScreen:22, Update:24, Close:42, Draw:50
 
-## Shading.cs (204 lines)
+## Shading.cs (207 lines)
 - **Quality** (enum, L8)
-- **Shading** (class, L12): Source:37, Shading:47, AimSun:90, Setup:129, Blank:157, Scene:164, PostToScreen:179, Dispose:199
+- **Shading** (class, L12): Source:37, Shading:47, AimSun:90, Setup:131, Blank:160, Scene:167, PostToScreen:182, Dispose:202
 
 ## Sky.cs (103 lines)
 - **Sky** (class, L7): Sky:28, Set:36, Omen:92
@@ -707,8 +707,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteDump.cs (113 lines)
 - **SpriteDump** (class, L9): Run:13, Portraits:45, Png:80, Crc:107
 
-## SpriteSheet.cs (1450 lines)
-- **SpriteSheet** (class, L12): SpriteSheet:28, Add:40, Pack:45, Side:70, InEl:123, Head:125, Visages:128, Head:142, GoblinHead:185, TrollHead:215, SkullHead:245, GhoulHead:271, Helm:296, Torso:471, PlateTorso:625, PixelMap:628, Ribs:644, Tabard:659, Emblem:676, Cape:716, Sleeve:724, Leg:760, Boot:787, Hand:805, Shield:813, Weapon:884, Blade:1042, Polearm:1053, Bow:1068, Arrow:1082, Quiver:1091, Plume:1100, Flag:1108, Blood:1117, Splat:1126, Horse:1139, Wolf:1209, Spider:1248, Bear:1302, Wyvern:1337, BodyShape:1401, HorseGear:1404, Saddle:1438
+## SpriteSheet.cs (1460 lines)
+- **SpriteSheet** (class, L12): SpriteSheet:28, Add:40, Pack:45, Side:70, InEl:123, Head:125, Visages:128, Head:142, GoblinHead:185, TrollHead:215, SkullHead:245, GhoulHead:271, Helm:296, Torso:481, PlateTorso:635, PixelMap:638, Ribs:654, Tabard:669, Emblem:686, Cape:726, Sleeve:734, Leg:770, Boot:797, Hand:815, Shield:823, Weapon:894, Blade:1052, Polearm:1063, Bow:1078, Arrow:1092, Quiver:1101, Plume:1110, Flag:1118, Blood:1127, Splat:1136, Horse:1149, Wolf:1219, Spider:1258, Bear:1312, Wyvern:1347, BodyShape:1411, HorseGear:1414, Saddle:1448
 
 ## Squad.cs (256 lines)
 - **Order** (enum, L5)

@@ -438,7 +438,7 @@ partial class BattleScreen
             theirs.Add(b.AddSquad(1, t, 24, new Vector2(i * 14, 14), 8, -Vector2.UnitY));
         }
         for (int i = 0; i < 3; i++) { mine[i].Order = theirs[i].Order = Order.Charge; mine[i].Target = theirs[i]; theirs[i].Target = mine[i]; }
-        for (int i = 0; i < 60 * 14; i++) b.Update(1 / 60f);
+        for (int i = 0; i < 60 * 14; i++) { b.Update(1 / 60f); Effects(1 / 60f); LeaveMarks(); Trample(); } // as in play: blood, sparks, trodden ground
         foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
         paused = hudHidden = true;
         SetCommand(true);
