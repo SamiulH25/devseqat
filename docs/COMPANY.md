@@ -419,3 +419,14 @@ your nearest idle foot company on Hold within 35 m go for the foes on you for 10
 added in the fight, not drawn. Not built (left for later): the respected lord's offer of single combat in the field,
 brigand kings and monster leaders hunting by `Prey`, a named man earning a deed for saving you, the report's line, and a
 `--balance` comparison (the self-test's `Calibration` and `CavalryBalance` stay green).
+
+**C14 (2026-11-12).** `BattleScreen.Arrows.cs`, drawing only (`ReplayExact` prints the same before and after: 4845 ticks,
+winner 1 at 80.8 s, 93 dead). Within 35 m of the eye a missile is a sprite quad along its flight (`Puppet.Missile`:
+the bowmen's "arrow" part at half width, the bolt shorter and thicker, the javelin part) with a band of the shooter's
+cloth over the fletching; farther it is a bright head and a light streak. Arrows that come down are kept for the battle
+(1,500 at most, 3 per 0.7 m patch so a thick fall reads as a thicket), standing at least 55 degrees, leaning the way they
+flew, the point sunk; a puff of water, mud or dust where each lands. Low quality keeps the old lines. Staged shots
+`arrows-volley.png`, `arrows-field.png`, `arrows-ground.png`. Not built: arrows standing in living men, horses, the dead,
+pavises and walls; the shield knock, plate glance and flinch; the close whistle past the camera; following your own arrow
+and its range; plunging and flat shots drawn differently; fire pots; the flight's shadow; a volley that leaves together
+(that is the sim's timing, out of a drawing-only phase); a frame budget measured at 3,000 men.

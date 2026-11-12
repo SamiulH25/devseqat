@@ -288,6 +288,7 @@ partial class BattleScreen
             puppet.Draw(u, h);
         }
         puppet.Rear = 0;
+        if (!forSun) DrawMissiles(); // real arrows near the camera (BattleScreen.Arrows.cs)
         foreach (var h in battle.LooseHorses) if (Seen(h.Pos, t.Height(h.Pos), 2.5f)) puppet.DrawLooseHorse(h, t.Height(h.Pos));
         foreach (var h in battle.DeadHorses) if (Seen(h.Pos, t.Height(h.Pos), 2.5f)) puppet.DrawDeadHorse(h, t.Height(h.Pos));
         puppet.Detail = 0;
@@ -551,19 +552,7 @@ partial class BattleScreen
     {
         lines.N = 0;
         Precipitation();
-        foreach (var a in battle.Arrows)
-        {
-            var dir = a.Vel.LengthSquared() > 0 ? Vector3.Normalize(a.Vel) : Vector3.Down;
-            if (a.Kind == Grip.Sling)
-            {
-                if (a.Stuck < 0) Line(a.Pos, a.Pos - dir * 0.12f, StoneColor); // a stone: a dark speck, gone once it lands
-                continue;
-            }
-            float len = a.Kind == Grip.Thrown ? 1.5f : a.Kind == Grip.Crossbow ? 0.45f : 0.8f; // a javelin is long, a bolt short
-            Line(a.Pos, a.Pos - dir * (a.Stuck >= 0 ? len * 0.6f : len), ArrowColor);
-            if (a.Kind == Grip.Thrown) Line(a.Pos + Vector3.Up * 0.02f, a.Pos - dir * len + Vector3.Up * 0.02f, ArrowColor); // thicker in the shaft
-            if (a.Stuck < 0 && quality != Quality.Low) Line(a.Pos - dir * len, a.Pos - dir * (len + 1.6f), ArrowStreak); // a faint streak behind it in flight
-        }
+        MissileLines(); // arrows, bolts, javelins and stones (BattleScreen.Arrows.cs)
         Stakes();
         Spells();
         RouteDots();

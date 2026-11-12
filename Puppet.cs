@@ -763,6 +763,27 @@ sealed partial class Puppet
     // Sprite stretched from a (bottom of sprite) to b (top), rotated about that axis to face the camera.
     void Axial(Vector3 aLocal, Vector3 bLocal, string name) => AxialSrc(aLocal, bLocal, art[name + pal]);
 
+    /// A missile in the world (docs/COMPANY.md C14): the sprite `part` from its point `head` to its `tail`, turned about the
+    /// shaft to face the camera, `thick` times as wide; a short band of the side's `cloth` over the fletching.
+    public void Missile(Vector3 head, Vector3 tail, string part, float thick, Color cloth)
+    {
+        var src = art[part + "/0"]; // shafts are not painted per side; the fletching band carries the colour
+        var axis = head - tail;
+        var side = Vector3.Cross(axis, camPos - (head + tail) / 2);
+        if (side.LengthSquared() < 1e-8f) side = camRight;
+        side = Vector3.Normalize(side) * src.Width * Art.Px * thick / 2;
+        tint = Color.White;
+        Quad(tail - side, tail + side, head - side, head + side, src, false);
+        if (part != "arrow") return;
+        // The fletching in the shooter's colours: a narrower quad over the feathers near the tail.
+        var f0 = tail + axis * 0.08f;
+        var f1 = tail + axis * 0.2f;
+        var fs = side * 0.75f;
+        tint = Color.Lerp(cloth, Color.White, 0.3f); // dyed feathers, bright enough to tell whose
+        Quad(f0 - fs, f0 + fs, f1 - fs, f1 + fs, art["white/0"], false);
+        tint = Color.White;
+    }
+
     void AxialSrc(Vector3 aLocal, Vector3 bLocal, Rectangle src)
     {
         Vector3 a = W(aLocal), b = W(bLocal), axis = b - a;

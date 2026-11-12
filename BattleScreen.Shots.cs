@@ -194,7 +194,11 @@ partial class BattleScreen
                 HuntedScene(); shotFrames = 0; shotIndex++; break;
             case 109 when shotFrames > 60:
                 pendingShot = "captain-hunted"; shotIndex++; break;
-            case 110 when pendingShot == null: Exit(); break;
+            case 110 or 112 or 114 when pendingShot == null:
+                ArrowScene((shotIndex - 110) / 2); shotFrames = 0; shotIndex++; break;
+            case 111 or 113 or 115 when shotFrames > 60:
+                pendingShot = shotIndex switch { 111 => "arrows-volley", 113 => "arrows-field", _ => "arrows-ground" }; shotIndex++; break;
+            case 116 when pendingShot == null: Exit(); break;
         }
     }
 
@@ -495,6 +499,43 @@ partial class BattleScreen
         blend = 0;
         yaw = MathHelper.PiOver2 + 0.15f;
         pitch = 0.62f;
+    }
+
+    /// Arrows you can see (docs/COMPANY.md C14), staged for a shot: two bow companies a side shooting across 45 m at men
+    /// holding their ground. 0: a volley in the air from command view; 1: the field view under it; 2: the beaten zone two
+    /// minutes on, from above.
+    void ArrowScene(int which)
+    {
+        battle = Battle.Empty(16);
+        SetWorld();
+        ResetArrows();
+        var b = battle;
+        b.Player.Pos = new Vector2(3, -26);
+        b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+        b.AddSquad(0, Troops.Get("men_at_arms"), 24, new Vector2(0, -22), 8, Vector2.UnitY);
+        b.AddSquad(0, Troops.Get("longbowmen"), 16, new Vector2(-16, -24), 8, Vector2.UnitY);
+        foreach (var x in new[] { -10f, 10f }) b.AddSquad(1, Troops.Get("longbowmen"), 18, new Vector2(x, 14), 9, -Vector2.UnitY);
+        b.AddSquad(1, Troops.Get("crossbowmen"), 12, new Vector2(22, 8), 6, -Vector2.UnitY);
+        foreach (var s in b.Squads) if (s.Team == 0 && s.Units.Count > 1 && s.Units[0].Type.Ammo == 0) s.Formation = Formation.ShieldWall;
+        int ticks = which == 2 ? 60 * 120 : 60 * 7 + 18;
+        for (int i = 0; i < ticks; i++) { b.Update(1 / 60f); TrackArrows(); }
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = true;
+        hudHidden = which != 1;
+        if (which == 1)
+        {
+            SetCommand(false);
+            blend = 0;
+            yaw = MathHelper.PiOver2;
+            pitch = 0.05f;
+            return;
+        }
+        SetCommand(true);
+        blend = 1;
+        camFocus = which == 2 ? new Vector2(0, -22) : new Vector2(0, -6);
+        camYaw = MathHelper.PiOver2 + (which == 2 ? 0.2f : 0.6f);
+        camPitch = which == 2 ? 0.95f : 0.42f;
+        zoom = which == 2 ? 22 : 36;
     }
 
     /// Magic and aura staged for a shot (docs/archive/MAGIC_AURA.md 6): spells (a smite's pillar, lightning, burning ground, mist, a

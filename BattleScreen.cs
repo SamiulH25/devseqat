@@ -35,7 +35,7 @@ sealed partial class BattleScreen
     readonly Dictionary<int, List<int>> groups = new();
     int lastGroup = -1;
     float lastGroupAt;
-    static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30), ArrowStreak = new(150, 146, 132), StoneColor = new(60, 58, 54);
+    static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30), ArrowStreak = new(150, 146, 132), ArrowHead = new(214, 214, 206), StoneColor = new(60, 58, 54);
 
     Puppet puppet = null!;
     Hud hud = null!;
@@ -105,7 +105,7 @@ sealed partial class BattleScreen
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
     // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/archive/MELEE.md), =magic at the magic scenes,
     // =spectacle at the spectacle scenes (docs/archive/SPECTACLE.md), skipping the rest.
-    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, _ => 0 }, shotFrames;
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
 
@@ -271,6 +271,7 @@ sealed partial class BattleScreen
         Looks.Grounded = false;
         Sky.Set(battle.Weather, nightFloor: 0.42f); // moonlight: dark, but you can still see who is who
         ResetMagicFx();
+        ResetArrows();
         ResetSpectacle();
         markCount = markNext = 0; falling.Clear(); bearers.Clear(); trauma = hitPause = 0; ending = -1; lastHitAt = lastPlayerHp = -1;
         Array.Clear(trample); trampleAt = 0; trampleDirty = true;
@@ -359,7 +360,7 @@ sealed partial class BattleScreen
         if (scale > 0 && Settings.Current.PauseOnAlerts && battle.Alerts.Count > alertsSeen
             && battle.Alerts.Skip(alertsSeen).Any(a => a.Kind is "breaking" or "horse" or "leaderless")) { paused = true; scale = 0; battle.Log("Paused: see the alert."); }
         alertsSeen = battle.Alerts.Count;
-        if (scale > 0) { battle.Advance(dt * scale); PlaySounds(); Effects(dt * scale); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
+        if (scale > 0) { battle.Advance(dt * scale); PlaySounds(); Effects(dt * scale); TrackArrows(); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
         FieldLife(dt * scale);
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);

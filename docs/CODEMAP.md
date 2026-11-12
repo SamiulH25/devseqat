@@ -127,6 +127,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Place** (struct, L9)
 - **Battle** (class, L13): Survey:19, Thin:69, BestPlace:78, SnapToGround:93, Patience:105, GoodGround:109, HoldsGround:119, DryAnchor:141, HorseGoing:149, GroundWarning:178, CrossesWater:193, CannotStake:207, PlantStakes:218
 
+## BattleHunt.cs (236 lines)
+- **Battle** (class, L10): HuntGeneral:31, Forward:47, SendHunterNow:56, SendHunter:59, MarkWithBows:80, OwnMenNear:103, LoosesAtCaptain:111, CloseTheGuard:121, GuardSpot:133, Grudge:144, HuntThink:154, UpdateHunt:197, StandState:226, HuntersState:229
+
 ## BattleMerge.cs (82 lines)
 - **Battle** (class, L7): Movers:16, CannotMerge:19, Merge:40, Fold:48, ReplayMerge:81
 
@@ -169,11 +172,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (290 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:80, CommandControls:88, BoxOf:208, OnScreen:210, PickSquad:217, GroundUnderMouse:231, UpdateCamera:253
 
-## BattleScreen.cs (527 lines)
-- **BattleScreen** (class, L10): Exit:16, GroundTips:47, MagicTips:59, BattleScreen:112, Load:124, QuickGround:143, BeginCampaign:153, StartDeployment:184, StageCommandView:199, FinishCampaignBattle:207, NewBattle:222, WithMages:261, SetWorld:269, SetCommand:282, Pressed:291, Update:299, PlaySounds:372, Soundscape:405, SyncHud:486, MenuChoice:513
+## BattleScreen.cs (528 lines)
+- **BattleScreen** (class, L10): Exit:16, GroundTips:47, MagicTips:59, BattleScreen:112, Load:124, QuickGround:143, BeginCampaign:153, StartDeployment:184, StageCommandView:199, FinishCampaignBattle:207, NewBattle:222, WithMages:261, SetWorld:269, SetCommand:283, Pressed:292, Update:300, PlaySounds:373, Soundscape:406, SyncHud:487, MenuChoice:514
 
-## BattleScreen.Draw.cs (631 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:52, DrawBlobs:95, EaseFacings:124, Spray:140, Effects:153, GroundSteps:184, BuildSprites:240, SpriteStates:296, DrawSpritesBasic:304, DrawSpritesShaded:314, Line:324, G:325, OrderArrows:334, OrderArrowLines:336, Ring:352, TorchRow:362, Precipitation:371, Fall:382, Stakes:401, SpellColor:424, Spells:430, AuraGlow:445, ChampionGlow:455, PlayerGlow:468, PendingFormsDrawn:482, RouteDots:507, PlanHook:520, DrawLines:550
+## BattleScreen.Draw.cs (620 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:52, DrawBlobs:95, EaseFacings:124, Spray:140, Effects:153, GroundSteps:184, BuildSprites:240, SpriteStates:297, DrawSpritesBasic:305, DrawSpritesShaded:315, Line:325, G:326, OrderArrows:335, OrderArrowLines:337, Ring:353, TorchRow:363, Precipitation:372, Fall:383, Stakes:402, SpellColor:425, Spells:431, AuraGlow:446, ChampionGlow:456, PlayerGlow:469, PendingFormsDrawn:483, RouteDots:508, PlanHook:521, DrawLines:551
 
 ## BattleScreen.Effects.cs (211 lines)
 - **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:122, TrampleTexture:145, RearOf:166, BannerFalls:190, DrawFallingBanners:201
@@ -196,8 +199,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Press.cs (194 lines)
 - **BattleScreen** (class, L8): PressShot:16, PressList:21, PressScript:49, MagicShot:78, Aim:102, Blocked:116, Behind:137, Over:145, Captain:152, Horse:163, Volley:174, Hot:184
 
-## BattleScreen.Shots.cs (691 lines)
-- **BattleScreen** (class, L8): ShotScript:10, BeastScene:202, readonly:221, readonly:229, PoseSheet:239, GripSheet:313, ShooterSheet:337, StanceSheet:369, LifeSheet:390, Clash:423, MarkedScene:450, HuntedScene:476, MagicScene:502, SpectacleScene:553, WorkScene:603, StageCast:659, Gallery:667
+## BattleScreen.Shots.cs (732 lines)
+- **BattleScreen** (class, L8): ShotScript:10, BeastScene:206, readonly:225, readonly:233, PoseSheet:243, GripSheet:317, ShooterSheet:341, StanceSheet:373, LifeSheet:394, Clash:427, MarkedScene:454, HuntedScene:480, ArrowScene:507, MagicScene:543, SpectacleScene:594, WorkScene:644, StageCast:700, Gallery:708
 
 ## BattleScreen.Spectacle.cs (208 lines)
 - **BattleScreen** (class, L9): ResetSpectacle:32, Beat:44, BeatCaption:53, AddGlow:67, AddAwe:70, AddScar:73, SpectacleFrame:84, Omen:112, Brighten:114, Drain:117, Shimmer:118, Flash:119, SetGlows:123, Weight:139, ScarColour:156, DrawScars:165, LightsFx:184
@@ -359,6 +362,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Campaign/Ground.cs (94 lines)
 - **Campaign** (class, L7): RainDaily:11, Roll:23, WetAt:31, GroundChooser:39, GroundFor:49, BattleSeed:53, GroundNote:56, GroundEdge:82
+
+## Campaign/Grudges.cs (17 lines)
+- **Campaign** (class, L4): GrudgeOf:10
 
 ## Campaign/Household.cs (75 lines)
 - **Campaign** (class, L6): static:13, GuardTroop:34, GuardWeekly:46
@@ -622,8 +628,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Program.cs (87 lines)
 
-## Puppet.cs (809 lines)
-- **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:82, Frame:89, View:99, Draw:119, Crossbow:222, Bow:246, Horse:275, static:350, Beast:358, WolfBody:370, Warg:399, BeastCorpse:417, DrawLooseHorse:430, DrawDeadHorse:439, RotY:475, Shoulder:486, Arm:490, ArmTo:497, Elbow:511, Sink:538, Leg:547, Span:561, Fallen:571, Corpse:635, Particle:654, Banner:667, Decal:712, Quad:724, HelmTop:737, HeadBill:744, Bill:753, Axial:764, AxialSrc:766, Long:777, Plane:790, Flat:801
+## Puppet.cs (830 lines)
+- **Puppet** (class, L13): Puppet:29, Begin:31, Rad:40, W:41, Awed:65, Lean:82, Frame:89, View:99, Draw:119, Crossbow:222, Bow:246, Horse:275, static:350, Beast:358, WolfBody:370, Warg:399, BeastCorpse:417, DrawLooseHorse:430, DrawDeadHorse:439, RotY:475, Shoulder:486, Arm:490, ArmTo:497, Elbow:511, Sink:538, Leg:547, Span:561, Fallen:571, Corpse:635, Particle:654, Banner:667, Decal:712, Quad:724, HelmTop:737, HeadBill:744, Bill:753, Axial:764, Missile:768, AxialSrc:787, Long:798, Plane:811, Flat:822
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, Sheet:133, OtherBeastCorpse:136
