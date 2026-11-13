@@ -314,8 +314,11 @@ The core tension: **you are strongest as a leader when you are in the fight, but
 - **Heroics:** your kills give nearby allies more morale than ordinary kills.
 - **Leaders matter:** if you or the enemy captain dies, every unit on that side loses 16 morale. The enemy captain (red ring in command view) stays just behind his line, so killing him is a real tactical goal.
 - **If you fall,** the battle continues and you command from afar at normal speed, without an aura.
-- **The captain's aura** (a knight's power, distinct from leadership): it wakes after a won duel and rises through five tiers
-  (Kindled, Aura Knight, Aura Expert, Aura Master, Transcendent), each wall broken by a trial. The pool on your panel pays
+- **The captain's aura** (a knight's power, distinct from leadership): it stirs as you fight and rises through five tiers
+  (Kindled, Aura Knight, Aura Expert, Aura Master, Transcendent), each wall broken by a trial. The first wall also gives way
+  after twelve won battles (a battle you fight yourself counts two); a won duel or a won tournament breaks the walls up to
+  Aura Knight. At a wall the captain sheet (K) lists each trial that would break it and where to find one now (the nearest
+  vigil site, a lord who would meet you). The pool on your panel pays
   for the aura blade (hold ALT) and your forms (U, I, O, and L for the great form). It comes back slowly as you move, twice as
   fast standing still with no foe within 30 m, and only a little in a fight. Land blows at full aura and the overflow banks a
   **surge** (up to 20) that your next form spends first. Under 20 you are **spent**: your blows land 10% lighter and your breath

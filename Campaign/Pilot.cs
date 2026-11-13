@@ -186,6 +186,7 @@ public sealed class Pilot
         float mine = Rules.Strength(Me);
         // Danger first: a hostile party our size or bigger close by sends us behind walls.
         bool danger = c.S.Parties.Any(p => p != Me && !p.Down && c.Hostile(Me, p) && Rules.Strength(p) > mine * 0.9f && Vector2.Distance(p.Pos, Me.Pos) < 30);
+        if (danger && c.S.GoalSite >= 0) shunned[c.S.GoalSite] = (float)c.S.Hours + 5 * 24; // danger near a vigil: try another site
         if (danger) { var near = c.S.Parties.Where(p => p != Me && !p.Down && c.Hostile(Me, p)).OrderBy(p => Vector2.Distance(p.Pos, Me.Pos)).First(); Refuge(near); return; }
         if (Me.Moving && Me.ChaseId >= 0 && c.PartyById(Me.ChaseId) is Party q && Rules.Strength(q) * 1.1f < mine) return;
         if (Siege(mine)) return;
@@ -245,13 +246,15 @@ public sealed class Pilot
         }
         if (!cap.AuraWall || cap.AuraTier >= Campaign.VigilBreaksBelow || cap.Wounds.Contains("core")) return false;
         if (c.S.GoalSite >= 0 && Me.Moving) return true;
-        var site = c.Sites.Where(x => Campaign.VigilSites.Contains(x.Kind) && Vector2.Distance(x.Pos, Me.Pos) < 200 * c.Map.Spread)
+        var site = c.Sites.Where(x => Campaign.VigilSites.Contains(x.Kind) && c.SiteReady(x) && shunned.GetValueOrDefault(x.Id) <= c.S.Hours && Vector2.Distance(x.Pos, Me.Pos) < 200 * c.Map.Spread)
             .OrderBy(x => Vector2.Distance(x.Pos, Me.Pos)).FirstOrDefault();
         if (site == null) return false;
         c.GoTo(site);
         return true;
     }
     float nextRite;
+    /// Sites the seeker fled from on the way, until when.
+    readonly Dictionary<int, float> shunned = new();
 
     /// Sieges (F9, so the stand-in can earn fiefs and rank): once sworn, take a weakly held enemy seat in reach: besiege, wait for
     /// the ladders, then storm it on paper. Returns true while busy with a siege.

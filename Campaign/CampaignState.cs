@@ -456,6 +456,8 @@ public sealed class CaptainState
     public int AuraTier;
     public float AuraXp;
     public bool AuraWall;
+    /// Battles won while the first wall stands (docs/ARCANA.md AR1): a fought one counts two; at `Campaign.SeasonWins` it wakes.
+    public int WallWins;
     /// When a cracked core (the `core` wound, K5) mends of itself.
     public float CoreUntil;
     /// The forms you know, in slot order (5.6), and how often each was used (its rank); the Black Flame in you (7).

@@ -1029,5 +1029,44 @@ public static partial class SelfTest
         Check(cut is > 8 and < 32, $"his lit blade cuts about half the arrows from the air ({cut} of 40)");
         Check(Cut(false) == 0, "an unlit blade cuts none");
     }
+
+    /// Aura everyone can find (docs/ARCANA.md AR1): won battles wake it at the first wall (a fought one counts two), losses do
+    /// not, the lists break the low walls, and the trial card names a way through and where.
+    static void AwakeningByDeeds()
+    {
+        var c = Campaign.New(120);
+        var cap = c.Captain;
+        cap.AuraWall = true; cap.AuraXp = Campaign.AuraNeeds[0];
+        var auto = new BattleResult(0, 0, new List<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Unhurt, 0);
+        var lost = auto with { Winner = 1 };
+        var fought = auto with { Duration = 90, PlayerKills = 1 };
+        for (int i = 0; i < 20; i++) c.AuraAfterBattle(lost, false, 1);
+        Check(cap.AuraTier == 0 && cap.WallWins == 0, "lost battles do not wake it");
+        for (int i = 0; i < Campaign.SeasonWins - 3; i++) c.AuraAfterBattle(auto, true, 0.5f);
+        Check(cap.AuraTier == 0 && cap.AuraWall, "not yet");
+        c.AuraAfterBattle(fought, true, 0.5f);
+        c.AuraAfterBattle(auto, true, 0.5f);
+        Check(cap.AuraTier == 1 && !cap.AuraWall && cap.WallWins == 0, $"twelve wins (a fought one counting two) wake it (tier {cap.AuraTier}, {cap.WallWins})");
+        Check(cap.Forms.Contains("focus"), "and the first form comes with it");
+        // Seasoning wakes only the first wall.
+        cap.AuraWall = true; cap.AuraXp = Campaign.AuraNeeds[1];
+        for (int i = 0; i < 30; i++) c.AuraAfterBattle(auto, true, 0.5f);
+        Check(cap.AuraTier == 1, "won battles alone do not break the walls above");
+        // The lists: a trial like a duel.
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town);
+        int tries = 0;
+        while (cap.AuraTier == 1 && tries++ < 40) c.AutoTournament(town);
+        Check(cap.AuraTier == 2, $"a won tournament breaks the wall below Aura Knight ({tries} tries)");
+        cap.AuraWall = true; cap.AuraXp = Campaign.AuraNeeds[2];
+        for (int i = 0; i < 40; i++) c.AutoTournament(town);
+        Check(cap.AuraTier == 2, "but not the walls above it");
+        // The card.
+        var card = c.NearestTrials();
+        Console.WriteLine("trials: " + string.Join(" | ", card));
+        Check(card.Any(l => l.StartsWith("VIGIL: THE ") && l.Contains(" DAY")), "the card names the nearest vigil and how far");
+        Check(card.Any(l => l.StartsWith("ODDS:")) && !card.Any(l => l.StartsWith("BATTLE:")), "the trials of this wall, not the first wall's");
+        cap.AuraWall = false;
+        Check(c.NearestTrials().Count == 0, "no wall, no card");
+    }
 }
 

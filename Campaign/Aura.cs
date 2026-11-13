@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+
 namespace Ironfield;
 
 /// The captain's aura on the map (docs/archive/KNIGHT_ORDERS.md 5.1-5.5, K1): XP from how you fought, the wall that stops it at
@@ -45,6 +47,7 @@ public sealed partial class Campaign
         Captain.AuraTier++;
         Captain.AuraXp = 0;
         Captain.AuraWall = false;
+        Captain.WallWins = 0;
         string name = AuraName(Captain.AuraTier);
         Deed(Captain.AuraTier == 1 ? $"{how} Your aura wakes: you are Kindled." : $"{how} Your aura breaks through: you are an {name}.", "aura");
         auraNews = $"BREAKTHROUGH: {name.ToUpperInvariant()}. {AuraGifts[Captain.AuraTier].ToUpperInvariant()}";
@@ -60,10 +63,23 @@ public sealed partial class Campaign
     /// After a battle you fought: XP from your kills, parries and ripostes, and the trial of holding against the odds.
     internal void AuraAfterBattle(BattleResult r, bool won, float odds)
     {
+        if (won) Seasoned(r.Duration > 0 ? 2 : 1);
         if (r.Duration <= 0) { GainAura(won ? 1.5f : 0.5f); return; } // auto-resolved: you did your part
         if (won && odds >= 2 && r.PlayerKills >= 3 && Captain.AuraTier < OddsBreakBelow)
             BreakThrough($"You held against odds of {odds:0.0} to one with your own blade.");
         GainAura(r.PlayerKills * 0.5f + r.Parries * 0.6f + r.Ripostes * 0.8f + (won ? 2 : 0.5f)); // after the trial: it counts towards the next tier
+    }
+
+    /// Won battles that wake the aura at its first wall (AR1), a fought one counting two: every captain who keeps fighting
+    /// and winning wakes in time, even one who never seeks a trial.
+    public const int SeasonWins = 12;
+
+    /// A won battle while the first wall stands.
+    void Seasoned(int n)
+    {
+        if (!Captain.AuraWall || Captain.AuraTier != 0) return;
+        Captain.WallWins += n;
+        if (Captain.WallWins >= SeasonWins) BreakThrough("Battle after battle, it wakes.");
     }
 
     /// After a duel: more XP than a battle, and a won duel breaks the lowest walls.
@@ -127,11 +143,43 @@ public sealed partial class Campaign
     /// The trials that can break the wall at this tier, for the captain sheet.
     public static string TrialsFor(int tier) => string.Join(", ", new[]
     {
-        tier < DuelBreaksBelow ? "WIN A DUEL" : "BEAT A CHAMPION ABOVE YOU IN A DUEL",
+        tier == 0 ? $"WIN {SeasonWins} BATTLES" : "",
+        tier < DuelBreaksBelow ? "WIN A DUEL OR THE LISTS" : "BEAT A CHAMPION ABOVE YOU IN A DUEL",
         tier < OddsBreakBelow ? "HOLD AGAINST TWO TO ONE" : "",
         tier < VigilBreaksBelow ? "KEEP A VIGIL AT A SHRINE, STONES, OLD BATTLEFIELD OR HERMIT" : "",
         "GRIEF",
     }.Where(s => s != ""));
+
+    /// The trial card (AR1): each trial that breaks the wall you stand at, with where to find it now. Empty below a wall.
+    public List<string> NearestTrials()
+    {
+        var lines = new List<string>();
+        var cap = Captain;
+        if (!cap.AuraWall || cap.AuraTier >= AuraTop) return lines;
+        int tier = cap.AuraTier;
+        var at = Player.Pos;
+        string Where(Vector2 p)
+        {
+            float days = MathF.Max(0.5f, MathF.Round(Vector2.Distance(at, p) / MathF.Max(0.1f, Speed(Player)) / 24 * 2) / 2);
+            return $"{(days <= 0.5f ? "HALF A DAY" : days == 1 ? "A DAY" : $"{days:0.#} DAYS")} {Bearing(at, p).ToUpperInvariant()}";
+        }
+        if (tier == 0) lines.Add($"BATTLE: WIN {Math.Max(1, SeasonWins - cap.WallWins)} MORE (A BATTLE YOU FIGHT COUNTS TWICE).");
+        if (tier < DuelBreaksBelow)
+        {
+            var lord = S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && Hostile(Player, p) && InSight(p.Pos) && CannotChallenge(p) == null)
+                .OrderBy(p => Vector2.Distance(p.Pos, at)).FirstOrDefault();
+            lines.Add(lord != null && CharacterOf(lord) is Character l
+                ? $"DUEL: {l.Name.ToUpperInvariant()} WOULD MEET YOU, {Where(lord.Pos)}."
+                : "DUEL: CHALLENGE A LORD YOU MEET IN THE FIELD (NOT A CAUTIOUS ONE).");
+            lines.Add("THE LISTS: WIN A TOURNAMENT WHEN A TOWN HOLDS ONE.");
+        }
+        else if (tier < AuraTop) lines.Add("DUEL: BEAT A CHAMPION ABOVE YOU (AN ORDER KNIGHT, OR A LORD FAR ABOVE YOUR AURA).");
+        if (tier < OddsBreakBelow) lines.Add("ODDS: WIN A BATTLE YOU FIGHT AT TWO TO ONE, WITH THREE KILLS OF YOUR OWN.");
+        if (tier < VigilBreaksBelow && Sites.Where(x => VigilSites.Contains(x.Kind) && SiteReady(x)).OrderBy(x => Vector2.Distance(x.Pos, at)).FirstOrDefault() is Site site)
+            lines.Add($"VIGIL: THE {site.Name.ToUpperInvariant()}, {Where(site.Pos)}. IF IT FAILS, YOUR CORE CRACKS.");
+        lines.Add("GRIEF: THE LOSS OF A COMPANION.");
+        return lines;
+    }
 
     /// A vigil breaks the walls below Aura Master; grief and a duel with a champion above you break any wall.
     public const int VigilBreaksBelow = 4;

@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **in progress** (2026-11-13): AR0 built; AR1-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **in progress** (2026-11-13): AR0-AR1 built (see "As built" at the end); AR2-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 
@@ -250,3 +250,24 @@ something the map and the battle are about.
 4. **A second circle?** Recommended: once Fame reaches about 100, other tradition only. Alternative: never (keep "mages are super units").
 5. **Wells on old maps?** Recommended: derive from existing sites (no layout bump, old saves get wells). Alternative:
    new layout 5 with wells placed on purpose (better geography, only new campaigns).
+
+## As built
+
+- **AR0 (measure):** `BalanceArcana.cs`: `--arcana N` (`Arcana`, `ArcanaRun`, `ArcanaSample`) plays seeds 4001.. twice for
+  `ArcanaDays` (240), seeking and plain, and writes `balance/arcana.csv`. `Pilot.Seeker` rides to the nearest ready vigil
+  site (`Arcane`) when its aura stands at a wall a vigil breaks, shuns a site it had to flee from for 5 days (it once
+  dithered between the stones and a refuge for ten days), and blesses its company / mends a cracked core in town when it
+  keeps a circle. Telemetry `Pilot.MagicBattles`, `EnemyMagic`, `Vigils`, `Rites`, `AuraDay`. The stand-in does not duel or
+  fight by hand, so its aura days are a lower bound: a battle you fight yourself gives kills, parries and ripostes too.
+  Test `ArcanaCensus`.
+- **AR1 (aura you can find):** `Campaign/Aura.cs`. `Seasoned`: while the first wall stands, a won battle adds 1 to
+  `CaptainState.WallWins` (2 if fought); at `SeasonWins` (12) it breaks ("Battle after battle, it wakes."). Only the first
+  wall. A won tournament (`FinishTournament`) breaks walls below `DuelBreaksBelow`, as a duel does. `NearestTrials` is the
+  trial card on the K sheet (`AuraBlock`): each way through this wall with where it is now (the nearest *ready* vigil site
+  in days and a bearing; a hostile lord in sight who would accept a duel). `TrialsFor` names the new trials. The census
+  (2 seeds): a plain captain wakes on day 81-87 (target ~90); a seeking one on day 68-107 (it reaches the wall's 30 XP
+  only around day 45-55 from auto-resolved fights). Breakthroughs as choices wait for AR6 (paths). Test `AwakeningByDeeds`.
+- **Found on the way:** the self-test's `ResolveBattles` (level 4) stalled because pathing ignored men within 12 m of
+  their goal: the last enemy bows stood pressed to a village fence with their places 4 m beyond. `BattlePath.AnyBlocked`
+  and `PathVia` now route near goals when a fence or hedge crosses the line (test `RoundTheNearFence`).
+
