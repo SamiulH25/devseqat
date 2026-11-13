@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **planned** (2026-11-13), AR0-AR9, nothing built. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **in progress** (2026-11-13): AR0 built; AR1-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 
@@ -21,6 +21,10 @@ in commit 3e46a93:
 | Towns with a circle for hire | **0 of 63**, every week for 20 weeks |
 | Your aura | stops at the first wall (30 XP) by day ~60, **tier 0 at day 240** |
 | Lords with aura | none; only the 14 knight-order armies' knights |
+
+AR0's census (`--arcana 2`, seeds 4001-4002, after the fixes): by day 120 magic in **0/26 and 1/43** battles (a seeker),
+**0/48 and 1/48** (plain); lords with a circle 2-6 of ~120; a seeker reached Kindled on day **141 and 68** (one vigil each,
+no duels), a plain captain **never**; the stand-in never hired a circle.
 
 Two of those were bugs and are fixed (towns' shrine radius was not scaled by `Map.Spread`; lords got a circle only when
 raised at tier 5+, which never happens). After the fixes (`MagesInTheWorld`): 70 offers in 22 weeks, at most **4 of 154**

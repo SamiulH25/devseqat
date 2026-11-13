@@ -424,8 +424,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/OwnOrder.cs (110 lines)
 - **Campaign** (class, L7): CannotFound:15, OrderNameOf:28, FoundOrder:39, NamedMan:53, CannotKnight:62, Knight:67, OwnVowBroken:78, HandOnAura:86
 
-## Campaign/Pilot.cs (262 lines)
-- **Pilot** (class, L8): Pilot:24, Run:35, Fight:55, Refuge:82, Visit:92, Kit:121, Worn:129, Worth:130, Fresh:134, Promote:144, TakePerks:155, Think:166, Siege:224, Talk:247, S:261
+## Campaign/Pilot.cs (296 lines)
+- **Pilot** (class, L8): Pilot:31, Run:42, Fight:64, Refuge:94, Visit:104, Kit:133, Worn:141, Worth:142, Fresh:146, Promote:156, TakePerks:167, Think:178, Arcane:238, Siege:258, Talk:281, S:295
 
 ## Campaign/Quests.cs (127 lines)
 - **Campaign** (class, L7): ElderOffers:13, RefreshElders:21, MoreTownOffers:44, SetUp:57, QuestDone:68, QuestLost:80, QuestStepDone:88, EscortArrived:105, SiteQuests:112, RelicQuest:118
@@ -665,7 +665,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **PortraitPainter** (class, L12): MoodOf:16, Of:20, SoldierSeed:52, Of:57, OfMan:61, CohesionMood:76, Captain:79, Of:83, Paint:86, Background:222, Shade:249
 - **Portraits** (class, L253): Of:258
 
-## Program.cs (87 lines)
+## Program.cs (93 lines)
 
 ## Puppet.cs (947 lines)
 - **Puppet** (class, L13): PalOf:31, SetPal:104, GetLook:110, Puppet:116, Begin:118, Rad:127, W:128, Awed:154, Lean:171, Frame:178, View:188, Draw:208, Crossbow:311, Bow:335, Horse:362, static:452, Beast:460, WolfBody:472, Warg:502, BeastCorpse:520, DrawLooseHorse:535, DrawDeadHorse:545, RotY:582, Shoulder:593, Arm:597, ArmTo:604, Elbow:616, Sink:643, Leg:652, SpanRect:664, Fallen:673, Corpse:744, Haze:766, Particle:778, Banner:793, Decal:840, Quad:853, HelmTop:866, HeadBill:873, BillRect:876, Missile:887, AxialSrc:907, LongRect:918, PlaneRect:930, FlatRect:940
@@ -788,9 +788,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/KnightTests.cs (1033 lines)
 - **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:464, ChampionsUseAura:495, OrderPolitics:533, BlackFlame:597, FlameTakesYou:652, OwnOrderFounded:675, AuraPool:723, AuraField:790, CastNow:798, BlessingFeedsAura:806, CurseOnCaptain:822, BladeBreaksCast:850, RelicRaised:876, OwnFormFromStyle:892, AspectChanges:922, BreakInBattle:948, ClashRing:970, TranscendentLight:995
 
-## Tests/MagicTests.cs (562 lines)
+## Tests/MagicTests.cs (572 lines)
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
-- **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543
+- **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:563
 
 ## Tests/MapTests.cs (199 lines)
 - **SelfTest** (class, L6): MapIndexMatches:10, RealmsFromData:32, ClimatesAndRidges:77, SevenRealms:105, RealmTempers:132

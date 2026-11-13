@@ -17,6 +17,13 @@ public sealed class Pilot
     float nextThink, nextTalk;
     /// Talk telemetry (LD7): topics raised and how many went its way.
     public int Talks, TalksWon;
+    /// Arcana telemetry (docs/ARCANA.md AR0): battles with casters on either side and on the enemy's, vigils kept, rites worked,
+    /// and the day each aura tier was first reached (index = tier; -1 = not yet).
+    public int MagicBattles, EnemyMagic, Vigils, Rites;
+    public readonly int[] AuraDay = { 0, -1, -1, -1, -1, -1 };
+    /// A seeker (AR0) goes after the arcane as a player who wants it would: it rides to a vigil when its aura stands at a
+    /// wall and works its circle's rites. Off by default, so the pacing runs and tests play as before.
+    public bool Seeker;
 
     /// The realm the company started in (docs/archive/WORLD.md W5): the pilot takes service there.
     readonly int StartRealm;
@@ -43,12 +50,14 @@ public sealed class Pilot
             if (c.Report is { Spoil.Length: > 0 }) c.TakeSpoil(); // a beaten chief's gear is free
             c.Report = null;
             c.Beat = null;
+            if (c.S.Event is { Id: "aura_vigil" }) Vigils++;
             if (c.S.Event != null) c.Choose(c.EventOf0()); // the stand-in takes the first choice it can afford
             if (c.Lists is Settlement lists) c.AutoTournament(lists);
             if (c.S.Hours >= nextThink) { Think(); nextThink = (float)c.S.Hours + 2; }
             if (!StageDay.ContainsKey(c.Stage)) StageDay[c.Stage] = c.Day;
             if (RenownForVassalDay < 0 && c.Captain.Renown >= Campaign.VassalRenown) RenownForVassalDay = c.Day;
             if (FirstT5Day < 0 && Me.Companies.Any(co => co.Stacks.Any(st => st.Men > 0 && st.Type.Tier >= 5))) FirstT5Day = c.Day;
+            for (int t = 1; t <= c.Captain.AuraTier && t < AuraDay.Length; t++) if (AuraDay[t] < 0) AuraDay[t] = c.Day;
         }
     }
 
@@ -57,6 +66,9 @@ public sealed class Pilot
         var e = c.Encounter!;
         if (c.Meeting(e)) { if (c.CharacterOf(e) is { Kind: "lord" } met) Talk(met); c.Part(); return; } // a friendly meeting, not a fight
         var setup = c.PrepareBattle(e);
+        static bool Casts(IEnumerable<Party> side) => side.Any(p => p.Companies.Any(k => Rules.RoleOf(k) == "casters"));
+        bool foeCasts = Casts(setup.Side1);
+        if (foeCasts || Casts(setup.Side0)) { MagicBattles++; if (foeCasts) EnemyMagic++; }
         float me = setup.Side0.Sum(Rules.Strength), them = setup.Side1.Sum(Rules.Strength) * c.Edge(e); // a den or the night fights for them
         // Auto-resolve swings 15% either way: take anything close to even, and pay off brigands rather than bleed.
         // Retreating again and again bleeds the rearguard dry: after two in a day, stand.
@@ -197,6 +209,7 @@ public sealed class Pilot
             else if (!Me.Moving || Me.GoalSettlement != t.Id) { c.GoTo(t); return; }
             if (hurt) return;
         }
+        if (Seeker && Arcane()) return;
         if (Me.Moving && Me.ChaseId < 0) return;
         // Room for men and money for them: the nearest settlement with recruits (villages, and towns and castles raise levies too).
         int room = Rules.MenLimit(c.Captain) - Me.Men - Me.Wounded;
@@ -218,6 +231,27 @@ public sealed class Pilot
             .OrderBy(s => Vector2.Distance(s.Pos, Me.Pos) + c.Rand(80)).FirstOrDefault();
         if (next != null) c.GoTo(next);
     }
+
+    /// The seeker's errands (AR0): at a wall it can break by a vigil, ride to the nearest site that holds one (the vigil comes
+    /// as an event on arrival, and the stand-in keeps it); with a circle, bless the company in town now and then and have a
+    /// cracked core mended. True while riding to a vigil.
+    bool Arcane()
+    {
+        var cap = c.Captain;
+        if (c.HasCircle && c.SettlementAt(Me.Pos) is Settlement town && town.Kind == SettlementKind.Town && c.S.Gold > Reserve + 120)
+        {
+            if (cap.Wounds.Contains("core") && c.Rite("mend_core") == null) Rites++;
+            else if (c.S.Hours >= nextRite && c.Rite("bless") == null) { Rites++; nextRite = (float)c.S.Hours + 7 * 24; }
+        }
+        if (!cap.AuraWall || cap.AuraTier >= Campaign.VigilBreaksBelow || cap.Wounds.Contains("core")) return false;
+        if (c.S.GoalSite >= 0 && Me.Moving) return true;
+        var site = c.Sites.Where(x => Campaign.VigilSites.Contains(x.Kind) && Vector2.Distance(x.Pos, Me.Pos) < 200 * c.Map.Spread)
+            .OrderBy(x => Vector2.Distance(x.Pos, Me.Pos)).FirstOrDefault();
+        if (site == null) return false;
+        c.GoTo(site);
+        return true;
+    }
+    float nextRite;
 
     /// Sieges (F9, so the stand-in can earn fiefs and rank): once sworn, take a weakly held enemy seat in reach: besiege, wait for
     /// the ladders, then storm it on paper. Returns true while busy with a siege.

@@ -40,6 +40,12 @@ if (args.Contains("--realms"))
     Ironfield.BalanceReport.Realms(n > 0 ? n : 8);
     return;
 }
+if (args.Contains("--arcana"))
+{
+    int n = args.SkipWhile(a => a != "--arcana").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();
+    Ironfield.BalanceReport.Arcana(n > 0 ? n : 4);
+    return;
+}
 if (args.Contains("--agree"))
 {
     var nums = args.SkipWhile(a => a != "--agree").Skip(1).Select(a => float.TryParse(a, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : -1).TakeWhile(v => v >= 0).ToList();

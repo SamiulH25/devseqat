@@ -558,5 +558,15 @@ public static partial class SelfTest
         Check(offers > 0, "a circle is offered somewhere");
         Check(lordCircles > 0, "a great lord fields a circle");
     }
+
+    /// The arcana census (docs/ARCANA.md AR0) runs, and a seeking stand-in rides to a vigil once its aura stands at a wall.
+    static void ArcanaCensus()
+    {
+        var (p, samples) = BalanceReport.ArcanaRun(4002, true, 90);
+        var last = samples.Last();
+        Console.WriteLine($"arcana: day {last.Day}, {last.MagicBattles}/{last.Battles} battles with magic, {last.LordCircles}/{last.Lords} lords with a circle, {last.Offers} offers, aura {last.Aura} (kindled day {p.AuraDay[1]}), vigils {last.Vigils}");
+        Check(samples.Count == 3 && last.Lords > 0 && last.Battles > 0, "the census samples a living campaign");
+        Check(last.Vigils > 0, "a seeker keeps a vigil at its aura's wall");
+    }
 }
 

@@ -5,7 +5,7 @@ namespace Ironfield;
 
 /// `dotnet run -- --balance [n]` (A7): runs n headless campaigns and a grid of battles, and writes CSVs to ./balance/
 /// for tuning Data/campaign.json and troops.json. Nothing here needs a display.
-public static class BalanceReport
+public static partial class BalanceReport
 {
     /// How long each pacing run lasts (weeks of campaign time).
     public const int PacingWeeks = 40;

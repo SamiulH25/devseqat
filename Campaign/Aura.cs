@@ -137,7 +137,7 @@ public sealed partial class Campaign
     public const int VigilBreaksBelow = 4;
     /// Days a cracked core takes to mend of itself (resting in a town counts three times).
     public const float CoreDays = 30;
-    static readonly string[] VigilSites = { "shrine", "stones", "battlefield", "hermit" };
+    internal static readonly string[] VigilSites = { "shrine", "stones", "battlefield", "hermit" };
 
     /// Will a night at this site be a trial for your aura?
     bool VigilAt(Site site) => Captain.AuraWall && Captain.AuraTier < VigilBreaksBelow && VigilSites.Contains(site.Kind) && S.Event == null && Events.Any(e => e.Id == "aura_vigil");
