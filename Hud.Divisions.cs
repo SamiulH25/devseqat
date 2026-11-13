@@ -32,7 +32,7 @@ sealed partial class Hud
         divCards.Clear();
         goals.Clear();
         // Right, under the minimap: the battle log is top left and the score bar in the middle.
-        int w = U(200), h = U(34), x = W - w - U(10), y = minimap.Bottom + U(22);
+        int w = U(200), h = U(46), x = W - w - U(10), y = minimap.Bottom + U(22);
         foreach (var d in B.DivisionsOf(0))
         {
             divCards.Add((new Rectangle(x, y, w, h), d));
@@ -48,6 +48,7 @@ sealed partial class Hud
             goals.Add((new Rectangle(x0 + (i % 2) * (bw + gap), y0 + (i / 2) * (bh + gap), bw, bh), GoalButtons[i].G, GoalButtons[i].Side));
         int right = x0 + 2 * bw + gap;
         goalClose = new Rectangle(right - U(40), y0 - U(32), U(40), U(13));
+        hornToggle = new Rectangle(right - U(92), y0 - U(18), U(92), U(13)); // the second row, beside the RMB hint
     }
 
     public Division? DivisionAt(Point p) => divCards.FirstOrDefault(c => c.R.Contains(p)).D;
@@ -75,16 +76,31 @@ sealed partial class Hud
             bool sel = d == Div, hover = r.Contains(Mouse);
             int alive = d.Alive, start = Math.Max(1, d.Start);
             int morale = AvgMorale(d.Squads);
-            Panel(r, sel ? Gold : d.Leaderless ? Bad : hover && Command ? Color.White * 0.5f : Edge, sel ? 2 : 1);
-            if (alive == 0) Rect(r, Color.Black * 0.4f);
-            string name = kit.Fit(d.Name.ToUpperInvariant(), r.Width - U(58));
-            Text(name, r.X + U(5), r.Y + U(4), sel ? Gold : Color.White, 1);
-            TextR(sel ? "ACTIVE" : $"{alive}/{d.Start}", r.Right - U(5), r.Y + U(4), sel ? Gold : Color.White, 1);
-            string line = d.Leaderless ? "NO ORDERS: SERGEANT DOWN" : d.Pending != null ? $"> {GoalTag(d.Pending)} IN {MathF.Max(0, d.PendingAt - B.Time):0}S" : GoalTag(d.Goal);
-            Text(line, r.X + U(5), r.Y + U(15), d.Leaderless ? Bad : d.Pending != null ? Warn : Dim, 1);
-            TextR(d.Temper.ToString().ToUpperInvariant(), r.Right - U(5), r.Y + U(15), Dim, 1);
-            Bar(new Rectangle(r.X + U(5), r.Y + U(26), r.Width / 2 - U(8), U(3)), alive / (float)start, Friendly);
-            Bar(new Rectangle(r.X + r.Width / 2 + U(3), r.Y + U(26), r.Width / 2 - U(8), U(3)), morale / 100f, MoraleColor(morale));
+            var hue = DivisionColour(d);
+            Panel(r, sel ? Gold : d.Leaderless ? Bad : d.Query != null ? Warn : hover && Command ? Color.White * 0.5f : Edge, sel ? 2 : 1);
+            Rect(new Rectangle(r.X + U(1), r.Y + U(1), U(3), r.Height - U(2)), hue); // his colour, as on the field
+            if (alive == 0 && d.Squads.Count > 0) Rect(r, Color.Black * 0.4f);
+            int x = r.X + U(8);
+            // Head: the division, and its men (or ADD while you deploy with companies picked).
+            var add = divAdds.FirstOrDefault(a => a.D == d).R;
+            string count = $"{alive}/{d.Start}";
+            Text(kit.Fit(d.Name.ToUpperInvariant(), r.Right - x - (add.IsEmpty ? TW(count, 1) : add.Width) - U(10)), x, r.Y + U(4), sel ? Gold : Color.White, 1);
+            if (!add.IsEmpty) SmallButton(add, $"ADD {Movable(d)}", hue);
+            else TextR(count, r.Right - U(5), r.Y + U(4), sel ? Gold : Color.White, 1);
+            // What he is doing, and the goal (or the rider on his way).
+            string report = B.Report(d);
+            var rc = report switch { "SERGEANT DOWN" or "BROKEN" => Bad, "ASKS FOR ORDERS" or "UNDER ARROWS" => Warn, "ENGAGED" => Orange, _ => Dim };
+            string goal = d.Pending != null ? $"> {GoalTag(d.Pending)} {MathF.Max(0, d.PendingAt - B.Time):0}S" : GoalTag(d.Goal);
+            TextR(goal, r.Right - U(5), r.Y + U(15), d.Pending != null ? Warn : Color.White * 0.8f, 1);
+            Text(kit.Fit(report, r.Right - x - TW(goal, 1) - U(12)), x, r.Y + U(15), rc, 1);
+            // His skill as pips, his nature, and the horn plan or that he can hear you.
+            for (int i = 0; i < 10; i++) Rect(new Rectangle(x + i * U(4), r.Y + U(27), U(3), U(4)), i < d.Skill ? Gold : Color.White * 0.15f);
+            string tail = d.Horn != null ? $"HORN: {GoalTag(d.Horn)}" : d.PendingHorn != null ? "PLAN RIDING" : B.InVoice(d) && !Deploying ? "IN EARSHOT" : "";
+            if (tail.Length > 0) TextR(tail, r.Right - U(5), r.Y + U(26), d.Horn != null ? Gold : d.PendingHorn != null ? Warn : Ok, 1);
+            string nature = d.Traits.Length > 0 ? d.Traits[0].ToUpperInvariant() : d.Temper.ToString().ToUpperInvariant();
+            Text(kit.Fit(nature, r.Right - x - U(44) - TW(tail, 1) - U(10)), x + U(44), r.Y + U(26), Dim, 1);
+            Bar(new Rectangle(x, r.Y + U(38), (r.Right - x) / 2 - U(6), U(3)), alive / (float)start, Friendly);
+            Bar(new Rectangle(x + (r.Right - x) / 2, r.Y + U(38), (r.Right - x) / 2 - U(5), U(3)), morale / 100f, MoraleColor(morale));
         }
     }
 
@@ -111,22 +127,24 @@ sealed partial class Hud
         int right = goals[1].R.Right;
         var area = new Rectangle(first.X - U(6), first.Y - U(36), right - first.X + U(12), goals[^1].R.Bottom - first.Y + U(54));
         Panel(area, Gold);
-        Text(kit.Fit($"SERGEANT: {Div.Name.ToUpperInvariant()}", area.Width - U(56)), area.X + U(6), area.Y + U(6), Gold, 1);
+        Text(kit.Fit(HornMode ? $"ON THE HORN: {Div.Name.ToUpperInvariant()}" : $"SERGEANT: {Div.Name.ToUpperInvariant()}", goalClose.X - area.X - U(10)), area.X + U(6), area.Y + U(6), Gold, 1);
+        SmallButton(hornToggle, HornMode ? "HORN PLAN: ON" : "HORN PLAN: OFF", HornMode ? Warn : Dim);
         bool backHover = goalClose.Contains(Mouse);
         Rect(goalClose, backHover ? Gold * 0.35f : Color.White * 0.08f);
         Frame(goalClose, backHover ? Gold : Dim, U(1));
         TextC("BACK", goalClose.Center.X, goalClose.Y + U(3), backHover ? Gold : Color.White, 1);
-        Text("RMB: LAND=TAKE FOE=ATK ALLY=SCREEN", area.X + U(6), area.Y + U(19), Dim, 1);
+        Text(kit.Fit("RMB AIMS IT", hornToggle.X - area.X - U(10)), area.X + U(6), area.Y + U(21), Dim, 1);
         (GoalKind G, int Side)? hovered = null;
         foreach (var (r, g, side) in goals)
         {
-            bool hover = r.Contains(Mouse), on = Div.Goal.Kind == g && (g != GoalKind.Flank || Div.Goal.Side == side);
+            var mark = HornMode ? Div.Horn ?? Div.PendingHorn : Div.Goal;
+            bool hover = r.Contains(Mouse), on = mark != null && mark.Kind == g && (g != GoalKind.Flank || mark.Side == side);
             if (hover) hovered = (g, side);
             Rect(r, hover ? Gold * 0.35f : on ? Gold * 0.15f : Color.White * 0.06f);
             Frame(r, hover || on ? Gold : Edge, U(1));
             Text(GoalButtons.First(b => b.G == g && b.Side == side).Label, r.X + U(6), r.Y + U(7), Color.White, 1);
         }
-        Text("BACK / CLICK CARD: ORDER SQUADS", area.X + U(6), area.Bottom - U(13), Dim, 1);
+        Text(HornMode ? $"KEPT UNTIL THE HORN ({Ctl.Name(Act.Horn)})" : "BACK / CLICK CARD: ORDER SQUADS", area.X + U(6), area.Bottom - U(13), HornMode ? Gold : Dim, 1);
         if (hovered is var (hg, hs))
         {
             string tip = GoalExplain(hg, hs);
@@ -142,7 +160,8 @@ sealed partial class Hud
         if (divCards.FirstOrDefault(c => c.R.Contains(Mouse)) is not { R.Width: > 0 } hit) return;
         var d = hit.D;
         bool sel = d == Div;
-        string l1 = $"{d.Name.ToUpperInvariant()}  ({d.Temper.ToString().ToUpperInvariant()} SERGEANT, SKILL {d.Skill})";
+        string who = Battle.SergeantName(d) is { Length: > 0 } nm ? $"{nm.ToUpperInvariant()}, " : "";
+        string l1 = $"{d.Name.ToUpperInvariant()}  ({who}{d.Temper.ToString().ToUpperInvariant()}{(d.Traits.Length > 0 ? " " + string.Join(" ", d.Traits).ToUpperInvariant() : "")} SERGEANT, SKILL {d.Skill})";
         string l2 = $"GOAL: {d.Goal.Describe.ToUpperInvariant()}";
         string l3 = d.Pending != null ? $"RIDER EN ROUTE: {GoalTag(d.Pending)} ({MathF.Max(0, d.PendingAt - B.Time):0}S)" : $"{d.Squads.Count} COMPANIES   {d.Alive}/{d.Start} MEN";
         string l4 = sel ? $"CLICK CARD, BACK, OR {Ctl.Name(Act.SelectAll)} TO ORDER COMPANIES" : $"CLICK OR PRESS {Ctl.Name(Act.NextDivision)} TO COMMAND SERGEANT";
@@ -273,6 +292,19 @@ sealed partial class Hud
     }
 
     /// In command view: a line from each of your divisions to where its goal points (dim when a new goal is on its way).
+    /// Where a horn plan that names no spot points: round the flank or at the foe, near enough for a line on the map.
+    Vector2? HornAim(Division d, Goal h)
+    {
+        if (h.Target?.Alive > 0) return h.Target.Center;
+        if (h.Kind is not (GoalKind.Flank or GoalKind.Attack) || B.Squads.All(s => s.Team == d.Team || s.Alive == 0)) return null;
+        var foe = B.Centroid(1 - d.Team);
+        if (h.Kind == GoalKind.Attack) return foe;
+        var f = foe - B.Centroid(d.Team);
+        if (f.LengthSquared() < 1) return foe;
+        f.Normalize();
+        return foe + new Vector2(-f.Y, f.X) * (h.Side * 35);
+    }
+
     void DivisionMarkers()
     {
         var vp = new Viewport(0, 0, W, H);
@@ -304,7 +336,7 @@ sealed partial class Hud
             if (liveCount == 0) continue;
             var at = sum / liveCount;
             if (!Screen(at, out var from)) continue;
-            var col = d == Div ? Gold : Friendly;
+            var col = d == Div ? Gold : DivisionColour(d);
             for (int gi = 0; gi < 2; gi++)
             {
                 var g = gi == 0 ? d.Goal : d.Pending;
@@ -317,18 +349,38 @@ sealed partial class Hud
                     Rect(new Rectangle((int)dst.X - U(3), (int)dst.Y - U(3), U(6), U(6)), c);
                 }
             }
+            // The horn plan: a dotted line in his colour to where the horn will send him.
+            if ((d.Horn ?? d.PendingHorn) is { } h && (h.Kind is GoalKind.Hold or GoalKind.Take or GoalKind.FallBack or GoalKind.Ambush ? h.Point : HornAim(d, h)) is Vector2 ht && Screen(ht, out var hd))
+            {
+                var hc = DivisionColour(d);
+                var step = hd - from; float len = step.Length();
+                for (float t0 = 0; t0 < len; t0 += U(10)) Line(from + step * (t0 / len), from + step * (MathF.Min(len, t0 + U(5)) / len), hc, U(2));
+                // The end may lie off the screen: the label goes where the route leaves it, and none if no route shows.
+                var room = new Rectangle(U(30), U(104), W - U(60), H - U(234));
+                bool In(Vector2 v) => room.Contains((int)v.X, (int)v.Y);
+                if (In(from))
+                {
+                    float t1 = 1;
+                    if (!In(hd)) { float a = 0, b2 = 1; for (int k = 0; k < 14; k++) { float m = (a + b2) / 2; if (In(from + step * m)) a = m; else b2 = m; } t1 = a; }
+                    var lp = from + step * t1 + new Vector2(0, U(4));
+                    var lr = new Rectangle((int)lp.X - TW("HORN", 1) / 2 - U(3), (int)lp.Y - U(2), TW("HORN", 1) + U(6), U(12));
+                    Rect(lr, Color.Black * 0.6f);
+                    TextC("HORN", lp.X, lp.Y, hc, 1);
+                }
+            }
             string tag = (d.Leader is { Active: true } ? "" : "! ") + d.Name.ToUpperInvariant() + ": " + GoalTag(d.Goal);
             // The tag stays off the HUD's panels, and one that would cover another division's is dimmed.
             int tw = TW(tag, 1);
-            var tr = new Rectangle((int)from.X - tw / 2, (int)from.Y - U(26), tw, U(9));
+            from.X = Math.Clamp(from.X, tw / 2f + U(4), W - tw / 2f - U(4)); // keep the tag on the screen
+            var tr = new Rectangle((int)from.X - tw / 2, (int)from.Y - U(54), tw, U(9)); // above the companies' flags
             var near = tr; near.Inflate(U(4), U(12)); // a margin, so a tag does not sit on a panel's heading either
             if (Over(near.Location) || Over(new Point(near.Center.X, near.Y)) || Over(new Point(near.Right, near.Y))
                 || Over(new Point(near.X, near.Bottom)) || Over(new Point(near.Center.X, near.Bottom)) || Over(new Point(near.Right, near.Bottom))) continue;
             bool crowded = false;
             foreach (var o in divTags) if (o.Intersects(tr)) { crowded = true; break; }
             divTags.Add(tr);
-            if (crowded) Rect(new Rectangle(tr.X - U(2), tr.Y - U(1), tr.Width + U(4), tr.Height + U(2)), Color.Black * 0.35f);
-            TextC(tag, from.X, from.Y - U(26), crowded ? col * 0.55f : col, 1);
+            Rect(new Rectangle(tr.X - U(3), tr.Y - U(2), tr.Width + U(6), tr.Height + U(3)), Color.Black * (crowded ? 0.35f : 0.6f));
+            TextC(tag, from.X, from.Y - U(54), crowded ? col * 0.55f : col, 1);
         }
     }
 }

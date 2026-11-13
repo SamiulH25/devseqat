@@ -88,7 +88,7 @@ sealed partial class BattleScreen
     readonly Verts<VertexPositionColor> lines = new();
     readonly Verts<VertexPositionColor> bands = new(); // ground marks as soft ribbons (Band)
 
-    bool command, paused, menuOpen, helpOpen, wheelOpen, skipMouse = true;
+    bool command, paused, menuOpen, helpOpen, wheelOpen, skipMouse = true, shotNoMouse;
     float yaw, pitch, fieldDist = 5.5f;       // field camera: third person behind the player
     float camYaw, camPitch, zoom = 45;        // command camera: free orbit around camFocus
     float blend, frameDt, realTime, lastCardClick;
@@ -107,7 +107,7 @@ sealed partial class BattleScreen
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
     // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/archive/MELEE.md), =magic at the magic scenes,
     // =spectacle at the spectacle scenes (docs/archive/SPECTACLE.md), skipping the rest.
-    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, _ => 0 }, shotFrames;
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, "sergeants" => 117, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
 
@@ -257,6 +257,9 @@ sealed partial class BattleScreen
         blend = 0;
         paused = menuOpen = helpOpen = wheelOpen = false;
         SetCommand(false);
+        // A quick battle opens deployed, like a campaign one: draw up, hand companies to sergeants, set horn plans
+        // (docs/SERGEANTS.md). Shot runs start straight in, except the sergeants' shots.
+        if (shotDir == null || Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") == "sergeants") StartDeployment();
     }
 
     /// IRONFIELD_MAGES=troop:team[:count],... adds companies of mages to the quick battle (e.g. galdr_masters:0,crimson_crones:1).
@@ -532,8 +535,10 @@ sealed partial class BattleScreen
         hud.DeployLast = memory is { LastDeploy.Count: > 0 } && !battle.Options.Siege && !battle.Options.Tournament ? memory.DeployAsLast : null;
         if (selectedDivision != null && selectedDivision.Alive == 0) selectedDivision = null;
         hud.Div = selectedDivision;
+        if (selectedDivision == null) hornMode = false;
+        hud.HornMode = hornMode;
         hud.WheelOpen = wheelOpen; hud.WheelSector = WheelSector() ?? -1;
-        hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = ms.Position;
+        hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = shotNoMouse ? new Point(-999, -999) : ms.Position;
         hud.Box = boxStart is Point b && command ? BoxOf(b, ms.Position) : null;
         hud.HoverSquad = command && !hud.Over(ms.Position) ? PickSquad(mouseGround, 1) ?? PickSquad(mouseGround, 0) : null;
         if (hud.Box is { Width: < 6, Height: < 6 }) hud.Box = null;

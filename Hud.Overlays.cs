@@ -158,6 +158,7 @@ sealed partial class Hud
                 ("ROTATE", $"{Ctl.First(Act.RotateLeft)} {Ctl.First(Act.RotateRight)} / MMB DRAG"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"),
                 ("FOCUS SQUAD", "DOUBLE-CLICK CARD"), ("CONTROL GROUP: KEEP / PICK", "CTRL+1-9 / 1-9"), ("JUMP TO AN ALERT", "CLICK IT"), ("WHAT THE GROUND DOES", "HOVER IT"), (Controls.Labels[Act.GroundView], Ctl.Name(Act.GroundView)),
                 (Controls.Labels[Act.Stakes], Ctl.Name(Act.Stakes)),
+                (Controls.Labels[Act.Horn], Ctl.Name(Act.Horn)), ("ANSWER A SERGEANT", $"{Ctl.Name(Act.AnswerA)} / {Ctl.Name(Act.AnswerB)}"),
             }),
             ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.Merge, Act.Relieve, Act.SplitCompany, Act.StandingOrder, Act.Cast, Act.SelectAll, Act.NextDivision,
                     Act.CommandView, Act.Pause, Act.Slower, Act.Faster, Act.Menu, Act.Help, Act.Graphics }

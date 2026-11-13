@@ -117,6 +117,7 @@ partial class BattleScreen
         if (castBy != null && (castBy.Alive == 0 || !selected.Contains(castBy) && selected.Count > 0)) { castBy = null; castPick = -1; }
         if (castBy != null && ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released) { castBy = null; castPick = -1; return; }
         if (castBy != null && LmbPressed && !hud.Over(ms.Position)) { CastAt(mouseGround); return; }
+        if (LmbPressed && CommandClick(ms.Position)) return; // tray, ADD, answers, the horn (BattleScreen.Orders.cs)
         if (LmbPressed)
         {
             if (hud.GoalCloseAt(ms.Position)) selectedDivision = null;

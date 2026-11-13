@@ -20,7 +20,7 @@ public partial class Battle
     void Tactics(Squad s)
     {
         if (s.BreakOffUntil > Time) return; // relieved: walking back, no wits until it stands again
-        if ((tick + s.Id * 7) % TacticsEvery(s.Grade) == 0) Wits(s);
+        if ((tick + s.Id * 7) % TacticsEvery(WitsGrade(s)) == 0) Wits(s);
         if (s.Threat != null && s.Order != Order.Charge)
         {
             if (s.Threat.Alive == 0) s.Threat = null;
@@ -31,7 +31,7 @@ public partial class Battle
     /// What the company does next, as well as its grade allows.
     void Wits(Squad s)
     {
-        var g = s.Grade;
+        var g = WitsGrade(s); // a sergeant lifts his companies' wits (docs/SERGEANTS.md SG4)
         if (s.Cavalry) { HorseWits(s); return; }
         if (s.Alive > 0 && s.Units[0].Type.Ammo > 0) BowsWits(s);
         if (!Ranked(s) || s.Alive == 0) { s.Plan = Plan.None; s.Bend = 0; s.Threat = null; return; }

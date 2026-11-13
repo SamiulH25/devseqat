@@ -68,6 +68,7 @@ partial class BattleScreen
     /// Give a division a goal (it reaches the sergeant after a delay; before the battle starts, at once).
     void GiveGoal(Division d, Goal g)
     {
+        if (hornMode) { battle.SetHornPlan(d, g, now: deploying); host.Audio?.Play(Cue.Order, 0.65f); return; } // kept until the horn (SG2)
         battle.IssueGoal(d, g, now: deploying);
         Cue h = g.Kind switch
         {
@@ -255,6 +256,8 @@ partial class BattleScreen
         }
         if (ctl.Pressed(Act.SelectAll)) { selected.Clear(); selectedDivision = null; }
         if (ctl.Pressed(Act.NextDivision)) NextDivision();
+        if (ctl.Pressed(Act.Horn)) SoundHorn();
+        if ((ctl.Pressed(Act.AnswerA) || ctl.Pressed(Act.AnswerB)) && hud.Asking is { } asker) Answer(asker, ctl.Pressed(Act.AnswerA));
         if (ctl.Pressed(Act.GroundView)) groundView = !(groundView ?? deploying);
         if (ctl.Pressed(Act.Stakes)) PlantStakes();
         if (ctl.Pressed(Act.Cast)) NextSpell();
@@ -302,6 +305,49 @@ partial class BattleScreen
         foreach (var s in bows) { var no = battle.PlantStakes(s); if (no == null) planted++; else why ??= no; }
         if (planted == 0 && why != null) battle.Log($"No stakes: {why.ToLowerInvariant()}.");
         else Tips.Show("stakes", "Stakes stop horse: riders cannot cross them, but your men on foot slip between.\nEach company of longbowmen plants them once, while it holds and no enemy is within 30 m.");
+    }
+
+    /// The goal you pick next is the chosen sergeant's horn plan (docs/SERGEANTS.md SG2).
+    bool hornMode;
+
+    /// Clicks on the command tray, a card's ADD, a sergeant's question and the horn; true when one was used.
+    bool CommandClick(Point p)
+    {
+        if (hud.AnswerAt(p) is var (ad, aa)) { Answer(ad, aa); return true; }
+        if (hud.HornToggleAt(p)) { hornMode = !hornMode; return true; }
+        if (hud.HornAt(p)) { SoundHorn(); return true; }
+        if (hud.ReserveAt(p) is int ri)
+        {
+            if (battle.CallUp(0, ri, selectedDivision) is string no) battle.Log(no);
+            else host.Audio?.Play(Cue.Order, 0.6f);
+            return true;
+        }
+        if (hud.AddAt(p) is Division to) { MoveTo(to); return true; }
+        if (hud.ToMeAt(p)) { MoveTo(null); return true; }
+        return false;
+    }
+
+    /// Before the battle: the selected companies go to a sergeant (or to you, when null) as far as there is room.
+    void MoveTo(Division? to)
+    {
+        int moved = 0;
+        string? why = null;
+        foreach (var s in selected.ToList()) { if (battle.Assign(s, to) is string no) why ??= no; else moved++; }
+        if (moved > 0) { battle.Log($"{moved} compan{(moved == 1 ? "y goes" : "ies go")} to {(to == null ? "you" : to.Name)}."); selected.Clear(); }
+        else if (why != null) battle.Log(why);
+        Tips.Show("tray", $"You lead at most {Armies.CommandCap} companies yourself; each sergeant up to {Armies.DivisionCap}.\nThe rest wait off the field: click one on the tray to call it up, to you or to the sergeant you have picked.");
+    }
+
+    void SoundHorn()
+    {
+        if (deploying) { battle.Log("The horn sounds once the battle has begun."); return; }
+        if (battle.SoundHorn(0) > 0) host.Audio?.Play(Cue.HornCharge, 0.9f);
+    }
+
+    void Answer(Division d, bool a)
+    {
+        var q = d.Query;
+        if (battle.Answer(d, a) is null && q != null) { battle.Log($"To {d.Name}: {(a ? q.LabelA : q.LabelB).ToLowerInvariant()}!"); host.Audio?.Play(a ? Cue.HornCharge : Cue.HornHold, 0.6f); }
     }
 
     /// Cycle the division you give goals to: none, then each living one in turn, then none again.

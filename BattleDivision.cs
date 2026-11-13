@@ -60,6 +60,19 @@ public sealed class Division
     public int Alive => Squads.Sum(s => s.Alive);
     public int Start => Squads.Sum(s => s.StartCount);
     public bool Leaderless => LeaderlessSince >= 0;
+
+    /// The horn plan (docs/SERGEANTS.md SG2): a goal held back until you sound the horn. PendingHorn is one still riding out.
+    public Goal? Horn, PendingHorn;
+    public float HornAt;
+    /// A question he has put to you (SG3), and when he may ask again.
+    public Query? Query;
+    public float QueryAfter;
+    /// Men standing at the last loss check, and how many fell since the one before (SG3: under arrows).
+    public int AliveThen = -1, Losing;
+    public float LossCheck;
+    /// His nature (SG7): officer traits of his company, or the spec's.
+    public string[] Traits = Array.Empty<string>();
+    public bool Has(string trait) => Array.IndexOf(Traits, trait) >= 0;
 }
 
 /// Battle: divisions (docs/archive/COMBAT_OVERHAUL.md 1.3-1.4). Each sergeant thinks every half second or so (quicker with
@@ -100,8 +113,12 @@ public partial class Battle
             var hero = spec.Leader.Length > 0 ? squads.SelectMany(s => s.Units).FirstOrDefault(u => u.Hero && u.Squad?.Company?.Hero == spec.Leader) : null;
             hero ??= (squads.FirstOrDefault(s => spec.LeadCompany != 0 && s.Company?.Id == spec.LeadCompany) ?? squads.FirstOrDefault())?.Units
                 .Where(u => u.Active).OrderByDescending(u => u.Type.Tier).ThenBy(u => u.Index).FirstOrDefault(); // the sergeant's own company
-            var d = AddDivision(team, spec.Name, squads, temper, spec.Skill, null, hero);
+            var lead = squads.FirstOrDefault(s => spec.LeadCompany != 0 && s.Company?.Id == spec.LeadCompany) ?? squads.FirstOrDefault(s => s.Units.Contains(hero!));
+            var traits = spec.Traits ?? lead?.Company?.Traits ?? Array.Empty<string>();
+            var d = AddDivision(team, spec.Name, squads, temper, spec.Skill + (traits.Contains("Veteran") ? 1 : 0), null, hero);
             d.SpecId = spec.Id;
+            d.Traits = traits;
+            if (d.Has("Drillmaster")) foreach (var s in squads) if (!s.Swarm) s.Drill = MathF.Min(1, s.Drill + d.Skill * 0.01f); // he drills them twice as hard
             d.Goal = StartGoal(d, spec.Goal);
         }
     }
@@ -121,7 +138,9 @@ public partial class Battle
     {
         var from = GeneralPos(d.Team);
         var to = CourierGoal(d);
+        if (InVoice(d)) return 0.6f; // near enough to shout (docs/SERGEANTS.md SG5)
         float t = 1.5f + Vector2.Distance(from, to) / CourierSpeed;
+        if ((d.Team == 0 ? Player : EnemyCaptain) is { Active: true, EnemyDist: < 4 }) t += 3; // you are fighting: the rider waits for your word
         if (d.Leader is { Active: true, EnemyDist: < 5 }) t += 2;
         if (d.Leader is not { Active: true }) t *= 2;
         t *= 1 - 0.05f * d.Skill;
@@ -174,6 +193,7 @@ public partial class Battle
     void UpdateDivisions()
     {
         UpdateCouriers();
+        UpdateCallUps();
         if (Time >= nextAiCommand && Divisions.Count > 0)
         {
             nextAiCommand = Time + 4;
@@ -182,6 +202,9 @@ public partial class Battle
         }
         foreach (var d in Divisions)
         {
+            if (d.Squads.Count == 0) continue; // emptied in deployment: a card waiting for companies
+            UpdateHornPlans(d);
+            CountLosses(d);
             if (d.Pending != null && Time >= d.PendingAt)
             {
                 d.Goal = d.Pending;
@@ -195,7 +218,7 @@ public partial class Battle
             }
             if (Time < d.NextThink) continue;
             d.NextThink = Time + 0.5f + (10 - d.Skill) * 0.06f; // a sharp sergeant reacts quicker
-            if (!LeaderCheck(d) || d.Alive == 0) continue;
+            if (!LeaderCheck(d) || d.Alive == 0) { d.Query = null; continue; }
             Brain(d);
         }
     }
@@ -220,14 +243,14 @@ public partial class Battle
             var near = EnemySquadNear(at, float.MaxValue, foe);
             if (near == null) continue;
             float gap = Vector2.Distance(at, near.Center) - near.Radius;
-            float wait = d.Temper switch { Temper.Bold => 15, Temper.Steady => 30, _ => 45 };
+            float wait = d.Temper switch { Temper.Bold => 15, Temper.Steady => 30, _ => 45 } * (d.Has("Hothead") ? 0.5f : 1);
             if (d.Goal.Kind == GoalKind.Hold && d.Temper != Temper.Bold && !fighting && gap > 50 && ambushTried.Add(d) && AmbushWood(d, live, at, foe) is Vector2 wood)
                 IssueGoal(d, new Goal(GoalKind.Ambush, wood), ai: true); // a wood near by on the enemy's way: wait in it
             else if (d.Goal.Kind is GoalKind.Hold or GoalKind.Reserve && (fighting || gap < 30 || Time - d.GoalSince > wait))
                 IssueGoal(d, new Goal(GoalKind.Attack, Target: near), ai: true);
             else if (d.Goal.Kind == GoalKind.Ambush && Time - d.GoalSince > wait * 3)
                 IssueGoal(d, new Goal(GoalKind.Attack, Target: near), ai: true); // nobody came: go and find them
-            else if (d.Goal.Kind == GoalKind.Attack && d.Alive < d.Start / 4 && d.Temper != Temper.Bold)
+            else if (d.Goal.Kind == GoalKind.Attack && d.Alive < d.Start / 4 && d.Temper != Temper.Bold && !d.Has("Stubborn"))
                 IssueGoal(d, new Goal(GoalKind.FallBack, at + Toward(at, centroid[foe], team) * -30), ai: true);
         }
     }
@@ -272,7 +295,8 @@ public partial class Battle
         int foe = 1 - d.Team;
         var center = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / live.Count;
         var dir = Toward(center, centroid[foe], d.Team);
-        float chargeAt = d.Temper switch { Temper.Bold => 22, Temper.Steady => 14, _ => 9 };
+        Questions(d, live, center, dir); // SG3: he asks at moments that matter
+        float chargeAt = d.Temper switch { Temper.Bold => 22, Temper.Steady => 14, _ => 9 } + (d.Has("Hothead") ? 6 : 0);
         float leash = d.Temper switch { Temper.Bold => 35, Temper.Steady => 20, _ => 12 };
         var g = d.Goal;
         switch (g.Kind)

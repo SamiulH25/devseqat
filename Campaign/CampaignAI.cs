@@ -270,12 +270,22 @@ public partial class Campaign
     /// A faction lives while it holds a town or castle.
     public bool Alive(int f) => S.Settlements.Any(s => s.Faction == f && s.Kind != SettlementKind.Village);
 
+    /// A broken realm's lords leave the field, however it lost its last seat (a siege, a defection, a revolt, terms).
+    void RealmBroken(int f)
+    {
+        foreach (var l in S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f && !p.Down && p != Player).ToList())
+        {
+            if (S.Armies.FirstOrDefault(a => a.Id == l.ArmyId) is LordArmy a) LeaveArmy(a, l);
+            l.Down = true; l.DownUntil = float.MaxValue;
+        }
+    }
+
     void FactionAI()
     {
         for (int f = 0; f < S.Factions.Count; f++)
         {
             var fs = S.Factions[f];
-            if (!Alive(f)) continue;
+            if (!Alive(f)) { RealmBroken(f); continue; }
             float income = S.Settlements.Where(t => t.Faction == f && t.Owner != Player.Id).Sum(Income);
             fs.Treasury += income / 7;
             var lords = S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f).ToList();

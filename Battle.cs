@@ -495,23 +495,12 @@ public sealed partial class Battle
             bool thin = onField <= started * 0.6f || Time >= 600;
             // A held company fills a spent company's place; one waiting for room on the field comes when the side thins,
             // and still needs a free place if the captain would lead it.
-            int i = reserves[team].FindIndex(r => r.Held ? OpenSlots(team) > 0 : thin && (!Leads(Armies[team]!, r.C) || OpenSlots(team) > 0));
+            int i = reserves[team].FindIndex(r => r.Held ? FreeSlots(team) > 0 : thin && (!Leads(Armies[team]!, r.C) || FreeSlots(team) > 0));
             if (i < 0) continue;
             var (c, role, _) = reserves[team][i];
             reserves[team].RemoveAt(i);
-            float f = team == 0 ? 1 : -1;
             var t = Troops.Get(c.Troop);
-            var s = AddSquad(team, t, c.Count, new Vector2(lateral.Count % 3 * 12 - 12, -rearLine[team]) * f, ColumnsFor(c.Count), new Vector2(0, f), c);
-            s.Anchor = new Vector2(0, -30 - Back) * f;
-            Role(team, role).Add(s);
-            lateral[s] = 0;
-            if (Divisions.FirstOrDefault(d => d.Team == team && d.SpecId >= 0 && d.SpecId == c.Division) is Division div)
-            {
-                div.Squads.Add(s);
-                s.Division = div;
-                if (div.Leader is not { Active: true } && s.Units.FirstOrDefault(u => u.Hero) is Unit h) { div.Leader = h; h.Sergeant = true; }
-            }
-            if (team == 1 && charged[1] || team == 0 && Options.AutoPlayer) s.Order = Order.Charge;
+            MarchOn(team, c, role, null, auto: true);
             Log(team == 0 ? $"Reinforcements: {t.Name} join the fight!" : $"Enemy reinforcements: {t.Name}!");
         }
     }

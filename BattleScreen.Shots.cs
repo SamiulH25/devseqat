@@ -199,6 +199,37 @@ partial class BattleScreen
             case 111 or 113 or 115 when shotFrames > 60:
                 pendingShot = shotIndex switch { 111 => "arrows-volley", 113 => "arrows-field", _ => "arrows-ground" }; shotIndex++; break;
             case 116 when pendingShot == null: Exit(); break;
+            // Sergeants (docs/SERGEANTS.md; IRONFIELD_SHOTS_FROM=sergeants starts deploying): the tray and ADD in deployment,
+            // a horn plan in the goal panel, a question and the division rings in battle, the question in field view.
+            case 117 when shotFrames > 10:
+                camFocus = b.Centroid(0) + new Vector2(0, 10); camYaw = MathHelper.PiOver2; camPitch = 0.75f; zoom = 70;
+                groundView = false; shotNoMouse = true; // no ground map or hover card over the tray and the cards
+                foreach (var s in b.Commanded.Take(2)) selected.Add(s);
+                pendingShot = "sergeants-deploy"; shotIndex++; break;
+            case 118 when pendingShot == null:
+                selected.Clear(); deploying = false; zoom = 100; camPitch = 0.95f; camFocus = b.DivisionsOf(0).FirstOrDefault() is { } hd ? Vector2.Lerp(hd.Squads[0].Center, b.Centroid(1), 0.12f) : b.Centroid(0); // the horse's wing and the foe in view
+                if (b.DivisionsOf(0).FirstOrDefault() is { } d0) { selectedDivision = d0; hornMode = true; GiveGoal(d0, new Goal(GoalKind.Flank, d0.Squads[0].Center, Side: -1)); }
+                shotFrames = 0; shotIndex++; break;
+            case 119 when shotFrames > 20:
+                pendingShot = "sergeants-horn"; shotIndex++; break;
+            case 120 when pendingShot == null:
+                hornMode = false; selectedDivision = null;
+                if (b.DivisionsOf(0).Skip(1).FirstOrDefault() is { } d1)
+                {
+                    var c = d1.Squads[0].Center;
+                    d1.Query = new Query("Their horse comes at our flank!", "STAND FAST", new Goal(GoalKind.Hold, c), "FALL BACK", new Goal(GoalKind.FallBack, c), true, b.Time + 9);
+                    if (b.ReservesOf(0).Count > 0) b.CallUp(0, 0, d1);
+                }
+                camFocus = b.Centroid(0) + new Vector2(0, 20); camPitch = 0.8f; zoom = 75;
+                shotFrames = 0; shotIndex++; break;
+            case 121 when shotFrames > 20:
+                pendingShot = "sergeants-ask"; shotIndex++; break;
+            case 122 when pendingShot == null:
+                SetCommand(false); blend = 0; b.Player.Pos = b.Centroid(0) - new Vector2(0, 12); yaw = MathHelper.PiOver2; pitch = 0.2f;
+                shotFrames = 0; shotIndex++; break;
+            case 123 when shotFrames > 20:
+                pendingShot = "sergeants-field"; shotIndex++; break;
+            case 124 when pendingShot == null: Exit(); break;
         }
     }
 

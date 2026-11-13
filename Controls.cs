@@ -27,6 +27,8 @@ public enum Act
     Merge, Slower, Faster, Relieve, SplitCompany, StandingOrder,
     // campaign map panels (later additions)
     LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen, InventoryScreen,
+    // sergeants (docs/SERGEANTS.md)
+    Horn, AnswerA, AnswerB,
 }
 
 public enum MouseButton { Left, Right, Middle, X1, X2 }
@@ -117,6 +119,7 @@ public sealed class Controls
         [Act.AuraBlade] = new[] { "ALT" }, [Act.Form1] = new[] { "U" }, [Act.Form2] = new[] { "I" }, [Act.Form3] = new[] { "O" }, [Act.GreatForm] = new[] { "L" }, [Act.Relic] = new[] { "BACKSPACE" },
         [Act.Cast] = new[] { "P" }, [Act.Merge] = new[] { "," }, [Act.Slower] = new[] { "[" }, [Act.Faster] = new[] { "]" },
         [Act.Relieve] = new[] { "." }, [Act.SplitCompany] = new[] { "/" }, [Act.StandingOrder] = new[] { "=" },
+        [Act.Horn] = new[] { "TILDE" }, [Act.AnswerA] = new[] { "F6" }, [Act.AnswerB] = new[] { "F7" },
         [Act.LordsScreen] = new[] { "L" }, [Act.SkillsScreen] = new[] { "K" }, [Act.RealmScreen] = new[] { "R" },
         [Act.DivisionsScreen] = new[] { "V" }, [Act.AtlasScreen] = new[] { "M" }, [Act.SiegeScreen] = new[] { "B" },
         [Act.InventoryScreen] = new[] { "I" },
@@ -139,6 +142,7 @@ public sealed class Controls
         [Act.AuraBlade] = "AURA BLADE (HOLD)", [Act.Form1] = "FORM 1", [Act.Form2] = "FORM 2", [Act.Form3] = "FORM 3", [Act.GreatForm] = "GREAT FORM", [Act.Relic] = "RAISE THE RELIC (ONCE A BATTLE)",
         [Act.Cast] = "CAST (CASTERS, COMMAND VIEW)", [Act.Merge] = "FOLD SELECTED INTO THE FULLEST",
         [Act.Slower] = "BATTLE SLOWER", [Act.Faster] = "BATTLE FASTER", [Act.Relieve] = "RELIEVE (FRESH TAKES THE TIRED'S PLACE)", [Act.SplitCompany] = "SPLIT A COMPANY IN TWO", [Act.StandingOrder] = "STANDING ORDER (CYCLE)",
+        [Act.Horn] = "SOUND THE HORN (SERGEANTS' PLANS)", [Act.AnswerA] = "ANSWER A SERGEANT: FIRST CHOICE", [Act.AnswerB] = "ANSWER A SERGEANT: SECOND CHOICE",
         [Act.LordsScreen] = "LORDS AND COMPANIONS (MAP)", [Act.SkillsScreen] = "THE CAPTAIN (MAP)", [Act.RealmScreen] = "THE REALMS (MAP)",
         [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)", [Act.InventoryScreen] = "KIT AND BAGGAGE (MAP)",
     };

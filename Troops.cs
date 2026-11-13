@@ -186,7 +186,8 @@ public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Com
 /// Leader names the companion fighting as a company's Hero, if one leads it; Temper is "Bold", "Steady" or "Cautious";
 /// Skill (0-10) is his Command skill; Goal is the goal he starts the battle with (a GoalKind name); LeadCompany, when
 /// Leader is empty, is the company his best man is picked from (a sergeant leading from his own company).
-public sealed record DivisionSpec(int Id, string Name, string Temper = "Steady", int Skill = 3, string Goal = "Hold", string Leader = "", int LeadCompany = 0);
+public sealed record DivisionSpec(int Id, string Name, string Temper = "Steady", int Skill = 3, string Goal = "Hold", string Leader = "", int LeadCompany = 0,
+    string[]? Traits = null);
 
 /// Army builder. A company belongs to a line (infantry, spears, archers, horse); its tier picks the troop on that line,
 /// standing in for companies the campaign has upgraded. Elite companies are smaller.
@@ -226,8 +227,16 @@ public static class Armies
         var list = new List<Company>();
         int id = 1;
         while (list.Sum(c => c.Count) < men)
-            foreach (var c in Random(rng, level, team).Companies) list.Add(c with { Id = team * 1000 + id++ });
+            foreach (var c in Random(rng, level, team).Companies) list.Add(c with { Id = team * 1000 + id++, Count = FullCount(c, rng) });
         return new ArmySpec(team == 1 ? "Crimson host" : "Azure company", level, list);
+    }
+
+    /// A full company as the campaign raises one: about 66 places (horse 48), so 60-70 men of the line and fewer of the
+    /// better troops (Rules.TierWeight), give or take a few.
+    static int FullCount(Company c, Random rng)
+    {
+        float w = Rules.TierWeight(Troops.Get(c.Troop).Tier);
+        return (int)MathF.Round((c.Role == "horse" ? 48 : 66) / w * (0.92f + 0.12f * rng.NextSingle()));
     }
 
     /// Split a big army into divisions under sergeants (docs/archive/COMBAT_OVERHAUL.md 1.6): the horse rides a wing, the foot
@@ -241,34 +250,36 @@ public static class Armies
 
     /// The most companies the captain leads himself; the rest serve under sergeants or wait in reserve.
     public const int CommandCap = 10;
-    /// The most companies Divide puts under one sergeant.
+    /// The most companies a sergeant leads.
     public const int DivisionCap = 8;
+    /// How many Divide gives each sergeant: two short of the cap, so you can move companies about in deployment.
+    public const int DivisionFill = 6;
 
     static ArmySpec Split(ArmySpec army)
     {
         var comps = army.Companies.ToList();
         var specs = new List<DivisionSpec>();
         var members = new List<List<int>>();
-        int Make(string name, List<int> idx, string goal, string temper)
+        int Make(string name, List<int> idx, string goal, string temper, string nature)
         {
             if (idx.Count == 0) return -1;
             int id = specs.Count;
             foreach (var i in idx) comps[i] = comps[i] with { Division = id };
             var lead = idx.OrderByDescending(i => Troops.Get(comps[i].Troop).Tier).ThenBy(i => i).First();
-            specs.Add(new DivisionSpec(id, name, temper, 3 + army.Level / 2, goal, "", comps[lead].Id));
+            specs.Add(new DivisionSpec(id, name, temper, 3 + army.Level / 2, goal, "", comps[lead].Id, new[] { nature }));
             members.Add(idx.ToList());
             return id;
         }
         var own = Enumerable.Range(0, comps.Count).Where(i => !comps[i].Allied).ToList();
         var horse = own.Where(i => RoleOf(comps[i]) == "horse").ToList();
         var foot = own.Where(i => RoleOf(comps[i]) is "infantry" or "spears").ToList();
-        if (horse.Sum(i => comps[i].Count) >= 30) Make("The horse", horse.Take(DivisionCap).ToList(), "FlankRight", "Bold");
+        if (horse.Sum(i => comps[i].Count) >= 30) Make("The horse", horse.Take(DivisionFill).ToList(), "FlankRight", "Bold", "Hothead");
         int left = -1, right = -1;
         if (foot.Count >= 4)
         {
-            int third = Math.Min(foot.Count / 3, DivisionCap);
-            left = Make("Left battle", foot.Take(third).ToList(), "Hold", "Steady");
-            right = Make("Right battle", foot.Skip(foot.Count - third).ToList(), "Hold", "Steady");
+            int third = Math.Min(foot.Count / 3, DivisionFill);
+            left = Make("Left battle", foot.Take(third).ToList(), "Hold", "Steady", "Stubborn");
+            right = Make("Right battle", foot.Skip(foot.Count - third).ToList(), "Hold", "Steady", "Drillmaster");
         }
         // Past CommandCap companies the captain cannot lead them himself: spare foot joins the battle with most room,
         // then the bows get a sergeant of their own. What is still over the cap waits in reserve (Battle.Deploy).
@@ -276,13 +287,13 @@ public static class Armies
         foreach (var i in foot.Where(i => comps[i].Division < 0).ToList())
         {
             if (Led() <= CommandCap) break;
-            var room = new[] { left, right }.Where(d => d >= 0 && members[d].Count < DivisionCap).OrderBy(d => members[d].Count).ToList();
+            var room = new[] { left, right }.Where(d => d >= 0 && members[d].Count < DivisionFill).OrderBy(d => members[d].Count).ToList();
             if (room.Count == 0) break;
             comps[i] = comps[i] with { Division = room[0] };
             members[room[0]].Add(i);
         }
-        var bows = own.Where(i => comps[i].Division < 0 && RoleOf(comps[i]) == "archers").Take(Math.Min(DivisionCap, Led() - CommandCap)).ToList();
-        if (bows.Count >= 2) Make("The bows", bows, "Hold", "Cautious");
+        var bows = own.Where(i => comps[i].Division < 0 && RoleOf(comps[i]) == "archers").Take(Math.Min(DivisionFill, Led() - CommandCap)).ToList();
+        if (bows.Count >= 2) Make("The bows", bows, "Hold", "Cautious", "Veteran");
         return army with { Companies = comps, Divisions = specs.Count > 0 ? specs : null };
     }
 

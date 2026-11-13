@@ -280,6 +280,21 @@ Sergeants told to hold or take ground stand on the best ground within 25 m of it
 **AMBUSH** (command view) sends a division of foot to the nearest wood to wait unseen, arrows held; it falls on the first enemy
 company that comes within 40 m.
 
+**Command and sergeants (docs/SERGEANTS.md):** you lead at most 10 companies yourself (**COMMAND n/10** in the tray over your
+panel). The rest serve under sergeants (up to 8 companies each) or wait in the **reserve** off the field. While you deploy, select
+companies and press a card's **ADD** (or **TO ME** in the tray) to move them between you and your sergeants; click a reserve chip to
+bring it on, for you or for the chosen sergeant. During the battle a call-up sends a rider back and the company marches on 8 s
+later. **Horn plans:** with a sergeant chosen, switch **HORN PLAN** on and pick a goal: he holds and waits, and **~** (HORN in the
+tray) sends every plan at once with no rider; a plan's dotted route shows on the field. Sergeants **ask** when their flank is
+threatened by horse, when arrows cut them down or when the foe before them routs: answer with **F6/F7** in the box at the top
+or let him choose by his temper when the time runs out. Near a sergeant (25 m) your word is shouted, not carried. A sergeant's
+skill lifts his companies' wits (skill 3 trained, 5 veteran, 8 elite) and his nature shows on his card: a Hothead charges
+sooner, a Stubborn one never falls back, a Drillmaster drills his men harder, a Veteran thinks a grade up. In command view each
+division has its own colour, and a box of that colour marks each of its companies.
+
+**Company size:** a company is about 66 places: 60-70 men of the line, fewer of the better troops (a man of tier IV takes 1.3
+places, tier VII 1.6), and horse about 48 places. Quick battles build their companies the same way.
+
 **Captain combat:** a parry needs the guard raised just as the blow comes (within 0.35 s, up to 0.45 s with Arms); attacking into a blow from the mirrored side
 **chambers** it. A parry opens a **riposte** for 0.45 s: a swing started then winds up twice as fast, hits a quarter harder, costs half
 the stamina and cannot be blocked by men of tier III or lower. Swings started hard on the heels of the last form a **chain**: each link

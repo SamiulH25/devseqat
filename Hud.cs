@@ -126,6 +126,7 @@ sealed partial class Hud
             : Array.Empty<MenuItem>();
         start = Deploying ? new Rectangle(W / 2 - U(130), U(96), U(260), U(30)) : Rectangle.Empty;
         deployToggle = Deploying && DeployLast != null ? new Rectangle(W / 2 - U(130), U(138), U(260), U(20)) : Rectangle.Empty;
+        LayoutCommand(); // the tray, ADD on the cards, a sergeant's question (Hud.Command.cs)
         int mw = U(220), mh = U(30), top = H / 2 - items.Length * (mh + U(8)) / 2 + U(10);
         if (ShowResult) // side by side along the bottom of the result
             for (int i = 0; i < items.Length; i++) menu.Add((new Rectangle(W / 2 - (items.Length * (mw + U(10)) - U(10)) / 2 + i * (mw + U(10)), ResultBox.Bottom - U(44), mw, mh), items[i]));
@@ -137,7 +138,7 @@ sealed partial class Hud
     public MenuItem? MenuAt(Point p) => menu.Where(m => m.R.Contains(p)).Select(m => (MenuItem?)m.M).FirstOrDefault();
     public Vector2? MinimapAt(Point p) => minimap.Contains(p)
         ? World.MinimapToWorld(new Vector2((p.X - minimap.X) / (float)minimap.Width, (p.Y - minimap.Y) / (float)minimap.Height)) : null;
-    public bool Over(Point p) => AlertAt(p) != null || CardAt(p) != null || ButtonAt(p) != null || DivisionAt(p) != null || GoalAt(p) != null || GoalCloseAt(p) || minimap.Contains(p) || player.Contains(p) || start.Contains(p) || deployToggle.Contains(p);
+    public bool Over(Point p) => AlertAt(p) != null || CardAt(p) != null || ButtonAt(p) != null || DivisionAt(p) != null || GoalAt(p) != null || GoalCloseAt(p) || OverCommand(p) || minimap.Contains(p) || player.Contains(p) || start.Contains(p) || deployToggle.Contains(p);
 
     // ---------- primitives ----------
 
@@ -245,14 +246,16 @@ sealed partial class Hud
         PlayerPanel();
         FormBar();
         SpellFan();
-        if (Command) DivisionMarkers(); // under the cards and panels
+        if (Command) { DivisionRings(); DivisionMarkers(); } // under the cards and panels
         Cards();
+        Tray();
         DivisionCards();
         if (Command && Div != null) GoalPanel();
         if (!Command && Div != null) SergeantFieldBadge();
         if (GroundView && !ShowResult && !MenuOpen) GroundPanel();
         if (Command) { CommandPanel(); Detail(); if (!ShowResult && !MenuOpen) { SquadTooltip(); DivisionTooltip(); GroundHints(); } } else { OpponentMark(); BlowNumbers(); MarkedMarks(); Crosshair(); }
         if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
+        if (!MenuOpen && !HelpOpen) Question();
         Hints();
         if (B.DownSince >= 0) // the last stand (P6)
         {

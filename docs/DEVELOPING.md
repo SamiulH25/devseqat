@@ -306,13 +306,24 @@ A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a 
 - **Where divisions come from:** `ArmySpec.Divisions` (a list of `DivisionSpec`) plus `Company.Division`, read by
   `BuildDivisions` in the constructor (not in sieges). The campaign fills them from `CampaignState.Divisions`
   (`Campaign.WithDivisions`); `Armies.Divide` splits any big army into a horse wing and two foot battles (enemy lords and
-  quick battles), at most `Armies.DivisionCap` (8) companies each; while the captain would still lead more than
+  quick battles), filled to `Armies.DivisionFill` (6) so there is room to move companies in deployment, at most
+  `Armies.DivisionCap` (8) each; each split division gets a nature (`DivisionSpec.Traits`); while the captain would still lead more than
   `Armies.CommandCap` (10), spare foot joins the battles and the bows get a division of their own. The AI's goals come from `AiCommand(team)`.
 - **The command cap:** `Battle.Deploy` fields at most `CommandCap` companies the captain leads himself (`Leads`: not allied,
   not in a division, not an assault); the rest wait in `reserves` with `Held` set and march on (`Reinforce`) only when
   `OpenSlots(team)` > 0, i.e. one of his own companies is spent (no man standing unrouted), folded or split. Budget reserves
   (the field's man `Cap`) keep the old 60%-strength rule, and also need a free slot if the captain would lead them. Applies to
   both teams. Test `CommandCap`.
+- **Sergeants that matter (docs/SERGEANTS.md, `BattleCommand.cs`):** the tray (`ReservesOf`, `CallUp` (immediate at time 0
+  and recorded in `Replay.Setup`, else a rider of `CallUpDelay` s, `Frame.CallUps`), `Assign` in deployment); horn plans
+  (`SetHornPlan`, `SoundHorn`, `Division.Horn`/`PendingHorn`, `Frame.Horn`, `GoalOrder.Plan`); questions (`Questions` in
+  `Brain`, `Query`, `Answer`, default by temper after `QueryWait`); `WitsGrade` = the better of a company's grade and its
+  sergeant's (`SergeantGrade`); voice (`InVoice`, `VoiceReach` 25 m, 0.6 s); natures (`Division.Traits`, `Has`). UI in
+  `Hud.Command.cs` (tray, question box, division colours and boxes) and `Hud.Divisions.cs` (cards, horn route). Tests in
+  `Tests/SergeantTests.cs`; shots with `IRONFIELD_SHOTS_FROM=sergeants`.
+- **Company size:** campaign companies hold `Rules.Cap` places (22 x ArmyScale = 66, horse 16 x 3 = 48), a man taking
+  `TierWeight(tier)` places, so 60-70 men of the line and fewer elites. `Armies.Large` (quick battles, bench, scale tests)
+  sizes its companies the same way (`FullCount`); `Armies.Random` keeps its small base counts for the many small test battles.
 - **Distance:** each side stands `Battle.Stand` (35 m) behind the old 30 m line, about 130 m apart; `MapRadius` grows by
   `Stand - 15` so the rear lines keep room, and the forest clearing's ring of woods moves out with it.
 - **Replays:** goals you give are recorded (`Frame.Goals`) and re-issued on playback; the AI's are recomputed. Direct orders

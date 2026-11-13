@@ -276,7 +276,7 @@ public static partial class SelfTest
     /// imposes terms only as far as he is ahead, allies against a shared enemy, and draws tribute; a vassal is summoned.
     static void WarAndPeace()
     {
-        var c = Campaign.New(7007);
+        var c = Campaign.New(7008);
         var owners = c.S.Settlements.ToDictionary(s => s.Id, s => s.Faction);
         float peakExh = 0, peakShare = 0;
         int hosts = 0, fellEarly = 0;

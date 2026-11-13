@@ -78,7 +78,7 @@ public static class Rules
     /// A company's places, from its role (shared by all its stacks).
     /// Mages are a circle of a few, not a company of many (super units): three or four at ArmyScale 3, one or two at 1.
     public static float Cap(string role) => role == "casters" ? B.ArmyScale * 1.2f + 1
-        : B.ArmyScale * role switch { "archers" => 16, "spears" => 12, "horse" => 10, _ => 24 };
+        : B.ArmyScale * role switch { "horse" => 16, _ => 22 }; // ~66 places: a company of 60-70 men, fewer of the better (TierWeight)
 
     /// A price per man (wage, levy, loot, ransom, promotion): the troop price spread over ArmyScale men.
     public static float PerMan(float cost) => cost / B.ArmyScale;

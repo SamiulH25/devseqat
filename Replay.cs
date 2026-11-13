@@ -35,12 +35,21 @@ public sealed class Replay
         /// Reliefs (tired, fresh) and splits (company) started this tick (BattleRelief.cs).
         public List<int[]>? Reliefs;
         public List<int>? Splits;
+        /// The horn sounded this tick, and reserve companies called up (team, reserve index, division or -1) (docs/SERGEANTS.md).
+        public bool Horn;
+        public List<int[]>? CallUps;
     }
+
+    /// Changes made in deployment before the first tick: [0, company, division or -1] moves a company to a sergeant or the
+    /// captain; [1, team, reserve index, division or -1] calls a reserve company up (docs/SERGEANTS.md SG1).
+    public List<int[]>? Setup;
 
     /// A goal you sent one of your divisions (it then rides to him inside the sim, so it replays exactly).
     public sealed class GoalOrder
     {
         public int Division, Target = -1, Side = 1;
+        /// A horn plan, not a goal (docs/SERGEANTS.md SG2).
+        public bool Plan;
         public GoalKind Kind;
         public Vector2 Point;
     }
@@ -78,6 +87,12 @@ public sealed class Replay
     public Battle Play()
     {
         var b = new Battle(Seed, Player, Enemy, Options);
+        if (Setup != null)
+            foreach (var x in Setup)
+            {
+                var into = x[^1] >= 0 ? b.Divisions[x[^1]] : null;
+                if (x[0] == 0) b.Assign(b.Squads[x[1]], into); else b.CallUp(x[1], x[2], into);
+            }
         for (int i = 0; i < Start.Count && i < b.Units.Count; i++)
         {
             b.Units[i].Pos = Start[i];
@@ -102,7 +117,12 @@ public sealed class Replay
                 }
             if (f.Goals != null)
                 foreach (var g in f.Goals)
-                    b.IssueGoal(b.Divisions[g.Division], new Goal(g.Kind, g.Point, g.Target >= 0 ? b.Squads[g.Target] : null, g.Side));
+                {
+                    var goal = new Goal(g.Kind, g.Point, g.Target >= 0 ? b.Squads[g.Target] : null, g.Side);
+                    if (g.Plan) b.SetHornPlan(b.Divisions[g.Division], goal); else b.IssueGoal(b.Divisions[g.Division], goal);
+                }
+            if (f.CallUps != null) foreach (var c in f.CallUps) b.CallUp(c[0], c[1], c[2] >= 0 ? b.Divisions[c[2]] : null);
+            if (f.Horn) b.SoundHorn(0);
             if (f.Stakes != null) foreach (int i in f.Stakes) b.PlantStakes(b.Squads[i]);
             b.Input = f.Input;
             b.Commanding = f.Commanding;
@@ -154,6 +174,10 @@ public sealed partial class Battle
         mergeRecords = null;
         f.Reliefs = reliefRecords?.Select(m => new[] { m.Tired, m.Fresh }).ToList();
         f.Splits = splitRecords;
+        f.Horn = hornRecorded;
+        f.CallUps = callUpRecords;
+        hornRecorded = false;
+        callUpRecords = null;
         reliefRecords = null;
         splitRecords = null;
         goalRecords = null;
