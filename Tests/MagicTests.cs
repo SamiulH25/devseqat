@@ -557,6 +557,11 @@ public static partial class SelfTest
         Console.WriteLine($"mages: {near}/{towns.Count} towns where a well reaches; {offers} circle offers seen in 22 weeks; at most {lordCircles} lords with a circle (day {c.Day})");
         Check(offers > 0, "a circle is offered somewhere");
         Check(lordCircles > 0, "a great lord fields a circle");
+        // A realm's arcana (docs/ARCANA.md AR5): the sorcerous realms' great lords keep circles more often.
+        int Circles(int arcana) => c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction >= 0 && Factions.Get(p.Faction).Arcana == arcana && p.Companies.Any(k => Rules.RoleOf(k) == "casters"));
+        int Lords(int arcana) => c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction >= 0 && Factions.Get(p.Faction).Arcana == arcana);
+        Console.WriteLine($"mages by arcana: 1: {Circles(1)}/{Lords(1)}, 2: {Circles(2)}/{Lords(2)}, 3: {Circles(3)}/{Lords(3)}");
+        Check(Circles(3) / (float)Math.Max(1, Lords(3)) > Circles(1) / (float)Math.Max(1, Lords(1)), "realms of arcana 3 keep more circles a lord than realms of 1");
     }
 
     /// The arcana census (docs/ARCANA.md AR0) runs, and a seeking stand-in rides to a vigil once its aura stands at a wall.

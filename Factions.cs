@@ -34,6 +34,9 @@ public sealed class FactionDef
     public float Aggression = 1, Garrison = 1, Siege = 1, Tribute = 1;
     /// What its lords hunt first: "" (whatever is hostile in reach) or "monsters" (goblins, beasts and the dead before men).
     public string Hunts = "";
+    /// How much it leans on sorcery (docs/ARCANA.md AR5), 0-3: of its great lords, this many in four raise a circle (1 = as
+    /// the other realms of old, roughly).
+    public int Arcana = 1;
 }
 
 /// Realms and cultures, loaded once from Data/factions.json (copied next to the game).
@@ -131,6 +134,7 @@ public static class Factions
             if (f.Home.Length != 2 || f.Home.Any(v => v is < -1 or > 1)) yield return $"{f.Name}: home must be [x, z] within -1..1";
             if (new[] { f.Aggression, f.Garrison, f.Siege, f.Tribute }.Any(v => v is < 0.3f or > 3)) yield return $"{f.Name}: temper values must be 0.3-3";
             if (f.Hunts is not ("" or "monsters")) yield return $"{f.Name}: hunts must be \"\" or \"monsters\"";
+            if (f.Arcana is < 0 or > 3) yield return $"{f.Name}: arcana must be 0-3";
         }
         foreach (var c in cultures!)
         {

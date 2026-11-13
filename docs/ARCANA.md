@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **in progress** (2026-11-13): AR0-AR3 built (see "As built" at the end); AR4-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **in progress** (2026-11-13): AR0-AR3 built, AR5 begun (see "As built" at the end); AR4, the rest of AR5, AR6-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 
@@ -293,4 +293,13 @@ something the map and the battle are about.
   reads WILL and TIDE, and a spell that would overreach shows its doubled cost in red (`WouldOverreach`). Auto-resolve:
   `Campaign.TideEdge` (`Balance.TideWeight` 0.5) by each side's mage share. `--agree` unchanged (its fights have no
   mages). The general sending horse at an overreaching circle is left for AR5. Tests `TideShared`, `Overreach`.
+- **AR5, first step (realms that lean on sorcery):** `FactionDef.Arcana` (0-3, default 1; `Data/factions.json`: Crimson and
+  the Ashen Sun 3, Northmarch, Sunward and the Khaganate 2, Azure and the League 1; `Factions.Validate`). `KeepsCircle`: of
+  four great lords, as many as the realm's arcana (one more where a steady well reaches his home), by id; it replaces the
+  one-in-five rule at spawn and at refit (`RaiseCircle`). Census (2 seeds, 240 days): lords with a circle 10-19 of ~125 (was
+  3-8). The stand-in fights lords in only 7-13 of ~110 battles (brigands the rest, who never cast), so "magic in 1 battle in
+  6" cannot be met by lords alone: against lords, enemy magic in 5 of 39 battles (target 1 in 3). Open question for the
+  next step: cunning folk among the bigger brigand bands, or more circles among lords. `Pilot.LordBattles`/`LordMagic`.
+  Court mages, rival circles and the AI answering your circle are still to come. Test: `MagesInTheWorld` checks arcana 3
+  realms keep more circles a lord than arcana 1.
 

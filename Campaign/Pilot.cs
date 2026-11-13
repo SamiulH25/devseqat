@@ -19,7 +19,7 @@ public sealed class Pilot
     public int Talks, TalksWon;
     /// Arcana telemetry (docs/ARCANA.md AR0): battles with casters on either side and on the enemy's, vigils kept, rites worked,
     /// and the day each aura tier was first reached (index = tier; -1 = not yet).
-    public int MagicBattles, EnemyMagic, Vigils, Rites;
+    public int MagicBattles, EnemyMagic, Vigils, Rites, LordBattles, LordMagic;
     public readonly int[] AuraDay = { 0, -1, -1, -1, -1, -1 };
     /// A seeker (AR0) goes after the arcane as a player who wants it would: it rides to a vigil when its aura stands at a
     /// wall and works its circle's rites. Off by default, so the pacing runs and tests play as before.
@@ -69,6 +69,7 @@ public sealed class Pilot
         static bool Casts(IEnumerable<Party> side) => side.Any(p => p.Companies.Any(k => Rules.RoleOf(k) == "casters"));
         bool foeCasts = Casts(setup.Side1);
         if (foeCasts || Casts(setup.Side0)) { MagicBattles++; if (foeCasts) EnemyMagic++; }
+        if (setup.Side1.Any(p => p.Kind == PartyKind.Lord)) { LordBattles++; if (foeCasts) LordMagic++; }
         float me = setup.Side0.Sum(Rules.Strength), them = setup.Side1.Sum(Rules.Strength) * c.Edge(e); // a den or the night fights for them
         // Auto-resolve swings 15% either way: take anything close to even, and pay off brigands rather than bleed.
         // Retreating again and again bleeds the rearguard dry: after two in a day, stand.

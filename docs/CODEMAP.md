@@ -233,6 +233,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Plan** (enum, L6)
 - **Battle** (class, L13): TacticsEvery:16, SightOf:17, Tactics:20, Wits:32, FlankThreat:101, Pinner:121, FlankSide:135, static:145, Wrap:155, Rotate:175, Choose:194, NextVictim:213, AvgMorale:226, SetPlan:235
 
+## BattleTide.cs (64 lines)
+- **Battle** (class, L9): SetupTide:22, TideTick:28, TideDraw:31, TideHolds:34, PayForCast:37, LashBack:49
+
 ## BattleTypes.cs (154 lines)
 - **BattleOptions** (class, L4)
 - **Weather** (record, L88): For:91
@@ -278,8 +281,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/CampaignActions.cs (191 lines)
 - **Campaign** (class, L6): MoveTo:10, Chase:11, GoTo:12, RecruitLevies:17, LevyPrice:62, MercenaryPrice:64, Hire:70, BuyHorses:88, RaiseHounds:103, Merge:127, Split:130, Disband:155, MoveUp:157, SignContract:165, Rest:184
 
-## Campaign/CampaignAI.cs (333 lines)
-- **Campaign** (class, L6): SpawnLord:10, BandName:40, SpawnBandits:47, RefreshMercenaries:78, Visible:115, MonsterHunter:119, LordThink:121, EnemyProvinceNear:193, Refit:206, RaiseCircle:248, Dread:262, BanditThink:264, Alive:289, RealmBroken:292, FactionAI:301
+## Campaign/CampaignAI.cs (342 lines)
+- **Campaign** (class, L6): SpawnLord:10, BandName:40, SpawnBandits:47, RefreshMercenaries:78, Visible:115, MonsterHunter:119, LordThink:121, EnemyProvinceNear:193, Refit:206, KeepsCircle:247, RaiseCircle:257, Dread:271, BanditThink:273, Alive:298, RealmBroken:301, FactionAI:310
 
 ## Campaign/CampaignBattle.cs (366 lines)
 - **Campaign** (class, L6): Apply:11, PrepareBattle:256, FinishBattle:299, AutoResolveEncounter:312, CanRetreat:321, Retreat:332, ParleyPrice:353, Parley:355
@@ -428,8 +431,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/OwnOrder.cs (110 lines)
 - **Campaign** (class, L7): CannotFound:15, OrderNameOf:28, FoundOrder:39, NamedMan:53, CannotKnight:62, Knight:67, OwnVowBroken:78, HandOnAura:86
 
-## Campaign/Pilot.cs (299 lines)
-- **Pilot** (class, L8): Pilot:31, Run:42, Fight:64, Refuge:94, Visit:104, Kit:133, Worn:141, Worth:142, Fresh:146, Promote:156, TakePerks:167, Think:178, Arcane:239, Siege:261, Talk:284, S:298
+## Campaign/Pilot.cs (300 lines)
+- **Pilot** (class, L8): Pilot:31, Run:42, Fight:64, Refuge:95, Visit:105, Kit:134, Worn:142, Worth:143, Fresh:147, Promote:157, TakePerks:168, Think:179, Arcane:240, Siege:262, Talk:285, S:299
 
 ## Campaign/Quests.cs (127 lines)
 - **Campaign** (class, L7): ElderOffers:13, RefreshElders:21, MoreTownOffers:44, SetUp:57, QuestDone:68, QuestLost:80, QuestStepDone:88, EscortArrived:105, SiteQuests:112, RelicQuest:118
@@ -528,11 +531,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Mods** (struct, L48): Add:53
 - **Effects** (class, L73): Get:79, Has:80, Load:84, Validate:103
 
-## Factions.cs (157 lines)
+## Factions.cs (161 lines)
 - **CultureDef** (class, L6)
 - **RelationDef** (class, L16)
 - **FactionDef** (class, L24)
-- **Factions** (class, L40): IndexOf:59, Get:60, Bind:83, Culture:84, CultureOf:85, Open:88, Root:91, Line:94, Path:97, Load:107, Validate:123
+- **Factions** (class, L43): IndexOf:62, Get:63, Bind:86, Culture:87, CultureOf:88, Open:91, Root:94, Line:97, Path:100, Load:110, Validate:126
 
 ## Forms.cs (106 lines)
 - **FormDef** (class, L8): Clone:16
@@ -795,9 +798,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/KnightTests.cs (1072 lines)
 - **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:464, ChampionsUseAura:495, OrderPolitics:533, BlackFlame:597, FlameTakesYou:652, OwnOrderFounded:675, AuraPool:723, AuraField:790, CastNow:798, BlessingFeedsAura:806, CurseOnCaptain:822, BladeBreaksCast:850, RelicRaised:876, OwnFormFromStyle:892, AspectChanges:922, BreakInBattle:948, ClashRing:970, TranscendentLight:995, AwakeningByDeeds:1035
 
-## Tests/MagicTests.cs (687 lines)
+## Tests/MagicTests.cs (692 lines)
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
-- **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:563, WellsFromSites:574, TideFeedsOffers:615, TideShared:633, Overreach:656
+- **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:568, WellsFromSites:579, TideFeedsOffers:620, TideShared:638, Overreach:661
 
 ## Tests/MapTests.cs (199 lines)
 - **SelfTest** (class, L6): MapIndexMatches:10, RealmsFromData:32, ClimatesAndRidges:77, SevenRealms:105, RealmTempers:132

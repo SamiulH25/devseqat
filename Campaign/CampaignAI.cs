@@ -26,9 +26,9 @@ public partial class Campaign
             string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, 7), faction);
             lord.Companies.Add(NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.7f, 1f)), 0, home));
         }
-        // Mages are super units: only a great lord (army level 5 up), one in five, brings a circle of his realm's mages (E1); no
-        // dice, so the campaign's draws stay as they were.
-        if (tier >= 5 && lord.Id % 5 == 0)
+        // Mages are super units: only a great lord brings a circle of his realm's mages, as many in four as his realm's arcana
+        // (docs/ARCANA.md AR5; E1); no dice, so the campaign's draws stay as they were.
+        if (tier >= 5 && KeepsCircle(lord))
         {
             string mage = Armies.MageTroop(Factions.CultureOf(faction), tier - 1);
             lord.Companies.Add(NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0, home));
@@ -242,12 +242,21 @@ public partial class Campaign
         RaiseCircle(p, home, fs);
     }
 
-    /// A great lord's circle (docs/archive/COMPANIONS_MAGIC.md E1): one lord in five whose men stand at tier IV or more raises
-    /// a circle of his realm's mages when he refits, from day 60 (as the towns' own circles), paid from the war chest.
-    /// A lord only got one when first raised before, and lords are raised at low tiers, so no army ever fielded mages.
+    /// Does this lord keep a circle (docs/ARCANA.md AR5)? Of four, as many as his realm's arcana, one more where a steady well
+    /// or better reaches his home; by his id, not the dice.
+    bool KeepsCircle(Party p)
+    {
+        int share = Factions.Get(Math.Max(0, p.Faction)).Arcana;
+        if (p.HomeId >= 0 && p.HomeId < S.Settlements.Count && TideAt(S.Settlements[p.HomeId].Pos).Strength >= 2) share++;
+        return p.Id % 4 < share;
+    }
+
+    /// A great lord's circle (docs/archive/COMPANIONS_MAGIC.md E1): a lord who keeps one (`KeepsCircle`) and whose men stand at
+    /// tier IV or more raises a circle of his realm's mages when he refits, from day 60 (as the towns' own circles), paid from the
+    /// war chest. A lord only got one when first raised before, and lords are raised at low tiers, so no army ever fielded mages.
     void RaiseCircle(Party p, Settlement home, FactionState fs)
     {
-        if (p.Kind != PartyKind.Lord || p.KnightOrder != "" || p.Id % 5 != 0 || p.Tier < 4 || Day < 60) return;
+        if (p.Kind != PartyKind.Lord || p.KnightOrder != "" || p.Tier < 4 || Day < 60 || !KeepsCircle(p)) return;
         if (p.Companies.Any(c => Rules.RoleOf(c) == "casters") || p.Companies.Count >= 6) return;
         string mage = Armies.MageTroop(Factions.CultureOf(p.Faction), p.Tier);
         int men = (int)(Rules.CapOf(mage, "casters") * 0.8f);
