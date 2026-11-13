@@ -41,6 +41,11 @@ public sealed class Canvas
     readonly float[] lit;
 
     public Canvas(int w, int h) { W = w; H = h; mat = new Mat?[w * h]; lit = new float[w * h]; }
+    /// A soft edge: the outline takes a mid tone of the material, for a part drawn over another of the same stuff (a horse's
+    /// chest, rump and neck over its barrel), so the joins read as one body rather than as seams.
+    public bool Soft;
+    /// Ends left without an outline, for a limb piece whose end joins another piece (a horse's leg at the knee and the body).
+    public bool OpenTop, OpenBottom;
 
     public bool In(int x, int y) => x >= 0 && y >= 0 && x < W && y < H;
     public bool Has(int x, int y) => In(x, y) && mat[y * W + x] != null;
@@ -148,14 +153,14 @@ public sealed class Canvas
         for (int y = 0; y < oh; y++)
             for (int x = 0; x < ow; x++)
             {
-                if (px[y * ow + x].A != 0) continue;
+                if (px[y * ow + x].A != 0 || OpenTop && y == 0 || OpenBottom && y == oh - 1) continue;
                 Mat? best = null;
                 foreach (var (dx, dy) in Around)
                 {
                     int sx = x - 1 + dx, sy = y - 1 + dy;
                     if (Has(sx, sy)) { var m = mat[sy * W + sx]!; if (best == null || m.Ramp[0].ToVector3().Length() < best.Ramp[0].ToVector3().Length()) best = m; }
                 }
-                if (best != null) px[y * ow + x] = new Color(best.Ramp[0].ToVector3() * 0.55f);
+                if (best != null) px[y * ow + x] = new Color(Soft ? best.Ramp[1].ToVector3() * 0.85f : best.Ramp[0].ToVector3() * 0.68f);
             }
         return px;
     }

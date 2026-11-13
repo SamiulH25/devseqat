@@ -215,6 +215,13 @@ sealed partial class Puppet
             default:
                 if (u.Charging) { arm = Lerp(idle, raise, Ease.Out(u.Charge)); leanZ -= 4 * u.Charge; }
                 else if (moving) arm = arm with { Alpha = arm.Alpha + swing * (two ? 0.25f : 0.6f) };
+                else if (u.Target is { Active: true } foe && Vector2.DistanceSquared(u.Pos, foe.Pos) < 9)
+                {
+                    // Squared up to a foe between blows: weapon half raised, weight forward, each man a little his own way.
+                    arm = Lerp(idle, raise, 0.3f + 0.1f * MathF.Sin(now * 1.3f + phase * 9));
+                    leanZ += 7 * lean;
+                    shield = t.HasShield && phase > 0.4f;
+                }
                 else if (Idle(u, moving) && IdleOf(u.Index, now) is (1, var w) && w > 0)
                 {
                     // At ease (A5): a pole stood on its butt, a two-hander leant on point down, a sword rested on the shoulder.

@@ -33,7 +33,7 @@ sealed partial class Puppet
     sealed class PalSprites
     {
         public readonly Rectangle Cape, TabardF, TabardS, TabardB, Plume, Quiver, Arrow, Lance, Javelin, Crossbow, Blood, Splat, Web, White, Puff;
-        public readonly Rectangle HLeg, HBody, HChest, HRump, HNeck, HHead, HFace, HTail, HHump, HSaddle, HCaparison, HChestCap, HRumpCap, HNeckCap, HHeadCap;
+        public readonly Rectangle HLeg, HLegUp, HLegLow, HBody, HChest, HRump, HNeck, HHead, HFace, HTail, HHump, HSaddle, HCaparison, HChestCap, HRumpCap, HNeckCap, HHeadCap;
         public readonly Rectangle WLeg, WBody, WHead, WTail, SLeg, SAbdomen, SHead, BLeg, BBody, BHead, YWing, YLeg, YBody, YNeck, YHead, YTail, YSting;
         public readonly float CrossbowLen, LanceLen, ArrowLen, JavelinLen;
 
@@ -44,7 +44,7 @@ sealed partial class Puppet
             Plume = G("plume"); Quiver = G("quiver"); Arrow = G("arrow"); Lance = G("lance"); Javelin = G("javelin"); Crossbow = G("crossbow");
             Blood = G("blood"); Splat = G("splat"); Web = G("web"); White = G("white"); Puff = G("puff");
             CrossbowLen = Crossbow.Height * Art.Px; LanceLen = Lance.Height * Art.Px; ArrowLen = Arrow.Height * Art.Px; JavelinLen = Javelin.Height * Art.Px;
-            HLeg = G("hleg"); HBody = G("hbody"); HChest = G("hchest"); HRump = G("hrump"); HNeck = G("hneck"); HHead = G("hhead"); HFace = G("hface"); HTail = G("htail"); HHump = G("hhump");
+            HLeg = G("hleg"); HLegUp = G("hleg.up"); HLegLow = G("hleg.low"); HBody = G("hbody"); HChest = G("hchest"); HRump = G("hrump"); HNeck = G("hneck"); HHead = G("hhead"); HFace = G("hface"); HTail = G("htail"); HHump = G("hhump");
             HSaddle = G("hbody.saddle"); HCaparison = G("hbody.caparison"); HChestCap = G("hchest.caparison"); HRumpCap = G("hrump.caparison"); HNeckCap = G("hneck.caparison"); HHeadCap = G("hhead.caparison");
             WLeg = G("wleg"); WBody = G("wbody"); WHead = G("whead"); WTail = G("wtail");
             SLeg = G("sleg"); SAbdomen = G("sabdomen"); SHead = G("shead");
@@ -397,7 +397,22 @@ sealed partial class Puppet
             if (front && Rear > 0) a = MathHelper.Lerp(a, Rad(sd < 0 ? 75 : 55), Rear); // forelegs pawing the air
             if (i == 1 && still == 2 && stillK < 0.5f) a = Rad(35) * MathF.Max(0, MathF.Sin(stillK * MathF.PI * 6)); // pawing the ground
             var hip = new Vector3(sd * 0.165f, 1.0f + bob + (front ? rock : -rock), front ? 0.6f : -0.6f);
-            AxialSrc(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), curPal.HLeg);
+            // Two segments: the knee folds the cannon back as a foreleg swings forward; behind, the gaskin slopes back to the
+            // hock and the cannon comes forward under it, and the hock folds as the leg swings through.
+            float lift = Rad(amp) * MathF.Max(0, MathF.Cos(anim * MathF.PI + ph * MathF.Tau)) * (front && Rear <= 0 ? 1.3f : 0.8f);
+            float upA = front ? a : a - Rad(16), lowA = front ? a - lift : a + Rad(12) - lift * 0.6f;
+            if (front && Rear > 0) lowA = a - Rad(70) * Rear; // forelegs tucked as he rears
+            float upL = front ? 0.47f : 0.48f, lowL = front ? 0.51f : 0.53f;
+            var knee = hip + new Vector3(0, -upL * MathF.Cos(upA), upL * MathF.Sin(upA));
+            var foot = knee + new Vector3(0, -lowL * MathF.Cos(lowA), lowL * MathF.Sin(lowA));
+            if (curPal.HLegUp.Width > 0)
+            {
+                // The pieces overlap past the knee (their joined ends carry no outline, only a clear padding row).
+                var up = Vector3.Normalize(knee - hip) * 0.07f;
+                AxialSrc(knee - Vector3.Normalize(foot - knee) * 0.05f, foot, curPal.HLegLow);
+                AxialSrc(hip, knee + up, curPal.HLegUp);
+            }
+            else AxialSrc(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), curPal.HLeg);
         }
         LongRect(new(0, y - rock, -0.82f), new(0, y + rock, 0.82f), curPal.HBody);
         if (camel) LongRect(new(0, y + 0.4f, -0.5f), new(0, y + 0.4f, 0.2f), curPal.HHump, 0.01f);
@@ -678,8 +693,8 @@ sealed partial class Puppet
             // and the living stand out over them (vertex alpha: how far the sprite shader drains the colour).
             float settle = Now > 0 ? Math.Clamp((Now - u.DiedAt - time) / 3f, 0, 1) : 1;
             var keepTint = tint;
-            tint = Color.Lerp(tint, new Color(118, 108, 96), 0.45f + 0.45f * settle);
-            tint.A = (byte)Math.Max(70, (int)(255 - 175 * settle));
+            tint = Color.Lerp(tint, new Color(150, 140, 126), 0.35f + 0.35f * settle); // muted, not blacked out
+            tint.A = (byte)Math.Max(110, (int)(255 - 145 * settle));
             if (look.Beast) BeastCorpse(u); else Corpse(phase);
             tint = keepTint;
             return;

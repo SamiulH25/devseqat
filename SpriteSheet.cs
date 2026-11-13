@@ -64,7 +64,7 @@ public sealed class SpriteSheet
 
     Mat cloth = null!, clothDk = null!, trim = null!, quilt = null!, linen = null!, skin = null!, hair = null!, leather = null!,
         wood = null!, steel = null!, plate = null!, iron = null!, mail = null!, brass = null!, ink = null!, blood = null!, mark = null!, fur = null!,
-        gskin = null!, rag = null!, glow = null!, bone = null!, pale = null!, shroud = null!, robe = null!, wisp = null!;
+        gskin = null!, rag = null!, glow = null!, bone = null!, pale = null!, shroud = null!, robe = null!, wisp = null!, felt = null!, plumeCloth = null!, hose = null!;
     Emblem charge;
 
     void Side(int p)
@@ -79,6 +79,11 @@ public sealed class SpriteSheet
         gskin = new(Style.GoblinSkin); rag = new(new Color(110, 92, 70), Pattern.Cloth); glow = Mat.Flat(new Color(236, 206, 70));
         bone = new(Style.Bone); pale = new(new Color(146, 152, 136)); shroud = new(new Color(128, 122, 106), Pattern.Cloth);
         robe = new(Color.Lerp(new Color(46, 36, 54), h.ClothDark, 0.15f), Pattern.Cloth); wisp = Mat.Flat(new Color(150, 236, 170));
+        // A levy's cap is wool dyed in the side's colour, not bare linen: from above, a crowd of white caps hid the two sides.
+        felt = new(Color.Lerp(h.Cloth, h.ClothDark, 0.45f), Pattern.Cloth);
+        // A plume in the side's own cloth (it was the trim, gold on most sides), so a knight's crest tells you whose he is.
+        plumeCloth = new(Color.Lerp(h.Cloth, Color.White, 0.12f), Pattern.Hair);
+        hose = new(Color.Lerp(Style.Leather, Style.Linen, 0.35f), Pattern.Cloth);
         charge = h.Charge;
         string s = "/" + p;
 
@@ -150,8 +155,16 @@ public sealed class SpriteSheet
             case "f":
                 if (!bald) c.Area((x, y) => Skull(x, y) && y < 4.2f, hr);
                 else c.Area((x, y) => Skull(x, y) && y > 3.5f && y < 7 && (x < 1.6f || x > 13.4f), hr); // a fringe over the ears
-                foreach (int ex in new[] { 4, 10 }) { c.Set(ex, 7, ink); c.Set(ex, 8, ink); }
+                foreach (int ex in new[] { 4, 10 })
+                {
+                    for (int bx = ex - 1; bx <= ex + 1; bx++) c.Shade(bx, 6, -0.28f); // the brow's shadow over the eye
+                    c.Set(ex, 7, ink); c.Set(ex, 8, ink);
+                }
                 c.Shade(7, 9, -0.35f); c.Shade(7, 10, -0.45f);
+                // The face rounds away from the light (upper left): the far cheek and the jaw in shade, a lit cheek on the near side.
+                for (int y = 5; y < 15; y++) for (int x = 0; x < 15; x++)
+                    if (x > 11 || y > 12) c.Shade(x, y, -0.14f); else if (x < 2) c.Shade(x, y, -0.07f);
+                c.Shade(3, 9, 0.1f); c.Shade(4, 9, 0.07f);
                 if (beard)
                 {
                     c.Area((x, y) => Skull(x, y) && y > 9.8f && !(y < 12 && x > 5.6f && x < 9.4f), hr);
@@ -300,8 +313,8 @@ public sealed class SpriteSheet
             case "cap":
             {
                 var c = new Canvas(18, 10);
-                c.Ellipse(9, 10, 8.2f, 9.6f, linen);
-                if (v == "s") c.Rect(1, 5, 5, 10, linen, -0.1f);
+                c.Ellipse(9, 10, 8.2f, 9.6f, felt);
+                if (v == "s") c.Rect(1, 5, 5, 10, felt, -0.1f);
                 for (int x = 0; x < 18; x++) c.Shade(x, 8, -0.35f);
                 return c;
             }
@@ -442,7 +455,11 @@ public sealed class SpriteSheet
             {
                 var c = new Canvas(18, 21);
                 c.Rect(1.3f, 0.3f, 16.7f, 21, plate);
+                foreach (var (cx, cy) in new[] { (1, 0), (2, 0), (1, 1), (16, 0), (15, 0), (16, 1) }) c.Clear(cx, cy); // the crown's corners rounded off
                 for (int x = 0; x < 18; x++) { c.Shade(x, 0, -0.5f); c.Shade(x, 1, -0.3f); }
+                if (v != "b") // a barrel lit from the upper left: a gleam left of centre, easing into shade on the right, not split in two
+                    for (int y = 0; y < 21; y++) for (int x = 0; x < 18; x++)
+                        if (c.Has(x, y)) c.Set(x, y, plate, (x is 4 or 5 ? 0.78f : 0.62f) - MathF.Max(0, x - 5) * 0.022f - (x < 2 ? 0.1f : 0) - (y < 2 ? 0.2f : 0)); // a barrel, not a slab
                 if (v == "f")
                 {
                     for (int x = 3; x < 15; x++) if (x is not (8 or 9)) { c.Set(x, 8, ink); c.Set(x, 9, ink); }
@@ -455,11 +472,11 @@ public sealed class SpriteSheet
                     // The back: rounded plates meeting at a riveted seam down the middle, a band round the crown and a
                     // dark lip over the neck, so a rank seen from behind reads as helms, not as one pale slab.
                     for (int y = 0; y < 21; y++)
-                        for (int x = 0; x < 18; x++) c.Shade(x, y, -0.18f - MathF.Abs(x - 8.5f) * 0.035f - (y > 12 ? (y - 12) * 0.03f : 0));
-                    for (int y = 2; y < 18; y++) { c.Set(8, y, ink); c.Shade(9, y, 0.35f); }
-                    for (int x = 2; x < 17; x++) { c.Shade(x, 6, -0.35f); c.Shade(x, 7, 0.2f); }
-                    for (int x = 2; x < 17; x++) { c.Set(x, 18, ink); c.Shade(x, 19, -0.5f); c.Shade(x, 20, -0.5f); }
-                    foreach (var (bx, by) in new[] { (4, 6), (13, 6), (10, 10), (10, 14) }) c.Set(bx, by, brass, 0.6f);
+                        for (int x = 0; x < 18; x++) if (c.Has(x, y)) c.Set(x, y, plate, 0.6f - MathF.Abs(x - 8.5f) * 0.018f - (y > 12 ? (y - 12) * 0.02f : 0)); // even steel (the barrel shading split it in two)
+                    for (int y = 2; y < 18; y++) { c.Shade(8, y, -0.3f); c.Shade(9, y, 0.2f); }
+                    for (int x = 2; x < 17; x++) { c.Shade(x, 6, -0.28f); c.Shade(x, 7, 0.15f); }
+                    for (int x = 2; x < 17; x++) { c.Shade(x, 18, -0.3f); c.Shade(x, 19, -0.2f); c.Shade(x, 20, -0.2f); }
+                    foreach (var (bx, by) in new[] { (4, 6), (13, 6), (4, 15), (13, 15) }) c.Set(bx, by, brass, 0.6f);
                 }
                 return c;
             }
@@ -484,7 +501,7 @@ public sealed class SpriteSheet
         var c = new Canvas(side ? 13 : 20, 23);
         Func<float, (float, float)> span = side ? SideSpan : TorsoSpan;
         var m = body switch { "gambeson" => quilt, "mail" => mail, "plate" => plate, "fur" => clothDk, "rags" => rag, "shroud" => shroud, "robe" => robe,
-            "lamellar" => plate, "deel" => cloth, "brigandine" => clothDk, _ => cloth };
+            "lamellar" => plate, "deel" => cloth, "brigandine" => felt, _ => cloth };
         if (body == "bones") return Ribs(c, span, side);
         if (body == "plate") PlateTorso(c, v);
         else
@@ -543,8 +560,18 @@ public sealed class SpriteSheet
             c.Body(13, 16, span, trim, -0.1f);
             c.Area((x, y) => y < 3 && x >= span(y).Item1 && x <= span(y).Item2, fur);
         }
-        if (body == "brigandine") // dark cloth over riveted plates
-            for (int y = 2; y < 13; y += 3) for (int x = 2 + y % 2; x < c.W - 1; x += 3) c.Set(x, y, brass, 0.65f);
+        if (body == "brigandine") // the side's cloth over riveted plates: each band of plates lit on top, shadowed under, studs in rows
+        {
+            for (int y = 1; y < 13; y++) for (int x = 0; x < c.W; x++)
+            {
+                int row = y % 3;
+                c.Shade(x, y, row == 0 ? -0.22f : row == 1 ? 0.12f : 0);
+                c.Shade(x, y, -MathF.Abs(x - (c.W - 1) / 2f) * 0.025f); // rounds over the chest
+            }
+            if (!side) for (int y = 1; y < 13; y++) c.Shade(c.W / 2, y, -0.18f); // the front (or back) seam
+            for (int y = 2; y < 13; y += 3) for (int x = 2 + y % 2; x < c.W - 1; x += 3) if (c.Has(x, y)) c.Set(x, y, brass, 0.6f);
+            c.Body(15.6f, 23, span, clothDk);
+        }
         if (body == "fur") // a shaggy mantle over the shoulders
             c.Area((x, y) => y < 6.5f + 1.2f * MathF.Sin(x * 1.7f) && x >= span(y).Item1 - 0.6f && x <= span(y).Item2 + 0.6f, fur);
         return c;
@@ -735,6 +762,7 @@ public sealed class SpriteSheet
         c.Set(7, 1, steel); c.Set(14, 1, steel); // shoulder clasps
         for (int y = 4; y < 29; y++) { c.Shade(7, y, -0.35f); c.Shade(11, y, 0.25f); c.Shade(15, y, -0.35f); }
         for (int x = 2; x < 20; x += 4) { c.Clear(x, 29); if (x % 8 == 2) c.Clear(x, 28); }
+        c.Soft = true; // cloth over the back, not a cut-out board
         return c;
     }
 
@@ -796,7 +824,12 @@ public sealed class SpriteSheet
             case "bones": c.Rect(3, 0, 5, 20, bone); c.Ellipse(4, 10, 1.7f, 1.5f, bone, 0.1f); break;
             case "shroud": c.Rect(2.2f, 0, 5.8f, 20, pale); c.Rect(1.5f, 0, 6.5f, 7, shroud); break;
             case "hide": c.Rect(2, 0, 6, 20, gskin); c.Rect(1.5f, 0, 6.5f, 4, rag); for (int y = 9; y < 12; y++) c.Shade(4, y, -0.3f); break;
-            default: c.Rect(1.5f, 0, 6.5f, 20, clothDk); break;
+            default:
+                // Undyed hose, wound with linen wraps from the ankle to under the knee: the side shows in the coat, not the legs.
+                c.Rect(1.5f, 0, 6.5f, 20, hose);
+                for (int y = 1; y < 9; y++) for (int x = 1; x < 7; x++) if (c.Has(x, y)) c.Set(x, y, hose, ((2 * y + x) / 3) % 2 == 0 ? 0.62f : 0.42f); // the wraps wound on a slant
+                for (int x = 1; x < 7; x++) c.Shade(x, 9, -0.25f);
+                break;
         }
         return c;
     }
@@ -1117,7 +1150,7 @@ public sealed class SpriteSheet
     Canvas Plume()
     {
         var c = new Canvas(8, 14);
-        c.Fill((x, y) => InEl(x, y, 4.2f + (y - 7) * 0.12f, 7, 3.2f, 6.8f), (x, y) => new Vector3((x - 4) / 5, (y - 7) / 9, 0.8f), new Mat(trim.Ramp[2], Pattern.Hair));
+        c.Fill((x, y) => InEl(x, y, 4.2f + (y - 7) * 0.12f, 7, 3.2f, 6.8f), (x, y) => new Vector3((x - 4) / 5, (y - 7) / 9, 0.8f), plumeCloth);
         return c;
     }
 
@@ -1167,9 +1200,10 @@ public sealed class SpriteSheet
         // The neck arches at the crest and narrows to the throat; the mane hangs in uneven locks along it.
         var neck = new Canvas(23, 13);
         static float NeckTop(float x) => 6.6f + x * 0.03f - (6.2f - x * 0.13f) - MathF.Sin(x / 23 * MathF.PI) * 0.9f;
-        static float NeckBottom(float x) => 6.6f + x * 0.03f + 6.0f - x * 0.15f;
+        static float NeckBottom(float x) => 6.6f + x * 0.03f + 6.4f - x * 0.17f; // deep at the chest, narrow at the throat
         neck.Columns(0, 23, x => (NeckTop(x), NeckBottom(x)), coat);
         neck.Area((x, y) => y >= NeckTop(x) && y < NeckTop(x) + 2.3f + ((int)x * 7 % 3) * 0.7f, mane);
+        neck.Soft = true;
         Add("hneck/n", neck);
 
         var head = new Canvas(20, 10);
@@ -1184,11 +1218,13 @@ public sealed class SpriteSheet
         var chest = new Canvas(24, 21);
         chest.Ellipse(12, 10.5f, 11.4f, 9.8f, coat);
         for (int y = 4; y < 18; y++) chest.Shade(12, y, -0.3f);
+        chest.Soft = true;
         Add("hchest/n", chest);
 
         var rump = new Canvas(24, 21);
         rump.Ellipse(12, 10.5f, 11.4f, 9.8f, coat);
         rump.Rect(10.8f, 3, 13.2f, 21, mane);
+        rump.Soft = true;
         Add("hrump/n", rump);
 
         var face = new Canvas(10, 15);
@@ -1202,10 +1238,27 @@ public sealed class SpriteSheet
         var leg = new Canvas(7, 30);
         leg.Body(0, 3, y => (0.8f + y * 0.15f, 6.2f - y * 0.15f), hoof);
         leg.Body(3, 5.5f, y => (1.4f, 5.6f), mane); // the fetlock's feather
-        leg.Rect(2.3f, 5.5f, 4.7f, 14.5f, coat);
-        leg.Ellipse(3.5f, 15.5f, 2.3f, 2.1f, coat, 0.05f);
-        leg.Body(17, 30, y => (1.8f - (y - 17) * 0.11f, 5.2f + (y - 17) * 0.11f), coat);
+        leg.Rect(2.0f, 5.5f, 5.0f, 14.5f, coat);
+        for (int y = 6; y < 14; y++) leg.Shade(4, y, -0.2f); // the tendon down the back of the cannon
+        leg.Ellipse(3.5f, 15.5f, 2.6f, 2.3f, coat, 0.05f);
+        leg.Body(17, 30, y => (1.5f - (y - 17) * 0.12f, 5.5f + (y - 17) * 0.12f), coat);
         Add("hleg/n", leg);
+        // The same leg in two pieces jointed at the knee (hock behind), so a standing or striding horse is not on four posts:
+        // the cannon from hoof to knee, and the forearm (gaskin) from knee to body. The fallen horse still uses the whole leg.
+        var low = new Canvas(7, 17);
+        low.Body(0, 3, y => (0.8f + y * 0.15f, 6.2f - y * 0.15f), hoof);
+        low.Body(3, 5.5f, y => (1.4f, 5.6f), mane);
+        low.Rect(2.0f, 5.5f, 5.0f, 14.5f, coat);
+        for (int y = 6; y < 14; y++) low.Shade(4, y, -0.2f);
+        low.Ellipse(3.5f, 15.2f, 2.6f, 2.0f, coat, 0.05f);
+        low.Soft = true; low.OpenBottom = true; // the knee end runs into the forearm
+        Add("hleg.low/n", low);
+        var up = new Canvas(7, 15);
+        up.Ellipse(3.5f, 1.2f, 2.4f, 1.6f, coat, 0.05f);
+        up.Body(1.5f, 15, y => (1.5f - (y - 2) * 0.12f, 5.5f + (y - 2) * 0.12f), coat);
+        for (int y = 3; y < 15; y++) up.Shade(1, y, -0.15f); // the muscle's shadow down the back
+        up.Soft = true; up.OpenTop = up.OpenBottom = true; // the knee and the body hide its ends
+        Add("hleg.up/n", up);
 
         // A full tail: thick at the dock, spreading into locks toward the end, with a gentle wave.
         var tail = new Canvas(9, 24);
@@ -1429,11 +1482,13 @@ public sealed class SpriteSheet
         cap.Border(trim);
         Emblem(cap, 27.5f, 13, 4.5f);
         Saddle(cap, false);
+        cap.Soft = true;
         Add($"hbody.caparison{s}", cap);
 
         var neck = new Canvas(23, 13);
         neck.Columns(0, 23, x => { float h = 6 - x * 0.1f, cy = 6.6f + x * 0.03f; return (cy - h + 2.2f, cy + h); }, cloth);
         neck.Border(trim);
+        neck.Soft = true;
         Add($"hneck.caparison{s}", neck);
 
         var head = new Canvas(20, 10);
@@ -1448,6 +1503,7 @@ public sealed class SpriteSheet
             c.Border(trim);
             if (part == "hchest") Emblem(c, 12, 10.5f, 4.0f);
             else c.Rect(10.8f, 1, 13.2f, 7, Mat.Flat(Style.Mane));
+            c.Soft = true;
             Add($"{part}.caparison{s}", c);
         }
     }
