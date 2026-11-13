@@ -306,7 +306,15 @@ A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a 
 - **Where divisions come from:** `ArmySpec.Divisions` (a list of `DivisionSpec`) plus `Company.Division`, read by
   `BuildDivisions` in the constructor (not in sieges). The campaign fills them from `CampaignState.Divisions`
   (`Campaign.WithDivisions`); `Armies.Divide` splits any big army into a horse wing and two foot battles (enemy lords and
-  quick battles). The AI's goals come from `AiCommand(team)`.
+  quick battles), at most `Armies.DivisionCap` (8) companies each; while the captain would still lead more than
+  `Armies.CommandCap` (10), spare foot joins the battles and the bows get a division of their own. The AI's goals come from `AiCommand(team)`.
+- **The command cap:** `Battle.Deploy` fields at most `CommandCap` companies the captain leads himself (`Leads`: not allied,
+  not in a division, not an assault); the rest wait in `reserves` with `Held` set and march on (`Reinforce`) only when
+  `OpenSlots(team)` > 0, i.e. one of his own companies is spent (no man standing unrouted), folded or split. Budget reserves
+  (the field's man `Cap`) keep the old 60%-strength rule, and also need a free slot if the captain would lead them. Applies to
+  both teams. Test `CommandCap`.
+- **Distance:** each side stands `Battle.Stand` (35 m) behind the old 30 m line, about 130 m apart; `MapRadius` grows by
+  `Stand - 15` so the rear lines keep room, and the forest clearing's ring of woods moves out with it.
 - **Replays:** goals you give are recorded (`Frame.Goals`) and re-issued on playback; the AI's are recomputed. Direct orders
   are recorded when they land, as ordinary order changes.
 

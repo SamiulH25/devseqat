@@ -315,7 +315,7 @@ public partial class Battle
             if (!bowsAlone && ArcherSupply(s, team)) continue; // out of arrows: to the wagon
             s.Front = dir;
             float gap = GapTo(s, foe), range = s.Units[0].Type.Range;
-            if (gap > range - 4 || !seesFoe) s.Anchor = s.Centroid() + dir * 4; // close to bow range, or until they can see someone to shoot
+            if (gap > range - 4 || !seesFoe) s.Anchor = DryAnchor(s.Centroid() + dir * 4); // close to bow range, or until they can see someone to shoot
             else if (!charged[team] && Role(foe, "horse").Any(h => h.Alive > 0) && CannotStake(s) == null) PlantStakes(s, record: false); // in range, horse about: stakes
             s.Target = SoftTarget(s, foe); // shoot the least armoured company in reach
             if (gap < 7 || (s.Units.Count(u => u.Active && u.Ammo > 0) * 4 <= s.Alive && (WagonStock[team] <= 0 || bowsAlone))) { s.Order = Order.Charge; s.Target = null; } // or three in four out of arrows
@@ -339,7 +339,7 @@ public partial class Battle
         if (team == 1)
         {
             eGuard.Front = dir;
-            eGuard.Anchor = front - dir * 4; // captain leads from just behind the line
+            if (inf.Count > 0) eGuard.Anchor = front - dir * 4; // captain leads from just behind the line (with no line, front is his own guard: he stays put)
             if (charged[1] && Time - chargedAt[1] > 12 && eGuard.Order != Order.Charge) { eGuard.Order = Order.Charge; Log(EnemyCaptain.Type.Wild ? $"The {EnemyCaptain.Type.Name.ToLowerInvariant()} joins the fight!" : "The enemy captain joins the fight!"); }
             HuntGeneral(); // he hunts you (BattleHunt.cs)
         }

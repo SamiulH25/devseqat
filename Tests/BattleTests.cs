@@ -851,7 +851,7 @@ public static partial class SelfTest
             while (b.Winner < 0 && b.Time < 600)
             {
                 b.Update(1 / 60f);
-                if (Vector2.Distance(Line(r), Line(low)) < 28) break;
+                if (Vector2.Distance(Line(r), Line(low)) < 32) break; // lines met: the crest meets a charge at its foot (its counter-charge trigger)
                 moved = MathF.Max(moved, Vector2.Dot(Line(r) - start, fwd));
             }
             Console.WriteLine($"crest {seed}: the side on the ridge came {moved:0.0} m forward before the lines met at {b.Time:0}s");
@@ -1660,6 +1660,25 @@ public static partial class SelfTest
         var l = Lancer(b);                       // team 0, galloping at the spears
         Run(b, 6);
         Check(l.Dead || l.Hp < l.Type.MaxHp, "braced spears hurt a charging lancer");
+    }
+
+    /// The captain leads at most Armies.CommandCap companies himself: a big army puts the rest under sergeants, and companies
+    /// still over the cap wait off the field and march on when one of his own is spent.
+    static void CommandCap()
+    {
+        var rng = new Random(3);
+        var b = new Battle(3, Armies.Divide(Armies.Large(rng, 2, 0, 1500)), Armies.Divide(Armies.Large(rng, 2, 1, 600)), new BattleOptions { Cap = 4000 });
+        int led = b.Commanded.Count(), under = b.DivisionsOf(0).Sum(d => d.Squads.Count);
+        Console.WriteLine($"command cap: {b.Armies[0]!.Companies.Count} companies, {led} led, {under} under {b.DivisionsOf(0).Count()} sergeants");
+        Check(led <= Armies.CommandCap, $"the captain leads at most {Armies.CommandCap} companies ({led})");
+        Check(under > 0, "the rest serve under sergeants");
+        var plain = new ArmySpec("plain", 2, Enumerable.Range(1, 14).Select(i => new Company("levies", 20, Id: i)).ToList());
+        var p = new Battle(4, plain, Armies.Standard(1), new BattleOptions { Cap = 4000 });
+        Check(p.Commanded.Count() == Armies.CommandCap, $"an army with no sergeants fields only {Armies.CommandCap} companies ({p.Commanded.Count()})");
+        foreach (var u in p.Commanded.First().Units) u.Fled = true;
+        for (int i = 0; i < 150; i++) p.Update(1 / 60f);
+        Check(p.Squads.Count(s => s.Team == 0 && s.Company != null) == Armies.CommandCap + 1, "a held company marches on when one of yours is spent");
+        Check(p.Commanded.Count(s => s.Alive > 0) <= Armies.CommandCap, "and the captain still leads no more than the cap");
     }
 
     /// Battle scale (docs/archive/COMBAT_OVERHAUL.md 2.7): a 1,200-man battle deploys without companies on top of each other,

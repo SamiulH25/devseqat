@@ -94,8 +94,8 @@ mountain ridges you cross by road at the passes.
 - **Divisions (V, or DIVISIONS on the party screen):** put companies under a companion or a company's sergeant. A division fights
   by a **goal** (hold, attack, flank left or right, reserve, screen, harass, guard) rather than your orders, in the leader's temper
   (bold, steady, cautious) and with his command skill, which grows with the battles he leads. Companies in no division are your
-  retinue and obey you at once. At most 6 divisions; a division whose leader falls or leaves breaks up. Skilled leaders also help
-  a little when you auto-resolve. Big enemy armies split into divisions too (a horse wing and two foot battles).
+  retinue and obey you at once. You lead at most **10 companies** yourself: past that, companies in no division wait off the field and march on when one of yours is spent (destroyed or routed). At most 6 divisions; a division whose leader falls or leaves breaks up. Skilled leaders also help
+  a little when you auto-resolve. Big enemy armies and quick battles split into divisions too (a horse wing, two foot battles, and a division of bows when the captain would lead more than 10); each division holds at most 8 companies. Armies start about 130 m apart.
 - **Companies persist.** A company is a banner of one role (foot, spears, bows or horse) holding **stacks** of troops, each with its own
   XP pool. Men are **promoted one at a time** along `troops.json` in a town's training yard: click a stack in the party screen and promote
   1, 5 or every ready man into any branch. A man promoted out of the company's role joins a company of his new role, or founds one.

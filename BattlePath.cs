@@ -29,6 +29,15 @@ public sealed class FlowField
                 if (t.CrossesFeatureNear(p, new Vector2(-t.Half + nx * t.Step, -t.Half + nz * t.Step), Horse)) continue; // not over the hedge he stands against
                 best = cost[nz * n + nx]; bx = nx; bz = nz;
             }
+        if (bx == x && bz == z && float.IsPositiveInfinity(here)) // pressed into a hedge's or house's cells: out to the cheapest open cell on his side
+            for (int dz = -2; dz <= 2; dz++)
+                for (int dx = -2; dx <= 2; dx++)
+                {
+                    int nx = x + dx, nz = z + dz;
+                    if (nx < 0 || nz < 0 || nx >= n || nz >= n || cost[nz * n + nx] >= best) continue;
+                    if (t.CrossesFeatureNear(p, new Vector2(-t.Half + nx * t.Step, -t.Half + nz * t.Step), Horse)) continue;
+                    best = cost[nz * n + nx]; bx = nx; bz = nz;
+                }
         if (bx == x && bz == z) return float.IsPositiveInfinity(here) ? Vector2.Zero : Goal - p is var g && g.LengthSquared() > 1e-4f ? Vector2.Normalize(g) : Vector2.Zero;
         var to = new Vector2(-t.Half + bx * t.Step, -t.Half + bz * t.Step) - p;
         return to.LengthSquared() > 1e-4f ? Vector2.Normalize(to) : Vector2.Zero;

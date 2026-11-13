@@ -58,7 +58,7 @@ public sealed partial class Terrain
                 for (int k = 0; k < 12; k++)
                 {
                     if (k == skip || k == (skip + 6) % 12) continue; // two rides, on opposite sides
-                    float a = k * MathF.Tau / 12 + rng.NextSingle() * 0.15f, d = 80 * p.Scale + 14 + rng.NextSingle() * 10;
+                    float a = k * MathF.Tau / 12 + rng.NextSingle() * 0.15f, d = 80 * p.Scale + 14 + (Battle.Stand - 15) + rng.NextSingle() * 10; // clear of the deployment
                     layoutWoods.Add((new Vector2(MathF.Cos(a) * d, MathF.Sin(a) * d * 0.9f), 20 + rng.NextSingle() * 6));
                 }
                 break;

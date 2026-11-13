@@ -79,7 +79,9 @@ public sealed partial class Battle
     readonly bool[] charged = new bool[2], horseCharged = new bool[2];
     /// A side whose boss has fallen (docs/archive/CREATURES.md): its craven creatures no longer rally.
     public readonly bool[] BossDown = new bool[2];
-    readonly Queue<(Company C, string Role)>[] reserves = { new(), new() };
+    /// Companies waiting off the field. Held: kept back by the command cap (not the field's size); it marches on when one of the
+    /// captain's own companies is spent.
+    readonly List<(Company C, string Role, bool Held)>[] reserves = { new(), new() };
     readonly List<(Company C, int Team)> heldBack = new(); // companies that never reached the field
 
     /// The prototype's standard battle (level 2 armies on both sides).
@@ -94,7 +96,7 @@ public sealed partial class Battle
         // The field holds at most Options.Cap men; each side gets its share and the rest wait as reinforcements.
         int total = player.Companies.Sum(c => c.Count) + enemy.Companies.Sum(c => c.Count);
         float share = total > Options.Cap ? Options.Cap / (float)total : 1;
-        MapRadius = 95 * FieldScale(player, enemy, Options);
+        MapRadius = 95 * FieldScale(player, enemy, Options) + (Back - 15); // the deeper stand needs room behind the lines
         Deploy(0, player, (int)(player.Companies.Sum(c => c.Count) * share));
         Deploy(1, enemy, (int)(enemy.Companies.Sum(c => c.Count) * share));
         UpdateCentroids();
@@ -127,13 +129,15 @@ public sealed partial class Battle
     {
         Armies[team] = army;
         float f = team == 0 ? 1 : -1;
-        // Biggest companies take the field first; the rest wait in reserve.
+        // Biggest companies take the field first; the rest wait in reserve. The captain leads at most CommandCap companies
+        // himself: past that, companies not under a sergeant are held back too.
         var onField = new List<Company>();
-        int used = 0;
+        int used = 0, led = 0;
         foreach (var c in army.Companies.Where(c => c.Count > 0).OrderByDescending(c => c.Count))
         {
-            if (onField.Count == 0 || used + c.Count <= budget) { onField.Add(c); used += c.Count; }
-            else reserves[team].Enqueue((c, Ironfield.Armies.RoleOf(c)));
+            bool held = Leads(army, c) && led >= Ironfield.Armies.CommandCap;
+            if (!held && (onField.Count == 0 || used + c.Count <= budget)) { onField.Add(c); used += c.Count; if (Leads(army, c)) led++; }
+            else reserves[team].Add((c, Ironfield.Armies.RoleOf(c), held));
         }
         if (Options.Siege && team == 1) { DeployDefenders(onField); return; }
         // Lay out every role's lines first: how wide the centre ends up decides how far out the flanks stand.
@@ -172,8 +176,15 @@ public sealed partial class Battle
         rearLine[team] = MathF.Max(48, 44 + infDepth) + Back;
     }
 
-    /// How much further back than the old 30 m line each side deploys, so the armies start about 90 m apart.
-    public const float Stand = 15;
+    /// Whether the captain leads this company himself (not an ally's, not under a sergeant). Assaults have no divisions and no cap.
+    bool Leads(ArmySpec army, Company c) => !Options.Siege && !c.Allied && army.Divisions?.Any(d => d.Id == c.Division) != true;
+
+    /// Free places under the captain's own command: CommandCap less his companies still standing (folded, split-off and spent ones do not count).
+    int OpenSlots(int team) => Ironfield.Armies.CommandCap - Squads.Count(s => s.Team == team && s.Company is { Allied: false } && s.Division == null
+        && s.FoldedInto == null && s.SplitFrom == null && s.Alive > 0);
+
+    /// How much further back than the old 30 m line each side deploys, so the armies start about 130 m apart.
+    public const float Stand = 35;
     /// Stand on a field; assaults keep the old distance from the wall.
     float Back => Options.Siege ? 0 : Stand;
     /// The widest a role's line may stand before its companies form a second line behind (the infantry's; flanks half).
@@ -481,8 +492,13 @@ public sealed partial class Battle
             if (reserves[team].Count == 0) continue;
             int onField = Units.Count(u => u.Team == team && u.Active && !u.Routing && !u.IsLeader);
             int started = Squads.Where(s => s.Team == team && s.Company != null).Sum(s => s.StartCount);
-            if (onField > started * 0.6f && Time < 600) continue;
-            var (c, role) = reserves[team].Dequeue();
+            bool thin = onField <= started * 0.6f || Time >= 600;
+            // A held company fills a spent company's place; one waiting for room on the field comes when the side thins,
+            // and still needs a free place if the captain would lead it.
+            int i = reserves[team].FindIndex(r => r.Held ? OpenSlots(team) > 0 : thin && (!Leads(Armies[team]!, r.C) || OpenSlots(team) > 0));
+            if (i < 0) continue;
+            var (c, role, _) = reserves[team][i];
+            reserves[team].RemoveAt(i);
             float f = team == 0 ? 1 : -1;
             var t = Troops.Get(c.Troop);
             var s = AddSquad(team, t, c.Count, new Vector2(lateral.Count % 3 * 12 - 12, -rearLine[team]) * f, ColumnsFor(c.Count), new Vector2(0, f), c);
@@ -525,7 +541,7 @@ public sealed partial class Battle
                 Named: named, BestKills: best?.Kills ?? 0, BestTroop: best?.Type.Id ?? "", BestFelledLeader: best?.FelledLeader == true));
         }
         for (int team = 0; team < 2; team++)
-            foreach (var (c, _) in reserves[team])
+            foreach (var (c, _, _) in reserves[team])
                 list.Add(new CompanyResult(team, c.Id, c.Count, c.Count, 0, 0, 0, new int[8], Deployed: false,
                     Stacks: c.Stacks.Select(x => new StackResult(x.Troop, x.Count, x.Count, 0, 0)).ToList()));
         bool blunt = Options.Tournament || Options.Duel; // the lists and single combat: a fall is a yield

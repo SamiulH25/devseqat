@@ -122,7 +122,7 @@ public partial class Battle
         int men = SquadsOf(team).Sum(s => s.Alive);
         if (holdAt[team] is Vector2 at)
         {
-            if (Time - holdSince[team] > Patience(team) || men < holdMen[team] * 0.85f)
+            if (Time - holdSince[team] > Patience(team) || men < holdMen[team] * 0.85f && !charged[foe]) // shot from afar it comes down; charged, it receives them on its ground
             {
                 holdDone[team] = true;
                 Log(team == 1 ? "The enemy comes down off his ground." : "Your line leaves its ground and advances.");
