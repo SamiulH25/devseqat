@@ -10,12 +10,18 @@ public sealed partial class Campaign
     /// Days left on a buff (0 when it is off).
     public float BuffDays(string id) => (float)Math.Max(0, (S.Buffs.Where(b => b.Effect == id).Select(b => b.Until).DefaultIfEmpty(0).Max() - S.Hours) / 24);
 
-    /// Lay a buff for `days` (a buff already on is renewed, not stacked).
+    /// Days that stand for "the whole campaign": a boon of the captain's origin (Campaign/Making.cs) never runs out.
+    public const float LastingDays = 100_000;
+    /// A buff that lasts the whole campaign (drawn LASTING, not as days).
+    public bool Lasting(string id) => BuffDays(id) > LastingDays / 2;
+
+    /// Lay a buff for `days` (a buff already on is renewed, not stacked; a renewal never shortens it).
     public void AddBuff(string id, float days)
     {
         if (!Effects.Has(id)) return;
+        double until = Math.Max(S.Hours + days * 24, S.Buffs.Where(b => b.Effect == id).Select(b => b.Until).DefaultIfEmpty(0).Max());
         S.Buffs.RemoveAll(b => b.Effect == id);
-        S.Buffs.Add(new Buff { Effect = id, Until = S.Hours + days * 24 });
+        S.Buffs.Add(new Buff { Effect = id, Until = until });
     }
 
     /// Daily: ended buffs go; Omen fades a point.

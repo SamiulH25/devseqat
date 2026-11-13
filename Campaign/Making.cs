@@ -4,7 +4,7 @@ namespace Ironfield;
 public sealed partial class Campaign
 {
     /// Name, age, the company's name and the birth's and past's world effects: gold, renown, food, horses, the homeland's
-    /// lords, and the men who followed you. Called once, at the end of `New`.
+    /// lords, the men who followed you and the boons laid on the map (`buff`). Called once, at the end of `New`.
     internal void ApplyMaking(CaptainMaking m, Settlement home)
     {
         var me = Me;
@@ -29,6 +29,10 @@ public sealed partial class Campaign
                             l.Opinion[S.CaptainChar] = Math.Clamp(l.Opinion.GetValueOrDefault(S.CaptainChar) + n, -100, 100);
                         break;
                     case "men": FollowedYou(a[0], Scaled((int)n), home); break;
+                    case "buff": // a boon of your old life, laid on the map (0 days: the whole campaign)
+                        AddBuff(a[0], n <= 0 ? LastingDays : n);
+                        Log($"{Effects.Get(a[0]).Name}: {Effects.Get(a[0]).Line}");
+                        break;
                 }
             }
             if (o.Line != "") Log(o.Line);

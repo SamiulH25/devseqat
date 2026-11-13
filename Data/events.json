@@ -711,6 +711,64 @@
       ]
     },
     {
+      "id": "origin_pilgrim", "trigger": "origin:pilgrim", "cooldown": 9999, "scene": "camp", "title": "A FELLOW WALKER",
+      "text": "A barefoot man with a shell on his hat finds your camp. You shared bread with him on the road to the far shrine, and he asks a blessing on your men.",
+      "choices": [
+        { "label": "KNEEL WITH THE MEN", "effects": ["cohesion:4", "calm:2"] },
+        { "label": "GIVE HIM ALMS", "need": "gold:30", "effects": ["gold:-30", "renown:4"] }
+      ]
+    },
+    {
+      "id": "origin_sapper", "trigger": "origin:sapper", "cooldown": 9999, "scene": "camp", "title": "AN OLD MINE",
+      "text": "Your diggers find a collapsed sap from some forgotten siege. Something glints in the spoil, and the timbers above it groan.",
+      "choices": [
+        { "label": "DIG IT OUT CAREFULLY", "effects": ["gold:140", "xp:3"] },
+        { "label": "LEAVE IT TO THE DEAD", "effects": ["cohesion:2"] }
+      ]
+    },
+    {
+      "id": "origin_tourney", "trigger": "origin:tourney", "cooldown": 9999, "scene": "town", "title": "A CHALLENGE AT THE GATE",
+      "text": "A young knight in borrowed harness blocks the town gate and calls your name. He wants to be the man who unhorsed the champion.",
+      "choices": [
+        { "label": "TILT WITH HIM", "effects": ["renown:8", "cohesion:2"] },
+        { "label": "TAKE HIM INTO THE COMPANY", "effects": ["men:2", "renown:-1"] },
+        { "label": "RIDE PAST", "effects": ["renown:-3"] }
+      ]
+    },
+    {
+      "id": "origin_steward", "trigger": "origin:steward", "cooldown": 9999, "scene": "town", "title": "THE GRANARY KEYS",
+      "text": "The granary you remember is still standing, and still full. The new lord's men have not found it. Your old keys still turn the lock.",
+      "choices": [
+        { "label": "EMPTY IT", "effects": ["food:60", "opinion_realm:-2"] },
+        { "label": "SELL ITS CONTENTS QUIETLY", "effects": ["gold:200", "renown:-2"] },
+        { "label": "TELL THE NEW LORD", "effects": ["opinion_realm:4", "renown:3"] }
+      ]
+    },
+    {
+      "id": "origin_marcher", "trigger": "origin:marcher", "cooldown": 9999, "scene": "camp", "title": "SMOKE ON THE BORDER",
+      "text": "Smoke on the horizon: a raid on a border farm, just like the ones you grew up with. The raiders are few, and loaded with loot.",
+      "choices": [
+        { "label": "RIDE THEM DOWN", "effects": ["gold:90", "renown:5", "cohesion:-1"] },
+        { "label": "HELP THE FARMERS REBUILD", "effects": ["opinion_realm:3", "food:-10"] }
+      ]
+    },
+    {
+      "id": "origin_forge", "trigger": "origin:forge", "cooldown": 9999, "scene": "town", "title": "YOUR FATHER'S MARK",
+      "text": "In the market a blade with your father's mark on the tang hangs for sale. The smith selling it swears it was made in his own shop.",
+      "choices": [
+        { "label": "SHAME HIM BEFORE THE CROWD", "effects": ["renown:4", "gold:40"] },
+        { "label": "BUY IT BACK", "need": "gold:60", "effects": ["gold:-60", "cohesion:3"] }
+      ]
+    },
+    {
+      "id": "origin_shore", "trigger": "origin:shore", "cooldown": 9999, "scene": "camp", "title": "A STORM COMING",
+      "text": "The sky goes yellow at noon. The men laugh at it, but you smell the storm a day off, as your mother taught you.",
+      "choices": [
+        { "label": "MAKE CAMP AND DIG IN", "effects": ["cohesion:3", "food:-5"] },
+        { "label": "MARCH THROUGH IT", "effects": ["xp:4", "sick:2"] }
+      ]
+    },
+    {
       "id": "origin_highborn", "trigger": "origin:highborn", "cooldown": 9999, "scene": "court", "title": "A COUSIN AT COURT",
       "text": "A cousin you have not seen since childhood writes from court: a word from your family could warm a lord or two, if you remember them in turn.",
       "choices": [

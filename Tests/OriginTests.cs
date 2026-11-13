@@ -30,6 +30,10 @@ public static partial class SelfTest
         var face = PortraitPainter.Of(back, back.Me);
         Check(face.Beard == 2 && face.Nose == 2 && face.Scar >= 1 && face.Skin == 3 && face.Charge == Emblem.Sun, "the painted face and arms are the creator's, after a save");
         Check(c.Player.Companies.All(co => co.Banner == (int)Emblem.Sun), "your first companies fly your arms");
+        // Boons: the birth's and the past's map buffs, for their days; a lasting one never runs out and a renewal never shortens it.
+        Check(c.HasBuff("well_bought") && c.HasBuff("heralds_cry") && MathF.Abs(c.BuffDays("well_bought") - 60) < 0.1f && !c.Lasting("heralds_cry"), "the origin's boons are laid for their days");
+        Check(Origins.Boons(m).Count() == 2 && Origins.Describe(Origins.Find("guild")!, 3).Any(l => l.StartsWith("BOON: WELL-BOUGHT HARNESS (60 DAYS)")), "the creator names the boons it lays");
+        Check(back.HasBuff("well_bought"), "boons survive a save");
         Check(new CaptainMaking { Cut = 4, Beard = 1 }.Style == 3 && new CaptainMaking { Cut = 4, Beard = 0 }.Style == 0, "a bald, bearded face is the bald battle head");
         foreach (var road in Origins.Roads)
         {
@@ -48,6 +52,11 @@ public static partial class SelfTest
         Check(dc.Player.Companies.Any(co => co.Stacks.Any(s => s.Troop == "spearrunners" && s.Men == dc.Scaled(6))), "the men who followed you come as a company");
         Check(dc.S.Characters.Where(l => l.Kind == "lord" && !l.Dead && l.Faction == 1).All(l => l.Opinion.GetValueOrDefault(dc.S.CaptainChar) <= -10), "your homeland's lords remember");
         Check(dc.S.Log.Any(e => e.Text.Contains("own banner")), "the log says you fly your own banner");
+        Check(dc.Lasting("camp_born") && dc.Lasting("run_before"), "lasting boons last the whole campaign");
+        dc.AddBuff("camp_born", 2);
+        dc.S.Hours += 2000 * 24;
+        Check(dc.HasBuff("camp_born") && dc.ActiveBuffs.Contains("run_before"), "a renewal never shortens a lasting boon, and it is still on years later");
+        Check(Origins.Births.Concat(Origins.Pasts).Count(o => Origins.Boons(o).Any()) >= 15, "most origins lay a boon");
 
         // Without the creator nothing changes.
         var plain = Campaign.New(77);

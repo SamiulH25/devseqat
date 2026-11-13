@@ -318,10 +318,10 @@ partial class MapScreen
         foreach (var id in ids)
         {
             var e = Effects.Get(id);
-            string text = e.Name.ToUpperInvariant() + (id == "relic" ? $" {C.S.RelicCharges}" : $" {C.BuffDays(id):0}D");
+            string text = e.Name.ToUpperInvariant() + (id == "relic" ? $" {C.S.RelicCharges}" : C.Lasting(id) ? "" : $" {C.BuffDays(id):0}D");
             if (x + ui.TW(text, 1) + ui.U(20) > r.Right) break;
             int w = ui.Chip(x, y, text, e.Harmful ? Style.Bad : Kit.Gilt, e.Icon == "" ? null : e.Icon);
-            if (ui.Hover(new Rectangle(x, y, w, ui.U(13)))) note = e.Line.ToUpperInvariant();
+            if (ui.Hover(new Rectangle(x, y, w, ui.U(13)))) note = e.Line.ToUpperInvariant() + (C.Lasting(id) ? " LASTS THE WHOLE CAMPAIGN." : "");
             x += w + ui.U(4);
         }
     }

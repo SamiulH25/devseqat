@@ -55,7 +55,8 @@ sealed class CreatorScreen
         2 => M.Past switch
         {
             "hedge_knight" => CreatorStage.Act.Ride, "poacher" => CreatorStage.Act.Shoot, "deserter" => CreatorStage.Act.Leave,
-            "disinherited" => CreatorStage.Act.Salute, "surgeon" => CreatorStage.Act.Stand, "drillmaster" => CreatorStage.Act.Guard, _ => CreatorStage.Act.Drill,
+            "disinherited" or "pilgrim" => CreatorStage.Act.Salute, "surgeon" or "steward" => CreatorStage.Act.Stand, "drillmaster" or "sapper" => CreatorStage.Act.Guard,
+            "tourney" => CreatorStage.Act.Ride, _ => CreatorStage.Act.Drill,
         },
         3 => M.Road switch { "lance" => CreatorStage.Act.Charge, "bow" => CreatorStage.Act.Shoot, "pole" => CreatorStage.Act.Guard, _ => CreatorStage.Act.Drill },
         4 => CreatorStage.Act.Turn,
@@ -328,7 +329,7 @@ sealed class CreatorScreen
         }
         y += U(6);
         ui.Divider(inner.X, y, inner.Width, Kit.Gilt * 0.6f); y += U(10);
-        ui.Text("PERKS", inner.X, y, Kit.Gilt, 1); y += U(12);
+        ui.Text("PERKS", inner.X, y, Kit.Gilt, 1); y += U(14);
         foreach (var id in Origins.Perks(M))
             if (Skills.Perk(id) is PerkDef p && y + U(14) < inner.Bottom)
             {
@@ -336,19 +337,40 @@ sealed class CreatorScreen
                 if (ui.Hover(new Rectangle(inner.X, y, inner.Width, U(13)))) ui.Tooltip(ui.Mouse.X + U(12), ui.Mouse.Y, p.Name.ToUpperInvariant(), p.Text);
                 y += U(16);
             }
-        y += U(4);
-        ui.Text("KIT", inner.X, y, Kit.Gilt, 1); y += U(12);
+        void Section() { y += U(4); ui.Divider(inner.X, y, inner.Width, Kit.Gilt * 0.45f); y += U(12); }
+        var boons = Origins.Boons(M).ToList();
+        if (boons.Count > 0 && y + U(40) < inner.Bottom)
+        {
+            Section();
+            ui.Text("BOONS", inner.X, y, Kit.Gilt, 1); ui.TextR("ON THE MAP", inner.Right, y, Style.Dim, 1); y += U(14);
+            foreach (var (fx, days) in boons)
+            {
+                if (y + U(14) > inner.Bottom) break;
+                var row = new Rectangle(inner.X, y, inner.Width, U(13));
+                ui.Rect(row, Color.Black * (ui.Hover(row) ? 0.45f : 0.25f));
+                ui.Rect(new Rectangle(row.X, row.Y, U(2), row.Height), days <= 0 ? Kit.Gilt : Kit.Rivet);
+                ui.Icon(fx.Icon, row.X + U(5), row.Y + U(3), days <= 0 ? Kit.Gilt : new Color(178, 188, 203), 1);
+                string span = Origins.BoonSpan(days);
+                ui.TextFit(fx.Name.ToUpperInvariant(), row.X + U(16), row.Y + U(3), row.Width - U(22) - ui.TW(span, 1), Style.Text, 1);
+                ui.TextR(span, row.Right - U(4), row.Y + U(3), days <= 0 ? Kit.Gilt : Style.Dim, 1);
+                if (ui.Hover(row)) ui.Tooltip(ui.Mouse.X + U(12), ui.Mouse.Y, fx.Name.ToUpperInvariant(), fx.Line.ToUpperInvariant() + (days <= 0 ? " LASTS THE WHOLE CAMPAIGN." : $" FOR THE FIRST {days:0} DAYS."));
+                y += U(16);
+            }
+        }
+        if (y + U(30) > inner.Bottom) return;
+        Section();
+        ui.Text("KIT", inner.X, y, Kit.Gilt, 1); y += U(14);
         var kit = preview.Kit;
         foreach (var (slot, id) in new[] { ("HAND", kit.Weapon), ("SIDE", kit.Side), ("SHIELD", Gear.Get(kit.Weapon).TwoHanded ? "" : kit.Shield), ("BODY", kit.Body), ("HORSE", kit.Horse) })
         {
             if (id == "" || y + U(10) > inner.Bottom) continue;
             ui.Text(slot, inner.X, y, Style.Dim, 1);
-            ui.TextFit(Gear.Get(id).Name.ToUpperInvariant(), inner.X + U(44), y, inner.Width - U(44), Style.Text, 1);
+            ui.TextFit(Gear.Get(id).Name.ToUpperInvariant(), inner.X + U(50), y, inner.Width - U(50), Style.Text, 1);
             y += U(10);
         }
-        y += U(8);
-        if (y + U(24) > inner.Bottom) return;
-        ui.Text("COMPANY", inner.X, y, Kit.Gilt, 1); y += U(12);
+        if (y + U(40) > inner.Bottom) return;
+        Section();
+        ui.Text("COMPANY", inner.X, y, Kit.Gilt, 1); y += U(14);
         foreach (var (troop, men) in Muster())
         {
             if (y + U(10) > inner.Bottom) break;
@@ -444,14 +466,23 @@ sealed class CreatorScreen
             bool on = o.Id == chosen;
             if (ui.Button(row, "", active: on)) pick(o.Id);
             if (o.Icon != "") ui.Icon(o.Icon, row.X + U(8), row.Y + (row.Height - U(14)) / 2, on ? new Color(255, 246, 222) : Kit.Gilt, 2);
-            int tx = row.X + U(32);
+            int tx = row.X + U(32), right = row.Right - U(4);
+            // A boon's mark at the row's end: a small seal with the boon's icon.
+            if (Origins.Boons(o).FirstOrDefault() is { Effect: not null } boon)
+            {
+                var seal = new Vector2(row.Right - U(17), row.Center.Y);
+                ui.Disc(seal, U(12), boon.Days <= 0 ? Kit.Mul(Kit.Gilt, 0.85f) : new Color(143, 152, 166));
+                ui.Disc(seal, U(11), on ? Kit.Mul(Kit.Gilt, 0.35f) : new Color(20, 16, 14));
+                ui.Icon(boon.Effect.Icon, (int)seal.X - U(7), (int)seal.Y - U(7), boon.Days <= 0 ? Kit.Gilt : new Color(178, 188, 203), 2);
+                right = row.Right - U(34);
+            }
             string sub = Skills.Perk(o.Perk) is PerkDef pk ? "PERK: " + pk.Name.ToUpperInvariant()
                 : string.Join(", ", Origins.Describe(o, 1).Take(2)) is { Length: > 0 } gives ? gives : o.Text.ToUpperInvariant();
             bool two = row.Height >= U(30);
             int sc = two ? nameScale : 1;
             int nameY = two ? row.Y + (row.Height - U(7 * sc + 14)) / 2 : row.Y + (row.Height - U(7)) / 2;
-            ui.TextFit(o.Name.ToUpperInvariant(), tx, nameY, row.Right - tx - U(4), on ? new Color(255, 246, 222) : Style.Text, sc);
-            if (two) ui.TextFit(sub, tx, nameY + U(7 * sc + 7), row.Right - tx - U(4), on ? Kit.Parchment : Style.Dim, 1);
+            ui.TextFit(o.Name.ToUpperInvariant(), tx, nameY, right - tx, on ? new Color(255, 246, 222) : Style.Text, sc);
+            if (two) ui.TextFit(sub, tx, nameY + U(7 * sc + 7), right - tx, on ? Kit.Parchment : Style.Dim, 1);
             y += rowH;
         }
         Detail(new Rectangle(r.X + listW + U(12), r.Y + U(14), r.Width - listW - U(12), r.Height - U(14)), show, show.Id == chosen);
@@ -481,7 +512,7 @@ sealed class CreatorScreen
         y = parch.Bottom + U(12);
         if (o.Age > 0) { ui.Text($"+{o.Age} YEARS", x, y, Style.Dim, 1); y += U(14); }
         ui.Text("GIVES", x, y, Kit.Gilt, 1); y += U(12);
-        foreach (var g in Origins.Describe(o, Balance.Get().ArmyScale))
+        foreach (var g in Origins.Describe(o, Balance.Get().ArmyScale).Where(g => !g.StartsWith("BOON:")))
         {
             if (y + U(10) > pane.Bottom - U(18)) break;
             bool bad = g.StartsWith("-") || g.Contains(" -") && !g.StartsWith("PERK") || g.StartsWith("NO ");
@@ -490,6 +521,9 @@ sealed class CreatorScreen
             y += U(2);
         }
         y += U(10);
+        foreach (var (fx, days) in Origins.Boons(o))
+            if (y + U(40) < pane.Bottom - U(20)) y += BoonCard(new Rectangle(x, y, w, 0), fx, days) + U(8);
+        y += U(10);
         if (o.Line != "" && y + U(30) < pane.Bottom - U(20))
         {
             ui.Divider(x, y, w, Kit.Gilt * 0.4f); y += U(12);
@@ -497,7 +531,34 @@ sealed class CreatorScreen
             { ui.TextC(line, pane.Center.X, y, Kit.Parchment * 0.85f, 1); y += U(10); }
         }
         if (Campaign.Events.Any(e => e.Trigger == "origin:" + o.Id))
+        {
+            ui.Divider(x + U(30), pane.Bottom - U(28), w - U(60), Kit.Gilt * 0.35f);
             ui.TextC("YOUR PAST MAY CATCH UP WITH YOU.", pane.Center.X, pane.Bottom - U(16), Style.Dim, 1);
+        }
+    }
+
+    /// A boon an origin lays on the map, as a card: its icon on a seal, its name, how long it lasts and what it does.
+    /// Returns the card's height (`r.Height` is ignored).
+    int BoonCard(Rectangle r, EffectDef fx, float days)
+    {
+        bool lasting = days <= 0;
+        var text = ui.Wrap(fx.Line.ToUpperInvariant(), r.Width - U(44));
+        var card = new Rectangle(r.X, r.Y, r.Width, U(26) + text.Count * U(10));
+        var edge = lasting ? Kit.Gilt : new Color(143, 152, 166);
+        ui.Rect(card, new Color(20, 24, 34));
+        ui.Frame(card, new Color(124, 104, 53), U(1));
+        ui.Rect(new Rectangle(card.X, card.Y, U(2), card.Height), edge);
+        var seal = new Vector2(card.X + U(19), card.Y + U(16));
+        ui.Disc(seal, U(12), edge);
+        ui.Disc(seal, U(11), new Color(20, 16, 14));
+        ui.Icon(fx.Icon, (int)seal.X - U(7), (int)seal.Y - U(7), lasting ? Kit.Gilt : new Color(178, 188, 203), 2);
+        string span = Origins.BoonSpan(days);
+        int spanW = ui.TW(span, 1) + U(8);
+        ui.TextFit(fx.Name.ToUpperInvariant(), card.X + U(36), card.Y + U(6), card.Width - U(44) - spanW, Style.Text, 1);
+        ui.TextR(span, card.Right - U(6), card.Y + U(6), lasting ? Kit.Gilt : Style.Dim, 1);
+        int ty = card.Y + U(18);
+        foreach (var line in text) { ui.Text(line, card.X + U(36), ty, Style.Dim, 1); ty += U(10); }
+        return card.Height;
     }
 
     /// The captain's face and names: two fields, then the features on the left and the painted face large on the right,

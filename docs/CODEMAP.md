@@ -261,8 +261,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Bonds.cs (160 lines)
 - **Campaign** (class, L6): readonly:11, CompanionsReact:24, BondsAfterBattle:32, Clash:47, BrotherFell:50, OpenStory:61, StoryOf:67, StoryWin:79, TakeStudent:91, StudentRises:101, CompanionsWeekly:122, Leave:150
 
-## Campaign/Buffs.cs (55 lines)
-- **Campaign** (class, L5): HasBuff:9, BuffDays:11, AddBuff:14, BuffsDaily:22, Feast:42
+## Campaign/Buffs.cs (61 lines)
+- **Campaign** (class, L5): HasBuff:9, BuffDays:11, Lasting:16, AddBuff:19, BuffsDaily:28, Feast:48
 
 ## Campaign/Callings.cs (149 lines)
 - **CallingDef** (class, L7)
@@ -395,8 +395,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/LordBonds.cs (81 lines)
 - **Campaign** (class, L9): BondOf:12, Kin:22, Feud:26, BondRegard:29, StartFeud:32, FoughtTogether:40, SeatTaken:49, BondsWeekly:57, BondsLine:72
 
-## Campaign/Making.cs (55 lines)
-- **Campaign** (class, L4): ApplyMaking:8, FollowedYou:40
+## Campaign/Making.cs (59 lines)
+- **Campaign** (class, L4): ApplyMaking:8, FollowedYou:44
 
 ## Campaign/MapIndex.cs (132 lines)
 - **MapIndex** (class, L9): MapIndex:20, Within:67, SegDist:69, CellOf:76, ProvinceAt:83, RoadDist:98, RiverDist:114
@@ -506,8 +506,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Bind** (struct, L37): ToString:39, Parse:61
 - **Controls** (class, L90): Controls:150, SaveUser:158, ResetDefaults:167, AnyPressed:175, FindFile:183, Load:193, WriteDefaults:220, Update:229, IsDown:235, Down:245, WasDown:246, Pressed:247, Released:248, Axis:249, First:252, Name:255
 
-## CreatorScreen.cs (650 lines)
-- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:67, Show:75, U:86, RandomName:89, RandomCompany:97, Randomise:100, RandomFace:113, Go:122, Refresh:134, Keys:156, Begin:181, Draw:189, Likeness:232, Ledger:307, Homeland:377, Choices:432, Detail:461, Face:505, Stepper:558, Unroll:573, Field:576, Swatches:590, Oath:606, Footer:642
+## CreatorScreen.cs (711 lines)
+- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:90, RandomCompany:98, Randomise:101, RandomFace:114, Go:123, Refresh:135, Keys:157, Begin:182, Draw:190, Likeness:233, Ledger:308, Homeland:399, Choices:454, Detail:492, BoonCard:542, Face:566, Stepper:619, Unroll:634, Field:637, Swatches:651, Oath:667, Footer:703
 
 ## CreatorStage.cs (207 lines)
 - **CreatorStage** (class, L10): CreatorStage:41, React:49, Render:52, Build:95, Perform:116, readonly:143, Drill:152, Shoot:165, Salute:177, Camera:188
@@ -644,10 +644,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **StereoHall** (class, L232): StereoHall:246, ProcessInPlace:259
 - **MusicLibrary** (class, L312): Get:363, Has:364, ByCategory:366, Validate:371
 
-## Origins.cs (190 lines)
+## Origins.cs (199 lines)
 - **OriginDef** (class, L6)
 - **CaptainMaking** (class, L15)
-- **Origins** (class, L29): Find:55, Chosen:56, static:59, Num:61, Sum:64, Free:71, Age:72, Perks:73, Shape:77, Wear:99, Preview:112, Describe:122, RoadGives:147, Validate:162
+- **Origins** (class, L29): Find:55, Chosen:56, static:59, Num:61, Sum:64, BoonSpan:76, Free:78, Age:79, Perks:80, Shape:84, Wear:106, Preview:119, Describe:129, RoadGives:155, Validate:170
 
 ## Overflow.cs (58 lines)
 - **Overflow** (class, L8): Frame:21, Box:24, Text:27, Flush:41
@@ -801,7 +801,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/MonsterTests.cs (249 lines)
 - **SelfTest** (class, L7): MonsterLeaders:11, SpiderVenom:43, BearRage:108, WyvernFlight:123, MonstersAbroad:175, BeastTrace:237
 
-## Tests/OriginTests.cs (56 lines)
+## Tests/OriginTests.cs (65 lines)
 - **SelfTest** (class, L4): CharacterCreator:8
 
 ## Tests/SergeantTests.cs (141 lines)

@@ -32,7 +32,7 @@ public static class Origins
     public const int BaseAge = 20;
     /// Effect verbs: those that shape the captain (`Shape`) and those that shape the new campaign (`Campaign.ApplyMaking`).
     public static readonly string[] CaptainVerbs = { "skill", "gear", "wear" };
-    public static readonly string[] WorldVerbs = { "gold", "renown", "food", "horses", "opinion_realm", "men", "free" };
+    public static readonly string[] WorldVerbs = { "gold", "renown", "food", "horses", "opinion_realm", "men", "free", "buff" };
 
     sealed class FileDto { public List<OriginDef> Births = new(), Pasts = new(), Roads = new(); }
     static FileDto? data;
@@ -67,6 +67,13 @@ public static class Origins
     /// Base men (before ArmyScale) the birth and the past bring, by troop.
     public static IEnumerable<(string Troop, int Men)> Men(CaptainMaking m) =>
         Chosen(m).SelectMany(o => o.Effects).Select(Parse).Where(e => e.Verb == "men").Select(e => (e.Args[0], (int)Num(e.Args[1])));
+
+    /// The boons an origin lays on the map when the campaign begins: an effect and its days (0 = the whole campaign).
+    public static IEnumerable<(EffectDef Effect, float Days)> Boons(OriginDef o) =>
+        o.Effects.Select(Parse).Where(e => e.Verb == "buff" && e.Args.Length == 2 && Effects.Has(e.Args[0])).Select(e => (Effects.Get(e.Args[0]), Num(e.Args[1])));
+    public static IEnumerable<(EffectDef Effect, float Days)> Boons(CaptainMaking m) => Chosen(m).SelectMany(Boons);
+    /// How long a boon lasts, in the creator's words.
+    public static string BoonSpan(float days) => days <= 0 ? "LASTING" : $"{days:0} DAYS";
 
     public static bool Free(CaptainMaking m) => Chosen(m).Any(o => o.Effects.Contains("free"));
     public static int Age(CaptainMaking m) => BaseAge + Chosen(m).Sum(o => o.Age);
@@ -137,6 +144,7 @@ public static class Origins
                 "men" => $"+{MathF.Round(Num(a[1]) * scale):0} {Troops.Get(a[0]).Name.ToUpperInvariant()} FOLLOW YOU",
                 "gear" or "wear" => $"YOUR OWN {Gear.Get(a[0]).Name.ToUpperInvariant()}",
                 "free" => "NO CONTRACT: A FREE COMPANY, NO UPKEEP PAID",
+                "buff" => $"BOON: {(Effects.Has(a[0]) ? Effects.Get(a[0]).Name : a[0]).ToUpperInvariant()} ({BoonSpan(Num(a[1]))})",
                 _ => fx(verb),
             });
         return lines.Distinct().ToList();
@@ -177,6 +185,7 @@ public static class Origins
                     "free" => a.Length == 0,
                     "skill" => a.Length == 2 && Skills.All.Any(s => s.Id == a[0]) && Num(a[1]) > 0,
                     "gear" or "wear" => a.Length == 1 && Gear.Find(a[0]) != null,
+                    "buff" => a.Length == 2 && Effects.Has(a[0]) && Num(a[1]) >= 0 && Num(a[1]) <= 365 && !Effects.Get(a[0]).Harmful,
                     "men" => a.Length == 2 && Troops.Has(a[0]) && Troops.Get(a[0]).Culture == "common" && Num(a[1]) is > 0 and <= 10,
                     "gold" or "renown" or "food" or "horses" or "opinion_realm" => a.Length == 1 && float.TryParse(a[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _),
                     _ => false,

@@ -1,35 +1,53 @@
 {
-  "_comment": "The captain's origins (character creator, Origins.cs). A birth (how you were raised) and a past (what you did before the company) each carry effects applied once when a campaign starts, an age added to 20, an optional free perk, and the line the log shows. Effects: gold:N, renown:N, food:N, horses:N, opinion_realm:N (lords of your homeland), skill:Id:N, gear:id (owned), wear:id (owned and worn), men:troop:N (base men, scaled by ArmyScale), free (no contract: a free company). Events with trigger origin:<id> come only to captains of that birth or past.",
+  "_comment": "The captain's origins (character creator, Origins.cs). A birth (how you were raised) and a past (what you did before the company) each carry effects applied once when a campaign starts, an age added to 20, an optional free perk, and the line the log shows. Effects: gold:N, renown:N, food:N, horses:N, opinion_realm:N (lords of your homeland), skill:Id:N, gear:id (owned), wear:id (owned and worn), men:troop:N (base men, scaled by ArmyScale), free (no contract: a free company), buff:effect:days (a boon laid on the map when the campaign begins: an effect from effects.json carried into every battle; 0 days = the whole campaign). Events with trigger origin:<id> come only to captains of that birth or past.",
   "births": [
     {
       "id": "highborn", "name": "Born in the Hall", "icon": "crown", "age": 6,
       "text": "A younger child of a minor house. You learned your letters, your manners and which lords hate which.",
-      "effects": ["renown:15", "gold:150", "skill:Charm:10", "skill:Leadership:5", "opinion_realm:5"],
+      "effects": ["renown:15", "gold:150", "skill:Charm:10", "skill:Leadership:5", "opinion_realm:5", "buff:house_name:0"],
       "line": "Your father's name still opens a door or two."
     },
     {
       "id": "yeoman", "name": "Born to the Plough", "icon": "bread", "age": 4,
       "text": "Free farmers on good land. You walked behind oxen, shot at the butts every Sunday and know what men eat.",
-      "effects": ["skill:Bowcraft:10", "skill:Logistics:10", "food:20", "men:levies:5"],
+      "effects": ["skill:Bowcraft:10", "skill:Logistics:10", "food:20", "men:levies:5", "buff:parish_lads:0"],
       "line": "Lads from your old parish walked out after you."
     },
     {
       "id": "guild", "name": "Born in the Market", "icon": "coin", "age": 5,
       "text": "Your family kept a counting house. You can read a ledger, smell a bad coin and talk a price down.",
-      "effects": ["gold:450", "skill:Charm:5", "skill:Stewardship:10"],
+      "effects": ["gold:450", "skill:Charm:5", "skill:Stewardship:10", "buff:well_bought:60"],
       "line": "Your mother's last letter came with a purse in it."
     },
     {
       "id": "camp", "name": "Born in the Baggage Train", "icon": "fire", "age": 3,
       "text": "A camp follower's child. You grew up between wagons, sutlers and surgeons, and saw your first battle at eight.",
-      "effects": ["skill:Arms:5", "skill:Tactics:10", "skill:Medicine:5", "horses:4"],
+      "effects": ["skill:Arms:5", "skill:Tactics:10", "skill:Medicine:5", "horses:4", "buff:camp_born:0"],
       "line": "You have never slept anywhere but a camp."
     },
     {
       "id": "cloister", "name": "Raised in the Cloister", "icon": "scroll", "age": 5,
       "text": "Left at a chapter house's gate. The brothers taught you herbs, Latin and patience before you ran off.",
-      "effects": ["skill:Medicine:15", "skill:Stewardship:5", "renown:5", "opinion_realm:3"],
+      "effects": ["skill:Medicine:15", "skill:Stewardship:5", "renown:5", "opinion_realm:3", "buff:cloister_prayers:0"],
       "line": "You still know the old prayers for the dying."
+    },
+    {
+      "id": "marcher", "name": "Born on the Marches", "icon": "tower", "age": 5,
+      "text": "A border keep where the raiders came every harvest. You learned to ride before you could read, and to sleep with your boots on.",
+      "effects": ["skill:Riding:10", "skill:Tactics:5", "horses:6", "men:outriders:3", "buff:march_watch:0"],
+      "line": "Three riders from the old keep followed the smoke of your fires."
+    },
+    {
+      "id": "forge", "name": "Born at the Forge", "icon": "chain", "age": 4,
+      "text": "Your father beat iron for the whole valley. You pumped his bellows, ground his edges and know good steel by its ring.",
+      "effects": ["skill:Arms:5", "skill:Training:5", "wear:mail", "buff:forge_steel:0"],
+      "line": "The mail on your back is your father's work. He made you swear to keep it oiled."
+    },
+    {
+      "id": "shore", "name": "Born by the Sea", "icon": "rain", "age": 4,
+      "text": "Fisher folk on a cold shore. You hauled nets in the surf, salted the catch and learned that the weather always wins.",
+      "effects": ["skill:Logistics:10", "skill:Arms:5", "food:30", "buff:sea_legs:0"],
+      "line": "Barrels of salt fish ride in your wagons. The men curse them and eat them."
     }
   ],
   "pasts": [
@@ -42,44 +60,68 @@
     {
       "id": "hedge_knight", "name": "Hedge Knight", "icon": "horse", "age": 9, "perk": "MountedLord",
       "text": "A knight with no land, only a horse, a name and a long road between tourneys.",
-      "effects": ["skill:Riding:15", "renown:25", "gear:warhorse", "wear:warhorse", "gold:-100"],
+      "effects": ["skill:Riding:15", "renown:25", "gear:warhorse", "wear:warhorse", "gold:-100", "buff:heralds_cry:45"],
       "line": "Heralds still know your arms from the lists."
     },
     {
       "id": "disinherited", "name": "Disinherited Heir", "icon": "crown", "age": 6, "perk": "Bannerman",
       "text": "The land was yours until your uncle bought the judge. Now you have a name, a grudge and men who remember your father.",
-      "effects": ["skill:Leadership:10", "skill:Charm:5", "renown:10", "men:outriders:3"],
+      "effects": ["skill:Leadership:10", "skill:Charm:5", "renown:10", "men:outriders:3", "buff:fathers_riders:0"],
       "line": "Three of your father's riders came with you. They want the land back."
     },
     {
       "id": "deserter", "name": "Deserter", "icon": "flag", "age": 8, "perk": "Ambusher",
       "text": "You walked away from a lord's war when it turned to murder. Nobody pays a deserter, so you are your own master now.",
-      "effects": ["free", "skill:Tactics:10", "skill:Arms:5", "gold:250", "men:spearrunners:6", "opinion_realm:-10"],
+      "effects": ["free", "skill:Tactics:10", "skill:Arms:5", "gold:250", "men:spearrunners:6", "opinion_realm:-10", "buff:run_before:0"],
       "line": "You fly no realm's colours. Some lords have not forgotten whose you once wore."
     },
     {
       "id": "poacher", "name": "Poacher", "icon": "arrow", "age": 7, "perk": "Pathfinder",
       "text": "The king's deer fed your village for six winters. You know every deer path, ford and hollow tree in the forest.",
-      "effects": ["skill:Bowcraft:15", "skill:Logistics:5", "gear:hunting_bow", "food:30", "men:bowmen:4"],
+      "effects": ["skill:Bowcraft:15", "skill:Logistics:5", "gear:hunting_bow", "food:30", "men:bowmen:4", "buff:woodcraft:0"],
       "line": "The woods are as good as a road to you."
     },
     {
       "id": "outlaw", "name": "Reformed Outlaw", "icon": "skull", "age": 10, "perk": "Pursuit",
       "text": "You held up the north road for years and bought a pardon with the takings. Old habits: you never let a beaten man get away.",
-      "effects": ["skill:Arms:10", "skill:Tactics:5", "gold:500", "renown:-15", "opinion_realm:-5"],
+      "effects": ["skill:Arms:10", "skill:Tactics:5", "gold:500", "renown:-15", "opinion_realm:-5", "buff:old_habits:0"],
       "line": "Your pardon is sealed, but the roads still whisper your old name."
     },
     {
       "id": "surgeon", "name": "Barber-Surgeon", "icon": "heart", "age": 11, "perk": "Surgeon",
       "text": "You sewed up other captains' men for a decade, then decided you could lead them better than the fools who got them cut.",
-      "effects": ["skill:Medicine:20", "skill:Charm:5", "gold:100"],
+      "effects": ["skill:Medicine:20", "skill:Charm:5", "gold:100", "buff:poultices:30"],
       "line": "Your saws and needles ride in the first wagon."
     },
     {
       "id": "drillmaster", "name": "Drill Sergeant", "icon": "shield", "age": 16, "perk": "Drillmaster",
       "text": "Twenty years shouting at recruits on a lord's parade ground. You can make a soldier out of almost anything.",
-      "effects": ["skill:Training:20", "skill:Leadership:5", "skill:Arms:5", "men:levies:6"],
+      "effects": ["skill:Training:20", "skill:Leadership:5", "skill:Arms:5", "men:levies:6", "buff:square_bashed:0"],
       "line": "You have turned worse rabble than this into a line."
+    },
+    {
+      "id": "pilgrim", "name": "Returned Pilgrim", "icon": "sun", "age": 8, "perk": "Rallying",
+      "text": "You walked to the far shrine to wash off a sin, and came back with sunburnt feet and a stillness men follow.",
+      "effects": ["skill:Charm:5", "skill:Medicine:5", "skill:Leadership:5", "renown:10", "opinion_realm:4", "men:acolytes:4", "buff:pilgrim_blessing:0"],
+      "line": "Pilgrims you met on the road took up spears when you raised your banner."
+    },
+    {
+      "id": "sapper", "name": "Siege Sapper", "icon": "tower", "age": 10, "perk": "Siegecraft",
+      "text": "Ten years under other men's walls: digging saps, building mantlets, counting the stones on the parapet.",
+      "effects": ["skill:Tactics:10", "skill:Stewardship:5", "men:billmen:4", "buff:dug_in:0"],
+      "line": "Your old diggers came with you. They still carry their shovels."
+    },
+    {
+      "id": "tourney", "name": "Tourney Champion", "icon": "star", "age": 6, "perk": "Duellist",
+      "text": "You won a gold circlet at the great lists and spent it in a month. Crowds know your face. Captains know your price.",
+      "effects": ["skill:Arms:10", "skill:Riding:5", "renown:30", "gold:150", "wear:sallet", "buff:crowd_favour:45"],
+      "line": "Your sallet still has the dent from the final tilt."
+    },
+    {
+      "id": "steward", "name": "Lord's Steward", "icon": "scroll", "age": 14, "perk": "TaxRoll",
+      "text": "You kept a lord's rolls, stores and stables until he died and his heir sold everything. You know what an army eats.",
+      "effects": ["skill:Stewardship:15", "skill:Logistics:10", "gold:300", "food:25", "opinion_realm:4", "buff:full_wagons:30"],
+      "line": "You left with the keys to a granary nobody else remembered."
     }
   ],
   "roads": [
