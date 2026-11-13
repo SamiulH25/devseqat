@@ -182,8 +182,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.cs (562 lines)
 - **BattleScreen** (class, L10): Exit:16, GroundTips:47, MagicTips:59, BattleScreen:114, Load:126, QuickGround:145, BeginCampaign:155, StartDeployment:186, StageCommandView:201, FinishCampaignBattle:209, NewBattle:224, WithMages:266, SetWorld:274, SetCommand:288, Pressed:297, Update:305, PlaySounds:387, Soundscape:426, SyncHud:519, MenuChoice:548
 
-## BattleScreen.Draw.cs (767 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:54, DrawBlobs:104, EaseFacings:146, Spray:162, Effects:175, GroundSteps:206, BuildSprites:262, SpriteStates:339, DrawSpritesBasic:347, DrawSpritesShaded:357, DrawSoft:368, Line:382, G:383, OrderArrows:392, OrderArrowLines:394, Ring:410, DashedRing:421, Band:434, BeamQuad:456, TorchRow:478, Precipitation:487, Fall:498, Stakes:517, SpellColor:540, Spells:546, AuraGlow:562, ChampionGlow:572, PlayerGlow:585, PendingFormsDrawn:599, RouteDots:624, PlanHook:637, DrawLines:667
+## BattleScreen.Draw.cs (772 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:54, DrawBlobs:104, EaseFacings:146, Spray:162, Effects:175, GroundSteps:206, BuildSprites:262, LensFill:341, SpriteStates:344, DrawSpritesBasic:352, DrawSpritesShaded:362, DrawSoft:373, Line:387, G:388, OrderArrows:397, OrderArrowLines:399, Ring:415, DashedRing:426, Band:439, BeamQuad:461, TorchRow:483, Precipitation:492, Fall:503, Stakes:522, SpellColor:545, Spells:551, AuraGlow:567, ChampionGlow:577, PlayerGlow:590, PendingFormsDrawn:604, RouteDots:629, PlanHook:642, DrawLines:672
 
 ## BattleScreen.Effects.cs (208 lines)
 - **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:125, TrampleTexture:148, RearOf:165, BannerFalls:187, DrawFallingBanners:198
