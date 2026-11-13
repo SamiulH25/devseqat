@@ -275,8 +275,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/CampaignActions.cs (191 lines)
 - **Campaign** (class, L6): MoveTo:10, Chase:11, GoTo:12, RecruitLevies:17, LevyPrice:62, MercenaryPrice:64, Hire:70, BuyHorses:88, RaiseHounds:103, Merge:127, Split:130, Disband:155, MoveUp:157, SignContract:165, Rest:184
 
-## Campaign/CampaignAI.cs (315 lines)
-- **Campaign** (class, L6): SpawnLord:10, BandName:40, SpawnBandits:47, RefreshMercenaries:78, Visible:113, MonsterHunter:117, LordThink:119, EnemyProvinceNear:191, Refit:204, Dread:244, BanditThink:246, Alive:271, RealmBroken:274, FactionAI:283
+## Campaign/CampaignAI.cs (333 lines)
+- **Campaign** (class, L6): SpawnLord:10, BandName:40, SpawnBandits:47, RefreshMercenaries:78, Visible:113, MonsterHunter:117, LordThink:119, EnemyProvinceNear:191, Refit:204, RaiseCircle:248, Dread:262, BanditThink:264, Alive:289, RealmBroken:292, FactionAI:301
 
 ## Campaign/CampaignBattle.cs (364 lines)
 - **Campaign** (class, L6): Apply:11, PrepareBattle:256, FinishBattle:297, AutoResolveEncounter:310, CanRetreat:319, Retreat:330, ParleyPrice:351, Parley:353
@@ -788,9 +788,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/KnightTests.cs (1033 lines)
 - **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:464, ChampionsUseAura:495, OrderPolitics:533, BlackFlame:597, FlameTakesYou:652, OwnOrderFounded:675, AuraPool:723, AuraField:790, CastNow:798, BlessingFeedsAura:806, CurseOnCaptain:822, BladeBreaksCast:850, RelicRaised:876, OwnFormFromStyle:892, AspectChanges:922, BreakInBattle:948, ClashRing:970, TranscendentLight:995
 
-## Tests/MagicTests.cs (540 lines)
+## Tests/MagicTests.cs (562 lines)
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
-- **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524
+- **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543
 
 ## Tests/MapTests.cs (199 lines)
 - **SelfTest** (class, L6): MapIndexMatches:10, RealmsFromData:32, ClimatesAndRidges:77, SevenRealms:105, RealmTempers:132

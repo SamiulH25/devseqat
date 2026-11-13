@@ -537,4 +537,26 @@ public static partial class SelfTest
         var w = b.Result().Wonders;
         Check(w.Count == 1 && w[0].Contains("Miracle") && w[0].Contains("us"), $"a great working is told once, as ours ({string.Join(" / ", w)})");
     }
+
+    /// Mages reach the campaign: towns near a shrine or hermit can offer a circle on the big map, and great lords raise
+    /// circles when they refit. Before, neither ever happened in a whole campaign.
+    static void MagesInTheWorld()
+    {
+        var c = Campaign.New(2001);
+        var towns = c.S.Settlements.Where(t => t.Kind == SettlementKind.Town).ToList();
+        int near = towns.Count(t => c.Sites.Any(x => x.Kind is "shrine" or "hermit" && Vector2.Distance(x.Pos, t.Pos) < Campaign.ShrineNear * c.Map.Spread));
+        Check(near > 0, "some towns stand near a shrine or hermit");
+        var pilot = new Pilot(c);
+        int offers = 0, lordCircles = 0;
+        for (int week = 0; week < 22; week++)
+        {
+            pilot.Run(24 * 7);
+            offers += c.S.Settlements.Sum(t => t.Mercenaries.Count(m => Rules.RoleOf(m) == "casters"));
+            lordCircles = Math.Max(lordCircles, c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Companies.Any(k => Rules.RoleOf(k) == "casters")));
+        }
+        Console.WriteLine($"mages: {near}/{towns.Count} towns near a shrine; {offers} circle offers seen in 22 weeks; at most {lordCircles} lords with a circle (day {c.Day})");
+        Check(offers > 0, "a circle is offered somewhere");
+        Check(lordCircles > 0, "a great lord fields a circle");
+    }
 }
+

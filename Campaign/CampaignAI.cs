@@ -94,7 +94,7 @@ public partial class Campaign
         }
         // Mages are rare: a town with a chapel, or a shrine or hermit near it, has a circle to hire one week in six (its own
         // week, no dice); Acolytes at first, from day 60 its culture's mages (E1).
-        if ((Level(t, "chapel") > 0 || Sites.Any(x => x.Kind is "shrine" or "hermit" && Vector2.Distance(x.Pos, t.Pos) < 40)) && (t.Id + Day / 7) % 6 == 0)
+        if ((Level(t, "chapel") > 0 || Sites.Any(x => x.Kind is "shrine" or "hermit" && Vector2.Distance(x.Pos, t.Pos) < ShrineNear * Map.Spread)) && (t.Id + Day / 7) % 6 == 0)
         {
             string mage = Day >= 60 ? Armies.MageTroop(t.Culture, 4) : "acolytes";
             var m = NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0);
@@ -237,6 +237,24 @@ public partial class Campaign
         if (p.Men >= Scaled(45) && p.Companies.Count >= 3) budget = 0;
         PromoteAll(p, ref budget);
         if (p.Companies.Count > 0) p.Tier = Math.Clamp((int)MathF.Round((float)p.Companies.Average(c => c.Type.Tier)), 1, 7);
+        RaiseCircle(p, home, fs);
+    }
+
+    /// How near a shrine or hermit must be (times `Map.Spread`) for a town to have a circle of mages to hire.
+    public const float ShrineNear = 40;
+    /// A great lord's circle (docs/archive/COMPANIONS_MAGIC.md E1): one lord in five whose men stand at tier IV or more raises
+    /// a circle of his realm's mages when he refits, from day 60 (as the towns' own circles), paid from the war chest.
+    /// A lord only got one when first raised before, and lords are raised at low tiers, so no army ever fielded mages.
+    void RaiseCircle(Party p, Settlement home, FactionState fs)
+    {
+        if (p.Kind != PartyKind.Lord || p.KnightOrder != "" || p.Id % 5 != 0 || p.Tier < 4 || Day < 60) return;
+        if (p.Companies.Any(c => Rules.RoleOf(c) == "casters") || p.Companies.Count >= 6) return;
+        string mage = Armies.MageTroop(Factions.CultureOf(p.Faction), p.Tier);
+        int men = (int)(Rules.CapOf(mage, "casters") * 0.8f);
+        int price = (int)MathF.Ceiling(men * Rules.PerMan(Troops.Get(mage).Cost));
+        if (fs.Treasury < price + 600) return; // the realm can still raise a lord after paying
+        fs.Treasury -= price;
+        p.Companies.Add(NewCompany(mage, "casters", men, 0, home));
     }
 
     /// How much bigger brigands think a party is: an Aura Master's name goes before him (MA8), so they flee one up to half again their weight.
