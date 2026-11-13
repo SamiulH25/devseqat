@@ -322,6 +322,13 @@ public sealed class Grave
     public double Hours;
 }
 
+/// A well you (or a realm) consecrated or bound (docs/ARCANA.md AR2): the tradition it was turned to, by whom and when.
+public sealed class WellMark
+{
+    public string Tradition = "";
+    public int Faction = -1, Day;
+}
+
 public sealed class Province
 {
     public int Id, Faction;
@@ -617,6 +624,8 @@ public sealed class CampaignState
     public Dictionary<string, int> Tally = new();
     public float FarSightUntil;
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
+    /// Wells consecrated or bound, by site id (docs/ARCANA.md AR2); the rest are as the map made them.
+    public Dictionary<int, WellMark> WellMarks = new();
     public List<Character> Characters = new();
     public int CaptainChar = -1;
     /// Your divisions (docs/archive/COMBAT_OVERHAUL.md 1.5): who leads each and the goal it starts a battle with.

@@ -71,6 +71,18 @@ sealed partial class MapScreen
             ui.Rect(new Rectangle((int)p.X - d / 2 - 1, (int)p.Y - d / 2 - 1, d + 2, d + 2), Color.Black);
             ui.Rect(new Rectangle((int)p.X - d / 2, (int)p.Y - d / 2, d, d), s.Kind == SettlementKind.Town ? Kit.Parchment : SideColor(s.Faction));
         }
+        // Wells (docs/ARCANA.md AR2): a mark in the tradition's colour, larger as it is stronger, edged white when marked.
+        void Dot(Vector2 at, int d, Color c) => ui.Rect(new Rectangle((int)at.X - d / 2, (int)at.Y - d / 2, d, d), c);
+        foreach (var w in C.Sites)
+        {
+            var (t, n) = C.Well(w);
+            if (n == 0) continue;
+            var p = M(w.Pos);
+            int d = ui.U(2 + 2 * n);
+            if (C.S.WellMarks.ContainsKey(w.Id)) Dot(p, d + ui.U(3), Color.White);
+            Dot(p, d + ui.U(1), Color.Black);
+            Dot(p, d, TideColour(t));
+        }
         var me = M(C.Player.Pos);
         ui.Rect(new Rectangle((int)me.X - ui.U(5), (int)me.Y - ui.U(5), ui.U(10), ui.U(10)), Color.Black);
         ui.Rect(new Rectangle((int)me.X - ui.U(4), (int)me.Y - ui.U(4), ui.U(8), ui.U(8)), Style.Accent);
@@ -109,7 +121,8 @@ sealed partial class MapScreen
             y += row;
         }
         y += ui.U(8);
-        foreach (var (c, label) in new[] { (Style.Accent, "YOUR COMPANY"), (Kit.Parchment, "TOWN"), (Style.Dim, "CASTLE, IN ITS REALM'S COLOUR") })
+        foreach (var (c, label) in new[] { (Style.Accent, "YOUR COMPANY"), (Kit.Parchment, "TOWN"), (Style.Dim, "CASTLE, IN ITS REALM'S COLOUR"),
+                     (TideColour("faith"), "WELL OF THE FAITH"), (TideColour("craft"), "WELL OF THE CRAFT") })
         {
             ui.Rect(new Rectangle(r.X + ui.U(2), y + ui.U(2), ui.U(7), ui.U(7)), c);
             ui.Text(label, r.X + ui.U(16), y, Style.Dim, 1);
@@ -117,4 +130,7 @@ sealed partial class MapScreen
         }
         ui.Text("CLICK THE MAP TO LOOK THERE.", r.X, y + ui.U(4), Style.Dim, 1);
     }
+
+    /// A tradition's colour on the map: pale blue for the faith (gold is your company and the towns), violet for the craft.
+    static Color TideColour(string tradition) => tradition == "faith" ? new Color(170, 225, 255) : tradition == "craft" ? new Color(190, 130, 255) : Style.Dim;
 }

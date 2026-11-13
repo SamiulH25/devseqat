@@ -94,9 +94,11 @@ public partial class Campaign
         }
         // Mages are rare: a town with a chapel, or a shrine or hermit near it, has a circle to hire one week in six (its own
         // week, no dice); Acolytes at first, from day 60 its culture's mages (E1).
-        if ((Level(t, "chapel") > 0 || Sites.Any(x => x.Kind is "shrine" or "hermit" && Vector2.Distance(x.Pos, t.Pos) < ShrineNear * Map.Spread)) && (t.Id + Day / 7) % 6 == 0)
+        // Where a well reaches (docs/ARCANA.md AR2), or at a chapel; a strong tide brings a seasoned circle later on.
+        int tide = TideAt(t.Pos).Strength;
+        if ((Level(t, "chapel") > 0 || tide > 0) && (t.Id + Day / 7) % 6 == 0)
         {
-            string mage = Day >= 60 ? Armies.MageTroop(t.Culture, 4) : "acolytes";
+            string mage = Day >= 60 ? Armies.MageTroop(t.Culture, tide >= 3 && Day >= 120 ? 5 : 4) : "acolytes";
             var m = NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0);
             m.Name = Day >= 60 ? $"The {t.Name} {Troops.Get(mage).Name}" : $"Acolytes of {t.Name}";
             t.Mercenaries.Add(m);
@@ -240,8 +242,6 @@ public partial class Campaign
         RaiseCircle(p, home, fs);
     }
 
-    /// How near a shrine or hermit must be (times `Map.Spread`) for a town to have a circle of mages to hire.
-    public const float ShrineNear = 40;
     /// A great lord's circle (docs/archive/COMPANIONS_MAGIC.md E1): one lord in five whose men stand at tier IV or more raises
     /// a circle of his realm's mages when he refits, from day 60 (as the towns' own circles), paid from the war chest.
     /// A lord only got one when first raised before, and lords are raised at low tiers, so no army ever fielded mages.

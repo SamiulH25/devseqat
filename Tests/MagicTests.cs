@@ -544,8 +544,8 @@ public static partial class SelfTest
     {
         var c = Campaign.New(2001);
         var towns = c.S.Settlements.Where(t => t.Kind == SettlementKind.Town).ToList();
-        int near = towns.Count(t => c.Sites.Any(x => x.Kind is "shrine" or "hermit" && Vector2.Distance(x.Pos, t.Pos) < Campaign.ShrineNear * c.Map.Spread));
-        Check(near > 0, "some towns stand near a shrine or hermit");
+        int near = towns.Count(t => c.TideAt(t.Pos).Strength > 0);
+        Check(near > 0, "some towns stand where a well reaches");
         var pilot = new Pilot(c);
         int offers = 0, lordCircles = 0;
         for (int week = 0; week < 22; week++)
@@ -554,7 +554,7 @@ public static partial class SelfTest
             offers += c.S.Settlements.Sum(t => t.Mercenaries.Count(m => Rules.RoleOf(m) == "casters"));
             lordCircles = Math.Max(lordCircles, c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Companies.Any(k => Rules.RoleOf(k) == "casters")));
         }
-        Console.WriteLine($"mages: {near}/{towns.Count} towns near a shrine; {offers} circle offers seen in 22 weeks; at most {lordCircles} lords with a circle (day {c.Day})");
+        Console.WriteLine($"mages: {near}/{towns.Count} towns where a well reaches; {offers} circle offers seen in 22 weeks; at most {lordCircles} lords with a circle (day {c.Day})");
         Check(offers > 0, "a circle is offered somewhere");
         Check(lordCircles > 0, "a great lord fields a circle");
     }
@@ -567,6 +567,65 @@ public static partial class SelfTest
         Console.WriteLine($"arcana: day {last.Day}, {last.MagicBattles}/{last.Battles} battles with magic, {last.LordCircles}/{last.Lords} lords with a circle, {last.Offers} offers, aura {last.Aura} (kindled day {p.AuraDay[1]}), vigils {last.Vigils}");
         Check(samples.Count == 3 && last.Lords > 0 && last.Battles > 0, "the census samples a living campaign");
         Check(last.Vigils > 0, "a seeker keeps a vigil at its aura's wall");
+    }
+
+    /// Wells (docs/ARCANA.md AR2): the map's holy and old places are wells, the same on every load of a seed; the Tide reaches
+    /// round them; consecrating or binding one turns and strengthens it, only in your realm and only by those who can.
+    static void WellsFromSites()
+    {
+        var c = Campaign.New(61);
+        var wells = c.Sites.Where(x => Campaign.WellTradition(x.Kind) != "").ToList();
+        Check(wells.Count > 20 && wells.All(x => c.Well(x).Strength is >= 1 and <= 3), $"holy and old places are wells of strength 1-3 ({wells.Count})");
+        Check(c.Sites.Where(x => x.Kind is "mill" or "mine" or "watchtower").All(x => c.Well(x).Strength == 0), "a mill is not a well");
+        Check(wells.Where(x => x.Kind is "shrine" or "spring" or "hermit").All(x => c.Well(x).Tradition == "faith")
+            && wells.Where(x => x.Kind is "stones" or "ruin" or "battlefield").All(x => c.Well(x).Tradition == "craft"), "shrines are faith, stones craft");
+        var strengths = wells.GroupBy(x => c.Well(x).Strength).ToDictionary(g => g.Key, g => g.Count());
+        Console.WriteLine($"wells: {wells.Count} ({string.Join(", ", strengths.OrderBy(kv => kv.Key).Select(kv => $"{kv.Value} of {kv.Key}"))})");
+        Check(strengths.Count == 3 && strengths[1] > strengths[3], "most wells are faint, a few strong");
+        var again = Campaign.New(61);
+        Check(again.Sites.All(x => again.Well(x) == c.Well(x)), "a seed's wells are the same every time");
+        // The tide: full at the well, a step less a little way off, none far away.
+        var w = wells.First(x => c.Well(x).Strength >= 2);
+        float reach = Campaign.WellReach * c.Map.Spread;
+        Check(c.TideAt(w.Pos).Strength >= c.Well(w).Strength, "at a well its tide is full");
+        Check(c.TideAt(w.Pos + new Vector2(reach * 2.6f, 0)).Well != w, "far off it is another well's, or none");
+        // Marking: stand there, hold the province, have a priest.
+        foreach (var k in c.Companions.ToList()) k.Calling = "Sword";
+        c.S.Gold = 1000;
+        var site = wells.First(x => c.Well(x).Tradition == "craft" && c.Well(x).Strength < 3);
+        c.Player.Pos = site.Pos;
+        var pr = c.S.Provinces.First(p => p.Id == site.Province);
+        Check(c.Rite("consecrate") != null, "no priest, no consecration");
+        c.Player.Companies.First(x => x.Men > 0).Stacks.Add(new TroopStack { Troop = "chaplains", Men = 5 });
+        c.Captain.Contract = pr.Faction == 0 ? 1 : 0;
+        Check(c.Rite("consecrate") == "ONLY IN A PROVINCE OF YOUR REALM", "not in another realm's land");
+        c.Captain.Contract = pr.Faction;
+        int before = c.Well(site).Strength;
+        Check(c.Rite("consecrate") == null && c.Well(site) == ("faith", before + 1) && c.S.Gold == 880, "a stones consecrated turns to the faith, a step stronger, for 120 crowns");
+        c.S.RiteDay = 0;
+        Check(c.Rite("consecrate") == "THIS WELL IS CONSECRATED ALREADY", "once");
+        c.Player.Pos = site.Pos + new Vector2(40 * c.Map.Spread, 0);
+        c.S.RiteDay = 0;
+        Check(c.Rite("consecrate") != null, "away from a well there is nothing to consecrate");
+        var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        Check(back.Well(back.Sites.First(x => x.Id == site.Id)).Tradition == "faith", "the mark is saved");
+    }
+
+    /// The tide brings circles to hire: towns where a well reaches offer them, and more strongly near strong wells.
+    static void TideFeedsOffers()
+    {
+        var c = Campaign.New(2001);
+        var towns = c.S.Settlements.Where(t => t.Kind == SettlementKind.Town).ToList();
+        int reached = towns.Count(t => c.TideAt(t.Pos).Strength > 0);
+        var seen = new HashSet<int>();
+        for (int week = 0; week < 7; week++)
+        {
+            c.Tick(24 * 7); c.Encounter = null; c.Arrived = null;
+            foreach (var t in towns.Where(t => t.Mercenaries.Any(m => Rules.RoleOf(m) == "casters"))) seen.Add(t.Id);
+        }
+        Console.WriteLine($"tide: {reached}/{towns.Count} towns where a well reaches; {seen.Count} offered a circle in 7 weeks");
+        Check(reached > towns.Count / 4, "a good share of towns lie where a well reaches");
+        Check(seen.Count > 0 && seen.All(id => c.TideAt(towns.First(t => t.Id == id).Pos).Strength > 0 || towns.First(t => t.Id == id).Buildings.GetValueOrDefault("chapel") > 0), "only those (or a chapel town) offer circles");
     }
 }
 

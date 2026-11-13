@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **in progress** (2026-11-13): AR0-AR1 built (see "As built" at the end); AR2-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **in progress** (2026-11-13): AR0-AR2 built (see "As built" at the end); AR3-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 
@@ -270,4 +270,15 @@ something the map and the battle are about.
 - **Found on the way:** the self-test's `ResolveBattles` (level 4) stalled because pathing ignored men within 12 m of
   their goal: the last enemy bows stood pressed to a village fence with their places 4 m beyond. `BattlePath.AnyBlocked`
   and `PathVia` now route near goals when a fence or hedge crosses the line (test `RoundTheNearFence`).
+- **AR2 (wells):** `Campaign/Wells.cs`. A site is a well by kind (`WellTradition`: shrine, spring, hermit = faith; stones,
+  ruin, battlefield = craft) with a fixed strength from its id (`WellBase`, 1-3; seed 61: 51 faint, 51 steady, 13 strong).
+  No map change: every map and old save has wells. Marks are the only save: `CampaignState.WellMarks` (`WellMark`:
+  tradition, faction, day). `Well(site)` gives tradition and strength (a mark turns it and adds a step). `TideAt(pos)`: the
+  strongest well within `WellReach` (25) x `Map.Spread` at full strength, within twice that a step less (so a faint well
+  reaches only close by); half the towns of seed 2001 lie where a well reaches. Rites `consecrate` (faith, 120 crowns) and
+  `bind` (craft, Omen +5) at a well (`WellHere`) in a province of your realm or one of your fiefs (`CannotMarkWell`,
+  `MarkWell`, a deed). Circles for hire: a town with a chapel or a tide (`RefreshMercenaries`), tier V from day 120 at a
+  strong tide; this replaces 3e46a93's shrine radius. UI: wells on the realm map (M; a mark sized by strength, pale blue
+  faith, violet craft, edged white when marked; legend lines), the encounter panel's tide line (`TideNote`). Tests
+  `WellsFromSites`, `TideFeedsOffers`. Province neighbours and wells feeding a realm's own culture's mages are left out.
 
