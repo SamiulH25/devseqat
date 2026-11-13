@@ -9,6 +9,8 @@ public sealed class OriginDef
     /// Years this adds to the captain's age (20 + birth + past).
     public int Age;
     public List<string> Effects = new();
+    /// A road's strengths and weaknesses in the field (the ARMS step).
+    public List<string> Pros = new(), Cons = new();
 }
 
 /// What the player chose in the character creator: who the captain is, where they come from and how they look.

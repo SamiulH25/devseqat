@@ -192,6 +192,8 @@ sealed class CreatorStage
             Act.Ride or Act.Charge => (1.5f, 9.4f, 1.45f),
             Act.Turn => (1.05f, 4.6f, 0.25f),
             Act.Leave => (1.2f, 6.4f, 0.4f),
+            Act.Drill or Act.Guard => (1.15f, 7.6f, 0.55f),
+            Act.Salute => (1.3f, 6.4f, 0.55f), // the raised blade clears the top of the well // a swung blade or a long haft needs room in the well
             _ => (1.15f, 5.6f, 0.55f),
         };
         if (aspect < 0.9f) dist *= 0.9f / aspect * 0.95f; // a narrow well needs a step back to fit the width

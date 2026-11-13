@@ -224,5 +224,18 @@ sealed class Ui
     }
 
     /// A troop portrait cropped to `box`; `k` is the pixel scale (default: the UI scale).
-    public void Portrait(UnitType t, Rectangle box, int k = 0, float top = 1.92f) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S, top);
+    /// One sprite from the atlas, at the largest whole scale that fits the box, centred (a weapon, a shield, a horse's head).
+    /// A long thin sprite in a wide box is laid on its side (a quarter turn keeps the pixels square), point to the right.
+    public void Sprite(string key, Rectangle box, Color? tint = null)
+    {
+        if (!art.Has(key)) return;
+        var src = art[key];
+        bool lay = src.Height > src.Width * 2 && box.Width > box.Height;
+        int sw = lay ? src.Height : src.Width, sh = lay ? src.Width : src.Height;
+        int k = Math.Max(1, Math.Min(box.Width / sw, box.Height / sh));
+        var c = box.Center.ToVector2();
+        Sb.Draw(art.Atlas, c, src, tint ?? Color.White, lay ? MathF.PI / 2 : 0, new Vector2(src.Width / 2f, src.Height / 2f), k, SpriteEffects.None, 0);
+    }
+
+    public void Portrait(UnitType t, Rectangle box, int k = 0, float top = 1.92f, int palette = 0) => Hud.Portrait(Sb, art, t, box, k > 0 ? k : S, top, palette);
 }

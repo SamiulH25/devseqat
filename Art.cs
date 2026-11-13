@@ -11,6 +11,7 @@ public sealed class Art
     public readonly Texture2D Atlas, Shadow, Pixel;
     readonly SpriteSheet sheet;
 
+    public bool Has(string key) => sheet.Rects.ContainsKey(key);
     public Rectangle this[string key] => sheet.Rects.TryGetValue(key, out var r) ? r : throw new KeyNotFoundException("no sprite " + key);
     public bool TryGet(string key, out Rectangle r) => sheet.Rects.TryGetValue(key, out r);
 

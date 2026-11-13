@@ -633,7 +633,8 @@ sealed partial class Hud
     void Icon(UnitType t, Rectangle box) => Portrait(sb, art, t, box, Ui);
 
     /// `top`: metres at the top of the box (higher shows the weapon's tip, lower closes in on the face).
-    public static void Portrait(SpriteBatch sb, Art art, UnitType t, Rectangle box, int k, float top = 1.92f)
+    /// `palette` paints the coats and shields in a realm's colours (a `Style.Sides` index).
+    public static void Portrait(SpriteBatch sb, Art art, UnitType t, Rectangle box, int k, float top = 1.92f, int palette = 0)
     {
         var l = t.Look;
         if (l.Beast) // a beast's portrait is its head, big
@@ -645,9 +646,10 @@ sealed partial class Hud
             sb.Draw(art.Atlas, dst, src, tint);
             return;
         }
-        void Part(string key, float xm, float ym, string pal = "/0", Color? tint = null)
+        string side = "/" + palette;
+        void Part(string key, float xm, float ym, string? pal = null, Color? tint = null)
         {
-            var src = art[key + pal];
+            var src = art[key + (pal ?? side)];
             var dest = new Rectangle((int)(box.Center.X + xm / Art.Px * k - src.Width * k / 2f), (int)(box.Y + (top - ym) / Art.Px * k - src.Height * k / 2f),
                 src.Width * k, src.Height * k);
             var d = Rectangle.Intersect(dest, box);
@@ -662,7 +664,7 @@ sealed partial class Hud
         if (l.Cape) Part("cape", 0, 1.0f);
         Part($"torso.{l.Body}.f", 0, 1.0f);
         if (l.Tabard) Part("tabard.f", 0, 0.98f);
-        Part(l.HeadKey + ".f", 0, 1.53f, l.NeutralHead ? "/n" : "/0");
+        Part(l.HeadKey + ".f", 0, 1.53f, l.NeutralHead ? "/n" : side);
         if (l.Head != "none") Part($"helm.{l.Head}.f", 0, Puppet.HelmTop(l.Head) - art[$"helm.{l.Head}.f/0"].Height * Art.Px / 2);
         if (l.Plume) Part("plume", 0, Puppet.HelmTop(l.Head) + art["plume/0"].Height * Art.Px / 2 - 0.06f);
         if (t.Class != UnitClass.Archer) Part(l.Weapon, -0.42f, WeaponY(l.Weapon));

@@ -290,7 +290,7 @@ sealed class CreatorScreen
         ui.Chip(cx, y, Origins.Free(M) ? "FREE COMPANY" : $"FOR THE {def.Name.ToUpperInvariant()}", Origins.Free(M) ? Style.Warn : colours.Ui, "flag");
         y += U(18);
         cx = inner.X;
-        cx += ui.Chip(cx, y, $"{Kit.N((int)Gold)}", Kit.Gilt, "coin") + U(4);
+        cx += ui.Chip(cx, y, $"{Kit.N((int)Gold)} CROWNS", Kit.Gilt, "coin") + U(4);
         cx += ui.Chip(cx, y, $"{Renown:0} RENOWN", Kit.Gilt, "star") + U(4);
         if (cx + U(60) < inner.Right) ui.Chip(cx, y, $"{Men} MEN", Style.Text, "shield");
         else ui.Chip(inner.X, y + U(16), $"{Men} MEN", Style.Text, "shield");
@@ -400,7 +400,7 @@ sealed class CreatorScreen
     {
         ui.Text("WHERE DOES YOUR COMPANY START?", r.X, r.Y, Style.Dim, 1);
         int listW = (int)(r.Width * 0.46f), y = r.Y + U(14);
-        int rowH = Math.Min(U(36), (r.Height - U(14)) / Math.Max(1, Factions.All.Count));
+        int rowH = Math.Min(U(54), (r.Height - U(14)) / Math.Max(1, Factions.All.Count));
         int show = M.Realm;
         for (int f = 0; f < Factions.All.Count; f++)
         {
@@ -408,8 +408,18 @@ sealed class CreatorScreen
             var row = new Rectangle(r.X, y, listW, rowH - U(4));
             if (ui.Hover(row)) show = f;
             if (ui.Button(row, "", active: f == M.Realm)) { M.Realm = f; }
-            ui.Shield(new Rectangle(row.X + U(4), row.Y + U(2), U(20), row.Height - U(4)), Style.Sides[def.Palette]);
-            ui.TextFit(def.Name.ToUpperInvariant(), row.X + U(30), row.Y + (row.Height - U(7)) / 2, row.Width - U(34), f == M.Realm ? new Color(255, 246, 222) : Style.Text, 1);
+            int sh = Math.Min(row.Height - U(8), U(30));
+            ui.Shield(new Rectangle(row.X + U(8), row.Center.Y - sh / 2, sh * 5 / 6, sh), Style.Sides[def.Palette]);
+            int tx = row.X + U(16) + sh;
+            bool on = f == M.Realm;
+            if (Factions.Culture(def.Culture) is { } cul && row.Height >= U(30))
+            {
+                var style = ui.Wrap(cul.Text.ToUpperInvariant(), row.Right - tx - U(6)).Take(row.Height >= U(42) ? 2 : 1).ToList();
+                int ny = row.Center.Y - U(7 + 10 * style.Count) / 2 - U(2);
+                ui.TextFit(def.Name.ToUpperInvariant(), tx, ny, row.Right - tx - U(6), on ? new Color(255, 246, 222) : Style.Text, 1);
+                for (int i = 0; i < style.Count; i++) ui.TextFit(style[i], tx, ny + U(12 + 10 * i), row.Right - tx - U(6), on ? Kit.Parchment : Style.Dim, 1);
+            }
+            else ui.TextFit(def.Name.ToUpperInvariant(), tx, row.Y + (row.Height - U(7)) / 2, row.Right - tx - U(6), on ? new Color(255, 246, 222) : Style.Text, 1);
             y += rowH;
         }
         var d = Factions.All[show];
@@ -436,17 +446,31 @@ sealed class CreatorScreen
         py += U(8);
         // Its soldiers at their prime: foot, bow and horse.
         string[] roles = { "infantry", "archers", "horse" };
-        int ps = Math.Min((pane.Width - U(32)) / 3, pane.Bottom - py - U(24));
+        var ties = Factions.Relations.Where(x => x.A == d.Name || x.B == d.Name).OrderByDescending(x => x.War).ToList();
+        int tiesH = ties.Count == 0 ? U(24) : U(30) + ties.Count * U(12);
+        int ps = Math.Min((pane.Width - U(40)) / 3, pane.Bottom - py - U(24) - tiesH);
         if (ps < U(30)) return;
-        int px = pane.Center.X - (3 * ps + 2 * U(6)) / 2;
+        int px = pane.Center.X - (3 * ps + 2 * U(10)) / 2;
         for (int k = 0; k < 3; k++)
         {
-            var pr = new Rectangle(px + k * (ps + U(6)), py, ps, ps);
+            var pr = new Rectangle(px + k * (ps + U(10)), py, ps, ps);
             var troop = Troops.Get(Factions.Line(show, roles[k], 4));
             ui.VGrad(pr, Kit.Mul(Style.Sides[d.Palette].Cloth, 0.5f), Kit.IronDark, 2);
-            ui.Portrait(troop, pr, Math.Max(1, ps / U(40)) * ui.S);
+            ui.Portrait(troop, pr, Math.Max(1, ps / U(40)) * ui.S, palette: d.Palette);
             ui.Frame(pr, Color.Black * 0.6f, U(1));
             ui.TextFitC(troop.Name.ToUpperInvariant(), pr.Center.X, pr.Bottom + U(5), ps + U(4), Style.Dim, 1);
+        }
+        // Its wars and truces: what you inherit by starting here.
+        int ty = py + ps + U(22), tx0 = pane.X + U(14), tw0 = pane.Width - U(28);
+        ui.Divider(tx0, ty, tw0, Kit.Gilt * 0.45f); ty += U(10);
+        if (ties.Count == 0) { ui.TextC("AT PEACE WITH EVERY REALM", pane.Center.X, ty, Style.Dim, 1); return; }
+        foreach (var t in ties)
+        {
+            if (ty + U(10) > pane.Bottom - U(4)) break;
+            string other = (t.A == d.Name ? t.B : t.A).ToUpperInvariant();
+            ui.Text(t.War ? "AT WAR" : "TRUCE", tx0, ty, t.War ? Style.Bad : Kit.Gilt, 1);
+            ui.TextFit(other + (t.War ? "" : $", {t.TruceDays:0} DAYS"), tx0 + U(56), ty, tw0 - U(56), t.War ? Style.Text : Style.Dim, 1);
+            ty += U(12);
         }
     }
 
@@ -455,10 +479,11 @@ sealed class CreatorScreen
     {
         ui.Text(question, r.X, r.Y, Style.Dim, 1);
         int listW = (int)(r.Width * 0.42f), y = r.Y + U(14);
-        int rowH = Math.Min(U(58), (r.Height - U(14)) / Math.Max(1, list.Count));
+        int rowH = Math.Min(U(list.Count <= 6 ? 84 : 58), (r.Height - U(14)) / Math.Max(1, list.Count));
         var show = list.FirstOrDefault(o => o.Id == chosen) ?? list[0];
         // One size for every name in the list: large when they all fit.
         int nameScale = rowH - U(4) >= U(44) && list.All(o => ui.TW(o.Name.ToUpperInvariant(), 2) <= listW - U(36)) ? 2 : 1;
+        // A short list's sub line is everything it gives; a long one shows its perk or first two gifts.
         foreach (var o in list)
         {
             var row = new Rectangle(r.X, y, listW, rowH - U(4));
@@ -476,13 +501,15 @@ sealed class CreatorScreen
                 ui.Icon(boon.Effect.Icon, (int)seal.X - U(7), (int)seal.Y - U(7), boon.Days <= 0 ? Kit.Gilt : new Color(178, 188, 203), 2);
                 right = row.Right - U(34);
             }
-            string sub = Skills.Perk(o.Perk) is PerkDef pk ? "PERK: " + pk.Name.ToUpperInvariant()
+            string sub = list.Count <= 6 ? string.Join(", ", Origins.Describe(o, 1)) : Skills.Perk(o.Perk) is PerkDef pk ? "PERK: " + pk.Name.ToUpperInvariant()
                 : string.Join(", ", Origins.Describe(o, 1).Take(2)) is { Length: > 0 } gives ? gives : o.Text.ToUpperInvariant();
             bool two = row.Height >= U(30);
             int sc = two ? nameScale : 1;
-            int nameY = two ? row.Y + (row.Height - U(7 * sc + 14)) / 2 : row.Y + (row.Height - U(7)) / 2;
+            // A tall row (a short list) gives the sub line room to wrap, up to three lines.
+            var subs = row.Height >= U(64) ? ui.Wrap(sub, right - tx).Take(3).ToList() : new List<string> { sub };
+            int nameY = two ? row.Y + (row.Height - U(7 * sc + 7 + 10 * subs.Count)) / 2 : row.Y + (row.Height - U(7)) / 2;
             ui.TextFit(o.Name.ToUpperInvariant(), tx, nameY, right - tx, on ? new Color(255, 246, 222) : Style.Text, sc);
-            if (two) ui.TextFit(sub, tx, nameY + U(7 * sc + 7), right - tx, on ? Kit.Parchment : Style.Dim, 1);
+            if (two) for (int i = 0; i < subs.Count; i++) ui.TextFit(subs[i], tx, nameY + U(7 * sc + 7 + 10 * i), right - tx, on ? Kit.Parchment : Style.Dim, 1);
             y += rowH;
         }
         Detail(new Rectangle(r.X + listW + U(12), r.Y + U(14), r.Width - listW - U(12), r.Height - U(14)), show, show.Id == chosen);
@@ -503,12 +530,13 @@ sealed class CreatorScreen
         // The story on a scroll that unrolls each time another origin is shown.
         if (o.Id != scrollKey) { scrollKey = o.Id; scrollAt = time; }
         int tw = w - U(40);
-        int ts = ui.Wrap(o.Text.ToUpperInvariant(), tw, 2).Count * U(18) < pane.Height / 3 ? 2 : 1, lh = U(ts == 2 ? 18 : 10);
+        const int ts = 1;
+        int lh = U(12);
         var lines = ui.Wrap(o.Text.ToUpperInvariant(), tw, ts);
-        var parch = new Rectangle(x + U(10), y, w - U(20), lines.Count * lh + U(36));
+        var parch = new Rectangle(x + U(10), y, w - U(20), lines.Count * lh + U(34));
         int shown = ui.Scroll(parch, Unroll(scrollAt, 0.45f));
         int ly = parch.Y + U(18);
-        foreach (var line in lines) { if (ly + lh - U(4) <= shown) ui.Text(line, x + U(20), ly, Kit.Ink, ts); ly += lh; }
+        foreach (var line in lines) { if (ly + lh - U(4) <= shown) ui.Text(line, x + U(22), ly, Kit.Ink, ts); ly += lh; }
         y = parch.Bottom + U(12);
         if (o.Age > 0) { ui.Text($"+{o.Age} YEARS", x, y, Style.Dim, 1); y += U(14); }
         ui.Text("GIVES", x, y, Kit.Gilt, 1); y += U(12);
@@ -521,6 +549,8 @@ sealed class CreatorScreen
             y += U(2);
         }
         y += U(10);
+        if (Origins.Roads.Contains(o)) y = RoadKit(x, y, w, o);
+        if (o.Pros.Count + o.Cons.Count > 0) y = InTheField(x, y, w, o);
         foreach (var (fx, days) in Origins.Boons(o))
             if (y + U(40) < pane.Bottom - U(20)) y += BoonCard(new Rectangle(x, y, w, 0), fx, days) + U(8);
         y += U(10);
@@ -530,11 +560,53 @@ sealed class CreatorScreen
             foreach (var line in ui.Wrap($"\"{o.Line.ToUpperInvariant()}\"", w - U(20)))
             { ui.TextC(line, pane.Center.X, y, Kit.Parchment * 0.85f, 1); y += U(10); }
         }
-        if (Campaign.Events.Any(e => e.Trigger == "origin:" + o.Id))
+        if (Campaign.Events.Any(e => e.Trigger == "origin:" + o.Id) && y + U(24) < pane.Bottom)
         {
-            ui.Divider(x + U(30), pane.Bottom - U(28), w - U(60), Kit.Gilt * 0.35f);
-            ui.TextC("YOUR PAST MAY CATCH UP WITH YOU.", pane.Center.X, pane.Bottom - U(16), Style.Dim, 1);
+            y += U(10);
+            string hint = Origins.Births.Contains(o) ? "WHERE YOU CAME FROM MAY CALL YOU BACK." : "YOUR PAST MAY CATCH UP WITH YOU.";
+            ui.Icon("scroll", pane.Center.X - ui.TW(hint, 1) / 2 - U(12), y - U(1), Style.Dim, 1);
+            ui.TextC(hint, pane.Center.X, y, Style.Dim, 1);
         }
+    }
+
+    /// The kit a road puts in your hands, drawn: one framed cell per piece with its sprite and its name. Returns the y below.
+    int RoadKit(int x, int y, int w, OriginDef road)
+    {
+        // The captain this road makes with your birth and past: the kit you will really carry (a past's horse and all).
+        var c = Origins.Preview(new CaptainMaking { Realm = M.Realm, Birth = M.Birth, Past = M.Past, Road = road.Id });
+        var weapon = Gear.Get(c.Kit.Weapon);
+        var pieces = new List<(string Slot, GearDef G, string Key, Color? Tint)> { ("IN HAND", weapon, weapon.Look + "/0", null) };
+        if (!weapon.TwoHanded && c.Kit.Shield != "" && Gear.Get(c.Kit.Shield).Look is var sl && sl != "none") pieces.Add(("SHIELD", Gear.Get(c.Kit.Shield), $"shield.{sl}/{(Origins.Free(M) ? 2 : Factions.All[M.Realm].Palette)}", null));
+        if (c.Kit.Side != "" && c.Kit.Side != c.Kit.Weapon) pieces.Add(("SIDE", Gear.Get(c.Kit.Side), Gear.Get(c.Kit.Side).Look + "/0", null));
+        if (c.Kit.Horse != "") pieces.Add(("HORSE", Gear.Get(c.Kit.Horse), "hhead/n", new Color(Style.Coats[0])));
+        ui.Text("YOUR KIT", x, y, Kit.Gilt, 1); y += U(12);
+        int n = Math.Max(3, pieces.Count), gap = U(6), cw = (w - gap * (n - 1)) / n, ch = Math.Min(U(48), cw);
+        for (int i = 0; i < pieces.Count; i++)
+        {
+            var (slot, g, key, tint) = pieces[i];
+            var cell = new Rectangle(x + i * (cw + gap), y, cw, ch);
+            ui.VGrad(cell, new Color(34, 30, 30), new Color(16, 14, 16), 2);
+            ui.Frame(cell, new Color(124, 104, 53), U(1));
+            ui.Sprite(key, Kit.Inset(cell, U(6)), tint);
+            ui.TextFitC(slot, cell.Center.X, cell.Bottom + U(4), cw, Kit.Gilt, 1);
+            int ny = cell.Bottom + U(14);
+            foreach (var line in ui.Wrap(g.Name.ToUpperInvariant(), cw).Take(2)) { ui.TextFitC(line, cell.Center.X, ny, cw, Style.Text, 1); ny += U(10); }
+        }
+        return y + ch + U(40);
+    }
+
+    /// A road in the field: what it is good at (gilt) and where it fails (warned), each line with its mark. Returns the y below.
+    int InTheField(int x, int y, int w, OriginDef o)
+    {
+        ui.Divider(x, y, w, Kit.Gilt * 0.4f); y += U(10);
+        ui.Text("IN THE FIELD", x, y, Kit.Gilt, 1); y += U(14);
+        foreach (var (line, good) in o.Pros.Select(p => (p, true)).Concat(o.Cons.Select(c => (c, false))))
+        {
+            ui.Text(good ? "+" : "-", x + U(2), y, good ? Kit.Gilt : Style.Warn, 1);
+            foreach (var l in ui.Wrap(line.ToUpperInvariant(), w - U(14))) { ui.Text(l, x + U(14), y, good ? Style.Text : Style.Warn, 1); y += U(10); }
+            y += U(4);
+        }
+        return y + U(6);
     }
 
     /// A boon an origin lays on the map, as a card: its icon on a seal, its name, how long it lasts and what it does.
@@ -573,11 +645,11 @@ sealed class CreatorScreen
 
         // The features.
         int ly = y;
-        ui.Text("SKIN", x, ly, Kit.Gilt, 1); ui.TextR(SkinNames[M.Skin], x + lw, ly, Style.Dim, 1); ly += U(11);
+        ui.Text("SKIN", x, ly, Kit.Gilt, 1); ui.Text(SkinNames[M.Skin], x + ui.TW("SKIN", 1) + U(8), ly, Style.Text, 1); ly += U(11);
         M.Skin = Swatches(x, ly, lw, Variety.Skins, M.Skin); ly += U(32);
-        ui.Text("HAIR", x, ly, Kit.Gilt, 1); ui.TextR(HairNames[M.Hair], x + lw, ly, Style.Dim, 1); ly += U(11);
+        ui.Text("HAIR", x, ly, Kit.Gilt, 1); ui.Text(HairNames[M.Hair], x + ui.TW("HAIR", 1) + U(8), ly, Style.Text, 1); ly += U(11);
         M.Hair = Swatches(x, ly, lw, Variety.Hairs, M.Hair); ly += U(32);
-        ui.Text("EYES", x, ly, Kit.Gilt, 1); ui.TextR(EyeNames[M.Eye], x + lw, ly, Style.Dim, 1); ly += U(11);
+        ui.Text("EYES", x, ly, Kit.Gilt, 1); ui.Text(EyeNames[M.Eye], x + ui.TW("EYES", 1) + U(8), ly, Style.Text, 1); ly += U(11);
         M.Eye = Swatches(x, ly, lw, PortraitPainter.EyeColours, M.Eye); ly += U(34);
         M.Cut = Stepper(x, ly, lw, "HAIR", CutNames, M.Cut); ly += U(26);
         M.Beard = Stepper(x, ly, lw, "BEARD", BeardNames, M.Beard); ly += U(26);
@@ -706,6 +778,6 @@ sealed class CreatorScreen
         if (ui.Gilded(new Rectangle(r.Center.X - U(96), r.Y, U(192), r.Height), "ROLL THE DICE")) Randomise();
         bool last = Step == Steps.Length - 1;
         if (!last && ui.Gilded(new Rectangle(r.Right - U(150), r.Y, U(150), r.Height), "NEXT", "ENTER")) Go(Step + 1);
-        if (last && ui.Gilded(new Rectangle(r.Right - U(150), r.Y, U(150), r.Height), "BEGIN", "ENTER", M.Name.Trim() != "")) Begin();
+        // On the oath, BEGIN THE CAMPAIGN under the scroll is the one way on (Enter too).
     }
 }

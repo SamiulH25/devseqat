@@ -11,8 +11,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## AnimSheet.cs (138 lines)
 - **AnimSheet** (class, L10): AnimSheet:20, Clip:29, Swing:31, Write:58, Render:68, Cell:89, Ground:120
 
-## Art.cs (57 lines)
-- **Art** (class, L8): TryGet:15, Art:17, Mipped:37
+## Art.cs (58 lines)
+- **Art** (class, L8): Has:14, TryGet:16, Art:18, Mipped:38
 
 ## Audio.cs (434 lines)
 - **Cue** (enum, L7)
@@ -506,10 +506,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Bind** (struct, L37): ToString:39, Parse:61
 - **Controls** (class, L90): Controls:150, SaveUser:158, ResetDefaults:167, AnyPressed:175, FindFile:183, Load:193, WriteDefaults:220, Update:229, IsDown:235, Down:245, WasDown:246, Pressed:247, Released:248, Axis:249, First:252, Name:255
 
-## CreatorScreen.cs (711 lines)
-- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:90, RandomCompany:98, Randomise:101, RandomFace:114, Go:123, Refresh:135, Keys:157, Begin:182, Draw:190, Likeness:233, Ledger:308, Homeland:399, Choices:454, Detail:492, BoonCard:542, Face:566, Stepper:619, Unroll:634, Field:637, Swatches:651, Oath:667, Footer:703
+## CreatorScreen.cs (783 lines)
+- **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:90, RandomCompany:98, Randomise:101, RandomFace:114, Go:123, Refresh:135, Keys:157, Begin:182, Draw:190, Likeness:233, Ledger:308, Homeland:399, Choices:478, Detail:519, RoadKit:573, InTheField:599, BoonCard:614, Face:638, Stepper:691, Unroll:706, Field:709, Swatches:723, Oath:739, Footer:775
 
-## CreatorStage.cs (207 lines)
+## CreatorStage.cs (209 lines)
 - **CreatorStage** (class, L10): CreatorStage:41, React:49, Render:52, Build:95, Perform:116, readonly:143, Drill:152, Shoot:165, Salute:177, Camera:188
 
 ## Ease.cs (22 lines)
@@ -551,10 +551,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Command.cs (186 lines)
 - **Hud** (class, L8): ReserveAt:18, ToMeAt:19, HornAt:20, HornToggleAt:21, AddAt:22, OverCommand:24, DivisionColour:31, Movable:42, LayoutCommand:44, LayoutQuestion:64, Tray:75, SmallButton:116, Question:125, DivisionRings:150
 
-## Hud.cs (951 lines)
+## Hud.cs (953 lines)
 - **Cmd** (enum, L7)
 - **MenuItem** (enum, L9)
-- **Hud** (class, L13): StartAt:45, DeployToggleAt:49, Hud:72, U:74, Layout:88, CardAt:136, ButtonAt:137, MenuAt:138, MinimapAt:139, Over:141, Rect:145, Panel:148, Frame:150, Line:158, Bar:164, Text:167, TW:172, TextC:173, TextR:174, MoraleColor:176, GradeTag:202, GradeColor:203, RanksOf:204, PlanOf:205, AvgMorale:212, AvgMorale:219, Draw:228, Strength:300, SideArms:311, GoalLines:315, Balance:327, Feed:366, MinimapPanel:390, PlayerPanel:437, FormBar:489, RelicSlot:516, SpellFan:528, Cards:553, EffectMarks:615, Icon:633, Portrait:636, Crosshair:672, CommandPanel:722, Wheel:753, Hints:780, Banners:792, Banner:831, StateOf:870, FormationName:873, SquadTooltip:876, EnemyGlass:902, Detail:926
+- **Hud** (class, L13): StartAt:45, DeployToggleAt:49, Hud:72, U:74, Layout:88, CardAt:136, ButtonAt:137, MenuAt:138, MinimapAt:139, Over:141, Rect:145, Panel:148, Frame:150, Line:158, Bar:164, Text:167, TW:172, TextC:173, TextR:174, MoraleColor:176, GradeTag:202, GradeColor:203, RanksOf:204, PlanOf:205, AvgMorale:212, AvgMorale:219, Draw:228, Strength:300, SideArms:311, GoalLines:315, Balance:327, Feed:366, MinimapPanel:390, PlayerPanel:437, FormBar:489, RelicSlot:516, SpellFan:528, Cards:553, EffectMarks:615, Icon:633, Portrait:637, Crosshair:674, CommandPanel:724, Wheel:755, Hints:782, Banners:794, Banner:833, StateOf:872, FormationName:875, SquadTooltip:878, EnemyGlass:904, Detail:928
 
 ## Hud.Divisions.cs (386 lines)
 - **Hud** (class, L8): readonly:16, readonly:24, LayoutDivisions:30, LayoutGoals:43, DivisionAt:54, GoalCloseAt:56, DivisionTag:60, GoalTag:68, DivisionCards:70, GoalExplain:107, GoalPanel:123, DivisionTooltip:158, SergeantFieldBadge:178, GoalWheel:188, SergeantPennants:210, NamedMarks:228, BannerMark:272, HornAim:296, DivisionMarkers:308
@@ -644,10 +644,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **StereoHall** (class, L232): StereoHall:246, ProcessInPlace:259
 - **MusicLibrary** (class, L312): Get:363, Has:364, ByCategory:366, Validate:371
 
-## Origins.cs (199 lines)
+## Origins.cs (201 lines)
 - **OriginDef** (class, L6)
-- **CaptainMaking** (class, L15)
-- **Origins** (class, L29): Find:55, Chosen:56, static:59, Num:61, Sum:64, BoonSpan:76, Free:78, Age:79, Perks:80, Shape:84, Wear:106, Preview:119, Describe:129, RoadGives:155, Validate:170
+- **CaptainMaking** (class, L17)
+- **Origins** (class, L31): Find:57, Chosen:58, static:61, Num:63, Sum:66, BoonSpan:78, Free:80, Age:81, Perks:82, Shape:86, Wear:108, Preview:121, Describe:131, RoadGives:157, Validate:172
 
 ## Overflow.cs (58 lines)
 - **Overflow** (class, L8): Frame:21, Box:24, Text:27, Flush:41
@@ -831,8 +831,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **DivisionSpec** (record, L189)
 - **Armies** (class, L194): LineTroop:197, readonly:199, Count:207, Standard:215, Random:218, Large:225, FullCount:236, Divide:245, Split:258, Make:300, MageTroop:304, LineTroop:308, RoleOf:310
 
-## Ui.cs (228 lines)
-- **Ui** (class, L8): Hovered:26, FrameEnd:34, Ui:38, Anim:57, static:68, Since:81, Count:91, Key:98, Reset:101, Begin:103, End:113, Blocks:116, Block:117, U:118, Rect:120, Frame:124, Panel:133, Dim:136, Text:139, TW:144, TextC:145, TextR:146, Bar:150, Hover:163, Clicked:166, Button:175, Face:203, FaceHead:216, Portrait:227
+## Ui.cs (241 lines)
+- **Ui** (class, L8): Hovered:26, FrameEnd:34, Ui:38, Anim:57, static:68, Since:81, Count:91, Key:98, Reset:101, Begin:103, End:113, Blocks:116, Block:117, U:118, Rect:120, Frame:124, Panel:133, Dim:136, Text:139, TW:144, TextC:145, TextR:146, Bar:150, Hover:163, Clicked:166, Button:175, Face:203, FaceHead:216, Sprite:229, Portrait:240
 
 ## UiKit.cs (569 lines)
 - **Kit** (class, L10): Mul:18, N:20, VGrad:25, HGrad:32, Line:39, Disc:46, Vignette:57, Hills:71, HillY:82, Stars:89, Castle:102, Plate:125, PlateBody:136, Fit:158, FitScale:171, TextFit:174, TextFitC:176, Inset:179, Shine:183, Ribbon:196, Divider:215, Shield:226, Banner:266, Icon:313, Ring:333, Pips:352, Gauge:366, TugBar:375, Chart:386, Chip:408, Gilded:419, Toggle:440, Check:453, Slider:464, Stepper:480, Tabs:494, Toast:516, OrderKey:526, Tooltip:541, Wrap:556

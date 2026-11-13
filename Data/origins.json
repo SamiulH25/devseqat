@@ -1,5 +1,5 @@
 {
-  "_comment": "The captain's origins (character creator, Origins.cs). A birth (how you were raised) and a past (what you did before the company) each carry effects applied once when a campaign starts, an age added to 20, an optional free perk, and the line the log shows. Effects: gold:N, renown:N, food:N, horses:N, opinion_realm:N (lords of your homeland), skill:Id:N, gear:id (owned), wear:id (owned and worn), men:troop:N (base men, scaled by ArmyScale), free (no contract: a free company), buff:effect:days (a boon laid on the map when the campaign begins: an effect from effects.json carried into every battle; 0 days = the whole campaign). Events with trigger origin:<id> come only to captains of that birth or past.",
+  "_comment": "The captain's origins (character creator, Origins.cs). Roads also carry 'pros' and 'cons': how the style plays, shown on the ARMS step. A birth (how you were raised) and a past (what you did before the company) each carry effects applied once when a campaign starts, an age added to 20, an optional free perk, and the line the log shows. Effects: gold:N, renown:N, food:N, horses:N, opinion_realm:N (lords of your homeland), skill:Id:N, gear:id (owned), wear:id (owned and worn), men:troop:N (base men, scaled by ArmyScale), free (no contract: a free company), buff:effect:days (a boon laid on the map when the campaign begins: an effect from effects.json carried into every battle; 0 days = the whole campaign). Events with trigger origin:<id> come only to captains of that birth or past.",
   "births": [
     {
       "id": "highborn", "name": "Born in the Hall", "icon": "crown", "age": 6,
@@ -125,10 +125,20 @@
     }
   ],
   "roads": [
-    { "id": "sword", "name": "Sword and Shield", "icon": "shield", "text": "On foot behind a kite shield, as most good soldiers fight. Slow to fall." },
-    { "id": "lance", "name": "Lance and Saddle", "icon": "horse", "text": "A warhorse under you and a boar spear for the charge. Few on foot will stand it." },
-    { "id": "bow", "name": "The Bow", "icon": "arrow", "text": "A hunting bow in hand, the sword at your side. You hit what you aim at." },
-    { "id": "great", "name": "The Greatsword", "icon": "sword", "text": "Both hands on a long blade and no shield. You strike first and hardest, and you take the blows that come back." },
-    { "id": "pole", "name": "Halberd and Line", "icon": "spear", "text": "You learned your trade in the pike line: chop, hook and thrust from out of reach, and know where the next blow will fall." }
+    { "id": "sword", "name": "Sword and Shield", "icon": "shield", "text": "On foot behind a kite shield, as most good soldiers fight. Slow to fall.",
+      "pros": ["Stands up to arrows behind the shield", "Blocks well: hard to bring down in a press", "Good with any company on foot"],
+      "cons": ["Slower blows than a two-hander", "No reach against spears and horse"] },
+    { "id": "lance", "name": "Lance and Saddle", "icon": "horse", "text": "A warhorse under you and a boar spear for the charge. Few on foot will stand it.",
+      "pros": ["The couched charge breaks men on foot", "Fast across the field: be where you are needed", "Rides down archers and routers"],
+      "cons": ["A stopped horse is a dead horse", "Spears braced in a line are death"] },
+    { "id": "bow", "name": "The Bow", "icon": "arrow", "text": "A hunting bow in hand, the sword at your side. You hit what you aim at.",
+      "pros": ["Kills from out of reach", "Picks off captains and sergeants", "Hunts other archers"],
+      "cons": ["Light armour: keep out of the press", "Little to do once the lines meet"] },
+    { "id": "great", "name": "The Greatsword", "icon": "sword", "text": "Both hands on a long blade and no shield. You strike first and hardest, and you take the blows that come back.",
+      "pros": ["The hardest blows a man can strike", "Cuts through shields and mail", "Breaks a wavering line"],
+      "cons": ["No shield: arrows find you", "Every miss leaves you open"] },
+    { "id": "pole", "name": "Halberd and Line", "icon": "spear", "text": "You learned your trade in the pike line: chop, hook and thrust from out of reach, and know where the next blow will fall.",
+      "pros": ["Reach: strike before the sword arrives", "Hooks riders from the saddle", "Stands firm with the pike line"],
+      "cons": ["Clumsy when they get inside the haft", "Slow to recover from a parry"] }
   ]
 }
