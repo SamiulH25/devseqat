@@ -424,6 +424,11 @@ the player rides a courser.
   the craft, each faint, steady or strong (the realm map, M, shows them). Towns where a well reaches hire out circles of mages,
   seasoned ones near a strong well. At a well in your realm a priest can **consecrate** it (120 crowns) or a cunning one
   **bind** it (Omen +5): it turns to that tradition and grows a step. The encounter panel names a well that reaches the field.
+- **The Tide:** every battle holds a pool of power set by the well that reaches its field (none, faint, steady or strong),
+  shown as a thin violet bar under the balance bar while anyone can cast. Both sides' mages draw on it as they spend Will
+  (a spell of the well's own tradition draws half), and it fills back over two minutes. With it run dry the enemy's mages
+  wait, except for their great working; yours, at your order, **overreach**: twice the Will, and a one-in-three chance the
+  working lashes back and strikes a caster down (the spell fan warns you). Casting first can leave the enemy nothing.
 - **The tree:** 287 troops (and the captain, plus 24 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons; javelin men and slingers throw (few shots, short range, hard hits).
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a

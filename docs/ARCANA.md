@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **in progress** (2026-11-13): AR0-AR2 built (see "As built" at the end); AR3-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **in progress** (2026-11-13): AR0-AR3 built (see "As built" at the end); AR4-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 
@@ -281,4 +281,16 @@ something the map and the battle are about.
   strong tide; this replaces 3e46a93's shrine radius. UI: wells on the realm map (M; a mark sized by strength, pale blue
   faith, violet craft, edged white when marked; legend lines), the encounter panel's tide line (`TideNote`). Tests
   `WellsFromSites`, `TideFeedsOffers`. Province neighbours and wells feeding a realm's own culture's mages are left out.
+- **AR3 (the Tide in battle):** `BattleTide.cs`. `BattleOptions.Tide` (0-3; a quick battle 1, the campaign the field's
+  `TideAt`, 0 where no well reaches) and `TideTradition`. `Battle.Tide` / `TideCap` = `TideBase` (60) x (1 + Tide), refilled
+  over `TideRefill` (120 s) while any company can cast (`Arcane`). `PayForCast`: a mage company's cast pays its Will and
+  draws the same from the Tide (`TideDraw`: half for the well's own tradition); short of it, an **overreach** pays twice the
+  Will, empties the Tide and lashes back at `OverreachRisk` (0.35, battle dice): one caster struck to 1 hp (never killed,
+  so nobody's kill is counted), the circle -12 morale, Omen +1 for your craft; counted in `Overreaches`/`Backlashes`.
+  Casting by rule waits for the Tide except a great working, which may overreach; your ordered casts overreach when they
+  must (`OrderedCast`; `CannotCast` says NO TIDE only when even that is out of reach). Heroes' abilities draw nothing.
+  HUD: a thin violet Tide gauge under the tug bar while any company can cast (hover: the Tide and its well); the spell fan
+  reads WILL and TIDE, and a spell that would overreach shows its doubled cost in red (`WouldOverreach`). Auto-resolve:
+  `Campaign.TideEdge` (`Balance.TideWeight` 0.5) by each side's mage share. `--agree` unchanged (its fights have no
+  mages). The general sending horse at an overreaching circle is left for AR5. Tests `TideShared`, `Overreach`.
 

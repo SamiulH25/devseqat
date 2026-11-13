@@ -9,7 +9,7 @@
   "RenownPerVictory": 5, "RenownStrengthDivisor": 50,
   "BaggageBase": 20, "BaggagePerHorse": 5, "MentionPurse": 20, "PensionCost": 40, "NatureWeight": 0.01,
   "CompanySlotsBase": 10, "MenBase": 40, "MenRenownDivisor": 5,
-  "ArmyScale": 3, "DrillWeight": 5, "TraitWeight": 0.1, "AuraWeight": 0.03,
+  "ArmyScale": 3, "DrillWeight": 5, "TraitWeight": 0.1, "AuraWeight": 0.03, "TideWeight": 0.5,
   "FeastPerMan": 6, "RollSize": 6, "VeteranSurvival": 0.6, "FallenCohesion": 1.5, "VillageRecruitsMax": 8, "HealField": 0.08, "HealTown": 0.25, "DrillCamp": 0.6, "DrillTown": 1.2,
   "LordsPerFaction": 8, "BanditsMax": 80, "BanditSpawnChance": 0.95, "BanditSpawnsPerDay": 5, "BanditBandMin": 10, "BanditBandMax": 20,
   "BanditGrowPerDays": 9, "BanditTierPerDays": 45, "LordAggression": 0.35, "TownIncome": 150, "CastleIncome": 90, "VillageIncome": 40, "LordWage": 1.3,

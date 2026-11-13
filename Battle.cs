@@ -240,6 +240,7 @@ public sealed partial class Battle
         SetupAura();
         SetupForms();
         SetupChampion();
+        SetupTide();
         Player.Facing = Player.Heading = MathHelper.PiOver2;
         eGuard = AddSquad(1, Options.EnemyLeader ?? UnitType.Captain, 1, new(0, scripted ? 80 : 34 + Back), 1, -Vector2.UnitY);
         EnemyCaptain = eGuard.Units[0];

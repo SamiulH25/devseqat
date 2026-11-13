@@ -767,6 +767,8 @@ public sealed class Balance
     /// What an aura tier adds to the side its holder leads in auto-resolve (you, or an order knight leading his army): x(1 +
     /// this x tier). Worth a company, never an army (docs/archive/KNIGHT_ORDERS.md 5.7, K6).
     public float AuraWeight = 0.03f;
+    /// How much the Tide (docs/ARCANA.md AR3) moves a side's circles in auto-resolve: x(1 + mage share x this x (tide - 1)).
+    public float TideWeight = 0.5f;
     /// A feast in town, crowns a man (docs/archive/COMPANIONS_MAGIC.md A5).
     public float FeastPerMan = 6;
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).

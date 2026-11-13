@@ -91,6 +91,7 @@ public partial class Battle
     void UpdateAbilities(float dt)
     {
         if (!anyCaster && Casts.Count == 0 && Fields.Count == 0) return;
+        TideTick(dt);
         for (int i = 0; i < Squads.Count; i++)
             if (Squads[i].Spells.Length > 0 && (tick + i * 7) % 30 == 0) ThinkSpells(Squads[i], 0.5f);
         for (int i = Casts.Count - 1; i >= 0; i--)
@@ -117,10 +118,11 @@ public partial class Battle
             bool hero = s.ByHero[i];
             if (Time < s.SpellReady[i] || (a.Great && s.GreatDone)) continue;
             if (hero ? Speaker(s, true) == null : casters == 0 || engaged || s.Will < WillCost(s, a) || s.Will < 20) continue; // under 20 Will a company is drained
+            if (!hero && !TideHolds(a, WillCost(s, a)) && !(a.Great && s.Will >= WillCost(s, a) * 2)) continue; // the Tide is low: wait, but a great working may overreach (BattleTide.cs)
             if (Target(s, a, out var at, out var on) is false) continue;
             float power = SpellPower(s, hero);
             if (power <= 0) continue;
-            if (!hero) s.Will -= WillCost(s, a);
+            if (!hero && !PayForCast(s, a, WillCost(s, a), a.Great)) continue;
             s.SpellReady[i] = Time + a.Cooldown;
             if (a.Great) s.GreatDone = true;
             MarkCast(AddCast(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power }));
@@ -137,6 +139,9 @@ public partial class Battle
     /// An ordered cast costs this much more Will (they break their rhythm for you), and the order lapses after this long.
     public const float OrderedWill = 5, OrderLasts = 30;
 
+    /// The ordered spell i would have to overreach for (the spell fan's warning).
+    public bool WouldOverreach(Squad s, int i) => i >= 0 && i < s.Spells.Length && !s.ByHero[i] && !TideHolds(s.Spells[i], WillCost(s, s.Spells[i]) + OrderedWill);
+
     /// Why the company cannot cast spell i now, or null (the HUD's spell fan; the spot is not known yet).
     public string? CannotCast(Squad s, int i)
     {
@@ -147,6 +152,7 @@ public partial class Battle
         if (a.Great && s.GreatDone) return "SPENT";
         if (Time < s.SpellReady[i]) return $"IN {s.SpellReady[i] - Time:0}";
         if (!hero && (s.Will < WillCost(s, a) + OrderedWill || s.Will < 20)) return "NO WILL";
+        if (!hero && !TideHolds(a, WillCost(s, a) + OrderedWill) && s.Will < (WillCost(s, a) + OrderedWill) * 2) return "NO TIDE";
         return null;
     }
 
@@ -162,6 +168,7 @@ public partial class Battle
         var me = Speaker(s, hero);
         if (me == null || Time < s.SpellReady[i]) return true;
         if (!hero && (casters == 0 || engaged || s.Will < WillCost(s, a) + OrderedWill || s.Will < 20)) return true;
+        if (!hero && !TideHolds(a, WillCost(s, a) + OrderedWill) && s.Will < (WillCost(s, a) + OrderedWill) * 2) return true; // wait for the Tide, or the Will to overreach
         var at = a.Self ? s.Center : s.CastAt;
         if (!a.Self && Vector2.Distance(me.Pos, at) > a.Range)
         {
@@ -180,7 +187,7 @@ public partial class Battle
         }
         float power = SpellPower(s, hero);
         if (power <= 0) return true;
-        if (!hero) s.Will -= WillCost(s, a) + OrderedWill;
+        if (!hero && !PayForCast(s, a, WillCost(s, a) + OrderedWill, true)) return true; // your word: they overreach if they must
         s.SpellReady[i] = Time + a.Cooldown;
         if (a.Great) s.GreatDone = true;
         s.CastSpell = -1;

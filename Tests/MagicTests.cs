@@ -627,5 +627,61 @@ public static partial class SelfTest
         Check(reached > towns.Count / 4, "a good share of towns lie where a well reaches");
         Check(seen.Count > 0 && seen.All(id => c.TideAt(towns.First(t => t.Id == id).Pos).Strength > 0 || towns.First(t => t.Id == id).Buildings.GetValueOrDefault("chapel") > 0), "only those (or a chapel town) offer circles");
     }
+
+    /// The Tide (docs/ARCANA.md AR3): one pool both sides draw on. A cast takes its Will from it too (half for the well's own
+    /// tradition); with it low the circles wait, but a great working or your order overreaches at twice the Will.
+    static void TideShared()
+    {
+        var (b, m, f) = MageScene("battle_priests");
+        Check(b.TideCap == Battle.TideBase * 2 && b.Tide == b.TideCap, "a quick battle's field holds a middling Tide");
+        var foe = b.AddSquad(1, Troops.Get("skalds"), 3, new(20, 30), 3, -Vector2.UnitY);
+        foe.Order = Order.Hold;
+        float tide = b.Tide;
+        Run(b, 12);
+        Check(b.Casts.Count + b.Fields.Count > 0 || b.Tide < tide, "casting draws the Tide down");
+        // A dry field: nobody casts but a great working.
+        var (d, dm, df) = MageScene("battle_priests");
+        d.Tide = 0;
+        float will = dm.Will;
+        for (int i = 0; i < 12 * 60; i++) { d.Tide = 0; d.Update(1 / 60f); }
+        Check(d.Casts.Count == 0 && dm.Will >= will - 1, "with the Tide dry the circle waits and keeps its Will");
+        // The well's own tradition draws half.
+        var a = Abilities.Get("smite");
+        var holy = Battle.Empty(3, new BattleOptions { Tide = 2, TideTradition = "faith" });
+        var dark = Battle.Empty(3, new BattleOptions { Tide = 2, TideTradition = "craft" });
+        Check(holy.TideCap == Battle.TideBase * 3 && holy.TideDraw(a, 20) == 10 && dark.TideDraw(a, 20) == 20, "a steady well holds three times the base; its own tradition draws half");
+    }
+
+    /// Overreach: an ordered cast with the Tide dry costs twice the Will and may lash back on the circle; never kills.
+    static void Overreach()
+    {
+        int lashed = 0, cast = 0;
+        for (int seed = 0; seed < 12; seed++)
+        {
+            var (b, m, f) = MageScene("battle_priests", 80 + seed);
+            m.HoldSpells = true;
+            Run(b, 10);
+            int smite = Array.FindIndex(m.Spells, a => a.Id == "smite");
+            b.Tide = 0;
+            Check(b.WouldOverreach(m, smite) && b.CannotCast(m, smite) == null, $"with Will to spare the spell fan offers an overreach ({b.CannotCast(m, smite)}, will {m.Will:0})");
+            m.CastSpell = smite; m.CastAt = f.Center; m.CastSince = b.Time;
+            float will = m.Will;
+            float hp = m.Units.Sum(u => u.Hp);
+            for (int i = 0; i < 3 * 60 && b.Casts.Count == 0; i++) { b.Tide = 0; b.Update(1 / 60f); }
+            if (b.Casts.Count == 0) continue;
+            cast++;
+            float cost = m.Spells[smite].Will + Battle.OrderedWill;
+            Check(will - m.Will >= cost * 2 - 1, $"an overreach costs twice the Will ({will - m.Will:0} of {cost * 2:0})");
+            Check(b.Overreaches[0] == 1, "it is counted");
+            if (b.Backlashes[0] > 0) { lashed++; Check(m.Units.Sum(u => u.Hp) < hp && m.Units.All(u => !u.Dead), "a backlash strikes a caster down, but does not kill him"); }
+        }
+        Console.WriteLine($"overreach: {cast} of 12 ordered casts went off on a dry Tide, {lashed} lashed back");
+        Check(cast == 12 && lashed > 0 && lashed < 12, "every ordered cast overreaches; some, not all, lash back");
+        // The well reaches the battle: the campaign hands the field's Tide over.
+        var c = Campaign.New(61);
+        var well = c.Sites.First(x => c.Well(x).Strength == 3);
+        Check(c.TideAt(well.Pos).Strength == 3, "the field at a strong well");
+        Check(Campaign.TideEdge(1, new[] { c.Player }, new[] { c.Player }) == 1, "the Tide weighs nothing between equal sides");
+    }
 }
 

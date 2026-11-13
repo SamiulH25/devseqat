@@ -91,4 +91,23 @@ public sealed partial class Campaign
         var (t, n, w) = TideAt(p);
         return n == 0 || w == null ? "" : $"A {TideWord(n)} WELL OF THE {t.ToUpperInvariant()} NEAR: {w.Name.ToUpperInvariant()}.";
     }
+
+    /// The Tide in auto-resolve (AR3): a side's circles weigh more on a strong well's field and less where none reaches, by
+    /// their share of the side's might: x(1 + share x `Balance.TideWeight` x (tide - 1)), one side over the other.
+    public static float TideEdge(int tide, IEnumerable<Party> side0, IEnumerable<Party> side1)
+    {
+        float F(IEnumerable<Party> side)
+        {
+            float all = 0, mages = 0;
+            foreach (var c in side.SelectMany(p => p.Companies))
+            {
+                float m = c.Stacks.Sum(st => Rules.Might(st.Type, st.Men));
+                all += m;
+                if (Rules.RoleOf(c) == "casters") mages += m;
+            }
+            return 1 + (all <= 0 ? 0 : mages / all) * B.TideWeight * (tide - 1);
+        }
+        return F(side0) / F(side1);
+    }
 }
+
