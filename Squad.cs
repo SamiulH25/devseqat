@@ -86,6 +86,8 @@ public sealed class Squad
     public bool HoldSpells;
     /// The rank of a circle's master (0-3, MA4): more Will, a cheaper great working.
     public int MasterRank;
+    /// The circle's doctrine (docs/ARCANA.md AR4): its own spells cost it less Will.
+    public string Doctrine = "";
     public int CastSpell = -1;
     public Vector2 CastAt;
     public float CastSince;

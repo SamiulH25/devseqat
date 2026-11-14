@@ -41,8 +41,36 @@ public sealed partial class Campaign
     {
         var known = Known(c);
         string trad = CircleTradition(c);
-        return Abilities.All.Where(a => (a.Tradition == trad || a.Id == "mend") && !a.Great && !known.Contains(a.Id) && a.Tradition is "faith" or "craft")
+        return Abilities.All.Where(a => (a.Tradition == trad || a.Id == "mend") && !a.Great && !known.Contains(a.Id) && a.Tradition is "faith" or "craft"
+                && (InSomeLine(a.Id) || a.Doctrine == c.Doctrine)) // a doctrine's own spells only to its circles (AR4)
             .OrderBy(a => a.Name);
+    }
+
+    /// A spell some troop line knows (the rest are doctrines' own).
+    static bool InSomeLine(string id) => Troops.All.Any(t => t.Spells.Contains(id));
+
+    /// Spells a circle may learn beyond its line: one more with a doctrine.
+    public static int LearnRoom(CompanyRecord c) => MaxLearned + (c.Doctrine != "" ? 1 : 0);
+
+    /// Why the circle cannot take this doctrine, or null (docs/ARCANA.md AR4).
+    public string? CannotChooseDoctrine(string id)
+    {
+        if (Circle is not CompanyRecord c) return "YOU HAVE NO CIRCLE";
+        if (c.Doctrine != "") return "THEY HAVE CHOSEN THEIR DOCTRINE";
+        var d = Abilities.Doctrines.FirstOrDefault(x => x.Id == id);
+        if (d.Id == null) return "NO SUCH DOCTRINE";
+        if (d.Tradition != CircleTradition(c)) return $"NOT A DOCTRINE OF THE {CircleTradition(c).ToUpperInvariant()}";
+        return null;
+    }
+
+    /// The circle takes a doctrine, once.
+    public string? ChooseDoctrine(string id)
+    {
+        if (CannotChooseDoctrine(id) is string why) return why;
+        var c = Circle!;
+        c.Doctrine = id;
+        Log($"{c.Name} take the doctrine of {Abilities.Doctrines.First(x => x.Id == id).Name}.");
+        return null;
     }
 
     /// Why the circle cannot learn this spell now, or null.
@@ -50,7 +78,7 @@ public sealed partial class Campaign
     {
         if (Circle is not CompanyRecord c) return "YOU HAVE NO CIRCLE";
         if (!Abilities.Has(id) || !Learnable(c).Any(a => a.Id == id)) return "THEY CANNOT LEARN THAT";
-        if (c.Spells.Count >= MaxLearned) return $"THEY KNOW {MaxLearned} SPELLS BEYOND THEIR LINE";
+        if (c.Spells.Count >= LearnRoom(c)) return $"THEY KNOW {LearnRoom(c)} SPELLS BEYOND THEIR LINE";
         string trad = CircleTradition(c);
         bool teacher = Companions.Any(k => S.Hours >= k.WoundedUntil && k.Calling == (trad == "faith" ? "Priest" : "Cunning"))
             || SiteAt(Player.Pos) is { } site && LearnSites.Contains(site.Kind) || trad == "faith" && RelicReady;
@@ -141,7 +169,7 @@ public sealed partial class Campaign
     {
         if (Circle is not CompanyRecord c) return army;
         var list = army.Companies.Select(co => co.Id != c.Id ? co
-            : co with { Spells = Prepared(c), MasterRank = MasterRank(MasterOf(c)), Leaderless = Leaderless(c) }).ToList();
+            : co with { Spells = Prepared(c), MasterRank = MasterRank(MasterOf(c)), Leaderless = Leaderless(c), Doctrine = c.Doctrine }).ToList();
         return army with { Companies = list };
     }
 }

@@ -46,6 +46,7 @@ public partial class Battle
         if (best != null && book != null) ids.AddRange(book.OrderByDescending(id => Abilities.Get(id).Great).Select(id => (id, false))); // a great working when it is time, before the rest
         s.CasterStart = s.Units.Count(u => u.Type.Spells.Length > 0);
         s.MasterRank = company?.MasterRank ?? 0;
+        s.Doctrine = company?.Doctrine ?? "";
         s.Will = WillCap(s);
         if (company?.Leaderless == true) s.GreatDone = true; // no great working without a master
         if (company is { HeroGifts.Length: > 0 } && s.Units.Any(u => u.Hero)) ids.AddRange(company.HeroGifts.Where(Abilities.Has).Select(id => (id, true)));
@@ -62,7 +63,9 @@ public partial class Battle
     /// A circle's full Will: 100, and 10 more for each rank of its master (MA4).
     static float WillCap(Squad s) => 100 + 10 * s.MasterRank;
     /// What a spell costs this company: a master of rank 3 works the great working for 15 less.
-    static float WillCost(Squad s, AbilityDef a) => a.Will - (a.Great && s.MasterRank >= 3 ? 15 : 0);
+    static float WillCost(Squad s, AbilityDef a) => a.Will - (a.Great && s.MasterRank >= 3 ? 15 : 0) - (s.Doctrine != "" && a.Doctrine == s.Doctrine ? DoctrineThrift : 0);
+    /// What a circle saves on the spells of its own doctrine (docs/ARCANA.md AR4).
+    public const float DoctrineThrift = 5;
     public static bool CasterCompany(Squad s) => s.Units.Count > 0 && s.Units[0].Type.Class == UnitClass.Caster;
 
     /// How strong a company's spells land: a caster's tier (0.6 at II, 1 at IV, 1.4 at VI) and how many of them still stand;
@@ -95,7 +98,10 @@ public partial class Battle
         for (int i = 0; i < Squads.Count; i++)
             if (Squads[i].Spells.Length > 0 && (tick + i * 7) % 30 == 0) ThinkSpells(Squads[i], 0.5f);
         for (int i = Casts.Count - 1; i >= 0; i--)
+        {
+            if (i >= Casts.Count) continue; // a working fired before may have unwoven others (Unweave)
             if (Time >= Casts[i].FireAt) { var c = Casts[i]; Casts.RemoveAt(i); Fire(c); }
+        }
         if (tick % 30 == 0) UpdateFields(0.5f);
     }
 
@@ -265,6 +271,11 @@ public partial class Battle
                 if (!Units.Any(u => u.Active && u.Routing && u.Team == s.Team && u.Routs <= 1 && Vector2.DistanceSquared(u.Pos, from) < a.Radius * a.Radius)) return false;
                 at = from;
                 return true;
+            case "casting": // the counterspell (AR4): an enemy working being gathered within range
+                if (Casts.Where(c => c.By.Team != s.Team && c.FireAt > Time + a.Warn && !c.Hero && Vector2.Distance(c.By.Center, from) < range)
+                        .OrderBy(c => c.FireAt).FirstOrDefault() is not Cast foeCast) return false;
+                at = foeCast.By.Center;
+                return true;
             case "losing":
                 if (!Losing(s.Team)) return false;
                 if (a.Kind is "rally" or "buff") { at = centroid[s.Team]; return true; }
@@ -362,6 +373,7 @@ public partial class Battle
         if (a.Effect == "burning" || a.Burn > 0) Sound(Cue.Flame, c.At);
         switch (a.Kind)
         {
+            case "unweave": Unweave(c, team); break;
             case "buff":
                 if (a.Self) AddTimed(c.By, a, c.Power);
                 else foreach (var o in Squads) if (o.Team == team && o.Alive > 0 && Vector2.Distance(o.Center, c.At) < a.Radius + o.Radius) AddTimed(o, a, c.Power);
@@ -474,4 +486,16 @@ public partial class Battle
         foreach (var t in s.Timed) m.Add(t.Effect, t.K);
         return m;
     }
+
+    /// The counterspell lands (docs/ARCANA.md AR4): every enemy working still gathering by casters within its glow comes apart.
+    /// Their Will is spent all the same.
+    void Unweave(Cast c, int team)
+    {
+        int n = Casts.RemoveAll(o => o.By.Team != team && o.FireAt > Time && !o.Hero && Vector2.Distance(o.By.Center, c.At) < c.A.Radius + o.By.Radius);
+        if (n == 0) return;
+        Flash("broken", c.At, c.A.Radius, 1 - team, c.A.Tradition);
+        Sound(Cue.WardShatter, c.At);
+        Log(team == 0 ? $"{c.By.Name} unweave the enemy's working!" : "The enemy's casters unweave your working!");
+    }
 }
+

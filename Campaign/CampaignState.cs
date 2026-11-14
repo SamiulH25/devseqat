@@ -46,6 +46,9 @@ public sealed class CompanyRecord
     /// A circle of mages (docs/archive/MAGIC_AURA.md 3.2-3.3): spells learned beyond its line's, those you prepared for battle
     /// (empty = its line's), its master (a Soldier id on the roll, 0 = none) and until when it is leaderless (hours).
     public List<string> Spells = new(), Prepared = new();
+    /// A circle's doctrine (docs/ARCANA.md AR4; "" = none chosen): its spells cost less Will, it may learn one more spell
+    /// and the doctrine's own spells.
+    public string Doctrine = "";
     public int Master;
     public double LeaderlessUntil;
     /// The roll has been started (a new company names its first man once).

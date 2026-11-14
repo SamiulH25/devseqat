@@ -720,5 +720,38 @@ public static partial class SelfTest
         c.CunningFolk(small);
         Check(small.Companies.Count == 0, "not the rabble");
     }
+
+    /// Doctrines (docs/ARCANA.md AR4): a circle takes one of its tradition's, once; its spells cost it less Will; it may learn
+    /// one more spell and its doctrine's own (Unweave for Vigil). Unweave breaks an enemy working still gathering in its glow.
+    static void DoctrinesAndUnweave()
+    {
+        Check(!Abilities.Validate().Any(), "abilities.json is valid: " + string.Join("; ", Abilities.Validate()));
+        var c = Campaign.New(63);
+        var co = c.Player.Companies.First(x => x.Men > 0);
+        var circle = c.NewCompany("lectors", "casters", 4, 0);
+        c.Player.Companies.Add(circle);
+        Check(c.CannotChooseDoctrine("storm") != null, "a circle of the faith cannot take a doctrine of the craft");
+        Check(!Campaign.Learnable(circle).Any(a => a.Id == "unweave"), "without the doctrine, no Unweave");
+        Check(c.ChooseDoctrine("vigil") == null && circle.Doctrine == "vigil" && c.ChooseDoctrine("mercy") != null, "Vigil, once");
+        Check(Campaign.Learnable(circle).Any(a => a.Id == "unweave") && Campaign.LearnRoom(circle) == Campaign.MaxLearned + 1, "then Unweave can be learned, and one spell more");
+        Check(!Campaign.Learnable(circle).Any(a => a.Id == "wither"), "but not another doctrine's own");
+
+        // In battle: a Vigil circle unweaves an enemy working before it lands, and pays less for its own doctrine.
+        var b = Battle.Empty(64);
+        var mine = b.AddSquad(0, Troops.Get("lectors"), 3, new(0, 0), 3, Vector2.UnitY, new Company("lectors", 3, "casters", Spells: new[] { "unweave", "ward" }, Doctrine: "vigil"));
+        var foe = b.AddSquad(1, Troops.Get("skalds"), 3, new(0, 30), 3, -Vector2.UnitY);
+        mine.Order = foe.Order = Order.Hold; foe.HoldSpells = true;
+        Run(b, 8);
+        b.Casts.Add(new Cast { A = Abilities.Get("lightning"), By = foe, At = mine.Center, Started = b.Time, FireAt = b.Time + 4, Power = 1 });
+        float hp = mine.Units.Sum(u => u.Hp), spent = -1;
+        for (int i = 0; i < 5 * 60; i++)
+        {
+            float w0 = mine.Will;
+            b.Update(1 / 60f);
+            if (spent < 0 && b.Casts.Any(x => x.By == mine)) spent = w0 - mine.Will;
+        }
+        Check(!b.Casts.Any(x => x.By == foe) && mine.Units.Sum(u => u.Hp) >= hp - 0.01f, "the enemy's lightning is unwoven before it falls");
+        Check(MathF.Abs(spent - (Abilities.Get("unweave").Will - Battle.DoctrineThrift)) < 0.5f, $"Unweave cost the Vigil circle {spent:0.0} Will (its doctrine's discount)");
+    }
 }
 

@@ -432,6 +432,9 @@ the player rides a courser.
   (a spell of the well's own tradition draws half), and it fills back over two minutes. With it run dry the enemy's mages
   wait, except for their great working; yours, at your order, **overreach**: twice the Will, and a one-in-three chance the
   working lashes back and strikes a caster down (the spell fan warns you). Casting first can leave the enemy nothing.
+- **Doctrines:** your circle takes one doctrine of its tradition, once, in its spellbook (faith: Mercy, Wrath, Vigil; craft:
+  Storm, Stars, Curse, Fire). Its doctrine's spells cost it 5 less Will, it can learn one more spell, and the doctrine's own:
+  Vigil's **Unweave** breaks an enemy working while it gathers, Curse's **Wither** drags at a company's limbs.
 - **The tree:** 287 troops (and the captain, plus 24 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons; javelin men and slingers throw (few shots, short range, hard hits).
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a

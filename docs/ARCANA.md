@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **in progress** (2026-11-13): AR0-AR3, AR5 and AR6 built (see "As built" at the end); AR4, AR7-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **in progress** (2026-11-13): AR0-AR6 built (see "As built" at the end); AR7-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 
@@ -324,4 +324,13 @@ something the map and the battle are about.
   (III: `Anchored` circles near you overreach without backlash for 15 s), Kindle the Tide (IV, great: Tide and Will full);
   aspects `hearth_deep`, `hearth_long`. K sheet `PathBlock`: three buttons with tooltips, then the path's line. Sworn orders
   are not yet bound to a path, the second shallow path and breakthrough choices are left out. Test `PathsDiffer`.
+- **AR4 (doctrines, the counterspell):** `AbilityDef.Doctrine` on every faith and craft spell (`Abilities.Doctrines`: faith
+  mercy, wrath, vigil; craft storm, stars, curse, fire; `Validate` wants one of the spell's tradition). `CompanyRecord.Doctrine`,
+  `ChooseDoctrine` / `CannotChooseDoctrine` (Circle.cs, once, of the circle's tradition); `LearnRoom` (one more spell);
+  `Learnable` offers spells in no troop's line (`InSomeLine`) only to their doctrine. In battle `Company.Doctrine` ->
+  `Squad.Doctrine`: `WillCost` takes `DoctrineThrift` (5) off its own spells. New spells: **Unweave** (vigil; kind `unweave`,
+  rule `casting`: the enemy's working gathering within range comes apart, `Battle.Unweave`) and **Wither** (curse; effect
+  `withered`: tire, slower). The fire loop in `UpdateAbilities` now survives a working that unweaves others. Spellbook:
+  `DoctrineRow` (choose, then the doctrine's line). Smaller than planned: two new spells, not ten; doctrines do not change
+  which troop lines a circle hires; lords' circles have none. Test `DoctrinesAndUnweave`.
 
