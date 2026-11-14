@@ -694,6 +694,31 @@ public sealed class CampaignState
 /// Deterministic random numbers whose state lives in the save (System.Random cannot be saved). xorshift64*.
 public sealed class Rng
 {
+    /// A stable mix of numbers into one (splitmix64 steps). Use it, never `HashCode.Combine` or `string.GetHashCode`, for
+    /// anything the campaign decides by: those are seeded afresh in every process, so a loaded save, or the same seed run
+    /// again, would get other weather, other battle seeds and other stock.
+    public static int Mix(params int[] values)
+    {
+        ulong h = 0x9E3779B97F4A7C15UL;
+        foreach (int v in values)
+        {
+            h ^= (uint)v;
+            h += 0x9E3779B97F4A7C15UL;
+            h = (h ^ (h >> 30)) * 0xBF58476D1CE4E5B9UL;
+            h = (h ^ (h >> 27)) * 0x94D049BB133111EBUL;
+            h ^= h >> 31;
+        }
+        return (int)(h ^ (h >> 32));
+    }
+
+    /// A stable number for a string (FNV-1a), for `Mix`.
+    public static int Of(string s)
+    {
+        uint h = 2166136261;
+        foreach (char ch in s) { h ^= ch; h *= 16777619; }
+        return (int)h;
+    }
+
     readonly CampaignState s;
     readonly bool roll, orders, kin;
     public Rng(CampaignState state) { s = state; if (s.Rng == 0) s.Rng = 0x9E3779B97F4A7C15UL ^ (ulong)(uint)s.Seed; }

@@ -23,6 +23,10 @@ sim=$(ls Battle*.cs Squad.cs Units.cs Terrain.cs | grep -v '^BattleScreen')
 grep -nE 'Random\.Shared|new Random\(\)|DateTime\.|Stopwatch|Environment\.TickCount' $sim \
   && fail "battle sim above uses unseeded randomness or the clock (use the battle's own rng; replays must reproduce)"
 
+echo "== campaign and sim never hash with per-process seeds"
+grep -nE 'HashCode\.|GetHashCode\(' $sim Campaign/*.cs | grep -v '^Campaign/CampaignState.cs:.*///' \
+  && fail "HashCode.Combine and GetHashCode are seeded afresh in every process: use Rng.Mix / Rng.Of so saves and seeds play the same"
+
 echo "== docs/CODEMAP.md is current"
 tools/codemap.sh --check >/dev/null || fail "docs/CODEMAP.md is stale: run tools/codemap.sh and commit it (new files must be 'git add'ed first)"
 

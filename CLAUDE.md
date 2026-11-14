@@ -115,7 +115,8 @@ be cut down (BattleCourier.cs). `Direct(squad, act)` delays a plain order and se
 (`Campaign.WithDivisions`, Campaign/Divisions.cs); `Armies.Divide` splits big AI armies. Battle UI: `Hud.Divisions.cs`, Y key.
 
 Battle randomness uses its own seeded `rng` only: replays (`Replay.cs`) must reproduce exactly, so never use `Random.Shared`
-or wall-clock time in the sim; `SelfTest.ReplayExact` checks it.
+or wall-clock time in the sim; `SelfTest.ReplayExact` checks it. In the campaign and the sim, mix numbers with `Rng.Mix` / `Rng.Of`, never
+`HashCode.Combine` or `GetHashCode` (seeded afresh in every process: a save would get other weather and battle seeds); `tools/check.sh` refuses them.
 
 ### Campaign tick (`Campaign.Tick(hours)`, 0.25 h steps, stops on `Encounter`/`Arrived`)
 Ticks live in `Campaign.cs`; the AI they call (`LordThink`, `BanditThink`, `FactionAI`) in `CampaignAI.cs`.

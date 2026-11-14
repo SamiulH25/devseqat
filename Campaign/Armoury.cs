@@ -118,7 +118,7 @@ public sealed partial class Campaign
     public (ItemQuality Quality, string Mark) StockMake(Settlement s, GearDef g)
     {
         int week = (int)(S.Hours / (24 * 7));
-        uint h = (uint)HashCode.Combine(S.Seed, s.Id, week, g.Id.GetHashCode(StringComparison.Ordinal), 77);
+        uint h = (uint)Rng.Mix(S.Seed, s.Id, week, Rng.Of(g.Id), 77);
         int roll = (int)(h % 100);
         var q = s.Kind == SettlementKind.Town && roll < 8 ? ItemQuality.Masterwork : roll < (s.Kind == SettlementKind.Village ? 10 : 30) ? ItemQuality.Fine : ItemQuality.Plain;
         var marks = MarksFor(g.Slot).ToList();
@@ -133,7 +133,7 @@ public sealed partial class Campaign
         int week = (int)(S.Hours / (24 * 7));
         int chance = s.Kind switch { SettlementKind.Town => 70, SettlementKind.Castle => 45, _ => 20 };
         return Gear.All.Where(g => !g.Free && (s.Kind != SettlementKind.Village || g.Cost <= 300)
-            && (uint)HashCode.Combine(S.Seed, s.Id, week, g.Id.GetHashCode(StringComparison.Ordinal)) % 100 < chance).ToList();
+            && (uint)Rng.Mix(S.Seed, s.Id, week, Rng.Of(g.Id)) % 100 < chance).ToList();
     }
 
     /// Buy a piece (of a make, with a mark) and wear it at once (a weapon goes in the main hand).

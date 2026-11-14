@@ -87,7 +87,7 @@ public sealed partial class Campaign
     }
 
     /// The weather a battle with this party would be fought in (the same roll PrepareBattle makes).
-    public Weather WeatherFor(Party enemy) => Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, enemy.Id));
+    public Weather WeatherFor(Party enemy) => Weather.For((float)(S.Hours % 24), SeasonIndex, Rng.Mix(S.Seed, (int)S.Hours, enemy.Id));
 
     /// What the prepared spells make of the weather for the encounter panel: a spell it blocks (rain spells in the dry,
     /// fire in the rain).

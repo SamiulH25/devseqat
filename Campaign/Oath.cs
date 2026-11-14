@@ -70,7 +70,7 @@ public sealed partial class Campaign
         var def = KnightOrders.Get(order);
         var o = OrderById(order)!;
         var setup = new BattleSetup { EnemyName = $"A knight of {def.Short}", Trial = order };
-        setup.Seed = HashCode.Combine(S.Seed, (int)(S.Hours * 4), order.GetHashCode(StringComparison.Ordinal) & 0xffff, 93);
+        setup.Seed = Rng.Mix(S.Seed, (int)(S.Hours * 4), Rng.Of(order) & 0xffff, 93);
         setup.Player = new ArmySpec("You", 0, new List<Company>());
         setup.Enemy = new ArmySpec(setup.EnemyName, 0, new List<Company>());
         int mine = Style.PaletteOf(Math.Max(0, Captain.Contract)), his = Style.PaletteOf(o.Patron);
