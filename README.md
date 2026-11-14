@@ -421,7 +421,8 @@ the player rides a courser.
   may leave you. Champions are rare: only a great lord (tier 4 up, one in three) brings one, or the lord a companion who left you
   now serves.
 - **Blessings and rites:** a shrine visit, a feast in a tavern (TAVERN tab) or a camp rite (party screen: bless, poultices,
-  read the bones, call rain; needs a Priest or Cunning companion or mages) give buffs that go into your next battles. Hunger
+  read the bones, call rain, consecrate or bind a well, blight an enemy province's harvest, calm the dead of a province for a
+  month; needs a Priest or Cunning companion or mages) give buffs that go into your next battles. Hunger
   hurts. A relic found in a ruin blesses three battles; a shrine fills it again. Chips above the captain's panel show them.
 - **Wells:** shrines, springs and hermits' cells are wells of the faith; standing stones, ruins and old battlefields wells of
   the craft, each faint, steady or strong (the realm map, M, shows them). Towns where a well reaches hire out circles of mages,

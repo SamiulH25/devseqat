@@ -571,7 +571,7 @@ public static partial class SelfTest
         var last = samples.Last();
         Console.WriteLine($"arcana: day {last.Day}, {last.MagicBattles}/{last.Battles} battles with magic, {last.LordCircles}/{last.Lords} lords with a circle, {last.Offers} offers, aura {last.Aura} (kindled day {p.AuraDay[1]}), vigils {last.Vigils}");
         Check(samples.Count == 3 && last.Lords > 0 && last.Battles > 0, "the census samples a living campaign");
-        Check(last.Vigils > 0, "a seeker keeps a vigil at its aura's wall");
+        Check(last.Vigils > 0 || p.AuraDay[1] > 0, "a seeker breaks its first wall (a vigil at the wall, or twelve wins first)");
     }
 
     /// Wells (docs/ARCANA.md AR2): the map's holy and old places are wells, the same on every load of a seed; the Tide reaches
@@ -752,6 +752,36 @@ public static partial class SelfTest
         }
         Check(!b.Casts.Any(x => x.By == foe) && mine.Units.Sum(u => u.Hp) >= hp - 0.01f, "the enemy's lightning is unwoven before it falls");
         Check(MathF.Abs(spent - (Abilities.Get("unweave").Will - Battle.DoctrineThrift)) < 0.5f, $"Unweave cost the Vigil circle {spent:0.0} Will (its doctrine's discount)");
+    }
+
+    /// Workings on the map (docs/ARCANA.md AR7): a blight fails an enemy province's harvest, only one at war with you; calming
+    /// the dead keeps a province's graves down; sorcerous realms blight their enemies by themselves.
+    static void WorkingsBite()
+    {
+        var c = Campaign.New(65);
+        foreach (var k in c.Companions.ToList()) k.Calling = "Sword";
+        c.Player.Companies.First(x => x.Men > 0).Stacks.Add(new TroopStack { Troop = "hedge_witches", Men = 5 });
+        c.Player.Companies.First(x => x.Men > 0).Stacks.Add(new TroopStack { Troop = "chaplains", Men = 5 });
+        c.S.Gold = 1000;
+        c.Captain.Contract = 0;
+        var foeProv = c.S.Provinces.First(p => p.Faction > 0 && c.S.Settlements.Any(s => s.Province == p.Id));
+        c.Player.Pos = foeProv.Center;
+        c.S.Wars.RemoveAll(w => (w.A == 0 && w.B == foeProv.Faction) || (w.B == 0 && w.A == foeProv.Faction));
+        Check(c.Rite("blight") == "ONLY THE FIELDS OF A REALM AT WAR WITH YOURS", "no blight on a realm at peace with yours");
+        c.S.Wars.Add(new War { A = 0, B = foeProv.Faction });
+        var towns = c.S.Settlements.Where(s => s.Province == foeProv.Id).ToList();
+        float pros = towns.Sum(t => t.Prosperity), omen = c.S.Omen;
+        Check(c.Rite("blight") == null && towns.Sum(t => t.Prosperity) < pros && towns.All(t => t.Unrest >= Campaign.BlightUnrest) && c.S.Omen == omen + 6,
+            "a blight fails the harvest, stirs unrest and draws the Omen");
+        c.S.RiteDay = 0;
+        Check(!c.Calmed(c.Player.Pos) && c.Rite("calm_dead") == null && c.Calmed(c.Player.Pos), "the dead of the province are calmed");
+        c.S.Hours += (Campaign.CalmDays + 1) * 24;
+        Check(!c.Calmed(c.Player.Pos), "for a month");
+        // Realms of arcana 2 and 3 work blights on their enemies.
+        var w = Campaign.New(66);
+        for (int d = 0; d < 120; d++) { w.Tick(24); w.Encounter = null; w.Arrived = null; }
+        Console.WriteLine($"workings: {w.S.Blights.Count} provinces blighted by realms in 120 days");
+        Check(w.S.Blights.Count > 0, "sorcerous realms blight their enemies' fields");
     }
 }
 

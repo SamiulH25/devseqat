@@ -631,6 +631,9 @@ public sealed class CampaignState
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
     /// Wells consecrated or bound, by site id (docs/ARCANA.md AR2); the rest are as the map made them.
     public Dictionary<int, WellMark> WellMarks = new();
+    /// Workings on the map (docs/ARCANA.md AR7): the day each province was last blighted, and until when its dead are calmed.
+    public Dictionary<int, int> Blights = new();
+    public Dictionary<int, double> Calmed = new();
     public List<Character> Characters = new();
     public int CaptainChar = -1;
     /// Your divisions (docs/archive/COMBAT_OVERHAUL.md 1.5): who leads each and the goal it starts a battle with.

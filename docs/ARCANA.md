@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **in progress** (2026-11-13): AR0-AR6 built (see "As built" at the end); AR7-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **in progress** (2026-11-13): AR0-AR7 built (see "As built" at the end); AR8-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 
@@ -333,4 +333,11 @@ something the map and the battle are about.
   `withered`: tire, slower). The fire loop in `UpdateAbilities` now survives a working that unweaves others. Spellbook:
   `DoctrineRow` (choose, then the doctrine's line). Smaller than planned: two new spells, not ten; doctrines do not change
   which troop lines a circle hires; lords' circles have none. Test `DoctrinesAndUnweave`.
+- **AR7 (workings on the map):** `Campaign/Workings.cs`. Two new rites (Rites.cs): **Blight the harvest** (craft, Omen +6;
+  `CannotBlight`: only in a province of a realm at war with yours) takes `BlightProsperity` (12) and adds `BlightUnrest` (10)
+  in each of its settlements; **Calm the dead** (faith, 60 crowns): `CampaignState.Calmed[province]` for `CalmDays` (30),
+  read in `GravesDaily` (`Calmed`). `WorkingsWeekly`: a realm of arcana 2 (one week in six) or 3 (one in three) blights an
+  enemy province bordering its own, not one blighted in the last 60 days (`CampaignState.Blights`; `Rng.Mix`, no dice), with
+  a log line; seed 66: 9 provinces in 120 days. Read the bones and Call rain already were scry and storm the roads. Left out:
+  Omen per province, AI answering a blight, bless the walls. Test `WorkingsBite`.
 

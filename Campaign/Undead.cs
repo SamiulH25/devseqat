@@ -42,6 +42,7 @@ public partial class Campaign
         {
             double days = (S.Hours - g.Hours) / 24;
             if (days > B.GraveDays) { S.Graves.Remove(g); continue; }
+            if (Calmed(g.Pos)) continue; // calmed by a rite (Workings.cs)
             if (days < B.GraveRiseDays * (S.Omen >= OmenStirs ? 0.5f : 1) || UndeadHosts.Count() >= B.UndeadMax || !rng.Chance(B.GraveRiseChance)) continue;
             S.Graves.Remove(g);
             RaiseHost(g);

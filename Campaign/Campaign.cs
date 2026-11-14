@@ -441,6 +441,7 @@ public sealed partial class Campaign
     void Weekly()
     {
         RelationsWeekly();
+        WorkingsWeekly(); // sorcerous realms blight their enemies' fields (Workings.cs)
         BondsWeekly(); // feuding lords come to blows (LordBonds.cs)
         CompanionsWeekly();
         WanderersWeekly();
