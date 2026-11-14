@@ -515,7 +515,7 @@ sealed partial class Hud
             string name = f.Name.ToUpperInvariant();
             while (name.Length > 2 && TW(name, 1) > bw - U(8)) name = name[..^1];
             Text(name, r.X + U(4), r.Y + U(12), ready ? Color.White : Dim, 1);
-            string cost = spent ? "SPENT" : B.FormWait(i) > 0 ? $"{B.FormWait(i):0}" : $"{f.Aura:0}";
+            string cost = spent ? "SPENT" : B.FormWait(i) > 0 ? $"{B.FormWait(i):0}" : $"{B.FormCost(f):0}";
             TextR(cost, r.Right - U(4), r.Y + U(3), ready ? Style.Aura : Dim, 1);
         }
     }

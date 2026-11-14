@@ -465,6 +465,8 @@ public sealed class CaptainState
     public bool AuraWall;
     /// Battles won while the first wall stands (docs/ARCANA.md AR1): a fought one counts two; at `Campaign.SeasonWins` it wakes.
     public int WallWins;
+    /// The path the aura walks (docs/ARCANA.md AR6): "sword", "banner", "hearth", or "" (not chosen yet).
+    public string Path = "";
     /// When a cracked core (the `core` wound, K5) mends of itself.
     public float CoreUntil;
     /// The forms you know, in slot order (5.6), and how often each was used (its rank); the Black Flame in you (7).

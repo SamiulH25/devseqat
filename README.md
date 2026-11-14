@@ -318,7 +318,10 @@ The core tension: **you are strongest as a leader when you are in the fight, but
   (Kindled, Aura Knight, Aura Expert, Aura Master, Transcendent), each wall broken by a trial. The first wall also gives way
   after twelve won battles (a battle you fight yourself counts two); a won duel or a won tournament breaks the walls up to
   Aura Knight. At a wall the captain sheet (K) lists each trial that would break it and where to find one now (the nearest
-  vigil site, a lord who would meet you). The pool on your panel pays
+  vigil site, a lord who would meet you). Once it wakes you choose its **path**, once, on the captain sheet: the **Sword**
+  (your forms cost less), the **Banner** (your aura steadies the companies round you from the first tier and further off;
+  forms that hold them and turn the broken back) or the **Hearth** (your circle near you draws half from the Tide; forms
+  that lend it your aura, anchor its overreach so it cannot lash back, and wake the Tide to the brim). The pool on your panel pays
   for the aura blade (hold ALT) and your forms (U, I, O, and L for the great form). It comes back slowly as you move, twice as
   fast standing still with no foe within 30 m, and only a little in a fight. Land blows at full aura and the overflow banks a
   **surge** (up to 20) that your next form spends first. Under 20 you are **spent**: your blows land 10% lighter and your breath

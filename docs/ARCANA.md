@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **in progress** (2026-11-13): AR0-AR3 built, AR5 begun (see "As built" at the end); AR4, the rest of AR5, AR6-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **in progress** (2026-11-13): AR0-AR3, AR5 and AR6 built (see "As built" at the end); AR4, AR7-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 
@@ -313,4 +313,15 @@ something the map and the battle are about.
 - **Found on the way:** campaign weather, battle seeds, armourers' stock and more were mixed with `HashCode.Combine`, which
   .NET seeds per process; the same save went another way in every run. Now `Rng.Mix`/`Rng.Of` (commit "the same save plays
   the same in every process"); `tools/check.sh` refuses `HashCode` in campaign and sim code.
+- **AR6 (paths):** `CaptainState.Path` ("" until chosen; old saves choose when they next open K), `Campaign.ChoosePath` /
+  `CannotChoosePath` / `PathLine` (Aura.cs), once, from Kindled; `LearnForms` learns the path's forms by tier
+  (`Forms.OfPath`; `FormDef.Path`, `Act`; `Forms.Generic` leaves them out). Into battle as `BattleOptions.Path` (`WithCaptain`,
+  only with a woken aura). `BattlePaths.cs`: **Sword** `FormCost` x`SwordThrift` (0.85; HUD form bar and K sheet show it);
+  **Banner** `InspireFrom` tier 1 and `InspireReach` 16 m (was tier 2, 10 m), forms Hold Fast (I, `held`), Steady Them (III,
+  new effect `steadied`), The Unbroken Banner (IV, great), all `buff` forms (which also turn routers back); **Hearth**
+  `Hearthside` (your caster company within `HearthReach` 25 m) draws `HearthDraw` (0.5) from the Tide (`TideDraw` takes the
+  squad), forms of the new kind `hearth` with an `act`: Lend Aura (I: your aura x1.2 into the nearest circle's Will), Anchor
+  (III: `Anchored` circles near you overreach without backlash for 15 s), Kindle the Tide (IV, great: Tide and Will full);
+  aspects `hearth_deep`, `hearth_long`. K sheet `PathBlock`: three buttons with tooltips, then the path's line. Sworn orders
+  are not yet bound to a path, the second shallow path and breakthrough choices are left out. Test `PathsDiffer`.
 

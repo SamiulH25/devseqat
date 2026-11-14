@@ -98,7 +98,7 @@ public sealed partial class Campaign
     /// Learn the forms anyone may at your tier (Focus when kindled, Aura Slash as an expert, Aura Burst as a master).
     void LearnForms()
     {
-        foreach (var f in Forms.Generic)
+        foreach (var f in Forms.Generic.Concat(Forms.OfPath(Captain.Path)))
             if (f.Tier <= Captain.AuraTier) LearnForm(f.Id);
         LearnFlameForms();
     }
@@ -240,4 +240,35 @@ public sealed partial class Campaign
 
     /// The aura news for this report, cleared once read.
     string TakeAuraNews() { var s = auraNews; auraNews = ""; return s; }
+
+    // ---- the captain's path (docs/ARCANA.md AR6) ----
+
+    /// What each path is, one line (the captain sheet).
+    public static string PathLine(string path) => path switch
+    {
+        "sword" => "THE SWORD: YOUR FORMS COST LESS AURA. THE ORDERS' FORMS AND YOUR OWN FORM ARE THIS ROAD.",
+        "banner" => "THE BANNER: YOUR AURA STEADIES YOUR MEN FROM THE FIRST TIER, FURTHER OFF; FORMS THAT HOLD AND RALLY THEM.",
+        "hearth" => "THE HEARTH: YOUR CIRCLE NEAR YOU DRAWS HALF FROM THE TIDE; FORMS THAT LEND IT AURA, ANCHOR IT, WAKE THE TIDE.",
+        _ => "",
+    };
+
+    /// Why you cannot take this path now, or null.
+    public string? CannotChoosePath(string path)
+    {
+        if (!Forms.Paths.Contains(path)) return "NO SUCH PATH";
+        if (Captain.AuraTier < 1) return "YOUR AURA HAS NOT WOKEN";
+        if (Captain.Path != "") return "YOU HAVE CHOSEN YOUR PATH";
+        return null;
+    }
+
+    /// Take a path, once: its forms of your tier and below are learned at once, the rest as your aura rises.
+    public string? ChoosePath(string path)
+    {
+        if (CannotChoosePath(path) is string why) return why;
+        Captain.Path = path;
+        LearnForms();
+        Deed($"You take the path of the {path switch { "sword" => "Sword", "banner" => "Banner", _ => "Hearth" }}.", "aura");
+        return null;
+    }
 }
+

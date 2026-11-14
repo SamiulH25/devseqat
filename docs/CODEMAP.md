@@ -122,9 +122,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleFlame.cs (40 lines)
 - **Battle** (class, L7): Madness:17
 
-## BattleForms.cs (246 lines)
+## BattleForms.cs (248 lines)
 - **PendingForm** (record, L6)
-- **Battle** (class, L10): FormWait:26, SetupForms:33, FormPower:47, CannotForm:50, UpdateForms:66, TryForm:77, Use:94, AsAbility:122, FoesNear:125, FormBlow:130, Land:138, InCone:159, InLine:169, Shout:176, Leap:189, AuraShot:219, Drain:230, CounterStrike:242
+- **Battle** (class, L10): FormWait:26, SetupForms:33, FormPower:47, CannotForm:50, UpdateForms:66, TryForm:77, Use:95, AsAbility:124, FoesNear:127, FormBlow:132, Land:140, InCone:161, InLine:171, Shout:178, Leap:191, AuraShot:221, Drain:232, CounterStrike:244
 
 ## BattleGrid.cs (133 lines)
 - **Battle** (class, L7): CellOf:14, BuildGrid:16, Near:28, Separate:104
@@ -233,18 +233,18 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Plan** (enum, L6)
 - **Battle** (class, L13): TacticsEvery:16, SightOf:17, Tactics:20, Wits:32, FlankThreat:101, Pinner:121, FlankSide:135, static:145, Wrap:155, Rotate:175, Choose:194, NextVictim:213, AvgMorale:226, SetPlan:235
 
-## BattleTide.cs (64 lines)
-- **Battle** (class, L9): SetupTide:22, TideTick:28, TideDraw:31, TideHolds:34, PayForCast:37, LashBack:49
+## BattleTide.cs (66 lines)
+- **Battle** (class, L9): SetupTide:22, TideTick:28, TideDraw:32, TideHolds:36, PayForCast:39, LashBack:51
 
-## BattleTypes.cs (154 lines)
+## BattleTypes.cs (156 lines)
 - **BattleOptions** (class, L4)
-- **Weather** (record, L88): For:91
-- **LeaderFate** (enum, L111)
-- **CompanyResult** (record, L115)
-- **NamedResult** (record, L122)
-- **StackResult** (record, L125)
-- **BattleResult** (record, L130)
-- **Blow** (struct, L155)
+- **Weather** (record, L90): For:93
+- **LeaderFate** (enum, L113)
+- **CompanyResult** (record, L117)
+- **NamedResult** (record, L124)
+- **StackResult** (record, L127)
+- **BattleResult** (record, L132)
+- **Blow** (struct, L157)
 
 ## BattleWings.cs (127 lines)
 - **Battle** (class, L9): MeleeTime:12, Rallies:15, RallyPoint:18, RideToRally:30, HorseWits:43, HorsePrey:63, ChargeLane:80, HoldsFire:93, BowsWits:97, Focus:126
@@ -255,8 +255,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Armoury.cs (249 lines)
 - **Campaign** (class, L4): MigrateGear:10, ChooseRoad:32, TakeRoad:35, OfferRoad:69, Own:71, Own:73, Unequip:89, Owns:101, Wears:102, CannotUse:105, CannotBuy:108, ArmourerStock:131, BuyGear:140, Equip:151, ClearSide:177, SellGear:180, SellPrice:192, SpoilMake:217, MarkFor:226, SpoilFrom:233, TakeSpoil:240
 
-## Campaign/Aura.cs (243 lines)
-- **Campaign** (class, L7): AuraName:13, GainAura:33, BreakThrough:44, AuraAfterBattle:64, Seasoned:78, AuraAfterDuel:86, FormRank:96, LearnForms:99, LearnForm:107, SlotForm:116, SlottedForms:125, FormsAfterBattle:129, TrialsFor:144, NearestTrials:154, VigilAt:191, KeepVigil:194, CrackCore:204, MendCore:213, CoreDaily:222, GriefTrial:230, ChampionAbove:238, TakeAuraNews:242
+## Campaign/Aura.cs (274 lines)
+- **Campaign** (class, L7): AuraName:13, GainAura:33, BreakThrough:44, AuraAfterBattle:64, Seasoned:78, AuraAfterDuel:86, FormRank:96, LearnForms:99, LearnForm:107, SlotForm:116, SlottedForms:125, FormsAfterBattle:129, TrialsFor:144, NearestTrials:154, VigilAt:191, KeepVigil:194, CrackCore:204, MendCore:213, CoreDaily:222, GriefTrial:230, ChampionAbove:238, TakeAuraNews:242, PathLine:247, CannotChoosePath:256, ChoosePath:265
 
 ## Campaign/Beasts.cs (212 lines)
 - **Campaign** (class, L9): MonsterLeader:14, LeaderOf:27, LairWord:30, SpawnNest:42, GrowNest:66, SpawnBears:80, BearThink:103, SpawnWyvern:127, WyvernThink:152, Flee:171, Wander:179, Ravage:189, PlunderNews:204
@@ -293,7 +293,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/CampaignSiege.cs (271 lines)
 - **Campaign** (class, L6): RecruitTroop:9, RecruitTroop:11, Income:14, RaiseGarrison:25, GarrisonTemper:39, GarrisonParty:42, GarrisonMen:48, MaxSupplies:51, GarrisonsWeekly:54, Station:74, Withdraw:84, CanBesiege:98, Besiege:108, LiftSiege:118, LaddersIn:127, PrepareAssault:129, AutoResolveAssault:145, AfterAssault:153, Capture:177, TryBesiege:210, SiegeHourly:235, SiegesDaily:241
 
-## Campaign/CampaignState.cs (913 lines)
+## Campaign/CampaignState.cs (915 lines)
 - **SettlementKind** (enum, L10)
 - **PartyKind** (enum, L12)
 - **CompanyRecord** (class, L16): Stack:70, Prune:77
@@ -320,15 +320,15 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Payment** (class, L423)
 - **Summons** (class, L430)
 - **CaptainState** (class, L436)
-- **CaptainLook** (class, L505)
-- **CaptainKit** (class, L512)
-- **LogEntry** (class, L520)
-- **Buff** (class, L527)
-- **CampaignState** (class, L533): Serialize:636, Deserialize:638, Save:654, Load:669, Exists:691
-- **Rng** (class, L695): Mix:700, Of:715, Rng:724, Rng:726, Orders:728, Rng:734, Kin:736, NextU:744, Float:752, Next:753, Next:754, Range:755, Chance:756, Pick:757
-- **Balance** (class, L761): Get:865
-- **CultureNames** (class, L881)
-- **Names** (class, L887): PlacesOf:894, LordsOf:895, MenOf:897, LadiesOf:899, Get:902
+- **CaptainLook** (class, L507)
+- **CaptainKit** (class, L514)
+- **LogEntry** (class, L522)
+- **Buff** (class, L529)
+- **CampaignState** (class, L535): Serialize:638, Deserialize:640, Save:656, Load:671, Exists:693
+- **Rng** (class, L697): Mix:702, Of:717, Rng:726, Rng:728, Orders:730, Rng:736, Kin:738, NextU:746, Float:754, Next:755, Next:756, Range:757, Chance:758, Pick:759
+- **Balance** (class, L763): Get:867
+- **CultureNames** (class, L883)
+- **Names** (class, L889): PlacesOf:896, LordsOf:897, MenOf:899, LadiesOf:901, Get:904
 
 ## Campaign/CampaignWar.cs (297 lines)
 - **Campaign** (class, L6): TakePrisoners:10, RecruitPrisoners:21, SellPrisoners:42, FreePrisoners:56, LordRansom:64, RansomLord:66, FreeLord:78, Release:87, PrisonersWeekly:95, WithOfficer:110, OfficerAfterBattle:116, FoodPrice:147, BuyFood:150, Forage:161, EatDaily:183, Offers:211, OfferValid:219, RefreshOffers:226, Accept:245, CheckContracts:257, SergeantName:296
@@ -350,6 +350,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **HonourMods** (struct, L14)
 - **Honours** (class, L16): Get:32, Of:34, Stat:42, Earn:49
 - **Campaign** (class, L64): CultureName:69, Scaled:73, NewCompany:75, Enlist:86, Destination:106, RoleWord:128, ManCulture:132, CultureWord:138, CanEnterLine:142, HasBarracks:157, PromoteCostFor:164, CanTrainHere:171, Promotable:175, PromoteMen:204, Promote:237, PromoteAll:250, BranchRank:277, MoveStack:290, SplitStack:305, Chronicle:329
+
+## Campaign/CourtMages.cs (54 lines)
+- **Campaign** (class, L6): MageTitle:9, NameCourtMage:12, CourtMageOf:29, CourtMagesAfterBattle:33, CunningFolk:46
 
 ## Campaign/Diplomacy.cs (370 lines)
 - **Terms** (enum, L6)
@@ -452,11 +455,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/RollChoices.cs (202 lines)
 - **Campaign** (class, L6): NatureTrait:17, Armed:23, OfBanner:26, SergeantChoice:31, SergeantMen:40, OpenSergeantPick:44, CannotChooseSergeant:53, ChooseSergeant:62, CannotMention:89, Mention:96, Givable:112, CannotArm:115, Arm:125, CannotPension:149, Pension:157, CannotMoveMan:178, MoveMan:188
 
-## Campaign/Rules.cs (323 lines)
+## Campaign/Rules.cs (324 lines)
 - **CompanyReport** (record, L6)
 - **BattleReport** (record, L10)
 - **BattleSetup** (class, L37)
-- **Rules** (class, L57): RoleOf:61, TroopRole:64, Fits:68, TierWeight:76, Cap:80, PerMan:84, Places:87, Room:90, CapOf:94, Strength:96, Strength:106, Might:109, MightAt:111, Might:113, Strength:114, Upkeep:116, UpgradeReady:119, PromoteCost:123, NeedsHorse:132, AddMen:135, CanMerge:141, Merge:144, CompanyName:165, CaptainType:175, CaptainMount:206, WithCaptain:215, CompanySlots:235, MenLimit:237, static:241, AutoResolve:252, Army:309
+- **Rules** (class, L57): RoleOf:61, TroopRole:64, Fits:68, TierWeight:76, Cap:80, PerMan:84, Places:87, Room:90, CapOf:94, Strength:96, Strength:106, Might:109, MightAt:111, Might:113, Strength:114, Upkeep:116, UpgradeReady:119, PromoteCost:123, NeedsHorse:132, AddMen:135, CanMerge:141, Merge:144, CompanyName:165, CaptainType:175, CaptainMount:206, WithCaptain:215, CompanySlots:236, MenLimit:238, static:242, AutoResolve:253, Army:310
 
 ## Campaign/Sites.cs (213 lines)
 - **Site** (class, L7): NameFor:18
@@ -537,10 +540,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **FactionDef** (class, L24)
 - **Factions** (class, L43): IndexOf:62, Get:63, Bind:86, Culture:87, CultureOf:88, Open:91, Root:94, Line:97, Path:100, Load:110, Validate:126
 
-## Forms.cs (106 lines)
-- **FormDef** (class, L8): Clone:16
-- **AspectDef** (class, L21): On:28
-- **Forms** (class, L38): Get:44, Has:45, OfOrder:49, Register:53, AspectsFor:58, Aspect:59, Load:65, Validate:83
+## Forms.cs (114 lines)
+- **FormDef** (class, L8): Clone:18
+- **AspectDef** (class, L23): On:30
+- **Forms** (class, L40): Get:46, Has:47, OfPath:51, OfOrder:55, Register:59, AspectsFor:64, Aspect:65, Load:71, Validate:89
 
 ## Gear.cs (86 lines)
 - **GearDef** (class, L6): ToString:18
@@ -602,8 +605,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Atlas.cs (136 lines)
 - **MapScreen** (class, L7): AtlasIds:14, AtlasTexture:29, AtlasPanel:58, AtlasLegend:103, TideColour:135
 
-## MapScreen.Captain.cs (343 lines)
-- **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:85, AuraBlock:155, OwnFormBlock:173, FlameBlock:200, FormList:224, CaptainRecord:265, NameLines:304, Breaks:331
+## MapScreen.Captain.cs (366 lines)
+- **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:85, AuraBlock:155, PathBlock:173, OwnFormBlock:196, FlameBlock:223, FormList:247, CaptainRecord:288, NameLines:327, Breaks:354
 
 ## MapScreen.cs (682 lines)
 - **MapScreen** (class, L9): Save:18, MapScreen:59, Prepare:74, Open:81, ShowResults:98, Pressed:106, Update:110, readonly:196, LaterTips:209, Pan:233, ScreenKeys:235, OpenScreen:243, Soundscape:251, CameFrom:313, Camera:315, Rename:339, Trails:352, ClickWorld:364, Ground:376, Draw:399, UpdateBearers:475, UpdateLife:517, BuildSprites:527, DrawSprites:534, G:546, DrawLines:548, Stage:587
@@ -795,8 +798,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/GearTests.cs (147 lines)
 - **SelfTest** (class, L4): GearItems:9, InventoryActions:71, GearSources:97
 
-## Tests/KnightTests.cs (1072 lines)
-- **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:464, ChampionsUseAura:495, OrderPolitics:533, BlackFlame:597, FlameTakesYou:652, OwnOrderFounded:675, AuraPool:723, AuraField:790, CastNow:798, BlessingFeedsAura:806, CurseOnCaptain:822, BladeBreaksCast:850, RelicRaised:876, OwnFormFromStyle:892, AspectChanges:922, BreakInBattle:948, ClashRing:970, TranscendentLight:995, AwakeningByDeeds:1035
+## Tests/KnightTests.cs (1133 lines)
+- **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:464, ChampionsUseAura:495, OrderPolitics:533, BlackFlame:597, FlameTakesYou:652, OwnOrderFounded:675, AuraPool:723, AuraField:790, CastNow:798, BlessingFeedsAura:806, CurseOnCaptain:822, BladeBreaksCast:850, RelicRaised:876, OwnFormFromStyle:892, AspectChanges:922, BreakInBattle:948, ClashRing:970, TranscendentLight:995, AwakeningByDeeds:1035, PathsDiffer:1075
 
 ## Tests/MagicTests.cs (724 lines)
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186

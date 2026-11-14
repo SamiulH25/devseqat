@@ -66,9 +66,9 @@ public partial class Battle
         inspireTick += dt;
         if (inspireTick < 0.5f) return;
         inspireTick = 0;
-        if (AuraTier < InspireTier || Spent || !fighting || !p.Active) return;
+        if (AuraTier < InspireFrom || Spent || !fighting || !p.Active) return; // the Banner inspires from the first tier, further off (BattlePaths.cs)
         foreach (var s in Squads)
-            if (s.Team == p.Team && s.Alive > 0 && Vector2.Distance(s.Center, p.Pos) < InspireRadius + s.Radius) AddTimed(s, Inspired, 1);
+            if (s.Team == p.Team && s.Alive > 0 && Vector2.Distance(s.Center, p.Pos) < InspireReach + s.Radius) AddTimed(s, Inspired, 1);
     }
 
     /// A Master's presence (tier 4+, not spent, K5): foes within reach lose heart, your own men near you steady. It can

@@ -28,20 +28,22 @@ public sealed partial class Battle
     void TideTick(float dt) => Tide = MathF.Min(TideCap, Tide + TideCap / TideRefill * dt);
 
     /// What a cast of `will` Will draws from the Tide: half for a spell of the well's own tradition.
-    public float TideDraw(AbilityDef a, float will) => will * (Options.TideTradition != "" && a.Tradition == Options.TideTradition ? 0.5f : 1);
+    /// A Hearth captain's circle near him draws half again less (BattlePaths.cs).
+    public float TideDraw(AbilityDef a, float will, Squad? s = null) =>
+        will * (Options.TideTradition != "" && a.Tradition == Options.TideTradition ? 0.5f : 1) * (Hearthside(s) ? HearthDraw : 1);
 
-    /// The Tide holds enough for this cast.
-    public bool TideHolds(AbilityDef a, float will) => Tide >= TideDraw(a, will);
+    /// The Tide holds enough for this company's cast.
+    public bool TideHolds(AbilityDef a, float will, Squad? s = null) => Tide >= TideDraw(a, will, s);
 
     /// Spend a cast's Will: from the Tide, or (when it is short) by overreaching. False if the company cannot pay either way.
     bool PayForCast(Squad s, AbilityDef a, float will, bool mayOverreach)
     {
-        if (TideHolds(a, will)) { s.Will -= will; Tide -= TideDraw(a, will); return true; }
+        if (TideHolds(a, will, s)) { s.Will -= will; Tide -= TideDraw(a, will, s); return true; }
         if (!mayOverreach || s.Will < will * 2) return false;
         s.Will -= will * 2;
         Tide = 0;
         Overreaches[s.Team]++;
-        if (rng.NextDouble() < OverreachRisk) LashBack(s, a);
+        if (rng.NextDouble() < OverreachRisk && !Anchored(s)) LashBack(s, a); // a Hearth captain's anchor holds it (BattlePaths.cs)
         return true;
     }
 

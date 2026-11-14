@@ -82,6 +82,8 @@ public sealed class BattleOptions
     /// A quick battle stands on a middling field (1); the campaign sets the real one (0 where no well reaches).
     public int Tide = 1;
     public string TideTradition = "";
+    /// The captain's path (docs/ARCANA.md AR6): "sword", "banner", "hearth", or "" (none chosen: as before).
+    public string Path = "";
 }
 
 /// When and in what weather a battle is fought (roadmap C4). The campaign passes its hour and season.

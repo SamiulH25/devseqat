@@ -166,7 +166,30 @@ partial class MapScreen
         // The trial card (docs/ARCANA.md AR1): every way through the wall, and where to find it now.
         foreach (var trial in C.NearestTrials())
             foreach (var l in ui.Wrap(trial, c.Width - ui.U(8))) { ui.Text(l, c.X + ui.U(8), y, Style.Text * 0.9f, 1); y += ui.U(11); }
-        return FormList(c, OwnFormBlock(c, FlameBlock(c, y)));
+        return FormList(c, OwnFormBlock(c, FlameBlock(c, PathBlock(c, y))));
+    }
+
+    /// The path the aura walks (docs/ARCANA.md AR6): three buttons once it wakes, then the path chosen and what it gives.
+    int PathBlock(Rectangle c, int y)
+    {
+        var cap = C.Captain;
+        if (cap.AuraTier < 1) return y;
+        y += ui.U(2);
+        if (cap.Path != "")
+        {
+            foreach (var l in ui.Wrap(Campaign.PathLine(cap.Path), c.Width)) { ui.Text(l, c.X, y, Style.Aura, 1); y += ui.U(11); }
+            return y + ui.U(2);
+        }
+        ui.Text("CHOOSE YOUR PATH (ONCE):", c.X, y, Kit.Gilt, 1); y += ui.U(12);
+        int w = (c.Width - ui.U(8)) / 3;
+        for (int i = 0; i < Forms.Paths.Length; i++)
+        {
+            string path = Forms.Paths[i];
+            var b = new Rectangle(c.X + i * (w + ui.U(4)), y, w, ui.U(20));
+            if (ui.Button(b, path.ToUpperInvariant(), true)) note = C.ChoosePath(path) ?? "";
+            if (b.Contains(ui.Mouse)) ui.Tooltip(b.Center.X, b.Y - ui.U(2), path.ToUpperInvariant(), ui.Wrap(Campaign.PathLine(path), ui.U(260)).ToArray());
+        }
+        return y + ui.U(26);
     }
 
     /// Your own form on offer (docs/archive/MAGIC_AURA.md 4.4): the two styles you fight in most, one button each. Returns the next y.
@@ -241,7 +264,7 @@ partial class MapScreen
             int rank = Campaign.FormRank(cap, id);
             string asp = cap.FormAspects.TryGetValue(id, out var aid) && Forms.Aspect(aid) is { } ad ? $" ({ad.Name.ToUpperInvariant()})" : "";
             ui.TextFit($"{f.Name.ToUpperInvariant()}{(rank > 1 ? $" {Style.Numerals[rank]}" : "")}{asp}", c.X + ui.U(14), y, c.Width - ui.U(40), on ? Style.Aura : Style.Dim, 1);
-            ui.TextR($"{f.Aura:0}", c.Right, y, Style.Dim, 1);
+            ui.TextR($"{f.Aura * (C.Captain.Path == "sword" ? Battle.SwordThrift : 1):0}", c.Right, y, Style.Dim, 1);
             if (hover) ui.Tooltip(row.Center.X, row.Y - ui.U(2), f.Name.ToUpperInvariant(), ui.Wrap(f.Line.ToUpperInvariant() + (on ? "" : " CLICK TO PUT IT IN THE FIRST SLOT."), ui.U(180)).ToArray());
             if (ui.Clicked(row)) note = C.SlotForm(id) ?? "";
             y += ui.U(12);

@@ -226,6 +226,7 @@ public static class Rules
         o.FormAspects = new Dictionary<string, string>(c.FormAspects);
         o.OwnForm = c.OwnForm;
         o.AtWall = c.AuraWall;
+        o.Path = c.AuraTier > 0 ? c.Path : ""; // the path walked (docs/ARCANA.md AR6)
         o.PlayerType = CaptainType(c);
         o.PlayerSide = c.Kit.Side != "" ? CaptainType(c, side: true) : null;
         o.PlayerMount = CaptainMount(c);

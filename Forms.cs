@@ -8,6 +8,8 @@ namespace Ironfield;
 public sealed class FormDef
 {
     public string Id = "", Name = "", Icon = "", Line = "", Kind = "", Order = "", Effect = "";
+    /// A path's form (docs/ARCANA.md AR6: "banner", "hearth"; "" = none), and a hearth form's act ("lend", "anchor", "kindle").
+    public string Path = "", Act = "";
     public int Tier = 1, MaxHit = 1, Count;
     public bool Great;
     public float Aura, Cooldown = 20, Warn, Range, Radius, Duration, Damage, Shock, Dps;
@@ -44,7 +46,11 @@ public static class Forms
     public static FormDef Get(string id) { Load(); return all!.TryGetValue(id, out var f) ? f : throw new KeyNotFoundException("no form " + id); }
     public static bool Has(string id) { Load(); return all!.ContainsKey(id); }
     /// The forms anyone may learn by tier (no order), in tier order.
-    public static IEnumerable<FormDef> Generic => All.Where(f => f.Order == "").OrderBy(f => f.Tier);
+    public static IEnumerable<FormDef> Generic => All.Where(f => f.Order == "" && f.Path == "").OrderBy(f => f.Tier);
+    /// A path's forms (AR6), in tier order.
+    public static IEnumerable<FormDef> OfPath(string path) => All.Where(f => f.Path == path && path != "").OrderBy(f => f.Tier);
+    /// The captain's paths (AR6).
+    public static readonly string[] Paths = { "sword", "banner", "hearth" };
     /// An order's forms, in tier order.
     public static IEnumerable<FormDef> OfOrder(string order) => All.Where(f => f.Order == order).OrderBy(f => f.Tier);
 
@@ -58,7 +64,7 @@ public static class Forms
     public static IEnumerable<AspectDef> AspectsFor(FormDef f) => Aspects.Where(a => a.Kind == f.Kind);
     public static AspectDef? Aspect(string id) => Aspects.FirstOrDefault(a => a.Id == id);
 
-    public static readonly string[] Kinds = { "focus", "slash", "guard", "edge", "shout", "leap", "shot", "counter", "buff", "burst", "volley", "burn", "drain" };
+    public static readonly string[] Kinds = { "focus", "slash", "guard", "edge", "shout", "leap", "shot", "counter", "buff", "burst", "volley", "burn", "drain", "hearth" };
 
     sealed class FileDto { public List<FormDef> Forms = new(); public List<AspectDef> Aspects = new(); }
 
@@ -94,6 +100,8 @@ public static class Forms
             if (f.Tier is < 1 or > 5 || f.Aura is <= 0 or > 80 || f.Cooldown < 5) yield return $"{f.Id}: tier, aura or cooldown out of range";
             if (f.Great && f.Tier < 3) yield return $"{f.Id}: a great form needs tier 3 or more";
             if (f.Corruption > 0 != (f.Order == "hollow")) yield return $"{f.Id}: only Black Flame forms feed corruption";
+            if (f.Path != "" && (!Paths.Contains(f.Path) || f.Order != "")) yield return $"{f.Id}: path must be sword, banner or hearth, and not an order's";
+            if (f.Kind == "hearth" != (f.Act is "lend" or "anchor" or "kindle")) yield return $"{f.Id}: a hearth form needs an act (lend, anchor, kindle), and only it";
         }
         foreach (var k in Kinds)
             if (aspects!.Count(a => a.Kind == k) != 2) yield return $"the {k} kind needs two aspects";

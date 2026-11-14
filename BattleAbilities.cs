@@ -118,7 +118,7 @@ public partial class Battle
             bool hero = s.ByHero[i];
             if (Time < s.SpellReady[i] || (a.Great && s.GreatDone)) continue;
             if (hero ? Speaker(s, true) == null : casters == 0 || engaged || s.Will < WillCost(s, a) || s.Will < 20) continue; // under 20 Will a company is drained
-            if (!hero && !TideHolds(a, WillCost(s, a)) && !(a.Great && s.Will >= WillCost(s, a) * 2)) continue; // the Tide is low: wait, but a great working may overreach (BattleTide.cs)
+            if (!hero && !TideHolds(a, WillCost(s, a), s) && !(a.Great && s.Will >= WillCost(s, a) * 2)) continue; // the Tide is low: wait, but a great working may overreach (BattleTide.cs)
             if (Target(s, a, out var at, out var on) is false) continue;
             float power = SpellPower(s, hero);
             if (power <= 0) continue;
@@ -140,7 +140,7 @@ public partial class Battle
     public const float OrderedWill = 5, OrderLasts = 30;
 
     /// The ordered spell i would have to overreach for (the spell fan's warning).
-    public bool WouldOverreach(Squad s, int i) => i >= 0 && i < s.Spells.Length && !s.ByHero[i] && !TideHolds(s.Spells[i], WillCost(s, s.Spells[i]) + OrderedWill);
+    public bool WouldOverreach(Squad s, int i) => i >= 0 && i < s.Spells.Length && !s.ByHero[i] && !TideHolds(s.Spells[i], WillCost(s, s.Spells[i]) + OrderedWill, s);
 
     /// Why the company cannot cast spell i now, or null (the HUD's spell fan; the spot is not known yet).
     public string? CannotCast(Squad s, int i)
@@ -152,7 +152,7 @@ public partial class Battle
         if (a.Great && s.GreatDone) return "SPENT";
         if (Time < s.SpellReady[i]) return $"IN {s.SpellReady[i] - Time:0}";
         if (!hero && (s.Will < WillCost(s, a) + OrderedWill || s.Will < 20)) return "NO WILL";
-        if (!hero && !TideHolds(a, WillCost(s, a) + OrderedWill) && s.Will < (WillCost(s, a) + OrderedWill) * 2) return "NO TIDE";
+        if (!hero && !TideHolds(a, WillCost(s, a) + OrderedWill, s) && s.Will < (WillCost(s, a) + OrderedWill) * 2) return "NO TIDE";
         return null;
     }
 
@@ -168,7 +168,7 @@ public partial class Battle
         var me = Speaker(s, hero);
         if (me == null || Time < s.SpellReady[i]) return true;
         if (!hero && (casters == 0 || engaged || s.Will < WillCost(s, a) + OrderedWill || s.Will < 20)) return true;
-        if (!hero && !TideHolds(a, WillCost(s, a) + OrderedWill) && s.Will < (WillCost(s, a) + OrderedWill) * 2) return true; // wait for the Tide, or the Will to overreach
+        if (!hero && !TideHolds(a, WillCost(s, a) + OrderedWill, s) && s.Will < (WillCost(s, a) + OrderedWill) * 2) return true; // wait for the Tide, or the Will to overreach
         var at = a.Self ? s.Center : s.CastAt;
         if (!a.Self && Vector2.Distance(me.Pos, at) > a.Range)
         {

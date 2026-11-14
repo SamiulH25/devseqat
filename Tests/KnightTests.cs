@@ -1068,5 +1068,66 @@ public static partial class SelfTest
         cap.AuraWall = false;
         Check(c.NearestTrials().Count == 0, "no wall, no card");
     }
+
+    /// The captain's paths (docs/ARCANA.md AR6): chosen once when the aura wakes, each changes the battle through its own
+    /// system: the Sword's forms cost less, the Banner inspires from the first tier and further off, the Hearth's circle draws
+    /// half from the Tide near him, takes his aura and is anchored against backlash.
+    static void PathsDiffer()
+    {
+        Check(!Forms.Validate().Any(), "forms.json is valid: " + string.Join("; ", Forms.Validate()));
+        Check(!Forms.Generic.Any(f => f.Path != "") && Forms.OfPath("banner").Count() == 3 && Forms.OfPath("hearth").Count() == 3, "path forms are their path's alone");
+        var c = Campaign.New(130);
+        Check(c.ChoosePath("banner") == "YOUR AURA HAS NOT WOKEN", "no path before the aura wakes");
+        c.Captain.AuraTier = 1;
+        Check(c.ChoosePath("banner") == null && c.Captain.Path == "banner" && c.Captain.Forms.Contains("hold_fast") && !c.Captain.Forms.Contains("steady_them"), "the Banner: its first form at once");
+        Check(c.ChoosePath("sword") != null, "a path is chosen once");
+        c.Captain.AuraWall = true; c.BreakThrough("t"); c.Captain.AuraWall = true; c.BreakThrough("t");
+        Check(c.Captain.AuraTier == 3 && c.Captain.Forms.Contains("steady_them"), "its next form comes with the tier");
+        Check(new BattleOptions().WithCaptain(c.Captain).Path == "banner", "the path goes into battle");
+
+        // The Sword: forms cost less.
+        float Spent(string path)
+        {
+            var b = Battle.Empty(131, new BattleOptions { AuraTier = 3, Forms = new[] { "focus" }, Path = path });
+            b.Player.Horse = null;
+            b.Input = new PlayerInput { Facing = MathHelper.PiOver2 };
+            b.Update(1 / 60f);
+            b.Aura = Battle.AuraMax; b.Surge = 0;
+            Press(b, 0);
+            return Battle.AuraMax - b.Aura;
+        }
+        float plain = Spent(""), sword = Spent("sword");
+        Check(MathF.Abs(sword - plain * Battle.SwordThrift) < 0.6f, $"the Sword's forms cost less ({sword:0.0} of {plain:0.0})");
+
+        // The Banner: inspires at the first tier and further off.
+        bool Inspires(string path)
+        {
+            var (b, _) = FormField(132, 1, Array.Empty<string>());
+            b.Options.Path = path;
+            var own = b.AddSquad(0, Troops.Get("shieldmen"), 6, b.Player.Pos + new Vector2(-13, 0), 6, Vector2.UnitY);
+            own.Order = Order.Hold;
+            Run(b, 2);
+            return own.Timed.Any(t => t.Effect.Id == "inspired");
+        }
+        Check(Inspires("banner") && !Inspires(""), "a Banner captain inspires a company 13 m off at the first tier; others do not");
+
+        // The Hearth: the circle near him draws half, takes his aura, is anchored.
+        var (h, _) = FormField(133, 3, new[] { "lend_aura", "anchor" });
+        h.Options.Path = "hearth";
+        var near = h.AddSquad(0, Troops.Get("skalds"), 3, h.Player.Pos + new Vector2(-6, -4), 3, Vector2.UnitY);
+        var far = h.AddSquad(0, Troops.Get("skalds"), 3, h.Player.Pos + new Vector2(-80, -4), 3, Vector2.UnitY);
+        near.Order = far.Order = Order.Hold; near.HoldSpells = far.HoldSpells = true;
+        h.Update(1 / 60f);
+        var storm = Abilities.Get("storm");
+        Check(h.TideDraw(storm, 30, near) == h.TideDraw(storm, 30, far) * Battle.HearthDraw, "the circle near a Hearth captain draws half from the Tide");
+        near.Will = 10;
+        h.Aura = Battle.AuraMax;
+        Press(h, 0);
+        Check(near.Will > 40, $"Lend Aura fills the circle's Will ({near.Will:0})");
+        Check(!h.Anchored(near), "not anchored yet");
+        h.Aura = Battle.AuraMax;
+        Press(h, 1);
+        Check(h.Anchored(near) && !h.Anchored(far), "Anchor holds the working of the circle near him");
+    }
 }
 
