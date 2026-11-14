@@ -110,7 +110,9 @@ public partial class Battle
     /// four, so over the looks that keep a route every man is tried and the route lasts until the last of them is through.
     bool AnyBlocked(Squad s, Vector2 g)
     {
-        bool Far(Vector2 p) => Vector2.DistanceSquared(p, g) > PathNear * PathNear;
+        // Near the goal men walk straight, unless a fence or hedge stands in the way (a company could stand pressed to one
+        // with its places a few metres beyond, and never settle to shoot or fight).
+        bool Far(Vector2 p) => Vector2.DistanceSquared(p, g) > PathNear * PathNear || Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(p, g, s.Cavalry);
         if (Far(s.Center) && WayBlocked(s.Center, g, s.Cavalry)) return true;
         int n = s.Units.Count;
         for (int k = 0; k < 4; k++)
@@ -164,7 +166,8 @@ public partial class Battle
     Vector2 PathVia(Unit u, Vector2 dest)
     {
         var f = u.Squad?.Path;
-        if (f == null || u.Routing || f.Horse != u.Mounted || Vector2.DistanceSquared(u.Pos, dest) < PathNear * PathNear || Vector2.DistanceSquared(dest, f.Goal) > 30 * 30) return dest;
+        if (f == null || u.Routing || f.Horse != u.Mounted || Vector2.DistanceSquared(dest, f.Goal) > 30 * 30) return dest;
+        if (Vector2.DistanceSquared(u.Pos, dest) < PathNear * PathNear && !Terrain.CrossesFeatureNear(u.Pos, dest, u.Mounted)) return dest; // near and nothing between
         var d = f.Dir(u.Pos);
         return d == Vector2.Zero ? dest : u.Pos + d * 3;
     }

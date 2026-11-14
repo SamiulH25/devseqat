@@ -50,7 +50,7 @@ public sealed partial class Campaign
         Map.BattleGround(Player.Pos, WetAt(Player.Pos), SeasonIndex) with { Favour = favour };
 
     /// The seed a battle with this party would have now (PrepareBattle uses it).
-    int BattleSeed(Party enemy) => HashCode.Combine(S.Seed, (int)(S.Hours * 4), enemy.Id);
+    int BattleSeed(Party enemy) => Rng.Mix(S.Seed, (int)(S.Hours * 4), enemy.Id);
 
     /// One line for the encounter panel on the ground and who holds it: "YOU HOLD THE HIGH GROUND."
     public string GroundNote(Party enemy)

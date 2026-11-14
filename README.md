@@ -314,8 +314,14 @@ The core tension: **you are strongest as a leader when you are in the fight, but
 - **Heroics:** your kills give nearby allies more morale than ordinary kills.
 - **Leaders matter:** if you or the enemy captain dies, every unit on that side loses 16 morale. The enemy captain (red ring in command view) stays just behind his line, so killing him is a real tactical goal.
 - **If you fall,** the battle continues and you command from afar at normal speed, without an aura.
-- **The captain's aura** (a knight's power, distinct from leadership): it wakes after a won duel and rises through five tiers
-  (Kindled, Aura Knight, Aura Expert, Aura Master, Transcendent), each wall broken by a trial. The pool on your panel pays
+- **The captain's aura** (a knight's power, distinct from leadership): it stirs as you fight and rises through five tiers
+  (Kindled, Aura Knight, Aura Expert, Aura Master, Transcendent), each wall broken by a trial. The first wall also gives way
+  after twelve won battles (a battle you fight yourself counts two); a won duel or a won tournament breaks the walls up to
+  Aura Knight. At a wall the captain sheet (K) lists each trial that would break it and where to find one now (the nearest
+  vigil site, a lord who would meet you). Once it wakes you choose its **path**, once, on the captain sheet: the **Sword**
+  (your forms cost less), the **Banner** (your aura steadies the companies round you from the first tier and further off;
+  forms that hold them and turn the broken back) or the **Hearth** (your circle near you draws half from the Tide; forms
+  that lend it your aura, anchor its overreach so it cannot lash back, and wake the Tide to the brim). The pool on your panel pays
   for the aura blade (hold ALT) and your forms (U, I, O, and L for the great form). It comes back slowly as you move, twice as
   fast standing still with no foe within 30 m, and only a little in a fight. Land blows at full aura and the overflow banks a
   **surge** (up to 20) that your next form spends first. Under 20 you are **spent**: your blows land 10% lighter and your breath
@@ -415,8 +421,21 @@ the player rides a courser.
   may leave you. Champions are rare: only a great lord (tier 4 up, one in three) brings one, or the lord a companion who left you
   now serves.
 - **Blessings and rites:** a shrine visit, a feast in a tavern (TAVERN tab) or a camp rite (party screen: bless, poultices,
-  read the bones, call rain; needs a Priest or Cunning companion or mages) give buffs that go into your next battles. Hunger
+  read the bones, call rain, consecrate or bind a well, blight an enemy province's harvest, calm the dead of a province for a
+  month; needs a Priest or Cunning companion or mages) give buffs that go into your next battles. Hunger
   hurts. A relic found in a ruin blesses three battles; a shrine fills it again. Chips above the captain's panel show them.
+- **Wells:** shrines, springs and hermits' cells are wells of the faith; standing stones, ruins and old battlefields wells of
+  the craft, each faint, steady or strong (the realm map, M, shows them). Towns where a well reaches hire out circles of mages,
+  seasoned ones near a strong well. At a well in your realm a priest can **consecrate** it (120 crowns) or a cunning one
+  **bind** it (Omen +5): it turns to that tradition and grows a step. The encounter panel names a well that reaches the field.
+- **The Tide:** every battle holds a pool of power set by the well that reaches its field (none, faint, steady or strong),
+  shown as a thin violet bar under the balance bar while anyone can cast. Both sides' mages draw on it as they spend Will
+  (a spell of the well's own tradition draws half), and it fills back over two minutes. With it run dry the enemy's mages
+  wait, except for their great working; yours, at your order, **overreach**: twice the Will, and a one-in-three chance the
+  working lashes back and strikes a caster down (the spell fan warns you). Casting first can leave the enemy nothing.
+- **Doctrines:** your circle takes one doctrine of its tradition, once, in its spellbook (faith: Mercy, Wrath, Vigil; craft:
+  Storm, Stars, Curse, Fire). Its doctrine's spells cost it 5 less Will, it can learn one more spell, and the doctrine's own:
+  Vigil's **Unweave** breaks an enemy working while it gathers, Curse's **Wither** drags at a company's limbs.
 - **The tree:** 287 troops (and the captain, plus 24 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons; javelin men and slingers throw (few shots, short range, hard hits).
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a

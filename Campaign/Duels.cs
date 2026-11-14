@@ -40,7 +40,7 @@ public sealed partial class Campaign
     {
         var lord = CharacterOf(e)!;
         var setup = new BattleSetup { EnemyName = lord.Name, Duel = e.Id };
-        setup.Seed = HashCode.Combine(S.Seed, (int)(S.Hours * 4), e.Id, 91);
+        setup.Seed = Rng.Mix(S.Seed, (int)(S.Hours * 4), e.Id, 91);
         setup.Player = new ArmySpec("You", 0, new List<Company>());
         setup.Enemy = new ArmySpec(lord.Name, 0, new List<Company>());
         int mine = Style.PaletteOf(Math.Max(0, Captain.Contract)), his = Style.PaletteOf(SideOf(e));
@@ -49,7 +49,7 @@ public sealed partial class Campaign
             Duel = true, Couriers = false, Cap = 10, Scouted = true,
             EnemyLeader = LordChampion(e), EnemyDamage = Settings.Current.EnemyDamage,
             EnemyAura = ChampionAura(e), EnemyForms = ChampionFormsOf(e), Madness = MadnessInBattle, // an order knight's aura and forms (K6)
-            Ground = TerrainParams.Lists, Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, HashCode.Combine(S.Seed, (int)S.Hours, e.Id)),
+            Ground = TerrainParams.Lists, Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, Rng.Mix(S.Seed, (int)S.Hours, e.Id)),
             Palette = new[] { mine, his == mine ? 3 : his },
         }.WithCaptain(Captain);
         return setup;

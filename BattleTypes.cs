@@ -78,6 +78,12 @@ public sealed class BattleOptions
     public UnitType? EnemyLeader;
     /// Added to every enemy man's morale at the start (a duel lost by his lord: -15).
     public float EnemyMorale;
+    /// The Tide of the field (docs/ARCANA.md AR3): the strength (0-3) of the well that reaches it, and its tradition ("" none).
+    /// A quick battle stands on a middling field (1); the campaign sets the real one (0 where no well reaches).
+    public int Tide = 1;
+    public string TideTradition = "";
+    /// The captain's path (docs/ARCANA.md AR6): "sword", "banner", "hearth", or "" (none chosen: as before).
+    public string Path = "";
 }
 
 /// When and in what weather a battle is fought (roadmap C4). The campaign passes its hour and season.

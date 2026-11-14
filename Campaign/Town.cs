@@ -19,7 +19,7 @@ public sealed partial class Campaign
     public BattleSetup PrepareTournament(Settlement t)
     {
         var setup = new BattleSetup { EnemyName = $"Champions of {t.Name}", Tournament = t.Id };
-        setup.Seed = HashCode.Combine(S.Seed, (int)(S.Hours * 4), t.Id, 77);
+        setup.Seed = Rng.Mix(S.Seed, (int)(S.Hours * 4), t.Id, 77);
         var best = Player.Companies.SelectMany(c => c.Stacks.Where(st => st.Men > 0).Select(st => (c, st))).OrderByDescending(x => x.st.Type.Tier).ThenByDescending(x => x.st.Men).FirstOrDefault();
         var mine = new List<Company>();
         if (best.st != null) mine.Add(new Company(best.st.Troop, Math.Min(TournamentMen, best.st.Men), Rules.RoleOf(best.c), best.c.Id, best.c.Name, 85));
@@ -64,6 +64,7 @@ public sealed partial class Campaign
         Captain.Renown += renown;
         var skillsBefore = new Dictionary<string, float>(Captain.Skills);
         Practise("Arms", (won ? 2 : 1) + (r.Parries + r.Ripostes) * 0.15f);
+        if (won && Captain.AuraTier < DuelBreaksBelow) BreakThrough($"You win the lists at {t.Name}."); // a trial like a duel (docs/ARCANA.md AR1)
         GainAura((won ? 3 : 1) + r.Parries * 0.3f);
         if (won) { S.Gold += TournamentPurse; t.Unrest = Math.Clamp(t.Unrest - 3, 0, 100); }
         var fate = r.Captain == LeaderFate.Unhurt ? LeaderFate.Unhurt : LeaderFate.Wounded;
@@ -109,7 +110,7 @@ public sealed partial class Campaign
         if (all.Count == 0) return new List<Rumour> { new("All is quiet on the roads, they say. Too quiet, says the innkeeper.", t.Pos) };
         // The day's talk: a stable choice for today, nearest things more likely.
         int day = (int)(S.Hours / 24);
-        return all.OrderBy(x => Vector2.Distance(x.At, t.Pos) * (0.5f + (HashCode.Combine(day, t.Id, x.Text.Length) & 255) / 255f)).Take(3).ToList();
+        return all.OrderBy(x => Vector2.Distance(x.At, t.Pos) * (0.5f + (Rng.Mix(day, t.Id, x.Text.Length) & 255) / 255f)).Take(3).ToList();
     }
 
     /// Ride where a rumour points (its site, if it names one).

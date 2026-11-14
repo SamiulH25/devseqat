@@ -26,6 +26,7 @@ public partial class Campaign
         if (playerIn) S.MentionPool.Clear(); // the last battle's men of the day (C4)
         // L5: the battle's name, and whether a win here is worth a battle honour (outnumbered, their captain slain, a wall taken).
         string field = playerIn ? BattleName(Player.Pos, siegeBattle) : "";
+        if (playerIn && won) field = WorkingRemembered(r, field); // a great working of yours names the day (docs/ARCANA.md AR8)
         float mine = playerTeam == 0 ? startStrength0 : startStrength1, theirs = playerTeam == 0 ? startStrength1 : startStrength0;
         bool notable = playerIn && won && (theirs >= 1.5f * MathF.Max(1, mine) || r.EnemyLeader == LeaderFate.Slain || siegeBattle);
         int foeFaction = (playerTeam == 0 ? side1 : side0).Select(SideOf).FirstOrDefault(f => f >= 0, -1);
@@ -141,6 +142,7 @@ public partial class Campaign
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, Rules.PerMan(lostStrength));
         AfterTheBattle(r, lookup, winners, losers, playerIn);
+        CourtMagesAfterBattle(side0.Concat(side1), playerIn); // a court mage falls with his circle (CourtMages.cs)
         S.Parties.RemoveAll(p => (Outlaw(p) || p.Kind == PartyKind.Caravan) && p.Down);
 
         var report = new BattleReport(won, enemyName, reports, 0, 0, 0, 0, 0, r.Captain);
@@ -269,8 +271,10 @@ public partial class Campaign
         setup.Enemy = WithChampion(Armies.Divide(Rules.Army(enemy.Name, setup.Side1)), enemy);
         setup.Seed = BattleSeed(enemy);
         bool scouts = setup.Side0.SelectMany(p => p.Companies).Any(c => c.Men > 0 && c.Type.Mount != null);
+        var tide = TideAt(enemy.Pos); // the well that reaches the field (Wells.cs, BattleTide.cs)
         setup.Options = new BattleOptions
         {
+            Tide = tide.Strength, TideTradition = tide.Tradition,
             AuraRadius = (Has("Bannerman") ? 16 : 12) + (Rank >= Rank.Lord ? LordBanner : 0), // a lord's banner reaches further (P5)
             KingsCharge = Rank == Rank.King,
             Goals = true, Banner = true, LastStand = true, // personal goals, your banner, the last stand (P6)
@@ -311,7 +315,7 @@ public partial class Campaign
     {
         BreakVow("no_auto", "send your men to fight without you at their head");
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, (1 + B.AuraWeight * AuraInBattle) * TacticsEdge * BuffEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed), Edge(Encounter!));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, (1 + B.AuraWeight * AuraInBattle) * TacticsEdge * BuffEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed) * TideEdge(setup.Options.Tide, setup.Side0, setup.Side1), Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }

@@ -1665,5 +1665,14 @@ public static partial class SelfTest
         Check(checkedReports > 0, "some reports were checked");
         Console.WriteLine($"report matches record: {checkedReports} company reports, {c.S.Fallen.Count} fallen");
     }
+
+    /// The campaign's own mix is stable across processes and versions (it replaced HashCode.Combine, which is seeded afresh in
+    /// every process: weather, battle seeds and an armourer's stock differed between two runs of one save).
+    static void StableMix()
+    {
+        Check(Rng.Mix(1, 2, 3) == Rng.Mix(1, 2, 3) && Rng.Mix(1, 2, 3) != Rng.Mix(3, 2, 1), "a mix depends on its values and their order");
+        Console.WriteLine($"mix: {Rng.Mix(1, 2, 3)} {Rng.Of("sallet")}");
+        Check(Rng.Mix(1, 2, 3) == -32489229 && Rng.Of("sallet") == -1432741536, "and gives the same numbers in every process");
+    }
 }
 

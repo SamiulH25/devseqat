@@ -39,14 +39,18 @@ partial class MapScreen
         ui.Rect(bar, Style.Foe);
         ui.Rect(new Rectangle(bar.X, bar.Y, (int)(bar.Width * me / MathF.Max(1, me + them)), bar.Height), Style.Friendly);
         ui.Text(C.GroundNote(e), x, bar.Bottom + ui.U(8), Kit.Gilt, 1); // the ground and who holds it (docs/archive/TERRAIN.md T7)
-        if (C.GrudgeOf(e) is { Length: > 0 } grudge) ui.Text(ui.Fit(grudge.ToUpperInvariant(), bar.Width), x, bar.Bottom + ui.U(20), Style.Bad, 1); // he comes for you (C13)
+        string tide = C.TideNote(e.Pos); // the well that reaches this field (docs/ARCANA.md AR2)
+        if (tide != "") ui.TextR(ui.Fit(tide, ui.U(300)), r.Right - ui.U(24), bar.Bottom + ui.U(20), TideColour(C.TideAt(e.Pos).Tradition), 1);
+        if (C.GrudgeOf(e) is { Length: > 0 } grudge) ui.Text(ui.Fit(grudge.ToUpperInvariant(), bar.Width - (tide != "" ? ui.U(310) : 0)), x, bar.Bottom + ui.U(20), Style.Bad, 1); // he comes for you (C13)
         if (C.SpellNote(e) is { Length: > 0 } sn) ui.TextR(ui.Fit(sn.ToUpperInvariant(), ui.U(300)), r.Right - ui.U(24), bar.Bottom + ui.U(8), Style.Dim, 1);
         y += ui.U(76);
         foreach (var c in e.Companies.Where(c => c.Men > 0).Take(6))
         {
             ui.Portrait(c.Type, new Rectangle(x, y, ui.U(32), ui.U(30)));
             ui.Text($"{c.Men} {c.Type.Name.ToUpperInvariant()}", x + ui.U(40), y + ui.U(4), Style.Text, 1);
-            ui.Text($"TIER {Style.Numerals[c.Type.Tier]}", x + ui.U(40), y + ui.U(16), Style.Dim, 1);
+            if (Rules.RoleOf(c) == "casters" && C.CourtMageOf(e) is Character mage && mage.CompanyId == c.Id)
+                ui.Text(ui.Fit($"LED BY {mage.Name.ToUpperInvariant()}", ui.U(146)), x + ui.U(40), y + ui.U(16), Style.Aura, 1); // the court mage (CourtMages.cs)
+            else ui.Text($"TIER {Style.Numerals[c.Type.Tier]}", x + ui.U(40), y + ui.U(16), Style.Dim, 1);
             x += ui.U(190);
             if (x > r.Right - ui.U(180) - face) { x = r.X + ui.U(24); y += ui.U(36); }
         }

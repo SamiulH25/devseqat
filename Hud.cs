@@ -347,6 +347,14 @@ sealed partial class Hud
         string state = Paused ? "PAUSED" : pace != 1 ? $"X{pace:0.###}" : "";
         kit.Icon("clock", W / 2 - TW($"{t / 60}:{t % 60:00} {state}".Trim()) / 2 - U(12), y + U(2), Dim, 1);
         TextC($"{t / 60}:{t % 60:00} {state}".Trim(), W / 2f, y, Color.White);
+        if (B.Arcane)
+        {
+            // The Tide (docs/ARCANA.md AR3), under the tug bar while any company can cast: the power left in this ground.
+            var tb = new Rectangle(x + bw / 4, y + U(31), bw / 2, U(3));
+            kit.Gauge(tb, B.TideCap <= 0 ? 0 : B.Tide / B.TideCap, new Color(150, 140, 255));
+            if (new Rectangle(tb.X, tb.Y - U(4), tb.Width, tb.Height + U(8)).Contains(Mouse))
+                TextC($"THE TIDE {B.Tide:0} OF {B.TideCap:0}{(B.Options.TideTradition != "" ? $": A WELL OF THE {B.Options.TideTradition.ToUpperInvariant()}" : "")}", W / 2f, panel.Bottom + U(4), Color.White, 1);
+        }
         if (B.Wall is SiegeWall w && !Deploying)
         {
             // The gate's strength under the balance bar, while it stands.
@@ -507,7 +515,7 @@ sealed partial class Hud
             string name = f.Name.ToUpperInvariant();
             while (name.Length > 2 && TW(name, 1) > bw - U(8)) name = name[..^1];
             Text(name, r.X + U(4), r.Y + U(12), ready ? Color.White : Dim, 1);
-            string cost = spent ? "SPENT" : B.FormWait(i) > 0 ? $"{B.FormWait(i):0}" : $"{f.Aura:0}";
+            string cost = spent ? "SPENT" : B.FormWait(i) > 0 ? $"{B.FormWait(i):0}" : $"{B.FormCost(f):0}";
             TextR(cost, r.Right - U(4), r.Y + U(3), ready ? Style.Aura : Dim, 1);
         }
     }
@@ -533,8 +541,8 @@ sealed partial class Hud
         var r = new Rectangle(x - U(6), y - U(20), bw + U(12), (n + 1) * bh + U(26));
         Rect(r, Color.Black * 0.6f);
         Frame(r, Style.Aura * 0.6f, U(1));
-        Text($"{kit.Fit(s.Name.ToUpperInvariant(), bw - U(60))}: CAST", x, y - U(14), Gold, 1);
-        TextR($"WILL {s.Will:0}", x + bw, y - U(14), new Color(120, 150, 255), 1);
+        Text($"{kit.Fit(s.Name.ToUpperInvariant(), bw - U(118))}: CAST", x, y - U(14), Gold, 1);
+        TextR($"WILL {s.Will:0}  TIDE {B.Tide:0}", x + bw, y - U(14), new Color(120, 150, 255), 1);
         for (int i = 0; i < n; i++)
         {
             var a = s.Spells[i];
@@ -543,8 +551,9 @@ sealed partial class Hud
             var row = new Rectangle(x - U(2), y + i * bh, bw + U(4), bh - U(2));
             if (pick) Rect(row, Kit.Mul(Style.Aura, 0.35f));
             Text(kit.Fit(a.Name.ToUpperInvariant(), bw - U(56)), x, y + i * bh + U(3), why == null ? Color.White : Dim, 1);
-            string cost = why ?? (s.ByHero[i] ? "READY" : $"{a.Will + Battle.OrderedWill:0} WILL");
-            TextR(cost, x + bw, y + i * bh + U(3), why == null ? Style.Aura : Warn, 1);
+            bool over = why == null && B.WouldOverreach(s, i); // the Tide is short: twice the Will, and a risk (BattleTide.cs)
+            string cost = why ?? (s.ByHero[i] ? "READY" : over ? $"{(a.Will + Battle.OrderedWill) * 2:0} OVERREACH" : $"{a.Will + Battle.OrderedWill:0} WILL");
+            TextR(cost, x + bw, y + i * bh + U(3), why == null && !over ? Style.Aura : Warn, 1);
         }
         TextC($"CLICK THE GROUND.  {Ctl.Name(Act.Cast)} NEXT SPELL, RMB CANCEL", W / 2f, y + n * bh + U(3), Dim, 1);
     }

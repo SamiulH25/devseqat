@@ -783,7 +783,13 @@ sealed class ScreenHost : Game
                 map.Stage("hall");
                 Shot("campaign-hall");
                 break;
-            case 54: Exit(); break;
+            case 54:
+                // The captain sheet with a woken aura at a wall (docs/ARCANA.md AR1, AR6): the path to choose and the trial card.
+                c.Captain.AuraTier = 1; c.Captain.AuraWall = true; c.Captain.AuraXp = Campaign.AuraNeeds[1]; c.Captain.Path = "";
+                map.Stage("skills");
+                Shot("campaign-aura");
+                break;
+            case 55: Exit(); break;
         }
     }
 }

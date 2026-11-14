@@ -33,6 +33,8 @@ public sealed class AbilityDef
     public float Omen;
     /// The cast only moves the caster's own company (Hold the line, Wheel).
     public bool Self;
+    /// Its doctrine within its tradition (docs/ARCANA.md AR4): faith mercy, wrath, vigil; craft storm, stars, curse, fire.
+    public string Doctrine = "";
 }
 
 /// The ability registry, loaded once from Data/abilities.json.
@@ -45,8 +47,19 @@ public static class Abilities
     public static AbilityDef Get(string id) { Load(); return all!.TryGetValue(id, out var a) ? a : throw new KeyNotFoundException("no ability " + id); }
     public static bool Has(string id) { Load(); return all!.ContainsKey(id); }
 
-    public static readonly string[] Kinds = { "buff", "debuff", "field", "attack", "bolt", "heal", "rally", "officer" };
-    public static readonly string[] Rules = { "closing", "fighting", "wavering", "hurt", "archers", "massed", "foes", "shot", "horse", "undead", "officer", "self", "routing", "losing" };
+    public static readonly string[] Kinds = { "buff", "debuff", "field", "attack", "bolt", "heal", "rally", "officer", "unweave" };
+    /// The doctrines of each tradition (docs/ARCANA.md AR4): id, tradition, name, what it is.
+    public static readonly (string Id, string Tradition, string Name, string Line)[] Doctrines =
+    {
+        ("mercy", "faith", "Mercy", "Healing, blessing and the miracle"),
+        ("wrath", "faith", "Wrath", "Light that strikes the dead and the foe"),
+        ("vigil", "faith", "Vigil", "Wards and the counterspell"),
+        ("storm", "craft", "Storm", "Song, wind, rain and lightning"),
+        ("stars", "craft", "Stars", "Foresight, mist and mirage"),
+        ("curse", "craft", "Curse", "The evil eye, fever, dread and withering"),
+        ("fire", "craft", "Fire", "Pots, smoke and wildfire"),
+    };
+    public static readonly string[] Rules = { "closing", "fighting", "wavering", "hurt", "archers", "massed", "foes", "shot", "horse", "undead", "officer", "self", "routing", "losing", "casting" };
 
     sealed class FileDto { public List<AbilityDef> Abilities = new(); }
 
@@ -83,6 +96,7 @@ public static class Abilities
             if (a.Needs is not ("" or "dry" or "rain")) yield return $"{a.Id}: unknown need {a.Needs}";
             if (a.Will is < 0 or > 80 || a.Cooldown < 5 || a.Radius <= 0) yield return $"{a.Id}: will, cooldown or radius out of range";
             if (a.Great && a.Tradition == "arms") yield return $"{a.Id}: a companion has no great working";
+            if (a.Tradition is "faith" or "craft" != Doctrines.Any(d => d.Id == a.Doctrine && d.Tradition == a.Tradition)) yield return $"{a.Id}: a faith or craft spell needs a doctrine of its tradition, and only it";
         }
     }
 }

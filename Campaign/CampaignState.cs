@@ -46,6 +46,9 @@ public sealed class CompanyRecord
     /// A circle of mages (docs/archive/MAGIC_AURA.md 3.2-3.3): spells learned beyond its line's, those you prepared for battle
     /// (empty = its line's), its master (a Soldier id on the roll, 0 = none) and until when it is leaderless (hours).
     public List<string> Spells = new(), Prepared = new();
+    /// A circle's doctrine (docs/ARCANA.md AR4; "" = none chosen): its spells cost less Will, it may learn one more spell
+    /// and the doctrine's own spells.
+    public string Doctrine = "";
     public int Master;
     public double LeaderlessUntil;
     /// The roll has been started (a new company names its first man once).
@@ -322,6 +325,13 @@ public sealed class Grave
     public double Hours;
 }
 
+/// A well you (or a realm) consecrated or bound (docs/ARCANA.md AR2): the tradition it was turned to, by whom and when.
+public sealed class WellMark
+{
+    public string Tradition = "";
+    public int Faction = -1, Day;
+}
+
 public sealed class Province
 {
     public int Id, Faction;
@@ -456,6 +466,10 @@ public sealed class CaptainState
     public int AuraTier;
     public float AuraXp;
     public bool AuraWall;
+    /// Battles won while the first wall stands (docs/ARCANA.md AR1): a fought one counts two; at `Campaign.SeasonWins` it wakes.
+    public int WallWins;
+    /// The path the aura walks (docs/ARCANA.md AR6): "sword", "banner", "hearth", or "" (not chosen yet).
+    public string Path = "";
     /// When a cracked core (the `core` wound, K5) mends of itself.
     public float CoreUntil;
     /// The forms you know, in slot order (5.6), and how often each was used (its rank); the Black Flame in you (7).
@@ -615,6 +629,11 @@ public sealed class CampaignState
     public Dictionary<string, int> Tally = new();
     public float FarSightUntil;
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
+    /// Wells consecrated or bound, by site id (docs/ARCANA.md AR2); the rest are as the map made them.
+    public Dictionary<int, WellMark> WellMarks = new();
+    /// Workings on the map (docs/ARCANA.md AR7): the day each province was last blighted, and until when its dead are calmed.
+    public Dictionary<int, int> Blights = new();
+    public Dictionary<int, double> Calmed = new();
     public List<Character> Characters = new();
     public int CaptainChar = -1;
     /// Your divisions (docs/archive/COMBAT_OVERHAUL.md 1.5): who leads each and the goal it starts a battle with.
@@ -683,6 +702,31 @@ public sealed class CampaignState
 /// Deterministic random numbers whose state lives in the save (System.Random cannot be saved). xorshift64*.
 public sealed class Rng
 {
+    /// A stable mix of numbers into one (splitmix64 steps). Use it, never `HashCode.Combine` or `string.GetHashCode`, for
+    /// anything the campaign decides by: those are seeded afresh in every process, so a loaded save, or the same seed run
+    /// again, would get other weather, other battle seeds and other stock.
+    public static int Mix(params int[] values)
+    {
+        ulong h = 0x9E3779B97F4A7C15UL;
+        foreach (int v in values)
+        {
+            h ^= (uint)v;
+            h += 0x9E3779B97F4A7C15UL;
+            h = (h ^ (h >> 30)) * 0xBF58476D1CE4E5B9UL;
+            h = (h ^ (h >> 27)) * 0x94D049BB133111EBUL;
+            h ^= h >> 31;
+        }
+        return (int)(h ^ (h >> 32));
+    }
+
+    /// A stable number for a string (FNV-1a), for `Mix`.
+    public static int Of(string s)
+    {
+        uint h = 2166136261;
+        foreach (char ch in s) { h ^= ch; h *= 16777619; }
+        return (int)h;
+    }
+
     readonly CampaignState s;
     readonly bool roll, orders, kin;
     public Rng(CampaignState state) { s = state; if (s.Rng == 0) s.Rng = 0x9E3779B97F4A7C15UL ^ (ulong)(uint)s.Seed; }
@@ -756,6 +800,8 @@ public sealed class Balance
     /// What an aura tier adds to the side its holder leads in auto-resolve (you, or an order knight leading his army): x(1 +
     /// this x tier). Worth a company, never an army (docs/archive/KNIGHT_ORDERS.md 5.7, K6).
     public float AuraWeight = 0.03f;
+    /// How much the Tide (docs/ARCANA.md AR3) moves a side's circles in auto-resolve: x(1 + mage share x this x (tide - 1)).
+    public float TideWeight = 0.5f;
     /// A feast in town, crowns a man (docs/archive/COMPANIONS_MAGIC.md A5).
     public float FeastPerMan = 6;
     /// Named men a company keeps at most (L1), and how much more often a named man lives through what kills his stack (L2).

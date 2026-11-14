@@ -87,7 +87,23 @@
     { "id": "devour", "name": "Devour", "icon": "skull", "kind": "drain", "order": "hollow", "tier": 2, "aura": 15, "cooldown": 20, "radius": 4, "maxHit": 6, "damage": 25, "corruption": 1.5,
       "line": "Tear the life out of the men around you and take it for your own." },
     { "id": "hollow_crown", "name": "Hollow Crown", "icon": "crown", "kind": "burst", "order": "hollow", "tier": 3, "great": true, "aura": 50, "cooldown": 300, "radius": 8, "maxHit": 20, "damage": 70, "shock": 30, "corruption": 4,
-      "line": "Once a battle: the black flame bursts from you. Every man near you burns." }
+      "line": "Once a battle: the black flame bursts from you. Every man near you burns." },
+
+    // The captain's paths (docs/ARCANA.md AR6): learned on your path as your aura rises, by anyone of any order or none.
+    // The Banner: aura spent on your men.
+    { "id": "hold_fast", "name": "Hold Fast", "icon": "shield", "kind": "buff", "path": "banner", "tier": 1, "aura": 25, "cooldown": 40, "radius": 15, "duration": 10, "effect": "held",
+      "line": "The companies round you will not break, and men running near you turn back." },
+    { "id": "steady_them", "name": "Steady Them", "icon": "flag", "kind": "buff", "path": "banner", "tier": 3, "aura": 35, "cooldown": 45, "radius": 25, "duration": 20, "effect": "steadied",
+      "line": "Your voice carries the aura: the companies round you take heart and find their breath." },
+    { "id": "unbroken_banner", "name": "The Unbroken Banner", "icon": "crown", "kind": "buff", "path": "banner", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "radius": 35, "duration": 25, "effect": "held",
+      "line": "Once a battle: every company near your banner holds like a wall, and the broken come back to it." },
+    // The Hearth: aura that feeds and steers your circle.
+    { "id": "lend_aura", "name": "Lend Aura", "icon": "star", "kind": "hearth", "act": "lend", "path": "hearth", "tier": 1, "aura": 30, "cooldown": 25, "radius": 40, "damage": 1.2,
+      "line": "Pour your aura into your circle nearby: their Will fills by as much again and a fifth." },
+    { "id": "anchor", "name": "Anchor", "icon": "tower", "kind": "hearth", "act": "anchor", "path": "hearth", "tier": 3, "aura": 35, "cooldown": 45, "duration": 15, "radius": 25,
+      "line": "Stand fast and hold the working: while it lasts your circle near you overreaches without the working turning on them." },
+    { "id": "kindle", "name": "Kindle the Tide", "icon": "sun", "kind": "hearth", "act": "kindle", "path": "hearth", "tier": 4, "great": true, "aura": 60, "cooldown": 300, "radius": 40,
+      "line": "Once a battle: your aura wakes the ground. The Tide fills to the brim, and your circle's Will with it." }
   ],
   // Aspects (docs/archive/MAGIC_AURA.md 4.5): at rank 3 a form takes one of the two its kind offers, for good. Numbers multiply the
   // form's own (radius, range, duration, damage, shock, cooldown, aura); maxHit and count add.
@@ -117,6 +133,8 @@
     { "id": "burn_broad", "kind": "burn", "name": "Broad", "line": "The black fire spreads wider.", "radius": 1.3 },
     { "id": "burn_long", "kind": "burn", "name": "Long", "line": "The black fire burns longer.", "duration": 1.5 },
     { "id": "drain_broad", "kind": "drain", "name": "Broad", "line": "It drains men further off.", "radius": 1.3 },
-    { "id": "drain_deep", "kind": "drain", "name": "Deep", "line": "It drains more from each man.", "damage": 1.3 }
+    { "id": "drain_deep", "kind": "drain", "name": "Deep", "line": "It drains more from each man.", "damage": 1.3 },
+    { "id": "hearth_deep", "kind": "hearth", "name": "Deep", "line": "It gives a third more.", "damage": 1.33 },
+    { "id": "hearth_long", "kind": "hearth", "name": "Long", "line": "It lasts half again as long, and comes back sooner.", "duration": 1.5, "cooldown": 0.8 }
   ]
 }

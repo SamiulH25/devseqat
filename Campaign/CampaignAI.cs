@@ -26,12 +26,13 @@ public partial class Campaign
             string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, 7), faction);
             lord.Companies.Add(NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.7f, 1f)), 0, home));
         }
-        // Mages are super units: only a great lord (army level 5 up), one in five, brings a circle of his realm's mages (E1); no
-        // dice, so the campaign's draws stay as they were.
-        if (tier >= 5 && lord.Id % 5 == 0)
+        // Mages are super units: only a great lord brings a circle of his realm's mages, as many in four as his realm's arcana
+        // (docs/ARCANA.md AR5; E1); no dice, so the campaign's draws stay as they were.
+        if (tier >= 5 && KeepsCircle(lord))
         {
             string mage = Armies.MageTroop(Factions.CultureOf(faction), tier - 1);
             lord.Companies.Add(NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0, home));
+            NameCourtMage(lord, lord.Companies[^1]); // a named court mage leads it (CourtMages.cs)
         }
         S.Parties.Add(lord);
     }
@@ -72,6 +73,7 @@ public partial class Campaign
         if (rng.Chance(0.6f))
             band.Companies.Add(NewCompany(Armies.LineTroop(rng.Chance(0.6f) ? "archers" : "horse", tier, rng.Next(3)), rng.Chance(0.6f) ? "archers" : "horse", Scaled(rng.Next(5, 10) + Day / 20), 0));
         foreach (var c in band.Companies) c.Role = Rules.TroopRole(c.Troop) is "horse" or "archers" ? Rules.TroopRole(c.Troop) : c.Role;
+        CunningFolk(band); // a few hedge witches with the bigger bands (CourtMages.cs)
         S.Parties.Add(band);
     }
 
@@ -94,9 +96,11 @@ public partial class Campaign
         }
         // Mages are rare: a town with a chapel, or a shrine or hermit near it, has a circle to hire one week in six (its own
         // week, no dice); Acolytes at first, from day 60 its culture's mages (E1).
-        if ((Level(t, "chapel") > 0 || Sites.Any(x => x.Kind is "shrine" or "hermit" && Vector2.Distance(x.Pos, t.Pos) < 40)) && (t.Id + Day / 7) % 6 == 0)
+        // Where a well reaches (docs/ARCANA.md AR2), or at a chapel; a strong tide brings a seasoned circle later on.
+        int tide = TideAt(t.Pos).Strength;
+        if ((Level(t, "chapel") > 0 || tide > 0) && (t.Id + Day / 7) % 6 == 0)
         {
-            string mage = Day >= 60 ? Armies.MageTroop(t.Culture, 4) : "acolytes";
+            string mage = Day >= 60 ? Armies.MageTroop(t.Culture, tide >= 3 && Day >= 120 ? 5 : 4) : "acolytes";
             var m = NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0);
             m.Name = Day >= 60 ? $"The {t.Name} {Troops.Get(mage).Name}" : $"Acolytes of {t.Name}";
             t.Mercenaries.Add(m);
@@ -237,6 +241,32 @@ public partial class Campaign
         if (p.Men >= Scaled(45) && p.Companies.Count >= 3) budget = 0;
         PromoteAll(p, ref budget);
         if (p.Companies.Count > 0) p.Tier = Math.Clamp((int)MathF.Round((float)p.Companies.Average(c => c.Type.Tier)), 1, 7);
+        RaiseCircle(p, home, fs);
+    }
+
+    /// Does this lord keep a circle (docs/ARCANA.md AR5)? Of four, as many as his realm's arcana, one more where a steady well
+    /// or better reaches his home; by his id, not the dice.
+    bool KeepsCircle(Party p)
+    {
+        int share = Factions.Get(Math.Max(0, p.Faction)).Arcana;
+        if (p.HomeId >= 0 && p.HomeId < S.Settlements.Count && TideAt(S.Settlements[p.HomeId].Pos).Strength >= 2) share++;
+        return p.Id % 4 < share;
+    }
+
+    /// A great lord's circle (docs/archive/COMPANIONS_MAGIC.md E1): a lord who keeps one (`KeepsCircle`) and whose men stand at
+    /// tier IV or more raises a circle of his realm's mages when he refits, from day 60 (as the towns' own circles), paid from the
+    /// war chest. A lord only got one when first raised before, and lords are raised at low tiers, so no army ever fielded mages.
+    void RaiseCircle(Party p, Settlement home, FactionState fs)
+    {
+        if (p.Kind != PartyKind.Lord || p.KnightOrder != "" || p.Tier < 4 || Day < 60 || !KeepsCircle(p)) return;
+        if (p.Companies.Any(c => Rules.RoleOf(c) == "casters") || p.Companies.Count >= 6) return;
+        string mage = Armies.MageTroop(Factions.CultureOf(p.Faction), p.Tier);
+        int men = (int)(Rules.CapOf(mage, "casters") * 0.8f);
+        int price = (int)MathF.Ceiling(men * Rules.PerMan(Troops.Get(mage).Cost));
+        if (fs.Treasury < price + 600) return; // the realm can still raise a lord after paying
+        fs.Treasury -= price;
+        p.Companies.Add(NewCompany(mage, "casters", men, 0, home));
+        NameCourtMage(p, p.Companies[^1]);
     }
 
     /// How much bigger brigands think a party is: an Aura Master's name goes before him (MA8), so they flee one up to half again their weight.

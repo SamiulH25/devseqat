@@ -56,7 +56,7 @@ public partial class Battle
         if (AuraTier < f.Tier) return $"NEEDS AURA TIER {f.Tier}";
         if (f.Great && greatUsed) return "THE GREAT FORM IS SPENT";
         if (Time < formReady[i]) return $"{f.Name.ToUpperInvariant()} IN {formReady[i] - Time:0}";
-        if (Aura + Surge < f.Aura) return "NOT ENOUGH AURA";
+        if (Aura + Surge < FormCost(f)) return "NOT ENOUGH AURA";
         if (p.Action is UnitAction.Windup or UnitAction.Recover or UnitAction.Stagger) return "BUSY";
         if (f.Kind == "shot" && (p.Type.Ammo == 0 || p.Ammo <= 0)) return "TAKE UP A BOW";
         if (f.Kind == "leap" && p.Mounted && f.Id != Forms.OwnId) return "NOT FROM THE SADDLE"; // your own Charge leaps from the saddle (MA6)
@@ -78,9 +78,10 @@ public partial class Battle
     {
         if (CannotForm(i) is string why) { PlayerHit = (why, Time); return; }
         var f = FormSlot[i]!;
-        float fromSurge = MathF.Min(Surge, f.Aura); // the surge goes first (MA3)
+        float cost = FormCost(f); // a Sword captain's forms cost less (BattlePaths.cs)
+        float fromSurge = MathF.Min(Surge, cost); // the surge goes first (MA3)
         Surge -= fromSurge;
-        Aura -= f.Aura - fromSurge;
+        Aura -= cost - fromSurge;
         formReady[i] = Time + f.Cooldown;
         if (f.Great) greatUses++;
         FormUses[f.Id] = FormUses.GetValueOrDefault(f.Id) + 1;
@@ -114,6 +115,7 @@ public partial class Battle
                     if (u.Active && u.Team == p.Team && u.Routing && u.Routs <= 1 && Vector2.DistanceSquared(u.Pos, p.Pos) < f.Radius * f.Radius)
                     { u.Routing = false; u.Morale = MathF.Max(u.Morale, RallyAt + 10); }
                 break;
+            case "hearth": HearthForm(p, f, k); break; // the Hearth path (BattlePaths.cs)
             case "burn": AddField(AsAbility(f), f.Effect, p.Team, p, p.Pos + p.Dir * f.Range, f.Radius, f.Duration, k, f.Dps); break;
         }
     }

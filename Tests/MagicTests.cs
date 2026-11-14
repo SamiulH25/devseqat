@@ -537,4 +537,266 @@ public static partial class SelfTest
         var w = b.Result().Wonders;
         Check(w.Count == 1 && w[0].Contains("Miracle") && w[0].Contains("us"), $"a great working is told once, as ours ({string.Join(" / ", w)})");
     }
+
+    /// Mages reach the campaign: towns near a shrine or hermit can offer a circle on the big map, and great lords raise
+    /// circles when they refit. Before, neither ever happened in a whole campaign.
+    static void MagesInTheWorld()
+    {
+        var c = Campaign.New(2001);
+        var towns = c.S.Settlements.Where(t => t.Kind == SettlementKind.Town).ToList();
+        int near = towns.Count(t => c.TideAt(t.Pos).Strength > 0);
+        Check(near > 0, "some towns stand where a well reaches");
+        var pilot = new Pilot(c);
+        int offers = 0, lordCircles = 0;
+        for (int week = 0; week < 22; week++)
+        {
+            pilot.Run(24 * 7);
+            offers += c.S.Settlements.Sum(t => t.Mercenaries.Count(m => Rules.RoleOf(m) == "casters"));
+            lordCircles = Math.Max(lordCircles, c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Companies.Any(k => Rules.RoleOf(k) == "casters")));
+        }
+        Console.WriteLine($"mages: {near}/{towns.Count} towns where a well reaches; {offers} circle offers seen in 22 weeks; at most {lordCircles} lords with a circle (day {c.Day})");
+        Check(offers > 0, "a circle is offered somewhere");
+        Check(lordCircles > 0, "a great lord fields a circle");
+        // A realm's arcana (docs/ARCANA.md AR5): the sorcerous realms' great lords keep circles more often.
+        int Circles(int arcana) => c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction >= 0 && Factions.Get(p.Faction).Arcana == arcana && p.Companies.Any(k => Rules.RoleOf(k) == "casters"));
+        int Lords(int arcana) => c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction >= 0 && Factions.Get(p.Faction).Arcana == arcana);
+        Console.WriteLine($"mages by arcana: 1: {Circles(1)}/{Lords(1)}, 2: {Circles(2)}/{Lords(2)}, 3: {Circles(3)}/{Lords(3)}");
+        Check(Circles(3) / (float)Math.Max(1, Lords(3)) > Circles(1) / (float)Math.Max(1, Lords(1)), "realms of arcana 3 keep more circles a lord than realms of 1");
+    }
+
+    /// The arcana census (docs/ARCANA.md AR0) runs, and a seeking stand-in rides to a vigil once its aura stands at a wall.
+    static void ArcanaCensus()
+    {
+        var (p, samples) = BalanceReport.ArcanaRun(4002, true, 90);
+        var last = samples.Last();
+        Console.WriteLine($"arcana: day {last.Day}, {last.MagicBattles}/{last.Battles} battles with magic, {last.LordCircles}/{last.Lords} lords with a circle, {last.Offers} offers, aura {last.Aura} (kindled day {p.AuraDay[1]}), vigils {last.Vigils}");
+        Check(samples.Count == 3 && last.Lords > 0 && last.Battles > 0, "the census samples a living campaign");
+        Check(last.Vigils > 0 || p.AuraDay[1] > 0, "a seeker breaks its first wall (a vigil at the wall, or twelve wins first)");
+    }
+
+    /// Wells (docs/ARCANA.md AR2): the map's holy and old places are wells, the same on every load of a seed; the Tide reaches
+    /// round them; consecrating or binding one turns and strengthens it, only in your realm and only by those who can.
+    static void WellsFromSites()
+    {
+        var c = Campaign.New(61);
+        var wells = c.Sites.Where(x => Campaign.WellTradition(x.Kind) != "").ToList();
+        Check(wells.Count > 20 && wells.All(x => c.Well(x).Strength is >= 1 and <= 3), $"holy and old places are wells of strength 1-3 ({wells.Count})");
+        Check(c.Sites.Where(x => x.Kind is "mill" or "mine" or "watchtower").All(x => c.Well(x).Strength == 0), "a mill is not a well");
+        Check(wells.Where(x => x.Kind is "shrine" or "spring" or "hermit").All(x => c.Well(x).Tradition == "faith")
+            && wells.Where(x => x.Kind is "stones" or "ruin" or "battlefield").All(x => c.Well(x).Tradition == "craft"), "shrines are faith, stones craft");
+        var strengths = wells.GroupBy(x => c.Well(x).Strength).ToDictionary(g => g.Key, g => g.Count());
+        Console.WriteLine($"wells: {wells.Count} ({string.Join(", ", strengths.OrderBy(kv => kv.Key).Select(kv => $"{kv.Value} of {kv.Key}"))})");
+        Check(strengths.Count == 3 && strengths[1] > strengths[3], "most wells are faint, a few strong");
+        var again = Campaign.New(61);
+        Check(again.Sites.All(x => again.Well(x) == c.Well(x)), "a seed's wells are the same every time");
+        // The tide: full at the well, a step less a little way off, none far away.
+        var w = wells.First(x => c.Well(x).Strength >= 2);
+        float reach = Campaign.WellReach * c.Map.Spread;
+        Check(c.TideAt(w.Pos).Strength >= c.Well(w).Strength, "at a well its tide is full");
+        Check(c.TideAt(w.Pos + new Vector2(reach * 2.6f, 0)).Well != w, "far off it is another well's, or none");
+        // Marking: stand there, hold the province, have a priest.
+        foreach (var k in c.Companions.ToList()) k.Calling = "Sword";
+        c.S.Gold = 1000;
+        var site = wells.First(x => c.Well(x).Tradition == "craft" && c.Well(x).Strength < 3);
+        c.Player.Pos = site.Pos;
+        var pr = c.S.Provinces.First(p => p.Id == site.Province);
+        Check(c.Rite("consecrate") != null, "no priest, no consecration");
+        c.Player.Companies.First(x => x.Men > 0).Stacks.Add(new TroopStack { Troop = "chaplains", Men = 5 });
+        c.Captain.Contract = pr.Faction == 0 ? 1 : 0;
+        Check(c.Rite("consecrate") == "ONLY IN A PROVINCE OF YOUR REALM", "not in another realm's land");
+        c.Captain.Contract = pr.Faction;
+        int before = c.Well(site).Strength;
+        Check(c.Rite("consecrate") == null && c.Well(site) == ("faith", before + 1) && c.S.Gold == 880, "a stones consecrated turns to the faith, a step stronger, for 120 crowns");
+        c.S.RiteDay = 0;
+        Check(c.Rite("consecrate") == "THIS WELL IS CONSECRATED ALREADY", "once");
+        c.Player.Pos = site.Pos + new Vector2(40 * c.Map.Spread, 0);
+        c.S.RiteDay = 0;
+        Check(c.Rite("consecrate") != null, "away from a well there is nothing to consecrate");
+        var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
+        Check(back.Well(back.Sites.First(x => x.Id == site.Id)).Tradition == "faith", "the mark is saved");
+    }
+
+    /// The tide brings circles to hire: towns where a well reaches offer them, and more strongly near strong wells.
+    static void TideFeedsOffers()
+    {
+        var c = Campaign.New(2001);
+        var towns = c.S.Settlements.Where(t => t.Kind == SettlementKind.Town).ToList();
+        int reached = towns.Count(t => c.TideAt(t.Pos).Strength > 0);
+        var seen = new HashSet<int>();
+        for (int week = 0; week < 7; week++)
+        {
+            c.Tick(24 * 7); c.Encounter = null; c.Arrived = null;
+            foreach (var t in towns.Where(t => t.Mercenaries.Any(m => Rules.RoleOf(m) == "casters"))) seen.Add(t.Id);
+        }
+        Console.WriteLine($"tide: {reached}/{towns.Count} towns where a well reaches; {seen.Count} offered a circle in 7 weeks");
+        Check(reached > towns.Count / 4, "a good share of towns lie where a well reaches");
+        Check(seen.Count > 0 && seen.All(id => c.TideAt(towns.First(t => t.Id == id).Pos).Strength > 0 || towns.First(t => t.Id == id).Buildings.GetValueOrDefault("chapel") > 0), "only those (or a chapel town) offer circles");
+    }
+
+    /// The Tide (docs/ARCANA.md AR3): one pool both sides draw on. A cast takes its Will from it too (half for the well's own
+    /// tradition); with it low the circles wait, but a great working or your order overreaches at twice the Will.
+    static void TideShared()
+    {
+        var (b, m, f) = MageScene("battle_priests");
+        Check(b.TideCap == Battle.TideBase * 2 && b.Tide == b.TideCap, "a quick battle's field holds a middling Tide");
+        var foe = b.AddSquad(1, Troops.Get("skalds"), 3, new(20, 30), 3, -Vector2.UnitY);
+        foe.Order = Order.Hold;
+        float tide = b.Tide;
+        Run(b, 12);
+        Check(b.Casts.Count + b.Fields.Count > 0 || b.Tide < tide, "casting draws the Tide down");
+        // A dry field: nobody casts but a great working.
+        var (d, dm, df) = MageScene("battle_priests");
+        d.Tide = 0;
+        float will = dm.Will;
+        for (int i = 0; i < 12 * 60; i++) { d.Tide = 0; d.Update(1 / 60f); }
+        Check(d.Casts.Count == 0 && dm.Will >= will - 1, "with the Tide dry the circle waits and keeps its Will");
+        // The well's own tradition draws half.
+        var a = Abilities.Get("smite");
+        var holy = Battle.Empty(3, new BattleOptions { Tide = 2, TideTradition = "faith" });
+        var dark = Battle.Empty(3, new BattleOptions { Tide = 2, TideTradition = "craft" });
+        Check(holy.TideCap == Battle.TideBase * 3 && holy.TideDraw(a, 20) == 10 && dark.TideDraw(a, 20) == 20, "a steady well holds three times the base; its own tradition draws half");
+    }
+
+    /// Overreach: an ordered cast with the Tide dry costs twice the Will and may lash back on the circle; never kills.
+    static void Overreach()
+    {
+        int lashed = 0, cast = 0;
+        for (int seed = 0; seed < 12; seed++)
+        {
+            var (b, m, f) = MageScene("battle_priests", 80 + seed);
+            m.HoldSpells = true;
+            Run(b, 10);
+            int smite = Array.FindIndex(m.Spells, a => a.Id == "smite");
+            b.Tide = 0;
+            Check(b.WouldOverreach(m, smite) && b.CannotCast(m, smite) == null, $"with Will to spare the spell fan offers an overreach ({b.CannotCast(m, smite)}, will {m.Will:0})");
+            m.CastSpell = smite; m.CastAt = f.Center; m.CastSince = b.Time;
+            float will = m.Will;
+            float hp = m.Units.Sum(u => u.Hp);
+            for (int i = 0; i < 3 * 60 && b.Casts.Count == 0; i++) { b.Tide = 0; b.Update(1 / 60f); }
+            if (b.Casts.Count == 0) continue;
+            cast++;
+            float cost = m.Spells[smite].Will + Battle.OrderedWill;
+            Check(will - m.Will >= cost * 2 - 1, $"an overreach costs twice the Will ({will - m.Will:0} of {cost * 2:0})");
+            Check(b.Overreaches[0] == 1, "it is counted");
+            if (b.Backlashes[0] > 0) { lashed++; Check(m.Units.Sum(u => u.Hp) < hp && m.Units.All(u => !u.Dead), "a backlash strikes a caster down, but does not kill him"); }
+        }
+        Console.WriteLine($"overreach: {cast} of 12 ordered casts went off on a dry Tide, {lashed} lashed back");
+        Check(cast == 12 && lashed > 0 && lashed < 12, "every ordered cast overreaches; some, not all, lash back");
+        // The well reaches the battle: the campaign hands the field's Tide over.
+        var c = Campaign.New(61);
+        var well = c.Sites.First(x => c.Well(x).Strength == 3);
+        Check(c.TideAt(well.Pos).Strength == 3, "the field at a strong well");
+        Check(Campaign.TideEdge(1, new[] { c.Player }, new[] { c.Player }) == 1, "the Tide weighs nothing between equal sides");
+    }
+
+    /// Court mages and cunning folk (docs/ARCANA.md AR5): a lord's circle is led by a named mage who falls with it; the bigger
+    /// brigand bands of the later campaign bring a few hedge witches.
+    static void CourtMage()
+    {
+        var c = Campaign.New(62);
+        var lord = c.S.Parties.First(p => p.Kind == PartyKind.Lord && p.Faction >= 0);
+        var circle = c.NewCompany(Armies.MageTroop(Factions.CultureOf(lord.Faction), 5), "casters", 6, 0);
+        lord.Companies.Add(circle);
+        c.NameCourtMage(lord, circle);
+        var mage = c.CourtMageOf(lord);
+        Console.WriteLine($"court mage: {mage?.Name}, leading the {circle.Name} for {lord.Name}");
+        Check(mage != null && mage.Kind == "mage" && mage.CompanyId == circle.Id && circle.Name.StartsWith("Circle of "), "the lord's circle has a named head, and is called after him");
+        Check(mage!.Name.EndsWith("Stormcaller") || mage.Name.EndsWith("Father of the Circle"), "titled by his tradition");
+        c.NameCourtMage(lord, circle);
+        Check(c.S.Characters.Count(ch => ch.Kind == "mage" && ch.PartyId == lord.Id) == 1, "one head a circle");
+        c.CourtMagesAfterBattle(new[] { lord }, false);
+        Check(!mage.Dead, "while the circle stands, so does he");
+        circle.Stacks.ForEach(st => st.Men = 0);
+        c.CourtMagesAfterBattle(new[] { lord }, false);
+        Check(mage.Dead && c.CourtMageOf(lord) == null, "cut the circle down and he falls with it");
+        // Cunning folk.
+        var band = new Party { Id = 1000, Kind = PartyKind.Bandit, Tier = 3 };
+        c.CunningFolk(band);
+        Check(band.Companies.Count == 0, "not in the early campaign");
+        c.S.Hours = 100 * 24;
+        c.CunningFolk(band);
+        Check(band.Companies.Count == 1 && Rules.RoleOf(band.Companies[0]) == "casters" && band.Companies[0].Name == "Cunning Folk", "later, one big band in five brings hedge witches");
+        var small = new Party { Id = 1005, Kind = PartyKind.Bandit, Tier = 2 };
+        c.CunningFolk(small);
+        Check(small.Companies.Count == 0, "not the rabble");
+    }
+
+    /// Doctrines (docs/ARCANA.md AR4): a circle takes one of its tradition's, once; its spells cost it less Will; it may learn
+    /// one more spell and its doctrine's own (Unweave for Vigil). Unweave breaks an enemy working still gathering in its glow.
+    static void DoctrinesAndUnweave()
+    {
+        Check(!Abilities.Validate().Any(), "abilities.json is valid: " + string.Join("; ", Abilities.Validate()));
+        var c = Campaign.New(63);
+        var co = c.Player.Companies.First(x => x.Men > 0);
+        var circle = c.NewCompany("lectors", "casters", 4, 0);
+        c.Player.Companies.Add(circle);
+        Check(c.CannotChooseDoctrine("storm") != null, "a circle of the faith cannot take a doctrine of the craft");
+        Check(!Campaign.Learnable(circle).Any(a => a.Id == "unweave"), "without the doctrine, no Unweave");
+        Check(c.ChooseDoctrine("vigil") == null && circle.Doctrine == "vigil" && c.ChooseDoctrine("mercy") != null, "Vigil, once");
+        Check(Campaign.Learnable(circle).Any(a => a.Id == "unweave") && Campaign.LearnRoom(circle) == Campaign.MaxLearned + 1, "then Unweave can be learned, and one spell more");
+        Check(!Campaign.Learnable(circle).Any(a => a.Id == "wither"), "but not another doctrine's own");
+
+        // In battle: a Vigil circle unweaves an enemy working before it lands, and pays less for its own doctrine.
+        var b = Battle.Empty(64);
+        var mine = b.AddSquad(0, Troops.Get("lectors"), 3, new(0, 0), 3, Vector2.UnitY, new Company("lectors", 3, "casters", Spells: new[] { "unweave", "ward" }, Doctrine: "vigil"));
+        var foe = b.AddSquad(1, Troops.Get("skalds"), 3, new(0, 30), 3, -Vector2.UnitY);
+        mine.Order = foe.Order = Order.Hold; foe.HoldSpells = true;
+        Run(b, 8);
+        b.Casts.Add(new Cast { A = Abilities.Get("lightning"), By = foe, At = mine.Center, Started = b.Time, FireAt = b.Time + 4, Power = 1 });
+        float hp = mine.Units.Sum(u => u.Hp), spent = -1;
+        for (int i = 0; i < 5 * 60; i++)
+        {
+            float w0 = mine.Will;
+            b.Update(1 / 60f);
+            if (spent < 0 && b.Casts.Any(x => x.By == mine)) spent = w0 - mine.Will;
+        }
+        Check(!b.Casts.Any(x => x.By == foe) && mine.Units.Sum(u => u.Hp) >= hp - 0.01f, "the enemy's lightning is unwoven before it falls");
+        Check(MathF.Abs(spent - (Abilities.Get("unweave").Will - Battle.DoctrineThrift)) < 0.5f, $"Unweave cost the Vigil circle {spent:0.0} Will (its doctrine's discount)");
+    }
+
+    /// Workings on the map (docs/ARCANA.md AR7): a blight fails an enemy province's harvest, only one at war with you; calming
+    /// the dead keeps a province's graves down; sorcerous realms blight their enemies by themselves.
+    static void WorkingsBite()
+    {
+        var c = Campaign.New(65);
+        foreach (var k in c.Companions.ToList()) k.Calling = "Sword";
+        c.Player.Companies.First(x => x.Men > 0).Stacks.Add(new TroopStack { Troop = "hedge_witches", Men = 5 });
+        c.Player.Companies.First(x => x.Men > 0).Stacks.Add(new TroopStack { Troop = "chaplains", Men = 5 });
+        c.S.Gold = 1000;
+        c.Captain.Contract = 0;
+        var foeProv = c.S.Provinces.First(p => p.Faction > 0 && c.S.Settlements.Any(s => s.Province == p.Id));
+        c.Player.Pos = foeProv.Center;
+        c.S.Wars.RemoveAll(w => (w.A == 0 && w.B == foeProv.Faction) || (w.B == 0 && w.A == foeProv.Faction));
+        Check(c.Rite("blight") == "ONLY THE FIELDS OF A REALM AT WAR WITH YOURS", "no blight on a realm at peace with yours");
+        c.S.Wars.Add(new War { A = 0, B = foeProv.Faction });
+        var towns = c.S.Settlements.Where(s => s.Province == foeProv.Id).ToList();
+        float pros = towns.Sum(t => t.Prosperity), omen = c.S.Omen;
+        Check(c.Rite("blight") == null && towns.Sum(t => t.Prosperity) < pros && towns.All(t => t.Unrest >= Campaign.BlightUnrest) && c.S.Omen == omen + 6,
+            "a blight fails the harvest, stirs unrest and draws the Omen");
+        c.S.RiteDay = 0;
+        Check(!c.Calmed(c.Player.Pos) && c.Rite("calm_dead") == null && c.Calmed(c.Player.Pos), "the dead of the province are calmed");
+        c.S.Hours += (Campaign.CalmDays + 1) * 24;
+        Check(!c.Calmed(c.Player.Pos), "for a month");
+        // Realms of arcana 2 and 3 work blights on their enemies.
+        var w = Campaign.New(66);
+        for (int d = 0; d < 120; d++) { w.Tick(24); w.Encounter = null; w.Arrived = null; }
+        Console.WriteLine($"workings: {w.S.Blights.Count} provinces blighted by realms in 120 days");
+        Check(w.S.Blights.Count > 0, "sorcerous realms blight their enemies' fields");
+    }
+
+    /// Magic remembered (docs/ARCANA.md AR8): a great working your circle cast in a won battle names the battle, and the circle's
+    /// master and the chronicle remember it; the foe's working does not.
+    static void WorkingsRemembered()
+    {
+        var (c, circle) = CircleCampaign(95);
+        c.CircleDaily();
+        var m = Campaign.MasterOf(circle)!;
+        var r = new BattleResult(0, 90, new List<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Unhurt, 0) { Wonders = new[] { "The foe worked Tempest." } };
+        Check(c.WorkingRemembered(r, "Greyford Field") == "Greyford Field", "the foe's working names nothing");
+        r = r with { Wonders = new[] { "Miracle was worked for us." } };
+        string named = c.WorkingRemembered(r, "Greyford Field");
+        Check(named == "the Miracle at Greyford Field", $"ours names the day ({named})");
+        Check(m.Deeds.Any(d => d.Contains("Miracle at Greyford Field")), "the master is known for it");
+    }
 }
+

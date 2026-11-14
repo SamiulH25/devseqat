@@ -308,10 +308,10 @@ partial class BattleScreen
         foreach (var u in battle.Units)
         {
             if (u.Fled) continue;
-            if (!forSun && !u.IsPlayer && u.Team == 0 && blend < 0.5f && Vector2.DistanceSquared(u.Pos, eye2) < 6 * 6) continue; // friends don't fill the lens
             if (deploying && !battle.Options.Scouted && u.Team == 1 && !u.IsLeader) continue; // unscouted: banners only
             if (u.Team == 1 && !u.IsLeader && !battle.Shown(u.Squad)) continue; // hidden by a crest or a wood
             float h = t.Height(u.Pos);
+            if (!forSun && !u.IsPlayer && u.Team == 0 && blend < 0.5f && LensFill(u.Pos, h)) continue; // friends don't fill the lens
             float rear = RearOf(u, !forSun);
             if (!Seen(u.Pos, h + (u.Dead ? 0 : u.Altitude), MathF.Max(u.Mounted ? 2.5f : 1.5f, u.Type.Size * (u.Type.Flying ? 3.5f : 1.5f)))) continue; // a wyvern on the wing, a huge beast's bulk
             puppet.Rear = rear;
@@ -335,6 +335,11 @@ partial class BattleScreen
         foreach (var h in battle.DeadHorses) { float hh = t.Height(h.Pos); if (Seen(h.Pos, hh, 2.5f)) puppet.DrawDeadHorse(h, hh); }
         puppet.Detail = 0;
     }
+
+    /// A man so close to the field camera that his body would fill the lens. Only these are left out:
+    /// the camera stands a few metres behind the captain, so a wider ring hid the ranks around him.
+    bool LensFill(Vector2 p, float h) => Vector3.DistanceSquared(new Vector3(p.X, h + 1, p.Y), eye) < LensRing * LensRing;
+    const float LensRing = 1.5f;
 
     void SpriteStates()
     {

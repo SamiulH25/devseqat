@@ -14,6 +14,10 @@ public sealed partial class Campaign
         ("rain", "CALL RAIN", "craft", 0, 4, "SOAKS THIS PROVINCE: HEAVY GOING FOR HORSE"),
         ("marks", "CRAFT MARKS", "craft", 0, 3, "NEXT BATTLE YOUR AURA BLADE LEAVES FEVER"),
         ("cleanse", "CLEANSE", "faith", 100, 0, "IN A TOWN: THE OMEN FALLS BY 10"),
+        ("consecrate", "CONSECRATE THE WELL", "faith", 120, 0, "AT A WELL OF YOUR REALM: IT TURNS TO THE FAITH AND GROWS"),
+        ("bind", "BIND THE WELL", "craft", 0, 5, "AT A WELL OF YOUR REALM: IT TURNS TO THE CRAFT AND GROWS"),
+        ("blight", "BLIGHT THE HARVEST", "craft", 0, 6, "IN A PROVINCE OF A REALM AT WAR WITH YOURS: ITS HARVEST FAILS"),
+        ("calm_dead", "CALM THE DEAD", "faith", 60, 0, "NO GRAVE FIELD IN THIS PROVINCE RISES FOR A MONTH"),
     };
     public const float OmenEvents = 12, RelicCharges = 3;
     /// The Omen's teeth (docs/archive/MAGIC_AURA.md 3.6, MA8): from OmenStirs the dead rise sooner and in greater numbers, from OmenShuns
@@ -38,6 +42,9 @@ public sealed partial class Campaign
         if (id == "mend_core" && !Captain.Wounds.Contains("core")) return "YOUR CORE IS WHOLE";
         if (id == "cleanse" && !InTown(Player)) return "IN A TOWN, AT ITS CHAPEL";
         if (id == "cleanse" && S.Omen <= 0) return "THERE IS NO OMEN TO CLEANSE";
+        if (id is "consecrate" or "bind" && CannotMarkWell(r.Tradition) is string notHere) return notHere;
+        if (id == "blight" && CannotBlight() is string noBlight) return noBlight;
+        if (id == "calm_dead" && ProvinceHere == null) return "NOWHERE TO CALM";
         S.Gold -= r.Gold;
         if (r.Tradition == "craft") BreakVow("no_craft", "work the craft");
         float prevOmen = S.Omen;
@@ -52,6 +59,9 @@ public sealed partial class Campaign
             case "bones": S.FarSightUntil = (float)S.Hours + 24; break;
             case "marks": AddBuff("craft_marks", 7); break;
             case "cleanse": S.Omen = MathF.Max(0, S.Omen - CleanseOmen); break;
+            case "consecrate": case "bind": MarkWell(r.Tradition); break;
+            case "blight": Blight(ProvinceHere!, "Your cunning folk"); Deed($"You blight the fields of {ProvinceHere!.Title}.", "workings"); break;
+            case "calm_dead": S.Calmed[ProvinceHere!.Id] = S.Hours + CalmDays * 24; break;
             case "rain":
                 var pr = S.Provinces.FirstOrDefault(p => p.Id == Map.ProvinceAt(Player.Pos).Id);
                 if (pr != null) pr.Wet = MathF.Min(1, pr.Wet + 0.5f);
@@ -66,6 +76,10 @@ public sealed partial class Campaign
             "bones" => "The bones are read. Far parties show themselves.",
             "marks" => "Old marks are cut into your blade and painted on your brow.",
             "cleanse" => "Candles, salt and water at the chapel. The air feels clean again.",
+            "consecrate" => "Prayers at the well through the night. By morning the place is holy.",
+            "bind" => "Blood on the stones and old words. The place listens to you now.",
+            "blight" => "Black words over the furrows by night. By morning the wheat is grey.",
+            "calm_dead" => "Salt, candles and the names of the dead. The grave fields lie quiet.",
             _ => "Rain comes on as the old words are spoken.",
         });
         AudioEngine.Current?.Play(Cue.RiteDrum, 0.75f);

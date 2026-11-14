@@ -126,6 +126,27 @@ partial class MapScreen
         ui.Block(r);
     }
 
+    /// The circle's doctrine (docs/ARCANA.md AR4): a button for each of its tradition's while none is chosen, then which.
+    int DoctrineRow(CompanyRecord c, int x, int y, int w)
+    {
+        if (c.Doctrine != "")
+        {
+            var d = Abilities.Doctrines.First(z => z.Id == c.Doctrine);
+            ui.TextFit($"DOCTRINE OF {d.Name.ToUpperInvariant()}: {d.Line.ToUpperInvariant()}. ITS SPELLS COST {Battle.DoctrineThrift:0} LESS WILL.", x, y, w, Style.Aura, 1);
+            return y + ui.U(14);
+        }
+        var mine = Abilities.Doctrines.Where(z => z.Tradition == Campaign.CircleTradition(c)).ToList();
+        ui.Text("CHOOSE A DOCTRINE (ONCE):", x, y + ui.U(4), Style.Dim, 1);
+        int lx = x + ui.TW("CHOOSE A DOCTRINE (ONCE):", 1) + ui.U(8), bw = (x + w - lx - ui.U(4) * (mine.Count - 1)) / Math.Max(1, mine.Count);
+        for (int i = 0; i < mine.Count; i++)
+        {
+            var b = new Rectangle(lx + i * (bw + ui.U(4)), y, bw, ui.U(18));
+            if (ui.Button(b, ui.Fit(mine[i].Name.ToUpperInvariant(), bw - ui.U(6)), true)) note = C.ChooseDoctrine(mine[i].Id) ?? "";
+            if (ui.Hover(b)) note = $"{mine[i].Name.ToUpperInvariant()}: {mine[i].Line.ToUpperInvariant()}. ITS SPELLS COST LESS WILL; ONE MORE SPELL TO LEARN, AND ITS OWN.";
+        }
+        return y + ui.U(22);
+    }
+
     /// The company the roll panel shows.
     CompanyRecord? rollOf;
     /// The man picked on the roll (C4): the action bar works on him.
@@ -143,6 +164,7 @@ partial class MapScreen
         ui.Text("THE SPELLBOOK", x, y, Kit.Gilt, 2);
         ui.TextR(ui.Fit(head, w - ui.U(150)), x + w, y + ui.U(4), master != null ? Kit.Gilt : Style.Warn, 1);
         y += ui.U(20);
+        y = DoctrineRow(c, x, y, w);
         var prep = Campaign.Prepared(c);
         ui.Text($"PREPARED {prep.Length} OF {Campaign.PrepareSlots(c)}. CLICK TO PREPARE OR SET ASIDE.", x, y, Style.Dim, 1);
         y += ui.U(12);
@@ -158,7 +180,7 @@ partial class MapScreen
         }
         y += (known.Count + 2) / 3 * ui.U(21) + ui.U(4);
         var learn = Campaign.Learnable(c).ToList();
-        if (c.Spells.Count < Campaign.MaxLearned && learn.Count > 0)
+        if (c.Spells.Count < Campaign.LearnRoom(c) && learn.Count > 0)
         {
             int cost = Campaign.LearnCost * (c.Spells.Count + 1);
             ui.TextFit($"LEARN ONE MORE: {cost} CROWNS, WITH A TEACHER ({(Campaign.CircleTradition(c) == "faith" ? "A PRIEST" : "A CUNNING ONE")}, A SHRINE, STONES OR A HERMIT)", x, y, w, Style.Dim, 1);

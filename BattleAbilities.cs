@@ -46,6 +46,7 @@ public partial class Battle
         if (best != null && book != null) ids.AddRange(book.OrderByDescending(id => Abilities.Get(id).Great).Select(id => (id, false))); // a great working when it is time, before the rest
         s.CasterStart = s.Units.Count(u => u.Type.Spells.Length > 0);
         s.MasterRank = company?.MasterRank ?? 0;
+        s.Doctrine = company?.Doctrine ?? "";
         s.Will = WillCap(s);
         if (company?.Leaderless == true) s.GreatDone = true; // no great working without a master
         if (company is { HeroGifts.Length: > 0 } && s.Units.Any(u => u.Hero)) ids.AddRange(company.HeroGifts.Where(Abilities.Has).Select(id => (id, true)));
@@ -62,7 +63,9 @@ public partial class Battle
     /// A circle's full Will: 100, and 10 more for each rank of its master (MA4).
     static float WillCap(Squad s) => 100 + 10 * s.MasterRank;
     /// What a spell costs this company: a master of rank 3 works the great working for 15 less.
-    static float WillCost(Squad s, AbilityDef a) => a.Will - (a.Great && s.MasterRank >= 3 ? 15 : 0);
+    static float WillCost(Squad s, AbilityDef a) => a.Will - (a.Great && s.MasterRank >= 3 ? 15 : 0) - (s.Doctrine != "" && a.Doctrine == s.Doctrine ? DoctrineThrift : 0);
+    /// What a circle saves on the spells of its own doctrine (docs/ARCANA.md AR4).
+    public const float DoctrineThrift = 5;
     public static bool CasterCompany(Squad s) => s.Units.Count > 0 && s.Units[0].Type.Class == UnitClass.Caster;
 
     /// How strong a company's spells land: a caster's tier (0.6 at II, 1 at IV, 1.4 at VI) and how many of them still stand;
@@ -91,10 +94,14 @@ public partial class Battle
     void UpdateAbilities(float dt)
     {
         if (!anyCaster && Casts.Count == 0 && Fields.Count == 0) return;
+        TideTick(dt);
         for (int i = 0; i < Squads.Count; i++)
             if (Squads[i].Spells.Length > 0 && (tick + i * 7) % 30 == 0) ThinkSpells(Squads[i], 0.5f);
         for (int i = Casts.Count - 1; i >= 0; i--)
+        {
+            if (i >= Casts.Count) continue; // a working fired before may have unwoven others (Unweave)
             if (Time >= Casts[i].FireAt) { var c = Casts[i]; Casts.RemoveAt(i); Fire(c); }
+        }
         if (tick % 30 == 0) UpdateFields(0.5f);
     }
 
@@ -117,10 +124,11 @@ public partial class Battle
             bool hero = s.ByHero[i];
             if (Time < s.SpellReady[i] || (a.Great && s.GreatDone)) continue;
             if (hero ? Speaker(s, true) == null : casters == 0 || engaged || s.Will < WillCost(s, a) || s.Will < 20) continue; // under 20 Will a company is drained
+            if (!hero && !TideHolds(a, WillCost(s, a), s) && !(a.Great && s.Will >= WillCost(s, a) * 2)) continue; // the Tide is low: wait, but a great working may overreach (BattleTide.cs)
             if (Target(s, a, out var at, out var on) is false) continue;
             float power = SpellPower(s, hero);
             if (power <= 0) continue;
-            if (!hero) s.Will -= WillCost(s, a);
+            if (!hero && !PayForCast(s, a, WillCost(s, a), a.Great)) continue;
             s.SpellReady[i] = Time + a.Cooldown;
             if (a.Great) s.GreatDone = true;
             MarkCast(AddCast(new Cast { A = a, By = s, Hero = hero, At = at, On = on, Started = Time, FireAt = Time + a.Warn, Power = power }));
@@ -137,6 +145,9 @@ public partial class Battle
     /// An ordered cast costs this much more Will (they break their rhythm for you), and the order lapses after this long.
     public const float OrderedWill = 5, OrderLasts = 30;
 
+    /// The ordered spell i would have to overreach for (the spell fan's warning).
+    public bool WouldOverreach(Squad s, int i) => i >= 0 && i < s.Spells.Length && !s.ByHero[i] && !TideHolds(s.Spells[i], WillCost(s, s.Spells[i]) + OrderedWill, s);
+
     /// Why the company cannot cast spell i now, or null (the HUD's spell fan; the spot is not known yet).
     public string? CannotCast(Squad s, int i)
     {
@@ -147,6 +158,7 @@ public partial class Battle
         if (a.Great && s.GreatDone) return "SPENT";
         if (Time < s.SpellReady[i]) return $"IN {s.SpellReady[i] - Time:0}";
         if (!hero && (s.Will < WillCost(s, a) + OrderedWill || s.Will < 20)) return "NO WILL";
+        if (!hero && !TideHolds(a, WillCost(s, a) + OrderedWill, s) && s.Will < (WillCost(s, a) + OrderedWill) * 2) return "NO TIDE";
         return null;
     }
 
@@ -162,6 +174,7 @@ public partial class Battle
         var me = Speaker(s, hero);
         if (me == null || Time < s.SpellReady[i]) return true;
         if (!hero && (casters == 0 || engaged || s.Will < WillCost(s, a) + OrderedWill || s.Will < 20)) return true;
+        if (!hero && !TideHolds(a, WillCost(s, a) + OrderedWill, s) && s.Will < (WillCost(s, a) + OrderedWill) * 2) return true; // wait for the Tide, or the Will to overreach
         var at = a.Self ? s.Center : s.CastAt;
         if (!a.Self && Vector2.Distance(me.Pos, at) > a.Range)
         {
@@ -180,7 +193,7 @@ public partial class Battle
         }
         float power = SpellPower(s, hero);
         if (power <= 0) return true;
-        if (!hero) s.Will -= WillCost(s, a) + OrderedWill;
+        if (!hero && !PayForCast(s, a, WillCost(s, a) + OrderedWill, true)) return true; // your word: they overreach if they must
         s.SpellReady[i] = Time + a.Cooldown;
         if (a.Great) s.GreatDone = true;
         s.CastSpell = -1;
@@ -257,6 +270,11 @@ public partial class Battle
             case "routing":
                 if (!Units.Any(u => u.Active && u.Routing && u.Team == s.Team && u.Routs <= 1 && Vector2.DistanceSquared(u.Pos, from) < a.Radius * a.Radius)) return false;
                 at = from;
+                return true;
+            case "casting": // the counterspell (AR4): an enemy working being gathered within range
+                if (Casts.Where(c => c.By.Team != s.Team && c.FireAt > Time + a.Warn && !c.Hero && Vector2.Distance(c.By.Center, from) < range)
+                        .OrderBy(c => c.FireAt).FirstOrDefault() is not Cast foeCast) return false;
+                at = foeCast.By.Center;
                 return true;
             case "losing":
                 if (!Losing(s.Team)) return false;
@@ -355,6 +373,7 @@ public partial class Battle
         if (a.Effect == "burning" || a.Burn > 0) Sound(Cue.Flame, c.At);
         switch (a.Kind)
         {
+            case "unweave": Unweave(c, team); break;
             case "buff":
                 if (a.Self) AddTimed(c.By, a, c.Power);
                 else foreach (var o in Squads) if (o.Team == team && o.Alive > 0 && Vector2.Distance(o.Center, c.At) < a.Radius + o.Radius) AddTimed(o, a, c.Power);
@@ -467,4 +486,16 @@ public partial class Battle
         foreach (var t in s.Timed) m.Add(t.Effect, t.K);
         return m;
     }
+
+    /// The counterspell lands (docs/ARCANA.md AR4): every enemy working still gathering by casters within its glow comes apart.
+    /// Their Will is spent all the same.
+    void Unweave(Cast c, int team)
+    {
+        int n = Casts.RemoveAll(o => o.By.Team != team && o.FireAt > Time && !o.Hero && Vector2.Distance(o.By.Center, c.At) < c.A.Radius + o.By.Radius);
+        if (n == 0) return;
+        Flash("broken", c.At, c.A.Radius, 1 - team, c.A.Tradition);
+        Sound(Cue.WardShatter, c.At);
+        Log(team == 0 ? $"{c.By.Name} unweave the enemy's working!" : "The enemy's casters unweave your working!");
+    }
 }
+
