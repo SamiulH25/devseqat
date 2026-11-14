@@ -302,4 +302,15 @@ something the map and the battle are about.
   next step: cunning folk among the bigger brigand bands, or more circles among lords. `Pilot.LordBattles`/`LordMagic`.
   Court mages, rival circles and the AI answering your circle are still to come. Test: `MagesInTheWorld` checks arcana 3
   realms keep more circles a lord than arcana 1.
+- **AR5, second step (court mages, cunning folk):** `Campaign/CourtMages.cs`. `NameCourtMage`: a lord's new circle (at spawn
+  or refit) gets a named head, a `Character` of kind `mage` (`PartyId`, `CompanyId`; named from the lord's culture by id, no
+  dice; titled by tradition, `MageTitle`), and the circle is called after him. `CourtMageOf(party)`; the encounter panel
+  shows "LED BY ..." on the circle's card. `CourtMagesAfterBattle` (from `Apply`): a mage whose circle is cut down falls (a
+  deed when you did it). `CunningFolk`: from day 90 one brigand band in five of tier III+ brings a few hedge witches (by id).
+  The enemy already answers circles (horse hunt mages first, elite bows focus them: MELEE D6/E4). Talking to a court mage and
+  rival circles with grudges are left for later. Census after this step (2 seeds, deterministic now): magic in 1 battle in
+  14-26 over 240 days for three runs, 1 in 2.6 for a seeker that kept its own circle. Test `CourtMage`.
+- **Found on the way:** campaign weather, battle seeds, armourers' stock and more were mixed with `HashCode.Combine`, which
+  .NET seeds per process; the same save went another way in every run. Now `Rng.Mix`/`Rng.Of` (commit "the same save plays
+  the same in every process"); `tools/check.sh` refuses `HashCode` in campaign and sim code.
 

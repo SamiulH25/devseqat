@@ -688,5 +688,37 @@ public static partial class SelfTest
         Check(c.TideAt(well.Pos).Strength == 3, "the field at a strong well");
         Check(Campaign.TideEdge(1, new[] { c.Player }, new[] { c.Player }) == 1, "the Tide weighs nothing between equal sides");
     }
+
+    /// Court mages and cunning folk (docs/ARCANA.md AR5): a lord's circle is led by a named mage who falls with it; the bigger
+    /// brigand bands of the later campaign bring a few hedge witches.
+    static void CourtMage()
+    {
+        var c = Campaign.New(62);
+        var lord = c.S.Parties.First(p => p.Kind == PartyKind.Lord && p.Faction >= 0);
+        var circle = c.NewCompany(Armies.MageTroop(Factions.CultureOf(lord.Faction), 5), "casters", 6, 0);
+        lord.Companies.Add(circle);
+        c.NameCourtMage(lord, circle);
+        var mage = c.CourtMageOf(lord);
+        Console.WriteLine($"court mage: {mage?.Name}, leading the {circle.Name} for {lord.Name}");
+        Check(mage != null && mage.Kind == "mage" && mage.CompanyId == circle.Id && circle.Name.StartsWith("Circle of "), "the lord's circle has a named head, and is called after him");
+        Check(mage!.Name.EndsWith("Stormcaller") || mage.Name.EndsWith("Father of the Circle"), "titled by his tradition");
+        c.NameCourtMage(lord, circle);
+        Check(c.S.Characters.Count(ch => ch.Kind == "mage" && ch.PartyId == lord.Id) == 1, "one head a circle");
+        c.CourtMagesAfterBattle(new[] { lord }, false);
+        Check(!mage.Dead, "while the circle stands, so does he");
+        circle.Stacks.ForEach(st => st.Men = 0);
+        c.CourtMagesAfterBattle(new[] { lord }, false);
+        Check(mage.Dead && c.CourtMageOf(lord) == null, "cut the circle down and he falls with it");
+        // Cunning folk.
+        var band = new Party { Id = 1000, Kind = PartyKind.Bandit, Tier = 3 };
+        c.CunningFolk(band);
+        Check(band.Companies.Count == 0, "not in the early campaign");
+        c.S.Hours = 100 * 24;
+        c.CunningFolk(band);
+        Check(band.Companies.Count == 1 && Rules.RoleOf(band.Companies[0]) == "casters" && band.Companies[0].Name == "Cunning Folk", "later, one big band in five brings hedge witches");
+        var small = new Party { Id = 1005, Kind = PartyKind.Bandit, Tier = 2 };
+        c.CunningFolk(small);
+        Check(small.Companies.Count == 0, "not the rabble");
+    }
 }
 

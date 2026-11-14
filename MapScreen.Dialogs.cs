@@ -48,7 +48,9 @@ partial class MapScreen
         {
             ui.Portrait(c.Type, new Rectangle(x, y, ui.U(32), ui.U(30)));
             ui.Text($"{c.Men} {c.Type.Name.ToUpperInvariant()}", x + ui.U(40), y + ui.U(4), Style.Text, 1);
-            ui.Text($"TIER {Style.Numerals[c.Type.Tier]}", x + ui.U(40), y + ui.U(16), Style.Dim, 1);
+            if (Rules.RoleOf(c) == "casters" && C.CourtMageOf(e) is Character mage && mage.CompanyId == c.Id)
+                ui.Text(ui.Fit($"LED BY {mage.Name.ToUpperInvariant()}", ui.U(146)), x + ui.U(40), y + ui.U(16), Style.Aura, 1); // the court mage (CourtMages.cs)
+            else ui.Text($"TIER {Style.Numerals[c.Type.Tier]}", x + ui.U(40), y + ui.U(16), Style.Dim, 1);
             x += ui.U(190);
             if (x > r.Right - ui.U(180) - face) { x = r.X + ui.U(24); y += ui.U(36); }
         }

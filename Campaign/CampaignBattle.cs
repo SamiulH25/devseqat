@@ -141,6 +141,7 @@ public partial class Campaign
         int wf = winners.Select(SideOf).FirstOrDefault(f => f >= 0, -1), lf = losers.Select(SideOf).FirstOrDefault(f => f >= 0, -1);
         if (wf >= 0 && lf >= 0) Score(wf, lf, Rules.PerMan(lostStrength));
         AfterTheBattle(r, lookup, winners, losers, playerIn);
+        CourtMagesAfterBattle(side0.Concat(side1), playerIn); // a court mage falls with his circle (CourtMages.cs)
         S.Parties.RemoveAll(p => (Outlaw(p) || p.Kind == PartyKind.Caravan) && p.Down);
 
         var report = new BattleReport(won, enemyName, reports, 0, 0, 0, 0, 0, r.Captain);

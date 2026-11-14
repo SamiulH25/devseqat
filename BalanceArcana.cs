@@ -55,7 +55,7 @@ public static partial class BalanceReport
                 var last = samples.Last();
                 string Tier(int t) => p.AuraDay[t] < 0 ? "-" : p.AuraDay[t].ToString();
                 Console.WriteLine($"arcana {seed} {(seeker ? "seeker" : "plain ")}: by day {day120.Day} magic in {day120.MagicBattles}/{day120.Battles} battles"
-                    + $" ({Share(day120.MagicBattles, day120.Battles)}, target 1 in 6), enemy {day120.EnemyMagic}; against lords (all run) {p.LordMagic}/{p.LordBattles} (target 1 in 3); lords with a circle {last.LordCircles}/{last.Lords};"
+                    + $" ({Share(day120.MagicBattles, day120.Battles)}, target 1 in 6), enemy {day120.EnemyMagic}; all run {last.MagicBattles}/{last.Battles} ({Share(last.MagicBattles, last.Battles)}); against lords (all run) {p.LordMagic}/{p.LordBattles} (target 1 in 3); lords with a circle {last.LordCircles}/{last.Lords};"
                     + $" aura tier days Kindled {Tier(1)} (target {(seeker ? "~30" : "~90")}), Knight {Tier(2)} (~90), Expert {Tier(3)} (~180);"
                     + $" circle {(last.Circle ? "yes" : "no")}, vigils {last.Vigils}, rites {last.Rites}, Omen {last.Omen:0}");
             }

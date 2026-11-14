@@ -32,6 +32,7 @@ public partial class Campaign
         {
             string mage = Armies.MageTroop(Factions.CultureOf(faction), tier - 1);
             lord.Companies.Add(NewCompany(mage, "casters", (int)(Rules.CapOf(mage, "casters") * 0.8f), 0, home));
+            NameCourtMage(lord, lord.Companies[^1]); // a named court mage leads it (CourtMages.cs)
         }
         S.Parties.Add(lord);
     }
@@ -72,6 +73,7 @@ public partial class Campaign
         if (rng.Chance(0.6f))
             band.Companies.Add(NewCompany(Armies.LineTroop(rng.Chance(0.6f) ? "archers" : "horse", tier, rng.Next(3)), rng.Chance(0.6f) ? "archers" : "horse", Scaled(rng.Next(5, 10) + Day / 20), 0));
         foreach (var c in band.Companies) c.Role = Rules.TroopRole(c.Troop) is "horse" or "archers" ? Rules.TroopRole(c.Troop) : c.Role;
+        CunningFolk(band); // a few hedge witches with the bigger bands (CourtMages.cs)
         S.Parties.Add(band);
     }
 
@@ -264,6 +266,7 @@ public partial class Campaign
         if (fs.Treasury < price + 600) return; // the realm can still raise a lord after paying
         fs.Treasury -= price;
         p.Companies.Add(NewCompany(mage, "casters", men, 0, home));
+        NameCourtMage(p, p.Companies[^1]);
     }
 
     /// How much bigger brigands think a party is: an Aura Master's name goes before him (MA8), so they flee one up to half again their weight.
