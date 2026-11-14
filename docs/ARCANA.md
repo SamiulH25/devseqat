@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **in progress** (2026-11-13): AR0-AR7 built (see "As built" at the end); AR8-AR9 planned. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **in progress** (2026-11-13): AR0-AR8 built (see "As built" at the end); AR9 (polish) under way. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 
@@ -340,4 +340,9 @@ something the map and the battle are about.
   enemy province bordering its own, not one blighted in the last 60 days (`CampaignState.Blights`; `Rng.Mix`, no dice), with
   a log line; seed 66: 9 provinces in 120 days. Read the bones and Call rain already were scry and storm the roads. Left out:
   Omen per province, AI answering a blight, bless the walls. Test `WorkingsBite`.
+- **AR8 (magic remembered):** `Campaign.WorkingRemembered` (Circle.cs, called from `Apply` for a won battle you fought in):
+  a great working of yours (`BattleResult.Wonders`, "... was worked for us.") names the battle "the <Working> at <field>",
+  goes on the circle master's deeds and is your deed (key `workings`). Court mages slain (AR5), wells marked (AR2) and
+  blights (AR7) are deeds already. Left out: titles from workings and a fallen master's staff as a relic item. Test
+  `WorkingsRemembered`.
 

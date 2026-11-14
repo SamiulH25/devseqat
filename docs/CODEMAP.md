@@ -287,8 +287,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/CampaignAI.cs (345 lines)
 - **Campaign** (class, L6): SpawnLord:10, BandName:41, SpawnBandits:48, RefreshMercenaries:80, Visible:117, MonsterHunter:121, LordThink:123, EnemyProvinceNear:195, Refit:208, KeepsCircle:249, RaiseCircle:259, Dread:274, BanditThink:276, Alive:301, RealmBroken:304, FactionAI:313
 
-## Campaign/CampaignBattle.cs (367 lines)
-- **Campaign** (class, L6): Apply:11, PrepareBattle:257, FinishBattle:300, AutoResolveEncounter:313, CanRetreat:322, Retreat:333, ParleyPrice:354, Parley:356
+## Campaign/CampaignBattle.cs (368 lines)
+- **Campaign** (class, L6): Apply:11, PrepareBattle:258, FinishBattle:301, AutoResolveEncounter:314, CanRetreat:323, Retreat:334, ParleyPrice:355, Parley:357
 
 ## Campaign/CampaignProgression.cs (62 lines)
 - **Campaign** (class, L7): PromotableAnywhere:52, Rand:61
@@ -345,8 +345,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Memory** (class, L69)
 - **Campaign** (class, L77): readonly:80, CharacterById:90, CharacterOf:91, NewCharacter:94, MakeCaptainCharacter:107, PersonName:116, MakeLord:131, BaseOpinion:153, OpinionOf:163, AuraRegard:166, OpinionOfYou:169, OpinionOfYou:172, Remember:175, MemoriesOf:194, RelationsWeekly:198, RelationsAfterBattle:220, MaybeSlain:236, SlayLord:243, HasCompanion:265, OfficerToCompanion:268, WanderersWeekly:290, WandererAt:303, WandererPrice:304, HireWanderer:307, AssignCompanion:326, RefreshHeroes:334, HeroFell:346, HolderOf:357, RecruitShare:362, RecruitsForYou:372
 
-## Campaign/Circle.cs (175 lines)
-- **Campaign** (class, L5): CircleTroop:18, CircleTradition:22, Known:26, PrepareSlots:29, Prepared:32, Learnable:40, InSomeLine:50, LearnRoom:53, CannotChooseDoctrine:56, ChooseDoctrine:67, CannotLearn:77, LearnSpell:92, Prepare:104, WeatherFor:118, SpellNote:122, SpellNote:124, MasterOf:136, MasterRank:139, MasterTitle:142, Leaderless:144, CircleDaily:148, WithCircle:168
+## Campaign/Circle.cs (190 lines)
+- **Campaign** (class, L5): CircleTroop:18, CircleTradition:22, Known:26, PrepareSlots:29, Prepared:32, Learnable:40, InSomeLine:50, LearnRoom:53, CannotChooseDoctrine:56, ChooseDoctrine:67, CannotLearn:77, LearnSpell:92, Prepare:104, WeatherFor:118, SpellNote:122, SpellNote:124, MasterOf:136, MasterRank:139, MasterTitle:142, Leaderless:144, CircleDaily:148, WithCircle:168, WorkingRemembered:178
 
 ## Campaign/Companies.cs (342 lines)
 - **HonourDef** (class, L7)
@@ -501,6 +501,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Campaign/Wells.cs (113 lines)
 - **Campaign** (class, L10): WellTradition:13, WellBase:22, TideWord:62, CannotMarkWell:68, MarkWell:80, TideNote:89, TideEdge:97
+
+## Campaign/Workings.cs (55 lines)
+- **Campaign** (class, L9): CannotBlight:18, Blight:26, Calmed:38, WorkingsWeekly:41
 
 ## Campaign/WorldLand.cs (125 lines)
 - **WorldMap** (class, L8): LayFields:12, FieldClear:64, InField:94, GrowStands:99
@@ -804,9 +807,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/KnightTests.cs (1133 lines)
 - **SelfTest** (class, L6): AuraBlade:9, AuraArmour:46, AuraBound:69, AuraGrows:94, Press:133, FormsWork:141, FormsLearned:227, OrdersOnMap:248, Bout:295, OrderOath:299, CreedBroken:325, OrderRankGate:366, CoreAndTrials:408, PresenceShakes:464, ChampionsUseAura:495, OrderPolitics:533, BlackFlame:597, FlameTakesYou:652, OwnOrderFounded:675, AuraPool:723, AuraField:790, CastNow:798, BlessingFeedsAura:806, CurseOnCaptain:822, BladeBreaksCast:850, RelicRaised:876, OwnFormFromStyle:892, AspectChanges:922, BreakInBattle:948, ClashRing:970, TranscendentLight:995, AwakeningByDeeds:1035, PathsDiffer:1075
 
-## Tests/MagicTests.cs (787 lines)
+## Tests/MagicTests.cs (802 lines)
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
-- **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:568, WellsFromSites:579, TideFeedsOffers:620, TideShared:638, Overreach:661, CourtMage:694, DoctrinesAndUnweave:726, WorkingsBite:759
+- **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:568, WellsFromSites:579, TideFeedsOffers:620, TideShared:638, Overreach:661, CourtMage:694, DoctrinesAndUnweave:726, WorkingsBite:759, WorkingsRemembered:789
 
 ## Tests/MapTests.cs (199 lines)
 - **SelfTest** (class, L6): MapIndexMatches:10, RealmsFromData:32, ClimatesAndRidges:77, SevenRealms:105, RealmTempers:132

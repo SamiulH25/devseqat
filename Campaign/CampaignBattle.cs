@@ -26,6 +26,7 @@ public partial class Campaign
         if (playerIn) S.MentionPool.Clear(); // the last battle's men of the day (C4)
         // L5: the battle's name, and whether a win here is worth a battle honour (outnumbered, their captain slain, a wall taken).
         string field = playerIn ? BattleName(Player.Pos, siegeBattle) : "";
+        if (playerIn && won) field = WorkingRemembered(r, field); // a great working of yours names the day (docs/ARCANA.md AR8)
         float mine = playerTeam == 0 ? startStrength0 : startStrength1, theirs = playerTeam == 0 ? startStrength1 : startStrength0;
         bool notable = playerIn && won && (theirs >= 1.5f * MathF.Max(1, mine) || r.EnemyLeader == LeaderFate.Slain || siegeBattle);
         int foeFaction = (playerTeam == 0 ? side1 : side0).Select(SideOf).FirstOrDefault(f => f >= 0, -1);

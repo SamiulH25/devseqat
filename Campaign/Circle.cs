@@ -172,4 +172,19 @@ public sealed partial class Campaign
             : co with { Spells = Prepared(c), MasterRank = MasterRank(MasterOf(c)), Leaderless = Leaderless(c), Doctrine = c.Doctrine }).ToList();
         return army with { Companies = list };
     }
+
+    /// A great working your circle cast in a won battle (docs/ARCANA.md AR8): the battle is named for it, its master is known
+    /// for it, and it is your deed. Returns the battle's name.
+    internal string WorkingRemembered(BattleResult r, string field)
+    {
+        const string Ours = " was worked for us.";
+        var w = r.Wonders.FirstOrDefault(x => x.EndsWith(Ours));
+        if (w == null) return field;
+        string working = w[..^Ours.Length];
+        string named = $"the {working} at {field}";
+        if (Circle is CompanyRecord c && MasterOf(c) is Soldier m) m.Deed($"Worked the {working} at {field}.");
+        Deed($"Your circle worked the {working} at {field}.", "workings");
+        return named;
+    }
 }
+

@@ -783,5 +783,20 @@ public static partial class SelfTest
         Console.WriteLine($"workings: {w.S.Blights.Count} provinces blighted by realms in 120 days");
         Check(w.S.Blights.Count > 0, "sorcerous realms blight their enemies' fields");
     }
+
+    /// Magic remembered (docs/ARCANA.md AR8): a great working your circle cast in a won battle names the battle, and the circle's
+    /// master and the chronicle remember it; the foe's working does not.
+    static void WorkingsRemembered()
+    {
+        var (c, circle) = CircleCampaign(95);
+        c.CircleDaily();
+        var m = Campaign.MasterOf(circle)!;
+        var r = new BattleResult(0, 90, new List<CompanyResult>(), LeaderFate.Unhurt, LeaderFate.Unhurt, 0) { Wonders = new[] { "The foe worked Tempest." } };
+        Check(c.WorkingRemembered(r, "Greyford Field") == "Greyford Field", "the foe's working names nothing");
+        r = r with { Wonders = new[] { "Miracle was worked for us." } };
+        string named = c.WorkingRemembered(r, "Greyford Field");
+        Check(named == "the Miracle at Greyford Field", $"ours names the day ({named})");
+        Check(m.Deeds.Any(d => d.Contains("Miracle at Greyford Field")), "the master is known for it");
+    }
 }
 
