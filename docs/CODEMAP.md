@@ -206,8 +206,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Magic.cs (359 lines)
 - **BattleScreen** (class, L8): OrderColour:31, FlashColour:40, ResetMagicFx:54, AddRipple:56, Rise:60, MagicFx:70, FlashFx:83, FieldFx:174, BuffFx:216, AuraFx:231, MagicLines:266
 
-## BattleScreen.Orders.cs (409 lines)
-- **BattleScreen** (class, L8): Targets:12, Issue:15, Send:28, Move:38, NextRule:50, GiveGoal:69, GoalCommand:83, Command:105, MergeSelected:170, RelieveSelected:191, SplitSelected:206, GroupKey:220, Group:223, OrderKeys:244, NextSpell:273, CastAt:285, PlantStakes:299, CommandClick:314, MoveTo:331, SoundHorn:341, Answer:347, NextDivision:354, LineAt:364, Distribute:381, PreviewSlots:400
+## BattleScreen.Orders.cs (410 lines)
+- **BattleScreen** (class, L8): Targets:12, Issue:15, Send:28, Move:38, NextRule:50, GiveGoal:69, GoalCommand:83, Command:105, MergeSelected:170, RelieveSelected:191, SplitSelected:206, GroupKey:220, Group:223, OrderKeys:244, NextSpell:273, CastAt:286, PlantStakes:300, CommandClick:315, MoveTo:332, SoundHorn:342, Answer:348, NextDivision:355, LineAt:365, Distribute:382, PreviewSlots:401
 
 ## BattleScreen.Press.cs (194 lines)
 - **BattleScreen** (class, L8): PressShot:16, PressList:21, PressScript:49, MagicShot:78, Aim:102, Blocked:116, Behind:137, Over:145, Captain:152, Horse:163, Volley:174, Hot:184
@@ -614,8 +614,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Captain.cs (366 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:85, AuraBlock:155, PathBlock:173, OwnFormBlock:196, FlameBlock:223, FormList:247, CaptainRecord:288, NameLines:327, Breaks:354
 
-## MapScreen.cs (682 lines)
-- **MapScreen** (class, L9): Save:18, MapScreen:59, Prepare:74, Open:81, ShowResults:98, Pressed:106, Update:110, readonly:196, LaterTips:209, Pan:233, ScreenKeys:235, OpenScreen:243, Soundscape:251, CameFrom:313, Camera:315, Rename:339, Trails:352, ClickWorld:364, Ground:376, Draw:399, UpdateBearers:475, UpdateLife:517, BuildSprites:527, DrawSprites:534, G:546, DrawLines:548, Stage:587
+## MapScreen.cs (687 lines)
+- **MapScreen** (class, L9): Save:18, MapScreen:59, Prepare:74, Open:81, ShowResults:98, Pressed:106, Update:110, readonly:201, LaterTips:214, Pan:238, ScreenKeys:240, OpenScreen:248, Soundscape:256, CameFrom:318, Camera:320, Rename:344, Trails:357, ClickWorld:369, Ground:381, Draw:404, UpdateBearers:480, UpdateLife:522, BuildSprites:532, DrawSprites:539, G:551, DrawLines:553, Stage:592
 
 ## MapScreen.Dialogs.cs (251 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, EncounterOwnSide:95, MeetingPanel:121, SiegePanel:153, BeatPanel:204, GameOverPanel:221, MenuPanel:236
@@ -699,7 +699,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:75, Deserialize:76, Save:80, Play:87, Matches:136, Run:139
 - **Battle** (class, L153): StartRecording:160, RecordFrame:165, FinishRecording:205
 
-## ScreenHost.cs (789 lines)
+## ScreenHost.cs (795 lines)
 - **ScreenHost** (class, L9): ScreenHost:45, ApplyVideo:64, OpenSettings:74, LoadContent:76, StartCampaign:119, Load:145, FinishLoading:160, DrawLoading:178, ContinueCampaign:203, OpenLab:214, QuickBattle:216, StartCampaignBattle:223, FinishCampaignBattle:233, CycleQuality:241, Update:245, Draw:290, Fade:325, CaptureShot:355, readonly:382, RestoreTavernTown:394, StagingRefused:401, CampaignShots:407
 
 ## SelfTest.cs (104 lines)

@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **in progress** (2026-11-13): AR0-AR8 built (see "As built" at the end); AR9 (polish) under way. Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **built** (2026-11-14), AR0-AR9; see "As built" at the end, with what was left out (kept here, not archived, until those are done or dropped). Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 
@@ -345,4 +345,21 @@ something the map and the battle are about.
   goes on the circle master's deeds and is your deed (key `workings`). Court mages slain (AR5), wells marked (AR2) and
   blights (AR7) are deeds already. Left out: titles from workings and a fallen master's staff as a relic item. Test
   `WorkingsRemembered`.
+- **AR9 (polish, balance):** tips (`Tips.Show`): `aura_wall`, `aura_path`, `doctrine`, `wells` on the map (MapScreen.cs), `tide`
+  when you first pick a spell to cast (`BattleScreen.NextSpell`). Campaign shots add `campaign-aura.png` (the K sheet with a
+  woken aura at a wall: trial card and path buttons); `overflow.txt` empty. `--realms 4`: largest share 30%, no flags with
+  realms blighting each other. `--agree` unchanged. Final census (`--arcana 4`, seeds 4001-4004, 240 days, deterministic):
+
+  | | Before (1.1) | After |
+  |---|---|---|
+  | Lords with a circle | 0 of ~154 | 11-18 of ~125 |
+  | Magic, whole run | ~0 | 1 battle in 2.5 (seekers with a circle) to 1 in 31; median about 1 in 13 |
+  | Against lords | 0 | 9 of 98 |
+  | Kindled (plain / seeker) | never / day 68-141 | day 59-120 / day 60-81 |
+  | Aura Knight | never | 1 run of 8 (day 206): the stand-in never duels or fights by hand |
+
+  Still short of the plan's targets: magic in 1 battle in 6 by day 120 (met by 2 runs of 8), Kindled by ~30 for a seeker and
+  Aura Knight by ~90 (both need fought battles and duels the stand-in does not do). Left out across the plan: a second shallow
+  path and breakthroughs as choices (AR6), orders bound to paths, eight more doctrine spells (AR4), talking to court mages and
+  rival circles with grudges (AR5), Omen per province and bless the walls (AR7), titles and a master's staff as a relic (AR8).
 

@@ -122,6 +122,11 @@ sealed partial class MapScreen
         if (C.Captain.Renown >= 80) Tips.Show("renown", "Renown is your standing: each victory adds to it, and it raises your men cap.\nThe bar under the captain panel shows the next rise.");
         if (C.Player.Companies.Count >= Rules.CompanySlots(C.Captain)) Tips.Show("slots", $"You have reached the most companies you can lead ({Rules.CompanySlots(C.Captain)}). Merge or disband a company to form a new one.");
         LaterTips();
+        // The arcane (docs/ARCANA.md AR1-AR6).
+        if (C.Captain.AuraWall) Tips.Show("aura_wall", $"Your aura stands at a wall: it grows no more until a trial breaks it.\nThe captain sheet ({ctl.First(Act.SkillsScreen)}) lists each trial and where to find one now.");
+        if (C.Captain.AuraTier >= 1 && C.Captain.Path == "") Tips.Show("aura_path", $"Your aura has woken. Choose its path on the captain sheet ({ctl.First(Act.SkillsScreen)}), once:\nthe Sword (forms), the Banner (your men) or the Hearth (your circle of mages).");
+        if (C.Circle is CompanyRecord circle && circle.Doctrine == "") Tips.Show("doctrine", $"Your circle can take a doctrine in its spellbook ({ctl.First(Act.PartyScreen)}, click the circle's roll):\nits spells cost less Will, and it may learn its doctrine's own.");
+        if (C.TideAt(C.Player.Pos).Strength >= 2) Tips.Show("wells", $"A well of power reaches here. The realm map ({ctl.First(Act.AtlasScreen)}) shows the wells: towns near them hire out circles,\nand a battle fought near one holds a deeper Tide for every caster on the field.");
         if (C.Day >= 7) Tips.Show("upkeep", "Upkeep is paid each week (the bar at the top). Your contract pays most of it;\nloot, ransoms and bounties pay the rest. Unpaid men desert.");
 
         if (panel == PanelKind.None)

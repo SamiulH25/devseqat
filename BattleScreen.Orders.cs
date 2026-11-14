@@ -276,6 +276,7 @@ partial class BattleScreen
         if (who == null) { battle.Log("Select a circle of mages, or a company led by a companion, to cast."); castBy = null; castPick = -1; return; }
         if (!command) { battle.Log($"Open the command view ({ctl.Name(Act.CommandView)}) to direct your casters."); return; }
         if (castBy != who) { castBy = who; castPick = -1; }
+        Tips.Show("tide", "The violet bar under the balance bar is the Tide: the power in this ground, set by the well near it.\nEvery cast draws on it, the enemy's too. Run dry, your order makes the circle overreach: twice the Will, and the working may turn on them.");
         castPick = castPick + 1 >= who.Spells.Length ? -1 : castPick + 1;
         if (castPick < 0) castBy = null;
         else Tips.Show("cast", "Click the ground to cast the spell there; attacks still glow before they land.\nAn ordered spell costs more Will. X makes your casters hold their spells for your word.");
