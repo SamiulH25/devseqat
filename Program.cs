@@ -69,6 +69,12 @@ if (args.Contains("--campaign-bench"))
     Ironfield.Bench.Campaign(n > 0 ? n : 30);
     return;
 }
+if (args.Contains("--world-bench"))
+{
+    int n = args.SkipWhile(a => a != "--world-bench").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();
+    Ironfield.Bench.World(n > 0 ? n : 11);
+    return;
+}
 if (args.Contains("--bench"))
 {
     int n = args.SkipWhile(a => a != "--bench").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();

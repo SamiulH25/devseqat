@@ -547,7 +547,15 @@ There are no model or pre-rendered WAV/OGG files. The only images are the unit s
   baked set loads to exactly the painted atlas. Gotchas: keep a PNG's size (the rig reads metres from pixels; `SpritesBaked`
   fails otherwise); semi-transparent pixels load premultiplied; save 8-bit, not interlaced (`Png.Decode` refuses otherwise).
   `Puppet.cs` draws each unit as part sprites on a 3D skeleton, posed from its action state.
-- **World:** `World.cs` builds the terrain mesh, foliage, towns, water and the minimap from `Terrain`.
+- **World:** `World.cs` builds the terrain mesh, foliage, towns, water and the minimap from `Terrain`. The build has two
+  halves: `new World(terrain)` makes every mesh and image with no GraphicsDevice (safe off the main thread; the campaign
+  map's runs behind the loading screen), and `Upload(gd)` sends them to the GPU. The CPU half runs its rows and tiles in
+  parallel (terrain and minimap rows, foliage and field tiles, road ribbons), each part built on its own `Mesh` and laid
+  into the one mesh in the old order, so the result is the same to the byte. Ribbons and plots work each corner out once.
+  `--world-bench [seed]` prints ms and vertices by stage and a `Checksum()` of the result: a faster build must keep the
+  checksum (2026-11-15: 7.5 s -> 0.4 s on seed 11, same checksum on campaigns in all four seasons, battle fields and sieges).
+  The ground colour asks `Terrain.WaterDepth`, which asks `River.Within`, an exact grid of the river's segments; a full
+  `River.Dist` scans every segment (3.5 us a call) and was most of the old build time. `WorldMap.Height` uses it too.
 - **Shaders:** plain GLSL in `Shaders/`, compiled at runtime by `GlslEffect.cs`. `Shading.cs` runs the pipeline (shadow map,
   scene target, post pass with FXAA). Quality High = shadows + post, Medium = no shadows, Low = fixed-function. GLSL rules
   are in the README "Shaders" section: render targets sample upside down on GL, vertex shaders end with `FIXUP_POSITION`,

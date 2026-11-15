@@ -5,6 +5,34 @@ namespace Ironfield;
 /// Self-tests of the world map at scale (docs/archive/WORLD.md).
 public static partial class SelfTest
 {
+    /// The river's segment grid (`River.Within`) answers exactly as `Dist(p) < radius` does, on campaign rivers and ridges,
+    /// a battle river and a hand-made path with long diagonal runs and a repeated point (where `Dist` is NaN): the ground
+    /// colours, `WaterDepth` and `WorldMap.Height` lean on it, so a seed's map and a replay must not move.
+    static void RiverWithinExact()
+    {
+        var map = Campaign.New(11).Map;
+        var rivers = map.Rivers.Concat(map.Ridges).ToList();
+        rivers.Add(River.Across(new Random(4)));
+        rivers.Add(new River(new[] { new Vector2(-300, -300), new Vector2(-100, 120), new Vector2(-100, 120), new Vector2(200, 160), new Vector2(260, -240) }, 9, Array.Empty<Vector2>()));
+        var rng = new Random(9);
+        int checks = 0, inside = 0;
+        foreach (var r in rivers)
+            for (int k = 0; k < 4000; k++)
+            {
+                var near = r.Path[rng.Next(r.Path.Length)] + new Vector2(rng.NextSingle() * 2 - 1, rng.NextSingle() * 2 - 1) * (k % 2 == 0 ? 12 : 70);
+                var p = k % 5 == 0 ? new Vector2(rng.NextSingle() * 2 - 1, rng.NextSingle() * 2 - 1) * map.GroundHalf : near;
+                foreach (float radius in new[] { 0.5f, r.Width / 2, r.Width / 2 + 3, r.Width, 30 })
+                {
+                    bool want = r.Dist(p) < radius, got = r.Within(p, radius);
+                    if (want != got) { Check(false, $"Within({p}, {radius}) = {got} but Dist = {r.Dist(p)}"); return; }
+                    checks++;
+                    if (want) inside++;
+                }
+            }
+        Check(inside > checks / 20, $"the check reached the water ({inside} of {checks} inside)");
+        Console.WriteLine($"river grid: {checks} answers match Dist ({inside} inside)");
+    }
+
     /// W0: the look-up grid gives exactly the full scans' answers (on and off the grid, new and legacy maps), so a map
     /// built from a save's seed places everything where it was.
     static void MapIndexMatches()

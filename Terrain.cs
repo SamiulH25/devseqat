@@ -29,14 +29,66 @@ public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float D
     public float Dist(Vector2 p)
     {
         float best = float.MaxValue;
-        for (int i = 0; i + 1 < Path.Length; i++)
-        {
-            var a = Path[i]; var ab = Path[i + 1] - a;
-            if (MathF.Abs(p.X - a.X) > 40 && MathF.Abs(p.X - Path[i + 1].X) > 40 && MathF.Abs(p.Y - a.Y) > 40 && MathF.Abs(p.Y - Path[i + 1].Y) > 40) continue;
-            float k = Math.Clamp(Vector2.Dot(p - a, ab) / ab.LengthSquared(), 0, 1);
-            best = MathF.Min(best, Vector2.Distance(p, a + ab * k));
-        }
+        for (int i = 0; i + 1 < Path.Length; i++) best = MathF.Min(best, SegmentDist(p, i));
         return best;
+    }
+
+    /// Distance from p to segment i, or MaxValue for a segment `Dist` passes over (p far from both its ends on both axes:
+    /// a rule kept as it was, since map generation reads `Dist` and a seed's map must not change).
+    float SegmentDist(Vector2 p, int i)
+    {
+        var a = Path[i]; var ab = Path[i + 1] - a;
+        if (MathF.Abs(p.X - a.X) > 40 && MathF.Abs(p.X - Path[i + 1].X) > 40 && MathF.Abs(p.Y - a.Y) > 40 && MathF.Abs(p.Y - Path[i + 1].Y) > 40) return float.MaxValue;
+        float k = Math.Clamp(Vector2.Dot(p - a, ab) / ab.LengthSquared(), 0, 1);
+        return Vector2.Distance(p, a + ab * k);
+    }
+
+    /// Whether `Dist(p) < radius`, exactly, but from a grid of the river's segments: only the segments near p are measured
+    /// (a full `Dist` measures them all, and the campaign map asks this for every ground vertex and minimap texel).
+    public bool Within(Vector2 p, float radius)
+    {
+        var g = Grids.GetValue(this, r => new SegmentGrid(r.Path));
+        // A repeated point on the path makes `Dist` NaN wherever that segment is measured, and NaN is never < radius.
+        foreach (int i in g.Repeated)
+            if (!(MathF.Abs(p.X - Path[i].X) > 40 && MathF.Abs(p.Y - Path[i].Y) > 40)) return false;
+        if (p.X + radius < g.Min.X || p.Y + radius < g.Min.Y || p.X - radius > g.Max.X || p.Y - radius > g.Max.Y) return false;
+        int x0 = g.CellX(p.X - radius), x1 = g.CellX(p.X + radius), y0 = g.CellY(p.Y - radius), y1 = g.CellY(p.Y + radius);
+        for (int y = y0; y <= y1; y++)
+            for (int x = x0; x <= x1; x++)
+                foreach (int i in g.Cells[y * g.W + x])
+                    if (SegmentDist(p, i) < radius) return true;
+        return false;
+    }
+
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<River, SegmentGrid> Grids = new();
+
+    /// The river's segments by 16 m cell: each listed in every cell its bounding box touches.
+    sealed class SegmentGrid
+    {
+        const float Cell = 16;
+        public readonly Vector2 Min, Max;
+        public readonly int W, H;
+        public readonly List<int>[] Cells;
+        /// Segments of no length (a point repeated on the path).
+        public readonly List<int> Repeated = new();
+        public SegmentGrid(Vector2[] path)
+        {
+            Min = new Vector2(float.MaxValue); Max = new Vector2(float.MinValue);
+            foreach (var q in path) { Min = Vector2.Min(Min, q); Max = Vector2.Max(Max, q); }
+            if (path.Length == 0) Min = Max = Vector2.Zero;
+            W = Math.Max(1, (int)((Max.X - Min.X) / Cell) + 1); H = Math.Max(1, (int)((Max.Y - Min.Y) / Cell) + 1);
+            Cells = new List<int>[W * H];
+            for (int c = 0; c < Cells.Length; c++) Cells[c] = new List<int>();
+            for (int i = 0; i + 1 < path.Length; i++)
+            {
+                if (path[i] == path[i + 1]) Repeated.Add(i);
+                Vector2 lo = Vector2.Min(path[i], path[i + 1]), hi = Vector2.Max(path[i], path[i + 1]);
+                for (int y = CellY(lo.Y); y <= CellY(hi.Y); y++)
+                    for (int x = CellX(lo.X); x <= CellX(hi.X); x++) Cells[y * W + x].Add(i);
+            }
+        }
+        public int CellX(float x) => Math.Clamp((int)((x - Min.X) / Cell), 0, W - 1);
+        public int CellY(float y) => Math.Clamp((int)((y - Min.Y) / Cell), 0, H - 1);
     }
 
     public bool AtFord(Vector2 p) => Fords.Any(f => Vector2.DistanceSquared(f, p) < FordRadius * FordRadius);
@@ -222,10 +274,7 @@ public sealed partial class Terrain
     public float WaterDepth(Vector2 p)
     {
         foreach (var r in Rivers)
-        {
-            float d = r.Dist(p);
-            if (d < r.Width / 2) return r.AtBridge(p) ? 0 : r.AtFord(p) ? 0.3f : r.Depth;
-        }
+            if (r.Within(p, r.Width / 2)) return r.AtBridge(p) ? 0 : r.AtFord(p) ? 0.3f : r.Depth;
         return 0;
     }
 
@@ -251,9 +300,12 @@ public sealed partial class Terrain
         Grass = false;
         MinimapRange = Half;
         for (int i = 0; i < buckets.Length; i++) buckets[i] = new List<int>();
-        for (int z = 0; z < N; z++)
+        RawHeight(0, 0); // builds the map's look-up grids once, before the rows below read them in parallel
+        Parallel.For(0, N, z => // the map's height is a pure function of the point: each core takes some rows
+        {
             for (int x = 0; x < N; x++)
                 grid[z * N + x] = RawHeight(-Half + x * Step, -Half + z * Step);
+        });
         foreach (var f in foliage) Add(f);
     }
 

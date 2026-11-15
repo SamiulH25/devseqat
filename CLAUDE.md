@@ -46,6 +46,7 @@ dotnet run -c Release -- --grounds 24                    # same army both sides 
 dotnet run -c Release -- --agree 4 5                     # fought vs auto-resolved: equal-Might fights by tier gap, at DrillWeight and at 5 (~2 min)
 dotnet run -c Release -- --arcana 4                      # magic and aura census (docs/ARCANA.md AR0): N seeds x 240 days, seeking and plain stand-in -> balance/arcana.csv (~6 min)
 dotnet run -c Release -- --campaign-bench 30             # headless campaign for N days: ms a day by tick stage (~76 ms on the 115-province map)
+dotnet run -c Release --no-build -- --world-bench [seed] # headless: the campaign map's terrain and world meshes, ms and verts by stage, a checksum that must not change (~0.4 s)
 ```
 
 Rendering without a display (works in the cloud container, software GL via Mesa llvmpipe):

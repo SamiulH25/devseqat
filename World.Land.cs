@@ -31,10 +31,18 @@ sealed partial class World
     /// Every field plot, tiled by 48 m like the foliage so only those in view are drawn.
     void Fields(Mesh m)
     {
-        foreach (var g in t.Fields.GroupBy(f => ((int)MathF.Floor(f.Center.X / 48), (int)MathF.Floor(f.Center.Y / 48))))
+        var groups = t.Fields.GroupBy(f => ((int)MathF.Floor(f.Center.X / 48), (int)MathF.Floor(f.Center.Y / 48))).ToArray();
+        var parts = new Mesh[groups.Length];
+        Parallel.For(0, groups.Length, g => // each tile on its own, laid in in order
+        {
+            var part = new Mesh();
+            foreach (var f in groups[g]) Plot(part, f);
+            parts[g] = part;
+        });
+        foreach (var part in parts)
         {
             int start = m.V.Count;
-            foreach (var f in g) Plot(m, f);
+            m.Append(part);
             AddTile(m, start);
         }
     }
@@ -48,7 +56,12 @@ sealed partial class World
         int nu = Math.Max(2, (int)MathF.Ceiling(f.Half.X * 2 / 2.5f)), nv = Math.Max(2, (int)MathF.Ceiling(f.Half.Y * 2 / 2.5f));
         // The crop shows strongest in the middle and fades into the meadow at the plot's edge, so plots read as painted
         // fields rather than patches laid on the grass; the corners are rounded off the same way.
-        void V(int i, int j)
+        var grid = new VertexPNCT[(nu + 1) * (nv + 1)];
+        for (int i = 0; i <= nu; i++)
+            for (int j = 0; j <= nv; j++) grid[i * (nv + 1) + j] = Corner(i, j);
+        void V(int i, int j) => m.V.Add(grid[i * (nv + 1) + j]);
+        // Each corner of the plot's cells is worked out once; the cells' triangles take theirs from the grid.
+        VertexPNCT Corner(int i, int j)
         {
             float fu = 2f * i / nu - 1, fv = 2f * j / nv - 1;
             float u = fu * f.Half.X, v = fv * f.Half.Y;
@@ -57,7 +70,7 @@ sealed partial class World
             float wobble = (Terrain.Noise(p.X * 0.2f, p.Y * 0.2f, t.Seed + 43) - 0.5f) * 0.5f;
             float blend = Math.Clamp(0.08f + 0.92f * MathF.Pow(Math.Clamp(rim + wobble * 0.4f, 0, 1), 3) + 0.35f * corner * corner, 0, 1);
             var c = Vector3.Lerp(col, GroundColor(p), blend) * (1 + (Terrain.Noise(p.X * 0.35f, p.Y * 0.35f, t.Seed + 41) - 0.5f) * 0.1f);
-            m.Raw(new Vector3(p.X, t.Height(p) + 0.16f, p.Y), NormalAt(p), new Color(c.X, c.Y, c.Z, 1 - blend), new Vector2(100 + v + f.Half.Y, rows * (1 - blend))); // alpha: how much crop (the map shader)
+            return new VertexPNCT(new Vector3(p.X, t.Height(p) + 0.16f, p.Y), NormalAt(p), new Color(c.X, c.Y, c.Z, 1 - blend), new Vector2(100 + v + f.Half.Y, rows * (1 - blend))); // alpha: how much crop (the map shader)
         }
         for (int i = 0; i < nu; i++)
             for (int j = 0; j < nv; j++)

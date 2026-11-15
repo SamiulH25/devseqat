@@ -441,8 +441,7 @@ public sealed partial class WorldMap
         foreach (var r in Rivers)
         {
             var at = new Vector2(x, z);
-            float d = r.Dist(at);
-            if (d < r.Width / 2 + 3) h -= r.Carve(at, d);
+            if (r.Within(at, r.Width / 2 + 3)) h -= r.Carve(at, r.Dist(at)); // the grid first: a full Dist only beside the river
         }
         foreach (var l in Lakes) h -= l.Carve(new Vector2(x, z));
         return h;

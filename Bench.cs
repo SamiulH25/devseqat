@@ -60,4 +60,21 @@ public static class Bench
         Console.WriteLine($"  setup {setup:0} ms; {days} days, {total / days:0.0} ms a day; parties now {c.S.Parties.Count(p => !p.Down)} ({c.S.Parties.Count(p => p.Kind == PartyKind.Lord && !p.Down)} lords)");
         Console.WriteLine("  ms a day by stage: " + string.Join(", ", Ironfield.Campaign.Stages.Select((s, i) => $"{s} {profile[i] / days:0.0}")));
     }
+
+    /// `dotnet run -c Release -- --world-bench [seed]`: build a new campaign's map terrain and its world meshes headless (what
+    /// the loading screen waits for), printing ms and vertices by stage and a checksum of the result (a faster build must keep the same checksum).
+    public static void World(int seed)
+    {
+        var c = Ironfield.Campaign.New(seed);
+        c.Map.Season = c.SeasonIndex;
+        var clock = Stopwatch.StartNew();
+        var terrain = c.Map.BuildTerrain();
+        double terrainMs = clock.Elapsed.TotalMilliseconds;
+        clock.Restart();
+        var w = new Ironfield.World(terrain, 0.72f);
+        double worldMs = clock.Elapsed.TotalMilliseconds;
+        Console.WriteLine($"world bench (seed {seed}): terrain field {terrain.N}x{terrain.N}, {terrain.Foliage.Count} foliage items");
+        Console.WriteLine($"  map terrain {terrainMs:0} ms, world meshes {worldMs:0} ms, checksum {w.Checksum():x16}");
+        foreach (var (stage, ms, verts) in w.BuildTimes) Console.WriteLine($"  {stage,-28} {ms,8:0.0} ms {verts,10:N0} verts");
+    }
 }

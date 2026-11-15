@@ -61,13 +61,46 @@ sealed partial class World : IDisposable
     {
         t = terrain;
         this.treeScale = treeScale;
-        var (v, idx) = BuildTerrain();
+        mark = System.Diagnostics.Stopwatch.GetTimestamp();
+        GroundColor(Vector2.Zero); // builds the map's look-up grids once, before the parallel parts read them
+        var (v, idx) = BuildTerrain(); Mark("terrain", v.Length);
         var sky = BuildSky();
-        var (mini, miniSize) = BuildMinimap();
-        var (ground, groundSize) = BuildGroundMap();
+        var (mini, miniSize) = BuildMinimap(); Mark("minimap", v.Length);
+        var (ground, groundSize) = BuildGroundMap(); Mark("ground map", v.Length);
         baked = new Baked(v, idx, BuildFoliage(), sky, mini, miniSize, ground, groundSize);
         terrainTris = idx.Length / 3;
         skyTris = sky.Length / 3;
+    }
+
+    /// A checksum of everything the CPU build made (meshes, images, culling tiles, chimneys), to show that a faster build
+    /// makes the same world (`--world-bench`).
+    public ulong Checksum()
+    {
+        var b = baked ?? throw new InvalidOperationException("only before Upload");
+        ulong h = 1469598103934665603UL;
+        void Bytes(ReadOnlySpan<byte> s) { foreach (var x in s) h = (h ^ x) * 1099511628211UL; }
+        Bytes(System.Runtime.InteropServices.MemoryMarshal.AsBytes(b.Terrain.AsSpan()));
+        Bytes(System.Runtime.InteropServices.MemoryMarshal.AsBytes(b.Indices.AsSpan()));
+        Bytes(System.Runtime.InteropServices.MemoryMarshal.AsBytes(b.Foliage.AsSpan()));
+        Bytes(System.Runtime.InteropServices.MemoryMarshal.AsBytes(b.Sky.AsSpan()));
+        Bytes(System.Runtime.InteropServices.MemoryMarshal.AsBytes(b.Minimap.AsSpan()));
+        Bytes(System.Runtime.InteropServices.MemoryMarshal.AsBytes(b.Ground.AsSpan()));
+        foreach (var (start, tris, box) in tiles.Concat(grassTiles)) { Bytes(BitConverter.GetBytes(start)); Bytes(BitConverter.GetBytes(tris)); Bytes(BitConverter.GetBytes(box.Min.X + box.Max.Y)); }
+        foreach (var c in Chimneys) Bytes(BitConverter.GetBytes(c.X + c.Y * 3 + c.Z * 7));
+        Bytes(BitConverter.GetBytes(alwaysStart)); Bytes(BitConverter.GetBytes(alwaysTris));
+        return h;
+    }
+
+    /// How long each part of the CPU build took and the vertices it made (`--world-bench`).
+    public readonly List<(string Stage, double Ms, int Verts)> BuildTimes = new();
+    long mark;
+    int markVerts;
+    void Mark(string stage, int verts)
+    {
+        long now = System.Diagnostics.Stopwatch.GetTimestamp();
+        BuildTimes.Add((stage, System.Diagnostics.Stopwatch.GetElapsedTime(mark, now).TotalMilliseconds, verts - markVerts));
+        mark = now;
+        markVerts = verts;
     }
 
     /// The GPU half: send the baked meshes and images to the device (main thread only).
@@ -287,7 +320,8 @@ sealed partial class World : IDisposable
             _ => c,
         };
         if (t.Tint != null) c = t.Tint(p, c);
-        if (t.WaterDepth(p) > 0) c = Vector3.Lerp(c, new Vector3(0.24f, 0.38f, 0.46f), t.WaterDepth(p) > 0.5f ? 0.9f : 0.6f); // the minimap shows water
+        float wet = t.WaterDepth(p);
+        if (wet > 0) c = Vector3.Lerp(c, new Vector3(0.24f, 0.38f, 0.46f), wet > 0.5f ? 0.9f : 0.6f); // the minimap shows water
         return c * (1 + n2 * 0.05f);
     }
 
@@ -295,7 +329,8 @@ sealed partial class World : IDisposable
     {
         int n = t.N;
         var v = new VertexPNCT[n * n];
-        for (int z = 0; z < n; z++)
+        Parallel.For(0, n, z => // rows are independent: each core takes some
+        {
             for (int x = 0; x < n; x++)
             {
                 var p = new Vector2(-t.Half + x * t.Step, -t.Half + z * t.Step);
@@ -306,6 +341,7 @@ sealed partial class World : IDisposable
                 if (!t.Grass) col.A = (byte)(255 * (1 - Cavity(x, z))); // the map's shade in hollows (World.Materials.cs)
                 v[z * n + x] = new VertexPNCT(new Vector3(p.X, t.GridHeight(x, z), p.Y), normal, col, p / 4);
             }
+        });
         var idx = new int[(n - 1) * (n - 1) * 6];
         int k = 0;
         for (int z = 0; z < n - 1; z++)
@@ -337,7 +373,8 @@ sealed partial class World : IDisposable
         float metresPerTexel = t.MinimapRange > 256 ? 4f : Terrain.MinimapMetresPerTexel;
         int S = Math.Clamp((int)MathF.Round(2 * t.MinimapRange / metresPerTexel), 128, 512);
         var data = new Color[S * S];
-        for (int y = 0; y < S; y++)
+        Parallel.For(0, S, y =>
+        {
             for (int x = 0; x < S; x++)
             {
                 var w = MinimapToWorld(new Vector2((x + 0.5f) / S, (y + 0.5f) / S), t.MinimapRange);
@@ -346,6 +383,7 @@ sealed partial class World : IDisposable
                 float shade = 0.65f + 0.55f * MathF.Max(0, Vector3.Dot(nrm, -SunDir));
                 data[y * S + x] = new Color(GroundColor(w) * shade * (Contour(w, metresPerTexel) ? 0.86f : 1));
             }
+        });
         MapFeatures(data, S, new Color(40, 56, 30), new Color(70, 52, 34));
         foreach (var f in t.Foliage)
         {
@@ -397,29 +435,48 @@ sealed partial class World : IDisposable
         Chimneys.Clear();
         // Foliage is built tile by tile (roadmap E4) so each frame draws only the tiles in view.
         const float TileSize = 48;
-        foreach (var tile in t.Foliage.GroupBy(f => ((int)MathF.Floor(f.Pos.X / TileSize), (int)MathF.Floor(f.Pos.Y / TileSize))))
+        markVerts = 0;
+        // Each tile is built on its own (in parallel), then laid into the one mesh in tile order, as it always was.
+        var groups = t.Foliage.GroupBy(f => ((int)MathF.Floor(f.Pos.X / TileSize), (int)MathF.Floor(f.Pos.Y / TileSize))).ToArray();
+        var parts = new Mesh[groups.Length];
+        Parallel.For(0, groups.Length, g =>
+        {
+            var part = new Mesh();
+            foreach (var f in groups[g]) Item(part, f);
+            parts[g] = part;
+        });
+        foreach (var part in parts)
         {
             int start = m.V.Count;
-            foreach (var f in tile) Item(f);
+            m.Append(part);
             if (m.V.Count == start) continue;
             var min = new Vector3(float.MaxValue); var max = new Vector3(float.MinValue);
             for (int i = start; i < m.V.Count; i++) { min = Vector3.Min(min, m.V[i].Position); max = Vector3.Max(max, m.V[i].Position); }
             tiles.Add((start, (m.V.Count - start) / 3, new BoundingBox(min - new Vector3(1.5f), max + new Vector3(1.5f)))); // room for wind sway
         }
+        Mark("foliage items", m.V.Count);
         Fields(m); // tiled too (World.Land.cs)
+        Mark("fields", m.V.Count);
         Roads(m); // tiled like the foliage, so only the roads in view are drawn (World.Water.cs)
+        Mark("roads", m.V.Count);
         alwaysStart = m.V.Count;
         Water(m);
+        Mark("water", m.V.Count);
         Features(m);
         if (t.Wall != null) Torches(m, t);
         if (!t.Grass) Skirt(m);
         else if (t.Wall == null) Outskirts(m); // a farmstead out past the fighting (World.Land.cs, WL6)
         if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
         alwaysTris = (m.V.Count - alwaysStart) / 3;
+        Mark("features, skirt", m.V.Count);
         Grass(m);
-        return m.V.ToArray();
+        Mark("grass", m.V.Count);
+        var all = m.V.ToArray();
+        Chimneys.AddRange(m.Chimneys);
+        Mark("to array", m.V.Count);
+        return all;
 
-        void Item(Foliage f)
+        void Item(Mesh m, Foliage f)
         {
             var rng = new Random(f.Seed);
             var b = new Vector3(f.Pos.X, t.Height(f.Pos), f.Pos.Y);
@@ -589,7 +646,7 @@ sealed partial class World : IDisposable
         var at = c + new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw)) * w * 0.32f + Vector3.Up * h * 1.1f;
         m.Tag = Vector2.Zero;
         m.Box(at, w * 0.12f, w * 0.12f, h * 0.75f, yaw, Stone);
-        Chimneys.Add(at + Vector3.Up * h * 0.75f);
+        m.Chimneys.Add(at + Vector3.Up * h * 0.75f);
     }
 
     void Village(Mesh m, Vector3 b, float s, Random r)
@@ -1029,11 +1086,13 @@ sealed partial class World : IDisposable
             return nn.Y < 0 ? -nn : nn;
         }
         var haze = new Color(150, 162, 180);
+        var edgeColour = new Color[n];
+        for (int i = 0; i < n; i++) edgeColour[i] = new Color(GroundColor(new Vector2(pts[0, i].X, pts[0, i].Z)));
         Color Col(int k, int i, Vector3 nn)
         {
             var q = pts[k, i];
             float rise = q.Y - pts[0, i].Y;
-            var near = new Color(GroundColor(new Vector2(pts[0, i].X, pts[0, i].Z)));
+            var near = edgeColour[i];
             var hill = Color.Lerp(near, new Color(92, 104, 66), Math.Clamp(dist[k] / 300, 0, 1));
             var c = Color.Lerp(hill, new Color(112, 108, 100), Math.Clamp((1 - nn.Y) * 3 - 0.4f + rise / 160, 0, 1)); // rock on steep, high ground
             if (q.Y > 95 + Terrain.Noise(q.X * 0.02f, q.Z * 0.02f, t.Seed + 25) * 25) c = new Color(228, 232, 238);
@@ -1055,6 +1114,16 @@ sealed partial class World : IDisposable
     {
         public readonly List<VertexPNCT> V = new();
         public Vector2 Tag; // goes in the UV of foliage: (wind sway, leafiness) for the world shader
+        /// Where the chimneys built into this mesh smoke (gathered into `World.Chimneys`).
+        public readonly List<Vector3> Chimneys = new();
+
+        /// Lay another mesh (a tile built on its own) onto this one; its tag carries on as if built here.
+        public void Append(Mesh other)
+        {
+            V.AddRange(other.V);
+            Chimneys.AddRange(other.Chimneys);
+            if (other.V.Count > 0) Tag = other.Tag;
+        }
 
         /// One vertex with its own normal and UV (ribbons: roads, and water whose UV tells the shader where it flows).
         public void Raw(Vector3 p, Vector3 n, Color c, Vector2 uv) => V.Add(new(p, n, c, uv));

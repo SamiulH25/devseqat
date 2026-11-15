@@ -54,32 +54,43 @@ sealed partial class World
     {
         if (t.RoadLines.Count == 0) return;
         float[] cols = { -1, -0.62f, -0.3f, 0, 0.3f, 0.62f, 1 };
-        foreach (var road in t.RoadLines)
+        // Each point of a ribbon (sample x column) is worked out once, the roads in parallel; then the quads take their
+        // corners from those points, road by road in order.
+        var ribbons = new (int Samples, VertexPNCT[] At)[t.RoadLines.Count];
+        Parallel.For(0, t.RoadLines.Count, k =>
         {
+            var road = t.RoadLines[k];
             var s = Resample(road.Points, 2f);
-            for (int from = 0; from + 1 < s.Count; from += 20)
+            var at = new VertexPNCT[s.Count * cols.Length];
+            for (int i = 0; i < s.Count; i++)
             {
-                int start = m.V.Count, to = Math.Min(s.Count - 1, from + 20);
-                for (int i = from; i < to; i++)
-                {
-                    var (p0, d0) = s[i]; var (p1, d1) = s[i + 1];
-                    Vector2 n0 = new(-d0.Y, d0.X), n1 = new(-d1.Y, d1.X);
-                    for (int c = 0; c + 1 < cols.Length; c++)
-                    {
-                        Vector2 a0 = p0 + n0 * cols[c] * road.Half, b0 = p0 + n0 * cols[c + 1] * road.Half;
-                        Vector2 a1 = p1 + n1 * cols[c] * road.Half, b1 = p1 + n1 * cols[c + 1] * road.Half;
-                        Vertex(a0, c); Vertex(b0, c + 1); Vertex(b1, c + 1);
-                        Vertex(a0, c); Vertex(b1, c + 1); Vertex(a1, c);
-                    }
-                }
-                AddTile(m, start);
+                var (p, d) = s[i];
+                Vector2 nrm = new(-d.Y, d.X);
+                for (int c = 0; c < cols.Length; c++) at[i * cols.Length + c] = Vertex(p + nrm * cols[c] * road.Half, c);
             }
-            void Vertex(Vector2 p, int col)
+            ribbons[k] = (s.Count, at);
+
+            VertexPNCT Vertex(Vector2 p, int col)
             {
                 var earth = col is 0 or 6 ? Verge : col is 2 or 4 ? Rut : col == 3 ? Crown : RoadEarth;
                 if (road.Village) earth = Vector3.Lerp(earth, Verge, 0.25f); // a lane: less worn
                 var c = Vector3.Lerp(earth, GroundColor(p), 0.1f); // the ground's season shows through (snow, dry summer)
-                m.Raw(new Vector3(p.X, t.Height(p) + 0.32f, p.Y), NormalAt(p), new Color(c), Trodden);
+                return new VertexPNCT(new Vector3(p.X, t.Height(p) + 0.32f, p.Y), NormalAt(p), new Color(c), Trodden);
+            }
+        });
+        foreach (var (count, at) in ribbons)
+        {
+            for (int from = 0; from + 1 < count; from += 20)
+            {
+                int start = m.V.Count, to = Math.Min(count - 1, from + 20);
+                for (int i = from; i < to; i++)
+                    for (int c = 0; c + 1 < cols.Length; c++)
+                    {
+                        int a0 = i * cols.Length + c, b0 = a0 + 1, a1 = a0 + cols.Length, b1 = a1 + 1;
+                        m.V.Add(at[a0]); m.V.Add(at[b0]); m.V.Add(at[b1]);
+                        m.V.Add(at[a0]); m.V.Add(at[b1]); m.V.Add(at[a1]);
+                    }
+                AddTile(m, start);
             }
         }
     }
