@@ -32,7 +32,7 @@ public partial class Campaign
         var d = new DivisionRecord { Id = S.Divisions.Count == 0 ? 0 : S.Divisions.Max(x => x.Id) + 1, LeaderChar = leaderChar, LeaderCompany = leaderCompany };
         S.Divisions.Add(d);
         if (LeaderCompanyOf(d) is CompanyRecord own) own.Division = d.Id;
-        Log($"{DivisionName(d)} takes command of a division.");
+        LogYours($"{DivisionName(d)} takes command of a division.");
         return null;
     }
 
@@ -78,7 +78,7 @@ public partial class Campaign
                 ? Companions.Any(k => k.Id == d.LeaderChar && S.Hours >= k.WoundedUntil)
                 : Player.Companies.Any(c => c.Id == d.LeaderCompany && c.Officer != "");
             if (ok) continue;
-            Log($"{DivisionName(d)}'s division is broken up: its companies return to your command.");
+            LogYours($"{DivisionName(d)}'s division is broken up: its companies return to your command.");
             DisbandDivision(d);
         }
         foreach (var c in Player.Companies) if (c.Division >= 0 && S.Divisions.All(d => d.Id != c.Division)) c.Division = -1;
@@ -113,7 +113,7 @@ public partial class Campaign
         {
             if (S.Characters.FirstOrDefault(k => k.Id == d.LeaderChar) is not Character ch) continue;
             if (!r.Companies.Any(c => c.Team == 0 && c.Deployed && CompaniesOf(d).Any(x => x.Id == c.Id))) continue;
-            if (++ch.CommandBattles % 2 == 0 && ch.Command < 10) { ch.Command++; Log($"{ch.Name} leads a division better now (command {ch.Command})."); }
+            if (++ch.CommandBattles % 2 == 0 && ch.Command < 10) { ch.Command++; LogYours($"{ch.Name} leads a division better now (command {ch.Command})."); }
         }
     }
 }

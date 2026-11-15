@@ -344,7 +344,7 @@ sealed partial class World : IDisposable
                 float hd = t.GridHeight(x, Math.Max(0, z - 1)), hu = t.GridHeight(x, Math.Min(n - 1, z + 1));
                 var normal = Vector3.Normalize(new Vector3(hl - hr, 2 * t.Step, hd - hu));
                 var col = new Color(GroundColor(p));
-                if (!t.Grass) col.A = (byte)(255 * (1 - Cavity(x, z))); // the map's shade in hollows (World.Materials.cs)
+                if (!t.Grass) col.A = (byte)(255 * (1 - 0.6f * Cavity(x, z))); // the map's shade in hollows (World.Materials.cs)
                 v[z * n + x] = new VertexPNCT(new Vector3(p.X, t.GridHeight(x, z), p.Y), normal, col, p / 4);
             }
         });

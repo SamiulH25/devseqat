@@ -44,7 +44,7 @@ public sealed partial class Campaign
         var g = Gear.Get(i.Def);
         S.Gold -= MendCost(g);
         i.Battered = false;
-        Log($"The smith mends your {ItemName(i, g).ToLowerInvariant()}.");
+        LogYours($"The smith mends your {ItemName(i, g).ToLowerInvariant()}.");
         AudioEngine.Current?.Play(Cue.AnvilRing, 0.6f);
         return null;
     }
@@ -74,7 +74,7 @@ public sealed partial class Campaign
         if (lots > 0) { S.Goods[goods] -= lots; if (S.Goods[goods] <= 0) S.Goods.Remove(goods); }
         i.Quality++;
         if (!Captain.Baggage.Contains(i)) Captain.Baggage.Add(i);
-        Log($"The smith makes your {g.Name.ToLowerInvariant()} {QualityName(i.Quality)}.");
+        LogYours($"The smith makes your {g.Name.ToLowerInvariant()} {QualityName(i.Quality)}.");
         AudioEngine.Current?.Play(Cue.AnvilRing, 0.8f);
         return null;
     }
@@ -100,7 +100,7 @@ public sealed partial class Campaign
         int most = i.Quality >= ItemQuality.Masterwork ? MostMarks : 1;
         if (i.Marks.Count >= most) i.Marks.RemoveAt(0);
         i.Marks.Add(mark);
-        Log($"The smith strikes a new mark on your {ItemName(i, g).ToLowerInvariant()}: {Effects.Get(mark).Name.ToLowerInvariant()}.");
+        LogYours($"The smith strikes a new mark on your {ItemName(i, g).ToLowerInvariant()}: {Effects.Get(mark).Name.ToLowerInvariant()}.");
         AudioEngine.Current?.Play(Cue.AnvilRing, 0.6f);
         return null;
     }
@@ -116,6 +116,6 @@ public sealed partial class Campaign
         var hit = rng.Pick(pool);
         hit.Battered = true;
         if (!Captain.Baggage.Contains(hit)) Captain.Baggage.Add(hit);
-        Log($"Your {ItemName(hit, Gear.Get(hit.Def)).ToLowerInvariant()} is battered in your fall. A smith can mend it.");
+        LogYours($"Your {ItemName(hit, Gear.Get(hit.Def)).ToLowerInvariant()} is battered in your fall. A smith can mend it.");
     }
 }

@@ -69,7 +69,7 @@ public sealed partial class Campaign
         if (CannotChooseDoctrine(id) is string why) return why;
         var c = Circle!;
         c.Doctrine = id;
-        Log($"{c.Name} take the doctrine of {Abilities.Doctrines.First(x => x.Id == id).Name}.");
+        LogYours($"{c.Name} take the doctrine of {Abilities.Doctrines.First(x => x.Id == id).Name}.");
         return null;
     }
 
@@ -96,7 +96,7 @@ public sealed partial class Campaign
         S.Gold -= LearnCost * (c.Spells.Count + 1);
         c.Spells.Add(id);
         if (CircleTradition(c) == "craft") BreakVow("no_craft", "work the craft");
-        Log($"{c.Name} learn {Abilities.Get(id).Name}.");
+        LogYours($"{c.Name} learn {Abilities.Get(id).Name}.");
         return null;
     }
 
@@ -152,7 +152,7 @@ public sealed partial class Campaign
         {
             c.Master = 0;
             c.LeaderlessUntil = S.Hours + LeaderlessDays * 24;
-            Log($"{c.Name} have lost their master: no great working for {LeaderlessDays} days, until another rises.");
+            LogYours($"{c.Name} have lost their master: no great working for {LeaderlessDays} days, until another rises.");
             return;
         }
         if (c.Master != 0 || Leaderless(c)) return;
@@ -161,7 +161,7 @@ public sealed partial class Campaign
         if (next == null) return;
         c.Master = next.Id;
         if (next.Deeds.Count == 0 || !next.Deeds[^1].Contains(MasterTitle(c))) next.Deed($"became {MasterTitle(c)}");
-        Log($"{next.Name} leads {c.Name} as {MasterTitle(c)}.");
+        LogYours($"{next.Name} leads {c.Name} as {MasterTitle(c)}.");
     }
 
     /// The circle as it goes into battle: its prepared spells, its master's rank, and whether it is leaderless.

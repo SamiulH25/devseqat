@@ -44,7 +44,7 @@ public partial class Campaign
         int gold = 0, lots = 0;
         foreach (var (id, n) in kinds) { gold += n * GoodsPrice(GoodsOf(id), s); lots += n; S.Goods.Remove(id); }
         S.Gold += gold;
-        Log($"You sell {lots} lots of goods in {s.Name} for {gold} crowns.");
+        LogYours($"You sell {lots} lots of goods in {s.Name} for {gold} crowns.");
         AudioEngine.Current?.Play(Cue.Coin);
         return null;
     }

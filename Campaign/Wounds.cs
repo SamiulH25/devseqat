@@ -35,7 +35,7 @@ partial class Campaign
         var w = free[rng.Next(free.Count)];
         Captain.Wounds.Add(w.Id);
         if (w.Id == "scar") Captain.Renown += 5;
-        Log($"The fall leaves its mark: {w.Name.ToLowerInvariant()}.");
+        LogYours($"The fall leaves its mark: {w.Name.ToLowerInvariant()}.");
         return w.Id;
     }
 

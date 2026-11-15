@@ -97,7 +97,7 @@ public sealed partial class Campaign
             next.Deadline = (float)S.Hours + 6 * 24;
             next.Giver = c.Giver;
             S.Contracts.Add(next);
-            Log($"Next: {next.Text}");
+            LogYours($"Next: {next.Text}");
         }
     }
 

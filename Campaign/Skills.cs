@@ -182,7 +182,7 @@ public sealed partial class Campaign
         if (Skills.Locked(Captain, skill, Skills.Perk(id)!) is string why) return why;
         if (Skills.Picks(Captain, skill.Id) <= 0) { Captain.FreePerks--; Captain.BonusPerks.Add(id); } // a rank's free choice (P5)
         Captain.Perks.Add(id);
-        Log($"You learn {Skills.Perk(id)!.Name}.");
+        LogYours($"You learn {Skills.Perk(id)!.Name}.");
         return null;
     }
 
@@ -212,7 +212,7 @@ public sealed partial class Campaign
         Captain.Retrained++;
         Captain.Perks.Remove(id);
         if (Captain.BonusPerks.Remove(id)) Captain.FreePerks++; // a free choice comes back free
-        Log($"You unlearn {Skills.Perk(id)!.Name}. The choice is open again.");
+        LogYours($"You unlearn {Skills.Perk(id)!.Name}. The choice is open again.");
         return null;
     }
 
@@ -226,7 +226,7 @@ public sealed partial class Campaign
         amount *= AgeEdge(skill);
         float before = Skill(skill), after = Skills.Raise(Captain, skill, amount);
         if ((int)(after / Skills.Step) > (int)(before / Skills.Step))
-            Log($"Your {skill.ToLowerInvariant()} reaches {(int)after}: a perk may be chosen (K).");
+            LogYours($"Your {skill.ToLowerInvariant()} reaches {(int)after}: a perk may be chosen (K).");
     }
 
     /// After a battle you fought: Leadership for commanding, Tactics for winning against the odds, and your own hands:

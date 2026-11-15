@@ -80,7 +80,7 @@ public sealed partial class Campaign
             if (c.Traits.Count >= 3) c.Traits.RemoveAt(0);
             c.Traits.Add(t);
         }
-        Log($"{m.Name} is sergeant of {c.Name}.");
+        LogYours($"{m.Name} is sergeant of {c.Name}.");
         return null;
     }
 
@@ -102,7 +102,7 @@ public sealed partial class Campaign
         var c = Player.Companies.First(k => k.Roll.Contains(m));
         c.Cohesion = MathF.Min(30, c.Cohesion + 1);
         m.Deed(OfBanner(m) && m.Mentions == BannerMentions ? "Mentioned a third time: one of the banner." : $"Mentioned by the captain on day {Day}.");
-        Log($"You mention {m.Name} of {c.Name} before the company.");
+        LogYours($"You mention {m.Name} of {c.Name} before the company.");
         return null;
     }
 
@@ -140,7 +140,7 @@ public sealed partial class Campaign
             m.CarriesDef = what.Def;
             m.Deed($"Carries {m.Carries}.");
         }
-        Log($"{m.Name} is armed with {m.Carries}.");
+        LogYours($"{m.Name} is armed with {m.Carries}.");
         return null;
     }
 

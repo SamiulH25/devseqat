@@ -536,10 +536,15 @@ public sealed class CaptainKit
     public IEnumerable<string> Worn => new[] { Weapon, Side, Shield, Body, Helm, Horse }.Where(id => id != "");
 }
 
+/// How much of the news the feed shows: only what touches you and your men, that plus the realm's news (the default), or all of it.
+public enum LogLevel { Yours, Notable, Everything }
+
 public sealed class LogEntry
 {
     public double At;
     public string Text = "";
+    /// The least log level that shows it (saves from before levels read as Notable).
+    public LogLevel Level = LogLevel.Notable;
 }
 
 /// A campaign buff: an effect id (Data/effects.json) and the hour it ends.

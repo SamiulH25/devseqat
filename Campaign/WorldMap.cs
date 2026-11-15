@@ -62,6 +62,8 @@ public sealed partial class WorldMap
     public float Spread => MathF.Pow(MathF.Max(0.05f, ExtentUsed / LegacyExtent), 0.3f);
     /// Half the side of this map's ground: the provinces, plus the mountain rim (an old save keeps the small world it had).
     public float GroundHalf => ExtentUsed + Rim;
+    /// The nearest point to `p` on the land in play (the square parties travel on; the rim beyond is closed to them).
+    public Vector2 InLand(Vector2 p) => Vector2.Clamp(p, new Vector2(-ExtentUsed), new Vector2(ExtentUsed));
     readonly List<(Vector2 C, float R, float H)> hills = new();
     /// The look-up grid for ProvinceAt, RoadDist and RiverDist, built on first use (once the roads and rivers are laid).
     MapIndex? index;
@@ -179,7 +181,7 @@ public sealed partial class WorldMap
             for (int i = 0; i + 1 < path.Length; i++)
                 foreach (var (a, b) in m.Roads)
                     if (Cross(path[i], path[i + 1], a, b) is Vector2 x) bridges.Add(x);
-            m.Rivers.Add(layout >= 4 ? new River(path, 4.6f, bridges.ToArray(), 1.5f) : new River(path, 2.6f, bridges.ToArray(), 1.1f)); // layout 4: wide enough to read on the map
+            m.Rivers.Add(layout >= 4 ? new River(path, 4.6f, bridges.ToArray(), 1.5f) { Widen = 2 } : new River(path, 2.6f, bridges.ToArray(), 1.1f) { Widen = 2 }); // layout 4: wide enough to read on the map
         }
         // Hill provinces get real hills.
         foreach (var p in m.Provinces.Where(p => p.Kind == "Hills"))
@@ -441,7 +443,7 @@ public sealed partial class WorldMap
         foreach (var r in Rivers)
         {
             var at = new Vector2(x, z);
-            if (r.Within(at, r.Width / 2 + 3)) h -= r.Carve(at, r.Dist(at)); // the grid first: a full Dist only beside the river
+            if (r.Within(at, r.CarveReach)) h -= r.Carve(at, r.Dist(at)); // the grid first: a full Dist only beside the river
         }
         foreach (var l in Lakes) h -= l.Carve(new Vector2(x, z));
         return h;

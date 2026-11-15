@@ -80,7 +80,7 @@ public sealed partial class Campaign
         S.Fallen.Add(m);
         bool tied = TiesOnFall(m, fate, where);
         if (!Player.Companies.Contains(c)) return;
-        if (fate == "pensioned") { Log($"{m.Name} of {c.Name} goes home with a pension."); return; }
+        if (fate == "pensioned") { LogYours($"{m.Name} of {c.Name} goes home with a pension."); return; }
         if (fate is "fell" or "missing")
         {
             // Losing a man the company knew costs it (L3); a long-serving man is remembered in the chronicle.
@@ -89,7 +89,7 @@ public sealed partial class Campaign
             rollNews.Add((fate == "fell" ? "FELL" : "MISSING", $"{m.Name}, {Troops.Get(m.Troop).Name}, {c.Name}. {N(m.Battles, "battle")}, {N(m.Kills, "kill")}.{Known(m)}"));
             if (fate == "fell" && m.Battles >= 10) Deed($"{m.Name} of {c.Name} fell against {(where != "" ? where : "the enemy")}, after {m.Battles} battles.");
         }
-        Log(fate switch { "fell" => $"{m.Name} of {c.Name} has fallen.", "missing" => $"{m.Name} of {c.Name} is missing.", _ => $"{m.Name} has left {c.Name}." });
+        LogYours(fate switch { "fell" => $"{m.Name} of {c.Name} has fallen.", "missing" => $"{m.Name} of {c.Name} is missing.", _ => $"{m.Name} has left {c.Name}." });
     }
 
     void Hurt(CompanyRecord c, Soldier m)
@@ -243,7 +243,7 @@ public sealed partial class Campaign
         st.Take(1); // he leaves the ranks
         m.Deed($"Made sergeant of {c.Name} on day {Day}.");
         c.OfficerMan = m;
-        Log($"{m.Name} rises from the ranks to be sergeant of {c.Name}.");
+        LogYours($"{m.Name} rises from the ranks to be sergeant of {c.Name}.");
         OpenSergeantPick(c, m); // you may choose another (C4)
         return "Sgt " + m.Name;
     }

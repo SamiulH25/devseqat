@@ -256,7 +256,7 @@ public sealed partial class Campaign
         // The heir inherits his father's view of you, and adds his own if you were the one who killed him.
         foreach (var (k, v) in old.Opinion) heir.Opinion[k] = heir.Opinion.GetValueOrDefault(k) + v * 0.5f;
         if (byPlayer) Remember(heir, Me, $"you slew my {(kin == "" ? "lord" : kin)}", -30);
-        Log(kin == "" ? $"{old.Name} {cause}. {heir.Name} takes up {His(old)} banner." : $"{old.Name} {cause}. {His(old).ToUpperInvariant()[0]}{His(old)[1..]} {KinWord(heir, old)} {heir.Name} takes up the banner.");
+        LogYours(kin == "" ? $"{old.Name} {cause}. {heir.Name} takes up {His(old)} banner." : $"{old.Name} {cause}. {His(old).ToUpperInvariant()[0]}{His(old)[1..]} {KinWord(heir, old)} {heir.Name} takes up the banner.");
     }
 
     // ---------- companions (3.3) ----------
@@ -279,7 +279,7 @@ public sealed partial class Campaign
         c.OfficerMan = null;
         ch.Opinion[S.CaptainChar] = 40;
         Remember(ch, Me, "you made me one of your household", 10);
-        Log($"{c.Officer} of {c.Name} has fought {c.OfficerBattles} battles at your side and joins your household as {ch.Role.ToLowerInvariant()}.");
+        LogYours($"{c.Officer} of {c.Name} has fought {c.OfficerBattles} battles at your side and joins your household as {ch.Role.ToLowerInvariant()}.");
         c.Officer = "";
         c.Traits.Clear();
         c.OfficerBattles = 0;
@@ -317,7 +317,7 @@ public sealed partial class Campaign
         w.PartyId = Player.Id;
         w.CompanyId = Player.Companies.FirstOrDefault(c => !Companions.Any(k => k.CompanyId == c.Id))?.Id ?? -1;
         w.Opinion[S.CaptainChar] = 25;
-        Log($"{w.Name} joins your household as {w.Role.ToLowerInvariant()}.");
+        LogYours($"{w.Name} joins your household as {w.Role.ToLowerInvariant()}.");
         RefreshHeroes();
         return null;
     }
@@ -346,8 +346,8 @@ public sealed partial class Campaign
     void HeroFell(CompanyRecord c, string foe = "")
     {
         if (Companions.FirstOrDefault(k => k.CompanyId == c.Id) is not Character k) return;
-        if (!Has("Triage") && rng.Chance(0.1f)) { k.Dead = true; Log($"{k.Name}, your {k.Role.ToLowerInvariant()}, has fallen leading {c.Name}."); CompanionFell(k, foe); BrotherFell(k); StudentRises(k); GriefTrial(k); }
-        else { k.WoundedUntil = (float)S.Hours + 5 * 24; Log($"{k.Name} is carried from the field, wounded."); }
+        if (!Has("Triage") && rng.Chance(0.1f)) { k.Dead = true; LogYours($"{k.Name}, your {k.Role.ToLowerInvariant()}, has fallen leading {c.Name}."); CompanionFell(k, foe); BrotherFell(k); StudentRises(k); GriefTrial(k); }
+        else { k.WoundedUntil = (float)S.Hours + 5 * 24; LogYours($"{k.Name} is carried from the field, wounded."); }
         RefreshHeroes();
     }
 

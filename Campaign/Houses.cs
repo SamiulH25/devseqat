@@ -214,7 +214,7 @@ public sealed partial class Campaign
             if (!S.Characters.Any(c => c.House == h.Id && !c.Dead))
             {
                 h.Extinct = true;
-                Log($"{h.Name} dies out.");
+                LogAll($"{h.Name} dies out.");
             }
     }
 
@@ -259,7 +259,7 @@ public sealed partial class Campaign
             Retitle(a); Retitle(b);
             if (PartyById(a.PartyId) is Party pa) pa.Name = a.Name;
             if (PartyById(b.PartyId) is Party pb) pb.Name = b.Name;
-            if (aLeads || bLeads) Log($"{a.Name} weds {b.Name}.");
+            if (aLeads || bLeads) LogAll($"{a.Name} weds {b.Name}.");
         }
     }
 }

@@ -11,6 +11,11 @@ public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wa
 public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float Depth = 1.3f)
 {
     public const float FordRadius = 7, BridgeHalf = 2.4f;
+    /// Extra bed width for coarse ground (the campaign map's 4 m grid): the cut is wider and its banks gentler, so a grid
+    /// vertex always lands in the channel and the water sheet never floats over uncut ground.
+    public float Widen { get; init; }
+    /// How far from the centre line the ground is touched by the cut.
+    public float CarveReach => Width / 2 + 3 + 2 * Widen;
     /// Bridges on a battlefield river: where each crosses and the way its deck runs (TerrainFeatures.cs `BridgeTheRoad`).
     public (Vector2 At, Vector2 Along)[] Bridges { get; init; } = Array.Empty<(Vector2, Vector2)>();
 
@@ -94,7 +99,7 @@ public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float D
     public bool AtFord(Vector2 p) => Fords.Any(f => Vector2.DistanceSquared(f, p) < FordRadius * FordRadius);
 
     /// How far the bed is cut below the banks here (shallow at a ford).
-    public float Carve(Vector2 p, float dist) => AtBridge(p) ? 0 : (AtFord(p) ? 0.35f : Depth) * Smooth(Width / 2 + 3, Width / 2 - 1, dist);
+    public float Carve(Vector2 p, float dist) => AtBridge(p) ? 0 : (AtFord(p) ? 0.35f : Depth) * Smooth(CarveReach, Width / 2 - 1 + Widen, dist);
 
     static float Smooth(float a, float b, float x) { float t = Math.Clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
 

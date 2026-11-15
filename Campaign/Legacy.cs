@@ -41,13 +41,13 @@ public sealed partial class Campaign
                 c.LostHonours.Remove(lost);
                 c.BattleHonours.Add(lost.Name);
                 rollNews.Add(("HONOUR", $"{c.Name} win back {lost.Name} from the {FactionNames[foeFaction]}."));
-                Log($"{c.Name} win back their banner honour, {lost.Name}.");
+                LogYours($"{c.Name} win back their banner honour, {lost.Name}.");
             }
         if (won && notable && c.Men > 0 && !c.BattleHonours.Contains(field))
         {
             c.BattleHonours.Add(field);
             rollNews.Add(("HONOUR", $"{field} is sewn on the banner of {c.Name}."));
-            Log($"{c.Name} carry a new battle honour: {field}.");
+            LogYours($"{c.Name} carry a new battle honour: {field}.");
         }
         if (!won && cr.Routed && foeFaction >= 0 && c.BattleHonours.Count > 0)
         {
@@ -55,7 +55,7 @@ public sealed partial class Campaign
             c.BattleHonours.RemoveAt(c.BattleHonours.Count - 1);
             c.LostHonours.Add(new LostHonour { Name = name, Faction = foeFaction });
             rollNews.Add(("LOST", $"{c.Name} broke, and lost {name} to the {FactionNames[foeFaction]}. Beat them to win it back."));
-            Log($"{c.Name} broke, and the {FactionNames[foeFaction]} took their banner honour, {name}.");
+            LogYours($"{c.Name} broke, and the {FactionNames[foeFaction]} took their banner honour, {name}.");
         }
     }
 

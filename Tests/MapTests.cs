@@ -33,6 +33,49 @@ public static partial class SelfTest
         Console.WriteLine($"river grid: {checks} answers match Dist ({inside} inside)");
     }
 
+    /// The player's march goes the way the land allows: across a river by its bridge rather than wading beside it, never
+    /// through a lake, always ending on the goal, and planned quickly enough to answer a click.
+    static void MarchRoutes()
+    {
+        var map = Campaign.New(11).Map;
+        float WaterAt(Vector2 p) => map.Rivers.Any(r => r.Within(p, r.Width / 2) && !r.AtFord(p)) && map.RoadDist(p) > 3 ? 1 : 0;
+        int tried = 0, wade = 0;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        foreach (var b in map.Bridges.Take(12))
+        {
+            var across = new Vector2(-b.Along.Y, b.Along.X);
+            Vector2 from = b.At - b.Along * 18 + across * 35, to = b.At + b.Along * 18 + across * 35;
+            if (WaterAt(from) + WaterAt(to) > 0 || map.InLake(from) || map.InLake(to)) continue;
+            var route = map.PlanRoute(from, to, 1.3f);
+            Check(route.Count > 0 && route[^1] == map.InLand(to), "a route ends on its goal");
+            var at = from;
+            foreach (var q in route)
+            {
+                for (float k = 0; k < 1; k += 0.5f / MathF.Max(1, Vector2.Distance(at, q)))
+                {
+                    var p = Vector2.Lerp(at, q, k);
+                    Check(!map.InLake(p, -1), $"the march from {from} keeps out of the lakes");
+                    wade += (int)WaterAt(p);
+                }
+                at = q;
+            }
+            tried++;
+        }
+        Check(tried >= 4, $"enough bridges to try ({tried})");
+        Check(wade < tried * 4, $"marches cross by the bridges rather than wading ({wade} wet samples over {tried} marches)");
+        var far = map.Settlements.OrderBy(s => s.Pos.X + s.Pos.Y).First().Pos;
+        var other = map.Settlements.OrderBy(s => s.Pos.X + s.Pos.Y).Last().Pos;
+        var t0 = clock.ElapsedMilliseconds;
+        var long_ = map.PlanRoute(far, other, 1.3f);
+        long ms = clock.ElapsedMilliseconds - t0;
+        t0 = clock.ElapsedMilliseconds;
+        map.PlanRoute(other, far, 1.3f);
+        long again = clock.ElapsedMilliseconds - t0;
+        Check(again < 400, $"a march across the map is planned in good time ({again} ms)");
+        Check(long_[^1] == other, "the march across the map ends on its goal");
+        Console.WriteLine($"march routes: {tried} bridge crossings, {wade} wet samples; across the map {long_.Count} legs in {ms} ms, {again} ms the second time (all {clock.ElapsedMilliseconds} ms)");
+    }
+
     /// W0: the look-up grid gives exactly the full scans' answers (on and off the grid, new and legacy maps), so a map
     /// built from a save's seed places everything where it was.
     static void MapIndexMatches()

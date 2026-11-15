@@ -70,7 +70,7 @@ public sealed partial class Campaign
         m!.Knight = true;
         S.OwnOrder!.Knights.Add(m.Id);
         m.Deed($"knighted into the {S.OwnOrder.Name}");
-        Log($"You knight {m.Name}. He is a brother of the {S.OwnOrder.Name} now.");
+        LogYours($"You knight {m.Name}. He is a brother of the {S.OwnOrder.Name} now.");
         return null;
     }
 
@@ -78,7 +78,7 @@ public sealed partial class Campaign
     void OwnVowBroken(string what)
     {
         Captain.Renown = MathF.Max(0, Captain.Renown - 10);
-        Log($"You {what}, and your own creed forbids it. Your knights saw.");
+        LogYours($"You {what}, and your own creed forbids it. Your knights saw.");
     }
 
     /// Handing over (L8): the new captain is another man. His aura is a tier below yours if he leads your order (with the

@@ -14,6 +14,8 @@ public sealed partial class Campaign
     /// Raised for the UI: a hostile party has caught you (or you it); you arrived where you were heading; a battle report.
     public Party? Encounter;
     public Settlement? Arrived;
+    /// Set when the player's march reaches the spot clicked (not a chase); the map screen pauses on it and clears it.
+    public bool Reached;
     public BattleReport? Report;
     /// How many fights the world has resolved without you (lord against lord, bandits against lords): campaign telemetry.
     public int AiBattles;
@@ -129,11 +131,21 @@ public sealed partial class Campaign
         return c;
     }
 
-    public void Log(string text)
+    /// Add a line to the feed. Unless a level is given, what is about you ("You ...", "Your ...", your things) is Yours and the rest is Notable.
+    public void Log(string text, LogLevel? level = null)
     {
-        S.Log.Add(new LogEntry { At = S.Hours, Text = text });
+        S.Log.Add(new LogEntry { At = S.Hours, Text = text, Level = level ?? Classify(text) });
         if (S.Log.Count > 60) S.Log.RemoveAt(0);
     }
+
+    /// The log level a line gets when its caller does not say: lines about you are Yours.
+    static LogLevel Classify(string text) =>
+        text.StartsWith("You ") || text.StartsWith("Your ") || text.Contains(" your ") || text.Contains(" you ") || text.Contains(" you.")
+            || text.StartsWith("Contract") || text.StartsWith("Done:") || text.StartsWith("Next:") ? LogLevel.Yours : LogLevel.Notable;
+    /// Lines about your own company and household, whatever they say.
+    void LogYours(string text) => Log(text, LogLevel.Yours);
+    /// World chatter: lords' skirmishes, brigands, goblins, marriages. Shown only on the full log.
+    void LogAll(string text) => Log(text, LogLevel.Everything);
 
     public Party? PartyById(int id) => S.Parties.FirstOrDefault(p => p.Id == id);
     public Settlement SettlementById(int id) => S.Settlements[id];
@@ -229,6 +241,11 @@ public sealed partial class Campaign
         return s;
     }
 
+    /// The player's way to the goal still to walk (Campaign.Move; WorldTravel.cs), and the goal it was planned for.
+    List<Vector2> route = new();
+    Vector2 routeGoal;
+    public IReadOnlyList<Vector2> PlayerRoute => route;
+
     void Move(float h)
     {
         foreach (var p in S.Parties)
@@ -242,21 +259,36 @@ public sealed partial class Campaign
                 if (q == null || q.Down) p.ChaseId = -1; else target = q.Pos;
             }
             if (target == null && p.Moving) target = p.Goal;
-            if (target is not Vector2 t) continue;
+            if (target is not Vector2 aim) continue;
+            var t = Map.InLand(aim); // a goal out on the rim is walked to the edge of the land, and reached there
+            // The player marching to a place goes by the way the land allows (bridges, roads, round lakes), point by point.
+            bool waypoint = false;
+            if (p.Kind == PartyKind.Player && p.ChaseId < 0)
+            {
+                if (route.Count == 0 || routeGoal != t) { route = Map.PlanRoute(p.Pos, t, B.RoadBonus); routeGoal = t; }
+                while (route.Count > 1 && Vector2.DistanceSquared(route[0], p.Pos) < 1e-4f) route.RemoveAt(0);
+                if (route.Count > 1) { t = route[0]; waypoint = true; }
+            }
+            else if (p.Kind == PartyKind.Player) route.Clear();
             var d = t - p.Pos;
             float dist = d.Length(), step = Speed(p) * Map.SpeedFactor(p.Pos, B.RoadBonus) * h;
-            if (dist < 1e-3f) { p.Moving = false; continue; }
+            if (dist < 1e-3f) { if (waypoint) route.RemoveAt(0); else p.Moving = false; continue; }
             p.Facing = MathF.Atan2(d.Y, d.X);
             if (dist <= step)
             {
                 p.Pos = t;
-                if (p.ChaseId < 0) p.Moving = false;
-                if (p.Kind == PartyKind.Player && p.GoalSettlement >= 0) { Arrived = SettlementById(p.GoalSettlement); p.GoalSettlement = -1; }
-                if (p.Kind == PartyKind.Player && SiteById(S.GoalSite) is Site site) { S.GoalSite = -1; ArriveAtSite(site); }
+                if (waypoint) route.RemoveAt(0);
+                else
+                {
+                    if (p.Kind == PartyKind.Player) route.Clear();
+                    if (p.ChaseId < 0) { p.Moving = false; if (p.Kind == PartyKind.Player) Reached = true; }
+                    if (p.Kind == PartyKind.Player && p.GoalSettlement >= 0) { Arrived = SettlementById(p.GoalSettlement); p.GoalSettlement = -1; }
+                    if (p.Kind == PartyKind.Player && SiteById(S.GoalSite) is Site site) { S.GoalSite = -1; ArriveAtSite(site); }
+                }
             }
             else p.Pos += d / dist * step;
             if (p.Kind == PartyKind.Player) Practise("Logistics", MathF.Min(dist, step) * 0.006f); // days on the march (F4)
-            p.Pos = Vector2.Clamp(p.Pos, new Vector2(-Map.ExtentUsed), new Vector2(Map.ExtentUsed));
+            p.Pos = Map.InLand(p.Pos);
         }
     }
 
@@ -324,7 +356,7 @@ public sealed partial class Campaign
         AiBattles++;
         Apply(r, sideA, sideB, "");
         if (winner.Kind == PartyKind.Lord || loser.Kind == PartyKind.Lord)
-            Log($"{winner.Name} defeats {loser.Name} near {Map.ProvinceAt(loser.Pos).Name}.");
+            LogAll($"{winner.Name} defeats {loser.Name} near {Map.ProvinceAt(loser.Pos).Name}.");
     }
 
     /// How much harder a party fights than its strength says, on the defending side of an auto-resolve: a holdout dug in,

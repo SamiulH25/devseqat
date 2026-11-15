@@ -44,13 +44,13 @@ partial class Campaign
         foreach (var t in now.Where(t => !me.Traits.Contains(t)))
         {
             me.Traits.Add(t);
-            if (t == "Coward") Log("Men have started to call you a coward.");
+            if (t == "Coward") LogYours("Men have started to call you a coward.");
             else Deed($"Men have started to call you {t}.");
         }
         foreach (var t in EarnedTraits.Where(t => me.Traits.Contains(t) && !now.Contains(t)).ToList())
         {
             me.Traits.Remove(t);
-            Log($"Men no longer call you {t}.");
+            LogYours($"Men no longer call you {t}.");
         }
     }
 
@@ -87,7 +87,7 @@ partial class Campaign
         if (me.Age > OldAge && (Day - 1) % 30 == 0 && Skill("Arms") > 1)
         {
             Captain.Skills["Arms"] = Skill("Arms") - 1;
-            Log("Your arm is not what it was.");
+            LogYours("Your arm is not what it was.");
         }
     }
 

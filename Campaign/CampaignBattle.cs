@@ -108,8 +108,8 @@ public partial class Campaign
             if (p.Kind == PartyKind.Monster)
             {
                 p.Down = true;
-                if (p.Breed == "troll") Log($"{p.Name} is slain near {Map.ProvinceAt(p.Pos).Name}.");
-                if (p.Breed == "undead") Log($"{p.Name} are laid to rest.");
+                if (p.Breed == "troll") LogAll($"{p.Name} is slain near {Map.ProvinceAt(p.Pos).Name}.");
+                if (p.Breed == "undead") LogAll($"{p.Name} are laid to rest.");
                 if (p.Lair) { var taker = winners.FirstOrDefault(w => w.Kind is PartyKind.Player or PartyKind.Lord); if (taker != null && taker != Player) taker.Gold += p.Gold; HoldoutCleared(p, taker); }
                 continue;
             }
@@ -128,7 +128,7 @@ public partial class Campaign
                     Player.Captives.Add(p.Id);
                     Log($"{p.Name} is your prisoner.");
                 }
-                else { Log($"{p.Name}'s army is scattered."); MaybeSlain(p, playerIn && won, winners.Select(CharacterOf).FirstOrDefault(c => c is { Kind: "lord" })); }
+                else { Log($"{p.Name}'s army is scattered.", playerIn ? LogLevel.Yours : LogLevel.Everything); MaybeSlain(p, playerIn && won, winners.Select(CharacterOf).FirstOrDefault(c => c is { Kind: "lord" })); }
                 if (p.Captive && CharacterOf(p) is Character held) Remember(held, Me, "you took me captive", -8);
             }
         }

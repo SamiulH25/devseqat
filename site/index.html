@@ -1,0 +1,1154 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ironfield</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Ironfield: a 2.5D medieval war game. Fight in the front rank, command three thousand men, and remember every name you lost.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Pixelify+Sans:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout: a field kit laid over the battlefield. Dark iron plates with hairline edges and gold corner ticks;
+   gold only for what is yours; your realm's colour runs through the page once you pick a banner. Single dark look, by choice. */
+:root {
+  --iron: #101318;          /* the ground under every plate */
+  --plate: #191d25;         /* a panel */
+  --plate-hi: #222834;      /* a raised panel, hover */
+  --edge: rgba(226, 232, 244, .15);
+  --bone: #eeece4;          /* text */
+  --dim: #a7adb8;           /* second text */
+  --gold: #f0c83c;          /* you */
+  --foe: #ff6a5c;           /* the enemy host */
+  --realm: #5aa0ff;         /* your banner's colour (set by the realm picker) */
+  --realm-cloth: #2f62b3;
+  --grass: #5c9a3c;
+  --f-pixel: "Silkscreen", ui-monospace, "Courier New", monospace;
+  --f-head: "Pixelify Sans", "Silkscreen", ui-monospace, monospace;
+  --f-body: "Alegreya Sans", "Gill Sans", "Trebuchet MS", system-ui, sans-serif;
+  --step--1: .875rem; --step-0: 1.0625rem; --step-1: 1.3rem; --step-2: 1.75rem; --step-3: 2.6rem;
+  --gut: max(16px, env(safe-area-inset-left, 0px));
+  --gut-r: max(16px, env(safe-area-inset-right, 0px));
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+body { background: var(--iron); color: var(--bone); font: 400 var(--step-0)/1.55 var(--f-body); overflow-x: hidden; }
+h1, h2, h3 { font-family: var(--f-pixel); font-weight: 700; line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+p { margin: 0; }
+a { color: inherit; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: var(--gut); padding-right: var(--gut-r); }
+.label { font-family: var(--f-pixel); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.pixel { font-family: var(--f-pixel); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* The plate: the game's panel, with gold corner ticks */
+.plate {
+  --t: var(--gold);
+  background:
+    linear-gradient(var(--t), var(--t)) top left / 7px 1px no-repeat,
+    linear-gradient(var(--t), var(--t)) top left / 1px 7px no-repeat,
+    linear-gradient(var(--t), var(--t)) top right / 7px 1px no-repeat,
+    linear-gradient(var(--t), var(--t)) top right / 1px 7px no-repeat,
+    linear-gradient(var(--t), var(--t)) bottom left / 7px 1px no-repeat,
+    linear-gradient(var(--t), var(--t)) bottom left / 1px 7px no-repeat,
+    linear-gradient(var(--t), var(--t)) bottom right / 7px 1px no-repeat,
+    linear-gradient(var(--t), var(--t)) bottom right / 1px 7px no-repeat,
+    var(--plate);
+  border: 1px solid var(--edge);
+}
+
+/* Buttons: iron keys with a key hint, gold when they are the one that matters */
+.btn { display: inline-flex; align-items: center; gap: .6em; padding: .7em 1.05em; background: var(--plate-hi); border: 1px solid var(--edge);
+  font-family: var(--f-pixel); font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; text-decoration: none;
+  transition: transform .12s, background .12s, border-color .12s; }
+.btn:hover { background: #2b3241; border-color: rgba(240, 200, 60, .5); }
+.btn:active { transform: translateY(1px); }
+.btn kbd { font: inherit; font-size: .7rem; color: var(--dim); }
+.btn.gold { background: var(--gold); color: #1a1406; border-color: var(--gold); box-shadow: 0 3px 0 #8a6d12; }
+.btn.gold:hover { background: #ffd95a; }
+.btn.gold kbd { color: #5b4708; }
+.btn[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.btn.small { padding: .5em .75em; font-size: .72rem; }
+
+/* Nav with the battle bar */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: rgba(16, 19, 24, .94); }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: rgba(16, 19, 24, .94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--edge); }
+.nav .wrap { display: flex; align-items: center; gap: 1rem; padding-block: .55rem; }
+.brand { font-family: var(--f-pixel); font-weight: 700; letter-spacing: .06em; text-decoration: none; display: flex; align-items: center; gap: .5rem; }
+.brand canvas { width: 18px; height: 20px; image-rendering: pixelated; }
+.nav ul { display: flex; gap: 1.1rem; list-style: none; margin: 0 0 0 auto; padding: 0; }
+.nav ul a { font-family: var(--f-pixel); font-size: .72rem; letter-spacing: .07em; text-transform: uppercase; color: var(--dim); text-decoration: none; }
+.nav ul a:hover { color: var(--bone); }
+.tug { display: flex; align-items: center; gap: .55rem; font-family: var(--f-pixel); font-size: .78rem; }
+.tug .bar { width: 120px; height: 6px; background: var(--foe); position: relative; }
+.tug .bar i { position: absolute; inset: 0 auto 0 0; width: 50%; background: var(--realm); }
+.tug .bar b { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--bone); left: 50%; }
+.tug .us { color: var(--realm); } .tug .them { color: var(--foe); }
+.sound { margin-left: .25rem; }
+@media (max-width: 860px) { .nav ul { display: none; } .tug { margin-left: auto; } }
+@media (max-width: 420px) { .tug .bar { width: 64px; } .brand span { display: none; } }
+
+/* Hero */
+.hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--edge); background: #6d8fb8; }
+.hero .shot { position: absolute; inset: -24px; background: url("img/ranks.jpg") center 35% / cover no-repeat; transform: translate3d(0,0,0) scale(1.04); transition: transform .4s ease-out, filter .9s; }
+.hero::after { content: ""; position: absolute; inset: 0; background:
+  linear-gradient(180deg, rgba(16,19,24,.15) 0%, rgba(16,19,24,0) 30%, rgba(16,19,24,.55) 62%, var(--iron) 100%),
+  linear-gradient(90deg, rgba(16,19,24,.78) 0%, rgba(16,19,24,.2) 55%, rgba(16,19,24,0) 100%); }
+.hero .wrap { position: relative; z-index: 1; padding-block: clamp(72px, 13vw, 150px) clamp(40px, 6vw, 72px); display: grid; gap: 1.3rem; }
+.hero .eyebrow { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+.chip { font-family: var(--f-pixel); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; padding: .3em .6em; border: 1px solid var(--edge); background: rgba(16,19,24,.7); }
+.chip.gold { color: var(--gold); border-color: rgba(240, 200, 60, .45); }
+.title { font-size: clamp(3rem, 12.5vw, 9.5rem); letter-spacing: .02em; color: var(--bone); text-shadow: 5px 5px 0 #07090c; line-height: .9; }
+.title span { display: inline-block; transition: transform .2s; }
+.title span:hover { transform: translateY(-6px); color: var(--gold); }
+.lead { font-size: clamp(1.15rem, 2.2vw, 1.45rem); max-width: 36ch; line-height: 1.45; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.ctas { display: flex; flex-wrap: wrap; gap: .7rem; }
+.hour { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+.hour .label { color: var(--bone); margin-right: .3rem; text-shadow: 0 1px 2px #000; }
+.hour button { font-family: var(--f-pixel); font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; padding: .35em .6em; background: rgba(16,19,24,.72); border: 1px solid var(--edge); cursor: pointer; }
+.hour button:hover { border-color: rgba(240, 200, 60, .5); }
+.hour button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.hero .tint { position: absolute; inset: 0; pointer-events: none; transition: background .9s; }
+.hero canvas.rain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* Marching column */
+.column { position: relative; height: 104px; border-bottom: 1px solid var(--edge); background: linear-gradient(180deg, var(--iron), #141922 60%, #1a2a17 60%, #1d3019 100%); overflow: hidden; }
+.column canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; cursor: pointer; }
+.column .hint { position: absolute; right: var(--gut-r); top: 8px; }
+@media (max-width: 600px) { .column .hint { display: none; } }
+.bubble { position: absolute; transform: translate(-50%, -100%); background: var(--bone); color: #15181e; font-family: var(--f-body); font-size: .9rem; padding: .3em .6em; white-space: nowrap; pointer-events: none; box-shadow: 3px 3px 0 #07090c; max-width: 90vw; overflow: hidden; text-overflow: ellipsis; }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: var(--bone); transform: translateX(-50%); }
+
+/* Sections */
+section.band { padding-block: clamp(56px, 8vw, 104px); border-bottom: 1px solid var(--edge); }
+.head { display: grid; gap: .8rem; margin-bottom: 2rem; max-width: 62ch; }
+.head h2 { font-family: var(--f-head); font-size: clamp(2.2rem, 5.2vw, 3.4rem); letter-spacing: 0; line-height: 1; }
+.head p { color: var(--dim); font-size: var(--step-1); line-height: 1.45; }
+.key { color: var(--gold); }
+
+/* The clash (parry game) */
+.clash { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.stage { position: relative; padding: 10px; }
+.stage canvas { display: block; width: 100%; height: clamp(300px, 46vw, 420px); image-rendering: pixelated; cursor: crosshair; touch-action: manipulation; }
+.ledger { display: grid; gap: 1rem; padding: 1.25rem; }
+.ledger dl { display: grid; grid-template-columns: auto 1fr; gap: .45rem 1rem; margin: 0; }
+.ledger dt { font-family: var(--f-pixel); font-size: .72rem; letter-spacing: .07em; text-transform: uppercase; color: var(--dim); align-self: center; }
+.ledger dd { margin: 0; font-family: var(--f-pixel); font-size: 1.15rem; text-align: right; }
+.keys { display: grid; grid-template-columns: repeat(3, 2.2rem); grid-template-rows: repeat(2, 2.2rem); gap: 4px; justify-content: center; }
+.keys span { display: grid; place-items: center; border: 1px solid var(--edge); background: var(--plate-hi); font-family: var(--f-pixel); font-size: .8rem; }
+.keys .u { grid-column: 2; } .keys .l { grid-column: 1; grid-row: 2; } .keys .d { grid-column: 2; grid-row: 2; } .keys .r { grid-column: 3; grid-row: 2; }
+.keys span.on { background: var(--gold); color: #1a1406; }
+@media (max-width: 820px) { .clash { grid-template-columns: 1fr; } }
+
+/* Command */
+.command { display: grid; gap: 1rem; }
+.field { position: relative; padding: 10px; }
+.field canvas { display: block; width: 100%; height: clamp(300px, 44vw, 460px); image-rendering: pixelated; }
+.field .score { display: flex; align-items: center; gap: .75rem; padding: 0 0 10px; font-family: var(--f-pixel); }
+.field .score .bar { flex: 1; height: 8px; background: var(--foe); position: relative; }
+.field .score .bar i { position: absolute; inset: 0 auto 0 0; width: 50%; background: var(--realm); transition: width .2s; }
+.field .score .us { color: var(--realm); min-width: 3.5ch; } .field .score .them { color: var(--foe); min-width: 3.5ch; text-align: right; }
+.outcome { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; padding: 1.2rem 1.6rem; display: grid; gap: .6rem; justify-items: center; }
+.outcome h3 { font-size: 1.7rem; }
+.orders { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.orders .sep { width: 1px; align-self: stretch; background: var(--edge); margin: 0 .25rem; }
+.orders .group { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; }
+.shot-card { margin: 0; display: grid; gap: .5rem; }
+.shot-card img { width: 100%; display: block; border: 1px solid var(--edge); aspect-ratio: 16 / 7; object-fit: cover; cursor: zoom-in; }
+.shot-card figcaption { color: var(--dim); font-size: var(--step--1); }
+.shot-card figcaption b { font-family: var(--f-pixel); font-weight: 400; font-size: .72rem; letter-spacing: .07em; text-transform: uppercase; color: var(--bone); margin-right: .4em; }
+@media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
+
+/* Realms */
+.realms { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .6rem; }
+.realm { display: grid; justify-items: center; gap: .55rem; padding: 1rem .4rem .8rem; background: var(--plate); border: 1px solid var(--edge); cursor: pointer; text-align: center; transition: transform .15s, border-color .15s, background .15s; }
+.realm:hover { transform: translateY(-4px); background: var(--plate-hi); }
+.realm canvas { width: 56px; height: 60px; image-rendering: pixelated; }
+.realm span { font-family: var(--f-pixel); font-size: .66rem; letter-spacing: .05em; text-transform: uppercase; line-height: 1.25; }
+.realm[aria-pressed="true"] { border-color: var(--rc); box-shadow: inset 0 -3px 0 var(--rc); }
+.realm[aria-pressed="true"] canvas { animation: wave 1.6s ease-in-out infinite; }
+@keyframes wave { 50% { transform: translateY(-3px) rotate(-2deg); } }
+.atlas-row { margin-top: 1rem; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1rem; align-items: stretch; }
+.atlas { position: relative; padding: 10px; display: grid; gap: .5rem; align-content: start; overflow: hidden; }
+.atlas canvas { width: 100%; max-width: 100%; aspect-ratio: 16 / 10; display: block; image-rendering: pixelated; cursor: pointer; }
+.atlas-tip { position: absolute; transform: translate(-50%, calc(-100% - 12px)); pointer-events: none; background: var(--plate); border: 1px solid var(--gold); padding: .3em .6em; font-family: var(--f-pixel); font-size: .66rem; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.atlas-tip b { color: var(--gold); font-weight: 400; }
+.realm-detail { display: grid; align-content: start; justify-items: start; gap: .7rem; padding: 1.3rem 1.4rem; }
+.realm-detail .top { display: flex; align-items: center; gap: 1rem; }
+.realm-detail canvas { width: 70px; height: 75px; image-rendering: pixelated; flex: none; }
+.realm-detail .province { color: var(--dim); font-size: var(--step--1); border-top: 1px solid var(--edge); padding-top: .7rem; width: 100%; }
+@media (max-width: 860px) { .atlas-row { grid-template-columns: 1fr; } }
+.realm-detail h3 { font-size: var(--step-2); color: var(--realm); }
+.realm-detail .troops { font-size: var(--step-1); }
+.realm-detail .flavour { color: var(--dim); font-style: italic; }
+.realm-detail .names { color: var(--dim); font-size: var(--step--1); margin-top: .35rem; }
+@media (max-width: 900px) { .realms { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .realms { grid-template-columns: repeat(2, minmax(0, 1fr)); } .realm-detail { grid-template-columns: 1fr; justify-items: start; } }
+
+/* The company */
+.company { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.banner-col { display: grid; justify-items: center; gap: .8rem; }
+.banner { position: relative; width: 170px; padding: 18px 14px 46px; background: var(--realm-cloth); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%); display: grid; justify-items: center; gap: 10px; transform-origin: top center; animation: sway 5s ease-in-out infinite; transition: background .3s; }
+.banner::before { content: ""; position: absolute; inset: 6px 6px auto; height: 2px; background: rgba(255,255,255,.35); }
+@keyframes sway { 50% { transform: rotate(1.4deg) skewX(-1deg); } }
+.banner canvas { width: 70px; height: 75px; image-rendering: pixelated; }
+.banner .cap { font-family: var(--f-pixel); font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; text-align: center; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+.honours { display: grid; gap: 4px; width: 100%; }
+.honours span { display: block; background: var(--gold); color: #1a1406; font-family: var(--f-pixel); font-size: .58rem; letter-spacing: .04em; text-transform: uppercase; padding: 3px 4px; text-align: center; box-shadow: 0 2px 0 #8a6d12; animation: sew .5s ease-out; }
+@keyframes sew { from { transform: scaleX(.2); opacity: 0; } }
+.pole { width: 190px; height: 6px; background: #6b4a2a; box-shadow: 0 2px 0 #3a2716; margin-bottom: -6px; }
+.roll { padding: 1.1rem 1.25rem; display: grid; gap: 1rem; min-width: 0; }
+.roll-top { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; justify-content: space-between; }
+.men { list-style: none; margin: 0; padding: 0; display: grid; }
+.men li { display: grid; grid-template-columns: 2.4rem minmax(0, 1fr) auto; gap: .8rem; align-items: center; padding: .55rem 0; border-top: 1px solid var(--edge); }
+.men li:first-child { border-top: 0; }
+.men .tier { font-family: var(--f-pixel); color: var(--gold); text-align: center; border: 1px solid rgba(240, 200, 60, .35); padding: .15em 0; font-size: .8rem; }
+.men .who { min-width: 0; }
+.men .who b { font-weight: 700; }
+.men .who small { display: block; color: var(--dim); font-size: .9rem; overflow-wrap: anywhere; }
+.men .bt { font-family: var(--f-pixel); font-size: .72rem; color: var(--dim); text-align: right; white-space: nowrap; }
+.men li.new { animation: rise .7s ease-out; }
+.men li.hurt { animation: hurt .7s ease-out; }
+@keyframes rise { from { background: rgba(240, 200, 60, .16); } }
+@keyframes hurt { from { background: rgba(255, 106, 92, .2); } }
+.log { border-left: 2px solid var(--gold); padding: .2rem 0 .2rem .8rem; color: var(--bone); min-height: 3.1em; }
+.fallen { border-top: 1px solid var(--edge); padding-top: .8rem; }
+.fallen ol { list-style: none; margin: .5rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .35rem .9rem; color: var(--dim); font-size: .95rem; }
+.fallen li::before { content: "\2020 "; color: var(--foe); }
+.fallen li.none::before { content: none; }
+@media (max-width: 760px) { .company { grid-template-columns: 1fr; } }
+
+/* Gallery */
+.gallery { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1rem; }
+.gallery .wide { grid-column: span 3; } .gallery .third { grid-column: span 2; }
+.gallery .contain img { object-fit: contain; background: #0b0d12; }
+@media (max-width: 760px) { .gallery { grid-template-columns: 1fr; } .gallery .shot-card { grid-column: auto; } }
+dialog.lightbox { border: 1px solid var(--edge); background: var(--iron); padding: 8px; max-width: min(1200px, 96vw); color: var(--bone); }
+dialog.lightbox::backdrop { background: rgba(5, 6, 8, .85); }
+dialog.lightbox img { display: block; width: 100%; height: auto; }
+dialog.lightbox p { padding: .6rem .2rem .2rem; color: var(--dim); }
+
+/* Facts */
+.facts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; border: 1px solid var(--edge); }
+.fact { padding: 1.3rem 1rem; border-left: 1px solid var(--edge); display: grid; gap: .3rem; align-content: start; }
+.fact:first-child { border-left: 0; }
+.fact b { font-family: var(--f-pixel); font-size: clamp(1.6rem, 3.2vw, 2.3rem); color: var(--bone); font-variant-numeric: tabular-nums; }
+.fact:last-child b { color: var(--gold); }
+.fact span { color: var(--dim); font-size: .95rem; line-height: 1.35; }
+@media (max-width: 900px) { .facts { grid-template-columns: repeat(3, minmax(0, 1fr)); } .fact:nth-child(4) { border-left: 0; } .fact:nth-child(n+4) { border-top: 1px solid var(--edge); } }
+@media (max-width: 480px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fact { border-left: 1px solid var(--edge) !important; border-top: 1px solid var(--edge); } .fact:nth-child(odd) { border-left: 0 !important; } .fact:nth-child(-n+2) { border-top: 0; } }
+
+/* Roll call */
+.call { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; align-items: stretch; }
+.call form { padding: 1.4rem; display: grid; gap: 1rem; align-content: start; }
+.call label { display: grid; gap: .35rem; }
+.call input { background: var(--iron); border: 1px solid var(--edge); padding: .75em .9em; font-size: 1.05rem; min-width: 0; }
+.call input:focus { border-color: var(--gold); outline: none; }
+.call .note { color: var(--dim); font-size: var(--step--1); }
+.writ { padding: 1.4rem; display: grid; align-content: center; justify-items: center; text-align: center; gap: .8rem; position: relative; overflow: hidden; }
+.writ .sigil { width: 84px; height: 90px; image-rendering: pixelated; }
+.writ .inscribed { font-family: var(--f-pixel); font-size: clamp(1.2rem, 2.8vw, 1.8rem); color: var(--gold); min-height: 1.2em; overflow-wrap: anywhere; }
+.writ p { color: var(--dim); max-width: 34ch; }
+@media (max-width: 760px) { .call { grid-template-columns: 1fr; } }
+
+footer { padding-block: 2.2rem 3rem; color: var(--dim); font-size: var(--step--1); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; justify-content: space-between; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+
+<nav class="nav" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="#top"><canvas id="navShield" width="14" height="15" aria-hidden="true"></canvas><span>IRONFIELD</span></a>
+    <ul>
+      <li><a href="#clash">The ranks</a></li>
+      <li><a href="#command">Command</a></li>
+      <li><a href="#realms">Realms</a></li>
+      <li><a href="#company">Company</a></li>
+      <li><a href="#roll-call">Roll call</a></li>
+    </ul>
+    <div class="tug" title="The battle turns as you read">
+      <span class="us tnum" id="tugUs">755</span>
+      <span class="bar"><i id="tugBar"></i><b></b></span>
+      <span class="them tnum" id="tugThem">760</span>
+    </div>
+    <button class="btn small sound" id="soundBtn" aria-pressed="true" title="Sound on or off">Sound</button>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="shot" id="heroShot" role="img" aria-label="Field view: the captain on horseback in the line, blue banners all along the ranks"></div>
+  <div class="tint" id="heroTint"></div>
+  <canvas class="rain" id="rain" hidden></canvas>
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip gold">In the forge</span><span class="chip">2.5D medieval war</span><span class="chip">Windows · Linux · macOS</span></div>
+    <h1 class="title" aria-label="Ironfield"><span>I</span><span>R</span><span>O</span><span>N</span><span>F</span><span>I</span><span>E</span><span>L</span><span>D</span></h1>
+    <p class="lead">Ride in the front rank with your company. Lift into the sky and command three thousand men. Then march on, and remember every name you lost.</p>
+    <div class="ctas">
+      <a class="btn gold" href="#clash">Take the field <kbd>↓</kbd></a>
+      <a class="btn" href="#roll-call">Put your name on the roll</a>
+      <button class="btn" id="hornBtn" type="button">Sound the horn <kbd>H</kbd></button>
+    </div>
+    <div class="hour" role="group" aria-label="Light by the hour"><span class="label">Light by the hour</span><button type="button" data-h="dawn">Dawn</button><button type="button" data-h="noon" aria-pressed="true">Noon</button><button type="button" data-h="dusk">Dusk</button><button type="button" data-h="night">Night</button><button type="button" data-h="rain">Rain</button><button type="button" data-h="fog">Fog</button></div>
+  </div>
+</header>
+
+<div class="column" aria-label="Your company on the march. Click a man to hear him.">
+  <canvas id="march"></canvas>
+  <span class="label hint">Your company on the march · click a man</span>
+</div>
+
+<main>
+<section class="band" id="clash">
+  <div class="wrap">
+    <div class="head">
+      <span class="label">I · In the ranks</span>
+      <h2>Every blow has a side</h2>
+      <p>Watch for the <span style="color:var(--foe)">red mark</span>, raise your guard to meet it, and the man in front of you staggers. Miss it, and you learn why soldiers wear helmets.</p>
+    </div>
+    <div class="clash">
+      <div class="plate stage"><canvas id="duel" aria-label="Parry game. Press the arrow key on the side of the red mark."></canvas></div>
+      <aside class="plate ledger">
+        <dl>
+          <dt>Health</dt><dd id="hp" style="color:var(--foe)">♥♥♥</dd>
+          <dt>Parried</dt><dd class="tnum" id="streak">0</dd>
+          <dt>Best</dt><dd class="tnum" id="best" style="color:var(--gold)">0</dd>
+          <dt>Foe</dt><dd id="foeName" style="font-size:.8rem">Crimson man-at-arms</dd>
+        </dl>
+        <div class="keys" aria-hidden="true"><span class="u" data-k="up">↑</span><span class="l" data-k="left">←</span><span class="d" data-k="down">↓</span><span class="r" data-k="right">→</span></div>
+        <p class="label" style="text-align:center">Arrows or WASD. On a phone, tap the side of the mark.</p>
+        <p style="color:var(--dim);font-size:.95rem">In the game you swing with the mouse and block with the right button. Couched lances, shield bashes and your horse are in there too.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="command">
+  <div class="wrap">
+    <div class="head">
+      <span class="label">II · Command the field</span>
+      <h2>Lift your eyes from the mud</h2>
+      <p>Press <span class="key pixel">Tab</span> and time slows to a quarter. Hold the line, send the horse round a flank, rally a broken company. Hit them from behind and they break.</p>
+    </div>
+    <div class="command">
+      <div class="plate field">
+        <div class="score"><span class="us tnum" id="armyUs">400</span><span class="bar"><i id="armyBar"></i></span><span class="them tnum" id="armyThem">400</span></div>
+        <canvas id="army" aria-label="A small battle. Your companies in your colours at the bottom, the enemy host in red at the top."></canvas>
+        <div class="plate outcome" id="outcome" hidden><h3 id="outcomeText">Victory</h3><p id="outcomeSub" style="color:var(--dim)"></p><button class="btn gold small" id="againBtn" type="button">Fight again</button></div>
+      </div>
+      <div class="orders">
+        <div class="group"><span class="label">Men on the field</span>
+          <button class="btn small size" data-size="400" type="button">400</button>
+          <button class="btn small size" data-size="800" type="button" aria-pressed="true">800</button>
+          <button class="btn small size" data-size="1500" type="button">1,500</button>
+          <button class="btn small size" data-size="3000" type="button">3,000</button>
+        </div>
+        <span class="sep"></span>
+        <div class="group"><span class="label">Orders</span>
+          <button class="btn small order" data-o="hold" type="button" aria-pressed="true">Hold <kbd>H</kbd></button>
+          <button class="btn small order" data-o="advance" type="button">Advance <kbd>T</kbd></button>
+          <button class="btn small order gold" data-o="charge" type="button">Charge <kbd>C</kbd></button>
+          <button class="btn small" id="flankBtn" type="button">Horse: flank right</button>
+          <button class="btn small" id="rallyBtn" type="button">Rally <kbd>R</kbd></button>
+        </div>
+      </div>
+      <div class="split">
+        <figure class="shot-card"><img src="img/command.jpg" alt="Command view: about 750 men a side under numbered company flags" loading="lazy"><figcaption><b>Command view</b>About 750 men a side. Your flags in blue, theirs in red, divisions on the right.</figcaption></figure>
+        <figure class="shot-card"><img src="img/woods.jpg" alt="A pine wood seen from the command camera" loading="lazy"><figcaption><b>The ground</b>A wood hides men and halves a horse's pace. Ridges, fens, rivers and hedgerows all change the fight.</figcaption></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="realms">
+  <div class="wrap">
+    <div class="head">
+      <span class="label">III · Seven realms, one war</span>
+      <h2>Choose the colours you ride under</h2>
+      <p>115 provinces, seven crowns, and a long war between them. Each realm has its own heraldry, temper and four lines of troops. Pick one and the page takes its colours.</p>
+    </div>
+    <div class="realms" id="realmGrid" role="group" aria-label="Realms"></div>
+    <div class="atlas-row">
+      <div class="plate atlas">
+        <canvas id="atlas" width="160" height="100" aria-label="The realm map: seven realms and their provinces. Click a province to ride for its realm."></canvas>
+        <div class="atlas-tip" id="atlasTip" hidden></div>
+        <span class="label">The realm map · hover a province, click to ride for its realm</span>
+      </div>
+      <div class="plate realm-detail" id="realmDetail">
+        <div class="top"><canvas id="realmBig" width="14" height="15" aria-hidden="true"></canvas><h3 id="rdName">Azure Crown</h3></div>
+        <p class="troops" id="rdTroops">Heavy foot, crossbows and lances.</p>
+        <p class="flavour" id="rdFlavour">Blue roofs and quiet bells.</p>
+        <p class="names" id="rdNames"></p>
+        <p class="province" id="rdLand">Its provinces are on the map.</p>
+        <a class="btn" href="#company">See your company</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="company">
+  <div class="wrap">
+    <div class="head">
+      <span class="label">IV · Your company is your legacy</span>
+      <h2>Every man has a name</h2>
+      <p>Men earn names in battle. They rise to sergeant, carry the banner, and sometimes fall. The fallen are kept for ever. Great battles are sewn onto your banner, and a rout can lose one to the enemy.</p>
+    </div>
+    <div class="company">
+      <div class="banner-col">
+        <div class="pole" aria-hidden="true"></div>
+        <div class="banner" id="banner"><canvas id="bannerShield" width="14" height="15" aria-hidden="true"></canvas><div class="cap" id="bannerCap">Free company<br>of the Azure Crown</div><div class="honours" id="honours"></div></div>
+      </div>
+      <div class="plate roll">
+        <div class="roll-top">
+          <span class="label">The roll · <span id="rollCount">6</span> named men · <span id="rollBattles">0</span> battles</span>
+          <div class="group" style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn gold small" id="fightBtn" type="button">Fight a battle</button>
+            <button class="btn small" id="newCoBtn" type="button">Raise a new company</button>
+          </div>
+        </div>
+        <p class="log" id="rollLog">Six men took the crown's coin at Fallowby. None of them has a story yet.</p>
+        <ul class="men" id="men"></ul>
+        <div class="fallen"><span class="label">The fallen</span><ol id="fallen"><li style="list-style:none" id="noneFallen">None yet.</li></ol></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="gallery">
+  <div class="wrap">
+    <div class="head">
+      <span class="label">V · From the field</span>
+      <h2>Drawn by hand, built in code</h2>
+      <p>A solid, low-poly world lit by one sun. The soldiers are pixel puppets, so a man's worth shows in his metal and his colours. Click to look closer.</p>
+    </div>
+    <div class="gallery">
+      <figure class="shot-card wide"><img src="img/troll.jpg" alt="A troll, a goblin, wolves and two soldiers" loading="lazy"><figcaption><b>Creatures</b>Trolls, goblins and wolves fight by their own rules.</figcaption></figure>
+      <figure class="shot-card wide"><img src="img/map.jpg" alt="The campaign map: towns, brigand bands and your company" loading="lazy"><figcaption><b>The campaign</b>Towns, brigands and your company on the march.</figcaption></figure>
+      <figure class="shot-card third"><img src="img/winter.jpg" alt="The campaign map under snow" loading="lazy"><figcaption><b>Winter</b>Snow slows the march and doubles the rations.</figcaption></figure>
+      <figure class="shot-card third contain"><img src="img/realms.jpg" alt="The seven realms with their banners and troops" loading="lazy"><figcaption><b>Realms</b>Heraldry, troops and who is at war with whom.</figcaption></figure>
+      <figure class="shot-card third"><img src="img/siege.jpg" alt="A siege assault on a town wall at night" loading="lazy"><figcaption><b>Sieges</b>Climb at the ladders or batter the gate.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="facts">
+      <div class="fact"><b>3,000</b><span>men on the field at once, more waiting behind</span></div>
+      <div class="fact"><b>287</b><span>troops across seven cultures</span></div>
+      <div class="fact"><b>115</b><span>provinces to march, hold and lose</span></div>
+      <div class="fact"><b>16</b><span>creatures: goblins, wolves, trolls, the dead</span></div>
+      <div class="fact"><b>7</b><span>realms with their own heraldry and temper</span></div>
+      <div class="fact"><b>0</b><span>art files. Every sprite, sound and tune is made in code.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="roll-call">
+  <div class="wrap">
+    <div class="head">
+      <span class="label">VI · Roll call</span>
+      <h2>Put your name on the roll</h2>
+      <p>Ironfield is still in the forge. Sign the roll and you'll hear the horn when the gates open.</p>
+    </div>
+    <div class="call">
+      <form class="plate" id="signForm" novalidate>
+        <label for="capName"><span class="label">Your name, captain</span><input id="capName" name="name" autocomplete="nickname" maxlength="28" placeholder="Aldric of the Ford" required></label>
+        <label for="capMail"><span class="label">Where to send word</span><input id="capMail" name="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
+        <button class="btn gold" type="submit">Sign the roll</button>
+        <p class="note" id="signNote">One letter when the game is ready. Nothing else.</p>
+      </form>
+      <div class="plate writ" aria-live="polite">
+        <canvas class="sigil" id="writShield" width="14" height="15" aria-hidden="true"></canvas>
+        <div class="inscribed" id="inscribed">Your name here</div>
+        <p id="writText">Free captain of the Azure Crown. Signed and sealed when you sign.</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="pixel">IRONFIELD</span>
+    <span>Made in C# and MonoGame. No art files: every sprite, mesh, sound and tune is generated in code.</span>
+  </div>
+</footer>
+
+<dialog class="lightbox" id="lightbox"><img id="lbImg" alt=""><p id="lbCap"></p></dialog>
+
+<script>
+(() => {
+"use strict";
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = (s, r = document) => r.querySelector(s);
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("ironfield." + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("ironfield." + k, JSON.stringify(v)); } catch {} }
+};
+
+/* ---------- Realms (from Data/factions.json and Data/names.json) ---------- */
+const REALMS = [
+  { id: "azure", name: "Azure Crown", cloth: "#2f62b3", dark: "#1a3770", trim: "#efe6c8", ui: "#5aa0ff", charge: "chevron",
+    troops: "Heavy foot, crossbows and lances.", flavour: "Blue roofs and quiet bells.",
+    men: ["Jehan","Colin","Thibaut","Perrin","Guiot","Huguet","Robin","Martin","Gautier","Jacquet","Lorin","Bertin","Guillot","Perrot"] },
+  { id: "crimson", name: "Crimson Compact", cloth: "#b0262c", dark: "#651318", trim: "#e0a83a", ui: "#ff6a5c", charge: "saltire",
+    troops: "Greatswords, halberds, longbows and heavy horse.", flavour: "Red banners and loud markets.",
+    men: ["Hob","Wat","Jankin","Perkin","Dickon","Hal","Tam","Will","Rafe","Gib","Hodge","Nick","Simkin","Watkin"] },
+  { id: "northern", name: "Northmarch", cloth: "#2e6b46", dark: "#173d27", trim: "#eef0ea", ui: "#5fcf8a", charge: "bend",
+    troops: "Axes, round shields, glaives and light horse.", flavour: "Timber halls and smoke.",
+    men: ["Ulf","Ketil","Orm","Hakon","Sigurd","Torvald","Grim","Asgeir","Hrafn","Ivar","Leif","Rolf","Svein","Toki"] },
+  { id: "southern", name: "Sunward Emirates", cloth: "#d9822b", dark: "#8a4b12", trim: "#fff1c4", ui: "#ffab4a", charge: "sun",
+    troops: "Spears and javelins, light horse and mamluks.", flavour: "White walls, palms and a call to prayer.",
+    men: ["Karim","Nasir","Samir","Faris","Jamil","Hamza","Idris","Malik","Bilal","Amin","Badr","Salim","Ziyad","Harun"] },
+  { id: "steppe", name: "Khaganate of the Grass", cloth: "#258896", dark: "#124d56", trim: "#f2d24a", ui: "#4fd0d8", charge: "fess",
+    troops: "Horse archers first, bows on foot, axes and spears.", flavour: "Felt tents around a wooden hall.",
+    men: ["Boke","Toktai","Esen","Kutlu","Sengir","Altai","Oktay","Kaidu","Burilgi","Tolui","Jebe","Mongke","Orda","Sartak"] },
+  { id: "league", name: "Saltmarsh League", cloth: "#6b3fa0", dark: "#3a1f5c", trim: "#f1ecf6", ui: "#b48cff", charge: "pale",
+    troops: "Pikes and pavise crossbows, hired steel.", flavour: "Canals, cranes and counting houses.",
+    men: ["Beppe","Tonio","Nino","Gianni","Piero","Sandro","Rocco","Dario","Bruno","Matteo","Lapo","Vanni","Cecco","Tano"] },
+  { id: "order", name: "Order of the Ashen Sun", cloth: "#e4e0d6", dark: "#9a958a", trim: "#c0262c", ui: "#e8e4dc", charge: "cross",
+    troops: "Sworn brothers on foot and knight-brothers.", flavour: "Bells, banners and a great grey chapter house.",
+    men: ["Brother Aldo","Brother Piet","Brother Hugo","Brother Ansel","Brother Tomas","Brother Wido","Brother Egon","Brother Lutz","Brother Benno","Brother Ivo","Brother Konrad","Brother Otto"] }
+];
+const EPITHETS = ["the Bold","Ironhand","the Grey","of the Ford","the Young","Longshanks","Blackmane","the Steadfast","Halfhelm","the Red","Oakheart","the Silent","Stormborn","Wolfsbane","Goldhand","Hammerfall","Thornbeard","Greycloak","Swiftspur","the Hawk","Ironside","Brightblade"];
+const PLACES = ["Ashford","Brackmoor","Caddon","Dunmere","Elsworth","Fallowby","Greywater","Harrowgate","Ivydown","Kettleby","Larkhill","Marrow","Netherby","Oakhollow","Pellham","Quarrell","Redmarsh","Stonebridge","Thornwick","Underhill","Vexley","Wendle","Yarrowby","Aldgrave"];
+const byId = id => REALMS.find(r => r.id === id) || REALMS[0];
+let realm = byId(store.get("realm", "azure"));
+const foeRealm = () => realm.id === "crimson" ? REALMS[0] : REALMS[1];
+
+/* ---------- Pixel heraldry: a heater shield 14x15 ---------- */
+const CHARGES = {
+  chevron: (u, v) => { const c = .62 - 1.0 * Math.abs(u - .5); return v > c - .2 && v < c; },
+  saltire: (u, v) => Math.abs((u - .5) - (v - .45) * .9) < .1 || Math.abs((u - .5) + (v - .45) * .9) < .1,
+  bend: (u, v) => Math.abs(u - v * .95) < .13,
+  sun: (u, v) => { const dx = u - .5, dy = v - .42, d = Math.hypot(dx, dy); return d < .17 || (d < .3 && d > .22 && (Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4) - Math.atan2(dy, dx)) ** 2 < .05); },
+  fess: (u, v) => v > .3 && v < .55,
+  pale: (u, v) => Math.abs(u - .5) < .12,
+  cross: (u, v) => Math.abs(u - .5) < .09 || Math.abs(v - .4) < .08
+};
+function shieldPixels(r) {
+  const W = 14, H = 15, inside = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return false; const hw = y < 7 ? 7 : 7 - (y - 6) ** 2 / 8; return Math.abs(x + .5 - 7) < hw; };
+  const px = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (!inside(x, y)) continue;
+    const edge = !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1);
+    let c = CHARGES[r.charge]((x + .5) / W, (y + .5) / H) ? r.trim : r.cloth;
+    if (edge) c = "#0b0d12";
+    else if (x === 1 || y === 1) c = shade(c, 28);
+    else if (x >= 11 || y >= 11) c = shade(c, -26);
+    px.push([x, y, c]);
+  }
+  return px;
+}
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, v + amt));
+  return "#" + ((f(n >> 16) << 16) | (f((n >> 8) & 255) << 8) | f(n & 255)).toString(16).padStart(6, "0");
+}
+function paintShield(cv, r) {
+  const ctx = cv.getContext("2d"); ctx.clearRect(0, 0, cv.width, cv.height);
+  for (const [x, y, c] of shieldPixels(r)) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }
+}
+
+/* ---------- Sound: a small synth, like the game's own ---------- */
+let soundOn = store.get("sound", true), actx = null;
+const soundBtn = $("#soundBtn");
+soundBtn.setAttribute("aria-pressed", String(soundOn));
+soundBtn.onclick = () => { soundOn = !soundOn; soundBtn.setAttribute("aria-pressed", String(soundOn)); store.set("sound", soundOn); if (soundOn) clink(); };
+function ac() { if (!soundOn) return null; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); return actx; } catch { return null; } }
+function noise(a, dur) { const b = a.createBuffer(1, Math.ceil(a.sampleRate * dur), a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; const s = a.createBufferSource(); s.buffer = b; return s; }
+function horn() {
+  const a = ac(); if (!a) return; const t0 = a.currentTime + .02;
+  [[0, 1.1, 98, 110], [1.25, 1.9, 110, 123]].forEach(([at, len, f0, f1]) => {
+    const g = a.createGain(), lp = a.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 900; lp.Q.value = 2;
+    g.gain.setValueAtTime(0, t0 + at); g.gain.linearRampToValueAtTime(.16, t0 + at + .18); g.gain.setValueAtTime(.16, t0 + at + len - .35); g.gain.linearRampToValueAtTime(0, t0 + at + len);
+    [1, 1.5, 2.005].forEach((m, i) => { const o = a.createOscillator(); o.type = "sawtooth"; o.frequency.setValueAtTime(f0 * m, t0 + at); o.frequency.linearRampToValueAtTime(f1 * m, t0 + at + .25); const og = a.createGain(); og.gain.value = [1, .35, .25][i]; o.connect(og).connect(lp); o.start(t0 + at); o.stop(t0 + at + len + .05); });
+    lp.connect(g).connect(a.destination);
+  });
+}
+function clink() {
+  const a = ac(); if (!a) return; const t = a.currentTime;
+  const n = noise(a, .08), hp = a.createBiquadFilter(), g = a.createGain(); hp.type = "highpass"; hp.frequency.value = 3000; g.gain.setValueAtTime(.25, t); g.gain.exponentialRampToValueAtTime(.001, t + .08); n.connect(hp).connect(g).connect(a.destination); n.start(t);
+  [2350, 3170].forEach(f => { const o = a.createOscillator(), og = a.createGain(); o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * .82, t + .35); og.gain.setValueAtTime(.08, t); og.gain.exponentialRampToValueAtTime(.001, t + .4); o.connect(og).connect(a.destination); o.start(t); o.stop(t + .42); });
+}
+function thud() {
+  const a = ac(); if (!a) return; const t = a.currentTime;
+  const o = a.createOscillator(), g = a.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(48, t + .2); g.gain.setValueAtTime(.35, t); g.gain.exponentialRampToValueAtTime(.001, t + .25); o.connect(g).connect(a.destination); o.start(t); o.stop(t + .26);
+  const n = noise(a, .15), lp = a.createBiquadFilter(), ng = a.createGain(); lp.type = "lowpass"; lp.frequency.value = 700; ng.gain.setValueAtTime(.2, t); ng.gain.exponentialRampToValueAtTime(.001, t + .15); n.connect(lp).connect(ng).connect(a.destination); n.start(t);
+}
+function blip(f = 660) { const a = ac(); if (!a) return; const t = a.currentTime, o = a.createOscillator(), g = a.createGain(); o.type = "square"; o.frequency.value = f; g.gain.setValueAtTime(.05, t); g.gain.exponentialRampToValueAtTime(.001, t + .09); o.connect(g).connect(a.destination); o.start(t); o.stop(t + .1); }
+$("#hornBtn").onclick = horn;
+
+/* ---------- Pixel men: the game's puppets, front on ---------- */
+// One grid unit = p pixels. A man is 16 wide and 30 tall; (ox, oy) is his top-left.
+function pline(ctx, ox, oy, p, x0, y0, x1, y1, w, col) {
+  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1); ctx.fillStyle = col;
+  for (let i = 0; i <= n; i++) { const x = Math.round(x0 + (x1 - x0) * i / n), y = Math.round(y0 + (y1 - y0) * i / n); ctx.fillRect(ox + x * p, oy + y * p, w * p, w * p); }
+}
+function drawMan(ctx, ox, oy, p, o) {
+  const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(ox + x * p), Math.round(oy + y * p), Math.ceil(w * p), Math.ceil(h * p)); };
+  const step = o.walk ? Math.sin(o.walk) : 0, lift = Math.round(Math.max(0, step) * 2), lift2 = Math.round(Math.max(0, -step) * 2);
+  const mail = o.grey ? "#7d8188" : "#a3abb5", skin = o.grey ? "#b8b0a8" : (o.skin || "#e2b48c"), cloth = o.grey ? "#6e7177" : o.r.cloth, trim = o.grey ? "#9a9da2" : o.r.trim;
+  // legs and boots
+  R(4, 22, 3, 7 - lift, "#4a3a2c"); R(9, 22, 3, 7 - lift2, "#4a3a2c"); R(3.5, 29 - lift, 4, 1, "#2a1f17"); R(8.5, 29 - lift2, 4, 1, "#2a1f17");
+  // body: mail, tabard, trim, charge
+  R(2, 11, 12, 11, mail); R(3, 11, 10, 12, cloth); R(3, 22, 10, 1, trim); R(3, 11, 1, 11, shade(cloth, 25)); R(12, 11, 1, 12, shade(cloth, -30));
+  const ch = CHARGES[o.r.charge];
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 6; x++) if (ch((x + .5) / 6, (y + .5) / 8)) R(5 + x, 13 + y, 1, 1, trim);
+  R(3, 17, 10, 1, "#3b2a1c"); // belt
+  // off arm
+  R(0, 12, 2.5, 8, mail); R(0, 19, 2.5, 2, skin);
+  // head and helm
+  R(5, 5, 6, 6, skin); R(6, 7, 1, 1, "#1b1b1b"); R(9, 7, 1, 1, "#1b1b1b"); R(6, 9, 4, 1, shade(skin, -40));
+  if (o.helm === "kettle") { R(3, 4, 10, 1.5, "#8a929b"); R(4, 1, 8, 3.5, "#c3cad2"); R(5, 1, 2, 2, "#e8edf2"); }
+  else if (o.helm === "hood") { R(4, 2, 8, 3, cloth); R(4, 4, 1, 6, cloth); R(11, 4, 1, 6, cloth); }
+  else { R(4, 1, 8, 4, "#b9c1c9"); R(7.5, 0, 1, 1, "#b9c1c9"); R(5, 1, 2, 2, "#e8edf2"); R(7.5, 4, 1, 4, "#8a929b"); }
+  // weapon arm: shoulder (13,12) -> hand -> tip
+  const [hx, hy] = o.hand || [14, 19], [tx, ty] = o.tip || [15, 6];
+  if (!o.grey) { pline(ctx, ox, oy, p, tx, ty, hx, hy, 1, o.weapon || "#dfe6ee"); R(hx - 1, hy - .5, 3, 1, "#c79a3a"); }
+  pline(ctx, ox, oy, p, 13, 12, hx, hy, 2, mail); R(hx, hy, 2, 2, skin);
+  if (o.grey) { R(-1, 6, 2.5, 6, mail); R(13.5, 6, 2.5, 6, mail); } // arms up, weapon gone: routing
+}
+
+/* ---------- The marching column ---------- */
+(function march() {
+  const cv = $("#march"), ctx = cv.getContext("2d"); let W = 0, H = 0, dpr = 1, men = [], bubble = null, last = 0, running = false;
+  const LINES = ["Owes me two crowns.", "My feet are made of blisters now.", "Is that rain or the sea?", "Sergeant says I swing like a farmer.", "First over the wall. Twice.", "I'll carry the banner next time.", "Hold the line. I heard you.", "My mother thinks I'm a miller.", "Three meals a day, they said.", "Smells like a fen. It is a fen.", "If I fall, tell them it was a troll.", "We march at dawn. It is dawn."];
+  const TROOPS = ["Levy", "Spearman", "Crossbowman", "Man-at-arms", "Shieldman", "Archer"];
+  function build() {
+    const r = cv.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr;
+    men = []; const n = Math.ceil(W / 46) + 2;
+    for (let i = 0; i < n; i++) men.push(mk(i * 46 - 20));
+  }
+  function mk(x) {
+    const flag = Math.random() < .12, r = Math.random() < .7 ? realm : pick(REALMS);
+    return { x, r, phase: rand(0, 6), hop: 0, flag, name: pick(r.men), troop: pick(TROOPS), helm: pick(["kettle", "nasal", "hood"]), line: pick(LINES) };
+  }
+  function frame(t) {
+    const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H); ctx.imageSmoothingEnabled = false;
+    const p = 2, base = H - 70;
+    for (const m of men) {
+      m.x += 22 * dt; m.phase += 6 * dt; m.hop = Math.max(0, m.hop - dt * 3);
+      if (m.x > W + 30) { Object.assign(m, mk(Math.min(...men.map(o => o.x)) - 46)); }
+      const hopY = -Math.sin(m.hop * Math.PI) * 14, bob = Math.abs(Math.sin(m.phase)) * -1.5;
+      ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.fillRect(Math.round(m.x + 4), base + 60, 26, 3);
+      if (m.flag) { pline(ctx, Math.round(m.x), Math.round(base + bob + hopY), p, 15, -14, 15, 19, 1, "#6b4a2a"); ctx.fillStyle = m.r.cloth; ctx.fillRect(Math.round(m.x + 32), Math.round(base + bob + hopY - 28), 20, 13); ctx.fillStyle = m.r.trim; ctx.fillRect(Math.round(m.x + 32), Math.round(base + bob + hopY - 28), 20, 2); }
+      drawMan(ctx, Math.round(m.x), Math.round(base + bob + hopY), p, { r: m.r, walk: m.phase, helm: m.helm, hand: [14, 19], tip: m.flag ? [14, 19] : [15, 4] });
+    }
+    if (bubble) {
+      const m = bubble.m; bubble.t -= dt; bubble.el.style.left = (m.x + 16) + "px"; bubble.el.style.top = (base - 8 - Math.sin(m.hop * Math.PI) * 14) + "px";
+      if (bubble.t <= 0 || m.x > W + 20) { bubble.el.remove(); bubble = null; }
+    }
+    if (running) requestAnimationFrame(frame);
+  }
+  cv.addEventListener("pointerdown", e => {
+    const r = cv.getBoundingClientRect(), x = e.clientX - r.left; let best = null, bd = 30;
+    for (const m of men) { const d = Math.abs(m.x + 16 - x); if (d < bd) { bd = d; best = m; } }
+    if (!best) return; best.hop = 1; blip(520 + Math.random() * 200);
+    if (bubble) bubble.el.remove();
+    const el = document.createElement("div"); el.className = "bubble"; el.textContent = `${best.name}, ${best.troop.toLowerCase()}: ${best.line}`; cv.parentElement.appendChild(el);
+    bubble = { el, m: best, t: 3.2 };
+  });
+  build(); addEventListener("resize", build);
+  if (reduce) { requestAnimationFrame(frame); return; }
+  new IntersectionObserver(es => { const v = es[0].isIntersecting; if (v && !running) { running = true; last = performance.now(); requestAnimationFrame(frame); } running = v; }).observe(cv);
+  requestAnimationFrame(frame);
+  window.__marchRepaint = () => men.forEach(m => { if (Math.random() < .7) m.r = realm; });
+})();
+
+/* ---------- The clash: a parry game ---------- */
+(function duel() {
+  const cv = $("#duel"), ctx = cv.getContext("2d"); let W = 0, H = 0, dpr = 1;
+  const DIRS = ["left", "right", "up", "down"], KEYMAP = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down", a: "left", d: "right", w: "up", s: "down", A: "left", D: "right", W: "up", S: "down" };
+  const BANDIT = { cloth: "#6b5a44", dark: "#3a2d20", trim: "#b59a64", charge: "bend" }, GOBLIN = { cloth: "#4e3b2a", dark: "#2a1f17", trim: "#8a6a3a", charge: "pale" };
+  const FOES = [{ name: "Man-at-arms", helm: "kettle" }, { name: "Halberdier", helm: "nasal" }, { name: "Brigand with a cleaver", r: BANDIT, helm: "hood" }, { name: "Goblin with ideas", r: GOBLIN, helm: "nasal", skin: "#7c9a46" }, { name: "Big sergeant", helm: "kettle" }, { name: "Greatsword", helm: "nasal" }];
+  const foeLabel = () => foe.r ? foe.name : `${foeRealm().name.split(" ")[0]} ${foe.name.toLowerCase()}`;
+  let pauseFor = .6, st = "ready", t = 0, dur = 1, dir = "left", feint = null, hp = 3, streak = 0, best = store.get("best", 0), guard = null, guardT = 0, shake = 0, flash = 0, sparks = [], pop = null, last = 0, running = false, foe = FOES[0];
+  $("#best").textContent = best;
+  function size() { const r = cv.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; draw(); }
+  const center = () => ({ cx: W / 2, cy: H * .44 });
+  const P = () => Math.max(3, Math.floor(H / 44));
+  function markPos(d) { const { cx, cy } = center(), p = P(); return { left: [cx - p * 17, cy - p * 3], right: [cx + p * 17, cy - p * 3], up: [cx, cy - p * 19], down: [cx, cy + p * 12] }[d]; }
+  function hud() { $("#hp").textContent = "♥".repeat(hp) + "♡".repeat(3 - hp); $("#streak").textContent = streak; $("#best").textContent = best; $("#foeName").textContent = foeLabel(); }
+  function start() { hp = 3; streak = 0; foe = pick(FOES); st = "pause"; t = 0; pauseFor = .9; hud(); go(); }
+  function nextBlow() { st = "windup"; t = 0; dur = Math.max(.42, 1.05 - streak * .04); dir = pick(DIRS); feint = streak >= 6 && Math.random() < .3 ? { at: dur * .45, to: pick(DIRS.filter(d => d !== dir)) } : null; if (feint) dur += .25; }
+  function input(d) {
+    if (st === "ready" || st === "over") { start(); return; }
+    guard = d; guardT = .25; litKey(d);
+    if (st !== "windup") return;
+    if (d === dir && !(feint && t < feint.at)) {
+      st = "parried"; t = 0; streak++; if (streak > best) { best = streak; store.set("best", best); }
+      clink(); const [mx, my] = markPos(dir); for (let i = 0; i < 18; i++) sparks.push({ x: mx, y: my, vx: rand(-220, 220), vy: rand(-260, 60), l: rand(.25, .55) });
+      pop = { text: streak % 5 === 0 ? "RIPOSTE!" : pick(["PARRIED", "BLOCKED", "NOT TODAY", "HELD"]), t: .7 }; hud();
+    } else hit();
+  }
+  function hit() { st = "hit"; t = 0; hp--; shake = .35; flash = .3; thud(); pop = { text: hp > 0 ? "HIT" : "YOU FALL", t: .8 }; hud(); }
+  function litKey(d) { const k = $(`.keys [data-k="${d}"]`); if (!k) return; k.classList.add("on"); setTimeout(() => k.classList.remove("on"), 160); }
+  function update(dt) {
+    t += dt; guardT = Math.max(0, guardT - dt); shake = Math.max(0, shake - dt); flash = Math.max(0, flash - dt);
+    if (pop) { pop.t -= dt; if (pop.t <= 0) pop = null; }
+    sparks = sparks.filter(s => (s.l -= dt) > 0); for (const s of sparks) { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 700 * dt; }
+    if (st === "pause") { if (t > pauseFor) nextBlow(); }
+    else if (st === "windup") { if (feint && t >= feint.at && dir !== feint.to) dir = feint.to; if (t >= dur) hit(); }
+    else if (st === "parried" && t > .45) { st = "pause"; t = 0; pauseFor = rand(.3, .7); }
+    else if (st === "hit" && t > .6) { if (hp <= 0) { st = "over"; t = 0; } else { st = "pause"; t = 0; pauseFor = rand(.5, .9); } }
+  }
+  function enemyPose() {
+    const idle = { hand: [14, 19], tip: [15, 5] };
+    const W_ = { left: { hand: [-3, 8], tip: [-9, -1] }, right: { hand: [17, 8], tip: [24, -1] }, up: { hand: [9, 0], tip: [8, -11] }, down: { hand: [14, 22], tip: [8, 27] } };
+    if (st === "windup") { const k = Math.min(1, t / (dur * .6)) ** .6, w = W_[dir], j = t > dur * .6 ? rand(-.4, .4) : 0; return { hand: [idle.hand[0] + (w.hand[0] - idle.hand[0]) * k + j, idle.hand[1] + (w.hand[1] - idle.hand[1]) * k], tip: [idle.tip[0] + (w.tip[0] - idle.tip[0]) * k + j, idle.tip[1] + (w.tip[1] - idle.tip[1]) * k] }; }
+    if (st === "hit") return { hand: [8, 20], tip: [6, 30] };
+    if (st === "parried") return { hand: [16, 14], tip: [25, 10] };
+    return idle;
+  }
+  function draw() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false;
+    const sx = shake > 0 ? rand(-6, 6) * shake / .35 : 0, sy = shake > 0 ? rand(-4, 4) * shake / .35 : 0; ctx.translate(sx, sy);
+    // sky and field
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#7ea7d6"); g.addColorStop(.55, "#cfe0ee"); g.addColorStop(.56, "#6aa04a"); g.addColorStop(1, "#3f6e2c"); ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, H + 20);
+    ctx.fillStyle = "#2c4a2a"; for (let i = 0; i < W; i += 14) { const h = 10 + ((i * 37) % 23); ctx.fillRect(i, H * .56 - h, 10, h); ctx.fillRect(i + 3, H * .56 - h - 4, 4, 4); }
+    ctx.fillStyle = "rgba(160,40,40,.9)"; for (let i = 0; i < 9; i++) { const x = (W * .12) + i * W * .09; ctx.fillRect(x, H * .53, 5, 8); ctx.fillStyle = "#e8d8c0"; ctx.fillRect(x + 1, H * .51, 3, 3); ctx.fillStyle = "rgba(160,40,40,.9)"; }
+    const { cx, cy } = center(), p = P(), ox = Math.round(cx - 8 * p), oy = Math.round(cy - 15 * p);
+    ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(ox - p, oy + 30 * p, 18 * p, p * 1.5);
+    const fr = foeRealm(), pose = enemyPose(), stag = st === "parried" ? -p * 2 * Math.max(0, 1 - t / .45) : 0;
+    drawMan(ctx, ox, oy + stag, p, { r: foe.r || fr, helm: foe.helm, skin: foe.skin, hand: pose.hand, tip: pose.tip, weapon: st === "windup" && t > dur * .6 ? "#ffffff" : "#dfe6ee" });
+    if (st === "windup" || (st === "hit" && t < .2)) {
+      const [mx, my] = markPos(dir), pulse = 1 + Math.sin(t * 22) * .12, s = p * 3.2 * pulse, ang = Math.atan2(cy - my, cx - mx);
+      ctx.save(); ctx.translate(mx, my); ctx.rotate(ang); ctx.fillStyle = "#ff3b2f"; ctx.strokeStyle = "#2a0606"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(s, 0); ctx.lineTo(-s * .8, -s * .8); ctx.lineTo(-s * .8, s * .8); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+      const left = Math.max(0, 1 - t / dur); ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.fillRect(cx - 40, oy - 3 * p, 80, 5); ctx.fillStyle = "#ff3b2f"; ctx.fillRect(cx - 40, oy - 3 * p, 80 * left, 5);
+    }
+    // your shield and sword (you are gold)
+    const gp = guardT > 0 && guard ? markPos(guard) : null, k = guardT / .25;
+    const bx = W * .14 + (gp ? (gp[0] - W * .14) * .35 * k : 0), by = H * .9 + (gp ? (gp[1] - H * .9) * .35 * k : 0), s = p * .85;
+    ctx.fillStyle = "#0b0d12"; ctx.beginPath(); ctx.moveTo(bx - 9 * s, by - 10 * s); ctx.lineTo(bx + 9 * s, by - 10 * s); ctx.lineTo(bx + 9 * s, by + 2 * s); ctx.lineTo(bx, by + 14 * s); ctx.lineTo(bx - 9 * s, by + 2 * s); ctx.fill();
+    ctx.fillStyle = "#f0c83c"; ctx.beginPath(); ctx.moveTo(bx - 8 * s, by - 9 * s); ctx.lineTo(bx + 8 * s, by - 9 * s); ctx.lineTo(bx + 8 * s, by + 2 * s); ctx.lineTo(bx, by + 12.5 * s); ctx.lineTo(bx - 8 * s, by + 2 * s); ctx.fill();
+    ctx.fillStyle = "#6e4a10"; ctx.beginPath(); ctx.moveTo(bx, by - 6 * s); ctx.lineTo(bx + 4 * s, by); ctx.lineTo(bx, by + 6 * s); ctx.lineTo(bx - 4 * s, by); ctx.fill();
+    const swx = W * .86 + (gp ? (gp[0] - W * .86) * .25 * k : 0), swy = H * 1.0; ctx.fillStyle = "#dfe6ee"; ctx.save(); ctx.translate(swx, swy); ctx.rotate(-.5 + (gp ? -.3 * k : 0)); ctx.fillRect(-s, -20 * s, 2 * s, 20 * s); ctx.fillStyle = "#c79a3a"; ctx.fillRect(-4 * s, -1 * s, 8 * s, 2 * s); ctx.restore();
+    for (const sp of sparks) { ctx.fillStyle = sp.l > .3 ? "#fff6c8" : "#f0c83c"; ctx.fillRect(sp.x, sp.y, 3, 3); }
+    if (flash > 0) { ctx.fillStyle = `rgba(200,20,20,${flash})`; ctx.fillRect(-10, -10, W + 20, H + 20); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.textAlign = "center"; ctx.font = `700 ${Math.max(13, Math.round(Math.min(H / 14, W / 24)))}px Silkscreen, monospace`;
+    if (pop) { const a = Math.min(1, pop.t * 3), y = H * .2 - (1 - pop.t) * 20; ctx.fillStyle = `rgba(7,9,12,${a})`; ctx.fillText(pop.text, W / 2 + 3, y + 3); ctx.fillStyle = pop.text === "HIT" || pop.text === "YOU FALL" ? `rgba(255,106,92,${a})` : `rgba(240,200,60,${a})`; ctx.fillText(pop.text, W / 2, y); }
+    if (st === "ready" || st === "over") {
+      ctx.fillStyle = "rgba(16,19,24,.72)"; ctx.fillRect(0, H * .66, W, H * .34);
+      ctx.fillStyle = "#f0c83c"; ctx.fillText(st === "ready" ? "CLICK TO TAKE THE FIELD" : `YOU PARRIED ${streak}. AGAIN?`, W / 2, H * .79);
+      ctx.font = `400 ${Math.max(9, Math.round(Math.min(H / 26, W / 38)))}px Silkscreen, monospace`; ctx.fillStyle = "#eeece4";
+      ctx.fillText(st === "ready" ? "Meet the red mark before the blow" : "Click to stand up and go again.", W / 2, H * .88);
+    }
+  }
+  function loop(ts) { const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts; update(dt); draw(); if (running && st !== "ready" && !(st === "over" && t > 1)) requestAnimationFrame(loop); else { running = false; draw(); } }
+  function go() { if (!running) { running = true; last = performance.now(); requestAnimationFrame(loop); } }
+  cv.addEventListener("pointerdown", e => {
+    if (st === "ready" || st === "over") { input("left"); return; }
+    const r = cv.getBoundingClientRect(), { cx, cy } = center(), dx = e.clientX - r.left - cx, dy = e.clientY - r.top - cy;
+    input(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down"));
+  });
+  addEventListener("keydown", e => {
+    const d = KEYMAP[e.key]; if (!d || e.target.tagName === "INPUT") return;
+    if (st === "ready" || st === "over") { const r = cv.getBoundingClientRect(); if (r.top > innerHeight * .8 || r.bottom < innerHeight * .2) return; }
+    if (st !== "ready" && st !== "over") e.preventDefault();
+    input(d);
+    if (st !== "ready") go();
+  });
+  addEventListener("resize", size); size(); hud();
+  if (document.fonts) document.fonts.ready.then(draw);
+})();
+
+/* ---------- Command: a small battle ---------- */
+const Army = (function () {
+  const cv = $("#army"), ctx = cv.getContext("2d"); let W = 0, H = 0, dpr = 1, ground = null;
+  let arrows = [], lastWhoosh = 0, men = [], comps = [], size = 800, time = 0, running = false, last = 0, over = false, rallyCd = 0, sp = 3, grid = [], cols = 0, rows = 0, frameNo = 0;
+  const CELL = 16;
+  function resize() { const r = cv.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio || 1); const nw = r.width, nh = r.height; if (Math.abs(nw - W) < 2 && Math.abs(nh - H) < 2 && men.length) return; W = nw; H = nh; cv.width = W * dpr; cv.height = H * dpr; paintGround(); setup(); }
+  function paintGround() {
+    ground = document.createElement("canvas"); ground.width = Math.ceil(W); ground.height = Math.ceil(H); const g = ground.getContext("2d");
+    g.fillStyle = "#5f9a40"; g.fillRect(0, 0, W, H);
+    for (let i = 0; i < W * H / 60; i++) { g.fillStyle = Math.random() < .5 ? "rgba(255,255,200,.06)" : "rgba(0,40,0,.08)"; g.fillRect(Math.random() * W | 0, Math.random() * H | 0, 3, 2); }
+    g.strokeStyle = "rgba(150,110,70,.55)"; g.lineWidth = 5; g.beginPath(); g.moveTo(0, H * .42); g.bezierCurveTo(W * .3, H * .38, W * .6, H * .58, W, H * .5); g.stroke();
+    const tree = (x, y) => { g.fillStyle = "rgba(0,0,0,.2)"; g.fillRect(x - 2, y + 4, 9, 3); g.fillStyle = "#2c5a2e"; g.fillRect(x, y - 6, 5, 10); g.fillStyle = "#3d7a3a"; g.fillRect(x + 1, y - 9, 3, 4); };
+    for (let i = 0; i < 26; i++) tree(rand(0, W * .12), rand(H * .35, H * .7));
+    for (let i = 0; i < 22; i++) tree(rand(W * .88, W), rand(H * .32, H * .62));
+  }
+  function setup() {
+    men = []; comps = []; time = 0; over = false; rallyCd = 0; $("#outcome").hidden = true;
+    const per = size / 2, nc = 6, front = W * .7, cw = front / nc, x0 = (W - front) / 2;
+    sp = Math.max(1.6, Math.min(6, Math.sqrt((front * H * .1) / per)));
+    arrows = [];
+    for (let team = 0; team < 2; team++) {
+      const horseN = Math.round(per * .14), bowN = Math.round(per * .12), footN = per - horseN - bowN, yLine = team === 0 ? H * .66 : H * .34, back = team === 0 ? 1 : -1;
+      for (let c = 0; c <= nc + 1; c++) {
+        const cav = c === nc, bow = c === nc + 1, m = cav ? horseN : bow ? bowN : (c < nc - 1 ? Math.round(footN / nc) : footN - Math.round(footN / nc) * (nc - 1));
+        const comp = { team, cav, bow, size: m, alive: m, morale: 100, order: "hold", routing: false, label: team ? "ABCDEFHG"[c] : (cav ? "H" : bow ? "B" : String(c + 1)), cx: 0, cy: 0, phase: 0, volley: rand(.3, 1) };
+        comps.push(comp); const ci = comps.length - 1;
+        const files = Math.max(1, Math.ceil(Math.sqrt(m * (cav ? 1.6 : bow ? 9 : 3.2)))), csp = cav ? sp * 1.5 : bow ? sp * 1.3 : sp;
+        const ccx = cav ? (team === 0 ? W * .9 : W * .1) : bow ? W * .5 : x0 + c * cw + cw / 2, ccy = cav ? (team === 0 ? H * .8 : H * .2) : bow ? (team === 0 ? H * .86 : H * .14) : yLine;
+        for (let i = 0; i < m; i++) { const f = i % files, r = Math.floor(i / files), x = ccx + (f - (files - 1) / 2) * csp, y = ccy + back * r * csp; men.push({ x, y, hx: x, hy: y, t: team, c: ci, hp: cav ? 4 : bow ? 2 : 3, cd: Math.random(), st: 0, tg: -1, cav, bow }); }
+      }
+    }
+    cols = Math.ceil(W / CELL) + 1; rows = Math.ceil(H / CELL) + 1; grid = Array.from({ length: cols * rows }, () => []);
+    document.querySelectorAll(".order").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.o === "hold")));
+    tally(); draw();
+  }
+  function buildGrid() { for (const a of grid) a.length = 0; men.forEach((m, i) => { if (m.st === 0) { const cx = Math.min(cols - 1, Math.max(0, m.x / CELL | 0)), cy = Math.min(rows - 1, Math.max(0, m.y / CELL | 0)); grid[cx + cy * cols].push(i); } }); }
+  function nearest(m, rad) {
+    const cx = m.x / CELL | 0, cy = m.y / CELL | 0; let best = -1, bd = Infinity;
+    for (const R of [1, rad]) {
+      for (let y = cy - R; y <= cy + R; y++) { if (y < 0 || y >= rows) continue; for (let x = cx - R; x <= cx + R; x++) { if (x < 0 || x >= cols) continue; for (const j of grid[x + y * cols]) { const o = men[j]; if (o.t === m.t) continue; const d = (o.x - m.x) ** 2 + (o.y - m.y) ** 2; if (d < bd) { bd = d; best = j; } } } }
+      if (best >= 0) return best;
+    }
+    return -1;
+  }
+  function hurt(j, a) {
+    const o = men[j], rear = (o.t === 0 ? a.y > o.y + 1 : a.y < o.y - 1), comp = comps[o.c];
+    o.hp -= rear ? 2 : 1; if (o.hp > 0) return;
+    o.st = 2; comp.alive--; comp.morale -= (100 / comp.size) * (rear ? 3.4 : 1.7);
+    if (Math.random() < .04) thudSoft();
+  }
+  let lastThud = 0; function thudSoft() { const n = performance.now(); if (n - lastThud > 260) { lastThud = n; const a = ac(); if (a) { const t = a.currentTime, o = a.createOscillator(), g = a.createGain(); o.frequency.setValueAtTime(rand(180, 260), t); o.frequency.exponentialRampToValueAtTime(60, t + .1); g.gain.setValueAtTime(.05, t); g.gain.exponentialRampToValueAtTime(.001, t + .12); o.connect(g).connect(a.destination); o.start(t); o.stop(t + .13); } } }
+  function centroids() { for (const c of comps) { c.cx = 0; c.cy = 0; c.n = 0; } for (const m of men) if (m.st < 2 && m.st !== 3) { const c = comps[m.c]; c.cx += m.x; c.cy += m.y; c.n++; } for (const c of comps) if (c.n) { c.cx /= c.n; c.cy /= c.n; } }
+  function step(dt) {
+    time += dt; frameNo++; rallyCd = Math.max(0, rallyCd - dt); buildGrid(); centroids();
+    const s = H / 340, walk = 16 * s, run = 28 * s, horse = 54 * s, flee = 34 * s, contact = Math.max(2.4, sp * 1.05);
+    // the enemy general
+    if (time > 1.4) comps.forEach(c => { if (c.team === 1 && !c.cav && !c.bow && c.order === "hold") c.order = "advance"; });
+    if (time > 2.5) comps.forEach(c => { if (c.team === 1 && c.cav && c.order === "hold") { c.order = "flank"; c.phase = 0; } });
+    if (time > 6) comps.forEach(c => { if (c.team === 1 && !c.cav && c.order === "advance") c.order = "charge"; });
+    // morale and routing
+    const lost = [0, 0], all = [0, 0]; comps.forEach(c => { all[c.team] += c.size; lost[c.team] += c.size - c.alive; });
+    comps.forEach(c => { if (lost[c.team] / all[c.team] > .5) c.morale -= 3 * dt; if (!c.routing && c.morale < 22 && c.alive > 0) c.routing = true; });
+    for (let i = 0; i < men.length; i++) {
+      const m = men[i]; if (m.st >= 2) continue; const c = comps[m.c];
+      if (m.st === 0 && c.routing && Math.random() < dt * 2.5) m.st = 1;
+      if (m.st === 1) { m.y += (m.t === 0 ? 1 : -1) * flee * dt; m.x += rand(-8, 8) * dt; if (m.y < -6 || m.y > H + 6) m.st = 3; continue; }
+      if ((frameNo + i) % 8 === 0 || m.tg < 0 || men[m.tg].st !== 0) m.tg = nearest(m, 5);
+      const tg = m.tg >= 0 ? men[m.tg] : null, d = tg ? Math.hypot(tg.x - m.x, tg.y - m.y) : Infinity, toward = m.t === 0 ? -1 : 1;
+      if (tg && d < contact) { m.cd -= dt; if (m.cd <= 0) { m.cd = rand(.55, 1.05); const charge = m.cav && c.order !== "hold" ? .3 : 0; if (Math.random() < .3 + charge) hurt(m.tg, m); } continue; }
+      let tx = m.hx, ty = m.hy, v = walk;
+      if (c.order === "hold") { if (tg && d < 14 * s + contact) { tx = tg.x; ty = tg.y; } }
+      else if (c.order === "flank" && c.phase < 2) {
+        const side = m.t === 0 ? 1 : -1, foeY = m.t === 0 ? H * .25 : H * .75, rearY = m.t === 0 ? H * .08 : H * .92;
+        const wp = c.phase === 0 ? [W * (side > 0 ? .97 : .03), foeY] : [W * (side > 0 ? .62 : .38), rearY];
+        tx = wp[0] + (m.hx - c.homeX || 0) * .5; ty = wp[1]; v = horse;
+        if (Math.hypot(c.cx - wp[0], c.cy - wp[1]) < 26 * s) { c.phase++; if (c.phase === 2) c.order = "charge"; }
+        if (tg && d < 10 * s) { tx = tg.x; ty = tg.y; }
+      } else {
+        v = m.cav ? horse : (c.order === "charge" ? run : walk);
+        if (tg && d < 70 * s) { tx = tg.x; ty = tg.y; }
+        else { tx = m.x + (tg ? Math.sign(tg.x - m.x) * .3 : 0); ty = m.y + toward * 10; }
+      }
+      const dx = tx - m.x, dy = ty - m.y, dl = Math.hypot(dx, dy);
+      if (dl > .5) { const k = Math.min(1, v * dt / dl); m.x += dx * k; m.y += dy * k; }
+      if (c.order !== "hold") { m.hx = m.x; m.hy = m.y; }
+    }
+    volleys(dt, s);
+    for (const a of arrows) { a.t += dt; if (a.t >= a.dur && !a.done) { a.done = true; const j = nearestAt(a.x1, a.y1, a.team); if (j >= 0 && Math.hypot(men[j].x - a.x1, men[j].y - a.y1) < sp * 1.4 && Math.random() < .45) hurt(j, { x: a.x0, y: a.y0 }); } }
+    arrows = arrows.filter(a => a.t < a.dur + .8);
+    tally();
+    const standing = [0, 0]; for (const m of men) if (m.st === 0) standing[m.t]++;
+    if (!over && (standing[0] === 0 || standing[1] === 0 || time > 90)) end(standing);
+  }
+  function nearestAt(x, y, team) {
+    const cx = x / CELL | 0, cy = y / CELL | 0; let best = -1, bd = Infinity;
+    for (let yy = cy - 1; yy <= cy + 1; yy++) { if (yy < 0 || yy >= rows) continue; for (let xx = cx - 1; xx <= cx + 1; xx++) { if (xx < 0 || xx >= cols) continue; for (const j of grid[xx + yy * cols]) { const o = men[j]; if (o.t === team || o.st !== 0) continue; const d = (o.x - x) ** 2 + (o.y - y) ** 2; if (d < bd) { bd = d; best = j; } } } }
+    return best;
+  }
+  function volleys(dt, s) {
+    comps.forEach((c, ci) => {
+      if (!c.bow || c.routing || !c.n) return; c.volley -= dt; if (c.volley > 0) return;
+      let aim = null, bd = Infinity; for (const o of comps) if (o.team !== c.team && o.n && !o.routing) { const d = Math.hypot(o.cx - c.cx, o.cy - c.cy); if (d < bd) { bd = d; aim = o; } }
+      if (!aim || bd > H * .62) { c.volley = .4; return; }
+      c.volley = rand(2.3, 3);
+      for (const m of men) if (m.c === ci && m.st === 0 && Math.random() < .8) {
+        const x1 = aim.cx + rand(-22, 22) * s, y1 = aim.cy + rand(-9, 9) * s, dist = Math.hypot(x1 - m.x, y1 - m.y);
+        arrows.push({ x0: m.x, y0: m.y, x1, y1, t: -rand(0, .25), dur: .6 + dist / (220 * s), team: c.team, h: dist * .28 });
+      }
+      if (arrows.length > 1600) arrows.splice(0, arrows.length - 1600);
+      whoosh();
+    });
+  }
+  function whoosh() {
+    const a = ac(); if (!a) return; const n = performance.now(); if (n - lastWhoosh < 400) return; lastWhoosh = n;
+    const t = a.currentTime, src = noise(a, .6), bp = a.createBiquadFilter(), g = a.createGain(); bp.type = "bandpass"; bp.frequency.setValueAtTime(1800, t); bp.frequency.exponentialRampToValueAtTime(600, t + .5); bp.Q.value = 1.2;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.08, t + .08); g.gain.exponentialRampToValueAtTime(.001, t + .55); src.connect(bp).connect(g).connect(a.destination); src.start(t);
+  }
+  function end(standing) {
+    over = true; const won = standing[1] === 0 || (standing[0] > standing[1] && time > 90), killed = men.filter(m => m.t === 1 && m.st === 2).length, lostUs = men.filter(m => m.t === 0 && m.st === 2).length;
+    $("#outcomeText").textContent = won ? "Victory" : "Defeat"; $("#outcomeText").style.color = won ? "var(--gold)" : "var(--foe)";
+    $("#outcomeSub").textContent = won ? `The field is yours. ${killed} of theirs fell, and ${lostUs} of yours.` : `Your line broke. ${lostUs} of yours fell. Try the horse round their flank.`;
+    $("#outcome").hidden = false; if (won) horn(); else thud();
+  }
+  function tally() {
+    const a = [0, 0]; for (const m of men) if (m.st === 0) a[m.t]++;
+    $("#armyUs").textContent = a[0]; $("#armyThem").textContent = a[1]; $("#armyBar").style.width = (a[0] + a[1] ? a[0] / (a[0] + a[1]) * 100 : 50) + "%";
+  }
+  function draw() {
+    if (!W) return; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(ground, 0, 0, W, H);
+    const us = realm, them = foeRealm(), sz = Math.max(1.5, Math.min(3, sp * .7));
+    for (const m of men) if (m.st === 2) { ctx.fillStyle = "rgba(60,30,25,.75)"; ctx.fillRect(m.x - sz / 2, m.y, sz * 1.4, sz * .6); }
+    for (const m of men) {
+      if (m.st === 2 || m.st === 3) continue; const r = m.t === 0 ? us : them, grey = m.st === 1;
+      if (m.cav) { ctx.fillStyle = grey ? "#7a7570" : "#6b4a2a"; ctx.fillRect(m.x - sz, m.y, sz * 2.2, sz * .9); }
+      ctx.fillStyle = grey ? "#8a8d92" : r.cloth; ctx.fillRect(m.x - sz / 2, m.y - sz, sz, sz * 1.2);
+      ctx.fillStyle = grey ? "#b0b0ac" : m.bow ? r.trim : (m.t === 0 ? "#dfe4ea" : "#c9ced6"); ctx.fillRect(m.x - sz / 2, m.y - sz * 1.6, sz, sz * .6);
+    }
+    ctx.strokeStyle = "rgba(240,232,210,.85)"; ctx.lineWidth = 1; ctx.beginPath();
+    for (const a of arrows) {
+      if (a.t < 0) continue; const k = Math.min(1, a.t / a.dur);
+      if (k >= 1) { ctx.moveTo(a.x1, a.y1); ctx.lineTo(a.x1 + 1, a.y1 - 2.5); continue; }
+      const P = q => [a.x0 + (a.x1 - a.x0) * q, a.y0 + (a.y1 - a.y0) * q - Math.sin(Math.PI * q) * a.h], [x, y] = P(k), [x2, y2] = P(Math.min(1, k + .03)), dx = x2 - x, dy = y2 - y, l = Math.hypot(dx, dy) || 1;
+      ctx.moveTo(x - dx / l * 4, y - dy / l * 4); ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    centroids();
+    const cap = comps.find(c => c.team === 0 && !c.cav && c.label === "3");
+    if (cap && cap.n) { ctx.fillStyle = "#0b0d12"; ctx.fillRect(cap.cx - 3, cap.cy + sp * 5 - 3, 7, 7); ctx.fillStyle = "#f0c83c"; ctx.fillRect(cap.cx - 2, cap.cy + sp * 5 - 2, 5, 5); }
+    ctx.font = "700 9px Silkscreen, monospace"; ctx.textAlign = "center";
+    for (const c of comps) {
+      if (!c.n) continue; const r = c.team === 0 ? us : them, x = Math.round(c.cx), y = Math.round(c.cy - (c.team === 0 ? sp * 2 : sp * 2) - 16), dead = c.routing;
+      ctx.fillStyle = "#3a2716"; ctx.fillRect(x - 1, y, 2, 16);
+      ctx.fillStyle = "#0b0d12"; ctx.fillRect(x, y - 1, 15, dead ? 13 : 11); ctx.fillStyle = dead ? "#80848a" : (c.team === 0 ? r.ui : "#ff6a5c"); ctx.fillRect(x + 1, y, 13, dead ? 11 : 9);
+      ctx.fillStyle = "#0b0d12"; ctx.fillText(c.label, x + 7.5, y + 8);
+      if (!dead && c.morale < 45 && Math.sin(time * 30) > 0) { ctx.fillStyle = "#f0c83c"; ctx.fillRect(x + 15, y, 2, 2); }
+    }
+    if (time === 0 && !over) {
+      const msg = W < 520 ? "Press Charge to begin" : "Give an order. Charge starts the fight.";
+      ctx.font = `700 ${Math.max(10, Math.min(13, W / 36))}px Silkscreen, monospace`; const tw = ctx.measureText(msg).width + 26;
+      ctx.fillStyle = "rgba(16,19,24,.88)"; ctx.fillRect(W / 2 - tw / 2, H / 2 - 16, tw, 30); ctx.strokeStyle = "#f0c83c"; ctx.lineWidth = 1; ctx.strokeRect(W / 2 - tw / 2 + .5, H / 2 - 15.5, tw - 1, 29);
+      ctx.fillStyle = "#f0c83c"; ctx.fillText(msg, W / 2, H / 2 + 4);
+    }
+  }
+  function loop(ts) { const dt = Math.min(.04, (ts - last) / 1000 || 0); last = ts; if (!over) step(dt); draw(); if (running && !over) requestAnimationFrame(loop); else running = false; }
+  function go() { if (!running && !over) { running = true; last = performance.now(); requestAnimationFrame(loop); } }
+  function order(o) { if (over) return; comps.forEach(c => { if (c.team === 0 && !c.cav && !c.bow && !c.routing) c.order = o; if (c.team === 0 && c.cav && o === "charge" && c.order === "hold") c.order = "charge"; }); document.querySelectorAll(".order").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.o === o))); if (o === "charge") horn(); else blip(440); go(); }
+  function flank() { if (over) return; const c = comps.find(c => c.team === 0 && c.cav); if (c && !c.routing) { c.order = "flank"; c.phase = 0; c.homeX = c.cx; blip(560); go(); } }
+  function rally() { if (over || rallyCd > 0) return; rallyCd = 8; let n = 0; comps.forEach(c => { if (c.team === 0 && c.routing && c.alive > 0) { c.routing = false; c.morale = 55; n++; } }); men.forEach(m => { if (m.t === 0 && m.st === 1) m.st = 0; }); horn(); $("#rallyBtn").textContent = n ? `Rallied ${n}` : "Rally"; setTimeout(() => $("#rallyBtn").innerHTML = "Rally <kbd>R</kbd>", 1500); go(); }
+  document.querySelectorAll(".order").forEach(b => b.onclick = () => order(b.dataset.o));
+  document.querySelectorAll(".size").forEach(b => b.onclick = () => { size = +b.dataset.size; document.querySelectorAll(".size").forEach(x => x.setAttribute("aria-pressed", String(x === b))); running = false; setup(); });
+  $("#flankBtn").onclick = flank; $("#rallyBtn").onclick = rally; $("#againBtn").onclick = () => { running = false; setup(); };
+  addEventListener("keydown", e => {
+    const r = cv.getBoundingClientRect(); if (r.top > innerHeight || r.bottom < 0 || e.target.tagName === "INPUT") return;
+    const k = e.key.toLowerCase(); if (k === "h") order("hold"); else if (k === "t") order("advance"); else if (k === "c") order("charge"); else if (k === "r") rally();
+  });
+  addEventListener("resize", () => { running = false; resize(); });
+  resize(); if (document.fonts) document.fonts.ready.then(draw);
+  return { repaint: draw };
+})();
+
+/* ---------- Realm picker ---------- */
+(function realms() {
+  const grid = $("#realmGrid");
+  REALMS.forEach(r => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "realm"; b.style.setProperty("--rc", r.ui); b.dataset.id = r.id;
+    const cv = document.createElement("canvas"); cv.width = 14; cv.height = 15; paintShield(cv, r);
+    const s = document.createElement("span"); s.textContent = r.name; b.append(cv, s); b.onclick = () => { choose(r); blip(600); }; grid.appendChild(b);
+  });
+  function choose(r) {
+    realm = r; store.set("realm", r.id);
+    document.documentElement.style.setProperty("--realm", r.ui); document.documentElement.style.setProperty("--realm-cloth", r.cloth);
+    grid.querySelectorAll(".realm").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === r.id)));
+    $("#rdName").textContent = r.name; $("#rdTroops").textContent = r.troops; $("#rdFlavour").textContent = r.flavour;
+    $("#rdNames").textContent = "Men of this realm: " + r.men.slice(0, 6).join(", ") + ".";
+    ["#realmBig", "#navShield", "#bannerShield", "#writShield"].forEach(id => paintShield($(id), r));
+    $("#bannerCap").innerHTML = ""; const cap = $("#bannerCap"); cap.append("Free company"); cap.append(document.createElement("br")); cap.append("of the " + r.name);
+    const capName = store.get("captain", null); $("#writText").textContent = capName ? `Free captain of the ${r.name}. Your name is on the roll.` : `Free captain of the ${r.name}. Signed and sealed when you sign.`;
+    if (window.__marchRepaint) window.__marchRepaint();
+    Army.repaint();
+    if (window.__atlas) window.__atlas.repaint();
+  }
+  choose(realm);
+  window.__chooseRealm = choose;
+})();
+
+/* ---------- The realm map: seven realms grown from their homes (Data/factions.json), 115 provinces ---------- */
+(function atlas() {
+  const cv = $("#atlas"), ctx = cv.getContext("2d"), GW = 160, GH = 100, tip = $("#atlasTip");
+  const HOMES = { azure: [-.75, -.05], crimson: [.45, .4], northern: [-.2, -.85], southern: [.1, .85], steppe: [.88, -.3], league: [-.8, .8], order: [0, 0] };
+  const rng = mulberry(7919), NW = 18, NH = 12, N = Array.from({ length: NW * NH * 3 }, rng);
+  const vn = (x, y, o = 0) => { x = Math.max(0, Math.min(NW - 1.001, x)); y = Math.max(0, Math.min(NH - 1.001, y)); const xi = x | 0, yi = y | 0, fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy), g = (a, b) => N[o * NW * NH + b * NW + a]; return (g(xi, yi) * (1 - sx) + g(xi + 1, yi) * sx) * (1 - sy) + (g(xi, yi + 1) * (1 - sx) + g(xi + 1, yi + 1) * sx) * sy; };
+  const PRE = ["Ash", "Brack", "Cold", "Dun", "Elder", "Fen", "Grey", "Hart", "Iron", "Lark", "Mar", "Nether", "Oak", "Red", "Stone", "Thorn", "Wolf", "Salt", "Ember", "Raven", "High", "Black", "Wych", "Gold"];
+  const SUF = ["ford", "moor", "mere", "wick", "by", "gate", "hill", "down", "holt", "marsh", "bridge", "stead", "field", "wold", "combe", "ley"];
+  const used = new Set(); let pi = 0;
+  const provName = () => { if (pi < PLACES.length) { used.add(PLACES[pi]); return PLACES[pi++]; } let n, t = 0; do { n = PRE[rng() * PRE.length | 0] + SUF[rng() * SUF.length | 0]; } while (used.has(n) && t++ < 40); used.add(n); return n; };
+  const land = new Uint8Array(GW * GH);
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) { const u = x / GW * 2 - 1, v = y / GH * 2 - 1; land[x + y * GW] = u * u * .85 + v * v < .8 + (vn(x / 10, y / 10) - .5) * .55 ? 1 : 0; }
+  const homes = REALMS.map(r => { const h = HOMES[r.id]; return [(h[0] + 1) / 2 * GW * .84 + GW * .08, (h[1] + 1) / 2 * GH * .8 + GH * .1]; });
+  const seeds = []; let tries = 0;
+  while (seeds.length < 115 && tries++ < 30000) { const x = rng() * GW, y = rng() * GH; if (!land[(x | 0) + (y | 0) * GW]) continue; const md = tries < 15000 ? 7 : 4.5; if (seeds.some(s => (s.x - x) ** 2 + (s.y - y) ** 2 < md * md)) continue; seeds.push({ x, y }); }
+  seeds.forEach(s => { let best = 0, bd = Infinity; homes.forEach((h, k) => { const d = Math.hypot(h[0] - s.x, h[1] - s.y) * (REALMS[k].id === "order" ? 1.7 : 1) * (.85 + rng() * .3); if (d < bd) { bd = d; best = k; } }); s.realm = best; });
+  homes.forEach((h, k) => { let best = null, bd = Infinity; seeds.forEach(s => { const d = Math.hypot(h[0] - s.x, h[1] - s.y); if (d < bd && !s.capital) { bd = d; best = s; } }); if (best) { best.realm = k; best.capital = true; } });
+  seeds.forEach(s => s.name = provName());
+  const prov = new Int16Array(GW * GH).fill(-1);
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+    const i = x + y * GW; if (!land[i]) continue;
+    const wx = x + (vn(x / 7, y / 7, 1) - .5) * 9, wy = y + (vn(x / 7, y / 7, 2) - .5) * 9; let best = -1, bd = Infinity;
+    for (let k = 0; k < seeds.length; k++) { const d = (seeds[k].x - wx) ** 2 + (seeds[k].y - wy) ** 2; if (d < bd) { bd = d; best = k; } }
+    prov[i] = best;
+  }
+  const img = ctx.createImageData(GW, GH), hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  let hover = -1;
+  function repaint() {
+    const d = img.data, mine = REALMS.indexOf(realm), grass = [79, 122, 58];
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+      const i = x + y * GW, n = (vn(x / 3, y / 3, 1) - .5) * 26; let c;
+      if (!land[i]) {
+        const coast = (x > 0 && land[i - 1]) || (x < GW - 1 && land[i + 1]) || (y > 0 && land[i - GW]) || (y < GH - 1 && land[i + GW]);
+        c = coast ? [46, 70, 98] : [22 + n * .3, 36 + n * .4, 56 + n * .5];
+      } else {
+        const p = prov[i], s = seeds[p], k = s.realm === mine ? .8 : .5;
+        c = hex(REALMS[s.realm].cloth).map((v, j) => v * k + grass[j] * (1 - k) + n);
+        if (s.realm !== mine) c = c.map(v => v * .8);
+        const nb = [x > 0 ? prov[i - 1] : -1, x < GW - 1 ? prov[i + 1] : -1, y > 0 ? prov[i - GW] : -1, y < GH - 1 ? prov[i + GW] : -1];
+        const realmEdge = nb.some(q => q >= 0 && seeds[q].realm !== s.realm), provEdge = nb.some(q => q >= 0 && q !== p);
+        if (p === hover) c = c.map(v => v + 45);
+        if (realmEdge) c = [14, 16, 22]; else if (provEdge) c = c.map(v => v * .72);
+        if (p === hover && provEdge) c = [240, 200, 60];
+      }
+      d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    seeds.forEach(s => { if (!s.capital) return; const x = s.x | 0, y = s.y | 0; ctx.fillStyle = "#0b0d12"; ctx.fillRect(x - 2, y - 2, 5, 5); ctx.fillStyle = REALMS[s.realm].trim; ctx.fillRect(x - 1, y - 1, 3, 3); });
+    const held = seeds.filter(s => s.realm === mine).length, cap = seeds.find(s => s.capital && s.realm === mine);
+    $("#rdLand").textContent = `Holds ${held} of ${seeds.length} provinces. Its seat is ${cap ? cap.name : "lost"}.`;
+  }
+  function at(e) { const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * GW | 0, y = (e.clientY - r.top) / r.height * GH | 0; return { p: x >= 0 && y >= 0 && x < GW && y < GH ? prov[x + y * GW] : -1, x: e.clientX - r.left + 11, y: e.clientY - r.top + 11, w: r.width }; }
+  cv.addEventListener("pointermove", e => {
+    const a = at(e); if (a.p !== hover) { hover = a.p; repaint(); }
+    if (a.p < 0) { tip.hidden = true; return; }
+    const s = seeds[a.p], b = document.createElement("b"); b.textContent = s.name; tip.replaceChildren(b, ` · ${REALMS[s.realm].name}${s.capital ? " · seat" : ""}`);
+    tip.hidden = false; tip.style.left = Math.max(80, Math.min(a.w - 60, a.x)) + "px"; tip.style.top = a.y + "px";
+  });
+  cv.addEventListener("pointerleave", () => { hover = -1; tip.hidden = true; repaint(); });
+  cv.addEventListener("click", e => { const a = at(e); if (a.p >= 0) { window.__chooseRealm(REALMS[seeds[a.p].realm]); blip(600); } });
+  window.__atlas = { repaint }; repaint();
+})();
+
+/* ---------- Light by the hour: the game's sky, on the hero shot ---------- */
+(function hour() {
+  const shot = $("#heroShot"), tint = $("#heroTint"), rain = $("#rain"), rc = rain.getContext("2d");
+  const LOOKS = {
+    dawn: ["saturate(1.15) brightness(1.04) hue-rotate(-10deg)", "linear-gradient(180deg, rgba(255,140,110,.5), rgba(255,210,170,.2))", "overlay"],
+    noon: ["none", "transparent", "normal"],
+    dusk: ["saturate(1.3) brightness(.85) contrast(1.05)", "linear-gradient(180deg, rgba(110,50,140,.55), rgba(255,110,50,.55))", "overlay"],
+    night: ["brightness(.5) saturate(.5) hue-rotate(12deg)", "linear-gradient(180deg, rgba(30,45,110,.8), rgba(40,60,120,.6))", "multiply"],
+    rain: ["brightness(.72) saturate(.55) contrast(.92)", "linear-gradient(180deg, rgba(110,120,140,.6), rgba(150,160,170,.4))", "multiply"],
+    fog: ["brightness(1.06) contrast(.6) saturate(.5)", "linear-gradient(180deg, rgba(225,230,234,.75), rgba(210,216,220,.55))", "screen"]
+  };
+  let drops = [], raining = false, last = 0;
+  function frame(t) {
+    if (!raining) return; const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
+    const W = rain.clientWidth, H = rain.clientHeight; if (rain.width !== W || rain.height !== H) { rain.width = W; rain.height = H; }
+    if (drops.length < 260) for (let i = 0; i < 20; i++) drops.push({ x: rand(-50, W), y: rand(-H, 0), v: rand(700, 1000) });
+    rc.clearRect(0, 0, W, H); rc.strokeStyle = "rgba(210,220,235,.45)"; rc.lineWidth = 1; rc.beginPath();
+    for (const d of drops) { d.y += d.v * dt; d.x += d.v * .18 * dt; if (d.y > H) { d.y = rand(-60, 0); d.x = rand(-50, W); } rc.moveTo(d.x, d.y); rc.lineTo(d.x - 3, d.y - 16); }
+    rc.stroke(); if (!reduce) requestAnimationFrame(frame);
+  }
+  document.querySelectorAll(".hour button").forEach(b => b.onclick = () => {
+    const h = b.dataset.h, [f, bg, mode] = LOOKS[h];
+    document.querySelectorAll(".hour button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    shot.style.filter = f; tint.style.background = bg; tint.style.mixBlendMode = mode;
+    raining = h === "rain"; rain.hidden = !raining; if (raining) { drops = []; last = performance.now(); requestAnimationFrame(frame); }
+    if (h === "night") clink(); else blip(h === "dawn" ? 520 : h === "dusk" ? 380 : 460);
+  });
+})();
+
+/* ---------- The company and its roll ---------- */
+(function company() {
+  const TROOPS = ["Levy", "Spearman", "Shieldman", "Man-at-arms", "Ironguard", "Paladin", "Champion"];
+  const NUM = ["I", "II", "III", "IV", "V", "VI", "VII"];
+  const DEEDS = ["was first over the wall", "brought down a horseman", "stood when half the company fell", "carried the banner out of the press", "held the ford alone for a while", "took a lord's horse", "pulled a friend from under the dead", "felled their sergeant"];
+  let co = store.get("company", null);
+  function fresh() { const used = new Set(); const men = []; for (let i = 0; i < 6; i++) men.push(recruit(used)); return { men, fallen: [], honours: [], battles: 0 }; }
+  function recruit(used = new Set(co ? co.men.map(m => m.name) : [])) { let n; let tries = 0; do { n = pick(realm.men); } while (used.has(n) && tries++ < 20); used.add(n); return { name: n, epithet: "", tier: 0, battles: 0, deeds: [], fresh: true }; }
+  if (!co || !co.men) co = fresh();
+  const save = () => store.set("company", co);
+  function render(changed = {}) {
+    const ul = $("#men"); ul.innerHTML = "";
+    co.men.forEach(m => {
+      const li = document.createElement("li"); if (m.fresh) li.className = "new"; if (changed[m.name] === "hurt") li.className = "hurt";
+      const t = document.createElement("span"); t.className = "tier"; t.textContent = NUM[m.tier];
+      const w = document.createElement("div"); w.className = "who"; const b = document.createElement("b"); b.textContent = m.name + (m.epithet ? " " + m.epithet : "");
+      const sm = document.createElement("small"); sm.textContent = TROOPS[m.tier] + (m.deeds.length ? ". " + cap(m.deeds[m.deeds.length - 1]) + "." : m.battles ? "." : ". Has not seen a battle yet.");
+      w.append(b, sm); const bt = document.createElement("span"); bt.className = "bt"; bt.textContent = m.battles + (m.battles === 1 ? " battle" : " battles");
+      li.append(t, w, bt); ul.appendChild(li); m.fresh = false;
+    });
+    const fl = $("#fallen"); fl.innerHTML = "";
+    if (!co.fallen.length) { const li = document.createElement("li"); li.style.listStyle = "none"; li.textContent = "None yet."; li.className = "none"; fl.appendChild(li); }
+    co.fallen.slice(0, 16).forEach(f => { const li = document.createElement("li"); li.textContent = `${f.name}, at ${f.at}`; fl.appendChild(li); });
+    const h = $("#honours"); h.innerHTML = ""; co.honours.forEach(x => { const s = document.createElement("span"); s.textContent = x; h.appendChild(s); });
+    $("#rollCount").textContent = co.men.length; $("#rollBattles").textContent = co.battles;
+  }
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  function fight() {
+    const place = pick(PLACES), win = Math.random() < .66, bname = pick(["Battle of ", "Fight at ", "Stand at "]) + place; co.battles++;
+    const lines = [win ? `Victory at ${place}.` : `Beaten at ${place}.`], changed = {};
+    const fell = [];
+    co.men.forEach(m => {
+      const pFall = Math.max(.04, (win ? .1 : .22) - m.tier * .015);
+      if (Math.random() < pFall) { fell.push(m); return; }
+      m.battles++;
+      if (Math.random() < .32) { const d = pick(DEEDS); m.deeds.push(d); if (!m.epithet && m.deeds.length >= 2) m.epithet = pick(EPITHETS); lines.push(`${m.name}${m.epithet ? " " + m.epithet : ""} ${d}.`); changed[m.name] = "deed"; }
+      if (m.tier < 6 && Math.random() < .4) m.tier++;
+    });
+    fell.forEach(m => { co.fallen.unshift({ name: m.name + (m.epithet ? " " + m.epithet : ""), at: place }); co.men.splice(co.men.indexOf(m), 1); co.men.push(recruit()); });
+    if (fell.length) lines.push(fell.map(m => m.name).join(" and ") + (fell.length > 1 ? " fell." : " fell.") + " New men fill the gap.");
+    else lines.push("Every named man walked away.");
+    if (win && Math.random() < .55 && !co.honours.includes(bname)) { co.honours.push(bname); if (co.honours.length > 4) co.honours.shift(); lines.push(`"${bname}" is sewn on the banner.`); horn(); }
+    else if (!win && co.honours.length && Math.random() < .4) { const lostH = co.honours.splice(Math.floor(Math.random() * co.honours.length), 1)[0]; lines.push(`The enemy took the honour "${lostH}". Win it back.`); thud(); }
+    else if (win) clink(); else thud();
+    $("#rollLog").textContent = lines.join(" "); save(); render(changed);
+  }
+  $("#fightBtn").onclick = fight;
+  $("#newCoBtn").onclick = () => { co = fresh(); save(); $("#rollLog").textContent = `Six men of the ${realm.name} took your coin. None of them has a story yet.`; render(); blip(500); };
+  render();
+})();
+
+/* ---------- Gallery lightbox ---------- */
+(function lightbox() {
+  const dlg = $("#lightbox"); if (!dlg.showModal) return;
+  document.querySelectorAll(".shot-card img").forEach(img => img.addEventListener("click", () => { $("#lbImg").src = img.src; $("#lbImg").alt = img.alt; $("#lbCap").textContent = img.closest("figure").querySelector("figcaption").textContent; dlg.showModal(); }));
+  dlg.addEventListener("click", () => dlg.close());
+})();
+
+/* ---------- Roll call ---------- */
+(function rollCall() {
+  // Point this at your mailing-list endpoint (a form service that accepts POST) when the page goes live.
+  const SIGNUP_ENDPOINT = "";
+  const form = $("#signForm"), note = $("#signNote");
+  const saved = store.get("captain", null);
+  if (saved) { $("#inscribed").textContent = "Captain " + saved; $("#capName").value = saved; }
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("#capName").value.trim(), mail = $("#capMail").value.trim();
+    if (!name) { note.textContent = "Write a name for the roll first."; $("#capName").focus(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) { note.textContent = "That address looks wrong. Check it and sign again."; $("#capMail").focus(); return; }
+    if (SIGNUP_ENDPOINT) { try { await fetch(SIGNUP_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email: mail, realm: realm.id }) }); } catch { note.textContent = "The rider was turned back. Try again in a moment."; return; } }
+    store.set("captain", name);
+    const el = $("#inscribed"); el.textContent = ""; const full = "Captain " + name; let i = 0;
+    const tick = () => { el.textContent = full.slice(0, ++i); if (i % 2) blip(380 + i * 12); if (i < full.length) setTimeout(tick, reduce ? 0 : 45); else horn(); };
+    tick();
+    $("#writText").textContent = `Free captain of the ${realm.name}. Your name is on the roll.`;
+    note.textContent = "Signed. You can close the page; the roll keeps your name.";
+  });
+})();
+
+/* ---------- Nav: the battle turns as you read; the hero shot leans with the mouse ---------- */
+(function scrollBar() {
+  const us = $("#tugUs"), them = $("#tugThem"), bar = $("#tugBar");
+  function upd() { const p = Math.min(1, scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight)); const a = Math.round(755 - p * 140), b = Math.round(760 - p * 610); us.textContent = a; them.textContent = b; bar.style.width = (a / (a + b) * 100) + "%"; }
+  addEventListener("scroll", upd, { passive: true }); upd();
+  if (!reduce) { const shot = $("#heroShot"); $(".hero").addEventListener("pointermove", e => { const r = e.currentTarget.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; shot.style.transform = `translate3d(${-x * 18}px, ${-y * 10}px, 0) scale(1.06)`; }); }
+  addEventListener("keydown", e => { if ((e.key === "h" || e.key === "H") && e.target.tagName !== "INPUT") { const r = $("#army").getBoundingClientRect(); if (r.top > innerHeight || r.bottom < 0) horn(); } });
+})();
+})();
+</script>

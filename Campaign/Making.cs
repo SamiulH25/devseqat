@@ -31,12 +31,12 @@ public sealed partial class Campaign
                     case "men": FollowedYou(a[0], Scaled((int)n), home); break;
                     case "buff": // a boon of your old life, laid on the map (0 days: the whole campaign)
                         AddBuff(a[0], n <= 0 ? LastingDays : n);
-                        Log($"{Effects.Get(a[0]).Name}: {Effects.Get(a[0]).Line}");
+                        LogYours($"{Effects.Get(a[0]).Name}: {Effects.Get(a[0]).Line}");
                         break;
                 }
             }
-            if (o.Line != "") Log(o.Line);
-            if (o.Perk != "" && Skills.Perk(o.Perk) is PerkDef p) Log($"From your old life you know {p.Name}.");
+            if (o.Line != "") LogYours(o.Line);
+            if (o.Perk != "" && Skills.Perk(o.Perk) is PerkDef p) LogYours($"From your old life you know {p.Name}.");
         }
     }
 

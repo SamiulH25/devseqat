@@ -219,7 +219,7 @@ public sealed partial class Campaign
                 into = NewCompany(to, Rules.TroopRole(to), 0, 0);
                 into.Culture = c.Culture; into.Home = c.Home;
                 p.Companies.Insert(p.Companies.IndexOf(c) + 1, into);
-                if (p == Player) Log($"{into.Name} are raised from the ranks of {c.Name}.");
+                if (p == Player) LogYours($"{into.Name} are raised from the ranks of {c.Name}.");
             }
             if (horse) p.Horses--;
             s.Xp -= from.UpgradeXp;
@@ -240,7 +240,7 @@ public sealed partial class Campaign
         if (n <= 0) return reason;
         string fromName = s.Type.Name;
         int done = PromoteMen(Player, c, s, to, n, cost => { if (S.Gold < cost) return false; S.Gold -= cost; return true; });
-        if (done > 0) Log($"{done} {fromName} of {c.Name} become {Troops.Get(to).Name}.");
+        if (done > 0) LogYours($"{done} {fromName} of {c.Name} become {Troops.Get(to).Name}.");
         Practise("Training", Rules.PerMan(done * 0.2f));
         return done > 0 ? null : "CANNOT PROMOTE";
     }
@@ -336,7 +336,7 @@ public sealed partial class Campaign
         c.SinceRout = cr.Routed ? 0 : c.SinceRout + 1;
         bool bloodied = won && cr.Start > 0 && lost * 2 >= cr.Start;
         foreach (var h in Honours.Earn(c, bloodied))
-            if (owner == Player) Log($"{c.Name} earn an honour: {h.Name}.");
+            if (owner == Player) LogYours($"{c.Name} earn an honour: {h.Name}.");
         if (owner == Player) RollAfterBattle(c, cr, won, bloodied, siege, foe);
     }
 }

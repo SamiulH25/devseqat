@@ -187,7 +187,7 @@ public partial class Campaign
             // A full holdout left alone long enough crowns a warlord (docs/archive/ANIMATION_ROSTER.md R3).
             Recruit(lair, "goblin_warlord", "infantry", 1);
             lair.Tier = 6;
-            Log($"The goblins of {lair.Name} have raised a warlord.");
+            LogAll($"The goblins of {lair.Name} have raised a warlord.");
         }
         if (lair.Men >= cap) return;
         Recruit(lair, "goblin", "infantry", Math.Min(cap - lair.Men, Math.Max(1, Scaled(B.HoldoutGrowPerDay))));
@@ -316,6 +316,6 @@ public partial class Campaign
         foreach (var v in S.Settlements.Where(v => v.Kind == SettlementKind.Village && Vector2.Distance(v.Pos, lair.Pos) < B.HoldoutRaidRange * Map.Spread))
             SeatOf(v).Unrest = MathF.Max(0, SeatOf(v).Unrest - 3);
         if (taker == Player) { Deed($"You burn out {lair.Name}.", "holdouts"); HelpedWant("monster", c => c.WantOn == lair.Id, "you cleared the beasts from our land"); }
-        else Log(taker != null ? $"{taker.Name} burns out {lair.Name}." : $"{lair.Name} is overrun.");
+        else LogAll(taker != null ? $"{taker.Name} burns out {lair.Name}." : $"{lair.Name} is overrun.");
     }
 }

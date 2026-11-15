@@ -56,7 +56,7 @@ partial class Campaign
             g.Traits.Add(HouseholdTrait);
             g.Cohesion = 20;
             Player.Companies.Add(g);
-            Log($"Your household guard takes the field: {Scaled(men)} {Troops.Get(troop).Name.ToLowerInvariant()} in your colours.");
+            LogYours($"Your household guard takes the field: {Scaled(men)} {Troops.Get(troop).Name.ToLowerInvariant()} in your colours.");
             return;
         }
         // Promoted with your rank: every man of the guard takes the new troop.
@@ -67,7 +67,7 @@ partial class Campaign
             var st = g.Stack(troop);
             (st.Men, st.Wounded) = (n, w);
             g.Role = Rules.TroopRole(troop);
-            Log($"Your household guard is now {Troops.Get(troop).Name.ToLowerInvariant()}.");
+            LogYours($"Your household guard is now {Troops.Get(troop).Name.ToLowerInvariant()}.");
         }
         int room = Scaled(men) - g.Men - g.Wounded;
         if (room > 0) g.Stack(troop).Men += Math.Min(room, Scaled(GuardRefill));

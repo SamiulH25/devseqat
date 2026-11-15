@@ -141,7 +141,7 @@ public sealed partial class Campaign
             k.Level++;
             var c = Callings.Get(k.Calling);
             string talent = c != null && k.Level <= c.Talents.Length ? Effects.Get(c.Talents[k.Level - 1]).Name.ToLowerInvariant() : "";
-            Log(k.Level == 5 && c != null ? $"{k.Name} reaches level 5 and learns {Abilities.Get(c.Second).Name}." : $"{k.Name} reaches level {k.Level}{(talent != "" ? $" ({talent})" : "")}.");
+            LogYours(k.Level == 5 && c != null ? $"{k.Name} reaches level 5 and learns {Abilities.Get(c.Second).Name}." : $"{k.Name} reaches level {k.Level}{(talent != "" ? $" ({talent})" : "")}.");
             if (k.Level >= 3 && k.Story == 0) OpenStory(k);
             if (k.Level >= 4 && k.Student == 0) TakeStudent(k);
         }

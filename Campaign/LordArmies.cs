@@ -78,7 +78,7 @@ public partial class Campaign
                 if (l.Task is "army" or "muster") { l.Task = "patrol"; l.TaskUntil = 0; l.ChaseId = -1; }
             }
         S.Armies.Remove(a);
-        if (news != "") Log(news);
+        if (news != "") LogAll(news);
     }
 
     void LeaveArmy(LordArmy a, Party l)
@@ -180,7 +180,7 @@ public partial class Campaign
                     && Vector2.Distance(s.Pos, p.Pos) < 80 * Map.Spread && Rules.Strength(GarrisonParty(s)) * appetite < weight)
                     .OrderBy(s => Vector2.Distance(s.Pos, p.Pos)).FirstOrDefault() is Settlement next)
             {
-                Log($"{target.Name} is too strong; {p.Name}'s army turns on {next.Name}.");
+                LogAll($"{target.Name} is too strong; {p.Name}'s army turns on {next.Name}.");
                 a.Target = next.Id;
                 p.Goal = next.Pos; p.Moving = true;
                 foreach (int id in a.Members) if (PartyById(id) is Party m) m.PatrolProvince = next.Province;

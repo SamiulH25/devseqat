@@ -410,11 +410,11 @@ sealed class ScreenHost : Game
         var c = campaign!;
         if (shotFrames < 20 || pendingShot != null) return;
         void Shot(string name) { pendingShot = name; shotFrames = 0; cStage++; }
-        if (cStage == 2 && lifeShots < 6) // the land and its life (docs/WORLD_LIFE.md WL3-WL5), in spring before the year turns
+        if (cStage == 2 && lifeShots < 7) // the land and its life (docs/WORLD_LIFE.md WL3-WL5), in spring before the year turns
         {
-            string[] stages = { "farm", "life", "village", "road", "night", "map" };
+            string[] stages = { "farm", "life", "village", "road", "night", "map", "river" };
             if (lifeShots == 4) { dayHours = c.S.Hours; c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 22.5; } // lamplight
-            if (lifeShots == 5) { c.S.Hours = dayHours; lifeShots++; return; }
+            if (lifeShots == 5) { c.S.Hours = dayHours; lifeShots++; return; } // daylight again ("map" is shot first)
             map.Stage(stages[lifeShots]);
             pendingShot = "campaign-" + stages[lifeShots]; shotFrames = 0; lifeShots++;
             return;

@@ -33,7 +33,7 @@ public sealed partial class Campaign
     {
         if (HouseOf(slain) is not House a || HouseOf(killer) is not House b || a == b) return;
         if (!a.Feuds.Contains(b.Id)) a.Feuds.Add(b.Id);
-        Log($"{a.Name} swears a blood feud against {b.Name}.");
+        LogAll($"{a.Name} swears a blood feud against {b.Name}.");
     }
 
     /// The lords who won a battle together remember it.
@@ -64,7 +64,7 @@ public sealed partial class Campaign
                 if (Vector2.Distance(PartyById(a.PartyId)!.Pos, PartyById(b.PartyId)!.Pos) > 15 * Map.Spread || !KRng.Chance(0.3f)) continue;
                 Remember(a, b, "we came to blows", -6);
                 Remember(b, a, "we came to blows", -6);
-                Log($"{a.Name} and {b.Name} come to blows: their houses are at feud.");
+                LogAll($"{a.Name} and {b.Name} come to blows: their houses are at feud.");
             }
     }
 

@@ -158,6 +158,7 @@ sealed partial class MapScreen
             Camera(dt, active);
             if (active && pendingClick && !ui.Blocks(ms.Position)) { pendingClick = false; ClickWorld(Ground(ms.Position)); }
             if (speed > 0) C.Tick(dt / Balance.Get().HourSeconds * speed);
+            if (C.Reached) { C.Reached = false; speed = 0; }
             if (C.Encounter != null)
             {
                 panel = PanelKind.Encounter; note = "";
@@ -340,7 +341,7 @@ sealed partial class MapScreen
             if (ms.Y < edge) pan += f; else if (ms.Y > gd.Viewport.Height - edge) pan -= f;
         }
         if (pan != Vector2.Zero) { follow = false; focus += pan * zoom * 0.9f * dt; }
-        focus = Vector2.Clamp(focus, new Vector2(-C.Map.ExtentUsed), new Vector2(C.Map.ExtentUsed));
+        focus = C.Map.InLand(focus);
         yaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt;
         if (ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
         {
@@ -420,7 +421,12 @@ sealed partial class MapScreen
         Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0, Snow: C.SeasonIndex == 3), nightFloor: 0.7f);
         var look = new Vector3(MathF.Cos(yaw) * MathF.Cos(pitch), -MathF.Sin(pitch), MathF.Sin(yaw) * MathF.Cos(pitch));
         var f3 = new Vector3(focus.X, terrain.Height(focus), focus.Y);
+        // The camera keeps its zoom and height at the edge of the world: only where its orbit would carry it off the ground
+        // (out past the mountain rim) is it held over the rim's edge, so it looks down more steeply instead of zooming in.
         eye = f3 - look * zoom;
+        float hold = C.Map.GroundHalf - 4;
+        eye.X = Math.Clamp(eye.X, -hold, hold);
+        eye.Z = Math.Clamp(eye.Z, -hold, hold);
         eye.Y = MathF.Max(eye.Y, terrain.Height(new Vector2(eye.X, eye.Z)) + 2);
         // Pulled back for a big map, the camera must still see the ground under it: the far plane and fog follow the zoom.
         // The near plane follows the zoom too: trees right by the camera are clipped rather than filling the screen.
@@ -585,8 +591,15 @@ sealed partial class MapScreen
         Vector2? target = pl.ChaseId >= 0 ? C.PartyById(pl.ChaseId)?.Pos : pl.Moving ? pl.Goal : null;
         if (target is Vector2 t)
         {
-            int n = (int)(Vector2.Distance(pl.Pos, t) / 3) + 1;
-            for (int i = 0; i < n; i += 2) Line(G(Vector2.Lerp(pl.Pos, t, i / (float)n)), G(Vector2.Lerp(pl.Pos, t, (i + 1) / (float)n)), Style.Accent);
+            // Dashes along the way the party will take (its route round rivers and lakes), or straight at a quarry.
+            var from = pl.Pos;
+            var legs = pl.ChaseId < 0 && C.PlayerRoute.Count > 0 ? C.PlayerRoute : new[] { t };
+            foreach (var to in legs)
+            {
+                int n = (int)(Vector2.Distance(from, to) / 3) + 1;
+                for (int i = 0; i < n; i += 2) Line(G(Vector2.Lerp(from, to, i / (float)n)), G(Vector2.Lerp(from, to, (i + 1) / (float)n)), Style.Accent);
+                from = to;
+            }
             Ring(t, 2, pl.ChaseId >= 0 ? Style.Foe : Style.Accent);
         }
         Ring(pl.Pos, 3, Style.Accent);
@@ -627,6 +640,10 @@ sealed partial class MapScreen
                 panel = PanelKind.None; follow = false; zoom = 52; pitch = 0.66f;
                 focus = C.S.Parties.Where(p => p.Kind == PartyKind.Caravan && !p.Down && p.Breed != "pilgrims").OrderBy(p => Vector2.Distance(p.Pos, C.Player.Pos))
                     .Select(p => p.Pos).DefaultIfEmpty(C.Player.Pos).First();
+                break;
+            case "river": // a river bending round a town and its bridges (the banks' ribbons)
+                panel = PanelKind.None; follow = false; zoom = 120; pitch = 0.95f;
+                focus = C.S.Settlements.OrderBy(s => C.Map.RiverDist(s.Pos) < 40 ? Vector2.Distance(s.Pos, C.Player.Pos) : float.MaxValue).First().Pos;
                 break;
             case "sites": panel = PanelKind.None; zoom = 120; pitch = 0.85f; focus = C.Player.Pos; follow = true; break;
             case "party": panel = PanelKind.Party; break;

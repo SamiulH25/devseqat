@@ -118,7 +118,7 @@ public sealed partial class Campaign
         if (c.Officer == "") { if (rng.Chance(Player.Companies.Contains(c) && Has("Sergeants") ? 0.8f : 0.4f)) { c.Officer = RiseToSergeant(c, SergeantName()); c.OfficerBattles = 0; } return; }
         if (lostFrac >= 0.5f && rng.Chance(0.25f))
         {
-            if (Player.Companies.Contains(c)) Log($"{c.Officer} of {c.Name} has fallen.");
+            if (Player.Companies.Contains(c)) LogYours($"{c.Officer} of {c.Name} has fallen.");
             SergeantFell(c, foe);
             c.Officer = "";
             c.Traits.Clear();
@@ -132,7 +132,7 @@ public sealed partial class Campaign
         {
             var t = rng.Pick(TraitText.Keys.Where(k => !c.Traits.Contains(k)).ToList());
             c.Traits.Add(t);
-            if (Player.Companies.Contains(c)) Log($"{c.Officer} of {c.Name} is now {t.ToLowerInvariant()}.");
+            if (Player.Companies.Contains(c)) LogYours($"{c.Officer} of {c.Name} is now {t.ToLowerInvariant()}.");
         }
     }
 

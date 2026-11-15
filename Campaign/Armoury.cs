@@ -142,7 +142,7 @@ public sealed partial class Campaign
         if (CannotBuy(g, q, mark) is string why) return why;
         S.Gold -= PriceOf(g, q, mark == "" ? 0 : 1);
         var i = Own(g.Id, q, mark, $"bought in {SettlementAt(Player.Pos)?.Name ?? "a market"}, day {Day}");
-        Log($"You buy a {ItemName(i, g).ToLowerInvariant()}.");
+        LogYours($"You buy a {ItemName(i, g).ToLowerInvariant()}.");
         AudioEngine.Current?.Play(Cue.AnvilRing, 0.7f);
         return Equip(g.Id);
     }
@@ -183,7 +183,7 @@ public sealed partial class Campaign
         if (Wears(g.Id)) return "TAKE IT OFF FIRST";
         var i = ItemOf(Captain, g.Id);
         S.Gold += SellPrice(g, i);
-        Log($"You sell your {ItemName(i, g).ToLowerInvariant()}.");
+        LogYours($"You sell your {ItemName(i, g).ToLowerInvariant()}.");
         if (i != null) Captain.Baggage.Remove(i);
         return null;
     }
@@ -242,7 +242,7 @@ public sealed partial class Campaign
         if (Report is not { Spoil.Length: > 0 } rep || Gear.Find(rep.Spoil) is not GearDef g) return "NOTHING TO TAKE";
         Own(g.Id, rep.SpoilMake, rep.SpoilMark, $"taken from {rep.Enemy}, day {Day}");
         Report = rep with { Spoil = "" };
-        Log($"You take the {g.Name.ToLowerInvariant()}. Wear it from the armourer in any market.");
+        LogYours($"You take the {g.Name.ToLowerInvariant()}. Wear it from the armourer in any market.");
         Count("spoils");
         return null;
     }

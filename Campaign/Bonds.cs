@@ -39,7 +39,7 @@ public sealed partial class Campaign
                 if (a.Sworn < 0 && b.Sworn < 0 && a.Together[b.Id] >= SwornAfter && a.Id < b.Id && !Clash(a, b))
                 {
                     a.Sworn = b.Id; b.Sworn = a.Id;
-                    Log($"{a.Name} and {b.Name} have fought side by side {SwornAfter} times and swear brotherhood.");
+                    LogYours($"{a.Name} and {b.Name} have fought side by side {SwornAfter} times and swear brotherhood.");
                 }
             }
     }
@@ -52,7 +52,7 @@ public sealed partial class Campaign
         if (k.Sworn < 0 || CharacterById(k.Sworn) is not Character b || b.Dead) return;
         b.Sworn = -2;
         Remember(b, Me, $"my sworn brother {k.Name} fell under your banner", -6);
-        Log($"{b.Name} grieves for his sworn brother {k.Name}.");
+        LogYours($"{b.Name} grieves for his sworn brother {k.Name}.");
     }
 
     // ---------- his story ----------
@@ -61,7 +61,7 @@ public sealed partial class Campaign
     void OpenStory(Character k)
     {
         k.Story = 1; k.StoryWins = 0; k.StoryDay = Day;
-        Log($"{k.Name} tells you of {StoryOf(k)}. Win three battles with him leading and it is settled.");
+        LogYours($"{k.Name} tells you of {StoryOf(k)}. Win three battles with him leading and it is settled.");
     }
 
     public static string StoryOf(Character k) => k.Calling switch
@@ -82,7 +82,7 @@ public sealed partial class Campaign
         k.Story = 2;
         Remember(k, Me, "you helped me settle my story", 15);
         GainXp(k, Math.Max(10, XpToNext(k)));
-        Log($"{k.Name}'s story is settled: {StoryOf(k)}. He is yours to the end.");
+        LogYours($"{k.Name}'s story is settled: {StoryOf(k)}. He is yours to the end.");
     }
 
     // ---------- his student ----------
@@ -94,7 +94,7 @@ public sealed partial class Campaign
         if (c?.Roll.FirstOrDefault(m => !m.Hurt && !Companions.Any(o => o.Student == m.Id)) is not Soldier m) return;
         k.Student = m.Id;
         m.Deed($"Taught by {k.Name}.");
-        Log($"{k.Name} takes {m.Name} of {c.Name} as his student.");
+        LogYours($"{k.Name} takes {m.Name} of {c.Name} as his student.");
     }
 
     /// He fell: his student, if he is on the roll still, rises as a companion of the same calling with half his levels.
@@ -113,7 +113,7 @@ public sealed partial class Campaign
         ch.Opinion[S.CaptainChar] = 30;
         S.Characters.Add(ch);
         m.Deed($"Rose as a companion when {k.Name} fell.");
-        Log($"{m.Name}, {k.Name}'s student, takes up his master's {k.Calling.ToLowerInvariant()} and joins your household.");
+        LogYours($"{m.Name}, {k.Name}'s student, takes up his master's {k.Calling.ToLowerInvariant()} and joins your household.");
         RefreshHeroes();
     }
 
@@ -129,17 +129,17 @@ public sealed partial class Campaign
                 {
                     Remember(all[i], all[j], "we quarrelled", -5);
                     Remember(all[j], all[i], "we quarrelled", -5);
-                    Log($"{all[i].Name} and {all[j].Name} quarrel by the fire.");
+                    LogYours($"{all[i].Name} and {all[j].Name} quarrel by the fire.");
                 }
         foreach (var k in all)
         {
-            if (k.Story == 1 && Day - k.StoryDay > StoryDays) { k.Story = 3; Remember(k, Me, "you never helped me settle my story", -15); Log($"{k.Name} speaks no more of {StoryOf(k)}."); }
+            if (k.Story == 1 && Day - k.StoryDay > StoryDays) { k.Story = 3; Remember(k, Me, "you never helped me settle my story", -15); LogYours($"{k.Name} speaks no more of {StoryOf(k)}."); }
             if (OpinionOfYou(k) >= LeaveBelow) { k.Warned = false; continue; }
             if (!k.Warned)
             {
                 k.Warned = true;
                 string why = MemoriesOf(k, Me).Where(m => m.Weight < 0).Select(m => m.What).FirstOrDefault() ?? "how things go";
-                Log($"{k.Name} is unhappy ({why}). If nothing changes he will leave you.");
+                LogYours($"{k.Name} is unhappy ({why}). If nothing changes he will leave you.");
                 continue;
             }
             Leave(k);
@@ -154,7 +154,7 @@ public sealed partial class Campaign
         k.PartyId = -1;
         k.Faction = S.Factions.Count == 0 ? -1 : (k.Id + Day) % S.Factions.Count;
         if (k.Sworn >= 0 && CharacterById(k.Sworn) is Character b) b.Sworn = -1;
-        Log($"{k.Name} leaves your service.");
+        LogYours($"{k.Name} leaves your service.");
         RefreshHeroes();
     }
 }

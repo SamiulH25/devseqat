@@ -1674,5 +1674,20 @@ public static partial class SelfTest
         Console.WriteLine($"mix: {Rng.Mix(1, 2, 3)} {Rng.Of("sallet")}");
         Check(Rng.Mix(1, 2, 3) == -32489229 && Rng.Of("sallet") == -1432741536, "and gives the same numbers in every process");
     }
-}
 
+    /// The feed has levels: lines about you show on all of them, the realm's news from Notable up, world chatter only on Everything.
+    static void LogLevels()
+    {
+        var c = Campaign.New(31);
+        c.S.Log.Clear();
+        c.Log("You buy a sword.");
+        c.Log("The Azure Crown and the Ashen League make peace.");
+        c.Log("Lord Brand defeats Ember Crew near Otley.", LogLevel.Everything);
+        c.Log("Your men go unpaid.");
+        int Shown(LogLevel l) => c.S.Log.Count(e => e.Level <= l);
+        Check(Shown(LogLevel.Yours) == 2, "yours: only what is about you");
+        Check(Shown(LogLevel.Notable) == 3, "notable: and the realm's news");
+        Check(Shown(LogLevel.Everything) == 4, "everything: and the chatter");
+        Check(c.S.Log[0].Level == LogLevel.Yours && c.S.Log[1].Level == LogLevel.Notable, "a line is classed by what it says when no level is given");
+    }
+}

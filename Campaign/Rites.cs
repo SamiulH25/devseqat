@@ -68,7 +68,7 @@ public sealed partial class Campaign
                 break;
         }
         if (r.Tradition == "craft") CompanionsReact("craft");
-        Log(id switch
+        LogYours(id switch
         {
             "bless" => "Your priest blesses the company.",
             "poultices" => "Herbs and dressings for the wounded.",
@@ -94,5 +94,5 @@ public sealed partial class Campaign
     void RelicSpent() { if (RelicReady) S.RelicCharges--; }
 
     /// A shrine fills the relic.
-    void RelicFilled() { if (S.Relic && S.RelicCharges < RelicCharges) { S.RelicCharges = (int)RelicCharges; Log("The relic is blessed again at the shrine."); } }
+    void RelicFilled() { if (S.Relic && S.RelicCharges < RelicCharges) { S.RelicCharges = (int)RelicCharges; LogYours("The relic is blessed again at the shrine."); } }
 }

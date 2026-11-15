@@ -36,7 +36,7 @@ public sealed partial class Campaign
         Captain.AuraXp = MathF.Min(AuraNeed, Captain.AuraXp + xp);
         if (Captain.AuraXp < AuraNeed) return;
         Captain.AuraWall = true;
-        Log(Captain.AuraTier == 0 ? "Something stirs in you in the press of battle, and will not wake. A trial will wake it (K)." : "Your aura has reached a wall. A trial will break it (K).");
+        LogYours(Captain.AuraTier == 0 ? "Something stirs in you in the press of battle, and will not wake. A trial will wake it (K)." : "Your aura has reached a wall. A trial will break it (K).");
         if (auraNews == "") auraNews = "YOUR AURA HAS REACHED A WALL";
     }
 
@@ -108,7 +108,7 @@ public sealed partial class Campaign
     {
         if (!Forms.Has(id) || Captain.Forms.Contains(id)) return false;
         Captain.Forms.Add(id);
-        if (S.Hours > 0) Log($"You learn the form {Forms.Get(id).Name}.");
+        if (S.Hours > 0) LogYours($"You learn the form {Forms.Get(id).Name}.");
         return true;
     }
 
@@ -132,10 +132,10 @@ public sealed partial class Campaign
         {
             int before = FormRank(Captain, id);
             Captain.FormUses[id] = Captain.FormUses.GetValueOrDefault(id) + n;
-            if (FormRank(Captain, id) > before && Forms.Has(id)) Log($"Your {Forms.Get(id).Name} grows stronger (rank {FormRank(Captain, id)}).");
+            if (FormRank(Captain, id) > before && Forms.Has(id)) LogYours($"Your {Forms.Get(id).Name} grows stronger (rank {FormRank(Captain, id)}).");
         }
         if (r.Corruption > 0) Corrupt(r.Corruption);
-        if (r.MadSpells > 0) Log(r.MadSpells == 1 ? "In the battle the black flame took you, and you do not know whose blood is on your blade." : $"In the battle the black flame took you {r.MadSpells} times.");
+        if (r.MadSpells > 0) LogYours(r.MadSpells == 1 ? "In the battle the black flame took you, and you do not know whose blood is on your blade." : $"In the battle the black flame took you {r.MadSpells} times.");
     }
 
     // ---- the higher trials and the cracked core (5.5, K5) ----
@@ -205,7 +205,7 @@ public sealed partial class Campaign
     {
         if (!Captain.Wounds.Contains("core")) Captain.Wounds.Add("core");
         Captain.CoreUntil = (float)S.Hours + CoreDays * 24;
-        Log("Your core is cracked: your aura fights a tier lower until it mends (a month, rest in a town, a priest, a spring).");
+        LogYours("Your core is cracked: your aura fights a tier lower until it mends (a month, rest in a town, a priest, a spring).");
         TemptFlame(); // a cracked core is where the Hollow Crown finds you (K7)
     }
 
@@ -214,7 +214,7 @@ public sealed partial class Campaign
     {
         if (!Captain.Wounds.Remove("core")) return false;
         Captain.CoreUntil = 0;
-        Log($"{how} Your core is whole again.");
+        LogYours($"{how} Your core is whole again.");
         return true;
     }
 

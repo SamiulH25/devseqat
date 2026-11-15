@@ -136,7 +136,7 @@ public partial class Campaign
             || p.Companies.Sum(c => c.Ready) >= Scaled(6) && p.Gold >= 150;
         if (threat != null)
         {
-            if (p.SiegeTarget >= 0) Log($"{p.Name} abandons the siege of {SettlementById(p.SiegeTarget).Name}.");
+            if (p.SiegeTarget >= 0) LogAll($"{p.Name} abandons the siege of {SettlementById(p.SiegeTarget).Name}.");
             p.SiegeTarget = -1;
             p.Task = "flee"; p.ChaseId = -1; p.Goal = home.Pos; p.Moving = true; p.TaskUntil = (float)S.Hours + 3;
         }
@@ -186,7 +186,7 @@ public partial class Campaign
                     v.Recruits = 0;
                     Raided(v);
                     Score(p.Faction, prov.Faction, 20);
-                    Log($"{p.Name} threatens {v.Name}.");
+                    LogAll($"{p.Name} threatens {v.Name}.");
                 }
         }
     }

@@ -108,7 +108,7 @@ public sealed partial class Campaign
         if (ItemOf(Captain, def) is not GearItem i) return g.Free ? "YOU KEEP YOUR OLD KIT" : "NOT YOURS";
         if (i.Name != "") return "A NAMED PIECE IS NOT LEFT BEHIND";
         Captain.Baggage.Remove(i);
-        Log($"You leave the {ItemName(i, g).ToLowerInvariant()} behind.");
+        LogYours($"You leave the {ItemName(i, g).ToLowerInvariant()} behind.");
         return null;
     }
 
@@ -147,7 +147,7 @@ public sealed partial class Campaign
             bool could = w.Kills >= NameAtKills;
             w.Kills += r.PlayerKills;
             if (!could && w.Kills >= NameAtKills && w.Name == "")
-                Log($"Your {Gear.Get(w.Def).Name.ToLowerInvariant()} has taken {w.Kills} lives. It has earned a name: give it one at the armourer.");
+                LogYours($"Your {Gear.Get(w.Def).Name.ToLowerInvariant()} has taken {w.Kills} lives. It has earned a name: give it one at the armourer.");
         }
     }
 
@@ -169,7 +169,7 @@ public sealed partial class Campaign
         if (name.Length is < 2 or > 24) return "A NAME OF 2 TO 24 LETTERS";
         i.Name = name;
         i.Quality = ItemQuality.Named;
-        Log($"You name your {Gear.Get(i.Def).Name.ToLowerInvariant()} {name}.");
+        LogYours($"You name your {Gear.Get(i.Def).Name.ToLowerInvariant()} {name}.");
         Deed($"named the blade {name}");
         return null;
     }

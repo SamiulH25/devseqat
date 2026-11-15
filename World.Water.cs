@@ -120,33 +120,68 @@ sealed partial class World
     /// stones across the fords that have no bridge.
     void RiverWater(Mesh m, River r, Random rng)
     {
-        float half = r.Width / 2 + 1.2f, bankOut = r.Width / 2 + 4.2f, along = 0;
+        float half = r.Width / 2 + 1.2f, bankOut = r.Width / 2 + 4.2f + 2 * r.Widen, bank = r.Width / 2 + 3.5f + 2 * r.Widen;
         var path = r.Path;
-        for (int i = 0; i + 1 < path.Length; i++)
+        // The course every 2 m, its direction averaged over some metres either way: a river turned hard round a town
+        // otherwise folds its ribbons over themselves at the kink, leaving flaps of bank standing out over the land.
+        var smp = Resample(path, 2f);
+        int count = smp.Count;
+        if (count < 2) return;
+        var nrm = new Vector2[count];
+        var surf = new float[count];
+        for (int i = 0; i < count; i++)
         {
-            Vector2 a = path[i], b = path[i + 1], d = Vector2.Normalize(b - a), n = new(-d.Y, d.X);
-            float len = Vector2.Distance(a, b);
-            // Directions at the joints, so neighbouring quads meet.
-            Vector2 na = Perp(i), nb = Perp(i + 1);
-            float bank = r.Width / 2 + 3.5f;
-            float Level(Vector2 p, Vector2 nn) => MathF.Min(t.Height(p + nn * bank), t.Height(p - nn * bank)) - 0.3f;
-            float la = Level(a, na), lb = Level(b, nb);
+            var d = Vector2.Zero;
+            for (int j = Math.Max(0, i - 4); j <= Math.Min(count - 1, i + 4); j++) d += smp[j].D;
+            d = d.LengthSquared() > 1e-6f ? Vector2.Normalize(d) : smp[i].D;
+            nrm[i] = new Vector2(-d.Y, d.X);
+            surf[i] = MathF.Min(t.Height(smp[i].P + nrm[i] * bank), t.Height(smp[i].P - nrm[i] * bank)) - 0.3f;
+        }
+        // The surface eased along the course (never above the lower bank it had), so it does not step at every sample.
+        var eased = new float[count];
+        for (int i = 0; i < count; i++)
+        {
+            float sum = 0; int k = 0;
+            for (int j = Math.Max(0, i - 3); j <= Math.Min(count - 1, i + 3); j++) { sum += surf[j]; k++; }
+            eased[i] = MathF.Min(surf[i], sum / k);
+        }
+        surf = eased;
+        Vector3 V(Vector2 p, float y) => new(p.X, y, p.Y);
+        // Across a bank, from the water's edge out to the grass: each point lies on the ground (or just over the water).
+        float[] cols = { 0, 0.25f, 0.5f, 0.75f, 1 };
+        float along = 0;
+        for (int i = 0; i + 1 < count; i++)
+        {
+            Vector2 a = smp[i].P, b = smp[i + 1].P, na = nrm[i], nb = nrm[i + 1];
+            float len = Vector2.Distance(a, b), la = surf[i], lb = surf[i + 1];
             Color ca = r.AtFord(a) ? WaterShallow : WaterDeep, cb = r.AtFord(b) ? WaterShallow : WaterDeep;
-            Vector3 V(Vector2 p, float y) => new(p.X, y, p.Y);
             float ya = -10 - along, yb = -10 - along - len;
             m.Raw(V(a - na * half, la), Vector3.Up, ca, new(-1, ya)); m.Raw(V(a + na * half, la), Vector3.Up, ca, new(1, ya)); m.Raw(V(b + nb * half, lb), Vector3.Up, cb, new(1, yb));
             m.Raw(V(a - na * half, la), Vector3.Up, ca, new(-1, ya)); m.Raw(V(b + nb * half, lb), Vector3.Up, cb, new(1, yb)); m.Raw(V(b - nb * half, lb), Vector3.Up, cb, new(-1, yb));
-            // The banks: wet mud at the water's edge drying toward the grass.
+            // The banks: wet mud at the water's edge drying toward the grass, draped over the cut.
             foreach (int side in new[] { -1, 1 })
             {
-                Vector2 ia = a + na * side * (half - 0.3f), ib = b + nb * side * (half - 0.3f), oa = a + na * side * bankOut, ob = b + nb * side * bankOut;
-                Color wet = new(Mud), dry = new(Vector3.Lerp(Shore, GroundColor(oa), 0.5f));
-                Vector3 Ia = V(ia, la + 0.03f), Ib = V(ib, lb + 0.03f), Oa = V(oa, t.Height(oa) + 0.05f), Ob = V(ob, t.Height(ob) + 0.05f);
-                m.Raw(Ia, NormalAt(ia), wet, Vector2.Zero); m.Raw(Oa, NormalAt(oa), dry, Vector2.Zero); m.Raw(Ob, NormalAt(ob), dry, Vector2.Zero);
-                m.Raw(Ia, NormalAt(ia), wet, Vector2.Zero); m.Raw(Ob, NormalAt(ob), dry, Vector2.Zero); m.Raw(Ib, NormalAt(ib), wet, Vector2.Zero);
-                // Reeds in the quiet water by the bank (not at fords or bridges, and not everywhere).
-                if (!r.AtFord(a) && !r.AtBridge(a) && Terrain.Noise(a.X * 0.05f, a.Y * 0.05f, t.Seed + 31 + side) > 0.55f)
-                    Reeds(m, a + na * side * (half - 0.2f + rng.NextSingle() * 1.2f) + d * rng.NextSingle() * len, la, rng);
+                for (int c = 0; c + 1 < cols.Length; c++)
+                {
+                    var (pa0, ya0, ka0) = BankPoint(a, na, la, c);
+                    var (pa1, ya1, ka1) = BankPoint(a, na, la, c + 1);
+                    var (pb0, yb0, kb0) = BankPoint(b, nb, lb, c);
+                    var (pb1, yb1, kb1) = BankPoint(b, nb, lb, c + 1);
+                    m.Raw(V(pa0, ya0), NormalAt(pa0), ka0, Vector2.Zero); m.Raw(V(pa1, ya1), NormalAt(pa1), ka1, Vector2.Zero); m.Raw(V(pb1, yb1), NormalAt(pb1), kb1, Vector2.Zero);
+                    m.Raw(V(pa0, ya0), NormalAt(pa0), ka0, Vector2.Zero); m.Raw(V(pb1, yb1), NormalAt(pb1), kb1, Vector2.Zero); m.Raw(V(pb0, yb0), NormalAt(pb0), kb0, Vector2.Zero);
+                }
+                // Reeds in the quiet water by the bank (not at fords or bridges, and not everywhere), about one stretch in two.
+                if (i % 2 == 0 && !r.AtFord(a) && !r.AtBridge(a) && Terrain.Noise(a.X * 0.05f, a.Y * 0.05f, t.Seed + 31 + side) > 0.55f)
+                    Reeds(m, a + na * side * (half - 0.2f + rng.NextSingle() * 1.2f) + smp[i].D * rng.NextSingle() * len * 2, la, rng);
+
+                (Vector2 P, float Y, Color C) BankPoint(Vector2 p, Vector2 n, float lvl, int c)
+                {
+                    float k = cols[c];
+                    var q = p + n * side * MathHelper.Lerp(half - 0.3f, bankOut, k);
+                    float y = c == 0 ? lvl + 0.03f : MathF.Max(t.Height(q), lvl + 0.03f) + 0.06f;
+                    var col = new Color(Vector3.Lerp(Mud, Vector3.Lerp(Shore, GroundColor(q), 0.5f + 0.5f * k * k), MathHelper.SmoothStep(0, 1, k)));
+                    return (q, y, col);
+                }
             }
             along += len;
         }
@@ -157,7 +192,7 @@ sealed partial class World
             int k = Nearest(f);
             var d = Vector2.Normalize(path[Math.Min(k + 1, path.Length - 1)] - path[Math.Max(k - 1, 0)]);
             var across = new Vector2(-d.Y, d.X);
-            float level = MathF.Min(t.Height(f + across * (r.Width / 2 + 3.5f)), t.Height(f - across * (r.Width / 2 + 3.5f))) - 0.3f;
+            float level = MathF.Min(t.Height(f + across * (r.Width / 2 + 3.5f + 2 * r.Widen)), t.Height(f - across * (r.Width / 2 + 3.5f + 2 * r.Widen))) - 0.3f;
             for (float s = -half + 0.6f; s < half - 0.4f; s += 1.1f + rng.NextSingle() * 0.4f)
             {
                 var p = f + across * s + d * (rng.NextSingle() - 0.5f) * 1.2f;
@@ -166,12 +201,6 @@ sealed partial class World
             }
         }
 
-        Vector2 Perp(int i)
-        {
-            var d = path[Math.Min(i + 1, path.Length - 1)] - path[Math.Max(i - 1, 0)];
-            d = d.LengthSquared() > 1e-6f ? Vector2.Normalize(d) : Vector2.UnitX;
-            return new Vector2(-d.Y, d.X);
-        }
         int Nearest(Vector2 p)
         {
             int best = 0;

@@ -499,7 +499,7 @@ partial class MapScreen
     void Contracts()
     {
         if (C.S.Contracts.Count == 0) return;
-        int w = ui.U(230), x = ui.W - w - ui.U(10), y = ui.U(194);
+        int w = ui.U(230), x = ui.W - w - ui.U(10), y = ui.U(194 + 8 * 23 + 8); // under the minimap and the menu rail (Hints)
         var r = new Rectangle(x, y, w, ui.U(20) + C.S.Contracts.Count * ui.U(26));
         ui.Panel(r);
         ui.Text("CONTRACTS", x + ui.U(8), y + ui.U(6), Style.Accent, 1);

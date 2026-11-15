@@ -42,7 +42,7 @@ public sealed partial class Campaign
         Captain.OwnFormOffer = Captain.StyleTally.Where(kv => kv.Value > 0).OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key).Take(2).Select(kv => kv.Key).ToList();
         if (Captain.OwnFormOffer.Count == 0) return;
         Beat = ("A FORM OF YOUR OWN", new[] { "YOU FIGHT LIKE NO ONE ELSE. THE AURA HAS TAKEN YOUR SHAPE.", "CHOOSE YOUR OWN FORM ON THE CAPTAIN SHEET (K)." });
-        Log("Your aura has taken the shape of how you fight. You can make a form of your own (K).");
+        LogYours("Your aura has taken the shape of how you fight. You can make a form of your own (K).");
     }
 
     /// The name a style's form takes from your company: the Red Lions' Answer.
@@ -99,7 +99,7 @@ public sealed partial class Campaign
     {
         if (CannotTakeAspect(form, aspect) is string why) return why;
         Captain.FormAspects[form] = aspect;
-        Log($"Your {Forms.Get(form).Name} grows {Forms.Aspect(aspect)!.Name.ToLowerInvariant()}.");
+        LogYours($"Your {Forms.Get(form).Name} grows {Forms.Aspect(aspect)!.Name.ToLowerInvariant()}.");
         return null;
     }
 }

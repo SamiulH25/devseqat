@@ -228,7 +228,16 @@ partial class MapScreen
     void Feed()
     {
         int y = ui.U(10), room = Math.Max(ui.U(80), (ui.W - ui.U(480)) / 2 - ui.U(30));
-        foreach (var e in C.S.Log.AsEnumerable().Reverse().Take(6))
+        // The log's level: a small switch above the lines (click to go from your own news, to the realm's, to everything).
+        var level = Settings.Current.LogLevel;
+        string[] names = { "YOURS", "NOTABLE", "EVERYTHING" };
+        if (ui.Button(new Rectangle(ui.U(10), y - ui.U(4), ui.U(118), ui.U(15)), $"LOG: {names[(int)level]}", true, "How much news the feed shows: your own, the realm's too, or everything. Click to change."))
+        {
+            Settings.Current.LogLevel = (LogLevel)(((int)level + 1) % 3);
+            Settings.Current.Save();
+        }
+        y += ui.U(18);
+        foreach (var e in C.S.Log.Where(e => e.Level <= Settings.Current.LogLevel).Reverse().Take(6))
         {
             float age = (float)(C.S.Hours - e.At) / 24;
             var c = Color.White * Math.Clamp(1.4f - age * 0.25f, 0.45f, 1);
@@ -269,7 +278,7 @@ partial class MapScreen
     void CaptainPanel()
     {
         var cap = C.Captain;
-        var r = new Rectangle(ui.U(10), ui.H - ui.U(146), ui.U(300), ui.U(136));
+        var r = new Rectangle(ui.U(10), ui.H - ui.U(146), ui.U(280), ui.U(136));
         ui.Panel(r);
         BuffChips(r);
         int x = r.X + ui.U(10), y = r.Y + ui.U(8);
@@ -333,7 +342,7 @@ partial class MapScreen
     {
         var list = C.Player.Companies;
         int cw = list.Count >= 10 ? ui.U(88) : ui.U(96), ch = ui.U(108), gap = list.Count >= 10 ? ui.U(4) : ui.U(6), total = list.Count * cw + Math.Max(0, list.Count - 1) * gap;
-        int x0 = Math.Max(ui.U(320), (ui.W - total) / 2);
+        int x0 = Math.Max(ui.U(300), (ui.W - total) / 2);
         for (int i = 0; i < list.Count; i++)
         {
             var c = list[i];
@@ -376,7 +385,8 @@ partial class MapScreen
         }
     }
 
-    /// The screens a mouse can reach, one button each above the captain card, with its key.
+    /// The screens a mouse can reach: a rail of buttons down the right edge under the minimap, each with its key, so the captain's
+    /// card at the bottom left is only the captain.
     void Hints()
     {
         var row = new (string Label, Act Key, PanelKind Panel)[]
@@ -384,15 +394,13 @@ partial class MapScreen
             ("COMPANY", Act.PartyScreen, PanelKind.Party), ("SERGEANTS", Act.DivisionsScreen, PanelKind.Divisions), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("KIT", Act.InventoryScreen, PanelKind.Inventory),
             ("LORDS", Act.LordsScreen, PanelKind.Characters), ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("KEYS", Act.Help, PanelKind.Help),
         };
-        int x0 = ui.U(10), x = x0, y = ui.H - ui.U(194), h = ui.U(20), maxW = ui.U(310);
+        int h = ui.U(20), w = row.Max(r => ui.TW(r.Label, 1) + ui.TW(ctl.First(r.Key), 1)) + ui.U(26);
+        int x = ui.W - w - ui.U(10), y = ui.U(10 + 170 + 12); // under the minimap, which is 170 high at the top right
         for (int i = 0; i < row.Length; i++)
         {
             var (label, key, kind) = row[i];
-            string k = ctl.First(key);
-            int w = ui.TW(label, 1) + ui.TW(k, 1) + ui.U(18);
-            if (x > x0 && x + w > x0 + maxW) { x = x0; y += h + ui.U(3); }
-            if (ui.Button(new Rectangle(x, y, w, h), label, true, k)) { if (kind == PanelKind.Help) panel = kind; else OpenScreen(kind); }
-            x += w + ui.U(4);
+            if (ui.Button(new Rectangle(x, y, w, h), label, true, ctl.First(key))) { if (kind == PanelKind.Help) panel = kind; else OpenScreen(kind); }
+            y += h + ui.U(3);
         }
     }
 

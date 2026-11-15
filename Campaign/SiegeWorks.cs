@@ -33,7 +33,7 @@ public sealed partial class Campaign
         var def = Engines.Get(id);
         S.Gold -= def.Cost;
         Queue(Player, def, Has("Siegecraft") ? 0.5f : 1);
-        Log($"Your engineers start on a {def.Name.ToLowerInvariant()}.");
+        LogYours($"Your engineers start on a {def.Name.ToLowerInvariant()}.");
         AudioEngine.Current?.Play(Cue.AnvilRing);
         return null;
     }
@@ -63,7 +63,7 @@ public sealed partial class Campaign
             if (blows <= 0) continue;
             bool was = s.Battered >= 1;
             s.Battered = MathF.Min(1, s.Battered + blows / (1 + 0.5f * Level(s, "walls")));
-            if (!was && s.Battered >= 1 && (camp.Contains(Player) || s.Owner == Player.Id)) Log($"The walls of {s.Name} are breached.");
+            if (!was && s.Battered >= 1 && (camp.Contains(Player) || s.Owner == Player.Id)) LogYours($"The walls of {s.Name} are breached.");
         }
     }
 
@@ -120,7 +120,7 @@ public sealed partial class Campaign
         if (CannotBuyEngine(s, id) is string why) return why;
         S.Gold -= Engines.Get(id).Cost;
         Player.Train.Add(id);
-        Log($"A {Engines.Get(id).Name.ToLowerInvariant()} joins your train.");
+        LogYours($"A {Engines.Get(id).Name.ToLowerInvariant()} joins your train.");
         return null;
     }
 
@@ -136,7 +136,7 @@ public sealed partial class Campaign
     void TrainLost()
     {
         if (Player.Train.Count == 0) return;
-        Log(Player.Train.Count == 1 ? "Your engine is lost to the enemy." : $"Your {Player.Train.Count} engines are lost to the enemy.");
+        LogYours(Player.Train.Count == 1 ? "Your engine is lost to the enemy." : $"Your {Player.Train.Count} engines are lost to the enemy.");
         Player.Train.Clear();
     }
 }

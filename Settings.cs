@@ -14,6 +14,8 @@ public sealed class Settings
     /// The field camera's kick when blows land (0 off, 0.5 soft, 1 full), and the brief hold when your own blow lands.
     public float CameraShake = 1;
     public bool HitPause = true;
+    /// How much of the news the campaign feed shows (Campaign.Log levels): Yours, Notable or Everything.
+    public LogLevel LogLevel = LogLevel.Notable;
     /// The battle's one cinematic moment (docs/archive/SPECTACLE.md): a great working, a breakthrough or a clash slows the view
     /// for a breath and draws bars top and bottom.
     public bool Cinematics = true;
