@@ -6,6 +6,8 @@ namespace Ironfield;
 /// Streams 44.1 kHz stereo music through a single `DynamicSoundEffectInstance`. A background worker renders 0.20 s
 /// chunks (mixing 4 sample-locked stems, crossfades and one-shot stingers through one shared `StereoHall` reverb),
 /// and the main thread submits queued PCM buffers in `Pump()` so OpenAL calls stay on the main thread.
+/// Every gain change is a ramp across a chunk: a piece fades in from silence and each piece it replaces fades out from
+/// wherever it was, so a change in the middle of a crossfade never jumps (a jump is a click).
 sealed class AudioStreamer : IDisposable
 {
     public const int ChunkFrames = Synth.Rate / 5; // 0.20 s = 8,820 stereo frames (35,280 bytes)
@@ -18,7 +20,13 @@ sealed class AudioStreamer : IDisposable
         public string Id = "";
         public double CursorSec;
         public bool Loop, Finished;
+        /// The slot's gain now (0..1): rises to 1 while it is the current piece, falls to 0 once replaced.
+        public float Gain;
     }
+
+    /// Seconds a piece takes to fade in or out; the most pieces fading out at once (past that, the quietest is let go).
+    const float FadeSec = 1.5f;
+    const int MaxFading = 3;
 
     readonly DynamicSoundEffectInstance output;
     readonly ConcurrentQueue<byte[]> ready = new();
@@ -31,8 +39,9 @@ sealed class AudioStreamer : IDisposable
     readonly float[] stingBuf = new float[ChunkFrames * 2];
     readonly float[] stemCur = { 1f, 0f, 0f, 0f }, stemWant = { 1f, 0f, 0f, 0f };
 
-    Slot? current, previous, stinger;
-    float crossfade = 1f, masterVol = 0.5f, stingerGain = 0.9f;
+    Slot? current, stinger;
+    readonly List<Slot> fading = new();
+    float masterVol = 0.5f, stingerGain = 0.9f, duck = 1f;
     volatile bool disposed;
 
     public AudioStreamer()
@@ -46,6 +55,8 @@ sealed class AudioStreamer : IDisposable
 
     public string CurrentId { get { lock (stateLock) return current?.Id ?? ""; } }
     public bool CurrentFinished { get { lock (stateLock) return current is { Loop: false, Finished: true }; } }
+    /// How far into the current piece the music has been rendered (seconds), to resume it later.
+    public double CurrentCursor { get { lock (stateLock) return current?.CursorSec ?? 0; } }
 
     public void SetVolume(float volume) => output.Volume = Math.Clamp(volume, 0f, 1f);
 
@@ -60,19 +71,24 @@ sealed class AudioStreamer : IDisposable
         }
     }
 
-    public void PlayPiece(string id, float[]? legacyFallback = null, bool? forceLoop = null)
+    /// Fade to `id` (from `startSec` in), fading out what plays now; "" fades to silence.
+    public void PlayPiece(string id, float[]? legacyFallback = null, bool? forceLoop = null, double startSec = 0)
     {
         lock (stateLock)
         {
             if (current?.Id == id && (id == "" || !current.Finished)) return;
-            previous = current;
+            if (current is { Gain: > 0.001f })
+            {
+                fading.Add(current);
+                if (fading.Count > MaxFading) fading.Remove(fading.MinBy(f => f.Gain)!);
+            }
             if (string.IsNullOrEmpty(id))
             {
                 current = null;
             }
             else if (MusicLibrary.Get(id) is { } score)
             {
-                current = new Slot { Id = id, Score = score, Loop = forceLoop ?? score.Loop };
+                current = new Slot { Id = id, Score = score, Loop = forceLoop ?? score.Loop, CursorSec = Math.Max(0, startSec) };
             }
             else if (legacyFallback != null)
             {
@@ -82,7 +98,6 @@ sealed class AudioStreamer : IDisposable
             {
                 current = null;
             }
-            crossfade = 0f;
         }
         wake.Set();
     }
@@ -148,31 +163,30 @@ sealed class AudioStreamer : IDisposable
             for (int s = 0; s < 4; s++)
                 stemCur[s] += (stemWant[s] - stemCur[s]) * 0.22f;
 
-            float stingDuck = stinger is { Finished: false } ? 0.48f : 1f;
-            float fadeStart = crossfade;
-            float fadeEnd = MathF.Min(1f, crossfade + (float)(chunkSec / 1.5));
-            crossfade = fadeEnd;
+            // The music dips under a stinger, eased over a third of a second rather than stepped.
+            float duck0 = duck, step = (float)(chunkSec / FadeSec);
+            duck = stinger is { Finished: false } ? MathF.Max(0.48f, duck - 0.6f) : MathF.Min(1f, duck + 0.3f);
 
             if (current != null && !current.Finished)
             {
                 if (current.Score != null) { wet = current.Score.ReverbWet; decay = current.Score.ReverbDecay; }
+                float g0 = current.Gain;
+                current.Gain = MathF.Min(1f, g0 + step);
                 RenderSlot(bank, current, mixBuf, stemCur);
-                ApplyRamp(mixBuf, fadeStart * stingDuck, fadeEnd * stingDuck);
+                ApplyRamp(mixBuf, g0 * duck0, current.Gain * duck);
             }
 
-            if (previous != null)
+            foreach (var f in fading)
             {
+                float g0 = f.Gain;
+                f.Gain = MathF.Max(0f, g0 - step);
+                if (f.Finished) continue;
                 Array.Clear(prevBuf, 0, prevBuf.Length);
-                RenderSlot(bank, previous, prevBuf, stemCur);
-                for (int i = 0; i < ChunkFrames; i++)
-                {
-                    float t = i / (float)ChunkFrames;
-                    float g = (1f - (fadeStart + (fadeEnd - fadeStart) * t)) * stingDuck;
-                    mixBuf[i * 2] += prevBuf[i * 2] * g;
-                    mixBuf[i * 2 + 1] += prevBuf[i * 2 + 1] * g;
-                }
-                if (fadeEnd >= 0.999f) previous = null;
+                RenderSlot(bank, f, prevBuf, stemCur);
+                ApplyRamp(prevBuf, g0 * duck0, f.Gain * duck);
+                for (int i = 0; i < prevBuf.Length; i++) mixBuf[i] += prevBuf[i];
             }
+            fading.RemoveAll(f => f.Gain <= 0f || f.Finished);
 
             if (stinger != null && !stinger.Finished)
             {

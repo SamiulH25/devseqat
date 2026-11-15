@@ -36,17 +36,20 @@ static partial class Synth
         return Loop(b, 0.5f);
     }
 
-    /// Rushing river and ford rapids: steady mid-band water babble with bubbling resonant ripples.
+    /// Rushing river and ford rapids: a low water rush with bubbling resonant ripples. Kept dark (bands at 300 and 820 Hz,
+    /// then a low-pass near 1.6 kHz): it used to sit at 680 and 1950 Hz and on the map, under no music, it was a hiss like static.
     public static float[] River()
     {
         var r = new Random(302);
         var b = Buf(7.5f);
-        var flow = new Band(680, 0.9f);
-        var foam = new Band(1950, 1.4f);
+        var flow = new Band(300, 0.7f);
+        var foam = new Band(820, 1.1f);
+        float dark = 1 - MathF.Exp(-MathF.Tau * 1600f / Rate), lp = 0;
         for (int i = 0; i < b.Length; i++)
         {
             float t = T(i), n = N(r);
-            b[i] = (flow.Run(n) * (0.8f + 0.2f * MathF.Sin(t * 2.3f)) + foam.Run(n) * 0.45f) * 0.85f;
+            lp += ((flow.Run(n) * (0.8f + 0.2f * MathF.Sin(t * 2.3f)) + foam.Run(n) * 0.3f) - lp) * dark;
+            b[i] = lp;
         }
         for (int k = 0; k < 45; k++)
         {
@@ -61,19 +64,30 @@ static partial class Synth
             }
             Mix(b, blup, at, R(r, 0.3f, 0.8f));
         }
+        Level(b, 0.1f);
         return Loop(b, 0.5f);
     }
 
-    /// Woodland canopy: leafy breeze rising and falling, creaking timber boughs and soft brush.
+    /// Scale a bed to a steady loudness (rms).
+    static void Level(float[] b, float rms)
+    {
+        float now = MathF.Sqrt(b.Sum(x => x * x) / b.Length);
+        for (int i = 0; i < b.Length; i++) b[i] *= rms / MathF.Max(now, 1e-6f);
+    }
+
+    /// Woodland canopy: leafy breeze rising and falling, creaking timber boughs and soft brush. The leaves are a soft
+    /// 1.2 kHz rustle under a low-pass (they were a 2.4 kHz band of noise: a hiss).
     public static float[] Forest()
     {
         var r = new Random(303);
         var b = Buf(9.5f);
-        var leaves = new Band(2400, 1.1f);
+        var leaves = new Band(1200, 0.8f);
+        float dark = 1 - MathF.Exp(-MathF.Tau * 2000f / Rate), lp = 0;
         for (int i = 0; i < b.Length; i++)
         {
             float t = T(i), swell = 0.5f + 0.5f * MathF.Sin(t * MathF.Tau / 9f) * MathF.Cos(t * 0.9f);
-            b[i] = leaves.Run(N(r)) * (0.35f + 0.65f * swell) * 0.65f;
+            lp += (leaves.Run(N(r)) * (0.35f + 0.65f * swell) * 0.65f - lp) * dark;
+            b[i] = lp;
         }
         for (int k = 0; k < 5; k++)
         {
@@ -89,6 +103,7 @@ static partial class Synth
             }
             Mix(b, bough, at, 0.5f);
         }
+        Level(b, 0.075f);
         return Loop(b, 0.5f);
     }
 

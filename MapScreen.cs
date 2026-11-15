@@ -291,7 +291,7 @@ sealed partial class MapScreen
 
         bool hostNear = false;
         foreach (var p in C.S.Parties)
-            if (p.Id != C.Player.Id && p.Men >= 75 && C.Hostile(C.Player, p) && Vector2.DistanceSquared(p.Pos, C.Player.Pos) < 28f * 28f) { hostNear = true; break; }
+            if (p.Kind == PartyKind.Lord && p.Id != C.Player.Id && C.Hostile(C.Player, p) && Vector2.DistanceSquared(p.Pos, C.Player.Pos) < 24f * 24f) { hostNear = true; break; } // an enemy lord's host, not brigands
 
         string? interior = panel switch
         {
@@ -313,7 +313,7 @@ sealed partial class MapScreen
         audio.SetBed(Bed.Birds, winter ? 0 : day * dry * (1 - town * 0.5f));
         audio.SetBed(Bed.Crickets, winter ? 0 : Sky.Night * dry);
         audio.SetBed(Bed.Town, town * (0.4f + 0.6f * day));
-        if (river > 0.02f) audio.SetBed(Bed.River, river * 0.65f);
+        if (river > 0.02f) audio.SetBed(Bed.River, river * 0.45f);
         if (prov.Kind == "Marsh" || culture == "league") audio.SetBed(Bed.Surf, prov.Kind == "Marsh" ? 0.55f : 0.35f);
         if (prov.Kind == "Forest") audio.SetBed(Bed.Forest, 0.55f * (1 - town * 0.5f));
         if (omen > 0.02f) audio.SetBed(Bed.OmenDrone, omen);

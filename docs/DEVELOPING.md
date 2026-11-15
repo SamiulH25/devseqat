@@ -570,11 +570,19 @@ There are no model or pre-rendered WAV/OGG files. The only images are the unit s
   No audio device means silence, not a crash. `--sounds dir [filter]` writes matching cues, beds and stereo scores as WAV
   files to listen to; `SelfTest.SoundsMade` checks the bank, validates all 68 scores (`MusicLibrary.Validate`), and verifies
   levels and loop seams.
-  Music is kept steady on purpose (`AudioEngine.UpdateMapMusic`): a town tab's piece starts only after the tab has stayed
-  open 0.9 s, open-map pieces play to their end with 12–16 s of quiet between, a host or dread cuts one only after lasting
-  4 s and never within 20 s of the last change, and a battle's victory/defeat piece plays out on the map. Each score's
+  Music is kept steady on purpose: `MusicDirector.cs` (headless, checked by `SelfTest.MapMusicSteady`) chooses the map's
+  music and `AudioEngine.UpdateMapMusic` starts what it asks for. A town or hall screen's piece starts once it has stayed
+  open 1.5 s, and another screen of the same visit takes over only after 6 s (flicking tabs used to swap the music every
+  second); open-map pieces play to their end with 5–9 s of quiet between (the old 12–16 s left only the hissy beds);
+  only dread lasting 6 s may cut one, never within 30 s of the last change; an enemy lord's host near (not brigands) only
+  colours the next pick; after a visit under two minutes the map piece resumes where it was left (`AudioStreamer.PlayPiece`
+  `startSec`); and a battle's victory/defeat piece plays out on the map. In the streamer every gain change is a ramp: a
+  new piece fades in and each piece it replaces fades out from its own current gain, so a change mid-crossfade never
+  clicks. Each score's
   `masterGain` was set so pieces sit near −20 dB RMS (measured from `--sounds` renders); keep new scores near that.
-  Beds of raw noise must be band-limited: plain white noise at 44.1 kHz reads as loud static (the old rain bed did).
+  Beds of raw noise must be band-limited and dark: plain white noise at 44.1 kHz reads as loud static (the old rain bed
+  did), and so did noise bands above ~1.5 kHz (the old river at 680/1950 Hz and forest at 2.4 kHz, now 300/820 Hz and
+  1.2 kHz under a low-pass).
 
 Check visual changes with the screenshot commands in section 1 and look at the PNGs.
 

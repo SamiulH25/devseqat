@@ -14,11 +14,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Art.cs (58 lines)
 - **Art** (class, L8): Has:14, TryGet:16, Art:18, Mipped:38
 
-## Audio.cs (434 lines)
+## Audio.cs (358 lines)
 - **Cue** (enum, L7)
 - **MusicTrack** (enum, L26)
 - **Bed** (enum, L29)
-- **AudioEngine** (class, L38): AudioEngine:62, MakeAll:80, Ready:104, Chance:120, Cap:122, Family:127, FamilyCap:137, TriggersDuck:139, Duck:143, Play:149, PlayAt:174, SetBed:185, BedGain:198, Beds:205, Intensity:214, SetStemWeights:220, PlayStinger:223, RequestPiece:230, UpdateMapMusic:245, UpdateBattleMusic:304, Music:330, PickMapPiece:353, StartPiece:363, Update:388, AdvancePlaylist:411, Make:423
+- **AudioEngine** (class, L38): AudioEngine:59, MakeAll:76, Ready:100, Chance:116, Cap:118, Family:123, FamilyCap:133, TriggersDuck:135, Duck:139, Play:145, PlayAt:170, SetBed:181, BedGain:194, Beds:201, Intensity:210, SetStemWeights:216, PlayStinger:219, RequestPiece:226, UpdateMapMusic:237, UpdateBattleMusic:257, Music:279, StartPiece:300, Update:325, Make:347
 
 ## AudioBank.cs (277 lines)
 - **AudioBank** (class, L9): HasVoice:34, Get:35, Load:37, BuildFallback:94, TailSeconds:126, RenderNoteSlice:130, PickZone:225, OrnamentIntegral:233, WrapIdx:246, SampleLinear:254, SampleHermite:263
@@ -26,8 +26,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## AudioMusic.cs (316 lines)
 - **Synth** (class, L5): Piece:11, Hz:26, Deg:31, Fit:34, Flute:37, Fiddle:52, Drone:68, Drum:79, Snare:81, Jingle:89, Cymbal:97, Chord:150, Roads:155, Hearth:176, Banners:195, Fade:214, Deploy:226, BattleBase:241, BattleHigh:256, Victory:284, Defeat:302
 
-## AudioStreamer.cs (244 lines)
-- **AudioStreamer** (class, L9): AudioStreamer:38, SetVolume:50, SetStems:52, PlayPiece:63, PlayStinger:90, Pump:103, WorkerLoop:117, RenderNextChunk:138, RenderSlot:199, ApplyRamp:226, Dispose:237
+## AudioStreamer.cs (258 lines)
+- **AudioStreamer** (class, L11): AudioStreamer:47, SetVolume:61, SetStems:63, PlayPiece:75, PlayStinger:105, Pump:118, WorkerLoop:132, RenderNextChunk:153, RenderSlot:213, ApplyRamp:240, Dispose:251
 
 ## AudioSynth.Combat.cs (372 lines)
 - **Synth** (class, L4): DrawsBlood:7, HeavyImpact:11, SlashLight:13, SlashHeavy:32, BluntFlesh:51, BluntPlate:64, PierceHit:80, LanceImpact:94, LanceShatter:108, BlockWood:124, BlockMetal:126, ParrySteel:140, ShieldSplinter:155, BashThud:171, SwingWhoosh:179, SwingOne:192, SwingTwo:193, SwingPole:194, RiposteRing:196, WeaponSwap:208, LowHpPulse:224, LongbowLoose:232, CrossbowSnap:246, CrossbowSpan:263, SlingCrack:276, JavelinCast:295, ArrowShield:302, ArrowPlate:313, ArrowFlesh:327, RamSwing:340, LadderHook:355, FirePotShatter:364
@@ -38,8 +38,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## AudioSynth.cs (909 lines)
 - **Synth** (class, L6): Buf:12, N:13, R:14, T:15, Pole:17, Mix:20, Normalize:45, Space:57, Far:92, Loop:101, Wrap:111, Versions:122, InWorld:125, Peak:131, Cues:149, Make:162, Clash:264, Block:283, Hit:296, Bow:311, Throw:326, ArrowHit:342, Impact:351, Thud:360, Click:374, Pluck:382, Voices:398, readonly:423, Shout:426, Death:435, Neigh:445, Volley:459, Ram:480, Crash:493, Cheer:510, Order:518, Horn:534, Coin:552, Page:565, Splash:581, Squelch:595, Rustle:611, Spell:626, Thunder:640, Holy:658, Flame:673, AuraThrum:689, Gather:704, MakeBed:721, Wind:731, Gallop:747, Din:762, Roar:781, March:806, Rain:825, Birds:845, Crickets:867, Town:886
 
-## AudioSynth.World.cs (304 lines)
-- **Synth** (class, L5): Surf:10, River:40, Forest:68, Blizzard:96, Tavern:114, Forge:134, OmenDrone:155, GravelStep:175, SnowCrunch:188, RecruitCheer:202, EquipBlade:214, EquipArmor:216, HorseTack:225, AnvilRing:242, WaxSeal:260, RiteDrum:268, FeastToast:277, ScrollUnroll:289
+## AudioSynth.World.cs (319 lines)
+- **Synth** (class, L5): Surf:10, River:41, Level:72, Forest:80, Blizzard:111, Tavern:129, Forge:149, OmenDrone:170, GravelStep:190, SnowCrunch:203, RecruitCheer:217, EquipBlade:229, EquipArmor:231, HorseTack:240, AnvilRing:257, WaxSeal:275, RiteDrum:283, FeastToast:292, ScrollUnroll:304
 
 ## BalanceArcana.cs (66 lines)
 - **BalanceReport** (class, L9): ArcanaSample:14, Arcana:23, static:32, Arcana:45, Share:65
@@ -658,6 +658,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Townscape.Houses.cs (475 lines)
 - **MapScreen** (class, L7): Glass:41, TimberHouse:50, Openings:71, WhiteHouse:97, LogHouse:116, Yurt:129, Turf:145, Edges:161, Dome:169, HeroWall:201, TavernWindow:204, TavernDoor:216, Lantern:232, TavernSign:240
 
+## MusicDirector.cs (128 lines)
+- **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:120
+
 ## MusicScore.cs (398 lines)
 - **MusicScore** (class, L7): CompiledNote:28, Compile:38, StableHash:102, RenderStereoWindow:114, RenderSlicePass:149, UpperBoundStart:167, RenderFullStereo:180, SoftLimitStereo:219
 - **StereoHall** (class, L232): StereoHall:246, ProcessInPlace:259
@@ -780,8 +783,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **FieldLayout** (enum, L7)
 - **Terrain** (class, L11): RidgeCrest:20, ShapeLayout:30, LayoutHeight:86, GroundOf:107, ShapeGround:122, Sq:155, PlaceVillage:158, PlaceHedges:187, HedgeLine:203
 
-## Tests/AudioTests.cs (144 lines)
-- **SelfTest** (class, L5): SoundsMade:16, CombatCuesEmitted:101, CreatureAndMagicCues:125
+## Tests/AudioTests.cs (207 lines)
+- **SelfTest** (class, L5): MapMusicSteady:17, SoundsMade:79, CombatCuesEmitted:164, CreatureAndMagicCues:188
 
 ## Tests/BattleTests.cs (1879 lines)
 - **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, CavalryBalance:123, Flanks:164, Parry:180, BlowsShown:208, FightsRead:230, Formations:246, CaptainCombat:276, CaptainKit:302, SkillBouts:360, Bout:410, Fight:424, BattleGoals:458, BannerAndLastStand:480, DuelFight:517, RangedRoles:538, FatigueAndSupply:558, GroundLayer:576, GroundMoves:601, GroundFights:632, Layouts:669, HedgesAndBridges:700, EveryLayoutResolves:748, SightAndCover:769, Rivers:811, HoldsTheCrest:839, HorseAvoidsBadGround:865, AmbushWaits:882, TakesTheFord:902, GroundForThePlayer:924, Stakes:943, Pathfinder:981, GoesToFord:1001, FilesThroughGap:1030, RoundTheNearFence:1055, ChargeFindsCaptain:1069, FlowCacheBound:1084, Generals:1099, HorseDown:1116, Ground:1125, HoldFire:1149, TroopTree:1163, SpritesBaked:1190, Sprites:1211, TroopVariety:1248, BigBattle:1284, StackBattle:1314, NamedMenFight:1349, AutoResolveNamedMen:1391, PullBack:1417, ReplayExact:1448, FoldCompanies:1482, AdvanceSteps:1526, RelieveAndSplit:1541, QueuedAndStanding:1577, AlertsRaise:1636, DeploymentMemory:1661, SpearsStopHorse:1692, CommandCap:1703, ScaleBattle:1722, Couriers:1760, DivisionGoals:1781

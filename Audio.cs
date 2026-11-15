@@ -51,13 +51,10 @@ sealed class AudioEngine
 
     AudioStreamer? streamer;
     MusicTrack track = MusicTrack.None;
-    string requestedPiece = "", activeInterior = "", wantInterior = "";
-    string[] mapPool = { "azure_day", "azure_peace" };
-    float mapGap, duckAmount, duckHold, mapHoldSec, wantFor, urgeFor;
-    /// Map music pacing: a screen must stay open `Settle` s before its music starts; a host or dread must last `UrgeHold` s
-    /// to cut a piece, and not within `MinHold` s of the last change; between open-map pieces, `MapPause` to +4 s of quiet.
-    const float Settle = 0.9f, UrgeHold = 4f, MinHold = 20f, MapPause = 12f;
-    int mapCursor;
+    string requestedPiece = "";
+    float duckAmount, duckHold;
+    /// What the campaign map plays and when (MusicDirector.cs).
+    readonly MusicDirector director = new(Environment.TickCount);
 
     public AudioEngine()
     {
@@ -65,7 +62,6 @@ sealed class AudioEngine
         {
             using (var probe = new SoundEffect(new byte[128], Synth.Rate, AudioChannels.Mono)) { }
             streamer = new AudioStreamer();
-            mapCursor = pick.Next(3);
             Task.Run(MakeAll);
             Enabled = true;
         }
@@ -233,69 +229,26 @@ sealed class AudioEngine
         track = mode;
         if (requestedPiece == id && streamer is { CurrentFinished: false }) return;
         requestedPiece = id;
-        mapGap = 0;
         StartPiece(id);
     }
 
-    /// Contextual overworld & settlement music director (AU4). Kept steady on purpose: a screen's music starts only once
-    /// that screen has stayed open for `Settle` seconds (flicking through a town's tabs does not restart the music), an
-    /// open-map piece always plays to its end before the next (after a fixed pause), and only a hostile host or dread that
-    /// has lasted `UrgeHold` seconds may cut one short, never sooner than `MinHold` seconds after the last change. The
-    /// victory or defeat piece from a battle plays out before the map music comes back.
+    /// The campaign map's music (AU4): `MusicDirector` chooses, this starts what it asks for. Coming back from a battle,
+    /// the victory or defeat piece plays out before the map's own music.
     public void UpdateMapMusic(string? interiorPiece, string culture, bool night, bool winter, bool hostNear, float dread, float dt)
     {
         if (!Enabled) return;
-        mapHoldSec += dt;
-        string want = interiorPiece ?? "";
-        if (want != wantInterior) { wantInterior = want; wantFor = 0; }
-        wantFor += dt;
-        if (track is MusicTrack.Victory or MusicTrack.Defeat && want == "" && streamer is { CurrentFinished: false })
+        if (track != MusicTrack.Map)
         {
-            // Back from a battle: the outcome piece finishes, then AdvancePlaylist brings in the map after its pause.
+            if (track is MusicTrack.Victory or MusicTrack.Defeat && streamer is { CurrentFinished: false }) director.Adopt(requestedPiece);
+            else director.Reset();
             track = MusicTrack.Map;
-            activeInterior = "";
-            mapGap = 0;
-            mapHoldSec = 0;
         }
-        if (want != "")
+        var cue = director.Update(interiorPiece, MusicDirector.Pool(culture, night, winter, hostNear, dread), dread >= 0.55f, dt,
+            streamer?.CurrentFinished ?? true, streamer?.CurrentCursor ?? 0);
+        if (cue is { } c)
         {
-            if (activeInterior != want && (wantFor >= Settle || track != MusicTrack.Map))
-            {
-                activeInterior = want;
-                track = MusicTrack.Map;
-                requestedPiece = want;
-                mapGap = 0;
-                mapHoldSec = 0;
-                StartPiece(want);
-            }
-            return;
-        }
-        if (activeInterior != "" && wantFor < Settle) return; // a town screen closed for a moment keeps its music
-
-        string prefix = culture switch
-        {
-            "crimson" => "crimson", "northern" => "north", "southern" => "sunward",
-            "steppe" => "steppe", "league" => "league", "order" => "order", _ => "azure",
-        };
-        mapPool = dread >= 0.55f ? new[] { dread >= 0.8f ? "black_flame" : "omen_graves", $"{prefix}_night" }
-            : hostNear ? new[] { $"{prefix}_host", $"{prefix}_day" }
-            : winter ? (night ? new[] { "winter_night", $"{prefix}_night" } : new[] { "winter_march", $"{prefix}_day", $"{prefix}_peace" })
-            : night ? new[] { $"{prefix}_night", $"{prefix}_peace" }
-            : new[] { $"{prefix}_day", $"{prefix}_peace" };
-
-        bool fromInterior = activeInterior != "";
-        activeInterior = "";
-        bool urge = (dread >= 0.55f || hostNear) && !mapPool.Contains(requestedPiece);
-        urgeFor = urge ? urgeFor + dt : 0;
-        bool urgentShift = urgeFor >= UrgeHold && mapHoldSec >= MinHold;
-
-        if (track != MusicTrack.Map || fromInterior || urgentShift)
-        {
-            track = MusicTrack.Map;
-            mapHoldSec = 0;
-            mapGap = 0;
-            requestedPiece = PickMapPiece();
-            StartPiece(requestedPiece);
+            requestedPiece = c.Id;
+            StartPiece(c.Id, c.At);
         }
     }
 
@@ -311,8 +264,6 @@ sealed class AudioEngine
             string id = !string.IsNullOrEmpty(outcomeId) && MusicLibrary.Has(outcomeId) ? outcomeId : fallback;
             if (track == mode && requestedPiece == id) return;
             track = mode;
-            activeInterior = "";
-            mapGap = 0;
             requestedPiece = id;
             StartPiece(id);
             return;
@@ -321,8 +272,6 @@ sealed class AudioEngine
         string target = !string.IsNullOrEmpty(suiteId) && MusicLibrary.Has(suiteId) ? suiteId : "battle";
         if (track == MusicTrack.Battle && requestedPiece == target && streamer is not { CurrentFinished: true }) return;
         track = MusicTrack.Battle;
-        activeInterior = "";
-        mapGap = 0;
         requestedPiece = target;
         StartPiece(target);
     }
@@ -331,14 +280,12 @@ sealed class AudioEngine
     {
         if (!Enabled || t == track) return;
         track = t;
-        activeInterior = "";
-        mapGap = 0;
+        if (t == MusicTrack.Map) { director.Reset(); return; } // UpdateMapMusic starts the map's piece
         string id = t switch
         {
             MusicTrack.Title => MusicLibrary.Has("title_ironfield") ? "title_ironfield" : "map0",
             MusicTrack.Creator => MusicLibrary.Has("creator_hearth") ? "creator_hearth" : "map1",
             MusicTrack.Chronicle => MusicLibrary.Has("chronicle_end") ? "chronicle_end" : "map1",
-            MusicTrack.Map => PickMapPiece(),
             MusicTrack.Deploy => "deploy",
             MusicTrack.Battle => "battle",
             MusicTrack.Victory => "victory",
@@ -350,23 +297,13 @@ sealed class AudioEngine
         StartPiece(id);
     }
 
-    string PickMapPiece()
-    {
-        if (mapPool.Length > 0)
-        {
-            string candidate = mapPool[mapCursor % mapPool.Length];
-            if (MusicLibrary.Has(candidate)) return candidate;
-        }
-        return "map" + (mapCursor % 3);
-    }
-
-    void StartPiece(string id)
+    void StartPiece(string id, double at = 0)
     {
         if (streamer == null) return;
         if (id == "") { streamer.PlayPiece(""); return; }
         if (MusicLibrary.Has(id))
         {
-            streamer.PlayPiece(id);
+            streamer.PlayPiece(id, startSec: at);
             return;
         }
         // Lazy fallback for legacy procedural pieces while AU0–AU3 run
@@ -397,7 +334,6 @@ sealed class AudioEngine
         float musDuck = 1f - duckAmount * 0.45f;
 
         streamer?.Pump(Mus * 0.78f * musDuck);
-        AdvancePlaylist(dt);
 
         foreach (var b in beds.Keys.ToList())
         {
@@ -406,18 +342,6 @@ sealed class AudioEngine
             i.Volume = Math.Clamp(level * BedGain(b) * Amb * bedDuck, 0, 1);
             beds[b] = (i, level, 0);
         }
-    }
-
-    void AdvancePlaylist(float dt)
-    {
-        if (track != MusicTrack.Map || activeInterior != "" || streamer == null || !streamer.CurrentFinished) return;
-        if (mapGap <= 0) mapGap = MapPause + pick.NextSingle() * 4;
-        if ((mapGap -= dt) > 0.01f) return;
-        mapGap = 0;
-        mapHoldSec = 0;
-        mapCursor++;
-        requestedPiece = PickMapPiece();
-        StartPiece(requestedPiece);
     }
 
     static SoundEffect Make(float[] s)
