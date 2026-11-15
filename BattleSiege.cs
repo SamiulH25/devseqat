@@ -6,8 +6,8 @@ namespace Ironfield;
 /// or breaks the gate. Men only cross the wall's outer face at a ladder (attackers on foot) or through a broken gate.
 public sealed partial class Battle
 {
-    /// Set when the gate breaks during the last Update (the screen rebuilds the wall's meshes).
-    public bool GateBroke;
+    /// Counts changes to the wall: the gate broken, a breach, a tower at the face (the screen rebuilds the wall's meshes when it moves).
+    public int WallVersion;
     readonly Dictionary<Squad, Vector2> posts = new(); // where each defending company stands guard
     float ramSound;
     bool ramPhase;
@@ -43,6 +43,7 @@ public sealed partial class Battle
             lateral[s] = 0;
             posts[s] = at;
         }
+        MountWallEngines();
     }
 
     /// The way across the wall for u toward dest: dest itself when no wall lies between, else the near side of the best passage.
@@ -54,11 +55,13 @@ public sealed partial class Battle
         if (inU == inD) return dest;
         float best = float.MaxValue;
         Vector2 pick = new(dest.X, inU ? SiegeWall.Outer + 3 : SiegeWall.Outer - 3); // no way through: wait at the wall
+        // A closed gate costs a detour's worth; once a breach or a tower gives another way in, its strength counts too (A2).
+        float shut = w.Breaches.Any() || w.Ramps.Count > 0 ? 25 + 0.1f * w.GateHp : 25;
         void Try(float x, float halfWidth, float outY, float inY, bool open)
         {
             var near = new Vector2(x, inU ? inY : outY);
             var far = new Vector2(x, inU ? outY : inY);
-            float cost = Vector2.Distance(u.Pos, near) + Vector2.Distance(near, dest) + (open ? 0 : 25);
+            float cost = Vector2.Distance(u.Pos, near) + Vector2.Distance(near, dest) + (open ? 0 : shut);
             if (cost >= best) return;
             best = cost;
             // At the foot of the passage: go through (a closed gate keeps you at it, battering).
@@ -68,7 +71,11 @@ public sealed partial class Battle
         bool attackerOnFoot = u.Team == 0 && !u.Mounted;
         if (w.GateOpen || attackerOnFoot) Try(SiegeWall.GateX, SiegeWall.GateHalf, SiegeWall.Outer - 2, SiegeWall.Outer + 3, w.GateOpen);
         if (attackerOnFoot)
+        {
             foreach (float x in w.Ladders) Try(x, SiegeWall.LadderHalf, SiegeWall.Outer - 2.4f, SiegeWall.Top0 + 0.8f, true);
+            foreach (float x in w.Ramps) Try(x, SiegeWall.RampHalf, SiegeWall.Outer - 2.4f, SiegeWall.Top0 + 0.8f, true); // a siege tower's ramp
+        }
+        if (!u.Mounted) foreach (float x in w.Breaches) Try(x, SiegeWall.BreachHalf, SiegeWall.Outer - 2, SiegeWall.Outer + 3, true); // over the rubble, either way
         return pick;
     }
 
@@ -77,7 +84,7 @@ public sealed partial class Battle
     {
         var w = Wall!;
         if (SiegeWall.Inside(from) == SiegeWall.Inside(u.Pos)) return true;
-        return (w.GateOpen && w.AtGate(u.Pos.X)) || (u.Team == 0 && !u.Mounted && w.AtLadder(u.Pos.X));
+        return (w.GateOpen && w.AtGate(u.Pos.X)) || (u.Team == 0 && !u.Mounted && (w.AtLadder(u.Pos.X) || w.AtRamp(u.Pos.X))) || (!u.Mounted && w.AtBreach(u.Pos.X));
     }
 
     void EnforceWall(Vector2[] before)
@@ -90,7 +97,7 @@ public sealed partial class Battle
             if (!u.Active) continue;
             if (MayCross(u, before[i]))
             {
-                if (SiegeWall.Inside(before[i]) != SiegeWall.Inside(u.Pos) && !Wall.AtGate(u.Pos.X) && ladderSound <= 0)
+                if (SiegeWall.Inside(before[i]) != SiegeWall.Inside(u.Pos) && !Wall.AtGate(u.Pos.X) && !Wall.AtBreach(u.Pos.X) && ladderSound <= 0)
                 { ladderSound = 1.6f; Sound(Cue.LadderHook, u.Pos); }
                 continue;
             }
@@ -104,7 +111,6 @@ public sealed partial class Battle
     void Batter(float dt)
     {
         var w = Wall;
-        GateBroke = false;
         if (w == null || w.GateOpen) return;
         int rams = 0;
         foreach (var u in Units)
@@ -122,13 +128,45 @@ public sealed partial class Battle
             ramPhase = !ramPhase;
             Sound(ramPhase ? Cue.Ram : Cue.RamSwing, new Vector2(SiegeWall.GateX, SiegeWall.Outer));
         }
-        if (w.GateOpen)
+        if (w.GateOpen) GateGivesWay();
+    }
+
+    /// The gate breaks (battered, or a stone from an engine): the defenders lose heart.
+    void GateGivesWay()
+    {
+        WallVersion++;
+        Log("The gate gives way!");
+        Sound(Cue.WallFall, new Vector2(SiegeWall.GateX, SiegeWall.Outer));
+        Sound(Cue.Horn, new Vector2(SiegeWall.GateX, SiegeWall.Outer));
+        foreach (var u in Units) if (u.Team == 1 && u.Active) u.Morale -= 10;
+    }
+
+    /// A section of the face falls (an engine's stones): the defenders lose heart and the nearest foot company goes to stop the gap.
+    void WallBreached(int i)
+    {
+        var at = new Vector2(SiegeWall.SectionX(i), SiegeWall.Outer);
+        WallVersion++;
+        Log("The wall is breached!");
+        Sound(Cue.WallFall, at, priority: true);
+        Sound(Cue.Horn, at);
+        foreach (var u in Units) if (u.Team == 1 && u.Active) u.Morale -= 6;
+        var post = new Vector2(at.X, SiegeWall.Outer + 6);
+        var foot = SquadsOf(1).Where(s => s != eGuard && s.Works == null && s.Alive > 0 && !s.Cavalry && !s.Units.Any(u => u.Active && u.Ammo > 0) && posts.ContainsKey(s))
+            .OrderBy(s => Vector2.Distance(posts[s], post)).FirstOrDefault();
+        if (foot != null) posts[foot] = post;
+    }
+
+    /// Springalds on the walkway (BattleOptions.WallEngines, from the walls' level), each worked by a few townsmen.
+    void MountWallEngines()
+    {
+        for (int k = 0; k < Options.WallEngines; k++)
         {
-            GateBroke = true;
-            Log("The gate gives way!");
-            Sound(Cue.Crash, new Vector2(SiegeWall.GateX, SiegeWall.Outer));
-            Sound(Cue.Horn, new Vector2(SiegeWall.GateX, SiegeWall.Outer));
-            foreach (var u in Units) if (u.Team == 1 && u.Active) u.Morale -= 10;
+            float x = (k % 2 == 0 ? -1 : 1) * (40 + 28 * (k / 2)) + SiegeWall.GateX;
+            var at = new Vector2(x, (SiegeWall.Top0 + SiegeWall.Top1) / 2);
+            var def = Ironfield.Engines.Get("springald");
+            var crew = AddSquad(1, Troops.Get("levies"), def.Crew, at + new Vector2(0, 2.5f), def.Crew, -Vector2.UnitY);
+            crew.Order = Order.Hold;
+            AddEngine(1, "springald", at, -Vector2.UnitY, crew);
         }
     }
 
@@ -139,7 +177,7 @@ public sealed partial class Battle
         var inside = Units.Where(u => u.Team == 0 && u.Active && !u.Routing && SiegeWall.Inside(u.Pos)).ToList();
         foreach (var s in SquadsOf(1))
         {
-            if (s == eGuard || s.Alive == 0) continue;
+            if (s == eGuard || s.Alive == 0 || s.Works != null) continue; // a crew stays by its engine
             var post = posts.TryGetValue(s, out var p) ? p : new Vector2(SiegeWall.GateX, SiegeWall.Outer + 7);
             bool archers = s.Units.Any(u => u.Active && u.Ammo > 0);
             if (archers) { s.Order = Order.Hold; s.Front = -Vector2.UnitY; s.Anchor = post; continue; }
@@ -162,7 +200,7 @@ public sealed partial class Battle
         bool foesInTheOpen = Units.Any(u => u.Team == 1 && u.Active && !u.Routing && !SiegeWall.Inside(u.Pos));
         foreach (var s in SquadsOf(0))
         {
-            if (s.Company == null || s.Alive == 0 || !(Options.AutoPlayer || s.AiControlled)) continue;
+            if (s.Company == null || s.Alive == 0 || s.Works != null || !(Options.AutoPlayer || s.AiControlled)) continue;
             bool archers = s.Units.Any(u => u.Active && u.Ammo > 0);
             if (archers && foesInTheOpen)
             {

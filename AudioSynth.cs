@@ -140,7 +140,8 @@ static partial class Synth
         Cue.Volley => 0.55f, Cue.Neigh or Cue.WolfSnarl => 0.6f,
         Cue.ArrowHit or Cue.ArrowShield or Cue.ArrowPlate or Cue.ArrowFlesh => 0.6f,
         Cue.Bow or Cue.LongbowLoose or Cue.CrossbowSnap or Cue.SlingCrack or Cue.JavelinCast => 0.6f, Cue.Throw => 0.5f,
-        Cue.Splash or Cue.Squelch or Cue.Rustle or Cue.Hollow or Cue.GravelStep or Cue.SnowCrunch or Cue.LadderHook or Cue.RamSwing => 0.55f,
+        Cue.Splash or Cue.Squelch or Cue.Rustle or Cue.Hollow or Cue.GravelStep or Cue.SnowCrunch or Cue.LadderHook or Cue.RamSwing or Cue.EngineWinch => 0.55f,
+        Cue.EngineRelease => 0.7f,
         Cue.Horn or Cue.Rout => 0.5f, // a horn is all body: at a lower peak it is still the loudest thing on the field
         _ => 0.85f,
     };
@@ -221,6 +222,9 @@ static partial class Synth
         Cue.RamSwing => RamSwing(r),
         Cue.LadderHook => LadderHook(r),
         Cue.FirePotShatter => FirePotShatter(r),
+        Cue.EngineWinch => EngineWinch(r),
+        Cue.EngineRelease => EngineRelease(r),
+        Cue.WallFall => WallFall(r),
         Cue.TrollRoar => TrollRoar(r),
         Cue.TrollSweep => TrollSweep(r),
         Cue.WolfHowl => WolfHowl(r),

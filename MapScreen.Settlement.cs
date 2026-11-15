@@ -18,7 +18,7 @@ partial class MapScreen
             SettlementKind.Village when C.Refuses(s) => new[] { "FORAGE" },
             SettlementKind.Village => new[] { "RECRUIT", "FOOD", "FORAGE", "REST", "ELDERS" },
             SettlementKind.Castle => new[] { "HALL", "REST", "FOOD", "CAPTIVES", "CONTRACT" },
-            _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "TAVERN", "HALL", "MARKET", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
+            _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "TAVERN", "HALL", "MARKET", "WORKSHOP", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
         }).Concat(C.ChapterAt(s) != null ? new[] { "CHAPTER" } : Array.Empty<string>()).Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
         int tw = Math.Min(ui.U(104), (r.Width - ui.U(40)) / tabs.Length);
         int pick = ui.Tabs(new Rectangle(r.X + ui.U(20), r.Y + ui.U(80), tw * tabs.Length, ui.U(22)), tabs, Array.IndexOf(tabs, tab));
@@ -34,6 +34,7 @@ partial class MapScreen
             case "TAVERN": TavernTab(s, body); break;
             case "HALL": HallTab(s, body); break;
             case "MARKET": MarketTab(s, body); break;
+            case "WORKSHOP": WorkshopTab(s, body); break;
             case "TRAIN": TrainTab(s, body); break;
             case "REST": RestTab(s, body); break;
             case "FOOD": FoodTab(s, body); break;
@@ -369,6 +370,29 @@ partial class MapScreen
             int price = C.FoodPrice(days);
             if (ui.Button(new Rectangle(row.Right - ui.U(160), row.Y + ui.U(7), ui.U(154), ui.U(26)), $"BUY {days} DAYS", C.S.Gold >= price, $"{price}")) note = C.BuyFood(days) ?? "BOUGHT";
             y += ui.U(46);
+        }
+    }
+
+    /// Workshop tab (docs/SIEGECRAFT.md A4): light engines for your train; each takes a crew from a foot company in battle.
+    void WorkshopTab(Settlement s, Rectangle body)
+    {
+        var train = C.Player.Train;
+        ui.Text(train.Count == 0 ? "YOUR COMPANY HAS NO ENGINES." : "YOUR TRAIN: " + string.Join(", ", train.GroupBy(id => id).Select(g => $"{g.Count()} {Engines.Get(g.Key).Name.ToUpperInvariant()}")), body.X, body.Y, Style.Text, 1);
+        ui.Text($"EACH ENGINE SLOWS THE MARCH BY {Campaign.TrainDrag * 100:0}% AND TAKES ITS CREW FROM A FOOT COMPANY. A LOST BATTLE LOSES THE TRAIN.", body.X, body.Y + ui.U(14), Style.Dim, 1);
+        int y = body.Y + ui.U(40);
+        foreach (var def in Campaign.TrainDefs)
+        {
+            var row = new Rectangle(body.X, y, body.Width, ui.U(46));
+            TownRow(row);
+            ui.Text(def.Name.ToUpperInvariant(), row.X + ui.U(10), row.Y + ui.U(8), Style.Text, 1);
+            ui.Text(ui.Fit(def.Line.ToUpperInvariant(), row.Width - ui.U(360)), row.X + ui.U(10), row.Y + ui.U(20), Style.Dim, 1);
+            ui.Text($"RANGE {def.Range:0} M, CREW {def.Crew}, THROUGH {def.Pierce} MEN", row.X + ui.U(10), row.Y + ui.U(32), Style.Dim, 1);
+            var why = C.CannotBuyEngine(s, def.Id);
+            var buy = new Rectangle(row.Right - ui.U(330), row.Y + ui.U(10), ui.U(160), ui.U(26));
+            if (ui.Button(buy, "BUY", why == null, $"{def.Cost:0}")) note = C.BuyEngine(s, def.Id) ?? "BOUGHT";
+            if (why != null && ui.Hover(buy)) note = why;
+            if (ui.Button(new Rectangle(row.Right - ui.U(164), row.Y + ui.U(10), ui.U(158), ui.U(26)), "SELL", train.Contains(def.Id), $"{def.Cost / 2:0}")) note = C.SellEngine(def.Id) ?? "SOLD";
+            y += ui.U(52);
         }
     }
 

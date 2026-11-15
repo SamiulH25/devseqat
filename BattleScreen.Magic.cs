@@ -91,6 +91,11 @@ partial class BattleScreen
                 AddRipple(at, radius * 0.3f, radius, 0.45f, new Color(236, 236, 245));
                 break;
             case "cast": Rise(at, 0.8f, 8, col, 0.07f, 0.9f); AddRipple(at, 2.2f, 0.4f, 0.6f, col); break;
+            case "stone": // an engine's stone lands (BattleEngines.cs): earth thrown up, a dent in the ground
+                Spray(at, 0.6f, 22, new Color(96, 78, 58), 3.5f, 0.8f, 0.09f, false);
+                AddScar(at, MathF.Max(1.5f, radius * 0.6f), ScarKind.Crack);
+                if (near < 70) Kick(0.18f);
+                break;
             case "breakthrough": // the wall breaks in the field (MA7): a white shock, a rising column, a moment held
                 AddRipple(at, 0.5f, radius, 1.4f, Color.White, 0.4f);
                 AddRipple(at, 0.5f, radius * 0.6f, 1.0f, col);

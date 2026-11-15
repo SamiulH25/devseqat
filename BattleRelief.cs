@@ -115,11 +115,11 @@ public sealed partial class Battle
         return SplitNow(s);
     }
 
-    Squad SplitNow(Squad s)
+    Squad SplitNow(Squad s, int take = -1, bool quiet = false)
     {
         var rt = new Vector2(-s.Front.Y, s.Front.X);
         var movers = s.Units.Where(u => u.Active && !u.Routing && !u.Hero).OrderByDescending(u => Vector2.Dot(u.Pos - s.Anchor, rt)).ThenBy(u => u.Index).ToList();
-        movers = movers.Take(movers.Count / 2).ToList();
+        movers = movers.Take(take >= 0 ? take : movers.Count / 2).ToList(); // a set number: an engine's crew (BattleEngines.cs)
         float width = Math.Min(s.Columns, Math.Max(1, s.Alive)) * s.Spacing;
         var h = new Squad(s.Name, s.Team)
         {
@@ -151,7 +151,7 @@ public sealed partial class Battle
         Squads.Add(h);
         Bounds(s);
         Bounds(h);
-        Log($"{s.Name} split in two: {movers.Count} men form a second company.");
+        if (!quiet) Log($"{s.Name} split in two: {movers.Count} men form a second company.");
         return h;
     }
 

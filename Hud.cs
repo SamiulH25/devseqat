@@ -360,7 +360,7 @@ sealed partial class Hud
             // The gate's strength under the balance bar, while it stands.
             var g = new Rectangle(x + bw / 4, panel.Bottom + U(4), bw / 2, U(16));
             Panel(g);
-            if (w.GateOpen) TextC("THE GATE IS BROKEN", W / 2f, g.Y + U(5), Gold, 1);
+            if (w.GateOpen || w.Breaches.Any()) TextC(w.GateOpen ? "THE GATE IS BROKEN" : "THE WALL IS BREACHED", W / 2f, g.Y + U(5), Gold, 1);
             else
             {
                 kit.Icon("tower", g.X + U(6), g.Y + U(5), Color.White, 1);
@@ -709,7 +709,13 @@ sealed partial class Hud
 
         // Context prompts.
         string? prompt = null;
-        if (!p.Mounted && B.LooseHorses.Any(h => Vector2.DistanceSquared(h.Pos, p.Pos) < 2.8f * 2.8f)) prompt = $"{Ctl.Name(Act.Interact)}  MOUNT HORSE";
+        if (B.Manned is { } me)
+        {
+            prompt = $"{Ctl.Name(Act.Interact)}  LEAVE   {Ctl.Name(Act.Attack)}  LOOSE   {me.Def.Name.ToUpperInvariant()} " + (me.Reload > 0 ? $"WINDING {100 - me.Reload / me.Def.Reload * 100:0}%" : "READY");
+            Bar(new Rectangle(cx - U(24), cy + U(40), U(48), U(4)), me.Reload > 0 ? 1 - Math.Clamp(me.Reload / me.Def.Reload, 0, 1) : 1, Gold);
+        }
+        else if (!p.Mounted && B.EngineNear(p) is { } near) prompt = $"{Ctl.Name(Act.Interact)}  WORK {near.Def.Name.ToUpperInvariant()}";
+        else if (!p.Mounted && B.LooseHorses.Any(h => Vector2.DistanceSquared(h.Pos, p.Pos) < 2.8f * 2.8f)) prompt = $"{Ctl.Name(Act.Interact)}  MOUNT HORSE";
         else if (p.Mounted && !p.Couched && p.Speed > 6) prompt = $"{Ctl.Name(Act.Couch)}  COUCH LANCE";
         else if (p.Mounted && MathF.Abs(p.Speed) < 1.5f) prompt = $"{Ctl.Name(Act.Interact)}  DISMOUNT";
         if (prompt != null)

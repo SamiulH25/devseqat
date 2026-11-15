@@ -10,7 +10,21 @@ partial class BattleScreen
     // ---------- orders ----------
 
     List<Squad> Targets() =>
-        (selected.Count > 0 ? selected : battle.Commanded).Where(s => s.Alive > 0).ToList();
+        (selected.Count > 0 ? selected : battle.Commanded).Where(s => s.Alive > 0 && s.Works == null).ToList(); // an engine's crew take only its orders (EngineOrder)
+
+    /// Companies selected that work a light or stone engine (docs/SIEGECRAFT.md A5).
+    List<Squad> SelectedCrews() => selected.Where(s => s.Alive > 0 && s.Works is { Wrecked: false, Def.Rolls: false }).ToList();
+
+    /// A right-click with engine crews selected: an enemy company becomes their mark, a place on the ground (or the wall) too.
+    void EngineOrder(Vector2 at, bool click)
+    {
+        if (!click) return;
+        var foe = PickSquad(at, 1);
+        foreach (var s in SelectedCrews())
+            Send(s, q => { if (q.Works is { } e) battle.AimEngine(e, foe, foe == null ? at : null); });
+        host.Audio?.Play(Cue.Order, 0.6f);
+        Tips.Show("engines", "An engine's crew shoot at what you click: a company, a spot of ground, or the wall.\nHold position clears the mark. Stand by an engine in field view and press the use key to work it yourself.");
+    }
 
     void Issue(string what, Action<Squad> act, bool move = false, Cue horn = Cue.Order)
     {
@@ -109,7 +123,9 @@ partial class BattleScreen
         {
             case Cmd.Charge: Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }, move: true, Cue.HornCharge); break;
             case Cmd.Follow: Issue("follow me!", s => { s.Order = Order.Follow; s.Target = null; }, move: true, Cue.Order); break;
-            case Cmd.Hold: Issue("hold position!", s => s.HoldInPlace(), move: true, Cue.HornHold); break;
+            case Cmd.Hold:
+                foreach (var cs in SelectedCrews()) Send(cs, q => { if (q.Works is { } e) battle.AimEngine(e, null, null); });
+                Issue("hold position!", s => s.HoldInPlace(), move: true, Cue.HornHold); break;
             case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge); break;
             case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20), move: true, Cue.HornRetreat); break;
             case Cmd.Rule: NextRule(); break;

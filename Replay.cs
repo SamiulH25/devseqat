@@ -68,6 +68,8 @@ public sealed class Replay
         public List<OrderStep>? Queue;
         public StandingRule Rule;
         public bool RuleFired;
+        /// The spot an engine this company works was told to shoot at (docs/SIEGECRAFT.md A5).
+        public Vector2? Mark;
     }
 
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true };
@@ -114,6 +116,7 @@ public sealed class Replay
                     s.Queue.Clear();
                     if (o.Queue != null) s.Queue.AddRange(o.Queue);
                     s.Rule = o.Rule; s.RuleFired = o.RuleFired;
+                    if (s.Works != null) s.Works.Mark = o.Mark;
                 }
             if (f.Goals != null)
                 foreach (var g in f.Goals)
@@ -188,14 +191,14 @@ public sealed partial class Battle
             var s = Squads[i];
             if (s.Team != 0 || s.AiControlled || Options.AutoPlayer) continue;
             int target = s.Target != null ? Squads.IndexOf(s.Target) : -1;
-            string sig = $"{s.Order}|{target}|{s.Anchor.X:R},{s.Anchor.Y:R}|{s.Front.X:R},{s.Front.Y:R}|{s.Columns}|{s.Formation}|{s.FireAtWill}|{s.Override}|{s.Pursue}|{s.HoldSpells}|{s.CastSpell}|{s.CastAt.X:R},{s.CastAt.Y:R}|{s.CastSince:R}|{s.Rule}|{s.RuleFired}|{string.Join(";", s.Queue)}";
+            string sig = $"{s.Order}|{target}|{s.Anchor.X:R},{s.Anchor.Y:R}|{s.Front.X:R},{s.Front.Y:R}|{s.Columns}|{s.Formation}|{s.FireAtWill}|{s.Override}|{s.Pursue}|{s.HoldSpells}|{s.CastSpell}|{s.CastAt.X:R},{s.CastAt.Y:R}|{s.CastSince:R}|{s.Rule}|{s.RuleFired}|{string.Join(";", s.Queue)}|{s.Works?.Mark?.X:R},{s.Works?.Mark?.Y:R}";
             if (lastOrders.TryGetValue(i, out var last) && last == sig) continue;
             lastOrders[i] = sig;
             (f.Orders ??= new()).Add(new Replay.SquadOrder
             {
                 Squad = i, Target = target, Order = s.Order, Anchor = s.Anchor, Front = s.Front, Columns = s.Columns, Formation = s.Formation, FireAtWill = s.FireAtWill, Override = s.Override, Pursue = s.Pursue,
                 HoldSpells = s.HoldSpells, CastSpell = s.CastSpell, CastAt = s.CastAt, CastSince = s.CastSince,
-                Queue = s.Queue.Count > 0 ? s.Queue.ToList() : null, Rule = s.Rule, RuleFired = s.RuleFired,
+                Queue = s.Queue.Count > 0 ? s.Queue.ToList() : null, Rule = s.Rule, RuleFired = s.RuleFired, Mark = s.Works?.Mark,
             });
         }
         r.Frames.Add(f);

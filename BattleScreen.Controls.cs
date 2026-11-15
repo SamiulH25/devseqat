@@ -66,6 +66,7 @@ partial class BattleScreen
             Couch = ctl.Pressed(Act.Couch),
             Mount = ctl.Pressed(Act.Interact),
             Facing = yaw, // the player looks (and strikes) where the camera looks
+            EngineAim = battle.Manned != null ? GroundUnder(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2) : null, // an engine you work looses where the crosshair is
             Sprint = ctl.Down(Act.Sprint),
             Attack = IsActive && !wheelOpen && ctl.Down(Act.Attack),
             Block = IsActive && !wheelOpen && ctl.Down(Act.Block),
@@ -194,6 +195,11 @@ partial class BattleScreen
                 foreach (var ds in dv.Squads.Where(q => q.Alive > 0)) arrows.Add((ds.Centroid(), mouseGround, Ui.Now));
                 return;
             }
+            if (!deploying && SelectedCrews().Count > 0)
+            {
+                EngineOrder(mouseGround, click);
+                if (!selected.Any(s => s.Works == null)) return;
+            }
             if (click && PickSquad(mouseGround, 1) is Squad foe)
             {
                 OrderArrows(foe.Centroid());
@@ -230,11 +236,13 @@ partial class BattleScreen
     }
 
     /// Ray-march the mouse ray onto the terrain.
-    Vector2 GroundUnderMouse()
+    Vector2 GroundUnderMouse() => GroundUnder(ms.X, ms.Y);
+
+    Vector2 GroundUnder(int x, int y)
     {
         var vp = GraphicsDevice.Viewport;
-        var near = vp.Unproject(new Vector3(ms.X, ms.Y, 0), proj, view, Matrix.Identity);
-        var far = vp.Unproject(new Vector3(ms.X, ms.Y, 1), proj, view, Matrix.Identity);
+        var near = vp.Unproject(new Vector3(x, y, 0), proj, view, Matrix.Identity);
+        var far = vp.Unproject(new Vector3(x, y, 1), proj, view, Matrix.Identity);
         var d = Vector3.Normalize(far - near);
         var t = battle.Terrain;
         float Above(Vector3 p) => p.Y - t.Height(new Vector2(p.X, p.Z));

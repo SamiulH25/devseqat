@@ -137,6 +137,11 @@ public sealed partial class Campaign
         setup.Options.Siege = true;
         setup.Options.Ladders = LaddersIn(s) > 0 ? 0 : Player.Men >= Scaled(90) ? 4 : 2;
         setup.Options.GateHp = (s.Kind == SettlementKind.Town ? 600 : 450) + 150 * Level(s, "walls");
+        setup.Options.WallHp = (s.Kind == SettlementKind.Town ? 900 : 700) + 250 * Level(s, "walls"); // what engines must break (docs/SIEGECRAFT.md A2)
+        setup.Options.WallEngines = Level(s, "walls"); // springalds on the walkway, one for each level of walls
+        setup.Options.WallHp *= 1 - 0.7f * MathF.Min(1, s.Battered); // what the camp's stones have done (SiegeWorks.cs)
+        setup.Options.Breaches = BreachesOf(s);
+        setup.Options.Engines = EnginesFor(setup, assault: true);
         setup.Options.Ground = Map.BattleGround(s.Pos) with { Road = false };
         setup.Options.Palette[1] = Style.PaletteOf(s.Faction);
         return setup;
@@ -145,7 +150,7 @@ public sealed partial class Campaign
     public BattleReport AutoResolveAssault(Settlement s)
     {
         var setup = PrepareAssault(s);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge, wall: (setup.Options.Ladders > 0 ? 1.4f : 1.7f) + 0.1f * Level(s, "walls"));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, TacticsEdge, wall: WallFactor(s, setup.Options.Ladders > 0, ReadyWorks(Player).Concat(Player.Train)));
         return FinishBattle(r, setup);
     }
 
@@ -240,6 +245,7 @@ public sealed partial class Campaign
     /// Daily: the besieged eat their stores, then starve; lords assault after two days.
     void SiegesDaily()
     {
+        BatterDaily(); // engines at the walls (SiegeWorks.cs)
         foreach (var s in S.Settlements.Where(s => s.Besieged))
         {
             var besiegers = S.Parties.Where(p => p.SiegeTarget == s.Id && !p.Down).ToList();
@@ -257,7 +263,7 @@ public sealed partial class Campaign
             if (lords.Count == 0 || S.Hours - s.SiegeSince < 48 || !rng.Chance(0.5f)) continue;
             var defenders = new List<Party> { GarrisonParty(s) };
             defenders.AddRange(S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction == s.Faction && Vector2.Distance(p.Pos, s.Pos) < 8 * Map.Spread));
-            var r = Rules.AutoResolve(lords, defenders, rng, wall: 1.4f + 0.1f * Level(s, "walls"));
+            var r = Rules.AutoResolve(lords, defenders, rng, wall: WallFactor(s, true, lords.SelectMany(ReadyWorks)));
             Apply(r, lords, defenders, "");
             if (r.Winner == 0) Capture(s, lords[0].Faction, -1, lords[0].CharId);
             else

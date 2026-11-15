@@ -14,6 +14,7 @@ sealed partial class BattleScreen
     bool IsActive => host.IsActive;
     bool IsMouseVisible { set => host.IsMouseVisible = value; }
     void Exit() => host.Exit();
+    int wallSeen; // the battle's WallVersion when the wall's meshes were last built
     SpriteBatch sb => host.Sb;
     Art art => host.Art;
     PixelFont font => host.Font;
@@ -370,7 +371,7 @@ sealed partial class BattleScreen
         if (scale > 0 && Settings.Current.PauseOnAlerts && battle.Alerts.Count > alertsSeen
             && battle.Alerts.Skip(alertsSeen).Any(a => a.Kind is "breaking" or "horse" or "leaderless")) { paused = true; scale = 0; battle.Log("Paused: see the alert."); }
         alertsSeen = battle.Alerts.Count;
-        if (scale > 0) { battle.Advance(dt * scale); PlaySounds(); Effects(dt * scale); TrackArrows(); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.GateBroke) world.RebuildFoliage(); }
+        if (scale > 0) { battle.Advance(dt * scale); PlaySounds(); Effects(dt * scale); TrackArrows(); SpectacleFrame(dt); Feel(); LeaveMarks(); Trample(); if (battle.WallVersion != wallSeen) { wallSeen = battle.WallVersion; world.RebuildFoliage(); } }
         FieldLife(dt * scale);
         Soundscape();
         blend = Math.Clamp(blend + (command ? dt : -dt) / BlendTime, 0, 1);
@@ -400,8 +401,8 @@ sealed partial class BattleScreen
                 float range = cue switch
                 {
                     Cue.Shout or Cue.Horn or Cue.Rout or Cue.Cheer or Cue.HornRetreat or Cue.TrollRoar or Cue.WolfHowl or Cue.WyvernScreech or Cue.AuraBreakthrough => 160,
-                    Cue.Crash or Cue.CrowSwarm => 200,
-                    Cue.Ram or Cue.RamSwing or Cue.RaiseDead or Cue.ChampionClash or Cue.BearRoar => 120,
+                    Cue.Crash or Cue.CrowSwarm or Cue.WallFall => 200,
+                    Cue.Ram or Cue.RamSwing or Cue.EngineRelease or Cue.EngineWinch or Cue.RaiseDead or Cue.ChampionClash or Cue.BearRoar => 120,
                     Cue.Volley => 90,
                     _ => 70,
                 };

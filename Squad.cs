@@ -17,6 +17,8 @@ public sealed class Squad
     public readonly List<Unit> Units = new();
     public Order Order = Order.Hold;
     public Squad? Target;                          // Charge at this squad (null = nearest enemy)
+    /// The engine this company crews (BattleEngines.cs): it holds by it and the general leaves it be.
+    public Engine? Works;
     public Vector2 Anchor, Front = Vector2.UnitY; // Anchor = centre of the front rank
     public int Columns = 8, StartCount, Alive;    // Alive = active and not routing, refreshed each tick
     public bool Cavalry, FireAtWill = true;        // FireAtWill off: archers hold their arrows

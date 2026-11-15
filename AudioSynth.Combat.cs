@@ -361,6 +361,59 @@ static partial class Synth
         return b;
     }
 
+    /// A windlass: a ratchet clicking up through a creaking rope and beam, slowing as the load comes on (docs/SIEGECRAFT.md A6).
+    static float[] EngineWinch(Random r)
+    {
+        var b = Buf(1.7f);
+        var creak = new Band(R(r, 300, 480), 6f);
+        float ph = 0;
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = T(i), k = t / 1.7f;
+            ph += (34 + 22 * (1 - k) + 9 * MathF.Sin(t * 5)) / Rate;
+            b[i] = creak.Run((ph % 1) * 2 - 1) * MathF.Sin(MathF.PI * k) * 0.9f;
+        }
+        for (float at = 0.05f, gap = 0.09f; at < 1.55f; at += gap, gap *= 1.07f)
+            Mix(b, Click(0.02f, R(r, 900, 1500), 0.55f, r), at, R(r, 0.5f, 0.8f)); // the pawl dropping into each tooth
+        return b;
+    }
+
+    /// The release: a sharp slap of the arm or the bow-arms, a deep wooden thump and the rope's twang (A6).
+    static float[] EngineRelease(Random r)
+    {
+        var b = Buf(0.7f);
+        Mix(b, Thud(R(r, 52, 74), 0.5f, 1f, r), 0, 1f);
+        Mix(b, SwingWhoosh(r, 300, 1400, 0.16f, 2f), 0, 0.7f);
+        var wood = new Band(R(r, 700, 1100), 3f);
+        float f = R(r, 150, 210);
+        for (int i = 0; i < 0.5f * Rate; i++)
+        {
+            float t = T(i);
+            b[i] += wood.Run(N(r)) * MathF.Exp(-t * 30) * 1.3f + MathF.Sin(MathF.Tau * f * t) * MathF.Exp(-t * 7) * 0.4f;
+        }
+        return b;
+    }
+
+    /// A length of wall coming down: the first crack, then the long grumble of masonry and stones rolling (A6).
+    static float[] WallFall(Random r)
+    {
+        var b = Buf(2.2f);
+        Mix(b, Thud(R(r, 38, 55), 0.9f, 1.2f, r), 0, 1f);
+        Mix(b, Crash(r), 0.05f, 0.8f);
+        var rumble = new Band(R(r, 140, 240), 1.2f);
+        for (int i = 0; i < b.Length; i++)
+        {
+            float t = T(i);
+            b[i] += rumble.Run(N(r)) * MathF.Exp(-t * 1.6f) * MathF.Min(1, t * 9) * 0.9f;
+        }
+        for (int k = 0; k < 26; k++)
+        {
+            float at = 0.15f + MathF.Pow(r.NextSingle(), 1.5f) * 1.6f;
+            Mix(b, Thud(R(r, 70, 170), 0.12f, 0.7f, r), at, R(r, 0.15f, 0.55f) * (1 - at / 2.4f));
+        }
+        return b;
+    }
+
     static float[] FirePotShatter(Random r)
     {
         var b = Buf(0.85f);

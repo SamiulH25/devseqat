@@ -10,6 +10,7 @@ public struct PlayerInput
     public float Facing;      // where the player looks (and strikes)
     public AttackDir Dir;     // attack / block direction, picked by mouse movement
     public bool Sprint, Attack, Block, Rally, Couch, Mount, Bash, Swap;
+    public Vector2? EngineAim; // where the crosshair meets the ground: the mark of an engine you work (docs/SIEGECRAFT.md A5)
     public bool Aura;         // held: the aura blade burns (docs/archive/KNIGHT_ORDERS.md K1)
     public bool Form1, Form2, Form3, Great; // pressed: a form (K2)
     public bool Relic;        // pressed: raise the relic (docs/archive/MAGIC_AURA.md 3.4)
@@ -102,6 +103,7 @@ public sealed partial class Battle
         UpdateCentroids();
         BuildDivisions(0, player);
         BuildDivisions(1, enemy);
+        DeployEngines(); // engines of war and their crews (BattleEngines.cs)
         if (Options.PlayerWounded) Player.Fled = true; // too hurt to ride: you command from the rear
         foreach (var u in Units) if (u.Team == 1 && !u.IsLeader) u.Morale = Math.Clamp(u.Morale + Options.EnemyMorale, 5, 100);
         if (Options.Duel) SetupDuel();
@@ -233,7 +235,7 @@ public sealed partial class Battle
         rng = new Random(seed);
         this.scripted = scripted;
         Options = options ?? new BattleOptions();
-        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, (Options.Ground ?? TerrainParams.Meadow) with { Scale = scale }, Options.Siege ? new SiegeWall(Options.Ladders, Options.GateHp) : null);
+        Terrain = scripted ? Terrain.Flat() : new Terrain(seed, (Options.Ground ?? TerrainParams.Meadow) with { Scale = scale }, Options.Siege ? new SiegeWall(Options.Ladders, Options.GateHp, Options.WallHp) : null);
         Player = Spawn(Options.PlayerType ?? UnitType.Captain, 0, null, new Vector2(0, scripted ? -80 : -34 - Back));
         Player.IsPlayer = Player.IsLeader = true;
         SetupCaptain();
@@ -380,6 +382,7 @@ public sealed partial class Battle
         Mark(6);
         UpdateChampion(dt);
         UpdateArrows(dt);
+        UpdateEngines(dt); // engines of war (BattleEngines.cs)
         Mark(7);
         UpdateMorale(dt);
         UpdateAlerts(dt); // what needs you (BattleAlerts.cs): reads the sim, changes nothing

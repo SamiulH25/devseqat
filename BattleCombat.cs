@@ -121,6 +121,7 @@ public partial class Battle
         if (a.Team == 1) dmg *= Options.EnemyDamage;
         if (OutOfReach(a, t, ranged)) { if (a.IsPlayer) PlayerHit = ("OUT OF REACH", Time); return; } // a wyvern aloft (BattleMonsters.cs)
         if (ranged && Wall != null && SiegeWall.Inside(t.Pos) && !SiegeWall.Inside(a.Pos) && Terrain.Height(t.Pos) > Terrain.Height(a.Pos) + 2) dmg *= 0.6f; // merlons
+        if (ranged && Engines.Count > 0 && Sheltered(t)) dmg *= 0.25f; // under a ram's roof, behind a tower (BattleEngines.cs)
         // Arrows and spears often take the horse instead of the rider (a footman's blade rarely does).
         if (t.Mounted && rng.NextSingle() < (ranged ? 0.55f : a.Type.Class == UnitClass.Skirmisher ? 0.55f : 0.18f))
         {

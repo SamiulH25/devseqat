@@ -14,6 +14,8 @@ public enum Cue
     SwingOne, SwingTwo, SwingPole, RiposteRing, WeaponSwap, LowHpPulse,
     LongbowLoose, CrossbowSnap, CrossbowSpan, SlingCrack, JavelinCast, ArrowShield, ArrowPlate, ArrowFlesh,
     RamSwing, LadderHook, FirePotShatter,
+    // engines of war (docs/SIEGECRAFT.md A6)
+    EngineWinch, EngineRelease, WallFall,
     // AU2: creatures, beasts, undead, magic traditions, aura moments & order horns
     TrollRoar, TrollSweep, WolfHowl, WolfSnarl, SpiderChitter, WebSpit, BearRoar, WyvernScreech, WyvernFlap, GoblinShriek,
     BoneHit, BoneCollapse, RaiseDead,

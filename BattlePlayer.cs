@@ -14,7 +14,14 @@ public partial class Battle
         UpdateAura(p, inp.Aura, dt);
         UpdateClash(p); // a clash of champions (MA7)
         UpdateForms(p, inp);
-        if (inp.Mount) ToggleMount(p);
+        if (Manned != null && (Commanding || p.Mounted)) Man(null);
+        if (inp.Mount)
+        {
+            if (Manned != null) Man(null);
+            else if (!p.Mounted && !Commanding && EngineNear(p) is Engine eng) Man(eng);
+            else ToggleMount(p);
+        }
+        if (Manned != null) { inp.Attack = false; p.Charging = false; p.Charge = 0; } // the attack key looses the engine, not a blow
         if (inp.Swap) SwapWeapon(p);
         if (inp.Bash) Bash(p);
 

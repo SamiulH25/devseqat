@@ -547,21 +547,36 @@ public static partial class SelfTest
         int near = towns.Count(t => c.TideAt(t.Pos).Strength > 0);
         Check(near > 0, "some towns stand where a well reaches");
         var pilot = new Pilot(c);
+        int Circles(int arcana) => c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction >= 0 && Factions.Get(p.Faction).Arcana == arcana && p.Companies.Any(k => Rules.RoleOf(k) == "casters"));
+        int Lords(int arcana) => c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction >= 0 && Factions.Get(p.Faction).Arcana == arcana);
         int offers = 0, lordCircles = 0;
+        var seen = new int[4]; var lords = new int[4]; // circles and lords by realm arcana, summed over the weeks (one day's count swings with the war)
         for (int week = 0; week < 22; week++)
         {
             pilot.Run(24 * 7);
             offers += c.S.Settlements.Sum(t => t.Mercenaries.Count(m => Rules.RoleOf(m) == "casters"));
             lordCircles = Math.Max(lordCircles, c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Companies.Any(k => Rules.RoleOf(k) == "casters")));
+            for (int a = 1; a <= 3; a++) { seen[a] += Circles(a); lords[a] += Lords(a); }
         }
         Console.WriteLine($"mages: {near}/{towns.Count} towns where a well reaches; {offers} circle offers seen in 22 weeks; at most {lordCircles} lords with a circle (day {c.Day})");
         Check(offers > 0, "a circle is offered somewhere");
         Check(lordCircles > 0, "a great lord fields a circle");
         // A realm's arcana (docs/ARCANA.md AR5): the sorcerous realms' great lords keep circles more often.
-        int Circles(int arcana) => c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction >= 0 && Factions.Get(p.Faction).Arcana == arcana && p.Companies.Any(k => Rules.RoleOf(k) == "casters"));
-        int Lords(int arcana) => c.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction >= 0 && Factions.Get(p.Faction).Arcana == arcana);
-        Console.WriteLine($"mages by arcana: 1: {Circles(1)}/{Lords(1)}, 2: {Circles(2)}/{Lords(2)}, 3: {Circles(3)}/{Lords(3)}");
-        Check(Circles(3) / (float)Math.Max(1, Lords(3)) > Circles(1) / (float)Math.Max(1, Lords(1)), "realms of arcana 3 keep more circles a lord than realms of 1");
+        // A second world too: in one alone the war can strip a realm's lords of the tier a circle needs (seen with the siege engines, A3).
+        var c2 = Campaign.New(2002);
+        var pilot2 = new Pilot(c2);
+        for (int week = 0; week < 22; week++)
+        {
+            pilot2.Run(24 * 7);
+            foreach (var p in c2.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction >= 0 && Factions.Get(p.Faction).Arcana >= 1))
+            {
+                int a = Factions.Get(p.Faction).Arcana;
+                lords[a]++;
+                if (p.Companies.Any(k => Rules.RoleOf(k) == "casters")) seen[a]++;
+            }
+        }
+        Console.WriteLine($"mages by arcana, lord-weeks over two worlds: 1: {seen[1]}/{lords[1]}, 2: {seen[2]}/{lords[2]}, 3: {seen[3]}/{lords[3]}");
+        Check(seen[3] / (float)Math.Max(1, lords[3]) > seen[1] / (float)Math.Max(1, lords[1]), "realms of arcana 3 keep more circles a lord than realms of 1");
     }
 
     /// The arcana census (docs/ARCANA.md AR0) runs, and a seeking stand-in rides to a vigil once its aura stands at a wall.

@@ -676,6 +676,7 @@ partial class BattleScreen
         Precipitation();
         MissileLines(); // arrows, bolts, javelins and stones (BattleScreen.Arrows.cs)
         Stakes();
+        EngineLines(); // engines of war and their shots (BattleScreen.Engines.cs)
         Spells();
         if (!hudHidden)
         {

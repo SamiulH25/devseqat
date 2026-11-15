@@ -1,0 +1,26 @@
+{
+  // Engines of war (docs/SIEGECRAFT.md A1): crewed by a company, they loose bolts that run through a file of men or
+  // stones that fall among them. Range and MinRange in metres, Reload in seconds with a full crew, Speed the shot's speed
+  // over the ground (m/s), Spread the scatter per metre of range, Shock the morale a stone takes from men near where it lands,
+  // WallDamage what a hit does to a gate or a section of the wall. Ram and tower roll at Move m/s (docs/SIEGECRAFT.md A2).
+  // Train engines are bought in towns for Cost crowns and march with the company (A4); siege works are built at a siege
+  // in Build hours for Cost crowns (A3).
+  "engines": [
+    { "id": "scorpion", "name": "Scorpion", "line": "A light bolt-thrower on a cart: one man in its sight, and the next behind him.",
+      "shot": "bolt", "range": 90, "minRange": 0, "damage": 55, "pierce": 3, "armourPierce": 0.6, "reload": 6, "crew": 3, "hp": 120, "train": true, "cost": 400,
+      "speed": 75, "spread": 0.012, "shock": 6 },
+    { "id": "springald", "name": "Springald", "line": "A great frame of twisted sinew: its bolt goes through a rank.",
+      "shot": "bolt", "range": 115, "minRange": 0, "damage": 80, "pierce": 5, "armourPierce": 0.75, "reload": 10, "crew": 4, "hp": 180, "train": true, "cost": 700,
+      "speed": 85, "spread": 0.01, "shock": 10, "wallDamage": 8 },
+    { "id": "mangonel", "name": "Mangonel", "line": "A crew hauls the beam down and a stone the size of a head falls among the foe.",
+      "shot": "stone", "range": 130, "minRange": 25, "damage": 70, "splash": 2.5, "armourPierce": 0.5, "reload": 14, "crew": 8, "hp": 260, "build": 24, "cost": 150,
+      "speed": 30, "spread": 0.03, "shock": 14, "wallDamage": 45 },
+    { "id": "trebuchet", "name": "Trebuchet", "line": "A counterweight the size of a cart: slow to wind, and nothing stands where it lands.",
+      "shot": "stone", "range": 190, "minRange": 55, "damage": 120, "splash": 3.5, "armourPierce": 0.7, "reload": 30, "crew": 12, "hp": 400, "build": 48, "cost": 400,
+      "speed": 34, "spread": 0.035, "shock": 22, "wallDamage": 140 },
+    { "id": "ram", "name": "Ram", "line": "An iron-headed trunk under a hide roof: the crew under it are hard to shoot.",
+      "shot": "ram", "damage": 100, "crew": 10, "hp": 500, "move": 1.2, "build": 12, "cost": 60 },
+    { "id": "tower", "name": "Siege tower", "line": "A tower on wheels, hides on its face: once at the wall, its bridge drops onto the walkway.",
+      "shot": "tower", "crew": 16, "hp": 700, "move": 0.8, "build": 36, "cost": 250 }
+  ]
+}

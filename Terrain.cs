@@ -173,14 +173,36 @@ public sealed class SiegeWall
     public float GateHp, GateMax;
     public bool GateOpen => GateHp <= 0;
 
-    public SiegeWall(int ladders, float gateHp)
+    /// The wall's face in sections an engine can break (docs/SIEGECRAFT.md A2): `SectionCount` of `SectionWidth` metres from
+    /// `SectionsFrom`, all but the two by the gatehouse. A broken section is a breach: a slope of rubble men on foot climb
+    /// (the bank behind it stands, so the ground does not change). Siege towers that reach the face are `Ramps`.
+    public const float SectionWidth = 10, SectionsFrom = -100, BreachHalf = 4, RampHalf = 1.8f;
+    public const int SectionCount = 20;
+    public readonly float[] SectionHp;
+    public readonly float SectionMax;
+    public readonly List<float> Ramps = new();
+
+    public SiegeWall(int ladders, float gateHp, float sectionHp = 0)
     {
         Ladders = ladders switch { <= 0 => Array.Empty<float>(), 1 => new[] { -22f }, 2 => new[] { -24f, 22f }, _ => new[] { -36f, -16f, 18f, 38f } };
         GateHp = GateMax = gateHp;
+        SectionMax = sectionHp > 0 ? sectionHp : gateHp * 1.5f;
+        SectionHp = Enumerable.Repeat(SectionMax, SectionCount).ToArray();
     }
 
     public bool AtGate(float x) => MathF.Abs(x - GateX) < GateHalf;
     public bool AtLadder(float x) => Ladders.Any(l => MathF.Abs(x - l) < LadderHalf);
+    /// The section of the face at x (-1: by the gatehouse or past the sections).
+    public int SectionAt(float x)
+    {
+        int i = (int)MathF.Floor((x - SectionsFrom) / SectionWidth);
+        return i < 0 || i >= SectionCount || MathF.Abs(SectionX(i) - GateX) < 9 ? -1 : i;
+    }
+    public static float SectionX(int i) => SectionsFrom + (i + 0.5f) * SectionWidth;
+    public bool Breached(int i) => i >= 0 && SectionHp[i] <= 0;
+    public bool AtBreach(float x) { int i = SectionAt(x); return Breached(i) && MathF.Abs(x - SectionX(i)) < BreachHalf; }
+    public IEnumerable<float> Breaches => Enumerable.Range(0, SectionCount).Where(Breached).Select(SectionX);
+    public bool AtRamp(float x) => Ramps.Any(r => MathF.Abs(x - r) < RampHalf);
     /// Inside the walls (on the walkway or in the town).
     public static bool Inside(Vector2 p) => p.Y >= Outer;
     /// Height the wall adds at a terrain vertex (vertices sit every 2.5 m; 14 and 16.5 are raised).

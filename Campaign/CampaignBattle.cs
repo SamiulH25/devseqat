@@ -295,6 +295,7 @@ public partial class Campaign
             Palette = new[] { Style.PaletteOf(Math.Max(0, Captain.Contract)), Style.PaletteOf(SideOf(enemy)) },
             Standing = ActiveBuffs.Concat(RelicReady ? new[] { "relic" } : Array.Empty<string>()).ToArray(), // a shrine's blessing, a feast, hunger (Buffs.cs); your relic (Rites.cs)
         }.WithCaptain(Captain);
+        setup.Options.Engines = EnginesFor(setup, assault: false); // the trains (SiegeWorks.cs)
         return setup;
     }
 
@@ -306,6 +307,7 @@ public partial class Campaign
         Encounter = null;
         duelWith = -1;
         var report = Apply(r, setup.Side0, setup.Side1, setup.EnemyName, setup.SiegeOf >= 0);
+        if (r.Winner == 1 && setup.Side0.Contains(Player)) TrainLost();
         DivisionsAfterBattle(r);
         if (setup.SiegeOf >= 0) AfterAssault(S.Settlements[setup.SiegeOf], r.Winner == 0);
         return Report ?? report;
@@ -315,7 +317,7 @@ public partial class Campaign
     {
         BreakVow("no_auto", "send your men to fight without you at their head");
         var setup = PrepareBattle(Encounter!);
-        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, (1 + B.AuraWeight * AuraInBattle) * TacticsEdge * BuffEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed) * TideEdge(setup.Options.Tide, setup.Side0, setup.Side1), Edge(Encounter!));
+        var r = Rules.AutoResolve(setup.Side0, setup.Side1, rng, (1 + B.AuraWeight * AuraInBattle) * TacticsEdge * BuffEdge * DuelEdge(Encounter!) * GroundEdge(setup.Options.Ground!, setup.Side0, setup.Side1, setup.Seed) * TideEdge(setup.Options.Tide, setup.Side0, setup.Side1) * TrainEdge(setup.Side0, setup.Side1), Edge(Encounter!));
         if (r.Winner == 1 && S.Hours >= Captain.WoundedUntil && rng.Chance(0.5f)) r = r with { Captain = LeaderFate.Wounded };
         return FinishBattle(r, setup);
     }

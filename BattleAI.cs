@@ -335,7 +335,7 @@ public partial class Battle
         else foreach (var s in horse) s.Order = Order.Charge;
         if (horseCharged[team])
             foreach (var s in horse.Where(s => s.Target == null))
-                s.Target = new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(foe, r)).Where(t => t.Alive > 0).OrderBy(t => Visible(t, team) ? 0 : 1).ThenBy(t => HorseGoing(s, t)).FirstOrDefault(); // ones it can see, on good going; soft targets first
+                s.Target = EnginePrey(s, foe) ?? new[] { "archers", "spears", "infantry", "horse" }.SelectMany(r => Role(foe, r)).Where(t => t.Alive > 0).OrderBy(t => Visible(t, team) ? 0 : 1).ThenBy(t => HorseGoing(s, t)).FirstOrDefault(); // ones it can see, on good going; soft targets first
         if (team == 1)
         {
             eGuard.Front = dir;

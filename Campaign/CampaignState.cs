@@ -270,6 +270,11 @@ public sealed class Party
     public bool Captive;                 // a lord held by you
     public float Food = 10;              // days of food (yours; lords are fed by their faction)
     public int SiegeTarget = -1;         // the settlement this party is besieging
+    /// Engines of war (docs/SIEGECRAFT.md): the light engines that march with it (its train, A4), and the works its camp builds
+    /// at a siege (A3), good only while it still besieges WorksAt.
+    public List<string> Train = new();
+    public List<SiegeWork> SiegeWorks = new();
+    public int WorksAt = -1;
     /// Monsters (docs/archive/CREATURES.md): what they are ("goblin"); a holdout is a Lair party that never moves, its Gold the
     /// hoard; a raiding band names its holdout (LairId, a party id) and the village it is going to plunder (RaidOn).
     public string Breed = "";
@@ -307,6 +312,8 @@ public sealed class Settlement
     public int Owner = -1;                         // party id of the holder of the fief (-1: the faction)
     public bool Besieged;
     public float SiegeSince;                       // when the siege began (ladders take 12 hours)
+    /// How far engines have battered its walls (0-1, docs/SIEGECRAFT.md A3); mended a little each day it is not besieged.
+    public float Battered;
     /// Fiefs (F6): prosperity scales income and recruits; unrest above 70 raises rebels and at 100 the place defects.
     public float Prosperity = 50, Unrest;
     /// Buildings by id and level (towns and castles), and the one under construction until a time.
@@ -315,6 +322,13 @@ public sealed class Settlement
     public float BuildUntil;
     /// Tax level: 0 low, 1 normal, 2 high (set by the holder; a seat's villages pay at its rate).
     public int Tax = 1;
+}
+
+/// A siege work (docs/SIEGECRAFT.md A3): which engine, and the hour it is ready.
+public sealed class SiegeWork
+{
+    public string Id = "";
+    public double ReadyAt;
 }
 
 /// Where a big battle's dead lie unburied, how many, and since when.

@@ -68,7 +68,7 @@ partial class MapScreen
         for (int i = 0, bx = r.X + (r.Width - widths.Sum() - (n - 1) * ui.U(8)) / 2; i < n; bx += widths[i] + ui.U(8), i++) bts[i] = new Rectangle(bx, by, widths[i], ui.U(30));
         bool fit = C.Player.Men > 0;
         if (ui.Button(bts[0], "ATTACK", fit)) { panel = PanelKind.None; speed = 0; OnBattle?.Invoke(C.PrepareBattle(e)); }
-        if (ui.Button(bts[1], "AUTO-RESOLVE", fit)) { C.AutoResolveEncounter(); ShowResults(); }
+        if (ui.Button(bts[1], "AUTO-RESOLVE", fit)) { C.AutoResolveEncounter(); ShowResults(); return; } // Encounter is cleared now: the rest of this panel reads it
         bool canRetreat = C.CanRetreat(out string why);
         if (ui.Button(bts[2], "RETREAT", canRetreat)) { C.Retreat(); panel = PanelKind.None; }
         if (!canRetreat && ui.Hover(bts[2])) note = why;
@@ -150,10 +150,34 @@ partial class MapScreen
     }
 
     /// At the walls of an enemy town or castle: besiege, assault, wait or leave.
+    /// Your siege camp's works (docs/SIEGECRAFT.md A3): how battered the walls are, what is built or building, and a row to
+    /// order each work.
+    void SiegeWorksRows(Settlement s, Rectangle r, int x, int y)
+    {
+        var works = C.WorksOf(C.Player);
+        string state = works.Count == 0 ? "NO ENGINES IN YOUR CAMP." : string.Join(", ", works.Select(w => Engines.Get(w.Id).Name.ToUpperInvariant() + (w.ReadyAt <= C.S.Hours ? " (READY)" : $" ({w.ReadyAt - C.S.Hours:0} H)")));
+        ui.Text($"WALLS BATTERED {s.Battered * 100:0}%{(s.Battered >= 1 ? ": A BREACH" : "")}", x, y, s.Battered >= 1 ? Style.Ok : Style.Text, 1);
+        ui.Text(ui.Fit(state, r.Width - ui.U(220)), x + ui.U(170), y, Style.Dim, 1);
+        y += ui.U(20);
+        foreach (var def in Campaign.SiegeWorkDefs)
+        {
+            var row = new Rectangle(x, y, r.Width - ui.U(48), ui.U(30));
+            TownRow(row);
+            ui.Text(def.Name.ToUpperInvariant(), row.X + ui.U(10), row.Y + ui.U(5), Style.Text, 1);
+            ui.Text(ui.Fit(def.Line.ToUpperInvariant(), row.Width - ui.U(200)), row.X + ui.U(10), row.Y + ui.U(17), Style.Dim, 1);
+            var why = C.CannotBuildWork(s, def.Id);
+            float hours = def.Build * (C.Has("Siegecraft") ? 0.5f : 1);
+            var bt = new Rectangle(row.Right - ui.U(176), row.Y + ui.U(2), ui.U(172), ui.U(26));
+            if (ui.Button(bt, $"BUILD {hours:0} H", why == null, $"{def.Cost:0}")) note = C.BuildWork(s, def.Id) ?? $"{def.Name.ToUpperInvariant()} UNDER WAY";
+            if (why != null && ui.Hover(bt)) note = why;
+            y += ui.U(34);
+        }
+    }
+
     void SiegePanel()
     {
         var s = at!;
-        var r = Modal(680, 400, (C.Besieging == s ? "THE SIEGE OF " : "") + s.Name.ToUpperInvariant(), SideColor(s.Faction));
+        var r = Modal(680, C.Besieging == s ? 560 : 400, (C.Besieging == s ? "THE SIEGE OF " : "") + s.Name.ToUpperInvariant(), SideColor(s.Faction));
         int x = r.X + ui.U(24), y = r.Y + ui.U(50);
         ui.Text($"{s.Kind.ToString().ToUpperInvariant()} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}", x, y, Style.Dim, 1);
         y += ui.U(18);
@@ -177,6 +201,8 @@ partial class MapScreen
             ui.Text(wait > 0 ? $"LADDERS AND A RAM IN {wait:0} HOURS. ASSAULTING NOW MEANS THE GATE ALONE." : "LADDERS ARE BUILT AND THE RAM IS READY.", x, y, wait > 0 ? Style.Warn : Style.Ok, 1);
             y += ui.U(14);
             ui.Text("STARVING THEM OUT: EACH DAY COSTS THEM A DAY OF SUPPLIES, THEN MEN.", x, y, Style.Dim, 1);
+            y += ui.U(22);
+            SiegeWorksRows(s, r, x, y);
         }
         else ui.Text("YOUR MEN WILL NEED A NIGHT TO BUILD LADDERS AND A RAM.", x, y, Style.Dim, 1);
         Note(r);

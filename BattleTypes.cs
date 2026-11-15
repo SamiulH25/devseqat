@@ -1,5 +1,14 @@
 namespace Ironfield;
 
+/// One engine a side brings to a battle (BattleOptions.Engines).
+public sealed class EngineSpec
+{
+    public int Team;
+    public string Id = "";
+    /// An allied lord's: crewed from his companies, not yours.
+    public bool Ally;
+}
+
 /// Everything about a battle that is not the two armies: who you are, what you have learned, and the ground.
 public sealed class BattleOptions
 {
@@ -65,6 +74,14 @@ public sealed class BattleOptions
     public bool Siege;
     public int Ladders = 2;
     public float GateHp = 500;
+    /// Each section of the wall's face (docs/SIEGECRAFT.md A2; 0: half again the gate's) and the springalds on its walkway.
+    public float WallHp;
+    public int WallEngines;
+    /// Sections of the wall already down when the assault begins (a battered wall, docs/SIEGECRAFT.md A3).
+    public int Breaches;
+    /// Engines each side brings (a siege camp's works, a company's train: docs/SIEGECRAFT.md A3, A4); each is crewed by men
+    /// detached from one of its side's foot companies (Battle.DeployEngines).
+    public List<EngineSpec> Engines = new();
     public Weather Weather = Weather.Clear;
     /// The Horns perk: orders reach your sergeants 30% sooner.
     public bool Horns;
