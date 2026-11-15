@@ -75,6 +75,8 @@ public static class Bench
         double worldMs = clock.Elapsed.TotalMilliseconds;
         Console.WriteLine($"world bench (seed {seed}): terrain field {terrain.N}x{terrain.N}, {terrain.Foliage.Count} foliage items");
         Console.WriteLine($"  map terrain {terrainMs:0} ms, world meshes {worldMs:0} ms, checksum {w.Checksum():x16}");
+        var size = w.Size();
+        Console.WriteLine($"  {size.Tiles} culled tiles ({size.TileVerts:N0} verts), {size.AlwaysVerts:N0} verts always drawn, {size.Bytes / 1048576.0:0} MB of buffers");
         foreach (var (stage, ms, verts) in w.BuildTimes) Console.WriteLine($"  {stage,-28} {ms,8:0.0} ms {verts,10:N0} verts");
     }
 }

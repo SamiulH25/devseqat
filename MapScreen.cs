@@ -33,6 +33,8 @@ sealed partial class MapScreen
     Quality lifeQuality = Quality.High;
     readonly List<Vector2> partySpots = new();
     World? world;
+    /// What the last frame's world cost to draw (render.txt in campaign shots).
+    public string? RenderCost => world?.RenderCost;
     Terrain terrain = null!;
     int season;
     readonly Dictionary<int, List<Vector2>> trails = new(); // where each party has been lately (drawn as fading tracks)

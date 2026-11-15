@@ -388,7 +388,7 @@ partial class BattleScreen
     Vector3 G(Vector2 p, float y = 0.08f) => new(p.X, battle.Terrain.Height(p) + y, p.Y);
 
     /// The last frame's draw load: sprite triangles, line segments, ground marks, units on the field (shots runs log it).
-    public string RenderCost => $"{sprites.N / 3} sprite tris, {lines.N / 2} lines, {markCount} marks, {battle.Units.Count(u => u.Active)} men";
+    public string RenderCost => $"{sprites.N / 3} sprite tris, {lines.N / 2} lines, {markCount} marks, {battle.Units.Count(u => u.Active)} men, {world.RenderCost}";
 
     readonly Dictionary<Squad, float> selectedAt = new();
     /// Orders just given: an arrow from each company to where it was sent, drawn out and then drawn in over a second (V7).

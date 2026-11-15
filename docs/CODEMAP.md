@@ -252,7 +252,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleWings.cs (127 lines)
 - **Battle** (class, L9): MeleeTime:12, Rallies:15, RallyPoint:18, RideToRally:30, HorseWits:43, HorsePrey:63, ChargeLane:80, HoldsFire:93, BowsWits:97, Focus:126
 
-## Bench.cs (80 lines)
+## Bench.cs (82 lines)
 - **Bench** (class, L7): Run:9, Campaign:43, World:66
 
 ## Campaign/Armoury.cs (249 lines)
@@ -614,8 +614,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Captain.cs (366 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:85, AuraBlock:155, PathBlock:173, OwnFormBlock:196, FlameBlock:223, FormList:247, CaptainRecord:288, NameLines:327, Breaks:354
 
-## MapScreen.cs (696 lines)
-- **MapScreen** (class, L9): Save:18, MapScreen:59, Prepared:73, Prepare:78, Open:88, ShowResults:107, Pressed:115, Update:119, readonly:210, LaterTips:223, Pan:247, ScreenKeys:249, OpenScreen:257, Soundscape:265, CameFrom:327, Camera:329, Rename:353, Trails:366, ClickWorld:378, Ground:390, Draw:413, UpdateBearers:489, UpdateLife:531, BuildSprites:541, DrawSprites:548, G:560, DrawLines:562, Stage:601
+## MapScreen.cs (698 lines)
+- **MapScreen** (class, L9): Save:18, MapScreen:61, Prepared:75, Prepare:80, Open:90, ShowResults:109, Pressed:117, Update:121, readonly:212, LaterTips:225, Pan:249, ScreenKeys:251, OpenScreen:259, Soundscape:267, CameFrom:329, Camera:331, Rename:355, Trails:368, ClickWorld:380, Ground:392, Draw:415, UpdateBearers:491, UpdateLife:533, BuildSprites:543, DrawSprites:550, G:562, DrawLines:564, Stage:603
 
 ## MapScreen.Dialogs.cs (251 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, EncounterOwnSide:95, MeetingPanel:121, SiegePanel:153, BeatPanel:204, GameOverPanel:221, MenuPanel:236
@@ -705,8 +705,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:75, Deserialize:76, Save:80, Play:87, Matches:136, Run:139
 - **Battle** (class, L153): StartRecording:160, RecordFrame:165, FinishRecording:205
 
-## ScreenHost.cs (795 lines)
-- **ScreenHost** (class, L9): ScreenHost:45, ApplyVideo:64, OpenSettings:74, LoadContent:76, StartCampaign:119, Load:145, FinishLoading:160, DrawLoading:178, ContinueCampaign:203, OpenLab:214, QuickBattle:216, StartCampaignBattle:223, FinishCampaignBattle:233, CycleQuality:241, Update:245, Draw:290, Fade:325, CaptureShot:355, readonly:382, RestoreTavernTown:394, StagingRefused:401, CampaignShots:407
+## ScreenHost.cs (796 lines)
+- **ScreenHost** (class, L9): ScreenHost:45, ApplyVideo:64, OpenSettings:74, LoadContent:76, StartCampaign:119, Load:145, FinishLoading:160, DrawLoading:178, ContinueCampaign:203, OpenLab:214, QuickBattle:216, StartCampaignBattle:223, FinishCampaignBattle:233, CycleQuality:241, Update:245, Draw:290, Fade:325, CaptureShot:355, readonly:383, RestoreTavernTown:395, StagingRefused:402, CampaignShots:408
 
 ## SelfTest.cs (104 lines)
 - **SelfTest** (class, L6): Run:14, Slots:21, ResolveBattles:33, RunOne:56, Lancer:64, Run:73, Scaled:75, MakeWanderer:78, Days:86, Ids:98, Check:100
@@ -898,9 +898,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Verts.cs (36 lines)
 - **Verts<T>** (class, L6): Add:13, Draw:19, Dispose:35
 
-## World.cs (1240 lines)
+## World.cs (1300 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): Baked:47, World:56, World:60, Checksum:77, Mark:98, Upload:107, Image:131, FoliageBuffer:138, RebuildFoliage:146, Lit:152, Draw:170, SetFog:198, DrawShaded:205, DrawShadowCasters:232, DrawGeometry:242, SetExtra:281, Dispose:283, Smooth:292, GroundColor:299, BuildDetail:358, WorldToMinimap:403, MinimapToWorld:404, BuildSky:408, BuildFoliage:430, DrawFoliage:512, Jitter:527, Broadleaf:533, Pine:550, Bush:564, Rock:573, House:585, Windows:614, Chimney:644, Village:652, Town:665, SiteModel:701, WallStones:786, Tower:798, Torches:817, GateDoor:837, Ladder:864, Wheel:877, Wagon:912, TownHouse:974, Castle:981, Grass:998, Skirt:1052
+- **World** (class, L25): Baked:50, World:59, World:63, Checksum:80, Mark:110, Upload:119, Image:143, FoliageBuffer:150, RebuildFoliage:158, Lit:164, Draw:182, SetFog:207, DrawShaded:214, DrawShadowCasters:241, DrawGeometry:251, SetExtra:287, Dispose:289, Smooth:298, GroundColor:305, BuildDetail:373, WorldToMinimap:418, MinimapToWorld:419, BuildSky:423, BuildFoliage:445, DrawTerrain:527, DrawFoliage:560, Jitter:587, Broadleaf:593, Pine:610, Bush:624, Rock:633, House:645, Windows:674, Chimney:704, Village:712, Town:725, SiteModel:761, WallStones:846, Tower:858, Torches:877, GateDoor:897, Ladder:924, Wheel:937, Wagon:972, TownHouse:1034, Castle:1041, Grass:1058, Skirt:1112
 
 ## World.Features.cs (115 lines)
 - **World** (class, L7): Features:11

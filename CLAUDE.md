@@ -57,7 +57,7 @@ Press shots (marketing frames, HUD off): add `IRONFIELD_PRESS=seed` to the line 
 cinematic cameras fires (`BattleScreen.Press.cs`: drawn up, the captain, the horse, first contact, the melee close on a long lens and wide,
 and every strong spell as it lands). Pick the field with `IRONFIELD_GROUND`/`IRONFIELD_LAYOUT`/`IRONFIELD_WEATHER`/`IRONFIELD_MEN`;
 `IRONFIELD_MAGES=galdr_masters:0,crimson_crones:1[:count]` adds mage companies to a quick battle. Set `"TipsSeen"` in settings.json to skip the tip boxes.
-Without it the run saves ~30 staged battle PNGs (field-view.png, command-overview.png, gallery-*.png, pose-sheet*.png, pose-horses.png...) and quits, with `render.txt` (sprite triangles, lines and marks drawn per shot). `IRONFIELD_CAMPAIGN_SHOTS=/dir`
+Without it the run saves ~30 staged battle PNGs (field-view.png, command-overview.png, gallery-*.png, pose-sheet*.png, pose-horses.png...) and quits, with `render.txt` (sprite triangles, lines and marks drawn per shot, and the world's terrain triangles, tiles and draw calls; campaign shots write it too). `IRONFIELD_CAMPAIGN_SHOTS=/dir`
 does the same for campaign screens (with one tavern town strip per culture by day and night, and `campaign-aura.png`: the captain sheet at an aura wall), `IRONFIELD_LAB_SHOTS=/dir` for every UI lab page, `IRONFIELD_CREATOR_SHOTS=/dir` for each character creator step. Each run also writes `overflow.txt` (text that runs out of its panel; aim for none). ALSA/OpenAL "no audio" errors are harmless. Look at PNGs with the Read tool to check visual changes.
 
 Other env vars: `IRONFIELD_SAVES` (save dir; settings go to its parent), `IRONFIELD_QUALITY=High|Medium|Low`,

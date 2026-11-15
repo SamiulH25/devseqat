@@ -369,6 +369,7 @@ sealed class ScreenHost : Game
         Overflow.Flush(dir, name);
         // What the frame cost to draw, so a heavy effect shows up between runs (docs/archive/VISUALS.md V8).
         if (mode == Mode.Battle) File.AppendAllText(Path.Combine(dir, "render.txt"), $"{name}: {battle.RenderCost}\n");
+        if (mode == Mode.Map && map.RenderCost is { } mc) File.AppendAllText(Path.Combine(dir, "render.txt"), $"{name}: {mc}\n");
         pendingShot = null;
         battle.PendingShot = null;
         lab.PendingShot = null;

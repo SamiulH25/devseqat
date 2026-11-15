@@ -556,6 +556,13 @@ There are no model or pre-rendered WAV/OGG files. The only images are the unit s
   checksum (2026-11-15: 7.5 s -> 0.4 s on seed 11, same checksum on campaigns in all four seasons, battle fields and sieges).
   The ground colour asks `Terrain.WaterDepth`, which asks `River.Within`, an exact grid of the river's segments; a full
   `River.Dist` scans every segment (3.5 us a call) and was most of the old build time. `WorldMap.Height` uses it too.
+  Drawing culls by box against the camera's (or the sun's) frustum: the terrain's index buffer is laid out in 32x32-cell
+  blocks (`TerrainBlock`, `DrawTerrain`), foliage, fields and roads in 48 m tiles; tiles in view that sit next to each
+  other in the buffer go out as one draw call. Water, features and the skirt are always drawn. The block layout changed
+  the checksum once (2026-11-15); the triangles are the same. `World.RenderCost` (and `render.txt` in battle and campaign
+  shots) gives terrain triangles drawn, tiles seen, draw calls and triangles for the camera and shadow passes: the open
+  campaign map draws ~29k of its 228k terrain triangles and ~250 tiles in ~70 calls. Shots differ run to run (map life,
+  clock), so compare render costs, not pixels.
 - **Shaders:** plain GLSL in `Shaders/`, compiled at runtime by `GlslEffect.cs`. `Shading.cs` runs the pipeline (shadow map,
   scene target, post pass with FXAA). Quality High = shadows + post, Medium = no shadows, Low = fixed-function. GLSL rules
   are in the README "Shaders" section: render targets sample upside down on GL, vertex shaders end with `FIXUP_POSITION`,

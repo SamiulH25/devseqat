@@ -40,6 +40,9 @@ sealed partial class World : IDisposable
     VertexBuffer terrainVb = null!, skyVb = null!, foliageVb = null!;
     IndexBuffer terrainIb = null!;
     readonly int terrainTris, skyTris;
+    /// Terrain cells per block side: the terrain's index buffer is laid out in blocks, each culled by its box.
+    const int TerrainBlock = 32;
+    readonly List<(int Start, int Tris, BoundingBox Box)> terrainBlocks = new();
     Texture2D detail = null!;
     BasicEffect terrainFx = null!, foliageFx = null!, skyFx = null!;
     /// The meshes and map images made by the headless constructor, held until `Upload` sends them to the GPU.
@@ -89,6 +92,15 @@ sealed partial class World : IDisposable
         foreach (var c in Chimneys) Bytes(BitConverter.GetBytes(c.X + c.Y * 3 + c.Z * 7));
         Bytes(BitConverter.GetBytes(alwaysStart)); Bytes(BitConverter.GetBytes(alwaysTris));
         return h;
+    }
+
+    /// The size of what the build made: culled tiles, their vertices, the always-drawn vertices (water, skirt), buffer bytes.
+    public (int Tiles, int TileVerts, int AlwaysVerts, long Bytes) Size()
+    {
+        var b = baked ?? throw new InvalidOperationException("only before Upload");
+        int tileVerts = tiles.Sum(x => x.Tris * 3) + grassTiles.Sum(x => x.Tris * 3);
+        long bytes = (b.Terrain.Length + b.Foliage.Length) * 36L + b.Indices.Length * 4L + b.Sky.Length * 16L;
+        return (tiles.Count + grassTiles.Count, tileVerts, alwaysTris * 3, bytes);
     }
 
     /// How long each part of the CPU build took and the vertices it made (`--world-bench`).
@@ -183,14 +195,11 @@ sealed partial class World : IDisposable
         gd.SamplerStates[0] = DetailSampler;
         terrainFx.View = view; terrainFx.Projection = proj;
         terrainFx.CurrentTechnique.Passes[0].Apply();
-        gd.SetVertexBuffer(terrainVb);
-        gd.Indices = terrainIb;
-        for (int s = 0; s < terrainTris; s += Chunk)
-            gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, s * 3, Math.Min(Chunk, terrainTris - s));
+        drawFrustum.Matrix = view * proj;
+        DrawTerrain(drawFrustum);
 
         foliageFx.View = view; foliageFx.Projection = proj;
         foliageFx.CurrentTechnique.Passes[0].Apply();
-        drawFrustum.Matrix = view * proj;
         DrawFoliage(drawFrustum, false);
     }
 
@@ -243,10 +252,7 @@ sealed partial class World : IDisposable
     {
         fx.CurrentTechnique = fx.Techniques[terrain];
         fx.CurrentTechnique.Passes[0].Apply();
-        gd.SetVertexBuffer(terrainVb);
-        gd.Indices = terrainIb;
-        for (int s = 0; s < terrainTris; s += Chunk)
-            gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, s * 3, Math.Min(Chunk, terrainTris - s));
+        DrawTerrain(view);
         fx.CurrentTechnique = fx.Techniques[foliage];
         fx.CurrentTechnique.Passes[0].Apply();
         DrawFoliage(view, shadow);
@@ -342,15 +348,24 @@ sealed partial class World : IDisposable
                 v[z * n + x] = new VertexPNCT(new Vector3(p.X, t.GridHeight(x, z), p.Y), normal, col, p / 4);
             }
         });
+        // Indices laid out block by block, each block with its box, so only the blocks in view are drawn.
         var idx = new int[(n - 1) * (n - 1) * 6];
         int k = 0;
-        for (int z = 0; z < n - 1; z++)
-            for (int x = 0; x < n - 1; x++)
+        for (int bz = 0; bz < n - 1; bz += TerrainBlock)
+            for (int bx = 0; bx < n - 1; bx += TerrainBlock)
             {
-                // Split along (x+1, z)-(x, z+1), matching Terrain.Height.
-                int a = z * n + x, b = a + 1, c = a + n, d = a + n + 1;
-                idx[k++] = a; idx[k++] = b; idx[k++] = c;
-                idx[k++] = d; idx[k++] = c; idx[k++] = b;
+                int start = k;
+                var min = new Vector3(float.MaxValue); var max = new Vector3(float.MinValue);
+                for (int z = bz; z < Math.Min(n - 1, bz + TerrainBlock); z++)
+                    for (int x = bx; x < Math.Min(n - 1, bx + TerrainBlock); x++)
+                    {
+                        // Split along (x+1, z)-(x, z+1), matching Terrain.Height.
+                        int a = z * n + x, b = a + 1, c = a + n, d = a + n + 1;
+                        idx[k++] = a; idx[k++] = b; idx[k++] = c;
+                        idx[k++] = d; idx[k++] = c; idx[k++] = b;
+                    }
+                for (int i = start; i < k; i++) { min = Vector3.Min(min, v[idx[i]].Position); max = Vector3.Max(max, v[idx[i]].Position); }
+                terrainBlocks.Add((start, (k - start) / 3, new BoundingBox(min - Vector3.One, max + Vector3.One)));
             }
         return (v, idx);
     }
@@ -508,20 +523,65 @@ sealed partial class World : IDisposable
     /// Foliage triangles drawn last frame (for the performance check).
     public int FoliageDrawn { get; private set; }
 
-    /// Draw the foliage tiles inside `view` (a camera's or the sun's frustum), then the water and grass.
+    /// The terrain blocks inside `view`, neighbours in the index buffer joined into one call.
+    void DrawTerrain(BoundingFrustum view)
+    {
+        gd.SetVertexBuffer(terrainVb);
+        gd.Indices = terrainIb;
+        int runStart = -1, runTris = 0;
+        void Flush()
+        {
+            for (int s = 0; s < runTris; s += Chunk) gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, runStart + s * 3, Math.Min(Chunk, runTris - s));
+            TerrainDrawn += runTris;
+            runStart = -1; runTris = 0;
+        }
+        TerrainDrawn = 0;
+        foreach (var (start, tris, box) in terrainBlocks)
+        {
+            if (!view.Intersects(box)) continue;
+            if (runStart >= 0 && runStart + runTris * 3 == start) { runTris += tris; continue; }
+            if (runStart >= 0) Flush();
+            runStart = start; runTris = tris;
+        }
+        if (runStart >= 0) Flush();
+    }
+
+    /// Terrain triangles drawn by the last pass.
+    int TerrainDrawn;
+
+    /// Draw calls and foliage triangles of the last camera pass and the last shadow pass (render.txt in shots).
+    public (int Tiles, int Calls, int Tris) CameraCost { get; private set; }
+    public (int Tiles, int Calls, int Tris) ShadowCost { get; private set; }
+    public (int Camera, int Shadow) TerrainCost { get; private set; }
+    public string RenderCost => $"terrain {TerrainCost.Camera:N0}/{terrainTris:N0} tris, shadow {TerrainCost.Shadow:N0}; world {CameraCost.Tiles} tiles in {CameraCost.Calls} calls {CameraCost.Tris:N0} tris, shadow {ShadowCost.Tiles} tiles in {ShadowCost.Calls} calls {ShadowCost.Tris:N0} tris";
+
+    /// Draw the foliage tiles inside `view` (a camera's or the sun's frustum), then the water and grass. Visible tiles
+    /// that lie next to each other in the buffer go out as one draw call.
     void DrawFoliage(BoundingFrustum view, bool shadow)
     {
         gd.SetVertexBuffer(foliageVb);
-        int drawn = 0;
+        int drawn = 0, calls = 0, seen = 0, runStart = -1, runTris = 0;
+        void Flush()
+        {
+            for (int s = 0; s < runTris; s += Chunk, calls++) gd.DrawPrimitives(PrimitiveType.TriangleList, runStart + s * 3, Math.Min(Chunk, runTris - s));
+            drawn += runTris;
+            runStart = -1; runTris = 0;
+        }
         void Range(int start, int tris)
         {
-            for (int s = 0; s < tris; s += Chunk) gd.DrawPrimitives(PrimitiveType.TriangleList, start + s * 3, Math.Min(Chunk, tris - s));
-            drawn += tris;
+            if (tris <= 0) return;
+            seen++;
+            if (runStart >= 0 && runStart + runTris * 3 == start) { runTris += tris; return; }
+            if (runStart >= 0) Flush();
+            runStart = start; runTris = tris;
         }
         foreach (var (start, tris, box) in tiles) if (view.Intersects(box)) Range(start, tris);
         if (!shadow) foreach (var (start, tris, box) in grassTiles) if (view.Intersects(box)) Range(start, tris);
         if (alwaysTris > 0) Range(alwaysStart, alwaysTris);
+        if (runStart >= 0) Flush();
         FoliageDrawn = drawn;
+        if (shadow) { ShadowCost = (seen, calls, drawn); TerrainCost = (TerrainCost.Camera, TerrainDrawn); }
+        else { CameraCost = (seen, calls, drawn); TerrainCost = (TerrainDrawn, TerrainCost.Shadow); }
     }
 
     static Color Jitter(Color c, Random r, float amount)
