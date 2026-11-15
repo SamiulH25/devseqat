@@ -37,6 +37,7 @@ dotnet run -- --write-controls                           # write default control
 dotnet run -c Release --no-build -- --sprites out.png torso.plate helm   # headless: chosen sprite parts 6x on one PNG (pixel-art check)
 dotnet run -c Release --no-build -- --bake-sprites                      # paint parts the code has but Data/sprites lacks; keeps existing (maybe hand-edited) PNGs
 dotnet run -c Release --no-build -- --bake-sprites --force helm.kettle  # repaint matching PNGs from code (no filter = all); --check lists PNGs that differ from the code
+tools/sprite_tool.py show helm.kettle.f                                 # a part as a text grid with its legend (team colours starred); write KEY FILE, lint, team
 dotnet run -c Release --no-build -- --portraits out.png [seed]   # headless: lords' and kin's painted faces 3x on one PNG (first four: one face in each mood)
 dotnet run -c Release --no-build -- --sounds /tmp/snd [filter]   # headless: matching cues (all versions, near then far), beds and stereo music scores as 44.1 kHz WAV
 dotnet run -c Release -- --bench 1500                    # headless 1500-a-side battle: ms per tick by stage (3000 men ~3.6 ms)
