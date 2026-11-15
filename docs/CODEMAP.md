@@ -614,8 +614,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Captain.cs (366 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:85, AuraBlock:155, PathBlock:173, OwnFormBlock:196, FlameBlock:223, FormList:247, CaptainRecord:288, NameLines:327, Breaks:354
 
-## MapScreen.cs (687 lines)
-- **MapScreen** (class, L9): Save:18, MapScreen:59, Prepare:74, Open:81, ShowResults:98, Pressed:106, Update:110, readonly:201, LaterTips:214, Pan:238, ScreenKeys:240, OpenScreen:248, Soundscape:256, CameFrom:318, Camera:320, Rename:344, Trails:357, ClickWorld:369, Ground:381, Draw:404, UpdateBearers:480, UpdateLife:522, BuildSprites:532, DrawSprites:539, G:551, DrawLines:553, Stage:592
+## MapScreen.cs (696 lines)
+- **MapScreen** (class, L9): Save:18, MapScreen:59, Prepared:73, Prepare:78, Open:88, ShowResults:107, Pressed:115, Update:119, readonly:210, LaterTips:223, Pan:247, ScreenKeys:249, OpenScreen:257, Soundscape:265, CameFrom:327, Camera:329, Rename:353, Trails:366, ClickWorld:378, Ground:390, Draw:413, UpdateBearers:489, UpdateLife:531, BuildSprites:541, DrawSprites:548, G:560, DrawLines:562, Stage:601
 
 ## MapScreen.Dialogs.cs (251 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, EncounterOwnSide:95, MeetingPanel:121, SiegePanel:153, BeatPanel:204, GameOverPanel:221, MenuPanel:236
@@ -895,13 +895,13 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Verts.cs (36 lines)
 - **Verts<T>** (class, L6): Add:13, Draw:19, Dispose:35
 
-## World.cs (1143 lines)
+## World.cs (1171 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): World:54, RebuildFoliage:72, Lit:78, Draw:96, SetFog:124, DrawShaded:131, DrawShadowCasters:158, DrawGeometry:168, SetExtra:207, Dispose:209, Smooth:218, GroundColor:225, BuildDetail:288, BuildMinimap:300, WorldToMinimap:333, MinimapToWorld:334, DrawFoliage:427, Jitter:442, Broadleaf:448, Pine:465, Bush:479, Rock:488, House:500, Windows:529, Chimney:559, Village:567, Town:580, SiteModel:616, WallStones:701, Tower:713, Torches:732, GateDoor:752, Ladder:779, Wheel:792, Wagon:827, TownHouse:889, Castle:896, Grass:913, Skirt:967
+- **World** (class, L25): Baked:47, World:56, World:60, Upload:74, Image:98, FoliageBuffer:105, RebuildFoliage:113, Lit:119, Draw:137, SetFog:165, DrawShaded:172, DrawShadowCasters:199, DrawGeometry:209, SetExtra:248, Dispose:250, Smooth:259, GroundColor:266, BuildDetail:322, WorldToMinimap:365, MinimapToWorld:366, BuildSky:370, BuildFoliage:392, DrawFoliage:455, Jitter:470, Broadleaf:476, Pine:493, Bush:507, Rock:516, House:528, Windows:557, Chimney:587, Village:595, Town:608, SiteModel:644, WallStones:729, Tower:741, Torches:760, GateDoor:780, Ladder:807, Wheel:820, Wagon:855, TownHouse:917, Castle:924, Grass:941, Skirt:995
 
-## World.Features.cs (117 lines)
+## World.Features.cs (115 lines)
 - **World** (class, L7): Features:11
-- **World** (class, L58): KindColor:61, Contour:71, BuildGroundMap:78, MapFeatures:98
+- **World** (class, L58): KindColor:61, Contour:71, MapFeatures:96
 
 ## World.Land.cs (200 lines)
 - **World** (class, L9): Fields:32, Plot:43, Hedge:91, Fence:124, Outskirts:144, V3:186, Birch:189

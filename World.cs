@@ -31,18 +31,20 @@ sealed partial class World : IDisposable
     public static Vector3 SunDir => Sky.SunDir; // light travels this way
     const int Chunk = 60000; // primitives per draw call
 
-    public readonly Texture2D Minimap;
+    public Texture2D Minimap { get; private set; } = null!;
     /// The ground map (Act.GroundView, docs/archive/TERRAIN.md T6): each kind of ground in its own flat colour, height contours every
     /// 2 m, hedges, fences and houses. Same framing as the minimap.
-    public readonly Texture2D GroundMap;
-    readonly GraphicsDevice gd;
+    public Texture2D GroundMap { get; private set; } = null!;
+    GraphicsDevice gd = null!;
     readonly Terrain t;
-    readonly VertexBuffer terrainVb, skyVb;
-    VertexBuffer foliageVb;
-    readonly IndexBuffer terrainIb;
+    VertexBuffer terrainVb = null!, skyVb = null!, foliageVb = null!;
+    IndexBuffer terrainIb = null!;
     readonly int terrainTris, skyTris;
-    readonly Texture2D detail;
-    readonly BasicEffect terrainFx, foliageFx, skyFx;
+    Texture2D detail = null!;
+    BasicEffect terrainFx = null!, foliageFx = null!, skyFx = null!;
+    /// The meshes and map images made by the headless constructor, held until `Upload` sends them to the GPU.
+    Baked? baked;
+    sealed record Baked(VertexPNCT[] Terrain, int[] Indices, VertexPNCT[] Foliage, VertexPositionColor[] Sky, Color[] Minimap, int MinimapSize, Color[] Ground, int GroundSize);
     static readonly SamplerState DetailSampler = new()
     {
         Filter = TextureFilter.LinearMipPoint, AddressU = TextureAddressMode.Wrap, AddressV = TextureAddressMode.Wrap,
@@ -51,28 +53,67 @@ sealed partial class World : IDisposable
     /// Trees and bushes drawn at this share of their size: the campaign map shrinks them so towns stand out (docs/archive/VISUALS.md V4).
     readonly float treeScale;
 
-    public World(GraphicsDevice gd, Terrain terrain, float treeScale = 1)
+    public World(GraphicsDevice gd, Terrain terrain, float treeScale = 1) : this(terrain, treeScale) => Upload(gd);
+
+    /// The CPU half: every mesh and map image, with no GraphicsDevice, so it can run off the main thread (the campaign map's
+    /// takes seconds; `MapScreen.Prepare` makes it behind the loading screen). Call `Upload` on the main thread before drawing.
+    public World(Terrain terrain, float treeScale = 1)
     {
-        this.gd = gd;
         t = terrain;
         this.treeScale = treeScale;
-        (terrainVb, terrainIb, terrainTris) = BuildTerrain();
-        (foliageVb, _) = BuildFoliage();
-        (skyVb, skyTris) = BuildSky();
+        var (v, idx) = BuildTerrain();
+        var sky = BuildSky();
+        var (mini, miniSize) = BuildMinimap();
+        var (ground, groundSize) = BuildGroundMap();
+        baked = new Baked(v, idx, BuildFoliage(), sky, mini, miniSize, ground, groundSize);
+        terrainTris = idx.Length / 3;
+        skyTris = sky.Length / 3;
+    }
+
+    /// The GPU half: send the baked meshes and images to the device (main thread only).
+    public void Upload(GraphicsDevice gd)
+    {
+        var b = baked ?? throw new InvalidOperationException("the world is already on the GPU");
+        baked = null;
+        this.gd = gd;
+        terrainVb = new VertexBuffer(gd, VertexPNCT.Decl, b.Terrain.Length, BufferUsage.WriteOnly);
+        terrainVb.SetData(b.Terrain);
+        // A big map needs 32-bit indices (the campaign map has far more than 65536 vertices).
+        bool wide = b.Terrain.Length > ushort.MaxValue;
+        terrainIb = new IndexBuffer(gd, wide ? IndexElementSize.ThirtyTwoBits : IndexElementSize.SixteenBits, b.Indices.Length, BufferUsage.WriteOnly);
+        if (wide) terrainIb.SetData(b.Indices);
+        else terrainIb.SetData(b.Indices.Select(i => (ushort)i).ToArray());
+        foliageVb = FoliageBuffer(b.Foliage);
+        skyVb = new VertexBuffer(gd, VertexPositionColor.VertexDeclaration, b.Sky.Length, BufferUsage.WriteOnly);
+        skyVb.SetData(b.Sky);
+        Minimap = Image(b.Minimap, b.MinimapSize);
+        GroundMap = Image(b.Ground, b.GroundSize);
         detail = t.Grass ? BuildDetail() : BuildMaterials(); // the campaign map (no grass) gets its ground materials
-        Minimap = BuildMinimap();
-        GroundMap = BuildGroundMap();
 
         terrainFx = Lit(new BasicEffect(gd) { TextureEnabled = true, Texture = detail });
         foliageFx = Lit(new BasicEffect(gd));
         skyFx = new BasicEffect(gd) { VertexColorEnabled = true };
     }
 
+    Texture2D Image(Color[] data, int size)
+    {
+        var tex = new Texture2D(gd, size, size);
+        tex.SetData(data);
+        return tex;
+    }
+
+    VertexBuffer FoliageBuffer(VertexPNCT[] v)
+    {
+        var vb = new VertexBuffer(gd, VertexPNCT.Decl, Math.Max(3, v.Length), BufferUsage.WriteOnly);
+        if (v.Length > 0) vb.SetData(v);
+        return vb;
+    }
+
     /// Build the foliage meshes again (after the gate of a besieged town breaks).
     public void RebuildFoliage()
     {
         foliageVb.Dispose();
-        (foliageVb, _) = BuildFoliage();
+        foliageVb = FoliageBuffer(BuildFoliage());
     }
 
     BasicEffect Lit(BasicEffect fx)
@@ -208,9 +249,9 @@ sealed partial class World : IDisposable
 
     public void Dispose()
     {
-        terrainVb.Dispose(); terrainIb.Dispose(); foliageVb.Dispose(); skyVb.Dispose(); extraVb?.Dispose();
-        detail.Dispose(); Minimap.Dispose();
-        terrainFx.Dispose(); foliageFx.Dispose(); skyFx.Dispose();
+        terrainVb?.Dispose(); terrainIb?.Dispose(); foliageVb?.Dispose(); skyVb?.Dispose(); extraVb?.Dispose();
+        detail?.Dispose(); Minimap?.Dispose(); GroundMap?.Dispose();
+        terrainFx?.Dispose(); foliageFx?.Dispose(); skyFx?.Dispose();
     }
 
     // ---------- terrain ----------
@@ -250,7 +291,7 @@ sealed partial class World : IDisposable
         return c * (1 + n2 * 0.05f);
     }
 
-    (VertexBuffer, IndexBuffer, int) BuildTerrain()
+    (VertexPNCT[], int[]) BuildTerrain()
     {
         int n = t.N;
         var v = new VertexPNCT[n * n];
@@ -265,8 +306,6 @@ sealed partial class World : IDisposable
                 if (!t.Grass) col.A = (byte)(255 * (1 - Cavity(x, z))); // the map's shade in hollows (World.Materials.cs)
                 v[z * n + x] = new VertexPNCT(new Vector3(p.X, t.GridHeight(x, z), p.Y), normal, col, p / 4);
             }
-        // A big map needs 32-bit indices (the campaign map has far more than 65536 vertices).
-        bool wide = v.Length > ushort.MaxValue;
         var idx = new int[(n - 1) * (n - 1) * 6];
         int k = 0;
         for (int z = 0; z < n - 1; z++)
@@ -277,12 +316,7 @@ sealed partial class World : IDisposable
                 idx[k++] = a; idx[k++] = b; idx[k++] = c;
                 idx[k++] = d; idx[k++] = c; idx[k++] = b;
             }
-        var vb = new VertexBuffer(gd, VertexPNCT.Decl, v.Length, BufferUsage.WriteOnly);
-        vb.SetData(v);
-        var ib = new IndexBuffer(gd, wide ? IndexElementSize.ThirtyTwoBits : IndexElementSize.SixteenBits, idx.Length, BufferUsage.WriteOnly);
-        if (wide) ib.SetData(idx);
-        else ib.SetData(idx.Select(i => (ushort)i).ToArray());
-        return (vb, ib, idx.Length / 3);
+        return (v, idx);
     }
 
     Texture2D BuildDetail()
@@ -297,7 +331,7 @@ sealed partial class World : IDisposable
         return Art.Mipped(gd, data, 64);
     }
 
-    Texture2D BuildMinimap()
+    (Color[], int) BuildMinimap()
     {
         // One texel every couple of metres on a battlefield, coarser on the campaign map (it covers hundreds of metres).
         float metresPerTexel = t.MinimapRange > 256 ? 4f : Terrain.MinimapMetresPerTexel;
@@ -324,9 +358,7 @@ sealed partial class World : IDisposable
                     if (px >= 0 && py >= 0 && px < S && py < S && (dx == 0 || dy == 0)) data[py * S + px] = new Color(34, 70, 36);
                 }
         }
-        var tex = new Texture2D(gd, S, S);
-        tex.SetData(data);
-        return tex;
+        return (data, S);
     }
 
     /// Minimap coordinates in 0..1 (x right, y down). It is drawn as seen from your side: enemy at the top, world -X to the right.
@@ -335,7 +367,7 @@ sealed partial class World : IDisposable
 
     // ---------- sky ----------
 
-    (VertexBuffer, int) BuildSky()
+    VertexPositionColor[] BuildSky()
     {
         const int seg = 24, rings = 8;
         const float r = 300;
@@ -352,14 +384,12 @@ sealed partial class World : IDisposable
                 v.Add(B); v.Add(D); v.Add(Cc);
             }
         }
-        var vb = new VertexBuffer(gd, VertexPositionColor.VertexDeclaration, v.Count, BufferUsage.WriteOnly);
-        vb.SetData(v.ToArray());
-        return (vb, v.Count / 3);
+        return v.ToArray();
     }
 
     // ---------- foliage ----------
 
-    (VertexBuffer, int) BuildFoliage()
+    VertexPNCT[] BuildFoliage()
     {
         var m = new Mesh();
         tiles.Clear();
@@ -387,9 +417,7 @@ sealed partial class World : IDisposable
         if (m.V.Count == 0) m.Tri(Vector3.Zero, Vector3.Zero, Vector3.Zero, Color.Black, Vector3.Down); // keep the buffer valid on a bare field
         alwaysTris = (m.V.Count - alwaysStart) / 3;
         Grass(m);
-        var vb = new VertexBuffer(gd, VertexPNCT.Decl, Math.Max(3, m.V.Count), BufferUsage.WriteOnly);
-        if (m.V.Count > 0) vb.SetData(m.V.ToArray());
-        return (vb, m.V.Count / 3);
+        return m.V.ToArray();
 
         void Item(Foliage f)
         {

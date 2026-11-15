@@ -75,7 +75,7 @@ sealed partial class World
         return (int)MathF.Floor(t.Height(w + new Vector2(texel, 0)) / 2) != band || (int)MathF.Floor(t.Height(w + new Vector2(0, texel)) / 2) != band;
     }
 
-    Texture2D BuildGroundMap()
+    (Color[], int) BuildGroundMap()
     {
         int S = 256;
         float texel = 2 * t.MinimapRange / S;
@@ -89,9 +89,7 @@ sealed partial class World
                 data[y * S + x] = c;
             }
         MapFeatures(data, S, new Color(20, 40, 16), new Color(60, 40, 24));
-        var tex = new Texture2D(gd, S, S);
-        tex.SetData(data);
-        return tex;
+        return (data, S);
     }
 
     /// Hedges, fences and houses onto a map texture.

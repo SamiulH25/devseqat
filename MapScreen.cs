@@ -69,22 +69,31 @@ sealed partial class MapScreen
         lineFx = new BasicEffect(gd) { VertexColorEnabled = true };
     }
 
-    /// The headless half of `Open`: the map's terrain for the campaign's season. Safe off the main thread (the loading screen
-    /// runs it beside `Campaign.New`).
-    public static Terrain Prepare(Campaign c)
+    /// The map's terrain and its world meshes, made without the GPU.
+    public sealed record Prepared(Terrain Terrain, World World);
+
+    /// The headless half of `Open`: the map's terrain and world meshes for the campaign's season. Safe off the main thread
+    /// (the loading screen runs it beside `Campaign.New`): building the map's meshes takes seconds, and on the main thread
+    /// the window froze and looked crashed.
+    public static Prepared Prepare(Campaign c)
     {
         c.Map.Season = c.SeasonIndex;
-        return c.Map.BuildTerrain();
+        var terrain = c.Map.BuildTerrain();
+        return new Prepared(terrain, new World(terrain, treeScale: MapTreeScale));
     }
 
-    /// Show a campaign; `prepared` is its terrain from `Prepare` if already built.
-    public void Open(Campaign c, Terrain? prepared = null)
+    const float MapTreeScale = 0.72f;
+
+    /// Show a campaign; `prepared` is its terrain and world from `Prepare` if already built.
+    public void Open(Campaign c, Prepared? prepared = null)
     {
         C = c;
         world?.Dispose();
         season = c.SeasonIndex;
-        terrain = prepared ?? Prepare(c);
-        world = new World(gd, terrain, treeScale: 0.72f);
+        var p = prepared ?? Prepare(c);
+        terrain = p.Terrain;
+        world = p.World;
+        world.Upload(gd);
         life = new MapLife(terrain, terrain.Seed) { Chimneys = world.Chimneys };
         atlasIds = null;
         world.SetFog(260, 700);

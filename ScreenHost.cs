@@ -136,7 +136,7 @@ sealed class ScreenHost : Game
 
     // ---------- loading ----------
 
-    Task<(Campaign C, Terrain T)>? loading;
+    Task<(Campaign C, MapScreen.Prepared P)>? loading;
     volatile string loadStage = "";
     string loadTitle = "";
     float loadSince;
@@ -170,7 +170,7 @@ sealed class ScreenHost : Game
             return;
         }
         campaign = task.Result.C;
-        map.Open(campaign, task.Result.T);
+        map.Open(campaign, task.Result.P);
         mode = Mode.Map;
     }
 

@@ -76,6 +76,7 @@ CI: `.github/workflows/ci.yml` builds, runs `--selftest`, and on push publishes 
 Program.cs  CLI switches (--selftest/--balance/--replay/--write-controls) else runs ScreenHost
 ScreenHost  MonoGame Game. Mode {Title, Map, Battle, Lab, Loading}; owns Art, Audio, Settings, Controls (Ctl), Shading, Quality
             Loading: new/continued campaigns are made on a worker thread (`Load`: Campaign.New + MapScreen.Prepare) behind a loading screen
+            (Prepare also bakes the map's `World` meshes headless; `World.Upload` sends them to the GPU on the main thread: keep slow mesh work off it)
   TitleScreen ── New/Continue/QuickBattle ──┐   New opens CreatorScreen (the character creator)
   MapScreen (campaign UI + 3D map) ◄────────┤   SettingsScreen overlay on any mode
   BattleScreen (battle UI, camera, render) ◄┘
