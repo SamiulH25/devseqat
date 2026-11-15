@@ -1185,6 +1185,28 @@ public static partial class SelfTest
         Check(Troops.All.Where(t => t.Class == UnitClass.Caster).All(t => magi.Contains(t.Id) && !reachable.Contains(t.Id)), "every mage rises from Acolytes, and no recruit becomes one");
     }
 
+    /// The sprites are PNG files (SpriteBake): Data/sprites holds every part the code paints, at the size the rig expects,
+    /// for both colour schemes, and the PNG codec reads back what it writes.
+    static void SpritesBaked()
+    {
+        var img = new Color[] { Color.Transparent, new(12, 200, 90), new(255, 255, 255), new(1, 2, 3), Color.Transparent, new(90, 40, 200) };
+        var (back, w, h) = Png.Decode(Png.Encode(img, 3, 2));
+        Check(w == 3 && h == 2 && back.AsSpan().SequenceEqual(img), "a PNG reads back as written");
+        foreach (bool cb in new[] { false, true })
+        {
+            var baked = SpriteBake.Load(cb);
+            Check(baked != null, "Data/sprites is baked (run --bake-sprites)");
+            if (baked == null) return;
+            var painted = SpriteSheet.Paint(cb ? Style.ColorBlind() : Style.Standard());
+            var have = baked.ToDictionary(p => p.Key);
+            var missing = painted.Where(p => !have.ContainsKey(p.Key)).Select(p => p.Key).ToList();
+            Check(missing.Count == 0, $"every painted part is baked (run --bake-sprites): {string.Join(", ", missing.Take(8))}");
+            var resized = painted.Where(p => have.TryGetValue(p.Key, out var b) && (b.W != p.W || b.H != p.H)).Select(p => p.Key).ToList();
+            Check(resized.Count == 0, $"baked parts keep the rig's size: {string.Join(", ", resized.Take(8))}");
+            Check(baked.Count == painted.Count, "no baked part the code does not know");
+        }
+    }
+
     /// Every sprite any troop's look can ask for exists, for every side.
     static void Sprites()
     {

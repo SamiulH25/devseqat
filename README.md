@@ -20,7 +20,7 @@ through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contr
   that reads the field.
 - **It moves:** animated men and horses, blows with weight, trampled earth, weather and light by the hour, fades and battle
   names (see "Design: motion and feel").
-- **No art files:** every sprite, mesh, sound and tune is generated in code.
+- **No bought art:** every sprite, mesh, sound and tune is generated in code; unit sprites are baked from code to editable PNGs (`Data/sprites/`).
 
 ### Screenshots
 
@@ -55,7 +55,7 @@ dotnet run -c Release -- --bench 1500  # headless N-a-side battle: ms per tick f
 ```
 
 You need .NET SDK 10 (`net10.0`). On Ubuntu 24.04 `apt-get install dotnet-sdk-10.0` works (no Microsoft feed needed).
-The game needs no art files: sprites, terrain and the font are all generated in code. Troops come from `Data/troops.json`.
+Unit sprites are PNGs in `Data/sprites/`, baked from the painting code (`--bake-sprites`); terrain and the font are generated in code. Troops come from `Data/troops.json`.
 **Design language:** see [`docs/DESIGN.md`](docs/DESIGN.md) (art direction, unit painting rules, heraldry, tiers, UI tokens).
 **Roadmap:** see [`docs/archive/ROADMAP.md`](docs/archive/ROADMAP.md) (what comes next, in what order, and why).
 **Campaign:** see [`docs/CAMPAIGN.md`](docs/CAMPAIGN.md) (map, companies, XP and upgrades, economy, AI, battle hand-off; "As built" at the end).
@@ -647,7 +647,7 @@ For a detailed developer guide (how each system works, data formats, worked exam
 | `Controls.cs` | Rebindable actions, defaults, `controls.json` loading and key names for the HUD. |
 | `Puppet.cs` | Draws each unit as a puppet of part sprites on a 3D skeleton, with continuous poses from its action state; horses too. |
 | `Painter.cs` | The sprite painter: materials (hue-shifted 5-tone ramps + surface patterns), lit shapes, selective outline. |
-| `SpriteSheet.cs` | Paints every unit and horse part for every look, view and side, and packs a 1024x1024 atlas (headless). |
+| `SpriteSheet.cs` | The pipeline: paints every unit and horse part for every look, view and side; the sheet loads the baked PNGs (`SpriteBake.cs`, `Png.cs`) and packs a 1024x1024 atlas (headless). |
 | `Art.cs` | Uploads the atlas; blob shadow; white pixel. `PixelFont.cs`: the 5x7 HUD font. |
 | `SelfTest.cs` | `--selftest` runner and helpers; the tests are in `Tests/` (`BattleTests`, `CampaignTests`, `CareerTests`). `tools/check.sh` runs build + rules + self-test. |
 

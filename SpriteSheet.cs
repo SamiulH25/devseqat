@@ -2,7 +2,9 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Paints every unit sprite at startup (no image files) and packs them into one atlas. Headless: the self-test builds it too.
+/// The unit sprite atlas. The code below is the pipeline that paints every part; `--bake-sprites` writes them out as PNGs
+/// in Data/sprites (SpriteBake), and those PNGs are the product: the game loads them and only paints from code when
+/// none are baked. Edit a PNG to change how a part looks; change the code and re-bake (`--force`) to repaint. Headless.
 ///
 /// Keys are "part.variant.view/palette": e.g. "torso.mail.f/1" is a crimson mail torso seen from the front.
 /// Views: f (front), s (side, facing right; mirrored for left), b (back). Palettes: 0 azure, 1 crimson, 2 gold (you),
@@ -14,7 +16,10 @@ public sealed class SpriteSheet
     public const int W = 1024, H = 1024;
     public readonly Color[] Pixels = new Color[W * H];
     public readonly Dictionary<string, Rectangle> Rects = new();
-    readonly List<(string Key, Canvas C)> pending = new();
+    readonly List<Part> pending = new();
+
+    /// One finished part: its key and its pixels, (W x H) with the 1 px outline border already in.
+    public readonly record struct Part(string Key, Color[] Px, int W, int H);
 
     public static readonly Dictionary<string, float> Grip = new()
     {
@@ -25,19 +30,30 @@ public sealed class SpriteSheet
 
     static readonly string[] Views = { "f", "s", "b" };
 
+    /// The game's sheet: the baked PNGs (SpriteBake.Load), or the parts painted from code when Data/sprites has none.
     public SpriteSheet()
     {
-        for (int p = 0; p < Style.Sides.Length; p++) Side(p);
-        Horse();
-        Wolf();
-        Spider();
-        Bear();
-        Wyvern();
-        Visages();
+        pending.AddRange(SpriteBake.Load(Settings.Current.ColorBlind) ?? Paint(Style.Sides));
         Pack();
     }
 
-    void Add(string key, Canvas c) => pending.Add((key, c));
+    SpriteSheet(bool _) { }
+
+    /// The pipeline: every part painted from code for these sides, in paint order, not packed.
+    public static List<Part> Paint(Heraldry[] sides)
+    {
+        var s = new SpriteSheet(false);
+        for (int p = 0; p < sides.Length; p++) s.Side(sides[p], p);
+        s.Horse();
+        s.Wolf();
+        s.Spider();
+        s.Bear();
+        s.Wyvern();
+        s.Visages();
+        return s.pending;
+    }
+
+    void Add(string key, Canvas c) => pending.Add(new(key, c.Render(), c.W + 2, c.H + 2));
 
     /// How many rows of the atlas the packed sprites use (of H): each palette paints a full set of parts.
     public int Filled { get; private set; }
@@ -45,12 +61,10 @@ public sealed class SpriteSheet
     void Pack()
     {
         int x = 0, y = 0, rowH = 0;
-        foreach (var (key, c) in pending.OrderByDescending(p => p.C.H).ThenByDescending(p => p.C.W))
+        foreach (var (key, px, w, h) in pending.OrderByDescending(p => p.H).ThenByDescending(p => p.W))
         {
-            int w = c.W + 2, h = c.H + 2;
             if (x + w > W) { x = 0; y += rowH; rowH = 0; }
             if (y + h > H) throw new InvalidOperationException("sprite atlas full");
-            var px = c.Render();
             for (int j = 0; j < h; j++) Array.Copy(px, j * w, Pixels, (y + j) * W + x, w);
             Rects[key] = new Rectangle(x, y, w, h);
             x += w;
@@ -67,9 +81,8 @@ public sealed class SpriteSheet
         gskin = null!, rag = null!, glow = null!, bone = null!, pale = null!, shroud = null!, robe = null!, wisp = null!, felt = null!, plumeCloth = null!, hose = null!;
     Emblem charge;
 
-    void Side(int p)
+    void Side(Heraldry h, int p)
     {
-        var h = Style.Sides[p];
         cloth = new(h.Cloth, Pattern.Cloth); clothDk = new(h.ClothDark, Pattern.Cloth); trim = new(h.Trim);
         quilt = new(Color.Lerp(h.Cloth, Style.Linen, 0.2f), Pattern.Quilt); linen = new(Style.Linen, Pattern.Cloth);
         skin = new(Style.Skin); hair = new(Style.Hair, Pattern.Hair); leather = new(Style.Leather); wood = new(Style.Wood, Pattern.Wood);

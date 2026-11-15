@@ -1,4 +1,9 @@
-﻿if (args.Contains("--sprites"))
+﻿if (args.Contains("--bake-sprites"))
+{
+    Ironfield.SpriteBake.Run(args.SkipWhile(a => a != "--bake-sprites").Skip(1).ToArray());
+    return;
+}
+if (args.Contains("--sprites"))
 {
     var rest = args.SkipWhile(a => a != "--sprites").Skip(1).ToArray();
     Ironfield.SpriteDump.Run(rest.FirstOrDefault() ?? "sprites.png", rest.Skip(1).ToArray());

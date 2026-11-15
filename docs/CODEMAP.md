@@ -679,12 +679,15 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## PixelFont.cs (70 lines)
 - **PixelFont** (class, L7): BuildCharIdx:27, PixelFont:35, Width:50, Draw:52, DrawRun:58
 
+## Png.cs (138 lines)
+- **Png** (class, L10): Encode:14, static:42, Unfilter:100, Paeth:117, Chunk:123, Crc:132
+
 ## PortraitPainter.cs (276 lines)
 - **Face** (record, L8)
 - **PortraitPainter** (class, L12): MoodOf:16, Of:20, SoldierSeed:52, Of:57, OfMan:61, CohesionMood:76, Captain:79, Of:83, Paint:86, Background:222, Shade:249
 - **Portraits** (class, L253): Of:258
 
-## Program.cs (93 lines)
+## Program.cs (98 lines)
 
 ## Puppet.cs (947 lines)
 - **Puppet** (class, L13): PalOf:31, SetPal:104, GetLook:110, Puppet:116, Begin:118, Rad:127, W:128, Awed:154, Lean:171, Frame:178, View:188, Draw:208, Crossbow:311, Bow:335, Horse:362, static:452, Beast:460, WolfBody:472, Warg:502, BeastCorpse:520, DrawLooseHorse:535, DrawDeadHorse:545, RotY:582, Shoulder:593, Arm:597, ArmTo:604, Elbow:616, Sink:643, Leg:652, SpanRect:664, Fallen:673, Corpse:744, Haze:766, Particle:778, Banner:793, Decal:840, Quad:853, HelmTop:866, HeadBill:873, BillRect:876, Missile:887, AxialSrc:907, LongRect:918, PlaneRect:930, FlatRect:940
@@ -730,11 +733,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **BeatKind** (enum, L6)
 - **Beats** (class, L11): Ask:23, Running:32, Amount:36, Scale:44, Reset:47
 
+## SpriteBake.cs (200 lines)
+- **SpriteBake** (class, L18): SchemeName:39, Find:43, Load:54, Rgb:97, Hex:98, Hex:99, Run:106, SwapFor:161, Same:178, Check:187
+
 ## SpriteDump.cs (113 lines)
 - **SpriteDump** (class, L9): Run:13, Portraits:45, Png:80, Crc:107
 
-## SpriteSheet.cs (1523 lines)
-- **SpriteSheet** (class, L12): SpriteSheet:28, Add:40, Pack:45, Side:70, InEl:128, Head:130, Visages:133, Head:147, GoblinHead:198, TrollHead:228, SkullHead:258, GhoulHead:284, Helm:309, Torso:498, PlateTorso:662, PixelMap:665, Ribs:681, Tabard:696, Emblem:713, Cape:753, Sleeve:769, Leg:805, Boot:837, Hand:855, Shield:863, Weapon:934, Blade:1092, Polearm:1103, Bow:1118, Arrow:1132, Quiver:1141, Plume:1150, Flag:1158, Blood:1167, Splat:1176, Horse:1189, Wolf:1279, Spider:1318, Bear:1372, Wyvern:1407, BodyShape:1471, HorseGear:1474, Saddle:1511
+## SpriteSheet.cs (1536 lines)
+- **SpriteSheet** (class, L14): Part:22, SpriteSheet:34, SpriteSheet:40, Paint:43, Add:56, Pack:61, Side:84, InEl:141, Head:143, Visages:146, Head:160, GoblinHead:211, TrollHead:241, SkullHead:271, GhoulHead:297, Helm:322, Torso:511, PlateTorso:675, PixelMap:678, Ribs:694, Tabard:709, Emblem:726, Cape:766, Sleeve:782, Leg:818, Boot:850, Hand:868, Shield:876, Weapon:947, Blade:1105, Polearm:1116, Bow:1131, Arrow:1145, Quiver:1154, Plume:1163, Flag:1171, Blood:1180, Splat:1189, Horse:1202, Wolf:1292, Spider:1331, Bear:1385, Wyvern:1420, BodyShape:1484, HorseGear:1487, Saddle:1524
 
 ## Squad.cs (258 lines)
 - **Order** (enum, L5)
@@ -777,8 +783,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/AudioTests.cs (144 lines)
 - **SelfTest** (class, L5): SoundsMade:16, CombatCuesEmitted:101, CreatureAndMagicCues:125
 
-## Tests/BattleTests.cs (1857 lines)
-- **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, CavalryBalance:123, Flanks:164, Parry:180, BlowsShown:208, FightsRead:230, Formations:246, CaptainCombat:276, CaptainKit:302, SkillBouts:360, Bout:410, Fight:424, BattleGoals:458, BannerAndLastStand:480, DuelFight:517, RangedRoles:538, FatigueAndSupply:558, GroundLayer:576, GroundMoves:601, GroundFights:632, Layouts:669, HedgesAndBridges:700, EveryLayoutResolves:748, SightAndCover:769, Rivers:811, HoldsTheCrest:839, HorseAvoidsBadGround:865, AmbushWaits:882, TakesTheFord:902, GroundForThePlayer:924, Stakes:943, Pathfinder:981, GoesToFord:1001, FilesThroughGap:1030, RoundTheNearFence:1055, ChargeFindsCaptain:1069, FlowCacheBound:1084, Generals:1099, HorseDown:1116, Ground:1125, HoldFire:1149, TroopTree:1163, Sprites:1189, TroopVariety:1226, BigBattle:1262, StackBattle:1292, NamedMenFight:1327, AutoResolveNamedMen:1369, PullBack:1395, ReplayExact:1426, FoldCompanies:1460, AdvanceSteps:1504, RelieveAndSplit:1519, QueuedAndStanding:1555, AlertsRaise:1614, DeploymentMemory:1639, SpearsStopHorse:1670, CommandCap:1681, ScaleBattle:1700, Couriers:1738, DivisionGoals:1759
+## Tests/BattleTests.cs (1879 lines)
+- **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, CavalryBalance:123, Flanks:164, Parry:180, BlowsShown:208, FightsRead:230, Formations:246, CaptainCombat:276, CaptainKit:302, SkillBouts:360, Bout:410, Fight:424, BattleGoals:458, BannerAndLastStand:480, DuelFight:517, RangedRoles:538, FatigueAndSupply:558, GroundLayer:576, GroundMoves:601, GroundFights:632, Layouts:669, HedgesAndBridges:700, EveryLayoutResolves:748, SightAndCover:769, Rivers:811, HoldsTheCrest:839, HorseAvoidsBadGround:865, AmbushWaits:882, TakesTheFord:902, GroundForThePlayer:924, Stakes:943, Pathfinder:981, GoesToFord:1001, FilesThroughGap:1030, RoundTheNearFence:1055, ChargeFindsCaptain:1069, FlowCacheBound:1084, Generals:1099, HorseDown:1116, Ground:1125, HoldFire:1149, TroopTree:1163, SpritesBaked:1190, Sprites:1211, TroopVariety:1248, BigBattle:1284, StackBattle:1314, NamedMenFight:1349, AutoResolveNamedMen:1391, PullBack:1417, ReplayExact:1448, FoldCompanies:1482, AdvanceSteps:1526, RelieveAndSplit:1541, QueuedAndStanding:1577, AlertsRaise:1636, DeploymentMemory:1661, SpearsStopHorse:1692, CommandCap:1703, ScaleBattle:1722, Couriers:1760, DivisionGoals:1781
 
 ## Tests/CampaignTests.cs (1678 lines)
 - **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:41, CampaignRun:52, Progression:94, Economy:121, Bridge:133, Calibration:155, RiverRoadGivesBridge:180, RainMakesMud:206, DefenderChoosesGround:231, AutoResolveGroundEdge:247, SiegeBattle:258, CampaignWar:296, RefuseOldSave:357, RollEarnsNames:383, FallenRemembered:453, RisesFromRanks:498, BannerHonours:537, FameDraws:576, RetireAndSucceed:602, BuryNamed:632, Stacks:660, Cultures:705, Characters:778, CampaignDivisions:883, Armoury:929, Duels:1000, RidingAndBowcraft:1033, PerkTiers:1082, SkillRises:1109, LastingWounds:1162, CaptainTraits:1185, HouseholdGuard:1224, RankRewards:1252, StartingRoad:1280, SkillTree:1300, BalanceMatchesData:1383, HousesAndKin:1397, PortraitsVary:1432, TalkBondsWants:1448, LordArmies:1506, HorsesCostGold:1552, GoodsSell:1562, SaveMidRun:1580, Drive:1600, CheckSound:1613, ReportMatchesRecord:1628, StableMix:1671

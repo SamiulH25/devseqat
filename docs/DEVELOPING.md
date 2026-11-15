@@ -530,10 +530,22 @@ in the F1 help (`Hud.Help`). Some map keys (P, K, L, R) are hard-coded in `MapSc
 
 ## 7. Rendering and sound
 
-There are no image, model or pre-rendered WAV/OGG files: sprites and meshes are built at startup, SFX and ambient beds are synthesised in code, and music renders live from compact JSON scores through a 28-voice micro-sample bank (`Data/audio/instruments.bank`).
+There are no model or pre-rendered WAV/OGG files. The only images are the unit sprite PNGs, baked from code (below); meshes are built at startup, SFX and ambient beds are synthesised in code, and music renders live from compact JSON scores through a 28-voice micro-sample bank (`Data/audio/instruments.bank`).
 
-- **Sprites:** `SpriteSheet.cs` paints every body part, for every look, view (front/side/back) and side colour, into a
-  1024x1024 atlas, using `Painter.cs` materials. Keys look like `helm.kettle.f`. A new `Look` part needs painting code here.
+- **Sprites:** `SpriteSheet.cs` paints every body part, for every look, view (front/side/back) and side colour, using
+  `Painter.cs` materials (`SpriteSheet.Paint`), and the sheet packs them into a 1024x1024 atlas. Keys look like `helm.kettle.f/0`.
+  A new `Look` part needs painting code here, then a bake.
+- **Sprites as PNGs:** the painting code is the pipeline and the PNGs in `Data/sprites/` are the product: `new SpriteSheet()`
+  loads them (`SpriteBake.Load`) and paints from code only when no `manifest.json` is found (working directory first, so an
+  edited PNG shows even with `--no-build`, then next to the game). Layout: `parts/KEY.png` one master per team part, painted
+  in palette 0 (Azure); `neutral/KEY.png` horse and beast coats and men's faces; `sides/<standard|colorblind>/<p>/KEY.png` a
+  palette's own copy where a colour swap cannot make it (the side's charge on tabards, shields, flags, caparisons, and a few
+  colour clashes); `manifest.json` the parts in paint order and per scheme and palette the colour swap master -> side. Every
+  other side's part is the master with its colours swapped, so a master edit reaches all nine sides as long as team cloth
+  keeps the master's team colours. `--bake-sprites` writes only missing PNGs (hand edits survive) and always rewrites the
+  manifest; `--force [filter]` repaints from code; `--check` lists PNGs that differ from what the code paints. A freshly
+  baked set loads to exactly the painted atlas. Gotchas: keep a PNG's size (the rig reads metres from pixels; `SpritesBaked`
+  fails otherwise); semi-transparent pixels load premultiplied; save 8-bit, not interlaced (`Png.Decode` refuses otherwise).
   `Puppet.cs` draws each unit as part sprites on a 3D skeleton, posed from its action state.
 - **World:** `World.cs` builds the terrain mesh, foliage, towns, water and the minimap from `Terrain`.
 - **Shaders:** plain GLSL in `Shaders/`, compiled at runtime by `GlslEffect.cs`. `Shading.cs` runs the pipeline (shadow map,

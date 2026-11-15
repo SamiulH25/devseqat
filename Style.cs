@@ -19,7 +19,7 @@ public static class Style
 
     /// Colour-blind-safe sides (roadmap D3): blue against vermilion and reddish purple (Okabe-Ito hues), which stay apart
     /// under deuteranopia and protanopia. You stay gold; brigands stay grey-brown. Chosen at start-up (Settings).
-    static Heraldry[] ColorBlind() => new Heraldry[]
+    internal static Heraldry[] ColorBlind() => new Heraldry[]
     {
         new("Azure", new(0, 96, 160), new(0, 56, 100), new(236, 228, 196), Emblem.Chevron, new(86, 180, 233)),
         new("Crimson", new(204, 92, 0), new(120, 52, 0), new(250, 236, 200), Emblem.Saltire, new(230, 159, 0)),
@@ -32,7 +32,7 @@ public static class Style
         new("Ashen Sun", new(232, 232, 226), new(150, 150, 146), new(20, 20, 24), Emblem.Cross, new(245, 245, 240)),
     };
 
-    static Heraldry[] Standard() => new Heraldry[]
+    internal static Heraldry[] Standard() => new Heraldry[]
     {
         new("Azure", new(54, 94, 176), new(30, 50, 108), new(230, 218, 178), Emblem.Chevron, new(112, 160, 255)),
         new("Crimson", new(172, 48, 42), new(98, 26, 28), new(222, 178, 72), Emblem.Saltire, new(236, 88, 70)),
