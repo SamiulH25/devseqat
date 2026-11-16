@@ -182,6 +182,7 @@ sealed class CreatorScreen
     void Begin()
     {
         if (M.Name.Trim() == "") { Go(4); typing = 1; return; }
+        if (M.FreeStart) M.Realm = dice.Next(Factions.All.Count); // a free company starts at any capital
         Open = false;
         AudioEngine.Current?.Play(Cue.WaxSeal, 0.85f);
         begin(M);
@@ -192,6 +193,16 @@ sealed class CreatorScreen
         time = now;
         Keys(kb, pkb);
         Refresh();
+        // On a 1080p-class screen the interface would be drawn at 1x, with text too small to read comfortably: the creator
+        // uses the 2x scale there (its layout follows the window, so it fits the smaller logical area).
+        int savedScale = ui.S;
+        if (Settings.Current.UiScale == 0 && ui.S == 1 && ui.H >= 1000) ui.S = 2;
+        DrawScreen();
+        ui.S = savedScale;
+    }
+
+    void DrawScreen()
+    {
         ui.Dim(0.55f);
 
         int margin = U(16), top = U(16);
@@ -225,6 +236,9 @@ sealed class CreatorScreen
             default: Oath(inner); break;
         }
         Footer(new Rectangle(margin, ui.H - footH - U(12), ui.W - 2 * margin, footH));
+        foreach (var tip in late) tip(); // tooltips last
+        late.Clear();
+        hoverCard?.Invoke();
     }
 
     // ---------- the portrait ----------
@@ -235,7 +249,7 @@ sealed class CreatorScreen
         var inner = ui.Plate(r, null, Kit.Gilt);
         var def = Factions.All[M.Realm];
         var colours = Origins.Free(M) ? Style.Sides[2] : Style.Sides[def.Palette];
-        int wellH = Math.Min((int)(inner.Height * 0.7f), U(440));
+        int wellH = Math.Max(U(150), Math.Min(Math.Min((int)(inner.Height * 0.7f), U(440)), inner.Height - U(150))); // what lies beneath (face, chips, company) needs about 150
         var well = new Rectangle(inner.X, inner.Y, inner.Width, wellH);
         ui.VGrad(well, Kit.Mul(colours.Cloth, 0.45f), new Color(16, 12, 14), 2);
         ui.Stars(new Rectangle(well.X, well.Y, well.Width, well.Height / 2), time, 24);
@@ -307,6 +321,54 @@ sealed class CreatorScreen
     /// Skills as bars (the usual start dim, what your choices add in gilt), then perks and the kit you carry.
     void Ledger(Rectangle r)
     {
+        hoverCard = null;
+        LedgerBody(r);
+    }
+
+    readonly List<Action> late = new();
+
+    /// A tooltip at the mouse, wrapped to a sensible width and kept on the screen; drawn after everything else so no panel paints over it.
+    void Tip(string title, params string[] text)
+    {
+        int mx = ui.Mouse.X, my = ui.Mouse.Y;
+        late.Add(() =>
+        {
+            var lines = text.SelectMany(t => ui.Wrap(t, U(190))).ToArray();
+            int w = Math.Max(ui.TW(title, 1), lines.Select(l => ui.TW(l, 1)).DefaultIfEmpty(0).Max()) + U(16);
+            int x = Math.Clamp(mx + U(12), w / 2 + U(4), ui.W - w / 2 - U(4));
+            ui.Tooltip(x, Math.Max(my, U(22 + 11 * lines.Length)), title, lines);
+        });
+    }
+
+    Action? hoverCard;
+
+    /// A hover card: a sprite or a troop's portrait beside a title and a line, drawn after the ledger.
+    void Card(string title, string line, string? key, Color? tint, UnitType? troop)
+    {
+        int mx = ui.Mouse.X, my = ui.Mouse.Y;
+        hoverCard = () =>
+        {
+            if (Ui.Since(System.HashCode.Combine(title, 0x7e)) < 0.25f) return;
+            int sz = U(48), pad = U(8);
+            var lines = ui.Wrap(line, U(140));
+            int tw = Math.Max(ui.TW(title, 1), lines.Select(l => ui.TW(l, 1)).DefaultIfEmpty(0).Max());
+            var box = new Rectangle(0, 0, sz + pad * 3 + tw, Math.Max(sz, U(14) + lines.Count * U(11)) + pad * 2);
+            box.X = Math.Max(U(4), mx - box.Width - U(12)); box.Y = Math.Clamp(my - box.Height / 2, U(4), Math.Max(U(4), ui.H - box.Height - U(4)));
+            ui.Rect(new Rectangle(box.X + U(2), box.Y + U(3), box.Width, box.Height), Color.Black * 0.4f);
+            ui.Rect(box, new Color(10, 10, 14) * 0.95f);
+            ui.Frame(box, Kit.Gilt * 0.8f, U(1));
+            var cell = new Rectangle(box.X + pad, box.Y + pad, sz, sz);
+            ui.VGrad(cell, new Color(34, 30, 30), new Color(16, 14, 16), 2);
+            ui.Frame(cell, new Color(124, 104, 53), U(1));
+            if (troop != null) ui.Portrait(troop, Kit.Inset(cell, U(2)), 0, 2.3f);
+            else if (key != null) ui.Sprite(key, Kit.Inset(cell, U(4)), tint);
+            ui.Text(title, cell.Right + pad, box.Y + pad, Kit.Gilt, 1);
+            for (int i = 0; i < lines.Count; i++) ui.Text(lines[i], cell.Right + pad, box.Y + pad + U(14) + i * U(11), Style.Dim, 1);
+        };
+    }
+
+    void LedgerBody(Rectangle r)
+    {
         var inner = ui.Plate(r, "LEDGER", Kit.Rivet);
         var plain = new CaptainState();
         Campaign.StartingSkills(plain);
@@ -325,6 +387,8 @@ sealed class CreatorScreen
             int nowW = (int)(bar.Width * MathF.Min(1, shown / span));
             ui.Rect(new Rectangle(bar.X, bar.Y, nowW, bar.Height), Kit.Gilt);
             ui.Rect(new Rectangle(bar.X, bar.Y, Math.Min(wasW, nowW), bar.Height), Kit.Mul(Kit.Rivet, 1.1f));
+            if (ui.Hover(new Rectangle(inner.X, y, inner.Width, rowH)))
+                Tip(s.Name.ToUpperInvariant(), s.Governs + ".", "RISES WITH: " + s.Rises + ".");
             y += rowH;
         }
         y += U(6);
@@ -334,7 +398,7 @@ sealed class CreatorScreen
             if (Skills.Perk(id) is PerkDef p && y + U(14) < inner.Bottom)
             {
                 ui.Chip(inner.X, y, p.Name.ToUpperInvariant(), Kit.Gilt, "up");
-                if (ui.Hover(new Rectangle(inner.X, y, inner.Width, U(13)))) ui.Tooltip(ui.Mouse.X + U(12), ui.Mouse.Y, p.Name.ToUpperInvariant(), p.Text);
+                if (ui.Hover(new Rectangle(inner.X, y, inner.Width, U(13)))) Tip(p.Name.ToUpperInvariant(), p.Text);
                 y += U(16);
             }
         void Section() { y += U(4); ui.Divider(inner.X, y, inner.Width, Kit.Gilt * 0.45f); y += U(12); }
@@ -353,7 +417,7 @@ sealed class CreatorScreen
                 string span = Origins.BoonSpan(days);
                 ui.TextFit(fx.Name.ToUpperInvariant(), row.X + U(16), row.Y + U(3), row.Width - U(22) - ui.TW(span, 1), Style.Text, 1);
                 ui.TextR(span, row.Right - U(4), row.Y + U(3), days <= 0 ? Kit.Gilt : Style.Dim, 1);
-                if (ui.Hover(row)) ui.Tooltip(ui.Mouse.X + U(12), ui.Mouse.Y, fx.Name.ToUpperInvariant(), fx.Line.ToUpperInvariant() + (days <= 0 ? " LASTS THE WHOLE CAMPAIGN." : $" FOR THE FIRST {days:0} DAYS."));
+                if (ui.Hover(row)) Tip(fx.Name.ToUpperInvariant(), fx.Line.ToUpperInvariant() + (days <= 0 ? " LASTS THE WHOLE CAMPAIGN." : $" FOR THE FIRST {days:0} DAYS."));
                 y += U(16);
             }
         }
@@ -366,6 +430,14 @@ sealed class CreatorScreen
             if (id == "" || y + U(10) > inner.Bottom) continue;
             ui.Text(slot, inner.X, y, Style.Dim, 1);
             ui.TextFit(Gear.Get(id).Name.ToUpperInvariant(), inner.X + U(50), y, inner.Width - U(50), Style.Text, 1);
+            if (ui.Hover(new Rectangle(inner.X, y, inner.Width, U(10))))
+            {
+                var g = Gear.Get(id);
+                int pal = Origins.Free(M) ? 2 : Factions.All[M.Realm].Palette;
+                string[] tries = slot == "SHIELD" ? new[] { $"shield.{g.Look}/{pal}" } : slot == "BODY" ? new[] { $"torso.{g.Look}.f/{pal}", $"torso.{g.Look}.f/0" } : slot == "HORSE" ? new[] { "hhead/n" } : new[] { g.Look + "/0" };
+                string? key = tries.FirstOrDefault(k => ui.HasSprite(k));
+                Card(g.Name.ToUpperInvariant(), g.Text.ToUpperInvariant(), key, slot == "HORSE" ? new Color(Style.Coats[0]) : null, null);
+            }
             y += U(10);
         }
         if (y + U(40) > inner.Bottom) return;
@@ -376,6 +448,7 @@ sealed class CreatorScreen
             if (y + U(10) > inner.Bottom) break;
             ui.TextR($"{men}", inner.X + U(26), y, Style.Text, 1);
             ui.TextFit(Troops.Get(troop).Name.ToUpperInvariant(), inner.X + U(34), y, inner.Width - U(34), Style.Dim, 1);
+            if (ui.Hover(new Rectangle(inner.X, y, inner.Width, U(10)))) { var t = Troops.Get(troop); Card(t.Name.ToUpperInvariant(), $"TIER {t.Tier} {t.Class}. HP {t.MaxHp:0}, DAMAGE {t.Damage:0}, ARMOUR {t.Armor:0}.".ToUpperInvariant(), null, null, t); }
             y += U(10);
         }
     }
@@ -400,21 +473,22 @@ sealed class CreatorScreen
     {
         ui.Text("WHERE DOES YOUR COMPANY START?", r.X, r.Y, Style.Dim, 1);
         int listW = (int)(r.Width * 0.46f), y = r.Y + U(14);
-        int rowH = Math.Min(U(54), (r.Height - U(14)) / Math.Max(1, Factions.All.Count));
+        int rowH = Math.Min(U(54), (r.Height - U(14)) / Math.Max(1, Factions.All.Count + 1));
         int show = M.Realm;
+        bool showFree = M.FreeStart;
         for (int f = 0; f < Factions.All.Count; f++)
         {
             var def = Factions.All[f];
             var row = new Rectangle(r.X, y, listW, rowH - U(4));
-            if (ui.Hover(row)) show = f;
-            if (ui.Button(row, "", active: f == M.Realm)) { M.Realm = f; }
+            if (ui.Hover(row)) { show = f; showFree = false; }
+            if (ui.Button(row, "", active: f == M.Realm && !M.FreeStart)) { M.Realm = f; M.FreeStart = false; }
             int sh = Math.Min(row.Height - U(8), U(30));
             ui.Shield(new Rectangle(row.X + U(8), row.Center.Y - sh / 2, sh * 5 / 6, sh), Style.Sides[def.Palette]);
             int tx = row.X + U(16) + sh;
-            bool on = f == M.Realm;
+            bool on = f == M.Realm && !M.FreeStart;
             if (Factions.Culture(def.Culture) is { } cul && row.Height >= U(30))
             {
-                var style = ui.Wrap(cul.Text.ToUpperInvariant(), row.Right - tx - U(6)).Take(row.Height >= U(42) ? 2 : 1).ToList();
+                var style = ui.Wrap(cul.Text.ToUpperInvariant(), row.Right - tx - U(6)).Take(row.Height >= U(36) ? 2 : 1).ToList();
                 int ny = row.Center.Y - U(7 + 10 * style.Count) / 2 - U(2);
                 ui.TextFit(def.Name.ToUpperInvariant(), tx, ny, row.Right - tx - U(6), on ? new Color(255, 246, 222) : Style.Text, 1);
                 for (int i = 0; i < style.Count; i++) ui.TextFit(style[i], tx, ny + U(12 + 10 * i), row.Right - tx - U(6), on ? Kit.Parchment : Style.Dim, 1);
@@ -422,10 +496,32 @@ sealed class CreatorScreen
             else ui.TextFit(def.Name.ToUpperInvariant(), tx, row.Y + (row.Height - U(7)) / 2, row.Right - tx - U(6), on ? new Color(255, 246, 222) : Style.Text, 1);
             y += rowH;
         }
+        // The free company: no realm's colours, a random capital.
+        {
+            var row = new Rectangle(r.X, y, listW, rowH - U(4));
+            if (ui.Hover(row)) showFree = true;
+            if (ui.Button(row, "", active: M.FreeStart)) { M.FreeStart = true; M.Realm = dice.Next(Factions.All.Count); }
+            int sh = Math.Min(row.Height - U(8), U(30));
+            ui.Shield(new Rectangle(row.X + U(8), row.Center.Y - sh / 2, sh * 5 / 6, sh), Style.Sides[2]);
+            int tx = row.X + U(16) + sh;
+            var fc = M.FreeStart ? new Color(255, 246, 222) : Style.Text;
+            ui.TextFit("FREE COMPANY", tx, row.Center.Y - U(7 + 10) / 2 - U(2), row.Right - tx - U(6), fc, 1);
+            ui.TextFit("NO CROWN, RANDOM CAPITAL", tx, row.Center.Y - U(7 + 10) / 2 - U(2) + U(12), row.Right - tx - U(6), M.FreeStart ? Kit.Parchment : Style.Dim, 1);
+        }
         var d = Factions.All[show];
         var pane = new Rectangle(r.X + listW + U(12), r.Y + U(14), r.Width - listW - U(12), r.Height - U(14));
         ui.Rect(pane, Color.Black * 0.25f);
         ui.Frame(pane, Kit.Rivet * 0.5f, U(1));
+        if (showFree)
+        {
+            int fw = Math.Min(U(70), pane.Width / 3);
+            ui.Banner(pane.Center.X, pane.Y + U(10), fw, (int)(fw * 1.9f), Style.Sides[2], time * 1.3f);
+            int fy = pane.Y + U(20) + (int)(fw * 1.9f);
+            ui.TextC("FREE COMPANY", pane.Center.X, fy, Kit.Gilt, 2); fy += U(26);
+            foreach (var line in ui.Wrap("YOU START AT THE CAPITAL OF A REALM CHOSEN BY CHANCE WHEN THE CAMPAIGN BEGINS, BUT SERVE NO CROWN. NO CONTRACT, NO WAGES TO ANYONE, NO UPKEEP PAID BY A LORD. YOUR FIRST MEN ARE THAT REALM'S OWN. TAKE CONTRACTS, SWEAR FEALTY OR FOUND A REALM OF YOUR OWN LATER.", pane.Width - U(24)))
+            { ui.TextC(line, pane.Center.X, fy, Style.Dim, 1); fy += U(11); }
+            return;
+        }
         int bw = Math.Min(U(70), pane.Width / 3);
         ui.Banner(pane.Center.X, pane.Y + U(10), bw, (int)(bw * 1.9f), Style.Sides[d.Palette], time * 1.3f);
         int py = pane.Y + U(20) + (int)(bw * 1.9f);
@@ -478,7 +574,7 @@ sealed class CreatorScreen
     void Choices(Rectangle r, IReadOnlyList<OriginDef> list, string chosen, Action<string> pick, string question)
     {
         ui.Text(question, r.X, r.Y, Style.Dim, 1);
-        int listW = (int)(r.Width * 0.42f), y = r.Y + U(14);
+        int listW = (int)(r.Width * (r.Height < U(440) ? 0.48f : 0.42f)), y = r.Y + U(14); // a short screen gives the list more width: its names and sub lines run long
         int rowH = Math.Min(U(list.Count <= 6 ? 84 : 58), (r.Height - U(14)) / Math.Max(1, list.Count));
         var show = list.FirstOrDefault(o => o.Id == chosen) ?? list[0];
         // One size for every name in the list: large when they all fit.
@@ -503,13 +599,15 @@ sealed class CreatorScreen
             }
             string sub = list.Count <= 6 ? string.Join(", ", Origins.Describe(o, 1)) : Skills.Perk(o.Perk) is PerkDef pk ? "PERK: " + pk.Name.ToUpperInvariant()
                 : string.Join(", ", Origins.Describe(o, 1).Take(2)) is { Length: > 0 } gives ? gives : o.Text.ToUpperInvariant();
-            bool two = row.Height >= U(30);
+            bool two = row.Height >= U(26);
             int sc = two ? nameScale : 1;
             // A tall row (a short list) gives the sub line room to wrap, up to three lines.
             var subs = row.Height >= U(64) ? ui.Wrap(sub, right - tx).Take(3).ToList() : new List<string> { sub };
             int nameY = two ? row.Y + (row.Height - U(7 * sc + 7 + 10 * subs.Count)) / 2 : row.Y + (row.Height - U(7)) / 2;
             ui.TextFit(o.Name.ToUpperInvariant(), tx, nameY, right - tx, on ? new Color(255, 246, 222) : Style.Text, sc);
             if (two) for (int i = 0; i < subs.Count; i++) ui.TextFit(subs[i], tx, nameY + U(7 * sc + 7 + 10 * i), right - tx, on ? Kit.Parchment : Style.Dim, 1);
+            else if (right - tx - ui.TW(o.Name.ToUpperInvariant(), 1) - U(10) > U(48)) // a crowded list: the sub line follows the name on one row
+                ui.TextFit(sub, tx + ui.TW(o.Name.ToUpperInvariant(), 1) + U(10), nameY, right - tx - ui.TW(o.Name.ToUpperInvariant(), 1) - U(10), on ? Kit.Parchment : Style.Dim, 1);
             y += rowH;
         }
         Detail(new Rectangle(r.X + listW + U(12), r.Y + U(14), r.Width - listW - U(12), r.Height - U(14)), show, show.Id == chosen);
@@ -549,8 +647,8 @@ sealed class CreatorScreen
             y += U(2);
         }
         y += U(10);
-        if (Origins.Roads.Contains(o)) y = RoadKit(x, y, w, o);
-        if (o.Pros.Count + o.Cons.Count > 0) y = InTheField(x, y, w, o);
+        if (Origins.Roads.Contains(o)) y = RoadKit(x, y, w, o, pane.Bottom - U(8));
+        if (o.Pros.Count + o.Cons.Count > 0) y = InTheField(x, y, w, o, pane.Bottom - U(8));
         foreach (var (fx, days) in Origins.Boons(o))
             if (y + U(40) < pane.Bottom - U(20)) y += BoonCard(new Rectangle(x, y, w, 0), fx, days) + U(8);
         y += U(10);
@@ -564,13 +662,14 @@ sealed class CreatorScreen
         {
             y += U(10);
             string hint = Origins.Births.Contains(o) ? "WHERE YOU CAME FROM MAY CALL YOU BACK." : "YOUR PAST MAY CATCH UP WITH YOU.";
-            ui.Icon("scroll", pane.Center.X - ui.TW(hint, 1) / 2 - U(12), y - U(1), Style.Dim, 1);
-            ui.TextC(hint, pane.Center.X, y, Style.Dim, 1);
+            var hintLines = ui.Wrap(hint, pane.Width - U(40)); // wrapped, and kept inside the pane
+            ui.Icon("scroll", x, y - U(1), Style.Dim, 1);
+            foreach (var hl in hintLines) { if (y + U(10) > pane.Bottom - U(4)) break; ui.Text(hl, x + U(14), y, Style.Dim, 1); y += U(10); }
         }
     }
 
     /// The kit a road puts in your hands, drawn: one framed cell per piece with its sprite and its name. Returns the y below.
-    int RoadKit(int x, int y, int w, OriginDef road)
+    int RoadKit(int x, int y, int w, OriginDef road, int bottom)
     {
         // The captain this road makes with your birth and past: the kit you will really carry (a past's horse and all).
         var c = Origins.Preview(new CaptainMaking { Realm = M.Realm, Birth = M.Birth, Past = M.Past, Road = road.Id });
@@ -580,7 +679,9 @@ sealed class CreatorScreen
         if (c.Kit.Side != "" && c.Kit.Side != c.Kit.Weapon) pieces.Add(("SIDE", Gear.Get(c.Kit.Side), Gear.Get(c.Kit.Side).Look + "/0", null));
         if (c.Kit.Horse != "") pieces.Add(("HORSE", Gear.Get(c.Kit.Horse), "hhead/n", new Color(Style.Coats[0])));
         ui.Text("YOUR KIT", x, y, Kit.Gilt, 1); y += U(12);
-        int n = Math.Max(3, pieces.Count), gap = U(6), cw = (w - gap * (n - 1)) / n, ch = Math.Min(U(48), cw);
+        int n = Math.Max(3, pieces.Count), gap = U(6), cw = (w - gap * (n - 1)) / n;
+        // The cells shrink, down to a small thumbnail, when the pane is short, so the road's field notes below still have room.
+        int ch = Math.Clamp(bottom - y - U(12 + 36 + 80), U(28), Math.Min(U(48), cw));
         for (int i = 0; i < pieces.Count; i++)
         {
             var (slot, g, key, tint) = pieces[i];
@@ -592,18 +693,20 @@ sealed class CreatorScreen
             int ny = cell.Bottom + U(14);
             foreach (var line in ui.Wrap(g.Name.ToUpperInvariant(), cw).Take(2)) { ui.TextFitC(line, cell.Center.X, ny, cw, Style.Text, 1); ny += U(10); }
         }
-        return y + ch + U(40);
+        return y + ch + U(36);
     }
 
     /// A road in the field: what it is good at (gilt) and where it fails (warned), each line with its mark. Returns the y below.
-    int InTheField(int x, int y, int w, OriginDef o)
+    int InTheField(int x, int y, int w, OriginDef o, int bottom)
     {
         ui.Divider(x, y, w, Kit.Gilt * 0.4f); y += U(10);
         ui.Text("IN THE FIELD", x, y, Kit.Gilt, 1); y += U(14);
         foreach (var (line, good) in o.Pros.Select(p => (p, true)).Concat(o.Cons.Select(c => (c, false))))
         {
+            var wrapped = ui.Wrap(line.ToUpperInvariant(), w - U(14));
+            if (y + wrapped.Count * U(10) > bottom) break; // never past the pane
             ui.Text(good ? "+" : "-", x + U(2), y, good ? Kit.Gilt : Style.Warn, 1);
-            foreach (var l in ui.Wrap(line.ToUpperInvariant(), w - U(14))) { ui.Text(l, x + U(14), y, good ? Style.Text : Style.Warn, 1); y += U(10); }
+            foreach (var l in wrapped) { ui.Text(l, x + U(14), y, good ? Style.Text : Style.Warn, 1); y += U(10); }
             y += U(4);
         }
         return y + U(6);
@@ -643,24 +746,26 @@ sealed class CreatorScreen
         int pw = Math.Min(w * 2 / 5, (r.Bottom - y - U(70)) * PortraitPainter.W / PortraitPainter.H);
         int lw = w - pw - U(16), px = x + lw + U(16);
 
-        // The features.
+        // The features. On a short screen (the 2x scale on 1080p leaves 540 high) the rows pack closer so the helm button still fits.
+        bool tight = r.Height < U(440);
+        int sp = U(tight ? 25 : 32), stp = U(tight ? 22 : 26), sz = U(tight ? 18 : 26);
         int ly = y;
         ui.Text("SKIN", x, ly, Kit.Gilt, 1); ui.Text(SkinNames[M.Skin], x + ui.TW("SKIN", 1) + U(8), ly, Style.Text, 1); ly += U(11);
-        M.Skin = Swatches(x, ly, lw, Variety.Skins, M.Skin); ly += U(32);
+        M.Skin = Swatches(x, ly, lw, Variety.Skins, M.Skin, sz); ly += sp;
         ui.Text("HAIR", x, ly, Kit.Gilt, 1); ui.Text(HairNames[M.Hair], x + ui.TW("HAIR", 1) + U(8), ly, Style.Text, 1); ly += U(11);
-        M.Hair = Swatches(x, ly, lw, Variety.Hairs, M.Hair); ly += U(32);
+        M.Hair = Swatches(x, ly, lw, Variety.Hairs, M.Hair, sz); ly += sp;
         ui.Text("EYES", x, ly, Kit.Gilt, 1); ui.Text(EyeNames[M.Eye], x + ui.TW("EYES", 1) + U(8), ly, Style.Text, 1); ly += U(11);
-        M.Eye = Swatches(x, ly, lw, PortraitPainter.EyeColours, M.Eye); ly += U(34);
-        M.Cut = Stepper(x, ly, lw, "HAIR", CutNames, M.Cut); ly += U(26);
-        M.Beard = Stepper(x, ly, lw, "BEARD", BeardNames, M.Beard); ly += U(26);
-        M.Brow = Stepper(x, ly, lw, "BROW", BrowNames, M.Brow); ly += U(26);
-        M.Nose = Stepper(x, ly, lw, "NOSE", NoseNames, M.Nose); ly += U(26);
-        M.Jaw = Stepper(x, ly, lw, "CHIN", JawNames, M.Jaw); ly += U(26);
-        M.Scar = Stepper(x, ly, lw, "SCAR", ScarNames, M.Scar); ly += U(30);
+        M.Eye = Swatches(x, ly, lw, PortraitPainter.EyeColours, M.Eye, sz); ly += sp + U(2);
+        M.Cut = Stepper(x, ly, lw, "HAIR", CutNames, M.Cut); ly += stp;
+        M.Beard = Stepper(x, ly, lw, "BEARD", BeardNames, M.Beard); ly += stp;
+        M.Brow = Stepper(x, ly, lw, "BROW", BrowNames, M.Brow); ly += stp;
+        M.Nose = Stepper(x, ly, lw, "NOSE", NoseNames, M.Nose); ly += stp;
+        M.Jaw = Stepper(x, ly, lw, "CHIN", JawNames, M.Jaw); ly += stp;
+        M.Scar = Stepper(x, ly, lw, "SCAR", ScarNames, M.Scar); ly += stp + U(4);
         int bw = (lw - U(8)) / 2;
         if (ui.Button(new Rectangle(x, ly, bw, U(22)), ui.Fit(helm ? "TAKE OFF THE HELM" : "PUT ON THE HELM", bw - U(6)))) helm = !helm;
         if (ui.Button(new Rectangle(x + bw + U(8), ly, bw, U(22)), "ANOTHER FACE")) RandomFace();
-        ly += U(30);
+        ly += U(tight ? 26 : 30);
         foreach (var line in ui.Wrap("YOUR FACE IS YOURS IN EVERY BATTLE AND EVERY HALL. YOUR ARMS FLY OVER YOUR FIRST COMPANIES.", lw))
         { if (ly + U(10) > r.Bottom) break; ui.Text(line, x, ly, Style.Dim, 1); ly += U(10); }
 
@@ -717,12 +822,12 @@ sealed class CreatorScreen
         ui.TextFit(shown == "" ? "TYPE A NAME" : shown, box.X + U(8), box.Y + U(5), box.Width - U(16), shown == "" ? Style.Dim : on ? Kit.Gilt : Style.Text, 2);
         if (ui.Clicked(box)) { typing = on ? 0 : which; Ui.Typed.Clear(); }
         if (ui.Button(new Rectangle(box.Right + U(8), y, U(72), U(24)), "RANDOM")) { roll(); typing = 0; }
-        return y + U(34);
+        return y + U(ui.H / ui.S < 640 ? 31 : 34);
     }
 
-    int Swatches(int x, int y, int w, Color[] colours, int chosen)
+    int Swatches(int x, int y, int w, Color[] colours, int chosen, int size = 0)
     {
-        int s = Math.Min(U(26), (w - U(8) * (colours.Length - 1)) / colours.Length);
+        int s = Math.Min(size > 0 ? size : U(26), (w - U(8) * (colours.Length - 1)) / colours.Length);
         for (int i = 0; i < colours.Length; i++)
         {
             var r = new Rectangle(x + i * (s + U(8)), y, s, s);

@@ -193,6 +193,7 @@ public partial class Battle
                 return;
             }
             float allowed = spill && d < 8 ? 99 : front ? Lunge(s) : u.Rank == 1 ? Lunge(s) * 0.6f : 0.8f;
+            if (u.Hesitant) allowed = MathF.Min(allowed, 0.3f); // nerve gone: he lets the front come to him
             if (Vector2.Distance(u.Slot, enemy.Pos) < allowed + reach)
             {
                 var to = Via(u, enemy.Pos) - u.Pos;

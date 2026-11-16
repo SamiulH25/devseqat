@@ -239,7 +239,7 @@ Two measures, written once as helpers and printed by the tests:
 | `StepsUp` | killing a front-rank man: the man behind him in his file takes his slot and nobody else moves more than 0.5 m |
 | `FightsItsTarget` | two companies side by side charge two targets: over 90 % of blows land on their own targets |
 | `PartsByCompany` | a 3-company line against a 3-company line: the companies charge at different times when their gaps differ |
-| `LeviesBreakRanks` | a Rabble company holding 10 m from the enemy charges on its own within 15 s; with a sergeant beside it, it does not |
+| `UrgeLunges` (was `LeviesBreakRanks`) | levies 10 m from the enemy lunge one by one, then tip into a charge; with a sergeant beside them they do not; drilled men never |
 | `RefusesFlank` | a Trained company holding, enemy coming at its side: it turns to face before contact; Rabble does not |
 | `VeteransWrap` | two Veteran companies against one engaged enemy: at least a third of their hits come from the flank or rear; two Rabble companies: far fewer |
 | `ElitePincer` | two Elite companies against one: one pins, one wraps (Plan values), and they win faster than the same men as Trained |
@@ -260,7 +260,7 @@ Each step ends with `tools/check.sh` green, a commit, and before/after shots.
 |---|---|---|---|
 | **M1** | Fighting from the ranks with one fixed discipline (0.6) for everyone: stable slots, engage anchor, front rank fights, rear ranks wait and step up, Hold leash, a front where lines meet. **Fixes the blob.** | `BattleAI.Think`, `Battle.UpdateSquad`, `Squad.Slot`, `BattleGrid.Separate`, `Units.cs` | `HoldsRanks` (tier 4 part), `RearRanksWait`, `StepsUp`, `FightsItsTarget`; shots look like two lines |
 | **M2** | Drill and Formed: the tier table, modifiers, `Company.Drill`, gains and losses, broken ranks as the fallback, local numbers and in-rank support in `Hit` | `Squad.cs`, `Battle.AddSquad`, `BattleCombat.Hit`, `BattleMorale.cs`, `Troops.cs`, `Rules.Army` | `HoldsRanks` (levy part), `TierWins` |
-| **M3** | Company by company: the general pairs companies and charges each on its own gap; the wing goes for an end; Rabble breaks ranks; Hothead | `BattleAI.General` | `PartsByCompany`, `LeviesBreakRanks` |
+| **M3** | Company by company: the general pairs companies and charges each on its own gap; the wing goes for an end; Rabble breaks ranks; Hothead | `BattleAI.General` | `PartsByCompany`, `UrgeLunges` |
 | **M4** | Company wits: `BattleTactics.cs`, `Plan`, cadence and sight by grade; Trained refuse and re-form; Veteran flank, bend, re-form, rotate; Elite pincer, target choice, roll-up, wait for support | new `BattleTactics.cs`, `Squad.Bend`/`Slot`, `BattleDivision.Engage` | `RefusesFlank`, `VeteransWrap`, `ElitePincer`, `Reforms` |
 | **M5** | Horse and bows by grade | `BattleAI.ThinkCav`, `General` archers | horse regroup test, bows fall back test |
 | **M6** | Player view: grade and state on cards and tooltips, feed lines, wrap arrow, banner effects, muster grade, README | `Hud.cs`, `BattleScreen.Draw.cs`, `BattleBanner.cs`, `MapScreen.Muster.cs` | shots, `overflow.txt` empty |

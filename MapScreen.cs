@@ -96,7 +96,9 @@ sealed partial class MapScreen
         terrain = p.Terrain;
         world = p.World;
         world.Upload(gd);
+        FinishLife(); // the worker still on the old map's life must be done first
         life = new MapLife(terrain, terrain.Seed) { Chimneys = world.Chimneys };
+        lock (lifeLock) { lifeMesh = default; lifeFresh = false; }
         atlasIds = null;
         world.SetFog(260, 700);
         bearers.Clear();
@@ -123,7 +125,9 @@ sealed partial class MapScreen
         pkb = kb; pms = ms;
         kb = Keyboard.GetState(); ms = Mouse.GetState();
         time += dt;
+        FrameProf.Begin("mapLife");
         UpdateLife(dt);
+        FrameProf.End("mapLife");
         if (ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released) pendingClick = true;
         if (Pressed(Keys.Enter)) Tips.Dismiss();
         Tips.Show("welcome", $"Welcome, captain. Click the map to march; click a town or village to enter it.\nBrigands are close by: click their banner to ride at them, or let them come to you.\n{Pan()} pans, the wheel zooms, {ctl.First(Act.Pause)} pauses. {ctl.First(Act.PartyScreen)} opens your company. {ctl.First(Act.Help)} lists the keys.");
@@ -157,7 +161,9 @@ sealed partial class MapScreen
             }
             Camera(dt, active);
             if (active && pendingClick && !ui.Blocks(ms.Position)) { pendingClick = false; ClickWorld(Ground(ms.Position)); }
+            FrameProf.Begin("campaignTick");
             if (speed > 0) C.Tick(dt / Balance.Get().HourSeconds * speed);
+            FrameProf.End("campaignTick");
             if (C.Reached) { C.Reached = false; speed = 0; }
             if (C.Encounter != null)
             {
@@ -441,7 +447,14 @@ sealed partial class MapScreen
 
         bool shaded = shading != null && quality != Quality.Low;
         lifeQuality = quality;
-        if (shaded && life != null) { var (v, n) = life.Build(); world.SetExtra(v, n); }
+        
+        if (shaded && life != null)
+        {
+            (VertexPNCT[] V, int Tris) made = default;
+            bool fresh;
+            lock (lifeLock) { fresh = lifeFresh; made = lifeMesh; lifeFresh = false; }
+            if (fresh) world.SetExtra(made.V, made.Tris);
+        }
         else world.ExtraTris = 0;
         if (shaded)
         {
@@ -490,7 +503,11 @@ sealed partial class MapScreen
             }
             DrawLines();
         }
+        FrameProf.Begin("drawUi");
+        long calls0 = FrameProf.On ? gd.Metrics.DrawCount : 0, sprites0 = FrameProf.On ? gd.Metrics.SpriteCount : 0;
         DrawUi();
+        if (FrameProf.On) { FrameProf.Count("uiDrawCalls", gd.Metrics.DrawCount - calls0); FrameProf.Count("uiSprites", gd.Metrics.SpriteCount - sprites0); }
+        FrameProf.End("drawUi");
     }
 
     /// Each party is drawn as its leader on horseback (brigands and goblins on foot), three times life size.
@@ -536,19 +553,57 @@ sealed partial class MapScreen
         foreach (int id in bearers.Keys.Where(id => C.PartyById(id) == null).ToList()) bearers.Remove(id);
     }
 
-    /// The map's birds and beasts move on (they flee the parties near them; crows find the dead).
+    /// The map's birds and beasts move on (they flee the parties near them; crows find the dead). Their step and their mesh
+    /// are made on a worker thread from a snapshot of what they read, one frame behind: the main thread only uploads the
+    /// finished mesh (`Draw`). Staged shots run it inline so a shot is the same every time.
+    Task? lifeTask;
+    (VertexPNCT[] V, int Tris) lifeMesh;
+    bool lifeFresh;
+    float lifeDt;
+    readonly object lifeLock = new();
+
+    /// Wait for the worker (before the life it works on is replaced) and keep what it made.
+    void FinishLife()
+    {
+        if (lifeTask == null) return;
+        try { lifeTask.Wait(); } catch (AggregateException e) { Console.WriteLine("map life failed: " + e.InnerException); }
+        lifeTask = null;
+    }
+
     void UpdateLife(float dt)
     {
         if (life == null || C == null) return;
-        partySpots.Clear();
-        foreach (var p in C.S.Parties) if (!p.Down) partySpots.Add(p.Pos);
-        var carrion = C.S.Graves.Select(g => g.Pos).Concat(C.Map.Sites.Where(s => s.Kind == "battlefield").Select(s => s.Pos));
-        life.SetCaravans(C.S.Parties.Where(p => p.Kind == PartyKind.Caravan && !p.Down).Select(p => (p.Id, p.Pos, p.Facing, p.Breed == "pilgrims")));
-        life.SetHoldouts(C.S.Parties.Where(p => p.Lair && !p.Down && p.Breed == "goblin").Select(p => (p.Id, p.Pos, p.Men, p.Tier)));
-        life.Update(dt, focus, zoom, partySpots, carrion, (float)(C.S.Hours % 24), lifeQuality);
+        lifeDt += dt;
+        if (lifeTask is { IsCompleted: false }) return; // still at it: its step covers the time we add up meanwhile
+        if (lifeTask?.IsFaulted == true) FinishLife(); // report the failure once, then carry on
+        lifeTask = null;
+        var spots = new List<Vector2>(partySpots.Capacity);
+        foreach (var p in C.S.Parties) if (!p.Down) spots.Add(p.Pos);
+        var carrion = C.S.Graves.Select(g => g.Pos).Concat(C.Map.Sites.Where(s => s.Kind == "battlefield").Select(s => s.Pos)).ToList();
+        var caravans = C.S.Parties.Where(p => p.Kind == PartyKind.Caravan && !p.Down).Select(p => (p.Id, p.Pos, p.Facing, p.Breed == "pilgrims")).ToList();
+        var holdouts = C.S.Parties.Where(p => p.Lair && !p.Down && p.Breed == "goblin").Select(p => (p.Id, p.Pos, p.Men, p.Tier)).ToList();
+        var (step, at, zm, hour, quality, shaded) = (lifeDt, focus, zoom, (float)(C.S.Hours % 24), lifeQuality, shading != null && lifeQuality != Quality.Low);
+        var mapLife = life;
+        lifeDt = 0;
+        void Work()
+        {
+            mapLife.SetCaravans(caravans);
+            mapLife.SetHoldouts(holdouts);
+            mapLife.Update(step, at, zm, spots, carrion, hour, quality);
+            if (shaded) { var built = mapLife.Build(); lock (lifeLock) { lifeMesh = built; lifeFresh = true; } }
+        }
+        if (Ui.Instant) { Work(); return; }
+        lifeTask = Task.Run(Work);
     }
 
     void BuildSprites(Matrix viewer)
+    {
+        FrameProf.Begin("sprites");
+        BuildSpritesInner(viewer);
+        FrameProf.End("sprites"); // summed over the frame's passes? no: the last call only
+    }
+
+    void BuildSpritesInner(Matrix viewer)
     {
         sprites.N = 0;
         puppet.Begin(viewer);

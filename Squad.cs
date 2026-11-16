@@ -121,6 +121,10 @@ public sealed class Squad
     public bool Broken, InContact;
     /// Charged without orders (rabble or a hothead, docs/archive/MELEE.md D4): a sergeant leaves it be until it has re-formed.
     public bool BrokeRanks;
+    /// How restless the company is (0-1): the mean itch of its men to go in without orders (BattleUrge.cs); shown on its card.
+    public float Restless;
+    /// When one of its men last loosed an arrow (the AI sends bows that have not shot for a while forward).
+    public float LoosedAt;
     public Grade Grade => Battle.GradeOf(Drill);
     public float Discipline => Drill * Formed;
     /// The enemy company it is closing with or fighting (BattleRanks.cs; the ordered Target, else the nearest).

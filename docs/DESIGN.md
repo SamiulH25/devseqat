@@ -152,7 +152,7 @@ All widgets are extension methods on `Ui` in `UiKit.cs` (the UI lab, F3 on the t
 - **Ribbon title:** every dialog has its title on a cloth ribbon across its top edge, tinted by side when it belongs to one.
 - **Buttons:** a bevelled iron button with a top light, a shade line and a drop shadow; its key hint sits on the right (dim).
   On hover or when active: a gold edge and a gold wash. `Gilded` is the larger gold-edged button for the main choices
-  (title menu, leave, continue).
+  (leave, continue).
 - **Tabs:** raised cards; the active one is lit and joins the gold line beneath.
 - **Wells:** sunken boxes inside a dialog with a short coloured heading (`Well`), used to group a screen into parts.
 - **Rows:** lists of things to buy, hire or promote are rows on a faint plate that lights under the mouse, with a portrait in
@@ -173,11 +173,14 @@ All widgets are extension methods on `Ui` in `UiKit.cs` (the UI lab, F3 on the t
 - **Crosshair:** four chevrons for the attack directions. Gold is your chosen direction, red is an incoming blow.
 - **Overlays** (menu, controls, result) dim the battle to 50% and centre one plate with a ribbon title. The result is an
   after-action report: the tally side against side, both sides' strength over the battle, and how it went.
-- **Painted scenes:** the title (night sky into an ember dusk, hills, a castle, the two realms' banners) and the event dialog
+- **Painted scenes:** the title (a dusk sky, the sun going down behind far peaks, a castle on its crag, a hamlet, and a company on
+  the march along the near ridge under the colours of your last save; `TitleScreen.Scene.cs`) and the event dialog
   (a picture chosen by the event: a burning village, a court, a market town or the camp) are drawn from rectangles and discs.
 
 ### Screens
-- **Title:** the dusk scene, the menu on a plate, and a card for the last save (captain, service, day, purse, men).
+- **Title:** the dusk scene; down the left the name in bevelled gilt blocks over a sword, the menu as plain rows on a gilt spine
+  (the chosen row takes a gold wash and an arrowhead; mouse, or W/S and Enter), and a card for the last save (captain, service,
+  day, purse, men). With the scale on AUTO it draws at x2 from 1000 lines up, as the creator does.
 - **Party (P), the muster roll:** a card per company with its stacks to promote and its moves; open slots; the captain down
   the right. **Skills (K), the captain sheet:** the captain, a ring and a perk branch per skill, the record.
   **Realm (R):** a card per realm, the relations grid and the chronicle; the career ladder and your acts on a second tab.
@@ -215,7 +218,8 @@ for its own sake on the HUD, and nothing bounces. All of it is in the view: the 
   sweep from over the far side down to your lines (any key skips it); when it is decided the field plays on at half speed for
   1.6 s while the camera rises, and then the result fades in.
 - **Screens:** every new screen rises out of black (0.35 s); a campaign battle holds the black under a plate with its name,
-  ground and weather. The title scene drifts (clouds, birds, sparks, castle fires, a little parallax with the mouse); event
+  ground and weather. The title scene lives (the company marches, flags and grass move in the wind, clouds and geese drift, torches and windows
+  flicker, a gleam crosses the name, a little parallax with the mouse); event
   pictures breathe (moon glow, clouds, fire flicker).
 - **Interface:** panels fade in and rise a few pixels (120 ms in, 80 ms out); hover brightens over 80 ms; bars and counts slide
   to their new value. Text in the event feed holds for 4.5 s and fades over 1.5 s. Hit text holds for 1.2 s.

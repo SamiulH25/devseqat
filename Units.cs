@@ -229,6 +229,10 @@ public sealed class Unit
     public int Place = -1, Rank;
     /// A fixed 0-1 draw for this man: how readily he leaves the ranks when discipline is poor (low = first to go).
     public float Grit;
+    /// His itch to go in without orders (0-1, BattleUrge.cs); at the top he Lunges out of the ranks alone. Hesitant: a drilled man who holds back from the blows.
+    public float Urge;
+    public bool Lunging, Hesitant;
+    public float LungeAt = -99;
     /// His guard is up on purpose against a blow he saw coming (a drilled man's choice, BattleRanks.Guard): he blocks
     /// better, and strikes back at once if it holds.
     public bool Guard;

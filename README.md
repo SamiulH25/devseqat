@@ -154,7 +154,7 @@ mountain ridges you cross by road at the passes.
   among themselves each year too.
 - **Towns:** train, hire mercenaries, buy horses and food, kit yourself out at the armourer (MARKET tab: weapons from spear to crossbow, shields, armour, helms and horses; stock changes weekly, heavy pieces need the Arms skill, the best need a rank; worn gear can be swapped, spare gear sold back at 40%), rest to heal, sell prisoners
   and ransom lords, sign or end contracts, and take work from the steward's board (hunt a lord, clear brigands, guard a village, scout a town,
-  take a castle). **Villages:** recruit (levies, or clansmen in the north), buy or forage food. **Castles:** rest, prisoners and contracts.
+  take a castle). **Villages:** recruit (levies, or clansmen in the north), buy or forage food. **Castles:** rest, prisoners and contracts, and (if you serve the castle's realm or hold it, with renown) **esquires**: noble recruits, on foot or mounted, who are the only way to field knights besides knighting a veteran. No amount of drill turns common troops (levies, sergeants, lancers) into noble ones (knights, paladins, order brothers): the upgrade panel says NOBLE BIRTH ONLY (docs/NOBILITY.md).
 - **Sieges:** ride to an enemy town or castle and besiege it. After a night your men have ladders and a ram; assault the walls (an on-foot
   battle: climb at the ladders, batter the gate, defenders on the walkway) or wait while the garrison starves. A seat you capture as a sworn
   vassal becomes your **fief** (your first at once, later ones by the council's vote): weekly income, and a garrison you can strengthen

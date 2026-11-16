@@ -53,7 +53,9 @@ sealed partial class MapLife
     readonly Dictionary<Vector2, Flock> crows = new();
     Flock? hawk;
     readonly World.Mesh mesh = new();
-    VertexPNCT[] buf = new VertexPNCT[3];
+    // Two mesh buffers taken in turn: the worker builds into one while the main thread uploads the other.
+    readonly VertexPNCT[][] bufs = { new VertexPNCT[3], new VertexPNCT[3] };
+    int flip;
     readonly Random woolRng = new(5);
     float clock, spawnWait;
 
@@ -284,7 +286,9 @@ sealed partial class MapLife
         if (hawk != null) DrawFlock(hawk);
         BuildPeople();
         BuildHoldouts();
-        if (buf.Length < mesh.V.Count) buf = new VertexPNCT[Math.Max(mesh.V.Count, buf.Length * 2)];
+        flip ^= 1;
+        var buf = bufs[flip];
+        if (buf.Length < mesh.V.Count) buf = bufs[flip] = new VertexPNCT[Math.Max(mesh.V.Count, buf.Length * 2)];
         CollectionsMarshal.AsSpan(mesh.V).CopyTo(buf);
         return (buf, mesh.V.Count / 3);
     }

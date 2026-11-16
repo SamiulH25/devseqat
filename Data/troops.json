@@ -3379,7 +3379,6 @@
    "name": "Khan's Guard",
    "class": "Cavalry",
    "culture": "northern",
-   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "golden_horde_masters",
@@ -3417,7 +3416,6 @@
    "name": "Royal Dragoons",
    "class": "Cavalry",
    "culture": "northern",
-   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "sovereign_dragoons"
@@ -3547,7 +3545,6 @@
    "name": "Golden Horde Masters",
    "class": "Cavalry",
    "culture": "northern",
-   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "steppe_horse",
@@ -3581,7 +3578,6 @@
    "name": "Sovereign Dragoons",
    "class": "Cavalry",
    "culture": "northern",
-   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "royal_destrier",
@@ -5331,7 +5327,6 @@
    "name": "Kheshig",
    "class": "Cavalry",
    "culture": "steppe",
-   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "khagans_own"
@@ -5368,7 +5363,6 @@
    "name": "Khagan's Own",
    "class": "Cavalry",
    "culture": "steppe",
-   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "steppe_horse",
@@ -8294,7 +8288,6 @@
    "name": "Crown Squires",
    "class": "Cavalry",
    "culture": "azure",
-   "stock": "noble",
    "tier": 2,
    "upgradesTo": [
     "lancers"
@@ -9846,7 +9839,6 @@
    "name": "Veteran Turcopoles",
    "class": "Cavalry",
    "culture": "order",
-   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "chapter_turcopoles"
@@ -9880,7 +9872,6 @@
    "name": "Chapter Turcopoles",
    "class": "Cavalry",
    "culture": "order",
-   "stock": "noble",
    "tier": 5,
    "upgradesTo": [],
    "mount": "courser",
@@ -10300,6 +10291,76 @@
     "shield": "none",
     "weapon": "sword",
     "face": "wyvern"
+   }
+  },
+  {
+   "id": "esquires",
+   "name": "Esquires",
+   "class": "Infantry",
+   "culture": "common",
+   "stock": "noble",
+   "tier": 3,
+   "upgradesTo": [
+    "foot_knights",
+    "lily_squires",
+    "rose_blades",
+    "wolf_thegns",
+    "hollow_squires"
+   ],
+   "cost": 60,
+   "upgradeXp": 280,
+   "hp": 118,
+   "damage": 27,
+   "armor": 11,
+   "reach": 1.8,
+   "windup": 0.42,
+   "recover": 0.55,
+   "speed": 3.5,
+   "block": 0.6,
+   "look": {
+    "head": "kettle",
+    "body": "mail",
+    "legs": "mail",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "heater",
+    "weapon": "sword",
+    "tabard": true
+   }
+  },
+  {
+   "id": "mounted_esquires",
+   "name": "Mounted Esquires",
+   "class": "Cavalry",
+   "culture": "common",
+   "stock": "noble",
+   "tier": 3,
+   "upgradesTo": [
+    "knights",
+    "demi_lancers",
+    "falcon_riders",
+    "sky_riders"
+   ],
+   "mount": "courser",
+   "cost": 66,
+   "upgradeXp": 300,
+   "hp": 82,
+   "damage": 18,
+   "armor": 5,
+   "reach": 2.5,
+   "windup": 0.4,
+   "recover": 0.8,
+   "speed": 3.8,
+   "block": 0.2,
+   "look": {
+    "head": "nasal",
+    "body": "mail",
+    "legs": "cloth",
+    "feet": "boots",
+    "hands": "skin",
+    "shield": "none",
+    "weapon": "lance",
+    "tabard": true
    }
   }
  ]

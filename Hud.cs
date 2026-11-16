@@ -592,6 +592,7 @@ sealed partial class Hud
             Text($"{idx}", r.X + U(5), r.Y + U(6), sel ? Kit.IronDark : Color.White, 1);
             Text(Style.Numerals[Math.Clamp(type.Tier, 0, 7)], r.X + U(4), r.Y + U(20), Gold, 1); // tier
             if (!s.Swarm) { Rect(new Rectangle(r.X + U(3), r.Y + U(28), TW(GradeTag(s.Grade), 1) + U(3), U(10)), Color.Black * 0.6f); Text(GradeTag(s.Grade), r.X + U(4), r.Y + U(29), GradeColor(s.Grade), 1); } // drill grade
+            if (s.Restless > 0.15f) { Rect(new Rectangle(r.X + U(3), r.Y + U(46), (int)((r.Width - U(6)) * Math.Min(1, s.Restless / 0.75f)), U(3)), s.Restless > 0.5f ? Bad : Orange); if (s.Restless > 0.3f) Text("RST", r.X + U(4), r.Y + U(38), s.Restless > 0.5f ? Bad : Orange, 1); } // restless: the men's itch to go in (BattleUrge.cs)
             string tag = s.Order switch { Order.Follow => "FLW", Order.Charge => s.Target != null ? "ATK" : "CHG", _ => "HLD" };
             TextR(tag, r.Right - U(4), r.Y + U(5), s.Order == Order.Charge ? Orange : Dim, 1);
             if (s.Formation != Formation.Line)

@@ -380,6 +380,7 @@ public partial class Battle
 
     void Shoot(Unit u, Unit t)
     {
+        if (u.Squad != null) u.Squad.LoosedAt = Time;
         u.Cooldown = (u.Type.Windup + u.Type.Recover + 0.8f + rng.NextSingle() * 0.8f) * u.Type.Reload * StyleReload(u) * (1 + u.Mods.Reload); // a crossbow takes long to span
         float spread = (u.Squad?.Company?.Has("Sharpshooter") == true ? 0.65f : 1) * MathF.Max(0.2f, 1 + u.Mods.Spread); // steady aim
         if (MirageFor(u) is { } m) { Loose(u, m.Pos, null, u.Type.Damage, spread); return; } // a mirage draws their arrows (MA8)

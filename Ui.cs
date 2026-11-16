@@ -117,9 +117,12 @@ sealed class Ui
     public void Block(Rectangle r) => blockers.Add(r);
     public int U(float v) => (int)(v * S);
 
-    public void Rect(Rectangle r, Color c) => Sb.Draw(art.Pixel, r, c);
+    public void Rect(Rectangle r, Color c) => Sb.Draw(font.Texture, r, font.White, c); // from the font's texture, so boxes and text share a batch
     /// The 1x1 white texture, for drawing rotated lines.
     public Texture2D Pixel => art.Pixel;
+    /// The font's texture with its white texel: lines and boxes drawn from it batch with the text.
+    public Texture2D FontTexture => font.Texture;
+    public Rectangle FontWhite => font.White;
 
     public void Frame(Rectangle r, Color c, int t)
     {
@@ -138,7 +141,7 @@ sealed class Ui
     /// Text at whole-pixel positions (a half-pixel offset makes the point-sampled glyphs lose rows).
     public void Text(string s, float x, float y, Color c, int scale = 2)
     {
-        Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
+        if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
         font.Draw(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale * S);
     }
     public int TW(string s, int scale = 2) => PixelFont.Width(s, scale * S);
@@ -226,6 +229,8 @@ sealed class Ui
     /// A troop portrait cropped to `box`; `k` is the pixel scale (default: the UI scale).
     /// One sprite from the atlas, at the largest whole scale that fits the box, centred (a weapon, a shield, a horse's head).
     /// A long thin sprite in a wide box is laid on its side (a quarter turn keeps the pixels square), point to the right.
+    public bool HasSprite(string key) => art.Has(key);
+
     public void Sprite(string key, Rectangle box, Color? tint = null)
     {
         if (!art.Has(key)) return;

@@ -1703,7 +1703,8 @@ public static partial class SelfTest
         Check(Troops.All.Count(t => t.Noble) >= 60, "the noble troops are marked");
         var c = Campaign.New(95);
         var co = c.Player.Companies.First();
-        Check(!c.CanEnterLine(c.Player, co, "levies", "crown_squires", out string why) && why.Contains("NOBLE"), "levies cannot become squires by drill");
+        Check(c.CanEnterLine(c.Player, co, "levies", "crown_squires", out _), "levies still become (common) crown squires");
+        Check(!c.CanEnterLine(c.Player, co, "lancers", "knights", out string why) && why.Contains("NOBLE"), "lancers cannot drill into knights");
         Check(!c.CanEnterLine(c.Player, co, "ironguard", "paladins", out _), "ironguard cannot drill into paladins");
         Check(c.CanEnterLine(c.Player, co, "levies", "shieldmen", out _), "levies still become shieldmen");
         Check(c.CanEnterLine(c.Player, co, "paladins", "royal_crusaders", out _) || !Troops.Get("royal_crusaders").Noble, "a noble troop trains up the noble line");
@@ -1717,5 +1718,50 @@ public static partial class SelfTest
                 if (c.CanEnterLine(c.Player, co, id, u, out _) || Troops.Get(u).Order != "" || !Troops.Get(u).Noble) todo.Push(u);
         }
         Check(!seen.Any(id => Troops.Get(id).Noble && Troops.Get(id).Order == ""), "no noble troop is reachable by drilling levies or clansmen: " + string.Join(", ", seen.Where(id => Troops.Get(id).Noble && Troops.Get(id).Order == "")));
+    }
+
+    /// N2: castles send esquires (and only castles, to their own captains), the pool refills without dice, sellswords and
+    /// prisoners are never noble, and every noble troop has a way in (a castle root, an order, or knighting).
+    static void NobleRecruits()
+    {
+        var c = Campaign.New(96);
+        var castle = c.S.Settlements.First(t => t.Kind == SettlementKind.Castle && t.Faction >= 0);
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town);
+        c.S.Gold = 5000; c.Captain.Renown = 100; c.Captain.Contract = castle.Faction;
+        Check(c.RecruitNobles(town, false, 3) is string s1 && s1.Contains("CASTLES"), "towns raise no esquires: " + c.RecruitNobles(town, false, 3));
+        castle.Nobles = 0;
+        Check(c.RecruitNobles(castle, false, 3) is string s2 && s2.Contains("NO ESQUIRES"), "an empty pool sends none");
+        c.Player.Cooldown = 1e6f;
+        for (int h = 0; h < 40 * 24; h++) { c.Tick(1); c.Encounter = null; c.Arrived = null; c.Report = null; c.Beat = null; if (c.S.Event != null) c.Choose(c.EventOf0()); }
+        Check(castle.Nobles > 0 && castle.Nobles <= c.Scaled(Balance.Get().NobleRecruitsMax), $"the pool refills to its cap ({castle.Nobles})");
+        c.Captain.Renown = 10;
+        Check(c.CannotRecruitNobles(castle) is string lowRenown && lowRenown.Contains("RENOWN"), "a house wants renown");
+        c.Captain.Renown = 100;
+        int gold = (int)c.S.Gold, pool = castle.Nobles;
+        Check(c.RecruitNobles(castle, false, 2) == null && castle.Nobles == pool - 2 && c.S.Gold < gold, "esquires join for a price");
+        Check(c.Player.Companies.Any(k => k.Stacks.Any(x => x.Troop == "esquires")), "they form a company of their own");
+        c.Captain.Contract = -1;
+        Check(c.CannotRecruitNobles(castle) is string foreign && foreign.Contains("OWN CAPTAINS"), "a free captain is not sent esquires");
+        var co = c.Player.Companies.First(k => k.Stacks.Any(x => x.Troop == "esquires"));
+        Check(!c.CanEnterLine(c.Player, co, "levies", "esquires", out _) || !Troops.Get("levies").UpgradesTo.Contains("esquires"), "no drill leads into esquires");
+        Check(Troops.Get("esquires").Noble && Troops.Get("esquires").UpgradesTo.Any(u => Troops.Get(u).Noble), "esquires train up the noble line");
+        // Nobles never come cheap otherwise: not as hired sellswords, not as prisoners.
+        for (int k = 0; k < 40; k++)
+        {
+            foreach (var t in c.S.Settlements.Where(t => t.Kind == SettlementKind.Town)) c.RefreshMercenaries(t);
+            Check(c.S.Settlements.SelectMany(t => t.Mercenaries).SelectMany(m => m.Stacks).All(x => !x.Type.Noble || x.Type.Order != ""), "no sellsword company is noble");
+        }
+        var pg = new PrisonerGroup { Troop = "paladins", Count = 4 };
+        c.Player.Prisoners.Add(pg);
+        Check(c.RecruitPrisoners(pg) is string held && held.Contains("NOBLES"), "noble prisoners are ransomed, not recruited");
+        // Every noble troop (outside an order's own gate) has a way in: a castle root, or a commoner parent (knighting, N3).
+        var knighted = Troops.All.Where(t => t.Noble && Troops.All.Any(p => !p.Noble && p.UpgradesTo.Contains(t.Id))).Select(t => t.Id).ToHashSet();
+        var rooted = new HashSet<string>(); var todo = new Stack<string>(new[] { "esquires", "mounted_esquires" });
+        while (todo.Count > 0) { string id = todo.Pop(); if (rooted.Add(id)) foreach (var u in Troops.Get(id).UpgradesTo) if (Troops.Get(u).Noble) todo.Push(u); }
+        var reach = new HashSet<string>(rooted); todo = new Stack<string>(knighted); // a knighted man then drills up the noble line
+        while (todo.Count > 0) { string id = todo.Pop(); if (reach.Add(id) || knighted.Contains(id)) foreach (var u in Troops.Get(id).UpgradesTo) if (Troops.Get(u).Noble && !reach.Contains(u)) todo.Push(u); }
+        var lost = Troops.All.Where(t => t.Noble && t.Order == "" && t.Culture != "order" && !reach.Contains(t.Id)).Select(t => t.Id).ToList();
+        Console.WriteLine($"nobles: {rooted.Count} from the castle roots, {knighted.Count} by knighting, {reach.Count} in all, unreachable: {string.Join(", ", lost)}");
+        Check(lost.Count == 0, "every noble troop has a way in: " + string.Join(", ", lost));
     }
 }

@@ -296,6 +296,8 @@ public sealed class Party
 public sealed class Settlement
 {
     public int Id, Province, Faction, Recruits, Horses;
+    /// Esquires a castle's house will send with you (docs/NOBILITY.md N2); only castles raise them.
+    public int Nobles;
     /// War hounds ready at this place's kennel (docs/archive/CREATURES.md phase 4).
     public int Hounds;
     public string Name = "";
@@ -829,6 +831,9 @@ public sealed class Balance
     /// Cohesion a company loses with each named man killed or lost (L3).
     public float FallenCohesion = 1.5f;
     public int VillageRecruitsMax = 8, LordsPerFaction = 8, BanditsMax = 80;
+    /// Noble recruits (docs/NOBILITY.md N2): a castle's pool of esquires (times ArmyScale), the days between each new batch, the price against a levy's, the renown a house wants of you.
+    public int NobleRecruitsMax = 4, NobleRefillDays = 3;
+    public float NobleMarkup = 1.6f, NobleRenown = 60;
     /// A bandit band appears this many times a day while below BanditsMax (0-1) — the roll for each attempt.
     public float BanditSpawnChance = 0.95f;
     /// How many bands the world tries to raise each day (while under BanditsMax), so a big map fills up quickly.

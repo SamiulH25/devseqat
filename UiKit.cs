@@ -39,7 +39,7 @@ static partial class Kit
     public static void Line(this Ui ui, Vector2 a, Vector2 b, Color c, float thick = 1)
     {
         var d = b - a;
-        ui.Sb.Draw(ui.Pixel, a, null, c, MathF.Atan2(d.Y, d.X), new Vector2(0, 0.5f), new Vector2(d.Length(), ui.U(thick)), default, 0);
+        ui.Sb.Draw(ui.FontTexture, a, ui.FontWhite, c, MathF.Atan2(d.Y, d.X), new Vector2(0, 0.5f), new Vector2(d.Length(), ui.U(thick)), default, 0);
     }
 
     /// A filled disc made of horizontal runs (pixel-stepped edge).

@@ -63,7 +63,7 @@ public partial class Battle
             if (toSlot > 0.4f) { var back = Via(u, u.Slot) - u.Pos; u.Wish = back / MathF.Max(0.01f, back.Length()) * u.Type.Speed; u.Face(back); }
             return;
         }
-        bool free = s.HuntCaptain || s.CoverUntil > Time; // sent for the captain, or to cover him: a run, not a line
+        bool free = s.HuntCaptain || s.CoverUntil > Time || u.Lunging; // sent for the captain, or to cover him, or lunging on his own: a run, not a line
         bool charge = s.Order == Order.Charge || free;
         if (charge && s.Target != null && d > 3 && !free) (enemy, d) = Nearest(u, s.Target); // go for the ordered target
 
@@ -315,6 +315,8 @@ public partial class Battle
             if (!bowsAlone && ArcherSupply(s, team)) continue; // out of arrows: to the wagon
             s.Front = dir;
             float gap = GapTo(s, foe), range = s.Units[0].Type.Range;
+            // With the line gone, bows that have loosed nothing for 20 s (the foe on a height they cannot reach, behind a crest) close on him: two sides of bows out of each other's reach would never end the battle.
+            if (bowsAlone && Time - s.LoosedAt > 20) gap = MathF.Max(gap, range);
             if (gap > range - 4 || !seesFoe) s.Anchor = DryAnchor(s.Centroid() + dir * 4); // close to bow range, or until they can see someone to shoot
             else if (!charged[team] && Role(foe, "horse").Any(h => h.Alive > 0) && CannotStake(s) == null) PlantStakes(s, record: false); // in range, horse about: stakes
             s.Target = SoftTarget(s, foe); // shoot the least armoured company in reach

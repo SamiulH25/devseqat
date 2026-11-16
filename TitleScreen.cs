@@ -3,8 +3,9 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Ironfield;
 
-/// The title screen: a dusk scene with new campaign, continue, quick battle, settings, quit, and a card for the last save.
-sealed class TitleScreen
+/// The title screen: the name and the menu down the left of a painted dusk (TitleScreen.Scene.cs), and a card for the last save.
+/// New campaign, continue, quick battle, settings, quit; the mouse or the arrow keys and Enter.
+sealed partial class TitleScreen
 {
     readonly ScreenHost host;
     readonly Ui ui;
@@ -12,8 +13,10 @@ sealed class TitleScreen
     KeyboardState kb, pkb;
     bool click;
     readonly CreatorScreen creator;
-    // Debug: IRONFIELD_CREATOR_SHOTS=/dir saves a PNG of each creator step, then quits.
-    public readonly string? ShotsDir = Environment.GetEnvironmentVariable("IRONFIELD_CREATOR_SHOTS") is { Length: > 0 } d ? d : null;
+    // Debug: IRONFIELD_CREATOR_SHOTS=/dir saves a PNG of each creator step, IRONFIELD_TITLE_SHOTS=/dir one of the title; then quits.
+    static readonly string? creatorShots = Environment.GetEnvironmentVariable("IRONFIELD_CREATOR_SHOTS") is { Length: > 0 } d ? d : null;
+    static readonly string? titleShots = Environment.GetEnvironmentVariable("IRONFIELD_TITLE_SHOTS") is { Length: > 0 } d ? d : null;
+    public readonly string? ShotsDir = creatorShots ?? titleShots;
     public string? PendingShot;
     int shotStep = -1, shotFrames;
     float time;
@@ -30,20 +33,32 @@ sealed class TitleScreen
         this.host = host;
         ui = new Ui(host.Sb, host.Art, host.Font);
         creator = new CreatorScreen(ui, m => host.StartCampaign(Environment.TickCount & 0xFFFF, m.Realm, m), new CreatorStage(host.GraphicsDevice, host.Art));
-        if (ShotsDir != null || Environment.GetEnvironmentVariable("IRONFIELD_TITLE_PICK") != null) creator.Show();
+        if (creatorShots != null || Environment.GetEnvironmentVariable("IRONFIELD_TITLE_PICK") != null) creator.Show();
     }
 
     float lastDt = 1 / 60f;
+    // The menu: the chosen row follows the mouse when it moves and the arrow keys otherwise.
+    static readonly string[] Items = { "NEW CAMPAIGN", "CONTINUE", "QUICK BATTLE", "SETTINGS", "QUIT" };
+    int sel = -1, nav;
+    bool go, mouseMoved;
 
     public void Update(float dt = 1 / 60f)
     {
         pms = ms;
         ms = Mouse.GetState();
         if (ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released) click = true;
+        if (ms.Position != pms.Position) mouseMoved = true;
         pkb = kb; kb = Keyboard.GetState();
-        if (kb.IsKeyDown(Keys.F3) && !pkb.IsKeyDown(Keys.F3)) host.OpenLab();
+        bool Hit(Keys k) => kb.IsKeyDown(k) && !pkb.IsKeyDown(k);
+        if (Hit(Keys.F3)) host.OpenLab();
+        if (!creator.Open)
+        {
+            if (Hit(Keys.Down) || Hit(Keys.S)) nav++;
+            if (Hit(Keys.Up) || Hit(Keys.W)) nav--;
+            if (Hit(Keys.Enter)) go = true;
+        }
         lastDt = dt;
-        time += dt;
+        time = titleShots != null ? 3f : time + dt;
     }
 
     int U(float v) => ui.U(v);
@@ -55,50 +70,157 @@ sealed class TitleScreen
         gd.Clear(Kit.Night);
         ui.Begin(gd.Viewport, ms.Position, click);
         click = false;
+        if (Settings.Current.UiScale == 0 && ui.S == 1 && ui.H >= 1000) ui.S = 2; // the title is a picture: draw it large, as the creator does
+        var save = Card();
         Scene();
         if (creator.Open)
         {
+            nav = 0; go = false;
             creator.Draw(kb, pkb, time);
             ui.End();
-            if (ShotsDir != null) Shots();
+            if (creatorShots != null) Shots();
             return;
         }
 
-        int cx = ui.W / 2, ty = (int)(ui.H * 0.13f);
-        ui.TextC("IRONFIELD", cx + U(3), ty + U(4), Kit.GiltDark * 0.8f, 8);
-        ui.TextC("IRONFIELD", cx, ty, Kit.Gilt, 8);
-        ui.Rect(new Rectangle(cx - ui.TW("IRONFIELD", 8) / 2, ty + U(8), ui.TW("IRONFIELD", 8), U(2)), Color.White * 0.15f);
-        ui.Divider(cx - U(180), ty + U(70), U(360), Kit.Gilt);
-        ui.TextC("A CAPTAIN'S WAR", cx, ty + U(80), Kit.Parchment, 2);
-
-        var save = Card();
-        int mw = U(250), my = (int)(ui.H * 0.4f);
-        var m = ui.Plate(new Rectangle(cx - mw / 2, my, mw, U(206)), solid: false);
-        int y = m.Y;
-        Rectangle B() { var r = new Rectangle(m.X, y, m.Width, U(30)); y += U(36); return r; }
-        if (ui.Gilded(B(), "NEW CAMPAIGN")) creator.Show();
-        if (ui.Gilded(B(), "CONTINUE", save != null ? $"DAY {save.Day}" : "", host.CanContinue)) host.ContinueCampaign();
-        if (ui.Gilded(B(), "QUICK BATTLE")) host.QuickBattle();
-        if (ui.Gilded(B(), "SETTINGS")) host.OpenSettings();
-        if (ui.Gilded(B(), "QUIT")) host.Exit();
-        float sway = time * 1.5f;
-        ui.Banner(cx - mw / 2 - U(64), my - U(10), U(52), U(150), Style.Sides[0], sway);
-        ui.Banner(cx + mw / 2 + U(64), my - U(10), U(52), U(150), Style.Sides[1], sway + 1.3f);
-        if (host.TitleNote != "") ui.TextC(host.TitleNote, cx, my + U(214), Style.Warn, 1);
-
-        if (save != null)
-        {
-            var c = ui.Plate(new Rectangle(U(24), ui.H - U(104), U(250), U(80)), null, Kit.Gilt);
-            ui.Shield(new Rectangle(c.X - U(2), c.Y - U(2), U(40), U(48)), Style.Sides[save.Palette]);
-            int tx = c.X + U(46);
-            ui.Text(save.Name, tx, c.Y, Style.Text, 1);
-            ui.Text(save.Service, tx, c.Y + U(11), Style.Dim, 1);
-            ui.Icon("clock", tx, c.Y + U(26), Style.Dim, 1); ui.Text($"DAY {save.Day}", tx + U(12), c.Y + U(26), Style.Text, 1);
-            ui.Icon("coin", tx + U(58), c.Y + U(26), Kit.Gilt, 1); ui.Text($"{save.Gold:N0}", tx + U(70), c.Y + U(26), Style.Text, 1);
-            ui.Icon("shield", tx, c.Y + U(39), Style.Dim, 1); ui.Text($"{save.Men} MEN", tx + U(12), c.Y + U(39), Style.Text, 1);
-        }
-        ui.TextR("F2 GRAPHICS QUALITY   F3 UI LAB", ui.W - U(24), ui.H - U(24), Style.Dim * 0.6f, 1);
+        int x = U(64), ty = (int)(ui.H * 0.115f), k = Math.Max(U(9), ui.H / 60);
+        Logo(x, ty, k);
+        Sword(x, ty + 7 * k + U(14), 53 * k);
+        Spaced("A CAPTAIN'S WAR", x + U(40), ty + 7 * k + U(34), Kit.Parchment, 2, U(5));
+        Menu(x, (int)(ui.H * 0.43f), save);
+        if (host.TitleNote != "") ui.Text(host.TitleNote, x, (int)(ui.H * 0.43f) + U(184), Style.Warn, 1);
+        if (save != null) Company(save, x, ui.H - U(92));
+        ui.TextR("W/S CHOOSE   ENTER SELECT   F2 GRAPHICS   F3 UI LAB", ui.W - U(24), ui.H - U(20), Style.Text * 0.7f, 1);
         ui.End();
+        if (titleShots != null) TitleShot();
+    }
+
+    /// The name in tall gilt letters: each pixel of the font a bevelled block, bright at the top and bronze at the foot,
+    /// standing on a dark extrusion, with a gleam that crosses it now and then.
+    void Logo(int x, int y, int k)
+    {
+        const string word = "IRONFIELD";
+        int b = Math.Max(1, k / 6);
+        float gleam = Ui.Instant ? -99 : (time % 9f) * 30 - 12; // in font pixels, left to right
+        bool On(int ch, int col, int row) => ch >= 0 && ch < word.Length && PixelFont.Lit(word[ch], col, row);
+        for (int pass = 0; pass < 3; pass++)
+            for (int ch = 0; ch < word.Length; ch++)
+                for (int row = 0; row < 7; row++)
+                    for (int col = 0; col < 5; col++)
+                    {
+                        if (!On(ch, col, row)) continue;
+                        int px = x + (ch * 6 + col) * k, py = y + row * k;
+                        if (pass == 0) { ui.Rect(new Rectangle(px + k * 3 / 4, py + k, k, k), Color.Black * 0.35f); continue; }
+                        if (pass == 1) { ui.Rect(new Rectangle(px + k / 3, py + k / 2, k, k), new Color(52, 30, 18)); continue; }
+                        float f = row / 6f;
+                        var c = f < 0.45f ? Color.Lerp(new Color(255, 238, 172), Kit.Gilt, f / 0.45f) : Color.Lerp(Kit.Gilt, new Color(150, 100, 40), (f - 0.45f) / 0.55f);
+                        float g = MathF.Max(0, 1 - MathF.Abs(ch * 6 + col + row * 0.6f - gleam) / 2.5f);
+                        c = Color.Lerp(c, new Color(255, 252, 232), g * 0.7f);
+                        ui.Rect(new Rectangle(px, py, k, k), c);
+                        if (!On(ch, col, row - 1)) ui.Rect(new Rectangle(px, py, k, b), Color.Lerp(c, Color.White, 0.55f));
+                        if (!On(ch, col - 1, row)) ui.Rect(new Rectangle(px, py, b, k), Color.Lerp(c, Color.White, 0.3f));
+                        if (!On(ch, col + 1, row)) ui.Rect(new Rectangle(px + k - b, py, b, k), Kit.Mul(c, 0.72f));
+                        if (!On(ch, col, row + 1)) ui.Rect(new Rectangle(px, py + k - b, k, b), Kit.Mul(c, 0.55f));
+                    }
+    }
+
+    /// A sword laid under the name, hilt to the left: pommel, grip, cross and a long blade tapering to its point.
+    void Sword(int x, int y, int w)
+    {
+        int u = Math.Max(1, U(1));
+        var steel = new Color(206, 212, 222); var shade = new Color(128, 136, 152);
+        ui.Rect(new Rectangle(x + U(4), y + U(5), w - U(10), U(2)), Color.Black * 0.35f);
+        ui.Disc(new Vector2(x + U(5), y), U(5), Kit.GiltDark); ui.Disc(new Vector2(x + U(5), y - u), U(3.5f), Kit.Gilt);
+        ui.Rect(new Rectangle(x + U(9), y - U(2), U(22), U(5)), new Color(84, 52, 36));
+        for (int i = 0; i < 5; i++) ui.Rect(new Rectangle(x + U(11 + i * 4), y - U(2), u, U(5)), new Color(52, 32, 24));
+        ui.Rect(new Rectangle(x + U(31), y - U(11), U(5), U(23)), Kit.GiltDark);
+        ui.Rect(new Rectangle(x + U(31), y - U(11), U(3), U(22)), Kit.Gilt);
+        ui.Rect(new Rectangle(x + U(31), y - U(11), U(5), U(2)), new Color(255, 232, 160));
+        int bx = x + U(36), bw = w - U(36), tip = U(22);
+        ui.Rect(new Rectangle(bx, y - U(3), bw - tip, U(3)), steel);
+        ui.Rect(new Rectangle(bx, y, bw - tip, U(3)), shade);
+        ui.Rect(new Rectangle(bx, y - U(3), bw - tip, u), Color.White * 0.8f);
+        ui.Rect(new Rectangle(bx + U(4), y - u / 2, (bw - tip) * 3 / 4, u), new Color(86, 92, 108));
+        for (int i = 0; i < 3; i++) // the point, narrowing in three steps
+        {
+            int h = U(2 - i) + (i == 2 ? u : 0), sx = bx + bw - tip + i * tip / 3;
+            ui.Rect(new Rectangle(sx, y - h, tip / 3, h), steel);
+            ui.Rect(new Rectangle(sx, y, tip / 3, h), shade);
+        }
+    }
+
+    /// Text with its letters set apart by `gap` pixels.
+    void Spaced(string s, float x, float y, Color c, int scale, int gap)
+    {
+        foreach (char ch in s) { ui.Text(ch.ToString(), x, y, c, scale); x += ui.TW("A", scale) + gap; }
+    }
+
+    /// The menu down the left: plain rows on a gilt spine; the chosen row lights and slides out.
+    void Menu(int x, int y, SaveCard? save)
+    {
+        bool[] can = { true, host.CanContinue, true, true, true };
+        if (sel < 0 || !can[sel]) sel = can[1] ? 1 : 0;
+        for (; nav != 0; nav -= Math.Sign(nav))
+            do sel = (sel + Math.Sign(nav) + Items.Length) % Items.Length; while (!can[sel]);
+        int w = U(270), h = U(30), gap = U(5);
+        ui.Rect(new Rectangle(x - U(10), y - U(2), Math.Max(1, U(1)), Items.Length * (h + gap) - gap + U(4)), Kit.Gilt * 0.35f);
+        int hit = -1;
+        for (int i = 0; i < Items.Length; i++)
+        {
+            var r = new Rectangle(x - U(10), y + i * (h + gap), w, h);
+            if (can[i] && mouseMoved && ui.Hover(r)) sel = i;
+            bool hot = sel == i;
+            float a = Ui.Anim(0x7171 + i, hot ? 1 : 0, 16);
+            Overflow.Box(r);
+            if (a > 0.01f)
+            {
+                ui.HGrad(r, Kit.Gilt * (0.42f * a), Kit.Gilt * 0f, 4);
+                ui.HGrad(new Rectangle(r.X, r.Y, r.Width, Math.Max(1, U(1))), Kit.Gilt * a, Kit.Gilt * 0f, 4);
+                ui.HGrad(new Rectangle(r.X, r.Bottom - Math.Max(1, U(1)), r.Width, Math.Max(1, U(1))), Kit.Gilt * (0.6f * a), Kit.Gilt * 0f, 4);
+                ui.Rect(new Rectangle(r.X, r.Y, U(3), r.Height), Color.Lerp(Kit.Gilt, new Color(255, 238, 172), 0.5f) * a);
+                for (int j = 0; j < 4; j++) // the pointer: a small gilt arrowhead
+                    ui.Rect(new Rectangle(r.X + U(10 + j), r.Center.Y - U(4 - j), U(2), U(8 - 2 * j)), new Color(255, 238, 172) * a);
+            }
+            var c = !can[i] ? Style.Dim * 0.45f : Color.Lerp(Kit.Parchment, new Color(255, 250, 230), a);
+            ui.Text(Items[i], r.X + U(26) + U(3) * a, r.Y + (h - U(14)) / 2f, c, 2);
+            string note = i == 1 ? (save != null ? $"DAY {save.Day}" : can[1] ? "" : "NO SAVE") : "";
+            if (note != "") ui.TextR(note, r.Right - U(12), r.Y + (h - U(7)) / 2f, Style.Dim * (can[i] ? 1 : 0.6f), 1);
+            ui.Block(r);
+            if (can[i] && ui.Clicked(r)) hit = i;
+        }
+        mouseMoved = false;
+        if (go && can[sel]) hit = sel;
+        go = false;
+        if (hit < 0) return;
+        Ui.OnClick?.Invoke();
+        switch (hit)
+        {
+            case 0: creator.Show(); break;
+            case 1: host.ContinueCampaign(); break;
+            case 2: host.QuickBattle(); break;
+            case 3: host.OpenSettings(); break;
+            default: host.Exit(); break;
+        }
+    }
+
+    /// The last save as the company's card: its arms, the captain, whom he serves, the day, the purse and the men.
+    void Company(SaveCard save, int x, int y)
+    {
+        var c = ui.Plate(new Rectangle(x - U(10), y, U(270), U(66)), null, Kit.Gilt);
+        ui.Shield(new Rectangle(c.X - U(2), c.Y - U(4), U(40), U(48)), Style.Sides[save.Palette]);
+        int tx = c.X + U(48);
+        ui.TextFit(save.Name, tx, c.Y - U(4), c.Right - tx, Kit.Gilt, ui.FitScale(save.Name, c.Right - tx));
+        ui.Text(save.Service, tx, c.Y + U(14), Style.Dim, 1);
+        ui.Rect(new Rectangle(tx, c.Y + U(25), c.Right - tx, Math.Max(1, U(1))), Kit.Gilt * 0.3f);
+        ui.Icon("clock", tx, c.Y + U(31), Style.Dim, 1); ui.Text($"DAY {save.Day}", tx + U(12), c.Y + U(31), Style.Text, 1);
+        ui.Icon("coin", tx + U(62), c.Y + U(31), Kit.Gilt, 1); ui.Text($"{save.Gold:N0}", tx + U(74), c.Y + U(31), Style.Text, 1);
+        ui.Icon("shield", tx + U(124), c.Y + U(31), Style.Dim, 1); ui.Text($"{save.Men} MEN", tx + U(136), c.Y + U(31), Style.Text, 1);
+    }
+
+    /// The title as one PNG (IRONFIELD_TITLE_SHOTS), then quit.
+    void TitleShot()
+    {
+        if (++shotFrames == 10) PendingShot = "title";
+        if (shotFrames > 12 && PendingShot == null) host.Exit();
     }
 
     /// The creator's steps one by one as PNGs (IRONFIELD_CREATOR_SHOTS), with a made-up captain, then quit.
@@ -113,77 +235,6 @@ sealed class TitleScreen
         PendingShot = $"creator-{shotStep + 1}-{CreatorScreen.Steps[shotStep].ToLowerInvariant().Replace(' ', '-')}";
         shotStep++;
         shotFrames = 0;
-    }
-
-    /// Night sky into an ember dusk, a moon, a castle on the far hill and three ranges of hills.
-    void Scene()
-    {
-        var screen = new Rectangle(0, 0, ui.W, ui.H);
-        ui.VGrad(new Rectangle(0, 0, ui.W, ui.H / 2), Kit.Night, Kit.Dusk);
-        ui.VGrad(new Rectangle(0, ui.H / 2, ui.W, ui.H - ui.H / 2), Kit.Dusk, new Color(196, 110, 62));
-        ui.Stars(new Rectangle(0, 0, ui.W, ui.H / 2), time);
-        // The mouse leans the scene a little: far layers move less than near ones.
-        float px = Ui.Instant ? 0 : (ms.X / (float)Math.Max(1, ui.W) - 0.5f) * U(18);
-        var moon = new Vector2(ui.W * 0.8f - px * 0.2f, ui.H * 0.2f);
-        ui.Disc(moon, U(46), Color.White * 0.04f); ui.Disc(moon, U(34), Color.White * 0.06f);
-        ui.Disc(moon, U(24), new Color(240, 232, 210)); ui.Disc(moon + new Vector2(U(6), U(-4)), U(5), new Color(214, 206, 186));
-        Clouds();
-        int castleX = (int)(ui.W * 0.76f - px * 0.4f);
-        // The castle's windows flicker like fires behind them.
-        var ember = Color.Lerp(Kit.Ember, new Color(255, 214, 140), 0.25f + 0.25f * MathF.Sin(time * 7.3f) * MathF.Sin(time * 3.1f));
-        ui.Castle(castleX, ui.HillY(screen, castleX, (int)(ui.H * 0.66f), U(26), 0.4f) + U(6), 3, new Color(78, 50, 70), ember);
-        ui.Hills(Shifted(screen, px * 0.4f), (int)(ui.H * 0.66f), U(26), 0.4f, new Color(78, 50, 70));
-        Birds();
-        ui.Hills(Shifted(screen, px * 0.7f), (int)(ui.H * 0.76f), U(22), 3.1f, new Color(46, 32, 48));
-        ui.Hills(Shifted(screen, px), (int)(ui.H * 0.88f), U(14), 5.7f, new Color(20, 16, 26));
-        Embers();
-        ui.Vignette(0.8f);
-    }
-
-    /// The screen moved sideways by `dx`, widened so the hills still cover both edges.
-    static Rectangle Shifted(Rectangle r, float dx) => new(r.X - (int)MathF.Abs(dx) - 8 + (int)dx, r.Y, r.Width + 2 * (int)MathF.Abs(dx) + 16, r.Height);
-
-    /// Long thin clouds drifting slowly across the dusk.
-    void Clouds()
-    {
-        for (int i = 0; i < 6; i++)
-        {
-            float span = ui.W + U(400);
-            float x = ((i * 0.37f * span + time * U(6 + i * 2)) % span) - U(200);
-            float y = ui.H * (0.12f + 0.07f * i);
-            var c = Color.Lerp(new Color(120, 80, 120), new Color(236, 150, 112), 0.15f * i) * (0.06f + 0.015f * i);
-            for (int k = 0; k < 24; k++) // a long low streak: puffs swelling in the middle, overlapping softly
-            {
-                float e = MathF.Sin(k / 23f * MathF.PI);
-                ui.Disc(new Vector2(x + U(k * 9), y + U(MathF.Sin(k * 0.9f + i) * 1.5f)), U(3 + 7 * e), c);
-            }
-        }
-    }
-
-    /// A few rooks wheeling over the far hill, wings beating.
-    void Birds()
-    {
-        for (int i = 0; i < 5; i++)
-        {
-            float a = time * 0.25f + i * 1.3f;
-            var at = new Vector2(ui.W * (0.8f + 0.06f * MathF.Cos(a)) + U(i * 14), ui.H * (0.46f + 0.03f * MathF.Sin(a * 1.7f)));
-            float flap = MathF.Sin(time * 9 + i * 2) * U(3);
-            var c = new Color(40, 26, 36);
-            ui.Line(at, at + new Vector2(-U(5), -flap), c, Math.Max(1, U(1)));
-            ui.Line(at, at + new Vector2(U(5), -flap), c, Math.Max(1, U(1)));
-        }
-    }
-
-    /// Sparks rising from the near fields.
-    void Embers()
-    {
-        for (int i = 0; i < 18; i++)
-        {
-            float life = 6 + i % 4, t = ((time + i * 0.71f) % life) / life;
-            float x = ui.W * ((i * 0.618f) % 1) + MathF.Sin(t * 6 + i) * U(12);
-            float y = ui.H * (0.98f - 0.5f * t);
-            ui.Disc(new Vector2(x, y), Math.Max(1, U(1.5f)), Color.Lerp(new Color(255, 200, 120), Kit.Ember, t) * (1 - t) * 0.8f);
-        }
     }
 
     /// The newest save as a card, re-read only when the file changes.

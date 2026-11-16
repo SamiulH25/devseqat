@@ -18,6 +18,8 @@ public sealed class CaptainMaking
 {
     public string Name = "", Company = "", Birth = "camp", Past = "sellsword", Road = "sword";
     public int Realm, Skin = 1, Hair = 2;
+    /// A free company: starts at a random realm's capital, in no realm's pay (Realm is rolled when the campaign begins).
+    public bool FreeStart;
     /// The painted face (CaptainLook numbers) and the charge on your banner (an `Emblem`).
     public int Cut, Beard = 1, Eye, Brow = 1, Nose = 1, Jaw = 1, Scar, Arms = (int)Emblem.Chevron;
     /// The battle head's style from the cut and beard: 0 clean, 1 full beard, 2 moustache, 3 bald and bearded.
@@ -77,7 +79,7 @@ public static class Origins
     /// How long a boon lasts, in the creator's words.
     public static string BoonSpan(float days) => days <= 0 ? "LASTING" : $"{days:0} DAYS";
 
-    public static bool Free(CaptainMaking m) => Chosen(m).Any(o => o.Effects.Contains("free"));
+    public static bool Free(CaptainMaking m) => m.FreeStart || Chosen(m).Any(o => o.Effects.Contains("free"));
     public static int Age(CaptainMaking m) => BaseAge + Chosen(m).Sum(o => o.Age);
     public static IEnumerable<string> Perks(CaptainMaking m) => Chosen(m).Select(o => o.Perk).Where(p => p != "");
 

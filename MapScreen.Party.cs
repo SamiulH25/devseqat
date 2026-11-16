@@ -117,20 +117,30 @@ partial class MapScreen
         if (st == null || !c.Stacks.Contains(st) || !C.Player.Companies.Contains(c)) { panel = PanelKind.Party; upStack = null; return; }
         string man = Campaign.ManCulture(c, st.Troop); // only the lines these men may enter by culture (a stranger's are not shown)
         var options = st.Type.UpgradesTo.Where(to => Troops.Get(to) is var t && (t.Culture == Factions.Common || man == Factions.Common || Factions.Open(man, t.Culture))).ToArray();
-        var r = Modal(Math.Max(860, options.Length * 190 + 60), 470, $"{st.Type.Name.ToUpperInvariant()} OF {c.Name.ToUpperInvariant()}");
+        var common = options.Where(to => Troops.Get(to).Culture == Factions.Common).ToArray();
+        var faction = options.Where(to => Troops.Get(to).Culture != Factions.Common).ToArray();
+        bool both = common.Length > 0 && faction.Length > 0;
+        int modalW = Math.Max(860, options.Length * 190 + (both ? 96 : 60));
+        var r = Modal(modalW, 500, $"{st.Type.Name.ToUpperInvariant()} OF {c.Name.ToUpperInvariant()}");
         ui.TextC($"{st.Men} FIT, {st.Wounded} WOUNDED. POOL {st.Xp:0} / {st.PoolCap:0} XP: {st.Ready} READY ({st.Type.UpgradeXp} XP A MAN). EACH MAN PROMOTED SPENDS HIS SHARE.",
-            r.X + r.Width / 2f, r.Y + ui.U(44), Style.Dim, 1);
+            r.X + r.Width / 2f, r.Y + ui.U(42), Style.Dim, 1);
         if (options.Length == 0) ui.TextC("THESE MEN ARE AT THE TOP OF THEIR LINE.", r.X + r.Width / 2f, r.Y + ui.U(120), Style.Text);
-        int cw = options.Length >= 5 ? ui.U(176) : ui.U(190), gap = ui.U(10), x = r.X + (r.Width - options.Length * cw - (options.Length - 1) * gap) / 2, y = r.Y + ui.U(62);
-        foreach (var to in options)
+        int gap = ui.U(8), groupGap = both ? ui.U(24) : 0, pad = ui.U(8);
+        int avail = r.Width - ui.U(44) - groupGap - Math.Max(0, options.Length - 1) * gap;
+        int cw = Math.Clamp(avail / Math.Max(1, options.Length), ui.U(124), options.Length >= 5 ? ui.U(176) : ui.U(190));
+        int totalW = options.Length * cw + Math.Max(0, options.Length - 1) * gap + groupGap;
+        int x = r.X + (r.Width - totalW) / 2, gy = r.Y + ui.U(58), y = gy + ui.U(24);
+
+        void DrawCard(string to, int cx)
         {
             var t = Troops.Get(to);
-            var card = new Rectangle(x, y, cw, ui.U(300));
+            var card = new Rectangle(cx, y, cw, ui.U(300));
             int one = C.Promotable(C.Player, c, st, to, 1, C.S.Gold, out int cost1, out string reason);
             ui.Panel(card, one > 0 ? Style.Accent : Style.PanelEdge, one > 0 ? 2 : 1);
-            ui.Portrait(t, new Rectangle(card.X + ui.U(40), card.Y + ui.U(8), cw - ui.U(80), ui.U(70)));
-            ui.TextC(t.Name.ToUpperInvariant(), card.X + cw / 2f, card.Y + ui.U(86), Style.Text, t.Name.Length > 16 ? 1 : 2);
-            ui.TextC($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]}  {t.Class.ToString().ToUpperInvariant()}  {t.Culture.ToUpperInvariant()}", card.X + cw / 2f, card.Y + ui.U(106), Style.Accent, 1);
+            int inset = Math.Min(ui.U(36), cw / 5);
+            ui.Portrait(t, new Rectangle(card.X + inset, card.Y + ui.U(8), cw - inset * 2, ui.U(70)));
+            ui.TextFitC(t.Name.ToUpperInvariant(), card.X + cw / 2f, card.Y + ui.U(86), cw - ui.U(8), Style.Text, t.Name.Length > 14 ? 1 : 2);
+            ui.TextFitC($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]}  {t.Class.ToString().ToUpperInvariant()}  {t.Culture.ToUpperInvariant()}", card.X + cw / 2f, card.Y + ui.U(106), cw - ui.U(8), Style.Accent, 1);
             int sy = card.Y + ui.U(122);
             var rows = new List<(string label, string value)> { ("HEALTH", $"{t.MaxHp:0}"), ("ARMOUR", $"{t.Armor:0}"), ("DAMAGE", $"{t.Damage:0}"), ("REACH", $"{t.Reach:0.0} M"),
                 t.Range > 0 ? ("RANGE", $"{t.Range:0} M") : ("SPEED", $"{t.Speed:0.0}"), ("HORSE", t.Mount?.Name.ToUpperInvariant() ?? "-") };
@@ -140,8 +150,8 @@ partial class MapScreen
             int step = ui.U(rows.Count > 6 ? 12 : 14);
             foreach (var (label, value) in rows)
             {
-                ui.Text(label, card.X + ui.U(14), sy, Style.Dim, 1);
-                ui.TextR(value, card.Right - ui.U(14), sy, label == "STYLE" ? Style.Accent : Style.Text, 1);
+                ui.Text(label, card.X + ui.U(12), sy, Style.Dim, 1);
+                ui.TextR(value, card.Right - ui.U(12), sy, label == "STYLE" ? Style.Accent : Style.Text, 1);
                 sy += step;
             }
             if (style != "" && ui.Hover(card))
@@ -151,14 +161,14 @@ partial class MapScreen
             }
             else if (t.Spells.Length > 0 && ui.Hover(card))
                 note = "SPELLS: " + string.Join(", ", t.Spells.Select(id => Abilities.Get(id).Name.ToUpperInvariant())) + ". " + Abilities.Get(t.Spells[^1]).Line.ToUpperInvariant();
-            if (Rules.TroopRole(to) != Rules.RoleOf(c)) ui.TextC($"JOINS A {Rules.TroopRole(to).ToUpperInvariant()} COMPANY", card.X + cw / 2f, card.Y + ui.U(210), Style.Warn, 1);
+            if (Rules.TroopRole(to) != Rules.RoleOf(c)) ui.TextFitC($"JOINS A {Rules.TroopRole(to).ToUpperInvariant()} COMPANY", card.X + cw / 2f, card.Y + ui.U(210), cw - ui.U(8), Style.Warn, 1);
             ui.TextFitC(one > 0 ? $"{cost1} CROWNS A MAN" : reason, card.X + cw / 2f, card.Y + ui.U(226), cw - ui.U(8), one > 0 ? Style.Text : Style.Warn, 1);
-            int bw = (cw - ui.U(28) - 2 * ui.U(4)) / 3, by = card.Bottom - ui.U(56);
+            int bw = (cw - ui.U(24) - 2 * ui.U(4)) / 3, by = card.Bottom - ui.U(56);
             int b = 0;
             foreach (var (label, want) in new[] { ("1", 1), ("5", 5), ("ALL", st.Ready) })
             {
                 int n = C.Promotable(C.Player, c, st, to, want, C.S.Gold, out int cost, out _);
-                var br = new Rectangle(card.X + ui.U(14) + b * (bw + ui.U(4)), by, bw, ui.U(24));
+                var br = new Rectangle(card.X + ui.U(12) + b * (bw + ui.U(4)), by, bw, ui.U(24));
                 if (ui.Button(br, label, n > 0 && (want == 1 || n > 1)))
                 {
                     note = C.Promote(c, st, to, n) ?? $"PROMOTED {n}";
@@ -167,8 +177,24 @@ partial class MapScreen
                 if (ui.Hover(br)) note = n > 0 ? $"PROMOTE {n} FOR {cost} CROWNS" : reason;
                 b++;
             }
-            ui.TextC($"{st.Ready} READY, {C.S.Gold:0} CROWNS", card.X + cw / 2f, card.Bottom - ui.U(22), Style.Dim, 1);
-            x += cw + gap;
+            ui.TextFitC($"{st.Ready} READY, {C.S.Gold:0} CROWNS", card.X + cw / 2f, card.Bottom - ui.U(22), cw - ui.U(8), Style.Dim, 1);
+        }
+
+        string[] cultures = faction.Select(to => Troops.Get(to).Culture).Distinct().ToArray();
+        string factionTitle = cultures.Length == 1 ? $"{(Factions.Culture(cultures[0])?.Name ?? cultures[0]).ToUpperInvariant()} EXCLUSIVE" : "FACTION EXCLUSIVE";
+        var groups = new List<(string Title, string[] Items, bool Exclusive)>();
+        if (common.Length > 0) groups.Add(("COMMON TROOPS", common, false));
+        if (faction.Length > 0) groups.Add((factionTitle, faction, true));
+        for (int gi = 0; gi < groups.Count; gi++)
+        {
+            var (title, items, exclusive) = groups[gi];
+            int gw = items.Length * cw + (items.Length - 1) * gap;
+            var frame = new Rectangle(x - pad, gy, gw + pad * 2, ui.U(332));
+            ui.Rect(frame, Color.Black * 0.22f);
+            ui.Rect(new Rectangle(frame.X, frame.Y, frame.Width, ui.U(2)), exclusive ? Style.Accent : Style.PanelEdge);
+            ui.TextC(title, frame.Center.X, gy + ui.U(7), exclusive ? Style.Accent : Style.Dim, 1);
+            foreach (var to in items) { DrawCard(to, x); x += cw + gap; }
+            x += groupGap - gap;
         }
         // Moving and splitting the stack.
         int mbw = ui.U(200), mby = r.Bottom - ui.U(80), mbx = r.X + (r.Width - 3 * mbw - 2 * ui.U(8)) / 2;

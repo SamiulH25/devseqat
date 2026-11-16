@@ -395,6 +395,7 @@ public sealed partial class Campaign
         foreach (var v in S.Settlements.Where(v => v.ThreatUntil <= S.Hours))
         {
             int more = (v.Owner == Player.Id && Has("JustRuler") ? 2 : 1) * (v.Prosperity >= 70 ? 2 : 1);
+            if (v.Kind == SettlementKind.Castle && v.Faction >= 0 && Day % B.NobleRefillDays == 0) v.Nobles = Math.Min(Scaled(B.NobleRecruitsMax), v.Nobles + Scaled(1)); // no dice: nobles are bred, not levied (N2)
             if (v.Prosperity < 20 && rng.Chance(0.5f)) continue; // a poor village raises men slowly
             v.Recruits = v.Kind == SettlementKind.Village ? Math.Min(Scaled(B.VillageRecruitsMax), v.Recruits + Scaled(more)) : Math.Min(Scaled(12), v.Recruits + Scaled(2 * more)); // towns and castles raise levies too
         }

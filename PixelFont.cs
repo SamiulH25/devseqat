@@ -35,24 +35,48 @@ public sealed class PixelFont
     public PixelFont(GraphicsDevice gd)
     {
         if (Glyphs.Length != Chars.Length) throw new InvalidOperationException("font table out of sync");
-        var data = new Color[Chars.Length * 6 * 8];
+        // One cell a glyph, 6 x 8 texels: the white 5 x 7 glyph and, under it one texel down and right, its drop shadow (premultiplied
+        // black at 200/255, so a tint scales it with the glyph). One sprite a character then draws both. The last cell is solid
+        // white: rectangles are drawn from this texture too, so text and boxes batch together.
+        int cells = Chars.Length + 1, stride = cells * 6;
+        var data = new Color[stride * 8];
+        var shadow = new Color(0, 0, 0, 200);
         for (int g = 0; g < Glyphs.Length; g++)
             for (int row = 0; row < 7; row++)
             {
                 int bits = Convert.ToInt32(Glyphs[g].Substring(row * 2, 2), 16);
                 for (int b = 0; b < 5; b++)
-                    if ((bits >> (4 - b) & 1) != 0) data[row * Chars.Length * 6 + g * 6 + b] = Color.White;
+                    if ((bits >> (4 - b) & 1) != 0) data[(row + 1) * stride + g * 6 + b + 1] = shadow;
             }
-        tex = new Texture2D(gd, Chars.Length * 6, 8);
+        for (int g = 0; g < Glyphs.Length; g++)
+            for (int row = 0; row < 7; row++)
+            {
+                int bits = Convert.ToInt32(Glyphs[g].Substring(row * 2, 2), 16);
+                for (int b = 0; b < 5; b++)
+                    if ((bits >> (4 - b) & 1) != 0) data[row * stride + g * 6 + b] = Color.White;
+            }
+        for (int row = 0; row < 8; row++) for (int b = 0; b < 6; b++) data[row * stride + Chars.Length * 6 + b] = Color.White;
+        tex = new Texture2D(gd, stride, 8);
         tex.SetData(data);
     }
 
+    /// The texture holding the glyphs and a white texel: boxes drawn from it batch with text.
+    public Texture2D Texture => tex;
+    /// One white texel well inside the white cell (point sampling: no bleed from the neighbours).
+    public Rectangle White => new(Chars.Length * 6 + 2, 3, 1, 1);
+
     public static int Width(string s, int scale) => s.Length * 6 * scale;
+
+    /// Is the font's pixel at (col 0-4, row 0-6) of this character set? For drawing a glyph block by block (the title's name).
+    public static bool Lit(char ch, int col, int row)
+    {
+        if (col < 0 || col > 4 || row < 0 || row > 6 || ch >= 128) return false;
+        return (Convert.ToInt32(Glyphs[CharIdx[ch]].Substring(row * 2, 2), 16) >> (4 - col) & 1) != 0;
+    }
 
     public void Draw(SpriteBatch sb, string s, Vector2 pos, Color c, int scale = 2)
     {
-        DrawRun(sb, s, pos + new Vector2(scale), new Color(0, 0, 0, 200), scale); // drop shadow
-        DrawRun(sb, s, pos, c, scale);
+        DrawRun(sb, s, pos, c, scale); // the glyph and its shadow are one cell of the texture
     }
 
     void DrawRun(SpriteBatch sb, string s, Vector2 pos, Color c, int scale)

@@ -168,27 +168,35 @@ public static partial class SelfTest
         Check(times.Count >= 3 && times[^1] - times[0] > 1.5f, "the line's companies charge at different times");
     }
 
-    /// M3: levies holding near the enemy break ranks and charge on their own; a sergeant beside them keeps them in hand.
-    static void LeviesBreakRanks()
+    /// Urge (BattleUrge.cs): levies near the enemy lunge out one by one before the company tips into a charge; a sergeant holds them;
+    /// drilled men never lunge; a hothead company goes sooner than plain levies. Men lunge before the company charges.
+    static void UrgeLunges()
     {
-        bool Breaks(bool sergeant)
+        (int lunging, bool charged, float tipAt, float firstAt) Run1(string troop, bool sergeant)
         {
             var b = Battle.Empty(47);
-            var lev = b.AddSquad(0, Troops.Get("levies"), 20, new(0, -6), 10, Vector2.UnitY);
+            var sq = b.AddSquad(0, Troops.Get(troop), 20, new(0, -6), 10, Vector2.UnitY);
             b.AddSquad(1, Troops.Get("men_at_arms"), 20, new(0, 6), 10, -Vector2.UnitY);
-            if (sergeant) b.AddDivision(0, "Sergeant Test", new[] { lev }, Temper.Cautious, 3, new Goal(GoalKind.Hold, new Vector2(0, -6)));
-            for (int i = 0; i < 60 * 15 && lev.Order == Order.Hold; i++) b.Update(1 / 60f);
-            return lev.Order == Order.Charge && lev.BrokeRanks;
+            if (sergeant) b.AddDivision(0, "Sergeant Test", new[] { sq }, Temper.Cautious, 3, new Goal(GoalKind.Hold, new Vector2(0, -6)));
+            int peak = 0; float tip = -1, first = -1;
+            for (int i = 0; i < 60 * 25 && sq.Order == Order.Hold; i++)
+            {
+                b.Update(1 / 60f);
+                int l = sq.Units.Count(u => u.Lunging);
+                peak = Math.Max(peak, l);
+                if (l > 0 && first < 0) first = b.Time;
+            }
+            if (sq.Order == Order.Charge) tip = b.Time;
+            return (peak, sq.Order == Order.Charge && sq.BrokeRanks, tip, first);
         }
-        bool alone = Breaks(false), led = Breaks(true);
-        Console.WriteLine($"melee: levies 10 m from the enemy break ranks alone {alone}, with a sergeant {led}");
-        Check(alone, "levies near the enemy break ranks and charge");
-        Check(!led, "a sergeant beside them holds them");
-        var c = Battle.Empty(48);
-        var drilled = c.AddSquad(0, Troops.Get("men_at_arms"), 20, new(0, -6), 10, Vector2.UnitY);
-        c.AddSquad(1, Troops.Get("men_at_arms"), 20, new(0, 6), 10, -Vector2.UnitY);
-        Run(c, 15);
-        Check(drilled.Order == Order.Hold, "trained men hold until told");
+        var alone = Run1("levies", false);
+        var led = Run1("levies", true);
+        var drilled = Run1("men_at_arms", false);
+        Console.WriteLine($"urge: levies lunge first at {alone.firstAt:0.0} s, tip at {alone.tipAt:0.0} s (peak {alone.lunging} lunging); with a sergeant peak {led.lunging}, charged {led.charged}; drilled peak {drilled.lunging}");
+        Check(alone.charged, "levies near the enemy tip into a charge on their own");
+        Check(alone.firstAt >= 0 && alone.firstAt < alone.tipAt, "men lunge one by one before the company charges");
+        Check(!led.charged, "a sergeant beside them holds them");
+        Check(!drilled.charged && drilled.lunging == 0, "drilled men hold until told");
     }
 
     /// M4: a trained company holding its ground wheels to face an enemy coming at its flank; rabble do not wheel.

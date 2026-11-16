@@ -17,7 +17,7 @@ partial class MapScreen
         {
             SettlementKind.Village when C.Refuses(s) => new[] { "FORAGE" },
             SettlementKind.Village => new[] { "RECRUIT", "FOOD", "FORAGE", "REST", "ELDERS" },
-            SettlementKind.Castle => new[] { "HALL", "REST", "FOOD", "CAPTIVES", "CONTRACT" },
+            SettlementKind.Castle => new[] { "HALL", "ESQUIRES", "REST", "FOOD", "CAPTIVES", "CONTRACT" },
             _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "TAVERN", "HALL", "MARKET", "WORKSHOP", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
         }).Concat(C.ChapterAt(s) != null ? new[] { "CHAPTER" } : Array.Empty<string>()).Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
         int tw = Math.Min(ui.U(104), (r.Width - ui.U(40)) / tabs.Length);
@@ -30,6 +30,7 @@ partial class MapScreen
         switch (tab)
         {
             case "RECRUIT": RecruitTab(s, body); break;
+            case "ESQUIRES": NoblesTab(s, body); break;
             case "MERCENARIES": MercenariesTab(s, body); break;
             case "TAVERN": TavernTab(s, body); break;
             case "HALL": HallTab(s, body); break;
@@ -122,6 +123,37 @@ partial class MapScreen
             by += ui.U(31);
         }
         if (s.ThreatUntil > C.S.Hours) ui.Text("THE VILLAGE WAS THREATENED: NO RECRUITS FOR NOW", body.X, row.Bottom + ui.U(12), Style.Foe, 1);
+    }
+
+    /// Esquires tab (docs/NOBILITY.md N2): a castle's house sends noble recruits, on foot and mounted, with its own captains.
+    void NoblesTab(Settlement s, Rectangle body)
+    {
+        string? why = C.CannotRecruitNobles(s);
+        int per = (int)Balance.Get().ArmyScale, cap = Math.Max(1, C.Scaled(Balance.Get().NobleRecruitsMax)), y = body.Y;
+        foreach (bool mounted in new[] { false, true })
+        {
+            var t = Troops.Get(Campaign.NobleTroop(mounted));
+            var row = new Rectangle(body.X, y, body.Width, ui.U(104));
+            TownRow(row);
+            PortraitWell(t, new Rectangle(row.X + ui.U(6), row.Y + ui.U(6), ui.U(92), ui.U(92)), Style.PaletteOf(s.Faction));
+            int tx = row.X + ui.U(110), ty = row.Y + ui.U(10);
+            ui.Text(t.Name.ToUpperInvariant(), tx, ty, Style.Text, 2);
+            ui.Text($"TIER {Style.Numerals[t.Tier]} . NOBLE . {s.Nobles} OF {cap} READY", tx, ty + ui.U(20), Style.Dim, 1);
+            ui.Icon("coin", tx, ty + ui.U(34), Kit.Gilt, 1);
+            ui.Text($"{C.NoblePrice(mounted)} CROWNS FOR {per} MEN", tx + ui.U(12), ty + ui.U(34), Kit.Gilt, 1);
+            TroopStats(t, tx + ui.U(160), ty + ui.U(34));
+            ui.Pips(new Rectangle(tx, ty + ui.U(50), ui.U(220), ui.U(7)), s.Nobles / (float)cap, Style.Friendly, 12);
+            ui.Text("THEY TRAIN ONLY INTO THE NOBLE LINES: KNIGHTS, ORDERS.", tx, ty + ui.U(66), Style.Dim, 1);
+            ui.Text("NO DRILL TURNS COMMON MEN INTO THEM, NOR THEM INTO COMMON MEN.", tx, ty + ui.U(78), Style.Dim, 1);
+            int bx = row.Right - ui.U(150), by = row.Y + ui.U(8);
+            foreach (var (label, n) in new[] { ("RECRUIT 1", 1), ("RECRUIT 5", 5), ("RECRUIT ALL", 99) })
+            {
+                if (ui.Button(new Rectangle(bx, by, ui.U(142), ui.U(26)), label, why == null, "", n == 99)) note = C.RecruitNobles(s, mounted, n) ?? $"THEY RIDE WITH YOU. {s.Nobles} LEFT";
+                by += ui.U(31);
+            }
+            y += ui.U(112);
+        }
+        ui.Text(why ?? "THE HOUSE TRUSTS ITS OWN CAPTAINS: SWORN TO ITS REALM, OR HOLDING THE CASTLE.", body.X, y + ui.U(4), why == null ? Style.Dim : Style.Foe, 1);
     }
 
     /// Tavern tab (S5): a wanderer looking for a captain (3.3), and what people are saying (rumours of real things nearby).

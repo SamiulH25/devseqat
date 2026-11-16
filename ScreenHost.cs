@@ -53,7 +53,8 @@ sealed class ScreenHost : Game
         bool anyShots = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 }
             || Environment.GetEnvironmentVariable("IRONFIELD_CAMPAIGN_SHOTS") is { Length: > 0 }
             || Environment.GetEnvironmentVariable("IRONFIELD_LAB_SHOTS") is { Length: > 0 }
-            || Environment.GetEnvironmentVariable("IRONFIELD_CREATOR_SHOTS") is { Length: > 0 };
+            || Environment.GetEnvironmentVariable("IRONFIELD_CREATOR_SHOTS") is { Length: > 0 }
+            || Environment.GetEnvironmentVariable("IRONFIELD_TITLE_SHOTS") is { Length: > 0 };
         IsFixedTimeStep = anyShots;
         Window.AllowUserResizing = true;
         Window.Title = "Ironfield";
@@ -76,6 +77,7 @@ sealed class ScreenHost : Game
     protected override void LoadContent()
     {
         Sb = new SpriteBatch(GraphicsDevice);
+        if (FrameProf.On) GraphicsDevice.Metrics = new GraphicsMetrics();
         Art = new Art(GraphicsDevice);
         if (Environment.GetEnvironmentVariable("IRONFIELD_DUMP_ATLAS") is { Length: > 0 } atlasPath)
         {
@@ -244,6 +246,7 @@ sealed class ScreenHost : Game
 
     protected override void Update(GameTime gameTime)
     {
+        FrameProf.Begin("update");
         kb = Keyboard.GetState(); ms = Mouse.GetState();
         Ctl.Update(kb, ms);
         float dt = MathF.Min((float)gameTime.ElapsedGameTime.TotalSeconds, 1 / 30f);
@@ -285,10 +288,12 @@ sealed class ScreenHost : Game
         }
         if (campaignShots != null) { shotFrames++; CampaignShots(); }
         base.Update(gameTime);
+        FrameProf.End("update");
     }
 
     protected override void Draw(GameTime gameTime)
     {
+        FrameProf.Begin("draw");
         Ui.Now = (float)gameTime.TotalGameTime.TotalSeconds;
         Ui.Instant = campaignShots != null || lab.ShotsDir != null || title.ShotsDir != null || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("IRONFIELD_SHOTS"));
         Overflow.Frame(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
@@ -319,6 +324,8 @@ sealed class ScreenHost : Game
         }
         Ui.FrameEnd();
         base.Draw(gameTime);
+        FrameProf.End("draw");
+        FrameProf.Frame(mode.ToString());
     }
 
     /// Black over a screen that just came up, lifting over 0.35 s (a battle holds it longer under its name plate).
@@ -790,7 +797,14 @@ sealed class ScreenHost : Game
                 map.Stage("skills");
                 Shot("campaign-aura");
                 break;
-            case 55: Exit(); break;
+            case 55:
+            {
+                // A castle's esquires (docs/NOBILITY.md N2): the noble recruits tab.
+                var castle = c.S.Settlements.First(s => s.Kind == SettlementKind.Castle && s.Faction >= 0);
+                c.Captain.Contract = castle.Faction; c.Captain.Renown = 120; c.S.Gold = 1500; castle.Nobles = c.Scaled(3);
+                map.Stage("esquires", castle); Shot("campaign-esquires"); break;
+            }
+            case 56: Exit(); break;
         }
     }
 }
