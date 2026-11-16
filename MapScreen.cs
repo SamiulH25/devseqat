@@ -498,6 +498,7 @@ sealed partial class MapScreen
     {
         foreach (var p in C.S.Parties)
         {
+            if (p.Lair && p.Breed == "goblin") { bearers.Remove(p.Id); continue; }
             if (!bearers.TryGetValue(p.Id, out var u))
             {
                 var type = p.Kind switch
@@ -543,6 +544,7 @@ sealed partial class MapScreen
         foreach (var p in C.S.Parties) if (!p.Down) partySpots.Add(p.Pos);
         var carrion = C.S.Graves.Select(g => g.Pos).Concat(C.Map.Sites.Where(s => s.Kind == "battlefield").Select(s => s.Pos));
         life.SetCaravans(C.S.Parties.Where(p => p.Kind == PartyKind.Caravan && !p.Down).Select(p => (p.Id, p.Pos, p.Facing, p.Breed == "pilgrims")));
+        life.SetHoldouts(C.S.Parties.Where(p => p.Lair && !p.Down && p.Breed == "goblin").Select(p => (p.Id, p.Pos, p.Men, p.Tier)));
         life.Update(dt, focus, zoom, partySpots, carrion, (float)(C.S.Hours % 24), lifeQuality);
     }
 
@@ -687,6 +689,9 @@ sealed partial class MapScreen
                 at = C.S.Settlements.Where(s => s.Kind != SettlementKind.Village).OrderByDescending(s => C.HallFolk(s).Count).First();
                 C.Player.Pos = at.Pos; C.Player.Moving = false;
                 tab = "HALL"; panel = PanelKind.Settlement; note = ""; break;
+            case "esquires":
+                at = s!; C.Player.Pos = at.Pos; C.Player.Moving = false;
+                tab = "ESQUIRES"; panel = PanelKind.Settlement; note = ""; break;
             case "beat": panel = PanelKind.Beat; break;
             case "gameover": panel = PanelKind.GameOver; break;
             case "event": panel = PanelKind.Event; note = ""; break;

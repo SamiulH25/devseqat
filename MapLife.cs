@@ -283,6 +283,7 @@ sealed partial class MapLife
         foreach (var f in flushed) DrawFlock(f);
         if (hawk != null) DrawFlock(hawk);
         BuildPeople();
+        BuildHoldouts();
         if (buf.Length < mesh.V.Count) buf = new VertexPNCT[Math.Max(mesh.V.Count, buf.Length * 2)];
         CollectionsMarshal.AsSpan(mesh.V).CopyTo(buf);
         return (buf, mesh.V.Count / 3);
