@@ -31,7 +31,7 @@ public static class Troops
 
     sealed class TroopDto
     {
-        public string Id = "", Name = "", Class = "Infantry", Culture = "common", Breed = "", Order = "";
+        public string Id = "", Name = "", Class = "Infantry", Culture = "common", Breed = "", Order = "", Stock = "common";
         public string? Mount;
         public int Tier, Cost, UpgradeXp, Ammo;
         public string[] UpgradesTo = Array.Empty<string>();
@@ -72,7 +72,7 @@ public static class Troops
             var l = d.Look;
             troops[d.Id] = new UnitType
             {
-                Id = d.Id, Name = d.Name, Culture = d.Culture, Breed = d.Breed, Order = d.Order, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
+                Id = d.Id, Name = d.Name, Culture = d.Culture, Breed = d.Breed, Order = d.Order, Stock = d.Stock, Class = Enum.Parse<UnitClass>(d.Class, true), Tier = d.Tier, Cost = d.Cost, UpgradeXp = d.UpgradeXp,
                 UpgradesTo = d.UpgradesTo, MaxHp = d.Hp, Damage = d.Damage, Armor = d.Armor, Reach = d.Reach, Windup = d.Windup,
                 Recover = d.Recover, Speed = d.Speed, BlockChance = d.Block, Range = d.Range, Ammo = d.Ammo, VsMounted = d.VsMounted, VsMonster = d.VsMonster, Pierce = d.Pierce, Reload = d.Reload,
                 Leader = d.Leader, Size = d.Size, Drill = d.Drill, Traits = d.Traits, Spells = d.Spells, Mount = d.Mount == null ? null : mounts[d.Mount],
@@ -102,6 +102,8 @@ public static class Troops
             if ((t.Class == UnitClass.Cavalry) != (t.Mount != null)) yield return $"{t.Id}: cavalry needs a mount and only cavalry has one";
             if (t.Culture is not ("common" or "wild") && Factions.Culture(t.Culture) == null) yield return $"{t.Id}: unknown culture {t.Culture}";
             if (t.Wild != (t.Breed != "")) yield return $"{t.Id}: a wild troop needs a breed, and only wild troops have one";
+            if (t.Stock is not ("common" or "noble")) yield return $"{t.Id}: stock must be common or noble";
+            if (t.Noble && (t.Wild || t.Class is UnitClass.Caster or UnitClass.Captain)) yield return $"{t.Id}: only fighting men of the line are noble";
             if (t.Wild && t.UpgradesTo.Length > 0) yield return $"{t.Id}: wild troops do not upgrade";
             foreach (var u in t.UpgradesTo)
                 if (troops.TryGetValue(u, out var up) && up.Wild) yield return $"{t.Id}: men do not upgrade into {u}";

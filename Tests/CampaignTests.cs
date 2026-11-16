@@ -752,9 +752,10 @@ public static partial class SelfTest
         // Elite lines: azure ironguard -> paladins (tier V) needs an azure barracks in your realm.
         var ig = c.NewCompany("ironguard", "infantry", 6, 1000, town);
         c.Player.Companies.Add(ig);
-        Check(c.Promotable(c.Player, ig, ig.Stack("ironguard"), "paladins", 1, 5000, out _, out _) == 1, "a captain sworn to the Crown may train paladins");
+        Check(c.Promotable(c.Player, ig, ig.Stack("ironguard"), "paladins", 1, 5000, out _, out why) == 0 && why.Contains("NOBLE"), "ironguard cannot be drilled into noble paladins: " + why);
+        Check(c.Promotable(c.Player, ig, ig.Stack("ironguard"), "aegis_wardens", 1, 5000, out _, out _) == 1, "a captain sworn to the Crown may train aegis wardens");
         c.Captain.Contract = -1;
-        Check(c.Promotable(c.Player, ig, ig.Stack("ironguard"), "paladins", 1, 5000, out _, out why) == 0 && why.Contains("BARRACKS"), "a free captain may not: " + why);
+        Check(c.Promotable(c.Player, ig, ig.Stack("ironguard"), "aegis_wardens", 1, 5000, out _, out why) == 0 && why.Contains("BARRACKS"), "a free captain may not: " + why);
         // Each realm's lords field their own culture's troops.
         var w = Campaign.New(84);
         w.Player.Cooldown = 1e6f;
@@ -1583,6 +1584,9 @@ public static partial class SelfTest
         new Pilot(c).Run(200 * 24);
         CheckSound(c, "after 200 days");
         Check(c.S.Fallen.Count + c.Player.Companies.Sum(k => k.Roll.Count) > 0, "by day 200 the roll is in play");
+        // The player's planned route is a cache, replanned from where he stands after a load, so a save mid-march resumes by a
+        // slightly different path (skill practice, then everything after, drifts). Save him standing, as a player saves.
+        c.Player.Moving = false; c.Player.GoalSettlement = -1; c.Player.ChaseId = -1;
         var loaded = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
         string a = Drive(c, 60), b = Drive(loaded, 60);
         if (a != b)
@@ -1689,5 +1693,29 @@ public static partial class SelfTest
         Check(Shown(LogLevel.Notable) == 3, "notable: and the realm's news");
         Check(Shown(LogLevel.Everything) == 4, "everything: and the chatter");
         Check(c.S.Log[0].Level == LogLevel.Yours && c.S.Log[1].Level == LogLevel.Notable, "a line is classed by what it says when no level is given");
+    }
+
+    /// Noble birth (docs/NOBILITY.md): XP promotion never turns common troops into noble ones (no militia into paladins),
+    /// whatever the culture or barracks; a noble troop still trains up its own line.
+    static void NobleBirth()
+    {
+        Check(!Troops.Validate().Any(), "troops.json validates with stock");
+        Check(Troops.All.Count(t => t.Noble) >= 60, "the noble troops are marked");
+        var c = Campaign.New(95);
+        var co = c.Player.Companies.First();
+        Check(!c.CanEnterLine(c.Player, co, "levies", "crown_squires", out string why) && why.Contains("NOBLE"), "levies cannot become squires by drill");
+        Check(!c.CanEnterLine(c.Player, co, "ironguard", "paladins", out _), "ironguard cannot drill into paladins");
+        Check(c.CanEnterLine(c.Player, co, "levies", "shieldmen", out _), "levies still become shieldmen");
+        Check(c.CanEnterLine(c.Player, co, "paladins", "royal_crusaders", out _) || !Troops.Get("royal_crusaders").Noble, "a noble troop trains up the noble line");
+        // Everything XP can reach from the commoner roots without crossing the gate is common.
+        var seen = new HashSet<string>(); var todo = new Stack<string>(new[] { "levies", "clansmen" });
+        while (todo.Count > 0)
+        {
+            string id = todo.Pop();
+            if (!seen.Add(id)) continue;
+            foreach (var u in Troops.Get(id).UpgradesTo)
+                if (c.CanEnterLine(c.Player, co, id, u, out _) || Troops.Get(u).Order != "" || !Troops.Get(u).Noble) todo.Push(u);
+        }
+        Check(!seen.Any(id => Troops.Get(id).Noble && Troops.Get(id).Order == ""), "no noble troop is reachable by drilling levies or clansmen: " + string.Join(", ", seen.Where(id => Troops.Get(id).Noble && Troops.Get(id).Order == "")));
     }
 }

@@ -87,6 +87,9 @@ public sealed class UnitType
     public string Culture = "common";
     /// A knight order's signature troop (docs/archive/KNIGHT_ORDERS.md 4.1): its order id, "" for every other troop.
     public string Order = "";
+    /// "common" or "noble" (docs/NOBILITY.md): XP promotion never crosses from common to noble; nobles come from castles or by knighting.
+    public string Stock = "common";
+    public bool Noble => Stock == "noble";
     /// What a wild troop is ("goblin"); empty for men.
     public string Breed = "";
     public UnitClass Class;

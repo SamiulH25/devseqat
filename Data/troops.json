@@ -275,6 +275,7 @@
    "name": "Foot Knights",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "paladins",
@@ -338,6 +339,7 @@
    "name": "Paladins",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "iron_legionaries",
@@ -370,6 +372,7 @@
    "name": "Citadel Sentinels",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "immortals",
@@ -402,6 +405,7 @@
    "name": "Iron Legionaries",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "immortals",
@@ -434,6 +438,7 @@
    "name": "Royal Crusaders",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "sovereign_champions"
@@ -466,6 +471,7 @@
    "name": "Immortals",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 220,
@@ -495,6 +501,7 @@
    "name": "Bastion Lords",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 215,
@@ -523,6 +530,7 @@
    "name": "Sovereign Champions",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 225,
@@ -617,6 +625,7 @@
    "name": "Sword Brethren",
    "class": "Infantry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "grand_blademasters",
@@ -712,6 +721,7 @@
    "name": "Grand Blademasters",
    "class": "Infantry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "sword_saints",
@@ -745,6 +755,7 @@
    "name": "Dread Cleavers",
    "class": "Infantry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "archons"
@@ -776,6 +787,7 @@
    "name": "Sword Saints",
    "class": "Infantry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 225,
@@ -805,6 +817,7 @@
    "name": "Archons",
    "class": "Infantry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 230,
@@ -928,6 +941,7 @@
    "name": "Marshal Guard",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "imperial_marshals"
@@ -960,6 +974,7 @@
    "name": "Imperial Marshals",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 218,
@@ -1366,6 +1381,7 @@
    "name": "Thane Champions",
    "class": "Infantry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "high_king_chosen",
@@ -1399,6 +1415,7 @@
    "name": "Valhalla Reavers",
    "class": "Infantry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "blood_jarls"
@@ -1430,6 +1447,7 @@
    "name": "Iron Thanes",
    "class": "Infantry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "allfather_guard",
@@ -1462,6 +1480,7 @@
    "name": "High King's Chosen",
    "class": "Infantry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 228,
@@ -1491,6 +1510,7 @@
    "name": "Blood Jarls",
    "class": "Infantry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 222,
@@ -1519,6 +1539,7 @@
    "name": "Allfather's Guard",
    "class": "Infantry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 224,
@@ -2918,6 +2939,7 @@
    "name": "Knights",
    "class": "Cavalry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "banner_knights",
@@ -2951,6 +2973,7 @@
    "name": "Demi-Lancers",
    "class": "Cavalry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "banner_knights",
@@ -3082,6 +3105,7 @@
    "name": "Banner Knights",
    "class": "Cavalry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "paladin_knights",
@@ -3115,6 +3139,7 @@
    "name": "Cataphracts",
    "class": "Cavalry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "iron_cataphracts"
@@ -3251,6 +3276,7 @@
    "name": "Paladin Knights",
    "class": "Cavalry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "grail_knights",
@@ -3285,6 +3311,7 @@
    "name": "Iron Cataphracts",
    "class": "Cavalry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "imperial_cataphracts"
@@ -3317,6 +3344,7 @@
    "name": "Storm Riders",
    "class": "Cavalry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "thunder_lords",
@@ -3351,6 +3379,7 @@
    "name": "Khan's Guard",
    "class": "Cavalry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "golden_horde_masters",
@@ -3388,6 +3417,7 @@
    "name": "Royal Dragoons",
    "class": "Cavalry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "sovereign_dragoons"
@@ -3424,6 +3454,7 @@
    "name": "Grail Knights",
    "class": "Cavalry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "royal_destrier",
@@ -3454,6 +3485,7 @@
    "name": "Imperial Cataphracts",
    "class": "Cavalry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "cataphract_horse",
@@ -3484,6 +3516,7 @@
    "name": "Thunder Lords",
    "class": "Cavalry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "royal_destrier",
@@ -3514,6 +3547,7 @@
    "name": "Golden Horde Masters",
    "class": "Cavalry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "steppe_horse",
@@ -3547,6 +3581,7 @@
    "name": "Sovereign Dragoons",
    "class": "Cavalry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "royal_destrier",
@@ -5130,6 +5165,7 @@
    "name": "Emir's Mamluks",
    "class": "Cavalry",
    "culture": "southern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "sultans_guard"
@@ -5162,6 +5198,7 @@
    "name": "Sultan's Guard",
    "class": "Cavalry",
    "culture": "southern",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "royal_destrier",
@@ -5294,6 +5331,7 @@
    "name": "Kheshig",
    "class": "Cavalry",
    "culture": "steppe",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "khagans_own"
@@ -5330,6 +5368,7 @@
    "name": "Khagan's Own",
    "class": "Cavalry",
    "culture": "steppe",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "steppe_horse",
@@ -5883,6 +5922,7 @@
    "name": "Sun Brothers",
    "class": "Infantry",
    "culture": "order",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "ashen_brothers"
@@ -5914,6 +5954,7 @@
    "name": "Ashen Brothers",
    "class": "Infantry",
    "culture": "order",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "sun_templars"
@@ -5946,6 +5987,7 @@
    "name": "Sun Templars",
    "class": "Infantry",
    "culture": "order",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "ashen_saints"
@@ -5979,6 +6021,7 @@
    "name": "Ashen Saints",
    "class": "Infantry",
    "culture": "order",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 242,
@@ -6040,6 +6083,7 @@
    "name": "Knight Brothers",
    "class": "Cavalry",
    "culture": "order",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "sun_knights"
@@ -6071,6 +6115,7 @@
    "name": "Sun Knights",
    "class": "Cavalry",
    "culture": "order",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "ashen_knights"
@@ -6103,6 +6148,7 @@
    "name": "Ashen Knights",
    "class": "Cavalry",
    "culture": "order",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "grand_masters"
@@ -6136,6 +6182,7 @@
    "name": "Grand Masters",
    "class": "Cavalry",
    "culture": "order",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "royal_destrier",
@@ -6259,6 +6306,7 @@
    "name": "Emir's Guard",
    "class": "Infantry",
    "culture": "southern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "lions_of_the_sun"
@@ -6290,6 +6338,7 @@
    "name": "Lions of the Sun",
    "class": "Infantry",
    "culture": "southern",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 220,
@@ -6578,6 +6627,7 @@
    "name": "Noyan's Guard",
    "class": "Infantry",
    "culture": "steppe",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "khagans_axes"
@@ -6610,6 +6660,7 @@
    "name": "Khagan's Axes",
    "class": "Infantry",
    "culture": "steppe",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 228,
@@ -6888,6 +6939,7 @@
    "name": "Doge's Guard",
    "class": "Infantry",
    "culture": "league",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "lion_guard"
@@ -6919,6 +6971,7 @@
    "name": "Lion Guard",
    "class": "Infantry",
    "culture": "league",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "cost": 220,
@@ -7043,6 +7096,7 @@
    "name": "Doge's Lances",
    "class": "Cavalry",
    "culture": "league",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "lion_knights"
@@ -7076,6 +7130,7 @@
    "name": "Lion Knights",
    "class": "Cavalry",
    "culture": "league",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "royal_destrier",
@@ -7431,6 +7486,7 @@
    "name": "Lily Squires",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "lily_knights"
@@ -7463,6 +7519,7 @@
    "name": "Lily Knights",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "lily_wardens"
@@ -7495,6 +7552,7 @@
    "name": "Wardens of the Lily",
    "class": "Infantry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [],
    "cost": 208,
@@ -7525,6 +7583,7 @@
    "name": "Rose Blades",
    "class": "Infantry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "rose_swordmasters"
@@ -7557,6 +7616,7 @@
    "name": "Rose Swordmasters",
    "class": "Infantry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "thorn_knights"
@@ -7589,6 +7649,7 @@
    "name": "Thorn Knights",
    "class": "Infantry",
    "culture": "crimson",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [],
    "cost": 211,
@@ -7619,6 +7680,7 @@
    "name": "Wolf Thegns",
    "class": "Infantry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "wolfsworn"
@@ -7652,6 +7714,7 @@
    "name": "Wolfsworn",
    "class": "Infantry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "winter_wolves"
@@ -7685,6 +7748,7 @@
    "name": "Winter Wolves",
    "class": "Infantry",
    "culture": "northern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [],
    "cost": 213,
@@ -7715,6 +7779,7 @@
    "name": "Falcon Riders",
    "class": "Cavalry",
    "culture": "southern",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "falcon_knights"
@@ -7748,6 +7813,7 @@
    "name": "Falcon Knights",
    "class": "Cavalry",
    "culture": "southern",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "sun_hawks"
@@ -7782,6 +7848,7 @@
    "name": "Sun Hawks",
    "class": "Cavalry",
    "culture": "southern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [],
    "mount": "destrier",
@@ -7813,6 +7880,7 @@
    "name": "Sky Riders",
    "class": "Cavalry",
    "culture": "steppe",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "sky_archers"
@@ -7848,6 +7916,7 @@
    "name": "Sky Archers",
    "class": "Cavalry",
    "culture": "steppe",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "sky_sworn"
@@ -7885,6 +7954,7 @@
    "name": "Sky-Sworn",
    "class": "Cavalry",
    "culture": "steppe",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [],
    "mount": "steppe_horse",
@@ -7985,6 +8055,7 @@
    "name": "Lantern Knights",
    "class": "Skirmisher",
    "culture": "league",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [],
    "cost": 198,
@@ -8016,6 +8087,7 @@
    "name": "Hollow Squires",
    "class": "Infantry",
    "culture": "common",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "hollow_knights"
@@ -8047,6 +8119,7 @@
    "name": "Hollow Knights",
    "class": "Infantry",
    "culture": "common",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "hollow_lords"
@@ -8082,6 +8155,7 @@
    "name": "Lords of the Hollow Crown",
    "class": "Infantry",
    "culture": "common",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [],
    "cost": 210,
@@ -8114,6 +8188,7 @@
    "name": "Sworn Brothers",
    "class": "Infantry",
    "culture": "common",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "sworn_masters"
@@ -8151,6 +8226,7 @@
    "name": "Masters of the Order",
    "class": "Infantry",
    "culture": "common",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [],
    "cost": 215,
@@ -8218,6 +8294,7 @@
    "name": "Crown Squires",
    "class": "Cavalry",
    "culture": "azure",
+   "stock": "noble",
    "tier": 2,
    "upgradesTo": [
     "lancers"
@@ -8753,6 +8830,7 @@
    "name": "Sultan's Camels",
    "class": "Cavalry",
    "culture": "southern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [],
    "mount": "camel",
@@ -8935,6 +9013,7 @@
    "name": "Sword Dancers",
    "class": "Infantry",
    "culture": "southern",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "saints_of_the_sand"
@@ -8965,6 +9044,7 @@
    "name": "Saints of the Sand",
    "class": "Infantry",
    "culture": "southern",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "hp": 198,
@@ -9082,6 +9162,7 @@
    "name": "Khan's Lancers",
    "class": "Cavalry",
    "culture": "steppe",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "ironclad_khans"
@@ -9113,6 +9194,7 @@
    "name": "Ironclad Khans",
    "class": "Cavalry",
    "culture": "steppe",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "mount": "cataphract_horse",
@@ -9378,6 +9460,7 @@
    "name": "Admiral's Guard",
    "class": "Infantry",
    "culture": "league",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [],
    "hp": 172,
@@ -9608,6 +9691,7 @@
    "name": "Hammer Brothers",
    "class": "Infantry",
    "culture": "order",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "iron_hammers"
@@ -9638,6 +9722,7 @@
    "name": "Iron Hammers",
    "class": "Infantry",
    "culture": "order",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [
     "hammers_of_the_sun"
@@ -9668,6 +9753,7 @@
    "name": "Hammers of the Sun",
    "class": "Infantry",
    "culture": "order",
+   "stock": "noble",
    "tier": 6,
    "upgradesTo": [
     "ashen_hammers"
@@ -9699,6 +9785,7 @@
    "name": "Ashen Hammers",
    "class": "Infantry",
    "culture": "order",
+   "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
    "hp": 198,
@@ -9759,6 +9846,7 @@
    "name": "Veteran Turcopoles",
    "class": "Cavalry",
    "culture": "order",
+   "stock": "noble",
    "tier": 4,
    "upgradesTo": [
     "chapter_turcopoles"
@@ -9792,6 +9880,7 @@
    "name": "Chapter Turcopoles",
    "class": "Cavalry",
    "culture": "order",
+   "stock": "noble",
    "tier": 5,
    "upgradesTo": [],
    "mount": "courser",
