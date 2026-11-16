@@ -49,28 +49,28 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public string HeadKey => Face != "man" ? "head." + Face : Visage >= 0 ? "head.v" + Visage : "head";
     public bool NeutralHead => Face == "man" && Visage >= 0;
     // "coif": a mail hood.
-    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "greathelm", "spangen", "turban", "steppe", "coif", "spike", "barbute", "furcap", "bucket" };
+    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "sallet_crest", "sallet_bevor", "greathelm", "greathelm_horns", "greathelm_wings", "greathelm_crown", "armet", "bascinet", "gjermundbu", "morion", "kulah", "spangen", "spangen_horns", "spangen_wolf", "turban", "steppe", "steppe_mask", "steppe_horns", "coif", "spike", "barbute", "barbute_crest", "furcap", "bucket", "brigand_hat" };
     // Goblin kit: "rags" (bare green arms), "hide" (bare green legs), "bare" feet, "claw" hands.
     // Undead kit: "bones" (a ribcage and bare bone), "shroud" (a ghoul's grave wrappings over grey skin), "robe" (a necromancer's), "bone" feet and hands.
     // The new realms (docs/archive/WORLD.md W4): "lamellar" (rows of small plates), "deel" (a long wrapped steppe coat), "brigandine"
     // (cloth over riveted plates); the "turban" wound over a spiked cap, the fur-brimmed "steppe" helm; the tall "pavise".
-    public static readonly string[] Bodies = { "tunic", "gambeson", "mail", "plate", "fur", "rags", "bones", "shroud", "robe", "lamellar", "deel", "brigandine" };
-    public static readonly string[] LegsKinds = { "cloth", "mail", "plate", "hide", "bones", "shroud" };
-    public static readonly string[] FeetKinds = { "boots", "sabatons", "bare", "bone" };
+    public static readonly string[] Bodies = { "tunic", "gambeson", "gambeson_fur", "mail", "plate", "plate_gilded", "plate_fur", "breastplate", "coatofplates", "scale", "scale_iron", "mail_fur", "lamellar_gilded", "leather", "fur", "rags", "bones", "shroud", "robe", "lamellar", "deel", "deel_fur", "brigandine", "brigandine_gilded" };
+    public static readonly string[] LegsKinds = { "cloth", "mail", "splint", "plate", "furlegs", "hide", "bones", "shroud" };
+    public static readonly string[] FeetKinds = { "boots", "ridingboots", "furboots", "sabatons", "bare", "bone" };
     public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw", "bone" };
-    public static readonly string[] Shields = { "none", "round", "kite", "heater", "pavise", "buckler", "targe", "dhal" };
-    public static readonly string[] Weapons = { "sword", "longsword", "axe", "spear", "pike", "lance", "bow", "longbow", "crossbow", "greatsword", "daneaxe", "club", "staff", "mace",
-        "halberd", "glaive", "javelin", "sling", "scimitar", "falchion", "warhammer" };
-    public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "crossbow";
+    public static readonly string[] Shields = { "none", "round", "round_bossed", "kite", "tower", "heater", "heater_gilded", "pavise", "buckler", "targe", "dhal", "kalkan" };
+    public static readonly string[] Weapons = { "sword", "longsword", "longsword_gilded", "axe", "spear", "pike", "lance", "pennonlance", "bow", "longbow", "recurve", "crossbow", "arbalest", "greatsword", "flamberge", "daneaxe", "bardiche", "club", "staff", "mace", "morningstar",
+        "halberd", "billhook", "glaive", "javelin", "sling", "scimitar", "falchion", "warhammer" };
+    public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "recurve" or "crossbow" or "arbalest";
     /// Anything that is shot or thrown, so needs ammo: bows, javelins and slings.
     public static bool Missile(string weapon) => Ranged(weapon) || weapon is "javelin" or "sling";
     public static Grip GripOf(string weapon) => weapon switch
     {
-        "greatsword" or "daneaxe" or "club" or "warhammer" => Grip.Two,
-        "spear" or "pike" or "halberd" or "glaive" => Grip.Pole,
-        "lance" => Grip.Lance,
-        "bow" or "longbow" => Grip.Bow,
-        "crossbow" => Grip.Crossbow,
+        "greatsword" or "flamberge" or "daneaxe" or "bardiche" or "club" or "warhammer" => Grip.Two,
+        "spear" or "pike" or "halberd" or "billhook" or "glaive" => Grip.Pole,
+        "lance" or "pennonlance" => Grip.Lance,
+        "bow" or "longbow" or "recurve" => Grip.Bow,
+        "crossbow" or "arbalest" => Grip.Crossbow,
         "staff" => Grip.Staff,
         "javelin" => Grip.Thrown,
         "sling" => Grip.Sling,

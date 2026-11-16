@@ -13,7 +13,7 @@ namespace Ironfield;
 /// Sizes in pixels times Style.Px give the part's size in metres; the puppet skeleton in Puppet.cs relies on them.
 public sealed class SpriteSheet
 {
-    public const int W = 1024, H = 1024;
+    public const int W = 2048, H = 2048;
     public readonly Color[] Pixels = new Color[W * H];
     public readonly Dictionary<string, Rectangle> Rects = new();
     readonly List<Part> pending = new();
@@ -23,9 +23,10 @@ public sealed class SpriteSheet
 
     public static readonly Dictionary<string, float> Grip = new()
     {
-        ["sword"] = 0.233f, ["longsword"] = 0.17f, ["axe"] = 0.2f, ["spear"] = 0.3f, ["pike"] = 0.3f, ["lance"] = 0.3f, ["bow"] = 0.5f, ["longbow"] = 0.5f,
-        ["crossbow"] = 0.55f, ["greatsword"] = 0.12f, ["daneaxe"] = 0.3f, ["club"] = 0.22f, ["staff"] = 0.55f, ["mace"] = 0.2f,
-        ["halberd"] = 0.35f, ["glaive"] = 0.35f, ["javelin"] = 0.45f, ["sling"] = 0.1f, ["scimitar"] = 0.22f, ["falchion"] = 0.24f, ["warhammer"] = 0.3f,
+        ["sword"] = 0.20f, ["longsword"] = 0.17f, ["longsword_gilded"] = 0.17f, ["axe"] = 0.2f, ["spear"] = 0.3f, ["pike"] = 0.3f, ["lance"] = 0.3f, ["pennonlance"] = 0.3f,
+        ["bow"] = 0.5f, ["longbow"] = 0.5f, ["recurve"] = 0.5f, ["crossbow"] = 0.55f, ["arbalest"] = 0.55f, ["greatsword"] = 0.15f, ["flamberge"] = 0.15f,
+        ["daneaxe"] = 0.3f, ["bardiche"] = 0.3f, ["club"] = 0.22f, ["staff"] = 0.55f, ["mace"] = 0.2f, ["morningstar"] = 0.2f,
+        ["halberd"] = 0.35f, ["billhook"] = 0.35f, ["glaive"] = 0.35f, ["javelin"] = 0.45f, ["sling"] = 0.1f, ["scimitar"] = 0.19f, ["falchion"] = 0.19f, ["warhammer"] = 0.3f,
     };
 
     static readonly string[] Views = { "f", "s", "b" };
@@ -359,27 +360,47 @@ public sealed class SpriteSheet
                 if (v != "f") c.Rect(2, 10.5f, v == "s" ? 11 : 16, 13, mail);
                 return c;
             }
-            case "sallet":
+            case "brigand_hat":
             {
-                var c = new Canvas(18, 13);
-                c.Fill((x, y) => InEl(x, y, 9, 8.2f, 8, 7.7f) && y < 9.3f, (x, y) => new Vector3((x - 9) / 9, (y - 8) / 9, 0.6f), plate);
-                if (v == "s") c.Body(7.5f, 12.8f, y => (0.3f, 9 - (y - 7.5f) * 0.6f), plate, -0.1f);
-                else if (v == "b") c.Body(8.5f, 12.8f, y => (1 + (y - 8.5f) * 0.4f, 17 - (y - 8.5f) * 0.4f), plate, -0.1f);
-                else for (int x = 1; x < 17; x++) c.Set(x, 9, iron, 0.2f);
+                var c = new Canvas(22, 12);
+                c.Ellipse(11, 7, 6.2f, 5.5f, leather);
+                c.Rect(1, 8.5f, 21, 10.2f, leather, -0.12f);
+                c.Rect(5, 7, 17, 8.5f, trim, 0.1f);
+                return c;
+            }
+            case "sallet":
+            case "sallet_crest":
+            case "sallet_bevor":
+            {
+                int top = kind == "sallet_crest" ? 3 : 0;
+                var c = new Canvas(18, 13 + top + (kind == "sallet_bevor" ? 4 : 0));
+                c.Fill((x, y) => InEl(x, y, 9, top + 8.2f, 8, 7.7f) && y < top + 9.3f, (x, y) => new Vector3((x - 9) / 9, (y - top - 8) / 9, 0.6f), plate);
+                if (v == "s") c.Body(top + 7.5f, top + 12.8f, y => (0.3f, 9 - (y - top - 7.5f) * 0.6f), plate, -0.1f);
+                else if (v == "b") c.Body(top + 8.5f, top + 12.8f, y => (1 + (y - top - 8.5f) * 0.4f, 17 - (y - top - 8.5f) * 0.4f), plate, -0.1f);
+                else for (int x = 1; x < 17; x++) c.Set(x, top + 9, iron, 0.2f);
+                if (kind == "sallet_crest") c.Rect(8, 0.5f, 10, top + 6, brass, 0.3f);
+                if (kind == "sallet_bevor") c.Rect(3, top + 10.5f, 15, top + 16.5f, plate, -0.08f);
                 return c;
             }
             case "spangen":
+            case "spangen_horns":
+            case "spangen_wolf":
             {
-                // The northern clans' helm: a riveted cone with a nasal, brass bands and short horns.
+                // The northern clans' helm: plain riveted cone, tall horns, or wolf-fur crest.
                 var c = new Canvas(24, 15);
                 c.Body(2.3f, 11, y => (12 - 1 - (y - 2.3f) * 0.82f, 12 + 1 + (y - 2.3f) * 0.82f), plate);
                 c.Rect(4.5f, 9.5f, 19.5f, 11.5f, brass);
                 for (int y = 3; y < 10; y++) c.Set(12, y, brass, 0.4f);
                 if (v == "f") c.Rect(11, 10, 13, 15, iron, 0.1f);
                 if (v == "s") c.Rect(18, 10, 20, 15, iron, 0.1f);
-                if (v != "s")
-                    for (int i = 0; i < 6; i++) { c.Set(4 - i / 2, 8 - i, linen, 0.3f); c.Set(20 + i / 2, 8 - i, linen, 0.3f); c.Set(5 - i / 2, 8 - i, linen); c.Set(19 + i / 2, 8 - i, linen); }
-                else for (int i = 0; i < 6; i++) { c.Set(11 - i / 2, 7 - i, linen, 0.3f); c.Set(12 - i / 2, 7 - i, linen); }
+                if (kind == "spangen_wolf") c.Rect(6, 1, 18, 4.5f, fur);
+                if (kind != "spangen_wolf")
+                {
+                    int hLen = kind == "spangen_horns" ? 8 : 6;
+                    if (v != "s")
+                        for (int i = 0; i < hLen; i++) { c.Set(Math.Max(0, 4 - i / 2), Math.Max(0, 8 - i), linen, 0.3f); c.Set(Math.Min(23, 20 + i / 2), Math.Max(0, 8 - i), linen, 0.3f); c.Set(Math.Max(0, 5 - i / 2), Math.Max(0, 8 - i), linen); c.Set(Math.Min(23, 19 + i / 2), Math.Max(0, 8 - i), linen); }
+                    else for (int i = 0; i < hLen; i++) { c.Set(Math.Max(0, 11 - i / 2), Math.Max(0, 7 - i), linen, 0.3f); c.Set(Math.Max(0, 12 - i / 2), Math.Max(0, 7 - i), linen); }
+                }
                 return c;
             }
             case "turban":
@@ -405,14 +426,19 @@ public sealed class SpriteSheet
                 return c;
             }
             case "steppe":
+            case "steppe_mask":
+            case "steppe_horns":
             {
-                // A tall steel cone with a fur brim and a tassel at the point (the Khaganate).
+                // A tall steel cone with a fur brim (plus iron war-mask or side horns).
                 var c = new Canvas(20, 17);
                 c.Body(2, 13, y => (10 - 0.8f - (y - 2) * 0.68f, 10 + 0.8f + (y - 2) * 0.68f), plate);
                 c.Rect(1.5f, 11.5f, 18.5f, 15.5f, fur);
                 for (int x = 1; x < 19; x += 2) c.Shade(x, 15, -0.3f);
                 c.Body(0, 2.5f, y => (9.2f - y * 0.2f, 10.8f + y * 0.2f), trim);
                 for (int y = 4; y < 11; y++) c.Set(10, y, brass, 0.4f);
+                if (kind == "steppe_mask" && v != "b") { c.Rect(v == "s" ? 13 : 6, 13.5f, v == "s" ? 18 : 14, 17, iron, 0.1f); }
+                if (kind == "steppe_horns" && v != "s")
+                    for (int i = 0; i < 5; i++) { c.Set(3 - i / 2, 10 - i, linen, 0.3f); c.Set(17 + i / 2, 10 - i, linen, 0.3f); }
                 return c;
             }
             case "spike":
@@ -427,13 +453,16 @@ public sealed class SpriteSheet
                 return c;
             }
             case "barbute":
+            case "barbute_crest":
             {
-                // A close steel helm down to the jaw with a T-shaped opening for the eyes and mouth (the League).
-                var c = new Canvas(18, 19);
-                c.Fill((x, y) => InEl(x, y, 9, 9.5f, 8.2f, 9.2f) && y > 0.3f, (x, y) => new Vector3((x - 9) / 9, (y - 8) / 10, 0.6f), plate);
-                if (v == "f") { for (int x = 4; x < 14; x++) c.Set(x, 8, ink); for (int y = 8; y < 17; y++) { c.Set(8, y, ink); c.Set(9, y, ink); } }
-                else if (v == "s") for (int y = 8; y < 17; y++) c.Set(16, y, ink);
-                for (int y = 1; y < 8; y++) c.Set(9, y, iron, 0.3f); // the ridge
+                // A close steel helm down to the jaw with a T-shaped opening for the eyes and mouth (plus optional brass crest).
+                int top = kind == "barbute_crest" ? 3 : 0;
+                var c = new Canvas(18, 19 + top);
+                c.Fill((x, y) => InEl(x, y, 9, top + 9.5f, 8.2f, 9.2f) && y > top + 0.3f, (x, y) => new Vector3((x - 9) / 9, (y - top - 8) / 10, 0.6f), plate);
+                if (v == "f") { for (int x = 4; x < 14; x++) c.Set(x, top + 8, ink); for (int y = top + 8; y < top + 17; y++) { c.Set(8, y, ink); c.Set(9, y, ink); } }
+                else if (v == "s") for (int y = top + 8; y < top + 17; y++) c.Set(16, y, ink);
+                for (int y = top + 1; y < top + 8; y++) c.Set(9, y, iron, 0.3f); // the ridge
+                if (kind == "barbute_crest") c.Rect(8, 0.5f, 10, top + 5, brass, 0.35f);
                 return c;
             }
             case "furcap":
@@ -462,6 +491,159 @@ public sealed class SpriteSheet
                 }
                 else if (v == "s") for (int x = 10; x < 17; x++) c.Set(x, 8, ink);
                 else c.Rect(8, 3, 10, 18, brass, 0.3f);
+                return c;
+            }
+            case "armet":
+            {
+                // Closed visored armet: rounded skull, pointed snout visor, tight neck bevor.
+                var c = new Canvas(19, 20);
+                c.Fill((x, y) => InEl(x, y, 9.5f, 8.5f, 7.8f, 8.2f) && y > 0.3f, (x, y) => new Vector3((x - 9.5f) / 8, (y - 7.5f) / 9, 0.6f), plate);
+                c.Body(10.5f, 19.8f, y => (3.5f + (y - 10.5f) * 0.25f, 15.5f - (y - 10.5f) * 0.25f), plate, -0.05f);
+                if (v == "f")
+                {
+                    for (int x = 4; x < 15; x++) if (x is not 9) c.Set(x, 8, ink);
+                    for (int y = 9; y < 14; y++) c.Set(9, y, steel, 0.5f);
+                    foreach (var (bx, by) in new[] { (6, 11), (12, 11), (7, 13), (11, 13) }) c.Set(bx, by, ink);
+                }
+                else if (v == "s")
+                {
+                    c.Body(6f, 14f, y => (12f, 18.2f - MathF.Abs(y - 9.5f) * 0.7f), plate, 0.1f);
+                    for (int x = 12; x < 18; x++) c.Set(x, 8, ink);
+                }
+                else
+                {
+                    for (int y = 2; y < 18; y++) c.Shade(9, y, -0.25f);
+                    for (int x = 3; x < 16; x++) c.Shade(x, 12, -0.25f);
+                }
+                return c;
+            }
+            case "bascinet":
+            {
+                // Pointed houndskull bascinet with a mail aventail over the shoulders.
+                var c = new Canvas(19, 20);
+                c.Body(0.5f, 12.5f, y => (9.5f - 1.5f - y * 0.65f, 9.5f + 1.5f + y * 0.65f), plate);
+                c.Rect(2, 12, 17, 19.8f, mail);
+                if (v == "f")
+                {
+                    for (int x = 4; x < 15; x++) if (x is not 9) c.Set(x, 7, ink);
+                    c.Body(7f, 13.5f, y => (7.5f, 11.5f), steel, 0.2f);
+                    foreach (var (bx, by) in new[] { (6, 10), (12, 10) }) c.Set(bx, by, ink);
+                }
+                else if (v == "s")
+                {
+                    c.Body(6f, 12.5f, y => (12f, 18.6f - MathF.Abs(y - 9f) * 0.75f), plate, 0.12f);
+                    for (int x = 12; x < 18; x++) c.Set(x, 7, ink);
+                }
+                return c;
+            }
+            case "gjermundbu":
+            {
+                // Norse spectacle helm: riveted dome, iron brow-goggles, nasal and mail aventail.
+                var c = new Canvas(20, 16);
+                c.Fill((x, y) => InEl(x, y, 10, 9.5f, 8.2f, 8.2f) && y < 10.5f, (x, y) => new Vector3((x - 10) / 8, (y - 8) / 8, 0.6f), plate);
+                for (int y = 2; y < 10; y++) c.Set(10, y, brass, 0.4f);
+                c.Rect(2, 9.5f, 18, 11.2f, iron, 0.05f);
+                if (v == "f")
+                {
+                    c.Rect(9, 10, 11, 15.5f, iron, 0.1f);
+                    for (int x = 4; x < 8; x++) c.Set(x, 12, iron);
+                    for (int x = 12; x < 16; x++) c.Set(x, 12, iron);
+                }
+                else if (v == "s") c.Rect(16, 10, 18, 15.5f, iron, 0.1f);
+                if (v != "f") c.Rect(2, 11, v == "s" ? 12 : 18, 15.8f, mail);
+                return c;
+            }
+            case "morion":
+            {
+                // Swept-brim combed morion (League & marine infantry).
+                var c = new Canvas(22, 16);
+                c.Fill((x, y) => InEl(x, y, 11, 11, 7.6f, 8.5f) && y < 12f, (x, y) => new Vector3((x - 11) / 8, (y - 10) / 8, 0.6f), plate);
+                c.Body(0.5f, 5f, y => (10f, 12f), steel, 0.15f); // tall comb
+                for (int x = 1; x < 21; x++)
+                {
+                    float lift = MathF.Abs(x - 11) * 0.22f;
+                    c.Set(x, (int)(12.5f - lift), plate, 0.1f);
+                    c.Set(x, (int)(13.5f - lift), iron, -0.05f);
+                }
+                return c;
+            }
+            case "kulah":
+            {
+                // Domed Kulah-Khud with nasal bar, twin brow-plumes and mail aventail.
+                var c = new Canvas(20, 19);
+                c.Fill((x, y) => InEl(x, y, 10, 11, 7.6f, 8.2f) && y < 12f, (x, y) => new Vector3((x - 10) / 8, (y - 10) / 8, 0.6f), plate);
+                for (int y = 0; y < 4; y++) c.Set(10, y, brass, 0.5f); // top spike
+                c.Rect(2.5f, 10.5f, 17.5f, 12.2f, brass);
+                if (v == "f")
+                {
+                    c.Rect(9, 10, 11, 16, steel, 0.2f);
+                    for (int i = 0; i < 4; i++) { c.Set(6 - i / 2, 7 - i, cloth, 0.3f); c.Set(14 + i / 2, 7 - i, cloth, 0.3f); }
+                }
+                else if (v == "s")
+                {
+                    c.Rect(15.5f, 10, 17.5f, 16, steel, 0.2f);
+                    for (int i = 0; i < 4; i++) c.Set(13 - i / 2, 7 - i, cloth, 0.3f);
+                }
+                c.Rect(2.5f, 12, v == "s" ? 13 : 17.5f, 18.8f, mail);
+                return c;
+            }
+            case "greathelm_horns":
+            case "greathelm_wings":
+            case "greathelm_crown":
+            {
+                // Ornamented greathelms (7px headroom above the 18x21 barrel): Teutonic horns, swept wings, or royal crown.
+                var c = new Canvas(28, 28);
+                int ox = 5, oy = 7;
+                c.Rect(ox + 1.3f, oy + 0.3f, ox + 16.7f, oy + 21, plate);
+                foreach (var (cx, cy) in new[] { (1, 0), (2, 0), (1, 1), (16, 0), (15, 0), (16, 1) }) c.Clear(ox + cx, oy + cy);
+                for (int x = 0; x < 18; x++) { c.Shade(ox + x, oy, -0.5f); c.Shade(ox + x, oy + 1, -0.3f); }
+                if (v != "b")
+                    for (int y = 0; y < 21; y++) for (int x = 0; x < 18; x++)
+                        if (c.Has(ox + x, oy + y)) c.Set(ox + x, oy + y, plate, (x is 4 or 5 ? 0.78f : 0.62f) - MathF.Max(0, x - 5) * 0.022f - (x < 2 ? 0.1f : 0) - (y < 2 ? 0.2f : 0));
+                if (v == "f")
+                {
+                    for (int x = 3; x < 15; x++) if (x is not (8 or 9)) { c.Set(ox + x, oy + 8, ink); c.Set(ox + x, oy + 9, ink); }
+                    c.Rect(ox + 8, oy + 10, ox + 10, oy + 20, brass, 0.1f);
+                }
+                else if (v == "s") { for (int x = 10; x < 17; x++) { c.Set(ox + x, oy + 8, ink); c.Set(ox + x, oy + 9, ink); } }
+                else
+                {
+                    for (int y = 0; y < 21; y++) for (int x = 0; x < 18; x++)
+                        if (c.Has(ox + x, oy + y)) c.Set(ox + x, oy + y, plate, 0.6f - MathF.Abs(x - 8.5f) * 0.018f - (y > 12 ? (y - 12) * 0.02f : 0));
+                    for (int y = 2; y < 18; y++) { c.Shade(ox + 8, oy + y, -0.3f); c.Shade(ox + 9, oy + y, 0.2f); }
+                }
+                if (kind == "greathelm_horns")
+                {
+                    if (v != "s")
+                        for (int i = 0; i < 9; i++)
+                        {
+                            int lx = ox + 1 - i / 2 + (i > 5 ? (i - 5) : 0), rx = ox + 16 + i / 2 - (i > 5 ? (i - 5) : 0), hy = oy + 3 - i;
+                            c.Set(lx, hy, linen, 0.25f); c.Set(lx + 1, hy, linen, -0.05f);
+                            c.Set(rx, hy, linen, 0.25f); c.Set(rx - 1, hy, linen, -0.05f);
+                        }
+                    else
+                        for (int i = 0; i < 9; i++) { int hx = ox + 8 - i / 2 + (i > 5 ? (i - 5) : 0), hy = oy + 2 - i; c.Set(hx, hy, linen, 0.25f); c.Set(hx + 1, hy, linen); }
+                }
+                else if (kind == "greathelm_wings")
+                {
+                    if (v != "s")
+                        for (int i = 0; i < 9; i++)
+                        {
+                            int lx = ox + 1 - i / 2, rx = ox + 16 + i / 2, wy = oy + 4 - i;
+                            for (int k = 0; k < 3; k++) { c.Set(lx - k, wy, linen, 0.72f - k * 0.12f); c.Set(rx + k, wy, linen, 0.72f - k * 0.12f); }
+                        }
+                    else
+                        for (int i = 0; i < 9; i++)
+                        {
+                            int wx = ox + 7 - i / 2, wy = oy + 4 - i;
+                            for (int k = 0; k < 4; k++) c.Set(wx - k, wy, linen, 0.72f - k * 0.1f);
+                        }
+                }
+                else // greathelm_crown
+                {
+                    c.Rect(ox + 2, oy - 1, ox + 16, oy + 1, brass, 0.25f);
+                    foreach (int px in new[] { ox + 3, ox + 7, ox + 10, ox + 14 }) { c.Set(px, oy - 3, brass, 0.5f); c.Set(px, oy - 2, brass, 0.35f); }
+                }
                 return c;
             }
             default: // greathelm
@@ -513,23 +695,60 @@ public sealed class SpriteSheet
         bool side = v == "s";
         var c = new Canvas(side ? 13 : 20, 23);
         Func<float, (float, float)> span = side ? SideSpan : TorsoSpan;
-        var m = body switch { "gambeson" => quilt, "mail" => mail, "plate" => plate, "fur" => clothDk, "rags" => rag, "shroud" => shroud, "robe" => robe,
-            "lamellar" => plate, "deel" => cloth, "brigandine" => felt, _ => cloth };
+        var m = body switch { "gambeson" or "gambeson_fur" => quilt, "mail" or "mail_fur" => mail, "plate" or "plate_gilded" or "plate_fur" or "breastplate" => plate, "fur" => clothDk, "rags" => rag, "shroud" => shroud, "robe" => robe,
+            "lamellar" or "lamellar_gilded" or "scale" or "scale_iron" => plate, "deel" or "deel_fur" => cloth, "brigandine" or "brigandine_gilded" or "coatofplates" => felt, "leather" => leather, _ => cloth };
         if (body == "bones") return Ribs(c, span, side);
-        if (body == "plate") PlateTorso(c, v);
+        if (body is "plate" or "plate_gilded" or "plate_fur")
+        {
+            PlateTorso(c, v);
+            if (body == "plate_gilded")
+            {
+                c.Body(1.5f, 3.2f, span, brass, 0.4f);
+                c.Body(13.5f, 15.6f, span, brass, 0.35f);
+                if (v == "f") for (int y = 4; y < 13; y++) c.Set(10, y, brass, 0.5f);
+            }
+            else if (body == "plate_fur")
+            {
+                c.Body(0, 4.2f, span, fur);
+                for (int x = 1; x < c.W - 1; x += 2) c.Shade(x, 4, -0.35f);
+            }
+        }
+        else if (body == "breastplate")
+        {
+            c.Body(0, 23, span, cloth);
+            c.Body(1.5f, 13.5f, span, plate);
+            c.Body(13.5f, 15.6f, span, leather);
+            if (v == "f") { c.Set(9, 14, brass, 0.6f); c.Set(10, 14, brass, 0.6f); }
+        }
+        else if (body == "coatofplates")
+        {
+            c.Body(0, 23, span, felt);
+            for (int y = 3; y < 14; y += 3) for (int x = 2; x < c.W - 2; x += 3) if (c.Has(x, y)) c.Set(x, y, steel, 0.55f);
+            c.Body(13.5f, 15.6f, span, leather);
+        }
+        else if (body is "scale" or "scale_iron")
+        {
+            c.Body(0, 23, span, body == "scale" ? brass : iron, 0.1f);
+            for (int y = 2; y < 16; y++) for (int x = 0; x < c.W; x++)
+                if (c.Has(x, y) && (y % 2 == 0) && ((x + y) % 3 == 0)) c.Shade(x, y, -0.35f);
+            c.Body(13.5f, 15.6f, span, leather);
+            c.Body(15.6f, 23, span, clothDk);
+        }
         else
         {
             c.Body(0, 23, span, m);
             if (body == "tunic") c.Body(20.5f, 23, span, clothDk);
+            if (body == "leather") { for (int x = 3; x < c.W - 3; x += 3) for (int y = 4; y < 13; y += 3) if (c.Has(x, y)) c.Set(x, y, brass, 0.35f); }
         }
         // Belt with a buckle.
-        if (body != "plate") c.Body(13.5f, 15.6f, span, leather); // (the plate map has its own)
-        if (v == "f" && body != "plate") { c.Set(9, 14, brass, 0.7f); c.Set(10, 14, brass, 0.7f); c.Set(9, 15, brass, 0.4f); c.Set(10, 15, brass, 0.4f); }
+        if (body is not ("plate" or "plate_gilded" or "plate_fur" or "breastplate" or "coatofplates" or "scale")) c.Body(13.5f, 15.6f, span, leather); // (the plate map has its own)
+        if (v == "f" && body is not ("plate" or "plate_gilded" or "plate_fur")) { c.Set(9, 14, brass, 0.7f); c.Set(10, 14, brass, 0.7f); c.Set(9, 15, brass, 0.4f); c.Set(10, 15, brass, 0.4f); }
         if (v == "f" && body is "tunic" or "gambeson")
             foreach (var (x, y) in new[] { (9, 0), (10, 0), (9, 1), (10, 1), (10, 2) }) c.Set(x, y, skin, 0.4f);
-        if (body == "gambeson") // a thick quilted coat with a standing collar
+        if (body is "gambeson" or "gambeson_fur") // a thick quilted coat with a standing collar
         {
             for (int x = 0; x < c.W; x++) { c.Shade(x, 0, 0.15f); c.Shade(x, 1, 0.1f); c.Shade(x, 2, -0.35f); }
+            if (body == "gambeson_fur") c.Body(0, 3.5f, span, fur);
             if (v == "f") for (int y = 3; y < 23; y++) if (y < 13 || y > 15) c.Shade(10, y, -0.3f); // laced down the front
         }
         if (body == "rags") // bare green shoulders and a torn hem, patched with the side's cloth
@@ -548,7 +767,7 @@ public sealed class SpriteSheet
             c.Body(13.5f, 15.6f, span, linen, -0.2f);
             for (int x = 0; x < c.W; x++) c.Shade(x, 22, -0.3f);
         }
-        if (body == "lamellar") // rows of small laced plates, a cloth skirt below the belt
+        if (body is "lamellar" or "lamellar_gilded") // rows of small laced plates, a cloth skirt below the belt
         {
             for (int y = 1; y < 14; y++) for (int x = 0; x < c.W; x++)
             {
@@ -557,23 +776,25 @@ public sealed class SpriteSheet
                 else if (row == 1) c.Shade(x, y, 0.18f);                             // the lit top edge of the plates
                 if (row != 0 && (x + (y / 3 % 2) * 2) % 4 == 0) c.Shade(x, y, -0.3f); // the joins, staggered row on row
             }
-            for (int y = 3; y < 14; y += 3) for (int x = 2 + y / 3 % 2 * 2; x < c.W - 1; x += 4) if (c.Has(x, y)) c.Set(x, y, trim, 0.4f); // the lacing
+            for (int y = 3; y < 14; y += 3) for (int x = 2 + y / 3 % 2 * 2; x < c.W - 1; x += 4) if (c.Has(x, y)) c.Set(x, y, body == "lamellar_gilded" ? brass : trim, 0.45f); // the lacing
+            if (body == "lamellar_gilded") c.Body(1.5f, 3.2f, span, brass, 0.4f);
             c.Body(15.6f, 23, span, clothDk);
             for (int x = 0; x < c.W; x++) c.Shade(x, 22, -0.25f);
         }
-        if (body == "mail") // a hauberk: a padded collar showing at the neck, rings to the thighs, a ragged hem
+        if (body is "mail" or "mail_fur") // a hauberk: a padded collar showing at the neck, rings to the thighs, a ragged hem
         {
-            c.Body(0, 2.2f, span, quilt, 0.05f);
+            c.Body(0, 2.2f, span, body == "mail_fur" ? fur : quilt, 0.05f);
+            if (body == "mail_fur") c.Body(2.2f, 4.2f, span, fur);
             for (int x = 0; x < c.W; x += 2) if (c.Has(x, 22)) c.Clear(x, 22);
             if (v == "f") for (int y = 16; y < 23; y++) c.Shade(10, y, -0.35f); // the split skirt for walking and riding
         }
-        if (body == "deel") // a long coat wrapped left over right, a trim down the overlap and a wide sash
+        if (body is "deel" or "deel_fur") // a long coat wrapped left over right, a trim down the overlap and a wide sash
         {
             if (v == "f") for (int y = 0; y < 23; y++) { int x = (int)(6 + y * 0.35f); c.Set(x, y, trim, 0.5f); c.Set(x + 1, y, trim, 0.35f); }
             c.Body(13, 16, span, trim, -0.1f);
-            c.Area((x, y) => y < 3 && x >= span(y).Item1 && x <= span(y).Item2, fur);
+            c.Area((x, y) => y < (body == "deel_fur" ? 5 : 3) && x >= span(y).Item1 && x <= span(y).Item2, fur);
         }
-        if (body == "brigandine") // the side's cloth over riveted plates: each band of plates lit on top, shadowed under, studs in rows
+        if (body is "brigandine" or "brigandine_gilded") // the side's cloth over riveted plates: each band of plates lit on top, shadowed under, studs in rows
         {
             for (int y = 1; y < 13; y++) for (int x = 0; x < c.W; x++)
             {
@@ -784,8 +1005,8 @@ public sealed class SpriteSheet
         var c = new Canvas(8, 20);
         switch (body)
         {
-            case "gambeson":
-                c.Rect(1, 0, 7, 20, quilt); c.Rect(1, 0, 7, 2.5f, leather);
+            case "gambeson": case "gambeson_fur":
+                c.Rect(1, 0, 7, 20, quilt); c.Rect(1, 0, 7, 2.5f, body == "gambeson_fur" ? fur : leather);
                 for (int y = 5; y < 20; y += 3) for (int x = 0; x < 8; x++) c.Shade(x, y, -0.3f); // quilted round the arm
                 break;
             case "fur": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 4, fur); break;
@@ -793,16 +1014,21 @@ public sealed class SpriteSheet
             case "bones": c.Rect(3, 0, 5, 20, bone); c.Ellipse(4, 10, 1.6f, 1.4f, bone, 0.1f); break; // a bare arm bone and its elbow
             case "shroud": c.Rect(2.2f, 0, 5.8f, 20, pale); c.Rect(1.5f, 0, 6.5f, 5, shroud); break;
             case "robe": c.Rect(1, 0, 7, 20, robe); c.Rect(0.5f, 16, 7.5f, 20, robe, -0.15f); break; // wide sleeves
-            case "mail":
+            case "mail": case "mail_fur":
                 c.Rect(1.5f, 0, 6.5f, 20, mail);
                 c.Rect(1.5f, 0, 6.5f, 1.6f, leather); // a leather cuff at the wrist
+                if (body == "mail_fur") c.Rect(1, 0, 7, 4, fur);
                 break;
-            case "lamellar": c.Rect(1.5f, 0, 6.5f, 20, mail); c.Rect(1, 0, 7, 6, plate); for (int x = 0; x < 8; x++) c.Shade(x, 3, -0.3f); break;
-            case "deel": c.Rect(1, 0, 7, 20, cloth); c.Rect(1, 16.5f, 7, 20, trim); break;
-            case "brigandine": c.Rect(1.5f, 0, 6.5f, 20, mail); c.Rect(1, 0, 7, 7, clothDk); c.Set(3, 3, brass, 0.65f); c.Set(5, 5, brass, 0.65f); break;
-            case "plate":
+            case "lamellar": case "lamellar_gilded": case "scale": case "scale_iron": c.Rect(1.5f, 0, 6.5f, 20, mail); c.Rect(1, 0, 7, 6, body == "scale" ? brass : plate); for (int x = 0; x < 8; x++) c.Shade(x, 3, -0.3f); break;
+            case "leather": case "coatofplates": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 4, body == "coatofplates" ? plate : leather); break;
+            case "deel": case "deel_fur": c.Rect(1, 0, 7, 20, cloth); c.Rect(1, 16.5f, 7, 20, trim); if (body == "deel_fur") c.Rect(1, 0, 7, 3, fur); break;
+            case "brigandine": case "brigandine_gilded": c.Rect(1.5f, 0, 6.5f, 20, mail); c.Rect(1, 0, 7, 7, clothDk); c.Set(3, 3, brass, 0.65f); c.Set(5, 5, brass, 0.65f); break;
+            case "plate": case "plate_gilded": case "plate_fur": case "breastplate":
                 // Vambrace (forearm), the elbow cop with its wing, lames and the upper cannon to the shoulder.
-                c.Rect(1.5f, 0, 6.5f, 20, plate);
+                c.Rect(1.5f, 0, 6.5f, 20, body == "breastplate" ? cloth : plate);
+                if (body == "breastplate") c.Rect(1, 0, 7, 6, plate);
+                if (body == "plate_fur") c.Rect(1, 0, 7, 4, fur);
+                if (body == "plate_gilded") c.Rect(1, 5, 7, 6.5f, brass);
                 c.Rect(1, 0, 7, 1.6f, plate, 0.1f);                                // the flared cuff
                 c.Ellipse(4, 10, 3.6f, 2.6f, plate, 0.15f);
                 c.Ellipse(1.6f, 10, 1.5f, 2f, plate, 0.25f);                      // the couter's wing
@@ -834,6 +1060,15 @@ public sealed class SpriteSheet
                 c.Set(4, 10, brass, 0.6f);
                 for (int y = 15; y < 19; y++) c.Set(6, y, leather, 0.3f); // the strap round the thigh
                 break;
+            case "splint":
+                c.Rect(1.5f, 0, 6.5f, 20, leather);
+                c.Rect(2, 1, 6, 18, plate, 0.05f);
+                c.Rect(1.3f, 11, 6.7f, 12.4f, leather, -0.05f);
+                break;
+            case "furlegs":
+                c.Rect(1.5f, 0, 6.5f, 20, hose);
+                c.Rect(1.2f, 0, 6.8f, 9, fur);
+                break;
             case "bones": c.Rect(3, 0, 5, 20, bone); c.Ellipse(4, 10, 1.7f, 1.5f, bone, 0.1f); break;
             case "shroud": c.Rect(2.2f, 0, 5.8f, 20, pale); c.Rect(1.5f, 0, 6.5f, 7, shroud); break;
             case "hide": c.Rect(2, 0, 6, 20, gskin); c.Rect(1.5f, 0, 6.5f, 4, rag); for (int y = 9; y < 12; y++) c.Shade(4, y, -0.3f); break;
@@ -856,11 +1091,15 @@ public sealed class SpriteSheet
             c.Rect(2, 0, 7, 5, m);
             c.Body(4, 8, y => (1, 9.6f - MathF.Max(0, 5.2f - y) * 0.8f), m, -0.05f);
             if (kind == "sabatons") for (int x = 0; x < 10; x++) c.Shade(x, 5, -0.4f);
+            if (kind == "furboots") c.Rect(2, 0, 7, 2.5f, fur);
+            if (kind == "ridingboots") c.Rect(2, 0, 7, 2, leather, 0.2f);
             return c;
         }
         var f = new Canvas(8, 8);
         f.Body(0, 8, y => y < 5 ? (1, 7) : (0.5f, 7.5f), m);
         if (kind == "sabatons") for (int x = 0; x < 8; x++) f.Shade(x, 4, -0.4f);
+        if (kind == "furboots") f.Rect(1, 0, 7, 2.5f, fur);
+        if (kind == "ridingboots") f.Rect(1, 0, 7, 2, leather, 0.2f);
         if (v == "f") for (int x = 1; x < 7; x++) f.Shade(x, 7, -0.25f);
         return f;
     }
@@ -933,6 +1172,38 @@ public sealed class SpriteSheet
                 Emblem(c, 10, 9.5f, 5);
                 return c;
             }
+            case "round_bossed":
+            {
+                c.Fill((x, y) => InEl(x, y, 10, 12.5f, 9.6f, 9.6f), (x, y) => new Vector3((x - 10) / 14, (y - 12.5f) / 14, 1), cloth);
+                c.Border(iron);
+                c.Ellipse(10, 12.5f, 3.2f, 3.2f, brass, 0.2f);
+                return c;
+            }
+            case "kalkan":
+            {
+                // Domed wicker/iron Steppe & Sunward shield with brass boss and radiating spokes.
+                var k = new Canvas(18, 18);
+                k.Fill((x, y) => InEl(x, y, 9, 9, 8.5f, 8.5f), (x, y) => new Vector3((x - 9) / 10, (y - 9) / 10, 1), wood);
+                k.Border(iron);
+                k.Ellipse(9, 9, 2.8f, 2.8f, brass, 0.3f);
+                return k;
+            }
+            case "tower":
+            {
+                float Half(float y) => y < 8 ? 9.8f - (8 - y) * (8 - y) * 0.04f : 9.8f * MathF.Pow(MathF.Max(0, 1 - (y - 8) / 19f), 0.7f);
+                c.Fill((x, y) => y > 0.3f && MathF.Abs(x - 10) <= Half(y), (x, y) => new Vector3((x - 10) / 16, (y - 10) / 30, 1), cloth);
+                c.Border(brass);
+                Emblem(c, 10, 9.5f, 5.2f);
+                return c;
+            }
+            case "heater_gilded":
+            {
+                float Half(float y) => y < 10 ? 9.6f : 9.6f * MathF.Sqrt(MathF.Max(0, 1 - (y - 10) * (y - 10) / (14.6f * 14.6f)));
+                c.Fill((x, y) => y > 0.3f && MathF.Abs(x - 10) <= Half(y), (x, y) => new Vector3((x - 10) / 16, (y - 10) / 30, 1), cloth);
+                c.Border(brass);
+                Emblem(c, 10, 10, 5);
+                return c;
+            }
             default: // heater
             {
                 float Half(float y) => y < 10 ? 9.6f : 9.6f * MathF.Sqrt(MathF.Max(0, 1 - (y - 10) * (y - 10) / (14.6f * 14.6f)));
@@ -948,8 +1219,15 @@ public sealed class SpriteSheet
     {
         switch (kind)
         {
-            case "sword": return Blade(33, 23);
-            case "longsword": return Blade(40, 29);
+            case "sword": return ArmingSword();
+            case "longsword": return Longsword();
+            case "longsword_gilded":
+            {
+                var c = Longsword();
+                for (int y = 0; y < c.H; y++) for (int x = 0; x < c.W; x++)
+                    if (y >= c.H - 11 && c.Has(x, y) && (x == 0 || x == c.W - 1 || y >= c.H - 4)) c.Set(x, y, brass, 0.55f);
+                return c;
+            }
             case "axe":
             {
                 var c = new Canvas(8, 30);
@@ -962,8 +1240,48 @@ public sealed class SpriteSheet
             case "spear": return Polearm(65, 9, 2.9f, false);
             case "pike": return Polearm(90, 7, 2.2f, false);
             case "lance": return Polearm(93, 7, 1.8f, true);
+            case "pennonlance":
+            {
+                var c = Polearm(95, 7, 1.8f, true);
+                // Fluttering team-coloured pennant behind the lance head
+                for (int y = 10; y < 24; y++)
+                {
+                    int w0 = 3 - Math.Max(0, (y - 16) / 3);
+                    for (int x = 0; x < w0; x++) if (x < c.W) c.Set(x, y, cloth, 0.5f);
+                }
+                return c;
+            }
             case "bow": return Bow(33);
-            case "greatsword": return Blade(58, 44);
+            case "recurve":
+            {
+                // Composite horn recurve bow with swept tips
+                var c = new Canvas(11, 31);
+                for (int y = 2; y < 29; y++)
+                {
+                    float t = (y - 15f) / 13f;
+                    float bx = 3 + t * t * 5.2f - (MathF.Abs(t) > 0.78f ? (MathF.Abs(t) - 0.78f) * 9f : 0);
+                    c.Set((int)bx, y, linen, 0.45f); c.Set((int)bx + 1, y, wood, 0.35f);
+                    c.Set(2, y, linen, 0.2f);
+                }
+                return c;
+            }
+            case "greatsword": return Greatsword();
+            case "flamberge":
+            {
+                var c = Greatsword();
+                // Wavy flame-edge notches along the blade
+                for (int y = 6; y < 44; y += 4) { c.Clear(2, y); c.Clear(5, y + 2); }
+                return c;
+            }
+            case "bardiche":
+            {
+                var c = new Canvas(13, 64);
+                c.Rect(5.5f, 4, 7.5f, 64, wood);
+                c.Body(0, 22, y => (0.5f + MathF.Abs(y - 10) * 0.25f, 5.5f), steel);
+                for (int y = 1; y < 20; y++) c.Shade(1, y, 0.45f);
+                c.Rect(5, 42, 8, 48, leather);
+                return c;
+            }
             case "daneaxe":
             {
                 var c = new Canvas(12, 62);
@@ -983,6 +1301,16 @@ public sealed class SpriteSheet
                 foreach (var (kx, ky) in new[] { (2, 5), (11, 9), (3, 15), (10, 19) }) { c.Ellipse(kx, ky, 1.6f, 1.6f, wood, -0.25f); c.Shade(kx, ky, -0.4f); }
                 for (int y = 0; y < 22; y++) c.Shade(1, y, 0.35f);
                 c.Rect(4.6f, 36, 9.4f, 44, leather);
+                return c;
+            }
+            case "billhook":
+            {
+                var c = new Canvas(12, 70);
+                c.Rect(5, 4, 7, 70, wood);
+                c.Body(0, 15, y => (4.5f, 7.5f), steel);
+                c.Rect(7, 3, 11, 6, steel); // curved hook
+                c.Rect(1, 9, 5, 11, iron);  // back spike
+                c.Rect(4.6f, 48, 7.4f, 54, leather);
                 return c;
             }
             case "halberd":
@@ -1028,28 +1356,8 @@ public sealed class SpriteSheet
                 c.Set(3, 3, Mat.Flat(new Color(150, 146, 136)));
                 return c;
             }
-            case "scimitar":
-            {
-                // A curved blade widening toward the tip, the hilt with a short cross and a pommel cap (the south).
-                var c = new Canvas(10, 32);
-                c.Body(0, 23, y => { float bend = (23 - y) * (23 - y) * 0.006f; float half = MathF.Min(1.9f, 0.6f + (23 - MathF.Abs(y - 7)) * 0.07f); return (4 - half + bend * 1.6f, 4 + half + bend * 1.6f); }, steel);
-                for (int y = 2; y < 22; y++) c.Shade(4 + (int)((23 - y) * (23 - y) * 0.01f), y, 0.35f);
-                c.Rect(1, 23, 8, 24.8f, brass);
-                c.Rect(3, 24.8f, 5, 30.5f, leather);
-                c.Ellipse(4, 31, 1.6f, 1.0f, brass, 0.1f);
-                return c;
-            }
-            case "falchion":
-            {
-                // A short heavy chopper: broad near the clipped point, straight in the back.
-                var c = new Canvas(9, 30);
-                c.Body(0, 21, y => (2.5f, 5.5f + MathF.Min(1.8f, y < 4 ? y * 0.45f : 1.8f - (y - 4) * 0.06f)), steel);
-                for (int y = 2; y < 20; y++) c.Shade(3, y, 0.35f);
-                c.Rect(0.5f, 21, 8.5f, 22.8f, iron);
-                c.Rect(3, 22.8f, 5, 28.5f, leather);
-                c.Ellipse(4, 29, 1.6f, 1.0f, iron, 0.1f);
-                return c;
-            }
+            case "scimitar": return Scimitar();
+            case "falchion": return Falchion();
             case "warhammer":
             {
                 // A long-hafted hammer: a squared face one side, a curved beak the other, a spike on top.
@@ -1062,6 +1370,15 @@ public sealed class SpriteSheet
                 for (int x = 2; x < 12; x++) c.Shade(x, 9, -0.3f);
                 c.Rect(5.6f, 10, 8.4f, 12, iron);
                 c.Rect(5.6f, 38, 8.4f, 44, leather);
+                return c;
+            }
+            case "morningstar":
+            {
+                var c = new Canvas(11, 32);
+                c.Rect(4.5f, 8, 6.5f, 32, wood);
+                c.Ellipse(5.5f, 5.5f, 3.4f, 3.6f, iron);
+                foreach (var (sx, sy) in new[] { (1, 5), (9, 5), (5, 0), (2, 2), (8, 2), (2, 8), (8, 8) }) c.Set(sx, sy, steel, 0.7f);
+                c.Rect(4.2f, 22, 6.8f, 29, leather);
                 return c;
             }
             case "mace":
@@ -1087,6 +1404,15 @@ public sealed class SpriteSheet
                 c.Rect(3.6f, 30, 6.4f, 36, leather);
                 return c;
             }
+            case "arbalest":
+            {
+                var c = new Canvas(26, 28);
+                c.Rect(11.5f, 4, 14.5f, 28, wood);
+                c.Body(3, 6.5f, y => (0.5f, 25.5f), steel);
+                c.Rect(11, 0.5f, 15, 3, brass, 0.4f); // stirrup
+                for (int x = 1; x < 25; x++) c.Set(x, 10, linen, 0.3f);
+                return c;
+            }
             case "crossbow":
             {
                 // Seen from above along the bolt: the stock, the steel prod across it, the string.
@@ -1102,16 +1428,240 @@ public sealed class SpriteSheet
         }
     }
 
-    Canvas Blade(int h, int guard)
+    Canvas PaintGrid(params string[] rows)
     {
-        var c = new Canvas(8, h);
-        c.Body(0, guard, y => { float half = MathF.Min(1.6f, 0.5f + y * 0.4f); return (4 - half, 4 + half); }, steel);
-        for (int y = 3; y < guard - 1; y++) c.Shade(4, y, 0.35f);
-        c.Rect(0.2f, guard, 7.8f, guard + 2, brass);
-        c.Rect(3, guard + 2, 5, h - 2, leather);
-        c.Ellipse(4, h - 1.2f, 1.7f, 1.3f, brass, 0.1f);
+        var c = new Canvas(rows[0].Length, rows.Length);
+        for (int y = 0; y < rows.Length; y++)
+            for (int x = 0; x < rows[y].Length; x++)
+                switch (rows[y][x])
+                {
+                    case 'S': c.Set(x, y, steel, 0.95f); break;
+                    case 's': c.Set(x, y, steel, 0.70f); break;
+                    case 'f': c.Set(x, y, steel, 0.45f); break;
+                    case 'd': c.Set(x, y, steel, 0.20f); break;
+                    case 'I': c.Set(x, y, iron, 0.70f); break;
+                    case 'i': c.Set(x, y, iron, 0.45f); break;
+                    case 'k': c.Set(x, y, iron, 0.20f); break;
+                    case 'B': c.Set(x, y, brass, 0.95f); break;
+                    case 'b': c.Set(x, y, brass, 0.70f); break;
+                    case 'g': c.Set(x, y, brass, 0.45f); break;
+                    case 'r': c.Set(x, y, brass, 0.20f); break;
+                    case 'L': c.Set(x, y, leather, 0.70f); break;
+                    case 'l': c.Set(x, y, leather, 0.20f); break;
+                }
         return c;
     }
+
+    Canvas ArmingSword() => PaintGrid(
+        "....S....",
+        "....S....",
+        "...Ss....",
+        "...Ssf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...Sdf...",
+        "...sfd...",
+        "...sfd...",
+        "bBbBbggrr",
+        "r..bgg..r",
+        "....L....",
+        "....l....",
+        "....L....",
+        "....l....",
+        "....L....",
+        "...bBg...",
+        "...bgg...",
+        "....g...."
+    );
+
+    Canvas Longsword() => PaintGrid(
+        ".....S.....",
+        ".....S.....",
+        "....Ss.....",
+        "....Ssf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....Sdf....",
+        "....sfd....",
+        "....sfd....",
+        "b...bBg...r",
+        "bBbbBbggrrr",
+        "....bgg....",
+        ".....L.....",
+        ".....l.....",
+        ".....L.....",
+        ".....b.....",
+        ".....L.....",
+        ".....l.....",
+        "....bBg....",
+        "....ggr....",
+        ".....r....."
+    );
+
+    Canvas Greatsword() => PaintGrid(
+        "......S......",
+        "......S......",
+        ".....Ss......",
+        ".....Ssf.....",
+        ".....Sdf.....",
+        ".....Sdf.....",
+        ".....Sdf.....",
+        "....Ssdff....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "....Ssdfd....",
+        "...ISdfdki...",
+        "....Ssdfd....",
+        ".....ILk.....",
+        ".....lLl.....",
+        ".....ILk.....",
+        ".....lLl.....",
+        ".....ILk.....",
+        ".....lLl.....",
+        "b....bBg....r",
+        "bBbbbBbggrrrr",
+        ".g...bgg...r.",
+        ".....Lll.....",
+        ".....lLl.....",
+        ".....Lll.....",
+        ".....lLl.....",
+        ".....bBg.....",
+        ".....Lll.....",
+        ".....lLl.....",
+        ".....Lll.....",
+        ".....lLl.....",
+        "....bBbg.....",
+        "...bBgggr....",
+        "....ggrr....."
+    );
+
+    Canvas Scimitar() => PaintGrid(
+        ".........S.",
+        "........Ss.",
+        ".......Ssf.",
+        "......Ssf..",
+        "......Ssd..",
+        ".....Ssd...",
+        ".....Ssd...",
+        ".....Ssd...",
+        "....Ssd....",
+        "....Ssd....",
+        "....Ssd....",
+        "...Ssd.....",
+        "...Ssd.....",
+        "...Ssd.....",
+        "...Ssd.....",
+        "...Ssd.....",
+        "..Ssd......",
+        "..Ssd......",
+        "..Ssd......",
+        "..Ssd......",
+        "..Ssd......",
+        "..Ssd......",
+        "...b.......",
+        "bBbBbggr...",
+        "..bgggr....",
+        "...L.......",
+        "...l.......",
+        "...L.......",
+        "..Ll.......",
+        "..bBg......",
+        ".bBgr......",
+        ".gr........"
+    );
+
+    Canvas Falchion() => PaintGrid( // the back curves in to a point, the edge swells below it, a brass guard
+        "......S...",
+        "......Sf..",
+        ".....Ssf..",
+        ".....Ssf..",
+        "....Sssf..",
+        "....Ssssf.",
+        "...Sssssf.",
+        "...Sssssf.",
+        "...Ssssf..",
+        "...Ssssf..",
+        "...Sssf...",
+        "...Sssf...",
+        "...Sssf...",
+        "...Ssf....",
+        "...Ssf....",
+        "...Ssf....",
+        "...Ssf....",
+        "...Ssf....",
+        "...Ssf....",
+        "...Ssf....",
+        "...Ssd....",
+        "...Ssd....",
+        ".bBBbBgr..",
+        "..bggr....",
+        "....L.....",
+        "....l.....",
+        "....L.....",
+        "....l.....",
+        "....L.....",
+        "...bBg....",
+        "...ggr...."
+    );
 
     Canvas Polearm(int h, int head, float width, bool lance)
     {
@@ -1204,80 +1754,117 @@ public sealed class SpriteSheet
         var coat = new Mat(Style.Coat);
         var mane = new Mat(Style.Mane, Pattern.Hair);
         var hoof = new Mat(Style.Hoof);
-        var eye = Mat.Flat(new Color(30, 26, 26));
+        var eye = Mat.Flat(new Color(26, 22, 22));
+        var innerEar = Mat.Flat(new Color(148, 128, 124));
 
         var body = new Canvas(55, 23);
         BodyShape(body, coat);
+        // Subtle equine musculature: shoulder slope, flank tuck, and croup curve.
+        for (int i = 0; i < 9; i++) body.Shade(39 - i / 2, 7 + i, -0.22f);
+        for (int i = 0; i < 6; i++) body.Shade(16 + i, 14 - i / 2, -0.18f);
+        for (int i = 0; i < 6; i++) body.Shade(13 - i / 2, 5 + i, -0.16f);
         Add("hbody/n", body);
 
-        // The neck arches at the crest and narrows to the throat; the mane hangs in uneven locks along it.
+        // The neck arches proudly at the crest, narrows to the throatlatch, and carries a flowing mane.
         var neck = new Canvas(23, 13);
-        static float NeckTop(float x) => 6.6f + x * 0.03f - (6.2f - x * 0.13f) - MathF.Sin(x / 23 * MathF.PI) * 0.9f;
-        static float NeckBottom(float x) => 6.6f + x * 0.03f + 6.4f - x * 0.17f; // deep at the chest, narrow at the throat
-        neck.Columns(0, 23, x => (NeckTop(x), NeckBottom(x)), coat);
-        neck.Area((x, y) => y >= NeckTop(x) && y < NeckTop(x) + 2.3f + ((int)x * 7 % 3) * 0.7f, mane);
+        neck.Columns(0, 23, x => (HorseNeckTop(x), HorseNeckBottom(x)), coat);
+        neck.Area((x, y) => y >= HorseNeckTop(x) && y < HorseNeckTop(x) + 2.5f + ((int)x * 7 % 3) * 0.75f, mane);
+        for (int x = 3; x < 20; x++) neck.Shade(x, (int)HorseNeckBottom(x) - 1, -0.2f);
         neck.Soft = true;
         Add("hneck/n", neck);
 
-        var head = new Canvas(20, 10);
-        head.Columns(0, 20, x => { float h = 4.6f - x * 0.07f, cy = 5.2f; return (cy - h, cy + h); }, coat);
-        foreach (var (x, y) in new[] { (1, 0), (2, 0), (2, 1) }) head.Set(x, y, coat, 0.5f);
-        head.Area((x, y) => x < 5 && y < 2.4f && y > 0.6f, mane);
-        head.Set(5, 3, eye); head.Set(6, 3, eye);
-        head.Set(18, 6, eye);
-        for (int y = 0; y < 10; y++) for (int x = 15; x < 20; x++) head.Shade(x, y, -0.35f);
+        // Sculpted equine head: upright ears, forelock, rounded jowl, tapered nasal bridge, distinct muzzle and nostril.
+        var head = new Canvas(22, 12);
+        head.Columns(1, 22, x =>
+        {
+            float top = x < 5 ? 3.2f - (x - 1) * 0.1f : 2.8f + (x - 5) * 0.14f;
+            float bot = x < 6 ? 11.2f - (6 - x) * 0.35f : 11.2f - (x - 6) * 0.19f;
+            return (top, bot);
+        }, coat);
+        // Upright pointed ears at the poll.
+        head.Body(0, 3.2f, y => (1.8f + (3.2f - y) * 0.35f, 4.8f - (3.2f - y) * 0.35f), coat);
+        head.Set(3, 1, innerEar); head.Set(3, 2, innerEar);
+        head.Area((x, y) => x >= 3 && x < 7 && y >= 2 && y < 3.6f, mane); // forelock
+        head.Set(7, 4, eye); head.Set(8, 4, eye);
+        head.Shade(7, 3, 0.18f); // brow ridge
+        for (int x = 6; x < 17; x++) head.Shade(x, (int)(10.8f - (x - 6) * 0.19f), -0.22f); // jawline shadow
+        for (int y = 5; y < 9; y++) for (int x = 18; x < 22; x++) if (head.Has(x, y)) head.Shade(x, y, -0.28f); // soft muzzle
+        head.Set(19, 6, eye); // nostril
         Add("hhead/n", head);
 
+        // Front view chest: narrower at the withers, broad muscular shoulders, tapering between the forelegs at the brisket.
         var chest = new Canvas(24, 21);
-        chest.Ellipse(12, 10.5f, 11.4f, 9.8f, coat);
-        for (int y = 4; y < 18; y++) chest.Shade(12, y, -0.3f);
+        chest.Body(1, 20.5f, y =>
+        {
+            float half = y < 9 ? 5.8f + (y - 1) * 0.68f : 11.2f - (y - 9) * 0.42f;
+            return (12 - half, 12 + half);
+        }, coat);
+        for (int y = 9; y < 19; y++) chest.Shade(12, y, -0.32f); // pectoral cleft
         chest.Soft = true;
         Add("hchest/n", chest);
 
+        // Rear view croup: rounded hindquarters tapering cleanly toward the gaskins, with the tail dock at the top-center.
         var rump = new Canvas(24, 21);
-        rump.Ellipse(12, 10.5f, 11.4f, 9.8f, coat);
-        rump.Rect(10.8f, 3, 13.2f, 21, mane);
+        rump.Body(1, 20.5f, y =>
+        {
+            float half = y < 8 ? 5.5f + (y - 1) * 0.8f : 11.1f - (y - 8) * 0.32f;
+            return (12 - half, 12 + half);
+        }, coat);
+        rump.Rect(10.8f, 2, 13.2f, 21, mane);
         rump.Soft = true;
         Add("hrump/n", rump);
 
-        var face = new Canvas(10, 15);
-        face.Body(0.5f, 15, y => { float half = y < 3 ? 3.6f : 4.6f - y * 0.12f; return (5 - half, 5 + half); }, coat);
-        foreach (var (x, y) in new[] { (1, 0), (2, 0), (7, 0), (8, 0) }) face.Set(x, y, coat, 0.4f);
-        face.Set(1, 6, eye); face.Set(8, 6, eye);
-        face.Set(3, 13, eye); face.Set(6, 13, eye);
-        face.Rect(4.2f, 3, 5.8f, 11, Mat.Flat(Style.Linen));
+        // Front-view horse face: pointed ears, forelock, wide forehead, tapered nasal bridge, blaze and nostrils.
+        var face = new Canvas(12, 16);
+        face.Body(3, 16, y =>
+        {
+            float half = y < 7 ? 3.8f + (y - 3) * 0.25f : y < 13 ? 4.8f - (y - 7) * 0.36f : 2.6f + (y - 13) * 0.1f;
+            return (6 - half, 6 + half);
+        }, coat);
+        face.Body(0, 3.5f, y => (1.0f + (3.5f - y) * 0.35f, 3.6f - (3.5f - y) * 0.25f), coat);
+        face.Body(0, 3.5f, y => (8.4f + (3.5f - y) * 0.25f, 11.0f - (3.5f - y) * 0.35f), coat);
+        face.Rect(4.5f, 2, 7.5f, 4, mane); // forelock
+        face.Set(1, 6, eye); face.Set(10, 6, eye);
+        face.Body(4, 13.5f, y => { float w = 0.9f - (y - 4) * 0.04f; return (6 - w, 6 + w); }, Mat.Flat(Style.Linen)); // tapered blaze
+        face.Set(4, 13, eye); face.Set(7, 13, eye); // nostrils
         Add("hface/n", face);
 
         var leg = new Canvas(7, 30);
-        leg.Body(0, 3, y => (0.8f + y * 0.15f, 6.2f - y * 0.15f), hoof);
-        leg.Body(3, 5.5f, y => (1.4f, 5.6f), mane); // the fetlock's feather
-        leg.Rect(2.0f, 5.5f, 5.0f, 14.5f, coat);
-        for (int y = 6; y < 14; y++) leg.Shade(4, y, -0.2f); // the tendon down the back of the cannon
-        leg.Ellipse(3.5f, 15.5f, 2.6f, 2.3f, coat, 0.05f);
-        leg.Body(17, 30, y => (1.5f - (y - 17) * 0.12f, 5.5f + (y - 17) * 0.12f), coat);
+        leg.Body(0, 2.8f, y => (0.7f + y * 0.35f, 6.3f - y * 0.35f), hoof);
+        leg.Body(2.8f, 5.4f, y => (1.8f - (y - 2.8f) * 0.15f, 5.2f + (y - 2.8f) * 0.15f), mane); // pastern & fetlock
+        leg.Rect(2.3f, 5.4f, 4.7f, 14.5f, coat);
+        for (int y = 6; y < 14; y++) leg.Shade(4, y, -0.22f); // flexor tendon
+        leg.Ellipse(3.5f, 15.5f, 2.3f, 2.1f, coat, 0.05f);
+        leg.Body(17, 30, y => (1.7f - (y - 17) * 0.11f, 5.3f + (y - 17) * 0.11f), coat);
         Add("hleg/n", leg);
         // The same leg in two pieces jointed at the knee (hock behind), so a standing or striding horse is not on four posts:
         // the cannon from hoof to knee, and the forearm (gaskin) from knee to body. The fallen horse still uses the whole leg.
         var low = new Canvas(7, 17);
-        low.Body(0, 3, y => (0.8f + y * 0.15f, 6.2f - y * 0.15f), hoof);
-        low.Body(3, 5.5f, y => (1.4f, 5.6f), mane);
-        low.Rect(2.0f, 5.5f, 5.0f, 14.5f, coat);
-        for (int y = 6; y < 14; y++) low.Shade(4, y, -0.2f);
-        low.Ellipse(3.5f, 15.2f, 2.6f, 2.0f, coat, 0.05f);
+        low.Body(0, 2.8f, y => (0.7f + y * 0.35f, 6.3f - y * 0.35f), hoof);
+        low.Body(2.8f, 5.4f, y => (1.8f - (y - 2.8f) * 0.15f, 5.2f + (y - 2.8f) * 0.15f), mane);
+        low.Rect(2.3f, 5.4f, 4.7f, 14.5f, coat);
+        for (int y = 6; y < 14; y++) low.Shade(4, y, -0.22f);
+        low.Ellipse(3.5f, 15.2f, 2.3f, 1.9f, coat, 0.05f);
         low.Soft = true; low.OpenBottom = true; // the knee end runs into the forearm
         Add("hleg.low/n", low);
         var up = new Canvas(7, 15);
-        up.Ellipse(3.5f, 1.2f, 2.4f, 1.6f, coat, 0.05f);
-        up.Body(1.5f, 15, y => (1.5f - (y - 2) * 0.12f, 5.5f + (y - 2) * 0.12f), coat);
-        for (int y = 3; y < 15; y++) up.Shade(1, y, -0.15f); // the muscle's shadow down the back
+        up.Ellipse(3.5f, 1.2f, 2.2f, 1.5f, coat, 0.05f);
+        up.Body(1.5f, 15, y => (1.7f - (y - 2) * 0.11f, 5.3f + (y - 2) * 0.11f), coat);
+        for (int y = 3; y < 15; y++) up.Shade(1, y, -0.18f); // the muscle's shadow down the back
         up.Soft = true; up.OpenTop = up.OpenBottom = true; // the knee and the body hide its ends
         Add("hleg.up/n", up);
 
-        // A full tail: thick at the dock, spreading into locks toward the end, with a gentle wave.
-        var tail = new Canvas(9, 24);
-        tail.Body(0, 24, y => { float half = 1.9f + MathF.Sin(MathF.Min(1, y / 20) * MathF.PI * 0.8f) * 2.1f, c = 4.5f + MathF.Sin(y * 0.35f) * 0.55f; return (c - half, c + half); }, mane);
-        for (int x = 1; x < 8; x += 2) tail.Clear(x, 0); // ragged ends
-        tail.Clear(2, 1); tail.Clear(6, 1);
+        // A full flowing tail: narrow at the dock (top), full through the middle, tapering into windswept locks at the tip.
+        var tail = new Canvas(9, 26);
+        tail.Body(0, 26, y =>
+        {
+            float t = y / 25f;
+            float half = t > 0.8f ? 1.4f + (1 - t) * 4f : 0.9f + MathF.Sin(MathF.Pow(t, 0.75f) * MathF.PI) * 3.1f;
+            float c = 4.5f + MathF.Sin(y * 0.32f) * 0.65f;
+            return (c - half, c + half);
+        }, mane);
+        for (int x = 2; x < 7; x += 2) tail.Clear(x, 0); // windswept tip
+        tail.Clear(3, 1); tail.Clear(5, 1);
         Add("htail/n", tail);
 
         // A camel (docs/archive/WORLD.md W4) is the horse rig in a sand coat with a hump over the back.
@@ -1475,11 +2062,23 @@ public sealed class SpriteSheet
         Add("yleg/n", leg);
     }
 
+    /// Equine torso span (x = 0 croup/tail to x = 54 shoulder/chest): croup peak, saddle sway, proud withers, tucked flank, deep brisket.
     static (float, float) HorseSpan(float x)
     {
-        float u = (x - 27.5f) / 27;
-        return (2 + 6 * u * u * u * u, 21.5f - 6 * u * u * u * u + 0.6f * (1 - u * u));
+        float u = (x - 27.5f) / 27f;
+        float ends = 6f * u * u * u * u;
+        float croup = MathF.Exp(-MathF.Pow((x - 13f) / 7f, 2)) * 1.1f;
+        float withers = MathF.Exp(-MathF.Pow((x - 41f) / 6f, 2)) * 1.6f;
+        float sway = MathF.Exp(-MathF.Pow((x - 27f) / 8f, 2)) * 1.2f;
+        float top = 2.6f + ends - croup - withers + sway;
+        float flankTuck = MathF.Exp(-MathF.Pow((x - 17f) / 6.5f, 2)) * 2.6f;
+        float brisket = MathF.Exp(-MathF.Pow((x - 39f) / 9f, 2)) * 1.5f;
+        float bot = 20.5f - ends - flankTuck + brisket;
+        return (top, bot);
     }
+
+    static float HorseNeckTop(float x) => 6.4f + x * 0.02f - (6.0f - x * 0.13f) - MathF.Sin(x / 22f * MathF.PI) * 1.45f;
+    static float HorseNeckBottom(float x) => 6.4f + x * 0.02f + 6.4f - x * 0.21f - MathF.Sin(Math.Clamp((x - 6f) / 16f, 0, 1) * MathF.PI) * 0.65f;
 
     static void BodyShape(Canvas c, Mat m) => c.Columns(0.5f, 54.5f, HorseSpan, m);
 
@@ -1490,35 +2089,51 @@ public sealed class SpriteSheet
         Saddle(saddle, true);
         Add($"hbody.saddle{s}", saddle);
 
-        var cap = new Canvas(55, 23);
-        cap.Columns(1.5f, 53.5f, x => { var (t, _) = HorseSpan(x); return (t + 1.5f, 22.4f - ((int)x % 6 < 3 ? 1.6f : 0)); }, cloth);
-        cap.Border(trim);
-        Emblem(cap, 27.5f, 13, 4.5f);
-        Saddle(cap, false);
-        cap.Soft = true;
-        Add($"hbody.caparison{s}", cap);
+        var stack = new Canvas(55, 23);
+        stack.Columns(15, 42, x => { var (t, _) = HorseSpan(x); return (t + 2f, 19.5f + ((int)x % 4 < 2 ? 1.5f : 0)); }, clothDk);
+        stack.Border(trim);
+        Saddle(stack, false);
+        stack.Soft = true;
+        Add($"hbody.steppetack{s}", stack);
 
-        var neck = new Canvas(23, 13);
-        neck.Columns(0, 23, x => { float h = 6 - x * 0.1f, cy = 6.6f + x * 0.03f; return (cy - h + 2.2f, cy + h); }, cloth);
-        neck.Border(trim);
-        neck.Soft = true;
-        Add($"hneck.caparison{s}", neck);
-
-        var head = new Canvas(20, 10);
-        head.Columns(4, 18, x => { float h = 4.4f - x * 0.07f; return (5.2f - h, 5.2f + h); }, plate);
-        head.Clear(5, 3); head.Clear(6, 3);
-        Add($"hhead.caparison{s}", head);
-
-        foreach (var part in new[] { "hchest", "hrump" })
+        void CaparisonSet(string tag, Mat bodyMat, Mat edgeMat, bool scaled)
         {
-            var c = new Canvas(24, 21);
-            c.Ellipse(12, 10.8f, 11.4f, 9.6f, cloth);
-            c.Border(trim);
-            if (part == "hchest") Emblem(c, 12, 10.5f, 4.0f);
-            else c.Rect(10.8f, 1, 13.2f, 7, Mat.Flat(Style.Mane));
-            c.Soft = true;
-            Add($"{part}.caparison{s}", c);
+            var cap = new Canvas(55, 23);
+            cap.Columns(1.5f, 53.5f, x => { var (t, _) = HorseSpan(x); return (t + 1.5f, 22.4f - ((int)x % 6 < 3 ? 1.6f : 0)); }, bodyMat);
+            if (scaled) for (int y = 4; y < 21; y += 2) for (int x = 3; x < 52; x += 3) if (cap.Has(x, y)) cap.Shade(x, y, -0.35f);
+            cap.Border(edgeMat);
+            if (!scaled) Emblem(cap, 27.5f, 13, 4.5f);
+            Saddle(cap, false);
+            cap.Soft = true;
+            Add($"hbody.{tag}{s}", cap);
+
+            var neck = new Canvas(23, 13);
+            neck.Columns(0, 23, x => (HorseNeckTop(x) + 2.0f, HorseNeckBottom(x)), bodyMat);
+            if (scaled) for (int y = 2; y < 11; y += 2) for (int x = 2; x < 21; x += 3) if (neck.Has(x, y)) neck.Shade(x, y, -0.35f);
+            neck.Border(edgeMat);
+            neck.Soft = true;
+            Add($"hneck.{tag}{s}", neck);
+
+            var head = new Canvas(22, 12);
+            head.Columns(5, 21, x => (2.9f + (x - 5) * 0.14f, 9.6f - (x - 5) * 0.14f), scaled ? brass : plate);
+            head.Clear(7, 4); head.Clear(8, 4);
+            for (int x = 6; x < 20; x++) head.Shade(x, (int)(3.4f + (x - 5) * 0.14f), 0.25f); // nasal ridge
+            Add($"hhead.{tag}{s}", head);
+
+            foreach (var part in new[] { "hchest", "hrump" })
+            {
+                var c = new Canvas(24, 21);
+                c.Ellipse(12, 10.8f, 11.4f, 9.6f, bodyMat);
+                c.Border(edgeMat);
+                if (part == "hchest" && !scaled) Emblem(c, 12, 10.5f, 4.0f);
+                else if (part == "hrump") c.Rect(10.8f, 1, 13.2f, 7, Mat.Flat(Style.Mane));
+                c.Soft = true;
+                Add($"{part}.{tag}{s}", c);
+            }
         }
+        CaparisonSet("caparison", cloth, trim, false);
+        CaparisonSet("gildedcaparison", cloth, brass, false);
+        CaparisonSet("scalebarding", brass, iron, true);
     }
 
     void Saddle(Canvas c, bool cloth)

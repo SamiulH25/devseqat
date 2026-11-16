@@ -17,8 +17,53 @@ public static class Variety
 
     // Helms and weapons that can stand in for one another (one family each). A realm's own helms (spangen, turban,
     // steppe) and the knightly ones stay as the troop has them.
-    static readonly string[][] HelmKin = { new[] { "cap", "hood", "none" }, new[] { "kettle", "nasal", "coif" } };
-    static readonly string[][] WeaponKin = { new[] { "sword", "axe", "mace" } };
+    static readonly string[][] HelmKin =
+    {
+        new[] { "cap", "hood", "brigand_hat", "none" },
+        new[] { "kettle", "nasal", "coif", "morion" },
+        new[] { "sallet", "sallet_bevor", "sallet_crest", "bascinet", "armet" },
+        new[] { "barbute", "barbute_crest" },
+        new[] { "greathelm", "greathelm_horns", "greathelm_wings" },
+        new[] { "spangen", "spangen_horns", "spangen_wolf", "gjermundbu" },
+        new[] { "steppe", "steppe_mask", "steppe_horns" },
+        new[] { "spike", "kulah" },
+    };
+    static readonly string[][] BodyKin =
+    {
+        new[] { "tunic", "leather", "gambeson", "gambeson_fur" },
+        new[] { "mail", "coatofplates", "brigandine", "brigandine_gilded" },
+        new[] { "mail_fur", "fur" },
+        new[] { "deel", "deel_fur" },
+        new[] { "plate", "plate_gilded", "breastplate" },
+        new[] { "lamellar", "scale", "scale_iron", "lamellar_gilded" },
+    };
+    static readonly string[][] LegKin =
+    {
+        new[] { "cloth", "furlegs" },
+        new[] { "mail", "splint" },
+        new[] { "plate", "splint" },
+    };
+    static readonly string[][] BootKin =
+    {
+        new[] { "boots", "ridingboots", "furboots" },
+    };
+    static readonly string[][] ShieldKin =
+    {
+        new[] { "round", "round_bossed", "targe" },
+        new[] { "heater", "heater_gilded", "kite" },
+        new[] { "dhal", "kalkan" },
+    };
+    static readonly string[][] WeaponKin =
+    {
+        new[] { "sword", "axe", "mace", "morningstar", "falchion" },
+        new[] { "longsword", "longsword_gilded" },
+        new[] { "greatsword", "flamberge" },
+        new[] { "daneaxe", "bardiche" },
+        new[] { "halberd", "billhook", "glaive" },
+        new[] { "lance", "pennonlance" },
+        new[] { "bow", "recurve" },
+        new[] { "crossbow", "arbalest" },
+    };
 
     static readonly Dictionary<Look, Dictionary<int, Look>> cache = new(ReferenceEqualityComparer.Instance);
 
@@ -40,14 +85,22 @@ public static class Variety
         if (look.Face != "man") return look;
         int visage = Visage(t.Culture, seed);
         int helm = keepKit ? 0 : Pick(seed, 1, look.Head, HelmKin, 0.45f);
+        int body = keepKit ? 0 : Pick(seed, 3, look.Body, BodyKin, 0.40f);
+        int shield = keepKit ? 0 : Pick(seed, 4, look.Shield, ShieldKin, 0.40f);
+        int legs = keepKit ? 0 : Pick(seed, 5, look.Legs, LegKin, 0.35f);
+        int feet = keepKit ? 0 : Pick(seed, 6, look.Feet, BootKin, 0.40f);
         int weapon = keepKit ? 0 : Pick(seed, 2, look.Weapon, WeaponKin, 0.35f);
-        int code = visage + Visages * (helm + 4 * weapon);
+        int code = visage + Visages * (helm + 6 * (weapon + 4 * (body + 6 * (shield + 4 * (legs + 3 * feet)))));
         if (!cache.TryGetValue(look, out var byCode)) cache[look] = byCode = new();
         if (byCode.TryGetValue(code, out var v)) return v;
         v = look with
         {
             Visage = visage,
             Head = helm == 0 ? look.Head : Kin(HelmKin, look.Head)[helm - 1],
+            Body = body == 0 ? look.Body : Kin(BodyKin, look.Body)[body - 1],
+            Shield = shield == 0 ? look.Shield : Kin(ShieldKin, look.Shield)[shield - 1],
+            Legs = legs == 0 ? look.Legs : Kin(LegKin, look.Legs)[legs - 1],
+            Feet = feet == 0 ? look.Feet : Kin(BootKin, look.Feet)[feet - 1],
             Weapon = weapon == 0 ? look.Weapon : Kin(WeaponKin, look.Weapon)[weapon - 1],
         };
         return byCode[code] = v;
@@ -70,7 +123,8 @@ public static class Variety
     /// A face: skin leans by the troop's culture (fair in the north, darker in the south and on the steppe), hair by skin.
     internal static int Visage(string culture, int seed)
     {
-        float[] skinW = culture switch
+        string baseCulture = culture.Contains('_') ? culture[..culture.IndexOf('_')] : culture;
+        float[] skinW = baseCulture switch
         {
             "northern" => new[] { 5f, 4, 1, 0 },
             "southern" => new[] { 0f, 2, 4, 4 },

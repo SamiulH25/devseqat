@@ -33,7 +33,7 @@ sealed partial class Puppet
     sealed class PalSprites
     {
         public readonly Rectangle Cape, TabardF, TabardS, TabardB, Plume, Quiver, Arrow, Lance, Javelin, Crossbow, Blood, Splat, Web, White, Puff;
-        public readonly Rectangle HLeg, HLegUp, HLegLow, HBody, HChest, HRump, HNeck, HHead, HFace, HTail, HHump, HSaddle, HCaparison, HChestCap, HRumpCap, HNeckCap, HHeadCap;
+        public readonly Rectangle HLeg, HLegUp, HLegLow, HBody, HChest, HRump, HNeck, HHead, HFace, HTail, HHump, HSaddle, HSteppetack, HCaparison, HChestCap, HRumpCap, HNeckCap, HHeadCap, HScale, HChestScale, HRumpScale, HNeckScale, HHeadScale, HGild, HChestGild, HRumpGild, HNeckGild, HHeadGild;
         public readonly Rectangle WLeg, WBody, WHead, WTail, SLeg, SAbdomen, SHead, BLeg, BBody, BHead, YWing, YLeg, YBody, YNeck, YHead, YTail, YSting;
         public readonly float CrossbowLen, LanceLen, ArrowLen, JavelinLen;
 
@@ -45,7 +45,10 @@ sealed partial class Puppet
             Blood = G("blood"); Splat = G("splat"); Web = G("web"); White = G("white"); Puff = G("puff");
             CrossbowLen = Crossbow.Height * Art.Px; LanceLen = Lance.Height * Art.Px; ArrowLen = Arrow.Height * Art.Px; JavelinLen = Javelin.Height * Art.Px;
             HLeg = G("hleg"); HLegUp = G("hleg.up"); HLegLow = G("hleg.low"); HBody = G("hbody"); HChest = G("hchest"); HRump = G("hrump"); HNeck = G("hneck"); HHead = G("hhead"); HFace = G("hface"); HTail = G("htail"); HHump = G("hhump");
-            HSaddle = G("hbody.saddle"); HCaparison = G("hbody.caparison"); HChestCap = G("hchest.caparison"); HRumpCap = G("hrump.caparison"); HNeckCap = G("hneck.caparison"); HHeadCap = G("hhead.caparison");
+            HSaddle = G("hbody.saddle"); HSteppetack = G("hbody.steppetack");
+            HCaparison = G("hbody.caparison"); HChestCap = G("hchest.caparison"); HRumpCap = G("hrump.caparison"); HNeckCap = G("hneck.caparison"); HHeadCap = G("hhead.caparison");
+            HScale = G("hbody.scalebarding"); HChestScale = G("hchest.scalebarding"); HRumpScale = G("hrump.scalebarding"); HNeckScale = G("hneck.scalebarding"); HHeadScale = G("hhead.scalebarding");
+            HGild = G("hbody.gildedcaparison"); HChestGild = G("hchest.gildedcaparison"); HRumpGild = G("hrump.gildedcaparison"); HNeckGild = G("hneck.gildedcaparison"); HHeadGild = G("hhead.gildedcaparison");
             WLeg = G("wleg"); WBody = G("wbody"); WHead = G("whead"); WTail = G("wtail");
             SLeg = G("sleg"); SAbdomen = G("sabdomen"); SHead = G("shead");
             BLeg = G("bleg"); BBody = G("bbody"); BHead = G("bhead");
@@ -254,7 +257,7 @@ sealed partial class Puppet
         if (look.Plume && Detail == 0) BillRect(new(0, HelmTop(look.Head) + curPal.Plume.Height * Art.Px / 2 - 0.06f, -0.03f), curPal.Plume, false, 0.05f);
         (viewIdx, flip) = (bodyView, bodyFlip);
 
-        if (p.Armed && (p.Haul >= 0 || p.Aim && look.Weapon == "crossbow" && !u.Mounted)) { twist = 0; Crossbow(u, p); return; }
+        if (p.Armed && (p.Haul >= 0 || p.Aim && Look.GripOf(look.Weapon) == Grip.Crossbow && !u.Mounted)) { twist = 0; Crossbow(u, p); return; }
         bool ranged = Look.Ranged(look.Weapon);
         twist = ranged || !p.Armed ? 0 : TwistOf(p);
         if (ranged && p.Aim) { Bow(u, p); return; }
@@ -302,7 +305,11 @@ sealed partial class Puppet
             float w = Now * (9 + 9 * p.Draw) + Ease.Hash(u.Index) * 6; // round and round over his head, faster as he lets fly
             dir = Vector3.Normalize(new Vector3(MathF.Cos(w), 0.2f, MathF.Sin(w)));
         }
-        if (!p.Empty) SpanRect(hand, dir, curLook.Weapon, curLook.WeaponLen, SpriteSheet.Grip[look.Weapon]);
+        if (!p.Empty)
+        {
+            SpanRect(hand, dir, curLook.Weapon, curLook.WeaponLen, SpriteSheet.Grip[look.Weapon]);
+            if (Detail < 2) BillRect(hand, curLook.Hand, false, 0.02f); // the fist closed over the grip (docs/PLAYTEST.md PT5)
+        }
         ShieldOnArm();
     }
 
@@ -319,14 +326,14 @@ sealed partial class Puppet
             float y = MathHelper.Lerp(0.35f, 0.82f, p.Haul);
             ArmTo(1, new Vector3(0.07f, y, 0.44f));
             ArmTo(-1, new Vector3(-0.05f, y, 0.44f));
-            AxialSrc(butt + down * curPal.CrossbowLen, butt, curPal.Crossbow);
+            AxialSrc(butt + down * curLook.WeaponLen, butt, curLook.Weapon);
             return;
         }
         var dir = Vector3.Normalize(Vector3.Lerp(new Vector3(0, -0.9f, 0.45f), Vector3.UnitZ, p.Draw));
         var at = Vector3.Lerp(new Vector3(0.12f, 0.95f, 0.15f), new Vector3(0.12f, 1.36f, 0.05f), p.Draw); // the butt to his cheek
         ArmTo(1, at + dir * 0.12f);
         ArmTo(-1, at + dir * 0.42f);
-        SpanRect(at, dir, curPal.Crossbow, curPal.CrossbowLen, 0);
+        SpanRect(at, dir, curLook.Weapon, curLook.WeaponLen, 0);
         if (p.Draw > 0.95f && u.Action != UnitAction.Recover) SpanRect(at + dir * 0.3f + Vector3.Up * 0.03f, dir, curPal.Arrow, curPal.ArrowLen, 0);
     }
 
@@ -366,10 +373,10 @@ sealed partial class Puppet
         if (Rear > 0) { Lean(0, -RearDeg * Rear); origin.Y += MathF.Sin(Rad(RearDeg * Rear)) * 0.7f * Scale; }
         var side = pal; var sidePal = curPal;
         var plain = tint;
-        bool caparison = barding == "caparison", camel = barding == "camel";
+        bool caparison = barding is "caparison" or "scalebarding" or "gildedcaparison", camel = barding == "camel";
         coatTint = new Color(tint.ToVector3() * (camel ? Style.CamelCoat : Style.Coats[coat % Style.Coats.Length]));
         float gait = Math.Clamp(MathF.Abs(speed) / 11, 0, 1);
-        float amp = MathF.Abs(speed) < 0.3f ? 0 : 14 + 30 * gait;
+        float amp = MathF.Abs(speed) < 0.3f ? 0 : 15 + 34 * gait;
         float bob = MathF.Sin(anim * MathF.Tau) * 0.05f * gait;
         float y = 1.25f + bob;
         // The gait by speed (legs: front left, front right, rear left, rear right): a four-beat walk, a trot on diagonal pairs,
@@ -378,7 +385,7 @@ sealed partial class Puppet
         ReadOnlySpan<float> walkP = stackalloc float[] { 0, 0.5f, 0.75f, 0.25f };
         ReadOnlySpan<float> trotP = stackalloc float[] { 0, 0.5f, 0.5f, 0 };
         ReadOnlySpan<float> gallopP = stackalloc float[] { 0.45f, 0.55f, 0, 0.1f };
-        float rock = MathF.Sin(anim * MathF.PI * 2 + 1.2f) * 0.09f * gallop; // front end rises as the hind legs push
+        float rock = MathF.Sin(anim * MathF.PI * 2 + 1.2f) * 0.10f * gallop; // front end rises as the hind legs push
         float nod = MathF.Sin(anim * MathF.PI * 2 + 0.6f) * (0.05f + 0.07f * gallop) * MathF.Min(1, sp / 2); // the head nods with the stride
         var (still, stillK) = idle >= 0 && sp < 0.3f && Now > 0 && Rear <= 0 ? HorseIdle(idle, Now) : (0, 0f);
         {
@@ -396,7 +403,7 @@ sealed partial class Puppet
             float a = Rad(amp) * MathF.Sin(anim * MathF.PI + ph * MathF.Tau);
             if (front && Rear > 0) a = MathHelper.Lerp(a, Rad(sd < 0 ? 75 : 55), Rear); // forelegs pawing the air
             if (i == 1 && still == 2 && stillK < 0.5f) a = Rad(35) * MathF.Max(0, MathF.Sin(stillK * MathF.PI * 6)); // pawing the ground
-            var hip = new Vector3(sd * 0.165f, 1.0f + bob + (front ? rock : -rock), front ? 0.6f : -0.6f);
+            var hip = new Vector3(sd * 0.165f, 1.02f + bob + (front ? rock : -rock), front ? 0.58f : -0.60f);
             // Two segments: the knee folds the cannon back as a foreleg swings forward; behind, the gaskin slopes back to the
             // hock and the cannon comes forward under it, and the hock folds as the leg swings through.
             float lift = Rad(amp) * MathF.Max(0, MathF.Cos(anim * MathF.PI + ph * MathF.Tau)) * (front && Rear <= 0 ? 1.3f : 0.8f);
@@ -418,23 +425,28 @@ sealed partial class Puppet
         if (camel) LongRect(new(0, y + 0.4f, -0.5f), new(0, y + 0.4f, 0.2f), curPal.HHump, 0.01f);
         if (Detail == 0) BillRect(new(0, y + rock, 0.6f), curPal.HChest, false, -0.015f);
         if (Detail == 0) BillRect(new(0, y - rock, -0.55f), curPal.HRump, false, -0.015f);
-        float neckOut = gallop * 0.12f; // stretched out at the gallop
-        LongRect(new(0, y + rock + 0.17f, 0.62f), new(0, y + rock + 0.73f + nod - neckOut, 1.0f + neckOut), curPal.HNeck);
-        LongRect(new(0, y + rock + 0.73f + nod - neckOut, 0.95f + neckOut), new(0, y + rock + 0.37f + nod * 1.5f - neckOut, 1.42f + neckOut * 1.4f), curPal.HHead);
-        if (Detail == 0) BillRect(new(0, y + rock + 0.6f + nod * 1.2f - neckOut, 1.15f + neckOut), curPal.HFace, false, -0.04f);
+        float neckOut = gallop * 0.13f; // stretched out at the gallop
+        LongRect(new(0, y + rock + 0.20f, 0.60f), new(0, y + rock + 0.76f + nod - neckOut, 1.00f + neckOut), curPal.HNeck);
+        LongRect(new(0, y + rock + 0.76f + nod - neckOut, 0.96f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.44f + neckOut * 1.4f), curPal.HHead);
+        if (Detail == 0) BillRect(new(0, y + rock + 0.58f + nod * 1.2f - neckOut, 1.18f + neckOut), curPal.HFace, false, -0.04f);
         float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.07f * (1 - gait); // a standing horse flicks its tail
-        if (Detail == 0) AxialSrc(new(0, y + 0.2f, -0.82f), new(swish, 0.85f + bob + gait * 0.4f, -1.05f - gait * 0.35f), curPal.HTail);
+        if (Detail == 0) AxialSrc(new(0, y + 0.20f, -0.82f), new(swish, 0.84f + bob + gait * 0.44f, -1.06f - gait * 0.44f), curPal.HTail);
 
         // Gear over the coat.
         pal = side; curPal = sidePal;
         tint = plain;
-        LongRect(new(0, y - rock, -0.82f), new(0, y + rock, 0.82f), caparison ? curPal.HCaparison : curPal.HSaddle, 0.03f);
+        var (hb, hc, hr, hn, hh) = barding == "scalebarding" ? (curPal.HScale, curPal.HChestScale, curPal.HRumpScale, curPal.HNeckScale, curPal.HHeadScale)
+            : barding == "gildedcaparison" ? (curPal.HGild, curPal.HChestGild, curPal.HRumpGild, curPal.HNeckGild, curPal.HHeadGild)
+            : barding == "caparison" ? (curPal.HCaparison, curPal.HChestCap, curPal.HRumpCap, curPal.HNeckCap, curPal.HHeadCap)
+            : barding == "steppetack" ? (curPal.HSteppetack, default, default, default, default)
+            : (curPal.HSaddle, default, default, default, default);
+        LongRect(new(0, y - rock, -0.82f), new(0, y + rock, 0.82f), hb, 0.03f);
         if (caparison && Detail == 0)
         {
-            BillRect(new(0, y + rock, 0.6f), curPal.HChestCap, false, -0.01f);
-            BillRect(new(0, y - rock, -0.55f), curPal.HRumpCap, false, -0.01f);
-            LongRect(new(0, y + rock + 0.17f, 0.62f), new(0, y + rock + 0.73f + nod - neckOut, 1.0f + neckOut), curPal.HNeckCap, 0.02f);
-            LongRect(new(0, y + rock + 0.73f + nod - neckOut, 0.95f + neckOut), new(0, y + rock + 0.37f + nod * 1.5f - neckOut, 1.42f + neckOut * 1.4f), curPal.HHeadCap, 0.02f);
+            BillRect(new(0, y + rock, 0.6f), hc, false, -0.01f);
+            BillRect(new(0, y - rock, -0.55f), hr, false, -0.01f);
+            LongRect(new(0, y + rock + 0.20f, 0.60f), new(0, y + rock + 0.76f + nod - neckOut, 1.00f + neckOut), hn, 0.02f);
+            LongRect(new(0, y + rock + 0.76f + nod - neckOut, 0.96f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.44f + neckOut * 1.4f), hh, 0.02f);
         }
         if (riderLegs)
             for (int sd = -1; sd <= 1; sd += 2)
@@ -576,7 +588,7 @@ sealed partial class Puppet
         FlatRect(new(-0.55f, 0.04f, -0.5f), curPal.HLeg, false);
         curPal = sidePal;
         tint = Color.White;
-        FlatRect(new(0, 0.07f, 0), h.Barding == "caparison" ? curPal.HCaparison : curPal.HSaddle, true);
+        FlatRect(new(0, 0.07f, 0), h.Barding == "scalebarding" ? curPal.HScale : h.Barding == "gildedcaparison" ? curPal.HGild : h.Barding == "caparison" ? curPal.HCaparison : h.Barding == "steppetack" ? curPal.HSteppetack : curPal.HSaddle, true);
     }
 
     static Vector3 RotY(Vector3 v, float deg)
@@ -865,8 +877,13 @@ sealed partial class Puppet
     /// (their top just above the crown). Shared with the HUD's troop card (`Hud`).
     public static float HelmTop(string kind) => 1.605f + kind switch
     {
-        "cap" => 8.5f, "kettle" => 9.6f, "nasal" => 10.5f, "sallet" => 9.5f, "spangen" => 11.5f, "turban" => 12f,
-        "steppe" => 15.5f, "spike" => 11.5f, "furcap" => 11f, _ => 6.83f,
+        "cap" or "brigand_hat" => 8.5f, "kettle" => 9.6f, "nasal" => 10.5f,
+        "sallet" or "sallet_bevor" => 9.5f, "sallet_crest" => 12.5f,
+        "spangen" or "spangen_horns" or "spangen_wolf" => 11.5f, "turban" => 12f,
+        "steppe" or "steppe_mask" or "steppe_horns" => 15.5f, "spike" => 11.5f, "furcap" => 11f,
+        "gjermundbu" => 10.5f, "morion" or "barbute_crest" => 12.5f, "kulah" => 11.5f,
+        "greathelm_horns" or "greathelm_wings" or "greathelm_crown" => 13.83f,
+        _ => 6.83f,
     } * Art.Px;
 
     /// The bare head; a man's own visage is painted in the neutral palette.
