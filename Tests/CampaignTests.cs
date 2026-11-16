@@ -175,6 +175,35 @@ public static partial class SelfTest
         Check(agree >= n * 0.75f, $"auto-resolve calibration ({agree}/{n})");
     }
 
+    /// A lord fights as he is (docs/PLAYTEST.md PT6b): the same two armies, a Reckless then a Cautious enemy lord. The
+    /// reckless one goes in sooner and leads it himself; the cautious one sounds the retreat sooner.
+    static void LordsFightAsTheyAre()
+    {
+        (float Charge, float Captain, float Ends) Run(params string[] traits)
+        {
+            var rng = new Random(77);
+            var a0 = Armies.Random(rng, 2, 0);
+            var a1 = Armies.Random(rng, 2, 0);
+            var b = new Battle(301, Ids(a0, 1000), Ids(a1, 2000), new BattleOptions { AutoPlayer = true, PlayerWounded = true, LeaderTraits = traits, Ground = TerrainParams.Meadow with { Layouts = null } });
+            float charge = -1, captain = -1;
+            for (int step = 0; b.Winner < 0 && step < 60 * 400; step++)
+            {
+                b.Update(1 / 60f);
+                if (charge < 0 && b.SquadsOf(1).Any(q => q.Order == Order.Charge && q.Units.All(u => !u.IsLeader))) charge = b.Time;
+                if (captain < 0 && b.SquadsOf(1).Any(q => q.Order == Order.Charge && q.Units.Any(u => u.IsLeader))) captain = b.Time;
+            }
+            Console.WriteLine($"  {string.Join(",", traits)}: line charges {charge:0.0} s, captain {captain:0.0} s, ends {b.Time:0} s");
+            return (charge, captain, b.Time);
+        }
+        var bold = Run("Reckless");
+        var wary = Run("Cautious");
+        var plain = Run();
+        Check(bold.Captain >= 0 && (wary.Captain < 0 || bold.Captain < wary.Captain), "a reckless lord leads the charge sooner than a cautious one");
+        Check(bold.Charge >= 0 && (wary.Charge < 0 || bold.Charge <= wary.Charge), "a reckless lord's line goes in no later than a cautious one's");
+        Check(Nature.Of(Array.Empty<string>()) == Nature.Plain && plain.Ends > 0, "no traits, the plain general");
+        Check(Nature.Line(new[] { "Reckless" }).StartsWith("RECKLESS") && Nature.Line(new[] { "Greedy" }) == "", "the panel line names how he fights");
+    }
+
     /// The campaign chooses the ground (docs/archive/TERRAIN.md T7): a road over a river is a river line with its bridge, a village
     /// gives a village field, a ridge a crest or a pass.
     static void RiverRoadGivesBridge()
@@ -702,6 +731,20 @@ public static partial class SelfTest
     /// Cultures and regional recruitment (F2): every troop has a culture; every culture can climb from its village root to a
     /// tier VII of its own; villages raise their culture's men whoever holds them; men cannot train into another culture's line;
     /// elite lines need a town of their culture in your realm.
+    static void UpgradeTreeVisibility()
+    {
+        var c = Campaign.New(19);
+        var town = c.S.Settlements.First(s => s.Culture == "azure" && s.Kind == SettlementKind.Town);
+        c.Captain.Contract = town.Faction;
+        var ig = c.NewCompany("ironguard", "infantry", 6, 1000, town);
+        c.Player.Companies.Add(ig);
+        var tree = c.UpgradeGraph(c.Player, ig, "ironguard");
+        Check(tree.ContainsKey("aegis_wardens") && !tree.ContainsKey("paladins"), "upgrade screen hides noble lines from commoners while showing unlocked elite lines");
+        Check(!tree.ContainsKey("lily_squires"), "upgrade screen hides knight order lines when unsworn");
+        c.Captain.Contract = -1;
+        Check(!c.UpgradeGraph(c.Player, ig, "ironguard").ContainsKey("aegis_wardens"), "upgrade screen hides elite lines without a realm barracks");
+    }
+
     static void Cultures()
     {
         var errs = Factions.Validate().ToList();
@@ -1439,6 +1482,11 @@ public static partial class SelfTest
         var px = PortraitPainter.Paint(faces[0]);
         Check(px.Length == PortraitPainter.W * PortraitPainter.H && px.All(p => p.A == 255), "a portrait is a whole opaque picture");
         Check(!PortraitPainter.Paint(faces[0] with { Mood = 0 }).SequenceEqual(PortraitPainter.Paint(faces[0] with { Mood = 3 })), "a warm face and a hostile one differ");
+        var small = PortraitPainter.Resample(px, PortraitPainter.W, PortraitPainter.HeadCrop, 20, 20);
+        Check(small.Length == 400 && small.All(p => p.A == 255) && small.Distinct().Count() > 20, "a small copy of the head is a whole picture too");
+        for (int dress = 0; dress <= 4; dress++)
+            for (int cut = 0; cut <= 4; cut++)
+                Check(PortraitPainter.Paint(faces[0] with { Dress = dress, Cut = cut, Beard = cut % 4, Crown = cut == 2, Female = cut == 1, Age = 20 + cut * 12, Scar = cut % 3 }).All(p => p.A == 255), $"dress {dress}, cut {cut} paints whole");
         var ruler = c.RulerOf(lords[0].Faction)!;
         Check(PortraitPainter.Of(c, ruler).Crown, "a ruler wears a circlet");
         Check(PortraitPainter.Of(c, lords[0]).Age == lords[0].Age, "the face ages with him");

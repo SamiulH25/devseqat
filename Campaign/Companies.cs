@@ -154,6 +154,30 @@ public sealed partial class Campaign
         return true;
     }
 
+    /// Every troop these men can unlock or upgrade into, breadth first from `root` (excludes barred/locked lines).
+    public Dictionary<string, List<string>> UpgradeGraph(Party p, CompanyRecord c, string root)
+    {
+        var graph = new Dictionary<string, List<string>> { [root] = new() };
+        var queue = new Queue<string>();
+        queue.Enqueue(root);
+        while (queue.Count > 0)
+        {
+            string id = queue.Dequeue();
+            var kids = graph[id];
+            foreach (var to in Troops.Get(id).UpgradesTo)
+            {
+                if (!CanEnterLine(p, c, id, to, out _)) continue;
+                kids.Add(to);
+                if (!graph.ContainsKey(to))
+                {
+                    graph[to] = new();
+                    queue.Enqueue(to);
+                }
+            }
+        }
+        return graph;
+    }
+
     /// Does the party's realm (your contract, or a lord's faction), or the party itself, hold a barracks of this culture (F6)?
     public bool HasBarracks(Party p, string culture)
     {
@@ -299,6 +323,26 @@ public sealed partial class Campaign
         MoveNamed(from, to, s.Troop);
         from.Stacks.Remove(s);
         if (from.Men + from.Wounded == 0) Player.Companies.Remove(from);
+        return null;
+    }
+
+    /// Send n fit men of a stack to another company that takes their kind, with their share of the pool and of the named
+    /// men. All of a stack with no wounded moves the stack itself.
+    public string? MoveMen(CompanyRecord from, TroopStack s, CompanyRecord to, int n)
+    {
+        if (from == to) return "SAME COMPANY";
+        if (!Rules.Fits(to, s.Troop)) return "WRONG ROLE";
+        n = Math.Min(n, s.Men);
+        if (n <= 0) return "TOO FEW MEN";
+        if (n == s.Men && s.Wounded == 0) return MoveStack(from, s, to);
+        if (Rules.Room(to, s.Troop) < n) return "NO ROOM";
+        float xp = s.Xp * n / s.Men;
+        MoveNamed(from, to, s.Troop, n / (float)s.Men);
+        s.Take(n);
+        var t = to.Stack(s.Troop);
+        t.Men += n;
+        t.Xp = Math.Clamp(t.Xp + xp, 0, t.PoolCap);
+        from.Prune();
         return null;
     }
 
