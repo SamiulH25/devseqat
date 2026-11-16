@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The world, from above</title>
+<style>
+  :root { --iron: #12151c; --iron2: #1b202b; --iron3: #262c3a; --line: #353c4e; --text: #e6dfcc; --dim: #958e7d; --gilt: #d6ac46; --gilt2: #78581f; --you: #70a0ff; --model: #e0a85a; --bad: #e2483c; --ok: #6ec468; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { background: var(--iron); color: var(--text); font: 13.5px/1.45 Georgia, serif; display: grid; grid-template: auto 1fr / 54px 1fr 320px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  header { grid-column: 1 / 4; display: flex; align-items: center; gap: 10px; padding: 7px 14px; background: linear-gradient(#232836, #171b25); border-bottom: 2px solid var(--gilt2); }
+  header h1 { margin: 0 6px 0 0; font-size: 17px; letter-spacing: .12em; text-transform: uppercase; color: var(--gilt); font-weight: normal; }
+  .mono, .btn, .seg button, label.tog { font: 11.5px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .05em; text-transform: uppercase; }
+  .rev { color: var(--dim); } .grow { flex: 1; }
+  .btn { background: linear-gradient(#2e2c2e, #18181c); border: 1px solid var(--line); padding: 5px 11px; cursor: pointer; border-radius: 2px; }
+  .btn:hover { border-color: var(--gilt); color: var(--gilt); }
+  .btn.gold { background: linear-gradient(#6b5623, #2b230e); border-color: var(--gilt); color: #fff3cf; }
+  .btn[disabled] { opacity: .35; cursor: default; }
+  .btn.small { padding: 2px 7px; }
+  .seg { display: flex; } .seg button { background: var(--iron2); border: 1px solid var(--line); padding: 5px 10px; cursor: pointer; margin-left: -1px; }
+  .seg button.on { background: var(--gilt2); color: #fff3cf; border-color: var(--gilt); position: relative; }
+  label.tog { color: var(--dim); cursor: pointer; user-select: none; } label.tog input { vertical-align: -2px; accent-color: var(--gilt); }
+  #search { background: var(--iron); border: 1px solid var(--line); padding: 5px 9px; width: 170px; border-radius: 2px; }
+  #state { color: var(--dim); min-width: 110px; text-align: right; } #state.dirty { color: var(--gilt); } #state.err { color: var(--bad); }
+  #tools { background: var(--iron2); border-right: 1px solid var(--line); padding: 6px 5px; display: flex; flex-direction: column; gap: 4px; overflow: auto; }
+  #tools button { height: 40px; background: var(--iron3); border: 1px solid var(--line); cursor: pointer; border-radius: 2px; font: 10px ui-monospace, monospace; line-height: 1.1; padding: 0; }
+  #tools button b { display: block; font-size: 15px; font-weight: normal; }
+  #tools button.on { border-color: var(--gilt); background: var(--gilt2); color: #fff3cf; }
+  #tools hr { width: 100%; border: 0; border-top: 1px solid var(--line); margin: 3px 0; }
+  #stage { position: relative; overflow: hidden; background: #0b0d12; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  #tip { position: absolute; pointer-events: none; background: #0d1016ee; border: 1px solid var(--gilt2); padding: 3px 8px; border-radius: 2px; display: none; white-space: nowrap; z-index: 3; }
+  #hint { position: absolute; left: 10px; bottom: 8px; color: var(--dim); background: #0d1016cc; padding: 3px 9px; border-radius: 2px; z-index: 2; }
+  aside { background: var(--iron2); border-left: 1px solid var(--line); overflow: auto; padding: 0 0 30px; }
+  aside h2 { margin: 0; padding: 9px 14px 5px; font: 11.5px ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--gilt); border-top: 1px solid var(--line); }
+  aside h2:first-child { border-top: 0; }
+  .pad { padding: 2px 14px 10px; }
+  .row { display: grid; grid-template-columns: 78px 1fr; gap: 6px; align-items: center; margin: 4px 0; }
+  .row > span { color: var(--dim); font: 11px ui-monospace, monospace; text-transform: uppercase; letter-spacing: .05em; }
+  .row input, .row select, textarea { width: 100%; background: #0f1218; border: 1px solid var(--line); padding: 4px 7px; border-radius: 2px; }
+  input:focus, select:focus, textarea:focus { outline: 1px solid var(--gilt); }
+  table { width: 100%; border-collapse: collapse; } td, th { padding: 2px 5px; text-align: right; } td:first-child, th:first-child { text-align: left; }
+  th { color: var(--dim); font: 10.5px ui-monospace, monospace; font-weight: normal; text-transform: uppercase; }
+  tr.realm { cursor: pointer; } tr.realm:hover td { background: var(--iron3); } tr.realm.on td { background: #3a3220; }
+  .sw { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border: 1px solid #0008; vertical-align: -1px; }
+  .note { border: 1px solid var(--line); border-left: 3px solid var(--who, var(--line)); padding: 6px 9px; margin: 6px 0; cursor: pointer; background: #151922; border-radius: 2px; }
+  .note.waits { box-shadow: 0 0 0 1px var(--gilt) inset; } .note.done { opacity: .5; }
+  .note b { font-weight: normal; color: var(--text); } .note small { color: var(--dim); display: block; }
+  .msg { padding: 5px 8px; margin: 5px 0; background: #0f1218; border-left: 3px solid var(--who); white-space: pre-wrap; border-radius: 2px; }
+  .msg .who { font: 10.5px ui-monospace, monospace; color: var(--who); text-transform: uppercase; display: block; }
+  .by-you { --who: var(--you); } .by-model { --who: var(--model); }
+  .acts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+  .empty { color: var(--dim); font-style: italic; }
+  #gate { position: absolute; inset: 0; display: none; place-items: center; background: var(--iron); z-index: 5; }
+  #gate .box { max-width: 520px; text-align: center; border: 1px dashed var(--gilt2); padding: 30px; } #gate p { color: var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">The world</h1>
+  <span class="rev mono" id="rev"></span>
+  <span class="grow"></span>
+  <div class="seg" id="modes"><button data-mode="realm" class="on">Realms</button><button data-mode="terrain">Land</button><button data-mode="culture">Cultures</button></div>
+  <label class="tog"><input type="checkbox" data-layer="roads" checked> Roads</label>
+  <label class="tog"><input type="checkbox" data-layer="sealanes" checked> Sea lanes</label>
+  <label class="tog"><input type="checkbox" data-layer="water" checked> Water</label>
+  <label class="tog"><input type="checkbox" data-layer="sites" checked> Sites</label>
+  <label class="tog"><input type="checkbox" data-layer="names" checked> Names</label>
+  <label class="tog"><input type="checkbox" data-layer="notes" checked> Notes</label>
+  <input id="search" placeholder="Find a place" autocomplete="off">
+  <button class="btn" id="undo" title="Ctrl+Z" disabled>Undo</button>
+  <span id="state" class="mono"></span>
+  <button class="btn gold" id="save" disabled>Save</button>
+</header>
+<div id="tools"></div>
+<div id="stage"><canvas id="map"></canvas><div id="tip"></div><div id="hint" class="mono"></div>
+  <div id="gate"><div class="box">
+    <h2 style="color:var(--gilt);font-weight:normal;margin-top:0">Open the world file</h2>
+    <p>This page was opened straight from disk, so it cannot read <b>world.json</b> by itself. Pick it once and the page saves back into it. Or run <code>tools/world.py</code> and open <code>http://localhost:8765</code>.</p>
+    <button class="btn gold" id="pick">Choose docs/world/world.json</button><input type="file" id="file" accept=".json" hidden>
+  </div></div>
+</div>
+<aside id="side"></aside>
+
+<script>
+// The world from above: world.json is the model of the game's world (realms, provinces, settlements, rivers, ridges,
+// lakes, roads, sites, and notes pinned to the map); this page draws it top-down and lets the person change it.
+// A model changes the same file by hand. The file's shape and rules are in README.md beside this page.
+// World units: x east, y south, 0,0 the middle, the land runs from -extent to +extent. No build, no libraries.
+const ME = "you", OTHER = "model";
+const KIND_COL = {
+  Meadow: "#7fa556", Farmland: "#b6a65b", Coast: "#9ab86e",
+  Forest: "#3d6a3b", Taiga: "#2c5238", Marsh: "#5c7b6c",
+  Hills: "#8b8558", Highlands: "#6f6852", Tundra: "#9aa89e",
+  Steppe: "#b9b274", Badlands: "#a67750", Desert: "#d6b87c", Oasis: "#6aa866",
+  Sea: "#1d3d59"
+};
+const CULT_COL = { azure: "#4a78d0", crimson: "#c0443c", northern: "#3f8a62", southern: "#d99a3a", steppe: "#3a9aa6", league: "#8a5ac0", order: "#d8d6cc", common: "#888" };
+const SITE_GLYPH = { ruin: "R", shrine: "+", stones: "o", battlefield: "x", mine: "M", hermit: "h", watchtower: "T", spring: "~", mill: "*" };
+const TOOLS = [["select", "➤", "Pick"], ["paint", "▨", "Realm"], ["terrain", "≋", "Land"], null, ["town", "■", "Town"], ["castle", "♜", "Castle"], ["village", "●", "Village"], ["site", "◆", "Site"], ["province", "✚", "Prov."], ["lake", "◯", "Lake"], null, ["river", "≈", "River"], ["road", "╌", "Road"], ["sealane", "⛵", "Sea lane"], ["ridge", "⋀", "Ridge"], null, ["note", "✎", "Note"]];
+const HINTS = { select: "Click a thing to pick it, drag it to move it. Drag the land to pan, wheel to zoom.", paint: "Click or drag across provinces to give them to the realm picked on the right.", terrain: "Click or drag across provinces to paint land or Sea (carve coasts, bays and islands).", town: "Click to found a town.", castle: "Click to raise a castle.", village: "Click to found a village.", site: "Click to place a site.", province: "Click to add a province: its land is whatever lies nearest its centre.", lake: "Click to place a lake; set its size on the right.", river: "Click point after point; Enter or double-click ends the river.", road: "Click point after point; Enter or double-click ends the road.", sealane: "Click point after point across water; Enter or double-click ends the sea lane.", ridge: "Click point after point; Enter or double-click ends the ridge.", note: "Click the map to pin a note there for the model." };
+const LISTS = { settlement: "settlements", province: "provinces", site: "sites", lake: "lakes", river: "rivers", road: "roads", sealane: "sealanes", ridge: "ridges", note: "notes" };
+
+let W = null, dirty = false, handle = null, mode = "realm", tool = "select", sel = null, paintRealm = 0, paintKind = "Sea", drawing = null;
+const layers = { roads: true, sealanes: true, water: true, sites: true, names: true, notes: true };
+const view = { x: 0, y: 0, k: 1 }, undo = [];
+const served = location.protocol.startsWith("http");
+const $ = (s) => document.querySelector(s), cv = $("#map"), g = cv.getContext("2d");
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+const r1 = (v) => Math.round(v * 10) / 10;
+const sx = (x) => (x - view.x) * view.k + cv.width / 2, sy = (y) => (y - view.y) * view.k + cv.height / 2;
+const wx = (px) => (px - cv.width / 2) / view.k + view.x, wy = (py) => (py - cv.height / 2) / view.k + view.y;
+const realm = (id) => W.realms.find((r) => r.id === id);
+const realmCol = (id) => realm(id)?.colour || "#6b6b6b";
+const subcult = (id) => W.subcultures?.find((c) => c.id === id);
+const cultCol = (subId, cultId) => subcult(subId)?.colour || CULT_COL[cultId] || "#888";
+const item = (s) => s && W[LISTS[s.type]].find((o) => o.id === s.id);
+const nextId = (list) => list.reduce((m, o) => Math.max(m, o.id), -1) + 1;
+const waitsFor = (n, who) => !n.done && (n.thread?.length ? n.thread[n.thread.length - 1].by !== who : n.by !== who);
+
+// ---------- the land: organic Voronoi provinces (deterministic noise warp so coasts & borders look natural) ----------
+const N = 512;
+let owner = new Int16Array(N * N), land = document.createElement("canvas");
+land.width = land.height = N;
+function hash2(ix, iy) { let h = Math.imul(ix, 374761393) + Math.imul(iy, 668265263); h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
+function vnoise(x, y) {
+  const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+  const a = hash2(ix, iy), b = hash2(ix + 1, iy), c = hash2(ix, iy + 1), d = hash2(ix + 1, iy + 1);
+  return (a * (1 - ux) + b * ux) * (1 - uy) + (c * (1 - ux) + d * ux) * uy - .5;
+}
+function warp(x, y) {
+  return [x + vnoise(x / 65, y / 65) * 24 + vnoise(x / 24 + 17, y / 24 - 9) * 9 + vnoise(x / 9 - 3, y / 9 + 5) * 3.5,
+          y + vnoise(x / 65 + 31, y / 65 + 13) * 24 + vnoise(x / 24 - 7, y / 24 + 23) * 9 + vnoise(x / 9 + 11, y / 9 - 13) * 3.5];
+}
+function provinceAt(x, y) {
+  const [wx0, wy0] = warp(x, y);
+  let best = -1, bd = Infinity;
+  for (let i = 0; i < W.provinces.length; i++) { const p = W.provinces[i], d = (p.x - wx0) * (p.x - wx0) + (p.y - wy0) * (p.y - wy0); if (d < bd) { bd = d; best = i; } }
+  return best;
+}
+function hex(c) { const n = parseInt(c.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function buildLand() {
+  const E = W.extent, P = W.provinces, cell = 2 * E / N, lg = land.getContext("2d"), img = lg.createImageData(N, N), d = img.data;
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) owner[j * N + i] = provinceAt(-E + (i + .5) * cell, -E + (j + .5) * cell);
+  // Distance (in cells, 0..3) from land for coastal shallows.
+  const coast = new Uint8Array(N * N);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) if (P[owner[j * N + i]].kind !== "Sea") coast[j * N + i] = 3;
+  for (let pass = 2; pass >= 1; pass--) for (let j = 1; j < N - 1; j++) for (let i = 1; i < N - 1; i++) {
+    const idx = j * N + i;
+    if (coast[idx] === 0 && (coast[idx - 1] > pass || coast[idx + 1] > pass || coast[idx - N] > pass || coast[idx + N] > pass)) coast[idx] = pass;
+  }
+  // The subculture (or culture) of each province's settlements decides its culture colour (most of them win), falling back to the province's own subculture.
+  const cult = P.map((p, pi) => {
+    const t = {};
+    for (const s of W.settlements) if (s._p === pi) { const k0 = s.subculture || s.culture; t[k0] = (t[k0] || 0) + (s.kind === "village" ? 1 : 3); }
+    const win = Object.entries(t).sort((a, b) => b[1] - a[1])[0]?.[0] || p.subculture || "common";
+    return cultCol(win, win);
+  });
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const idx = j * N + i, o = owner[idx], p = P[o], isSea = p.kind === "Sea";
+    const wx0 = -E + (i + .5) * cell, wy0 = -E + (j + .5) * cell;
+    const tex = 1 + vnoise(wx0 / 28, wy0 / 28) * .12 + vnoise(wx0 / 10, wy0 / 10) * .05;
+    const r = i < N - 1 ? owner[idx + 1] : o, b = j < N - 1 ? owner[idx + N] : o;
+    const pr = P[r], pb = P[b];
+    let c;
+    if (isSea) {
+      const sh = coast[idx];
+      c = sh === 2 ? [48, 96, 130] : sh === 1 ? [35, 72, 102] : [24, 50, 74];
+      if (pr.kind !== "Sea" || pb.kind !== "Sea") c = [188, 170, 126]; // sandy/rocky shore
+    } else {
+      const k = hex(KIND_COL[p.kind] || "#777");
+      c = mode === "terrain" ? k : hex(mode === "culture" ? cult[o] : realmCol(p.realm));
+      if (mode !== "terrain") c = c.map((v, q) => v * .66 + k[q] * .34);
+      let f = tex;
+      if (pr.kind === "Sea" || pb.kind === "Sea") f = .30;
+      else if (r !== o || b !== o) f *= (pr.realm !== p.realm || pb.realm !== p.realm) ? .38 : .82;
+      c = [Math.min(255, c[0] * f), Math.min(255, c[1] * f), Math.min(255, c[2] * f)];
+    }
+    const q = idx * 4; d[q] = c[0]; d[q + 1] = c[1]; d[q + 2] = c[2]; d[q + 3] = 255;
+  }
+  lg.putImageData(img, 0, 0);
+}
+function index() { for (const s of W.settlements) s._p = provinceAt(s.x, s.y); }
+
+// ---------- drawing ----------
+function line(pts, close) { g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(sx(p[0]), sy(p[1])) : g.moveTo(sx(p[0]), sy(p[1]))); if (close) g.closePath(); }
+function draw() {
+  if (!W) return;
+  const w = cv.width = cv.clientWidth * devicePixelRatio, h = cv.height = cv.clientHeight * devicePixelRatio, E = W.extent, k = view.k, px = devicePixelRatio;
+  g.fillStyle = "#19334b"; g.fillRect(0, 0, w, h);
+  g.imageSmoothingEnabled = k * 2 * E / N < 3;
+  g.drawImage(land, sx(-E), sy(-E), 2 * E * k, 2 * E * k);
+  g.lineJoin = g.lineCap = "round";
+  for (const r of W.ridges) {
+    // Soft alpine shadow under the range, then individual shaded mountain peaks along the spine.
+    line(r.points); g.strokeStyle = "#2b241d55"; g.lineWidth = Math.max(2 * px, r.width * k * .75); g.stroke();
+    const step = Math.max(10, r.width * .55);
+    for (let i = 1; i < r.points.length; i++) {
+      const [ax, ay] = r.points[i - 1], [bx, by] = r.points[i], len = Math.hypot(bx - ax, by - ay);
+      if (len < 1) continue;
+      const n = Math.max(1, Math.floor(len / step));
+      for (let t = 0; t < n; t++) {
+        const f = (t + .5) / n, mx = ax + (bx - ax) * f, my = ay + (by - ay) * f;
+        const w0 = r.width * .42, h0 = r.width * .48;
+        const x0 = sx(mx), y0 = sy(my + h0 * .35), xL = sx(mx - w0), xR = sx(mx + w0), yTop = sy(my - h0 * .65);
+        // Sunlit left slope
+        g.beginPath(); g.moveTo(xL, y0); g.lineTo(x0, yTop); g.lineTo(x0, y0); g.closePath();
+        g.fillStyle = "#8d7c68"; g.fill();
+        // Shaded right slope
+        g.beginPath(); g.moveTo(x0, yTop); g.lineTo(xR, y0); g.lineTo(x0, y0); g.closePath();
+        g.fillStyle = "#5a4d3f"; g.fill();
+        // Snow cap
+        g.beginPath(); g.moveTo(x0 - (x0 - xL) * .36, yTop + (y0 - yTop) * .36); g.lineTo(x0, yTop); g.lineTo(x0 + (xR - x0) * .36, yTop + (y0 - yTop) * .36); g.closePath();
+        g.fillStyle = "#eee9dc"; g.fill();
+        // Crisp outline
+        g.beginPath(); g.moveTo(xL, y0); g.lineTo(x0, yTop); g.lineTo(xR, y0);
+        g.strokeStyle = "#2b241dcc"; g.lineWidth = 1.2 * px; g.stroke();
+      }
+    }
+  }
+  if (layers.water) {
+    for (const l of W.lakes) { g.beginPath(); g.arc(sx(l.x), sy(l.y), l.radius * k, 0, 7); g.fillStyle = "#3d74a8"; g.fill(); g.strokeStyle = "#1f4468"; g.lineWidth = px; g.stroke(); }
+    for (const r of W.rivers) {
+      for (let i = 1; i < r.points.length; i++) {
+        const w0 = Math.max(1.2 * px, r.width * k * (.35 + .65 * i / (r.points.length - 1)));
+        g.beginPath(); g.moveTo(sx(r.points[i - 1][0]), sy(r.points[i - 1][1])); g.lineTo(sx(r.points[i][0]), sy(r.points[i][1]));
+        g.strokeStyle = "#1a3c5c"; g.lineWidth = w0 + 2 * px; g.stroke();
+        g.strokeStyle = "#4d8cc4"; g.lineWidth = w0; g.stroke();
+      }
+    }
+  }
+  if (layers.sealanes) {
+    g.setLineDash([7 * px, 6 * px]);
+    for (const r of W.sealanes) { line(r.points); g.strokeStyle = "#8fd4f0aa"; g.lineWidth = 1.8 * px; g.stroke(); }
+    g.setLineDash([]);
+  }
+  if (layers.roads) for (const r of W.roads) { if (r.minor && k < .9 * px) continue; line(r.points); g.strokeStyle = r.minor ? "#d9c79066" : "#e6d6a0cc"; g.lineWidth = (r.minor ? 1 : 1.8) * px; g.stroke(); }
+  if (layers.sites && k > .75 * px) for (const s of W.sites) { const x = sx(s.x), y = sy(s.y), q = 3.5 * px; g.beginPath(); g.moveTo(x, y - q); g.lineTo(x + q, y); g.lineTo(x, y + q); g.lineTo(x - q, y); g.closePath(); g.fillStyle = "#efe6c8"; g.fill(); g.strokeStyle = "#222"; g.lineWidth = px; g.stroke(); }
+  g.textAlign = "center"; g.textBaseline = "middle";
+  if (layers.names && k > .55 * px) { g.font = `italic ${Math.min(15, 9 + k * 2) * px}px Georgia`; for (const p of W.provinces) { if (p.kind === "Sea" && sel?.id !== p.id) continue; g.fillStyle = "#0009"; g.fillText(p.name, sx(p.x) + px, sy(p.y) + 13 * px); g.fillStyle = "#fff6"; g.fillText(p.name, sx(p.x), sy(p.y) + 12 * px); } }
+  if (tool === "province" || sel?.type === "province") for (const p of W.provinces) { const x = sx(p.x), y = sy(p.y); g.strokeStyle = "#fffb"; g.lineWidth = 1.5 * px; g.beginPath(); g.moveTo(x - 4 * px, y); g.lineTo(x + 4 * px, y); g.moveTo(x, y - 4 * px); g.lineTo(x, y + 4 * px); g.stroke(); }
+  for (const kind of ["village", "castle", "town"]) for (const s of W.settlements) {
+    if (s.kind !== kind) continue;
+    const x = sx(s.x), y = sy(s.y), c = mode === "culture" ? cultCol(s.subculture, s.culture) : realmCol(s.realm);
+    g.fillStyle = c; g.strokeStyle = "#111"; g.lineWidth = 1.5 * px;
+    if (kind === "village") { if (k < .7 * px) continue; g.beginPath(); g.arc(x, y, 3 * px, 0, 7); g.fill(); g.stroke(); }
+    else if (kind === "town") { const q = 6 * px; if (s.port) { g.beginPath(); g.arc(x, y, 9.5 * px, 0, 7); g.strokeStyle = "#8fd4f0"; g.lineWidth = 1.6 * px; g.stroke(); } g.fillStyle = c; g.strokeStyle = "#111"; g.lineWidth = 1.5 * px; g.fillRect(x - q, y - q, 2 * q, 2 * q); g.strokeRect(x - q, y - q, 2 * q, 2 * q); g.fillStyle = "#fff"; g.fillRect(x - 2 * px, y - 2 * px, 4 * px, 4 * px); }
+    else { const q = 5 * px; if (s.port) { g.beginPath(); g.arc(x, y, 8.5 * px, 0, 7); g.strokeStyle = "#8fd4f0"; g.lineWidth = 1.4 * px; g.stroke(); } g.fillStyle = c; g.strokeStyle = "#111"; g.lineWidth = 1.5 * px; g.beginPath(); g.moveTo(x - q, y + q); g.lineTo(x - q, y - q); g.lineTo(x - q / 3, y - q); g.lineTo(x - q / 3, y - q / 3); g.lineTo(x + q / 3, y - q / 3); g.lineTo(x + q / 3, y - q); g.lineTo(x + q, y - q); g.lineTo(x + q, y + q); g.closePath(); g.fill(); g.stroke(); }
+    if (layers.names && (kind === "town" || kind === "castle" && k > 1.1 * px || k > 2.2 * px)) {
+      g.font = `${(kind === "town" ? 13 : 11) * px}px Georgia`; g.lineWidth = 3 * px; g.strokeStyle = "#000c"; const ty = y - (kind === "village" ? 9 : 14) * px;
+      g.strokeText(s.name, x, ty); g.fillStyle = kind === "town" ? "#fff" : "#e6dfcc"; g.fillText(s.name, x, ty);
+    }
+  }
+  if (layers.sites && layers.names && k > 2.6 * px) { g.font = `italic ${10 * px}px Georgia`; for (const s of W.sites) { g.lineWidth = 3 * px; g.strokeStyle = "#000c"; g.strokeText(s.name, sx(s.x), sy(s.y) - 9 * px); g.fillStyle = "#efe6c8"; g.fillText(s.name, sx(s.x), sy(s.y) - 9 * px); } }
+  if (layers.notes) for (const n of W.notes) { const x = sx(n.x), y = sy(n.y), q = 8 * px; g.beginPath(); g.moveTo(x, y); g.lineTo(x - q * .7, y - q * 1.5); g.arc(x, y - q * 1.7, q * .75, Math.PI, 0); g.closePath(); g.fillStyle = n.done ? "#777" : n.by === ME ? "#70a0ff" : "#e0a85a"; g.fill(); g.strokeStyle = waitsFor(n, ME) ? "#fff" : "#111"; g.lineWidth = (waitsFor(n, ME) ? 2.5 : 1.2) * px; g.stroke(); }
+  // The thing picked, and a line being drawn.
+  const o = item(sel);
+  if (o) {
+    g.strokeStyle = "#fff"; g.lineWidth = 2 * px; g.setLineDash([5 * px, 4 * px]);
+    if (o.points) { line(o.points); g.stroke(); g.setLineDash([]); for (const p of o.points) { g.fillStyle = "#fff"; g.fillRect(sx(p[0]) - 3 * px, sy(p[1]) - 3 * px, 6 * px, 6 * px); } }
+    else { g.beginPath(); g.arc(sx(o.x), sy(o.y), (sel.type === "lake" ? o.radius * k : 0) + 12 * px, 0, 7); g.stroke(); g.setLineDash([]); }
+  }
+  if (drawing) { line(drawing.points.concat([[wx(mouse.x), wy(mouse.y)]])); g.strokeStyle = "#fff"; g.lineWidth = 2 * px; g.setLineDash([4 * px, 4 * px]); g.stroke(); g.setLineDash([]); }
+}
+
+// ---------- picking ----------
+function segDist(p, a, b) { const vx = b[0] - a[0], vy = b[1] - a[1], l = vx * vx + vy * vy || 1, t = Math.max(0, Math.min(1, ((p[0] - a[0]) * vx + (p[1] - a[1]) * vy) / l)); return Math.hypot(p[0] - a[0] - t * vx, p[1] - a[1] - t * vy); }
+function pick(px, py) {
+  const reach = 9 * devicePixelRatio / view.k, x = wx(px), y = wy(py);
+  let best = null, bd = reach;
+  const point = (type, list, on = true) => { if (on) for (const o of list) { const d = Math.hypot(o.x - x, o.y - y); if (d < bd) { bd = d; best = { type, id: o.id }; } } };
+  point("note", W.notes, layers.notes); point("settlement", W.settlements); point("site", W.sites, layers.sites);
+  if (tool === "province" || sel?.type === "province") point("province", W.provinces);
+  if (best) return best;
+  const lines = (type, list, on = true) => { if (on) for (const o of list) for (let i = 1; i < o.points.length; i++) { const d = segDist([x, y], o.points[i - 1], o.points[i]); if (d < bd) { bd = d; best = { type, id: o.id }; } } };
+  lines("river", W.rivers, layers.water); lines("ridge", W.ridges); lines("road", W.roads, layers.roads); lines("sealane", W.sealanes, layers.sealanes);
+  if (best) return best;
+  if (layers.water) for (const l of W.lakes) if (Math.hypot(l.x - x, l.y - y) < l.radius) return { type: "lake", id: l.id };
+  if (Math.abs(x) <= W.extent && Math.abs(y) <= W.extent) return { type: "province", id: W.provinces[provinceAt(x, y)].id };
+  return null;
+}
+function label(s) { const o = item(s); if (!o) return ""; return s.type === "settlement" ? `${o.name} (${o.kind}, ${subcult(o.subculture)?.name || realm(o.realm)?.name || "no realm"})` : s.type === "province" ? `${o.name}: ${o.kind}${o.subculture ? ", " + (subcult(o.subculture)?.name || o.subculture) : ""}, ${realm(o.realm)?.name || "no realm"}` : s.type === "site" ? `${o.name} (${o.kind})` : s.type === "note" ? `Note: ${o.title}` : `${s.type} ${o.id}`; }
+
+// ---------- changes ----------
+function before() { undo.push(JSON.stringify(W, (k, v) => k === "_p" ? undefined : v)); if (undo.length > 40) undo.shift(); }
+function changed(landToo) { dirty = true; if (landToo) { index(); buildLand(); } paint(); }
+function back() { if (!undo.length) return; W = JSON.parse(undo.pop()); dirty = true; if (!item(sel)) sel = null; index(); buildLand(); paint(); }
+function place(x, y) {
+  before();
+  x = r1(x); y = r1(y);
+  const p = W.provinces[provinceAt(x, y)];
+  if (tool === "town" || tool === "castle" || tool === "village") { const o = { id: nextId(W.settlements), name: "New " + tool, kind: tool, realm: p.realm, culture: realm(p.realm)?.culture || "common", x, y }; W.settlements.push(o); sel = { type: "settlement", id: o.id }; }
+  else if (tool === "site") { const o = { id: nextId(W.sites), name: "New site", kind: "ruin", x, y }; W.sites.push(o); sel = { type: "site", id: o.id }; }
+  else if (tool === "province") { const o = { id: nextId(W.provinces), name: "New province", kind: p.kind, realm: p.realm, x, y }; W.provinces.push(o); sel = { type: "province", id: o.id }; }
+  else if (tool === "lake") { const o = { id: nextId(W.lakes), x, y, radius: 12 }; W.lakes.push(o); sel = { type: "lake", id: o.id }; }
+  else if (tool === "note") { const o = { id: nextId(W.notes), x, y, title: "New note", by: ME, done: false, thread: [] }; W.notes.push(o); sel = { type: "note", id: o.id }; }
+  setTool("select"); changed(true);
+}
+function endLine() {
+  if (!drawing) return;
+  const d = drawing; drawing = null;
+  if (d.points.length > 1) { before(); const list = W[LISTS[d.type]], o = { id: nextId(list), ...(d.type === "road" ? { minor: false } : { width: d.type === "ridge" ? 25 : 4.5 }), points: d.points }; list.push(o); sel = { type: d.type, id: o.id }; dirty = true; }
+  setTool("select"); paint();
+}
+
+// ---------- the mouse ----------
+const mouse = { x: 0, y: 0 }; let drag = null;
+const at = (e) => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) * devicePixelRatio, (e.clientY - b.top) * devicePixelRatio]; };
+cv.addEventListener("mousedown", (e) => {
+  if (!W || e.button === 2) return;
+  const [px, py] = at(e), x = wx(px), y = wy(py);
+  if (tool === "river" || tool === "road" || tool === "sealane" || tool === "ridge") { (drawing ||= { type: tool, points: [] }).points.push([r1(x), r1(y)]); draw(); return; }
+  if (tool === "paint") { const p = W.provinces[provinceAt(x, y)]; if (p && p.kind !== "Sea" && p.realm !== paintRealm) { before(); const pi = W.provinces.indexOf(p); p.realm = paintRealm; for (const s of W.settlements) if (s._p === pi) s.realm = paintRealm; changed(true); } drag = { paint: true }; return; }
+  if (tool === "terrain") { const p = W.provinces[provinceAt(x, y)]; if (p && p.kind !== paintKind) { before(); p.kind = paintKind; if (paintKind === "Sea") p.realm = -1; changed(true); } drag = { terrain: true }; return; }
+  if (tool !== "select") { if (Math.abs(x) <= W.extent && Math.abs(y) <= W.extent) place(x, y); return; }
+  const o = item(sel);
+  if (o?.points) { const vi = o.points.findIndex((p) => Math.hypot(sx(p[0]) - px, sy(p[1]) - py) < 8 * devicePixelRatio); if (vi >= 0) { before(); drag = { vertex: vi }; return; } }
+  const hit = pick(px, py);
+  // A point thing is picked and dragged in one press; land and lines are only picked, and the press pans.
+  if (hit && hit.type !== "province" && !item(hit).points) { sel = hit; drag = { move: true, moved: false }; paintSide(); draw(); return; }
+  drag = { pan: true, px, py, vx: view.x, vy: view.y, hit, moved: false };
+});
+addEventListener("mousemove", (e) => {
+  if (!W) return;
+  const [px, py] = at(e); mouse.x = px; mouse.y = py;
+  const x = wx(px), y = wy(py);
+  if (drag?.pan) { if (Math.hypot(px - drag.px, py - drag.py) > 4) drag.moved = true; if (drag.moved) { view.x = drag.vx - (px - drag.px) / view.k; view.y = drag.vy - (py - drag.py) / view.k; draw(); } }
+  else if (drag?.move) { const o = item(sel); if (!drag.moved) { before(); drag.moved = true; } o.x = r1(x); o.y = r1(y); dirty = true; draw(); }
+  else if (drag?.vertex >= 0) { item(sel).points[drag.vertex] = [r1(x), r1(y)]; dirty = true; draw(); }
+  else if (drag?.paint) { const p = W.provinces[provinceAt(x, y)], pi = W.provinces.indexOf(p); if (p && p.kind !== "Sea" && p.realm !== paintRealm) { p.realm = paintRealm; for (const s of W.settlements) if (s._p === pi) s.realm = paintRealm; changed(true); } }
+  else if (drag?.terrain) { const p = W.provinces[provinceAt(x, y)]; if (p && p.kind !== paintKind) { p.kind = paintKind; if (paintKind === "Sea") p.realm = -1; changed(true); } }
+  else if (drawing) draw();
+  const tip = $("#tip");
+  if (e.target === cv && !drag) { const h = pick(px, py); if (h) { tip.textContent = label(h); tip.style.display = "block"; tip.style.left = px / devicePixelRatio + 14 + "px"; tip.style.top = py / devicePixelRatio + 12 + "px"; } else tip.style.display = "none"; }
+  else tip.style.display = "none";
+});
+addEventListener("mouseup", () => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.pan && !d.moved) { sel = d.hit; paintSide(); draw(); }
+  if (d.move && d.moved || d.vertex >= 0) changed(true);
+});
+cv.addEventListener("dblclick", (e) => {
+  if (drawing) { drawing.points.pop(); endLine(); return; }
+  const o = item(sel); if (!o?.points) return;
+  const [px, py] = at(e), p = [r1(wx(px)), r1(wy(py))];
+  let bi = -1, bd = 10 * devicePixelRatio / view.k;
+  for (let i = 1; i < o.points.length; i++) { const dd = segDist(p, o.points[i - 1], o.points[i]); if (dd < bd) { bd = dd; bi = i; } }
+  if (bi > 0) { before(); o.points.splice(bi, 0, p); changed(false); }
+});
+cv.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  const o = item(sel); if (!o?.points || o.points.length <= 2) return;
+  const [px, py] = at(e), vi = o.points.findIndex((p) => Math.hypot(sx(p[0]) - px, sy(p[1]) - py) < 8 * devicePixelRatio);
+  if (vi >= 0) { before(); o.points.splice(vi, 1); changed(false); }
+});
+cv.addEventListener("wheel", (e) => { e.preventDefault(); const [px, py] = at(e), x = wx(px), y = wy(py), f = Math.exp(-e.deltaY * .0015); view.k = Math.max(.15, Math.min(40, view.k * f)); view.x = x - (px - cv.width / 2) / view.k; view.y = y - (py - cv.height / 2) / view.k; draw(); }, { passive: false });
+addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); return; }
+  if (e.target.matches("input, textarea, select")) return;
+  if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); back(); }
+  else if (e.key === "Enter") endLine();
+  else if (e.key === "Escape") { drawing = null; sel = null; setTool("select"); paint(); }
+  else if (e.key === "Delete" && sel) remove();
+});
+addEventListener("resize", draw);
+addEventListener("beforeunload", (e) => { if (dirty) e.preventDefault(); });
+function remove() {
+  if (sel.type === "province" && W.provinces.length <= 1) return;
+  if (!confirm("Remove " + label(sel) + "?")) return;
+  before(); const list = W[LISTS[sel.type]]; list.splice(list.findIndex((o) => o.id === sel.id), 1); sel = null; changed(true);
+}
+function goTo(o, s) { view.x = o.x ?? o.points[0][0]; view.y = o.y ?? o.points[0][1]; view.k = Math.max(view.k, 2.2 * devicePixelRatio); sel = s; paint(); }
+
+// ---------- the panels ----------
+function setTool(t) { tool = t; if (t !== "river" && t !== "road" && t !== "sealane" && t !== "ridge") drawing = null; paintTools(); $("#hint").textContent = HINTS[t]; }
+function paintTools() { $("#tools").innerHTML = TOOLS.map((t) => t ? `<button data-tool="${t[0]}" class="${tool === t[0] ? "on" : ""}" title="${esc(HINTS[t[0]])}"><b>${t[1]}</b>${t[2]}</button>` : "<hr>").join(""); }
+const field = (name, key, o, opts) => `<div class="row"><span>${name}</span>${opts ? `<select data-k="${key}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(o[key]) === String(v) ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>` : `<input data-k="${key}" value="${esc(o[key])}" ${typeof o[key] === "number" ? 'type="number" step="any"' : ""}>`}</div>`;
+function paintSide() {
+  if (!W) return;
+  const o = item(sel), realms = W.realms.map((r) => [r.id, r.name]).concat([[-1, "No realm"]]);
+  let h = "";
+  if (o) {
+    h += `<h2>${esc(sel.type)} picked</h2><div class="pad" id="props">`;
+    const subOpts = [["", "(none)"]].concat((W.subcultures || []).map((sc) => [sc.id, `${sc.name} (${sc.parent})`]));
+    if (sel.type === "settlement") h += field("Name", "name", o) + field("Kind", "kind", o, [["town", "Town"], ["castle", "Castle"], ["village", "Village"]]) + field("Port", "port", o, [["false", "No"], ["true", "Yes"]]) + field("Realm", "realm", o, realms) + field("Culture", "culture", o, Object.keys(CULT_COL).map((c) => [c, c])) + (W.subcultures?.length ? field("Subcult.", "subculture", o, subOpts) : "") + (subcult(o.subculture)?.flavour ? `<div class="empty">${esc(subcult(o.subculture).flavour)}</div>` : "") + `<div class="row"><span>Province</span><b style="font-weight:normal">${esc(W.provinces[o._p]?.name || "")}</b></div>`;
+    else if (sel.type === "province") { const n = W.settlements.filter((s) => W.provinces[s._p] === o); h += field("Name", "name", o) + field("Land", "kind", o, W.kinds.map((k) => [k, k])) + field("Realm", "realm", o, realms) + (W.subcultures?.length && o.kind !== "Sea" ? field("Subcult.", "subculture", o, subOpts) : "") + `<div class="row"><span>Holds</span><b style="font-weight:normal">${n.filter((s) => s.kind === "town").length} towns, ${n.filter((s) => s.kind === "castle").length} castles, ${n.filter((s) => s.kind === "village").length} villages</b></div>`; }
+    else if (sel.type === "site") h += field("Name", "name", o) + field("Kind", "kind", o, Object.keys(SITE_GLYPH).map((k) => [k, k]));
+    else if (sel.type === "lake") h += field("Radius", "radius", o);
+    else if (sel.type === "river" || sel.type === "ridge") h += field("Width", "width", o) + `<div class="empty">${o.points.length} points. Drag a point; double-click the line to add one; right-click a point to remove it.</div>`;
+    else if (sel.type === "road") h += field("Kind", "minor", o, [["false", "Road"], ["true", "Village track"]]) + `<div class="empty">${o.points.length} points. Drag a point; double-click the line to add one; right-click a point to remove it.</div>`;
+    else if (sel.type === "sealane") h += `<div class="empty">${o.points.length} points. Drag a point; double-click the line to add one; right-click a point to remove it.</div>`;
+    else if (sel.type === "note") {
+      h += field("Title", "title", o) + (o.thread || []).map((m) => `<div class="msg by-${m.by}"><span class="who">${m.by === ME ? "You" : "The model"}${m.ask ? " asks" : ""} . ${esc(m.at)}</span>${esc(m.text)}</div>`).join("") +
+        `<textarea id="say" rows="3" placeholder="What should change here, or what do you want to know?"></textarea><div class="acts"><button class="btn small" data-a="say">Say</button><button class="btn small" data-a="ask">Ask the model</button><button class="btn small" data-a="done">${o.done ? "Reopen" : "Settled"}</button></div>`;
+    }
+    if (o.x !== undefined) h += `<div class="row"><span>At</span><b style="font-weight:normal" class="mono">${o.x}, ${o.y}</b></div>`;
+    h += `<div class="acts"><button class="btn small" data-a="remove">Remove</button></div></div>`;
+  }
+  const mine = W.notes.filter((n) => waitsFor(n, ME)), sorted = [...W.notes].sort((a, b) => waitsFor(b, ME) - waitsFor(a, ME) || a.done - b.done);
+  h += `<h2>Notes${mine.length ? ` . ${mine.length} wait for you` : ""}</h2><div class="pad">` + (sorted.length ? sorted.map((n) => `<div class="note by-${n.by} ${waitsFor(n, ME) ? "waits" : ""} ${n.done ? "done" : ""}" data-note="${n.id}"><b>${esc(n.title)}</b><small>${n.done ? "settled" : waitsFor(n, ME) ? "waits for you" : waitsFor(n, OTHER) ? "waits for the model" : ""} . ${esc(n.thread?.at?.(-1)?.text?.slice(0, 70) || "")}</small></div>`).join("") : `<div class="empty">None yet. Use the Note tool to pin one on the map.</div>`) + `</div>`;
+  h += `<h2>Realms${tool === "paint" ? " . click one to paint with" : ""}</h2><div class="pad">` +
+    (tool === "terrain" ? `<div style="margin-bottom:8px">${field("Brush", "paintKind", { paintKind }, W.kinds.map((k) => [k, k]))}</div>` : "") +
+    `<table><tr><th>Realm</th><th>Prov</th><th>Town</th><th>Cast</th><th>Vill</th></tr>` +
+    W.realms.concat([{ id: -1, name: "No realm", colour: "#6b6b6b" }]).map((r) => { const c = (k) => W.settlements.filter((s) => s.realm === r.id && s.kind === k).length, p = W.provinces.filter((q) => q.realm === r.id && q.kind !== "Sea").length; return p + c("town") + c("castle") + c("village") === 0 && r.id < 0 ? "" : `<tr class="realm ${paintRealm === r.id ? "on" : ""}" data-realm="${r.id}"><td><span class="sw" style="background:${r.colour}"></span>${esc(r.name)}</td><td>${p}</td><td>${c("town")}</td><td>${c("castle")}</td><td>${c("village")}</td></tr>`; }).join("") +
+    `</table>`;
+  const pr = realm(paintRealm);
+  if (pr) h += `<div id="realmEdit" style="margin-top:8px">${field("Name", "name", pr)}${field("Culture", "culture", pr, Object.keys(CULT_COL).map((c) => [c, c]))}<div class="row"><span>Colour</span><input type="color" data-k="colour" value="${esc(pr.colour)}"></div></div>`;
+  h += `<div class="acts"><button class="btn small" data-a="realm">New realm</button></div></div>`;
+  if (mode === "culture" && W.subcultures?.length) {
+    h += `<h2>Subcultures</h2><div class="pad">` + W.subcultures.map((sc) => `<div style="margin:3px 0"><span class="sw" style="background:${sc.colour}"></span><b>${esc(sc.name)}</b> <span class="mono" style="color:var(--dim)">(${esc(sc.parent)})</span><div class="empty" style="margin-left:16px">${esc(sc.flavour || "")}</div></div>`).join("") + `</div>`;
+  }
+  const seaN = W.provinces.filter((p) => p.kind === "Sea").length;
+  h += `<h2>The whole world</h2><div class="pad mono" style="color:var(--dim)">${W.provinces.length - seaN} land . ${seaN} sea . ${W.settlements.length} settlements<br>${W.rivers.length} rivers . ${W.lakes.length} lakes . ${W.ridges.length} ridges<br>${W.roads.length} roads . ${W.sealanes.length} sea lanes . ${W.sites.length} sites<br>${2 * W.extent} units across<br>${esc(W.source || "")}</div>`;
+  $("#side").innerHTML = h;
+}
+function paint() {
+  if (!W) return;
+  $("#title").textContent = W.title || "The world";
+  $("#rev").textContent = `revision ${W.revision} . ${W.updated}`;
+  $("#save").disabled = !dirty; $("#undo").disabled = !undo.length;
+  const st = $("#state"); if (!st.classList.contains("err")) { st.textContent = dirty ? "unsaved changes" : "saved"; st.className = "mono " + (dirty ? "dirty" : ""); }
+  paintSide(); draw();
+}
+function setKey(o, k, v, was) { o[k] = typeof was === "number" ? (parseFloat(v) || 0) : typeof was === "boolean" ? v === "true" : v; }
+$("#side").addEventListener("change", (e) => {
+  const k = e.target.dataset.k; if (!k) return;
+  const inRealm = e.target.closest("#realmEdit"), o = inRealm ? realm(paintRealm) : item(sel);
+  if (k === "paintKind") { paintKind = e.target.value; return; }
+  if (!o) return;
+  before(); setKey(o, k, e.target.value, o[k]); if (k === "kind" && o.kind === "Sea" && sel?.type === "province") o.realm = -1; changed(true);
+});
+$("#side").addEventListener("click", (e) => {
+  const t = e.target.closest("[data-a], [data-note], [data-realm]"); if (!t) return;
+  if (t.dataset.note) { const n = W.notes.find((x) => x.id === +t.dataset.note); goTo(n, { type: "note", id: n.id }); return; }
+  if (t.dataset.realm) { paintRealm = +t.dataset.realm; paintSide(); return; }
+  const a = t.dataset.a, o = item(sel);
+  if (a === "remove") remove();
+  else if (a === "realm") { before(); const id = nextId(W.realms); W.realms.push({ id, name: "New realm", culture: "common", colour: "#" + ((id * 2654435761 >>> 8) & 0xffffff).toString(16).padStart(6, "0") }); paintRealm = id; changed(false); }
+  else if (a === "say" || a === "ask") { const text = $("#say").value.trim(); if (!text) { $("#say").focus(); return; } before(); (o.thread ||= []).push({ by: ME, at: today(), text, ...(a === "ask" ? { ask: true } : {}) }); o.done = false; changed(false); }
+  else if (a === "done") { before(); o.done = !o.done; changed(false); }
+});
+$("#tools").addEventListener("click", (e) => { const b = e.target.closest("[data-tool]"); if (b) { setTool(b.dataset.tool); paintSide(); draw(); } });
+$("#modes").addEventListener("click", (e) => { const m = e.target.dataset.mode; if (!m) return; mode = m; for (const b of $("#modes").children) b.classList.toggle("on", b.dataset.mode === m); buildLand(); draw(); });
+document.querySelectorAll("[data-layer]").forEach((c) => c.addEventListener("change", () => { layers[c.dataset.layer] = c.checked; draw(); }));
+$("#undo").addEventListener("click", back);
+$("#search").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || !W) return;
+  const q = e.target.value.trim().toLowerCase(); if (!q) return;
+  for (const [type, list] of [["settlement", W.settlements], ["province", W.provinces], ["site", W.sites], ["note", W.notes]]) { const o = list.find((x) => (x.name || x.title || "").toLowerCase().includes(q)); if (o) { goTo(o, { type, id: o.id }); return; } }
+});
+
+// ---------- loading and saving ----------
+function fail(msg) { const st = $("#state"); st.textContent = msg; st.className = "mono err"; st.title = msg; }
+async function save() {
+  if (!dirty || !W) return;
+  const out = JSON.parse(JSON.stringify(W, (k, v) => k === "_p" ? undefined : v));
+  out.revision = (W.revision || 0) + 1; out.updated = today();
+  // One thing a line, so a person or a model can read and change the file by hand.
+  const text = "{\n" + Object.entries(out).map(([k, v]) => `  ${JSON.stringify(k)}: ` + (Array.isArray(v) && v.length && typeof v[0] === "object" ? "[\n" + v.map((o) => "    " + JSON.stringify(o)).join(",\n") + "\n  ]" : JSON.stringify(v))).join(",\n") + "\n}\n";
+  try {
+    if (served) { const r = await (await fetch("save", { method: "POST", body: text })).json(); if (!r.ok) throw new Error(r.error); }
+    else if (handle) { const w = await handle.createWritable(); await w.write(text); await w.close(); }
+    else { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = "world.json"; a.click(); }
+    W.revision = out.revision; W.updated = out.updated; dirty = false; $("#state").className = "mono"; paint();
+  } catch (x) { fail("not saved: " + x.message); }
+}
+$("#save").addEventListener("click", save);
+function open(w) {
+  W = w; for (const k of Object.values(LISTS)) W[k] ||= []; W.realms ||= []; W.kinds ||= Object.keys(KIND_COL); if (!W.kinds.includes("Sea")) W.kinds.push("Sea");
+  $("#gate").style.display = "none"; paintRealm = W.realms[0]?.id ?? -1;
+  cv.width = cv.clientWidth * devicePixelRatio; cv.height = cv.clientHeight * devicePixelRatio;
+  view.x = view.y = 0; view.k = Math.min(cv.width, cv.height) / (2 * W.extent) * .96;
+  index(); buildLand(); setTool("select"); paint();
+}
+$("#pick").addEventListener("click", async () => {
+  if (window.showOpenFilePicker) { try { [handle] = await showOpenFilePicker({ types: [{ description: "world.json", accept: { "application/json": [".json"] } }] }); open(JSON.parse(await (await handle.getFile()).text())); } catch (x) { if (x.name !== "AbortError") alert("Could not open it: " + x.message); } }
+  else $("#file").click();
+});
+$("#file").addEventListener("change", async (e) => { const f = e.target.files[0]; if (f) open(JSON.parse(await f.text())); });
+(async () => {
+  paintTools();
+  if (!served) { $("#gate").style.display = "grid"; return; }
+  try { open(await (await fetch("world.json", { cache: "no-store" })).json()); } catch { $("#gate").style.display = "grid"; }
+})();
+</script>
+</body>
+</html>
