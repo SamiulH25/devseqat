@@ -16,7 +16,24 @@
     { "id": "southern", "name": "Sunward", "root": "levies", "kin": ["crimson", "northern"], "text": "spears and javelins, light horse and mamluks", "flavour": "White walls, palms and a call to prayer" },
     { "id": "steppe", "name": "Steppe", "root": "clansmen", "kin": ["northern"], "text": "horse archers first, bows on foot, axes and spears", "flavour": "Felt tents around a wooden hall" },
     { "id": "league", "name": "League", "root": "levies", "kin": ["azure"], "text": "pikes and pavise crossbows, hired steel", "flavour": "Canals, cranes and counting houses" },
-    { "id": "order", "name": "Ashen Sun", "root": "levies", "kin": ["azure", "crimson"], "text": "sworn brothers on foot and knight-brothers", "flavour": "Bells, banners and a great grey chapter house" }
+    { "id": "order", "name": "Ashen Sun", "root": "levies", "kin": ["azure", "crimson"], "text": "sworn brothers on foot and knight-brothers", "flavour": "Bells, banners and a great grey chapter house" },
+    {"id": "azure_heart", "name": "Crownlanders", "root": "levies", "kin": ["azure"], "text": "river-valley billmen, halberdiers and heavy lancers", "flavour": "Stone bridges, tournaments and rich abbey lands"},
+    {"id": "azure_march", "name": "Border Reivers", "root": "levies", "kin": ["azure"], "text": "pass scouts, border crossbows and light horse", "flavour": "Watch-fires on the western ridge"},
+    {"id": "azure_coast", "name": "Bayfolk", "root": "levies", "kin": ["azure"], "text": "harbour crossbows, shipboard marines and sea-wardens", "flavour": "Salt-stained docks and tall-masted cogs"},
+    {"id": "crimson_patrician", "name": "High Compact", "root": "levies", "kin": ["crimson"], "text": "civic pikes, guild halberds and duelist blades", "flavour": "Marble forums, guildhalls and crimson banners"},
+    {"id": "crimson_alpine", "name": "Cragfolk", "root": "levies", "kin": ["crimson"], "text": "pass skirmishers, highland axes and crag halberdiers", "flavour": "Switchback trails and slate-roofed keeps"},
+    {"id": "northern_fjord", "name": "Fjord-Reavers", "root": "clansmen", "kin": ["northern"], "text": "longship oarsmen, sea-raiders and axe huscarls", "flavour": "Dragon-prowed hulls and salt-spray cliffs"},
+    {"id": "northern_taiga", "name": "Wood-Clans", "root": "clansmen", "kin": ["northern"], "text": "taiga trappers, frost hunters and woodland rangers", "flavour": "Pine-log halls deep in the snow-bound woods"},
+    {"id": "southern_oasis", "name": "River-Lords", "root": "levies", "kin": ["southern"], "text": "oasis spearmen, river guards and gilded champions", "flavour": "Date palms, irrigation canals and white domes"},
+    {"id": "southern_dune", "name": "Dune-Kin", "root": "levies", "kin": ["southern"], "text": "camel skirmishers, sand raiders and desert lancers", "flavour": "Black goat-hair tents by shifting dunes"},
+    {"id": "southern_rift", "name": "Rift-Corsairs", "root": "levies", "kin": ["southern"], "text": "galley bowmen, rift marines and corsair captains", "flavour": "Lateen sails and spice-scented bazaars"},
+    {"id": "steppe_horde", "name": "Free Banners", "root": "clansmen", "kin": ["steppe", "northern"], "text": "steppe outriders, horse archers and free lancers", "flavour": "Endless grass and painted felt yurts"},
+    {"id": "steppe_salt", "name": "Salt-Riders", "root": "clansmen", "kin": ["steppe", "northern"], "text": "salt-sea scouts, armoured lancers and steppe cataphracts", "flavour": "Brine-crusted ports on the inland sea"},
+    {"id": "league_lagoon", "name": "Lagoon-Guilds", "root": "levies", "kin": ["league"], "text": "galley pikes, lagoon crossbows and merchant captains", "flavour": "Gilded canals, arsenals and counting houses"},
+    {"id": "league_fen", "name": "Fen-Folk", "root": "levies", "kin": ["league"], "text": "fen slingers, marsh spears and pavise bowmen", "flavour": "Reed-thatched stilt villages in the mist"},
+    {"id": "order_chapter", "name": "Vow-Keepers", "root": "levies", "kin": ["order"], "text": "sworn novices, chapter sergeants and sun paladins", "flavour": "Bell-towers and austere grey chapter-houses"},
+    {"id": "order_warden", "name": "Pass-Wardens", "root": "levies", "kin": ["order"], "text": "gate militia, pass halberds and canyon crossbows", "flavour": "Fortified stone gates spanning the canyon pass"},
+    {"id": "bandit", "name": "Outlaws", "root": "cutthroats", "kin": [], "text": "brigands, poachers, highwaymen and sea corsairs", "flavour": "Campfires hidden off the king's road"}
   ],
   "factions": [
     {

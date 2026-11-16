@@ -3,10 +3,21 @@
     Ironfield.SpriteBake.Run(args.SkipWhile(a => a != "--bake-sprites").Skip(1).ToArray());
     return;
 }
+if (args.Contains("--cursors"))
+{
+    Ironfield.Cursors.Dump(args.SkipWhile(a => a != "--cursors").Skip(1).FirstOrDefault() ?? "cursors.png");
+    return;
+}
 if (args.Contains("--sprites"))
 {
     var rest = args.SkipWhile(a => a != "--sprites").Skip(1).ToArray();
     Ironfield.SpriteDump.Run(rest.FirstOrDefault() ?? "sprites.png", rest.Skip(1).ToArray());
+    return;
+}
+if (args.Contains("--export-world"))
+{
+    var rest = args.SkipWhile(a => a != "--export-world").Skip(1).ToArray();
+    Ironfield.WorldExport.Run(rest.FirstOrDefault() ?? "world.json", rest.Length > 1 && int.TryParse(rest[1], out int ws) ? ws : 7);
     return;
 }
 if (args.Contains("--portraits"))
@@ -25,6 +36,14 @@ if (args.Contains("--write-controls"))
 {
     Ironfield.Controls.WriteDefaults(Ironfield.Controls.FileName);
     Console.WriteLine("wrote " + Ironfield.Controls.FileName);
+    return;
+}
+if (args.Contains("--troop-balance"))
+{
+    var rest = args.SkipWhile(a => a != "--troop-balance").Skip(1).ToArray();
+    string scope = rest.Length > 0 ? rest[0] : "nobles";
+    int seeds = rest.Length > 1 && int.TryParse(rest[1], out int s) ? s : 2;
+    Ironfield.BalanceReport.TroopBalance(scope, seeds);
     return;
 }
 if (args.Contains("--balance"))
