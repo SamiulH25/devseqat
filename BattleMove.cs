@@ -95,7 +95,7 @@ public partial class Battle
         if (f.Active)
         {
             Stagger(f, 1.1f); // knocked flat
-            f.Pos += n * 0.6f;
+            f.Pos += n * Math.Clamp(closing * 0.08f, 0.45f, 0.9f);
         }
         if (r.IsPlayer) PlayerHit = ($"TRAMPLE {real:0}", Time);
         foreach (var u in Near(f.Pos, 5, nearBrace))

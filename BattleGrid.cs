@@ -126,7 +126,21 @@ public sealed partial class Battle
                 if (a.Team == b.Team) continue;
                 if (a.Mounted && !b.Mounted) Impact(a, b, n, dt);
                 else if (b.Mounted && !a.Mounted) Impact(b, a, -n, dt);
-                else if (a.Mounted) { a.Speed *= 1 - 1.5f * dt; b.Speed *= 1 - 1.5f * dt; }
+                else if (a.Mounted)
+                {
+                    a.Speed *= 1 - 1.5f * dt;
+                    b.Speed *= 1 - 1.5f * dt;
+                    float closing = MathF.Abs(Vector2.Dot(a.Vel - b.Vel, n));
+                    if (closing >= 6 && a.ImpactCd <= 0 && b.ImpactCd <= 0)
+                    {
+                        a.ImpactCd = b.ImpactCd = 0.6f;
+                        Sound(Cue.Impact, (a.Pos + b.Pos) * 0.5f);
+                        a.Speed *= 0.65f;
+                        b.Speed *= 0.65f;
+                        HitHorse(a, closing * 1.1f, b);
+                        HitHorse(b, closing * 1.1f, a);
+                    }
+                }
             }
         }
     }

@@ -176,7 +176,7 @@ public partial class Battle
                 var dir = hd + away * 1.5f;
                 if (u.Pos.Length() > MapRadius - 25) dir -= Vector2.Normalize(u.Pos) * 3; // stay on the field
                 u.Wish = Vector2.Normalize(dir) * h.Gallop;
-                if (u.CavTimer <= 0) u.Cav = CavState.Charge;
+                if (u.CavTimer <= 0 || (enemy != null && d > 20)) u.Cav = CavState.Charge;
                 return;
             }
             case CavState.Melee:
@@ -236,7 +236,9 @@ public partial class Battle
         {
             float diff = MathHelper.WrapAngle(MathF.Atan2(u.Wish.Y, u.Wish.X) - u.Heading);
             u.Heading += Math.Clamp(diff, -rate * dt, rate * dt);
-            ws *= MathF.Max(0.2f, MathF.Cos(MathF.Min(MathF.Abs(diff), MathHelper.PiOver2)));
+            float turnMin = u.Speed > h.Trot && MathF.Abs(diff) > 1.1f ? h.Trot * 0.6f / ws : 0.2f;
+            ws *= MathF.Max(turnMin, MathF.Cos(MathF.Min(MathF.Abs(diff), MathHelper.PiOver2)));
+            ws *= SlopeFactor(Terrain, u.Pos, u.HeadingDir, mounted: true);
         }
         else if (MathF.Abs(u.Speed) < 1.5f)
             u.Heading += Math.Clamp(MathHelper.WrapAngle(u.Facing - u.Heading), -rate * 0.6f * dt, rate * 0.6f * dt); // turn on the spot
@@ -263,7 +265,7 @@ public partial class Battle
         var reserve = reserveSquad[team];
         if (reserve != null)
         {
-            bool needed = reserve.Alive == 0 || reserve.BrokeRanks || (charged[team] && (Time - chargedAt[team] > 18 || inf.Any(s => s != reserve && s.Alive < s.StartCount * 0.5f)));
+            bool needed = reserve.Alive == 0 || reserve.BrokeRanks || (charged[team] && (Time - chargedAt[team] > 18 * NatureOf(team).ReserveWait || inf.Any(s => s != reserve && s.Alive < s.StartCount * 0.5f)));
             if (needed)
             {
                 reserveSquad[team] = null;
@@ -289,12 +291,12 @@ public partial class Battle
         // With several companies, the outermost swings out to take the end of the enemy line in the flank.
         if (inf.Count >= 3 && inf.OrderBy(s => lateral.GetValueOrDefault(s)).Last() is { Order: not Order.Charge } wing) wing.Anchor = DryAnchor(basis + dir * (step - 4 - depth.GetValueOrDefault(wing)) + side * (lateral.GetValueOrDefault(wing) + 14));
         foreach (var s in spears) if (s.Order != Order.Charge) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - depth.GetValueOrDefault(s)) + side * (16 + flankOut[team].Spears + lateral.GetValueOrDefault(s))); } // swing wide on a flank
-        bool late = charged[team] && Time - chargedAt[team] > 20;
+        bool late = charged[team] && Time - chargedAt[team] > 20 * NatureOf(team).ReserveWait;
         foreach (var s in inf.Concat(spears))
         {
             if (s.Order == Order.Charge || s.Alive == 0) continue;
             var opp = Opposite(s, foe, dir, side);
-            float trigger = (spears.Contains(s) ? 10 : 16) + (s.Company?.Has("Hothead") == true ? 6 : 0);
+            float trigger = (spears.Contains(s) ? 10 : 16) + (s.Company?.Has("Hothead") == true ? 6 : 0) + NatureOf(team).Closes;
             float gap = opp == null ? float.MaxValue : Vector2.Distance(s.Center, opp.Center) - s.Radius - opp.Radius;
             if (!late && gap >= trigger && GapTo(s, foe) >= trigger) continue;
             s.Order = Order.Charge;
@@ -327,7 +329,7 @@ public partial class Battle
         {
             var (sign, outward) = HorseFlank(team, front, dir, side); // the other flank, or round the outside of a wood
             foreach (var s in horse) { s.Front = dir; s.Anchor = DryAnchor(basis + dir * (step - 2 - depth.GetValueOrDefault(s)) + side * (sign * (26 + outward + flankOut[team].Horse) + lateral.GetValueOrDefault(s))); }
-            if (charged[team] || (Time > 35 && hold == null) || horse.Any(s => s.Alive > 0 && GapTo(s, foe) < 20))
+            if (charged[team] || (Time > 35 * NatureOf(team).ReserveWait && hold == null) || horse.Any(s => s.Alive > 0 && GapTo(s, foe) < 20))
             {
                 horseCharged[team] = true;
                 foreach (var s in horse) s.Order = Order.Charge;
@@ -342,7 +344,7 @@ public partial class Battle
         {
             eGuard.Front = dir;
             if (inf.Count > 0) eGuard.Anchor = front - dir * 4; // captain leads from just behind the line (with no line, front is his own guard: he stays put)
-            if (charged[1] && Time - chargedAt[1] > 12 && eGuard.Order != Order.Charge) { eGuard.Order = Order.Charge; Log(EnemyCaptain.Type.Wild ? $"The {EnemyCaptain.Type.Name.ToLowerInvariant()} joins the fight!" : "The enemy captain joins the fight!"); }
+            if (charged[1] && Time - chargedAt[1] > Nature.CaptainJoins && eGuard.Order != Order.Charge) { eGuard.Order = Order.Charge; Log(EnemyCaptain.Type.Wild ? $"The {EnemyCaptain.Type.Name.ToLowerInvariant()} joins the fight!" : "The enemy captain joins the fight!"); }
             HuntGeneral(); // he hunts you (BattleHunt.cs)
         }
     }
