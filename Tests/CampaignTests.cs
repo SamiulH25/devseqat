@@ -939,13 +939,22 @@ public static partial class SelfTest
         var other = c.Player.Companies[1];
         Check(c.AssignDivision(other, d.Id) == null && other.Division == d.Id, "assign another company");
         Check(c.AssignDivision(lead, -1) != null, "his own company cannot leave him");
-        c.SetDivisionGoal(d, "FlankLeft");
+        c.SetDivisionGoal(d, "FlankLeft"); // an old goal name lands on its post (OF6)
+        Check(d.Goal == "LeftWing:Swing", $"an old goal name maps to a post and stance ({d.Goal})");
+        c.SetDivisionPost(d, Post.Skirmish);
+        Check(Campaign.GoalOf(d) == new Goal(Post.Skirmish, Stance.Loose), "a new post keeps the stance if it can, else takes its first");
+        c.SetDivisionStance(d, Stance.Charge);
+        Check(Campaign.GoalOf(d).Stance == Stance.Loose, "a stance of another post is refused");
+        c.SetDivisionPost(d, Post.LeftWing); c.SetDivisionStance(d, Stance.Swing);
+        d.Goal = "Attack"; // as an old save holds it
+        Check(new Campaign(CampaignState.Deserialize(c.S.Serialize())).S.Divisions[0].Goal == "Front:Charge", "an old save's goal is mapped when it loads");
+        d.Goal = "LeftWing:Swing";
         Check(c.CommandOf(d) == 3, $"a sergeant's command grows with his battles ({c.CommandOf(d)})");
         float edge = c.TacticsEdge;
         lead.OfficerBattles = 15;
         Check(c.TacticsEdge > edge, "a skilled division leader helps when you auto-resolve");
         var back = CampaignState.Deserialize(c.S.Serialize());
-        Check(back.Divisions.Count == 1 && back.Divisions[0].Goal == "FlankLeft" && back.Parties[0].Companies.Count(x => x.Division == d.Id) == 2,
+        Check(back.Divisions.Count == 1 && back.Divisions[0].Goal == "LeftWing:Swing" && back.Parties[0].Companies.Count(x => x.Division == d.Id) == 2,
             "the save keeps divisions and who is in them");
         var setup = c.PrepareBattle(bandit);
         Check(setup.Player.Divisions?.Count == 1 && setup.Player.Companies.Count(x => x.Division == d.Id) == 2, "the battle army carries the division");

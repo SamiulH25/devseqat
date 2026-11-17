@@ -769,7 +769,7 @@ Put battle tests in `Tests/BattleTests.cs`, campaign tests in `Tests/CampaignTes
 
 Battle-scale tests: `ScaleBattle` (600 a side, divided, deploys without overlaps, under 12 ms a tick, replays exactly),
 `DivisionGoals` (orders land, direct orders, Hold never chases, Advance halts at contact, Guard beside the line, Swing, Loose gives way, Plug, a fallen sergeant, old names, replay), `OfficerSkill` (reaction, notice, together or piecemeal, drift, closing a gap, resting a spent company, natures) and `Couriers`; campaign:
-`CampaignDivisions` (make, assign, save, into battle, old saves).
+`CampaignDivisions` (make, assign, post and stance, old goal names mapped, save, into battle, old saves); `PostsInDeployment`, `CompanySergeants`.
 
 Other tools: `--balance N` writes CSVs of N headless campaigns and battles to `balance/` (gitignored); `--pacing N` runs the
 stand-in captain and reports career stage days against targets (slow: ~10 min for 8).

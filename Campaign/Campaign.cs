@@ -46,6 +46,7 @@ public sealed partial class Campaign
         Factions.Bind(S.Factions);
         RegisterOwnForm(); // your own form is made in play (MA6)
         MigrateGear();
+        foreach (var d in S.Divisions) d.Goal = Ironfield.Goal.FromName(d.Goal).Name; // old goal names to posts (OF6)
         FillNatures();
         LearnForms();
         SyncOrders();

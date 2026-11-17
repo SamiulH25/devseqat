@@ -116,7 +116,39 @@ partial class MapScreen
         return string.Join(". ", parts);
     }
 
-    static string GoalText(string g) => g switch { "FlankLeft" => "FLANK LEFT", "FlankRight" => "FLANK RIGHT", _ => g.ToUpperInvariant() };
+    /// A division's post and stance as two buttons side by side (docs/OFFICERS.md OF6): each click steps to the next post, or
+    /// the next of the post's stances. True when one was clicked.
+    bool PostButtons(DivisionRecord d, Rectangle area, string? arrow, bool captions = false)
+    {
+        var g = Campaign.GoalOf(d);
+        int half = (area.Width - ui.U(4)) * 4 / 7; // the post's names are the longer ("RIGHT WING")
+        var pb = new Rectangle(area.X, area.Y, half, area.Height);
+        var sb = new Rectangle(area.X + half + ui.U(4), area.Y, area.Width - half - ui.U(4), area.Height);
+        int room = pb.Width - ui.U(arrow != null ? 22 : 8), sroom = sb.Width - ui.U(arrow != null ? 22 : 8);
+        // Which is which: a caption over each, or the word in the button where it fits.
+        string Named(string head, string word) => captions || ui.TW(head + word, 1) > (head == "POST: " ? room : sroom) ? word : head + word;
+        if (captions)
+        {
+            ui.Text("POST", pb.X + ui.U(1), pb.Y - ui.U(9), Style.Text * 0.75f, 1);
+            ui.Text("STANCE", sb.X + ui.U(1), sb.Y - ui.U(9), Style.Text * 0.75f, 1);
+        }
+        bool hit = false;
+        if (ui.Button(pb, ui.Fit(Named("POST: ", Goal.Label(g.Post)), room), true, arrow ?? ""))
+        {
+            var posts = Enum.GetValues<Post>();
+            C.SetDivisionPost(d, posts[(Array.IndexOf(posts, g.Post) + 1) % posts.Length]);
+            hit = true;
+        }
+        if (ui.Button(sb, ui.Fit(Named("STANCE: ", Goal.Label(g.Stance)), sroom), true, arrow ?? ""))
+        {
+            var st = Goal.StancesOf(g.Post);
+            C.SetDivisionStance(d, st[(Array.IndexOf(st, g.Stance) + 1) % st.Length]);
+            hit = true;
+        }
+        if (ui.Hover(pb)) note = "HIS POST WHEN THE BATTLE OPENS: THE FRONT, A WING, THE SKIRMISHERS OR THE RESERVE. CLICK FOR THE NEXT.";
+        if (ui.Hover(sb)) note = $"HIS STANCE AT THAT POST: HE WILL {g.Describe.ToUpperInvariant()}. CLICK FOR THE NEXT.";
+        return hit;
+    }
 
     /// Divisions (docs/archive/COMBAT_OVERHAUL.md 1.5): group companies under a companion or a sergeant, who leads them in battle
     /// by goals and hears your orders late. Companies in no division are your retinue: they obey you at once.
@@ -194,10 +226,7 @@ partial class MapScreen
         if (comps.Count == 0) ui.Text(d == null ? "NONE. EVERY COMPANY HAS A SERGEANT." : "NO COMPANIES YET.", px, cy, d == null ? Style.Dim : Style.Warn, 1);
         if (d != null)
         {
-            var gb = new Rectangle(px, box.Bottom - ui.U(28), pw - ui.U(80), ui.U(20));
-            int gi = Array.IndexOf(Campaign.DivisionGoals, d.Goal);
-            if (ui.Button(gb, ui.Fit("STARTS: " + GoalText(d.Goal), gb.Width - ui.U(8)))) { C.SetDivisionGoal(d, Campaign.DivisionGoals[(gi + 1) % Campaign.DivisionGoals.Length]); chipClicked = true; }
-            if (ui.Hover(gb)) note = "WHAT HIS DIVISION DOES WHEN THE BATTLE OPENS. CLICK FOR THE NEXT GOAL.";
+            if (PostButtons(d, new Rectangle(px, box.Bottom - ui.U(28), pw - ui.U(88), ui.U(20)), null)) chipClicked = true;
             var db = new Rectangle(box.Right - ui.U(80), box.Bottom - ui.U(28), ui.U(72), ui.U(20));
             if (ui.Button(db, "DISBAND")) { C.DisbandDivision(d); chipClicked = true; }
         }

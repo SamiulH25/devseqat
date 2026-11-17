@@ -237,8 +237,9 @@ public sealed class Contract
 public sealed class DivisionRecord
 {
     public int Id, LeaderChar = -1, LeaderCompany = -1;
-    /// The goal it starts a battle with: Hold, Attack, FlankLeft, FlankRight, Reserve, Screen, Harass or Guard.
-    public string Goal = "Hold";
+    /// The post and stance it starts a battle with, as "Post:Stance" (docs/OFFICERS.md OF6; `Goal.FromName`). Old saves hold
+    /// a goal name (Hold, Attack, FlankLeft...): the campaign maps it to the nearest post when it loads.
+    public string Goal = "Front:Hold";
 }
 
 /// A realm's army: lords who ride together under a leader against a seat ("siege") or to relieve one of their own ("relieve").

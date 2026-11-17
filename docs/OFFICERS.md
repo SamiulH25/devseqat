@@ -8,7 +8,7 @@ This plan replaces the eleven division goals with two plain layers, the same for
   him a stance. He does what the stance says and nothing else. **His skill decides how well**: a poor officer on the
   enemy's line can lose it badly, and that is something to see and use.
 
-Status: OF0-OF5 built. Supersedes the goal layer of `docs/SERGEANTS.md` (SG0-SG7); the command cap,
+Status: OF0-OF6 built. Supersedes the goal layer of `docs/SERGEANTS.md` (SG0-SG7); the command cap,
 reserve tray, call-ups and horn plans stay.
 
 ## Decisions
@@ -89,3 +89,7 @@ An officer's skill (0-10: a companion's Command, a sergeant's battles, an enemy 
 - OF5 (2026-11-17): `BattleSergeants.cs`. He keeps order by numbers, not by moving: re-forming 25 % quicker, urge falls
   faster, a rally aura of 2.5 morale a second in 10 m. A grade worse is 0.25 drill (`SergeantLoss`), given back when another
   man steps up (8-24 s by drill). The card's plate across the portrait's foot also carries RESTLESS (it wins; it replaced the loose RST text). Visual judge (Haiku fallback): 5, then 7/10.
+- OF6 (2026-11-17): `DivisionRecord.Goal` holds "Post:Stance"; the `Campaign` constructor maps an old save's goal name with
+  `Goal.FromName` (no save version bump). Each party lane (and each V card) has a post button and a stance button
+  (`PostButtons`) in place of the eight-goal cycle. Deviation: lanes stay one per officer, labelled with his post, rather
+  than one per post (two officers may share a post). Visual judge (Haiku fallback): 6, then 7/10; the post button takes 4/7 of the row so RIGHT WING fits.
