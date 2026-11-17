@@ -19,20 +19,21 @@ public partial class Battle
     public const float SkirmishAhead = 22, ScreenAhead = 12;
     /// How far behind the line the reserve waits.
     public const float ReserveBehind = 30;
-    /// Loose: give way when enemy foot comes this near; go out again when it is this far from the skirmish spot.
-    public const float LooseGiveWay = 25, LooseReturn = 45;
-    /// Guard: how far from his post a wing meets a foe coming round the line's end, and how far he follows it.
-    public const float WingReach = 25, WingLeash = 35;
+    /// Loose: go out again when enemy foot is this far from the skirmish spot (when it gives way is `Notice`, OF2).
+    public const float LooseReturn = 45;
+    /// Guard: how far a wing follows a foe it went to meet before it comes back.
+    public const float WingLeash = 35;
 
     /// The companies that make the side's front line: the Front post's, and the foot the captain leads himself.
     bool OnLine(Squad s, int team) => s.Team == team && s.Alive > 0 && s.FoldedInto == null && s != eGuard && s != Player.Squad && s.Works == null
         && (s.Division is { } d ? d.Post == Post.Front : !s.Cavalry && !Ranged(s));
 
-    /// The side's front line (see Line). With no line, a 20 m stretch at the side's middle.
+    /// The side's front line (see Line), facing the way the side deployed. With no line, a 20 m stretch at the side's middle.
     public Line FrontLine(int team)
     {
-        int foe = 1 - team;
-        var fwd = Toward(centroid[team], centroid[foe], team);
+        // The way the side was drawn up to face (sides deploy along Z), not the way the centroids happen to lie: a company
+        // wandering off would swing every post round with it.
+        var fwd = new Vector2(0, team == 0 ? 1 : -1);
         var right = new Vector2(fwd.Y, -fwd.X);
         Vector2 sum = Vector2.Zero;
         int n = 0;
@@ -128,20 +129,26 @@ public partial class Battle
                 if (EnemySquadNear(s.Center, 200, foe) is Squad e) gap = MathF.Min(gap, Vector2.Distance(s.Center, e.Center) - e.Radius - s.Radius);
             if (gap > 3 && gap < float.MaxValue)
             {
-                // A walk a few metres ahead of where the line stands now (never further), and a halt at contact.
-                var now = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center - d.Offsets[s]) / live.Count;
+                // A walk a few metres ahead of where the line stands now (never further), and a halt at contact. A good
+                // officer steps from his rearmost company and keeps them level; a poor one from his foremost, and the
+                // line comes on ragged (OF2).
+                var pace = live.Where(s => !d.Resting.Contains(s)).Select(s => Vector2.Dot(s.Center - d.Offsets[s] - spot, line.Fwd)).DefaultIfEmpty(0);
+                var now = spot + line.Fwd * (LineSkill(d) >= 5 ? pace.Min() : pace.Max());
                 var step = now + line.Fwd * MathF.Min(6, gap - 1.5f);
                 if (Vector2.Dot(step - spot, line.Fwd) > 0) d.Spot = spot = step;
             }
         }
-        foreach (var s in live) Place(s, spot + d.Offsets[s], line.Fwd);
+        Dress(d, live, line);
+        RestSpent(d, live, line);
+        foreach (var s in live) Place(s, spot + d.Offsets[s] + Drifted(d, s) - (d.Resting.Contains(s) ? line.Fwd * RestBack : Vector2.Zero), line.Fwd);
         Steady(d, live, spot, foe);
     }
 
     /// Lock shields when horse comes near a standing company; bows on Hold pick the softest target in reach.
     void Steady(Division d, List<Squad> live, Vector2 at, int foe)
     {
-        bool horseNear = Squads.Any(s => s.Team == foe && s.Cavalry && s.Alive > 0 && Vector2.Distance(s.Center, at) - s.Radius < 35);
+        float notice = Notice(d);
+        bool horseNear = Squads.Any(s => s.Team == foe && s.Cavalry && s.Alive > 0 && Vector2.Distance(s.Center, at) - s.Radius < notice);
         foreach (var s in live.Where(s => !s.Cavalry && !Ranged(s) && !s.Swarm && s.Units[0].Type.HasShield))
             s.Formation = horseNear && d.Temper != Temper.Bold && s.Order == Order.Hold ? Formation.ShieldWall : Formation.Line;
         foreach (var s in live.Where(Ranged))
@@ -149,11 +156,20 @@ public partial class Battle
     }
 
     /// Charge: every company goes in at the enemy company nearest it (horse at the softest it can reach), bows shoot
-    /// until the foe is on them. A company keeps its target while that stands.
+    /// until the foe is on them. A company keeps its target while that stands. A good officer sends them in together; a
+    /// poor one one after another, nearest first (`Stagger` apart, OF2); those not yet sent stand where they are.
     void ChargeIn(Division d, List<Squad> live, int foe)
     {
+        if (d.Sequence.Count == 0)
+            d.Sequence.AddRange(live.OrderBy(s => EnemySquadNear(s.Center, float.MaxValue, foe) is Squad e ? Vector2.Distance(s.Center, e.Center) : 0).ThenBy(s => Squads.IndexOf(s)));
         foreach (var s in live)
         {
+            int turn = d.Sequence.IndexOf(s);
+            if (turn > 0 && Time < d.GoalSince + turn * Stagger(d))
+            {
+                if (s.Order != Order.Hold) Place(s, s.Center, Toward(s.Center, centroid[foe], d.Team));
+                continue;
+            }
             if (s.Order == Order.Charge && s.Target is { Alive: > 0 } && !Ranged(s)) continue;
             var t = EnemySquadNear(s.Center, float.MaxValue, foe);
             if (t == null) continue;
@@ -170,7 +186,8 @@ public partial class Battle
         int side = d.Goal.Side == 0 ? 1 : d.Goal.Side;
         var spot = WingSpot(line, side, live);
         var end = side < 0 ? line.LeftEnd : line.RightEndPos;
-        var threat = EnemySquadNear(spot, WingReach, foe) ?? EnemySquadNear(end, WingReach * 0.6f, foe);
+        float reach = Notice(d) * 0.7f; // a sharp officer sees them coming round the end sooner (OF2)
+        var threat = EnemySquadNear(spot, reach, foe) ?? EnemySquadNear(end, reach * 0.6f, foe);
         if (threat != null && Vector2.Distance(center, spot) < WingLeash) Engage(d, live, threat);
         else Form(d, live, spot, line.Fwd);
         Steady(d, live, spot, foe);
@@ -182,7 +199,7 @@ public partial class Battle
     {
         var spot = line.Mid + line.Fwd * SkirmishAhead;
         float near = FootGap(center, foe);
-        if (d.Phase == 0 && near < LooseGiveWay) d.Phase = 1;
+        if (d.Phase == 0 && near < 10 + Notice(d) * 0.4f) d.Phase = 1; // a poor officer sees the foot late (OF2)
         else if (d.Phase == 1 && FootGap(spot, foe) > LooseReturn) d.Phase = 0;
         Form(d, live, d.Phase == 0 ? spot : line.Mid - line.Fwd * 12, line.Fwd);
         Shoot(live, foe);

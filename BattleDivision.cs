@@ -108,6 +108,11 @@ public sealed class Division
     public readonly Dictionary<Squad, Vector2> Offsets = new();
     /// Plug: reserve companies sent in, and the line company each went to help.
     public readonly Dictionary<Squad, Squad> Plugs = new();
+    /// OF2: how each company has wandered from its place under a poor officer; the order a poor officer sends his companies
+    /// in on Charge; the spent companies a good one has pulled back to rest.
+    public readonly Dictionary<Squad, Vector2> Drift = new();
+    public readonly List<Squad> Sequence = new();
+    public readonly HashSet<Squad> Resting = new();
     public Post Post => Goal.Post;
     public Stance Stance => Goal.Stance;
 
@@ -270,12 +275,14 @@ public partial class Battle
                 d.Spot = null;
                 d.Offsets.Clear();
                 d.Plugs.Clear();
+                d.Sequence.Clear();
+                d.Resting.Clear();
                 d.NextThink = Time;
                 foreach (var s in d.Squads) { s.Override = false; s.Pursue = false; }
                 if (d.Team == 0) Log($"{d.Name}: \"{Capital(d.Goal.Describe)}!\"");
             }
             if (Time < d.NextThink) continue;
-            d.NextThink = Time + 0.5f + (10 - d.Skill) * 0.06f; // a sharp sergeant reacts quicker
+            d.NextThink = Time + Reaction(d); // a sharp officer looks again sooner (OF2)
             if (!LeaderCheck(d) || d.Alive == 0) continue;
             Brain(d);
         }

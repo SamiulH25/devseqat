@@ -91,6 +91,7 @@ BattleSiege.cs          assaults: defenders on the wall, ladders and gate routin
 BattleGrid.cs           spatial grid for neighbour queries (Near, Separate, NearestFar, NearestRouter)
 BattleDivision.cs       divisions: Post, Stance, Goal (the pair), Temper, IssueGoal and OrderDelay, Direct, Form/Engage/Flank/Harass
 BattlePosts.cs          officers at posts: FrontLine, where each post lies (SpotOf), the officer's Brain by stance, AiCommand
+BattleOfficers.cs       how well an officer keeps his stance by skill: Reaction, Notice, Dress (drift, closing gaps), Stagger, RestSpent
 BattleCourier.cs        riders carrying orders to divisions; cut down by enemies on the road
 BattleTypes.cs          BattleOptions, Weather, BattleResult, CompanyResult, StackResult
 Squad.cs                a company on the field: Order, Formation, slots
@@ -305,6 +306,15 @@ every 0.5-1 s by skill. He does what the stance says and never changes it himsel
   come alongside, hit), Charge. Skirmish: Loose (shoot; `Phase` 1 behind the line while foot is within `LooseGiveWay`), Harass,
   Screen (give way round the nearer end). Reserve: Wait, Plug (`Plugs`: a line company half gone, pressed or running gets the
   nearest waiting company sent at its foe), Follow (by the captain).
+- **Skill decides how well (OF2, `BattleOfficers.cs`), both sides alike:** `Reaction` (seconds between looks, 2 - 0.16 x skill),
+  `Notice` (15 + 4 x skill m: shields lock against horse that near, a Guard wing meets a foe within 0.7 of it, Loose gives way
+  at 10 + 0.4 of it), `LineSkill` (skill, +3 for a Drillmaster): under 5 his companies drift (`Division.Drift`, a random walk
+  on the battle rng, capped), from 5 he closes his front rank to 3 m gaps (`Dress`) and Advance steps from his rearmost
+  company, not his foremost; `Stagger` (0.08 x (10 - skill)^2 s between companies going in on Charge, nearest first,
+  `Division.Sequence`; half for a Hothead); from skill 6 `RestSpent` pulls a company in contact under 40% of its men or
+  under 35 nerve back `RestBack` m (`Division.Resting`) and swaps a fresh company from behind the line into its place
+  (Stubborn: 30% and 25, and his shaken men gain 0.5 morale a look on Hold). The line faces the way the side deployed
+  (+Z for team 0), so posts do not swing when companies wander.
 - **Saved names:** `DivisionSpec.Goal` and the campaign's `DivisionRecord.Goal` are strings read by `Goal.FromName`: "Post:Stance",
   or an old goal name mapped to the nearest post (Hold -> Front Hold, FlankLeft -> LeftWing Swing, Reserve -> Reserve Plug...).
 
@@ -736,7 +746,7 @@ Put battle tests in `Tests/BattleTests.cs`, campaign tests in `Tests/CampaignTes
 `Tests/CareerTests.cs`, and add the call to `SelfTest.Run()`. Use fixed seeds so results are repeatable.
 
 Battle-scale tests: `ScaleBattle` (600 a side, divided, deploys without overlaps, under 12 ms a tick, replays exactly),
-`DivisionGoals` (orders land, direct orders, Hold never chases, Advance halts at contact, Guard beside the line, Swing, Loose gives way, Plug, a fallen sergeant, old names, replay) and `Couriers`; campaign:
+`DivisionGoals` (orders land, direct orders, Hold never chases, Advance halts at contact, Guard beside the line, Swing, Loose gives way, Plug, a fallen sergeant, old names, replay), `OfficerSkill` (reaction, notice, together or piecemeal, drift, closing a gap, resting a spent company, natures) and `Couriers`; campaign:
 `CampaignDivisions` (make, assign, save, into battle, old saves).
 
 Other tools: `--balance N` writes CSVs of N headless campaigns and battles to `balance/` (gitignored); `--pacing N` runs the

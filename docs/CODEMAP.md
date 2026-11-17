@@ -103,13 +103,13 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **DeploySpot** (class, L7)
 - **Battle** (class, L17): DeploymentOf:20, ApplyDeployment:27
 
-## BattleDivision.cs (440 lines)
+## BattleDivision.cs (447 lines)
 - **Post** (enum, L7)
 - **Stance** (enum, L10)
 - **Temper** (enum, L14)
 - **Goal** (record, L17): StancesOf:25, Fits:33, Of:36, Label:56, Label:57, FromName:62
-- **Division** (class, L87): Division:114, Has:132
-- **Battle** (class, L138): DivisionsOf:141, AddDivision:146, PickLeader:159, BuildDivisions:163, OrderDelay:189, IssueGoal:208, Direct:225, ApplyDirects:237, UpdateDivisions:248, Capital:286, LeaderCheck:290, Toward:311, EnemySquadNear:318, Ranged:331, Form:334, Place:362, Engage:376, Flank:401, Harass:425
+- **Division** (class, L87): Division:119, Has:137
+- **Battle** (class, L143): DivisionsOf:146, AddDivision:151, PickLeader:164, BuildDivisions:168, OrderDelay:194, IssueGoal:213, Direct:230, ApplyDirects:242, UpdateDivisions:253, Capital:293, LeaderCheck:297, Toward:318, EnemySquadNear:325, Ranged:338, Form:341, Place:369, Engage:383, Flank:408, Harass:432
 
 ## BattleDrill.cs (147 lines)
 - **Grade** (enum, L6)
@@ -167,6 +167,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleNotice.cs (159 lines)
 - **Battle** (class, L11): Fame:28, CountMarks:37, Alone:100, MeetsCaptain:109, GivesGround:126, CaptainKilled:141, CaptainBroughtDown:153
 
+## BattleOfficers.cs (106 lines)
+- **Battle** (class, L10): Reaction:16, Notice:19, LineSkill:22, Stagger:26, Drifted:29, Dress:34, RestSpent:72, Nerve:99
+
 ## BattlePath.cs (267 lines)
 - **FlowField** (class, L6): FlowField:13, Dir:16, CostFrom:47
 - **Battle** (class, L58): UpdatePath:71, NearestSquadCenter:93, AnyBlocked:111, Route:130, WayBlocked:151, PathVia:166, FlowKey:177, Cached:180, Flow:195, BuildFlow:204, StepCosts:240
@@ -177,9 +180,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattlePlayer.cs (177 lines)
 - **Battle** (class, L6): Guard:17, UpdatePlayer:34, ToggleMount:113, Rally:148, KingsCharge:166
 
-## BattlePosts.cs (285 lines)
+## BattlePosts.cs (302 lines)
 - **Line** (struct, L7)
-- **Battle** (class, L16): OnLine:28, FrontLine:32, Mid:53, Frontage:56, WingSpot:60, SpotOf:68, Brain:86, HoldLine:113, Steady:142, ChargeIn:153, GuardFlank:168, Loose:181, ScreenLine:192, FootGap:209, Shoot:218, FollowCaptain:224, Plug:236, AiCommand:261
+- **Battle** (class, L16): OnLine:28, FrontLine:32, Mid:54, Frontage:57, WingSpot:61, SpotOf:69, Brain:87, HoldLine:114, Steady:148, ChargeIn:161, GuardFlank:184, Loose:198, ScreenLine:209, FootGap:226, Shoot:235, FollowCaptain:241, Plug:253, AiCommand:278
 
 ## BattleQueue.cs (109 lines)
 - **OrderStep** (record, L7)
@@ -917,6 +920,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Tests/MonsterTests.cs (249 lines)
 - **SelfTest** (class, L7): MonsterLeaders:11, SpiderVenom:43, BearRage:108, WyvernFlight:123, MonstersAbroad:175, BeastTrace:237
+
+## Tests/OfficerTests.cs (108 lines)
+- **SelfTest** (class, L6): OfficerSkill:24
 
 ## Tests/OriginTests.cs (65 lines)
 - **SelfTest** (class, L4): CharacterCreator:8
