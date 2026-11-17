@@ -157,7 +157,7 @@ sealed partial class Hud
             {
                 ("SELECT SQUAD / BOX", "LMB / DRAG"), ("ADD TO SELECTION", Ctl.Name(Act.AddToSelection)), ("MOVE (KEEP WIDTH)", "RMB"),
                 ("DRAW FORMATION LINE", "RMB DRAG"), ("ATTACK ENEMY SQUAD", "RMB ON ENEMY"), ("QUEUE AN ORDER AFTER THE LAST", $"{Ctl.Name(Act.AddToSelection)} + RMB"),
-                ("PICK SERGEANT (DIVISION)", $"{Ctl.Name(Act.NextDivision)} / CLICK CARD"), ("SERGEANT: TAKE / ATK / SCREEN", "RMB LAND / FOE / ALLY"), ("SERGEANT IN FIELD VIEW", $"{Ctl.Name(Act.OrderWheel)} (GOAL WHEEL)"), ("EXIT SERGEANT TO SQUADS", $"BACK / {Ctl.Name(Act.SelectAll)}"),
+                ("PICK OFFICER / HIS STANCE", $"{Ctl.Name(Act.NextDivision)} OR CARD / 1-3"), ("PUT COMPANIES ON A POST", "DRAG CARD TO POST"), ("OFFICER IN FIELD VIEW", $"{Ctl.Name(Act.OrderWheel)} (WHEEL)"), ("ORDER HIS COMPANIES", "RMB / BACK"),
                 ("PAN", $"{Ctl.First(Act.Forward)}{Ctl.First(Act.Left)}{Ctl.First(Act.Back)}{Ctl.First(Act.Right)} / SCREEN EDGES"),
                 ("ROTATE", $"{Ctl.First(Act.RotateLeft)} {Ctl.First(Act.RotateRight)} / MMB DRAG"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"), ("LOOK AT THE CAPTAIN / BE HIM", "CLICK HIS PICTURE / TWICE"),
                 ("FOCUS SQUAD", "DOUBLE-CLICK CARD"), ("CONTROL GROUP: KEEP / PICK", "CTRL+1-9 / 1-9"), ("JUMP TO AN ALERT", "CLICK IT"), ("WHAT THE GROUND DOES", "HOVER IT"), (Controls.Labels[Act.GroundView], Ctl.Name(Act.GroundView)),

@@ -338,7 +338,7 @@ sealed partial class BattleScreen
         {
             Tips.Show("command", $"Command view: you are the general. Select companies, RMB to move them, RMB-drag to draw a line, RMB on an enemy to attack it.\nThe deck at the bottom right shows what they can do. {ctl.First(Act.Pause)} pauses; the bars at the top left set the speed.\nYour captain keeps his guard but does not strike: FIGHT ({ctl.First(Act.CommandView)}) steps back into him, and he inspires the men near him.");
             if (battle.DivisionsOf(0).Any(d => d.Alive > 0))
-                Tips.Show("divisions", $"Sergeants lead your divisions by goals (Take, Attack, Flank, Screen...).\nClick a Sergeant card on the right (or press {ctl.First(Act.NextDivision)}), then pick a Goal or RMB on ground/enemy/ally.\nOrders ride out and take a few seconds. Click BACK (or a company) to order companies directly.");
+                Tips.Show("divisions", $"Officers hold posts: the front, a wing, the skirmishers or the reserve. Each keeps the stance you give him.\nClick an officer's card on the right (or press {ctl.First(Act.NextDivision)}), then pick a stance (1-3) or a new post. His skill decides how well he does it.\nRMB with an officer picked orders his companies yourself. Each company's sergeant keeps its ranks; if he falls they fight a grade worse.");
         }
         if (deploying) GroundTips();
         else MagicTips();

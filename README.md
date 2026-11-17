@@ -10,8 +10,8 @@ through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contr
 
 **At a glance (November 2026)**
 - **Battles of up to 3,000 men** on the field at once (Battle size setting), more waiting as reinforcements. You fight in the
-  front rank (directional blows, parries, couched lances) and command the whole field from above with a cursor while your captain keeps his guard, or hand wings to sergeants'
-  **divisions** that follow a goal.
+  front rank (directional blows, parries, couched lances) and command the whole field from above with a cursor while your captain keeps his guard, or hand wings to officers'
+  **divisions**, each at a post (the front, a wing, the skirmishers, the reserve) keeping the stance you give him.
 - **A war of seven realms** on a map of 115 provinces, each realm with its own heraldry, temper and four lines of troops:
   287 troops across seven cultures and common, plus 24 creatures (goblins, wolves, trolls, giant spiders, cave bears, wyverns, the dead).
 - **A company that is your legacy:** named men on the roll, the fallen remembered, banner honours won and lost, a career from
@@ -277,21 +277,30 @@ when blows come at him; FIGHT on it (or Tab) steps back into him, a click on his
 C charge, F follow me, G form a line on me, H hold position, T advance 15 m, B fall back 20 m, V loose/tight spacing,
 **J formation** (line, shield wall, square, wedge, loose), X archers fire at will / hold fire. Allied lords' companies follow their own AI general.
 
-**Divisions (both views):** division cards sit top left; click one (or press **Y** to cycle) to give it goals. In command view the
-order buttons become goal buttons, and RMB on the ground means *take this ground*, on an enemy *attack it*, on a friend *screen it*.
-In field view the order wheel becomes a goal wheel. Goals reach the sergeant at once (riders and the order delay are off for now,
-docs/OFFICERS.md), and a newer goal replaces the last. You can still select a division's companies and order them directly: they
-then follow your order until the division gets a new goal. If a sergeant falls, his men keep their last goal and the best man left
-takes charge after 10 s.
-Sergeants told to hold or take ground stand on the best ground within 25 m of it (a crest, a knoll, a wood's edge, the village).
-**AMBUSH** (command view) sends a division of foot to the nearest wood to wait unseen, arrows held; it falls on the first enemy
-company that comes within 40 m.
+**Officers at posts (docs/OFFICERS.md):** each division is a few companies under an officer at a **post**: the **front**
+line, the **left** or **right wing**, the **skirmishers** or the **reserve**. He keeps the **stance** you give him and nothing else:
+the front can **hold** the line, **advance** in order or **charge**; a wing can **guard** the flank, **swing** round the enemy's
+end or **charge**; the skirmishers **loose** (and give way to foot), **harass** or **screen** the line; the reserve **waits**,
+**plugs** the line where it breaks or **follows** you. Officer cards sit on the right, one line each: post, stance and what is
+happening ("RIGHT WING · GUARD · HORSE 120 M"). Click one (or press **Y**), then a stance (keys **1-3**) or a new post; in field
+view the wheel shows them. Orders land at once (riders and the order delay are off for now). With an officer picked, **RMB**
+orders his companies yourself: they follow your order until he gets a new stance. **His skill decides how well**: a sharp officer
+looks again sooner and sees threats further out, sends his companies in together, keeps his line still, closes gaps and rests a
+spent company; a poor one sends them in one by one and lets the line wander. While you deploy, each post is a marked zone on the
+field: drag a company card onto it (or pick companies and click it) to put them under that officer, or press **AUTO-FILL** in the
+tray to send horse to the wings, bows to the skirmishers and foot to the front. If an officer falls, the best man left takes
+charge after 10 s.
+
+**Company sergeants:** every company has a sergeant who keeps it in order (he never changes its orders): its ranks re-form a
+quarter quicker, he holds back men straining to break ranks and rallies shaken men near him. The card shows what he is doing
+(DRESSING, RALLYING, RE-FORMING, HOLDING). When he falls (NO SERGEANT) the company fights about a grade worse until another man
+steps up, 8 to 24 s later by its drill.
 
 **Command and sergeants (docs/SERGEANTS.md):** you lead at most 10 companies yourself (**COMMAND n/10** in the tray over your
 panel). The rest serve under sergeants (up to 8 companies each) or wait in the **reserve** off the field. While you deploy, select
 companies and press a card's **ADD** (or **TO ME** in the tray) to move them between you and your sergeants; click a reserve chip to
 bring it on, for you or for the chosen sergeant. During the battle a call-up sends a rider back and the company marches on 8 s
-later. **Horn plans:** with a sergeant chosen, switch **HORN PLAN** on and pick a goal: he holds and waits, and **~** (HORN in the
+later. **Horn plans:** with an officer chosen, switch **HORN PLAN** on and pick a stance or post: he holds and waits, and **~** (HORN in the
 tray) sends every plan at once; a plan's dotted route shows on the field. A sergeant's
 skill lifts his companies' wits (skill 3 trained, 5 veteran, 8 elite) and his nature shows on his card: a Hothead charges
 sooner, a Stubborn one never falls back, a Drillmaster drills his men harder, a Veteran thinks a grade up. In command view each
@@ -584,12 +593,15 @@ The visuals pass (`docs/archive/VISUALS.md`) changed nothing in the simulation: 
 
 ## Design: divisions and scale
 
-- **Why divisions:** at 1,500 men you cannot steer forty companies one by one. Divisions turn the general's job into picking goals
-  and timing them (the order delay that made you plan ahead is off for now: docs/OFFICERS.md OF0).
+- **Why divisions:** at 1,500 men you cannot steer forty companies one by one. Divisions turn the general's job into placing
+  officers on posts, picking their stances and timing them (the order delay is off for now: docs/OFFICERS.md OF0).
 - **Sergeants:** each division has a leader on the field (a gold pennant marks him); his aura steadies nearby men (+1.5 morale a
-  second, +4 to the routing). Killing the enemy's sergeants is a real aim: their divisions freeze on their last goal.
-- **The AI general** keeps his centre under his own hand and sends his divisions in when the lines close, the fight starts, or
-  they have waited long enough for their temper; a broken wing that is not bold falls back.
+  second, +4 to the routing). Killing the enemy's officers is a real aim: their divisions keep their last stance, leaderless, and a company whose sergeant
+  falls fights a grade worse.
+- **The AI general** lays a big army out on the same posts (horse on the wings, foot on the front, bows skirmishing, spare foot
+  in reserve) under officers whose skill follows the army's quality, and picks their stances by the fight: the front goes in
+  when the lines close or it has waited long enough for its temper, the wings swing round once the line is at blows, the
+  reserve plugs the line.
 - **Scale:** men near the enemy think every tick, others every 2nd or 4th tick, so 3,000 men cost about 3.6 ms a tick
   (`--bench`). Far men are drawn with fewer parts, and the roar of a big melee rises with the men in contact.
 
