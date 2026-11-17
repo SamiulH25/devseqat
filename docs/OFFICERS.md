@@ -8,7 +8,7 @@ This plan replaces the eleven division goals with two plain layers, the same for
   him a stance. He does what the stance says and nothing else. **His skill decides how well**: a poor officer on the
   enemy's line can lose it badly, and that is something to see and use.
 
-Status: OF0-OF3 built. Supersedes the goal layer of `docs/SERGEANTS.md` (SG0-SG7); the command cap,
+Status: OF0-OF4 built. Supersedes the goal layer of `docs/SERGEANTS.md` (SG0-SG7); the command cap,
 reserve tray, call-ups and horn plans stay.
 
 ## Decisions
@@ -83,3 +83,6 @@ An officer's skill (0-10: a companion's Command, a sergeant's battles, an enemy 
   battle's own rng, so replays still match.
 - OF3 (2026-11-16): `Armies.Split` lays armies on posts, `Armies.OfficerSkill` from tier and level, `AiStance` reads the
   fight. Test `AiOnPosts`. Simplification: skirmishers stay on Loose all battle (no switch to Harass or Screen yet).
+- OF4 (2026-11-17): `Hud.Posts.cs`, `Battle.Situation`, `Battle.AutoFill`. Deviation: the front post is not a drawn zone
+  (its companies stand where you put them, and a box round a spread-out battle covered the field); it is a tag, and you drop
+  onto its companies. Cards are 214 wide; the situation drops "ENEMY" ("HORSE 125 M"); the officer panel heads its stances and posts apart, gold marks his stance and post now, the horn's plan is the word HORN; a front officer's tag sits on his own company. Visual judge (Haiku fallback; T3 not available): 6, 6, 6, 6, then 7/10 after five rounds. Left as polish: the horn word in gold, AWAITS HORN beside HORN: SWING on a card.

@@ -193,6 +193,7 @@ partial class BattleScreen
             }
             else if (hud.CardAt(ms.Position) is Squad card)
             {
+                if (deploying) { dragCard = card; dragMoved = false; }
                 if (card == lastCardSquad && realTime - lastCardClick < DoubleClick) camFocus = card.Centroid(); // double-click: look at it
                 lastCardSquad = card;
                 lastCardClick = realTime;
@@ -202,6 +203,18 @@ partial class BattleScreen
             }
             else if (hud.MinimapAt(ms.Position) is Vector2 w) camFocus = w;
             else if (!hud.Over(ms.Position)) boxStart = ms.Position;
+        }
+        if (dragCard != null && ms.LeftButton == ButtonState.Pressed && hud.CardAt(ms.Position) != dragCard) dragMoved = true;
+        if (LmbReleased && dragCard is Squad dragged)
+        {
+            dragCard = null;
+            // Dropped on a post zone or an officer's card: it (and any companies picked with it) go under him.
+            if (dragMoved && (hud.DivisionAt(ms.Position) ?? (hud.Over(ms.Position) ? null : hud.ZoneAt(mouseGround))) is Division to)
+            {
+                if (!selected.Contains(dragged)) { selected.Clear(); selected.Add(dragged); }
+                MoveTo(to);
+                return;
+            }
         }
         if (LmbReleased && boxStart is Point start)
         {

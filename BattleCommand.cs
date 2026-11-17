@@ -178,7 +178,7 @@ public partial class Battle
     /// What the division is doing, in a few words for its card.
     public string Report(Division d)
     {
-        if (d.Squads.Count == 0) return "NO COMPANIES";
+        if (d.Squads.Count == 0) return "NO MEN";
         if (d.Alive == 0) return "BROKEN";
         if (d.Leaderless) return "SERGEANT DOWN";
         if (d.Squads.Any(s => s.Alive > 0 && s.InContact)) return "ENGAGED";
@@ -195,6 +195,49 @@ public partial class Battle
             Stance.Harass => "HARASSING", Stance.Screen => "SCREENING", Stance.Plug => "READY TO PLUG",
             Stance.Follow => "BY THE CAPTAIN", _ => "IN RESERVE",
         };
+    }
+
+    /// What is happening to the division, in a few words after its post and stance on its card (docs/OFFICERS.md OF4):
+    /// its state when that is the news, else the nearest enemy company and how far ("HORSE 60 M").
+    public string Situation(Division d)
+    {
+        var report = Report(d);
+        if (report == "AWAITS THE HORN") return "AWAITS HORN";
+        if (report is "NO MEN" or "BROKEN" or "SERGEANT DOWN" or "UNDER ARROWS" or "AWAITS THE HORN" or "PLUGGING THE LINE" or "GIVING WAY") return report;
+        if (report == "ENGAGED") return "AT BLOWS";
+        var live = d.Squads.Where(s => s.Alive > 0).ToList();
+        var at = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / live.Count;
+        if (EnemySquadNear(at, float.MaxValue, 1 - d.Team) is not Squad e) return report;
+        float gap = MathF.Max(0, Vector2.Distance(at, e.Center) - e.Radius);
+        string kind = e.Cavalry ? "HORSE" : Ranged(e) ? "BOWS" : "FOOT";
+        return $"{kind} {MathF.Round(gap / 5) * 5:0} M"; // the card's colour already says it is the enemy's
+    }
+
+    /// Whether a company is the kind a post wants: horse on the wings, bows skirmishing, foot on the front or in reserve.
+    public static bool Suits(Squad s, Post p) => p switch
+    {
+        Post.LeftWing or Post.RightWing => s.Cavalry,
+        Post.Skirmish => Ranged(s),
+        _ => !s.Cavalry && !Ranged(s),
+    };
+
+    /// AUTO-FILL (OF4), before the battle: the companies you lead go to officers whose post suits them (horse to the wings,
+    /// bows to the skirmishers, foot to the front, then the reserve), each officer up to `Armies.DivisionFill`; you keep
+    /// at least three. Returns how many moved.
+    public int AutoFill(int team)
+    {
+        if (Time > 0) return 0;
+        int moved = 0;
+        var order = new[] { Post.LeftWing, Post.RightWing, Post.Skirmish, Post.Front, Post.Reserve };
+        foreach (var post in order)
+            foreach (var d in DivisionsOf(team).Where(x => x.Post == post))
+                foreach (var s in SquadsOf(team).Where(s => s.Division == null && s.Company is { Allied: false } && s.FoldedInto == null && Suits(s, post))
+                    .OrderBy(s => s.Units[0].Type.Tier).ThenBy(s => Squads.IndexOf(s)).ToList())
+                {
+                    if (d.Squads.Count >= Ironfield.Armies.DivisionFill || SquadsOf(team).Count(q => q.Division == null && q.Company is { Allied: false } && q.FoldedInto == null) <= 3) break;
+                    if (Assign(s, d) == null) moved++;
+                }
+        return moved;
     }
 
     /// Every 5 s: how many of the division fell since the last look (for UNDER ARROWS).

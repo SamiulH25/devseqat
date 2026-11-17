@@ -69,12 +69,11 @@ public partial class Battle
     public Vector2? SpotOf(Division d, Goal g)
     {
         var live = d.Squads.Where(s => s.Alive > 0).ToList();
-        if (live.Count == 0) return null;
         var line = FrontLine(d.Team);
         return g.Stance switch
         {
             Stance.Charge or Stance.Swing or Stance.Harass => null,
-            Stance.Hold or Stance.Advance => g == d.Goal && d.Spot is Vector2 at ? at : g.Post == d.Post ? Mid(live) : line.Mid,
+            Stance.Hold or Stance.Advance => g == d.Goal && d.Spot is Vector2 at ? at : g.Post == d.Post && live.Count > 0 ? Mid(live) : line.Mid,
             Stance.Guard => WingSpot(line, g.Side, live),
             Stance.Loose => line.Mid + line.Fwd * SkirmishAhead,
             Stance.Screen => line.Mid + line.Fwd * ScreenAhead,

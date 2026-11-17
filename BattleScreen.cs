@@ -97,6 +97,9 @@ sealed partial class BattleScreen
     float blend, frameDt, realTime, lastCardClick, lastFieldClick;
     bool replaySaved;
     Squad? lastCardSquad, lastFieldSquad;
+    /// A company card pressed in deployment: dragged onto a post zone or an officer's card, it goes under him (OF4).
+    Squad? dragCard;
+    bool dragMoved;
     Vector2 camFocus, mouseGround, aimAcc, wheelVec;
     Point wheelOrigin;
     AttackDir aimDir = AttackDir.Overhead;    // picked by the direction the mouse last moved
@@ -548,6 +551,7 @@ sealed partial class BattleScreen
         hud.DeployLast = memory is { LastDeploy.Count: > 0 } && !battle.Options.Siege && !battle.Options.Tournament ? memory.DeployAsLast : null;
         if (selectedDivision != null && selectedDivision.Alive == 0) selectedDivision = null;
         hud.Div = selectedDivision;
+        hud.MouseGround = mouseGround; hud.Dragging = dragCard is { } dc && dragMoved ? dc : null;
         if (selectedDivision == null) hornMode = false;
         hud.HornMode = hornMode;
         hud.WheelOpen = wheelOpen; hud.WheelSector = WheelSector() ?? -1; hud.WheelCenter = command && wheelOpen ? wheelOrigin : null;

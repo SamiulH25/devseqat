@@ -136,6 +136,7 @@ BattleScreen.Draw.cs    render passes, sprites, particles, rain, order lines
 BattleScreen.Shots.cs   staged screenshots (IRONFIELD_SHOTS)
 Hud.cs                  battle 2D interface: layout, drawing and hit-testing
 Hud.Divisions.cs        division cards, stance and post buttons, the officer's wheel, lines to posts, riders, sergeant pennants
+Hud.Posts.cs            post zones on the field (deployment, and the officer you picked), dropping companies on them, the drag ghost
 Ui.cs                   immediate-mode panel kit used by the campaign screens
 Controls.cs             rebindable actions (Act enum), defaults, controls.json
 
@@ -315,6 +316,14 @@ every 0.5-1 s by skill. He does what the stance says and never changes it himsel
   under 35 nerve back `RestBack` m (`Division.Resting`) and swaps a fresh company from behind the line into its place
   (Stubborn: 30% and 25, and his shaken men gain 0.5 morale a look on Hold). The line faces the way the side deployed
   (+Z for team 0), so posts do not swing when companies wander.
+- **The command view (OF4):** each officer's card reads `POST · STANCE · Situation(d)` (the middle dot is a glyph in
+  `PixelFont`, char U+00B7; the map is 256 wide). While you deploy, and for the officer you picked, `Hud.PostZones` draws
+  each wing, skirmish and reserve post as a dashed box where `SpotOf` puts it (sized by his companies), named; a front
+  officer gets only the tag over his companies (their division rings already show them), and dropping counts on any of his
+  companies. Drag a company card onto a zone or an officer's card, or pick companies and click a zone (not a company),
+  to `Assign` them. AUTO-FILL (tray, deployment, `Battle.AutoFill`) gives your companies to posts that suit them (horse
+  wings, bows skirmish, foot front then reserve), up to `DivisionFill` each, leaving you three. With an officer picked,
+  keys 1-3 are his post's stances (shown on the buttons).
 - **Saved names:** `DivisionSpec.Goal` and the campaign's `DivisionRecord.Goal` are strings read by `Goal.FromName`: "Post:Stance",
   or an old goal name mapped to the nearest post (Hold -> Front Hold, FlankLeft -> LeftWing Swing, Reserve -> Reserve Plug...).
 

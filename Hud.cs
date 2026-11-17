@@ -291,6 +291,7 @@ sealed partial class Hud
         GoalLines();
         AlertStrip();
         MinimapPanel();
+        PostZones();
         DivisionRings();
         DivisionMarkers();
         Cards();
@@ -301,6 +302,7 @@ sealed partial class Hud
         if (GroundView && !ShowResult && !MenuOpen) GroundPanel();
         SpellFan();
         if (!ShowResult && !MenuOpen) { SquadTooltip(); DivisionTooltip(); GroundHints(); }
+        DragGhost();
     }
 
     /// The fight view: you are the captain. Vitals, the arms that listen to you and the reticle; no cards, no map, no buttons.

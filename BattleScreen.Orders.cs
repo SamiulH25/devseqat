@@ -258,6 +258,7 @@ partial class BattleScreen
             if (!Pressed(i == 9 ? Keys.D0 : Keys.D1 + i)) continue;
             int digit = (i + 1) % 10;
             if (fight) { ListenArm(digit, queueing); continue; } // the fight view picks arms, not companies (BattleScreen.Fight.cs)
+            if (selectedDivision is { } sd && digit is >= 1 and <= 3) { GiveGoal(sd, new Goal(sd.Post, Goal.StancesOf(sd.Post)[digit - 1])); continue; } // an officer's stances (OF4)
             if (digit > 0 && (ctrl || groups.ContainsKey(digit))) { Group(digit, ctrl); continue; } // control groups (Q6)
             if (i < mine.Count && !selected.Remove(mine[i])) selected.Add(mine[i]);
         }
@@ -331,6 +332,15 @@ partial class BattleScreen
         }
         if (hud.AddAt(p) is Division to) { MoveTo(to); return true; }
         if (hud.ToMeAt(p)) { MoveTo(null); return true; }
+        if (hud.AutoFillAt(p))
+        {
+            int n = battle.AutoFill(0);
+            battle.Log(n > 0 ? $"{n} compan{(n == 1 ? "y goes" : "ies go")} to the posts that suit them." : "No company of yours suits a post with room.");
+            if (n > 0) host.Audio?.Play(Cue.Order, 0.6f);
+            return true;
+        }
+        // Companies picked in deployment, and a click on a post zone (not on a company): they go under that officer.
+        if (deploying && selected.Count > 0 && !hud.Over(p) && PickSquad(mouseGround, 0) == null && hud.ZoneAt(mouseGround) is Division zd) { MoveTo(zd); return true; }
         return false;
     }
 
@@ -342,7 +352,7 @@ partial class BattleScreen
         foreach (var s in selected.ToList()) { if (battle.Assign(s, to) is string no) why ??= no; else moved++; }
         if (moved > 0) { battle.Log($"{moved} compan{(moved == 1 ? "y goes" : "ies go")} to {(to == null ? "you" : to.Name)}."); selected.Clear(); }
         else if (why != null) battle.Log(why);
-        Tips.Show("tray", $"You lead at most {Armies.CommandCap} companies yourself; each sergeant up to {Armies.DivisionCap}.\nThe rest wait off the field: click one on the tray to call it up, to you or to the sergeant you have picked.");
+        Tips.Show("tray", $"You lead at most {Armies.CommandCap} companies yourself; each officer up to {Armies.DivisionCap}. Drag a card onto a post, or AUTO-FILL.\nThe rest wait off the field: click one on the tray to call it up, to you or to the officer you have picked.");
     }
 
     void SoundHorn()

@@ -10,16 +10,17 @@ sealed partial class Hud
     /// The goal you pick for the chosen sergeant becomes his horn plan (SG2).
     public bool HornMode;
 
-    Rectangle tray, toMe, hornButton, hornToggle;
+    Rectangle tray, toMe, hornButton, hornToggle, autoFill;
     readonly List<(Rectangle R, int I)> reserveChips = new();
     readonly List<(Rectangle R, Division D)> divAdds = new();
 
     public int? ReserveAt(Point p) => reserveChips.Where(c => c.R.Contains(p)).Select(c => (int?)c.I).FirstOrDefault();
     public bool ToMeAt(Point p) => toMe.Contains(p);
+    public bool AutoFillAt(Point p) => autoFill.Contains(p);
     public bool HornAt(Point p) => hornButton.Contains(p);
     public bool HornToggleAt(Point p) => Div != null && Command && hornToggle.Contains(p);
     public Division? AddAt(Point p) => divAdds.FirstOrDefault(c => c.R.Contains(p)).D;
-    bool OverCommand(Point p) => tray.Contains(p) || AddAt(p) != null || HornToggleAt(p);
+    bool OverCommand(Point p) => tray.Contains(p) || AddAt(p) != null || HornToggleAt(p) || AutoFillAt(p);
 
     /// Each of your divisions in its own colour, by its place among your divisions (gold stays the colour of a choice).
     static readonly Color[] DivisionHues =
@@ -39,10 +40,10 @@ sealed partial class Hud
     void LayoutCommand()
     {
         reserveChips.Clear(); divAdds.Clear();
-        tray = toMe = hornButton = Rectangle.Empty;
+        tray = toMe = hornButton = autoFill = Rectangle.Empty;
         if (!Command || ShowResult) return;
         foreach (var (r, d) in divCards)
-            if (Movable(d) > 0) divAdds.Add((new Rectangle(r.Right - U(50), r.Y + U(3), U(46), U(12)), d));
+            if (Movable(d) > 0) divAdds.Add((new Rectangle(r.Right - U(50), r.Y + U(2), U(46), U(12)), d));
         // The tray sits over your own panel: a head row, then the reserve's chips three to a row.
         var waiting = B.ReservesOf(0);
         int pending = B.CallUpsOf(0).Count(), chips = Math.Min(9, waiting.Count + pending);
@@ -52,6 +53,7 @@ sealed partial class Hud
         for (int i = 0; i < Math.Min(chips, waiting.Count); i++)
             reserveChips.Add((new Rectangle(tray.X + U(6) + i % 3 * (cw + U(2)), tray.Y + U(18) + i / 3 * U(18), cw, U(15)), i));
         if (Deploying && Movable(null) > 0) toMe = new Rectangle(tray.Right - U(70), tray.Y + U(3), U(64), U(12));
+        else if (Deploying && B.DivisionsOf(0).Any()) autoFill = new Rectangle(tray.Right - U(70), tray.Y + U(3), U(64), U(12)); // OF4
         else if (!Deploying && B.DivisionsOf(0).Any(d => d.Horn != null && d.Alive > 0)) hornButton = new Rectangle(tray.Right - U(96), tray.Y + U(3), U(90), U(12));
     }
 
@@ -65,8 +67,8 @@ sealed partial class Hud
         Text($"COMMAND {led}/{Armies.CommandCap}", tray.X + U(6), tray.Y + U(5), full ? Gold : Color.White, 1);
         string sub = B.ReservesOf(0).Count + B.CallUpsOf(0).Count() == 0 ? "NO RESERVE" : Div != null ? $"FOR {Div.Name.ToUpperInvariant()}" : full ? "PICK A SERGEANT (Y)" : "CLICK: CALL UP";
         int subX = tray.X + U(14) + TW($"COMMAND {led}/{Armies.CommandCap}", 1);
-        int subRoom = (!toMe.IsEmpty ? toMe.X : !hornButton.IsEmpty ? hornButton.X : tray.Right) - subX - U(6);
-        Text(kit.Fit(sub, subRoom), subX, tray.Y + U(5), Dim, 1);
+        int subRoom = (!toMe.IsEmpty ? toMe.X : !hornButton.IsEmpty ? hornButton.X : !autoFill.IsEmpty ? autoFill.X : tray.Right) - subX - U(6);
+        if (TW(sub, 1) <= subRoom) Text(sub, subX, tray.Y + U(5), Dim, 1); // whole or not at all: a cut hint reads as noise
         var waiting = B.ReservesOf(0);
         foreach (var (r, i) in reserveChips)
         {
@@ -94,6 +96,7 @@ sealed partial class Hud
         int more = waiting.Count + B.CallUpsOf(0).Count() - k;
         if (more > 0) TextR($"+{more} MORE", tray.Right - U(6), tray.Bottom - U(9), Dim, 1);
         if (!toMe.IsEmpty) SmallButton(toMe, $"TO ME ({Movable(null)})", Gold);
+        if (!autoFill.IsEmpty) SmallButton(autoFill, "AUTO-FILL", Color.White * 0.85f); // a one-shot button, not a lit toggle
         if (!hornButton.IsEmpty) SmallButton(hornButton, $"HORN ({Ctl.Name(Act.Horn)})", Gold);
     }
 
@@ -113,6 +116,7 @@ sealed partial class Hud
         foreach (var d in B.DivisionsOf(0))
         {
             var col = (d == Div ? Gold : DivisionColour(d)) * (d == Div ? 0.9f : 0.6f);
+            if (d == Div && d.Post != Post.Front && ZonesShown(d)) col = DivisionColour(d) * 0.6f; // the gold dashed zone is the mark; the ring stays his colour
             foreach (var s in d.Squads)
             {
                 if (s.Alive == 0) continue;

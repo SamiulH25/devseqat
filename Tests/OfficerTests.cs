@@ -137,4 +137,22 @@ public static partial class SelfTest
         Check(seen.Any(x => x.Item1 is Post.LeftWing or Post.RightWing && x.Item2 == Stance.Swing), "wings swing round once the line is at blows");
         Check(!b.Divisions.Any(d => d.Stance == Stance.Wait), "a reserve the general leads waits to plug the line");
     }
+
+    /// OF4: AUTO-FILL sends the companies you lead to posts that suit them (horse to the wings, bows to the skirmishers,
+    /// foot to the front) and leaves you at least three; an officer's card line names the nearest enemy and how far.
+    static void PostsInDeployment()
+    {
+        var b = Battle.Empty(51);
+        Squad Co(string troop, float x, int id) { var s = b.AddSquad(0, Troops.Get(troop), 12, new(x, -20), 6, Vector2.UnitY); s.Company = new Company(troop, 12, "", id); return s; }
+        var mine = new[] { Co("lancers", -40, 1), Co("lancers", -30, 2), Co("bowmen", -20, 3), Co("shieldmen", -10, 4), Co("shieldmen", 0, 5), Co("shieldmen", 10, 6), Co("shieldmen", 20, 7) };
+        var wing = b.AddDivision(0, "Wing", Array.Empty<Squad>(), Temper.Steady, 5, new Goal(Post.RightWing, Stance.Guard));
+        var skirm = b.AddDivision(0, "Bows", Array.Empty<Squad>(), Temper.Steady, 5, new Goal(Post.Skirmish, Stance.Loose));
+        var front = b.AddDivision(0, "Front", Array.Empty<Squad>(), Temper.Steady, 5, new Goal(Post.Front, Stance.Hold));
+        int moved = b.AutoFill(0);
+        Console.WriteLine($"officers: auto-fill moved {moved}: wing {wing.Squads.Count}, bows {skirm.Squads.Count}, front {front.Squads.Count}");
+        Check(wing.Squads.Count == 2 && wing.Squads.All(s => s.Cavalry) && skirm.Squads.Count == 1, "AUTO-FILL sends horse to the wing and bows to the skirmishers");
+        Check(front.Squads.All(s => !s.Cavalry) && mine.Count(s => s.Division == null) >= 3, "and foot to the front, leaving you at least three");
+        var foe = b.AddSquad(1, Troops.Get("lancers"), 10, new(60, 40), 5, -Vector2.UnitY);
+        Check(b.Situation(wing).StartsWith("HORSE ") && b.Situation(wing).EndsWith(" M"), $"the card names the nearest enemy and how far ({b.Situation(wing)})");
+    }
 }
