@@ -32,7 +32,8 @@ sealed partial class Hud
         divCards.Clear();
         goals.Clear();
         // Right, under the minimap: the battle log is top left and the score bar in the middle.
-        int w = U(200), h = U(46), x = W - w - U(10), y = minimap.Bottom + U(22);
+        int w = U(200), h = U(46), x = W - w - U(10), y = minimap.Bottom + U(34);
+        if (!Command && !Deploying) return; // in the field you fight: the sergeants' cards wait for the command view (PT2g)
         foreach (var d in B.DivisionsOf(0))
         {
             divCards.Add((new Rectangle(x, y, w, h), d));
@@ -188,7 +189,7 @@ sealed partial class Hud
     void GoalWheel()
     {
         Rect(new Rectangle(0, 0, W, H), Color.Black * 0.25f);
-        var c = new Vector2(W / 2f, H / 2f);
+        var c = WheelPos();
         for (int i = 0; i < GoalWheelOrder.Length; i++)
         {
             float a = -MathHelper.PiOver2 + i * MathHelper.TwoPi / GoalWheelOrder.Length;
@@ -244,10 +245,9 @@ sealed partial class Hud
                 TextC(m.Name.ToUpperInvariant(), x, y - 4 * s - U(10), u.Routing ? Dim : Gold, 1);
                 // His small face beside his name (C1), the same face the roll shows.
                 var face = PortraitPainter.OfMan(m.Id, u.Type, m.Wounds, m.Age > 0 ? m.Age : 25, false, 0, u.Routing ? 2 : 1);
-                var tex = Portraits.Of(sb.GraphicsDevice, face, half: true);
                 int fw = U(12), fh = U(15), fx = x - TW(m.Name.ToUpperInvariant(), 1) / 2 - fw - U(4), fy = y - 4 * s - U(14);
                 Rect(new Rectangle(fx - 1, fy - 1, fw + 2, fh + 2), Color.Black * 0.7f);
-                sb.Draw(tex, new Rectangle(fx, fy, fw, fh), u.Routing ? new Color(130, 128, 120) : Color.White);
+                sb.Draw(Portraits.Sized(sb.GraphicsDevice, face, fw, fh), new Rectangle(fx, fy, fw, fh), u.Routing ? new Color(130, 128, 120) : Color.White);
             }
         }
         // Fallen named men you can still get out (L8): a red mark, and close by, what to do and how far along you are.
@@ -368,6 +368,8 @@ sealed partial class Hud
                     TextC("HORN", lp.X, lp.Y, hc, 1);
                 }
             }
+            // The name and goal over the field only for the division you picked or point at: its card says it for the rest (PT2g).
+            if (d != Div && DivisionAt(Mouse) != d) continue;
             string tag = (d.Leader is { Active: true } ? "" : "! ") + d.Name.ToUpperInvariant() + ": " + GoalTag(d.Goal);
             // The tag stays off the HUD's panels, and one that would cover another division's is dimmed.
             int tw = TW(tag, 1);

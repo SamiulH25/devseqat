@@ -12,7 +12,7 @@ static partial class Kit
     // ---------- colours ----------
 
     public static readonly Color Iron = new(30, 34, 44), IronDark = new(15, 17, 23), Rivet = new(120, 112, 96),
-        Gilt = new(214, 172, 70), GiltDark = new(120, 88, 34), Parchment = new(226, 210, 172), Ink = new(58, 44, 30),
+        Gilt = new(214, 172, 70), GiltDark = new(120, 88, 34), Parchment = new(226, 210, 172), Ink = new(58, 44, 30), InkDeep = new(34, 22, 14),
         Night = new(12, 16, 32), Dusk = new(64, 44, 70), Ember = new(236, 120, 48);
 
     public static Color Mul(Color c, float k) => new((int)Math.Min(255, c.R * k), (int)Math.Min(255, c.G * k), (int)Math.Min(255, c.B * k));
@@ -301,6 +301,7 @@ static partial class Kit
         ["flag"] = new[] { "XXXXXXX", "XooooX.", "XXXXXXX", "X......", "X......", "X......", "X......" },
         ["clock"] = new[] { "..XXX..", ".X.X.X.", "X..X..X", "X..XX.X", "X.....X", ".X...X.", "..XXX.." },
         ["up"] = new[] { "...X...", "..XXX..", ".XX.XX.", "XX...XX", "...X...", "..XXX..", ".XX.XX." },
+        ["back"] = new[] { "XX...XX", ".XX.XX.", "..XXX..", "...X...", "XX...XX", ".XX.XX.", "..XXX.." },
         ["chain"] = new[] { ".XX....", "X..X...", "X..XX..", ".XX..X.", "...X..X", "....X.X", ".....X." },
         ["sun"] = new[] { "X..X..X", ".X...X.", "..XXX..", "XXXXXXX", "..XXX..", ".X...X.", "X..X..X" },
         ["rain"] = new[] { ".XXXX..", "XXXXXX.", "XXXXXXX", ".......", "X.X.X..", ".X.X.X.", "X.X.X.." },
@@ -308,6 +309,15 @@ static partial class Kit
         ["scroll"] = new[] { "XXXXXX.", "XoooooX", ".XoooX.", ".XoooX.", ".XoooX.", "XoooooX", ".XXXXXX" },
         ["spear"] = new[] { ".....X.", "....XXX", "...XXoX", "..X.XX.", ".X.....", "X......", "......." },
         ["boot"] = new[] { "..XXX..", "..XXX..", "..XXX..", "..XXX..", "..XXXX.", "XXXXXXX", "XXXXXXX" },
+        ["mug"] = new[] { ".XXXX..", ".XXXXXX", ".XooX.X", ".XooX.X", ".XooXXX", ".XXXX..", "......." },
+        ["anvil"] = new[] { ".......", "XXXXXXX", ".XXXXX.", "..XXX..", "..ooo..", ".XXXXX.", "XXXXXXX" },
+        ["bed"] = new[] { "X......", "X......", "XXX....", "XXXXXXX", "XoooooX", "X.....X", "X.....X" },
+        ["wheat"] = new[] { "...X...", "..XXX..", ".X.X.X.", "..XXX..", ".X.X.X.", "...o...", "...o..." },
+        ["scales"] = new[] { "...X...", "XXXXXXX", "X..X..X", "XXX.XXX", "...X...", "..ooo..", ".ooooo." },
+        ["helm"] = new[] { "..XXX..", ".XXXXX.", "XXXXXXX", "XooXooX", "XXXoXXX", "XX.o.XX", "......." },
+        ["house"] = new[] { "...X...", "..XXX..", ".XXXXX.", "XXXXXXX", ".XoooX.", ".Xo.oX.", ".Xo.oX." },
+        ["cross"] = new[] { "...X...", "...X...", ".XXXXX.", "...X...", "...X...", "...X...", "...X..." },
+        ["hammer"] = new[] { ".XXXX..", "XXXXXX.", ".XXoX..", "...o...", "...o...", "...o...", "...o..." },
     };
 
     public static void Icon(this Ui ui, string name, int x, int y, Color c, int scale = 2)
@@ -323,6 +333,15 @@ static partial class Kit
                 ui.Rect(new Rectangle(x + i * p + ui.U(1), y + j * p + ui.U(1), p, p), Color.Black * 0.5f);
                 ui.Rect(new Rectangle(x + i * p, y + j * p, p, p), ch == 'o' ? dark : c);
             }
+    }
+
+    /// An icon as flat blocks `p` screen pixels a cell, with no shadow: for a faint mark behind other things.
+    public static void IconFlat(this Ui ui, string name, int x, int y, Color c, int p)
+    {
+        var rows = Icons[name];
+        for (int j = 0; j < 7; j++)
+            for (int i = 0; i < 7; i++)
+                if (rows[j][i] != '.') ui.Rect(new Rectangle(x + i * p, y + j * p, p, p), rows[j][i] == 'o' ? c * 0.6f : c);
     }
 
     public static IEnumerable<string> IconNames => Icons.Keys;
@@ -403,6 +422,24 @@ static partial class Kit
     }
 
     // ---------- controls ----------
+
+    /// Tabs as plain words in a line, the open one gold and underlined: a level under boxed tabs (docs/PLAYTEST.md PT2c).
+    /// Returns the label clicked, or -1.
+    public static int WordTabs(this Ui ui, int x, int y, string[] labels, int active)
+    {
+        int hit = -1;
+        for (int i = 0; i < labels.Length; i++)
+        {
+            int w = ui.TW(labels[i], 1);
+            var r = new Rectangle(x - ui.U(6), y, w + ui.U(12), ui.U(18));
+            bool on = i == active, over = ui.Hover(r);
+            ui.Text(labels[i], x, y + ui.U(5), on ? Gilt : over ? Color.White : Style.Text, 1);
+            if (on) ui.Rect(new Rectangle(x - ui.U(2), y + ui.U(15), w + ui.U(4), ui.U(2)), Gilt);
+            if (!on && ui.Clicked(r)) hit = i;
+            x += w + ui.U(24);
+        }
+        return hit;
+    }
 
     /// A small coloured tag; returns its width.
     public static int Chip(this Ui ui, int x, int y, string text, Color c, string? icon = null)

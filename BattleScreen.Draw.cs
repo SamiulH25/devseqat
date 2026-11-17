@@ -45,7 +45,7 @@ partial class BattleScreen
             if (TipsHeld) return;
             tipUi.Begin(gd.Viewport, ms.Position, false);
             BeatCaption(tipUi);
-            Tips.Draw(tipUi, tipUi.U(142));
+            Tips.Draw(tipUi, tipUi.U(224)); // above the order panel and its key hints at the bottom right
             tipUi.End();
         }
     }
@@ -720,6 +720,8 @@ partial class BattleScreen
                         continue;
                     }
                     if (s.Order != Order.Hold) continue;
+                    if (selected.Contains(s) && Vector2.DistanceSquared(s.Centroid(), s.Anchor) > 4f)
+                        Band(G(s.Centroid(), 0.15f), G(s.Anchor, 0.15f), Sel * 0.55f, 0.5f);
                     // Front-rank bracket ticks with a compact center chevron.
                     float halfW = Math.Max(0.8f, (Math.Min(s.Columns, s.Alive) - 1) * s.Spacing / 2);
                     var rt = new Vector2(-s.Front.Y, s.Front.X);

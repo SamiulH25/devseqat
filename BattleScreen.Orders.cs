@@ -34,6 +34,7 @@ partial class BattleScreen
         foreach (var s in list) late = MathF.Max(late, move ? Move(s, act) : Send(s, act));
         if (move && queueing) what = "then " + what;
         host.Audio?.Play(horn, 0.65f);
+        if (!command) { hud.CombatPrompt = (selected.Count == 0 ? "ALL: " : list.Count == 1 ? list[0].Name.ToUpperInvariant() + ": " : $"{list.Count} SQUADS: ") + what.ToUpperInvariant(); hud.CombatPromptAt = battle.Time; }
         battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
     }
 
@@ -122,6 +123,10 @@ partial class BattleScreen
         switch (c)
         {
             case Cmd.Charge: Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }, move: true, Cue.HornCharge); break;
+            case Cmd.AttackMove:
+                if (command) attackMoveMode = !attackMoveMode;
+                else Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge);
+                break;
             case Cmd.Follow: Issue("follow me!", s => { s.Order = Order.Follow; s.Target = null; }, move: true, Cue.Order); break;
             case Cmd.Hold:
                 foreach (var cs in SelectedCrews()) Send(cs, q => { if (q.Works is { } e) battle.AimEngine(e, null, null); });
@@ -129,6 +134,7 @@ partial class BattleScreen
             case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge); break;
             case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20), move: true, Cue.HornRetreat); break;
             case Cmd.Rule: NextRule(); break;
+            case Cmd.More: hud.MoreOrders = !hud.MoreOrders; break;
             case Cmd.Spacing: Issue("change spacing", s => s.Loose = !s.Loose); break;
             case Cmd.Merge: MergeSelected(); break;
             case Cmd.Relieve: RelieveSelected(); break;
@@ -278,7 +284,7 @@ partial class BattleScreen
         if (ctl.Pressed(Act.Stakes)) PlantStakes();
         if (ctl.Pressed(Act.Cast)) NextSpell();
         foreach (var (cmd, (_, act)) in Hud.Orders)
-            if (ctl.Pressed(act)) Command(cmd);
+            if (act is Act k && ctl.Pressed(k)) Command(cmd);
     }
 
     /// The caster you direct and the spell picked (docs/archive/MAGIC_AURA.md 3.1). The next left click on the field casts it there.

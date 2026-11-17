@@ -22,7 +22,7 @@ sealed partial class BattleScreen
     Shading? shading => host.Shading;
     Quality quality { get => host.Quality; set => host.Quality = value; }
 
-    const float CommandTimeScale = 0.25f, BlendTime = 0.45f, DoubleClick = 0.35f;
+    const float CommandTimeScale = 0.25f, WheelTimeScale = 0.08f, BlendTime = 0.45f, DoubleClick = 0.35f;
     /// Battle speeds ([ and ], docs/archive/COMBAT_QOL.md Q4), and the one chosen (1 = normal).
     static readonly float[] Speeds = { 0.5f, 1, 2, 3 };
     int speed = 1;
@@ -89,13 +89,14 @@ sealed partial class BattleScreen
     readonly Verts<VertexPositionColor> lines = new();
     readonly Verts<VertexPositionColor> bands = new(); // ground marks as soft ribbons (Band)
 
-    bool command, paused, menuOpen, helpOpen, wheelOpen, skipMouse = true, shotNoMouse;
+    bool command, paused, menuOpen, helpOpen, wheelOpen, skipMouse = true, shotNoMouse, attackMoveMode;
     float yaw, pitch, fieldDist = 5.5f;       // field camera: third person behind the player
     float camYaw, camPitch, zoom = 45;        // command camera: free orbit around camFocus
-    float blend, frameDt, realTime, lastCardClick;
+    float blend, frameDt, realTime, lastCardClick, lastFieldClick;
     bool replaySaved;
-    Squad? lastCardSquad;
+    Squad? lastCardSquad, lastFieldSquad;
     Vector2 camFocus, mouseGround, aimAcc, wheelVec;
+    Point wheelOrigin;
     AttackDir aimDir = AttackDir.Overhead;    // picked by the direction the mouse last moved
     Vector2? dragStart;                       // RMB drag on the ground (command view)
     Point? boxStart;                          // LMB drag on the screen (command view)
@@ -289,6 +290,7 @@ sealed partial class BattleScreen
     void SetCommand(bool on)
     {
         command = on;
+        if (!on) attackMoveMode = false;
         dragStart = null;
         boxStart = null;
         if (on) { camFocus = battle.Player.Pos; camYaw = yaw; camPitch = 0.95f; }
@@ -363,7 +365,7 @@ sealed partial class BattleScreen
         // The opening sweep runs until it ends or you press anything.
         if (intro >= 0) { intro += dt; if (intro > IntroTime || LmbPressed || Keyboard.GetState().GetPressedKeyCount() > 0) intro = -1; }
         if (battle.Winner >= 0) ending = ending < 0 ? 0 : ending + dt;
-        float scale = paused || menuOpen || helpOpen || deploying ? 0 : command && alive ? CommandTimeScale : 1;
+        float scale = paused || menuOpen || helpOpen || deploying ? 0 : wheelOpen ? WheelTimeScale : command && alive ? CommandTimeScale : 1;
         scale *= Speeds[speed];
         if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
         if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
@@ -529,7 +531,7 @@ sealed partial class BattleScreen
         }
         else { route = null; routeAt = null; }
         hud.CastBy = castBy; hud.CastPick = castPick;
-        hud.Command = command; hud.Paused = paused; hud.Speed = Speeds[speed]; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
+        hud.Command = command; hud.Paused = paused; hud.Speed = Speeds[speed]; hud.SpeedIdx = speed; hud.AttackMoveMode = attackMoveMode; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
         hud.ShowResult = battle.Winner >= 0 && !helpOpen && !Ending;
         hud.InCampaign = campaignBattle != null;
         hud.Deploying = deploying;
@@ -538,7 +540,7 @@ sealed partial class BattleScreen
         hud.Div = selectedDivision;
         if (selectedDivision == null) hornMode = false;
         hud.HornMode = hornMode;
-        hud.WheelOpen = wheelOpen; hud.WheelSector = WheelSector() ?? -1;
+        hud.WheelOpen = wheelOpen; hud.WheelSector = WheelSector() ?? -1; hud.WheelCenter = command && wheelOpen ? wheelOrigin : null;
         hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = shotNoMouse ? new Point(-999, -999) : ms.Position;
         hud.Box = boxStart is Point b && command ? BoxOf(b, ms.Position) : null;
         hud.HoverSquad = command && !hud.Over(ms.Position) ? PickSquad(mouseGround, 1) ?? PickSquad(mouseGround, 0) : null;

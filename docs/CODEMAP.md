@@ -194,13 +194,13 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Arrows.cs (127 lines)
 - **BattleScreen** (class, L10): Landed:13, ResetArrows:25, TrackArrows:29, Steep:51, Puff:61, DrawMissiles:78, MissileLines:101
 
-## BattleScreen.Controls.cs (319 lines)
-- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:81, CommandControls:89, CommandCursor:219, BoxOf:235, OnScreen:237, PickSquad:244, GroundUnderMouse:258, GroundUnder:260, UpdateCamera:282
+## BattleScreen.Controls.cs (378 lines)
+- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:81, CommandControls:89, CommandCursor:276, BoxOf:294, OnScreen:296, PickSquad:303, GroundUnderMouse:317, GroundUnder:319, UpdateCamera:341
 
-## BattleScreen.cs (563 lines)
-- **BattleScreen** (class, L10): Exit:16, GroundTips:48, MagicTips:60, BattleScreen:115, Load:127, QuickGround:146, BeginCampaign:156, StartDeployment:187, StageCommandView:202, FinishCampaignBattle:210, NewBattle:225, WithMages:267, SetWorld:275, SetCommand:289, Pressed:298, Update:306, PlaySounds:388, Soundscape:427, SyncHud:520, MenuChoice:549
+## BattleScreen.cs (565 lines)
+- **BattleScreen** (class, L10): Exit:16, GroundTips:48, MagicTips:60, BattleScreen:116, Load:128, QuickGround:147, BeginCampaign:157, StartDeployment:188, StageCommandView:203, FinishCampaignBattle:211, NewBattle:226, WithMages:268, SetWorld:276, SetCommand:290, Pressed:300, Update:308, PlaySounds:390, Soundscape:429, SyncHud:522, MenuChoice:551
 
-## BattleScreen.Draw.cs (773 lines)
+## BattleScreen.Draw.cs (775 lines)
 - **BattleScreen** (class, L8): Draw:12, DrawShaded:54, DrawBlobs:104, EaseFacings:146, Spray:162, Effects:175, GroundSteps:206, BuildSprites:262, LensFill:341, SpriteStates:344, DrawSpritesBasic:352, DrawSpritesShaded:362, DrawSoft:373, Line:387, G:388, OrderArrows:397, OrderArrowLines:399, Ring:415, DashedRing:426, Band:439, BeamQuad:461, TorchRow:483, Precipitation:492, Fall:503, Stakes:522, SpellColor:545, Spells:551, AuraGlow:567, ChampionGlow:577, PlayerGlow:590, PendingFormsDrawn:604, RouteDots:629, PlanHook:642, DrawLines:672
 
 ## BattleScreen.Effects.cs (208 lines)
@@ -221,8 +221,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Magic.cs (364 lines)
 - **BattleScreen** (class, L8): OrderColour:31, FlashColour:40, ResetMagicFx:54, AddRipple:56, Rise:60, MagicFx:70, FlashFx:83, FieldFx:179, BuffFx:221, AuraFx:236, MagicLines:271
 
-## BattleScreen.Orders.cs (427 lines)
-- **BattleScreen** (class, L8): Targets:12, SelectedCrews:16, EngineOrder:19, Issue:29, Send:42, Move:52, NextRule:64, GiveGoal:83, GoalCommand:97, Command:119, MergeSelected:187, RelieveSelected:208, SplitSelected:223, GroupKey:237, Group:240, OrderKeys:261, NextSpell:290, CastAt:303, PlantStakes:317, CommandClick:332, MoveTo:349, SoundHorn:359, Answer:365, NextDivision:372, LineAt:382, Distribute:399, PreviewSlots:418
+## BattleScreen.Orders.cs (432 lines)
+- **BattleScreen** (class, L8): Targets:12, SelectedCrews:16, EngineOrder:19, Issue:29, Send:43, Move:53, NextRule:65, GiveGoal:84, GoalCommand:98, Command:120, MergeSelected:192, RelieveSelected:213, SplitSelected:228, GroupKey:242, Group:245, OrderKeys:266, NextSpell:295, CastAt:308, PlantStakes:322, CommandClick:337, MoveTo:354, SoundHorn:364, Answer:370, NextDivision:377, LineAt:387, Distribute:404, PreviewSlots:423
 
 ## BattleScreen.Press.cs (194 lines)
 - **BattleScreen** (class, L8): PressShot:16, PressList:21, PressScript:49, MagicShot:78, Aim:102, Blocked:116, Behind:137, Over:145, Captain:152, Horse:163, Volley:174, Hot:184
@@ -612,10 +612,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Command.cs (186 lines)
 - **Hud** (class, L8): ReserveAt:18, ToMeAt:19, HornAt:20, HornToggleAt:21, AddAt:22, OverCommand:24, DivisionColour:31, Movable:42, LayoutCommand:44, LayoutQuestion:64, Tray:75, SmallButton:116, Question:125, DivisionRings:150
 
-## Hud.cs (1079 lines)
+## Hud.cs (1146 lines)
 - **Cmd** (enum, L7)
 - **MenuItem** (enum, L9)
-- **Hud** (class, L13): StartAt:47, DeployToggleAt:51, Hud:74, U:76, Layout:90, CardAt:147, ButtonAt:148, MenuAt:149, MinimapAt:150, Over:152, Rect:156, Panel:159, Frame:161, Line:169, Bar:175, Text:178, TW:183, TextC:184, TextR:185, MoraleColor:187, GradeTag:213, GradeColor:214, RanksOf:215, PlanOf:216, AvgMorale:223, AvgMorale:230, Draw:239, Strength:311, SideArms:322, GoalLines:326, Balance:338, Feed:385, MinimapPanel:409, PlayerPanel:456, FormBar:508, RelicSlot:535, SpellFan:547, Cards:573, OrderFlash:644, StripCard:654, EffectMarks:669, Icon:687, Portrait:691, Crosshair:728, CommandPanel:797, PaletteButton:830, Wheel:845, Hints:872, Banners:884, Banner:923, StateOf:997, FormationName:1000, SquadTooltip:1003, EnemyGlass:1030, Detail:1054
+- **Hud** (class, L13): StartAt:51, DeployToggleAt:55, Hud:80, U:82, Layout:96, CardAt:153, ButtonAt:154, MenuAt:155, PauseAt:156, SpeedAt:157, ModeAt:158, MinimapAt:159, Over:161, Rect:165, Panel:168, Frame:170, Line:178, Bar:184, Text:187, TW:192, TextC:193, TextR:194, MoraleColor:196, GradeTag:222, GradeColor:223, RanksOf:224, PlanOf:225, AvgMorale:232, AvgMorale:239, Draw:248, Strength:333, SideArms:344, GoalLines:348, Balance:360, Feed:438, MinimapPanel:462, PlayerPanel:509, FormBar:561, RelicSlot:588, SpellFan:600, Cards:626, OrderFlash:697, StripCard:707, EffectMarks:722, Icon:740, Portrait:744, Crosshair:781, HasRangedOrCaster:841, CommandPanel:856, PaletteButton:890, WheelPos:906, Wheel:910, Hints:937, Banners:949, Banner:988, StateOf:1063, FormationName:1066, SquadTooltip:1069, EnemyGlass:1096, Detail:1120
 
 ## Hud.Divisions.cs (388 lines)
 - **Hud** (class, L8): readonly:16, readonly:24, LayoutDivisions:30, LayoutGoals:44, DivisionAt:55, GoalCloseAt:57, DivisionTag:61, GoalTag:69, DivisionCards:71, GoalExplain:108, GoalPanel:124, DivisionTooltip:159, SergeantFieldBadge:179, GoalWheel:189, SergeantPennants:211, NamedMarks:229, BannerMark:272, HornAim:296, DivisionMarkers:308
@@ -629,8 +629,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Hud.Marked.cs (113 lines)
 - **Hud** (class, L9): MarkedMarks:11, VolleyRings:62, GroundRing:86, Chevron:102
 
-## Hud.Melee.cs (128 lines)
-- **Hud** (class, L9): BlowNumbers:16, Shadowed:40, Opponent:49, BlockWord:86, OpponentMark:89, DuelBars:106, Fighter:118
+## Hud.Melee.cs (142 lines)
+- **Hud** (class, L9): BlowNumbers:16, Shadowed:40, Opponent:49, CombatOrderBanner:87, BlockWord:100, OpponentMark:103, DuelBars:120, Fighter:132
 
 ## Hud.Overlays.cs (191 lines)
 - **Hud** (class, L7): SampleStrength:15, Overlay:24, MenuButtons:31, Menu:38, Result:50, Well:83, Tally:93, StrengthChart:127, Help:140
@@ -940,8 +940,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Ui.cs (255 lines)
 - **Ui** (class, L8): Hovered:26, FrameEnd:36, Ui:40, Anim:59, static:70, Since:83, Count:93, Key:100, Reset:103, Begin:105, End:115, Blocks:118, Block:119, U:120, Rect:122, Frame:129, Panel:138, Dim:141, Text:144, Ink:151, TW:159, TextC:160, TextR:161, Bar:165, Hover:178, Clicked:181, Button:190, Face:219, FaceHead:229, HasSprite:241, Sprite:243, Portrait:254
 
-## UiKit.cs (605 lines)
-- **Kit** (class, L10): Mul:18, N:20, VGrad:25, HGrad:32, Line:39, Disc:46, Vignette:57, Hills:71, HillY:82, Stars:89, Castle:102, Plate:125, PlateBody:136, Fit:158, FitScale:171, TextFit:174, TextFitC:176, Inset:179, Shine:183, Ribbon:196, Divider:215, Shield:226, Banner:266, Icon:322, IconFlat:338, Ring:351, Pips:370, Gauge:384, TugBar:393, Chart:404, WordTabs:427, Chip:444, Gilded:455, Toggle:476, Check:489, Slider:500, Stepper:516, Tabs:530, Toast:552, OrderKey:562, Tooltip:577, Wrap:592
+## UiKit.cs (606 lines)
+- **Kit** (class, L10): Mul:18, N:20, VGrad:25, HGrad:32, Line:39, Disc:46, Vignette:57, Hills:71, HillY:82, Stars:89, Castle:102, Plate:125, PlateBody:136, Fit:158, FitScale:171, TextFit:174, TextFitC:176, Inset:179, Shine:183, Ribbon:196, Divider:215, Shield:226, Banner:266, Icon:323, IconFlat:339, Ring:352, Pips:371, Gauge:385, TugBar:394, Chart:405, WordTabs:428, Chip:445, Gilded:456, Toggle:477, Check:490, Slider:501, Stepper:517, Tabs:531, Toast:553, OrderKey:563, Tooltip:578, Wrap:593
 
 ## UiLab.cs (99 lines)
 - **UiLab** (class, L9): UiLab:29, Update:40, Shots:56, Draw:68, Nav:81

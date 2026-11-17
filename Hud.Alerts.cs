@@ -14,7 +14,7 @@ partial class Hud
     {
         alertRows.Clear();
         if (ShowResult || Deploying) return;
-        int y = U(10) + 6 * U(21) + U(8), room = (W - U(472)) / 2 - U(40);
+        int y = U(10), room = (W - U(472)) / 2 - U(40);
         foreach (var a in B.RecentAlerts())
         {
             float alpha = Math.Clamp((10 - (B.Time - a.Time)) / 2f, 0, 1);

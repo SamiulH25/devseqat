@@ -88,7 +88,27 @@ partial class BattleScreen
 
     void CommandControls(float dt)
     {
-        wheelOpen = false;
+        bool alt = kb.IsKeyDown(Keys.LeftAlt) || kb.IsKeyDown(Keys.RightAlt);
+        if (!wheelOpen && IsActive && !alt && ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Released && !hud.Over(ms.Position))
+        {
+            wheelOpen = true;
+            wheelOrigin = ms.Position;
+            wheelVec = Vector2.Zero;
+        }
+        if (wheelOpen)
+        {
+            if (IsActive && ms.MiddleButton == ButtonState.Pressed)
+                wheelVec = (ms.Position - wheelOrigin).ToVector2();
+            else
+            {
+                if (IsActive && WheelSector() is int sector)
+                {
+                    if (selectedDivision is { } dv) GoalCommand(dv, Hud.GoalWheelOrder[sector].G, Hud.GoalWheelOrder[sector].Side);
+                    else Command(Hud.WheelOrder[sector]);
+                }
+                wheelOpen = false;
+            }
+        }
         var vp = GraphicsDevice.Viewport;
         var f = Forward(camYaw);
         var pan = f * ctl.Axis(Act.Forward, Act.Back) + RightOf(f) * ctl.Axis(Act.Right, Act.Left);
@@ -102,25 +122,55 @@ partial class BattleScreen
         camFocus += pan * zoom * 0.9f * dt;
         if (camFocus.Length() > battle.Terrain.Half - 20) camFocus = Vector2.Normalize(camFocus) * (battle.Terrain.Half - 20);
         camYaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt;
-        if (ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
+        if (!wheelOpen && alt && ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
         {
             // Middle-drag orbits: horizontal turns, vertical tilts.
             camYaw += (ms.X - pms.X) * 0.006f;
             camPitch = Math.Clamp(camPitch + (ms.Y - pms.Y) * 0.006f, 0.25f, 1.45f);
         }
+        float oldZoom = zoom;
         zoom = Math.Clamp(zoom - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.03f, 10, MathHelper.Clamp(battle.MapRadius * 1.3f, 110, 260)); // a big field lets you pull further out
+        if (zoom < oldZoom && IsActive && !hud.Over(ms.Position))
+            camFocus += (GroundUnderMouse() - camFocus) * ((oldZoom - zoom) / oldZoom) * 0.65f;
         battle.Input = new PlayerInput { Dir = aimDir };
         if (!IsActive) return;
         mouseGround = GroundUnderMouse();
         bool add = ctl.Down(Act.AddToSelection);
+        Cursors.Want = CommandCursor();
+        if (wheelOpen) return;
 
         // Left button: HUD first (buttons, cards, minimap), then the field (click or box select).
         if (castBy != null && (castBy.Alive == 0 || !selected.Contains(castBy) && selected.Count > 0)) { castBy = null; castPick = -1; }
         if (castBy != null && ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released) { castBy = null; castPick = -1; return; }
         if (castBy != null && LmbPressed && !hud.Over(ms.Position)) { CastAt(mouseGround); return; }
         if (LmbPressed && CommandClick(ms.Position)) return; // tray, ADD, answers, the horn (BattleScreen.Orders.cs)
+        if (attackMoveMode && IsActive)
+        {
+            if (ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released) { attackMoveMode = false; return; }
+            if (LmbPressed)
+            {
+                Vector2? at = hud.MinimapAt(ms.Position) is Vector2 mw ? mw : !hud.Over(ms.Position) ? mouseGround : null;
+                if (at is Vector2 pt)
+                {
+                    attackMoveMode = false;
+                    if (selectedDivision is { } dv && !deploying) GiveGoal(dv, new Goal(GoalKind.Take, pt));
+                    else if (PickSquad(pt, 1) is Squad foe) { OrderArrows(foe.Centroid()); Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }, move: true); }
+                    else { OrderArrows(pt); LineAt(pt, battle.Centroid(1)); }
+                    return;
+                }
+            }
+        }
+        if (ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released && hud.MinimapAt(ms.Position) is Vector2 rmw)
+        {
+            if (selectedDivision is { } dv && !deploying) GiveGoal(dv, new Goal(GoalKind.Take, rmw));
+            else { OrderArrows(rmw); LineAt(rmw, battle.Centroid(1)); }
+            return;
+        }
         if (LmbPressed)
         {
+            if (hud.PauseAt(ms.Position)) { paused = !paused; return; }
+            if (hud.SpeedAt(ms.Position) is int si) { speed = si; paused = false; return; }
+            if (hud.ModeAt(ms.Position) && battle.Player.Active && !deploying) { SetCommand(false); return; }
             if (hud.GoalCloseAt(ms.Position)) selectedDivision = null;
             else if (selectedDivision != null && hud.GoalAt(ms.Position) is var (gk, gs)) GoalCommand(selectedDivision, gk, gs);
             else if (hud.DivisionAt(ms.Position) is Division dc)
@@ -169,7 +219,15 @@ partial class BattleScreen
                 if (sq != null) selectedDivision = null;
                 if (sq == null) { if (!add) selected.Clear(); }
                 else if (add) { if (!selected.Remove(sq)) selected.Add(sq); }
+                else if (sq == lastFieldSquad && realTime - lastFieldClick < DoubleClick)
+                {
+                    selected.Clear();
+                    var kind = sq.Units.FirstOrDefault(u => u.Active)?.Type.Id;
+                    foreach (var s in Selectable)
+                        if (s == sq || (kind != null && s.Units.Any(u => u.Active && u.Type.Id == kind))) selected.Add(s);
+                }
                 else { selected.Clear(); selected.Add(sq); }
+                if (sq != null) { lastFieldSquad = sq; lastFieldClick = realTime; }
             }
             else
             {
@@ -211,6 +269,26 @@ partial class BattleScreen
             else Distribute(a, mouseGround, enemy);   // drag: draw the line
             battle.Log((selected.Count == 0 ? "All troops: " : "Squads: ") + (queueing ? "then move there" : "move"));
         }
+    }
+
+    /// The cursor for what a click would do here: attack a company, select yours, sight an engine or a spell, send the
+    /// companies to the ground, drag a box, turn the camera (the kinds are in Cursors.cs).
+    CursorKind CommandCursor()
+    {
+        var p = ms.Position;
+        if (wheelOpen) return CursorKind.Pointer;
+        if (ms.MiddleButton == ButtonState.Pressed && (kb.IsKeyDown(Keys.LeftAlt) || kb.IsKeyDown(Keys.RightAlt))) return CursorKind.Turn;
+        if (boxStart is Point bs && (Math.Abs(p.X - bs.X) > 6 || Math.Abs(p.Y - bs.Y) > 6)) return CursorKind.Box;
+        if (hud.Over(p))
+            return hud.CardAt(p) != null || hud.ButtonAt(p) != null || hud.AlertAt(p) != null || hud.DivisionAt(p) != null || hud.GoalAt(p) != null || hud.MinimapAt(p) != null
+                ? CursorKind.Hand : CursorKind.Pointer;
+        if (castBy != null) return CursorKind.Cast;
+        if (attackMoveMode) return CursorKind.Attack;
+        if (!deploying && SelectedCrews().Count > 0) return CursorKind.Aim;
+        bool canOrder = selectedDivision != null || Targets().Count > 0;
+        if (canOrder && !deploying && PickSquad(mouseGround, 1) != null) return CursorKind.Attack;
+        if (PickSquad(mouseGround, 0) is { AiControlled: false }) return CursorKind.Select;
+        return canOrder ? CursorKind.Move : CursorKind.Pointer;
     }
 
     static Rectangle BoxOf(Point a, Point b) => new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
