@@ -272,31 +272,43 @@ public partial class Battle
         }
     }
 
-    /// The general's stances for his divisions (the AI's, and yours when the AI plays you). Front lines hold, then charge
-    /// once the lines close, the fight starts, or they have waited long enough; wings guard, then swing round; the reserve
-    /// plugs. An officer never changes his own stance: this is the general's word.
+    /// The general's stances for his divisions (the AI's, and yours when the AI plays you; docs/OFFICERS.md OF3). He reads
+    /// the fight, not a clock alone: a front line holds, walks forward if the foe will not come (or its arrows are telling),
+    /// and charges once the lines are close or blows have begun; wings guard the line's ends until the line is at blows,
+    /// then swing round; the reserve waits to plug the line. His officers then keep the stance as well as their skill lets
+    /// them (BattleOfficers.cs); none changes his own.
     void AiCommand(int team)
     {
         int foe = 1 - team;
-        bool fighting = SquadsOf(team).Any(s => s.Alive > 0 && s.Division == null && s.Units.Any(u => u.Active && u.EnemyDist < 5));
+        bool lineFighting = Squads.Any(s => OnLine(s, team) && s.InContact);
+        bool fighting = lineFighting || SquadsOf(team).Any(s => s.Alive > 0 && s.Division == null && s.Units.Any(u => u.Active && u.EnemyDist < 5));
         foreach (var d in DivisionsOf(team))
         {
             if (d.Pending != null || d.Alive == 0) continue;
-            var live = d.Squads.Where(s => s.Alive > 0).ToList();
-            var at = Mid(live);
-            var near = EnemySquadNear(at, float.MaxValue, foe);
-            if (near == null) continue;
-            float gap = Vector2.Distance(at, near.Center) - near.Radius;
-            float wait = d.Temper switch { Temper.Bold => 15, Temper.Steady => 30, _ => 45 } * (d.Has("Hothead") ? 0.5f : 1);
-            bool waited = Time - d.GoalSince > wait;
-            Stance? next = d.Stance switch
-            {
-                Stance.Hold or Stance.Advance when fighting || gap < 30 || waited => Stance.Charge,
-                Stance.Guard when fighting || waited => Stance.Swing,
-                Stance.Wait => Stance.Plug,
-                _ => null,
-            };
-            if (next is { } st) IssueGoal(d, Ironfield.Goal.Of(d.Post, st), ai: true);
+            var next = AiStance(d, foe, fighting, lineFighting);
+            if (next is { } st && st != d.Stance) IssueGoal(d, Ironfield.Goal.Of(d.Post, st), ai: true);
         }
+    }
+
+    /// The stance the general wants for this division now, or null to leave it.
+    Stance? AiStance(Division d, int foe, bool fighting, bool lineFighting)
+    {
+        var live = d.Squads.Where(s => s.Alive > 0).ToList();
+        var at = Mid(live);
+        var near = EnemySquadNear(at, float.MaxValue, foe);
+        if (near == null) return null;
+        float gap = Vector2.Distance(at, near.Center) - near.Radius;
+        float wait = d.Temper switch { Temper.Bold => 15, Temper.Steady => 30, _ => 45 } * (d.Has("Hothead") ? 0.5f : 1);
+        bool waited = Time - d.GoalSince > wait;
+        bool shot = d.Losing * 12 >= Math.Max(12, d.Alive); // losing men to arrows: standing still costs
+        return d.Stance switch
+        {
+            Stance.Hold when fighting || gap < 25 => Stance.Charge,
+            Stance.Hold when waited || shot => Stance.Advance,
+            Stance.Advance when fighting || gap < 20 => Stance.Charge,
+            Stance.Guard when lineFighting || Time - d.GoalSince > wait * 2 => Stance.Swing,
+            Stance.Wait => Stance.Plug,
+            _ => null,
+        };
     }
 }

@@ -105,4 +105,36 @@ public static partial class SelfTest
         Run(br, 1);
         Check(rested && second.Anchor.Y > lr[0].Anchor.Y, "a good officer pulls a spent company back and sends the fresh one into its place");
     }
+
+    /// OF3: Divide lays a big army out on posts (horse on the wings, foot on the front line, bows skirmishing, spare foot in
+    /// reserve) under officers whose skill follows the army's quality; the general picks stances by post and the state of
+    /// the fight, only ever stances of the division's own post.
+    static void AiOnPosts()
+    {
+        var levies = Armies.Random(new Random(40), 1, 0);
+        var elite = Armies.Random(new Random(40), 7, 0);
+        Check(Armies.OfficerSkill(levies) <= 2 && Armies.OfficerSkill(elite) >= 8, $"officers' skill follows the army's quality ({Armies.OfficerSkill(levies)}, {Armies.OfficerSkill(elite)})");
+
+        var army = Armies.Divide(Armies.Large(new Random(41), 3, 1, 2400));
+        var posts = army.Divisions!.Select(x => Goal.FromName(x.Goal)).ToList();
+        Console.WriteLine($"officers: a big army divides into {string.Join(", ", army.Divisions!.Select(x => $"{x.Name} {x.Goal} skill {x.Skill}"))}");
+        Check(posts.Any(g => g.Post == Post.Front) && posts.Any(g => g.Post is Post.LeftWing or Post.RightWing), "a big army stands on the front line and the wings");
+        Check(army.Divisions!.All(x => x.Skill == Armies.OfficerSkill(army)), "its officers have the skill its quality gives");
+
+        var b = new Battle(41, Armies.Divide(Armies.Large(new Random(42), 3, 0, 1500)), Armies.Divide(Armies.Large(new Random(43), 3, 1, 1500)),
+            new BattleOptions { Cap = 4000, AutoPlayer = true, PlayerWounded = true });
+        var seen = new HashSet<(Post, Stance)>();
+        bool fits = true;
+        for (int i = 0; i < 60 * 120 && b.Winner < 0; i++)
+        {
+            b.Update(1 / 60f);
+            if (i % 30 != 0) continue;
+            foreach (var d in b.Divisions) { seen.Add((d.Post, d.Stance)); fits &= Goal.Fits(d.Post, d.Stance); }
+        }
+        Console.WriteLine($"officers: stances seen {string.Join(", ", seen.Select(x => $"{x.Item1}:{x.Item2}"))}");
+        Check(fits, "the general only ever gives a division a stance of its own post");
+        Check(seen.Contains((Post.Front, Stance.Charge)), "front lines go in once the fight is on");
+        Check(seen.Any(x => x.Item1 is Post.LeftWing or Post.RightWing && x.Item2 == Stance.Swing), "wings swing round once the line is at blows");
+        Check(!b.Divisions.Any(d => d.Stance == Stance.Wait), "a reserve the general leads waits to plug the line");
+    }
 }

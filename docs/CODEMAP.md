@@ -180,9 +180,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattlePlayer.cs (177 lines)
 - **Battle** (class, L6): Guard:17, UpdatePlayer:34, ToggleMount:113, Rally:148, KingsCharge:166
 
-## BattlePosts.cs (302 lines)
+## BattlePosts.cs (314 lines)
 - **Line** (struct, L7)
-- **Battle** (class, L16): OnLine:28, FrontLine:32, Mid:54, Frontage:57, WingSpot:61, SpotOf:69, Brain:87, HoldLine:114, Steady:148, ChargeIn:161, GuardFlank:184, Loose:198, ScreenLine:209, FootGap:226, Shoot:235, FollowCaptain:241, Plug:253, AiCommand:278
+- **Battle** (class, L16): OnLine:28, FrontLine:32, Mid:54, Frontage:57, WingSpot:61, SpotOf:69, Brain:87, HoldLine:114, Steady:148, ChargeIn:161, GuardFlank:184, Loose:198, ScreenLine:209, FootGap:226, Shoot:235, FollowCaptain:241, Plug:253, AiCommand:280, AiStance:294
 
 ## BattleQueue.cs (109 lines)
 - **OrderStep** (record, L7)
@@ -921,8 +921,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/MonsterTests.cs (249 lines)
 - **SelfTest** (class, L7): MonsterLeaders:11, SpiderVenom:43, BearRage:108, WyvernFlight:123, MonstersAbroad:175, BeastTrace:237
 
-## Tests/OfficerTests.cs (108 lines)
-- **SelfTest** (class, L6): OfficerSkill:24
+## Tests/OfficerTests.cs (140 lines)
+- **SelfTest** (class, L6): OfficerSkill:24, AiOnPosts:112
 
 ## Tests/OriginTests.cs (65 lines)
 - **SelfTest** (class, L4): CharacterCreator:8
@@ -951,14 +951,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## TitleScreen.Scene.cs (486 lines)
 - **TitleScreen** (class, L8): readonly:10, Q:48, Tri:49, R:50, Scene:52, PaintSky:84, Sun:97, Streak:112, Clouds:124, ShootingStar:141, Flock:154, FarY:171, CragY:180, MidY:188, NearY:194, FrontY:201, Foreground:208, Layer:225, Haze:237, Castle:245, Flag:281, Pines:297, Hamlet:310, Column:338, Man:358, Horse:405, Rider:425, Wagon:454, Grass:464, Embers:476
 
-## Troops.cs (318 lines)
+## Troops.cs (337 lines)
 - **Troops** (class, L7): Has:14, Get:15, HasMount:16, Mount:17, Path:53, Load:63, Validate:93, WorseUpgrade:140, Tree:154
 - **NamedSpec** (record, L170)
 - **Company** (record, L172): Has:177
 - **StackSpec** (record, L183)
 - **ArmySpec** (record, L185)
 - **DivisionSpec** (record, L192)
-- **Armies** (class, L197): LineTroop:200, readonly:202, Count:210, Standard:218, Random:221, Large:228, FullCount:239, Divide:248, Split:261, Make:303, MageTroop:307, LineTroop:311, RoleOf:313
+- **Armies** (class, L197): LineTroop:200, readonly:202, Count:210, Standard:218, Random:221, Large:228, FullCount:239, Divide:249, OfficerSkill:257, Split:270, Make:322, MageTroop:326, LineTroop:330, RoleOf:332
 
 ## TroopSheet.cs (67 lines)
 - **TroopSheet** (class, L8): TroopSheet:16, Write:23, One:34

@@ -8,7 +8,7 @@ This plan replaces the eleven division goals with two plain layers, the same for
   him a stance. He does what the stance says and nothing else. **His skill decides how well**: a poor officer on the
   enemy's line can lose it badly, and that is something to see and use.
 
-Status: OF0-OF2 built. Supersedes the goal layer of `docs/SERGEANTS.md` (SG0-SG7); the command cap,
+Status: OF0-OF3 built. Supersedes the goal layer of `docs/SERGEANTS.md` (SG0-SG7); the command cap,
 reserve tray, call-ups and horn plans stay.
 
 ## Decisions
@@ -81,3 +81,5 @@ An officer's skill (0-10: a companion's Command, a sergeant's battles, an enemy 
   sends a fresh one into its place; the morale system still decides who runs. `FrontLine` now faces the way the side
   deployed, not centroid to centroid (a new or wandering company swung every post). Drift is a sideways random walk on the
   battle's own rng, so replays still match.
+- OF3 (2026-11-16): `Armies.Split` lays armies on posts, `Armies.OfficerSkill` from tier and level, `AiStance` reads the
+  fight. Test `AiOnPosts`. Simplification: skirmishers stay on Loose all battle (no switch to Harass or Screen yet).

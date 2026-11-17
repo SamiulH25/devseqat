@@ -331,7 +331,12 @@ every 0.5-1 s by skill. He does what the stance says and never changes it himsel
   (`Campaign.WithDivisions`); `Armies.Divide` splits any big army into a horse wing and two foot battles (enemy lords and
   quick battles), filled to `Armies.DivisionFill` (6) so there is room to move companies in deployment, at most
   `Armies.DivisionCap` (8) each; each split division gets a nature (`DivisionSpec.Traits`); while the captain would still lead more than
-  `Armies.CommandCap` (10), spare foot joins the battles and the bows get a division of their own. The AI's goals come from `AiCommand(team)`.
+  `Armies.CommandCap` (10), spare foot joins the battles and the bows get a division of their own. On posts (OF3): the horse
+  rides both wings when there are 2+ companies and 60+ men (Left horse Veteran, Right horse Hothead), else the right; the
+  battles stand on the front line; the bows skirmish (Loose); foot still over the cap waits as "The reserve" (Reserve:Wait).
+  Every officer's skill is `Armies.OfficerSkill(army)` (average tier x 1.1 + level x 0.35, 1-9). The AI's stances come from
+  `AiCommand(team)` / `AiStance`: Hold -> Charge when at blows or within 25 m, Hold -> Advance after its wait (by temper) or
+  under arrows, Advance -> Charge within 20 m, Guard -> Swing once the line is at blows (or twice the wait), Wait -> Plug.
 - **The command cap:** `Battle.Deploy` fields at most `CommandCap` companies the captain leads himself (`Leads`: not allied,
   not in a division, not an assault); the rest wait in `reserves` with `Held` set and march on (`Reinforce`) only when
   `OpenSlots(team)` > 0, i.e. one of his own companies is spent (no man standing unrouted), folded or split. Budget reserves
