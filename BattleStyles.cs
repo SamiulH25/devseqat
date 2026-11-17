@@ -12,18 +12,19 @@ public partial class Battle
     /// The style a troop's weapon gives it, when troops.json names none.
     public static AttackStyle StyleFor(UnitType t) => t.Look.Weapon switch
     {
-        "daneaxe" or "warhammer" => AttackStyle.Crush,
-        "greatsword" => AttackStyle.Sweep,
-        "longsword" => t.HasShield ? AttackStyle.Riposte : AttackStyle.Sweep,
+        "daneaxe" or "warhammer" or "bardiche" => AttackStyle.Crush,
+        "greatsword" or "flamberge" => AttackStyle.Sweep,
+        "longsword" or "longsword_gilded" => t.HasShield ? AttackStyle.Riposte : AttackStyle.Sweep,
         "scimitar" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Riposte : AttackStyle.Sweep, // the curved blade turns a blow and cuts back
-        "sword" or "axe" or "mace" or "falchion" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Bash : AttackStyle.None,
+        "morningstar" when !t.Mounted() && !t.HasShield => AttackStyle.Crush, // the spiked head two-handed comes down over a guard
+        "sword" or "axe" or "mace" or "morningstar" or "falchion" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Bash : AttackStyle.None,
         "pike" or "halberd" => AttackStyle.Thrust,
         "spear" or "glaive" or "javelin" => AttackStyle.HoldOff,
         "sling" => AttackStyle.QuickLoose,
-        "lance" => AttackStyle.RideDown,
+        "lance" or "pennonlance" => AttackStyle.RideDown,
         "longbow" => AttackStyle.Plunge,
-        "bow" => AttackStyle.QuickLoose,
-        "crossbow" => AttackStyle.Punch,
+        "bow" or "recurve" => AttackStyle.QuickLoose,
+        "crossbow" or "arbalest" => AttackStyle.Punch,
         _ => AttackStyle.None,
     };
 

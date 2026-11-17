@@ -89,6 +89,10 @@ An officer's skill (0-10: a companion's Command, a sergeant's battles, an enemy 
 - OF5 (2026-11-17): `BattleSergeants.cs`. He keeps order by numbers, not by moving: re-forming 25 % quicker, urge falls
   faster, a rally aura of 2.5 morale a second in 10 m. A grade worse is 0.25 drill (`SergeantLoss`), given back when another
   man steps up (8-24 s by drill). The card's plate across the portrait's foot also carries RESTLESS (it wins; it replaced the loose RST text). Visual judge (Haiku fallback): 5, then 7/10.
+  Fix (2026-11-17): the rally skips a man with a `fear` creature within 8 m (`Feared`): 2.5 a second cancelled a troll's
+  fear exactly, so a company never broke by night (`Trolls` red). `VeteransWrap` now weighs the trade over six seeds: one
+  clash swings on whose sergeant falls first. Picking him from the rear rank was tried and dropped: he never falls, and
+  the level 4 battle in `ResolveBattles` stalls past ten minutes.
 - OF6 (2026-11-17): `DivisionRecord.Goal` holds "Post:Stance"; the `Campaign` constructor maps an old save's goal name with
   `Goal.FromName` (no save version bump). Each party lane (and each V card) has a post button and a stance button
   (`PostButtons`) in place of the eight-goal cycle. Deviation: lanes stay one per officer, labelled with his post, rather

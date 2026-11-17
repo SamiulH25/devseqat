@@ -6,6 +6,14 @@ by running the thing, not read off a doc. Ordered by what costs the most if left
 Fix them roughly in this order: 1 and 2 first (they gate everything else being trustworthy), then 3, then 4–6.
 7–12 are cheap and can go in any time. 13–14 are polish.
 
+## Progress (2026-11-17, second session)
+
+- **Done:** 1 (seven weapon names in `StyleFor`/`PassivesFor`; a two-handed morningstar crushes), 2 (`RunNames`: every test
+  runs, failures print as `FAILED name: why`, the summary names them), 3 (see the correction under 3), the two OF5
+  regressions in 7 (see the note under 7), `UpgradeTreeVisibility` registered, `Tests/Dbg.cs` deleted, 10, 12.
+- **Still red, need a call:** `Cultures` (issue 4) and `PassivesOnlyAdd` (see the note under 7).
+- **Open:** 4, 5, 6, 8, 9, 11, 13, 14; the trace helpers in 7.
+
 | # | Issue | Severity | Size |
 |---|---|---|---|
 | 1 | 32 elite troops lost their attack style, and get the wrong passives | **P1** | small |
@@ -140,6 +148,11 @@ else if (Player.Food < 4 && here != null && !Refuses(here) && S.Gold >= FoodPric
 
 The purchase branch did not fire because `FoodPrice(7)` exceeded the player's gold at that moment. So the player was
 standing in a town, not at war with it, with an army in the field — and starved.
+
+**Correction (2026-11-17):** the gold gate was not the cause (314 crowns, a week costs 189). Nogent was taken by realm 5,
+at war with your liege, while the army stood in it; the test clears every encounter, so the army never answered the
+assault, and an enemy town will not sell food (`Refuses`). In play you get the encounter and can march away. The test now
+keeps the liege at peace; `EatDaily` is unchanged. Open question: should a town taken round you throw you out?
 
 **Fix, two parts:**
 
@@ -277,6 +290,15 @@ Red at HEAD `c0e186c` (all eight confirmed by running each alone):
 | `Trolls` | `Tests/CreatureTests.cs:243` | officer work: night/day troll balance moved |
 
 The last two are regressions from OF4–OF6, which shipped with their own balance guards red. They pass at `3ea9b0d`.
+
+**Update (2026-11-17):** `VeteransWrap` and `Trolls` broke at OF5 (`3a48e10`, company sergeants), bisected. Trolls: the
+sergeant's rally (2.5 morale a second) cancelled a troll's fear (2.5) exactly; a man under a `fear` creature is no longer
+rallied. VeteransWrap: seed 52 is an unlucky draw (veterans trade better on 8 of 12 seeds); the trade is now averaged over
+six. `PassivesOnlyAdd` was hiding a second failure behind Grail Knights: **Tempest Spears** (20) against 30 Storm Riders is
+a near wipeout every time (0-7 men standing), and on 12 seeds the spears score 39 with their passives against 60 without.
+`set_spears` is most of it (braced points kill the horse, the rider fights on afoot), but even `tireless` alone scores
+lower. It passed before 902dce7 by luck (the same probe there: 54 against 31). Needs a call: a fairer matchup for this
+pair (20 against 15 is steady: 360 against 372, `set_spears` still costs about a man), or a look at what bracing skirmishers do.
 
 Test methods that exist but are not in the `Tests` array in `SelfTest.cs`, so never run in any mode:
 

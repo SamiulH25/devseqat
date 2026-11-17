@@ -124,7 +124,9 @@ public static partial class SelfTest
         c.Player.Companies.Clear();
         foreach (var co in Armies.Standard(0).Companies) c.Player.Companies.Add(c.NewCompany(co.Troop, co.Role, co.Count, 0));
         c.Player.Cooldown = 1e6f;
-        for (int h = 0; h < 8 * 168; h++) { c.Tick(1); c.Encounter = null; c.Arrived = null; }
+        // The liege stays at peace: this measures pay and food, not whether a war elsewhere takes the town the army stands in.
+        void Peace() { foreach (var w in c.S.Wars.Where(w => w.A == c.Captain.Contract || w.B == c.Captain.Contract)) { w.Active = false; w.TruceUntil = 1e9f; } }
+        for (int h = 0; h < 8 * 168; h++) { Peace(); c.Tick(1); c.Encounter = null; c.Arrived = null; }
         Console.WriteLine($"economy: after 8 weeks gold {c.S.Gold:0}, weekly balance {c.S.LastWeekBalance:0}");
         Check(c.S.UnpaidWeeks == 0 && c.S.Gold > 0 && c.Player.Men >= 60, "a contracted level-2 army stays paid for 8 weeks");
     }

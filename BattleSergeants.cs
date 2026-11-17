@@ -68,7 +68,17 @@ public partial class Battle
             : s.Formed < 0.9f ? SgtTask.Dressing : SgtTask.None;
         if (s.SgtDoing != SgtTask.Rallying) return;
         foreach (var u in s.Units)
-            if (u.Active && !u.Routing && u.Morale < 55 && Vector2.DistanceSquared(u.Pos, sgt.Pos) < 100) u.Morale += 2.5f;
+            if (u.Active && !u.Routing && u.Morale < 55 && Vector2.DistanceSquared(u.Pos, sgt.Pos) < 100 && !Feared(u)) u.Morale += 2.5f;
+    }
+
+    /// A man with a fearsome creature (a troll) over him: no sergeant's word steadies that (the same 8 m as UpdateMorale).
+    /// Without this his rally (2.5 a second) cancels the troll's fear exactly and a company never breaks by night.
+    bool Feared(Unit u)
+    {
+        if (u.Type.VsMonster > 1) return false; // hunters know what they face
+        foreach (var o in Near(u.Pos, 8, near))
+            if (o.Active && o.Team != u.Team && o.Type.Has("fear") && Vector2.DistanceSquared(o.Pos, u.Pos) < 64) return true;
+        return false;
     }
 
     /// The sergeant's work in a few words, for the card and the hover card.

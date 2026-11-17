@@ -16,3 +16,5 @@ Thumbs.db
 balance/
 dist/
 docs/world/world.json.bak
+.midas/
+BlenderMCP/customer_uuid.txt

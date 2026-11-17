@@ -115,8 +115,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Grade** (enum, L6)
 - **Battle** (class, L10): DrillOf:17, DrillOf:21, DrillOf:40, GradeOf:53, GradeName:54, FellFromRanks:57, Flanked:64, UpdateFormed:68, Steadied:97, RankGuard:109, RankEdge:133
 
-## BattleEffects.cs (126 lines)
-- **Battle** (class, L8): PassivesFor:12, SignatureOf:36, PassivesWithSignature:53, PassiveWeight:58, TroopMods:67, UpdateEffects:84, RefreshMods:96, StandEffect:103, AurasOn:111
+## BattleEffects.cs (127 lines)
+- **Battle** (class, L8): PassivesFor:12, SignatureOf:37, PassivesWithSignature:54, PassiveWeight:59, TroopMods:68, UpdateEffects:85, RefreshMods:97, StandEffect:104, AurasOn:112
 
 ## BattleEngines.cs (441 lines)
 - **Engine** (class, L7)
@@ -246,9 +246,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Workings.cs (304 lines)
 - **BattleScreen** (class, L9): ResetWorkings:18, Age:20, Linger:22, WorkFx:26, Jitter:64, WorkingsFx:71, FieldLook:130, SkyBolt:153, StormSky:162, WorkingLines:185, Flock:230, Hash:251, Bird:254, WardDome:266, PotArcs:287
 
-## BattleSergeants.cs (95 lines)
+## BattleSergeants.cs (105 lines)
 - **SgtTask** (enum, L6)
-- **Battle** (class, L11): StepUpTime:17, PickSergeant:20, HasSergeant:25, SergeantUp:28, AppointSergeants:31, UpdateSergeant:37, SergeantText:75, SergeantTag:86
+- **Battle** (class, L11): StepUpTime:17, PickSergeant:20, HasSergeant:25, SergeantUp:28, AppointSergeants:31, UpdateSergeant:37, Feared:76, SergeantText:85, SergeantTag:96
 
 ## BattleSiege.cs (215 lines)
 - **Battle** (class, L7): DeployDefenders:19, Via:50, MayCross:83, EnforceWall:90, Batter:111, GateGivesWay:135, WallBreached:145, MountWallEngines:160, SiegeDefend:174, SiegeAttack:197
@@ -256,10 +256,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleSight.cs (121 lines)
 - **Battle** (class, L8): InMist:17, Visible:23, Visible:24, Shown:28, UpdateSight:30, Sees:55, ClearLine:71, Ambush:90, MirageSpot:108, MirageFor:116, Warded:120
 
-## BattleStyles.cs (183 lines)
+## BattleStyles.cs (184 lines)
 - **AttackStyle** (enum, L6)
-- **Battle** (class, L10): StyleFor:13, static:31, Styled:50, StyleSwing:54, StyleSwingStarts:63, StyleBlow:71, Bashing:78, StyleGuard:82, StyleBlocked:96, StyleLanded:104, Closing:149, Behind:157, StyleReload:176
-- **StyleExtensions** (class, L179): Mounted:182
+- **Battle** (class, L10): StyleFor:13, static:32, Styled:51, StyleSwing:55, StyleSwingStarts:64, StyleBlow:72, Bashing:79, StyleGuard:83, StyleBlocked:97, StyleLanded:105, Closing:150, Behind:158, StyleReload:177
+- **StyleExtensions** (class, L180): Mounted:183
 
 ## BattleTactics.cs (259 lines)
 - **Plan** (enum, L6)
@@ -798,11 +798,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## ScreenHost.cs (895 lines)
 - **ScreenHost** (class, L9): readonly:42, ScreenHost:56, ApplyVideo:76, OpenSettings:86, LoadContent:88, StartCampaign:137, Load:163, FinishLoading:178, DrawLoading:196, ContinueCampaign:221, OpenLab:232, QuickBattle:234, StartCampaignBattle:241, FinishCampaignBattle:251, CycleQuality:259, Update:263, DrawCursor:319, Draw:339, Fade:380, CaptureShot:410, readonly:438, RestoreTavernTown:450, StagingRefused:457, CampaignShots:463
 
-## SelfTest.cs (104 lines)
-- **SelfTest** (class, L6): Run:14, Slots:21, ResolveBattles:33, RunOne:56, Lancer:64, Run:73, Scaled:75, MakeWanderer:78, Days:86, Ids:98, Check:100
+## SelfTest.cs (103 lines)
+- **SelfTest** (class, L6): Run:14, Slots:20, ResolveBattles:32, RunOne:55, Lancer:63, Run:72, Scaled:74, MakeWanderer:77, Days:85, Ids:97, Check:99
 
-## SelfTestShards.cs (98 lines)
-- **SelfTest** (class, L9): RunParallel:15, RunShard:55, LoadTimes:81, SaveTimes:93
+## SelfTestShards.cs (125 lines)
+- **SelfTest** (class, L9): RunParallel:16, RunShard:68, RunNames:71, LoadTimes:108, SaveTimes:120
 
 ## Settings.cs (83 lines)
 - **Difficulty** (enum, L5)
@@ -879,8 +879,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/BattleTests.cs (1890 lines)
 - **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, CavalryBalance:123, Flanks:164, Parry:180, BlowsShown:208, FightsRead:230, Formations:246, CaptainCombat:276, CaptainKit:302, SkillBouts:360, Bout:410, Fight:424, BattleGoals:458, BannerAndLastStand:480, DuelFight:517, RangedRoles:538, FatigueAndSupply:558, GroundLayer:576, GroundMoves:601, GroundFights:632, Layouts:669, HedgesAndBridges:700, EveryLayoutResolves:748, SightAndCover:769, Rivers:811, HoldsTheCrest:839, HorseAvoidsBadGround:865, TakesTheFord:882, GroundForThePlayer:904, Stakes:923, Pathfinder:961, GoesToFord:981, FilesThroughGap:1010, RoundTheNearFence:1035, ChargeFindsCaptain:1049, FlowCacheBound:1064, Generals:1079, HorseDown:1096, Ground:1105, HoldFire:1129, TroopTree:1143, SpritesBaked:1170, Sprites:1191, TroopVariety:1228, BigBattle:1264, StackBattle:1294, NamedMenFight:1329, AutoResolveNamedMen:1371, PullBack:1397, ReplayExact:1428, FoldCompanies:1462, AdvanceSteps:1506, RelieveAndSplit:1521, QueuedAndStanding:1557, AlertsRaise:1616, DeploymentMemory:1641, SpearsStopHorse:1672, CommandCap:1683, ScaleBattle:1702, DivisionGoals:1739
 
-## Tests/CampaignTests.cs (1824 lines)
-- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:41, CampaignRun:52, Progression:94, Economy:121, Bridge:133, Calibration:155, LordsFightAsTheyAre:180, RiverRoadGivesBridge:209, RainMakesMud:235, DefenderChoosesGround:260, AutoResolveGroundEdge:276, SiegeBattle:287, CampaignWar:325, RefuseOldSave:386, RollEarnsNames:412, FallenRemembered:482, RisesFromRanks:527, BannerHonours:566, FameDraws:605, RetireAndSucceed:631, BuryNamed:661, Stacks:689, UpgradeTreeVisibility:734, Cultures:748, Characters:822, CampaignDivisions:927, Armoury:982, Duels:1053, RidingAndBowcraft:1086, PerkTiers:1135, SkillRises:1162, LastingWounds:1215, CaptainTraits:1238, HouseholdGuard:1277, RankRewards:1305, StartingRoad:1333, SkillTree:1353, BalanceMatchesData:1436, HousesAndKin:1450, PortraitsVary:1485, TalkBondsWants:1506, LordArmies:1564, HorsesCostGold:1610, GoodsSell:1620, SaveMidRun:1638, Drive:1661, CheckSound:1674, ReportMatchesRecord:1689, StableMix:1732, LogLevels:1740, NobleBirth:1757, NobleRecruits:1782
+## Tests/CampaignTests.cs (1826 lines)
+- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:41, CampaignRun:52, Progression:94, Economy:121, Bridge:135, Calibration:157, LordsFightAsTheyAre:182, RiverRoadGivesBridge:211, RainMakesMud:237, DefenderChoosesGround:262, AutoResolveGroundEdge:278, SiegeBattle:289, CampaignWar:327, RefuseOldSave:388, RollEarnsNames:414, FallenRemembered:484, RisesFromRanks:529, BannerHonours:568, FameDraws:607, RetireAndSucceed:633, BuryNamed:663, Stacks:691, UpgradeTreeVisibility:736, Cultures:750, Characters:824, CampaignDivisions:929, Armoury:984, Duels:1055, RidingAndBowcraft:1088, PerkTiers:1137, SkillRises:1164, LastingWounds:1217, CaptainTraits:1240, HouseholdGuard:1279, RankRewards:1307, StartingRoad:1335, SkillTree:1355, BalanceMatchesData:1438, HousesAndKin:1452, PortraitsVary:1487, TalkBondsWants:1508, LordArmies:1566, HorsesCostGold:1612, GoodsSell:1622, SaveMidRun:1640, Drive:1663, CheckSound:1676, ReportMatchesRecord:1691, StableMix:1734, LogLevels:1742, NobleBirth:1759, NobleRecruits:1784
 
 ## Tests/CaptainTests.cs (179 lines)
 - **SelfTest** (class, L6): CaptainKeepsGuard:10, EnemySeesCaptain:36, EnemyHuntsCaptain:111
@@ -896,9 +896,6 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Tests/CreatureTests.cs (580 lines)
 - **SelfTest** (class, L6): HoldoutTrace:11, Holdouts:23, GoblinBattle:91, WolfTrace:138, Wolves:156, WolfRiders:221, Trolls:243, TrollsAbroad:308, UndeadAbroad:338, PlayerCreatures:389, TrollTrace:461, Undead:486, UndeadTrace:545, GraveTrace:568
-
-## Tests/Dbg.cs (25 lines)
-- **SelfTest** (class, L3): DbgArc:5
 
 ## Tests/EffectTests.cs (182 lines)
 - **SelfTest** (class, L6): NoPassives:9, EffectsValidate:19, PassivesByTier:28, PassivesBite:49, SignaturesBite:76, AuraReachesCompanies:137, PassivesOnlyAdd:156
@@ -922,8 +919,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/MapTests.cs (270 lines)
 - **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203
 
-## Tests/MeleeTests.cs (422 lines)
-- **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, UrgeLunges:173, RefusesFlank:203, VeteransWrap:242, ElitePincer:255, Reforms:286, HorseRegroup:316, BowsFallBack:360, MusterGrade:398, MightWeighsDrill:413
+## Tests/MeleeTests.cs (425 lines)
+- **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, UrgeLunges:173, RefusesFlank:203, VeteransWrap:242, ElitePincer:258, Reforms:289, HorseRegroup:319, BowsFallBack:363, MusterGrade:401, MightWeighsDrill:416
 
 ## Tests/MonsterTests.cs (249 lines)
 - **SelfTest** (class, L7): MonsterLeaders:11, SpiderVenom:43, BearRage:108, WyvernFlight:123, MonstersAbroad:175, BeastTrace:237
