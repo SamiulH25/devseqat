@@ -307,6 +307,7 @@ public static partial class SelfTest
         Console.WriteLine($"world: the next in {clock.ElapsedMilliseconds} ms (the province grid is made once)");
         var d = WorldDesign.Get();
         var m = a.Map;
+        var deep = new Vector2(0, -m.ExtentUsed + 3); // the open sea at the drawn map's north edge
         Check(m.Designed && m.Provinces.Count == d.Provinces.Count(p => p.Kind != "Sea"), $"one province a land province of the design ({m.Provinces.Count})");
         Check(m.Settlements.Count == d.Settlements.Length && m.Sites.Count == d.Sites.Length, "every drawn settlement and site is on the map");
         Check(m.Provinces.Select(p => p.Name).SequenceEqual(b.Map.Provinces.Select(p => p.Name)) && m.Settlements.Select(s => s.Pos).SequenceEqual(b.Map.Settlements.Select(s => s.Pos)),
@@ -315,7 +316,7 @@ public static partial class SelfTest
         Check(m.Settlements.All(s => !m.InSea(s.Pos) && m.ProvinceAt(s.Pos).Id == s.Province && m.Provinces[s.Province].Faction == s.Faction), "every settlement on land, in its own realm's province");
         Check(m.Provinces.All(p => p.Neighbors.Count > 0 && p.Neighbors.All(n => m.Provinces[n].Neighbors.Contains(p.Id))), "every province has neighbours, and they have it");
         var low = m.Settlements.MinBy(s => m.Height(s.Pos.X, s.Pos.Y))!;
-        Check(m.Height(0, -600) < -WorldMap.SeaDepth * 0.8f, $"the open sea lies low ({m.Height(0, -600):0.0})");
+        Check(m.Height(deep.X, deep.Y) < -WorldMap.SeaDepth * 0.8f, $"the open sea lies low ({m.Height(deep.X, deep.Y):0.0})");
         Check(m.Height(low.Pos.X, low.Pos.Y) > 0, $"every settlement stands above the sea ({low.Name} at {m.Height(low.Pos.X, low.Pos.Y):0.0}, land {m.Landness(low.Pos):0.00})");
         Check(m.LandShare is > 0.3f and < 0.6f, $"about two fifths of the map is land ({m.LandShare:0.00})");
         // Roads: every town and castle reaches every other over the road lines (through villages too).
@@ -332,8 +333,8 @@ public static partial class SelfTest
         Console.WriteLine($"world: {m.Provinces.Count} provinces, {m.Settlements.Count} settlements, {m.RoadLines.Count} roads, {m.Rivers.Count} rivers, {m.Ridges.Count} ridges, {m.Lakes.Count} lakes and ponds, land {m.LandShare:0.00}");
         Check(cut.Count == 0, "every town and castle is joined by road: not " + string.Join(", ", cut.Select(s => $"{s.Name} at {s.Pos}")));
         // The sea (WM2): a point at sea is put ashore, a way between far towns keeps to the land, nobody walks on water.
-        var shore = m.InLand(new Vector2(0, -600));
-        Check(m.InSea(new Vector2(0, -600)) && !m.InSea(shore), $"a point at sea is put on the shore ({shore})");
+        var shore = m.InLand(deep);
+        Check(m.InSea(deep) && !m.InSea(shore), $"a point at sea is put on the shore ({shore})");
         var towns = m.Settlements.Where(s => s.Kind == SettlementKind.Town).ToList();
         foreach (var (from, to) in new[] { (towns[0], towns[^1]), (towns[3], towns[towns.Count / 2]) })
         {

@@ -134,3 +134,8 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
   - **Left for WM3**: a battle by the shore still gets its province's field; the coast battlefield comes with the Coast
     land kind. **Left for WM6**: the minimap and realm map (M) paint no sea.
   - Judged with Haiku 5.5 (the T3 judge was not reachable from the session): 6 in four rounds; the owner looked at the shots and accepted the look (polish left for WM6).
+- **The map scaled up a third (2026-11-17, the owner: towns stood too close).** `WorldMap.DesignScale` (1.33) spreads
+  every drawn place, province centre, lake, ridge and road out from the middle; the province rule is read at
+  `p / DesignScale`, so borders scale with it. Rivers keep their widths. The map is 825 wide each side of the middle
+  instead of 620; parties scale with the land (`PartyScale`), and marches between towns take a third longer, which WM4's
+  `--pacing` run will weigh. Campaign creation: about 1.5 s first, 0.9 s after.

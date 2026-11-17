@@ -8,6 +8,12 @@ namespace Ironfield;
 /// warped nearest-centre rule, sampled once on a grid.
 public sealed partial class WorldMap
 {
+    /// How much larger the game's map is than the drawn one: every drawn place, lake and ridge is spread out by this,
+    /// so towns stand further apart (the owner, 2026-11-17: the drawn spacing felt crowded). Rivers keep their widths.
+    public const float DesignScale = 1.33f;
+    static Vector2 Drawn(float x, float y) => new Vector2(x, y) * DesignScale;
+    static Vector2 Drawn(float[] p) => WorldDesign.At(p) * DesignScale;
+
     /// The layout built from Data/world.json.
     public const int DesignLayout = 5;
     /// The seed every designed map's own noise uses (ground, hills, ponds, invented names): the same land for every campaign.
@@ -56,11 +62,11 @@ public sealed partial class WorldMap
     /// The map of layout 5: everything from the design, then the same finishing as layout 4 (roads routed over the land).
     static WorldMap FromDesign(WorldDesign d, int realms)
     {
-        var m = new WorldMap(DesignSeed) { ExtentUsed = d.Extent, Layout = DesignLayout };
+        var m = new WorldMap(DesignSeed) { ExtentUsed = d.Extent * DesignScale, Layout = DesignLayout };
         var rng = new Random(DesignSeed);
         var namer = new PlaceNamer(Names.Get(), DesignSeed);
         foreach (var s in d.Settlements) namer.Used.Add(s.Name); // invented province names never repeat a settlement's
-        float span = d.Extent / LegacyExtent;
+        float span = m.ExtentUsed / LegacyExtent;
         int realmCount = realms > 0 ? Math.Min(realms, Factions.All.Count) : Factions.All.Count;
         // The design's realms are the data's realms, matched by culture (their ids need not agree).
         var faction = d.Realms.ToDictionary(r => r.Id, r => Math.Min(realmCount - 1, Math.Max(0, Factions.All.ToList().FindIndex(f => f.Culture == r.Culture))));
@@ -72,7 +78,7 @@ public sealed partial class WorldMap
             if (p.Kind == "Sea") { landOf[p.Id] = -1; continue; }
             int f = faction[p.Realm];
             landOf[p.Id] = (short)m.Provinces.Count;
-            m.Provinces.Add(new Province { Id = m.Provinces.Count, Name = namer.Next(Factions.CultureOf(f)), Kind = p.Kind, Center = new Vector2(p.X, p.Y), Faction = f });
+            m.Provinces.Add(new Province { Id = m.Provinces.Count, Name = namer.Next(Factions.CultureOf(f)), Kind = p.Kind, Center = Drawn(p.X, p.Y), Faction = f });
         }
         m.BuildGrid(d, landOf);
         m.LinkNeighbours();
@@ -80,7 +86,7 @@ public sealed partial class WorldMap
         // Settlements as drawn, each in the province its place falls in.
         foreach (var s in d.Settlements)
         {
-            var pos = new Vector2(s.X, s.Y);
+            var pos = Drawn(s.X, s.Y);
             int f = faction[s.Realm];
             m.Settlements.Add(new Settlement
             {
@@ -100,20 +106,20 @@ public sealed partial class WorldMap
             }
         foreach (var r in d.Ridges)
         {
-            var pts = Meander(r.Points.Select(WorldDesign.At).ToList(), 0, rng);
+            var pts = Meander(r.Points.Select(Drawn).ToList(), 0, rng);
             var passes = new List<Vector2>();
             for (int i = 0; i + 1 < pts.Count; i++)
                 foreach (var (ra, rb) in m.Roads)
                     if (Cross(pts[i], pts[i + 1], ra, rb) is Vector2 x) passes.Add(x);
-            m.Ridges.Add(new River(pts.ToArray(), r.Width, passes.ToArray(), 18 + rng.NextSingle() * 6));
+            m.Ridges.Add(new River(pts.ToArray(), r.Width * DesignScale, passes.ToArray(), 18 + rng.NextSingle() * 6));
         }
         m.ridgeIndex = null;
-        foreach (var l in d.Lakes) m.Lakes.Add(new Lake(new Vector2(l.X, l.Y), l.Radius, DesignSeed * 31 + l.Id));
+        foreach (var l in d.Lakes) m.Lakes.Add(new Lake(Drawn(l.X, l.Y), l.Radius * DesignScale, DesignSeed * 31 + l.Id));
         m.PlaceLakes(new Random(DesignSeed * 31 + 7), span, ponds: true);
         m.LayRoads(true);
         foreach (var s in d.Sites)
         {
-            var pos = new Vector2(s.X, s.Y);
+            var pos = Drawn(s.X, s.Y);
             m.Sites.Add(new Site { Id = m.Sites.Count, Province = m.DesignProvinceAt(pos).Id, Kind = s.Kind, Pos = pos, Name = s.Name });
         }
         return m;
@@ -142,7 +148,7 @@ public sealed partial class WorldMap
             {
                 var p = new Vector2(gridOrigin + (x + 0.5f) * DesignCell, gridOrigin + (z + 0.5f) * DesignCell);
                 // Beyond the design's extent is open sea.
-                short l = MathF.Max(MathF.Abs(p.X), MathF.Abs(p.Y)) > d.Extent ? (short)-1 : landOf[d.ProvinceAt(p)];
+                short l = MathF.Max(MathF.Abs(p.X), MathF.Abs(p.Y)) > d.Extent * DesignScale ? (short)-1 : landOf[d.ProvinceAt(p / DesignScale)];
                 prov[z * n + x] = l;
                 sea[z * n + x] = l < 0;
             }
@@ -256,7 +262,7 @@ public sealed partial class WorldMap
     void DesignRoads(WorldDesign d)
     {
         foreach (var r in d.Roads)
-            for (int i = 0; i + 1 < r.Points.Length; i++) Roads.Add((WorldDesign.At(r.Points[i]), WorldDesign.At(r.Points[i + 1])));
+            for (int i = 0; i + 1 < r.Points.Length; i++) Roads.Add((Drawn(r.Points[i]), Drawn(r.Points[i + 1])));
         // Which settlement a road end is (the drawing puts ends on settlements); union-find over the settlements.
         var parent = Enumerable.Range(0, Settlements.Count).ToArray();
         int Find(int i) => parent[i] == i ? i : parent[i] = Find(parent[i]);
@@ -278,7 +284,7 @@ public sealed partial class WorldMap
             for (int j = i + 1; j < seats.Count; j++)
             {
                 float dd = Vector2.Distance(seats[i].Pos, seats[j].Pos);
-                if (dd < 160) pairs.Add((dd, seats[i], seats[j]));
+                if (dd < 160 * DesignScale) pairs.Add((dd, seats[i], seats[j]));
             }
         foreach (var (_, a, b) in pairs.OrderBy(p => p.D))
             if (Find(a.Id) != Find(b.Id) && OverLand(a.Pos, b.Pos)) { Roads.Add((a.Pos, b.Pos)); Join(a.Id, b.Id); }
@@ -290,7 +296,7 @@ public sealed partial class WorldMap
                 for (int j = i + 1; j < Settlements.Count; j++)
                 {
                     float dd = Vector2.Distance(Settlements[i].Pos, Settlements[j].Pos);
-                    if (dd < 90) hops.Add((dd, Settlements[i], Settlements[j]));
+                    if (dd < 90 * DesignScale) hops.Add((dd, Settlements[i], Settlements[j]));
                 }
             foreach (var (_, a, b) in hops.OrderBy(p => p.D))
                 if (Find(a.Id) != Find(b.Id) && OverLand(a.Pos, b.Pos)) { Roads.Add((a.Pos, b.Pos)); Join(a.Id, b.Id); }
@@ -300,7 +306,7 @@ public sealed partial class WorldMap
     /// A drawn river as the map carries it: its few drawn points wander between, kept clear of settlements.
     River DesignRiver(WorldDesign.Line r, Random rng, float span)
     {
-        var pts = Meander(r.Points.Select(WorldDesign.At).ToList(), 6 * MathF.Sqrt(span), rng);
+        var pts = Meander(r.Points.Select(Drawn).ToList(), 6 * MathF.Sqrt(span), rng);
         for (int i = 0; i < pts.Count; i++)
             foreach (var st in Settlements)
             {
