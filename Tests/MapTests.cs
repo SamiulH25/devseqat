@@ -267,4 +267,31 @@ public static partial class SelfTest
         pilot.Run(6);
         Check(k.Captain.Contract == khaganate, $"the stand-in takes service with the realm it started in (contract {k.Captain.Contract}, faction {k.Player.Faction}, over {k.S.GameOver} {k.S.EndReason})");
     }
+
+    /// WM0 (docs/WORLDMAP.md): the designed world reads and is sound, and its province rule is the page's to the last bit
+    /// (values from index.html's own `warp`, run in node).
+    static void WorldDesignReads()
+    {
+        foreach (var (x, y, wx, wy) in new (double, double, double, double)[]
+        {
+            (0, 0, -7.7301459998078981, -10.837984924690796), (-620, -620, -618.87482998118787, -623.14446812961580),
+            (619.5, -3.25, 622.66043395385566, -8.0668512108277373), (-232.1, 288.3, -227.87906672729753, 293.16291085347893),
+            (100.7, -450.2, 108.26074332586522, -450.02547878008693), (-1.5, 1.5, -9.5507438729155645, -9.1130908568517128),
+            (333.3, 77.7, 330.40776775642331, 82.971315689207401), (-555, 412, -561.85270567648479, 412.64126216712435),
+            (12.25, -600, 13.641997776116668, -591.94377195733853), (-90.1, -0.4, -93.766216322053651, 4.5858507213790807),
+            (250, 250, 241.62467547669448, 261.09049112777546), (-400.9, -120.6, -395.81745496762647, -114.54276686343474),
+        })
+        {
+            var (ax, ay) = WorldDesign.Warp(x, y);
+            Check(Math.Abs(ax - wx) < 1e-9 && Math.Abs(ay - wy) < 1e-9, $"the warp at {x}, {y} is the page's ({ax}, {ay} against {wx}, {wy})");
+        }
+        var w = WorldDesign.Get();
+        var errs = w.Validate().ToList();
+        Check(errs.Count == 0, "world.json is sound: " + string.Join("; ", errs.Take(5)));
+        int land = w.Provinces.Count(p => p.Kind != "Sea");
+        Console.WriteLine($"world: {w.Title} rev {w.Revision}: {land} land provinces, {w.Provinces.Length - land} sea, {w.Settlements.Length} settlements");
+        Check(land > 0 && w.Realms.All(r => w.Settlements.Any(s => s.Realm == r.Id && s.Kind == "town")), "every realm has a town");
+        Check(w.Realms.All(r => Factions.All.Any(f => f.Culture == r.Culture)), "every realm's culture is a realm culture of factions.json");
+        Check(w.Subcultures.All(c => Factions.Culture(c.Id) != null), "every subculture is a culture in factions.json");
+    }
 }

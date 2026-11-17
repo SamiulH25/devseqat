@@ -10,7 +10,7 @@ public sealed class CultureDef
     public string Flavour = "Thatch and mud lanes";
     /// Cultures whose troops this culture's lines may borrow and its men may train as (docs/archive/WORLD.md W3).
     public string[] Kin = { };
-    /// Not in the world yet: a subculture from the world book (docs/world/world.json) whose troops are kept in the data but no
+    /// Not in the world yet: a subculture from the world book (Data/world.json) whose troops are kept in the data but no
     /// realm, settlement or band fields until that world is brought into the game. Its trees need not reach tier VII yet.
     public bool Waiting;
 }

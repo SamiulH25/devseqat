@@ -1,0 +1,94 @@
+# The designed world: plan
+
+Status: **WM0 built** (2026-11-17); WM1-WM6 planned. Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
+game as map layout 5, the map every new campaign plays on. Phases WM0-WM7; each ships on its own and `tools/check.sh`
+must pass after each. When a phase ships, add its "As built" note at the end.
+
+## Decisions (the owner, 2026-11-17)
+
+- **The sea cannot be crossed** in this sprint. All the land is one piece (the south joins through the Order's isthmus),
+  so nothing is cut off. Ports and the 27 sea lanes come later as ship travel (WM7, not in this sprint).
+- **The Saltmarsh League** holds one province (Venaria, inside the Azure Crown) with 25 settlements crowded into it. The
+  model puts a redraw forward as a note in the world file; the owner rules on it in the page before WM4 builds it.
+- **Province names are invented** by the game's per-culture name lists, as settlements' are. The file's real-world names
+  (Cairo, Kiev, Tuscany...) stay in the file as working labels only.
+- **Subcultures recruit in full this sprint**: each subculture's tree is finished to tier VII and its settlements
+  raise and train its men (WM5). The 17 cultures marked `waiting` in `Data/factions.json` lose the mark as they come in.
+
+## What the file holds (revision 11)
+
+| | Count | Note |
+|---|---|---|
+| Provinces | 162 | 80 land, 82 sea (`kind: "Sea"`, realm -1). Shapes: nearest centre after a noise warp (`provinceAt` in the page) |
+| Settlements | 394 | 61 towns, 53 castles, 280 villages; each with realm, culture, subculture, 23 ports |
+| Sites | 144 | the nine kinds the game has |
+| Rivers, ridges, lakes | 5, 6, 12 | polylines with widths; lakes as circles |
+| Roads | 117 | straight two-point links between settlements; many realms have none between them |
+| Sea lanes | 27 | port to port (WM7) |
+| Land kinds | 14 | the game's seven plus Coast, Taiga, Highlands, Tundra, Desert, Oasis, Sea |
+
+The land is 43% of the 1240-wide square the current map fills. Realms by provinces: Khaganate 20, Emirates 18,
+Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
+
+## Phases
+
+### WM0: One file, read by the game
+
+- Move the file to `Data/world.json` (game data); `tools/world.py` and the page load and save it there. Fix
+  `docs/world/README.md`, which still describes the old entry-and-thread book, to describe the map file (notes pinned on
+  the map are the talk between the authors) and the rules for the model.
+- `WorldDesign.cs` (headless): load and validate the file (the same faults `world.py --check` finds), and port `warp` and
+  `provinceAt` exactly. A test checks the C# against points sampled from the page's own function.
+
+### WM1: Layout 5 from the design
+
+- `WorldMap.FromDesign`: provinces (land ones as `Province`, sea ones kept for `ProvinceAt` and drawing), settlements at
+  their places with their province from `ProvinceAt`, rivers, ridges, lakes and sites as drawn, invented names. Roads:
+  the drawn links routed over the land with the layout 4 router (`LayRoads`), plus links so every town can reach every
+  other by road where the land joins.
+- The same map for every seed: the seed still deals lords, weather and battles. Saves keep their layout; layout 4 and
+  older generate exactly as before (`CampaignMap`, `MapIndexMatches` unchanged).
+- Heights: the land rises from the shore; ridges as layout 4 draws them; Hills/Highlands get hills.
+
+### WM2: The sea
+
+- Sea ground drops below the water line with a shelf and a beach; the water shader draws it (as lakes are drawn).
+- Nothing travels on the sea: route planning, `InLand`, AI movement and encounters keep to the land. A battle by the
+  shore gets the coast field.
+
+### WM3: The new lands
+
+- Coast, Taiga, Highlands, Tundra, Desert, Oasis: map tint and ground materials, trees, `Province.Title`, battle field
+  (`TerrainParams`), rain and season, site kinds, monster country (`Wild`), the tavern strip's country.
+
+### WM4: Realms on the designed map
+
+- Capitals, homes and lords from the drawn holdings (lords scale with a realm's towns and castles, not its provinces).
+- The League redraw if the owner agrees it. Knight order chapters, wells, holdouts and nests placed on the new land.
+- Guards: `--realms 8` (no realm snowballs), `--pacing 8` (career stages near their targets), `--campaign-bench` and
+  `--world-bench` (no slower than layout 4).
+
+### WM5: Subcultures recruit
+
+- Each settlement's culture is its subculture; villages raise its recruits and its barracks train its men.
+- Each of the 16 realm subcultures gets lines to tier VII (at least an infantry, archer and horse line at VII, as
+  `Cultures` asks) built on its existing tier II-V chain; new looks painted and baked. `bandit` troops go to brigand
+  bands. Each culture drops `waiting` as it passes `Cultures`; `docs/TROOPS.md` regenerated.
+- Balance: `TierFight`, `--troop-balance`, `--balance 4`.
+
+### WM6: Polish
+
+- Campaign shots of the new map, judged (7/10 or better). The realm map (M) and minimap draw the coast. Docs, README
+  and the landing page brought up to date.
+
+### WM7 (later, not this sprint): ships
+
+- Ports and sea lanes: embark, sail, land; encounters at sea.
+
+## As built
+
+- **WM0 (2026-11-17).** `Data/world.json` (moved from `docs/world/`; `tools/world.py` serves it to the page as
+  `world.json`). `WorldDesign.cs` loads and validates it; `Warp` and `Hash2` copy JavaScript's number rules (`Math.imul`,
+  a double sum, `>>>` as ToUint32 of the rounded double product), and `WorldDesignReads` checks twelve points against
+  values from the page's own function run in node, to 1e-9. `tools/world.py` gained `save()`, which writes the page's
+  layout, so a scripted edit diffs only what it changed. The League proposal is note 0 in the file (revision 12).

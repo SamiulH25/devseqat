@@ -1,8 +1,8 @@
 {
   "version": 2,
   "title": "Ironfield: the Rift Continent",
-  "revision": 11,
-  "updated": "2026-11-16",
+  "revision": 12,
+  "updated": "2026-11-17",
   "source": "tectonic continent (collision spine, Rift Sea shortcut, Sun-Gate isthmus & offshore isles)",
   "extent": 620,
   "kinds": ["Meadow", "Farmland", "Coast", "Forest", "Taiga", "Marsh", "Hills", "Highlands", "Tundra", "Steppe", "Badlands", "Desert", "Oasis", "Sea"],
@@ -869,7 +869,9 @@
     {"id":115,"minor":false,"points":[[168.7,-157.5],[242.7,-209.0]]},
     {"id":116,"minor":false,"points":[[341.7,144.7],[366.4,146.2]]}
   ],
-  "notes": [],
+  "notes": [
+    {"id":0,"x":-294.8,"y":95.6,"title":"Proposal: give the Saltmarsh League room","by":"model","done":false,"thread":[{"by":"model","at":"2026-11-17","text":"The Saltmarsh League holds one province, Venetia, with 25 settlements packed into it (8 towns, 4 castles, 13 villages) inside the Azure Crown. In play that is one small fief-sized patch for a whole realm: its lords would have nowhere to march and one siege could end it. Proposal: (1) the League takes the two Azure coast provinces beside it, Lorraine and Peyrolles (both Bayfolk country already, 12 settlements); (2) Venetia splits in two, a northern lagoon around Brinemere, Chalmont and Fresnay and a southern one around Saltmere, Chioggia Vel and Hondeval; (3) the crowded centre thins to about 3 towns, 2 castles and 8 villages, the rest moving out into the new provinces. The League ends with 4 provinces and about 30 settlements; the Azure Crown keeps 10 provinces. Agree, change, or turn it down here; nothing on the map moves until you say.","ask":true}]}
+  ],
   "sealanes": [
     {"id":0,"points":[[-96.9,-248.2],[-88,-308],[-66.6,-362.5]]},
     {"id":1,"points":[[-96.9,-248.2],[-110,-308],[-154,-374],[-176,-440],[-220.3,-429.3]]},

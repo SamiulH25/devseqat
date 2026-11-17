@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The world model (docs/world/): one JSON file that is the game's world seen from above, and a page that draws it.
 
-  tools/world.py                 serve the page at http://localhost:8765 (it loads and saves docs/world/world.json)
+  tools/world.py                 serve the page at http://localhost:8765 (it loads and saves Data/world.json)
   tools/world.py --check         validate world.json; exit 1 on a fault
   tools/world.py --summary       the world in a few lines: each realm's provinces, towns, castles, villages; the totals
   tools/world.py --inbox [you]   the notes that wait for the model (or for the person)
@@ -12,7 +12,8 @@ Only the standard library. The file's shape and the rules for changing it are in
 import json, os, sys, shutil, subprocess, threading, http.server
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "world")
-FILE = os.path.join(ROOT, "world.json")
+# The map is game data (the game builds layout 5 from it, docs/WORLDMAP.md); the page lives beside its README.
+FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Data", "world.json")
 AUTHORS = ["you", "model"]
 SETTLEMENTS = ["town", "castle", "village"]
 POINTS = ["provinces", "settlements", "sites", "lakes", "notes"]
@@ -22,6 +23,21 @@ LINES = ["rivers", "ridges", "roads", "sealanes"]
 def load():
     with open(FILE, encoding="utf-8") as f:
         return json.load(f)
+
+
+def dump(w):
+    """The file's text as the page writes it: one line a key, one compact line an object in a list (a save makes no churn)."""
+    def val(v):
+        if isinstance(v, list) and v and isinstance(v[0], dict):
+            return "[\n" + ",\n".join("    " + json.dumps(o, separators=(",", ":"), ensure_ascii=False) for o in v) + "\n  ]"
+        return json.dumps(v, ensure_ascii=False)
+    return "{\n" + ",\n".join(f"  {json.dumps(k)}: " + val(v) for k, v in w.items()) + "\n}\n"
+
+
+def save(w):
+    """Write the file as the page does (for a script or a model editing it): revision is the caller's to raise."""
+    with open(FILE, "w", encoding="utf-8") as f:
+        f.write(dump(w))
 
 
 def faults(w):
@@ -152,6 +168,10 @@ def summary(w):
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         super().__init__(*a, directory=ROOT, **k)
+
+    def translate_path(self, path):
+        # The page asks for world.json beside it; the file lives in Data/.
+        return os.path.abspath(FILE) if path.split("?")[0] == "/world.json" else super().translate_path(path)
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")

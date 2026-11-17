@@ -82,7 +82,7 @@ def main():
         held = sum(1 for t in troops.values() if t.get("culture") in waiting)
         w(f"**Not in the world yet:** {held} troops in {len(waiting)} cultures marked `waiting` in `Data/factions.json`")
         w("(" + ", ".join(f"`{c}`" for c in waiting) + "). They come from the world book")
-        w("(`docs/world/world.json`) and are kept for when that world is brought into the game; until then no realm,")
+        w("(`Data/world.json`) and are kept for when that world is brought into the game; until then no realm,")
         w("settlement or band fields them, and their trees stop short of tier VII.")
         w("")
     w("Marks used below: **†** noble stock, raised at a castle rather than a village; **‡** a knight")

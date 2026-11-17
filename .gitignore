@@ -15,6 +15,7 @@ Content/bin/
 Thumbs.db
 balance/
 dist/
-docs/world/world.json.bak
+Data/world.json.bak
 .midas/
 BlenderMCP/customer_uuid.txt
+__pycache__/

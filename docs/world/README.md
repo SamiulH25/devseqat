@@ -1,13 +1,14 @@
-# The world book
+# The world map
 
-How the final game world is going to be, worked out by two authors: **you** (the person) and **the model** (whichever
-model is running). One file holds everything; one page lets the person read and answer it.
+The game's world seen from above, drawn by two authors: **you** (the person) and **the model** (whichever model is
+running). One file holds it; one page lets the person see it, change it and talk about it. The game builds the map every
+new campaign plays on (layout 5) from this file (plan and status: `docs/WORLDMAP.md`).
 
 | File | What it is |
 |---|---|
-| `world.json` | The book. The only source of truth. Both authors edit it. |
-| `index.html` | The person's page: read, answer, agree, turn down, add, edit. No build, no libraries. |
-| `../../tools/world.py` | Serves the page, validates the file, prints what waits for an author. |
+| `Data/world.json` | The map. The only source of truth. Both authors edit it; the game reads it. |
+| `docs/world/index.html` | The person's page: the map from above, its layers, editing tools and the notes. No build, no libraries. |
+| `tools/world.py` | Serves the page, validates the file, prints what waits for an author, saves it in the page's layout. |
 
 ## Using it (the person)
 
@@ -15,54 +16,53 @@ model is running). One file holds everything; one page lets the person read and 
 tools/world.py          # then open http://localhost:8765
 ```
 
-The page opens on **Waiting for you**: what the model has put forward or asked. On each card: write in the box and press
-**Say** (a remark) or **Ask** (a question the model must answer); **Agree** or **Turn down** a proposal; **Edit** anything.
-**Save** (or Ctrl+S) writes `world.json` and keeps the last version as `world.json.bak`. Opened straight from disk without
-the server, the page asks you to pick `world.json` once and then saves back into it (Chromium), or downloads it (others).
+Drag, add and remove provinces, settlements, sites, rivers, ridges, lakes, roads and sea lanes with the tools; colour by
+realm, culture or land. **Notes** are pins on the map with a thread of talk: write in a note to remark or ask, and mark it
+done when it is settled. **Save** (or Ctrl+S) writes `Data/world.json` and keeps the last version as `world.json.bak`.
+Opened straight from disk without the server, the page asks you to pick the file once and then saves back into it
+(Chromium), or downloads it (others).
 
 ## The file
 
 ```json
 {
-  "version": 1, "title": "...", "revision": 7, "updated": "2026-11-16",
-  "authors":  { "you": "You", "model": "The model" },
-  "statuses": { "built": "...", "agreed": "...", "proposed": "...", "open": "...", "rejected": "..." },
-  "sections": [ { "id": "realms", "title": "Realms", "blurb": "..." } ],
-  "entries":  [ {
-      "id": "realm-azure-crown", "section": "realms", "title": "Azure Crown",
-      "status": "built", "by": "model",
-      "body": "What the entry says, in plain sentences.",
-      "facts": { "culture": "Azure" },
-      "links": [ "culture-azure" ],
-      "source": "Data/factions.json",
-      "thread": [ { "by": "model", "at": "2026-11-16", "text": "...", "ask": true } ]
-  } ]
+  "version": 2, "title": "...", "revision": 12, "updated": "2026-11-17", "source": "...", "extent": 620,
+  "kinds": ["Meadow", "Farmland", "Coast", "...", "Sea"],
+  "realms": [ {"id": 0, "name": "Azure Crown", "culture": "azure", "colour": "#365eb0"} ],
+  "provinces": [ {"id": 0, "name": "Alexandria", "kind": "Coast", "realm": 3, "x": -232.1, "y": 288.3, "subculture": "southern_rift"} ],
+  "settlements": [ {"id": 0, "name": "Orvalle", "kind": "town", "realm": 2, "culture": "northern", "subculture": "northern_fjord", "x": -96.9, "y": -248.2, "port": true} ],
+  "sites": [ {"id": 0, "name": "Orvalle Mill", "kind": "mill", "x": -343.1, "y": -320.1} ],
+  "rivers": [ {"id": 0, "width": 5.2, "points": [[-235, -115], [-255, -35]]} ],
+  "ridges": [ {"id": 0, "width": 24, "points": [[-275, -145], [-215, -125]]} ],
+  "lakes": [ {"id": 0, "x": -402.4, "y": -336.6, "radius": 2.9} ],
+  "roads": [ {"id": 0, "minor": false, "points": [[-96.9, -248.2], [-70.7, -183.3]]} ],
+  "sealanes": [ {"id": 0, "points": [[-96.9, -248.2], [-66.6, -362.5]]} ],
+  "subcultures": [ {"id": "azure_heart", "parent": "azure", "name": "Crownlanders", "colour": "#4a78d0", "flavour": "..."} ],
+  "notes": [ {"id": 0, "x": -294.8, "y": 95.6, "title": "...", "by": "model", "done": false,
+              "thread": [ {"by": "model", "at": "2026-11-17", "text": "...", "ask": true} ]} ]
 }
 ```
 
-- **status**: `built` (in the game today), `agreed` (decided, not built), `proposed` (put forward, waiting for the other
-  author), `open` (a question with no answer yet), `rejected` (turned down, kept for the record).
-- **by**: who wrote the entry, `you` or `model`.
-- **thread**: the talk on the entry, oldest first. `ask: true` marks a question.
-- **An entry waits for an author** when the last message in its thread is the other author's, or when it has no thread and
-  the other author put it forward as `proposed` or `open`. Rejected entries wait for nobody.
+- World units: x east, y south, the middle at 0,0; everything lies within `extent` of it.
+- **Provinces** are points. The land a province holds is everything nearer its centre than any other's after a noise warp
+  (`warp` and `provinceAt` in the page; the game ports them exactly). A `Sea` province is water and belongs to no realm
+  (`realm: -1`).
+- A settlement's `culture` is its realm's; its `subculture` (an id from `subcultures`, which are cultures in
+  `Data/factions.json`) is the people who live there.
+- **A note waits for an author** when it is not `done` and the last message in its thread (or the note itself, if nobody
+  has spoken) is the other author's. `ask: true` marks a question.
 - **revision** goes up by one on every save. The server refuses a save over a newer file.
 
 ## Rules for the model (read before touching the file)
 
-1. Start with `tools/world.py --inbox`. It prints only what waits for you, so you do not need to read the whole file.
-   Answer every item: add a message to its `thread` with `"by": "model"` and today's date.
-2. **Never change the person's words**: not their entries' `body`, not their messages. Reply in the thread instead.
-3. **Never set `agreed` or `rejected` yourself** on something the person has not ruled on. New ideas go in as
-   `"status": "proposed", "by": "model"`. A question for the person is an entry in the `questions` section with
-   `"status": "open"` and a thread message with `"ask": true`.
-4. When the person agrees an answer to a question, write the result up as its own entry in the right section
-   (`"status": "agreed"`, with `links` back to the question) and say so in the question's thread.
-5. `built` means it is in the game's data or code now. Give the `source` (a file). Do not mark an idea `built`.
-   When something agreed is built, change its status to `built` and name the source. When the game's data changes,
-   bring the matching `built` entries up to date.
-6. Keep entries short and concrete: what is true of the world, not how to code it. One idea an entry. Put numbers and
-   names in `facts`. Link related entries by `id`.
-7. Ids are lower-case words with hyphens, unique, and never changed once made (other entries link to them).
-8. After editing: add 1 to `revision`, set `updated`, and run `tools/world.py --check`. It must print `world.json ok`.
-9. Do not delete entries. Turn-downs stay as `rejected`, so the same idea is not proposed twice.
+1. Start with `tools/world.py --inbox`. It prints only the notes that wait for you. Answer every one: add a message to its
+   `thread` with `"by": "model"` and today's date.
+2. **Never move, rename or remove what the person drew** on your own, and never change their messages. Put a change
+   forward as a note pinned where it applies (`"by": "model"`, a message with `ask: true`), and make it only once they
+   agree in the thread. Mark a note `done` only when the person has settled it.
+3. Before changing the world's lore, realms, history or tone, ask the same way: a note, not an edit.
+4. Write the file with `tools/world.py`'s `save()` (it keeps the page's layout: one line an object, so a diff shows only
+   what changed). After editing: add 1 to `revision`, set `updated`, and run `tools/world.py --check`. It must print
+   `world.json ok`.
+5. The game reads this file: after a change, run `tools/check.sh` (the layout 5 tests build the map from it).
+6. Ids are whole numbers, unique in their list, and never reused; other things refer to them.
