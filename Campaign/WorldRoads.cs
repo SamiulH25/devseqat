@@ -23,14 +23,14 @@ public sealed partial class WorldMap
     }
 
     /// A few lakes in open low country and a pond by some villages, clear of settlements, rivers, ridges and the rim.
-    void PlaceLakes(Random rng, float span)
+    void PlaceLakes(Random rng, float span, bool ponds = false)
     {
         bool Clear(Vector2 p, float r, float fromTown) =>
             MathF.Max(MathF.Abs(p.X), MathF.Abs(p.Y)) < ExtentUsed - 20 - r
             && Settlements.All(s => Vector2.Distance(s.Pos, p) > fromTown + r)
             && RiverDist(p) > r * 1.3f + 8 && RidgeDist(p) > r + 30 * span
-            && Lakes.All(l => Vector2.Distance(l.Center, p) > l.Radius + r + 12);
-        int lakes = Math.Max(2, Provinces.Count / 9);
+            && Lakes.All(l => Vector2.Distance(l.Center, p) > l.Radius + r + 12) && Landness(p) > 0.98f;
+        int lakes = ponds ? 0 : Math.Max(2, Provinces.Count / 9); // a designed map has its drawn lakes, and only the ponds besides
         for (int i = 0, tries = 0; i < lakes && tries < 400; tries++)
         {
             var prov = Provinces[rng.Next(Provinces.Count)];
@@ -123,7 +123,7 @@ public sealed partial class WorldMap
             if (b == 0)
             {
                 var p = At(x, z);
-                b = (sbyte)(m.InLake(p, 2.5f) || m.RiverDist(p) < riverHalf + 1.5f ? -1 : 1);
+                b = (sbyte)(m.InLake(p, 2.5f) || m.RiverDist(p) < riverHalf + 1.5f || m.Landness(p) < 0.45f ? -1 : 1); // and the sea, on a designed map
             }
             return b < 0;
         }

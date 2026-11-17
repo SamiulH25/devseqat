@@ -39,7 +39,7 @@ public sealed partial class Campaign
 
     /// The seat of a settlement's province (a village pays its seat's tax and shares its buildings' reach).
     public Settlement SeatOf(Settlement s) => s.Kind != SettlementKind.Village ? s
-        : S.Settlements.FirstOrDefault(t => t.Province == s.Province && t.Kind != SettlementKind.Village) ?? s;
+        : S.Settlements.Where(t => t.Province == s.Province && t.Kind != SettlementKind.Village).MinBy(t => Vector2.DistanceSquared(t.Pos, s.Pos)) ?? s; // the nearest, where a drawn province has several
 
     /// What prosperity, tax and a market do to a settlement's income.
     float FiefFactor(Settlement s)

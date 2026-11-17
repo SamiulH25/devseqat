@@ -294,4 +294,44 @@ public static partial class SelfTest
         Check(w.Realms.All(r => Factions.All.Any(f => f.Culture == r.Culture)), "every realm's culture is a realm culture of factions.json");
         Check(w.Subcultures.All(c => Factions.Culture(c.Id) != null), "every subculture is a culture in factions.json");
     }
+
+    /// WM1 (docs/WORLDMAP.md): layout 5 is the drawn world, the same for every seed: its land provinces with invented names,
+    /// its settlements in their own realm's land and none at sea, every town and castle joined by road, and a campaign runs.
+    static void DesignedMap()
+    {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var a = Campaign.New(7, layout: WorldMap.DesignLayout);
+        Console.WriteLine($"world: layout 5 campaign made in {clock.ElapsedMilliseconds} ms");
+        clock.Restart();
+        var b = Campaign.New(8, layout: WorldMap.DesignLayout);
+        Console.WriteLine($"world: the next in {clock.ElapsedMilliseconds} ms (the province grid is made once)");
+        var d = WorldDesign.Get();
+        var m = a.Map;
+        Check(m.Designed && m.Provinces.Count == d.Provinces.Count(p => p.Kind != "Sea"), $"one province a land province of the design ({m.Provinces.Count})");
+        Check(m.Settlements.Count == d.Settlements.Length && m.Sites.Count == d.Sites.Length, "every drawn settlement and site is on the map");
+        Check(m.Provinces.Select(p => p.Name).SequenceEqual(b.Map.Provinces.Select(p => p.Name)) && m.Settlements.Select(s => s.Pos).SequenceEqual(b.Map.Settlements.Select(s => s.Pos)),
+            "the same land for every seed");
+        Check(m.Provinces.Select(p => p.Name).Distinct().Count() == m.Provinces.Count && m.Provinces.All(p => d.Provinces.All(q => q.Name != p.Name)), "province names are invented and unique");
+        Check(m.Settlements.All(s => !m.InSea(s.Pos) && m.ProvinceAt(s.Pos).Id == s.Province && m.Provinces[s.Province].Faction == s.Faction), "every settlement on land, in its own realm's province");
+        Check(m.Provinces.All(p => p.Neighbors.Count > 0 && p.Neighbors.All(n => m.Provinces[n].Neighbors.Contains(p.Id))), "every province has neighbours, and they have it");
+        var low = m.Settlements.MinBy(s => m.Height(s.Pos.X, s.Pos.Y))!;
+        Check(m.Height(0, -600) < -WorldMap.SeaDepth * 0.8f, $"the open sea lies low ({m.Height(0, -600):0.0})");
+        Check(m.Height(low.Pos.X, low.Pos.Y) > 0, $"every settlement stands above the sea ({low.Name} at {m.Height(low.Pos.X, low.Pos.Y):0.0}, land {m.Landness(low.Pos):0.00})");
+        Check(m.LandShare is > 0.3f and < 0.6f, $"about two fifths of the map is land ({m.LandShare:0.00})");
+        // Roads: every town and castle reaches every other over the road lines (through villages too).
+        var all = m.Settlements;
+        int At(Vector2 p) => all.FindIndex(s => Vector2.DistanceSquared(s.Pos, p) < 1);
+        var links = all.Select(_ => new List<int>()).ToArray();
+        foreach (var l in m.RoadLines)
+            if (At(l.Points[0]) is int i and >= 0 && At(l.Points[^1]) is int j and >= 0) { links[i].Add(j); links[j].Add(i); }
+        int first = all.FindIndex(s => s.Kind != SettlementKind.Village);
+        var seen = new HashSet<int> { first };
+        var open = new Queue<int>(seen);
+        while (open.Count > 0) foreach (int j in links[open.Dequeue()]) if (seen.Add(j)) open.Enqueue(j);
+        var cut = all.Where(s => s.Kind != SettlementKind.Village && !seen.Contains(s.Id)).ToList();
+        Console.WriteLine($"world: {m.Provinces.Count} provinces, {m.Settlements.Count} settlements, {m.RoadLines.Count} roads, {m.Rivers.Count} rivers, {m.Ridges.Count} ridges, {m.Lakes.Count} lakes and ponds, land {m.LandShare:0.00}");
+        Check(cut.Count == 0, "every town and castle is joined by road: not " + string.Join(", ", cut.Select(s => $"{s.Name} at {s.Pos}")));
+        a.Tick(24 * 3);
+        Check(a.S.Parties.Count > 0, "a campaign runs on it");
+    }
 }

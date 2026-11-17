@@ -311,8 +311,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Callings** (class, L13): Get:19, Load:23, Validate:33
 - **Campaign** (class, L47): LevelFor:53, XpToNext:55, CallingFor:59, EnsureCallings:72, GiftsOf:78, TalentsOf:82, WithHeroes:86, WithChampion:101, CompanionsAfterBattle:119, GainXp:135
 
-## Campaign/Campaign.cs (543 lines)
-- **Campaign** (class, L7): Campaign:41, New:67, Log:136, Classify:143, LogYours:147, LogAll:149, PartyById:151, SettlementById:152, SideOf:156, Outlaw:158, Hostile:160, WarBetween:169, FactionsAtWar:170, AtWarWithAnyone:171, Score:174, Refuses:185, InSight:190, SettlementAt:192, InTown:193, Tick:198, Speed:225, PaceOf:229, BaseSpeed:233, Move:250, Encounters:296, Clash:324, Edge:366, EdgeOfKind:367, Hourly:369, Daily:392, Weekly:475, Desert:533
+## Campaign/Campaign.cs (545 lines)
+- **Campaign** (class, L7): Campaign:41, New:68, Log:138, Classify:145, LogYours:149, LogAll:151, PartyById:153, SettlementById:154, SideOf:158, Outlaw:160, Hostile:162, WarBetween:171, FactionsAtWar:172, AtWarWithAnyone:173, Score:176, Refuses:187, InSight:192, SettlementAt:194, InTown:195, Tick:200, Speed:227, PaceOf:231, BaseSpeed:235, Move:252, Encounters:298, Clash:326, Edge:368, EdgeOfKind:369, Hourly:371, Daily:394, Weekly:477, Desert:535
 
 ## Campaign/CampaignActions.cs (191 lines)
 - **Campaign** (class, L6): MoveTo:10, Chase:11, GoTo:12, RecruitLevies:17, LevyPrice:62, MercenaryPrice:64, Hire:70, BuyHorses:88, RaiseHounds:103, Merge:127, Split:130, Disband:155, MoveUp:157, SignContract:165, Rest:184
@@ -554,9 +554,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/WorldLand.cs (125 lines)
 - **WorldMap** (class, L8): LayFields:12, FieldClear:64, InField:94, GrowStands:99
 
-## Campaign/WorldMap.cs (636 lines)
-- **WorldMap** (class, L8): InLand:66, WorldMap:74, readonly:84, Generate:88, Climate:203, RaiseRidges:217, AddRidge:248, RidgeDist:260, RidgeHeight:263, OnRidge:281, HomeOf:284, ReachOf:286, GrowRealms:291, SiteKindsFor:333, PlaceSites:346, Cross:371, RiverDist:380, RiverScan:381, ProvinceAt:385, ProvinceScan:388, RoadDist:400, RoadScan:402, SpeedFactor:415, BattleGround:420, Height:440, LandHeight:453, RimAt:475, Ridged:477, Tint:480, KindTint:511, BuildTerrain:531
-- **PlaceNamer** (class, L610): PlaceNamer:617, Pool:619, Next:625
+## Campaign/WorldMap.cs (654 lines)
+- **WorldMap** (class, L8): InLand:66, WorldMap:74, readonly:84, Generate:88, Climate:204, RaiseRidges:218, AddRidge:249, RidgeDist:261, RidgeHeight:264, OnRidge:282, HomeOf:285, ReachOf:287, GrowRealms:292, SiteKindsFor:334, PlaceSites:347, Cross:372, RiverDist:381, RiverScan:382, ProvinceAt:386, ProvinceScan:389, RoadDist:402, RoadScan:404, SpeedFactor:417, BattleGround:422, Height:442, LandHeight:455, DesignedHeight:479, RimAt:493, Ridged:495, Tint:498, KindTint:529, BuildTerrain:549
+- **PlaceNamer** (class, L628): PlaceNamer:635, Pool:637, Next:643
 
 ## Campaign/WorldRoads.cs (260 lines)
 - **WorldMap** (class, L9): InLake:19, PlaceLakes:26, LayRoads:55
@@ -916,8 +916,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
 - **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:583, WellsFromSites:594, TideFeedsOffers:635, TideShared:653, Overreach:676, CourtMage:709, DoctrinesAndUnweave:741, WorkingsBite:774, WorkingsRemembered:804
 
-## Tests/MapTests.cs (297 lines)
-- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:273
+## Tests/MapTests.cs (337 lines)
+- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:273, DesignedMap:300
 
 ## Tests/MeleeTests.cs (425 lines)
 - **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, UrgeLunges:173, RefusesFlank:203, VeteransWrap:242, ElitePincer:258, Reforms:289, HorseRegroup:319, BowsFallBack:363, MusterGrade:401, MightWeighsDrill:416
@@ -1022,6 +1022,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## World.Water.cs (294 lines)
 - **World** (class, L9): NormalAt:20, Roads:53, AddTile:99, Water:110, RiverWater:121, Reeds:213, Lake:235, Bridge:269
+
+## WorldDesign.cs (114 lines)
+- **WorldDesign** (class, L8): Get:34, Load:36, At:42, IsSea:43, ProvinceAt:47, U32:63, Hash2:66, Noise:77, static:85, Validate:92
 
 ## WorldExport.cs (46 lines)
 - **WorldExport** (class, L10): Run:12

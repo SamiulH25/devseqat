@@ -64,10 +64,12 @@ public sealed partial class Campaign
 
     /// A new campaign; `realm` is the realm you start in (docs/archive/WORLD.md W5): its capital, its villages' recruits.
     /// A new campaign; `making` is the captain from the character creator (null: the plain captain, who picks a road by event).
-    public static Campaign New(int seed, int realm = 0, CaptainMaking? making = null)
+    /// `layout` = the map's layout (-1: WorldMap.CurrentLayout, or IRONFIELD_MAP_LAYOUT when set: 5 = the designed world).
+    public static Campaign New(int seed, int realm = 0, CaptainMaking? making = null, int layout = -1)
     {
+        if (layout < 0) layout = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MAP_LAYOUT"), out int l) ? l : WorldMap.CurrentLayout;
         var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent,
-            Layout = WorldMap.CurrentLayout, DataRealms = Factions.All.Count };
+            Layout = layout, DataRealms = Factions.All.Count };
         s.Captain.Renown = B.StartRenown;
         StartingSkills(s.Captain);
         if (making != null) { Origins.Shape(s.Captain, making); if (Origins.Free(making)) s.Captain.Contract = -1; }

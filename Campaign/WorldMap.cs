@@ -54,7 +54,7 @@ public sealed partial class WorldMap
     /// ProvinceScale; past it the count follows the land's area, so a bigger map is as crowded per league as that one was
     /// (provinces spread out as the map grows, and parties counted by province grew sparse; docs/archive/WORLD.md W2).
     public float PartyScale => ExtentUsed <= PreviousExtent + 1 ? ProvinceScale
-        : PreviousProvinces / (float)LegacyProvinces * (ExtentUsed / PreviousExtent) * (ExtentUsed / PreviousExtent);
+        : PreviousProvinces / (float)LegacyProvinces * (ExtentUsed / PreviousExtent) * (ExtentUsed / PreviousExtent) * LandShare; // a designed map counts only its land
     /// About how many provinces the pre-W2 map had (the anchor PartyScale grows from).
     public const int PreviousProvinces = 60;
     /// How far apart this map's places stand against the original map's (1 = the same). Distances that mean "the next
@@ -87,6 +87,7 @@ public sealed partial class WorldMap
     /// `realms` = how many data realms the map shares out (a save's DataRealms; 0 = all of them, as a new campaign has).
     public static WorldMap Generate(int seed, float extent = Extent, int layout = CurrentLayout, int realms = 0)
     {
+        if (layout >= DesignLayout) return FromDesign(WorldDesign.Get(), realms); // layout 5: the drawn world (WorldDesigned.cs)
         var m = new WorldMap(seed) { ExtentUsed = extent, Layout = layout };
         int realmCount = layout < 3 ? 3 : realms > 0 ? Math.Min(realms, Factions.All.Count) : Factions.All.Count;
         var rng = new Random(seed);
@@ -382,11 +383,12 @@ public sealed partial class WorldMap
 
     // ---------- queries ----------
 
-    public Province ProvinceAt(Vector2 p) => Index.ProvinceAt(p) ?? ProvinceScan(p);
+    public Province ProvinceAt(Vector2 p) => cellProvince != null ? DesignProvinceAt(p) : Index.ProvinceAt(p) ?? ProvinceScan(p);
 
     /// The full scans the index answers for; kept for points off the grid and for the test that checks the two agree.
     public Province ProvinceScan(Vector2 p)
     {
+        if (cellProvince != null) return DesignProvinceAt(p);
         Province best = Provinces[0];
         float bd = float.MaxValue;
         foreach (var q in Provinces)
@@ -458,6 +460,7 @@ public sealed partial class WorldMap
             float d = Vector2.Distance(new Vector2(x, z), c) / r;
             if (d < 1) h += hh * (1 - d * d) * (1 - d * d);
         }
+        if (Designed) return DesignedHeight(x, z, h);
         float edge = MathF.Max(MathF.Abs(x), MathF.Abs(z));
         float t = Math.Clamp((edge - (ExtentUsed - 10)) / (GroundHalf - ExtentUsed + 10), 0, 1);
         if (Layout >= 4) // graded: rolling foothills first, then the range climbing to its peaks (no wall at the edge of the land)
@@ -470,6 +473,21 @@ public sealed partial class WorldMap
         if (Ridges.Count > 0) h += RidgeHeight(new Vector2(x, z)) * (0.85f + 0.3f * Terrain.Noise(x * 0.05f, z * 0.05f, Seed + 3));
         return h;
     }
+
+    /// A designed map's land: the ground and ridges as anywhere, sinking to a sea floor across the shore (no mountain rim:
+    /// the sea closes this world).
+    float DesignedHeight(float x, float z, float h)
+    {
+        if (Ridges.Count > 0) h += RidgeHeight(new Vector2(x, z)) * (0.85f + 0.3f * Terrain.Noise(x * 0.05f, z * 0.05f, Seed + 3));
+        float land = Landness(new Vector2(x, z));
+        // The drawn coast (land 0.5) stands at the land's height; the shore falls away seaward of it.
+        return MathHelper.Lerp(-SeaDepth, h + LandRise, MathHelper.SmoothStep(0, 1, Math.Clamp((land - 0.12f) / 0.4f, 0, 1)));
+    }
+
+    /// How deep the sea floor lies below a designed map's land.
+    public const float SeaDepth = 7;
+    /// How far a designed map's land is lifted, so its lowest ground (the noise's dips, river beds) stays above the sea at 0.
+    public const float LandRise = 4.5f;
 
     /// How far out on the mountain rim a point is: 0 at the edge of the land in play (and inside it), 1 at the world's end.
     float RimAt(float edge) => Math.Clamp((edge - ExtentUsed - 4) / (GroundHalf - ExtentUsed - 4), 0, 1);

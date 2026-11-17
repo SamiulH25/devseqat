@@ -1,6 +1,6 @@
 # The designed world: plan
 
-Status: **WM0 built** (2026-11-17); WM1-WM6 planned. Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
+Status: **WM0-WM1 built** (2026-11-17); WM2-WM6 planned. New campaigns stay on layout 4 until WM4 (set `IRONFIELD_MAP_LAYOUT=5` to play the drawn world now). Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
 game as map layout 5, the map every new campaign plays on. Phases WM0-WM7; each ships on its own and `tools/check.sh`
 must pass after each. When a phase ships, add its "As built" note at the end.
 
@@ -92,3 +92,28 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
   a double sum, `>>>` as ToUint32 of the rounded double product), and `WorldDesignReads` checks twelve points against
   values from the page's own function run in node, to 1e-9. `tools/world.py` gained `save()`, which writes the page's
   layout, so a scripted edit diffs only what it changed. The League proposal is note 0 in the file (revision 12).
+- **League redraw (2026-11-17, owner agreed note 0).** Lorraine and Peyrolles passed to the League; Venetia split into
+  Venetia and Mestre; eleven settlements moved out of the crowded centre. League: 4 provinces, 37 settlements.
+- **WM1 (2026-11-17).** `Campaign/WorldDesigned.cs`: `WorldMap.Generate` hands layout 5 to `FromDesign`. Deviations and
+  gotchas:
+  - **Not yet the default.** `CurrentLayout` stays 4 so the balance and campaign tests keep measuring the map they were
+    tuned on; WM4 switches it once the realms are tuned. `Campaign.New(..., layout:)` or `IRONFIELD_MAP_LAYOUT=5`
+    (campaign shots too) builds the drawn world.
+  - The map's own noise uses `DesignSeed` (1105), not the campaign's seed: every campaign gets the same ground, names
+    and ponds. The campaign's seed still deals everything else.
+  - Provinces are the 81 land provinces only. `ProvinceAt` reads a 2-unit grid of the design's warped rule (built once
+    a process, cached statically); a sea cell answers with the nearest land province, and `InSea` / `Landness` tell the
+    sea apart. Neighbours are provinces whose land meets for three or more cells.
+  - A province can hold several towns and castles: `SeatOf` a village is now the nearest seat in its province (the same
+    answer as before on layouts 0-4, which have one).
+  - Roads: the 117 drawn links, a village with none goes to the nearest seat over land, then the shortest land links
+    between seats until every seat is joined; a seat whose every line crosses a bay (Crowle) is joined through villages.
+    LayRoads routes them all; the router bars ground with `Landness` under 0.45.
+  - Heights: the land is lifted `LandRise` (4.5) and sinks to `SeaDepth` (7) below across the shore; no mountain rim.
+    The sea has no water drawn yet (WM2): it reads as a low green basin.
+  - Rivers and ridges follow the drawn points with a meander between them; Hills and Highlands provinces get hills;
+    the drawn lakes plus village ponds (no random big lakes).
+  - Creating a campaign: about 1.1 s the first time in a process, 0.55 s after (road routing).
+  - Seen in shots, left for later phases: the sea (WM2); the realm map (M) and minimap still paint provinces as plain
+    nearest-centre cells over the whole square (WM6).
+  - Test `DesignedMap`.
