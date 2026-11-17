@@ -16,6 +16,7 @@ public sealed partial class WorldMap
     /// bridges and fords is weighed far above its real pace so a party goes round to them, and a lake is all but barred.
     float TravelCostAt(Vector2 p, float roadBonus)
     {
+        if (InSea(p) || Landness(p) < 0.35f) return float.PositiveInfinity; // the sea is not crossed (docs/WORLDMAP.md WM2)
         if (InLake(p)) return 40;
         if (RoadDist(p) < 2.5f) return 1 / roadBonus;
         foreach (var r in Rivers)
@@ -72,8 +73,9 @@ public sealed partial class WorldMap
                     if (dx == 0 && dz == 0) continue;
                     int x = cx + dx, z = cz + dz;
                     if (x < 0 || z < 0 || x >= n || z >= n) continue;
-                    float len = (dx != 0 && dz != 0 ? 1.4142f : 1) * TravelCell;
-                    float nc = cc + len * 0.5f * (here + CellCost(x, z, roadBonus));
+                    float len = (dx != 0 && dz != 0 ? 1.4142f : 1) * TravelCell, there = CellCost(x, z, roadBonus);
+                    if (float.IsPositiveInfinity(there)) continue;
+                    float nc = cc + len * 0.5f * (here + there);
                     int id = z * n + x;
                     if (nc >= cost[id]) continue;
                     cost[id] = nc;

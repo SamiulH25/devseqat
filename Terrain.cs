@@ -269,6 +269,8 @@ public sealed partial class Terrain
     public readonly List<RoadLine> RoadLines = new();
     public readonly List<Lake> Lakes = new();
     public readonly List<MapBridge> MapBridges = new();
+    /// The sea's surface on a designed campaign map (docs/WORLDMAP.md WM2); null where there is no sea.
+    public float? SeaLevel;
     /// Field plots round the settlements (campaign map, layout 4) and the season they were drawn for (-1: a battlefield).
     public readonly List<FieldPlot> Fields = new();
     public int MapSeason = -1;

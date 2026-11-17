@@ -24,6 +24,8 @@ public sealed partial class WorldMap
     // and a softened land fraction for the shore's heights.
     short[]? cellProvince;
     bool[]? cellSea;
+    /// For each sea cell, the nearest land cell over the grid (itself for a land cell): where InLand puts a point at sea.
+    int[]? cellShore;
     float[]? cellLand;
     int gridN;
     float gridOrigin;
@@ -128,7 +130,7 @@ public sealed partial class WorldMap
         lock (gridCacheLock)
             if (gridCache is { } c && c.Design == d)
             {
-                (cellProvince, cellSea, cellLand, LandShare) = (c.Province, c.Sea, c.Land, c.Share);
+                (cellProvince, cellSea, cellLand, cellShore, LandShare) = (c.Province, c.Sea, c.Land, c.Shore, c.Share);
                 index = null;
                 return;
             }
@@ -147,11 +149,12 @@ public sealed partial class WorldMap
         });
         // The sea's cells take the land province nearest them over the grid (a breadth-first fill from the shore).
         var queue = new Queue<int>();
-        for (int i = 0; i < prov.Length; i++) if (prov[i] >= 0) queue.Enqueue(i);
+        var shore = new int[n * n];
+        for (int i = 0; i < prov.Length; i++) if (prov[i] >= 0) { queue.Enqueue(i); shore[i] = i; }
         while (queue.Count > 0)
         {
             int i = queue.Dequeue(), x = i % n, z = i / n;
-            void Visit(int j) { if (prov[j] < 0) { prov[j] = prov[i]; queue.Enqueue(j); } }
+            void Visit(int j) { if (prov[j] < 0) { prov[j] = prov[i]; shore[j] = shore[i]; queue.Enqueue(j); } }
             if (x > 0) Visit(i - 1);
             if (x < n - 1) Visit(i + 1);
             if (z > 0) Visit(i - n);
@@ -164,13 +167,26 @@ public sealed partial class WorldMap
         cellProvince = prov;
         cellSea = sea;
         cellLand = land;
+        cellShore = shore;
         LandShare = MathF.Max(0.05f, (float)(sea.Where((s, i) => !s && InExtent(i)).Count() / (double)Enumerable.Range(0, n * n).Count(InExtent)));
-        lock (gridCacheLock) gridCache = (d, prov, sea, land, LandShare);
+        lock (gridCacheLock) gridCache = (d, prov, sea, land, shore, LandShare);
         index = null;
     }
 
     static readonly object gridCacheLock = new();
-    static (WorldDesign Design, short[] Province, bool[] Sea, float[] Land, float Share)? gridCache;
+    static (WorldDesign Design, short[] Province, bool[] Sea, float[] Land, int[] Shore, float Share)? gridCache;
+
+    /// The nearest point on land to p (p itself on land): the middle of the nearest land cell, a step further in so a
+    /// party stopped there stands clear of the water's edge.
+    Vector2 OntoLand(Vector2 p)
+    {
+        int i = Cell(p, out _, out _);
+        if (!cellSea![i]) return p;
+        int j = cellShore![i];
+        var land = new Vector2(gridOrigin + (j % gridN + 0.5f) * DesignCell, gridOrigin + (j / gridN + 0.5f) * DesignCell);
+        var inward = land - p;
+        return inward.LengthSquared() > 1e-4f ? land + Vector2.Normalize(inward) * DesignCell : land;
+    }
 
     bool InExtent(int i)
     {
@@ -226,9 +242,10 @@ public sealed partial class WorldMap
             if (cells >= 3) { Provinces[a].Neighbors.Add(b); Provinces[b].Neighbors.Add(a); }
     }
 
-    /// Does the straight line from a to b keep to the land?
-    bool OverLand(Vector2 a, Vector2 b)
+    /// Does the straight line from a to b keep to the land? (Always on a generated map.)
+    public bool OverLand(Vector2 a, Vector2 b)
     {
+        if (cellSea == null) return true;
         int steps = (int)MathF.Ceiling(Vector2.Distance(a, b) / DesignCell);
         for (int i = 1; i < steps; i++) if (InSea(Vector2.Lerp(a, b, i / (float)steps))) return false;
         return true;

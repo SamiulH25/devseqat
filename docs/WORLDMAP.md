@@ -1,6 +1,6 @@
 # The designed world: plan
 
-Status: **WM0-WM1 built** (2026-11-17); WM2-WM6 planned. New campaigns stay on layout 4 until WM4 (set `IRONFIELD_MAP_LAYOUT=5` to play the drawn world now). Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
+Status: **WM0-WM2 built** (2026-11-17); WM3-WM6 planned. New campaigns stay on layout 4 until WM4 (set `IRONFIELD_MAP_LAYOUT=5` to play the drawn world now). Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
 game as map layout 5, the map every new campaign plays on. Phases WM0-WM7; each ships on its own and `tools/check.sh`
 must pass after each. When a phase ships, add its "As built" note at the end.
 
@@ -110,10 +110,27 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
     between seats until every seat is joined; a seat whose every line crosses a bay (Crowle) is joined through villages.
     LayRoads routes them all; the router bars ground with `Landness` under 0.45.
   - Heights: the land is lifted `LandRise` (4.5) and sinks to `SeaDepth` (7) below across the shore; no mountain rim.
-    The sea has no water drawn yet (WM2): it reads as a low green basin.
+    (WM2 reshaped the shore and added the water.)
   - Rivers and ridges follow the drawn points with a meander between them; Hills and Highlands provinces get hills;
     the drawn lakes plus village ponds (no random big lakes).
   - Creating a campaign: about 1.1 s the first time in a process, 0.55 s after (road routing).
   - Seen in shots, left for later phases: the sea (WM2); the realm map (M) and minimap still paint provinces as plain
     nearest-centre cells over the whole square (WM6).
   - Test `DesignedMap`.
+- **WM2 (2026-11-17).** The sea. Deviations and gotchas:
+  - **Heights across the shore** (`DesignedHeight`, by blurred landness): sea floor (`-SeaDepth`), a shelf up to the
+    shallows, a wide flat beach from `BeachLow` (-0.5) to `BeachHigh` (0.7) around the drawn coast, then a bank up to the
+    land (lifted `LandRise`). The sea's surface is `SeaLevel` (0) and travels to the renderer as `Terrain.SeaLevel`.
+  - **Drawing** (`World.Sea`, World.Water.cs): a still sheet over every 8 m cell that dips under the water, tiled and
+    culled, shaded as lake water (x = 5 + nearness to the shore: paler shallows); past the map's edge open sea to the
+    horizon over a flat sea-floor skirt (the mountain skirt is for maps without a sea). Sand on the beach in `Tint` by
+    landness, so the band keeps its width whatever the slope (sand pale enough that `world.glsl` keeps its colour).
+    Shader: still water got broad painted tone steps and a broken surf line at the shore (lakes too); the sun glint fades
+    out past 50-160 m, where far ripples aliased into white speckle (rivers and lakes too).
+  - **Nothing on the sea**: `InLand` puts a point at sea on the nearest land (each sea cell keeps its nearest land cell,
+    `cellShore`); every party is put ashore each tick (spawns scatter); `PlanRoute` bars the sea; parties other than the
+    marching player whose straight line crosses water follow a planned way round (`Campaign.SeaRoute`, not saved:
+    planned again after a load).
+  - **Left for WM3**: a battle by the shore still gets its province's field; the coast battlefield comes with the Coast
+    land kind. **Left for WM6**: the minimap and realm map (M) paint no sea.
+  - Judged with Haiku 5.5 (the T3 judge was not reachable from the session): 6 in four rounds; the owner looked at the shots and accepted the look (polish left for WM6).

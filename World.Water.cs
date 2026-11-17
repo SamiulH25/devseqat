@@ -106,6 +106,61 @@ sealed partial class World
 
     // ---------- water ----------
 
+    /// The sea of a designed map (docs/WORLDMAP.md WM2): a still sheet at sea level over every cell whose ground dips under
+    /// it, deep blue far out and paler over the shelf (the still-water shading of a lake: x = 5 + how near the shore).
+    /// Laid in culled blocks, as most of it is out of view.
+    void Sea(Mesh m, float level)
+    {
+        const float C = 8;
+        const int Block = 16;
+        int n = (int)MathF.Ceiling(2 * t.Half / C);
+        float o = -t.Half;
+        var depth = new float[(n + 1) * (n + 1)];
+        Parallel.For(0, n + 1, z => { for (int x = 0; x <= n; x++) depth[z * (n + 1) + x] = level - t.Height(o + x * C, o + z * C); });
+        Vector2 Still(float d) => new(5 + 1.12f * (1 - Math.Clamp(d / 4.5f, 0, 1)), -10);
+        Color Tone(float d) => Color.Lerp(SeaDeep, WaterShallow, 1 - Math.Clamp(d / 5, 0, 1));
+        for (int bz = 0; bz < n; bz += Block)
+            for (int bx = 0; bx < n; bx += Block)
+            {
+                int start = m.V.Count;
+                for (int z = bz; z < Math.Min(n, bz + Block); z++)
+                    for (int x = bx; x < Math.Min(n, bx + Block); x++)
+                    {
+                        float d00 = depth[z * (n + 1) + x], d10 = depth[z * (n + 1) + x + 1], d01 = depth[(z + 1) * (n + 1) + x], d11 = depth[(z + 1) * (n + 1) + x + 1];
+                        if (MathF.Max(MathF.Max(d00, d10), MathF.Max(d01, d11)) <= -0.2f) continue; // dry land all round
+                        Vector3 P(int ix, int iz) => new(o + ix * C, level, o + iz * C);
+                        m.Raw(P(x, z), Vector3.Up, Tone(d00), Still(d00)); m.Raw(P(x + 1, z + 1), Vector3.Up, Tone(d11), Still(d11)); m.Raw(P(x + 1, z), Vector3.Up, Tone(d10), Still(d10));
+                        m.Raw(P(x, z), Vector3.Up, Tone(d00), Still(d00)); m.Raw(P(x, z + 1), Vector3.Up, Tone(d01), Still(d01)); m.Raw(P(x + 1, z + 1), Vector3.Up, Tone(d11), Still(d11));
+                    }
+                AddTile(m, start);
+            }
+        // Past the map's edge the sea runs on to the horizon over the skirt's sea floor.
+        const float Far = 1700, Big = 100;
+        var open = new Vector2(5, -10); // still water, far from any shore
+        for (float z = -t.Half - Far; z < t.Half + Far; z += Big * 8)
+        {
+            int start = m.V.Count;
+            for (float zz = z; zz < MathF.Min(z + Big * 8, t.Half + Far); zz += Big)
+                for (float x = -t.Half - Far; x < t.Half + Far; x += Big)
+                {
+                    if (x >= -t.Half - 0.01f && x + Big <= t.Half + 0.01f && zz >= -t.Half - 0.01f && zz + Big <= t.Half + 0.01f) continue;
+                    float x0 = x, z0 = zz, x1 = x + Big, z1 = zz + Big;
+                    // Cells straddling the map's edge keep to the outside of it.
+                    if (z0 < t.Half && z1 > -t.Half && x0 < t.Half && x1 > -t.Half)
+                    {
+                        if (x0 < -t.Half) x1 = -t.Half; else if (x1 > t.Half) x0 = t.Half;
+                        else if (z0 < -t.Half) z1 = -t.Half; else z0 = t.Half;
+                    }
+                    Vector3 P(float px, float pz) => new(px, level, pz);
+                    m.Raw(P(x0, z0), Vector3.Up, SeaDeep, open); m.Raw(P(x1, z1), Vector3.Up, SeaDeep, open); m.Raw(P(x1, z0), Vector3.Up, SeaDeep, open);
+                    m.Raw(P(x0, z0), Vector3.Up, SeaDeep, open); m.Raw(P(x0, z1), Vector3.Up, SeaDeep, open); m.Raw(P(x1, z1), Vector3.Up, SeaDeep, open);
+                }
+            AddTile(m, start);
+        }
+    }
+
+    static readonly Color SeaDeep = new(36, 76, 100);
+
     /// Rivers, lakes and the works on them.
     void Water(Mesh m)
     {

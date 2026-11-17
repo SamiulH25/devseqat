@@ -474,6 +474,7 @@ sealed partial class World : IDisposable
         Mark("fields", m.V.Count);
         Roads(m); // tiled like the foliage, so only the roads in view are drawn (World.Water.cs)
         Mark("roads", m.V.Count);
+        if (t.SeaLevel is float sea) { Sea(m, sea); Mark("sea", m.V.Count); } // tiled: most of it is out of view
         alwaysStart = m.V.Count;
         Water(m);
         Mark("water", m.V.Count);
@@ -1137,7 +1138,9 @@ sealed partial class World : IDisposable
                 float s = MathHelper.SmoothStep(0, 1, Math.Clamp((d - 60) / 900, 0, 1));
                 float roll = (Terrain.Noise(p.X * 0.03f, p.Y * 0.03f, t.Seed + 24) - 0.5f) * 6 * MathF.Min(1, d / 120);
                 float peak = Terrain.Noise(p.X * 0.008f, p.Y * 0.008f, t.Seed + 22) * 110 + Terrain.Noise(p.X * 0.03f, p.Y * 0.03f, t.Seed + 23) * 28;
-                pts[k, i] = new Vector3(p.X, MathHelper.Lerp(h0, h0 * 0.75f, MathF.Min(1, d / 200)) + roll + 0.03f * d + peak * s, p.Y);
+                pts[k, i] = t.SeaLevel is float sea // a sea map: open sea floor out to the horizon (World.Water.cs `Sea`)
+                    ? new Vector3(p.X, MathF.Min(h0, sea - 6) + roll * 0.2f, p.Y)
+                    : new Vector3(p.X, MathHelper.Lerp(h0, h0 * 0.75f, MathF.Min(1, d / 200)) + roll + 0.03f * d + peak * s, p.Y);
             }
         }
         Vector3 Normal(int k, int i)

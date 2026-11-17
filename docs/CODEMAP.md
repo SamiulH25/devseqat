@@ -311,8 +311,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Callings** (class, L13): Get:19, Load:23, Validate:33
 - **Campaign** (class, L47): LevelFor:53, XpToNext:55, CallingFor:59, EnsureCallings:72, GiftsOf:78, TalentsOf:82, WithHeroes:86, WithChampion:101, CompanionsAfterBattle:119, GainXp:135
 
-## Campaign/Campaign.cs (545 lines)
-- **Campaign** (class, L7): Campaign:41, New:68, Log:138, Classify:145, LogYours:149, LogAll:151, PartyById:153, SettlementById:154, SideOf:158, Outlaw:160, Hostile:162, WarBetween:171, FactionsAtWar:172, AtWarWithAnyone:173, Score:176, Refuses:187, InSight:192, SettlementAt:194, InTown:195, Tick:200, Speed:227, PaceOf:231, BaseSpeed:235, Move:252, Encounters:298, Clash:326, Edge:368, EdgeOfKind:369, Hourly:371, Daily:394, Weekly:477, Desert:535
+## Campaign/Campaign.cs (569 lines)
+- **Campaign** (class, L7): Campaign:41, New:68, Log:138, Classify:145, LogYours:149, LogAll:151, PartyById:153, SettlementById:154, SideOf:158, Outlaw:160, Hostile:162, WarBetween:171, FactionsAtWar:172, AtWarWithAnyone:173, Score:176, Refuses:187, InSight:192, SettlementAt:194, InTown:195, Tick:200, Speed:227, PaceOf:231, BaseSpeed:235, Move:252, SeaRoute:307, Encounters:322, Clash:350, Edge:392, EdgeOfKind:393, Hourly:395, Daily:418, Weekly:501, Desert:559
 
 ## Campaign/CampaignActions.cs (191 lines)
 - **Campaign** (class, L6): MoveTo:10, Chase:11, GoTo:12, RecruitLevies:17, LevyPrice:62, MercenaryPrice:64, Hire:70, BuyHorses:88, RaiseHounds:103, Merge:127, Split:130, Disband:155, MoveUp:157, SignContract:165, Rest:184
@@ -551,18 +551,21 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Workings.cs (55 lines)
 - **Campaign** (class, L9): CannotBlight:18, Blight:26, Calmed:38, WorkingsWeekly:41
 
+## Campaign/WorldDesigned.cs (339 lines)
+- **WorldMap** (class, L9): Cell:33, InSea:41, Landness:44, DesignProvinceAt:54, FromDesign:57, BuildGrid:124, OntoLand:181, InExtent:191, Blur:197, LinkNeighbours:225, OverLand:246, DesignRoads:256, DesignRiver:301, Meander:320
+
 ## Campaign/WorldLand.cs (125 lines)
 - **WorldMap** (class, L8): LayFields:12, FieldClear:64, InField:94, GrowStands:99
 
-## Campaign/WorldMap.cs (654 lines)
-- **WorldMap** (class, L8): InLand:66, WorldMap:74, readonly:84, Generate:88, Climate:204, RaiseRidges:218, AddRidge:249, RidgeDist:261, RidgeHeight:264, OnRidge:282, HomeOf:285, ReachOf:287, GrowRealms:292, SiteKindsFor:334, PlaceSites:347, Cross:372, RiverDist:381, RiverScan:382, ProvinceAt:386, ProvinceScan:389, RoadDist:402, RoadScan:404, SpeedFactor:417, BattleGround:422, Height:442, LandHeight:455, DesignedHeight:479, RimAt:493, Ridged:495, Tint:498, KindTint:529, BuildTerrain:549
-- **PlaceNamer** (class, L628): PlaceNamer:635, Pool:637, Next:643
+## Campaign/WorldMap.cs (675 lines)
+- **WorldMap** (class, L8): InLand:66, WorldMap:78, readonly:88, Generate:92, Climate:208, RaiseRidges:222, AddRidge:253, RidgeDist:265, RidgeHeight:268, OnRidge:286, HomeOf:289, ReachOf:291, GrowRealms:296, SiteKindsFor:338, PlaceSites:351, Cross:376, RiverDist:385, RiverScan:386, ProvinceAt:390, ProvinceScan:393, RoadDist:406, RoadScan:408, SpeedFactor:421, BattleGround:426, Height:446, LandHeight:459, DesignedHeight:483, RimAt:505, Ridged:507, Tint:510, KindTint:549, BuildTerrain:569
+- **PlaceNamer** (class, L649): PlaceNamer:656, Pool:658, Next:664
 
 ## Campaign/WorldRoads.cs (260 lines)
 - **WorldMap** (class, L9): InLake:19, PlaceLakes:26, LayRoads:55
 
-## Campaign/WorldTravel.cs (128 lines)
-- **WorldMap** (class, L8): TravelCostAt:17, CellCost:26, PlanRoute:37, LineCost:94, Straighten:109
+## Campaign/WorldTravel.cs (130 lines)
+- **WorldMap** (class, L8): TravelCostAt:17, CellCost:27, PlanRoute:38, LineCost:96, Straighten:111
 
 ## Campaign/Wounds.cs (50 lines)
 - **WoundDef** (record, L4)
@@ -845,7 +848,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Heraldry** (record, L8)
 - **Style** (class, L11): ColorBlind:22, Standard:35, PaletteOf:49
 
-## Terrain.cs (629 lines)
+## Terrain.cs (631 lines)
 - **FoliageKind** (enum, L5)
 - **River** (record, L11): AtBridge:23, Dist:34, SegmentDist:43, Within:53, AtFord:99, Carve:102, Smooth:104, Across:107
 - **Lake** (record, L119): Edge:122, Inside:125, Carve:134
@@ -856,7 +859,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **SiegeWall** (class, L173): SiegeWall:190, AtGate:198, AtLadder:199, SectionAt:201, SectionX:206, Breached:207, AtBreach:208, AtRamp:210, Inside:212, Raise:214
 - **Foliage** (struct, L218)
 - **TerrainParams** (record, L223): Named:247
-- **Terrain** (class, L254): LayoutFor:257, WaterDepth:301, Flat:308, Terrain:309, Terrain:310, Terrain:314, Terrain:339, RawHeight:378, RoadCenter:410, RoadDist:413, Height:422, Height:434, GridHeight:435, Gradient:438, BucketOf:448, AddProp:455, Add:457, Blocked:464, PushOut:478, Core:504, PlaceFoliage:506, PlaceTown:580, SmoothStep:602, Hash:608, Noise:620
+- **Terrain** (class, L254): LayoutFor:257, WaterDepth:303, Flat:310, Terrain:311, Terrain:312, Terrain:316, Terrain:341, RawHeight:380, RoadCenter:412, RoadDist:415, Height:424, Height:436, GridHeight:437, Gradient:440, BucketOf:450, AddProp:457, Add:459, Blocked:466, PushOut:480, Core:506, PlaceFoliage:508, PlaceTown:582, SmoothStep:604, Hash:610, Noise:622
 
 ## TerrainFeatures.cs (177 lines)
 - **FeatureKind** (enum, L7)
@@ -916,7 +919,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
 - **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:583, WellsFromSites:594, TideFeedsOffers:635, TideShared:653, Overreach:676, CourtMage:709, DoctrinesAndUnweave:741, WorkingsBite:774, WorkingsRemembered:804
 
-## Tests/MapTests.cs (337 lines)
+## Tests/MapTests.cs (354 lines)
 - **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:273, DesignedMap:300
 
 ## Tests/MeleeTests.cs (425 lines)
@@ -1006,9 +1009,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Verts.cs (36 lines)
 - **Verts<T>** (class, L6): Add:13, Draw:19, Dispose:35
 
-## World.cs (1303 lines)
+## World.cs (1306 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): Baked:50, World:59, World:63, Checksum:80, Mark:110, Upload:119, Image:143, FoliageBuffer:150, RebuildFoliage:158, Lit:164, Draw:182, SetFog:207, DrawShaded:214, DrawShadowCasters:241, DrawGeometry:251, SetExtra:287, Dispose:289, Smooth:298, GroundColor:305, BuildDetail:373, WorldToMinimap:418, MinimapToWorld:419, BuildSky:423, BuildFoliage:445, DrawTerrain:530, DrawFoliage:563, Jitter:590, Broadleaf:596, Pine:613, Bush:627, Rock:636, House:648, Windows:677, Chimney:707, Village:715, Town:728, SiteModel:764, WallStones:849, Tower:861, Torches:880, GateDoor:900, Ladder:927, Wheel:940, Wagon:975, TownHouse:1037, Castle:1044, Grass:1061, Skirt:1115
+- **World** (class, L25): Baked:50, World:59, World:63, Checksum:80, Mark:110, Upload:119, Image:143, FoliageBuffer:150, RebuildFoliage:158, Lit:164, Draw:182, SetFog:207, DrawShaded:214, DrawShadowCasters:241, DrawGeometry:251, SetExtra:287, Dispose:289, Smooth:298, GroundColor:305, BuildDetail:373, WorldToMinimap:418, MinimapToWorld:419, BuildSky:423, BuildFoliage:445, DrawTerrain:531, DrawFoliage:564, Jitter:591, Broadleaf:597, Pine:614, Bush:628, Rock:637, House:649, Windows:678, Chimney:708, Village:716, Town:729, SiteModel:765, WallStones:850, Tower:862, Torches:881, GateDoor:901, Ladder:928, Wheel:941, Wagon:976, TownHouse:1038, Castle:1045, Grass:1062, Skirt:1116
 
 ## World.Features.cs (115 lines)
 - **World** (class, L7): Features:11
@@ -1020,8 +1023,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## World.Materials.cs (78 lines)
 - **World** (class, L10): BuildMaterials:14, Periodic:35, Fbm:52, Cavity:65
 
-## World.Water.cs (294 lines)
-- **World** (class, L9): NormalAt:20, Roads:53, AddTile:99, Water:110, RiverWater:121, Reeds:213, Lake:235, Bridge:269
+## World.Water.cs (349 lines)
+- **World** (class, L9): NormalAt:20, Roads:53, AddTile:99, Sea:112, Water:165, RiverWater:176, Reeds:268, Lake:290, Bridge:324
 
 ## WorldDesign.cs (114 lines)
 - **WorldDesign** (class, L8): Get:34, Load:36, At:42, IsSea:43, ProvinceAt:47, U32:63, Hash2:66, Noise:77, static:85, Validate:92

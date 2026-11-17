@@ -63,7 +63,11 @@ public sealed partial class WorldMap
     /// Half the side of this map's ground: the provinces, plus the mountain rim (an old save keeps the small world it had).
     public float GroundHalf => ExtentUsed + Rim;
     /// The nearest point to `p` on the land in play (the square parties travel on; the rim beyond is closed to them).
-    public Vector2 InLand(Vector2 p) => Vector2.Clamp(p, new Vector2(-ExtentUsed), new Vector2(ExtentUsed));
+    public Vector2 InLand(Vector2 p)
+    {
+        p = Vector2.Clamp(p, new Vector2(-ExtentUsed), new Vector2(ExtentUsed));
+        return cellSea != null ? OntoLand(p) : p; // a designed map: off the sea, onto the nearest shore
+    }
     readonly List<(Vector2 C, float R, float H)> hills = new();
     /// The look-up grid for ProvinceAt, RoadDist and RiverDist, built on first use (once the roads and rivers are laid).
     MapIndex? index;
@@ -480,14 +484,22 @@ public sealed partial class WorldMap
     {
         if (Ridges.Count > 0) h += RidgeHeight(new Vector2(x, z)) * (0.85f + 0.3f * Terrain.Noise(x * 0.05f, z * 0.05f, Seed + 3));
         float land = Landness(new Vector2(x, z));
-        // The drawn coast (land 0.5) stands at the land's height; the shore falls away seaward of it.
-        return MathHelper.Lerp(-SeaDepth, h + LandRise, MathHelper.SmoothStep(0, 1, Math.Clamp((land - 0.12f) / 0.4f, 0, 1)));
+        // Across the shore (blurred landness 0 to 1): the sea floor, a shelf rising to the shallows, a gentle beach at the
+        // drawn coast (land 0.5), then a bank up to the land's own height.
+        float Up(float a, float b) => MathHelper.SmoothStep(0, 1, Math.Clamp((land - a) / (b - a), 0, 1));
+        if (land < 0.25f) return MathHelper.Lerp(-SeaDepth, BeachLow, Up(0.03f, 0.25f));
+        if (land < 0.86f) return MathHelper.Lerp(BeachLow, BeachHigh, (land - 0.25f) / 0.61f);
+        return MathHelper.Lerp(BeachHigh, h + LandRise, Up(0.86f, 0.99f));
     }
 
     /// How deep the sea floor lies below a designed map's land.
     public const float SeaDepth = 7;
+    /// The sea's surface on a designed map (the land is lifted well above it, the sea floor sinks below).
+    public const float SeaLevel = 0;
     /// How far a designed map's land is lifted, so its lowest ground (the noise's dips, river beds) stays above the sea at 0.
     public const float LandRise = 4.5f;
+    /// A designed map's beach runs from just under the water to just above it.
+    const float BeachLow = -0.5f, BeachHigh = 0.7f;
 
     /// How far out on the mountain rim a point is: 0 at the edge of the land in play (and inside it), 1 at the world's end.
     float RimAt(float edge) => Math.Clamp((edge - ExtentUsed - 4) / (GroundHalf - ExtentUsed - 4), 0, 1);
@@ -514,6 +526,14 @@ public sealed partial class WorldMap
             c = Vector3.Lerp(c, rock, MathHelper.SmoothStep(0, 1, rim * 3 - 0.3f));
             float snow = Math.Clamp((h - 30 + 4 * n) / 8, 0, 1) * MathHelper.SmoothStep(0, 1, rim * 1.6f) * (1 - 0.6f * steep); // snow slides off the steep faces
             c = Vector3.Lerp(c, new Vector3(0.9f, 0.92f, 0.95f), snow);
+        }
+        if (Designed) // the beach: pale sand from the shallows up the low shore, wet and darker at the water's edge
+        {
+            // Sand by how near the coast (landness), so the beach is a band a few metres wide whatever the bank's slope.
+            float sh = Height(p.X, p.Y), ln = Landness(p) + (Terrain.Noise(p.X * 0.15f, p.Y * 0.15f, Seed + 13) - 0.5f) * 0.08f;
+            float sand = MathHelper.SmoothStep(1, 0, Math.Clamp((ln - 0.8f) / 0.16f, 0, 1)); // graded into the grass
+            var beach = Vector3.Lerp(new Vector3(0.52f, 0.46f, 0.36f), new Vector3(0.93f, 0.84f, 0.64f), Math.Clamp((sh - BeachLow) / (BeachHigh - BeachLow + 0.4f), 0, 1));
+            c = Vector3.Lerp(c, beach * (0.94f + 0.12f * Terrain.Noise(p.X * 0.2f, p.Y * 0.2f, Seed + 12)), sand);
         }
         if (Ridges.Count > 0 && RidgeDist(p) is float rd && rd < Ridges[0].Width) c = Vector3.Lerp(c, new Vector3(0.62f, 0.6f, 0.58f), 0.6f * (1 - rd / Ridges[0].Width)); // bare rock
         // Summer dries the grass, autumn browns it, winter lies white (more so on high ground; roads show through).
@@ -564,7 +584,7 @@ public sealed partial class WorldMap
         var fields = Layout >= 4 ? LayFields(span) : new List<FieldPlot>();
         var fieldCells = FieldCells(fields);
         var standRng = new Random(Seed * 5 + 3); // layout 4 woods: their own dice
-        bool Clear(Vector2 p) => Settlements.All(s => Vector2.Distance(s.Pos, p) > 9 * span) && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && !InLake(p, 2)
+        bool Clear(Vector2 p) => Landness(p) > 0.95f && Settlements.All(s => Vector2.Distance(s.Pos, p) > 9 * span) && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && !InLake(p, 2)
             && MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half && !InField(fieldCells, p, 1.5f);
         foreach (var f in fields.Where(f => f.Kind == FieldKind.Orchard)) // rows of small round fruit trees
         {
@@ -606,7 +626,7 @@ public sealed partial class WorldMap
                 float d = r.Dist(pos);
                 if (d > r.Width * 0.45f && d < r.Width && Clear(pos)) foliage.Add(new Foliage(FoliageKind.Pine, pos, (2.2f + rng.NextSingle()) * grow0, 0, rng.Next()));
             }
-        for (int i = 0; i < 260; i++) // pines on the mountain rim
+        for (int i = 0; i < (Designed ? 0 : 260); i++) // pines on the mountain rim (a designed map has the sea instead)
         {
             float rimHalf = GroundHalf - 4;
             var pos = new Vector2(rng.NextSingle() * 2 * rimHalf - rimHalf, rng.NextSingle() * 2 * rimHalf - rimHalf);
@@ -619,6 +639,7 @@ public sealed partial class WorldMap
         terrain.MapBridges.AddRange(Bridges);
         terrain.Fields.AddRange(fields);
         terrain.MapSeason = Season;
+        if (Designed) terrain.SeaLevel = SeaLevel;
         return terrain;
     }
 }

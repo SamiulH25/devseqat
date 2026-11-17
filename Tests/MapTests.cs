@@ -331,7 +331,24 @@ public static partial class SelfTest
         var cut = all.Where(s => s.Kind != SettlementKind.Village && !seen.Contains(s.Id)).ToList();
         Console.WriteLine($"world: {m.Provinces.Count} provinces, {m.Settlements.Count} settlements, {m.RoadLines.Count} roads, {m.Rivers.Count} rivers, {m.Ridges.Count} ridges, {m.Lakes.Count} lakes and ponds, land {m.LandShare:0.00}");
         Check(cut.Count == 0, "every town and castle is joined by road: not " + string.Join(", ", cut.Select(s => $"{s.Name} at {s.Pos}")));
+        // The sea (WM2): a point at sea is put ashore, a way between far towns keeps to the land, nobody walks on water.
+        var shore = m.InLand(new Vector2(0, -600));
+        Check(m.InSea(new Vector2(0, -600)) && !m.InSea(shore), $"a point at sea is put on the shore ({shore})");
+        var towns = m.Settlements.Where(s => s.Kind == SettlementKind.Town).ToList();
+        foreach (var (from, to) in new[] { (towns[0], towns[^1]), (towns[3], towns[towns.Count / 2]) })
+        {
+            var way = m.PlanRoute(from.Pos, to.Pos, 1.3f);
+            var at = from.Pos;
+            foreach (var w in way)
+            {
+                for (float k = 0; k <= 1; k += 0.05f) Check(!m.InSea(Vector2.Lerp(at, w, k)), $"the way from {from.Name} to {to.Name} keeps off the sea");
+                at = w;
+            }
+            Check(way[^1] == m.InLand(to.Pos), "a way ends at its goal");
+        }
         a.Tick(24 * 3);
         Check(a.S.Parties.Count > 0, "a campaign runs on it");
+        var wet = a.S.Parties.Where(q => !q.Down && m.InSea(q.Pos)).ToList();
+        Check(wet.Count == 0, "nobody on the sea: " + string.Join(", ", wet.Select(q => $"{q.Name} at {q.Pos}")));
     }
 }
