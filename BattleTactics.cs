@@ -28,6 +28,9 @@ public partial class Battle
         }
     }
 
+    /// A company of yours that you command (not an allied lord's, not one the AI plays for you): its charge is yours to end.
+    bool ObeysPlayer(Squad s) => s.Team == 0 && !s.AiControlled && !Options.AutoPlayer;
+
     /// What the company does next, as well as its grade allows.
     void Wits(Squad s)
     {
@@ -44,7 +47,8 @@ public partial class Battle
         }
         float sight = SightOf(g);
         // Broken and not at blows: step back, re-form, go in again (veterans and better).
-        if (g >= Grade.Veteran && s.Broken && !s.InContact && s.Order == Order.Charge && s.Plan != Plan.Reform && !s.BrokeRanks)
+        // Not on your own charge: a company you sent in keeps going however ragged its ranks get on the way (PT1, docs/PLAYTEST.md).
+        if (g >= Grade.Veteran && s.Broken && !s.InContact && s.Order == Order.Charge && s.Plan != Plan.Reform && !s.BrokeRanks && !ObeysPlayer(s))
         {
             s.Resume = s.Target ?? s.Foe;
             s.HoldInPlace();

@@ -287,7 +287,7 @@ sealed class CreatorScreen
         ui.Shield(new Rectangle(well.X + U(6), well.Bottom - U(46), U(32), U(40)), arms);
 
         // The painted face beside the name, as lords will see it.
-        int y = well.Bottom + U(10), fw = PortraitPainter.W * U(1), fh = PortraitPainter.H * U(1);
+        int y = well.Bottom + U(10), fw = U(48), fh = U(60);
         var medal = new Rectangle(inner.X, y, fw, fh);
         ui.Face(PortraitPainter.Of(M), medal);
         ui.Frame(Kit.Inset(medal, -U(1)), Kit.Gilt * 0.8f, U(1));
@@ -627,14 +627,14 @@ sealed class CreatorScreen
         ui.Divider(x, y, w, Kit.Gilt * 0.5f); y += U(10);
         // The story on a scroll that unrolls each time another origin is shown.
         if (o.Id != scrollKey) { scrollKey = o.Id; scrollAt = time; }
-        int tw = w - U(40);
+        int tw = w - U(54);
         const int ts = 1;
         int lh = U(12);
         var lines = ui.Wrap(o.Text.ToUpperInvariant(), tw, ts);
-        var parch = new Rectangle(x + U(10), y, w - U(20), lines.Count * lh + U(34));
+        var parch = new Rectangle(x + U(10), y, w - U(20), lines.Count * lh + U(48));
         int shown = ui.Scroll(parch, Unroll(scrollAt, 0.45f));
-        int ly = parch.Y + U(18);
-        foreach (var line in lines) { if (ly + lh - U(4) <= shown) ui.Text(line, x + U(22), ly, Kit.Ink, ts); ly += lh; }
+        int ly = parch.Y + U(26);
+        foreach (var line in lines) { if (ly + lh - U(4) <= shown) ui.Ink(line, x + U(27), ly, Kit.InkDeep, ts); ly += lh; }
         y = parch.Bottom + U(12);
         if (o.Age > 0) { ui.Text($"+{o.Age} YEARS", x, y, Style.Dim, 1); y += U(14); }
         ui.Text("GIVES", x, y, Kit.Gilt, 1); y += U(12);
@@ -857,14 +857,14 @@ sealed class CreatorScreen
         var oath = ui.Wrap(text, parch.Width - U(56), sc);
         var tale = ui.Wrap(string.Join(" ", new[] { birth.Line, past.Line }.Where(l => l != "")).ToUpperInvariant(), parch.Width - U(60));
         int height = U(40) + oath.Count * lh + U(16) + tale.Count * U(12);
-        int y = Math.Max(parch.Y + U(18), parch.Center.Y - height / 2 - U(10));
-        if (Seen(y, U(14))) ui.TextC("THE OATH OF THE COMPANY", parch.Center.X, y, Kit.Ink, 2);
+        int y = Math.Max(parch.Y + U(32), parch.Center.Y - height / 2 - U(10));
+        if (Seen(y, U(14))) ui.Ink("THE OATH OF THE COMPANY", parch.Center.X, y, Kit.InkDeep, 2, cx: true);
         y += U(24);
         if (Seen(y, U(2))) ui.Divider(parch.X + U(40), y, parch.Width - U(80), Kit.Mul(Kit.Ink, 0.9f));
         y += U(16);
-        foreach (var line in oath) { if (Seen(y, lh - U(6))) ui.TextC(line, parch.Center.X, y, Kit.Ink, sc); y += lh; }
+        foreach (var line in oath) { if (Seen(y, lh - U(6))) ui.Ink(line, parch.Center.X, y, Kit.InkDeep, sc, cx: true); y += lh; }
         y += U(16);
-        foreach (var line in tale) if (y + U(40) < parch.Bottom) { if (Seen(y, U(8))) ui.TextC(line, parch.Center.X, y, Kit.Mul(Kit.Ink, 1.5f), 1); y += U(12); }
+        foreach (var line in tale) if (y + U(40) < parch.Bottom) { if (Seen(y, U(8))) ui.Ink(line, parch.Center.X, y, Kit.Ink, 1, cx: true); y += U(12); }
         // A wax seal in the realm's colour.
         var colours = Origins.Free(M) ? Style.Sides[2] : Style.Sides[def.Palette];
         var seal = new Vector2(parch.Right - U(48), parch.Bottom - U(44));

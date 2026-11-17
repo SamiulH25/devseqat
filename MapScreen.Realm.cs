@@ -149,12 +149,17 @@ partial class MapScreen
     void Realms(Rectangle a)
     {
         var alive = Enumerable.Range(0, C.S.Factions.Count).Where(C.Alive).ToList();
-        int gap = ui.U(10), n = Math.Max(1, alive.Count), cw = (a.Width - (n - 1) * gap) / n, ch = (int)(a.Height * 0.56f);
+        int gap = ui.U(10), n = Math.Max(1, alive.Count), cw = (a.Width - (n - 1) * gap) / n, ch = (int)(a.Height * 0.46f);
+        hoverRealm = null;
         for (int i = 0; i < alive.Count; i++) RealmCard(alive[i], new Rectangle(a.X + i * (cw + gap), a.Y + ui.U(12), cw, ch - ui.U(12)));
-        int by = a.Y + ch + gap, bh = a.Bottom - by, lw = (int)(a.Width * 0.42f);
-        Relations(alive, Well(new Rectangle(a.X, by, lw, bh), "RELATIONS", Kit.Gilt));
+        int by = a.Y + ch + gap, bh = a.Bottom - by, lw = (int)(a.Width * 0.36f);
+        Relations(alive, Well(new Rectangle(a.X, by, lw, bh), "WARS AND ALLIANCES", Kit.Gilt));
         Chronicle(Well(new Rectangle(a.X + lw + gap, by, a.Width - lw - gap, bh), "CHRONICLE", Style.Friendly));
+        if (hoverRealm is var (hb, hn, hl)) ui.Tooltip(hb.Center.X, hb.Y + ui.U(20), hn, hl);
     }
+
+    /// The realm card under the mouse and its tooltip lines, drawn after every card so none covers it.
+    (Rectangle Box, string Name, string[] Lines)? hoverRealm;
 
     /// How a realm stands to you: your liege, at war with your liege, a truce, allied or at peace.
     (string Text, Color Colour) Stance(int f)
@@ -180,51 +185,34 @@ partial class MapScreen
         ui.Shield(new Rectangle(c.Center.X - (int)(sh / 1.2f) / 2, c.Y - ui.U(4), (int)(sh / 1.2f), sh), hd);
         int y = c.Y + sh + ui.U(2);
         string name = C.FactionNames[f].ToUpperInvariant();
-        if (ui.TW(name, 2) <= c.Width) { ui.TextC(name, c.Center.X, y, Style.Text, 2); y += ui.U(18); }
-        else
-        {
-            // A long name ("Order of the Ashen Sun") goes on two small lines.
-            var nl = ui.Wrap(name, c.Width);
-            for (int i = 0; i < Math.Min(2, nl.Count); i++) { ui.TextFitC(i == 1 ? string.Join(" ", nl.Skip(1)) : nl[i], c.Center.X, y, c.Width, Style.Text, 1); y += ui.U(10); }
-            y += ui.U(4);
-        }
-        var cult = Factions.Culture(Factions.CultureOf(f));
-        // The culture's line: up to two lines, then cut.
-        var cl = ui.Wrap((cult?.Text ?? "").ToUpperInvariant(), c.Width);
-        for (int i = 0; i < Math.Min(2, cl.Count); i++) { ui.TextFitC(i == 1 ? string.Join(" ", cl.Skip(1)) : cl[i], c.Center.X, y, c.Width, Style.Dim, 1); y += ui.U(10); }
-        y += ui.U(4);
+        // One size for every realm, and two lines' room on every card (a long name such as "Order of the Ashen Sun" takes
+        // both), so the rows under the names line up across the cards.
+        var nl = ui.Wrap(name, c.Width);
+        int ny = nl.Count >= 2 ? y : y + ui.U(5);
+        for (int i = 0; i < Math.Min(2, nl.Count); i++) ui.TextFitC(i == 1 ? string.Join(" ", nl.Skip(1)) : nl[i], c.Center.X, ny + i * ui.U(10), c.Width, Style.Text, 1);
+        y += ui.U(26);
         var (st, sc) = Stance(f);
         int chipW = ui.TW(st, 1) + ui.U(10);
-        ui.Chip(c.Center.X - chipW / 2, y, st, sc); y += ui.U(20);
+        ui.Chip(c.Center.X - chipW / 2, y, st, sc); y += ui.U(22);
         float share = C.RealmShare(f);
-        ui.Text("LAND HELD", c.X, y, Style.Dim, 1); ui.TextR(Campaign.Pct(share), c.Right, y, Style.Text, 1); y += ui.U(10);
-        ui.Pips(new Rectangle(c.X, y, c.Width, ui.U(7)), share / MathF.Max(0.01f, Campaign.WinShare), hd.Ui, 10); y += ui.U(13);
-        float weary = C.Exhaustion(f);
-        if (weary > 0)
+        ui.Text("LAND", c.X, y, Style.Dim, 1); ui.TextR(Campaign.Pct(share), c.Right, y, Style.Text, 1); y += ui.U(10);
+        ui.Pips(new Rectangle(c.X, y, c.Width, ui.U(7)), share / MathF.Max(0.01f, Campaign.WinShare), hd.Ui, 10); y += ui.U(15);
+        var ruler = C.RulerOf(f);
+        string rn = ruler == null ? "NONE" : ruler == C.Me ? "YOU" : ruler.Name.ToUpperInvariant();
+        var rl = ui.Wrap(rn, c.Width);
+        for (int i = 0; i < Math.Min(2, rl.Count); i++) ui.TextFitC(i == 1 ? string.Join(" ", rl.Skip(1)) : rl[i], c.Center.X, y + (rl.Count >= 2 ? i * ui.U(10) : ui.U(5)), c.Width, Style.Dim, 1);
+        y += ui.U(26);
+        // The rest on hover (docs/PLAYTEST.md PT2e): its style of war, its strength and its weariness.
+        if (ui.Hover(box))
         {
-            ui.Text("WAR WEARINESS", c.X, y, Style.Dim, 1); ui.TextR($"{weary:0}", c.Right, y, weary > 55 ? Style.Bad : Style.Warn, 1); y += ui.U(10);
-            ui.Gauge(new Rectangle(c.X, y, c.Width, ui.U(5)), weary / 100f, weary > 55 ? Style.Bad : Style.Warn); y += ui.U(10);
-        }
-        int lords = C.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction == f);
-        int towns = C.S.Settlements.Count(s => s.Faction == f && s.Kind == SettlementKind.Town);
-        int castles = C.S.Settlements.Count(s => s.Faction == f && s.Kind == SettlementKind.Castle);
-        int third = c.Width / 3;
-        if (y + ui.U(14) <= c.Bottom)
-        {
-            foreach (var (k, icon, v) in new[] { (0, "crown", lords), (1, "tower", towns), (2, "flag", castles) })
-            {
-                int ix = c.X + k * third + third / 2;
-                ui.Icon(icon, ix - ui.U(12), y, Style.Dim, 1);
-                ui.Text(v.ToString(), ix, y, Style.Text, 1);
-            }
-            y += ui.U(15);
-        }
-        if (y + ui.U(10) <= c.Bottom)
-        {
-            var ruler = C.RulerOf(f);
-            string rn = ruler == null ? "NONE" : ruler == C.Me ? "YOU" : ruler.Name.ToUpperInvariant();
-            if (ui.TW("RULED BY " + rn, 1) <= c.Width) { ui.Text("RULED BY", c.X, y, Style.Dim, 1); ui.TextR(rn, c.Right, y, Style.Text, 1); y += ui.U(14); }
-            else { ui.TextC("RULED BY", c.Center.X, y, Style.Dim, 1); ui.TextFitC(rn, c.Center.X, y + ui.U(10), c.Width, Style.Text, 1); y += ui.U(24); }
+            var cult = Factions.Culture(Factions.CultureOf(f));
+            int lords = C.S.Parties.Count(p => p.Kind == PartyKind.Lord && p.Faction == f);
+            int towns = C.S.Settlements.Count(s => s.Faction == f && s.Kind == SettlementKind.Town);
+            int castles = C.S.Settlements.Count(s => s.Faction == f && s.Kind == SettlementKind.Castle);
+            var lines = ui.Wrap((cult?.Text ?? "").ToUpperInvariant(), ui.U(220)).ToList();
+            lines.Add($"{lords} LORDS, {towns} TOWNS, {castles} CASTLES");
+            if (C.Exhaustion(f) > 0) lines.Add($"WAR WEARINESS {C.Exhaustion(f):0}");
+            hoverRealm = (box, name, lines.ToArray());
         }
         int ps = Math.Min((c.Width - ui.U(8)) / 3, c.Bottom - y);
         if (ps >= ui.U(30))
@@ -240,34 +228,31 @@ partial class MapScreen
         }
     }
 
-    /// A grid of who is at war with whom.
+    /// Who is at war with whom, and who is allied: one line a pair (peace, the usual state, is left out). Your realm's own
+    /// wars come first.
     void Relations(List<int> alive, Rectangle m)
     {
-        int n = alive.Count;
-        if (n == 0) return;
-        int label = ui.U(66), cell = Math.Min((m.Width - label) / n, (m.Height - ui.U(14)) / n);
-        int ox = m.X + label, oy = m.Y + ui.U(12);
-        string Short(int f) { var w = C.FactionNames[f].ToUpperInvariant().Split(' ').Last(); return w.Length > 10 ? w[..10] : w; }
-        for (int i = 0; i < n; i++)
-        {
-            var col = Style.Sides[Style.PaletteOf(alive[i])].Ui;
-            string head = Short(alive[i]);
-            if (ui.TW(head, 1) > cell - ui.U(4)) head = head[..Math.Max(1, Math.Min(head.Length, (cell - ui.U(4)) / (6 * ui.S)))];
-            ui.TextC(head, ox + i * cell + cell / 2f, m.Y, col, 1);
-            ui.Text(Short(alive[i]), m.X, oy + i * cell + cell / 2 - ui.U(3), col, 1);
-            for (int j = 0; j < n; j++)
+        int me = C.Captain.Contract, y = m.Y;
+        var pairs = new List<(int A, int B, bool War)>();
+        for (int i = 0; i < alive.Count; i++)
+            for (int j = i + 1; j < alive.Count; j++)
             {
                 int a = alive[i], b = alive[j];
-                var r = new Rectangle(ox + j * cell + ui.U(1), oy + i * cell + ui.U(1), cell - ui.U(2), cell - ui.U(2));
-                string s = a == b ? "" : C.FactionsAtWar(a, b) ? "WAR" : C.Allied(a, b) ? "ALLY"
-                    : C.S.Factions[b].TributaryOf == a || C.S.Factions[a].TributaryOf == b ? "TRIB"
-                    : C.WarBetween(a, b) is War w && w.TruceUntil > C.S.Hours ? "TRUCE" : "PEACE";
-                var sc = s switch { "WAR" => Style.Bad, "TRUCE" => Style.Warn, "TRIB" => Kit.Gilt, "" => Color.White * 0.2f, _ => Style.Ok };
-                ui.Rect(r, s == "" ? Color.Black * 0.3f : Kit.Mul(sc, 0.35f));
-                ui.Frame(r, s == "" ? Color.Black * 0.5f : Kit.Mul(sc, 0.8f), ui.U(1));
-                if (s != "" && ui.TW(s, 1) <= r.Width) ui.TextC(s, r.Center.X + ui.U(1), r.Center.Y - ui.U(3), Color.Lerp(sc, Color.White, 0.5f), 1);
+                if (C.FactionsAtWar(a, b)) pairs.Add((a, b, true));
+                else if (C.Allied(a, b)) pairs.Add((a, b, false));
             }
+        foreach (var (a, b, war) in pairs.OrderByDescending(p => p.A == me || p.B == me).ThenByDescending(p => p.War))
+        {
+            if (y + ui.U(12) > m.Bottom) break;
+            if (a == me || b == me) ui.Rect(new Rectangle(m.X - ui.U(2), y - ui.U(3), m.Width + ui.U(4), ui.U(14)), Kit.Gilt * 0.08f);
+            int x = m.X + ui.U(2);
+            string an = C.FactionNames[a].ToUpperInvariant(), bn = C.FactionNames[b].ToUpperInvariant(), mid = war ? "  AT WAR WITH  " : "  ALLIED TO  ";
+            ui.Text(an, x, y, SideColor(a), 1); x += ui.TW(an, 1);
+            ui.Text(mid, x, y, war ? Style.Bad : Style.Ok, 1); x += ui.TW(mid, 1);
+            ui.TextFit(bn, x, y, m.Right - x, SideColor(b), 1);
+            y += ui.U(14);
         }
+        ui.Text(pairs.Count == 0 ? "ALL THE REALMS ARE AT PEACE." : "THE REST ARE AT PEACE.", m.X + ui.U(2), y + ui.U(4), Style.Dim, 1);
     }
 
     /// The latest lines of the campaign log, newest first, on a thread of dots.
@@ -318,8 +303,11 @@ partial class MapScreen
         ui.Text($"OBJECTIVE: {(obj == null ? "NONE" : obj.Name.ToUpperInvariant())}   LAND HELD: {Campaign.Pct(C.RealmShare(f))} (WIN AT {Campaign.Pct(Campaign.WinShare)})", rx, ry, Style.Dim, 1);
         ry += ui.U(14);
         var foes = Enumerable.Range(0, C.S.Factions.Count).Where(g => C.FactionsAtWar(f, g)).Select(g => C.FactionNames[g].ToUpperInvariant()).ToList();
-        ui.Text("AT WAR WITH: " + (foes.Count == 0 ? "NOBODY" : string.Join(", ", foes)) + (foes.Count > 0 ? $"   WEARINESS {C.Exhaustion(f):0}" : ""), rx, ry, Style.Dim, 1);
-        ry += ui.U(14);
+        if (rank != Rank.King) // a king's rows below say it realm by realm
+        {
+            ui.Text("AT WAR WITH: " + (foes.Count == 0 ? "NOBODY" : string.Join(", ", foes)) + (foes.Count > 0 ? $"   WEARINESS {C.Exhaustion(f):0}" : ""), rx, ry, Style.Dim, 1);
+            ry += ui.U(14);
+        }
         if (fs.TributaryOf >= 0) { ui.Text($"TRIBUTARY TO THE {C.FactionNames[fs.TributaryOf].ToUpperInvariant()}", rx, ry, Style.Warn, 1); ry += ui.U(14); }
         if (C.S.Summons is Summons sm)
         {
@@ -369,29 +357,40 @@ partial class MapScreen
         }
     }
 
-    /// A king's row per other realm: war standing or peace, and buttons to offer terms, declare war or ally. Returns the new y.
+    /// The realm whose choices are open in the king's list (one at a time), or -1.
+    int diploOpen = -1;
+
+    /// A king's row per other realm: its name and standing, and one button that opens the choices for that realm alone
+    /// (offer terms in a war; declare war or ally in peace). Returns the new y.
     int KingDiplomacy(int rx, int ry, int bw, int f, List<int> others)
     {
         foreach (int g in others)
         {
             var wr = C.WarBetween(f, g);
-            bool war = C.FactionsAtWar(f, g);
-            string status = war ? $"AT WAR  WEARINESS {C.ExhaustionOf(wr!, f):0} / {C.ExhaustionOf(wr!, g):0}  STANDING {C.Margin(wr!, f, g):+0.0;-0.0}"
+            bool war = C.FactionsAtWar(f, g), open = diploOpen == g;
+            string status = war ? $"AT WAR, STANDING {C.Margin(wr!, f, g):+0.0;-0.0}"
                 : C.Allied(f, g) ? "ALLIED" : C.S.Factions[g].TributaryOf == f ? "YOUR TRIBUTARY"
                 : wr != null && wr.TruceUntil > C.S.Hours ? $"TRUCE, {(wr.TruceUntil - (float)C.S.Hours) / 24:0} DAYS" : "AT PEACE";
-            ui.Text($"{C.FactionNames[g].ToUpperInvariant()}: {status}", rx, ry, SideColor(g), 1);
-            ry += ui.U(13);
-            int sw = (bw - ui.U(12)) / 4;
+            ui.Text(C.FactionNames[g].ToUpperInvariant(), rx, ry + ui.U(5), SideColor(g), 1);
+            ui.Text(status, rx + ui.U(190), ry + ui.U(5), war ? Style.Bad : Style.Dim, 1);
+            if (ui.Button(new Rectangle(rx + bw - ui.U(110), ry, ui.U(110), ui.U(18)), open ? "CLOSE" : war ? "SEEK PEACE" : "DEALINGS", true, "", open))
+                diploOpen = open ? -1 : g;
+            ry += ui.U(22);
+            if (!open) continue;
+            if (war) { ui.Text($"WEARINESS: THEM {C.ExhaustionOf(wr!, g):0}, YOU {C.ExhaustionOf(wr!, f):0}. OFFER PEACE ON:", rx + ui.U(10), ry, Style.Dim, 1); ry += ui.U(13); }
             var labels = war ? new[] { "TRUCE", "GOLD", "A SEAT", "TRIBUTE" } : new[] { "DECLARE WAR", "ALLIANCE" };
+            int sw = (bw - ui.U(10) - ui.U(4) * (labels.Length - 1)) / labels.Length;
             for (int i = 0; i < labels.Length; i++)
             {
-                var b = new Rectangle(rx + i * (sw + ui.U(4)), ry, war ? sw : sw * 2, ui.U(22));
-                if (!war) b.X = rx + i * (sw * 2 + ui.U(4));
+                var b = new Rectangle(rx + ui.U(10) + i * (sw + ui.U(4)), ry, sw, ui.U(22));
                 if (ui.Button(b, labels[i]))
+                {
                     note = war ? C.OfferPeace(g, (Terms)i) ?? "THEY ACCEPT" : (i == 0 ? C.DeclareWar(g) : C.ProposeAlliance(g)) ?? (i == 0 ? "WAR IS DECLARED" : "AN ALLIANCE IS SWORN");
+                    diploOpen = -1;
+                }
                 if (war && ui.Hover(b)) note = $"OFFER PEACE ON {Campaign.TermsText((Terms)i)}";
             }
-            ry += ui.U(28);
+            ry += ui.U(30);
         }
         return ry;
     }

@@ -39,7 +39,7 @@ public sealed class PixelFont
         // black at 200/255, so a tint scales it with the glyph). One sprite a character then draws both. The last cell is solid
         // white: rectangles are drawn from this texture too, so text and boxes batch together.
         int cells = Chars.Length + 1, stride = cells * 6;
-        var data = new Color[stride * 8];
+        var data = new Color[stride * 16]; // rows 8-15: the same glyphs with no shadow, for writing on paper
         var shadow = new Color(0, 0, 0, 200);
         for (int g = 0; g < Glyphs.Length; g++)
             for (int row = 0; row < 7; row++)
@@ -53,10 +53,10 @@ public sealed class PixelFont
             {
                 int bits = Convert.ToInt32(Glyphs[g].Substring(row * 2, 2), 16);
                 for (int b = 0; b < 5; b++)
-                    if ((bits >> (4 - b) & 1) != 0) data[row * stride + g * 6 + b] = Color.White;
+                    if ((bits >> (4 - b) & 1) != 0) data[row * stride + g * 6 + b] = data[(row + 8) * stride + g * 6 + b] = Color.White;
             }
         for (int row = 0; row < 8; row++) for (int b = 0; b < 6; b++) data[row * stride + Chars.Length * 6 + b] = Color.White;
-        tex = new Texture2D(gd, stride, 8);
+        tex = new Texture2D(gd, stride, 16);
         tex.SetData(data);
     }
 
@@ -79,7 +79,10 @@ public sealed class PixelFont
         DrawRun(sb, s, pos, c, scale); // the glyph and its shadow are one cell of the texture
     }
 
-    void DrawRun(SpriteBatch sb, string s, Vector2 pos, Color c, int scale)
+    /// The glyphs alone, with no black shadow under them (ink on paper, where a dark shadow would smear dark letters).
+    public void DrawPlain(SpriteBatch sb, string s, Vector2 pos, Color c, int scale = 2) => DrawRun(sb, s, pos, c, scale, 8);
+
+    void DrawRun(SpriteBatch sb, string s, Vector2 pos, Color c, int scale, int top = 0)
     {
         int space = CharIdx[' '];
         for (int k = 0; k < s.Length; k++)
@@ -87,7 +90,7 @@ public sealed class PixelFont
             char ch = s[k];
             if (ch is >= 'a' and <= 'z') ch = (char)(ch - 32);
             int i = ch < 128 ? CharIdx[ch] : space;
-            sb.Draw(tex, pos, new Rectangle(i * 6, 0, 6, 8), c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+            sb.Draw(tex, pos, new Rectangle(i * 6, top, 6, 8), c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
             pos.X += 6 * scale;
         }
     }

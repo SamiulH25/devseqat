@@ -277,6 +277,8 @@ public sealed partial class Campaign
                     if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you did what I asked of you", 15);
                 }
                 if (c.Then == null) Deed($"Contract done: {c.Text} (+{c.Reward:0} crowns).", "quests");
+                if (c.Then == null) RecordQuest(c, true);
+                else if (S.PinnedQuest == c.Id) { if (c.Then.Id == 0) c.Then.Id = S.NextId++; S.PinnedQuest = c.Then.Id; } // the pin follows the chain
                 else Log($"Done: {c.Text}");
                 QuestStepDone(c);
                 OrderContractDone(c);
@@ -288,6 +290,7 @@ public sealed partial class Campaign
                 S.Contracts.Remove(c);
                 if (CharacterById(c.Giver) is Character giver) Remember(giver, Me, "you failed me", -8);
                 Log($"Contract failed: {c.Text}");
+                RecordQuest(c, false);
                 OrderContractLost(c);
             }
         }

@@ -7,11 +7,11 @@ namespace Ironfield;
 partial class MapScreen
 {
     int gearSlot, bladeName;
-    static readonly string[] GearTabs = { "WEAPONS", "SHIELDS", "ARMOUR", "HELMS", "HORSES" };
+    static readonly string[] GearTabs = { "WEAPONS", "SHIELDS", "ARMOUR", "HELMS", "YOUR HORSE" };
 
     void ArmourerWell(Settlement s, Rectangle c)
     {
-        if (ui.Tabs(new Rectangle(c.X, c.Y, c.Width, ui.U(20)), GearTabs, gearSlot) is int t and >= 0) gearSlot = t;
+        if (ui.WordTabs(c.X + ui.U(4), c.Y, GearTabs, gearSlot) is int t and >= 0) gearSlot = t; // words: a level under the town's tabs
         string slot = Gear.Slots[gearSlot];
         var stock = C.ArmourerStock(s);
         var list = Gear.InSlot(slot).Where(g => C.Owns(g.Id) || stock.Contains(g)).OrderBy(g => g.Cost).ToList();

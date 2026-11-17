@@ -24,7 +24,7 @@ public sealed partial class Battle
     const float ForwardBy = 30;
 
     /// Seconds between the general's orders against you: longer on Easy, shorter on Hard.
-    float HuntCooldown => Options.EnemyDamage < 0.9f ? 90 : Options.EnemyDamage > 1.1f ? 40 : 60;
+    float HuntCooldown => (Options.EnemyDamage < 0.9f ? 90 : Options.EnemyDamage > 1.1f ? 40 : 60) * Nature.HuntWait;
 
     /// Twice a second, after the enemy general's own orders: send for the captain, mark him with bows, the guard round
     /// the enemy captain, and a grudge lord's charge.
@@ -38,7 +38,7 @@ public sealed partial class Battle
         }
         if (Hunter == null && Time >= huntAgain && p.Active && !p.Routing && (PlayerKills >= HarmKills * (HuntsSent + 1) || Forward(p) > ForwardBy))
             SendHunter();
-        if (Options.EnemyDamage >= 0.9f) MarkWithBows(); // Easy keeps the notice but not the volleys
+        if (Options.EnemyDamage >= 0.9f && !Nature.Honourable) MarkWithBows(); // Easy keeps the notice but not the volleys; an honourable lord will not have you shot
         CloseTheGuard();
         Grudge();
     }

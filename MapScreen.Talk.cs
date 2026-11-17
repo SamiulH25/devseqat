@@ -42,6 +42,7 @@ sealed partial class MapScreen
         int lx = r.X + ui.U(24), ly = r.Y + ui.U(46), lw = ui.U(220);
         // Left: who he is.
         ui.Face(PortraitPainter.Of(C, ch), new Rectangle(lx + (lw - ui.U(192)) / 2, ly, ui.U(192), ui.U(240)));
+        lx += (lw - ui.U(192)) / 2; lw = ui.U(192); // the lines below line up with the portrait
         int y = ly + ui.U(248);
         ui.Text(ui.Fit(ch.Name.ToUpperInvariant(), lw), lx, y, Style.Text, 1); y += ui.U(13);
         string house = C.HouseOf(ch) is House h ? h.Name.ToUpperInvariant() : "";
@@ -49,20 +50,25 @@ sealed partial class MapScreen
         ui.Text(ui.Fit((house != "" ? house + ", " : "") + realm, lw), lx, y, Style.Dim, 1); y += ui.U(13);
         ui.Text(ui.Fit(string.Join(", ", ch.Traits).ToUpperInvariant() + $"  AGE {ch.Age}", lw), lx, y, Style.Dim, 1); y += ui.U(15);
         float op = C.OpinionOfYou(ch);
-        ui.Text($"THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})", lx, y, OpinionColor(op), 1); y += ui.U(13);
-        foreach (var m in C.MemoriesOf(ch, C.Me).Take(2))
+        // What he thinks of you as one chip; why, his family and his bonds on hover (docs/PLAYTEST.md PT2f).
+        y += ui.U(2);
+        var oc = new Rectangle(lx, y, ui.Chip(lx, y, $"{Regard(op)} ({op:+0;-0;0})", OpinionColor(op), "heart"), ui.U(13));
+        if (ui.Hover(oc))
         {
-            ui.Text(ui.Fit($"{m.What.ToUpperInvariant()} ({m.Weight:+0;-0})", lw), lx + ui.U(6), y, Style.Dim, 1); y += ui.U(12);
+            var why = C.MemoriesOf(ch, C.Me).Take(4).Select(m => $"{m.What.ToUpperInvariant()} ({m.Weight:+0;-0})").ToList();
+            foreach (var extra in new[] { C.FamilyLine(ch), C.BondsLine(ch) }.Where(l => l != "")) why.Add(extra.ToUpperInvariant());
+            note = $"THINKS {OpinionWord(op)} OF YOU" + (why.Count > 0 ? ": " + string.Join(". ", why) : ".");
         }
-        string fam = C.FamilyLine(ch), bonds = C.BondsLine(ch);
-        foreach (var line in new[] { fam, bonds, ch.WantKnown && ch.Want != "" ? "WANTS: " + C.WantText(ch) : "" }.Where(l => l != ""))
+        y += ui.U(21);
+        foreach (var line in new[] { ch.WantKnown && ch.Want != "" ? "WANTS: " + C.WantText(ch) : "" }.Where(l => l != ""))
             foreach (var w in ui.Wrap(line.ToUpperInvariant(), lw).Take(2)) { if (y > r.Bottom - ui.U(70)) break; ui.Text(w, lx, y, Kit.Gilt, 1); y += ui.U(12); }
 
         // Right: what he says, and the topics.
         int rx = lx + lw + ui.U(24), rw = r.Right - ui.U(24) - rx, ry = ly;
         ui.Rect(new Rectangle(rx, ry, rw, ui.U(64)), Color.White * 0.04f);
         int ty = ry + ui.U(8);
-        foreach (var w in ui.Wrap("\"" + talkSaid + "\"", rw - ui.U(16), 2).Take(3)) { ui.Text(w, rx + ui.U(8), ty, Style.Text, 2); ty += ui.U(18); }
+        ui.Rect(new Rectangle(rx, ry, ui.U(3), ui.U(64)), Kit.Gilt);
+        foreach (var w in ui.Wrap(talkSaid, rw - ui.U(24), 2).Take(3)) { ui.Text(w, rx + ui.U(14), ty, Style.Text, 2); ty += ui.U(18); }
         ry += ui.U(76);
         string group = "";
         int bx = rx, bw = (rw - ui.U(16)) / 3, bh = ui.U(24);
@@ -87,6 +93,12 @@ sealed partial class MapScreen
             bx += bw + ui.U(8);
         }
         ry += bh + ui.U(12);
+        var barred = C.TopicsFor(ch).Select(t => C.CannotAsk(ch, t.Id)).ToList();
+        if (barred.Count > 0 && barred.All(w => w != null))
+        {
+            string why = barred.GroupBy(w => w).OrderByDescending(g => g.Count()).First().Key!;
+            foreach (var w in ui.Wrap("HE WILL NOT HEAR YOU: " + why.ToUpperInvariant(), rw)) { ui.Text(w, rx, ry, Style.Warn, 1); ry += ui.U(12); }
+        }
         if (talkTopic != "" && C.CannotAsk(ch, talkTopic) == null) Arguments(ch, rx, ry, rw);
         Note(r);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(90), r.Bottom - ui.U(40), ui.U(180), ui.U(30)), "LEAVE")) LeaveTalk();

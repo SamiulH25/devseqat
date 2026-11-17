@@ -26,7 +26,7 @@ public enum Act
     // battle quality of life (docs/archive/COMBAT_QOL.md)
     Merge, Slower, Faster, Relieve, SplitCompany, StandingOrder,
     // campaign map panels (later additions)
-    LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen, InventoryScreen,
+    LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen, InventoryScreen, QuestsScreen,
     // sergeants (docs/SERGEANTS.md)
     Horn, AnswerA, AnswerB,
 }
@@ -122,7 +122,7 @@ public sealed class Controls
         [Act.Horn] = new[] { "TILDE" }, [Act.AnswerA] = new[] { "F6" }, [Act.AnswerB] = new[] { "F7" },
         [Act.LordsScreen] = new[] { "L" }, [Act.SkillsScreen] = new[] { "K" }, [Act.RealmScreen] = new[] { "R" },
         [Act.DivisionsScreen] = new[] { "V" }, [Act.AtlasScreen] = new[] { "M" }, [Act.SiegeScreen] = new[] { "B" },
-        [Act.InventoryScreen] = new[] { "I" },
+        [Act.InventoryScreen] = new[] { "I" }, [Act.QuestsScreen] = new[] { "J" },
     };
 
     public static readonly Dictionary<Act, string> Labels = new()
@@ -144,7 +144,7 @@ public sealed class Controls
         [Act.Slower] = "BATTLE SLOWER", [Act.Faster] = "BATTLE FASTER", [Act.Relieve] = "RELIEVE (FRESH TAKES THE TIRED'S PLACE)", [Act.SplitCompany] = "SPLIT A COMPANY IN TWO", [Act.StandingOrder] = "STANDING ORDER (CYCLE)",
         [Act.Horn] = "SOUND THE HORN (SERGEANTS' PLANS)", [Act.AnswerA] = "ANSWER A SERGEANT: FIRST CHOICE", [Act.AnswerB] = "ANSWER A SERGEANT: SECOND CHOICE",
         [Act.LordsScreen] = "LORDS AND COMPANIONS (MAP)", [Act.SkillsScreen] = "THE CAPTAIN (MAP)", [Act.RealmScreen] = "THE REALMS (MAP)",
-        [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)", [Act.InventoryScreen] = "KIT AND BAGGAGE (MAP)",
+        [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)", [Act.InventoryScreen] = "KIT AND BAGGAGE (MAP)", [Act.QuestsScreen] = "QUESTS (MAP)",
     };
 
     public Controls()

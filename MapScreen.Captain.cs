@@ -84,72 +84,76 @@ partial class MapScreen
     /// Each skill as a ring with its perks beneath as nodes: gold when taken, lit when one may be taken now, dark when locked.
     void SkillTree(Rectangle c)
     {
+        // Two levels (docs/PLAYTEST.md PT2d): the ten skills as rings at the top (click one), and the picked skill's perks
+        // below as rows that say what each does and whether you can take it, so nothing needs a hover to be read.
         var cap = C.Captain;
-        int n = Skills.All.Count, cols = n > 8 ? 5 : 4, rows = (n + cols - 1) / cols;
-        int bw = c.Width / cols, bh = c.Height / Math.Max(1, rows);
-        (Rectangle Node, PerkDef Perk, SkillDef Skill, int State)? tip = null;
-        (Rectangle Box, SkillDef Skill)? skillTip = null;
+        int n = Skills.All.Count, cols = 5, rows = (n + cols - 1) / cols;
+        if (skillPick == null || Skills.All.All(k => k.Id != skillPick))
+            skillPick = (Skills.All.FirstOrDefault(k => Skills.Picks(cap, k.Id) > 0) ?? Skills.All[0]).Id;
+        int bw = c.Width / cols, bh = ui.U(66);
         for (int i = 0; i < n; i++)
         {
             var sk = Skills.All[i];
             var box = new Rectangle(c.X + i % cols * bw, c.Y + i / cols * bh, bw, bh);
             float lv = C.Skill(sk.Id);
             int open = Skills.Picks(cap, sk.Id);
-            float rr = Math.Min(ui.U(22), bw / 5f);
+            bool on = sk.Id == skillPick, over = ui.Hover(box);
+            if (on || over) ui.Rect(Kit.Inset(box, ui.U(2)), Color.White * (on ? 0.07f : 0.04f));
+            if (on) ui.Frame(Kit.Inset(box, ui.U(2)), Kit.Gilt, ui.U(2));
+            float rr = ui.U(16);
             var centre = new Vector2(box.Center.X, box.Y + rr + ui.U(6));
             ui.Ring(centre, rr, lv / Skills.Max, open > 0 ? Kit.Gilt : Style.Friendly, $"{lv:0}");
-            var ringBox = new Rectangle((int)(centre.X - rr), (int)(centre.Y - rr), (int)(2 * rr), (int)(2 * rr));
-            if (ui.Hover(ringBox)) skillTip = (ringBox, sk);
-            ui.TextC(sk.Name.ToUpperInvariant(), box.Center.X, centre.Y + rr + ui.U(8), open > 0 ? Kit.Gilt : Style.Text, 1);
-            int ty = (int)(centre.Y + rr) + ui.U(20);
-            if (open > 0) ui.TextC($"{open} TO CHOOSE", box.Center.X, ty, Kit.Gilt, 1);
-            else ui.TextC($"NEXT AT {((int)(lv / Skills.Step) + 1) * (int)Skills.Step}", box.Center.X, ty, Style.Dim * 0.7f, 1);
-
-            // The branch (P3): tier I-III perks two by two, the capstone centred below them.
-            // Room under each node for a name of two lines.
-            int node = Math.Clamp((bh - (ty - box.Y) - ui.U(20)) / 3 - ui.U(22), ui.U(18), ui.U(38)), ic = node >= ui.U(32) ? 2 : 1;
-            int gx = Math.Max(ui.U(16), bw / 2 - node), gy = ui.U(22), nx0 = box.Center.X - node - gx / 2, ny0 = ty + ui.U(14);
-            for (int k = 0; k < sk.Perks.Count && k < 5; k++)
-            {
-                var pk = sk.Perks[k];
-                bool has = cap.Perks.Contains(pk.Id), cap4 = Skills.Capstone(sk, pk);
-                int state = has ? 2 : Skills.Locked(cap, sk, pk) == null ? 1 : 0;
-                var nr = cap4 ? new Rectangle(box.Center.X - node / 2, ny0 + 2 * (node + gy), node, node)
-                    : new Rectangle(nx0 + k % 2 * (node + gx), ny0 + k / 2 * (node + gy), node, node);
-                bool hover = ui.Hover(nr);
-                ui.Rect(new Rectangle(nr.X + ui.U(2), nr.Y + ui.U(3), nr.Width, nr.Height), Color.Black * 0.4f);
-                ui.VGrad(nr, state == 2 ? Kit.Mul(Kit.Gilt, 0.6f) : state == 1 ? new Color(46, 46, 52) : new Color(24, 24, 28), state == 2 ? Kit.Mul(Kit.Gilt, 0.25f) : Kit.IronDark, 1);
-                ui.Frame(nr, state == 2 ? Kit.Gilt : state == 1 ? (hover ? Kit.Gilt : Style.Text * 0.7f) : cap4 ? Kit.Gilt * 0.35f : Color.Black * 0.6f, ui.U(cap4 ? 2 : 1));
-                string icon = cap4 ? "crown" : SkillIcons.TryGetValue(sk.Id, out var si) ? si : "star";
-                ui.Icon(icon, nr.X + (node - ui.U(7 * ic)) / 2, nr.Y + (node - ui.U(7 * ic)) / 2, state == 2 ? Color.White : state == 1 ? Style.Text : Style.Dim * 0.4f, ic);
-                string label = pk.Name.ToUpperInvariant();
-                var shown = NameLines(label, node + gx - ui.U(4));
-                int most = cap4 ? 3 : 2; // nothing sits under the capstone, so its name may take a third line
-                for (int li = 0; li < Math.Min(most, shown.Count); li++)
-                    ui.TextFitC(li == most - 1 && shown.Count > most ? string.Join(" ", shown.Skip(li)) : shown[li], nr.Center.X, nr.Bottom + ui.U(3 + 9 * li), node + gx - ui.U(4),
-                        state == 0 ? Style.Dim * 0.5f : state == 2 ? Kit.Gilt : Style.Text, 1);
-                if (hover) tip = (nr, pk, sk, state);
-                if (state == 1 && ui.Clicked(nr)) { note = C.TakePerk(pk.Id) ?? $"{label} LEARNED"; Ui.OnClick?.Invoke(); }
-                // A taken perk can be forgotten in a town: the first click asks, the second pays.
-                if (state == 2 && ui.Clicked(nr))
-                {
-                    if (forgetAsk != pk.Id) { forgetAsk = C.CannotForget(pk.Id) == null ? pk.Id : null; note = C.CannotForget(pk.Id) is string w ? $"TO FORGET: {w}" : $"CLICK AGAIN TO FORGET {label}"; }
-                    else { note = C.ForgetPerk(pk.Id) ?? $"{label} FORGOTTEN"; forgetAsk = null; }
-                    Ui.OnClick?.Invoke();
-                }
-            }
+            ui.TextC(sk.Name.ToUpperInvariant(), box.Center.X, centre.Y + rr + ui.U(5), open > 0 || on ? Kit.Gilt : Style.Text, 1);
+            if (open > 0) ui.TextC($"{open} TO CHOOSE", box.Center.X, centre.Y + rr + ui.U(15), Kit.Gilt, 1);
+            if (!on && ui.Clicked(box)) { skillPick = sk.Id; forgetAsk = null; note = ""; }
         }
-        if (skillTip is var (sr, sd))
-            ui.Tooltip(sr.Center.X, sr.Y - ui.U(2), sd.Name.ToUpperInvariant(), ui.Wrap($"RISES BY {sd.Rises}.", ui.U(170)).Concat(ui.Wrap($"{sd.Governs}.", ui.U(170))).ToArray());
-        if (tip is var (tr, tp, ts, tst))
+        var pick = Skills.All.First(k => k.Id == skillPick);
+        int y = c.Y + rows * bh + ui.U(6);
+        ui.Divider(c.X, y, c.Width, Kit.Gilt * 0.5f);
+        y += ui.U(8);
+        float plv = C.Skill(pick.Id);
+        ui.Text(pick.Name.ToUpperInvariant(), c.X, y, Kit.Gilt, 2);
+        ui.TextR(Skills.Picks(cap, pick.Id) > 0 ? $"{Skills.Picks(cap, pick.Id)} TO CHOOSE" : $"NEXT PERK AT {((int)(plv / Skills.Step) + 1) * (int)Skills.Step}", c.Right, y + ui.U(4), Skills.Picks(cap, pick.Id) > 0 ? Kit.Gilt : Style.Dim, 1);
+        y += ui.U(18);
+        ui.TextFit($"RISES BY {pick.Rises}. {pick.Governs}.", c.X, y, c.Width, Style.Dim, 1);
+        y += ui.U(14);
+        int rh = Math.Min(ui.U(44), (c.Bottom - y) / Math.Max(1, Math.Min(5, pick.Perks.Count)));
+        for (int k = 0; k < pick.Perks.Count && k < 5; k++)
         {
-            var lines = ui.Wrap(tp.Text.ToUpperInvariant(), ui.U(170)).ToList();
-            if (tst == 2) lines.Add(C.CannotForget(tp.Id) == null ? $"CLICK TWICE TO FORGET IT FOR {C.RetrainCost} CROWNS." : "FORGET IT IN A TOWN, FOR GOLD.");
-            lines.Add(tst == 2 ? "TAKEN." : tst == 1 ? "CLICK TO TAKE IT." : (Skills.Locked(cap, ts, tp) ?? "") + ".");
-            int tier = Skills.TierOf(ts, tp);
-            ui.Tooltip(tr.Center.X, tr.Y - ui.U(2), $"{tp.Name.ToUpperInvariant()} . {(tier == 4 ? "CAPSTONE" : "TIER " + Style.Numerals[tier])}", lines.ToArray());
+            var pk = pick.Perks[k];
+            bool has = cap.Perks.Contains(pk.Id), cap4 = Skills.Capstone(pick, pk);
+            string? locked = has ? null : Skills.Locked(cap, pick, pk);
+            int state = has ? 2 : locked == null ? 1 : 0;
+            var row = new Rectangle(c.X, y, c.Width, rh - ui.U(4));
+            bool over = ui.Hover(row);
+            ui.Rect(row, state == 2 ? Kit.Gilt * 0.14f : Color.White * (over && state != 0 ? 0.08f : 0.035f));
+            ui.Frame(row, state == 2 ? Kit.Gilt * 0.7f : state == 1 ? Kit.Gilt : Color.Black * 0.5f, ui.U(state == 1 ? 2 : 1)); // every perk you can take is framed gold
+            string icon = cap4 ? "crown" : SkillIcons.TryGetValue(pick.Id, out var si) ? si : "star";
+            ui.Icon(icon, row.X + ui.U(8), row.Y + (row.Height - ui.U(14)) / 2, state == 2 ? Kit.Gilt : state == 1 ? Style.Text : Style.Dim * 0.5f, 2);
+            int tx = row.X + ui.U(30), tier = Skills.TierOf(pick, pk), right = ui.U(150);
+            string label = pk.Name.ToUpperInvariant();
+            ui.Text(label, tx, row.Y + ui.U(5), state == 0 ? Style.Dim : state == 2 ? Kit.Gilt : Style.Text, 1);
+            ui.Text(tier == 4 ? "CAPSTONE" : "TIER " + Style.Numerals[tier], tx + ui.TW(label, 1) + ui.U(8), row.Y + ui.U(5), Style.Dim * 0.8f, 1);
+            var lines = ui.Wrap(pk.Text.ToUpperInvariant(), row.Width - ui.U(30) - right);
+            for (int li = 0; li < Math.Min(2, lines.Count); li++)
+                ui.Text(li == 1 && lines.Count > 2 ? ui.Fit(lines[1] + " " + lines[2], row.Width - ui.U(30) - right) : lines[li], tx, row.Y + ui.U(17 + 10 * li), state == 0 ? Style.Dim * 0.7f : Style.Dim, 1);
+            string what = state == 2 ? (forgetAsk == pk.Id ? "CLICK AGAIN TO FORGET" : "TAKEN") : state == 1 ? "CLICK TO TAKE" : (locked ?? "").ToUpperInvariant();
+            foreach (var (l, i) in ui.Wrap(what, right - ui.U(12)).Take(2).Select((l, i) => (l, i)))
+                ui.TextR(l, row.Right - ui.U(8), row.Y + ui.U(5 + 10 * i), state == 1 ? Kit.Gilt : state == 2 ? Kit.Gilt * 0.8f : Style.Dim * 0.8f, 1);
+            if (state == 1 && ui.Clicked(row)) { note = C.TakePerk(pk.Id) ?? $"{label} LEARNED"; Ui.OnClick?.Invoke(); }
+            // A taken perk can be forgotten in a town: the first click asks, the second pays.
+            if (state == 2 && ui.Clicked(row))
+            {
+                if (forgetAsk != pk.Id) { forgetAsk = C.CannotForget(pk.Id) == null ? pk.Id : null; note = C.CannotForget(pk.Id) is string w ? $"TO FORGET: {w}" : $"CLICK AGAIN TO FORGET {label} FOR {C.RetrainCost} CROWNS"; }
+                else { note = C.ForgetPerk(pk.Id) ?? $"{label} FORGOTTEN"; forgetAsk = null; }
+                Ui.OnClick?.Invoke();
+            }
+            y += rh;
         }
     }
+
+    /// The skill whose perks the captain sheet shows (click its ring).
+    string? skillPick;
 
     /// The aura (docs/archive/KNIGHT_ORDERS.md 5): tier, XP to the next, the wall and what the tier gives. Returns the next y.
     int AuraBlock(Rectangle c, int y)
@@ -323,44 +327,4 @@ partial class MapScreen
         if (cap.Perks.Count == 0) foreach (var l in ui.Wrap("NONE YET. SKILLS RISE BY USE; EVERY 25 POINTS OPENS A PERK ON THAT BRANCH.", c.Width)) { ui.Text(l, c.X, y, Style.Dim * 0.8f, 1); y += ui.U(11); }
     }
 
-    /// A perk name in lines of `width`, a word too long for one line split with a hyphen (QUARTER- MASTER) rather than cut short.
-    List<string> NameLines(string label, int width)
-    {
-        var lines = new List<string>();
-        string line = "";
-        foreach (var word in label.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-        {
-            string w = word;
-            while (ui.TW(w, 1) > width && w.Length > 5)
-            {
-                int k = Breaks(w);
-                while (k > 3 && ui.TW(w[..k] + "-", 1) > width) k--;
-                if (line != "") { lines.Add(line); line = ""; }
-                lines.Add(w[k - 1] == '-' ? w[..k] : w[..k] + "-");
-                w = w[k..];
-            }
-            string joined = line == "" ? w : line + " " + w;
-            if (line != "" && ui.TW(joined, 1) > width) { lines.Add(line); line = w; }
-            else line = joined;
-        }
-        if (line != "") lines.Add(line);
-        return lines;
-    }
-
-    static readonly string[] Endings = { "MASTER", "CRAFT", "BREAKER", "KEEPER", "SMITH", "MAKER", "SETTER", "SHIP", "MAN" };
-
-    /// Where to break a long word: after its own hyphen, before a familiar ending, between two consonants near the middle
-    /// (TAC-TICIAN, CASTEL-LAN), else in the middle.
-    static int Breaks(string w)
-    {
-        int dash = w.IndexOf('-');
-        if (dash > 0 && dash < w.Length - 1) return dash + 1;
-        foreach (var e in Endings) if (w.Length > e.Length + 2 && w.EndsWith(e)) return w.Length - e.Length;
-        static bool Consonant(char c) => char.IsLetter(c) && !"AEIOUY".Contains(c);
-        int mid = (w.Length + 1) / 2;
-        for (int d = 0; d <= 2; d++)
-            foreach (int k in new[] { mid - d, mid + d })
-                if (k >= 3 && k <= w.Length - 3 && Consonant(w[k - 1]) && Consonant(w[k])) return k;
-        return mid;
-    }
 }

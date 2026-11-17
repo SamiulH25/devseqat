@@ -150,7 +150,7 @@ All eight phases shipped. What was built, and where it differs from the plan:
 
 - **LD0 houses and kin** (`Campaign/Houses.cs`): as planned. Houses keep at most 8 living members and a birth comes with a 25%
   chance a year, so families stay readable. Kin have their own dice (`KRng`) so a run's battles do not shift when a child is born.
-- **LD1 portraits** (`PortraitPainter.cs`): painted 48x60 busts on the house's arms, derived from the character and never saved.
+- **LD1 portraits** (`PortraitPainter.cs`, painted by `Bust` in `PortraitBust.cs`; overhauled 2026-11-16 from flat 48x60 busts): painted 96x120 busts on the house's arms, the head modelled as a lit height field in six tones, derived from the character and never saved.
   Shown on the L screen rows, the encounter panel, the talk screen and the hall.
 - **LD2 bonds** (`Campaign/LordBonds.cs`): kin +20 and feud -40 sit in `BaseOpinion`; friend and rival are read from opinion (40 and
   -35). A feud starts only when a lord falls to another lord's men (not yours: you get the memory instead), passes to heirs with

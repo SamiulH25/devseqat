@@ -33,25 +33,37 @@ static class Tips
         queue.RemoveAt(i);
     }
 
-    /// Draw the current tip above the bottom of the screen; `bottom` is the space to leave free below it.
+    /// Draw the current tip docked at the right edge, its bottom `bottom` above the screen's: a narrow card out of the middle of
+    /// the view (docs/PLAYTEST.md PT2a), so it never covers the men or the map you are reading.
     public static void Draw(Ui ui, int bottom)
     {
         if (!Active) return;
-        DrawAt(ui, ui.H - bottom - Height(ui));
+        int w = ui.U(300);
+        var lines = Lines(ui, w - ui.U(24));
+        int h = Height(ui, lines);
+        Card(ui, new Rectangle(ui.W - w - ui.U(10), ui.H - bottom - h, w, h), lines);
     }
 
-    static int Height(Ui ui) => queue[Current].Text.Split('\n').Length * ui.U(14) + ui.U(52);
+    /// The tip's text re-wrapped to the card: the line breaks in the text were written for a wide box, so they become spaces.
+    static List<string> Lines(Ui ui, int w) => ui.Wrap(queue[Current].Text.ToUpperInvariant().Replace('\n', ' '), w);
+
+    static int Height(Ui ui, List<string> lines) => lines.Count * ui.U(11) + ui.U(46);
 
     /// Draw the current tip with its top at `top` (over an open panel: at the top of the screen, clear of its buttons).
     public static void DrawAt(Ui ui, int top)
     {
         if (!Active) return;
-        var lines = queue[Current].Text.ToUpperInvariant().Split('\n');
-        int w = lines.Max(l => ui.TW(l, 1)) + ui.U(40), h = Height(ui);
-        var r = new Rectangle((ui.W - w) / 2, top, w, h);
+        int w = ui.U(420);
+        var lines = Lines(ui, w - ui.U(24));
+        Card(ui, new Rectangle((ui.W - w) / 2, top, w, Height(ui, lines)), lines);
+    }
+
+    static void Card(Ui ui, Rectangle r, List<string> lines)
+    {
+        ui.Rect(r, Kit.IronDark); // solid: nothing on the field shows through the words
         ui.Panel(r, Style.Accent);
         ui.Text("TIP", r.X + ui.U(12), r.Y + ui.U(8), Style.Accent, 1);
-        for (int i = 0; i < lines.Length; i++) ui.Text(lines[i], r.X + ui.U(20), r.Y + ui.U(22) + i * ui.U(14), Style.Text, 1);
-        if (ui.Button(new Rectangle(r.Right - ui.U(130), r.Bottom - ui.U(26), ui.U(120), ui.U(20)), "GOT IT (ENTER)")) Dismiss();
+        for (int i = 0; i < lines.Count; i++) ui.Text(lines[i], r.X + ui.U(12), r.Y + ui.U(21) + i * ui.U(11), Style.Text, 1);
+        if (ui.Button(new Rectangle(r.Right - ui.U(110), r.Bottom - ui.U(22), ui.U(100), ui.U(16)), "GOT IT", true, "ENTER")) Dismiss();
     }
 }

@@ -289,6 +289,7 @@ public partial class Campaign
             Ground = GroundFor(enemy, GroundChooser(enemy, setup.Side0)), // the map's field, the rain, who chose it (Ground.cs)
             EnemyAggression = SideOf(enemy) >= 0 ? Factions.Get(SideOf(enemy)).Aggression : 1.5f, // a realm's temper; brigands do not wait long
             Grudge = GrudgeOf(enemy), // he comes for you himself (Grudges.cs)
+            LeaderTraits = enemy.Kind == PartyKind.Lord && CharacterOf(enemy) is Character lord ? lord.Traits.ToArray() : Array.Empty<string>(), // he fights as he is (BattleNature.cs)
             EnemyLeader = LeaderOf(enemy), // a monster host is led by one of its own, not a man (Beasts.cs)
             EnemyAura = ChampionAura(enemy), EnemyForms = ChampionFormsOf(enemy), Madness = MadnessInBattle, // an order knight leads with his aura (K6)
             Weather = WeatherFor(enemy),

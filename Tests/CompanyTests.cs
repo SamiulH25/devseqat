@@ -140,6 +140,35 @@ public static partial class SelfTest
         Check(lad!.Nature == ways, "a lad whose master fell takes his nature");
     }
 
+    /// Sending some men of a stack to another company: the men and their share of the pool go, the rest stay; no room
+    /// and the wrong kind are refused; sending every man moves the stack and an emptied company is struck off.
+    static void MoveMenBetween()
+    {
+        var c = Campaign.New(77);
+        var a = c.Player.Companies[0];
+        string? err = c.Split(a);
+        Check(err == null, "a company splits in two: " + err);
+        var b = c.Player.Companies[1];
+        var st = a.Stacks[0];
+        st.Xp = st.PoolCap * 0.5f;
+        int menA = a.Men, menB = b.Men, all = c.Player.Men;
+        float pool = st.Xp + b.Stack(st.Troop).Xp;
+        Check(c.MoveMen(a, st, b, 5) == null, "five men go over");
+        Check(a.Men == menA - 5 && b.Men == menB + 5 && c.Player.Men == all, "five left one company and joined the other, none lost");
+        Check(MathF.Abs(st.Xp + b.Stack(st.Troop).Xp - pool) < 1f, "their share of the XP pool went with them");
+        Check(c.MoveMen(a, st, a, 1) != null, "not into the same company");
+        Check(c.MoveMen(a, st, b, 0) != null, "not no men at all");
+        b.Stack(st.Troop).Men += 400; // far past its places
+        Check(c.MoveMen(a, st, b, 3) == "NO ROOM", "a full company takes no more");
+        b.Stack(st.Troop).Men -= 400;
+        int left = st.Men, count = c.Player.Companies.Count;
+        if (a.Stacks.Count == 1 && st.Wounded == 0 && Rules.Room(b, st.Troop) >= left)
+        {
+            Check(c.MoveMen(a, st, b, left) == null, "the last men go over");
+            Check(c.Player.Companies.Count == count - 1 && c.Player.Men == all, "the emptied company is struck off, no man lost");
+        }
+    }
+
     /// C4: your hand on the roll. Each action's refusals and effects; the unanswered sergeant choice falls back to the risen
     /// man; what you did survives a save.
     static void RollChoices()
@@ -225,5 +254,17 @@ public static partial class SelfTest
         var back = new Campaign(CampaignState.Deserialize(c.S.Serialize()));
         var h2 = back.Player.Companies.SelectMany(k => k.Roll).First(m => m.Id == hero.Id);
         Check(h2.Mentions == 3 && h2.Carries == hero.Carries && back.S.Pensioned.Contains(home), "mentions, arms and pensions survive a save");
+    }
+
+    /// Every cursor shape builds, has its hot spot on the shape, an iron outline and some colour inside it.
+    static void CursorsBuild()
+    {
+        foreach (var k in Enum.GetValues<CursorKind>())
+        {
+            var s = Cursors.Of(k);
+            Check(s.Pixels.Length == s.W * s.H && s.W <= 24 && s.H <= 24, $"{k} cursor is a small sprite");
+            Check(s.Hot.X > 0 && s.Hot.Y > 0 && s.Hot.X < s.W - 1 && s.Hot.Y < s.H - 1, $"{k} cursor's hot spot is inside it");
+            Check(s.Pixels.Count(c => c.A > 0) > 40 && s.Pixels.Any(c => c.A > 0 && c.R < 30), $"{k} cursor has body and outline");
+        }
     }
 }

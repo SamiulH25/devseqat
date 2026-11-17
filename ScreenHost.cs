@@ -37,7 +37,18 @@ sealed class ScreenHost : Game
     // Debug: IRONFIELD_CAMPAIGN_SHOTS=/dir walks through the campaign screens, saving a PNG of each, then quits.
     readonly string? campaignShots = Environment.GetEnvironmentVariable("IRONFIELD_CAMPAIGN_SHOTS") is { Length: > 0 } cs ? cs : null;
     int cStage, shotFrames;
-    bool shotInventory;
+    bool shotInventory; bool shotMarket; bool shotQuests; bool shotQuestMap;
+    int townShot;
+    static readonly (string Name, string Tab, string Where)[] TownShots =
+    {
+        ("town-train", "TRAIN", "town"), ("town-recruit", "RECRUIT", "town"), ("town-hire", "MERCENARIES", "town"), ("town-tavern", "TAVERN", "town"),
+        ("town-market", "MARKET", "town"), ("town-workshop", "WORKSHOP", "town"), ("town-food", "FOOD", "town"), ("town-rest", "REST", "town"),
+        ("town-hall", "HALL", "town"), ("town-armourer", "ARMOURER", "town"), ("castle-esquires", "ESQUIRES", "castle"), ("town-captives", "CAPTIVES", "town"), ("town-contract", "CONTRACT", "town"), ("castle-rest", "REST", "castle"), ("castle-contract", "CONTRACT", "castle"),
+        ("village-recruit", "RECRUIT", "village"), ("village-forage", "FORAGE", "village"), ("village-elders", "ELDERS", "village"),
+        ("fief-fief", "FIEF", "fief"), ("fief-garrison", "GARRISON", "fief"), ("upgrade-tree", "UPGRADE", "town"), ("party-board", "PARTY", "town"),
+    };
+    /// Debug: with IRONFIELD_TOWN_ONLY=1 a campaign shots run saves only the settlement screen's tabs (`town-*.png` and the like).
+    static readonly bool townOnly = Environment.GetEnvironmentVariable("IRONFIELD_TOWN_ONLY") == "1";
     string? pendingShot;
     KeyboardState kb;
     MouseState ms;
@@ -87,6 +98,11 @@ sealed class ScreenHost : Game
         if (Environment.GetEnvironmentVariable("IRONFIELD_ANIM") is { Length: > 0 } animDir)
         {
             AnimSheet.Write(GraphicsDevice, Art, animDir, Environment.GetEnvironmentVariable("IRONFIELD_ANIM_ONLY") ?? ""); // debug: the animation strips
+            Environment.Exit(0);
+        }
+        if (Environment.GetEnvironmentVariable("IRONFIELD_TROOPS") is { Length: > 0 } troopDir)
+        {
+            TroopSheet.Write(GraphicsDevice, Art, troopDir); // debug: every troop as a transparent PNG
             Environment.Exit(0);
         }
         Font = new PixelFont(GraphicsDevice);
@@ -291,9 +307,40 @@ sealed class ScreenHost : Game
         FrameProf.End("update");
     }
 
+    bool wantCursor;
+    /// Linux draws its own cursor: on some Fedora sessions (Wayland, a missing cursor theme) SDL's system cursor never shows,
+    /// and the whole UI is mouse driven. `IRONFIELD_SYSTEM_CURSOR=1` goes back to the system one.
+    static readonly bool SoftCursor = OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("IRONFIELD_SYSTEM_CURSOR") != "1";
+
+    /// The game's own cursor (docs/DEVELOPING.md, "The cursor"): the shape comes from what the mouse would do, set by the
+    /// screen as `Cursors.Want` (battle: attack, move, select, aim, cast, box, turn; map: attack, move, hand), a button under
+    /// the mouse makes it the gauntlet, loading shows the hourglass. Drawn in whole pixels over everything, with a soft shadow,
+    /// a little darker while the left button is held.
+    void DrawCursor()
+    {
+        var want = Cursors.Want;
+        Cursors.Want = CursorKind.Pointer;
+        if (!SoftCursor || !wantCursor || !IsActive) return;
+        var m = Mouse.GetState();
+        var vp = GraphicsDevice.Viewport;
+        if (!vp.Bounds.Contains(m.Position)) return;
+        var kind = mode == Mode.Loading ? CursorKind.Wait : want == CursorKind.Pointer && Ui.OverButton ? CursorKind.Hand : want;
+        var shape = Cursors.Of(kind);
+        var tex = Cursors.Texture(GraphicsDevice, kind);
+        int u = Math.Max(2, vp.Height / 360);
+        bool down = m.LeftButton == ButtonState.Pressed;
+        var at = new Point(m.X - shape.Hot.X * u, m.Y - shape.Hot.Y * u + (down ? u : 0));
+        Sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp);
+        Sb.Draw(tex, new Rectangle(at.X + u, at.Y + u, shape.W * u, shape.H * u), Color.Black * 0.32f);
+        Sb.Draw(tex, new Rectangle(at.X, at.Y, shape.W * u, shape.H * u), down ? new Color(200, 200, 200) : Color.White);
+        Sb.End();
+    }
+
     protected override void Draw(GameTime gameTime)
     {
         FrameProf.Begin("draw");
+        wantCursor = IsMouseVisible; // the cursor is drawn by the game on Linux (see DrawCursor)
+        if (SoftCursor) IsMouseVisible = false;
         Ui.Now = (float)gameTime.TotalGameTime.TotalSeconds;
         Ui.Instant = campaignShots != null || lab.ShotsDir != null || title.ShotsDir != null || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("IRONFIELD_SHOTS"));
         Overflow.Frame(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
@@ -317,6 +364,7 @@ sealed class ScreenHost : Game
         Fade();
         if (SettingsPanel.Open) SettingsPanel.Draw();
         CaptureShot();
+        DrawCursor();
         if (gpuReport != null)
         {
             if (mode != Mode.Battle) QuickBattle();
@@ -426,6 +474,7 @@ sealed class ScreenHost : Game
             pendingShot = "campaign-" + stages[lifeShots]; shotFrames = 0; lifeShots++;
             return;
         }
+        if (townOnly && cStage < 56) cStage = 56;
         switch (cStage)
         {
             case 0: map.Stage("map"); Shot("campaign-map"); break;
@@ -580,6 +629,8 @@ sealed class ScreenHost : Game
                 Shot("campaign-brigand-king");
                 break;
             }
+            case 28 when !shotQuests: c.S.Event = null; map.Stage("quests"); Shot("campaign-quests"); cStage--; shotQuests = true; break; // the quests screen (PT3)
+            case 28 when !shotQuestMap: map.Stage("questmap"); Shot("campaign-quest-map"); cStage--; shotQuestMap = true; break; // and the pinned one on the map
             case 28:
             {
                 c.S.Event = null;
@@ -686,6 +737,7 @@ sealed class ScreenHost : Game
                 break;
             }
             case 38: map.Stage("atlas"); Shot("campaign-atlas"); break;
+            case 39 when !shotMarket: map.Stage("market"); Shot("campaign-market"); cStage--; shotMarket = true; break; // the town's MARKET: horses and goods
             case 39: map.Stage("armourer"); Shot("campaign-armourer"); break; // also stages the pieces the inventory shows
             case 40 when !shotInventory: map.Stage("inventory"); Shot("campaign-inventory"); cStage--; shotInventory = true; break;
             case 40:
@@ -803,6 +855,39 @@ sealed class ScreenHost : Game
                 var castle = c.S.Settlements.First(s => s.Kind == SettlementKind.Castle && s.Faction >= 0);
                 c.Captain.Contract = castle.Faction; c.Captain.Renown = 120; c.S.Gold = 1500; castle.Nobles = c.Scaled(3);
                 map.Stage("esquires", castle); Shot("campaign-esquires"); break;
+            }
+            case 56 when townShot < TownShots.Length:
+            {
+                // Every tab of the settlement screen (docs/PLAYTEST.md PT2), at a town, a castle, a village and a fief of yours,
+                // with something in each: wounded, prisoners, a captive lord, an engine or two.
+                var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction >= 0 && s.Mercenaries.Count > 0);
+                var castle = c.S.Settlements.First(s => s.Kind == SettlementKind.Castle && s.Faction == town.Faction);
+                var village = c.S.Settlements.First(s => s.Kind == SettlementKind.Village && s.Faction == town.Faction);
+                var fief = c.S.Settlements.Last(s => s.Kind == SettlementKind.Town && s.Faction == town.Faction);
+                if (townShot == 0)
+                {
+                    c.Encounter = null; c.S.Event = null; c.Beat = null;
+                    c.Captain.Contract = town.Faction; c.S.Gold = 1500; c.Player.Food = 5;
+                    var main = c.Player.Companies[0].Main!;
+                    main.Wounded = 14; main.Xp = main.PoolCap * 0.7f;
+                    c.Player.Prisoners.Clear();
+                    foreach (var (troop, n) in new[] { ("levies", 23), ("spearmen", 9), ("archers", 6) }) if (Troops.Has(troop)) c.Player.Prisoners.Add(new PrisonerGroup { Troop = troop, Count = n });
+                    if (c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Lord && p.Faction != town.Faction) is Party lord && !c.Player.Captives.Contains(lord.Id)) c.Player.Captives.Add(lord.Id);
+                    foreach (var def in Campaign.TrainDefs.Take(2)) c.Player.Train.Add(def.Id);
+                    fief.Owner = c.Player.Id; fief.Prosperity = 68; fief.Unrest = 34;
+                }
+                var (name, tab, where) = TownShots[townShot++];
+                if (tab == "PARTY")
+                {
+                    // The company board with two divisions made: one company split so there is something to move.
+                    c.Split(c.Player.Companies[0]); c.Split(c.Player.Companies[^1]);
+                    foreach (var l in c.DivisionLeaders().Where(l => l.Company >= 0).Take(2).ToList()) c.MakeDivision(l.Char, l.Company);
+                    if (c.S.Divisions.Count > 0 && c.Player.Companies.FirstOrDefault(k => k.Division < 0) is CompanyRecord free) c.AssignDivision(free, c.S.Divisions[0].Id);
+                    map.Stage("party");
+                }
+                else if (tab == "UPGRADE") { map.Stage("tab:TRAIN", town); map.Stage("upgrade"); } // the promotion screen, in a town where men can be promoted
+                else map.Stage("tab:" + tab, where switch { "castle" => castle, "village" => village, "fief" => fief, _ => town });
+                Shot(name); cStage--; break;
             }
             case 56: Exit(); break;
         }

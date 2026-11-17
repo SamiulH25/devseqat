@@ -136,6 +136,29 @@ public static partial class SelfTest
     }
 
     /// More quests (S3): elders' jobs, escorts, ransoms, rescues, the relic chain; each can be done, and chains move on.
+    /// The quests screen (docs/PLAYTEST.md PT3): offers on a board you have seen are listed, a held quest shows its place, and
+    /// a quest done or failed moves to the history.
+    static void QuestsListed()
+    {
+        var c = Campaign.New(9101);
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && !c.Refuses(s));
+        var board = c.Offers(town).ToList();
+        Check(board.Count > 0 && c.QuestList().Any(q => q.State == "AVAILABLE" && q.Giver.Contains(town.Name)), "a steward's offer is on the list");
+        var visit = new Contract { Id = c.S.NextId++, Kind = "visit", Target = town.Id, Faction = -1, Deadline = (float)c.S.Hours + 100, Reward = 10, Text = "Ride to the town." };
+        var far = c.S.Settlements.Where(s => s.Kind == SettlementKind.Town).OrderByDescending(s => Vector2.Distance(s.Pos, town.Pos)).First();
+        var late = new Contract { Id = c.S.NextId++, Kind = "visit", Target = far.Id, Faction = -1, Deadline = (float)c.S.Hours - 1, Reward = 10, Text = "Too late." };
+        c.S.Contracts.Add(visit);
+        c.S.PinnedQuest = visit.Id;
+        Check(c.QuestList().Any(q => q.State == "ACTIVE" && q.Id == visit.Id && q.Place == town.Pos), "a held quest is listed with its place");
+        c.Player.Pos = town.Pos;
+        c.S.Contracts.Add(late);
+        c.Tick(2);
+        var list = c.QuestList();
+        Check(list.Any(q => q.State == "DONE" && q.Title == visit.Text), "a quest done moves to the history");
+        Check(list.Any(q => q.State == "FAILED" && q.Title == late.Text), "a quest failed moves to the history");
+        Check(c.S.PinnedQuest == -1, "the pin comes off a finished quest");
+    }
+
     static void Quests()
     {
         var c = Campaign.New(9);

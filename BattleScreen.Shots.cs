@@ -7,6 +7,8 @@ namespace Ironfield;
 /// BattleScreen: the staged screenshot script (IRONFIELD_SHOTS).
 partial class BattleScreen
 {
+    bool shotOrders;
+
     void ShotScript()
     {
         var b = battle;
@@ -30,7 +32,20 @@ partial class BattleScreen
             case 4 when b.Time > 20f:
                 camFocus = b.Centroid(0); camYaw = 1.9f; camPitch = 0.9f; zoom = 60;
                 pendingShot = "command-overview"; shotIndex++; break;
-            case 5 when b.Time > 20.5f:
+            case 5 when b.Time > 20.5f && !shotOrders: // orders as pictures (docs/PLAYTEST.md PT4): two companies sent at a foe, bows holding, MORE open
+            {
+                shotOrders = true;
+                var mine = b.Commanded.Where(q => q.Alive > 0).ToList();
+                var foe = b.SquadsOf(1).Where(q => q.Alive > 0).OrderBy(q => Vector2.Distance(q.Centroid(), b.Centroid(0))).First();
+                selected.Clear();
+                foreach (var q in mine.Where(q => q.Units[0].Type.Ammo == 0).OrderBy(q => Vector2.Distance(q.Centroid(), b.Centroid(0))).Take(2)) { q.Order = Order.Charge; q.Target = foe; selected.Add(q); }
+                if (mine.FirstOrDefault(q => q.Units[0].Type.Ammo > 0) is Squad bows) bows.FireAtWill = false;
+                hud.MoreOrders = true;
+                camFocus = b.Centroid(0); camYaw = 1.9f; camPitch = 0.9f; zoom = 60; // as the overview, so the two compare
+                pendingShot = "command-orders"; break;
+            }
+            case 5 when b.Time > 20.5f && pendingShot == null:
+                hud.MoreOrders = false;
                 camFocus = new Vector2(0, -60); camYaw = MathHelper.PiOver2; camPitch = 0.32f; zoom = 90;
                 pendingShot = "landscape"; shotIndex++; break;
             case 6 when b.Time > 21f && groundView != true:

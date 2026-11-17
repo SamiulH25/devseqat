@@ -65,13 +65,13 @@ partial class MapScreen
     {
         float hour = (float)(C.S.Hours % 24);
         // The picture fills the right of the strip; the left is the plate the writing sits on.
-        var pic = new Rectangle(p.X + p.Width / 4, p.Y, p.Width - p.Width / 4, p.Height);
+        var pic = new Rectangle(p.X + p.Width * 2 / 5 - ui.U(10), p.Y, p.Width - p.Width * 2 / 5 + ui.U(10), p.Height);
         if (s.Kind == SettlementKind.Town) Townscape(pic, s, hour);
         else PlaceScene(pic, s, hour);
         // A dark plate on the left for the writing, fading into the picture.
         int pw = p.Width * 2 / 5;
         ui.Rect(new Rectangle(p.X, p.Y, pw, p.Height), Kit.IronDark * 0.9f);
-        ui.HGrad(new Rectangle(p.X + pw, p.Y, p.Width / 6, p.Height), Kit.IronDark * 0.9f, Kit.IronDark * 0f, 2);
+        ui.HGrad(new Rectangle(p.X + pw, p.Y, ui.U(48), p.Height), Kit.IronDark * 0.9f, Kit.IronDark * 0f, 2);
         ui.VGrad(new Rectangle(p.X + pw, p.Bottom - ui.U(24), p.Width - pw, ui.U(24)), Kit.IronDark * 0f, Kit.IronDark * 0.6f, 2);
         int x = p.X + ui.U(14), y = p.Y + ui.U(14);
         ui.Shield(new Rectangle(x, y, ui.U(54), ui.U(65)), Style.Sides[Style.PaletteOf(s.Faction)]);

@@ -47,7 +47,7 @@ public sealed partial class Campaign
         if (CharacterById(c.Giver) is Character ch) return ch.Name;
         if (c.From >= 0 && c.From < S.Settlements.Count) return $"The elders of {S.Settlements[c.From].Name}";
         if (board != null) return $"The steward of {board.Name}";
-        if (c.Faction >= 0 && c.Faction < FactionNames.Length) return $"The {FactionNames[c.Faction]}";
+        if (c.Faction >= 0 && c.Faction < FactionNames.Length) return $"A steward of the {FactionNames[c.Faction]}";
         return "Your own";
     }
 

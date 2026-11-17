@@ -41,17 +41,17 @@ public static class SpriteDump
     }
 
     /// `--portraits out.png [seed]`: the faces of a new campaign's lords and kin (each in all four moods for the first row),
-    /// 3x on one PNG, for checking portrait variety (docs/archive/LORDS.md LD1).
+    /// 2x on one PNG, for checking portrait variety (docs/archive/LORDS.md LD1).
     public static void Portraits(string path, int seed)
     {
-        const int Z = 3, Cols = 12;
+        const int Z = 2, Cols = 10;
         var c = Campaign.New(seed);
         var faces = new List<Face>();
         var lords = c.S.Characters.Where(x => !x.Dead && x.Kind is "lord" or "kin" or "knight").GroupBy(x => x.Faction)
             .SelectMany(g => g.Select((x, i) => (x, i))).OrderBy(p => p.i).ThenBy(p => p.x.Faction).Select(p => p.x).ToList();
         var first = PortraitPainter.Of(c, lords[0]);
         for (int m = 0; m < 4; m++) faces.Add(first with { Mood = m });
-        foreach (var ch in lords.Skip(1).Take(Cols * 5 - 4)) faces.Add(PortraitPainter.Of(c, ch));
+        foreach (var ch in lords.Skip(1).Take(Cols * 4 - 4)) faces.Add(PortraitPainter.Of(c, ch));
         // A last row of named men (docs/COMPANY.md C1): tiers I, III, V and VII, fresh and then scarred.
         while (faces.Count % Cols != 0) faces.Add(faces[0] with { Seed = -1 });
         int id = 40 + seed;

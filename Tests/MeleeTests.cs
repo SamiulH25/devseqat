@@ -285,21 +285,30 @@ public static partial class SelfTest
     /// M4: a veteran company whose ranks broke on the way in steps back, re-forms, and goes in again at the same foe.
     static void Reforms()
     {
-        var b = Battle.Empty(54);
-        var a = b.AddSquad(0, Troops.Get("men_at_arms"), 24, new(0, -20), 8, Vector2.UnitY);
-        var e = b.AddSquad(1, Troops.Get("men_at_arms"), 24, new(0, 20), 8, -Vector2.UnitY);
-        a.Drill = 0.75f;
-        e.HoldInPlace();
-        a.Order = Order.Charge;
-        a.Target = e;
-        Run(b, 1);
-        a.Formed = 0.3f;
-        a.Broken = true;
-        bool fellBack = false;
-        for (int i = 0; i < 60 * 20 && !(fellBack && a.Order == Order.Charge); i++) { b.Update(1 / 60f); fellBack |= a.Plan == Plan.Reform && a.Order == Order.Hold; }
-        Console.WriteLine($"melee: broken veterans fall back {fellBack}, formed {a.Formed:0.00}, going in again {a.Order} at {a.Target?.Name}");
-        Check(fellBack, "broken veterans stop to re-form");
-        Check(a.Order == Order.Charge && a.Target == e && !a.Broken, "then go in again at the same foe");
+        // A broken veteran company that the AI leads steps back to re-form; one you sent in keeps going (PT1).
+        (bool fellBack, bool again, float formed) Charge(bool yours)
+        {
+            var b = Battle.Empty(54);
+            var a = b.AddSquad(0, Troops.Get("men_at_arms"), 24, new(0, -20), 8, Vector2.UnitY);
+            var e = b.AddSquad(1, Troops.Get("men_at_arms"), 24, new(0, 20), 8, -Vector2.UnitY);
+            a.Drill = 0.75f;
+            a.AiControlled = !yours;
+            e.HoldInPlace();
+            a.Order = Order.Charge;
+            a.Target = e;
+            Run(b, 1);
+            a.Formed = 0.3f;
+            a.Broken = true;
+            bool fell = false;
+            for (int i = 0; i < 60 * 20 && !(fell && a.Order == Order.Charge); i++) { b.Update(1 / 60f); fell |= a.Plan == Plan.Reform && a.Order == Order.Hold; }
+            return (fell, a.Order == Order.Charge && a.Target == e, a.Formed);
+        }
+        var ai = Charge(false);
+        var you = Charge(true);
+        Console.WriteLine($"melee: AI veterans fall back {ai.fellBack}, formed {ai.formed:0.00}; your charge falls back {you.fellBack}");
+        Check(ai.fellBack, "broken veterans the AI leads stop to re-form");
+        Check(ai.again, "then go in again at the same foe");
+        Check(!you.fellBack && you.again, "a company you sent in never stops to re-form on the way");
     }
 
     /// M5: veteran horse rally as a body behind their own side after a charge, and go again together; trained horse

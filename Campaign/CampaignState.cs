@@ -620,6 +620,9 @@ public sealed class CampaignState
     public List<FactionState> Factions = new();
     public List<LogEntry> Log = new();
     public List<Contract> Contracts = new();   // the contracts you have accepted
+    /// The quests screen (docs/PLAYTEST.md PT3): finished and failed quests, oldest first; and the one pinned to the HUD (-1: none).
+    public List<QuestRecord> QuestHistory = new();
+    public int PinnedQuest = -1;
     /// Diplomacy (F7): alliances, gold owed under terms, the record of treaties (newest last), and the marshal's summons to you.
     public List<Pact> Pacts = new();
     public List<Payment> Payments = new();

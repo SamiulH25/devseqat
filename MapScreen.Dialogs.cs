@@ -42,8 +42,10 @@ partial class MapScreen
         string tide = C.TideNote(e.Pos); // the well that reaches this field (docs/ARCANA.md AR2)
         if (tide != "") ui.TextR(ui.Fit(tide, ui.U(300)), r.Right - ui.U(24), bar.Bottom + ui.U(20), TideColour(C.TideAt(e.Pos).Tradition), 1);
         if (C.GrudgeOf(e) is { Length: > 0 } grudge) ui.Text(ui.Fit(grudge.ToUpperInvariant(), bar.Width - (tide != "" ? ui.U(310) : 0)), x, bar.Bottom + ui.U(20), Style.Bad, 1); // he comes for you (C13)
+        else if (e.Kind == PartyKind.Lord && C.CharacterOf(e) is Character nch && Nature.Line(nch.Traits) is { Length: > 0 } how)
+            ui.Text(ui.Fit(how, bar.Width - (tide != "" ? ui.U(310) : 0)), x, bar.Bottom + ui.U(20), Kit.Parchment, 1); // how he fights (docs/PLAYTEST.md PT6c): his nature, not a hazard
         if (C.SpellNote(e) is { Length: > 0 } sn) ui.TextR(ui.Fit(sn.ToUpperInvariant(), ui.U(300)), r.Right - ui.U(24), bar.Bottom + ui.U(8), Style.Dim, 1);
-        y += ui.U(76);
+        y += ui.U(84); // room under the notes before the troops
         foreach (var c in e.Companies.Where(c => c.Men > 0).Take(6))
         {
             ui.Portrait(c.Type, new Rectangle(x, y, ui.U(32), ui.U(30)));

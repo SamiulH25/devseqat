@@ -102,7 +102,7 @@ public partial class Battle
 
     /// How long a side holding good ground waits for the enemy to come before it goes to him: a minute and more,
     /// less for an aggressive realm (`BattleOptions.EnemyAggression`, the enemy's temper).
-    float Patience(int team) => Math.Clamp(70 / (team == 1 ? Options.EnemyAggression : 1), 25, 150);
+    float Patience(int team) => Math.Clamp(70 / (team == 1 ? Options.EnemyAggression : 1), 25, 150) * (team == 1 ? Nature.Patience : 1);
 
     /// Is the line at `front` on better ground than the enemy at `foeFront`: clearly higher, or in a wood or village
     /// while they stand in the open?

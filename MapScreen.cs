@@ -8,7 +8,7 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed partial class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory, Quests }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
@@ -124,9 +124,11 @@ sealed partial class MapScreen
     {
         pkb = kb; pms = ms;
         kb = Keyboard.GetState(); ms = Mouse.GetState();
-        time += dt;
+        hover = default;
+        float run = speed == 0 ? 0 : dt; // paused: wind, water, sky, birds, boats and smoke all hold still (PT1, docs/PLAYTEST.md)
+        time += run;
         FrameProf.Begin("mapLife");
-        UpdateLife(dt);
+        UpdateLife(run);
         FrameProf.End("mapLife");
         if (ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released) pendingClick = true;
         if (Pressed(Keys.Enter)) Tips.Dismiss();
@@ -160,7 +162,8 @@ sealed partial class MapScreen
                 else if (CampaignState.LoadError is string err) C.Log("Quicksave not loaded: " + err + ".");
             }
             Camera(dt, active);
-            if (active && pendingClick && !ui.Blocks(ms.Position)) { pendingClick = false; ClickWorld(Ground(ms.Position)); }
+            hover = active && viewReady && panel == PanelKind.None && !ui.Blocks(ms.Position) ? PickAt(ms.Position, true) : default;
+            if (active && viewReady && pendingClick && !ui.Blocks(ms.Position)) { pendingClick = false; ClickWorld(PickAt(ms.Position, false)); }
             FrameProf.Begin("campaignTick");
             if (speed > 0) C.Tick(dt / Balance.Get().HourSeconds * speed);
             FrameProf.End("campaignTick");
@@ -198,7 +201,7 @@ sealed partial class MapScreen
             Trails();
         }
         else if (panel == PanelKind.Help && (ctl.Pressed(Act.Help) || ctl.Pressed(Act.Menu))) panel = PanelKind.None;
-        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll)
+        else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Quests)
             panel = panel is PanelKind.Upgrade or PanelKind.Roll ? PanelKind.Party : panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Siege ? PanelKind.None : CameFrom(panel);
         if (renaming != null) Rename();
         else Ui.Typed.Clear();
@@ -220,13 +223,14 @@ sealed partial class MapScreen
     {
         (Act.PartyScreen, PanelKind.Party), (Act.LordsScreen, PanelKind.Characters), (Act.SkillsScreen, PanelKind.Skills),
         (Act.RealmScreen, PanelKind.Realm), (Act.DivisionsScreen, PanelKind.Divisions), (Act.AtlasScreen, PanelKind.Atlas), (Act.InventoryScreen, PanelKind.Inventory),
+        (Act.QuestsScreen, PanelKind.Quests),
     };
     /// The screen the current one was opened from (the map or the party screen), where BACK and its key return.
     PanelKind from;
 
     /// Panels you can leave for another screen without losing a choice (no encounter, town, event or report open).
     bool Browsing => panel is PanelKind.None or PanelKind.Party or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm
-        or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Inventory;
+        or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Inventory or PanelKind.Quests;
 
     /// One-time tips for the systems a campaign reaches later: named men, divisions, sites, duels, gear, fiefs, fame, retiring.
     void LaterTips()
@@ -242,8 +246,8 @@ sealed partial class MapScreen
             Tips.Show("site", "A place of note is near (the marks on the map): ruins, shrines, old battlefields, mines, hermits.\nRide to one to see what is there. Some help you, some cost you.");
         if (panel == PanelKind.Encounter && C.Encounter is Party foe && C.CannotChallenge(foe) == null)
             Tips.Show("duel", "This lord will meet you in single combat. CHALLENGE him: win and his men start shaken;\nlose and you fight the battle wounded, from the rear.");
-        if (panel == PanelKind.Settlement && tab == "MARKET")
-            Tips.Show("market", "The market sells horses for your men, and arms and armour for you.\nClick a piece to see how it compares with what you wear, then buy it and put it on.");
+        if (panel == PanelKind.Settlement && tab == "ARMOURER")
+            Tips.Show("market", "The armourer sells arms and armour for you.\nClick a piece to see how it compares with what you wear, then buy it and put it on.");
         if (C.Fiefs.Any())
             Tips.Show("fief", "You hold a fief. Its FIEF tab sets the taxes and builds; its GARRISON tab keeps men there.\nHigh taxes and an empty garrison breed unrest, and unrest breeds revolt.");
         if (C.Fame >= 20)
@@ -296,7 +300,7 @@ sealed partial class MapScreen
         float omen = MathF.Max(graveNear, Math.Clamp(MathF.Max(C.S.Omen - 15f, C.Captain.Corruption - 25f) / 35f, 0f, 0.85f));
         bool feastOn = C.S.Flags.TryGetValue("hall_feast", out float fh) && C.S.Hours - fh < 24;
         bool inTavern = panel == PanelKind.Settlement && tab == "TAVERN" || panel == PanelKind.Talk && feastOn;
-        bool inForge = panel == PanelKind.Settlement && tab is "MARKET" or "TRAIN";
+        bool inForge = panel == PanelKind.Settlement && tab is "MARKET" or "ARMOURER" or "TRAIN";
 
         bool hostNear = false;
         foreach (var p in C.S.Parties)
@@ -384,15 +388,65 @@ sealed partial class MapScreen
         foreach (int id in trails.Keys.Where(id => C.PartyById(id) == null).ToList()) trails.Remove(id);
     }
 
-    void ClickWorld(Vector2 g)
+    /// What is under the mouse on the map: a party, a town, a ruin or the bare ground (PT1, docs/PLAYTEST.md).
+    readonly record struct MapPick(Party? Party, Settlement? Town, Site? Site, Vector2 Ground);
+
+    MapPick hover;
+    bool viewReady;
+
+    /// A world point on screen, with how many pixels a world unit is there. False when it is behind the camera.
+    bool OnScreen(Vector2 p, out Vector2 sp, out float pxPerUnit)
     {
-        var party = C.S.Parties.Where(p => p != C.Player && !p.Down && Vector2.Distance(p.Pos, g) < 5).OrderBy(p => Vector2.Distance(p.Pos, g)).FirstOrDefault();
-        var town = C.SettlementAt(g, 6);
-        var site = town == null ? C.SiteAt(g) : null;
-        if (party != null) C.Chase(party);
-        else if (town != null) C.GoTo(town);
-        else if (site != null) C.GoTo(site);
-        else C.MoveTo(g);
+        var vp = gd.Viewport;
+        float h = terrain.Height(p) + 1;
+        var a = vp.Project(new Vector3(p.X, h, p.Y), proj, view, Matrix.Identity);
+        var bx = vp.Project(new Vector3(p.X + 1, h, p.Y), proj, view, Matrix.Identity);
+        var bz = vp.Project(new Vector3(p.X, h, p.Y + 1), proj, view, Matrix.Identity);
+        sp = new Vector2(a.X, a.Y);
+        pxPerUnit = MathF.Max(Vector2.Distance(sp, new Vector2(bx.X, bx.Y)), Vector2.Distance(sp, new Vector2(bz.X, bz.Y)));
+        return a.Z is > 0 and < 1;
+    }
+
+    /// The things to click are picked on screen, not on the ground: a town, a party or a ruin counts when the mouse is within
+    /// its drawn size (at least a thumb's width, so it works zoomed far out), and the one the mouse is nearest to wins. Click,
+    /// tooltip, cursor and the hover ring all read this one pick.
+    MapPick PickAt(Point m, bool includePlayer)
+    {
+        var g = Ground(m);
+        var mv = new Vector2(m.X, m.Y);
+        Party? party = null; Settlement? town = null; Site? site = null;
+        float best = 1;
+        foreach (var q in C.S.Parties)
+        {
+            if (q.Down || !includePlayer && q == C.Player || !OnScreen(q.Pos, out var sp, out var k)) continue;
+            float d = Vector2.Distance(sp, mv) / MathF.Max(22, 3 * k);
+            if (d < best) { best = d; party = q; }
+        }
+        if (party != null) return new MapPick(party, null, null, g);
+        best = 1;
+        foreach (var t in C.S.Settlements)
+        {
+            if (!OnScreen(t.Pos, out var sp, out var k)) continue;
+            float d = Vector2.Distance(sp, mv) / MathF.Max(28, k * (t.Kind == SettlementKind.Village ? 6 : t.Kind == SettlementKind.Castle ? 8 : 10));
+            if (d < best) { best = d; town = t; }
+        }
+        if (town != null) return new MapPick(null, town, null, g);
+        best = 1;
+        foreach (var st in C.Map.Sites)
+        {
+            if (!OnScreen(st.Pos, out var sp, out var k)) continue;
+            float d = Vector2.Distance(sp, mv) / MathF.Max(22, 3 * k);
+            if (d < best) { best = d; site = st; }
+        }
+        return new MapPick(null, null, site, g);
+    }
+
+    void ClickWorld(MapPick pick)
+    {
+        if (pick.Party != null) C.Chase(pick.Party);
+        else if (pick.Town != null) C.GoTo(pick.Town);
+        else if (pick.Site != null) C.GoTo(pick.Site);
+        else C.MoveTo(pick.Ground);
         if (speed == 0) speed = 1;
     }
 
@@ -438,6 +492,7 @@ sealed partial class MapScreen
         // The near plane follows the zoom too: trees right by the camera are clipped rather than filling the screen.
         proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45), gd.Viewport.AspectRatio, Math.Clamp(zoom * 0.35f, 0.5f, 40), MathF.Max(1600, zoom * 3.2f));
         view = Matrix.CreateLookAt(eye, f3, Vector3.Up);
+        viewReady = true;
         UpdateBearers();
         // Fog starts beyond the near ground in view, so a wide view is hazy at the horizon rather than cut off.
         float fogStart = MathF.Max(200, zoom * 1.9f), fogEnd = MathF.Max(600, zoom * 5.2f);
@@ -560,6 +615,7 @@ sealed partial class MapScreen
     (VertexPNCT[] V, int Tris) lifeMesh;
     bool lifeFresh;
     float lifeDt;
+    (Vector2, float, Quality) lifeView;
     readonly object lifeLock = new();
 
     /// Wait for the worker (before the life it works on is replaced) and keep what it made.
@@ -574,6 +630,9 @@ sealed partial class MapScreen
     {
         if (life == null || C == null) return;
         lifeDt += dt;
+        // Paused and the camera has not moved: nothing in the life would change, so do no work at all.
+        if (dt == 0 && lifeDt == 0 && lifeFresh == false && lifeView == (focus, zoom, lifeQuality) && lifeTask is null or { IsCompleted: true, IsFaulted: false }) return;
+        lifeView = (focus, zoom, lifeQuality);
         if (lifeTask is { IsCompleted: false }) return; // still at it: its step covers the time we add up meanwhile
         if (lifeTask?.IsFaulted == true) FinishLife(); // report the failure once, then carry on
         lifeTask = null;
@@ -636,6 +695,8 @@ sealed partial class MapScreen
                 Line(G(p + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r), G(p + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r), c);
             }
         }
+        // The town or ruin the next click would go to gets a ring, so a click that is not on its centre still reads as aimed.
+        if (hover.Party == null && (hover.Town?.Pos ?? hover.Site?.Pos) is Vector2 ringAt) Ring(ringAt, hover.Town is { Kind: SettlementKind.Village } ? 6 : hover.Town != null ? 10 : 4, Style.Accent);
         // Tracks: dotted lines behind every party, toward its current position.
         foreach (var (id, track) in trails)
         {
@@ -711,6 +772,11 @@ sealed partial class MapScreen
                 if (rollPick != null) { C.S.MentionPool.Add(rollPick.Id); rollPick.Mentions = 1; }
                 break;
             case "divisions": panel = PanelKind.Divisions; note = ""; break;
+            case "quests": C.StageQuests(); panel = PanelKind.Quests; note = ""; break;
+            case "questmap": // the pinned quest in the HUD's corner and its marker on the map
+                panel = PanelKind.None; follow = false; zoom = 120; pitch = 0.85f; questMark = null;
+                if (C.S.Contracts.FirstOrDefault(k => k.Id == C.S.PinnedQuest) is Contract pin && C.PlaceOf(pin).Place is Vector2 qp) focus = qp;
+                break;
             case "skills": panel = PanelKind.Skills; note = ""; break;
             case "inventory":
             {
@@ -750,6 +816,8 @@ sealed partial class MapScreen
             case "beat": panel = PanelKind.Beat; break;
             case "gameover": panel = PanelKind.GameOver; break;
             case "event": panel = PanelKind.Event; note = ""; break;
+            case var w when w.StartsWith("tab:"): // any tab of a given place (the town screen's shots)
+                at = s!; C.Player.Pos = at.Pos; C.Player.Moving = false; tab = w[4..]; panel = PanelKind.Settlement; note = ""; break;
             case "settlement":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
                 tab = "MERCENARIES"; panel = PanelKind.Settlement; break;
@@ -757,7 +825,7 @@ sealed partial class MapScreen
                 at = what == "tavern" ? s ?? C.S.Settlements.First(t => t.Kind == SettlementKind.Town && !C.Refuses(t))
                     : C.S.Settlements.OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).First(s => s.Kind == SettlementKind.Village && !C.Refuses(s));
                 tab = what.ToUpperInvariant(); panel = PanelKind.Settlement; note = ""; break;
-            case "armourer":
+            case "armourer" or "market":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
                 C.S.Gold = 2000;
                 foreach (var (k, n) in new[] { ("arms", 14), ("armour", 3), ("silver", 2) }) C.S.Goods[k] = n; // goods to sell, staged
@@ -766,7 +834,7 @@ sealed partial class MapScreen
                 (blade.Kills, blade.Battles, blade.From) = (23, 9, "bought in a market, day 4");
                 Campaign.Own(C.Captain, "boar_spear", ItemQuality.Masterwork, "balanced", "taken from Lord Renaud Ironside, day 88");
                 C.S.Goods["arms"] = 160;
-                tab = "MARKET"; panel = PanelKind.Settlement; note = ""; break;
+                tab = what == "market" ? "MARKET" : "ARMOURER"; panel = PanelKind.Settlement; note = ""; break;
             case "upgrade": upgrading = C.Player.Companies[0]; upStack = upgrading.Main; panel = PanelKind.Upgrade; break;
             case "encounter": panel = PanelKind.Encounter; break;
             case "results": panel = PanelKind.Results; break;

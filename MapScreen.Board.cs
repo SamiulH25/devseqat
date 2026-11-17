@@ -44,15 +44,15 @@ partial class MapScreen
         var divs = C.S.Divisions.ToList();
         var lanes = new List<(DivisionRecord? D, List<CompanyRecord> Comps)> { (null, list.Where(c => divs.All(v => v.Id != c.Division)).ToList()) };
         foreach (var d in divs) lanes.Add((d, list.Where(c => c.Division == d.Id).ToList()));
-        int headW = ui.U(178), gap = ui.U(6), tileW = ui.U(list.Count <= 12 ? 152 : 122);
+        int headW = ui.U(164), gap = ui.U(6), tileW = ui.U(156); // wide enough for a full company name (25 letters)
         int perRow = Math.Max(1, (board.Width - headW - ui.U(14) + gap) / (tileW + gap));
         bool newLane = divs.Count < Campaign.MaxDivisions;
         int avail = board.Bottom - y - (newLane ? ui.U(50) : 0);
         int LaneH(DivisionRecord? d, int tiles, int th) => Math.Max(ui.U(d == null ? 48 : 64), Math.Max(1, (tiles + perRow - 1) / perRow) * (th + gap) + gap);
         // A place to put the picked company shows in every lane it is not in (one tile more).
         int Tiles((DivisionRecord? D, List<CompanyRecord> Comps) l) => l.Comps.Count + (musterPick != null && !l.Comps.Contains(musterPick) ? 1 : 0);
-        int tileH = ui.U(56);
-        if (lanes.Sum(l => LaneH(l.D, Tiles(l), tileH) + gap) > avail) tileH = ui.U(40);
+        int tileH = ui.U(66);
+        if (lanes.Sum(l => LaneH(l.D, Tiles(l), tileH) + gap) > avail) tileH = ui.U(48);
         for (int i = 0; i < lanes.Count; i++)
         {
             var (d, comps) = lanes[i];
@@ -216,28 +216,30 @@ partial class MapScreen
     /// if its sergeant leads the lane. A press picks it and begins a drag.
     void CompanyTile(CompanyRecord c, Rectangle r, bool leads)
     {
-        bool picked = musterPick == c, ready = c.Ready > 0, hover = ui.Hover(r), held = dragging && dragCo == c.Id, small = r.Height < ui.U(50);
+        bool picked = musterPick == c, ready = c.Ready > 0, hover = ui.Hover(r), held = dragging && dragCo == c.Id, small = r.Height < ui.U(60);
         string role = Rules.RoleOf(c);
         ui.Rect(new Rectangle(r.X + ui.U(1), r.Y + ui.U(2), r.Width, r.Height), Color.Black * 0.35f);
         ui.VGrad(r, picked ? new Color(58, 56, 52) : hover ? new Color(46, 48, 56) : new Color(32, 35, 44), Kit.IronDark, 1);
         ui.Rect(new Rectangle(r.X, r.Y, ui.U(2), r.Height), RoleColor(role));
-        int ph = r.Height - ui.U(8);
-        var port = new Rectangle(r.X + ui.U(5), r.Y + ui.U(4), Math.Min(ph, ui.U(36)), ph);
+        // The name has the whole width of the tile to itself; the man and the numbers sit under it.
+        ui.TextFit(c.Name.ToUpperInvariant(), r.X + ui.U(6), r.Y + ui.U(5), r.Width - ui.U(10), picked ? Kit.Gilt : Style.Text, 1);
+        int top = r.Y + ui.U(16), ph = r.Bottom - ui.U(4) - top;
+        var port = new Rectangle(r.X + ui.U(5), top, Math.Min(ph, ui.U(40)), ph);
         ui.VGrad(port, Kit.Mul(Style.Sides[2].Cloth, 0.5f), Kit.IronDark, 2);
         ui.Portrait(c.Type, port, ui.S);
         ui.Frame(port, Color.Black * 0.6f, ui.U(1));
-        int tx = port.Right + ui.U(5), tw = r.Right - tx - ui.U(4);
-        ui.TextFit(c.Name.ToUpperInvariant(), tx, r.Y + ui.U(5), tw - (leads ? ui.U(10) : 0), picked ? Kit.Gilt : Style.Text, 1);
-        if (leads) ui.Icon("crown", r.Right - ui.U(11), r.Y + ui.U(4), Kit.Gilt, 1);
-        ui.Text($"{c.Men}", tx, r.Y + ui.U(17), Style.Text, 1);
+        int tx = port.Right + ui.U(6), tw = r.Right - tx - ui.U(5);
+        ui.Text($"{c.Men}", tx, top + ui.U(1), Style.Text, 1);
         int mx = tx + ui.TW($"{c.Men}", 1) + ui.U(3);
-        if (c.Wounded > 0) { ui.Text($"+{c.Wounded}", mx, r.Y + ui.U(17), Style.Warn, 1); mx += ui.TW($"+{c.Wounded}", 1) + ui.U(3); }
-        ui.Text(Style.Numerals[Math.Clamp(c.Type.Tier, 0, 7)], mx + ui.U(2), r.Y + ui.U(17), Kit.Mul(Kit.Gilt, 0.8f), 1);
-        if (ready) { ui.Icon("up", r.Right - ui.U(11) - ui.TW($"{c.Ready}", 1) - ui.U(3), r.Y + ui.U(17), Kit.Gilt, 1); ui.TextR($"{c.Ready}", r.Right - ui.U(4), r.Y + ui.U(17), Kit.Gilt, 1); }
+        if (c.Wounded > 0) { ui.Text($"+{c.Wounded}", mx, top + ui.U(1), Style.Warn, 1); mx += ui.TW($"+{c.Wounded}", 1) + ui.U(3); }
+        ui.Text(Style.Numerals[Math.Clamp(c.Type.Tier, 0, 7)], mx + ui.U(2), top + ui.U(1), Kit.Mul(Kit.Gilt, 0.8f), 1);
+        int rx = r.Right - ui.U(5);
+        if (leads) { ui.Icon("crown", rx - ui.U(7), top + ui.U(1), Kit.Gilt, 1); rx -= ui.U(11); }
+        if (ready) { ui.TextR($"{c.Ready}", rx, top + ui.U(1), Kit.Gilt, 1); ui.Icon("up", rx - ui.TW($"{c.Ready}", 1) - ui.U(10), top + ui.U(1), Kit.Gilt, 1); }
         float full = Rules.Places(c) / MathF.Max(1, Rules.Cap(role));
-        ui.Gauge(new Rectangle(tx, r.Y + ui.U(29), tw, ui.U(4)), full, RoleColor(role));
-        if (!small) ui.Gauge(new Rectangle(tx, r.Y + ui.U(37), tw, ui.U(4)), c.Cohesion / 30f, c.Cohesion >= 15 ? Style.Ok : c.Cohesion >= 8 ? Style.Warn : Style.Bad);
-        if (!small) ui.TextFit(role.ToUpperInvariant() + (c.Officer != "" ? " . " + c.Officer.ToUpperInvariant() : ""), tx, r.Y + ui.U(45), tw, Style.Dim, 1);
+        ui.Gauge(new Rectangle(tx, top + ui.U(13), tw, ui.U(4)), full, RoleColor(role));
+        if (!small) ui.Gauge(new Rectangle(tx, top + ui.U(21), tw, ui.U(4)), c.Cohesion / 30f, c.Cohesion >= 15 ? Style.Ok : c.Cohesion >= 8 ? Style.Warn : Style.Bad);
+        if (!small) ui.TextFit(c.Officer != "" ? c.Officer.ToUpperInvariant() : role.ToUpperInvariant(), tx, top + ui.U(30), tw, Style.Dim, 1);
         if (held) ui.Rect(r, Kit.IronDark * 0.6f);
         ui.Frame(r, picked ? Kit.Gilt : ready ? Kit.Mul(Kit.Gilt, 0.6f) : Color.White * (hover ? 0.3f : 0.1f), ui.U(picked ? 2 : 1));
         if (hover && !dragging)

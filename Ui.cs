@@ -23,7 +23,7 @@ sealed class Ui
     static bool hoverSeen;
 
     /// The mouse is on button `r` this frame: tick once when it arrives on a new one.
-    static void Hovered(Rectangle r)
+    public static void Hovered(Rectangle r)
     {
         if (hoverSeen) return;
         hoverSeen = true;
@@ -31,6 +31,8 @@ sealed class Ui
     }
 
     /// End of a frame: forget the hovered button once the mouse has left every button.
+    /// The mouse is on an enabled button this frame (the game's cursor warms up over one).
+    public static bool OverButton => hoverSeen;
     public static void FrameEnd() { if (!hoverSeen) hoverWas = Rectangle.Empty; hoverSeen = false; }
     /// Characters typed since the last frame (the window's text input), for renaming companies.
     public static readonly Queue<char> Typed = new();
@@ -144,6 +146,16 @@ sealed class Ui
         if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
         font.Draw(Sb, s, new Vector2(MathF.Floor(x), MathF.Floor(y)), c, scale * S);
     }
+    /// Writing in ink on paper: no black shadow (it would be the colour of the letters), a pale edge under each stroke
+    /// instead, so dark words stand clear of the sheet. `cx` centres the line on x.
+    public void Ink(string s, float x, float y, Color c, int scale = 1, bool cx = false)
+    {
+        if (cx) x -= TW(s, scale) / 2f;
+        if (Overflow.On) Overflow.Text(s, MathF.Floor(x), MathF.Floor(y), TW(s, scale));
+        var at = new Vector2(MathF.Floor(x), MathF.Floor(y));
+        font.DrawPlain(Sb, s, at + new Vector2(0, scale * S), new Color(250, 242, 216) * 0.75f, scale * S);
+        font.DrawPlain(Sb, s, at, c, scale * S);
+    }
     public int TW(string s, int scale = 2) => PixelFont.Width(s, scale * S);
     public void TextC(string s, float cx, float y, Color c, int scale = 2) => Text(s, cx - TW(s, scale) / 2f, y, c, scale);
     public void TextR(string s, float rx, float y, Color c, int scale = 2) => Text(s, rx - TW(s, scale), y, c, scale);
@@ -202,28 +214,25 @@ sealed class Ui
         return hit;
     }
 
-    /// A painted bust portrait (docs/archive/LORDS.md LD1) fitted into `box`, whole pixels when it is big enough, centred at the bottom.
+    /// A painted bust portrait (docs/archive/LORDS.md LD1) fitted into `box`, centred at the bottom: whole pixels when it
+    /// is big enough, else a copy averaged down to the size it is drawn at.
     public void Face(Face f, Rectangle box, Color? tint = null)
     {
         float k = MathF.Min(box.Width / (float)PortraitPainter.W, box.Height / (float)PortraitPainter.H);
-        bool half = k < 1;
-        var tex = Portraits.Of(Sb.GraphicsDevice, f, half);
-        if (half) k *= 2;
-        if (k >= 1) k = MathF.Floor(k);
-        int w = (int)(tex.Width * k), h = (int)(tex.Height * k);
+        int w = (int)(PortraitPainter.W * (k >= 1 ? MathF.Floor(k) : k)), h = (int)(PortraitPainter.H * (k >= 1 ? MathF.Floor(k) : k));
+        var tex = k >= 1 ? Portraits.Of(Sb.GraphicsDevice, f) : Portraits.Sized(Sb.GraphicsDevice, f, w, h);
         Sb.Draw(tex, new Rectangle(box.Center.X - w / 2, box.Bottom - h, w, h), tint ?? Color.White);
     }
 
-    /// The head and shoulders of a painted face (the middle 40x40 of it), at whole pixels: bigger in a short row than the
+    /// The head and shoulders of a painted face (`PortraitPainter.HeadCrop`), square: bigger in a short row than the
     /// whole bust would be (docs/COMPANY.md C1).
     public void FaceHead(Face f, Rectangle box, Color? tint = null)
     {
-        var tex = Portraits.Of(Sb.GraphicsDevice, f);
-        var src = new Rectangle(4, 10, 40, 40);
-        int k = Math.Max(1, Math.Min(box.Width, box.Height) / 40);
-        bool small = Math.Min(box.Width, box.Height) < 40;
-        int w = small ? Math.Min(box.Width, box.Height) : 40 * k;
-        Sb.Draw(tex, new Rectangle(box.Center.X - w / 2, box.Center.Y - w / 2, w, w), src, tint ?? Color.White);
+        int m = Math.Min(box.Width, box.Height), full = PortraitPainter.HeadCrop.Width;
+        int w = m >= full ? m / full * full : m;
+        var at = new Rectangle(box.Center.X - w / 2, box.Center.Y - w / 2, w, w);
+        if (m >= full) Sb.Draw(Portraits.Of(Sb.GraphicsDevice, f), at, PortraitPainter.HeadCrop, tint ?? Color.White);
+        else Sb.Draw(Portraits.Sized(Sb.GraphicsDevice, f, w, w, head: true), at, tint ?? Color.White);
     }
 
     /// A troop portrait cropped to `box`; `k` is the pixel scale (default: the UI scale).
