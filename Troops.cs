@@ -186,7 +186,8 @@ public sealed record ArmySpec(string Name, int Level, IReadOnlyList<Company> Com
 
 /// A division (docs/archive/COMBAT_OVERHAUL.md 1): companies whose Company.Division is Id, led by a sergeant who pursues a goal.
 /// Leader names the companion fighting as a company's Hero, if one leads it; Temper is "Bold", "Steady" or "Cautious";
-/// Skill (0-10) is his Command skill; Goal is the goal he starts the battle with (a GoalKind name); LeadCompany, when
+/// Skill (0-10) is his Command skill; Goal is his post and stance at the start ("Front:Hold", read by Goal.FromName, which
+/// also maps the old goal names); LeadCompany, when
 /// Leader is empty, is the company his best man is picked from (a sergeant leading from his own company).
 public sealed record DivisionSpec(int Id, string Name, string Temper = "Steady", int Skill = 3, string Goal = "Hold", string Leader = "", int LeadCompany = 0,
     string[]? Traits = null);
@@ -275,13 +276,13 @@ public static class Armies
         var own = Enumerable.Range(0, comps.Count).Where(i => !comps[i].Allied).ToList();
         var horse = own.Where(i => RoleOf(comps[i]) == "horse").ToList();
         var foot = own.Where(i => RoleOf(comps[i]) is "infantry" or "spears").ToList();
-        if (horse.Sum(i => comps[i].Count) >= 30) Make("The horse", horse.Take(DivisionFill).ToList(), "FlankRight", "Bold", "Hothead");
+        if (horse.Sum(i => comps[i].Count) >= 30) Make("The horse", horse.Take(DivisionFill).ToList(), "RightWing:Guard", "Bold", "Hothead");
         int left = -1, right = -1;
         if (foot.Count >= 4)
         {
             int third = Math.Min(foot.Count / 3, DivisionFill);
-            left = Make("Left battle", foot.Take(third).ToList(), "Hold", "Steady", "Stubborn");
-            right = Make("Right battle", foot.Skip(foot.Count - third).ToList(), "Hold", "Steady", "Drillmaster");
+            left = Make("Left battle", foot.Take(third).ToList(), "Front:Hold", "Steady", "Stubborn");
+            right = Make("Right battle", foot.Skip(foot.Count - third).ToList(), "Front:Hold", "Steady", "Drillmaster");
         }
         // Past CommandCap companies the captain cannot lead them himself: spare foot joins the battle with most room,
         // then the bows get a sergeant of their own. What is still over the cap waits in reserve (Battle.Deploy).
@@ -295,7 +296,7 @@ public static class Armies
             members[room[0]].Add(i);
         }
         var bows = own.Where(i => comps[i].Division < 0 && RoleOf(comps[i]) == "archers").Take(Math.Min(DivisionFill, Led() - CommandCap)).ToList();
-        if (bows.Count >= 2) Make("The bows", bows, "Hold", "Cautious", "Veteran");
+        if (bows.Count >= 2) Make("The bows", bows, "Skirmish:Loose", "Cautious", "Veteran");
         return army with { Companies = comps, Divisions = specs.Count > 0 ? specs : null };
     }
 

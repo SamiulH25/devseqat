@@ -48,7 +48,7 @@ partial class BattleScreen
         else skipMouse = true;
         if (wasWheel && !wheelOpen && WheelSector() is int sector)
         {
-            if (selectedDivision is { } dv) GoalCommand(dv, Hud.GoalWheelOrder[sector].G, Hud.GoalWheelOrder[sector].Side);
+            if (selectedDivision is { } dv) GiveGoal(dv, Hud.WheelGoals(dv)[sector]);
             else Command(Hud.WheelOrder[sector]);
         }
         fieldDist = Math.Clamp(fieldDist - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.004f, 2.5f, 12);
@@ -133,8 +133,8 @@ partial class BattleScreen
                 if (at is Vector2 pt)
                 {
                     attackMoveMode = false;
-                    if (selectedDivision is { } dv && !deploying) GiveGoal(dv, new Goal(GoalKind.Take, pt));
-                    else if (PickSquad(pt, 1) is Squad foe) { OrderArrows(foe.Centroid()); Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }, move: true); }
+                    if (selectedDivision is { } dv && !deploying) OrderDivisionCompanies(dv);
+                    if (PickSquad(pt, 1) is Squad foe) { OrderArrows(foe.Centroid()); Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }, move: true); }
                     else
                     {
                         // March there, and charge whoever comes near on the way: the move plus the standing rule for it.
@@ -149,8 +149,8 @@ partial class BattleScreen
         }
         if (ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released && hud.MinimapAt(ms.Position) is Vector2 rmw)
         {
-            if (selectedDivision is { } dv && !deploying) GiveGoal(dv, new Goal(GoalKind.Take, rmw));
-            else { OrderArrows(rmw); LineAt(rmw, battle.Centroid(1)); }
+            if (selectedDivision is { } dv && !deploying) OrderDivisionCompanies(dv);
+            OrderArrows(rmw); LineAt(rmw, battle.Centroid(1));
             return;
         }
         if (LmbPressed)
@@ -167,7 +167,7 @@ partial class BattleScreen
                 return;
             }
             if (hud.GoalCloseAt(ms.Position)) selectedDivision = null;
-            else if (selectedDivision != null && hud.GoalAt(ms.Position) is var (gk, gs)) GoalCommand(selectedDivision, gk, gs);
+            else if (selectedDivision != null && hud.GoalAt(ms.Position) is Goal gg) GiveGoal(selectedDivision, gg);
             else if (hud.DivisionAt(ms.Position) is Division dc)
             {
                 selectedDivision = selectedDivision == dc ? null : dc;
@@ -239,15 +239,7 @@ partial class BattleScreen
             dragStart = null;
             var enemy = battle.Centroid(1);
             bool click = Vector2.Distance(a, mouseGround) < 2;
-            if (selectedDivision is { } dv && !deploying)
-            {
-                // A division takes goals, not orders: an enemy is Attack, a friend is Screen, ground is Take.
-                if (click && PickSquad(mouseGround, 1) is Squad tf) GiveGoal(dv, new Goal(GoalKind.Attack, Target: tf));
-                else if (click && PickSquad(mouseGround, 0) is Squad fr && fr.Division != dv) GiveGoal(dv, new Goal(GoalKind.Screen, Target: fr));
-                else GiveGoal(dv, new Goal(GoalKind.Take, mouseGround));
-                foreach (var ds in dv.Squads.Where(q => q.Alive > 0)) arrows.Add((ds.Centroid(), mouseGround, Ui.Now));
-                return;
-            }
+            if (selectedDivision is { } dv && !deploying) OrderDivisionCompanies(dv); // an officer takes posts and stances; RMB orders his companies
             if (!deploying && SelectedCrews().Count > 0)
             {
                 EngineOrder(mouseGround, click);

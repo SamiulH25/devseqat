@@ -951,7 +951,7 @@ public static partial class SelfTest
         Check(setup.Player.Divisions?.Count == 1 && setup.Player.Companies.Count(x => x.Division == d.Id) == 2, "the battle army carries the division");
         var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
         var bd = b.DivisionsOf(0).SingleOrDefault();
-        Check(bd != null && bd.Squads.Count == 2 && bd.Goal.Kind == GoalKind.Flank && bd.Goal.Side < 0 && bd.Leader?.Sergeant == true,
+        Check(bd != null && bd.Squads.Count == 2 && bd.Goal == new Goal(Post.LeftWing, Stance.Swing) && bd.Leader?.Sergeant == true,
             $"in battle the division has its companies, goal and sergeant ({bd?.Squads.Count} squads, {bd?.Goal.Describe})");
         // An old save (no Division fields) loads with nobody in a division.
         var node = System.Text.Json.Nodes.JsonNode.Parse(c.S.Serialize())!;

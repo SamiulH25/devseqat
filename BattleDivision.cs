@@ -2,37 +2,88 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// What a sergeant can be told to do (docs/archive/COMBAT_OVERHAUL.md 1.2).
-public enum GoalKind { Hold, Take, Attack, Flank, Screen, Guard, Reserve, Harass, Pursue, FallBack, Ambush }
+/// Where an officer stands his division in the army (docs/OFFICERS.md OF1). Where a post lies is worked out from the army
+/// (`Battle.FrontLine`), never set by hand: wings beside the front line's ends, skirmishers ahead of it, the reserve behind.
+public enum Post { Front, LeftWing, RightWing, Skirmish, Reserve }
+
+/// What an officer does at his post. Each post has three (`Goal.StancesOf`); he never changes it himself.
+public enum Stance { Hold, Advance, Charge, Guard, Swing, Loose, Harass, Screen, Wait, Plug, Follow }
 
 /// How a sergeant fights: Bold charges early and chases far; Steady keeps formation and waits for contact;
 /// Cautious keeps a short leash and lets the enemy come to him.
 public enum Temper { Bold, Steady, Cautious }
 
-/// A sergeant's goal. Point is used by Hold, Take, FallBack and Ambush; Target by Attack (an enemy squad) and Screen (a friendly
-/// one); Side by Flank (+1 his right, -1 his left). Null Target: he picks one himself.
-public sealed record Goal(GoalKind Kind, Vector2 Point = default, Squad? Target = null, int Side = 1)
+/// An officer's orders: his post and the stance he keeps there (also a horn plan, kept until the horn).
+public sealed record Goal(Post Post, Stance Stance)
 {
-    public string Describe => Kind switch
+    static readonly Stance[] FrontStances = { Stance.Hold, Stance.Advance, Stance.Charge },
+        WingStances = { Stance.Guard, Stance.Swing, Stance.Charge },
+        SkirmishStances = { Stance.Loose, Stance.Harass, Stance.Screen },
+        ReserveStances = { Stance.Wait, Stance.Plug, Stance.Follow };
+
+    /// The stances an officer at this post can keep, the first his default.
+    public static Stance[] StancesOf(Post p) => p switch
     {
-        GoalKind.Hold => "hold this ground",
-        GoalKind.Take => "take that ground",
-        GoalKind.Attack => Target != null ? $"attack the {Target.Name}" : "attack",
-        GoalKind.Flank => Side > 0 ? "go round their flank on our right" : "go round their flank on our left",
-        GoalKind.Screen => Target != null ? $"screen the {Target.Name}" : "screen our line",
-        GoalKind.Guard => "guard the captain",
-        GoalKind.Reserve => "wait in reserve",
-        GoalKind.Harass => "harass them",
-        GoalKind.Pursue => "run them down",
-        GoalKind.Ambush => "lie in wait",
-        _ => "fall back",
+        Post.Front => FrontStances,
+        Post.LeftWing or Post.RightWing => WingStances,
+        Post.Skirmish => SkirmishStances,
+        _ => ReserveStances,
     };
 
-    /// Short name for buttons and cards.
-    public static string Label(GoalKind k) => k switch { GoalKind.FallBack => "FALL BACK", _ => k.ToString().ToUpperInvariant() };
+    public static bool Fits(Post p, Stance s) => Array.IndexOf(StancesOf(p), s) >= 0;
+
+    /// A post with this stance if it fits there, else the post's default.
+    public static Goal Of(Post p, Stance? s = null) => new(p, s is { } x && Fits(p, x) ? x : StancesOf(p)[0]);
+
+    /// +1 on the right wing, -1 on the left, 0 elsewhere.
+    public int Side => Post == Post.RightWing ? 1 : Post == Post.LeftWing ? -1 : 0;
+
+    public string Describe => Stance switch
+    {
+        Stance.Hold => "hold the line",
+        Stance.Advance => "advance in order",
+        Stance.Charge => "charge",
+        Stance.Guard => Side < 0 ? "guard the left flank" : "guard the right flank",
+        Stance.Swing => Side < 0 ? "swing round their right" : "swing round their left",
+        Stance.Loose => "loose, and give way to their foot",
+        Stance.Harass => "harass them",
+        Stance.Screen => "screen the line",
+        Stance.Wait => "wait in reserve",
+        Stance.Plug => "plug the line where it breaks",
+        _ => "follow the captain",
+    };
+
+    public static string Label(Post p) => p switch { Post.LeftWing => "LEFT WING", Post.RightWing => "RIGHT WING", _ => p.ToString().ToUpperInvariant() };
+    public static string Label(Stance s) => s.ToString().ToUpperInvariant();
+    /// "LEFT WING: GUARD", for cards and tags.
+    public string Tag => $"{Label(Post)}: {Label(Stance)}";
+
+    /// A goal from its saved name: "Front:Hold" (a post and a stance), or an old goal name mapped to the nearest post.
+    public static Goal FromName(string name)
+    {
+        var parts = name.Split(':');
+        if (parts.Length == 2 && Enum.TryParse<Post>(parts[0], out var p))
+            return Of(p, Enum.TryParse<Stance>(parts[1], out var st) ? st : null);
+        return name switch
+        {
+            "Attack" or "Pursue" => new(Post.Front, Stance.Charge),
+            "Take" => new(Post.Front, Stance.Advance),
+            "FlankLeft" => new(Post.LeftWing, Stance.Swing),
+            "FlankRight" or "Flank" => new(Post.RightWing, Stance.Swing),
+            "Reserve" => new(Post.Reserve, Stance.Plug),
+            "FallBack" => new(Post.Reserve, Stance.Wait),
+            "Guard" => new(Post.Reserve, Stance.Follow),
+            "Screen" => new(Post.Skirmish, Stance.Screen),
+            "Harass" => new(Post.Skirmish, Stance.Harass),
+            _ => new(Post.Front, Stance.Hold), // Hold, Ambush, anything unknown
+        };
+    }
+
+    /// The name FromName reads back.
+    public string Name => $"{Post}:{Stance}";
 }
 
-/// A division: a few companies led by a sergeant who turns a goal into orders, and hears new goals late.
+/// A division: a few companies under an officer at a post, who keeps the stance he was given (docs/OFFICERS.md).
 public sealed class Division
 {
     public readonly int Team, Id;
@@ -47,10 +98,18 @@ public sealed class Division
     /// A goal on its way (a rider or a horn call): it takes over at PendingAt. A newer goal replaces it.
     public Goal? Pending;
     public float PendingAt, GoalSince, LeaderlessSince = -1, NextThink;
-    /// Step within the goal (Flank: 0 swing wide, 1 come alongside, 2 hit them; Attack: 1 once charging).
+    /// Step within the stance (Swing: 0 swing wide, 1 come alongside, 2 hit them; Loose and Screen: 1 while given way).
     public int Phase;
-    /// Flank: the direction toward the enemy when the goal began, so the swing does not chase its own tail.
+    /// Swing: the direction toward the enemy when the stance began, so the swing does not chase its own tail.
     public Vector2 Axis;
+    /// Front: where the line stood when the stance began (null: take it at the next look), and each company's place
+    /// from it, so Hold and Advance keep the line as you drew it up.
+    public Vector2? Spot;
+    public readonly Dictionary<Squad, Vector2> Offsets = new();
+    /// Plug: reserve companies sent in, and the line company each went to help.
+    public readonly Dictionary<Squad, Squad> Plugs = new();
+    public Post Post => Goal.Post;
+    public Stance Stance => Goal.Stance;
 
     public Division(int team, int id, string name, Temper temper, int skill, Goal goal)
     {
@@ -73,9 +132,9 @@ public sealed class Division
     public bool Has(string trait) => Array.IndexOf(Traits, trait) >= 0;
 }
 
-/// Battle: divisions (docs/archive/COMBAT_OVERHAUL.md 1.3-1.4). Each sergeant thinks every half second or so (quicker with
-/// skill) and sets his companies' orders from his goal; the unit AI does the rest. Goals and your direct orders to his
-/// companies arrive after a delay that grows with the distance from you.
+/// Battle: divisions (docs/archive/COMBAT_OVERHAUL.md 1.3-1.4, docs/OFFICERS.md). Each officer looks again every half second or
+/// so (quicker with skill) and sets his companies' orders from his post and stance (BattlePosts.cs); the unit AI does the
+/// rest. Orders land at once while `Riders` is off.
 public partial class Battle
 {
     public readonly List<Division> Divisions = new();
@@ -88,7 +147,7 @@ public partial class Battle
     {
         var list = squads.ToList();
         var at = list.Count > 0 ? list.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / list.Count : centroid[team];
-        var d = new Division(team, Divisions.Count, name, temper, skill, goal ?? new Goal(GoalKind.Hold, at));
+        var d = new Division(team, Divisions.Count, name, temper, skill, goal ?? new Goal(Post.Front, Stance.Hold));
         foreach (var s in list) { d.Squads.Add(s); s.Division = d; if (!s.Swarm) s.Drill = MathF.Min(1, s.Drill + Math.Clamp(skill, 0, 10) * 0.01f); } // a sergeant drills his men
         d.Leader = leader ?? PickLeader(d);
         if (d.Leader != null) d.Leader.Sergeant = true;
@@ -117,17 +176,8 @@ public partial class Battle
             d.SpecId = spec.Id;
             d.Traits = traits;
             if (d.Has("Drillmaster")) foreach (var s in squads) if (!s.Swarm) s.Drill = MathF.Min(1, s.Drill + d.Skill * 0.01f); // he drills them twice as hard
-            d.Goal = StartGoal(d, spec.Goal);
+            d.Goal = Ironfield.Goal.FromName(spec.Goal);
         }
-    }
-
-    /// A goal from its saved name ("Hold", "Attack", "FlankLeft", "FlankRight", ...), placed where the division stands.
-    Goal StartGoal(Division d, string name)
-    {
-        var at = d.Squads.Count > 0 ? d.Squads.Aggregate(Vector2.Zero, (a, s) => a + s.Centroid()) / d.Squads.Count : centroid[d.Team];
-        if (name == "FlankLeft") return new Goal(GoalKind.Flank, at, Side: -1);
-        if (name == "FlankRight") return new Goal(GoalKind.Flank, at, Side: 1);
-        return new Goal(Enum.TryParse<GoalKind>(name, out var k) ? k : GoalKind.Hold, at);
     }
 
     /// Riders carry orders (off for now: docs/OFFICERS.md OF0, every order lands at once).
@@ -164,7 +214,7 @@ public partial class Battle
         Couriers.RemoveAll(c => c.Div == d && c.Goal); // a countermand overtakes the rider still on the road
         SendCourier(d, Time + delay, true);
         if (Recording != null && d.Team == 0 && !ai)
-            (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Kind = g.Kind, Point = g.Point, Target = g.Target != null ? Squads.IndexOf(g.Target) : -1, Side = g.Side });
+            (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Post = g.Post, Stance = g.Stance });
         if (d.Team == 0 && delay > 0) Log(countermand ? $"New orders ride to {d.Name}: {g.Describe} ({delay:0}s)." : $"Orders ride to {d.Name}: {g.Describe} ({delay:0}s).");
         return delay;
     }
@@ -217,6 +267,9 @@ public partial class Battle
                 d.GoalSince = Time;
                 d.Phase = 0;
                 d.Axis = Vector2.Zero;
+                d.Spot = null;
+                d.Offsets.Clear();
+                d.Plugs.Clear();
                 d.NextThink = Time;
                 foreach (var s in d.Squads) { s.Override = false; s.Pursue = false; }
                 if (d.Team == 0) Log($"{d.Name}: \"{Capital(d.Goal.Describe)}!\"");
@@ -229,44 +282,6 @@ public partial class Battle
     }
 
     float nextAiCommand = 4;
-    /// How near an enemy company must come before a division lying in wait falls on it.
-    public const float AmbushReach = 40;
-    /// The AI's divisions that have already been offered the chance to lie in wait.
-    readonly HashSet<Division> ambushTried = new();
-
-    /// The AI general's divisions (and yours when the AI plays you): wings that hold send in their men once the
-    /// lines close, the fight starts, or they have waited long enough; a broken division falls back.
-    void AiCommand(int team)
-    {
-        int foe = 1 - team;
-        bool fighting = SquadsOf(team).Any(s => s.Alive > 0 && s.Division == null && s.Units.Any(u => u.Active && u.EnemyDist < 5));
-        foreach (var d in DivisionsOf(team))
-        {
-            if (d.Pending != null || d.Alive == 0) continue;
-            var live = d.Squads.Where(s => s.Alive > 0).ToList();
-            var at = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / live.Count;
-            var near = EnemySquadNear(at, float.MaxValue, foe);
-            if (near == null) continue;
-            float gap = Vector2.Distance(at, near.Center) - near.Radius;
-            float wait = d.Temper switch { Temper.Bold => 15, Temper.Steady => 30, _ => 45 } * (d.Has("Hothead") ? 0.5f : 1);
-            if (d.Goal.Kind == GoalKind.Hold && d.Temper != Temper.Bold && !fighting && gap > 50 && ambushTried.Add(d) && AmbushWood(d, live, at, foe) is Vector2 wood)
-                IssueGoal(d, new Goal(GoalKind.Ambush, wood), ai: true); // a wood near by on the enemy's way: wait in it
-            else if (d.Goal.Kind is GoalKind.Hold or GoalKind.Reserve && (fighting || gap < 30 || Time - d.GoalSince > wait))
-                IssueGoal(d, new Goal(GoalKind.Attack, Target: near), ai: true);
-            else if (d.Goal.Kind == GoalKind.Ambush && Time - d.GoalSince > wait * 3)
-                IssueGoal(d, new Goal(GoalKind.Attack, Target: near), ai: true); // nobody came: go and find them
-            else if (d.Goal.Kind == GoalKind.Attack && d.Alive < d.Start / 4 && d.Temper != Temper.Bold && !d.Has("Stubborn"))
-                IssueGoal(d, new Goal(GoalKind.FallBack, at + Toward(at, centroid[foe], team) * -30), ai: true);
-        }
-    }
-
-    /// A wood edge to lie in wait at: within 50 m of the division, no further back than it stands, and of foot only.
-    Vector2? AmbushWood(Division d, List<Squad> live, Vector2 at, int foe)
-    {
-        if (live.Any(s => s.Cavalry || Ranged(s))) return null;
-        var fwd = Toward(at, centroid[foe], d.Team);
-        return BestPlace(at, 50, p => p.Kind == PlaceKind.WoodEdge && Vector2.Dot(p.Pos - at, fwd) > -5 ? p.Hide : 0)?.Pos;
-    }
 
     static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
@@ -290,99 +305,6 @@ public partial class Battle
         d.LeaderlessSince = -1;
         if (d.Team == 0) Log($"A {next.Type.Name} takes command of {d.Name}'s men.");
         return true;
-    }
-
-    /// The sergeant's half-second decision: from his goal and what he sees, set each company's order.
-    void Brain(Division d)
-    {
-        var live = d.Squads.Where(s => s.Alive > 0 && !s.Override).ToList();
-        if (live.Count == 0) return;
-        int foe = 1 - d.Team;
-        var center = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / live.Count;
-        var dir = Toward(center, centroid[foe], d.Team);
-        float chargeAt = d.Temper switch { Temper.Bold => 22, Temper.Steady => 14, _ => 9 } + (d.Has("Hothead") ? 6 : 0);
-        float leash = d.Temper switch { Temper.Bold => 35, Temper.Steady => 20, _ => 12 };
-        var g = d.Goal;
-        switch (g.Kind)
-        {
-            case GoalKind.Hold:
-            {
-                var at = SnapToGround(g.Point); // the best ground near where he was told (BattleGround.cs)
-                HoldGround(d, live, at, Toward(at, centroid[foe], d.Team), chargeAt * 0.7f, leash);
-                break;
-            }
-            case GoalKind.Take:
-            {
-                var at = SnapToGround(g.Point);
-                var threat = EnemySquadNear(at, 15, foe);
-                if (threat != null) Engage(d, live, threat);
-                else if (Vector2.Distance(center, at) > 6) Form(d, live, at, dir);
-                else HoldGround(d, live, at, dir, chargeAt * 0.7f, leash);
-                break;
-            }
-            case GoalKind.Ambush:
-            {
-                // Wait still and hidden at the point; when an enemy company comes within 40 m, fall on it.
-                var prey = EnemySquadNear(center, AmbushReach, foe);
-                if (prey != null)
-                {
-                    d.Goal = new Goal(GoalKind.Attack, Target: prey);
-                    d.Phase = 1;
-                    Engage(d, live, prey);
-                    if (d.Team == 0) Log($"{d.Name} springs the ambush!");
-                    else Log("An ambush! The enemy breaks cover.");
-                }
-                else Form(d, live, g.Point, Toward(g.Point, centroid[foe], d.Team));
-                foreach (var s in live) s.FireAtWill = false; // no arrows to give them away
-                break;
-            }
-            case GoalKind.Attack:
-            {
-                var t = g.Target is { Alive: > 0 } ? g.Target : EnemySquadNear(g.Target?.Center ?? center, float.MaxValue, foe);
-                if (t == null) { HoldGround(d, live, center, dir, chargeAt, leash); break; }
-                if (t != g.Target) d.Goal = g with { Target = t };
-                float gap = Vector2.Distance(center, t.Center) - t.Radius;
-                if (d.Phase == 1 || gap < chargeAt) { d.Phase = 1; Engage(d, live, t); }
-                else Form(d, live, center + Toward(center, t.Center, d.Team) * MathF.Min(10, gap), Toward(center, t.Center, d.Team));
-                break;
-            }
-            case GoalKind.Flank: Flank(d, live, center, g.Side); break;
-            case GoalKind.Screen:
-            {
-                var friend = g.Target is { Alive: > 0 } f ? f : SquadsOf(d.Team).Where(s => s.Division != d && s.Alive > 0 && s.Company != null)
-                    .OrderByDescending(s => s.Units[0].Type.Ammo > 0).ThenBy(s => Vector2.Distance(s.Center, center)).FirstOrDefault();
-                if (friend == null) { HoldGround(d, live, center, dir, chargeAt, leash); break; }
-                var threat = EnemySquadNear(friend.Center, float.MaxValue, foe);
-                var to = threat != null ? Toward(friend.Center, threat.Center, d.Team) : dir;
-                HoldGround(d, live, friend.Center + to * (friend.Radius + 9), to, 12, 22);
-                break;
-            }
-            case GoalKind.Guard:
-            {
-                var general = d.Team == 0 ? Player : EnemyCaptain;
-                if (!general.Active) { HoldGround(d, live, center, dir, chargeAt, leash); break; }
-                var threat = EnemySquadNear(general.Pos, 14, foe);
-                if (threat != null) Engage(d, live, threat);
-                else Form(d, live, general.Pos + Toward(general.Pos, centroid[foe], d.Team) * 7, Toward(general.Pos, centroid[foe], d.Team));
-                break;
-            }
-            case GoalKind.Reserve: Reserve(d, live, dir); break;
-            case GoalKind.Harass: Harass(d, live, center, foe); break;
-            case GoalKind.Pursue:
-            {
-                bool any = Units.Any(u => u.Team == foe && u.Active && Vector2.DistanceSquared(u.Pos, center) < 60 * 60);
-                foreach (var s in live)
-                {
-                    s.Pursue = any;
-                    if (any) { s.Order = Order.Charge; s.Target = null; }
-                }
-                if (!any) Form(d, live, center, dir); // nobody left to catch: rally where they stand
-                break;
-            }
-            default: // FallBack
-                Form(d, live, g.Point, Toward(g.Point, centroid[foe], d.Team));
-                break;
-        }
     }
 
     /// Unit vector from a toward b (the side's own forward when they are on top of each other).
@@ -475,23 +397,6 @@ public partial class Battle
         }
     }
 
-    /// Hold `at`: form there; charge an enemy company that comes within `reach` (a cautious sergeant never does: his men
-    /// still fight what walks into them); come back when the fight has pulled them `leash` metres away. Shields lock
-    /// against horse.
-    void HoldGround(Division d, List<Squad> live, Vector2 at, Vector2 front, float reach, float leash)
-    {
-        int foe = 1 - d.Team;
-        var threat = d.Temper == Temper.Cautious ? null : EnemySquadNear(at, reach, foe);
-        var center = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / live.Count;
-        if (threat != null && Vector2.Distance(center, at) < leash) Engage(d, live, threat);
-        else Form(d, live, at, front);
-        bool horseNear = Squads.Any(s => s.Team == foe && s.Cavalry && s.Alive > 0 && Vector2.Distance(s.Center, at) - s.Radius < 35);
-        foreach (var s in live.Where(s => !s.Cavalry && !Ranged(s) && !s.Swarm && s.Units[0].Type.HasShield))
-            s.Formation = horseNear && d.Temper != Temper.Bold && s.Order == Order.Hold ? Formation.ShieldWall : Formation.Line;
-        foreach (var s in live.Where(Ranged))
-            if (s.Order == Order.Hold) { s.Target = SoftTarget(s, foe); s.FireAtWill = true; }
-    }
-
     /// Go round the enemy's flank: swing wide on `side`, come alongside, then hit the company nearest.
     void Flank(Division d, List<Squad> live, Vector2 center, int side)
     {
@@ -513,29 +418,6 @@ public partial class Battle
         if (d.Phase < 2) { Form(d, live, d.Phase == 0 ? wide : beside, d.Phase == 0 ? fwd : -right); return; }
         var target = close ?? EnemySquadNear(beside, float.MaxValue, foe);
         if (target != null) Engage(d, live, target);
-    }
-
-    /// Wait behind the line, then commit when a friendly company is breaking, or when a bold sergeant has waited long enough.
-    void Reserve(Division d, List<Squad> live, Vector2 dir)
-    {
-        var line = SquadsOf(d.Team).Where(s => s.Division != d && s.Alive > 0 && s.Company != null).ToList();
-        var behind = line.Count > 0 ? line.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / line.Count : centroid[d.Team];
-        var breaking = line.FirstOrDefault(s => s.Alive < s.StartCount * 0.5f || s.Pressure > 3);
-        float patience = d.Temper switch { Temper.Bold => 45, Temper.Steady => 90, _ => 150 };
-        if (breaking != null || Time - d.GoalSince > patience && charged[d.Team])
-        {
-            var target = EnemySquadNear((breaking ?? live[0]).Center, float.MaxValue, 1 - d.Team);
-            if (target != null)
-            {
-                d.Goal = new Goal(GoalKind.Attack, target.Center, target);
-                d.Phase = 1;
-                Log(d.Team == 0 ? $"{d.Name} commits the reserve!" : "The enemy commits a reserve!");
-                Sound(Cue.Shout, behind);
-                Engage(d, live, target);
-                return;
-            }
-        }
-        Form(d, live, behind - dir * 25, dir);
     }
 
     /// Harass: archers keep at three-quarters of their range and shoot, horse archers skirmish, lancers hit soft

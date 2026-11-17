@@ -8,7 +8,7 @@ This plan replaces the eleven division goals with two plain layers, the same for
   him a stance. He does what the stance says and nothing else. **His skill decides how well**: a poor officer on the
   enemy's line can lose it badly, and that is something to see and use.
 
-Status: planned. OF0 in progress. Supersedes the goal layer of `docs/SERGEANTS.md` (SG0-SG7); the command cap,
+Status: OF0-OF1 built. Supersedes the goal layer of `docs/SERGEANTS.md` (SG0-SG7); the command cap,
 reserve tray, call-ups and horn plans stay.
 
 ## Decisions
@@ -70,3 +70,9 @@ An officer's skill (0-10: a companion's Command, a sergeant's battles, an enemy 
 
 ## As built
 - OF0 (2026-11-16): `OrderDelay` returns 0; questions dropped.
+- OF1 (2026-11-16): `Post`, `Stance` and `Goal` (the pair) in BattleDivision.cs; the officer's look by stance and `FrontLine`
+  in BattlePosts.cs. Deviations: the AI keeps its old timing rules, put onto stances (Hold/Advance -> Charge, Guard -> Swing,
+  Wait -> Plug), until OF3. Dropped with the old goals: Take (a spot you clicked), Attack on a company you clicked, Pursue,
+  FallBack and the AI's ambush in a wood (`AmbushWood`, test `AmbushWaits`); the right button with an officer picked now
+  gives his companies a direct order instead. The campaign still saves old goal names; `Goal.FromName` maps them (OF6
+  replaces them). The command view only swapped the goal buttons for stance and post buttons; OF4 redoes it.

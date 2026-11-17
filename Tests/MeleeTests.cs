@@ -177,7 +177,7 @@ public static partial class SelfTest
             var b = Battle.Empty(47);
             var sq = b.AddSquad(0, Troops.Get(troop), 20, new(0, -6), 10, Vector2.UnitY);
             b.AddSquad(1, Troops.Get("men_at_arms"), 20, new(0, 6), 10, -Vector2.UnitY);
-            if (sergeant) b.AddDivision(0, "Sergeant Test", new[] { sq }, Temper.Cautious, 3, new Goal(GoalKind.Hold, new Vector2(0, -6)));
+            if (sergeant) b.AddDivision(0, "Sergeant Test", new[] { sq }, Temper.Cautious, 3, new Goal(Post.Front, Stance.Hold));
             int peak = 0; float tip = -1, first = -1;
             for (int i = 0; i < 60 * 25 && sq.Order == Order.Hold; i++)
             {

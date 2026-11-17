@@ -132,7 +132,7 @@ public partial class Battle
     {
         float delay = now || Time <= 0 ? 0 : OrderDelay(d);
         if (Recording != null && d.Team == 0)
-            (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Kind = g.Kind, Point = g.Point, Target = g.Target != null ? Squads.IndexOf(g.Target) : -1, Side = g.Side, Plan = true });
+            (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Post = g.Post, Stance = g.Stance, Plan = true });
         if (delay <= 0) { d.Horn = g; d.PendingHorn = null; }
         else
         {
@@ -183,10 +183,18 @@ public partial class Battle
         if (d.Leaderless) return "SERGEANT DOWN";
         if (d.Squads.Any(s => s.Alive > 0 && s.InContact)) return "ENGAGED";
         if (d.Losing * 12 >= Math.Max(12, d.Alive)) return "UNDER ARROWS";
-        if (d.Horn != null && d.Goal.Kind is GoalKind.Hold or GoalKind.Reserve or GoalKind.Ambush) return "AWAITS THE HORN";
+        if (d.Horn != null && d.Stance is Stance.Hold or Stance.Guard or Stance.Wait or Stance.Loose) return "AWAITS THE HORN";
+        if (d.Plugs.Count > 0) return "PLUGGING THE LINE";
+        if (d.Phase == 1 && d.Stance is Stance.Loose or Stance.Screen) return "GIVING WAY";
         var live = d.Squads.Where(s => s.Alive > 0).ToList();
-        if (live.Count > 0 && live.Average(s => Vector2.Distance(s.Center, s.Anchor)) > 8) return "ON THE MOVE";
-        return d.Goal.Kind switch { GoalKind.Hold or GoalKind.Take => "HOLDING", GoalKind.Reserve => "IN RESERVE", GoalKind.Ambush => "LYING IN WAIT", _ => "ADVANCING" };
+        if (live.Count > 0 && d.Stance is not (Stance.Advance or Stance.Charge or Stance.Swing) && live.Average(s => Vector2.Distance(s.Center, s.Anchor)) > 8) return "ON THE MOVE";
+        return d.Stance switch
+        {
+            Stance.Hold => "HOLDING THE LINE", Stance.Advance => "ADVANCING", Stance.Charge => "CHARGING",
+            Stance.Guard => "GUARDING THE FLANK", Stance.Swing => "SWINGING ROUND", Stance.Loose => "LOOSING",
+            Stance.Harass => "HARASSING", Stance.Screen => "SCREENING", Stance.Plug => "READY TO PLUG",
+            Stance.Follow => "BY THE CAPTAIN", _ => "IN RESERVE",
+        };
     }
 
     /// Every 5 s: how many of the division fell since the last look (for UNDER ARROWS).

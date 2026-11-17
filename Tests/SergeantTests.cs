@@ -59,14 +59,14 @@ public static partial class SelfTest
     {
         var (b, d, s) = OneDivision(3, new Vector2(60, 0));
         b.AddSquad(1, Troops.Get("levies"), 10, new Vector2(60, 120), 5, -Vector2.UnitY);
-        b.SetHornPlan(d, new Goal(GoalKind.Take, new Vector2(60, 30)));
-        Check(d.Horn?.Kind == GoalKind.Take, "a plan set in deployment is his at once");
+        b.SetHornPlan(d, new Goal(Post.Front, Stance.Advance));
+        Check(d.Horn?.Stance == Stance.Advance, "a plan set in deployment is his at once");
         Run(b, 3);
-        Check(d.Goal.Kind == GoalKind.Hold && b.Report(d) == "AWAITS THE HORN", $"he holds and waits for the horn ({b.Report(d)})");
+        Check(d.Stance == Stance.Hold && b.Report(d) == "AWAITS THE HORN", $"he holds and waits for the horn ({b.Report(d)})");
         Check(b.SoundHorn(0) == 1 && d.Horn == null, "the horn sends the division that had a plan");
         Run(b, 1);
-        Check(d.Goal.Kind == GoalKind.Take, "and the plan lands within a second, with no rider");
-        Check(b.SetHornPlan(d, new Goal(GoalKind.FallBack, new Vector2(60, -20))) == 0 && d.Horn?.Kind == GoalKind.FallBack, "a plan given during the battle is his at once");
+        Check(d.Stance == Stance.Advance, "and the plan lands within a second, with no rider");
+        Check(b.SetHornPlan(d, new Goal(Post.Reserve, Stance.Wait)) == 0 && d.Horn?.Post == Post.Reserve, "a plan given during the battle is his at once");
     }
 
     /// SG4: a rabble company under a skilled sergeant thinks like veterans; once he falls it is rabble again.

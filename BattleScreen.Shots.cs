@@ -221,7 +221,7 @@ partial class BattleScreen
                 pendingShot = "sergeants-deploy"; shotIndex++; break;
             case 118 when pendingShot == null:
                 selected.Clear(); deploying = false; zoom = 100; camPitch = 0.95f; camFocus = b.DivisionsOf(0).FirstOrDefault() is { } hd ? Vector2.Lerp(hd.Squads[0].Center, b.Centroid(1), 0.12f) : b.Centroid(0); // the horse's wing and the foe in view
-                if (b.DivisionsOf(0).FirstOrDefault() is { } d0) { selectedDivision = d0; hornMode = true; GiveGoal(d0, new Goal(GoalKind.Flank, d0.Squads[0].Center, Side: -1)); }
+                if (b.DivisionsOf(0).FirstOrDefault() is { } d0) { selectedDivision = d0; hornMode = true; GiveGoal(d0, new Goal(Post.LeftWing, Stance.Swing)); }
                 shotFrames = 0; shotIndex++; break;
             case 119 when shotFrames > 20:
                 pendingShot = "sergeants-horn"; shotIndex++; break;

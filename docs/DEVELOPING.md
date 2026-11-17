@@ -89,7 +89,8 @@ BattlePlayer.cs         UpdatePlayer (your own unit), ToggleMount, Rally
 BattleCaptain.cs        captain moves (bash, weapon swap, calling a horse), fatigue, supply wagons, AI retreat
 BattleSiege.cs          assaults: defenders on the wall, ladders and gate routing (Via), battering
 BattleGrid.cs           spatial grid for neighbour queries (Near, Separate, NearestFar, NearestRouter)
-BattleDivision.cs       divisions: Goal, Temper, IssueGoal and OrderDelay, Direct, the sergeant's Brain, AiCommand
+BattleDivision.cs       divisions: Post, Stance, Goal (the pair), Temper, IssueGoal and OrderDelay, Direct, Form/Engage/Flank/Harass
+BattlePosts.cs          officers at posts: FrontLine, where each post lies (SpotOf), the officer's Brain by stance, AiCommand
 BattleCourier.cs        riders carrying orders to divisions; cut down by enemies on the road
 BattleTypes.cs          BattleOptions, Weather, BattleResult, CompanyResult, StackResult
 Squad.cs                a company on the field: Order, Formation, slots
@@ -133,7 +134,7 @@ BattleScreen.Orders.cs  squad orders and drawn lines
 BattleScreen.Draw.cs    render passes, sprites, particles, rain, order lines
 BattleScreen.Shots.cs   staged screenshots (IRONFIELD_SHOTS)
 Hud.cs                  battle 2D interface: layout, drawing and hit-testing
-Hud.Divisions.cs        division cards, goal buttons, goal wheel, goal lines, riders, sergeant pennants
+Hud.Divisions.cs        division cards, stance and post buttons, the officer's wheel, lines to posts, riders, sergeant pennants
 Ui.cs                   immediate-mode panel kit used by the campaign screens
 Controls.cs             rebindable actions (Act enum), defaults, controls.json
 
@@ -188,7 +189,7 @@ Tests run it at a fixed `1/60` s. Each step, with the file it lives in:
 | rebuild the neighbour grid | `BuildGrid` | `BattleGrid.cs` |
 | team centroids and squad bounding circles | `UpdateCentroids` | `Battle.cs` |
 | AI generals, every 0.5 s (team 1 always; team 0 when `AutoPlayer` or it has AI squads) | `General` | `BattleAI.cs` |
-| couriers, goals that arrive, the AI's goals, each division's brain | `UpdateDivisions` | `BattleDivision.cs`, `BattleCourier.cs` |
+| couriers, orders that arrive, the AI's stances, each officer's look | `UpdateDivisions` | `BattleDivision.cs`, `BattlePosts.cs`, `BattleCourier.cs` |
 | siege gate battering | `Batter` | `BattleSiege.cs` |
 | reinforcements, every 1 s | `Reinforce` | `Battle.cs` |
 | called horse, supply wagons | `UpdateCalledHorse`, `Resupply` | `BattleCaptain.cs` |
@@ -288,12 +289,24 @@ come back as `Deployed: false` with no losses.
 
 ### 4.9 Divisions (`BattleDivision.cs`, `BattleCourier.cs`)
 
-A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a `Temper` (Bold, Steady, Cautious), a
-`Skill` (1-10) and a `Goal` (`GoalKind` + point / target squad / flank side). Division squads are left out of
-`Commanded` (your orders) and of the AI general's `Led()`; the division's `Brain` gives their orders instead, every
-0.5-1 s by skill. Goals: Hold and Take (stand at a point, engage what comes within reach, leash back by temper), Attack
-(form toward the target, then engage), Flank (an axis fixed when the goal starts; swing wide, come alongside, hit), Screen
-(stand in front of a friend), Guard (stay by the general), Reserve, Harass (ranged), Pursue, FallBack.
+A `Division` groups squads of one team under an officer (`Unit.Sergeant`), with a `Temper` (Bold, Steady, Cautious), a
+`Skill` (1-10) and a `Goal`: a `Post` and a `Stance` (docs/OFFICERS.md OF1). Division squads are left out of
+`Commanded` (your orders) and of the AI general's `Led()`; the officer's `Brain` (BattlePosts.cs) gives their orders instead,
+every 0.5-1 s by skill. He does what the stance says and never changes it himself (the general does: `AiCommand`).
+
+- **Where a post lies:** `FrontLine(team)` is the middle, facing (toward the enemy's centroid) and the two ends of the side's
+  line: the Front post's companies plus the foot the captain leads himself (not his guard, not bows or horse). Wings stand
+  beside its ends (`WingSpot`), skirmishers `SkirmishAhead` (22 m) ahead (a screen `ScreenAhead`, 12 m), the reserve
+  `ReserveBehind` (30 m) behind. The Front post stands where it was when the stance began (`Division.Spot` and each
+  company's `Offsets`), so Hold and Advance keep the line as you drew it up. `SpotOf(d, goal)` is where a stance would put him.
+- **Stances:** Front: Hold (stand; shields lock against horse; bows shoot), Advance (the spot walks at most 6 m ahead of where
+  the line stands and halts 3 m from the foe), Charge (each company at the enemy nearest it, horse at soft prey). Wing: Guard
+  (beside the line's end; meet a foe within `WingReach` and come back past `WingLeash`), Swing (the old flank: swing wide,
+  come alongside, hit), Charge. Skirmish: Loose (shoot; `Phase` 1 behind the line while foot is within `LooseGiveWay`), Harass,
+  Screen (give way round the nearer end). Reserve: Wait, Plug (`Plugs`: a line company half gone, pressed or running gets the
+  nearest waiting company sent at its foe), Follow (by the captain).
+- **Saved names:** `DivisionSpec.Goal` and the campaign's `DivisionRecord.Goal` are strings read by `Goal.FromName`: "Post:Stance",
+  or an old goal name mapped to the nearest post (Hold -> Front Hold, FlankLeft -> LeftWing Swing, Reserve -> Reserve Plug...).
 
 - **Orders (no delay for now):** `IssueGoal(d, goal)` sets `d.Pending` and `d.PendingAt = Time + OrderDelay(d)`; `UpdateDivisions`
   swaps it in when due. `OrderDelay` is 0 while `Battle.Riders` is false (docs/OFFICERS.md OF0), so goals land next tick. A newer goal replaces a pending one. `Direct(squad, act)` delays a plain order to one company the
@@ -326,7 +339,7 @@ A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a 
   sizes its companies the same way (`FullCount`); `Armies.Random` keeps its small base counts for the many small test battles.
 - **Distance:** each side stands `Battle.Stand` (35 m) behind the old 30 m line, about 130 m apart; `MapRadius` grows by
   `Stand - 15` so the rear lines keep room, and the forest clearing's ring of woods moves out with it.
-- **Replays:** goals you give are recorded (`Frame.Goals`) and re-issued on playback; the AI's are recomputed. Direct orders
+- **Replays:** posts and stances you give are recorded (`Frame.Goals`, `GoalOrder.Post`/`Stance`) and re-issued on playback; the AI's are recomputed. Direct orders
   are recorded when they land, as ordinary order changes.
 
 ### 4.10 Ground (docs/archive/TERRAIN.md)
@@ -723,7 +736,7 @@ Put battle tests in `Tests/BattleTests.cs`, campaign tests in `Tests/CampaignTes
 `Tests/CareerTests.cs`, and add the call to `SelfTest.Run()`. Use fixed seeds so results are repeatable.
 
 Battle-scale tests: `ScaleBattle` (600 a side, divided, deploys without overlaps, under 12 ms a tick, replays exactly),
-`DivisionGoals` (delay, countermand, direct orders, leash, flank, a fallen sergeant, replay) and `Couriers`; campaign:
+`DivisionGoals` (orders land, direct orders, Hold never chases, Advance halts at contact, Guard beside the line, Swing, Loose gives way, Plug, a fallen sergeant, old names, replay) and `Couriers`; campaign:
 `CampaignDivisions` (make, assign, save, into battle, old saves).
 
 Other tools: `--balance N` writes CSVs of N headless campaigns and battles to `balance/` (gitignored); `--pacing N` runs the

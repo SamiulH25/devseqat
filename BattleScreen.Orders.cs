@@ -80,41 +80,27 @@ partial class BattleScreen
     /// Companies you can pick: your retinue and the companies of your divisions (their orders arrive late).
     IEnumerable<Squad> Selectable => battle.SquadsOf(0).Where(s => !s.AiControlled);
 
-    /// Give a division a goal (it reaches the sergeant after a delay; before the battle starts, at once).
+    /// Give a division a post and stance (it lands at once; with the horn plan on, it is kept until the horn).
     void GiveGoal(Division d, Goal g)
     {
         if (hornMode) { battle.SetHornPlan(d, g, now: deploying); host.Audio?.Play(Cue.Order, 0.65f); return; } // kept until the horn (SG2)
         battle.IssueGoal(d, g, now: deploying);
-        Cue h = g.Kind switch
+        Cue h = g.Stance switch
         {
-            GoalKind.Attack or GoalKind.Flank or GoalKind.Pursue or GoalKind.Take => Cue.HornCharge,
-            GoalKind.FallBack => Cue.HornRetreat,
-            GoalKind.Hold or GoalKind.Guard or GoalKind.Screen => Cue.HornHold,
+            Stance.Charge or Stance.Advance or Stance.Swing => Cue.HornCharge,
+            Stance.Hold or Stance.Guard or Stance.Wait or Stance.Follow or Stance.Screen => Cue.HornHold,
             _ => Cue.Order,
         };
         host.Audio?.Play(h, 0.65f);
     }
 
-    void GoalCommand(Division d, GoalKind kind, int side)
+    /// The right button with an officer picked: his companies take the order directly (each then follows it, not him,
+    /// until he gets new orders).
+    void OrderDivisionCompanies(Division d)
     {
-        var mid = d.Squads.Where(s => s.Alive > 0).Select(s => s.Center).DefaultIfEmpty(Vector2.Zero).Aggregate((a, b) => a + b) / Math.Max(1, d.Squads.Count(s => s.Alive > 0));
-        var foe = battle.SquadsOf(1).Where(s => s.Alive > 0).OrderBy(s => Vector2.DistanceSquared(s.Center, mid)).FirstOrDefault();
-        var enemy = battle.Centroid(1);
-        var away = mid - enemy;
-        if (away.LengthSquared() < 1) away = -Vector2.UnitY;
-        away.Normalize();
-        Goal g = kind switch
-        {
-            GoalKind.Attack or GoalKind.Harass => new Goal(kind, Target: foe),
-            GoalKind.Flank => new Goal(kind, Target: foe, Side: side),
-            GoalKind.Screen => new Goal(kind, Target: battle.SquadsOf(0).Where(s => s.Alive > 0 && s.Division != d).OrderBy(s => Vector2.DistanceSquared(s.Center, mid)).FirstOrDefault()),
-            GoalKind.Take => new Goal(kind, mid - away * 25),
-            GoalKind.FallBack => new Goal(kind, mid + away * 30),
-            GoalKind.Hold => new Goal(kind, mid),
-            GoalKind.Ambush => new Goal(kind, battle.BestPlace(mid, 60, p => p.Hide)?.Pos ?? mid), // the nearest wood to hide in
-            _ => new Goal(kind, mid),
-        };
-        GiveGoal(d, g);
+        selected.Clear();
+        foreach (var s in d.Squads) if (s.Alive > 0) selected.Add(s);
+        selectedDivision = null;
     }
 
     void Command(Cmd c)
@@ -372,7 +358,7 @@ partial class BattleScreen
         if (list.Count == 0) { battle.Log("You have no divisions. Make them on the campaign map (V)."); return; }
         int i = selectedDivision == null ? -1 : list.IndexOf(selectedDivision);
         selectedDivision = i + 1 < list.Count ? list[i + 1] : null;
-        if (selectedDivision != null) { selected.Clear(); battle.Log($"Goals for {selectedDivision.Name}: {selectedDivision.Goal.Describe}"); }
+        if (selectedDivision != null) { selected.Clear(); battle.Log($"{selectedDivision.Name}, {Goal.Label(selectedDivision.Post).ToLowerInvariant()}: {selectedDivision.Goal.Describe}"); }
     }
 
     /// Line of the selected squads' combined width, centred on `center`, facing `toward`.

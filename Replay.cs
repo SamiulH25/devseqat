@@ -50,8 +50,8 @@ public sealed class Replay
         public int Division, Target = -1, Side = 1;
         /// A horn plan, not a goal (docs/SERGEANTS.md SG2).
         public bool Plan;
-        public GoalKind Kind;
-        public Vector2 Point;
+        public Post Post;
+        public Stance Stance;
     }
 
     /// One of your companies' orders, recorded when it changes.
@@ -121,7 +121,7 @@ public sealed class Replay
             if (f.Goals != null)
                 foreach (var g in f.Goals)
                 {
-                    var goal = new Goal(g.Kind, g.Point, g.Target >= 0 ? b.Squads[g.Target] : null, g.Side);
+                    var goal = Goal.Of(g.Post, g.Stance);
                     if (g.Plan) b.SetHornPlan(b.Divisions[g.Division], goal); else b.IssueGoal(b.Divisions[g.Division], goal);
                 }
             if (f.CallUps != null) foreach (var c in f.CallUps) b.CallUp(c[0], c[1], c[2] >= 0 ? b.Divisions[c[2]] : null);
