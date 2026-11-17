@@ -350,7 +350,18 @@ sealed partial class Hud
             int bw = idx >= 10 ? U(18) : U(13);
             Rect(new Rectangle(r.X + U(3), r.Y + U(3), bw, U(13)), sel ? Gold : Color.Black * 0.75f);
             Text($"{idx}", r.X + U(5), r.Y + U(6), sel ? Kit.IronDark : Color.White, 1);
-            if (s.Restless > 0.15f) { Rect(new Rectangle(r.X + U(3), r.Y + U(46), (int)((r.Width - U(6)) * Math.Min(1, s.Restless / 0.75f)), U(3)), s.Restless > 0.5f ? Bad : Orange); if (s.Restless > 0.3f) Text("RST", r.X + U(4), r.Y + U(38), s.Restless > 0.5f ? Bad : Orange, 1); } // restless: the men's itch to go in (BattleUrge.cs)
+            // A plate across the portrait's foot: the men's itch to go in (RST, BattleUrge.cs), else what its sergeant is doing (OF5).
+            if (s.Restless > 0.15f) Rect(new Rectangle(r.X + U(3), r.Y + U(46), (int)((r.Width - U(6)) * Math.Min(1, s.Restless / 0.75f)), U(3)), s.Restless > 0.5f ? Bad : Orange);
+            var (plate, pc) = s.Restless > 0.3f ? ("RESTLESS", Orange) // never red: red is NO SERGEANT
+                : s.SgtDoing != SgtTask.None && active > 0 ? (Battle.SergeantTag(s.SgtDoing), s.SgtDoing == SgtTask.Down ? new Color(255, 106, 85) : s.SgtDoing == SgtTask.Rallying ? Warn : s.SgtDoing == SgtTask.Reforming ? Orange : Style.Text)
+                : ("", Color.White);
+            if (plate != "")
+            {
+                var band = new Rectangle(r.X + U(3), r.Y + U(35), r.Width - U(6), U(11));
+                Rect(band, Color.Black * 0.8f);
+                Rect(new Rectangle(band.X, band.Y, band.Width, U(1)), pc * 0.8f);
+                TextC(kit.Fit(plate, band.Width - U(4)), band.Center.X, band.Y + U(3), pc, 1);
+            }
             // Its order as one picture in the corner (PT4); a crossed bow when it holds its fire, a dot for orders queued or a
             // standing rule. Formation, drill, tier and the rest are on the hover card.
             var (oi, oc) = OrderMark(s);

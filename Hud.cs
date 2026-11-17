@@ -730,6 +730,9 @@ sealed partial class Hud
         };
         if (fights.TryGetValue(s, out var fight)) lines.Insert(3, (FightLine(s, fight), Standing(s, fight).Col));
         if (s.Company?.Traits is { Length: > 0 } tr) lines.Add(("OFFICER: " + string.Join(", ", tr).ToUpperInvariant(), Gold));
+        // Its sergeant (OF5): what he is doing, or how long until another man steps up.
+        if (s.SgtDoing == SgtTask.Down) lines.Add(($"SERGEANT DOWN: A GRADE WORSE FOR {MathF.Max(0, s.SgtDownAt + Battle.StepUpTime(s) - B.Time):0} S", Bad));
+        else if (Battle.SergeantUp(s)) lines.Add(("SERGEANT: " + (s.SgtDoing == SgtTask.None ? "KEEPING ORDER" : Battle.SergeantText(s.SgtDoing)), Dim));
         int w = lines.Max(l => TW(l.Item1, 1)) + U(16), h = lines.Count * U(13) + U(10);
         var r = new Rectangle(Math.Min(Mouse.X + U(18), W - w - 4), Math.Min(Mouse.Y + U(18), H - h - 4), w, h);
         Panel(r);

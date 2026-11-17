@@ -449,6 +449,7 @@ public sealed partial class Battle
         PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
         Close(s, dt);   // a charging company closes as a body
         UpdateFormed(s, dt); // its order: lost and won back (BattleDrill.cs)
+        if (tick % 60 == 30) UpdateSergeant(s); // its sergeant keeps its order (BattleSergeants.cs)
         if (tick % 60 == 0) TipCompany(s); // a company whose men have lunged one by one goes in as a body (BattleUrge.cs)
     }
 

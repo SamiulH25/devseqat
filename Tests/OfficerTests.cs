@@ -155,4 +155,39 @@ public static partial class SelfTest
         var foe = b.AddSquad(1, Troops.Get("lancers"), 10, new(60, 40), 5, -Vector2.UnitY);
         Check(b.Situation(wing).StartsWith("HORSE ") && b.Situation(wing).EndsWith(" M"), $"the card names the nearest enemy and how far ({b.Situation(wing)})");
     }
+
+    /// OF5: every company has a sergeant who keeps its order. He rallies wavering men near him; when he falls the company
+    /// drops about a grade until another man steps up, and then has it back.
+    static void CompanySergeants()
+    {
+        var b = Battle.Empty(61);
+        var s = b.AddSquad(0, Troops.Get("men_at_arms"), 20, new(0, 0), 10, Vector2.UnitY);
+        Run(b, 1.1f);
+        Check(s.Sgt is { Active: true } && s.SgtDoing != SgtTask.Down, "a company has a sergeant from the start");
+        var grade = s.Grade;
+        float drill = s.Drill;
+
+        // Rallying: shaken men near him take heart; with no sergeant they do not.
+        float Rally(bool withSgt)
+        {
+            var bb = Battle.Empty(62);
+            var q = bb.AddSquad(0, Troops.Get("men_at_arms"), 20, new(0, 0), 10, Vector2.UnitY);
+            Run(bb, 1.1f);
+            if (!withSgt) { q.Sgt = null; q.SgtDownAt = float.MaxValue; } // no sergeant, and no drill lost (a fair comparison)
+            foreach (var u in q.Units) u.Morale = 30;
+            Run(bb, 2);
+            return q.Units.Where(u => u.Active).Average(u => u.Morale);
+        }
+        float with = Rally(true), without = Rally(false);
+        Console.WriteLine($"officers: shaken company's morale after 2 s: {with:0} with its sergeant, {without:0} without");
+        Check(with > without + 2, "a sergeant rallies wavering men");
+
+        // He falls: a grade worse, then another man steps up and it is as before.
+        s.Sgt!.Dead = true;
+        Run(b, 1.1f);
+        Console.WriteLine($"officers: sergeant down: drill {drill:0.00} -> {s.Drill:0.00} ({grade} -> {s.Grade}), step up in {Battle.StepUpTime(s):0} s");
+        Check(s.SgtDoing == SgtTask.Down && s.Grade < grade, "with its sergeant down the company fights a grade worse");
+        Run(b, Battle.StepUpTime(s) + 1.5f);
+        Check(s.Sgt is { Active: true } && MathF.Abs(s.Drill - drill) < 0.001f, "another man steps up and the company is itself again");
+    }
 }

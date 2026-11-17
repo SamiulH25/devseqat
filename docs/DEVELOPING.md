@@ -324,6 +324,14 @@ every 0.5-1 s by skill. He does what the stance says and never changes it himsel
   to `Assign` them. AUTO-FILL (tray, deployment, `Battle.AutoFill`) gives your companies to posts that suit them (horse
   wings, bows skirmish, foot front then reserve), up to `DivisionFill` each, leaving you three. With an officer picked,
   keys 1-3 are his post's stances (shown on the buttons).
+- **Company sergeants (OF5, `BattleSergeants.cs`):** every company but beasts, the raised dead and swarms has a sergeant
+  (`Squad.Sgt`: a named man first, then its best man by tier), appointed at its first look. Once a second (`tick % 60 == 30`)
+  `UpdateSergeant` picks his task: RE-FORMING (broken or broke ranks), HOLDING THEM BACK (restless), RALLYING (a tenth of
+  its men under 40 morale: men within 10 m of him under 55 gain 2.5 a second), DRESSING (Formed under 0.9). While he stands
+  the ranks re-form 25 % quicker (`UpdateFormed`) and his men's urge falls faster (`UpdateUrge`, +0.1). When he falls the
+  company loses `SergeantLoss` (0.25) drill, about a grade, kept in `SgtPenalty`, until another man steps up after
+  `StepUpTime` (8 s elite to 24 s rabble) and it is given back. The card shows a plate across the portrait's foot (DRESSING, RALLYING, RE-FORMING,
+  HOLDING, NO SERGEANT; RESTLESS wins over them); the hover card a line. No dice, so replays are untouched.
 - **Saved names:** `DivisionSpec.Goal` and the campaign's `DivisionRecord.Goal` are strings read by `Goal.FromName`: "Post:Stance",
   or an old goal name mapped to the nearest post (Hold -> Front Hold, FlankLeft -> LeftWing Swing, Reserve -> Reserve Plug...).
 

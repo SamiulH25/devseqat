@@ -228,9 +228,15 @@ partial class BattleScreen
             case 120 when pendingShot == null:
                 hornMode = false; selectedDivision = null;
                 if (b.DivisionsOf(0).Skip(1).FirstOrDefault() is { } d1 && b.ReservesOf(0).Count > 0) b.CallUp(0, 0, d1);
+                // Company sergeants at work on the cards (OF5): one down, one dressing loose ranks, one rallying shaken men.
+                b.AppointSergeants();
+                var sc = b.Commanded.Where(s => s.Sgt != null).Take(3).ToList();
+                if (sc.Count > 0) sc[0].Sgt!.Dead = true;
+                if (sc.Count > 1) sc[1].Formed = 0.7f;
+                if (sc.Count > 2) foreach (var u in sc[2].Units) u.Morale = 30;
                 camFocus = b.Centroid(0) + new Vector2(0, 20); camPitch = 0.8f; zoom = 75;
                 shotFrames = 0; shotIndex++; break;
-            case 121 when shotFrames > 20:
+            case 121 when shotFrames > 70: // a second, so each sergeant has looked
                 pendingShot = "sergeants-callup"; shotIndex++; break;
             case 122 when pendingShot == null:
                 SetCommand(false); blend = 0; b.Player.Pos = b.Centroid(0) - new Vector2(0, 12); yaw = MathHelper.PiOver2; pitch = 0.2f;

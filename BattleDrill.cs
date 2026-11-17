@@ -84,6 +84,7 @@ public partial class Battle
         f -= MathF.Min(0.1f, routing * 0.02f) * dt;
         float rate = contact ? GradeOf(s.Drill) >= Grade.Veteran ? s.Drill * 0.05f : 0 : s.Drill * 0.25f;
         if (rate > 0 && Steadied(s)) rate *= 1.5f;
+        if (rate > 0 && SergeantUp(s)) rate *= 1.25f; // its sergeant dresses the ranks
         f += rate * dt;
         float ground = Terrain.GroundDefAt(s.Anchor).Order;
         if (ground < 0.6f && f > ground) f = MathF.Max(ground, f - 0.2f * dt); // woods and water break up any ranks
