@@ -7,7 +7,7 @@ namespace Ironfield;
 /// BattleScreen: the staged screenshot script (IRONFIELD_SHOTS).
 partial class BattleScreen
 {
-    bool shotOrders;
+    bool shotOrders, shotHold;
 
     void ShotScript()
     {
@@ -32,7 +32,7 @@ partial class BattleScreen
             case 4 when b.Time > 20f:
                 camFocus = b.Centroid(0); camYaw = 1.9f; camPitch = 0.9f; zoom = 60;
                 pendingShot = "command-overview"; shotIndex++; break;
-            case 5 when b.Time > 20.5f && !shotOrders: // orders as pictures (docs/PLAYTEST.md PT4): two companies sent at a foe, bows holding, MORE open
+            case 5 when b.Time > 20.5f && !shotOrders: // orders as pictures (docs/PLAYTEST.md PT4): two companies sent at a foe, bows holding, the deck lit
             {
                 shotOrders = true;
                 var mine = b.Commanded.Where(q => q.Alive > 0).ToList();
@@ -40,12 +40,10 @@ partial class BattleScreen
                 selected.Clear();
                 foreach (var q in mine.Where(q => q.Units[0].Type.Ammo == 0).OrderBy(q => Vector2.Distance(q.Centroid(), b.Centroid(0))).Take(2)) { q.Order = Order.Charge; q.Target = foe; selected.Add(q); }
                 if (mine.FirstOrDefault(q => q.Units[0].Type.Ammo > 0) is Squad bows) bows.FireAtWill = false;
-                hud.MoreOrders = true;
                 camFocus = b.Centroid(0); camYaw = 1.9f; camPitch = 0.9f; zoom = 60; // as the overview, so the two compare
                 pendingShot = "command-orders"; break;
             }
             case 5 when b.Time > 20.5f && pendingShot == null:
-                hud.MoreOrders = false;
                 camFocus = new Vector2(0, -60); camYaw = MathHelper.PiOver2; camPitch = 0.32f; zoom = 90;
                 pendingShot = "landscape"; shotIndex++; break;
             case 6 when b.Time > 21f && groundView != true:
@@ -229,22 +227,59 @@ partial class BattleScreen
                 pendingShot = "sergeants-horn"; shotIndex++; break;
             case 120 when pendingShot == null:
                 hornMode = false; selectedDivision = null;
-                if (b.DivisionsOf(0).Skip(1).FirstOrDefault() is { } d1)
-                {
-                    var c = d1.Squads[0].Center;
-                    d1.Query = new Query("Their horse comes at our flank!", "STAND FAST", new Goal(GoalKind.Hold, c), "FALL BACK", new Goal(GoalKind.FallBack, c), true, b.Time + 9);
-                    if (b.ReservesOf(0).Count > 0) b.CallUp(0, 0, d1);
-                }
+                if (b.DivisionsOf(0).Skip(1).FirstOrDefault() is { } d1 && b.ReservesOf(0).Count > 0) b.CallUp(0, 0, d1);
                 camFocus = b.Centroid(0) + new Vector2(0, 20); camPitch = 0.8f; zoom = 75;
                 shotFrames = 0; shotIndex++; break;
             case 121 when shotFrames > 20:
-                pendingShot = "sergeants-ask"; shotIndex++; break;
+                pendingShot = "sergeants-callup"; shotIndex++; break;
             case 122 when pendingShot == null:
                 SetCommand(false); blend = 0; b.Player.Pos = b.Centroid(0) - new Vector2(0, 12); yaw = MathHelper.PiOver2; pitch = 0.2f;
                 shotFrames = 0; shotIndex++; break;
             case 123 when shotFrames > 20:
                 pendingShot = "sergeants-field"; shotIndex++; break;
             case 124 when pendingShot == null: Exit(); break;
+            // The two views (docs/PLAYTEST.md PT4, "As rebuilt"; IRONFIELD_SHOTS_FROM=hud): the fight view bare, an arm told to
+            // attack, the order ring, the hold-there marker; then the command view, companies sent at a foe, one company's deck.
+            case 125 when b.Time > 2f:
+                b.Player.Pos = new(0, -34 - Battle.Stand); yaw = MathHelper.PiOver2; pitch = 0.2f; aimDir = AttackDir.Right;
+                pendingShot = "fight-view"; shotIndex++; break;
+            case 126 when pendingShot == null:
+                ListenArm(1, false); Command(Cmd.Advance);
+                shotFrames = 0; shotIndex++; break;
+            case 127 when shotFrames > 6:
+                pendingShot = "fight-orders"; shotIndex++; break;
+            case 128 when pendingShot == null:
+                shotWheel = wheelOpen = true; wheelVec = new Vector2(60, -60);
+                pendingShot = "fight-ring"; shotIndex++; break;
+            case 129 when pendingShot == null:
+                shotWheel = wheelOpen = false; shotHold = true; holdHeld = 1; pitch = 0.32f; ListenArm(0, false);
+                shotFrames = 0; shotIndex++; break;
+            case 130 when shotFrames > 3:
+                pendingShot = "fight-hold"; shotIndex++; break;
+            case 131 when pendingShot == null && b.Time > 20f:
+                shotHold = false; holdHeld = -1;
+                SetCommand(true); blend = 1; camFocus = b.Centroid(0); camYaw = 1.9f; camPitch = 0.9f; zoom = 60; shotNoMouse = true;
+                pendingShot = "command-view"; shotIndex++; break;
+            case 132 when pendingShot == null:
+            {
+                var mine = b.Commanded.Where(q => q.Alive > 0).ToList();
+                var foe = b.SquadsOf(1).Where(q => q.Alive > 0).OrderBy(q => Vector2.Distance(q.Centroid(), b.Centroid(0))).First();
+                foreach (var q in mine.Where(q => q.Units[0].Type.Ammo == 0).OrderBy(q => Vector2.Distance(q.Centroid(), b.Centroid(0))).Take(2)) { q.Order = Order.Charge; q.Target = foe; selected.Add(q); }
+                if (mine.FirstOrDefault(q => q.Units[0].Type.Ammo > 0) is Squad bows) bows.FireAtWill = false;
+                shotFrames = 0; shotIndex++; break;
+            }
+            case 133 when shotFrames > 3:
+                pendingShot = "command-attack"; shotIndex++; break;
+            case 134 when pendingShot == null:
+                selected.Clear();
+                if (b.Commanded.FirstOrDefault(q => q.Alive > 0 && q.Units[0].Type.Ammo > 0) is Squad one) selected.Add(one);
+                paused = true; shotFrames = 0; shotIndex++; break;
+            case 135 when shotFrames > 3:
+                shotMouse = hud.ButtonCentre(Cmd.FireAtWill);
+                shotFrames = 0; shotIndex++; break;
+            case 136 when shotFrames > 2:
+                pendingShot = "command-bows"; shotIndex++; break;
+            case 137 when pendingShot == null: Exit(); break;
         }
     }
 

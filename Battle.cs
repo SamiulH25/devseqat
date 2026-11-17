@@ -387,7 +387,7 @@ public sealed partial class Battle
         UpdateMorale(dt);
         UpdateUrge(dt); // each man's itch to go in, or hang back (BattleUrge.cs)
         UpdateAlerts(dt); // what needs you (BattleAlerts.cs): reads the sim, changes nothing
-        UpdateHunt(dt); // your men cover you when they come for you (BattleHunt.cs)
+        UpdateHunt(dt); // the stand goal when four come for you (BattleHunt.cs)
         UpdateBanner();
         UpdateRescue(dt);
         Mark(8);

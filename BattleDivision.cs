@@ -65,8 +65,6 @@ public sealed class Division
     public Goal? Horn, PendingHorn;
     public float HornAt;
     /// A question he has put to you (SG3), and when he may ask again.
-    public Query? Query;
-    public float QueryAfter;
     /// Men standing at the last loss check, and how many fell since the one before (SG3: under arrows).
     public int AliveThen = -1, Losing;
     public float LossCheck;
@@ -132,10 +130,16 @@ public partial class Battle
         return new Goal(Enum.TryParse<GoalKind>(name, out var k) ? k : GoalKind.Hold, at);
     }
 
-    /// Seconds an order takes to reach the sergeant: a base, the ride from the general, longer if he is fighting or
-    /// dead (his men wait for someone to take charge), shorter with his skill and with the Horns perk.
+    /// Riders carry orders (off for now: docs/OFFICERS.md OF0, every order lands at once).
+    public const bool Riders = false;
+
+    /// Seconds an order takes to reach the sergeant: 0 while `Riders` is off. With riders: a base, the ride from the
+    /// general, longer if he is fighting or dead (his men wait for someone to take charge), shorter with his skill and with
+    /// the Horns perk.
     public float OrderDelay(Division d)
     {
+#pragma warning disable CS0162 // unreachable while Riders is off
+        if (!Riders) return 0;
         var from = GeneralPos(d.Team);
         var to = CourierGoal(d);
         if (InVoice(d)) return 0.6f; // near enough to shout (docs/SERGEANTS.md SG5)
@@ -147,6 +151,7 @@ public partial class Battle
         if (d.Team == 0 && Options.Horns) t *= 0.7f;
         if (d.Team == 0 && Perk("MasterOfWar")) t *= 0.5f;
         return t;
+#pragma warning restore CS0162
     }
 
     /// Send a division a new goal: it rides out now and takes over when it arrives (replacing any goal still on its way).
@@ -160,7 +165,7 @@ public partial class Battle
         SendCourier(d, Time + delay, true);
         if (Recording != null && d.Team == 0 && !ai)
             (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Kind = g.Kind, Point = g.Point, Target = g.Target != null ? Squads.IndexOf(g.Target) : -1, Side = g.Side });
-        if (d.Team == 0) Log(countermand ? $"New orders ride to {d.Name}: {g.Describe} ({delay:0}s)." : $"Orders ride to {d.Name}: {g.Describe} ({delay:0}s).");
+        if (d.Team == 0 && delay > 0) Log(countermand ? $"New orders ride to {d.Name}: {g.Describe} ({delay:0}s)." : $"Orders ride to {d.Name}: {g.Describe} ({delay:0}s).");
         return delay;
     }
     List<Replay.GoalOrder>? goalRecords;
@@ -218,7 +223,7 @@ public partial class Battle
             }
             if (Time < d.NextThink) continue;
             d.NextThink = Time + 0.5f + (10 - d.Skill) * 0.06f; // a sharp sergeant reacts quicker
-            if (!LeaderCheck(d) || d.Alive == 0) { d.Query = null; continue; }
+            if (!LeaderCheck(d) || d.Alive == 0) continue;
             Brain(d);
         }
     }
@@ -295,7 +300,6 @@ public partial class Battle
         int foe = 1 - d.Team;
         var center = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / live.Count;
         var dir = Toward(center, centroid[foe], d.Team);
-        Questions(d, live, center, dir); // SG3: he asks at moments that matter
         float chargeAt = d.Temper switch { Temper.Bold => 22, Temper.Steady => 14, _ => 9 } + (d.Has("Hothead") ? 6 : 0);
         float leash = d.Temper switch { Temper.Bold => 35, Temper.Steady => 20, _ => 12 };
         var g = d.Goal;

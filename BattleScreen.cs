@@ -4,8 +4,10 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Ironfield;
 
-/// The battle screen: rendering, camera and input around a headless Battle. Two views with an eased camera blend between them:
-/// field (third person, you fight) and command (free orbit camera, time slowed, you direct squads).
+/// The battle screen: rendering, camera and input around a headless Battle. Two views with an eased camera blend between them,
+/// each with its own HUD and its own way to give orders (docs/PLAYTEST.md PT4, "As rebuilt"): fight (third person, you are the
+/// captain; arms listen on number keys, orders go where you look) and command (free orbit camera and a cursor; you pick
+/// companies and order them from the deck, at the battle's own speed while the captain keeps his guard).
 /// The world (terrain, foliage, sky) is 3D geometry from World; units are 2D sprite puppets. Hosted by ScreenHost.
 sealed partial class BattleScreen
 {
@@ -22,10 +24,10 @@ sealed partial class BattleScreen
     Shading? shading => host.Shading;
     Quality quality { get => host.Quality; set => host.Quality = value; }
 
-    const float CommandTimeScale = 0.25f, WheelTimeScale = 0.08f, BlendTime = 0.45f, DoubleClick = 0.35f;
+    const float RingTimeScale = 0.2f, BlendTime = 0.45f, DoubleClick = 0.35f;
     /// Battle speeds ([ and ], docs/archive/COMBAT_QOL.md Q4), and the one chosen (1 = normal).
-    static readonly float[] Speeds = { 0.5f, 1, 2, 3 };
-    int speed = 1;
+    static readonly float[] Speeds = { 0.25f, 0.5f, 1, 2, 3 };
+    int speed = 2;
     /// Alerts already looked at for pausing (Settings.PauseOnAlerts).
     int alertsSeen;
     /// Campaign memory (docs/archive/COMBAT_QOL.md Q6): the save the battle came from, the layout before the remembered one was
@@ -109,9 +111,10 @@ sealed partial class BattleScreen
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
     // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/archive/MELEE.md), =magic at the magic scenes,
     // =spectacle at the spectacle scenes (docs/archive/SPECTACLE.md), skipping the rest.
-    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, "sergeants" => 117, _ => 0 }, shotFrames;
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, "sergeants" => 117, "hud" => 125, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
+    Point? shotMouse; // a shot points the mouse at something to show its hover card
 
     public BattleScreen(ScreenHost host) { this.host = host; }
 
@@ -290,7 +293,9 @@ sealed partial class BattleScreen
     void SetCommand(bool on)
     {
         command = on;
-        if (!on) attackMoveMode = false;
+        attackMoveMode = false;
+        wheelOpen = false;
+        holdHeld = -1;
         dragStart = null;
         boxStart = null;
         if (on) { camFocus = battle.Player.Pos; camYaw = yaw; camPitch = 0.95f; }
@@ -321,10 +326,14 @@ sealed partial class BattleScreen
         if (battle.Units.Any(battle.Rescuable))
             Tips.Show("rescue", "One of your named men is down (the gold mark). Stand over him while the fight goes on\nand you carry him out alive, if you are quick.");
         if (deploying) Tips.Show("deploy", $"Deployment. Select a company (click its card or press 1-9), then hold RMB and drag to draw its line.\nYou can only deploy in your third of the field. Press {ctl.First(Act.Pause)} (or START BATTLE) to begin.");
-        else if (!command && battle.Player.Active) Tips.Show("field", $"Field view: you fight. On horseback {ctl.First(Act.Forward)}/{ctl.First(Act.Back)} rein, {ctl.First(Act.Left)}/{ctl.First(Act.Right)} turn, {ctl.First(Act.Sprint)} gallops.\nMove the mouse to choose a swing direction, {ctl.First(Act.Attack)} to attack, {ctl.First(Act.Block)} to block (match the red mark to parry).\n{ctl.First(Act.CommandView)}: command view. Hold {ctl.Name(Act.OrderWheel)}: the order wheel. {ctl.First(Act.Help)}: all the keys.");
-        else if (command && !deploying)
+        else if (!command && battle.Player.Active)
         {
-            Tips.Show("command", $"Command view: time slows. Select companies, RMB to move them, RMB-drag to draw a line,\nRMB on an enemy to attack it. {ctl.First(Act.CommandView)} returns to your body: you inspire the men near you.");
+            Tips.Show("field", $"Field view: you fight. On horseback {ctl.First(Act.Forward)}/{ctl.First(Act.Back)} rein, {ctl.First(Act.Left)}/{ctl.First(Act.Right)} turn, {ctl.First(Act.Sprint)} gallops.\nMove the mouse to choose a swing direction, {ctl.First(Act.Attack)} to attack, {ctl.First(Act.Block)} to block (match the red mark to parry).\n{ctl.First(Act.CommandView)}: command the whole field. {ctl.First(Act.Help)}: all the keys.");
+            if (battle.Time > 6) Tips.Show("listen", $"Your men listen by arm: 1 foot, 2 bows, 3 horse, 0 all. {ctl.First(Act.Charge)} sends them at the company you look at.\nHold {ctl.First(Act.HoldPosition)} and let go: they draw up on the ground you look at. Hold {ctl.Name(Act.OrderWheel)}: the order ring.");
+        }
+        if (command && !deploying)
+        {
+            Tips.Show("command", $"Command view: you are the general. Select companies, RMB to move them, RMB-drag to draw a line, RMB on an enemy to attack it.\nThe deck at the bottom right shows what they can do. {ctl.First(Act.Pause)} pauses; the bars at the top left set the speed.\nYour captain keeps his guard but does not strike: FIGHT ({ctl.First(Act.CommandView)}) steps back into him, and he inspires the men near him.");
             if (battle.DivisionsOf(0).Any(d => d.Alive > 0))
                 Tips.Show("divisions", $"Sergeants lead your divisions by goals (Take, Attack, Flank, Screen...).\nClick a Sergeant card on the right (or press {ctl.First(Act.NextDivision)}), then pick a Goal or RMB on ground/enemy/ally.\nOrders ride out and take a few seconds. Click BACK (or a company) to order companies directly.");
         }
@@ -365,7 +374,7 @@ sealed partial class BattleScreen
         // The opening sweep runs until it ends or you press anything.
         if (intro >= 0) { intro += dt; if (intro > IntroTime || LmbPressed || Keyboard.GetState().GetPressedKeyCount() > 0) intro = -1; }
         if (battle.Winner >= 0) ending = ending < 0 ? 0 : ending + dt;
-        float scale = paused || menuOpen || helpOpen || deploying ? 0 : wheelOpen ? WheelTimeScale : command && alive ? CommandTimeScale : 1;
+        float scale = paused || menuOpen || helpOpen || deploying ? 0 : wheelOpen ? RingTimeScale : 1; // the order ring slows the field while you choose
         scale *= Speeds[speed];
         if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
         if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
@@ -523,7 +532,7 @@ sealed partial class BattleScreen
     {
         hud.B = battle; hud.Selected = selected; hud.Ctl = ctl; hud.Minimap = world.Minimap; hud.GroundMap = world.GroundMap;
         hud.GroundView = groundView ?? deploying; // the ground map is up while you deploy, until you close it
-        hud.GroundLine = command && !hud.Over(ms.Position) && dragStart == null ? Grounds.Describe(battle.Terrain.GroundAt(mouseGround)) : null;
+        hud.GroundLine = command && shotMouse == null && !hud.Over(ms.Position) && dragStart == null ? Grounds.Describe(battle.Terrain.GroundAt(mouseGround)) : null;
         hud.OrderWarning = command && dragStart != null && Targets().Count > 0 ? battle.GroundWarning(Targets(), mouseGround) : null;
         if (command && dragStart != null && Targets() is { Count: > 0 } ts)
         {
@@ -531,6 +540,7 @@ sealed partial class BattleScreen
         }
         else { route = null; routeAt = null; }
         hud.CastBy = castBy; hud.CastPick = castPick;
+        hud.HoldPlace = command ? -1 : holdHeld; hud.LookFoe = !command && !deploying && !Overlay && Targets().Count > 0 ? LookFoe() : null;
         hud.Command = command; hud.Paused = paused; hud.Speed = Speeds[speed]; hud.SpeedIdx = speed; hud.AttackMoveMode = attackMoveMode; hud.MenuOpen = menuOpen; hud.HelpOpen = helpOpen;
         hud.ShowResult = battle.Winner >= 0 && !helpOpen && !Ending;
         hud.InCampaign = campaignBattle != null;
@@ -541,9 +551,9 @@ sealed partial class BattleScreen
         if (selectedDivision == null) hornMode = false;
         hud.HornMode = hornMode;
         hud.WheelOpen = wheelOpen; hud.WheelSector = WheelSector() ?? -1; hud.WheelCenter = command && wheelOpen ? wheelOrigin : null;
-        hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = shotNoMouse ? new Point(-999, -999) : ms.Position;
+        hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = shotMouse ?? (shotNoMouse ? new Point(-999, -999) : ms.Position);
         hud.Box = boxStart is Point b && command ? BoxOf(b, ms.Position) : null;
-        hud.HoverSquad = command && !hud.Over(ms.Position) ? PickSquad(mouseGround, 1) ?? PickSquad(mouseGround, 0) : null;
+        hud.HoverSquad = command && shotMouse == null && !shotNoMouse && !hud.Over(ms.Position) ? PickSquad(mouseGround, 1) ?? PickSquad(mouseGround, 0) : null;
         if (hud.Box is { Width: < 6, Height: < 6 }) hud.Box = null;
         hud.Layout(GraphicsDevice.Viewport);
     }

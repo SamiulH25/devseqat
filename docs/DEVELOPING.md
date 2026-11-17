@@ -295,10 +295,10 @@ A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a 
 (form toward the target, then engage), Flank (an axis fixed when the goal starts; swing wide, come alongside, hit), Screen
 (stand in front of a friend), Guard (stay by the general), Reserve, Harass (ranged), Pursue, FallBack.
 
-- **Orders arrive late:** `IssueGoal(d, goal)` sets `d.Pending` and `d.PendingAt = Time + OrderDelay(d)`; `UpdateDivisions`
-  swaps it in when due. A newer goal replaces a pending one. `Direct(squad, act)` delays a plain order to one company the
+- **Orders (no delay for now):** `IssueGoal(d, goal)` sets `d.Pending` and `d.PendingAt = Time + OrderDelay(d)`; `UpdateDivisions`
+  swaps it in when due. `OrderDelay` is 0 while `Battle.Riders` is false (docs/OFFICERS.md OF0), so goals land next tick. A newer goal replaces a pending one. `Direct(squad, act)` delays a plain order to one company the
   same way; when it lands the squad gets `Override = true` and its sergeant leaves it alone until the next goal.
-- **Couriers:** each goal (and each batch of direct orders) sends a `Courier` that rides the line from the general so that it
+- **Couriers (dormant while `Riders` is off):** each goal (and each batch of direct orders) sends a `Courier` that rides the line from the general so that it
   arrives at `PendingAt`. An enemy within 2.5 m cuts it down (after a 1.5 s grace): the order's time moves back by a fresh
   delay, and the next rider bends round the danger. `BattleOptions.Couriers = false` keeps plain delays.
 - **Leaders:** `LeaderCheck` notices a dead sergeant (morale -8 for his men, orders x2 slower) and promotes the best man
@@ -316,10 +316,10 @@ A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a 
   both teams. Test `CommandCap`.
 - **Sergeants that matter (docs/SERGEANTS.md, `BattleCommand.cs`):** the tray (`ReservesOf`, `CallUp` (immediate at time 0
   and recorded in `Replay.Setup`, else a rider of `CallUpDelay` s, `Frame.CallUps`), `Assign` in deployment); horn plans
-  (`SetHornPlan`, `SoundHorn`, `Division.Horn`/`PendingHorn`, `Frame.Horn`, `GoalOrder.Plan`); questions (`Questions` in
-  `Brain`, `Query`, `Answer`, default by temper after `QueryWait`); `WitsGrade` = the better of a company's grade and its
-  sergeant's (`SergeantGrade`); voice (`InVoice`, `VoiceReach` 25 m, 0.6 s); natures (`Division.Traits`, `Has`). UI in
-  `Hud.Command.cs` (tray, question box, division colours and boxes) and `Hud.Divisions.cs` (cards, horn route). Tests in
+  (`SetHornPlan`, `SoundHorn`, `Division.Horn`/`PendingHorn`, `Frame.Horn`, `GoalOrder.Plan`); questions were dropped in
+  docs/OFFICERS.md OF0; `WitsGrade` = the better of a company's grade and its
+  sergeant's (`SergeantGrade`); voice (`InVoice`, `VoiceReach` 25 m; moot while orders land at once); natures (`Division.Traits`, `Has`). UI in
+  `Hud.Command.cs` (tray, division colours and boxes) and `Hud.Divisions.cs` (cards, horn route). Tests in
   `Tests/SergeantTests.cs`; shots with `IRONFIELD_SHOTS_FROM=sergeants`.
 - **Company size:** campaign companies hold `Rules.Cap` places (22 x ArmyScale = 66, horse 16 x 3 = 48), a man taking
   `TierWeight(tier)` places, so 60-70 men of the line and fewer elites. `Armies.Large` (quick battles, bench, scale tests)
@@ -516,9 +516,17 @@ which panel is open; set it to `PanelKind.None` to close. Colours come from `Sty
 ### 6.4 `BattleScreen` and `Hud`
 
 `BattleScreen` wraps a `Battle`: two views blended by an eased camera, **field** (third person, you fight) and **command**
-(orbit camera, slowed time, you direct squads). Input in `BattleScreen.Controls.cs` (`FieldControls`, `CommandControls`),
-orders in `BattleScreen.Orders.cs` (`Command(Cmd)`, drawn lines), rendering in `BattleScreen.Draw.cs`. `Hud.cs` draws the
-battle's 2D interface (cards, minimap, menus, crosshair, order wheel) and answers hit tests.
+(orbit camera and a cursor, you direct companies). They are two games with two HUDs that never show together
+(docs/PLAYTEST.md PT4, "As rebuilt"). Input in `BattleScreen.Controls.cs` (`FieldControls`, `CommandControls`), orders in
+`BattleScreen.Orders.cs` (`Command(Cmd)`, drawn lines), the fight view's own orders in `BattleScreen.Fight.cs` (`ListenArm`:
+number keys pick the arm that listens; `LookFoe`, `HoldKey`: orders go where you look), rendering in `BattleScreen.Draw.cs`.
+`Hud.cs` holds what both views share (layout, hit tests, flags, hover cards); `Hud.Deck.cs` draws the command view (`TopBar`,
+`CaptainPlate`, `Cards`, `OrderDeck`; `LayoutOrders` decides which buttons the chosen companies get, `Lit` which are gold,
+`Info` each order's name, icon, key and hover line); `Hud.Fight.cs` the fight view (`Vitals`, `ArmChips`, `Wheel`, `OrderToast`).
+The command view runs at the battle's speed (`Speeds`, x0.25 to x3); the sim keeps the captain's guard meanwhile
+(`Battle.Guard`, `SelfGuard` in BattlePlayer.cs: he faces and blocks the nearest foe winding up at him, never parries or
+strikes; test `CaptainKeepsGuard`). To add an order to the deck: a `Cmd`, an `Info` entry, a case in `BattleScreen.Command`,
+and a line in `LayoutOrders` saying when it shows.
 
 ### 6.5 Controls
 

@@ -14,3 +14,5 @@ Content/bin/
 .DS_Store
 Thumbs.db
 balance/
+dist/
+docs/world/world.json.bak

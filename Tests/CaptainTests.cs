@@ -5,6 +5,32 @@ namespace Ironfield;
 /// The enemy sees and hunts the captain (docs/COMPANY.md C12-C13).
 public static partial class SelfTest
 {
+    /// PT4: left alone while you command, the captain blocks the blows aimed at him (and never strikes back); the same
+    /// captain standing idle in the fight view takes them.
+    static void CaptainKeepsGuard()
+    {
+        (float Lost, bool Guarded, int Kills) Stand(bool commanding)
+        {
+            var b = Battle.Empty(21);
+            var p = b.Player;
+            p.Pos = Vector2.Zero;
+            var foe = b.AddSquad(1, Troops.Get("levies"), 2, new Vector2(0, 1.6f), 2, -Vector2.UnitY);
+            foe.Order = Order.Charge;
+            b.Commanding = commanding;
+            float hp = p.Hp;
+            bool guarded = false;
+            for (int i = 0; i < 60 * 10 && p.Active; i++) { b.Update(1 / 60f); guarded |= b.SelfGuard; }
+            return (hp - p.Hp, guarded, b.PlayerKills);
+        }
+        var idle = Stand(false);
+        var guard = Stand(true);
+        Check(!idle.Guarded, "a captain you are fighting as does not guard by himself");
+        Check(idle.Lost > 0, "an idle captain is hurt by two levies in ten seconds");
+        Check(guard.Guarded, "a captain left alone while you command raises his guard at a blow");
+        Check(guard.Lost < idle.Lost, $"his guard turns blows ({guard.Lost:0} lost against {idle.Lost:0} idle)");
+        Check(guard.Kills == 0, "he only guards: he strikes no one while you command");
+    }
+
     /// C12: a famed captain is picked over a nearer man of his; the cap on places round him holds; a man at blows keeps his
     /// foe; rabble give ground after he kills; a company that brings him down takes heart; and it all replays exactly.
     static void EnemySeesCaptain()
@@ -81,7 +107,7 @@ public static partial class SelfTest
     }
 
     /// C13: the general sends for a captain who rides far forward, once, and the battle replays; bows never mark you in a
-    /// melee but do in the open; a grudge lord comes for you; the guard closes round its captain; your men cover you.
+    /// melee but do in the open; a grudge lord comes for you; the guard closes round its captain.
     static void EnemyHuntsCaptain()
     {
         // The order: ride out ahead of your line; the general sends for you once (the cooldown holds), and it replays.
@@ -149,16 +175,5 @@ public static partial class SelfTest
         for (int i = 0; i < 240; i++) { if (i % 30 == 0) gd.HuntGeneral(); gd.Player.Pos = gd.EnemyCaptain.Pos + new Vector2(0, -14); gd.Update(1 / 60f); }
         float after = guard.Units.Where(u => u.GuardSlot >= 0).Select(u => Vector2.Distance(u.Pos, gd.EnemyCaptain.Pos)).DefaultIfEmpty(99).Average();
         Check(after < 3.5f && after < before, $"his nearest men close round their captain when you come near ({before:0.0} m to {after:0.0} m)");
-
-        // Your men answer: two or more on you and your nearest idle company comes to cover you.
-        var cv = Battle.Empty(45, new BattleOptions { Renown = 500 });
-        cv.Player.Pos = Vector2.Zero;
-        var mine = cv.AddSquad(0, Troops.Get("levies"), 8, new Vector2(0, -16), 4, Vector2.UnitY);
-        var foes = cv.AddSquad(1, Troops.Get("levies"), 4, new Vector2(0, 3), 4, -Vector2.UnitY);
-        foes.Drill = 0.4f;
-        float covered = -1;
-        for (int i = 0; i < 120 && covered < 0; i++) { cv.Update(1 / 60f); if (mine.CoverUntil > cv.Time) covered = cv.Time; }
-        Check(covered >= 0, "your nearest idle company comes to cover you when two or more are on you");
-        Check(cv.Alerts.Any(a => a.Kind == "cover"), "TO THE CAPTAIN! is raised");
     }
 }

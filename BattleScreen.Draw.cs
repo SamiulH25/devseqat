@@ -697,6 +697,7 @@ partial class BattleScreen
                 foreach (var k in goneSelected) selectedAt.Remove(k);
             }
             OrderArrowLines();
+            HoldMarker(); // the fight view's hold-there marker (BattleScreen.Fight.cs)
             if (command)
             {
                 if (battle.Player.Active) Ring(battle.Player.Pos, 0.75f, Gold * 0.65f, 12, 0.75f);

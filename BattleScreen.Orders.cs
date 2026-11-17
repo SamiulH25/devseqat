@@ -34,7 +34,7 @@ partial class BattleScreen
         foreach (var s in list) late = MathF.Max(late, move ? Move(s, act) : Send(s, act));
         if (move && queueing) what = "then " + what;
         host.Audio?.Play(horn, 0.65f);
-        if (!command) { hud.CombatPrompt = (selected.Count == 0 ? "ALL: " : list.Count == 1 ? list[0].Name.ToUpperInvariant() + ": " : $"{list.Count} SQUADS: ") + what.ToUpperInvariant(); hud.CombatPromptAt = battle.Time; }
+        if (!command) Prompt(hud.ListenWord() + ": " + what.ToUpperInvariant());
         battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
     }
 
@@ -122,7 +122,14 @@ partial class BattleScreen
         var enemy = battle.Centroid(1);
         switch (c)
         {
-            case Cmd.Charge: Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }, move: true, Cue.HornCharge); break;
+            case Cmd.Charge:
+                // In the fight view the charge goes at the company you look at (BattleScreen.Fight.cs); else at the nearest.
+                if (!command && LookFoe() is Squad lf) { OrderArrows(lf.Centroid()); Issue("attack " + lf.Name + "!", s => { s.Order = Order.Charge; s.Target = lf; }, move: true, Cue.HornCharge); }
+                else Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }, move: true, Cue.HornCharge);
+                break;
+            case Cmd.Stakes: PlantStakes(); break;
+            case Cmd.Cast: NextSpell(); break;
+            case Cmd.ShapeLine or Cmd.ShapeWall or Cmd.ShapeSquare or Cmd.ShapeWedge or Cmd.ShapeLoose: SetShape(Hud.ShapeOf(c)!.Value); break;
             case Cmd.AttackMove:
                 if (command) attackMoveMode = !attackMoveMode;
                 else Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge);
@@ -134,7 +141,6 @@ partial class BattleScreen
             case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge); break;
             case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20), move: true, Cue.HornRetreat); break;
             case Cmd.Rule: NextRule(); break;
-            case Cmd.More: hud.MoreOrders = !hud.MoreOrders; break;
             case Cmd.Spacing: Issue("change spacing", s => s.Loose = !s.Loose); break;
             case Cmd.Merge: MergeSelected(); break;
             case Cmd.Relieve: RelieveSelected(); break;
@@ -146,16 +152,7 @@ partial class BattleScreen
                 // Cycle from the first company's formation; each company takes the next one it can (horse has no shield wall).
                 var first = list[0].Choices(list[0].Units[0].Type.HasShield);
                 var next = first[(Array.IndexOf(first, list[0].Formation) + 1) % first.Length];
-                foreach (var s in list)
-                {
-                    var ok = s.Choices(s.Units[0].Type.HasShield);
-                    var f = ok.Contains(next) ? next : Formation.Line;
-                    Send(s, q => q.Formation = f);
-                }
-                battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + next switch
-                {
-                    Formation.ShieldWall => "shield wall!", Formation.Square => "form square!", Formation.Wedge => "wedge!", Formation.Loose => "open ranks!", _ => "form line!",
-                });
+                SetShape(next);
                 break;
             }
             case Cmd.FireAtWill:
@@ -268,23 +265,25 @@ partial class BattleScreen
         selected.RemoveWhere(s => s.FoldedInto != null);
         queueing = ctl.Down(Act.AddToSelection);
         var mine = battle.Commanded.ToList();
+        bool fight = !command && !deploying;
         bool ctrl = kb.IsKeyDown(Keys.LeftControl) || kb.IsKeyDown(Keys.RightControl);
         for (int i = 0; i < 10; i++)
         {
             if (!Pressed(i == 9 ? Keys.D0 : Keys.D1 + i)) continue;
             int digit = (i + 1) % 10;
+            if (fight) { ListenArm(digit, queueing); continue; } // the fight view picks arms, not companies (BattleScreen.Fight.cs)
             if (digit > 0 && (ctrl || groups.ContainsKey(digit))) { Group(digit, ctrl); continue; } // control groups (Q6)
             if (i < mine.Count && !selected.Remove(mine[i])) selected.Add(mine[i]);
         }
         if (ctl.Pressed(Act.SelectAll)) { selected.Clear(); selectedDivision = null; }
         if (ctl.Pressed(Act.NextDivision)) NextDivision();
         if (ctl.Pressed(Act.Horn)) SoundHorn();
-        if ((ctl.Pressed(Act.AnswerA) || ctl.Pressed(Act.AnswerB)) && hud.Asking is { } asker) Answer(asker, ctl.Pressed(Act.AnswerA));
         if (ctl.Pressed(Act.GroundView)) groundView = !(groundView ?? deploying);
         if (ctl.Pressed(Act.Stakes)) PlantStakes();
         if (ctl.Pressed(Act.Cast)) NextSpell();
         foreach (var (cmd, (_, act)) in Hud.Orders)
-            if (act is Act k && ctl.Pressed(k)) Command(cmd);
+            if (act is Act k && ctl.Pressed(k) && !(fight && cmd == Cmd.Hold)) Command(cmd);
+        if (fight && !shotHold) HoldKey(); // a tap holds them where they stand; held, it plants their line where you look
     }
 
     /// The caster you direct and the spell picked (docs/archive/MAGIC_AURA.md 3.1). The next left click on the field casts it there.
@@ -333,10 +332,9 @@ partial class BattleScreen
     /// The goal you pick next is the chosen sergeant's horn plan (docs/SERGEANTS.md SG2).
     bool hornMode;
 
-    /// Clicks on the command tray, a card's ADD, a sergeant's question and the horn; true when one was used.
+    /// Clicks on the command tray, a card's ADD and the horn; true when one was used.
     bool CommandClick(Point p)
     {
-        if (hud.AnswerAt(p) is var (ad, aa)) { Answer(ad, aa); return true; }
         if (hud.HornToggleAt(p)) { hornMode = !hornMode; return true; }
         if (hud.HornAt(p)) { SoundHorn(); return true; }
         if (hud.ReserveAt(p) is int ri)
@@ -365,12 +363,6 @@ partial class BattleScreen
     {
         if (deploying) { battle.Log("The horn sounds once the battle has begun."); return; }
         if (battle.SoundHorn(0) > 0) host.Audio?.Play(Cue.HornCharge, 0.9f);
-    }
-
-    void Answer(Division d, bool a)
-    {
-        var q = d.Query;
-        if (battle.Answer(d, a) is null && q != null) { battle.Log($"To {d.Name}: {(a ? q.LabelA : q.LabelB).ToLowerInvariant()}!"); host.Audio?.Play(a ? Cue.HornCharge : Cue.HornHold, 0.6f); }
     }
 
     /// Cycle the division you give goals to: none, then each living one in turn, then none again.

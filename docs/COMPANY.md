@@ -302,15 +302,14 @@ The general, the bows, the lord, and your own men's answer.
   back while it lasts, as in the clash of champions.
 - **His guard.** The enemy captain's nearest men close round him when you come within 20 m, so reaching him is a fight
   and not a ride past.
-- **Your men answer.** When two or more hold you as their target, the household guard and the nearest company of yours
-  not at blows step in to cover you ("TO THE CAPTAIN!"), unless you have ordered them to hold. A named man who saves
-  you earns the deed (C2).
+- **Your men answer.** Dropped 2026-11-16: companies called to cover you ("TO THE CAPTAIN!") broke ranks and charged
+  their own nearest foe when no enemy was near you, so they looked to run in for no reason.
 - **It is worth it.** New personal goals ("the men sent for you: none get home", "stand when four come for you"), and
   the report's line for what the enemy threw at you.
 - **Difficulty** scales the cap, the general's cooldown and the bows; Easy keeps the notice and the feedback but not the
   volleys.
 - **Tests:** `EnemyHuntsCaptain` (the order goes out once, is recorded and replays; bows never mark you in a melee; a
-  grudge lord seeks you; the guard closes; your men cover you), `Calibration` and `CavalryBalance` green; `--balance`
+  grudge lord seeks you; the guard closes), `Calibration` and `CavalryBalance` green; `--balance`
   win rate of even fights with the stand-in captain within noise of before.
 
 ### C14: Arrows you can see

@@ -152,7 +152,7 @@ public partial class Battle
             if (facing && t.Action == UnitAction.Block)
             {
                 // Matching the incoming direction just as the blow comes is a parry: free, and it throws the attacker off balance.
-                if (!ranged && !lance && Input.Dir == Dirs.Mirror(a.Swing) && Time - t.BlockStart < ParryTime)
+                if (!ranged && !lance && !SelfGuard && Input.Dir == Dirs.Mirror(a.Swing) && Time - t.BlockStart < ParryTime)
                 {
                     Stagger(a, 0.9f);
                     t.Stamina = MathF.Max(0, t.Stamina - 2);
@@ -163,7 +163,7 @@ public partial class Battle
                     Sound(Cue.ParrySteel, t.Pos, priority: true);
                     return;
                 }
-                if (!t.Type.HasShield && !ranged && Input.Dir != Dirs.Mirror(a.Swing))
+                if (!t.Type.HasShield && !ranged && BlockDir != Dirs.Mirror(a.Swing))
                 {
                     dmg *= 0.5f; // a two-handed guard only half-stops a blow from the wrong side
                     goto Struck;

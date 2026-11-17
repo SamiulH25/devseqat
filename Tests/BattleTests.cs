@@ -1752,55 +1752,29 @@ public static partial class SelfTest
         Check(rec.Winner == again.Winner && again.Units.Count(u => u.Dead) == rec.Dead, "a big battle replays exactly");
     }
 
-    /// Divisions (docs/archive/COMBAT_OVERHAUL.md 1.8): goals arrive late and a newer one cancels an older; a Hold goal keeps the
-    /// division near its ground; Flank swings wide and hits a side; a fallen sergeant is replaced; direct orders wait
-    /// for the delay too; and a battle with divisions and goals replays exactly.
-    /// Orders ride out as couriers (docs/archive/COMBAT_OVERHAUL.md 1.4): a rider who meets the enemy on the road is cut down and
-    /// the order lands later; with couriers off the same order lands on time.
-    static void Couriers()
-    {
-        float Landed(bool couriers, bool blocked)
-        {
-            var b = Battle.Empty(31);
-            b.Options.Couriers = couriers;
-            var far = b.AddSquad(0, Troops.Get("shieldmen"), 12, new(60, -20), 6, Vector2.UnitY);
-            var d = b.AddDivision(0, "Sgt Far", new[] { far }, Temper.Steady, 3);
-            if (blocked) b.AddSquad(1, Troops.Get("levies"), 16, new(30, -50), 8, Vector2.UnitX); // across the road (you stand at 0,-80)
-            Run(b, 0.2f);
-            b.IssueGoal(d, new Goal(GoalKind.Take, new(60, -10)));
-            if (couriers) Check(b.Couriers.Count == 1, "a goal sends a rider");
-            for (int i = 0; i < 60 * 30 && d.Goal.Kind != GoalKind.Take; i++) b.Update(1 / 60f);
-            return d.Goal.Kind == GoalKind.Take ? b.Time : float.MaxValue;
-        }
-        float plain = Landed(false, false), clear = Landed(true, false), cut = Landed(true, true);
-        Console.WriteLine($"couriers: order lands at {plain:0.0}s plain, {clear:0.0}s by rider, {cut:0.0}s with the road blocked");
-        Check(MathF.Abs(plain - clear) < 0.1f, "a rider on a clear road arrives when the delay says");
-        Check(cut > clear + 1 && cut < clear + 30, "a rider cut down on the road makes the order late, and the next goes round");
-    }
-
+    /// Divisions (docs/archive/COMBAT_OVERHAUL.md 1.8): goals land at once and a newer one replaces an older; a Hold goal keeps
+    /// the division near its ground; Flank swings wide and hits a side; a fallen sergeant is replaced; direct orders land at
+    /// once too; and a battle with divisions and goals replays exactly.
     static void DivisionGoals()
     {
-        // Delay and countermand.
+        // Orders land at once (docs/OFFICERS.md OF0: no riders for now); a newer goal replaces the last.
         var b = Battle.Empty(21);
         var a = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, -20), 8, Vector2.UnitY);
         var d = b.AddDivision(0, "Sgt Test", new[] { a }, Temper.Steady, 3);
         Run(b, 0.5f);
-        float delay = b.IssueGoal(d, new Goal(GoalKind.Take, new(30, -20)));
-        Check(delay > 1.5f, $"an order takes time to reach a sergeant ({delay:0.0}s)");
-        Run(b, delay * 0.5f);
-        Check(d.Goal.Kind == GoalKind.Hold && d.Pending != null, "the goal has not arrived halfway through the delay");
-        float again = b.IssueGoal(d, new Goal(GoalKind.FallBack, new(0, -40)));
-        bool sawTake = false;
-        for (int i = 0; i < (again + 1) * 60; i++) { b.Update(1 / 60f); sawTake |= d.Goal.Kind == GoalKind.Take; }
-        Check(!sawTake && d.Goal.Kind == GoalKind.FallBack, "a newer goal cancels one still on its way");
+        Check(b.IssueGoal(d, new Goal(GoalKind.Take, new(30, -20))) == 0, "an order reaches a sergeant at once");
+        b.Update(1 / 60f);
+        Check(d.Goal.Kind == GoalKind.Take && d.Pending == null && b.Couriers.Count == 0, "the goal is his on the next tick, and no rider goes");
+        b.IssueGoal(d, new Goal(GoalKind.FallBack, new(0, -40)));
+        b.Update(1 / 60f);
+        Check(d.Goal.Kind == GoalKind.FallBack, "a newer goal replaces the last");
         Run(b, 15);
         Check(Vector2.Distance(a.Centroid(), new Vector2(0, -40)) < 6, "the division falls back to the point it was given");
 
-        // Direct order: waits for the delay, then the company follows it and not its sergeant.
-        float wait = b.Direct(a, s => { s.Order = Order.Charge; });
-        Check(wait > 1 && a.Order == Order.Hold, "a direct order to a division's company is not obeyed at once");
-        Run(b, wait + 0.2f);
-        Check(a.Override && a.Order == Order.Charge, "the direct order lands after the delay and the sergeant leaves it alone");
+        // Direct order: lands at once, then the company follows it and not its sergeant.
+        Check(b.Direct(a, s => { s.Order = Order.Charge; }) == 0, "a direct order to a division's company has no delay");
+        b.Update(1 / 60f);
+        Check(a.Override && a.Order == Order.Charge, "the direct order lands and the sergeant leaves it alone");
         b.IssueGoal(d, new Goal(GoalKind.Hold, new(0, -40)));
         Run(b, 6);
         Check(!a.Override, "a new goal hands the company back to its sergeant");
@@ -1845,10 +1819,9 @@ public static partial class SelfTest
         d = b.AddDivision(0, "Sgt Doomed", new[] { c1, c2 }, Temper.Steady, 3);
         var first = d.Leader!;
         Run(b, 1);
-        float before = b.OrderDelay(d);
         first.Dead = true;
         Run(b, 1);
-        Check(d.Leaderless && b.OrderDelay(d) > before * 1.5f, "a division without its sergeant hears orders late");
+        Check(d.Leaderless, "a division without its sergeant is leaderless for a while");
         Run(b, 11);
         Check(!d.Leaderless && d.Leader != first && d.Leader!.Active, "the best man left takes command after a while");
 

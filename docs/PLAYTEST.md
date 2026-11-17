@@ -1,6 +1,6 @@
 # Playtest notes: Andrew, round 1 (PT0-PT5)
 
-Status: PT1 built (2026-11-16); PT2-PT4 and PT6a-c built (2026-11-16); PT5 in progress (judged 6/10, not yet passed); PT6d waits on the playtester. This page keeps the playtester's notes as given, says what each one means in
+Status: PT1 built (2026-11-16); PT2-PT4 and PT6a-c built (2026-11-16; PT4 rebuilt the same day, see "PT4, as rebuilt"); PT5 in progress (judged 6/10, not yet passed); PT6d waits on the playtester. This page keeps the playtester's notes as given, says what each one means in
 the code, and orders the work. Read it first when choosing what to build next. Update the status line and the "As built"
 section at the end as phases land.
 
@@ -424,49 +424,53 @@ Steady, Cautious) with `Hothead` and `Stubborn` traits (`BattleDivision.cs`, `Ba
 - Test `QuestsListed`. Shots `campaign-quests.png`, `campaign-quest-map.png`. Judged 6/10, then 7/10 (Haiku fallback).
   Left: small row text, the ring drawn as dots.
 
-### PT4 (2026-11-16)
+### PT4, as rebuilt (2026-11-16)
 
-- **The order palette** (`Hud.Layout`, `PaletteButton`): six big picture buttons, CHARGE, ADVANCE, HOLD, FOLLOW ME,
-  FALL BACK, FIRE (`MainOrders`), each with an icon, a name and its key in the corner. The rest (ON ME, SPACING, SHAPE,
-  RELIEVE, SPLIT, FOLD IN, RULE: `MoreOrdersList`, short names in `ShortOrder`) sit behind MORE ORDERS (`Cmd.More`,
-  `Hud.MoreOrders`). Each small button shows its key on hover.
-- **Cards say the order as a picture** (`OrderMark`): a shield for hold, a sword for attack (red when it has a target),
-  a flag for follow. A struck-through arrow means it holds its fire. A gold dot means orders are queued or a rule is set.
-  Tier, drill grade, formation and the rule moved to the hover card.
-- **Flags carry the same picture**. A chosen company's attack draws a dashed red line with a dark edge to its foe, with
-  a sword at the end. When the foe is off-screen, the line stops at the screen's edge.
-- **A new order flashes** the card and its flag gold for half a second (`OrderFlash`: order, target, formation, place).
-- Shot `command-orders.png` (two companies attack, bows hold fire, MORE open). Judged 6/10, then 7/10 (Haiku fallback).
-  Left: the FALL BACK icon reads as an anvil, and the attack line can end under the top bar.
+The first PT4 (an order palette with a MORE fold) and its rework (a radial wheel on the middle button, speed buttons under
+the balance bar, slowed time in command view) were replaced whole. The battle is now two views that share no widget.
 
-### PT4 rework plan: RTS Command View & Mount & Blade Combat View
+**Command view: you are the general (cursor, RTS).** `Hud.Deck.cs`, `BattleScreen.Controls.cs`.
+- **One top plate** (`TopBar`): pause and five speed bars (x0.25, x0.5, x1, x2, x3) on the left, the balance bar with
+  WINNING / EVEN / LOSING in the middle, the clock on the right. Command view no longer slows time: it runs at the speed
+  you pick, and Space pauses to give orders.
+- **The captain's plate** (`CaptainPlate`, bottom left): his picture (click: look at him; twice: step into him), health,
+  breath and horse, and a gold FIGHT button. While you command he keeps his own guard (`Battle.Guard`, BattlePlayer.cs: he
+  turns to the nearest foe winding up at him and blocks on the right side; no parry, no blow back) and the plate turns red
+  with UNDER ATTACK. Test `CaptainKeepsGuard`.
+- **The order deck** (`OrderDeck`, `LayoutOrders`, bottom right): square picture buttons. Row 1 orders (charge, attack
+  move, advance, hold, follow, fall back). Row 2 the formations the chosen companies can take, picked outright instead of
+  cycled (line, shield wall, square, wedge, open order; drawn as men seen from above). Then what fits the selection only:
+  FIRE for bows and mages, SPACING, STANDING ORDER, FORM ON ME, STAKES for longbows, CAST for mages, SPLIT with one chosen,
+  FOLD IN with two or more, RELIEVE with exactly two. What they are doing now is lit gold (`Lit`). The button under the
+  mouse shows its name, key and one line on a card above the deck. The header says who listens and how many men.
+- **Attack move is a real order**: ATTACK MOVE then a click on the ground marches them there with the standing rule
+  "charge when they close" set; a click on a company attacks it.
+- **Camera**: middle-button drag turns and tilts (no Alt), the wheel zooms toward the cursor, right-click the minimap sends.
+- Gone from this view: the captain's big panel, the selected-company text panel (the hover card and the deck header say
+  it), the MORE fold, the radial wheel, the text speed buttons, the key hint line (F1 KEYS sits over the deck).
 
-Goal: split the battle HUD and controls cleanly into two distinct experiences instead of blending both on screen:
-- **Command View = cursor-first RTS:** almost all work done with the mouse, minimal HUD clutter.
-- **Combat View = Mount & Blade:** uncluttered melee screen with directional reticle, compact vitals, and quick F-key / radial ordering.
+**Fight view: you are the captain (reticle, Mount & Blade).** `Hud.Fight.cs`, `BattleScreen.Fight.cs`.
+- **Vitals** (`Vitals`, bottom left): bare bars for health, breath, aura and horse, what is in your hands, rally and kills.
+- **Arms, not companies** (`ArmChips`, `ListenArm`): 1 foot, 2 bows, 3 horse, 4 mages, 0 all; Shift adds. The arm that
+  listens is gold; each chip shows men, strength and its last order. Company cards and their numbers are the command view's.
+- **Orders go where you look** (`LookFoe`, `HoldKey`): charge sends them at the enemy company under the reticle (the
+  prompt names it); the hold key tapped holds in place, held and let go it draws them up on the ground you look at, with
+  a gold marker and each man's place shown while held (`HoldMarker`).
+- **The order ring** (`Wheel`, hold MMB or Z): eight picture tiles, the chosen one gold with its name in the middle; the
+  field slows to x0.2 while it is open. With a sergeant picked it is still the goal wheel.
+- **The word you gave** shows over the arms for two seconds (`OrderToast`). The top is a thin balance bar; alerts show
+  two at most.
+- Gone from this view: the strip of company cards, the captain's panel, the key hint row along the bottom.
 
-#### Step 1: Middle-mouse radial wheel in RTS mode (done)
-- Holding Middle Mouse on the field opens the radial order/goal wheel at the cursor and slows time (`WheelTimeScale = 0.08f`); releasing executes the sector and restores the original speed. `Alt + Middle-drag` orbits.
+Shots: `IRONFIELD_SHOTS_FROM=hud` writes `fight-view`, `fight-orders`, `fight-ring`, `fight-hold`, `command-view`,
+`command-attack`, `command-bows` (about a minute). Judged: see the scores below.
 
-#### Step 2–5: Implemented & visually verified (2026-11-16, rated 9/10)
-- Gate RTS panels (`MinimapPanel`, `Cards`, `DivisionCards`, `Tray`, `AlertStrip`, `CommandPanel`) strictly on `Command`; hide them in Combat View.
-- Remove the text `Feed()` log from the battlefield HUD (keep alerts as clickable icons that pan to the spot).
-- Add clickable top-bar controls in Command View for Pause / Speed (`||`, `0.5x`, `1x`, `2x`, `3x`) and `FIGHT` / `COMMAND` mode toggle so you never need the keyboard.
-
-#### Step 3: Cursor-first RTS controls & field readability (`BattleScreen.Controls.cs`, `BattleScreen.Draw.cs`, `Hud.cs`)
-- **Minimap right-click:** right-clicking the minimap issues a move/attack order to selected squads at that world point (left-click/drag continues to pan).
-- **Double-click field selection:** double-clicking a friendly squad on the field selects all friendly squads of the same class/type.
-- **Cursor Attack-Move mode:** clicking the Attack-Move icon (or `A`) enters a one-shot target cursor; left-clicking ground/minimap advances and engages enemies along the path.
-- **Zoom-to-cursor & ground order lines:** scroll wheel zooms toward `mouseGround`; selected squads draw crisp ground lines to their `Anchor` (blue/gold) or `Target` (red), plus a clear `FALL BACK` icon and clipped attack lines that never run under the top bar.
-- **Contextual icon grid:** bottom-center action grid shows only valid icon buttons for the current selection (formations, fire-at-will, spells, split/merge/relieve).
-
-#### Step 4: Mount & Blade Combat View (`Hud.Melee.cs`, `BattleScreen.Controls.cs`, `BattleScreen.Orders.cs`)
-- **Minimal M&B HUD:** center 4-way directional swing/block reticle (`Aim`) with parry/hit flash, compact bottom-corner vitals (player HP, horse HP, stamina/ammo/shield), and punchy in-world `OpponentMark` / `BlowNumbers`.
-- **M&B F-key group ordering:** `1` Infantry, `2` Archers, `3` Cavalry, `0` All + `F1` Hold/Follow/Charge (or hold `F1` to project a ground banner where you look, release to send), `F2` Formation cycle, `F3` Fire at Will / Hold Fire, with a tiny transient top-left prompt that fades out. Keep the radial wheel as an alternative.
-
-#### Step 5: Visual review & verification
-- Run `tools/check.sh` (full build + `--selftest`).
-- Capture `IRONFIELD_SHOTS` for both Command View and Combat View and launch a Hydrogen Medium subagent to inspect and rate the visuals.
+Judged three rounds (Haiku through a subagent: the T3 judge tool was not available in that session). Command 5, 6, 7 out
+of 10; fight 6, 6, 7. Fixed on the way: words under every deck and ring tile, icons on the captain's bars, a SPEED label,
+the key as a keycap on the hover card, a shade under the vitals, MEN on the arm chips, the hints on a plate, the ring
+lifted over the captain's head, no line or pole on the hold marker. One claim was wrong: the judge said the hover card
+covers the F1 KEYS label; the label is hidden on purpose while the card is up. Left: the ring's lower tiles still cross
+the captain's shoulders, and the formation icons are dot patterns that lean on the word under them.
 
 ### PT5 (2026-11-16)
 

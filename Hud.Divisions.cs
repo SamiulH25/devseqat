@@ -78,7 +78,7 @@ sealed partial class Hud
             int alive = d.Alive, start = Math.Max(1, d.Start);
             int morale = AvgMorale(d.Squads);
             var hue = DivisionColour(d);
-            Panel(r, sel ? Gold : d.Leaderless ? Bad : d.Query != null ? Warn : hover && Command ? Color.White * 0.5f : Edge, sel ? 2 : 1);
+            Panel(r, sel ? Gold : d.Leaderless ? Bad : hover && Command ? Color.White * 0.5f : Edge, sel ? 2 : 1);
             Rect(new Rectangle(r.X + U(1), r.Y + U(1), U(3), r.Height - U(2)), hue); // his colour, as on the field
             if (alive == 0 && d.Squads.Count > 0) Rect(r, Color.Black * 0.4f);
             int x = r.X + U(8);
@@ -96,7 +96,7 @@ sealed partial class Hud
             Text(kit.Fit(report, r.Right - x - TW(goal, 1) - U(12)), x, r.Y + U(15), rc, 1);
             // His skill as pips, his nature, and the horn plan or that he can hear you.
             for (int i = 0; i < 10; i++) Rect(new Rectangle(x + i * U(4), r.Y + U(27), U(3), U(4)), i < d.Skill ? Gold : Color.White * 0.15f);
-            string tail = d.Horn != null ? $"HORN: {GoalTag(d.Horn)}" : d.PendingHorn != null ? "PLAN RIDING" : B.InVoice(d) && !Deploying ? "IN EARSHOT" : "";
+            string tail = d.Horn != null ? $"HORN: {GoalTag(d.Horn)}" : d.PendingHorn != null ? "PLAN RIDING" : "";
             if (tail.Length > 0) TextR(tail, r.Right - U(5), r.Y + U(26), d.Horn != null ? Gold : d.PendingHorn != null ? Warn : Ok, 1);
             string nature = d.Traits.Length > 0 ? d.Traits[0].ToUpperInvariant() : d.Temper.ToString().ToUpperInvariant();
             Text(kit.Fit(nature, r.Right - x - U(44) - TW(tail, 1) - U(10)), x + U(44), r.Y + U(26), Dim, 1);
