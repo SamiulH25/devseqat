@@ -597,11 +597,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **EngineDef** (class, L8)
 - **Engines** (class, L27): Get:33, Has:34, Load:38, Validate:55
 
-## Factions.cs (161 lines)
+## Factions.cs (165 lines)
 - **CultureDef** (class, L6)
-- **RelationDef** (class, L16)
-- **FactionDef** (class, L24)
-- **Factions** (class, L43): IndexOf:62, Get:63, Bind:86, Culture:87, CultureOf:88, Open:91, Root:94, Line:97, Path:100, Load:110, Validate:126
+- **RelationDef** (class, L19)
+- **FactionDef** (class, L27)
+- **Factions** (class, L46): IndexOf:65, Get:66, Bind:89, Culture:90, CultureOf:91, Open:94, Root:97, Line:100, Path:103, Load:113, Validate:129
 
 ## Forms.cs (114 lines)
 - **FormDef** (class, L8): Clone:18

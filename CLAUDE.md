@@ -298,6 +298,9 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 ## Invariants and gotchas (break these and things fail subtly)
 
 - Headless code (Battle*, Squad, Units, Troops, Terrain, Campaign/*) must not use MonoGame graphics/audio/input.
+- Cultures marked `"waiting": true` in `Data/factions.json` (the 17 subcultures, `bandit` among them) are the world book's, kept for
+  when `docs/world/world.json` comes into the game: no realm fields them and their trees stop short of tier VII. Wiring one in = a realm
+  or region holds it, then drop the flag (`Factions.Validate` refuses a waiting culture a realm holds).
 - Ground positions are `Vector2(X = world X, Y = world Z)`; height comes from `Terrain.Height(pos)`.
 - Faction ids index `CampaignState.Factions`; realms founded in play (F5) carry `FactionState.Founded` (ids past the save's
   `DataRealms`; never test `id >= Factions.All.Count`, the data may have grown since the save). A map's realm layout comes from

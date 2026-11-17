@@ -752,7 +752,7 @@ public static partial class SelfTest
         var errs = Factions.Validate().ToList();
         Check(errs.Count == 0, "factions.json is valid: " + string.Join("; ", errs));
         Check(Troops.All.All(t => t.Culture is "common" or "wild" || Factions.Culture(t.Culture) != null), "every troop has a culture");
-        foreach (var cul in Factions.Cultures)
+        foreach (var cul in Factions.Cultures.Where(c => !c.Waiting)) // waiting subcultures come in with the world book's map
         {
             var seen = new HashSet<string>();
             var open = new Queue<string>(new[] { cul.Root });

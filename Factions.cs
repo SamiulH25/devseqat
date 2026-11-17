@@ -10,6 +10,9 @@ public sealed class CultureDef
     public string Flavour = "Thatch and mud lanes";
     /// Cultures whose troops this culture's lines may borrow and its men may train as (docs/archive/WORLD.md W3).
     public string[] Kin = { };
+    /// Not in the world yet: a subculture from the world book (docs/world/world.json) whose troops are kept in the data but no
+    /// realm, settlement or band fields until that world is brought into the game. Its trees need not reach tier VII yet.
+    public bool Waiting;
 }
 
 /// How two realms stand when a new campaign opens: at war, or at peace with a truce for some days (Data/factions.json).
@@ -141,6 +144,7 @@ public static class Factions
             if (!Troops.All.Any(t => t.Id == c.Root)) yield return $"culture {c.Id}: unknown root {c.Root}";
             foreach (var k in c.Kin) if (cultures.All(o => o.Id != k) || k == c.Id) yield return $"culture {c.Id}: unknown kin {k}";
             if (!Open(c.Id, Troops.Get(c.Root).Culture)) yield return $"culture {c.Id}: its root {c.Root} is not of its culture or kin";
+            if (c.Waiting && factions.Any(f => f.Culture == c.Id)) yield return $"culture {c.Id}: a realm holds it, so it is no longer waiting";
         }
         foreach (var f in factions)
         {

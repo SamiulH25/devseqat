@@ -11,8 +11,11 @@ Fix them roughly in this order: 1 and 2 first (they gate everything else being t
 - **Done:** 1 (seven weapon names in `StyleFor`/`PassivesFor`; a two-handed morningstar crushes), 2 (`RunNames`: every test
   runs, failures print as `FAILED name: why`, the summary names them), 3 (see the correction under 3), the two OF5
   regressions in 7 (see the note under 7), `UpgradeTreeVisibility` registered, `Tests/Dbg.cs` deleted, 10, 12.
-- **Still red, need a call:** `Cultures` (issue 4) and `PassivesOnlyAdd` (see the note under 7).
-- **Open:** 4, 5, 6, 8, 9, 11, 13, 14; the trace helpers in 7.
+- **Decided:** 4 is option (c), by the owner: the troops stay and come in with the world book's map. The 17 cultures carry
+  `"waiting": true` in `Data/factions.json`; `Cultures` skips them, `Factions.Validate` refuses a waiting culture a realm
+  holds, and `docs/TROOPS.md` lists them.
+- **Still red, needs a call:** `PassivesOnlyAdd` (see the note under 7).
+- **Open:** 5, 6, 8, 9, 11, 13, 14; the trace helpers in 7.
 
 | # | Issue | Severity | Size |
 |---|---|---|---|
