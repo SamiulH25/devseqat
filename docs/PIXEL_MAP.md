@@ -1,18 +1,27 @@
-# Pixel map demo (art rework, option 3)
+# Pixel map demo (art rework)
 
 Status: **demo on branch `demo/pixel-map`**, not wired into the game. Started 2026-11-18.
 
 ## The direction
 
-The art rework goes pixel-art first. The battle camera and fight view stay as they are. The units and the
-campaign map change, and the art stays painted by code. For the campaign map the user chose **option 3, tilted 2.5D**:
+The art rework goes pixel-art first. The battle camera and fight view stay as they are; the units and the campaign
+map change; art stays painted by code. The first demo was a tilted 2.5D height field (option 3). On 2026-11-18 the user
+rejected it: parties stood in the sea, things overlapped everywhere, and the sprites did not work. They asked for
+**the world entirely pixel art, at an angle, with minimal elevation changes**. This is that version:
 
-- One fixed camera, looking north and tilted about 55° down. It is orthographic, so every art pixel has the same
-  size. You can't turn it, and zoom moves in whole steps.
-- The ground is drawn as pixel art straight from the map data (`world.json` → `WorldMap`): land kinds, beaches,
-  sea depth, rivers, lakes, roads and field plots.
-- Trees, towns, castles, villages, sites and parties stand up as sprites. Code paints each one at the exact pixel
-  size it shows (never scaled, never turned), using the soldiers' painter (`Painter.cs`).
+- **One tile grid.** A tile is 4 m, drawn 12 pixels across. The ground is seen from straight above. Things on it
+  (trees, houses, walls, men) stand up in a three-quarter view, as in classic pixel-art maps. The camera never turns,
+  and every art pixel is the same size.
+- **No overlap by rule.** Every thing claims whole tiles, and a tile holds one thing: a town takes 8x6 tiles, a
+  castle 6x5, a village house 2x2, a site 2x2, a field block 2x3, a tree 1, and a party 2-4 by 2. A party also keeps
+  one tile clear of walls, houses, sites and other parties. No tree stands just south of a field, where its crown
+  would rise over it. Only a sprite's top rises into the tile behind it, as 3/4 art always does.
+- **Minimal relief.** The ground is cut into terraces 2.2 m high. A step up shows a three-pixel earth face on its south
+  side, and a one-pixel shade on its east and west sides. Higher terraces are a shade lighter. There is no height
+  field and no occlusion.
+- **Hand-ruled sprites.** Every sprite is placed pixel by pixel in code from five-tone hue-shifted ramps, lit from the
+  upper left, with a selective outline. Sprites are never scaled shapes. A man is 13 px tall, a rider 20 px long, a
+  house 16-22 px wide.
 
 ## Run it
 
@@ -20,72 +29,64 @@ campaign map change, and the art stays painted by code. For the campaign map the
 dotnet run -c Release --no-build -- --pixel-map /dir [seed]
 ```
 
-This is headless, with no GPU and no xvfb, and takes about 0.4 s a view. Each view is written as `name.png`
-(1920x1080, 3x nearest) and `name.1x.png` (640x360, the true pixels). The views are `start` (where the company
-starts), one town for each kind of country the world has (`coast`, `taiga`, `desert`, `highlands`, `forest`,
-`farmland`, `tundra`, `steppe`), and `wide` (the start at half scale).
+This is headless, with no GPU and no xvfb, and takes about 0.5 s a view. Each view is written as `name.png`
+(1920x1080, 3x nearest) and `name.1x.png` (640x360, the true pixels). The views are `start` (where the company starts)
+and one town for each kind of country (`coast`, `taiga`, `desert`, `highlands`, `forest`, `farmland`, `tundra`, `steppe`).
 
-## How it works (`PixelMap.cs`, `PixelMapRamps.cs`, `PixelMapSprites.cs`, `PixelMapFields.cs`, `PixelMapParties.cs`)
+## How it works
 
-- **Projection:** `screen x = (X - x0) * k`, `screen y = (Z * sin p - height * cos p) * k - oy`, where `k` is pixels
-  per metre (3 close, 1.5 wide).
-- **Ground:** the ground is drawn one screen column at a time, near to far. Each sample fills from its row up to the
-  last row drawn (a y-buffer), like a heightfield renderer. Per pixel it keeps how near the ground is
-  (`near`, used to hide sprites behind hills) and what the ground is (`Stuff`).
-- **Colour:** land takes the map's own `WorldMap.Tint`, looked up through a small noise warp so the borders
-  between kinds are ragged, not stair-stepped. It is then snapped to a coarse HSV grid and given a hue-shifted
-  five-tone ramp (`Ramps.Land`), so the map holds a few dozen ramps instead of a gradient.
-- **Light:** the slope's light against a fixed sun to the upper left (the sprites' light) is drawn as bands. A 4x4
-  Bayer dither appears only in a narrow seam where two bands meet. Grass gets clumps and sparse tufts; water gets
-  broken wave-crest rows.
-- **Edges:** a bank where land meets water, foam on the water's edge, and darker verges beside roads.
-- **Sprites:** sprites are sorted by their foot's screen y, with a drop shadow down and to the right. A sprite pixel
-  is hidden where the ground drawn there is nearer than the sprite's foot.
-- **Places:** walls, houses and roofs depend on the country and the people (`BuildOf`). Most lands get grey stone,
-  plaster and red tile or brown thatch. The south gets ochre walls round white flat-roofed houses with a dome. The
-  north and the taiga get log walls with shingle or turf. The steppe gets yurts. A banner in the realm's colours
-  flies over each town's great house and each castle's keep.
-- **Fields** (`PixelMapFields.cs`): fields are strips on one world lattice (6 m wide, 13 m long), so no two
-  ever overlap. Each cell is worked by the nearest place within its reach (towns reach furthest, castles least,
-  scaled by the land's `Fields`), with a ragged edge. Fields keep off the place itself, water, the shore, roads,
-  slopes and woods. Lanes fall on uneven columns and rows, so blocks come in many sizes. A block's outer edge is
-  hedged, the strips inside are parted by a dark line, furrows run along a strip (or across it, for one strip in
-  three), and barren land is only ploughed or fallow. The map's own plots (`WorldLand.LayFields`) are not used.
-- **Parties** (`PixelMapParties.cs`): each party is a small scene built from separately outlined pieces (`Group`).
-  A lord or the player is a rider on a horse with a mane, a head carried low and a tail. Great lords (tier 3+) and
-  the player are knights, with a caparison in the realm's dark cloth, a shield with the realm's charge and a
-  swallow-tailed banner. One to three helmeted men follow in a file, every other one with a round shield. Brigands
-  are a hooded band. A caravan is a wagon, an ox and a guard. Pilgrims are robed men. Monsters are drawn by breed.
-  A party at or beside a place stands clear east of it, facing it. Only one party (yours, else the greatest) is drawn
-  per place.
-- **Labels:** names use the game's pixel font (`PixelFont.Lit`) on a dark plate, with a line in the realm's UI
-  colour under towns and castles. Labels that would overlap one already placed are skipped (towns first).
+- `PixelMap.cs`: the run, the views, and the ground. Each pixel samples the world at its tile-aligned point: sea by
+  depth (banded), rivers and lakes, a place's yard, a field, a road, or land coloured by the map's `WorldMap.Tint`
+  (warped so the borders between kinds are ragged, then snapped to a few dozen ramps). Then come `Terraces` (the step
+  faces) and `Edges` (foam on water under land, verges beside roads).
+- `PixelMapPlan.cs`: the plan of the tiles (`Use`), claimed in order. Each step takes only the tiles still free:
+  1. water, steep tiles and roads (`Base`)
+  2. towns and castles; two places the map sets close together are pushed to the nearest clear footprint (`Places`)
+  3. village houses on free 2x2 plots round the village
+  4. sites
+  5. fields (`Fields`): 2x3-tile blocks worked by the nearest place within its reach, with lanes on uneven columns and
+     rows
+  6. trees (`Trees`): the map's own trees, plus stands grown from the land kind's tree count through a patchy noise,
+     kept a tile clear of houses
+  7. parties (`Parties`): the nearest free land or road block to where each party is. A party at a place stands just
+     east of it, facing it, and only one party shows per place.
+
+  The same file also draws: shadows (an oval at the foot, or a strip along a place's east wall), sprites sorted by
+  foot, and labels. Labels are tried above a place, below it, then further out, and are never laid over another place,
+  a party or another name.
+- `PixelMapPix.cs`: `Pix`, the pixel canvas (`Set`, `Rect`, `Oval` with a per-pixel colour, `Put`, `Outline`). Also
+  `Tones` (ramps), `Ink` (outline shade), the sprite cache, and `Charge` (a realm's emblem in pixels).
+- `PixelMapArt.cs`: trees, pines and bushes; `House` (tile, thatch or shingle roof, plaster with timber framing, log
+  walls, or the south's flat roofs and dome); yurts; wall runs, wall sides and towers (round with a cone, square and
+  flat, or timber); `Town`, `Castle` and `Site`. `Build` picks the look by people and country: grey stone and red
+  tile, ochre and white flat roofs in the south, logs and shingle in the north, a palisade and yurts on the steppe.
+- `PixelMapFolk.cs`: men (kettle hat, hood or bare; spear, bow or axe; a round shield with rim and boss), riders
+  (a horse with mane, a low head and a tail; a knight's caparison in the realm's dark cloth with its charge; a
+  swallow-tailed banner), wolves, a bear, an ox, spiders, a wyvern and a covered wagon. `Party` lays them out as one
+  sprite and mirrors it when the party faces left.
+- `PixelMapRamps.cs`: the ground's ramps (sea, fresh water, road, hedge, fields, land snapped in HSV).
 
 ## Judging
 
-The CLAUDE.md judge (Hydrogen via T3) was not reachable in this session, so the fallback judge (Haiku) was used:
+The CLAUDE.md judge (Hydrogen via T3) was not reachable in this session, so the fallback judge (Haiku) was used.
 
 | Round | Score | What it found |
 |---|---|---|
-| 1 | 5/10 | dither everywhere, sea specks read as stars, villages read as haystacks or boulders, labels on roofs, pale towns lost in the sand, parties on the gate |
-| 2 | 6/10 | villages, labels, sea and dither fixed; mottled dark greens, yurts read as mushrooms, taiga roofs read as moss mounds, fields at random angles |
-| 3 | 7/10 | coarser value steps, spaced yurts, shingle roofs, labels clear of towns, fields snapped to 0, 1:2, 1:1 and 2:1 |
-| 4 | 6/10 | (the user's round: overlapping farms, weak troops and lords) lattice strip fields fixed the overlaps; parties sat on the gates, horses were blobs, soldiers were tubes |
-| 5 | 6/10 | parties clear of the walls, faces, uneven field blocks; horses read as llamas, shields as slabs |
-| 6 | 7/10 | stocky horses with a low head, round shields with rim and boss, a dark caparison |
+| 1-3 | 5, 6, 7 | the first, tilted height-field demo (commit d93ef60) |
+| 4-6 | 6, 6, 7 | strip fields and parties as scenes on that demo (commit 8d63b69) |
+| 7 | 7/10 | this tile-grid redesign: coherent, consistent scale, no party on water; a party touching a town tower and trees rising over fields (both fixed after) |
 
-Polish still open after round 6: horse muzzles are a little pointed, and a blue rider's leg blends into a cream
-horse. Polish still open after round 3: the steppe and taiga ground is still a little speckled. Southern battlements merge
-with bright sand. The rider beside a town gate touches the wall's footing. Taiga roofs need a ridge line and eaves.
+Still open after round 7:
+- Some labels lie over a field or a tree.
+- Every desert hamlet is the same white box.
+- A lone watch tower on the steppe reads poorly.
 
 ## What a real build would need (not done)
 
-- **In game:** bake the ground once per season into textures (tiles of the screen-space image, since the camera
-  never turns). Re-bake only the sprites each frame. Draw it all into a 640x360 target scaled up by a whole number.
-- **Time of day and weather:** palette shifts on the baked image (night ramps), not live lighting.
-- **Life:** moving parties walk on the image, with sprites redrawn per frame. Smoke, birds and waves are small
-  animated sprites.
-- **Zoom:** 1.5, 3 and maybe 6 px/m, each baked at its own scale. Painted sprites are cached by size.
-- **Picking:** clicks go back to world positions through the `near` buffer (screen pixel → world Z, X).
-- **Not yet drawn:** province or realm borders, fords and bridges as their own sprites, sieges and burning villages,
-  site sprites beyond the basic shapes.
+- **In game:** draw the ground once per season into tile-aligned chunks and redraw only sprites each frame. Render into
+  a 640x360 target and scale it up by a whole number.
+- **Zoom:** whole steps only (12 px tiles at 1x, 2x and 3x). A far zoom would need its own small sprites.
+- **Time of day and weather:** palette shifts, such as night ramps.
+- **Life:** parties move tile to tile on the plan. Smoke, birds and waves are small animated sprites.
+- **Picking:** a click goes to its tile (screen pixel / 12), then to what claimed the tile.
+- **Not yet drawn:** borders, bridges and fords as sprites, sieges, burning villages, and a far zoom.
