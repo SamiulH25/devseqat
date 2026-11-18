@@ -119,11 +119,18 @@ public sealed partial class Terrain
     }
 
     /// Does a short step from a to b cross a feature that stops this man (stakes stop only horse; pass false for arrows)?
-    /// Only the features near b are looked at.
-    public bool CrossesFeatureNear(Vector2 a, Vector2 b, bool mounted = true)
+    /// Only the features near b are looked at. With `pad` each feature counts as longer by its thickness and the pad at both
+    /// ends: a man passing that close to a fence's end catches on it.
+    public bool CrossesFeatureNear(Vector2 a, Vector2 b, bool mounted = true, float pad = 0)
     {
         if (!featureCells.TryGetValue(CellX(b.Y) * bucketSide + CellX(b.X), out var near)) return false;
-        foreach (int i in near) if (Features[i].Stops(mounted) && SegmentsCross(a, b, Features[i].A, Features[i].B)) return true;
+        foreach (int i in near)
+        {
+            var f = Features[i];
+            if (!f.Stops(mounted)) continue;
+            var more = pad > 0 && f.B != f.A ? Vector2.Normalize(f.B - f.A) * (f.Half + pad) : Vector2.Zero;
+            if (SegmentsCross(a, b, f.A - more, f.B + more)) return true;
+        }
         return false;
     }
 
@@ -135,7 +142,7 @@ public sealed partial class Terrain
         return false;
     }
 
-    static bool SegmentsCross(Vector2 p, Vector2 p2, Vector2 q, Vector2 q2)
+    internal static bool SegmentsCross(Vector2 p, Vector2 p2, Vector2 q, Vector2 q2)
     {
         static float Cross(Vector2 a, Vector2 b) => a.X * b.Y - a.Y * b.X;
         Vector2 r = p2 - p, s = q2 - q;

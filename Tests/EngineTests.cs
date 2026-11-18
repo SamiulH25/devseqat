@@ -129,23 +129,29 @@ public static partial class SelfTest
     /// In an assault, a mangonel before the gate throws at it and takes it down faster than the ram alone.
     static void EngineBreaksGate()
     {
-        float GateAfter(bool engine)
+        // When the gate falls (or, if it stands at the minute, a minute plus what is left of it): the ram breaks it either way.
+        float GateFalls(bool engine, int seed)
         {
             var rng = new Random(5);
             var att = Ids(Armies.Random(rng, 2, 0), 3000);
             var def = Ids(Armies.Random(rng, 2, 1), 4000);
-            var b = new Battle(77, att, def, new BattleOptions { AutoPlayer = true, PlayerWounded = true, Siege = true, Ladders = 0, GateHp = 2000 });
+            var b = new Battle(seed, att, def, new BattleOptions { AutoPlayer = true, PlayerWounded = true, Siege = true, Ladders = 0, GateHp = 2000 });
             Engine? e = null;
             if (engine)
             {
                 var crew = b.AddSquad(0, Troops.Get("levies"), 8, new Vector2(SiegeWall.GateX + 20, SiegeWall.Outer - 72), 4, Vector2.UnitY);
                 e = b.AddEngine(0, "mangonel", new Vector2(SiegeWall.GateX + 20, SiegeWall.Outer - 70), Vector2.UnitY, crew);
             }
-            for (int i = 0; i < 60 * 60 && b.Winner < 0; i++) b.Update(1 / 60f);
-            if (e != null) Console.WriteLine($"gate: mangonel {e.Shots} stones, {e.GateDamage:0} off the gate, gate {b.Wall!.GateHp:0}");
+            for (int i = 0; i < 60 * 60 && b.Winner < 0 && b.Wall!.GateHp > 0; i++) b.Update(1 / 60f);
+            float at = b.Wall!.GateHp > 0 ? 60 + b.Wall.GateHp : b.Time;
+            Console.WriteLine($"gate: {(e != null ? $"mangonel {e.Shots} stones, {e.GateDamage:0} off the gate" : "no engine")}, gate {b.Wall.GateHp:0}, score {at:0.0}");
             if (e != null) Check(e.GateDamage > 0, "the mangonel's stones strike the gate");
-            return b.Wall!.GateHp;
+            return at;
         }
-        Check(GateAfter(true) < GateAfter(false), "the gate falls faster under stones");
+        // One battle is too chaotic to tell (the crew alone moves the fall by ten seconds either way): take the most of five.
+        int sooner = 0;
+        for (int seed = 77; seed < 82; seed++) if (GateFalls(true, seed) < GateFalls(false, seed)) sooner++;
+        Console.WriteLine($"gate: falls sooner under stones in {sooner} of 5 battles");
+        Check(sooner >= 3, $"the gate falls faster under stones ({sooner} of 5)");
     }
 }

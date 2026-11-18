@@ -93,6 +93,14 @@ An officer's skill (0-10: a companion's Command, a sergeant's battles, an enemy 
   fear exactly, so a company never broke by night (`Trolls` red). `VeteransWrap` now weighs the trade over six seeds: one
   clash swings on whose sergeant falls first. Picking him from the rear rank was tried and dropped: he never falls, and
   the level 4 battle in `ResolveBattles` stalls past ten minutes.
+  Fix (2026-11-18): he is picked from the rear rank after all (`PickSergeant`: named, tier, then rank), where file closers
+  stood. From the front he fell in the first seconds of every clash and the grade lost with him decided it: 24 elites lost
+  to 31 rabble of their own troop 0-3 (`ElitePincer`), and Hold off made Tempest Spears fight worse (`StylesOnlyAdd`). He still
+  falls when the company is flanked, shot at or wrapped. The level 4 stall was a pathing bug, not his: fences closed every
+  2.5 m cell they touched, so the last enemy bows walked into a village yard through a 2.4 m gate and the flow field had no
+  way out. Fences and hedges now close only cells within a man's width and bar the steps over their line
+  (`BattlePath.EdgeBlocks`, `Clearance`); test `OutOfTheYard`. `EngineBreaksGate` now times the gate's fall over five
+  battles (it compared hit points after both gates had fallen, and passed on a rounding of -1 against 0).
 - OF6 (2026-11-17): `DivisionRecord.Goal` holds "Post:Stance"; the `Campaign` constructor maps an old save's goal name with
   `Goal.FromName` (no save version bump). Each party lane (and each V card) has a post button and a stance button
   (`PostButtons`) in place of the eight-goal cycle. Deviation: lanes stay one per officer, labelled with his post, rather

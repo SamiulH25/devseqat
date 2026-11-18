@@ -8,28 +8,30 @@ public sealed class FlowField
     public readonly Vector2 Goal;
     public readonly bool Horse;
     readonly float[] cost;
+    readonly ushort[] bars;
     readonly Terrain t;
 
-    internal FlowField(Terrain t, Vector2 goal, bool horse, float[] cost) { this.t = t; Goal = goal; Horse = horse; this.cost = cost; }
+    internal FlowField(Terrain t, Vector2 goal, bool horse, float[] cost, ushort[] bars) { this.t = t; Goal = goal; Horse = horse; this.cost = cost; this.bars = bars; }
 
     /// The way to go from p: toward the cheapest of the eight neighbouring cells (zero at the goal or where nothing leads there).
     public Vector2 Dir(Vector2 p)
     {
         int n = t.N;
         int x = Math.Clamp((int)MathF.Round((p.X + t.Half) / t.Step), 0, n - 1), z = Math.Clamp((int)MathF.Round((p.Y + t.Half) / t.Step), 0, n - 1);
-        float here = cost[z * n + x], best = here;
+        // His cell's centre can lie over the fence he stands against (fences bar steps, not cells): then its cost is not his.
+        float here = t.CrossesFeatureNear(p, new Vector2(-t.Half + x * t.Step, -t.Half + z * t.Step), Horse) ? float.PositiveInfinity : cost[z * n + x], best = here;
         int bx = x, bz = z;
         for (int dz = -1; dz <= 1; dz++)
             for (int dx = -1; dx <= 1; dx++)
             {
                 int nx = x + dx, nz = z + dz;
                 if ((dx | dz) == 0 || nx < 0 || nz < 0 || nx >= n || nz >= n) continue;
-                if (cost[nz * n + nx] >= best) continue;
+                if (cost[nz * n + nx] >= best || !float.IsPositiveInfinity(here) && (bars[z * n + x] & Battle.StepBit(dx, dz)) != 0) continue; // the field's own barred steps
                 if (dx != 0 && dz != 0 && (float.IsPositiveInfinity(cost[z * n + nx]) || float.IsPositiveInfinity(cost[nz * n + x]))) continue; // no cutting round a hedge's end
                 if (t.CrossesFeatureNear(p, new Vector2(-t.Half + nx * t.Step, -t.Half + nz * t.Step), Horse)) continue; // not over the hedge he stands against
                 best = cost[nz * n + nx]; bx = nx; bz = nz;
             }
-        if (bx == x && bz == z && float.IsPositiveInfinity(here)) // pressed into a hedge's or house's cells: out to the cheapest open cell on his side
+        if (bx == x && bz == z && float.IsPositiveInfinity(here)) // in a house's cells, or his cell's centre over a fence: out to the cheapest open cell on his side
             for (int dz = -2; dz <= 2; dz++)
                 for (int dx = -2; dx <= 2; dx++)
                 {
@@ -58,6 +60,7 @@ public sealed class FlowField
 public partial class Battle
 {
     float[]?[] stepCost = new float[]?[2]; // per cell, for foot and horse: the cost of crossing it (infinite = blocked)
+    ushort[]?[] edgeBlock = new ushort[]?[2]; // per cell, for foot and horse: the steps to its eight neighbours a hedge or fence bars (EdgeBlocks)
     readonly List<FlowField> flowCache = new();
     const int FlowCacheSize = 48;
     /// Within this of its destination a man stops following the field and goes straight.
@@ -112,7 +115,7 @@ public partial class Battle
     {
         // Near the goal men walk straight, unless a fence or hedge stands in the way (a company could stand pressed to one
         // with its places a few metres beyond, and never settle to shoot or fight).
-        bool Far(Vector2 p) => Vector2.DistanceSquared(p, g) > PathNear * PathNear || Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(p, g, s.Cavalry);
+        bool Far(Vector2 p) => Vector2.DistanceSquared(p, g) > PathNear * PathNear || Terrain.Features.Count > 0 && Terrain.CrossesFeatureNear(p, g, s.Cavalry, Clearance(s.Cavalry));
         if (Far(s.Center) && WayBlocked(s.Center, g, s.Cavalry)) return true;
         int n = s.Units.Count;
         for (int k = 0; k < 4; k++)
@@ -167,7 +170,7 @@ public partial class Battle
     {
         var f = u.Squad?.Path;
         if (f == null || u.Routing || f.Horse != u.Mounted || Vector2.DistanceSquared(dest, f.Goal) > 30 * 30) return dest;
-        if (Vector2.DistanceSquared(u.Pos, dest) < PathNear * PathNear && !Terrain.CrossesFeatureNear(u.Pos, dest, u.Mounted)) return dest; // near and nothing between
+        if (Vector2.DistanceSquared(u.Pos, dest) < PathNear * PathNear && !Terrain.CrossesFeatureNear(u.Pos, dest, u.Mounted, Clearance(u.Mounted))) return dest; // near and nothing between (nor a fence's end at his elbow)
         var d = f.Dir(u.Pos);
         return d == Vector2.Zero ? dest : u.Pos + d * 3;
     }
@@ -206,6 +209,7 @@ public partial class Battle
         FlowBuilds++;
 
         var step = stepCost[horse ? 1 : 0] ??= StepCosts(horse);
+        var bars = edgeBlock[horse ? 1 : 0] ??= EdgeBlocks(horse);
         int n = Terrain.N;
         var cost = new float[n * n];
         Array.Fill(cost, float.PositiveInfinity);
@@ -226,17 +230,18 @@ public partial class Battle
                     if ((dx | dz) == 0 || nx < lo || nz < lo || nx > hi || nz > hi) continue;
                     int k = nz * n + nx;
                     float w = step[k];
-                    if (float.IsPositiveInfinity(w)) continue;
+                    if (float.IsPositiveInfinity(w) || (bars[c] & StepBit(dx, dz)) != 0) continue;
                     if (dx != 0 && dz != 0 && (float.IsPositiveInfinity(step[z * n + nx]) || float.IsPositiveInfinity(step[nz * n + x]))) continue; // no cutting a corner
                     float nc = cc + w * (dx != 0 && dz != 0 ? 1.4142f : 1);
                     if (nc < cost[k]) { cost[k] = nc; open.Enqueue(k, nc); }
                 }
         }
-        return new FlowField(Terrain, goal, horse, cost);
+        return new FlowField(Terrain, goal, horse, cost, bars);
     }
 
     /// What crossing each cell costs: the inverse of the ground's speed, deep water up to ten times dearer still (go to the ford),
-    /// and blocked where a hedge, fence or house stands.
+    /// and blocked where a house stands or a hedge or fence comes within a man's width of the cell's centre (`Clearance`). The
+    /// line of a thin fence between two rows of cells is barred by EdgeBlocks, so a gap only closes if it is truly too narrow.
     float[] StepCosts(bool horse)
     {
         int n = Terrain.N;
@@ -251,17 +256,66 @@ public partial class Battle
                 if (g == GroundKind.Water) w *= 2 + 8 * MathF.Min(1, Terrain.WaterDepth(p)); // deep water much dearer: men go to the ford
                 step[z * n + x] = Terrain.House(p) ? float.PositiveInfinity : w;
             }
+        float clear = Clearance(horse);
         foreach (var f in Terrain.Features)
         {
             if (!f.Stops(horse)) continue;
-            float len = Vector2.Distance(f.A, f.B);
-            for (float s = 0; s <= len; s += 0.5f)
-            {
-                var p = Vector2.Lerp(f.A, f.B, len < 0.01f ? 0 : s / len);
-                int x = (int)MathF.Round((p.X + Terrain.Half) / Terrain.Step), z = (int)MathF.Round((p.Y + Terrain.Half) / Terrain.Step);
-                if (x >= 0 && z >= 0 && x < n && z < n) step[z * n + x] = float.PositiveInfinity;
-            }
+            float reach = f.Half + clear;
+            var (x0, x1, z0, z1) = CellBox(f.A, f.B, reach);
+            for (int z = z0; z <= z1; z++)
+                for (int x = x0; x <= x1; x++)
+                {
+                    var c = new Vector2(-Terrain.Half + x * Terrain.Step, -Terrain.Half + z * Terrain.Step);
+                    var ab = f.B - f.A;
+                    float k = ab.LengthSquared() < 1e-6f ? 0 : Math.Clamp(Vector2.Dot(c - f.A, ab) / ab.LengthSquared(), 0, 1);
+                    if (Vector2.DistanceSquared(c, f.A + ab * k) < reach * reach) step[z * n + x] = float.PositiveInfinity;
+                }
         }
         return step;
+    }
+
+    /// The bit for a step of (dx, dz) in an `edgeBlock` cell.
+    internal static ushort StepBit(int dx, int dz) => (ushort)(1 << ((dz + 1) * 3 + dx + 1));
+
+    /// How far past a hedge's or fence's edge a man needs to pass it: a man on foot, a horse (so stakes' gaps stay shut to horse).
+    static float Clearance(bool horse) => horse ? 1f : 0.4f;
+
+    /// The cells round the line a-b, `pad` past it and one more.
+    (int x0, int x1, int z0, int z1) CellBox(Vector2 a, Vector2 b, float pad)
+    {
+        int n = Terrain.N;
+        float st = Terrain.Step, h = Terrain.Half;
+        return (Math.Max(0, (int)MathF.Floor((MathF.Min(a.X, b.X) - pad + h) / st) - 1), Math.Min(n - 1, (int)MathF.Ceiling((MathF.Max(a.X, b.X) + pad + h) / st) + 1),
+                Math.Max(0, (int)MathF.Floor((MathF.Min(a.Y, b.Y) - pad + h) / st) - 1), Math.Min(n - 1, (int)MathF.Ceiling((MathF.Max(a.Y, b.Y) + pad + h) / st) + 1));
+    }
+
+    /// For each cell, the steps to its neighbours that cross a hedge or fence that stops this kind of man. Closing every cell a
+    /// fence touched shut every gap under about 5 m on the 2.5 m cells (men walked into a garden and the field had no way out);
+    /// StepCosts now closes only the cells within a man's width of it, and this bars the steps over its line between them.
+    /// Each feature is taken longer by its thickness and the clearance, so a gap too narrow to pass stays shut.
+    ushort[] EdgeBlocks(bool horse)
+    {
+        int n = Terrain.N;
+        float st = Terrain.Step, h = Terrain.Half;
+        var bars = new ushort[n * n];
+        Vector2 Centre(int x, int z) => new(-h + x * st, -h + z * st);
+        foreach (var f in Terrain.Features)
+        {
+            if (!f.Stops(horse)) continue;
+            var along = f.B - f.A;
+            along = along.LengthSquared() > 1e-6f ? Vector2.Normalize(along) * (f.Half + Clearance(horse)) : Vector2.Zero;
+            Vector2 a = f.A - along, b = f.B + along;
+            var (x0, x1, z0, z1) = CellBox(a, b, 0);
+            for (int z = z0; z <= z1; z++)
+                for (int x = x0; x <= x1; x++)
+                    for (int dz = -1; dz <= 1; dz++)
+                        for (int dx = -1; dx <= 1; dx++)
+                        {
+                            int nx = x + dx, nz = z + dz;
+                            if ((dx | dz) == 0 || nx < 0 || nz < 0 || nx >= n || nz >= n) continue;
+                            if (Terrain.SegmentsCross(Centre(x, z), Centre(nx, nz), a, b)) bars[z * n + x] |= StepBit(dx, dz);
+                        }
+        }
+        return bars;
     }
 }

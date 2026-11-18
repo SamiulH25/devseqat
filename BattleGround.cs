@@ -225,7 +225,7 @@ public partial class Battle
         var mid = s.Anchor + s.Front * 2.2f;
         for (float x = -half; x < half; x += 3.2f) // runs of 2.4 m with gaps a man can slip through
             Terrain.AddFeature(FeatureKind.Stakes, mid + side * x, mid + side * MathF.Min(half, x + 2.4f));
-        stepCost[1] = null; // the horse's routes must go round them now
+        stepCost[1] = null; edgeBlock[1] = null; // the horse's routes must go round them now
         flowCache.RemoveAll(f => f.Horse);
         if (s.Team == 0 || !enemyStaked) Log(s.Team == 0 ? $"The {s.Name} plant their stakes." : "The enemy archers plant stakes.");
         if (s.Team == 1) enemyStaked = true;

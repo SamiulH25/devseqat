@@ -1044,6 +1044,24 @@ public static partial class SelfTest
         Check(s.Units.All(u => u.Pos.Y > 0.5f && Vector2.Distance(u.Pos, u.Slot) <= 1.5f), "it walks round the near fence and settles in its places");
     }
 
+    /// Pathing: a company in a fenced yard finds its 2.4 m gate. Fences once closed every 2.5 m cell they touched, so gaps under
+    /// about 5 m were shut to the flow field: the last enemy bows walked into a village garden, never got out, and the battle stalled.
+    static void OutOfTheYard()
+    {
+        var b = Battle.Empty(7);
+        b.Terrain.AddFeature(FeatureKind.Fence, new Vector2(-10, 0), new Vector2(5, 0)); // the front, the gate near one end, away from the way out
+        b.Terrain.AddFeature(FeatureKind.Fence, new Vector2(7.4f, 0), new Vector2(10, 0));
+        b.Terrain.AddFeature(FeatureKind.Fence, new Vector2(-10, 0), new Vector2(-10, 12));
+        b.Terrain.AddFeature(FeatureKind.Fence, new Vector2(10, 0), new Vector2(10, 12));
+        b.Terrain.AddFeature(FeatureKind.Fence, new Vector2(-10, 12), new Vector2(10, 12));
+        var s = b.AddSquad(0, UnitType.Shieldman, 8, new(-5, 6), 4, -Vector2.UnitY);
+        s.Order = Order.Hold; s.Anchor = new(-5, -20); s.Front = -Vector2.UnitY;
+        float time = 0;
+        while (s.Units.Any(u => u.Pos.Y > -1) && time < 60) { b.Update(1 / 60f); time += 1 / 60f; }
+        Console.WriteLine($"yard: a company of 8 out through a 2.4 m gate in {time:0.0}s");
+        Check(s.Units.All(u => u.Pos.Y < -1), "a company finds the narrow gate out of a fenced yard");
+    }
+
     /// Pathing: a charge with no company left to hit goes round the hedge for the captain behind it (a battle once stalled
     /// with the last enemy company pressed against a hedge, the lone captain on the far side).
     static void ChargeFindsCaptain()

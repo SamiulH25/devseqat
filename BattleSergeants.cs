@@ -16,10 +16,11 @@ public partial class Battle
     /// Seconds before another man steps up: 8 in an elite company, 24 among rabble.
     public static float StepUpTime(Squad s) => 8 + 16 * (1 - Math.Clamp(s.Drill + s.SgtPenalty, 0, 1));
 
-    /// The man who keeps the company's order: a named man first (the roll's), then the best of its men by tier.
+    /// The man who keeps the company's order: a named man first (the roll's), then the best of its men by tier, then one
+    /// from the rear rank, where a file closer stands (a front-rank man falls at first contact and costs the company its grade).
     static Unit? PickSergeant(Squad s) => s.Units
         .Where(u => u.Active && !u.Routing && !u.Hero && !u.IsLeader && !u.IsPlayer && !u.Sergeant)
-        .OrderByDescending(u => u.SoldierId != 0).ThenByDescending(u => u.Type.Tier).ThenBy(u => u.Index).FirstOrDefault();
+        .OrderByDescending(u => u.SoldierId != 0).ThenByDescending(u => u.Type.Tier).ThenByDescending(u => u.Rank).ThenBy(u => u.Index).FirstOrDefault();
 
     /// Whether this company has a sergeant at all: not beasts, the raised dead or a swarm.
     static bool HasSergeant(Squad s) => !s.Swarm && s.Units.Count > 0 && !s.Units[0].Type.Wild && !s.Units[0].Type.Has("raised");

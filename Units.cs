@@ -49,12 +49,12 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public string HeadKey => Face != "man" ? "head." + Face : Visage >= 0 ? "head.v" + Visage : "head";
     public bool NeutralHead => Face == "man" && Visage >= 0;
     // "coif": a mail hood.
-    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "sallet_crest", "sallet_bevor", "greathelm", "greathelm_horns", "greathelm_wings", "greathelm_crown", "armet", "bascinet", "gjermundbu", "morion", "kulah", "spangen", "spangen_horns", "spangen_wolf", "turban", "steppe", "steppe_mask", "steppe_horns", "coif", "spike", "barbute", "barbute_crest", "furcap", "bucket", "brigand_hat", "auramaster" };
+    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "sallet_crest", "sallet_bevor", "greathelm", "greathelm_horns", "greathelm_wings", "greathelm_crown", "armet", "bascinet", "gjermundbu", "morion", "kulah", "spangen", "spangen_horns", "spangen_wolf", "turban", "steppe", "steppe_mask", "steppe_horns", "coif", "spike", "barbute", "barbute_crest", "furcap", "bucket", "brigand_hat" };
     // Goblin kit: "rags" (bare green arms), "hide" (bare green legs), "bare" feet, "claw" hands.
     // Undead kit: "bones" (a ribcage and bare bone), "shroud" (a ghoul's grave wrappings over grey skin), "robe" (a necromancer's), "bone" feet and hands.
     // The new realms (docs/archive/WORLD.md W4): "lamellar" (rows of small plates), "deel" (a long wrapped steppe coat), "brigandine"
     // (cloth over riveted plates); the "turban" wound over a spiked cap, the fur-brimmed "steppe" helm; the tall "pavise".
-    public static readonly string[] Bodies = { "tunic", "gambeson", "gambeson_fur", "mail", "plate", "plate_gilded", "plate_fur", "breastplate", "coatofplates", "scale", "scale_iron", "mail_fur", "lamellar_gilded", "leather", "fur", "rags", "bones", "shroud", "robe", "lamellar", "deel", "deel_fur", "brigandine", "brigandine_gilded", "auramaster" };
+    public static readonly string[] Bodies = { "tunic", "gambeson", "gambeson_fur", "mail", "plate", "plate_gilded", "plate_fur", "breastplate", "coatofplates", "scale", "scale_iron", "mail_fur", "lamellar_gilded", "leather", "fur", "rags", "bones", "shroud", "robe", "lamellar", "deel", "deel_fur", "brigandine", "brigandine_gilded" };
     public static readonly string[] LegsKinds = { "cloth", "mail", "splint", "plate", "furlegs", "hide", "bones", "shroud" };
     public static readonly string[] FeetKinds = { "boots", "ridingboots", "furboots", "sabatons", "bare", "bone" };
     public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw", "bone" };
