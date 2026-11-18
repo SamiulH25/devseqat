@@ -29,14 +29,23 @@ public static partial class PixelMap
                 float shadow = f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine or FoliageKind.Birch or FoliageKind.Bush ? s.W * 0.42f : s.W * 0.48f;
                 list.Add(new Placed(s, sp, f.Pos.Y, shadow));
             }
-            foreach (var p in c.S.Parties)
+            // One party shows at a place (yours first, then the greatest), so lords resting in a town do not pile up.
+            var shownAt = new HashSet<int>();
+            foreach (var p in c.S.Parties.OrderBy(p => p.Kind == PartyKind.Player ? 0 : 1).ThenByDescending(p => p.Tier))
             {
-                if (p.Down || p.Captive) continue;
+                if (p.Down || p.Captive || p.Kind == PartyKind.Garrison) continue;
                 var at = p.Pos;
-                if (!p.Moving && c.SettlementAt(p.Pos, 3) is { } st) at = st.Pos + new Vector2(st.Kind == SettlementKind.Village ? 9 : 18, st.Kind == SettlementKind.Village ? 6 : 12); // beside the gate, not on it
+                bool? face = null;
+                if (c.S.Settlements.FirstOrDefault(s => Vector2.Distance(s.Pos, p.Pos) < (s.Kind == SettlementKind.Village ? 10 : 17)) is { } st) // at a place or on its doorstep
+                {
+                    if (!shownAt.Add(st.Id)) continue;
+                    // Clear of the walls, east of the place and facing it, its men trailing away: the gate and the town stay seen.
+                    at = st.Pos + new Vector2(st.Kind switch { SettlementKind.Village => 19, SettlementKind.Castle => 24, _ => 30 }, 6);
+                    face = true;
+                }
                 var sp = Screen(at, t.Height(at));
                 if (sp.X < -20 || sp.X > W + 20 || sp.Y < -20 || sp.Y > H + 30) continue;
-                list.Add(new Placed(Art.Party(p, c, k), sp, at.Y + 0.01f, 3 * k));
+                list.Add(new Placed(Art.Party(p, c, k, face), sp, at.Y + 0.01f, 3 * k));
             }
             foreach (var pl in list) Shadow(pl);
             foreach (var pl in list.OrderBy(p => p.Foot.Y).ThenBy(p => p.Foot.X)) Blit(pl);
@@ -163,7 +172,7 @@ public static partial class PixelMap
 
     /// The sprites, painted by code with the soldiers' painter (Painter.cs: lit shapes, five-tone hue-shifted ramps, a
     /// selective outline) at the exact pixel size they are drawn, cached.
-    static class Art
+    static partial class Art
     {
         static readonly Dictionary<string, Sprite> cache = new();
 
@@ -464,69 +473,5 @@ public static partial class PixelMap
             }
             return Done(cv);
         });
-
-        // ---------- parties ----------
-
-        /// A party as its leader with its banner: lords and the company on horseback, brigands on foot, merchants with a wagon.
-        public static Sprite Party(Party p, Campaign c, float k)
-        {
-            int pal = p.Kind == PartyKind.Player ? 2 : Style.PaletteOf(c.SideOf(p));
-            string kind = p.Kind switch { PartyKind.Bandit or PartyKind.Monster => "foot", PartyKind.Caravan => "wagon", _ => "rider" };
-            bool left = MathF.Cos(p.Facing) < 0;
-            return Cached($"party{kind}.{pal}.{k}.{left}.{p.Id % 4}", () =>
-            {
-                float u = k / 3 * 1.3f;
-                var side = Style.Sides[pal];
-                var cloth = new Mat(side.Cloth, Pattern.Cloth);
-                var skin = new Mat(new Color(222, 172, 132));
-                var steel = new Mat(new Color(150, 156, 166), Pattern.Plate);
-                var cv = new Canvas((int)(16 * u) + 2, (int)(20 * u) + 2);
-                float w = cv.W, h = cv.H, cx = w / 2;
-                if (kind == "rider")
-                {
-                    // A horse in profile facing right: barrel, a raised neck and head, four legs, a tail; the rider in his
-                    // side's cloth, and the banner high behind him so the party reads by its colour.
-                    var coat = new Mat(new Color(Style.Coats[p.Id % Style.Coats.Length]));
-                    float by = h - 4.2f * u, bx = cx - 0.5f * u;
-                    foreach (float lx in new[] { -3.6f, -2.2f, 2.0f, 3.3f })
-                        cv.Rect(bx + lx * u, by, bx + lx * u + 0.9f * u, h, coat, lx is -2.2f or 2.0f ? -0.25f : 0);
-                    cv.Ellipse(bx, by - 0.6f * u, 4.8f * u, 2.3f * u, coat);
-                    cv.Body(by - 6.2f * u, by - 0.8f * u, y => { float a = (y - (by - 6.2f * u)) / (5.4f * u); return (bx + (3.0f + 0.4f * a) * u, bx + (4.4f + 0.8f * a) * u); }, coat, 0.1f);
-                    cv.Body(by - 6.6f * u, by - 4.6f * u, _ => (bx + 4.0f * u, bx + 6.4f * u), coat, 0.15f); // the head
-                    cv.Line(bx - 4.8f * u, by - 1.6f * u, bx - 5.8f * u, by + 1.2f * u, new Mat(new Color(54, 40, 32)), 0.4f, 1.2f * u); // the tail
-                    cv.Rect(bx - 2.6f * u, by - 2.8f * u, bx + 2.2f * u, by - 0.6f * u, cloth); // the saddle cloth
-                    cv.Body(by - 7.6f * u, by - 2.4f * u, y => { float a = (y - (by - 7.6f * u)) / (5.2f * u); return (bx - (1.1f + 0.4f * a) * u, bx + (1.1f + 0.4f * a) * u); }, cloth, 0.1f);
-                    cv.Ellipse(bx, by - 8.6f * u, 1.3f * u, 1.3f * u, p.Tier >= 3 || p.Kind == PartyKind.Player ? steel : skin, 0.15f);
-                    float fx = bx - 2.4f * u;
-                    cv.Rect(fx, 1, fx + MathF.Max(0.9f, 0.7f * u), by - 2 * u, new Mat(new Color(76, 56, 40)));
-                    cv.Rect(fx + 1, 1, fx + 1 + 6 * u, 1 + 4 * u, new Mat(side.Cloth, Pattern.Cloth), 0.1f);
-                    cv.Rect(fx + 1 + 2.4f * u, 1, fx + 1 + 3.4f * u, 1 + 4 * u, new Mat(side.Trim)); // a pale on the flag
-                }
-                else if (kind == "foot")
-                {
-                    float by = h;
-                    cv.Rect(cx - 1.4f * u, by - 3.5f * u, cx - 0.4f * u, by, new Mat(new Color(70, 58, 46)));
-                    cv.Rect(cx + 0.4f * u, by - 3.5f * u, cx + 1.4f * u, by, new Mat(new Color(70, 58, 46)));
-                    cv.Body(by - 9 * u, by - 3 * u, y => { float a = (y - (by - 9 * u)) / (6 * u); return (cx - (1.3f + a) * u, cx + (1.3f + a) * u); }, cloth);
-                    cv.Ellipse(cx, by - 10.3f * u, 1.3f * u, 1.3f * u, new Mat(new Color(110, 92, 70)), 0.1f); // a hood
-                    cv.Line(cx + 2 * u, by - 12 * u, cx + 3 * u, by - 5 * u, new Mat(new Color(96, 70, 46)), 0.4f, 1.2f * u);
-                }
-                else
-                {
-                    float by = h - 1.5f * u;
-                    cv.Rect(cx - 5 * u, by - 5 * u, cx + 4 * u, by - 1.5f * u, new Mat(new Color(120, 86, 54), Pattern.Wood));
-                    cv.Ellipse(cx - 0.5f * u, by - 6 * u, 4.6f * u, 2.8f * u, new Mat(new Color(222, 210, 180), Pattern.Cloth), 0.1f);
-                    cv.Ellipse(cx - 3 * u, by - 0.5f * u, 1.6f * u, 1.6f * u, new Mat(new Color(70, 52, 38)));
-                    cv.Ellipse(cx + 2.5f * u, by - 0.5f * u, 1.6f * u, 1.6f * u, new Mat(new Color(70, 52, 38)));
-                    cv.Rect(cx - 0.4f * u, by - 13 * u, cx + 0.4f * u + 0.5f, by - 7 * u, new Mat(new Color(70, 52, 38)));
-                    cv.Rect(cx + 0.9f * u, by - 13 * u, cx + 4.5f * u, by - 10.5f * u, cloth);
-                }
-                var s = Done(cv);
-                if (!left) return s;
-                var flip = new Color[s.Px.Length];
-                for (int y = 0; y < s.H; y++) for (int x = 0; x < s.W; x++) flip[y * s.W + x] = s.Px[y * s.W + s.W - 1 - x];
-                return s with { Px = flip };
-            });
-        }
     }
 }

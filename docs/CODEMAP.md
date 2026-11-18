@@ -773,6 +773,15 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## PixelFont.cs (98 lines)
 - **PixelFont** (class, L7): BuildCharIdx:28, PixelFont:36, Width:69, Lit:72, Draw:78, DrawPlain:84, DrawRun:86
 
+## PixelMap.cs (224 lines)
+- **PixelMap** (class, L11): Run:22, Save:58, Sample:188, Hash:218
+
+## PixelMapRamps.cs (91 lines)
+- **PixelMap** (class, L5)
+
+## PixelMapSprites.cs (477 lines)
+- **PixelMap** (class, L5): Sprite:8, Build:11
+
 ## Png.cs (138 lines)
 - **Png** (class, L10): Encode:14, static:42, Unfilter:100, Paeth:117, Chunk:123, Crc:132
 

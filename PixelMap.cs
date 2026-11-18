@@ -78,30 +78,11 @@ public static partial class PixelMap
         readonly Color[] px = new Color[W * H];
         readonly float[] near = new float[W * H];   // the world Z of the ground drawn at each pixel (bigger = nearer)
         readonly Stuff[] stuff = new Stuff[W * H];
-        readonly List<FieldPlot>[] plotGrid;
-        const float PlotCell = 16;
-        readonly int plotSide;
-
         public View(Campaign c, Terrain t, Vector2 at, float k)
         {
             this.c = c; this.t = t; m = c.Map; this.k = k;
             x0 = at.X - W / 2f / k;
             oy = (at.Y * SinP - t.Height(at) * CosP) * k - H / 2f;
-            plotSide = (int)MathF.Ceiling(2 * t.Half / PlotCell) + 1;
-            plotGrid = new List<FieldPlot>[plotSide * plotSide];
-            foreach (var f in t.Fields)
-            {
-                float r = MathF.Max(f.Half.X, f.Half.Y) + 1;
-                for (float gx = f.Center.X - r; gx <= f.Center.X + r + PlotCell; gx += PlotCell)
-                    for (float gz = f.Center.Y - r; gz <= f.Center.Y + r + PlotCell; gz += PlotCell)
-                        if (PlotCellOf(new Vector2(gx, gz)) is int i) (plotGrid[i] ??= new()).Add(f);
-            }
-        }
-
-        int? PlotCellOf(Vector2 p)
-        {
-            int gx = (int)((p.X + t.Half) / PlotCell), gz = (int)((p.Y + t.Half) / PlotCell);
-            return gx < 0 || gz < 0 || gx >= plotSide || gz >= plotSide ? null : gz * plotSide + gx;
         }
 
         /// Where a point of the world falls on the screen (float pixels).
@@ -170,40 +151,13 @@ public static partial class PixelMap
             float light = (Vector3.Dot(n, Sun) - flat) * 5.5f; // 0 on the level, + toward the sun, - away
 
             if (m.RoadDist(p) < 0.85f) return new Sample(Stuff.Road, Ramps.Road, 2, light * 0.7f, p);
-            if (PlotCellOf(p) is int pc && plotGrid[pc] is { } plots)
-                foreach (var f in plots)
-                {
-                    var ax = SnapAxis(f.Axis);
-                    var d = p - f.Center;
-                    float u = Vector2.Dot(d, ax), v = d.X * -ax.Y + d.Y * ax.X;
-                    if (MathF.Abs(u) < f.Half.X && MathF.Abs(v) < f.Half.Y)
-                    {
-                        bool hedge = f.Hedged != 0 && f.Kind != FieldKind.Pasture && (MathF.Abs(u) > f.Half.X - 0.45f || MathF.Abs(v) > f.Half.Y - 0.45f);
-                        if (hedge) return new Sample(Stuff.Field, Ramps.Hedge, 1, light, p);
-                        int stripe = f.Kind is FieldKind.Ploughed or FieldKind.Grain or FieldKind.Green ? ((int)MathF.Floor(v * k / 2.4f) & 1) : 0;
-                        return new Sample(Stuff.Field, Ramps.Field(f.Kind, f.Seed, m.Season), 2 - stripe, light, p,
-                            Texture: f.Kind is FieldKind.Pasture or FieldKind.Fallow or FieldKind.Orchard); // grass in clumps, not a flat sheet
-                    }
-                }
+            if (FieldAt(p, light) is { } field) return field; // the strip fields (PixelMapFields.cs), not the map's overlapping plots
             // The land's kind is looked up a little off the point (a warp of a few metres), so the border between two kinds
             // of country is a ragged natural edge rather than the stair steps of the province grid.
             var warp = new Vector2(Terrain.Noise(p.X * 0.13f, p.Y * 0.13f, 81) - 0.5f, Terrain.Noise(p.X * 0.13f, p.Y * 0.13f, 82) - 0.5f) * 14
                 + new Vector2(Terrain.Noise(p.X * 0.6f, p.Y * 0.6f, 83) - 0.5f, Terrain.Noise(p.X * 0.6f, p.Y * 0.6f, 84) - 0.5f) * 3;
             var tint = m.Tint(p + warp, Ramps.Grass);
             return new Sample(Stuff.Land, Ramps.Land(tint), 2, light, p, Texture: true);
-        }
-
-        /// A plot's long side turned to the nearest angle pixel art draws cleanly (level, upright, 1:2, 1:1, 2:1), so its
-        /// edges are even steps rather than ragged ones.
-        static Vector2 SnapAxis(Vector2 a)
-        {
-            float ang = MathF.Atan2(a.Y, a.X), best = 0, err = float.MaxValue;
-            foreach (float s in new[] { 0f, 26.565f, 45f, 63.435f, 90f, 116.565f, 135f, 153.435f, 180f, -26.565f, -45f, -63.435f, -90f, -116.565f, -135f, -153.435f, -180f })
-            {
-                float r = MathHelper.ToRadians(s), e = MathF.Abs(MathHelper.WrapAngle(ang - r));
-                if (e < err) { err = e; best = r; }
-            }
-            return new Vector2(MathF.Cos(best), MathF.Sin(best));
         }
 
         /// Banks and verges: land against water takes its darkest tone (the bank's face), water just under land a pale
