@@ -1,6 +1,6 @@
 # The designed world: plan
 
-Status: **WM0-WM4 built** (2026-11-18); WM5-WM6 planned. New campaigns play the drawn world (layout 5); `IRONFIELD_MAP_LAYOUT=4` makes the last seeded map. Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
+Status: **WM0-WM5 built** (2026-11-18); WM6 planned. New campaigns play the drawn world (layout 5); `IRONFIELD_MAP_LAYOUT=4` makes the last seeded map. Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
 game as map layout 5, the map every new campaign plays on. Phases WM0-WM7; each ships on its own and `tools/check.sh`
 must pass after each. When a phase ships, add its "As built" note at the end.
 
@@ -194,10 +194,38 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
   - **Saved ways round the sea**: `Party.SeaWay`/`SeaGoal` replace WM2's unsaved table; a way planned again after a load
     differed, and a loaded game drifted (`SaveMidRun`).
   - **Guards**: `--realms 8`: largest share 32 %, 0 flags (layout 4: 28 %, 0); the Khaganate starts at a quarter of the
-    provinces as drawn, the Order keeps 1-6 % and survives every run. `--campaign-bench` as above.
+    provinces as drawn, the Order keeps 1-6 % and survives every run. `--campaign-bench` as above. `--pacing 8` on both maps
+    with the same build: the stand-in captain runs ahead of the targets on each (Marshal by day 106-162 on both; vassal
+    from day 31), so the drawn map paces as layout 4 did; on it one run of eight never got past Sworn Sword and one was slow
+    (Lord on day 165). The fast pacing is older than this sprint and is left for a balance pass.
   - **Tests moved to the drawn map** where they had read the old map's land names (`Wolves`: forest or taiga;
     `RainMakesMud`: the rainy lands against the dry by `Lands.Rain`, the drawn map has no fens), the one-seat province
     (`CampaignWar`), or a quiet first town or largest host (`CoreAndTrials` rests in a town of your realm, `OrderPolitics`
     makes its host the greatest, `RealmTempers` leaves every realm a seat). `MagesInTheWorld` keeps the seeded map: on the
     drawn map the two arcana-3 realms (the Compact, the Order) lose their early wars and field no lord of tier IV in 22
     weeks. **Left for balance**: those two realms' lords stay at tiers I-III through the first half year.
+- **WM5 (2026-11-18).** Subcultures recruit. Deviations and gotchas:
+  - **Places are their people**: a drawn settlement's culture is its subculture (`FromDesign`), once that culture is not
+    `waiting`; its villages raise the same root (levies or clansmen) and its men climb their own lines. Twelve League
+    places are drawn as Bayfolk (`azure_coast`), Azure people under League rule; kept as drawn.
+  - **66 new troops** (`Data/troops.json`, made by a script from the parent realm's lines): each subculture's own chain runs
+    on to tier VII (tiers VI-VII; the Bayfolk also V), and it gets a tier VII of its own in each other role (infantry,
+    archers, horse), reached from its parent realm's tier VI of that role, so its men climb there through kin troops.
+    Stats: a chain step takes the stronger of its last troop (raised 8 %) and the parent's troop at that tier; a role VII has
+    its parent realm's tier VII stats. Names from each people's own words (King's Wardens, Sea-King's Chosen, Pine Wardens,
+    Gate Wardens...). **Looks use existing painted parts** (the parent realm's armour at that tier, the people's own helm
+    for the role VIIs); no new parts were painted. All 16 pass `Cultures` and drop `waiting`; `bandit` keeps it.
+  - **A people's realm** (`Factions.PeopleOf`): a culture a realm holds is its own; a subculture belongs to the first of its
+    kin a realm holds (a realm culture's kin are only lines it borrows: the League's include the Azure). Used by
+    `HasBarracks` (a barracks in a town of a culture's peoples trains that culture's lines: on the drawn map every town is
+    a subculture's, so a realm's own elite lines had no barracks) and `KinRealm` (a subculture's restless seat goes over
+    to its parent realm; before, no drawn seat could).
+  - **Found on the way**: `WandererAt` offered dead wanderers (hired, never came); lords' refits now leave 150 in the
+    realm's chest (`RefitReserve`: a beaten small realm's refits halved its chest toward nothing, and with an empty chest it
+    raises no lord; the Order of the Ashen Sun ran down to 50).
+  - **Left out: brigand bands of the outlaws' own troops.** Tried (the `bandit` culture's four lines, same dice): the seeker
+    in `--arcana` kindled its aura by day 90 in 2 of 5 seeds instead of 4, from fewer fights; a balance call for later.
+    Bands still field realm lines.
+  - Tests moved to subcultures: `Cultures` (a village is its realm's people or its drawn people; lords' own troops count
+    their peoples'), `UpgradeTreeVisibility`, `FiefLife` (a Crimson-people castle), `SiegeCamp` (the wall mends each
+    unbesieged day: another lord's siege in between left the end state battered).

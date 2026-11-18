@@ -90,6 +90,15 @@ public static class Factions
     public static CultureDef? Culture(string id) { Load(); return cultures!.FirstOrDefault(c => c.Id == id); }
     public static string CultureOf(int faction) => faction < 0 ? Common : Get(faction).Culture;
 
+    /// The realm culture a people belongs to (docs/WORLDMAP.md WM5): a culture a realm holds is its own; a subculture (no realm
+    /// holds it) belongs to the first of its kin a realm holds (the Bayfolk to the Azure). A realm culture's kin are only the
+    /// lines it may borrow (the League's include the Azure), never its people.
+    public static string PeopleOf(string culture)
+    {
+        if (All.Any(f => f.Culture == culture)) return culture;
+        return Culture(culture)?.Kin.FirstOrDefault(k => All.Any(f => f.Culture == k)) ?? culture;
+    }
+
     /// May men of `culture` serve as troops of `troop`'s culture? Their own, common troops, and their kin's.
     public static bool Open(string culture, string troop) => troop == Common || troop == culture || (Culture(culture)?.Kin.Contains(troop) ?? false);
 

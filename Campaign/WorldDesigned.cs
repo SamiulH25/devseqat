@@ -90,7 +90,9 @@ public sealed partial class WorldMap
             int f = faction[s.Realm];
             m.Settlements.Add(new Settlement
             {
-                Id = m.Settlements.Count, Province = m.DesignProvinceAt(pos).Id, Faction = f, Culture = Factions.CultureOf(f), Name = s.Name, Pos = pos,
+                // Its own people (WM5): the drawn subculture, whose villages raise the same root and whose men climb its own lines.
+                Id = m.Settlements.Count, Province = m.DesignProvinceAt(pos).Id, Faction = f, Name = s.Name, Pos = pos,
+                Culture = s.Subculture is { } sub && Factions.Culture(sub) is { Waiting: false } ? sub : Factions.CultureOf(f),
                 Kind = s.Kind switch { "town" => SettlementKind.Town, "castle" => SettlementKind.Castle, _ => SettlementKind.Village },
             });
         }

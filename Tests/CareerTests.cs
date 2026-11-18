@@ -194,7 +194,7 @@ public static partial class SelfTest
         Check(Campaign.MaxSupplies(castle) > 30, "walls lay in more supplies");
 
         // A foreign fief, taxed hard and left bare, revolts and then goes over to its own people's realm.
-        var foreign = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction == 1 && s.Culture == Factions.CultureOf(1)).OrderBy(s => s.Id).First();
+        var foreign = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && s.Faction == 1 && Factions.PeopleOf(s.Culture) == Factions.CultureOf(1)).OrderBy(s => s.Id).First(); // of Crimson's people (a subculture on the drawn map)
         var kin = foreign.Faction;
         foreign.Faction = 0;
         c.S.Provinces[foreign.Province].Faction = 0;

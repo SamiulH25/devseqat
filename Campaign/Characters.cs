@@ -300,7 +300,7 @@ public sealed partial class Campaign
         }
     }
 
-    public Character? WandererAt(Settlement s) => S.Characters.FirstOrDefault(c => c.Kind == "wanderer" && c.AtSettlement == s.Id);
+    public Character? WandererAt(Settlement s) => S.Characters.FirstOrDefault(c => c.Kind == "wanderer" && !c.Dead && c.AtSettlement == s.Id); // a dead one was hired and never came
     public int WandererPrice(Character w) => 150 + 25 * Companions.Count();
 
     /// Take a wanderer into your household: he leads the first company without a companion.

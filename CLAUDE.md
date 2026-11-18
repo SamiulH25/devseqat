@@ -255,7 +255,7 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 | Archived sprint plans | `docs/archive/` (index in `docs/archive/README.md`): every phased plan (`AUDIO.md` AU0–AU6, `COMBAT_QOL.md` Q1–Q6, L, K, MA, S, T, V, W, Q, F...) once built. New sprint plans go in `docs/` and move to `docs/archive/` when their last phase ships |
 | Magic and aura redesign plan | `docs/ARCANA.md` (AR0-AR9, built 2026-11-14; "As built" lists what was left out: census `--arcana`, aura every fighting captain finds, wells, the Tide and overreach, doctrines and Unweave, court mages and cunning folk, paths (Sword, Banner, Hearth), blight and calm the dead, workings naming battles) |
 | Playtest plan (Andrew, round 1) | `docs/PLAYTEST.md` (PT0-PT6, planned: town click target, no re-form on a player's charge, a paused map really stops, the clutter audit and one-job-per-screen rules, a quests menu, combat orders and HUD as pictures, weapons that look like weapons, lords and commander personality after Crusader Kings). Read first when choosing work |
-| Current sprint plan (designed world) | `docs/WORLDMAP.md` (WM0-WM7, planned 2026-11-17, WM0-WM4 built: `Data/world.json` is map layout 5, the map every new campaign plays on; the sea is impassable for now; province names invented; subcultures recruit to tier VII (WM5); WM7 ships later) |
+| Current sprint plan (designed world) | `docs/WORLDMAP.md` (WM0-WM7, planned 2026-11-17, WM0-WM5 built: `Data/world.json` is map layout 5, the map every new campaign plays on; the sea is impassable for now; province names invented; places are their subcultures, which recruit to tier VII (`Factions.PeopleOf`); WM6 polish left; WM7 ships later) |
 | Next sprint plan | `docs/COMPANY.md` (C0-C14, planned, nothing built yet. The men of the company: faces for named men, natures, ties between them, your choices on the roll, the camp, named men in the fight, the book of the fallen, polish. The captain: gear as items with quality and marks, more slots and grades, a baggage and inventory screen, spoils, trophies and the smith; enemies that notice and hunt the captain. Arrows you can see: real shafts by kind, volleys, arrows left standing where they land) |
 
 ## Recipes
@@ -301,9 +301,9 @@ Player actions (most in `CampaignActions.cs`) are public methods on `Campaign` r
 ## Invariants and gotchas (break these and things fail subtly)
 
 - Headless code (Battle*, Squad, Units, Troops, Terrain, Campaign/*) must not use MonoGame graphics/audio/input.
-- Cultures marked `"waiting": true` in `Data/factions.json` (the 17 subcultures, `bandit` among them) are the world book's, kept for
-  when `Data/world.json` comes into the game (docs/WORLDMAP.md WM5): no realm fields them and their trees stop short of tier VII. Wiring one in = a realm
-  or region holds it, then drop the flag (`Factions.Validate` refuses a waiting culture a realm holds).
+- The 16 realm subcultures in `Data/factions.json` are the peoples of the drawn map's places (docs/WORLDMAP.md WM5): a place's culture may be one
+  (`Settlement.Culture`), and `Factions.PeopleOf` gives the realm culture it belongs to (never read a realm culture's `kin` as its people: the
+  League's kin include the Azure). `bandit` is still `"waiting": true`: no realm fields it (`Factions.Validate` refuses a waiting culture a realm holds).
 - Ground positions are `Vector2(X = world X, Y = world Z)`; height comes from `Terrain.Height(pos)`.
 - Faction ids index `CampaignState.Factions`; realms founded in play (F5) carry `FactionState.Founded` (ids past the save's
   `DataRealms`; never test `id >= Factions.All.Count`, the data may have grown since the save). A map's realm layout comes from

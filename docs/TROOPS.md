@@ -5,13 +5,13 @@ the end of a campaign. Generated from `Data/troops.json`, `Data/factions.json` a
 by `tools/troopmap.py`; change the data and re-run it (`python3 tools/troopmap.py --write`) rather
 than editing this page.
 
-**411 troops, 473 upgrade links.** 387 of them are men and 24 are wild
+**477 troops, 539 upgrade links.** 453 of them are men and 24 are wild
 things. Tiers run I–VII among the men, plus the tier-0 captain, who belongs to no tree. The wild
 roster has no links at all. The 30 roots are `levies`, `clansmen`, `acolytes`, `esquires`,
 `mounted_esquires`, the captain, and one for each wild troop.
 
-**Not in the world yet:** 80 troops in 17 cultures marked `waiting` in `Data/factions.json`
-(`azure_heart`, `azure_march`, `azure_coast`, `crimson_patrician`, `crimson_alpine`, `northern_fjord`, `northern_taiga`, `southern_oasis`, `southern_dune`, `southern_rift`, `steppe_horde`, `steppe_salt`, `league_lagoon`, `league_fen`, `order_chapter`, `order_warden`, `bandit`). They come from the world book
+**Not in the world yet:** 17 troops in 1 cultures marked `waiting` in `Data/factions.json`
+(`bandit`). They come from the world book
 (`Data/world.json`) and are kept for when that world is brought into the game; until then no realm,
 settlement or band fields them, and their trees stop short of tier VII.
 
@@ -74,7 +74,7 @@ The data graph is a DAG; the campaign puts gates on its edges (`Companies.CanEnt
 | Ashen Sun | Order of the Ashen Sun | 32 | 5 | sworn brothers on foot and knight-brothers | Azure, Crimson |
 | Wild | — | 24 | 0 | beasts and monsters, no upgrades | — |
 
-Men per tier: T0 (the captain) 1, I 3, II 41, III 58, IV 92, V 90, VI 61, VII 41.
+Men per tier: T0 (the captain) 1, I 3, II 41, III 58, IV 92, V 91, VI 77, VII 90.
 
 ## The shared trunk
 
@@ -132,13 +132,13 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | V | Magisters | Caster | 1000 | Lectors | Grand Magisters |
 | VI | Citadel Sentinels † | Infantry | 155 | Aegis Wardens | Bastion Lords, Immortals |
 | VI | Marshal Guard † | Infantry | 155 | Banner Sergeants | Imperial Marshals |
-| VI | Iron Legionaries † | Infantry | 160 | Aegis Wardens, Paladins | Immortals, Sovereign Champions |
+| VI | Iron Legionaries † | Infantry | 160 | Aegis Wardens, Paladins | Beacon Guard, Immortals, Sovereign Champions |
 | VI | Royal Crusaders † | Infantry | 165 | Paladins, **Sword Brethren** | Sovereign Champions |
 | VI | Wardens of the Lily † ‡ | Infantry | 208 | Lily Knights | — |
 | VI | Grand Phalanx † | Skirmisher | 172 | Silver Pikes | Imperial Pikemen, Sovereign Halberdiers |
-| VI | Guild Sharpshooters † | Archer | 156 | Heavy Arbalests | Grand Arbalests |
+| VI | Guild Sharpshooters † | Archer | 156 | Heavy Arbalests | Abbey Arbalesters, Cog Arbalesters, Grand Arbalests, Ridge Crossbows |
 | VI | Fortress Bolters † | Archer | 158 | Heavy Arbalests, Siege Crossbowmen | Grand Arbalests, Iron Citadel Arbalests |
-| VI | Paladin Knights † | Cavalry | 195 | Banner Knights, **Valkyrie Lancers** | Grail Knights, Imperial Cataphracts |
+| VI | Paladin Knights † | Cavalry | 195 | Banner Knights, **Valkyrie Lancers** | Grail Knights, Imperial Cataphracts, Strand Knights, Tourney Champions |
 | VI | Grand Magisters | Caster | 1350 | Magisters | — |
 | VII | Imperial Marshals † | Infantry | 218 | Marshal Guard | — |
 | VII | Sovereign Champions † | Infantry | 225 | Iron Legionaries, Royal Crusaders | — |
@@ -193,8 +193,8 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | VI | Grand Blademasters † | Infantry | 162 | Blademasters, Sword Brethren | Archons, Sword Saints |
 | VI | Thorn Knights † ‡ | Infantry | 174 | Rose Swordmasters | — |
 | VI | Royal Halberdiers † | Skirmisher | 156 | Heavy Halberdiers, **Silver Pikes**, **Vanguard Glaives** | Sovereign Halberdiers |
-| VI | Royal Yeomen † | Archer | 152 | Master Longbowmen, Ward Archers | Sky Piercers, Sovereign Longbowmen |
-| VI | Iron Cataphracts † | Cavalry | 182 | **Banner Knights**, Cataphracts | Imperial Cataphracts |
+| VI | Royal Yeomen † | Archer | 152 | Master Longbowmen, Ward Archers | Guildhall Bows, Sky Piercers, Sovereign Longbowmen, Switchback Bows |
+| VI | Iron Cataphracts † | Cavalry | 182 | **Banner Knights**, Cataphracts | Imperial Cataphracts, Pass Cataphracts, Senate Cataphracts |
 | VI | Crimson Crones | Caster | 1350 | War-witches | — |
 | VII | Archons † | Infantry | 218 | Dread Cleavers, Grand Blademasters | — |
 | VII | Sword Saints † | Infantry | 225 | Grand Blademasters | — |
@@ -260,12 +260,12 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | V | Storm Lancers † | Cavalry | 142 | Thane Riders | Storm Riders |
 | V | Skalds | Caster | 1000 | Rune-singers | Galdr-masters |
 | VI | Iron Thanes † | Infantry | 152 | Huscarl Thanes, Jarl Guard | Allfather's Guard, High King's Chosen |
-| VI | Thane Champions † | Infantry | 164 | Einherjar, Huscarl Thanes, Jarl Guard | Blood Jarls, High King's Chosen |
+| VI | Thane Champions † | Infantry | 164 | Einherjar, Huscarl Thanes, Jarl Guard | Bear Trappers, Blood Jarls, High King's Chosen |
 | VI | Valhalla Reavers † | Infantry | 178 | Doomcleavers, Einherjar | Blood Jarls |
 | VI | Winter Wolves † ‡ | Infantry | 213 | Wolfsworn | — |
 | VI | Dragon Glaives † | Skirmisher | 150 | Vanguard Glaives | Tempest Spears |
-| VI | Highland Marksmen † | Archer | 148 | **Master Longbowmen**, Shadow Hunters | Sky Piercers |
-| VI | Khan's Guard † | Cavalry | 180 | Steppe Marksmen | Golden Horde Masters, Sovereign Dragoons |
+| VI | Highland Marksmen † | Archer | 148 | **Master Longbowmen**, Shadow Hunters | Prow Archers, Sky Piercers |
+| VI | Khan's Guard † | Cavalry | 180 | Steppe Marksmen | Golden Horde Masters, Snow Riders, Sovereign Dragoons, Strand Riders |
 | VI | Royal Dragoons † | Cavalry | 184 | Carabiniers, Steppe Marksmen | Sovereign Dragoons |
 | VI | Storm Riders † | Cavalry | 185 | Storm Lancers, Valkyrie Lancers | Grail Knights, Thunder Lords |
 | VI | Galdr-masters | Caster | 1350 | Skalds | — |
@@ -328,13 +328,13 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | V | Sun Lancers | Cavalry | 150 | Mamluks | Emir's Mamluks |
 | V | Falcon Knights † ‡ | Cavalry | 156 | Falcon Riders | Sun Hawks |
 | V | Astrologers | Caster | 1000 | Star-readers | Sages of the Sun |
-| VI | Emir's Guard † | Infantry | 160 | Dervish Blades, Mamluk Footmen | Lions of the Sun |
+| VI | Emir's Guard † | Infantry | 160 | Dervish Blades, Mamluk Footmen | Lions of the Sun, Tent Guard |
 | VI | Sword Dancers † | Infantry | 163 | Whirling Dervishes | Saints of the Sand |
 | VI | Emir's Spears † | Skirmisher | 152 | Sun Guard | Golden Spears |
 | VI | Sun-fire Throwers † | Skirmisher | 178 | Flame Bearers | — |
-| VI | Falcon Eyes † | Archer | 148 | Emir's Archers | Sultan's Bows |
+| VI | Falcon Eyes † | Archer | 148 | Emir's Archers | Dome Archers, Lateen Bowmen, Mirage Bows, Sultan's Bows |
 | VI | Sultan's Camels † | Cavalry | 182 | Camel Guard | — |
-| VI | Emir's Mamluks † | Cavalry | 200 | Mamluk Knights, Sun Lancers | Sultan's Guard |
+| VI | Emir's Mamluks † | Cavalry | 200 | Mamluk Knights, Sun Lancers | River Lancers, Spice Lancers, Sultan's Guard |
 | VI | Sun Hawks † ‡ | Cavalry | 212 | Falcon Knights | — |
 | VI | Sages of the Sun | Caster | 1350 | Astrologers | — |
 | VII | Lions of the Sun † | Infantry | 220 | Emir's Guard | — |
@@ -392,10 +392,10 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | V | Iron Lancers | Cavalry | 150 | Torguud Lancers | Khan's Lancers |
 | V | Sky Archers † ‡ | Cavalry | 169 | Sky Riders | Sky-Sworn |
 | V | Shamans | Caster | 1000 | Drummers | Sky-callers |
-| VI | Noyan's Guard † | Infantry | 164 | Steppe Champions, Wolf Axes | Khagan's Axes |
+| VI | Noyan's Guard † | Infantry | 164 | Steppe Champions, Wolf Axes | Khagan's Axes, Port Axemen, Yurt Guard |
 | VI | Tug Lords † | Skirmisher | 152 | Tug Guard | — |
 | VI | Sky Spears † | Skirmisher | 170 | Tumen Spears | Eternal Spears |
-| VI | Sky Wolf Archers † | Archer | 148 | Tengri Bows | Eternal Sky Archers |
+| VI | Sky Wolf Archers † | Archer | 148 | Tengri Bows | Eternal Sky Archers, Grass Archers, Salt-Sea Archers |
 | VI | Kheshig † | Cavalry | 180 | Noyan Bows | Khagan's Own |
 | VI | Khan's Lancers † | Cavalry | 182 | Baghatur, Iron Lancers | Ironclad Khans |
 | VI | Sky-Sworn † ‡ | Cavalry | 234 | Sky Archers | — |
@@ -455,14 +455,14 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | V | Guild Knights † | Cavalry | 145 | Signoria Lancers | Doge's Lances |
 | V | Guild Lances | Cavalry | 145 | Condottieri | Doge's Lances |
 | V | Alchemists | Caster | 1000 | Apothecaries | Guild Alchemists |
-| VI | Doge's Guard † | Infantry | 160 | Brigandiers, Senate Guard | Lion Guard |
+| VI | Doge's Guard † | Infantry | 160 | Brigandiers, Senate Guard | Lion Guard, Stilt Guard |
 | VI | Admiral's Guard † | Infantry | 163 | Sea Wardens | — |
 | VI | Doge's Pikes † | Skirmisher | 152 | Marsh Wardens | Lagoon Guard |
 | VI | Lagoon Wall † | Skirmisher | 152 | Wall Spears | — |
 | VI | Captains of Fortune † | Skirmisher | 167 | Condottiere Foot | Lords of Fortune |
 | VI | Lantern Knights † ‡ | Skirmisher | 198 | Lantern Guards | — |
-| VI | Doge's Arbalesters † | Archer | 156 | Guild Arbalesters | Lion Crossbows |
-| VI | Doge's Lances † | Cavalry | 195 | Guild Knights, Guild Lances | Lion Knights |
+| VI | Doge's Arbalesters † | Archer | 156 | Guild Arbalesters | Counting-House Bows, Lion Crossbows |
+| VI | Doge's Lances † | Cavalry | 195 | Guild Knights, Guild Lances | Fen Lances, Gilded Lances, Lion Knights |
 | VI | Guild Alchemists | Caster | 1350 | Alchemists | — |
 | VII | Lion Guard † | Infantry | 220 | Doge's Guard | — |
 | VII | Lagoon Guard † | Skirmisher | 210 | Doge's Pikes | — |
@@ -512,10 +512,10 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | V | Sun Knights † | Cavalry | 160 | Knight Brothers | Ashen Knights |
 | V | Battle Priests | Caster | 1000 | Chaplains | Saints Militant |
 | VI | Hammers of the Sun † | Infantry | 163 | Iron Hammers | Ashen Hammers |
-| VI | Sun Templars † ‡ | Infantry | 176 | Ashen Brothers | Ashen Saints |
+| VI | Sun Templars † ‡ | Infantry | 176 | Ashen Brothers | Ashen Saints, Pass Guard |
 | VI | Pilgrim Guard † | Skirmisher | 167 | Ashen Pikes | Dawn Pikes |
-| VI | Sun Arbalests † | Archer | 172 | Ashen Arbalests | Dawn Watch |
-| VI | Ashen Knights † | Cavalry | 215 | Sun Knights | Grand Masters |
+| VI | Sun Arbalests † | Archer | 172 | Ashen Arbalests | Cloister Arbalests, Dawn Watch, Wall Crossbows |
+| VI | Ashen Knights † | Cavalry | 215 | Sun Knights | Gate Knights, Grand Masters, Vow Knights |
 | VI | Saints Militant | Caster | 1350 | Battle Priests | — |
 | VII | Ashen Hammers † | Infantry | 214 | Hammers of the Sun | — |
 | VII | Ashen Saints † | Infantry | 242 | Sun Templars | — |
@@ -562,6 +562,8 @@ Most upgrades stay inside one culture, but a few are the roads between them — 
 becomes an Azure Royal Crusader, a northern glaive a Crimson Royal Halberdier. These are the links that
 make a conquered realm's veterans useful, provided the men may serve that culture (they must be kin):
 
+- Ashen Knights (Ashen Sun) → Vow Knights (Vow-Keepers)
+- Ashen Knights (Ashen Sun) → Gate Knights (Pass-Wardens)
 - Axemen (Northern) → Yurt Guards (Steppe)
 - Banner Knights (Azure) → Iron Cataphracts (Crimson)
 - Bay Marines (Bayfolk) → Sea Wardens (League)
@@ -573,21 +575,52 @@ make a conquered realm's veterans useful, provided the men may serve that cultur
 - Clansmen (Northern) → Salt Scouts (Salt-Riders)
 - Composite Bowmen (Northern) → Ward Archers (Crimson)
 - Demi-Lancers (Azure) → Valkyrie Lancers (Northern)
+- Doge's Arbalesters (League) → Counting-House Bows (Lagoon-Guilds)
+- Doge's Guard (League) → Stilt Guard (Fen-Folk)
+- Doge's Lances (League) → Gilded Lances (Lagoon-Guilds)
+- Doge's Lances (League) → Fen Lances (Fen-Folk)
+- Emir's Guard (Sunward) → Tent Guard (Dune-Kin)
+- Emir's Mamluks (Sunward) → River Lancers (River-Lords)
+- Emir's Mamluks (Sunward) → Spice Lancers (Rift-Corsairs)
+- Falcon Eyes (Sunward) → Dome Archers (River-Lords)
+- Falcon Eyes (Sunward) → Mirage Bows (Dune-Kin)
+- Falcon Eyes (Sunward) → Lateen Bowmen (Rift-Corsairs)
 - Foot Knights (Azure) → Sword Brethren (Crimson)
 - Grand Phalanx (Azure) → Sovereign Halberdiers (Crimson)
+- Guild Sharpshooters (Azure) → Abbey Arbalesters (Crownlanders)
+- Guild Sharpshooters (Azure) → Ridge Crossbows (Border Reivers)
+- Guild Sharpshooters (Azure) → Cog Arbalesters (Bayfolk)
 - Halberdiers (Crimson) → Vanguard Glaives (Northern)
+- Highland Marksmen (Northern) → Prow Archers (Fjord-Reavers)
+- Iron Cataphracts (Crimson) → Senate Cataphracts (High Compact)
+- Iron Cataphracts (Crimson) → Pass Cataphracts (Cragfolk)
+- Iron Legionaries (Azure) → Beacon Guard (Border Reivers)
+- Khan's Guard (Northern) → Strand Riders (Fjord-Reavers)
+- Khan's Guard (Northern) → Snow Riders (Wood-Clans)
 - Knights (Crimson) → Banner Knights (Azure)
 - Longbowmen (Crimson) → Composite Bowmen (Northern)
 - Master Longbowmen (Crimson) → Highland Marksmen (Northern)
 - Mounted Yeomen (Northern) → Demi-Lancers (Azure)
+- Noyan's Guard (Steppe) → Yurt Guard (Free Banners)
+- Noyan's Guard (Steppe) → Port Axemen (Salt-Riders)
 - Paladin Knights (Azure) → Imperial Cataphracts (Crimson)
+- Paladin Knights (Azure) → Tourney Champions (Crownlanders)
+- Paladin Knights (Azure) → Strand Knights (Bayfolk)
 - Phalanx Pikemen (Azure) → Heavy Halberdiers (Crimson)
 - Pikemen (Azure) → Halberdiers (Crimson)
 - Royal Yeomen (Crimson) → Sky Piercers (Northern)
+- Royal Yeomen (Crimson) → Guildhall Bows (High Compact)
+- Royal Yeomen (Crimson) → Switchback Bows (Cragfolk)
 - Sergeants (Azure) → Halberdiers (Crimson)
 - Silver Pikes (Azure) → Royal Halberdiers (Crimson)
+- Sky Wolf Archers (Steppe) → Grass Archers (Free Banners)
+- Sky Wolf Archers (Steppe) → Salt-Sea Archers (Salt-Riders)
 - Storm Riders (Northern) → Grail Knights (Azure)
+- Sun Arbalests (Ashen Sun) → Cloister Arbalests (Vow-Keepers)
+- Sun Arbalests (Ashen Sun) → Wall Crossbows (Pass-Wardens)
+- Sun Templars (Ashen Sun) → Pass Guard (Pass-Wardens)
 - Sword Brethren (Crimson) → Royal Crusaders (Azure)
+- Thane Champions (Northern) → Bear Trappers (Wood-Clans)
 - Valkyrie Lancers (Northern) → Paladin Knights (Azure)
 - Vanguard Glaives (Northern) → Royal Halberdiers (Crimson)
 
@@ -676,12 +709,12 @@ raises the fallen, and `death_knight` joins such a host when the Omen runs high.
 
 ## Where the tree stops short
 
-- 41 troops reach tier VII. 43 lines end below it: a branch the campaign can climb
+- 90 troops reach tier VII. 28 lines end below it: a branch the campaign can climb
   but never crown. A realm fields only its own four lines, so a side branch ending at VI is a dead end
   unless a bridge carries it into a neighbour's tier VII.
 - The tree stops being a tree where lines converge: Sworn Brothers (11 ways in), Sword Brethren (3 ways in), Thane Champions (3 ways in), Halberdiers (3 ways in), Royal Halberdiers (3 ways in), Lancers (3 ways in).
 - Branches that end early, culture by culture:
-  Beast Hunters (III, common), Storm Slingers (IV, southern), Wolf Runners (IV, steppe), Vale Wardens (V, azure_heart), Pass Reivers (V, azure_march), Bandit Chieftains (V, bandit), Corsair Captains (V, bandit), Master Poachers (V, bandit), Outlaw Captains (V, bandit), Summit Wardens (V, crimson_alpine), Compact Duelists (V, crimson_patrician), Reed Stalkers (V, league_fen), Merchant Captains (V, league_lagoon), Fjord Jarls (V, northern_fjord), Taiga Rangers (V, northern_taiga), Chapter Turcopoles (V, order), Sun Paladins (V, order_chapter), Gate Champions (V, order_warden), Mirage Riders (V, southern_dune), Oasis Champions (V, southern_oasis), Rift Captains (V, southern_rift), Horde Champions (V, steppe_horde), Salt Cataphracts (V, steppe_salt), Grand Magisters (VI, azure), Wardens of the Lily (VI, azure), Lords of the Hollow Crown (VI, common), Masters of the Order (VI, common), Crimson Crones (VI, crimson), Thorn Knights (VI, crimson), Admiral's Guard (VI, league), Guild Alchemists (VI, league), Lagoon Wall (VI, league), Lantern Knights (VI, league), Galdr-masters (VI, northern), Winter Wolves (VI, northern), Saints Militant (VI, order), Sages of the Sun (VI, southern), Sultan's Camels (VI, southern), Sun Hawks (VI, southern), Sun-fire Throwers (VI, southern), Sky-Sworn (VI, steppe), Sky-callers (VI, steppe), Tug Lords (VI, steppe)
+  Beast Hunters (III, common), Storm Slingers (IV, southern), Wolf Runners (IV, steppe), Bandit Chieftains (V, bandit), Corsair Captains (V, bandit), Master Poachers (V, bandit), Outlaw Captains (V, bandit), Chapter Turcopoles (V, order), Grand Magisters (VI, azure), Wardens of the Lily (VI, azure), Lords of the Hollow Crown (VI, common), Masters of the Order (VI, common), Crimson Crones (VI, crimson), Thorn Knights (VI, crimson), Admiral's Guard (VI, league), Guild Alchemists (VI, league), Lagoon Wall (VI, league), Lantern Knights (VI, league), Galdr-masters (VI, northern), Winter Wolves (VI, northern), Saints Militant (VI, order), Sages of the Sun (VI, southern), Sultan's Camels (VI, southern), Sun Hawks (VI, southern), Sun-fire Throwers (VI, southern), Sky-Sworn (VI, steppe), Sky-callers (VI, steppe), Tug Lords (VI, steppe)
 - `captain` (tier 0) is the player's own man and belongs to no tree, and `beast_hunters` (III) is a
   single tier the campaign fields as it stands, with nothing above or below it.
 

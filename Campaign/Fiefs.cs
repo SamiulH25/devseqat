@@ -100,7 +100,7 @@ public sealed partial class Campaign
     // ---------- the daily life of a fief ----------
 
     /// The realm whose culture a settlement's people share, if one other than its holder still stands (where a revolt goes).
-    int KinRealm(Settlement s) => Enumerable.Range(0, S.Factions.Count).FirstOrDefault(f => f != s.Faction && Alive(f) && Factions.CultureOf(f) == s.Culture, -1);
+    int KinRealm(Settlement s) => Enumerable.Range(0, S.Factions.Count).FirstOrDefault(f => f != s.Faction && Alive(f) && Factions.CultureOf(f) == Factions.PeopleOf(s.Culture), -1); // a subculture's town goes to its parent realm (WM5)
 
     /// How a seat's unrest moves a day, and why (for the fief tab).
     public (float Drift, List<string> Why) UnrestDrift(Settlement s)
@@ -189,7 +189,7 @@ public sealed partial class Campaign
         Log($"The rebels of {s.Name} are scattered.");
     }
 
-    /// At the end of its patience a seat goes over to the realm of its own people.
+    /// At the end of its patience a seat goes over to the realm of its own people (KinRealm).
     void Defects(Settlement s, int kin)
     {
         if (s.Owner == Player.Id) Log($"{s.Name} throws open its gates to the {FactionNames[kin]}. Your fief is lost.");

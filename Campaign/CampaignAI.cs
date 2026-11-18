@@ -206,13 +206,18 @@ public partial class Campaign
     /// At home: recruit levies, upgrade companies that are ready, by the same rules and prices as yours. A lord who cannot
     /// pay draws on his faction's war chest, up to a share of it per visit, so a beaten lord rebuilds instead of dying broke
     /// while the chest still has money to raise new lords.
+    /// What a realm's chest keeps back from its lords' refits.
+    public const float RefitReserve = 150;
+
     void Refit(Party p, Settlement home)
     {
         var fs = S.Factions[Math.Max(0, p.Faction)];
         // A beaten lord may draw on the war chest, but only his share of it: half the chest is split between the realm's
         // lords, so a run of refits costs the realm at most half of what it holds and it can still raise new lords (600).
         int lordsOfFaction = Math.Max(1, S.Parties.Count(q => q.Kind == PartyKind.Lord && q.Faction == p.Faction));
-        float share = MathF.Min(250 * Map.PartyScale, fs.Treasury * 0.5f / lordsOfFaction);
+        // Above a small reserve (RefitReserve): a beaten realm's refits halved its chest again and again toward nothing, and a
+        // realm with an empty chest can raise no new lord (the drawn map's Order of the Ashen Sun, six seats, ran down to 50).
+        float share = MathF.Min(250 * Map.PartyScale, MathF.Max(0, fs.Treasury - RefitReserve) * 0.5f / lordsOfFaction);
         float budget = Math.Clamp(share, 0, 250 * Map.PartyScale);
         string levy = RecruitTroop(p.Faction);
         if (p.Companies.Count == 0) p.Companies.Add(NewCompany(levy, "infantry", Scaled(12), 0, home)); // the lord's household, raised again

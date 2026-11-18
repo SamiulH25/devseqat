@@ -81,9 +81,20 @@ public static partial class SelfTest
         Check(c.WorksOf(c.Player).Count == 0, "lifting the siege abandons the works");
         string json = c.S.Serialize();
         Check(CampaignState.Deserialize(json).Settlements[castle.Id].Battered == castle.Battered, "a battered wall is saved");
-        for (double end = c.S.Hours + 24 * 12; c.S.Hours < end - 1e-3;) { c.Rest(1); c.Encounter = null; c.Arrived = null; }
-        Console.WriteLine($"after the siege: besieged {castle.Besieged} by {string.Join(",", c.S.Parties.Where(p => p.SiegeTarget == castle.Id).Select(p => p.Name))}, battered {castle.Battered:0.00}");
-        Check(castle.Besieged || castle.Battered < 0.5f, "an unbesieged wall is mended");
+        // Each day it stands unbesieged the wall mends (another lord may lay siege to it in between: only the end state was
+        // checked, and a siege of eight of the twelve days left it battered).
+        int mendDays = 0, siegeDays = 0;
+        bool mended = true;
+        for (int day = 0; day < 12; day++)
+        {
+            float before = castle.Battered;
+            bool sieged = castle.Besieged;
+            for (double end = c.S.Hours + 24; c.S.Hours < end - 1e-3;) { c.Rest(1); c.Encounter = null; c.Arrived = null; sieged |= castle.Besieged; }
+            if (sieged) siegeDays++;
+            else if (before > 0) { mendDays++; mended &= castle.Battered < before; }
+        }
+        Console.WriteLine($"after the siege: {siegeDays} of 12 days besieged, {mendDays} mending, battered {castle.Battered:0.00}");
+        Check(mendDays > 0 && mended, "an unbesieged wall is mended");
     }
 
     /// Your train: bought in a town, slows the march, goes into battle, is saved, and is lost with a lost battle.

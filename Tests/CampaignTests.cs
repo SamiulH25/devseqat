@@ -741,7 +741,7 @@ public static partial class SelfTest
     static void UpgradeTreeVisibility()
     {
         var c = Campaign.New(19);
-        var town = c.S.Settlements.First(s => s.Culture == "azure" && s.Kind == SettlementKind.Town);
+        var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction == 0); // an Azure town (on the drawn map, of one of its peoples)
         c.Captain.Contract = town.Faction;
         var ig = c.NewCompany("ironguard", "infantry", 6, 1000, town);
         c.Player.Companies.Add(ig);
@@ -774,21 +774,26 @@ public static partial class SelfTest
             foreach (var role in new[] { "infantry", "archers", "horse" })
                 Check(top.Any(t => Rules.TroopRole(t.Id) == role), $"{cul.Id} has a tier VII {role} line");
         }
+        // A realm's own people: its culture, or on the drawn map one of its subcultures (whose kin is the realm's; WM5).
+        static bool OwnPeople(int f, string culture) => Factions.PeopleOf(culture) == Factions.CultureOf(f);
         var c = Campaign.New(83);
+        Check(c.S.Settlements.Any(v => v.Culture != Factions.CultureOf(v.Faction)), "the drawn map's places are their own peoples");
         foreach (var v in c.S.Settlements.Where(v => v.Kind == SettlementKind.Village))
         {
-            Check(v.Culture == Factions.CultureOf(v.Faction), "a village starts with its realm's culture");
+            // Its realm's people, or the people the map drew it with (twelve League places are Bayfolk, Azure coast people).
+            Check(OwnPeople(v.Faction, v.Culture) || c.Map.Designed && v.Culture == WorldDesign.Get().Settlements[v.Id].Subculture, $"a village starts with its realm's culture or its drawn people ({v.Name}: {v.Culture})");
             Check(Campaign.RecruitTroop(v) == Factions.Root(v.Culture), "a village raises its culture's root");
         }
         // A northern village held by the Azure Crown still raises clansmen, and they form a northern company.
-        var north = c.S.Settlements.First(v => v.Kind == SettlementKind.Village && v.Culture == "northern");
+        var north = c.S.Settlements.First(v => v.Kind == SettlementKind.Village && v.Faction == 2 && Factions.Root(v.Culture) == "clansmen");
         north.Faction = 0;
+        north.Owner = c.Player.Id; // conquered by you: its lord's opinion no longer holds men back (a drawn province's seat may be another lord's)
         north.Recruits = 10;
         c.Player.Pos = north.Pos;
         c.S.Gold = 1000;
         Check(c.RecruitLevies(north, 6) == null, "you can recruit in a conquered northern village");
         var clans = c.Player.Companies.FirstOrDefault(k => k.Stacks.Any(st => st.Troop == "clansmen"));
-        Check(clans != null && clans.Culture == "northern" && clans.Stack("clansmen").Men == 6, "its men are clansmen, in a northern company");
+        Check(clans != null && clans.Culture == north.Culture && clans.Stack("clansmen").Men == 6, $"its men are clansmen, in a company of its people ({north.Culture})");
         Check(c.Player.Companies.Where(k => k != clans).All(k => k.Stacks.All(st => st.Troop != "clansmen")), "and they did not dilute the azure companies");
         // Culture lines: azure shieldmen may become men-at-arms but not crimson greatswords.
         var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == 0);
@@ -796,7 +801,7 @@ public static partial class SelfTest
         var az = c.NewCompany("shieldmen", "infantry", 10, 1000, town);
         c.Player.Companies.Add(az);
         var sh = az.Stack("shieldmen");
-        Check(az.Culture == "azure" && sh.Ready > 0, "an azure company of ready shieldmen");
+        Check(OwnPeople(0, az.Culture) && sh.Ready > 0, $"an azure company of ready shieldmen ({az.Culture})");
         Check(c.Promotable(c.Player, az, sh, "greatswords", 1, 1000, out _, out string why) == 0 && why.Contains("CANNOT TRAIN"), "azure men cannot train as crimson greatswords: " + why);
         Check(c.Promotable(c.Player, az, sh, "men_at_arms", 1, 1000, out _, out _) == 1, "but can as azure men-at-arms");
         // Elite lines: azure ironguard -> paladins (tier V) needs an azure barracks in your realm.
@@ -813,10 +818,10 @@ public static partial class SelfTest
         for (int f = 0; f < w.S.Factions.Count; f++)
         {
             // Lords seated in the realm's own lands: one seated in a conquered town raises that town's people (4.2).
-            var homeLords = w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f && p.HomeId >= 0 && w.SettlementById(p.HomeId) is { } h && h.Culture == Factions.CultureOf(f)).ToList();
+            var homeLords = w.S.Parties.Where(p => p.Kind == PartyKind.Lord && p.Faction == f && p.HomeId >= 0 && w.SettlementById(p.HomeId) is { } h && OwnPeople(f, h.Culture)).ToList();
             var stacks = homeLords.SelectMany(p => p.Companies).SelectMany(k => k.Stacks).Where(st => st.Type.Culture != Factions.Common).ToList();
             // Its own culture's troops or its kin's (the realms of docs/archive/WORLD.md W3 borrow two of their four lines).
-            int own = stacks.Where(st => Factions.Open(Factions.CultureOf(f), st.Type.Culture)).Sum(st => st.Men), all = stacks.Sum(st => st.Men);
+            int own = stacks.Where(st => Factions.Open(Factions.CultureOf(f), st.Type.Culture) || OwnPeople(f, st.Type.Culture)).Sum(st => st.Men), all = stacks.Sum(st => st.Men);
             Console.WriteLine($"realm {f} ({Factions.CultureOf(f)}): {own}/{all} of its lords' cultured men are its own or its kin's");
             Console.WriteLine("  " + string.Join(", ", homeLords.SelectMany(p => p.Companies).SelectMany(k => k.Stacks).GroupBy(st => st.Troop).Select(g => $"{g.Key}:{g.Sum(st => st.Men)}")));
             Check(all > 0 && own >= all * 0.85f, $"realm {f}'s army is recognisably {Factions.CultureOf(f)}");
