@@ -82,14 +82,16 @@ public sealed partial class WorldMap
     /// How the map is laid out: 0 = the original three realms by fixed bands (every save from before docs/archive/WORLD.md W1 keeps it),
     /// 1 = each data realm grows from its home in Data/factions.json, 2 = that plus climates, ridges and more rivers (W2),
     /// 3 = all the data realms (seven, W3) at their homes in the data, 4 = that plus roads routed over the land, lakes and
-    /// village ponds (docs/WORLD_LIFE.md WL1-WL2). Layouts 1-2 keep the three homes they were made with.
-    public const int LegacyLayout = 0, CurrentLayout = 4;
+    /// village ponds (docs/WORLD_LIFE.md WL1-WL2), 5 = the drawn world (docs/WORLDMAP.md), what new campaigns play on since WM4.
+    /// Layouts 1-2 keep the three homes they were made with. `GeneratedLayout` is the newest map made from a seed: what
+    /// `Generate` makes when no layout is named (the generator's own tests ask for it).
+    public const int LegacyLayout = 0, GeneratedLayout = 4, CurrentLayout = 5;
     /// The three realms' homes (x, z, reach) on layout 1-2 maps, as factions.json had them before the realms became seven.
     static readonly (float X, float Z, float Reach)[] ThreeRealmHomes = { (-0.8f, 0.45f, 0), (0.8f, 0.45f, 0), (0, -0.85f, -20) };
     public int Layout;
 
     /// `realms` = how many data realms the map shares out (a save's DataRealms; 0 = all of them, as a new campaign has).
-    public static WorldMap Generate(int seed, float extent = Extent, int layout = CurrentLayout, int realms = 0)
+    public static WorldMap Generate(int seed, float extent = Extent, int layout = GeneratedLayout, int realms = 0)
     {
         if (layout >= DesignLayout) return FromDesign(WorldDesign.Get(), realms); // layout 5: the drawn world (WorldDesigned.cs)
         var m = new WorldMap(seed) { ExtentUsed = extent, Layout = layout };
@@ -395,6 +397,8 @@ public sealed partial class WorldMap
     }
 
     public float RoadDist(Vector2 p) => Index.RoadDist(p) ?? RoadScan(p);
+    /// RoadDist(p) < r, answered faster (MapIndex.NearRoad).
+    public bool NearRoad(Vector2 p, float r) => Index.NearRoad(p, r) ?? RoadScan(p) < r;
 
     public float RoadScan(Vector2 p)
     {
@@ -410,7 +414,7 @@ public sealed partial class WorldMap
 
     /// Map travel speed factor at a point (terrain kind, roads).
     public float SpeedFactor(Vector2 p, float roadBonus) =>
-        RoadDist(p) < 2.5f ? roadBonus : RiverDist(p) < 1.6f || InLake(p) ? 0.35f : OnRidge(p) ? 0.45f
+        NearRoad(p, 2.5f) ? roadBonus : RiverDist(p) < 1.6f || InLake(p) ? 0.35f : OnRidge(p) ? 0.45f
         : Lands.Of(ProvinceAt(p).Kind).Speed;
 
     /// Battle ground for a fight at p: the province's kind, with a road if one runs close.

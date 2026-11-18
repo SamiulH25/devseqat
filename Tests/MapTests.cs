@@ -254,7 +254,14 @@ public static partial class SelfTest
         var g = Campaign.New(5105);
         Check(MathF.Abs(g.LeaderShare - 0.3f) < 1e-3f, $"seven realms unite against 30% of the seats ({g.LeaderShare:0.00})");
         var seats = g.S.Settlements.Where(s => s.Kind != SettlementKind.Village).ToList();
-        foreach (var s in seats.OrderBy(s => Vector2.Distance(s.Pos, seats.Where(t => t.Faction == azure).First().Pos)).Take((int)(seats.Count * 0.33f))) s.Faction = azure;
+        // The nearest seats, but never a realm's last (a realm wiped out raises the bar for the rest: LeaderShare).
+        int given = 0;
+        foreach (var s in seats.OrderBy(s => Vector2.Distance(s.Pos, seats.Where(t => t.Faction == azure).First().Pos)))
+        {
+            if (given >= (int)(seats.Count * 0.33f)) break;
+            if (s.Faction == azure || seats.Count(t => t.Faction == s.Faction) <= 1) continue;
+            s.Faction = azure; given++;
+        }
         Check(g.Leading(azure), "a realm with a third of the seats leads");
         Days(g, 1);
         var neighbours = Enumerable.Range(1, g.S.Factions.Count - 1).Where(f => g.Alive(f) && (bool)borders.Invoke(g, new object[] { azure, f })!).ToList();

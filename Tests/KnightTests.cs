@@ -434,9 +434,14 @@ public static partial class SelfTest
         Check(!m.Captain.Wounds.Contains("core") && m.AuraInBattle == 2, "a month: the core mends");
         var r = Campaign.New(111);
         r.CrackCore();
-        var town = r.S.Settlements.First(t => t.Kind == SettlementKind.Town);
+        var town = r.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == 0); // one of your realm's: an enemy lord rides up to rest in his
         r.Player.Pos = town.Pos;
-        for (int d = 0; d < 11 && r.Captain.Wounds.Contains("core"); d++) { r.Rest(24); r.Encounter = null; r.Arrived = null; }
+        // Clear the ground first: a party passing the town only cuts each night's rest short (more of them roam a big map).
+        float clear = 30 * r.Map.Spread;
+        foreach (var p in r.S.Parties.Where(p => p != r.Player && Vector2.Distance(p.Pos, town.Pos) < clear)) { p.Pos += Vector2.Normalize(p.Pos - town.Pos + new Vector2(0.01f, 0)) * clear; p.Moving = false; }
+        int cut = 0;
+        for (int d = 0; d < 11 && r.Captain.Wounds.Contains("core"); d++) { double was = r.S.Hours; r.Rest(24); if (r.S.Hours - was < 23.9) cut++; r.Encounter = null; r.Arrived = null; }
+        Console.WriteLine($"core: rested in {town.Name}, {cut} of the days cut short");
         Check(!r.Captain.Wounds.Contains("core"), "resting in a town mends it in a third of the time");
         // Grief, in anger: through at once, with a mark of the Black Flame.
         var g = Campaign.New(112);
@@ -580,8 +585,12 @@ public static partial class SelfTest
         // A crusade against a great host of the dead.
         var host = new Party { Id = c.S.NextId++, Kind = PartyKind.Monster, Breed = "undead", Name = "The Test Dead", Faction = -1, Pos = c.Player.Pos + new Vector2(40, 0) };
         host.Goal = host.Pos;
-        host.Companies.Add(c.NewCompany("skeleton", "infantry", c.CrusadeHost, 0));
+        // The greatest host on the map, and no crusade already called (the order goes for the greatest; another world may
+        // already hold a bigger brigand king or host of the dead than the test's).
+        int greatest = c.S.Parties.Where(p => !p.Down && p.Kind is PartyKind.Monster or PartyKind.Bandit).Select(p => p.Men).DefaultIfEmpty(0).Max();
+        host.Companies.Add(c.NewCompany("skeleton", "infantry", Math.Max(c.CrusadeHost, greatest + 1), 0));
         c.S.Parties.Add(host);
+        o.CrusadeOn = -1;
         Days(c, 1);
         Check(o.CrusadeOn == host.Id || host.Down, "the Lily calls a crusade against the dead");
         if (o.CrusadeOn == host.Id)

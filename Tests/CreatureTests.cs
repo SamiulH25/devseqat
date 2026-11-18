@@ -160,7 +160,7 @@ public static partial class SelfTest
         Check(packs.Count == c.WolfPacksWanted && packs.Count > 0, $"the forests have their wolf packs ({packs.Count})");
         foreach (var w in packs)
         {
-            Check(c.Map.ProvinceAt(w.Pos).Kind == "Forest", $"{w.Name} lives in a forest");
+            Check(c.Map.ProvinceAt(w.Pos).Kind is "Forest" or "Taiga", $"{w.Name} lives in a forest or the taiga"); // WM3: the taiga's woods have wolves too
             Check(w.Companies.Any(co => co.Troop == "dire_wolf"), $"{w.Name} is led by a dire wolf");
         }
         var pack = packs[0];

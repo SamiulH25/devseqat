@@ -12,6 +12,7 @@ public sealed class MapIndex
     readonly float origin;
     readonly int n;
     readonly int[][] provinces, roads;
+    readonly float[] roadNear; // each cell centre's distance to its nearest road: no point in the cell is nearer than this less h
     readonly (int River, int Seg)[][] rivers;
     readonly List<Province> provinceList;
     readonly List<(Vector2 A, Vector2 B)> roadList;
@@ -24,6 +25,7 @@ public sealed class MapIndex
         n = Math.Max(1, (int)MathF.Ceiling(2 * half / Cell));
         this.provinces = new int[n * n][];
         this.roads = new int[n * n][];
+        roadNear = new float[n * n];
         this.rivers = new (int, int)[n * n][];
         float h = Cell * 0.70711f + 0.01f; // half the cell's diagonal, and a hair for rounding
         // Each distance is worked out once per cell (the nearest, then everything within reach of it), in plain loops.
@@ -51,6 +53,7 @@ public sealed class MapIndex
                 keep.Clear();
                 for (int i = 0; i < rd.Length; i++) if (rd[i] <= road + 2 * h) keep.Add(i);
                 this.roads[k] = keep.ToArray();
+                roadNear[k] = road;
                 // River.Dist skips a bend whose ends are more than 40 away on both axes; keep every bend it might not skip
                 // for some point in the cell, nearest first (ties in river order), so the look-up can stop once no bend can come closer.
                 cand.Clear();
@@ -108,6 +111,23 @@ public sealed class MapIndex
             best = MathF.Min(best, Vector2.Distance(p, a + ab * t));
         }
         return best;
+    }
+
+    /// Whether a road lies nearer than r: the same answer as RoadDist(p) < r, but a cell far from every road says no at once
+    /// and a near one stops at the first road in reach (the drawn map's parties ask it for every step: docs/WORLDMAP.md WM4).
+    public bool? NearRoad(Vector2 p, float r)
+    {
+        int k = CellOf(p);
+        if (k < 0) return null;
+        if (roadNear[k] - (Cell * 0.70711f + 0.01f) > r) return false;
+        foreach (int i in roads[k])
+        {
+            var (a, b) = roadList[i];
+            var ab = b - a;
+            float t = Math.Clamp(Vector2.Dot(p - a, ab) / ab.LengthSquared(), 0, 1);
+            if (Vector2.Distance(p, a + ab * t) < r) return true;
+        }
+        return false;
     }
 
     /// The same answer as the smallest River.Dist over the rivers; null off the grid.

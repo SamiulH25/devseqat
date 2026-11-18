@@ -1,6 +1,6 @@
 # The designed world: plan
 
-Status: **WM0-WM3 built** (2026-11-17); WM4-WM6 planned. New campaigns stay on layout 4 until WM4 (set `IRONFIELD_MAP_LAYOUT=5` to play the drawn world now). Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
+Status: **WM0-WM4 built** (2026-11-18); WM5-WM6 planned. New campaigns play the drawn world (layout 5); `IRONFIELD_MAP_LAYOUT=4` makes the last seeded map. Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
 game as map layout 5, the map every new campaign plays on. Phases WM0-WM7; each ships on its own and `tools/check.sh`
 must pass after each. When a phase ships, add its "As built" note at the end.
 
@@ -175,3 +175,29 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
   `p / DesignScale`, so borders scale with it. Rivers keep their widths. The map is 825 wide each side of the middle
   instead of 620; parties scale with the land (`PartyScale`), and marches between towns take a third longer, which WM4's
   `--pacing` run will weigh. Campaign creation: about 1.5 s first, 0.9 s after.
+- **WM4 (2026-11-18).** Realms on the drawn map, and the drawn map for every new campaign. Deviations and gotchas:
+  - **The default.** `WorldMap.CurrentLayout` is 5; `GeneratedLayout` (4) is what `Generate(seed)` makes when no layout is
+    named, so the generator's tests still test the seeded maps. Saves keep their layout.
+  - **Lords by holdings**: `Campaign.LordsWantedOf(f)` shares the same world total by the towns and castles each realm holds
+    now (two at least): the Order with six seats raises 6, the Khaganate with 27 raises 25. Other layouts: `LordsWanted`.
+  - **Capitals and homes** come from the drawing as WM1 made it (no change needed); knight-order chapters, wells, holdouts,
+    nests and packs land on the new land by the rules they had (checked in a 60-day run).
+  - **A province with several seats** (`CampaignSiege` capture): a taken seat brings the villages it is the seat of
+    (`SeatOf`), and the province changes hands once no seat in it holds out for the old realm. It used to hand over every
+    village and the province at the first seat; with one seat a province (every seeded map) nothing changes.
+  - **Speed** (`--campaign-bench 30`: 118.6 ms a day, layout 4 118.5). The drawn map ran 640 ms a day: (1) AI parties going
+    round the sea planned with the player's planner, which priced roads and woods on a 4-unit grid and cleared two
+    170 000-cell arrays a plan; they use `WorldMap.PlanAroundSea` now (a 6-unit land grid, arrays kept, straight legs over
+    land). (2) The road look-up grid was first built on the first campaign tick (0.8 s), since the drawn sites are placed
+    without asking it; `FromDesign` builds it. Also `MapIndex.NearRoad` (exact: a cell's lower bound, then the first road in
+    reach) for `SpeedFactor`.
+  - **Saved ways round the sea**: `Party.SeaWay`/`SeaGoal` replace WM2's unsaved table; a way planned again after a load
+    differed, and a loaded game drifted (`SaveMidRun`).
+  - **Guards**: `--realms 8`: largest share 32 %, 0 flags (layout 4: 28 %, 0); the Khaganate starts at a quarter of the
+    provinces as drawn, the Order keeps 1-6 % and survives every run. `--campaign-bench` as above.
+  - **Tests moved to the drawn map** where they had read the old map's land names (`Wolves`: forest or taiga;
+    `RainMakesMud`: the rainy lands against the dry by `Lands.Rain`, the drawn map has no fens), the one-seat province
+    (`CampaignWar`), or a quiet first town or largest host (`CoreAndTrials` rests in a town of your realm, `OrderPolitics`
+    makes its host the greatest, `RealmTempers` leaves every realm a seat). `MagesInTheWorld` keeps the seeded map: on the
+    drawn map the two arcana-3 realms (the Compact, the Order) lose their early wars and field no lord of tier IV in 22
+    weeks. **Left for balance**: those two realms' lords stay at tiers I-III through the first half year.

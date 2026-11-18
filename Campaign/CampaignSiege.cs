@@ -190,8 +190,11 @@ public sealed partial class Campaign
         s.Supplies = 15;
         s.Offers.Clear();
         s.Mercenaries.Clear();
-        S.Provinces[s.Province].Faction = f;
-        foreach (var v in S.Settlements.Where(v => v.Province == s.Province && v.Kind == SettlementKind.Village)) { v.Faction = f; v.Owner = owner; }
+        // A drawn province can hold several seats (docs/WORLDMAP.md WM4): the seat takes the villages it is the seat of, and the
+        // province changes hands once no seat in it holds out for the old realm (with one seat a province, as every generated
+        // map has, both are the whole province, as before).
+        if (!S.Settlements.Any(t => t != s && t.Province == s.Province && t.Kind != SettlementKind.Village && t.Faction == old)) S.Provinces[s.Province].Faction = f;
+        foreach (var v in S.Settlements.Where(v => v.Province == s.Province && v.Kind == SettlementKind.Village && SeatOf(v) == s)) { v.Faction = f; v.Owner = owner; }
         foreach (var p in S.Parties.Where(p => p.SiegeTarget == s.Id)) { p.SiegeTarget = -1; if (p.Kind == PartyKind.Lord) p.TaskUntil = 0; }
         RaiseGarrison(s, 0.4f);
         Score(f, old, 600);

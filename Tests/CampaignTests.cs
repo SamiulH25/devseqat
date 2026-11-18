@@ -255,7 +255,9 @@ public static partial class SelfTest
         var c = Campaign.New(31);
         for (int i = 0; i < 20 * 24 * 4; i++) { c.Encounter = null; c.Arrived = null; c.Tick(0.25f); }
         Check(c.S.Provinces.Any(p => p.Wet > 0.2f) && c.S.Provinces.Any(p => p.Wet < 0.1f), "it rains in some provinces and not others");
-        Check(c.S.Provinces.Where(p => p.Kind == "Marsh").DefaultIfEmpty().Average(p => p?.Wet ?? 0) >= c.S.Provinces.Where(p => p.Kind is "Steppe" or "Badlands").DefaultIfEmpty().Average(p => p?.Wet ?? 0), "the fens stay wetter than the steppe");
+        // The rainy lands (the fens; on the drawn map, which has none, the coasts and highlands) against the dry ones.
+        float WetOf(Func<LandDef, bool> land) => c.S.Provinces.Where(p => land(Lands.Of(p.Kind))).DefaultIfEmpty().Average(p => p?.Wet ?? 0);
+        Check(WetOf(l => l.Rain >= 1.3f) >= WetOf(l => l.Rain <= 0.5f), "the rainy lands stay wetter than the steppe and the sands");
     }
 
     /// The side that was set upon (or scouts better) chooses where to stand: it gets the crest, and the panel says so.
@@ -351,8 +353,10 @@ public static partial class SelfTest
         Console.WriteLine($"assault on {castle.Name}: {(castle.Faction == 0 ? "taken" : "repulsed")}, prisoners {c.PrisonerCount}");
         if (castle.Faction == 0)
         {
-            Check(castle.Owner == c.Player.Id && c.S.Provinces[castle.Province].Faction == 0, "the castle and its province change hands");
-            Check(c.S.Settlements.Where(v => v.Province == castle.Province).All(v => v.Faction == 0), "its villages follow");
+            // A drawn province may hold other seats: it changes hands once none of them holds out for the old realm.
+            bool holdsOut = c.S.Settlements.Any(t => t != castle && t.Province == castle.Province && t.Kind != SettlementKind.Village && t.Faction == 2);
+            Check(castle.Owner == c.Player.Id && (c.S.Provinces[castle.Province].Faction == 0) != holdsOut, "the castle changes hands, and its province with it unless another seat holds out");
+            Check(c.S.Settlements.Where(v => v.Kind == SettlementKind.Village && c.SeatOf(v) == castle).All(v => v.Faction == 0), "its villages follow");
             Check(c.PrisonerCount > 0, "the garrison is taken prisoner");
             float before = c.S.Gold;
             var town = c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction == 0);
@@ -378,7 +382,8 @@ public static partial class SelfTest
         captures = c.S.Settlements.Count(s => s.Faction != owners[s.Id] && s.Kind != SettlementKind.Village);
         foreach (var p in c.S.Parties) foreach (var co in p.Companies) Check(co.Men >= 0 && co.Wounded >= 0, "no negative men");
         foreach (var s in c.S.Settlements) Check(s.Garrison.All(g => g.Men >= 0) && s.Supplies >= 0, "garrisons stay sane");
-        Check(c.S.Provinces.All(p => c.S.Settlements.First(s => s.Province == p.Id && s.Kind != SettlementKind.Village).Faction == p.Faction), "a province belongs to whoever holds its seat");
+        // A drawn province may have several seats, or none (docs/WORLDMAP.md WM4): it belongs to the holder of one of them.
+        Check(c.S.Provinces.All(p => c.S.Settlements.Where(s => s.Province == p.Id && s.Kind != SettlementKind.Village) is var seats && (!seats.Any() || seats.Any(s => s.Faction == p.Faction))), "a province belongs to whoever holds its seat");
         Console.WriteLine($"war: after 200 days {captures} seats changed hands, wars {string.Join(" ", c.S.Wars.Select(w => $"{w.A}-{w.B}:{(w.Active ? "war" : "truce")}"))}, "
             + $"seats {string.Join("/", Enumerable.Range(0, 3).Select(f => c.S.Settlements.Count(s => s.Faction == f && s.Kind != SettlementKind.Village)))}, contracts {c.S.Contracts.Count}");
         Check(captures > 0, "the lords take towns and castles from each other");

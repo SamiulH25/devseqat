@@ -260,6 +260,10 @@ public sealed class Party
     public PartyKind Kind;
     public Vector2 Pos, Goal;
     public bool Moving, Down, Resting;
+    /// A way round the sea (docs/WORLDMAP.md WM2, WM4: Campaign.SeaRoute): the points still to walk and the goal they were
+    /// planned for. Saved, so a loaded game walks on as one that never saved (a way planned again from here would differ).
+    public List<Vector2> SeaWay = new();
+    public Vector2 SeaGoal;
     /// Travellers you chose to rob (S4): hostile to you whatever their realm.
     public bool Prey;
     public float Gold, Cooldown, DownUntil, TaskUntil, Facing;

@@ -35,6 +35,15 @@ public sealed partial class Campaign
     /// fewer lords and the world's total follows the size of the map, not the number of realms (docs/archive/WORLD.md W0).
     public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale * LegacyRealms / Math.Max(1, S.DataRealms));
     public const int LegacyRealms = 3;
+    /// A realm's share of the lords. On the drawn map (docs/WORLDMAP.md WM4) realms are as unequal as they were drawn (the
+    /// Order holds six seats, the Khaganate twenty-seven), so the same world total is shared by the towns and castles each
+    /// holds now, two at least; elsewhere every realm raises `LordsWanted`.
+    public int LordsWantedOf(int f)
+    {
+        if (!Map.Designed) return LordsWanted;
+        int seats = S.Settlements.Count(s => s.Faction == f && s.Kind != SettlementKind.Village), all = S.Settlements.Count(s => s.Kind != SettlementKind.Village);
+        return Math.Max(2, (int)MathF.Round(LordsWanted * (float)S.DataRealms * seats / Math.Max(1, all)));
+    }
     public int BanditsWanted => (int)MathF.Round(B.BanditsMax * ProvinceScale);
     int BanditSpawnsWanted => Math.Max(1, (int)MathF.Round(B.BanditSpawnsPerDay * ProvinceScale));
 
@@ -107,7 +116,7 @@ public sealed partial class Campaign
             c.RaiseGarrison(v);
         }
         for (int f = 0; f < factions; f++)
-            for (int i = 0; i < c.LordsWanted; i++) c.SpawnLord(f);
+            for (int i = 0; i < c.LordsWantedOf(f); i++) c.SpawnLord(f);
         // Open with a map's worth of brigands, not three: the roads are dangerous from the first day.
         for (int i = 0; i < c.BanditsWanted / 3; i++) c.SpawnBandits();
         // The wilds already have their goblins, some of them well dug in.
@@ -278,13 +287,13 @@ public sealed partial class Campaign
             bool seaTurn = !waypoint && Map.Designed && SeaRoute(p, ref t);
             var d = t - p.Pos;
             float dist = d.Length(), step = Speed(p) * Map.SpeedFactor(p.Pos, B.RoadBonus) * h;
-            if (dist < 1e-3f) { if (waypoint) route.RemoveAt(0); else if (seaTurn) seaRoutes[p.Id].Way.RemoveAt(0); else p.Moving = false; continue; }
+            if (dist < 1e-3f) { if (waypoint) route.RemoveAt(0); else if (seaTurn) p.SeaWay.RemoveAt(0); else p.Moving = false; continue; }
             p.Facing = MathF.Atan2(d.Y, d.X);
             if (dist <= step)
             {
                 p.Pos = t;
                 if (waypoint) route.RemoveAt(0);
-                else if (seaTurn) seaRoutes[p.Id].Way.RemoveAt(0);
+                else if (seaTurn) p.SeaWay.RemoveAt(0);
                 else
                 {
                     if (p.Kind == PartyKind.Player) route.Clear();
@@ -299,23 +308,19 @@ public sealed partial class Campaign
         }
     }
 
-    /// Ways round the sea for parties other than the marching player, by party id: the goal they were planned for and the
-    /// points still to walk. Not saved: planned again when wanted.
-    readonly Dictionary<int, (Vector2 Goal, List<Vector2> Way)> seaRoutes = new();
-
     /// Points `t` at the next turn of a way round the sea when the straight line to it crosses water; true if it did.
     bool SeaRoute(Party p, ref Vector2 t)
     {
-        if (seaRoutes.TryGetValue(p.Id, out var r) && Vector2.DistanceSquared(r.Goal, t) < 64)
+        if (p.SeaWay.Count > 0 && Vector2.DistanceSquared(p.SeaGoal, t) < 64)
         {
-            while (r.Way.Count > 1 && Vector2.DistanceSquared(r.Way[0], p.Pos) < 0.25f) r.Way.RemoveAt(0);
-            if (r.Way.Count > 1) { t = r.Way[0]; return true; }
+            while (p.SeaWay.Count > 1 && Vector2.DistanceSquared(p.SeaWay[0], p.Pos) < 0.25f) p.SeaWay.RemoveAt(0);
+            if (p.SeaWay.Count > 1) { t = p.SeaWay[0]; return true; }
         }
-        seaRoutes.Remove(p.Id);
+        p.SeaWay.Clear();
         if (Map.OverLand(p.Pos, t)) return false;
-        var way = Map.PlanRoute(p.Pos, t, B.RoadBonus);
-        seaRoutes[p.Id] = (t, way);
-        if (way.Count > 1) { t = way[0]; return true; }
+        p.SeaWay = Map.PlanAroundSea(p.Pos, t);
+        p.SeaGoal = t;
+        if (p.SeaWay.Count > 1) { t = p.SeaWay[0]; return true; }
         return false;
     }
 

@@ -325,7 +325,7 @@ public partial class Campaign
             // their villages' recruits) can actually pay for, or the chest is bled dry fielding companies that starve.
             int seatsHeld = S.Settlements.Count(s => s.Faction == f && s.Kind != SettlementKind.Village && s.Owner != Player.Id);
             int affordable = Math.Max(1, seatsHeld * 2 + 2);
-            int wanted = Math.Min(LordsWanted, affordable);
+            int wanted = Math.Min(LordsWantedOf(f), affordable);
             // Keep a reserve in the chest before a new lord is raised, so a run of defeats does not leave the realm broke.
             if (lords.Count - orderArmies < wanted && fs.Treasury >= 600 + 400) { SpawnLord(f); fs.Treasury -= 600; }
             var front = S.Provinces.Where(p => p.Faction == f && p.Neighbors.Any(n => FactionsAtWar(f, S.Provinces[n].Faction))).ToList();

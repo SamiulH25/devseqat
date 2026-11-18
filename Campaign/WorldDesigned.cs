@@ -122,6 +122,8 @@ public sealed partial class WorldMap
             var pos = Drawn(s.X, s.Y);
             m.Sites.Add(new Site { Id = m.Sites.Count, Province = m.DesignProvinceAt(pos).Id, Kind = s.Kind, Pos = pos, Name = s.Name });
         }
+        _ = m.Index; // build the look-up grid now, behind the loading screen: the generated maps' site placing builds it, this map's
+                     // drawn sites do not, and the first campaign tick stalled 0.8 s building it (docs/WORLDMAP.md WM4)
         return m;
     }
 
@@ -249,6 +251,80 @@ public sealed partial class WorldMap
     }
 
     /// Does the straight line from a to b keep to the land? (Always on a generated map.)
+    const float SeaCell = 6;
+    int seaN;
+    float seaOrigin;
+    bool[]? seaOpen;
+    float[] seaCostOf = Array.Empty<float>();
+    int[] seaPrev = Array.Empty<int>(), seaSeen = Array.Empty<int>();
+    int seaStamp;
+    readonly object seaLock = new();
+
+    /// A way round the sea for the AI's parties (docs/WORLDMAP.md WM4): A* on a coarse land grid (6 units, land or not, every
+    /// step the same), then pulled into straight legs wherever the line stays on land. The player's full planner prices roads,
+    /// rivers and woods on a 4-unit grid and cleared two 170 000-cell arrays a plan; with every chasing lord re-planning it
+    /// was most of the drawn map's campaign tick. The last point is `to`; a goal no land way reaches gives just `to`.
+    public List<Vector2> PlanAroundSea(Vector2 from, Vector2 to)
+    {
+        lock (seaLock)
+        {
+            if (seaOpen == null)
+            {
+                seaOrigin = -ExtentUsed;
+                seaN = (int)MathF.Ceiling(2 * ExtentUsed / SeaCell) + 1;
+                seaOpen = new bool[seaN * seaN];
+                for (int z = 0; z < seaN; z++)
+                    for (int x = 0; x < seaN; x++) seaOpen[z * seaN + x] = !InSea(new Vector2(seaOrigin + x * SeaCell, seaOrigin + z * SeaCell));
+                seaCostOf = new float[seaN * seaN]; seaPrev = new int[seaN * seaN]; seaSeen = new int[seaN * seaN];
+            }
+            int n = seaN;
+            int Of(Vector2 p) => Math.Clamp((int)MathF.Round((p.Y - seaOrigin) / SeaCell), 0, n - 1) * n + Math.Clamp((int)MathF.Round((p.X - seaOrigin) / SeaCell), 0, n - 1);
+            Vector2 At(int c) => new(seaOrigin + c % n * SeaCell, seaOrigin + c / n * SeaCell);
+            int start = Of(from), end = Of(to);
+            if (++seaStamp == int.MaxValue) { Array.Clear(seaSeen); seaStamp = 1; }
+            var open = new PriorityQueue<int, float>();
+            seaSeen[start] = seaStamp; seaCostOf[start] = 0; seaPrev[start] = -1;
+            open.Enqueue(start, 0);
+            var goal = At(end);
+            bool found = false;
+            while (open.TryDequeue(out int c, out _))
+            {
+                if (c == end) { found = true; break; }
+                int cx = c % n, cz = c / n;
+                float cc = seaCostOf[c];
+                for (int dz = -1; dz <= 1; dz++)
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        int x = cx + dx, z = cz + dz, id = z * n + x;
+                        if ((dx | dz) == 0 || x < 0 || z < 0 || x >= n || z >= n || !seaOpen[id] && id != end) continue;
+                        if (dx != 0 && dz != 0 && !seaOpen[cz * n + x] && !seaOpen[z * n + cx]) continue; // no slipping between two sea cells
+                        float nc = cc + (dx != 0 && dz != 0 ? 1.4142f : 1);
+                        if (seaSeen[id] == seaStamp && nc >= seaCostOf[id]) continue;
+                        seaSeen[id] = seaStamp; seaCostOf[id] = nc; seaPrev[id] = c;
+                        open.Enqueue(id, nc + Vector2.Distance(At(id), goal) / SeaCell);
+                    }
+            }
+            if (!found) return new List<Vector2> { to };
+            var cells = new List<Vector2>();
+            for (int i = end; i >= 0 && i != start; i = seaPrev[i]) cells.Add(At(i));
+            cells.Add(from);
+            cells.Reverse();
+            cells[^1] = to;
+            // Straight legs: from each corner on to the furthest later point the line reaches over land.
+            var way = new List<Vector2>();
+            int at = 0;
+            while (at < cells.Count - 1)
+            {
+                int next = at + 1;
+                for (int j = at + 2, misses = 0; j < cells.Count && misses < 16; j++)
+                    if (OverLand(cells[at], cells[j])) { next = j; misses = 0; } else misses++;
+                way.Add(cells[next]);
+                at = next;
+            }
+            return way;
+        }
+    }
+
     public bool OverLand(Vector2 a, Vector2 b)
     {
         if (cellSea == null) return true;
