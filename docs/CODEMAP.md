@@ -566,6 +566,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## CreatorStage.cs (209 lines)
 - **CreatorStage** (class, L10): CreatorStage:41, React:49, Render:52, Build:95, Perform:116, readonly:143, Drill:152, Shoot:165, Salute:177, Camera:188
 
+## Cursors.cs (217 lines)
+- **CursorKind** (enum, L8)
+- **Cursors** (class, L35): Shape:39, Of:53, Finish:67, Build:86, Reticle:172, Dump:188, Texture:209
+
 ## Ease.cs (22 lines)
 - **Ease** (class, L4): C:6, In:8, Out:10, OutCubic:11, InOut:13, OutBack:15, Spring:17, Kick:19, Hash:21
 
@@ -936,6 +940,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **ArmySpec** (record, L185)
 - **DivisionSpec** (record, L191)
 - **Armies** (class, L196): LineTroop:199, readonly:201, Count:209, Standard:217, Random:220, Large:227, FullCount:238, Divide:247, Split:260, Make:302, MageTroop:306, LineTroop:310, RoleOf:312
+
+## TroopSheet.cs (67 lines)
+- **TroopSheet** (class, L8): TroopSheet:16, Write:23, One:34
 
 ## Ui.cs (255 lines)
 - **Ui** (class, L8): Hovered:26, FrameEnd:36, Ui:40, Anim:59, static:70, Since:83, Count:93, Key:100, Reset:103, Begin:105, End:115, Blocks:118, Block:119, U:120, Rect:122, Frame:129, Panel:138, Dim:141, Text:144, Ink:151, TW:159, TextC:160, TextR:161, Bar:165, Hover:178, Clicked:181, Button:190, Face:219, FaceHead:229, HasSprite:241, Sprite:243, Portrait:254
