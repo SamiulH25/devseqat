@@ -214,7 +214,10 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
     Stats: a chain step takes the stronger of its last troop (raised 8 %) and the parent's troop at that tier; a role VII has
     its parent realm's tier VII stats. Names from each people's own words (King's Wardens, Sea-King's Chosen, Pine Wardens,
     Gate Wardens...). **Looks use existing painted parts** (the parent realm's armour at that tier, the people's own helm
-    for the role VIIs); no new parts were painted. All 16 pass `Cultures` and drop `waiting`; `bandit` keeps it.
+    for the role VIIs, no plume on a soft hat or hood); no new parts were painted. All 16 pass `Cultures` and drop
+    `waiting`; `bandit` keeps it. Judged with Haiku from the troop sheets (`IRONFIELD_TROOPS`): 5.5/10. Infantry VIIs read as
+    a step up; **left for later**: peoples of one realm are hard to tell apart (horse VIIs above all, and steppe_horde from
+    steppe_salt, southern_dune from southern_rift), which needs parts painted per people (helms, horse coats and harness).
   - **A people's realm** (`Factions.PeopleOf`): a culture a realm holds is its own; a subculture belongs to the first of its
     kin a realm holds (a realm culture's kin are only lines it borrows: the League's include the Azure). Used by
     `HasBarracks` (a barracks in a town of a culture's peoples trains that culture's lines: on the drawn map every town is

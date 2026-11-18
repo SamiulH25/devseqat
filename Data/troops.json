@@ -13237,8 +13237,7 @@
     "shield": "none",
     "weapon": "longbow",
     "cape": true,
-    "tabard": true,
-    "plume": true
+    "tabard": true
    },
    "ammo": 42,
    "range": 56,
@@ -13270,7 +13269,6 @@
     "shield": "none",
     "weapon": "daneaxe",
     "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -13303,7 +13301,6 @@
     "shield": "none",
     "weapon": "longbow",
     "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -14252,8 +14249,7 @@
     "shield": "kalkan",
     "weapon": "lance",
     "cape": true,
-    "tabard": true,
-    "plume": true
+    "tabard": true
    },
    "mount": "destrier"
   },
@@ -14504,7 +14500,6 @@
     "shield": "kalkan",
     "weapon": "lance",
     "tabard": true,
-    "plume": true,
     "cape": true
    },
    "mount": "cataphract_horse"
@@ -15048,7 +15043,6 @@
     "shield": "tower",
     "weapon": "longsword_gilded",
     "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -15079,7 +15073,6 @@
     "shield": "kite",
     "weapon": "pennonlance",
     "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
