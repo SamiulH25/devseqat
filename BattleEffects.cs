@@ -14,19 +14,20 @@ public partial class Battle
         if (t.Mount != null)
             return t.Look.Weapon switch
             {
-                "lance" => new[] { "heavy_charge", "iron_skin" },
-                "bow" or "longbow" or "crossbow" => new[] { "swift", "steady_aim" },
+                "lance" or "pennonlance" => new[] { "heavy_charge", "iron_skin" },
+                "bow" or "longbow" or "recurve" or "crossbow" or "arbalest" => new[] { "swift", "steady_aim" },
                 _ => new[] { "swift", "fearsome" },
             };
         return t.Look.Weapon switch
         {
-            "daneaxe" => new[] { "fearsome", "iron_skin" },
-            "greatsword" => new[] { "fearsome", "tireless" },
-            "longsword" when !t.HasShield => new[] { "fearsome", "tireless" },
+            "daneaxe" or "bardiche" => new[] { "fearsome", "iron_skin" },
+            "morningstar" when !t.HasShield => new[] { "fearsome", "iron_skin" },
+            "greatsword" or "flamberge" => new[] { "fearsome", "tireless" },
+            "longsword" or "longsword_gilded" when !t.HasShield => new[] { "fearsome", "tireless" },
             "pike" => new[] { "set_spears", "unshakeable" },
             "spear" => new[] { "set_spears", "tireless" },
-            "longbow" or "bow" => new[] { "steady_aim", "sure_footed" },
-            "crossbow" => t.Look.Shield == "pavise" ? new[] { "pavise", "steady_aim" } : new[] { "steady_aim", "iron_skin" },
+            "longbow" or "bow" or "recurve" => new[] { "steady_aim", "sure_footed" },
+            "crossbow" or "arbalest" => t.Look.Shield == "pavise" ? new[] { "pavise", "steady_aim" } : new[] { "steady_aim", "iron_skin" },
             _ => t.HasShield ? new[] { "locked_shields", "unshakeable" } : new[] { "tireless", "sure_footed" },
         };
     }

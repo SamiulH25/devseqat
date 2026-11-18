@@ -124,7 +124,9 @@ public static partial class SelfTest
         c.Player.Companies.Clear();
         foreach (var co in Armies.Standard(0).Companies) c.Player.Companies.Add(c.NewCompany(co.Troop, co.Role, co.Count, 0));
         c.Player.Cooldown = 1e6f;
-        for (int h = 0; h < 8 * 168; h++) { c.Tick(1); c.Encounter = null; c.Arrived = null; }
+        // The liege stays at peace: this measures pay and food, not whether a war elsewhere takes the town the army stands in.
+        void Peace() { foreach (var w in c.S.Wars.Where(w => w.A == c.Captain.Contract || w.B == c.Captain.Contract)) { w.Active = false; w.TruceUntil = 1e9f; } }
+        for (int h = 0; h < 8 * 168; h++) { Peace(); c.Tick(1); c.Encounter = null; c.Arrived = null; }
         Console.WriteLine($"economy: after 8 weeks gold {c.S.Gold:0}, weekly balance {c.S.LastWeekBalance:0}");
         Check(c.S.UnpaidWeeks == 0 && c.S.Gold > 0 && c.Player.Men >= 60, "a contracted level-2 army stays paid for 8 weeks");
     }
@@ -750,7 +752,7 @@ public static partial class SelfTest
         var errs = Factions.Validate().ToList();
         Check(errs.Count == 0, "factions.json is valid: " + string.Join("; ", errs));
         Check(Troops.All.All(t => t.Culture is "common" or "wild" || Factions.Culture(t.Culture) != null), "every troop has a culture");
-        foreach (var cul in Factions.Cultures)
+        foreach (var cul in Factions.Cultures.Where(c => !c.Waiting)) // waiting subcultures come in with the world book's map
         {
             var seen = new HashSet<string>();
             var open = new Queue<string>(new[] { cul.Root });
@@ -939,19 +941,28 @@ public static partial class SelfTest
         var other = c.Player.Companies[1];
         Check(c.AssignDivision(other, d.Id) == null && other.Division == d.Id, "assign another company");
         Check(c.AssignDivision(lead, -1) != null, "his own company cannot leave him");
-        c.SetDivisionGoal(d, "FlankLeft");
+        c.SetDivisionGoal(d, "FlankLeft"); // an old goal name lands on its post (OF6)
+        Check(d.Goal == "LeftWing:Swing", $"an old goal name maps to a post and stance ({d.Goal})");
+        c.SetDivisionPost(d, Post.Skirmish);
+        Check(Campaign.GoalOf(d) == new Goal(Post.Skirmish, Stance.Loose), "a new post keeps the stance if it can, else takes its first");
+        c.SetDivisionStance(d, Stance.Charge);
+        Check(Campaign.GoalOf(d).Stance == Stance.Loose, "a stance of another post is refused");
+        c.SetDivisionPost(d, Post.LeftWing); c.SetDivisionStance(d, Stance.Swing);
+        d.Goal = "Attack"; // as an old save holds it
+        Check(new Campaign(CampaignState.Deserialize(c.S.Serialize())).S.Divisions[0].Goal == "Front:Charge", "an old save's goal is mapped when it loads");
+        d.Goal = "LeftWing:Swing";
         Check(c.CommandOf(d) == 3, $"a sergeant's command grows with his battles ({c.CommandOf(d)})");
         float edge = c.TacticsEdge;
         lead.OfficerBattles = 15;
         Check(c.TacticsEdge > edge, "a skilled division leader helps when you auto-resolve");
         var back = CampaignState.Deserialize(c.S.Serialize());
-        Check(back.Divisions.Count == 1 && back.Divisions[0].Goal == "FlankLeft" && back.Parties[0].Companies.Count(x => x.Division == d.Id) == 2,
+        Check(back.Divisions.Count == 1 && back.Divisions[0].Goal == "LeftWing:Swing" && back.Parties[0].Companies.Count(x => x.Division == d.Id) == 2,
             "the save keeps divisions and who is in them");
         var setup = c.PrepareBattle(bandit);
         Check(setup.Player.Divisions?.Count == 1 && setup.Player.Companies.Count(x => x.Division == d.Id) == 2, "the battle army carries the division");
         var b = new Battle(setup.Seed, setup.Player, setup.Enemy, setup.Options);
         var bd = b.DivisionsOf(0).SingleOrDefault();
-        Check(bd != null && bd.Squads.Count == 2 && bd.Goal.Kind == GoalKind.Flank && bd.Goal.Side < 0 && bd.Leader?.Sergeant == true,
+        Check(bd != null && bd.Squads.Count == 2 && bd.Goal == new Goal(Post.LeftWing, Stance.Swing) && bd.Leader?.Sergeant == true,
             $"in battle the division has its companies, goal and sergeant ({bd?.Squads.Count} squads, {bd?.Goal.Describe})");
         // An old save (no Division fields) loads with nobody in a division.
         var node = System.Text.Json.Nodes.JsonNode.Parse(c.S.Serialize())!;

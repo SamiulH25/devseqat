@@ -267,4 +267,129 @@ public static partial class SelfTest
         pilot.Run(6);
         Check(k.Captain.Contract == khaganate, $"the stand-in takes service with the realm it started in (contract {k.Captain.Contract}, faction {k.Player.Faction}, over {k.S.GameOver} {k.S.EndReason})");
     }
+
+    /// WM0 (docs/WORLDMAP.md): the designed world reads and is sound, and its province rule is the page's to the last bit
+    /// (values from index.html's own `warp`, run in node).
+    static void WorldDesignReads()
+    {
+        foreach (var (x, y, wx, wy) in new (double, double, double, double)[]
+        {
+            (0, 0, -7.7301459998078981, -10.837984924690796), (-620, -620, -618.87482998118787, -623.14446812961580),
+            (619.5, -3.25, 622.66043395385566, -8.0668512108277373), (-232.1, 288.3, -227.87906672729753, 293.16291085347893),
+            (100.7, -450.2, 108.26074332586522, -450.02547878008693), (-1.5, 1.5, -9.5507438729155645, -9.1130908568517128),
+            (333.3, 77.7, 330.40776775642331, 82.971315689207401), (-555, 412, -561.85270567648479, 412.64126216712435),
+            (12.25, -600, 13.641997776116668, -591.94377195733853), (-90.1, -0.4, -93.766216322053651, 4.5858507213790807),
+            (250, 250, 241.62467547669448, 261.09049112777546), (-400.9, -120.6, -395.81745496762647, -114.54276686343474),
+        })
+        {
+            var (ax, ay) = WorldDesign.Warp(x, y);
+            Check(Math.Abs(ax - wx) < 1e-9 && Math.Abs(ay - wy) < 1e-9, $"the warp at {x}, {y} is the page's ({ax}, {ay} against {wx}, {wy})");
+        }
+        var w = WorldDesign.Get();
+        var errs = w.Validate().ToList();
+        Check(errs.Count == 0, "world.json is sound: " + string.Join("; ", errs.Take(5)));
+        int land = w.Provinces.Count(p => p.Kind != "Sea");
+        Console.WriteLine($"world: {w.Title} rev {w.Revision}: {land} land provinces, {w.Provinces.Length - land} sea, {w.Settlements.Length} settlements");
+        Check(land > 0 && w.Realms.All(r => w.Settlements.Any(s => s.Realm == r.Id && s.Kind == "town")), "every realm has a town");
+        Check(w.Realms.All(r => Factions.All.Any(f => f.Culture == r.Culture)), "every realm's culture is a realm culture of factions.json");
+        Check(w.Subcultures.All(c => Factions.Culture(c.Id) != null), "every subculture is a culture in factions.json");
+    }
+
+    /// WM1 (docs/WORLDMAP.md): layout 5 is the drawn world, the same for every seed: its land provinces with invented names,
+    /// its settlements in their own realm's land and none at sea, every town and castle joined by road, and a campaign runs.
+    /// WM3: the drawn world's six new kinds of country (Coast, Taiga, Highlands, Tundra, Desert, Oasis) have their names,
+    /// woods, weather, monsters and battlefields; a battle by the sea has the sea on its flank.
+    static void NewLands()
+    {
+        var d = WorldDesign.Get();
+        Check(d.Provinces.Where(p => p.Kind != "Sea").All(p => Lands.Known(p.Kind)), "every land kind the design uses is known");
+        Check(new Province { Name = "Ashby", Kind = "Hills" }.Title == "the Ashby Hills" && new Province { Name = "Ashby", Kind = "Desert" }.Title == "the Ashby Sands"
+            && new Province { Name = "Ashby", Kind = "Nowhere" }.Title == "the Vale of Ashby", "titles by kind (an unknown kind is a vale)");
+        Check(Lands.Of("Taiga").Wild && Lands.Of("Tundra").Wild && !Lands.Of("Desert").Wild && Lands.Of("Forest").Wild && !Lands.Of("Meadow").Wild, "monster country");
+        // Weather: the sands never snow, the cold lands snow in spring too.
+        bool desertSnow = false, coldSpring = false;
+        for (int s = 0; s < 400; s++)
+        {
+            desertSnow |= Weather.For(12, 3, s, Lands.Of("Desert").Rain, "hot").Snow;
+            coldSpring |= Weather.For(12, 0, s, Lands.Of("Tundra").Rain, "cold").Snow;
+        }
+        Check(!desertSnow && coldSpring, "no snow on the sands; snow in a tundra spring");
+        // Battlefields.
+        var shore = new Terrain(5, TerrainParams.Coast with { Layouts = new[] { FieldLayout.Shore } });
+        int side = shore.ShoreSide;        Check(shore.Layout == FieldLayout.Shore && side != 0 && shore.WaterDepth(new Vector2(side * 220, 0)) > 1 && shore.WaterDepth(new Vector2(-side * 220, 0)) == 0,
+            "the sea lies along one flank of a shore field");
+        Check(Enumerable.Range(-20, 41).All(i => shore.WaterDepth(new Vector2(i * 2.4f, i * 3f)) == 0), "the deployment ground is dry");
+        Check(Enumerable.Range(0, 60).Any(i => shore.GroundAt(new Vector2(side * (60 + i * 2), 0)) == GroundKind.Sand), "a beach between the field and the sea");
+        Check(!shore.Foliage.Any(f => f.Radius > 0 && shore.WaterDepth(f.Pos) > 0), "no trees or boulders in the sea");
+        Check(Enumerable.Range(0, 200).All(i => shore.WaterDepth(new Vector2(side * i, i % 7 * 9)) > 0 || shore.Height(new Vector2(side * i, i % 7 * 9)) > -2.5f), "no dry ground lies under the sea's surface");
+        var desert = new Terrain(5, TerrainParams.Desert with { Layouts = new[] { FieldLayout.Open } });
+        int sand = 0, all = 0;
+        for (float x = -200; x <= 200; x += 10) for (float z = -200; z <= 200; z += 10) { all++; if (desert.GroundAt(new Vector2(x, z)) == GroundKind.Sand) sand++; }
+        Check(sand > all * 0.3f && !desert.Foliage.Any(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine), $"the desert is sand ({sand}/{all}) without trees");
+        var taiga = new Terrain(5, TerrainParams.Taiga);
+        Check(taiga.Foliage.Count(f => f.Kind == FoliageKind.Pine) > 50 && !taiga.Foliage.Any(f => f.Kind == FoliageKind.Broadleaf), "the taiga's woods are pine");
+        // The designed map: a fight on the beach is a shore field; a fight in the sands a desert one.
+        var m = Campaign.New(7, layout: WorldMap.DesignLayout).Map;
+        var beach = m.Settlements.Select(s => s.Pos).First(p => m.NearSea(p));
+        Check(m.BattleGround(beach).Layouts is [FieldLayout.Shore] && m.BattleGround(beach).Name == "Coast", "a battle by the sea is fought on the shore");
+        var inland = m.Provinces.Where(p => p.Kind == "Desert").Select(p => p.Center).Where(p => !m.NearSea(p) && !m.OnRidge(p)).ToList();
+        Check(inland.Count == 0 || m.BattleGround(inland[0]).Name == "Desert", "a battle in the sands is fought on sand");
+        Check(m.Provinces.Any(p => p.Title.EndsWith("Sands")) && m.Provinces.Any(p => p.Title.EndsWith("Shore")), "the new lands are named on the map");
+    }
+
+    static void DesignedMap()
+    {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var a = Campaign.New(7, layout: WorldMap.DesignLayout);
+        Console.WriteLine($"world: layout 5 campaign made in {clock.ElapsedMilliseconds} ms");
+        clock.Restart();
+        var b = Campaign.New(8, layout: WorldMap.DesignLayout);
+        Console.WriteLine($"world: the next in {clock.ElapsedMilliseconds} ms (the province grid is made once)");
+        var d = WorldDesign.Get();
+        var m = a.Map;
+        var deep = new Vector2(0, -m.ExtentUsed + 3); // the open sea at the drawn map's north edge
+        Check(m.Designed && m.Provinces.Count == d.Provinces.Count(p => p.Kind != "Sea"), $"one province a land province of the design ({m.Provinces.Count})");
+        Check(m.Settlements.Count == d.Settlements.Length && m.Sites.Count == d.Sites.Length, "every drawn settlement and site is on the map");
+        Check(m.Provinces.Select(p => p.Name).SequenceEqual(b.Map.Provinces.Select(p => p.Name)) && m.Settlements.Select(s => s.Pos).SequenceEqual(b.Map.Settlements.Select(s => s.Pos)),
+            "the same land for every seed");
+        Check(m.Provinces.Select(p => p.Name).Distinct().Count() == m.Provinces.Count && m.Provinces.All(p => d.Provinces.All(q => q.Name != p.Name)), "province names are invented and unique");
+        Check(m.Settlements.All(s => !m.InSea(s.Pos) && m.ProvinceAt(s.Pos).Id == s.Province && m.Provinces[s.Province].Faction == s.Faction), "every settlement on land, in its own realm's province");
+        Check(m.Provinces.All(p => p.Neighbors.Count > 0 && p.Neighbors.All(n => m.Provinces[n].Neighbors.Contains(p.Id))), "every province has neighbours, and they have it");
+        var low = m.Settlements.MinBy(s => m.Height(s.Pos.X, s.Pos.Y))!;
+        Check(m.Height(deep.X, deep.Y) < -WorldMap.SeaDepth * 0.8f, $"the open sea lies low ({m.Height(deep.X, deep.Y):0.0})");
+        Check(m.Height(low.Pos.X, low.Pos.Y) > 0, $"every settlement stands above the sea ({low.Name} at {m.Height(low.Pos.X, low.Pos.Y):0.0}, land {m.Landness(low.Pos):0.00})");
+        Check(m.LandShare is > 0.3f and < 0.6f, $"about two fifths of the map is land ({m.LandShare:0.00})");
+        // Roads: every town and castle reaches every other over the road lines (through villages too).
+        var all = m.Settlements;
+        int At(Vector2 p) => all.FindIndex(s => Vector2.DistanceSquared(s.Pos, p) < 1);
+        var links = all.Select(_ => new List<int>()).ToArray();
+        foreach (var l in m.RoadLines)
+            if (At(l.Points[0]) is int i and >= 0 && At(l.Points[^1]) is int j and >= 0) { links[i].Add(j); links[j].Add(i); }
+        int first = all.FindIndex(s => s.Kind != SettlementKind.Village);
+        var seen = new HashSet<int> { first };
+        var open = new Queue<int>(seen);
+        while (open.Count > 0) foreach (int j in links[open.Dequeue()]) if (seen.Add(j)) open.Enqueue(j);
+        var cut = all.Where(s => s.Kind != SettlementKind.Village && !seen.Contains(s.Id)).ToList();
+        Console.WriteLine($"world: {m.Provinces.Count} provinces, {m.Settlements.Count} settlements, {m.RoadLines.Count} roads, {m.Rivers.Count} rivers, {m.Ridges.Count} ridges, {m.Lakes.Count} lakes and ponds, land {m.LandShare:0.00}");
+        Check(cut.Count == 0, "every town and castle is joined by road: not " + string.Join(", ", cut.Select(s => $"{s.Name} at {s.Pos}")));
+        // The sea (WM2): a point at sea is put ashore, a way between far towns keeps to the land, nobody walks on water.
+        var shore = m.InLand(deep);
+        Check(m.InSea(deep) && !m.InSea(shore), $"a point at sea is put on the shore ({shore})");
+        var towns = m.Settlements.Where(s => s.Kind == SettlementKind.Town).ToList();
+        foreach (var (from, to) in new[] { (towns[0], towns[^1]), (towns[3], towns[towns.Count / 2]) })
+        {
+            var way = m.PlanRoute(from.Pos, to.Pos, 1.3f);
+            var at = from.Pos;
+            foreach (var w in way)
+            {
+                for (float k = 0; k <= 1; k += 0.05f) Check(!m.InSea(Vector2.Lerp(at, w, k)), $"the way from {from.Name} to {to.Name} keeps off the sea");
+                at = w;
+            }
+            Check(way[^1] == m.InLand(to.Pos), "a way ends at its goal");
+        }
+        a.Tick(24 * 3);
+        Check(a.S.Parties.Count > 0, "a campaign runs on it");
+        var wet = a.S.Parties.Where(q => !q.Down && m.InSea(q.Pos)).ToList();
+        Check(wet.Count == 0, "nobody on the sea: " + string.Join(", ", wet.Select(q => $"{q.Name} at {q.Pos}")));
+    }
 }

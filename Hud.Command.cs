@@ -3,25 +3,24 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Hud: the command tray (who you lead, the reserve, the horn), sergeants' questions, and each division's colour and
-/// rings on the field (docs/SERGEANTS.md SG1-SG3, SG6).
+/// Hud: the command tray (who you lead, the reserve, the horn) and each division's colour and rings on the field
+/// (docs/SERGEANTS.md SG1, SG2, SG6).
 sealed partial class Hud
 {
     /// The goal you pick for the chosen sergeant becomes his horn plan (SG2).
     public bool HornMode;
 
-    Rectangle tray, toMe, hornButton, hornToggle;
+    Rectangle tray, toMe, hornButton, hornToggle, autoFill;
     readonly List<(Rectangle R, int I)> reserveChips = new();
     readonly List<(Rectangle R, Division D)> divAdds = new();
-    readonly List<(Rectangle R, Division D, bool A)> answers = new();
 
     public int? ReserveAt(Point p) => reserveChips.Where(c => c.R.Contains(p)).Select(c => (int?)c.I).FirstOrDefault();
     public bool ToMeAt(Point p) => toMe.Contains(p);
+    public bool AutoFillAt(Point p) => autoFill.Contains(p);
     public bool HornAt(Point p) => hornButton.Contains(p);
     public bool HornToggleAt(Point p) => Div != null && Command && hornToggle.Contains(p);
     public Division? AddAt(Point p) => divAdds.FirstOrDefault(c => c.R.Contains(p)).D;
-    public (Division D, bool A)? AnswerAt(Point p) => answers.Where(a => a.R.Contains(p)).Select(a => ((Division, bool)?)(a.D, a.A)).FirstOrDefault();
-    bool OverCommand(Point p) => tray.Contains(p) || AnswerAt(p) != null || AddAt(p) != null || HornToggleAt(p);
+    bool OverCommand(Point p) => tray.Contains(p) || AddAt(p) != null || HornToggleAt(p) || AutoFillAt(p);
 
     /// Each of your divisions in its own colour, by its place among your divisions (gold stays the colour of a choice).
     static readonly Color[] DivisionHues =
@@ -35,20 +34,16 @@ sealed partial class Hud
         return DivisionHues[i % DivisionHues.Length];
     }
 
-    /// The one sergeant's question on screen: the oldest one waiting.
-    public Division? Asking => B.DivisionsOf(0).Where(d => d.Query != null).OrderBy(d => d.Query!.Until).FirstOrDefault();
-
     /// Selected companies that could go to division d (or to you when d is null) before the battle.
     int Movable(Division? d) => Deploying ? Selected.Count(s => B.CannotAssign(s, d) == null) : 0;
 
     void LayoutCommand()
     {
-        reserveChips.Clear(); divAdds.Clear(); answers.Clear();
-        tray = toMe = hornButton = Rectangle.Empty;
-        LayoutQuestion();
+        reserveChips.Clear(); divAdds.Clear();
+        tray = toMe = hornButton = autoFill = Rectangle.Empty;
         if (!Command || ShowResult) return;
         foreach (var (r, d) in divCards)
-            if (Movable(d) > 0) divAdds.Add((new Rectangle(r.Right - U(50), r.Y + U(3), U(46), U(12)), d));
+            if (Movable(d) > 0) divAdds.Add((new Rectangle(r.Right - U(50), r.Y + U(2), U(46), U(12)), d));
         // The tray sits over your own panel: a head row, then the reserve's chips three to a row.
         var waiting = B.ReservesOf(0);
         int pending = B.CallUpsOf(0).Count(), chips = Math.Min(9, waiting.Count + pending);
@@ -58,18 +53,9 @@ sealed partial class Hud
         for (int i = 0; i < Math.Min(chips, waiting.Count); i++)
             reserveChips.Add((new Rectangle(tray.X + U(6) + i % 3 * (cw + U(2)), tray.Y + U(18) + i / 3 * U(18), cw, U(15)), i));
         if (Deploying && Movable(null) > 0) toMe = new Rectangle(tray.Right - U(70), tray.Y + U(3), U(64), U(12));
+        else if (Deploying && B.DivisionsOf(0).Any()) autoFill = new Rectangle(tray.Right - U(70), tray.Y + U(3), U(64), U(12)); // OF4
         else if (!Deploying && B.DivisionsOf(0).Any(d => d.Horn != null && d.Alive > 0)) hornButton = new Rectangle(tray.Right - U(96), tray.Y + U(3), U(90), U(12));
     }
-
-    void LayoutQuestion()
-    {
-        if (Asking is not { Query: { } q } d || ShowResult || MenuOpen) return;
-        var box = QuestionBox;
-        int bw = U(150), y = box.Y + U(22);
-        answers.Add((new Rectangle(box.Center.X - bw - U(4), y, bw, U(16)), d, true));
-        answers.Add((new Rectangle(box.Center.X + U(4), y, bw, U(16)), d, false));
-    }
-    Rectangle QuestionBox => new(W / 2 - U(230), Paused ? U(124) : U(92), U(460), U(62));
 
     /// Left, over your panel: how many companies you lead, the reserve (click to call one up), TO ME and the horn.
     void Tray()
@@ -81,8 +67,8 @@ sealed partial class Hud
         Text($"COMMAND {led}/{Armies.CommandCap}", tray.X + U(6), tray.Y + U(5), full ? Gold : Color.White, 1);
         string sub = B.ReservesOf(0).Count + B.CallUpsOf(0).Count() == 0 ? "NO RESERVE" : Div != null ? $"FOR {Div.Name.ToUpperInvariant()}" : full ? "PICK A SERGEANT (Y)" : "CLICK: CALL UP";
         int subX = tray.X + U(14) + TW($"COMMAND {led}/{Armies.CommandCap}", 1);
-        int subRoom = (!toMe.IsEmpty ? toMe.X : !hornButton.IsEmpty ? hornButton.X : tray.Right) - subX - U(6);
-        Text(kit.Fit(sub, subRoom), subX, tray.Y + U(5), Dim, 1);
+        int subRoom = (!toMe.IsEmpty ? toMe.X : !hornButton.IsEmpty ? hornButton.X : !autoFill.IsEmpty ? autoFill.X : tray.Right) - subX - U(6);
+        if (TW(sub, 1) <= subRoom) Text(sub, subX, tray.Y + U(5), Dim, 1); // whole or not at all: a cut hint reads as noise
         var waiting = B.ReservesOf(0);
         foreach (var (r, i) in reserveChips)
         {
@@ -110,6 +96,7 @@ sealed partial class Hud
         int more = waiting.Count + B.CallUpsOf(0).Count() - k;
         if (more > 0) TextR($"+{more} MORE", tray.Right - U(6), tray.Bottom - U(9), Dim, 1);
         if (!toMe.IsEmpty) SmallButton(toMe, $"TO ME ({Movable(null)})", Gold);
+        if (!autoFill.IsEmpty) SmallButton(autoFill, "AUTO-FILL", Color.White * 0.85f); // a one-shot button, not a lit toggle
         if (!hornButton.IsEmpty) SmallButton(hornButton, $"HORN ({Ctl.Name(Act.Horn)})", Gold);
     }
 
@@ -121,30 +108,6 @@ sealed partial class Hud
         TextC(label, r.Center.X, r.Y + U(3), hover ? Color.White : c, 1);
     }
 
-    /// A sergeant's question, top centre in both views: what he sees, two answers, and what he does if you are silent.
-    void Question()
-    {
-        if (answers.Count < 2 || answers[0].D.Query is not { } q) return;
-        var d = answers[0].D;
-        var box = QuestionBox;
-        Panel(box, DivisionColour(d), 2);
-        float left = MathF.Max(0, q.Until - B.Time);
-        string head = $"{d.Name.ToUpperInvariant()}: {q.Text.ToUpperInvariant()}";
-        Text(kit.Fit(head, box.Width - U(46)), box.X + U(8), box.Y + U(7), Color.White, 1);
-        TextR($"{left:0}S", box.Right - U(8), box.Y + U(7), left < 4 ? Warn : Color.White, 1);
-        for (int i = 0; i < 2; i++)
-        {
-            var (r, _, a) = answers[i];
-            bool hover = r.Contains(Mouse), mine = a == q.AByDefault;
-            Rect(r, hover ? Gold * 0.4f : Gold * 0.12f);
-            Frame(r, hover ? Gold : Edge, U(1));
-            TextC($"{Ctl.Name(a ? Act.AnswerA : Act.AnswerB)}: {(a ? q.LabelA : q.LabelB)}", r.Center.X, r.Y + U(5), hover ? Color.White : Gold, 1);
-            if (mine) TextC("HIS OWN CHOICE", r.Center.X, r.Bottom + U(4), Dim, 1);
-        }
-        int others = B.DivisionsOf(0).Count(x => x.Query != null) - 1;
-        if (others > 0) TextR($"+{others} ASKING", box.Right - U(8), box.Bottom - U(10), Warn, 1);
-    }
-
     /// A footprint of the division's colour under each of its companies (command view): a box round the men's ranks, turned
     /// along its ranks, so you see at a glance who is whose without rings crossing the field.
     void DivisionRings()
@@ -153,6 +116,7 @@ sealed partial class Hud
         foreach (var d in B.DivisionsOf(0))
         {
             var col = (d == Div ? Gold : DivisionColour(d)) * (d == Div ? 0.9f : 0.6f);
+            if (d == Div && d.Post != Post.Front && ZonesShown(d)) col = DivisionColour(d) * 0.6f; // the gold dashed zone is the mark; the ring stays his colour
             foreach (var s in d.Squads)
             {
                 if (s.Alive == 0) continue;

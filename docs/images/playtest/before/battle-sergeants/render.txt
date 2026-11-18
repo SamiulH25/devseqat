@@ -1,0 +1,4 @@
+sergeants-deploy: 14566 sprite tris, 0 lines, 0 marks, 1489 men, terrain 18,432/83,232 tris, shadow 34,816; world 28 tiles in 20 calls 53,763 tris, shadow 25 tiles in 15 calls 44,176 tris
+sergeants-horn: 7628 sprite tris, 0 lines, 0 marks, 1489 men, terrain 16,384/83,232 tris, shadow 45,312; world 32 tiles in 25 calls 63,723 tris, shadow 41 tiles in 17 calls 65,404 tris
+sergeants-ask: 12288 sprite tris, 0 lines, 0 marks, 1489 men, terrain 14,336/83,232 tris, shadow 36,864; world 26 tiles in 20 calls 46,971 tris, shadow 34 tiles in 17 calls 61,388 tris
+sergeants-field: 20434 sprite tris, 0 lines, 0 marks, 1489 men, terrain 51,488/83,232 tris, shadow 14,336; world 74 tiles in 26 calls 97,735 tris, shadow 11 tiles in 8 calls 9,114 tris

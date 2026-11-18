@@ -77,6 +77,14 @@ def main():
     w("roster has no links at all. The 30 roots are `levies`, `clansmen`, `acolytes`, `esquires`,")
     w("`mounted_esquires`, the captain, and one for each wild troop.")
     w("")
+    waiting = [c["id"] for c in cultures.values() if c.get("waiting")]
+    if waiting:
+        held = sum(1 for t in troops.values() if t.get("culture") in waiting)
+        w(f"**Not in the world yet:** {held} troops in {len(waiting)} cultures marked `waiting` in `Data/factions.json`")
+        w("(" + ", ".join(f"`{c}`" for c in waiting) + "). They come from the world book")
+        w("(`Data/world.json`) and are kept for when that world is brought into the game; until then no realm,")
+        w("settlement or band fields them, and their trees stop short of tier VII.")
+        w("")
     w("Marks used below: **†** noble stock, raised at a castle rather than a village; **‡** a knight")
     w("order's signature troop; **bold** in *From* means the parent is outside the culture.")
     w("")

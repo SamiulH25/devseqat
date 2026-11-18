@@ -4,12 +4,19 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ironfield;
 
 /// Orders the player can give, from hotkeys, the order wheel or the command-view buttons.
-public enum Cmd { Charge, AttackMove, Advance, FormHere, Spacing, FallBack, FireAtWill, Hold, Follow, Formation, Merge, Relieve, Split, Rule, More }
+public enum Cmd
+{
+    Charge, AttackMove, Advance, FormHere, Spacing, FallBack, FireAtWill, Hold, Follow, Formation, Merge, Relieve, Split, Rule,
+    // the order deck only (command view): stakes, a cast, and a formation picked outright
+    Stakes, Cast, ShapeLine, ShapeWall, ShapeSquare, ShapeWedge, ShapeLoose,
+}
 
 public enum MenuItem { Resume, Controls, NewBattle, Quit, Withdraw, Continue, Title, Settings }
 
-/// All 2D interface: unit cards, player panel, balance of power, minimap, event feed, crosshair, order wheel,
-/// command buttons, squad banners and the menu / controls / result overlays. Layout is in 720p units times `Ui`.
+/// All 2D interface of a battle. It is two HUDs that never show together (docs/PLAYTEST.md PT4, "As rebuilt"):
+/// the command view (Hud.Deck.cs: top bar with the clock and speeds, minimap, company cards, the captain's plate, the order
+/// deck) and the fight view (Hud.Fight.cs: vitals, the arms that listen, the order ring). This file holds what both share:
+/// layout and hit-testing, primitives, flags on the field, hover cards. Layout is in 720p units times `Ui`.
 sealed partial class Hud
 {
     // Colours come from the design tokens (Style.cs, docs/DESIGN.md).
@@ -45,8 +52,9 @@ sealed partial class Hud
     public bool Command, Paused, MenuOpen, HelpOpen, WheelOpen, ShowResult, InCampaign, Deploying, AttackMoveMode;
     public string? CombatPrompt;
     public float CombatPromptAt = -99;
-    /// The order palette's fold (docs/PLAYTEST.md PT4): the less common orders show above the six big ones while open.
-    public bool MoreOrders;
+    /// Fight view: how long the hold key has been down (under 0 = not held), and the enemy company you look at.
+    public float HoldPlace = -1;
+    public Squad? LookFoe;
     Rectangle start;
     public bool StartAt(Point p) => Deploying && start.Contains(p);
     /// The deployment toggle (docs/archive/COMBAT_QOL.md Q6): null when no layout is remembered, else whether it is in use.
@@ -70,7 +78,7 @@ sealed partial class Hud
     readonly List<(Rectangle R, Squad S)> cards = new();
     readonly List<(Rectangle R, Cmd C)> buttons = new();
     readonly List<(Rectangle R, MenuItem M)> menu = new();
-    Rectangle minimap, player, pauseBtn, modeBtn;
+    Rectangle minimap, player, pauseBtn, modeBtn, captainBtn, topBar, deck;
     readonly List<(Rectangle R, int I)> speedBtns = new();
     int W, H;
 
@@ -98,45 +106,14 @@ sealed partial class Hud
         W = vp.Width;
         H = vp.Height;
         Ui = Settings.UiFor(H);
-        cards.Clear(); buttons.Clear(); menu.Clear();
-
-        var mine = Mine;
-        // Cards shrink to fit a big retinue; past what fits, the rest are summed up on the last card.
-        int rightReserve = Command ? U(252) : U(14); // room for the order palette (PT4)
-        // In the field view the cards fold to a thin strip (number, men, strength and morale): you fight, not command (PT2g).
-        bool strip = !Command && !Deploying;
-        int room = W - U(296) - rightReserve, gap = mine.Count > 8 ? U(4) : U(6), ch = strip ? U(30) : U(94);
-        int cw = Math.Clamp((room - gap * Math.Max(0, mine.Count - 1)) / Math.Max(1, mine.Count), U(64), mine.Count > 8 ? U(68) : U(80));
-        int fit = Math.Max(1, (room + gap) / (cw + gap));
-        int shown = Math.Min(mine.Count, fit), total = shown * cw + Math.Max(0, shown - 1) * gap;
-        int cx0 = Math.Max(U(296), (W - total) / 2);
-        for (int i = 0; i < shown; i++) cards.Add((new Rectangle(cx0 + i * (cw + gap), H - ch - U(10), cw, ch), mine[i]));
-        hiddenCards = mine.Count - shown;
-
-        int ph = B.AuraTier > 0 ? U(108) : U(94); // a row more for the aura (docs/archive/KNIGHT_ORDERS.md K1)
-        player = new Rectangle(U(10), H - ph - U(10), U(280), ph);
+        cards.Clear(); buttons.Clear(); menu.Clear(); speedBtns.Clear(); armChips.Clear();
+        pauseBtn = modeBtn = captainBtn = topBar = deck = Rectangle.Empty;
+        hiddenCards = 0;
         int ms = U(150);
         minimap = new Rectangle(W - ms - U(10), U(10), ms, ms);
+        if (Command) LayoutDeck(); else LayoutFight();
         LayoutDivisions();
-
         if (Command && Div != null) LayoutGoals();
-        else if (Command)
-        {
-            // The order palette (docs/PLAYTEST.md PT4): six big picture buttons for the common orders, a MORE fold for the rest.
-            int bw = U(70), bh = U(50), pg = U(4), sh = U(20);
-            int x0 = W - 3 * bw - 2 * pg - U(14), y = H - U(10) - sh;
-            buttons.Add((new Rectangle(x0, y, 3 * bw + 2 * pg, sh), Cmd.More));
-            y -= pg + 2 * bh + pg;
-            for (int i = 0; i < MainOrders.Length; i++)
-                buttons.Add((new Rectangle(x0 + (i % 3) * (bw + pg), y + (i / 3) * (bh + pg), bw, bh), MainOrders[i]));
-            if (MoreOrders)
-            {
-                int rows = (MoreOrdersList.Length + 2) / 3;
-                y -= U(8) + rows * (sh + pg);
-                for (int i = 0; i < MoreOrdersList.Length; i++)
-                    buttons.Add((new Rectangle(x0 + (i % 3) * (bw + pg), y + (i / 3) * (sh + pg), bw, sh), MoreOrdersList[i]));
-            }
-        }
 
         var items = ShowResult ? (InCampaign ? new[] { MenuItem.Continue } : new[] { MenuItem.NewBattle, MenuItem.Title })
             : MenuOpen ? (InCampaign ? new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.Withdraw } : new[] { MenuItem.Resume, MenuItem.Controls, MenuItem.Settings, MenuItem.NewBattle, MenuItem.Title })
@@ -155,10 +132,15 @@ sealed partial class Hud
     public MenuItem? MenuAt(Point p) => menu.Where(m => m.R.Contains(p)).Select(m => (MenuItem?)m.M).FirstOrDefault();
     public bool PauseAt(Point p) => Command && !ShowResult && pauseBtn.Contains(p);
     public int? SpeedAt(Point p) => Command && !ShowResult ? speedBtns.Where(s => s.R.Contains(p)).Select(s => (int?)s.I).FirstOrDefault() : null;
-    public bool ModeAt(Point p) => Command && !ShowResult && !Deploying && B.Player.Active && modeBtn.Contains(p);
-    public Vector2? MinimapAt(Point p) => minimap.Contains(p)
+    /// The captain's plate: FIGHT takes you into his body, his picture looks at him.
+    public bool ModeAt(Point p) => Command && !ShowResult && modeBtn.Contains(p);
+    public bool CaptainAt(Point p) => Command && !ShowResult && captainBtn.Contains(p);
+    public Vector2? MinimapAt(Point p) => Command && minimap.Contains(p)
         ? World.MinimapToWorld(new Vector2((p.X - minimap.X) / (float)minimap.Width, (p.Y - minimap.Y) / (float)minimap.Height)) : null;
-    public bool Over(Point p) => PauseAt(p) || SpeedAt(p) != null || ModeAt(p) || AlertAt(p) != null || CardAt(p) != null || ButtonAt(p) != null || DivisionAt(p) != null || GoalAt(p) != null || GoalCloseAt(p) || OverCommand(p) || (Command && minimap.Contains(p)) || player.Contains(p) || start.Contains(p) || deployToggle.Contains(p);
+    /// The mouse is on the interface, not the field (command view; the fight view has no cursor).
+    public bool Over(Point p) => Command && (topBar.Contains(p) || deck.Contains(p) || player.Contains(p) || minimap.Contains(p))
+        || AlertAt(p) != null || CardAt(p) != null || ButtonAt(p) != null || DivisionAt(p) != null || GoalAt(p) != null || GoalCloseAt(p) || OverCommand(p)
+        || start.Contains(p) || deployToggle.Contains(p);
 
     // ---------- primitives ----------
 
@@ -257,39 +239,8 @@ sealed partial class Hud
         if (!Deploying) FightMarks();
         VolleyRings(); // a volley marked on you (C13): on the ground, under the panels
         DuelBars();
-        PlayerPanel();
-        if (Command)
-        {
-            Banners();
-            Balance();
-            GoalLines();
-            AlertStrip();
-            MinimapPanel();
-            DivisionRings();
-            DivisionMarkers();
-            Cards();
-            Tray();
-            DivisionCards();
-            if (Div != null) GoalPanel();
-            if (GroundView && !ShowResult && !MenuOpen) GroundPanel();
-            CommandPanel();
-            Detail();
-            if (!ShowResult && !MenuOpen) { SquadTooltip(); DivisionTooltip(); GroundHints(); }
-        }
-        else
-        {
-            if (B.AuraTier > 0) FormBar();
-            if (B.Player.Type.Spells.Length > 0) SpellFan();
-            if (Div != null) SergeantFieldBadge();
-            OpponentMark();
-            BlowNumbers();
-            MarkedMarks();
-            Crosshair();
-            CombatOrderBanner();
-        }
+        if (Command) DrawCommand(); else DrawFight();
         if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
-        if (!MenuOpen && !HelpOpen) Question();
-        Hints();
         if (B.DownSince >= 0) // the last stand (P6)
         {
             var r = new Rectangle(W / 2 - U(160), H / 2 - U(60), U(320), U(34));
@@ -317,7 +268,7 @@ sealed partial class Hud
         {
             // A planning pause (docs/archive/COMBAT_QOL.md Q4): orders given now go out together when the battle runs on.
             int riding = B.PendingDirects.Count();
-            var r = new Rectangle(W / 2 - U(150), U(64), U(300), U(riding > 0 ? 54 : 42));
+            var r = PauseBox;
             Panel(r, Gold);
             TextC("PAUSED", W / 2f, r.Y + U(6), Gold);
             TextC($"GIVE YOUR ORDERS. {Ctl.Name(Act.Pause)} SENDS THEM OFF", W / 2f, r.Y + U(24), Dim, 1);
@@ -327,6 +278,49 @@ sealed partial class Hud
         else if (HelpOpen) Help();
         else if (MenuOpen) Menu();
         sb.End();
+    }
+
+    Rectangle PauseBox => new(W / 2 - U(150), U(64), U(300), U(B.PendingDirects.Any() ? 54 : 42));
+
+    /// The command view: the field's flags and marks, then the top bar, the minimap and sergeants, and the bottom row
+    /// (captain, companies, orders). Nothing of the fight view shows here.
+    void DrawCommand()
+    {
+        Banners();
+        TopBar();
+        GoalLines();
+        AlertStrip();
+        MinimapPanel();
+        PostZones();
+        DivisionRings();
+        DivisionMarkers();
+        Cards();
+        CaptainPlate();
+        Tray();
+        DivisionCards();
+        if (Div != null) GoalPanel(); else OrderDeck();
+        if (GroundView && !ShowResult && !MenuOpen) GroundPanel();
+        SpellFan();
+        if (!ShowResult && !MenuOpen) { SquadTooltip(); DivisionTooltip(); GroundHints(); }
+        DragGhost();
+    }
+
+    /// The fight view: you are the captain. Vitals, the arms that listen to you and the reticle; no cards, no map, no buttons.
+    void DrawFight()
+    {
+        FightTop();
+        AlertStrip(2);
+        Vitals();
+        if (B.AuraTier > 0) FormBar();
+        ArmChips();
+        if (Div != null) SergeantFieldBadge();
+        OpponentMark();
+        BlowNumbers();
+        MarkedMarks();
+        Crosshair();
+        SwingWords();
+        OrderToast();
+        FightHints();
     }
 
     /// The fighting strength of a side: men standing, weighted by health and arm (a rider counts for more than a bowman).
@@ -343,119 +337,16 @@ sealed partial class Hud
 
     Heraldry SideArms(int team) => Style.Sides[Math.Clamp(B.Options.Palette[Math.Clamp(team, 0, 1)], 0, Style.Sides.Length - 1)];
 
-    /// Top centre: the two sides' strength pulling on one bar between their shields, the men standing and the clock.
     /// Your personal goals for this battle (P6), under the balance bar: open in white, met in gold, lost struck grey.
     void GoalLines()
     {
-        int y = Deploying ? (DeployLast != null ? U(186) : U(158)) : U(78);
+        int y = Deploying ? (DeployLast != null ? U(186) : U(158)) : Paused ? PauseBox.Bottom + U(6) : B.Wall != null ? U(80) : U(60);
         foreach (var g in B.Goals)
         {
             int st = B.GoalState(g);
             string mark = st > 0 ? "DONE: " : st < 0 ? "LOST: " : "GOAL: ";
             TextC(mark + B.GoalText(g), W / 2f, y, st > 0 ? Gold : st < 0 ? Dim * 0.6f : Color.White, 1);
             y += U(11);
-        }
-    }
-
-    void Balance()
-    {
-        float s0 = 0, s1 = 0; int mine = 0, foes = 0;
-        foreach (var u in B.Units)
-        {
-            if (!u.Active || u.Routing) continue;
-            float wt = u.Hp / u.Type.MaxHp * (u.Type.Class switch { UnitClass.Cavalry => 2.2f, UnitClass.Captain => 3f, UnitClass.Archer => 0.9f, _ => 1f });
-            if (u.Team == 0) { s0 += wt; mine++; } else { s1 += wt; foes++; }
-        }
-        float f = s0 + s1 > 0 ? s0 / (s0 + s1) : 0.5f;
-        int bw = U(360), x = (W - bw) / 2, y = U(14);
-        var panel = new Rectangle(x - U(56), y - U(8), bw + U(112), U(46));
-        Panel(panel);
-        // Clickable RTS top-bar controls right below the balance bar (PT4 cursor-first RTS).
-        speedBtns.Clear();
-        pauseBtn = modeBtn = Rectangle.Empty;
-        if (Command && !ShowResult)
-        {
-            int cy = panel.Bottom + U(4), bh = U(16), pw = U(38), sw = U(30), mw = U(60), gap = U(4);
-            int totalW = pw + 4 * (sw + gap) + (B.Player.Active && !Deploying ? gap + mw : 0);
-            int cx = W / 2 - totalW / 2;
-            pauseBtn = new Rectangle(cx, cy, pw, bh);
-            bool ph = pauseBtn.Contains(Mouse);
-            Panel(pauseBtn, Paused || ph ? Gold : null);
-            TextC(Paused ? "RUN" : "PAUSE", pauseBtn.Center.X, cy + U(5), Paused || ph ? Gold : Color.White, 1);
-            cx += pw + gap;
-            string[] sl = { "0.5X", "1X", "2X", "3X" };
-            for (int i = 0; i < 4; i++)
-            {
-                var sr = new Rectangle(cx, cy, sw, bh);
-                speedBtns.Add((sr, i));
-                bool on = !Paused && SpeedIdx == i, sh = sr.Contains(Mouse);
-                Panel(sr, on || sh ? Gold : null);
-                TextC(sl[i], sr.Center.X, cy + U(5), on ? Gold : sh ? Color.White : Dim, 1);
-                cx += sw + gap;
-            }
-            if (B.Player.Active && !Deploying)
-            {
-                modeBtn = new Rectangle(cx, cy, mw, bh);
-                bool mh = modeBtn.Contains(Mouse);
-                Panel(modeBtn, mh ? Gold : Friendly);
-                TextC("FIGHT", modeBtn.Center.X, cy + U(5), mh ? Gold : Color.White, 1);
-            }
-        }
-        kit.Shield(new Rectangle(x - U(48), y - U(4), U(30), U(36)), SideArms(0));
-        kit.Shield(new Rectangle(x + bw + U(18), y - U(4), U(30), U(36)), SideArms(1));
-        kit.TugBar(new Rectangle(x, y + U(20), bw, U(8)), f, SideArms(0).Ui, Foe);
-        Text($"{mine}", x, y, SideArms(0).Ui);
-        TextR($"{foes}", x + bw, y, Foe);
-        int t = (int)B.Time;
-        float pace = (Command && B.Player.Active ? 0.25f : 1) * Speed;
-        string state = Paused ? "PAUSED" : pace != 1 ? $"X{pace:0.###}" : "";
-        kit.Icon("clock", W / 2 - TW($"{t / 60}:{t % 60:00} {state}".Trim()) / 2 - U(12), y + U(2), Dim, 1);
-        TextC($"{t / 60}:{t % 60:00} {state}".Trim(), W / 2f, y, Color.White);
-        if (B.Arcane)
-        {
-            // The Tide (docs/ARCANA.md AR3), under the tug bar while any company can cast: the power left in this ground.
-            var tb = new Rectangle(x + bw / 4, y + U(31), bw / 2, U(3));
-            kit.Gauge(tb, B.TideCap <= 0 ? 0 : B.Tide / B.TideCap, new Color(150, 140, 255));
-            if (new Rectangle(tb.X, tb.Y - U(4), tb.Width, tb.Height + U(8)).Contains(Mouse))
-                TextC($"THE TIDE {B.Tide:0} OF {B.TideCap:0}{(B.Options.TideTradition != "" ? $": A WELL OF THE {B.Options.TideTradition.ToUpperInvariant()}" : "")}", W / 2f, panel.Bottom + U(4), Color.White, 1);
-        }
-        if (B.Wall is SiegeWall w && !Deploying)
-        {
-            // The gate's strength under the balance bar, while it stands.
-            var g = new Rectangle(x + bw / 4, panel.Bottom + U(4), bw / 2, U(16));
-            Panel(g);
-            if (w.GateOpen || w.Breaches.Any()) TextC(w.GateOpen ? "THE GATE IS BROKEN" : "THE WALL IS BREACHED", W / 2f, g.Y + U(5), Gold, 1);
-            else
-            {
-                kit.Icon("tower", g.X + U(6), g.Y + U(5), Color.White, 1);
-                Text("GATE", g.X + U(18), g.Y + U(5), Color.White, 1);
-                kit.Gauge(new Rectangle(g.X + U(48), g.Y + U(5), g.Width - U(54), U(6)), w.GateHp / w.GateMax, Style.HorseBar);
-            }
-        }
-    }
-
-    /// The event feed as toasts down the left: an edge colour and an icon for what kind of news it is.
-    void Feed()
-    {
-        int y = U(10), shown = 0;
-        for (int i = B.Events.Count - 1; i >= 0 && shown < 6; i--, shown++)
-        {
-            var (text, at) = B.Events[i];
-            float alpha = Math.Clamp((6 - (B.Time - at)) / 1.5f, 0, 1);
-            var up = text.ToUpperInvariant();
-            var (c, icon) = up.StartsWith("VICTORY") || up.Contains("CAPTAIN IS SLAIN") ? (Gold, "crown")
-                : up.StartsWith("DEFEAT") || up.Contains("YOU HAVE FALLEN") ? (Bad, "skull")
-                : up.Contains("HORSE IS SLAIN") ? (Bad, "horse")
-                : up.Contains("GUARD BROKEN") ? (Bad, "shield")
-                : up.StartsWith("ENEMY") || up.StartsWith("THE ENEMY") ? (Foe, up.Contains("HORSE") || up.Contains("CAVALRY") ? "horse" : "sword")
-                : up.Contains("ROUT") || up.Contains("BREAK") || up.Contains("FLEE") ? (Warn, "flag")
-                : up.Contains("ARROW") || up.Contains("VOLLEY") ? (Ok, "arrow")
-                : (Color.White, "scroll");
-            // Keep clear of the balance bar in the middle.
-            int room = (W - U(472)) / 2 - U(40);
-            up = kit.Fit(up, room);
-            kit.Toast(U(10), y, up, c, icon, alpha);
-            y += U(21);
         }
     }
 
@@ -502,58 +393,6 @@ sealed partial class Hud
             float a = CamYaw + k * 0.45f;
             var tip = M((Command ? CamFocus : B.Player.Pos) + new Vector2(MathF.Cos(a), MathF.Sin(a)) * 22);
             Line(origin, tip, Color.White * 0.7f, U(1));
-        }
-    }
-
-    /// Bottom left: your own captain: mount, health, stamina and horse as bevelled gauges, rally and kills.
-    void PlayerPanel()
-    {
-        var p = B.Player;
-        var r = player;
-        Panel(r);
-        kit.Shield(new Rectangle(r.X + U(8), r.Y + U(10), U(26), U(31)), SideArms(0));
-        int x = r.X + U(42), y = r.Y + U(9), bw = U(150);
-        if (!p.Active)
-        {
-            Text(B.Options.PlayerWounded ? "WOUNDED" : "YOU HAVE FALLEN", x, y, Bad);
-            Text("COMMANDING FROM AFAR", x, y + U(22), Dim, 1);
-            Text($"KILLS {B.PlayerKills}", x, y + U(40), Color.White);
-            return;
-        }
-        string mount = p.Mounted ? (p.Couched ? "LANCE COUCHED" : $"{p.Horse!.Name.ToUpperInvariant()}  {MathF.Abs(p.Speed):0.0} M/S") : "ON FOOT";
-        Text(mount, x, y, p.Couched ? Gold : Color.White, 1);
-        if (p.Type.Ammo > 0) TextR($"{p.Ammo} SHOTS", x + U(60) + bw, y, p.Ammo > 0 ? Gold : Bad, 1); // your bow (P1)
-        y += U(14);
-        void Row(string icon, string label, float frac, Color c)
-        {
-            kit.Icon(icon, x, y, c, 1);
-            Text(label, x + U(12), y + U(1), Dim, 1);
-            kit.Gauge(new Rectangle(x + U(60), y, bw, U(8)), frac, c);
-            y += U(14);
-        }
-        Row("heart", "HEALTH", p.Hp / p.Type.MaxHp, Bad);
-        Row("boot", B.Fevered ? "FEVER" : "STAMINA", p.Stamina / 100, B.Fevered ? Bad : Ok); // a curse on you shows in red (MA9)
-        if (B.AuraTier > 0) Row("star", B.AuraBlade ? "BLADE" : B.Quenched ? "QUENCHED" : B.Spent ? "SPENT" : B.Surge >= 1 ? $"SURGE {B.Surge:0}" : "AURA", B.Aura / Battle.AuraMax, B.Quenched ? Bad : B.Spent ? Dim : Style.Aura);
-        if (p.Mounted) Row("horse", "HORSE", p.HorseHp / p.Horse!.Hp, HorseCol);
-        else Text("NO HORSE", x + U(12), y + U(1), Dim, 1);
-        int rx = r.Right - U(10);
-        bool ready = B.RallyCooldown <= 0;
-        var rally = new Rectangle(rx - U(64), r.Bottom - U(30), U(64), U(18));
-        Rect(rally, ready ? Kit.Mul(Gold, 0.35f) : Color.Black * 0.4f);
-        Frame(rally, ready ? Gold : Color.White * 0.15f, U(1));
-        kit.Icon("flag", rally.X + U(5), rally.Y + U(6), ready ? Gold : Dim, 1);
-        TextR(ready ? $"RALLY {Ctl.Name(Act.Rally)}" : $"{B.RallyCooldown:0}", rally.Right - U(5), rally.Y + U(6), ready ? Gold : Dim, 1);
-        kit.Icon("skull", rx - U(64), r.Y + U(10), Dim, 1);
-        TextR($"{B.PlayerKills}", rx, r.Y + U(10), Color.White, 1);
-        // What is in your hands (P7), and the swap key when a second weapon waits.
-        string weapon = B.PlayerWeapon.ToUpperInvariant() + (B.HasSecondWeapon ? $" ({Ctl.Name(Act.SwapWeapon)})" : "");
-        if (TW(weapon, 1) < rally.X - x - U(8)) Text(weapon, x, r.Bottom - U(16), Dim, 1);
-        // The swing (P2): a riposte window open, a chain of blows under way.
-        if (!Command)
-        {
-            if (B.Mad) TextC("THE FLAME HAS YOU", W / 2f, H / 2f + U(36), Bad, 2);
-            else if (B.Riposting) TextC("RIPOSTE!", W / 2f, H / 2f + U(36), Gold, 2);
-            else if (B.Chain >= 1 && p.Action is UnitAction.Windup or UnitAction.Recover) TextC($"CHAIN X{B.Chain + 1}", W / 2f, H / 2f + U(36), B.Chain >= 3 ? Bad : Color.White, 1);
         }
     }
 
@@ -622,74 +461,6 @@ sealed partial class Hud
         TextC($"CLICK THE GROUND.  {Ctl.Name(Act.Cast)} NEXT SPELL, RMB CANCEL", W / 2f, y + n * bh + U(3), Dim, 1);
     }
 
-    /// The unit cards as a dock along the bottom: portrait in its side's cloth, number, tier, order, men and morale gauges.
-    void Cards()
-    {
-        if (cards.Count > 0)
-        {
-            var dock = new Rectangle(cards[0].R.X - U(8), cards[0].R.Y - U(6), cards[^1].R.Right - cards[0].R.X + U(16), cards[0].R.Height + U(12));
-            kit.PlateBody(dock, Kit.Rivet, 1, 0.8f);
-        }
-        var cloth = SideArms(0);
-        for (int ci = 0; ci < cards.Count; ci++)
-        {
-            var (r, s) = cards[ci];
-            int active = 0, routing = 0;
-            float moraleSum = 0;
-            foreach (var u in s.Units) if (u.Active) { active++; if (u.Routing) routing++; moraleSum += u.Morale; }
-            int morale = active == 0 ? 0 : (int)(moraleSum / active);
-            var (state, sc) = StateOf(s, active, routing, morale);
-            bool sel = Selected.Contains(s);
-            if (r.Height < U(50)) { StripCard(ci, r, s, active, morale, state, sc, sel, cloth); continue; }
-            bool hover = Command && r.Contains(Mouse);
-            Rect(new Rectangle(r.X + U(1), r.Y + U(2), r.Width, r.Height), Color.Black * 0.4f);
-            kit.VGrad(r, sel ? new Color(70, 60, 36) : hover ? new Color(46, 46, 50) : new Color(30, 32, 38), Kit.IronDark, 2);
-            var port = new Rectangle(r.X + U(3), r.Y + U(3), r.Width - U(6), U(46));
-            kit.VGrad(port, Kit.Mul(cloth.Cloth, 0.5f), Kit.IronDark, 2);
-            var type = s.Units.Count > 0 ? s.Units[0].Type : UnitType.Shieldman;
-            Icon(type, new Rectangle(port.X + U(12), port.Y + U(1), port.Width - U(24), port.Height - U(1)));
-            Frame(r, sel ? Gold : state is "STEADY" ? Color.Black * 0.7f : sc, U(sel ? 2 : 1));
-            if (active == 0) Rect(r, Color.Black * 0.45f);
-
-            int idx = ci + 1;
-            int bw = idx >= 10 ? U(18) : U(13);
-            Rect(new Rectangle(r.X + U(3), r.Y + U(3), bw, U(13)), sel ? Gold : Color.Black * 0.75f);
-            Text($"{idx}", r.X + U(5), r.Y + U(6), sel ? Kit.IronDark : Color.White, 1);
-            if (s.Restless > 0.15f) { Rect(new Rectangle(r.X + U(3), r.Y + U(46), (int)((r.Width - U(6)) * Math.Min(1, s.Restless / 0.75f)), U(3)), s.Restless > 0.5f ? Bad : Orange); if (s.Restless > 0.3f) Text("RST", r.X + U(4), r.Y + U(38), s.Restless > 0.5f ? Bad : Orange, 1); } // restless: the men's itch to go in (BattleUrge.cs)
-            // Its order as one picture in the corner (PT4); a crossed bow when it holds its fire, a dot for orders queued or a
-            // standing rule. Formation, drill, tier and the rest are on the hover card.
-            var (oi, oc) = OrderMark(s);
-            Rect(new Rectangle(r.Right - U(20), r.Y + U(3), U(18), U(18)), Color.Black * 0.65f);
-            kit.Icon(oi, r.Right - U(18), r.Y + U(5), oc, 2);
-            if (!s.FireAtWill || s.HoldSpells)
-            {
-                Rect(new Rectangle(r.Right - U(20), r.Y + U(23), U(18), U(18)), Color.Black * 0.65f);
-                kit.Icon("arrow", r.Right - U(18), r.Y + U(25), Style.Text, 2);
-                Line(new Vector2(r.Right - U(18), r.Y + U(25)), new Vector2(r.Right - U(4), r.Y + U(39)), Bad, U(2)); // struck through: holding fire
-            }
-            if (s.Rule != StandingRule.None || s.Queue.Count > 0) Rect(new Rectangle(r.Right - U(13), r.Y + U(44), U(5), U(5)), Gold);
-            // A gold flash when a new order reaches it (PT4 6): you see the order land, not only hear it.
-            if (OrderFlash(s) is float fl and > 0) { Rect(r, Gold * (0.35f * fl)); Frame(r, Gold, U(2)); }
-
-            // The troop's name by measured width; too long, its last word ("YEOMAN ARCHERS" -> "ARCHERS"), then cut.
-            string nm = s.Name.ToUpperInvariant();
-            if (TW(nm, 1) > r.Width - U(2)) nm = kit.Fit(nm.Split(' ').Last(), r.Width - U(2));
-            TextC(nm, r.X + r.Width / 2f, r.Y + U(52), Dim, 1);
-            TextC($"{active}/{s.StartCount}", r.X + r.Width / 2f, r.Y + U(61), Color.White);
-            kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(76), r.Width - U(8), U(6)), active / (float)Math.Max(1, s.StartCount), cloth.Ui);
-            kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(84), r.Width - U(8), U(6)), morale / 100f, MoraleColor(morale));
-            if (state == "STEADY" && fights.TryGetValue(s, out var fight)) (state, sc) = Standing(s, fight); // how its fight goes
-            if (state != "STEADY") kit.Chip(r.X + r.Width / 2 - (TW(state, 1) + U(10)) / 2, r.Y - U(20), state, sc);
-            EffectMarks(s, r);
-        }
-        if (hiddenCards > 0 && cards.Count > 0)
-        {
-            var last = cards[^1].R;
-            TextC($"+{hiddenCards} MORE", last.X + last.Width / 2f, last.Y - U(12), Gold, 1);
-        }
-    }
-    int hiddenCards;
-
     /// What each of your companies was last told (its order, target, formation, place), and when that changed: a new order
     /// flashes its card and flag for half a second (docs/PLAYTEST.md PT4 6).
     readonly Dictionary<Squad, (int Key, float At)> orderSeen = new();
@@ -697,24 +468,10 @@ sealed partial class Hud
     float? OrderFlash(Squad s)
     {
         int key = (int)s.Order * 7919 + (s.Target?.Id ?? -1) * 31 + (int)s.Formation * 131 + (int)(s.Anchor.X * 3) * 17 + (int)(s.Anchor.Y * 3);
-        if (!orderSeen.TryGetValue(s, out var seen)) { orderSeen[s] = (key, -9); return null; }
+        if (!orderSeen.TryGetValue(s, out var seen) || Ironfield.Ui.Instant) { orderSeen[s] = (key, -9); return null; } // shots freeze the clock: no flash stuck on
         if (seen.Key != key) orderSeen[s] = seen = (key, Ironfield.Ui.Now);
         float t = Ironfield.Ui.Now - seen.At;
         return t < 0.5f ? 1 - t / 0.5f : null;
-    }
-
-    /// A company card folded for the field view: its number, men standing, strength and morale, its state in colour.
-    void StripCard(int ci, Rectangle r, Squad s, int active, int morale, string state, Color sc, bool sel, Heraldry cloth)
-    {
-        kit.VGrad(r, sel ? new Color(70, 60, 36) : new Color(30, 32, 38), Kit.IronDark, 2);
-        Frame(r, sel ? Gold : state is "STEADY" ? Color.Black * 0.7f : sc, U(sel ? 2 : 1));
-        if (active == 0) Rect(r, Color.Black * 0.45f);
-        int idx = ci + 1, bw = idx >= 10 ? U(18) : U(13);
-        Rect(new Rectangle(r.X + U(3), r.Y + U(3), bw, U(13)), sel ? Gold : Color.Black * 0.75f);
-        Text($"{idx}", r.X + U(5), r.Y + U(6), sel ? Kit.IronDark : Color.White, 1);
-        TextR($"{active}", r.Right - U(4), r.Y + U(6), state is "STEADY" ? Color.White : sc, 1);
-        kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(19), r.Width - U(8), U(3)), active / (float)Math.Max(1, s.StartCount), cloth.Ui);
-        kit.Gauge(new Rectangle(r.X + U(4), r.Y + U(24), r.Width - U(8), U(3)), morale / 100f, MoraleColor(morale));
     }
 
     /// The effects on a company (docs/archive/COMPANIONS_MAGIC.md A6): up to four icons along the foot of its portrait, gold for
@@ -816,135 +573,23 @@ sealed partial class Hud
         else if (!p.Mounted && B.LooseHorses.Any(h => Vector2.DistanceSquared(h.Pos, p.Pos) < 2.8f * 2.8f)) prompt = $"{Ctl.Name(Act.Interact)}  MOUNT HORSE";
         else if (p.Mounted && !p.Couched && p.Speed > 6) prompt = $"{Ctl.Name(Act.Couch)}  COUCH LANCE";
         else if (p.Mounted && MathF.Abs(p.Speed) < 1.5f) prompt = $"{Ctl.Name(Act.Interact)}  DISMOUNT";
-        if (prompt != null)
+        // Orders by looking (PT4): hold the hold key to plant the line where you look; charge sends them at the company you look at.
+        if (HoldPlace >= 0.25f) prompt = "LET GO: HOLD THAT GROUND";
+        else if (prompt == null && LookFoe is { Alive: > 0 } lf) prompt = $"{Ctl.Name(Act.Charge)}  ATTACK {lf.Name.ToUpperInvariant()}";
+        if (prompt != null && !WheelOpen)
         {
-            int pw = TW(prompt, 1) + U(14), py = H / 2 + (H / 2 - U(120)) / 2; // between the crosshair and the cards
+            int pw = TW(prompt, 1) + U(14), py = H / 2 + U(132);
             Rect(new Rectangle(cx - pw / 2, py - U(5), pw, U(17)), Color.Black * 0.5f);
             TextC(prompt, cx, py, Color.White, 1);
         }
     }
 
-    static readonly Dictionary<Cmd, string> OrderIcons = new()
-    {
-        [Cmd.Charge] = "sword", [Cmd.AttackMove] = "up", [Cmd.Advance] = "up", [Cmd.FormHere] = "crown", [Cmd.Spacing] = "chain", [Cmd.FallBack] = "back",
-        [Cmd.FireAtWill] = "arrow", [Cmd.Hold] = "shield", [Cmd.Follow] = "flag", [Cmd.Formation] = "star", [Cmd.Merge] = "chain", [Cmd.Relieve] = "heart", [Cmd.Split] = "tower", [Cmd.Rule] = "scroll",
-    };
-
-    /// Order keys as icons only below 1120 wide (1280x720 and up show full labeled buttons).
-    bool CompactOrders => W < U(1120);
-
-    /// The six orders a new player needs, big on the palette; the rest are behind MORE.
-    static readonly Cmd[] MainOrders = { Cmd.Charge, Cmd.AttackMove, Cmd.Hold, Cmd.Follow, Cmd.FallBack, Cmd.FireAtWill };
-    static readonly Dictionary<Cmd, string> ShortOrder = new() { [Cmd.AttackMove] = "ATK MOVE", [Cmd.FormHere] = "ON ME", [Cmd.Formation] = "SHAPE", [Cmd.Rule] = "RULE", [Cmd.Merge] = "FOLD IN", [Cmd.FireAtWill] = "FIRE" };
-    static readonly Cmd[] MoreOrdersList = { Cmd.Advance, Cmd.FormHere, Cmd.Spacing, Cmd.Formation, Cmd.Relieve, Cmd.Split, Cmd.Merge, Cmd.Rule };
-
-    bool HasRangedOrCaster()
-    {
-        var list = Selected.Count > 0 ? Selected : (IEnumerable<Squad>)Mine;
-        return list.Any(s => s.Alive > 0 && (s.Units.Any(u => u.Active && u.Type.Ammo > 0) || Battle.CasterCompany(s)));
-    }
-
-    /// An order as a picture: the icon a card, a flag and the palette all use for what a company was told.
-    static (string Icon, Color Col) OrderMark(Squad s) => s.Order switch
-    {
-        Order.Charge => ("sword", s.Target != null ? Bad : Orange),
-        Order.Follow => ("flag", Friendly),
-        _ => ("shield", Style.Text),
-    };
-
-    /// The order keys in command view: an icon, the order and its key on each.
-    void CommandPanel()
-    {
-        if (buttons.Count == 0) return;
-        var first = new Rectangle(buttons.Min(b => b.R.X), buttons.Min(b => b.R.Y), 0, 0); // the palette's top left (MORE sits at the bottom)
-        int right = buttons.Max(b => b.R.Right), bottom = buttons.Max(b => b.R.Bottom); // the keys fill by column, so the last is not the far corner
-        var area = new Rectangle(first.X - U(8), first.Y - U(24), right - first.X + U(16), bottom - first.Y + U(32));
-        Panel(area);
-        Text(Selected.Count == 0 ? "ORDERS: ALL TROOPS" : "ORDERS: " + string.Join(" ", cards.Select((c, i) => Selected.Contains(c.S) ? $"{i + 1}" : "").Where(x => x != "")),
-            area.X + U(8), area.Y + U(8), Gold, 1);
-        foreach (var (r, c) in buttons)
-        {
-            if (c == Cmd.More || r.Height >= U(30)) { PaletteButton(r, c); continue; }
-            bool hover = r.Contains(Mouse);
-            Rect(new Rectangle(r.X + U(1), r.Y + U(2), r.Width, r.Height), Color.Black * 0.4f);
-            kit.VGrad(r, hover ? Kit.Mul(Gold, 0.5f) : new Color(36, 36, 42), hover ? Kit.Mul(Gold, 0.2f) : Kit.IronDark, 1);
-            Frame(r, hover ? Gold : Color.Black * 0.7f, U(1));
-            Rect(new Rectangle(r.X + U(1), r.Y + U(1), r.Width - U(2), U(1)), Color.White * (hover ? 0.3f : 0.1f));
-            var (label, act) = Orders[c];
-            // A small one under MORE: icon and name; its key shows on hover (the name is what a new player reads).
-            kit.Icon(OrderIcons[c], r.X + U(4), r.Y + U(7), hover ? Color.White : Style.Text, 1);
-            string key = act is Act k ? Ctl.Name(k) : "";
-            TextC(kit.Fit(hover && key != "" ? key : ShortOrder.GetValueOrDefault(c, label), r.Width - U(18)), r.X + U(14) + (r.Width - U(14)) / 2f, r.Y + U(7), hover ? Kit.Parchment : Style.Text, 1);
-        }
-        if (CompactOrders && buttons.FirstOrDefault(b => b.R.Contains(Mouse)) is { R.Width: > 0 } h)
-        {
-            string label = Orders[h.C].Label;
-            int lw = TW(label, 1) + U(12);
-            var tr = new Rectangle(Math.Min(h.R.Center.X - lw / 2, W - lw - U(4)), area.Y - U(22), lw, U(18));
-            Panel(tr);
-            TextC(label, tr.Center.X, tr.Y + U(5), Color.White, 1);
-        }
-    }
-
-    /// A big order button (a picture, its name under it, its key in the corner) or the MORE fold.
-    void PaletteButton(Rectangle r, Cmd c)
-    {
-        bool hover = r.Contains(Mouse), on = c == Cmd.AttackMove && AttackMoveMode;
-        bool dim = c == Cmd.FireAtWill && !HasRangedOrCaster();
-        Rect(new Rectangle(r.X + U(1), r.Y + U(2), r.Width, r.Height), Color.Black * 0.4f);
-        kit.VGrad(r, hover || on ? Kit.Mul(Gold, 0.5f) : new Color(40, 40, 46), hover || on ? Kit.Mul(Gold, 0.2f) : Kit.IronDark, 1);
-        Frame(r, on || hover ? Gold : Color.Black * 0.7f, U(on ? 2 : 1));
-        Rect(new Rectangle(r.X + U(1), r.Y + U(1), r.Width - U(2), U(1)), Color.White * (hover ? 0.3f : 0.12f));
-        if (c == Cmd.More) { TextC(MoreOrders ? "FEWER ORDERS" : "MORE ORDERS", r.Center.X, r.Y + U(7), hover ? Color.White : Style.Text, 1); return; }
-        var (label, act) = Orders[c];
-        var col = dim ? Dim * 0.55f : on ? Gold : hover ? Color.White : Style.Text;
-        kit.Icon(OrderIcons[c], r.Center.X - U(10), r.Y + U(6), col, 3);
-        TextC(ShortOrder.GetValueOrDefault(c, label), r.Center.X, r.Bottom - U(12), col, 1);
-        if (act is Act k) TextR(Ctl.Name(k), r.Right - U(3), r.Y + U(3), hover ? Kit.Parchment : Dim, 1);
-    }
-
     Vector2 WheelPos() => WheelCenter is Point p
         ? new Vector2(Math.Clamp(p.X, U(200), Math.Max(U(200), W - U(200))), Math.Clamp(p.Y, U(170), Math.Max(U(170), H - U(170))))
-        : new Vector2(W / 2f, H / 2f);
-
-    void Wheel()
-    {
-        Rect(new Rectangle(0, 0, W, H), Color.Black * 0.25f);
-        var c = WheelPos();
-        var order = WheelOrder;
-        for (int i = 0; i < order.Length; i++)
-        {
-            float a = -MathHelper.PiOver2 + i * MathHelper.TwoPi / order.Length;
-            var at = c + new Vector2(MathF.Cos(a), MathF.Sin(a)) * U(130);
-            var r = new Rectangle((int)at.X - U(58), (int)at.Y - U(14), U(116), U(28));
-            bool on = i == WheelSector;
-            Panel(r, on ? Gold : Edge, on ? 2 : 1);
-            if (on) Rect(r, Gold * 0.25f);
-            var (label, act) = Orders[order[i]];
-            TextC(label, at.X, at.Y - U(9), on ? Gold : Color.White, 1);
-            if (act is Act k) TextC(Ctl.Name(k), at.X, at.Y + U(2), Dim, 1);
-        }
-        var inner = new Rectangle((int)c.X - U(60), (int)c.Y - U(16), U(120), U(32));
-        Panel(inner);
-        TextC("ORDERS TO", c.X, c.Y - U(10), Dim, 1);
-        TextC(Selected.Count == 0 ? "ALL TROOPS" : string.Join(" ", cards.Select((cd, i) => Selected.Contains(cd.S) ? $"{i + 1}" : "").Where(x => x != "")),
-            c.X, c.Y + U(1), Gold, 1);
-    }
+        : new Vector2(W / 2f, H / 2f - U(Div == null ? 96 : 0)); // the order ring sits over the captain's head, not on him
 
     /// Wheel sectors clockwise from the top.
     public static readonly Cmd[] WheelOrder = { Cmd.Charge, Cmd.Advance, Cmd.FormHere, Cmd.Spacing, Cmd.FallBack, Cmd.FireAtWill, Cmd.Hold, Cmd.Follow };
-
-    void Hints()
-    {
-        string s = Command
-            ? $"{Ctl.Name(Act.Help)} KEYS   {Ctl.Name(Act.Pause)} PAUSE   {Ctl.Name(Act.CommandView)} {(B.Player.Active ? "FIELD" : "BODY")}"
-            : $"{Ctl.Name(Act.Help)} KEYS   {Ctl.Name(Act.OrderWheel)} ORDERS   {Ctl.Name(Act.CommandView)} COMMAND   {Ctl.Name(Act.Menu)} MENU";
-        int panelTop = Command ? (Div != null && goals.Count > 0 ? goals[0].R.Y - U(48) : buttons.Count > 0 ? buttons.Min(b => b.R.Y) - U(36) : H - U(18)) : H - U(18);
-        int y = panelTop;
-        if (cards.Count > 0 && !Command && W - U(12) - TW(s, 1) < cards[^1].R.Right + U(10))
-            y = cards[^1].R.Y - (hiddenCards > 0 ? U(24) : U(14));
-        TextR(s, W - U(10), y, Color.White * 0.65f, 1);
-    }
 
     void Banners()
     {
@@ -1085,6 +730,9 @@ sealed partial class Hud
         };
         if (fights.TryGetValue(s, out var fight)) lines.Insert(3, (FightLine(s, fight), Standing(s, fight).Col));
         if (s.Company?.Traits is { Length: > 0 } tr) lines.Add(("OFFICER: " + string.Join(", ", tr).ToUpperInvariant(), Gold));
+        // Its sergeant (OF5): what he is doing, or how long until another man steps up.
+        if (s.SgtDoing == SgtTask.Down) lines.Add(($"SERGEANT DOWN: A GRADE WORSE FOR {MathF.Max(0, s.SgtDownAt + Battle.StepUpTime(s) - B.Time):0} S", Bad));
+        else if (Battle.SergeantUp(s)) lines.Add(("SERGEANT: " + (s.SgtDoing == SgtTask.None ? "KEEPING ORDER" : Battle.SergeantText(s.SgtDoing)), Dim));
         int w = lines.Max(l => TW(l.Item1, 1)) + U(16), h = lines.Count * U(13) + U(10);
         var r = new Rectangle(Math.Min(Mouse.X + U(18), W - w - 4), Math.Min(Mouse.Y + U(18), H - h - 4), w, h);
         Panel(r);
@@ -1116,31 +764,4 @@ sealed partial class Hud
         for (int i = 0; i < lines.Count; i++) Text(lines[i].Item1, r.X + U(8), r.Y + U(6) + i * U(13), lines[i].Item2, 1);
     }
 
-    /// With one company selected: its full detail above the cards.
-    void Detail()
-    {
-        if (Selected.Count != 1) return;
-        var s = Selected.First();
-        if (s.Units.Count == 0) return;
-        var t = s.Units[0].Type;
-        var act = s.Units.Where(u => u.Active).ToList();
-        int bot = tray.Height > 0 ? tray.Y - U(6) : player.Y - U(6);
-        var r = new Rectangle(U(10), bot - U(110), U(280), U(110));
-        Panel(r, Friendly);
-        int x = r.X + U(8), y = r.Y + U(6);
-        Text((s.Company?.Name ?? s.Name).ToUpperInvariant(), x, y, Gold, 1);
-        y += U(14);
-        Text($"{t.Name.ToUpperInvariant()}  {s.Alive}/{s.StartCount}  KILLS {s.Kills}", x, y, Color.White, 1);
-        y += U(14);
-        Text($"HP {t.MaxHp:0}  ARMOUR {t.Armor:0}  DMG {t.Damage:0}  REACH {t.Reach:0.0}", x, y, Dim, 1);
-        y += U(14);
-        Text($"{(s.Swarm ? "" : Battle.GradeName(s.Grade).ToUpperInvariant() + ", ")}{StateOf(s)}, {FormationName(s.Formation)}" + (t.Ammo > 0 ? $", {act.Sum(u => u.Ammo)} ARROWS" : ""), x, y, Dim, 1);
-        y += U(14);
-        float morale = act.Count == 0 ? 0 : act.Average(u => u.Morale) / 100, stamina = act.Count == 0 ? 0 : act.Average(u => u.Stamina) / 100;
-        Text("MORALE", x, y, Dim, 1); Bar(new Rectangle(x + U(60), y + U(1), U(170), U(5)), morale, morale < 0.3f ? Bad : Ok);
-        y += U(12);
-        Text("STAMINA", x, y, Dim, 1); Bar(new Rectangle(x + U(60), y + U(1), U(170), U(5)), stamina, Warn);
-        y += U(12);
-        if (s.Company?.Traits is { Length: > 0 } tr) Text("OFFICER: " + string.Join(", ", tr).ToUpperInvariant(), x, y, Gold, 1);
-    }
 }

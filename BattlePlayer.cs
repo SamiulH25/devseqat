@@ -5,10 +5,37 @@ namespace Ironfield;
 /// Battle: the player's own unit (input to movement and actions, mounting, rallying).
 public partial class Battle
 {
+    /// While you command, the captain keeps his own guard (docs/PLAYTEST.md PT4): he turns to the nearest foe winding up a
+    /// blow at him and blocks on the right side. He never parries and never strikes back, so a captain left in a melee
+    /// still goes down; it only buys the time to look at the field. Read from the sim alone, so replays agree.
+    public bool SelfGuard { get; private set; }
+    AttackDir guardDir;
+    /// The side the player's block covers: the mouse's, or the guard's own read while you command.
+    AttackDir BlockDir => SelfGuard ? guardDir : Input.Dir;
+    const float GuardReach = 3.5f;
+
+    void Guard(Unit p, ref PlayerInput inp)
+    {
+        Unit? foe = null;
+        float best = GuardReach * GuardReach;
+        foreach (var u in Units)
+        {
+            if (!u.Active || u.Team == p.Team || u.Target != p || u.Action != UnitAction.Windup) continue;
+            float d = Vector2.DistanceSquared(u.Pos, p.Pos);
+            if (d < best) { best = d; foe = u; }
+        }
+        if (foe == null) return;
+        SelfGuard = true;
+        guardDir = Dirs.Mirror(foe.Swing);
+        p.Face(foe.Pos - p.Pos);
+        inp.Block = true;
+    }
+
     void UpdatePlayer(Unit p, float dt)
     {
         var inp = Madness(p, Input, dt);
-        if (Commanding && !Mad) { inp = default; inp.Dir = Input.Dir; p.Charging = false; p.Charge = 0; }
+        SelfGuard = false;
+        if (Commanding && !Mad) { inp = default; inp.Dir = Input.Dir; p.Charging = false; p.Charge = 0; Guard(p, ref inp); }
         else p.Facing = inp.Facing;
 
         UpdateAura(p, inp.Aura, dt);

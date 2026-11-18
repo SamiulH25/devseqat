@@ -51,7 +51,7 @@ public partial class Battle
         else (enemy, d) = Notice(u, enemy, d); // the captain draws the eye (BattleNotice.cs)
         u.EnemyDist = d;
         if (!u.Mounted && GivesGround(u)) return; // rabble who just saw him kill give ground
-        if (HuntThink(u, s, ref enemy, ref d)) return; // sent for you, covering you, guarding their captain (BattleHunt.cs)
+        if (HuntThink(u, s, ref enemy, ref d)) return; // sent for you, guarding their captain (BattleHunt.cs)
         u.EnemyDist = d;
         if (u.Ammo > 0 && !u.Mounted && LoosesAtCaptain(u, s)) return; // a volley marked on you
         if (u.Mounted) { ThinkCav(u, s, enemy, d, dt); return; }
@@ -63,7 +63,7 @@ public partial class Battle
             if (toSlot > 0.4f) { var back = Via(u, u.Slot) - u.Pos; u.Wish = back / MathF.Max(0.01f, back.Length()) * u.Type.Speed; u.Face(back); }
             return;
         }
-        bool free = s.HuntCaptain || s.CoverUntil > Time || u.Lunging; // sent for the captain, or to cover him, or lunging on his own: a run, not a line
+        bool free = s.HuntCaptain || u.Lunging; // sent for the captain, or lunging on his own: a run, not a line
         bool charge = s.Order == Order.Charge || free;
         if (charge && s.Target != null && d > 3 && !free) (enemy, d) = Nearest(u, s.Target); // go for the ordered target
 

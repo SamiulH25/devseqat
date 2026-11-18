@@ -318,6 +318,20 @@ static partial class Kit
         ["house"] = new[] { "...X...", "..XXX..", ".XXXXX.", "XXXXXXX", ".XoooX.", ".Xo.oX.", ".Xo.oX." },
         ["cross"] = new[] { "...X...", "...X...", ".XXXXX.", "...X...", "...X...", "...X...", "...X..." },
         ["hammer"] = new[] { ".XXXX..", "XXXXXX.", ".XXoX..", "...o...", "...o...", "...o...", "...o..." },
+        // battle orders (Hud.Deck.cs): a step forward, formations as men seen from above, spacing, split, fold in, relieve, stakes, pause and run
+        ["step"] = new[] { ".......", "...X...", "..XXX..", ".XX.XX.", "XX...XX", ".......", "......." },
+        ["f_line"] = new[] { ".......", ".......", "X.X.X.X", ".......", "X.X.X.X", ".......", "......." },
+        ["f_wall"] = new[] { ".......", "XXXXXXX", "XoXoXoX", "XXXXXXX", ".......", "o.o.o.o", "......." },
+        ["f_square"] = new[] { "X.X.X.X", ".......", "X.....X", ".......", "X.....X", ".......", "X.X.X.X" },
+        ["f_wedge"] = new[] { "...X...", ".......", "..X.X..", ".......", ".X.X.X.", ".......", "X.X.X.X" },
+        ["f_loose"] = new[] { "X...X..", "..X...X", ".......", ".X...X.", "...X...", "X.....X", "..X.X.." },
+        ["spread"] = new[] { ".......", ".X...X.", "XX...XX", "XXXXXXX", "XX...XX", ".X...X.", "......." },
+        ["split"] = new[] { "...X...", "...X...", "..XXX..", ".XX.XX.", "XX...XX", "X.....X", "X.....X" },
+        ["merge"] = new[] { "X.....X", "X.....X", "XX...XX", ".XX.XX.", "..XXX..", "...X...", "...X..." },
+        ["relieve"] = new[] { "..X....", ".XXXXXX", "..X....", ".......", "....X..", "XXXXXX.", "....X.." },
+        ["stakes"] = new[] { ".......", "..X..X.", ".X..X..", ".X..X..", "X..X..X", "X..X..X", "ooooooo" },
+        ["pause"] = new[] { ".......", ".XX.XX.", ".XX.XX.", ".XX.XX.", ".XX.XX.", ".XX.XX.", "......." },
+        ["play"] = new[] { ".X.....", ".XX....", ".XXX...", ".XXXX..", ".XXX...", ".XX....", ".X....." },
     };
 
     public static void Icon(this Ui ui, string name, int x, int y, Color c, int scale = 2)

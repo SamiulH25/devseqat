@@ -387,7 +387,7 @@ public sealed partial class Battle
         UpdateMorale(dt);
         UpdateUrge(dt); // each man's itch to go in, or hang back (BattleUrge.cs)
         UpdateAlerts(dt); // what needs you (BattleAlerts.cs): reads the sim, changes nothing
-        UpdateHunt(dt); // your men cover you when they come for you (BattleHunt.cs)
+        UpdateHunt(dt); // the stand goal when four come for you (BattleHunt.cs)
         UpdateBanner();
         UpdateRescue(dt);
         Mark(8);
@@ -449,6 +449,7 @@ public sealed partial class Battle
         PlaceMen(s, n); // places in the ranks, and slots (BattleRanks.cs)
         Close(s, dt);   // a charging company closes as a body
         UpdateFormed(s, dt); // its order: lost and won back (BattleDrill.cs)
+        if (tick % 60 == 30) UpdateSergeant(s); // its sergeant keeps its order (BattleSergeants.cs)
         if (tick % 60 == 0) TipCompany(s); // a company whose men have lunged one by one goes in as a body (BattleUrge.cs)
     }
 

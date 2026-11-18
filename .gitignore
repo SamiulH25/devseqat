@@ -14,3 +14,8 @@ Content/bin/
 .DS_Store
 Thumbs.db
 balance/
+dist/
+Data/world.json.bak
+.midas/
+BlenderMCP/customer_uuid.txt
+__pycache__/

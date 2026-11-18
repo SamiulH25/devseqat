@@ -46,6 +46,7 @@ public sealed partial class Campaign
         Factions.Bind(S.Factions);
         RegisterOwnForm(); // your own form is made in play (MA6)
         MigrateGear();
+        foreach (var d in S.Divisions) d.Goal = Ironfield.Goal.FromName(d.Goal).Name; // old goal names to posts (OF6)
         FillNatures();
         LearnForms();
         SyncOrders();
@@ -63,10 +64,12 @@ public sealed partial class Campaign
 
     /// A new campaign; `realm` is the realm you start in (docs/archive/WORLD.md W5): its capital, its villages' recruits.
     /// A new campaign; `making` is the captain from the character creator (null: the plain captain, who picks a road by event).
-    public static Campaign New(int seed, int realm = 0, CaptainMaking? making = null)
+    /// `layout` = the map's layout (-1: WorldMap.CurrentLayout, or IRONFIELD_MAP_LAYOUT when set: 5 = the designed world).
+    public static Campaign New(int seed, int realm = 0, CaptainMaking? making = null, int layout = -1)
     {
+        if (layout < 0) layout = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_MAP_LAYOUT"), out int l) ? l : WorldMap.CurrentLayout;
         var s = new CampaignState { Seed = seed, Gold = B.StartGold, Ironman = Settings.Current.Ironman, MapExtent = WorldMap.Extent,
-            Layout = WorldMap.CurrentLayout, DataRealms = Factions.All.Count };
+            Layout = layout, DataRealms = Factions.All.Count };
         s.Captain.Renown = B.StartRenown;
         StartingSkills(s.Captain);
         if (making != null) { Origins.Shape(s.Captain, making); if (Origins.Free(making)) s.Captain.Contract = -1; }
@@ -251,6 +254,7 @@ public sealed partial class Campaign
         foreach (var p in S.Parties)
         {
             p.Cooldown -= h;
+            if (Map.Designed) p.Pos = Map.InLand(p.Pos); // one placed out at sea (spawns scatter) is put ashore
             if (p.Down || (p.Kind == PartyKind.Player && p.Resting)) continue;
             Vector2? target = null;
             if (p.ChaseId >= 0)
@@ -270,14 +274,17 @@ public sealed partial class Campaign
                 if (route.Count > 1) { t = route[0]; waypoint = true; }
             }
             else if (p.Kind == PartyKind.Player) route.Clear();
+            // On a designed map anyone whose straight way crosses the sea goes round by the land (docs/WORLDMAP.md WM2).
+            bool seaTurn = !waypoint && Map.Designed && SeaRoute(p, ref t);
             var d = t - p.Pos;
             float dist = d.Length(), step = Speed(p) * Map.SpeedFactor(p.Pos, B.RoadBonus) * h;
-            if (dist < 1e-3f) { if (waypoint) route.RemoveAt(0); else p.Moving = false; continue; }
+            if (dist < 1e-3f) { if (waypoint) route.RemoveAt(0); else if (seaTurn) seaRoutes[p.Id].Way.RemoveAt(0); else p.Moving = false; continue; }
             p.Facing = MathF.Atan2(d.Y, d.X);
             if (dist <= step)
             {
                 p.Pos = t;
                 if (waypoint) route.RemoveAt(0);
+                else if (seaTurn) seaRoutes[p.Id].Way.RemoveAt(0);
                 else
                 {
                     if (p.Kind == PartyKind.Player) route.Clear();
@@ -290,6 +297,26 @@ public sealed partial class Campaign
             if (p.Kind == PartyKind.Player) Practise("Logistics", MathF.Min(dist, step) * 0.006f); // days on the march (F4)
             p.Pos = Map.InLand(p.Pos);
         }
+    }
+
+    /// Ways round the sea for parties other than the marching player, by party id: the goal they were planned for and the
+    /// points still to walk. Not saved: planned again when wanted.
+    readonly Dictionary<int, (Vector2 Goal, List<Vector2> Way)> seaRoutes = new();
+
+    /// Points `t` at the next turn of a way round the sea when the straight line to it crosses water; true if it did.
+    bool SeaRoute(Party p, ref Vector2 t)
+    {
+        if (seaRoutes.TryGetValue(p.Id, out var r) && Vector2.DistanceSquared(r.Goal, t) < 64)
+        {
+            while (r.Way.Count > 1 && Vector2.DistanceSquared(r.Way[0], p.Pos) < 0.25f) r.Way.RemoveAt(0);
+            if (r.Way.Count > 1) { t = r.Way[0]; return true; }
+        }
+        seaRoutes.Remove(p.Id);
+        if (Map.OverLand(p.Pos, t)) return false;
+        var way = Map.PlanRoute(p.Pos, t, B.RoadBonus);
+        seaRoutes[p.Id] = (t, way);
+        if (way.Count > 1) { t = way[0]; return true; }
+        return false;
     }
 
     void Encounters()

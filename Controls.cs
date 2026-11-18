@@ -28,7 +28,7 @@ public enum Act
     // campaign map panels (later additions)
     LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen, InventoryScreen, QuestsScreen,
     // sergeants (docs/SERGEANTS.md)
-    Horn, AnswerA, AnswerB,
+    Horn,
 }
 
 public enum MouseButton { Left, Right, Middle, X1, X2 }
@@ -95,6 +95,8 @@ public sealed class Controls
     public float Sensitivity = 1;
     public bool InvertY;
     public readonly List<string> Problems = new();
+    /// Actions that once were and are gone (an old controls.json may still bind them): skipped without a complaint.
+    static readonly HashSet<string> Retired = new(StringComparer.OrdinalIgnoreCase) { "AnswerA", "AnswerB" };
 
     KeyboardState kb, pkb;
     MouseState ms, pms;
@@ -119,7 +121,7 @@ public sealed class Controls
         [Act.AuraBlade] = new[] { "ALT" }, [Act.Form1] = new[] { "U" }, [Act.Form2] = new[] { "I" }, [Act.Form3] = new[] { "O" }, [Act.GreatForm] = new[] { "L" }, [Act.Relic] = new[] { "BACKSPACE" },
         [Act.Cast] = new[] { "P" }, [Act.Merge] = new[] { "," }, [Act.Slower] = new[] { "[" }, [Act.Faster] = new[] { "]" },
         [Act.Relieve] = new[] { "." }, [Act.SplitCompany] = new[] { "/" }, [Act.StandingOrder] = new[] { "=" },
-        [Act.Horn] = new[] { "TILDE" }, [Act.AnswerA] = new[] { "F6" }, [Act.AnswerB] = new[] { "F7" },
+        [Act.Horn] = new[] { "TILDE" },
         [Act.LordsScreen] = new[] { "L" }, [Act.SkillsScreen] = new[] { "K" }, [Act.RealmScreen] = new[] { "R" },
         [Act.DivisionsScreen] = new[] { "V" }, [Act.AtlasScreen] = new[] { "M" }, [Act.SiegeScreen] = new[] { "B" },
         [Act.InventoryScreen] = new[] { "I" }, [Act.QuestsScreen] = new[] { "J" },
@@ -138,11 +140,11 @@ public sealed class Controls
         [Act.PartyScreen] = "PARTY SCREEN (MAP)", [Act.Speed1] = "SPEED X1 (MAP)", [Act.Speed2] = "SPEED X3 (MAP)", [Act.Speed3] = "SPEED X8 (MAP)",
         [Act.FollowParty] = "FOLLOW YOUR PARTY (MAP)", [Act.QuickSave] = "QUICK SAVE", [Act.QuickLoad] = "QUICK LOAD",
         [Act.Formation] = "CYCLE FORMATION", [Act.Bash] = "SHIELD BASH / KICK", [Act.SwapWeapon] = "SWAP WEAPON",
-        [Act.NextDivision] = "CYCLE SERGEANT (GOALS)", [Act.GroundView] = "GROUND MAP", [Act.Stakes] = "PLANT STAKES (LONGBOWMEN)",
+        [Act.NextDivision] = "CYCLE OFFICER", [Act.GroundView] = "GROUND MAP", [Act.Stakes] = "PLANT STAKES (LONGBOWMEN)",
         [Act.AuraBlade] = "AURA BLADE (HOLD)", [Act.Form1] = "FORM 1", [Act.Form2] = "FORM 2", [Act.Form3] = "FORM 3", [Act.GreatForm] = "GREAT FORM", [Act.Relic] = "RAISE THE RELIC (ONCE A BATTLE)",
         [Act.Cast] = "CAST (CASTERS, COMMAND VIEW)", [Act.Merge] = "FOLD SELECTED INTO THE FULLEST",
         [Act.Slower] = "BATTLE SLOWER", [Act.Faster] = "BATTLE FASTER", [Act.Relieve] = "RELIEVE (FRESH TAKES THE TIRED'S PLACE)", [Act.SplitCompany] = "SPLIT A COMPANY IN TWO", [Act.StandingOrder] = "STANDING ORDER (CYCLE)",
-        [Act.Horn] = "SOUND THE HORN (SERGEANTS' PLANS)", [Act.AnswerA] = "ANSWER A SERGEANT: FIRST CHOICE", [Act.AnswerB] = "ANSWER A SERGEANT: SECOND CHOICE",
+        [Act.Horn] = "SOUND THE HORN (OFFICERS' PLANS)",
         [Act.LordsScreen] = "LORDS AND COMPANIONS (MAP)", [Act.SkillsScreen] = "THE CAPTAIN (MAP)", [Act.RealmScreen] = "THE REALMS (MAP)",
         [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)", [Act.InventoryScreen] = "KIT AND BAGGAGE (MAP)", [Act.QuestsScreen] = "QUESTS (MAP)",
     };
@@ -203,7 +205,7 @@ public sealed class Controls
             if (root["Bindings"] is JsonObject binds)
                 foreach (var (name, value) in binds)
                 {
-                    if (!Enum.TryParse<Act>(name, true, out var act)) { c.Problems.Add($"UNKNOWN ACTION {name}"); continue; }
+                    if (!Enum.TryParse<Act>(name, true, out var act)) { if (!Retired.Contains(name)) c.Problems.Add($"UNKNOWN ACTION {name}"); continue; }
                     var list = new List<Bind>();
                     foreach (var item in value!.AsArray())
                     {

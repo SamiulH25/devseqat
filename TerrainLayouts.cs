@@ -4,7 +4,11 @@ namespace Ironfield;
 
 /// The shape a battlefield is built to (docs/archive/TERRAIN.md T2): what lies between and around the two armies.
 /// The armies meet along Z = 0; team 0 deploys at negative Z, team 1 at positive Z.
-public enum FieldLayout { Open, Ridge, TwoHills, Broken, Fen, RiverLine, WoodedFlank, ForestClearing, Village, Hedgerows, Pass }
+public enum FieldLayout { Open, Ridge, TwoHills, Broken, Fen, RiverLine, WoodedFlank, ForestClearing, Village, Hedgerows, Pass, Shore }
+
+/// The colour a field's open ground takes (docs/WORLDMAP.md WM3): meadow green, the taiga's dark moss, the highland moor, the
+/// tundra's frost, desert sand, the dry grass of an oasis. Drawing only, but the desert's sand is its ground layer too.
+public enum GroundLook { Green, Moss, Frost, Sand, Dry, Moor }
 
 /// Terrain: field layouts. Each one shapes the heights (`LayoutHeight`) and paints its ground (`PaintLayout`).
 /// A layout draws on its own random stream, so the rest of a field (hills, woods, trees) is the same seed for seed.
@@ -71,6 +75,12 @@ public sealed partial class Terrain
             case FieldLayout.Village:
                 VillageAt = new Vector2((rng.NextSingle() * 50 - 25) * p.Scale, rng.NextSingle() * 6 - 3 + (p.Favour < 0 ? 0 : p.Favour == 0 ? -8 : 8)); // on the chooser's side
                 break;
+            case FieldLayout.Shore:
+                // The sea along one flank: the beach starts past the deployment ground, the water a little further out.
+                ShoreSide = rng.Next(2) * 2 - 1;
+                shoreX = 50 * p.Scale + 34 + rng.NextSingle() * 14; // just past the deployment ground's flank
+                SeaLevel = ShoreSea;
+                break;
             case FieldLayout.Broken:
                 // Tall, steep knolls scattered over the field.
                 for (int i = 0; i < 4; i++)
@@ -80,6 +90,25 @@ public sealed partial class Terrain
                 }
                 break;
         }
+    }
+
+    /// Shore: the flank the sea lies on (+1 east, -1 west; 0 on other fields), and where the land gives way to the beach.
+    public int ShoreSide { get; private set; }
+    float shoreX;
+    /// A shore field's sea surface: below all but the lowest hollows, which the shore raises clear of it.
+    const float ShoreSea = -2.5f;
+    /// How far past the shore line a point lies (metres, toward the sea; negative inland). The line wanders a little.
+    float PastShore(float x, float z) => ShoreSide * x - shoreX - 15 * Noise(z * 0.008f, 0, Seed + 61) - 5 * Noise(z * 0.03f, 0, Seed + 64); // bays and points
+    /// The sea side of a shore field, where WaterDepth reads the sea (false on every other field).
+    bool AtSea(Vector2 p) => Layout == FieldLayout.Shore && PastShore(p.X, p.Y) > -6;
+    /// Shore: inland the ground keeps clear of the sea's surface; past the line it runs down a beach into the sea, and the
+    /// high rim that frames other fields falls away on that side.
+    float ShoreHeight(float x, float z, float h)
+    {
+        float past = PastShore(x, z), k = SmoothStep(-8, 30, past); // the land stays above the sea until AtSea reads it
+        float beach = ShoreSea + 0.9f + 0.6f * Noise(x * 0.05f, z * 0.05f, Seed + 62);
+        float land = MathHelper.Lerp(MathF.Max(h, beach), beach, SmoothStep(-50, -16, past)); // a wide flat strand before the water
+        return MathHelper.Lerp(land, ShoreSea - 4.5f, k);
     }
 
     /// Height a layout adds at (x, z).
@@ -148,6 +177,30 @@ public sealed partial class Terrain
                 float wet = Noise(p.X * 0.025f, p.Y * 0.025f, Seed + 53) + 0.25f * Noise(p.X * 0.09f, p.Y * 0.09f, Seed + 54);
                 if (wet > 0 || Rivers.Any(r => r.Dist(p) < r.Width / 2 + 5)) return GroundKind.Mud;
                 break;
+            case FieldLayout.Shore:
+                if (PastShore(p.X, p.Y) is float past && past > -22 && (Height(p) < ShoreSea + 2.6f || past > -8)) return GroundKind.Sand; // the beach
+                break;
+        }
+        return LookGround(p, k, steep);
+    }
+
+    /// The ground the field's look gives open grass (WM3): dunes of sand in the desert and round an oasis, stones in the
+    /// tundra and on the highland slopes; elsewhere stones only on the steepest ground.
+    GroundKind LookGround(Vector2 p, GroundKind k, float steep)
+    {
+        float n = Noise(p.X * 0.03f, p.Y * 0.03f, Seed + 63);
+        switch (Params.Look)
+        {
+            case GroundLook.Sand:
+                if (steep > 0.4f) return GroundKind.Stony;
+                return k == GroundKind.Grass && n > -0.1f ? GroundKind.Sand : n < -0.35f ? GroundKind.Stony : k;
+            case GroundLook.Dry:
+                return k == GroundKind.Grass && p.Length() > 150 + 30 * n ? GroundKind.Sand : steep > 0.45f ? GroundKind.Stony : k;
+            case GroundLook.Frost:
+                return steep > 0.3f || k == GroundKind.Grass && n > 0.3f ? GroundKind.Stony : k;
+            case GroundLook.Moss:
+            case GroundLook.Moor:
+                return steep > 0.32f ? GroundKind.Stony : k;
         }
         return steep > 0.45f ? GroundKind.Stony : k;
     }

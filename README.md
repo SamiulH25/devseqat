@@ -10,8 +10,8 @@ through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contr
 
 **At a glance (November 2026)**
 - **Battles of up to 3,000 men** on the field at once (Battle size setting), more waiting as reinforcements. You fight in the
-  front rank (directional blows, parries, couched lances) and command from above in slowed time, or hand wings to sergeants'
-  **divisions** that follow a goal.
+  front rank (directional blows, parries, couched lances) and command the whole field from above with a cursor while your captain keeps his guard, or hand wings to officers'
+  **divisions**, each at a post (the front, a wing, the skirmishers, the reserve) keeping the stance you give him.
 - **A war of seven realms** on a map of 115 provinces, each realm with its own heraldry, temper and four lines of troops:
   287 troops across seven cultures and common, plus 24 creatures (goblins, wolves, trolls, giant spiders, cave bears, wyverns, the dead).
 - **A company that is your legacy:** named men on the roll, the fallen remembered, banner honours won and lost, a career from
@@ -255,39 +255,53 @@ Keys are MonoGame `Keys` names (`W`, `LeftShift`, `F1`...) or `LMB`/`RMB`/`MMB`/
   The gold chevron at the crosshair shows it. LMB hold+release attacks (longer hold hits harder).
 - RMB block (front only). A shield stops any direction at a stamina cost; blocking **in the direction the blow comes from**
   (red chevron) is a **parry**: free, and it staggers the attacker. RMB while winding up cancels the swing (feint).
-- R rally. **Hold MMB (or Z) for the order wheel**: move the mouse toward an order, release to give it.
+- R rally. **Hold MMB (or Z) for the order ring**: eight pictures round the reticle; lean the mouse toward one, release to give it (time slows while it is open).
+- **Who listens:** 1 foot, 2 bows, 3 horse, 4 mages, 0 everyone (Shift adds an arm). The chips at the bottom right show them.
+- **Orders go where you look:** C sends them at the enemy company under the reticle (else at the nearest); tap H to hold in
+  place, or hold H and let go to draw them up on the ground you look at (a gold marker and each man's place show first).
 
-**Command view** (Tab; time x0.25, Space pauses):
+**Command view** (Tab; the battle runs at its own speed: Space pauses, `[` `]` or the bars at the top left pick x0.25 to x3).
+Your captain keeps his guard while you are away (he blocks, he never strikes), and his plate at the bottom left turns red
+when blows come at him; FIGHT on it (or Tab) steps back into him, a click on his picture looks at him.
+- The **order deck** (bottom right) is a grid of picture buttons for the companies chosen: orders, the formations they can
+  take (picked outright), and what else fits (FIRE for bows, STAKES for longbows, CAST for mages, SPLIT, FOLD IN, RELIEVE).
+  What they are doing is lit gold; hover a button for its name, key and what it does. ATTACK MOVE, then a click: march
+  there and charge whoever comes near.
+- MMB drag turns and tilts the camera; the wheel zooms toward the cursor.
 - LMB select a squad, drag a box to select several (Shift adds). Click a unit card to select it, double-click to jump the camera to it.
 - RMB click moves (keeps the current width), RMB drag draws the formation line (it faces the enemy) with a preview of every man's spot,
   RMB on an enemy squad attacks it (red line; hovered enemies are ringed).
 - WASD or the screen edges pan, Q/E or middle-drag orbit (middle-drag also tilts), wheel zoom, click the minimap to jump there.
-- The order buttons (bottom right) give the same orders as the hotkeys.
 
-**Orders (both views):** 1-9 toggle a squad, 0 or ~ selects all (with nothing selected, orders go to every squad).
+**Orders (both views):** in command view 1-9 toggle a company and 0 or ~ selects all; in fight view the numbers pick arms (above). With nothing selected, orders go to every company.
 C charge, F follow me, G form a line on me, H hold position, T advance 15 m, B fall back 20 m, V loose/tight spacing,
 **J formation** (line, shield wall, square, wedge, loose), X archers fire at will / hold fire. Allied lords' companies follow their own AI general.
 
-**Divisions (both views):** division cards sit top left; click one (or press **Y** to cycle) to give it goals. In command view the
-order buttons become goal buttons, and RMB on the ground means *take this ground*, on an enemy *attack it*, on a friend *screen it*.
-In field view the order wheel becomes a goal wheel. Goals do not arrive at once: a **rider** carries each one to the sergeant
-(about 1.5 s plus 1 s per 14 m, longer if he is fighting, shorter with his skill and the Bannerman perk), and a newer goal overtakes
-one still on the road. Riders show as gold dots in command view; an enemy who reaches the road cuts a rider down and the next one
-rides out the long way round (cut down the enemy's red riders and his divisions wait). You can still select a division's companies
-and order them directly: the order rides out the same way, and they then follow it until the division gets a new goal. If a
-sergeant falls, his men keep their last goal, orders take twice as long, and the best man left takes charge after 10 s.
-Sergeants told to hold or take ground stand on the best ground within 25 m of it (a crest, a knoll, a wood's edge, the village).
-**AMBUSH** (command view) sends a division of foot to the nearest wood to wait unseen, arrows held; it falls on the first enemy
-company that comes within 40 m.
+**Officers at posts (docs/OFFICERS.md):** each division is a few companies under an officer at a **post**: the **front**
+line, the **left** or **right wing**, the **skirmishers** or the **reserve**. He keeps the **stance** you give him and nothing else:
+the front can **hold** the line, **advance** in order or **charge**; a wing can **guard** the flank, **swing** round the enemy's
+end or **charge**; the skirmishers **loose** (and give way to foot), **harass** or **screen** the line; the reserve **waits**,
+**plugs** the line where it breaks or **follows** you. Officer cards sit on the right, one line each: post, stance and what is
+happening ("RIGHT WING · GUARD · HORSE 120 M"). Click one (or press **Y**), then a stance (keys **1-3**) or a new post; in field
+view the wheel shows them. Orders land at once (riders and the order delay are off for now). With an officer picked, **RMB**
+orders his companies yourself: they follow your order until he gets a new stance. **His skill decides how well**: a sharp officer
+looks again sooner and sees threats further out, sends his companies in together, keeps his line still, closes gaps and rests a
+spent company; a poor one sends them in one by one and lets the line wander. While you deploy, each post is a marked zone on the
+field: drag a company card onto it (or pick companies and click it) to put them under that officer, or press **AUTO-FILL** in the
+tray to send horse to the wings, bows to the skirmishers and foot to the front. If an officer falls, the best man left takes
+charge after 10 s.
+
+**Company sergeants:** every company has a sergeant who keeps it in order (he never changes its orders): its ranks re-form a
+quarter quicker, he holds back men straining to break ranks and rallies shaken men near him. The card shows what he is doing
+(DRESSING, RALLYING, RE-FORMING, HOLDING). When he falls (NO SERGEANT) the company fights about a grade worse until another man
+steps up, 8 to 24 s later by its drill.
 
 **Command and sergeants (docs/SERGEANTS.md):** you lead at most 10 companies yourself (**COMMAND n/10** in the tray over your
 panel). The rest serve under sergeants (up to 8 companies each) or wait in the **reserve** off the field. While you deploy, select
 companies and press a card's **ADD** (or **TO ME** in the tray) to move them between you and your sergeants; click a reserve chip to
 bring it on, for you or for the chosen sergeant. During the battle a call-up sends a rider back and the company marches on 8 s
-later. **Horn plans:** with a sergeant chosen, switch **HORN PLAN** on and pick a goal: he holds and waits, and **~** (HORN in the
-tray) sends every plan at once with no rider; a plan's dotted route shows on the field. Sergeants **ask** when their flank is
-threatened by horse, when arrows cut them down or when the foe before them routs: answer with **F6/F7** in the box at the top
-or let him choose by his temper when the time runs out. Near a sergeant (25 m) your word is shouted, not carried. A sergeant's
+later. **Horn plans:** with an officer chosen, switch **HORN PLAN** on and pick a stance or post: he holds and waits, and **~** (HORN in the
+tray) sends every plan at once; a plan's dotted route shows on the field. A sergeant's
 skill lifts his companies' wits (skill 3 trained, 5 veteran, 8 elite) and his nature shows on his card: a Hothead charges
 sooner, a Stubborn one never falls back, a Drillmaster drills his men harder, a Veteran thinks a grade up. In command view each
 division has its own colour, and a box of that colour marks each of its companies.
@@ -555,8 +569,8 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
   WAVERING / ROUTING / FLANKED). Bottom left: you (horse and speed, health, stamina, horse health, rally, kills).
 - Top: **balance of power** (strength-weighted), battle clock, event feed (top left), **minimap** (top right; enemy at the top, camera wedge).
 - Field view: directional crosshair chevrons, damage text (speed bonus, flank, rear, high ground, parry), context prompts.
-- Command view: squad **banners** with morale bars, order buttons, box select, formation preview, attack lines.
-- Overlays: order wheel, F1 controls, Esc menu, and a result screen with both armies' losses.
+- Command view: squad **banners** with morale bars, the order deck, the captain's plate, box select, formation preview, attack lines.
+- Overlays: order ring (fight view), F1 controls, Esc menu, and a result screen with both armies' losses.
 - In a big battle flags stack and shrink instead of piling up, the chosen flag comes to the front, and wavering and routed
   companies' flags show it. Division tags keep off the panels.
 - The interface moves, a little: bars slide and leave a pale strip for what was just lost, hovers fade, tabs slide their mark,
@@ -579,12 +593,15 @@ The visuals pass (`docs/archive/VISUALS.md`) changed nothing in the simulation: 
 
 ## Design: divisions and scale
 
-- **Why divisions:** at 1,500 men you cannot steer forty companies one by one. Divisions turn the general's job into picking goals
-  and timing them, and the order delay means you must plan ahead: a flank ordered late arrives late.
+- **Why divisions:** at 1,500 men you cannot steer forty companies one by one. Divisions turn the general's job into placing
+  officers on posts, picking their stances and timing them (the order delay is off for now: docs/OFFICERS.md OF0).
 - **Sergeants:** each division has a leader on the field (a gold pennant marks him); his aura steadies nearby men (+1.5 morale a
-  second, +4 to the routing). Killing the enemy's sergeants is a real aim: their divisions freeze on their last goal.
-- **The AI general** keeps his centre under his own hand and sends his divisions in when the lines close, the fight starts, or
-  they have waited long enough for their temper; a broken wing that is not bold falls back.
+  second, +4 to the routing). Killing the enemy's officers is a real aim: their divisions keep their last stance, leaderless, and a company whose sergeant
+  falls fights a grade worse.
+- **The AI general** lays a big army out on the same posts (horse on the wings, foot on the front, bows skirmishing, spare foot
+  in reserve) under officers whose skill follows the army's quality, and picks their stances by the fight: the front goes in
+  when the lines close or it has waited long enough for its temper, the wings swing round once the line is at blows, the
+  reserve plugs the line.
 - **Scale:** men near the enemy think every tick, others every 2nd or 4th tick, so 3,000 men cost about 3.6 ms a tick
   (`--bench`). Far men are drawn with fewer parts, and the roar of a big melee rises with the men in contact.
 

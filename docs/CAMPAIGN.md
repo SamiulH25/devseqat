@@ -1,6 +1,6 @@
 # Ironfield campaign specification
 
-Status: **implemented (M0-M5)**; roadmap phase F will replace much of it (see [`CAMPAIGN_OVERHAUL.md`](archive/CAMPAIGN_OVERHAUL.md)), with the open questions in section 13 settled by the proposals; see "As built" at the end
+Status: **implemented (M0-M5)**; roadmap phase F (built, F0-F9: see [`CAMPAIGN_OVERHAUL.md`](archive/CAMPAIGN_OVERHAUL.md)) replaced much of it and settled the open questions in section 13; see "As built" at the end
 for where the build differs from this text. This document specifies the campaign layer that wraps the battles: what the player does between
 fights, how armies persist and improve, and how the map hands a battle over and takes the result back.
 Look and interface follow [`DESIGN.md`](DESIGN.md). Numbers marked *(tune)* are starting values for play-testing, not promises.

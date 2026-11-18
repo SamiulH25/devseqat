@@ -3,36 +3,26 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Hud: your divisions (docs/archive/COMBAT_OVERHAUL.md 1.7): a card per division above the player panel, the goal buttons that
-/// replace the order buttons while one is picked, the goal wheel, and goal lines on the field in command view.
+/// Hud: your divisions (docs/archive/COMBAT_OVERHAUL.md 1.7, docs/OFFICERS.md): a card per division, the stance and post buttons
+/// that replace the order buttons while one is picked, the officer's wheel, and lines to each post on the field in command view.
 sealed partial class Hud
 {
     readonly List<(Rectangle R, Division D)> divCards = new();
-    readonly List<(Rectangle R, GoalKind G, int Side)> goals = new();
+    readonly List<(Rectangle R, Goal G, bool IsPost)> goals = new();
     readonly List<Rectangle> divTags = new();
     Rectangle goalClose;
 
-    /// The goals on the buttons (command view), in order; Side is for Flank.
-    public static readonly (GoalKind G, int Side, string Label)[] GoalButtons =
-    {
-        (GoalKind.Attack, 1, "ATTACK"), (GoalKind.Hold, 1, "HOLD"), (GoalKind.Take, 1, "TAKE GROUND"), (GoalKind.FallBack, 1, "FALL BACK"),
-        (GoalKind.Flank, -1, "FLANK LEFT"), (GoalKind.Flank, 1, "FLANK RIGHT"), (GoalKind.Screen, 1, "SCREEN"), (GoalKind.Guard, 1, "GUARD ME"),
-        (GoalKind.Reserve, 1, "RESERVE"), (GoalKind.Harass, 1, "HARASS"), (GoalKind.Pursue, 1, "PURSUE"), (GoalKind.Ambush, 1, "AMBUSH"),
-    };
-
-    /// The goal wheel's sectors (field view), clockwise from the top: the same count as the order wheel.
-    public static readonly (GoalKind G, int Side, string Label)[] GoalWheelOrder =
-    {
-        (GoalKind.Attack, 1, "ATTACK"), (GoalKind.Take, 1, "TAKE GROUND"), (GoalKind.Flank, 1, "FLANK RIGHT"), (GoalKind.Pursue, 1, "PURSUE"),
-        (GoalKind.FallBack, 1, "FALL BACK"), (GoalKind.Flank, -1, "FLANK LEFT"), (GoalKind.Hold, 1, "HOLD"), (GoalKind.Guard, 1, "GUARD ME"),
-    };
+    /// The officer's wheel (field view), clockwise from the top: the three stances of his post, then the five posts (each
+    /// with its first stance). Eight, the same count as the order wheel.
+    public static Goal[] WheelGoals(Division d) =>
+        Goal.StancesOf(d.Post).Select(s => new Goal(d.Post, s)).Concat(Enum.GetValues<Post>().Select(p => Goal.Of(p))).ToArray();
 
     void LayoutDivisions()
     {
         divCards.Clear();
         goals.Clear();
         // Right, under the minimap: the battle log is top left and the score bar in the middle.
-        int w = U(200), h = U(46), x = W - w - U(10), y = minimap.Bottom + U(34);
+        int w = U(214), h = U(46), x = W - w - U(10), y = minimap.Bottom + U(34);
         if (!Command && !Deploying) return; // in the field you fight: the sergeants' cards wait for the command view (PT2g)
         foreach (var d in B.DivisionsOf(0))
         {
@@ -43,17 +33,23 @@ sealed partial class Hud
 
     void LayoutGoals()
     {
-        int bw = U(104), bh = U(21), gap = U(3), n = GoalButtons.Length;
-        int x0 = W - 2 * bw - gap - U(14), y0 = H - (n + 1) / 2 * (bh + gap) - U(26);
+        // Two columns: the post's three stances, then under their own heading the five posts.
+        if (Div == null) return;
+        var cells = Goal.StancesOf(Div.Post).Select(s => ((Goal?)new Goal(Div.Post, s), false)).Append((null, false))
+            .Concat(Enum.GetValues<Post>().Select(p => ((Goal?)Goal.Of(p, p == Div.Post ? Div.Stance : null), true))).ToList();
+        int bw = U(104), bh = U(21), gap = U(3), n = cells.Count, head = U(12);
+        int x0 = W - 2 * bw - gap - U(14), y0 = H - (n + 1) / 2 * (bh + gap) - head - U(26);
         for (int i = 0; i < n; i++)
-            goals.Add((new Rectangle(x0 + (i % 2) * (bw + gap), y0 + (i / 2) * (bh + gap), bw, bh), GoalButtons[i].G, GoalButtons[i].Side));
+            if (cells[i].Item1 is Goal g)
+                goals.Add((new Rectangle(x0 + (i % 2) * (bw + gap), y0 + (i / 2) * (bh + gap) + (cells[i].Item2 ? head : 0),
+                    i % 2 == 0 && (i == n - 1 || cells[i + 1].Item1 == null) ? 2 * bw + gap : bw, bh), g, cells[i].Item2)); // a lone button takes the whole row
         int right = x0 + 2 * bw + gap;
         goalClose = new Rectangle(right - U(40), y0 - U(32), U(40), U(13));
         hornToggle = new Rectangle(right - U(92), y0 - U(18), U(92), U(13)); // the second row, beside the RMB hint
     }
 
     public Division? DivisionAt(Point p) => divCards.FirstOrDefault(c => c.R.Contains(p)).D;
-    public (GoalKind G, int Side)? GoalAt(Point p) => goals.Where(g => g.R.Contains(p)).Select(g => ((GoalKind, int)?)(g.G, g.Side)).FirstOrDefault();
+    public Goal? GoalAt(Point p) => goals.FirstOrDefault(g => g.R.Contains(p)).G;
     public bool GoalCloseAt(Point p) => Div != null && Command && goalClose.Contains(p);
 
     readonly Dictionary<string, string> divTagCache = new();
@@ -66,37 +62,39 @@ sealed partial class Hud
         return divTagCache[d.Name] = w[..1].ToUpperInvariant();
     }
 
-    static string GoalTag(Goal g) => g.Kind == GoalKind.Flank ? (g.Side > 0 ? "FLANK R" : "FLANK L") : Goal.Label(g.Kind);
+    static string GoalTag(Goal g) => Goal.Label(g.Stance);
 
     void DivisionCards()
     {
         if (divCards.Count == 0) return;
-        Text($"SERGEANTS ({Ctl.Name(Act.NextDivision)})", divCards[0].R.X, divCards[0].R.Y - U(12), Gold * 0.9f, 1);
+        Text($"OFFICERS ({Ctl.Name(Act.NextDivision)})", divCards[0].R.X, divCards[0].R.Y - U(12), Gold * 0.9f, 1);
         foreach (var (r, d) in divCards)
         {
             bool sel = d == Div, hover = r.Contains(Mouse);
             int alive = d.Alive, start = Math.Max(1, d.Start);
             int morale = AvgMorale(d.Squads);
             var hue = DivisionColour(d);
-            Panel(r, sel ? Gold : d.Leaderless ? Bad : d.Query != null ? Warn : hover && Command ? Color.White * 0.5f : Edge, sel ? 2 : 1);
+            Panel(r, sel ? Gold : d.Leaderless ? Bad : hover && Command ? Color.White * 0.5f : Edge, sel ? 2 : 1);
             Rect(new Rectangle(r.X + U(1), r.Y + U(1), U(3), r.Height - U(2)), hue); // his colour, as on the field
             if (alive == 0 && d.Squads.Count > 0) Rect(r, Color.Black * 0.4f);
             int x = r.X + U(8);
             // Head: the division, and its men (or ADD while you deploy with companies picked).
             var add = divAdds.FirstOrDefault(a => a.D == d).R;
-            string count = $"{alive}/{d.Start}";
+            string count = d.Squads.Count == 0 ? "" : $"{alive}/{d.Start}"; // "NO MEN" on the next line says it
             Text(kit.Fit(d.Name.ToUpperInvariant(), r.Right - x - (add.IsEmpty ? TW(count, 1) : add.Width) - U(10)), x, r.Y + U(4), sel ? Gold : Color.White, 1);
             if (!add.IsEmpty) SmallButton(add, $"ADD {Movable(d)}", hue);
             else TextR(count, r.Right - U(5), r.Y + U(4), sel ? Gold : Color.White, 1);
-            // What he is doing, and the goal (or the rider on his way).
-            string report = B.Report(d);
-            var rc = report switch { "SERGEANT DOWN" or "BROKEN" => Bad, "ASKS FOR ORDERS" or "UNDER ARROWS" => Warn, "ENGAGED" => Orange, _ => Dim };
-            string goal = d.Pending != null ? $"> {GoalTag(d.Pending)} {MathF.Max(0, d.PendingAt - B.Time):0}S" : GoalTag(d.Goal);
-            TextR(goal, r.Right - U(5), r.Y + U(15), d.Pending != null ? Warn : Color.White * 0.8f, 1);
-            Text(kit.Fit(report, r.Right - x - TW(goal, 1) - U(12)), x, r.Y + U(15), rc, 1);
+            // One line (OF4): his post, his stance, and what is happening ("LEFT WING · GUARD · HORSE 60 M").
+            string news = B.Situation(d);
+            var rc = news switch { "SERGEANT DOWN" or "BROKEN" => Bad, "UNDER ARROWS" or "GIVING WAY" => Warn, "AT BLOWS" or "PLUGGING THE LINE" => Orange, _ => Dim };
+            string post = Goal.Label(d.Post), head = $" \u00b7 {Goal.Label((d.Pending ?? d.Goal).Stance)} \u00b7 ";
+            Text(post, x, r.Y + U(15), Color.White, 1); // the post first and brightest: it is what you scan for
+            Text(head, x + TW(post, 1), r.Y + U(15), d.Pending != null ? Warn : Dim, 1);
+            int nx = x + TW(post + head, 1);
+            Text(kit.Fit(news, r.Right - nx - U(6)), nx, r.Y + U(15), rc, 1);
             // His skill as pips, his nature, and the horn plan or that he can hear you.
             for (int i = 0; i < 10; i++) Rect(new Rectangle(x + i * U(4), r.Y + U(27), U(3), U(4)), i < d.Skill ? Gold : Color.White * 0.15f);
-            string tail = d.Horn != null ? $"HORN: {GoalTag(d.Horn)}" : d.PendingHorn != null ? "PLAN RIDING" : B.InVoice(d) && !Deploying ? "IN EARSHOT" : "";
+            string tail = d.Horn != null ? $"HORN: {GoalTag(d.Horn)}" : d.PendingHorn != null ? "PLAN RIDING" : "";
             if (tail.Length > 0) TextR(tail, r.Right - U(5), r.Y + U(26), d.Horn != null ? Gold : d.PendingHorn != null ? Warn : Ok, 1);
             string nature = d.Traits.Length > 0 ? d.Traits[0].ToUpperInvariant() : d.Temper.ToString().ToUpperInvariant();
             Text(kit.Fit(nature, r.Right - x - U(44) - TW(tail, 1) - U(10)), x + U(44), r.Y + U(26), Dim, 1);
@@ -105,20 +103,28 @@ sealed partial class Hud
         }
     }
 
-    static string GoalExplain(GoalKind g, int side) => g switch
+    static string StanceExplain(Stance s) => s switch
     {
-        GoalKind.Attack => "CHARGE AND PRESS THE CHOSEN OR NEAREST ENEMY",
-        GoalKind.Hold => "HOLD GROUND; FIGHT FOES THAT COME CLOSE",
-        GoalKind.Take => "ADVANCE TO THE SPOT (OR RMB ON LAND) AND HOLD IT",
-        GoalKind.FallBack => "WITHDRAW FROM THE FIGHT AND RE-FORM BEHIND",
-        GoalKind.Flank => side < 0 ? "SWING AROUND THE ENEMY'S LEFT FLANK" : "SWING AROUND THE ENEMY'S RIGHT FLANK",
-        GoalKind.Screen => "GUARD THE CHOSEN (RMB) OR NEAREST ALLIED COMPANY",
-        GoalKind.Guard => "STAY CLOSE AND PROTECT YOUR CAPTAIN",
-        GoalKind.Reserve => "WAIT BEHIND THE LINE; COMMIT WHEN A FLANK FALTERS",
-        GoalKind.Harass => "SKIRMISH AND KEEP DISTANCE WITH BOWS OR HORSE",
-        GoalKind.Pursue => "RUN DOWN BROKEN AND ROUTING ENEMIES",
-        GoalKind.Ambush => "HIDE IN THE NEAREST WOOD AND STRIKE FROM COVER",
-        _ => "",
+        Stance.Hold => "STAND ON THE LINE; FIGHT WHAT COMES",
+        Stance.Advance => "WALK FORWARD IN ORDER, HALT AT CONTACT",
+        Stance.Charge => "GO IN AT THE NEAREST ENEMY",
+        Stance.Guard => "COVER THE FRONT LINE'S FLANK",
+        Stance.Swing => "GO ROUND THE ENEMY'S FLANK, THEN IN",
+        Stance.Loose => "SHOOT; FALL BACK FROM FOOT THAT CLOSES",
+        Stance.Harass => "KEEP AT THREE-QUARTERS RANGE, PICK SOFT PREY",
+        Stance.Screen => "STAND BEFORE THE LINE, GIVE WAY WHEN IT CLOSES",
+        Stance.Wait => "WAIT BEHIND THE LINE",
+        Stance.Plug => "SEND A COMPANY WHERE THE LINE BREAKS",
+        _ => "STAY BY THE CAPTAIN",
+    };
+
+    static string PostExplain(Post p) => p switch
+    {
+        Post.Front => "THE MAIN LINE",
+        Post.LeftWing => "BESIDE THE LINE'S LEFT END",
+        Post.RightWing => "BESIDE THE LINE'S RIGHT END",
+        Post.Skirmish => "AHEAD OF THE LINE",
+        _ => "BEHIND THE LINE",
     };
 
     void GoalPanel()
@@ -128,27 +134,35 @@ sealed partial class Hud
         int right = goals[1].R.Right;
         var area = new Rectangle(first.X - U(6), first.Y - U(36), right - first.X + U(12), goals[^1].R.Bottom - first.Y + U(54));
         Panel(area, Gold);
-        Text(kit.Fit(HornMode ? $"ON THE HORN: {Div.Name.ToUpperInvariant()}" : $"SERGEANT: {Div.Name.ToUpperInvariant()}", goalClose.X - area.X - U(10)), area.X + U(6), area.Y + U(6), Gold, 1);
+        Text(kit.Fit(HornMode ? $"ON THE HORN: {Div.Name.ToUpperInvariant()}" : $"OFFICER: {Div.Name.ToUpperInvariant()}", goalClose.X - area.X - U(10)), area.X + U(6), area.Y + U(6), Gold, 1);
         SmallButton(hornToggle, HornMode ? "HORN PLAN: ON" : "HORN PLAN: OFF", HornMode ? Warn : Dim);
         bool backHover = goalClose.Contains(Mouse);
         Rect(goalClose, backHover ? Gold * 0.35f : Color.White * 0.08f);
         Frame(goalClose, backHover ? Gold : Dim, U(1));
         TextC("BACK", goalClose.Center.X, goalClose.Y + U(3), backHover ? Gold : Color.White, 1);
-        Text(kit.Fit("RMB AIMS IT", hornToggle.X - area.X - U(10)), area.X + U(6), area.Y + U(21), Dim, 1);
-        (GoalKind G, int Side)? hovered = null;
-        foreach (var (r, g, side) in goals)
+        Text(kit.Fit($"STANCE ({Goal.Label(Div.Post)})", hornToggle.X - area.X - U(10)), area.X + U(6), area.Y + U(21), Dim, 1);
+        // The posts under their own heading.
+        if (goals.FirstOrDefault(g => g.IsPost).R is { Width: > 0 } firstPost)
+            Text("POST", firstPost.X + U(1), firstPost.Y - U(10), Dim, 1);
+        (Goal G, bool IsPost)? hovered = null;
+        var mark = HornMode ? Div.Horn ?? Div.PendingHorn : Div.Goal;
+        foreach (var (r, g, isPost) in goals)
         {
-            var mark = HornMode ? Div.Horn ?? Div.PendingHorn : Div.Goal;
-            bool hover = r.Contains(Mouse), on = mark != null && mark.Kind == g && (g != GoalKind.Flank || mark.Side == side);
-            if (hover) hovered = (g, side);
+            // Gold is what he does now; the horn's plan is only the word HORN on its button.
+            bool hover = r.Contains(Mouse), on = isPost ? g.Post == Div.Post : g == Div.Goal;
+            bool horn = HornMode && mark != null && (isPost ? mark.Post == g.Post && mark.Post != Div.Post : mark == g);
+            if (hover) hovered = (g, isPost);
             Rect(r, hover ? Gold * 0.35f : on ? Gold * 0.15f : Color.White * 0.06f);
             Frame(r, hover || on ? Gold : Edge, U(1));
-            Text(GoalButtons.First(b => b.G == g && b.Side == side).Label, r.X + U(6), r.Y + U(7), Color.White, 1);
+            Text(isPost ? Goal.Label(g.Post) : Goal.Label(g.Stance), r.X + U(6), r.Y + U(7), isPost ? Color.White * 0.8f : Color.White, 1);
+            string key = isPost ? "" : $"{Array.IndexOf(Goal.StancesOf(g.Post), g.Stance) + 1}"; // its number key
+            if (horn) key = (key + " HORN").Trim(); // what the horn will order
+            if (key != "") TextR(key, r.Right - U(5), r.Y + U(7), Gold * 0.8f, 1);
         }
         Text(HornMode ? $"KEPT UNTIL THE HORN ({Ctl.Name(Act.Horn)})" : "BACK / CLICK CARD: ORDER SQUADS", area.X + U(6), area.Bottom - U(13), HornMode ? Gold : Dim, 1);
-        if (hovered is var (hg, hs))
+        if (hovered is var (hg, hp))
         {
-            string tip = GoalExplain(hg, hs);
+            string tip = hp ? PostExplain(hg.Post) : StanceExplain(hg.Stance);
             int tw = TW(tip, 1) + U(14);
             var tr = new Rectangle(Math.Min(area.Right - tw, W - tw - U(6)), area.Y - U(22), tw, U(18));
             Panel(tr, Gold);
@@ -163,7 +177,7 @@ sealed partial class Hud
         bool sel = d == Div;
         string who = Battle.SergeantName(d) is { Length: > 0 } nm ? $"{nm.ToUpperInvariant()}, " : "";
         string l1 = $"{d.Name.ToUpperInvariant()}  ({who}{d.Temper.ToString().ToUpperInvariant()}{(d.Traits.Length > 0 ? " " + string.Join(" ", d.Traits).ToUpperInvariant() : "")} SERGEANT, SKILL {d.Skill})";
-        string l2 = $"GOAL: {d.Goal.Describe.ToUpperInvariant()}";
+        string l2 = $"{Goal.Label(d.Post)}: {d.Goal.Describe.ToUpperInvariant()}";
         string l3 = d.Pending != null ? $"RIDER EN ROUTE: {GoalTag(d.Pending)} ({MathF.Max(0, d.PendingAt - B.Time):0}S)" : $"{d.Squads.Count} COMPANIES   {d.Alive}/{d.Start} MEN";
         string l4 = sel ? $"CLICK CARD, BACK, OR {Ctl.Name(Act.SelectAll)} TO ORDER COMPANIES" : $"CLICK OR PRESS {Ctl.Name(Act.NextDivision)} TO COMMAND SERGEANT";
         int w = Math.Max(Math.Max(TW(l1, 1), TW(l2, 1)), Math.Max(TW(l3, 1), TW(l4, 1))) + U(16);
@@ -179,7 +193,7 @@ sealed partial class Hud
     void SergeantFieldBadge()
     {
         if (Div == null) return;
-        string s = $"SERGEANT: {Div.Name.ToUpperInvariant()}   {Ctl.Name(Act.OrderWheel)}: GOAL WHEEL   {Ctl.Name(Act.NextDivision)}: NEXT/EXIT";
+        string s = $"OFFICER: {Div.Name.ToUpperInvariant()}   {Ctl.Name(Act.OrderWheel)}: STANCE WHEEL   {Ctl.Name(Act.NextDivision)}: NEXT/EXIT";
         int w = TW(s, 1) + U(14), y = divCards.Count > 0 ? divCards[^1].R.Bottom + U(6) : minimap.Bottom + U(22);
         var r = new Rectangle(W - w - U(10), y, w, U(18));
         Panel(r, Gold);
@@ -190,19 +204,20 @@ sealed partial class Hud
     {
         Rect(new Rectangle(0, 0, W, H), Color.Black * 0.25f);
         var c = WheelPos();
-        for (int i = 0; i < GoalWheelOrder.Length; i++)
+        var wheel = WheelGoals(Div!);
+        for (int i = 0; i < wheel.Length; i++)
         {
-            float a = -MathHelper.PiOver2 + i * MathHelper.TwoPi / GoalWheelOrder.Length;
+            float a = -MathHelper.PiOver2 + i * MathHelper.TwoPi / wheel.Length;
             var at = c + new Vector2(MathF.Cos(a), MathF.Sin(a)) * U(130);
             var r = new Rectangle((int)at.X - U(58), (int)at.Y - U(11), U(116), U(22));
             bool on = i == WheelSector;
             Panel(r, on ? Gold : Edge, on ? 2 : 1);
             if (on) Rect(r, Gold * 0.25f);
-            TextC(GoalWheelOrder[i].Label, at.X, at.Y - U(4), on ? Gold : Color.White, 1);
+            TextC(i < 3 ? Goal.Label(wheel[i].Stance) : Goal.Label(wheel[i].Post), at.X, at.Y - U(4), on ? Gold : i < 3 ? Color.White : Dim, 1);
         }
         var inner = new Rectangle((int)c.X - U(70), (int)c.Y - U(16), U(140), U(32));
         Panel(inner, Gold);
-        TextC("GOAL FOR", c.X, c.Y - U(10), Dim, 1);
+        TextC("ORDERS FOR", c.X, c.Y - U(10), Dim, 1);
         string n = Div!.Name.ToUpperInvariant();
         TextC(n.Length > 18 ? n[..18] : n, c.X, c.Y + U(1), Gold, 1);
     }
@@ -291,20 +306,7 @@ sealed partial class Hud
         Rect(new Rectangle(x + s, y - 10 * s, 5 * s, 2 * s), Gold);
     }
 
-    /// In command view: a line from each of your divisions to where its goal points (dim when a new goal is on its way).
-    /// Where a horn plan that names no spot points: round the flank or at the foe, near enough for a line on the map.
-    Vector2? HornAim(Division d, Goal h)
-    {
-        if (h.Target?.Alive > 0) return h.Target.Center;
-        if (h.Kind is not (GoalKind.Flank or GoalKind.Attack) || B.Squads.All(s => s.Team == d.Team || s.Alive == 0)) return null;
-        var foe = B.Centroid(1 - d.Team);
-        if (h.Kind == GoalKind.Attack) return foe;
-        var f = foe - B.Centroid(d.Team);
-        if (f.LengthSquared() < 1) return foe;
-        f.Normalize();
-        return foe + new Vector2(-f.Y, f.X) * (h.Side * 35);
-    }
-
+    /// In command view: a line from each of your divisions to where its post lies (dim when new orders are on their way).
     void DivisionMarkers()
     {
         var vp = new Viewport(0, 0, W, H);
@@ -341,7 +343,7 @@ sealed partial class Hud
             {
                 var g = gi == 0 ? d.Goal : d.Pending;
                 if (g == null) continue;
-                Vector2? to = g.Kind is GoalKind.Hold or GoalKind.Take or GoalKind.FallBack or GoalKind.Ambush ? g.Point : g.Target?.Alive > 0 ? g.Target.Center : null;
+                Vector2? to = B.SpotOf(d, g);
                 if (to is Vector2 t && Screen(t, out var dst))
                 {
                     var c = g == d.Pending ? Warn * 0.7f : col * 0.8f;
@@ -350,7 +352,7 @@ sealed partial class Hud
                 }
             }
             // The horn plan: a dotted line in his colour to where the horn will send him.
-            if ((d.Horn ?? d.PendingHorn) is { } h && (h.Kind is GoalKind.Hold or GoalKind.Take or GoalKind.FallBack or GoalKind.Ambush ? h.Point : HornAim(d, h)) is Vector2 ht && Screen(ht, out var hd))
+            if ((d.Horn ?? d.PendingHorn) is { } h && B.SpotOf(d, h) is Vector2 ht && Screen(ht, out var hd))
             {
                 var hc = DivisionColour(d);
                 var step = hd - from; float len = step.Length();
@@ -369,8 +371,9 @@ sealed partial class Hud
                 }
             }
             // The name and goal over the field only for the division you picked or point at: its card says it for the rest (PT2g).
-            if (d != Div && DivisionAt(Mouse) != d) continue;
-            string tag = (d.Leader is { Active: true } ? "" : "! ") + d.Name.ToUpperInvariant() + ": " + GoalTag(d.Goal);
+            // Not while its post zone shows: the zone names it (OF4).
+            if (d != Div && DivisionAt(Mouse) != d || ZonesShown(d)) continue;
+            string tag = (d.Leader is { Active: true } ? "" : "! ") + d.Name.ToUpperInvariant() + ": " + d.Goal.Tag;
             // The tag stays off the HUD's panels, and one that would cover another division's is dimmed.
             int tw = TW(tag, 1);
             from.X = Math.Clamp(from.X, tw / 2f + U(4), W - tw / 2f - U(4)); // keep the tag on the screen

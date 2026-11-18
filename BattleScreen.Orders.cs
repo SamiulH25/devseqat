@@ -34,7 +34,7 @@ partial class BattleScreen
         foreach (var s in list) late = MathF.Max(late, move ? Move(s, act) : Send(s, act));
         if (move && queueing) what = "then " + what;
         host.Audio?.Play(horn, 0.65f);
-        if (!command) { hud.CombatPrompt = (selected.Count == 0 ? "ALL: " : list.Count == 1 ? list[0].Name.ToUpperInvariant() + ": " : $"{list.Count} SQUADS: ") + what.ToUpperInvariant(); hud.CombatPromptAt = battle.Time; }
+        if (!command) Prompt(hud.ListenWord() + ": " + what.ToUpperInvariant());
         battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
     }
 
@@ -80,41 +80,27 @@ partial class BattleScreen
     /// Companies you can pick: your retinue and the companies of your divisions (their orders arrive late).
     IEnumerable<Squad> Selectable => battle.SquadsOf(0).Where(s => !s.AiControlled);
 
-    /// Give a division a goal (it reaches the sergeant after a delay; before the battle starts, at once).
+    /// Give a division a post and stance (it lands at once; with the horn plan on, it is kept until the horn).
     void GiveGoal(Division d, Goal g)
     {
         if (hornMode) { battle.SetHornPlan(d, g, now: deploying); host.Audio?.Play(Cue.Order, 0.65f); return; } // kept until the horn (SG2)
         battle.IssueGoal(d, g, now: deploying);
-        Cue h = g.Kind switch
+        Cue h = g.Stance switch
         {
-            GoalKind.Attack or GoalKind.Flank or GoalKind.Pursue or GoalKind.Take => Cue.HornCharge,
-            GoalKind.FallBack => Cue.HornRetreat,
-            GoalKind.Hold or GoalKind.Guard or GoalKind.Screen => Cue.HornHold,
+            Stance.Charge or Stance.Advance or Stance.Swing => Cue.HornCharge,
+            Stance.Hold or Stance.Guard or Stance.Wait or Stance.Follow or Stance.Screen => Cue.HornHold,
             _ => Cue.Order,
         };
         host.Audio?.Play(h, 0.65f);
     }
 
-    void GoalCommand(Division d, GoalKind kind, int side)
+    /// The right button with an officer picked: his companies take the order directly (each then follows it, not him,
+    /// until he gets new orders).
+    void OrderDivisionCompanies(Division d)
     {
-        var mid = d.Squads.Where(s => s.Alive > 0).Select(s => s.Center).DefaultIfEmpty(Vector2.Zero).Aggregate((a, b) => a + b) / Math.Max(1, d.Squads.Count(s => s.Alive > 0));
-        var foe = battle.SquadsOf(1).Where(s => s.Alive > 0).OrderBy(s => Vector2.DistanceSquared(s.Center, mid)).FirstOrDefault();
-        var enemy = battle.Centroid(1);
-        var away = mid - enemy;
-        if (away.LengthSquared() < 1) away = -Vector2.UnitY;
-        away.Normalize();
-        Goal g = kind switch
-        {
-            GoalKind.Attack or GoalKind.Harass => new Goal(kind, Target: foe),
-            GoalKind.Flank => new Goal(kind, Target: foe, Side: side),
-            GoalKind.Screen => new Goal(kind, Target: battle.SquadsOf(0).Where(s => s.Alive > 0 && s.Division != d).OrderBy(s => Vector2.DistanceSquared(s.Center, mid)).FirstOrDefault()),
-            GoalKind.Take => new Goal(kind, mid - away * 25),
-            GoalKind.FallBack => new Goal(kind, mid + away * 30),
-            GoalKind.Hold => new Goal(kind, mid),
-            GoalKind.Ambush => new Goal(kind, battle.BestPlace(mid, 60, p => p.Hide)?.Pos ?? mid), // the nearest wood to hide in
-            _ => new Goal(kind, mid),
-        };
-        GiveGoal(d, g);
+        selected.Clear();
+        foreach (var s in d.Squads) if (s.Alive > 0) selected.Add(s);
+        selectedDivision = null;
     }
 
     void Command(Cmd c)
@@ -122,7 +108,14 @@ partial class BattleScreen
         var enemy = battle.Centroid(1);
         switch (c)
         {
-            case Cmd.Charge: Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }, move: true, Cue.HornCharge); break;
+            case Cmd.Charge:
+                // In the fight view the charge goes at the company you look at (BattleScreen.Fight.cs); else at the nearest.
+                if (!command && LookFoe() is Squad lf) { OrderArrows(lf.Centroid()); Issue("attack " + lf.Name + "!", s => { s.Order = Order.Charge; s.Target = lf; }, move: true, Cue.HornCharge); }
+                else Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }, move: true, Cue.HornCharge);
+                break;
+            case Cmd.Stakes: PlantStakes(); break;
+            case Cmd.Cast: NextSpell(); break;
+            case Cmd.ShapeLine or Cmd.ShapeWall or Cmd.ShapeSquare or Cmd.ShapeWedge or Cmd.ShapeLoose: SetShape(Hud.ShapeOf(c)!.Value); break;
             case Cmd.AttackMove:
                 if (command) attackMoveMode = !attackMoveMode;
                 else Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge);
@@ -134,7 +127,6 @@ partial class BattleScreen
             case Cmd.Advance: Issue("advance!", s => s.Shift(enemy, 15), move: true, Cue.HornCharge); break;
             case Cmd.FallBack: Issue("fall back!", s => s.Shift(enemy, -20), move: true, Cue.HornRetreat); break;
             case Cmd.Rule: NextRule(); break;
-            case Cmd.More: hud.MoreOrders = !hud.MoreOrders; break;
             case Cmd.Spacing: Issue("change spacing", s => s.Loose = !s.Loose); break;
             case Cmd.Merge: MergeSelected(); break;
             case Cmd.Relieve: RelieveSelected(); break;
@@ -146,16 +138,7 @@ partial class BattleScreen
                 // Cycle from the first company's formation; each company takes the next one it can (horse has no shield wall).
                 var first = list[0].Choices(list[0].Units[0].Type.HasShield);
                 var next = first[(Array.IndexOf(first, list[0].Formation) + 1) % first.Length];
-                foreach (var s in list)
-                {
-                    var ok = s.Choices(s.Units[0].Type.HasShield);
-                    var f = ok.Contains(next) ? next : Formation.Line;
-                    Send(s, q => q.Formation = f);
-                }
-                battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + next switch
-                {
-                    Formation.ShieldWall => "shield wall!", Formation.Square => "form square!", Formation.Wedge => "wedge!", Formation.Loose => "open ranks!", _ => "form line!",
-                });
+                SetShape(next);
                 break;
             }
             case Cmd.FireAtWill:
@@ -268,23 +251,26 @@ partial class BattleScreen
         selected.RemoveWhere(s => s.FoldedInto != null);
         queueing = ctl.Down(Act.AddToSelection);
         var mine = battle.Commanded.ToList();
+        bool fight = !command && !deploying;
         bool ctrl = kb.IsKeyDown(Keys.LeftControl) || kb.IsKeyDown(Keys.RightControl);
         for (int i = 0; i < 10; i++)
         {
             if (!Pressed(i == 9 ? Keys.D0 : Keys.D1 + i)) continue;
             int digit = (i + 1) % 10;
+            if (fight) { ListenArm(digit, queueing); continue; } // the fight view picks arms, not companies (BattleScreen.Fight.cs)
+            if (selectedDivision is { } sd && digit is >= 1 and <= 3) { GiveGoal(sd, new Goal(sd.Post, Goal.StancesOf(sd.Post)[digit - 1])); continue; } // an officer's stances (OF4)
             if (digit > 0 && (ctrl || groups.ContainsKey(digit))) { Group(digit, ctrl); continue; } // control groups (Q6)
             if (i < mine.Count && !selected.Remove(mine[i])) selected.Add(mine[i]);
         }
         if (ctl.Pressed(Act.SelectAll)) { selected.Clear(); selectedDivision = null; }
         if (ctl.Pressed(Act.NextDivision)) NextDivision();
         if (ctl.Pressed(Act.Horn)) SoundHorn();
-        if ((ctl.Pressed(Act.AnswerA) || ctl.Pressed(Act.AnswerB)) && hud.Asking is { } asker) Answer(asker, ctl.Pressed(Act.AnswerA));
         if (ctl.Pressed(Act.GroundView)) groundView = !(groundView ?? deploying);
         if (ctl.Pressed(Act.Stakes)) PlantStakes();
         if (ctl.Pressed(Act.Cast)) NextSpell();
         foreach (var (cmd, (_, act)) in Hud.Orders)
-            if (act is Act k && ctl.Pressed(k)) Command(cmd);
+            if (act is Act k && ctl.Pressed(k) && !(fight && cmd == Cmd.Hold)) Command(cmd);
+        if (fight && !shotHold) HoldKey(); // a tap holds them where they stand; held, it plants their line where you look
     }
 
     /// The caster you direct and the spell picked (docs/archive/MAGIC_AURA.md 3.1). The next left click on the field casts it there.
@@ -333,10 +319,9 @@ partial class BattleScreen
     /// The goal you pick next is the chosen sergeant's horn plan (docs/SERGEANTS.md SG2).
     bool hornMode;
 
-    /// Clicks on the command tray, a card's ADD, a sergeant's question and the horn; true when one was used.
+    /// Clicks on the command tray, a card's ADD and the horn; true when one was used.
     bool CommandClick(Point p)
     {
-        if (hud.AnswerAt(p) is var (ad, aa)) { Answer(ad, aa); return true; }
         if (hud.HornToggleAt(p)) { hornMode = !hornMode; return true; }
         if (hud.HornAt(p)) { SoundHorn(); return true; }
         if (hud.ReserveAt(p) is int ri)
@@ -347,6 +332,15 @@ partial class BattleScreen
         }
         if (hud.AddAt(p) is Division to) { MoveTo(to); return true; }
         if (hud.ToMeAt(p)) { MoveTo(null); return true; }
+        if (hud.AutoFillAt(p))
+        {
+            int n = battle.AutoFill(0);
+            battle.Log(n > 0 ? $"{n} compan{(n == 1 ? "y goes" : "ies go")} to the posts that suit them." : "No company of yours suits a post with room.");
+            if (n > 0) host.Audio?.Play(Cue.Order, 0.6f);
+            return true;
+        }
+        // Companies picked in deployment, and a click on a post zone (not on a company): they go under that officer.
+        if (deploying && selected.Count > 0 && !hud.Over(p) && PickSquad(mouseGround, 0) == null && hud.ZoneAt(mouseGround) is Division zd) { MoveTo(zd); return true; }
         return false;
     }
 
@@ -358,19 +352,13 @@ partial class BattleScreen
         foreach (var s in selected.ToList()) { if (battle.Assign(s, to) is string no) why ??= no; else moved++; }
         if (moved > 0) { battle.Log($"{moved} compan{(moved == 1 ? "y goes" : "ies go")} to {(to == null ? "you" : to.Name)}."); selected.Clear(); }
         else if (why != null) battle.Log(why);
-        Tips.Show("tray", $"You lead at most {Armies.CommandCap} companies yourself; each sergeant up to {Armies.DivisionCap}.\nThe rest wait off the field: click one on the tray to call it up, to you or to the sergeant you have picked.");
+        Tips.Show("tray", $"You lead at most {Armies.CommandCap} companies yourself; each officer up to {Armies.DivisionCap}. Drag a card onto a post, or AUTO-FILL.\nThe rest wait off the field: click one on the tray to call it up, to you or to the officer you have picked.");
     }
 
     void SoundHorn()
     {
         if (deploying) { battle.Log("The horn sounds once the battle has begun."); return; }
         if (battle.SoundHorn(0) > 0) host.Audio?.Play(Cue.HornCharge, 0.9f);
-    }
-
-    void Answer(Division d, bool a)
-    {
-        var q = d.Query;
-        if (battle.Answer(d, a) is null && q != null) { battle.Log($"To {d.Name}: {(a ? q.LabelA : q.LabelB).ToLowerInvariant()}!"); host.Audio?.Play(a ? Cue.HornCharge : Cue.HornHold, 0.6f); }
     }
 
     /// Cycle the division you give goals to: none, then each living one in turn, then none again.
@@ -380,7 +368,7 @@ partial class BattleScreen
         if (list.Count == 0) { battle.Log("You have no divisions. Make them on the campaign map (V)."); return; }
         int i = selectedDivision == null ? -1 : list.IndexOf(selectedDivision);
         selectedDivision = i + 1 < list.Count ? list[i + 1] : null;
-        if (selectedDivision != null) { selected.Clear(); battle.Log($"Goals for {selectedDivision.Name}: {selectedDivision.Goal.Describe}"); }
+        if (selectedDivision != null) { selected.Clear(); battle.Log($"{selectedDivision.Name}, {Goal.Label(selectedDivision.Post).ToLowerInvariant()}: {selectedDivision.Goal.Describe}"); }
     }
 
     /// Line of the selected squads' combined width, centred on `center`, facing `toward`.

@@ -48,7 +48,7 @@ partial class BattleScreen
         else skipMouse = true;
         if (wasWheel && !wheelOpen && WheelSector() is int sector)
         {
-            if (selectedDivision is { } dv) GoalCommand(dv, Hud.GoalWheelOrder[sector].G, Hud.GoalWheelOrder[sector].Side);
+            if (selectedDivision is { } dv) GiveGoal(dv, Hud.WheelGoals(dv)[sector]);
             else Command(Hud.WheelOrder[sector]);
         }
         fieldDist = Math.Clamp(fieldDist - (ms.ScrollWheelValue - pms.ScrollWheelValue) * 0.004f, 2.5f, 12);
@@ -88,27 +88,7 @@ partial class BattleScreen
 
     void CommandControls(float dt)
     {
-        bool alt = kb.IsKeyDown(Keys.LeftAlt) || kb.IsKeyDown(Keys.RightAlt);
-        if (!wheelOpen && IsActive && !alt && ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Released && !hud.Over(ms.Position))
-        {
-            wheelOpen = true;
-            wheelOrigin = ms.Position;
-            wheelVec = Vector2.Zero;
-        }
-        if (wheelOpen)
-        {
-            if (IsActive && ms.MiddleButton == ButtonState.Pressed)
-                wheelVec = (ms.Position - wheelOrigin).ToVector2();
-            else
-            {
-                if (IsActive && WheelSector() is int sector)
-                {
-                    if (selectedDivision is { } dv) GoalCommand(dv, Hud.GoalWheelOrder[sector].G, Hud.GoalWheelOrder[sector].Side);
-                    else Command(Hud.WheelOrder[sector]);
-                }
-                wheelOpen = false;
-            }
-        }
+        wheelOpen = shotWheel; // the ring is the fight view's; here the deck and the right button give orders
         var vp = GraphicsDevice.Viewport;
         var f = Forward(camYaw);
         var pan = f * ctl.Axis(Act.Forward, Act.Back) + RightOf(f) * ctl.Axis(Act.Right, Act.Left);
@@ -122,7 +102,7 @@ partial class BattleScreen
         camFocus += pan * zoom * 0.9f * dt;
         if (camFocus.Length() > battle.Terrain.Half - 20) camFocus = Vector2.Normalize(camFocus) * (battle.Terrain.Half - 20);
         camYaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt;
-        if (!wheelOpen && alt && ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
+        if (IsActive && ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
         {
             // Middle-drag orbits: horizontal turns, vertical tilts.
             camYaw += (ms.X - pms.X) * 0.006f;
@@ -153,17 +133,24 @@ partial class BattleScreen
                 if (at is Vector2 pt)
                 {
                     attackMoveMode = false;
-                    if (selectedDivision is { } dv && !deploying) GiveGoal(dv, new Goal(GoalKind.Take, pt));
-                    else if (PickSquad(pt, 1) is Squad foe) { OrderArrows(foe.Centroid()); Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }, move: true); }
-                    else { OrderArrows(pt); LineAt(pt, battle.Centroid(1)); }
+                    if (selectedDivision is { } dv && !deploying) OrderDivisionCompanies(dv);
+                    if (PickSquad(pt, 1) is Squad foe) { OrderArrows(foe.Centroid()); Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }, move: true); }
+                    else
+                    {
+                        // March there, and charge whoever comes near on the way: the move plus the standing rule for it.
+                        OrderArrows(pt); LineAt(pt, battle.Centroid(1));
+                        foreach (var s in Targets().Where(s => Battle.RulesFor(s).Contains(StandingRule.ChargeWhenClose)))
+                            Send(s, q => { q.Rule = StandingRule.ChargeWhenClose; q.RuleFired = false; });
+                        battle.Log((selected.Count == 0 ? "All troops: " : "Squads: ") + "march there, and charge what comes near");
+                    }
                     return;
                 }
             }
         }
         if (ms.RightButton == ButtonState.Pressed && pms.RightButton == ButtonState.Released && hud.MinimapAt(ms.Position) is Vector2 rmw)
         {
-            if (selectedDivision is { } dv && !deploying) GiveGoal(dv, new Goal(GoalKind.Take, rmw));
-            else { OrderArrows(rmw); LineAt(rmw, battle.Centroid(1)); }
+            if (selectedDivision is { } dv && !deploying) OrderDivisionCompanies(dv);
+            OrderArrows(rmw); LineAt(rmw, battle.Centroid(1));
             return;
         }
         if (LmbPressed)
@@ -171,8 +158,16 @@ partial class BattleScreen
             if (hud.PauseAt(ms.Position)) { paused = !paused; return; }
             if (hud.SpeedAt(ms.Position) is int si) { speed = si; paused = false; return; }
             if (hud.ModeAt(ms.Position) && battle.Player.Active && !deploying) { SetCommand(false); return; }
+            if (hud.CaptainAt(ms.Position))
+            {
+                // The captain's picture: look at him; twice quickly, step into him.
+                if (realTime - lastCaptainClick < DoubleClick && battle.Player.Active && !deploying) { SetCommand(false); return; }
+                lastCaptainClick = realTime;
+                camFocus = battle.Player.Pos;
+                return;
+            }
             if (hud.GoalCloseAt(ms.Position)) selectedDivision = null;
-            else if (selectedDivision != null && hud.GoalAt(ms.Position) is var (gk, gs)) GoalCommand(selectedDivision, gk, gs);
+            else if (selectedDivision != null && hud.GoalAt(ms.Position) is Goal gg) GiveGoal(selectedDivision, gg);
             else if (hud.DivisionAt(ms.Position) is Division dc)
             {
                 selectedDivision = selectedDivision == dc ? null : dc;
@@ -198,6 +193,7 @@ partial class BattleScreen
             }
             else if (hud.CardAt(ms.Position) is Squad card)
             {
+                if (deploying) { dragCard = card; dragMoved = false; }
                 if (card == lastCardSquad && realTime - lastCardClick < DoubleClick) camFocus = card.Centroid(); // double-click: look at it
                 lastCardSquad = card;
                 lastCardClick = realTime;
@@ -207,6 +203,18 @@ partial class BattleScreen
             }
             else if (hud.MinimapAt(ms.Position) is Vector2 w) camFocus = w;
             else if (!hud.Over(ms.Position)) boxStart = ms.Position;
+        }
+        if (dragCard != null && ms.LeftButton == ButtonState.Pressed && hud.CardAt(ms.Position) != dragCard) dragMoved = true;
+        if (LmbReleased && dragCard is Squad dragged)
+        {
+            dragCard = null;
+            // Dropped on a post zone or an officer's card: it (and any companies picked with it) go under him.
+            if (dragMoved && (hud.DivisionAt(ms.Position) ?? (hud.Over(ms.Position) ? null : hud.ZoneAt(mouseGround))) is Division to)
+            {
+                if (!selected.Contains(dragged)) { selected.Clear(); selected.Add(dragged); }
+                MoveTo(to);
+                return;
+            }
         }
         if (LmbReleased && boxStart is Point start)
         {
@@ -244,15 +252,7 @@ partial class BattleScreen
             dragStart = null;
             var enemy = battle.Centroid(1);
             bool click = Vector2.Distance(a, mouseGround) < 2;
-            if (selectedDivision is { } dv && !deploying)
-            {
-                // A division takes goals, not orders: an enemy is Attack, a friend is Screen, ground is Take.
-                if (click && PickSquad(mouseGround, 1) is Squad tf) GiveGoal(dv, new Goal(GoalKind.Attack, Target: tf));
-                else if (click && PickSquad(mouseGround, 0) is Squad fr && fr.Division != dv) GiveGoal(dv, new Goal(GoalKind.Screen, Target: fr));
-                else GiveGoal(dv, new Goal(GoalKind.Take, mouseGround));
-                foreach (var ds in dv.Squads.Where(q => q.Alive > 0)) arrows.Add((ds.Centroid(), mouseGround, Ui.Now));
-                return;
-            }
+            if (selectedDivision is { } dv && !deploying) OrderDivisionCompanies(dv); // an officer takes posts and stances; RMB orders his companies
             if (!deploying && SelectedCrews().Count > 0)
             {
                 EngineOrder(mouseGround, click);
@@ -277,10 +277,10 @@ partial class BattleScreen
     {
         var p = ms.Position;
         if (wheelOpen) return CursorKind.Pointer;
-        if (ms.MiddleButton == ButtonState.Pressed && (kb.IsKeyDown(Keys.LeftAlt) || kb.IsKeyDown(Keys.RightAlt))) return CursorKind.Turn;
+        if (ms.MiddleButton == ButtonState.Pressed) return CursorKind.Turn;
         if (boxStart is Point bs && (Math.Abs(p.X - bs.X) > 6 || Math.Abs(p.Y - bs.Y) > 6)) return CursorKind.Box;
         if (hud.Over(p))
-            return hud.CardAt(p) != null || hud.ButtonAt(p) != null || hud.AlertAt(p) != null || hud.DivisionAt(p) != null || hud.GoalAt(p) != null || hud.MinimapAt(p) != null
+            return hud.CardAt(p) != null || hud.ButtonAt(p) != null || hud.PauseAt(p) || hud.SpeedAt(p) != null || hud.ModeAt(p) || hud.CaptainAt(p) || hud.AlertAt(p) != null || hud.DivisionAt(p) != null || hud.GoalAt(p) != null || hud.MinimapAt(p) != null
                 ? CursorKind.Hand : CursorKind.Pointer;
         if (castBy != null) return CursorKind.Cast;
         if (attackMoveMode) return CursorKind.Attack;

@@ -15,10 +15,10 @@ public partial class Campaign
     public int HoldoutsWanted => Math.Max(1, (int)MathF.Round(S.Provinces.Count(Wild) * B.HoldoutsPerWildProvince));
     public IEnumerable<Party> Holdouts => S.Parties.Where(p => p.Lair && !p.Down && p.Breed == "goblin");
     /// Wild country, where goblins dig in and trolls roam: forest, hills, fens and badlands.
-    public static bool Wild(Province p) => p.Kind is "Forest" or "Hills" or "Marsh" or "Badlands";
+    public static bool Wild(Province p) => Lands.Of(p.Kind).Wild;
 
     /// Wolf packs the world keeps: a share of its forest provinces.
-    public int WolfPacksWanted => (int)MathF.Round(S.Provinces.Count(p => p.Kind == "Forest") * B.WolfPacksPerForest);
+    public int WolfPacksWanted => (int)MathF.Round(S.Provinces.Count(p => p.Kind is "Forest" or "Taiga") * B.WolfPacksPerForest);
     public IEnumerable<Party> WolfPacks => S.Parties.Where(p => p.Breed == "wolf" && !p.Down);
     /// What a breed is called, many of them ("goblins", "wolves").
     public static string Plural(string breed) => breed switch { "wolf" => "wolves", "undead" => "undead", _ => breed + "s" };
@@ -30,7 +30,7 @@ public partial class Campaign
     /// Raise a wolf pack in a forest, away from settlements and from you: wolves and the dire wolf that leads them.
     internal bool SpawnWolfPack()
     {
-        var forests = S.Provinces.Where(p => p.Kind == "Forest").ToList();
+        var forests = S.Provinces.Where(p => p.Kind is "Forest" or "Taiga").ToList();
         if (forests.Count == 0) return false;
         for (int attempt = 0; attempt < 16; attempt++)
         {

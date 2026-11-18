@@ -83,20 +83,6 @@ sealed partial class Hud
     }
 
     /// The direction to guard, as the crosshair chevron that lights for it.
-    /// Transient Mount & Blade order banner in top-left of combat view (fades out after 2.5 s).
-    void CombatOrderBanner()
-    {
-        if (string.IsNullOrEmpty(CombatPrompt)) return;
-        float age = B.Time - CombatPromptAt;
-        if (age < 0 || age > 2.5f) return;
-        float alpha = age < 1.8f ? 1 : (2.5f - age) / 0.7f;
-        int w = TW(CombatPrompt, 1) + U(24);
-        var r = new Rectangle(U(12), U(12), w, U(22));
-        Rect(r, PanelBg * (0.85f * alpha));
-        Frame(r, Gold * (0.8f * alpha), U(1));
-        Text(CombatPrompt, r.X + U(10), r.Y + U(7), Gold * alpha, 1);
-    }
-
     static string BlockWord(AttackDir d) => d switch { AttackDir.Overhead => "UP", AttackDir.Thrust => "DOWN", AttackDir.Left => "LEFT", _ => "RIGHT" };
 
     /// Over the foe you are fighting: his name, his health and what he is doing.

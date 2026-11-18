@@ -89,7 +89,9 @@ BattlePlayer.cs         UpdatePlayer (your own unit), ToggleMount, Rally
 BattleCaptain.cs        captain moves (bash, weapon swap, calling a horse), fatigue, supply wagons, AI retreat
 BattleSiege.cs          assaults: defenders on the wall, ladders and gate routing (Via), battering
 BattleGrid.cs           spatial grid for neighbour queries (Near, Separate, NearestFar, NearestRouter)
-BattleDivision.cs       divisions: Goal, Temper, IssueGoal and OrderDelay, Direct, the sergeant's Brain, AiCommand
+BattleDivision.cs       divisions: Post, Stance, Goal (the pair), Temper, IssueGoal and OrderDelay, Direct, Form/Engage/Flank/Harass
+BattlePosts.cs          officers at posts: FrontLine, where each post lies (SpotOf), the officer's Brain by stance, AiCommand
+BattleOfficers.cs       how well an officer keeps his stance by skill: Reaction, Notice, Dress (drift, closing gaps), Stagger, RestSpent
 BattleCourier.cs        riders carrying orders to divisions; cut down by enemies on the road
 BattleTypes.cs          BattleOptions, Weather, BattleResult, CompanyResult, StackResult
 Squad.cs                a company on the field: Order, Formation, slots
@@ -133,7 +135,8 @@ BattleScreen.Orders.cs  squad orders and drawn lines
 BattleScreen.Draw.cs    render passes, sprites, particles, rain, order lines
 BattleScreen.Shots.cs   staged screenshots (IRONFIELD_SHOTS)
 Hud.cs                  battle 2D interface: layout, drawing and hit-testing
-Hud.Divisions.cs        division cards, goal buttons, goal wheel, goal lines, riders, sergeant pennants
+Hud.Divisions.cs        division cards, stance and post buttons, the officer's wheel, lines to posts, riders, sergeant pennants
+Hud.Posts.cs            post zones on the field (deployment, and the officer you picked), dropping companies on them, the drag ghost
 Ui.cs                   immediate-mode panel kit used by the campaign screens
 Controls.cs             rebindable actions (Act enum), defaults, controls.json
 
@@ -188,7 +191,7 @@ Tests run it at a fixed `1/60` s. Each step, with the file it lives in:
 | rebuild the neighbour grid | `BuildGrid` | `BattleGrid.cs` |
 | team centroids and squad bounding circles | `UpdateCentroids` | `Battle.cs` |
 | AI generals, every 0.5 s (team 1 always; team 0 when `AutoPlayer` or it has AI squads) | `General` | `BattleAI.cs` |
-| couriers, goals that arrive, the AI's goals, each division's brain | `UpdateDivisions` | `BattleDivision.cs`, `BattleCourier.cs` |
+| couriers, orders that arrive, the AI's stances, each officer's look | `UpdateDivisions` | `BattleDivision.cs`, `BattlePosts.cs`, `BattleCourier.cs` |
 | siege gate battering | `Batter` | `BattleSiege.cs` |
 | reinforcements, every 1 s | `Reinforce` | `Battle.cs` |
 | called horse, supply wagons | `UpdateCalledHorse`, `Resupply` | `BattleCaptain.cs` |
@@ -288,17 +291,54 @@ come back as `Deployed: false` with no losses.
 
 ### 4.9 Divisions (`BattleDivision.cs`, `BattleCourier.cs`)
 
-A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a `Temper` (Bold, Steady, Cautious), a
-`Skill` (1-10) and a `Goal` (`GoalKind` + point / target squad / flank side). Division squads are left out of
-`Commanded` (your orders) and of the AI general's `Led()`; the division's `Brain` gives their orders instead, every
-0.5-1 s by skill. Goals: Hold and Take (stand at a point, engage what comes within reach, leash back by temper), Attack
-(form toward the target, then engage), Flank (an axis fixed when the goal starts; swing wide, come alongside, hit), Screen
-(stand in front of a friend), Guard (stay by the general), Reserve, Harass (ranged), Pursue, FallBack.
+A `Division` groups squads of one team under an officer (`Unit.Sergeant`), with a `Temper` (Bold, Steady, Cautious), a
+`Skill` (1-10) and a `Goal`: a `Post` and a `Stance` (docs/OFFICERS.md OF1). Division squads are left out of
+`Commanded` (your orders) and of the AI general's `Led()`; the officer's `Brain` (BattlePosts.cs) gives their orders instead,
+every 0.5-1 s by skill. He does what the stance says and never changes it himself (the general does: `AiCommand`).
 
-- **Orders arrive late:** `IssueGoal(d, goal)` sets `d.Pending` and `d.PendingAt = Time + OrderDelay(d)`; `UpdateDivisions`
-  swaps it in when due. A newer goal replaces a pending one. `Direct(squad, act)` delays a plain order to one company the
+- **Where a post lies:** `FrontLine(team)` is the middle, facing (toward the enemy's centroid) and the two ends of the side's
+  line: the Front post's companies plus the foot the captain leads himself (not his guard, not bows or horse). Wings stand
+  beside its ends (`WingSpot`), skirmishers `SkirmishAhead` (22 m) ahead (a screen `ScreenAhead`, 12 m), the reserve
+  `ReserveBehind` (30 m) behind. The Front post stands where it was when the stance began (`Division.Spot` and each
+  company's `Offsets`), so Hold and Advance keep the line as you drew it up. `SpotOf(d, goal)` is where a stance would put him.
+- **Stances:** Front: Hold (stand; shields lock against horse; bows shoot), Advance (the spot walks at most 6 m ahead of where
+  the line stands and halts 3 m from the foe), Charge (each company at the enemy nearest it, horse at soft prey). Wing: Guard
+  (beside the line's end; meet a foe within `WingReach` and come back past `WingLeash`), Swing (the old flank: swing wide,
+  come alongside, hit), Charge. Skirmish: Loose (shoot; `Phase` 1 behind the line while foot is within `LooseGiveWay`), Harass,
+  Screen (give way round the nearer end). Reserve: Wait, Plug (`Plugs`: a line company half gone, pressed or running gets the
+  nearest waiting company sent at its foe), Follow (by the captain).
+- **Skill decides how well (OF2, `BattleOfficers.cs`), both sides alike:** `Reaction` (seconds between looks, 2 - 0.16 x skill),
+  `Notice` (15 + 4 x skill m: shields lock against horse that near, a Guard wing meets a foe within 0.7 of it, Loose gives way
+  at 10 + 0.4 of it), `LineSkill` (skill, +3 for a Drillmaster): under 5 his companies drift (`Division.Drift`, a random walk
+  on the battle rng, capped), from 5 he closes his front rank to 3 m gaps (`Dress`) and Advance steps from his rearmost
+  company, not his foremost; `Stagger` (0.08 x (10 - skill)^2 s between companies going in on Charge, nearest first,
+  `Division.Sequence`; half for a Hothead); from skill 6 `RestSpent` pulls a company in contact under 40% of its men or
+  under 35 nerve back `RestBack` m (`Division.Resting`) and swaps a fresh company from behind the line into its place
+  (Stubborn: 30% and 25, and his shaken men gain 0.5 morale a look on Hold). The line faces the way the side deployed
+  (+Z for team 0), so posts do not swing when companies wander.
+- **The command view (OF4):** each officer's card reads `POST · STANCE · Situation(d)` (the middle dot is a glyph in
+  `PixelFont`, char U+00B7; the map is 256 wide). While you deploy, and for the officer you picked, `Hud.PostZones` draws
+  each wing, skirmish and reserve post as a dashed box where `SpotOf` puts it (sized by his companies), named; a front
+  officer gets only the tag over his companies (their division rings already show them), and dropping counts on any of his
+  companies. Drag a company card onto a zone or an officer's card, or pick companies and click a zone (not a company),
+  to `Assign` them. AUTO-FILL (tray, deployment, `Battle.AutoFill`) gives your companies to posts that suit them (horse
+  wings, bows skirmish, foot front then reserve), up to `DivisionFill` each, leaving you three. With an officer picked,
+  keys 1-3 are his post's stances (shown on the buttons).
+- **Company sergeants (OF5, `BattleSergeants.cs`):** every company but beasts, the raised dead and swarms has a sergeant
+  (`Squad.Sgt`: a named man first, then its best man by tier), appointed at its first look. Once a second (`tick % 60 == 30`)
+  `UpdateSergeant` picks his task: RE-FORMING (broken or broke ranks), HOLDING THEM BACK (restless), RALLYING (a tenth of
+  its men under 40 morale: men within 10 m of him under 55 gain 2.5 a second), DRESSING (Formed under 0.9). While he stands
+  the ranks re-form 25 % quicker (`UpdateFormed`) and his men's urge falls faster (`UpdateUrge`, +0.1). When he falls the
+  company loses `SergeantLoss` (0.25) drill, about a grade, kept in `SgtPenalty`, until another man steps up after
+  `StepUpTime` (8 s elite to 24 s rabble) and it is given back. The card shows a plate across the portrait's foot (DRESSING, RALLYING, RE-FORMING,
+  HOLDING, NO SERGEANT; RESTLESS wins over them); the hover card a line. No dice, so replays are untouched.
+- **Saved names:** `DivisionSpec.Goal` and the campaign's `DivisionRecord.Goal` are strings read by `Goal.FromName`: "Post:Stance",
+  or an old goal name mapped to the nearest post (Hold -> Front Hold, FlankLeft -> LeftWing Swing, Reserve -> Reserve Plug...).
+
+- **Orders (no delay for now):** `IssueGoal(d, goal)` sets `d.Pending` and `d.PendingAt = Time + OrderDelay(d)`; `UpdateDivisions`
+  swaps it in when due. `OrderDelay` is 0 while `Battle.Riders` is false (docs/OFFICERS.md OF0), so goals land next tick. A newer goal replaces a pending one. `Direct(squad, act)` delays a plain order to one company the
   same way; when it lands the squad gets `Override = true` and its sergeant leaves it alone until the next goal.
-- **Couriers:** each goal (and each batch of direct orders) sends a `Courier` that rides the line from the general so that it
+- **Couriers (dormant while `Riders` is off):** each goal (and each batch of direct orders) sends a `Courier` that rides the line from the general so that it
   arrives at `PendingAt`. An enemy within 2.5 m cuts it down (after a 1.5 s grace): the order's time moves back by a fresh
   delay, and the next rider bends round the danger. `BattleOptions.Couriers = false` keeps plain delays.
 - **Leaders:** `LeaderCheck` notices a dead sergeant (morale -8 for his men, orders x2 slower) and promotes the best man
@@ -308,7 +348,12 @@ A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a 
   (`Campaign.WithDivisions`); `Armies.Divide` splits any big army into a horse wing and two foot battles (enemy lords and
   quick battles), filled to `Armies.DivisionFill` (6) so there is room to move companies in deployment, at most
   `Armies.DivisionCap` (8) each; each split division gets a nature (`DivisionSpec.Traits`); while the captain would still lead more than
-  `Armies.CommandCap` (10), spare foot joins the battles and the bows get a division of their own. The AI's goals come from `AiCommand(team)`.
+  `Armies.CommandCap` (10), spare foot joins the battles and the bows get a division of their own. On posts (OF3): the horse
+  rides both wings when there are 2+ companies and 60+ men (Left horse Veteran, Right horse Hothead), else the right; the
+  battles stand on the front line; the bows skirmish (Loose); foot still over the cap waits as "The reserve" (Reserve:Wait).
+  Every officer's skill is `Armies.OfficerSkill(army)` (average tier x 1.1 + level x 0.35, 1-9). The AI's stances come from
+  `AiCommand(team)` / `AiStance`: Hold -> Charge when at blows or within 25 m, Hold -> Advance after its wait (by temper) or
+  under arrows, Advance -> Charge within 20 m, Guard -> Swing once the line is at blows (or twice the wait), Wait -> Plug.
 - **The command cap:** `Battle.Deploy` fields at most `CommandCap` companies the captain leads himself (`Leads`: not allied,
   not in a division, not an assault); the rest wait in `reserves` with `Held` set and march on (`Reinforce`) only when
   `OpenSlots(team)` > 0, i.e. one of his own companies is spent (no man standing unrouted), folded or split. Budget reserves
@@ -316,17 +361,17 @@ A `Division` groups squads of one team under a leader (`Unit.Sergeant`), with a 
   both teams. Test `CommandCap`.
 - **Sergeants that matter (docs/SERGEANTS.md, `BattleCommand.cs`):** the tray (`ReservesOf`, `CallUp` (immediate at time 0
   and recorded in `Replay.Setup`, else a rider of `CallUpDelay` s, `Frame.CallUps`), `Assign` in deployment); horn plans
-  (`SetHornPlan`, `SoundHorn`, `Division.Horn`/`PendingHorn`, `Frame.Horn`, `GoalOrder.Plan`); questions (`Questions` in
-  `Brain`, `Query`, `Answer`, default by temper after `QueryWait`); `WitsGrade` = the better of a company's grade and its
-  sergeant's (`SergeantGrade`); voice (`InVoice`, `VoiceReach` 25 m, 0.6 s); natures (`Division.Traits`, `Has`). UI in
-  `Hud.Command.cs` (tray, question box, division colours and boxes) and `Hud.Divisions.cs` (cards, horn route). Tests in
+  (`SetHornPlan`, `SoundHorn`, `Division.Horn`/`PendingHorn`, `Frame.Horn`, `GoalOrder.Plan`); questions were dropped in
+  docs/OFFICERS.md OF0; `WitsGrade` = the better of a company's grade and its
+  sergeant's (`SergeantGrade`); voice (`InVoice`, `VoiceReach` 25 m; moot while orders land at once); natures (`Division.Traits`, `Has`). UI in
+  `Hud.Command.cs` (tray, division colours and boxes) and `Hud.Divisions.cs` (cards, horn route). Tests in
   `Tests/SergeantTests.cs`; shots with `IRONFIELD_SHOTS_FROM=sergeants`.
 - **Company size:** campaign companies hold `Rules.Cap` places (22 x ArmyScale = 66, horse 16 x 3 = 48), a man taking
   `TierWeight(tier)` places, so 60-70 men of the line and fewer elites. `Armies.Large` (quick battles, bench, scale tests)
   sizes its companies the same way (`FullCount`); `Armies.Random` keeps its small base counts for the many small test battles.
 - **Distance:** each side stands `Battle.Stand` (35 m) behind the old 30 m line, about 130 m apart; `MapRadius` grows by
   `Stand - 15` so the rear lines keep room, and the forest clearing's ring of woods moves out with it.
-- **Replays:** goals you give are recorded (`Frame.Goals`) and re-issued on playback; the AI's are recomputed. Direct orders
+- **Replays:** posts and stances you give are recorded (`Frame.Goals`, `GoalOrder.Post`/`Stance`) and re-issued on playback; the AI's are recomputed. Direct orders
   are recorded when they land, as ordinary order changes.
 
 ### 4.10 Ground (docs/archive/TERRAIN.md)
@@ -516,9 +561,17 @@ which panel is open; set it to `PanelKind.None` to close. Colours come from `Sty
 ### 6.4 `BattleScreen` and `Hud`
 
 `BattleScreen` wraps a `Battle`: two views blended by an eased camera, **field** (third person, you fight) and **command**
-(orbit camera, slowed time, you direct squads). Input in `BattleScreen.Controls.cs` (`FieldControls`, `CommandControls`),
-orders in `BattleScreen.Orders.cs` (`Command(Cmd)`, drawn lines), rendering in `BattleScreen.Draw.cs`. `Hud.cs` draws the
-battle's 2D interface (cards, minimap, menus, crosshair, order wheel) and answers hit tests.
+(orbit camera and a cursor, you direct companies). They are two games with two HUDs that never show together
+(docs/PLAYTEST.md PT4, "As rebuilt"). Input in `BattleScreen.Controls.cs` (`FieldControls`, `CommandControls`), orders in
+`BattleScreen.Orders.cs` (`Command(Cmd)`, drawn lines), the fight view's own orders in `BattleScreen.Fight.cs` (`ListenArm`:
+number keys pick the arm that listens; `LookFoe`, `HoldKey`: orders go where you look), rendering in `BattleScreen.Draw.cs`.
+`Hud.cs` holds what both views share (layout, hit tests, flags, hover cards); `Hud.Deck.cs` draws the command view (`TopBar`,
+`CaptainPlate`, `Cards`, `OrderDeck`; `LayoutOrders` decides which buttons the chosen companies get, `Lit` which are gold,
+`Info` each order's name, icon, key and hover line); `Hud.Fight.cs` the fight view (`Vitals`, `ArmChips`, `Wheel`, `OrderToast`).
+The command view runs at the battle's speed (`Speeds`, x0.25 to x3); the sim keeps the captain's guard meanwhile
+(`Battle.Guard`, `SelfGuard` in BattlePlayer.cs: he faces and blocks the nearest foe winding up at him, never parries or
+strikes; test `CaptainKeepsGuard`). To add an order to the deck: a `Cmd`, an `Info` entry, a case in `BattleScreen.Command`,
+and a line in `LayoutOrders` saying when it shows.
 
 ### 6.5 Controls
 
@@ -547,6 +600,9 @@ There are no model or pre-rendered WAV/OGG files. The only images are the unit s
   baked set loads to exactly the painted atlas. Gotchas: keep a PNG's size (the rig reads metres from pixels; `SpritesBaked`
   fails otherwise); semi-transparent pixels load premultiplied; save 8-bit, not interlaced (`Png.Decode` refuses otherwise).
   `Puppet.cs` draws each unit as part sprites on a 3D skeleton, posed from its action state.
+  The tier VII Grand Masters use the `auramaster` helmet, torso and sleeve. Their crown and gold inlays are painted into
+  the parts, not an aura effect; the cape and shield still show team colours. To check the assembled knight, take a full
+  `IRONFIELD_SHOTS` run and open `gallery-order.png`.
 - **World:** `World.cs` builds the terrain mesh, foliage, towns, water and the minimap from `Terrain`. The build has two
   halves: `new World(terrain)` makes every mesh and image with no GraphicsDevice (safe off the main thread; the campaign
   map's runs behind the loading screen), and `Upload(gd)` sends them to the GPU. The CPU half runs its rows and tiles in
@@ -715,8 +771,8 @@ Put battle tests in `Tests/BattleTests.cs`, campaign tests in `Tests/CampaignTes
 `Tests/CareerTests.cs`, and add the call to `SelfTest.Run()`. Use fixed seeds so results are repeatable.
 
 Battle-scale tests: `ScaleBattle` (600 a side, divided, deploys without overlaps, under 12 ms a tick, replays exactly),
-`DivisionGoals` (delay, countermand, direct orders, leash, flank, a fallen sergeant, replay) and `Couriers`; campaign:
-`CampaignDivisions` (make, assign, save, into battle, old saves).
+`DivisionGoals` (orders land, direct orders, Hold never chases, Advance halts at contact, Guard beside the line, Swing, Loose gives way, Plug, a fallen sergeant, old names, replay), `OfficerSkill` (reaction, notice, together or piecemeal, drift, closing a gap, resting a spent company, natures) and `Couriers`; campaign:
+`CampaignDivisions` (make, assign, post and stance, old goal names mapped, save, into battle, old saves); `PostsInDeployment`, `CompanySergeants`.
 
 Other tools: `--balance N` writes CSVs of N headless campaigns and battles to `balance/` (gitignored); `--pacing N` runs the
 stand-in captain and reports career stage days against targets (slow: ~10 min for 8).

@@ -101,6 +101,9 @@ void main()
         float rad = (vUV.x - 5.0) / 1.12; // still water: 0 at the middle, 1 at the shore
         float edge = mix(abs(vUV.x), smoothstep(0.55, 1.0, rad), still);
         vec3 wc = vColor.rgb * mix(vec3(1.0), vec3(1.22, 1.18, 1.04), smoothstep(0.5, 1.0, edge)); // paler shallows by the banks
+        float drift = Noise2(vWorld.xz * 0.012 + vec2(Time * 0.004, 0.0)) * 0.6 + Noise2(vWorld.xz * 0.045 + 5.0) * 0.4;
+        float bands = floor(drift * 4.0) / 3.0 + smoothstep(0.42, 0.5, fract(drift * 4.0)) / 3.0; // painted: a few tones with soft-edged steps
+        wc *= mix(vec3(1.0), mix(vec3(0.86, 0.9, 0.94), vec3(1.12, 1.1, 1.04), clamp(bands, 0.0, 1.0)), still); // still water: broad lighter and darker reaches
         wc = mix(vec3(dot(wc, vec3(0.299, 0.587, 0.114))), wc, Palette.x) * Palette.y;
         vec3 wl = -SunDir;
         vec3 rn = normalize(vec3((rip - 0.5) * 0.5, 1.0, (Noise2(q * 1.3 + 7.0) - 0.5) * 0.5));
@@ -110,11 +113,14 @@ void main()
         vec3 wcol = wc * (wamb + SunColor * max(wl.y, 0.0) * wsh) * (0.9 + rip * 0.2);
         float fres = pow(1.0 - max(dot(vw, rn), 0.0), 3.0);
         wcol = mix(wcol, FogColor * 0.85, fres * 0.55);                                                   // the sky in it
-        wcol += SunColor * pow(max(dot(reflect(-wl, rn), vw), 0.0), 60.0) * 0.6 * wsh;                     // sun glint
+        float glintFar = 1.0 - smoothstep(50.0, 160.0, length(CameraPos - vWorld)); // far ripples alias into speckle: let the glint go
+        wcol += SunColor * pow(max(dot(reflect(-wl, rn), vw), 0.0), 60.0) * 0.6 * wsh * glintFar;          // sun glint
         float streak = (1.0 - smoothstep(0.0, 0.4, abs(vUV.x))) * smoothstep(0.45, 0.75, Noise2(vec2(along * 0.06 - Time * 0.3, vUV.x * 0.7))) * (1.0 - still);
         wcol += (wamb + SunColor * 0.5) * vec3(0.13, 0.15, 0.16) * streak;                                // the bright thread of the current
         float foam = smoothstep(0.8, 1.0, edge) * smoothstep(0.45, 0.75, Noise2(q * 3.0 + 1.0)) * (1.0 - still);
         wcol = mix(wcol, vec3(0.86, 0.88, 0.86) * (wamb + SunColor * 0.6), foam * 0.45);                  // foam at the banks
+        float surf = smoothstep(0.8, 0.93, rad) * (0.6 + 0.4 * sin(rad * 40.0 - Time * 1.5)) * smoothstep(0.25, 0.5, Noise2(vWorld.xz * 0.3 + Time * 0.05)) * still;
+        wcol = mix(wcol, vec3(0.92, 0.94, 0.92) * (wamb + SunColor * 0.6), surf * 0.75);                  // a broken line of surf at the shore
         wcol += vec3(0.25) * Field.w * smoothstep(0.9, 0.97, Noise2(vWorld.xz * 6.0 + vec2(Time * 3.1, -Time * 2.3))); // rain pocks
         // Ice in winter: a cold blue sheet, cracked, darker toward a rim at the banks so it does not melt into the snow.
         float crack = 1.0 - smoothstep(0.0, 0.02, abs(Noise2(vWorld.xz * 0.3) - 0.5));
@@ -187,7 +193,8 @@ void main()
         float sw = Noise2(vWorld.xz * 0.016 + 7.0) * 0.65 + Noise2(vWorld.xz * 0.045 + 1.0) * 0.35;
         float lush = Noise2(vWorld.xz * 0.028 + 13.0);
         float level = smoothstep(0.8, 0.95, n.y);
-        albedo = mix(albedo, mix(albedo * vec3(0.82, 0.96, 0.8), albedo * vec3(1.14, 1.06, 0.7), smoothstep(0.32, 0.72, sw)), level);
+        float own = 1.0 - smoothstep(0.55, 0.75, dot(albedo, vec3(0.3, 0.55, 0.15))); // snow and pale sand keep their own colour (WM3)
+        albedo = mix(albedo, mix(albedo * vec3(0.82, 0.96, 0.8), albedo * vec3(1.14, 1.06, 0.7), smoothstep(0.32, 0.72, sw)), level * own);
         albedo *= 0.88 + 0.22 * smoothstep(0.2, 0.8, lush);
     }
     // Close up, the ground breaks into mottled grass and patches of clover and dry stalks (faded in within ~40 m).

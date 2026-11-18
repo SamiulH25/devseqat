@@ -48,7 +48,7 @@ partial class MapScreen
         int perRow = Math.Max(1, (board.Width - headW - ui.U(14) + gap) / (tileW + gap));
         bool newLane = divs.Count < Campaign.MaxDivisions;
         int avail = board.Bottom - y - (newLane ? ui.U(50) : 0);
-        int LaneH(DivisionRecord? d, int tiles, int th) => Math.Max(ui.U(d == null ? 48 : 64), Math.Max(1, (tiles + perRow - 1) / perRow) * (th + gap) + gap);
+        int LaneH(DivisionRecord? d, int tiles, int th) => Math.Max(ui.U(d == null ? 48 : 72), Math.Max(1, (tiles + perRow - 1) / perRow) * (th + gap) + gap);
         // A place to put the picked company shows in every lane it is not in (one tile more).
         int Tiles((DivisionRecord? D, List<CompanyRecord> Comps) l) => l.Comps.Count + (musterPick != null && !l.Comps.Contains(musterPick) ? 1 : 0);
         int tileH = ui.U(66);
@@ -143,10 +143,8 @@ partial class MapScreen
             ui.Pips(pr, cmd / 6f, Kit.Gilt, 6);
             ui.Text($"{cmd}", pr.Right + ui.U(4), hy + ui.U(17), Style.Text, 1);
             if (ui.Hover(new Rectangle(pr.X, pr.Y - ui.U(3), pr.Width + ui.U(14), ui.U(13)))) note = $"COMMAND {cmd} OF 6: HE IS QUICKER TO ACT AND TO HEAR YOUR ORDERS.";
-            var gb = new Rectangle(hx, hy + ui.U(32), hw, ui.U(20));
-            int gi = Array.IndexOf(Campaign.DivisionGoals, d.Goal);
-            if (ui.Button(gb, ui.Fit("OPENS: " + GoalText(d.Goal), gb.Width - ui.U(24)), true, ">")) { C.SetDivisionGoal(d, Campaign.DivisionGoals[(gi + 1) % Campaign.DivisionGoals.Length]); acted = true; }
-            if (ui.Hover(gb)) note = "WHAT HIS DIVISION DOES WHEN THE BATTLE OPENS. CLICK FOR THE NEXT GOAL.";
+            // His post and his stance when the battle opens (OF6), each a button that steps to the next.
+            if (PostButtons(d, new Rectangle(hx, hy + ui.U(41), hw, ui.U(20)), null, captions: true)) acted = true; // no arrows: room for RIGHT WING
         }
         ui.Rect(new Rectangle(lane.X + headW, lane.Y + ui.U(6), ui.U(1), lane.Height - ui.U(12)), Color.White * 0.08f);
         int gap = ui.U(6), x0 = lane.X + headW + ui.U(8), i = 0;

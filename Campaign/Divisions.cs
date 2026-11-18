@@ -5,7 +5,6 @@ namespace Ironfield;
 public partial class Campaign
 {
     public const int MaxDivisions = 6;
-    public static readonly string[] DivisionGoals = { "Hold", "Attack", "FlankLeft", "FlankRight", "Reserve", "Screen", "Harass", "Guard" };
 
     public IEnumerable<DivisionRecord> Divisions => S.Divisions;
 
@@ -53,7 +52,17 @@ public partial class Campaign
         return null;
     }
 
-    public void SetDivisionGoal(DivisionRecord d, string goal) { if (DivisionGoals.Contains(goal)) d.Goal = goal; }
+    /// The post and stance a division opens a battle with.
+    public static Goal GoalOf(DivisionRecord d) => Ironfield.Goal.FromName(d.Goal);
+
+    /// Set its post and stance from a saved name ("LeftWing:Guard", or an old goal name, mapped).
+    public void SetDivisionGoal(DivisionRecord d, string goal) => d.Goal = Ironfield.Goal.FromName(goal).Name;
+
+    /// Put the division on another post (OF6): it keeps its stance if the post has it, else takes the post's first.
+    public void SetDivisionPost(DivisionRecord d, Post post) => d.Goal = Ironfield.Goal.Of(post, GoalOf(d).Stance).Name;
+
+    /// Give the division another of its post's stances (a stance of another post is refused).
+    public void SetDivisionStance(DivisionRecord d, Stance stance) { var g = GoalOf(d); if (Ironfield.Goal.Fits(g.Post, stance)) d.Goal = new Goal(g.Post, stance).Name; }
 
     /// How a division's leader fights: a companion's temper (or one from his traits), a sergeant's from his.
     public string TemperOf(DivisionRecord d)
@@ -94,7 +103,7 @@ public partial class Campaign
         {
             var lead = LeaderCompanyOf(d);
             string hero = d.LeaderChar >= 0 && lead?.Hero == DivisionName(d) && lead.Division == d.Id ? lead.Hero : "";
-            return new DivisionSpec(d.Id, DivisionName(d), TemperOf(d), CommandOf(d), d.Goal, hero, lead?.Division == d.Id ? lead.Id : 0);
+            return new DivisionSpec(d.Id, DivisionName(d), TemperOf(d), CommandOf(d), GoalOf(d).Name, hero, lead?.Division == d.Id ? lead.Id : 0);
         }).ToList();
         return army with
         {

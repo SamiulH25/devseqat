@@ -54,7 +54,7 @@ public sealed partial class WorldMap
     /// ProvinceScale; past it the count follows the land's area, so a bigger map is as crowded per league as that one was
     /// (provinces spread out as the map grows, and parties counted by province grew sparse; docs/archive/WORLD.md W2).
     public float PartyScale => ExtentUsed <= PreviousExtent + 1 ? ProvinceScale
-        : PreviousProvinces / (float)LegacyProvinces * (ExtentUsed / PreviousExtent) * (ExtentUsed / PreviousExtent);
+        : PreviousProvinces / (float)LegacyProvinces * (ExtentUsed / PreviousExtent) * (ExtentUsed / PreviousExtent) * LandShare; // a designed map counts only its land
     /// About how many provinces the pre-W2 map had (the anchor PartyScale grows from).
     public const int PreviousProvinces = 60;
     /// How far apart this map's places stand against the original map's (1 = the same). Distances that mean "the next
@@ -63,7 +63,11 @@ public sealed partial class WorldMap
     /// Half the side of this map's ground: the provinces, plus the mountain rim (an old save keeps the small world it had).
     public float GroundHalf => ExtentUsed + Rim;
     /// The nearest point to `p` on the land in play (the square parties travel on; the rim beyond is closed to them).
-    public Vector2 InLand(Vector2 p) => Vector2.Clamp(p, new Vector2(-ExtentUsed), new Vector2(ExtentUsed));
+    public Vector2 InLand(Vector2 p)
+    {
+        p = Vector2.Clamp(p, new Vector2(-ExtentUsed), new Vector2(ExtentUsed));
+        return cellSea != null ? OntoLand(p) : p; // a designed map: off the sea, onto the nearest shore
+    }
     readonly List<(Vector2 C, float R, float H)> hills = new();
     /// The look-up grid for ProvinceAt, RoadDist and RiverDist, built on first use (once the roads and rivers are laid).
     MapIndex? index;
@@ -87,6 +91,7 @@ public sealed partial class WorldMap
     /// `realms` = how many data realms the map shares out (a save's DataRealms; 0 = all of them, as a new campaign has).
     public static WorldMap Generate(int seed, float extent = Extent, int layout = CurrentLayout, int realms = 0)
     {
+        if (layout >= DesignLayout) return FromDesign(WorldDesign.Get(), realms); // layout 5: the drawn world (WorldDesigned.cs)
         var m = new WorldMap(seed) { ExtentUsed = extent, Layout = layout };
         int realmCount = layout < 3 ? 3 : realms > 0 ? Math.Min(realms, Factions.All.Count) : Factions.All.Count;
         var rng = new Random(seed);
@@ -330,16 +335,7 @@ public sealed partial class WorldMap
     }
 
     /// Which sites each kind of country holds (the first kinds are the likeliest).
-    static string[] SiteKindsFor(string province) => province switch
-    {
-        "Hills" => new[] { "ruin", "stones", "mine", "watchtower", "hermit", "spring" },
-        "Forest" => new[] { "ruin", "hermit", "spring", "shrine", "stones", "watchtower" },
-        "Farmland" => new[] { "mill", "shrine", "battlefield", "watchtower", "spring", "ruin" },
-        "Marsh" => new[] { "shrine", "hermit", "ruin", "spring", "stones", "mill" },
-        "Steppe" => new[] { "stones", "battlefield", "watchtower", "ruin", "shrine", "spring" },
-        "Badlands" => new[] { "mine", "ruin", "watchtower", "stones", "hermit", "spring" },
-        _ => new[] { "shrine", "battlefield", "mill", "spring", "ruin", "watchtower" },
-    };
+    static string[] SiteKindsFor(string province) => Lands.Of(province).Sites;
 
     /// One or two sites per province, off the roads and clear of settlements and rivers. They use their own random numbers,
     /// so adding them moved nothing else on the map.
@@ -382,11 +378,12 @@ public sealed partial class WorldMap
 
     // ---------- queries ----------
 
-    public Province ProvinceAt(Vector2 p) => Index.ProvinceAt(p) ?? ProvinceScan(p);
+    public Province ProvinceAt(Vector2 p) => cellProvince != null ? DesignProvinceAt(p) : Index.ProvinceAt(p) ?? ProvinceScan(p);
 
     /// The full scans the index answers for; kept for points off the grid and for the test that checks the two agree.
     public Province ProvinceScan(Vector2 p)
     {
+        if (cellProvince != null) return DesignProvinceAt(p);
         Province best = Provinces[0];
         float bd = float.MaxValue;
         foreach (var q in Provinces)
@@ -414,16 +411,13 @@ public sealed partial class WorldMap
     /// Map travel speed factor at a point (terrain kind, roads).
     public float SpeedFactor(Vector2 p, float roadBonus) =>
         RoadDist(p) < 2.5f ? roadBonus : RiverDist(p) < 1.6f || InLake(p) ? 0.35f : OnRidge(p) ? 0.45f
-        : ProvinceAt(p).Kind switch { "Forest" => 0.7f, "Hills" => 0.8f, "Marsh" => 0.6f, "Steppe" => 1.1f, "Badlands" => 0.85f, _ => 1f };
+        : Lands.Of(ProvinceAt(p).Kind).Speed;
 
     /// Battle ground for a fight at p: the province's kind, with a road if one runs close.
     public TerrainParams BattleGround(Vector2 p, float wet = 0, int season = -1)
     {
-        var t = OnRidge(p) ? TerrainParams.Hills : ProvinceAt(p).Kind switch
-        {
-            "Forest" => TerrainParams.Forest, "Hills" => TerrainParams.Hills, "Farmland" => TerrainParams.Farmland,
-            "Marsh" => TerrainParams.Marsh, "Steppe" => TerrainParams.Steppe, "Badlands" => TerrainParams.Badlands, _ => TerrainParams.Meadow,
-        };
+        bool shore = Designed && NearSea(p);
+        var t = shore ? TerrainParams.Coast : OnRidge(p) ? TerrainParams.Hills : Lands.Of(ProvinceAt(p).Kind).Field;
         bool road = RoadDist(p) < 6, river = RiverDist(p) < 12;
         // The field's shape from what is on the map here (docs/archive/TERRAIN.md T7): a road meeting a river is a river line
         // with its bridge, a village gives a village between the lines, a ridge a crest or (near a road) a pass.
@@ -431,6 +425,7 @@ public sealed partial class WorldMap
         if (road && river && t != TerrainParams.Marsh) layouts = new[] { FieldLayout.RiverLine };
         else if (Settlements.Any(s => s.Kind == SettlementKind.Village && Vector2.Distance(s.Pos, p) < VillageNear) && t != TerrainParams.Marsh && t != TerrainParams.Forest) layouts = new[] { FieldLayout.Village };
         else if (OnRidge(p)) layouts = road ? new[] { FieldLayout.Pass } : new[] { FieldLayout.Ridge, FieldLayout.Ridge, FieldLayout.TwoHills };
+        if (shore) layouts = new[] { FieldLayout.Shore }; // by the sea the sea is on the field (WM3)
         return t with { Road = road, River = river || t == TerrainParams.Marsh, Layouts = layouts, Wet = wet, Season = season };
     }
 
@@ -458,6 +453,7 @@ public sealed partial class WorldMap
             float d = Vector2.Distance(new Vector2(x, z), c) / r;
             if (d < 1) h += hh * (1 - d * d) * (1 - d * d);
         }
+        if (Designed) return DesignedHeight(x, z, h);
         float edge = MathF.Max(MathF.Abs(x), MathF.Abs(z));
         float t = Math.Clamp((edge - (ExtentUsed - 10)) / (GroundHalf - ExtentUsed + 10), 0, 1);
         if (Layout >= 4) // graded: rolling foothills first, then the range climbing to its peaks (no wall at the edge of the land)
@@ -471,6 +467,29 @@ public sealed partial class WorldMap
         return h;
     }
 
+    /// A designed map's land: the ground and ridges as anywhere, sinking to a sea floor across the shore (no mountain rim:
+    /// the sea closes this world).
+    float DesignedHeight(float x, float z, float h)
+    {
+        if (Ridges.Count > 0) h += RidgeHeight(new Vector2(x, z)) * (0.85f + 0.3f * Terrain.Noise(x * 0.05f, z * 0.05f, Seed + 3));
+        float land = Landness(new Vector2(x, z));
+        // Across the shore (blurred landness 0 to 1): the sea floor, a shelf rising to the shallows, a gentle beach at the
+        // drawn coast (land 0.5), then a bank up to the land's own height.
+        float Up(float a, float b) => MathHelper.SmoothStep(0, 1, Math.Clamp((land - a) / (b - a), 0, 1));
+        if (land < 0.25f) return MathHelper.Lerp(-SeaDepth, BeachLow, Up(0.03f, 0.25f));
+        if (land < 0.86f) return MathHelper.Lerp(BeachLow, BeachHigh, (land - 0.25f) / 0.61f);
+        return MathHelper.Lerp(BeachHigh, h + LandRise, Up(0.86f, 0.99f));
+    }
+
+    /// How deep the sea floor lies below a designed map's land.
+    public const float SeaDepth = 7;
+    /// The sea's surface on a designed map (the land is lifted well above it, the sea floor sinks below).
+    public const float SeaLevel = 0;
+    /// How far a designed map's land is lifted, so its lowest ground (the noise's dips, river beds) stays above the sea at 0.
+    public const float LandRise = 4.5f;
+    /// A designed map's beach runs from just under the water to just above it.
+    const float BeachLow = -0.5f, BeachHigh = 0.7f;
+
     /// How far out on the mountain rim a point is: 0 at the edge of the land in play (and inside it), 1 at the world's end.
     float RimAt(float edge) => Math.Clamp((edge - ExtentUsed - 4) / (GroundHalf - ExtentUsed - 4), 0, 1);
     /// Sharp-crested noise (0..1): ridges where plain noise crosses its middle.
@@ -479,7 +498,10 @@ public sealed partial class WorldMap
     /// Ground tint: patchwork fields in farmland, dark forest floor, dry hills, grey rock and snow on the rim (visual only).
     public Vector3 Tint(Vector2 p, Vector3 ground)
     {
-        var c = ground * KindTint(p);
+        var land = Lands.Of(ProvinceAt(p).Kind);
+        var c = ground * KindTint(p, land);
+        if (land.Wash.W > 0) // sand and frost: drawn toward a colour of their own, mottled
+            c = Vector3.Lerp(c, new Vector3(land.Wash.X, land.Wash.Y, land.Wash.Z) * (0.93f + 0.14f * Terrain.Noise(p.X * 0.11f, p.Y * 0.11f, Seed + 14)), land.Wash.W);
         float rim = RimAt(MathF.Max(MathF.Abs(p.X), MathF.Abs(p.Y)));
         if (rim > 0)
         {
@@ -497,20 +519,38 @@ public sealed partial class WorldMap
             float snow = Math.Clamp((h - 30 + 4 * n) / 8, 0, 1) * MathHelper.SmoothStep(0, 1, rim * 1.6f) * (1 - 0.6f * steep); // snow slides off the steep faces
             c = Vector3.Lerp(c, new Vector3(0.9f, 0.92f, 0.95f), snow);
         }
+        if (Designed) // the beach: pale sand from the shallows up the low shore, wet and darker at the water's edge
+        {
+            // Sand by how near the coast (landness), so the beach is a band a few metres wide whatever the bank's slope.
+            float sh = Height(p.X, p.Y), ln = Landness(p) + (Terrain.Noise(p.X * 0.15f, p.Y * 0.15f, Seed + 13) - 0.5f) * 0.08f;
+            float sand = MathHelper.SmoothStep(1, 0, Math.Clamp((ln - 0.8f) / 0.16f, 0, 1)); // graded into the grass
+            var beach = Vector3.Lerp(new Vector3(0.52f, 0.46f, 0.36f), new Vector3(0.93f, 0.84f, 0.64f), Math.Clamp((sh - BeachLow) / (BeachHigh - BeachLow + 0.4f), 0, 1));
+            c = Vector3.Lerp(c, beach * (0.94f + 0.12f * Terrain.Noise(p.X * 0.2f, p.Y * 0.2f, Seed + 12)), sand);
+        }
         if (Ridges.Count > 0 && RidgeDist(p) is float rd && rd < Ridges[0].Width) c = Vector3.Lerp(c, new Vector3(0.62f, 0.6f, 0.58f), 0.6f * (1 - rd / Ridges[0].Width)); // bare rock
         // Summer dries the grass, autumn browns it, winter lies white (more so on high ground; roads show through).
         return Season switch
         {
             1 => c * new Vector3(1.06f, 1.02f, 0.86f),
             2 => c * new Vector3(1.18f, 0.94f, 0.68f),
+            3 when land.Hot => c * new Vector3(0.98f, 0.98f, 1.0f), // no snow on the sands
             3 => Vector3.Lerp(c, new Vector3(0.86f, 0.89f, 0.93f), RoadDist(p) < 2.5f ? 0.35f : 0.7f + 0.2f * Math.Clamp(Height(p.X, p.Y) / 10, 0, 1)),
             _ => c,
         };
     }
 
-    Vector3 KindTint(Vector2 p)
+    /// A battle at p is fought by the sea: open water within a few lengths of it (a designed map only).
+    public bool NearSea(Vector2 p)
     {
-        switch (ProvinceAt(p).Kind)
+        const float R = 8;
+        for (int i = 0; i < 8; i++)
+            if (Landness(p + new Vector2(MathF.Cos(i * MathF.Tau / 8), MathF.Sin(i * MathF.Tau / 8)) * R) < 0.5f) return true;
+        return Landness(p) < 0.5f;
+    }
+
+    Vector3 KindTint(Vector2 p, LandDef land)
+    {
+        switch (land.Kind)
         {
             case "Farmland":
             {
@@ -518,12 +558,7 @@ public sealed partial class WorldMap
                 int h = Math.Abs(cx * 73856093 ^ cz * 19349663) % 4;
                 return h switch { 0 => new(1.16f, 1.06f, 0.74f), 1 => new(1.02f, 0.92f, 0.78f), 2 => new(0.94f, 1.03f, 0.9f), _ => Vector3.One };
             }
-            case "Forest": return new(0.8f, 0.88f, 0.76f);
-            case "Hills": return new(1.08f, 1.04f, 0.86f);
-            case "Marsh": return new(0.76f, 0.88f, 0.82f);
-            case "Steppe": return new(1.14f, 1.08f, 0.78f);
-            case "Badlands": return new(1.26f, 1.0f, 0.7f);
-            default: return Vector3.One;
+            default: return land.Tint;
         }
     }
 
@@ -546,7 +581,7 @@ public sealed partial class WorldMap
         var fields = Layout >= 4 ? LayFields(span) : new List<FieldPlot>();
         var fieldCells = FieldCells(fields);
         var standRng = new Random(Seed * 5 + 3); // layout 4 woods: their own dice
-        bool Clear(Vector2 p) => Settlements.All(s => Vector2.Distance(s.Pos, p) > 9 * span) && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && !InLake(p, 2)
+        bool Clear(Vector2 p) => Landness(p) > 0.95f && Settlements.All(s => Vector2.Distance(s.Pos, p) > 9 * span) && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && !InLake(p, 2)
             && MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half && !InField(fieldCells, p, 1.5f);
         foreach (var f in fields.Where(f => f.Kind == FieldKind.Orchard)) // rows of small round fruit trees
         {
@@ -560,8 +595,9 @@ public sealed partial class WorldMap
             // Woods scale with the ground they stand on (area), so the bigger map stays as wooded as the old one. Trees grow
             // a little larger too, so a whole-map view reads as woodland without holding four times the geometry.
             float grow = MathF.Sqrt(span);
-            int trees = (int)(p.Kind switch { "Forest" => 90, "Hills" => 26, "Farmland" => 6, "Marsh" => 30, "Steppe" => 2, "Badlands" => 4, _ => 14 } * span * span * 1.4f);
-            float radius = (p.Kind == "Forest" ? 48 : 60) * span;
+            var land = Lands.Of(p.Kind);
+            int trees = (int)(land.Trees * span * span * 1.4f);
+            float radius = (land.Trees >= 70 ? 48 : 60) * span;
             if (Layout >= 4) { GrowStands(p, trees, radius, grow, standRng, Clear, foliage); continue; }
             for (int i = 0; i < trees; i++)
             {
@@ -569,7 +605,7 @@ public sealed partial class WorldMap
                 var pos = p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
                 if (!Clear(pos) || ProvinceAt(pos) != p) continue;
                 if (OnRidge(pos)) continue;
-                bool pine = p.Kind == "Hills" || rng.NextSingle() < 0.25f;
+                bool pine = land.Conifer || rng.NextSingle() < 0.25f;
                 // Trees by a town are smaller, so the town stands out among them rather than under them.
                 float town = Settlements.Min(s => Vector2.Distance(s.Pos, pos)), near = 0.55f + 0.45f * Math.Clamp((town - 9 * span) / (16 * span), 0, 1);
                 foliage.Add(new Foliage(pine ? FoliageKind.Pine : FoliageKind.Broadleaf, pos, (2.2f + rng.NextSingle() * 1.2f) * grow * near, 0, rng.Next()));
@@ -588,7 +624,7 @@ public sealed partial class WorldMap
                 float d = r.Dist(pos);
                 if (d > r.Width * 0.45f && d < r.Width && Clear(pos)) foliage.Add(new Foliage(FoliageKind.Pine, pos, (2.2f + rng.NextSingle()) * grow0, 0, rng.Next()));
             }
-        for (int i = 0; i < 260; i++) // pines on the mountain rim
+        for (int i = 0; i < (Designed ? 0 : 260); i++) // pines on the mountain rim (a designed map has the sea instead)
         {
             float rimHalf = GroundHalf - 4;
             var pos = new Vector2(rng.NextSingle() * 2 * rimHalf - rimHalf, rng.NextSingle() * 2 * rimHalf - rimHalf);
@@ -601,6 +637,7 @@ public sealed partial class WorldMap
         terrain.MapBridges.AddRange(Bridges);
         terrain.Fields.AddRange(fields);
         terrain.MapSeason = Season;
+        if (Designed) terrain.SeaLevel = SeaLevel;
         return terrain;
     }
 }

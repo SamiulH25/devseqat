@@ -146,6 +146,10 @@ sealed partial class Hud
         {
             ("IN THE FIELD", new[] { Act.Forward, Act.Back, Act.Left, Act.Right, Act.Sprint, Act.Attack, Act.Block, Act.Bash, Act.SwapWeapon, Act.AuraBlade, Act.Form1, Act.Form2, Act.Form3, Act.GreatForm, Act.Relic, Act.Couch, Act.Interact, Act.Rally, Act.OrderWheel }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
+                .Append(("WHO LISTENS: FOOT, BOWS, HORSE, MAGES", "1 2 3 4"))
+                .Append(("ALL LISTEN", "0"))
+                .Append(("ATTACK THE COMPANY YOU LOOK AT", Ctl.Name(Act.Charge)))
+                .Append(("HOLD THE GROUND YOU LOOK AT", $"HOLD {Ctl.Name(Act.HoldPosition)}"))
                 .Append(("SWING / BLOCK DIRECTION", "MOVE MOUSE"))
                 .Append(("FEINT", "BLOCK IN WINDUP"))
                 .Append(("RIPOSTE", "SWING JUST AFTER A PARRY")).ToArray()),
@@ -153,17 +157,17 @@ sealed partial class Hud
             {
                 ("SELECT SQUAD / BOX", "LMB / DRAG"), ("ADD TO SELECTION", Ctl.Name(Act.AddToSelection)), ("MOVE (KEEP WIDTH)", "RMB"),
                 ("DRAW FORMATION LINE", "RMB DRAG"), ("ATTACK ENEMY SQUAD", "RMB ON ENEMY"), ("QUEUE AN ORDER AFTER THE LAST", $"{Ctl.Name(Act.AddToSelection)} + RMB"),
-                ("PICK SERGEANT (DIVISION)", $"{Ctl.Name(Act.NextDivision)} / CLICK CARD"), ("SERGEANT: TAKE / ATK / SCREEN", "RMB LAND / FOE / ALLY"), ("SERGEANT IN FIELD VIEW", $"{Ctl.Name(Act.OrderWheel)} (GOAL WHEEL)"), ("EXIT SERGEANT TO SQUADS", $"BACK / {Ctl.Name(Act.SelectAll)}"),
+                ("PICK OFFICER / HIS STANCE", $"{Ctl.Name(Act.NextDivision)} OR CARD / 1-3"), ("PUT COMPANIES ON A POST", "DRAG CARD TO POST"), ("OFFICER IN FIELD VIEW", $"{Ctl.Name(Act.OrderWheel)} (WHEEL)"), ("ORDER HIS COMPANIES", "RMB / BACK"),
                 ("PAN", $"{Ctl.First(Act.Forward)}{Ctl.First(Act.Left)}{Ctl.First(Act.Back)}{Ctl.First(Act.Right)} / SCREEN EDGES"),
-                ("ROTATE", $"{Ctl.First(Act.RotateLeft)} {Ctl.First(Act.RotateRight)} / MMB DRAG"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"),
+                ("ROTATE", $"{Ctl.First(Act.RotateLeft)} {Ctl.First(Act.RotateRight)} / MMB DRAG"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"), ("LOOK AT THE CAPTAIN / BE HIM", "CLICK HIS PICTURE / TWICE"),
                 ("FOCUS SQUAD", "DOUBLE-CLICK CARD"), ("CONTROL GROUP: KEEP / PICK", "CTRL+1-9 / 1-9"), ("JUMP TO AN ALERT", "CLICK IT"), ("WHAT THE GROUND DOES", "HOVER IT"), (Controls.Labels[Act.GroundView], Ctl.Name(Act.GroundView)),
                 (Controls.Labels[Act.Stakes], Ctl.Name(Act.Stakes)),
-                (Controls.Labels[Act.Horn], Ctl.Name(Act.Horn)), ("ANSWER A SERGEANT", $"{Ctl.Name(Act.AnswerA)} / {Ctl.Name(Act.AnswerB)}"),
+                (Controls.Labels[Act.Horn], Ctl.Name(Act.Horn)),
             }),
             ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.Merge, Act.Relieve, Act.SplitCompany, Act.StandingOrder, Act.Cast, Act.SelectAll, Act.NextDivision,
                     Act.CommandView, Act.Pause, Act.Slower, Act.Faster, Act.Menu, Act.Help, Act.Graphics }
                 .Select(a => (Controls.Labels[a], Ctl.Name(a)))
-                .Prepend(("SELECT SQUAD", "1-0")).ToArray()),
+                .Prepend(("SELECT COMPANY (COMMAND VIEW)", "1-0")).ToArray()),
         };
         int cw = (r.Width - U(40)) / 3, room = cw - U(16), avail = r.Height - U(56) - U(24) - U(32);
         // One row per action, its key at the right; a pair too long for one row puts the key on a second line.

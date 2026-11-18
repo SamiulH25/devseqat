@@ -237,8 +237,9 @@ public sealed class Contract
 public sealed class DivisionRecord
 {
     public int Id, LeaderChar = -1, LeaderCompany = -1;
-    /// The goal it starts a battle with: Hold, Attack, FlankLeft, FlankRight, Reserve, Screen, Harass or Guard.
-    public string Goal = "Hold";
+    /// The post and stance it starts a battle with, as "Post:Stance" (docs/OFFICERS.md OF6; `Goal.FromName`). Old saves hold
+    /// a goal name (Hold, Attack, FlankLeft...): the campaign maps it to the nearest post when it loads.
+    public string Goal = "Front:Hold";
 }
 
 /// A realm's army: lords who ride together under a leader against a seat ("siege") or to relieve one of their own ("relieve").
@@ -353,11 +354,7 @@ public sealed class Province
     public int Id, Faction;
     public string Name = "", Kind = "Meadow";
     /// The province as the land knows it: "the Greywater Hills", "Oakhollow Forest" (S1).
-    [JsonIgnore] public string Title => Kind switch
-    {
-        "Hills" => $"the {Name} Hills", "Forest" => $"{Name} Forest", "Farmland" => $"the {Name} Fields",
-        "Marsh" => $"the {Name} Fens", "Steppe" => $"the {Name} Steppe", "Badlands" => $"the {Name} Wastes", _ => $"the Vale of {Name}",
-    };
+    [JsonIgnore] public string Title => string.Format(Lands.Of(Kind).Title, Name);
     public Vector2 Center;
     public List<int> Neighbors = new();
     /// How wet its ground is from recent rain, 0-1 (docs/archive/TERRAIN.md T7; Campaign.RainDaily).

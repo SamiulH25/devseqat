@@ -229,6 +229,10 @@ public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, floa
     public float Wet { get; init; }
     public int Season { get; init; } = -1;
     public int Favour { get; init; } = -1;
+    /// The drawn world's grounds (docs/WORLDMAP.md WM3): the colour the open ground takes (green, moss, frost, sand, dry
+    /// grass), and woods of pines only.
+    public GroundLook Look { get; init; }
+    public bool Conifer { get; init; }
 
     public static readonly TerrainParams Meadow = new("Meadow", 3, 5, 1f, 1f, 64, 11, 60, 220, true, Layouts: new[] { FieldLayout.Open, FieldLayout.Open, FieldLayout.Ridge, FieldLayout.WoodedFlank, FieldLayout.Village, FieldLayout.RiverLine });
     public static readonly TerrainParams Farmland = new("Farmland", 1, 3, 0.7f, 0.6f, 70, 6, 30, 380, true, Layouts: new[] { FieldLayout.Hedgerows, FieldLayout.Hedgerows, FieldLayout.Village, FieldLayout.Open });
@@ -240,12 +244,24 @@ public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, floa
     public static readonly TerrainParams Steppe = new("Steppe", 2, 3, 0.8f, 1.2f, 96, 1, 6, 60, false);
     /// Badlands: dry, broken ground with tall knolls, stones and scrub, and little cover.
     public static readonly TerrainParams Badlands = new("Badlands", 6, 8, 2.1f, 1.6f, 80, 2, 14, 90, false, Layouts: new[] { FieldLayout.Broken, FieldLayout.Broken, FieldLayout.TwoHills, FieldLayout.Pass });
+    /// Coast: low rolling ground by the sea; on the shore the sea runs along one flank (FieldLayout.Shore).
+    public static readonly TerrainParams Coast = new("Coast", 2, 3, 0.7f, 0.8f, 72, 4, 24, 160, true, Layouts: new[] { FieldLayout.Shore, FieldLayout.Shore, FieldLayout.Open, FieldLayout.Village });
+    /// Taiga: dark pine forest on mossy ground; the fight is in a clearing or beside a great wood.
+    public static readonly TerrainParams Taiga = new("Taiga", 2, 4, 1f, 1f, 55, 20, 260, 220, false, Layouts: new[] { FieldLayout.ForestClearing, FieldLayout.WoodedFlank }) { Look = GroundLook.Moss, Conifer = true };
+    /// Highlands: high, bare moorland, steeper than the hills, stony on its slopes, a few pines.
+    public static readonly TerrainParams Highlands = new("Highlands", 5, 8, 2.2f, 1.6f, 70, 5, 60, 160, false, Layouts: new[] { FieldLayout.Ridge, FieldLayout.Pass, FieldLayout.Pass, FieldLayout.TwoHills }) { Look = GroundLook.Moor, Conifer = true };
+    /// Tundra: cold open barrens, frost on the grass, stones everywhere, stunted pines.
+    public static readonly TerrainParams Tundra = new("Tundra", 2, 4, 0.8f, 1.1f, 90, 2, 10, 70, false) { Look = GroundLook.Frost, Conifer = true };
+    /// Desert: dunes of loose sand between hard, stony pans; no woods at all.
+    public static readonly TerrainParams Desert = new("Desert", 3, 5, 1.3f, 1.4f, 100, 0, 0, 20, false, Layouts: new[] { FieldLayout.Open, FieldLayout.Open, FieldLayout.Broken }) { Look = GroundLook.Sand };
+    /// Oasis: dry grass and palms by a stream in the sand; the desert lies round the edge.
+    public static readonly TerrainParams Oasis = new("Oasis", 1, 3, 0.8f, 0.9f, 60, 3, 30, 120, true, true, new[] { FieldLayout.Open, FieldLayout.Village }) { Look = GroundLook.Dry };
     /// The tournament field (S5): flat, open, a few trees at the edge.
     public static readonly TerrainParams Lists = new("Lists", 0, 0, 0.2f, 0.3f, 90, 0, 6, 30, false);
 
     /// A preset by name (IRONFIELD_GROUND), or null.
     public static TerrainParams? Named(string name) =>
-        new[] { Meadow, Farmland, Forest, Hills, Marsh, Steppe, Badlands, Lists }.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        new[] { Meadow, Farmland, Forest, Hills, Marsh, Steppe, Badlands, Coast, Taiga, Highlands, Tundra, Desert, Oasis, Lists }.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 }
 
 /// Headless battlefield ground: a heightmap (gentle rolling meadow, a few hills, a rim of high ground,
@@ -269,6 +285,8 @@ public sealed partial class Terrain
     public readonly List<RoadLine> RoadLines = new();
     public readonly List<Lake> Lakes = new();
     public readonly List<MapBridge> MapBridges = new();
+    /// The sea's surface on a designed campaign map (docs/WORLDMAP.md WM2); null where there is no sea.
+    public float? SeaLevel;
     /// Field plots round the settlements (campaign map, layout 4) and the season they were drawn for (-1: a battlefield).
     public readonly List<FieldPlot> Fields = new();
     public int MapSeason = -1;
@@ -302,6 +320,7 @@ public sealed partial class Terrain
     {
         foreach (var r in Rivers)
             if (r.Within(p, r.Width / 2)) return r.AtBridge(p) ? 0 : r.AtFord(p) ? 0.3f : r.Depth;
+        if (Layout == FieldLayout.Shore && customHeight == null && SeaLevel is float sea && AtSea(p)) return MathF.Max(0, sea - Height(p));
         return 0;
     }
 
@@ -341,7 +360,8 @@ public sealed partial class Terrain
         Seed = seed;
         IsFlat = flat;
         Layout = flat ? FieldLayout.Open : LayoutFor(seed, p, wall != null);
-        Params = wall != null ? p with { Road = false } : Layout == FieldLayout.RiverLine ? p with { Road = true, River = true } : p;
+        Params = wall != null ? p with { Road = false } : Layout == FieldLayout.RiverLine ? p with { Road = true, River = true }
+            : Layout == FieldLayout.Shore ? p with { Road = false } : p; // no road runs into the sea
         Wall = wall;
         p = Params;
         Half = BattleHalf;
@@ -390,7 +410,9 @@ public sealed partial class Terrain
         }
         h += LayoutHeight(x, z);
         // High ground all round frames the valley (and the horizon).
-        h += SmoothStep(120, 240, r) * (14 + 10 * Noise(x * 0.008f, z * 0.008f, Seed + 3));
+        float rim = SmoothStep(120, 240, r) * (14 + 10 * Noise(x * 0.008f, z * 0.008f, Seed + 3));
+        if (Layout == FieldLayout.Shore) rim *= 1 - SmoothStep(-90, -10, PastShore(x, z)); // no rim between the field and the sea
+        h += rim;
         float rd = RoadDist(new Vector2(x, z));
         if (rd < 5) h -= 0.25f * (1 - rd / 5); // worn a little into the ground
         foreach (var river in Rivers)
@@ -399,6 +421,7 @@ public sealed partial class Terrain
             float d = river.Dist(at);
             if (d < river.Width / 2 + 3) h -= river.Carve(at, d);
         }
+        if (Layout == FieldLayout.Shore) h = ShoreHeight(x, z, h);
         if (Wall != null)
         {
             h = MathHelper.Lerp(h, 0.4f * h, SmoothStep(40, 0, MathF.Abs(z - 15))); // level ground along the wall
@@ -511,6 +534,7 @@ public sealed partial class Terrain
         if (Layout == FieldLayout.Village) PlaceVillage(new Random(Seed + 19));
         void Wood(Vector2 c, float r)
         {
+            if (Layout == FieldLayout.Shore && PastShore(c.X, c.Y) > -24 - r) return; // no wood on the beach or in the sea
             woods.Add((c, r));
             bool pines = rng.NextSingle() < 0.4f;
             int attempts = (int)(r * r * 0.25f);
@@ -521,12 +545,13 @@ public sealed partial class Terrain
                 if (!Ok(p, 2.4f)) continue;
                 float s = 0.8f + rng.NextSingle() * 0.5f;
                 bool pine = pines ? rng.NextSingle() < 0.85f : Height(p) > 7 || rng.NextSingle() < 0.15f;
+                if (Params.Conifer) pine = true;
                 Add(new Foliage(pine ? FoliageKind.Pine : FoliageKind.Broadleaf, p, s, 0.32f * s, rng.Next()));
             }
         }
 
-        // Two woods flank the field: cavalry has to ride round them.
-        for (int side = -1; side <= 1; side += 2)
+        // Two woods flank the field: cavalry has to ride round them (not in the open desert).
+        for (int side = -1; side <= (Params.Look == GroundLook.Sand ? -3 : 1); side += 2)
             Wood(new Vector2(side * (Params.FlankWoodDist * Params.Scale + rng.NextSingle() * 8), rng.NextSingle() * 36 - 18), 13 + rng.NextSingle() * 4);
         foreach (var (c, r) in layoutWoods) Wood(c, r);
         for (int i = 0; i < Params.Woods; i++)
@@ -540,7 +565,7 @@ public sealed partial class Terrain
             var p = new Vector2(rng.NextSingle() * 440 - 220, rng.NextSingle() * 440 - 220);
             if (!Ok(p, 3)) continue;
             float s = 0.9f + rng.NextSingle() * 0.5f;
-            Add(new Foliage(rng.NextSingle() < 0.3f ? FoliageKind.Pine : FoliageKind.Broadleaf, p, s, 0.32f * s, rng.Next()));
+            Add(new Foliage(rng.NextSingle() < 0.3f || Params.Conifer ? FoliageKind.Pine : FoliageKind.Broadleaf, p, s, 0.32f * s, rng.Next()));
         }
         for (int i = 0; i < Params.Bushes; i++) // bushes: no collision; many hug the edges of the woods
         {
@@ -556,7 +581,7 @@ public sealed partial class Terrain
                 float a = rng.NextSingle() * MathF.Tau, d = MathF.Sqrt(rng.NextSingle()) * 170;
                 p = new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
             }
-            if (RoadDist(p) < 3 || Blocked(p, 0.5f)) continue;
+            if (RoadDist(p) < 3 || Blocked(p, 0.5f) || AtSea(p)) continue;
             Add(new Foliage(FoliageKind.Bush, p, 0.7f + rng.NextSingle() * 0.6f, 0, rng.Next()));
         }
         if (Layout == FieldLayout.Hedgerows) PlaceHedges(new Random(Seed + 20));
@@ -564,7 +589,7 @@ public sealed partial class Terrain
         {
             float a = rng.NextSingle() * MathF.Tau, d = MathF.Sqrt(rng.NextSingle()) * 180;
             var p = new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
-            if (RoadDist(p) < 3 || Blocked(p, 0.3f)) continue;
+            if (RoadDist(p) < 3 || Blocked(p, 0.3f) || AtSea(p)) continue;
             Add(new Foliage(FoliageKind.Rock, p, 0.25f + rng.NextSingle() * 0.35f, 0, rng.Next()));
         }
         for (int i = 0; i < 30; i++) // boulders

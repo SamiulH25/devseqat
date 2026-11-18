@@ -10,6 +10,11 @@ things. Tiers run I–VII among the men, plus the tier-0 captain, who belongs to
 roster has no links at all. The 30 roots are `levies`, `clansmen`, `acolytes`, `esquires`,
 `mounted_esquires`, the captain, and one for each wild troop.
 
+**Not in the world yet:** 80 troops in 17 cultures marked `waiting` in `Data/factions.json`
+(`azure_heart`, `azure_march`, `azure_coast`, `crimson_patrician`, `crimson_alpine`, `northern_fjord`, `northern_taiga`, `southern_oasis`, `southern_dune`, `southern_rift`, `steppe_horde`, `steppe_salt`, `league_lagoon`, `league_fen`, `order_chapter`, `order_warden`, `bandit`). They come from the world book
+(`Data/world.json`) and are kept for when that world is brought into the game; until then no realm,
+settlement or band fields them, and their trees stop short of tier VII.
+
 Marks used below: **†** noble stock, raised at a castle rather than a village; **‡** a knight
 order's signature troop; **bold** in *From* means the parent is outside the culture.
 

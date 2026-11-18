@@ -168,8 +168,12 @@ All widgets are extension methods on `Ui` in `UiKit.cs` (the UI lab, F3 on the t
   the minimap in a plate with gilt corners; the player panel with gauges and a rally key; order keys with an icon each.
 - **Banners** (command view): a pole and a flag in the side colour with the company number (yours) or initial (theirs),
   and a morale strip beneath.
-- **Order wheel:** eight sectors clockwise from the top: Charge, Advance, Form on me, Spacing, Fall back, Fire/Hold, Hold,
-  Follow me. The chosen sector is gold.
+- **Order ring** (fight view): eight picture tiles clockwise from the top: Charge, Advance, Form on me, Spacing, Fall back,
+  Fire/Hold, Hold, Follow me. The chosen tile grows and turns gold, its name shows in the middle.
+- **Order deck** (command view): square picture buttons in rows (orders, formations as men seen from above, context
+  actions). Gold = what the chosen companies are doing now; only what they can do is shown. Text lives on the hover card.
+- **Two HUDs, never mixed:** the command view has the top plate, minimap, cards, captain's plate and deck; the fight view
+  has bare vitals, the arm chips and the reticle. A widget belongs to one of them.
 - **Crosshair:** four chevrons for the attack directions. Gold is your chosen direction, red is an incoming blow.
 - **Overlays** (menu, controls, result) dim the battle to 50% and centre one plate with a ribbon title. The result is an
   after-action report: the tally side against side, both sides' strength over the battle, and how it went.

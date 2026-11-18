@@ -33,7 +33,7 @@ public partial class Campaign
 
     static readonly string[] NestNames = { "Nest", "Webs", "Silk Hollow", "Brood", "Cocoons", "Spinnings" };
     /// Spider nests the world keeps: a share of its forest and fen provinces.
-    public int NestsWanted => Math.Max(1, (int)MathF.Round(S.Provinces.Count(p => p.Kind is "Forest" or "Marsh") * B.NestsPerWood));
+    public int NestsWanted => Math.Max(1, (int)MathF.Round(S.Provinces.Count(p => p.Kind is "Forest" or "Marsh" or "Taiga") * B.NestsPerWood));
     public IEnumerable<Party> Nests => S.Parties.Where(p => p.Lair && !p.Down && p.Breed == "spider");
     /// Every lair: goblin holdouts and spider nests.
     public IEnumerable<Party> Lairs => S.Parties.Where(p => p.Lair && !p.Down);
@@ -41,7 +41,7 @@ public partial class Campaign
     /// Spin a nest deep in a wood or fen, away from settlements, other lairs and you.
     internal bool SpawnNest()
     {
-        var woods = S.Provinces.Where(p => p.Kind is "Forest" or "Marsh").ToList();
+        var woods = S.Provinces.Where(p => p.Kind is "Forest" or "Marsh" or "Taiga").ToList();
         if (woods.Count == 0) return false;
         for (int attempt = 0; attempt < 24; attempt++)
         {
@@ -73,13 +73,13 @@ public partial class Campaign
 
     static readonly string[] BearNames = { "Old Grizzle", "Black Maul", "Scarback", "Stonepaw", "Redclaw", "Ironhide", "Mossjaw", "Greymuzzle", "Bonebreaker" };
     /// Cave bears the world keeps: a share of its hill and forest provinces.
-    public int BearsWanted => (int)MathF.Round(S.Provinces.Count(p => p.Kind is "Hills" or "Forest") * B.BearsPerWild);
+    public int BearsWanted => (int)MathF.Round(S.Provinces.Count(p => p.Kind is "Hills" or "Forest" or "Taiga" or "Highlands") * B.BearsPerWild);
     public IEnumerable<Party> Bears => S.Parties.Where(p => p.Breed == "bear" && !p.Down);
 
     /// Wake a sleuth of cave bears in hill or forest country, away from settlements and from you.
     internal bool SpawnBears()
     {
-        var wild = S.Provinces.Where(p => p.Kind is "Hills" or "Forest").ToList();
+        var wild = S.Provinces.Where(p => p.Kind is "Hills" or "Forest" or "Taiga" or "Highlands").ToList();
         if (wild.Count == 0) return false;
         for (int attempt = 0; attempt < 16; attempt++)
         {
@@ -126,7 +126,7 @@ public partial class Campaign
     /// the other wyverns.
     internal bool SpawnWyvern()
     {
-        var high = S.Provinces.Where(p => p.Kind is "Hills" or "Badlands").ToList();
+        var high = S.Provinces.Where(p => p.Kind is "Hills" or "Badlands" or "Highlands" or "Desert").ToList();
         if (high.Count == 0) high = S.Provinces.Where(Wild).ToList();
         if (high.Count == 0) return false;
         for (int attempt = 0; attempt < 24; attempt++)

@@ -6,7 +6,7 @@ namespace Ironfield;
 /// 5x7 bitmap font built at startup (uppercase only), so the HUD needs no SpriteFont content.
 public sealed class PixelFont
 {
-    const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,:-/()!%+[]=><?'";
+    const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,:-/()!%+[]=><?'\u00b7";
     static readonly string[] Glyphs =
     {
         "0E11111F111111", "1E11111E11111E", "0E11101010110E", "1E11111111111E", "1F10101E10101F", "1F10101E101010",
@@ -19,6 +19,7 @@ public sealed class PixelFont
         "00000000000000", "00000000000C0C", "000000000C0408", "000C0C000C0C00", "0000001F000000", "01010204081010",
         "02040808080402", "08040202020408", "04040404040004", "18190204081303", "0004041F040400", "0E08080808080E",
         "0E02020202020E", "00001F001F0000", "08040201020408", "02040810080402", "0E110102040004", "04040800000000",
+        "0000000C0C0000", // a middle dot, between the parts of a one-line card (docs/OFFICERS.md OF4)
     };
 
     readonly Texture2D tex;
@@ -26,9 +27,9 @@ public sealed class PixelFont
 
     static sbyte[] BuildCharIdx()
     {
-        var map = new sbyte[128];
+        var map = new sbyte[256];
         Array.Fill(map, (sbyte)Chars.IndexOf(' '));
-        for (int i = 0; i < Chars.Length; i++) if (Chars[i] < 128) map[Chars[i]] = (sbyte)i;
+        for (int i = 0; i < Chars.Length; i++) if (Chars[i] < 256) map[Chars[i]] = (sbyte)i;
         return map;
     }
 
@@ -89,7 +90,7 @@ public sealed class PixelFont
         {
             char ch = s[k];
             if (ch is >= 'a' and <= 'z') ch = (char)(ch - 32);
-            int i = ch < 128 ? CharIdx[ch] : space;
+            int i = ch < 256 ? CharIdx[ch] : space;
             sb.Draw(tex, pos, new Rectangle(i * 6, top, 6, 8), c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
             pos.X += 6 * scale;
         }

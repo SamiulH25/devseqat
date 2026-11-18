@@ -26,6 +26,8 @@ public sealed partial class Campaign
             : kind.Equals("Hills", StringComparison.OrdinalIgnoreCase) || kind.Equals("Mountains", StringComparison.OrdinalIgnoreCase) ? "Hill"
             : kind.Equals("Forest", StringComparison.OrdinalIgnoreCase) ? "Wood"
             : kind.Equals("Marsh", StringComparison.OrdinalIgnoreCase) ? "Fen"
+            : kind is "Taiga" ? "Wood" : kind is "Highlands" ? "Hill" : kind is "Coast" ? "Strand" : kind is "Desert" ? "Sands"
+            : kind is "Tundra" ? "Barrow" : kind is "Oasis" ? "Wells"
             : FieldWords[(near.Id * 7 + Day) % FieldWords.Length];
         return $"{near.Name} {word}";
     }

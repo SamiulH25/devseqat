@@ -4,8 +4,8 @@ namespace Ironfield;
 
 /// The enemy hunts you (docs/COMPANY.md C13). When you do real harm or stand far forward, the enemy general sends his horse
 /// (or his reserve) for you, once and then after a cooldown; good bows mark a captain in the open with a warning first; a
-/// lord with a grudge (`BattleOptions.Grudge`) comes for you himself; his nearest men close round him when you come near;
-/// and when two or more are on you, your household guard and your nearest idle company step in. All on the battle's own
+/// lord with a grudge (`BattleOptions.Grudge`) comes for you himself; his nearest men close round him when you come near.
+/// All on the battle's own
 /// state and order of thinking, so replays stay exact.
 public sealed partial class Battle
 {
@@ -149,7 +149,7 @@ public sealed partial class Battle
         eGuard.Order = hurt ? Order.Hold : Order.Charge;
     }
 
-    /// In a man's thinking: a hunter goes for the captain, a covering man for the foes on the captain, a guardsman to his
+    /// In a man's thinking: a hunter goes for the captain, a guardsman to his
     /// place, a grudge lord for you. True when the man has been moved and his thinking is done.
     bool HuntThink(Unit u, Squad s, ref Unit? enemy, ref float d)
     {
@@ -160,11 +160,6 @@ public sealed partial class Battle
         {
             enemy = p;
             d = Vector2.Distance(u.Pos, p.Pos);
-            return false;
-        }
-        if (s.CoverUntil > Time && u.Team == p.Team && !atBlows && OnTheCaptain(u) is (Unit foe, float fd))
-        {
-            (enemy, d) = (foe, fd);
             return false;
         }
         if (u.GuardSlot >= 0 && !atBlows && !u.Mounted)
@@ -178,22 +173,8 @@ public sealed partial class Battle
         return false;
     }
 
-    /// The nearest foe holding the captain as his mark, within 15 m of the captain.
-    (Unit, float)? OnTheCaptain(Unit u)
-    {
-        Unit? best = null;
-        float bd = float.MaxValue;
-        foreach (var o in Near(Player.Pos, 15, nearNotice))
-        {
-            if (!o.OnCaptain && o.Squad?.HuntCaptain != true || o.Team == u.Team || o.Routing) continue;
-            float dd = Vector2.DistanceSquared(o.Pos, u.Pos);
-            if (dd < bd) { bd = dd; best = o; }
-        }
-        return best == null ? null : (best, MathF.Sqrt(bd));
-    }
-
-    /// Twice a second: when two or more are on you, your household guard and your nearest idle foot company come to cover
-    /// you for ten seconds ("TO THE CAPTAIN!"); and the stand goal when four come at once.
+    /// Twice a second: the stand goal when four come for you at once. (Your men no longer break off to cover you: it set
+    /// whole companies charging their own nearest foe with nobody near you, 2026-11-16.)
     void UpdateHunt(float dt)
     {
         if ((coverTimer -= dt) > 0) return;
@@ -202,25 +183,7 @@ public sealed partial class Battle
         if (!p.Active || p.Routing) return;
         int on = MarkedBy + (Hunter != null && Vector2.Distance(Hunter.Center, p.Pos) < 25 ? 1 : 0);
         if (on >= 4 && standFrom < 0 && Options.Goals && !Goals.Any(g => g.Id == "stand")) { standFrom = Time; Goals.Add(Goal("stand")); }
-        if (on < 2) return;
-        bool called = false;
-        foreach (var s in Squads)
-        {
-            if (s.Team != p.Team || s.Alive == 0 || s.AiControlled || s.CoverUntil > Time) continue;
-            if (s.Company?.Has("Household") == true && s.Order == Order.Follow) { s.CoverUntil = Time + 10; called = true; }
-        }
-        var near = Squads.Where(s => s.Team == p.Team && s.Alive > 0 && !s.AiControlled && !s.InContact && !s.Cavalry && s.Order == Order.Hold && s.Division == null
-                && s.Units.Count > 0 && s.Units[0].Type.Ammo == 0 && s.CoverUntil <= Time && Vector2.Distance(s.Center, p.Pos) < 35 + s.Radius)
-            .OrderBy(s => Vector2.DistanceSquared(s.Center, p.Pos)).FirstOrDefault();
-        if (near != null) { near.CoverUntil = Time + 10; called = true; }
-        if (called && Time - lastCoverCall > 15)
-        {
-            lastCoverCall = Time;
-            Alerts.Add(new Alert("cover", "TO THE CAPTAIN!", near, p.Pos, Time));
-        }
     }
-
-    float lastCoverCall = -99;
 
     /// The stand goal: you still stand ten seconds after four came for you at once.
     int StandState() => standFrom < 0 ? 0 : !Player.Active ? -1 : Time - standFrom >= 10 ? 1 : Winner >= 0 ? -1 : 0;

@@ -309,6 +309,16 @@ sealed partial class World : IDisposable
         var c = Vector3.Lerp(new Vector3(0.36f, 0.52f, 0.24f), new Vector3(0.47f, 0.6f, 0.28f), 0.5f + 0.5f * n);
         c = Vector3.Lerp(c, new Vector3(0.58f, 0.6f, 0.34f), Smooth(4, 12, t.Height(p)) * 0.6f);           // dry hilltops
         c = Vector3.Lerp(c, new Vector3(0.48f, 0.42f, 0.32f), Smooth(0.35f, 0.7f, t.Gradient(p).Length())); // bare slopes
+        c = t.Params.Look switch // the drawn world's grounds (WM3)
+        {
+            GroundLook.Moss => Vector3.Lerp(c, new Vector3(0.17f, 0.25f, 0.2f) * (0.9f + 0.2f * n2), 0.88f), // dark blue-green moss (the light is warm: inputs run cool)
+            GroundLook.Moor => Vector3.Lerp(Vector3.Lerp(c, new Vector3(0.42f, 0.37f, 0.3f), 0.78f), new Vector3(0.44f, 0.29f, 0.4f), 0.65f * Smooth(0.15f, 0.4f, 0.7f * n2 + 0.5f * n)), // brown moor, heather in drifts
+            GroundLook.Frost => Vector3.Lerp(Vector3.Lerp(c, new Vector3(0.4f, 0.45f, 0.48f), 0.95f), new Vector3(0.82f, 0.88f, 1.0f),
+                Smooth(0.42f, 0.47f, 0.75f * Terrain.Noise(p.X * 0.21f, p.Y * 0.21f, s + 9) + 0.25f * n)), // lichen grey, old snow lying in small crisp patches
+            GroundLook.Sand => Vector3.Lerp(c, new Vector3(0.72f, 0.63f, 0.47f) * (0.94f + 0.08f * n), 0.85f),
+            GroundLook.Dry => Vector3.Lerp(c, new Vector3(0.62f, 0.56f, 0.38f), 0.7f),
+            _ => c,
+        };
         float rd = t.RoadDist(p);
         if (t.RoadLines.Count > 0) c = Vector3.Lerp(c, new Vector3(0.5f, 0.47f, 0.33f), 0.45f * (1 - Smooth(2.6f, 6f + n2, rd))); // worn verges (the road itself is a ribbon)
         else c = Vector3.Lerp(c, new Vector3(0.56f, 0.47f, 0.34f), 1 - Smooth(1.8f, 3.4f + n2 * 0.6f, rd));   // road
@@ -325,6 +335,7 @@ sealed partial class World : IDisposable
             GroundKind.Bridge => new Vector3(0.45f, 0.33f, 0.21f), // the deck, as the minimap shows it
             _ => c,
         };
+        if (t.Params.Look == GroundLook.Sand && t.GroundAt(p) == GroundKind.Stony) c = Vector3.Lerp(c, new Vector3(0.64f, 0.58f, 0.47f), 0.6f); // pale hard pans, not dark blotches
         if (t.Tint != null) c = t.Tint(p, c);
         float wet = t.WaterDepth(p);
         if (wet > 0) c = Vector3.Lerp(c, new Vector3(0.24f, 0.38f, 0.46f), wet > 0.5f ? 0.9f : 0.6f); // the minimap shows water
@@ -474,6 +485,7 @@ sealed partial class World : IDisposable
         Mark("fields", m.V.Count);
         Roads(m); // tiled like the foliage, so only the roads in view are drawn (World.Water.cs)
         Mark("roads", m.V.Count);
+        if (t.SeaLevel is float sea) { Sea(m, sea); Mark("sea", m.V.Count); } // tiled: most of it is out of view
         alwaysStart = m.V.Count;
         Water(m);
         Mark("water", m.V.Count);
@@ -1070,6 +1082,8 @@ sealed partial class World : IDisposable
             float a = r.NextSingle() * MathF.Tau, d = MathF.Sqrt(r.NextSingle()) * 150;
             var p = new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
             if (t.RoadDist(p) < 2.6f) continue;
+            if (t.Params.Look != GroundLook.Green || t.Layout == FieldLayout.Shore) // no tufts on sand or in the sea; frost lets few through
+                if (t.GroundAt(p) is GroundKind.Sand or GroundKind.Water or GroundKind.Ford || t.Params.Look == GroundLook.Frost && r.Next(3) > 0) continue;
             var key = ((int)MathF.Floor(p.X / 48), (int)MathF.Floor(p.Y / 48));
             if (!buckets.TryGetValue(key, out var gm)) buckets[key] = gm = new Mesh();
             var ground = GroundColor(p);
@@ -1137,7 +1151,9 @@ sealed partial class World : IDisposable
                 float s = MathHelper.SmoothStep(0, 1, Math.Clamp((d - 60) / 900, 0, 1));
                 float roll = (Terrain.Noise(p.X * 0.03f, p.Y * 0.03f, t.Seed + 24) - 0.5f) * 6 * MathF.Min(1, d / 120);
                 float peak = Terrain.Noise(p.X * 0.008f, p.Y * 0.008f, t.Seed + 22) * 110 + Terrain.Noise(p.X * 0.03f, p.Y * 0.03f, t.Seed + 23) * 28;
-                pts[k, i] = new Vector3(p.X, MathHelper.Lerp(h0, h0 * 0.75f, MathF.Min(1, d / 200)) + roll + 0.03f * d + peak * s, p.Y);
+                pts[k, i] = t.SeaLevel is float sea // a sea map: open sea floor out to the horizon (World.Water.cs `Sea`)
+                    ? new Vector3(p.X, MathF.Min(h0, sea - 6) + roll * 0.2f, p.Y)
+                    : new Vector3(p.X, MathHelper.Lerp(h0, h0 * 0.75f, MathF.Min(1, d / 200)) + roll + 0.03f * d + peak * s, p.Y);
             }
         }
         Vector3 Normal(int k, int i)

@@ -54,50 +54,19 @@ public static partial class SelfTest
     }
 
     /// SG2: a plan set before the battle waits for the horn and then lands at once at any distance; one set during the
-    /// battle rides out first; the plan is spent when sounded.
+    /// battle is his at once too (no riders, docs/OFFICERS.md OF0); the plan is spent when sounded.
     static void HornPlans()
     {
         var (b, d, s) = OneDivision(3, new Vector2(60, 0));
         b.AddSquad(1, Troops.Get("levies"), 10, new Vector2(60, 120), 5, -Vector2.UnitY);
-        b.SetHornPlan(d, new Goal(GoalKind.Take, new Vector2(60, 30)));
-        Check(d.Horn?.Kind == GoalKind.Take, "a plan set in deployment is his at once");
+        b.SetHornPlan(d, new Goal(Post.Front, Stance.Advance));
+        Check(d.Horn?.Stance == Stance.Advance, "a plan set in deployment is his at once");
         Run(b, 3);
-        Check(d.Goal.Kind == GoalKind.Hold && b.Report(d) == "AWAITS THE HORN", $"he holds and waits for the horn ({b.Report(d)})");
+        Check(d.Stance == Stance.Hold && b.Report(d) == "AWAITS THE HORN", $"he holds and waits for the horn ({b.Report(d)})");
         Check(b.SoundHorn(0) == 1 && d.Horn == null, "the horn sends the division that had a plan");
         Run(b, 1);
-        Check(d.Goal.Kind == GoalKind.Take, "and the plan lands within a second, with no rider");
-        float late = b.SetHornPlan(d, new Goal(GoalKind.FallBack, new Vector2(60, -20)));
-        Check(late > 1 && d.Horn == null && d.PendingHorn != null, $"a plan given during the battle rides out ({late:0.0}s)");
-        Run(b, late + 0.5f);
-        Check(d.Horn?.Kind == GoalKind.FallBack, "and becomes his plan when the rider arrives");
-    }
-
-    /// SG3: a sergeant whose flank is threatened by horse asks; unanswered he decides by his temper; answered, the
-    /// answer rides out to him. He does not ask again at once.
-    static void SergeantsAsk()
-    {
-        Query? Ask(Battle b, Division d) { for (int i = 0; i < 60 * 4 && d.Query == null; i++) b.Update(1 / 60f); return d.Query; }
-        foreach (var temper in new[] { Temper.Steady, Temper.Cautious })
-        {
-            var (b, d, s) = OneDivision(4, new Vector2(0, 0), temper);
-            var horse = b.AddSquad(1, Troops.Get("lancers"), 8, new Vector2(-38, 4), 4, Vector2.UnitX);
-            horse.Order = Order.Charge; horse.Target = s;
-            var q = Ask(b, d);
-            Check(q != null && q.Text.Contains("horse"), $"a {temper} sergeant asks when horse comes at his flank ({q?.Text})");
-            Check(b.Report(d) == "ASKS FOR ORDERS", "his card says he is asking");
-            Run(b, Battle.QueryWait + 1);
-            var want = temper == Temper.Cautious ? GoalKind.FallBack : GoalKind.Hold;
-            Check(d.Query == null && d.Goal.Kind == want, $"unanswered, a {temper} sergeant chooses {want} himself ({d.Goal.Kind})");
-        }
-        {
-            var (b, d, s) = OneDivision(5, new Vector2(0, 0));
-            var horse = b.AddSquad(1, Troops.Get("lancers"), 8, new Vector2(-38, 4), 4, Vector2.UnitX);
-            horse.Order = Order.Charge; horse.Target = s;
-            Ask(b, d);
-            Check(b.Answer(d, false) == null && d.Pending?.Kind == GoalKind.FallBack && d.Query == null, "your answer rides out to him as a goal");
-            Run(b, 3);
-            Check(d.Query == null, "he does not ask again at once");
-        }
+        Check(d.Stance == Stance.Advance, "and the plan lands within a second, with no rider");
+        Check(b.SetHornPlan(d, new Goal(Post.Reserve, Stance.Wait)) == 0 && d.Horn?.Post == Post.Reserve, "a plan given during the battle is his at once");
     }
 
     /// SG4: a rabble company under a skilled sergeant thinks like veterans; once he falls it is rabble again.
@@ -109,19 +78,6 @@ public static partial class SelfTest
         Check(Battle.SergeantGrade(3) == Grade.Trained && Battle.SergeantGrade(5) == Grade.Veteran && Battle.SergeantGrade(2) == Grade.Rabble, "sergeant grade by skill");
         d.Leader!.Hp = 0; d.Leader.Dead = true;
         Check(Battle.WitsGrade(s) == Grade.Rabble, "without him they are rabble again");
-    }
-
-    /// SG5: near the sergeant your word is shouted; far off a rider takes it, and later while you are fighting.
-    static void VoiceOrders()
-    {
-        var (b, d, _) = OneDivision(7, new Vector2(0, 0));
-        b.Player.Pos = new Vector2(8, 0);
-        Check(b.InVoice(d) && MathF.Abs(b.OrderDelay(d) - 0.6f) < 1e-3f, "in earshot the order is shouted");
-        b.Player.Pos = new Vector2(0, -90);
-        float far = b.OrderDelay(d);
-        Check(!b.InVoice(d) && far > 2, $"far off a rider takes it ({far:0.0}s)");
-        b.Player.EnemyDist = 2;
-        Check(b.OrderDelay(d) > far + 2, "and longer while you fight");
     }
 
     /// SG7: quick-battle sergeants have a nature; a Drillmaster drills his men harder; a Veteran thinks a grade up.

@@ -54,7 +54,7 @@ public sealed partial class Battle
                 foreach (var o in Near(u.Pos, 5, nearUrge)) if (o != u && o.Lunging && o.Team == u.Team && o.Squad == s) lunging++;
                 gain += 0.05f * Math.Min(4, lunging) * temper; // others going in pulls him along
             }
-            float loss = 0.08f + 0.4f * s.Drill + 0.2f * s.Formed * s.Drill + (steady ? 0.6f : 0);
+            float loss = 0.08f + 0.4f * s.Drill + 0.2f * s.Formed * s.Drill + (steady ? 0.6f : 0) + (SergeantUp(s) ? 0.1f : 0); // his sergeant holds him back
             u.Urge = Math.Clamp(u.Urge + (gain - loss) * step, 0, 1);
             if (u.Lunging)
             {

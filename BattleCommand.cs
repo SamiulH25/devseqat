@@ -2,11 +2,8 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A question a sergeant puts to you (docs/SERGEANTS.md SG3): two answers, each a goal. Unanswered by Until, he takes
-/// his own choice (A when AByDefault).
-public sealed record Query(string Text, string LabelA, Goal A, string LabelB, Goal B, bool AByDefault, float Until);
-
-/// Battle: the command tray, horn plans, sergeants' reports and questions, wits, voice and nature (docs/SERGEANTS.md).
+/// Battle: the command tray, horn plans, sergeants' reports, wits, voice and nature (docs/SERGEANTS.md; questions dropped in
+/// docs/OFFICERS.md OF0).
 public partial class Battle
 {
     // ---------- SG1: who leads whom, and the reserve ----------
@@ -135,7 +132,7 @@ public partial class Battle
     {
         float delay = now || Time <= 0 ? 0 : OrderDelay(d);
         if (Recording != null && d.Team == 0)
-            (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Kind = g.Kind, Point = g.Point, Target = g.Target != null ? Squads.IndexOf(g.Target) : -1, Side = g.Side, Plan = true });
+            (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Post = g.Post, Stance = g.Stance, Plan = true });
         if (delay <= 0) { d.Horn = g; d.PendingHorn = null; }
         else
         {
@@ -176,27 +173,74 @@ public partial class Battle
         if (d.Team == 0) Log($"{d.Name}: \"On the horn, {d.Horn.Describe}.\"");
     }
 
-    // ---------- SG3: reports and questions ----------
-
-    /// How long a question waits for your answer, and how long before he asks again.
-    public const float QueryWait = 12, QueryEvery = 25;
+    // ---------- SG3: reports ----------
 
     /// What the division is doing, in a few words for its card.
     public string Report(Division d)
     {
-        if (d.Squads.Count == 0) return "NO COMPANIES";
+        if (d.Squads.Count == 0) return "NO MEN";
         if (d.Alive == 0) return "BROKEN";
         if (d.Leaderless) return "SERGEANT DOWN";
-        if (d.Query != null) return "ASKS FOR ORDERS";
         if (d.Squads.Any(s => s.Alive > 0 && s.InContact)) return "ENGAGED";
         if (d.Losing * 12 >= Math.Max(12, d.Alive)) return "UNDER ARROWS";
-        if (d.Horn != null && d.Goal.Kind is GoalKind.Hold or GoalKind.Reserve or GoalKind.Ambush) return "AWAITS THE HORN";
+        if (d.Horn != null && d.Stance is Stance.Hold or Stance.Guard or Stance.Wait or Stance.Loose) return "AWAITS THE HORN";
+        if (d.Plugs.Count > 0) return "PLUGGING THE LINE";
+        if (d.Phase == 1 && d.Stance is Stance.Loose or Stance.Screen) return "GIVING WAY";
         var live = d.Squads.Where(s => s.Alive > 0).ToList();
-        if (live.Count > 0 && live.Average(s => Vector2.Distance(s.Center, s.Anchor)) > 8) return "ON THE MOVE";
-        return d.Goal.Kind switch { GoalKind.Hold or GoalKind.Take => "HOLDING", GoalKind.Reserve => "IN RESERVE", GoalKind.Ambush => "LYING IN WAIT", _ => "ADVANCING" };
+        if (live.Count > 0 && d.Stance is not (Stance.Advance or Stance.Charge or Stance.Swing) && live.Average(s => Vector2.Distance(s.Center, s.Anchor)) > 8) return "ON THE MOVE";
+        return d.Stance switch
+        {
+            Stance.Hold => "HOLDING THE LINE", Stance.Advance => "ADVANCING", Stance.Charge => "CHARGING",
+            Stance.Guard => "GUARDING THE FLANK", Stance.Swing => "SWINGING ROUND", Stance.Loose => "LOOSING",
+            Stance.Harass => "HARASSING", Stance.Screen => "SCREENING", Stance.Plug => "READY TO PLUG",
+            Stance.Follow => "BY THE CAPTAIN", _ => "IN RESERVE",
+        };
     }
 
-    /// Every 5 s: how many of the division fell since the last look (for UNDER ARROWS and the arrows question).
+    /// What is happening to the division, in a few words after its post and stance on its card (docs/OFFICERS.md OF4):
+    /// its state when that is the news, else the nearest enemy company and how far ("HORSE 60 M").
+    public string Situation(Division d)
+    {
+        var report = Report(d);
+        if (report == "AWAITS THE HORN") return "AWAITS HORN";
+        if (report is "NO MEN" or "BROKEN" or "SERGEANT DOWN" or "UNDER ARROWS" or "AWAITS THE HORN" or "PLUGGING THE LINE" or "GIVING WAY") return report;
+        if (report == "ENGAGED") return "AT BLOWS";
+        var live = d.Squads.Where(s => s.Alive > 0).ToList();
+        var at = live.Aggregate(Vector2.Zero, (a, s) => a + s.Center) / live.Count;
+        if (EnemySquadNear(at, float.MaxValue, 1 - d.Team) is not Squad e) return report;
+        float gap = MathF.Max(0, Vector2.Distance(at, e.Center) - e.Radius);
+        string kind = e.Cavalry ? "HORSE" : Ranged(e) ? "BOWS" : "FOOT";
+        return $"{kind} {MathF.Round(gap / 5) * 5:0} M"; // the card's colour already says it is the enemy's
+    }
+
+    /// Whether a company is the kind a post wants: horse on the wings, bows skirmishing, foot on the front or in reserve.
+    public static bool Suits(Squad s, Post p) => p switch
+    {
+        Post.LeftWing or Post.RightWing => s.Cavalry,
+        Post.Skirmish => Ranged(s),
+        _ => !s.Cavalry && !Ranged(s),
+    };
+
+    /// AUTO-FILL (OF4), before the battle: the companies you lead go to officers whose post suits them (horse to the wings,
+    /// bows to the skirmishers, foot to the front, then the reserve), each officer up to `Armies.DivisionFill`; you keep
+    /// at least three. Returns how many moved.
+    public int AutoFill(int team)
+    {
+        if (Time > 0) return 0;
+        int moved = 0;
+        var order = new[] { Post.LeftWing, Post.RightWing, Post.Skirmish, Post.Front, Post.Reserve };
+        foreach (var post in order)
+            foreach (var d in DivisionsOf(team).Where(x => x.Post == post))
+                foreach (var s in SquadsOf(team).Where(s => s.Division == null && s.Company is { Allied: false } && s.FoldedInto == null && Suits(s, post))
+                    .OrderBy(s => s.Units[0].Type.Tier).ThenBy(s => Squads.IndexOf(s)).ToList())
+                {
+                    if (d.Squads.Count >= Ironfield.Armies.DivisionFill || SquadsOf(team).Count(q => q.Division == null && q.Company is { Allied: false } && q.FoldedInto == null) <= 3) break;
+                    if (Assign(s, d) == null) moved++;
+                }
+        return moved;
+    }
+
+    /// Every 5 s: how many of the division fell since the last look (for UNDER ARROWS).
     void CountLosses(Division d)
     {
         if (Time < d.LossCheck) return;
@@ -204,61 +248,6 @@ public partial class Battle
         int alive = d.Alive;
         d.Losing = d.AliveThen < 0 ? 0 : Math.Max(0, d.AliveThen - alive);
         d.AliveThen = alive;
-    }
-
-    /// Answer a question: A or B rides out to him as a goal.
-    public string? Answer(Division d, bool a)
-    {
-        if (d.Query is not { } q) return "He has asked nothing.";
-        d.Query = null;
-        d.QueryAfter = Time + QueryEvery;
-        IssueGoal(d, a ? q.A : q.B);
-        return null;
-    }
-
-    /// He asks when something needs your word (yours only, and not when the AI plays you); unanswered, he decides.
-    void Questions(Division d, List<Squad> live, Vector2 center, Vector2 dir)
-    {
-        if (d.Query is { } q)
-        {
-            if (Time < q.Until) return;
-            d.Query = null;
-            d.QueryAfter = Time + QueryEvery;
-            var pick = q.AByDefault ? q.A : q.B;
-            d.Pending = pick;
-            d.PendingAt = Time; // he is there: no rider
-            Log($"{d.Name} decides: {(q.AByDefault ? q.LabelA : q.LabelB).ToLowerInvariant()}.");
-            return;
-        }
-        if (d.Team != 0 || Options.AutoPlayer || Time < d.QueryAfter || d.Pending != null || d.Leader is not { Active: true }) return;
-        int foe = 1 - d.Team;
-        bool bold = d.Temper == Temper.Bold || d.Has("Hothead"), shy = d.Temper == Temper.Cautious && !d.Has("Stubborn");
-        var back = new Goal(GoalKind.FallBack, center - dir * 25);
-        var stay = new Goal(GoalKind.Hold, center);
-        Query? ask = null;
-        // Their horse comes at our flank.
-        if (!live.All(s => s.Cavalry) && d.Goal.Kind != GoalKind.FallBack
-            && Squads.FirstOrDefault(s => s.Team == foe && s.Cavalry && s.Alive > 0 && s.Order == Order.Charge && Vector2.Distance(s.Center, center) < 45
-                && Vector2.Dot(Vector2.Normalize(s.Center - center + new Vector2(1e-3f, 0)), Facing(live, dir)) < 0.6f) is Squad horse)
-            ask = new Query("Their horse comes at our flank!", "STAND FAST", stay, "FALL BACK", back, !shy, Time + QueryWait);
-        // We are taking arrows and nobody is close enough to hit back.
-        else if (d.Goal.Kind is GoalKind.Hold or GoalKind.Take or GoalKind.Reserve && d.Losing * 12 >= Math.Max(12, d.Alive) && EnemySquadNear(center, 20, foe) == null
-            && Squads.Where(s => s.Team == foe && s.Alive > 0 && Ranged(s)).OrderBy(s => Vector2.DistanceSquared(s.Center, center)).FirstOrDefault() is Squad bows)
-            ask = new Query($"We are taking arrows from the {bows.Name}!", "GO AT THEM", new Goal(GoalKind.Attack, Target: bows), "PULL BACK", back, !shy, Time + QueryWait);
-        // The company we were sent at breaks.
-        else if (d.Goal.Kind == GoalKind.Attack && d.Goal.Target is { } t && t.Alive == 0 && t.Units.Any(u => u.Active && u.Routing))
-            ask = new Query($"The {t.Name} break and run!", "RUN THEM DOWN", new Goal(GoalKind.Pursue), "RE-FORM", stay, bold, Time + QueryWait);
-        if (ask == null) return;
-        d.Query = ask;
-        Log($"{d.Name}: \"{ask.Text}\" ({ask.LabelA} / {ask.LabelB})");
-        Sound(Cue.Shout, center);
-    }
-
-    /// Which way the division faces: its companies' fronts together (the way to the enemy if they cancel out).
-    static Vector2 Facing(List<Squad> live, Vector2 dir)
-    {
-        var f = live.Aggregate(Vector2.Zero, (a, s) => a + s.Front);
-        return f.LengthSquared() > 0.01f ? Vector2.Normalize(f) : dir;
     }
 
     // ---------- SG4: a sergeant lifts his companies' wits ----------

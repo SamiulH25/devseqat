@@ -177,7 +177,7 @@ public static partial class SelfTest
             var b = Battle.Empty(47);
             var sq = b.AddSquad(0, Troops.Get(troop), 20, new(0, -6), 10, Vector2.UnitY);
             b.AddSquad(1, Troops.Get("men_at_arms"), 20, new(0, 6), 10, -Vector2.UnitY);
-            if (sergeant) b.AddDivision(0, "Sergeant Test", new[] { sq }, Temper.Cautious, 3, new Goal(GoalKind.Hold, new Vector2(0, -6)));
+            if (sergeant) b.AddDivision(0, "Sergeant Test", new[] { sq }, Temper.Cautious, 3, new Goal(Post.Front, Stance.Hold));
             int peak = 0; float tip = -1, first = -1;
             for (int i = 0; i < 60 * 25 && sq.Order == Order.Hold; i++)
             {
@@ -247,7 +247,10 @@ public static partial class SelfTest
         Check(vet.bend > 0.3f && trained.bend == 0, "veterans wrap round the ends, trained men do not");
         float Trade((int flank, int mine, int theirs, float bend) r) => (24f - r.theirs) / MathF.Max(1, 32 - r.mine);
         Check(vet.flank >= 10, $"and land blows in the foe's flanks ({vet.flank})");
-        Check(Trade(vet) > Trade(trained), $"and trade better ({Trade(vet):0.0} kills a loss against {Trade(trained):0.0})");
+        // The trade over six fields: one clash swings on who loses his sergeant first (OF5), so one seed is a coin toss.
+        float vetTrade = 0, trainedTrade = 0;
+        for (int seed = 50; seed < 56; seed++) { vetTrade += Trade(WideClash(0.75f, seed)) / 6; trainedTrade += Trade(WideClash(0.45f, seed)) / 6; }
+        Check(vetTrade > trainedTrade, $"and trade better ({vetTrade:0.0} kills a loss against {trainedTrade:0.0}, six fields)");
     }
 
     /// M4: two elite companies against one: the one behind goes round to his flank while the other pins him. And elites
