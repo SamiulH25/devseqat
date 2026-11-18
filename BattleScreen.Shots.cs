@@ -47,7 +47,7 @@ partial class BattleScreen
                 camFocus = new Vector2(0, -60); camYaw = MathHelper.PiOver2; camPitch = 0.32f; zoom = 90;
                 if (b.Terrain.Layout == FieldLayout.Shore) { camFocus = new Vector2(b.Terrain.ShoreSide * 40, -40); camYaw = MathF.Atan2(0.5f, b.Terrain.ShoreSide); } // the sea on the flank in view
                 pendingShot = "landscape"; shotIndex++; break;
-            case 6 when b.Time > 21f && groundView != true:
+            case 6 when b.Time > 21f && groundView != true && pendingShot == null: // after "landscape" is saved (two updates can run before a draw)
                 groundView = true; camFocus = b.Centroid(0) + new Vector2(0, 25); zoom = 50; camPitch = 0.7f;
                 pendingShot = "ground-map"; break; // the ground map (docs/archive/TERRAIN.md T6)
             case 6 when groundView == true && pendingShot == null:

@@ -55,6 +55,8 @@ void main()
 
 #ifdef FRAGMENT
 #ifndef SHADOW
+// The broad mottling MapLand gives the grass, for ground that keeps its own colour (sand, frost; WM3).
+float patchyOwn(vec2 w) { return texture2D(Detail, w * 0.0105 + vec2(0.13, 0.71)).r; }
 // The campaign map's land colour (the grounded look): olive rather than lime, drifting in hue across the country, in
 // patches tens of metres across (lush hollows, sun-bleached rises), with grass texture. Shared by the ground and the
 // field plots laid on it, so a plot's feathered edge meets the meadow in the same colour.
@@ -184,6 +186,9 @@ void main()
         float wRock = smoothstep(0.3, 0.5, slope + (mid.b - 0.5) * 0.18);
         albedo = mix(mix(grass, earth, wEarth), rock, wRock);
         albedo = mix(albedo, vColor.rgb, smoothstep(0.75, 0.9, dot(vColor.rgb, vec3(0.333)))); // snow and pale ground keep their own colour
+        float own = step(999.0, vUV.x) * clamp(vUV.x - 1000.0, 0.0, 1.0);                     // sand, frost, heath (WM3: Terrain.Own) keep theirs too
+        vec3 ownLand = vColor.rgb * (0.86 + 0.28 * patchyOwn(w)) * (0.84 + 0.32 * mix(fine.r, mid.r, 0.35));
+        albedo = mix(albedo, ownLand, own * (1.0 - 0.7 * wRock));
         albedo *= mix(0.62, 1.0, vColor.a);                                                   // shade in the hollows
     }
     else

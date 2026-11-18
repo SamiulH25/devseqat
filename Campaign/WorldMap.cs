@@ -539,6 +539,9 @@ public sealed partial class WorldMap
         };
     }
 
+    /// How much of its own colour the ground at p keeps on the map: its land's wash (sand, frost, heath), none elsewhere.
+    public float OwnColour(Vector2 p) => Lands.Of(ProvinceAt(p).Kind).Wash.W;
+
     /// A battle at p is fought by the sea: open water within a few lengths of it (a designed map only).
     public bool NearSea(Vector2 p)
     {
@@ -581,7 +584,8 @@ public sealed partial class WorldMap
         var fields = Layout >= 4 ? LayFields(span) : new List<FieldPlot>();
         var fieldCells = FieldCells(fields);
         var standRng = new Random(Seed * 5 + 3); // layout 4 woods: their own dice
-        bool Clear(Vector2 p) => Landness(p) > 0.95f && Settlements.All(s => Vector2.Distance(s.Pos, p) > 9 * span) && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && !InLake(p, 2)
+        float keepOff = 9 * (Designed ? MathF.Sqrt(span) : span); // the drawn map's places stand close: woods come within half the generated maps' margin
+        bool Clear(Vector2 p) => Landness(p) > 0.95f && Settlements.All(s => Vector2.Distance(s.Pos, p) > keepOff) && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && !InLake(p, 2)
             && MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half && !InField(fieldCells, p, 1.5f);
         foreach (var f in fields.Where(f => f.Kind == FieldKind.Orchard)) // rows of small round fruit trees
         {
@@ -622,7 +626,13 @@ public sealed partial class WorldMap
             {
                 var pos = r.Path[i] + new Vector2(rng.NextSingle() * 2 - 1, rng.NextSingle() * 2 - 1) * r.Width;
                 float d = r.Dist(pos);
-                if (d > r.Width * 0.45f && d < r.Width && Clear(pos)) foliage.Add(new Foliage(FoliageKind.Pine, pos, (2.2f + rng.NextSingle()) * grow0, 0, rng.Next()));
+                if (d > r.Width * 0.45f && d < r.Width && Clear(pos))
+                {
+                    // On the drawn map woods come close to towns: these shrink by a town as the stands' trees do, not tower over it.
+                    float town = Designed ? Settlements.Min(st => Vector2.Distance(st.Pos, pos)) : float.MaxValue;
+                    float near = Designed ? 0.45f + 0.55f * Math.Clamp((town - 12 * span) / (30 * span), 0, 1) : 1;
+                    foliage.Add(new Foliage(FoliageKind.Pine, pos, (2.2f + rng.NextSingle()) * grow0 * near, 0, rng.Next()));
+                }
             }
         for (int i = 0; i < (Designed ? 0 : 260); i++) // pines on the mountain rim (a designed map has the sea instead)
         {
@@ -631,7 +641,7 @@ public sealed partial class WorldMap
             if (MathF.Max(MathF.Abs(pos.X), MathF.Abs(pos.Y)) < ExtentUsed - 4) continue;
             foliage.Add(new Foliage(FoliageKind.Pine, pos, 2.4f + rng.NextSingle(), 0, rng.Next()));
         }
-        var terrain = new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers);
+        var terrain = new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers) { Own = OwnColour };
         terrain.RoadLines.AddRange(RoadLines);
         terrain.Lakes.AddRange(Lakes);
         terrain.MapBridges.AddRange(Bridges);

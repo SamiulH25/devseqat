@@ -356,7 +356,9 @@ sealed partial class World : IDisposable
                 var normal = Vector3.Normalize(new Vector3(hl - hr, 2 * t.Step, hd - hu));
                 var col = new Color(GroundColor(p));
                 if (!t.Grass) col.A = (byte)(255 * (1 - 0.6f * Cavity(x, z))); // the map's shade in hollows (World.Materials.cs)
-                v[z * n + x] = new VertexPNCT(new Vector3(p.X, t.GridHeight(x, z), p.Y), normal, col, p / 4);
+                // The map marks ground that keeps its own colour (sand, frost: Terrain.Own) as UV x = 1000 + the amount; plain p / 4 never reaches it.
+                var uv = !t.Grass && t.Own?.Invoke(p) is > 0 and var own ? new Vector2(1000 + own, p.Y / 4) : p / 4;
+                v[z * n + x] = new VertexPNCT(new Vector3(p.X, t.GridHeight(x, z), p.Y), normal, col, uv);
             }
         });
         // Indices laid out block by block, each block with its box, so only the blocks in view are drawn.

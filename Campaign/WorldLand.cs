@@ -31,6 +31,9 @@ public sealed partial class WorldMap
                     if (d > r0 + ch * 0.5f && d < r1) cells.Add((c, d));
                 }
             int orchards = town ? 1 + rng.Next(2) : 0, left = town ? 9 : 5 + rng.Next(3);
+            var land = Lands.Of(ProvinceAt(s.Pos).Kind); // sands and barrens farm a few bare plots (WM3; no such land before layout 5)
+            if (land.Fields < 1) left = Math.Max(1, (int)MathF.Round(left * land.Fields));
+            if (land.Barren || land.Cold) orchards = 0; // no fruit trees in the sands or the north
             foreach (var (c, d) in cells.OrderBy(x => x.D + rng.NextSingle() * ch * 2)) // a ragged ring, not a full one
             {
                 if (left <= 0) break;
@@ -46,7 +49,7 @@ public sealed partial class WorldMap
                     if (halves.Count == 0) continue;
                     plot = halves[rng.Next(halves.Count)];
                 }
-                var kind = orchards > 0 && d < r0 + cw ? FieldKind.Orchard : rng.Next(10) switch
+                var kind = land.Barren ? (rng.Next(2) == 0 ? FieldKind.Fallow : FieldKind.Ploughed) : orchards > 0 && d < r0 + cw ? FieldKind.Orchard : rng.Next(10) switch
                 {
                     0 or 1 => FieldKind.Pasture, 2 or 3 or 4 => FieldKind.Grain, 5 or 6 => FieldKind.Green, 7 or 8 => FieldKind.Ploughed, _ => FieldKind.Fallow,
                 };
@@ -104,7 +107,7 @@ public sealed partial class WorldMap
             float a = rng.NextSingle() * MathF.Tau, d = MathF.Sqrt(rng.NextSingle()) * radius * 0.8f;
             var centre = p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
             float sr = (Lands.Of(p.Kind).Trees >= 70 ? 20 : 11) * MathF.Sqrt(grow) * (0.7f + rng.NextSingle() * 0.6f);
-            int count = trees / stands;
+            int count = trees / stands * (Designed ? 2 : 1); // the drawn map's provinces are ragged: more of a stand falls outside, so it tries more
             for (int i = 0; i < count; i++)
             {
                 float ta = rng.NextSingle() * MathF.Tau, td = rng.NextSingle() * sr; // thickest at the heart

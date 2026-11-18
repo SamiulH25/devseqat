@@ -154,8 +154,16 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
   - **Weather**: `Weather.For` takes the country's rain and climate (`Campaign.WeatherFor` reads the player's province):
     the sands never snow, the cold lands snow outside summer. This also makes battles in the fens rainier and on the steppe
     drier on every layout (the same dice, other thresholds).
-  - **Map**: winter does not whiten the sands. The map shader keeps only very pale ground's own colour, so the desert's
-    wash is bright (0.95, 0.85, 0.62) and strong; tundra is a pale frost wash.
+  - **Map**: winter does not whiten the sands. A land's wash amount is also how much of its own colour the map shader keeps
+    through its grassland look (`WorldMap.OwnColour` -> `Terrain.Own`, sent as terrain UV x = 1000 + the amount, which plain
+    `p / 4` UVs never reach; world.glsl). The shader used to keep only very pale ground's colour, so the sands came out olive
+    and the frost as fog-white blotches; the washes are natural colours now: sand (0.86, 0.74, 0.52), the tundra lichen and
+    grey stone (0.66, 0.67, 0.58), heath brown in the highlands.
+  - **Fields and woods on the drawn map** (2026-11-18): sands and barrens keep 40 % of a village's plots, bare (fallow and
+    ploughed: `LandDef.Fields`, `Barren`); taiga 60 %; no orchards in the sands or the cold lands. Woods kept 9 x span (38
+    units at span 4.2) clear of every place, which left the crowded drawn map nearly bare; there it is 9 x sqrt(span), stands
+    try twice as often (the drawn provinces are ragged), and ridge pines shrink by a town as stand trees do. Layouts 0-4 are
+    untouched (`--world-bench` checksum unchanged).
   - **Monsters**: wolves and spider nests also in the taiga; bears in the taiga and highlands; wyverns in the highlands and
     desert. **Tavern strip**: taiga is drawn as forest, highlands as moors under a range, tundra as flat barrens with snow
     outside summer, desert and oasis as dunes (hot), coast as the sea to the horizon. **Names**: battles take Strand,

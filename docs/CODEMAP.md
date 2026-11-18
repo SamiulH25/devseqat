@@ -434,9 +434,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **GearItem** (class, L10): CountsAs:19
 - **Campaign** (class, L23): QualityScale:31, QualityPrice:37, QualityName:42, PriceOf:48, MarksFor:51, ItemOf:54, ItemName:57, WornItems:66, MarkMods:69, InSlot:86, TakeOff:93, DropItem:104, Wardrobe:116, BaggageRoom:121, BaggageLoad:124, BaggageDrag:133, ItemsAfterBattle:142, MayName:162, NameItem:165
 
-## Campaign/Lands.cs (60 lines)
-- **LandDef** (record, L11)
-- **Lands** (class, L18): Of:58, Known:59
+## Campaign/Lands.cs (62 lines)
+- **LandDef** (record, L13)
+- **Lands** (class, L20): Of:60, Known:61
 
 ## Campaign/Legacy.cs (131 lines)
 - **Campaign** (class, L8): BattleName:19, BannerAfterBattle:37, CompanyFame:67, FameXp:77, FameWord:80, CannotRetire:89, Retire:96, HandOver:110
@@ -558,12 +558,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/WorldDesigned.cs (345 lines)
 - **WorldMap** (class, L9): Drawn:14, Drawn:15, Cell:39, InSea:47, Landness:50, DesignProvinceAt:60, FromDesign:63, BuildGrid:130, OntoLand:187, InExtent:197, Blur:203, LinkNeighbours:231, OverLand:252, DesignRoads:262, DesignRiver:307, Meander:326
 
-## Campaign/WorldLand.cs (125 lines)
-- **WorldMap** (class, L8): LayFields:12, FieldClear:64, InField:94, GrowStands:99
+## Campaign/WorldLand.cs (128 lines)
+- **WorldMap** (class, L8): LayFields:12, FieldClear:67, InField:97, GrowStands:102
 
-## Campaign/WorldMap.cs (673 lines)
-- **WorldMap** (class, L8): InLand:66, WorldMap:78, readonly:88, Generate:92, Climate:208, RaiseRidges:222, AddRidge:253, RidgeDist:265, RidgeHeight:268, OnRidge:286, HomeOf:289, ReachOf:291, GrowRealms:296, SiteKindsFor:338, PlaceSites:342, Cross:367, RiverDist:376, RiverScan:377, ProvinceAt:381, ProvinceScan:384, RoadDist:397, RoadScan:399, SpeedFactor:412, BattleGround:417, Height:435, LandHeight:448, DesignedHeight:472, RimAt:494, Ridged:496, Tint:499, NearSea:543, KindTint:551, BuildTerrain:566
-- **PlaceNamer** (class, L647): PlaceNamer:654, Pool:656, Next:662
+## Campaign/WorldMap.cs (683 lines)
+- **WorldMap** (class, L8): InLand:66, WorldMap:78, readonly:88, Generate:92, Climate:208, RaiseRidges:222, AddRidge:253, RidgeDist:265, RidgeHeight:268, OnRidge:286, HomeOf:289, ReachOf:291, GrowRealms:296, SiteKindsFor:338, PlaceSites:342, Cross:367, RiverDist:376, RiverScan:377, ProvinceAt:381, ProvinceScan:384, RoadDist:397, RoadScan:399, SpeedFactor:412, BattleGround:417, Height:435, LandHeight:448, DesignedHeight:472, RimAt:494, Ridged:496, Tint:499, OwnColour:543, NearSea:546, KindTint:554, BuildTerrain:569
+- **PlaceNamer** (class, L657): PlaceNamer:664, Pool:666, Next:672
 
 ## Campaign/WorldRoads.cs (260 lines)
 - **WorldMap** (class, L9): InLake:19, PlaceLakes:26, LayRoads:55
@@ -852,7 +852,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Heraldry** (record, L8)
 - **Style** (class, L11): ColorBlind:22, Standard:35, PaletteOf:49
 
-## Terrain.cs (654 lines)
+## Terrain.cs (657 lines)
 - **FoliageKind** (enum, L5)
 - **River** (record, L11): AtBridge:23, Dist:34, SegmentDist:43, Within:53, AtFord:99, Carve:102, Smooth:104, Across:107
 - **Lake** (record, L119): Edge:122, Inside:125, Carve:134
@@ -863,7 +863,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **SiegeWall** (class, L173): SiegeWall:190, AtGate:198, AtLadder:199, SectionAt:201, SectionX:206, Breached:207, AtBreach:208, AtRamp:210, Inside:212, Raise:214
 - **Foliage** (struct, L218)
 - **TerrainParams** (record, L223): Named:263
-- **Terrain** (class, L270): LayoutFor:273, WaterDepth:319, Flat:327, Terrain:328, Terrain:329, Terrain:333, Terrain:358, RawHeight:398, RoadCenter:433, RoadDist:436, Height:445, Height:457, GridHeight:458, Gradient:461, BucketOf:471, AddProp:478, Add:480, Blocked:487, PushOut:501, Core:527, PlaceFoliage:529, PlaceTown:605, SmoothStep:627, Hash:633, Noise:645
+- **Terrain** (class, L270): LayoutFor:273, WaterDepth:322, Flat:330, Terrain:331, Terrain:332, Terrain:336, Terrain:361, RawHeight:401, RoadCenter:436, RoadDist:439, Height:448, Height:460, GridHeight:461, Gradient:464, BucketOf:474, AddProp:481, Add:483, Blocked:490, PushOut:504, Core:530, PlaceFoliage:532, PlaceTown:608, SmoothStep:630, Hash:636, Noise:648
 
 ## TerrainFeatures.cs (184 lines)
 - **FeatureKind** (enum, L7)
@@ -1014,9 +1014,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Verts.cs (36 lines)
 - **Verts<T>** (class, L6): Add:13, Draw:19, Dispose:35
 
-## World.cs (1319 lines)
+## World.cs (1321 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): Baked:50, World:59, World:63, Checksum:80, Mark:110, Upload:119, Image:143, FoliageBuffer:150, RebuildFoliage:158, Lit:164, Draw:182, SetFog:207, DrawShaded:214, DrawShadowCasters:241, DrawGeometry:251, SetExtra:287, Dispose:289, Smooth:298, GroundColor:305, BuildDetail:384, WorldToMinimap:429, MinimapToWorld:430, BuildSky:434, BuildFoliage:456, DrawTerrain:542, DrawFoliage:575, Jitter:602, Broadleaf:608, Pine:625, Bush:639, Rock:648, House:660, Windows:689, Chimney:719, Village:727, Town:740, SiteModel:776, WallStones:861, Tower:873, Torches:892, GateDoor:912, Ladder:939, Wheel:952, Wagon:987, TownHouse:1049, Castle:1056, Grass:1073, Skirt:1129
+- **World** (class, L25): Baked:50, World:59, World:63, Checksum:80, Mark:110, Upload:119, Image:143, FoliageBuffer:150, RebuildFoliage:158, Lit:164, Draw:182, SetFog:207, DrawShaded:214, DrawShadowCasters:241, DrawGeometry:251, SetExtra:287, Dispose:289, Smooth:298, GroundColor:305, BuildDetail:386, WorldToMinimap:431, MinimapToWorld:432, BuildSky:436, BuildFoliage:458, DrawTerrain:544, DrawFoliage:577, Jitter:604, Broadleaf:610, Pine:627, Bush:641, Rock:650, House:662, Windows:691, Chimney:721, Village:729, Town:742, SiteModel:778, WallStones:863, Tower:875, Torches:894, GateDoor:914, Ladder:941, Wheel:954, Wagon:989, TownHouse:1051, Castle:1058, Grass:1075, Skirt:1131
 
 ## World.Features.cs (115 lines)
 - **World** (class, L7): Features:11

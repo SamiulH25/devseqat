@@ -8,8 +8,10 @@ namespace Ironfield;
 /// then draws it toward a colour of its own (sand, frost), which a multiply cannot do. `Trees` is a province's woods
 /// at the 392 map's size; `Conifer` makes them pines. `Rain` scales the daily chance of rain (and a battle's). `Wild` = monster
 /// country. `Climate`: "cold" (snow outside summer), "hot" (never snow, no white winter on the map) or "".
+/// The wash's amount is also how much of that colour the map shader keeps through its grassland look (`WorldMap.OwnColour`).
+/// `Fields` is the share of a village's field plots it keeps; `Barren` ground grows no green crops (fallow and ploughed only).
 public sealed record LandDef(string Kind, string Title, Vector3 Tint, Vector4 Wash, int Trees, bool Conifer, float Speed, float Rain,
-    bool Wild, string[] Sites, TerrainParams Field, string Climate = "")
+    bool Wild, string[] Sites, TerrainParams Field, string Climate = "", float Fields = 1, bool Barren = false)
 {
     public bool Hot => Climate == "hot";
     public bool Cold => Climate == "cold";
@@ -40,14 +42,14 @@ public static class Lands
         // The drawn world's kinds (layout 5).
         new("Coast", "the {0} Shore", new(1.05f, 1.04f, 0.9f), new(0.62f, 0.62f, 0.46f, 0.25f), 8, false, 1f, 1.3f, false,
             new[] { "watchtower", "shrine", "ruin", "battlefield", "hermit", "spring" }, TerrainParams.Coast),
-        new("Taiga", "the {0} Taiga", new(0.76f, 0.86f, 0.84f), new(0.17f, 0.26f, 0.19f, 0.6f), 70, true, 0.7f, 1.1f, true,
-            new[] { "hermit", "ruin", "stones", "spring", "shrine", "watchtower" }, TerrainParams.Taiga, "cold"),
-        new("Highlands", "the {0} Highlands", new(1.0f, 0.98f, 0.88f), new(0.5f, 0.42f, 0.3f, 0.45f), 16, true, 0.75f, 1.3f, true,
+        new("Taiga", "the {0} Taiga", new(0.76f, 0.86f, 0.84f), new(0.2f, 0.27f, 0.21f, 0.6f), 70, true, 0.7f, 1.1f, true,
+            new[] { "hermit", "ruin", "stones", "spring", "shrine", "watchtower" }, TerrainParams.Taiga, "cold", Fields: 0.6f),
+        new("Highlands", "the {0} Highlands", new(1.0f, 0.98f, 0.88f), new(0.47f, 0.4f, 0.33f, 0.5f), 16, true, 0.75f, 1.3f, true,
             new[] { "stones", "ruin", "watchtower", "mine", "hermit", "spring" }, TerrainParams.Highlands),
-        new("Tundra", "the {0} Barrens", Vector3.One, new(0.86f, 0.9f, 0.92f, 0.95f), 6, true, 0.8f, 0.6f, true,
-            new[] { "stones", "ruin", "hermit", "watchtower", "battlefield", "spring" }, TerrainParams.Tundra, "cold"),
-        new("Desert", "the {0} Sands", Vector3.One, new(0.95f, 0.85f, 0.62f, 0.9f), 0, false, 0.75f, 0.1f, false,
-            new[] { "ruin", "stones", "watchtower", "mine", "battlefield", "hermit" }, TerrainParams.Desert, "hot"),
+        new("Tundra", "the {0} Barrens", Vector3.One, new(0.66f, 0.67f, 0.58f, 0.8f), 6, true, 0.8f, 0.6f, true, // lichen and grey stone, snow in winter
+            new[] { "stones", "ruin", "hermit", "watchtower", "battlefield", "spring" }, TerrainParams.Tundra, "cold", Fields: 0.4f, Barren: true),
+        new("Desert", "the {0} Sands", Vector3.One, new(0.86f, 0.74f, 0.52f, 0.9f), 0, false, 0.75f, 0.1f, false,
+            new[] { "ruin", "stones", "watchtower", "mine", "battlefield", "hermit" }, TerrainParams.Desert, "hot", Fields: 0.4f, Barren: true),
         new("Oasis", "the {0} Oasis", new(0.94f, 1.04f, 0.86f), new(0.84f, 0.74f, 0.54f, 0.45f), 12, false, 0.95f, 0.3f, false,
             new[] { "spring", "shrine", "mill", "ruin", "watchtower", "hermit" }, TerrainParams.Oasis, "hot"),
     };

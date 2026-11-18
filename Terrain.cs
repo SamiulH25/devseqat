@@ -304,6 +304,9 @@ public sealed partial class Terrain
     readonly Func<Vector2, float>? customRoad;
     /// Optional ground colour multiplier (the campaign map's fields and forest floors). Visual only.
     public readonly Func<Vector2, Vector3, Vector3>? Tint; // (place, ground colour) -> the colour drawn
+    /// The campaign map: how much of the colour `Tint` gives a place keeps through the map's grassland look (0-1: sand,
+    /// frost, heath; docs/WORLDMAP.md WM3). Null or 0 = the grassland look, as every map had before. Visual only.
+    public Func<Vector2, float>? Own { get; init; }
     /// Grass tufts and the minimap's reach (the campaign map has no grass and a wider overview).
     public readonly bool Grass = true;
     public readonly float MinimapRange = 110;
