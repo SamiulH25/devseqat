@@ -354,11 +354,7 @@ public sealed class Province
     public int Id, Faction;
     public string Name = "", Kind = "Meadow";
     /// The province as the land knows it: "the Greywater Hills", "Oakhollow Forest" (S1).
-    [JsonIgnore] public string Title => Kind switch
-    {
-        "Hills" => $"the {Name} Hills", "Forest" => $"{Name} Forest", "Farmland" => $"the {Name} Fields",
-        "Marsh" => $"the {Name} Fens", "Steppe" => $"the {Name} Steppe", "Badlands" => $"the {Name} Wastes", _ => $"the Vale of {Name}",
-    };
+    [JsonIgnore] public string Title => string.Format(Lands.Of(Kind).Title, Name);
     public Vector2 Center;
     public List<int> Neighbors = new();
     /// How wet its ground is from recent rain, 0-1 (docs/archive/TERRAIN.md T7; Campaign.RainDaily).

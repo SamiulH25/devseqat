@@ -465,11 +465,12 @@ sealed class ScreenHost : Game
         var c = campaign!;
         if (shotFrames < 20 || pendingShot != null) return;
         void Shot(string name) { pendingShot = name; shotFrames = 0; cStage++; }
-        if (cStage == 2 && lifeShots < 7) // the land and its life (docs/WORLD_LIFE.md WL3-WL5), in spring before the year turns
+        if (cStage == 2 && lifeShots < (c.Map.Designed ? 11 : 7)) // the land and its life (docs/WORLD_LIFE.md WL3-WL5), in spring before the year turns; on the drawn map its new lands (WM3)
         {
-            string[] stages = { "farm", "life", "village", "road", "night", "map", "river" };
+            string[] stages = { "farm", "life", "village", "road", "night", "map", "river", "lands-Desert", "lands-Tundra", "lands-Taiga", "lands-Highlands" };
             if (lifeShots == 4) { dayHours = c.S.Hours; c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 22.5; } // lamplight
             if (lifeShots == 5) { c.S.Hours = dayHours; lifeShots++; return; } // daylight again ("map" is shot first)
+            if (lifeShots >= 7) c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 11.5; // the new lands by day (the clock steps back a few hours)
             map.Stage(stages[lifeShots]);
             pendingShot = "campaign-" + stages[lifeShots]; shotFrames = 0; lifeShots++;
             return;

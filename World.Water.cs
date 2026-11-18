@@ -144,6 +144,9 @@ sealed partial class World
                 for (float x = -t.Half - Far; x < t.Half + Far; x += Big)
                 {
                     if (x >= -t.Half - 0.01f && x + Big <= t.Half + 0.01f && zz >= -t.Half - 0.01f && zz + Big <= t.Half + 0.01f) continue;
+                    // Only off a sea edge: a shore battlefield has its high rim on the other three sides.
+                    float ex = Math.Clamp(x + Big / 2, -t.Half + 1, t.Half - 1), ez = Math.Clamp(zz + Big / 2, -t.Half + 1, t.Half - 1);
+                    if (t.Height(ex, ez) > level) continue;
                     float x0 = x, z0 = zz, x1 = x + Big, z1 = zz + Big;
                     // Cells straddling the map's edge keep to the outside of it.
                     if (z0 < t.Half && z1 > -t.Half && x0 < t.Half && x1 > -t.Half)

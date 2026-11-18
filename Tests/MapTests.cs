@@ -297,6 +297,46 @@ public static partial class SelfTest
 
     /// WM1 (docs/WORLDMAP.md): layout 5 is the drawn world, the same for every seed: its land provinces with invented names,
     /// its settlements in their own realm's land and none at sea, every town and castle joined by road, and a campaign runs.
+    /// WM3: the drawn world's six new kinds of country (Coast, Taiga, Highlands, Tundra, Desert, Oasis) have their names,
+    /// woods, weather, monsters and battlefields; a battle by the sea has the sea on its flank.
+    static void NewLands()
+    {
+        var d = WorldDesign.Get();
+        Check(d.Provinces.Where(p => p.Kind != "Sea").All(p => Lands.Known(p.Kind)), "every land kind the design uses is known");
+        Check(new Province { Name = "Ashby", Kind = "Hills" }.Title == "the Ashby Hills" && new Province { Name = "Ashby", Kind = "Desert" }.Title == "the Ashby Sands"
+            && new Province { Name = "Ashby", Kind = "Nowhere" }.Title == "the Vale of Ashby", "titles by kind (an unknown kind is a vale)");
+        Check(Lands.Of("Taiga").Wild && Lands.Of("Tundra").Wild && !Lands.Of("Desert").Wild && Lands.Of("Forest").Wild && !Lands.Of("Meadow").Wild, "monster country");
+        // Weather: the sands never snow, the cold lands snow in spring too.
+        bool desertSnow = false, coldSpring = false;
+        for (int s = 0; s < 400; s++)
+        {
+            desertSnow |= Weather.For(12, 3, s, Lands.Of("Desert").Rain, "hot").Snow;
+            coldSpring |= Weather.For(12, 0, s, Lands.Of("Tundra").Rain, "cold").Snow;
+        }
+        Check(!desertSnow && coldSpring, "no snow on the sands; snow in a tundra spring");
+        // Battlefields.
+        var shore = new Terrain(5, TerrainParams.Coast with { Layouts = new[] { FieldLayout.Shore } });
+        int side = shore.ShoreSide;        Check(shore.Layout == FieldLayout.Shore && side != 0 && shore.WaterDepth(new Vector2(side * 220, 0)) > 1 && shore.WaterDepth(new Vector2(-side * 220, 0)) == 0,
+            "the sea lies along one flank of a shore field");
+        Check(Enumerable.Range(-20, 41).All(i => shore.WaterDepth(new Vector2(i * 2.4f, i * 3f)) == 0), "the deployment ground is dry");
+        Check(Enumerable.Range(0, 60).Any(i => shore.GroundAt(new Vector2(side * (60 + i * 2), 0)) == GroundKind.Sand), "a beach between the field and the sea");
+        Check(!shore.Foliage.Any(f => f.Radius > 0 && shore.WaterDepth(f.Pos) > 0), "no trees or boulders in the sea");
+        Check(Enumerable.Range(0, 200).All(i => shore.WaterDepth(new Vector2(side * i, i % 7 * 9)) > 0 || shore.Height(new Vector2(side * i, i % 7 * 9)) > -2.5f), "no dry ground lies under the sea's surface");
+        var desert = new Terrain(5, TerrainParams.Desert with { Layouts = new[] { FieldLayout.Open } });
+        int sand = 0, all = 0;
+        for (float x = -200; x <= 200; x += 10) for (float z = -200; z <= 200; z += 10) { all++; if (desert.GroundAt(new Vector2(x, z)) == GroundKind.Sand) sand++; }
+        Check(sand > all * 0.3f && !desert.Foliage.Any(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine), $"the desert is sand ({sand}/{all}) without trees");
+        var taiga = new Terrain(5, TerrainParams.Taiga);
+        Check(taiga.Foliage.Count(f => f.Kind == FoliageKind.Pine) > 50 && !taiga.Foliage.Any(f => f.Kind == FoliageKind.Broadleaf), "the taiga's woods are pine");
+        // The designed map: a fight on the beach is a shore field; a fight in the sands a desert one.
+        var m = Campaign.New(7, layout: WorldMap.DesignLayout).Map;
+        var beach = m.Settlements.Select(s => s.Pos).First(p => m.NearSea(p));
+        Check(m.BattleGround(beach).Layouts is [FieldLayout.Shore] && m.BattleGround(beach).Name == "Coast", "a battle by the sea is fought on the shore");
+        var inland = m.Provinces.Where(p => p.Kind == "Desert").Select(p => p.Center).Where(p => !m.NearSea(p) && !m.OnRidge(p)).ToList();
+        Check(inland.Count == 0 || m.BattleGround(inland[0]).Name == "Desert", "a battle in the sands is fought on sand");
+        Check(m.Provinces.Any(p => p.Title.EndsWith("Sands")) && m.Provinces.Any(p => p.Title.EndsWith("Shore")), "the new lands are named on the map");
+    }
+
     static void DesignedMap()
     {
         var clock = System.Diagnostics.Stopwatch.StartNew();

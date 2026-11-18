@@ -1,6 +1,6 @@
 # The designed world: plan
 
-Status: **WM0-WM2 built** (2026-11-17); WM3-WM6 planned. New campaigns stay on layout 4 until WM4 (set `IRONFIELD_MAP_LAYOUT=5` to play the drawn world now). Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
+Status: **WM0-WM3 built** (2026-11-17); WM4-WM6 planned. New campaigns stay on layout 4 until WM4 (set `IRONFIELD_MAP_LAYOUT=5` to play the drawn world now). Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
 game as map layout 5, the map every new campaign plays on. Phases WM0-WM7; each ships on its own and `tools/check.sh`
 must pass after each. When a phase ships, add its "As built" note at the end.
 
@@ -134,6 +134,34 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
   - **Left for WM3**: a battle by the shore still gets its province's field; the coast battlefield comes with the Coast
     land kind. **Left for WM6**: the minimap and realm map (M) paint no sea.
   - Judged with Haiku 5.5 (the T3 judge was not reachable from the session): 6 in four rounds; the owner looked at the shots and accepted the look (polish left for WM6).
+- **WM3 (2026-11-17).** The new lands. One table, `Lands.All` (`Campaign/Lands.cs`), holds every kind of country: its
+  title, map tint and `Wash` (a pull toward a colour of its own: sand, frost; a multiply cannot make them), woods and
+  whether they are pines, map speed, rain, monster country (`Wild`), site kinds, the battlefield (`TerrainParams`) and a
+  climate (`cold`, `hot`). `Province.Title`, `WorldMap.Tint`/`KindTint`/`SpeedFactor`/`BattleGround`/`SiteKindsFor`,
+  the map's woods (`BuildTerrain`, `GrowStands`), `Campaign.RainDaily` and `Monsters.Wild` read it. The first seven rows
+  keep the values the code had, so layouts 0-4 generate and play as before (`CampaignMap`, `MapIndexMatches` unchanged).
+  Deviations and gotchas:
+  - **Battlefields**: presets `Coast`, `Taiga`, `Highlands`, `Tundra`, `Desert`, `Oasis` (Terrain.cs; `IRONFIELD_GROUND`
+    knows them). `TerrainParams.Look` (`GroundLook`: Moss, Frost, Sand, Dry) colours the open ground (`World.GroundColor`)
+    and sets its ground layer (`Terrain.LookGround`: dunes of Sand in the desert and round an oasis's edge, Stony patches
+    in the tundra and on highland slopes); `Conifer` makes every tree a pine. The desert has no flank woods.
+  - **The shore** is a new `FieldLayout.Shore`: the sea along one flank (`Terrain.ShoreSide`), from just past the
+    deployment ground (`50 * Scale + 34..48` m), a sand beach, the rim falling away into it. `Terrain.SeaLevel` (-2.5 on a
+    battlefield) makes `WaterDepth` read the sea and `World.Sea` draw it; the open sea past the field's edge is drawn
+    only off an edge that is under water, so the other three sides keep their rim. Inland, low ground is lifted clear of
+    the sea's surface. `WorldMap.BattleGround` gives a Shore field wherever open water lies within 8 units of the fight
+    (`NearSea`), whatever the province. A Coast province away from the water fights on open ground or a village.
+  - **Weather**: `Weather.For` takes the country's rain and climate (`Campaign.WeatherFor` reads the player's province):
+    the sands never snow, the cold lands snow outside summer. This also makes battles in the fens rainier and on the steppe
+    drier on every layout (the same dice, other thresholds).
+  - **Map**: winter does not whiten the sands. The map shader keeps only very pale ground's own colour, so the desert's
+    wash is bright (0.95, 0.85, 0.62) and strong; tundra is a pale frost wash.
+  - **Monsters**: wolves and spider nests also in the taiga; bears in the taiga and highlands; wyverns in the highlands and
+    desert. **Tavern strip**: taiga is drawn as forest, highlands as moors under a range, tundra as flat barrens with snow
+    outside summer, desert and oasis as dunes (hot), coast as the sea to the horizon. **Names**: battles take Strand,
+    Sands, Barrow, Wells. **Sound**: the coast has the surf bed, the taiga the forest bed.
+  - **Shots**: campaign shots on the drawn map add `campaign-lands-Desert/Tundra/Taiga/Highlands.png` (a province of each,
+    at midday); a battle shots run on a Shore field aims `landscape.png` at the sea. Test `NewLands`.
 - **The map scaled up a third (2026-11-17, the owner: towns stood too close).** `WorldMap.DesignScale` (1.33) spreads
   every drawn place, province centre, lake, ridge and road out from the middle; the province rule is read at
   `p / DesignScale`, so borders scale with it. Rivers keep their widths. The map is 825 wide each side of the middle

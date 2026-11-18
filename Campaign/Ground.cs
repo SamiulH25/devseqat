@@ -13,7 +13,7 @@ public sealed partial class Campaign
         float season = SeasonIndex switch { 0 => 0.3f, 1 => 0.15f, 2 => 0.35f, _ => 0.25f };
         foreach (var pr in S.Provinces)
         {
-            float land = pr.Kind switch { "Marsh" => 1.6f, "Forest" => 1.2f, "Steppe" => 0.5f, "Badlands" => 0.4f, _ => 1 };
+            float land = Lands.Of(pr.Kind).Rain;
             bool rained = Roll(S.Seed, Day, pr.Id) < season * land;
             pr.Wet = Math.Clamp(pr.Wet * 0.75f + (rained ? 0.3f : 0), 0, 1);
         }

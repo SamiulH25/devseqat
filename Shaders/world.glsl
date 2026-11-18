@@ -193,7 +193,8 @@ void main()
         float sw = Noise2(vWorld.xz * 0.016 + 7.0) * 0.65 + Noise2(vWorld.xz * 0.045 + 1.0) * 0.35;
         float lush = Noise2(vWorld.xz * 0.028 + 13.0);
         float level = smoothstep(0.8, 0.95, n.y);
-        albedo = mix(albedo, mix(albedo * vec3(0.82, 0.96, 0.8), albedo * vec3(1.14, 1.06, 0.7), smoothstep(0.32, 0.72, sw)), level);
+        float own = 1.0 - smoothstep(0.55, 0.75, dot(albedo, vec3(0.3, 0.55, 0.15))); // snow and pale sand keep their own colour (WM3)
+        albedo = mix(albedo, mix(albedo * vec3(0.82, 0.96, 0.8), albedo * vec3(1.14, 1.06, 0.7), smoothstep(0.32, 0.72, sw)), level * own);
         albedo *= 0.88 + 0.22 * smoothstep(0.2, 0.8, lush);
     }
     // Close up, the ground breaks into mottled grass and patches of clover and dry stalks (faded in within ~40 m).

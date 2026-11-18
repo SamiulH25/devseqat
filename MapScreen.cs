@@ -327,8 +327,8 @@ sealed partial class MapScreen
         audio.SetBed(Bed.Crickets, winter ? 0 : Sky.Night * dry);
         audio.SetBed(Bed.Town, town * (0.4f + 0.6f * day));
         if (river > 0.02f) audio.SetBed(Bed.River, river * 0.45f);
-        if (prov.Kind == "Marsh" || culture == "league") audio.SetBed(Bed.Surf, prov.Kind == "Marsh" ? 0.55f : 0.35f);
-        if (prov.Kind == "Forest") audio.SetBed(Bed.Forest, 0.55f * (1 - town * 0.5f));
+        if (prov.Kind == "Marsh" || culture == "league" || prov.Kind == "Coast") audio.SetBed(Bed.Surf, prov.Kind == "Marsh" ? 0.55f : prov.Kind == "Coast" ? 0.45f : 0.35f);
+        if (prov.Kind is "Forest" or "Taiga") audio.SetBed(Bed.Forest, 0.55f * (1 - town * 0.5f));
         if (omen > 0.02f) audio.SetBed(Bed.OmenDrone, omen);
         if (inTavern) audio.SetBed(Bed.Tavern, 0.85f);
         if (inForge) audio.SetBed(Bed.Forge, 0.75f);
@@ -762,6 +762,10 @@ sealed partial class MapScreen
             case "river": // a river bending round a town and its bridges (the banks' ribbons)
                 panel = PanelKind.None; follow = false; zoom = 120; pitch = 0.95f;
                 focus = C.S.Settlements.OrderBy(s => C.Map.RiverDist(s.Pos) < 40 ? Vector2.Distance(s.Pos, C.Player.Pos) : float.MaxValue).First().Pos;
+                break;
+            case var land when land.StartsWith("lands-"): // a province of one kind of country, seen whole (docs/WORLDMAP.md WM3)
+                panel = PanelKind.None; follow = false; zoom = 150; pitch = 0.9f;
+                focus = C.S.Provinces.Where(p => p.Kind == land[6..]).Select(p => p.Center).DefaultIfEmpty(C.Player.Pos).First();
                 break;
             case "sites": panel = PanelKind.None; zoom = 120; pitch = 0.85f; focus = C.Player.Pos; follow = true; break;
             case "party": panel = PanelKind.Party; break;

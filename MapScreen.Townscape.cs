@@ -22,15 +22,16 @@ partial class MapScreen
         string country = s.Culture == "steppe" ? "Steppe" : C.S.Provinces[s.Province].Kind; // tents stand on open ground
         string water = s.Culture == "league" ? "canal" : country == "Marsh" || C.Map.RiverDist(s.Pos) < 10 * C.Map.Spread ? "river" : "";
         bool night = hour is >= 20 or < 5;
-        return new TownLook(s.Culture, build, country, water, C.Winter, night, !night && hour >= 17);
+        bool snow = C.Winter ? !Lands.Of(country).Hot : country == "Tundra" && C.SeasonIndex != 1; // the barrens keep their snow; the sands have none
+        return new TownLook(s.Culture, build, country, water, snow, night, !night && hour >= 17);
     }
 
     /// The colours of a town's picture: the sky by the hour, warmed by the south and cooled by snow; walls and roofs by how its people build.
     static TownColours ColoursOf(TownLook l)
     {
-        bool hot = l.Country == "Badlands" || l.Culture == "southern", open = l.Country == "Steppe";
+        bool hot = l.Country is "Badlands" or "Desert" or "Oasis" || l.Culture == "southern", open = l.Country is "Steppe" or "Tundra";
         Color top, low, far, mid, near;
-        bool cold = l.Snow || l.Build == "log" || l.Country == "Forest";
+        bool cold = l.Snow || l.Build == "log" || l.Country is "Forest" or "Taiga" or "Tundra";
         if (l.Night)
         {
             top = Kit.Night;
@@ -161,7 +162,26 @@ partial class MapScreen
                     ui.Rect(new Rectangle(mx, my, ui.U(fw), ui.U(1)), Color.Lerp(mc, c.Rim, 0.3f));
                 }
                 break;
+            case "Highlands": // high moors, a range behind them
+                ui.Hills(p, y - ui.U(18), ui.U(22), 0.8f, Color.Lerp(col, c.SkyLow, 0.35f));
+                ui.Hills(p, y - ui.U(4), ui.U(12), 1.9f, col);
+                break;
+            case "Tundra": ui.Hills(p, y + ui.U(10), ui.U(4), 0.5f, col); break; // flat barrens to the edge of the world
+            case "Desert":
+            case "Oasis": // long dunes, soft crests
+                ui.Hills(p, y - ui.U(2), ui.U(10), 0.6f, Color.Lerp(col, c.SkyLow, 0.3f));
+                ui.Hills(p, y + ui.U(12), ui.U(7), 1.3f, col);
+                break;
+            case "Coast": // the sea to the horizon, a pale line where it meets the sky
+            {
+                int top = y + ui.U(16);
+                var sea = Color.Lerp(col, new Color(70, 108, 136), l.Night ? 0.25f : 0.45f);
+                ui.Rect(new Rectangle(p.X, top, p.Width, ground - top), sea);
+                ui.Rect(new Rectangle(p.X, top, p.Width, Math.Max(1, ui.U(1))), Color.Lerp(sea, c.SkyLow, 0.6f));
+                break;
+            }
             case "Forest":
+            case "Taiga":
                 ui.Hills(p, y, ui.U(6), 1.1f, col);
                 for (int x = p.X; x < p.Right; x += ui.U(7 + rng.Next(5)))
                     Pine(x, ui.HillY(p, x, y, ui.U(6), 1.1f) + ui.U(2), ui.U(10 + rng.Next(8)), col);

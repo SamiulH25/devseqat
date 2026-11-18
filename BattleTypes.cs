@@ -109,14 +109,16 @@ public sealed class BattleOptions
 /// When and in what weather a battle is fought (roadmap C4). The campaign passes its hour and season.
 public sealed record Weather(float Hour = 13, float Rain = 0, float Fog = 0, bool Snow = false)
 {
-    /// Weather for a campaign battle: the hour, and rain, snow or fog by season (deterministic from the seed).
-    public static Weather For(float hour, int season, int seed)
+    /// Weather for a campaign battle: the hour, and rain, snow or fog by season (deterministic from the seed). `rain` scales the
+    /// chance of rain by the country (docs/WORLDMAP.md WM3); a cold country snows outside summer, a hot one never.
+    public static Weather For(float hour, int season, int seed, float rain = 1, string climate = "")
     {
         var r = new Random(seed);
-        float wet = season switch { 0 => 0.25f, 1 => 0.1f, 2 => 0.35f, _ => 0.3f };
-        float rain = r.NextSingle() < wet ? 0.4f + r.NextSingle() * 0.6f : 0;
+        float wet = season switch { 0 => 0.25f, 1 => 0.1f, 2 => 0.35f, _ => 0.3f } * rain;
+        float fall = r.NextSingle() < wet ? 0.4f + r.NextSingle() * 0.6f : 0;
         float fog = (hour is > 4 and < 10 ? 0.35f : 0.08f) > r.NextSingle() ? 0.4f + r.NextSingle() * 0.5f : 0;
-        return new Weather(hour, rain, fog, season == 3 && rain > 0);
+        bool snow = climate != "hot" && (season == 3 || climate == "cold" && season != 1);
+        return new Weather(hour, fall, fog, snow && fall > 0);
     }
 
     public static readonly Weather Clear = new();

@@ -6234,15 +6234,13 @@
    "speed": 3.55,
    "block": 0.52,
    "look": {
-    "head": "greathelm_horns",
-    "body": "plate_gilded",
+    "head": "auramaster",
+    "body": "auramaster",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater_gilded",
     "weapon": "pennonlance",
-    "tabard": true,
-    "plume": true,
     "cape": true
    }
   },

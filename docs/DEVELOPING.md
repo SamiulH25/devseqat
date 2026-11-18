@@ -600,6 +600,9 @@ There are no model or pre-rendered WAV/OGG files. The only images are the unit s
   baked set loads to exactly the painted atlas. Gotchas: keep a PNG's size (the rig reads metres from pixels; `SpritesBaked`
   fails otherwise); semi-transparent pixels load premultiplied; save 8-bit, not interlaced (`Png.Decode` refuses otherwise).
   `Puppet.cs` draws each unit as part sprites on a 3D skeleton, posed from its action state.
+  The tier VII Grand Masters use the `auramaster` helmet, torso and sleeve. Their crown and gold inlays are painted into
+  the parts, not an aura effect; the cape and shield still show team colours. To check the assembled knight, take a full
+  `IRONFIELD_SHOTS` run and open `gallery-order.png`.
 - **World:** `World.cs` builds the terrain mesh, foliage, towns, water and the minimap from `Terrain`. The build has two
   halves: `new World(terrain)` makes every mesh and image with no GraphicsDevice (safe off the main thread; the campaign
   map's runs behind the loading screen), and `Upload(gd)` sends them to the GPU. The CPU half runs its rows and tiles in

@@ -335,16 +335,7 @@ public sealed partial class WorldMap
     }
 
     /// Which sites each kind of country holds (the first kinds are the likeliest).
-    static string[] SiteKindsFor(string province) => province switch
-    {
-        "Hills" => new[] { "ruin", "stones", "mine", "watchtower", "hermit", "spring" },
-        "Forest" => new[] { "ruin", "hermit", "spring", "shrine", "stones", "watchtower" },
-        "Farmland" => new[] { "mill", "shrine", "battlefield", "watchtower", "spring", "ruin" },
-        "Marsh" => new[] { "shrine", "hermit", "ruin", "spring", "stones", "mill" },
-        "Steppe" => new[] { "stones", "battlefield", "watchtower", "ruin", "shrine", "spring" },
-        "Badlands" => new[] { "mine", "ruin", "watchtower", "stones", "hermit", "spring" },
-        _ => new[] { "shrine", "battlefield", "mill", "spring", "ruin", "watchtower" },
-    };
+    static string[] SiteKindsFor(string province) => Lands.Of(province).Sites;
 
     /// One or two sites per province, off the roads and clear of settlements and rivers. They use their own random numbers,
     /// so adding them moved nothing else on the map.
@@ -420,16 +411,13 @@ public sealed partial class WorldMap
     /// Map travel speed factor at a point (terrain kind, roads).
     public float SpeedFactor(Vector2 p, float roadBonus) =>
         RoadDist(p) < 2.5f ? roadBonus : RiverDist(p) < 1.6f || InLake(p) ? 0.35f : OnRidge(p) ? 0.45f
-        : ProvinceAt(p).Kind switch { "Forest" => 0.7f, "Hills" => 0.8f, "Marsh" => 0.6f, "Steppe" => 1.1f, "Badlands" => 0.85f, _ => 1f };
+        : Lands.Of(ProvinceAt(p).Kind).Speed;
 
     /// Battle ground for a fight at p: the province's kind, with a road if one runs close.
     public TerrainParams BattleGround(Vector2 p, float wet = 0, int season = -1)
     {
-        var t = OnRidge(p) ? TerrainParams.Hills : ProvinceAt(p).Kind switch
-        {
-            "Forest" => TerrainParams.Forest, "Hills" => TerrainParams.Hills, "Farmland" => TerrainParams.Farmland,
-            "Marsh" => TerrainParams.Marsh, "Steppe" => TerrainParams.Steppe, "Badlands" => TerrainParams.Badlands, _ => TerrainParams.Meadow,
-        };
+        bool shore = Designed && NearSea(p);
+        var t = shore ? TerrainParams.Coast : OnRidge(p) ? TerrainParams.Hills : Lands.Of(ProvinceAt(p).Kind).Field;
         bool road = RoadDist(p) < 6, river = RiverDist(p) < 12;
         // The field's shape from what is on the map here (docs/archive/TERRAIN.md T7): a road meeting a river is a river line
         // with its bridge, a village gives a village between the lines, a ridge a crest or (near a road) a pass.
@@ -437,6 +425,7 @@ public sealed partial class WorldMap
         if (road && river && t != TerrainParams.Marsh) layouts = new[] { FieldLayout.RiverLine };
         else if (Settlements.Any(s => s.Kind == SettlementKind.Village && Vector2.Distance(s.Pos, p) < VillageNear) && t != TerrainParams.Marsh && t != TerrainParams.Forest) layouts = new[] { FieldLayout.Village };
         else if (OnRidge(p)) layouts = road ? new[] { FieldLayout.Pass } : new[] { FieldLayout.Ridge, FieldLayout.Ridge, FieldLayout.TwoHills };
+        if (shore) layouts = new[] { FieldLayout.Shore }; // by the sea the sea is on the field (WM3)
         return t with { Road = road, River = river || t == TerrainParams.Marsh, Layouts = layouts, Wet = wet, Season = season };
     }
 
@@ -509,7 +498,10 @@ public sealed partial class WorldMap
     /// Ground tint: patchwork fields in farmland, dark forest floor, dry hills, grey rock and snow on the rim (visual only).
     public Vector3 Tint(Vector2 p, Vector3 ground)
     {
-        var c = ground * KindTint(p);
+        var land = Lands.Of(ProvinceAt(p).Kind);
+        var c = ground * KindTint(p, land);
+        if (land.Wash.W > 0) // sand and frost: drawn toward a colour of their own, mottled
+            c = Vector3.Lerp(c, new Vector3(land.Wash.X, land.Wash.Y, land.Wash.Z) * (0.93f + 0.14f * Terrain.Noise(p.X * 0.11f, p.Y * 0.11f, Seed + 14)), land.Wash.W);
         float rim = RimAt(MathF.Max(MathF.Abs(p.X), MathF.Abs(p.Y)));
         if (rim > 0)
         {
@@ -541,14 +533,24 @@ public sealed partial class WorldMap
         {
             1 => c * new Vector3(1.06f, 1.02f, 0.86f),
             2 => c * new Vector3(1.18f, 0.94f, 0.68f),
+            3 when land.Hot => c * new Vector3(0.98f, 0.98f, 1.0f), // no snow on the sands
             3 => Vector3.Lerp(c, new Vector3(0.86f, 0.89f, 0.93f), RoadDist(p) < 2.5f ? 0.35f : 0.7f + 0.2f * Math.Clamp(Height(p.X, p.Y) / 10, 0, 1)),
             _ => c,
         };
     }
 
-    Vector3 KindTint(Vector2 p)
+    /// A battle at p is fought by the sea: open water within a few lengths of it (a designed map only).
+    public bool NearSea(Vector2 p)
     {
-        switch (ProvinceAt(p).Kind)
+        const float R = 8;
+        for (int i = 0; i < 8; i++)
+            if (Landness(p + new Vector2(MathF.Cos(i * MathF.Tau / 8), MathF.Sin(i * MathF.Tau / 8)) * R) < 0.5f) return true;
+        return Landness(p) < 0.5f;
+    }
+
+    Vector3 KindTint(Vector2 p, LandDef land)
+    {
+        switch (land.Kind)
         {
             case "Farmland":
             {
@@ -556,12 +558,7 @@ public sealed partial class WorldMap
                 int h = Math.Abs(cx * 73856093 ^ cz * 19349663) % 4;
                 return h switch { 0 => new(1.16f, 1.06f, 0.74f), 1 => new(1.02f, 0.92f, 0.78f), 2 => new(0.94f, 1.03f, 0.9f), _ => Vector3.One };
             }
-            case "Forest": return new(0.8f, 0.88f, 0.76f);
-            case "Hills": return new(1.08f, 1.04f, 0.86f);
-            case "Marsh": return new(0.76f, 0.88f, 0.82f);
-            case "Steppe": return new(1.14f, 1.08f, 0.78f);
-            case "Badlands": return new(1.26f, 1.0f, 0.7f);
-            default: return Vector3.One;
+            default: return land.Tint;
         }
     }
 
@@ -598,8 +595,9 @@ public sealed partial class WorldMap
             // Woods scale with the ground they stand on (area), so the bigger map stays as wooded as the old one. Trees grow
             // a little larger too, so a whole-map view reads as woodland without holding four times the geometry.
             float grow = MathF.Sqrt(span);
-            int trees = (int)(p.Kind switch { "Forest" => 90, "Hills" => 26, "Farmland" => 6, "Marsh" => 30, "Steppe" => 2, "Badlands" => 4, _ => 14 } * span * span * 1.4f);
-            float radius = (p.Kind == "Forest" ? 48 : 60) * span;
+            var land = Lands.Of(p.Kind);
+            int trees = (int)(land.Trees * span * span * 1.4f);
+            float radius = (land.Trees >= 70 ? 48 : 60) * span;
             if (Layout >= 4) { GrowStands(p, trees, radius, grow, standRng, Clear, foliage); continue; }
             for (int i = 0; i < trees; i++)
             {
@@ -607,7 +605,7 @@ public sealed partial class WorldMap
                 var pos = p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
                 if (!Clear(pos) || ProvinceAt(pos) != p) continue;
                 if (OnRidge(pos)) continue;
-                bool pine = p.Kind == "Hills" || rng.NextSingle() < 0.25f;
+                bool pine = land.Conifer || rng.NextSingle() < 0.25f;
                 // Trees by a town are smaller, so the town stands out among them rather than under them.
                 float town = Settlements.Min(s => Vector2.Distance(s.Pos, pos)), near = 0.55f + 0.45f * Math.Clamp((town - 9 * span) / (16 * span), 0, 1);
                 foliage.Add(new Foliage(pine ? FoliageKind.Pine : FoliageKind.Broadleaf, pos, (2.2f + rng.NextSingle() * 1.2f) * grow * near, 0, rng.Next()));
