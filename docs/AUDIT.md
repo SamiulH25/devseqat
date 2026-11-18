@@ -1,6 +1,6 @@
 # Scope audit (2026-11-18)
 
-Status: **audit done, decisions pending.** This page lists every system added on top of the core loop, measures how often a
+Status: **audit done; the plan is `docs/SCOPE.md` (SC0-SC9).** This page lists every system added on top of the core loop, measures how often a
 campaign meets it, and proposes for each one **finish**, **merge**, **cut** or **leave**. Nothing has changed in the code yet.
 The owner decides each verdict. The decided work then becomes phases in this file, done one commit at a time with
 `tools/check.sh` green after each.
@@ -74,7 +74,7 @@ Cost is lines of C#, not counting data, tests or shots. Reach is measured where 
 | 3 | **Black Flame**: pact, corruption, burning a wall, madness, purge, two endings | 190 + events | Pact taken by accident; nothing past corruption 5 | **Cut** (or keep as one dark-bargain event with no track) |
 | 4 | **Magic, battle side**: caster troops, abilities, Will, ordered casts, fields, great workings, spectacle | ~1,500 | 3-28% of battles, nearly always enemy mages | **Leave / finish**: this is what the player sees |
 | 5 | **Magic, campaign side**: spellbook, circle master, doctrines, the Tide, wells, rites, Omen, relic, workings and blight, court mages, cunning folk | ~900 | Player use 0; AI blight 30-40 provinces a year, which the player probably never notices | **Cut** the Tide, wells, doctrines, workings, Omen and relic. **Merge** spellbook and master into "hire a circle, it casts" |
-| 6 | **Captain progression overlap**: skills (10) and perks (50), aura, forms, path, order rank, rank rewards, career rank, renown and fame, gear marks | n/a | About ten parallel tracks | **Merge** down to three: career rank (renown), skills and perks, aura. Fame folds into renown |
+| 6 | **Captain progression overlap**: skills (10) and perks (50), aura, forms, path, order rank, rank rewards, career rank, renown and fame, gear marks | n/a | About ten parallel tracks | **Merge** down to three: career rank (renown), skills and perks, aura (fame stays; see 4.3) |
 | 7 | **Named men**: faces, natures, ties, roll choices, legend, banner honours, rescue | 810 | ~200 named deaths a year; the payoff phases C5-C7 were never built | **Finish**: name far fewer men (so a death matters), then build C6 (named men in the fight). Natures and ties stay only if C6 uses them |
 | 8 | **Lords and houses**: 150 houses, ~600 people, kin, feuds, bonds, wants, promises, talk topics, courting and marriage, grudges, painted portraits | 1,970 | Talk is used (50-110 a year); the rest isn't measured | **Hold** for PT6 (the playtester asked for Crusader Kings depth here). Decide with PT6, not before |
 | 9 | **Companions**: callings, talents, bonds, stories, students | 310 | not measured | **Leave** (small) |
@@ -117,9 +117,10 @@ Cut:
 
 That removes a resource, a map layer and a hidden AI process that nobody can see.
 
-### 4.3 Reputation
+### 4.3 Reputation (corrected)
 
-Renown (career) and Fame (legend) are two numbers for one idea. Merge them into renown.
+On a closer look, Fame is not a second renown. It is worked out from the companies' honours (`Legacy.cs`
+`Fame`), so it fits the legacy fantasy. It stays. At most, renown and fame should be shown side by side in the UI.
 
 ## 5. Problems in how the work was done (so it doesn't happen again)
 
