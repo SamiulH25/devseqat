@@ -787,7 +787,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **PortraitPainter** (class, L13): MoodOf:17, Of:21, SoldierSeed:53, Of:58, OfMan:62, CohesionMood:77, Captain:80, Of:84, Paint:87, Resample:94
 - **Portraits** (class, L117): Of:122, Sized:125
 
-## Program.cs (123 lines)
+## Program.cs (129 lines)
 
 ## Puppet.cs (969 lines)
 - **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:325, Bow:349, Horse:376, static:467, Beast:475, WolfBody:487, Warg:517, BeastCorpse:535, DrawLooseHorse:550, DrawDeadHorse:560, RotY:597, Shoulder:608, Arm:612, ArmTo:619, Elbow:631, Sink:658, Leg:667, SpanRect:679, Fallen:688, Corpse:759, Haze:781, Particle:793, Banner:808, Decal:855, Quad:868, HelmTop:881, HeadBill:895, BillRect:898, Missile:909, AxialSrc:929, LongRect:940, PlaneRect:952, FlatRect:962
@@ -841,6 +841,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## SpriteSheet.cs (2157 lines)
 - **SpriteSheet** (class, L14): Part:22, SpriteSheet:35, SpriteSheet:41, Paint:44, Add:57, Pack:62, Side:85, InEl:142, Head:144, Visages:147, Head:161, GoblinHead:212, TrollHead:242, SkullHead:272, GhoulHead:298, Helm:323, Torso:696, PlateTorso:900, PixelMap:903, Ribs:919, Tabard:934, Emblem:951, Cape:991, Sleeve:1007, Leg:1049, Boot:1090, Hand:1112, Shield:1120, Weapon:1223, PaintGrid:1436, ArmingSword:1460, Longsword:1496, Greatsword:1541, Scimitar:1602, Falchion:1637, Polearm:1671, Bow:1686, Arrow:1700, Quiver:1709, Plume:1718, Flag:1726, Blood:1735, Splat:1744, Horse:1757, Wolf:1884, Spider:1923, Bear:1977, Wyvern:2012, HorseNeckTop:2085, HorseNeckBottom:2086, BodyShape:2088, HorseGear:2091, Saddle:2145
+
+## SpriteSheet.Peoples.cs (548 lines)
+- **SpriteSheet** (class, L7): HelmBase:21, PeopleHelm:37, SunCrest:308, PeopleTorso:322, PeopleSleeve:412, PeopleBarding:430, Full:500, Crinet:529, Chanfron:540
 
 ## Squad.cs (269 lines)
 - **Order** (enum, L5)

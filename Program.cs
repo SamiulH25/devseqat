@@ -20,6 +20,12 @@ if (args.Contains("--export-world"))
     Ironfield.WorldExport.Run(rest.FirstOrDefault() ?? "world.json", rest.Length > 1 && int.TryParse(rest[1], out int ws) ? ws : 7);
     return;
 }
+if (args.Contains("--pixel-map"))
+{
+    var rest = args.SkipWhile(a => a != "--pixel-map").Skip(1).ToArray();
+    Ironfield.PixelMap.Run(rest.FirstOrDefault() ?? "pixelmap", rest.Length > 1 && int.TryParse(rest[1], out int pms) ? pms : 7);
+    return;
+}
 if (args.Contains("--portraits"))
 {
     var rest = args.SkipWhile(a => a != "--portraits").Skip(1).ToArray();
