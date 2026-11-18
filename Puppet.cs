@@ -49,6 +49,8 @@ sealed partial class Puppet
             HCaparison = G("hbody.caparison"); HChestCap = G("hchest.caparison"); HRumpCap = G("hrump.caparison"); HNeckCap = G("hneck.caparison"); HHeadCap = G("hhead.caparison");
             HScale = G("hbody.scalebarding"); HChestScale = G("hchest.scalebarding"); HRumpScale = G("hrump.scalebarding"); HNeckScale = G("hneck.scalebarding"); HHeadScale = G("hhead.scalebarding");
             HGild = G("hbody.gildedcaparison"); HChestGild = G("hchest.gildedcaparison"); HRumpGild = G("hrump.gildedcaparison"); HNeckGild = G("hneck.gildedcaparison"); HHeadGild = G("hhead.gildedcaparison");
+            foreach (var b in SpriteSheet.Bardings)
+                bardings[b] = (G("hbody." + b), G("hchest." + b), G("hrump." + b), G("hneck." + b), G("hhead." + b));
             WLeg = G("wleg"); WBody = G("wbody"); WHead = G("whead"); WTail = G("wtail");
             SLeg = G("sleg"); SAbdomen = G("sabdomen"); SHead = G("shead");
             BLeg = G("bleg"); BBody = G("bbody"); BHead = G("bhead");
@@ -56,6 +58,11 @@ sealed partial class Puppet
         }
 
         public Rectangle Tabard(int v) => v == 0 ? TabardF : v == 1 ? TabardS : TabardB;
+
+        /// A horse's gear by barding: the body piece, then chest, rump, neck and head (empty where it has none).
+        readonly Dictionary<string, (Rectangle Body, Rectangle Chest, Rectangle Rump, Rectangle Neck, Rectangle Head)> bardings = new();
+        public (Rectangle Body, Rectangle Chest, Rectangle Rump, Rectangle Neck, Rectangle Head) Barding(string kind) =>
+            bardings.TryGetValue(kind, out var b) ? b : bardings["saddle"];
     }
 
     sealed class LookSprites
@@ -373,7 +380,7 @@ sealed partial class Puppet
         if (Rear > 0) { Lean(0, -RearDeg * Rear); origin.Y += MathF.Sin(Rad(RearDeg * Rear)) * 0.7f * Scale; }
         var side = pal; var sidePal = curPal;
         var plain = tint;
-        bool caparison = barding is "caparison" or "scalebarding" or "gildedcaparison", camel = barding == "camel";
+        bool camel = barding == "camel";
         coatTint = new Color(tint.ToVector3() * (camel ? Style.CamelCoat : Style.Coats[coat % Style.Coats.Length]));
         float gait = Math.Clamp(MathF.Abs(speed) / 11, 0, 1);
         float amp = MathF.Abs(speed) < 0.3f ? 0 : 15 + 34 * gait;
@@ -435,18 +442,14 @@ sealed partial class Puppet
         // Gear over the coat.
         pal = side; curPal = sidePal;
         tint = plain;
-        var (hb, hc, hr, hn, hh) = barding == "scalebarding" ? (curPal.HScale, curPal.HChestScale, curPal.HRumpScale, curPal.HNeckScale, curPal.HHeadScale)
-            : barding == "gildedcaparison" ? (curPal.HGild, curPal.HChestGild, curPal.HRumpGild, curPal.HNeckGild, curPal.HHeadGild)
-            : barding == "caparison" ? (curPal.HCaparison, curPal.HChestCap, curPal.HRumpCap, curPal.HNeckCap, curPal.HHeadCap)
-            : barding == "steppetack" ? (curPal.HSteppetack, default, default, default, default)
-            : (curPal.HSaddle, default, default, default, default);
+        var (hb, hc, hr, hn, hh) = curPal.Barding(barding);
         LongRect(new(0, y - rock, -0.82f), new(0, y + rock, 0.82f), hb, 0.03f);
-        if (caparison && Detail == 0)
+        if (Detail == 0)
         {
-            BillRect(new(0, y + rock, 0.6f), hc, false, -0.01f);
-            BillRect(new(0, y - rock, -0.55f), hr, false, -0.01f);
-            LongRect(new(0, y + rock + 0.20f, 0.60f), new(0, y + rock + 0.76f + nod - neckOut, 1.00f + neckOut), hn, 0.02f);
-            LongRect(new(0, y + rock + 0.76f + nod - neckOut, 0.96f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.44f + neckOut * 1.4f), hh, 0.02f);
+            if (hc.Width > 0) BillRect(new(0, y + rock, 0.6f), hc, false, -0.01f);
+            if (hr.Width > 0) BillRect(new(0, y - rock, -0.55f), hr, false, -0.01f);
+            if (hn.Width > 0) LongRect(new(0, y + rock + 0.20f, 0.60f), new(0, y + rock + 0.76f + nod - neckOut, 1.00f + neckOut), hn, 0.02f);
+            if (hh.Width > 0) LongRect(new(0, y + rock + 0.76f + nod - neckOut, 0.96f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.44f + neckOut * 1.4f), hh, 0.02f);
         }
         if (riderLegs)
             for (int sd = -1; sd <= 1; sd += 2)
@@ -588,7 +591,7 @@ sealed partial class Puppet
         FlatRect(new(-0.55f, 0.04f, -0.5f), curPal.HLeg, false);
         curPal = sidePal;
         tint = Color.White;
-        FlatRect(new(0, 0.07f, 0), h.Barding == "scalebarding" ? curPal.HScale : h.Barding == "gildedcaparison" ? curPal.HGild : h.Barding == "caparison" ? curPal.HCaparison : h.Barding == "steppetack" ? curPal.HSteppetack : curPal.HSaddle, true);
+        FlatRect(new(0, 0.07f, 0), curPal.Barding(h.Barding).Body, true);
     }
 
     static Vector3 RotY(Vector3 v, float deg)
@@ -875,14 +878,16 @@ sealed partial class Puppet
     /// forehead, below any cone, spike or crest); that row lands on head row 5, just above the eyes (head rows 7-8), so a
     /// tall cone rises above the head instead of pushing the rim down over the face. Closed helms and hoods keep row 6.83
     /// (their top just above the crown). Shared with the HUD's troop card (`Hud`).
-    public static float HelmTop(string kind) => 1.605f + kind switch
+    public static float HelmTop(string kind) => 1.605f + SpriteSheet.HelmBase(kind) switch
     {
         "cap" or "brigand_hat" => 8.5f, "kettle" => 9.6f, "nasal" => 10.5f,
         "sallet" or "sallet_bevor" => 9.5f, "sallet_crest" => 12.5f,
         "spangen" or "spangen_horns" or "spangen_wolf" => 11.5f, "turban" => 12f,
         "steppe" or "steppe_mask" or "steppe_horns" => 15.5f, "spike" => 11.5f, "furcap" => 11f,
         "gjermundbu" => 10.5f, "morion" or "barbute_crest" => 12.5f, "kulah" => 11.5f,
-        "greathelm_horns" or "greathelm_wings" or "greathelm_crown" => 13.83f,
+        "greathelm_horns" or "greathelm_wings" or "greathelm_crown" or "greathelm_sun" => 13.83f,
+        "galea" => 13f, "ibex" => 15f, "dragon" => 16.5f, "bearhead" or "whitebear" => 14f, "spike_turban" => 17.5f, "corsair" => 10.5f,
+        "tug" => 21.5f, "lion" => 10.83f, "chapel" => 10f, "winged_sallet" => 15.5f,
         _ => 6.83f,
     } * Art.Px;
 

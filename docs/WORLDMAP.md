@@ -218,6 +218,13 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
     `waiting`; `bandit` keeps it. Judged with Haiku from the troop sheets (`IRONFIELD_TROOPS`): 5.5/10. Infantry VIIs read as
     a step up; **left for later**: peoples of one realm are hard to tell apart (horse VIIs above all, and steppe_horde from
     steppe_salt, southern_dune from southern_rift), which needs parts painted per people (helms, horse coats and harness).
+  - **Parts painted per people** (`SpriteSheet.Peoples.cs`): 15 helms (frogmouth, galea, ibex, dragon, bear and white-bear
+    hoods, spiked turban, litham, corsair, tug, faceplate, lion, chapel, sun greathelm, winged sallet) and a `_gilt` tier VII
+    copy of 13 of them (`HelmBase` strips it), six bodies (muscle cuirass, kaftan, mirror mail, jupon, dark lamellar,
+    burnous) and eight bardings (half, mail, fur, lamellar, parti, cross, tasselled, chequy; `SpriteSheet.Bardings`,
+    drawn through `PalSprites.Barding`). Each people climbs its own helm V -> VI -> gilt VII; 17 new mounts copy an
+    existing mount's stats and change only the barding, and no troop gained or lost a shield, so the sim is unchanged.
+    Judged with Sonnet from the troop sheets: 6.5/10. Left: tier VII foot still close to VI, crossbows read as a blob.
   - **A people's realm** (`Factions.PeopleOf`): a culture a realm holds is its own; a subculture belongs to the first of its
     kin a realm holds (a realm culture's kin are only lines it borrows: the League's include the Azure). Used by
     `HasBarracks` (a barracks in a town of a culture's peoples trains that culture's lines: on the drawn map every town is

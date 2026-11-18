@@ -11,7 +11,7 @@ namespace Ironfield;
 /// n = neutral horse coat (tinted per horse at draw time). Axial parts (limbs, weapons, horse legs, tail) have their
 /// top row at the far end (hand, foot, tip, hoof). Long horse parts run rear (left) to front (right), top edge up.
 /// Sizes in pixels times Style.Px give the part's size in metres; the puppet skeleton in Puppet.cs relies on them.
-public sealed class SpriteSheet
+public sealed partial class SpriteSheet
 {
     public const int W = 2048, H = 2048;
     public readonly Color[] Pixels = new Color[W * H];
@@ -322,6 +322,7 @@ public sealed class SpriteSheet
 
     Canvas Helm(string kind, string v)
     {
+        if (PeopleHelm(kind, v) is { } own) return own;
         switch (kind)
         {
             case "cap":
@@ -590,6 +591,7 @@ public sealed class SpriteSheet
             case "greathelm_horns":
             case "greathelm_wings":
             case "greathelm_crown":
+            case "greathelm_sun":
             {
                 // Ornamented greathelms (7px headroom above the 18x21 barrel): Teutonic horns, swept wings, or royal crown.
                 var c = new Canvas(28, 28);
@@ -639,6 +641,7 @@ public sealed class SpriteSheet
                             for (int k = 0; k < 4; k++) c.Set(wx - k, wy, linen, 0.72f - k * 0.1f);
                         }
                 }
+                else if (kind == "greathelm_sun") SunCrest(c, ox, oy, v);
                 else // greathelm_crown
                 {
                     c.Rect(ox + 2, oy - 1, ox + 16, oy + 1, brass, 0.25f);
@@ -698,6 +701,7 @@ public sealed class SpriteSheet
         var m = body switch { "gambeson" or "gambeson_fur" => quilt, "mail" or "mail_fur" => mail, "plate" or "plate_gilded" or "plate_fur" or "breastplate" => plate, "fur" => clothDk, "rags" => rag, "shroud" => shroud, "robe" => robe,
             "lamellar" or "lamellar_gilded" or "scale" or "scale_iron" => plate, "deel" or "deel_fur" => cloth, "brigandine" or "brigandine_gilded" or "coatofplates" => felt, "leather" => leather, _ => cloth };
         if (body == "bones") return Ribs(c, span, side);
+        if (PeopleTorso(body, v) is { } own) return own;
         if (body is "plate" or "plate_gilded" or "plate_fur")
         {
             PlateTorso(c, v);
@@ -1002,6 +1006,7 @@ public sealed class SpriteSheet
 
     Canvas Sleeve(string body)
     {
+        if (PeopleSleeve(body) is { } own) return own;
         var c = new Canvas(8, 20);
         switch (body)
         {
@@ -2134,6 +2139,7 @@ public sealed class SpriteSheet
         CaparisonSet("caparison", cloth, trim, false);
         CaparisonSet("gildedcaparison", cloth, brass, false);
         CaparisonSet("scalebarding", brass, iron, true);
+        PeopleBarding(s);
     }
 
     void Saddle(Canvas c, bool cloth)

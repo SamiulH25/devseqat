@@ -89,6 +89,176 @@
    "accel": 3.8,
    "turnRate": 1.7,
    "barding": "camel"
+  },
+  {
+   "id": "march_warhorse",
+   "name": "March Warhorse",
+   "hp": 140,
+   "trot": 5.2,
+   "gallop": 11.5,
+   "accel": 4.2,
+   "turnRate": 1.7,
+   "barding": "halfbarding"
+  },
+  {
+   "id": "alpine_charger",
+   "name": "Alpine Charger",
+   "hp": 250,
+   "trot": 5.1,
+   "gallop": 11.2,
+   "accel": 4.0,
+   "turnRate": 1.6,
+   "barding": "halfbarding"
+  },
+  {
+   "id": "fjord_horse",
+   "name": "Fjord Horse",
+   "hp": 155,
+   "trot": 6.2,
+   "gallop": 13.4,
+   "accel": 5.4,
+   "turnRate": 2.3,
+   "barding": "mailbarding"
+  },
+  {
+   "id": "taiga_horse",
+   "name": "Taiga Horse",
+   "hp": 155,
+   "trot": 6.2,
+   "gallop": 13.4,
+   "accel": 5.4,
+   "turnRate": 2.3,
+   "barding": "furbarding"
+  },
+  {
+   "id": "oasis_destrier",
+   "name": "Oasis Destrier",
+   "hp": 300,
+   "trot": 5.3,
+   "gallop": 11.6,
+   "accel": 4.2,
+   "turnRate": 1.7,
+   "barding": "tasselled"
+  },
+  {
+   "id": "rift_destrier",
+   "name": "Rift Destrier",
+   "hp": 300,
+   "trot": 5.3,
+   "gallop": 11.6,
+   "accel": 4.2,
+   "turnRate": 1.7,
+   "barding": "mailbarding"
+  },
+  {
+   "id": "horde_destrier",
+   "name": "Banner Destrier",
+   "hp": 200,
+   "trot": 5.0,
+   "gallop": 11.0,
+   "accel": 3.8,
+   "turnRate": 1.5,
+   "barding": "lamellarbarding"
+  },
+  {
+   "id": "lagoon_destrier",
+   "name": "Lagoon Destrier",
+   "hp": 300,
+   "trot": 5.3,
+   "gallop": 11.6,
+   "accel": 4.2,
+   "turnRate": 1.7,
+   "barding": "partibarding"
+  },
+  {
+   "id": "fen_destrier",
+   "name": "Fen Destrier",
+   "hp": 300,
+   "trot": 5.3,
+   "gallop": 11.6,
+   "accel": 4.2,
+   "turnRate": 1.7,
+   "barding": "caparison"
+  },
+  {
+   "id": "chapter_destrier",
+   "name": "Chapter Destrier",
+   "hp": 300,
+   "trot": 5.3,
+   "gallop": 11.6,
+   "accel": 4.2,
+   "turnRate": 1.7,
+   "barding": "crossbarding"
+  },
+  {
+   "id": "warden_destrier",
+   "name": "Warden Destrier",
+   "hp": 300,
+   "trot": 5.3,
+   "gallop": 11.6,
+   "accel": 4.2,
+   "turnRate": 1.7,
+   "barding": "halfbarding"
+  },
+  {
+   "id": "senate_charger",
+   "name": "Senate Charger",
+   "hp": 250,
+   "trot": 5.1,
+   "gallop": 11.2,
+   "accel": 4.0,
+   "turnRate": 1.6,
+   "barding": "gildedcaparison"
+  },
+  {
+   "id": "salt_charger",
+   "name": "Salt Charger",
+   "hp": 250,
+   "trot": 5.1,
+   "gallop": 11.2,
+   "accel": 4.0,
+   "turnRate": 1.6,
+   "barding": "mailbarding"
+  },
+  {
+   "id": "march_destrier",
+   "name": "March Destrier",
+   "hp": 140,
+   "trot": 5.2,
+   "gallop": 11.5,
+   "accel": 4.2,
+   "turnRate": 1.7,
+   "barding": "chequybarding"
+  },
+  {
+   "id": "steppe_destrier",
+   "name": "Steppe Destrier",
+   "hp": 200,
+   "trot": 5.0,
+   "gallop": 11.0,
+   "accel": 3.8,
+   "turnRate": 1.5,
+   "barding": "steppetack"
+  },
+  {
+   "id": "khan_charger",
+   "name": "Khan's Charger",
+   "hp": 250,
+   "trot": 5.1,
+   "gallop": 11.2,
+   "accel": 4.0,
+   "turnRate": 1.6,
+   "barding": "gildedcaparison"
+  },
+  {
+   "id": "strand_destrier",
+   "name": "Strand Destrier",
+   "hp": 300,
+   "trot": 5.3,
+   "gallop": 11.6,
+   "accel": 4.2,
+   "turnRate": 1.7,
+   "barding": "mailbarding"
   }
  ],
  "troops": [
@@ -11643,7 +11813,7 @@
    "block": 0.64,
    "look": {
     "head": "sallet",
-    "body": "plate",
+    "body": "mail",
     "legs": "plate",
     "feet": "boots",
     "hands": "gauntlets",
@@ -11673,15 +11843,14 @@
    "speed": 3.7,
    "block": 0.7,
    "look": {
-    "head": "sallet",
+    "head": "frogmouth",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater",
     "weapon": "longsword",
-    "tabard": true,
-    "plume": true
+    "tabard": true
    }
   },
   {
@@ -11702,7 +11871,7 @@
    "speed": 3.7,
    "block": 0.78,
    "look": {
-    "head": "greathelm",
+    "head": "frogmouth_gilt",
     "body": "plate_gilded",
     "legs": "plate",
     "feet": "sabatons",
@@ -11735,16 +11904,16 @@
    "pierce": 0.8,
    "reload": 1.8,
    "look": {
-    "head": "sallet",
-    "body": "plate",
+    "head": "frogmouth_gilt",
+    "body": "plate_gilded",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "arbalest",
+    "cape": true,
     "tabard": true,
-    "plume": true,
-    "cape": true
+    "plume": true
    },
    "stock": "noble"
   },
@@ -11767,7 +11936,7 @@
    "speed": 3.55,
    "block": 0.52,
    "look": {
-    "head": "sallet",
+    "head": "frogmouth_gilt",
     "body": "plate_gilded",
     "legs": "plate",
     "feet": "sabatons",
@@ -11898,15 +12067,14 @@
    "block": 0.38,
    "look": {
     "head": "sallet",
-    "body": "plate",
+    "body": "mail_fur",
     "legs": "mail",
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "heater",
-    "weapon": "lance",
-    "cape": true
+    "weapon": "lance"
    },
-   "mount": "warhorse"
+   "mount": "march_warhorse"
   },
   {
    "id": "march_riders",
@@ -11929,18 +12097,15 @@
    "speed": 4.1,
    "block": 0.45,
    "look": {
-    "head": "greathelm_wings",
-    "body": "plate",
+    "head": "winged_sallet",
+    "body": "plate_fur",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater",
-    "weapon": "lance",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "weapon": "lance"
    },
-   "mount": "warhorse"
+   "mount": "march_destrier"
   },
   {
    "id": "warden_lances",
@@ -11960,18 +12125,16 @@
    "speed": 4.1,
    "block": 0.52,
    "look": {
-    "head": "greathelm_crown",
+    "head": "winged_sallet_gilt",
     "body": "plate_gilded",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater",
     "weapon": "lance",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "cape": true
    },
-   "mount": "warhorse"
+   "mount": "march_destrier"
   },
   {
    "id": "beacon_guard",
@@ -11991,15 +12154,13 @@
    "speed": 3.4,
    "block": 0.78,
    "look": {
-    "head": "sallet",
+    "head": "winged_sallet_gilt",
     "body": "plate_gilded",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater",
     "weapon": "longsword_gilded",
-    "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -12024,15 +12185,13 @@
    "pierce": 0.8,
    "reload": 1.8,
    "look": {
-    "head": "sallet",
-    "body": "plate",
+    "head": "winged_sallet_gilt",
+    "body": "plate_fur",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "arbalest",
-    "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -12152,15 +12311,13 @@
    "speed": 3.7,
    "block": 0.66,
    "look": {
-    "head": "greathelm",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "kettle",
+    "body": "gambeson",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
-    "shield": "heater",
-    "weapon": "falchion",
-    "tabard": true,
-    "plume": true
+    "shield": "targe",
+    "weapon": "falchion"
    }
   },
   {
@@ -12184,15 +12341,13 @@
    "speed": 3.7,
    "block": 0.7,
    "look": {
-    "head": "sallet",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "morion",
+    "body": "brigandine",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
-    "shield": "heater",
-    "weapon": "falchion",
-    "tabard": true,
-    "plume": true
+    "shield": "targe",
+    "weapon": "falchion"
    }
   },
   {
@@ -12213,16 +12368,15 @@
    "speed": 3.7,
    "block": 0.78,
    "look": {
-    "head": "greathelm",
-    "body": "plate_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "morion_gilt",
+    "body": "brigandine_gilded",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
-    "shield": "heater",
+    "shield": "round_bossed",
     "weapon": "falchion",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    }
   },
   {
@@ -12246,16 +12400,15 @@
    "pierce": 0.8,
    "reload": 1.8,
    "look": {
-    "head": "sallet",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "morion_gilt",
+    "body": "brigandine_gilded",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "arbalest",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    },
    "stock": "noble"
   },
@@ -12267,7 +12420,7 @@
    "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "royal_destrier",
+   "mount": "strand_destrier",
    "cost": 260,
    "hp": 180,
    "damage": 42,
@@ -12278,14 +12431,13 @@
    "speed": 3.55,
    "block": 0.52,
    "look": {
-    "head": "greathelm_crown",
-    "body": "plate_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "morion_gilt",
+    "body": "brigandine_gilded",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
-    "shield": "heater_gilded",
+    "shield": "targe",
     "weapon": "pennonlance",
-    "tabard": true,
     "plume": true,
     "cape": true
    }
@@ -12402,13 +12554,12 @@
    "block": 0.42,
    "look": {
     "head": "sallet_crest",
-    "body": "breastplate",
+    "body": "mail",
     "legs": "plate",
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "greatsword",
-    "tabard": true
+    "weapon": "greatsword"
    }
   },
   {
@@ -12432,16 +12583,13 @@
    "speed": 3.7,
    "block": 0.42,
    "look": {
-    "head": "armet",
-    "body": "plate",
+    "head": "galea",
+    "body": "breastplate",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "greatsword",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "weapon": "greatsword"
    }
   },
   {
@@ -12462,15 +12610,13 @@
    "speed": 3.7,
    "block": 0.45,
    "look": {
-    "head": "sallet",
-    "body": "plate",
+    "head": "galea_gilt",
+    "body": "muscle",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "greatsword",
-    "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -12497,15 +12643,13 @@
    "ammo": 40,
    "pierce": 0.3,
    "look": {
-    "head": "sallet_crest",
-    "body": "plate",
+    "head": "galea_gilt",
+    "body": "muscle",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "longbow",
-    "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -12518,7 +12662,7 @@
    "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "cataphract_horse",
+   "mount": "senate_charger",
    "cost": 265,
    "hp": 192,
    "damage": 45,
@@ -12529,15 +12673,13 @@
    "speed": 3.5,
    "block": 0.52,
    "look": {
-    "head": "sallet_crest",
+    "head": "galea_gilt",
     "body": "scale",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "kite",
     "weapon": "lance",
-    "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -12652,14 +12794,13 @@
    "speed": 3.7,
    "block": 0.38,
    "look": {
-    "head": "sallet",
-    "body": "plate",
-    "legs": "plate",
+    "head": "spangen",
+    "body": "mail",
+    "legs": "splint",
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "bardiche",
-    "cape": true
+    "weapon": "bardiche"
    }
   },
   {
@@ -12683,16 +12824,13 @@
    "speed": 3.7,
    "block": 0.4,
    "look": {
-    "head": "armet",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "ibex",
+    "body": "plate_fur",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "bardiche",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "weapon": "bardiche"
    }
   },
   {
@@ -12713,16 +12851,14 @@
    "speed": 3.7,
    "block": 0.45,
    "look": {
-    "head": "sallet",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "ibex_gilt",
+    "body": "plate_gilded",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "bardiche",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "cape": true
    }
   },
   {
@@ -12748,15 +12884,13 @@
    "ammo": 40,
    "pierce": 0.3,
    "look": {
-    "head": "sallet",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "ibex_gilt",
+    "body": "plate_fur",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "longbow",
-    "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -12769,7 +12903,7 @@
    "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "cataphract_horse",
+   "mount": "alpine_charger",
    "cost": 265,
    "hp": 192,
    "damage": 45,
@@ -12780,15 +12914,13 @@
    "speed": 3.5,
    "block": 0.52,
    "look": {
-    "head": "sallet",
-    "body": "scale",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "ibex_gilt",
+    "body": "scale_iron",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "kite",
     "weapon": "lance",
-    "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -12904,13 +13036,12 @@
    "block": 0.64,
    "look": {
     "head": "gjermundbu",
-    "body": "mail_fur",
-    "legs": "plate",
+    "body": "mail",
+    "legs": "mail",
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "round_bossed",
-    "weapon": "axe",
-    "cape": true
+    "weapon": "axe"
    }
   },
   {
@@ -12934,16 +13065,13 @@
    "speed": 3.7,
    "block": 0.64,
    "look": {
-    "head": "gjermundbu",
-    "body": "plate_fur",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "dragon",
+    "body": "mail_fur",
+    "legs": "mail",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "round_bossed",
-    "weapon": "axe",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "weapon": "axe"
    }
   },
   {
@@ -12964,16 +13092,14 @@
    "speed": 3.7,
    "block": 0.64,
    "look": {
-    "head": "greathelm_crown",
-    "body": "plate_fur",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "dragon_gilt",
+    "body": "plate_gilded",
+    "legs": "mail",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "round_bossed",
     "weapon": "axe",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "cape": true
    }
   },
   {
@@ -12996,15 +13122,13 @@
    "ammo": 42,
    "pierce": 0.3,
    "look": {
-    "head": "gjermundbu",
-    "body": "plate",
+    "head": "dragon_gilt",
+    "body": "plate_fur",
     "legs": "mail",
-    "feet": "sabatons",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "longbow",
-    "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -13016,7 +13140,7 @@
    "culture": "northern_fjord",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "steppe_horse",
+   "mount": "fjord_horse",
    "cost": 245,
    "hp": 142,
    "damage": 30,
@@ -13030,15 +13154,13 @@
    "ammo": 38,
    "pierce": 0.3,
    "look": {
-    "head": "gjermundbu",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "dragon_gilt",
+    "body": "mail_fur",
+    "legs": "mail",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "longbow",
-    "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -13163,14 +13285,13 @@
    "speed": 3.7,
    "block": 0.26,
    "look": {
-    "head": "brigand_hat",
+    "head": "spangen_wolf",
     "body": "gambeson_fur",
     "legs": "furlegs",
     "feet": "furboots",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "longbow",
-    "cape": true
+    "weapon": "longbow"
    },
    "ammo": 34,
    "range": 56,
@@ -13197,15 +13318,13 @@
    "speed": 3.7,
    "block": 0.26,
    "look": {
-    "head": "hood",
-    "body": "mail",
-    "legs": "mail",
-    "feet": "boots",
+    "head": "bearhead",
+    "body": "mail_fur",
+    "legs": "furlegs",
+    "feet": "furboots",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "longbow",
-    "cape": true,
-    "tabard": true
+    "weapon": "longbow"
    },
    "ammo": 40,
    "range": 56,
@@ -13229,15 +13348,14 @@
    "speed": 3.7,
    "block": 0.28,
    "look": {
-    "head": "hood",
-    "body": "plate",
-    "legs": "mail",
-    "feet": "sabatons",
+    "head": "whitebear",
+    "body": "plate_fur",
+    "legs": "furlegs",
+    "feet": "furboots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "longbow",
-    "cape": true,
-    "tabard": true
+    "cape": true
    },
    "ammo": 42,
    "range": 56,
@@ -13261,14 +13379,13 @@
    "speed": 3.65,
    "block": 0.45,
    "look": {
-    "head": "brigand_hat",
-    "body": "plate_fur",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "whitebear",
+    "body": "plate_gilded",
+    "legs": "furlegs",
+    "feet": "furboots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "daneaxe",
-    "tabard": true,
     "cape": true
    }
   },
@@ -13279,7 +13396,7 @@
    "culture": "northern_taiga",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "steppe_horse",
+   "mount": "taiga_horse",
    "cost": 245,
    "hp": 142,
    "damage": 30,
@@ -13293,14 +13410,13 @@
    "ammo": 38,
    "pierce": 0.3,
    "look": {
-    "head": "brigand_hat",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "whitebear",
+    "body": "mail_fur",
+    "legs": "furlegs",
+    "feet": "furboots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "longbow",
-    "tabard": true,
     "cape": true
    },
    "stock": "noble"
@@ -13417,13 +13533,12 @@
    "block": 0.65,
    "look": {
     "head": "spike",
-    "body": "plate",
-    "legs": "plate",
+    "body": "kaftan",
+    "legs": "mail",
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "scimitar",
-    "tabard": true
+    "weapon": "scimitar"
    }
   },
   {
@@ -13447,15 +13562,13 @@
    "speed": 3.7,
    "block": 0.7,
    "look": {
-    "head": "spike",
-    "body": "lamellar",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "spike_turban",
+    "body": "kaftan",
+    "legs": "mail",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "scimitar",
-    "tabard": true,
-    "plume": true
+    "weapon": "scimitar"
    }
   },
   {
@@ -13476,16 +13589,15 @@
    "speed": 3.7,
    "block": 0.78,
    "look": {
-    "head": "spike",
-    "body": "lamellar_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "spike_turban_gilt",
+    "body": "kaftan",
+    "legs": "mail",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "round",
     "weapon": "scimitar",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    }
   },
   {
@@ -13508,16 +13620,15 @@
    "ammo": 42,
    "pierce": 0.3,
    "look": {
-    "head": "spike",
-    "body": "lamellar",
+    "head": "spike_turban_gilt",
+    "body": "kaftan",
     "legs": "mail",
-    "feet": "sabatons",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "recurve",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    },
    "stock": "noble"
   },
@@ -13529,7 +13640,7 @@
    "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "royal_destrier",
+   "mount": "oasis_destrier",
    "cost": 265,
    "hp": 184,
    "damage": 41,
@@ -13540,16 +13651,15 @@
    "speed": 3.5,
    "block": 0.52,
    "look": {
-    "head": "spike",
-    "body": "lamellar_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "spike_turban_gilt",
+    "body": "kaftan",
+    "legs": "mail",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "round",
     "weapon": "lance",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    }
   },
   {
@@ -13669,14 +13779,13 @@
    "speed": 4.0,
    "block": 0.4,
    "look": {
-    "head": "spike",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "boots",
+    "head": "turban",
+    "body": "lamellar",
+    "legs": "cloth",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "lance",
-    "cape": true
+    "weapon": "lance"
    },
    "mount": "camel"
   },
@@ -13701,15 +13810,13 @@
    "speed": 4.0,
    "block": 0.46,
    "look": {
-    "head": "kulah",
-    "body": "scale",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "litham",
+    "body": "burnous",
+    "legs": "cloth",
+    "feet": "ridingboots",
     "hands": "gauntlets",
-    "shield": "round",
-    "weapon": "lance",
-    "cape": true,
-    "tabard": true
+    "shield": "kalkan",
+    "weapon": "lance"
    },
    "mount": "camel"
   },
@@ -13731,16 +13838,14 @@
    "speed": 4.0,
    "block": 0.52,
    "look": {
-    "head": "kulah",
-    "body": "lamellar_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "litham_gilt",
+    "body": "burnous",
+    "legs": "cloth",
+    "feet": "ridingboots",
     "hands": "gauntlets",
-    "shield": "round",
+    "shield": "kalkan",
     "weapon": "lance",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "cape": true
    },
    "mount": "camel"
   },
@@ -13762,15 +13867,13 @@
    "speed": 3.7,
    "block": 0.78,
    "look": {
-    "head": "spike",
-    "body": "lamellar_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "litham_gilt",
+    "body": "burnous",
+    "legs": "cloth",
+    "feet": "ridingboots",
     "hands": "gauntlets",
-    "shield": "round",
+    "shield": "kalkan",
     "weapon": "scimitar",
-    "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -13794,15 +13897,13 @@
    "ammo": 42,
    "pierce": 0.3,
    "look": {
-    "head": "spike",
-    "body": "lamellar",
-    "legs": "mail",
-    "feet": "sabatons",
+    "head": "litham_gilt",
+    "body": "burnous",
+    "legs": "cloth",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "recurve",
-    "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -13922,13 +14023,12 @@
    "block": 0.64,
    "look": {
     "head": "spike",
-    "body": "plate",
-    "legs": "plate",
+    "body": "lamellar",
+    "legs": "splint",
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "scimitar",
-    "cape": true
+    "weapon": "scimitar"
    }
   },
   {
@@ -13952,16 +14052,13 @@
    "speed": 3.7,
    "block": 0.7,
    "look": {
-    "head": "spike",
-    "body": "lamellar",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "corsair",
+    "body": "brigandine",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "round",
-    "weapon": "scimitar",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "weapon": "scimitar"
    }
   },
   {
@@ -13982,16 +14079,14 @@
    "speed": 3.7,
    "block": 0.78,
    "look": {
-    "head": "spike",
-    "body": "lamellar_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "corsair_gilt",
+    "body": "brigandine_gilded",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
-    "shield": "round",
+    "shield": "targe",
     "weapon": "scimitar",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "cape": true
    }
   },
   {
@@ -14014,15 +14109,13 @@
    "ammo": 42,
    "pierce": 0.3,
    "look": {
-    "head": "spike",
-    "body": "lamellar",
-    "legs": "mail",
-    "feet": "sabatons",
+    "head": "corsair_gilt",
+    "body": "brigandine_gilded",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "recurve",
-    "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -14035,7 +14128,7 @@
    "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "royal_destrier",
+   "mount": "rift_destrier",
    "cost": 265,
    "hp": 184,
    "damage": 41,
@@ -14046,15 +14139,13 @@
    "speed": 3.5,
    "block": 0.52,
    "look": {
-    "head": "spike",
-    "body": "lamellar_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "corsair_gilt",
+    "body": "brigandine_gilded",
+    "legs": "splint",
+    "feet": "boots",
     "hands": "gauntlets",
     "shield": "round",
     "weapon": "lance",
-    "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -14180,14 +14271,13 @@
    "look": {
     "head": "steppe_mask",
     "body": "deel_fur",
-    "legs": "plate",
+    "legs": "mail",
     "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "kalkan",
-    "weapon": "lance",
-    "cape": true
+    "weapon": "lance"
    },
-   "mount": "destrier"
+   "mount": "steppe_destrier"
   },
   {
    "id": "banner_lancers",
@@ -14210,16 +14300,13 @@
    "speed": 4.1,
    "block": 0.38,
    "look": {
-    "head": "steppe_mask",
-    "body": "lamellar_gilded",
+    "head": "tug",
+    "body": "lamellar_dark",
     "legs": "mail",
     "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "kalkan",
-    "weapon": "lance",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "weapon": "lance"
    },
    "mount": "destrier"
   },
@@ -14241,17 +14328,16 @@
    "speed": 4.1,
    "block": 0.38,
    "look": {
-    "head": "steppe",
-    "body": "lamellar_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "tug_gilt",
+    "body": "lamellar_dark",
+    "legs": "mail",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "kalkan",
     "weapon": "lance",
-    "cape": true,
-    "tabard": true
+    "cape": true
    },
-   "mount": "destrier"
+   "mount": "horde_destrier"
   },
   {
    "id": "yurt_guard",
@@ -14271,15 +14357,13 @@
    "speed": 3.95,
    "block": 0.45,
    "look": {
-    "head": "steppe_mask",
-    "body": "lamellar_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "tug_gilt",
+    "body": "lamellar_dark",
+    "legs": "mail",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "bardiche",
-    "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -14303,15 +14387,13 @@
    "ammo": 48,
    "pierce": 0.3,
    "look": {
-    "head": "steppe_mask",
-    "body": "deel_fur",
+    "head": "tug_gilt",
+    "body": "lamellar_dark",
     "legs": "mail",
     "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "recurve",
-    "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -14430,15 +14512,15 @@
    "block": 0.4,
    "look": {
     "head": "kulah",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "boots",
+    "body": "scale",
+    "legs": "splint",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "kalkan",
     "weapon": "lance",
     "tabard": true
    },
-   "mount": "cataphract_horse"
+   "mount": "salt_charger"
   },
   {
    "id": "brine_cataphracts",
@@ -14461,16 +14543,13 @@
    "speed": 4.0,
    "block": 0.4,
    "look": {
-    "head": "steppe_mask",
-    "body": "lamellar_gilded",
-    "legs": "mail",
+    "head": "faceplate",
+    "body": "mirror",
+    "legs": "splint",
     "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "kalkan",
-    "weapon": "lance",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "weapon": "lance"
    },
    "mount": "cataphract_horse"
   },
@@ -14492,17 +14571,17 @@
    "speed": 4.0,
    "block": 0.4,
    "look": {
-    "head": "steppe",
-    "body": "lamellar_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "faceplate_gilt",
+    "body": "mirror",
+    "legs": "splint",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "kalkan",
     "weapon": "lance",
-    "tabard": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    },
-   "mount": "cataphract_horse"
+   "mount": "khan_charger"
   },
   {
    "id": "port_axemen",
@@ -14522,16 +14601,15 @@
    "speed": 3.95,
    "block": 0.45,
    "look": {
-    "head": "kulah",
-    "body": "lamellar_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "faceplate_gilt",
+    "body": "mirror",
+    "legs": "splint",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "bardiche",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    }
   },
   {
@@ -14554,16 +14632,15 @@
    "ammo": 48,
    "pierce": 0.3,
    "look": {
-    "head": "kulah",
-    "body": "deel_fur",
-    "legs": "mail",
+    "head": "faceplate_gilt",
+    "body": "mirror",
+    "legs": "splint",
     "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "recurve",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    },
    "stock": "noble"
   },
@@ -14687,8 +14764,7 @@
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "heater",
-    "weapon": "longsword",
-    "tabard": true
+    "weapon": "longsword"
    }
   },
   {
@@ -14712,15 +14788,13 @@
    "speed": 3.7,
    "block": 0.7,
    "look": {
-    "head": "barbute_crest",
-    "body": "plate_gilded",
+    "head": "lion",
+    "body": "jupon",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater",
-    "weapon": "longsword",
-    "tabard": true,
-    "plume": true
+    "weapon": "longsword"
    }
   },
   {
@@ -14741,15 +14815,13 @@
    "speed": 3.7,
    "block": 0.78,
    "look": {
-    "head": "barbute_crest",
-    "body": "plate_gilded",
+    "head": "lion",
+    "body": "jupon",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater",
     "weapon": "longsword",
-    "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -14774,15 +14846,13 @@
    "pierce": 0.8,
    "reload": 1.8,
    "look": {
-    "head": "morion",
-    "body": "plate",
+    "head": "lion",
+    "body": "jupon",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "pavise",
     "weapon": "crossbow",
-    "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -14795,7 +14865,7 @@
    "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "royal_destrier",
+   "mount": "lagoon_destrier",
    "cost": 242,
    "hp": 194,
    "damage": 45,
@@ -14806,15 +14876,13 @@
    "speed": 3.75,
    "block": 0.52,
    "look": {
-    "head": "morion",
-    "body": "plate",
+    "head": "lion",
+    "body": "jupon",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "kite",
     "weapon": "pennonlance",
-    "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -14935,14 +15003,13 @@
    "speed": 3.7,
    "block": 0.28,
    "look": {
-    "head": "brigand_hat",
-    "body": "plate",
+    "head": "kettle",
+    "body": "mail",
     "legs": "mail",
     "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "crossbow",
-    "cape": true
+    "weapon": "crossbow"
    },
    "ammo": 32,
    "range": 54,
@@ -14969,16 +15036,13 @@
    "speed": 3.7,
    "block": 0.35,
    "look": {
-    "head": "barbute",
-    "body": "plate",
+    "head": "chapel",
+    "body": "leather",
     "legs": "mail",
-    "feet": "sabatons",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "crossbow",
-    "cape": true,
-    "tabard": true,
-    "plume": true
+    "weapon": "crossbow"
    },
    "ammo": 32,
    "range": 54,
@@ -15002,15 +15066,14 @@
    "speed": 3.7,
    "block": 0.4,
    "look": {
-    "head": "barbute",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "chapel_gilt",
+    "body": "leather",
+    "legs": "mail",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "crossbow",
     "cape": true,
-    "tabard": true,
     "plume": true
    },
    "ammo": 32,
@@ -15035,15 +15098,15 @@
    "speed": 3.3,
    "block": 0.78,
    "look": {
-    "head": "brigand_hat",
-    "body": "plate_gilded",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "chapel_gilt",
+    "body": "leather",
+    "legs": "mail",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "tower",
     "weapon": "longsword_gilded",
-    "tabard": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    }
   },
   {
@@ -15054,7 +15117,7 @@
    "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "royal_destrier",
+   "mount": "fen_destrier",
    "cost": 242,
    "hp": 194,
    "damage": 45,
@@ -15065,15 +15128,15 @@
    "speed": 3.75,
    "block": 0.52,
    "look": {
-    "head": "brigand_hat",
-    "body": "plate",
-    "legs": "plate",
-    "feet": "sabatons",
+    "head": "chapel_gilt",
+    "body": "leather",
+    "legs": "mail",
+    "feet": "ridingboots",
     "hands": "gauntlets",
     "shield": "kite",
     "weapon": "pennonlance",
-    "tabard": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    }
   },
   {
@@ -15188,15 +15251,14 @@
    "speed": 3.7,
    "block": 0.68,
    "look": {
-    "head": "greathelm_horns",
-    "body": "plate",
+    "head": "greathelm",
+    "body": "mail",
     "legs": "plate",
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "heater",
     "weapon": "longsword_gilded",
-    "tabard": true,
-    "cape": true
+    "tabard": true
    }
   },
   {
@@ -15220,16 +15282,14 @@
    "speed": 3.7,
    "block": 0.7,
    "look": {
-    "head": "greathelm",
+    "head": "greathelm_sun",
     "body": "plate",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater",
     "weapon": "longsword_gilded",
-    "tabard": true,
-    "cape": true,
-    "plume": true
+    "tabard": true
    }
   },
   {
@@ -15250,7 +15310,7 @@
    "speed": 3.7,
    "block": 0.78,
    "look": {
-    "head": "greathelm_horns",
+    "head": "greathelm_sun",
     "body": "plate_gilded",
     "legs": "plate",
     "feet": "sabatons",
@@ -15258,8 +15318,7 @@
     "shield": "heater",
     "weapon": "longsword_gilded",
     "tabard": true,
-    "cape": true,
-    "plume": true
+    "cape": true
    }
   },
   {
@@ -15283,15 +15342,14 @@
    "pierce": 0.8,
    "reload": 1.8,
    "look": {
-    "head": "greathelm_horns",
-    "body": "plate",
+    "head": "greathelm_sun",
+    "body": "plate_gilded",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "crossbow",
     "tabard": true,
-    "plume": true,
     "cape": true
    },
    "stock": "noble"
@@ -15304,7 +15362,7 @@
    "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "royal_destrier",
+   "mount": "chapter_destrier",
    "cost": 258,
    "hp": 198,
    "damage": 46,
@@ -15315,7 +15373,7 @@
    "speed": 3.55,
    "block": 0.52,
    "look": {
-    "head": "greathelm_horns",
+    "head": "greathelm_sun",
     "body": "plate_gilded",
     "legs": "plate",
     "feet": "sabatons",
@@ -15323,7 +15381,6 @@
     "shield": "heater_gilded",
     "weapon": "pennonlance",
     "tabard": true,
-    "plume": true,
     "cape": true
    }
   },
@@ -15442,14 +15499,13 @@
    "speed": 3.7,
    "block": 0.38,
    "look": {
-    "head": "greathelm",
-    "body": "plate",
+    "head": "kettle",
+    "body": "coatofplates",
     "legs": "plate",
     "feet": "boots",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "halberd",
-    "tabard": true,
     "cape": true
    }
   },
@@ -15474,16 +15530,13 @@
    "speed": 3.7,
    "block": 0.38,
    "look": {
-    "head": "greathelm",
-    "body": "plate",
+    "head": "bascinet",
+    "body": "coatofplates",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
-    "weapon": "halberd",
-    "tabard": true,
-    "cape": true,
-    "plume": true
+    "weapon": "halberd"
    }
   },
   {
@@ -15504,14 +15557,13 @@
    "speed": 3.7,
    "block": 0.38,
    "look": {
-    "head": "greathelm",
-    "body": "plate",
+    "head": "bascinet_gilt",
+    "body": "coatofplates",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "halberd",
-    "tabard": true,
     "cape": true,
     "plume": true
    }
@@ -15534,16 +15586,15 @@
    "speed": 3.4,
    "block": 0.78,
    "look": {
-    "head": "greathelm",
-    "body": "plate_gilded",
+    "head": "bascinet_gilt",
+    "body": "coatofplates",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater",
     "weapon": "longsword_gilded",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    }
   },
   {
@@ -15567,16 +15618,15 @@
    "pierce": 0.8,
    "reload": 1.8,
    "look": {
-    "head": "greathelm",
-    "body": "plate",
+    "head": "bascinet_gilt",
+    "body": "coatofplates",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "none",
     "weapon": "crossbow",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    },
    "stock": "noble"
   },
@@ -15588,7 +15638,7 @@
    "stock": "noble",
    "tier": 7,
    "upgradesTo": [],
-   "mount": "royal_destrier",
+   "mount": "warden_destrier",
    "cost": 258,
    "hp": 198,
    "damage": 46,
@@ -15599,16 +15649,15 @@
    "speed": 3.55,
    "block": 0.52,
    "look": {
-    "head": "greathelm",
-    "body": "plate_gilded",
+    "head": "bascinet_gilt",
+    "body": "coatofplates",
     "legs": "plate",
     "feet": "sabatons",
     "hands": "gauntlets",
     "shield": "heater_gilded",
     "weapon": "pennonlance",
-    "tabard": true,
-    "plume": true,
-    "cape": true
+    "cape": true,
+    "plume": true
    }
   }
  ]

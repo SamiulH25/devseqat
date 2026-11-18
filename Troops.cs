@@ -130,7 +130,7 @@ public static class Troops
             if (!Look.Weapons.Contains(l.Weapon)) yield return $"{t.Id}: unknown weapon {l.Weapon}";
         }
         foreach (var m in mounts!.Values)
-            if (m.Barding is not ("saddle" or "caparison" or "scalebarding" or "gildedcaparison" or "steppetack" or "wolf" or "camel")) yield return $"{m.Id}: unknown barding {m.Barding}";
+            if (m.Barding is not ("wolf" or "camel") && !SpriteSheet.Bardings.Contains(m.Barding)) yield return $"{m.Id}: unknown barding {m.Barding}";
     }
 
     /// A higher tier is always better (docs/archive/COMPANIONS_MAGIC.md D0). An upgrade that keeps its class, weapon and shield
