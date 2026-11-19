@@ -20,12 +20,13 @@ sealed partial class MapScreen
             for (int x = 0; x < AtlasSize; x++)
             {
                 var w = World.MinimapToWorld(new Vector2((x + 0.5f) / AtlasSize, (y + 0.5f) / AtlasSize), terrain.MinimapRange);
-                ids[y * AtlasSize + x] = MathF.Max(MathF.Abs(w.X), MathF.Abs(w.Y)) > land ? -1 : C.Map.ProvinceAt(w).Id;
+                ids[y * AtlasSize + x] = MathF.Max(MathF.Abs(w.X), MathF.Abs(w.Y)) > land || C.Map.Landness(w) < 0.5f ? -1 : C.Map.ProvinceAt(w).Id; // the sea stays unpainted (WM6)
             }
         return atlasIds = ids;
     }
 
-    /// Paints the realm colours: a wash over each province, a dark line where two realms meet, a faint one between provinces.
+    /// Paints the realm colours: a wash over each province, a dark line where two realms meet, a faint one between provinces,
+    /// and the coast as a dark line where the land meets the sea (the minimap's sea shows through the unpainted texels).
     Texture2D AtlasTexture()
     {
         var ids = AtlasIds();
@@ -37,18 +38,18 @@ sealed partial class MapScreen
                 int i = y * AtlasSize + x;
                 if (ids[i] < 0) continue;
                 int f = Owner(i);
-                bool realmEdge = false, provEdge = false;
+                bool realmEdge = false, provEdge = false, coast = false;
                 foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
                 {
                     int nx = x + dx, ny = y + dy;
                     if (nx < 0 || ny < 0 || nx >= AtlasSize || ny >= AtlasSize) continue;
                     int j = ny * AtlasSize + nx;
-                    if (ids[j] < 0) continue;
+                    if (ids[j] < 0) { coast = true; continue; }
                     if (Owner(j) != f) realmEdge = true;
                     else if (ids[j] != ids[i]) provEdge = true;
                 }
                 var c = SideColor(f);
-                data[i] = realmEdge ? new Color(16, 12, 10, 235) : provEdge ? Color.Lerp(c, Color.Black, 0.35f) * 0.7f : c * 0.5f;
+                data[i] = coast ? new Color(38, 30, 22, 240) : realmEdge ? new Color(16, 12, 10, 235) : provEdge ? Color.Lerp(c, Color.Black, 0.35f) * 0.7f : c * 0.5f;
             }
         atlasTex ??= new Texture2D(gd, AtlasSize, AtlasSize);
         atlasTex.SetData(data);

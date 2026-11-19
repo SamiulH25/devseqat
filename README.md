@@ -12,7 +12,7 @@ through a war of seven realms on a campaign map: sieges, fiefs, prisoners, contr
 - **Battles of up to 3,000 men** on the field at once (Battle size setting), more waiting as reinforcements. You fight in the
   front rank (directional blows, parries, couched lances) and command the whole field from above with a cursor while your captain keeps his guard, or hand wings to officers'
   **divisions**, each at a post (the front, a wing, the skirmishers, the reserve) keeping the stance you give him.
-- **A war of seven realms** on a map of 115 provinces, each realm with its own heraldry, temper and four lines of troops:
+- **A war of seven realms** on a drawn continent of 81 provinces ringed by sea, each realm with its own heraldry, temper and four lines of troops:
   287 troops across seven cultures and common, plus 24 creatures (goblins, wolves, trolls, giant spiders, cave bears, wyverns, the dead).
 - **A company that is your legacy:** named men on the roll, the fallen remembered, banner honours won and lost, a career from
   hired sword to king, and a captain with gear, skills, wounds and a name.
@@ -80,10 +80,10 @@ Shaders are plain GLSL in `Shaders/` and need **no shader compiler** (no MGFXC, 
 banner is one you earned (`docs/archive/LEGACY.md`).
 
 You are a free captain sworn to the Azure Crown in the west. It is at war with the Northmarch clans of the cold north, its long
-border; the Crimson Compact in the east fights the Khaganate of the Grass, horse archers from the eastern steppe. The Sunward
+border; the Crimson Compact in the middle fights the Khaganate of the Grass, horse archers from the eastern steppe. The Sunward
 Emirates hold the dry south, the Saltmarsh League the fens and canals of the south-west, and the knight-brothers of the Order of the
-Ashen Sun the highlands in the middle. Brigands, goblins and worse roam between them all. The land is about 930 km across, with
-mountain ridges you cross by road at the passes.
+Ashen Sun the south-east. Brigands, goblins and worse roam between them all. The land is about 1,200 km across, ringed by a sea that cannot be crossed yet,
+with mountain ridges you cross by road at the passes; the minimap and the realm map (M) show the coast.
 - **Map:** click to march, click a town or village to enter it, and click a party to chase it. P opens the party screen, Space pauses,
   1-3 set the speed (x1, x3, x8), F follows you, F5 saves, F9 loads, and Esc opens the menu. The camera works as in command view (WASD, Q/E, wheel,
   middle-drag), and the overview (top right) jumps the camera. Hover anything for details.

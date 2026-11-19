@@ -478,7 +478,7 @@ sealed partial class MapScreen
         // Day and night on the map follow the campaign clock (kept readable at night); autumn and winter skies are greyer.
         // Winter tells the shaders it snows: fields, hedges, tree tops and roofs whiten and the water freezes (WL3).
         Looks.Grounded = true;
-        Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0, Snow: C.SeasonIndex == 3), nightFloor: 0.7f);
+        Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0, Snow: C.SeasonIndex == 3), nightFloor: 0.6f);
         var look = new Vector3(MathF.Cos(yaw) * MathF.Cos(pitch), -MathF.Sin(pitch), MathF.Sin(yaw) * MathF.Cos(pitch));
         var f3 = new Vector3(focus.X, terrain.Height(focus), focus.Y);
         // The camera keeps its zoom and height at the edge of the world: only where its orbit would carry it off the ground

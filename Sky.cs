@@ -41,7 +41,8 @@ public static class Sky
         float az = MathHelper.ToRadians(38 + (h - 13) * 15);
         float k = Math.Clamp(elev / MathHelper.ToRadians(25), 0, 1);           // low sun -> high sun
         float n = Math.Clamp(-elev / MathHelper.ToRadians(8), 0, 1);           // dusk -> night
-        n = MathF.Min(n, 1 - nightFloor);
+        float hue = n * 0.8f;                                                   // the light's colour goes fully to moonlight...
+        n = MathF.Min(n, 1 - nightFloor);                                       // ...while the floor only keeps it bright enough to read
         Night = n;
         Rain = w.Rain;
         float shown = elev > 0 ? elev : MathHelper.ToRadians(40);               // at night the moon lights from high up
@@ -49,8 +50,8 @@ public static class Sky
         var pos = new Vector3(MathF.Cos(showAz) * MathF.Cos(shown), MathF.Sin(shown), MathF.Sin(showAz) * MathF.Cos(shown));
         SunDir = -Vector3.Normalize(pos);
 
-        var sun = Vector3.Lerp(Vector3.Lerp(DuskSun, NoonSun, k), MoonSun, n);
-        var sky = Vector3.Lerp(Vector3.Lerp(DuskSky, NoonSky, k), NightSky, n);
+        var sun = Moonlit(Vector3.Lerp(DuskSun, NoonSun, k), MoonSun, n, hue);
+        var sky = Moonlit(Vector3.Lerp(DuskSky, NoonSky, k), NightSky, n, hue);
         var hor = Color.Lerp(Color.Lerp(DuskHorizon, NoonHorizon, k), NightHorizon, n);
         var zen = Color.Lerp(Color.Lerp(DuskZenith, NoonZenith, k), NightZenith, n);
         // Rain and fog grey everything out and dim the sun.
@@ -72,9 +73,18 @@ public static class Sky
         Snow = w.Snow ? 0.8f : 0;
         var gold = new Vector3(1.06f, 0.98f, 0.86f);
         var cool = new Vector3(0.94f, 0.98f, 1.05f);
-        Grade = Vector3.Lerp(Vector3.Lerp(Vector3.Lerp(gold, Vector3.One, k), cool, Math.Clamp(w.Rain + w.Fog * 0.5f, 0, 1)), new Vector3(0.9f, 0.95f, 1.1f), n);
+        Grade = Vector3.Lerp(Vector3.Lerp(Vector3.Lerp(gold, Vector3.One, k), cool, Math.Clamp(w.Rain + w.Fog * 0.5f, 0, 1)), new Vector3(0.62f, 0.8f, 1.2f), hue); // night: the grade takes the green and warmth out
         baseSun = SunColor; baseSky = SkyColor; baseGround = GroundColor; baseHorizon = Horizon; baseZenith = Zenith; baseGrade = Grade;
         OmenDark = 0; Swirl = Vector2.Zero;
+    }
+
+    /// Day light turned to night light: the colour of the night at `hue`, as bright as the day-night mix at `n` (with a
+    /// night floor a lit map at 23:00 is moon-blue, not the gold of a late afternoon).
+    static Vector3 Moonlit(Vector3 day, Vector3 night, float n, float hue)
+    {
+        static float Lum(Vector3 c) => 0.3f * c.X + 0.59f * c.Y + 0.11f * c.Z;
+        var tint = Vector3.Lerp(day, night, hue);
+        return tint * (Lum(Vector3.Lerp(day, night, n)) / MathF.Max(1e-4f, Lum(tint)));
     }
 
     /// A tempest over the field (docs/archive/SPECTACLE.md S3): x = how hard the clouds turn, y = how much more sky they cover.

@@ -406,6 +406,15 @@ sealed partial class World : IDisposable
             for (int x = 0; x < S; x++)
             {
                 var w = MinimapToWorld(new Vector2((x + 0.5f) / S, (y + 0.5f) / S), t.MinimapRange);
+                if (t.SeaLevel is float sea && t.Height(w) is float h && h < sea)
+                {
+                    // The sea (WM6): shallows a lighter teal, deep water dark blue, a pale line of surf at the shore.
+                    float depth = sea - h;
+                    var water = Vector3.Lerp(new Vector3(0.25f, 0.43f, 0.48f), new Vector3(0.07f, 0.14f, 0.25f), Smooth(0.3f, 5f, depth));
+                    if (depth < 0.25f) water = Vector3.Lerp(water, new Vector3(0.72f, 0.76f, 0.7f), 0.55f);
+                    data[y * S + x] = new Color(water);
+                    continue;
+                }
                 var g = t.Gradient(w);
                 var nrm = Vector3.Normalize(new Vector3(-g.X, 1, -g.Y));
                 float shade = 0.65f + 0.55f * MathF.Max(0, Vector3.Dot(nrm, -SunDir));

@@ -687,8 +687,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Armoury.cs (166 lines)
 - **MapScreen** (class, L7): ArmourerWell:12, Baggage:31, GearRow:49, GearStats:158
 
-## MapScreen.Atlas.cs (136 lines)
-- **MapScreen** (class, L7): AtlasIds:14, AtlasTexture:29, AtlasPanel:58, AtlasLegend:103, TideColour:135
+## MapScreen.Atlas.cs (137 lines)
+- **MapScreen** (class, L7): AtlasIds:14, AtlasTexture:30, AtlasPanel:59, AtlasLegend:104, TideColour:136
 
 ## MapScreen.Board.cs (373 lines)
 - **MapScreen** (class, L10): readonly:24, RoleColor:28, PartyPanel:30, BoardSummary:91, DrawLane:118, NewLane:174, Dashed:207, CompanyTile:215, CompanyDetail:254
@@ -823,8 +823,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Quality** (enum, L8)
 - **Shading** (class, L12): Source:37, Shading:47, AimSun:90, Setup:131, Blank:160, Scene:167, PostToScreen:182, Dispose:202
 
-## Sky.cs (103 lines)
-- **Sky** (class, L7): Sky:28, Set:36, Omen:92
+## Sky.cs (113 lines)
+- **Sky** (class, L7): Sky:28, Set:36, Moonlit:83, Omen:102
 
 ## SoundDump.cs (76 lines)
 - **SoundDump** (class, L4): Run:6, WriteMono:55, WriteStereo:66
@@ -841,6 +841,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## SpriteSheet.cs (2157 lines)
 - **SpriteSheet** (class, L14): Part:22, SpriteSheet:35, SpriteSheet:41, Paint:44, Add:57, Pack:62, Side:85, InEl:142, Head:144, Visages:147, Head:161, GoblinHead:212, TrollHead:242, SkullHead:272, GhoulHead:298, Helm:323, Torso:696, PlateTorso:900, PixelMap:903, Ribs:919, Tabard:934, Emblem:951, Cape:991, Sleeve:1007, Leg:1049, Boot:1090, Hand:1112, Shield:1120, Weapon:1223, PaintGrid:1436, ArmingSword:1460, Longsword:1496, Greatsword:1541, Scimitar:1602, Falchion:1637, Polearm:1671, Bow:1686, Arrow:1700, Quiver:1709, Plume:1718, Flag:1726, Blood:1735, Splat:1744, Horse:1757, Wolf:1884, Spider:1923, Bear:1977, Wyvern:2012, HorseNeckTop:2085, HorseNeckBottom:2086, BodyShape:2088, HorseGear:2091, Saddle:2145
+
+## SpriteSheet.Peoples.cs (548 lines)
+- **SpriteSheet** (class, L7): HelmBase:21, PeopleHelm:37, SunCrest:308, PeopleTorso:322, PeopleSleeve:412, PeopleBarding:430, Full:500, Crinet:529, Chanfron:540
 
 ## Squad.cs (269 lines)
 - **Order** (enum, L5)
@@ -1014,9 +1017,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Verts.cs (36 lines)
 - **Verts<T>** (class, L6): Add:13, Draw:19, Dispose:35
 
-## World.cs (1321 lines)
+## World.cs (1330 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19
-- **World** (class, L25): Baked:50, World:59, World:63, Checksum:80, Mark:110, Upload:119, Image:143, FoliageBuffer:150, RebuildFoliage:158, Lit:164, Draw:182, SetFog:207, DrawShaded:214, DrawShadowCasters:241, DrawGeometry:251, SetExtra:287, Dispose:289, Smooth:298, GroundColor:305, BuildDetail:386, WorldToMinimap:431, MinimapToWorld:432, BuildSky:436, BuildFoliage:458, DrawTerrain:544, DrawFoliage:577, Jitter:604, Broadleaf:610, Pine:627, Bush:641, Rock:650, House:662, Windows:691, Chimney:721, Village:729, Town:742, SiteModel:778, WallStones:863, Tower:875, Torches:894, GateDoor:914, Ladder:941, Wheel:954, Wagon:989, TownHouse:1051, Castle:1058, Grass:1075, Skirt:1131
+- **World** (class, L25): Baked:50, World:59, World:63, Checksum:80, Mark:110, Upload:119, Image:143, FoliageBuffer:150, RebuildFoliage:158, Lit:164, Draw:182, SetFog:207, DrawShaded:214, DrawShadowCasters:241, DrawGeometry:251, SetExtra:287, Dispose:289, Smooth:298, GroundColor:305, BuildDetail:386, WorldToMinimap:440, MinimapToWorld:441, BuildSky:445, BuildFoliage:467, DrawTerrain:553, DrawFoliage:586, Jitter:613, Broadleaf:619, Pine:636, Bush:650, Rock:659, House:671, Windows:700, Chimney:730, Village:738, Town:751, SiteModel:787, WallStones:872, Tower:884, Torches:903, GateDoor:923, Ladder:950, Wheel:963, Wagon:998, TownHouse:1060, Castle:1067, Grass:1084, Skirt:1140
 
 ## World.Features.cs (115 lines)
 - **World** (class, L7): Features:11

@@ -1,6 +1,6 @@
 # The designed world: plan
 
-Status: **WM0-WM5 built** (2026-11-18); WM6 planned. New campaigns play the drawn world (layout 5); `IRONFIELD_MAP_LAYOUT=4` makes the last seeded map. Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
+Status: **WM0-WM6 built** (2026-11-18); WM7 (ships) later. This sprint is done; move it to `docs/archive/` when WM7 gets its own plan. New campaigns play the drawn world (layout 5); `IRONFIELD_MAP_LAYOUT=4` makes the last seeded map. Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
 game as map layout 5, the map every new campaign plays on. Phases WM0-WM7; each ships on its own and `tools/check.sh`
 must pass after each. When a phase ships, add its "As built" note at the end.
 
@@ -239,3 +239,16 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
   - Tests moved to subcultures: `Cultures` (a village is its realm's people or its drawn people; lords' own troops count
     their peoples'), `UpgradeTreeVisibility`, `FiefLife` (a Crimson-people castle), `SiegeCamp` (the wall mends each
     unbesieged day: another lord's siege in between left the end state battered).
+- **WM6 (2026-11-18).** The minimap paints the sea below `Terrain.SeaLevel` (teal shallows to dark deep water, a pale surf
+  line at the shore; `World.BuildMinimap`). The realm map (M) leaves texels with `Landness` under 0.5 unpainted, so the
+  minimap's sea shows through, and draws a dark coastline (`MapScreen.Atlas.cs`). Night on the map was lit like a late
+  afternoon: its `nightFloor` (0.7) capped the light's colour as well as its brightness. Now `Sky.Moonlit` turns the
+  sun and sky to night colour by the true darkness (up to 80%), at the floor's brightness; the map's floor is 0.6; and
+  the night grade (`Sky.Grade`, post tint) is a strong cool (0.62, 0.8, 1.2) that takes the grass's green out. Battles
+  at night (floor 0.42) get the same cooler moonlight. README, CAMPAIGN.md and the landing page describe the drawn world (81 provinces, about
+  1,200 km, ringed by sea). Judged with Haiku 5.5 (the T3 judge was not reachable): 6, 6.5, 6.5, then 7/10 once night
+  read as night. Wrong claims checked against the pixels: the close minimap had no sea, the Tundra shot was a battle,
+  then that it showed the desert (it is Skane; the Sunward tooltip in it is a stale hover from the Desert shot before).
+  Left for the polish pass: night grass is one slate tone and its roads read glossy like water, a castle near lost at
+  04:00, map labels stacking when zoomed close, field contrast in winter, the river at mid zoom, Khaganate teal close to
+  Azure blue on the realm map, the realm map's sea without the minimap's shallows, the stale hover tooltip in shots.

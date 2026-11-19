@@ -51,8 +51,9 @@ Section 12 sequences the work; section 13 lists the decisions still open.
   spacing decides the count and `WorldMap.ProvinceCount` records the expected result.
 - **Factions own provinces.** At the start the Azure Crown and the Crimson Compact each hold about half, and a band of contested
   marches lies between them. Bandit camps spawn in wild provinces.
-- **Generated from a seed**, like battle terrain: the same seed always gives the same map (useful for saves and bug reports).
-  A hand-authored map can replace it later without code changes (it is data).
+- **A drawn world.** New campaigns play the Rift Continent drawn in `Data/world.json` (layout 5, docs/WORLDMAP.md): the
+  same land for every seed, 81 provinces ringed by an impassable sea. The seeded maps below (layout 4 and older) are kept for
+  old saves and `IRONFIELD_MAP_LAYOUT=4`; on them the same seed always gives the same map.
 - **Size.** The provinces span +-`WorldMap.Extent` (620 units, ~930 km across, about 115 provinces; maps from before
   docs/archive/WORLD.md W2 keep 392); the rendered ground reaches +-`GroundHalf`, the
   difference being a rim of mountains that closes the world in. The ground is drawn on a 4 m grid (`WorldMap.Step`), which is
