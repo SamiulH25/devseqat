@@ -229,7 +229,7 @@ partial class MapScreen
         {
             ui.Chip(c.X, y, $"{ready} COMPANY{(ready == 1 ? "" : "IES")} READY TO TRAIN", Kit.Gilt, "up");
             y += ui.U(16);
-            ui.Text("TRAIN THEM UP IN A TOWN.", c.X, y, Style.Dim, 1);
+            ui.Text("TO TIER III IN CAMP, HIGHER IN A TOWN.", c.X, y, Style.Dim, 1);
             y += ui.U(16);
         }
         // Banner honours won, lost or won back here (L5), each with the banner mark.

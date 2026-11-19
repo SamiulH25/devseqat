@@ -26,7 +26,8 @@ public sealed partial class Campaign
             int n = rs.Ready;
             string men = n == 1 ? "1 MAN" : $"{n} MEN";
             string ready = $"{men} OF {rc.Name.ToUpperInvariant()} READY ({rs.Type.Name.ToUpperInvariant()})";
-            return (CanTrainHere(Player) ? ($"{ready}: PROMOTE THEM HERE", "TRAIN") : ($"{ready}: TAKE THEM TO A TOWN", "TRAIN"));
+            bool here = rs.Type.UpgradesTo.Any(to => CanTrainHere(Player, to));
+            return here ? ($"{ready}: PROMOTE THEM (P)", "TRAIN") : ($"{ready}: TAKE THEM TO A TOWN", "TRAIN");
         }
         // 3. Room in the party for more men or another company (up to 10 companies).
         if (RoomForMen >= 8 && Player.Companies.Count < Slots && InTown(Player))

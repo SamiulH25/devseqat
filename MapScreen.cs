@@ -134,7 +134,7 @@ sealed partial class MapScreen
         if (Pressed(Keys.Enter)) Tips.Dismiss();
         Tips.Show("welcome", $"Welcome, captain. Click the map to march; click a town or village to enter it.\nBrigands are close by: click their banner to ride at them, or let them come to you.\n{Pan()} pans, the wheel zooms, {ctl.First(Act.Pause)} pauses. {ctl.First(Act.PartyScreen)} opens your company. {ctl.First(Act.Help)} lists the keys.");
         if (C.Player.Companies.Any(Rules.UpgradeReady))
-            Tips.Show("upgrade", $"Some of your men have the XP for promotion (gold bar, N READY).\nOpen the party screen ({ctl.First(Act.PartyScreen)}) in a town, click a troop stack, and choose how many to promote and into what.");
+            Tips.Show("upgrade", $"Some of your men have the XP for promotion (gold bar, N READY).\nOpen the party screen ({ctl.First(Act.PartyScreen)}), click a troop stack, and choose how many to promote and into what.\nMen rise to tier III anywhere; higher tiers need a town's training yard.");
         if (Skills.PicksTotal(C.Captain) > 0) Tips.Show("perk", $"One of your skills has reached a new mark: choose a perk on its branch ({ctl.First(Act.SkillsScreen)} opens your skills).\nSkills rise by doing: commanding, marching, healing, promoting, fighting, ruling and winning goodwill.");
         if (C.Captain.Renown >= 80) Tips.Show("renown", "Renown is your standing: each victory adds to it, and it raises your men cap.\nThe bar under the captain panel shows the next rise.");
         if (C.Player.Companies.Count >= Rules.CompanySlots(C.Captain)) Tips.Show("slots", $"You have reached the most companies you can lead ({Rules.CompanySlots(C.Captain)}). Merge or disband a company to form a new one.");
@@ -188,11 +188,11 @@ sealed partial class MapScreen
                 }
                 else
                 {
-                    at = s; tab = s.Kind == SettlementKind.Village ? "RECRUIT" : s.Kind == SettlementKind.Castle ? "REST" : "TRAIN"; panel = PanelKind.Settlement; note = "";
+                    at = s; tab = s.Kind == SettlementKind.Village ? "RECRUIT" : s.Kind == SettlementKind.Castle ? "MUSTER" : "TRAIN"; panel = PanelKind.Settlement; note = "";
                     // Open the tab the campaign says you need, not always the first one: arrival should feel like an answer.
                     var (_, where) = C.NextStep();
                     if (s.Kind == SettlementKind.Town && tabFor.Contains(where)) tab = where;
-                    Tips.Show("settlement", "Villages give recruits (levies). Towns train companies that have the XP, sell horses and gear,\nhire out mercenary companies, and pay contracts. Resting in a town heals the wounded faster.");
+                    Tips.Show("settlement", "Villages give recruits (levies). Men rise to tier III anywhere, to tier V at a castle's yard. A castle's MUSTER gathers its villages' men, horses and food.\nTowns train every tier, sell gear, hire out mercenaries and pay contracts. Resting in a town heals the wounded faster.");
                 }
             }
             int week = (int)(C.S.Hours / 168);

@@ -37,8 +37,10 @@ public sealed partial class Campaign
 
     public static int Level(Settlement s, string id) => s.Buildings.GetValueOrDefault(id);
 
-    /// The seat of a settlement's province (a village pays its seat's tax and shares its buildings' reach).
+    /// The seat of a village (a village pays its seat's tax and shares its buildings' reach): its holder (HD3), else the
+    /// nearest seat in its province.
     public Settlement SeatOf(Settlement s) => s.Kind != SettlementKind.Village ? s
+        : s.Holder >= 0 && s.Holder < S.Settlements.Count ? S.Settlements[s.Holder]
         : S.Settlements.Where(t => t.Province == s.Province && t.Kind != SettlementKind.Village).MinBy(t => Vector2.DistanceSquared(t.Pos, s.Pos)) ?? s; // the nearest, where a drawn province has several
 
     /// What prosperity, tax and a market do to a settlement's income.
@@ -113,6 +115,7 @@ public sealed partial class Campaign
         if (s.Besieged) Add(0.5f, "SIEGE");
         if (S.Settlements.Any(v => v.Province == s.Province && v.Kind == SettlementKind.Village && v.ThreatUntil > S.Hours)) Add(0.25f, "RAIDS");
         if (GarrisonMen(s) >= Scaled(30)) Add(-0.2f, "GARRISON");
+        if (s.Kind == SettlementKind.Castle && Demesne(s).Any() && HeldShare(s) >= 1) Add(-0.1f, "VILLAGES HELD"); // HD3
         if (Level(s, "chapel") > 0) Add(-0.25f, "CHAPEL");
         if (s.Prosperity < 25) Add(0.2f, "POVERTY");
         if (s.Owner == Player.Id)

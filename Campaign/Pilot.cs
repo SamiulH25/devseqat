@@ -109,7 +109,7 @@ public sealed class Pilot
         if (s.Kind != SettlementKind.Village && c.PrisonerCount > 0) c.SellPrisoners(s);
         if (s.Kind == SettlementKind.Town && c.GoodsCount > 0) c.SellGoods(s);
         foreach (int id in Me.Captives.ToList()) if (c.PartyById(id) is Party lord && s.Kind != SettlementKind.Village) c.RansomLord(lord, s);
-        if (c.InTown(Me)) Promote();
+        Promote();
         // Recruit while there is room and a reserve of gold for a few weeks' upkeep.
         float reserve = Reserve;
         int room = Rules.MenLimit(c.Captain) - Me.Men - Me.Wounded;
@@ -179,6 +179,7 @@ public sealed class Pilot
     void Think()
     {
         TakePerks();
+        Promote(); // men up to tier III rise in camp (docs/HOLDS.md HD1); the rest wait for a town
         if (c.S.Hours >= nextTalk && c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !p.Down && !c.Hostile(Me, p) && Vector2.Distance(p.Pos, Me.Pos) <= Campaign.TalkReach)
                 .Select(c.CharacterOf).FirstOrDefault(l => l != null && c.CannotTalk(l) == null) is Character talkTo)
         { Talk(talkTo); nextTalk = (float)c.S.Hours + 5 * 24; }
@@ -202,9 +203,9 @@ public sealed class Pilot
         if (Me.Food < 5 && c.S.Settlements.Where(t => !c.Refuses(t)).OrderBy(t => Vector2.Distance(t.Pos, Me.Pos)).FirstOrDefault() is Settlement larder
             && c.SettlementAt(Me.Pos) != larder)
         { if (Me.GoalSettlement != larder.Id) { visited.Remove(larder.Id); c.GoTo(larder); } return; }
-        // Badly hurt or holding promotions it can pay for: go to a town.
+        // Badly hurt or holding promotions it can pay for that only a town allows: go to a town.
         bool hurt = Me.Wounded > Me.Men / 2;
-        if ((hurt || Affordable().Any() || c.PrisonerCount > 20) && friendlyTowns.Count > 0)
+        if ((hurt || Affordable().Any(a => !c.CanTrainHere(Me, a.To)) || c.PrisonerCount > 20) && friendlyTowns.Count > 0)
         {
             var t = Nearest(friendlyTowns);
             if (c.SettlementAt(Me.Pos) == t) { if (hurt) c.Rest(12); else visited.Remove(t.Id); }

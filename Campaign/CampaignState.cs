@@ -332,6 +332,8 @@ public sealed class Settlement
     public float BuildUntil;
     /// Tax level: 0 low, 1 normal, 2 high (set by the holder; a seat's villages pay at its rate).
     public int Tax = 1;
+    /// A village's holder (docs/HOLDS.md HD3): the id of the castle or town whose demesne it is (-1 until bound; not villages).
+    public int Holder = -1;
 }
 
 /// A siege work (docs/SIEGECRAFT.md A3): which engine, and the hour it is ready.
@@ -858,6 +860,15 @@ public sealed class Balance
     /// how often the AI picks a fight on its own.
     public float LordAggression = 0.35f;
     public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 0.6f, DrillTown = 1.2f;
+    /// The highest tier men may be promoted into away from a town or yard (docs/HOLDS.md HD1).
+    public int CampTier = 3;
+    /// The castle's MUSTER (docs/HOLDS.md HD2): the highest tier its yard trains, the castellan's cut on pooled recruits, the
+    /// granary's reserve (garrison days kept back) and how many mouths a day of its stores feeds, the stables' stock and breeding.
+    public int CastleYardTier = 5;
+    public float MusterMarkup = 1.15f, GranaryReserve = 10, GranaryMouths = 60, CastleHorsesMax = 15, CastleHorsesWeek = 4;
+    /// Villages and their castle (HD3): days of stores a whole village sends a week at prosperity 50 (scaled by it), how near
+    /// its villages (km before Spread) the castellan rides out at brigands, and by how much his garrison must outweigh them.
+    public float GranaryPrice = 0.8f, VillageFood = 2.5f, SallyReach = 14, SallyOdds = 1.5f;
     public float TownIncome = 150, CastleIncome = 90, VillageIncome = 40, LordWage = 1.3f;
     public float TruceDays = 30, BountyBandits = 50, BountyLord = 120;
     /// Goblin holdouts (docs/archive/CREATURES.md): how many per forest or hill province, the daily chance one is raised while

@@ -15,7 +15,10 @@ public partial class Campaign
     int Slots => Rules.CompanySlots(Captain);
     int RoomForMen => Rules.MenLimit(Captain) - Player.Men - Player.Wounded;
 
-    public string? RecruitLevies(Settlement s, int n)
+    public string? RecruitLevies(Settlement s, int n) => RecruitLevies(s, n, 1);
+
+    /// Recruit from a village at its price times `markup` (the castle muster adds the castellan's cut, docs/HOLDS.md HD2).
+    string? RecruitLevies(Settlement s, int n, float markup)
     {
         // Only some of them will follow you: how many depends on what their lord thinks of you (4.2).
         if (s.Kind == SettlementKind.Village && Captain.Corruption >= HuntedAt) return "THE VILLAGE BARS ITS GATES TO YOU"; // the Black Flame (K7)
@@ -23,7 +26,7 @@ public partial class Campaign
         n = Math.Min(n, RecruitsForYou(s));
         if (n <= 0) return s.Recruits > 0 ? "THEY WILL NOT FOLLOW YOU: THEIR LORD THINKS ILL OF YOU" : "NO RECRUITS";
         string levy = RecruitTroopFor(s);
-        float each = Rules.PerMan(Troops.Get(levy).Cost) * RecruitPriceFactor(s);
+        float each = Rules.PerMan(Troops.Get(levy).Cost) * RecruitPriceFactor(s) * markup;
         int cost = (int)MathF.Ceiling(n * each);
         if (S.Gold < cost) return $"NEEDS {cost} CROWNS";
         if (n > RoomForMen) return "PARTY IS FULL (RENOWN RAISES THE LIMIT)";

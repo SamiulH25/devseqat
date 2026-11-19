@@ -43,7 +43,7 @@ sealed class ScreenHost : Game
     {
         ("town-train", "TRAIN", "town"), ("town-recruit", "RECRUIT", "town"), ("town-hire", "MERCENARIES", "town"), ("town-tavern", "TAVERN", "town"),
         ("town-market", "MARKET", "town"), ("town-workshop", "WORKSHOP", "town"), ("town-food", "FOOD", "town"), ("town-rest", "REST", "town"),
-        ("town-hall", "HALL", "town"), ("town-armourer", "ARMOURER", "town"), ("castle-esquires", "ESQUIRES", "castle"), ("town-captives", "CAPTIVES", "town"), ("town-contract", "CONTRACT", "town"), ("castle-rest", "REST", "castle"), ("castle-contract", "CONTRACT", "castle"),
+        ("town-hall", "HALL", "town"), ("town-armourer", "ARMOURER", "town"), ("castle-muster", "MUSTER", "castle"), ("castle-esquires", "ESQUIRES", "castle"), ("town-captives", "CAPTIVES", "town"), ("town-contract", "CONTRACT", "town"), ("castle-rest", "REST", "castle"), ("castle-contract", "CONTRACT", "castle"),
         ("village-recruit", "RECRUIT", "village"), ("village-forage", "FORAGE", "village"), ("village-elders", "ELDERS", "village"),
         ("fief-fief", "FIEF", "fief"), ("fief-garrison", "GARRISON", "fief"), ("upgrade-tree", "UPGRADE", "town"), ("party-board", "PARTY", "town"),
     };

@@ -117,6 +117,112 @@ public static partial class SelfTest
         Check(c.NextStep().Where == "TRAIN", "a ready man points at the training yard");
     }
 
+    /// HD1 (docs/HOLDS.md): men rise to tier III in camp; tier IV and up wait for a town's yard.
+    static void CampPromotion()
+    {
+        var c = Campaign.New(92);
+        var town = c.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == 0);
+        var open = Enumerable.Range(1, 40).Select(i => town.Pos + new Vector2(i * 3f, 0)).First(q => c.SettlementAt(q, 12) == null);
+        c.Player.Pos = open;
+        Check(!c.InTown(c.Player) && !c.Has("Drillmaster"), "the party stands in the open, no Drillmaster");
+        var lv = c.NewCompany("levies", "infantry", 10, 1000, town);
+        c.Player.Companies.Add(lv);
+        Check(c.Promotable(c.Player, lv, lv.Stack("levies"), "shieldmen", 1, 1000, out _, out string why) == 1, "levies rise to tier II in camp: " + why);
+        var ma = c.NewCompany("men_at_arms", "infantry", 10, 5000, town);
+        c.Player.Companies.Add(ma);
+        var st = ma.Stack("men_at_arms");
+        var up = st.Type.UpgradesTo.First(t => Troops.Get(t).Tier > 3 && c.CanEnterLine(c.Player, ma, st.Troop, t, out _));
+        Check(c.Promotable(c.Player, ma, st, up, 1, 5000, out _, out why) == 0 && why.Contains("TOWN"), $"tier III to {up} needs a town: " + why);
+        Check(c.NextStep().Text.Contains("PROMOTE THEM"), "the next step says to promote in camp: " + c.NextStep().Text);
+        c.Player.Pos = town.Pos;
+        Check(c.Promotable(c.Player, ma, st, up, 1, 5000, out _, out why) == 1, "and rises in the town: " + why);
+    }
+
+    /// HD2 (docs/HOLDS.md): a castle musters its villages' men in one place, trains to tier V, sells horses and its stores.
+    static void CastleMuster()
+    {
+        var c = Campaign.New(93);
+        var castle = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && !c.Refuses(s) && c.Demesne(s).Count() >= 2)
+            .OrderByDescending(s => c.Demesne(s).Count()).First();
+        c.Player.Pos = castle.Pos;
+        c.S.Gold = 100000;
+        Check(c.CannotMuster(castle) == null, "a friendly castle musters");
+        var villages = c.Demesne(castle).ToList();
+        foreach (var v in villages) { v.Recruits = c.Scaled(6); v.ThreatUntil = 0; }
+        int pool = c.MusterRecruits(castle), before = c.Player.Men;
+        Check(pool > 0 && pool <= villages.Sum(v => v.Recruits), $"its pool is its villages' men ({pool} from {villages.Count} villages)");
+        int villagePrice = villages.Max(c.LevyPrice);
+        Check(c.MusterPrice(castle) > villagePrice, $"the castellan takes a cut ({c.MusterPrice(castle)} against {villagePrice})");
+        Check(c.Muster(castle, pool) == null && c.Player.Men > before, $"mustered {c.Player.Men - before} men");
+        Check(c.MusterRecruits(castle) < pool, "the villages' men are drawn down");
+        // The yard: tier V here, tier VI and up still a town.
+        Check(c.CanTrainHere(c.Player, Troops.All.First(t => t.Tier == 5).Id), "the castle yard trains to tier V");
+        Check(!c.CanTrainHere(c.Player, Troops.All.First(t => t.Tier == 6).Id), "but not to tier VI");
+        // Stables and granary.
+        castle.Horses = c.Scaled(4);
+        int horses = c.Player.Horses;
+        Check(c.BuyHorses(castle, 2) == null && c.Player.Horses == horses + 2, "the stables sell remounts");
+        castle.Supplies = 40;
+        int spare = c.GranaryDays(castle);
+        float food = c.Player.Food;
+        Check(c.GranaryPrice(7) < c.FoodPrice(7), "the granary sells below the market");
+        Check(spare > 0 && c.BuyFromGranary(castle, 3) == null && c.Player.Food == food + Math.Min(3, spare) && castle.Supplies < 40, $"food comes from the castle's stores ({spare} days to spare, {castle.Supplies:0.0} left)");
+        castle.Supplies = Balance.Get().GranaryReserve;
+        Check(c.GranaryDays(castle) == 0 && c.BuyFromGranary(castle, 3) != null, "a bare granary sells nothing");
+    }
+
+    /// HD3 (docs/HOLDS.md): every village has a holder; a castle's stores, muster and foals follow its villages, raiding them
+    /// cuts all three, and its garrison rides out at a weak band near them.
+    static void VillagesFeedCastle()
+    {
+        var c = Campaign.New(94);
+        var villages = c.S.Settlements.Where(v => v.Kind == SettlementKind.Village).ToList();
+        int own = villages.Count(v => v.Holder >= 0 && c.S.Settlements[v.Holder].Province == v.Province);
+        Check(villages.All(v => v.Holder >= 0 && c.S.Settlements[v.Holder].Kind != SettlementKind.Village) && own > villages.Count * 0.7f,
+            $"every village is bound to a castle or town ({own} of {villages.Count} in its own province)");
+        var castle = c.S.Settlements.Where(s => s.Kind == SettlementKind.Castle && c.Demesne(s).Count() >= 2).OrderByDescending(s => c.Demesne(s).Count()).First();
+        var held = c.Demesne(castle).ToList();
+        foreach (var v in held) { v.ThreatUntil = 0; v.Recruits = c.Scaled(5); v.Prosperity = 50; }
+        float food = c.VillageFood(castle);
+        int pool = c.MusterRecruits(castle);
+        Check(food > 0 && pool > 0 && c.HeldShare(castle) == 1, $"whole villages feed the castle ({food:0.0} days a week, {pool} men)");
+        castle.Supplies = 5;
+        castle.Besieged = false;
+        c.GarrisonsWeekly();
+        float fed = castle.Supplies;
+        Check(Math.Abs(fed - (5 + 2 + food)) < 0.01f, $"the week's stores come from its villages ({fed:0.0})");
+        // Raid one village: the castle's stores, muster and share fall.
+        held[0].ThreatUntil = (float)c.S.Hours + 7 * 24;
+        Check(c.VillageFood(castle) < food && c.MusterRecruits(castle) < pool && c.HeldShare(castle) < 1, "a raided village cuts its castle's food, men and refill");
+        // The castellan sallies against a weak band near his villages.
+        held[0].ThreatUntil = 0;
+        castle.Garrison.Clear();
+        castle.Garrison.Add(c.NewCompany("men_at_arms", "infantry", c.Scaled(60), 0));
+        var band = new Party { Id = c.S.NextId++, Kind = PartyKind.Bandit, Name = "Test Band", Pos = held[0].Pos + new Vector2(2, 0), Tier = 1 };
+        band.Companies.Add(c.NewCompany("levies", "infantry", c.Scaled(8), 0));
+        foreach (var other in c.S.Parties.Where(p => p.Kind is PartyKind.Bandit or PartyKind.Monster)) other.Down = true; // one sally a day: only ours near
+        c.S.Parties.Add(band);
+        c.CastellansDaily();
+        Check(band.Down, "the garrison rides out and scatters a weak band near its villages");
+    }
+
+    /// HD3: caravans run town to town, and with few towns the sea lanes keep the roads busy.
+    static void CaravansTownToTown()
+    {
+        var c = Campaign.New(95);
+        int wanted = c.CaravansWanted;
+        for (int i = 0; i < 6; i++)
+        {
+            var car = c.SpawnCaravan();
+            if (car == null) continue;
+            Check(c.SettlementById(car.HomeId).Kind == SettlementKind.Town && c.SettlementById(car.GoalSettlement).Kind == SettlementKind.Town, "a caravan runs from a town to a town");
+        }
+        var towns = c.S.Settlements.Where(t => t.Kind == SettlementKind.Town).ToList();
+        foreach (var t in towns.Skip(towns.Count / 4)) t.Kind = SettlementKind.Castle; // three towns in four become castles
+        int few = c.CaravansWanted;
+        Check(few >= 2 && few > towns.Count / 4 / 2, $"fewer towns do not empty the roads ({wanted} -> {few} caravans for {towns.Count / 4} towns)");
+    }
+
     /// A level-2 army on contract, sitting still, stays solvent for 8 weeks.
     static void Economy()
     {
@@ -717,9 +823,9 @@ public static partial class SelfTest
         Check(c.Player.Companies.Count == companies + 1, "only one company is raised for them");
         Check(co.Men == men - 2 && co.Stacks.Count == 2, "the foot company holds levies and shieldmen");
         Check(co.Stacks.All(st => st.Xp <= st.PoolCap + 1e-3f), "pools stay under their caps after promotion");
-        // Promotion needs a town; out in the field it is refused with a reason.
+        // Promotion past tier III needs a town (HD1); out in the field it is refused with a reason.
         c.Player.Pos = town.Pos + new Vector2(40, 40);
-        Check(c.Promote(co, lev, "shieldmen", 1) == "NEEDS A TOWN", "promotion out in the field is refused");
+        Check(c.SettlementAt(c.Player.Pos) != null || !c.CanTrainHere(c.Player, Troops.All.First(t => t.Tier == 4).Id), "promotion past tier III out in the field is refused");
         // Moving and splitting stacks.
         Check(c.SplitStack(co, co.Stack("shieldmen"), 2) == null && co.Stack("shieldmen").Men == 3, "a stack can be split into a new company");
         var split = c.Player.Companies.First(k => k.Name.EndsWith(" II"));

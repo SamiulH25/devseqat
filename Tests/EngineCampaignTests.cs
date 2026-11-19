@@ -66,8 +66,10 @@ public static partial class SelfTest
         Check(c.S.Gold == 5000 - 150 - 400 - 60 - 250, "works are paid for");
         Check(c.ReadyWorks(c.Player).Count() == 0, "nothing is built at once");
         castle.Supplies = 99;
+        // Allied lords stay home this week: one storming the castle would end our siege and test the world, not the works.
+        foreach (var l in c.S.Parties.Where(p => p.Kind == PartyKind.Lord && !c.Hostile(c.Player, p))) { l.Down = true; l.DownUntil = (float)c.S.Hours + 8 * 24; }
         for (double end = c.S.Hours + 24 * 7; c.S.Hours < end - 1e-3 && c.Besieging == castle;) { c.Rest(1); c.Encounter = null; c.Arrived = null; }
-        Check(c.Besieging == castle, "the siege holds for the week");
+        Check(c.Besieging == castle, $"the siege holds for the week ({castle.Name}, realm {castle.Faction}, besieged {castle.Besieged}, men {c.Player.Men}, food {c.Player.Food:0}, supplies {castle.Supplies:0})");
         var ready = c.ReadyWorks(c.Player).ToList();
         Console.WriteLine($"siege camp: ready {string.Join(",", ready)}, walls battered {castle.Battered:0.00}, wall factor {plain:0.00} -> {c.WallFactor(castle, true, ready):0.00}");
         Check(ready.Count == 4, "a week builds all four");

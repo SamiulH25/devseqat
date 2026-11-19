@@ -56,6 +56,7 @@ public sealed partial class Campaign
         RegisterOwnForm(); // your own form is made in play (MA6)
         MigrateGear();
         foreach (var d in S.Divisions) d.Goal = Ironfield.Goal.FromName(d.Goal).Name; // old goal names to posts (OF6)
+        BindVillages(); // HD3: each village's holder, once (old saves too)
         FillNatures();
         LearnForms();
         SyncOrders();
@@ -111,7 +112,7 @@ public sealed partial class Campaign
         foreach (var v in s.Settlements)
         {
             v.Recruits = v.Kind == SettlementKind.Village ? c.Scaled(4 + c.rng.Next(5)) : 0;
-            v.Horses = v.Kind == SettlementKind.Town ? c.Scaled(10) : 0;
+            v.Horses = v.Kind == SettlementKind.Town ? c.Scaled(10) : v.Kind == SettlementKind.Castle ? c.Scaled(B.CastleHorsesMax / 2) : 0;
             if (v.Kind == SettlementKind.Town) c.RefreshMercenaries(v);
             c.RaiseGarrison(v);
         }
@@ -138,7 +139,7 @@ public sealed partial class Campaign
         s.Parties.Add(first);
         if (s.Captain.Contract >= 0) c.Log($"You sign on with the {c.FactionNames[realm]} as a free captain. Their steward pays 85% of your upkeep each week.");
         else c.Log("You fly your own banner. No steward pays your upkeep: take contracts, loot and ransoms.");
-        c.Log("Levies upgrade after a few battles: visit a town's training yard.");
+        c.Log("Levies earn promotion in a few battles: men rise to tier III in camp, higher at a town's training yard.");
         if (making != null) c.ApplyMaking(making, capital);
         return c;
     }
@@ -472,6 +473,7 @@ public sealed partial class Campaign
         WantsDaily(); // lords' wants (Wants.cs)
         FactionAI();
         SiegesDaily();
+        CastellansDaily(); // HD3
         RainDaily();
         FiefsDaily();
         OrdersDaily();
@@ -555,6 +557,7 @@ public sealed partial class Campaign
             RefreshMercenaries(t);
             t.Horses = Math.Min(Scaled(Level(t, "stables") > 0 ? 35 : 20), t.Horses + Scaled(Level(t, "stables") > 0 ? 10 : 5));
         }
+        CastleStablesWeekly();
         foreach (var t in S.Settlements.Where(t => Level(t, "kennel") > 0)) t.Hounds = Math.Min(Scaled(B.KennelMax), t.Hounds + Scaled(B.KennelPerWeek));
         GarrisonsWeekly();
         PrisonersWeekly();

@@ -33,6 +33,7 @@ partial class MapScreen
             case "ARMOURER": ArmourerWell(s, body); break;
             case "WORKSHOP": WorkshopTab(s, body); break;
             case "TRAIN": TrainTab(s, body); break;
+            case "MUSTER": MusterTab(s, body); break;
             case "REST": RestTab(s, body); break;
             case "FOOD": FoodTab(s, body); break;
             case "FORAGE": ForageTab(s, body); break;
@@ -57,7 +58,8 @@ partial class MapScreen
         {
             SettlementKind.Village when C.Refuses(s) => new[] { "FORAGE" },
             SettlementKind.Village => new[] { "RECRUIT", "FOOD", "FORAGE", "REST", "ELDERS" },
-            SettlementKind.Castle => new[] { "HALL", "ESQUIRES", "REST", "FOOD", "CAPTIVES", "CONTRACT" },
+            SettlementKind.Castle when C.Refuses(s) => new[] { "HALL", "CAPTIVES", "CONTRACT" },
+            SettlementKind.Castle => new[] { "MUSTER", "TRAIN", "HALL", "ESQUIRES", "REST", "CAPTIVES", "CONTRACT" },
             _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "TAVERN", "HALL", "MARKET", "ARMOURER", "WORKSHOP", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
         };
         return tabs.Where(t => t switch { "MERCENARIES" => s.Mercenaries.Count > 0, "CAPTIVES" => C.PrisonerCount > 0, _ => true })

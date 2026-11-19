@@ -51,7 +51,7 @@ public sealed partial class Campaign
     public static float MaxSupplies(Settlement s) => 30 + 10 * Level(s, "walls") + 15 * Level(s, "granary");
 
     /// Weekly: each faction pays to bring its garrisons back up (not while besieged); wounded heal.
-    void GarrisonsWeekly()
+    internal void GarrisonsWeekly()
     {
         foreach (var s in S.Settlements.Where(s => s.Kind != SettlementKind.Village && !s.Besieged))
         {
@@ -62,11 +62,12 @@ public sealed partial class Campaign
             {
                 int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * (0.8f + 0.07f * Level(s, "walls")) * GarrisonTemper(s)) - c.Men;
                 int n = Math.Min(Math.Min(want, Rules.Room(c, c.Troop)), (int)(MathF.Max(0, fs.Treasury - 300) / Rules.PerMan(20))); // the chest keeps the floor lords' wages keep
+                if (s.Kind == SettlementKind.Castle) n = (int)(n * HeldShare(s)); // a castle fills its ranks from its villages (HD3)
                 if (n <= 0) continue;
                 Rules.AddMen(c, c.Troop, n);
                 fs.Treasury -= n * Rules.PerMan(20);
             }
-            s.Supplies = MathF.Min(MaxSupplies(s), s.Supplies + 7);
+            s.Supplies = MathF.Min(MaxSupplies(s), s.Supplies + (s.Kind == SettlementKind.Castle ? 2 + VillageFood(s) : 7)); // a castle lives off its villages (HD3)
         }
     }
 
@@ -194,7 +195,7 @@ public sealed partial class Campaign
         // province changes hands once no seat in it holds out for the old realm (with one seat a province, as every generated
         // map has, both are the whole province, as before).
         if (!S.Settlements.Any(t => t != s && t.Province == s.Province && t.Kind != SettlementKind.Village && t.Faction == old)) S.Provinces[s.Province].Faction = f;
-        foreach (var v in S.Settlements.Where(v => v.Province == s.Province && v.Kind == SettlementKind.Village && SeatOf(v) == s)) { v.Faction = f; v.Owner = owner; }
+        foreach (var v in S.Settlements.Where(v => v.Kind == SettlementKind.Village && SeatOf(v) == s)) { v.Faction = f; v.Owner = owner; }
         foreach (var p in S.Parties.Where(p => p.SiegeTarget == s.Id)) { p.SiegeTarget = -1; if (p.Kind == PartyKind.Lord) p.TaskUntil = 0; }
         RaiseGarrison(s, 0.4f);
         Score(f, old, 600);

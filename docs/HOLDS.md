@@ -1,6 +1,6 @@
 # Holds: a land of castles, few towns (sprint plan)
 
-Status: **planned** (2026-11-18), nothing built. The owner's direction, from the review of the drawn world (WM6):
+Status: **in progress**. HD1-HD3 built 2026-11-19; HD4 waits on the owner's notes. Planned 2026-11-18. The owner's direction, from the review of the drawn world (WM6):
 
 > Towns and cities were rare in medieval times; castles and holds were far, far more common.
 
@@ -45,7 +45,12 @@ Still open: **world size** (see HD6).
 
 ## Phases
 
-### HD1: Promotion in camp up to tier III
+### HD1: Promotion in camp up to tier III (built 2026-11-19)
+As built: `Campaign.CanTrainHere(p, to)` (Companies.cs) allows a target of tier `Balance.CampTier` (3) or below anywhere;
+the reason is `TrainPlaceNeed` ("NEEDS A TOWN (TIER IV+)"). `NextStep` says PROMOTE THEM (P) when a ready stack can rise
+where it stands. The pilot promotes every think and goes to a town only for promotions a town alone allows. Test `CampPromotion`.
+`--pacing 8` against the same tree without HD1: average VASSAL day 51 -> 46, LORD 102 -> 98, MARSHAL 172 -> 160, first tier V
+day 105 -> 69. The base was already early on several runs; no retune yet (revisit after HD4).
 - `Campaign.CanTrainHere(p)` takes the target troop. A promotion **to tier I-III** is allowed anywhere. A promotion to
   tier IV or more still needs a town, a castle with a yard (HD2), your own fief's yard, or Drillmaster.
 - Drillmaster (Skills.cs) keeps its worth: "promote men of any tier in camp".
@@ -56,7 +61,15 @@ Still open: **world size** (see HD6).
   until the party stands in a town.
 - Balance: run `--pacing 8`. Career stages may come sooner, since raw men no longer wait for a town.
 
-### HD2: The castle's own function, the MUSTER
+### HD2: The castle's own function, the MUSTER (built 2026-11-19)
+As built: `Campaign/Muster.cs` (`Demesne`, `MusterRecruits`, `MusterPrice`, `CannotMuster`, `Muster`, `CastleYard`,
+`GranaryDays`, `GranaryPrice`, `BuyFromGranary`, `CastleStablesWeekly`); tab `MapScreen.Castle.cs` `MusterTab`. Castle tabs:
+MUSTER, TRAIN, HALL, ESQUIRES, REST, CAPTIVES, CONTRACT (FOOD went into the granary; a castle at war with you shows only HALL,
+CAPTIVES, CONTRACT). Deviations: the muster recruits each village's own men at its own culture and price (+ `MusterMarkup`),
+not all at the castle's culture. The granary is a cheaper store (`GranaryPrice` 0.8 of the market) that runs dry
+(`GranaryReserve` days kept for the garrison, one store day feeds `GranaryMouths` 60 men); plain `BuyFood` is unchanged. Castles
+start with half `CastleHorsesMax` (15) horses and breed `CastleHorsesWeek` (4) a week. The great castle's smith waits for hold
+sizes (HD4/HD5). Test `CastleMuster`; shot `castle-muster.png`.
 A castle is where its lord gathers men, horses and food from his villages. The MUSTER tab replaces town trips for
 everything but trade:
 - **Muster:** recruit from the castle's whole demesne in one place. Its bound villages' recruits pooled (HD3), at the
@@ -73,7 +86,17 @@ everything but trade:
   existing `Card`, `Stat` and `JobCards` pieces, with a picture tile in `PlaceRail`.
 - Tests: `CastleMuster` covers the pooled recruits, the yard's tier cap, and the stables and granary prices.
 
-### HD3: Villages hold castles together
+### HD3: Villages hold castles together (built 2026-11-19)
+As built: `Campaign/Holders.cs` (`BindVillages`, `HeldShare`, `VillageFood`, `CastellansDaily`); `Settlement.Holder` (saved;
+bound in the `Campaign` constructor, so old saves get one too), read by `SeatOf`. Holder = the nearest seat in the village's
+province; 52 of the drawn map's 280 villages lie in provinces with no seat (before, they had no seat at all) and go to their
+realm's nearest seat until HD4 gives every province one. A castle's weekly stores are 2 + `VillageFood` (2.5 a whole village
+at prosperity 50, scaled by it) instead of a flat 7; its garrison refill and foals scale with `HeldShare`; whole villages take
+0.1 a day off its unrest ("VILLAGES HELD"). The castellan rides out once a day at the nearest brigand band or beast pack near
+his villages (`SallyReach` 14 km) that his garrison outweighs `SallyOdds` (1.5) to one (not trolls, wyverns, the dead, lairs or
+named brigand kings). `CaravansWanted` = max(2, towns / 2, (towns + sea lanes) / 3): unchanged on today's map, 14 with 18
+towns. Not built: the carts between a castle and its villages (drawing only; with HD5). Tests `VillagesFeedCastle`,
+`CaravansTownToTown`.
 - Each village gets one **holder**: a castle or town, chosen once when the map is built, as the nearest seat in its
   province, reachable by road, and kept in the save (`Settlement.Holder`; `SeatOf` reads it).
 - **What villages give their castle:**

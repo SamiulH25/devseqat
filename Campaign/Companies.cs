@@ -195,9 +195,18 @@ public sealed partial class Campaign
     /// A training yard of level II or III in the fief you stand in cuts promotion gold 10% or 20% (F6).
     float YardDiscount => SettlementAt(Player.Pos) is Settlement s && s.Owner == Player.Id ? 1 - 0.1f * Math.Max(0, Level(s, "yard") - 1) : 1;
 
-    /// Where promotions may happen: a town's training yard, or anywhere with the Drillmaster perk.
-    public bool CanTrainHere(Party p) => p != Player || InTown(Player) || Has("Drillmaster")
-        || SettlementAt(Player.Pos) is Settlement s && s.Owner == Player.Id && Level(s, "yard") > 0;
+    /// Where promotions may happen (docs/HOLDS.md HD1-HD2): into a troop of tier `Balance.CampTier` (III) or below anywhere; up to
+    /// `CastleYardTier` (V) at a castle of a realm you serve or are at peace with; any tier at a town's training yard, your own
+    /// fief's yard, or anywhere with the Drillmaster perk. With no troop: may any tier rise here?
+    public bool CanTrainHere(Party p, string? to = null) => p != Player || to != null && Troops.Get(to).Tier <= B.CampTier
+        || to != null && CastleYard(SettlementAt(Player.Pos), Troops.Get(to).Tier)
+        || InTown(Player) || Has("Drillmaster") || SettlementAt(Player.Pos) is Settlement s && s.Owner == Player.Id && Level(s, "yard") > 0;
+
+    static readonly string[] Numerals = { "", "I", "II", "III", "IV", "V", "VI", "VII" };
+
+    /// Why a promotion cannot happen here, in the words the UI shows.
+    public string TrainPlaceNeed => SettlementAt(Player.Pos) is { Kind: SettlementKind.Castle } c && CannotMuster(c) == null
+        ? $"NEEDS A TOWN (TIER {Numerals[Math.Clamp(B.CastleYardTier + 1, 0, 7)]}+)" : $"NEEDS A TOWN OR CASTLE (TIER {Numerals[Math.Clamp(B.CampTier + 1, 0, 7)]}+)";
 
     /// How many men of a stack could be promoted to `to` now (at most `want`), and what that costs; a reason when it is none.
     public int Promotable(Party p, CompanyRecord c, TroopStack s, string to, int want, float gold, out int cost, out string reason, bool ignorePlace = false)
@@ -208,7 +217,7 @@ public sealed partial class Campaign
         if (!from.UpgradesTo.Contains(to)) { reason = "NOT ON THIS LINE"; return 0; }
         if (!CanEnterLine(p, c, s.Troop, to, out reason)) return 0;
         if (s.Ready <= 0) { reason = $"NEEDS {from.UpgradeXp} XP"; return 0; }
-        if (!ignorePlace && !CanTrainHere(p)) { reason = "NEEDS A TOWN"; return 0; }
+        if (!ignorePlace && !CanTrainHere(p, to)) { reason = TrainPlaceNeed; return 0; }
         var free = new Dictionary<CompanyRecord, float>();
         int horses = p.Horses, extra = 0, n = 0;
         float w = Rules.TierWeight(Troops.Get(to).Tier), wFrom = Rules.TierWeight(from.Tier);

@@ -49,7 +49,7 @@ public static class Skills
         } },
         new() { Id = "Training", Name = "Training", Rises = "MEN PROMOTED", Governs = "DRILL XP +1% PER 2 POINTS", Perks =
         {
-            new() { Id = "Drillmaster", Name = "Drillmaster", Text = "PROMOTE MEN IN CAMP, NOT ONLY IN TOWNS" },
+            new() { Id = "Drillmaster", Name = "Drillmaster", Text = "PROMOTE MEN OF ANY TIER IN CAMP" },
             new() { Id = "VeteranCadre", Name = "Veteran Cadre", Text = "RECRUITS JOIN WITH 20 XP EACH" },
             new() { Id = "CheapSteel", Name = "Cheap Steel", Text = "PROMOTIONS COST 20% LESS" },
             new() { Id = "Sergeants", Name = "Sergeants' Mess", Text = "COMPANIES FIND SERGEANTS TWICE AS OFTEN" },

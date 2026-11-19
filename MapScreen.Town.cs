@@ -14,13 +14,14 @@ partial class MapScreen
         ["TAVERN"] = ("mug", "TAVERN"), ["HALL"] = ("crown", "HALL"), ["MARKET"] = ("scales", "MARKET"), ["ARMOURER"] = ("anvil", "ARMOURER"),
         ["WORKSHOP"] = ("hammer", "WORKSHOP"), ["FOOD"] = ("bread", "FOOD"), ["REST"] = ("bed", "REST"), ["FORAGE"] = ("wheat", "FORAGE"),
         ["CAPTIVES"] = ("chain", "CAPTIVES"), ["CONTRACT"] = ("scroll", "CONTRACT"), ["ELDERS"] = ("house", "ELDERS"), ["CHAPTER"] = ("cross", "CHAPTER"),
-        ["FIEF"] = ("flag", "FIEF"), ["GARRISON"] = ("tower", "GARRISON"), ["HARBOUR"] = ("anchor", "HARBOUR"),
+        ["MUSTER"] = ("flag", "MUSTER"), ["FIEF"] = ("flag", "FIEF"), ["GARRISON"] = ("tower", "GARRISON"), ["HARBOUR"] = ("anchor", "HARBOUR"),
     };
 
     /// The number a tab's tile carries (0 = none): what waits for you there.
     int TabCount(string t, Settlement s) => t switch
     {
-        "TRAIN" => C.Player.Companies.Sum(c => c.Stacks.Sum(st => st.Ready)),
+        "TRAIN" => C.Player.Companies.Sum(c => c.Stacks.Where(st => st.Type.UpgradesTo.Any(t => C.CanTrainHere(C.Player, t))).Sum(st => st.Ready)),
+        "MUSTER" => C.CannotMuster(s) == null ? C.MusterRecruits(s) : 0,
         "RECRUIT" => C.RecruitsForYou(s),
         "MERCENARIES" => s.Mercenaries.Count,
         "ESQUIRES" => C.CannotRecruitNobles(s) == null ? s.Nobles : 0,
