@@ -696,7 +696,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Captain.cs (330 lines)
 - **MapScreen** (class, L7): SkillsPanel:15, CaptainCard:30, SkillTree:85, AuraBlock:159, PathBlock:177, OwnFormBlock:200, FlameBlock:227, FormList:251, CaptainRecord:292
 
-## MapScreen.cs (847 lines)
+## MapScreen.cs (848 lines)
 - **MapScreen** (class, L9): Save:18, MapScreen:61, Prepared:75, Prepare:80, Open:90, ShowResults:111, Pressed:119, Update:123, readonly:222, LaterTips:236, Pan:260, ScreenKeys:262, OpenScreen:270, Soundscape:278, CameFrom:340, Camera:342, Rename:366, Trails:379, MapPick:392, OnScreen:398, PickAt:413, ClickWorld:444, Ground:453, Draw:476, UpdateBearers:569, FinishLife:622, UpdateLife:629, BuildSprites:658, BuildSpritesInner:665, DrawSprites:672, G:684, DrawLines:686, Stage:734
 
 ## MapScreen.Dialogs.cs (279 lines)
@@ -823,8 +823,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Quality** (enum, L8)
 - **Shading** (class, L12): Source:37, Shading:47, AimSun:90, Setup:131, Blank:160, Scene:167, PostToScreen:182, Dispose:202
 
-## Sky.cs (113 lines)
-- **Sky** (class, L7): Sky:28, Set:36, Moonlit:83, Omen:102
+## Sky.cs (117 lines)
+- **Sky** (class, L7): Sky:31, Set:39, Moonlit:87, Omen:106
 
 ## SoundDump.cs (76 lines)
 - **SoundDump** (class, L4): Run:6, WriteMono:55, WriteStereo:66

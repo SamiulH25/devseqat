@@ -249,6 +249,11 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
   1,200 km, ringed by sea). Judged with Haiku 5.5 (the T3 judge was not reachable): 6, 6.5, 6.5, then 7/10 once night
   read as night. Wrong claims checked against the pixels: the close minimap had no sea, the Tundra shot was a battle,
   then that it showed the desert (it is Skane; the Sunward tooltip in it is a stale hover from the Desert shot before).
-  Left for the polish pass: night grass is one slate tone and its roads read glossy like water, a castle near lost at
-  04:00, map labels stacking when zoomed close, field contrast in winter, the river at mid zoom, Khaganate teal close to
-  Azure blue on the realm map, the realm map's sea without the minimap's shallows, the stale hover tooltip in shots.
+- **Map polish 1 (2026-11-18).** Night drains colour as well as cooling it (`Sky.NightHue` lowers the post saturation in
+  `Shading.PostToScreen`; the night grade eased to (0.74, 0.86, 1.08)), so brown and green no longer turn mauve. Roads
+  carry grit (three octaves of noise on `trodden` in world.glsl): they read as a smooth glossy tube without it. `Stage`
+  marks the view stale (`viewReady`), so a shot no longer hovers what lay under the mouse through the previous shot's
+  camera (the Sunward card in the Tundra shot). Judged 7/10 (Haiku). Still open: the roads' three lengthwise colour bands
+  (verge, rut, crown) read as corrugation; the Tundra map tint (`Lands`, 0.66, 0.67, 0.58) passes for sand in spring;
+  fields at 04:00 go grey-purple; Khaganate teal is close to Azure blue on the realm map; the realm map's sea has no
+  shallows. Checked and fine: winter field contrast, label stacking (placement keeps labels apart; two touch at most).

@@ -733,6 +733,7 @@ sealed partial class MapScreen
 
     public void Stage(string what, Settlement? s = null)
     {
+        hover = default; viewReady = false; // the camera jumps: no picking through the old view until Draw makes the new one
         switch (what)
         {
             case "siege": at = s; panel = PanelKind.Siege; break;

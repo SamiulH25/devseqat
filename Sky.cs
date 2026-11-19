@@ -16,6 +16,9 @@ public static class Sky
     public static float FogScale { get; private set; } = 1;
     /// How dark it is (0 = day, 1 = full night): torches and the map's lamplight use it.
     public static float Night { get; private set; }
+    /// How far the light's colour has gone to moonlight (0 = day, 0.8 = full night; not held back by a night floor). Night
+    /// drains colour as well as tinting it (Shading.PostToScreen).
+    public static float NightHue { get; private set; }
     public static float Rain { get; private set; }
     /// How strong cloud shadows are over the land (thin on a clear day, none under full overcast or at night), how wet the
     /// ground is, and snow cover (docs/archive/VISUALS.md V4).
@@ -44,6 +47,7 @@ public static class Sky
         float hue = n * 0.8f;                                                   // the light's colour goes fully to moonlight...
         n = MathF.Min(n, 1 - nightFloor);                                       // ...while the floor only keeps it bright enough to read
         Night = n;
+        NightHue = hue;
         Rain = w.Rain;
         float shown = elev > 0 ? elev : MathHelper.ToRadians(40);               // at night the moon lights from high up
         float showAz = elev > 0 ? az : az + MathF.PI;
@@ -73,7 +77,7 @@ public static class Sky
         Snow = w.Snow ? 0.8f : 0;
         var gold = new Vector3(1.06f, 0.98f, 0.86f);
         var cool = new Vector3(0.94f, 0.98f, 1.05f);
-        Grade = Vector3.Lerp(Vector3.Lerp(Vector3.Lerp(gold, Vector3.One, k), cool, Math.Clamp(w.Rain + w.Fog * 0.5f, 0, 1)), new Vector3(0.62f, 0.8f, 1.2f), hue); // night: the grade takes the green and warmth out
+        Grade = Vector3.Lerp(Vector3.Lerp(Vector3.Lerp(gold, Vector3.One, k), cool, Math.Clamp(w.Rain + w.Fog * 0.5f, 0, 1)), new Vector3(0.74f, 0.86f, 1.08f), hue); // night: the grade takes the green and warmth out
         baseSun = SunColor; baseSky = SkyColor; baseGround = GroundColor; baseHorizon = Horizon; baseZenith = Zenith; baseGrade = Grade;
         OmenDark = 0; Swirl = Vector2.Zero;
     }

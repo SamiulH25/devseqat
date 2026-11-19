@@ -265,6 +265,10 @@ void main()
     float trodden = step(-0.4, vUV.y) * step(vUV.y, -0.1); // roads (World.Water.cs `Trodden`)
     albedo = mix(albedo, vec3(0.9, 0.92, 0.96), Look.x * smoothstep(0.5, 0.85, n.y) * 0.85 * (1.0 - 0.8 * trodden)); // snow lies on what faces up, little on roads
     albedo *= 1.0 - Look.x * trodden * 0.3; // trodden snow: wet dark slush
+    // Grit on the road (the ribbon's colours are smooth bands; without it a road reads as a glossy tube, worst at night):
+    // clods a metre across, pebbles, and hoof-churned patches.
+    float grit = Noise2(vWorld.xz * 1.1) * 0.55 + Noise2(vWorld.xz * 4.3 + 7.0) * 0.3 + Noise2(vWorld.xz * 13.0 + 3.0) * 0.15;
+    albedo *= mix(1.0, 0.8 + 0.36 * grit, trodden);
 #ifdef FOLIAGE
     if (fieldTag > 0.5) // furrows and crop rows, fading out with distance before they could shimmer
     {

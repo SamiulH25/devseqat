@@ -189,7 +189,7 @@ sealed class Shading : IDisposable
         Post.Parameters["Scene"].SetValue(s);
         Post.Parameters["Texel"].SetValue(new Vector2(1f / s.Width, 1f / s.Height));
         var g = Looks.Grade;
-        Post.Parameters["Grade"].SetValue(new Vector4(g.X, g.Y, g.Z, fxaa ? 1 : 0)); // saturation, contrast, vignette, FXAA (Looks)
+        Post.Parameters["Grade"].SetValue(new Vector4(g.X * (1 - 0.55f * Ironfield.Sky.NightHue), g.Y, g.Z, fxaa ? 1 : 0)); // saturation (drained at night), contrast, vignette, FXAA (Looks)
         Post.Parameters["Tint"].SetValue(new Vector4(tint ?? Vector3.One, bloom));
         Post.Parameters["Awe"].SetValue(awe);
         Post.Parameters["Moment"].SetValue(moment);
