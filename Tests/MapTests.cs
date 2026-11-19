@@ -344,6 +344,25 @@ public static partial class SelfTest
         Check(m.Provinces.Any(p => p.Title.EndsWith("Sands")) && m.Provinces.Any(p => p.Title.EndsWith("Shore")), "the new lands are named on the map");
     }
 
+    /// The drawn map's field plots never touch one another or run down to the shore (pens crossed and ran onto the beach).
+    static void FieldsApart()
+    {
+        var m = Campaign.New(7, layout: WorldMap.DesignLayout).Map;
+        var f = m.BuildTerrain().Fields;
+        int touch = 0, wet = 0;
+        for (int i = 0; i < f.Count; i++)
+        {
+            for (int j = i + 1; j < f.Count; j++)
+                if (Vector2.DistanceSquared(f[i].Center, f[j].Center) < 40 * 40 && f[i].Overlaps(f[j], 1)) touch++;
+            foreach (var (u, v) in new[] { (-1f, -1f), (1f, -1f), (1f, 1f), (-1f, 1f) })
+                if (m.Landness(f[i].At(u * f[i].Half.X, v * f[i].Half.Y)) < 0.9f) { wet++; break; }
+        }
+        Console.WriteLine($"fields: {f.Count} plots, {touch} touching, {wet} at the shore");
+        Check(f.Count > 300, "the drawn map has its fields");
+        Check(touch == 0, $"no two plots touch ({touch})");
+        Check(wet == 0, $"no plot runs onto the shore ({wet})");
+    }
+
     static void DesignedMap()
     {
         var clock = System.Diagnostics.Stopwatch.StartNew();

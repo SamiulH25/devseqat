@@ -594,9 +594,18 @@ public sealed partial class WorldMap
         foreach (var f in fields.Where(f => f.Kind == FieldKind.Orchard)) // rows of small round fruit trees
         {
             var orng = new Random(f.Seed);
-            for (float u = -f.Half.X + 1.6f; u < f.Half.X - 1; u += 3.3f)
-                for (float v = -f.Half.Y + 1.6f; v < f.Half.Y - 1; v += 3.3f)
-                    foliage.Add(new Foliage(FoliageKind.Broadleaf, f.At(u, v), 1.15f + orng.NextSingle() * 0.2f, 0, orng.Next()));
+            if (Designed) // the drawn map: old trees in loose rows, some gone, none touching (a strict grid read as a ruled wood)
+                for (float u = -f.Half.X + 2.2f; u < f.Half.X - 1.5f; u += 4.4f)
+                    for (float v = -f.Half.Y + 2.2f; v < f.Half.Y - 1.5f; v += 4.4f)
+                    {
+                        if (orng.Next(100) < 22) continue;
+                        var at = f.At(u + (orng.NextSingle() - 0.5f) * 1.6f, v + (orng.NextSingle() - 0.5f) * 1.6f);
+                        foliage.Add(new Foliage(FoliageKind.Broadleaf, at, 0.8f + orng.NextSingle() * 0.35f, 0, orng.Next()));
+                    }
+            else
+                for (float u = -f.Half.X + 1.6f; u < f.Half.X - 1; u += 3.3f)
+                    for (float v = -f.Half.Y + 1.6f; v < f.Half.Y - 1; v += 3.3f)
+                        foliage.Add(new Foliage(FoliageKind.Broadleaf, f.At(u, v), 1.15f + orng.NextSingle() * 0.2f, 0, orng.Next()));
         }
         foreach (var p in Provinces)
         {

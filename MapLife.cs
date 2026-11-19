@@ -176,6 +176,14 @@ sealed partial class MapLife
         ? f.At((r.NextSingle() * 2 - 1) * f.Half.X * 0.85f, (r.NextSingle() * 2 - 1) * f.Half.Y * 0.8f)
         : h.Home + new Vector2(r.NextSingle() * 2 - 1, r.NextSingle() * 2 - 1) * h.Radius;
 
+    /// The nearest point to p well inside a pen (so a goal never lies past its fence).
+    static Vector2 Penned(FieldPlot f, Vector2 p)
+    {
+        var d = p - f.Center;
+        float u = Math.Clamp(Vector2.Dot(d, f.Axis), -f.Half.X * 0.8f, f.Half.X * 0.8f), v = Math.Clamp(d.X * -f.Axis.Y + d.Y * f.Axis.X, -f.Half.Y * 0.75f, f.Half.Y * 0.75f);
+        return f.At(u, v);
+    }
+
     /// One beast's moment: run from a party close by, else graze a while and amble to another spot.
     void Step(Herd h, Animal a, float dt, List<Vector2> parties)
     {
@@ -188,6 +196,7 @@ sealed partial class MapLife
             var away = a.Pos - th;
             away = away.LengthSquared() > 1e-4f ? Vector2.Normalize(away) : Vector2.UnitX;
             a.Goal = a.Pos + away * 6;
+            if (h.Plot is { } pen) a.Goal = Penned(pen, a.Goal); // a penned beast runs to the far fence, not into it
             a.Speed = h.Kind switch { Beast.Deer => 9, Beast.Rabbit => 7, Beast.Sheep => 3.2f, _ => 2.6f };
             a.Grazing = false;
             if (h.Kind == Beast.Rabbit && !a.Fleeing) a.Timer = 1.2f; // a dash, then down its hole
@@ -211,7 +220,7 @@ sealed partial class MapLife
         if (a.Speed > 0 && dist > 0.2f)
         {
             var next = a.Pos + to / dist * MathF.Min(dist, a.Speed * dt);
-            if (h.Plot is { } f && !f.Inside(next, -0.4f)) next = a.Pos + (f.Center - a.Pos) * 0.02f; // the fence holds them
+            if (h.Plot is { } f && !f.Inside(next, -0.4f)) { next = a.Pos; a.Goal = Within(h, rng); } // the fence holds them: stop and turn, no shove
             if (t.WaterDepth(next) <= 0) a.Pos = next;
             float want = MathF.Atan2(to.Y, to.X);
             a.Heading += MathHelper.WrapAngle(want - a.Heading) * MathF.Min(1, dt * 6);
@@ -339,7 +348,7 @@ sealed partial class MapLife
     {
         var f = new Vector2(MathF.Cos(a.Heading), MathF.Sin(a.Heading));
         var s = new Vector2(-f.Y, f.X);
-        float k = kind switch { Beast.Sheep => 1.1f, Beast.Cow => 1.25f, Beast.Deer => 1.4f, _ => 1.3f }, ground = t.Height(a.Pos), yaw = a.Heading; // about one fence post high
+        float k = kind switch { Beast.Sheep => 1.1f, Beast.Cow => 1.25f, Beast.Deer => 1.4f, _ => 1.3f }, ground = t.Height(a.Pos) + (kind == Beast.Deer ? 0 : 0.26f), yaw = a.Heading; // about one fence post high
         bool moving = a.Speed > 0 && !a.Grazing;
         float stride = moving ? MathF.Sin(a.Phase) : 0;
         Vector3 At(float fwd, float side, float up) { var p = a.Pos + f * fwd * k + s * side * k; return new Vector3(p.X, ground + up * k, p.Y); }

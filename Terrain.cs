@@ -164,6 +164,18 @@ public readonly record struct FieldPlot(Vector2 Center, Vector2 Axis, Vector2 Ha
     }
     /// A point of the plot from local coordinates (u along the axis, v across).
     public Vector2 At(float u, float v) => Center + Axis * u + new Vector2(-Axis.Y, Axis.X) * v;
+
+    /// Whether this plot and another come within `gap` metres (a separating-axis test on the two rotated rectangles).
+    public bool Overlaps(FieldPlot o, float gap)
+    {
+        var d = o.Center - Center;
+        foreach (var ax in new[] { Axis, new Vector2(-Axis.Y, Axis.X), o.Axis, new Vector2(-o.Axis.Y, o.Axis.X) })
+        {
+            float Reach(FieldPlot f) => MathF.Abs(Vector2.Dot(f.Axis, ax)) * f.Half.X + MathF.Abs(Vector2.Dot(new Vector2(-f.Axis.Y, f.Axis.X), ax)) * f.Half.Y;
+            if (MathF.Abs(Vector2.Dot(d, ax)) > Reach(this) + Reach(o) + gap) return false;
+        }
+        return true;
+    }
 }
 
 /// A town wall across the field for an assault (roadmap B1). It runs the whole width at z = 14..16.5 (a walkway on raised

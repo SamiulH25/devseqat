@@ -257,3 +257,17 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
   (verge, rut, crown) read as corrugation; the Tundra map tint (`Lands`, 0.66, 0.67, 0.58) passes for sand in spring;
   fields at 04:00 go grey-purple; Khaganate teal is close to Azure blue on the realm map; the realm map's sea has no
   shallows. Checked and fine: winter field contrast, label stacking (placement keeps labels apart; two touch at most).
+- **Farmland on the drawn map (2026-11-18, the owner's notes).** Pens and fields overlapped (plots were only kept off
+  other villages, never off each other's plots) and ran onto the beach: on the drawn map a plot now keeps 2.5 m from
+  every other plot (`FieldPlot.Overlaps`, a separating-axis test) and off the shore (`Landness` 0.97); test
+  `FieldsApart`. Hedges were single random sides with gaps, standing outside a crop that faded before its edge, so
+  they read as dark slabs scattered on the grass: a plot is now hedged all round or not at all, hedges stand on the
+  edge with a flat, sunlit top of leaves and rarely break, and a hedged crop runs up to its hedge. Plots sit 0.26 m
+  over the ground (was 0.16) and the beasts that live on them stand on that. Orchards were a strict 3.3 m grid of
+  touching crowns (the owner: "trees should not be like a grid"): now loose rows, 4.4 m apart, jittered, a fifth gone,
+  smaller crowns. Penned sheep fleeing a party ran into the fence and were shoved to the middle every frame (the
+  jitter): a fleeing goal is kept inside the pen, and a beast at the fence stops and picks a new spot. Layout 4 keeps
+  its fields (the plot rules are behind `Designed`; the hedge gap and lift apply to both). Judged 7/10 (Haiku); its
+  claims of a pen overlapping a field and of hedges on no plot were wrong. Still open: an unhedged plot's edge fades
+  over many metres, and green crops have no texture beside the furrowed ones. In shots, a pasture's herd sometimes has
+  not spawned yet (the shot can come before the herd search runs).

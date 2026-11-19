@@ -49,6 +49,10 @@ public sealed partial class WorldMap
                     if (halves.Count == 0) continue;
                     plot = halves[rng.Next(halves.Count)];
                 }
+                // On the drawn map no plot may touch another, its own village's or a neighbour's: pens crossed and hedges ran
+                // through crops (the seeded layouts keep their old fields).
+                float reach = plot.Half.Length() + 2.5f;
+                if (Designed && plots.Any(o => Vector2.DistanceSquared(o.Center, plot.Center) < (reach + o.Half.Length()) * (reach + o.Half.Length()) && o.Overlaps(plot, 2.5f))) continue;
                 var kind = land.Barren ? (rng.Next(2) == 0 ? FieldKind.Fallow : FieldKind.Ploughed) : orchards > 0 && d < r0 + cw ? FieldKind.Orchard : rng.Next(10) switch
                 {
                     0 or 1 => FieldKind.Pasture, 2 or 3 or 4 => FieldKind.Grain, 5 or 6 => FieldKind.Green, 7 or 8 => FieldKind.Ploughed, _ => FieldKind.Fallow,
@@ -56,12 +60,15 @@ public sealed partial class WorldMap
                 if (kind == FieldKind.Orchard) orchards--;
                 int hedged = 0;
                 for (int side = 0; side < 4; side++) if (rng.Next(100) < 33) hedged |= 1 << side;
+                if (Designed) hedged = hedged != 0 && BitCount(hedged) >= 2 ? 0b1111 : 0; // the drawn map: a hedge all round or none (odd single sides read as litter)
                 plots.Add(plot with { Kind = kind, Hedged = hedged });
                 left--;
             }
         }
         return plots;
     }
+
+    static int BitCount(int m) => System.Numerics.BitOperations.PopCount((uint)m);
 
     /// Whether a plot lies clear of the roads, water, ridges, sites and every settlement but its own.
     bool FieldClear(FieldPlot f, Settlement own)
@@ -71,6 +78,7 @@ public sealed partial class WorldMap
         {
             var p = f.At(u * f.Half.X, v * f.Half.Y);
             if (RoadDist(p) < 3.2f || RiverDist(p) < Rivers.Select(r => r.Width).DefaultIfEmpty(0).Max() / 2 + 3 || InLake(p, 2.5f)) return false;
+            if (Designed && Landness(p) < 0.97f) return false; // not down to the beach
         }
         foreach (var s in Settlements) if (s != own && Vector2.Distance(s.Pos, f.Center) < (s.Kind == SettlementKind.Village ? 10 : 15) + f.Half.X) return false;
         foreach (var s in Sites) if (Vector2.Distance(s.Pos, f.Center) < 7 + f.Half.X) return false;

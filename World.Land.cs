@@ -69,8 +69,9 @@ sealed partial class World
             float rim = MathF.Max(MathF.Abs(fu), MathF.Abs(fv)), corner = MathF.Abs(fu) * MathF.Abs(fv);
             float wobble = (Terrain.Noise(p.X * 0.2f, p.Y * 0.2f, t.Seed + 43) - 0.5f) * 0.5f;
             float blend = Math.Clamp(0.08f + 0.92f * MathF.Pow(Math.Clamp(rim + wobble * 0.4f, 0, 1), 3) + 0.35f * corner * corner, 0, 1);
+            if (f.Hedged != 0 && f.Kind != FieldKind.Pasture) blend = MathF.Min(blend, 0.08f + 0.3f * MathF.Pow(rim, 6)); // the crop runs up to its hedge, so the hedge reads as the field's edge
             var c = Vector3.Lerp(col, GroundColor(p), blend) * (1 + (Terrain.Noise(p.X * 0.35f, p.Y * 0.35f, t.Seed + 41) - 0.5f) * 0.1f);
-            return new VertexPNCT(new Vector3(p.X, t.Height(p) + 0.16f, p.Y), NormalAt(p), new Color(c.X, c.Y, c.Z, 1 - blend), new Vector2(100 + v + f.Half.Y, rows * (1 - blend))); // alpha: how much crop (the map shader)
+            return new VertexPNCT(new Vector3(p.X, t.Height(p) + 0.26f, p.Y), NormalAt(p), new Color(c.X, c.Y, c.Z, 1 - blend), new Vector2(100 + v + f.Half.Y, rows * (1 - blend))); // alpha: how much crop (the map shader)
         }
         for (int i = 0; i < nu; i++)
             for (int j = 0; j < nv; j++)
@@ -83,7 +84,7 @@ sealed partial class World
             float sx = side switch { 1 => 1, 3 => -1, _ => 0 }, sy = side switch { 0 => -1, 2 => 1, _ => 0 };
             Vector2 a = f.At(sy != 0 ? -f.Half.X : sx * f.Half.X, sy != 0 ? sy * f.Half.Y : -f.Half.Y);
             Vector2 b = f.At(sy != 0 ? f.Half.X : sx * f.Half.X, sy != 0 ? sy * f.Half.Y : f.Half.Y);
-            var shift = (f.At(sx * (f.Half.X + 0.5f), sy * (f.Half.Y + 0.5f)) - f.At(sx * f.Half.X, sy * f.Half.Y));
+            var shift = (f.At(sx * (f.Half.X + (f.Kind == FieldKind.Pasture ? 0.5f : 0.15f)), sy * (f.Half.Y + (f.Kind == FieldKind.Pasture ? 0.5f : 0.15f))) - f.At(sx * f.Half.X, sy * f.Half.Y));
             if (f.Kind == FieldKind.Pasture) Fence(m, a + shift, b + shift, rng);
             else if ((f.Hedged & (1 << side)) != 0) Hedge(m, a + shift, b + shift, rng);
         }
@@ -106,7 +107,7 @@ sealed partial class World
         float len = Vector2.Distance(a, b);
         if (len < 1) return;
         var d = (b - a) / len; var n = new Vector2(-d.Y, d.X);
-        var leaf = Jitter(new Color(74, 112, 52), rng, 0.08f); // the trees' green, not a dark outline
+        var leaf = Jitter(new Color(84, 122, 56), rng, 0.08f); // the trees' green, not a dark outline
         if (t.MapSeason == 2) leaf = Color.Lerp(leaf, new Color(128, 108, 56), 0.35f);
         if (t.MapSeason == 3) leaf = Color.Lerp(leaf, new Color(196, 200, 206), 0.55f); // snow lies along it
         int steps = Math.Max(1, (int)(len / 1.8f));
@@ -114,13 +115,16 @@ sealed partial class World
         for (int i = 0; i < steps; i++)
         {
             float h = 0.55f + rng.NextSingle() * 0.3f;
-            if (i == 0 || i == steps - 1 || rng.Next(5) == 0) { hPrev = h; continue; } // gaps, and open corners for the gates
+            if (i == 0 || i == steps - 1 || rng.Next(14) == 0) { hPrev = h; continue; } // a rare gap, and open corners for the gates
             Vector2 p0 = a + d * (len * i / steps), p1 = a + d * (len * (i + 1) / steps);
             float y0 = t.Height(p0), y1 = t.Height(p1);
             Vector3 l0 = V3(p0 - n * 0.3f, y0 - 0.1f), l1 = V3(p1 - n * 0.3f, y1 - 0.1f), r0 = V3(p0 + n * 0.3f, y0 - 0.1f), r1 = V3(p1 + n * 0.3f, y1 - 0.1f);
-            Vector3 t0 = V3(p0 + n * (rng.NextSingle() - 0.5f) * 0.2f, y0 + hPrev), t1 = V3(p1, y1 + h);
+            // A rounded hedge: two sides rising to a flat top of leaves (a sharp ridge showed one dark face from above, a slab).
+            float w0 = 0.18f + (rng.NextSingle() - 0.5f) * 0.08f, w1 = 0.18f;
+            Vector3 tl0 = V3(p0 - n * w0, y0 + hPrev), tl1 = V3(p1 - n * w1, y1 + h), tr0 = V3(p0 + n * w0, y0 + hPrev), tr1 = V3(p1 + n * w1, y1 + h);
             var c = Jitter(leaf, rng, 0.07f);
-            Face(l0, l1, t1, t0, c); Face(r1, r0, t0, t1, c);
+            Face(l0, l1, tl1, tl0, c); Face(r1, r0, tr0, tr1, c);
+            Face(tl0, tl1, tr1, tr0, Color.Lerp(c, new Color(150, 170, 90), 0.18f)); // the sunlit top
             hPrev = h;
         }
         void Face(Vector3 p, Vector3 q, Vector3 r, Vector3 s, Color c)
