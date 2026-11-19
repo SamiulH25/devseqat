@@ -118,6 +118,10 @@ towns. Not built: the carts between a castle and its villages (drawing only; wit
   `CaravansTownToTown`.
 
 ### HD4: The world's settlements (data, by notes)
+Status 2026-11-19: proposed. Seven notes in `Data/world.json` ("Holds: <realm>", pinned at each capital, revision 14) wait for
+the owner. The proposal: 19 towns (3 a realm, the Order 1), 42 towns become castles, 28 new holds (every province gets a seat;
+123 castles in all). The machine-readable plan the notes were written from is `docs/world/holds-plan.json` (`keep`, `convert`,
+`new` with province, realm, x, y, name): apply it once the threads agree, after any changes the owner asks for.
 - Put the change to `Data/world.json` forward as notes, one per realm, pinned at its capital. Each lists the towns
   that stay, the towns that become castles, and where new holds go (frontiers, passes, river crossings, coasts).
   Nothing is edited until the owner agrees in the thread (docs/world/README.md, rule 2).

@@ -1,0 +1,293 @@
+{
+ "keep": {
+  "0": [
+   14,
+   125,
+   77
+  ],
+  "1": [
+   180,
+   42,
+   154
+  ],
+  "2": [
+   0,
+   291,
+   248
+  ],
+  "3": [
+   281,
+   262,
+   255
+  ],
+  "4": [
+   335,
+   374,
+   305
+  ],
+  "5": [
+   20,
+   7,
+   63
+  ],
+  "6": [
+   298
+  ]
+ },
+ "convert": {
+  "0": [
+   39,
+   48,
+   69,
+   84,
+   98,
+   146
+  ],
+  "1": [
+   133,
+   191,
+   221
+  ],
+  "2": [
+   173,
+   187,
+   194,
+   201,
+   284
+  ],
+  "3": [
+   105,
+   112,
+   167,
+   208,
+   215,
+   227,
+   234,
+   312,
+   355
+  ],
+  "4": [
+   139,
+   240,
+   270,
+   278,
+   320,
+   327,
+   341,
+   347,
+   351,
+   362,
+   368,
+   381,
+   388
+  ],
+  "5": [
+   28,
+   35,
+   56,
+   90,
+   119
+  ],
+  "6": [
+   161
+  ]
+ },
+ "new": [
+  {
+   "province": 19,
+   "realm": 2,
+   "x": 108.6,
+   "y": -289.0,
+   "name": "Skarvik"
+  },
+  {
+   "province": 25,
+   "realm": 0,
+   "x": -184.3,
+   "y": -45.2,
+   "name": "Montrevel"
+  },
+  {
+   "province": 34,
+   "realm": 1,
+   "x": -96.4,
+   "y": 16.9,
+   "name": "Rocca Vespra"
+  },
+  {
+   "province": 75,
+   "realm": 2,
+   "x": -367.1,
+   "y": -397.0,
+   "name": "Hallstein"
+  },
+  {
+   "province": 79,
+   "realm": 2,
+   "x": -213.2,
+   "y": -337.4,
+   "name": "Ravnborg"
+  },
+  {
+   "province": 89,
+   "realm": 3,
+   "x": 352.4,
+   "y": 316.6,
+   "name": "Qasr Rimal"
+  },
+  {
+   "province": 98,
+   "realm": 3,
+   "x": 228.1,
+   "y": 419.0,
+   "name": "Burj Safa"
+  },
+  {
+   "province": 110,
+   "realm": 4,
+   "x": 178.3,
+   "y": 58.3,
+   "name": "Kara Kurgan"
+  },
+  {
+   "province": 113,
+   "realm": 3,
+   "x": -152.7,
+   "y": 302.5,
+   "name": "Hisn Tamar"
+  },
+  {
+   "province": 121,
+   "realm": 3,
+   "x": 281.6,
+   "y": 364.0,
+   "name": "Qalat Nur"
+  },
+  {
+   "province": 126,
+   "realm": 3,
+   "x": -303.0,
+   "y": 318.3,
+   "name": "Ribat Zahir"
+  },
+  {
+   "province": 129,
+   "realm": 1,
+   "x": -14.4,
+   "y": 47.3,
+   "name": "Castel Ardente"
+  },
+  {
+   "province": 141,
+   "realm": 6,
+   "x": 262.3,
+   "y": 115.3,
+   "name": "Ashen Watch"
+  },
+  {
+   "province": 10,
+   "realm": 1,
+   "x": 63.0,
+   "y": 75.5,
+   "name": "Torre Calva"
+  },
+  {
+   "province": 12,
+   "realm": 6,
+   "x": 175.7,
+   "y": 134.2,
+   "name": "Emberhold"
+  },
+  {
+   "province": 22,
+   "realm": 3,
+   "x": 426.4,
+   "y": 308.4,
+   "name": "Qasr Hilal"
+  },
+  {
+   "province": 26,
+   "realm": 6,
+   "x": 268.6,
+   "y": 212.8,
+   "name": "Cinder Gate"
+  },
+  {
+   "province": 37,
+   "realm": 3,
+   "x": 226.5,
+   "y": 313.6,
+   "name": "Hisn Kafur"
+  },
+  {
+   "province": 39,
+   "realm": 2,
+   "x": -196.1,
+   "y": -221.2,
+   "name": "Ulfsnes"
+  },
+  {
+   "province": 47,
+   "realm": 4,
+   "x": 359.3,
+   "y": 44.7,
+   "name": "Temir Kala"
+  },
+  {
+   "province": 52,
+   "realm": 2,
+   "x": -316.3,
+   "y": -248.5,
+   "name": "Kolsheim"
+  },
+  {
+   "province": 55,
+   "realm": 4,
+   "x": 194.1,
+   "y": -144.7,
+   "name": "Ulan Kala"
+  },
+  {
+   "province": 57,
+   "realm": 4,
+   "x": 220.5,
+   "y": -257.1,
+   "name": "Kyzyl Tepe"
+  },
+  {
+   "province": 118,
+   "realm": 1,
+   "x": -122.4,
+   "y": -163.3,
+   "name": "Monteserra"
+  },
+  {
+   "province": 137,
+   "realm": 4,
+   "x": 157.5,
+   "y": -78.1,
+   "name": "Tash Kurgan"
+  },
+  {
+   "province": 145,
+   "realm": 0,
+   "x": -284.4,
+   "y": -176.5,
+   "name": "Castelroc"
+  },
+  {
+   "province": 4,
+   "realm": 4,
+   "x": 353.9,
+   "y": -255.9,
+   "name": "Bozkurt Tepe"
+  },
+  {
+   "province": 8,
+   "realm": 0,
+   "x": -478.8,
+   "y": -46.0,
+   "name": "Haut-Brisac"
+  }
+ ]
+}
