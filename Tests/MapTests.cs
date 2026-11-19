@@ -363,6 +363,25 @@ public static partial class SelfTest
         Check(wet == 0, $"no plot runs onto the shore ({wet})");
     }
 
+    /// The drawn map's ground is dressed (docs/WORLD_DRESS.md): small cover on every kind of land, none where it must not
+    /// stand, each land its own plants, and the same every time it is built.
+    static void MapDressed()
+    {
+        var m = Campaign.New(7, layout: WorldMap.DesignLayout).Map;
+        var t = m.BuildTerrain();
+        var cover = t.Foliage.Where(f => f.Kind is FoliageKind.Shrub or FoliageKind.Tussock or FoliageKind.Heather or FoliageKind.Reed or FoliageKind.DeadTree
+            or FoliageKind.Palm or FoliageKind.Flowers or FoliageKind.Rock).ToList();
+        var bare = m.Provinces.Select(p => p.Kind).Distinct().Where(k => !cover.Any(f => m.ProvinceAt(f.Pos).Kind == k)).ToList();
+        Console.WriteLine($"dress: {cover.Count} pieces of small cover, {t.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine or FoliageKind.Birch)} trees");
+        Check(cover.Count > 3000 && bare.Count == 0, $"small cover on every kind of land ({cover.Count}; none in: {string.Join(", ", bare)})");
+        Check(!cover.Any(f => m.RoadDist(f.Pos) < 2.5f || m.Landness(f.Pos) < 0.95f || m.InLake(f.Pos, 2) || t.Fields.Any(q => q.Inside(f.Pos, 1.5f))), "none on a road, in the water or in a field");
+        Check(!cover.Any(f => m.Settlements.Any(s => Vector2.Distance(s.Pos, f.Pos) < 11)), "none among a place's houses");
+        var palms = t.Foliage.Where(f => f.Kind == FoliageKind.Palm).ToList();
+        Check(palms.Count > 20 && palms.All(f => m.ProvinceAt(f.Pos).Kind == "Oasis"), "palms grow in the oases and nowhere else");
+        Check(cover.Where(f => f.Kind == FoliageKind.Heather).All(f => m.ProvinceAt(f.Pos).Kind is "Highlands" or "Hills" or "Tundra"), "heather keeps to the high and cold lands");
+        Check(t.Foliage.SequenceEqual(m.BuildTerrain().Foliage), "the same cover every time the map is built");
+    }
+
     static void DesignedMap()
     {
         var clock = System.Diagnostics.Stopwatch.StartNew();

@@ -5,7 +5,9 @@ namespace Ironfield;
 public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wall, Tower, Gate, Ladder, House, Wagon,
     // Sites on the campaign map (docs/archive/SIDE_CONTENT.md S2).
     Ruin, Shrine, Stones, Field, Mine, Hut, Watch, Spring, Mill,
-    Birch } // a slim pale-barked tree (campaign map, WL3)
+    Birch, // a slim pale-barked tree (campaign map, WL3)
+    // The campaign map's small cover (docs/WORLD_DRESS.md): cheap pieces that stand between the woods.
+    Shrub, Tussock, Heather, Reed, DeadTree, Palm, Flowers }
 
 /// A river (roadmap C5): a centre line, its width, and the fords where it runs shallow.
 public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float Depth = 1.3f)
@@ -227,7 +229,8 @@ public sealed class SiegeWall
 }
 
 /// One piece of foliage (or, on the campaign map, a settlement). Radius > 0 = a solid obstacle (tree trunk, boulder).
-public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale, float Radius, int Seed);
+/// `Dry` (0-1) draws the map's small cover from green toward straw and thorn (docs/WORLD_DRESS.md).
+public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale, float Radius, int Seed, float Dry = 0);
 
 /// How a battlefield is generated: set from the campaign map cell where the fight happens (docs/CAMPAIGN.md 3.2).
 /// `Layouts` are the field shapes this ground may take (docs/archive/TERRAIN.md T2; null = open field), picked by the seed.

@@ -589,8 +589,9 @@ public sealed partial class WorldMap
         var fieldCells = FieldCells(fields);
         var standRng = new Random(Seed * 5 + 3); // layout 4 woods: their own dice
         float keepOff = 9 * (Designed ? MathF.Sqrt(span) : span); // the drawn map's places stand close: woods come within half the generated maps' margin
-        bool Clear(Vector2 p) => Landness(p) > 0.95f && Settlements.All(s => Vector2.Distance(s.Pos, p) > keepOff) && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && !InLake(p, 2)
+        bool Open(Vector2 p) => Landness(p) > 0.95f && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && !InLake(p, 2)
             && MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half && !InField(fieldCells, p, 1.5f);
+        bool Clear(Vector2 p) => Open(p) && Settlements.All(s => Vector2.Distance(s.Pos, p) > keepOff);
         foreach (var f in fields.Where(f => f.Kind == FieldKind.Orchard)) // rows of small round fruit trees
         {
             var orng = new Random(f.Seed);
@@ -647,6 +648,7 @@ public sealed partial class WorldMap
                     foliage.Add(new Foliage(FoliageKind.Pine, pos, (2.2f + rng.NextSingle()) * grow0 * near, 0, rng.Next()));
                 }
             }
+        if (Designed) Dress(grow0, Open, foliage); // woods and small cover between the stands (WorldDress.cs)
         for (int i = 0; i < (Designed ? 0 : 260); i++) // pines on the mountain rim (a designed map has the sea instead)
         {
             float rimHalf = GroundHalf - 4;

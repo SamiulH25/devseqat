@@ -74,6 +74,7 @@ public static class Bench
         var w = new Ironfield.World(terrain, 0.72f);
         double worldMs = clock.Elapsed.TotalMilliseconds;
         Console.WriteLine($"world bench (seed {seed}): terrain field {terrain.N}x{terrain.N}, {terrain.Foliage.Count} foliage items");
+        Console.WriteLine("  " + string.Join(", ", terrain.Foliage.GroupBy(f => f.Kind).OrderByDescending(g => g.Count()).Select(g => $"{g.Key} {g.Count()}")));
         Console.WriteLine($"  map terrain {terrainMs:0} ms, world meshes {worldMs:0} ms, checksum {w.Checksum():x16}");
         var size = w.Size();
         Console.WriteLine($"  {size.Tiles} culled tiles ({size.TileVerts:N0} verts), {size.AlwaysVerts:N0} verts always drawn, {size.Bytes / 1048576.0:0} MB of buffers");

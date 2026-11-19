@@ -49,6 +49,8 @@ sealed class ScreenHost : Game
     };
     /// Debug: with IRONFIELD_TOWN_ONLY=1 a campaign shots run saves only the settlement screen's tabs (`town-*.png` and the like).
     static readonly bool townOnly = Environment.GetEnvironmentVariable("IRONFIELD_TOWN_ONLY") == "1";
+    /// Debug: with IRONFIELD_MAP_ONLY=1 a campaign shots run saves only the map: the overview, the land and its life, each kind of country.
+    static readonly bool mapOnly = Environment.GetEnvironmentVariable("IRONFIELD_MAP_ONLY") == "1";
     string? pendingShot;
     KeyboardState kb;
     MouseState ms;
@@ -465,9 +467,10 @@ sealed class ScreenHost : Game
         var c = campaign!;
         if (shotFrames < 20 || pendingShot != null) return;
         void Shot(string name) { pendingShot = name; shotFrames = 0; cStage++; }
-        if (cStage == 2 && lifeShots < (c.Map.Designed ? 11 : 7)) // the land and its life (docs/WORLD_LIFE.md WL3-WL5), in spring before the year turns; on the drawn map its new lands (WM3)
+        string[] stages = { "farm", "life", "village", "road", "night", "map", "river", "lands-Desert", "lands-Tundra", "lands-Taiga", "lands-Highlands",
+            "lands-Steppe", "lands-Coast", "lands-Hills", "lands-Meadow", "lands-Oasis", "lands-Forest", "lands-Badlands" };
+        if (cStage == 2 && lifeShots < (c.Map.Designed ? stages.Length : 7)) // the land and its life (docs/WORLD_LIFE.md WL3-WL5), in spring before the year turns; on the drawn map each kind of country (WM3, docs/WORLD_DRESS.md)
         {
-            string[] stages = { "farm", "life", "village", "road", "night", "map", "river", "lands-Desert", "lands-Tundra", "lands-Taiga", "lands-Highlands" };
             if (lifeShots == 4) { dayHours = c.S.Hours; c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 22.5; } // lamplight
             if (lifeShots == 5) { c.S.Hours = dayHours; lifeShots++; return; } // daylight again ("map" is shot first)
             if (lifeShots >= 7) c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 11.5; // the new lands by day (the clock steps back a few hours)
@@ -475,6 +478,7 @@ sealed class ScreenHost : Game
             pendingShot = "campaign-" + stages[lifeShots]; shotFrames = 0; lifeShots++;
             return;
         }
+        if (mapOnly && cStage == 2) { Exit(); return; }
         if (townOnly && cStage < 56) cStage = 56;
         switch (cStage)
         {

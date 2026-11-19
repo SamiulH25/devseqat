@@ -524,6 +524,13 @@ sealed partial class World : IDisposable
                 case FoliageKind.Pine: Pine(m, b, f.Scale * treeScale, rng); break;
                 case FoliageKind.Bush: Bush(m, b, f.Scale * treeScale, rng); break;
                 case FoliageKind.Birch: Birch(m, b, f.Scale * treeScale, rng); break;
+                case FoliageKind.Shrub: Shrub(m, b, f.Scale * treeScale, f.Dry, rng); break;
+                case FoliageKind.Tussock: Tussock(m, b, f.Scale * treeScale, f.Dry, rng); break;
+                case FoliageKind.Heather: Heather(m, b, f.Scale * treeScale, rng); break;
+                case FoliageKind.Reed: ReedClump(m, b, f.Scale * treeScale, rng); break;
+                case FoliageKind.DeadTree: DeadTree(m, b, f.Scale * treeScale, rng); break;
+                case FoliageKind.Palm: Palm(m, b, f.Scale * treeScale, rng); break;
+                case FoliageKind.Flowers: Flowers(m, f.Pos, f.Scale, rng); break;
                 case FoliageKind.Village: Village(m, b, f.Scale, rng); break;
                 case FoliageKind.Town: Town(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
@@ -538,7 +545,7 @@ sealed partial class World : IDisposable
                 case FoliageKind.Wagon: Wagon(m, b, rng); break;
                 case FoliageKind.Ruin or FoliageKind.Shrine or FoliageKind.Stones or FoliageKind.Field or FoliageKind.Mine
                     or FoliageKind.Hut or FoliageKind.Watch or FoliageKind.Spring or FoliageKind.Mill: SiteModel(m, f.Kind, b, f.Scale, rng); break;
-                default: Rock(m, b, f.Scale, rng); break;
+                default: Rock(m, b, f.Scale, rng, f.Dry); break;
             }
         }
     }
@@ -656,9 +663,10 @@ sealed partial class World : IDisposable
             m.Blob(b + new Vector3(0.6f * s, 0.2f * s, 0.2f * s), new Vector3(0.6f, 0.5f, 0.6f) * s, Jitter(leaf, r, 0.1f), r, 0.2f);
     }
 
-    static void Rock(Mesh m, Vector3 b, float s, Random r)
+    /// `dry`: the map's dry lands have warm sandstone, not grey rock (docs/WORLD_DRESS.md).
+    static void Rock(Mesh m, Vector3 b, float s, Random r, float dry = 0)
     {
-        var stone = Jitter(new Color(128, 126, 122), r, 0.12f);
+        var stone = Jitter(Color.Lerp(new Color(128, 126, 122), new Color(182, 152, 110), dry), r, 0.12f);
         m.Tag = Vector2.Zero;
         m.Blob(b + Vector3.Up * 0.12f * s, new Vector3(1.0f, 0.62f, 0.85f) * s, stone, r, 0.28f);
     }
@@ -1217,6 +1225,11 @@ sealed partial class World : IDisposable
 
         /// One vertex with its own normal and UV (ribbons: roads, and water whose UV tells the shader where it flows).
         public void Raw(Vector3 p, Vector3 n, Color c, Vector2 uv) => V.Add(new(p, n, c, uv));
+        static readonly int[] IcoFaces =
+        {
+            0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
+            3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1,
+        };
         static readonly (Vector3[] P, int[] F) Sphere = Icosphere();
 
         /// A triangle with its own face normal, flipped to point away from `center` (so closed shapes light from outside).
@@ -1296,6 +1309,20 @@ sealed partial class World : IDisposable
                 Tri(p[faces[f]], p[faces[f + 1]], p[faces[f + 2]], Jitter(col, rng, 0.07f), c);
         }
 
+        /// A cheap `Blob`: the bare icosahedron, 20 faces (the map's small cover, World.Dress.cs). Leaves shade round, as a blob's do.
+        public void Lump(Vector3 c, Vector3 size, Color col, Random rng, float lump)
+        {
+            Span<Vector3> p = stackalloc Vector3[12]; // the icosphere's first twelve points are the icosahedron's
+            for (int i = 0; i < 12; i++) p[i] = c + Sphere.P[i] * size * (1 + (rng.NextSingle() * 2 - 1) * lump);
+            var inv = new Vector3(1 / (size.X * size.X), 1 / (size.Y * size.Y), 1 / (size.Z * size.Z));
+            for (int f = 0; f < IcoFaces.Length; f += 3)
+            {
+                var fc = Jitter(col, rng, 0.05f);
+                if (Tag.Y < 0.5f) { Tri(p[IcoFaces[f]], p[IcoFaces[f + 1]], p[IcoFaces[f + 2]], fc, c); continue; }
+                for (int k = 0; k < 3; k++) { var q = p[IcoFaces[f + k]]; V.Add(new(q, Vector3.Normalize((q - c) * inv), fc, Tag)); }
+            }
+        }
+
         static (Vector3[], int[]) Icosphere()
         {
             float g = (1 + MathF.Sqrt(5)) / 2;
@@ -1305,11 +1332,7 @@ sealed partial class World : IDisposable
                 new(0, -1, -g), new(0, 1, -g), new(g, 0, -1), new(g, 0, 1), new(-g, 0, -1), new(-g, 0, 1),
             };
             for (int i = 0; i < pts.Count; i++) pts[i] = Vector3.Normalize(pts[i]);
-            int[] faces =
-            {
-                0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
-                3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1,
-            };
+            var faces = IcoFaces;
             var mid = new Dictionary<(int, int), int>();
             int Mid(int a, int b)
             {
