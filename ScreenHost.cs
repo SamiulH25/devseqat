@@ -468,7 +468,7 @@ sealed class ScreenHost : Game
         if (shotFrames < 20 || pendingShot != null) return;
         void Shot(string name) { pendingShot = name; shotFrames = 0; cStage++; }
         string[] stages = { "farm", "life", "village", "road", "night", "map", "river", "lands-Desert", "lands-Tundra", "lands-Taiga", "lands-Highlands",
-            "lands-Steppe", "lands-Coast", "lands-Hills", "lands-Meadow", "lands-Oasis", "lands-Forest", "lands-Badlands" };
+            "lands-Steppe", "lands-Coast", "lands-Hills", "lands-Meadow", "lands-Oasis", "lands-Forest", "lands-Badlands", "port", "sail", "harbour" }; // and its ports and ships (WM7)
         if (cStage == 2 && lifeShots < (c.Map.Designed ? stages.Length : 7)) // the land and its life (docs/WORLD_LIFE.md WL3-WL5), in spring before the year turns; on the drawn map each kind of country (WM3, docs/WORLD_DRESS.md)
         {
             if (lifeShots == 4) { dayHours = c.S.Hours; c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 22.5; } // lamplight

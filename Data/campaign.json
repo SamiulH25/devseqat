@@ -2,6 +2,7 @@
   "_comment": "Campaign balance (docs/CAMPAIGN.md). Every value here is a starting point for play-testing; the defaults in Balance.cs match.",
   "HourSeconds": 0.5,
   "FootSpeed": 5.5, "HorseSpeed": 9.0, "RoadBonus": 1.3, "Vision": 55, "EncounterRadius": 3.5, "JoinRadius": 10, "AiClashRadius": 5.5,
+  "ShipSpeed": 14, "ShipFare": 10, "ShipFareMan": 0.3,
   "StartGold": 300, "StartRenown": 50,
   "UpkeepRate": 0.1, "ContractPay": 0.85, "LootRate": 0.25, "LootCoinShare": 0.3, "RansomRate": 1.0, "MercMarkup": 1.5,
   "WoundBase": 0.3, "WoundArmor": 40, "WoundMin": 0.25, "WoundMax": 0.7, "CaptureChance": 0.5, "FledReturnOnDefeat": 0.7,

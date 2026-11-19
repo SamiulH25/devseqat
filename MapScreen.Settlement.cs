@@ -21,7 +21,7 @@ partial class MapScreen
         ui.Rect(well, Color.Black * 0.22f);
         ui.Frame(well, Color.White * 0.06f, ui.U(1));
         var body = Kit.Inset(well, ui.U(12));
-        if (tab is "REST" or "FOOD" or "FORAGE" or "RECRUIT" or "ESQUIRES" or "CAPTIVES" or "TRAIN" or "ELDERS" or "WORKSHOP") Watermark(well);
+        if (tab is "REST" or "FOOD" or "FORAGE" or "RECRUIT" or "ESQUIRES" or "CAPTIVES" or "TRAIN" or "ELDERS" or "WORKSHOP" or "HARBOUR") Watermark(well);
         switch (tab)
         {
             case "RECRUIT": RecruitTab(s, body); break;
@@ -42,6 +42,7 @@ partial class MapScreen
             case "CONTRACT": ContractTab(s, body); break;
             case "ELDERS": EldersTab(s, body); break;
             case "CHAPTER": ChapterTab(s, body); break;
+            case "HARBOUR": HarbourTab(s, body); break;
         }
         Note(r);
         Purse(r);
@@ -60,8 +61,39 @@ partial class MapScreen
             _ => new[] { "TRAIN", "RECRUIT", "MERCENARIES", "TAVERN", "HALL", "MARKET", "ARMOURER", "WORKSHOP", "FOOD", "REST", "CAPTIVES", "CONTRACT" },
         };
         return tabs.Where(t => t switch { "MERCENARIES" => s.Mercenaries.Count > 0, "CAPTIVES" => C.PrisonerCount > 0, _ => true })
+            .Concat(C.IsPort(s) && !C.Refuses(s) ? new[] { "HARBOUR" } : Array.Empty<string>())
             .Concat(C.ChapterAt(s) != null ? new[] { "CHAPTER" } : Array.Empty<string>())
             .Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
+    }
+
+    /// Harbour tab (docs/WORLDMAP.md WM7): the ports ships sail to from here, a card each: whose it is and where it lies,
+    /// how long at sea, the fare for the whole company.
+    void HarbourTab(Settlement s, Rectangle body)
+    {
+        int y = Heading(body.X, body.Y, body.Width, "SHIPS SAIL FROM HERE TO", $"PASSAGE FOR {C.Player.Men + C.Player.Wounded} MEN");
+        foreach (var (to, lane) in C.Sailings(s).OrderBy(x => x.Lane.Length))
+        {
+            int rh = ui.U(56);
+            if (y + rh > body.Bottom) break;
+            var row = new Rectangle(body.X, y, body.Width, rh - ui.U(6));
+            Card(row, SideColor(to.Faction), true);
+            ui.Shield(new Rectangle(row.X + ui.U(10), row.Y + ui.U(7), ui.U(30), ui.U(36)), Style.Sides[Style.PaletteOf(to.Faction)]);
+            int tx = row.X + ui.U(50), tw = row.Right - ui.U(196) - tx;
+            ui.TextFit(to.Name.ToUpperInvariant(), tx, row.Y + ui.U(5), tw, Style.Text, 2);
+            ui.TextFit($"{to.Kind.ToString().ToUpperInvariant()} OF THE {C.FactionNames[to.Faction].ToUpperInvariant()}, TO THE {Campaign.Bearing(s.Pos, to.Pos).ToUpperInvariant()}", tx, row.Y + ui.U(23), tw, Style.Dim, 1);
+            float hours = C.SailHours(lane), days = hours / 24;
+            string time = hours < 24 ? $"{hours:0} HOURS AT SEA" : $"{days:0.#} DAYS AT SEA";
+            ui.Icon("clock", tx, row.Bottom - ui.U(13), Style.Dim, 1);
+            ui.Text(time, tx + ui.U(11), row.Bottom - ui.U(13), Style.Dim, 1);
+            if (C.Player.Food < days) ui.Text($"YOU CARRY {C.Player.Food:0} DAYS OF FOOD", tx + ui.U(22) + ui.TW(time, 1), row.Bottom - ui.U(13), Style.Bad, 1);
+            string? why = C.CannotSail(s, to);
+            if (ui.Button(new Rectangle(row.Right - ui.U(180), row.Center.Y - ui.U(13), ui.U(172), ui.U(26)), why ?? "SAIL", why == null, why == null ? $"{C.Fare(lane)}" : ""))
+            {
+                note = C.Sail(s, to) ?? "";
+                if (C.Sailing) { panel = PanelKind.None; follow = true; if (speed == 0) speed = 1; }
+            }
+            y += rh;
+        }
     }
 
     /// A row in a town list: a faint plate that lights under the mouse.

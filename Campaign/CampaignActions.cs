@@ -7,9 +7,10 @@ public partial class Campaign
 {
     // ---------- your actions ----------
 
-    public void MoveTo(Vector2 p) { S.GoalSite = -1; Player.Goal = Map.InLand(p); Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = -1; Player.Resting = false; }
-    public void Chase(Party q) { S.GoalSite = -1; Player.ChaseId = q.Id; Player.Moving = true; Player.GoalSettlement = -1; Player.Resting = false; }
-    public void GoTo(Settlement s) { S.GoalSite = -1; Player.Goal = s.Pos; Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = s.Id; Player.Resting = false; }
+    // A company at sea goes where its ship goes (Ships.cs): no order turns it.
+    public void MoveTo(Vector2 p) { if (Sailing) return; S.GoalSite = -1; Player.Goal = Map.InLand(p); Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = -1; Player.Resting = false; }
+    public void Chase(Party q) { if (Sailing) return; S.GoalSite = -1; Player.ChaseId = q.Id; Player.Moving = true; Player.GoalSettlement = -1; Player.Resting = false; }
+    public void GoTo(Settlement s) { if (Sailing) return; S.GoalSite = -1; Player.Goal = s.Pos; Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = s.Id; Player.Resting = false; }
 
     int Slots => Rules.CompanySlots(Captain);
     int RoomForMen => Rules.MenLimit(Captain) - Player.Men - Player.Wounded;

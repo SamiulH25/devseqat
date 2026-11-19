@@ -172,6 +172,27 @@ sealed partial class World
         foreach (var r in t.Rivers) RiverWater(m, r, rng);
         foreach (var l in t.Lakes) Lake(m, l, rng);
         foreach (var b in t.MapBridges) Bridge(m, b, rng);
+        foreach (var (at, yaw) in t.Moored) Ship(m, new Vector3(at.X, t.SeaLevel ?? 0, at.Y), yaw, 1.2f, Sailcloth, true);
+    }
+
+    static readonly Color Sailcloth = new(214, 204, 178);
+
+    /// A cog (docs/WORLDMAP.md WM7): a round hull with a raised bow and a sterncastle, one mast and a square sail, `at` on
+    /// the water. Furled it lies at a port's pier; under sail it is the ship your company crosses in (MapLife).
+    internal static void Ship(Mesh m, Vector3 at, float yaw, float k, Color sail, bool furled)
+    {
+        var f = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
+        Vector3 P(float fwd, float up) => at + f * fwd * k + Vector3.Up * up * k;
+        Color hull = new(98, 72, 50), deck = new(142, 112, 78), spar = new(84, 62, 44);
+        m.Box(P(0, -0.45f), 5.0f * k, 1.9f * k, 1.1f * k, yaw, hull);
+        m.Box(P(2.9f, -0.2f), 1.0f * k, 1.3f * k, 1.15f * k, yaw, hull);          // the bow, rising
+        m.Box(P(-2.2f, 0.65f), 1.5f * k, 2.0f * k, 0.6f * k, yaw, deck);          // the sterncastle
+        m.Box(P(0.2f, 0.65f), 3.2f * k, 1.6f * k, 0.06f * k, yaw, deck);          // the deck
+        m.Box(P(0.3f, 0.65f), 0.18f * k, 0.18f * k, 4.2f * k, yaw, spar);         // the mast
+        m.Box(P(0.3f, 4.3f), 0.14f * k, 3.4f * k, 0.14f * k, yaw, spar);          // the yard
+        if (furled) m.Box(P(0.3f, 4.02f), 0.3f * k, 3.0f * k, 0.28f * k, yaw, Sailcloth);
+        else m.Box(P(0.5f, 1.7f), 0.1f * k, 3.2f * k, 2.6f * k, yaw, sail);
+        m.Box(P(-0.15f, 4.95f), 0.9f * k, 0.05f * k, 0.3f * k, yaw, sail);        // the pennant
     }
 
     /// A river: its surface (flow in the UVs), muddy banks rising to the land, reeds in the quiet stretches, and stepping

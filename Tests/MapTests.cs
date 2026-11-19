@@ -382,6 +382,56 @@ public static partial class SelfTest
         Check(t.Foliage.SequenceEqual(m.BuildTerrain().Foliage), "the same cover every time the map is built");
     }
 
+    /// Ports and ship travel (docs/WORLDMAP.md WM7): the drawn lanes join ports over open water, a passage is paid for
+    /// and refused for cause, and a ship carries the company to the far port quicker than its men march, untroubled.
+    static void ShipTravel()
+    {
+        var c = Campaign.New(7, layout: WorldMap.DesignLayout);
+        var m = c.Map;
+        int ashore = 0;
+        foreach (var l in m.SeaLanes)
+            for (int i = 1; i < l.Way.Length; i++)
+                for (float s = 0; s <= 1; s += 2 / MathF.Max(2, Vector2.Distance(l.Way[i - 1], l.Way[i])))
+                    if (m.Landness(Vector2.Lerp(l.Way[i - 1], l.Way[i], s)) > 0.45f) ashore++;
+        Console.WriteLine($"ships: {m.SeaLanes.Count} lanes between {m.Quays.Count} ports, {m.SeaLanes.Min(l => l.Length):0}-{m.SeaLanes.Max(l => l.Length):0} long, {ashore} points ashore");
+        Check(m.SeaLanes.Count >= 24 && ashore == 0, $"the lanes keep to the water ({m.SeaLanes.Count} lanes, {ashore} points ashore)");
+        Check(m.SeaLanes.All(l => m.Settlements[l.A].Kind != SettlementKind.Village && m.Landness(l.Way[0]) < 0.2f && m.Landness(l.Way[^1]) < 0.2f), "a lane runs from a port's berth to a port's berth");
+        Check(m.Quays.Values.All(q => m.Landness(q.Shore) > 0.55f && Vector2.Distance(q.Shore, q.Berth) is > 3 and < 30), "each quay runs from the beach to deep water");
+        Check(Campaign.New(7, layout: WorldMap.GeneratedLayout).Map.SeaLanes.Count == 0, "a seeded map has no sea and no lanes");
+        var land = m.BuildTerrain();
+        float sea = land.SeaLevel ?? 0;
+        Check(land.Moored.Count == m.Quays.Count && land.Moored.All(s => new[] { -3f, 0, 4.1f }.All(k => land.Height(s.At + new Vector2(MathF.Cos(s.Yaw), MathF.Sin(s.Yaw)) * k) < sea - 0.6f)),
+            "a ship lies afloat at each quay, stern to bow"); // her keel is 0.54 under the water (World.Ship)
+
+        var lane = m.SeaLanes.OrderBy(l => l.Length).First(l => l.Length > 150);
+        Settlement from = c.SettlementById(lane.A)!, to = c.SettlementById(lane.B)!;
+        c.Captain.Contract = -1; // no realm's ports are closed to a free company
+        c.Player.Pos = from.Pos;
+        Check(c.IsPort(from) && c.Sailings(from).Any(x => x.To == to), "a port lists where its ships sail");
+        var inland = c.S.Settlements.First(s => !c.IsPort(s));
+        Check(c.Sail(from, inland) != null && !c.Sailing, "no ship sails to a place that is no port");
+        c.S.Gold = 0;
+        Check(c.Sail(from, to) != null && !c.Sailing, "no passage without the fare");
+        c.S.Gold = 1000;
+        int fare = c.Fare(lane);
+        Check(c.Sail(from, to) == null && c.Sailing && c.S.Gold == 1000 - fare && fare > 0, $"the fare is paid ({fare}) and the company is aboard");
+        c.MoveTo(inland.Pos);
+        Check(c.Sailing && c.Player.Goal == to.Pos, "a company at sea cannot be marched off its ship");
+        double start = c.S.Hours;
+        bool met = false, wet = true;
+        while (c.Sailing && c.S.Hours < start + 400)
+        {
+            c.Tick(0.25f);
+            met |= c.Encounter != null;
+            if (c.Sailing) wet &= m.Landness(c.Player.Pos) < 0.45f;
+        }
+        float hours = (float)(c.S.Hours - start), march = Vector2.Distance(from.Pos, to.Pos) / Balance.Get().FootSpeed;
+        Console.WriteLine($"ships: {from.Name} to {to.Name}, {lane.Length:0} by sea in {hours:0.0} h (a straight march: {march:0.0} h), fare {fare}");
+        Check(!c.Sailing && !met && wet, "the ship crosses on the water and meets no one");
+        Check(MathF.Abs(hours - c.SailHours(lane)) < 1 && hours < march, $"the crossing takes the lane's hours ({hours:0.0} against {c.SailHours(lane):0.0}) and beats the march ({march:0.0})");
+        Check(m.Landness(c.Player.Pos) > 0.5f && Vector2.Distance(c.Player.Pos, m.Quays[to.Id].Berth) < 20 && c.Player.GoalSettlement == to.Id, "the company lands at the far quay and makes for the port");
+    }
+
     static void DesignedMap()
     {
         var clock = System.Diagnostics.Stopwatch.StartNew();

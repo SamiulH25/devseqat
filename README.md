@@ -82,7 +82,7 @@ banner is one you earned (`docs/archive/LEGACY.md`).
 You are a free captain sworn to the Azure Crown in the west. It is at war with the Northmarch clans of the cold north, its long
 border; the Crimson Compact in the middle fights the Khaganate of the Grass, horse archers from the eastern steppe. The Sunward
 Emirates hold the dry south, the Saltmarsh League the fens and canals of the south-west, and the knight-brothers of the Order of the
-Ashen Sun the south-east. Brigands, goblins and worse roam between them all. The land is about 1,200 km across, ringed by a sea that cannot be crossed yet,
+Ashen Sun the south-east. Brigands, goblins and worse roam between them all. The land is about 1,200 km across, ringed by a sea you cross by ship from port to port (a port's HARBOUR tab: pay the fare and sail to the next port down the lane; nothing troubles you at sea yet),
 with mountain ridges you cross by road at the passes; the minimap and the realm map (M) show the coast.
 - **Map:** click to march, click a town or village to enter it, and click a party to chase it. P opens the party screen, Space pauses,
   1-3 set the speed (x1, x3, x8), F follows you, F5 saves, F9 loads, and Esc opens the menu. The camera works as in command view (WASD, Q/E, wheel,

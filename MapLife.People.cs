@@ -41,6 +41,8 @@ sealed partial class MapLife
     readonly Dictionary<int, List<Vector2>> trails = new();
     readonly Dictionary<int, float[]> roadLengths = new();
     readonly List<(int Id, Vector2 Pos, float Facing, bool Pilgrims)> caravans = new();
+    /// The ship your company is crossing in, when it is at sea (docs/WORLDMAP.md WM7): where, its heading, its sail.
+    public (Vector2 Pos, float Facing, Color Sail)? Ship;
     readonly List<Vector3> smoking = new();
     float peopleWait;
     /// How much bigger than life the map draws its folk: a man stands about as high as a cottage's eaves.
@@ -291,6 +293,8 @@ sealed partial class MapLife
         foreach (var v in travellers) DrawTraveller(v);
         foreach (var b in boats) DrawBoat(b);
         foreach (var c in caravans) DrawCaravan(c.Id, c.Pilgrims);
+        if (Ship is var (at, facing, sail)) // rolling a little on the swell
+            World.Ship(mesh, new Vector3(at.X, (t.SeaLevel ?? 0) + MathF.Sin(clock * 1.3f) * 0.08f, at.Y), facing + MathF.Sin(clock * 0.7f) * 0.03f, 1.2f, sail, false);
         DrawSmoke();
     }
 

@@ -264,6 +264,9 @@ public sealed class Party
     /// planned for. Saved, so a loaded game walks on as one that never saved (a way planned again from here would differ).
     public List<Vector2> SeaWay = new();
     public Vector2 SeaGoal;
+    /// At sea (docs/WORLDMAP.md WM7, Campaign/Ships.cs): the points of the lane still to sail, and the port sailed for.
+    public List<Vector2> Voyage = new();
+    public int VoyageTo = -1;
     /// Travellers you chose to rob (S4): hostile to you whatever their realm.
     public bool Prey;
     public float Gold, Cooldown, DownUntil, TaskUntil, Facing;
@@ -802,6 +805,8 @@ public sealed class Balance
     public float HourSeconds = 0.5f, FootSpeed = 5.5f, HorseSpeed = 9, RoadBonus = 1.3f, Vision = 55, EncounterRadius = 3.5f, JoinRadius = 10;
     /// How much closer two AI parties must be before they fight (the player's own encounters use EncounterRadius).
     public float AiClashRadius = 5.5f;
+    /// Ships (docs/WORLDMAP.md WM7): map units an hour under sail, the master's fee, and the fare a man for each hundred units.
+    public float ShipSpeed = 14, ShipFare = 10, ShipFareMan = 0.3f;
     public float StartGold = 300, StartRenown = 50;
     public float UpkeepRate = 0.1f, ContractPay = 0.85f, LootRate = 0.25f, LootCoinShare = 0.3f, RansomRate = 1, MercMarkup = 1.5f;
     public float WoundBase = 0.3f, WoundArmor = 40, WoundMin = 0.25f, WoundMax = 0.7f, CaptureChance = 0.5f, FledReturnOnDefeat = 0.7f;

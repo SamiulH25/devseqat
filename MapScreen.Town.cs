@@ -14,7 +14,7 @@ partial class MapScreen
         ["TAVERN"] = ("mug", "TAVERN"), ["HALL"] = ("crown", "HALL"), ["MARKET"] = ("scales", "MARKET"), ["ARMOURER"] = ("anvil", "ARMOURER"),
         ["WORKSHOP"] = ("hammer", "WORKSHOP"), ["FOOD"] = ("bread", "FOOD"), ["REST"] = ("bed", "REST"), ["FORAGE"] = ("wheat", "FORAGE"),
         ["CAPTIVES"] = ("chain", "CAPTIVES"), ["CONTRACT"] = ("scroll", "CONTRACT"), ["ELDERS"] = ("house", "ELDERS"), ["CHAPTER"] = ("cross", "CHAPTER"),
-        ["FIEF"] = ("flag", "FIEF"), ["GARRISON"] = ("tower", "GARRISON"),
+        ["FIEF"] = ("flag", "FIEF"), ["GARRISON"] = ("tower", "GARRISON"), ["HARBOUR"] = ("anchor", "HARBOUR"),
     };
 
     /// The number a tab's tile carries (0 = none): what waits for you there.
@@ -88,6 +88,7 @@ partial class MapScreen
         }
         Tag(s.Kind.ToString().ToUpperInvariant(), Style.Text, s.Kind == SettlementKind.Village ? "house" : "tower");
         Tag(C.FactionNames[s.Faction].ToUpperInvariant(), SideColor(s.Faction), "flag");
+        if (C.IsPort(s)) Tag("PORT", Style.Text, "anchor");
         if (s.Owner == C.Player.Id) Tag("YOUR FIEF", Kit.Gilt, "crown");
         if (C.Refuses(s)) Tag("HOSTILE", Style.Bad);
         if (C.HolderOf(s) is Character holder)

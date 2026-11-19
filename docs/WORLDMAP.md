@@ -1,6 +1,6 @@
 # The designed world: plan
 
-Status: **WM0-WM6 built** (2026-11-18); WM7 (ships) later. This sprint is done; move it to `docs/archive/` when WM7 gets its own plan. New campaigns play the drawn world (layout 5); `IRONFIELD_MAP_LAYOUT=4` makes the last seeded map. Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
+Status: **WM0-WM7 built** (WM7, ports and ship travel, 2026-11-19: the player only; see "As built" for what was left out). New campaigns play the drawn world (layout 5); `IRONFIELD_MAP_LAYOUT=4` makes the last seeded map. Brings the world drawn in `Data/world.json` (the Rift Continent, revision 11) into the
 game as map layout 5, the map every new campaign plays on. Phases WM0-WM7; each ships on its own and `tools/check.sh`
 must pass after each. When a phase ships, add its "As built" note at the end.
 
@@ -81,7 +81,7 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
 - Campaign shots of the new map, judged (7/10 or better). The realm map (M) and minimap draw the coast. Docs, README
   and the landing page brought up to date.
 
-### WM7 (later, not this sprint): ships
+### WM7: ships
 
 - Ports and sea lanes: embark, sail, land; encounters at sea.
 
@@ -271,3 +271,25 @@ Northmarch 13, Azure 12, Crimson 12, Order 4, League 1.
   claims of a pen overlapping a field and of hedges on no plot were wrong. Still open: an unhedged plot's edge fades
   over many metres, and green crops have no texture beside the furrowed ones. In shots, a pasture's herd sometimes has
   not spawned yet (the shot can come before the herd search runs).
+- **WM7, ports and ship travel (2026-11-19).** A port is a town or castle with a sea lane in `Data/world.json`: 26 lanes
+  between 21 ports. Ports, quays and lanes are worked out from the drawing each time the map is built
+  (`WorldMap.DesignSeaLanes`, `Campaign/WorldSea.cs`), so nothing new is saved and an old layout-5 save has them too.
+  - **The drawn lanes only say which ports are joined.** 15 of the 27 drawn lines cross land once the map is scaled, so
+    each lane is routed over water instead (`PlanBySea`: the sea planner's A*, on cells with `Landness` under 0.3,
+    bounded to twice the drawn length). The Marrakin to Orda Tash line crosses the isthmus (by sea it is 4,491 units
+    round the continent), so it is dropped; Orda Tash and Ludlow (a port with no lane) are not ports.
+  - **Quays.** `QuayOf` finds the nearest deep water (`Landness` under 0.15) within 80 units of the settlement (the
+    berth) and walks back to dry beach (the shore). Berths lie 10 to 58 units from their towns, because the drawn towns
+    stand inland of deep water. No road runs to a quay: a new road would change the map for existing saves.
+  - **Sailing** (`Campaign/Ships.cs`): a port's HARBOUR tab lists the ports one lane away with hours at sea and the
+    fare (`ShipFare` 10 crowns + `ShipFareMan` 0.3 a man per 100 units; `ShipSpeed` 14 units an hour, foot is 5.5).
+    `Sail` takes the fare and puts the company at the berth; `Move` carries it along the lane; at the far berth it is
+    put ashore and walks into the port. At sea: no orders (`MoveTo`, `Chase`, `GoTo` do nothing), no encounters, no
+    roadside events. A port that refuses you is closed; a siege must be lifted first.
+  - **Drawn**: a plank pier from shore to berth and a moored cog at each quay (`Terrain.Moored`, `World.Ship`); the
+    company at sea is a cog under sail in its side's cloth colour (`MapLife.Ship`), and the camera follows it off the
+    land. On Low quality (no life mesh) the company at sea is only its ring.
+  - Test `ShipTravel`; shots `campaign-port.png`, `campaign-sail.png`, `campaign-harbour.png`. The shots were checked by
+    pixel sampling only (a sail over a wooden hull at the view's centre, the HARBOUR heading); no judge rated them.
+  - **Left out**: lords and caravans do not sail (the AI still treats the sea as a wall); encounters at sea (pirates,
+    storms); booking beyond one lane (a long voyage is port by port); the lanes are not drawn on the realm map.

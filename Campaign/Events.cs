@@ -178,7 +178,7 @@ public sealed partial class Campaign
     void EventsDaily()
     {
         BrigandKingsDaily();
-        if (S.Event != null || S.Hours < S.NextEvent) return;
+        if (S.Event != null || S.Hours < S.NextEvent || Sailing) return; // no roadside event finds a ship
         var ready = new List<PendingEvent>();
         foreach (var e in Events.Where(e => !Forced(e.Trigger)))
         {

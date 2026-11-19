@@ -97,6 +97,7 @@ public sealed partial class WorldMap
             });
         }
         m.DesignRoads(d);
+        m.DesignSeaLanes(d);
         foreach (var r in d.Rivers) m.Rivers.Add(m.DesignRiver(r, rng, span));
         foreach (var p in m.Provinces.Where(p => p.Kind is "Hills" or "Highlands"))
             for (int i = 0, n = p.Kind == "Highlands" ? 5 : 3; i < n; i++)
@@ -266,19 +267,33 @@ public sealed partial class WorldMap
     /// step the same), then pulled into straight legs wherever the line stays on land. The player's full planner prices roads,
     /// rivers and woods on a 4-unit grid and cleared two 170 000-cell arrays a plan; with every chasing lord re-planning it
     /// was most of the drawn map's campaign tick. The last point is `to`; a goal no land way reaches gives just `to`.
-    public List<Vector2> PlanAroundSea(Vector2 from, Vector2 to)
+    public List<Vector2> PlanAroundSea(Vector2 from, Vector2 to) => PlanOver(ref seaOpen, false, from, to);
+
+    /// The same search over the other half of the grid: a ship's way through open water, no longer than `reach` (WorldSea.cs).
+    List<Vector2> PlanBySea(Vector2 from, Vector2 to, float reach) => PlanOver(ref waterOpen, true, from, to, reach / SeaCell);
+    bool[]? waterOpen;
+
+    List<Vector2> PlanOver(ref bool[]? grid, bool water, Vector2 from, Vector2 to, float limit = float.MaxValue)
     {
         lock (seaLock)
         {
-            if (seaOpen == null)
+            if (seaCostOf.Length == 0)
             {
                 seaOrigin = -ExtentUsed;
                 seaN = (int)MathF.Ceiling(2 * ExtentUsed / SeaCell) + 1;
-                seaOpen = new bool[seaN * seaN];
-                for (int z = 0; z < seaN; z++)
-                    for (int x = 0; x < seaN; x++) seaOpen[z * seaN + x] = !InSea(new Vector2(seaOrigin + x * SeaCell, seaOrigin + z * SeaCell));
                 seaCostOf = new float[seaN * seaN]; seaPrev = new int[seaN * seaN]; seaSeen = new int[seaN * seaN];
             }
+            if (grid == null)
+            {
+                grid = new bool[seaN * seaN];
+                for (int z = 0; z < seaN; z++)
+                    for (int x = 0; x < seaN; x++)
+                    {
+                        var p = new Vector2(seaOrigin + x * SeaCell, seaOrigin + z * SeaCell);
+                        grid[z * seaN + x] = water ? Landness(p) < Afloat : !InSea(p);
+                    }
+            }
+            var seaOpen = grid;
             int n = seaN;
             int Of(Vector2 p) => Math.Clamp((int)MathF.Round((p.Y - seaOrigin) / SeaCell), 0, n - 1) * n + Math.Clamp((int)MathF.Round((p.X - seaOrigin) / SeaCell), 0, n - 1);
             Vector2 At(int c) => new(seaOrigin + c % n * SeaCell, seaOrigin + c / n * SeaCell);
@@ -302,8 +317,10 @@ public sealed partial class WorldMap
                         if (dx != 0 && dz != 0 && !seaOpen[cz * n + x] && !seaOpen[z * n + cx]) continue; // no slipping between two sea cells
                         float nc = cc + (dx != 0 && dz != 0 ? 1.4142f : 1);
                         if (seaSeen[id] == seaStamp && nc >= seaCostOf[id]) continue;
+                        float est = nc + Vector2.Distance(At(id), goal) / SeaCell;
+                        if (est > limit) continue;
                         seaSeen[id] = seaStamp; seaCostOf[id] = nc; seaPrev[id] = c;
-                        open.Enqueue(id, nc + Vector2.Distance(At(id), goal) / SeaCell);
+                        open.Enqueue(id, est);
                     }
             }
             if (!found) return new List<Vector2> { to };
@@ -319,7 +336,7 @@ public sealed partial class WorldMap
             {
                 int next = at + 1;
                 for (int j = at + 2, misses = 0; j < cells.Count && misses < 16; j++)
-                    if (OverLand(cells[at], cells[j])) { next = j; misses = 0; } else misses++;
+                    if (water ? OverWater(cells[at], cells[j]) : OverLand(cells[at], cells[j])) { next = j; misses = 0; } else misses++;
                 way.Add(cells[next]);
                 at = next;
             }

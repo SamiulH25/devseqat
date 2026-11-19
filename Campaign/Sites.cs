@@ -63,7 +63,7 @@ public sealed partial class Campaign
         return days > 999 ? "NOTHING MORE TO FIND HERE" : $"AGAIN IN {Math.Ceiling(days):0} DAYS";
     }
 
-    public void GoTo(Site s) { Player.Goal = s.Pos; Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = -1; S.GoalSite = s.Id; Player.Resting = false; }
+    public void GoTo(Site s) { if (Sailing) return; Player.Goal = s.Pos; Player.Moving = true; Player.ChaseId = -1; Player.GoalSettlement = -1; S.GoalSite = s.Id; Player.Resting = false; }
 
     /// You reach a site: the first visit is remembered, and a ready site raises its event (one of the events whose trigger
     /// is "site_" + its kind).

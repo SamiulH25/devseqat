@@ -660,6 +660,12 @@ public sealed partial class WorldMap
         terrain.RoadLines.AddRange(RoadLines);
         terrain.Lakes.AddRange(Lakes);
         terrain.MapBridges.AddRange(Bridges);
+        foreach (var (_, (shore, berth)) in Quays.OrderBy(q => q.Key)) // a port's pier (a plank bridge out over the shallows) and a ship alongside its end
+        {
+            var along = Vector2.Normalize(berth - shore);
+            terrain.MapBridges.Add(new MapBridge((shore + berth) / 2, along, Vector2.Distance(shore, berth) / 2 - 1.2f, false));
+            terrain.Moored.Add((berth + new Vector2(-along.Y, along.X) * 2.7f + along, MathF.Atan2(along.Y, along.X))); // at the pier's head: further in her stern grounds
+        }
         terrain.Fields.AddRange(fields);
         terrain.MapSeason = Season;
         if (Designed) terrain.SeaLevel = SeaLevel;

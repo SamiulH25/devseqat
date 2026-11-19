@@ -556,6 +556,7 @@ partial class MapScreen
             if (s.Kind != SettlementKind.Village && s.Buildings.Count > 0)
                 linesOut.Add((string.Join(", ", s.Buildings.Select(b => (Campaign.BuildingOf(b.Key)?.Name ?? b.Key) + (b.Value > 1 ? " " + Style.Numerals[b.Value] : ""))).ToUpperInvariant(), Style.Dim));
             if (s.Owner >= 0 && s.Owner != C.Player.Id && C.PartyById(s.Owner) is Party holder) linesOut.Add(($"FIEF OF {holder.Name.ToUpperInvariant()}", Style.Dim));
+            if (C.IsPort(s)) linesOut.Add(("A PORT: SHIPS SAIL FROM ITS HARBOUR", Style.Text));
             if (C.Refuses(s)) linesOut.Add(("WILL NOT TRADE WITH YOU", Style.Foe));
         }
         int w = linesOut.Max(l => ui.TW(l.Item1, 1)) + ui.U(16), h = linesOut.Count * ui.U(13) + ui.U(10);

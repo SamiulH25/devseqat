@@ -316,6 +316,7 @@ static partial class Kit
         ["scales"] = new[] { "...X...", "XXXXXXX", "X..X..X", "XXX.XXX", "...X...", "..ooo..", ".ooooo." },
         ["helm"] = new[] { "..XXX..", ".XXXXX.", "XXXXXXX", "XooXooX", "XXXoXXX", "XX.o.XX", "......." },
         ["house"] = new[] { "...X...", "..XXX..", ".XXXXX.", "XXXXXXX", ".XoooX.", ".Xo.oX.", ".Xo.oX." },
+        ["anchor"] = new[] { "..XXX..", "..X.X..", "..XXX..", "...X...", "X..X..X", "XX.X.XX", ".XXXXX." },
         ["cross"] = new[] { "...X...", "...X...", ".XXXXX.", "...X...", "...X...", "...X...", "...X..." },
         ["hammer"] = new[] { ".XXXX..", "XXXXXX.", ".XXoX..", "...o...", "...o...", "...o...", "...o..." },
         // battle orders (Hud.Deck.cs): a step forward, formations as men seen from above, spacing, split, fold in, relieve, stakes, pause and run

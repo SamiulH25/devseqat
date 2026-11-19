@@ -256,13 +256,14 @@ public sealed partial class Campaign
     /// The player's way to the goal still to walk (Campaign.Move; WorldTravel.cs), and the goal it was planned for.
     List<Vector2> route = new();
     Vector2 routeGoal;
-    public IReadOnlyList<Vector2> PlayerRoute => route;
+    public IReadOnlyList<Vector2> PlayerRoute => Sailing ? Player.Voyage : route;
 
     void Move(float h)
     {
         foreach (var p in S.Parties)
         {
             p.Cooldown -= h;
+            if (p.Voyage.Count > 0) { Sail(p, h); continue; } // at sea (Ships.cs)
             if (Map.Designed) p.Pos = Map.InLand(p.Pos); // one placed out at sea (spawns scatter) is put ashore
             if (p.Down || (p.Kind == PartyKind.Player && p.Resting)) continue;
             Vector2? target = null;
@@ -332,7 +333,7 @@ public sealed partial class Campaign
         var cells = new Dictionary<(int, int), List<Party>>(S.Parties.Count * 2);
         foreach (var p in S.Parties)
         {
-            if (p.Down) continue;
+            if (p.Down || p.Voyage.Count > 0) continue; // nothing meets a ship at sea
             var key = ((int)MathF.Floor(p.Pos.X / Cell), (int)MathF.Floor(p.Pos.Y / Cell));
             if (!cells.TryGetValue(key, out var list)) cells[key] = list = new List<Party>(2);
             list.Add(p);

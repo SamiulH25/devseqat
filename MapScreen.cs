@@ -351,7 +351,7 @@ sealed partial class MapScreen
             if (ms.Y < edge) pan += f; else if (ms.Y > gd.Viewport.Height - edge) pan -= f;
         }
         if (pan != Vector2.Zero) { follow = false; focus += pan * zoom * 0.9f * dt; }
-        focus = C.Map.InLand(focus);
+        if (!(follow && C.Sailing)) focus = C.Map.InLand(focus); // the view keeps to the land, but follows your ship out
         yaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt;
         if (ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
         {
@@ -398,7 +398,7 @@ sealed partial class MapScreen
     bool OnScreen(Vector2 p, out Vector2 sp, out float pxPerUnit)
     {
         var vp = gd.Viewport;
-        float h = terrain.Height(p) + 1;
+        float h = Surface(p) + 1;
         var a = vp.Project(new Vector3(p.X, h, p.Y), proj, view, Matrix.Identity);
         var bx = vp.Project(new Vector3(p.X + 1, h, p.Y), proj, view, Matrix.Identity);
         var bz = vp.Project(new Vector3(p.X, h, p.Y + 1), proj, view, Matrix.Identity);
@@ -480,7 +480,7 @@ sealed partial class MapScreen
         Looks.Grounded = true;
         Sky.Set(new Weather((float)(C.S.Hours % 24), C.SeasonIndex >= 2 ? 0.25f : 0, Snow: C.SeasonIndex == 3), nightFloor: 0.6f);
         var look = new Vector3(MathF.Cos(yaw) * MathF.Cos(pitch), -MathF.Sin(pitch), MathF.Sin(yaw) * MathF.Cos(pitch));
-        var f3 = new Vector3(focus.X, terrain.Height(focus), focus.Y);
+        var f3 = new Vector3(focus.X, Surface(focus), focus.Y); // at sea the view rests on the water, not the sea bed
         // The camera keeps its zoom and height at the edge of the world: only where its orbit would carry it off the ground
         // (out past the mountain rim) is it held over the rim's edge, so it looks down more steeply instead of zooming in.
         eye = f3 - look * zoom;
@@ -603,7 +603,7 @@ sealed partial class MapScreen
             u.Vel = moving ? new Vector2(MathF.Cos(p.Facing), MathF.Sin(p.Facing)) * 3 : Vector2.Zero;
             u.Anim += moving ? 0.08f : 0;
             u.Dead = false;
-            u.Fled = p.Down;
+            u.Fled = p.Down || p.Voyage.Count > 0; // at sea the ship is drawn, not the rider (MapLife.Ship)
         }
         foreach (int id in bearers.Keys.Where(id => C.PartyById(id) == null).ToList()) bearers.Remove(id);
     }
@@ -640,6 +640,7 @@ sealed partial class MapScreen
         foreach (var p in C.S.Parties) if (!p.Down) spots.Add(p.Pos);
         var carrion = C.S.Graves.Select(g => g.Pos).Concat(C.Map.Sites.Where(s => s.Kind == "battlefield").Select(s => s.Pos)).ToList();
         var caravans = C.S.Parties.Where(p => p.Kind == PartyKind.Caravan && !p.Down).Select(p => (p.Id, p.Pos, p.Facing, p.Breed == "pilgrims")).ToList();
+        (Vector2, float, Color)? ship = C.Sailing ? (C.Player.Pos, C.Player.Facing, Style.Sides[Style.PaletteOf(C.SideOf(C.Player))].Cloth) : null;
         var holdouts = C.S.Parties.Where(p => p.Lair && !p.Down && p.Breed == "goblin").Select(p => (p.Id, p.Pos, p.Men, p.Tier)).ToList();
         var (step, at, zm, hour, quality, shaded) = (lifeDt, focus, zoom, (float)(C.S.Hours % 24), lifeQuality, shading != null && lifeQuality != Quality.Low);
         var mapLife = life;
@@ -648,6 +649,7 @@ sealed partial class MapScreen
         {
             mapLife.SetCaravans(caravans);
             mapLife.SetHoldouts(holdouts);
+            mapLife.Ship = ship;
             mapLife.Update(step, at, zm, spots, carrion, hour, quality);
             if (shaded) { var built = mapLife.Build(); lock (lifeLock) { lifeMesh = built; lifeFresh = true; } }
         }
@@ -681,7 +683,10 @@ sealed partial class MapScreen
         sprites.Draw(gd, PrimitiveType.TriangleList, sprites.N / 3);
     }
 
-    Vector3 G(Vector2 p, float y = 0.6f) => new(p.X, terrain.Height(p) + y, p.Y);
+    /// The ground, or the sea's surface over it: what a mark or a label out on the water stands on.
+    float Surface(Vector2 p) => MathF.Max(terrain.Height(p), terrain.SeaLevel ?? float.MinValue);
+
+    Vector3 G(Vector2 p, float y = 0.6f) => new(p.X, Surface(p) + y, p.Y);
 
     void DrawLines()
     {
@@ -731,11 +736,33 @@ sealed partial class MapScreen
 
     // ---------- debug staging (IRONFIELD_CAMPAIGN_SHOTS) ----------
 
+    Vector2 shotHome;
+
     public void Stage(string what, Settlement? s = null)
     {
         hover = default; viewReady = false; // the camera jumps: no picking through the old view until Draw makes the new one
+        if (what != "sail" && C.Sailing) { C.Player.Voyage.Clear(); C.Player.Pos = shotHome; C.Player.Moving = false; } // back ashore after the "sail" shot
         switch (what)
         {
+            case "port": // a port's quay: its pier and the ship lying at it (docs/WORLDMAP.md WM7)
+            {
+                var port = C.S.Settlements.Where(C.IsPort).OrderBy(t => Vector2.Distance(t.Pos, C.Map.Quays[t.Id].Berth)).First();
+                panel = PanelKind.None; follow = false; zoom = 60; pitch = 0.7f; focus = C.Map.Quays[port.Id].Shore;
+                break;
+            }
+            case "sail": // the company at sea, just out of port
+            {
+                var lane = C.Map.SeaLanes.OrderBy(l => Vector2.Distance(C.Map.Settlements[l.A].Pos, C.Map.Quays[l.A].Berth)).First();
+                shotHome = C.Player.Pos;
+                C.Player.Voyage = lane.Way.Skip(1).ToList(); C.Player.VoyageTo = lane.B;
+                C.Player.Pos = lane.Way[0] + Vector2.Normalize(lane.Way[1] - lane.Way[0]) * 26; C.Player.Facing = MathF.Atan2(lane.Way[1].Y - lane.Way[0].Y, lane.Way[1].X - lane.Way[0].X);
+                C.Player.Goal = C.Map.Settlements[lane.B].Pos; C.Player.Moving = true; C.Player.ChaseId = -1;
+                panel = PanelKind.None; follow = true; zoom = 46; pitch = 0.7f; focus = C.Player.Pos; // following: the view leaves the land only after your ship
+                break;
+            }
+            case "harbour": // the HARBOUR tab of a port that will have you
+                at = C.S.Settlements.Where(t => C.IsPort(t) && !C.Refuses(t)).OrderByDescending(t => C.Sailings(t).Count()).First();
+                C.Player.Pos = at.Pos; C.Player.Moving = false; tab = "HARBOUR"; panel = PanelKind.Settlement; note = ""; break;
             case "siege": at = s; panel = PanelKind.Siege; break;
             case "contract":
                 at = C.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == C.Captain.Contract);
