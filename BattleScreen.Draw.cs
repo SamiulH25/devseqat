@@ -55,6 +55,7 @@ partial class BattleScreen
     {
         var gd = GraphicsDevice;
         bool shadows = quality == Quality.High;
+        sh.FogFrom = MathF.Max(0, Vector3.Distance(eye, focusPoint) - 12); // fog measured from just short of the ground in view
         sh.CutEye = new Vector4(eye, Vector2.Distance(new(eye.X, eye.Z), new(focusPoint.X, focusPoint.Z)) * MathHelper.SmoothStep(0, 1, blend)); // set before the sun's pass: thinned trees cast no shadow
         if (shadows)
         {
@@ -89,7 +90,7 @@ partial class BattleScreen
         sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
         DrawSpritesShaded(sh.Sprite, "Sprite");
         DrawSoft(sh.Sprite);
-        sh.Torch = Vector4.Zero;
+        sh.Torch = Vector4.Zero; sh.FogFrom = 0;
         Array.Clear(sh.Glow); // the lights are this battle's alone (the map shares the shaders)
         DrawLines();
         var (awe, moment) = PostMoment();

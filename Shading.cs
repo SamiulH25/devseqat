@@ -126,6 +126,9 @@ sealed class Shading : IDisposable
     public Vector4 CutEye;
     /// Fog start and end (the campaign map pushes them out for its far camera).
     public Vector2 Fog = new(Ironfield.World.FogStart, Ironfield.World.FogEnd);
+    /// Metres the fog keeps clear in front of the eye before its start (the battle: the camera's distance to what it looks
+    /// at, so thick fog at night closes round the field in view instead of greying out the whole screen; 0 elsewhere).
+    public float FogFrom;
 
     /// Set the shared lighting parameters on a lit effect.
     public void Setup(Effect fx, Matrix viewProj, Vector3 camPos, float time, bool shadows, float normalOffset)
@@ -139,7 +142,7 @@ sealed class Shading : IDisposable
         p["SkyColor"]?.SetValue(SkyColor);
         p["GroundColor"]?.SetValue(GroundColor);
         p["FogColor"]?.SetValue(Ironfield.World.Horizon.ToVector3());
-        p["FogParams"]?.SetValue(new Vector4(Fog.X * Ironfield.Sky.FogScale, Fog.Y * Ironfield.Sky.FogScale, 0.55f, 0));
+        p["FogParams"]?.SetValue(new Vector4(FogFrom + Fog.X * Ironfield.Sky.FogScale, FogFrom + Fog.Y * Ironfield.Sky.FogScale, 0.55f, 0));
         p["ShadowParams"]?.SetValue(new Vector4(ShadowTexel, ShadowBias, shadows ? 1 : 0, normalOffset));
         p["Time"]?.SetValue(time);
         p["Wind"]?.SetValue(new Vector4(Wind.X, Wind.Y, Wind.Z * (1 - Calm * 0.9f), Wind.W * (1 - Calm * 0.6f)));
