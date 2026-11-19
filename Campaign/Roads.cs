@@ -29,9 +29,12 @@ public sealed partial class Campaign
     {
         var towns = S.Settlements.Where(t => t.Kind == SettlementKind.Town && !t.Besieged && t.Faction >= 0).ToList();
         if (towns.Count < 2) return null;
-        var from = fromTown ?? rng.Pick(towns);
-        var to = towns.Where(t => t != from && !FactionsAtWar(t.Faction, from.Faction))
+        List<Settlement> Dests(Settlement from) => towns.Where(t => t != from && !FactionsAtWar(t.Faction, from.Faction))
             .Where(t => Vector2.Distance(t.Pos, from.Pos) is var d && d > 50 * Map.Spread && d < 260 * Map.Spread).ToList();
+        // With few towns (HD4) some have no market in reach at peace: set out only from one that has.
+        var from = fromTown ?? (towns.Where(t => Dests(t).Count > 0).ToList() is { Count: > 0 } open ? rng.Pick(open) : null);
+        if (from == null) return null;
+        var to = Dests(from);
         if (to.Count == 0) return null;
         var dest = rng.Pick(to);
         var p = new Party

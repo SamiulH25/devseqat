@@ -539,6 +539,8 @@ sealed partial class World : IDisposable
                     break;
                 case FoliageKind.Wall: WallStones(m, b, f.Scale, rng); break;
                 case FoliageKind.Tower: Tower(m, b, rng); break;
+                case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/HOLDS.md HD5)
+                case FoliageKind.Castle when f.Dry == 3: GreatCastle(m, b, f.Scale, rng); break;
                 case FoliageKind.Gate: GateDoor(m, b, t.Wall?.GateOpen == true, rng); break;
                 case FoliageKind.Ladder: Ladder(m, b); break;
                 case FoliageKind.House: TownHouse(m, b, f.Scale, rng); break;
@@ -1072,7 +1074,72 @@ sealed partial class World : IDisposable
         House(m, b, 4.5f * s, 3.4f * s, 2.8f * s, yaw, Jitter(new Color(204, 192, 166), r, 0.08f), Jitter(new Color(140, 74, 52), r, 0.1f));
     }
 
-    static void Castle(Mesh m, Vector3 b, float s, Random r)
+    /// A tower house (HD5): a tall square keep under a pitched roof, a turret on one corner, and a low walled yard (barmkin)
+    /// with a byre against its wall.
+    static void TowerHouse(Mesh m, Vector3 b, float s, Random r)
+    {
+        m.Tag = Vector2.Zero;
+        float yaw = r.Next(4) * MathHelper.PiOver2, h = 2.5f * s;
+        var ax = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw)); var az = new Vector3(-ax.Z, 0, ax.X);
+        var keep = b - ax * 0.5f * s;
+        m.Box(keep - Vector3.Up * 0.3f * s, 1.4f * s, 1.4f * s, h + 0.3f * s, yaw, Jitter(Stone, r, 0.05f));
+        m.Gable(keep + Vector3.Up * h, 1.5f * s, 1.5f * s, 0.9f * s, yaw, Slate);
+        var turret = keep + (ax + az) * 0.7f * s;
+        m.Frustum(turret + Vector3.Up * h * 0.55f, turret + Vector3.Up * (h + 0.3f * s), 0.32f * s, 0.32f * s, 8, Stone, r);
+        m.Frustum(turret + Vector3.Up * (h + 0.3f * s), turret + Vector3.Up * (h + 0.9f * s), 0.4f * s, 0, 8, Slate, r, capBottom: true);
+        // The barmkin: a low wall round a yard beside the keep, open at the gate.
+        var yard = b + ax * 0.9f * s;
+        float wh = 0.55f * s, yh = 1.1f * s;
+        m.Box(yard + az * yh - Vector3.Up * 0.3f * s, 2 * yh, 0.25f * s, wh + 0.3f * s, yaw, Stone);
+        m.Box(yard - az * yh - Vector3.Up * 0.3f * s, 2 * yh, 0.25f * s, wh + 0.3f * s, yaw, Stone);
+        m.Box(yard + ax * yh + az * 0.65f * yh - Vector3.Up * 0.3f * s, 0.25f * s, 0.7f * yh, wh + 0.3f * s, yaw, Stone);
+        m.Box(yard + ax * yh - az * 0.65f * yh - Vector3.Up * 0.3f * s, 0.25f * s, 0.7f * yh, wh + 0.3f * s, yaw, Stone);
+        var byre = yard + az * 0.55f * s;
+        m.Box(byre - Vector3.Up * 0.2f * s, 1.3f * s, 0.7f * s, 0.6f * s, yaw, Jitter(Wattle, r, 0.08f));
+        m.Gable(byre + Vector3.Up * 0.4f * s, 1.3f * s, 0.7f * s, 0.4f * s, yaw, Jitter(Thatch, r, 0.08f));
+    }
+
+    /// A great castle (HD5): a curtain wall with round towers and a gatehouse round today's castle, and a big keep with
+    /// corner turrets in the middle.
+    static void GreatCastle(Mesh m, Vector3 b, float s, Random r)
+    {
+        m.Tag = Vector2.Zero;
+        float h = 1.1f * s, half = 3.4f * s, yaw = r.Next(4) * MathHelper.PiOver2;
+        for (int i = 0; i < 4; i++)
+        {
+            float a = yaw + i * MathHelper.PiOver2;
+            var dir = new Vector3(MathF.Cos(a), 0, MathF.Sin(a));
+            var side = new Vector3(-dir.Z, 0, dir.X);
+            if (i == 0)
+            {
+                // The gate side: two stretches of wall and a gatehouse between two drum towers.
+                foreach (int k in new[] { -1, 1 })
+                {
+                    m.Box(b + dir * half + side * k * half * 0.6f - Vector3.Up * 0.3f * s, 0.8f * half, 0.4f * s, h + 0.3f * s, a + MathHelper.PiOver2, Stone);
+                    var drum = b + dir * half + side * k * 0.75f * s;
+                    m.Frustum(drum - Vector3.Up * 0.3f * s, drum + Vector3.Up * h * 1.7f, 0.5f * s, 0.46f * s, 8, Stone, r);
+                    m.Frustum(drum + Vector3.Up * h * 1.7f, drum + Vector3.Up * h * 2.4f, 0.58f * s, 0, 8, Slate, r, capBottom: true);
+                }
+                m.Box(b + dir * half - Vector3.Up * 0.3f * s, 1.0f * s, 0.9f * s, h * 1.5f + 0.3f * s, a + MathHelper.PiOver2, Jitter(Stone, r, 0.04f));
+            }
+            else m.Box(b + dir * half - Vector3.Up * 0.3f * s, 2 * half, 0.4f * s, h + 0.3f * s, a + MathHelper.PiOver2, Stone);
+            var corner = b + new Vector3(MathF.Cos(a + MathHelper.PiOver4), 0, MathF.Sin(a + MathHelper.PiOver4)) * half * 1.414f;
+            m.Frustum(corner - Vector3.Up * 0.3f * s, corner + Vector3.Up * h * 1.7f, 0.6f * s, 0.55f * s, 8, Stone, r);
+            m.Frustum(corner + Vector3.Up * h * 1.7f, corner + Vector3.Up * h * 2.4f, 0.7f * s, 0, 8, Slate, r, capBottom: true);
+        }
+        Castle(m, b, s * 0.85f, r, keep: false); // the inner ward
+        m.Box(b - Vector3.Up * 0.3f * s, 2.0f * s, 2.0f * s, h * 3.0f, yaw, Jitter(Stone, r, 0.05f)); // the great keep
+        m.Gable(b + Vector3.Up * (h * 3.0f - 0.3f * s), 2.1f * s, 2.1f * s, 1.0f * s, yaw, Slate);
+        for (int i = 0; i < 4; i++)
+        {
+            float a = yaw + MathHelper.PiOver4 + i * MathHelper.PiOver2;
+            var t = b + new Vector3(MathF.Cos(a), 0, MathF.Sin(a)) * 1.414f * s;
+            m.Frustum(t + Vector3.Up * h * 2.2f, t + Vector3.Up * h * 3.3f, 0.26f * s, 0.26f * s, 6, Stone, r);
+            m.Frustum(t + Vector3.Up * h * 3.3f, t + Vector3.Up * h * 3.8f, 0.32f * s, 0, 6, Slate, r, capBottom: true);
+        }
+    }
+
+    static void Castle(Mesh m, Vector3 b, float s, Random r, bool keep = true)
     {
         m.Tag = Vector2.Zero;
         float h = 1.3f * s, half = 1.8f * s;
@@ -1091,6 +1158,7 @@ sealed partial class World : IDisposable
 
     void Grass(Mesh m)
     {
+        if (!keep) return;
         if (!t.Grass) return;
         var r = new Random(t.Seed + 13);
         const int count = 9000; // clumps of 2-4 tufts

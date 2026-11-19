@@ -99,6 +99,10 @@ def faults(w):
     for s in w.get("settlements", []):
         if s.get("kind") not in SETTLEMENTS:
             out.append(f"settlement '{s.get('name')}': kind '{s.get('kind')}' is not town, castle or village")
+        if s.get("kind") == "castle" and s.get("rank", 2) not in (1, 2, 3):
+            out.append(f"settlement '{s.get('name')}': rank {s.get('rank')!r} is not 1 (tower house), 2 (castle) or 3 (great castle)")
+        if s.get("kind") != "castle" and "rank" in s:
+            out.append(f"settlement '{s.get('name')}': only castles have a rank")
         if subs and s.get("subculture") and s["subculture"] not in subs:
             out.append(f"settlement '{s.get('name')}': unknown subculture '{s['subculture']}'")
         if w.get("provinces") and all(isinstance(s.get(k), (int, float)) for k in ("x", "y")):

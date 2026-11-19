@@ -11,7 +11,7 @@ partial class MapScreen
     void SettlementPanel()
     {
         var s = at!;
-        var r = Modal(980, 620, s.Kind.ToString().ToUpperInvariant(), SideColor(s.Faction));
+        var r = Modal(980, 620, s.KindWord, SideColor(s.Faction));
         bool fief = s.Owner == C.Player.Id && s.Kind != SettlementKind.Village;
         PlaceHero(s, new Rectangle(r.X + ui.U(14), r.Y + ui.U(16), r.Width - ui.U(28), ui.U(150)));
         var tabs = TownTabs(s, fief);
@@ -82,7 +82,7 @@ partial class MapScreen
             ui.Shield(new Rectangle(row.X + ui.U(10), row.Y + ui.U(7), ui.U(30), ui.U(36)), Style.Sides[Style.PaletteOf(to.Faction)]);
             int tx = row.X + ui.U(50), tw = row.Right - ui.U(196) - tx;
             ui.TextFit(to.Name.ToUpperInvariant(), tx, row.Y + ui.U(5), tw, Style.Text, 2);
-            ui.TextFit($"{to.Kind.ToString().ToUpperInvariant()} OF THE {C.FactionNames[to.Faction].ToUpperInvariant()}, TO THE {Campaign.Bearing(s.Pos, to.Pos).ToUpperInvariant()}", tx, row.Y + ui.U(23), tw, Style.Dim, 1);
+            ui.TextFit($"{to.KindWord} OF THE {C.FactionNames[to.Faction].ToUpperInvariant()}, TO THE {Campaign.Bearing(s.Pos, to.Pos).ToUpperInvariant()}", tx, row.Y + ui.U(23), tw, Style.Dim, 1);
             float hours = C.SailHours(lane), days = hours / 24;
             string time = hours < 24 ? $"{hours:0} HOURS AT SEA" : $"{days:0.#} DAYS AT SEA";
             ui.Icon("clock", tx, row.Bottom - ui.U(13), Style.Dim, 1);

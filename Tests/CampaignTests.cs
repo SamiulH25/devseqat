@@ -1626,7 +1626,8 @@ public static partial class SelfTest
         foreach (var e in Campaign.ValidateTalk()) Check(false, "talk.json: " + e);
         var c = Campaign.New(4247);
         c.S.Gold = 5000;
-        var party = c.S.Parties.First(p => p.Kind == PartyKind.Lord && p.KnightOrder == "" && !p.Down && c.CharacterOf(p) != null && !c.Hostile(c.Player, p));
+        var party = c.S.Parties.First(p => p.Kind == PartyKind.Lord && p.KnightOrder == "" && !p.Down && c.CharacterOf(p) != null && !c.Hostile(c.Player, p)
+            && Vector2.Distance(p.Pos, c.Player.Pos) > 3 * Campaign.TalkReach && c.InHall(c.CharacterOf(p)!) == null);
         var lord = c.CharacterOf(party)!;
         Check(c.CannotTalk(lord) != null, "a lord far away cannot be talked to");
         c.Player.Pos = party.Pos + new Vector2(2, 0);

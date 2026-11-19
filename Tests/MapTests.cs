@@ -469,6 +469,13 @@ public static partial class SelfTest
         Check(cut.Count == 0, "every town and castle is joined by road: not " + string.Join(", ", cut.Select(s => $"{s.Name} at {s.Pos}")));
         // The sea (WM2): a point at sea is put ashore, a way between far towns keeps to the land, nobody walks on water.
         var shore = m.InLand(deep);
+        // Holds (docs/HOLDS.md HD4): towns rare, castles common, every province a seat, every village bound, every realm a town.
+        int nTowns = a.S.Settlements.Count(s => s.Kind == SettlementKind.Town), castles = a.S.Settlements.Count(s => s.Kind == SettlementKind.Castle);
+        Check(nTowns <= 25 && castles >= 90, $"towns are rare and castles common ({nTowns} towns, {castles} castles)");
+        Check(m.Provinces.All(p => a.S.Settlements.Any(s => s.Province == p.Id && s.Kind != SettlementKind.Village)), "every province has a seat");
+        Check(a.S.Settlements.Where(s => s.Kind == SettlementKind.Village).All(v => v.Holder >= 0 && a.S.Settlements[v.Holder].Province == v.Province), "every village is bound to a seat of its province");
+        Check(Enumerable.Range(0, a.S.Factions.Count).All(f => a.S.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town)), "every realm has a town for its capital");
+        Check(a.S.Settlements.Where(s => s.Kind == SettlementKind.Castle).Select(s => s.Size).Distinct().Count() == 3, "castles come in three sizes");
         Check(m.InSea(deep) && !m.InSea(shore), $"a point at sea is put on the shore ({shore})");
         var towns = m.Settlements.Where(s => s.Kind == SettlementKind.Town).ToList();
         foreach (var (from, to) in new[] { (towns[0], towns[^1]), (towns[3], towns[towns.Count / 2]) })

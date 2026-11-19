@@ -94,6 +94,7 @@ public sealed partial class WorldMap
                 Id = m.Settlements.Count, Province = m.DesignProvinceAt(pos).Id, Faction = f, Name = s.Name, Pos = pos,
                 Culture = s.Subculture is { } sub && Factions.Culture(sub) is { Waiting: false } ? sub : Factions.CultureOf(f),
                 Kind = s.Kind switch { "town" => SettlementKind.Town, "castle" => SettlementKind.Castle, _ => SettlementKind.Village },
+                Rank = s.Kind == "castle" ? Math.Clamp(s.Rank == 0 ? 2 : s.Rank, 1, 3) : 0, // HD5: tower house, castle, great castle
             });
         }
         m.DesignRoads(d);

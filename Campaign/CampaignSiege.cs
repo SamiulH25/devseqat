@@ -13,7 +13,7 @@ public sealed partial class Campaign
     /// What a settlement yields a week: to its faction's treasury, or to you when it is your fief (with its province's villages).
     public float Income(Settlement t) => t.Kind switch
     {
-        SettlementKind.Town => B.TownIncome, SettlementKind.Castle => B.CastleIncome,
+        SettlementKind.Town => B.TownIncome, SettlementKind.Castle => B.CastleIncome * SizeFactor(t),
         _ => t.ThreatUntil > S.Hours && !(t.Owner == Player.Id && Has("Castellan")) ? 0 : B.VillageIncome,
     } * (t.Besieged ? 0.25f : 1) * FiefFactor(t);
 
@@ -21,12 +21,17 @@ public sealed partial class Campaign
 
     // ---------- garrisons ----------
 
-    /// Towns keep infantry, archers and spears behind their walls; castles infantry and archers.
+    /// How a castle's size (HD5) weighs its income, garrison and walls: a tower house 0.6, a castle 1, a great castle 1.4.
+    public static float SizeFactor(Settlement s) => s.Size switch { 1 => 0.6f, 3 => 1.4f, _ => 1 };
+
+    /// Towns and great castles keep infantry, archers and spears behind their walls; castles infantry and archers; a tower
+    /// house a smaller garrison of the two.
     void RaiseGarrison(Settlement s, float fill = 0.8f)
     {
         if (s.Kind == SettlementKind.Village) return;
         int tier = Math.Clamp(2 + Day / 45, 2, 5);
-        var roles = s.Kind == SettlementKind.Town ? new[] { "infantry", "archers", "spears" } : new[] { "infantry", "archers" };
+        var roles = s.Kind == SettlementKind.Town || s.Size == 3 ? new[] { "infantry", "archers", "spears" } : new[] { "infantry", "archers" };
+        if (s.Size == 1) fill *= 0.6f;
         foreach (var role in roles)
         {
             if (s.Garrison.Any(c => Rules.RoleOf(c) == role)) continue;
@@ -60,7 +65,7 @@ public sealed partial class Campaign
             RaiseGarrison(s, 0.4f);
             foreach (var c in s.Garrison.Where(c => c.Type.Tier <= 5))
             {
-                int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * (0.8f + 0.07f * Level(s, "walls")) * GarrisonTemper(s)) - c.Men;
+                int want = (int)(Rules.CapOf(c.Troop, Rules.RoleOf(c)) * (0.8f + 0.07f * Level(s, "walls")) * GarrisonTemper(s) * (s.Size == 1 ? 0.6f : 1)) - c.Men;
                 int n = Math.Min(Math.Min(want, Rules.Room(c, c.Troop)), (int)(MathF.Max(0, fs.Treasury - 300) / Rules.PerMan(20))); // the chest keeps the floor lords' wages keep
                 if (s.Kind == SettlementKind.Castle) n = (int)(n * HeldShare(s)); // a castle fills its ranks from its villages (HD3)
                 if (n <= 0) continue;
@@ -137,8 +142,8 @@ public sealed partial class Campaign
         // Lords of the town's faction resting inside fight too (PrepareBattle adds anyone near and friendly to them).
         setup.Options.Siege = true;
         setup.Options.Ladders = LaddersIn(s) > 0 ? 0 : Player.Men >= Scaled(90) ? 4 : 2;
-        setup.Options.GateHp = (s.Kind == SettlementKind.Town ? 600 : 450) + 150 * Level(s, "walls");
-        setup.Options.WallHp = (s.Kind == SettlementKind.Town ? 900 : 700) + 250 * Level(s, "walls"); // what engines must break (docs/SIEGECRAFT.md A2)
+        setup.Options.GateHp = (s.Kind == SettlementKind.Town ? 600 : 450 * SizeFactor(s)) + 150 * Level(s, "walls");
+        setup.Options.WallHp = (s.Kind == SettlementKind.Town ? 900 : 700 * SizeFactor(s)) + 250 * Level(s, "walls"); // what engines must break (docs/SIEGECRAFT.md A2)
         setup.Options.WallEngines = Level(s, "walls"); // springalds on the walkway, one for each level of walls
         setup.Options.WallHp *= 1 - 0.7f * MathF.Min(1, s.Battered); // what the camp's stones have done (SiegeWorks.cs)
         setup.Options.Breaches = BreachesOf(s);

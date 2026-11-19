@@ -11,7 +11,7 @@ public sealed class WorldDesign
 
     public sealed class Realm { public int Id; public string Name = "", Culture = "", Colour = ""; }
     public sealed class Province { public int Id, Realm = -1; public string Name = "", Kind = ""; public float X, Y; public string? Subculture; }
-    public sealed class Settlement { public int Id, Realm = -1; public string Name = "", Kind = "", Culture = ""; public float X, Y; public bool Port; public string? Subculture; }
+    public sealed class Settlement { public int Id, Realm = -1, Rank; public string Name = "", Kind = "", Culture = ""; public float X, Y; public bool Port; public string? Subculture; }
     public sealed class Site { public int Id; public string Name = "", Kind = ""; public float X, Y; }
     public sealed class Line { public int Id; public float Width; public bool Minor; public float[][] Points = Array.Empty<float[]>(); }
     public sealed class Lake { public int Id; public float X, Y, Radius; }

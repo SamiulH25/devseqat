@@ -777,6 +777,10 @@ sealed partial class MapScreen
                 panel = PanelKind.None; follow = false; zoom = 95; pitch = 0.85f;
                 focus = C.S.Settlements.Where(s => s.Kind == SettlementKind.Village).OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).First().Pos;
                 break;
+            case "holds": // the nearest tower house to the player (docs/HOLDS.md HD5)
+                panel = PanelKind.None; follow = false; zoom = 70; pitch = 0.72f;
+                focus = C.S.Settlements.Where(s => s.Size == 1).OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).Select(s => s.Pos).DefaultIfEmpty(C.Player.Pos).First();
+                break;
             case "village": // folk about a village, smoke from its chimneys (WL5); "night" is the same at lamplight
             case "night":
                 panel = PanelKind.None; follow = false; zoom = 28; pitch = 0.6f;

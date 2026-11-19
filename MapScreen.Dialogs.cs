@@ -181,7 +181,7 @@ partial class MapScreen
         var s = at!;
         var r = Modal(680, C.Besieging == s ? 560 : 400, (C.Besieging == s ? "THE SIEGE OF " : "") + s.Name.ToUpperInvariant(), SideColor(s.Faction));
         int x = r.X + ui.U(24), y = r.Y + ui.U(50);
-        ui.Text($"{s.Kind.ToString().ToUpperInvariant()} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}", x, y, Style.Dim, 1);
+        ui.Text($"{s.KindWord} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}", x, y, Style.Dim, 1);
         y += ui.U(18);
         ui.Text($"GARRISON {C.GarrisonMen(s)} MEN   SUPPLIES {s.Supplies:0} DAYS", x, y, Style.Text);
         y += ui.U(24);

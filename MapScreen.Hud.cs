@@ -101,17 +101,19 @@ partial class MapScreen
         int target = pl.ChaseId >= 0 ? pl.ChaseId : -1, goalTown = pl.GoalSettlement;
         foreach (var s in C.S.Settlements)
         {
-            if (Screen(G(s.Pos, s.Kind == SettlementKind.Village ? 6 : 11)) is not Vector2 sp) continue;
-            // Pulled back over a bigger world, the small labels would collide: villages drop out first, then towns shrink.
-            if (s.Kind == SettlementKind.Village && zoom > 230 && s.Id != goalTown) continue;
+            if (Screen(G(s.Pos, s.Kind == SettlementKind.Village ? 6 : s.Size == 3 ? 15 : 11)) is not Vector2 sp) continue;
+            // A hierarchy (docs/HOLDS.md HD5): towns large, castles small, villages only close in. Pulled back, villages drop out
+            // first, then tower houses, and towns shrink last.
+            if (s.Kind == SettlementKind.Village && zoom > 150 && s.Id != goalTown) continue;
+            if (s.Size == 1 && zoom > 300 && s.Id != goalTown) continue;
             var col = SideColor(s.Faction);
             string label = s.Name.ToUpperInvariant() + (s.Besieged ? " (BESIEGED)" : "") + (s.Owner == C.Player.Id ? " *" : "");
-            int scale = s.Kind == SettlementKind.Village || zoom > 300 ? 1 : 2;
+            int scale = s.Kind == SettlementKind.Town && zoom <= 450 ? 2 : 1;
             int w = ui.TW(label, scale) + ui.U(10);
             var r = new Rectangle((int)sp.X - w / 2, (int)sp.Y - ui.U(scale == 2 ? 18 : 13), w, ui.U(scale == 2 ? 18 : 13));
             all.Add(new Label
             {
-                Pri = s.Id == goalTown ? 0 : s.Kind == SettlementKind.Village ? 3 : 1, R = r,
+                Pri = s.Id == goalTown ? 0 : s.Kind switch { SettlementKind.Town => 1, SettlementKind.Village => 4, _ => s.Size == 1 ? 3 : 2 }, R = r,
                 Draw = l =>
                 {
                     ui.Rect(l.R, Color.Black * 0.45f);
@@ -548,7 +550,7 @@ partial class MapScreen
         else
         {
             linesOut.Add((s!.Name.ToUpperInvariant(), SideColor(s.Faction)));
-            linesOut.Add(($"{s.Kind.ToString().ToUpperInvariant()} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}", Style.Dim));
+            linesOut.Add(($"{s.KindWord} OF THE {C.FactionNames[s.Faction].ToUpperInvariant()}", Style.Dim));
             linesOut.Add(($"{C.S.Provinces[s.Province].Title.ToUpperInvariant()}, {s.Culture.ToUpperInvariant()} PEOPLE", Style.Dim));
             if (s.Kind == SettlementKind.Village) linesOut.Add((s.ThreatUntil > C.S.Hours ? "THREATENED: NO RECRUITS" : $"{s.Recruits} RECRUITS", Style.Text));
             if (s.Kind == SettlementKind.Town) linesOut.Add(($"{s.Mercenaries.Count} MERCENARY COMPANIES, {s.Horses} HORSES", Style.Text));

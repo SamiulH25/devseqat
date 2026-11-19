@@ -80,7 +80,7 @@ public partial class Campaign
     internal void RefreshMercenaries(Settlement t)
     {
         t.Mercenaries.Clear();
-        int offers = 1 + rng.Next(2);
+        int offers = (Map.Designed ? 2 : 1) + rng.Next(2); // the drawn world has few towns (HD4): each has more bands for hire
         for (int i = 0; i < offers; i++)
         {
             string role = rng.Pick(new[] { "infantry", "archers", "spears", "horse" });

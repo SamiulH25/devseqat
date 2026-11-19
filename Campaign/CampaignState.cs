@@ -334,6 +334,12 @@ public sealed class Settlement
     public int Tax = 1;
     /// A village's holder (docs/HOLDS.md HD3): the id of the castle or town whose demesne it is (-1 until bound; not villages).
     public int Holder = -1;
+    /// A castle's size (docs/HOLDS.md HD5): 1 tower house, 2 castle, 3 great castle; 0 for towns, villages and castles of old
+    /// saves and generated maps (read as a castle: `Size`).
+    public int Rank;
+    public int Size => Kind == SettlementKind.Castle ? (Rank == 0 ? 2 : Rank) : 0;
+    /// What it is, in the words the UI shows: TOWN, VILLAGE, or a castle by its size (TOWER HOUSE, CASTLE, GREAT CASTLE).
+    public string KindWord => Kind switch { SettlementKind.Town => "TOWN", SettlementKind.Village => "VILLAGE", _ => Size switch { 1 => "TOWER HOUSE", 3 => "GREAT CASTLE", _ => "CASTLE" } };
 }
 
 /// A siege work (docs/SIEGECRAFT.md A3): which engine, and the hour it is ready.

@@ -1,6 +1,6 @@
 # Holds: a land of castles, few towns (sprint plan)
 
-Status: **in progress**. HD1-HD3 built 2026-11-19; HD4 waits on the owner's notes. Planned 2026-11-18. The owner's direction, from the review of the drawn world (WM6):
+Status: **in progress**. HD1-HD5 built 2026-11-19 (the owner asked the model to decide HD4); HD6 (world size) and HD7 (docs and polish) left. Planned 2026-11-18. The owner's direction, from the review of the drawn world (WM6):
 
 > Towns and cities were rare in medieval times; castles and holds were far, far more common.
 
@@ -118,10 +118,19 @@ towns. Not built: the carts between a castle and its villages (drawing only; wit
   `CaravansTownToTown`.
 
 ### HD4: The world's settlements (data, by notes)
-Status 2026-11-19: proposed. Seven notes in `Data/world.json` ("Holds: <realm>", pinned at each capital, revision 14) wait for
-the owner. The proposal: 19 towns (3 a realm, the Order 1), 42 towns become castles, 28 new holds (every province gets a seat;
-123 castles in all). The machine-readable plan the notes were written from is `docs/world/holds-plan.json` (`keep`, `convert`,
-`new` with province, realm, x, y, name): apply it once the threads agree, after any changes the owner asks for.
+Built 2026-11-19. The owner asked the model to decide; the seven notes ("Holds: <realm>", at each capital) record the
+proposal and are marked done. `Data/world.json` now has 19 towns (3 a realm, the Order 1), 123 castles (42 former towns, 28
+new holds named in each realm's style) and every province a seat; `docs/world/holds-plan.json` is the plan it came from. 17 new
+holds were then moved to stand at least 18 units from any village (the drawn castles stand a median 28 from theirs).
+As built in code: lords were already shared out by each realm's share of seats (`LordsWantedOf`), so their number is unchanged.
+A castle's income, garrison and walls scale with its size (`CampaignSiege.SizeFactor`: tower house 0.6, castle 1, great castle
+1.4; a great castle keeps spears as a town does); realm income comes out about the same as before (13,500 against 13,900 base a
+week). Towns on the drawn map offer 2-3 bands for hire instead of 1-2. `TryBesiege` is unchanged (a lord besieges only the first seat
+listed in the province): letting him pick any enemy seat, towns first, snowballed (`--realms 8`: largest share 36-38%, the
+Order of the Ashen Sun gone in 2-5 runs of 8, against 30% and none before HD4; unchanged it is 32% and none). A caravan sets out only from a town with a market at peace in reach. Contract
+boards, tournaments and goods were left as they are (castles already have CONTRACT; tournaments and trade stay in towns). An old
+save keeps its own settlements: the map draws only those (`Campaign` constructor). `DesignedMap` checks the ratio, a seat in
+every province, every village bound in its own province, every realm a town, three castle sizes.
 - Put the change to `Data/world.json` forward as notes, one per realm, pinned at its capital. Each lists the towns
   that stay, the towns that become castles, and where new holds go (frontiers, passes, river crossings, coasts).
   Nothing is edited until the owner agrees in the thread (docs/world/README.md, rule 2).
@@ -145,7 +154,16 @@ the owner. The proposal: 19 towns (3 a realm, the Order 1), 42 towns become cast
   ms a day).
 - Tests: `DesignedMap` gains the ratio (towns ≤ 25, castles ≥ 90, each village bound, each realm a capital).
 
-### HD5: Seen on the map
+### HD5: Seen on the map (built 2026-11-19)
+As built: `"rank"` on castles in `Data/world.json` (1 tower house, 2 castle, 3 great castle; the page edits it as Size, and
+`tools/world.py --check` refuses a bad one), `Settlement.Rank`/`Size`/`KindWord` (the UI's TOWN, VILLAGE, TOWER HOUSE, CASTLE,
+GREAT CASTLE). Great castles are former towns that were ports or road hubs (17), tower houses the new holds (28), the rest
+castles (78). Models `World.TowerHouse` (keep, corner turret, walled yard with a byre) and `World.GreatCastle` (curtain wall with
+drum towers and a gatehouse round an inner ward and a great keep); the size rides in the castle foliage's `Dry` field (its
+`Radius` would make it an obstacle). Labels (`MapScreen.Flags`): towns in large type to zoom 450, castles small, tower houses
+gone past zoom 300, villages past 150 (the default view is 170). Shot `campaign-holds.png` frames the nearest tower house.
+Not built: the carts between a castle and its villages (the roads' own ox carts already walk those lanes). Checked by eye, no
+judge (the owner's rule from 2026-11-19).
 - Three sizes of hold: a **tower house** (a keep and a wall), a **castle** (today's ring), and a **great castle** (a
   double ring and a big keep), from the hold's rank in the data.
 - A label hierarchy: towns in large type, castles small, villages only close in.

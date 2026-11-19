@@ -577,7 +577,7 @@ public sealed partial class WorldMap
         float span = ExtentUsed / LegacyExtent, grow0 = MathF.Sqrt(span);
         foreach (var s in Settlements)
             foliage.Add(new Foliage(s.Kind switch { SettlementKind.Town => FoliageKind.Town, SettlementKind.Castle => FoliageKind.Castle, _ => FoliageKind.Village },
-                s.Pos, s.Kind == SettlementKind.Village ? 1.8f : 2.5f, 0, s.Id * 31 + Seed)); // a little larger than life beside the trees (WL3)
+                s.Pos, s.Kind == SettlementKind.Village ? 1.8f : 2.5f, 0, s.Id * 31 + Seed, s.Kind == SettlementKind.Castle ? s.Size : 0)); // a little larger than life beside the trees (WL3); a castle's Dry is its size (HD5: 1 tower house, 3 great castle)
         foreach (var site in Sites)
             foliage.Add(new Foliage(site.Kind switch
             {

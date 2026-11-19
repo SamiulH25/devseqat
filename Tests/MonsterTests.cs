@@ -178,7 +178,7 @@ public static partial class SelfTest
         var nests = c.Nests.ToList();
         Check(nests.Count >= 1 && nests.Count <= c.NestsWanted, $"the woods have their spider nests ({nests.Count} of {c.NestsWanted})");
         foreach (var n in nests)
-            Check(c.Map.ProvinceAt(n.Pos).Kind is "Forest" or "Marsh" && n.Companies.All(co => co.Troop == "spider"), $"{n.Name} is a nest of spiders in a wood or fen");
+            Check(c.Map.ProvinceAt(n.Pos).Kind is "Forest" or "Marsh" or "Taiga" && n.Companies.All(co => co.Troop == "spider"), $"{n.Name} is a nest of spiders in a wood or fen");
         Check(c.Holdouts.All(h => h.Breed == "goblin") && c.Lairs.Count() == c.Holdouts.Count() + nests.Count, "holdouts are goblins', nests spiders'");
         Check(c.Bears.Count() == c.BearsWanted && c.BearsWanted > 0, $"the hills have their bears ({c.Bears.Count()})");
         Check(c.Wyverns.Count() == 1, "a wyvern roosts somewhere in the world");

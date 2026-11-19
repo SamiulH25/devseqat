@@ -87,7 +87,7 @@ partial class MapScreen
             if (cx > tx && cx + w > tx + tw + ui.U(30)) { cx = tx; cy += ui.U(15); }
             cx += ui.Chip(cx, cy, text, col, icon) + ui.U(4);
         }
-        Tag(s.Kind.ToString().ToUpperInvariant(), Style.Text, s.Kind == SettlementKind.Village ? "house" : "tower");
+        Tag(s.KindWord, Style.Text, s.Kind == SettlementKind.Village ? "house" : "tower");
         Tag(C.FactionNames[s.Faction].ToUpperInvariant(), SideColor(s.Faction), "flag");
         if (C.IsPort(s)) Tag("PORT", Style.Text, "anchor");
         if (s.Owner == C.Player.Id) Tag("YOUR FIEF", Kit.Gilt, "crown");

@@ -386,7 +386,7 @@ function paintSide() {
   if (o) {
     h += `<h2>${esc(sel.type)} picked</h2><div class="pad" id="props">`;
     const subOpts = [["", "(none)"]].concat((W.subcultures || []).map((sc) => [sc.id, `${sc.name} (${sc.parent})`]));
-    if (sel.type === "settlement") h += field("Name", "name", o) + field("Kind", "kind", o, [["town", "Town"], ["castle", "Castle"], ["village", "Village"]]) + field("Port", "port", o, [["false", "No"], ["true", "Yes"]]) + field("Realm", "realm", o, realms) + field("Culture", "culture", o, Object.keys(CULT_COL).map((c) => [c, c])) + (W.subcultures?.length ? field("Subcult.", "subculture", o, subOpts) : "") + (subcult(o.subculture)?.flavour ? `<div class="empty">${esc(subcult(o.subculture).flavour)}</div>` : "") + `<div class="row"><span>Province</span><b style="font-weight:normal">${esc(W.provinces[o._p]?.name || "")}</b></div>`;
+    if (sel.type === "settlement") h += field("Name", "name", o) + field("Kind", "kind", o, [["town", "Town"], ["castle", "Castle"], ["village", "Village"]]) + field("Port", "port", o, [["false", "No"], ["true", "Yes"]]) + (o.kind === "castle" ? field("Size", "rank", o, [["1", "Tower house"], ["2", "Castle"], ["3", "Great castle"]]) : "") + field("Realm", "realm", o, realms) + field("Culture", "culture", o, Object.keys(CULT_COL).map((c) => [c, c])) + (W.subcultures?.length ? field("Subcult.", "subculture", o, subOpts) : "") + (subcult(o.subculture)?.flavour ? `<div class="empty">${esc(subcult(o.subculture).flavour)}</div>` : "") + `<div class="row"><span>Province</span><b style="font-weight:normal">${esc(W.provinces[o._p]?.name || "")}</b></div>`;
     else if (sel.type === "province") { const n = W.settlements.filter((s) => W.provinces[s._p] === o); h += field("Name", "name", o) + field("Land", "kind", o, W.kinds.map((k) => [k, k])) + field("Realm", "realm", o, realms) + (W.subcultures?.length && o.kind !== "Sea" ? field("Subcult.", "subculture", o, subOpts) : "") + `<div class="row"><span>Holds</span><b style="font-weight:normal">${n.filter((s) => s.kind === "town").length} towns, ${n.filter((s) => s.kind === "castle").length} castles, ${n.filter((s) => s.kind === "village").length} villages</b></div>`; }
     else if (sel.type === "site") h += field("Name", "name", o) + field("Kind", "kind", o, Object.keys(SITE_GLYPH).map((k) => [k, k]));
     else if (sel.type === "lake") h += field("Radius", "radius", o);
@@ -425,7 +425,7 @@ function paint() {
   const st = $("#state"); if (!st.classList.contains("err")) { st.textContent = dirty ? "unsaved changes" : "saved"; st.className = "mono " + (dirty ? "dirty" : ""); }
   paintSide(); draw();
 }
-function setKey(o, k, v, was) { o[k] = typeof was === "number" ? (parseFloat(v) || 0) : typeof was === "boolean" ? v === "true" : v; }
+function setKey(o, k, v, was) { o[k] = typeof was === "number" || k === "rank" ? (parseFloat(v) || 0) : typeof was === "boolean" ? v === "true" : v; if (k === "kind") { if (v === "castle") o.rank ??= 2; else delete o.rank; } }
 $("#side").addEventListener("change", (e) => {
   const k = e.target.dataset.k; if (!k) return;
   const inRealm = e.target.closest("#realmEdit"), o = inRealm ? realm(paintRealm) : item(sel);
