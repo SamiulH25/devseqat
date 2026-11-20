@@ -307,8 +307,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Callings** (class, L13): Get:19, Load:23, Validate:33
 - **Campaign** (class, L47): LevelFor:53, XpToNext:55, CallingFor:59, EnsureCallings:72, GiftsOf:78, TalentsOf:82, WithHeroes:86, WithChampion:101, CompanionsAfterBattle:119, GainXp:135
 
-## Campaign/Campaign.cs (580 lines)
-- **Campaign** (class, L7): LordsWantedOf:41, Campaign:50, New:80, Log:150, Classify:157, LogYours:161, LogAll:163, PartyById:165, SettlementById:166, SideOf:170, Outlaw:172, Hostile:174, WarBetween:183, FactionsAtWar:184, AtWarWithAnyone:185, Score:188, Refuses:199, InSight:204, SettlementAt:206, InTown:207, Tick:212, Speed:239, PaceOf:243, BaseSpeed:247, Move:264, SeaRoute:316, Encounters:331, Clash:359, Edge:401, EdgeOfKind:402, Hourly:404, Daily:427, Weekly:511, Desert:570
+## Campaign/Campaign.cs (590 lines)
+- **Campaign** (class, L7): LordsWantedOf:41, Campaign:50, New:80, Log:150, Classify:157, LogYours:161, LogAll:163, PartyById:165, SettlementById:166, SideOf:170, Outlaw:172, Hostile:174, WarBetween:183, FactionsAtWar:184, AtWarWithAnyone:185, Score:188, Refuses:199, InSight:204, SettlementAt:206, InTown:217, Tick:222, Speed:249, PaceOf:253, BaseSpeed:257, Move:274, SeaRoute:326, Encounters:341, Clash:369, Edge:411, EdgeOfKind:412, Hourly:414, Daily:437, Weekly:521, Desert:580
 
 ## Campaign/CampaignActions.cs (195 lines)
 - **Campaign** (class, L6): MoveTo:11, Chase:12, GoTo:13, RecruitLevies:18, RecruitLevies:21, LevyPrice:66, MercenaryPrice:68, Hire:74, BuyHorses:92, RaiseHounds:107, Merge:131, Split:134, Disband:159, MoveUp:161, SignContract:169, Rest:188
@@ -721,8 +721,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Castle.cs (58 lines)
 - **MapScreen** (class, L6): MusterTab:8
 
-## MapScreen.cs (973 lines)
-- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:93, Prepared:108, Prepare:113, Open:123, ShowResults:144, Pressed:152, Update:156, readonly:252, LaterTips:266, Pan:290, ScreenKeys:292, OpenScreen:300, Soundscape:308, CameFrom:370, Camera:372, Rename:396, Trails:409, MapPick:422, OnScreen:428, PickAt:443, ClickWorld:474, Ground:483, Draw:506, UpdateBearers:639, FinishLife:692, UpdateLife:699, BuildSprites:730, BuildSpritesInner:737, BuildUnits3D:744, DrawUnits3D:755, DrawSprites:766, Surface:779, G:781, DrawLines:783, Stage:833
+## MapScreen.cs (1016 lines)
+- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:96, Prepared:111, Prepare:116, Open:126, ShowResults:147, Pressed:155, Update:159, readonly:255, LaterTips:269, Pan:293, ScreenKeys:295, OpenScreen:303, Soundscape:311, CameFrom:373, Camera:375, Rename:399, Trails:412, MapPick:425, OnScreen:431, PickAt:446, ClickWorld:477, Ground:486, Draw:509, UpdateBearers:665, FinishLife:722, UpdateLife:729, BuildSprites:760, BuildSpritesInner:767, BuildUnits3D:774, DrawUnits3D:798, DrawSprites:809, Surface:822, G:824, DrawLines:826, Stage:876
 
 ## MapScreen.Dialogs.cs (291 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, EncounterOwnSide:97, MeetingPanel:123, SiegeWorksRows:157, SiegePanel:179, BeatPanel:232, GameOverPanel:249, MenuPanel:263, SavesPanel:279
@@ -840,8 +840,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SaveScreen.cs (286 lines)
 - **SaveScreen** (class, L10): Show:29, Close:39, Draw:47, CampaignRow:155, SaveRow:177, Card:195, TypeName:235, NameBox:245, Thumb:258, Ago:277
 
-## ScreenHost.cs (918 lines)
-- **ScreenHost** (class, L9): readonly:43, ScreenHost:63, ApplyVideo:83, OpenSettings:93, LoadContent:95, StartCampaign:153, Load:180, FinishLoading:196, ContinueCampaign:219, LoadSave:226, OpenLab:235, QuickBattle:237, StartCampaignBattle:244, FinishCampaignBattle:254, CycleQuality:262, Update:266, DrawCursor:323, Draw:343, Fade:384, CaptureShot:414, readonly:442, RestoreTavernTown:454, StagingRefused:461, SaveShots:468, CampaignShots:482
+## ScreenHost.cs (936 lines)
+- **ScreenHost** (class, L9): readonly:44, ScreenHost:64, ApplyVideo:84, OpenSettings:94, LoadContent:96, StartCampaign:154, Load:181, FinishLoading:197, ContinueCampaign:220, LoadSave:227, OpenLab:236, QuickBattle:238, StartCampaignBattle:245, FinishCampaignBattle:255, CycleQuality:263, Update:267, DrawCursor:324, Draw:344, EndDraw:394, Fade:402, CaptureShot:432, readonly:460, RestoreTavernTown:472, StagingRefused:479, SaveShots:486, CampaignShots:500
 
 ## SelfTest.cs (103 lines)
 - **SelfTest** (class, L6): Run:14, Slots:20, ResolveBattles:32, RunOne:55, Lancer:63, Run:72, Scaled:74, MakeWanderer:77, Days:85, Ids:97, Check:99

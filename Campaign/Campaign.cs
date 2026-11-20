@@ -203,7 +203,17 @@ public sealed partial class Campaign
     public float PlayerSight => B.Vision * 1.6f * Map.Spread * (HasCompanion("Scout") ? 1.25f : 1) * (S.Hours < S.FarSightUntil ? 2 : 1);
     public bool InSight(Vector2 p) => Vector2.Distance(p, Player.Pos) < PlayerSight || Fiefs.Any(f => f.Kind != SettlementKind.Village && Vector2.Distance(f.Pos, p) < 30 * Map.Spread);
 
-    public Settlement? SettlementAt(Vector2 p, float r = 6f) => S.Settlements.Where(s => Vector2.Distance(s.Pos, p) < r).OrderBy(s => Vector2.Distance(s.Pos, p)).FirstOrDefault();
+    public Settlement? SettlementAt(Vector2 p, float r = 6f)
+    {
+        float best = r * r;
+        Settlement? hit = null;
+        foreach (var s in S.Settlements)
+        {
+            float d2 = Vector2.DistanceSquared(s.Pos, p);
+            if (d2 < best) { best = d2; hit = s; }
+        }
+        return hit;
+    }
     public bool InTown(Party p) => SettlementAt(p.Pos) is { Kind: SettlementKind.Town } t && (p.Kind != PartyKind.Player || !Refuses(t));
 
     // ---------- time ----------

@@ -37,6 +37,7 @@ sealed class ScreenHost : Game
 
     // Debug: IRONFIELD_CAMPAIGN_SHOTS=/dir walks through the campaign screens, saving a PNG of each, then quits.
     readonly string? campaignShots = Environment.GetEnvironmentVariable("IRONFIELD_CAMPAIGN_SHOTS") is { Length: > 0 } cs ? cs : null;
+    long lastAllocBytes;
     int cStage, shotFrames;
     bool shotInventory; bool shotMarket; bool shotQuests; bool shotQuestMap;
     int townShot;
@@ -377,7 +378,24 @@ sealed class ScreenHost : Game
         Ui.FrameEnd();
         base.Draw(gameTime);
         FrameProf.End("draw");
+        if (FrameProf.On)
+        {
+            var m = GraphicsDevice.Metrics;
+            FrameProf.Count("drawCalls", m.DrawCount);
+            FrameProf.Count("primK", m.PrimitiveCount / 1000);
+            FrameProf.Count("targets", m.TargetCount);
+            long allocNow = GC.GetTotalAllocatedBytes(false);
+            if (lastAllocBytes > 0) FrameProf.Count("allocKB", (allocNow - lastAllocBytes) / 1024);
+            lastAllocBytes = allocNow;
+        }
         FrameProf.Frame(mode.ToString());
+    }
+
+    protected override void EndDraw()
+    {
+        FrameProf.Begin("present");
+        base.EndDraw();
+        FrameProf.End("present");
     }
 
     /// Black over a screen that just came up, lifting over 0.35 s (a battle holds it longer under its name plate).

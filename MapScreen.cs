@@ -56,10 +56,13 @@ sealed partial class MapScreen
     readonly Puppet3D? puppet3D;
     readonly Verts<VertexPositionColorTexture> sprites = new();
     readonly Verts<VertexPNCT> units3D = new();
+    readonly BoundingFrustum unitFrustum = new(Matrix.Identity);
     readonly Verts<VertexPositionColor> lines = new();
     readonly AlphaTestEffect spriteFx;
     readonly BasicEffect lineFx;
     readonly Dictionary<int, Unit> bearers = new();
+    readonly HashSet<int> bearerSeen = new();
+    readonly List<int> bearerDrop = new();
     /// Birds and beasts round the camera (MapLife.cs, docs/archive/WORLD_LIFE.md WL4); drawing only.
     MapLife? life;
     Quality lifeQuality = Quality.High;
@@ -523,7 +526,9 @@ sealed partial class MapScreen
         proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45), gd.Viewport.AspectRatio, Math.Clamp(zoom * 0.35f, 0.5f, 40), MathF.Max(1600, zoom * 3.2f));
         view = Matrix.CreateLookAt(eye, f3, Vector3.Up);
         viewReady = true;
+        FrameProf.Begin("bearersUpd");
         UpdateBearers();
+        FrameProf.End("bearersUpd");
         // Fog starts beyond the near ground in view, so a wide view is hazy at the horizon rather than cut off.
         float fogStart = MathF.Max(200, zoom * 1.9f), fogEnd = MathF.Max(600, zoom * 5.2f);
         world!.SetFog(fogStart, fogEnd);
@@ -551,6 +556,7 @@ sealed partial class MapScreen
             sh.Fog = new Vector2(fogStart, fogEnd);
             if (shadows)
             {
+                FrameProf.Begin("worldShadow");
                 sh.AimSun(f3, Math.Clamp(zoom * 2.4f, 80, 420));
                 gd.Textures[1] = null;
                 gd.SetRenderTarget(sh.ShadowMap);
@@ -558,15 +564,20 @@ sealed partial class MapScreen
                 gd.DepthStencilState = DepthStencilState.Default;
                 gd.RasterizerState = RasterizerState.CullNone;
                 world!.DrawShadowCasters(sh, time);
+                FrameProf.End("worldShadow");
                 if (do3D)
                 {
-                    BuildUnits3D(sh.LightView);
+                    FrameProf.Begin("u3dShadowBuild");
+                    BuildUnits3D(sh.LightView, sh.LightViewProj, forSun: true);
+                    FrameProf.End("u3dShadowBuild");
                     if (units3D.N > 0)
                     {
+                        FrameProf.Begin("u3dShadowDraw");
                         sh.Setup(sh.Unit3D, Matrix.Identity, sh.LightEye, time, false, 0);
                         sh.Unit3D.Parameters["ShadowMap"].SetValue((Texture2D?)null);
                         sh.Unit3D.Parameters["View"].SetValue(sh.LightView);
                         DrawUnits3D(sh.Unit3D, "Unit3DShadow");
+                        FrameProf.End("u3dShadowDraw");
                     }
                 }
                 else
@@ -580,34 +591,49 @@ sealed partial class MapScreen
             gd.Textures[1] = null;
             if (do3D)
             {
+                FrameProf.Begin("worldDraw");
                 var (pCol, pNd) = sh.PixelTargets(pScale);
                 gd.SetRenderTarget(pNd);
                 gd.Clear(Color.Transparent);
                 gd.SetRenderTarget(pCol);
                 gd.Clear(World.Horizon);
                 world!.DrawShaded(sh, view, proj, eye, time, shadows);
-                BuildUnits3D(view);
+                FrameProf.End("worldDraw");
+                FrameProf.Begin("u3dBuild");
+                BuildUnits3D(view, view * proj, forSun: false);
+                FrameProf.End("u3dBuild");
                 if (units3D.N > 0)
                 {
+                    FrameProf.Begin("u3dDraw");
                     gd.SetRenderTargets(pCol, pNd);
                     sh.Setup(sh.Unit3D, view * proj, eye, time, shadows, 1.2f);
                     sh.Unit3D.Parameters["View"].SetValue(view);
                     DrawUnits3D(sh.Unit3D, "Unit3D");
                     gd.SetRenderTarget(pCol);
+                    FrameProf.End("u3dDraw");
                 }
+                FrameProf.Begin("linesAndPost");
                 DrawLines();
                 sh.PixelPostToScreen(pScale, Sky.Grade);
+                FrameProf.End("linesAndPost");
+                if (FrameProf.On) { FrameProf.Count("bearers", bearers.Count); FrameProf.Count("u3dTris", units3D.N / 3); }
             }
             else
             {
+                FrameProf.Begin("worldDraw");
                 gd.SetRenderTarget(sh.Scene());
                 gd.Clear(World.Horizon);
                 world!.DrawShaded(sh, view, proj, eye, time, shadows);
+                FrameProf.End("worldDraw");
                 BuildSprites(view);
+                FrameProf.Begin("spritesDraw");
                 sh.Setup(sh.Sprite, view * proj, eye, time, shadows, 1.2f);
                 DrawSprites(sh.Sprite, "Sprite");
+                FrameProf.End("spritesDraw");
+                FrameProf.Begin("linesAndPost");
                 DrawLines();
                 sh.PostToScreen(Settings.Current.Fxaa, Sky.Grade);
+                FrameProf.End("linesAndPost");
             }
             sh.Fog = fog;
         }
@@ -638,9 +664,11 @@ sealed partial class MapScreen
     /// Each party is drawn as its leader on horseback (brigands and goblins on foot), three times life size.
     void UpdateBearers()
     {
+        bearerSeen.Clear();
         foreach (var p in C.S.Parties)
         {
             if (p.Lair && p.Breed == "goblin") { bearers.Remove(p.Id); continue; }
+            bearerSeen.Add(p.Id);
             if (!bearers.TryGetValue(p.Id, out var u))
             {
                 var type = p.Kind switch
@@ -675,7 +703,9 @@ sealed partial class MapScreen
             u.Dead = false;
             u.Fled = p.Down || p.Voyage.Count > 0; // at sea the ship is drawn, not the rider (MapLife.Ship)
         }
-        foreach (int id in bearers.Keys.Where(id => C.PartyById(id) == null).ToList()) bearers.Remove(id);
+        bearerDrop.Clear();
+        foreach (int id in bearers.Keys) if (!bearerSeen.Contains(id)) bearerDrop.Add(id);
+        foreach (int id in bearerDrop) bearers.Remove(id);
     }
 
     /// The map's birds and beasts move on (they flee the parties near them; crows find the dead). Their step and their mesh
@@ -741,14 +771,27 @@ sealed partial class MapScreen
         foreach (var u in bearers.Values) if (!u.Fled) puppet.Draw(u, terrain.Height(u.Pos));
     }
 
-    void BuildUnits3D(Matrix viewer)
+    void BuildUnits3D(Matrix viewer, Matrix frustumVp, bool forSun)
     {
         FrameProf.Begin("sprites");
         units3D.N = 0;
+        unitFrustum.Matrix = frustumVp;
         puppet3D!.Now = time;
-        puppet3D.Detail = zoom > 280 ? 1 : 0;
         puppet3D.BeginCamera(viewer);
-        foreach (var u in bearers.Values) if (!u.Fled) puppet3D.TryDraw(u, terrain.Height(u.Pos));
+        float near2 = 120f * 120f, mid2 = 260f * 260f;
+        int drawn = 0;
+        foreach (var u in bearers.Values)
+        {
+            if (u.Fled) continue;
+            float y = terrain.Height(u.Pos);
+            var center = new Vector3(u.Pos.X, y + 2.5f, u.Pos.Y);
+            if (unitFrustum.Contains(new BoundingSphere(center, 8f)) == ContainmentType.Disjoint) continue;
+            float d2 = Vector3.DistanceSquared(center, eye);
+            puppet3D.Detail = forSun ? (d2 < near2 ? 1 : 2) : (d2 < near2 ? 0 : d2 < mid2 ? 1 : 2);
+            puppet3D.TryDraw(u, y);
+            drawn++;
+        }
+        if (FrameProf.On && !forSun) FrameProf.Count("u3dDrawn", drawn);
         FrameProf.End("sprites");
     }
 
