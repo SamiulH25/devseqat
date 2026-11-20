@@ -38,6 +38,7 @@ partial class BattleScreen
             DrawSpritesBasic();
             DrawLines();
         }
+        FrameProf.Begin("hud");
         SyncHud();
         if (!hudHidden)
         {
@@ -48,6 +49,7 @@ partial class BattleScreen
             Tips.Draw(tipUi, tipUi.U(224)); // above the order panel and its key hints at the bottom right
             tipUi.End();
         }
+        FrameProf.End("hud");
     }
 
     /// The shader path: sun shadow map, then the scene into an off-screen target, then the post pass to the screen.
@@ -61,6 +63,7 @@ partial class BattleScreen
         if (shadows)
         {
             // Cover what the camera sees: about 90 m around you in the field, more as the command camera zooms out.
+            FrameProf.Begin("worldShadow");
             float k = MathHelper.SmoothStep(0, 1, blend);
             sh.AimSun(focusPoint, MathHelper.Lerp(90, Math.Clamp(zoom * 2.6f, 70, 260), k));
             gd.Textures[1] = null;
@@ -70,20 +73,28 @@ partial class BattleScreen
             gd.RasterizerState = RasterizerState.CullNone;
             gd.BlendState = BlendState.Opaque;
             world.DrawShadowCasters(sh, realTime);
+            FrameProf.End("worldShadow");
+            FrameProf.Begin("shadowBuild");
             BuildSprites(sh.LightView, true); // puppets turned to face the sun, so shadows have their silhouette
+            FrameProf.End("shadowBuild");
+            FrameProf.Begin("shadowDraw");
             sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, realTime, false, 0);
             sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
             DrawSpritesShaded(sh.Sprite, "SpriteShadow");
-            if (do3D && units3D.N > 0)
+            int shdN = do3D ? Total3DVerts() : 0;
+            if (shdN > 0)
             {
                 sh.Setup(sh.Unit3D, Matrix.Identity, sh.LightEye, realTime, false, 0);
                 sh.Unit3D.Parameters["ShadowMap"].SetValue((Texture2D?)null);
                 sh.Unit3D.Parameters["View"].SetValue(sh.LightView);
                 DrawUnits3D(sh.Unit3D, "Unit3DShadow");
+                if (FrameProf.On) FrameProf.Count("shdTris", shdN / 3);
             }
+            FrameProf.End("shadowDraw");
         }
         gd.Textures[1] = null;
         RenderTarget2D? normDepth = null;
+        FrameProf.Begin("worldDraw");
         if (do3D)
         {
             var (pCol, pNd) = sh.PixelTargets(pixelScale);
@@ -103,16 +114,24 @@ partial class BattleScreen
         world.DrawShaded(sh, view, proj, eye, realTime, shadows);
         sh.GroundMap = null; sh.NearDetail = false; sh.Cut = 0; sh.CutEye = Vector4.Zero;
         DrawBlobs(shadows ? 0.4f : 1); // with real shadows the blobs only add contact darkening
+        FrameProf.End("worldDraw");
+        FrameProf.Begin("mainBuild");
         BuildSprites(view, false);
-        if (do3D && units3D.N > 0)
+        FrameProf.End("mainBuild");
+        int mainN = do3D ? Total3DVerts() : 0;
+        if (mainN > 0)
         {
+            FrameProf.Begin("u3dDraw");
             var (pCol, pNd) = sh.PixelTargets(pixelScale);
             gd.SetRenderTargets(pCol, pNd);
             sh.Setup(sh.Unit3D, view * proj, eye, realTime, shadows, 0.45f);
             sh.Unit3D.Parameters["View"].SetValue(view);
             DrawUnits3D(sh.Unit3D, "Unit3D");
             gd.SetRenderTarget(pCol);
+            if (FrameProf.On) FrameProf.Count("u3dTris", mainN / 3);
+            FrameProf.End("u3dDraw");
         }
+        FrameProf.Begin("spritesAndPost");
         sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
         DrawSpritesShaded(sh.Sprite, "Sprite");
         DrawSoft(sh.Sprite);
@@ -124,12 +143,17 @@ partial class BattleScreen
             sh.PixelPostToScreen(pixelScale, Sky.Grade, 0, awe, moment, warpNow);
         else
             sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0, awe, moment, warpNow);
+        FrameProf.End("spritesAndPost");
     }
 
     readonly BoundingFrustum spriteFrustum = new(Matrix.Identity);
     readonly byte[] corpseGrid = new byte[512 * 512];
     readonly List<int> corpseTouched = new();
     readonly List<Squad> goneSelected = new();
+    Verts<VertexPNCT>[] workerVerts = Array.Empty<Verts<VertexPNCT>>();
+    Puppet3D[] workerPuppets = Array.Empty<Puppet3D>();
+    readonly List<(Unit U, float H, int Detail, float Rear, Look Look)> drawQueue3D = new(1024);
+    int Total3DVerts() { int n = units3D.N; for (int i = 0; i < workerVerts.Length; i++) n += workerVerts[i].N; return n; }
 
     void DrawBlobs(float alpha)
     {
@@ -339,37 +363,8 @@ partial class BattleScreen
             puppet3D.FxPuppet = forSun ? null : puppet;
             puppet3D.BeginCamera(viewer);
         }
-        // A banner over every company, carried by its first man.
-        foreach (var s in battle.Squads)
-        {
-            if (s.Company == null || s.Alive == 0) continue;
-            if (deploying && !battle.Options.Scouted && s.Team == 1) continue;
-            Unit? bearer = null;
-            foreach (var u in s.Units) if (u.Active && !u.Routing) { bearer = u; break; }
-            if (!forSun) BannerFalls(s, bearer);
-            if (bearer == null) continue;
-            if (!battle.Shown(s))
-            {
-                if (do3D) puppet3D!.Banner(s.LastSeen, t.Height(s.LastSeen), bearer.Palette, 0, s.Company.Banner);
-                else puppet.Banner(s.LastSeen, t.Height(s.LastSeen), bearer.Palette, 0, s.Company.Banner);
-                continue;
-            }
-            var at = bearer.Pos - bearer.Dir * 0.35f + new Vector2(-bearer.Dir.Y, bearer.Dir.X) * 0.25f;
-            float stream = Math.Clamp((bearer.Mounted ? MathF.Abs(bearer.Speed) : bearer.Vel.Length()) / 6, 0, 1);
-            if (do3D) puppet3D!.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
-            else puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
-        }
-        DrawFallingBanners(do3D);
-        if (!forSun)
-        {
-            DrawMarks();
-            DrawScars();
-            soft.N = 0;
-            foreach (var m in motes)
-                if (!m.Heavy && (m.Size >= 0.15f || m.Grow >= 0.3f)) // dust and smoke: a soft puff that swells and thins away
-                    puppet.Haze(m.Pos, m.Size * 1.15f, m.Col, (m.Size > 1.5f ? 0.24f : 0.55f) * MathF.Min(1, m.Life / m.Max * 1.6f), m.Max * 37 + m.Grow * 11 + m.Pos.X);
-                else puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
-        }
+        for (int i = 0; i < workerVerts.Length; i++) workerVerts[i].N = 0;
+        if (do3D) puppet3D!.ShadowOnly = forSun;
         var eye2 = new Vector2(eye.X, eye.Z);
         // Men outside the view (or, for the sun's pass, outside the shadow map) are skipped; men far off
         // are drawn with fewer parts. Low quality brings the detail bands closer.
@@ -382,13 +377,52 @@ partial class BattleScreen
             puppet.Detail = forSun ? (d2 < 20 * 20 ? 0 : d2 < 45 * 45 ? 1 : 2) : d2 < near * near ? 0 : d2 < far * far ? 1 : 2;
             return true;
         }
+        // A banner over every company, carried by its first man.
+        foreach (var s in battle.Squads)
+        {
+            if (s.Company == null || s.Alive == 0) continue;
+            if (deploying && !battle.Options.Scouted && s.Team == 1) continue;
+            Unit? bearer = null;
+            foreach (var u in s.Units) if (u.Active && !u.Routing) { bearer = u; break; }
+            if (!forSun) BannerFalls(s, bearer);
+            if (bearer == null) continue;
+            if (!battle.Shown(s))
+            {
+                float bh = t.Height(s.LastSeen);
+                if (spriteFrustum.Contains(new BoundingSphere(new Vector3(s.LastSeen.X, bh + 2f, s.LastSeen.Y), 3.5f)) != ContainmentType.Disjoint)
+                {
+                    if (do3D) puppet3D!.Banner(s.LastSeen, bh, bearer.Palette, 0, s.Company.Banner);
+                    else puppet.Banner(s.LastSeen, bh, bearer.Palette, 0, s.Company.Banner);
+                }
+                continue;
+            }
+            var at = bearer.Pos - bearer.Dir * 0.35f + new Vector2(-bearer.Dir.Y, bearer.Dir.X) * 0.25f;
+            float by = t.Height(at) + (bearer.Mounted ? 1.1f : 0);
+            if (spriteFrustum.Contains(new BoundingSphere(new Vector3(at.X, by + 2f, at.Y), 3.5f)) == ContainmentType.Disjoint) continue;
+            float stream = Math.Clamp((bearer.Mounted ? MathF.Abs(bearer.Speed) : bearer.Vel.Length()) / 6, 0, 1);
+            if (do3D) puppet3D!.Banner(at, by, bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
+            else puppet.Banner(at, by, bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
+        }
+        DrawFallingBanners(do3D);
+        if (!forSun)
+        {
+            DrawMarks();
+            DrawScars();
+            soft.N = 0;
+            foreach (var m in motes)
+                if (!m.Heavy && (m.Size >= 0.15f || m.Grow >= 0.3f)) // dust and smoke: a soft puff that swells and thins away
+                    puppet.Haze(m.Pos, m.Size * 1.15f, m.Col, (m.Size > 1.5f ? 0.24f : 0.55f) * MathF.Min(1, m.Life / m.Max * 1.6f), m.Max * 37 + m.Grow * 11 + m.Pos.X);
+                else puppet.Particle(m.Pos, m.Size * (m.Heavy ? 1 : MathF.Min(1, m.Life / m.Max * 2)), m.Col);
+        }
         foreach (int idx in corpseTouched) corpseGrid[idx] = 0;
         corpseTouched.Clear();
+        drawQueue3D.Clear();
+        float bNow = battle.Time;
         // units3D already initialized above for 3D banners
         foreach (var u in battle.Units)
         {
             if (u.Fled) continue;
-            if (u.Dead && battle.Time > 0 && battle.Time - u.DiedAt > (forSun ? 0.8f : 4.2f)) continue; // ascended spirits cast no shadow and clear cleanly
+            if (u.Dead && bNow > 0 && bNow - u.DiedAt > (forSun ? 0.8f : 4.2f)) continue; // ascended spirits cast no shadow and clear cleanly
             if (deploying && !battle.Options.Scouted && u.Team == 1 && !u.IsLeader) continue; // unscouted: banners only
             if (u.Team == 1 && !u.IsLeader && !battle.Shown(u.Squad)) continue; // hidden by a crest or a wood
             float h = t.Height(u.Pos);
@@ -398,13 +432,23 @@ partial class BattleScreen
             if (!Seen(u.Pos, h + (u.Dead ? 2.5f : u.Altitude), seenRad)) continue; // rising spirits or a wyvern on the wing
             if (do3D)
             {
-                float d2 = Vector2.DistanceSquared(u.Pos, eye2);
-                puppet3D!.Detail = forSun ? (d2 < 15 * 15 ? 1 : 2) : d2 < 26 * 26 ? 0 : d2 < 62 * 62 ? 1 : 2;
-                puppet3D.Rear = rear;
-                if (puppet3D.TryDraw(u, h)) continue;
+                var look = puppet3D!.ExactLook ? u.Type.Look : Variety.Of(u);
+                bool wisp = false;
+                if (u.Dead && bNow > 0)
+                {
+                    float ft = (look.Beast ? Ironfield.Fall.Plain : u.DiedFall) switch { Ironfield.Fall.Saddle => 0.75f, Ironfield.Fall.Flung => 0.6f, _ => 0.45f + Ease.Hash(u.Index) * 0.3f };
+                    if (bNow - u.DiedAt >= ft) wisp = true;
+                }
+                if (!wisp)
+                {
+                    float d3Sq = Vector3.DistanceSquared(new Vector3(u.Pos.X, h + 1f, u.Pos.Y), eye);
+                    int det = forSun ? (d3Sq < 14f * 14f ? 1 : 2) : (d3Sq < 20f * 20f ? 0 : d3Sq < 48f * 48f ? 1 : 2);
+                    drawQueue3D.Add((u, h, det, rear, look));
+                    continue;
+                }
             }
             puppet.Rear = rear;
-            if (u.Dead && battle.Time - u.DiedAt > 1f)
+            if (u.Dead && bNow - u.DiedAt > 1f)
             {
                 int cx = Math.Clamp((int)MathF.Floor(u.Pos.X / 0.9f) + 256, 0, 511);
                 int cz = Math.Clamp((int)MathF.Floor(u.Pos.Y / 0.9f) + 256, 0, 511);
@@ -417,6 +461,59 @@ partial class BattleScreen
             else puppet.SparseCorpse = false;
             puppet.Draw(u, h);
         }
+        if (do3D && drawQueue3D.Count > 0)
+        {
+            int qCount = drawQueue3D.Count;
+            if (workerPuppets.Length > 1 && qCount >= 64)
+            {
+                int nW = Math.Min(workerPuppets.Length, (qCount + 31) / 32);
+                int winner = battle.Winner;
+                Parallel.For(0, nW, w =>
+                {
+                    var wp = workerPuppets[w];
+                    wp.Now = bNow;
+                    wp.Winner = winner;
+                    wp.ShadowOnly = forSun;
+                    wp.BeginCamera(viewer);
+                    wp.PendingHaze.Clear();
+                    int from = w * qCount / nW, to = (w + 1) * qCount / nW;
+                    for (int i = from; i < to; i++)
+                    {
+                        var item = drawQueue3D[i];
+                        wp.Detail = item.Detail;
+                        wp.Rear = item.Rear;
+                        wp.TryDraw(item.U, item.H, item.Look);
+                    }
+                    wp.Rear = 0;
+                    wp.ShadowOnly = false;
+                });
+                if (!forSun)
+                {
+                    for (int w = 0; w < nW; w++)
+                    {
+                        var ph = workerPuppets[w].PendingHaze;
+                        for (int i = 0; i < ph.Count; i++)
+                        {
+                            var hItem = ph[i];
+                            puppet.Haze(hItem.Pos, hItem.Size, hItem.Col, hItem.Alpha, hItem.Seed);
+                        }
+                        ph.Clear();
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < qCount; i++)
+                {
+                    var item = drawQueue3D[i];
+                    puppet3D!.Detail = item.Detail;
+                    puppet3D.Rear = item.Rear;
+                    puppet3D.TryDraw(item.U, item.H, item.Look);
+                }
+                puppet3D!.Rear = 0;
+            }
+        }
+        if (do3D) puppet3D!.ShadowOnly = false;
         puppet.SparseCorpse = false;
         puppet.Rear = 0;
         if (!forSun) DrawMissiles(do3D); // real arrows near the camera (BattleScreen.Arrows.cs)
@@ -427,14 +524,15 @@ partial class BattleScreen
 
     void DrawUnits3D(Effect fx, string technique)
     {
-        if (units3D.N == 0) return;
         var gd = GraphicsDevice;
         gd.BlendState = BlendState.Opaque;
         gd.DepthStencilState = DepthStencilState.Default;
         gd.RasterizerState = RasterizerState.CullNone;
         fx.CurrentTechnique = fx.Techniques[technique];
         fx.CurrentTechnique.Passes[0].Apply();
-        units3D.Draw(gd, PrimitiveType.TriangleList, units3D.N / 3);
+        if (units3D.N > 0) units3D.Draw(gd, PrimitiveType.TriangleList, units3D.N / 3);
+        for (int i = 0; i < workerVerts.Length; i++)
+            if (workerVerts[i].N > 0) workerVerts[i].Draw(gd, PrimitiveType.TriangleList, workerVerts[i].N / 3);
     }
 
     /// A man so close to the field camera that his body would fill the lens. Only these are left out:

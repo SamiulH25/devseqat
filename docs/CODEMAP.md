@@ -200,11 +200,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (378 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:81, CommandControls:89, CommandCursor:276, BoxOf:294, OnScreen:296, PickSquad:303, GroundUnderMouse:317, GroundUnder:319, UpdateCamera:341
 
-## BattleScreen.cs (586 lines)
-- **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:126, Load:138, QuickGround:158, BeginCampaign:168, StartDeployment:199, StageCommandView:214, FinishCampaignBattle:222, NewBattle:237, WithMages:279, SetWorld:287, SetCommand:301, Pressed:313, Update:321, PlaySounds:409, Soundscape:448, SyncHud:541, MenuChoice:572
+## BattleScreen.cs (597 lines)
+- **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:126, Load:138, QuickGround:169, BeginCampaign:179, StartDeployment:210, StageCommandView:225, FinishCampaignBattle:233, NewBattle:248, WithMages:290, SetWorld:298, SetCommand:312, Pressed:324, Update:332, PlaySounds:420, Soundscape:459, SyncHud:552, MenuChoice:583
 
-## BattleScreen.Draw.cs (877 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:54, DrawBlobs:134, EaseFacings:176, Spray:192, Effects:205, GroundSteps:270, BuildSprites:326, DrawUnits3D:428, LensFill:442, SpriteStates:445, DrawSpritesBasic:453, DrawSpritesShaded:463, DrawSoft:474, Line:488, G:489, OrderArrows:498, OrderArrowLines:500, Ring:516, DashedRing:527, Band:540, BeamQuad:562, TorchRow:584, Precipitation:593, Fall:604, Stakes:623, SpellColor:646, Spells:652, AuraGlow:668, ChampionGlow:678, PlayerGlow:691, PendingFormsDrawn:705, RouteDots:730, PlanHook:743, DrawLines:773
+## BattleScreen.Draw.cs (975 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:56, Total3DVerts:156, DrawBlobs:158, EaseFacings:200, Spray:216, Effects:229, GroundSteps:294, BuildSprites:350, DrawUnits3D:525, LensFill:540, SpriteStates:543, DrawSpritesBasic:551, DrawSpritesShaded:561, DrawSoft:572, Line:586, G:587, OrderArrows:596, OrderArrowLines:598, Ring:614, DashedRing:625, Band:638, BeamQuad:660, TorchRow:682, Precipitation:691, Fall:702, Stakes:721, SpellColor:744, Spells:750, AuraGlow:766, ChampionGlow:776, PlayerGlow:789, PendingFormsDrawn:803, RouteDots:828, PlanHook:841, DrawLines:871
 
 ## BattleScreen.Effects.cs (210 lines)
 - **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:125, TrampleTexture:148, RearOf:165, BannerFalls:187, DrawFallingBanners:198
@@ -774,9 +774,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Upgrade.cs (293 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:185, Leads:281
 
-## Mesh3D.cs (417 lines)
-- **MeshKit3D** (class, L8): TryLoad:63, Load:73, Get:152, Resolve:154, MapLimb:274, MapHelm:282, MapWeapon:318, MapShield:345
-- **UnitMatTable** (struct, L357): Fill:370, FillBeast:408
+## Mesh3D.cs (419 lines)
+- **MeshKit3D** (class, L9): TryLoad:64, Load:74, Get:153, Resolve:155, MapLimb:276, MapHelm:284, MapWeapon:320, MapShield:347
+- **UnitMatTable** (struct, L359): Fill:372, FillBeast:410
 
 ## MusicDirector.cs (128 lines)
 - **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:120
@@ -824,8 +824,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet3D.Beasts.cs (237 lines)
 - **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:24, DrawWolfRig:42, DrawWarg3D:86, DrawBear3D:94, DrawSpider3D:139, DrawWyvern3D:175
 
-## Puppet3D.cs (1252 lines)
-- **Puppet3D** (class, L12): Puppet3D:35, BeginCamera:41, Rad:48, Frame:50, WorldFrame:59, Lean:68, W:75, WDir:87, EmitLocal:100, EmitBone:150, EmitDir:166, EmitWeapon:178, RotX:203, RotZ:209, RotY:215, Elbow:221, Sink:243, TryDraw:252, EmblemOf:718, EmitSlashArc:728, EmitShield:801, DrawFallen3D:846, Banner:948, DrawMissile:1051, HorseScale:1069, DrawHorse3D:1077, DrawLooseHorse:1175, Bench:1190
+## Puppet3D.cs (1282 lines)
+- **Puppet3D** (class, L12): Puppet3D:40, BeginCamera:46, Rad:53, Frame:55, WorldFrame:64, Lean:73, W:80, WDir:92, EmitLocal:105, EmitBone:171, EmitDir:187, EmitWeapon:199, RotX:224, RotZ:230, RotY:236, Elbow:242, Sink:264, TryDraw:273, EmblemOf:748, EmitSlashArc:758, EmitShield:831, DrawFallen3D:876, Banner:978, DrawMissile:1081, HorseScale:1099, DrawHorse3D:1107, DrawLooseHorse:1205, Bench:1220
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136

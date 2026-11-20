@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 using Microsoft.Xna.Framework;
 
@@ -37,7 +38,7 @@ sealed class MeshKit3D
     }
 
     public readonly Dictionary<string, Vert[]> Parts = new();
-    readonly Dictionary<Look, LookMeshes> lookCache = new(ReferenceEqualityComparer.Instance);
+    readonly ConcurrentDictionary<Look, LookMeshes> lookCache = new();
 
     // Pre-cached common, mount, beast, prop, emblem, and LOD parts (zero dictionary lookups in hot loop).
     public Vert[] Plume = Array.Empty<Vert>(), Cape = Array.Empty<Vert>(), Bow = Array.Empty<Vert>();
@@ -229,7 +230,8 @@ sealed class MeshKit3D
                 _ => 0.84f,
             },
         };
-        return lookCache[look] = resolved;
+        lookCache.TryAdd(look, resolved);
+        return resolved;
     }
 
     /// Map every one of the 29+ body armor IDs to a curated 4-layer modular combo: (Chest, Shoulders, Belt, Skirt, TabardPanel, BeltVarGroup, ShldVarGroup).

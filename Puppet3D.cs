@@ -24,6 +24,11 @@ sealed partial class Puppet3D
     public bool ExactLook;
     /// Optional 2D Puppet reference for sharing soft-particle swing glints and active Awe sources.
     public Puppet? FxPuppet;
+    /// Shadow-pass fast path: skips normal transforms, palette lookups, patterns, and slash glints.
+    public bool ShadowOnly;
+    /// Defer soft-particle weapon glints into PendingHaze so TryDraw is 100% thread-safe across Parallel.For workers.
+    public bool DeferHaze;
+    public readonly List<(Vector3 Pos, float Size, Color Col, float Alpha, float Seed)> PendingHaze = new();
 
     const float RearDeg = 38f, Saddle = 0.87f, Shank = 0.34f, UpperArm = 0.29f, Forearm = 0.28f;
 
@@ -109,6 +114,22 @@ sealed partial class Puppet3D
         verts.Reserve(len);
         var dst = verts.A;
         int n = verts.N;
+        if (ShadowOnly)
+        {
+            for (int i = 0; i < len; i++)
+            {
+                ref readonly var v = ref part[i];
+                dst[n++] = new VertexPNCT(
+                    new Vector3(
+                        wPos.X + wR.X * v.Pos.X + wU.X * v.Pos.Y + wF.X * v.Pos.Z,
+                        wPos.Y + wR.Y * v.Pos.X + wU.Y * v.Pos.Y + wF.Y * v.Pos.Z,
+                        wPos.Z + wR.Z * v.Pos.X + wU.Z * v.Pos.Y + wF.Z * v.Pos.Z),
+                    Vector3.Up, Color.White, Vector2.Zero);
+            }
+            verts.N = n;
+            return;
+        }
+
         var cols = palCols;
         var metalQ = UnitMatTable.MetalQ;
 
@@ -249,10 +270,10 @@ sealed partial class Puppet3D
     }
 
     /// Draw a unit (human, non-human, mounted, or beast) in full 3D. Returns false only for ascended dead spirit wisps.
-    public bool TryDraw(Unit u, float ground)
+    public bool TryDraw(Unit u, float ground, Look? preLook = null)
     {
         if (u.Fled || u.Raised) return true;
-        var look = ExactLook ? u.Type.Look : Variety.Of(u);
+        var look = preLook ?? (ExactLook ? u.Type.Look : Variety.Of(u));
         float phase = Ease.Hash(u.Index);
         if (u.Dead)
         {
@@ -269,19 +290,12 @@ sealed partial class Puppet3D
         if (look.Beast) return DrawBeast3D(u, ground, tint, look);
 
         bool camel = u.Mounted && u.Horse?.Barding == "camel";
-        UnitMatTable.Fill(palIdx, look.Visage, u.Coat, camel, tint, palCols, look.Face);
+        if (!ShadowOnly) UnitMatTable.Fill(palIdx, look.Visage, u.Coat, camel, tint, palCols, look.Face);
 
         float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1f) * u.Type.Size * Scale * Variety.Stature(u);
-        var lm = kit.Resolve(look);
 
-        if (u.Dead)
-        {
-            DrawFallen3D(u, ground, size, phase, palIdx, look, lm);
-            return true;
-        }
-
-        // Far LOD (Detail == 2): ~50-100 tris total, zero skeletal overhead!
-        if (Detail >= 2)
+        // Far LOD (Detail == 2): ~50-100 tris total, zero skeletal overhead and no Resolve needed!
+        if (Detail >= 2 && !u.Dead)
         {
             float liftFar = ground;
             if (u.Mounted && u.Horse!.Barding != "wolf")
@@ -294,10 +308,18 @@ sealed partial class Puppet3D
             else if (u.Mounted && u.Horse!.Barding == "wolf")
             {
                 liftFar = ground + DrawWarg3D(u, ground, tint);
-                UnitMatTable.Fill(palIdx, look.Visage, u.Coat, false, tint, palCols, look.Face);
+                if (!ShadowOnly) UnitMatTable.Fill(palIdx, look.Visage, u.Coat, false, tint, palCols, look.Face);
             }
             Frame(u.Pos, u.ViewFacing, liftFar, size);
             EmitLocal(kit.LodFoot, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+            return true;
+        }
+
+        var lm = kit.Resolve(look);
+
+        if (u.Dead)
+        {
+            DrawFallen3D(u, ground, size, phase, palIdx, look, lm);
             return true;
         }
 
@@ -686,7 +708,7 @@ sealed partial class Puppet3D
                     float wk = 1f - u.ActionTimer / (u.Swing == AttackDir.Overhead ? 0.2f : 0.15f);
                     if (wk > 0.55f) strikeK = (wk - 0.55f) / 0.45f;
                 }
-                if (strikeK >= 0f)
+                if (strikeK >= 0f && !ShadowOnly)
                 {
                     EmitSlashArc(wHand, wDir, p.Yaw, p.WeapB, u.Swing, lm.BladeReach, strikeK, p.TwoHand || grip == Grip.Pole);
                     if (FxPuppet?.Soft != null)
@@ -696,8 +718,16 @@ sealed partial class Puppet3D
                         var mid = W(wHand + wDir * (reachLen * 0.52f));
                         float a = MathF.Sin(strikeK * MathF.PI) * (p.TwoHand ? 0.42f : 0.28f);
                         var col = new Color(235, 242, 255);
-                        FxPuppet.Haze(tip, (p.TwoHand ? 0.48f : 0.32f) * scale, col, a, strikeK * 6f + u.Index);
-                        FxPuppet.Haze(mid, (p.TwoHand ? 0.32f : 0.20f) * scale, col, a * 0.6f, strikeK * 4f + u.Index);
+                        if (DeferHaze)
+                        {
+                            PendingHaze.Add((tip, (p.TwoHand ? 0.48f : 0.32f) * scale, col, a, strikeK * 6f + u.Index));
+                            PendingHaze.Add((mid, (p.TwoHand ? 0.32f : 0.20f) * scale, col, a * 0.6f, strikeK * 4f + u.Index));
+                        }
+                        else
+                        {
+                            FxPuppet.Haze(tip, (p.TwoHand ? 0.48f : 0.32f) * scale, col, a, strikeK * 6f + u.Index);
+                            FxPuppet.Haze(mid, (p.TwoHand ? 0.32f : 0.20f) * scale, col, a * 0.6f, strikeK * 4f + u.Index);
+                        }
                     }
                 }
             }
