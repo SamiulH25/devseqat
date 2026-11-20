@@ -237,7 +237,13 @@ sealed class Shading : IDisposable
     public void PixelPostToScreen(int scale, Vector3? tint = null, float bloom = 0, Vector4 awe = default, Vector4 moment = default, float warp = 0, Vector4? outlineCfg = null)
     {
         var (s, nd) = PixelTargets(scale);
-        gd.SetRenderTarget(null);
+        PixelPostTo(null, s, nd, scale, tint, bloom, awe, moment, warp, outlineCfg);
+    }
+
+    /// Composite any paired Scene + NormDepth targets into `dest` (null = back buffer) through PixelPost.
+    public void PixelPostTo(RenderTarget2D? dest, RenderTarget2D s, RenderTarget2D nd, int scale, Vector3? tint = null, float bloom = 0, Vector4 awe = default, Vector4 moment = default, float warp = 0, Vector4? outlineCfg = null)
+    {
+        gd.SetRenderTarget(dest);
         gd.BlendState = BlendState.Opaque;
         gd.DepthStencilState = DepthStencilState.None;
         gd.RasterizerState = RasterizerState.CullNone;

@@ -30,6 +30,8 @@ sealed class MeshKit3D
         public required bool FullEnclosedHelm, HasCape, HasPlume, HasShield, HasTabard;
         public required byte TorsoPat, LimbPat, LegPat;
         public required string ShieldKind;
+        public required bool WeaponEdgeZ, OffHandForward;
+        public required float OffHandOffset, BladeReach;
     }
 
     public readonly Dictionary<string, Vert[]> Parts = new();
@@ -152,6 +154,7 @@ sealed class MeshKit3D
             _ => $"head_{(look.Visage >= 0 ? Variety.Parts(look.Visage).Style : 0)}",
         };
         string torsoKey = MapTorso(look.Body);
+        string weaponKey = look.Weapon != "none" ? MapWeapon(look.Weapon) : "";
         string shieldKey = look.Shield != "none" ? MapShield(look.Shield) : "";
         byte torsoPat = torsoKey switch
         {
@@ -171,7 +174,7 @@ sealed class MeshKit3D
             FArm = Get($"farm_{limbTag}"),
             Thigh = Get($"thigh_{legTag}"),
             Shin = Get($"shin_{legTag}"),
-            Weapon = look.Weapon != "none" ? Get(MapWeapon(look.Weapon)) : Array.Empty<Vert>(),
+            Weapon = weaponKey.Length > 0 ? Get(weaponKey) : Array.Empty<Vert>(),
             Shield = shieldKey.Length > 0 ? Get(shieldKey) : Array.Empty<Vert>(),
             FullEnclosedHelm = helmKey is "helm_greathelm" or "helm_greathelm_wings" or "helm_greathelm_sun" or "helm_greathelm_horns" or "helm_dragon",
             HasCape = look.Cape,
@@ -182,6 +185,27 @@ sealed class MeshKit3D
             LimbPat = LimbPatOf(limbTag),
             LegPat = LimbPatOf(legTag),
             ShieldKind = shieldKey,
+            WeaponEdgeZ = weaponKey is "weapon_scimitar" or "weapon_falchion" or "weapon_axe" or "weapon_warhammer" or "weapon_daneaxe" or "weapon_halberd" or "weapon_glaive" or "weapon_billhook",
+            OffHandForward = weaponKey is "weapon_spear" or "weapon_pike" or "weapon_halberd" or "weapon_glaive" or "weapon_billhook",
+            OffHandOffset = weaponKey switch
+            {
+                "weapon_greatsword" or "weapon_flamberge" => 0.24f,
+                "weapon_longsword" => 0.18f,
+                "weapon_daneaxe" => 0.32f,
+                "weapon_spear" or "weapon_pike" or "weapon_halberd" or "weapon_glaive" or "weapon_billhook" => 0.34f,
+                _ => 0.22f,
+            },
+            BladeReach = weaponKey switch
+            {
+                "weapon_greatsword" or "weapon_flamberge" => 1.38f,
+                "weapon_daneaxe" => 1.36f,
+                "weapon_longsword" => 1.12f,
+                "weapon_halberd" or "weapon_glaive" or "weapon_billhook" => 1.88f,
+                "weapon_pike" => 2.10f,
+                "weapon_spear" => 1.60f,
+                "weapon_scimitar" => 0.94f,
+                _ => 0.84f,
+            },
         };
         return lookCache[look] = resolved;
     }

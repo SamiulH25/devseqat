@@ -8,8 +8,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **AbilityDef** (class, L8)
 - **Abilities** (class, L41): Get:47, Has:48, readonly:52, Load:66, Validate:83
 
-## AnimSheet.cs (138 lines)
-- **AnimSheet** (class, L10): AnimSheet:20, Clip:29, Swing:31, Write:58, Render:68, Cell:89, Ground:120
+## AnimSheet.cs (231 lines)
+- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, Write:77, Render:88, MakeUnit:135, Cell3D:161, Cell2D:192, Ground:213
 
 ## Art.cs (58 lines)
 - **Art** (class, L8): Has:14, TryGet:16, Art:18, Mipped:38
@@ -774,9 +774,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Upgrade.cs (293 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:185, Leads:281
 
-## Mesh3D.cs (342 lines)
-- **MeshKit3D** (class, L8): TryLoad:55, Load:65, Get:137, Resolve:139, MapTorso:189, MapLimb:204, MapHelm:212, MapWeapon:243, MapShield:270
-- **UnitMatTable** (struct, L282): Fill:295, FillBeast:333
+## Mesh3D.cs (366 lines)
+- **MeshKit3D** (class, L8): TryLoad:57, Load:67, Get:139, Resolve:141, MapTorso:213, MapLimb:228, MapHelm:236, MapWeapon:267, MapShield:294
+- **UnitMatTable** (struct, L306): Fill:319, FillBeast:357
 
 ## MusicDirector.cs (128 lines)
 - **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:120
@@ -821,11 +821,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet.cs (1081 lines)
 - **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:355, Bow:379, HorseScale:407, Horse:415, sp_breathe:513, static:515, Beast:523, WolfBody:535, Warg:565, BeastCorpse:583, DrawLooseHorse:598, DrawDeadHorse:608, RotY:639, Shoulder:650, Arm:654, ArmTo:661, Elbow:673, Sink:700, Leg:709, SpanRect:721, Fallen:730, SpiritAscent:798, Corpse:839, Haze:879, Particle:891, Banner:906, Decal:953, Quad:966, PlumeY:980, HelmTop:983, HeadBill:997, BillRect:1000, Missile:1011, AxialSrc:1031, LongRect:1042, PlaneRect:1054, FlatRect:1064, FlatRot:1073
 
-## Puppet3D.Beasts.cs (180 lines)
-- **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:24, DrawWolfRig:39, DrawWarg3D:64, DrawBear3D:72, DrawSpider3D:98, DrawWyvern3D:129
+## Puppet3D.Beasts.cs (237 lines)
+- **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:24, DrawWolfRig:42, DrawWarg3D:86, DrawBear3D:94, DrawSpider3D:139, DrawWyvern3D:175
 
-## Puppet3D.cs (941 lines)
-- **Puppet3D** (class, L12): Puppet3D:33, BeginCamera:39, Rad:46, Frame:48, WorldFrame:57, Lean:66, W:73, WDir:85, EmitLocal:98, EmitBone:148, EmitDir:164, RotY:175, Elbow:181, Sink:203, TryDraw:212, EmblemOf:530, EmitShield:540, DrawFallen3D:581, Banner:654, DrawMissile:757, HorseScale:775, DrawHorse3D:783, DrawLooseHorse:864, Bench:879
+## Puppet3D.cs (1207 lines)
+- **Puppet3D** (class, L12): Puppet3D:33, BeginCamera:39, Rad:46, Frame:48, WorldFrame:57, Lean:66, W:73, WDir:85, EmitLocal:98, EmitBone:148, EmitDir:164, EmitWeapon:176, RotX:201, RotZ:207, RotY:213, Elbow:219, Sink:241, TryDraw:250, EmblemOf:680, EmitSlashArc:690, EmitShield:763, DrawFallen3D:808, Banner:903, DrawMissile:1006, HorseScale:1024, DrawHorse3D:1032, DrawLooseHorse:1130, Bench:1145
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136
@@ -840,8 +840,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SaveScreen.cs (286 lines)
 - **SaveScreen** (class, L10): Show:29, Close:39, Draw:47, CampaignRow:155, SaveRow:177, Card:195, TypeName:235, NameBox:245, Thumb:258, Ago:277
 
-## ScreenHost.cs (909 lines)
-- **ScreenHost** (class, L9): readonly:42, ScreenHost:62, ApplyVideo:82, OpenSettings:92, LoadContent:94, StartCampaign:144, Load:171, FinishLoading:187, ContinueCampaign:210, LoadSave:217, OpenLab:226, QuickBattle:228, StartCampaignBattle:235, FinishCampaignBattle:245, CycleQuality:253, Update:257, DrawCursor:314, Draw:334, Fade:375, CaptureShot:405, readonly:433, RestoreTavernTown:445, StagingRefused:452, SaveShots:459, CampaignShots:473
+## ScreenHost.cs (910 lines)
+- **ScreenHost** (class, L9): readonly:42, ScreenHost:62, ApplyVideo:82, OpenSettings:92, LoadContent:94, StartCampaign:145, Load:172, FinishLoading:188, ContinueCampaign:211, LoadSave:218, OpenLab:227, QuickBattle:229, StartCampaignBattle:236, FinishCampaignBattle:246, CycleQuality:254, Update:258, DrawCursor:315, Draw:335, Fade:376, CaptureShot:406, readonly:434, RestoreTavernTown:446, StagingRefused:453, SaveShots:460, CampaignShots:474
 
 ## SelfTest.cs (103 lines)
 - **SelfTest** (class, L6): Run:14, Slots:20, ResolveBattles:32, RunOne:55, Lancer:63, Run:72, Scaled:74, MakeWanderer:77, Days:85, Ids:97, Check:99
@@ -857,9 +857,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SettingsScreen.cs (188 lines)
 - **SettingsScreen** (class, L7): readonly:20, SettingsScreen:22, Update:24, Close:42, Draw:50
 
-## Shading.cs (264 lines)
+## Shading.cs (270 lines)
 - **Quality** (enum, L8)
-- **Shading** (class, L12): Source:38, Shading:48, AimSun:104, Setup:148, Blank:177, Scene:184, PostToScreen:199, PixelPostToScreen:237, Dispose:259
+- **Shading** (class, L12): Source:38, Shading:48, AimSun:104, Setup:148, Blank:177, Scene:184, PostToScreen:199, PixelPostToScreen:237, PixelPostTo:244, Dispose:265
 
 ## Sky.cs (117 lines)
 - **Sky** (class, L7): Sky:31, Set:39, Moonlit:87, Omen:106

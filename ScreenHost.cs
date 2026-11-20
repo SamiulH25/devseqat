@@ -101,11 +101,7 @@ sealed class ScreenHost : Game
             using var file = File.Create(atlasPath); // debug: inspect the generated sprite sheet
             Art.Atlas.SaveAsPng(file, Art.Atlas.Width, Art.Atlas.Height);
         }
-        if (Environment.GetEnvironmentVariable("IRONFIELD_ANIM") is { Length: > 0 } animDir)
-        {
-            AnimSheet.Write(GraphicsDevice, Art, animDir, Environment.GetEnvironmentVariable("IRONFIELD_ANIM_ONLY") ?? ""); // debug: the animation strips
-            Environment.Exit(0);
-        }
+
         if (Environment.GetEnvironmentVariable("IRONFIELD_TROOPS") is { Length: > 0 } troopDir)
         {
             TroopSheet.Write(GraphicsDevice, Art, troopDir); // debug: every troop as a transparent PNG
@@ -118,6 +114,11 @@ sealed class ScreenHost : Game
         string? shaderError = null;
         try { Shading = new Shading(GraphicsDevice); }
         catch (Exception e) { Console.WriteLine("shaders unavailable: " + e.Message); Quality = Quality.Low; shaderError = e.Message; }
+        if (Environment.GetEnvironmentVariable("IRONFIELD_ANIM") is { Length: > 0 } animDir)
+        {
+            AnimSheet.Write(GraphicsDevice, Art, Shading, animDir, Environment.GetEnvironmentVariable("IRONFIELD_ANIM_ONLY") ?? ""); // debug: the animation strips
+            Environment.Exit(0);
+        }
         if (GpuReport.Requested) gpuReport = new GpuReport(this, Shading != null, shaderError);
 
         Audio = new AudioEngine();

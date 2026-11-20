@@ -3,29 +3,35 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// `IRONFIELD_ANIM=/dir`: draws the soldier animations as strips of frames, large, on a plain board, and quits: one row per
-/// clip (walk, run, idle, each swing from wind-up through the blow, block, a fall, a rider), eight frames a row. Written twice,
+/// `IRONFIELD_ANIM=/dir`: draws soldier, mount, and beast animations as strips of frames on a plain board and quits:
+/// one row per clip, eight frames a row, rendered through Puppet3D + Unit3D + PixelPost at 2x pixel scale. Written twice,
 /// from three-quarter front (`anim-front.png`) and from the side (`anim-side.png`), for judging motion without playing.
 /// Drawing only: the units here are never in a battle.
 sealed class AnimSheet
 {
-    const int Cols = 8, CellW = 150, CellH = 190;
+    const int Cols = 8, PixelScale = 2, HalfW = 84, HalfH = 104, CellW = HalfW * PixelScale, CellH = HalfH * PixelScale;
 
     readonly GraphicsDevice gd;
+    readonly Shading? sh;
     readonly Puppet puppet;
+    readonly Puppet3D? puppet3D;
     readonly Verts<VertexPositionColorTexture> sprites = new();
+    readonly Verts<VertexPNCT> units3D = new();
     readonly AlphaTestEffect fx;
     readonly BasicEffect flat;
 
-    AnimSheet(GraphicsDevice gd, Art art)
+    AnimSheet(GraphicsDevice gd, Art art, Shading? sh)
     {
         this.gd = gd;
+        this.sh = sh;
         puppet = new Puppet(art, sprites);
+        var kit = sh != null ? MeshKit3D.TryLoad() : null;
+        if (kit != null) puppet3D = new Puppet3D(kit, units3D);
         fx = new AlphaTestEffect(gd) { Texture = art.Atlas, VertexColorEnabled = true, AlphaFunction = CompareFunction.Greater, ReferenceAlpha = 128 };
         flat = new BasicEffect(gd) { VertexColorEnabled = true };
     }
 
-    /// One clip: its name and how to set the man (and the clock) for frame k of n.
+    /// One clip: its name and how to set the unit (and the clock) for frame k of n.
     record Clip(string Name, string Troop, Action<Unit, float> Set, string? Horse = null, float Span = 0);
 
     static Clip Swing(string name, string troop, AttackDir dir) => new(name, troop, (u, k) =>
@@ -50,61 +56,148 @@ sealed class AnimSheet
         Swing("spear+shield", "spearrunners", AttackDir.Thrust),
         new("block", "men_at_arms", (u, k) => { u.Action = k < 0.5f ? UnitAction.Block : UnitAction.Stagger; u.HitFlash = k >= 0.5f ? 0.15f * (1 - (k - 0.5f) * 2) : 0; }),
         new("bow", "bowmen", (u, k) => { u.Ammo = 10; u.EnemyDist = 20; if (k > 0.75f) { u.Action = UnitAction.Recover; u.ActionTimer = 0.25f * (1 - (k - 0.75f) * 4); } else u.Cooldown = 1.1f * (1 - k / 0.75f); }),
-        new("fall", "men_at_arms", (u, k) => { u.Dead = true; u.DiedAt = 0; u.DiedFall = Fall.Plain; u.DiedFrom = u.Pos + u.Dir; }, Span: 0.9f),
-        new("rider cut", "knights", (u, k) => { u.Vel = u.Dir * 6; u.Anim = k * 2; u.Swing = AttackDir.Right; u.Action = k < 3 / 8f ? UnitAction.Windup : UnitAction.Recover;
-            u.ActionTimer = k < 3 / 8f ? u.Type.Windup * (1 - (k + 1 / 8f) / (3 / 8f)) : u.Type.Recover * (1 - (k - 3 / 8f) / (5 / 8f)); }, Horse: "warhorse"),
+        new("crossbow", "crossbowmen", (u, k) => { u.Ammo = 10; u.EnemyDist = 20;
+            if (k < 0.5f) u.Cooldown = 2.0f - k * 1.5f;
+            else if (k < 0.75f) u.Cooldown = 1.0f - (k - 0.5f) / 0.25f;
+            else { u.Action = UnitAction.Recover; u.ActionTimer = 0.25f * (1 - (k - 0.75f) * 4); } }, Span: 2.0f),
+        new("fall", "men_at_arms", (u, k) => { u.Dead = true; u.DiedAt = 0; u.DiedFall = Fall.Cut; u.DiedFrom = u.Pos + u.Dir; }, Span: 0.72f),
+        new("rider gallop", "paladin_knights", (u, k) => { u.Vel = u.Dir * 8.6f; u.Anim = k; u.Couched = true; }, Horse: "warhorse", Span: 1.0f),
+        new("rider cut", "reaver_horsemen", (u, k) => { u.Vel = u.Dir * 6.2f; u.Anim = k; u.Swing = AttackDir.Right; u.Action = k < 3 / 8f ? UnitAction.Windup : UnitAction.Recover;
+            u.ActionTimer = k < 3 / 8f ? u.Type.Windup * (1 - (k + 1 / 8f) / (3 / 8f)) : u.Type.Recover * (1 - (k - 3 / 8f) / (5 / 8f)); }, Horse: "warhorse", Span: 1.0f),
+        new("wolf", "wolf", (u, k) => { u.Vel = u.Dir * 6.5f; u.Anim = k; if (k >= 0.5f && k < 0.75f) { u.Action = UnitAction.Windup; u.ActionTimer = u.Type.Windup * (1 - (k - 0.5f) * 4); }
+            else if (k >= 0.75f) { u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - (k - 0.75f) * 4); } }, Span: 1.0f),
+        new("bear", "bear", (u, k) => { u.Vel = u.Dir * (k < 0.375f ? 3.5f : 0.4f); u.Anim = k; if (k >= 0.375f && k < 0.625f) { u.Action = UnitAction.Windup; u.ActionTimer = u.Type.Windup * (1 - (k - 0.375f) * 4); }
+            else if (k >= 0.625f) { u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - (k - 0.625f) / 0.375f); } }, Span: 1.2f),
+        new("spider", "spider", (u, k) => { u.Vel = u.Dir * 4.5f; u.Anim = k; if (k >= 0.5f && k < 0.75f) { u.Action = UnitAction.Windup; u.ActionTimer = u.Type.Windup * (1 - (k - 0.5f) * 4); }
+            else if (k >= 0.75f) { u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - (k - 0.75f) * 4); } }, Span: 1.0f),
+        new("wyvern", "wyvern", (u, k) => { u.Altitude = 1.05f; u.Vel = u.Dir * 7f; u.Anim = k; if (k >= 0.5f && k < 0.75f) { u.Action = UnitAction.Windup; u.ActionTimer = u.Type.Windup * (1 - (k - 0.5f) * 4); }
+            else if (k >= 0.75f) { u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - (k - 0.75f) * 4); } }, Span: 1.2f),
     };
 
-    public static void Write(GraphicsDevice gd, Art art, string dir, string filter)
+    public static void Write(GraphicsDevice gd, Art art, Shading? sh, string dir, string filter)
     {
         Directory.CreateDirectory(dir);
-        var sheet = new AnimSheet(gd, art);
+        Sky.Set(new Weather(13, 0, 0));
+        var sheet = new AnimSheet(gd, art, sh);
         var clips = Clips.Where(c => filter == "" || c.Name.Contains(filter)).ToArray();
         sheet.Render(clips, 0.6f, Path.Combine(dir, "anim-front.png"));
         sheet.Render(clips, 1.45f, Path.Combine(dir, "anim-side.png"));
-        Console.WriteLine($"{clips.Length} clips -> {dir}: " + string.Join(", ", clips.Select(c => c.Name)));
+        Console.WriteLine($"{clips.Length} clips -> {dir} ({(sheet.puppet3D != null ? "3D 2x" : "2D")}): " + string.Join(", ", clips.Select(c => c.Name)));
     }
 
     void Render(Clip[] clips, float camYaw, string path)
     {
         int w = Cols * CellW, h = clips.Length * CellH;
-        using var rt = new RenderTarget2D(gd, w, h, false, SurfaceFormat.Color, DepthFormat.Depth24);
-        gd.SetRenderTarget(rt);
-        gd.Clear(new Color(118, 128, 112));
-        for (int row = 0; row < clips.Length; row++)
-            for (int col = 0; col < Cols; col++)
-            {
-                gd.Viewport = new Viewport(col * CellW, row * CellH, CellW, CellH);
-                gd.Clear(ClearOptions.DepthBuffer, Color.Black, 1, 0);
-                Cell(clips[row], col / (float)Cols, camYaw);
-            }
-        gd.SetRenderTarget(null);
-        var px = new Color[w * h];
-        rt.GetData(px);
+        Color[] px;
+        if (sh != null && puppet3D != null)
+        {
+            int hw = Cols * HalfW, hh = clips.Length * HalfH;
+            using var rtCol = new RenderTarget2D(gd, hw, hh, false, SurfaceFormat.Color, DepthFormat.Depth24, 0, RenderTargetUsage.PreserveContents);
+            using var rtNd = new RenderTarget2D(gd, hw, hh, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            using var rtOut = new RenderTarget2D(gd, w, h, false, SurfaceFormat.Color, DepthFormat.None);
+
+            gd.SetRenderTarget(rtNd);
+            gd.Clear(Color.Transparent);
+            gd.SetRenderTarget(rtCol);
+            gd.Clear(new Color(128, 140, 122));
+
+            for (int row = 0; row < clips.Length; row++)
+                for (int col = 0; col < Cols; col++)
+                    Cell3D(rtCol, rtNd, row, col, clips[row], col / (float)Cols, camYaw);
+
+            sh.PixelPostTo(rtOut, rtCol, rtNd, PixelScale, Vector3.One);
+            gd.SetRenderTarget(null);
+            px = new Color[w * h];
+            rtOut.GetData(px);
+        }
+        else
+        {
+            using var rt = new RenderTarget2D(gd, w, h, false, SurfaceFormat.Color, DepthFormat.Depth24);
+            gd.SetRenderTarget(rt);
+            gd.Clear(new Color(118, 128, 112));
+            for (int row = 0; row < clips.Length; row++)
+                for (int col = 0; col < Cols; col++)
+                {
+                    gd.Viewport = new Viewport(col * CellW, row * CellH, CellW, CellH);
+                    gd.Clear(ClearOptions.DepthBuffer, Color.Black, 1, 0);
+                    Cell2D(clips[row], col / (float)Cols, camYaw);
+                }
+            gd.SetRenderTarget(null);
+            px = new Color[w * h];
+            rt.GetData(px);
+        }
+
         for (int row = 0; row < clips.Length; row++) // a dark line between the rows, so each strip reads on its own
-            for (int x = 0; x < w; x++) px[row * CellH * w + x] = new Color(70, 76, 66);
+            for (int x = 0; x < w; x++) px[row * CellH * w + x] = new Color(64, 70, 60);
         File.WriteAllBytes(path, SpriteDump.Png(px, w, h));
     }
 
-    void Cell(Clip c, float k, float camYaw)
+    static Unit MakeUnit(Clip c, float k, out float now)
     {
         const float Facing = MathHelper.PiOver2;
         var u = new Unit { Index = 3, Palette = 0, Coat = 1, Type = Troops.Get(c.Troop), Facing = Facing, ViewFacing = Facing, Heading = Facing, ViewHeading = Facing, EnemyDist = 2 };
         if (c.Horse != null) u.Horse = Troops.Mount(c.Horse);
         c.Set(u, k);
         u.Speed = u.Vel.Length();
-        puppet.Now = c.Span > 0 ? 0.001f + k * c.Span : 1;
+        now = c.Span > 0 ? 0.001f + k * c.Span : 1f;
+        return u;
+    }
+
+    static (Matrix view, Matrix proj, Vector3 eye) CellCamera(Unit u, float camYaw, float aspect)
+    {
+        const float Facing = MathHelper.PiOver2;
+        bool wyvern = u.Type.Look.Face == "wyvern";
+        bool beast = u.Type.Look.Beast;
         bool rider = u.Mounted;
-        float dist = rider ? 7.5f : 4.6f, y = rider ? 1.5f : 1.0f;
+        float dist = wyvern ? 11.0f : rider ? 7.6f : beast ? 6.4f : 4.7f;
+        float y = wyvern ? 2.15f : rider ? 1.50f : beast ? 0.90f : 1.02f;
+        float eyeLift = wyvern ? 1.3f : 0.9f;
         float a = Facing + camYaw;
         var target = new Vector3(0, y, 0);
-        var eye = target + new Vector3(MathF.Cos(a) * dist, 0.9f, MathF.Sin(a) * dist);
-        var view = Matrix.CreateLookAt(eye, target, Vector3.Up);
-        var proj = Matrix.CreatePerspectiveFieldOfView(0.55f, CellW / (float)CellH, 0.1f, 100);
+        var eye = target + new Vector3(MathF.Cos(a) * dist, eyeLift, MathF.Sin(a) * dist);
+        return (Matrix.CreateLookAt(eye, target, Vector3.Up), Matrix.CreatePerspectiveFieldOfView(0.55f, aspect, 0.1f, 100), eye);
+    }
+
+    void Cell3D(RenderTarget2D rtCol, RenderTarget2D rtNd, int row, int col, Clip c, float k, float camYaw)
+    {
+        var u = MakeUnit(c, k, out float now);
+        var (view, proj, eye) = CellCamera(u, camYaw, HalfW / (float)HalfH);
+        var vp = new Viewport(col * HalfW, row * HalfH, HalfW, HalfH);
+
+        gd.SetRenderTarget(rtCol);
+        gd.Viewport = vp;
+        gd.Clear(ClearOptions.DepthBuffer, Color.Black, 1, 0);
+        Ground(view, proj);
+
+        units3D.N = 0;
+        puppet3D!.Now = now;
+        puppet3D.Detail = 0;
+        puppet3D.BeginCamera(view);
+        if (Environment.GetEnvironmentVariable("IRONFIELD_ANIM_DEBUG") == c.Name) Console.WriteLine($"{k:0.00} {Puppet.PoseOf(u, now, Ease.Hash(u.Index))}");
+        puppet3D.TryDraw(u, 0);
+        if (units3D.N == 0) return;
+
+        gd.SetRenderTargets(rtCol, rtNd);
+        gd.Viewport = vp;
+        gd.BlendState = BlendState.Opaque;
+        gd.DepthStencilState = DepthStencilState.Default;
+        gd.RasterizerState = RasterizerState.CullNone;
+        sh!.Setup(sh.Unit3D, view * proj, eye, now, false, 0.45f);
+        sh.Unit3D.Parameters["View"].SetValue(view);
+        sh.Unit3D.CurrentTechnique = sh.Unit3D.Techniques["Unit3D"];
+        sh.Unit3D.CurrentTechnique.Passes[0].Apply();
+        units3D.Draw(gd, PrimitiveType.TriangleList, units3D.N / 3);
+    }
+
+    void Cell2D(Clip c, float k, float camYaw)
+    {
+        var u = MakeUnit(c, k, out float now);
+        var (view, proj, _) = CellCamera(u, camYaw, CellW / (float)CellH);
         Ground(view, proj);
         sprites.N = 0;
+        puppet.Now = now;
         puppet.Begin(view);
-        if (Environment.GetEnvironmentVariable("IRONFIELD_ANIM_DEBUG") == c.Name) Console.WriteLine($"{k:0.00} {Puppet.PoseOf(u, puppet.Now, Ease.Hash(u.Index))}");
+        if (Environment.GetEnvironmentVariable("IRONFIELD_ANIM_DEBUG") == c.Name) Console.WriteLine($"{k:0.00} {Puppet.PoseOf(u, now, Ease.Hash(u.Index))}");
         puppet.Draw(u, 0);
         if (sprites.N == 0) return;
         gd.BlendState = BlendState.Opaque;
@@ -116,11 +209,11 @@ sealed class AnimSheet
         sprites.Draw(gd, PrimitiveType.TriangleList, sprites.N / 3);
     }
 
-    /// A flat square of turf under him with a cross at his feet, so drift and sliding feet show.
+    /// A flat square of turf under the unit with a cross at the origin, so drift and sliding feet show.
     void Ground(Matrix view, Matrix proj)
     {
-        var g = new Color(92, 110, 76);
-        var m = new Color(60, 70, 50);
+        var g = new Color(96, 114, 80);
+        var m = new Color(64, 74, 54);
         var v = new List<VertexPositionColor>();
         void Q(float x0, float z0, float x1, float z1, Color c)
         {
@@ -128,7 +221,7 @@ sealed class AnimSheet
             v.Add(new(new(x1, 0, z0), c)); v.Add(new(new(x1, 0, z1), c)); v.Add(new(new(x0, 0, z1), c));
         }
         Q(-3, -3, 3, 3, g);
-        for (int i = -3; i <= 3; i++) { Q(i - 0.01f, -3, i + 0.01f, 3, m); Q(-3, i - 0.01f, 3, i + 0.01f, m); }
+        for (int i = -3; i <= 3; i++) { Q(i - 0.015f, -3, i + 0.015f, 3, m); Q(-3, i - 0.015f, 3, i + 0.015f, m); }
         gd.DepthStencilState = DepthStencilState.None;
         gd.RasterizerState = RasterizerState.CullNone;
         flat.World = Matrix.Identity; flat.View = view; flat.Projection = proj;

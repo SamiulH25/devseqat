@@ -172,6 +172,44 @@ sealed partial class Puppet3D
         EmitLocal(part, pos, rx, dir, fz, sx, sy, sz, partPat);
     }
 
+    /// Emit a weapon mesh with its cutting edge (local +Z for axes/scimitars/polearms, local +X for straight swords) aligned to `edgeHint`.
+    void EmitWeapon(MeshKit3D.Vert[] part, Vector3 pos, Vector3 dir, Vector3 edgeHint, bool edgeAlongZ, float sx = 1f, float sy = 1f, float sz = 1f)
+    {
+        if (dir.LengthSquared() < 1e-5f) dir = Vector3.UnitY;
+        else dir = Vector3.Normalize(dir);
+        var e = edgeHint - dir * Vector3.Dot(edgeHint, dir);
+        if (e.LengthSquared() < 1e-4f)
+        {
+            e = Vector3.Cross(dir, Vector3.UnitY);
+            if (e.LengthSquared() < 1e-4f) e = Vector3.UnitX;
+        }
+        e.Normalize();
+        Vector3 rx, fz;
+        if (edgeAlongZ)
+        {
+            fz = e;
+            rx = Vector3.Normalize(Vector3.Cross(dir, fz));
+        }
+        else
+        {
+            rx = e;
+            fz = Vector3.Normalize(Vector3.Cross(rx, dir));
+        }
+        EmitLocal(part, pos, rx, dir, fz, sx, sy, sz);
+    }
+
+    static Vector3 RotX(Vector3 v, float deg)
+    {
+        float r = Rad(deg), c = MathF.Cos(r), s = MathF.Sin(r);
+        return new Vector3(v.X, v.Y * c - v.Z * s, v.Y * s + v.Z * c);
+    }
+
+    static Vector3 RotZ(Vector3 v, float deg)
+    {
+        float r = Rad(deg), c = MathF.Cos(r), s = MathF.Sin(r);
+        return new Vector3(v.X * c - v.Y * s, v.X * s + v.Y * c, v.Z);
+    }
+
     static Vector3 RotY(Vector3 v, float deg)
     {
         float r = Rad(deg), c = MathF.Cos(r), s = MathF.Sin(r);
@@ -261,17 +299,40 @@ sealed partial class Puppet3D
             return true;
         }
 
+        float mountTurn = u.Mounted ? MathHelper.WrapAngle(u.Heading - u.ViewHeading) : 0f;
         float lift = ground;
         if (u.Mounted && u.Horse!.Barding == "wolf")
         {
-            lift = ground + DrawWarg3D(u, ground, tint);
+            lift = ground + DrawWarg3D(u, ground, tint, mountTurn);
             UnitMatTable.Fill(palIdx, look.Visage, u.Coat, false, tint, palCols, look.Face);
         }
         else if (u.Mounted)
-            lift = ground + DrawHorse3D(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Horse!.Barding, Ease.Hash(u.Index));
+            lift = ground + DrawHorse3D(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Horse!.Barding, Ease.Hash(u.Index), mountTurn);
 
         var p = Puppet.PoseOf(u, Now, phase, Winner);
         if (FxPuppet is { Awe.Count: > 0 }) p = Puppet.Awed(FxPuppet.Awe, u, p, phase);
+
+        // Phase 3.5 locomotion, banking, breathing, gallop crouch & combat recoil (3D-only, preserves headless PoseOf!)
+        float speed = u.Mounted ? u.Speed : u.Vel.Length();
+        float walkFactor = !u.Mounted ? Math.Clamp(speed / 1.5f, 0f, 1f) : 0f;
+        float runFactor = !u.Mounted ? Math.Clamp((speed - 1.8f) / 2.8f, 0f, 1f) : 0f;
+        float gallop = u.Mounted ? Math.Clamp((u.Speed - 2.2f) / 6.2f, 0f, 1f) : 0f;
+        float legNorm = !u.Mounted ? Math.Clamp(p.Leg / 40f, -1f, 1f) : 0f;
+        float turnDelta = MathHelper.WrapAngle(u.Facing - u.ViewFacing);
+        float bankX = u.Mounted
+            ? Math.Clamp(mountTurn * (10f + 16f * gallop), -15f, 15f)
+            : Math.Clamp(turnDelta * (8f + 15f * runFactor), -13f, 13f);
+        float hitRecoil = u.HitFlash > 0 ? Math.Clamp(u.HitFlash / 0.15f, 0f, 1f) : 0f;
+        float stagger = u.Action == UnitAction.Stagger ? 1f : 0f;
+        float extraCrouch = !u.Mounted ? MathF.Max(p.ShieldUp ? 0.11f : 0f, stagger * 0.26f) : 0f;
+        if (extraCrouch > 0f && p.Crouch < extraCrouch) p = p with { Crouch = extraCrouch };
+
+        float gallopCrouch = u.Mounted && Rear <= 0 && u.Action != UnitAction.Windup
+            ? gallop * (u.Couched ? 17f : 11f) + MathF.Sin(u.Anim * MathF.Tau - 0.6f) * 3.5f * gallop
+            : 0f;
+        float stirrupBounce = u.Mounted ? MathF.Sin(u.Anim * MathF.Tau - 0.35f) * 0.036f * gallop : 0f;
+        bool idleBreathOn = !u.Mounted && speed < 0.35f && u.Action == UnitAction.None;
+        float breath = idleBreathOn ? MathF.Sin(Now * 2.1f + phase * MathF.Tau) : 0f;
 
         var at = u.Pos;
         float leanBack = 0;
@@ -283,26 +344,38 @@ sealed partial class Puppet3D
             leanBack = RearDeg * Rear * 0.8f;
         }
 
-        Frame(at, u.ViewFacing, lift + (p.Bob - (u.Mounted ? 0 : Sink(p))) * size, size);
-        Lean(p.LeanX, p.LeanZ - leanBack);
+        float extraLeanZ = gallopCrouch - hitRecoil * 4f - stagger * 4f + (p.ShieldUp ? 5f : 0f);
+        float extraLeanX = bankX + stagger * (phase > 0.5f ? 5f : -5f);
+        Frame(at, u.ViewFacing, lift + (p.Bob + stirrupBounce - (u.Mounted ? 0 : Sink(p))) * size, size);
+        Lean(p.LeanX + extraLeanX, p.LeanZ - leanBack + extraLeanZ);
 
         // Spider web snare wrapping a caught unit.
         if (Now > 0 && Now < u.WebbedUntil && kit.WebSnare.Length > 0)
             EmitLocal(kit.WebSnare, new Vector3(0, u.Mounted ? 0.35f : 0f, 0), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
 
-        // 1. Legs (Detail 0: articulated thigh+shin; Detail 1: streamlined single bone!)
+        // 1. Legs with pelvis counter-rotation, lateral weight shift onto planted foot, and heel-strike / toe-off feel.
+        float pelvisYaw = !u.Mounted ? -legNorm * (6.5f + 5.5f * runFactor) : 0f;
+        float hipShiftX = !u.Mounted ? legNorm * (0.018f + 0.016f * runFactor) : 0f;
         if (!u.Mounted)
         {
             for (int side = -1; side <= 1; side += 2)
             {
                 var (a, bend) = Knee(side, p);
-                var hip = new Vector3(side * 0.125f, 0.68f, 0);
-                var knee = hip + new Vector3(0, -Shank * MathF.Cos(Rad(a)), Shank * MathF.Sin(Rad(a)));
-                var foot = knee + new Vector3(0, -Shank * MathF.Cos(Rad(a - bend)), Shank * MathF.Sin(Rad(a - bend)));
+                // Subtle heel-strike extension on forward-reaching leg & toe-off tuck on trailing leg.
+                float legSign = legNorm * side;
+                if (walkFactor > 0.05f && !p.Kneel)
+                {
+                    if (legSign > 0f) bend = MathF.Max(4f, bend - legSign * 8f * walkFactor);
+                    else bend += -legSign * (10f + 12f * runFactor);
+                }
+                var hip = RotY(new Vector3(side * 0.125f, 0.68f + legSign * 0.012f * walkFactor, 0), pelvisYaw) + new Vector3(hipShiftX, 0, 0);
+                var knee = hip + RotY(new Vector3(0, -Shank * MathF.Cos(Rad(a)), Shank * MathF.Sin(Rad(a))), pelvisYaw * 0.6f);
+                var foot = knee + RotY(new Vector3(0, -Shank * MathF.Cos(Rad(a - bend)), Shank * MathF.Sin(Rad(a - bend))), pelvisYaw * 0.4f);
+                var toeFwd = RotY(new Vector3(side * 0.14f, legSign > 0.15f ? 0.22f * walkFactor : -0.18f * walkFactor, 1f), pelvisYaw * 0.4f);
                 if (Detail == 0)
                 {
-                    EmitBone(lm.Thigh, hip, knee, Vector3.UnitZ, 1f, lm.LegPat);
-                    EmitBone(lm.Shin, knee, foot, Vector3.UnitZ, 1f, lm.LegPat);
+                    EmitBone(lm.Thigh, hip, knee, toeFwd, 1f, lm.LegPat);
+                    EmitBone(lm.Shin, knee, foot, toeFwd, 1f, lm.LegPat);
                 }
                 else
                 {
@@ -313,46 +386,80 @@ sealed partial class Puppet3D
         else if (Detail == 0)
         {
             float spread = 0.27f * HorseScale(u.Horse!.Barding);
+            float legTuck = gallop * 0.06f;
+            float legBob = -stirrupBounce * 0.65f;
             for (int side = -1; side <= 1; side += 2)
             {
-                var hip = new Vector3(side * spread * 0.85f, 0.68f, -0.02f);
-                var knee = new Vector3(side * (spread + 0.08f), 0.36f, 0.14f);
-                var foot = new Vector3(side * (spread + 0.10f), 0.05f, 0.08f);
+                var hip = new Vector3(side * spread * 0.85f, 0.68f, -0.02f - legTuck * 0.4f);
+                var knee = new Vector3(side * (spread + 0.08f), 0.37f + legBob + legTuck * 0.5f, 0.15f + legTuck);
+                var foot = new Vector3(side * (spread + 0.10f), 0.06f + legBob * 1.2f + legTuck * 0.7f, 0.05f - legTuck * 0.8f);
                 EmitBone(lm.Thigh, hip, knee, Vector3.UnitZ, 1f, lm.LegPat);
                 EmitBone(lm.Shin, knee, foot, Vector3.UnitZ, 1f, lm.LegPat);
             }
         }
 
-        // 2. Determine combat stance twist BEFORE torso so archers turn side-on naturally!
+        // 2. Determine combat + stride counter-rotation twist BEFORE torso!
         var grip = Look.GripOf(look.Weapon);
         bool ranged = Look.Ranged(look.Weapon);
         bool isCrossbow = p.Armed && (p.Haul >= 0 || (grip == Grip.Crossbow && !u.Mounted));
-        twist = isCrossbow ? 0 : (ranged && p.Aim) ? 28f : (ranged || !p.Armed) ? 0 : Puppet.TwistOf(p);
+        float gaitTwist = !u.Mounted ? legNorm * (9f + 9f * runFactor) : 0f;
+        float combatTwist = isCrossbow ? 0f : (ranged && p.Aim) ? 28f : (ranged || !p.Armed) ? 0f : Puppet.TwistOf(p);
+        if (p.TwoHand && u.Action != UnitAction.None) combatTwist = Math.Clamp(combatTwist * 1.28f, -44f, 44f);
+        if (p.ShieldUp && u.Action == UnitAction.Block) combatTwist -= 14f;
+        twist = combatTwist + ((u.Action == UnitAction.None && !(ranged && p.Aim)) ? gaitTwist : gaitTwist * 0.2f);
 
+        Vector3 torsoPos = new(hipShiftX * 0.75f, breath * 0.008f, 0);
         Vector3 tR = RotY(Vector3.UnitX, twist);
         Vector3 tF = RotY(Vector3.UnitZ, twist);
-        EmitLocal(lm.Torso, Vector3.Zero, tR, Vector3.UnitY, tF, 1f, 1f, 1f, lm.TorsoPat);
+        EmitLocal(lm.Torso, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f + breath * 0.012f, 1f + breath * 0.018f, lm.TorsoPat);
         if (lm.HasTabard && Detail == 0)
         {
             var emb = EmblemOf(palIdx);
             if (emb.Length > 0)
-                EmitLocal(emb, RotY(new Vector3(0, 1.03f, 0.175f), twist), tR, Vector3.UnitY, tF, 0.56f, 0.56f, 0.7f);
+                EmitLocal(emb, torsoPos + RotY(new Vector3(0, 1.03f, 0.175f), twist), tR, Vector3.UnitY, tF, 0.56f, 0.56f, 0.7f);
         }
-        if (lm.HasCape && Detail == 0) EmitLocal(kit.Cape, Vector3.Zero, tR, Vector3.UnitY, tF, 1f, 1f, 1f, MeshKit3D.PatQuilt);
+        if (lm.HasCape && Detail == 0)
+        {
+            // Secondary motion: speed-driven cape billow, flutter, and turn-delta whip lag around the shoulder pin!
+            float capeSpeed = Math.Clamp(speed, 0f, 10f);
+            float capePitch = Math.Clamp(capeSpeed * 3.8f + (u.Action == UnitAction.Recover ? 9f : 0f), 0f, 34f)
+                + MathF.Sin(Now * (5.2f + capeSpeed * 1.25f) + phase * 11f) * (3.0f + capeSpeed * 0.9f);
+            float capeYaw = twist + Math.Clamp(-MathHelper.ToDegrees(u.Mounted ? mountTurn : turnDelta) * 0.65f, -24f, 24f)
+                + MathF.Sin(Now * 3.6f + phase * 7f) * (2.4f + capeSpeed * 0.65f);
+            Vector3 cR = RotY(Vector3.UnitX, capeYaw);
+            Vector3 cU = RotY(RotX(Vector3.UnitY, capePitch), capeYaw);
+            Vector3 cF = RotY(RotX(Vector3.UnitZ, capePitch), capeYaw);
+            Vector3 pin = torsoPos + RotY(new Vector3(0, 1.28f, -0.16f), twist);
+            Vector3 capeOrigin = pin - (cU * 1.28f + cF * -0.16f);
+            EmitLocal(kit.Cape, capeOrigin, cR, cU, cF, 1f, 1f, 1f, MeshKit3D.PatQuilt);
+        }
 
-        // 3. Head + Helm + Plume
-        float headYaw = p.Look + (ranged && p.Aim ? 0f : twist * 0.4f);
+        // 3. Head + Helm + Plume (with turn look-ahead, hit recoil snap, and secondary plume whip lag)
+        float headYaw = p.Look + Math.Clamp(MathHelper.ToDegrees(turnDelta) * 0.45f, -22f, 22f) + (ranged && p.Aim ? 0f : twist * 0.4f);
+        float headPitch = -hitRecoil * 18f - stagger * 10f + (p.ShieldUp ? 6f : 0f) - gallopCrouch * 0.45f;
         Vector3 hR = RotY(Vector3.UnitX, headYaw);
-        Vector3 hF = RotY(Vector3.UnitZ, headYaw);
+        Vector3 hU = RotY(RotX(Vector3.UnitY, headPitch), headYaw);
+        Vector3 hF = RotY(RotX(Vector3.UnitZ, headPitch), headYaw);
+        Vector3 headPos = torsoPos + new Vector3(0, 1.53f + breath * 0.01f, 0.01f);
         if (!lm.FullEnclosedHelm && (Detail == 0 || lm.Helm.Length == 0))
-            EmitLocal(lm.Head, new Vector3(0, 1.53f, 0.01f), hR, Vector3.UnitY, hF);
+            EmitLocal(lm.Head, headPos, hR, hU, hF);
         if (lm.Helm.Length > 0)
-            EmitLocal(lm.Helm, new Vector3(0, 1.53f, 0.01f), hR, Vector3.UnitY, hF);
+            EmitLocal(lm.Helm, headPos, hR, hU, hF);
         if (lm.HasPlume && Detail == 0)
-            EmitLocal(kit.Plume, new Vector3(0, 1.78f, 0.0f), hR, Vector3.UnitY, hF);
+        {
+            float pSpeed = Math.Clamp(speed, 0f, 10f);
+            float pPitch = Math.Clamp(pSpeed * 3.6f, 0f, 30f) + MathF.Sin(Now * (7.2f + pSpeed * 1.5f) + phase * 13f) * (2.8f + pSpeed * 0.85f) - hitRecoil * 16f;
+            float pYaw = headYaw + Math.Clamp(-MathHelper.ToDegrees(u.Mounted ? mountTurn : turnDelta) * 0.75f, -26f, 26f)
+                + MathF.Sin(Now * 4.8f + phase * 9f) * (2.5f + pSpeed * 0.6f);
+            Vector3 pR = RotY(Vector3.UnitX, pYaw);
+            Vector3 pU = RotY(RotX(Vector3.UnitY, headPitch - pPitch), pYaw);
+            Vector3 pF = RotY(RotX(Vector3.UnitZ, headPitch - pPitch), pYaw);
+            Vector3 plumePos = headPos + hU * 0.25f - hF * 0.01f;
+            EmitLocal(kit.Plume, plumePos, pR, pU, pF);
+        }
 
         // 4. Arms, Weapon, Shield, Quivers & Special Combat Stances
-        Vector3 Shoulder(int side) => RotY(new Vector3(side * 0.23f, 1.24f, 0), twist);
+        Vector3 Shoulder(int side) => torsoPos + RotY(new Vector3(side * 0.23f, 1.24f + breath * 0.01f, 0), twist);
         Vector3 ArmEnd(int side, float alphaDeg, float yawDeg, float reach)
         {
             var sh = Shoulder(side);
@@ -431,20 +538,47 @@ sealed partial class Puppet3D
             return true;
         }
 
-        var wHand = ArmEnd(1, p.ArmA, p.Yaw - twist, p.Reach);
+        var wHand = ArmEnd(1, p.ArmA + (stagger > 0 ? 18f : 0f), p.Yaw - twist + (stagger > 0 ? 16f : 0f), p.Reach);
         var wDir = RotY(new Vector3(0, MathF.Sin(Rad(p.WeapB)), MathF.Cos(Rad(p.WeapB))), p.Yaw);
         if (wDir.LengthSquared() < 1e-4f) wDir = Vector3.UnitY;
         wDir.Normalize();
 
+        // Tighter two-handed grip alignment: pull overly wide windup hands slightly toward torso center so both arms stay solidly on the hilt/shaft.
+        bool poleForwardGrip = p.TwoHand && p.Armed && lm.OffHandForward && p.WeapB < 75f;
+        Vector3 offHandTarget = p.TwoHand && p.Armed
+            ? (poleForwardGrip ? wHand + wDir * lm.OffHandOffset : wHand - wDir * lm.OffHandOffset)
+            : Vector3.Zero;
+        if (p.TwoHand && p.Armed)
+        {
+            var lSh = Shoulder(-1);
+            float maxTwoReach = (UpperArm + Forearm) * 0.97f;
+            var toOff = offHandTarget - lSh;
+            float distOff = toOff.Length();
+            if (distOff > maxTwoReach)
+            {
+                var pull = toOff * ((distOff - maxTwoReach) / distOff);
+                wHand -= pull * 0.85f;
+                offHandTarget -= pull * 0.85f;
+            }
+        }
+
         DrawArm(1, wHand);
 
         bool shieldArm = p.Armed && u.Type.HasShield && !ranged && !p.TwoHand && !u.Couched;
+        float shieldStrideBob = !u.Mounted ? legNorm * (0.032f + 0.025f * runFactor) : 0f;
         Vector3 offHand = p.TwoHand && p.Armed
-            ? wHand - wDir * 0.22f
+            ? offHandTarget
             : shieldArm
-                ? (p.ShieldUp ? new Vector3(-0.08f, 1.20f, 0.36f) : new Vector3(-0.24f, 0.98f, 0.24f) + new Vector3(0, p.OffA * 0.002f, 0))
-                : ArmEnd(-1, p.OffA, -twist, p.OffReach);
-        DrawArm(-1, offHand);
+                ? (p.ShieldUp
+                    ? torsoPos + RotY(new Vector3(-0.07f, 1.18f + hitRecoil * 0.06f, 0.37f - hitRecoil * 0.07f), twist * 0.35f)
+                    : torsoPos + RotY(new Vector3(-0.24f - stagger * 0.12f, 0.98f + p.OffA * 0.002f + MathF.Abs(shieldStrideBob) * 0.35f, 0.24f - shieldStrideBob - hitRecoil * 0.08f), twist * 0.45f))
+                : ArmEnd(-1, p.OffA + stagger * 22f, -twist - stagger * 18f, p.OffReach);
+        Vector3? offPole = p.TwoHand && p.Armed
+            ? RotY(new Vector3(-0.68f, -0.42f, -0.45f), twist * 0.65f)
+            : shieldArm && p.ShieldUp
+                ? new Vector3(-0.75f, -0.55f, -0.35f)
+                : null;
+        DrawArm(-1, offHand, offPole);
 
         if (!p.Armed) return true; // routed man has thrown away his weapon and shield
 
@@ -488,16 +622,26 @@ sealed partial class Puppet3D
 
         if (!p.Empty && lm.Weapon.Length > 0)
         {
-            EmitDir(lm.Weapon, wHand, wDir);
+            // Align weapon cutting edge cleanly into the active swing plane (Right/Left horizontal, Overhead vertical, Thrust sleek).
+            Vector3 edgeHint = (u.Action is UnitAction.Windup or UnitAction.Recover)
+                ? u.Swing switch
+                {
+                    AttackDir.Right => RotY(new Vector3(-0.96f, -0.26f, 0f), p.Yaw),
+                    AttackDir.Left => RotY(new Vector3(0.96f, -0.26f, 0f), p.Yaw),
+                    AttackDir.Thrust => lm.WeaponEdgeZ ? Vector3.Down : RotY(new Vector3(0.88f, -0.45f, 0f), p.Yaw),
+                    _ => RotY(new Vector3(0f, -MathF.Cos(Rad(p.WeapB)), MathF.Sin(Rad(p.WeapB))), p.Yaw), // Overhead chop edge forward/down
+                }
+                : RotY(new Vector3(0.28f, -0.30f, 0.91f), p.Yaw);
+            EmitWeapon(lm.Weapon, wHand, wDir, edgeHint, lm.WeaponEdgeZ);
 
-            // Blade swing motion glint wisps during active strike frames (shared soft-particle pass).
-            if (Detail == 0 && FxPuppet?.Soft != null && grip is Grip.One or Grip.Two or Grip.Pole)
+            // Crisp 3D steel slash-arc ribbons (Detail 0, works in battle AND AnimSheet) + optional battle haze glint.
+            if (Detail == 0 && grip is Grip.One or Grip.Two or Grip.Pole)
             {
                 float strikeK = -1f;
                 if (!u.IsPlayer && u.Action == UnitAction.Recover && u.Type.Recover > 0)
                 {
                     float rk = 1f - u.ActionTimer / u.Type.Recover;
-                    if (rk < 0.26f) strikeK = rk / 0.26f;
+                    if (rk < 0.30f) strikeK = rk / 0.30f;
                 }
                 else if (u.IsPlayer && u.Action == UnitAction.Windup)
                 {
@@ -506,13 +650,17 @@ sealed partial class Puppet3D
                 }
                 if (strikeK >= 0f)
                 {
-                    float reachLen = grip == Grip.Pole ? 1.55f : p.TwoHand ? 1.15f : 0.78f;
-                    var tip = W(wHand + wDir * (reachLen * 0.85f));
-                    var mid = W(wHand + wDir * (reachLen * 0.52f));
-                    float a = MathF.Sin(strikeK * MathF.PI) * (p.TwoHand ? 0.52f : 0.36f);
-                    var col = new Color(235, 242, 255);
-                    FxPuppet.Haze(tip, (p.TwoHand ? 0.55f : 0.36f) * scale, col, a, strikeK * 6f + u.Index);
-                    FxPuppet.Haze(mid, (p.TwoHand ? 0.38f : 0.24f) * scale, col, a * 0.65f, strikeK * 4f + u.Index);
+                    EmitSlashArc(wHand, wDir, p.Yaw, p.WeapB, u.Swing, lm.BladeReach, strikeK, p.TwoHand || grip == Grip.Pole);
+                    if (FxPuppet?.Soft != null)
+                    {
+                        float reachLen = lm.BladeReach;
+                        var tip = W(wHand + wDir * (reachLen * 0.85f));
+                        var mid = W(wHand + wDir * (reachLen * 0.52f));
+                        float a = MathF.Sin(strikeK * MathF.PI) * (p.TwoHand ? 0.42f : 0.28f);
+                        var col = new Color(235, 242, 255);
+                        FxPuppet.Haze(tip, (p.TwoHand ? 0.48f : 0.32f) * scale, col, a, strikeK * 6f + u.Index);
+                        FxPuppet.Haze(mid, (p.TwoHand ? 0.32f : 0.20f) * scale, col, a * 0.6f, strikeK * 4f + u.Index);
+                    }
                 }
             }
         }
@@ -520,8 +668,10 @@ sealed partial class Puppet3D
         if (u.Type.HasShield && lm.HasShield)
         {
             Vector3 shPos = p.ShieldUp ? offHand + new Vector3(0.05f, 0.02f, 0.12f) : offHand + new Vector3(-0.07f, 0.02f, 0.06f);
-            float shYaw = p.ShieldUp ? 12f : -58f;
-            EmitShield(lm, palIdx, shPos, shYaw, u.StuckArrows, false);
+            float shYaw = p.ShieldUp ? (14f - hitRecoil * 16f) : (-58f + twist * 0.35f - stagger * 22f);
+            float shPitch = p.ShieldUp ? (-14f + hitRecoil * 22f) : (runFactor * 12f + stagger * 18f);
+            float shRoll = p.ShieldUp ? (8f - hitRecoil * 14f) : (-legNorm * 6f * walkFactor - stagger * 16f);
+            EmitShield(lm, palIdx, shPos, shYaw, u.StuckArrows, false, shPitch, shRoll);
         }
 
         return true;
@@ -536,12 +686,89 @@ sealed partial class Puppet3D
         return kit.Emblems[(int)e];
     }
 
-    /// Emit a shield mesh with the side's exact 3D relief heraldic emblem and any arrows stuck into its face.
-    void EmitShield(MeshKit3D.LookMeshes lm, int palIdx, Vector3 pos, float yawDeg, int stuckArrows, bool backSlung)
+    /// Emit a crisp 3D cel-shaded tapered steel slash-arc ribbon along the active swing plane (zero-alloc, 6-8 tris).
+    void EmitSlashArc(Vector3 hand, Vector3 wDir, float yawDeg, float pitchDeg, AttackDir swing, float reach, float strikeK, bool heavy)
     {
-        Vector3 sR = RotY(Vector3.UnitX, yawDeg);
-        Vector3 sF = RotY(Vector3.UnitZ, yawDeg);
-        EmitLocal(lm.Shield, pos, sR, Vector3.UnitY, sF);
+        float intensity = MathF.Sin(strikeK * MathF.PI);
+        if (intensity < 0.22f) return;
+
+        // Sun-facing normal ensures steel slash streaks always gleam crisp silver-white instead of shading muddy grey.
+        Vector3 nFlash = Vector3.Normalize(-World.SunDir + Vector3.UnitY * 0.35f);
+        float rOuter = reach * 1.03f;
+        float rInner = reach * (heavy ? 0.66f : 0.72f);
+        byte alpha = (byte)((MeshKit3D.PatSmooth << 4) | 15);
+
+        if (swing == AttackDir.Thrust)
+        {
+            // Sleek needle-sharp steel thrust glint along the point!
+            Vector3 side = Vector3.Cross(wDir, Vector3.UnitY);
+            if (side.LengthSquared() < 1e-4f) side = Vector3.UnitX; else side.Normalize();
+            float halfW = (heavy ? 0.055f : 0.042f) * intensity;
+            Vector3 tip = W(hand + wDir * (rOuter + 0.14f * intensity));
+            Vector3 tail = W(hand + wDir * (reach * 0.35f));
+            Vector3 midL = W(hand + wDir * (reach * 0.80f) - side * halfW);
+            Vector3 midR = W(hand + wDir * (reach * 0.80f) + side * halfW);
+            var cTip = new Color((byte)255, (byte)255, (byte)255, alpha);
+            var cMid = new Color((byte)236, (byte)244, (byte)255, alpha);
+            var cTail = new Color((byte)195, (byte)214, (byte)240, alpha);
+            verts.Reserve(6);
+            var dst = verts.A; int n = verts.N;
+            dst[n++] = new VertexPNCT(tip, nFlash, cTip, Vector2.Zero);
+            dst[n++] = new VertexPNCT(midL, nFlash, cMid, Vector2.Zero);
+            dst[n++] = new VertexPNCT(midR, nFlash, cMid, Vector2.Zero);
+            dst[n++] = new VertexPNCT(tail, nFlash, cTail, Vector2.Zero);
+            dst[n++] = new VertexPNCT(midR, nFlash, cMid, Vector2.Zero);
+            dst[n++] = new VertexPNCT(midL, nFlash, cMid, Vector2.Zero);
+            verts.N = n;
+            return;
+        }
+
+        const int segs = 4;
+        float arcSpan = (heavy ? 64f : 52f) * (0.55f + 0.45f * intensity);
+        verts.Reserve(segs * 6);
+        var aDst = verts.A; int an = verts.N;
+        Vector3 prevIn = default, prevOut = default;
+        Color prevC = default;
+
+        for (int i = 0; i <= segs; i++)
+        {
+            float t = i / (float)segs; // 0 = leading blade edge, 1 = razor-tapered trailing tail
+            float dyaw = swing == AttackDir.Right ? t * arcSpan : swing == AttackDir.Left ? -t * arcSpan : 0f;
+            float dpitch = swing == AttackDir.Overhead ? t * arcSpan : t * 18f;
+            Vector3 d = RotY(new Vector3(0, MathF.Sin(Rad(pitchDeg + dpitch)), MathF.Cos(Rad(pitchDeg + dpitch))), yawDeg + dyaw);
+            float radIn = MathHelper.Lerp(rInner, rOuter * 0.985f, MathF.Sqrt(t));
+            float radOut = MathHelper.Lerp(rOuter, rOuter * 0.995f, t);
+            Vector3 pIn = W(hand + d * radIn);
+            Vector3 pOut = W(hand + d * radOut);
+            int cr = (int)MathHelper.Lerp(255, 198, t);
+            int cg = (int)MathHelper.Lerp(255, 218, t);
+            int cb = (int)MathHelper.Lerp(255, 245, t);
+            var col = new Color((byte)cr, (byte)cg, (byte)cb, alpha);
+
+            if (i > 0)
+            {
+                aDst[an++] = new VertexPNCT(prevOut, nFlash, prevC, Vector2.Zero);
+                aDst[an++] = new VertexPNCT(prevIn, nFlash, prevC, Vector2.Zero);
+                aDst[an++] = new VertexPNCT(pOut, nFlash, col, Vector2.Zero);
+                aDst[an++] = new VertexPNCT(pOut, nFlash, col, Vector2.Zero);
+                aDst[an++] = new VertexPNCT(prevIn, nFlash, prevC, Vector2.Zero);
+                aDst[an++] = new VertexPNCT(pIn, nFlash, col, Vector2.Zero);
+            }
+            prevIn = pIn; prevOut = pOut; prevC = col;
+        }
+        verts.N = an;
+    }
+
+    /// Emit a shield mesh with the side's exact 3D relief heraldic emblem and any arrows stuck into its face.
+    void EmitShield(MeshKit3D.LookMeshes lm, int palIdx, Vector3 pos, float yawDeg, int stuckArrows, bool backSlung, float pitchDeg = 0f, float rollDeg = 0f)
+    {
+        Vector3 bR = RotZ(Vector3.UnitX, rollDeg);
+        Vector3 bU = RotX(RotZ(Vector3.UnitY, rollDeg), pitchDeg);
+        Vector3 bF = RotX(Vector3.UnitZ, pitchDeg);
+        Vector3 sR = RotY(bR, yawDeg);
+        Vector3 sU = RotY(bU, yawDeg);
+        Vector3 sF = RotY(bF, yawDeg);
+        EmitLocal(lm.Shield, pos, sR, sU, sF);
 
         if (Detail <= 1)
         {
@@ -557,8 +784,8 @@ sealed partial class Puppet3D
                     "shield_kalkan" => (0.00f, 0.095f, 0.72f, 0.72f),
                     _ => (0.02f, 0.070f, 0.94f, 0.94f), // heater
                 };
-                Vector3 ePos = pos + Vector3.UnitY * ey + sF * ez;
-                EmitLocal(emb, ePos, sR, Vector3.UnitY, sF, sx, sy, 1f);
+                Vector3 ePos = pos + sU * ey + sF * ez;
+                EmitLocal(emb, ePos, sR, sU, sF, sx, sy, 1f);
             }
         }
 
@@ -569,8 +796,8 @@ sealed partial class Puppet3D
             {
                 float ox = (i % 2 - 0.5f) * 0.16f;
                 float oy = (i / 2 - 0.5f) * 0.18f;
-                Vector3 basePos = pos + sR * ox + Vector3.UnitY * oy + sF * 0.06f;
-                Vector3 dir = Vector3.Normalize(sF + sR * (0.20f * (i % 2 * 2 - 1)) + Vector3.UnitY * 0.24f);
+                Vector3 basePos = pos + sR * ox + sU * oy + sF * 0.06f;
+                Vector3 dir = Vector3.Normalize(sF + sR * (0.20f * (i % 2 * 2 - 1)) + sU * 0.24f);
                 // Arrow shaft points outward from shield face (head buried in shield, fletching sticking out!)
                 EmitDir(kit.Arrow, basePos + dir * 0.42f, -dir, 0.9f, 0.65f, 0.9f);
             }
@@ -623,28 +850,50 @@ sealed partial class Puppet3D
             return;
         }
 
-        float legSwing = crumple ? 30f * k : 10f;
+        float kneeFold = crumple ? 75f * Ease.Out(k) : 28f * Ease.Out(k);
+        float legSpread = 16f * Ease.Out(k);
         for (int side = -1; side <= 1; side += 2)
         {
             var hip = new Vector3(side * 0.125f, 0.68f, 0);
-            float s = Rad(legSwing * side);
-            var foot = hip + new Vector3(0, -0.62f * MathF.Cos(s), 0.62f * MathF.Sin(s));
-            EmitBone(lm.Shin, hip, foot, Vector3.UnitZ, 1f, lm.LegPat);
+            float thighA = Rad((crumple ? 35f * k : 14f * side * k));
+            var knee = hip + new Vector3(side * 0.04f * k, -Shank * MathF.Cos(thighA), Shank * MathF.Sin(thighA));
+            float shinA = thighA - Rad(kneeFold);
+            var foot = knee + new Vector3(side * 0.03f * k, -Shank * MathF.Cos(shinA), Shank * MathF.Sin(shinA));
+            if (Detail == 0)
+            {
+                EmitBone(lm.Thigh, hip, knee, Vector3.UnitZ, 1f, lm.LegPat);
+                EmitBone(lm.Shin, knee, foot, Vector3.UnitZ, 1f, lm.LegPat);
+            }
+            else EmitBone(lm.Shin, hip, foot, Vector3.UnitZ, 1f, lm.LegPat);
         }
 
         EmitLocal(lm.Torso, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ, 1f, 1f, 1f, lm.TorsoPat);
+        float hPitch = -22f * Ease.Out(k);
+        Vector3 hU = RotX(Vector3.UnitY, hPitch), hF = RotX(Vector3.UnitZ, hPitch);
         if (!lm.FullEnclosedHelm && (Detail == 0 || lm.Helm.Length == 0))
-            EmitLocal(lm.Head, new Vector3(0, 1.53f, 0.01f), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+            EmitLocal(lm.Head, new Vector3(0, 1.53f, 0.01f), Vector3.UnitX, hU, hF);
         if (lm.Helm.Length > 0)
-            EmitLocal(lm.Helm, new Vector3(0, 1.53f, 0.01f), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+            EmitLocal(lm.Helm, new Vector3(0, 1.53f, 0.01f), Vector3.UnitX, hU, hF);
 
-        float armA = 40f + 60f * k, offA = 50f + 40f * k;
+        float limp = Ease.Out(k);
         var rSh = new Vector3(0.23f, 1.24f, 0);
         var lSh = new Vector3(-0.23f, 1.24f, 0);
-        var rHand = rSh + new Vector3(0.08f, -MathF.Cos(Rad(armA)), MathF.Sin(Rad(armA))) * 0.50f;
-        var lHand = lSh + new Vector3(-0.08f, -MathF.Cos(Rad(offA)), MathF.Sin(Rad(offA))) * 0.50f;
-        EmitBone(lm.FArm, rSh, rHand, Vector3.UnitZ, 1f, lm.LimbPat);
-        EmitBone(lm.FArm, lSh, lHand, Vector3.UnitZ, 1f, lm.LimbPat);
+        var rHand = rSh + new Vector3(0.22f + 0.18f * limp, -0.30f + 0.25f * limp, 0.24f - 0.10f * limp);
+        var lHand = lSh + new Vector3(-0.20f - 0.22f * limp, -0.26f + 0.18f * limp, 0.20f - 0.14f * limp);
+        if (Detail == 0)
+        {
+            var rEl = Elbow(rSh, ref rHand, new Vector3(0.6f, -0.4f, -0.6f));
+            var lEl = Elbow(lSh, ref lHand, new Vector3(-0.6f, -0.4f, -0.6f));
+            EmitBone(lm.UArm, rSh, rEl, Vector3.UnitZ, 1f, lm.LimbPat);
+            EmitBone(lm.FArm, rEl, rHand, Vector3.UnitZ, 1f, lm.LimbPat);
+            EmitBone(lm.UArm, lSh, lEl, Vector3.UnitZ, 1f, lm.LimbPat);
+            EmitBone(lm.FArm, lEl, lHand, Vector3.UnitZ, 1f, lm.LimbPat);
+        }
+        else
+        {
+            EmitBone(lm.FArm, rSh, rHand, Vector3.UnitZ, 1f, lm.LimbPat);
+            EmitBone(lm.FArm, lSh, lHand, Vector3.UnitZ, 1f, lm.LimbPat);
+        }
 
         if (k < 0.4f && lm.Weapon.Length > 0)
             EmitDir(lm.Weapon, rHand, RotY(new Vector3(0, 0.5f, 0.87f), 20f));
@@ -780,15 +1029,22 @@ sealed partial class Puppet3D
         _ => 1.26f,
     };
 
-    float DrawHorse3D(Vector2 pos, float ground, float heading, float anim, float speed, string barding, float idle = -1)
+    float DrawHorse3D(Vector2 pos, float ground, float heading, float anim, float speed, string barding, float idle = -1, float turnDelta = 0f)
     {
         float hScale = HorseScale(barding);
         Frame(pos, heading, ground, Scale * hScale);
 
+        float gait = Math.Clamp(speed / 9f, 0, 1);
+        float trot = Math.Clamp(speed / 2.2f, 0, 1);
+        float horseBank = Math.Clamp(turnDelta * (8f + 14f * gait), -14f, 14f);
         if (Rear > 0)
         {
-            Lean(0, -RearDeg * Rear);
+            Lean(horseBank * 0.3f, -RearDeg * Rear);
             origin.Y += MathF.Sin(Rad(RearDeg * Rear)) * 0.7f * Scale * hScale;
+        }
+        else if (MathF.Abs(horseBank) > 0.2f)
+        {
+            Lean(horseBank, 0f);
         }
 
         bool camel = barding == "camel";
@@ -801,26 +1057,27 @@ sealed partial class Puppet3D
         var headMesh = camel ? kit.CamelHead : scaleB ? kit.HorseHeadScale : barded ? kit.HorseHeadBarded : kit.HorseHead;
         byte bodyPat = scaleB ? MeshKit3D.PatScale : barded ? MeshKit3D.PatQuilt : MeshKit3D.PatSmooth;
 
-        float gait = Math.Clamp(speed / 9f, 0, 1);
-        float trot = Math.Clamp(speed / 2.2f, 0, 1);
-        float bob = (MathF.Sin(anim * MathF.Tau) * 0.032f + MathF.Sin(anim * MathF.Tau * 2) * 0.010f) * gait;
-        float rock = MathF.Sin(anim * MathF.Tau - 0.5f) * 0.042f * gait;
+        // Fuller gallop suspension + rocking pitch across the barrel!
+        float susp = MathF.Max(0f, MathF.Sin(anim * MathF.Tau - 0.25f)) * 0.055f * gait;
+        float bob = (MathF.Sin(anim * MathF.Tau) * 0.048f + MathF.Sin(anim * MathF.Tau * 2) * 0.014f) * gait + susp;
+        float rock = MathF.Sin(anim * MathF.Tau - 0.55f) * 0.072f * gait;
         float y = 0.85f + bob;
         bool still = speed < 0.3f && idle >= 0;
-        float shift = still ? MathF.Sin(Now * 0.65f + idle * 6.28f) * 0.012f : 0;
+        float shift = still ? MathF.Sin(Now * 0.65f + idle * 6.28f) * 0.014f : 0;
         float nod = still ? MathF.Max(0, MathF.Sin(Now * 0.55f + idle * 11f) - 0.72f) * 0.30f * MathF.Sin(Now * 4.5f) : 0;
         float paw = still ? MathF.Max(0, MathF.Sin(Now * 0.45f + idle * 17f) - 0.86f) * 7f : 0;
 
-        float amp = speed < 0.3f ? 0 : 12f + 22f * trot + 28f * gait;
-        ReadOnlySpan<float> phase = stackalloc float[] { 0f, 0.5f - 0.25f * gait, 0.25f + 0.3f * gait, 0.75f + 0.05f * gait };
+        float amp = speed < 0.3f ? 0 : 12f + 20f * trot + 26f * gait;
+        ReadOnlySpan<float> phase = stackalloc float[] { 0f, 0.5f - 0.28f * gait, 0.25f + 0.32f * gait, 0.75f + 0.04f * gait };
         const float Upper = 0.42f, Lower = 0.46f;
 
         for (int i = 0; i < 4; i++)
         {
             bool front = i < 2;
             float sd = i % 2 == 0 ? -1f : 1f;
-            float a = Rad(amp) * MathF.Sin(anim * MathF.Tau + phase[i] * MathF.Tau);
-            float bend = MathF.Max(0, -MathF.Cos(anim * MathF.Tau + phase[i] * MathF.Tau)) * (front ? 0.52f : 0.36f) * (trot + gait) * 0.5f;
+            float ph = anim * MathF.Tau + phase[i] * MathF.Tau;
+            float a = Rad(amp) * MathF.Sin(ph);
+            float bend = MathF.Max(0, -MathF.Cos(ph)) * (front ? 0.68f : 0.48f) * (trot + gait) * 0.5f;
             if (front && Rear > 0) { a = Rad(58 * Rear); bend = 0.9f * Rear; }
             if (i == 0 && paw > 0) { a = Rad(20 * paw); bend = 0.4f * paw; }
 
@@ -839,14 +1096,20 @@ sealed partial class Puppet3D
             }
         }
 
-        EmitLocal(bodyMesh, new Vector3(shift, y, 0), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ, 1f, 1f, 1f, bodyPat);
+        // Pitch the horse barrel smoothly with its stride rock!
+        float bodyPitchDeg = -rock * 115f;
+        Vector3 bU = RotX(Vector3.UnitY, bodyPitchDeg);
+        Vector3 bF = RotX(Vector3.UnitZ, bodyPitchDeg);
+        EmitLocal(bodyMesh, new Vector3(shift, y, 0), Vector3.UnitX, bU, bF, 1f, 1f, 1f, bodyPat);
 
-        float neckOut = gait * 0.12f;
+        float neckPump = MathF.Sin(anim * MathF.Tau - 0.85f) * 0.085f * gait;
+        float neckOut = gait * 0.19f + neckPump;
+        float neckDrop = gait * 0.08f + neckPump * 0.45f;
         var neckBase = new Vector3(shift, y + rock + (camel ? 0.02f : 0.14f), 0.72f);
-        var poll = new Vector3(0, y + rock + (camel ? 0.88f : 0.74f) + nod - neckOut * 0.4f, (camel ? 1.24f : 1.16f) + neckOut);
+        var poll = new Vector3(0, y + rock + (camel ? 0.88f : 0.74f) + nod - neckDrop, (camel ? 1.24f : 1.16f) + neckOut);
         EmitBone(neckMesh, neckBase, poll, Vector3.UnitZ, 1f, bodyPat);
 
-        var muzzle = new Vector3(0, y + rock + (camel ? 0.62f : 0.36f) + nod * 1.5f - neckOut, (camel ? 1.62f : 1.52f) + neckOut * 1.4f);
+        var muzzle = new Vector3(0, y + rock + (camel ? 0.62f : 0.36f) + nod * 1.5f - neckDrop * 1.35f, (camel ? 1.62f : 1.52f) + neckOut * 1.45f);
         Vector3 headFwd = Vector3.Normalize(muzzle - poll);
         Vector3 headUp = Vector3.Normalize(Vector3.Cross(headFwd, Vector3.UnitX));
         if (headUp.Y < 0) headUp = -headUp;
@@ -854,8 +1117,11 @@ sealed partial class Puppet3D
 
         if (Detail == 0)
         {
-            float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.08f * (1 - gait) + MathF.Sin(anim * MathF.Tau) * 0.10f * gait;
-            EmitBone(kit.HorseTail, new Vector3(0, y - rock + 0.18f, -0.88f), new Vector3(swish, 0.82f + bob + gait * 0.44f, -1.16f - gait * 0.44f), Vector3.UnitZ);
+            float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.09f * (1 - gait)
+                + MathF.Sin(anim * MathF.Tau) * 0.13f * gait
+                - Math.Clamp(turnDelta * 0.25f, -0.25f, 0.25f);
+            float tailLift = 0.82f + bob - rock + gait * 0.56f + MathF.Sin(anim * MathF.Tau - 1.1f) * 0.08f * gait;
+            EmitBone(kit.HorseTail, new Vector3(0, y - rock + 0.18f, -0.88f), new Vector3(swish, tailLift, -1.18f - gait * 0.58f), Vector3.UnitZ);
         }
 
         return (Saddle + bob) * hScale * Scale;
