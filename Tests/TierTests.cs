@@ -41,11 +41,12 @@ public static partial class SelfTest
     /// D0: an upgrade that keeps its weapon may not lose a stat, and must gain in two; the check bites on a worse copy.
     static void UpgradeNeverWorse()
     {
+        Check(Troops.All.All(t => t.Tier <= Troops.MaxTier && t.Pierce is >= 0 and <= 1), $"all troops are tier <= {Troops.MaxTier} with pierce in 0..1");
         Check(Troops.All.All(t => t.UpgradesTo.Select(Troops.Get).All(n => Troops.WorseUpgrade(t, n) == null)), "no upgrade in troops.json is worse than its parent");
-        var guard = Troops.Get("allfather_guard");
-        var weaker = new UnitType { Id = "x", Class = guard.Class, Tier = 8, Look = guard.Look, MaxHp = guard.MaxHp + 10, Damage = guard.Damage + 5, Armor = guard.Armor - 1, BlockChance = guard.BlockChance };
+        var guard = Troops.Get("iron_thanes");
+        var weaker = new UnitType { Id = "x", Class = guard.Class, Tier = 7, Look = guard.Look, MaxHp = guard.MaxHp + 10, Damage = guard.Damage + 5, Armor = guard.Armor - 1, BlockChance = guard.BlockChance };
         Check(Troops.WorseUpgrade(guard, weaker) is string why && why.Contains("armour"), "an upgrade that loses armour is refused");
-        var same = new UnitType { Id = "y", Class = guard.Class, Tier = 8, Look = guard.Look, MaxHp = guard.MaxHp + 10, Damage = guard.Damage, Armor = guard.Armor, BlockChance = guard.BlockChance };
+        var same = new UnitType { Id = "y", Class = guard.Class, Tier = 7, Look = guard.Look, MaxHp = guard.MaxHp + 10, Damage = guard.Damage, Armor = guard.Armor, BlockChance = guard.BlockChance };
         Check(Troops.WorseUpgrade(guard, same) != null, "an upgrade that gains in only one stat is refused");
         foreach (var t in Troops.All.Where(t => !t.Wild && !t.Leader))
             foreach (var n in t.UpgradesTo.Select(Troops.Get))
@@ -79,12 +80,12 @@ public static partial class SelfTest
     {
         foreach (var (culture, cls) in new[] { ("northern", UnitClass.Infantry), ("azure", UnitClass.Cavalry), ("crimson", UnitClass.Archer), ("azure", UnitClass.Skirmisher) })
         {
-            var top = Troops.All.Where(t => t.Culture == culture && t.Class == cls && t.Tier == 7).OrderBy(t => t.Id).First();
-            var low = Troops.All.Where(t => t.Culture == culture && t.Class == cls && t.Tier == 4 && (t.Ammo > 0) == (top.Ammo > 0)).OrderBy(t => t.Id).First();
+            var top = Troops.All.Where(t => t.Culture == culture && t.Class == cls && t.Tier == 6).OrderBy(t => t.Id).First();
+            var low = Troops.All.Where(t => (t.Culture == culture || Factions.Open(culture, t.Culture)) && t.Class == cls && t.Tier == 3 && (t.Ammo > 0) == (top.Ammo > 0)).OrderBy(t => t.Culture == culture ? 0 : 1).ThenBy(t => t.Id).First();
             const int many = 40;
             var (a, b) = TierFight(top.Id, low.Id, 920, 20, many);
             Console.WriteLine($"tiers: 20 {top.Name} against {many} {low.Name}: {a:P0} against {b:P0} standing");
-            Check(a * 20 > b * many, $"20 {top.Name} (VII) beat {many} {low.Name} (IV)");
+            Check(a * 20 > b * many, $"20 {top.Name} (VI) beat {many} {low.Name} (III)");
         }
     }
 

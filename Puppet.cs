@@ -226,7 +226,7 @@ sealed partial class Puppet
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         float lift = ground;
         if (u.Mounted && !u.Dead && u.Horse!.Barding == "wolf") lift = ground + Warg(u, ground);
-        else if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true, Ease.Hash(u.Index))) * Scale;
+        else if (u.Mounted && !u.Dead) lift = ground + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true, Ease.Hash(u.Index));
         float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * u.Type.Size * Scale * Variety.Stature(u);
         float phase = Ease.Hash(u.Index);
         if (u.Dead) { Fallen(u, lift, size, phase); return; }
@@ -251,6 +251,12 @@ sealed partial class Puppet
         if (!u.Mounted)
             for (int side = -1; side <= 1; side += 2) Leg(side, p);
         if (look.Cape && Detail == 0) BillRect(new(0, 0.92f, -0.17f), curPal.Cape, false);
+        if (look.Body == "robe" && !u.Mounted)
+        {
+            var rt = curLook.Torso(viewIdx);
+            var skirt = new Rectangle(rt.X, rt.Y + rt.Height * 2 / 3, rt.Width, rt.Height - rt.Height * 2 / 3);
+            BillRect(new(0, 0.52f, 0.005f), skirt, true);
+        }
         BillRect(new(0, 1.0f, 0), curLook.Torso(viewIdx), true);
         if (look.Tabard && Detail == 0) BillRect(new(0, 0.98f, 0.01f), curPal.Tabard(viewIdx), true, 0.02f);
         var (bodyView, bodyFlip) = (viewIdx, flip);
@@ -261,10 +267,10 @@ sealed partial class Puppet
             // Every helmet's brow sits on the man's brow, whatever rises above it (HelmTop).
             BillRect(new(0, HelmTop(look.Head) - curLook.HelmFHalfH, 0.02f), curLook.Helm(viewIdx), true, 0.04f);
         }
-        if (look.Plume && Detail == 0) BillRect(new(0, HelmTop(look.Head) + curPal.Plume.Height * Art.Px / 2 - 0.06f, -0.03f), curPal.Plume, false, 0.05f);
+        if (look.Plume && Detail == 0) BillRect(new(0, PlumeY(look.Head) + curPal.Plume.Height * Art.Px / 2 - 0.08f, -0.03f), curPal.Plume, false, 0.05f);
         (viewIdx, flip) = (bodyView, bodyFlip);
 
-        if (p.Armed && (p.Haul >= 0 || p.Aim && Look.GripOf(look.Weapon) == Grip.Crossbow && !u.Mounted)) { twist = 0; Crossbow(u, p); return; }
+        if (p.Armed && (p.Haul >= 0 || Look.GripOf(look.Weapon) == Grip.Crossbow && !u.Mounted)) { twist = 0; Crossbow(u, p); return; }
         bool ranged = Look.Ranged(look.Weapon);
         twist = ranged || !p.Armed ? 0 : TwistOf(p);
         if (ranged && p.Aim) { Bow(u, p); return; }
@@ -316,6 +322,30 @@ sealed partial class Puppet
         {
             SpanRect(hand, dir, curLook.Weapon, curLook.WeaponLen, SpriteSheet.Grip[look.Weapon]);
             if (Detail < 2) BillRect(hand, curLook.Hand, false, 0.02f); // the fist closed over the grip (docs/PLAYTEST.md PT5)
+            if (Detail == 0 && Soft != null && grip is Grip.One or Grip.Two or Grip.Pole)
+            {
+                float strikeK = -1;
+                if (!u.IsPlayer && u.Action == UnitAction.Recover && u.Type.Recover > 0)
+                {
+                    float rk = 1 - u.ActionTimer / u.Type.Recover;
+                    if (rk < 0.26f) strikeK = rk / 0.26f;
+                }
+                else if (u.IsPlayer && u.Action == UnitAction.Windup)
+                {
+                    float wk = 1 - u.ActionTimer / (u.Swing == AttackDir.Overhead ? 0.2f : 0.15f);
+                    if (wk > 0.55f) strikeK = (wk - 0.55f) / 0.45f;
+                }
+                if (strikeK >= 0)
+                {
+                    float gf = SpriteSheet.Grip[look.Weapon];
+                    var tip = W(hand + dir * curLook.WeaponLen * (1 - gf) * 0.85f);
+                    var mid = W(hand + dir * curLook.WeaponLen * (1 - gf) * 0.52f);
+                    float a = MathF.Sin(strikeK * MathF.PI) * (p.TwoHand ? 0.52f : 0.36f);
+                    var col = new Color(235, 242, 255);
+                    Haze(tip, (p.TwoHand ? 0.55f : 0.36f) * scale, col, a, strikeK * 6 + u.Index);
+                    Haze(mid, (p.TwoHand ? 0.38f : 0.24f) * scale, col, a * 0.65f, strikeK * 4 + u.Index);
+                }
+            }
         }
         ShieldOnArm();
     }
@@ -336,8 +366,8 @@ sealed partial class Puppet
             AxialSrc(butt + down * curLook.WeaponLen, butt, curLook.Weapon);
             return;
         }
-        var dir = Vector3.Normalize(Vector3.Lerp(new Vector3(0, -0.9f, 0.45f), Vector3.UnitZ, p.Draw));
-        var at = Vector3.Lerp(new Vector3(0.12f, 0.95f, 0.15f), new Vector3(0.12f, 1.36f, 0.05f), p.Draw); // the butt to his cheek
+        var dir = Vector3.Normalize(Vector3.Lerp(new Vector3(-0.28f, 0.16f, 0.94f), Vector3.UnitZ, p.Draw));
+        var at = Vector3.Lerp(new Vector3(0.16f, 1.02f, 0.14f), new Vector3(0.12f, 1.36f, 0.05f), p.Draw); // ready forward/up -> butt to cheek
         ArmTo(1, at + dir * 0.12f);
         ArmTo(-1, at + dir * 0.42f);
         SpanRect(at, dir, curLook.Weapon, curLook.WeaponLen, 0);
@@ -363,8 +393,8 @@ sealed partial class Puppet
         var elbow = Elbow(shoulder, ref target, new Vector3(0.6f, 0.15f + 0.5f * p.Draw, -1));
         if (Detail < 2)
         {
-            AxialSrc(shoulder, elbow, curLook.SleeveBot);
-            AxialSrc(elbow, target, curLook.SleeveTop);
+            AxialSrc(shoulder, elbow, curLook.SleeveBot, 0.82f);
+            AxialSrc(elbow, target, curLook.SleeveTop, 0.82f);
             BillRect(target, curLook.Hand, false, 0.01f);
         }
         if (!loosed) SpanRect(drawHand, Vector3.Normalize(bowHand - drawHand), curPal.Arrow, curPal.ArrowLen, 0.1f);
@@ -373,27 +403,38 @@ sealed partial class Puppet
 
     /// A horse (with the rider's legs when `riderLegs`): coat parts tinted by `coat`, gear in the side's colours.
     /// Returns the gait bob height. A standing horse with an `idle` phase (0..1) shifts its weight, tosses its head and paws.
+    /// Stature by mount class: steppe ponies are nimble, warhorses are big, barded destriers tower over footmen.
+    static float HorseScale(string barding) => barding switch
+    {
+        "steppetack" or "camel" => 1.08f,
+        "saddle" or "halfbarding" or "furbarding" => 1.18f,
+        "scalebarding" or "gildedcaparison" => 1.32f,
+        _ => 1.26f,
+    };
+
     float Horse(Vector2 pos, float ground, float heading, float anim, float speed, int coat, string barding, bool riderLegs, float idle = -1)
     {
-        Frame(pos, heading, ground, Scale);
+        float hScale = HorseScale(barding);
+        Frame(pos, heading, ground, Scale * hScale);
         // Rearing: the horse pivots back onto its hind legs, lifted so the hind hooves stay on the ground.
-        if (Rear > 0) { Lean(0, -RearDeg * Rear); origin.Y += MathF.Sin(Rad(RearDeg * Rear)) * 0.7f * Scale; }
+        if (Rear > 0) { Lean(0, -RearDeg * Rear); origin.Y += MathF.Sin(Rad(RearDeg * Rear)) * 0.7f * Scale * hScale; }
         var side = pal; var sidePal = curPal;
         var plain = tint;
         bool camel = barding == "camel";
         coatTint = new Color(tint.ToVector3() * (camel ? Style.CamelCoat : Style.Coats[coat % Style.Coats.Length]));
         float gait = Math.Clamp(MathF.Abs(speed) / 11, 0, 1);
-        float amp = MathF.Abs(speed) < 0.3f ? 0 : 15 + 34 * gait;
-        float bob = MathF.Sin(anim * MathF.Tau) * 0.05f * gait;
+        float amp = MathF.Abs(speed) < 0.3f ? 0 : 17 + 42 * gait;
+        float breathe = sp_breathe(Now, idle);
+        float bob = MathF.Sin(anim * MathF.Tau) * 0.075f * gait + breathe;
         float y = 1.25f + bob;
         // The gait by speed (legs: front left, front right, rear left, rear right): a four-beat walk, a trot on diagonal pairs,
-        // then a gallop with the hind legs driving and the body rocking front to back.
-        float sp = MathF.Abs(speed), trot = Math.Clamp((sp - 2.5f) / 2, 0, 1), gallop = Math.Clamp((sp - 6.5f) / 2.5f, 0, 1);
+        // then a thundering gallop with strong hind-leg drive, high foreleg knee snap and body pitch.
+        float sp = MathF.Abs(speed), trot = Math.Clamp((sp - 2.5f) / 2, 0, 1), gallop = Math.Clamp((sp - 6.0f) / 2.5f, 0, 1);
         ReadOnlySpan<float> walkP = stackalloc float[] { 0, 0.5f, 0.75f, 0.25f };
         ReadOnlySpan<float> trotP = stackalloc float[] { 0, 0.5f, 0.5f, 0 };
         ReadOnlySpan<float> gallopP = stackalloc float[] { 0.45f, 0.55f, 0, 0.1f };
-        float rock = MathF.Sin(anim * MathF.PI * 2 + 1.2f) * 0.10f * gallop; // front end rises as the hind legs push
-        float nod = MathF.Sin(anim * MathF.PI * 2 + 0.6f) * (0.05f + 0.07f * gallop) * MathF.Min(1, sp / 2); // the head nods with the stride
+        float rock = MathF.Sin(anim * MathF.Tau + 1.2f) * (0.03f * trot + 0.145f * gallop); // front end rises as the hind legs drive
+        float nod = MathF.Sin(anim * MathF.Tau + 0.5f) * (0.06f + 0.10f * gallop) * MathF.Min(1, sp / 1.8f); // strong neck & head pump
         var (still, stillK) = idle >= 0 && sp < 0.3f && Now > 0 && Rear <= 0 ? HorseIdle(idle, Now) : (0, 0f);
         {
             if (still == 1) nod += 0.14f * MathF.Sin(Math.Clamp(stillK * 5, 0, 1) * MathF.PI);
@@ -410,10 +451,10 @@ sealed partial class Puppet
             float a = Rad(amp) * MathF.Sin(anim * MathF.PI + ph * MathF.Tau);
             if (front && Rear > 0) a = MathHelper.Lerp(a, Rad(sd < 0 ? 75 : 55), Rear); // forelegs pawing the air
             if (i == 1 && still == 2 && stillK < 0.5f) a = Rad(35) * MathF.Max(0, MathF.Sin(stillK * MathF.PI * 6)); // pawing the ground
-            var hip = new Vector3(sd * 0.165f, 1.02f + bob + (front ? rock : -rock), front ? 0.58f : -0.60f);
+            var hip = new Vector3(sd * 0.225f, 1.02f + bob + (front ? rock : -rock), front ? 0.62f : -0.64f);
             // Two segments: the knee folds the cannon back as a foreleg swings forward; behind, the gaskin slopes back to the
             // hock and the cannon comes forward under it, and the hock folds as the leg swings through.
-            float lift = Rad(amp) * MathF.Max(0, MathF.Cos(anim * MathF.PI + ph * MathF.Tau)) * (front && Rear <= 0 ? 1.3f : 0.8f);
+            float lift = Rad(amp) * MathF.Max(0, MathF.Cos(anim * MathF.PI + ph * MathF.Tau)) * (front && Rear <= 0 ? 1.45f + 0.25f * gallop : 0.85f + 0.25f * gallop);
             float upA = front ? a : a - Rad(16), lowA = front ? a - lift : a + Rad(12) - lift * 0.6f;
             if (front && Rear > 0) lowA = a - Rad(70) * Rear; // forelegs tucked as he rears
             float upL = front ? 0.47f : 0.48f, lowL = front ? 0.51f : 0.53f;
@@ -423,47 +464,54 @@ sealed partial class Puppet
             {
                 // The pieces overlap past the knee (their joined ends carry no outline, only a clear padding row).
                 var up = Vector3.Normalize(knee - hip) * 0.07f;
-                AxialSrc(knee - Vector3.Normalize(foot - knee) * 0.05f, foot, curPal.HLegLow);
-                AxialSrc(hip, knee + up, curPal.HLegUp);
+                AxialSrc(knee - Vector3.Normalize(foot - knee) * 0.05f, foot, curPal.HLegLow, 1.28f);
+                AxialSrc(hip, knee + up, curPal.HLegUp, 1.48f);
             }
-            else AxialSrc(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), curPal.HLeg);
+            else AxialSrc(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), curPal.HLeg, 1.35f);
         }
-        LongRect(new(0, y - rock, -0.82f), new(0, y + rock, 0.82f), curPal.HBody);
-        if (camel) LongRect(new(0, y + 0.4f, -0.5f), new(0, y + 0.4f, 0.2f), curPal.HHump, 0.01f);
-        if (Detail == 0) BillRect(new(0, y + rock, 0.6f), curPal.HChest, false, -0.015f);
-        if (Detail == 0) BillRect(new(0, y - rock, -0.55f), curPal.HRump, false, -0.015f);
-        float neckOut = gallop * 0.13f; // stretched out at the gallop
-        LongRect(new(0, y + rock + 0.20f, 0.60f), new(0, y + rock + 0.76f + nod - neckOut, 1.00f + neckOut), curPal.HNeck);
-        LongRect(new(0, y + rock + 0.76f + nod - neckOut, 0.96f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.44f + neckOut * 1.4f), curPal.HHead);
-        if (Detail == 0) BillRect(new(0, y + rock + 0.58f + nod * 1.2f - neckOut, 1.18f + neckOut), curPal.HFace, false, -0.04f);
-        float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.07f * (1 - gait); // a standing horse flicks its tail
-        if (Detail == 0) AxialSrc(new(0, y + 0.20f, -0.82f), new(swish, 0.84f + bob + gait * 0.44f, -1.06f - gait * 0.44f), curPal.HTail);
+        LongRect(new(0, y - rock, -0.88f), new(0, y + rock, 0.88f), curPal.HBody, 0, 1.24f);
+        if (camel) LongRect(new(0, y + 0.42f, -0.5f), new(0, y + 0.42f, 0.2f), curPal.HHump, 0.01f, 1.15f);
+        if (Detail == 0) BillRect(new(0, y + rock, 0.66f), curPal.HChest, false, -0.015f, 1.30f);
+        if (Detail == 0) BillRect(new(0, y - rock, -0.60f), curPal.HRump, false, -0.015f, 1.30f);
+        float neckOut = gallop * (0.14f + 0.08f * MathF.Sin(anim * MathF.Tau + 0.4f)); // stretches and pumps with each gallop stride
+        LongRect(new(0, y + rock + 0.18f, 0.62f), new(0, y + rock + 0.78f + nod - neckOut, 1.04f + neckOut), curPal.HNeck, 0, 1.30f);
+        LongRect(new(0, y + rock + 0.78f + nod - neckOut, 0.99f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.48f + neckOut * 1.4f), curPal.HHead, 0, 1.16f);
+        if (Detail == 0) BillRect(new(0, y + rock + 0.58f + nod * 1.2f - neckOut, 1.22f + neckOut), curPal.HFace, false, -0.04f, 1.16f);
+        float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.08f * (1 - gait) + MathF.Sin(anim * MathF.Tau) * 0.10f * gait; // flicks at stand, streams & waves at gallop
+        if (Detail == 0) AxialSrc(new(0, y + 0.20f, -0.88f), new(swish, 0.84f + bob + gait * 0.44f, -1.14f - gait * 0.44f), curPal.HTail, 1.25f);
 
         // Gear over the coat.
         pal = side; curPal = sidePal;
         tint = plain;
         var (hb, hc, hr, hn, hh) = curPal.Barding(barding);
-        LongRect(new(0, y - rock, -0.82f), new(0, y + rock, 0.82f), hb, 0.03f);
+        LongRect(new(0, y - rock, -0.88f), new(0, y + rock, 0.88f), hb, 0.03f, 1.24f);
         if (Detail == 0)
         {
-            if (hc.Width > 0) BillRect(new(0, y + rock, 0.6f), hc, false, -0.01f);
-            if (hr.Width > 0) BillRect(new(0, y - rock, -0.55f), hr, false, -0.01f);
-            if (hn.Width > 0) LongRect(new(0, y + rock + 0.20f, 0.60f), new(0, y + rock + 0.76f + nod - neckOut, 1.00f + neckOut), hn, 0.02f);
-            if (hh.Width > 0) LongRect(new(0, y + rock + 0.76f + nod - neckOut, 0.96f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.44f + neckOut * 1.4f), hh, 0.02f);
+            if (hc.Width > 0) BillRect(new(0, y + rock, 0.66f), hc, false, -0.01f, 1.30f);
+            if (hr.Width > 0) BillRect(new(0, y - rock, -0.60f), hr, false, -0.01f, 1.30f);
+            if (hn.Width > 0) LongRect(new(0, y + rock + 0.18f, 0.62f), new(0, y + rock + 0.78f + nod - neckOut, 1.04f + neckOut), hn, 0.02f, 1.30f);
+            if (hh.Width > 0) LongRect(new(0, y + rock + 0.78f + nod - neckOut, 0.99f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.48f + neckOut * 1.4f), hh, 0.02f, 1.16f);
         }
+        float seatH = (Saddle + bob) * hScale;
         if (riderLegs)
+        {
+            scale = Scale; // rider's legs keep human scale astride the larger barrel
+            float legSpread = 0.24f * hScale;
             for (int sd = -1; sd <= 1; sd += 2)
             {
-                var hip = new Vector3(sd * 0.2f, Saddle + 0.68f + bob, 0);
-                var foot = new Vector3(sd * 0.36f, 1.0f + bob, 0.18f);
+                var hip = new Vector3(sd * legSpread, seatH + 0.68f, 0);
+                var foot = new Vector3(sd * (legSpread + 0.14f), seatH + 0.12f, 0.18f);
                 AxialSrc(hip, foot, curLook.Leg);
                 if (Detail == 0) BillRect(foot, curLook.Boot(viewIdx), true);
             }
-        return bob;
+        }
+        return seatH * Scale;
     }
 
     /// What a standing horse with idle phase `idle` is doing at `now` (A5): 0 nothing, 1 a toss of the head, 2 pawing with a
     /// foreleg, 3 the weight shifted back; and how far into it (0..1). A new choice every 4 s or so.
+    static float sp_breathe(float now, float idle) => idle >= 0 && now > 0 ? MathF.Sin(now * 2.4f + idle * 13f) * 0.012f : 0;
+
     internal static (int Kind, float K) HorseIdle(float idle, float now)
     {
         float cyc = now * 0.23f + idle * 7;
@@ -572,26 +620,20 @@ sealed partial class Puppet
             tilt = 0;
             return;
         }
-        Frame(h.Pos, h.Heading, ground, h.Barding == "wolf" ? 1.5f : 1);
-        tint = Color.White;
-        FlatRect(new(0.3f, 0.02f, 0), curPal.Blood, false);
-        var sidePal = curPal;
-        if (h.Barding == "wolf")
+        float after = Now > 0 ? Now - h.At - 0.7f : 0.4f;
+        const float FadeTime = 2.2f;
+        if (after < 0 || after >= FadeTime) return;
+        float t = after / FadeTime;
+        float alpha = MathF.Min(1, t * 6f) * MathF.Pow(1 - t, 1.4f);
+        var col = h.Team == 0 ? new Color(150, 210, 255) : new Color(255, 145, 100);
+        for (int i = 0; i < 3; i++)
         {
-            curPal = neutralPal; tint = new Color(150, 140, 135);
-            FlatRect(new(0, 0.06f, 0), curPal.WBody, true); FlatRect(new(0.05f, 0.07f, 0.65f), curPal.WHead, true); FlatRect(new(-0.25f, 0.05f, 0.25f), curPal.WLeg, false);
-            curPal = sidePal; tint = Color.White;
-            return;
+            float tm = MathF.Max(0, t - i * 0.08f);
+            float ry = 0.5f + Ease.Out(tm) * 4.5f;
+            float ox = MathF.Sin(tm * 5 + h.Heading + i * 2.1f) * 0.45f;
+            float oz = MathF.Cos(tm * 4 + h.Heading + i * 1.7f) * 0.35f;
+            Haze(new Vector3(h.Pos.X + ox, ground + ry, h.Pos.Y + oz), (0.85f - i * 0.15f), col, alpha * (0.55f - i * 0.1f), h.Heading + i * 4);
         }
-        curPal = neutralPal;
-        tint = new Color(h.Barding == "camel" ? Style.CamelCoat : Style.Coats[h.Coat % Style.Coats.Length]);
-        FlatRect(new(0, 0.05f, 0), curPal.HBody, true);
-        FlatRect(new(0.2f, 0.06f, 1.2f), curPal.HHead, true);
-        FlatRect(new(-0.55f, 0.04f, 0.5f), curPal.HLeg, false);
-        FlatRect(new(-0.55f, 0.04f, -0.5f), curPal.HLeg, false);
-        curPal = sidePal;
-        tint = Color.White;
-        FlatRect(new(0, 0.07f, 0), curPal.Barding(h.Barding).Body, true);
     }
 
     static Vector3 RotY(Vector3 v, float deg)
@@ -620,9 +662,9 @@ sealed partial class Puppet
     {
         if (Detail >= 2) return hand; // far off: the weapon alone shows the arm
         var shoulder = Shoulder(side);
-        var elbow = Elbow(shoulder, ref hand, new Vector3(side * 0.8f, -0.55f, -0.45f));
-        AxialSrc(shoulder, elbow, curLook.SleeveBot);
-        AxialSrc(elbow, hand, curLook.SleeveTop);
+        var elbow = Elbow(shoulder, ref hand, new Vector3(side * 0.50f, -0.70f, -0.45f));
+        AxialSrc(shoulder, elbow, curLook.SleeveBot, 0.82f);
+        AxialSrc(elbow, hand, curLook.SleeveTop, 0.82f);
         BillRect(hand, curLook.Hand, false, 0.01f);
         return hand;
     }
@@ -702,16 +744,10 @@ sealed partial class Puppet
         float k = Now > 0 ? (Now - u.DiedAt) / time : 1;
         if (k >= 1)
         {
-            // Lying down: the corpse's "back" points along the fall.
-            Frame(u.Pos, MathF.Atan2(-dir.Y, -dir.X), ground, size);
-            // Lying still, he darkens and his colours drain over a few seconds, so the dead sink into the field
-            // and the living stand out over them (vertex alpha: how far the sprite shader drains the colour).
-            float settle = Now > 0 ? Math.Clamp((Now - u.DiedAt - time) / 3f, 0, 1) : 1;
-            var keepTint = tint;
-            tint = Color.Lerp(tint, new Color(150, 140, 126), 0.35f + 0.35f * settle); // muted, not blacked out
-            tint.A = (byte)Math.Max(110, (int)(255 - 145 * settle));
-            if (look.Beast) BeastCorpse(u); else Corpse(phase);
-            tint = keepTint;
+            // Spirit ascent: instead of leaving flat bodies on the field, the fallen dissolve into rising team-coloured
+            // wisps so casualties read at a glance across the battlefield.
+            float after = Now > 0 ? Now - u.DiedAt - time : 0.65f;
+            SpiritAscent(u, ground, size, phase, after);
             return;
         }
         bool crumple = fall == Fall.Thrust || fall == Fall.Plain && phase < 0.3f;
@@ -753,23 +789,85 @@ sealed partial class Puppet
         var hand = Arm(1, p.ArmA, 0);
         Arm(-1, p.OffA, 0);
         if (k < 0.4f) SpanRect(hand, RotY(new Vector3(0, 0.5f, 0.87f), 20), curLook.Weapon, curLook.WeaponLen, SpriteSheet.Grip[look.Weapon]); // still in his hand
+        if (k > 0.65f) SpiritAscent(u, ground, size, phase, (k - 0.65f) * 0.28f); // light begins to rise as he hits the ground
         tilt = 0;
+    }
+
+    /// Rising spirit wisps for a fallen soldier: team-coloured light drifting into the sky so the player can read
+    /// casualty spikes across the field without flat corpses cluttering the terrain.
+    void SpiritAscent(Unit u, float ground, float size, float phase, float after)
+    {
+        const float AscentTime = 3.2f;
+        if (after < 0 || after >= AscentTime) return;
+        float t = after / AscentTime;
+        float weight = (u.IsLeader || u.Hero ? 1.5f : u.Sergeant || u.Type.Tier >= 5 ? 1.25f : 1.0f) * MathF.Min(1.6f, size);
+        Color halo, core;
+        if (u.Type.Wild) { halo = new Color(175, 130, 255); core = new Color(235, 220, 255); }
+        else if (u.Team == 0) { halo = new Color(110, 200, 255); core = new Color(235, 248, 255); }
+        else { halo = new Color(255, 105, 72); core = new Color(255, 228, 185); }
+
+        // Brief flash where he fell before the spirit lifts clear.
+        if (t < 0.25f)
+        {
+            float fk = 1 - t / 0.25f;
+            Haze(new Vector3(u.Pos.X, ground + 0.18f, u.Pos.Y), (0.9f + (1 - fk) * 0.6f) * weight, halo, fk * 0.55f, phase * 19);
+        }
+        float alpha = MathF.Min(1, t * 7f) * MathF.Pow(1 - t, 1.35f);
+        float rise = (0.35f * t + 0.65f * Ease.Out(t)) * 6.8f * weight;
+        float swayX = MathF.Sin(t * 5.5f + phase * 6.28f) * 0.34f;
+        float swayZ = MathF.Cos(t * 4.3f + phase * 12.56f) * 0.24f;
+        var pos = new Vector3(u.Pos.X + swayX, ground + 0.45f + rise, u.Pos.Y + swayZ);
+        Haze(pos, (0.85f + 0.3f * (1 - t)) * weight, halo, alpha * 0.68f, phase * 31 + t * 4);
+        Haze(pos, 0.38f * weight, core, alpha * 0.92f, phase * 17 - t * 6);
+
+        // Trailing spirit motes drifting up in his wake.
+        for (int i = 1; i <= 4; i++)
+        {
+            float tm = t - i * 0.065f;
+            if (tm <= 0) continue;
+            float ma = MathF.Min(1, tm * 7f) * MathF.Pow(1 - tm, 1.5f) * (0.72f - i * 0.1f);
+            float mr = (0.35f * tm + 0.65f * Ease.Out(tm)) * 6.4f * weight;
+            float mx = MathF.Sin(tm * 6.2f + phase * 6.28f + i * 1.4f) * (0.28f + i * 0.09f);
+            float mz = MathF.Cos(tm * 4.8f + phase * 12.56f + i * 1.1f) * (0.22f + i * 0.07f);
+            float ms = (0.42f - i * 0.06f) * weight;
+            var mp = new Vector3(u.Pos.X + mx, ground + 0.35f + mr, u.Pos.Y + mz);
+            Haze(mp, ms * 1.35f, halo, ma * 0.58f, phase * 13 + i * 5 + tm * 5);
+            Haze(mp, ms * 0.55f, core, ma * 0.85f, phase * 7 + i * 3 - tm * 4);
+        }
     }
 
     void Corpse(float phase = 0.5f)
     {
-        // Parts laid flat on the ground, body pointing backwards from the feet; each man's limbs lie a little differently.
-        float j = (phase - 0.5f) * 0.16f, j2 = (Ease.Hash((int)(phase * 9973)) - 0.5f) * 0.16f;
-        if (!SparseCorpse && look.Body != "bones") FlatRect(new(j2, 0.055f, -0.7f), curPal.Blood, false); // a skeleton falls in a heap of dry bones
-        if (Detail > 0 || SparseCorpse) { FlatRect(new(0, 0.08f, -0.75f), curLook.TorsoF, false); return; } // dense/far piles keep torso only so outlines don't stack
-        FlatRect(new(0.12f + j, 0.08f, -0.2f), curLook.Leg, false);
-        FlatRect(new(-0.12f - j2, 0.08f, -0.2f + j), curLook.Leg, false);
-        FlatRect(new(0, 0.09f, -0.75f), curLook.TorsoF, false);
-        if (look.Tabard) FlatRect(new(0, 0.1f, -0.75f), curPal.TabardF, false);
-        if (look.Head != "none") FlatRect(new(j, 0.11f, -1.25f), curLook.HelmB, false);
-        else FlatRect(new(j, 0.11f, -1.25f), curLook.HeadB, false);
-        if (look.Shield != "none") { var keepS = scale; scale *= 0.75f; FlatRect(new(-0.36f - j, 0.07f, -0.62f + j2 * 2), curLook.Shield, true); scale = keepS; } // half under him: a man, not a shield
-        FlatRect(new(0.55f + j2 * 2, 0.105f, -0.55f + j * 3), curLook.Weapon, true); // the weapon thrown down beside him
+        // Parts laid on the ground, connected along the spine from feet (-0.34) through torso (-0.82) to head (-1.22) and helm.
+        float j = (phase - 0.5f) * 0.14f, j2 = (Ease.Hash((int)(phase * 9973)) - 0.5f) * 0.14f;
+        bool faceUp = phase >= 0.45f;
+        var torso = faceUp ? curLook.TorsoF : curLook.TorsoB;
+        var head = faceUp ? curLook.HeadF : curLook.HeadB;
+        var helm = faceUp ? curLook.HelmF : curLook.HelmB;
+        float headZ = -1.22f;
+        float helmZ = headZ - ((HelmTop(look.Head) - curLook.HelmFHalfH) - 1.53f);
+        if (!SparseCorpse && look.Body != "bones") FlatRot(new(j2, 0.055f, -0.78f), curPal.Blood, phase * 6.28f); // a skeleton falls in a heap of dry bones
+        if (Detail > 0 || SparseCorpse)
+        {
+            FlatRect(new(0, 0.085f, -0.82f), torso, false);
+            FlatRect(new(j * 0.3f, 0.095f, headZ), head, false);
+            if (look.Head != "none") FlatRect(new(j * 0.3f, 0.105f, helmZ), helm, false);
+            return;
+        }
+        // Legs: slightly splayed from the hips so they connect into the waist without parallel-board stiffness.
+        FlatRot(new(0.11f + j * 0.4f, 0.075f, -0.36f), curLook.Leg, -0.16f - phase * 0.24f);
+        FlatRot(new(-0.11f - j2 * 0.4f, 0.075f, -0.38f + j * 0.3f), curLook.Leg, 0.12f + (1 - phase) * 0.22f);
+        // Arms: emerging from the shoulders, weapon arm sprawled out toward the dropped weapon.
+        FlatRot(new(0.28f + j * 0.25f, 0.082f, -0.94f + j2 * 0.3f), curLook.SleeveBot, 0.70f + j * 2.2f);
+        FlatRot(new(0.41f + j * 0.35f, 0.084f, -0.82f + j2 * 0.5f), curLook.SleeveTop, 1.05f + j * 2.5f);
+        FlatRot(new(-0.27f - j2 * 0.25f, 0.082f, -0.92f - j * 0.25f), curLook.SleeveBot, -0.60f - j2 * 2.0f);
+        // Torso, tabard, head and helm: always draw the head under the helm so open caps/helms never float detached.
+        FlatRect(new(0, 0.095f, -0.82f), torso, false);
+        if (look.Tabard) FlatRect(new(0, 0.102f, -0.82f), faceUp ? curPal.TabardF : curPal.TabardB, false);
+        FlatRect(new(j * 0.35f, 0.106f, headZ), head, false);
+        if (look.Head != "none") FlatRect(new(j * 0.35f, 0.116f, helmZ), helm, false);
+        if (look.Shield != "none") { var keepS = scale; scale *= 0.78f; FlatRot(new(-0.38f - j * 0.8f, 0.072f, -0.74f + j2 * 1.4f), curLook.Shield, 0.35f + (phase - 0.5f) * 1.4f); scale = keepS; }
+        if (look.Weapon != "none") FlatRot(new(0.56f + j2 * 1.2f, 0.108f, -0.70f + j * 1.8f), curLook.Weapon, 0.75f + (phase - 0.5f) * 1.6f);
     }
 
     // ---------- effects ----------
@@ -878,11 +976,15 @@ sealed partial class Puppet
     /// forehead, below any cone, spike or crest); that row lands on head row 5, just above the eyes (head rows 7-8), so a
     /// tall cone rises above the head instead of pushing the rim down over the face. Closed helms and hoods keep row 6.83
     /// (their top just above the crown). Shared with the HUD's troop card (`Hud`).
+    /// Where a plume anchors: the steel crown itself (not the tips of horns, wings or a sun crest).
+    static float PlumeY(string kind) => SpriteSheet.HelmBase(kind) is "greathelm_horns" or "greathelm_wings" or "greathelm_crown" or "greathelm_sun"
+        ? 1.605f + 6.83f * Art.Px : HelmTop(kind);
+
     public static float HelmTop(string kind) => 1.605f + SpriteSheet.HelmBase(kind) switch
     {
-        "cap" or "brigand_hat" => 8.5f, "kettle" => 9.6f, "nasal" => 10.5f,
-        "sallet" or "sallet_bevor" => 9.5f, "sallet_crest" => 12.5f,
-        "spangen" or "spangen_horns" or "spangen_wolf" => 11.5f, "turban" => 12f,
+        "cap" or "brigand_hat" => 8.5f, "kettle" or "kettle_brimmed" => 9.6f, "nasal" => 10.5f,
+        "sallet" or "sallet_visored" or "sallet_bevor" => 9.5f, "sallet_crest" => 12.5f,
+        "spangen" or "spangen_spectacle" or "spangen_horns" or "spangen_wolf" => 11.5f, "turban" => 12f,
         "steppe" or "steppe_mask" or "steppe_horns" => 15.5f, "spike" => 11.5f, "furcap" => 11f,
         "gjermundbu" => 10.5f, "morion" or "barbute_crest" => 12.5f, "kulah" => 11.5f,
         "greathelm_horns" or "greathelm_wings" or "greathelm_crown" or "greathelm_sun" => 13.83f,
@@ -895,12 +997,12 @@ sealed partial class Puppet
     void HeadBill() => BillRect(new(0, 1.53f, 0.02f), curLook.Head(viewIdx), true);
 
     // Camera-facing sprite; `bias` moves it toward (+) or away from (-) the camera so layered parts never z-fight.
-    void BillRect(Vector3 local, Rectangle src, bool viewed, float bias = 0)
+    void BillRect(Vector3 local, Rectangle src, bool viewed, float bias = 0, float scaleMul = 1)
     {
         var c = W(local);
         if (bias != 0) c += Vector3.Normalize(camPos - c) * bias;
-        var hw = camRight * src.Width * Art.Px * scale / 2;
-        var hh = camUp * src.Height * Art.Px * scale / 2;
+        var hw = camRight * src.Width * Art.Px * scale * scaleMul / 2;
+        var hh = camUp * src.Height * Art.Px * scale * scaleMul / 2;
         Quad(c - hw - hh, c + hw - hh, c - hw + hh, c + hw + hh, src, viewed && viewIdx == 1 && flip);
     }
 
@@ -926,25 +1028,25 @@ sealed partial class Puppet
         tint = Color.White;
     }
 
-    void AxialSrc(Vector3 aLocal, Vector3 bLocal, Rectangle src)
+    void AxialSrc(Vector3 aLocal, Vector3 bLocal, Rectangle src, float widthScale = 1)
     {
         Vector3 a = W(aLocal), b = W(bLocal), axis = b - a;
         var side = Vector3.Cross(axis, camPos - (a + b) / 2);
         side = side.LengthSquared() < 1e-8f ? camRight : Vector3.Normalize(side);
-        side *= src.Width * Art.Px * scale / 2;
+        side *= src.Width * Art.Px * scale * widthScale / 2;
         Quad(a - side, a + side, b - side, b + side, src, false);
     }
 
     // Sprite running from a (left column) to b (right column), turned about that axis to face the camera, top edge kept up.
     // `bias` pulls it toward the camera (gear over the coat).
-    void LongRect(Vector3 aLocal, Vector3 bLocal, Rectangle src, float bias = 0)
+    void LongRect(Vector3 aLocal, Vector3 bLocal, Rectangle src, float bias = 0, float heightScale = 1)
     {
         Vector3 a = W(aLocal), b = W(bLocal), axis = b - a;
         if (bias != 0) { var toward = Vector3.Normalize(camPos - (a + b) / 2) * bias; a += toward; b += toward; }
         var side = Vector3.Cross(axis, camPos - (a + b) / 2);
         side = side.LengthSquared() < 1e-8f ? Vector3.Up : Vector3.Normalize(side);
         if (side.Y < 0) side = -side;
-        side *= src.Height * Art.Px * scale / 2;
+        side *= src.Height * Art.Px * scale * heightScale / 2;
         Quad(a - side, b - side, a + side, b + side, src, false);
     }
 
@@ -965,5 +1067,15 @@ sealed partial class Puppet
         var r = (across ? fwd : right) * src.Width * Art.Px * scale / 2;
         var c = W(local);
         Quad(c - r - top, c + r - top, c - r + top, c + r + top, src, false);
+    }
+
+    // Sprite lying on the ground turned by `angle` radians from pointing backwards along the spine.
+    void FlatRot(Vector3 local, Rectangle src, float angle)
+    {
+        float cs = MathF.Cos(angle), sn = MathF.Sin(angle);
+        var up = (-fwd * cs + right * sn) * src.Height * Art.Px * scale / 2;
+        var rt = (right * cs + fwd * sn) * src.Width * Art.Px * scale / 2;
+        var c = W(local);
+        Quad(c - rt - up, c + rt - up, c - rt + up, c + rt + up, src, false);
     }
 }

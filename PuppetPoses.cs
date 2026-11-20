@@ -114,10 +114,10 @@ sealed partial class Puppet
         bool moving = speed > 0.32f;
         float run = Math.Clamp((speed - 2.2f) / 2.5f, 0, 1); // 0 walking, 1 running
         float stride = MathF.Sin(u.Anim * MathF.PI);
-        float leg = moving && !u.Mounted ? stride * (24 + 12 * run) : 0;
-        float swing = moving && !u.Mounted ? -stride * (10 + 14 * run) : 0; // arms swing against the legs
-        float bob = moving && !u.Mounted ? MathF.Abs(stride) * (0.025f + 0.03f * run) : 0;
-        float leanZ = moving ? 3 + 9 * run : 0, leanX = moving && !u.Mounted ? stride * (1.5f + run) : 0; // the hips sway over the planted foot
+        float leg = moving && !u.Mounted ? stride * (26 + 15 * run) : 0;
+        float swing = moving && !u.Mounted ? -stride * (11 + 16 * run) : 0; // arms swing against the legs
+        float bob = moving && !u.Mounted ? MathF.Abs(stride) * (0.03f + 0.04f * run) : 0;
+        float leanZ = moving ? 4 + 12 * run : 0, leanX = moving && !u.Mounted ? stride * (1.8f + 1.2f * run) : 0; // the hips sway over the planted foot
         float knees = 0.7f + 1.1f * run;
         var t = u.Type;
         if (!moving && !u.Mounted)
@@ -186,8 +186,8 @@ sealed partial class Puppet
                 {
                     float up = Ease.InOut(k / 0.85f); // held at the top for the last moment
                     arm = Lerp(idle, raise, up);
-                    leanZ -= 5 * up * lean;
-                    if (two) leanX += 6 * side * up; // wound up to the side the blow comes from
+                    leanZ -= 7.5f * up * lean;
+                    leanX += (two ? 7.5f : 3.5f) * side * up; // wound up to the side the blow comes from
                 }
                 break;
             }
@@ -198,18 +198,18 @@ sealed partial class Puppet
                 float f;
                 if (!u.IsPlayer && k < hit) { f = Ease.OutBack(k / hit); arm = Lerp(raise, strike, f); }
                 else { float back = Ease.InOut(u.IsPlayer ? k : (k - hit) / (1 - hit)); arm = Lerp(strike, idle, back); f = 1 - back; }
-                leanZ += 9 * f * lean;
-                if (two) leanX += 6 * side * (1 - 2 * Math.Clamp(f, 0, 1)); // the weight swings through to the far side
+                leanZ += 13 * f * lean;
+                leanX += (two ? 7.5f : 3.5f) * side * (1 - 2 * Math.Clamp(f, 0, 1)); // the weight swings through to the far side
                 break;
             }
             case UnitAction.Block:
-                arm = two ? new(75, 20, -55, 0.65f) : t.HasShield ? new(45, 75, 10, 0.75f) : new(95, 70, -30, 0.7f); // a two-hander holds his haft across, a shield man raises it
-                shield = t.HasShield; leanZ -= 3;
+                arm = two ? new(75, 20, -55, 0.65f) : t.HasShield ? new(48, 78, 12, 0.75f) : new(95, 70, -30, 0.7f); // a two-hander holds his haft across, a shield man raises it
+                shield = t.HasShield; leanZ += t.HasShield ? 3 : -3; // brace into the shield
                 break;
             case UnitAction.Stagger:
             {
-                arm = new(10 + 25 * hurt, 90, 20, 0.75f);
-                leanZ -= 10 + MathF.Sin(now * 9 + phase) * 3; // stumbling back
+                arm = new(14 + 28 * hurt, 95, 32, 0.78f);
+                leanZ -= 13 + MathF.Sin(now * 9 + phase) * 3.5f; // stumbling back, guard thrown open
                 break;
             }
             default:
@@ -232,7 +232,7 @@ sealed partial class Puppet
                 break;
         }
         if (t.Look.Body == "bones") arm = arm with { Alpha = arm.Alpha + MathF.Sin(now * 23 + phase * 40) * 3 }; // dry joints rattle
-        float crouch = u.Action == UnitAction.Stagger ? 0.3f : 0;
+        float crouch = u.Action == UnitAction.Stagger ? 0.38f : u.Action == UnitAction.Block && t.HasShield ? 0.14f : 0;
         if (!moving && !u.Mounted && u.Action is UnitAction.None or UnitAction.Block && u.Squad is { } sq && t.Size < 1.5f)
         {
             // Stances in a line (docs/archive/ANIMATION_ROSTER.md A4): a shield wall crouches behind its shields, the first two ranks

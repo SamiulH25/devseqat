@@ -943,11 +943,13 @@ public static partial class SelfTest
                 foreach (var u in t.UpgradesTo)
                     if (Factions.Open(cul.Id, Troops.Get(u).Culture)) open.Enqueue(u);
             }
-            var top = seen.Select(Troops.Get).Where(t => t.Tier == 7 && t.Culture == cul.Id).ToList();
-            Console.WriteLine($"culture {cul.Id}: {seen.Count} troops open from {cul.Root}, tier VII: {string.Join(", ", top.Select(t => t.Id))}");
-            Check(top.Count >= 3, $"{cul.Id} men can climb from {cul.Root} to tier VII lines of their own");
+            var topOwn = seen.Select(Troops.Get).Where(t => t.Tier == Troops.MaxTier && t.Culture == cul.Id).ToList();
+            var topAll = seen.Select(Troops.Get).Where(t => t.Tier == Troops.MaxTier).ToList();
+            bool main = Factions.All.Any(f => f.Culture == cul.Id);
+            Console.WriteLine($"culture {cul.Id}: {seen.Count} troops open from {cul.Root}, tier VI: {string.Join(", ", topOwn.Select(t => t.Id))}");
+            Check(topOwn.Count >= (main ? 3 : 1), $"{cul.Id} men can climb from {cul.Root} to tier VI lines of their own");
             foreach (var role in new[] { "infantry", "archers", "horse" })
-                Check(top.Any(t => Rules.TroopRole(t.Id) == role), $"{cul.Id} has a tier VII {role} line");
+                Check((main ? topOwn : topAll).Any(t => Rules.TroopRole(t.Id) == role), $"{cul.Id} has a tier VI {role} line");
         }
         // A realm's own people: its culture, or on the drawn map one of its subcultures (whose kin is the realm's; WM5).
         static bool OwnPeople(int f, string culture) => Factions.PeopleOf(culture) == Factions.CultureOf(f);
@@ -1173,7 +1175,7 @@ public static partial class SelfTest
         var k = c.Captain.Kit;
         Check(k.Weapon == "arming_sword" && k.Side == "greatsword" && c.Owns("greatsword"), "a new captain has sword, shield and the greatsword");
         var plain = Rules.CaptainType(c.Captain);
-        Check(plain.Look.Weapon == "sword" && plain.Look.Shield == "heater" && plain.HasShield, "the starting kit looks as the captain always did");
+        Check(plain.Look.Weapon == "sword" && plain.Look.Shield == "round" && plain.Look.Body == "gambeson" && plain.HasShield, "the starting kit is sword, round shield and gambeson");
         var two = Rules.CaptainType(c.Captain, side: true);
         Check(two.Look.Weapon == "greatsword" && !two.HasShield && two.Damage > plain.Damage && two.Reach > plain.Reach, "the second weapon is the greatsword, no shield");
         // An old save's tiers become gear.

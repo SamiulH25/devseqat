@@ -117,7 +117,7 @@ public static partial class SelfTest
         var levies = ClashOrder(45, "levies");
         var drilled = ClashOrder(45, "ironguard");
         Console.WriteLine($"melee: levies rank error {levies.err:0.00} m, intermix {levies.mix:P0}; ironguard {drilled.err:0.00} m, {drilled.mix:P0}");
-        Check(Battle.GradeOf(Battle.DrillOf(Troops.Get("levies"))) == Grade.Rabble && Battle.GradeOf(Battle.DrillOf(Troops.Get("immortals"))) == Grade.Elite, "levies are rabble, tier 7 elite");
+        Check(Battle.GradeOf(Battle.DrillOf(Troops.Get("levies"))) == Grade.Rabble && Battle.GradeOf(Battle.DrillOf(Troops.Get("iron_legionaries"))) == Grade.Elite, "levies are rabble, tier 6 elite");
         Check(levies.err > drilled.err * 1.5f && levies.mix > drilled.mix, "levies end up a crowd, drilled men a line");
         var (b, a, _) = Clash(46, "levies", "levies");
         for (int i = 0; i < 60 * 20 && !a.Broken; i++) b.Update(1 / 60f);

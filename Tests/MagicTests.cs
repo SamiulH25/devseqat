@@ -79,7 +79,7 @@ public static partial class SelfTest
         Check(b.Casts.Count == 0 && m.Will < 20, "a drained company cannot cast");
 
         (b, m, f) = MageScene("battle_priests");
-        var guard = b.AddSquad(1, Troops.Get("ashen_saints"), m.Units.Count, new(0, 1.2f), m.Units.Count, -Vector2.UnitY); // mages kill levies now: tier VII at every throat
+        var guard = b.AddSquad(1, Troops.Get("sun_templars"), m.Units.Count, new(0, 1.2f), m.Units.Count, -Vector2.UnitY); // mages kill levies now: tier VII at every throat
         guard.Order = Order.Hold;
         foreach (var (u, i) in m.Units.Select((u, i) => (u, i))) guard.Units[i].Pos = u.Pos + new Vector2(0, 1.2f);
         Run(b, 3);

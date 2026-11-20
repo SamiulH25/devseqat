@@ -73,7 +73,7 @@ public static class Rules
     }
 
     /// How many places one man of a tier takes in a company (2.1): elites fill a company sooner *(tune)*.
-    public static float TierWeight(int tier) => tier switch { <= 1 => 0.8f, 2 => 1f, 3 => 1.15f, 4 => 1.3f, 5 => 1.4f, 6 => 1.5f, _ => 1.6f };
+    public static float TierWeight(int tier) => tier switch { <= 1 => 0.8f, 2 => 1f, 3 => 1.15f, 4 => 1.3f, 5 => 1.45f, _ => 1.6f };
 
     /// A company's places, from its role (shared by all its stacks).
     /// Mages are a circle of a few, not a company of many (super units): three or four at ArmyScale 3, one or two at 1.
@@ -183,12 +183,11 @@ public static class Rules
         (t.Damage, t.Reach, t.Windup, t.Recover, t.Pierce) = (w.Damage, w.Reach, w.Windup, w.Recover, w.Pierce);
         (t.Ammo, t.Range, t.Reload, t.ThrustOnly) = (w.Ammo, w.Range, w.Reload, w.Thrust);
         t.BlockChance = shield.Block;
-        t.Armor += body.Armor + helm.Armor;
         // How well each piece is made (C9) scales its own numbers; the smith's marks ride on the man's Mods.
         float Q(GearDef g) => Campaign.QualityScale(Campaign.ItemOf(c, g.Id)?.CountsAs() ?? ItemQuality.Plain);
         t.Damage *= Q(w);
         t.BlockChance = MathF.Min(0.95f, t.BlockChance * Q(shield));
-        t.Armor += body.Armor * (Q(body) - 1) + helm.Armor * (Q(helm) - 1);
+        t.Armor = body.Armor * Q(body) + helm.Armor * Q(helm);
         t.Mods = t.Mods + Campaign.MarkMods(c, side);
         t.Speed += body.Speed + helm.Speed + shield.Speed;
         // Arms (F4): +2% health per 10 points, Hardened +20%, Duellist +15% damage.
@@ -298,7 +297,7 @@ public static class Rules
                 var c = side.SelectMany(p => p.Companies).First(c => c.Id == r.Id);
                 int k = (int)MathF.Round(kills[team] * Strength(c) / MathF.Max(1, total));
                 var byTier = new int[8];
-                byTier[Math.Clamp(foeTier, 1, 7)] = k;
+                byTier[Math.Clamp(foeTier, 1, Troops.MaxTier)] = k;
                 list[i] = r with { Kills = k, KillsByTier = byTier, HorseKills = (int)MathF.Round(k * foeMounted) };
             }
         }

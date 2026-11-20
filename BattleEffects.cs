@@ -50,17 +50,17 @@ public partial class Battle
         };
     }
 
-    /// A troop's passives: its archetype's two, and its culture's signature at tier VII.
+    /// A troop's passives: its archetype's two, and its culture's signature at tier VI.
     public static string[] PassivesWithSignature(UnitType t) =>
-        t.Tier >= 7 && SignatureOf(t) is string sig ? PassivesFor(t).Append(sig).ToArray() : PassivesFor(t);
+        t.Tier >= Troops.MaxTier && SignatureOf(t) is string sig ? PassivesFor(t).Append(sig).ToArray() : PassivesFor(t);
 
-    /// How strongly a troop of this tier has its i-th passive: tier V its first at 0.7; VI the first in full and the
-    /// second at 0.7; VII all three (the third is its culture's signature) in full. Never falls as the tier rises (D0).
+    /// How strongly a troop of this tier has its i-th passive: tier IV its first at 0.7; V the first in full and the
+    /// second at 0.7; VI all three (the third is its culture's signature) in full. Never falls as the tier rises (D0).
     public static float PassiveWeight(int tier, int i) => tier switch
     {
-        5 => i == 0 ? 0.7f : 0,
-        6 => i == 0 ? 1 : i == 1 ? 0.7f : 0,
-        >= 7 => i <= 2 ? 1 : 0,
+        4 => i == 0 ? 0.7f : 0,
+        5 => i == 0 ? 1 : i == 1 ? 0.7f : 0,
+        >= 6 => i <= 2 ? 1 : 0,
         _ => 0,
     };
 

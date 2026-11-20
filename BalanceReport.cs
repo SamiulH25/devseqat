@@ -229,7 +229,7 @@ public static partial class BalanceReport
         {
             var byGap = new Dictionary<int, (int won, int n)>();
             for (int lo = 1; lo <= 6; lo++)
-                for (int hi = lo + 1; hi <= 7; hi++)
+                for (int hi = lo + 1; hi <= Troops.MaxTier; hi++)
                     for (int seed = 0; seed < seeds; seed++)
                     {
                         string a = Armies.LineTroop("infantry", lo), b = Armies.LineTroop("infantry", hi);

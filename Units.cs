@@ -49,28 +49,28 @@ public sealed record Look(string Head, string Body, string Legs, string Feet, st
     public string HeadKey => Face != "man" ? "head." + Face : Visage >= 0 ? "head.v" + Visage : "head";
     public bool NeutralHead => Face == "man" && Visage >= 0;
     // "coif": a mail hood.
-    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "nasal", "sallet", "sallet_crest", "sallet_bevor", "greathelm", "greathelm_horns", "greathelm_wings", "greathelm_crown", "armet", "bascinet", "gjermundbu", "morion", "kulah", "spangen", "spangen_horns", "spangen_wolf", "turban", "steppe", "steppe_mask", "steppe_horns", "coif", "spike", "barbute", "barbute_crest", "furcap", "bucket", "brigand_hat", "frogmouth", "galea", "ibex", "dragon", "bearhead", "spike_turban", "litham", "corsair", "tug", "faceplate", "lion", "chapel", "greathelm_sun", "winged_sallet", "frogmouth_gilt", "winged_sallet_gilt", "morion_gilt", "galea_gilt", "ibex_gilt", "dragon_gilt", "spike_turban_gilt", "litham_gilt", "corsair_gilt", "tug_gilt", "faceplate_gilt", "chapel_gilt", "bascinet_gilt", "whitebear" };
+    public static readonly string[] Heads = { "none", "cap", "hood", "kettle", "kettle_brimmed", "nasal", "sallet", "sallet_visored", "sallet_crest", "sallet_bevor", "greathelm", "greathelm_sugarloaf", "greathelm_visor", "greathelm_horns", "greathelm_wings", "greathelm_crown", "armet", "bascinet", "gjermundbu", "morion", "kulah", "spangen", "spangen_spectacle", "spangen_horns", "spangen_wolf", "turban", "steppe", "steppe_mask", "steppe_horns", "coif", "spike", "barbute", "barbute_crest", "furcap", "bucket", "brigand_hat", "frogmouth", "galea", "ibex", "dragon", "bearhead", "spike_turban", "litham", "corsair", "tug", "faceplate", "lion", "chapel", "greathelm_sun", "winged_sallet", "frogmouth_gilt", "winged_sallet_gilt", "morion_gilt", "galea_gilt", "ibex_gilt", "dragon_gilt", "spike_turban_gilt", "litham_gilt", "corsair_gilt", "tug_gilt", "faceplate_gilt", "chapel_gilt", "bascinet_gilt", "whitebear" };
     // Goblin kit: "rags" (bare green arms), "hide" (bare green legs), "bare" feet, "claw" hands.
     // Undead kit: "bones" (a ribcage and bare bone), "shroud" (a ghoul's grave wrappings over grey skin), "robe" (a necromancer's), "bone" feet and hands.
     // The new realms (docs/archive/WORLD.md W4): "lamellar" (rows of small plates), "deel" (a long wrapped steppe coat), "brigandine"
     // (cloth over riveted plates); the "turban" wound over a spiked cap, the fur-brimmed "steppe" helm; the tall "pavise".
-    public static readonly string[] Bodies = { "tunic", "gambeson", "gambeson_fur", "mail", "plate", "plate_gilded", "plate_fur", "breastplate", "coatofplates", "scale", "scale_iron", "mail_fur", "lamellar_gilded", "leather", "fur", "rags", "bones", "shroud", "robe", "lamellar", "deel", "deel_fur", "brigandine", "brigandine_gilded", "muscle", "kaftan", "mirror", "jupon", "lamellar_dark", "burnous" };
+    public static readonly string[] Bodies = { "tunic", "gambeson", "gambeson_fur", "mail", "mail_hauberk", "plate", "plate_fluted", "plate_surcoat", "plate_gilded", "plate_fur", "breastplate", "coatofplates", "scale", "scale_iron", "mail_fur", "lamellar_gilded", "leather", "fur", "rags", "bones", "shroud", "robe", "lamellar", "deel", "deel_fur", "brigandine", "brigandine_gilded", "muscle", "kaftan", "mirror", "jupon", "lamellar_dark", "burnous" };
     public static readonly string[] LegsKinds = { "cloth", "mail", "splint", "plate", "furlegs", "hide", "bones", "shroud" };
     public static readonly string[] FeetKinds = { "boots", "ridingboots", "furboots", "sabatons", "bare", "bone" };
     public static readonly string[] HandsKinds = { "skin", "gauntlets", "claw", "bone" };
-    public static readonly string[] Shields = { "none", "round", "round_bossed", "kite", "tower", "heater", "heater_gilded", "pavise", "buckler", "targe", "dhal", "kalkan" };
-    public static readonly string[] Weapons = { "sword", "longsword", "longsword_gilded", "axe", "spear", "pike", "lance", "pennonlance", "bow", "longbow", "recurve", "crossbow", "arbalest", "greatsword", "flamberge", "daneaxe", "bardiche", "club", "staff", "mace", "morningstar",
+    public static readonly string[] Shields = { "none", "round", "round_bossed", "round_iron", "kite", "tower", "heater", "heater_gilded", "heater_quartered", "pavise", "buckler", "targe", "dhal", "kalkan" };
+    public static readonly string[] Weapons = { "sword", "sword_viking", "sword_knightly", "longsword", "longsword_estoc", "longsword_gilded", "axe", "axe_bearded", "spear", "spear_winged", "pike", "lance", "pennonlance", "bow", "bow_horn", "longbow", "recurve", "crossbow", "crossbow_heavy", "arbalest", "greatsword", "greatsword_claymore", "flamberge", "daneaxe", "daneaxe_bearded", "bardiche", "club", "staff", "mace", "morningstar",
         "halberd", "billhook", "glaive", "javelin", "sling", "scimitar", "falchion", "warhammer" };
-    public static bool Ranged(string weapon) => weapon is "bow" or "longbow" or "recurve" or "crossbow" or "arbalest";
+    public static bool Ranged(string weapon) => weapon is "bow" or "bow_horn" or "longbow" or "recurve" or "crossbow" or "crossbow_heavy" or "arbalest";
     /// Anything that is shot or thrown, so needs ammo: bows, javelins and slings.
     public static bool Missile(string weapon) => Ranged(weapon) || weapon is "javelin" or "sling";
     public static Grip GripOf(string weapon) => weapon switch
     {
-        "greatsword" or "flamberge" or "daneaxe" or "bardiche" or "club" or "warhammer" => Grip.Two,
-        "spear" or "pike" or "halberd" or "billhook" or "glaive" => Grip.Pole,
+        "greatsword" or "greatsword_claymore" or "flamberge" or "daneaxe" or "daneaxe_bearded" or "bardiche" or "club" or "warhammer" => Grip.Two,
+        "spear" or "spear_winged" or "pike" or "halberd" or "billhook" or "glaive" => Grip.Pole,
         "lance" or "pennonlance" => Grip.Lance,
-        "bow" or "longbow" or "recurve" => Grip.Bow,
-        "crossbow" or "arbalest" => Grip.Crossbow,
+        "bow" or "bow_horn" or "longbow" or "recurve" => Grip.Bow,
+        "crossbow" or "crossbow_heavy" or "arbalest" => Grip.Crossbow,
         "staff" => Grip.Staff,
         "javelin" => Grip.Thrown,
         "sling" => Grip.Sling,

@@ -132,7 +132,8 @@ public sealed partial class Campaign
     {
         int week = (int)(S.Hours / (24 * 7));
         int chance = s.Kind switch { SettlementKind.Town => 70, SettlementKind.Castle => 45, _ => 20 };
-        return Gear.All.Where(g => !g.Free && (s.Kind != SettlementKind.Village || g.Cost <= 300)
+        int maxCost = s.Kind switch { SettlementKind.Village => 300, SettlementKind.Castle => 900, _ => int.MaxValue };
+        return Gear.All.Where(g => !g.Free && g.Cost <= maxCost
             && (uint)Rng.Mix(S.Seed, s.Id, week, Rng.Of(g.Id)) % 100 < chance).ToList();
     }
 

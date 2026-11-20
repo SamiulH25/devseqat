@@ -499,9 +499,17 @@ public sealed partial class SpriteSheet
     /// A full barding set in one stuff and edging; `work` decorates each piece.
     void Full(string s, string tag, Mat body, Mat edge, bool rows, Action<Canvas> work)
     {
+        var steelMat = rows ? Lacquer : plate;
         var cap = new Canvas(55, 23);
-        cap.Columns(1.5f, 53.5f, x => { var (t, _) = HorseSpan(x); return (t + 1.5f, 21.4f - ((int)x % 6 < 3 ? 1.2f : 0)); }, body);
+        cap.Columns(1.5f, 53.5f, x => { var (t, _) = HorseSpan(x); return (t + 1.5f, 22.0f - ((int)x % 6 < 3 ? 1.4f : 0)); }, body);
         work(cap);
+        if (!rows)
+        {
+            // Draped vertical cloth pleats so heraldic caparisons read as heavy woven cloth.
+            for (int x = 6; x < 50; x += 5)
+                for (int y = 6; y < 21; y++)
+                    if (cap.Has(x, y)) { cap.Shade(x, y, -0.20f); if (cap.Has(x + 1, y)) cap.Shade(x + 1, y, 0.12f); }
+        }
         cap.Border(edge);
         Saddle(cap, false);
         cap.Soft = true;
@@ -511,18 +519,33 @@ public sealed partial class SpriteSheet
             var c = new Canvas(24, 21);
             c.Ellipse(12, 10.8f, 11.4f, 9.6f, body);
             work(c);
+            if (part == "hchest")
+            {
+                // Armored peytral breastplate across the upper chest with central keel & rivets.
+                c.Body(2, 9.5f, y => { float hw = 5.2f + (y - 2) * 0.65f; return (12 - hw, 12 + hw); }, steelMat);
+                for (int y = 3; y < 9; y++) { c.Shade(12, y, 0.28f); c.Shade(11, y, -0.18f); }
+                for (int x = 5; x <= 19; x += 3) if (c.Has(x, 9)) c.Set(x, 9, edge);
+            }
+            else
+            {
+                for (int x = 5; x <= 19; x += 4) for (int y = 5; y < 19; y++) if (c.Has(x, y)) c.Shade(x, y, -0.20f);
+                c.Rect(10.8f, 1, 13.2f, 7, Mat.Flat(Style.Mane));
+            }
             c.Border(edge);
-            if (part == "hrump") c.Rect(10.8f, 1, 13.2f, 7, Mat.Flat(Style.Mane));
             c.Soft = true;
             Add($"{part}.{tag}{s}", c);
         }
         var neck = new Canvas(23, 13);
-        neck.Columns(0, 23, x => (HorseNeckTop(x) + 2.0f, HorseNeckBottom(x)), body);
+        neck.Columns(0, 23, x => (HorseNeckTop(x) + 1.8f, HorseNeckBottom(x)), body);
         work(neck);
+        neck.Columns(1, 22, x => (HorseNeckTop(x) + 1.6f, HorseNeckTop(x) + 4.8f), steelMat);
+        for (int x = 3; x < 21; x += 3)
+            for (int y = 1; y < 11; y++)
+                if (neck.Has(x, y)) { neck.Shade(x, y, -0.32f); if (neck.Has(x + 1, y)) neck.Shade(x + 1, y, 0.20f); }
         neck.Border(edge);
         neck.Soft = true;
         Add($"hneck.{tag}{s}", neck);
-        Chanfron(s, tag, rows ? Lacquer : plate);
+        Chanfron(s, tag, steelMat, edge);
     }
 
     /// The neck (crinet) and face (chanfron) of a half barding.
@@ -530,19 +553,29 @@ public sealed partial class SpriteSheet
     {
         var neck = new Canvas(23, 13);
         neck.Columns(0, 23, x => (HorseNeckTop(x) + 1.6f, HorseNeckTop(x) + 6.5f), neckMat);
-        if (plates) for (int x = 2; x < 23; x += 4) for (int y = 0; y < 13; y++) neck.Shade(x, y, -0.35f);
+        for (int x = 3; x < 22; x += 3)
+            for (int y = 0; y < 13; y++)
+                if (neck.Has(x, y)) { neck.Shade(x, y, plates ? -0.36f : -0.24f); if (neck.Has(x + 1, y)) neck.Shade(x + 1, y, plates ? 0.24f : 0.14f); }
         neck.Border(edge);
         neck.Soft = true;
         Add($"hneck.{tag}{s}", neck);
-        Chanfron(s, tag, plates ? plate : neckMat);
+        Chanfron(s, tag, plates ? plate : neckMat, edge);
     }
 
-    void Chanfron(string s, string tag, Mat m)
+    void Chanfron(string s, string tag, Mat m, Mat edge)
     {
         var head = new Canvas(22, 12);
-        head.Columns(5, 21, x => (2.9f + (x - 5) * 0.14f, 9.6f - (x - 5) * 0.14f), m);
-        head.Clear(7, 4); head.Clear(8, 4);
-        for (int x = 6; x < 20; x++) head.Shade(x, (int)(3.4f + (x - 5) * 0.14f), 0.25f);
+        head.Columns(4.5f, 20.5f, x => (2.6f + (x - 5) * 0.15f, 9.6f - (x - 5) * 0.16f), m);
+        head.Clear(8, 4); head.Clear(9, 4); // eye opening aligned with sculpted warhorse head
+        head.Set(7, 4, edge); head.Set(10, 4, edge); head.Set(8, 3, edge); head.Set(9, 3, edge); // flanged eye-guard
+        for (int x = 6; x < 20; x++)
+        {
+            int ridge = (int)(3.4f + (x - 5) * 0.15f);
+            if (head.Has(x, ridge)) head.Shade(x, ridge, 0.34f); // gleaming nasal ridge
+            if (head.Has(x, ridge + 2)) head.Shade(x, ridge + 2, -0.24f); // cheek bevel
+        }
+        head.Set(6, 5, edge); head.Set(6, 6, edge); // brow rondel
+        for (int y = 4; y <= 8; y++) if (head.Has(5, y)) head.Set(5, y, edge); // poll trim
         Add($"hhead.{tag}{s}", head);
     }
 }

@@ -29,19 +29,19 @@ public static partial class SelfTest
     {
         foreach (var t in Troops.All.Where(t => !t.Wild && !t.Leader))
         {
-            if (t.Tier < 5) Check(t.Passives.Length == 0, $"{t.Name} (tier {t.Tier}) has no passives");
+            if (t.Tier < 4) Check(t.Passives.Length == 0, $"{t.Name} (tier {t.Tier}) has no passives");
             else Check(t.Passives.Length >= 2, $"{t.Name} (tier {t.Tier}) has its passives");
-            foreach (var n in t.UpgradesTo.Select(Troops.Get).Where(n => t.Passives.Length > 0 && n.Look.Weapon == t.Look.Weapon && n.HasShield == t.HasShield && n.Mount == null == (t.Mount == null)))
+            foreach (var n in t.UpgradesTo.Select(Troops.Get).Where(n => t.Passives.Length > 0 && n.Order == "" && n.Look.Weapon == t.Look.Weapon && n.HasShield == t.HasShield && n.Mount == null == (t.Mount == null)))
                 Check(t.Passives.Take(2).SequenceEqual(n.Passives.Take(2)), $"{n.Name} keeps {t.Name}'s passives");
         }
-        for (int tier = 5; tier < 7; tier++)
+        for (int tier = 4; tier < Troops.MaxTier; tier++)
             for (int i = 0; i < 3; i++)
                 Check(Battle.PassiveWeight(tier + 1, i) >= Battle.PassiveWeight(tier, i), $"passive {i} is no weaker at tier {tier + 1} than at {tier}");
-        Check(Troops.All.Where(t => t.Culture == "order" && t.Tier == 7).All(t => t.Passives.Contains("zeal")), "the Order's tier VII troops carry Zeal");
-        foreach (var (troop, sig) in new[] { ("blood_jarls", "battle_fury"), ("immortals", "testudo"), ("sword_saints", "headsmen"), ("lions_of_the_sun", "whirlwind"),
-                     ("khagans_own", "ghost_riders"), ("lion_crossbows", "paid_in_full") })
+        Check(Troops.All.Where(t => t.Culture == "order" && t.Tier == 6).All(t => t.Passives.Contains("zeal")), "the Order's tier VI troops carry Zeal");
+        foreach (var (troop, sig) in new[] { ("thane_champions", "battle_fury"), ("iron_legionaries", "testudo"), ("grand_blademasters", "headsmen"), ("emir_guard", "whirlwind"),
+                     ("kheshig", "ghost_riders"), ("doge_arbalesters", "paid_in_full") })
             Check(Troops.Get(troop).Passives.Contains(sig), $"{Troops.Get(troop).Name} carry their culture's signature, {Effects.Get(sig).Name}");
-        Check(!Troops.Get("grail_knights").Passives.Contains("testudo") && !Troops.Get("sky_piercers").Passives.Contains("battle_fury"), "a signature only goes where it fits (no testudo on horseback, no fury for archers)");
+        Check(!Troops.Get("paladin_knights").Passives.Contains("testudo") && !Troops.Get("highland_marksmen").Passives.Contains("battle_fury"), "a signature only goes where it fits (no testudo on horseback, no fury for archers)");
         Console.WriteLine($"effects: {Troops.All.Count(t => t.Passives.Length > 0)} troops with passive traits");
     }
 
@@ -69,7 +69,7 @@ public static partial class SelfTest
             b.Hit(a, foes[0], 1, false);
             return m - foes[0].Morale;
         }
-        Check(Shaken(Troops.Get("doomcleavers")) > Shaken(NoPassives("doomcleavers")), "a fearsome man's blow shakes the man he strikes more");
+        Check(Shaken(Troops.Get("valhalla_reavers")) > Shaken(NoPassives("valhalla_reavers")), "a fearsome man's blow shakes the man he strikes more");
     }
 
     /// D4: each culture signature does what it says.
@@ -90,7 +90,7 @@ public static partial class SelfTest
             }
             return got;
         }
-        int testudo = Landed(Troops.Get("immortals")), open = Landed(NoPassives("immortals"));
+        int testudo = Landed(Troops.Get("iron_legionaries")), open = Landed(NoPassives("iron_legionaries"));
         Check(testudo < open * 0.7f, $"a testudo stops arrows from behind ({testudo} of 200 land, {open} without)");
 
         // Headsmen: a blow on a sergeant falls harder than on a common man.
@@ -102,13 +102,13 @@ public static partial class SelfTest
             b.Hit(a, foes[0], 30, false);
             return hp - foes[0].Hp;
         }
-        Check(Blow("sword_saints", true) > Blow("sword_saints", false) * 1.5f, "headsmen strike an officer far harder");
-        Check(MathF.Abs(Blow("grand_blademasters", true) - Blow("grand_blademasters", false)) < 0.01f, "other men do not");
+        Check(Blow("grand_blademasters", true) > Blow("grand_blademasters", false) * 1.5f, "headsmen strike an officer far harder");
+        Check(MathF.Abs(Blow("blademasters", true) - Blow("blademasters", false)) < 0.01f, "other men do not");
 
         // Battle fury: the same blow is harder once half the company has fallen.
         float Fury(int alive)
         {
-            var (b, a, foes) = StyleScene("blood_jarls", new Vector2(0, 1.3f));
+            var (b, a, foes) = StyleScene("thane_champions", new Vector2(0, 1.3f));
             a.Squad!.StartCount = 20;
             a.Squad.Alive = alive;
             float hp = foes[0].Hp = 999;
@@ -118,15 +118,15 @@ public static partial class SelfTest
         Check(Fury(10) > Fury(20) * 1.2f, "battle fury: the fewer they are, the harder they strike");
 
         // Whirlwind: a spear blow carries into the man beside.
-        var (wb, wa, wfoes) = StyleScene("lions_of_the_sun", new(0, 1.3f), new(0.9f, 1.2f));
+        var (wb, wa, wfoes) = StyleScene("emir_guard", new(0, 1.3f), new(0.9f, 1.2f));
         float beside = wfoes[1].Hp;
         wb.Hit(wa, wfoes[0], 20, false);
         Check(wfoes[1].Hp < beside, "a whirlwind's blow carries into the man beside");
 
         // Ghost riders shoot from the saddle as from the ground; paid in full stand while the day is not lost.
-        Check(Troops.Get("khagans_own").Mods.Gallop > 0, "ghost riders shoot steadily from the gallop");
+        Check(Troops.Get("kheshig").Mods.Gallop > 0, "ghost riders shoot steadily from the gallop");
         var pb = Battle.Empty(81);
-        var paid = pb.AddSquad(0, Troops.Get("lion_crossbows"), 6, new(0, 0), 3, Vector2.UnitY);
+        var paid = pb.AddSquad(0, Troops.Get("doge_arbalesters"), 6, new(0, 0), 3, Vector2.UnitY);
         pb.AddSquad(1, Troops.Get("levies"), 6, new(0, 60), 3, -Vector2.UnitY);
         foreach (var u in paid.Units) u.Morale = 2;
         Run(pb, 0.2f);
@@ -137,7 +137,7 @@ public static partial class SelfTest
     static void AuraReachesCompanies()
     {
         var b = Battle.Empty(71);
-        var saints = b.AddSquad(0, Troops.Get("ashen_saints"), 6, new(0, 0), 3, Vector2.UnitY);
+        var saints = b.AddSquad(0, Troops.Get("sun_templars"), 6, new(0, 0), 3, Vector2.UnitY);
         var near = b.AddSquad(0, Troops.Get("levies"), 6, new(12, 0), 3, Vector2.UnitY);
         var far = b.AddSquad(0, Troops.Get("levies"), 6, new(70, 0), 3, Vector2.UnitY);
         var foe = b.AddSquad(1, Troops.Get("levies"), 6, new(0, 14), 3, -Vector2.UnitY);
@@ -155,8 +155,8 @@ public static partial class SelfTest
     /// (20 against 30 close foes, three seeds; score as StylesOnlyAdd).
     static void PassivesOnlyAdd()
     {
-        foreach (var (troop, foe) in new[] { ("allfather_guard", "iron_legionaries"), ("doomcleavers", "citadel_sentinels"), ("imperial_pikemen", "grand_phalanx"),
-                     ("grail_knights", "paladin_knights"), ("tempest_spears", "storm_riders") })
+        foreach (var (troop, foe) in new[] { ("iron_thanes", "iron_legionaries"), ("valhalla_reavers", "citadel_sentinels"), ("grand_phalanx", "grand_phalanx"),
+                     ("paladin_knights", "paladin_knights"), ("dragon_glaives", "iron_legionaries") })
         {
             float Score(UnitType t)
             {

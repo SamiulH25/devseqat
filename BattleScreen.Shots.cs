@@ -150,7 +150,7 @@ partial class BattleScreen
                 pendingShot = "gallery-armour-side"; shotIndex++; break;
             case 53 or 55 when pendingShot == null:
                 // Melee (docs/archive/MELEE.md): three companies a side, 14 s after they charged; levies, then elites.
-                Clash(shotIndex == 53 ? "levies" : "immortals"); shotFrames = 0; shotIndex++; break;
+                Clash(shotIndex == 53 ? "levies" : "iron_legionaries"); shotFrames = 0; shotIndex++; break;
             case 54 or 56 when shotFrames > 20:
                 pendingShot = shotIndex == 54 ? "clash-levies" : "clash-elites"; shotIndex++; break;
             case 57 or 59 when pendingShot == null:
@@ -313,17 +313,17 @@ partial class BattleScreen
     static readonly (string Name, int Palette, string[] Troops)[] RosterShots =
     {
         ("recruits", 0, new[] { "town_crossbows", "crown_squires", "commons_bowmen", "hobilars", "hunters", "fell_riders", "herd_boys", "herd_riders", "militia_crossbows", "light_horse" }),
-        ("sunward-branches", 5, new[] { "slingers", "storm_slingers", "camel_scouts", "camel_guard", "naffatun", "sun_fire", "dervishes", "saints_of_the_sand" }),
-        ("steppe-league-branches", 6, new[] { "steppe_lancers", "ironclad_khans", "wolf_runners", "tug_lords", "marines", "admirals_guard", "lagoon_wall", "lords_of_fortune" }),
-        ("order-wild-branches", 8, new[] { "pilgrim_bows", "pilgrim_riders", "hammer_brothers", "ashen_hammers", "chapter_turcopoles", "goblin_warlord", "wight", "death_knight" }),
+        ("sunward-branches", 5, new[] { "slingers", "storm_slingers", "camel_scouts", "camel_guard", "naffatun", "sun_fire", "dervishes", "sword_dancers" }),
+        ("steppe-league-branches", 6, new[] { "steppe_lancers", "khans_lancers", "wolf_runners", "noyan_guard", "marines", "admirals_guard", "lagoon_wall", "captains_of_fortune" }),
+        ("order-wild-branches", 8, new[] { "pilgrim_bows", "pilgrim_riders", "hammer_brothers", "hammers_of_the_sun", "chapter_turcopoles", "goblin_warlord", "wight", "death_knight" }),
     };
 
     static readonly (string Name, int Palette, string[] Troops)[] NewRealms =
     {
-        ("sunward", 5, new[] { "sun_javelins", "ghazis", "jandars", "lions_of_the_sun", "sand_archers", "sultans_bows", "desert_riders", "mamluks", "sultans_guard" }),
-        ("khaganate", 6, new[] { "yurt_guards", "torguud", "khagans_axes", "grass_spears", "eternal_spears", "steppe_archers", "steppe_bows", "kheshig", "khagans_own" }),
-        ("saltmarsh", 7, new[] { "canal_guards", "brigandiers", "lion_guard", "league_pikes", "league_crossbows", "pavisiers", "lion_crossbows", "stradiots", "lion_knights" }),
-        ("order", 8, new[] { "order_sergeants", "ashen_brothers", "ashen_saints", "order_spears", "dawn_pikes", "order_crossbows", "dawn_watch", "order_riders", "grand_masters" }),
+        ("sunward", 5, new[] { "sun_javelins", "ghazis", "jandars", "emir_guard", "sand_archers", "falcon_eyes", "desert_riders", "mamluks", "emir_mamluks" }),
+        ("khaganate", 6, new[] { "yurt_guards", "torguud", "noyan_guard", "grass_spears", "sky_spears", "steppe_archers", "steppe_bows", "kheshig", "khan_guard" }),
+        ("saltmarsh", 7, new[] { "canal_guards", "brigandiers", "doge_guard", "league_pikes", "league_crossbows", "pavisiers", "doge_arbalesters", "stradiots", "doge_lances" }),
+        ("order", 8, new[] { "order_sergeants", "ashen_brothers", "sun_templars", "order_spears", "pilgrim_guard", "order_crossbows", "sun_arbalests", "order_riders", "ashen_knights" }),
     };
 
     /// The pose sheet (docs/archive/VISUALS.md V1): one man frozen at each moment of each action along a row, so every pose can be
