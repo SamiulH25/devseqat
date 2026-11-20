@@ -629,16 +629,20 @@ public static partial class SelfTest
         Check(seats.All(p => p.Lots.Count(l => l.Use == LotUse.Works) == PlaceState.WorkIds.Length), "a site (or its empty place) for every work");
         Check(sites[sites.Count / 2] >= 5 && sites[sites.Count / 10] >= 3, "most towns and castles have room for their works");
         Check(suburbs[suburbs.Count / 2] >= 6, "towns have room for suburbs along their roads");
+        var tents = seats.Select(p => p.Lots.Count(l => l.Use == LotUse.Camp)).OrderBy(x => x).ToList();
+        var spots = seats.Select(p => p.Lots.Count(l => l.Use == LotUse.Engine)).OrderBy(x => x).ToList();
+        Console.WriteLine($"siege camps: tents {tents[0]}-{tents[^1]} (median {tents[tents.Count / 2]}), engine spots median {spots[spots.Count / 2]}");
+        Check(tents[tents.Count / 2] >= 10 && spots[spots.Count / 2] >= 3, "a siege camp has room round most towns and castles");
         var bad = new List<string>();
         foreach (var p in m.Plans.Values)
-            foreach (var l in p.Lots.Where(l => l.Use is LotUse.Suburb or LotUse.Works && l.W > 0))
+            foreach (var l in p.Lots.Where(l => l.Use is LotUse.Suburb or LotUse.Works or LotUse.Camp or LotUse.Fire or LotUse.Engine && l.W > 0))
             {
                 bool hall = p.Kind == SettlementKind.Town && l.Use == LotUse.Works && Vector2.Distance(l.Pos, p.Square) < 2.4f; // the market hall stands on the square
                 if (!hall && !m.LotClear(l)) bad.Add($"{m.Settlements[p.Id].Name} {l.Use} in water or on a road");
                 foreach (var o in m.Plans.Values)
                     if (o.Id != p.Id && l.Corners.Any(c => Vector2.Distance(c, o.Pos) < o.Radius)) bad.Add($"{m.Settlements[p.Id].Name} {l.Use} on {m.Settlements[o.Id].Name}");
             }
-        Check(bad.Count == 0, $"suburbs and works on clear ground of their own ({bad.Count}): " + string.Join(", ", bad.Take(6)));
+        Check(bad.Count == 0, $"suburbs, works and camps on clear ground of their own ({bad.Count}): " + string.Join(", ", bad.Take(6)));
 
         var town = m.Plans.Values.Where(p => p.Kind == SettlementKind.Town).OrderByDescending(Sites).First();
         var castle = seats.Where(p => p.Kind == SettlementKind.Castle).OrderByDescending(Sites).First();
@@ -652,8 +656,18 @@ public static partial class SelfTest
         double poor = w.PlaceSum;
         w.UpdatePlaces(id => id == castle.Id ? new PlaceState(-1, 1, 0, 2) : PlaceState.None, wait: true);
         double walls = w.PlaceSum;
+        var siege = new PlaceState(-1, 1, 0, 0, 3, 1, 15);
+        w.UpdatePlaces(id => id == town.Id || id == castle.Id ? siege : PlaceState.None, wait: true);
+        int siegeVerts = w.PlaceVerts; int fires = w.Fires.Length;
+        w.UpdatePlaces(id => id == town.Id || id == castle.Id ? siege with { Besieger = -1, Engines = 0 } : PlaceState.None, wait: true);
+        double breached = w.PlaceSum;
+        w.UpdatePlaces(id => id == village.Id ? new PlaceState(-1, Burning: true) : PlaceState.None, wait: true);
+        int burning = w.Fires.Length;
         w.UpdatePlaces(id => PlaceState.None, wait: true);
-        Console.WriteLine($"{m.Settlements[town.Id].Name} and {m.Settlements[castle.Id].Name}: {plainVerts:N0} verts plain, {richVerts:N0} rich with every work");
+        Console.WriteLine($"{m.Settlements[town.Id].Name} and {m.Settlements[castle.Id].Name}: {plainVerts:N0} verts plain, {richVerts:N0} rich with every work, {siegeVerts:N0} besieged ({fires} fires)");
+        Check(siegeVerts > plainVerts + 3000 && fires >= 2, "a besieged place has its camp round it, its fires lit");
+        Check(breached != plain, "battered walls look battered");
+        Check(burning >= 1 && w.Fires.Length == 0, "a raided village burns, and the fires go out with the state");
         Check(richVerts > plainVerts + 3000, "a rich place with every work built shows them");
         Check(poor != plain && walls != plain && poor != walls, "a poor place and higher walls each look their own");
         Check(w.PlaceSum == plain && w.PlaceVerts == plainVerts, "the same state builds the same mesh");

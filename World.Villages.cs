@@ -18,6 +18,10 @@ sealed partial class World
             var lr = new Random(p.Seed + n++ * 7919); // each lot its own dice: a house looks the same whatever its neighbours show
             switch (lot.Use)
             {
+                case LotUse.House when s.Burning && n % 2 == 1: // a raid: every other house burnt out (a tent just gone), the first ones still smoking
+                    if (WorldMap.VillageKind(st) is not (HouseKind.Yurt or HouseKind.Tent)) Ruin(m, st with { Wall = Charred, Washes = null }, lot, lr);
+                    if (n < 6) m.Fires.Add(At(lot.Pos, t.Height(lot.Pos) + 0.4f));
+                    break;
                 case LotUse.House when Ruined(s, n, village: true):
                     if (WorldMap.VillageKind(st) is not (HouseKind.Yurt or HouseKind.Tent)) Ruin(m, st, lot, lr); // a camp just moves on
                     break;

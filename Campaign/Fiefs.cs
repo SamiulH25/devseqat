@@ -347,6 +347,7 @@ public sealed partial class Campaign
     {
         var seat = SeatOf(v);
         float k = Level(seat, "watchtower") > 0 ? 0.5f : 1;
+        v.RaidedAt = (float)S.Hours;
         v.Prosperity = MathF.Max(0, v.Prosperity - 6 * k);
         if (seat != v) { seat.Prosperity = MathF.Max(0, seat.Prosperity - 2 * k); seat.Unrest = MathF.Min(100, seat.Unrest + 2 * k); }
     }

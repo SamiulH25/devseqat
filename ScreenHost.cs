@@ -470,9 +470,12 @@ sealed class ScreenHost : Game
                 ("great", t => t.Size == 3), ("village", t => t.Kind == SettlementKind.Village),
             }.Select(k => ($"place-{a.Id}-{k.Kind}", c.S.Settlements.FirstOrDefault(t => t.Culture == a.Id && k.Is(t)))))
             .Where(x => x.Item2 != null)
-            // A town, castle and village also rich (every work built, walls at their highest) and poor (SM4).
-            .SelectMany(x => x.Item1.EndsWith("-town") || x.Item1.EndsWith("-castle") || x.Item1.EndsWith("-village")
-                ? new[] { (x.Item1, x.Item2!, ""), (x.Item1 + "-rich", x.Item2!, "rich"), (x.Item1 + "-poor", x.Item2!, "poor") }
+            // A town, castle and village also rich (every work built, walls at their highest) and poor (SM4); a town and castle
+            // besieged and breached, a village just raided (SM5).
+            .SelectMany(x => x.Item1.EndsWith("-town") || x.Item1.EndsWith("-castle")
+                ? new[] { (x.Item1, x.Item2!, ""), (x.Item1 + "-rich", x.Item2!, "rich"), (x.Item1 + "-poor", x.Item2!, "poor"), (x.Item1 + "-siege", x.Item2!, "siege") }
+                : x.Item1.EndsWith("-village")
+                ? new[] { (x.Item1, x.Item2!, ""), (x.Item1 + "-rich", x.Item2!, "rich"), (x.Item1 + "-poor", x.Item2!, "poor"), (x.Item1 + "-raided", x.Item2!, "raided") }
                 : new[] { (x.Item1, x.Item2!, "") }).ToList();
         if (placeShot >= placeShots.Count) { Exit(); return; }
         var (name, place, variant) = placeShots[placeShot++];
@@ -487,7 +490,15 @@ sealed class ScreenHost : Game
         }
         else if (variant == "poor") { place.Prosperity = 10; place.Buildings.Clear(); }
         c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 11.5;
+        if (variant == "raided") place.RaidedAt = (float)c.S.Hours - 10;
+        if (variant == "siege" && c.S.Parties.FirstOrDefault(p => p.Kind == PartyKind.Lord && !p.Down && p.Faction != place.Faction) is Party camp)
+        {
+            place.Prosperity = 50; place.Besieged = true; place.Battered = 1;
+            camp.SiegeTarget = place.Id; camp.WorksAt = place.Id;
+            camp.SiegeWorks = PlaceState.EngineIds.Select(id => new SiegeWork { Id = id, ReadyAt = 0 }).ToList();
+        }
         map.Stage("place", place);
+        map.ShotLife = variant is "siege" or "raided";
         pendingShot = name;
         shotFrames = 0;
     }

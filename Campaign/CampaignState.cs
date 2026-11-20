@@ -324,6 +324,8 @@ public sealed class Settlement
     public float SiegeSince;                       // when the siege began (ladders take 12 hours)
     /// How far engines have battered its walls (0-1, docs/archive/SIEGECRAFT.md A3); mended a little each day it is not besieged.
     public float Battered;
+    /// When it was last raided (game hours; villages): its model shows burnt houses and smoke for some days (docs/SETTLEMENTS.md SM5).
+    public float RaidedAt = -1e6f;
     /// Fiefs (F6): prosperity scales income and recruits; unrest above 70 raises rebels and at 100 the place defects.
     public float Prosperity = 50, Unrest;
     /// Buildings by id and level (towns and castles), and the one under construction until a time.

@@ -1297,6 +1297,8 @@ sealed partial class World : IDisposable
         public Vector2 Tag; // goes in the UV of foliage: (wind sway, leafiness) for the world shader
         /// Where the chimneys built into this mesh smoke (gathered into `World.Chimneys`).
         public readonly List<Vector3> Chimneys = new();
+        /// Where fires built into this mesh burn (a siege camp's, a raided village's): they always smoke (`World.Fires`).
+        public readonly List<Vector3> Fires = new();
 
         /// Lay another mesh (a tile built on its own) onto this one; its tag carries on as if built here.
         public void Append(Mesh other)

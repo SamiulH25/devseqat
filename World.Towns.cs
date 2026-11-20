@@ -27,6 +27,7 @@ sealed partial class World
             Building(m, p, st, lot, lr);
         }
         Works(m, p, st, s);
+        Siege(m, p, st, s);
         Flags(m, s, tops, 1.1f, 0.9f, p.Front + 2.2f, 1);
     }
 
@@ -49,8 +50,10 @@ sealed partial class World
             if (!tower[i]) continue;
             float outward = MathF.Atan2(ring[i].Y - p.Pos.Y, ring[i].X - p.Pos.X);
             if (timber) { if (i % 2 == 0) TimberTower(m, st, Vector2.Lerp(ring[i], p.Pos, 0.05f), 0.5f * u, wallH * 1.55f * st.Tall, outward, u, r); }
-            else Tower(m, st, ring[i], towerR, wallH * 1.45f * st.Tall, outward, st.Round, st.Cap, col, coursed, u);
+            else Tower(m, st, ring[i], towerR, wallH * 1.45f * st.Tall * TopOf(s, i), outward, st.Round, CapOf(s, i, st.Cap), col, coursed, u);
         }
+        // A breach (SM5) opens in the longest stretch of one edge, chosen by the plan's seed among those it could be.
+        int breachAt = s.Battered == 3 ? (int)((uint)(p.Seed * 2654435761u >> 13) % (uint)n) : -1;
         for (int e = 0; e < n; e++)
         {
             Vector2 a = ring[e], b = ring[(e + 1) % n];
@@ -70,13 +73,19 @@ sealed partial class World
             }
             cuts.Sort();
             float from = 0;
+            var pieces = new List<(float From, float To)>();
             foreach (var (c0, c1) in cuts.Append((len + 2, len + 3)))
             {
                 float to = MathF.Min(c0, len);
-                if (to - from > 0.3f) Curtain(m, st, a + dir * from, a + dir * to, p.Pos, wallH, thick, col, u, r);
+                if (to - from > 0.3f) pieces.Add((from, to));
                 from = MathF.Max(from, c1);
             }
+            int widest = e == breachAt && pieces.Count > 0 && pieces.Max(x => x.To - x.From) > 3.5f ? pieces.IndexOf(pieces.MaxBy(x => x.To - x.From)) : -1;
+            if (e == breachAt && widest < 0) breachAt = (breachAt + 1) % n; // too short here: the next edge
+            for (int k = 0; k < pieces.Count; k++) Curtain(m, st, a + dir * pieces[k].From, a + dir * pieces[k].To, p.Pos, wallH, thick, col, u, r, breach: k == widest);
         }
+        if (!timber) TowerHeaps(m, p, st, s, ring, u, tower);
+        else BatteredHeaps(m, p, st, s, ring.Min(v => Vector2.Distance(v, p.Pos)));
         var tops = new List<Vector3>();
         foreach (var g in p.Gates)
         {

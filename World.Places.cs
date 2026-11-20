@@ -17,6 +17,23 @@ sealed partial class World
         public VertexPNCT[]? Fresh; // built, waiting to go up to the GPU
         public VertexBuffer? Vb;
         public int Tris;
+        public Vector3[] Chimneys = Array.Empty<Vector3>(), Fires = Array.Empty<Vector3>();
+    }
+
+    int baseChimneys;
+    /// The fires burning at the places (a siege camp's, a raided village's), as last built; `SmokeVersion` counts changes.
+    public Vector3[] Fires { get; private set; } = Array.Empty<Vector3>();
+    /// Every chimney (the world's and the places'), as last built: a fresh array each time, so map life may read it while
+    /// the main thread swaps in the next.
+    public Vector3[] ChimneysNow { get; private set; } = Array.Empty<Vector3>();
+    public int SmokeVersion { get; private set; }
+
+    /// Gather the chimneys and fires of all the places' tiles as built now.
+    void PublishSmoke()
+    {
+        ChimneysNow = Chimneys.Take(baseChimneys).Concat(placeTiles.SelectMany(x => x.Chimneys)).ToArray();
+        Fires = placeTiles.SelectMany(x => x.Fires).ToArray();
+        SmokeVersion++;
     }
 
     readonly List<PlaceTile> placeTiles = new();
@@ -40,13 +57,14 @@ sealed partial class World
             placeTiles.Add(tile);
         }
         foreach (var p in t.Places) placeShown[p.Id] = stateOf?.Invoke(p.Id) ?? PlaceState.None;
-        var chimneys = new List<Vector3>[placeTiles.Count];
-        Parallel.For(0, placeTiles.Count, i => chimneys[i] = BuildPlaceTile(placeTiles[i]));
-        foreach (var c in chimneys) Chimneys.AddRange(c);
+        baseChimneys = Chimneys.Count;
+        Parallel.For(0, placeTiles.Count, i => BuildPlaceTile(placeTiles[i]));
+        foreach (var tile in placeTiles) Chimneys.AddRange(tile.Chimneys);
+        PublishSmoke();
     }
 
-    /// Build one tile's places into its `Fresh` mesh; returns their chimneys.
-    List<Vector3> BuildPlaceTile(PlaceTile tile)
+    /// Build one tile's places into its `Fresh` mesh, with their chimneys and fires.
+    void BuildPlaceTile(PlaceTile tile)
     {
         var m = new Mesh();
         foreach (var p in tile.Plans) Place(m, p, placeShown[p.Id], new Random(p.Seed));
@@ -54,8 +72,9 @@ sealed partial class World
         foreach (var v in m.V) { min = Vector3.Min(min, v.Position); max = Vector3.Max(max, v.Position); }
         tile.Box = m.V.Count > 0 ? new BoundingBox(min - new Vector3(1.5f), max + new Vector3(1.5f)) : default;
         tile.Tris = m.V.Count / 3;
+        tile.Chimneys = m.Chimneys.ToArray();
+        tile.Fires = m.Fires.ToArray();
         tile.Fresh = m.V.ToArray();
-        return m.Chimneys;
     }
 
     /// Compare each place's state with the one it was built in, and rebuild the tiles of those that changed on a worker
@@ -78,21 +97,24 @@ sealed partial class World
         }
         if (dirty.Count == 0) return;
         placeTask = Task.Run(() => { foreach (var tile in dirty) BuildPlaceTile(tile); });
-        if (wait) { placeTask.Wait(); FlushPlaces(); }
+        if (wait) { placeTask.Wait(); FlushPlaces(); if (gd == null) PublishSmoke(); }
     }
 
     /// Send finished place meshes to the GPU (main thread).
     void FlushPlaces()
     {
         if (gd == null || placeTask is { IsCompleted: false }) return;
+        bool any = false;
         foreach (var tile in placeTiles)
         {
             if (tile.Fresh is not { } v) continue;
+            any = true;
             tile.Vb?.Dispose();
             tile.Vb = v.Length > 0 ? new VertexBuffer(gd, VertexPNCT.Decl, v.Length, BufferUsage.WriteOnly) : null;
             if (v.Length > 0) tile.Vb!.SetData(v);
             tile.Fresh = null;
         }
+        if (any) PublishSmoke();
     }
 
     /// Draw the places' tiles inside `view` with the effect pass already applied.
@@ -128,7 +150,9 @@ sealed partial class World
                     case 3: GreatHold(m, p, st, s, r, k); break;
                     default: MidHold(m, p, st, s, r, k); break;
                 }
+                if (p.Size == 1 || st.Defence == Defence.Palisade) BatteredHeaps(m, p, st, s, p.Radius * 0.85f);
                 Works(m, p, st, s);
+                Siege(m, p, st, s);
                 break;
         }
         m.Tag = Vector2.Zero;
@@ -172,8 +196,9 @@ sealed partial class World
         bool coursed = Coursed(st);
         var tops = new List<Vector3>();
         for (int i = 0; i < n; i++)
-            tops.Add(Tower(m, st, ring[i], towerR, wallH * 1.45f * st.Tall, p.Front, st.Round, st.Cap, col, coursed, u));
-        for (int i = 0; i + 1 < n; i++) Curtain(m, st, Shorten(ring[i], ring[i + 1], towerR * 0.6f), Shorten(ring[i + 1], ring[i], towerR * 0.6f), p.Pos, wallH, thick, col, u, r);
+            tops.Add(Tower(m, st, ring[i], towerR, wallH * 1.45f * st.Tall * TopOf(s, i), p.Front, st.Round, CapOf(s, i, st.Cap), col, coursed, u));
+        for (int i = 0; i + 1 < n; i++) Curtain(m, st, Shorten(ring[i], ring[i + 1], towerR * 0.6f), Shorten(ring[i + 1], ring[i], towerR * 0.6f), p.Pos, wallH, thick, col, u, r, breach: s.Battered == 3 && i == BreachEdge(p, n));
+        TowerHeaps(m, p, st, s, ring, u);
         var gate = (ring[n - 1] + ring[0]) / 2;
         var along = Vector2.Normalize(ring[0] - ring[n - 1]);
         float gateHalf = 1.05f * u + towerR * 1.3f;
@@ -201,8 +226,9 @@ sealed partial class World
         int n = st.Round ? 7 : 6;
         float wallH = 2.4f * u * Rise(s), towerR = (st.Round ? 0.85f : 0.75f) * u;
         var ring = Enclosure(p, n, R, r, 0.1f);
-        for (int i = 0; i < n; i++) Tower(m, st, ring[i], towerR, wallH * 1.4f * st.Tall, p.Front, st.Round, st.Cap, col, coursed, u);
-        for (int i = 0; i + 1 < n; i++) Curtain(m, st, Shorten(ring[i], ring[i + 1], towerR * 0.6f), Shorten(ring[i + 1], ring[i], towerR * 0.6f), p.Pos, wallH, 0.6f * u, col, u, r);
+        for (int i = 0; i < n; i++) Tower(m, st, ring[i], towerR, wallH * 1.4f * st.Tall * TopOf(s, i), p.Front, st.Round, CapOf(s, i, st.Cap), col, coursed, u);
+        for (int i = 0; i + 1 < n; i++) Curtain(m, st, Shorten(ring[i], ring[i + 1], towerR * 0.6f), Shorten(ring[i + 1], ring[i], towerR * 0.6f), p.Pos, wallH, 0.6f * u, col, u, r, breach: s.Battered == 3 && i == BreachEdge(p, n));
+        TowerHeaps(m, p, st, s, ring, u);
         var gate = (ring[n - 1] + ring[0]) / 2;
         var along = Vector2.Normalize(ring[0] - ring[n - 1]);
         float gateHalf = 1.05f * u + towerR * 1.3f;

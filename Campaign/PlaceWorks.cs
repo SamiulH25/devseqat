@@ -11,6 +11,32 @@ public sealed partial class WorldMap
     readonly List<PlacePlan> basePlans = new();
     /// The field plots by cell (set by `BuildTerrain` before the places are planned): no lot stands in a field.
     Dictionary<(int, int), List<FieldPlot>> placeFields = new();
+    /// Trees, bushes and rocks by 4-unit cell (set by `BuildTerrain` before the places are planned): a siege camp pitches
+    /// round them, since nothing is cleared for it.
+    Dictionary<(int, int), List<Vector2>> placeTrees = new();
+
+    /// The cover a camp keeps clear of, by cell (`placeTrees`).
+    static Dictionary<(int, int), List<Vector2>> TreeCells(IEnumerable<Foliage> foliage)
+    {
+        var cells = new Dictionary<(int, int), List<Vector2>>();
+        foreach (var f in foliage)
+        {
+            if (f.Kind is FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village or FoliageKind.Flowers or FoliageKind.Tussock or FoliageKind.Heather or FoliageKind.Marram) continue;
+            var key = ((int)MathF.Floor(f.Pos.X / 4), (int)MathF.Floor(f.Pos.Y / 4));
+            if (!cells.TryGetValue(key, out var l)) cells[key] = l = new List<Vector2>();
+            l.Add(f.Pos);
+        }
+        return cells;
+    }
+
+    bool NearTree(Vector2 c, float within)
+    {
+        int cx = (int)MathF.Floor(c.X / 4), cy = (int)MathF.Floor(c.Y / 4);
+        for (int i = -1; i <= 1; i++)
+            for (int j = -1; j <= 1; j++)
+                if (placeTrees.TryGetValue((cx + i, cy + j), out var l) && l.Any(q => Vector2.DistanceSquared(q, c) < within * within)) return true;
+        return false;
+    }
 
     /// The sites' sizes, in `PlaceState.WorkIds` order (frontage, depth).
     static readonly (float W, float D)[] WorkSize = { (3.6f, 1.3f), (2.8f, 1.7f), (4.0f, 2.2f), (3.6f, 2.6f), (2.6f, 1.6f), (2.4f, 1.8f), (1.2f, 1.2f), (1.9f, 1.1f) };
@@ -30,7 +56,10 @@ public sealed partial class WorldMap
     PlacePlan LayCastle(PlacePlan p)
     {
         var lots = new List<Lot>();
-        LayWorks(p, lots, LocalRoads(p.Pos, p.Radius + 22), Neighbours(p), Array.Empty<Vector2>(), p.Pos);
+        var roads = LocalRoads(p.Pos, p.Radius + 22);
+        var near = Neighbours(p);
+        LayWorks(p, lots, roads, near, Array.Empty<Vector2>(), p.Pos);
+        LayCamp(p, lots, roads, near, Array.Empty<Vector2>());
         return p with { Lots = lots.ToArray() };
     }
 
@@ -80,6 +109,45 @@ public sealed partial class WorldMap
                 }
             }
             lots.Add(got ?? new Lot(p.Pos, 0, 0, 0, LotUse.Works));
+        }
+    }
+
+    /// Ground for a siege camp round a town or castle (SM5), shown while it is besieged: four spots for engines facing it,
+    /// then tents in clusters 3-7 out from its wall with a fire in each; off roads, water, fields, woods and the place's own
+    /// lots, on its own side of its neighbours. Nothing is cleared for it: a camp pitches where the trees allow.
+    void LayCamp(PlacePlan p, List<Lot> lots, List<(Vector2[] Pts, float Half)> roads, List<PlacePlan> near, Vector2[] ring)
+    {
+        var r = new Random(p.Seed ^ 0x51e6);
+        bool walled = ring.Length >= 3;
+        float edge = walled ? ring.Max(v => Vector2.Distance(v, p.Pos)) : p.Radius;
+        bool Fits(Lot lot, float pad)
+        {
+            foreach (var c in lot.Corners.Append(lot.Pos))
+                if (Wet(c, 0.2f) || OnRoad(roads, c, 0.9f) || !Owns(p, near, c) || NearTree(c, 1.1f) || Vector2.Distance(c, p.Pos) < edge + 1.6f) return false;
+            return !lots.Any(o => o.W > 0 && Lot.Overlap(o, lot, pad));
+        }
+        int engines = 0;
+        for (int i = 0; i < 80 && engines < 4; i++)
+        {
+            var at = p.Pos + PlacePlan.Dir(p.Front + 0.7f + i * 2.39996f) * (edge + 4.0f + i * 0.04f);
+            var lot = new Lot(at, Lot.Facing(Vector2.Normalize(p.Pos - at + new Vector2(1e-5f, 0))), 2.0f, 2.0f, LotUse.Engine);
+            if (Fits(lot, 0.6f)) { lots.Add(lot); engines++; }
+        }
+        int tents = 0, clusters = 0;
+        for (int i = 0; i < 60 && clusters < 4; i++)
+        {
+            var mid = p.Pos + PlacePlan.Dir(p.Front + 1.9f + i * 2.39996f) * (edge + 4.5f + r.NextSingle() * 2.0f);
+            var fire = new Lot(mid, 0, 0.5f, 0.5f, LotUse.Fire);
+            if (!Fits(fire, 0.9f)) continue;
+            lots.Add(fire);
+            clusters++;
+            for (int k = 0, got = 0; k < 24 && got < 5 && tents < 20; k++)
+            {
+                float a = k * 2.39996f + r.NextSingle() * 0.4f;
+                var at = mid + PlacePlan.Dir(a) * (1.3f + r.NextSingle() * 1.4f);
+                var tent = new Lot(at, Lot.Facing(Vector2.Normalize(mid - at + new Vector2(1e-5f, 0))), 1.2f, 1.2f, LotUse.Camp);
+                if (Fits(tent, 0.25f)) { lots.Add(tent); got++; tents++; }
+            }
         }
     }
 

@@ -82,6 +82,8 @@ sealed partial class MapScreen
     bool follow = true, pendingClick;
     /// Staged place shots: the map alone, no parties and no interface.
     bool bare;
+    /// Place shots that show the life about a place (its smoke): a siege, a raid (SM5).
+    public bool ShotLife;
     /// The camera starts pulled back far enough to show a province and its neighbours on the (much larger) world map.
     float yaw = MathHelper.PiOver2, pitch = 0.95f, zoom = 170, time;
     Vector2 focus;
@@ -122,14 +124,22 @@ sealed partial class MapScreen
     {
         if (id < 0 || id >= c.S.Settlements.Count) return PlaceState.None;
         var s = c.S.Settlements[id];
-        int works = 0;
+        int works = 0, besieger = -1, engines = 0;
         for (int i = 0; i < PlaceState.WorkIds.Length; i++) if (Campaign.Level(s, PlaceState.WorkIds[i]) > 0) works |= 1 << i;
+        if (s.Besieged && c.S.Parties.FirstOrDefault(p => p.SiegeTarget == s.Id && !p.Down) is Party camp) // SM5: the camp in its colours, its engines
+        {
+            besieger = Style.PaletteOf(c.SideOf(camp));
+            foreach (var w in c.ReadyWorks(camp)) { int e = Array.IndexOf(PlaceState.EngineIds, w); if (e >= 0) engines |= 1 << e; }
+        }
         return new PlaceState(s.Kind == SettlementKind.Village ? -1 : s.Owner >= 0 && s.Owner == c.Player.Id ? 2 : Style.PaletteOf(s.Faction),
-            PlaceState.WealthOf(s.Prosperity), works, Math.Clamp(Campaign.Level(s, "walls"), 0, 3));
+            PlaceState.WealthOf(s.Prosperity), works, Math.Clamp(Campaign.Level(s, "walls"), 0, 3),
+            PlaceState.BatteredOf(s.Battered), besieger, engines, s.Kind == SettlementKind.Village && c.S.Hours - s.RaidedAt < RaidSmokeHours);
     }
 
     const float MapTreeScale = 0.72f;
-    int placeTick;
+    /// How long a raided village shows its burnt houses and smoke (SM5).
+    const float RaidSmokeHours = 96;
+    int placeTick, smokeSeen;
 
     /// Show a campaign; `prepared` is its terrain and world from `Prepare` if already built.
     public void Open(Campaign c, Prepared? prepared = null)
@@ -142,7 +152,8 @@ sealed partial class MapScreen
         world = p.World;
         world.Upload(gd);
         FinishLife(); // the worker still on the old map's life must be done first
-        life = new MapLife(terrain, terrain.Seed) { Chimneys = world.Chimneys };
+        life = new MapLife(terrain, terrain.Seed) { Chimneys = world.ChimneysNow, Fires = world.Fires };
+        smokeSeen = world.SmokeVersion;
         lock (lifeLock) { lifeMesh = default; lifeFresh = false; }
         atlasIds = null;
         world.SetFog(260, 700);
@@ -176,6 +187,12 @@ sealed partial class MapScreen
         UpdateLife(run);
         FrameProf.End("mapLife");
         if (++placeTick % 15 == 0) world?.UpdatePlaces(id => PlaceStateOf(C, id)); // a place that changed hands is rebuilt (World.Places.cs)
+        if (world != null && life != null && world.SmokeVersion != smokeSeen) // its chimneys and fires smoke from the new build
+        {
+            smokeSeen = world.SmokeVersion;
+            life.Chimneys = world.ChimneysNow;
+            life.Fires = world.Fires;
+        }
         if (ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released) pendingClick = true;
         if (Pressed(Keys.Enter)) Tips.Dismiss();
         Tips.Show("welcome", $"Welcome, captain. Click the map to march; click a town or village to enter it.\nBrigands are close by: click their banner to ride at them, or let them come to you.\n{Pan()} pans, the wheel zooms, {ctl.First(Act.Pause)} pauses. {ctl.First(Act.PartyScreen)} opens your company. {ctl.First(Act.Help)} lists the keys.");
@@ -554,7 +571,7 @@ sealed partial class MapScreen
             if (fresh) world.SetExtra(made.V, made.Tris);
         }
         else world.ExtraTris = 0;
-        if (bare) world.ExtraTris = 0; // place shots: the models alone, no beasts, folk or smoke
+        if (bare && !ShotLife) world.ExtraTris = 0; // place shots: the models alone, no beasts, folk or smoke
         if (shaded)
         {
             var sh = shading!;

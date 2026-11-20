@@ -42,9 +42,15 @@ public sealed record PlacePlan(int Id, SettlementKind Kind, int Size, string Sty
 }
 
 /// What a place's model shows of its state (docs/SETTLEMENTS.md): the colours its flags fly (a `Style.Sides` palette; -1 none),
-/// how well it does (`Wealth`: 0 poor, 1 middling, 2 rich), the works it has built (a bit per `WorkIds`) and its walls' level.
-public readonly record struct PlaceState(int Palette, int Wealth = 1, int Works = 0, int Walls = 0)
+/// how well it does (`Wealth`: 0 poor, 1 middling, 2 rich), the works it has built (a bit per `WorkIds`) and its walls' level;
+/// (SM5) how battered its walls are (`Battered`: 0 whole, 1-2 knocked about, 3 breached), the colours of a camp besieging it
+/// (`Besieger`, -1 none) and the engines it has ready (a bit per `EngineIds`), and whether it burns (a village just raided).
+public readonly record struct PlaceState(int Palette, int Wealth = 1, int Works = 0, int Walls = 0, int Battered = 0, int Besieger = -1, int Engines = 0, bool Burning = false)
 {
+    /// The siege engines a camp shows: mangonel and trebuchet on their spots, the ram at the gate, the tower by the wall.
+    public static readonly string[] EngineIds = { "mangonel", "trebuchet", "ram", "tower" };
+    /// The band of a settlement's `Battered` (0-1; 1 is a breach).
+    public static int BatteredOf(float battered) => battered >= 1 ? 3 : battered >= 0.6f ? 2 : battered >= 0.2f ? 1 : 0;
     public static readonly PlaceState None = new(-1);
     /// The buildings a model shows, in the order of their sites (`LotUse.Works` lots, one each); walls show in the circuit.
     public static readonly string[] WorkIds = { "barracks", "granary", "yard", "stables", "chapel", "kennel", "watchtower", "market" };

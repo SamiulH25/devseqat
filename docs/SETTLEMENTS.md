@@ -1,6 +1,6 @@
 # Settlements: the town and castle models overhaul (SM1-SM7)
 
-Status: **planned 2026-11-20**, SM1-SM4 built 2026-11-20 (see their "As built"), SM5 next. Owner's brief (2026-11-20): overhaul the town and castle models.
+Status: **planned 2026-11-20**, SM1-SM5 built 2026-11-20 (see their "As built"), SM6 next. Owner's brief (2026-11-20): overhaul the town and castle models.
 Owner's answers:
 1. **Scope:** towns, castles in all three sizes and villages on the campaign map, and the siege battlefield (the wall,
    towers, gate and houses you fight over) made to match.
@@ -216,6 +216,30 @@ small things (market stalls, wells, cranes, carts, stacks, gardens, fences).
 - **Besieged:** a siege camp round the place (tents in the besieger's colours, engines from `Party.SiegeWorks`), smoke and
   fires (the map's chimney smoke).
 - **Raided** villages: burnt roofs and smoke for some days after a raid (needs a saved raid time on the village).
+
+**As built (2026-11-20).**
+- State (`PlaceState`): `Battered` (`BatteredOf`: 0 under 0.2, 1, 2 from 0.6, 3 at 1 = a breach), `Besieger` (the camp's
+  palette: `Style.PaletteOf(SideOf(party))` of the party whose `SiegeTarget` it is), `Engines` (a bit per
+  `PlaceState.EngineIds` among its `ReadyWorks`), `Burning` (a village raided in the last 96 hours: `Settlement.RaidedAt`,
+  a new save field set in `Campaign.Raided`, which every raid, forage and beast's plunder goes through).
+- Battered (`World.Siege.cs`): a quarter of the towers (half when band 2-3) lose their caps and a fifth of their height
+  (`Broken`, `CapOf`, `TopOf`), with rubble at their foot; at band 3 one curtain opens a cart-wide breach with rubble in and
+  before it (castles: an edge other than the front, `BreachEdge`; towns: the longest stretch of one edge). The broken
+  curtain is still built whole into a scratch mesh so the dice run as they would unbroken. Tower houses and the timber
+  peoples' holds only get rubble heaps (`BatteredHeaps`).
+- The camp stands on ground planned with the map (`WorldMap.LayCamp`): four engine spots 4 out from the wall facing it,
+  up to four clusters of tents round a fire 4.5-6.5 out (tents 1-20 a place, median 13), off roads, water, fields and
+  woods (`placeTrees`), on the place's own side of its neighbours; nothing is cleared for it. Tents are ridge tents or
+  round pavilions in the besieger's cloth, paled; a banner by the first fire. Mangonel, trebuchet and tower take the
+  engine spots as they are ready; the ram stands on the road before the gate.
+- Fires smoke (`MapLife.DrawSmoke`, every fire, five puffs and a flicker of flame): the places' chimneys and fires are
+  rebuilt with their tiles and published as fresh arrays (`World.ChimneysNow`, `World.Fires`, `SmokeVersion`), which
+  `MapScreen` swaps into map life (it runs on a worker). Suburb chimneys smoke too now.
+- Raided villages: every other house a charred shell (`Ruin` in `Charred`), the first three smoking; a nomad camp's burnt
+  tents are simply gone, their fires still smoking.
+- Not built: broken merlons along the curtains, scorch on the walls, a camp's palisade or ditch (contravallation).
+- Shots: `-siege` (a lord's camp with every engine ready, the wall breached) and `-raided`; these two show map life
+  (`MapScreen.ShotLife`) so the smoke can be judged.
 
 ### SM6: The siege battlefield
 - The assault field's wall, towers, gatehouse and the houses behind it in the defender's style (`BattleOptions.Style`, set
