@@ -18,12 +18,14 @@ partial class MapScreen
     /// What the picture of a town is made of: its people's way of building, the country, water, snow, the hour.
     TownLook LookOf(Settlement s, float hour)
     {
-        string build = s.Culture switch { "southern" => "white", "northern" => "log", "steppe" => "tent", _ => "timber" };
-        string country = s.Culture == "steppe" ? "Steppe" : C.S.Provinces[s.Province].Kind; // tents stand on open ground
-        string water = s.Culture == "league" ? "canal" : country == "Marsh" || C.Map.RiverDist(s.Pos) < 10 * C.Map.Spread ? "river" : "";
+        // On the drawn map a place's culture is its people (a subculture): the picture is painted by the realm culture it belongs
+        // to, and built the way that people builds (docs/SETTLEMENTS.md).
+        string people = Factions.PeopleOf(s.Culture), build = Architecture.Of(s.Culture).Build;
+        string country = build == "tent" ? "Steppe" : C.S.Provinces[s.Province].Kind; // tents stand on open ground
+        string water = people == "league" ? "canal" : country == "Marsh" || C.Map.RiverDist(s.Pos) < 10 * C.Map.Spread ? "river" : "";
         bool night = hour is >= 20 or < 5;
         bool snow = C.Winter ? !Lands.Of(country).Hot : country == "Tundra" && C.SeasonIndex != 1; // the barrens keep their snow; the sands have none
-        return new TownLook(s.Culture, build, country, water, snow, night, !night && hour >= 17);
+        return new TownLook(people, build, country, water, snow, night, !night && hour >= 17);
     }
 
     /// The colours of a town's picture: the sky by the hour, warmed by the south and cooled by snow; walls and roofs by how its people build.
@@ -107,7 +109,7 @@ partial class MapScreen
         rimLight = c.Rim;
         if (l.Build == "log") Palisade(p, ground - ui.U(28), c.Mid);
         else if (l.Build != "tent") TownWall(p, ground - ui.U(30), l.Build == "white" ? Color.Lerp(c.Mid, c.Wall, 0.4f) : c.Mid, l.Night, c.Lit, cloth, rng);
-        Landmark(p, s.Culture, ground, c.Mid, l.Night, c.Lit, cloth, t);
+        Landmark(p, l.Culture, ground, c.Mid, l.Night, c.Lit, cloth, t);
         // A back row of houses, darker and higher, behind the front row: the town has depth.
         var back = c with { Wall = Color.Lerp(c.Wall, c.Mid, 0.6f), Roof = Color.Lerp(c.Roof, c.Mid, 0.6f) };
         HouseRow(p.X, p.Right, ground - ui.U(6), l, back, new Random(s.Id * 13 + 5), t, false);

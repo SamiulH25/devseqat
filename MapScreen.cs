@@ -80,6 +80,8 @@ sealed partial class MapScreen
     /// The town tabs a NextStep hint may open on arrival.
     static readonly HashSet<string> tabFor = new() { "TRAIN", "RECRUIT", "MARKET", "FOOD", "REST", "CONTRACT" };
     bool follow = true, pendingClick;
+    /// Staged place shots: the map alone, no parties and no interface.
+    bool bare;
     /// The camera starts pulled back far enough to show a province and its neighbours on the (much larger) world map.
     float yaw = MathHelper.PiOver2, pitch = 0.95f, zoom = 170, time;
     Vector2 focus;
@@ -111,10 +113,20 @@ sealed partial class MapScreen
     {
         c.Map.Season = c.SeasonIndex;
         var terrain = c.Map.BuildTerrain();
-        return new Prepared(terrain, new World(terrain, treeScale: MapTreeScale));
+        return new Prepared(terrain, new World(terrain, treeScale: MapTreeScale, placeState: id => PlaceStateOf(c, id)));
+    }
+
+    /// What a settlement's model shows of it (docs/SETTLEMENTS.md): its holder's colours on its flags (gold for your own fiefs;
+    /// villages fly none).
+    static PlaceState PlaceStateOf(Campaign c, int id)
+    {
+        if (id < 0 || id >= c.S.Settlements.Count) return PlaceState.None;
+        var s = c.S.Settlements[id];
+        return new PlaceState(s.Kind == SettlementKind.Village ? -1 : s.Owner >= 0 && s.Owner == c.Player.Id ? 2 : Style.PaletteOf(s.Faction));
     }
 
     const float MapTreeScale = 0.72f;
+    int placeTick;
 
     /// Show a campaign; `prepared` is its terrain and world from `Prepare` if already built.
     public void Open(Campaign c, Prepared? prepared = null)
@@ -160,6 +172,7 @@ sealed partial class MapScreen
         FrameProf.Begin("mapLife");
         UpdateLife(run);
         FrameProf.End("mapLife");
+        if (++placeTick % 15 == 0) world?.UpdatePlaces(id => PlaceStateOf(C, id)); // a place that changed hands is rebuilt (World.Places.cs)
         if (ms.LeftButton == ButtonState.Pressed && pms.LeftButton == ButtonState.Released) pendingClick = true;
         if (Pressed(Keys.Enter)) Tips.Dismiss();
         Tips.Show("welcome", $"Welcome, captain. Click the map to march; click a town or village to enter it.\nBrigands are close by: click their banner to ride at them, or let them come to you.\n{Pan()} pans, the wheel zooms, {ctl.First(Act.Pause)} pauses. {ctl.First(Act.PartyScreen)} opens your company. {ctl.First(Act.Help)} lists the keys.");
@@ -538,6 +551,7 @@ sealed partial class MapScreen
             if (fresh) world.SetExtra(made.V, made.Tris);
         }
         else world.ExtraTris = 0;
+        if (bare) world.ExtraTris = 0; // place shots: the models alone, no beasts, folk or smoke
         if (shaded)
         {
             var sh = shading!;
@@ -620,7 +634,7 @@ sealed partial class MapScreen
             }
             // A party in a town stands before its gate (on the near side as the map first faces), not on the roofs.
             var at = p.Pos;
-            if (!p.Moving && C.SettlementAt(p.Pos, 3) is { } s) at = s.Pos + new Vector2(0, s.Kind == SettlementKind.Village ? -5.5f : -9.5f);
+            if (!p.Moving && C.SettlementAt(p.Pos, 3) is { } s) at = C.Map.Plans.TryGetValue(s.Id, out var plan) ? plan.Doorstep : s.Pos + new Vector2(0, s.Kind == SettlementKind.Village ? -5.5f : -9.5f);
             var moved = at - u.Pos;
             bool moving = moved.LengthSquared() > 1e-6f && moved.LengthSquared() < 4;
             u.Pos = at;
@@ -696,7 +710,7 @@ sealed partial class MapScreen
     {
         sprites.N = 0;
         puppet.Begin(viewer);
-        foreach (var u in bearers.Values) if (!u.Fled) puppet.Draw(u, terrain.Height(u.Pos));
+        if (!bare) foreach (var u in bearers.Values) if (!u.Fled) puppet.Draw(u, terrain.Height(u.Pos));
     }
 
     void DrawSprites(Effect fx, string technique)
@@ -799,6 +813,13 @@ sealed partial class MapScreen
             case "saveas": saves.Show(SaveScreen.Use.Save, C.S); panel = PanelKind.Saves; break;
             case "load": saves.Show(SaveScreen.Use.Load, C.S); panel = PanelKind.Saves; break;
             case "close": panel = PanelKind.None; zoom = 60; pitch = 0.7f; break;
+            case "place" when s != null: // a settlement close up, from before its gate a little aside (docs/SETTLEMENTS.md)
+            {
+                panel = PanelKind.None; follow = false; bare = true; focus = s.Pos; pitch = 0.6f;
+                zoom = s.Kind == SettlementKind.Town ? 52 : s.Kind == SettlementKind.Village ? 28 : s.Size switch { 1 => 24, 3 => 40, _ => 31 };
+                if (C.Map.Plans.TryGetValue(s.Id, out var plan)) yaw = plan.Front + MathF.PI + 0.55f;
+                break;
+            }
             case "life": // a pasture and its beasts up close (WL4)
                 panel = PanelKind.None; follow = false; zoom = 46; pitch = 0.72f;
                 focus = terrain.Fields.Where(f => f.Kind == FieldKind.Pasture).OrderBy(f => Vector2.Distance(f.Center, C.Player.Pos)).Select(f => f.Center).DefaultIfEmpty(C.Player.Pos).First();

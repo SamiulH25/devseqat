@@ -55,6 +55,11 @@ sealed class ScreenHost : Game
     /// and a second campaign's, then saves the save screens: `campaign-save-as.png`, `campaign-load.png`.
     static readonly bool savesOnly = Environment.GetEnvironmentVariable("IRONFIELD_SAVES_ONLY") == "1";
     int saveShot;
+    /// Debug: IRONFIELD_PLACES=1 (or a filter: a style id's part, e.g. "steppe") with IRONFIELD_CAMPAIGN_SHOTS saves only the
+    /// settlements close up, one of each style and kind, labels and parties hidden (docs/SETTLEMENTS.md).
+    static readonly string? placesOnly = Environment.GetEnvironmentVariable("IRONFIELD_PLACES");
+    List<(string Name, Settlement Place)>? placeShots;
+    int placeShot;
     string? pendingShot;
     KeyboardState kb;
     MouseState ms;
@@ -455,6 +460,24 @@ sealed class ScreenHost : Game
         throw new InvalidOperationException("campaign shots staging refused: " + why);
     }
 
+    /// The settlements close up (IRONFIELD_PLACES): the first place of each style and kind, by day.
+    void PlaceShots(Campaign c)
+    {
+        placeShots ??= Architecture.All.Where(a => placesOnly == "1" || a.Id.Contains(placesOnly!))
+            .SelectMany(a => new (string Kind, Func<Settlement, bool> Is)[]
+            {
+                ("town", t => t.Kind == SettlementKind.Town), ("tower", t => t.Size == 1), ("castle", t => t.Size == 2),
+                ("great", t => t.Size == 3), ("village", t => t.Kind == SettlementKind.Village),
+            }.Select(k => ($"place-{a.Id}-{k.Kind}", c.S.Settlements.FirstOrDefault(t => t.Culture == a.Id && k.Is(t)))))
+            .Where(x => x.Item2 != null).Select(x => (x.Item1, x.Item2!)).ToList();
+        if (placeShot >= placeShots.Count) { Exit(); return; }
+        var (name, place) = placeShots[placeShot++];
+        c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 11.5;
+        map.Stage("place", place);
+        pendingShot = name;
+        shotFrames = 0;
+    }
+
     /// The save screens over the map (IRONFIELD_SAVES_ONLY): a quicksave and a named save of this campaign, another campaign's.
     void SaveShots(Campaign c)
     {
@@ -475,6 +498,7 @@ sealed class ScreenHost : Game
         var c = campaign!;
         if (shotFrames < 20 || pendingShot != null) return;
         void Shot(string name) { pendingShot = name; shotFrames = 0; cStage++; }
+        if (placesOnly != null) { PlaceShots(c); return; }
         string[] stages = { "farm", "life", "village", "road", "night", "map", "river", "lands-Desert", "lands-Tundra", "lands-Taiga", "lands-Highlands",
             "lands-Steppe", "lands-Coast", "lands-Hills", "lands-Meadow", "lands-Oasis", "lands-Forest", "lands-Badlands", "port", "sail", "harbour", "holds" }; // and its ports and ships (WM7), and a tower house (HD5)
         if (cStage == 2 && lifeShots < (c.Map.Designed ? stages.Length : 7)) // the land and its life (docs/archive/WORLD_LIFE.md WL3-WL5), in spring before the year turns; on the drawn map each kind of country (WM3, docs/WORLD_DRESS.md)

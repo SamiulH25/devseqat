@@ -60,7 +60,7 @@ sealed partial class World : IDisposable
 
     /// The CPU half: every mesh and map image, with no GraphicsDevice, so it can run off the main thread (the campaign map's
     /// takes seconds; `MapScreen.Prepare` makes it behind the loading screen). Call `Upload` on the main thread before drawing.
-    public World(Terrain terrain, float treeScale = 1)
+    public World(Terrain terrain, float treeScale = 1, Func<int, PlaceState>? placeState = null)
     {
         t = terrain;
         this.treeScale = treeScale;
@@ -71,6 +71,7 @@ sealed partial class World : IDisposable
         var (mini, miniSize) = BuildMinimap(); Mark("minimap", v.Length);
         var (ground, groundSize) = BuildGroundMap(); Mark("ground map", v.Length);
         baked = new Baked(v, idx, BuildFoliage(), sky, mini, miniSize, ground, groundSize);
+        BuildPlaces(placeState); Mark("places", markVerts + placeTiles.Sum(x => x.Tris * 3)); // the settlements (World.Places.cs)
         terrainTris = idx.Length / 3;
         skyTris = sky.Length / 3;
     }
@@ -90,6 +91,7 @@ sealed partial class World : IDisposable
         Bytes(System.Runtime.InteropServices.MemoryMarshal.AsBytes(b.Ground.AsSpan()));
         foreach (var (start, tris, box) in tiles.Concat(grassTiles)) { Bytes(BitConverter.GetBytes(start)); Bytes(BitConverter.GetBytes(tris)); Bytes(BitConverter.GetBytes(box.Min.X + box.Max.Y)); }
         foreach (var c in Chimneys) Bytes(BitConverter.GetBytes(c.X + c.Y * 3 + c.Z * 7));
+        foreach (var tile in placeTiles) if (tile.Fresh is { } pv) Bytes(System.Runtime.InteropServices.MemoryMarshal.AsBytes(pv.AsSpan()));
         Bytes(BitConverter.GetBytes(alwaysStart)); Bytes(BitConverter.GetBytes(alwaysTris));
         return h;
     }
@@ -98,9 +100,10 @@ sealed partial class World : IDisposable
     public (int Tiles, int TileVerts, int AlwaysVerts, long Bytes) Size()
     {
         var b = baked ?? throw new InvalidOperationException("only before Upload");
-        int tileVerts = tiles.Sum(x => x.Tris * 3) + grassTiles.Sum(x => x.Tris * 3);
-        long bytes = (b.Terrain.Length + b.Foliage.Length) * 36L + b.Indices.Length * 4L + b.Sky.Length * 16L;
-        return (tiles.Count + grassTiles.Count, tileVerts, alwaysTris * 3, bytes);
+        int placeVerts = placeTiles.Sum(x => x.Tris * 3);
+        int tileVerts = tiles.Sum(x => x.Tris * 3) + grassTiles.Sum(x => x.Tris * 3) + placeVerts;
+        long bytes = (b.Terrain.Length + b.Foliage.Length + placeVerts) * 36L + b.Indices.Length * 4L + b.Sky.Length * 16L;
+        return (tiles.Count + grassTiles.Count + placeTiles.Count, tileVerts, alwaysTris * 3, bytes);
     }
 
     /// How long each part of the CPU build took and the vertices it made (`--world-bench`).
@@ -129,6 +132,7 @@ sealed partial class World : IDisposable
         if (wide) terrainIb.SetData(b.Indices);
         else terrainIb.SetData(b.Indices.Select(i => (ushort)i).ToArray());
         foliageVb = FoliageBuffer(b.Foliage);
+        FlushPlaces();
         skyVb = new VertexBuffer(gd, VertexPositionColor.VertexDeclaration, b.Sky.Length, BufferUsage.WriteOnly);
         skyVb.SetData(b.Sky);
         Minimap = Image(b.Minimap, b.MinimapSize);
@@ -201,6 +205,7 @@ sealed partial class World : IDisposable
         foliageFx.View = view; foliageFx.Projection = proj;
         foliageFx.CurrentTechnique.Passes[0].Apply();
         DrawFoliage(drawFrustum, false);
+        DrawPlaces(drawFrustum);
     }
 
     /// Fog distances for the fixed-function path (the campaign map sees much further than a battle).
@@ -256,6 +261,7 @@ sealed partial class World : IDisposable
         fx.CurrentTechnique = fx.Techniques[foliage];
         fx.CurrentTechnique.Passes[0].Apply();
         DrawFoliage(view, shadow);
+        DrawPlaces(view);
         if (ExtraTris > 0)
         {
             int verts = ExtraTris * 3;
@@ -289,6 +295,8 @@ sealed partial class World : IDisposable
     public void Dispose()
     {
         terrainVb?.Dispose(); terrainIb?.Dispose(); foliageVb?.Dispose(); skyVb?.Dispose(); extraVb?.Dispose();
+        try { placeTask?.Wait(); } catch (AggregateException) { }
+        foreach (var tile in placeTiles) tile.Vb?.Dispose();
         detail?.Dispose(); Minimap?.Dispose(); GroundMap?.Dispose();
         terrainFx?.Dispose(); foliageFx?.Dispose(); skyFx?.Dispose();
     }
@@ -516,6 +524,7 @@ sealed partial class World : IDisposable
 
         void Item(Mesh m, Foliage f)
         {
+            if (t.Places.Count > 0 && f.Kind is FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village) return; // built as places (World.Places.cs)
             var rng = new Random(f.Seed);
             var b = new Vector3(f.Pos.X, t.Height(f.Pos), f.Pos.Y);
             switch (f.Kind)
@@ -594,7 +603,7 @@ sealed partial class World : IDisposable
     public (int Tiles, int Calls, int Tris) CameraCost { get; private set; }
     public (int Tiles, int Calls, int Tris) ShadowCost { get; private set; }
     public (int Camera, int Shadow) TerrainCost { get; private set; }
-    public string RenderCost => $"terrain {TerrainCost.Camera:N0}/{terrainTris:N0} tris, shadow {TerrainCost.Shadow:N0}; world {CameraCost.Tiles} tiles in {CameraCost.Calls} calls {CameraCost.Tris:N0} tris, shadow {ShadowCost.Tiles} tiles in {ShadowCost.Calls} calls {ShadowCost.Tris:N0} tris";
+    public string RenderCost => $"terrain {TerrainCost.Camera:N0}/{terrainTris:N0} tris, shadow {TerrainCost.Shadow:N0}; world {CameraCost.Tiles} tiles in {CameraCost.Calls} calls {CameraCost.Tris:N0} tris, shadow {ShadowCost.Tiles} tiles in {ShadowCost.Calls} calls {ShadowCost.Tris:N0} tris; places {PlaceCost.Tiles} tiles {PlaceCost.Tris:N0} tris";
 
     /// Draw the foliage tiles inside `view` (a camera's or the sun's frustum), then the water and grass. Visible tiles
     /// that lie next to each other in the buffer go out as one draw call.
@@ -1282,7 +1291,7 @@ sealed partial class World : IDisposable
     }
 
     /// Flat-shaded triangle soup with a few low-poly primitives.
-    internal sealed class Mesh
+    internal sealed partial class Mesh
     {
         public readonly List<VertexPNCT> V = new();
         public Vector2 Tag; // goes in the UV of foliage: (wind sway, leafiness) for the world shader

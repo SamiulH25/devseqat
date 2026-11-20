@@ -513,4 +513,35 @@ public static partial class SelfTest
         var wet = a.S.Parties.Where(q => !q.Down && m.InSea(q.Pos)).ToList();
         Check(wet.Count == 0, "nobody on the sea: " + string.Join(", ", wet.Select(q => $"{q.Name} at {q.Pos}")));
     }
+
+    /// Settlements as laid out for their models (docs/SETTLEMENTS.md SM1): every people has a style, every place a plan whose gate
+    /// faces a road and whose doorstep is dry ground outside it, nothing grows inside a footprint, and a place that changes
+    /// hands is rebuilt with its flags.
+    static void PlacesPlanned()
+    {
+        var subs = WorldDesign.Get().Subcultures.Select(c => c.Id).ToList();
+        var unstyled = subs.Concat(Factions.All.Select(f => f.Culture)).Where(c => !Architecture.Styled(c)).Distinct().ToList();
+        Check(unstyled.Count == 0, "every subculture and realm culture builds in a style: " + string.Join(", ", unstyled));
+        Check(Architecture.All.Select(a => a.Id).Distinct().Count() == Architecture.All.Count && Architecture.All.All(a => a.Build is "timber" or "white" or "log" or "tent"), "styles are unique and paint the tavern in a known way");
+        var c = Campaign.New(7, layout: WorldMap.DesignLayout);
+        var m = c.Map;
+        var t = m.BuildTerrain();
+        Check(t.Places.Count == m.Settlements.Count && m.Plans.Count == m.Settlements.Count, $"a plan for every settlement ({t.Places.Count} of {m.Settlements.Count})");
+        var roadless = t.Places.Where(p => p.Roads.Length == 0).ToList();
+        Console.WriteLine($"places: {t.Places.Count}, {roadless.Count} with no road, {t.Places.Count(p => p.Water.Length > 0)} by water; radius {t.Places.Min(p => p.Radius):0.0}-{t.Places.Max(p => p.Radius):0.0}");
+        Check(roadless.Count < t.Places.Count / 10, $"almost every place has a road out ({roadless.Count} without)");
+        Check(t.Places.Where(p => p.Roads.Length > 0).All(p => p.Front == p.Roads[0]), "the gate faces the main road");
+        var wet = t.Places.Where(p => m.Wet(p.Doorstep, 0.3f) || Vector2.Distance(p.Doorstep, p.Pos) <= p.Radius).ToList();
+        Check(wet.Count <= 2, "a party stands outside the gate on dry ground: " + string.Join(", ", wet.Select(p => m.Settlements[p.Id].Name)));
+        var inside = t.Foliage.Where(f => f.Kind is not (FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village)
+            && t.Places.Any(p => Vector2.Distance(p.Pos, f.Pos) < p.Radius)).ToList();
+        Check(inside.Count == 0, $"nothing grows inside a place ({inside.Count} pieces)");
+        var w = new World(t, 0.72f, id => PlaceState.None);
+        int bare = w.PlaceVerts;
+        w.UpdatePlaces(id => new PlaceState(m.Settlements[id].Kind == SettlementKind.Village ? -1 : 1), wait: true);
+        int flown = w.PlaceVerts;
+        w.UpdatePlaces(id => PlaceState.None, wait: true);
+        Console.WriteLine($"places mesh: {bare:N0} verts bare, {flown:N0} with flags");
+        Check(flown > bare && w.PlaceVerts == bare, "flags go up when a place has a holder and come down with him, the place rebuilt each time");
+    }
 }
