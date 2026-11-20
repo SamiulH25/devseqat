@@ -55,6 +55,7 @@ partial class BattleScreen
     {
         var gd = GraphicsDevice;
         bool shadows = quality == Quality.High;
+        bool do3D = use3DPixel && puppet3D != null;
         sh.FogFrom = MathF.Max(0, Vector3.Distance(eye, focusPoint) - 12); // fog measured from just short of the ground in view
         sh.CutEye = new Vector4(eye, Vector2.Distance(new(eye.X, eye.Z), new(focusPoint.X, focusPoint.Z)) * MathHelper.SmoothStep(0, 1, blend)); // set before the sun's pass: thinned trees cast no shadow
         if (shadows)
@@ -73,9 +74,25 @@ partial class BattleScreen
             sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, realTime, false, 0);
             sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
             DrawSpritesShaded(sh.Sprite, "SpriteShadow");
+            if (do3D && units3D.N > 0)
+            {
+                sh.Setup(sh.Unit3D, Matrix.Identity, sh.LightEye, realTime, false, 0);
+                sh.Unit3D.Parameters["ShadowMap"].SetValue((Texture2D?)null);
+                sh.Unit3D.Parameters["View"].SetValue(sh.LightView);
+                DrawUnits3D(sh.Unit3D, "Unit3DShadow");
+            }
         }
         gd.Textures[1] = null;
-        gd.SetRenderTarget(sh.Scene());
+        RenderTarget2D? normDepth = null;
+        if (do3D)
+        {
+            var (pCol, pNd) = sh.PixelTargets(pixelScale);
+            normDepth = pNd;
+            gd.SetRenderTarget(pNd);
+            gd.Clear(Color.Transparent);
+            gd.SetRenderTarget(pCol);
+        }
+        else gd.SetRenderTarget(sh.Scene());
         gd.Clear(World.Horizon);
         MenMap(blend);
         sh.GroundMap = TrampleTexture(); sh.GroundSize = TrampleSize; sh.NearDetail = true;
@@ -87,6 +104,15 @@ partial class BattleScreen
         sh.GroundMap = null; sh.NearDetail = false; sh.Cut = 0; sh.CutEye = Vector4.Zero;
         DrawBlobs(shadows ? 0.4f : 1); // with real shadows the blobs only add contact darkening
         BuildSprites(view, false);
+        if (do3D && units3D.N > 0)
+        {
+            var (pCol, pNd) = sh.PixelTargets(pixelScale);
+            gd.SetRenderTargets(pCol, pNd);
+            sh.Setup(sh.Unit3D, view * proj, eye, realTime, shadows, 0.45f);
+            sh.Unit3D.Parameters["View"].SetValue(view);
+            DrawUnits3D(sh.Unit3D, "Unit3D");
+            gd.SetRenderTarget(pCol);
+        }
         sh.Setup(sh.Sprite, view * proj, eye, realTime, shadows, 0.45f);
         DrawSpritesShaded(sh.Sprite, "Sprite");
         DrawSoft(sh.Sprite);
@@ -94,7 +120,10 @@ partial class BattleScreen
         Array.Clear(sh.Glow); // the lights are this battle's alone (the map shares the shaders)
         DrawLines();
         var (awe, moment) = PostMoment();
-        sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0, awe, moment, warpNow);
+        if (do3D && normDepth != null)
+            sh.PixelPostToScreen(pixelScale, Sky.Grade, 0, awe, moment, warpNow);
+        else
+            sh.PostToScreen(fxaa: Settings.Current.Fxaa, Sky.Grade, host.Quality == Quality.High ? 0.5f : 0, awe, moment, warpNow);
     }
 
     readonly BoundingFrustum spriteFrustum = new(Matrix.Identity);
@@ -340,6 +369,9 @@ partial class BattleScreen
         }
         foreach (int idx in corpseTouched) corpseGrid[idx] = 0;
         corpseTouched.Clear();
+        bool do3D = use3DPixel && puppet3D != null && quality != Quality.Low && shading != null;
+        units3D.N = 0;
+        if (do3D) { puppet3D!.Now = battle.Time; puppet3D.Winner = battle.Winner; }
         foreach (var u in battle.Units)
         {
             if (u.Fled) continue;
@@ -351,6 +383,13 @@ partial class BattleScreen
             float rear = RearOf(u, !forSun);
             float seenRad = u.Dead ? 5f : MathF.Max(u.Mounted ? 2.5f : 1.5f, u.Type.Size * (u.Type.Flying ? 3.5f : 1.5f));
             if (!Seen(u.Pos, h + (u.Dead ? 2.5f : u.Altitude), seenRad)) continue; // rising spirits or a wyvern on the wing
+            if (do3D)
+            {
+                float d2 = Vector2.DistanceSquared(u.Pos, eye2);
+                puppet3D!.Detail = forSun ? (d2 < 15 * 15 ? 1 : 2) : d2 < 26 * 26 ? 0 : d2 < 62 * 62 ? 1 : 2;
+                puppet3D.Rear = rear;
+                if (puppet3D.TryDraw(u, h)) continue;
+            }
             puppet.Rear = rear;
             if (u.Dead && battle.Time - u.DiedAt > 1f)
             {
@@ -368,9 +407,21 @@ partial class BattleScreen
         puppet.SparseCorpse = false;
         puppet.Rear = 0;
         if (!forSun) DrawMissiles(); // real arrows near the camera (BattleScreen.Arrows.cs)
-        foreach (var h in battle.LooseHorses) { float hh = t.Height(h.Pos); if (Seen(h.Pos, hh, 2.5f)) puppet.DrawLooseHorse(h, hh); }
+        foreach (var h in battle.LooseHorses) { float hh = t.Height(h.Pos); if (Seen(h.Pos, hh, 2.5f)) { if (do3D && h.Mount.Barding != "wolf") puppet3D!.DrawLooseHorse(h, hh); else puppet.DrawLooseHorse(h, hh); } }
         foreach (var h in battle.DeadHorses) { if (battle.Time > 0 && battle.Time - h.At > (forSun ? 0.75f : 3.2f)) continue; float hh = t.Height(h.Pos); if (Seen(h.Pos, hh + 1.5f, 4f)) puppet.DrawDeadHorse(h, hh); }
         puppet.Detail = 0;
+    }
+
+    void DrawUnits3D(Effect fx, string technique)
+    {
+        if (units3D.N == 0) return;
+        var gd = GraphicsDevice;
+        gd.BlendState = BlendState.Opaque;
+        gd.DepthStencilState = DepthStencilState.Default;
+        gd.RasterizerState = RasterizerState.CullNone;
+        fx.CurrentTechnique = fx.Techniques[technique];
+        fx.CurrentTechnique.Passes[0].Apply();
+        units3D.Draw(gd, PrimitiveType.TriangleList, units3D.N / 3);
     }
 
     /// A man so close to the field camera that his body would fill the lens. Only these are left out:

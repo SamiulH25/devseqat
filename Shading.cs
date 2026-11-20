@@ -18,11 +18,12 @@ sealed class Shading : IDisposable
     public static readonly Vector2 SpriteLight = new(1.05f, 0.62f); // sprite brightness: sky part, sun part (lit ~1.0, shade ~0.5)
     public static readonly Vector4 Wind = new(0.8f, 0.6f, 0.12f, 0.25f); // direction xz, strength, steady lean
 
-    public readonly Effect World, Sprite, Sky, Post;
+    public readonly Effect World, Sprite, Sky, Post, Unit3D, PixelPost;
     public readonly RenderTarget2D ShadowMap;
     public Matrix LightView, LightViewProj;
     public Vector3 LightEye;
-    RenderTarget2D? scene;
+    RenderTarget2D? scene, pixelScene, pixelNormDepth;
+    int pixelTargetW, pixelTargetH;
     readonly GraphicsDevice gd;
     readonly VertexPositionTexture[] quad =
     {
@@ -81,6 +82,19 @@ sealed class Shading : IDisposable
             new[] { new TextureSlot("Scene", 0, SamplerState.LinearClamp) },
             new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
             new GlslEffect.Technique("Post"));
+
+        var lit3D = lit.Concat(new[] { Uniform.Mat4("View") }).ToArray();
+        Unit3D = GlslEffect.Create(gd, "unit3d", common + Source("unit3d.glsl"), lit3D,
+            new[] { shadowTex },
+            new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aNormal", VertexElementUsage.Normal),
+                    new Attribute("aColor", VertexElementUsage.Color), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
+            new GlslEffect.Technique("Unit3D"), new GlslEffect.Technique("Unit3DShadow", "SHADOW"));
+
+        PixelPost = GlslEffect.Create(gd, "pixel_post", Source("pixel_post.glsl"),
+            new[] { Uniform.Vec2("Texel"), Uniform.Vec4("Grade"), Uniform.Vec4("Tint"), Uniform.Vec4("Awe"), Uniform.Vec4("Moment"), Uniform.Float("Time"), Uniform.Float("Warp"), Uniform.Vec4("OutlineCfg") },
+            new[] { new TextureSlot("Scene", 0, SamplerState.PointClamp), new TextureSlot("NormDepth", 1, SamplerState.PointClamp) },
+            new[] { new Attribute("aPos", VertexElementUsage.Position), new Attribute("aUV", VertexElementUsage.TextureCoordinate) },
+            new GlslEffect.Technique("PixelPost"));
 
         ShadowMap = new RenderTarget2D(gd, ShadowSize, ShadowSize, false, SurfaceFormat.Single, DepthFormat.Depth24);
     }
@@ -202,9 +216,49 @@ sealed class Shading : IDisposable
         gd.DrawUserPrimitives(PrimitiveType.TriangleList, quad, 0, 2);
     }
 
+    /// Paired low-res pixel-art render targets (Color+Depth24 and Normal+LinearDepth) for the 3D pixel-art pipeline.
+    public (RenderTarget2D Color, RenderTarget2D NormDepth) PixelTargets(int scale)
+    {
+        var pp = gd.PresentationParameters;
+        int w = Math.Max(1, pp.BackBufferWidth / Math.Max(1, scale));
+        int h = Math.Max(1, pp.BackBufferHeight / Math.Max(1, scale));
+        if (pixelScene == null || pixelNormDepth == null || pixelTargetW != w || pixelTargetH != h)
+        {
+            pixelScene?.Dispose();
+            pixelNormDepth?.Dispose();
+            pixelScene = new RenderTarget2D(gd, w, h, false, SurfaceFormat.Color, DepthFormat.Depth24, 0, RenderTargetUsage.PreserveContents);
+            pixelNormDepth = new RenderTarget2D(gd, w, h, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            pixelTargetW = w; pixelTargetH = h;
+        }
+        return (pixelScene, pixelNormDepth);
+    }
+
+    /// Composite the pixel-art Scene + NormDepth targets to the screen with crisp PointClamp upscaling, 1px silhouette outlines & convex highlights.
+    public void PixelPostToScreen(int scale, Vector3? tint = null, float bloom = 0, Vector4 awe = default, Vector4 moment = default, float warp = 0, Vector4? outlineCfg = null)
+    {
+        var (s, nd) = PixelTargets(scale);
+        gd.SetRenderTarget(null);
+        gd.BlendState = BlendState.Opaque;
+        gd.DepthStencilState = DepthStencilState.None;
+        gd.RasterizerState = RasterizerState.CullNone;
+        PixelPost.Parameters["Scene"].SetValue(s);
+        PixelPost.Parameters["NormDepth"].SetValue(nd);
+        PixelPost.Parameters["Texel"].SetValue(new Vector2(1f / s.Width, 1f / s.Height));
+        var g = Looks.Grade;
+        PixelPost.Parameters["Grade"].SetValue(new Vector4(g.X * (1 - 0.55f * Ironfield.Sky.NightHue), g.Y, g.Z, scale));
+        PixelPost.Parameters["Tint"].SetValue(new Vector4(tint ?? Vector3.One, bloom));
+        PixelPost.Parameters["Awe"].SetValue(awe);
+        PixelPost.Parameters["Moment"].SetValue(moment);
+        PixelPost.Parameters["Warp"]?.SetValue(warp);
+        PixelPost.Parameters["Time"].SetValue((float)(Environment.TickCount64 % 100000) / 1000f);
+        PixelPost.Parameters["OutlineCfg"].SetValue(outlineCfg ?? new Vector4(0.95f, 0.85f, 0.90f, 0));
+        PixelPost.CurrentTechnique.Passes[0].Apply();
+        gd.DrawUserPrimitives(PrimitiveType.TriangleList, quad, 0, 2);
+    }
+
     public void Dispose()
     {
-        World.Dispose(); Sprite.Dispose(); Sky.Dispose(); Post.Dispose();
-        ShadowMap.Dispose(); scene?.Dispose();
+        World.Dispose(); Sprite.Dispose(); Sky.Dispose(); Post.Dispose(); Unit3D.Dispose(); PixelPost.Dispose();
+        ShadowMap.Dispose(); scene?.Dispose(); pixelScene?.Dispose(); pixelNormDepth?.Dispose();
     }
 }

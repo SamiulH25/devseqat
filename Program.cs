@@ -87,6 +87,12 @@ if (args.Contains("--grounds"))
     Ironfield.BalanceReport.Grounds(n > 0 ? n : 8);
     return;
 }
+if (args.Contains("--bench-3d"))
+{
+    int n = args.SkipWhile(a => a != "--bench-3d").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();
+    Ironfield.Puppet3D.Bench(n > 0 ? n : 1500);
+    return;
+}
 if (args.Contains("--campaign-bench"))
 {
     int n = args.SkipWhile(a => a != "--campaign-bench").Skip(1).Select(a => int.TryParse(a, out var v) ? v : 0).FirstOrDefault();

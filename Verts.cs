@@ -10,6 +10,15 @@ sealed class Verts<T> : IDisposable where T : struct, IVertexType
     public int N;
     DynamicVertexBuffer? vb;
 
+    public void Reserve(int extra)
+    {
+        int need = N + extra;
+        if (need <= A.Length) return;
+        int cap = A.Length;
+        while (cap < need) cap *= 2;
+        Array.Resize(ref A, cap);
+    }
+
     public void Add(T v)
     {
         if (N == A.Length) Array.Resize(ref A, N * 2);

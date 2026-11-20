@@ -200,11 +200,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (378 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:81, CommandControls:89, CommandCursor:276, BoxOf:294, OnScreen:296, PickSquad:303, GroundUnderMouse:317, GroundUnder:319, UpdateCamera:341
 
-## BattleScreen.cs (579 lines)
-- **BattleScreen** (class, L12): Exit:18, GroundTips:50, MagicTips:62, BattleScreen:122, Load:134, QuickGround:153, BeginCampaign:163, StartDeployment:194, StageCommandView:209, FinishCampaignBattle:217, NewBattle:232, WithMages:274, SetWorld:282, SetCommand:296, Pressed:308, Update:316, PlaySounds:402, Soundscape:441, SyncHud:534, MenuChoice:565
+## BattleScreen.cs (588 lines)
+- **BattleScreen** (class, L12): Exit:18, GroundTips:55, MagicTips:67, BattleScreen:127, Load:139, QuickGround:160, BeginCampaign:170, StartDeployment:201, StageCommandView:216, FinishCampaignBattle:224, NewBattle:239, WithMages:281, SetWorld:289, SetCommand:303, Pressed:315, Update:323, PlaySounds:411, Soundscape:450, SyncHud:543, MenuChoice:574
 
-## BattleScreen.Draw.cs (813 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:54, DrawBlobs:105, EaseFacings:147, Spray:163, Effects:176, GroundSteps:241, BuildSprites:297, LensFill:378, SpriteStates:381, DrawSpritesBasic:389, DrawSpritesShaded:399, DrawSoft:410, Line:424, G:425, OrderArrows:434, OrderArrowLines:436, Ring:452, DashedRing:463, Band:476, BeamQuad:498, TorchRow:520, Precipitation:529, Fall:540, Stakes:559, SpellColor:582, Spells:588, AuraGlow:604, ChampionGlow:614, PlayerGlow:627, PendingFormsDrawn:641, RouteDots:666, PlanHook:679, DrawLines:709
+## BattleScreen.Draw.cs (864 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:54, DrawBlobs:134, EaseFacings:176, Spray:192, Effects:205, GroundSteps:270, BuildSprites:326, DrawUnits3D:415, LensFill:429, SpriteStates:432, DrawSpritesBasic:440, DrawSpritesShaded:450, DrawSoft:461, Line:475, G:476, OrderArrows:485, OrderArrowLines:487, Ring:503, DashedRing:514, Band:527, BeamQuad:549, TorchRow:571, Precipitation:580, Fall:591, Stakes:610, SpellColor:633, Spells:639, AuraGlow:655, ChampionGlow:665, PlayerGlow:678, PendingFormsDrawn:692, RouteDots:717, PlanHook:730, DrawLines:760
 
 ## BattleScreen.Effects.cs (208 lines)
 - **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:125, TrampleTexture:148, RearOf:165, BannerFalls:187, DrawFallingBanners:198
@@ -774,6 +774,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Upgrade.cs (293 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:185, Leads:281
 
+## Mesh3D.cs (221 lines)
+- **MeshKit3D** (class, L8): TryLoad:41, Load:51, Get:96, Resolve:98, MapTorso:124, MapLimb:132, MapHelm:139, MapWeapon:154, MapShield:171
+- **UnitMatTable** (struct, L180): Fill:192
+
 ## MusicDirector.cs (128 lines)
 - **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:120
 
@@ -812,10 +816,13 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **PortraitPainter** (class, L13): MoodOf:17, Of:21, SoldierSeed:53, Of:58, OfMan:62, CohesionMood:77, Captain:80, Of:84, Paint:87, Resample:94
 - **Portraits** (class, L117): Of:122, Sized:125
 
-## Program.cs (128 lines)
+## Program.cs (134 lines)
 
 ## Puppet.cs (1081 lines)
 - **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:355, Bow:379, HorseScale:407, Horse:415, sp_breathe:513, static:515, Beast:523, WolfBody:535, Warg:565, BeastCorpse:583, DrawLooseHorse:598, DrawDeadHorse:608, RotY:639, Shoulder:650, Arm:654, ArmTo:661, Elbow:673, Sink:700, Leg:709, SpanRect:721, Fallen:730, SpiritAscent:798, Corpse:839, Haze:879, Particle:891, Banner:906, Decal:953, Quad:966, PlumeY:980, HelmTop:983, HeadBill:997, BillRect:1000, Missile:1011, AxialSrc:1031, LongRect:1042, PlaneRect:1054, FlatRect:1064, FlatRot:1073
+
+## Puppet3D.cs (524 lines)
+- **Puppet3D** (class, L11): Puppet3D:29, Rad:35, Frame:37, Lean:46, W:53, WDir:65, EmitLocal:78, EmitBone:120, RotY:135, Elbow:141, Sink:164, TryDraw:173, HorseScale:364, DrawHorse3D:372, DrawLooseHorse:446, Bench:461
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136
@@ -847,9 +854,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SettingsScreen.cs (188 lines)
 - **SettingsScreen** (class, L7): readonly:20, SettingsScreen:22, Update:24, Close:42, Draw:50
 
-## Shading.cs (210 lines)
+## Shading.cs (264 lines)
 - **Quality** (enum, L8)
-- **Shading** (class, L12): Source:37, Shading:47, AimSun:90, Setup:134, Blank:163, Scene:170, PostToScreen:185, Dispose:205
+- **Shading** (class, L12): Source:38, Shading:48, AimSun:104, Setup:148, Blank:177, Scene:184, PostToScreen:199, PixelPostToScreen:237, Dispose:259
 
 ## Sky.cs (117 lines)
 - **Sky** (class, L7): Sky:31, Set:39, Moonlit:87, Omen:106
@@ -911,6 +918,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **FieldLayout** (enum, L7)
 - **GroundLook** (enum, L11)
 - **Terrain** (class, L15): RidgeCrest:24, ShapeLayout:34, PastShore:101, AtSea:103, ShoreHeight:106, LayoutHeight:115, GroundOf:136, ShapeGround:151, LookGround:189, Sq:208, PlaceVillage:211, PlaceHedges:240, HedgeLine:256
+
+## TesterSaves.cs (183 lines)
+- **TesterSaves** (class, L9): Scenario:11, Run:29, Settle:63, Rested:72, Nearest:74, Place:77, Army:84, Rich:94, readonly:102, Sandbox:108, AtWarWith:115, BigBattle:117, Siege:126, CircleAndAura:136, KnightOrder:149, Monsters:159, Port:168, CastleMuster:175
 
 ## Tests/AudioTests.cs (207 lines)
 - **SelfTest** (class, L5): MapMusicSteady:17, SoundsMade:79, CombatCuesEmitted:164, CreatureAndMagicCues:188
@@ -1045,8 +1055,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Variety.cs (148 lines)
 - **Variety** (class, L9): static:16, Seed:72, Of:75, Of:83, Stature:111, Kin:113, Pick:116, Visage:125, Weighted:142
 
-## Verts.cs (36 lines)
-- **Verts<T>** (class, L6): Add:13, Draw:19, Dispose:35
+## Verts.cs (45 lines)
+- **Verts<T>** (class, L6): Reserve:13, Add:22, Draw:28, Dispose:44
 
 ## World.cs (1427 lines)
 - **VertexPNCT** (struct, L7): VertexPNCT:19

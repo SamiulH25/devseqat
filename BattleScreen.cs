@@ -41,6 +41,11 @@ sealed partial class BattleScreen
     static readonly Color Gold = Hud.Gold, Sel = new(255, 236, 90), Friendly = Hud.Friendly, Foe = Hud.Foe, ArrowColor = new(70, 50, 30), ArrowStreak = new(150, 146, 132), ArrowHead = new(214, 214, 206), StoneColor = new(60, 58, 54);
 
     Puppet puppet = null!;
+    MeshKit3D? meshKit3D;
+    Puppet3D? puppet3D;
+    readonly Verts<VertexPNCT> units3D = new();
+    bool use3DPixel = Environment.GetEnvironmentVariable("IRONFIELD_3D_UNITS") != "0";
+    int pixelScale = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_PIXEL_SCALE"), out var ps) && ps is >= 1 and <= 4 ? ps : 2;
     Hud hud = null!;
     World world = null!;
     AlphaTestEffect spriteFx = null!;
@@ -135,6 +140,8 @@ sealed partial class BattleScreen
     {
         tipUi = new Ui(sb, art, font);
         puppet = new Puppet(art, sprites) { Soft = soft };
+        meshKit3D = MeshKit3D.TryLoad();
+        if (meshKit3D != null) puppet3D = new Puppet3D(meshKit3D, units3D);
         hud = new Hud(sb, art, font);
         spriteFx = new AlphaTestEffect(GraphicsDevice)
         {
@@ -325,6 +332,8 @@ sealed partial class BattleScreen
             try { battle.FinishRecording()?.Save("last-battle"); } catch (Exception e) { Console.WriteLine("replay not saved: " + e.Message); }
         }
         if (!TipsHeld && Pressed(Keys.Enter) && Tips.Active) Tips.Dismiss();
+        if (Pressed(Keys.F9)) { pixelScale = pixelScale == 2 ? 3 : pixelScale == 3 ? 1 : 2; battle.Log($"3D pixel scale: {pixelScale}x"); }
+        if (Pressed(Keys.F10)) { use3DPixel = !use3DPixel; battle.Log(use3DPixel ? $"3D Pixel Art ON ({pixelScale}x)" : "Classic 2D Sprites"); }
         else if (!TipsHeld && LmbPressed && Tips.Active && command && tipUi.Blocks(ms.Position)) Tips.Dismiss();
         if (battle.Units.Any(battle.Rescuable))
             Tips.Show("rescue", "One of your named men is down (the gold mark). Stand over him while the fight goes on\nand you carry him out alive, if you are quick.");
