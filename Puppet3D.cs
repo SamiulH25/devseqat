@@ -8,7 +8,7 @@ namespace Ironfield;
 ///   Detail == 0 (< 45m): full articulated low-poly 3D skeleton (~400 tris/knight, ~450 tris/horse)
 ///   Detail == 1 (45-95m): streamlined articulated 3D (no capes/plumes/sub-knees, ~240 tris/knight)
 ///   Detail == 2 (> 95m / far shadows): single-mesh 3D silhouette (~55 tris/unit)
-sealed class Puppet3D
+sealed partial class Puppet3D
 {
     readonly MeshKit3D kit;
     readonly Verts<VertexPNCT> verts;
@@ -169,12 +169,11 @@ sealed class Puppet3D
         return 2 * Shank - Shank * (MathF.Cos(Rad(a)) + MathF.Cos(Rad(a - bend)));
     }
 
-    /// Returns true if drawn in 3D, false if caller should fall back to 2D `Puppet` (beasts / ascending spirits).
+    /// Returns true if drawn in 3D, false only for ascending spirit wisps (handled by `Puppet`).
     public bool TryDraw(Unit u, float ground)
     {
         if (u.Fled || u.Raised) return true;
         var look = Variety.Of(u);
-        if (look.Beast) return false;
         if (u.Dead)
         {
             float time = u.DiedFall switch { Fall.Saddle => 0.75f, Fall.Flung => 0.6f, _ => 0.45f + Ease.Hash(u.Index) * 0.3f };
@@ -185,9 +184,12 @@ sealed class Puppet3D
         int palIdx = u.IsPlayer ? 2 : u.Palette;
         Color tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         if (u.Poison > 0 && u.HitFlash <= 0) tint = Color.Lerp(tint, new Color(150, 230, 110), 0.4f);
-        bool camel = u.Mounted && u.Horse?.Barding == "camel";
-        UnitMatTable.Fill(palIdx, look.Visage, u.Coat, camel, tint, palCols);
         unitIdHash = Ease.Hash(u.Index * 37 + 11);
+
+        if (look.Beast) return DrawBeast3D(u, ground, tint, look);
+
+        bool camel = u.Mounted && u.Horse?.Barding == "camel";
+        UnitMatTable.Fill(palIdx, look.Visage, u.Coat, camel, tint, palCols, look.Face);
 
         // Far LOD (Detail == 2): ~55-100 tris total, zero skeletal overhead!
         if (Detail >= 2 && !u.Dead)
@@ -200,7 +202,11 @@ sealed class Puppet3D
                 EmitLocal(kit.LodHorse, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
                 liftFar = ground + Saddle * hScale * Scale;
             }
-            else if (u.Mounted && u.Horse!.Barding == "wolf") return false;
+            else if (u.Mounted && u.Horse!.Barding == "wolf")
+            {
+                liftFar = ground + DrawWarg3D(u, ground, tint);
+                UnitMatTable.Fill(palIdx, look.Visage, u.Coat, false, tint, palCols, look.Face);
+            }
             float szFar = (u.Type.Class == UnitClass.Captain ? 1.12f : 1f) * u.Type.Size * Scale * Variety.Stature(u);
             Frame(u.Pos, u.ViewFacing, liftFar, szFar);
             EmitLocal(kit.LodFoot, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
@@ -208,10 +214,13 @@ sealed class Puppet3D
         }
 
         float lift = ground;
-        if (u.Mounted && !u.Dead && u.Horse!.Barding != "wolf")
+        if (u.Mounted && !u.Dead && u.Horse!.Barding == "wolf")
+        {
+            lift = ground + DrawWarg3D(u, ground, tint);
+            UnitMatTable.Fill(palIdx, look.Visage, u.Coat, false, tint, palCols, look.Face);
+        }
+        else if (u.Mounted && !u.Dead)
             lift = ground + DrawHorse3D(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Horse!.Barding, Ease.Hash(u.Index));
-        else if (u.Mounted && !u.Dead && u.Horse!.Barding == "wolf")
-            return false;
 
         float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1f) * u.Type.Size * Scale * Variety.Stature(u);
         float phase = Ease.Hash(u.Index);
@@ -417,22 +426,29 @@ sealed class Puppet3D
             }
         }
 
-        bool barded = barding is not ("" or "saddle" or "steppetack" or "camel");
+        bool camel = barding == "camel";
+        bool scaleBard = barding is "scalebarding" or "lamellarbarding";
+        bool furBard = barding == "furbarding";
+        bool clothBard = !camel && !scaleBard && !furBard && barding is not ("" or "saddle" or "steppetack");
+        var bodyMesh = camel ? kit.CamelBody : scaleBard ? kit.HorseBodyScale : furBard ? kit.HorseBodyFur : clothBard ? kit.HorseBodyBarded : kit.HorseBody;
+        var neckMesh = camel ? kit.CamelNeck : scaleBard ? kit.HorseNeckScale : clothBard ? kit.HorseNeckBarded : kit.HorseNeck;
+        var headMesh = camel ? kit.CamelHead : scaleBard ? kit.HorseHeadScale : clothBard ? kit.HorseHeadBarded : kit.HorseHead;
+
         float pitchAngle = MathF.Atan2(2 * rock, 1.76f);
         float cp = MathF.Cos(pitchAngle), sp2 = MathF.Sin(pitchAngle);
         Vector3 bUp = new(0, cp, -sp2), bFwd = new(0, sp2, cp);
-        EmitLocal(barded ? kit.HorseBodyBarded : kit.HorseBody, new Vector3(0, y, 0), Vector3.UnitX, bUp, bFwd);
+        EmitLocal(bodyMesh, new Vector3(0, y, 0), Vector3.UnitX, bUp, bFwd);
 
         float neckOut = gallop * (0.14f + 0.08f * MathF.Sin(anim * MathF.Tau + 0.4f));
         var neckBase = new Vector3(0, y + rock + 0.14f, 0.62f);
-        var poll = new Vector3(0, y + rock + 0.82f + nod - neckOut, 1.02f + neckOut);
-        EmitBone(barded ? kit.HorseNeckBarded : kit.HorseNeck, neckBase, poll, Vector3.UnitZ);
+        var poll = new Vector3(0, y + rock + (camel ? 0.90f : 0.82f) + nod - neckOut, (camel ? 1.12f : 1.02f) + neckOut);
+        EmitBone(neckMesh, neckBase, poll, Vector3.UnitZ);
 
-        var muzzle = new Vector3(0, y + rock + 0.36f + nod * 1.5f - neckOut, 1.52f + neckOut * 1.4f);
+        var muzzle = new Vector3(0, y + rock + (camel ? 0.62f : 0.36f) + nod * 1.5f - neckOut, (camel ? 1.62f : 1.52f) + neckOut * 1.4f);
         Vector3 headFwd = Vector3.Normalize(muzzle - poll);
         Vector3 headUp = Vector3.Normalize(Vector3.Cross(headFwd, Vector3.UnitX));
         if (headUp.Y < 0) headUp = -headUp;
-        EmitLocal(barded ? kit.HorseHeadBarded : kit.HorseHead, poll, Vector3.UnitX, headUp, headFwd);
+        EmitLocal(headMesh, poll, Vector3.UnitX, headUp, headFwd);
 
         if (Detail == 0)
         {

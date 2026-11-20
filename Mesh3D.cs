@@ -29,13 +29,18 @@ sealed class MeshKit3D
     public readonly Dictionary<string, Vert[]> Parts = new();
     readonly Dictionary<Look, LookMeshes> lookCache = new(ReferenceEqualityComparer.Instance);
 
-    // Pre-cached common / horse / LOD parts (zero dictionary lookups in hot loop).
-    public Vert[] Plume = Array.Empty<Vert>(), Cape = Array.Empty<Vert>();
-    public Vert[] Bow = Array.Empty<Vert>();
-    public Vert[] HorseBody = Array.Empty<Vert>(), HorseBodyBarded = Array.Empty<Vert>();
-    public Vert[] HorseNeck = Array.Empty<Vert>(), HorseNeckBarded = Array.Empty<Vert>();
-    public Vert[] HorseHead = Array.Empty<Vert>(), HorseHeadBarded = Array.Empty<Vert>();
+    // Pre-cached common, mount, beast, and LOD parts (zero dictionary lookups in hot loop).
+    public Vert[] Plume = Array.Empty<Vert>(), Cape = Array.Empty<Vert>(), Bow = Array.Empty<Vert>();
+    public Vert[] HorseBody = Array.Empty<Vert>(), HorseBodyBarded = Array.Empty<Vert>(), HorseBodyScale = Array.Empty<Vert>(), HorseBodyFur = Array.Empty<Vert>();
+    public Vert[] HorseNeck = Array.Empty<Vert>(), HorseNeckBarded = Array.Empty<Vert>(), HorseNeckScale = Array.Empty<Vert>();
+    public Vert[] HorseHead = Array.Empty<Vert>(), HorseHeadBarded = Array.Empty<Vert>(), HorseHeadScale = Array.Empty<Vert>();
     public Vert[] HorseLegUp = Array.Empty<Vert>(), HorseLegLow = Array.Empty<Vert>(), HorseTail = Array.Empty<Vert>();
+    public Vert[] CamelBody = Array.Empty<Vert>(), CamelNeck = Array.Empty<Vert>(), CamelHead = Array.Empty<Vert>();
+    public Vert[] WolfBody = Array.Empty<Vert>(), WolfHead = Array.Empty<Vert>(), WolfLeg = Array.Empty<Vert>(), WolfTail = Array.Empty<Vert>();
+    public Vert[] BearBody = Array.Empty<Vert>(), BearHead = Array.Empty<Vert>(), BearLeg = Array.Empty<Vert>();
+    public Vert[] SpiderAbdomen = Array.Empty<Vert>(), SpiderHead = Array.Empty<Vert>(), SpiderLeg = Array.Empty<Vert>();
+    public Vert[] WyvernBody = Array.Empty<Vert>(), WyvernNeck = Array.Empty<Vert>(), WyvernHead = Array.Empty<Vert>();
+    public Vert[] WyvernWing = Array.Empty<Vert>(), WyvernLeg = Array.Empty<Vert>(), WyvernTail = Array.Empty<Vert>(), WyvernSting = Array.Empty<Vert>();
     public Vert[] LodFoot = Array.Empty<Vert>(), LodHorse = Array.Empty<Vert>();
 
     public static MeshKit3D? TryLoad()
@@ -76,20 +81,19 @@ sealed class MeshKit3D
             }
             kit.Parts[name] = verts;
         }
-        kit.Plume = kit.Get("plume");
-        kit.Cape = kit.Get("cape");
-        kit.Bow = kit.Get("weapon_bow");
-        kit.HorseBody = kit.Get("horse_body");
-        kit.HorseBodyBarded = kit.Get("horse_body_barded");
-        kit.HorseNeck = kit.Get("horse_neck");
-        kit.HorseNeckBarded = kit.Get("horse_neck_barded");
-        kit.HorseHead = kit.Get("horse_head");
-        kit.HorseHeadBarded = kit.Get("horse_head_barded");
-        kit.HorseLegUp = kit.Get("horse_leg_up");
-        kit.HorseLegLow = kit.Get("horse_leg_low");
-        kit.HorseTail = kit.Get("horse_tail");
-        kit.LodFoot = kit.Get("lod_foot");
-        kit.LodHorse = kit.Get("lod_horse");
+        kit.Plume = kit.Get("plume"); kit.Cape = kit.Get("cape"); kit.Bow = kit.Get("weapon_bow");
+        kit.HorseBody = kit.Get("horse_body"); kit.HorseBodyBarded = kit.Get("horse_body_barded");
+        kit.HorseBodyScale = kit.Get("horse_body_scale"); kit.HorseBodyFur = kit.Get("horse_body_fur");
+        kit.HorseNeck = kit.Get("horse_neck"); kit.HorseNeckBarded = kit.Get("horse_neck_barded"); kit.HorseNeckScale = kit.Get("horse_neck_scale");
+        kit.HorseHead = kit.Get("horse_head"); kit.HorseHeadBarded = kit.Get("horse_head_barded"); kit.HorseHeadScale = kit.Get("horse_head_scale");
+        kit.HorseLegUp = kit.Get("horse_leg_up"); kit.HorseLegLow = kit.Get("horse_leg_low"); kit.HorseTail = kit.Get("horse_tail");
+        kit.CamelBody = kit.Get("camel_body"); kit.CamelNeck = kit.Get("camel_neck"); kit.CamelHead = kit.Get("camel_head");
+        kit.WolfBody = kit.Get("wolf_body"); kit.WolfHead = kit.Get("wolf_head"); kit.WolfLeg = kit.Get("wolf_leg"); kit.WolfTail = kit.Get("wolf_tail");
+        kit.BearBody = kit.Get("bear_body"); kit.BearHead = kit.Get("bear_head"); kit.BearLeg = kit.Get("bear_leg");
+        kit.SpiderAbdomen = kit.Get("spider_abdomen"); kit.SpiderHead = kit.Get("spider_head"); kit.SpiderLeg = kit.Get("spider_leg");
+        kit.WyvernBody = kit.Get("wyvern_body"); kit.WyvernNeck = kit.Get("wyvern_neck"); kit.WyvernHead = kit.Get("wyvern_head");
+        kit.WyvernWing = kit.Get("wyvern_wing"); kit.WyvernLeg = kit.Get("wyvern_leg"); kit.WyvernTail = kit.Get("wyvern_tail"); kit.WyvernSting = kit.Get("wyvern_sting");
+        kit.LodFoot = kit.Get("lod_foot"); kit.LodHorse = kit.Get("lod_horse");
         return kit;
     }
 
@@ -98,14 +102,22 @@ sealed class MeshKit3D
     public LookMeshes Resolve(Look look)
     {
         if (lookCache.TryGetValue(look, out var cached)) return cached;
-        string limbTag = MapLimb(look.Body);
-        string legTag = MapLimb(look.Legs);
+        bool bones = look.Body == "bones" || look.Face == "skull";
+        string limbTag = bones ? "bones" : MapLimb(look.Body);
+        string legTag = bones ? "bones" : MapLimb(look.Legs);
         string helmKey = MapHelm(look.Head);
-        int headStyle = look.Visage >= 0 ? Variety.Parts(look.Visage).Style : 0;
+        string headKey = look.Face switch
+        {
+            "goblin" => "head_goblin",
+            "troll" => "head_troll",
+            "skull" => "head_skull",
+            "ghoul" => "head_ghoul",
+            _ => $"head_{(look.Visage >= 0 ? Variety.Parts(look.Visage).Style : 0)}",
+        };
         var resolved = new LookMeshes
         {
             Torso = Get(MapTorso(look.Body)),
-            Head = Get($"head_{headStyle}"),
+            Head = Get(headKey),
             Helm = helmKey.Length > 0 ? Get(helmKey) : Array.Empty<Vert>(),
             UArm = Get($"uarm_{limbTag}"),
             FArm = Get($"farm_{limbTag}"),
@@ -113,7 +125,7 @@ sealed class MeshKit3D
             Shin = Get($"shin_{legTag}"),
             Weapon = look.Weapon != "none" ? Get(MapWeapon(look.Weapon)) : Array.Empty<Vert>(),
             Shield = look.Shield != "none" ? Get(MapShield(look.Shield)) : Array.Empty<Vert>(),
-            FullEnclosedHelm = helmKey == "helm_greathelm",
+            FullEnclosedHelm = helmKey is "helm_greathelm" or "helm_greathelm_wings" or "helm_greathelm_sun" or "helm_greathelm_horns" or "helm_dragon",
             HasCape = look.Cape,
             HasPlume = look.Plume,
             HasShield = look.Shield != "none",
@@ -123,16 +135,24 @@ sealed class MeshKit3D
 
     static string MapTorso(string body) => body switch
     {
-        "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur" or "breastplate" or "lamellar" or "lamellar_gilded" or "scale" or "scale_iron" => "torso_plate",
-        "mail" or "mail_hauberk" or "coatofplates" or "brigandine" or "brigandine_gilded" or "mail_fur" => "torso_mail",
-        "robe" => "torso_robe",
+        "bones" => "torso_bones",
+        "plate_gilded" => "torso_plate_gilded",
+        "plate" or "plate_fluted" or "plate_surcoat" or "breastplate" or "mirror" => "torso_plate",
+        "plate_fur" or "mail_fur" or "gambeson_fur" or "fur" => "torso_fur",
+        "lamellar" or "lamellar_gilded" or "lamellar_dark" => "torso_lamellar",
+        "scale" or "scale_iron" => "torso_scale",
+        "deel" or "deel_fur" => "torso_deel",
+        "kaftan" or "burnous" => "torso_kaftan",
+        "mail" or "mail_hauberk" or "coatofplates" or "brigandine" or "brigandine_gilded" => "torso_mail",
+        "robe" or "shroud" => "torso_robe",
         _ => "torso_tunic",
     };
 
     static string MapLimb(string gear) => gear switch
     {
-        "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur" or "breastplate" or "splint" => "plate",
-        "mail" or "mail_hauberk" or "coatofplates" or "brigandine" or "brigandine_gilded" or "mail_fur" or "lamellar" or "scale" or "scale_iron" or "lamellar_gilded" => "mail",
+        "bones" => "bones",
+        "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur" or "breastplate" or "splint" or "mirror" => "plate",
+        "mail" or "mail_hauberk" or "coatofplates" or "brigandine" or "brigandine_gilded" or "mail_fur" or "lamellar" or "scale" or "scale_iron" or "lamellar_gilded" or "lamellar_dark" => "mail",
         _ => "cloth",
     };
 
@@ -140,60 +160,91 @@ sealed class MeshKit3D
     {
         if (head is "" or "none") return "";
         string h = SpriteSheet.HelmBase(head);
-        if (h.StartsWith("kettle") || h == "chapel" || h == "morion") return "helm_kettle";
-        if (h.StartsWith("sallet") || h == "winged_sallet" || h == "barbute" || h == "barbute_crest") return "helm_sallet";
-        if (h.StartsWith("greathelm") || h is "armet" or "bascinet" or "bucket" or "lion" or "dragon") return "helm_greathelm";
-        if (h is "nasal" or "gjermundbu" or "coif" or "kulah" or "spike") return "helm_nasal";
-        if (h.StartsWith("spangen") || h.StartsWith("steppe") || h is "ibex" or "tug" or "galea") return "helm_spangen";
-        if (h.Contains("turban") || h is "litham" or "corsair") return "helm_turban";
-        if (h == "hood") return "helm_hood";
-        if (h is "furcap" or "bearhead" or "whitebear") return "helm_furcap";
-        return "helm_cap";
+        return h switch
+        {
+            "greathelm_wings" or "winged_sallet" => "helm_greathelm_wings",
+            "greathelm_sun" or "greathelm_crown" => "helm_greathelm_sun",
+            "greathelm_horns" or "ibex" => "helm_greathelm_horns",
+            "dragon" or "lion" => "helm_dragon",
+            "greathelm" or "greathelm_sugarloaf" or "greathelm_visor" or "armet" or "bascinet" or "bucket" or "frogmouth" or "faceplate" => "helm_greathelm",
+            "sallet_crest" => "helm_sallet_crest",
+            "sallet" or "sallet_visored" or "sallet_bevor" => "helm_sallet",
+            "barbute" or "barbute_crest" => "helm_barbute",
+            "morion" => "helm_morion",
+            "kettle" or "kettle_brimmed" or "chapel" => "helm_kettle",
+            "spangen_horns" or "steppe_horns" => "helm_spangen_horns",
+            "spangen" or "spangen_spectacle" or "spangen_wolf" or "galea" => "helm_spangen",
+            "bearhead" or "whitebear" => "helm_bearhead",
+            "tug" => "helm_tug",
+            "steppe" or "steppe_mask" or "kulah" => "helm_steppe",
+            "spike_turban" => "helm_spike_turban",
+            "turban" or "litham" or "corsair" => "helm_turban",
+            "nasal" or "gjermundbu" or "coif" or "spike" => "helm_nasal",
+            "brigand_hat" => "helm_brigand_hat",
+            "hood" => "helm_hood",
+            "furcap" => "helm_furcap",
+            _ => "helm_cap",
+        };
     }
 
-    static string MapWeapon(string w)
+    static string MapWeapon(string w) => w switch
     {
-        if (w.Contains("greatsword") || w == "flamberge") return "weapon_greatsword";
-        if (w.Contains("longsword")) return "weapon_longsword";
-        if (w.Contains("sword") || w is "scimitar" or "falchion" or "saber") return "weapon_sword";
-        if (w.Contains("axe") || w == "bardiche") return "weapon_axe";
-        if (w.Contains("mace") || w is "morningstar" or "hammer" or "warhammer" or "maul") return "weapon_mace";
-        if (w.Contains("lance")) return "weapon_lance";
-        if (w.Contains("pike")) return "weapon_pike";
-        if (w.Contains("halberd") || w is "billhook" or "glaive") return "weapon_halberd";
-        if (w.Contains("spear") || w == "javelin") return "weapon_spear";
-        if (w.Contains("crossbow") || w == "arbalest") return "weapon_crossbow";
-        if (w.Contains("bow") || w == "recurve") return "weapon_bow";
-        if (w.Contains("staff") || w == "crozier") return "weapon_staff";
-        return "weapon_sword";
-    }
+        "scimitar" or "saber" => "weapon_scimitar",
+        "falchion" => "weapon_falchion",
+        "flamberge" => "weapon_flamberge",
+        "greatsword" or "greatsword_claymore" => "weapon_greatsword",
+        "longsword" or "longsword_estoc" or "longsword_gilded" => "weapon_longsword",
+        "warhammer" or "hammer" or "maul" => "weapon_warhammer",
+        "morningstar" => "weapon_morningstar",
+        "mace" => "weapon_mace",
+        "daneaxe" or "daneaxe_bearded" or "bardiche" => "weapon_daneaxe",
+        "axe" or "axe_bearded" => "weapon_axe",
+        "glaive" => "weapon_glaive",
+        "billhook" => "weapon_billhook",
+        "halberd" => "weapon_halberd",
+        "lance" or "pennonlance" => "weapon_lance",
+        "pike" => "weapon_pike",
+        "spear" or "spear_winged" or "javelin" => "weapon_spear",
+        "crossbow" or "crossbow_heavy" or "arbalest" => "weapon_crossbow",
+        "bow" or "bow_horn" or "longbow" or "recurve" => "weapon_bow",
+        "sling" => "weapon_sling",
+        "club" => "weapon_club",
+        "staff" or "crozier" => "weapon_staff",
+        _ => "weapon_sword",
+    };
 
-    static string MapShield(string sh)
+    static string MapShield(string sh) => sh switch
     {
-        if (sh.Contains("kite") || sh.Contains("pavise")) return "shield_kite";
-        if (sh.Contains("round") || sh is "targe" or "dhal" or "kalkan" or "buckler") return "shield_round";
-        return "shield_heater";
-    }
+        "pavise" => "shield_pavise",
+        "tower" => "shield_tower",
+        "kalkan" or "dhal" => "shield_kalkan",
+        "kite" => "shield_kite",
+        "round" or "round_bossed" or "round_iron" or "targe" or "buckler" => "shield_round",
+        _ => "shield_heater",
+    };
 }
 
-/// Fast pre-resolved 14-slot material table per unit (eliminates per-vertex switch & float conversion in the hot loop).
+/// Fast pre-resolved 14-slot material table per unit (supports human visages, non-human races, mounts, and beasts).
 struct UnitMatTable
 {
     public const int Slots = 14;
-    // Normalized 0..1 base color * tint per material slot (pre-divided by 255 for fast byte-shade multiplication!).
-    public Vector3 C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13;
-    public Vector3 Tint;
-
     public static readonly float[] Metals =
     {
         0f, 0f, 0f, 0f, 0.95f, 0.55f, 0.90f, 0f, 0f, 0f, 0f, 0f, 0f, 0f
     };
 
-    public static void Fill(int paletteIdx, int visage, int coatIdx, bool camel, Color tint, Span<Vector3> cols)
+    public static void Fill(int paletteIdx, int visage, int coatIdx, bool camel, Color tint, Span<Vector3> cols, string face = "man")
     {
         var side = Style.Sides[Math.Clamp(paletteIdx, 0, Style.Sides.Length - 1)];
         var (sk, hr, _) = visage >= 0 ? Variety.Parts(visage) : (-1, -1, 0);
-        Color skin = sk >= 0 ? Variety.Skins[sk] : Style.Skin;
+        Color skin = face switch
+        {
+            "goblin" => Style.GoblinSkin,
+            "troll" => new Color(118, 128, 96),
+            "skull" => Style.Bone,
+            "ghoul" => new Color(152, 160, 146),
+            _ => sk >= 0 ? Variety.Skins[sk] : Style.Skin,
+        };
         Color hair = hr >= 0 ? Variety.Hairs[hr] : Style.Hair;
         var coatVec = camel ? Style.CamelCoat : Style.Coats[Math.Abs(coatIdx) % Style.Coats.Length];
         var tv = tint.ToVector3();
@@ -203,19 +254,30 @@ struct UnitMatTable
             MathF.Min(1f, c.G * (boost / 255f)) * tv.Y,
             MathF.Min(1f, c.B * (boost / 255f)) * tv.Z);
 
-        cols[0] = tv;                                               // mat 0: literal baked RGB * tint
-        cols[1] = Pack(side.Cloth, 1.16f);                          // primary faction cloth
-        cols[2] = Pack(side.ClothDark, 1.18f);                      // dark faction cloth
-        cols[3] = Pack(side.Trim, 1.10f);                           // trim / heraldry
-        cols[4] = Pack(new Color(196, 204, 218));                   // polished steel / plate
-        cols[5] = Pack(new Color(110, 116, 128));                   // iron / mail
-        cols[6] = Pack(Style.Brass);                                // brass / gold
-        cols[7] = Pack(new Color(128, 86, 52));                     // leather
-        cols[8] = Pack(new Color(146, 102, 60));                    // wood
-        cols[9] = Pack(skin);                                       // skin
-        cols[10] = Pack(hair);                                      // hair / beard
-        cols[11] = Vector3.Clamp(coatVec * 1.04f, Vector3.Zero, Vector3.One) * tv;  // horse coat
-        cols[12] = Vector3.Clamp(coatVec * 0.38f, Vector3.Zero, Vector3.One) * tv;  // horse mane / tail
-        cols[13] = Pack(new Color(60, 46, 38));                     // hoof / dark bridle
+        cols[0] = tv;
+        cols[1] = Pack(side.Cloth, 1.16f);
+        cols[2] = Pack(side.ClothDark, 1.18f);
+        cols[3] = Pack(side.Trim, 1.10f);
+        cols[4] = Pack(new Color(196, 204, 218));
+        cols[5] = Pack(new Color(110, 116, 128));
+        cols[6] = Pack(Style.Brass);
+        cols[7] = Pack(new Color(128, 86, 52));
+        cols[8] = Pack(new Color(146, 102, 60));
+        cols[9] = Pack(skin);
+        cols[10] = Pack(hair);
+        cols[11] = Vector3.Clamp(coatVec * 1.04f, Vector3.Zero, Vector3.One) * tv;
+        cols[12] = Vector3.Clamp(coatVec * 0.38f, Vector3.Zero, Vector3.One) * tv;
+        cols[13] = Pack(new Color(60, 46, 38));
+    }
+
+    /// Fill material slots 11..13 for a 3D beast (wolf/hound/warg, bear, spider, wyvern).
+    public static void FillBeast(Color body, Color accent, Color dark, Color tint, Span<Vector3> cols)
+    {
+        var tv = tint.ToVector3();
+        Vector3 Pack(Color c) => new(c.R / 255f * tv.X, c.G / 255f * tv.Y, c.B / 255f * tv.Z);
+        cols[0] = tv;
+        cols[11] = Pack(body);
+        cols[12] = Pack(accent);
+        cols[13] = Pack(dark);
     }
 }

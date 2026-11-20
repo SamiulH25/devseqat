@@ -713,6 +713,10 @@ def main():
     all_parts.extend(build_weapons_and_shields())
     all_parts.extend(build_horse())
     all_parts.extend(build_lods())
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import build_meshes_phase2
+    all_parts.extend(build_meshes_phase2.build_all(PartBuilder))
 
     export_bin(all_parts)
     save_blend(all_parts)
