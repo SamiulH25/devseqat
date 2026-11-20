@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Input;
 namespace Ironfield;
 
 /// The title screen: the name and the menu down the left of a painted dusk (TitleScreen.Scene.cs), and a card for the last save.
-/// New campaign, continue, quick battle, settings, quit; the mouse or the arrow keys and Enter.
+/// New campaign, continue, load (the save screen, SaveScreen.cs), quick battle, settings, quit; the mouse or the arrow keys and Enter.
 sealed partial class TitleScreen
 {
     readonly ScreenHost host;
@@ -22,23 +22,21 @@ sealed partial class TitleScreen
     float time;
     public bool InCreator => creator.Open;
     public string CreatorCulture => creator.CurrentCulture;
-    // The latest save, read once per file change, for the continue card.
-    DateTime saveStamp;
-    SaveCard? card;
-
-    sealed record SaveCard(string Name, string Service, int Day, int Gold, int Men, int Palette);
+    /// LOAD: every campaign and its saves.
+    readonly SaveScreen saves = new();
 
     public TitleScreen(ScreenHost host)
     {
         this.host = host;
         ui = new Ui(host.Sb, host.Art, host.Font);
+        saves.OnLoad = p => { if (host.LoadSave(p) is string why) host.TitleNote = why; };
         creator = new CreatorScreen(ui, m => host.StartCampaign(Environment.TickCount & 0xFFFF, m.Realm, m), new CreatorStage(host.GraphicsDevice, host.Art));
         if (creatorShots != null || Environment.GetEnvironmentVariable("IRONFIELD_TITLE_PICK") != null) creator.Show();
     }
 
     float lastDt = 1 / 60f;
     // The menu: the chosen row follows the mouse when it moves and the arrow keys otherwise.
-    static readonly string[] Items = { "NEW CAMPAIGN", "CONTINUE", "QUICK BATTLE", "SETTINGS", "QUIT" };
+    static readonly string[] Items = { "NEW CAMPAIGN", "CONTINUE", "LOAD", "QUICK BATTLE", "SETTINGS", "QUIT" };
     int sel = -1, nav;
     bool go, mouseMoved;
 
@@ -50,8 +48,9 @@ sealed partial class TitleScreen
         if (ms.Position != pms.Position) mouseMoved = true;
         pkb = kb; kb = Keyboard.GetState();
         bool Hit(Keys k) => kb.IsKeyDown(k) && !pkb.IsKeyDown(k);
-        if (Hit(Keys.F3)) host.OpenLab();
-        if (!creator.Open)
+        if (Hit(Keys.F3) && !saves.Open) host.OpenLab();
+        if (saves.Open) { if (Hit(Keys.Escape)) saves.Close(); }
+        else if (!creator.Open)
         {
             if (Hit(Keys.Down) || Hit(Keys.S)) nav++;
             if (Hit(Keys.Up) || Hit(Keys.W)) nav--;
@@ -75,10 +74,10 @@ sealed partial class TitleScreen
 
     public void Draw()
     {
-        if (titleShots != null && shotFrames >= 14) { DrawLoading("SHAPING THE LAND AND ITS REALMS"); TitleShot(); return; }
+        if (titleShots != null && shotFrames >= 24) { DrawLoading("SHAPING THE LAND AND ITS REALMS"); TitleShot(); return; }
         creator.Prepare(lastDt); // the living captain, drawn to its texture before the frame's sprites begin
         BeginPicture();
-        var save = Card();
+        var save = Saves.Latest()?.Meta;
         Scene();
         if (creator.Open)
         {
@@ -93,9 +92,11 @@ sealed partial class TitleScreen
         Logo(x, ty, k);
         Sword(x, ty + 7 * k + U(14), 53 * k);
         Spaced("A CAPTAIN'S WAR", x + U(40), ty + 7 * k + U(34), Kit.Parchment, 2, U(5));
+        if (saves.Open) nav = 0;
         Menu(x, (int)(ui.H * 0.43f), save);
-        if (host.TitleNote != "") ui.Text(host.TitleNote, x, (int)(ui.H * 0.43f) + U(184), Style.Warn, 1);
+        if (host.TitleNote != "") ui.Text(host.TitleNote, x, (int)(ui.H * 0.43f) + Items.Length * U(35) + U(10), Style.Warn, 1);
         if (save != null) Company(save, x, ui.H - U(92));
+        if (saves.Open) saves.Draw(ui, ms.ScrollWheelValue - pms.ScrollWheelValue, kb, pkb);
         ui.TextR("W/S CHOOSE   ENTER SELECT   F2 GRAPHICS   F3 UI LAB", ui.W - U(24), ui.H - U(20), Style.Text * 0.7f, 1);
         ui.End();
         if (titleShots != null) TitleShot();
@@ -173,9 +174,10 @@ sealed partial class TitleScreen
     }
 
     /// The menu down the left: plain rows on a gilt spine; the chosen row lights and slides out.
-    void Menu(int x, int y, SaveCard? save)
+    void Menu(int x, int y, SaveMeta? save)
     {
-        bool[] can = { true, host.CanContinue, true, true, true };
+        bool hasSaves = Saves.Campaigns().Count > 0;
+        bool[] can = { true, host.CanContinue, hasSaves, true, true, true };
         if (sel < 0 || !can[sel]) sel = can[1] ? 1 : 0;
         for (; nav != 0; nav -= Math.Sign(nav))
             do sel = (sel + Math.Sign(nav) + Items.Length) % Items.Length; while (!can[sel]);
@@ -185,7 +187,7 @@ sealed partial class TitleScreen
         for (int i = 0; i < Items.Length; i++)
         {
             var r = new Rectangle(x - U(10), y + i * (h + gap), w, h);
-            if (can[i] && mouseMoved && ui.Hover(r)) sel = i;
+            if (can[i] && mouseMoved && !saves.Open && ui.Hover(r)) sel = i;
             bool hot = sel == i;
             float a = Ui.Anim(0x7171 + i, hot ? 1 : 0, 16);
             Overflow.Box(r);
@@ -203,10 +205,10 @@ sealed partial class TitleScreen
             string note = i == 1 ? (save != null ? $"DAY {save.Day}" : can[1] ? "" : "NO SAVE") : "";
             if (note != "") ui.TextR(note, r.Right - U(12), r.Y + (h - U(7)) / 2f, Style.Dim * (can[i] ? 1 : 0.6f), 1);
             ui.Block(r);
-            if (can[i] && ui.Clicked(r)) hit = i;
+            if (can[i] && !saves.Open && ui.Clicked(r)) hit = i;
         }
         mouseMoved = false;
-        if (go && can[sel]) hit = sel;
+        if (go && can[sel] && !saves.Open) hit = sel;
         go = false;
         if (hit < 0) return;
         Ui.OnClick?.Invoke();
@@ -214,20 +216,21 @@ sealed partial class TitleScreen
         {
             case 0: creator.Show(); break;
             case 1: host.ContinueCampaign(); break;
-            case 2: host.QuickBattle(); break;
-            case 3: host.OpenSettings(); break;
+            case 2: saves.Show(SaveScreen.Use.Load, null); break;
+            case 3: host.QuickBattle(); break;
+            case 4: host.OpenSettings(); break;
             default: host.Exit(); break;
         }
     }
 
     /// The last save as the company's card: its arms, the captain, whom he serves, the day, the purse and the men.
-    void Company(SaveCard save, int x, int y)
+    void Company(SaveMeta save, int x, int y)
     {
         var c = ui.Plate(new Rectangle(x - U(10), y, U(270), U(66)), null, Kit.Gilt);
-        ui.Shield(new Rectangle(c.X - U(2), c.Y - U(4), U(40), U(48)), Style.Sides[save.Palette]);
+        ui.Shield(new Rectangle(c.X - U(2), c.Y - U(4), U(40), U(48)), Style.Sides[Math.Clamp(save.Palette, 0, Style.Sides.Length - 1)]);
         int tx = c.X + U(48);
-        ui.TextFit(save.Name, tx, c.Y - U(4), c.Right - tx, Kit.Gilt, ui.FitScale(save.Name, c.Right - tx));
-        ui.Text(save.Service, tx, c.Y + U(14), Style.Dim, 1);
+        ui.TextFit(save.Captain, tx, c.Y - U(4), c.Right - tx, Kit.Gilt, ui.FitScale(save.Captain, c.Right - tx));
+        ui.TextFit(save.Service, tx, c.Y + U(14), c.Right - tx, Style.Dim, 1);
         ui.Rect(new Rectangle(tx, c.Y + U(25), c.Right - tx, Math.Max(1, U(1))), Kit.Gilt * 0.3f);
         ui.Icon("clock", tx, c.Y + U(31), Style.Dim, 1); ui.Text($"DAY {save.Day}", tx + U(12), c.Y + U(31), Style.Text, 1);
         ui.Icon("coin", tx + U(62), c.Y + U(31), Kit.Gilt, 1); ui.Text($"{save.Gold:N0}", tx + U(74), c.Y + U(31), Style.Text, 1);
@@ -238,9 +241,12 @@ sealed partial class TitleScreen
     void TitleShot()
     {
         if (++shotFrames == 10) PendingShot = "title";
-        if (shotFrames == 14) { BeginLoading("A NEW CAMPAIGN"); loadBar = 0.62f; }
-        if (shotFrames == 24) PendingShot = "loading";
-        if (shotFrames > 26 && PendingShot == null) host.Exit();
+        if (shotFrames == 12 && Saves.Campaigns().Count > 0) saves.Show(SaveScreen.Use.Load, null);
+        if (shotFrames == 18 && saves.Open) PendingShot = "title-load";
+        if (shotFrames == 20) saves.Close();
+        if (shotFrames == 24) { BeginLoading("A NEW CAMPAIGN"); loadBar = 0.62f; }
+        if (shotFrames == 34) PendingShot = "loading";
+        if (shotFrames > 36 && PendingShot == null) host.Exit();
     }
 
     /// The creator's steps one by one as PNGs (IRONFIELD_CREATOR_SHOTS), with a made-up captain, then quit.
@@ -256,30 +262,4 @@ sealed partial class TitleScreen
         shotStep++;
         shotFrames = 0;
     }
-
-    /// The newest save as a card, re-read only when the file changes.
-    SaveCard? Card()
-    {
-        var path = new[] { "autosave", "quicksave" }.Select(n => Path.Combine(CampaignState.SaveDir, n + ".json"))
-            .Where(File.Exists).OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault();
-        if (path == null) return card = null;
-        var stamp = File.GetLastWriteTimeUtc(path);
-        if (stamp == saveStamp) return card;
-        saveStamp = stamp;
-        card = null;
-        try
-        {
-            var s = CampaignState.Deserialize(File.ReadAllText(path));
-            string name = s.Characters.FirstOrDefault(c => c.Id == s.CaptainChar)?.Name ?? "THE CAPTAIN";
-            int f = s.Captain.Contract;
-            bool serving = f >= 0 && f < s.Factions.Count;
-            string service = !serving ? "A FREE COMPANY" : (s.Captain.Fealty ? "SWORN TO THE " : "IN THE PAY OF THE ") + s.Factions[f].Name;
-            card = new SaveCard(name.ToUpperInvariant(), Fit(service.ToUpperInvariant()), (int)(s.Hours / 24) + 1, (int)s.Gold,
-                s.Parties.Count > 0 ? s.Parties[0].Men : 0, !serving ? 2 : f < s.Factions.Count && s.Factions[f].Founded ? s.Factions[f].Palette : Factions.All[Math.Min(f, Factions.All.Count - 1)].Palette);
-        }
-        catch (Exception) { }
-        return card;
-    }
-
-    string Fit(string s) { while (s.Length > 4 && ui.TW(s, 1) > U(196)) s = s[..^2]; return s; }
 }

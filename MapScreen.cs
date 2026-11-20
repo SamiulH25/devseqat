@@ -8,14 +8,44 @@ namespace Ironfield;
 /// puppets, and the campaign interface (map HUD plus encounter, settlement, party, upgrade, results and menu panels).
 sealed partial class MapScreen
 {
-    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory, Quests }
+    enum PanelKind { None, Encounter, Settlement, Party, Upgrade, Results, Menu, GameOver, Siege, Characters, Skills, Realm, Beat, Event, Divisions, Atlas, Roll, Help, Talk, Inventory, Quests, Saves }
 
     public Campaign C = null!;
     public Action<BattleSetup>? OnBattle;
     public Action? OnTitle, OnSettings;
+    /// Open a save file (the host, behind the loading screen); the reason it cannot be read otherwise.
+    public Func<string, string?>? OnLoadSave;
+    /// SAVE AS and LOAD from the menu (SaveScreen.cs).
+    readonly SaveScreen saves = new();
+    /// A save just written, waiting for the next frame's map to be taken as its picture.
+    string? thumbFor;
 
-    /// Ironman campaigns keep one save; others quick-save.
-    void Save() { C.S.Save(C.S.Ironman ? "autosave" : "quicksave"); C.Log("Saved."); }
+    /// Ironman campaigns keep one save; others quick-save (Campaign/Saves.cs: a folder a campaign).
+    void Save() { Write(C.S.Ironman ? SaveKind.Auto : SaveKind.Quick); C.Log("Saved."); }
+
+    /// Write a save of the campaign and take the map, as the next frame draws it, for its picture.
+    void Write(SaveKind kind) => thumbFor = Saves.Save(C.S, kind);
+
+    /// Shots: write a save as the menu would, picture and all.
+    public void ShotSave(SaveKind kind, string label = "") => thumbFor = Saves.Save(C.S, kind, label);
+
+    /// This campaign's quicksave, loaded in place (the same map).
+    void QuickLoad()
+    {
+        var path = Path.Combine(Saves.DirOf(C.S.CampaignId), "quick.json");
+        if (C.S.CampaignId != "" && Saves.Load(path) is CampaignState loaded) { Open(new Campaign(loaded)); C.Log("Loaded."); }
+        else C.Log(CampaignState.LoadError is string err && File.Exists(path) ? "Quicksave not loaded: " + err + "." : "No quicksave in this campaign.");
+    }
+
+    /// The map without the interface, shrunk, as the picture of the save just written.
+    void GrabThumb()
+    {
+        int w = gd.PresentationParameters.BackBufferWidth, h = gd.PresentationParameters.BackBufferHeight;
+        var px = new Color[w * h];
+        gd.GetBackBufferData(px);
+        Saves.WriteThumb(thumbFor!, px, w, h);
+        thumbFor = null;
+    }
 
     readonly GraphicsDevice gd;
     readonly Art art;
@@ -156,11 +186,7 @@ sealed partial class MapScreen
             if (ctl.Pressed(Act.Speed3)) speed = 8;
             if (ctl.Pressed(Act.FollowParty)) follow = true;
             if (ctl.Pressed(Act.QuickSave)) Save();
-            if (ctl.Pressed(Act.QuickLoad) && !C.S.Ironman)
-            {
-                if (CampaignState.Load("quicksave") is CampaignState loaded) { Open(new Campaign(loaded)); C.Log("Loaded."); }
-                else if (CampaignState.LoadError is string err) C.Log("Quicksave not loaded: " + err + ".");
-            }
+            if (ctl.Pressed(Act.QuickLoad) && !C.S.Ironman) QuickLoad();
             Camera(dt, active);
             hover = active && viewReady && panel == PanelKind.None && !ui.Blocks(ms.Position) ? PickAt(ms.Position, true) : default;
             if (active && viewReady && pendingClick && !ui.Blocks(ms.Position)) { pendingClick = false; ClickWorld(PickAt(ms.Position, false)); }
@@ -196,16 +222,17 @@ sealed partial class MapScreen
                 }
             }
             int week = (int)(C.S.Hours / 168);
-            if (week != lastWeek) { lastWeek = week; C.S.Save("autosave"); }
+            if (week != lastWeek) { lastWeek = week; Write(SaveKind.Auto); }
             if (C.SeasonIndex != season) { var keep = (focus, follow); Open(C); (focus, follow) = keep; C.Log($"{C.Season} comes."); }
             Trails();
         }
         else if (panel == PanelKind.Help && (ctl.Pressed(Act.Help) || ctl.Pressed(Act.Menu))) panel = PanelKind.None;
+        else if (panel == PanelKind.Saves) { if (Pressed(Keys.Escape) || !saves.Open) { saves.Close(); panel = PanelKind.Menu; } }
         else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Quests)
             panel = panel is PanelKind.Upgrade or PanelKind.Roll ? PanelKind.Party : panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Siege ? PanelKind.None : CameFrom(panel);
         if (renaming != null) Rename();
-        else Ui.Typed.Clear();
-        if (renaming == null) ScreenKeys();
+        else if (!saves.Typing) Ui.Typed.Clear();
+        if (renaming == null && panel != PanelKind.Saves) ScreenKeys();
         // A career beat or the council's word waits for the map to be clear (F5).
         if (panel == PanelKind.None && C.Beat != null) { panel = PanelKind.Beat; speed = 0; }
         if (panel == PanelKind.None && C.S.GameOver) { panel = PanelKind.GameOver; speed = 0; }
@@ -352,7 +379,7 @@ sealed partial class MapScreen
         }
         if (pan != Vector2.Zero) { follow = false; focus += pan * zoom * 0.9f * dt; }
         if (!(follow && C.Sailing)) focus = C.Map.InLand(focus); // the view keeps to the land, but follows your ship out
-        yaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt;
+        if (!saves.Typing) yaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt; // Q and E are letters in a save's name
         if (ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
         {
             yaw += (ms.X - pms.X) * 0.006f;
@@ -558,6 +585,7 @@ sealed partial class MapScreen
             }
             DrawLines();
         }
+        if (thumbFor != null) GrabThumb(); // the map is drawn and the interface not yet
         FrameProf.Begin("drawUi");
         long calls0 = FrameProf.On ? gd.Metrics.DrawCount : 0, sprites0 = FrameProf.On ? gd.Metrics.SpriteCount : 0;
         DrawUi();
@@ -768,6 +796,8 @@ sealed partial class MapScreen
                 at = C.S.Settlements.First(t => t.Kind == SettlementKind.Town && t.Faction == C.Captain.Contract);
                 tab = "CONTRACT"; panel = PanelKind.Settlement; break;
             case "map": panel = PanelKind.None; zoom = 330; pitch = 0.95f; break;
+            case "saveas": saves.Show(SaveScreen.Use.Save, C.S); panel = PanelKind.Saves; break;
+            case "load": saves.Show(SaveScreen.Use.Load, C.S); panel = PanelKind.Saves; break;
             case "close": panel = PanelKind.None; zoom = 60; pitch = 0.7f; break;
             case "life": // a pasture and its beasts up close (WL4)
                 panel = PanelKind.None; follow = false; zoom = 46; pitch = 0.72f;

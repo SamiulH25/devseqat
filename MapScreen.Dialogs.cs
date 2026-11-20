@@ -240,7 +240,7 @@ partial class MapScreen
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(44), ui.U(220), ui.U(30)), won ? "PLAY ON" : "CONTINUE"))
         { C.Beat = null; panel = PanelKind.None; }
         if (won && ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(80), ui.U(220), ui.U(30)), "TO THE TITLE"))
-        { C.Beat = null; C.S.Save("autosave"); OnTitle?.Invoke(); }
+        { C.Beat = null; Write(SaveKind.Auto); OnTitle?.Invoke(); }
         if (!won && ui.Button(new Rectangle(r.Right - ui.U(150), r.Bottom - ui.U(44), ui.U(130), ui.U(30)), $"REALM ({ctl.Name(Act.RealmScreen)})"))
         { C.Beat = null; realmTab = 1; OpenScreen(PanelKind.Realm); }
     }
@@ -255,25 +255,37 @@ partial class MapScreen
         if (C.S.Deeds.Count > 0) ui.TextC("LAST DEED: " + C.S.Deeds[^1].Text.ToUpperInvariant(), r.X + r.Width / 2f, y + ui.U(8), Kit.Parchment, 1);
         if (ui.Button(new Rectangle(r.X + r.Width / 2 - ui.U(110), r.Bottom - ui.U(50), ui.U(220), ui.U(32)), "TO THE TITLE"))
         {
-            var p = Path.Combine(CampaignState.SaveDir, "autosave.json");
-            if (File.Exists(p)) File.Delete(p);
+            Saves.EndCampaign(C.S);
             OnTitle?.Invoke();
         }
     }
 
     void MenuPanel()
     {
-        var r = Modal(300, 310, "PAUSED");
+        var r = Modal(300, 386, "PAUSED");
         int y = r.Y + ui.U(54);
         Rectangle B() { var b = new Rectangle(r.X + ui.U(40), y, r.Width - ui.U(80), ui.U(30)); y += ui.U(38); return b; }
         if (ui.Button(B(), "RESUME")) panel = PanelKind.None;
-        if (ui.Button(B(), $"SAVE ({ctl.Name(Act.QuickSave)})")) { Save(); panel = PanelKind.None; }
-        if (ui.Button(B(), $"LOAD ({ctl.Name(Act.QuickLoad)})", !C.S.Ironman && CampaignState.Exists("quicksave")) )
-        {
-            if (CampaignState.Load("quicksave") is CampaignState s) Open(new Campaign(s));
-            else note = (CampaignState.LoadError ?? "NO SAVE").ToUpperInvariant();
-        }
+        bool quick = C.S.CampaignId != "" && File.Exists(Path.Combine(Saves.DirOf(C.S.CampaignId), "quick.json"));
+        if (ui.Button(B(), C.S.Ironman ? "SAVE" : "QUICK SAVE", note: ctl.Name(Act.QuickSave))) { Save(); panel = PanelKind.None; }
+        if (ui.Button(B(), "QUICK LOAD", !C.S.Ironman && quick, ctl.Name(Act.QuickLoad))) { QuickLoad(); panel = PanelKind.None; }
+        if (ui.Button(B(), "SAVE AS...", !C.S.Ironman)) { saves.Show(SaveScreen.Use.Save, C.S); panel = PanelKind.Saves; }
+        if (ui.Button(B(), "LOAD...")) { saves.Show(SaveScreen.Use.Load, C.S); panel = PanelKind.Saves; }
         if (ui.Button(B(), "SETTINGS")) OnSettings?.Invoke();
-        if (ui.Button(B(), "QUIT TO TITLE")) { C.S.Save("autosave"); OnTitle?.Invoke(); }
+        if (ui.Button(B(), "QUIT TO TITLE")) { Write(SaveKind.Auto); OnTitle?.Invoke(); }
+    }
+
+    /// SAVE AS and LOAD: the save screen over the map (SaveScreen.cs). Escape or BACK returns to the menu.
+    void SavesPanel()
+    {
+        bool loading = false;
+        saves.OnLoad ??= p =>
+        {
+            if (OnLoadSave?.Invoke(p) is string why) C.Log("Not loaded: " + why.ToLowerInvariant() + ".");
+            else loading = true;
+        };
+        saves.OnSaved ??= p => thumbFor = p;
+        saves.Draw(ui, ms.ScrollWheelValue - pms.ScrollWheelValue, kb, pkb);
+        if (!saves.Open) panel = loading ? PanelKind.None : PanelKind.Menu;
     }
 }

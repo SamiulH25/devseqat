@@ -64,7 +64,9 @@ Unit sprites are PNGs in `Data/sprites/`, baked from the painting code (`--bake-
 [`PROGRESSION`](docs/archive/PROGRESSION.md), [`WORLD`](docs/archive/WORLD.md), [`TERRAIN`](docs/archive/TERRAIN.md), [`POLISH`](docs/archive/POLISH.md),
 [`VISUALS`](docs/archive/VISUALS.md). **Developers:** [`docs/DEVELOPING.md`](docs/DEVELOPING.md) and [`CLAUDE.md`](CLAUDE.md).
 
-The game opens on a **title screen**: New Campaign, Continue (latest save), Quick Battle (one random battle), Quit.
+The game opens on a **title screen**: New Campaign, Continue (latest save), Load (every campaign and its saves), Quick Battle (one random battle), Quit.
+Each campaign keeps its own saves: the last three autosaves, a quicksave (F5) and saves you name (SAVE AS... in the Esc menu), each with a picture
+of the map. LOAD... in the Esc menu opens any campaign. An Ironman campaign keeps one save.
 To inspect the sprite atlas, run `IRONFIELD_DUMP_ATLAS=/path/atlas.png dotnet run`.
 To render a few staged camera shots as PNGs and quit (works headless with `xvfb-run -a dotnet run`), set `IRONFIELD_SHOTS=/some/dir`
 (`IRONFIELD_CAMPAIGN_SHOTS` does the same for the campaign screens). `IRONFIELD_WEATHER=hour,rain,fog` and `IRONFIELD_GROUND=river` set a quick battle's

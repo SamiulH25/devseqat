@@ -368,7 +368,7 @@ a whole campaign.
 - `Data/names.json`: places, lords and company name patterns.
 
 ### 10.3 Saves
-- JSON in `saves/` (in the user's data folder in release builds). One file per slot, plus an autosave on entering a battle and on each new week.
+- JSON in `saves/` (in the user's data folder in release builds), one folder per campaign: rotating autosaves (on entering a battle and on each new week, three kept), a quicksave and named saves (docs/SAVES.md).
 - Saves include the campaign RNG state; battle seeds are derived (5.2), so reloading before a battle replays the same field and armies.
 - Saves are versioned. A loader upgrades older versions or refuses them with a clear message.
 

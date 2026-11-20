@@ -614,6 +614,8 @@ public sealed class CampaignState
     /// Goods from the field you carry to sell (kind id -> lots; Campaign/Goods.cs).
     public SortedDictionary<string, int> Goods = new();
     public bool Ironman, GameOver;
+    /// The campaign's save folder (Campaign/Saves.cs), given on its first save and set from the folder on load.
+    public string CampaignId = "";
     /// Why the campaign ended ("" = the Ironman captain was not ransomed), and whether it was won (5.5; play may go on).
     public string EndReason = "";
     public bool Won;
@@ -695,10 +697,11 @@ public sealed class CampaignState
         : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Ironfield", "saves");
 
     /// Write to a temporary file first and keep the previous save as .bak, so a crash mid-save never loses a campaign.
-    public void Save(string slot)
+    /// Where saves go is `Saves` (Campaign/Saves.cs): a folder a campaign.
+    public void SaveFile(string p)
     {
-        Directory.CreateDirectory(SaveDir);
-        string p = Path.Combine(SaveDir, slot + ".json"), tmp = p + ".tmp";
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(p))!);
+        string tmp = p + ".tmp";
         File.WriteAllText(tmp, Serialize());
         if (File.Exists(p)) File.Copy(p, p + ".bak", true);
         File.Move(tmp, p, true);
@@ -710,29 +713,26 @@ public sealed class CampaignState
     /// Why the last Load returned null for a save that exists (an old or unreadable file), for the screens to show.
     public static string? LoadError;
 
-    public static CampaignState? Load(string slot)
+    public static CampaignState? LoadFile(string p)
     {
-        var p = Path.Combine(SaveDir, slot + ".json");
         RestoredFromBackup = false;
         LoadError = null;
-        if (!File.Exists(p)) return null;
+        if (!File.Exists(p)) { LoadError = "the save is gone"; return null; }
         try { return Deserialize(File.ReadAllText(p)); }
         catch (Exception e)
         {
             // A save from before the overhaul is refused outright (no migration, by design); a damaged one falls back to its backup.
             if (e.Message != TooOld && File.Exists(p + ".bak"))
             {
-                Console.WriteLine($"save {slot} unreadable ({e.Message}); restoring the backup");
+                Console.WriteLine($"save {p} unreadable ({e.Message}); restoring the backup");
                 try { var back = Deserialize(File.ReadAllText(p + ".bak")); RestoredFromBackup = true; return back; }
                 catch (Exception e2) { e = e2; }
             }
             LoadError = e.Message;
-            Console.WriteLine($"save {slot} not loaded: {e.Message}");
+            Console.WriteLine($"save {p} not loaded: {e.Message}");
             return null;
         }
     }
-
-    public static bool Exists(string slot) => File.Exists(Path.Combine(SaveDir, slot + ".json"));
 }
 
 /// Deterministic random numbers whose state lives in the save (System.Random cannot be saved). xorshift64*.

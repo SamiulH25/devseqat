@@ -432,7 +432,9 @@ Key classes:
 (`RefuseOldSave` test). If you change the save shape in a way old saves cannot load: bump the version (old saves will then
 be refused). Adding a new field with a sensible default does **not** need a bump: missing JSON fields keep their default.
 
-`Save(slot)` writes a temp file first and keeps a `.bak`. Saves go to `CampaignState.SaveDir` (`IRONFIELD_SAVES` if set).
+`SaveFile(path)` writes a temp file first and keeps a `.bak`; `LoadFile(path)` falls back to the `.bak`. Where saves go is
+`Saves` (Campaign/Saves.cs): a folder a campaign under `CampaignState.SaveDir` (`IRONFIELD_SAVES` if set), with rotating autosaves,
+a quicksave, named saves, a `.meta` card and a map picture each. Layout and rules: docs/SAVES.md.
 
 ### 5.2 Randomness
 

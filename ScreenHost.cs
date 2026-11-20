@@ -51,6 +51,10 @@ sealed class ScreenHost : Game
     static readonly bool townOnly = Environment.GetEnvironmentVariable("IRONFIELD_TOWN_ONLY") == "1";
     /// Debug: with IRONFIELD_MAP_ONLY=1 a campaign shots run saves only the map: the overview, the land and its life, each kind of country.
     static readonly bool mapOnly = Environment.GetEnvironmentVariable("IRONFIELD_MAP_ONLY") == "1";
+    /// Debug: with IRONFIELD_SAVES_ONLY=1 a campaign shots run writes a few saves (with their map pictures) into IRONFIELD_SAVES,
+    /// and a second campaign's, then saves the save screens: `campaign-save-as.png`, `campaign-load.png`.
+    static readonly bool savesOnly = Environment.GetEnvironmentVariable("IRONFIELD_SAVES_ONLY") == "1";
+    int saveShot;
     string? pendingShot;
     KeyboardState kb;
     MouseState ms;
@@ -125,6 +129,7 @@ sealed class ScreenHost : Game
         battle.OnCampaignBattleOver = FinishCampaignBattle;
         battle.OnTitle = () => mode = Mode.Title;
         map = new MapScreen(GraphicsDevice, Sb, Art, Font, Shading, Ctl) { OnBattle = StartCampaignBattle, OnTitle = () => mode = Mode.Title, OnSettings = OpenSettings };
+        map.OnLoadSave = LoadSave;
         title = new TitleScreen(this);
         lab = new UiLab(this) { OnBack = () => mode = Mode.Title };
         if (lab.ShotsDir != null) mode = Mode.Lab;
@@ -199,16 +204,22 @@ sealed class ScreenHost : Game
     /// A message for the title screen (why a save would not load).
     public string TitleNote = "";
 
-    public bool CanContinue => CampaignState.Exists("autosave") || CampaignState.Exists("quicksave");
+    public bool CanContinue => Saves.Latest() != null;
 
+    /// CONTINUE: the newest save of a campaign still at war (Campaign/Saves.cs).
     public void ContinueCampaign()
     {
-        string? latest = new[] { "autosave", "quicksave" }.Where(CampaignState.Exists)
-            .OrderByDescending(n => File.GetLastWriteTimeUtc(Path.Combine(CampaignState.SaveDir, n + ".json"))).FirstOrDefault();
-        if (latest == null) return;
-        if (CampaignState.Load(latest) is not CampaignState s) { TitleNote = (CampaignState.LoadError ?? "the save could not be read").ToUpperInvariant(); return; }
+        if (Saves.Latest() is not SaveEntry latest) return;
+        if (LoadSave(latest.Path) is string why) TitleNote = why;
+    }
+
+    /// Open a save file behind the loading screen; the reason it cannot be read otherwise (nothing changes then).
+    public string? LoadSave(string path)
+    {
+        if (Saves.Load(path) is not CampaignState s) return (CampaignState.LoadError ?? "the save could not be read").ToUpperInvariant();
         TitleNote = "";
         Load("THE CAMPAIGN GOES ON", () => { loadStage = "READING THE CHRONICLE"; return new Campaign(s); });
+        return null;
     }
 
     /// The UI lab: a gallery of interface concepts (F3 on the title screen).
@@ -223,7 +234,7 @@ sealed class ScreenHost : Game
 
     void StartCampaignBattle(BattleSetup s)
     {
-        campaign!.S.Save("autosave");
+        Saves.Save(campaign!.S, SaveKind.Auto);
         setup = s;
         battle.BeginCampaign(s, campaign!.S);
         mode = Mode.Battle;
@@ -444,6 +455,21 @@ sealed class ScreenHost : Game
         throw new InvalidOperationException("campaign shots staging refused: " + why);
     }
 
+    /// The save screens over the map (IRONFIELD_SAVES_ONLY): a quicksave and a named save of this campaign, another campaign's.
+    void SaveShots(Campaign c)
+    {
+        switch (saveShot++)
+        {
+            case 0: map.Stage("map"); break;
+            case 1: map.ShotSave(SaveKind.Quick); break;
+            case 2: map.Stage("close"); c.S.Hours += 50; map.ShotSave(SaveKind.Named, "BEFORE THE SIEGE"); break;
+            case 3: Saves.Save(Campaign.New(77).S, SaveKind.Auto); map.Stage("saveas"); pendingShot = "campaign-save-as"; break;
+            case 4: map.Stage("load"); pendingShot = "campaign-load"; break;
+            default: Exit(); return;
+        }
+        shotFrames = 0;
+    }
+
     void CampaignShots()
     {
         var c = campaign!;
@@ -461,6 +487,7 @@ sealed class ScreenHost : Game
             return;
         }
         if (mapOnly && cStage == 2) { Exit(); return; }
+        if (savesOnly) { SaveShots(c); return; }
         if (townOnly && cStage < 56) cStage = 56;
         switch (cStage)
         {

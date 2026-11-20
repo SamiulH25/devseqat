@@ -42,7 +42,7 @@ sealed partial class TitleScreen
     float lean;  // the mouse's lean in pixels (the near ridge moves by all of it)
     int u = 1;   // one interface unit, at least a pixel
 
-    Heraldry Colours => Style.Sides[card?.Palette ?? 0];
+    Heraldry Colours => Style.Sides[Math.Clamp(Saves.Latest()?.Meta?.Palette ?? 0, 0, Style.Sides.Length - 1)];
 
     /// A length of the picture: 1 at 540 lines, growing with the window (the men and the castle keep whole pixels instead).
     float Q(float v) => v * ui.H / 540f;

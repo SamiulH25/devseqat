@@ -54,6 +54,7 @@ partial class MapScreen
             case PanelKind.Roll: RollPanel(); break;
             case PanelKind.Results: ResultsPanel(); break;
             case PanelKind.Menu: MenuPanel(); break;
+            case PanelKind.Saves: SavesPanel(); break;
             case PanelKind.GameOver: GameOverPanel(); break;
             case PanelKind.Siege: SiegePanel(); break;
             case PanelKind.Characters: CharactersPanel(); break;

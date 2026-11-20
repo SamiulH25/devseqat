@@ -513,11 +513,80 @@ public static partial class SelfTest
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "old.json"), json);
             File.WriteAllText(Path.Combine(dir, "old.json.bak"), json);
-            Check(CampaignState.Load("old") == null && CampaignState.LoadError == CampaignState.TooOld, "loading an old save from disk returns nothing, with the reason");
-            c.S.Save("new");
-            Check(CampaignState.Load("new") != null && CampaignState.LoadError == null, "a new save loads from disk");
+            Check(CampaignState.LoadFile(Path.Combine(dir, "old.json")) == null && CampaignState.LoadError == CampaignState.TooOld, "loading an old save from disk returns nothing, with the reason");
+            c.S.SaveFile(Path.Combine(dir, "new.json"));
+            Check(CampaignState.LoadFile(Path.Combine(dir, "new.json")) != null && CampaignState.LoadError == null, "a new save loads from disk");
         }
         finally { Environment.SetEnvironmentVariable("IRONFIELD_SAVES", was); Directory.Delete(dir, true); }
+    }
+
+    /// Several campaigns (docs/SAVES.md): a folder each; autosaves rotate, the quicksave and named saves sit beside them; each save
+    /// has a card the screens read; CONTINUE takes the newest war not over; Ironman keeps one save; old single-slot saves move in.
+    static void SaveFolders()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "ironfield-saves-" + Environment.ProcessId);
+        string? was = Environment.GetEnvironmentVariable("IRONFIELD_SAVES");
+        Environment.SetEnvironmentVariable("IRONFIELD_SAVES", dir);
+        Saves.Forget();
+        try
+        {
+            // Old saves first: an autosave and a quicksave of one campaign, as builds before folders wrote them.
+            Directory.CreateDirectory(dir);
+            var old = Campaign.New(5);
+            File.WriteAllText(Path.Combine(dir, "autosave.json"), old.S.Serialize());
+            old.S.Hours += 30;
+            File.WriteAllText(Path.Combine(dir, "quicksave.json"), old.S.Serialize());
+            var listed = Saves.Campaigns();
+            Check(listed.Count == 1 && listed[0].Saves.Count == 2, $"the old autosave and quicksave move into one campaign folder ({listed.Count} campaigns)");
+            Check(!File.Exists(Path.Combine(dir, "autosave.json")) && !File.Exists(Path.Combine(dir, "quicksave.json")), "nothing is left in the old places");
+            Check(listed[0].Saves.All(e => e.Meta != null && File.Exists(Path.ChangeExtension(e.Path, ".meta"))), "each moved save has its card");
+
+            var a = Campaign.New(11);
+            var b = Campaign.New(12);
+            for (int i = 0; i < Saves.AutoKeep + 2; i++) { a.S.Hours += 24; Saves.Save(a.S, SaveKind.Auto); }
+            Check(a.S.CampaignId != "" && Directory.Exists(Saves.DirOf(a.S.CampaignId)), "a campaign gets a folder on its first save");
+            var autos = Saves.List(Saves.DirOf(a.S.CampaignId)).Where(e => e.Kind == SaveKind.Auto).ToList();
+            Check(autos.Count == Saves.AutoKeep, $"autosaves rotate: {autos.Count} kept, wanted {Saves.AutoKeep}");
+            Check(autos[0].Meta!.Day == (int)(a.S.Hours / 24) + 1, "the newest autosave is listed first");
+            Saves.Save(a.S, SaveKind.Quick);
+            Saves.Save(a.S, SaveKind.Quick);
+            Check(Saves.CannotSave(a.S, SaveKind.Named, " ") != null, "a named save needs a name");
+            string named = Saves.Save(a.S, SaveKind.Named, "Before the siege!");
+            Check(Path.GetFileName(named) == "named-before-the-siege.json", "a named save's file is a safe slug: " + Path.GetFileName(named));
+            var entries = Saves.List(Saves.DirOf(a.S.CampaignId));
+            Check(entries.Count(e => e.Kind == SaveKind.Quick) == 1, "one quicksave a campaign");
+            Check(entries.Any(e => e.Kind == SaveKind.Named && e.Label == "BEFORE THE SIEGE!"), "the named save keeps the name as typed");
+
+            Saves.Save(b.S, SaveKind.Auto);
+            Check(b.S.CampaignId != a.S.CampaignId && Saves.Campaigns().Count == 3, "a second campaign has its own folder and leaves the first alone");
+            Check(Saves.Latest()?.Path.Contains(b.S.CampaignId) == true, "CONTINUE opens the newest save");
+
+            // A save loads into the campaign it came from, even with the card gone.
+            File.Delete(Path.ChangeExtension(named, ".meta"));
+            Saves.Changed();
+            var back = Saves.Load(named);
+            Check(back != null && back.CampaignId == a.S.CampaignId && back.Hours == a.S.Hours, "a save loads and knows its campaign");
+            Check(Saves.List(Saves.DirOf(a.S.CampaignId)).All(e => e.Meta != null), "a save without its card is read and its card written again");
+
+            // Ironman: one save only; the war's end takes the campaign.
+            var iron = Campaign.New(13);
+            iron.S.Ironman = true;
+            Check(Saves.CannotSave(iron.S, SaveKind.Named, "x") != null && Saves.CannotSave(iron.S, SaveKind.Quick) != null, "an Ironman campaign refuses quick and named saves");
+            for (int i = 0; i < 3; i++) { iron.S.Hours += 24; Saves.Save(iron.S, SaveKind.Quick); }
+            Check(Saves.List(Saves.DirOf(iron.S.CampaignId)).Count == 1, "an Ironman campaign keeps one save");
+            iron.S.GameOver = true;
+            Saves.Save(iron.S, SaveKind.Auto);
+            Check(Saves.Latest()?.Path.Contains(iron.S.CampaignId) != true, "CONTINUE skips a war that is over");
+            Saves.EndCampaign(iron.S);
+            Check(!Directory.Exists(Saves.DirOf(iron.S.CampaignId)), "an Ironman campaign's end takes its folder");
+
+            // Deleting: a save, then the last save, takes the folder with it.
+            foreach (var e in Saves.List(Saves.DirOf(b.S.CampaignId))) Saves.Delete(e);
+            Check(!Directory.Exists(Saves.DirOf(b.S.CampaignId)), "deleting a campaign's last save removes its folder");
+            Saves.DeleteCampaign(a.S.CampaignId);
+            Check(Saves.Campaigns().Count == 1, "deleting a campaign removes it from the list");
+        }
+        finally { Environment.SetEnvironmentVariable("IRONFIELD_SAVES", was); Saves.Forget(); if (Directory.Exists(dir)) Directory.Delete(dir, true); }
     }
 
     /// The roll (docs/archive/LEGACY.md L1): each company names a first man, names fit its culture, battles add names up to the cap, the
