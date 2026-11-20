@@ -30,13 +30,13 @@ public static partial class SelfTest
     {
         foreach (var t in Troops.All.Where(t => !t.Wild && !t.Leader && t.Class != UnitClass.Caster)) // a mage's tier shows in his spells (MagesByTier)
         {
-            if (t.Tier < 5) Check(t.Style == AttackStyle.None && t.StyleRank == 0, $"{t.Name} (tier {t.Tier}) has no attack style");
-            else Check(t.StyleRank == t.Tier - 4, $"{t.Name}'s style rank follows its tier");
+            if (t.Tier < 4) Check(t.Style == AttackStyle.None && t.StyleRank == 0, $"{t.Name} (tier {t.Tier}) has no attack style");
+            else Check(t.StyleRank == t.Tier - 3, $"{t.Name}'s style rank follows its tier");
             foreach (var n in t.UpgradesTo.Select(Troops.Get).Where(n => t.Style != AttackStyle.None && n.Look.Weapon == t.Look.Weapon && n.HasShield == t.HasShield))
                 Check(n.Style == t.Style && n.StyleRank > t.StyleRank, $"{n.Name} keeps {t.Name}'s style and raises it");
         }
         int styled = Troops.All.Count(t => t.Style != AttackStyle.None);
-        Check(Troops.All.Where(t => !t.Wild && !t.Leader && t.Tier >= 5 && t.Class != UnitClass.Caster).All(t => t.Style != AttackStyle.None), "every tier V-VII troop has an attack style");
+        Check(Troops.All.Where(t => !t.Wild && !t.Leader && t.Tier >= 4 && t.Class != UnitClass.Caster).All(t => t.Style != AttackStyle.None), "every tier IV-VI troop has an attack style");
         Check(Enum.GetValues<AttackStyle>().Skip(1).All(s => Battle.StyleText(s).name != ""), "every style has a name for the tooltip");
         Console.WriteLine($"styles: {styled} troops with an attack style");
     }
@@ -56,22 +56,22 @@ public static partial class SelfTest
     /// D2: a shield bash shoves and staggers a man; a lance and a close bolt throw him back.
     static void KnockThrowsBack()
     {
-        var (b, a, foes) = StyleScene("allfather_guard", new Vector2(0, 1.3f));
+        var (b, a, foes) = StyleScene("longship_huscarls", new Vector2(0, 1.3f));
         a.Blows = 3; // his third blow: a bash
         b.Hit(a, foes[0], 10, false);
         Check(foes[0].Pos.Y > 1.4f && foes[0].Action == UnitAction.Stagger, $"a shield bash shoves a man ({foes[0].Pos.Y - 1.3f:0.00} m) and staggers him");
-        (b, a, foes) = StyleScene("allfather_guard", new Vector2(0, 1.3f));
+        (b, a, foes) = StyleScene("longship_huscarls", new Vector2(0, 1.3f));
         a.Blows = 2;
         b.Hit(a, foes[0], 10, false);
         Check(foes[0].Pos.Y < 1.35f, "the blows between bashes do not");
 
-        (b, a, foes) = StyleScene("grail_knights", new Vector2(0, 2.5f), new Vector2(0, 4.0f));
+        (b, a, foes) = StyleScene("paladin_knights", new Vector2(0, 2.5f), new Vector2(0, 4.0f));
         float behind = foes[1].Hp;
         b.Hit(a, foes[0], 40, false, lance: true);
         Check(foes[0].Pos.Y > 3.5f || foes[0].Dead, "a lance rides a man down");
         Check(foes[1].Hp < behind, "and the horse tramples the man behind");
 
-        (b, a, foes) = StyleScene("grand_arbalests", new Vector2(0, 12));
+        (b, a, foes) = StyleScene("guild_sharpshooters", new Vector2(0, 12));
         b.Hit(a, foes[0], 5, true);
         Check(foes[0].Pos.Y > 12.4f, "a close bolt punches a man back");
     }
@@ -79,7 +79,7 @@ public static partial class SelfTest
     /// D2: a pike thrust that lands carries on to the man behind; the plain pike stops at the first.
     static void ThrustThrough()
     {
-        foreach (var (troop, through) in new[] { (Troops.Get("imperial_pikemen"), true), (Plain("imperial_pikemen"), false) })
+        foreach (var (troop, through) in new[] { (Troops.Get("grand_phalanx"), true), (Plain("grand_phalanx"), false) })
         {
             var (b, a, foes) = StyleScene(troop, new(0, 2), new(0, 3.2f), new(1.5f, 3.2f));
             float hp1 = foes[1].Hp, hp2 = foes[2].Hp;
@@ -107,7 +107,7 @@ public static partial class SelfTest
             }
             return dead;
         }
-        int crush = Kills(Troops.Get("doomcleavers")), plain = Kills(Plain("doomcleavers"));
+        int crush = Kills(Troops.Get("valhalla_reavers")), plain = Kills(Plain("valhalla_reavers"));
         Console.WriteLine($"styles: Doomcleavers kill {crush} shield men in three fights, {plain} without the crush");
         Check(crush > plain, "a crush gets through shields faster than a plain axe");
     }
@@ -116,8 +116,8 @@ public static partial class SelfTest
     /// tier IV-VI foes, three seeds (score: own men standing plus foes out of the fight, dead or running; one man's slack for the dice).
     static void StylesOnlyAdd()
     {
-        foreach (var (troop, foe) in new[] { ("allfather_guard", "iron_legionaries"), ("doomcleavers", "citadel_sentinels"), ("grand_blademasters", "citadel_sentinels"),
-                     ("imperial_pikemen", "grand_phalanx"), ("grail_knights", "paladin_knights"), ("tempest_spears", "iron_legionaries"), ("emir_mamluks", "storm_riders") })
+        foreach (var (troop, foe) in new[] { ("iron_thanes", "iron_legionaries"), ("valhalla_reavers", "citadel_sentinels"), ("grand_blademasters", "citadel_sentinels"),
+                     ("grand_phalanx", "grand_phalanx"), ("paladin_knights", "paladin_knights"), ("dragon_glaives", "iron_legionaries"), ("emir_mamluks", "storm_riders") })
         {
             float Score(UnitType t)
             {
@@ -160,7 +160,7 @@ public static partial class SelfTest
         }
         var shields = Troops.Get("levies");
         Check(shields.HasShield, "levies carry a shield for this test");
-        float far = Through(Troops.Get("sovereign_longbowmen"), true), near = Through(Troops.Get("sovereign_longbowmen"), false), plain = Through(Plain("sovereign_longbowmen"), true);
+        float far = Through(Troops.Get("royal_yeomen"), true), near = Through(Troops.Get("royal_yeomen"), false), plain = Through(Plain("royal_yeomen"), true);
         Console.WriteLine($"styles: arrows past a front shield: longbow long shot {far:P0}, short shot {near:P0}, plain bow long shot {plain:P0}");
         Check(far > near + 0.05f, "a long longbow shot gets past a front shield more often than a short one");
         Check(MathF.Abs(plain - near) < 0.06f, "a plain bow's long shot is no better than its short one");

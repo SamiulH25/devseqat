@@ -125,7 +125,7 @@ partial class MapScreen
         PortraitWell(t, new Rectangle(row.X + ui.U(8), row.Y + ui.U(6), ph, ph), palette);
         int tx = row.X + ph + ui.U(20), ty = row.Y + ui.U(8);
         ui.TextFit(t.Name.ToUpperInvariant(), tx, ty, ui.U(320), Style.Text, 2);
-        for (int i = 0; i < 7; i++) ui.Rect(new Rectangle(tx + i * ui.U(7), ty + ui.U(21), ui.U(5), ui.U(5)), i < t.Tier ? Kit.Gilt : Color.White * 0.1f);
+        for (int i = 0; i < Troops.MaxTier; i++) ui.Rect(new Rectangle(tx + i * ui.U(7), ty + ui.U(21), ui.U(5), ui.U(5)), i < t.Tier ? Kit.Gilt : Color.White * 0.1f);
         ui.Text($"TIER {Style.Numerals[t.Tier]} . {kind}", tx + ui.U(54), ty + ui.U(20), Style.Dim, 1);
         TroopStats(t, tx, ty + ui.U(36));
         ui.Pips(new Rectangle(tx, ty + ui.U(54), ui.U(200), ui.U(7)), cap == 0 ? 0 : ready / (float)cap, Style.Friendly, 12);

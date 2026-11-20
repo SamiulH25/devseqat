@@ -164,7 +164,7 @@ public sealed partial class Campaign
         foreach (var role in roles)
         {
             if (lineMen <= 0) break;
-            string troop = Armies.LineTroop(role, Math.Clamp(tier - 1, 1, 7), o.Patron);
+            string troop = Armies.LineTroop(role, Math.Clamp(tier - 1, 1, Troops.MaxTier), o.Patron);
             int n = Math.Min(lineMen, Rules.CapOf(troop, role));
             p.Companies.Add(NewCompany(troop, role, n, 0, home));
             lineMen -= n;

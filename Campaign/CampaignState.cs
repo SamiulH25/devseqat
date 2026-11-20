@@ -544,7 +544,7 @@ public sealed class CaptainLook
 /// (free gear is always yours and is not listed).
 public sealed class CaptainKit
 {
-    public string Weapon = "arming_sword", Side = "greatsword", Shield = "heater_shield", Body = "mail", Helm = "sallet", Horse = "courser";
+    public string Weapon = "arming_sword", Side = "greatsword", Shield = "round_shield", Body = "gambeson", Helm = "kettle_hat", Horse = "courser";
     /// Old saves only: the gear ids owned before pieces were things; `Campaign.MigrateGear` moves them into `CaptainState.Baggage`.
     public List<string> Owned = new();
     public IEnumerable<string> Worn => new[] { Weapon, Side, Shield, Body, Helm, Horse }.Where(id => id != "");

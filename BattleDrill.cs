@@ -9,12 +9,12 @@ public enum Grade { Rabble, Trained, Veteran, Elite }
 /// well its ranks hold right now. Men read Drill x Formed (Squad.Discipline); below Formed 0.4 the ranks are broken.
 public partial class Battle
 {
-    /// Drill by troop tier 1-7.
-    static readonly float[] TierDrill = { 0.10f, 0.10f, 0.22f, 0.38f, 0.50f, 0.64f, 0.78f, 0.92f };
+    /// Drill by troop tier 1-6.
+    static readonly float[] TierDrill = { 0.10f, 0.10f, 0.22f, 0.38f, 0.54f, 0.72f, 0.92f };
 
     /// A troop's own drill: its data's, else its tier's. Creatures have none (the raised dead a little: they keep their
     /// places, mindlessly; their order never breaks, see UpdateFormed).
-    public static float DrillOf(UnitType t) => t.Drill >= 0 ? t.Drill : t.Has("raised") ? 0.25f : t.Wild ? 0 : TierDrill[Math.Clamp(t.Tier, 0, 7)];
+    public static float DrillOf(UnitType t) => t.Drill >= 0 ? t.Drill : t.Has("raised") ? 0.25f : t.Wild ? 0 : TierDrill[Math.Clamp(t.Tier, 0, Troops.MaxTier)];
 
     /// A company's drill: its men's (averaged over a mixed company), plus cohesion (up to +0.1), its officer
     /// (Veteran +0.05, Hothead -0.05) and a companion at its head (+0.05). A sergeant adds his skill (AddDivision).

@@ -23,9 +23,9 @@ public sealed partial class SpriteSheet
 
     public static readonly Dictionary<string, float> Grip = new()
     {
-        ["sword"] = 0.20f, ["longsword"] = 0.17f, ["longsword_gilded"] = 0.17f, ["axe"] = 0.2f, ["spear"] = 0.3f, ["pike"] = 0.3f, ["lance"] = 0.3f, ["pennonlance"] = 0.3f,
-        ["bow"] = 0.5f, ["longbow"] = 0.5f, ["recurve"] = 0.5f, ["crossbow"] = 0.55f, ["arbalest"] = 0.55f, ["greatsword"] = 0.15f, ["flamberge"] = 0.15f,
-        ["daneaxe"] = 0.3f, ["bardiche"] = 0.3f, ["club"] = 0.22f, ["staff"] = 0.55f, ["mace"] = 0.2f, ["morningstar"] = 0.2f,
+        ["sword"] = 0.20f, ["sword_viking"] = 0.20f, ["sword_knightly"] = 0.20f, ["longsword"] = 0.19f, ["longsword_estoc"] = 0.19f, ["longsword_gilded"] = 0.19f, ["axe"] = 0.2f, ["axe_bearded"] = 0.2f, ["spear"] = 0.3f, ["spear_winged"] = 0.3f, ["pike"] = 0.3f, ["lance"] = 0.3f, ["pennonlance"] = 0.3f,
+        ["bow"] = 0.5f, ["bow_horn"] = 0.5f, ["longbow"] = 0.5f, ["recurve"] = 0.5f, ["crossbow"] = 0.55f, ["crossbow_heavy"] = 0.55f, ["arbalest"] = 0.55f, ["greatsword"] = 0.22f, ["greatsword_claymore"] = 0.22f, ["flamberge"] = 0.22f,
+        ["daneaxe"] = 0.3f, ["daneaxe_bearded"] = 0.3f, ["bardiche"] = 0.3f, ["club"] = 0.22f, ["staff"] = 0.55f, ["mace"] = 0.2f, ["morningstar"] = 0.2f,
         ["halberd"] = 0.35f, ["billhook"] = 0.35f, ["glaive"] = 0.35f, ["javelin"] = 0.45f, ["sling"] = 0.1f, ["scimitar"] = 0.19f, ["falchion"] = 0.19f, ["warhammer"] = 0.3f,
     };
 
@@ -342,7 +342,7 @@ public sealed partial class SpriteSheet
                 if (v == "s") for (int y = 4; y < 14; y++) for (int x = 9; x < 18; x++) { if (InEl(x + 0.5f, y + 0.5f, 15.5f, 10f, 4.6f, 5.6f)) c.Clear(x, y); }
                 return c;
             }
-            case "kettle":
+            case "kettle": case "kettle_brimmed":
             {
                 var c = new Canvas(18, 12);
                 c.Fill((x, y) => InEl(x, y, 9, 7.5f, 6.2f, 7f) && y < 7.6f, (x, y) => new Vector3((x - 9) / 7, (y - 7.5f) / 8, 0.6f), plate);
@@ -369,7 +369,7 @@ public sealed partial class SpriteSheet
                 c.Rect(5, 7, 17, 8.5f, trim, 0.1f);
                 return c;
             }
-            case "sallet":
+            case "sallet": case "sallet_visored":
             case "sallet_crest":
             case "sallet_bevor":
             {
@@ -383,7 +383,7 @@ public sealed partial class SpriteSheet
                 if (kind == "sallet_bevor") c.Rect(3, top + 10.5f, 15, top + 16.5f, plate, -0.08f);
                 return c;
             }
-            case "spangen":
+            case "spangen": case "spangen_spectacle":
             case "spangen_horns":
             case "spangen_wolf":
             {
@@ -698,11 +698,11 @@ public sealed partial class SpriteSheet
         bool side = v == "s";
         var c = new Canvas(side ? 13 : 20, 23);
         Func<float, (float, float)> span = side ? SideSpan : TorsoSpan;
-        var m = body switch { "gambeson" or "gambeson_fur" => quilt, "mail" or "mail_fur" => mail, "plate" or "plate_gilded" or "plate_fur" or "breastplate" => plate, "fur" => clothDk, "rags" => rag, "shroud" => shroud, "robe" => robe,
+        var m = body switch { "gambeson" or "gambeson_fur" => quilt, "mail" or "mail_hauberk" or "mail_fur" => mail, "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur" or "breastplate" => plate, "fur" => clothDk, "rags" => rag, "shroud" => shroud, "robe" => robe,
             "lamellar" or "lamellar_gilded" or "scale" or "scale_iron" => plate, "deel" or "deel_fur" => cloth, "brigandine" or "brigandine_gilded" or "coatofplates" => felt, "leather" => leather, _ => cloth };
         if (body == "bones") return Ribs(c, span, side);
         if (PeopleTorso(body, v) is { } own) return own;
-        if (body is "plate" or "plate_gilded" or "plate_fur")
+        if (body is "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur")
         {
             PlateTorso(c, v);
             if (body == "plate_gilded")
@@ -1019,7 +1019,7 @@ public sealed partial class SpriteSheet
             case "bones": c.Rect(3, 0, 5, 20, bone); c.Ellipse(4, 10, 1.6f, 1.4f, bone, 0.1f); break; // a bare arm bone and its elbow
             case "shroud": c.Rect(2.2f, 0, 5.8f, 20, pale); c.Rect(1.5f, 0, 6.5f, 5, shroud); break;
             case "robe": c.Rect(1, 0, 7, 20, robe); c.Rect(0.5f, 16, 7.5f, 20, robe, -0.15f); break; // wide sleeves
-            case "mail": case "mail_fur":
+            case "mail": case "mail_hauberk": case "mail_fur":
                 c.Rect(1.5f, 0, 6.5f, 20, mail);
                 c.Rect(1.5f, 0, 6.5f, 1.6f, leather); // a leather cuff at the wrist
                 if (body == "mail_fur") c.Rect(1, 0, 7, 4, fur);
@@ -1028,7 +1028,7 @@ public sealed partial class SpriteSheet
             case "leather": case "coatofplates": c.Rect(1.5f, 0, 6.5f, 20, leather); c.Rect(1, 0, 7, 4, body == "coatofplates" ? plate : leather); break;
             case "deel": case "deel_fur": c.Rect(1, 0, 7, 20, cloth); c.Rect(1, 16.5f, 7, 20, trim); if (body == "deel_fur") c.Rect(1, 0, 7, 3, fur); break;
             case "brigandine": case "brigandine_gilded": c.Rect(1.5f, 0, 6.5f, 20, mail); c.Rect(1, 0, 7, 7, clothDk); c.Set(3, 3, brass, 0.65f); c.Set(5, 5, brass, 0.65f); break;
-            case "plate": case "plate_gilded": case "plate_fur": case "breastplate":
+            case "plate": case "plate_fluted": case "plate_surcoat": case "plate_gilded": case "plate_fur": case "breastplate":
                 // Vambrace (forearm), the elbow cop with its wing, lames and the upper cannon to the shoulder.
                 c.Rect(1.5f, 0, 6.5f, 20, body == "breastplate" ? cloth : plate);
                 if (body == "breastplate") c.Rect(1, 0, 7, 6, plate);
@@ -1132,7 +1132,7 @@ public sealed partial class SpriteSheet
         var c = new Canvas(20, 25);
         switch (kind)
         {
-            case "round":
+            case "round": case "round_iron":
             {
                 c.Fill((x, y) => InEl(x, y, 10, 12.5f, 9.6f, 9.6f), (x, y) => new Vector3((x - 10) / 14, (y - 12.5f) / 14, 1), wood);
                 for (int y = 0; y < 25; y++) for (int x = 0; x < 20; x++)
@@ -1224,8 +1224,8 @@ public sealed partial class SpriteSheet
     {
         switch (kind)
         {
-            case "sword": return ArmingSword();
-            case "longsword": return Longsword();
+            case "sword": case "sword_viking": case "sword_knightly": return ArmingSword();
+            case "longsword": case "longsword_estoc": return Longsword();
             case "longsword_gilded":
             {
                 var c = Longsword();
@@ -1233,7 +1233,7 @@ public sealed partial class SpriteSheet
                     if (y >= c.H - 11 && c.Has(x, y) && (x == 0 || x == c.W - 1 || y >= c.H - 4)) c.Set(x, y, brass, 0.55f);
                 return c;
             }
-            case "axe":
+            case "axe": case "axe_bearded":
             {
                 var c = new Canvas(8, 30);
                 c.Rect(3, 2, 5, 30, wood);
@@ -1242,7 +1242,7 @@ public sealed partial class SpriteSheet
                 c.Rect(2.5f, 0, 5.5f, 2.5f, iron);
                 return c;
             }
-            case "spear": return Polearm(65, 9, 2.9f, false);
+            case "spear": case "spear_winged": return Polearm(65, 9, 2.9f, false);
             case "pike": return Polearm(90, 7, 2.2f, false);
             case "lance": return Polearm(93, 7, 1.8f, true);
             case "pennonlance":
@@ -1256,7 +1256,7 @@ public sealed partial class SpriteSheet
                 }
                 return c;
             }
-            case "bow": return Bow(33);
+            case "bow": case "bow_horn": return Bow(33);
             case "recurve":
             {
                 // Composite horn recurve bow with swept tips
@@ -1270,7 +1270,7 @@ public sealed partial class SpriteSheet
                 }
                 return c;
             }
-            case "greatsword": return Greatsword();
+            case "greatsword": case "greatsword_claymore": return Greatsword();
             case "flamberge":
             {
                 var c = Greatsword();
@@ -1287,7 +1287,7 @@ public sealed partial class SpriteSheet
                 c.Rect(5, 42, 8, 48, leather);
                 return c;
             }
-            case "daneaxe":
+            case "daneaxe": case "daneaxe_bearded":
             {
                 var c = new Canvas(12, 62);
                 c.Rect(5, 2, 7, 62, wood);
@@ -1418,7 +1418,7 @@ public sealed partial class SpriteSheet
                 for (int x = 1; x < 25; x++) c.Set(x, 10, linen, 0.3f);
                 return c;
             }
-            case "crossbow":
+            case "crossbow": case "crossbow_heavy":
             {
                 // Seen from above along the bolt: the stock, the steel prod across it, the string.
                 var c = new Canvas(24, 26);

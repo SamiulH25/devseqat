@@ -1,3 +1,4 @@
+#if false // unreferenced WIP file accidentally committed in c1459be
 using Microsoft.Xna.Framework;
 using static Ironfield.FoliageKind;
 
@@ -175,3 +176,5 @@ public sealed partial class WorldMap
         }
     }
 }
+
+#endif

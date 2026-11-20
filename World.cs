@@ -533,14 +533,14 @@ sealed partial class World : IDisposable
                 case FoliageKind.Flowers: Flowers(m, f.Pos, f.Scale, rng); break;
                 case FoliageKind.Village: Village(m, b, f.Scale, rng); break;
                 case FoliageKind.Town: Town(m, b, f.Scale, rng); break;
+                case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/HOLDS.md HD5)
+                case FoliageKind.Castle when f.Dry == 3: GreatCastle(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
                 case FoliageKind.Wall when t.Wall?.AtBreach(f.Pos.X) == true: // a breach (docs/SIEGECRAFT.md A2): the face lies in rubble at its foot
                     for (int i = 0; i < 4; i++) { var at = new Vector2(f.Pos.X - 1.8f + i * 1.2f, SiegeWall.Outer - 0.6f + (i % 2) * 0.9f); Rock(m, new Vector3(at.X, t.Height(at), at.Y), 1.1f + 0.3f * (i % 3), rng); }
                     break;
                 case FoliageKind.Wall: WallStones(m, b, f.Scale, rng); break;
                 case FoliageKind.Tower: Tower(m, b, rng); break;
-                case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/HOLDS.md HD5)
-                case FoliageKind.Castle when f.Dry == 3: GreatCastle(m, b, f.Scale, rng); break;
                 case FoliageKind.Gate: GateDoor(m, b, t.Wall?.GateOpen == true, rng); break;
                 case FoliageKind.Ladder: Ladder(m, b); break;
                 case FoliageKind.House: TownHouse(m, b, f.Scale, rng); break;
@@ -1152,13 +1152,13 @@ sealed partial class World : IDisposable
             m.Frustum(corner - Vector3.Up * 0.3f * s, corner + Vector3.Up * h * 1.6f, 0.5f * s, 0.46f * s, 8, Stone, r);
             m.Frustum(corner + Vector3.Up * h * 1.6f, corner + Vector3.Up * h * 2.3f, 0.6f * s, 0, 8, Slate, r, capBottom: true);
         }
+        if (!keep) return;
         m.Box(b - Vector3.Up * 0.3f * s, 1.5f * s, 1.5f * s, h * 2.2f, 0, Jitter(Stone, r, 0.05f)); // keep
         m.Gable(b + Vector3.Up * (h * 2.2f - 0.3f * s), 1.6f * s, 1.6f * s, 0.8f * s, 0, Slate);
     }
 
     void Grass(Mesh m)
     {
-        if (!keep) return;
         if (!t.Grass) return;
         var r = new Random(t.Seed + 13);
         const int count = 9000; // clumps of 2-4 tufts

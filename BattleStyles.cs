@@ -18,7 +18,7 @@ public partial class Battle
         "scimitar" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Riposte : AttackStyle.Sweep, // the curved blade turns a blow and cuts back
         "morningstar" when !t.Mounted() && !t.HasShield => AttackStyle.Crush, // the spiked head two-handed comes down over a guard
         "sword" or "axe" or "mace" or "morningstar" or "falchion" => t.Mounted() ? AttackStyle.CutWheel : t.HasShield ? AttackStyle.Bash : AttackStyle.None,
-        "pike" or "halberd" => AttackStyle.Thrust,
+        "pike" or "halberd" or "billhook" => AttackStyle.Thrust,
         "spear" or "glaive" or "javelin" => AttackStyle.HoldOff,
         "sling" => AttackStyle.QuickLoose,
         "lance" or "pennonlance" => AttackStyle.RideDown,

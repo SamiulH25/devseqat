@@ -107,7 +107,7 @@ public static class Factions
 
     /// The troop a realm's line fields at a tier (1-7).
     public static string Line(int faction, string role, int tier) =>
-        Get(Math.Max(0, faction)).Lines.TryGetValue(role, out var l) ? l[Math.Clamp(tier, 1, 7) - 1] : Get(Math.Max(0, faction)).Lines["infantry"][Math.Clamp(tier, 1, 7) - 1];
+        Get(Math.Max(0, faction)).Lines.TryGetValue(role, out var l) ? l[Math.Clamp(tier, 1, Troops.MaxTier) - 1] : Get(Math.Max(0, faction)).Lines["infantry"][Math.Clamp(tier, 1, Troops.MaxTier) - 1];
 
     static string Path()
     {
@@ -160,8 +160,8 @@ public static class Factions
             if (cultures.All(c => c.Id != f.Culture)) yield return $"{f.Name}: unknown culture {f.Culture}";
             foreach (var role in Roles)
             {
-                if (!f.Lines.TryGetValue(role, out var line) || line.Length != 7) { yield return $"{f.Name}: the {role} line needs seven troops"; continue; }
-                for (int i = 0; i < 7; i++)
+                if (!f.Lines.TryGetValue(role, out var line) || line.Length != Troops.MaxTier) { yield return $"{f.Name}: the {role} line needs six troops"; continue; }
+                for (int i = 0; i < Troops.MaxTier; i++)
                 {
                     if (!Troops.All.Any(t => t.Id == line[i])) { yield return $"{f.Name} {role}: unknown troop {line[i]}"; continue; }
                     var t = Troops.Get(line[i]);

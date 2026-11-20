@@ -251,6 +251,12 @@ sealed partial class Puppet
         if (!u.Mounted)
             for (int side = -1; side <= 1; side += 2) Leg(side, p);
         if (look.Cape && Detail == 0) BillRect(new(0, 0.92f, -0.17f), curPal.Cape, false);
+        if (look.Body == "robe" && !u.Mounted)
+        {
+            var rt = curLook.Torso(viewIdx);
+            var skirt = new Rectangle(rt.X, rt.Y + rt.Height * 2 / 3, rt.Width, rt.Height - rt.Height * 2 / 3);
+            BillRect(new(0, 0.52f, 0.005f), skirt, true);
+        }
         BillRect(new(0, 1.0f, 0), curLook.Torso(viewIdx), true);
         if (look.Tabard && Detail == 0) BillRect(new(0, 0.98f, 0.01f), curPal.Tabard(viewIdx), true, 0.02f);
         var (bodyView, bodyFlip) = (viewIdx, flip);
@@ -261,10 +267,10 @@ sealed partial class Puppet
             // Every helmet's brow sits on the man's brow, whatever rises above it (HelmTop).
             BillRect(new(0, HelmTop(look.Head) - curLook.HelmFHalfH, 0.02f), curLook.Helm(viewIdx), true, 0.04f);
         }
-        if (look.Plume && Detail == 0) BillRect(new(0, HelmTop(look.Head) + curPal.Plume.Height * Art.Px / 2 - 0.06f, -0.03f), curPal.Plume, false, 0.05f);
+        if (look.Plume && Detail == 0) BillRect(new(0, PlumeY(look.Head) + curPal.Plume.Height * Art.Px / 2 - 0.08f, -0.03f), curPal.Plume, false, 0.05f);
         (viewIdx, flip) = (bodyView, bodyFlip);
 
-        if (p.Armed && (p.Haul >= 0 || p.Aim && Look.GripOf(look.Weapon) == Grip.Crossbow && !u.Mounted)) { twist = 0; Crossbow(u, p); return; }
+        if (p.Armed && (p.Haul >= 0 || Look.GripOf(look.Weapon) == Grip.Crossbow && !u.Mounted)) { twist = 0; Crossbow(u, p); return; }
         bool ranged = Look.Ranged(look.Weapon);
         twist = ranged || !p.Armed ? 0 : TwistOf(p);
         if (ranged && p.Aim) { Bow(u, p); return; }
@@ -336,8 +342,8 @@ sealed partial class Puppet
             AxialSrc(butt + down * curLook.WeaponLen, butt, curLook.Weapon);
             return;
         }
-        var dir = Vector3.Normalize(Vector3.Lerp(new Vector3(0, -0.9f, 0.45f), Vector3.UnitZ, p.Draw));
-        var at = Vector3.Lerp(new Vector3(0.12f, 0.95f, 0.15f), new Vector3(0.12f, 1.36f, 0.05f), p.Draw); // the butt to his cheek
+        var dir = Vector3.Normalize(Vector3.Lerp(new Vector3(-0.28f, 0.16f, 0.94f), Vector3.UnitZ, p.Draw));
+        var at = Vector3.Lerp(new Vector3(0.16f, 1.02f, 0.14f), new Vector3(0.12f, 1.36f, 0.05f), p.Draw); // ready forward/up -> butt to cheek
         ArmTo(1, at + dir * 0.12f);
         ArmTo(-1, at + dir * 0.42f);
         SpanRect(at, dir, curLook.Weapon, curLook.WeaponLen, 0);
@@ -363,8 +369,8 @@ sealed partial class Puppet
         var elbow = Elbow(shoulder, ref target, new Vector3(0.6f, 0.15f + 0.5f * p.Draw, -1));
         if (Detail < 2)
         {
-            AxialSrc(shoulder, elbow, curLook.SleeveBot);
-            AxialSrc(elbow, target, curLook.SleeveTop);
+            AxialSrc(shoulder, elbow, curLook.SleeveBot, 0.82f);
+            AxialSrc(elbow, target, curLook.SleeveTop, 0.82f);
             BillRect(target, curLook.Hand, false, 0.01f);
         }
         if (!loosed) SpanRect(drawHand, Vector3.Normalize(bowHand - drawHand), curPal.Arrow, curPal.ArrowLen, 0.1f);
@@ -620,9 +626,9 @@ sealed partial class Puppet
     {
         if (Detail >= 2) return hand; // far off: the weapon alone shows the arm
         var shoulder = Shoulder(side);
-        var elbow = Elbow(shoulder, ref hand, new Vector3(side * 0.8f, -0.55f, -0.45f));
-        AxialSrc(shoulder, elbow, curLook.SleeveBot);
-        AxialSrc(elbow, hand, curLook.SleeveTop);
+        var elbow = Elbow(shoulder, ref hand, new Vector3(side * 0.50f, -0.70f, -0.45f));
+        AxialSrc(shoulder, elbow, curLook.SleeveBot, 0.82f);
+        AxialSrc(elbow, hand, curLook.SleeveTop, 0.82f);
         BillRect(hand, curLook.Hand, false, 0.01f);
         return hand;
     }
@@ -878,11 +884,15 @@ sealed partial class Puppet
     /// forehead, below any cone, spike or crest); that row lands on head row 5, just above the eyes (head rows 7-8), so a
     /// tall cone rises above the head instead of pushing the rim down over the face. Closed helms and hoods keep row 6.83
     /// (their top just above the crown). Shared with the HUD's troop card (`Hud`).
+    /// Where a plume anchors: the steel crown itself (not the tips of horns, wings or a sun crest).
+    static float PlumeY(string kind) => SpriteSheet.HelmBase(kind) is "greathelm_horns" or "greathelm_wings" or "greathelm_crown" or "greathelm_sun"
+        ? 1.605f + 6.83f * Art.Px : HelmTop(kind);
+
     public static float HelmTop(string kind) => 1.605f + SpriteSheet.HelmBase(kind) switch
     {
-        "cap" or "brigand_hat" => 8.5f, "kettle" => 9.6f, "nasal" => 10.5f,
-        "sallet" or "sallet_bevor" => 9.5f, "sallet_crest" => 12.5f,
-        "spangen" or "spangen_horns" or "spangen_wolf" => 11.5f, "turban" => 12f,
+        "cap" or "brigand_hat" => 8.5f, "kettle" or "kettle_brimmed" => 9.6f, "nasal" => 10.5f,
+        "sallet" or "sallet_visored" or "sallet_bevor" => 9.5f, "sallet_crest" => 12.5f,
+        "spangen" or "spangen_spectacle" or "spangen_horns" or "spangen_wolf" => 11.5f, "turban" => 12f,
         "steppe" or "steppe_mask" or "steppe_horns" => 15.5f, "spike" => 11.5f, "furcap" => 11f,
         "gjermundbu" => 10.5f, "morion" or "barbute_crest" => 12.5f, "kulah" => 11.5f,
         "greathelm_horns" or "greathelm_wings" or "greathelm_crown" or "greathelm_sun" => 13.83f,
@@ -926,12 +936,12 @@ sealed partial class Puppet
         tint = Color.White;
     }
 
-    void AxialSrc(Vector3 aLocal, Vector3 bLocal, Rectangle src)
+    void AxialSrc(Vector3 aLocal, Vector3 bLocal, Rectangle src, float widthScale = 1)
     {
         Vector3 a = W(aLocal), b = W(bLocal), axis = b - a;
         var side = Vector3.Cross(axis, camPos - (a + b) / 2);
         side = side.LengthSquared() < 1e-8f ? camRight : Vector3.Normalize(side);
-        side *= src.Width * Art.Px * scale / 2;
+        side *= src.Width * Art.Px * scale * widthScale / 2;
         Quad(a - side, a + side, b - side, b + side, src, false);
     }
 

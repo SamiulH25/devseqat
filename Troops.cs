@@ -7,6 +7,7 @@ namespace Ironfield;
 public static class Troops
 {
     public const string FileName = "Data/troops.json";
+    public const int MaxTier = 6;
     static Dictionary<string, UnitType>? troops;
     static Dictionary<string, Mount>? mounts;
 
@@ -80,7 +81,7 @@ public static class Troops
             };
             var t = troops[d.Id];
             t.Flying = t.Has("flying");
-            t.StyleRank = t.Wild || t.Leader ? 0 : Math.Clamp(t.Tier - 4, 0, 3);
+            t.StyleRank = t.Wild || t.Leader ? 0 : Math.Clamp(t.Tier - 3, 0, 3);
             t.Style = t.StyleRank == 0 ? AttackStyle.None : d.Attack != null ? Enum.Parse<AttackStyle>(d.Attack, true) : Battle.StyleFor(t);
             t.Passives = t.StyleRank == 0 ? Array.Empty<string>() : d.Passives ?? Battle.PassivesWithSignature(t);
         }
@@ -119,6 +120,8 @@ public static class Troops
             foreach (var u in t.UpgradesTo)
                 if (troops.TryGetValue(u, out var nx) && nx.Class == UnitClass.Caster && t.Class == UnitClass.Caster && !t.Spells.All(nx.Spells.Contains))
                     yield return $"{t.Id} -> {u} forgets a spell";
+            if (t.Tier > MaxTier) yield return $"{t.Id}: tier {t.Tier} above {MaxTier}";
+            if (t.Pierce is < 0 or > 1) yield return $"{t.Id}: pierce {t.Pierce} out of 0..1";
             if (t.Drill > 1) yield return $"{t.Id}: drill {t.Drill} above 1";
             if (t.Size is < 0.5f or > 3f) yield return $"{t.Id}: size {t.Size} out of range";
             if (l.Beast && (t.Mount != null || t.Ammo > 0 || l.Shield != "none")) yield return $"{t.Id}: a beast rides nothing, shoots nothing and carries no shield";
@@ -201,16 +204,16 @@ public static class Armies
 
     static readonly (string Role, string[] ByTier, int Base)[] Lines =
     {
-        ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries", "immortals" }, 24),
-        ("archers", new[] { "bowmen", "bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen", "sovereign_longbowmen" }, 16),
-        ("spears", new[] { "levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx", "imperial_pikemen" }, 12),
-        ("horse", new[] { "outriders", "lancers", "lancers", "knights", "banner_knights", "paladin_knights", "grail_knights" }, 10),
+        ("infantry", new[] { "levies", "shieldmen", "men_at_arms", "ironguard", "paladins", "iron_legionaries" }, 24),
+        ("archers", new[] { "bowmen", "bowmen", "longbowmen", "yeoman_archers", "master_longbowmen", "royal_yeomen" }, 16),
+        ("spears", new[] { "levies", "spearrunners", "pikemen", "phalanx_pikemen", "silver_pikes", "grand_phalanx" }, 12),
+        ("horse", new[] { "outriders", "lancers", "lancers", "knights", "banner_knights", "paladin_knights" }, 10),
     };
 
     static int Count(int baseCount, string troop, bool enemy)
     {
         var t = Troops.Get(troop);
-        float k = t.Tier switch { 1 => 1.25f, 2 => 1f, 3 => 0.85f, 4 => 0.7f, 5 => 0.65f, 6 => 0.6f, _ => 0.55f };
+        float k = t.Tier switch { 1 => 1.25f, 2 => 1f, 3 => 0.85f, 4 => 0.7f, 5 => 0.62f, _ => 0.55f };
         return Math.Max(4, (int)MathF.Round(baseCount * k * (enemy ? 1.05f : 1)));
     }
 
@@ -220,7 +223,7 @@ public static class Armies
     /// A campaign-like army: each line's tier is the level, give or take one (companies are upgraded unevenly).
     public static ArmySpec Random(Random rng, int level, int team)
     {
-        var tiers = Lines.Select(_ => Math.Clamp(level + (rng.NextSingle() < 0.35f ? (rng.Next(2) == 0 ? -1 : 1) : 0), 1, 7)).ToArray();
+        var tiers = Lines.Select(_ => Math.Clamp(level + (rng.NextSingle() < 0.35f ? (rng.Next(2) == 0 ? -1 : 1) : 0), 1, Troops.MaxTier)).ToArray();
         return Make(team == 1 ? "Crimson host" : "Azure company", level, tiers, team == 1);
     }
 
@@ -327,7 +330,7 @@ public static class Armies
         Troops.All.Where(t => t.Class == UnitClass.Caster && t.Culture == culture && t.Tier == Math.Clamp(tier, 4, 6)).Select(t => t.Id).FirstOrDefault() ?? "acolytes";
 
     /// The troop a line fields at a tier (1-7).
-    public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, 7) - 1];
+    public static string LineTroop(string role, int tier) => Lines.First(l => l.Role == role).ByTier[Math.Clamp(tier, 1, Troops.MaxTier) - 1];
 
     public static string RoleOf(Company c) => c.Role is { Length: > 0 } r ? r : Troops.Get(c.Troop).Has("raise") ? "casters" : Troops.Get(c.Troop).Class switch
     {

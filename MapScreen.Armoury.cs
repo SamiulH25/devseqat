@@ -161,6 +161,6 @@ partial class MapScreen
             : $"DMG {g.Damage:0} . REACH {g.Reach:0.0} M" + (g.Pierce > 0 ? $" . PIERCE {g.Pierce * 100:0}%" : "") + (g.TwoHanded ? " . 2 HANDS" : "") + (g.Thrust ? " . THRUSTS" : ""),
         "shield" => $"BLOCK {g.Block * 100:0}%" + (g.Speed != 0 ? $" . SPEED {g.Speed:+0.0;-0.0}" : ""),
         "horse" => Troops.Mount(g.Mount) is var m ? $"HEALTH {m.Hp:0} . GALLOP {m.Gallop:0.0} M/S" : "",
-        _ => $"ARMOUR {g.Armor:+0;-0;0}" + (g.Speed != 0 ? $" . SPEED {g.Speed:+0.0;-0.0}" : ""),
+        _ => $"ARMOUR {g.Armor:0.#}" + (g.Speed != 0 ? $" . SPEED {g.Speed:+0.0;-0.0}" : ""),
     };
 }

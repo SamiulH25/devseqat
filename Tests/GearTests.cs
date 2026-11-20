@@ -28,6 +28,9 @@ public static partial class SelfTest
         }
         float worn = Hit(ItemQuality.Worn), plain = Hit(ItemQuality.Plain), fine = Hit(ItemQuality.Fine), master = Hit(ItemQuality.Masterwork);
         Check(worn < plain && plain < fine && fine < master, $"make scales the blow ({worn:0.0} < {plain:0.0} < {fine:0.0} < {master:0.0})");
+        float Arm(ItemQuality q) { cap.Baggage.RemoveAll(i => i.Def == "gambeson"); if (q != ItemQuality.Plain) cap.Baggage.Add(new GearItem { Def = "gambeson", Quality = q }); return Rules.CaptainType(cap).Armor; }
+        Check(Arm(ItemQuality.Worn) < Arm(ItemQuality.Plain) && Arm(ItemQuality.Plain) < Arm(ItemQuality.Masterwork), "make scales body armour upward too");
+        Check(Gear.Get("claymore").TwoHanded && Gear.Get("varangian_axe").TwoHanded, "two-handed weapons require two hands");
         var spear = Gear.Get("boar_spear");
         Check(Campaign.PriceOf(spear, ItemQuality.Fine) > spear.Cost && Campaign.PriceOf(spear, ItemQuality.Fine, 1) > Campaign.PriceOf(spear, ItemQuality.Fine), "a finer piece and a mark cost more");
         c.S.Gold = 5000;

@@ -20,21 +20,21 @@ public static class Variety
     static readonly string[][] HelmKin =
     {
         new[] { "cap", "hood", "brigand_hat", "none" },
-        new[] { "kettle", "nasal", "coif", "morion" },
-        new[] { "sallet", "sallet_bevor", "sallet_crest", "bascinet", "armet" },
+        new[] { "kettle", "kettle_brimmed", "nasal", "coif", "morion" },
+        new[] { "sallet", "sallet_visored", "sallet_bevor", "sallet_crest", "bascinet", "armet" },
         new[] { "barbute", "barbute_crest" },
-        new[] { "greathelm", "greathelm_horns", "greathelm_wings" },
-        new[] { "spangen", "spangen_horns", "spangen_wolf", "gjermundbu" },
+        new[] { "greathelm", "greathelm_sugarloaf", "greathelm_visor", "greathelm_horns", "greathelm_wings" },
+        new[] { "spangen", "spangen_spectacle", "spangen_horns", "spangen_wolf", "gjermundbu" },
         new[] { "steppe", "steppe_mask", "steppe_horns" },
         new[] { "spike", "kulah" },
     };
     static readonly string[][] BodyKin =
     {
         new[] { "tunic", "leather", "gambeson", "gambeson_fur" },
-        new[] { "mail", "coatofplates", "brigandine", "brigandine_gilded" },
+        new[] { "mail", "mail_hauberk", "coatofplates", "brigandine", "brigandine_gilded" },
         new[] { "mail_fur", "fur" },
         new[] { "deel", "deel_fur" },
-        new[] { "plate", "plate_gilded", "breastplate" },
+        new[] { "plate", "plate_fluted", "plate_surcoat", "plate_gilded", "breastplate" },
         new[] { "lamellar", "scale", "scale_iron", "lamellar_gilded" },
     };
     static readonly string[][] LegKin =
@@ -49,20 +49,21 @@ public static class Variety
     };
     static readonly string[][] ShieldKin =
     {
-        new[] { "round", "round_bossed", "targe" },
-        new[] { "heater", "heater_gilded", "kite" },
+        new[] { "round", "round_bossed", "round_iron", "targe" },
+        new[] { "heater", "heater_gilded", "heater_quartered", "kite" },
         new[] { "dhal", "kalkan" },
     };
     static readonly string[][] WeaponKin =
     {
-        new[] { "sword", "axe", "mace", "morningstar", "falchion" },
-        new[] { "longsword", "longsword_gilded" },
-        new[] { "greatsword", "flamberge" },
-        new[] { "daneaxe", "bardiche" },
+        new[] { "sword", "sword_viking", "sword_knightly", "axe", "axe_bearded", "mace", "morningstar", "falchion" },
+        new[] { "longsword", "longsword_estoc", "longsword_gilded" },
+        new[] { "greatsword", "greatsword_claymore", "flamberge" },
+        new[] { "daneaxe", "daneaxe_bearded", "bardiche" },
         new[] { "halberd", "billhook", "glaive" },
         new[] { "lance", "pennonlance" },
-        new[] { "bow", "recurve" },
-        new[] { "crossbow", "arbalest" },
+        new[] { "spear", "spear_winged" },
+        new[] { "bow", "bow_horn", "recurve" },
+        new[] { "crossbow", "crossbow_heavy", "arbalest" },
     };
 
     static readonly Dictionary<Look, Dictionary<int, Look>> cache = new(ReferenceEqualityComparer.Instance);
@@ -90,7 +91,7 @@ public static class Variety
         int legs = keepKit ? 0 : Pick(seed, 5, look.Legs, LegKin, 0.35f);
         int feet = keepKit ? 0 : Pick(seed, 6, look.Feet, BootKin, 0.40f);
         int weapon = keepKit ? 0 : Pick(seed, 2, look.Weapon, WeaponKin, 0.35f);
-        int code = visage + Visages * (helm + 6 * (weapon + 4 * (body + 6 * (shield + 4 * (legs + 3 * feet)))));
+        int code = visage + Visages * (helm + 8 * (weapon + 10 * (body + 8 * (shield + 6 * (legs + 4 * feet)))));
         if (!cache.TryGetValue(look, out var byCode)) cache[look] = byCode = new();
         if (byCode.TryGetValue(code, out var v)) return v;
         v = look with

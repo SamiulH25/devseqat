@@ -110,7 +110,7 @@ partial class MapScreen
         foreach (var g in nodes.Values.GroupBy(n => n.Col))
         {
             var b = g.First().Box;
-            int tier = Math.Clamp(st.Type.Tier + g.Key, 0, 7);
+            int tier = Math.Clamp(st.Type.Tier + g.Key, 0, Troops.MaxTier);
             ui.TextC(g.Key == 0 ? "YOUR MEN" : $"TIER {Style.Numerals[tier]}", b.Center.X, area.Y - ui.U(13), g.Key == 0 ? Kit.Gilt : Style.Dim, 1);
         }
         // The lines: faint, then the way to the troop in focus in gilt and the way on from it in parchment.
@@ -192,8 +192,8 @@ partial class MapScreen
         ui.Frame(new Rectangle(d.X, d.Y, ph, ph), Kit.GiltDark, ui.U(1));
         int tx = d.X + ph + ui.U(14), colW = ui.U(250);
         ui.TextFit(t.Name.ToUpperInvariant(), tx, d.Y, colW, Style.Text, ui.FitScale(t.Name.ToUpperInvariant(), colW));
-        for (int i = 0; i < 7; i++) ui.Rect(new Rectangle(tx + i * ui.U(7), d.Y + ui.U(21), ui.U(5), ui.U(5)), i < t.Tier ? Kit.Gilt : Color.White * 0.1f);
-        ui.Text($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, 7)]}", tx + ui.U(54), d.Y + ui.U(20), Style.Dim, 1);
+        for (int i = 0; i < Troops.MaxTier; i++) ui.Rect(new Rectangle(tx + i * ui.U(7), d.Y + ui.U(21), ui.U(5), ui.U(5)), i < t.Tier ? Kit.Gilt : Color.White * 0.1f);
+        ui.Text($"TIER {Style.Numerals[Math.Clamp(t.Tier, 0, Troops.MaxTier)]}", tx + ui.U(47), d.Y + ui.U(20), Style.Dim, 1);
         int cx = tx, cy = d.Y + ui.U(34);
         cx += ui.Chip(cx, cy, t.Class.ToString().ToUpperInvariant(), Style.Text, t.Mount != null ? "horse" : t.Range > 0 ? "arrow" : "sword") + ui.U(4);
         ui.Chip(cx, cy, (Factions.Culture(t.Culture)?.Name ?? t.Culture).ToUpperInvariant(), t.Culture == Factions.Common ? Style.Dim : Style.Accent, "flag");

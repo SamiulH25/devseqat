@@ -20,10 +20,10 @@ public partial class Campaign
         };
         MakeLord(lord);
         lord.Goal = lord.Pos;
-        int tier = Math.Clamp(1 + rng.Next(2) + Day / 30, 1, 7);
+        int tier = Math.Clamp(1 + rng.Next(2) + Day / 30, 1, Troops.MaxTier);
         foreach (var role in new[] { "infantry", "archers", rng.Next(2) == 0 ? "spears" : "horse" })
         {
-            string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, 7), faction);
+            string troop = Armies.LineTroop(role, Math.Clamp(tier + rng.Next(-1, 1), 1, Troops.MaxTier), faction);
             lord.Companies.Add(NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.7f, 1f)), 0, home));
         }
         // Mages are super units: only a great lord brings a circle of his realm's mages, as many in four as his realm's arcana
@@ -246,7 +246,7 @@ public partial class Campaign
         // refits for a few ready men would bleed the realm dry.
         if (p.Men >= Scaled(45) && p.Companies.Count >= 3) budget = 0;
         PromoteAll(p, ref budget);
-        if (p.Companies.Count > 0) p.Tier = Math.Clamp((int)MathF.Round((float)p.Companies.Average(c => c.Type.Tier)), 1, 7);
+        if (p.Companies.Count > 0) p.Tier = Math.Clamp((int)MathF.Round((float)p.Companies.Average(c => c.Type.Tier)), 1, Troops.MaxTier);
         RaiseCircle(p, home, fs);
     }
 
