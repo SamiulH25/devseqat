@@ -1,6 +1,6 @@
 # Settlements: the town and castle models overhaul (SM1-SM7)
 
-Status: **planned 2026-11-20**, SM1 and SM2 built 2026-11-20 (see their "As built"), SM3 next. Owner's brief (2026-11-20): overhaul the town and castle models.
+Status: **planned 2026-11-20**, SM1-SM3 built 2026-11-20 (see their "As built"), SM4 next. Owner's brief (2026-11-20): overhaul the town and castle models.
 Owner's answers:
 1. **Scope:** towns, castles in all three sizes and villages on the campaign map, and the siege battlefield (the wall,
    towers, gate and houses you fight over) made to match.
@@ -158,6 +158,25 @@ small things (market stalls, wells, cranes, carts, stacks, gardens, fences).
 - By style: a street village along the road, or houses round a green; the house kind of the people (cottages, longhalls,
   chalets, cubes, yurts and tents, stilt houses over the fen). A small church or shrine, a well, garden plots and fences.
 - Budget: a village costs no more than it does today.
+
+**As built (2026-11-20).**
+- Laid out headless like a town (`Campaign/VillagePlans.cs`, `WorldMap.LayVillage`): `PlacePlan.Lots` (houses, a
+  `Landmark` chapel or shrine in about a third, a `Well` in every one) and `Square` (the middle, moved off water). A street
+  village (most that sit on their road) strings houses either side of it facing the street; the rest, and the gaps after,
+  stand round the green facing the well, then anywhere near (a golden-angle walk reaching up to 3 further out when a
+  crossroads fills the middle). Nomads pitch a loose ring and raise no chapel. 4-8 houses (median 7) on seed 7.
+- The house is the people's hamlet kind where it has one (black tents, yurts, stilt houses), else its town house; a
+  tall town house becomes a cottage (a stucco farmhouse where they build in brick) (`WorldMap.VillageKind`). Crownlands
+  cottages are thatched (their towns wear slate). Drawn detached, not lean, in `World.Villages.cs` (`VillagePlace`, `Well`).
+- Roads narrow to 0.7 through a village (`PlacePlan.StreetScale` now counts villages): main roads met at many villages
+  and at full width left no room for houses.
+- Chimney smoke (`MapLife.DrawSmoke`) rises from one chimney in three (`Lit`), lower and smaller: a village's houses
+  stand close and every hearth smoking read as a cloud of floating pyramids.
+- Budget: all places 0.96M verts on seed 11 (1.35M after SM2): villages are cheaper than before.
+- Left out: garden plots and fences (each village is already ringed by its field plots, hedges and fences, WL3). No fen
+  village stands on the drawn map, so the stilt houses are untested in a shot.
+- Test `VillagesLaidOut` (houses in each, none in water or on a road, wells, no chapel in a camp); its six thinnest
+  villages are drawn as `village-<name>.svg` with `IRONFIELD_PLAN_SVG`.
 
 ### SM4: The place's state: banners, prosperity, buildings
 - **Banners:** flags on towers and keeps in the owner's realm colours (`Style.Sides`), changing when the place changes hands.

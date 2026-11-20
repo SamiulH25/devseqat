@@ -32,9 +32,9 @@ public sealed record PlacePlan(int Id, SettlementKind Kind, int Size, string Sty
         float k = 1;
         foreach (var p in places)
         {
-            if (p.Kind != SettlementKind.Town) continue;
-            float d = Vector2.Distance(p.Pos, at) / p.Radius;
-            if (d < 1.15f) k = MathF.Min(k, MathHelper.Lerp(0.62f, 1, MathHelper.SmoothStep(0, 1, (d - 0.8f) / 0.35f)));
+            if (p.Kind == SettlementKind.Castle) continue;
+            float d = Vector2.Distance(p.Pos, at) / p.Radius, narrow = p.Kind == SettlementKind.Town ? 0.62f : 0.7f;
+            if (d < 1.15f) k = MathF.Min(k, MathHelper.Lerp(narrow, 1, MathHelper.SmoothStep(0, 1, (d - 0.8f) / 0.35f)));
         }
         return k;
     }
@@ -78,14 +78,18 @@ public sealed partial class WorldMap
             };
             plans.Add(plan);
         }
-        // Towns are laid out after every plan is known (a street narrows by any town it runs through), in parallel.
-        townPlans.Clear();
-        townPlans.AddRange(plans.Where(p => p.Kind == SettlementKind.Town));
+        // Towns and villages are laid out after every plan is known (a street narrows by any town it runs through), in parallel.
+        streetPlans.Clear();
+        streetPlans.AddRange(plans.Where(p => p.Kind != SettlementKind.Castle));
         RoadDist(Vector2.Zero); // the look-up grid, built before the workers read it
-        var towns = plans.Select((p, i) => (p, i)).Where(x => x.p.Kind == SettlementKind.Town).ToList();
-        var laid = new PlacePlan[towns.Count];
-        Parallel.For(0, towns.Count, k => laid[k] = LayTown(towns[k].p));
-        for (int k = 0; k < towns.Count; k++) plans[towns[k].i] = laid[k];
+        var laid = plans.ToArray();
+        Parallel.For(0, laid.Length, k => laid[k] = laid[k].Kind switch
+        {
+            SettlementKind.Town => LayTown(laid[k]),
+            SettlementKind.Village => LayVillage(laid[k]),
+            _ => laid[k],
+        });
+        plans = laid.ToList();
         Plans = plans.ToDictionary(p => p.Id);
         return plans;
     }

@@ -592,4 +592,25 @@ public static partial class SelfTest
         }
         return sb.Append("</svg>").ToString();
     }
+
+    /// Villages laid out by their plans (SM3): each holds its people's houses, none in water or on a road, a well, and a
+    /// chapel in about half; the nomads' camps have no chapel.
+    static void VillagesLaidOut()
+    {
+        var m = Campaign.New(7, layout: WorldMap.DesignLayout).Map;
+        m.BuildTerrain();
+        var villages = m.Plans.Values.Where(p => p.Kind == SettlementKind.Village).ToList();
+        var houses = villages.Select(p => p.Lots.Count(l => l.Use == LotUse.House)).OrderBy(x => x).ToList();
+        int chapels = villages.Count(p => p.Lots.Any(l => l.Use == LotUse.Landmark)), wells = villages.Count(p => p.Lots.Any(l => l.Use == LotUse.Well));
+        Console.WriteLine($"villages: {villages.Count}, houses {houses[0]}-{houses[^1]} (median {houses[houses.Count / 2]}), {chapels} chapels, {wells} wells");
+        foreach (var p in villages.Where(p => p.Lots.Count(l => l.Use == LotUse.House) < 4 || !p.Lots.Any(l => l.Use == LotUse.Well)).OrderBy(p => p.Lots.Count(l => l.Use == LotUse.House)).Take(10))
+            Console.WriteLine($"  thin {m.Settlements[p.Id].Name,-14} {p.Look.Id,-18} r {p.Radius:0.0} houses {p.Lots.Count(l => l.Use == LotUse.House)} well {p.Lots.Any(l => l.Use == LotUse.Well)} wet {m.Wet(p.Pos)} roadDist {m.RoadDist(p.Pos):0.0} landness {m.Landness(p.Pos):0.00}");
+        if (Environment.GetEnvironmentVariable("IRONFIELD_PLAN_SVG") is { } dir)
+            foreach (var p in villages.OrderBy(p => p.Lots.Count(l => l.Use == LotUse.House)).Take(6)) File.WriteAllText(Path.Combine(dir, $"village-{m.Settlements[p.Id].Name}.svg"), PlanSvg(m, p));
+        Check(houses[0] >= 3 && houses[houses.Count / 2] >= 5, $"every village holds houses (fewest {houses[0]})");
+        Check(wells > villages.Count * 0.9f && chapels > villages.Count / 4, "a well in almost every village, a chapel in many");
+        Check(villages.Where(p => WorldMap.VillageKind(p.Look) is HouseKind.Yurt or HouseKind.Tent).All(p => !p.Lots.Any(l => l.Use == LotUse.Landmark)), "no chapel in a camp");
+        var bad = villages.SelectMany(p => p.Lots.Where(l => !m.LotClear(l)).Select(l => $"{m.Settlements[p.Id].Name} {l.Use}")).ToList();
+        Check(bad.Count == 0, $"no village house in water or on a road ({bad.Count}): " + string.Join(", ", bad.Take(6)));
+    }
 }

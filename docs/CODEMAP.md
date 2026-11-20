@@ -494,10 +494,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Pilot.cs (303 lines)
 - **Pilot** (class, L8): Pilot:31, Run:42, Fight:64, Refuge:95, Visit:105, Kit:136, Worn:144, Worth:145, Fresh:149, Promote:159, TakePerks:170, Think:181, Arcane:243, Siege:265, Talk:288, S:302
 
-## Campaign/PlacePlans.cs (163 lines)
+## Campaign/PlacePlans.cs (167 lines)
 - **PlacePlan** (record, L7): StreetScale:30, Dir:41
 - **PlaceState** (struct, L45)
-- **WorldMap** (class, L50): FootprintOf:56, PlanPlaces:64, Wet:94, RoadBearings:99, WaterBearings:120, DoorstepOf:138, LineDist:149, SegDist:157
+- **WorldMap** (class, L50): FootprintOf:56, PlanPlaces:64, Wet:98, RoadBearings:103, WaterBearings:124, DoorstepOf:142, LineDist:153, SegDist:161
 
 ## Campaign/QuestLog.cs (92 lines)
 - **QuestView** (record, L7)
@@ -578,6 +578,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Campaign/Undead.cs (91 lines)
 - **Campaign** (class, L9): AfterTheBattle:15, Bury:35, GravesDaily:39, RaiseHost:53, UndeadThink:75
+
+## Campaign/VillagePlans.cs (98 lines)
+- **WorldMap** (class, L5): VillageKind:9, LayVillage:17
 
 ## Campaign/Wants.cs (97 lines)
 - **Campaign** (class, L7): WantText:12, WantDone:26, WantsDaily:38, ChooseWant:54, WantMet:79, PeaceWanted:87, Revenge:90, HelpedWant:93
@@ -724,8 +727,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapLife.Holdouts.cs (140 lines)
 - **MapLife** (class, L7): SetHoldouts:24, BuildHoldouts:30, DrawHoldout:35
 
-## MapLife.People.cs (518 lines)
-- **MapLife** (class, L10): FindPlaces:66, SetCaravans:74, UpdatePeople:87, PopulatePeople:123, NewPerson:159, Jitter:165, StepPerson:169, Lengths:206, Length:215, At:223, NearRoads:238, SpawnTraveller:246, StepTraveller:265, SpawnBoat:279, Shallows:299, SpawnSeaBoat:301, StepSeaBoat:312, BuildPeople:323, DrawPerson:339, DrawTraveller:358, DrawHorse:374, DrawCart:388, DrawBoat:409, DrawSeaBoat:437, DrawCaravan:452, Behind:473, Puff:489, DrawSmoke:502
+## MapLife.People.cs (521 lines)
+- **MapLife** (class, L10): FindPlaces:66, SetCaravans:74, UpdatePeople:87, PopulatePeople:123, NewPerson:159, Jitter:165, StepPerson:169, Lengths:206, Length:215, At:223, NearRoads:238, SpawnTraveller:246, StepTraveller:265, SpawnBoat:279, Shallows:299, SpawnSeaBoat:301, StepSeaBoat:312, BuildPeople:323, DrawPerson:339, DrawTraveller:358, DrawHorse:374, DrawCart:388, DrawBoat:409, DrawSeaBoat:437, DrawCaravan:452, Behind:473, Puff:489, Lit:502, DrawSmoke:505
 
 ## MapScreen.Armoury.cs (166 lines)
 - **MapScreen** (class, L7): ArmourerWell:12, Baggage:31, GearRow:49, GearStats:158
@@ -979,8 +982,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
 - **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:585, WellsFromSites:596, TideFeedsOffers:637, TideShared:655, Overreach:678, CourtMage:711, DoctrinesAndUnweave:743, WorkingsBite:776, WorkingsRemembered:806
 
-## Tests/MapTests.cs (595 lines)
-- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, NewLands:309, FieldsApart:348, MapDressed:368, ShipTravel:406, DesignedMap:454, PlacesPlanned:520, TownsLaidOut:550, PlanSvg:573
+## Tests/MapTests.cs (616 lines)
+- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, NewLands:309, FieldsApart:348, MapDressed:368, ShipTravel:406, DesignedMap:454, PlacesPlanned:520, TownsLaidOut:550, PlanSvg:573, VillagesLaidOut:598
 
 ## Tests/MeleeTests.cs (425 lines)
 - **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, UrgeLunges:173, RefusesFlank:203, VeteransWrap:242, ElitePincer:258, Reforms:289, HorseRegroup:319, BowsFallBack:363, MusterGrade:401, MightWeighsDrill:416
@@ -1092,11 +1095,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## World.Materials.cs (78 lines)
 - **World** (class, L10): BuildMaterials:14, Periodic:35, Fbm:52, Cavity:65
 
-## World.Places.cs (400 lines)
-- **World** (class, L9): BuildPlaces:32, BuildPlaceTile:47, UpdatePlaces:61, FlushPlaces:83, DrawPlaces:97, Place:114, Enclosure:137, Flags:152, YardHouse:159, MidHold:163, GreatHold:192, SmallHold:236, MotteAndBailey:333, Shorten:399
+## World.Places.cs (399 lines)
+- **World** (class, L9): BuildPlaces:32, BuildPlaceTile:47, UpdatePlaces:61, FlushPlaces:83, DrawPlaces:97, Place:114, Enclosure:136, Flags:151, YardHouse:158, MidHold:162, GreatHold:191, SmallHold:235, MotteAndBailey:332, Shorten:398
 
 ## World.Towns.cs (192 lines)
 - **World** (class, L8): TownPlace:11, TownWall:21, Building:76, TownHeight:116, Crane:129, Stall:149, Windmill:168
+
+## World.Villages.cs (60 lines)
+- **World** (class, L8): VillagePlace:12, VillageHeight:37, Well:47
 
 ## World.Water.cs (374 lines)
 - **World** (class, L9): NormalAt:20, Roads:53, AddTile:100, Sea:113, Water:169, Ship:183, RiverWater:201, Reeds:293, Lake:315, Bridge:349

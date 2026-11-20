@@ -114,11 +114,10 @@ sealed partial class World
     void Place(Mesh m, PlacePlan p, PlaceState s, Random r)
     {
         var st = p.Look;
-        var b = At(p.Pos, t.Height(p.Pos));
         switch (p.Kind)
         {
             case SettlementKind.Town: TownPlace(m, p, st, s, r); break;
-            case SettlementKind.Village: Village(m, b, 1.8f, r); break; // SM3 remodels villages
+            case SettlementKind.Village: VillagePlace(m, p, st, s, r); break;
             default:
                 float k = Math.Clamp(p.Radius / WorldMap.FootprintOf(p.Kind, p.Size), 0.6f, 1);
                 switch (p.Size)

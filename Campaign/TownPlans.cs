@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// What stands on a lot of a place (docs/SETTLEMENTS.md SM2).
-public enum LotUse : byte { House, Landmark, Warehouse, Crane, Stall, Yurt, Mill }
+public enum LotUse : byte { House, Landmark, Warehouse, Crane, Stall, Yurt, Mill, Well }
 
 /// One building's ground in a place: its middle, its turn (the door faces -`Across`, as `World.Dwelling` builds), its
 /// frontage W along the street and its depth D.
@@ -70,13 +70,13 @@ public sealed partial class WorldMap
     /// Whether p stands on a road: within `keep` of its half-width (narrowed in a town's streets) from its middle.
     bool OnRoad(List<(Vector2[] Pts, float Half)> roads, Vector2 p, float keep)
     {
-        float k = keep * PlacePlan.StreetScale(townPlans, p);
+        float k = keep * PlacePlan.StreetScale(streetPlans, p);
         foreach (var (pts, half) in roads) if (LineDist(pts, p) < half * k) return true;
         return false;
     }
 
-    /// Every town's plan before its layout (their streets narrow): set by `PlanPlaces` before it lays the towns out.
-    readonly List<PlacePlan> townPlans = new();
+    /// Every town's and village's plan before its layout (their streets narrow): set by `PlanPlaces` before it lays them out.
+    readonly List<PlacePlan> streetPlans = new();
 
     /// Whether a point lies inside a closed ring.
     public static bool InRing(Vector2[] ring, Vector2 p)
