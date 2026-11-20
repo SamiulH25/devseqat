@@ -764,18 +764,36 @@ sealed partial class Puppet
 
     void Corpse(float phase = 0.5f)
     {
-        // Parts laid flat on the ground, body pointing backwards from the feet; each man's limbs lie a little differently.
-        float j = (phase - 0.5f) * 0.16f, j2 = (Ease.Hash((int)(phase * 9973)) - 0.5f) * 0.16f;
-        if (!SparseCorpse && look.Body != "bones") FlatRect(new(j2, 0.055f, -0.7f), curPal.Blood, false); // a skeleton falls in a heap of dry bones
-        if (Detail > 0 || SparseCorpse) { FlatRect(new(0, 0.08f, -0.75f), curLook.TorsoF, false); return; } // dense/far piles keep torso only so outlines don't stack
-        FlatRect(new(0.12f + j, 0.08f, -0.2f), curLook.Leg, false);
-        FlatRect(new(-0.12f - j2, 0.08f, -0.2f + j), curLook.Leg, false);
-        FlatRect(new(0, 0.09f, -0.75f), curLook.TorsoF, false);
-        if (look.Tabard) FlatRect(new(0, 0.1f, -0.75f), curPal.TabardF, false);
-        if (look.Head != "none") FlatRect(new(j, 0.11f, -1.25f), curLook.HelmB, false);
-        else FlatRect(new(j, 0.11f, -1.25f), curLook.HeadB, false);
-        if (look.Shield != "none") { var keepS = scale; scale *= 0.75f; FlatRect(new(-0.36f - j, 0.07f, -0.62f + j2 * 2), curLook.Shield, true); scale = keepS; } // half under him: a man, not a shield
-        FlatRect(new(0.55f + j2 * 2, 0.105f, -0.55f + j * 3), curLook.Weapon, true); // the weapon thrown down beside him
+        // Parts laid on the ground, connected along the spine from feet (-0.34) through torso (-0.82) to head (-1.22) and helm.
+        float j = (phase - 0.5f) * 0.14f, j2 = (Ease.Hash((int)(phase * 9973)) - 0.5f) * 0.14f;
+        bool faceUp = phase >= 0.45f;
+        var torso = faceUp ? curLook.TorsoF : curLook.TorsoB;
+        var head = faceUp ? curLook.HeadF : curLook.HeadB;
+        var helm = faceUp ? curLook.HelmF : curLook.HelmB;
+        float headZ = -1.22f;
+        float helmZ = headZ - ((HelmTop(look.Head) - curLook.HelmFHalfH) - 1.53f);
+        if (!SparseCorpse && look.Body != "bones") FlatRot(new(j2, 0.055f, -0.78f), curPal.Blood, phase * 6.28f); // a skeleton falls in a heap of dry bones
+        if (Detail > 0 || SparseCorpse)
+        {
+            FlatRect(new(0, 0.085f, -0.82f), torso, false);
+            FlatRect(new(j * 0.3f, 0.095f, headZ), head, false);
+            if (look.Head != "none") FlatRect(new(j * 0.3f, 0.105f, helmZ), helm, false);
+            return;
+        }
+        // Legs: slightly splayed from the hips so they connect into the waist without parallel-board stiffness.
+        FlatRot(new(0.11f + j * 0.4f, 0.075f, -0.36f), curLook.Leg, -0.16f - phase * 0.24f);
+        FlatRot(new(-0.11f - j2 * 0.4f, 0.075f, -0.38f + j * 0.3f), curLook.Leg, 0.12f + (1 - phase) * 0.22f);
+        // Arms: emerging from the shoulders, weapon arm sprawled out toward the dropped weapon.
+        FlatRot(new(0.28f + j * 0.25f, 0.082f, -0.94f + j2 * 0.3f), curLook.SleeveBot, 0.70f + j * 2.2f);
+        FlatRot(new(0.41f + j * 0.35f, 0.084f, -0.82f + j2 * 0.5f), curLook.SleeveTop, 1.05f + j * 2.5f);
+        FlatRot(new(-0.27f - j2 * 0.25f, 0.082f, -0.92f - j * 0.25f), curLook.SleeveBot, -0.60f - j2 * 2.0f);
+        // Torso, tabard, head and helm: always draw the head under the helm so open caps/helms never float detached.
+        FlatRect(new(0, 0.095f, -0.82f), torso, false);
+        if (look.Tabard) FlatRect(new(0, 0.102f, -0.82f), faceUp ? curPal.TabardF : curPal.TabardB, false);
+        FlatRect(new(j * 0.35f, 0.106f, headZ), head, false);
+        if (look.Head != "none") FlatRect(new(j * 0.35f, 0.116f, helmZ), helm, false);
+        if (look.Shield != "none") { var keepS = scale; scale *= 0.78f; FlatRot(new(-0.38f - j * 0.8f, 0.072f, -0.74f + j2 * 1.4f), curLook.Shield, 0.35f + (phase - 0.5f) * 1.4f); scale = keepS; }
+        if (look.Weapon != "none") FlatRot(new(0.56f + j2 * 1.2f, 0.108f, -0.70f + j * 1.8f), curLook.Weapon, 0.75f + (phase - 0.5f) * 1.6f);
     }
 
     // ---------- effects ----------
@@ -975,5 +993,15 @@ sealed partial class Puppet
         var r = (across ? fwd : right) * src.Width * Art.Px * scale / 2;
         var c = W(local);
         Quad(c - r - top, c + r - top, c - r + top, c + r + top, src, false);
+    }
+
+    // Sprite lying on the ground turned by `angle` radians from pointing backwards along the spine.
+    void FlatRot(Vector3 local, Rectangle src, float angle)
+    {
+        float cs = MathF.Cos(angle), sn = MathF.Sin(angle);
+        var up = (-fwd * cs + right * sn) * src.Height * Art.Px * scale / 2;
+        var rt = (right * cs + fwd * sn) * src.Width * Art.Px * scale / 2;
+        var c = W(local);
+        Quad(c - rt - up, c + rt - up, c - rt + up, c + rt + up, src, false);
     }
 }
