@@ -1,6 +1,6 @@
 # Settlements: the town and castle models overhaul (SM1-SM7)
 
-Status: **planned 2026-11-20**, SM1 built 2026-11-20 (see its "As built"), SM2 next. Owner's brief (2026-11-20): overhaul the town and castle models.
+Status: **planned 2026-11-20**, SM1 and SM2 built 2026-11-20 (see their "As built"), SM3 next. Owner's brief (2026-11-20): overhaul the town and castle models.
 Owner's answers:
 1. **Scope:** towns, castles in all three sizes and villages on the campaign map, and the siege battlefield (the wall,
    towers, gate and houses you fight over) made to match.
@@ -130,6 +130,29 @@ small things (market stalls, wells, cranes, carts, stacks, gardens, fences).
 - Ports: the wall opens on a quay with warehouses and cranes by the pier. League towns get canals, fen towns dykes and mills.
 - Steppe towns: an earth bank and palisade round a timber core, yurts outside. Dune towns: a ksar, a block of adobe.
 - Test: no house of a town stands in water or on a road.
+
+**As built (2026-11-20).**
+- The layout is headless and lives in the plan (`Campaign/TownPlans.cs`, `WorldMap.LayTown`): `PlacePlan.Ring` (the wall's
+  corners, stretched along the main road, pulled in off water; corners still wet are dropped), `Gates` (where a drawn
+  road's middle crosses an edge, and a water gate toward a quay within 6 of the wall), `Square` and `Lots` (`Lot`: middle,
+  turn, frontage, depth, `LotUse`). `World.Towns.cs` only raises what the plan says, so the test checks the plan.
+- Streets are the map's own road ribbons, narrowed to 0.62 of their width inside a town (`PlacePlan.StreetScale`, read
+  by `World.Roads` and by the layout): at full width a town road (5.2) left no room for houses. Houses stand in rows along
+  them (a row facing the street, one back to back, a lane, and on: 7 bands), then along lanes the map does not draw: out
+  from the square between the roads, round 3.1 inside the wall, and a ring halfway out. Rows by people (`Rows`): terraced
+  tall houses and stucco, attached cubes in the south (a ksar), detached halls, cabins and chalets.
+- A town holds 9-59 houses (median ~30, seed 7): towns where seven roads meet or that stand out on the water hold fewest.
+  The test asks for the fewest >= 8 and the median >= 25. Houses are drawn `lean` (bare side walls, plain backs).
+- The landmark sits on the square on the side away from the roads (`World.Chapel` at 1.4, the cathedral at 1.65), a
+  smaller one anywhere inside the wall when the square is crowded. Market stalls under striped awnings stand round it.
+- Ports: a crane on the first dry ground in from the quay and up to three warehouses by it, wholly inside the wall or
+  wholly outside; foliage is cleared under any lot past the footprint (`BuildTerrain`). The steppe pitches up to 12 yurts
+  outside the bank and keeps a timber core (cabins) among the yurts inside; the fens' windmill stands out in the fields.
+- Dropped: the lagoon's canals (both lagoon towns on the drawn map stand out on the water with no room for one, and a
+  canal crowded out their quays) and the fens' dykes (no fen town on the drawn map). Revisit if the world gains them.
+- Planning all places takes ~150 ms of the map build (towns laid out in parallel after every base plan is known).
+- Working on layouts: `IRONFIELD_PLAN_SVG=/dir dotnet run -c Release --no-build -- --selftest TownsLaidOut` writes each
+  town's plan from above (water, roads at full width, wall, gates, lots by use, doors) as `plan-<town>.svg`.
 
 ### SM3: Villages
 - By style: a street village along the road, or houses round a green; the house kind of the people (cottages, longhalls,

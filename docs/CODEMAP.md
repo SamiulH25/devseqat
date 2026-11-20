@@ -494,10 +494,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Pilot.cs (303 lines)
 - **Pilot** (class, L8): Pilot:31, Run:42, Fight:64, Refuge:95, Visit:105, Kit:136, Worn:144, Worth:145, Fresh:149, Promote:159, TakePerks:170, Think:181, Arcane:243, Siege:265, Talk:288, S:302
 
-## Campaign/PlacePlans.cs (131 lines)
-- **PlacePlan** (record, L7): Dir:21
-- **PlaceState** (struct, L25)
-- **WorldMap** (class, L30): FootprintOf:36, PlanPlaces:44, Wet:65, RoadBearings:70, WaterBearings:91, DoorstepOf:109, LineDist:120
+## Campaign/PlacePlans.cs (163 lines)
+- **PlacePlan** (record, L7): StreetScale:30, Dir:41
+- **PlaceState** (struct, L45)
+- **WorldMap** (class, L50): FootprintOf:56, PlanPlaces:64, Wet:94, RoadBearings:99, WaterBearings:120, DoorstepOf:138, LineDist:149, SegDist:157
 
 ## Campaign/QuestLog.cs (92 lines)
 - **QuestView** (record, L7)
@@ -567,6 +567,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Rumour** (record, L6)
 - **Campaign** (class, L10): PrepareTournament:19, AutoTournament:41, FinishTournament:50, Rumours:86, Follow:117, Flavour:124
 
+## Campaign/TownPlans.cs (369 lines)
+- **LotUse** (enum, L6)
+- **Lot** (struct, L10): Facing:24, Overlap:27
+- **Gate** (struct, L41)
+- **WorldMap** (class, L43): OnRoad:71, InRing:82, RingDist:92, LotClear:100, LayTown:112, Resample:354
+
 ## Campaign/Traits.cs (96 lines)
 - **Campaign** (class, L6): readonly:11, RegardOfTraits:21, TraitsEarned:27, TraitsWeekly:40, AgeDaily:78, AgeEdge:95
 
@@ -594,9 +600,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/WorldLand.cs (136 lines)
 - **WorldMap** (class, L8): LayFields:12, BitCount:71, FieldClear:74, InField:105, GrowStands:110
 
-## Campaign/WorldMap.cs (710 lines)
+## Campaign/WorldMap.cs (712 lines)
 - **WorldMap** (class, L8): InLand:66, WorldMap:78, readonly:90, Generate:94, Climate:210, RaiseRidges:224, AddRidge:255, RidgeDist:267, RidgeHeight:270, OnRidge:288, HomeOf:291, ReachOf:293, GrowRealms:298, SiteKindsFor:340, PlaceSites:344, Cross:369, RiverDist:378, RiverScan:379, ProvinceAt:383, ProvinceScan:386, RoadDist:399, NearRoad:401, RoadScan:403, SpeedFactor:416, BattleGround:421, Height:439, LandHeight:452, DesignedHeight:476, RimAt:498, Ridged:500, Tint:503, OwnColour:547, NearSea:550, KindTint:558, BuildTerrain:573
-- **PlaceNamer** (class, L684): PlaceNamer:691, Pool:693, Next:699
+- **PlaceNamer** (class, L686): PlaceNamer:693, Pool:695, Next:701
 
 ## Campaign/WorldRoads.cs (260 lines)
 - **WorldMap** (class, L9): InLake:19, PlaceLakes:26, LayRoads:55
@@ -973,8 +979,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
 - **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:585, WellsFromSites:596, TideFeedsOffers:637, TideShared:655, Overreach:678, CourtMage:711, DoctrinesAndUnweave:743, WorkingsBite:776, WorkingsRemembered:806
 
-## Tests/MapTests.cs (547 lines)
-- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, NewLands:309, FieldsApart:348, MapDressed:368, ShipTravel:406, DesignedMap:454, PlacesPlanned:520
+## Tests/MapTests.cs (595 lines)
+- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, NewLands:309, FieldsApart:348, MapDressed:368, ShipTravel:406, DesignedMap:454, PlacesPlanned:520, TownsLaidOut:550, PlanSvg:573
 
 ## Tests/MeleeTests.cs (425 lines)
 - **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, UrgeLunges:173, RefusesFlank:203, VeteransWrap:242, ElitePincer:258, Reforms:289, HorseRegroup:319, BowsFallBack:363, MusterGrade:401, MightWeighsDrill:416
@@ -1077,8 +1083,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **World** (class, L7): Features:11
 - **World** (class, L58): KindColor:61, Contour:71, MapFeatures:96
 
-## World.Kit.cs (773 lines)
-- **World** (class, L7): Dir3:152, Dir2:153, At:154, WallColour:157, Weathered:165, Coursed:168, WetAt:184, Dwelling:191, Window:410, Tower:423, CapOn:446, Merlons:475, Merlon:504, Curtain:515, Palisade:551, TimberTower:583, Gatehouse:601, Keep:644, Chapel:692, Flag:751
+## World.Kit.cs (776 lines)
+- **World** (class, L7): Dir3:152, Dir2:153, At:154, WallColour:157, Weathered:165, Coursed:168, WetAt:184, Dwelling:192, Window:413, Tower:426, CapOn:449, Merlons:478, Merlon:507, Curtain:518, Palisade:554, TimberTower:586, Gatehouse:604, Keep:647, Chapel:695, Flag:754
 
 ## World.Land.cs (217 lines)
 - **World** (class, L9): Fields:32, Plot:51, Hedge:105, Fence:141, Outskirts:161, V3:203, Birch:206
@@ -1089,8 +1095,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## World.Places.cs (400 lines)
 - **World** (class, L9): BuildPlaces:32, BuildPlaceTile:47, UpdatePlaces:61, FlushPlaces:83, DrawPlaces:97, Place:114, Enclosure:137, Flags:152, YardHouse:159, MidHold:163, GreatHold:192, SmallHold:236, MotteAndBailey:333, Shorten:399
 
-## World.Water.cs (373 lines)
-- **World** (class, L9): NormalAt:20, Roads:53, AddTile:99, Sea:112, Water:168, Ship:182, RiverWater:200, Reeds:292, Lake:314, Bridge:348
+## World.Towns.cs (192 lines)
+- **World** (class, L8): TownPlace:11, TownWall:21, Building:76, TownHeight:116, Crane:129, Stall:149, Windmill:168
+
+## World.Water.cs (374 lines)
+- **World** (class, L9): NormalAt:20, Roads:53, AddTile:100, Sea:113, Water:169, Ship:183, RiverWater:201, Reeds:293, Lake:315, Bridge:349
 
 ## WorldDesign.cs (114 lines)
 - **WorldDesign** (class, L8): Get:34, Load:36, At:42, IsSea:43, ProvinceAt:47, U32:63, Hash2:66, Noise:77, static:85, Validate:92

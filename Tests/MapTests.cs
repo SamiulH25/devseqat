@@ -544,4 +544,52 @@ public static partial class SelfTest
         Console.WriteLine($"places mesh: {bare:N0} verts bare, {flown:N0} with flags");
         Check(flown > bare && w.PlaceVerts == bare, "flags go up when a place has a holder and come down with him, the place rebuilt each time");
     }
+
+    /// Towns laid out by their plans (docs/SETTLEMENTS.md SM2): every town walled, a gate on each road into it, a landmark on
+    /// its square, its houses in rows, none in water or on a road, ports with a crane and warehouses by the quay.
+    static void TownsLaidOut()
+    {
+        var c = Campaign.New(7, layout: WorldMap.DesignLayout);
+        var m = c.Map;
+        m.BuildTerrain();
+        var towns = m.Plans.Values.Where(p => p.Kind == SettlementKind.Town).ToList();
+        foreach (var p in towns.Take(30))
+            Console.WriteLine($"  {m.Settlements[p.Id].Name,-14} {p.Style,-18} r {p.Radius,4:0.0}  wall {p.Ring.Length,2} corners  gates {p.Gates.Length}  roads {p.Roads.Length}  houses {p.Lots.Count(l => l.Use is LotUse.House or LotUse.Yurt),3}  {string.Join(" ", p.Lots.Where(l => l.Use is not (LotUse.House or LotUse.Yurt)).GroupBy(l => l.Use).Select(g => $"{g.Key} {g.Count()}"))}");
+        if (Environment.GetEnvironmentVariable("IRONFIELD_PLAN_SVG") is { } dir) // a drawing of each town's plan from above, for working on the layout
+            foreach (var p in towns) File.WriteAllText(Path.Combine(dir, $"plan-{m.Settlements[p.Id].Name}.svg"), PlanSvg(m, p));
+        var wetWalls = towns.Where(p => p.Ring.Length < 6 || p.Ring.Any(v => m.Wet(v, 0.5f))).Select(p => m.Settlements[p.Id].Name).ToList();
+        Check(wetWalls.Count == 0, "every town walled, its wall on dry ground: " + string.Join(", ", wetWalls));
+        Check(towns.All(p => p.Gates.Length >= Math.Min(2, p.Roads.Length)), "a gate for the roads into each town");
+        Check(towns.All(p => p.Lots.Count(l => l.Use == LotUse.Landmark) == 1), "a landmark on every town's square");
+        var houses = towns.Select(p => p.Lots.Count(l => l.Use is LotUse.House or LotUse.Yurt)).OrderBy(x => x).ToList();
+        Check(houses[0] >= 8 && houses[houses.Count / 2] >= 25, $"towns are full of houses (fewest {houses[0]}, median {houses[houses.Count / 2]})");
+        var bad = towns.SelectMany(p => p.Lots.Where(l => l.Use is not (LotUse.Stall or LotUse.Crane) && !m.LotClear(l)).Select(l => $"{m.Settlements[p.Id].Name} {l.Use} at {l.Pos}")).ToList();
+        Check(bad.Count == 0, $"no house of a town in water or on a road ({bad.Count}): " + string.Join(", ", bad.Take(6)));
+        var ports = towns.Where(p => p.Quay != null).ToList();
+        Check(ports.All(p => p.Lots.Any(l => l.Use == LotUse.Crane) && p.Lots.Any(l => l.Use == LotUse.Warehouse)), "ports keep a crane and warehouses by the quay");
+    }
+
+    /// A town's plan from above as SVG: water, roads, the wall and gates, the lots by use.
+    static string PlanSvg(WorldMap m, PlacePlan p)
+    {
+        float R = p.Radius + 6, k = 30;
+        var sb = new System.Text.StringBuilder($"<svg xmlns='http://www.w3.org/2000/svg' width='{2 * R * k}' height='{2 * R * k}' style='background:#bca'>");
+        string P(Vector2 v) => $"{(v.X - p.Pos.X + R) * k:0.0},{(v.Y - p.Pos.Y + R) * k:0.0}";
+        for (float x = -R; x < R; x += 0.5f)
+            for (float y = -R; y < R; y += 0.5f)
+                if (m.Wet(p.Pos + new Vector2(x, y))) sb.Append($"<rect x='{(x + R) * k}' y='{(y + R) * k}' width='{k / 2}' height='{k / 2}' fill='#58a'/>");
+        foreach (var l in m.RoadLines.Where(l => l.Points.Any(q => Vector2.Distance(q, p.Pos) < R + 20)))
+            sb.Append($"<polyline points='{string.Join(" ", l.Points.Select(P))}' fill='none' stroke='#987' stroke-opacity='0.7' stroke-width='{l.Half * 2 * k}'/>");
+        sb.Append($"<polygon points='{string.Join(" ", p.Ring.Select(P))}' fill='none' stroke='#333' stroke-width='{0.5f * k}'/>");
+        if (p.Quay is Vector2 qz) sb.Append($"<circle cx='{P(qz).Split(',')[0]}' cy='{P(qz).Split(',')[1]}' r='{k * 0.6f}' fill='#000'/>");
+        foreach (var g in p.Gates) sb.Append($"<circle cx='{P(g.At).Split(',')[0]}' cy='{P(g.At).Split(',')[1]}' r='{k}' fill='#c33'/>");
+        foreach (var l in p.Lots)
+        {
+            string fill = l.Use switch { LotUse.Landmark => "#c9c", LotUse.Stall => "#fc4", LotUse.Warehouse => "#963", LotUse.Crane => "#000", LotUse.Yurt => "#eee", LotUse.Mill => "#a52", _ => "#ddc" };
+            sb.Append($"<polygon points='{string.Join(" ", l.Corners.Select(P))}' fill='{fill}' stroke='#222' stroke-width='1'/>");
+            var door = l.Pos - l.Across * (l.D / 2);
+            sb.Append($"<circle cx='{P(door).Split(',')[0]}' cy='{P(door).Split(',')[1]}' r='3' fill='#a00'/>");
+        }
+        return sb.Append("</svg>").ToString();
+    }
 }

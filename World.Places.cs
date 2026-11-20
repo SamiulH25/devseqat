@@ -117,7 +117,7 @@ sealed partial class World
         var b = At(p.Pos, t.Height(p.Pos));
         switch (p.Kind)
         {
-            case SettlementKind.Town: Town(m, b, 2.5f, r); break;       // SM2 remodels towns
+            case SettlementKind.Town: TownPlace(m, p, st, s, r); break;
             case SettlementKind.Village: Village(m, b, 1.8f, r); break; // SM3 remodels villages
             default:
                 float k = Math.Clamp(p.Radius / WorldMap.FootprintOf(p.Kind, p.Size), 0.6f, 1);

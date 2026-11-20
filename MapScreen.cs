@@ -816,7 +816,7 @@ sealed partial class MapScreen
             case "place" when s != null: // a settlement close up, from before its gate a little aside (docs/SETTLEMENTS.md)
             {
                 panel = PanelKind.None; follow = false; bare = true; focus = s.Pos; pitch = 0.6f;
-                zoom = s.Kind == SettlementKind.Town ? 52 : s.Kind == SettlementKind.Village ? 28 : s.Size switch { 1 => 24, 3 => 40, _ => 31 };
+                zoom = s.Kind == SettlementKind.Town ? 42 : s.Kind == SettlementKind.Village ? 28 : s.Size switch { 1 => 24, 3 => 40, _ => 31 };
                 if (C.Map.Plans.TryGetValue(s.Id, out var plan)) yaw = plan.Front + MathF.PI + 0.55f;
                 break;
             }

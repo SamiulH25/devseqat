@@ -188,7 +188,8 @@ sealed partial class World
 
     /// One house of a people's kind standing on the ground at `at`: w along the yaw, d across, h to the eaves. Its floor sits at
     /// the highest corner; on a slope a footing of the people's stone fills down to the lowest. The front (door) faces -d.
-    void Dwelling(Mesh m, HouseKind kind, PlaceStyle st, Vector2 at, float w, float d, float h, float yaw, Random r, bool chimney = false, float? raised = null)
+    /// `lean` (a house in a row) leaves its side walls bare, where its neighbours hide them, and keeps its back plain.
+    void Dwelling(Mesh m, HouseKind kind, PlaceStyle st, Vector2 at, float w, float d, float h, float yaw, Random r, bool chimney = false, float? raised = null, bool lean = false)
     {
         var (lo, hi) = GroundUnder(at, w, d, yaw);
         if (raised is float f && f > hi) lo = hi = f; // on a mound or a platform
@@ -214,14 +215,15 @@ sealed partial class World
                 float post = MathF.Max(0.05f, 0.085f * h);
                 foreach (var (n, along, fw, fd) in Faces(ax, az, w, d))
                 {
-                    int cols = fw > 1.6f * h ? 2 : 1;
+                    if (lean && n != -az && n != az) continue;
+                    int cols = fw > 1.6f * h && !(lean && n == az) ? 2 : 1;
                     float pw = (fw - post * (cols + 1)) / cols;
                     for (int k = 0; k < cols; k++)
                     {
                         var fc = b + n * (fd / 2) + along * (-fw / 2 + post * (k + 1) + pw * (k + 0.5f));
                         m.Panel(fc + Vector3.Up * (h * 0.25f), along, n, pw, h * 0.38f, wall, 0.012f);
                         m.Panel(fc + Vector3.Up * (h * 0.71f), along, n, pw, h * 0.4f, wall, 0.012f);
-                        if (fw > 1.2f * h) Window(m, fc + Vector3.Up * (h * 0.72f), along, n, MathF.Min(pw * 0.38f, h * 0.24f), h * 0.2f);
+                        if (fw > 1.2f * h || lean && n == -az) Window(m, fc + Vector3.Up * (h * 0.72f), along, n, MathF.Min(pw * 0.38f, h * 0.24f), h * 0.2f);
                         if (k == 0 && n == -az) m.Panel(fc + Vector3.Up * (h * 0.23f) + along * (pw * 0.2f), along, n, MathF.Min(pw * 0.3f, h * 0.3f), h * 0.44f, Kit.Mul(wood, 0.75f), 0.03f);
                     }
                 }
@@ -244,7 +246,7 @@ sealed partial class World
                 m.Walls(floor, w, d, h + sink, yaw, wall);
                 foreach (var (n, along, fw, fd) in Faces(ax, az, w, d))
                 {
-                    if (fw < h) continue;
+                    if (fw < h || lean && n != -az && n != az) continue;
                     int cols = Math.Max(1, (int)(fw / (h * 0.55f)));
                     for (int k = 0; k < cols; k++)
                     {
@@ -299,6 +301,7 @@ sealed partial class World
             {
                 m.Walls(floor, w, d, h + sink, yaw, wall);
                 foreach (var (n, along, fw, fd) in Faces(ax, az, w, d))
+                    if (!lean || n == -az || n == az)
                     foreach (float y in new[] { 0.3f, 0.68f })
                         m.Panel(b + n * (fd / 2) + Vector3.Up * (h * y), along, n, fw + 0.04f, h * 0.07f, Kit.Mul(wall, 0.72f), 0.012f);
                 m.GableRoof(b + Vector3.Up * h, w, d, d * st.Pitch, yaw, roof, wall, d * 0.14f);

@@ -660,7 +660,9 @@ public sealed partial class WorldMap
             foliage.Add(new Foliage(FoliageKind.Pine, pos, 2.4f + rng.NextSingle(), 0, rng.Next()));
         }
         var plans = PlanPlaces(); // the places' footprints (docs/SETTLEMENTS.md): nothing else grows inside them
-        foliage.RemoveAll(f => f.Kind is not (FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village) && plans.Any(pl => Vector2.DistanceSquared(pl.Pos, f.Pos) < (pl.Radius + 0.8f) * (pl.Radius + 0.8f)));
+        var outer = plans.SelectMany(pl => pl.Lots.Where(l => Vector2.Distance(l.Pos, pl.Pos) > pl.Radius - 1)).ToList(); // a quay's sheds, yurts and mills out past the footprint
+        foliage.RemoveAll(f => f.Kind is not (FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village)
+            && (plans.Any(pl => Vector2.DistanceSquared(pl.Pos, f.Pos) < (pl.Radius + 0.8f) * (pl.Radius + 0.8f)) || outer.Any(l => Vector2.Distance(l.Pos, f.Pos) < (l.W + l.D) / 2 + 0.8f)));
         var terrain = new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers) { Own = OwnColour };
         terrain.Places.AddRange(plans);
         terrain.RoadLines.AddRange(RoadLines);
