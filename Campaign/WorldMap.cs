@@ -430,7 +430,10 @@ public sealed partial class WorldMap
         else if (Settlements.Any(s => s.Kind == SettlementKind.Village && Vector2.Distance(s.Pos, p) < VillageNear) && t != TerrainParams.Marsh && t != TerrainParams.Forest) layouts = new[] { FieldLayout.Village };
         else if (OnRidge(p)) layouts = road ? new[] { FieldLayout.Pass } : new[] { FieldLayout.Ridge, FieldLayout.Ridge, FieldLayout.TwoHills };
         if (shore) layouts = new[] { FieldLayout.Shore }; // by the sea the sea is on the field (WM3)
-        return t with { Road = road, River = river || t == TerrainParams.Marsh, Layouts = layouts, Wet = wet, Season = season };
+        // The houses on the field are built as the nearest place's people build (SM6).
+        string? people = Settlements.Count > 0 ? Settlements.MinBy(s => Vector2.DistanceSquared(s.Pos, p))!.Culture : null;
+        if (people == "") people = null;
+        return t with { Road = road, River = river || t == TerrainParams.Marsh, Layouts = layouts, Wet = wet, Season = season, Style = people };
     }
 
     /// How near a village a fight must be to be fought among its houses.
@@ -659,7 +662,14 @@ public sealed partial class WorldMap
             if (MathF.Max(MathF.Abs(pos.X), MathF.Abs(pos.Y)) < ExtentUsed - 4) continue;
             foliage.Add(new Foliage(FoliageKind.Pine, pos, 2.4f + rng.NextSingle(), 0, rng.Next()));
         }
+        placeFields = fieldCells;
+        placeTrees = TreeCells(foliage);
+        var plans = PlanPlaces(); // the places' footprints (docs/SETTLEMENTS.md): nothing else grows inside them
+        var outer = plans.SelectMany(pl => pl.Lots.Where(l => l.W > 0 && l.Use is not (LotUse.Camp or LotUse.Fire or LotUse.Engine) && Vector2.Distance(l.Pos, pl.Pos) > pl.Radius - 1)).ToList(); // sheds, yurts, mills, suburbs and works out past the footprint (a siege camp pitches round the trees)
+        foliage.RemoveAll(f => f.Kind is not (FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village)
+            && (plans.Any(pl => Vector2.DistanceSquared(pl.Pos, f.Pos) < (pl.Radius + 0.8f) * (pl.Radius + 0.8f)) || outer.Any(l => Vector2.Distance(l.Pos, f.Pos) < (l.W + l.D) / 2 + 0.8f)));
         var terrain = new Terrain(Seed, GroundHalf, ExtentUsed < Extent ? LegacyStep : Step, Height, RoadDist, foliage, Tint, Rivers) { Own = OwnColour };
+        terrain.Places.AddRange(plans);
         terrain.RoadLines.AddRange(RoadLines);
         terrain.Lakes.AddRange(Lakes);
         terrain.MapBridges.AddRange(Bridges);

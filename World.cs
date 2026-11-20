@@ -60,7 +60,7 @@ sealed partial class World : IDisposable
 
     /// The CPU half: every mesh and map image, with no GraphicsDevice, so it can run off the main thread (the campaign map's
     /// takes seconds; `MapScreen.Prepare` makes it behind the loading screen). Call `Upload` on the main thread before drawing.
-    public World(Terrain terrain, float treeScale = 1)
+    public World(Terrain terrain, float treeScale = 1, Func<int, PlaceState>? placeState = null)
     {
         t = terrain;
         this.treeScale = treeScale;
@@ -71,6 +71,7 @@ sealed partial class World : IDisposable
         var (mini, miniSize) = BuildMinimap(); Mark("minimap", v.Length);
         var (ground, groundSize) = BuildGroundMap(); Mark("ground map", v.Length);
         baked = new Baked(v, idx, BuildFoliage(), sky, mini, miniSize, ground, groundSize);
+        BuildPlaces(placeState); Mark("places", markVerts + placeTiles.Sum(x => x.Tris * 3)); // the settlements (World.Places.cs)
         terrainTris = idx.Length / 3;
         skyTris = sky.Length / 3;
     }
@@ -90,6 +91,7 @@ sealed partial class World : IDisposable
         Bytes(System.Runtime.InteropServices.MemoryMarshal.AsBytes(b.Ground.AsSpan()));
         foreach (var (start, tris, box) in tiles.Concat(grassTiles)) { Bytes(BitConverter.GetBytes(start)); Bytes(BitConverter.GetBytes(tris)); Bytes(BitConverter.GetBytes(box.Min.X + box.Max.Y)); }
         foreach (var c in Chimneys) Bytes(BitConverter.GetBytes(c.X + c.Y * 3 + c.Z * 7));
+        foreach (var tile in placeTiles) if (tile.Fresh is { } pv) Bytes(System.Runtime.InteropServices.MemoryMarshal.AsBytes(pv.AsSpan()));
         Bytes(BitConverter.GetBytes(alwaysStart)); Bytes(BitConverter.GetBytes(alwaysTris));
         return h;
     }
@@ -98,9 +100,10 @@ sealed partial class World : IDisposable
     public (int Tiles, int TileVerts, int AlwaysVerts, long Bytes) Size()
     {
         var b = baked ?? throw new InvalidOperationException("only before Upload");
-        int tileVerts = tiles.Sum(x => x.Tris * 3) + grassTiles.Sum(x => x.Tris * 3);
-        long bytes = (b.Terrain.Length + b.Foliage.Length) * 36L + b.Indices.Length * 4L + b.Sky.Length * 16L;
-        return (tiles.Count + grassTiles.Count, tileVerts, alwaysTris * 3, bytes);
+        int placeVerts = placeTiles.Sum(x => x.Tris * 3);
+        int tileVerts = tiles.Sum(x => x.Tris * 3) + grassTiles.Sum(x => x.Tris * 3) + placeVerts;
+        long bytes = (b.Terrain.Length + b.Foliage.Length + placeVerts) * 36L + b.Indices.Length * 4L + b.Sky.Length * 16L;
+        return (tiles.Count + grassTiles.Count + placeTiles.Count, tileVerts, alwaysTris * 3, bytes);
     }
 
     /// How long each part of the CPU build took and the vertices it made (`--world-bench`).
@@ -129,6 +132,7 @@ sealed partial class World : IDisposable
         if (wide) terrainIb.SetData(b.Indices);
         else terrainIb.SetData(b.Indices.Select(i => (ushort)i).ToArray());
         foliageVb = FoliageBuffer(b.Foliage);
+        FlushPlaces();
         skyVb = new VertexBuffer(gd, VertexPositionColor.VertexDeclaration, b.Sky.Length, BufferUsage.WriteOnly);
         skyVb.SetData(b.Sky);
         Minimap = Image(b.Minimap, b.MinimapSize);
@@ -201,6 +205,7 @@ sealed partial class World : IDisposable
         foliageFx.View = view; foliageFx.Projection = proj;
         foliageFx.CurrentTechnique.Passes[0].Apply();
         DrawFoliage(drawFrustum, false);
+        DrawPlaces(drawFrustum);
     }
 
     /// Fog distances for the fixed-function path (the campaign map sees much further than a battle).
@@ -256,6 +261,7 @@ sealed partial class World : IDisposable
         fx.CurrentTechnique = fx.Techniques[foliage];
         fx.CurrentTechnique.Passes[0].Apply();
         DrawFoliage(view, shadow);
+        DrawPlaces(view);
         if (ExtraTris > 0)
         {
             int verts = ExtraTris * 3;
@@ -289,6 +295,8 @@ sealed partial class World : IDisposable
     public void Dispose()
     {
         terrainVb?.Dispose(); terrainIb?.Dispose(); foliageVb?.Dispose(); skyVb?.Dispose(); extraVb?.Dispose();
+        try { placeTask?.Wait(); } catch (AggregateException) { }
+        foreach (var tile in placeTiles) tile.Vb?.Dispose();
         detail?.Dispose(); Minimap?.Dispose(); GroundMap?.Dispose();
         terrainFx?.Dispose(); foliageFx?.Dispose(); skyFx?.Dispose();
     }
@@ -516,6 +524,7 @@ sealed partial class World : IDisposable
 
         void Item(Mesh m, Foliage f)
         {
+            if (t.Places.Count > 0 && f.Kind is FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village) return; // built as places (World.Places.cs)
             var rng = new Random(f.Seed);
             var b = new Vector3(f.Pos.X, t.Height(f.Pos), f.Pos.Y);
             switch (f.Kind)
@@ -542,14 +551,20 @@ sealed partial class World : IDisposable
                 case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/HOLDS.md HD5)
                 case FoliageKind.Castle when f.Dry == 3: GreatCastle(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
+                case FoliageKind.Wall when t.Wall?.AtBreach(f.Pos.X) == true && FieldStyle is PlaceStyle fs: FieldBreach(m, fs, f.Pos, rng); break; // a people's field (World.SiegeField.cs, SM6)
                 case FoliageKind.Wall when t.Wall?.AtBreach(f.Pos.X) == true: // a breach (docs/archive/SIEGECRAFT.md A2): the face lies in rubble at its foot
                     for (int i = 0; i < 4; i++) { var at = new Vector2(f.Pos.X - 1.8f + i * 1.2f, SiegeWall.Outer - 0.6f + (i % 2) * 0.9f); Rock(m, new Vector3(at.X, t.Height(at), at.Y), 1.1f + 0.3f * (i % 3), rng); }
                     break;
+                case FoliageKind.Wall when FieldStyle is PlaceStyle fs: FieldWall(m, fs, b, f.Scale, rng); break;
                 case FoliageKind.Wall: WallStones(m, b, f.Scale, rng); break;
+                case FoliageKind.Tower when FieldStyle is PlaceStyle fs: FieldTower(m, fs, b, rng, MathF.Abs(f.Pos.X - SiegeWall.GateX) < 6); break;
                 case FoliageKind.Tower: Tower(m, b, rng); break;
-                case FoliageKind.Gate: GateDoor(m, b, t.Wall?.GateOpen == true, rng); break;
+                case FoliageKind.Gate: GateDoor(m, b, t.Wall?.GateOpen == true, rng, FieldStyle); break;
                 case FoliageKind.Ladder: Ladder(m, b); break;
+                case FoliageKind.House when FieldStyle is PlaceStyle fs: FieldHouse(m, fs, f, rng, t.Wall == null); break;
                 case FoliageKind.House: TownHouse(m, b, f.Scale, rng); break;
+                case FoliageKind.Keep: FieldKeep(m, FieldStyle ?? Architecture.Of("azure_heart"), f, rng); break;
+                case FoliageKind.Landmark: FieldLandmark(m, FieldStyle ?? Architecture.Of("azure_heart"), f, rng); break;
                 case FoliageKind.Wagon: Wagon(m, b, rng); break;
                 case FoliageKind.Ruin or FoliageKind.Shrine or FoliageKind.Stones or FoliageKind.Field or FoliageKind.Mine
                     or FoliageKind.Hut or FoliageKind.Watch or FoliageKind.Spring or FoliageKind.Mill: SiteModel(m, f.Kind, b, f.Scale, rng); break;
@@ -594,7 +609,7 @@ sealed partial class World : IDisposable
     public (int Tiles, int Calls, int Tris) CameraCost { get; private set; }
     public (int Tiles, int Calls, int Tris) ShadowCost { get; private set; }
     public (int Camera, int Shadow) TerrainCost { get; private set; }
-    public string RenderCost => $"terrain {TerrainCost.Camera:N0}/{terrainTris:N0} tris, shadow {TerrainCost.Shadow:N0}; world {CameraCost.Tiles} tiles in {CameraCost.Calls} calls {CameraCost.Tris:N0} tris, shadow {ShadowCost.Tiles} tiles in {ShadowCost.Calls} calls {ShadowCost.Tris:N0} tris";
+    public string RenderCost => $"terrain {TerrainCost.Camera:N0}/{terrainTris:N0} tris, shadow {TerrainCost.Shadow:N0}; world {CameraCost.Tiles} tiles in {CameraCost.Calls} calls {CameraCost.Tris:N0} tris, shadow {ShadowCost.Tiles} tiles in {ShadowCost.Calls} calls {ShadowCost.Tris:N0} tris; places {PlaceCost.Tiles} tiles {PlaceCost.Tris:N0} tris";
 
     /// Draw the foliage tiles inside `view` (a camera's or the sun's frustum), then the water and grass. Visible tiles
     /// that lie next to each other in the buffer go out as one draw call.
@@ -936,7 +951,7 @@ sealed partial class World : IDisposable
         m.Tag = Vector2.Zero;
     }
 
-    static void GateDoor(Mesh m, Vector3 b, bool broken, Random r)
+    void GateDoor(Mesh m, Vector3 b, bool broken, Random r, PlaceStyle? st = null)
     {
         m.Tag = Vector2.Zero;
         if (!broken)
@@ -957,8 +972,13 @@ sealed partial class World : IDisposable
         else
             for (int i = 0; i < 5; i++) // splintered planks on the ground
                 m.Box(b + new Vector3(r.NextSingle() * 5 - 2.5f, 0, 1 + r.NextSingle() * 3), 1.6f, 0.3f, 0.12f, r.NextSingle() * MathF.Tau, Timber);
-        m.Tag = MasonryTag;
-        m.Box(b + new Vector3(0, SiegeWall.Height - 0.4f, 0.9f), SiegeWall.GateHalf * 2 + 2, 2.4f, 1.2f, 0, WallStone); // the arch over the way
+        if (st?.Defence == Defence.Palisade) // a timber lintel over the gap
+            m.Box(b + new Vector3(0, SiegeWall.Height - 0.4f, 0.9f), SiegeWall.GateHalf * 2 + 2, 1.2f, 1.1f, 0, Weathered(st, r));
+        else
+        {
+            m.Tag = st == null || Coursed(st) ? MasonryTag : Vector2.Zero;
+            m.Box(b + new Vector3(0, SiegeWall.Height - 0.4f, 0.9f), SiegeWall.GateHalf * 2 + 2, 2.4f, 1.2f, 0, st == null ? WallStone : WallColour(st, r)); // the arch over the way
+        }
         m.Tag = Vector2.Zero;
     }
 
@@ -1282,12 +1302,14 @@ sealed partial class World : IDisposable
     }
 
     /// Flat-shaded triangle soup with a few low-poly primitives.
-    internal sealed class Mesh
+    internal sealed partial class Mesh
     {
         public readonly List<VertexPNCT> V = new();
         public Vector2 Tag; // goes in the UV of foliage: (wind sway, leafiness) for the world shader
         /// Where the chimneys built into this mesh smoke (gathered into `World.Chimneys`).
         public readonly List<Vector3> Chimneys = new();
+        /// Where fires built into this mesh burn (a siege camp's, a raided village's): they always smoke (`World.Fires`).
+        public readonly List<Vector3> Fires = new();
 
         /// Lay another mesh (a tile built on its own) onto this one; its tag carries on as if built here.
         public void Append(Mesh other)

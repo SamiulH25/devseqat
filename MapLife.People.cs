@@ -62,6 +62,9 @@ sealed partial class MapLife
 
     /// Where smoke rises: `World.Chimneys`, set by the map once the world is built.
     public IReadOnlyList<Vector3> Chimneys = Array.Empty<Vector3>();
+    /// Where fires burn (`World.Fires`: siege camps, raided villages): each smokes, thick and dark.
+    public IReadOnlyList<Vector3> Fires = Array.Empty<Vector3>();
+    readonly List<Vector3> burning = new();
 
     void FindPlaces()
     {
@@ -116,8 +119,11 @@ sealed partial class MapLife
         }
         foreach (var b in seaBoats) StepSeaBoat(b, dt);
         smoking.Clear();
-        smoking.AddRange(Chimneys.Where(c => Vector2.DistanceSquared(new Vector2(c.X, c.Z), focus) < reach * reach)
+        smoking.AddRange(Chimneys.Where(c => Vector2.DistanceSquared(new Vector2(c.X, c.Z), focus) < reach * reach && Lit(c)) // one hearth in three alight: a village's houses stand close
             .OrderBy(c => Vector2.DistanceSquared(new Vector2(c.X, c.Z), focus)).Take(high ? 40 : 16));
+        burning.Clear();
+        burning.AddRange(Fires.Where(c => Vector2.DistanceSquared(new Vector2(c.X, c.Z), focus) < reach * reach * 2)
+            .OrderBy(c => Vector2.DistanceSquared(new Vector2(c.X, c.Z), focus)).Take(high ? 24 : 10));
     }
 
     void PopulatePeople(Vector2 focus, float reach, bool day, bool work, int cap)
@@ -498,6 +504,9 @@ sealed partial class MapLife
         }
     }
 
+    /// Whether a chimney smokes (about one in three, fixed by where it stands).
+    static bool Lit(Vector3 c) => ((uint)(MathF.Floor(c.X * 5.3f) * 73856093f % 1e6f + MathF.Floor(c.Z * 5.3f) * 19349663f % 1e6f)) % 3 == 0;
+
     /// Smoke from the chimneys: a few puffs each, rising, drifting with the wind and swelling as they go.
     void DrawSmoke()
     {
@@ -508,10 +517,22 @@ sealed partial class MapLife
             for (int j = 0; j < 5; j++)
             {
                 float age = clock * 0.18f + seed + j / 5f; age -= MathF.Floor(age); // seed can be negative: keep the age in 0..1
-                var p = at + new Vector3(2.4f, 0, 0.9f) * age * age * 2.2f + Vector3.Up * age * 5f;
-                float size = 0.4f + age * 1.0f;
+                var p = at + new Vector3(2.4f, 0, 0.9f) * age * age * 1.4f + Vector3.Up * age * 3.2f;
+                float size = 0.22f + age * 0.6f;
                 var col = Color.Lerp(new Color(128, 126, 122), new Color(196, 198, 202), age);
                 Puff(p, size, col);
+            }
+        }
+        for (int c = 0; c < burning.Count; c++) // fires: a flicker of flame and a thick dark column leaning with the wind
+        {
+            var at = burning[c];
+            float seed = (c * 0.618f + at.X * 0.017f) % 1f;
+            Puff(at + Vector3.Up * 0.08f, 0.15f + 0.05f * MathF.Sin(clock * 9 + c), new Color(236, 128, 44));
+            for (int j = 0; j < 5; j++)
+            {
+                float age = clock * 0.15f + seed + j / 5f; age -= MathF.Floor(age);
+                var p = at + new Vector3(2.4f, 0, 0.9f) * age * age * 1.4f + Vector3.Up * (0.25f + age * 3.8f);
+                Puff(p, 0.2f + age * 0.75f, Color.Lerp(new Color(88, 82, 76), new Color(172, 168, 166), age));
             }
         }
     }

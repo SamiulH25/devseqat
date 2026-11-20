@@ -147,7 +147,11 @@ void main()
         gl_FragColor = vec4(Fog(vColor.rgb * fl * 1.25, vWorld), 1.0);
         return;
     }
-    if (vUV.y < -0.5 && vUV.y > -1.5) albedo *= Masonry(vWorld, n, length(vWorld - CameraPos));
+    if (vUV.y < -0.5 && vUV.y > -1.5) // masonry; the map's places (tag -1.25, docs/SETTLEMENTS.md) lay finer courses
+    {
+        float fine = step(vUV.y, -1.1);
+        albedo *= Masonry(vWorld * mix(1.0, 2.2, fine), n, length(vWorld - CameraPos) * mix(1.0, 1.5, fine));
+    }
     // Command view: leaves on the line of sight to men below are thinned away (dithered), so they show through the wood.
     // The ground map's green channel marks the men; look down the view ray from this leaf to the ground for any.
     // Trees well in front of what the camera looks at are thinned away too, so a near pine never fills the view.

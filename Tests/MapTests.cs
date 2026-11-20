@@ -513,4 +513,200 @@ public static partial class SelfTest
         var wet = a.S.Parties.Where(q => !q.Down && m.InSea(q.Pos)).ToList();
         Check(wet.Count == 0, "nobody on the sea: " + string.Join(", ", wet.Select(q => $"{q.Name} at {q.Pos}")));
     }
+
+    /// Settlements as laid out for their models (docs/SETTLEMENTS.md SM1): every people has a style, every place a plan whose gate
+    /// faces a road and whose doorstep is dry ground outside it, nothing grows inside a footprint, and a place that changes
+    /// hands is rebuilt with its flags.
+    static void PlacesPlanned()
+    {
+        var subs = WorldDesign.Get().Subcultures.Select(c => c.Id).ToList();
+        var unstyled = subs.Concat(Factions.All.Select(f => f.Culture)).Where(c => !Architecture.Styled(c)).Distinct().ToList();
+        Check(unstyled.Count == 0, "every subculture and realm culture builds in a style: " + string.Join(", ", unstyled));
+        Check(Architecture.All.Select(a => a.Id).Distinct().Count() == Architecture.All.Count && Architecture.All.All(a => a.Build is "timber" or "white" or "log" or "tent"), "styles are unique and paint the tavern in a known way");
+        var c = Campaign.New(7, layout: WorldMap.DesignLayout);
+        var m = c.Map;
+        var t = m.BuildTerrain();
+        Check(t.Places.Count == m.Settlements.Count && m.Plans.Count == m.Settlements.Count, $"a plan for every settlement ({t.Places.Count} of {m.Settlements.Count})");
+        var roadless = t.Places.Where(p => p.Roads.Length == 0).ToList();
+        Console.WriteLine($"places: {t.Places.Count}, {roadless.Count} with no road, {t.Places.Count(p => p.Water.Length > 0)} by water; radius {t.Places.Min(p => p.Radius):0.0}-{t.Places.Max(p => p.Radius):0.0}");
+        Check(roadless.Count < t.Places.Count / 10, $"almost every place has a road out ({roadless.Count} without)");
+        Check(t.Places.Where(p => p.Roads.Length > 0).All(p => p.Front == p.Roads[0]), "the gate faces the main road");
+        var wet = t.Places.Where(p => m.Wet(p.Doorstep, 0.3f) || Vector2.Distance(p.Doorstep, p.Pos) <= p.Radius).ToList();
+        Check(wet.Count <= 2, "a party stands outside the gate on dry ground: " + string.Join(", ", wet.Select(p => m.Settlements[p.Id].Name)));
+        var inside = t.Foliage.Where(f => f.Kind is not (FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village)
+            && t.Places.Any(p => Vector2.Distance(p.Pos, f.Pos) < p.Radius)).ToList();
+        Check(inside.Count == 0, $"nothing grows inside a place ({inside.Count} pieces)");
+        var w = new World(t, 0.72f, id => PlaceState.None);
+        int bare = w.PlaceVerts;
+        w.UpdatePlaces(id => new PlaceState(m.Settlements[id].Kind == SettlementKind.Village ? -1 : 1), wait: true);
+        int flown = w.PlaceVerts;
+        w.UpdatePlaces(id => PlaceState.None, wait: true);
+        Console.WriteLine($"places mesh: {bare:N0} verts bare, {flown:N0} with flags");
+        Check(flown > bare && w.PlaceVerts == bare, "flags go up when a place has a holder and come down with him, the place rebuilt each time");
+    }
+
+    /// Towns laid out by their plans (docs/SETTLEMENTS.md SM2): every town walled, a gate on each road into it, a landmark on
+    /// its square, its houses in rows, none in water or on a road, ports with a crane and warehouses by the quay.
+    static void TownsLaidOut()
+    {
+        var c = Campaign.New(7, layout: WorldMap.DesignLayout);
+        var m = c.Map;
+        m.BuildTerrain();
+        var towns = m.Plans.Values.Where(p => p.Kind == SettlementKind.Town).ToList();
+        foreach (var p in towns.Take(30))
+            Console.WriteLine($"  {m.Settlements[p.Id].Name,-14} {p.Style,-18} r {p.Radius,4:0.0}  wall {p.Ring.Length,2} corners  gates {p.Gates.Length}  roads {p.Roads.Length}  houses {p.Lots.Count(l => l.Use is LotUse.House or LotUse.Yurt),3}  {string.Join(" ", p.Lots.Where(l => l.Use is not (LotUse.House or LotUse.Yurt)).GroupBy(l => l.Use).Select(g => $"{g.Key} {g.Count()}"))}");
+        if (Environment.GetEnvironmentVariable("IRONFIELD_PLAN_SVG") is { } dir) // a drawing of each town's plan from above, for working on the layout
+            foreach (var p in towns) File.WriteAllText(Path.Combine(dir, $"plan-{m.Settlements[p.Id].Name}.svg"), PlanSvg(m, p));
+        var wetWalls = towns.Where(p => p.Ring.Length < 6 || p.Ring.Any(v => m.Wet(v, 0.5f))).Select(p => m.Settlements[p.Id].Name).ToList();
+        Check(wetWalls.Count == 0, "every town walled, its wall on dry ground: " + string.Join(", ", wetWalls));
+        Check(towns.All(p => p.Gates.Length >= Math.Min(2, p.Roads.Length)), "a gate for the roads into each town");
+        Check(towns.All(p => p.Lots.Count(l => l.Use == LotUse.Landmark) == 1), "a landmark on every town's square");
+        var houses = towns.Select(p => p.Lots.Count(l => l.Use is LotUse.House or LotUse.Yurt)).OrderBy(x => x).ToList();
+        Check(houses[0] >= 8 && houses[houses.Count / 2] >= 25, $"towns are full of houses (fewest {houses[0]}, median {houses[houses.Count / 2]})");
+        var bad = towns.SelectMany(p => p.Lots.Where(l => l.Use is not (LotUse.Stall or LotUse.Crane or LotUse.Works) && !m.LotClear(l)).Select(l => $"{m.Settlements[p.Id].Name} {l.Use} at {l.Pos}")).ToList();
+        Check(bad.Count == 0, $"no house of a town in water or on a road ({bad.Count}): " + string.Join(", ", bad.Take(6)));
+        var ports = towns.Where(p => p.Quay != null).ToList();
+        Check(ports.All(p => p.Lots.Any(l => l.Use == LotUse.Crane) && p.Lots.Any(l => l.Use == LotUse.Warehouse)), "ports keep a crane and warehouses by the quay");
+    }
+
+    /// A town's plan from above as SVG: water, roads, the wall and gates, the lots by use.
+    static string PlanSvg(WorldMap m, PlacePlan p)
+    {
+        float R = p.Radius + 6, k = 30;
+        var sb = new System.Text.StringBuilder($"<svg xmlns='http://www.w3.org/2000/svg' width='{2 * R * k}' height='{2 * R * k}' style='background:#bca'>");
+        string P(Vector2 v) => $"{(v.X - p.Pos.X + R) * k:0.0},{(v.Y - p.Pos.Y + R) * k:0.0}";
+        for (float x = -R; x < R; x += 0.5f)
+            for (float y = -R; y < R; y += 0.5f)
+                if (m.Wet(p.Pos + new Vector2(x, y))) sb.Append($"<rect x='{(x + R) * k}' y='{(y + R) * k}' width='{k / 2}' height='{k / 2}' fill='#58a'/>");
+        foreach (var l in m.RoadLines.Where(l => l.Points.Any(q => Vector2.Distance(q, p.Pos) < R + 20)))
+            sb.Append($"<polyline points='{string.Join(" ", l.Points.Select(P))}' fill='none' stroke='#987' stroke-opacity='0.7' stroke-width='{l.Half * 2 * k}'/>");
+        sb.Append($"<polygon points='{string.Join(" ", p.Ring.Select(P))}' fill='none' stroke='#333' stroke-width='{0.5f * k}'/>");
+        if (p.Quay is Vector2 qz) sb.Append($"<circle cx='{P(qz).Split(',')[0]}' cy='{P(qz).Split(',')[1]}' r='{k * 0.6f}' fill='#000'/>");
+        foreach (var g in p.Gates) sb.Append($"<circle cx='{P(g.At).Split(',')[0]}' cy='{P(g.At).Split(',')[1]}' r='{k}' fill='#c33'/>");
+        foreach (var l in p.Lots)
+        {
+            string fill = l.Use switch { LotUse.Landmark => "#c9c", LotUse.Stall => "#fc4", LotUse.Warehouse => "#963", LotUse.Crane => "#000", LotUse.Yurt => "#eee", LotUse.Mill => "#a52", _ => "#ddc" };
+            sb.Append($"<polygon points='{string.Join(" ", l.Corners.Select(P))}' fill='{fill}' stroke='#222' stroke-width='1'/>");
+            var door = l.Pos - l.Across * (l.D / 2);
+            sb.Append($"<circle cx='{P(door).Split(',')[0]}' cy='{P(door).Split(',')[1]}' r='3' fill='#a00'/>");
+        }
+        return sb.Append("</svg>").ToString();
+    }
+
+    /// Villages laid out by their plans (SM3): each holds its people's houses, none in water or on a road, a well, and a
+    /// chapel in about half; the nomads' camps have no chapel.
+    static void VillagesLaidOut()
+    {
+        var m = Campaign.New(7, layout: WorldMap.DesignLayout).Map;
+        m.BuildTerrain();
+        var villages = m.Plans.Values.Where(p => p.Kind == SettlementKind.Village).ToList();
+        var houses = villages.Select(p => p.Lots.Count(l => l.Use == LotUse.House)).OrderBy(x => x).ToList();
+        int chapels = villages.Count(p => p.Lots.Any(l => l.Use == LotUse.Landmark)), wells = villages.Count(p => p.Lots.Any(l => l.Use == LotUse.Well));
+        Console.WriteLine($"villages: {villages.Count}, houses {houses[0]}-{houses[^1]} (median {houses[houses.Count / 2]}), {chapels} chapels, {wells} wells");
+        foreach (var p in villages.Where(p => p.Lots.Count(l => l.Use == LotUse.House) < 4 || !p.Lots.Any(l => l.Use == LotUse.Well)).OrderBy(p => p.Lots.Count(l => l.Use == LotUse.House)).Take(10))
+            Console.WriteLine($"  thin {m.Settlements[p.Id].Name,-14} {p.Look.Id,-18} r {p.Radius:0.0} houses {p.Lots.Count(l => l.Use == LotUse.House)} well {p.Lots.Any(l => l.Use == LotUse.Well)} wet {m.Wet(p.Pos)} roadDist {m.RoadDist(p.Pos):0.0} landness {m.Landness(p.Pos):0.00}");
+        if (Environment.GetEnvironmentVariable("IRONFIELD_PLAN_SVG") is { } dir)
+            foreach (var p in villages.OrderBy(p => p.Lots.Count(l => l.Use == LotUse.House)).Take(6)) File.WriteAllText(Path.Combine(dir, $"village-{m.Settlements[p.Id].Name}.svg"), PlanSvg(m, p));
+        Check(houses[0] >= 3 && houses[houses.Count / 2] >= 5, $"every village holds houses (fewest {houses[0]})");
+        Check(wells > villages.Count * 0.9f && chapels > villages.Count / 4, "a well in almost every village, a chapel in many");
+        Check(villages.Where(p => WorldMap.VillageKind(p.Look) is HouseKind.Yurt or HouseKind.Tent).All(p => !p.Lots.Any(l => l.Use == LotUse.Landmark)), "no chapel in a camp");
+        var bad = villages.SelectMany(p => p.Lots.Where(l => !m.LotClear(l)).Select(l => $"{m.Settlements[p.Id].Name} {l.Use}")).ToList();
+        Check(bad.Count == 0, $"no village house in water or on a road ({bad.Count}): " + string.Join(", ", bad.Take(6)));
+    }
+
+    /// The place's state on its model (docs/SETTLEMENTS.md SM4): a site for each work round every town and castle, suburbs
+    /// by the towns' roads, none of it in water, on a road or on a neighbour's ground; each state builds its own mesh, and
+    /// the same state the same mesh.
+    /// The battlefield is built as its people build (docs/SETTLEMENTS.md SM6): an assault's field carries the place's people,
+    /// a castle's a keep and a close-towered curtain, a town's its landmark and houses; an unstyled field is untouched;
+    /// every people's field builds.
+    static void FieldsStyled()
+    {
+        SiegeWall Wall() => new(2, 500);
+        int Count(Terrain t, FoliageKind k) => t.Foliage.Count(f => f.Kind == k);
+        var plain = new Terrain(5, TerrainParams.Meadow, Wall());
+        var town = new Terrain(5, TerrainParams.Meadow with { Style = "azure_heart" }, Wall());
+        var castle = new Terrain(5, TerrainParams.Meadow with { Style = "azure_heart", Castle = true }, Wall());
+        Check(Count(plain, FoliageKind.Keep) + Count(plain, FoliageKind.Landmark) == 0 && Count(plain, FoliageKind.Tower) == 8, "an unstyled field keeps its old wall");
+        Check(Count(town, FoliageKind.Landmark) == 1 && Count(town, FoliageKind.Keep) == 0, "a town has its landmark behind the wall");
+        Check(Count(castle, FoliageKind.Keep) == 1 && Count(castle, FoliageKind.Tower) > Count(town, FoliageKind.Tower)
+            && Count(castle, FoliageKind.House) < Count(town, FoliageKind.House), "a castle has a keep, a close-towered curtain and few houses");
+        Check(castle.House(castle.Foliage.First(f => f.Kind == FoliageKind.Keep).Pos), "the keep is solid");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        int i = 0;
+        foreach (var st in Architecture.All)
+        {
+            var w = new World(new Terrain(5 + i, TerrainParams.Meadow with { Style = st.Id, Castle = i % 2 == 0, Banner = 1 }, Wall()));
+            if (i++ % 3 == 0) _ = new World(new Terrain(9, TerrainParams.Farmland with { Style = st.Id, Layouts = new[] { FieldLayout.Village } }));
+        }
+        Console.WriteLine($"styled fields: {Architecture.All.Count} assaults and some villages built in {sw.ElapsedMilliseconds} ms");
+
+        var c = Campaign.New(7);
+        var hold = c.S.Settlements.First(s => s.Kind == SettlementKind.Castle && s.Culture != "");
+        var g = c.PrepareAssault(hold).Options.Ground!;
+        Check(g.Style == hold.Culture && g.Castle && g.Banner == Style.PaletteOf(hold.Faction), "an assault on a castle is fought at its people's walls, under its colours");
+        var burg = c.S.Settlements.First(s => s.Kind == SettlementKind.Town);
+        Check(c.PrepareAssault(burg).Options.Ground is { Castle: false } tg && tg.Style == burg.Culture, "an assault on a town is fought at a town wall");
+        var near = c.Map.BattleGround(burg.Pos + new Vector2(1, 0));
+        Check(near.Style == burg.Culture, "a field takes the nearest place's people");
+        var json = System.Text.Json.JsonSerializer.Serialize(g, new System.Text.Json.JsonSerializerOptions { IncludeFields = true });
+        var back = System.Text.Json.JsonSerializer.Deserialize<TerrainParams>(json, new System.Text.Json.JsonSerializerOptions { IncludeFields = true })!;
+        Check(back.Style == g.Style && back.Castle && back.Banner == g.Banner, "a replay keeps the field's people");
+    }
+
+    static void PlacesShowState()
+    {
+        var m = Campaign.New(7, layout: WorldMap.DesignLayout).Map;
+        var t = m.BuildTerrain();
+        var seats = m.Plans.Values.Where(p => p.Kind != SettlementKind.Village).ToList();
+        int Sites(PlacePlan p) => p.Lots.Count(l => l.Use == LotUse.Works && l.W > 0);
+        var sites = seats.Select(Sites).OrderBy(x => x).ToList();
+        var suburbs = m.Plans.Values.Where(p => p.Kind == SettlementKind.Town).Select(p => p.Lots.Count(l => l.Use == LotUse.Suburb)).OrderBy(x => x).ToList();
+        Console.WriteLine($"works sites: {sites[0]}-{sites[^1]} (median {sites[sites.Count / 2]}) at {seats.Count} towns and castles; suburbs {suburbs[0]}-{suburbs[^1]} (median {suburbs[suburbs.Count / 2]})");
+        Check(seats.All(p => p.Lots.Count(l => l.Use == LotUse.Works) == PlaceState.WorkIds.Length), "a site (or its empty place) for every work");
+        Check(sites[sites.Count / 2] >= 5 && sites[sites.Count / 10] >= 3, "most towns and castles have room for their works");
+        Check(suburbs[suburbs.Count / 2] >= 6, "towns have room for suburbs along their roads");
+        var tents = seats.Select(p => p.Lots.Count(l => l.Use == LotUse.Camp)).OrderBy(x => x).ToList();
+        var spots = seats.Select(p => p.Lots.Count(l => l.Use == LotUse.Engine)).OrderBy(x => x).ToList();
+        Console.WriteLine($"siege camps: tents {tents[0]}-{tents[^1]} (median {tents[tents.Count / 2]}), engine spots median {spots[spots.Count / 2]}");
+        Check(tents[tents.Count / 2] >= 10 && spots[spots.Count / 2] >= 3, "a siege camp has room round most towns and castles");
+        var bad = new List<string>();
+        foreach (var p in m.Plans.Values)
+            foreach (var l in p.Lots.Where(l => l.Use is LotUse.Suburb or LotUse.Works or LotUse.Camp or LotUse.Fire or LotUse.Engine && l.W > 0))
+            {
+                bool hall = p.Kind == SettlementKind.Town && l.Use == LotUse.Works && Vector2.Distance(l.Pos, p.Square) < 2.4f; // the market hall stands on the square
+                if (!hall && !m.LotClear(l)) bad.Add($"{m.Settlements[p.Id].Name} {l.Use} in water or on a road");
+                foreach (var o in m.Plans.Values)
+                    if (o.Id != p.Id && l.Corners.Any(c => Vector2.Distance(c, o.Pos) < o.Radius)) bad.Add($"{m.Settlements[p.Id].Name} {l.Use} on {m.Settlements[o.Id].Name}");
+            }
+        Check(bad.Count == 0, $"suburbs, works and camps on clear ground of their own ({bad.Count}): " + string.Join(", ", bad.Take(6)));
+
+        var town = m.Plans.Values.Where(p => p.Kind == SettlementKind.Town).OrderByDescending(Sites).First();
+        var castle = seats.Where(p => p.Kind == SettlementKind.Castle).OrderByDescending(Sites).First();
+        var village = m.Plans.Values.First(p => p.Kind == SettlementKind.Village && p.Lots.Any(l => l.Use == LotUse.Suburb));
+        var w = new World(t, 0.72f, id => PlaceState.None);
+        double plain = w.PlaceSum; int plainVerts = w.PlaceVerts;
+        var built = new PlaceState(1, 2, (1 << PlaceState.WorkIds.Length) - 1, 3);
+        w.UpdatePlaces(id => id == town.Id || id == castle.Id ? built : id == village.Id ? new PlaceState(-1, 2) : PlaceState.None, wait: true);
+        int richVerts = w.PlaceVerts;
+        w.UpdatePlaces(id => id == town.Id || id == village.Id ? new PlaceState(-1, 0) : PlaceState.None, wait: true);
+        double poor = w.PlaceSum;
+        w.UpdatePlaces(id => id == castle.Id ? new PlaceState(-1, 1, 0, 2) : PlaceState.None, wait: true);
+        double walls = w.PlaceSum;
+        var siege = new PlaceState(-1, 1, 0, 0, 3, 1, 15);
+        w.UpdatePlaces(id => id == town.Id || id == castle.Id ? siege : PlaceState.None, wait: true);
+        int siegeVerts = w.PlaceVerts; int fires = w.Fires.Length;
+        w.UpdatePlaces(id => id == town.Id || id == castle.Id ? siege with { Besieger = -1, Engines = 0 } : PlaceState.None, wait: true);
+        double breached = w.PlaceSum;
+        w.UpdatePlaces(id => id == village.Id ? new PlaceState(-1, Burning: true) : PlaceState.None, wait: true);
+        int burning = w.Fires.Length;
+        w.UpdatePlaces(id => PlaceState.None, wait: true);
+        Console.WriteLine($"{m.Settlements[town.Id].Name} and {m.Settlements[castle.Id].Name}: {plainVerts:N0} verts plain, {richVerts:N0} rich with every work, {siegeVerts:N0} besieged ({fires} fires)");
+        Check(siegeVerts > plainVerts + 3000 && fires >= 2, "a besieged place has its camp round it, its fires lit");
+        Check(breached != plain, "battered walls look battered");
+        Check(burning >= 1 && w.Fires.Length == 0, "a raided village burns, and the fires go out with the state");
+        Check(richVerts > plainVerts + 3000, "a rich place with every work built shows them");
+        Check(poor != plain && walls != plain && poor != walls, "a poor place and higher walls each look their own");
+        Check(w.PlaceSum == plain && w.PlaceVerts == plainVerts, "the same state builds the same mesh");
+    }
 }

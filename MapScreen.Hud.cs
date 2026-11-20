@@ -27,6 +27,7 @@ partial class MapScreen
 
     void DrawUi()
     {
+        if (bare) return;
         bool click = pendingClick;
         pendingClick = false;
         ui.Begin(gd.Viewport, ms.Position, click);

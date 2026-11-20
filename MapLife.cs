@@ -111,7 +111,7 @@ sealed partial class MapLife
     public void Update(float dt, Vector2 focus, float zoom, IReadOnlyList<Vector2> parties, IEnumerable<Vector2> carrion, float hour, Quality quality)
     {
         clock += dt;
-        if (quality == Quality.Low) { herds.Clear(); flocks.Clear(); crows.Clear(); hawk = null; crowds.Clear(); travellers.Clear(); boats.Clear(); smoking.Clear(); return; }
+        if (quality == Quality.Low) { herds.Clear(); flocks.Clear(); crows.Clear(); hawk = null; crowds.Clear(); travellers.Clear(); boats.Clear(); smoking.Clear(); burning.Clear(); return; }
         bool high = quality == Quality.High;
         float reach = battle ? 420 : Math.Clamp(zoom * 0.9f, 50, 260);
         var near = parties.Where(p => Vector2.DistanceSquared(p, focus) < (reach + 40) * (reach + 40)).ToList();

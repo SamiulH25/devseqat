@@ -9,7 +9,9 @@ public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wa
     // The campaign map's small cover (docs/WORLD_DRESS.md): cheap pieces that stand between the woods.
     Shrub, Tussock, Heather, Reed, DeadTree, Palm, Flowers,
     // The water's edge and the roadside (docs/WORLD_DRESS.md WD4).
-    Driftwood, Milestone, Wayside, Well, Rowboat, Marram }
+    Driftwood, Milestone, Wayside, Well, Rowboat, Marram,
+    // An assault field's keep (a castle's) or landmark (a town's), behind the wall (docs/SETTLEMENTS.md SM6).
+    Keep, Landmark }
 
 /// A river (roadmap C5): a centre line, its width, and the fords where it runs shallow.
 public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float Depth = 1.3f)
@@ -250,6 +252,12 @@ public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, floa
     /// grass), and woods of pines only.
     public GroundLook Look { get; init; }
     public bool Conifer { get; init; }
+    /// Who built what stands on the field (docs/SETTLEMENTS.md SM6): an `Architecture` style id (a place's culture) for the
+    /// houses and an assault's wall, null = the old plain look. `Castle`: the assault is on a castle (a curtain and a keep,
+    /// not a town wall and its houses). `Banner`: the defenders' colours over the gate (a `Style.Sides` palette, -1 none).
+    public string? Style { get; init; }
+    public bool Castle { get; init; }
+    public int Banner { get; init; } = -1;
 
     public static readonly TerrainParams Meadow = new("Meadow", 3, 5, 1f, 1f, 64, 11, 60, 220, true, Layouts: new[] { FieldLayout.Open, FieldLayout.Open, FieldLayout.Ridge, FieldLayout.WoodedFlank, FieldLayout.Village, FieldLayout.RiverLine });
     public static readonly TerrainParams Farmland = new("Farmland", 1, 3, 0.7f, 0.6f, 70, 6, 30, 380, true, Layouts: new[] { FieldLayout.Hedgerows, FieldLayout.Hedgerows, FieldLayout.Village, FieldLayout.Open });
@@ -304,6 +312,8 @@ public sealed partial class Terrain
     public readonly List<MapBridge> MapBridges = new();
     /// Ships lying at the ports' piers on the campaign map (docs/archive/WORLDMAP.md WM7; drawing only).
     public readonly List<(Vector2 At, float Yaw)> Moored = new();
+    /// The campaign map's settlements as laid out for their models (docs/SETTLEMENTS.md); empty on a battlefield.
+    public readonly List<PlacePlan> Places = new();
     /// The sea's surface on a designed campaign map (docs/archive/WORLDMAP.md WM2); null where there is no sea.
     public float? SeaLevel;
     /// Field plots round the settlements (campaign map, layout 4) and the season they were drawn for (-1: a battlefield).
@@ -634,13 +644,24 @@ public sealed partial class Terrain
         Add(new Foliage(FoliageKind.Wall, new Vector2(SiegeWall.GateX + 4.6f, 15.25f), 3.7f, 0, rng.Next()));
         foreach (float x in new[] { SiegeWall.GateX - 5.2f, SiegeWall.GateX + 5.2f, -60, -30, 30, 60, -95, 95 })
             Add(new Foliage(FoliageKind.Tower, new Vector2(x, 15.25f), 1, 0, rng.Next()));
+        if (Params is { Style: not null, Castle: true }) // a castle's curtain: towers close along it (SM6), clear of the torches every 10 m
+            foreach (float x in new[] { -75f, -45, -17, 17, 45, 75 })
+                Add(new Foliage(FoliageKind.Tower, new Vector2(x, 15.25f), 1, 0, Seed ^ (int)(x * 97)));
         Add(new Foliage(FoliageKind.Gate, new Vector2(SiegeWall.GateX, SiegeWall.Outer + 0.6f), 1, 0, rng.Next()));
         foreach (float x in w.Ladders) Add(new Foliage(FoliageKind.Ladder, new Vector2(x, SiegeWall.Outer), 1, 0, rng.Next()));
-        for (int i = 0; i < 40; i++)
+        // A people's field (SM6): a castle's keep, or a town's landmark, stands behind the wall to one side of the gate; a
+        // castle's bailey holds a few buildings, not a town.
+        bool styled = Params.Style != null, castle = styled && Params.Castle;
+        float side = (Seed & 1) == 0 ? 1 : -1;
+        if (styled) Add(castle ? new Foliage(FoliageKind.Keep, new Vector2(SiegeWall.GateX + 24 * side, 44), 1, 6.5f, Seed ^ 0x4b33)
+            : new Foliage(FoliageKind.Landmark, new Vector2(SiegeWall.GateX - 26 * side, 52), 1, 6, Seed ^ 0x1a2d));
+        for (int i = 0, built = 0; i < 40; i++)
         {
             var p = new Vector2(rng.NextSingle() * 150 - 75, 34 + rng.NextSingle() * 40);
             if (MathF.Abs(p.X - SiegeWall.GateX) < 9 || Blocked(p, 5)) continue;
+            if (castle && (built >= 7 || MathF.Abs(p.X) > 48 || p.Y > 62)) continue;
             Add(new Foliage(FoliageKind.House, p, 1 + rng.NextSingle() * 0.4f, 2.6f, rng.Next()));
+            built++;
         }
     }
 
