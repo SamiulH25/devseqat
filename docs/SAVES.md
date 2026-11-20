@@ -40,6 +40,15 @@ saves/
 Loading from the map always goes through the host's loading screen (another campaign may be another map); QUICK LOAD (F9) loads
 this campaign's `quick.json` in place, as before.
 
+## Tester saves
+
+`dotnet run -c Release --no-build -- --tester-saves [filter]` (`TesterSaves.cs`) writes twelve playtest campaigns into the
+save folder (`IRONFIELD_SAVES`, else the real one), each in its own `test-NN-...` folder with one named save, company named
+after the scenario: fresh start, first month, seasoned sellsword, late career (the stand-in captain plays 30-200 days for
+those), rich sandbox, big battle ahead, at the walls, circle and aura, at the chapter house, monster country, at a port,
+castle muster. It prints each one as it loads back and what stands close by. Running it again replaces only the `test-`
+folders. No map pictures (headless): the card shows the arms.
+
 ## Not done (ideas)
 
 - Steam/cloud sync, save import/export.

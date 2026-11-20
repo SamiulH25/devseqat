@@ -32,6 +32,11 @@ if (args.Contains("--sounds"))
     Ironfield.SoundDump.Run(rest.FirstOrDefault() ?? "sounds", rest.ElementAtOrDefault(1));
     return;
 }
+if (args.Contains("--tester-saves"))
+{
+    Ironfield.TesterSaves.Run(args.SkipWhile(a => a != "--tester-saves").Skip(1).FirstOrDefault());
+    return;
+}
 if (args.Contains("--write-controls"))
 {
     Ironfield.Controls.WriteDefaults(Ironfield.Controls.FileName);

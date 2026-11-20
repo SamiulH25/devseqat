@@ -812,7 +812,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **PortraitPainter** (class, L13): MoodOf:17, Of:21, SoldierSeed:53, Of:58, OfMan:62, CohesionMood:77, Captain:80, Of:84, Paint:87, Resample:94
 - **Portraits** (class, L117): Of:122, Sized:125
 
-## Program.cs (123 lines)
+## Program.cs (128 lines)
 
 ## Puppet.cs (1081 lines)
 - **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:355, Bow:379, HorseScale:407, Horse:415, sp_breathe:513, static:515, Beast:523, WolfBody:535, Warg:565, BeastCorpse:583, DrawLooseHorse:598, DrawDeadHorse:608, RotY:639, Shoulder:650, Arm:654, ArmTo:661, Elbow:673, Sink:700, Leg:709, SpanRect:721, Fallen:730, SpiritAscent:798, Corpse:839, Haze:879, Particle:891, Banner:906, Decal:953, Quad:966, PlumeY:980, HelmTop:983, HeadBill:997, BillRect:1000, Missile:1011, AxialSrc:1031, LongRect:1042, PlaneRect:1054, FlatRect:1064, FlatRot:1073
