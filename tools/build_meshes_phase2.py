@@ -17,21 +17,35 @@ def build_phase2_helms(PartBuilder):
 
     def add_mail_coif(p, mat_id=5, shade=(0.96, 0.96, 1.0)):
         p.add_loft([
-            (0, -0.17, -0.045, 0.175, 0.145, 7),
-            (0, 0.06, -0.045, 0.172, 0.140, 7),
-        ], mat_id=mat_id, shade=shade, cap_bot=False, cap_top=False, ao_y=(-0.17, 0.08, 0.76, 1.02))
+            (0, -0.17, -0.030, 0.176, 0.150, 8),
+            (0, -0.06, -0.042, 0.160, 0.132, 8),
+            (0, 0.06, -0.035, 0.166, 0.138, 8),
+        ], mat_id=mat_id, shade=shade, cap_bot=False, cap_top=False, ao_y=(-0.17, 0.08, 0.78, 1.02))
 
     def greathelm_base(name):
+        # Secular medieval keeled greathelm (NO Christian cross!): horizontal gilded brow rim, ocular slit & cheek breath-slots!
         p = PartBuilder(name)
-        p.add_loft([
-            (0, -0.155, 0.00, 0.172, 0.178, segs),
-            (0, 0.040, 0.008, 0.182, 0.188, segs),
-            (0, 0.230, 0.000, 0.168, 0.174, segs),
-            (0, 0.275, 0.000, 0.135, 0.140, segs),
-        ], mat_id=4, ao_y=(-0.155, 0.275, 0.76, 1.10))
-        p.add_box((0, 0.062, 0.192), (0.255, 0.042, 0.034), mat_id=0, shade=(0.05, 0.05, 0.07))
-        p.add_box((0, 0.035, 0.205), (0.044, 0.32, 0.026), mat_id=6)
-        p.add_box((0, 0.095, 0.203), (0.275, 0.036, 0.026), mat_id=6)
+        rings = []
+        for y, rx, rz, prow in [
+            (-0.155, 0.170, 0.176, 0.016),
+            (0.040, 0.180, 0.186, 0.024),
+            (0.225, 0.168, 0.174, 0.014),
+            (0.272, 0.132, 0.138, 0.006),
+        ]:
+            ring = []
+            for i in range(segs):
+                a = 2.0 * math.pi * i / segs
+                sa = math.sin(a)
+                x = math.cos(a) * rx
+                z = sa * rz + (prow * (sa ** 2) if sa > 0 else 0.0)
+                ring.append(Vector((x, y, z)))
+            rings.append(ring)
+        p.add_loft(rings, mat_id=4, ao_y=(-0.155, 0.275, 0.76, 1.10))
+        p.add_box((0, 0.062, 0.194), (0.245, 0.038, 0.030), mat_id=0, shade=(0.05, 0.05, 0.07))
+        p.add_box((0, 0.095, 0.198), (0.260, 0.030, 0.028), mat_id=6)
+        p.add_box((0, 0.028, 0.194), (0.240, 0.024, 0.024), mat_id=5)
+        for sx in (-1, 1):
+            p.add_box((sx * 0.072, -0.042, 0.180), (0.064, 0.036, 0.022), mat_id=0, shade=(0.12, 0.12, 0.15), rot_euler=(0, sx * 0.35, 0))
         p.add_loft([(0, 0.215, 0, 0.174, 0.180, segs), (0, 0.242, 0, 0.172, 0.178, segs)], mat_id=6, cap_bot=False, cap_top=False)
         return p
 
@@ -61,17 +75,17 @@ def build_phase2_helms(PartBuilder):
         gh.add_cone((sx * 0.35, 0.32, 0.03), (sx * 0.27, 0.49, 0.08), 0.028, 0.007, segs=5, mat_id=3)
     parts.append(gh)
 
-    # 4. Horned northern spangenhelm (brass ribs, spectacle guard, mail aventail & sweeping Viking horns!)
+    # 4. Horned northern spangenhelm (clean contoured brass ribs, snug nasal + cheek plates, mail aventail & sweeping horns!)
     sh = PartBuilder("helm_spangen_horns")
     add_mail_coif(sh, mat_id=5)
-    sh.add_loft([(0, 0.048, 0, 0.192, 0.196, segs), (0, 0.095, 0, 0.190, 0.194, segs)], mat_id=6)
-    sh.add_loft([(0, 0.085, 0, 0.182, 0.188, segs), (0, 0.185, 0, 0.148, 0.154, segs), (0, 0.295, 0, 0.028, 0.028, segs)], mat_id=4, ao_y=(0.08, 0.30, 0.78, 1.10))
+    sh.add_loft([(0, 0.048, 0, 0.188, 0.192, segs), (0, 0.092, 0, 0.186, 0.190, segs)], mat_id=6, cap_bot=False, cap_top=False)
+    sh.add_loft([(0, 0.082, 0, 0.180, 0.186, segs), (0, 0.185, 0, 0.146, 0.152, segs), (0, 0.295, 0, 0.026, 0.026, segs)], mat_id=4, ao_y=(0.08, 0.30, 0.78, 1.10))
     for a_rib in (0.0, math.pi * 0.5, math.pi, math.pi * 1.5):
-        sh.add_cone((math.cos(a_rib) * 0.184, 0.09, math.sin(a_rib) * 0.190), (0, 0.298, 0), 0.022, 0.012, segs=4, mat_id=6)
-    sh.add_sphere((0, 0.305, 0), (0.032, 0.036, 0.032), segs=5, rings=3, mat_id=6)
-    sh.add_box((0, -0.005, 0.192), (0.044, 0.12, 0.028), mat_id=5)
-    sh.add_box((0, 0.048, 0.190), (0.18, 0.030, 0.028), mat_id=6)
+        sh.add_cone((math.cos(a_rib) * 0.180, 0.09, math.sin(a_rib) * 0.186), (0, 0.296, 0), 0.020, 0.011, segs=4, mat_id=6)
+    sh.add_sphere((0, 0.302, 0), (0.028, 0.032, 0.028), segs=5, rings=3, mat_id=6)
+    sh.add_box((0, -0.005, 0.178), (0.040, 0.125, 0.026), mat_id=5)
     for sx in (-1, 1):
+        sh.add_box((sx * 0.148, -0.020, 0.032), (0.034, 0.135, 0.095), mat_id=4, rot_euler=(0, sx * 0.42, -sx * 0.14), shade=(0.94, 0.96, 1.0))
         sh.add_cone((sx * 0.14, 0.14, 0.0), (sx * 0.22, 0.19, 0.02), 0.054, 0.044, segs=5, mat_id=6)
         sh.add_cone((sx * 0.21, 0.18, 0.02), (sx * 0.35, 0.28, 0.04), 0.042, 0.024, segs=5, mat_id=3)
         sh.add_cone((sx * 0.35, 0.28, 0.04), (sx * 0.28, 0.45, 0.09), 0.024, 0.007, segs=5, mat_id=3)
@@ -160,12 +174,49 @@ def build_phase2_helms(PartBuilder):
     br.add_cone((-0.17, 0.10, -0.04), (-0.28, 0.34, -0.18), 0.036, 0.012, segs=4, mat_id=3)  # jaunty feather!
     parts.append(br)
 
-    # 12. Sallet with brass crest & gothic bevor chin-guard!
+    # 12. Gothic Sallet with contoured wrap-around steel bevor & sculpted arched brass crown comb!
     sc = PartBuilder("helm_sallet_crest")
-    sc.add_loft([(0, 0.01, -0.06, 0.190, 0.235, segs), (0, 0.08, -0.02, 0.195, 0.212, segs), (0, 0.185, -0.01, 0.180, 0.190, segs), (0, 0.27, 0, 0.045, 0.052, segs)], mat_id=4, ao_y=(0.01, 0.28, 0.78, 1.12))
-    sc.add_box((0, 0.068, 0.212), (0.21, 0.028, 0.026), mat_id=0, shade=(0.06, 0.06, 0.08))
-    sc.add_box((0, -0.065, 0.135), (0.22, 0.125, 0.11), mat_id=4, shade=(0.94, 0.96, 1.0))  # steel bevor chin-guard
-    sc.add_box((0, 0.265, -0.02), (0.038, 0.14, 0.26), mat_id=6)
+    rings_sc = []
+    for y, rx, rz, zoff in [
+        (-0.025, 0.186, 0.192, -0.055),
+        (0.035, 0.194, 0.202, -0.022),
+        (0.095, 0.192, 0.204, -0.008),
+        (0.185, 0.174, 0.184, -0.004),
+        (0.248, 0.112, 0.122, 0.000),
+        (0.278, 0.032, 0.040, 0.000),
+    ]:
+        ring = []
+        for i in range(segs):
+            a = 2.0 * math.pi * i / segs
+            sa = math.sin(a)
+            x = math.cos(a) * rx
+            z = sa * rz + zoff
+            yy = y
+            if sa < -0.20 and y < 0.10:
+                z -= (0.10 - y) * 1.45 * (-sa)
+            if sa > 0.35 and y < 0.04:
+                yy += (0.04 - y) * 0.90 * sa
+            if sa > 0.50 and 0.02 < y < 0.11:
+                z += 0.016 * sa
+            ring.append(Vector((x, yy, z)))
+        rings_sc.append(ring)
+    sc.add_loft(rings_sc, mat_id=4, ao_y=(-0.02, 0.28, 0.78, 1.12))
+    sc.add_loft([(0, 0.044, 0.018, 0.174, 0.182, segs), (0, 0.066, 0.018, 0.176, 0.184, segs)], mat_id=0, shade=(0.06, 0.06, 0.08), cap_bot=False, cap_top=False)
+    # Contoured gothic bevor curving smoothly from gorget up around the chin & jawline (zero floating brick!)
+    bev_rings = []
+    for y, rx, rz, prow in [(-0.165, 0.165, 0.162, 0.012), (-0.085, 0.168, 0.172, 0.032), (-0.015, 0.164, 0.176, 0.038)]:
+        ring = []
+        for i in range(segs):
+            a = 2.0 * math.pi * i / segs
+            sa = math.sin(a)
+            x = math.cos(a) * rx
+            z = sa * rz + (prow * (sa ** 2) if sa > 0 else -0.02)
+            ring.append(Vector((x, y, z)))
+        bev_rings.append(ring)
+    sc.add_loft(bev_rings, mat_id=4, cap_bot=False, ao_y=(-0.165, 0.0, 0.80, 1.08))
+    # Sleek tapered arched brass comb hugging the gothic dome cleanly!
+    sc.add_cone((0, 0.23, 0.13), (0, 0.315, 0.0), 0.016, 0.026, segs=4, mat_id=6)
+    sc.add_cone((0, 0.315, 0.0), (0, 0.22, -0.16), 0.026, 0.014, segs=4, mat_id=6)
     parts.append(sc)
 
     # 13. Dragon-crested warhelm (sculpted gilded wyrm head, jaws, horns & spine ridge!)

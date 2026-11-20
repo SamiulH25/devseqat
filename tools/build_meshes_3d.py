@@ -309,65 +309,89 @@ def build_helm(kind):
     segs = 8
 
     def add_mail_coif(mat_id=5, shade=(0.96, 0.96, 1.0)):
-        # Open-faced chainmail/linen aventail wrapping cheeks, jaw & back of neck cleanly down to gorget!
+        # Snug contoured chainmail/linen aventail wrapping cheeks, jaw & neck cleanly down to gorget!
         p.add_loft([
-            (0, -0.17, -0.045, 0.175, 0.145, 7),
-            (0, 0.06, -0.045, 0.172, 0.140, 7),
-        ], mat_id=mat_id, shade=shade, cap_bot=False, cap_top=False, ao_y=(-0.17, 0.08, 0.76, 1.02))
+            (0, -0.17, -0.030, 0.176, 0.150, 8),
+            (0, -0.06, -0.042, 0.160, 0.132, 8),
+            (0, 0.06, -0.035, 0.166, 0.138, 8),
+        ], mat_id=mat_id, shade=shade, cap_bot=False, cap_top=False, ao_y=(-0.17, 0.08, 0.78, 1.02))
 
     if kind == "kettle":
-        # Ref-c style: wide angled riveted steel brim, domed ribbed skull + snug chainmail coif framing face!
+        # Clean iconic medieval kettle hat: smooth rounded steel dome sweeping into a wide sloped brim + snug mail coif!
         add_mail_coif(mat_id=5)
         p.add_loft([
-            (0, 0.035, 0.0, 0.295, 0.305, segs),  # bold sloped kettle brim
-            (0, 0.088, 0.0, 0.198, 0.206, segs),  # brim crease
-            (0, 0.185, 0.0, 0.176, 0.182, segs),  # steel dome
-            (0, 0.275, 0.0, 0.042, 0.042, segs),  # peaked crown
-        ], mat_id=4, ao_y=(0.03, 0.28, 0.78, 1.12))
-        p.add_loft([(0, 0.085, 0, 0.203, 0.210, segs), (0, 0.120, 0, 0.198, 0.205, segs)], mat_id=5, cap_bot=False, cap_top=False)  # riveted iron brow band
-        p.add_box((0, 0.215, 0.0), (0.028, 0.125, 0.24), mat_id=4, shade=(1.08, 1.08, 1.12))  # subtle crown ridge
+            (0, 0.042, 0.0, 0.295, 0.305, segs),  # bold sloped circular brim
+            (0, 0.095, 0.0, 0.196, 0.204, segs),  # brim-crown crease
+            (0, 0.165, 0.0, 0.182, 0.188, segs),  # smooth rounded dome lower
+            (0, 0.232, 0.0, 0.132, 0.138, segs),  # smooth rounded dome upper
+            (0, 0.270, 0.0, 0.038, 0.038, segs),  # clean smooth crown apex
+        ], mat_id=4, ao_y=(0.04, 0.27, 0.78, 1.12))
+        p.add_loft([(0, 0.094, 0, 0.200, 0.208, segs), (0, 0.118, 0, 0.197, 0.204, segs)], mat_id=5, cap_bot=False, cap_top=False)
 
     elif kind == "sallet":
-        # Ref-c style: gothic swept lobster-tail neck guard, brow visor with dark eye-slit & crisp crown comb!
+        # Sleek continuous gothic sallet: smooth rounded dome sweeping into a long lobster-tail neck guard,
+        # angled visor brow integrated cleanly into the shell (zero floating bars!), flush dark eye-slit!
         rings = []
         levels = [
-            (0.01, 0.185, 0.185, -0.065),
-            (0.075, 0.196, 0.210, -0.015),
-            (0.185, 0.180, 0.190, -0.008),
-            (0.272, 0.042, 0.052, 0.000),
+            (-0.025, 0.186, 0.192, -0.055),
+            (0.035, 0.194, 0.202, -0.022),
+            (0.095, 0.192, 0.204, -0.008),
+            (0.185, 0.174, 0.184, -0.004),
+            (0.248, 0.112, 0.122, 0.000),
+            (0.278, 0.032, 0.040, 0.000),
         ]
         for y, rx, rz, zoff in levels:
             ring = []
             for i in range(segs):
                 a = 2.0 * math.pi * i / segs
+                sa = math.sin(a)
                 x = math.cos(a) * rx
-                z = math.sin(a) * rz + zoff
-                if math.sin(a) < -0.25 and y < 0.11:
-                    z -= (0.11 - y) * 1.65 * (-math.sin(a))  # iconic gothic lobster tail!
-                if math.sin(a) > 0.55 and 0.04 < y < 0.12:
-                    z += 0.028  # projecting visor brow!
-                ring.append(Vector((x, y, z)))
+                z = sa * rz + zoff
+                yy = y
+                # Long swept gothic lobster tail at the back
+                if sa < -0.20 and y < 0.10:
+                    z -= (0.10 - y) * 1.45 * (-sa)
+                # Slightly raised open-face arch over the nose/mouth, lowering smoothly over the eyes!
+                if sa > 0.35 and y < 0.04:
+                    yy += (0.04 - y) * 0.95 * sa
+                if sa > 0.50 and 0.02 < y < 0.11:
+                    z += 0.016 * sa  # gentle brow visor contour
+                ring.append(Vector((x, yy, z)))
             rings.append(ring)
-        p.add_loft(rings, mat_id=4, ao_y=(0.01, 0.28, 0.78, 1.12))
-        # Dark horizontal visor eye-slit + steel lower visor lip
-        p.add_box((0, 0.065, 0.212), (0.21, 0.028, 0.026), mat_id=0, shade=(0.06, 0.06, 0.08))
-        p.add_box((0, 0.036, 0.198), (0.22, 0.034, 0.032), mat_id=4, shade=(0.94, 0.96, 1.0))
-        p.add_box((0, 0.225, -0.01), (0.032, 0.105, 0.23), mat_id=4, shade=(1.10, 1.10, 1.14))  # raised gothic comb
+        p.add_loft(rings, mat_id=4, ao_y=(-0.02, 0.28, 0.78, 1.12))
+        # Flush dark recessed visor slit tucked snugly along the brow contour
+        p.add_loft([
+            (0, 0.044, 0.018, 0.174, 0.182, segs),
+            (0, 0.066, 0.018, 0.176, 0.184, segs),
+        ], mat_id=0, shade=(0.06, 0.06, 0.08), cap_bot=False, cap_top=False)
 
     elif kind == "greathelm":
-        # Ref-c style: bold flat-topped crusader greathelm with PROUD brass T-cross & unmistakable dark eye-slit!
-        p.add_loft([
-            (0, -0.155, 0.00, 0.172, 0.178, segs),
-            (0, 0.040, 0.008, 0.182, 0.188, segs),
-            (0, 0.230, 0.000, 0.168, 0.174, segs),
-            (0, 0.275, 0.000, 0.135, 0.140, segs),  # authentic flat-topped crusader crown
-        ], mat_id=4, ao_y=(-0.155, 0.275, 0.76, 1.10))
-        # Proud brass brow-band + dark recessed eye-slit clearly protruding outside the steel cylinder!
-        p.add_box((0, 0.062, 0.192), (0.255, 0.042, 0.034), mat_id=0, shade=(0.05, 0.05, 0.07))  # deep black ocular slit
-        p.add_box((0, 0.035, 0.205), (0.044, 0.32, 0.026), mat_id=6)   # proud vertical gilded cross bar
-        p.add_box((0, 0.095, 0.203), (0.275, 0.036, 0.026), mat_id=6)  # proud upper brow cross bar
-        p.add_box((0, -0.045, 0.184), (0.16, 0.030, 0.026), mat_id=5, shade=(0.55, 0.56, 0.60))  # breath-plate shadow band
-        p.add_loft([(0, 0.215, 0, 0.174, 0.180, segs), (0, 0.242, 0, 0.172, 0.178, segs)], mat_id=6, cap_bot=False, cap_top=False)  # crown rim band
+        # Secular medieval iron/steel greathelm (NO cross!): keeled angular visor prow, bold dark eye-slit,
+        # riveted steel brow band, brass crown rim & dark recessed breathing vents!
+        rings = []
+        for y, rx, rz, prow in [
+            (-0.155, 0.170, 0.176, 0.016),
+            (0.040, 0.180, 0.186, 0.024),
+            (0.225, 0.168, 0.174, 0.014),
+            (0.272, 0.132, 0.138, 0.006),
+        ]:
+            ring = []
+            for i in range(segs):
+                a = 2.0 * math.pi * i / segs
+                sa = math.sin(a)
+                x = math.cos(a) * rx
+                z = sa * rz + (prow * (sa ** 2) if sa > 0 else 0.0)
+                ring.append(Vector((x, y, z)))
+            rings.append(ring)
+        p.add_loft(rings, mat_id=4, ao_y=(-0.155, 0.275, 0.76, 1.10))
+        # Deep black ocular visor slit + reinforced steel/brass brow rim (secular, fierce, no cross!)
+        p.add_box((0, 0.062, 0.194), (0.245, 0.038, 0.030), mat_id=0, shade=(0.05, 0.05, 0.07))
+        p.add_box((0, 0.095, 0.198), (0.260, 0.030, 0.028), mat_id=6)  # horizontal gilded brow reinforcing band
+        p.add_box((0, 0.028, 0.194), (0.240, 0.024, 0.024), mat_id=5)  # lower ocular steel rim
+        # Recessed dark breathing slots on lower left/right cheeks
+        for sx in (-1, 1):
+            p.add_box((sx * 0.072, -0.042, 0.180), (0.064, 0.036, 0.022), mat_id=0, shade=(0.12, 0.12, 0.15), rot_euler=(0, sx * 0.35, 0))
+        p.add_loft([(0, 0.215, 0, 0.174, 0.180, segs), (0, 0.242, 0, 0.172, 0.178, segs)], mat_id=6, cap_bot=False, cap_top=False)
 
     elif kind == "nasal":
         # Norman conical nasal helm with riveted brow rim, proud nasal bar & snug chainmail coif!
@@ -378,26 +402,27 @@ def build_helm(kind):
             (0, 0.31, 0.0, 0.026, 0.026, segs),
         ], mat_id=4, ao_y=(0.05, 0.31, 0.80, 1.12))
         p.add_loft([(0, 0.048, 0, 0.194, 0.198, segs), (0, 0.088, 0, 0.190, 0.195, segs)], mat_id=5, cap_bot=False, cap_top=False)
-        p.add_box((0, -0.005, 0.192), (0.046, 0.145, 0.032), mat_id=4, shade=(1.04, 1.06, 1.10))
+        p.add_box((0, -0.005, 0.182), (0.042, 0.135, 0.028), mat_id=4, shade=(1.04, 1.06, 1.10))
 
     elif kind == "spangen":
-        # Nordic spangenhelm: brass brow band, crossed over-crown ribs, spectacle eye-arch + cheek plates & mail aventail!
+        # Clean Nordic spangenhelm: riveted brass brow band, tapered crown ribs hugging the conical dome,
+        # snug curved nasal guard, tucked cheek-plates & contoured mail aventail!
         add_mail_coif(mat_id=5)
-        p.add_loft([(0, 0.048, 0.0, 0.192, 0.196, segs), (0, 0.095, 0.0, 0.190, 0.194, segs)], mat_id=6, cap_bot=False, cap_top=False)
+        p.add_loft([(0, 0.048, 0.0, 0.188, 0.192, segs), (0, 0.092, 0.0, 0.186, 0.190, segs)], mat_id=6, cap_bot=False, cap_top=False)
         p.add_loft([
-            (0, 0.085, 0.0, 0.182, 0.188, segs),
-            (0, 0.185, 0.0, 0.148, 0.154, segs),
-            (0, 0.295, 0.0, 0.028, 0.028, segs),
+            (0, 0.082, 0.0, 0.180, 0.186, segs),
+            (0, 0.185, 0.0, 0.146, 0.152, segs),
+            (0, 0.295, 0.0, 0.026, 0.026, segs),
         ], mat_id=4, ao_y=(0.08, 0.30, 0.78, 1.10))
-        # Sleek tapered brass spangen ribs hugging the conical dome + brass finial button
         for a_rib in (0.0, math.pi * 0.5, math.pi, math.pi * 1.5):
-            rx0, rz0 = math.cos(a_rib) * 0.184, math.sin(a_rib) * 0.190
-            p.add_cone((rx0, 0.09, rz0), (0, 0.298, 0), 0.022, 0.012, segs=4, mat_id=6)
-        p.add_sphere((0, 0.305, 0), (0.032, 0.036, 0.032), segs=5, rings=3, mat_id=6)
-        p.add_box((0, -0.005, 0.192), (0.044, 0.12, 0.028), mat_id=5)
-        p.add_box((0, 0.048, 0.190), (0.18, 0.030, 0.028), mat_id=6)  # spectacle brow bar
+            rx0, rz0 = math.cos(a_rib) * 0.180, math.sin(a_rib) * 0.186
+            p.add_cone((rx0, 0.09, rz0), (0, 0.296, 0), 0.020, 0.011, segs=4, mat_id=6)
+        p.add_sphere((0, 0.302, 0), (0.028, 0.032, 0.028), segs=5, rings=3, mat_id=6)
+        # Snug contoured nasal guard hugging the nose (zero floating shelf!)
+        p.add_box((0, -0.005, 0.178), (0.040, 0.125, 0.026), mat_id=5)
+        # Cheek plates tucked seamlessly against the jaw under the brow band
         for sx in (-1, 1):
-            p.add_box((sx * 0.165, -0.025, 0.055), (0.042, 0.14, 0.115), mat_id=4, rot_euler=(0, sx * 0.25, -sx * 0.12))
+            p.add_box((sx * 0.148, -0.020, 0.032), (0.034, 0.135, 0.095), mat_id=4, rot_euler=(0, sx * 0.42, -sx * 0.14), shade=(0.94, 0.96, 1.0))
 
     elif kind == "turban":
         # Ref-c style: authentic low-wrapped folded linen turban around a gleaming domed steel helm + brass finial + neck cloth!
