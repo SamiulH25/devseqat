@@ -208,13 +208,6 @@ sealed class AudioEngine
 
     // ---------- music & stems ----------
 
-    /// Legacy 1-parameter battle intensity (maps onto the 4-stem mixer until AU5 wires granular battle stems).
-    public void Intensity(float x)
-    {
-        float k = Math.Clamp(x, 0f, 1f);
-        SetStemWeights(1f, Math.Clamp(k * 1.8f, 0f, 1f), k, Math.Clamp((k - 0.55f) * 2.2f, 0f, 1f));
-    }
-
     public void SetStemWeights(float deploy, float skirmish, float melee, float crisis) =>
         streamer?.SetStems(deploy, skirmish, melee, crisis);
 
@@ -222,16 +215,6 @@ sealed class AudioEngine
     {
         if (!Enabled) return;
         streamer?.PlayStinger(id, gain);
-    }
-
-    /// Play a specific score ID directly (used by contextual map/battle directors in AU4–AU5).
-    public void RequestPiece(string id, MusicTrack mode = MusicTrack.Map)
-    {
-        if (!Enabled || string.IsNullOrEmpty(id)) return;
-        track = mode;
-        if (requestedPiece == id && streamer is { CurrentFinished: false }) return;
-        requestedPiece = id;
-        StartPiece(id);
     }
 
     /// The campaign map's music (AU4): `MusicDirector` chooses, this starts what it asks for. Coming back from a battle,

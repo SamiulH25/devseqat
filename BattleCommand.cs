@@ -127,21 +127,13 @@ public partial class Battle
 
     // ---------- SG2: plans and horns ----------
 
-    /// Give a division a horn plan: before the battle at once, during it by rider like any order. Returns the delay.
-    public float SetHornPlan(Division d, Goal g, bool now = false)
+    /// Give a division a horn plan: his at once, kept until the horn.
+    public void SetHornPlan(Division d, Goal g)
     {
-        float delay = now || Time <= 0 ? 0 : OrderDelay(d);
         if (Recording != null && d.Team == 0)
             (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Post = g.Post, Stance = g.Stance, Plan = true });
-        if (delay <= 0) { d.Horn = g; d.PendingHorn = null; }
-        else
-        {
-            d.PendingHorn = g;
-            d.HornAt = Time + delay;
-            SendCourier(d, d.HornAt, false);
-        }
-        if (d.Team == 0) Log(delay <= 0 ? $"{d.Name} will {g.Describe} on the horn." : $"A plan rides to {d.Name}: on the horn, {g.Describe} ({delay:0}s).");
-        return delay;
+        d.Horn = g;
+        if (d.Team == 0) Log($"{d.Name} will {g.Describe} on the horn.");
     }
 
     /// Sound the horn: every division of the side with a plan takes it now (no rider). Returns how many moved.
@@ -155,7 +147,6 @@ public partial class Battle
             d.Pending = d.Horn;
             d.PendingAt = Time + 0.5f;
             d.Horn = null;
-            Couriers.RemoveAll(c => c.Div == d && c.Goal);
             n++;
         }
         Sound(Cue.HornCharge, GeneralPos(team));
@@ -163,15 +154,6 @@ public partial class Battle
         return n;
     }
     bool hornRecorded;
-
-    /// Horn plans still on the road land when their rider arrives.
-    void UpdateHornPlans(Division d)
-    {
-        if (d.PendingHorn == null || Time < d.HornAt) return;
-        d.Horn = d.PendingHorn;
-        d.PendingHorn = null;
-        if (d.Team == 0) Log($"{d.Name}: \"On the horn, {d.Horn.Describe}.\"");
-    }
 
     // ---------- SG3: reports ----------
 
@@ -258,13 +240,14 @@ public partial class Battle
     /// The grade a company thinks at: its own, or its living sergeant's if better.
     public static Grade WitsGrade(Squad s) => s.Division is { Leader.Active: true } d && !s.Swarm && SergeantGrade(d.Skill) > s.Grade ? SergeantGrade(d.Skill) : s.Grade;
 
-    // ---------- SG5: command by being near ----------
+    // ---------- the general ----------
 
-    /// Within this of his sergeant the captain's word is shouted, not ridden.
-    public const float VoiceReach = 25;
-    /// Can the general shout to this division's sergeant?
-    public bool InVoice(Division d) => GeneralActive(d.Team) && Vector2.Distance(GeneralPos(d.Team), CourierGoal(d)) <= VoiceReach;
-    bool GeneralActive(int team) => (team == 0 ? Player : EnemyCaptain).Active;
+    /// Where a side's general stands (the horn sounds from here): its captain, else behind its line.
+    Vector2 GeneralPos(int team)
+    {
+        var general = team == 0 ? Player : EnemyCaptain;
+        return general.Active ? general.Pos : new Vector2(0, -rearLine[team] * (team == 0 ? 1 : -1));
+    }
 
     // ---------- SG7: his name ----------
 

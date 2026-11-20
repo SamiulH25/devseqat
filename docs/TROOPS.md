@@ -1,19 +1,19 @@
 # The troop trees
 
-Every soldier in Ironfield, from the levy a village raises to the tier-VII company a realm fields at
+Every soldier in Ironfield, from the levy a village raises to the tier-VI company a realm fields at
 the end of a campaign. Generated from `Data/troops.json`, `Data/factions.json` and `Data/orders.json`
 by `tools/troopmap.py`; change the data and re-run it (`python3 tools/troopmap.py --write`) rather
 than editing this page.
 
 **387 troops, 438 upgrade links.** 363 of them are men and 24 are wild
-things. Tiers run I–VII among the men, plus the tier-0 captain, who belongs to no tree. The wild
+things. Tiers run I–VI among the men, plus the tier-0 captain, who belongs to no tree. The wild
 roster has no links at all. The 30 roots are `levies`, `clansmen`, `acolytes`, `esquires`,
 `mounted_esquires`, the captain, and one for each wild troop.
 
 **Not in the world yet:** 17 troops in 1 cultures marked `waiting` in `Data/factions.json`
 (`bandit`). They come from the world book
 (`Data/world.json`) and are kept for when that world is brought into the game; until then no realm,
-settlement or band fields them, and their trees stop short of tier VII.
+settlement or band fields them, and their trees stop short of tier VI.
 
 Marks used below: **†** noble stock, raised at a castle rather than a village; **‡** a knight
 order's signature troop; **bold** in *From* means the parent is outside the culture.
@@ -22,7 +22,7 @@ order's signature troop; **bold** in *From* means the parent is outside the cult
 
 - **Tier is the rank.** Every upgrade raises the tier and must be a better soldier — `Troops.WorseUpgrade`
   allows no loss of hp, damage, armour or block (nor range and pierce, for a bow) when a troop keeps its
-  class, weapon and shield, and asks for a gain in two of them. Tier I is the levy, VII the sovereign elite.
+  class, weapon and shield, and asks for a gain in two of them. Tier I is the levy, VI the elite.
 - **Two recruit roots.** `levies` (tier I, common) feed the five levy realms; `clansmen` (tier I, northern)
   feed the northern and steppe lines. Every troop but the two noble roots, the mages and the captain
   can be reached by upgrading one of those two.
@@ -63,15 +63,15 @@ The data graph is a DAG; the campaign puts gates on its edges (`Companies.CanEnt
 
 ## Cultures at a glance
 
-| Culture | Realm | Troops | Tier VII | Line | Kin |
+| Culture | Realm | Troops | Tier VI | Line | Kin |
 |---|---|---|---|---|---|
-| Azure | Azure Crown | 34 | 0 | heavy foot, crossbows and lances | — |
-| Crimson | Crimson Compact | 27 | 0 | greatswords, halberds, longbows and heavy horse | — |
-| Northern | Northmarch | 47 | 0 | axes, round shields, glaives and light horse | — |
-| Sunward | Sunward Emirates | 39 | 0 | spears and javelins, light horse and mamluks | Crimson, Northern |
-| Steppe | Khaganate of the Grass | 37 | 0 | horse archers first, bows on foot, axes and spears | Northern |
-| League | Saltmarsh League | 38 | 0 | pikes and pavise crossbows, hired steel | Azure |
-| Ashen Sun | Order of the Ashen Sun | 27 | 0 | sworn brothers on foot and knight-brothers | Azure, Crimson |
+| Azure | Azure Crown | 34 | 10 | heavy foot, crossbows and lances | — |
+| Crimson | Crimson Compact | 27 | 7 | greatswords, halberds, longbows and heavy horse | — |
+| Northern | Northmarch | 47 | 10 | axes, round shields, glaives and light horse | — |
+| Sunward | Sunward Emirates | 39 | 9 | spears and javelins, light horse and mamluks | Crimson, Northern |
+| Steppe | Khaganate of the Grass | 37 | 8 | horse archers first, bows on foot, axes and spears | Northern |
+| League | Saltmarsh League | 38 | 9 | pikes and pavise crossbows, hired steel | Azure |
+| Ashen Sun | Order of the Ashen Sun | 27 | 6 | sworn brothers on foot and knight-brothers | Azure, Crimson |
 | Wild | — | 24 | 0 | beasts and monsters, no upgrades | — |
 
 Men per tier: T0 (the captain) 1, I 3, II 41, III 58, IV 92, V 91, VI 77.
@@ -95,8 +95,8 @@ Men per tier: T0 (the captain) 1, I 3, II 41, III 58, IV 92, V 91, VI 77.
 **The realm's line** — what its lords promote along (`factions.json`). A name repeated across two
 tiers means the line has no distinct troop at the lower one yet, so its companies start a step up:
 
-| Role | I | II | III | IV | V | VI | VII |
-|---|---|---|---|---|---|---|---|
+| Role | I | II | III | IV | V | VI |
+|---|---|---|---|---|---|---|
 | Infantry | Levies | Shieldmen | Men-at-Arms | Ironguard | Paladins | Iron Legionaries |
 | Archers | Town Crossbows | Town Crossbows | Crossbowmen | Arbalests | Heavy Arbalests | Guild Sharpshooters |
 | Spears | Levies | Spearrunners | Pikemen | Phalanx Pikemen | Silver Pikes | Grand Phalanx |
@@ -141,8 +141,6 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | VI | Paladin Knights † | Cavalry | 195 | Banner Knights, **Valkyrie Lancers** | — |
 | VI | Grand Magisters | Caster | 1350 | Magisters | — |
 
-**Stops short of tier VII:** Citadel Sentinels (VI), Fortress Bolters (VI), Grand Magisters (VI), Grand Phalanx (VI), Guild Sharpshooters (VI), Iron Legionaries (VI), Marshal Guard (VI), Paladin Knights (VI), Royal Crusaders (VI), Wardens of the Lily (VI).
-
 ## Crimson — Crimson Compact
 
 *Greatswords, halberds, longbows and heavy horse.* Root: `levies`. No kin.
@@ -150,8 +148,8 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 **The realm's line** — what its lords promote along (`factions.json`). A name repeated across two
 tiers means the line has no distinct troop at the lower one yet, so its companies start a step up:
 
-| Role | I | II | III | IV | V | VI | VII |
-|---|---|---|---|---|---|---|---|
+| Role | I | II | III | IV | V | VI |
+|---|---|---|---|---|---|---|
 | Infantry | Levies | Shieldmen | Greatswords | Zweihanders | Blademasters | Grand Blademasters |
 | Archers | Commons Bowmen | Commons Bowmen | Longbowmen | Yeoman Archers | Master Longbowmen | Royal Yeomen |
 | Spears | Levies | Spearrunners | Billmen | Halberdiers | Heavy Halberdiers | Royal Halberdiers |
@@ -189,8 +187,6 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | VI | Iron Cataphracts † | Cavalry | 182 | **Banner Knights**, Cataphracts | — |
 | VI | Crimson Crones | Caster | 1350 | War-witches | — |
 
-**Stops short of tier VII:** Crimson Crones (VI), Dread Cleavers (VI), Grand Blademasters (VI), Iron Cataphracts (VI), Royal Halberdiers (VI), Royal Yeomen (VI), Thorn Knights (VI).
-
 ## Northern — Northmarch
 
 *Axes, round shields, glaives and light horse.* Root: `clansmen`. No kin.
@@ -198,8 +194,8 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 **The realm's line** — what its lords promote along (`factions.json`). A name repeated across two
 tiers means the line has no distinct troop at the lower one yet, so its companies start a step up:
 
-| Role | I | II | III | IV | V | VI | VII |
-|---|---|---|---|---|---|---|---|
+| Role | I | II | III | IV | V | VI |
+|---|---|---|---|---|---|---|
 | Infantry | Clansmen | Axemen | Huscarls | Varangians | Einherjar | Thane Champions |
 | Archers | Hunters | Hunters | Rangers | Woodland Stalkers | Shadow Hunters | Highland Marksmen |
 | Spears | Clansmen | Spearrunners | Billmen | Glaivemen | Vanguard Glaives | Dragon Glaives |
@@ -257,8 +253,6 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | VI | Storm Riders † | Cavalry | 185 | Storm Lancers, Valkyrie Lancers | — |
 | VI | Galdr-masters | Caster | 1350 | Skalds | — |
 
-**Stops short of tier VII:** Dragon Glaives (VI), Galdr-masters (VI), Highland Marksmen (VI), Iron Thanes (VI), Khan's Guard (VI), Royal Dragoons (VI), Storm Riders (VI), Thane Champions (VI), Valhalla Reavers (VI), Winter Wolves (VI).
-
 ## Sunward — Sunward Emirates
 
 *Spears and javelins, light horse and mamluks.* Root: `levies`. Kin: Crimson, Northern.
@@ -266,8 +260,8 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 **The realm's line** — what its lords promote along (`factions.json`). A name repeated across two
 tiers means the line has no distinct troop at the lower one yet, so its companies start a step up:
 
-| Role | I | II | III | IV | V | VI | VII |
-|---|---|---|---|---|---|---|---|
+| Role | I | II | III | IV | V | VI |
+|---|---|---|---|---|---|---|
 | Infantry | Levies | Shieldmen | Ghazis | Jandars | Dervish Blades | Emir's Guard |
 | Archers | Slingers | Slingers | Sand Archers | Oasis Bows | Emir's Archers | Falcon Eyes |
 | Spears | Levies | Spearrunners | Sun Javelins | Dune Spears | Sun Guard | Emir's Spears |
@@ -317,7 +311,7 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | VI | Sun Hawks † ‡ | Cavalry | 212 | Falcon Knights | — |
 | VI | Sages of the Sun | Caster | 1350 | Astrologers | — |
 
-**Stops short of tier VII:** Storm Slingers (IV), Emir's Guard (VI), Emir's Mamluks (VI), Emir's Spears (VI), Falcon Eyes (VI), Sages of the Sun (VI), Sultan's Camels (VI), Sun Hawks (VI), Sun-fire Throwers (VI), Sword Dancers (VI).
+**Stops short of tier VI:** Storm Slingers (IV).
 
 ## Steppe — Khaganate of the Grass
 
@@ -326,8 +320,8 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 **The realm's line** — what its lords promote along (`factions.json`). A name repeated across two
 tiers means the line has no distinct troop at the lower one yet, so its companies start a step up:
 
-| Role | I | II | III | IV | V | VI | VII |
-|---|---|---|---|---|---|---|---|
+| Role | I | II | III | IV | V | VI |
+|---|---|---|---|---|---|---|
 | Infantry | Clansmen | Axemen | Yurt Guards | Torguud | Wolf Axes | Noyan's Guard |
 | Archers | Herd Boys | Herd Boys | Steppe Archers | Yurt Archers | Tengri Bows | Sky Wolf Archers |
 | Spears | Clansmen | Spearrunners | Grass Spears | Horde Spears | Tumen Spears | Sky Spears |
@@ -375,7 +369,7 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | VI | Sky-Sworn † ‡ | Cavalry | 234 | Sky Archers | — |
 | VI | Sky-callers | Caster | 1350 | Shamans | — |
 
-**Stops short of tier VII:** Wolf Runners (IV), Khan's Lancers (VI), Kheshig (VI), Noyan's Guard (VI), Sky Spears (VI), Sky Wolf Archers (VI), Sky-Sworn (VI), Sky-callers (VI), Tug Lords (VI).
+**Stops short of tier VI:** Wolf Runners (IV).
 
 ## League — Saltmarsh League
 
@@ -384,8 +378,8 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 **The realm's line** — what its lords promote along (`factions.json`). A name repeated across two
 tiers means the line has no distinct troop at the lower one yet, so its companies start a step up:
 
-| Role | I | II | III | IV | V | VI | VII |
-|---|---|---|---|---|---|---|---|
+| Role | I | II | III | IV | V | VI |
+|---|---|---|---|---|---|---|
 | Infantry | Levies | Shieldmen | Canal Guards | Guild Swords | Brigandiers | Doge's Guard |
 | Archers | Militia Crossbows | Militia Crossbows | League Crossbows | Pavisiers | Guild Arbalesters | Doge's Arbalesters |
 | Spears | Levies | Spearrunners | League Pikes | Guild Pikes | Marsh Wardens | Doge's Pikes |
@@ -434,8 +428,6 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | VI | Doge's Lances † | Cavalry | 195 | Guild Knights, Guild Lances | — |
 | VI | Guild Alchemists | Caster | 1350 | Alchemists | — |
 
-**Stops short of tier VII:** Admiral's Guard (VI), Captains of Fortune (VI), Doge's Arbalesters (VI), Doge's Guard (VI), Doge's Lances (VI), Doge's Pikes (VI), Guild Alchemists (VI), Lagoon Wall (VI), Lantern Knights (VI).
-
 ## Ashen Sun — Order of the Ashen Sun
 
 *Sworn brothers on foot and knight-brothers.* Root: `levies`. Kin: Azure, Crimson.
@@ -443,8 +435,8 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 **The realm's line** — what its lords promote along (`factions.json`). A name repeated across two
 tiers means the line has no distinct troop at the lower one yet, so its companies start a step up:
 
-| Role | I | II | III | IV | V | VI | VII |
-|---|---|---|---|---|---|---|---|
+| Role | I | II | III | IV | V | VI |
+|---|---|---|---|---|---|---|
 | Infantry | Levies | Shieldmen | Order Sergeants | Sun Brothers | Ashen Brothers | Sun Templars |
 | Archers | Pilgrim Crossbows | Pilgrim Crossbows | Order Crossbows | Chapter Arbalests | Ashen Arbalests | Sun Arbalests |
 | Spears | Levies | Spearrunners | Order Spears | Chapter Pikes | Ashen Pikes | Pilgrim Guard |
@@ -482,7 +474,7 @@ tiers means the line has no distinct troop at the lower one yet, so its companie
 | VI | Ashen Knights † | Cavalry | 215 | Sun Knights | — |
 | VI | Saints Militant | Caster | 1350 | Battle Priests | — |
 
-**Stops short of tier VII:** Chapter Turcopoles (V), Ashen Knights (VI), Hammers of the Sun (VI), Pilgrim Guard (VI), Saints Militant (VI), Sun Arbalests (VI), Sun Templars (VI).
+**Stops short of tier VI:** Chapter Turcopoles (V).
 
 ## Common — the trunk, the noble roots and your own order
 
@@ -513,7 +505,7 @@ knight order (`sworn_brothers`, `sworn_masters`), the few odd branches that lead
 | VI | Masters of the Order † | Infantry | 162 | Sworn Brothers | — |
 | VI | Lords of the Hollow Crown † ‡ | Infantry | 172 | Hollow Knights | — |
 
-**Stops short of tier VII:** Beast Hunters (III), Lords of the Hollow Crown (VI), Masters of the Order (VI).
+**Stops short of tier VI:** Beast Hunters (III).
 
 ## Bridges between cultures
 
@@ -631,12 +623,12 @@ raises the fallen, and `death_knight` joins such a host when the Omen runs high.
 
 ## Where the tree stops short
 
-- 0 troops reach tier VII. 85 lines end below it: a branch the campaign can climb
-  but never crown. A realm fields only its own four lines, so a side branch ending at VI is a dead end
-  unless a bridge carries it into a neighbour's tier VII.
+- 77 troops reach tier VI. 8 lines end below it: a branch the campaign can climb
+  but never crown. A realm fields only its own four lines, so a side branch ending at V is a dead end
+  unless a bridge carries it into a neighbour's tier VI.
 - The tree stops being a tree where lines converge: Sworn Brothers (11 ways in), Sword Brethren (3 ways in), Thane Champions (3 ways in), Halberdiers (3 ways in), Royal Halberdiers (3 ways in), Lancers (3 ways in).
 - Branches that end early, culture by culture:
-  Beast Hunters (III, common), Storm Slingers (IV, southern), Wolf Runners (IV, steppe), Bandit Chieftains (V, bandit), Corsair Captains (V, bandit), Master Poachers (V, bandit), Outlaw Captains (V, bandit), Chapter Turcopoles (V, order), Citadel Sentinels (VI, azure), Fortress Bolters (VI, azure), Grand Magisters (VI, azure), Grand Phalanx (VI, azure), Guild Sharpshooters (VI, azure), Iron Legionaries (VI, azure), Marshal Guard (VI, azure), Paladin Knights (VI, azure), Royal Crusaders (VI, azure), Wardens of the Lily (VI, azure), Tide-Wardens (VI, azure_coast), Crown Vanguard (VI, azure_heart), March Riders (VI, azure_march), Lords of the Hollow Crown (VI, common), Masters of the Order (VI, common), Crimson Crones (VI, crimson), Dread Cleavers (VI, crimson), Grand Blademasters (VI, crimson), Iron Cataphracts (VI, crimson), Royal Halberdiers (VI, crimson), Royal Yeomen (VI, crimson), Thorn Knights (VI, crimson), Crag Axemen (VI, crimson_alpine), Forum Blades (VI, crimson_patrician), Admiral's Guard (VI, league), Captains of Fortune (VI, league), Doge's Arbalesters (VI, league), Doge's Guard (VI, league), Doge's Lances (VI, league), Doge's Pikes (VI, league), Guild Alchemists (VI, league), Lagoon Wall (VI, league), Lantern Knights (VI, league), Pavise Bowmen (VI, league_fen), Arsenal Guard (VI, league_lagoon), Dragon Glaives (VI, northern), Galdr-masters (VI, northern), Highland Marksmen (VI, northern), Iron Thanes (VI, northern), Khan's Guard (VI, northern), Royal Dragoons (VI, northern), Storm Riders (VI, northern), Thane Champions (VI, northern), Valhalla Reavers (VI, northern), Winter Wolves (VI, northern), Longship Huscarls (VI, northern_fjord), Snowfield Hunters (VI, northern_taiga), Ashen Knights (VI, order), Hammers of the Sun (VI, order), Pilgrim Guard (VI, order), Saints Militant (VI, order), Sun Arbalests (VI, order), Sun Templars (VI, order), Chapter Sergeants (VI, order_chapter), Canyon Halberds (VI, order_warden), Emir's Guard (VI, southern), Emir's Mamluks (VI, southern), Emir's Spears (VI, southern), Falcon Eyes (VI, southern), Sages of the Sun (VI, southern), Sultan's Camels (VI, southern), Sun Hawks (VI, southern), Sun-fire Throwers (VI, southern), Sword Dancers (VI, southern), Dune Raiders (VI, southern_dune), Canal Guard (VI, southern_oasis), Rift Boarders (VI, southern_rift), Khan's Lancers (VI, steppe), Kheshig (VI, steppe), Noyan's Guard (VI, steppe), Sky Spears (VI, steppe), Sky Wolf Archers (VI, steppe), Sky-Sworn (VI, steppe), Sky-callers (VI, steppe), Tug Lords (VI, steppe), Banner Lancers (VI, steppe_horde), Brine Cataphracts (VI, steppe_salt)
+  Beast Hunters (III, common), Storm Slingers (IV, southern), Wolf Runners (IV, steppe), Bandit Chieftains (V, bandit), Corsair Captains (V, bandit), Master Poachers (V, bandit), Outlaw Captains (V, bandit), Chapter Turcopoles (V, order)
 - `captain` (tier 0) is the player's own man and belongs to no tree, and `beast_hunters` (III) is a
   single tier the campaign fields as it stands, with nothing above or below it.
 

@@ -66,7 +66,8 @@ public static partial class SelfTest
         Check(b.SoundHorn(0) == 1 && d.Horn == null, "the horn sends the division that had a plan");
         Run(b, 1);
         Check(d.Stance == Stance.Advance, "and the plan lands within a second, with no rider");
-        Check(b.SetHornPlan(d, new Goal(Post.Reserve, Stance.Wait)) == 0 && d.Horn?.Post == Post.Reserve, "a plan given during the battle is his at once");
+        b.SetHornPlan(d, new Goal(Post.Reserve, Stance.Wait));
+        Check(d.Horn?.Post == Post.Reserve, "a plan given during the battle is his at once");
     }
 
     /// SG4: a rabble company under a skilled sergeant thinks like veterans; once he falls it is rabble again.

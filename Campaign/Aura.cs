@@ -140,16 +140,6 @@ public sealed partial class Campaign
 
     // ---- the higher trials and the cracked core (5.5, K5) ----
 
-    /// The trials that can break the wall at this tier, for the captain sheet.
-    public static string TrialsFor(int tier) => string.Join(", ", new[]
-    {
-        tier == 0 ? $"WIN {SeasonWins} BATTLES" : "",
-        tier < DuelBreaksBelow ? "WIN A DUEL OR THE LISTS" : "BEAT A CHAMPION ABOVE YOU IN A DUEL",
-        tier < OddsBreakBelow ? "HOLD AGAINST TWO TO ONE" : "",
-        tier < VigilBreaksBelow ? "KEEP A VIGIL AT A SHRINE, STONES, OLD BATTLEFIELD OR HERMIT" : "",
-        "GRIEF",
-    }.Where(s => s != ""));
-
     /// The trial card (AR1): each trial that breaks the wall you stand at, with where to find it now. Empty below a wall.
     public List<string> NearestTrials()
     {

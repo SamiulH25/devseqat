@@ -138,6 +138,27 @@ public static partial class SelfTest
         Check(!b.Divisions.Any(d => d.Stance == Stance.Wait), "a reserve the general leads waits to plug the line");
     }
 
+    /// The general's skirmishers use all three stances: Screen when horse rides at the line, Harass once the lines are at
+    /// blows, Loose again when both are past.
+    static void SkirmishersRead()
+    {
+        var b = Battle.Empty(61);
+        var bows = b.AddSquad(1, Troops.Get("bowmen"), 12, new(0, 20), 6, -Vector2.UnitY);
+        var d = b.AddDivision(1, "Bows", new[] { bows }, Temper.Steady, 5, new Goal(Post.Skirmish, Stance.Loose));
+        var horse = b.AddSquad(0, Troops.Get("lancers"), 10, new(0, -30), 5, Vector2.UnitY);
+        Run(b, 5);
+        Check(d.Stance == Stance.Screen, $"horse riding at the line: the skirmishers screen it ({d.Stance})");
+
+        var f = Battle.Empty(62);
+        var fbows = f.AddSquad(1, Troops.Get("bowmen"), 12, new(-30, 25), 6, -Vector2.UnitY);
+        var fd = f.AddDivision(1, "Bows", new[] { fbows }, Temper.Steady, 5, new Goal(Post.Skirmish, Stance.Loose));
+        var line = f.AddSquad(1, Troops.Get("shieldmen"), 16, new(0, 1.5f), 8, -Vector2.UnitY);
+        f.AddDivision(1, "Front", new[] { line }, Temper.Steady, 5, new Goal(Post.Front, Stance.Charge));
+        f.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, -1.5f), 8, Vector2.UnitY);
+        Run(f, 5);
+        Check(fd.Stance == Stance.Harass, $"the lines at blows: the skirmishers go out to harass ({fd.Stance})");
+    }
+
     /// OF4: AUTO-FILL sends the companies you lead to posts that suit them (horse to the wings, bows to the skirmishers,
     /// foot to the front) and leaves you at least three; an officer's card line names the nearest enemy and how far.
     static void PostsInDeployment()

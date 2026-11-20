@@ -46,7 +46,7 @@ public sealed partial class Campaign
         int mine = Style.PaletteOf(Math.Max(0, Captain.Contract)), his = Style.PaletteOf(SideOf(e));
         setup.Options = new BattleOptions
         {
-            Duel = true, Couriers = false, Cap = 10, Scouted = true,
+            Duel = true, Cap = 10, Scouted = true,
             EnemyLeader = LordChampion(e), EnemyDamage = Settings.Current.EnemyDamage,
             EnemyAura = ChampionAura(e), EnemyForms = ChampionFormsOf(e), Madness = MadnessInBattle, // an order knight's aura and forms (K6)
             Ground = TerrainParams.Lists, Weather = Weather.For((float)(S.Hours % 24), SeasonIndex, Rng.Mix(S.Seed, (int)S.Hours, e.Id)),

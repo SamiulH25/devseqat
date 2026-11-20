@@ -29,7 +29,7 @@ public sealed partial class Campaign
         int mePal = Style.PaletteOf(Math.Max(0, Captain.Contract)), townPal = Style.PaletteOf(t.Faction);
         setup.Options = new BattleOptions
         {
-            Tournament = true, Couriers = false, Cap = 40, Scouted = true,
+            Tournament = true, Cap = 40, Scouted = true,
             PlayerWounded = S.Hours < Captain.WoundedUntil, EnemyDamage = Settings.Current.EnemyDamage,
             Ground = TerrainParams.Lists, Weather = new Weather(13),
             Palette = new[] { mePal, townPal == mePal ? 3 : townPal },

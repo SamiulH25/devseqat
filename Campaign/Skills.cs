@@ -25,7 +25,7 @@ public static class Skills
     {
         new() { Id = "Leadership", Name = "Leadership", Rises = "BATTLES COMMANDED, MEN LED", Governs = "MEN LIMIT +1 PER 5 POINTS", Perks =
         {
-            new() { Id = "Bannerman", Name = "Bannerman", Text = "AURA RADIUS +4 M, ORDERS REACH SERGEANTS 30% SOONER" },
+            new() { Id = "Bannerman", Name = "Bannerman", Text = "AURA RADIUS +4 M" },
             new() { Id = "IronWill", Name = "Iron Will", Text = "COMPANIES NEAR YOU HOLD UNTIL 30% STRENGTH" },
             new() { Id = "BornCaptain", Name = "Born Captain", Text = "+10 MEN LIMIT" },
             new() { Id = "Rallying", Name = "Rallying Cry", Text = "EVERY COMPANY STARTS A BATTLE WITH +5 MORALE" },
@@ -37,7 +37,7 @@ public static class Skills
             new() { Id = "Ambusher", Name = "Ambusher", Text = "RETREATS COST HALF THE REARGUARD, AMBUSHES SHAKE MORE" },
             new() { Id = "Siegecraft", Name = "Siegecraft", Text = "LADDERS AND RAM IN 6 HOURS, NOT 12" },
             new() { Id = "Pursuit", Name = "Pursuit", Text = "+25% PRISONERS AFTER A WIN" },
-            new() { Id = "MasterOfWar", Name = "Master of War", Text = "AUTO-RESOLVE +10%, ORDERS REACH YOUR SERGEANTS TWICE AS FAST" },
+            new() { Id = "MasterOfWar", Name = "Master of War", Text = "AUTO-RESOLVE +10%" },
         } },
         new() { Id = "Logistics", Name = "Logistics", Rises = "DAYS ON THE MARCH", Governs = "PARTY SPEED +1% PER 20 POINTS", Perks =
         {

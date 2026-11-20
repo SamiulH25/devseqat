@@ -521,7 +521,7 @@ public static partial class SelfTest
         {
             var none = new ArmySpec("none", 0, new List<Company>());
             var lordParty = new Party { Tier = 4 };
-            var b = new Battle(400 + seed, none, none, new BattleOptions { Duel = true, Couriers = false, EnemyLeader = Campaign.LordChampion(lordParty), PlayerMount = Mount.Warhorse });
+            var b = new Battle(400 + seed, none, none, new BattleOptions { Duel = true, EnemyLeader = Campaign.LordChampion(lordParty), PlayerMount = Mount.Warhorse });
             Check(!b.Player.Mounted && b.Units.Count(u => u.Active) == 2, "a duel is the two leaders, on foot");
             Check(b.EnemyCaptain.Type.MaxHp > UnitType.Captain.MaxHp, "a lord of a strong army fights better than a plain captain");
             bool w = Fight(b, new[] { b.EnemyCaptain }, parry: true);
@@ -1760,20 +1760,20 @@ public static partial class SelfTest
             && Goal.FromName("Skirmish:Harass") == new Goal(Post.Skirmish, Stance.Harass) && Goal.FromName("Reserve:Charge") == new Goal(Post.Reserve, Stance.Wait),
             "old goal names map to the nearest post, and a stance that does not fit the post falls back to its first");
 
-        // Orders land at once (docs/archive/OFFICERS.md OF0: no riders for now); a newer one replaces the last.
+        // Orders land at once (docs/archive/OFFICERS.md OF0); a newer one replaces the last.
         var b = Battle.Empty(21);
         var a = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, -20), 8, Vector2.UnitY);
         var d = b.AddDivision(0, "Sgt Test", new[] { a }, Temper.Steady, 3);
         Run(b, 0.5f);
-        Check(b.IssueGoal(d, new Goal(Post.Front, Stance.Advance)) == 0, "an order reaches an officer at once");
+        b.IssueGoal(d, new Goal(Post.Front, Stance.Advance));
         b.Update(1 / 60f);
-        Check(d.Stance == Stance.Advance && d.Pending == null && b.Couriers.Count == 0, "the stance is his on the next tick, and no rider goes");
+        Check(d.Stance == Stance.Advance && d.Pending == null, "the stance is his on the next tick");
         b.IssueGoal(d, new Goal(Post.Reserve, Stance.Wait));
         b.Update(1 / 60f);
         Check(d.Post == Post.Reserve && d.Stance == Stance.Wait, "newer orders replace the last");
 
         // Direct order: lands at once, then the company follows it and not its officer.
-        Check(b.Direct(a, s => { s.Order = Order.Charge; }) == 0, "a direct order to a division's company has no delay");
+        b.Direct(a, s => { s.Order = Order.Charge; });
         b.Update(1 / 60f);
         Check(a.Override && a.Order == Order.Charge, "the direct order lands and the officer leaves it alone");
         b.IssueGoal(d, new Goal(Post.Front, Stance.Hold));

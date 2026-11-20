@@ -95,7 +95,7 @@ public sealed class Division
     public readonly List<Squad> Squads = new();
     public Unit? Leader;
     public Goal Goal;
-    /// A goal on its way (a rider or a horn call): it takes over at PendingAt. A newer goal replaces it.
+    /// A goal given (an order or a horn call): it takes over at PendingAt. A newer goal replaces it.
     public Goal? Pending;
     public float PendingAt, GoalSince, LeaderlessSince = -1, NextThink;
     /// Step within the stance (Swing: 0 swing wide, 1 come alongside, 2 hit them; Loose and Screen: 1 while given way).
@@ -125,9 +125,8 @@ public sealed class Division
     public int Start => Squads.Sum(s => s.StartCount);
     public bool Leaderless => LeaderlessSince >= 0;
 
-    /// The horn plan (docs/archive/SERGEANTS.md SG2): a goal held back until you sound the horn. PendingHorn is one still riding out.
-    public Goal? Horn, PendingHorn;
-    public float HornAt;
+    /// The horn plan (docs/archive/SERGEANTS.md SG2): a goal held back until you sound the horn.
+    public Goal? Horn;
     /// A question he has put to you (SG3), and when he may ask again.
     /// Men standing at the last loss check, and how many fell since the one before (SG3: under arrows).
     public int AliveThen = -1, Losing;
@@ -139,14 +138,11 @@ public sealed class Division
 
 /// Battle: divisions (docs/archive/COMBAT_OVERHAUL.md 1.3-1.4, docs/archive/OFFICERS.md). Each officer looks again every half second or
 /// so (quicker with skill) and sets his companies' orders from his post and stance (BattlePosts.cs); the unit AI does the
-/// rest. Orders land at once while `Riders` is off.
+/// rest. Orders land at once (docs/archive/OFFICERS.md OF0; the riders that once carried them were removed 2026-11-19).
 public partial class Battle
 {
     public readonly List<Division> Divisions = new();
     public IEnumerable<Division> DivisionsOf(int team) => Divisions.Where(d => d.Team == team);
-    /// Metres a second an order travels (a rider at the gallop).
-    public const float CourierSpeed = 14;
-
     /// Make a division of these companies. Leader: the given man, else the company's companion, else its best man.
     public Division AddDivision(int team, string name, IEnumerable<Squad> squads, Temper temper, int skill, Goal? goal = null, Unit? leader = null)
     {
@@ -185,58 +181,25 @@ public partial class Battle
         }
     }
 
-    /// Riders carry orders (off for now: docs/archive/OFFICERS.md OF0, every order lands at once).
-    public const bool Riders = false;
-
-    /// Seconds an order takes to reach the sergeant: 0 while `Riders` is off. With riders: a base, the ride from the
-    /// general, longer if he is fighting or dead (his men wait for someone to take charge), shorter with his skill and with
-    /// the Horns perk.
-    public float OrderDelay(Division d)
+    /// Send a division a new goal: it takes over on the next tick (replacing any goal not yet taken).
+    public void IssueGoal(Division d, Goal g, bool ai = false)
     {
-#pragma warning disable CS0162 // unreachable while Riders is off
-        if (!Riders) return 0;
-        var from = GeneralPos(d.Team);
-        var to = CourierGoal(d);
-        if (InVoice(d)) return 0.6f; // near enough to shout (docs/archive/SERGEANTS.md SG5)
-        float t = 1.5f + Vector2.Distance(from, to) / CourierSpeed;
-        if ((d.Team == 0 ? Player : EnemyCaptain) is { Active: true, EnemyDist: < 4 }) t += 3; // you are fighting: the rider waits for your word
-        if (d.Leader is { Active: true, EnemyDist: < 5 }) t += 2;
-        if (d.Leader is not { Active: true }) t *= 2;
-        t *= 1 - 0.05f * d.Skill;
-        if (d.Team == 0 && Options.Horns) t *= 0.7f;
-        if (d.Team == 0 && Perk("MasterOfWar")) t *= 0.5f;
-        return t;
-#pragma warning restore CS0162
-    }
-
-    /// Send a division a new goal: it rides out now and takes over when it arrives (replacing any goal still on its way).
-    public float IssueGoal(Division d, Goal g, bool now = false, bool ai = false)
-    {
-        float delay = now ? 0 : OrderDelay(d);
-        bool countermand = d.Pending != null;
         d.Pending = g;
-        d.PendingAt = Time + delay;
-        Couriers.RemoveAll(c => c.Div == d && c.Goal); // a countermand overtakes the rider still on the road
-        SendCourier(d, Time + delay, true);
+        d.PendingAt = Time;
         if (Recording != null && d.Team == 0 && !ai)
             (goalRecords ??= new()).Add(new Replay.GoalOrder { Division = d.Id, Post = g.Post, Stance = g.Stance });
-        if (d.Team == 0 && delay > 0) Log(countermand ? $"New orders ride to {d.Name}: {g.Describe} ({delay:0}s)." : $"Orders ride to {d.Name}: {g.Describe} ({delay:0}s).");
-        return delay;
     }
     List<Replay.GoalOrder>? goalRecords;
 
-    /// An order to one company. Yours (not in a division) obey at once; a division's hear it after the order delay,
-    /// then follow it and not their sergeant until he gets a new goal. Returns the delay in seconds.
-    public float Direct(Squad s, Action<Squad> act)
+    /// An order to one company. Yours (not in a division) obey at once; a division's take it on the next tick (all
+    /// together after a planning pause), then follow it and not their sergeant until he gets a new goal.
+    public void Direct(Squad s, Action<Squad> act)
     {
-        if (s.Division == null) { act(s); return 0; }
-        float delay = OrderDelay(s.Division);
-        directs.Add((Time + delay, s, act));
-        if (!Couriers.Any(c => c.Div == s.Division && !c.Goal && c.At == Time + delay)) SendCourier(s.Division, Time + delay, false);
-        return delay;
+        if (s.Division == null) { act(s); return; }
+        directs.Add((Time, s, act));
     }
     readonly List<(float At, Squad S, Action<Squad> Act)> directs = new();
-    /// Your direct orders still riding to a division's companies (for the HUD).
+    /// Your direct orders to a division's companies not yet taken (given in a pause; for the HUD).
     public IEnumerable<(Squad S, float Eta)> PendingDirects => directs.Select(x => (x.S, x.At - Time));
 
     void ApplyDirects()
@@ -252,7 +215,6 @@ public partial class Battle
 
     void UpdateDivisions()
     {
-        UpdateCouriers();
         UpdateCallUps();
         if (Time >= nextAiCommand && Divisions.Count > 0)
         {
@@ -263,7 +225,6 @@ public partial class Battle
         foreach (var d in Divisions)
         {
             if (d.Squads.Count == 0) continue; // emptied in deployment: a card waiting for companies
-            UpdateHornPlans(d);
             CountLosses(d);
             if (d.Pending != null && Time >= d.PendingAt)
             {

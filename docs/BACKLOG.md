@@ -39,17 +39,18 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 - **Sprites** (`archive/SPRITE_HERO_SET.md`): the open question of 8 directions (three-quarter front and back views,
   `.q`/`.r`) is still the owner's call. Creatures, gilded and fur variants were left for a later pass.
 
-## Code debt (from the 2026-11-17 audit, `archive/ISSUES.md`; still true on `02576fc`)
+## Code debt (from the 2026-11-17 audit, `archive/ISSUES.md`)
+
+Fixed 2026-11-19: couriers removed (5); the AI's skirmishers Screen and Harass (6, test `SkirmishersRead`); dead methods
+deleted, companions can be moved between companies (click one on the household tab), the stand-in takes order trials
+(`AutoTrial` in `Pilot.Visit`), `Aura.TrialsFor` deleted as `NearestTrials` already lists every trial (8). Closed with no
+change: the trace helpers are debug runs (listed in DEVELOPING.md 9) (7); F1 help is already grouped by view (13); the
+"pre-PT4 hooks" in `Hud.cs` are the live goal lines, form bar, spell fan and officer panel (14).
 
 | # | Issue | Fix |
 |---|---|---|
-| 5 | Couriers built but off (`BattleDivision.Riders = false`, BattleDivision.cs:189) and still drawn | Hide the drawing while off, or turn them on and tune; decide which |
-| 6 | Stances `Harass`, `Screen`, `Wait` exist but `AiStance` never picks them and the player can only reach some | Give the AI a reason to choose them, or drop them from the enum |
-| 8 | Public methods with no callers: `AssignCompanion` (no UI to move a companion), `AutoTrial` (the pilot cannot pass a trial), `Aura.TrialsFor` (the K sheet should list trials at your tier), plus dead ones (`GradeTag`, `RequestPiece`, `MusicLibrary.ByCategory`, `AudioEngine.Intensity`, `AudioStreamer.SetVolume`, `CultureName`) | Wire the three missing features; delete the dead ones |
-| 7 | Trace helpers left in tests (`HoldoutTrace`, `WolfTrace`, `TrollTrace`, `UndeadTrace`, `GraveTrace`, `BeastTrace`, `PilotTrace`) | Delete or move behind a debug switch |
-| 11 | Two landing pages: `docs/index.html` and `site/index.html` | Keep `docs/index.html`, delete `site/` |
-| 13 | 60+ keys and no in-game way to learn them beyond F1 | Contextual key chips or a first-battle walk-through |
-| 14 | `Hud.cs` still carries pre-PT4 hooks | Remove what the two rebuilt views no longer call |
+| 11 | Two landing pages: `docs/index.html` and `site/` (tracked, with 8 screenshots) | Keep `docs/index.html`, delete `site/` (owner to confirm) |
+| 12 | `BlenderMCP/customer_uuid.txt` is tracked (a per-machine id) | `git rm --cached` it and ignore it |
 
 ## After the sprite merge
 

@@ -92,10 +92,10 @@ sealed partial class Hud
             Text(head, x + TW(post, 1), r.Y + U(15), d.Pending != null ? Warn : Dim, 1);
             int nx = x + TW(post + head, 1);
             Text(kit.Fit(news, r.Right - nx - U(6)), nx, r.Y + U(15), rc, 1);
-            // His skill as pips, his nature, and the horn plan or that he can hear you.
+            // His skill as pips, his nature, and the horn plan.
             for (int i = 0; i < 10; i++) Rect(new Rectangle(x + i * U(4), r.Y + U(27), U(3), U(4)), i < d.Skill ? Gold : Color.White * 0.15f);
-            string tail = d.Horn != null ? $"HORN: {GoalTag(d.Horn)}" : d.PendingHorn != null ? "PLAN RIDING" : "";
-            if (tail.Length > 0) TextR(tail, r.Right - U(5), r.Y + U(26), d.Horn != null ? Gold : d.PendingHorn != null ? Warn : Ok, 1);
+            string tail = d.Horn != null ? $"HORN: {GoalTag(d.Horn)}" : "";
+            if (tail.Length > 0) TextR(tail, r.Right - U(5), r.Y + U(26), Gold, 1);
             string nature = d.Traits.Length > 0 ? d.Traits[0].ToUpperInvariant() : d.Temper.ToString().ToUpperInvariant();
             Text(kit.Fit(nature, r.Right - x - U(44) - TW(tail, 1) - U(10)), x + U(44), r.Y + U(26), Dim, 1);
             Bar(new Rectangle(x, r.Y + U(38), (r.Right - x) / 2 - U(6), U(3)), alive / (float)start, Friendly);
@@ -145,7 +145,7 @@ sealed partial class Hud
         if (goals.FirstOrDefault(g => g.IsPost).R is { Width: > 0 } firstPost)
             Text("POST", firstPost.X + U(1), firstPost.Y - U(10), Dim, 1);
         (Goal G, bool IsPost)? hovered = null;
-        var mark = HornMode ? Div.Horn ?? Div.PendingHorn : Div.Goal;
+        var mark = HornMode ? Div.Horn : Div.Goal;
         foreach (var (r, g, isPost) in goals)
         {
             // Gold is what he does now; the horn's plan is only the word HORN on its button.
@@ -178,7 +178,7 @@ sealed partial class Hud
         string who = Battle.SergeantName(d) is { Length: > 0 } nm ? $"{nm.ToUpperInvariant()}, " : "";
         string l1 = $"{d.Name.ToUpperInvariant()}  ({who}{d.Temper.ToString().ToUpperInvariant()}{(d.Traits.Length > 0 ? " " + string.Join(" ", d.Traits).ToUpperInvariant() : "")} SERGEANT, SKILL {d.Skill})";
         string l2 = $"{Goal.Label(d.Post)}: {d.Goal.Describe.ToUpperInvariant()}";
-        string l3 = d.Pending != null ? $"RIDER EN ROUTE: {GoalTag(d.Pending)} ({MathF.Max(0, d.PendingAt - B.Time):0}S)" : $"{d.Squads.Count} COMPANIES   {d.Alive}/{d.Start} MEN";
+        string l3 = $"{d.Squads.Count} COMPANIES   {d.Alive}/{d.Start} MEN";
         string l4 = sel ? $"CLICK CARD, BACK, OR {Ctl.Name(Act.SelectAll)} TO ORDER COMPANIES" : $"CLICK OR PRESS {Ctl.Name(Act.NextDivision)} TO COMMAND SERGEANT";
         int w = Math.Max(Math.Max(TW(l1, 1), TW(l2, 1)), Math.Max(TW(l3, 1), TW(l4, 1))) + U(16);
         int h = U(58);
@@ -306,7 +306,7 @@ sealed partial class Hud
         Rect(new Rectangle(x + s, y - 10 * s, 5 * s, 2 * s), Gold);
     }
 
-    /// In command view: a line from each of your divisions to where its post lies (dim when new orders are on their way).
+    /// In command view: a line from each of your divisions to where its post lies (dim for a goal not yet taken).
     void DivisionMarkers()
     {
         var vp = new Viewport(0, 0, W, H);
@@ -316,18 +316,6 @@ sealed partial class Hud
             s = new Vector2(v.X, v.Y);
             return v.Z is > 0 and < 1;
         }
-        // Riders on the road: yours gold, the enemy's red (cut one down and his order comes late).
-        foreach (var c in B.Couriers)
-            if (Screen(c.Pos, out var cp))
-            {
-                var col = c.Div.Team == 0 ? Gold : Foe;
-                Rect(new Rectangle((int)cp.X - U(3), (int)cp.Y - U(3), U(6), U(6)), Color.Black * 0.7f);
-                Rect(new Rectangle((int)cp.X - U(2), (int)cp.Y - U(2), U(4), U(4)), col);
-                // A little flag on a staff that flutters as he rides, so you can watch the order travel.
-                Rect(new Rectangle((int)cp.X, (int)cp.Y - U(14), Math.Max(1, U(1)), U(12)), Color.Black * 0.7f);
-                for (int i = 0; i < 4; i++) Rect(new Rectangle((int)cp.X + U(1), (int)cp.Y - U(14) + i * U(1) + (int)(MathF.Sin(Ironfield.Ui.Now * 12 + i) * U(0.6f)), U(7 - i), Math.Max(1, U(1))), col);
-                if (c.Div.Team == 0) Text("RIDER", cp.X + U(5), cp.Y - U(4), col, 1);
-            }
         divTags.Clear();
         foreach (var d in B.DivisionsOf(0))
         {
@@ -352,7 +340,7 @@ sealed partial class Hud
                 }
             }
             // The horn plan: a dotted line in his colour to where the horn will send him.
-            if ((d.Horn ?? d.PendingHorn) is { } h && B.SpotOf(d, h) is Vector2 ht && Screen(ht, out var hd))
+            if (d.Horn is { } h && B.SpotOf(d, h) is Vector2 ht && Screen(ht, out var hd))
             {
                 var hc = DivisionColour(d);
                 var step = hd - from; float len = step.Length();

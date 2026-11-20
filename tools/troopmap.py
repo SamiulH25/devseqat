@@ -9,6 +9,7 @@ from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NUMERALS = {0: "0", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 7: "VII"}
+MAX_TIER = 6  # Troops.MaxTier
 CLASSES = ["Infantry", "Skirmisher", "Archer", "Cavalry", "Caster", "Captain"]
 CULTURE_ORDER = ["azure", "crimson", "northern", "southern", "steppe", "league", "order"]
 
@@ -67,13 +68,13 @@ def main():
 
     w("# The troop trees")
     w("")
-    w("Every soldier in Ironfield, from the levy a village raises to the tier-VII company a realm fields at")
+    w("Every soldier in Ironfield, from the levy a village raises to the tier-VI company a realm fields at")
     w("the end of a campaign. Generated from `Data/troops.json`, `Data/factions.json` and `Data/orders.json`")
     w("by `tools/troopmap.py`; change the data and re-run it (`python3 tools/troopmap.py --write`) rather")
     w("than editing this page.")
     w("")
     w(f"**{len(troops)} troops, {edges} upgrade links.** {len(men)} of them are men and {len(wild)} are wild")
-    w("things. Tiers run I–VII among the men, plus the tier-0 captain, who belongs to no tree. The wild")
+    w("things. Tiers run I–VI among the men, plus the tier-0 captain, who belongs to no tree. The wild")
     w("roster has no links at all. The 30 roots are `levies`, `clansmen`, `acolytes`, `esquires`,")
     w("`mounted_esquires`, the captain, and one for each wild troop.")
     w("")
@@ -83,7 +84,7 @@ def main():
         w(f"**Not in the world yet:** {held} troops in {len(waiting)} cultures marked `waiting` in `Data/factions.json`")
         w("(" + ", ".join(f"`{c}`" for c in waiting) + "). They come from the world book")
         w("(`Data/world.json`) and are kept for when that world is brought into the game; until then no realm,")
-        w("settlement or band fields them, and their trees stop short of tier VII.")
+        w("settlement or band fields them, and their trees stop short of tier VI.")
         w("")
     w("Marks used below: **†** noble stock, raised at a castle rather than a village; **‡** a knight")
     w("order's signature troop; **bold** in *From* means the parent is outside the culture.")
@@ -92,7 +93,7 @@ def main():
     w("")
     w("- **Tier is the rank.** Every upgrade raises the tier and must be a better soldier — `Troops.WorseUpgrade`")
     w("  allows no loss of hp, damage, armour or block (nor range and pierce, for a bow) when a troop keeps its")
-    w("  class, weapon and shield, and asks for a gain in two of them. Tier I is the levy, VII the sovereign elite.")
+    w("  class, weapon and shield, and asks for a gain in two of them. Tier I is the levy, VI the elite.")
     w("- **Two recruit roots.** `levies` (tier I, common) feed the five levy realms; `clansmen` (tier I, northern)")
     w("  feed the northern and steppe lines. Every troop but the two noble roots, the mages and the captain")
     w("  can be reached by upgrading one of those two.")
@@ -133,14 +134,14 @@ def main():
     w("")
     w("## Cultures at a glance")
     w("")
-    w("| Culture | Realm | Troops | Tier VII | Line | Kin |")
+    w("| Culture | Realm | Troops | Tier VI | Line | Kin |")
     w("|---|---|---|---|---|---|")
     for cid in CULTURE_ORDER:
         c = cultures[cid]
         own = [i for i, t in troops.items() if t["culture"] == cid]
         realm = next(f["name"] for f in factions if f["culture"] == cid)
         kin = ", ".join(cultures[k]["name"] for k in c.get("kin", [])) or "—"
-        w(f"| {c['name']} | {realm} | {len(own)} | {len([i for i in own if troops[i]['tier'] == 7])} | {c['text']} | {kin} |")
+        w(f"| {c['name']} | {realm} | {len(own)} | {len([i for i in own if troops[i]['tier'] == MAX_TIER])} | {c['text']} | {kin} |")
     w(f"| Wild | — | {len(wild)} | 0 | beasts and monsters, no upgrades | — |")
     w("")
     counts = defaultdict(int)
@@ -172,10 +173,10 @@ def main():
             t = troops[i]
             w(f"| {numeral(t['tier'])} | {t['name']}{mark(i)} | {t['class']} | {t.get('cost', '—')} | "
               f"{from_cell(i, cid)} | {to_cell(i)} |")
-        stops = [i for i in own if not troops[i].get("upgradesTo") and 0 < troops[i]["tier"] < 7]
+        stops = [i for i in own if not troops[i].get("upgradesTo") and 0 < troops[i]["tier"] < MAX_TIER]
         if stops:
             w("")
-            w("**Stops short of tier VII:** " +
+            w("**Stops short of tier VI:** " +
               ", ".join(f"{name(i)} ({numeral(troops[i]['tier'])})" for i in sorted(stops, key=lambda k: (troops[k]["tier"], name(k))))
               + ".")
         w("")
@@ -191,8 +192,8 @@ def main():
         w("**The realm's line** — what its lords promote along (`factions.json`). A name repeated across two")
         w("tiers means the line has no distinct troop at the lower one yet, so its companies start a step up:")
         w("")
-        w("| Role | " + " | ".join(numeral(i) for i in range(1, 8)) + " |")
-        w("|---|" + "---|" * 7)
+        w("| Role | " + " | ".join(numeral(i) for i in range(1, MAX_TIER + 1)) + " |")
+        w("|---|" + "---|" * MAX_TIER)
         for role in ("infantry", "archers", "spears", "horse"):
             w(f"| {role.capitalize()} | " + " | ".join(troops[tid]["name"] for tid in realm["lines"][role]) + " |")
         w("")
@@ -278,11 +279,11 @@ def main():
 
     w("## Where the tree stops short")
     w("")
-    short = [i for i in men if not troops[i].get("upgradesTo") and 0 < troops[i]["tier"] < 7]
-    long = [i for i in men if troops[i]["tier"] == 7]
-    w(f"- {len(long)} troops reach tier VII. {len(short)} lines end below it: a branch the campaign can climb")
-    w("  but never crown. A realm fields only its own four lines, so a side branch ending at VI is a dead end")
-    w("  unless a bridge carries it into a neighbour's tier VII.")
+    short = [i for i in men if not troops[i].get("upgradesTo") and 0 < troops[i]["tier"] < MAX_TIER]
+    long = [i for i in men if troops[i]["tier"] == MAX_TIER]
+    w(f"- {len(long)} troops reach tier VI. {len(short)} lines end below it: a branch the campaign can climb")
+    w("  but never crown. A realm fields only its own four lines, so a side branch ending at V is a dead end")
+    w("  unless a bridge carries it into a neighbour's tier VI.")
     w("- The tree stops being a tree where lines converge: " +
       ", ".join(f"{name(i)} ({len(parents[i])} ways in)" for i in sorted(men, key=lambda k: -len(parents[k]))[:6]) + ".")
     w("- Branches that end early, culture by culture:")

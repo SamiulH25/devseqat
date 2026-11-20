@@ -126,6 +126,8 @@ public sealed class Pilot
         }
         if (Me.Wounded > Me.Men / 3 && s.Kind != SettlementKind.Village) c.Rest(24);
         Kit(s);
+        // A chapter house whose order knows us: take its trial (fought out of sight, as the lists are).
+        if (c.ChapterAt(s) is OrderState chapter && c.CannotSeekTrial(chapter.Id) == null) c.AutoTrial(chapter.Id);
         visited[s.Id] = (float)c.S.Hours;
     }
 

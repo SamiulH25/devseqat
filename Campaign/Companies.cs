@@ -66,7 +66,6 @@ public sealed partial class Campaign
     /// The charges a company banner may carry (the field is its side's colour).
     static readonly Emblem[] BannerCharges = { Emblem.Chevron, Emblem.Saltire, Emblem.Lozenge, Emblem.Bend };
 
-    public static string CultureName(int faction) => Factions.CultureOf(faction);
 
     /// A new company with one stack (of `men` men with `xp` each in its pool), an origin, a banner and perhaps a sergeant.
     /// A base count of men at the campaign's army scale (Balance.ArmyScale).

@@ -281,7 +281,6 @@ public partial class Campaign
             RallyBonus = Has("WarCry") ? 35 : 25,
             RallyCooldown = Has("WarCry") ? 9 : 12,
             IronWill = Has("IronWill"),
-            Horns = Has("Bannerman"),
             Cap = Settings.Current.BattleSize,
             PlayerWounded = S.Hours < Captain.WoundedUntil,
             Scouted = scouts || Has("Tactician"),

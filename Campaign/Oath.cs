@@ -76,7 +76,7 @@ public sealed partial class Campaign
         int mine = Style.PaletteOf(Math.Max(0, Captain.Contract)), his = Style.PaletteOf(o.Patron);
         setup.Options = new BattleOptions
         {
-            Duel = true, Couriers = false, Cap = 10, Scouted = true,
+            Duel = true, Cap = 10, Scouted = true,
             EnemyLeader = TrialKnight(), EnemyDamage = Settings.Current.EnemyDamage,
             Ground = TerrainParams.Lists, Weather = new Weather(11),
             Palette = new[] { mine, his == mine ? 3 : his },

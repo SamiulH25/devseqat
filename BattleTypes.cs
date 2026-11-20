@@ -86,10 +86,6 @@ public sealed class BattleOptions
     /// detached from one of its side's foot companies (Battle.DeployEngines).
     public List<EngineSpec> Engines = new();
     public Weather Weather = Weather.Clear;
-    /// The Horns perk: orders reach your sergeants 30% sooner.
-    public bool Horns;
-    /// Orders to divisions ride out as couriers, who can be cut down on the way (a new one then sets out). Off: plain delays.
-    public bool Couriers = true;
     /// A tournament (S5): blunt weapons, so your captain is never taken and the champion who leads them is not slain.
     public bool Tournament;
     /// Single combat before a battle (P2): you on foot against the enemy leader, nobody else; a fall is a yield, not a death.

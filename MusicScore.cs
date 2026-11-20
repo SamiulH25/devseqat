@@ -363,10 +363,6 @@ public static class MusicLibrary
     public static MusicScore? Get(string id) => All.TryGetValue(id, out var s) ? s : null;
     public static bool Has(string id) => All.ContainsKey(id);
 
-    public static IEnumerable<MusicScore> ByCategory(string category, string? culture = null) =>
-        All.Values.Where(s => s.Category.Equals(category, StringComparison.OrdinalIgnoreCase)
-            && (culture == null || s.Culture.Equals(culture, StringComparison.OrdinalIgnoreCase)));
-
     /// Schema and musical sanity check run by `Tests/AudioTests.cs`.
     public static List<string> Validate()
     {

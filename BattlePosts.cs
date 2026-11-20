@@ -274,7 +274,8 @@ public partial class Battle
     /// The general's stances for his divisions (the AI's, and yours when the AI plays you; docs/archive/OFFICERS.md OF3). He reads
     /// the fight, not a clock alone: a front line holds, walks forward if the foe will not come (or its arrows are telling),
     /// and charges once the lines are close or blows have begun; wings guard the line's ends until the line is at blows,
-    /// then swing round; the reserve waits to plug the line. His officers then keep the stance as well as their skill lets
+    /// then swing round; skirmishers shoot loose, screen the line from horse and harass once the lines are locked; the
+    /// reserve waits to plug the line. His officers then keep the stance as well as their skill lets
     /// them (BattleOfficers.cs); none changes his own.
     void AiCommand(int team)
     {
@@ -289,6 +290,11 @@ public partial class Battle
         }
     }
 
+    /// Enemy horse this near the skirmishers sends them to screen the line.
+    public const float HorseThreat = 60;
+    bool HorseNear(Vector2 p, int foe, float within) =>
+        Squads.Any(s => s.Team == foe && s.Alive > 0 && s.Cavalry && Vector2.Distance(s.Center, p) - s.Radius < within);
+
     /// The stance the general wants for this division now, or null to leave it.
     Stance? AiStance(Division d, int foe, bool fighting, bool lineFighting)
     {
@@ -300,8 +306,14 @@ public partial class Battle
         float wait = d.Temper switch { Temper.Bold => 15, Temper.Steady => 30, _ => 45 } * (d.Has("Hothead") ? 0.5f : 1);
         bool waited = Time - d.GoalSince > wait;
         bool shot = d.Losing * 12 >= Math.Max(12, d.Alive); // losing men to arrows: standing still costs
+        bool horse = HorseNear(at, foe, d.Stance == Stance.Screen ? HorseThreat + 15 : HorseThreat); // a margin to let go, so he does not flicker
         return d.Stance switch
         {
+            // Skirmishers: screen the line from horse riding at it; once the lines are locked, go out and harass.
+            Stance.Loose when horse && !lineFighting => Stance.Screen,
+            Stance.Loose when lineFighting => Stance.Harass,
+            Stance.Screen when !horse => lineFighting ? Stance.Harass : Stance.Loose,
+            Stance.Harass when !lineFighting => horse ? Stance.Screen : Stance.Loose,
             Stance.Hold when fighting || gap < 25 => Stance.Charge,
             Stance.Hold when waited || shot => Stance.Advance,
             Stance.Advance when fighting || gap < 20 => Stance.Charge,

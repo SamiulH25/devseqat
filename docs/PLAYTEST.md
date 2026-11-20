@@ -201,7 +201,7 @@ Plan, in order:
 5. **Drag to order.** Dragging with the right button already draws a line; add a drag preview showing the formation's
    shape and the slot positions as ghost men, and a one-click "attack that" from the enemy card.
 6. **Sound and feedback.** A short cue and a flash on the company when an order is received, a second when it is carried
-   out (the courier delay of `BattleCourier.cs` is invisible today; draw the rider on the way).
+   out (couriers were removed 2026-11-19: orders land at once).
 
 Done when: a new player can give move, attack, hold and fall back to a company in a quick battle with no tip text, judged
 on a render, and the screen at the start of a battle has no more than a card row, one order palette, and the minimap.

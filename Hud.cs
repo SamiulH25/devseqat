@@ -200,8 +200,7 @@ sealed partial class Hud
         return ("STEADY", Ok);
     }
 
-    /// A company's grade as a card tag, its colour (the higher, the brighter), and its ranks in a word or two.
-    static string GradeTag(Grade g) => g switch { Grade.Rabble => "RAB", Grade.Trained => "TRN", Grade.Veteran => "VET", _ => "ELT" };
+    /// A company's grade colour (the higher, the brighter), and its ranks in a word or two.
     static Color GradeColor(Grade g) => g switch { Grade.Rabble => Dim, Grade.Trained => Color.White, Grade.Veteran => Gold, _ => Orange };
     static string RanksOf(Squad s) => s.Cavalry || s.Swarm ? "" : s.Plan == Plan.Reform ? "RE-FORMING" : s.Broken ? "RANKS BROKEN" : s.Formed < 0.7f ? "WAVERING RANKS" : "FORMED";
     static string PlanOf(Squad s) => s.Plan switch
@@ -272,7 +271,7 @@ sealed partial class Hud
             Panel(r, Gold);
             TextC("PAUSED", W / 2f, r.Y + U(6), Gold);
             TextC($"GIVE YOUR ORDERS. {Ctl.Name(Act.Pause)} SENDS THEM OFF", W / 2f, r.Y + U(24), Dim, 1);
-            if (riding > 0) TextC($"{riding} ORDER{(riding == 1 ? "" : "S")} WITH THE RIDERS", W / 2f, r.Y + U(36), Dim, 1);
+            if (riding > 0) TextC($"{riding} ORDER{(riding == 1 ? "" : "S")} WAITING", W / 2f, r.Y + U(36), Dim, 1);
         }
         if (ShowResult) Result();
         else if (HelpOpen) Help();

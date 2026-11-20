@@ -89,10 +89,9 @@ BattlePlayer.cs         UpdatePlayer (your own unit), ToggleMount, Rally
 BattleCaptain.cs        captain moves (bash, weapon swap, calling a horse), fatigue, supply wagons, AI retreat
 BattleSiege.cs          assaults: defenders on the wall, ladders and gate routing (Via), battering
 BattleGrid.cs           spatial grid for neighbour queries (Near, Separate, NearestFar, NearestRouter)
-BattleDivision.cs       divisions: Post, Stance, Goal (the pair), Temper, IssueGoal and OrderDelay, Direct, Form/Engage/Flank/Harass
+BattleDivision.cs       divisions: Post, Stance, Goal (the pair), Temper, IssueGoal, Direct, Form/Engage/Flank/Harass
 BattlePosts.cs          officers at posts: FrontLine, where each post lies (SpotOf), the officer's Brain by stance, AiCommand
 BattleOfficers.cs       how well an officer keeps his stance by skill: Reaction, Notice, Dress (drift, closing gaps), Stagger, RestSpent
-BattleCourier.cs        riders carrying orders to divisions; cut down by enemies on the road
 BattleTypes.cs          BattleOptions, Weather, BattleResult, CompanyResult, StackResult
 Squad.cs                a company on the field: Order, Formation, slots
 Units.cs                UnitType (a troop), Unit (one soldier), Mount, Look, enums
@@ -195,7 +194,7 @@ Tests run it at a fixed `1/60` s. Each step, with the file it lives in:
 | rebuild the neighbour grid | `BuildGrid` | `BattleGrid.cs` |
 | team centroids and squad bounding circles | `UpdateCentroids` | `Battle.cs` |
 | AI generals, every 0.5 s (team 1 always; team 0 when `AutoPlayer` or it has AI squads) | `General` | `BattleAI.cs` |
-| couriers, orders that arrive, the AI's stances, each officer's look | `UpdateDivisions` | `BattleDivision.cs`, `BattlePosts.cs`, `BattleCourier.cs` |
+| orders that arrive, the AI's stances, each officer's look | `UpdateDivisions` | `BattleDivision.cs`, `BattlePosts.cs` |
 | siege gate battering | `Batter` | `BattleSiege.cs` |
 | reinforcements, every 1 s | `Reinforce` | `Battle.cs` |
 | called horse, supply wagons | `UpdateCalledHorse`, `Resupply` | `BattleCaptain.cs` |
@@ -296,7 +295,7 @@ come back as `Deployed: false` with no losses.
 On screen the dead do not stay: a fallen man or horse rises as team-coloured wisps and is no longer drawn about 4 s after
 `DiedAt` (`BattleScreen.Draw.cs`; shadows go sooner). Drawing only: the sim keeps the dead (`Unit.Dead`, `DeadHorses`).
 
-### 4.9 Divisions (`BattleDivision.cs`, `BattleCourier.cs`)
+### 4.9 Divisions (`BattleDivision.cs`, `BattlePosts.cs`)
 
 A `Division` groups squads of one team under an officer (`Unit.Sergeant`), with a `Temper` (Bold, Steady, Cautious), a
 `Skill` (1-10) and a `Goal`: a `Post` and a `Stance` (docs/archive/OFFICERS.md OF1). Division squads are left out of
@@ -342,13 +341,10 @@ every 0.5-1 s by skill. He does what the stance says and never changes it himsel
 - **Saved names:** `DivisionSpec.Goal` and the campaign's `DivisionRecord.Goal` are strings read by `Goal.FromName`: "Post:Stance",
   or an old goal name mapped to the nearest post (Hold -> Front Hold, FlankLeft -> LeftWing Swing, Reserve -> Reserve Plug...).
 
-- **Orders (no delay for now):** `IssueGoal(d, goal)` sets `d.Pending` and `d.PendingAt = Time + OrderDelay(d)`; `UpdateDivisions`
-  swaps it in when due. `OrderDelay` is 0 while `Battle.Riders` is false (docs/archive/OFFICERS.md OF0), so goals land next tick. A newer goal replaces a pending one. `Direct(squad, act)` delays a plain order to one company the
-  same way; when it lands the squad gets `Override = true` and its sergeant leaves it alone until the next goal.
-- **Couriers (dormant while `Riders` is off):** each goal (and each batch of direct orders) sends a `Courier` that rides the line from the general so that it
-  arrives at `PendingAt`. An enemy within 2.5 m cuts it down (after a 1.5 s grace): the order's time moves back by a fresh
-  delay, and the next rider bends round the danger. `BattleOptions.Couriers = false` keeps plain delays.
-- **Leaders:** `LeaderCheck` notices a dead sergeant (morale -8 for his men, orders x2 slower) and promotes the best man
+- **Orders land at once** (docs/archive/OFFICERS.md OF0): `IssueGoal(d, goal)` sets `d.Pending` and `UpdateDivisions` swaps it in
+  on the next tick; a newer goal replaces a pending one. `Direct(squad, act)` queues a plain order to one company the same
+  way (given in a planning pause, they all go out when the battle runs on); when it lands the squad gets `Override = true` and its sergeant leaves it alone until the next goal.
+- **Leaders:** `LeaderCheck` notices a dead sergeant (morale -8 for his men) and promotes the best man
   left after 10 s. His aura is in `UpdateMorale`.
 - **Where divisions come from:** `ArmySpec.Divisions` (a list of `DivisionSpec`) plus `Company.Division`, read by
   `BuildDivisions` in the constructor (not in sieges). The campaign fills them from `CampaignState.Divisions`
@@ -361,6 +357,8 @@ every 0.5-1 s by skill. He does what the stance says and never changes it himsel
   Every officer's skill is `Armies.OfficerSkill(army)` (average tier x 1.1 + level x 0.35, 1-9). The AI's stances come from
   `AiCommand(team)` / `AiStance`: Hold -> Charge when at blows or within 25 m, Hold -> Advance after its wait (by temper) or
   under arrows, Advance -> Charge within 20 m, Guard -> Swing once the line is at blows (or twice the wait), Wait -> Plug.
+  Skirmishers: Loose -> Screen while enemy horse is within `HorseThreat` (60 m) and the lines are not locked, Loose -> Harass
+  once the front line is at blows, and back to Loose when neither holds (Screen lets go at 75 m, so it does not flicker).
 - **The command cap:** `Battle.Deploy` fields at most `CommandCap` companies the captain leads himself (`Leads`: not allied,
   not in a division, not an assault); the rest wait in `reserves` with `Held` set and march on (`Reinforce`) only when
   `OpenSlots(team)` > 0, i.e. one of his own companies is spent (no man standing unrouted), folded or split. Budget reserves
@@ -732,10 +730,15 @@ greeting for each mood and a yes line for every topic (and a no line for checked
 
 ## 9. Testing
 
-`dotnet run -c Release --no-build -- --selftest` runs everything (about 70 s); CI runs exactly this. Tests are
-`static void` methods on the partial class `SelfTest`, spread over `Tests/*.cs`, and called in order from
-`SelfTest.Run()`. A failing `Check(cond, "message")` throws `selftest failed: message` and stops the run.
-`--selftest Name` runs one test by method name (it does not need to be in `Run()`, but it must be to run in CI).
+`dotnet run -c Release --no-build -- --selftest` runs everything (about 2 min on 4 cores, one process per core:
+`SelfTestShards.cs`); CI runs exactly this. Tests are `static void` methods on the partial class `SelfTest`, spread over
+`Tests/*.cs`, and listed in the `Tests` array in `SelfTest.cs`. A failing `Check(cond, "message")` fails that test only:
+the run goes on, prints `FAILED name: why`, and the summary names every failure. `--selftest Name` runs one test by method
+name (it does not need to be in `Tests`, but it must be to run in CI).
+
+**Debug runs** (not in `Tests`, run by name; they print and check nothing): `TierSurvey` (every upgrade link fought against its
+parent), `PilotTrace` (a stand-in captain's campaign with its log), `HoldoutTrace`, `WolfTrace`, `TrollTrace`,
+`UndeadTrace`, `GraveTrace` (creatures, `Tests/CreatureTests.cs`) and `BeastTrace` (`Tests/MonsterTests.cs`).
 
 The run prints a few numbers (battle times, losses). Those move whenever sim behaviour changes; that is expected. Only the
 final `selftest ok` matters.

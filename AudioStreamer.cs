@@ -58,8 +58,6 @@ sealed class AudioStreamer : IDisposable
     /// How far into the current piece the music has been rendered (seconds), to resume it later.
     public double CurrentCursor { get { lock (stateLock) return current?.CursorSec ?? 0; } }
 
-    public void SetVolume(float volume) => output.Volume = Math.Clamp(volume, 0f, 1f);
-
     public void SetStems(float s0, float s1, float s2, float s3)
     {
         lock (stateLock)

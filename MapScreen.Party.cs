@@ -70,12 +70,23 @@ partial class MapScreen
                 if (C.CannotTalk(ch) is string cant) note = cant;
                 else { OpenTalk(ch, PanelKind.Characters); return; }
             }
+            // A companion leads one company; a click moves him to the next (he swaps with whoever led it).
+            if (ch.Kind == "companion" && ui.Clicked(box) && C.Player.Companies.Count > 1)
+            {
+                var cos = C.Player.Companies;
+                int k = cos.FindIndex(co => co.Id == ch.CompanyId);
+                C.AssignCompanion(ch, cos[(k + 1) % cos.Count]);
+            }
             if (ui.Hover(box))
             {
                 var why = C.MemoriesOf(ch, C.Me).Take(3).Select(m => $"{m.What.ToUpperInvariant()} ({m.Weight:+0;-0}, DAY {m.Day})").ToList();
                 string house = C.HouseOf(ch) is House hs ? hs.Name.ToUpperInvariant() + ", " : "";
                 note = house + string.Join(", ", ch.Traits).ToUpperInvariant() + $", AGE {ch.Age}. THINKS {OpinionWord(op)} OF YOU ({op:+0;-0;0})" + (why.Count > 0 ? ": " + string.Join("; ", why) : "");
-                if (ch.Kind == "companion") note = CompanionNote(ch) + ". " + note;
+                if (ch.Kind == "companion")
+                {
+                    string leads = C.Player.Companies.FirstOrDefault(co => co.Id == ch.CompanyId) is CompanyRecord led ? $"LEADS {led.Name.ToUpperInvariant()}" : "LEADS NO COMPANY";
+                    note = leads + (C.Player.Companies.Count > 1 ? " (CLICK: THE NEXT COMPANY). " : ". ") + CompanionNote(ch) + ". " + note;
+                }
                 else if (C.FamilyLine(ch) is var fam && fam != "") note = fam.ToUpperInvariant() + ". " + note;
                 if (ch.Kind == "lord" && C.CannotTalk(ch) == null) note = "CLICK TO TALK. " + note;
             }

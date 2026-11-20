@@ -30,35 +30,34 @@ partial class BattleScreen
     {
         var list = Targets();
         if (list.Count == 0) return;
-        float late = 0;
-        foreach (var s in list) late = MathF.Max(late, move ? Move(s, act) : Send(s, act));
+        foreach (var s in list) if (move) Move(s, act); else Send(s, act);
         if (move && queueing) what = "then " + what;
         host.Audio?.Play(horn, 0.65f);
         if (!command) Prompt(hud.ListenWord() + ": " + what.ToUpperInvariant());
-        battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
+        battle.Log((selected.Count == 0 ? "All troops" : string.Join(", ", list.Select(s => s.Name))) + ": " + what);
     }
 
     /// Give one company an order: at once for your retinue (and anyone before the battle starts); a company in a
-    /// division gets it when the rider arrives, and then follows it instead of its sergeant. Returns the delay.
-    float Send(Squad s, Action<Squad> act)
+    /// division takes it on the next tick, and then follows it instead of its sergeant.
+    void Send(Squad s, Action<Squad> act)
     {
-        if (deploying || s.Division == null) { act(s); return 0; }
-        return battle.Direct(s, act);
+        if (deploying || s.Division == null) act(s);
+        else battle.Direct(s, act);
     }
 
     /// Shift held as a movement order is given: it is queued after the company's other orders (docs/archive/COMBAT_QOL.md Q3).
     bool queueing;
 
     /// A movement order: queued behind the company's orders while Shift is held, else it replaces them.
-    float Move(Squad s, Action<Squad> act)
+    void Move(Squad s, Action<Squad> act)
     {
-        if (!queueing || deploying) return Send(s, q => { q.Queue.Clear(); q.StepTarget = null; act(q); });
+        if (!queueing || deploying) { Send(s, q => { q.Queue.Clear(); q.StepTarget = null; act(q); }); return; }
         // Work the order out on a stand-in, then queue the result as a step.
         var last = s.Queue.Count > 0 ? s.Queue[^1] : battle.StepOf(s);
         var ghost = new Squad(s.Name, s.Team) { Cavalry = s.Cavalry, Formation = s.Formation, Columns = last.Columns, Front = last.Front, Anchor = last.Anchor, Order = last.Order };
         act(ghost);
         var step = new OrderStep(ghost.Order, ghost.Anchor, ghost.Front, ghost.Columns, ghost.Target != null ? battle.Squads.IndexOf(ghost.Target) : -1);
-        return Send(s, q => q.Queue.Add(step));
+        Send(s, q => q.Queue.Add(step));
     }
 
     /// Cycle the standing rule of the selected companies (docs/archive/COMBAT_QOL.md Q3); each takes the next rule it can keep.
@@ -77,14 +76,14 @@ partial class BattleScreen
         Tips.Show("rules", "A standing order holds until you change it. Charge when they close: hold, then charge whoever comes within 25 m.\nFall back when worn: under half strength or shaken, walk out of the fight. Skirmish: bows keep their distance.");
     }
 
-    /// Companies you can pick: your retinue and the companies of your divisions (their orders arrive late).
+    /// Companies you can pick: your retinue and the companies of your divisions (orders to a division's company take it from its officer).
     IEnumerable<Squad> Selectable => battle.SquadsOf(0).Where(s => !s.AiControlled);
 
     /// Give a division a post and stance (it lands at once; with the horn plan on, it is kept until the horn).
     void GiveGoal(Division d, Goal g)
     {
-        if (hornMode) { battle.SetHornPlan(d, g, now: deploying); host.Audio?.Play(Cue.Order, 0.65f); return; } // kept until the horn (SG2)
-        battle.IssueGoal(d, g, now: deploying);
+        if (hornMode) { battle.SetHornPlan(d, g); host.Audio?.Play(Cue.Order, 0.65f); return; } // kept until the horn (SG2)
+        battle.IssueGoal(d, g);
         Cue h = g.Stance switch
         {
             Stance.Charge or Stance.Advance or Stance.Swing => Cue.HornCharge,
@@ -171,7 +170,7 @@ partial class BattleScreen
     }
 
     /// Fold the selected companies into one (docs/archive/COMBAT_QOL.md Q1): the fullest takes in the rest (a company a
-    /// companion leads always takes them in). A company in a division folds when the rider reaches it.
+    /// companion leads always takes them in). A company in a division folds on the next tick.
     void MergeSelected()
     {
         var list = selected.Where(s => s.Alive > 0 && s.FoldedInto == null).ToList();
@@ -181,8 +180,7 @@ partial class BattleScreen
         foreach (var s in list.Where(s => s != into))
         {
             if (battle.CannotMerge(s, into) is string why) { battle.Log($"{s.Name} cannot fold in: {why.ToLowerInvariant()}."); continue; }
-            float late = Send(s, q => battle.Merge(q, into));
-            if (late > 0) battle.Log($"{s.Name}: fall in with {into.Name}! (a rider takes {late:0} s)");
+            Send(s, q => battle.Merge(q, into));
             sent++;
         }
         selected.RemoveWhere(s => s.FoldedInto != null);
@@ -201,8 +199,7 @@ partial class BattleScreen
         var tired = list.MaxBy(Weary)!;
         var fresh = list.First(s => s != tired);
         if (battle.CannotRelieve(tired, fresh) is string why) { battle.Log($"{fresh.Name} cannot relieve {tired.Name}: {why.ToLowerInvariant()}."); return; }
-        float late = Send(fresh, q => battle.Relieve(tired, q));
-        if (late > 0) battle.Log($"{fresh.Name}: relieve {tired.Name}! (a rider takes {late:0} s)");
+        Send(fresh, q => battle.Relieve(tired, q));
         host.Audio?.Play(Cue.Order, 0.6f);
         Tips.Show("relieve", "The fresh company marches onto the tired one's line. When it is close behind, the tired men\nbreak off and walk back to where the fresh ones stood. Tired men fight badly: relieve them before they break.");
     }
@@ -290,15 +287,15 @@ partial class BattleScreen
         else Tips.Show("cast", "Click the ground to cast the spell there; attacks still glow before they land.\nAn ordered spell costs more Will. X makes your casters hold their spells for your word.");
     }
 
-    /// Cast the picked spell on a spot: the order reaches a company in a division late, like any order.
+    /// Cast the picked spell on a spot.
     void CastAt(Vector2 spot)
     {
         if (castBy is not { } s || castPick < 0) return;
         int i = castPick;
         var a = s.Spells[i];
-        float late = Send(s, q => { q.CastSpell = i; q.CastAt = spot; q.CastSince = battle.Time; });
+        Send(s, q => { q.CastSpell = i; q.CastAt = spot; q.CastSince = battle.Time; });
         if (battle.CannotCast(s, i) is string why) battle.Log($"{s.Name} will cast {a.Name} when they can ({why.ToLowerInvariant()}).");
-        else battle.Log($"{s.Name}: cast {a.Name} there!" + (late > 0 ? $" (a rider takes {late:0} s)" : ""));
+        else battle.Log($"{s.Name}: cast {a.Name} there!");
         arrows.Add((s.Centroid(), spot, Ui.Now));
         castBy = null;
         castPick = -1;
