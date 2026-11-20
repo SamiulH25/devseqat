@@ -66,7 +66,9 @@ def build_phase2_helms(PartBuilder):
     add_mail_coif(sh, mat_id=5)
     sh.add_loft([(0, 0.048, 0, 0.192, 0.196, segs), (0, 0.095, 0, 0.190, 0.194, segs)], mat_id=6)
     sh.add_loft([(0, 0.085, 0, 0.182, 0.188, segs), (0, 0.185, 0, 0.148, 0.154, segs), (0, 0.295, 0, 0.028, 0.028, segs)], mat_id=4, ao_y=(0.08, 0.30, 0.78, 1.10))
-    sh.add_box((0, 0.195, 0.0), (0.030, 0.20, 0.31), mat_id=6)
+    for a_rib in (0.0, math.pi * 0.5, math.pi, math.pi * 1.5):
+        sh.add_cone((math.cos(a_rib) * 0.184, 0.09, math.sin(a_rib) * 0.190), (0, 0.298, 0), 0.022, 0.012, segs=4, mat_id=6)
+    sh.add_sphere((0, 0.305, 0), (0.032, 0.036, 0.032), segs=5, rings=3, mat_id=6)
     sh.add_box((0, -0.005, 0.192), (0.044, 0.12, 0.028), mat_id=5)
     sh.add_box((0, 0.048, 0.190), (0.18, 0.030, 0.028), mat_id=6)
     for sx in (-1, 1):
@@ -186,7 +188,7 @@ def build_phase2_helms(PartBuilder):
     ], mat_id=4, ao_y=(-0.16, 0.28, 0.78, 1.12))
     # Angular protruding pointed visor prow + crisp dark eye-slit + high crown comb
     am.add_cone((0, 0.015, 0.15), (0, 0.035, 0.275), 0.115, 0.024, segs=4, mat_id=4, smooth=False, shade=(1.04, 1.06, 1.10))
-    am.add_box((0, 0.080, 0.206), (0.22, 0.032, 0.030), mat_id=0, shade=(0.05, 0.05, 0.07))
+    am.add_box((0, 0.080, 0.196), (0.175, 0.028, 0.028), mat_id=0, shade=(0.05, 0.05, 0.07))
     am.add_box((0, 0.235, -0.01), (0.034, 0.11, 0.24), mat_id=4, shade=(1.10, 1.10, 1.14))
     am.add_box((0, 0.080, 0.214), (0.032, 0.15, 0.020), mat_id=6)  # subtle gilt visor trim
     parts.append(am)
@@ -201,7 +203,7 @@ def build_phase2_helms(PartBuilder):
         (0, 0.315, -0.02, 0.032, 0.035, segs),  # iconic pointed bascinet apex
     ], mat_id=4, ao_y=(-0.08, 0.32, 0.78, 1.12))
     bs.add_cone((0, 0.01, 0.14), (0, 0.02, 0.305), 0.110, 0.022, segs=4, mat_id=4, smooth=False, shade=(1.05, 1.07, 1.12))
-    bs.add_box((0, 0.076, 0.205), (0.20, 0.030, 0.028), mat_id=0, shade=(0.05, 0.05, 0.07))
+    bs.add_box((0, 0.076, 0.194), (0.165, 0.026, 0.026), mat_id=0, shade=(0.05, 0.05, 0.07))
     parts.append(bs)
 
     # 16. Spiked Iron Skullcap (NEW — 16 spike troops: domed iron helm + brass socket + tall top spike!)

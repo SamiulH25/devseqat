@@ -74,6 +74,129 @@ sealed class AnimSheet
             else if (k >= 0.75f) { u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - (k - 0.75f) * 4); } }, Span: 1.2f),
     };
 
+    record ShowcaseItem(string Label, string Body, string Legs, string Head, int Palette, bool Tabard = false, string Face = "man");
+
+    static readonly ShowcaseItem[] Armors =
+    {
+        new("Tunic / Gambeson", "gambeson", "cloth", "cap", 0),
+        new("Mail Hauberk", "mail", "mail", "coif", 0, Tabard: true),
+        new("Brigandine", "brigandine", "mail", "sallet", 1),
+        new("Breastplate", "breastplate", "plate", "morion", 7),
+        new("Knight Plate", "plate", "plate", "greathelm", 8, Tabard: true),
+        new("Gilded Plate", "plate_gilded", "plate", "greathelm_sun", 2, Tabard: true),
+        new("Lamellar", "lamellar", "cloth", "turban", 5),
+        new("Iron Scale", "scale", "mail", "spangen", 6),
+        new("Northern Fur", "fur", "cloth", "spangen_horns", 4),
+        new("Steppe Deel", "deel", "cloth", "steppe", 6),
+        new("Desert Kaftan", "kaftan", "cloth", "spike_turban", 5),
+        new("Caster Robe", "robe", "cloth", "hood", 0),
+        new("Skeleton Bones", "bones", "bones", "none", 3, Face: "skull"),
+    };
+
+    static readonly ShowcaseItem[] Helms =
+    {
+        new("Cap", "gambeson", "cloth", "cap", 0),
+        new("Hood", "robe", "cloth", "hood", 0),
+        new("Fur Cap", "deel", "cloth", "furcap", 6),
+        new("Brigand Hat", "gambeson", "cloth", "brigand_hat", 3),
+        new("Mail Coif", "mail", "mail", "coif", 0),
+        new("Kettle", "mail", "mail", "kettle", 0),
+        new("Nasal", "mail", "mail", "nasal", 0),
+        new("Spike", "mail", "mail", "spike", 1),
+        new("Spangen", "fur", "mail", "spangen", 4),
+        new("Spangen Horns", "fur", "mail", "spangen_horns", 4),
+        new("Bearhead", "fur", "cloth", "bearhead", 4),
+        new("Sallet", "brigandine", "plate", "sallet", 1),
+        new("Sallet Crest", "plate", "plate", "sallet_crest", 1),
+        new("Barbute", "plate", "plate", "barbute", 7),
+        new("Morion", "breastplate", "plate", "morion", 7),
+        new("Bascinet", "plate", "plate", "bascinet", 0),
+        new("Armet", "plate", "plate", "armet", 0),
+        new("Greathelm", "plate", "plate", "greathelm", 8),
+        new("Winged Greathelm", "plate_gilded", "plate", "greathelm_wings", 0),
+        new("Sun Greathelm", "plate_gilded", "plate", "greathelm_sun", 8),
+        new("Horned Greathelm", "plate", "plate", "greathelm_horns", 1),
+        new("Dragon Helm", "plate_gilded", "plate", "dragon", 1),
+        new("Steppe Helm", "deel", "cloth", "steppe", 6),
+        new("Khan Tug", "lamellar", "mail", "tug", 6),
+        new("Turban Helm", "lamellar", "cloth", "turban", 5),
+        new("Spike Turban", "lamellar", "mail", "spike_turban", 5),
+    };
+
+    public static void WriteArmorShowcase(GraphicsDevice gd, Art art, Shading? sh, string dir)
+    {
+        Directory.CreateDirectory(dir);
+        Sky.Set(new Weather(13, 0, 0));
+        var sheet = new AnimSheet(gd, art, sh);
+        sheet.RenderGrid(Armors, cols: 7, halfW: 100, halfH: 122, camYaw: 0.18f, dist: 3.85f, targetY: 0.96f, eyeLift: 0.45f, Path.Combine(dir, "body_armor_front_raw.png"));
+        sheet.RenderGrid(Armors, cols: 7, halfW: 100, halfH: 122, camYaw: 0.78f, dist: 3.85f, targetY: 0.96f, eyeLift: 0.45f, Path.Combine(dir, "body_armor_3q_raw.png"));
+        sheet.RenderGrid(Helms, cols: 7, halfW: 88, halfH: 96, camYaw: 0.32f, dist: 2.35f, targetY: 1.54f, eyeLift: 0.22f, Path.Combine(dir, "helmets_raw.png"));
+        Console.WriteLine($"Armor ({Armors.Length}) & Helmet ({Helms.Length}) showcase -> {dir}");
+    }
+
+    void RenderGrid(ShowcaseItem[] items, int cols, int halfW, int halfH, float camYaw, float dist, float targetY, float eyeLift, string path)
+    {
+        if (sh == null || puppet3D == null) return;
+        int rows = (items.Length + cols - 1) / cols;
+        int hw = cols * halfW, hh = rows * halfH;
+        int w = hw * PixelScale, h = hh * PixelScale;
+        using var rtCol = new RenderTarget2D(gd, hw, hh, false, SurfaceFormat.Color, DepthFormat.Depth24, 0, RenderTargetUsage.PreserveContents);
+        using var rtNd = new RenderTarget2D(gd, hw, hh, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+        using var rtOut = new RenderTarget2D(gd, w, h, false, SurfaceFormat.Color, DepthFormat.None);
+
+        gd.SetRenderTarget(rtNd);
+        gd.Clear(Color.Transparent);
+        gd.SetRenderTarget(rtCol);
+        gd.Clear(new Color(122, 134, 118));
+
+        const float Facing = MathHelper.PiOver2;
+        for (int i = 0; i < items.Length; i++)
+        {
+            int row = i / cols, col = i % cols;
+            var it = items[i];
+            var look = new Look(it.Head, it.Body, it.Legs, "boots", "gloves", "none", "none", false, false, it.Tabard, it.Face, 1);
+            var ut = new UnitType { Id = "showcase", Class = UnitClass.Infantry, Size = 1f, Look = look };
+            var u = new Unit { Index = 11, Palette = it.Palette, Coat = 1, Type = ut, Facing = Facing, ViewFacing = Facing, Heading = Facing, ViewHeading = Facing, EnemyDist = 20 };
+
+            float a = Facing + camYaw;
+            var target = new Vector3(0, targetY, 0);
+            var eye = target + new Vector3(MathF.Cos(a) * dist, eyeLift, MathF.Sin(a) * dist);
+            var view = Matrix.CreateLookAt(eye, target, Vector3.Up);
+            var proj = Matrix.CreatePerspectiveFieldOfView(0.55f, halfW / (float)halfH, 0.1f, 100);
+            var vp = new Viewport(col * halfW, row * halfH, halfW, halfH);
+
+            gd.SetRenderTarget(rtCol);
+            gd.Viewport = vp;
+            gd.Clear(ClearOptions.DepthBuffer, Color.Black, 1, 0);
+            Ground(view, proj);
+
+            units3D.N = 0;
+            puppet3D.Now = 1f;
+            puppet3D.Detail = 0;
+            puppet3D.ExactLook = true;
+            puppet3D.BeginCamera(view);
+            puppet3D.TryDraw(u, 0);
+            if (units3D.N == 0) continue;
+
+            gd.SetRenderTargets(rtCol, rtNd);
+            gd.Viewport = vp;
+            gd.BlendState = BlendState.Opaque;
+            gd.DepthStencilState = DepthStencilState.Default;
+            gd.RasterizerState = RasterizerState.CullNone;
+            sh.Setup(sh.Unit3D, view * proj, eye, 1f, false, 0.45f);
+            sh.Unit3D.Parameters["View"].SetValue(view);
+            sh.Unit3D.CurrentTechnique = sh.Unit3D.Techniques["Unit3D"];
+            sh.Unit3D.CurrentTechnique.Passes[0].Apply();
+            units3D.Draw(gd, PrimitiveType.TriangleList, units3D.N / 3);
+        }
+
+        sh.PixelPostTo(rtOut, rtCol, rtNd, PixelScale, Vector3.One);
+        gd.SetRenderTarget(null);
+        var px = new Color[w * h];
+        rtOut.GetData(px);
+        File.WriteAllBytes(path, SpriteDump.Png(px, w, h));
+    }
+
     public static void Write(GraphicsDevice gd, Art art, Shading? sh, string dir, string filter)
     {
         Directory.CreateDirectory(dir);

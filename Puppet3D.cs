@@ -20,6 +20,8 @@ sealed partial class Puppet3D
     public int Winner = -1;
     public int Detail;
     public float Scale = 1f;
+    /// Bypass per-soldier Variety randomization (used by showcase sheets to inspect exact Look meshes).
+    public bool ExactLook;
     /// Optional 2D Puppet reference for sharing soft-particle swing glints and active Awe sources.
     public Puppet? FxPuppet;
 
@@ -250,7 +252,7 @@ sealed partial class Puppet3D
     public bool TryDraw(Unit u, float ground)
     {
         if (u.Fled || u.Raised) return true;
-        var look = Variety.Of(u);
+        var look = ExactLook ? u.Type.Look : Variety.Of(u);
         float phase = Ease.Hash(u.Index);
         if (u.Dead)
         {

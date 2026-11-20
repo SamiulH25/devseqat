@@ -8,8 +8,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **AbilityDef** (class, L8)
 - **Abilities** (class, L41): Get:47, Has:48, readonly:52, Load:66, Validate:83
 
-## AnimSheet.cs (231 lines)
-- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, Write:77, Render:88, MakeUnit:135, Cell3D:161, Cell2D:192, Ground:213
+## AnimSheet.cs (354 lines)
+- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:77, WriteArmorShowcase:126, RenderGrid:137, Write:200, Render:211, MakeUnit:258, Cell3D:284, Cell2D:315, Ground:336
 
 ## Art.cs (58 lines)
 - **Art** (class, L8): Has:14, TryGet:16, Art:18, Mipped:38
@@ -824,8 +824,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet3D.Beasts.cs (237 lines)
 - **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:24, DrawWolfRig:42, DrawWarg3D:86, DrawBear3D:94, DrawSpider3D:139, DrawWyvern3D:175
 
-## Puppet3D.cs (1207 lines)
-- **Puppet3D** (class, L12): Puppet3D:33, BeginCamera:39, Rad:46, Frame:48, WorldFrame:57, Lean:66, W:73, WDir:85, EmitLocal:98, EmitBone:148, EmitDir:164, EmitWeapon:176, RotX:201, RotZ:207, RotY:213, Elbow:219, Sink:241, TryDraw:250, EmblemOf:680, EmitSlashArc:690, EmitShield:763, DrawFallen3D:808, Banner:903, DrawMissile:1006, HorseScale:1024, DrawHorse3D:1032, DrawLooseHorse:1130, Bench:1145
+## Puppet3D.cs (1209 lines)
+- **Puppet3D** (class, L12): Puppet3D:35, BeginCamera:41, Rad:48, Frame:50, WorldFrame:59, Lean:68, W:75, WDir:87, EmitLocal:100, EmitBone:150, EmitDir:166, EmitWeapon:178, RotX:203, RotZ:209, RotY:215, Elbow:221, Sink:243, TryDraw:252, EmblemOf:682, EmitSlashArc:692, EmitShield:765, DrawFallen3D:810, Banner:905, DrawMissile:1008, HorseScale:1026, DrawHorse3D:1034, DrawLooseHorse:1132, Bench:1147
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136
@@ -840,8 +840,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SaveScreen.cs (286 lines)
 - **SaveScreen** (class, L10): Show:29, Close:39, Draw:47, CampaignRow:155, SaveRow:177, Card:195, TypeName:235, NameBox:245, Thumb:258, Ago:277
 
-## ScreenHost.cs (910 lines)
-- **ScreenHost** (class, L9): readonly:42, ScreenHost:62, ApplyVideo:82, OpenSettings:92, LoadContent:94, StartCampaign:145, Load:172, FinishLoading:188, ContinueCampaign:211, LoadSave:218, OpenLab:227, QuickBattle:229, StartCampaignBattle:236, FinishCampaignBattle:246, CycleQuality:254, Update:258, DrawCursor:315, Draw:335, Fade:376, CaptureShot:406, readonly:434, RestoreTavernTown:446, StagingRefused:453, SaveShots:460, CampaignShots:474
+## ScreenHost.cs (915 lines)
+- **ScreenHost** (class, L9): readonly:42, ScreenHost:62, ApplyVideo:82, OpenSettings:92, LoadContent:94, StartCampaign:150, Load:177, FinishLoading:193, ContinueCampaign:216, LoadSave:223, OpenLab:232, QuickBattle:234, StartCampaignBattle:241, FinishCampaignBattle:251, CycleQuality:259, Update:263, DrawCursor:320, Draw:340, Fade:381, CaptureShot:411, readonly:439, RestoreTavernTown:451, StagingRefused:458, SaveShots:465, CampaignShots:479
 
 ## SelfTest.cs (103 lines)
 - **SelfTest** (class, L6): Run:14, Slots:20, ResolveBattles:32, RunOne:55, Lancer:63, Run:72, Scaled:74, MakeWanderer:77, Days:85, Ids:97, Check:99

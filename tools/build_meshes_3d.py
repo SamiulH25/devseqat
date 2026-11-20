@@ -389,9 +389,11 @@ def build_helm(kind):
             (0, 0.185, 0.0, 0.148, 0.154, segs),
             (0, 0.295, 0.0, 0.028, 0.028, segs),
         ], mat_id=4, ao_y=(0.08, 0.30, 0.78, 1.10))
-        # Crossed spangen crown ribs + spectacle nasal guard + hinged cheek plates
-        p.add_box((0, 0.195, 0.0), (0.030, 0.20, 0.31), mat_id=6)
-        p.add_box((0, 0.195, 0.0), (0.31, 0.20, 0.030), mat_id=6)
+        # Sleek tapered brass spangen ribs hugging the conical dome + brass finial button
+        for a_rib in (0.0, math.pi * 0.5, math.pi, math.pi * 1.5):
+            rx0, rz0 = math.cos(a_rib) * 0.184, math.sin(a_rib) * 0.190
+            p.add_cone((rx0, 0.09, rz0), (0, 0.298, 0), 0.022, 0.012, segs=4, mat_id=6)
+        p.add_sphere((0, 0.305, 0), (0.032, 0.036, 0.032), segs=5, rings=3, mat_id=6)
         p.add_box((0, -0.005, 0.192), (0.044, 0.12, 0.028), mat_id=5)
         p.add_box((0, 0.048, 0.190), (0.18, 0.030, 0.028), mat_id=6)  # spectacle brow bar
         for sx in (-1, 1):
