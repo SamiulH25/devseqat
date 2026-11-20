@@ -7,7 +7,9 @@ public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wa
     Ruin, Shrine, Stones, Field, Mine, Hut, Watch, Spring, Mill,
     Birch, // a slim pale-barked tree (campaign map, WL3)
     // The campaign map's small cover (docs/WORLD_DRESS.md): cheap pieces that stand between the woods.
-    Shrub, Tussock, Heather, Reed, DeadTree, Palm, Flowers }
+    Shrub, Tussock, Heather, Reed, DeadTree, Palm, Flowers,
+    // The water's edge and the roadside (docs/WORLD_DRESS.md WD4).
+    Driftwood, Milestone, Wayside, Well, Rowboat, Marram }
 
 /// A river (roadmap C5): a centre line, its width, and the fords where it runs shallow.
 public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float Depth = 1.3f)

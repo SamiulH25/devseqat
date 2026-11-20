@@ -36,22 +36,21 @@ public sealed partial class WorldMap
     /// water, field or site). Small cover comes up to a place's houses; trees stand a few metres further off.
     void Dress(float grow, Func<Vector2, bool> open, List<Foliage> foliage)
     {
-        var rng = new Random(Seed * 17 + 5);
         var taken = new HashSet<(int, int)>();
         foreach (var f in foliage) taken.Add(((int)MathF.Floor(f.Pos.X / DressCell), (int)MathF.Floor(f.Pos.Y / DressCell)));
         int n = (int)(ExtentUsed / DressCell);
         for (int x = -n; x < n; x++)
             for (int z = -n; z < n; z++)
             {
+                var rng = new Random(Rng.Mix(Seed, 17, x, z)); // each cell its own dice: what else stands on the map never moves the cover
                 var p = new Vector2(x + 0.15f + rng.NextSingle() * 0.7f, z + 0.15f + rng.NextSingle() * 0.7f) * DressCell;
                 if (taken.Contains((x, z)) || !open(p) || OnRidge(p)) continue;
                 var land = Lands.Of(ProvinceAt(p).Kind);
                 if (!Covers.TryGetValue(land.Kind, out var c)) continue;
-                float town = float.MaxValue, houses = 0;
-                foreach (var st in Settlements)
-                    if (Vector2.Distance(st.Pos, p) is var d && d < town) (town, houses) = (d, st.Kind == SettlementKind.Village ? 11 : 14);
+                var (town, houses, place) = NearestPlace(p);
                 if (town < houses) continue;
-                bool trees = town > houses + 3 && RoadDist(p) > 4.5f && RiverDist(p) > 4; // a ride cut through a wood: roads and streams stay in sight
+                // Trees keep a few metres off a village's houses, more off a town's or castle's walls, so the close view sees it.
+                bool trees = town > houses + (place?.Kind == SettlementKind.Village ? 3 : 8) && RoadDist(p) > 4.5f && RiverDist(p) > 4; // a ride cut through a wood: roads and streams stay in sight
                 // Trees shrink by a town as the stands' do, so it stands out among them.
                 float near = 0.45f + 0.55f * Math.Clamp((town - 12 * grow * grow) / (30 * grow * grow), 0, 1);
                 float dry = Math.Clamp(c.Dry + (rng.NextSingle() - 0.5f) * 0.3f, 0, 1);

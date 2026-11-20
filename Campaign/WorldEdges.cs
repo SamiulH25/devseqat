@@ -69,7 +69,7 @@ public sealed partial class WorldMap
                     else if (roll < 0.06f + 0.3f * Math.Max(0, rocky - 0.45f)) foliage.Add(new Foliage(Rock, p, 0.45f + rng.NextSingle() * 0.4f, 0, rng.Next(), kind.Hot ? 0.7f : 0.15f));
                 }
                 else if (roll < (kind.Kind is "Tundra" or "Desert" ? 0.2f : 0.45f)) // the bank behind the beach: marram grass, bleached by salt and wind
-                    foliage.Add(new Foliage(Tussock, p, (0.9f + rng.NextSingle() * 0.5f) * grow, 0, rng.Next(), Math.Clamp(0.45f + (kind.Hot ? 0.3f : 0) + rng.NextSingle() * 0.15f, 0, 1)));
+                    foliage.Add(new Foliage(Marram, p, (1.0f + rng.NextSingle() * 0.5f) * grow, 0, rng.Next(), Math.Clamp(0.45f + (kind.Hot ? 0.3f : 0) + rng.NextSingle() * 0.15f, 0, 1)));
             }
     }
 
@@ -107,7 +107,7 @@ public sealed partial class WorldMap
             {
                 var q = from + dir * d;
                 float l = Landness(q);
-                if (l is >= 0.6f and <= 0.75f && Height(q.X, q.Y) > SeaLevel + 0.1f && RoadDist(q) > 3 && RiverDist(q) > 3 && !ByQuay(q, 3)) return q;
+                if (l is >= 0.6f and <= 0.75f && Height(q.X, q.Y) > SeaLevel + 0.1f && RoadDist(q) > 6 && RiverDist(q) > 3 && !ByQuay(q, 3)) return q;
                 if (l < 0.6f) return null;
             }
             return null;
@@ -151,7 +151,7 @@ public sealed partial class WorldMap
                             int flip = place.Id & 1;
                             // (Distances are to the road's coarse copy, up to 1.2 m off the drawn line: the margins allow for it.)
                             float near = 0.45f + 0.55f * Math.Clamp((town - 12 * grow * grow) / (30 * grow * grow), 0, 1); // small by the walls, as the stands' trees are
-                            if (k % 4 == 0 && town > houses + 8 && Free(p + side * (r.Half + 3.2f) * (flip * 2 - 1), r.Half + 1.6f))
+                            if (k % 3 == 0 && town > houses + 8 && Free(p + side * (r.Half + 3.2f) * (flip * 2 - 1), r.Half + 1.6f))
                                 foliage.Add(new Foliage(Lands.Of(ProvinceAt(p).Kind).Conifer ? Pine : Broadleaf, p + side * (r.Half + 3.2f) * (flip * 2 - 1), (1.5f + rng.NextSingle() * 0.5f) * grow * near, 0, rng.Next()));
                             var hedge = p - side * (r.Half + 2.4f) * (flip * 2 - 1);
                             if (Free(hedge, r.Half + 0.9f)) foliage.Add(new Foliage(Shrub, hedge, (0.8f + rng.NextSingle() * 0.25f) * grow, 0, rng.Next(), 0.1f));

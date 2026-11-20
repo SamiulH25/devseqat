@@ -527,7 +527,7 @@ public sealed partial class WorldMap
         {
             // Sand by how near the coast (landness), so the beach is a band a few metres wide whatever the bank's slope.
             float sh = Height(p.X, p.Y), ln = Landness(p) + (Terrain.Noise(p.X * 0.15f, p.Y * 0.15f, Seed + 13) - 0.5f) * 0.08f;
-            float sand = MathHelper.SmoothStep(1, 0, Math.Clamp((ln - 0.8f) / 0.16f, 0, 1)); // graded into the grass
+            float sand = MathHelper.SmoothStep(1, 0, Math.Clamp((ln - 0.84f) / 0.14f, 0, 1)); // sand up the bank, the marram on it // graded into the grass
             var beach = Vector3.Lerp(new Vector3(0.52f, 0.46f, 0.36f), new Vector3(0.93f, 0.84f, 0.64f), Math.Clamp((sh - BeachLow) / (BeachHigh - BeachLow + 0.4f), 0, 1));
             c = Vector3.Lerp(c, beach * (0.94f + 0.12f * Terrain.Noise(p.X * 0.2f, p.Y * 0.2f, Seed + 12)), sand);
         }
@@ -589,8 +589,10 @@ public sealed partial class WorldMap
         var fieldCells = FieldCells(fields);
         var standRng = new Random(Seed * 5 + 3); // layout 4 woods: their own dice
         float keepOff = 9 * (Designed ? MathF.Sqrt(span) : span); // the drawn map's places stand close: woods come within half the generated maps' margin
-        bool Open(Vector2 p) => Landness(p) > 0.95f && Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RoadDist(p) > 2.5f && RiverDist(p) > 3 && !InLake(p, 2)
+        // Ground anything may stand on, road or shore aside: no site, river, lake or field, inside the map.
+        bool Ground(Vector2 p) => Sites.All(s => Vector2.Distance(s.Pos, p) > 5) && RiverDist(p) > 3 && !InLake(p, 2)
             && MathF.Abs(p.X) < half && MathF.Abs(p.Y) < half && !InField(fieldCells, p, 1.5f);
+        bool Open(Vector2 p) => Landness(p) > 0.95f && RoadDist(p) > 2.5f && Ground(p);
         bool Clear(Vector2 p) => Open(p) && Settlements.All(s => Vector2.Distance(s.Pos, p) > keepOff);
         foreach (var f in fields.Where(f => f.Kind == FieldKind.Orchard)) // rows of small round fruit trees
         {
@@ -648,6 +650,7 @@ public sealed partial class WorldMap
                     foliage.Add(new Foliage(FoliageKind.Pine, pos, (2.2f + rng.NextSingle()) * grow0 * near, 0, rng.Next()));
                 }
             }
+        if (Designed) DressEdges(grow0, Ground, foliage); // the shore and the roadsides (WorldEdges.cs), before the cover so it keeps clear of them
         if (Designed) Dress(grow0, Open, foliage); // woods and small cover between the stands (WorldDress.cs)
         for (int i = 0; i < (Designed ? 0 : 260); i++) // pines on the mountain rim (a designed map has the sea instead)
         {

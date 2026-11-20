@@ -1,6 +1,6 @@
 # The dressed map (plan WD1-WD7)
 
-Status: **WD1-WD3 built** (2026-11-19). WD4-WD7 planned. Follows `docs/WORLD_LIFE.md` (roads, water, fields, beasts,
+Status: **WD1-WD4 built** (2026-11-19). WD5-WD7 planned. Follows `docs/WORLD_LIFE.md` (roads, water, fields, beasts,
 folk) and `docs/WORLDMAP.md` (the drawn world). Move to `docs/archive/` when the last phase ships.
 
 ## The problem (measured, 2026-11-19)
@@ -48,7 +48,7 @@ a town), smaller trees and shrubs at the rim, glades between. Roads and streams 
 so they stay in sight. Forest and taiga are wood with glades; meadow, hills and coast get copses; steppe a rare one;
 desert, tundra and badlands none.
 
-### WD4 The water's edge and the roadside
+### WD4 The water's edge and the roadside (built)
 - Shore: stones and drift wood on the beach, marram tussocks on the bank behind it, reeds round lake shores, rocks
   standing in the surf. (Cover stops at `Landness` 0.95 today, so the beach is bare.)
 - Ports (23 drawn): a jetty and moored boats; fishing boats off the coast (drawing only, as river boats are).
@@ -89,3 +89,26 @@ thin the cover by `Quality` if Medium needs it.
     palms only in oases, heather only in the high and cold lands, the same cover twice.
   - Not done: judged by eye from the shots only (no judge model was reachable from the session). Cover does not thin
     with `Quality`. Layout 4 has none.
+- **WD4 (2026-11-19).** `Campaign/WorldEdges.cs` (`DressEdges`, called in `BuildTerrain` just before `Dress`; dice
+  `Seed * 19 + 11`): `Shore` (a try every 4 m across landness 0.27-0.95: rocks in the surf off rocky stretches (a 40 m
+  noise), stones and `Driftwood` on the dry beach, marram (a `Tussock` bleached to dry 0.45+) on the bank; none on the
+  roads, by a pier (`ByQuay`) or among houses), `Boats` (`Rowboat`: three by each pier, one or two below each village
+  within 34 m of the sea, on the dry beach at landness 0.6-0.75), `Roadside` (the last 50 m into a town or castle: a
+  tree every 9.6 m on one side, shrunk by the walls as the stands' are, and a shrub hedge on the other; a `Milestone`
+  every 45 m of the seats' roads; halfway along each seats' road over 90 m a `Wayside` shrine or a `Well`). Pieces in
+  `World.Dress.cs`. `BuildTerrain` split `Open` into `Ground` (no site, river, lake or field) plus land and road.
+  - Fishing boats (drawing only, `MapLife.People.cs` `SeaBoat`): up to two (four on High) by day, drifting over the
+    shelf 1.2-3.5 m deep and turning back from the beach and the deep.
+  - The small cover now rolls its own dice a cell (`Rng.Mix(Seed, 17, x, z)`): before, anything placed ahead of it
+    reshuffled every wood on the map. Woods keep 8 m off a town's or castle's houses (3 m off a village's): a wood tree
+    at a gate stood in front of the town in the close view.
+  - Lake reeds were already drawn (`World.Lake`); nothing added there. Ports' piers and moored cogs came with WM7.
+  - Crossroads in the open are rare on the drawn map (its roads run place to place), so the wayside shrines and wells
+    stand halfway along the long roads instead.
+  - Numbers (`--world-bench`, seed 11): 9,624 items (140 driftwood, 128 boats, 59 milestones, 24 shrines and wells,
+    some 1,060 shore pieces); buffers 154 -> 162 MB.
+  - Marram is its own kind (`Marram`: a fan of stiff pale blades, no mound); the beach's sand reaches up the bank to
+    landness 0.98 (`WorldMap.Tint`), so the stones, driftwood and marram stand on sand, not lawn.
+  - Judged with the Haiku fallback (the T3 judge was not reachable): round 1 scored 6 (driftwood read as a stick,
+    milestones as stakes, round marram, no sand under the shore pieces); fixed and re-judged.
+  - Test: `MapDressed` grew the shore, marram, boats, avenue, milestone and wayside checks.

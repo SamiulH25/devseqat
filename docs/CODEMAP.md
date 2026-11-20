@@ -11,8 +11,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## AnimSheet.cs (138 lines)
 - **AnimSheet** (class, L10): AnimSheet:20, Clip:29, Swing:31, Write:58, Render:68, Cell:89, Ground:120
 
-## Art.cs (70 lines)
-- **Art** (class, L8): Has:14, TryGet:16, Art:18, Mipped:50
+## Art.cs (58 lines)
+- **Art** (class, L8): Has:14, TryGet:16, Art:18, Mipped:38
 
 ## Audio.cs (360 lines)
 - **Cue** (enum, L7)
@@ -824,8 +824,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:77, Deserialize:78, Save:82, Play:89, Matches:139, Run:142
 - **Battle** (class, L156): StartRecording:163, RecordFrame:168, FinishRecording:208
 
-## ScreenHost.cs (905 lines)
-- **ScreenHost** (class, L9): readonly:42, ScreenHost:58, ApplyVideo:78, OpenSettings:88, LoadContent:90, StartCampaign:144, Load:170, FinishLoading:185, DrawLoading:203, ContinueCampaign:228, OpenLab:239, QuickBattle:241, StartCampaignBattle:248, FinishCampaignBattle:258, CycleQuality:266, Update:270, DrawCursor:326, Draw:346, Fade:387, CaptureShot:417, readonly:445, RestoreTavernTown:457, StagingRefused:464, CampaignShots:470
+## ScreenHost.cs (900 lines)
+- **ScreenHost** (class, L9): readonly:42, ScreenHost:58, ApplyVideo:78, OpenSettings:88, LoadContent:90, StartCampaign:139, Load:165, FinishLoading:180, DrawLoading:198, ContinueCampaign:223, OpenLab:234, QuickBattle:236, StartCampaignBattle:243, FinishCampaignBattle:253, CycleQuality:261, Update:265, DrawCursor:321, Draw:341, Fade:382, CaptureShot:412, readonly:440, RestoreTavernTown:452, StagingRefused:459, CampaignShots:465
 
 ## SelfTest.cs (103 lines)
 - **SelfTest** (class, L6): Run:14, Slots:20, ResolveBattles:32, RunOne:55, Lancer:63, Run:72, Scaled:74, MakeWanderer:77, Days:85, Ids:97, Check:99
@@ -861,8 +861,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteDump.cs (113 lines)
 - **SpriteDump** (class, L9): Run:13, Portraits:45, Png:80, Crc:107
 
-## SpriteSheet.cs (2163 lines)
-- **SpriteSheet** (class, L14): Part:22, SpriteSheet:35, SpriteSheet:47, Paint:50, Add:63, Pack:68, Side:91, InEl:148, Head:150, Visages:153, Head:167, GoblinHead:218, TrollHead:248, SkullHead:278, GhoulHead:304, Helm:329, Torso:702, PlateTorso:906, PixelMap:909, Ribs:925, Tabard:940, Emblem:957, Cape:997, Sleeve:1013, Leg:1055, Boot:1096, Hand:1118, Shield:1126, Weapon:1229, PaintGrid:1442, ArmingSword:1466, Longsword:1502, Greatsword:1547, Scimitar:1608, Falchion:1643, Polearm:1677, Bow:1692, Arrow:1706, Quiver:1715, Plume:1724, Flag:1732, Blood:1741, Splat:1750, Horse:1763, Wolf:1890, Spider:1929, Bear:1983, Wyvern:2018, HorseNeckTop:2091, HorseNeckBottom:2092, BodyShape:2094, HorseGear:2097, Saddle:2151
+## SpriteSheet.cs (2157 lines)
+- **SpriteSheet** (class, L14): Part:22, SpriteSheet:35, SpriteSheet:41, Paint:44, Add:57, Pack:62, Side:85, InEl:142, Head:144, Visages:147, Head:161, GoblinHead:212, TrollHead:242, SkullHead:272, GhoulHead:298, Helm:323, Torso:696, PlateTorso:900, PixelMap:903, Ribs:919, Tabard:934, Emblem:951, Cape:991, Sleeve:1007, Leg:1049, Boot:1090, Hand:1112, Shield:1120, Weapon:1223, PaintGrid:1436, ArmingSword:1460, Longsword:1496, Greatsword:1541, Scimitar:1602, Falchion:1637, Polearm:1671, Bow:1686, Arrow:1700, Quiver:1709, Plume:1718, Flag:1726, Blood:1735, Splat:1744, Horse:1757, Wolf:1884, Spider:1923, Bear:1977, Wyvern:2012, HorseNeckTop:2085, HorseNeckBottom:2086, BodyShape:2088, HorseGear:2091, Saddle:2145
 
 ## SpriteSheet.Peoples.cs (548 lines)
 - **SpriteSheet** (class, L7): HelmBase:21, PeopleHelm:37, SunCrest:308, PeopleTorso:322, PeopleSleeve:412, PeopleBarding:430, Full:500, Crinet:529, Chanfron:540
@@ -997,8 +997,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **DivisionSpec** (record, L192)
 - **Armies** (class, L197): LineTroop:200, readonly:202, Count:210, Standard:218, Random:221, Large:228, FullCount:239, Divide:249, OfficerSkill:257, Split:270, Make:322, MageTroop:326, LineTroop:330, RoleOf:332
 
-## TroopSheet.cs (122 lines)
-- **TroopSheet** (class, L8): TroopSheet:16, Write:23, WriteTurntable:34, OnePose:55, One:89
+## TroopSheet.cs (67 lines)
+- **TroopSheet** (class, L8): TroopSheet:16, Write:23, One:34
 
 ## Ui.cs (255 lines)
 - **Ui** (class, L8): Hovered:26, FrameEnd:36, Ui:40, Anim:59, static:70, Since:83, Count:93, Key:100, Reset:103, Begin:105, End:115, Blocks:118, Block:119, U:120, Rect:122, Frame:129, Panel:138, Dim:141, Text:144, Ink:151, TW:159, TextC:160, TextR:161, Bar:165, Hover:178, Clicked:181, Button:190, Face:219, FaceHead:229, HasSprite:241, Sprite:243, Portrait:254

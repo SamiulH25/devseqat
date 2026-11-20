@@ -374,7 +374,26 @@ public static partial class SelfTest
         var bare = m.Provinces.Select(p => p.Kind).Distinct().Where(k => !cover.Any(f => m.ProvinceAt(f.Pos).Kind == k)).ToList();
         Console.WriteLine($"dress: {cover.Count} pieces of small cover, {t.Foliage.Count(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine or FoliageKind.Birch)} trees");
         Check(cover.Count > 3000 && bare.Count == 0, $"small cover on every kind of land ({cover.Count}; none in: {string.Join(", ", bare)})");
-        Check(!cover.Any(f => m.RoadDist(f.Pos) < 2.5f || m.Landness(f.Pos) < 0.95f || m.InLake(f.Pos, 2) || t.Fields.Any(q => q.Inside(f.Pos, 1.5f))), "none on a road, in the water or in a field");
+        var inland = cover.Where(f => m.Landness(f.Pos) >= 0.95f).ToList();
+        Check(!cover.Any(f => m.RoadDist(f.Pos) < 2.5f || m.InLake(f.Pos, 2) || t.Fields.Any(q => q.Inside(f.Pos, 1.5f))), "none on a road, in a lake or in a field");
+        // The shore (WD4): only stones in the surf, the beach's stones and marram above it.
+        var shore = cover.Where(f => m.Landness(f.Pos) < 0.95f).ToList();
+        Check(shore.Count > 40 && shore.All(f => f.Kind is FoliageKind.Rock) && shore.All(f => f.Kind == FoliageKind.Rock || t.Height(f.Pos) > (t.SeaLevel ?? 0)),
+            $"only stones among the small cover on the shore, the surf's standing out of the sea ({shore.Count})");
+        var marram = t.Foliage.Where(f => f.Kind == FoliageKind.Marram).ToList();
+        Check(marram.Count > 200 && marram.All(f => m.Landness(f.Pos) is >= 0.8f and < 0.95f && m.RoadDist(f.Pos) > 2.5f), $"marram on the bank behind the beach ({marram.Count})");
+        var drift = t.Foliage.Where(f => f.Kind == FoliageKind.Driftwood).ToList();
+        var boats = t.Foliage.Where(f => f.Kind == FoliageKind.Rowboat).ToList();
+        Check(drift.Count > 30 && drift.All(f => m.Landness(f.Pos) is > 0.4f and < 0.85f && t.Height(f.Pos) > (t.SeaLevel ?? 0)), $"driftwood lies on the beach above the tide ({drift.Count})");
+        Check(boats.Count >= m.Quays.Count * 2 && boats.All(f => t.Height(f.Pos) > (t.SeaLevel ?? 0) && m.Landness(f.Pos) < 0.8f), $"boats drawn up on the beach by the ports ({boats.Count})");
+        var miles = t.Foliage.Where(f => f.Kind == FoliageKind.Milestone).ToList();
+        var shrines = t.Foliage.Where(f => f.Kind is FoliageKind.Wayside or FoliageKind.Well).ToList();
+        var avenue = t.Foliage.Where(f => f.Kind is FoliageKind.Broadleaf or FoliageKind.Pine && m.RoadDist(f.Pos) < 6.5f
+            && m.Settlements.Any(st => st.Kind != SettlementKind.Village && Vector2.Distance(st.Pos, f.Pos) < 64)).ToList();
+        Console.WriteLine($"edges: {avenue.Count} trees along the roads into seats, {shore.Count} on the shore, {drift.Count} driftwood, {boats.Count} boats, {miles.Count} milestones, {shrines.Count} wayside shrines and wells");
+        Check(avenue.Count > 150, $"trees line the roads into the towns and castles ({avenue.Count})");
+        Check(miles.Count > 40 && miles.All(f => m.RoadDist(f.Pos) < 5.5f && m.Settlements.All(st => Vector2.Distance(st.Pos, f.Pos) > 20)), "milestones stand by the roads, out in the country");
+        Check(shrines.Count > 10 && shrines.All(f => m.RoadDist(f.Pos) is > 2.5f and < 7 && m.Settlements.All(st => Vector2.Distance(st.Pos, f.Pos) > 25)), "wayside shrines and wells on the long roads");
         Check(!cover.Any(f => m.Settlements.Any(s => Vector2.Distance(s.Pos, f.Pos) < 11)), "none among a place's houses");
         var palms = t.Foliage.Where(f => f.Kind == FoliageKind.Palm).ToList();
         Check(palms.Count > 20 && palms.All(f => m.ProvinceAt(f.Pos).Kind == "Oasis"), "palms grow in the oases and nowhere else");
@@ -450,6 +469,13 @@ public static partial class SelfTest
         Check(m.Provinces.Select(p => p.Name).Distinct().Count() == m.Provinces.Count && m.Provinces.All(p => d.Provinces.All(q => q.Name != p.Name)), "province names are invented and unique");
         Check(m.Settlements.All(s => !m.InSea(s.Pos) && m.ProvinceAt(s.Pos).Id == s.Province && m.Provinces[s.Province].Faction == s.Faction), "every settlement on land, in its own realm's province");
         Check(m.Provinces.All(p => p.Neighbors.Count > 0 && p.Neighbors.All(n => m.Provinces[n].Neighbors.Contains(p.Id))), "every province has neighbours, and they have it");
+        // Holds (docs/HOLDS.md HD4): towns rare, castles common, every province a seat, every village bound, every realm a town.
+        int nTowns = a.S.Settlements.Count(s => s.Kind == SettlementKind.Town), castles = a.S.Settlements.Count(s => s.Kind == SettlementKind.Castle);
+        Check(nTowns <= 25 && castles >= 90, $"towns are rare and castles common ({nTowns} towns, {castles} castles)");
+        Check(m.Provinces.All(p => a.S.Settlements.Any(s => s.Province == p.Id && s.Kind != SettlementKind.Village)), "every province has a seat");
+        Check(a.S.Settlements.Where(s => s.Kind == SettlementKind.Village).All(v => v.Holder >= 0 && a.S.Settlements[v.Holder].Province == v.Province), "every village is bound to a seat of its province");
+        Check(Enumerable.Range(0, a.S.Factions.Count).All(f => a.S.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town)), "every realm has a town for its capital");
+        Check(a.S.Settlements.Where(s => s.Kind == SettlementKind.Castle).Select(s => s.Size).Distinct().Count() == 3, "castles come in three sizes");
         var low = m.Settlements.MinBy(s => m.Height(s.Pos.X, s.Pos.Y))!;
         Check(m.Height(deep.X, deep.Y) < -WorldMap.SeaDepth * 0.8f, $"the open sea lies low ({m.Height(deep.X, deep.Y):0.0})");
         Check(m.Height(low.Pos.X, low.Pos.Y) > 0, $"every settlement stands above the sea ({low.Name} at {m.Height(low.Pos.X, low.Pos.Y):0.0}, land {m.Landness(low.Pos):0.00})");
@@ -469,13 +495,6 @@ public static partial class SelfTest
         Check(cut.Count == 0, "every town and castle is joined by road: not " + string.Join(", ", cut.Select(s => $"{s.Name} at {s.Pos}")));
         // The sea (WM2): a point at sea is put ashore, a way between far towns keeps to the land, nobody walks on water.
         var shore = m.InLand(deep);
-        // Holds (docs/HOLDS.md HD4): towns rare, castles common, every province a seat, every village bound, every realm a town.
-        int nTowns = a.S.Settlements.Count(s => s.Kind == SettlementKind.Town), castles = a.S.Settlements.Count(s => s.Kind == SettlementKind.Castle);
-        Check(nTowns <= 25 && castles >= 90, $"towns are rare and castles common ({nTowns} towns, {castles} castles)");
-        Check(m.Provinces.All(p => a.S.Settlements.Any(s => s.Province == p.Id && s.Kind != SettlementKind.Village)), "every province has a seat");
-        Check(a.S.Settlements.Where(s => s.Kind == SettlementKind.Village).All(v => v.Holder >= 0 && a.S.Settlements[v.Holder].Province == v.Province), "every village is bound to a seat of its province");
-        Check(Enumerable.Range(0, a.S.Factions.Count).All(f => a.S.Settlements.Any(s => s.Faction == f && s.Kind == SettlementKind.Town)), "every realm has a town for its capital");
-        Check(a.S.Settlements.Where(s => s.Kind == SettlementKind.Castle).Select(s => s.Size).Distinct().Count() == 3, "castles come in three sizes");
         Check(m.InSea(deep) && !m.InSea(shore), $"a point at sea is put on the shore ({shore})");
         var towns = m.Settlements.Where(s => s.Kind == SettlementKind.Town).ToList();
         foreach (var (from, to) in new[] { (towns[0], towns[^1]), (towns[3], towns[towns.Count / 2]) })

@@ -38,6 +38,15 @@ sealed partial class MapLife
     readonly Dictionary<int, List<Person>> crowds = new();
     readonly List<Traveller> travellers = new();
     readonly List<Boat> boats = new();
+    /// Fishing boats off the coast (docs/WORLD_DRESS.md WD4): they drift over the shallows, turning back from the
+    /// beach and from deep water.
+    sealed class SeaBoat
+    {
+        public Vector2 Pos;
+        public float Heading, Phase;
+        public Color Hull, Sail;
+    }
+    readonly List<SeaBoat> seaBoats = new();
     readonly Dictionary<int, List<Vector2>> trails = new();
     readonly Dictionary<int, float[]> roadLengths = new();
     readonly List<(int Id, Vector2 Pos, float Facing, bool Pilgrims)> caravans = new();
@@ -77,7 +86,7 @@ sealed partial class MapLife
 
     void UpdatePeople(float dt, Vector2 focus, float zoom, float reach, float hour, bool high)
     {
-        if (zoom > 260) { crowds.Clear(); travellers.Clear(); boats.Clear(); return; }
+        if (zoom > 260) { crowds.Clear(); travellers.Clear(); boats.Clear(); seaBoats.Clear(); return; }
         bool day = hour > 5.5f && hour < 21f, work = hour > 6.5f && hour < 18f && t.MapSeason != 3;
         peopleWait -= dt;
         if (peopleWait <= 0)
@@ -91,6 +100,8 @@ sealed partial class MapLife
             for (int tries = 0; tries < 12 && travellers.Count < roadCap && roads.Count > 0; tries++) SpawnTraveller(roads, focus, reach, day);
             boats.RemoveAll(b => Vector2.Distance(At(b.River.Path, b.S, out _), focus) > reach * 1.5f);
             if (day && boats.Count < (high ? 3 : 1)) SpawnBoat(focus, reach);
+            seaBoats.RemoveAll(b => Vector2.Distance(b.Pos, focus) > reach * 1.5f);
+            for (int tries = 0; tries < 30 && day && seaBoats.Count < (high ? 4 : 2); tries++) SpawnSeaBoat(focus, reach);
         }
         foreach (var crowd in crowds.Values)
             foreach (var p in crowd) if (!p.Gone) StepPerson(p, dt, hour);
@@ -103,6 +114,7 @@ sealed partial class MapLife
             b.Phase += dt;
             if (b.S > Length(b.River.Path) - 2) boats.RemoveAt(i);
         }
+        foreach (var b in seaBoats) StepSeaBoat(b, dt);
         smoking.Clear();
         smoking.AddRange(Chimneys.Where(c => Vector2.DistanceSquared(new Vector2(c.X, c.Z), focus) < reach * reach)
             .OrderBy(c => Vector2.DistanceSquared(new Vector2(c.X, c.Z), focus)).Take(high ? 40 : 16));
@@ -283,6 +295,29 @@ sealed partial class MapLife
         boats.Add(new Boat { River = river, S = at, Speed = 0.5f + rng.NextSingle() * 0.4f, Phase = rng.NextSingle() * 10, Hull = Jitter(Plank, rng) });
     }
 
+    /// The sea's shallows near the shore: deep enough to float a boat, shallow enough to fish (the shelf, 1.2-3.5 m down).
+    bool Shallows(Vector2 p) => t.SeaLevel is float sea && t.Height(p) is var h && h < sea - 1.2f && h > sea - 3.5f;
+
+    void SpawnSeaBoat(Vector2 focus, float reach)
+    {
+        if (t.SeaLevel == null) return;
+        float a = rng.NextSingle() * MathF.Tau, d = MathF.Sqrt(rng.NextSingle()) * reach;
+        var p = focus + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d;
+        if (!Shallows(p) || seaBoats.Any(b => Vector2.Distance(b.Pos, p) < 25)) return;
+        seaBoats.Add(new SeaBoat { Pos = p, Heading = rng.NextSingle() * MathF.Tau, Phase = rng.NextSingle() * 10, Hull = Jitter(Plank, rng),
+            Sail = Jitter(rng.Next(3) == 0 ? new Color(176, 110, 72) : Canvas, rng) });
+    }
+
+    /// A slow drift; a boat whose way ahead runs aground or out to the deep turns until it finds the shallows again.
+    void StepSeaBoat(SeaBoat b, float dt)
+    {
+        b.Phase += dt;
+        var dir = new Vector2(MathF.Cos(b.Heading), MathF.Sin(b.Heading));
+        if (!Shallows(b.Pos + dir * 5)) { b.Heading += 0.9f * dt; return; }
+        b.Heading += MathF.Sin(b.Phase * 0.13f) * 0.04f * dt;
+        b.Pos += dir * 0.35f * dt;
+    }
+
     // ---------- drawing ----------
 
     void BuildPeople()
@@ -292,6 +327,7 @@ sealed partial class MapLife
                 if (!p.Gone) DrawPerson(p.Pos, p.Heading, p.Phase, p.Speed > 0, p.Working && p.Speed == 0 ? 1 : 0, p, Folk);
         foreach (var v in travellers) DrawTraveller(v);
         foreach (var b in boats) DrawBoat(b);
+        foreach (var b in seaBoats) DrawSeaBoat(b);
         foreach (var c in caravans) DrawCaravan(c.Id, c.Pilgrims);
         if (Ship is var (at, facing, sail)) // rolling a little on the swell
             World.Ship(mesh, new Vector3(at.X, (t.SeaLevel ?? 0) + MathF.Sin(clock * 1.3f) * 0.08f, at.Y), facing + MathF.Sin(clock * 0.7f) * 0.03f, 1.2f, sail, false);
@@ -395,6 +431,21 @@ sealed partial class MapLife
             mesh.Raw(a - side, Vector3.Up, col, Vector2.Zero); mesh.Raw(a + side, Vector3.Up, col, Vector2.Zero); mesh.Raw(c + side, Vector3.Up, col, Vector2.Zero);
             mesh.Raw(a - side, Vector3.Up, col, Vector2.Zero); mesh.Raw(c + side, Vector3.Up, col, Vector2.Zero); mesh.Raw(c - side, Vector3.Up, col, Vector2.Zero);
         }
+    }
+
+    /// A fishing boat: a hull, a mast with a small square sail, a fisherman in her stern; she rolls on the swell.
+    void DrawSeaBoat(SeaBoat b)
+    {
+        float level = (t.SeaLevel ?? 0) + MathF.Sin(b.Phase * 1.4f) * 0.06f, yaw = b.Heading + MathF.Sin(b.Phase * 0.8f) * 0.04f;
+        var f = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
+        var at = new Vector3(b.Pos.X, level - 0.3f, b.Pos.Y);
+        mesh.Box(at, 3.4f, 1.3f, 0.6f, yaw, b.Hull);
+        mesh.Box(at + f * 1.9f, 0.5f, 0.8f, 0.7f, yaw, b.Hull);                       // the prow
+        mesh.Box(at + f * 0.4f + Vector3.Up * 0.5f, 0.1f, 0.1f, 2.6f, yaw, new Color(84, 62, 44)); // the mast
+        mesh.Box(at + f * 0.45f + Vector3.Up * 1.2f, 0.06f, 1.6f, 1.6f, yaw, b.Sail);
+        var who = new Person { Shirt = Shirts[(int)(b.Phase * 10) % Shirts.Length], Hose = new Color(84, 74, 60), Hat = true };
+        var stern = b.Pos - new Vector2(f.X, f.Z) * 1.1f;
+        DrawPerson(stern, yaw, 0, false, 0, who, 1, level + 0.25f - t.Height(stern));
     }
 
     /// A caravan's wagons, or a pilgrims' file of walkers, strung out along the way the party came.
