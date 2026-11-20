@@ -413,12 +413,38 @@ sealed partial class Puppet3D
         Vector3 torsoPos = new(hipShiftX * 0.75f, breath * 0.008f, 0);
         Vector3 tR = RotY(Vector3.UnitX, twist);
         Vector3 tF = RotY(Vector3.UnitZ, twist);
-        EmitLocal(lm.Torso, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f + breath * 0.012f, 1f + breath * 0.018f, lm.TorsoPat);
-        if (lm.HasTabard && Detail == 0)
+        float syB = 1f + breath * 0.012f, szB = 1f + breath * 0.018f;
+        EmitLocal(lm.Chest, torsoPos, tR, Vector3.UnitY, tF, 1f, syB, szB, lm.ChestPat);
+        if (lm.Skirt.Length > 0)
+            EmitLocal(lm.Skirt, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, 1f, lm.SkirtPat);
+        if (Detail == 0)
         {
-            var emb = EmblemOf(palIdx);
-            if (emb.Length > 0)
-                EmitLocal(emb, torsoPos + RotY(new Vector3(0, 1.03f, 0.186f), twist), tR, Vector3.UnitY, tF, 0.56f, 0.56f, 0.7f);
+            var shldMesh = lm.Shoulders;
+            var beltMesh = lm.Belt;
+            // Subtle deterministic per-soldier modular mix-and-match within companies (zero GC, off for player & showcase!)
+            if (!ExactLook && !u.IsPlayer && !u.IsLeader && !u.Hero)
+            {
+                int seed = Variety.Seed(u);
+                if (lm.BeltVarGroup > 0 && (seed & 3) != 0)
+                {
+                    var pool = lm.BeltVarGroup == 1 ? kit.BeltPoolLight : lm.BeltVarGroup == 2 ? kit.BeltPoolHeavy : kit.BeltPoolNorth;
+                    if (pool.Length > 0) beltMesh = pool[Math.Abs(seed * 7 + 3) % pool.Length];
+                }
+                if (lm.ShldVarGroup > 0 && (seed % 5) == 1)
+                {
+                    var pool = lm.ShldVarGroup == 1 ? kit.ShldPoolKnight : kit.ShldPoolFoot;
+                    if (pool.Length > 0) shldMesh = pool[Math.Abs(seed * 11 + 5) % pool.Length];
+                }
+            }
+            if (shldMesh.Length > 0) EmitLocal(shldMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, syB, szB, lm.ShldPat);
+            if (lm.TabardPanel.Length > 0) EmitLocal(lm.TabardPanel, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, 1f, MeshKit3D.PatQuilt);
+            if (beltMesh.Length > 0) EmitLocal(beltMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, szB);
+            if (lm.HasTabard)
+            {
+                var emb = EmblemOf(palIdx);
+                if (emb.Length > 0)
+                    EmitLocal(emb, torsoPos + RotY(new Vector3(0, 1.03f, 0.186f), twist), tR, Vector3.UnitY, tF, 0.56f, 0.56f, 0.7f);
+            }
         }
         if (lm.HasCape && Detail == 0)
         {
@@ -869,7 +895,14 @@ sealed partial class Puppet3D
             else EmitBone(lm.Shin, hip, foot, Vector3.UnitZ, 1f, lm.LegPat);
         }
 
-        EmitLocal(lm.Torso, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ, 1f, 1f, 1f, lm.TorsoPat);
+        EmitLocal(lm.Chest, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ, 1f, 1f, 1f, lm.ChestPat);
+        if (lm.Skirt.Length > 0) EmitLocal(lm.Skirt, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ, 1f, 1f, 1f, lm.SkirtPat);
+        if (Detail == 0)
+        {
+            if (lm.Shoulders.Length > 0) EmitLocal(lm.Shoulders, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ, 1f, 1f, 1f, lm.ShldPat);
+            if (lm.TabardPanel.Length > 0) EmitLocal(lm.TabardPanel, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ, 1f, 1f, 1f, MeshKit3D.PatQuilt);
+            if (lm.Belt.Length > 0) EmitLocal(lm.Belt, Vector3.Zero, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
+        }
         float hPitch = -22f * Ease.Out(k);
         Vector3 hU = RotX(Vector3.UnitY, hPitch), hF = RotX(Vector3.UnitZ, hPitch);
         if (!lm.FullEnclosedHelm && (Detail == 0 || lm.Helm.Length == 0))

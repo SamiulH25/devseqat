@@ -469,8 +469,8 @@ def build_limbs():
             (0, 1.06, 0, 0.072, 0.072, segs),
         ], mat_id=mat_id, cap_bot=False, cap_top=False, ao_y=(0.0, 1.0, 1.06, 0.84))
         if is_plate:
-            # Sculpted layered steel pauldron bell capping the shoulder!
-            ua.add_sphere((0, 0.10, 0.0), (0.145, 0.185, 0.142), segs=5, rings=3, mat_id=4, shade=(1.04, 1.05, 1.08), ao_y=(-0.08, 0.28, 1.08, 0.84))
+            # Sleek steel rerebrace shoulder cap (pairs seamlessly underneath modular shld_pauldrons_*!)
+            ua.add_sphere((0, 0.08, 0.0), (0.118, 0.145, 0.118), segs=5, rings=3, mat_id=4, shade=(1.02, 1.04, 1.08), ao_y=(-0.06, 0.24, 1.06, 0.84))
         parts.append(ua)
 
         fa = PartBuilder(f"farm_{mat_tag}")
@@ -800,7 +800,7 @@ def export_bin(all_parts):
                     rgba[0], rgba[1], rgba[2], rgba[3],
                 ))
     size_kb = os.path.getsize(path) / 1024.0
-    knight = sum(counts[k] for k in ["torso_plate", "head_0", "helm_sallet", "uarm_plate", "uarm_plate", "farm_plate", "farm_plate", "thigh_plate", "thigh_plate", "shin_plate", "shin_plate", "weapon_sword", "shield_heater"])
+    knight = sum(counts[k] for k in ["chest_plate", "shld_pauldrons_steel", "belt_leather", "skirt_fauld_steel", "head_0", "helm_sallet", "uarm_plate", "uarm_plate", "farm_plate", "farm_plate", "thigh_plate", "thigh_plate", "shin_plate", "shin_plate", "weapon_sword", "shield_heater"])
     horse = sum(counts[k] for k in ["horse_body_barded", "horse_neck_barded", "horse_head_barded", "horse_tail", "horse_leg_up", "horse_leg_up", "horse_leg_up", "horse_leg_up", "horse_leg_low", "horse_leg_low", "horse_leg_low", "horse_leg_low"])
     print(f"Exported {len(all_parts)} modular 3D parts ({total_tris} tris total, {size_kb:.1f} KB) -> {path}")
     print(f"  Detail 0 Knight: {knight} tris | Detail 0 Barded Horse: {horse} tris | Detail 2 LOD Foot: {counts['lod_foot']} tris | LOD Horse: {counts['lod_horse']} tris")
@@ -809,8 +809,10 @@ def export_bin(all_parts):
 def main():
     clear_scene()
     all_parts = []
-    for k in ("tunic", "mail", "plate", "robe"):
-        all_parts.append(build_torso(k))
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import build_meshes_armor
+    all_parts.extend(build_meshes_armor.build_modular_armors(PartBuilder))
     for st in range(4):
         all_parts.append(build_head(st))
     for hk in ("kettle", "sallet", "greathelm", "nasal", "spangen", "turban", "hood", "cap", "furcap"):
@@ -819,8 +821,6 @@ def main():
     all_parts.extend(build_weapons_and_shields())
     all_parts.extend(build_horse())
     all_parts.extend(build_lods())
-    import sys
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import build_meshes_phase2
     all_parts.extend(build_meshes_phase2.build_all(PartBuilder))
 

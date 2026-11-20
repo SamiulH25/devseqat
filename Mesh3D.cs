@@ -26,9 +26,11 @@ sealed class MeshKit3D
     /// Pre-resolved modular mesh references for one `Look` (zero string lookups during rendering!).
     public sealed class LookMeshes
     {
-        public required Vert[] Torso, Head, Helm, UArm, FArm, Thigh, Shin, Weapon, Shield;
+        public required Vert[] Chest, Shoulders, Belt, Skirt, TabardPanel;
+        public required Vert[] Head, Helm, UArm, FArm, Thigh, Shin, Weapon, Shield;
         public required bool FullEnclosedHelm, HasCape, HasPlume, HasShield, HasTabard;
-        public required byte TorsoPat, LimbPat, LegPat;
+        public required byte ChestPat, ShldPat, SkirtPat, LimbPat, LegPat;
+        public required byte BeltVarGroup, ShldVarGroup;
         public required string ShieldKind;
         public required bool WeaponEdgeZ, OffHandForward;
         public required float OffHandOffset, BladeReach;
@@ -53,6 +55,9 @@ sealed class MeshKit3D
     public Vert[] WyvernBody = Array.Empty<Vert>(), WyvernNeck = Array.Empty<Vert>(), WyvernHead = Array.Empty<Vert>();
     public Vert[] WyvernWing = Array.Empty<Vert>(), WyvernLeg = Array.Empty<Vert>(), WyvernTail = Array.Empty<Vert>(), WyvernSting = Array.Empty<Vert>();
     public Vert[] LodFoot = Array.Empty<Vert>(), LodHorse = Array.Empty<Vert>();
+    // Pre-cached modular belt & shoulder pools for zero-alloc per-soldier variety within regiments!
+    public Vert[][] BeltPoolLight = Array.Empty<Vert[]>(), BeltPoolHeavy = Array.Empty<Vert[]>(), BeltPoolNorth = Array.Empty<Vert[]>();
+    public Vert[][] ShldPoolKnight = Array.Empty<Vert[]>(), ShldPoolFoot = Array.Empty<Vert[]>();
 
     public static MeshKit3D? TryLoad()
     {
@@ -133,6 +138,11 @@ sealed class MeshKit3D
         kit.WyvernBody = kit.Get("wyvern_body"); kit.WyvernNeck = kit.Get("wyvern_neck"); kit.WyvernHead = kit.Get("wyvern_head");
         kit.WyvernWing = kit.Get("wyvern_wing"); kit.WyvernLeg = kit.Get("wyvern_leg"); kit.WyvernTail = kit.Get("wyvern_tail"); kit.WyvernSting = kit.Get("wyvern_sting");
         kit.LodFoot = kit.Get("lod_foot"); kit.LodHorse = kit.Get("lod_horse");
+        kit.BeltPoolLight = new[] { kit.Get("belt_leather"), kit.Get("belt_pouch"), kit.Get("belt_baldric") };
+        kit.BeltPoolHeavy = new[] { kit.Get("belt_leather"), kit.Get("belt_pouch"), kit.Get("belt_baldric"), kit.Get("belt_gilded") };
+        kit.BeltPoolNorth = new[] { kit.Get("belt_cross_straps"), kit.Get("belt_baldric"), kit.Get("belt_pouch") };
+        kit.ShldPoolKnight = new[] { kit.Get("shld_pauldrons_steel"), kit.Get("shld_pauldrons_fluted"), kit.Get("shld_gorget_steel") };
+        kit.ShldPoolFoot = new[] { kit.Get("shld_mail_aventail"), kit.Get("shld_gorget_steel") };
         return kit;
     }
 
@@ -153,21 +163,26 @@ sealed class MeshKit3D
             "ghoul" => "head_ghoul",
             _ => $"head_{(look.Visage >= 0 ? Variety.Parts(look.Visage).Style : 0)}",
         };
-        string torsoKey = MapTorso(look.Body);
+        var (chestKey, shldKey, beltKey, skirtKey, forceTabard, beltVar, shldVar) = MapArmorLayers(look.Body);
         string weaponKey = look.Weapon != "none" ? MapWeapon(look.Weapon) : "";
         string shieldKey = look.Shield != "none" ? MapShield(look.Shield) : "";
-        byte torsoPat = torsoKey switch
+        static byte LayerPat(string k) => k switch
         {
-            "torso_mail" => PatMail,
-            "torso_lamellar" or "torso_scale" => PatScale,
-            "torso_tunic" or "torso_brigandine" or "torso_deel" or "torso_kaftan" or "torso_robe" => PatQuilt,
-            "torso_plate" or "torso_plate_gilded" or "torso_breastplate" => PatBrushed,
+            "chest_mail" or "shld_mail_aventail" or "skirt_mail" => PatMail,
+            "chest_lamellar" or "chest_scale" or "shld_lamellar" or "shld_scale" or "skirt_lamellar" or "skirt_scale" => PatScale,
+            "chest_tunic" or "chest_surcoat" or "chest_brigandine" or "chest_robe" or "shld_collar_cloth" or "shld_cowl_cloth" or "skirt_tunic" or "skirt_deel" or "skirt_kaftan" or "skirt_tabard" => PatQuilt,
+            "chest_plate" or "chest_mirror" or "shld_gorget_steel" or "shld_pauldrons_steel" or "shld_pauldrons_gilded" or "shld_pauldrons_fluted" or "skirt_fauld_steel" or "skirt_fauld_gilded" => PatBrushed,
             _ => PatSmooth,
         };
         byte LimbPatOf(string tag) => tag switch { "mail" => PatMail, "plate" => PatBrushed, "cloth" => PatQuilt, _ => PatSmooth };
+        bool showTabardPanel = (forceTabard || look.Tabard) && chestKey != "chest_robe" && chestKey != "chest_bones" && skirtKey != "skirt_kaftan" && skirtKey != "skirt_deel" && chestKey != "chest_surcoat";
         var resolved = new LookMeshes
         {
-            Torso = Get(torsoKey),
+            Chest = Get(chestKey),
+            Shoulders = shldKey.Length > 0 ? Get(shldKey) : Array.Empty<Vert>(),
+            Belt = beltKey.Length > 0 ? Get(beltKey) : Array.Empty<Vert>(),
+            Skirt = skirtKey.Length > 0 ? Get(skirtKey) : Array.Empty<Vert>(),
+            TabardPanel = showTabardPanel ? Get("skirt_tabard") : Array.Empty<Vert>(),
             Head = Get(headKey),
             Helm = helmKey.Length > 0 ? Get(helmKey) : Array.Empty<Vert>(),
             UArm = Get($"uarm_{limbTag}"),
@@ -181,9 +196,13 @@ sealed class MeshKit3D
             HasPlume = look.Plume,
             HasShield = look.Shield != "none",
             HasTabard = look.Tabard,
-            TorsoPat = torsoPat,
+            ChestPat = LayerPat(chestKey),
+            ShldPat = LayerPat(shldKey),
+            SkirtPat = LayerPat(skirtKey),
             LimbPat = LimbPatOf(limbTag),
             LegPat = LimbPatOf(legTag),
+            BeltVarGroup = beltVar,
+            ShldVarGroup = shldVar,
             ShieldKind = shieldKey,
             WeaponEdgeZ = weaponKey is "weapon_scimitar" or "weapon_falchion" or "weapon_axe" or "weapon_warhammer" or "weapon_daneaxe" or "weapon_halberd" or "weapon_glaive" or "weapon_billhook",
             OffHandForward = weaponKey is "weapon_spear" or "weapon_pike" or "weapon_halberd" or "weapon_glaive" or "weapon_billhook",
@@ -210,21 +229,41 @@ sealed class MeshKit3D
         return lookCache[look] = resolved;
     }
 
-    static string MapTorso(string body) => body switch
+    /// Map every one of the 29+ body armor IDs to a curated 4-layer modular combo: (Chest, Shoulders, Belt, Skirt, TabardPanel, BeltVarGroup, ShldVarGroup).
+    static (string Chest, string Shld, string Belt, string Skirt, bool Tabard, byte BeltVar, byte ShldVar) MapArmorLayers(string body) => body switch
     {
-        "bones" => "torso_bones",
-        "plate_gilded" => "torso_plate_gilded",
-        "breastplate" or "mirror" or "plate_fluted" => "torso_breastplate",
-        "plate" or "plate_surcoat" => "torso_plate",
-        "brigandine" or "brigandine_gilded" or "coatofplates" => "torso_brigandine",
-        "plate_fur" or "mail_fur" or "gambeson_fur" or "fur" => "torso_fur",
-        "lamellar" or "lamellar_gilded" or "lamellar_dark" => "torso_lamellar",
-        "scale" or "scale_iron" => "torso_scale",
-        "deel" or "deel_fur" => "torso_deel",
-        "kaftan" or "burnous" => "torso_kaftan",
-        "mail" or "mail_hauberk" => "torso_mail",
-        "robe" or "shroud" => "torso_robe",
-        _ => "torso_tunic",
+        "bones"             => ("chest_bones", "", "", "", false, 0, 0),
+        "robe"              => ("chest_robe", "shld_cowl_cloth", "belt_stole", "", false, 0, 0),
+        "shroud"            => ("chest_robe", "shld_linen_shawl", "belt_sash_dark", "", false, 0, 0),
+        "plate_gilded"      => ("chest_plate", "shld_pauldrons_gilded", "belt_gilded", "skirt_fauld_gilded", true, 0, 0),
+        "plate_fluted"      => ("chest_plate", "shld_pauldrons_fluted", "belt_baldric", "skirt_fauld_steel", false, 2, 0),
+        "plate_surcoat"     => ("chest_surcoat", "shld_pauldrons_steel", "belt_leather", "skirt_fauld_steel", true, 2, 1),
+        "plate_fur"         => ("chest_plate", "shld_fur_mantle", "belt_cross_straps", "skirt_fauld_steel", false, 3, 0),
+        "plate"             => ("chest_plate", "shld_pauldrons_steel", "belt_leather", "skirt_fauld_steel", true, 2, 1),
+        "breastplate"       => ("chest_plate", "shld_gorget_steel", "belt_pouch", "skirt_tunic", false, 1, 2),
+        "mirror"            => ("chest_mirror", "shld_lamellar", "belt_sash_dark", "skirt_mail", false, 0, 0),
+        "brigandine_gilded" => ("chest_brigandine", "shld_pauldrons_gilded", "belt_gilded", "skirt_fauld_gilded", false, 0, 0),
+        "brigandine"        => ("chest_brigandine", "shld_pauldrons_steel", "belt_leather", "skirt_mail", false, 1, 2),
+        "coatofplates"      => ("chest_brigandine", "shld_mail_aventail", "belt_baldric", "skirt_tunic", false, 1, 2),
+        "mail_hauberk"      => ("chest_mail", "shld_mail_aventail", "belt_baldric", "skirt_mail", false, 1, 0),
+        "mail_fur"          => ("chest_mail", "shld_fur_mantle", "belt_cross_straps", "skirt_mail", false, 3, 0),
+        "mail"              => ("chest_surcoat", "shld_mail_aventail", "belt_pouch", "skirt_mail", false, 1, 0),
+        "lamellar_gilded"   => ("chest_lamellar", "shld_pauldrons_gilded", "belt_gilded", "skirt_lamellar", false, 0, 0),
+        "lamellar_dark"     => ("chest_scale", "shld_lamellar", "belt_sash_dark", "skirt_mail", false, 0, 0),
+        "lamellar"          => ("chest_lamellar", "shld_lamellar", "belt_sash_dark", "skirt_lamellar", false, 0, 0),
+        "scale_iron"        => ("chest_scale", "shld_gorget_steel", "belt_pouch", "skirt_fauld_steel", false, 1, 0),
+        "scale"             => ("chest_scale", "shld_scale", "belt_baldric", "skirt_scale", false, 1, 0),
+        "fur"               => ("chest_leather", "shld_fur_mantle", "belt_cross_straps", "skirt_tunic", false, 3, 0),
+        "gambeson_fur"      => ("chest_tunic", "shld_fur_mantle", "belt_pouch", "skirt_tunic", false, 3, 0),
+        "deel_fur"          => ("chest_tunic", "shld_fur_mantle", "belt_sash_trim", "skirt_deel", false, 0, 0),
+        "deel"              => ("chest_tunic", "shld_fur_collar", "belt_sash_trim", "skirt_deel", false, 0, 0),
+        "kaftan"            => ("chest_tunic", "shld_linen_shawl", "belt_sash_trim", "skirt_kaftan", false, 0, 0),
+        "burnous"           => ("chest_tunic", "shld_linen_shawl", "belt_sash_dark", "skirt_kaftan", false, 0, 0),
+        "jupon"             => ("chest_surcoat", "shld_gorget_steel", "belt_gilded", "skirt_tunic", false, 0, 0),
+        "leather"           => ("chest_leather", "", "belt_baldric", "skirt_tunic", false, 1, 0),
+        "rags"              => ("chest_leather", "", "belt_leather", "skirt_tunic", false, 0, 0),
+        "gambeson"          => ("chest_tunic", "shld_collar_cloth", "belt_pouch", "skirt_tunic", false, 1, 0),
+        _                   => ("chest_tunic", "", "belt_leather", "skirt_tunic", false, 1, 0),
     };
 
     static string MapLimb(string gear) => gear switch
