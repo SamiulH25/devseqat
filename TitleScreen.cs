@@ -63,14 +63,21 @@ sealed partial class TitleScreen
 
     int U(float v) => ui.U(v);
 
-    public void Draw()
+    /// Start a frame of the picture (the title, the loading screen).
+    void BeginPicture()
     {
         var gd = host.GraphicsDevice;
-        creator.Prepare(lastDt); // the living captain, drawn to its texture before the frame's sprites begin
         gd.Clear(Kit.Night);
         ui.Begin(gd.Viewport, ms.Position, click);
         click = false;
         if (Settings.Current.UiScale == 0 && ui.S == 1 && ui.H >= 1000) ui.S = 2; // the title is a picture: draw it large, as the creator does
+    }
+
+    public void Draw()
+    {
+        if (titleShots != null && shotFrames >= 14) { DrawLoading("SHAPING THE LAND AND ITS REALMS"); TitleShot(); return; }
+        creator.Prepare(lastDt); // the living captain, drawn to its texture before the frame's sprites begin
+        BeginPicture();
         var save = Card();
         Scene();
         if (creator.Open)
@@ -124,7 +131,8 @@ sealed partial class TitleScreen
     }
 
     /// A sword laid under the name, hilt to the left: pommel, grip, cross and a long blade tapering to its point.
-    void Sword(int x, int y, int w)
+    /// `lit` under 1 (the loading screen) leaves the blade past that share of its length in cold iron, a flare where the light ends.
+    void Sword(int x, int y, int w, float lit = 1)
     {
         int u = Math.Max(1, U(1));
         var steel = new Color(206, 212, 222); var shade = new Color(128, 136, 152);
@@ -135,17 +143,27 @@ sealed partial class TitleScreen
         ui.Rect(new Rectangle(x + U(31), y - U(11), U(5), U(23)), Kit.GiltDark);
         ui.Rect(new Rectangle(x + U(31), y - U(11), U(3), U(22)), Kit.Gilt);
         ui.Rect(new Rectangle(x + U(31), y - U(11), U(5), U(2)), new Color(255, 232, 160));
-        int bx = x + U(36), bw = w - U(36), tip = U(22);
-        ui.Rect(new Rectangle(bx, y - U(3), bw - tip, U(3)), steel);
-        ui.Rect(new Rectangle(bx, y, bw - tip, U(3)), shade);
-        ui.Rect(new Rectangle(bx, y - U(3), bw - tip, u), Color.White * 0.8f);
-        ui.Rect(new Rectangle(bx + U(4), y - u / 2, (bw - tip) * 3 / 4, u), new Color(86, 92, 108));
-        for (int i = 0; i < 3; i++) // the point, narrowing in three steps
+        int bx = x + U(36), bw = w - U(36), tip = U(22), body = bx + bw - tip;
+        // The blade from `from` on to its point.
+        void Blade(int from, Color top, Color under, Color edge, Color fuller)
         {
-            int h = U(2 - i) + (i == 2 ? u : 0), sx = bx + bw - tip + i * tip / 3;
-            ui.Rect(new Rectangle(sx, y - h, tip / 3, h), steel);
-            ui.Rect(new Rectangle(sx, y, tip / 3, h), shade);
+            void Run(int x0, int x1, int ry, int rh, Color c) { x0 = Math.Max(x0, from); if (x1 > x0) ui.Rect(new Rectangle(x0, ry, x1 - x0, rh), c); }
+            Run(bx, body, y - U(3), U(3), top);
+            Run(bx, body, y, U(3), under);
+            Run(bx, body, y - U(3), u, edge);
+            Run(bx + U(4), bx + U(4) + (bw - tip) * 3 / 4, y - u / 2, u, fuller);
+            for (int i = 0; i < 3; i++) // the point, narrowing in three steps
+            {
+                int h = U(2 - i) + (i == 2 ? u : 0), sx = body + i * tip / 3;
+                Run(sx, sx + tip / 3, y - h, h, top);
+                Run(sx, sx + tip / 3, y, h, under);
+            }
         }
+        Blade(bx, steel, shade, Color.White * 0.8f, new Color(86, 92, 108));
+        if (lit >= 1) return;
+        int head = bx + (int)(bw * Math.Clamp(lit, 0, 1));
+        Blade(head, new Color(58, 62, 76), new Color(36, 40, 52), new Color(84, 90, 106), new Color(24, 26, 34));
+        Flare(head, y);
     }
 
     /// Text with its letters set apart by `gap` pixels.
@@ -216,11 +234,13 @@ sealed partial class TitleScreen
         ui.Icon("shield", tx + U(124), c.Y + U(31), Style.Dim, 1); ui.Text($"{save.Men} MEN", tx + U(136), c.Y + U(31), Style.Text, 1);
     }
 
-    /// The title as one PNG (IRONFIELD_TITLE_SHOTS), then quit.
+    /// The title as one PNG and the loading screen, part done, as another (IRONFIELD_TITLE_SHOTS), then quit.
     void TitleShot()
     {
         if (++shotFrames == 10) PendingShot = "title";
-        if (shotFrames > 12 && PendingShot == null) host.Exit();
+        if (shotFrames == 14) { BeginLoading("A NEW CAMPAIGN"); loadBar = 0.62f; }
+        if (shotFrames == 24) PendingShot = "loading";
+        if (shotFrames > 26 && PendingShot == null) host.Exit();
     }
 
     /// The creator's steps one by one as PNGs (IRONFIELD_CREATOR_SHOTS), with a made-up captain, then quit.

@@ -49,10 +49,11 @@ sealed partial class TitleScreen
     static float Tri(float a) { a -= MathF.Floor(a); return 1 - MathF.Abs(2 * a - 1); }
     void R(float x, float y, float w, float h, Color c) => ui.Rect(new Rectangle((int)x, (int)y, Math.Max(1, (int)w), Math.Max(1, (int)h)), c);
 
-    void Scene()
+    /// `pan` slides the eye to the right by that many pixels on the near ridge (the loading screen drifts along the march).
+    void Scene(float pan = 0)
     {
         u = Math.Max(1, U(1));
-        lean = Ui.Instant ? 0 : (ms.X / (float)Math.Max(1, ui.W) - 0.5f) * Q(18);
+        lean = Ui.Instant ? 0 : (ms.X / (float)Math.Max(1, ui.W) - 0.5f) * Q(18) + pan;
         PaintSky();
         ui.Stars(new Rectangle(0, 0, ui.W, (int)(ui.H * 0.46f)), time, 120);
         ShootingStar();

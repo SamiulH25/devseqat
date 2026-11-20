@@ -824,8 +824,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Replay** (class, L8): Serialize:77, Deserialize:78, Save:82, Play:89, Matches:139, Run:142
 - **Battle** (class, L156): StartRecording:163, RecordFrame:168, FinishRecording:208
 
-## ScreenHost.cs (900 lines)
-- **ScreenHost** (class, L9): readonly:42, ScreenHost:58, ApplyVideo:78, OpenSettings:88, LoadContent:90, StartCampaign:139, Load:165, FinishLoading:180, DrawLoading:198, ContinueCampaign:223, OpenLab:234, QuickBattle:236, StartCampaignBattle:243, FinishCampaignBattle:253, CycleQuality:261, Update:265, DrawCursor:321, Draw:341, Fade:382, CaptureShot:412, readonly:440, RestoreTavernTown:452, StagingRefused:459, CampaignShots:465
+## ScreenHost.cs (882 lines)
+- **ScreenHost** (class, L9): readonly:42, ScreenHost:58, ApplyVideo:78, OpenSettings:88, LoadContent:90, StartCampaign:139, Load:166, FinishLoading:182, ContinueCampaign:204, OpenLab:215, QuickBattle:217, StartCampaignBattle:224, FinishCampaignBattle:234, CycleQuality:242, Update:246, DrawCursor:303, Draw:323, Fade:364, CaptureShot:394, readonly:422, RestoreTavernTown:434, StagingRefused:441, CampaignShots:447
 
 ## SelfTest.cs (103 lines)
 - **SelfTest** (class, L6): Run:14, Slots:20, ResolveBattles:32, RunOne:55, Lancer:63, Run:72, Scaled:74, MakeWanderer:77, Days:85, Ids:97, Check:99
@@ -982,11 +982,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tips.cs (69 lines)
 - **Tips** (class, L6): Show:14, Dismiss:28, Draw:38, Lines:48, Height:50, DrawAt:53, Card:61
 
-## TitleScreen.cs (265 lines)
-- **TitleScreen** (class, L8): SaveCard:29, TitleScreen:31, Update:45, U:64, Draw:66, Logo:99, Sword:127, Spaced:152, Menu:158, Company:206, TitleShot:220, Shots:227, Card:241, Fit:264
+## TitleScreen.cs (285 lines)
+- **TitleScreen** (class, L8): SaveCard:29, TitleScreen:31, Update:45, U:64, BeginPicture:67, Draw:76, Logo:106, Sword:135, Spaced:170, Menu:176, Company:224, TitleShot:238, Shots:247, Card:261, Fit:284
 
-## TitleScreen.Scene.cs (486 lines)
-- **TitleScreen** (class, L8): readonly:10, Q:48, Tri:49, R:50, Scene:52, PaintSky:84, Sun:97, Streak:112, Clouds:124, ShootingStar:141, Flock:154, FarY:171, CragY:180, MidY:188, NearY:194, FrontY:201, Foreground:208, Layer:225, Haze:237, Castle:245, Flag:281, Pines:297, Hamlet:310, Column:338, Man:358, Horse:405, Rider:425, Wagon:454, Grass:464, Embers:476
+## TitleScreen.Scene.cs (487 lines)
+- **TitleScreen** (class, L8): readonly:10, Q:48, Tri:49, R:50, Scene:53, PaintSky:85, Sun:98, Streak:113, Clouds:125, ShootingStar:142, Flock:155, FarY:172, CragY:181, MidY:189, NearY:195, FrontY:202, Foreground:209, Layer:226, Haze:238, Castle:246, Flag:282, Pines:298, Hamlet:311, Column:339, Man:359, Horse:406, Rider:426, Wagon:455, Grass:465, Embers:477
 
 ## Troops.cs (337 lines)
 - **Troops** (class, L7): Has:14, Get:15, HasMount:16, Mount:17, Path:53, Load:63, Validate:93, WorseUpgrade:140, Tree:154

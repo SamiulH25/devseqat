@@ -158,20 +158,22 @@ sealed class ScreenHost : Game
 
     Task<(Campaign C, MapScreen.Prepared P)>? loading;
     volatile string loadStage = "";
-    string loadTitle = "";
-    float loadSince;
+    // The share of the work behind us once the stage now running ends: the loading screen's blade creeps toward it.
+    volatile float loadGoal;
 
-    /// Make a campaign and its map terrain off the main thread while the loading screen shows; `Update` opens it when done.
+    /// Make a campaign and its map terrain off the main thread while the loading screen shows (`TitleScreen.Loading.cs`);
+    /// `Update` opens it when done.
     void Load(string what, Func<Campaign> make)
     {
-        loadTitle = what;
         loadStage = "";
-        loadSince = Ui.Now;
+        loadGoal = 0.6f;
+        title.BeginLoading(what);
         mode = Mode.Loading;
         loading = Task.Run(() =>
         {
             var c = make();
             loadStage = "RAISING THE HILLS AND RIVERS";
+            loadGoal = 0.95f;
             return (c, MapScreen.Prepare(c));
         });
     }
@@ -192,27 +194,6 @@ sealed class ScreenHost : Game
         campaign = task.Result.C;
         map.Open(campaign, task.Result.P);
         mode = Mode.Map;
-    }
-
-    /// The loading screen: the game's name, what is being made, a gilt bar that sweeps while it works.
-    void DrawLoading()
-    {
-        GraphicsDevice.Clear(new Color(14, 12, 10));
-        var ui = fadeUi;
-        ui.Begin(GraphicsDevice.Viewport, Point.Zero, false);
-        float t = Ui.Now - loadSince;
-        int cx = ui.W / 2, y = ui.H / 2 - ui.U(40);
-        ui.TextC("IRONFIELD", cx, y, Kit.Gilt, 4);
-        ui.TextC(loadTitle, cx, y + ui.U(42), Kit.Parchment, 2);
-        int w = ui.U(260), h = Math.Max(2, ui.U(3)), by = y + ui.U(70);
-        ui.Rect(new Rectangle(cx - w / 2, by, w, h), Kit.Gilt * 0.18f);
-        float sweep = (t * 0.55f) % 1f, seg = 0.28f;
-        int x0 = (int)(cx - w / 2 + w * Math.Clamp(sweep * (1 + seg) - seg, 0, 1)), x1 = (int)(cx - w / 2 + w * Math.Clamp(sweep * (1 + seg), 0, 1));
-        ui.Rect(new Rectangle(x0, by, Math.Max(0, x1 - x0), h), Kit.Gilt);
-        string stage = loadStage;
-        int dots = (int)(t * 2.5f) % 4;
-        if (stage != "") ui.TextC(stage + new string('.', dots) + new string(' ', 3 - dots), cx, by + ui.U(14), Kit.Parchment * 0.7f, 1);
-        ui.End();
     }
 
     /// A message for the title screen (why a save would not load).
@@ -300,7 +281,8 @@ sealed class ScreenHost : Game
             case Mode.Loading:
                 IsMouseVisible = true;
                 Audio?.Beds(0.4f, 0, 0);
-                if (loading is { IsCompleted: true }) FinishLoading();
+                // The work done, the blade's light runs out to the point (about a third of a second), then the map opens.
+                if (title.Loading(dt, loading is { IsCompleted: true } ? 1 : loadGoal)) FinishLoading();
                 break;
             default: battle.Update(dt); break;
         }
@@ -351,7 +333,7 @@ sealed class ScreenHost : Game
         {
             case Mode.Title: title.Draw(); break;
             case Mode.Lab: lab.Draw(); break;
-            case Mode.Loading: DrawLoading(); break;
+            case Mode.Loading: title.DrawLoading(loadStage); break;
             case Mode.Map:
                 try { map.Draw(Quality); }
                 catch (Exception e) when (Quality != Quality.Low)

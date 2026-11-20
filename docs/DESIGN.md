@@ -185,6 +185,10 @@ All widgets are extension methods on `Ui` in `UiKit.cs` (the UI lab, F3 on the t
 - **Title:** the dusk scene; down the left the name in bevelled gilt blocks over a sword, the menu as plain rows on a gilt spine
   (the chosen row takes a gold wash and an arrowhead; mouse, or W/S and Enter), and a card for the last save (captain, service,
   day, purse, men). With the scale on AUTO it draws at x2 from 1000 lines up, as the creator does.
+- **Loading:** the title's picture carries on, the eye drifting along the march. The name stays; the sword under it is the
+  measure of the work: the blade takes the light from the hilt out, the rest cold iron, sparks where the light ends. Under it
+  the load's name and the stage now running; where the menu stood, a scroll unrolls with one word of counsel (a rule of the
+  game, never a key). The work done, the light runs out to the point (a third of a second) and the map opens.
 - **Party (P), the muster roll:** a card per company with its stacks to promote and its moves; open slots; the captain down
   the right. **Skills (K), the captain sheet:** the captain, a ring and a perk branch per skill, the record.
   **Realm (R):** a card per realm, the relations grid and the chronicle; the career ladder and your acts on a second tab.
