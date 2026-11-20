@@ -314,8 +314,8 @@ partial class BattleScreen
     {
         ("recruits", 0, new[] { "town_crossbows", "crown_squires", "commons_bowmen", "hobilars", "hunters", "fell_riders", "herd_boys", "herd_riders", "militia_crossbows", "light_horse" }),
         ("sunward-branches", 5, new[] { "slingers", "storm_slingers", "camel_scouts", "camel_guard", "naffatun", "sun_fire", "dervishes", "sword_dancers" }),
-        ("steppe-league-branches", 6, new[] { "steppe_lancers", "ironclad_khans", "wolf_runners", "noyan_guard", "marines", "admirals_guard", "lagoon_wall", "captains_of_fortune" }),
-        ("order-wild-branches", 8, new[] { "pilgrim_bows", "pilgrim_riders", "hammer_brothers", "ashen_hammers", "chapter_turcopoles", "goblin_warlord", "wight", "death_knight" }),
+        ("steppe-league-branches", 6, new[] { "steppe_lancers", "khans_lancers", "wolf_runners", "noyan_guard", "marines", "admirals_guard", "lagoon_wall", "captains_of_fortune" }),
+        ("order-wild-branches", 8, new[] { "pilgrim_bows", "pilgrim_riders", "hammer_brothers", "hammers_of_the_sun", "chapter_turcopoles", "goblin_warlord", "wight", "death_knight" }),
     };
 
     static readonly (string Name, int Palette, string[] Troops)[] NewRealms =
