@@ -66,7 +66,7 @@ sealed class SettingsScreen
         int y = body.Y;
         void Label(string t) => ui.Text(t, body.X, y + ui.U(6), Style.Text);
         bool Choice(int i, string label, bool on) => ui.Button(new Rectangle(body.X + ui.U(260) + i * ui.U(124), y, ui.U(118), ui.U(26)), label, true, "", on);
-        void Row() => y += ui.U(34);
+        void Row() => y += ui.U(tab == "VIDEO" ? 31 : 34);
 
         switch (tab)
         {
@@ -86,6 +86,12 @@ sealed class SettingsScreen
                 Label("GRAPHICS");
                 foreach (var (q, i) in new[] { (Quality.High, 0), (Quality.Medium, 1), (Quality.Low, 2) })
                     if (Choice(i, q.ToString().ToUpperInvariant(), host.Quality == q) && (host.Shading != null || q == Quality.Low)) host.Quality = q;
+                Row();
+                Label("3D PIXEL ART");
+                bool can3D = host.Shading != null && host.MeshKit != null && host.Quality != Quality.Low;
+                if (Choice(0, "OFF", !s.PixelArt || !can3D)) s.PixelArt = false;
+                for (int ps = 1; ps <= 3; ps++)
+                    if (Choice(ps, $"{ps}X", can3D && s.PixelArt && s.PixelScale == ps) && can3D) { s.PixelArt = true; s.PixelScale = ps; }
                 Row();
                 Label("VSYNC");
                 if (Choice(0, "OFF", !s.VSync)) { s.VSync = false; host.ApplyVideo(); }

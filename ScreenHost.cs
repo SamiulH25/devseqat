@@ -12,6 +12,7 @@ sealed class ScreenHost : Game
     public Art Art = null!;
     public PixelFont Font = null!;
     public Shading? Shading;
+    public MeshKit3D? MeshKit;
     public readonly Controls Ctl = Controls.Load();
     GpuReport? gpuReport;
     public Quality Quality = Enum.TryParse<Quality>(Settings.Current.Quality, out var q0) ? q0 : Quality.High;
@@ -102,11 +103,7 @@ sealed class ScreenHost : Game
             Art.Atlas.SaveAsPng(file, Art.Atlas.Width, Art.Atlas.Height);
         }
 
-        if (Environment.GetEnvironmentVariable("IRONFIELD_TROOPS") is { Length: > 0 } troopDir)
-        {
-            TroopSheet.Write(GraphicsDevice, Art, troopDir); // debug: every troop as a transparent PNG
-            Environment.Exit(0);
-        }
+
         Font = new PixelFont(GraphicsDevice);
         SettingsPanel = new SettingsScreen(this); // needs Sb and Font
         fadeUi = new Ui(Sb, Art, Font);
@@ -114,6 +111,12 @@ sealed class ScreenHost : Game
         string? shaderError = null;
         try { Shading = new Shading(GraphicsDevice); }
         catch (Exception e) { Console.WriteLine("shaders unavailable: " + e.Message); Quality = Quality.Low; shaderError = e.Message; }
+        MeshKit = MeshKit3D.TryLoad();
+        if (Environment.GetEnvironmentVariable("IRONFIELD_TROOPS") is { Length: > 0 } troopDir)
+        {
+            TroopSheet.Write(GraphicsDevice, Art, Shading, MeshKit, troopDir); // debug: every troop as a transparent PNG
+            Environment.Exit(0);
+        }
         if (Environment.GetEnvironmentVariable("IRONFIELD_ANIM") is { Length: > 0 } animDir)
         {
             AnimSheet.Write(GraphicsDevice, Art, Shading, animDir, Environment.GetEnvironmentVariable("IRONFIELD_ANIM_ONLY") ?? ""); // debug: the animation strips
@@ -134,7 +137,7 @@ sealed class ScreenHost : Game
         battle.Load();
         battle.OnCampaignBattleOver = FinishCampaignBattle;
         battle.OnTitle = () => mode = Mode.Title;
-        map = new MapScreen(GraphicsDevice, Sb, Art, Font, Shading, Ctl) { OnBattle = StartCampaignBattle, OnTitle = () => mode = Mode.Title, OnSettings = OpenSettings };
+        map = new MapScreen(GraphicsDevice, Sb, Art, Font, Shading, MeshKit, Ctl) { OnBattle = StartCampaignBattle, OnTitle = () => mode = Mode.Title, OnSettings = OpenSettings };
         map.OnLoadSave = LoadSave;
         title = new TitleScreen(this);
         lab = new UiLab(this) { OnBack = () => mode = Mode.Title };

@@ -74,7 +74,7 @@ sealed class AnimSheet
             else if (k >= 0.75f) { u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - (k - 0.75f) * 4); } }, Span: 1.2f),
     };
 
-    record ShowcaseItem(string Label, string Body, string Legs, string Head, int Palette, bool Tabard = false, string Face = "man");
+    record ShowcaseItem(string Label, string Body, string Legs, string Head, int Palette, bool Tabard = false, string Face = "man", string Shield = "none", string Weapon = "none", bool Plume = false, bool Cape = false);
 
     static readonly ShowcaseItem[] Armors =
     {
@@ -164,7 +164,15 @@ sealed class AnimSheet
         sheet.RenderGrid(Armors, cols: 6, halfW: 100, halfH: 122, camYaw: 0.18f, dist: 3.85f, targetY: 0.96f, eyeLift: 0.45f, Path.Combine(dir, "body_armor_front_raw.png"));
         sheet.RenderGrid(Armors, cols: 6, halfW: 100, halfH: 122, camYaw: 0.78f, dist: 3.85f, targetY: 0.96f, eyeLift: 0.45f, Path.Combine(dir, "body_armor_3q_raw.png"));
         sheet.RenderGrid(Helms, cols: 7, halfW: 88, halfH: 96, camYaw: 0.32f, dist: 2.35f, targetY: 1.54f, eyeLift: 0.22f, Path.Combine(dir, "helmets_raw.png"));
-        Console.WriteLine($"Armor ({Armors.Length}) & Helmet ({Helms.Length}) showcase -> {dir}");
+        var factionItems = new List<ShowcaseItem>();
+        // 5 rows (armor tiers) x 9 columns (all 9 factions: Azure..Ashen Sun)!
+        for (int p = 0; p < Style.Sides.Length; p++) factionItems.Add(new(Style.Sides[p].Name, "gambeson", "cloth", "kettle", p, Shield: "round", Weapon: "spear"));
+        for (int p = 0; p < Style.Sides.Length; p++) factionItems.Add(new(Style.Sides[p].Name, "mail", "mail", "nasal", p, Tabard: true, Shield: "heater", Weapon: "sword"));
+        for (int p = 0; p < Style.Sides.Length; p++) factionItems.Add(new(Style.Sides[p].Name, "brigandine", "mail", "sallet", p, Weapon: "halberd"));
+        for (int p = 0; p < Style.Sides.Length; p++) factionItems.Add(new(Style.Sides[p].Name, "plate", "plate", "greathelm", p, Tabard: true, Shield: "heater", Weapon: "sword", Plume: true, Cape: true));
+        for (int p = 0; p < Style.Sides.Length; p++) factionItems.Add(new(Style.Sides[p].Name, "plate_fluted", "plate", "armet", p, Weapon: "greatsword"));
+        sheet.RenderGrid(factionItems.ToArray(), cols: Style.Sides.Length, halfW: 86, halfH: 108, camYaw: 0.45f, dist: 4.15f, targetY: 1.00f, eyeLift: 0.55f, Path.Combine(dir, "factions_raw.png"));
+        Console.WriteLine($"Armor ({Armors.Length}), Helmet ({Helms.Length}) & Factions ({Style.Sides.Length}x5) showcase -> {dir}");
     }
 
     void RenderGrid(ShowcaseItem[] items, int cols, int halfW, int halfH, float camYaw, float dist, float targetY, float eyeLift, string path)
@@ -187,7 +195,7 @@ sealed class AnimSheet
         {
             int row = i / cols, col = i % cols;
             var it = items[i];
-            var look = new Look(it.Head, it.Body, it.Legs, "boots", "gloves", "none", "none", false, false, it.Tabard, it.Face, 1);
+            var look = new Look(it.Head, it.Body, it.Legs, "boots", "gloves", it.Shield, it.Weapon, it.Plume, it.Cape, it.Tabard, it.Face, 1);
             var ut = new UnitType { Id = "showcase", Class = UnitClass.Infantry, Size = 1f, Look = look };
             var u = new Unit { Index = 11, Palette = it.Palette, Coat = 1, Type = ut, Facing = Facing, ViewFacing = Facing, Heading = Facing, ViewHeading = Facing, EnemyDist = 20 };
 

@@ -12,10 +12,14 @@ sealed class CreatorStage
     public enum Act { Stand, March, Leave, Drill, Guard, Ride, Charge, Shoot, Turn, Salute }
 
     readonly GraphicsDevice gd;
+    readonly Shading? shading;
+    readonly Func<Quality>? qualityOf;
     readonly Puppet puppet;
+    readonly Puppet3D? puppet3D;
     readonly Verts<VertexPositionColorTexture> sprites = new();
+    readonly Verts<VertexPNCT> units3D = new();
     readonly AlphaTestEffect fx;
-    RenderTarget2D? rt;
+    RenderTarget2D? rt, rtCol, rtNd;
     readonly Unit u = new() { IsPlayer = true, Index = 1, Coat = 2 };
     Act act = Act.Stand;
     float clock, react, beatLeft;
@@ -38,10 +42,13 @@ sealed class CreatorStage
     public Vector2 Feet;
     public float ShadowW;
 
-    public CreatorStage(GraphicsDevice gd, Art art)
+    public CreatorStage(GraphicsDevice gd, Art art, Shading? shading = null, MeshKit3D? meshKit = null, Func<Quality>? qualityOf = null)
     {
         this.gd = gd;
+        this.shading = shading;
+        this.qualityOf = qualityOf;
         puppet = new Puppet(art, sprites);
+        if (meshKit != null) puppet3D = new Puppet3D(meshKit, units3D) { ExactLook = true };
         fx = new AlphaTestEffect(gd) { Texture = art.Atlas, VertexColorEnabled = true, AlphaFunction = CompareFunction.Greater, ReferenceAlpha = 128 };
     }
 
@@ -62,30 +69,74 @@ sealed class CreatorStage
         clock += dt;
         react = MathF.Max(0, react - dt);
         Perform(dt);
-        Camera(dt, w / (float)h, out var view, out var proj);
+        Camera(dt, w / (float)h, out var view, out var proj, out var eye);
 
-        sprites.N = 0;
-        puppet.Now = clock;
-        puppet.Winner = Cheering ? 0 : -1;
-        puppet.Begin(view);
-        puppet.Draw(u, 0);
         var feet = new Viewport(0, 0, w, h).Project(Vector3.Zero, proj, view, Matrix.Identity);
         var side = new Viewport(0, 0, w, h).Project(new Vector3(u.Mounted ? 1.4f : 0.45f, 0, 0), proj, view, Matrix.Identity);
         Feet = new Vector2(feet.X, feet.Y);
         ShadowW = MathF.Max(8, MathF.Abs(side.X - feet.X) * 2);
 
+        bool do3D = shading != null && puppet3D != null && Settings.Current.EffectivePixelArt && (qualityOf?.Invoke() ?? Quality.High) != Quality.Low;
         var keep = gd.GetRenderTargets();
-        gd.SetRenderTarget(rt);
-        gd.Clear(Color.Transparent);
-        if (sprites.N > 0)
+        if (do3D)
         {
-            gd.BlendState = BlendState.Opaque;
-            gd.DepthStencilState = DepthStencilState.Default;
-            gd.RasterizerState = RasterizerState.CullNone;
-            gd.SamplerStates[0] = SamplerState.PointClamp;
-            fx.World = Matrix.Identity; fx.View = view; fx.Projection = proj;
-            fx.CurrentTechnique.Passes[0].Apply();
-            sprites.Draw(gd, PrimitiveType.TriangleList, sprites.N / 3);
+            int pScale = Settings.Current.EffectivePixelScale;
+            int hw = Math.Max(8, w / pScale), hh = Math.Max(8, h / pScale);
+            if (rtCol == null || rtNd == null || rtCol.Width != hw || rtCol.Height != hh)
+            {
+                rtCol?.Dispose(); rtNd?.Dispose();
+                rtCol = new RenderTarget2D(gd, hw, hh, false, SurfaceFormat.Color, DepthFormat.Depth24, 0, RenderTargetUsage.PreserveContents);
+                rtNd = new RenderTarget2D(gd, hw, hh, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            }
+            Sky.Set(new Weather(13, 0, 0));
+            units3D.N = 0;
+            puppet3D!.Now = clock;
+            puppet3D.Winner = Cheering ? 0 : -1;
+            puppet3D.Detail = 0;
+            puppet3D.BeginCamera(view);
+            puppet3D.TryDraw(u, 0);
+
+            gd.SetRenderTarget(rtNd);
+            gd.Clear(Color.Transparent);
+            gd.SetRenderTarget(rtCol);
+            gd.Clear(Color.Transparent);
+            if (units3D.N > 0)
+            {
+                gd.SetRenderTargets(rtCol, rtNd);
+                gd.BlendState = BlendState.Opaque;
+                gd.DepthStencilState = DepthStencilState.Default;
+                gd.RasterizerState = RasterizerState.CullNone;
+                shading!.Setup(shading.Unit3D, view * proj, eye, clock, false, 0.45f);
+                var toCam = Vector3.Normalize(eye - new Vector3(0, camY, 0));
+                var camRight = Vector3.Normalize(Vector3.Cross(Vector3.Up, toCam));
+                var keyDir = -Vector3.Normalize(toCam * 0.78f - camRight * 0.42f + Vector3.Up * 0.52f);
+                shading.Unit3D.Parameters["SunDir"].SetValue(keyDir);
+                shading.Unit3D.Parameters["View"].SetValue(view);
+                shading.Unit3D.CurrentTechnique = shading.Unit3D.Techniques["Unit3D"];
+                shading.Unit3D.CurrentTechnique.Passes[0].Apply();
+                units3D.Draw(gd, PrimitiveType.TriangleList, units3D.N / 3);
+            }
+            shading!.PixelPostTo(rt, rtCol, rtNd, pScale, Vector3.One, outlineCfg: new Vector4(0.95f, 0.85f, 0.90f, 1f));
+        }
+        else
+        {
+            sprites.N = 0;
+            puppet.Now = clock;
+            puppet.Winner = Cheering ? 0 : -1;
+            puppet.Begin(view);
+            puppet.Draw(u, 0);
+            gd.SetRenderTarget(rt);
+            gd.Clear(Color.Transparent);
+            if (sprites.N > 0)
+            {
+                gd.BlendState = BlendState.Opaque;
+                gd.DepthStencilState = DepthStencilState.Default;
+                gd.RasterizerState = RasterizerState.CullNone;
+                gd.SamplerStates[0] = SamplerState.PointClamp;
+                fx.World = Matrix.Identity; fx.View = view; fx.Projection = proj;
+                fx.CurrentTechnique.Passes[0].Apply();
+                sprites.Draw(gd, PrimitiveType.TriangleList, sprites.N / 3);
+            }
         }
         gd.SetRenderTargets(keep);
     }
@@ -185,7 +236,7 @@ sealed class CreatorStage
     }
 
     /// Ease the camera toward the act's framing: a rider seen from the side, the whole man near for the likeness, the rest three-quarter.
-    void Camera(float dt, float aspect, out Matrix view, out Matrix proj)
+    void Camera(float dt, float aspect, out Matrix view, out Matrix proj, out Vector3 eye)
     {
         var (y, dist, yaw) = act switch
         {
@@ -202,7 +253,7 @@ sealed class CreatorStage
         camY += (y - camY) * k; camDist += (dist - camDist) * k; camYaw += (yaw - camYaw) * k;
         float a = Facing + camYaw;
         var target = new Vector3(0, camY, 0);
-        var eye = target + new Vector3(MathF.Cos(a) * camDist, camDist * 0.06f, MathF.Sin(a) * camDist);
+        eye = target + new Vector3(MathF.Cos(a) * camDist, camDist * 0.06f, MathF.Sin(a) * camDist);
         view = Matrix.CreateLookAt(eye, target, Vector3.Up);
         proj = Matrix.CreatePerspectiveFieldOfView(Fov, aspect, 0.1f, 100);
     }

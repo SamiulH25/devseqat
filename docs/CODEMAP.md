@@ -8,8 +8,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **AbilityDef** (class, L8)
 - **Abilities** (class, L41): Get:47, Has:48, readonly:52, Load:66, Validate:83
 
-## AnimSheet.cs (387 lines)
-- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:77, WriteArmorShowcase:157, RenderGrid:170, Write:233, Render:244, MakeUnit:291, Cell3D:317, Cell2D:348, Ground:369
+## AnimSheet.cs (395 lines)
+- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:77, WriteArmorShowcase:157, RenderGrid:178, Write:241, Render:252, MakeUnit:299, Cell3D:325, Cell2D:356, Ground:377
 
 ## Art.cs (58 lines)
 - **Art** (class, L8): Has:14, TryGet:16, Art:18, Mipped:38
@@ -200,8 +200,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Controls.cs (378 lines)
 - **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:81, CommandControls:89, CommandCursor:276, BoxOf:294, OnScreen:296, PickSquad:303, GroundUnderMouse:317, GroundUnder:319, UpdateCamera:341
 
-## BattleScreen.cs (588 lines)
-- **BattleScreen** (class, L12): Exit:18, GroundTips:55, MagicTips:67, BattleScreen:127, Load:139, QuickGround:160, BeginCampaign:170, StartDeployment:201, StageCommandView:216, FinishCampaignBattle:224, NewBattle:239, WithMages:281, SetWorld:289, SetCommand:303, Pressed:315, Update:323, PlaySounds:411, Soundscape:450, SyncHud:543, MenuChoice:574
+## BattleScreen.cs (586 lines)
+- **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:126, Load:138, QuickGround:158, BeginCampaign:168, StartDeployment:199, StageCommandView:214, FinishCampaignBattle:222, NewBattle:237, WithMages:279, SetWorld:287, SetCommand:301, Pressed:313, Update:321, PlaySounds:409, Soundscape:448, SyncHud:541, MenuChoice:572
 
 ## BattleScreen.Draw.cs (877 lines)
 - **BattleScreen** (class, L8): Draw:12, DrawShaded:54, DrawBlobs:134, EaseFacings:176, Spray:192, Effects:205, GroundSteps:270, BuildSprites:326, DrawUnits3D:428, LensFill:442, SpriteStates:445, DrawSpritesBasic:453, DrawSpritesShaded:463, DrawSoft:474, Line:488, G:489, OrderArrows:498, OrderArrowLines:500, Ring:516, DashedRing:527, Band:540, BeamQuad:562, TorchRow:584, Precipitation:593, Fall:604, Stakes:623, SpellColor:646, Spells:652, AuraGlow:668, ChampionGlow:678, PlayerGlow:691, PendingFormsDrawn:705, RouteDots:730, PlanHook:743, DrawLines:773
@@ -606,8 +606,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## CreatorScreen.cs (888 lines)
 - **CreatorScreen** (class, L9): CreatorScreen:47, Prepare:68, Show:76, U:87, RandomName:90, RandomCompany:98, Randomise:101, RandomFace:114, Go:123, Refresh:135, Keys:157, Begin:182, Draw:191, DrawScreen:204, Likeness:247, Ledger:322, Tip:331, Card:346, LedgerBody:370, Homeland:472, Choices:574, Detail:617, RoadKit:672, InTheField:700, BoonCard:717, Face:741, Stepper:796, Unroll:811, Field:814, Swatches:828, Oath:844, Footer:880
 
-## CreatorStage.cs (209 lines)
-- **CreatorStage** (class, L10): CreatorStage:41, React:49, Render:52, Build:95, Perform:116, readonly:143, Drill:152, Shoot:165, Salute:177, Camera:188
+## CreatorStage.cs (260 lines)
+- **CreatorStage** (class, L10): CreatorStage:45, React:56, Render:59, Build:146, Perform:167, readonly:194, Drill:203, Shoot:216, Salute:228, Camera:239
 
 ## Cursors.cs (217 lines)
 - **CursorKind** (enum, L8)
@@ -721,8 +721,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Castle.cs (58 lines)
 - **MapScreen** (class, L6): MusterTab:8
 
-## MapScreen.cs (909 lines)
-- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:91, Prepared:105, Prepare:110, Open:120, ShowResults:141, Pressed:149, Update:153, readonly:249, LaterTips:263, Pan:287, ScreenKeys:289, OpenScreen:297, Soundscape:305, CameFrom:367, Camera:369, Rename:393, Trails:406, MapPick:419, OnScreen:425, PickAt:440, ClickWorld:471, Ground:480, Draw:503, UpdateBearers:597, FinishLife:650, UpdateLife:657, BuildSprites:688, BuildSpritesInner:695, DrawSprites:702, Surface:715, G:717, DrawLines:719, Stage:769
+## MapScreen.cs (973 lines)
+- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:93, Prepared:108, Prepare:113, Open:123, ShowResults:144, Pressed:152, Update:156, readonly:252, LaterTips:266, Pan:290, ScreenKeys:292, OpenScreen:300, Soundscape:308, CameFrom:370, Camera:372, Rename:396, Trails:409, MapPick:422, OnScreen:428, PickAt:443, ClickWorld:474, Ground:483, Draw:506, UpdateBearers:639, FinishLife:692, UpdateLife:699, BuildSprites:730, BuildSpritesInner:737, BuildUnits3D:744, DrawUnits3D:755, DrawSprites:766, Surface:779, G:781, DrawLines:783, Stage:833
 
 ## MapScreen.Dialogs.cs (291 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, EncounterOwnSide:97, MeetingPanel:123, SiegeWorksRows:157, SiegePanel:179, BeatPanel:232, GameOverPanel:249, MenuPanel:263, SavesPanel:279
@@ -840,8 +840,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SaveScreen.cs (286 lines)
 - **SaveScreen** (class, L10): Show:29, Close:39, Draw:47, CampaignRow:155, SaveRow:177, Card:195, TypeName:235, NameBox:245, Thumb:258, Ago:277
 
-## ScreenHost.cs (915 lines)
-- **ScreenHost** (class, L9): readonly:42, ScreenHost:62, ApplyVideo:82, OpenSettings:92, LoadContent:94, StartCampaign:150, Load:177, FinishLoading:193, ContinueCampaign:216, LoadSave:223, OpenLab:232, QuickBattle:234, StartCampaignBattle:241, FinishCampaignBattle:251, CycleQuality:259, Update:263, DrawCursor:320, Draw:340, Fade:381, CaptureShot:411, readonly:439, RestoreTavernTown:451, StagingRefused:458, SaveShots:465, CampaignShots:479
+## ScreenHost.cs (918 lines)
+- **ScreenHost** (class, L9): readonly:43, ScreenHost:63, ApplyVideo:83, OpenSettings:93, LoadContent:95, StartCampaign:153, Load:180, FinishLoading:196, ContinueCampaign:219, LoadSave:226, OpenLab:235, QuickBattle:237, StartCampaignBattle:244, FinishCampaignBattle:254, CycleQuality:262, Update:266, DrawCursor:323, Draw:343, Fade:384, CaptureShot:414, readonly:442, RestoreTavernTown:454, StagingRefused:461, SaveShots:468, CampaignShots:482
 
 ## SelfTest.cs (103 lines)
 - **SelfTest** (class, L6): Run:14, Slots:20, ResolveBattles:32, RunOne:55, Lancer:63, Run:72, Scaled:74, MakeWanderer:77, Days:85, Ids:97, Check:99
@@ -849,12 +849,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SelfTestShards.cs (125 lines)
 - **SelfTest** (class, L9): RunParallel:16, RunShard:68, RunNames:71, LoadTimes:108, SaveTimes:120
 
-## Settings.cs (83 lines)
+## Settings.cs (93 lines)
 - **Difficulty** (enum, L5)
-- **Settings** (class, L8): Load:37, Save:44, UiFor:51, FirstTime:58
-- **CrashLog** (class, L67): Install:69, Write:71
+- **Settings** (class, L8): Load:47, Save:54, UiFor:61, FirstTime:68
+- **CrashLog** (class, L77): Install:79, Write:81
 
-## SettingsScreen.cs (188 lines)
+## SettingsScreen.cs (194 lines)
 - **SettingsScreen** (class, L7): readonly:20, SettingsScreen:22, Update:24, Close:42, Draw:50
 
 ## Shading.cs (270 lines)
@@ -1019,8 +1019,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **DivisionSpec** (record, L195)
 - **Armies** (class, L200): LineTroop:203, readonly:205, Count:213, Standard:221, Random:224, Large:231, FullCount:242, Divide:252, OfficerSkill:260, Split:273, Make:325, MageTroop:329, LineTroop:333, RoleOf:335
 
-## TroopSheet.cs (67 lines)
-- **TroopSheet** (class, L8): TroopSheet:16, Write:23, One:34
+## TroopSheet.cs (113 lines)
+- **TroopSheet** (class, L9): TroopSheet:20, Write:29, One:41
 
 ## Ui.cs (255 lines)
 - **Ui** (class, L8): Hovered:26, FrameEnd:36, Ui:40, Anim:59, static:70, Since:83, Count:93, Key:100, Reset:103, Begin:105, End:115, Blocks:118, Block:119, U:120, Rect:122, Frame:129, Panel:138, Dim:141, Text:144, Ink:151, TW:159, TextC:160, TextR:161, Bar:165, Hover:178, Clicked:181, Button:190, Face:219, FaceHead:229, HasSprite:241, Sprite:243, Portrait:254

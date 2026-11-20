@@ -30,7 +30,7 @@ sealed partial class TitleScreen
         this.host = host;
         ui = new Ui(host.Sb, host.Art, host.Font);
         saves.OnLoad = p => { if (host.LoadSave(p) is string why) host.TitleNote = why; };
-        creator = new CreatorScreen(ui, m => host.StartCampaign(Environment.TickCount & 0xFFFF, m.Realm, m), new CreatorStage(host.GraphicsDevice, host.Art));
+        creator = new CreatorScreen(ui, m => host.StartCampaign(Environment.TickCount & 0xFFFF, m.Realm, m), new CreatorStage(host.GraphicsDevice, host.Art, host.Shading, host.MeshKit, () => host.Quality));
         if (creatorShots != null || Environment.GetEnvironmentVariable("IRONFIELD_TITLE_PICK") != null) creator.Show();
     }
 

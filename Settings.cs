@@ -10,6 +10,16 @@ public sealed class Settings
     public int Width = 1280, Height = 720, UiScale; // UiScale 0 = automatic (by window height)
     public bool Fullscreen, Fxaa = true, VSync = true, Ironman, ColorBlind;
     public string Quality = "High";
+    /// Real-time 3D pixel-art renderer (false = classic 2D sprite puppets; Low quality always falls back to 2D).
+    public bool PixelArt = true;
+    /// Pixel-art pixel size (1 = native, 2 = classic 2x pixel grid, 3 = chunky 3x).
+    public int PixelScale = 2;
+
+    static readonly bool? EnvPixelArt = Environment.GetEnvironmentVariable("IRONFIELD_3D_UNITS") is { Length: > 0 } e3d ? e3d != "0" : null;
+    static readonly int? EnvPixelScale = int.TryParse(Environment.GetEnvironmentVariable("IRONFIELD_PIXEL_SCALE"), out var eps) && eps is >= 1 and <= 4 ? eps : null;
+
+    public bool EffectivePixelArt => EnvPixelArt ?? PixelArt;
+    public int EffectivePixelScale => EnvPixelScale ?? Math.Clamp(PixelScale, 1, 3);
     public float MasterVolume = 0.8f, SfxVolume = 1, AmbienceVolume = 0.85f, MusicVolume = 0.6f;
     /// The field camera's kick when blows land (0 off, 0.5 soft, 1 full), and the brief hold when your own blow lands.
     public float CameraShake = 1;

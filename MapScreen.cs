@@ -53,7 +53,9 @@ sealed partial class MapScreen
     readonly Controls ctl;
     readonly Ui ui;
     readonly Puppet puppet;
+    readonly Puppet3D? puppet3D;
     readonly Verts<VertexPositionColorTexture> sprites = new();
+    readonly Verts<VertexPNCT> units3D = new();
     readonly Verts<VertexPositionColor> lines = new();
     readonly AlphaTestEffect spriteFx;
     readonly BasicEffect lineFx;
@@ -88,11 +90,12 @@ sealed partial class MapScreen
     KeyboardState kb, pkb;
     MouseState ms, pms;
 
-    public MapScreen(GraphicsDevice gd, SpriteBatch sb, Art art, PixelFont font, Shading? shading, Controls ctl)
+    public MapScreen(GraphicsDevice gd, SpriteBatch sb, Art art, PixelFont font, Shading? shading, MeshKit3D? meshKit, Controls ctl)
     {
         this.gd = gd; this.art = art; this.shading = shading; this.ctl = ctl;
         ui = new Ui(sb, art, font);
         puppet = new Puppet(art, sprites) { Scale = 2.5f }; // a little smaller than the towns they ride between (WL3)
+        if (meshKit != null) puppet3D = new Puppet3D(meshKit, units3D) { Scale = 2.5f };
         spriteFx = new AlphaTestEffect(gd)
         {
             Texture = art.Atlas, VertexColorEnabled = true, AlphaFunction = CompareFunction.Greater, ReferenceAlpha = 128,
@@ -542,6 +545,8 @@ sealed partial class MapScreen
         {
             var sh = shading!;
             bool shadows = quality == Quality.High;
+            bool do3D = Settings.Current.EffectivePixelArt && puppet3D != null;
+            int pScale = Settings.Current.EffectivePixelScale;
             var fog = sh.Fog;
             sh.Fog = new Vector2(fogStart, fogEnd);
             if (shadows)
@@ -553,20 +558,57 @@ sealed partial class MapScreen
                 gd.DepthStencilState = DepthStencilState.Default;
                 gd.RasterizerState = RasterizerState.CullNone;
                 world!.DrawShadowCasters(sh, time);
-                BuildSprites(sh.LightView);
-                sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, time, false, 0);
-                sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
-                DrawSprites(sh.Sprite, "SpriteShadow");
+                if (do3D)
+                {
+                    BuildUnits3D(sh.LightView);
+                    if (units3D.N > 0)
+                    {
+                        sh.Setup(sh.Unit3D, Matrix.Identity, sh.LightEye, time, false, 0);
+                        sh.Unit3D.Parameters["ShadowMap"].SetValue((Texture2D?)null);
+                        sh.Unit3D.Parameters["View"].SetValue(sh.LightView);
+                        DrawUnits3D(sh.Unit3D, "Unit3DShadow");
+                    }
+                }
+                else
+                {
+                    BuildSprites(sh.LightView);
+                    sh.Setup(sh.Sprite, Matrix.Identity, sh.LightEye, time, false, 0);
+                    sh.Sprite.Parameters["ShadowMap"].SetValue((Texture2D?)null);
+                    DrawSprites(sh.Sprite, "SpriteShadow");
+                }
             }
             gd.Textures[1] = null;
-            gd.SetRenderTarget(sh.Scene());
-            gd.Clear(World.Horizon);
-            world!.DrawShaded(sh, view, proj, eye, time, shadows);
-            BuildSprites(view);
-            sh.Setup(sh.Sprite, view * proj, eye, time, shadows, 1.2f);
-            DrawSprites(sh.Sprite, "Sprite");
-            DrawLines();
-            sh.PostToScreen(Settings.Current.Fxaa, Sky.Grade);
+            if (do3D)
+            {
+                var (pCol, pNd) = sh.PixelTargets(pScale);
+                gd.SetRenderTarget(pNd);
+                gd.Clear(Color.Transparent);
+                gd.SetRenderTarget(pCol);
+                gd.Clear(World.Horizon);
+                world!.DrawShaded(sh, view, proj, eye, time, shadows);
+                BuildUnits3D(view);
+                if (units3D.N > 0)
+                {
+                    gd.SetRenderTargets(pCol, pNd);
+                    sh.Setup(sh.Unit3D, view * proj, eye, time, shadows, 1.2f);
+                    sh.Unit3D.Parameters["View"].SetValue(view);
+                    DrawUnits3D(sh.Unit3D, "Unit3D");
+                    gd.SetRenderTarget(pCol);
+                }
+                DrawLines();
+                sh.PixelPostToScreen(pScale, Sky.Grade);
+            }
+            else
+            {
+                gd.SetRenderTarget(sh.Scene());
+                gd.Clear(World.Horizon);
+                world!.DrawShaded(sh, view, proj, eye, time, shadows);
+                BuildSprites(view);
+                sh.Setup(sh.Sprite, view * proj, eye, time, shadows, 1.2f);
+                DrawSprites(sh.Sprite, "Sprite");
+                DrawLines();
+                sh.PostToScreen(Settings.Current.Fxaa, Sky.Grade);
+            }
             sh.Fog = fog;
         }
         else
@@ -697,6 +739,28 @@ sealed partial class MapScreen
         sprites.N = 0;
         puppet.Begin(viewer);
         foreach (var u in bearers.Values) if (!u.Fled) puppet.Draw(u, terrain.Height(u.Pos));
+    }
+
+    void BuildUnits3D(Matrix viewer)
+    {
+        FrameProf.Begin("sprites");
+        units3D.N = 0;
+        puppet3D!.Now = time;
+        puppet3D.Detail = zoom > 280 ? 1 : 0;
+        puppet3D.BeginCamera(viewer);
+        foreach (var u in bearers.Values) if (!u.Fled) puppet3D.TryDraw(u, terrain.Height(u.Pos));
+        FrameProf.End("sprites");
+    }
+
+    void DrawUnits3D(Effect fx, string technique)
+    {
+        if (units3D.N == 0) return;
+        gd.BlendState = BlendState.Opaque;
+        gd.DepthStencilState = DepthStencilState.Default;
+        gd.RasterizerState = RasterizerState.CullNone;
+        fx.CurrentTechnique = fx.Techniques[technique];
+        fx.CurrentTechnique.Passes[0].Apply();
+        units3D.Draw(gd, PrimitiveType.TriangleList, units3D.N / 3);
     }
 
     void DrawSprites(Effect fx, string technique)

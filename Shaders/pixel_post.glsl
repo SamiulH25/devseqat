@@ -4,7 +4,7 @@
 // Texel      = 1 / pixelTargetSize (size of one crisp pixel-art pixel in UV space)
 // Grade      = (saturation, contrast, vignette, pixelModeFlag)
 // Tint       = (rgb color grade, bloom strength)
-// OutlineCfg = (outerOutlineStrength, depthSepStrength, convexHighlightStrength, unused)
+// OutlineCfg = (outerOutlineStrength, depthSepStrength, convexHighlightStrength, transparentBg)
 varying vec2 vUV;
 
 #ifdef VERTEX
@@ -48,6 +48,7 @@ void main()
     bool isUnit = ndC.a > 0.005;
     float maxNA = max(max(ndL.a, ndR.a), max(ndU.a, ndD.a));
 
+    bool transparentBg = OutlineCfg.w > 0.5;
     if (!isUnit)
     {
         // Case 1: Outer 1-pixel ink silhouette drawn cleanly around every unit & horse!
@@ -62,9 +63,18 @@ void main()
             if (ndD.a > bestA) { bestA = ndD.a; bestOff = vec2(0.0, Texel.y); }
             vec3 uCol = texture2D(Scene, puv + bestOff).rgb;
             vec3 ink = mix(uCol * 0.20, vec3(0.07, 0.06, 0.10), 0.58);
-            // Fade outline gently very far away so distant armies don't turn into a solid black smear.
-            float farFade = smoothstep(0.03, 0.16, bestA);
-            col = mix(col, ink, OutlineCfg.x * farFade);
+            if (transparentBg) col = ink;
+            else
+            {
+                // Fade outline gently very far away so distant armies don't turn into a solid black smear.
+                float farFade = smoothstep(0.03, 0.16, bestA);
+                col = mix(col, ink, OutlineCfg.x * farFade);
+            }
+        }
+        else if (transparentBg)
+        {
+            gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+            return;
         }
     }
     else
@@ -120,7 +130,7 @@ void main()
     col = (col - 0.5) * Grade.y + 0.5;
     col += vec3(0.035, 0.018, -0.02) * smoothstep(0.45, 1.0, l) + vec3(-0.02, 0.0, 0.03) * (1.0 - smoothstep(0.0, 0.45, l));
     vec2 c = (vUV - 0.5) * vec2(1.3, 1.0);
-    col *= 1.0 - Grade.z * smoothstep(0.35, 0.95, length(c));
+    if (!transparentBg) col *= 1.0 - Grade.z * smoothstep(0.35, 0.95, length(c));
     if (Awe.w > 0.0)
     {
         vec2 d = vec2((vUV.x - Awe.x) * (Texel.y / Texel.x), vUV.y - Awe.y);
