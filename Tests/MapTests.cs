@@ -563,7 +563,7 @@ public static partial class SelfTest
         Check(towns.All(p => p.Lots.Count(l => l.Use == LotUse.Landmark) == 1), "a landmark on every town's square");
         var houses = towns.Select(p => p.Lots.Count(l => l.Use is LotUse.House or LotUse.Yurt)).OrderBy(x => x).ToList();
         Check(houses[0] >= 8 && houses[houses.Count / 2] >= 25, $"towns are full of houses (fewest {houses[0]}, median {houses[houses.Count / 2]})");
-        var bad = towns.SelectMany(p => p.Lots.Where(l => l.Use is not (LotUse.Stall or LotUse.Crane) && !m.LotClear(l)).Select(l => $"{m.Settlements[p.Id].Name} {l.Use} at {l.Pos}")).ToList();
+        var bad = towns.SelectMany(p => p.Lots.Where(l => l.Use is not (LotUse.Stall or LotUse.Crane or LotUse.Works) && !m.LotClear(l)).Select(l => $"{m.Settlements[p.Id].Name} {l.Use} at {l.Pos}")).ToList();
         Check(bad.Count == 0, $"no house of a town in water or on a road ({bad.Count}): " + string.Join(", ", bad.Take(6)));
         var ports = towns.Where(p => p.Quay != null).ToList();
         Check(ports.All(p => p.Lots.Any(l => l.Use == LotUse.Crane) && p.Lots.Any(l => l.Use == LotUse.Warehouse)), "ports keep a crane and warehouses by the quay");
@@ -612,5 +612,50 @@ public static partial class SelfTest
         Check(villages.Where(p => WorldMap.VillageKind(p.Look) is HouseKind.Yurt or HouseKind.Tent).All(p => !p.Lots.Any(l => l.Use == LotUse.Landmark)), "no chapel in a camp");
         var bad = villages.SelectMany(p => p.Lots.Where(l => !m.LotClear(l)).Select(l => $"{m.Settlements[p.Id].Name} {l.Use}")).ToList();
         Check(bad.Count == 0, $"no village house in water or on a road ({bad.Count}): " + string.Join(", ", bad.Take(6)));
+    }
+
+    /// The place's state on its model (docs/SETTLEMENTS.md SM4): a site for each work round every town and castle, suburbs
+    /// by the towns' roads, none of it in water, on a road or on a neighbour's ground; each state builds its own mesh, and
+    /// the same state the same mesh.
+    static void PlacesShowState()
+    {
+        var m = Campaign.New(7, layout: WorldMap.DesignLayout).Map;
+        var t = m.BuildTerrain();
+        var seats = m.Plans.Values.Where(p => p.Kind != SettlementKind.Village).ToList();
+        int Sites(PlacePlan p) => p.Lots.Count(l => l.Use == LotUse.Works && l.W > 0);
+        var sites = seats.Select(Sites).OrderBy(x => x).ToList();
+        var suburbs = m.Plans.Values.Where(p => p.Kind == SettlementKind.Town).Select(p => p.Lots.Count(l => l.Use == LotUse.Suburb)).OrderBy(x => x).ToList();
+        Console.WriteLine($"works sites: {sites[0]}-{sites[^1]} (median {sites[sites.Count / 2]}) at {seats.Count} towns and castles; suburbs {suburbs[0]}-{suburbs[^1]} (median {suburbs[suburbs.Count / 2]})");
+        Check(seats.All(p => p.Lots.Count(l => l.Use == LotUse.Works) == PlaceState.WorkIds.Length), "a site (or its empty place) for every work");
+        Check(sites[sites.Count / 2] >= 5 && sites[sites.Count / 10] >= 3, "most towns and castles have room for their works");
+        Check(suburbs[suburbs.Count / 2] >= 6, "towns have room for suburbs along their roads");
+        var bad = new List<string>();
+        foreach (var p in m.Plans.Values)
+            foreach (var l in p.Lots.Where(l => l.Use is LotUse.Suburb or LotUse.Works && l.W > 0))
+            {
+                bool hall = p.Kind == SettlementKind.Town && l.Use == LotUse.Works && Vector2.Distance(l.Pos, p.Square) < 2.4f; // the market hall stands on the square
+                if (!hall && !m.LotClear(l)) bad.Add($"{m.Settlements[p.Id].Name} {l.Use} in water or on a road");
+                foreach (var o in m.Plans.Values)
+                    if (o.Id != p.Id && l.Corners.Any(c => Vector2.Distance(c, o.Pos) < o.Radius)) bad.Add($"{m.Settlements[p.Id].Name} {l.Use} on {m.Settlements[o.Id].Name}");
+            }
+        Check(bad.Count == 0, $"suburbs and works on clear ground of their own ({bad.Count}): " + string.Join(", ", bad.Take(6)));
+
+        var town = m.Plans.Values.Where(p => p.Kind == SettlementKind.Town).OrderByDescending(Sites).First();
+        var castle = seats.Where(p => p.Kind == SettlementKind.Castle).OrderByDescending(Sites).First();
+        var village = m.Plans.Values.First(p => p.Kind == SettlementKind.Village && p.Lots.Any(l => l.Use == LotUse.Suburb));
+        var w = new World(t, 0.72f, id => PlaceState.None);
+        double plain = w.PlaceSum; int plainVerts = w.PlaceVerts;
+        var built = new PlaceState(1, 2, (1 << PlaceState.WorkIds.Length) - 1, 3);
+        w.UpdatePlaces(id => id == town.Id || id == castle.Id ? built : id == village.Id ? new PlaceState(-1, 2) : PlaceState.None, wait: true);
+        int richVerts = w.PlaceVerts;
+        w.UpdatePlaces(id => id == town.Id || id == village.Id ? new PlaceState(-1, 0) : PlaceState.None, wait: true);
+        double poor = w.PlaceSum;
+        w.UpdatePlaces(id => id == castle.Id ? new PlaceState(-1, 1, 0, 2) : PlaceState.None, wait: true);
+        double walls = w.PlaceSum;
+        w.UpdatePlaces(id => PlaceState.None, wait: true);
+        Console.WriteLine($"{m.Settlements[town.Id].Name} and {m.Settlements[castle.Id].Name}: {plainVerts:N0} verts plain, {richVerts:N0} rich with every work");
+        Check(richVerts > plainVerts + 3000, "a rich place with every work built shows them");
+        Check(poor != plain && walls != plain && poor != walls, "a poor place and higher walls each look their own");
+        Check(w.PlaceSum == plain && w.PlaceVerts == plainVerts, "the same state builds the same mesh");
     }
 }

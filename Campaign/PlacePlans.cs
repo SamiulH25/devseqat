@@ -41,10 +41,16 @@ public sealed record PlacePlan(int Id, SettlementKind Kind, int Size, string Sty
     public static Vector2 Dir(float bearing) => new(MathF.Cos(bearing), MathF.Sin(bearing));
 }
 
-/// What a place's model shows of its state (docs/SETTLEMENTS.md): the colours its flags fly (a `Style.Sides` palette; -1 none).
-public readonly record struct PlaceState(int Palette)
+/// What a place's model shows of its state (docs/SETTLEMENTS.md): the colours its flags fly (a `Style.Sides` palette; -1 none),
+/// how well it does (`Wealth`: 0 poor, 1 middling, 2 rich), the works it has built (a bit per `WorkIds`) and its walls' level.
+public readonly record struct PlaceState(int Palette, int Wealth = 1, int Works = 0, int Walls = 0)
 {
     public static readonly PlaceState None = new(-1);
+    /// The buildings a model shows, in the order of their sites (`LotUse.Works` lots, one each); walls show in the circuit.
+    public static readonly string[] WorkIds = { "barracks", "granary", "yard", "stables", "chapel", "kennel", "watchtower", "market" };
+    /// The wealth band of a prosperity (0-100): a place shows a change only when it crosses a band.
+    public static int WealthOf(float prosperity) => prosperity < 30 ? 0 : prosperity >= 80 ? 2 : 1;
+    public bool Has(int work) => (Works >> work & 1) != 0;
 }
 
 public sealed partial class WorldMap
@@ -81,13 +87,15 @@ public sealed partial class WorldMap
         // Towns and villages are laid out after every plan is known (a street narrows by any town it runs through), in parallel.
         streetPlans.Clear();
         streetPlans.AddRange(plans.Where(p => p.Kind != SettlementKind.Castle));
+        basePlans.Clear();
+        basePlans.AddRange(plans);
         RoadDist(Vector2.Zero); // the look-up grid, built before the workers read it
         var laid = plans.ToArray();
         Parallel.For(0, laid.Length, k => laid[k] = laid[k].Kind switch
         {
             SettlementKind.Town => LayTown(laid[k]),
             SettlementKind.Village => LayVillage(laid[k]),
-            _ => laid[k],
+            _ => LayCastle(laid[k]),
         });
         plans = laid.ToList();
         Plans = plans.ToDictionary(p => p.Id);

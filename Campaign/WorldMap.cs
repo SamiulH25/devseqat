@@ -659,6 +659,7 @@ public sealed partial class WorldMap
             if (MathF.Max(MathF.Abs(pos.X), MathF.Abs(pos.Y)) < ExtentUsed - 4) continue;
             foliage.Add(new Foliage(FoliageKind.Pine, pos, 2.4f + rng.NextSingle(), 0, rng.Next()));
         }
+        placeFields = fieldCells;
         var plans = PlanPlaces(); // the places' footprints (docs/SETTLEMENTS.md): nothing else grows inside them
         var outer = plans.SelectMany(pl => pl.Lots.Where(l => Vector2.Distance(l.Pos, pl.Pos) > pl.Radius - 1)).ToList(); // a quay's sheds, yurts and mills out past the footprint
         foliage.RemoveAll(f => f.Kind is not (FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village)

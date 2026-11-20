@@ -25,6 +25,8 @@ sealed partial class World
     Task? placeTask;
     /// Vertices of every place as built now (tests).
     internal int PlaceVerts => placeTiles.Sum(x => x.Tris * 3);
+    /// A sum over every place's vertices as built (tests: the same state builds the same mesh; no GPU, so `Fresh` stays).
+    internal double PlaceSum => placeTiles.Sum(x => x.Fresh?.Sum(v => v.Position.X * 1.3 + v.Position.Y * 7.1 + v.Position.Z * 3.7 + v.Color.PackedValue % 977) ?? 0);
     /// Places triangles drawn last pass (render.txt).
     public (int Tiles, int Tris) PlaceCost { get; private set; }
 
@@ -126,6 +128,7 @@ sealed partial class World
                     case 3: GreatHold(m, p, st, s, r, k); break;
                     default: MidHold(m, p, st, s, r, k); break;
                 }
+                Works(m, p, st, s);
                 break;
         }
         m.Tag = Vector2.Zero;
@@ -162,7 +165,7 @@ sealed partial class World
     void MidHold(Mesh m, PlacePlan p, PlaceStyle st, PlaceState s, Random r, float k)
     {
         if (st.Defence == Defence.Palisade) { MotteAndBailey(m, p, st, s, r, k, great: false); return; }
-        float u = k, R = p.Radius * 0.92f, wallH = 2.7f * u, thick = 0.62f * u, towerR = (st.Round ? 0.95f : 0.85f) * u;
+        float u = k, R = p.Radius * 0.92f, wallH = 2.7f * u * Rise(s), thick = 0.62f * u, towerR = (st.Round ? 0.95f : 0.85f) * u;
         int n = st.Round ? 5 + r.Next(2) : 4 + r.Next(2);
         var ring = Enclosure(p, n, R, r, 0.14f);
         var col = WallColour(st, r);
@@ -179,7 +182,7 @@ sealed partial class World
         var gateTops = Gatehouse(m, st, gate, p.Front, wallH, u, col, r, towerR * 0.8f);
         var back = -Dir2(p.Front);
         var side = new Vector2(-back.Y, back.X) * (r.Next(2) == 0 ? 1 : -1);
-        var keepTop = Keep(m, st, p.Pos + back * (R * 0.38f) + side * (R * 0.1f), 2.4f * u, wallH * 2.25f * st.Tall, p.Front, col, u, r, false);
+        var keepTop = Keep(m, st, p.Pos + back * (R * 0.38f) + side * (R * 0.1f), 2.4f * u, wallH / Rise(s) * 2.25f * st.Tall, p.Front, col, u, r, false); // the keep stands as built; the walls rise round it
         Dwelling(m, YardHouse(st), st, p.Pos - side * (R * 0.42f) + back * (R * 0.05f), 2.8f * u, 1.3f * u, 1.25f * u, p.Front - MathHelper.PiOver2 * MathF.Sign(Vector2.Dot(side, new Vector2(-back.Y, back.X))), r, chimney: true);
         Dwelling(m, YardHouse(st), st, p.Pos + side * (R * 0.4f) - back * (R * 0.32f), 1.4f * u, 1.0f * u, 0.9f * u, p.Front + MathHelper.PiOver2, r);
         Flags(m, s, new[] { keepTop + Vector3.Up * (st.Cap is Cap.Cone or Cap.Pyramid ? 1.6f * u : 0.1f) }, 1.5f * u, 1.2f * u, p.Front + 2.2f, u);
@@ -196,7 +199,7 @@ sealed partial class World
         bool coursed = Coursed(st);
         // The outer curtain.
         int n = st.Round ? 7 : 6;
-        float wallH = 2.4f * u, towerR = (st.Round ? 0.85f : 0.75f) * u;
+        float wallH = 2.4f * u * Rise(s), towerR = (st.Round ? 0.85f : 0.75f) * u;
         var ring = Enclosure(p, n, R, r, 0.1f);
         for (int i = 0; i < n; i++) Tower(m, st, ring[i], towerR, wallH * 1.4f * st.Tall, p.Front, st.Round, st.Cap, col, coursed, u);
         for (int i = 0; i + 1 < n; i++) Curtain(m, st, Shorten(ring[i], ring[i + 1], towerR * 0.6f), Shorten(ring[i + 1], ring[i], towerR * 0.6f), p.Pos, wallH, 0.6f * u, col, u, r);
@@ -210,7 +213,7 @@ sealed partial class World
         var back = -Dir2(p.Front);
         var inner = p with { Pos = p.Pos + back * (R * 0.1f) };
         int ni = st.Round ? 5 : 4;
-        float iwH = 3.3f * u, itR = (st.Round ? 1.0f : 0.9f) * u, iR = R * 0.52f;
+        float iwH = 3.3f * u * Rise(s), itR = (st.Round ? 1.0f : 0.9f) * u, iR = R * 0.52f;
         var iring = Enclosure(inner, ni, iR, r, 0.05f);
         var tops = new List<Vector3>();
         for (int i = 0; i < ni; i++) tops.Add(Tower(m, st, iring[i], itR, iwH * 1.4f * st.Tall, p.Front, st.Round, st.Cap, col, coursed, u));
@@ -220,7 +223,7 @@ sealed partial class World
         Curtain(m, st, Shorten(iring[ni - 1], iring[0], itR * 0.6f), igate - ialong * gateHalf, inner.Pos, iwH, 0.7f * u, col, u, r);
         Curtain(m, st, igate + ialong * gateHalf, Shorten(iring[0], iring[ni - 1], itR * 0.6f), inner.Pos, iwH, 0.7f * u, col, u, r);
         var igateTops = Gatehouse(m, st, igate, p.Front, iwH, u, col, r, itR * 0.8f);
-        var keepTop = Keep(m, st, inner.Pos + back * (iR * 0.15f), 2.9f * u, iwH * 2.0f * st.Tall, p.Front, col, u, r, great: true);
+        var keepTop = Keep(m, st, inner.Pos + back * (iR * 0.15f), 2.9f * u, iwH / Rise(s) * 2.0f * st.Tall, p.Front, col, u, r, great: true);
         // The outer bailey: a hall, the chapel and the stables in the ring between the walls.
         var side = new Vector2(-back.Y, back.X);
         float mid = (R * 0.86f + iR) / 2;
@@ -245,7 +248,7 @@ sealed partial class World
             {
                 // A ring of bank and palisade with a gate tower; a hall (or the chief's yurt) inside, and a watch tower.
                 int n = 9;
-                float R = p.Radius * 0.85f, wallH = 2.0f * u;
+                float R = p.Radius * 0.85f, wallH = 2.0f * u * Rise(s);
                 var ring = new Vector2[n];
                 for (int i = 0; i < n; i++) ring[i] = p.Pos + Dir2(p.Front + MathF.PI / n + i * MathF.Tau / n) * R;
                 for (int i = 0; i + 1 < n; i++) Curtain(m, st, ring[i], ring[i + 1], p.Pos, wallH, 0, col, u, r);
@@ -331,7 +334,7 @@ sealed partial class World
     /// earth mound with a palisade and a timber keep on top. Halls (or yurts) in the bailey. `great` is bigger, with more.
     void MotteAndBailey(Mesh m, PlacePlan p, PlaceStyle st, PlaceState s, Random r, float k, bool great)
     {
-        float u = k, R = p.Radius * 0.9f, wallH = (great ? 2.4f : 2.1f) * u;
+        float u = k, R = p.Radius * 0.9f, wallH = (great ? 2.4f : 2.1f) * u * Rise(s);
         var col = WallColour(st, r);
         var fwd = Dir2(p.Front);
         var side = new Vector2(-fwd.Y, fwd.X);

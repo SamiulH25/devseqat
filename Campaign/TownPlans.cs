@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// What stands on a lot of a place (docs/SETTLEMENTS.md SM2).
-public enum LotUse : byte { House, Landmark, Warehouse, Crane, Stall, Yurt, Mill, Well }
+public enum LotUse : byte { House, Landmark, Warehouse, Crane, Stall, Yurt, Mill, Well, Suburb, Works }
 
 /// One building's ground in a place: its middle, its turn (the door faces -`Across`, as `World.Dwelling` builds), its
 /// frontage W along the street and its depth D.
@@ -334,6 +334,9 @@ public sealed partial class WorldMap
                 if (Fits(lot, 0, walled: false) && RingDist(Ring, at) > 1.6f && !InRing(Ring, at)) { lots.Add(lot); break; }
             }
 
+        var others = Neighbours(p);
+        LaySuburbs(p, lots, others, Ring);
+        LayWorks(p, lots, LocalRoads(p.Pos, p.Radius + 22), others, Ring, square);
         return p with { Ring = Ring, Gates = gates.ToArray(), Lots = lots.ToArray(), Square = square };
     }
 

@@ -24,11 +24,12 @@ public sealed partial class WorldMap
         var centre = p.Pos;
         for (int k = 0; k < 16 && Wet(centre, 0.8f); k++) centre = p.Pos + PlacePlan.Dir(k * 2.4f) * (0.6f + k * 0.25f);
         var lots = new List<Lot>();
+        var near = Neighbours(p);
         float reach = R + 0.8f; // grows when the middle is full (a village at a crossroads)
         bool Fits(Lot lot, float pad = 0.35f)
         {
             foreach (var c in lot.Corners.Append(lot.Pos))
-                if (Wet(c, 0.25f) || OnRoad(roads, c, 0.85f) || Vector2.Distance(c, centre) > reach) return false;
+                if (Wet(c, 0.25f) || OnRoad(roads, c, 0.85f) || Vector2.Distance(c, centre) > reach || !Owns(p, near, c)) return false;
             return !lots.Any(o => Lot.Overlap(o, lot, pad));
         }
         var (w0, d0) = kind switch
@@ -91,6 +92,16 @@ public sealed partial class WorldMap
             var at = centre + PlacePlan.Dir(a) * rad;
             var lot = House(at, Vector2.Normalize(centre - at + new Vector2(1e-5f, 0)));
             if (kind == HouseKind.Tent) lot = lot with { Yaw = lot.Yaw + (r.NextSingle() - 0.5f) * 1.2f };
+            if (Fits(lot)) lots.Add(lot);
+        }
+        // A few more where the village has room, shown when it does well (SM4).
+        int built = lots.Count(l => l.Use == LotUse.House);
+        for (int tries = 0; lots.Count(l => l.Use == LotUse.Suburb) < 3 && tries < 120; tries++)
+        {
+            float a = p.Front + 1.1f + tries * 2.39996f;
+            var at = centre + PlacePlan.Dir(a) * ((nomads ? 3.4f : 3.8f) + r.NextSingle() * 1.6f + MathF.Min(2.5f, tries / 40f));
+            reach = R + 1.8f + MathF.Min(2.5f, tries / 40f);
+            var lot = House(at, Vector2.Normalize(centre - at + new Vector2(1e-5f, 0))) with { Use = LotUse.Suburb };
             if (Fits(lot)) lots.Add(lot);
         }
         return p with { Lots = lots.ToArray(), Square = centre };

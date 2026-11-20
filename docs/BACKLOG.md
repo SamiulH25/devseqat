@@ -17,7 +17,7 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 | [`WORLD_DRESS.md`](WORLD_DRESS.md) | WD5 life in every land; WD6 air and weather; WD7 check and tune | medium | WD5: wild herds by land, gulls, waterfowl, storks, campfires. WD6: cloud shadows, wind on grass, dawn mist, dust, blown snow. WD7: every land per season, frame time at widest zoom |
 | [`COMPANY.md`](COMPANY.md) | C5 the camp; C6 named men in the fight; C7 what is remembered; C8 polish | large | C5 is the big one (a screen, camp events with a `men` trigger, rites move there). C7 has the opt-in captain death (LEGACY L7) |
 | [`NOBILITY.md`](NOBILITY.md) | N3 knighting a named man; N4 AI lords' noble retinues and UI badge; N5 balance | medium | Gap: northern, southern, steppe and league have no non-order noble T4 |
-| [`SETTLEMENTS.md`](SETTLEMENTS.md) | SM1-SM7: towns, castles, villages and the siege field remodelled by subculture, showing owner, prosperity, buildings and siege | large | Owner's brief 2026-11-20. SM1 (kit, style table, castles), SM2 (towns) and SM3 (villages) built; SM4 state next |
+| [`SETTLEMENTS.md`](SETTLEMENTS.md) | SM1-SM7: towns, castles, villages and the siege field remodelled by subculture, showing owner, prosperity, buildings and siege | large | Owner's brief 2026-11-20. SM1-SM4 built (kit and castles, towns, villages, the state: banners, prosperity, works); SM5 siege and damage next |
 | [`PLAYTEST.md`](PLAYTEST.md) | PT5 weapons that read as weapons; PT6d CK systems | medium; design | PT5: re-look at `pose-grips`, `pose-stances` and the clash gallery after the sprite overhaul (it redrew most weapons) and close it or list what is still wrong. PT6d waits on the playtester |
 
 ## Left out of finished plans (pick up or drop)

@@ -11,20 +11,34 @@ sealed partial class World
     void TownPlace(Mesh m, PlacePlan p, PlaceStyle st, PlaceState s, Random r)
     {
         if (p.Ring.Length < 3) { Town(m, At(p.Pos, t.Height(p.Pos)), 2.5f, r); return; }
-        var tops = TownWall(m, p, st, r);
-        foreach (var lot in p.Lots) Building(m, p, st, lot, r);
+        var tops = TownWall(m, p, st, s, r);
+        int n = 0, stalls = 0;
+        foreach (var lot in p.Lots)
+        {
+            int i = n++;
+            var lr = new Random(p.Seed + i * 7919); // each lot its own dice: a house looks the same whatever the state shows elsewhere
+            switch (lot.Use)
+            {
+                case LotUse.Works: continue;
+                case LotUse.Suburb: if (s.Wealth == 2) Cottage(m, st, lot, lr, chimney: i % 3 == 0); continue;
+                case LotUse.Stall when stalls++ >= StallsUp(s): continue;
+                case LotUse.House when Ruined(s, i, village: false): Ruin(m, st, lot, lr); continue;
+            }
+            Building(m, p, st, lot, lr);
+        }
+        Works(m, p, st, s);
         Flags(m, s, tops, 1.1f, 0.9f, p.Front + 2.2f, 1);
     }
 
     /// The town wall: a tower at each corner clear of the gates, curtains between cut where the gates stand, a gatehouse at
     /// each gate (a timber gate tower in a palisade). Returns the gates' tops for the flags.
-    List<Vector3> TownWall(Mesh m, PlacePlan p, PlaceStyle st, Random r)
+    List<Vector3> TownWall(Mesh m, PlacePlan p, PlaceStyle st, PlaceState s, Random r)
     {
         const float u = 1;
         var ring = p.Ring;
         int n = ring.Length;
         bool timber = st.Defence == Defence.Palisade;
-        float wallH = timber ? 2.0f : 2.2f, thick = 0.5f, towerR = st.Round ? 0.78f : 0.7f;
+        float wallH = (timber ? 2.0f : 2.2f) * Rise(s), thick = 0.5f, towerR = st.Round ? 0.78f : 0.7f;
         float gateHalf = timber ? 1.0f : 1.05f + towerR * 1.1f;
         var col = WallColour(st, r);
         bool coursed = Coursed(st);

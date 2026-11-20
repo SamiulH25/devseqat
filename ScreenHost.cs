@@ -58,7 +58,7 @@ sealed class ScreenHost : Game
     /// Debug: IRONFIELD_PLACES=1 (or a filter: a style id's part, e.g. "steppe") with IRONFIELD_CAMPAIGN_SHOTS saves only the
     /// settlements close up, one of each style and kind, labels and parties hidden (docs/SETTLEMENTS.md).
     static readonly string? placesOnly = Environment.GetEnvironmentVariable("IRONFIELD_PLACES");
-    List<(string Name, Settlement Place)>? placeShots;
+    List<(string Name, Settlement Place, string Variant)>? placeShots;
     int placeShot;
     string? pendingShot;
     KeyboardState kb;
@@ -469,9 +469,23 @@ sealed class ScreenHost : Game
                 ("town", t => t.Kind == SettlementKind.Town), ("tower", t => t.Size == 1), ("castle", t => t.Size == 2),
                 ("great", t => t.Size == 3), ("village", t => t.Kind == SettlementKind.Village),
             }.Select(k => ($"place-{a.Id}-{k.Kind}", c.S.Settlements.FirstOrDefault(t => t.Culture == a.Id && k.Is(t)))))
-            .Where(x => x.Item2 != null).Select(x => (x.Item1, x.Item2!)).ToList();
+            .Where(x => x.Item2 != null)
+            // A town, castle and village also rich (every work built, walls at their highest) and poor (SM4).
+            .SelectMany(x => x.Item1.EndsWith("-town") || x.Item1.EndsWith("-castle") || x.Item1.EndsWith("-village")
+                ? new[] { (x.Item1, x.Item2!, ""), (x.Item1 + "-rich", x.Item2!, "rich"), (x.Item1 + "-poor", x.Item2!, "poor") }
+                : new[] { (x.Item1, x.Item2!, "") }).ToList();
         if (placeShot >= placeShots.Count) { Exit(); return; }
-        var (name, place) = placeShots[placeShot++];
+        var (name, place, variant) = placeShots[placeShot++];
+        if (variant == "rich")
+        {
+            place.Prosperity = 95;
+            if (place.Kind != SettlementKind.Village)
+            {
+                foreach (var id in PlaceState.WorkIds) if (place.Kind == SettlementKind.Town || id is not ("market" or "stables")) place.Buildings[id] = 1;
+                place.Buildings["walls"] = 3;
+            }
+        }
+        else if (variant == "poor") { place.Prosperity = 10; place.Buildings.Clear(); }
         c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 11.5;
         map.Stage("place", place);
         pendingShot = name;

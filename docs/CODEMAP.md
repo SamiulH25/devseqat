@@ -494,10 +494,13 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Pilot.cs (303 lines)
 - **Pilot** (class, L8): Pilot:31, Run:42, Fight:64, Refuge:95, Visit:105, Kit:136, Worn:144, Worth:145, Fresh:149, Promote:159, TakePerks:170, Think:181, Arcane:243, Siege:265, Talk:288, S:302
 
-## Campaign/PlacePlans.cs (167 lines)
+## Campaign/PlacePlans.cs (175 lines)
 - **PlacePlan** (record, L7): StreetScale:30, Dir:41
-- **PlaceState** (struct, L45)
-- **WorldMap** (class, L50): FootprintOf:56, PlanPlaces:64, Wet:98, RoadBearings:103, WaterBearings:124, DoorstepOf:142, LineDist:153, SegDist:161
+- **PlaceState** (struct, L46): WealthOf:52, Has:53
+- **WorldMap** (class, L56): FootprintOf:62, PlanPlaces:70, Wet:106, RoadBearings:111, WaterBearings:132, DoorstepOf:150, LineDist:161, SegDist:169
+
+## Campaign/PlaceWorks.cs (120 lines)
+- **WorldMap** (class, L8): readonly:16, Neighbours:19, Owns:22, LayCastle:30, LayWorks:41, LaySuburbs:88
 
 ## Campaign/QuestLog.cs (92 lines)
 - **QuestView** (record, L7)
@@ -567,11 +570,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Rumour** (record, L6)
 - **Campaign** (class, L10): PrepareTournament:19, AutoTournament:41, FinishTournament:50, Rumours:86, Follow:117, Flavour:124
 
-## Campaign/TownPlans.cs (369 lines)
+## Campaign/TownPlans.cs (372 lines)
 - **LotUse** (enum, L6)
 - **Lot** (struct, L10): Facing:24, Overlap:27
 - **Gate** (struct, L41)
-- **WorldMap** (class, L43): OnRoad:71, InRing:82, RingDist:92, LotClear:100, LayTown:112, Resample:354
+- **WorldMap** (class, L43): OnRoad:71, InRing:82, RingDist:92, LotClear:100, LayTown:112, Resample:357
 
 ## Campaign/Traits.cs (96 lines)
 - **Campaign** (class, L6): readonly:11, RegardOfTraits:21, TraitsEarned:27, TraitsWeekly:40, AgeDaily:78, AgeEdge:95
@@ -579,7 +582,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/Undead.cs (91 lines)
 - **Campaign** (class, L9): AfterTheBattle:15, Bury:35, GravesDaily:39, RaiseHost:53, UndeadThink:75
 
-## Campaign/VillagePlans.cs (98 lines)
+## Campaign/VillagePlans.cs (109 lines)
 - **WorldMap** (class, L5): VillageKind:9, LayVillage:17
 
 ## Campaign/Wants.cs (97 lines)
@@ -603,9 +606,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Campaign/WorldLand.cs (136 lines)
 - **WorldMap** (class, L8): LayFields:12, BitCount:71, FieldClear:74, InField:105, GrowStands:110
 
-## Campaign/WorldMap.cs (712 lines)
+## Campaign/WorldMap.cs (713 lines)
 - **WorldMap** (class, L8): InLand:66, WorldMap:78, readonly:90, Generate:94, Climate:210, RaiseRidges:224, AddRidge:255, RidgeDist:267, RidgeHeight:270, OnRidge:288, HomeOf:291, ReachOf:293, GrowRealms:298, SiteKindsFor:340, PlaceSites:344, Cross:369, RiverDist:378, RiverScan:379, ProvinceAt:383, ProvinceScan:386, RoadDist:399, NearRoad:401, RoadScan:403, SpeedFactor:416, BattleGround:421, Height:439, LandHeight:452, DesignedHeight:476, RimAt:498, Ridged:500, Tint:503, OwnColour:547, NearSea:550, KindTint:558, BuildTerrain:573
-- **PlaceNamer** (class, L686): PlaceNamer:693, Pool:695, Next:701
+- **PlaceNamer** (class, L687): PlaceNamer:694, Pool:696, Next:702
 
 ## Campaign/WorldRoads.cs (260 lines)
 - **WorldMap** (class, L9): InLake:19, PlaceLakes:26, LayRoads:55
@@ -745,8 +748,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Castle.cs (58 lines)
 - **MapScreen** (class, L6): MusterTab:8
 
-## MapScreen.cs (930 lines)
-- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:93, Prepared:107, Prepare:112, PlaceStateOf:121, Open:132, ShowResults:153, Pressed:161, Update:165, readonly:262, LaterTips:276, Pan:300, ScreenKeys:302, OpenScreen:310, Soundscape:318, CameFrom:380, Camera:382, Rename:406, Trails:419, MapPick:432, OnScreen:438, PickAt:453, ClickWorld:484, Ground:493, Draw:516, UpdateBearers:611, FinishLife:664, UpdateLife:671, BuildSprites:702, BuildSpritesInner:709, DrawSprites:716, Surface:729, G:731, DrawLines:733, Stage:783
+## MapScreen.cs (934 lines)
+- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:93, Prepared:107, Prepare:112, PlaceStateOf:121, Open:135, ShowResults:156, Pressed:164, Update:168, readonly:265, LaterTips:279, Pan:303, ScreenKeys:305, OpenScreen:313, Soundscape:321, CameFrom:383, Camera:385, Rename:409, Trails:422, MapPick:435, OnScreen:441, PickAt:456, ClickWorld:487, Ground:496, Draw:519, UpdateBearers:614, FinishLife:667, UpdateLife:674, BuildSprites:705, BuildSpritesInner:712, DrawSprites:719, Surface:732, G:734, DrawLines:736, Stage:786
 
 ## MapScreen.Dialogs.cs (291 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, EncounterOwnSide:97, MeetingPanel:123, SiegeWorksRows:157, SiegePanel:179, BeatPanel:232, GameOverPanel:249, MenuPanel:263, SavesPanel:279
@@ -854,8 +857,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SaveScreen.cs (286 lines)
 - **SaveScreen** (class, L10): Show:29, Close:39, Draw:47, CampaignRow:155, SaveRow:177, Card:195, TypeName:235, NameBox:245, Thumb:258, Ago:277
 
-## ScreenHost.cs (933 lines)
-- **ScreenHost** (class, L9): readonly:42, ScreenHost:67, ApplyVideo:87, OpenSettings:97, LoadContent:99, StartCampaign:149, Load:176, FinishLoading:192, ContinueCampaign:215, LoadSave:222, OpenLab:231, QuickBattle:233, StartCampaignBattle:240, FinishCampaignBattle:250, CycleQuality:258, Update:262, DrawCursor:319, Draw:339, Fade:380, CaptureShot:410, readonly:438, RestoreTavernTown:450, StagingRefused:457, PlaceShots:464, SaveShots:482, CampaignShots:496
+## ScreenHost.cs (947 lines)
+- **ScreenHost** (class, L9): readonly:42, ScreenHost:67, ApplyVideo:87, OpenSettings:97, LoadContent:99, StartCampaign:149, Load:176, FinishLoading:192, ContinueCampaign:215, LoadSave:222, OpenLab:231, QuickBattle:233, StartCampaignBattle:240, FinishCampaignBattle:250, CycleQuality:258, Update:262, DrawCursor:319, Draw:339, Fade:380, CaptureShot:410, readonly:438, RestoreTavernTown:450, StagingRefused:457, PlaceShots:464, SaveShots:496, CampaignShots:510
 
 ## SelfTest.cs (103 lines)
 - **SelfTest** (class, L6): Run:14, Slots:20, ResolveBattles:32, RunOne:55, Lancer:63, Run:72, Scaled:74, MakeWanderer:77, Days:85, Ids:97, Check:99
@@ -982,8 +985,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **SelfTest** (class, L6): AbilitiesValidate:9, MagesByTier:18, SpellWarns:46, MageWill:66, BlessingBuffs:90, MistCoversArrows:109, WildfireNeedsDry:138, HorseHuntsMages:162, MagesHelp:186
 - **SelfTest** (class, L215): StandingEffectsCarry:219, RitesWork:249, SuperMages:277, CastOnOrder:297, SpellbookCarries:351, SpellbookByTier:369, CircleMaster:391, MistHides:416, MirageDrawsArrows:435, WardBreaksCast:454, OmenTeeth:472, AuraIsKnown:493, SpectacleBeat:508, WondersReported:524, MagesInTheWorld:543, ArcanaCensus:585, WellsFromSites:596, TideFeedsOffers:637, TideShared:655, Overreach:678, CourtMage:711, DoctrinesAndUnweave:743, WorkingsBite:776, WorkingsRemembered:806
 
-## Tests/MapTests.cs (616 lines)
-- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, NewLands:309, FieldsApart:348, MapDressed:368, ShipTravel:406, DesignedMap:454, PlacesPlanned:520, TownsLaidOut:550, PlanSvg:573, VillagesLaidOut:598
+## Tests/MapTests.cs (661 lines)
+- **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, NewLands:309, FieldsApart:348, MapDressed:368, ShipTravel:406, DesignedMap:454, PlacesPlanned:520, TownsLaidOut:550, PlanSvg:573, VillagesLaidOut:598, PlacesShowState:620
 
 ## Tests/MeleeTests.cs (425 lines)
 - **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, UrgeLunges:173, RefusesFlank:203, VeteransWrap:242, ElitePincer:258, Reforms:289, HorseRegroup:319, BowsFallBack:363, MusterGrade:401, MightWeighsDrill:416
@@ -1095,17 +1098,20 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## World.Materials.cs (78 lines)
 - **World** (class, L10): BuildMaterials:14, Periodic:35, Fbm:52, Cavity:65
 
-## World.Places.cs (399 lines)
-- **World** (class, L9): BuildPlaces:32, BuildPlaceTile:47, UpdatePlaces:61, FlushPlaces:83, DrawPlaces:97, Place:114, Enclosure:136, Flags:151, YardHouse:158, MidHold:162, GreatHold:191, SmallHold:235, MotteAndBailey:332, Shorten:398
+## World.Places.cs (402 lines)
+- **World** (class, L9): BuildPlaces:34, BuildPlaceTile:49, UpdatePlaces:63, FlushPlaces:85, DrawPlaces:99, Place:116, Enclosure:139, Flags:154, YardHouse:161, MidHold:165, GreatHold:194, SmallHold:238, MotteAndBailey:335, Shorten:401
 
-## World.Towns.cs (192 lines)
-- **World** (class, L8): TownPlace:11, TownWall:21, Building:76, TownHeight:116, Crane:129, Stall:149, Windmill:168
+## World.Towns.cs (206 lines)
+- **World** (class, L8): TownPlace:11, TownWall:35, Building:90, TownHeight:130, Crane:143, Stall:163, Windmill:182
 
-## World.Villages.cs (60 lines)
-- **World** (class, L8): VillagePlace:12, VillageHeight:37, Well:47
+## World.Villages.cs (75 lines)
+- **World** (class, L8): VillagePlace:12, Cottage:44, VillageHeight:52, Well:62
 
 ## World.Water.cs (374 lines)
 - **World** (class, L9): NormalAt:20, Roads:53, AddTile:100, Sea:113, Water:169, Ship:183, RiverWater:201, Reeds:293, Lake:315, Bridge:349
+
+## World.Works.cs (169 lines)
+- **World** (class, L7): Ruined:10, Rise:13, StallsUp:16, Ruin:19, Works:36, Range:62, Barn:70, Tiltyard:86, Stables:102, Kennel:113, Watchtower:124, MarketHall:133, Rails:152
 
 ## WorldDesign.cs (114 lines)
 - **WorldDesign** (class, L8): Get:34, Load:36, At:42, IsSea:43, ProvinceAt:47, U32:63, Hash2:66, Noise:77, static:85, Validate:92

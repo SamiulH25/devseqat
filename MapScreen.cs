@@ -117,12 +117,15 @@ sealed partial class MapScreen
     }
 
     /// What a settlement's model shows of it (docs/SETTLEMENTS.md): its holder's colours on its flags (gold for your own fiefs;
-    /// villages fly none).
+    /// villages fly none), its prosperity's band, the works built and its walls' level.
     static PlaceState PlaceStateOf(Campaign c, int id)
     {
         if (id < 0 || id >= c.S.Settlements.Count) return PlaceState.None;
         var s = c.S.Settlements[id];
-        return new PlaceState(s.Kind == SettlementKind.Village ? -1 : s.Owner >= 0 && s.Owner == c.Player.Id ? 2 : Style.PaletteOf(s.Faction));
+        int works = 0;
+        for (int i = 0; i < PlaceState.WorkIds.Length; i++) if (Campaign.Level(s, PlaceState.WorkIds[i]) > 0) works |= 1 << i;
+        return new PlaceState(s.Kind == SettlementKind.Village ? -1 : s.Owner >= 0 && s.Owner == c.Player.Id ? 2 : Style.PaletteOf(s.Faction),
+            PlaceState.WealthOf(s.Prosperity), works, Math.Clamp(Campaign.Level(s, "walls"), 0, 3));
     }
 
     const float MapTreeScale = 0.72f;
@@ -818,6 +821,7 @@ sealed partial class MapScreen
                 panel = PanelKind.None; follow = false; bare = true; focus = s.Pos; pitch = 0.6f;
                 zoom = s.Kind == SettlementKind.Town ? 42 : s.Kind == SettlementKind.Village ? 28 : s.Size switch { 1 => 24, 3 => 40, _ => 31 };
                 if (C.Map.Plans.TryGetValue(s.Id, out var plan)) yaw = plan.Front + MathF.PI + 0.55f;
+                world?.UpdatePlaces(id => PlaceStateOf(C, id), wait: true); // the shots change a place's state (SM4): show it now
                 break;
             }
             case "life": // a pasture and its beasts up close (WL4)

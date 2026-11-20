@@ -1,6 +1,6 @@
 # Settlements: the town and castle models overhaul (SM1-SM7)
 
-Status: **planned 2026-11-20**, SM1-SM3 built 2026-11-20 (see their "As built"), SM4 next. Owner's brief (2026-11-20): overhaul the town and castle models.
+Status: **planned 2026-11-20**, SM1-SM4 built 2026-11-20 (see their "As built"), SM5 next. Owner's brief (2026-11-20): overhaul the town and castle models.
 Owner's answers:
 1. **Scope:** towns, castles in all three sizes and villages on the campaign map, and the siege battlefield (the wall,
    towers, gate and houses you fight over) made to match.
@@ -186,6 +186,30 @@ small things (market stalls, wells, cranes, carts, stacks, gardens, fences).
   caps); market (stalls, a market hall); yard (a tiltyard and pells); barracks (a long range); granary (a tithe barn);
   stables (stable range and paddock); chapel (chapel); watchtower (a tall tower beyond the wall); kennel (kennels and a run).
 - Test: two states that differ build different meshes; the same state builds the same mesh (checksum).
+
+**As built (2026-11-20).**
+- `PlaceState(Palette, Wealth, Works, Walls)`: `Wealth` is the prosperity's band (`WealthOf`: under 30 poor, 80 and up
+  rich; towns start at 60, villages at 50), `Works` a bit per `PlaceState.WorkIds` (barracks, granary, yard, stables,
+  chapel, kennel, watchtower, market; any level counts), `Walls` the walls building's level 0-3. `MapScreen.PlaceStateOf`
+  fills it; a place is rebuilt only when one of these changes, so prosperity shows as it crosses a band.
+- Ground for all of it is planned with the map (`Campaign/PlaceWorks.cs`), never moved by the state: a site per work
+  round every town and castle (`LotUse.Works`, in `WorkIds` order; a zero-sized lot where none fits or a castle cannot
+  build it: no stables or market), outside the wall, off roads, water and fields, the watchtower further out; a town's
+  market hall on its square off the roads crossing it. Towns get 5-18 suburb lots along the roads 1.2-7 past the wall
+  (`LotUse.Suburb`, median 12), villages up to 3. Every lot keeps to its own side of its neighbours (`Owns`: nearer its
+  own place's edge than any other's, outside any other footprint). Foliage is cleared under every lot past the
+  footprint, so works sites stand in small clearings whether built or not.
+- Drawn (`World.Works.cs`): barracks a long range, granary a tithe barn (a tall store in the south), yard a railed list
+  with its tilt, pells and a shed, stables a range and paddock, chapel, kennel a shed and run, watchtower the people's
+  tower with its flag, market a hall on posts. Rich: suburbs of cottages (`Cottage`, the village house), six stalls.
+  Middling: four stalls. Poor: two stalls, one town house in four (one village house in three) roofless (`Ruin`); camps
+  just lose the tents. Walls rise 12% a level (curtains, towers and gatehouses; keeps stay as built).
+- Each lot draws with its own dice (`p.Seed + i * 7919`): a house looks the same whatever its neighbours show.
+- Not built: a tiltyard's stand by yard level, the market's extra stalls past six, walls changing material by level
+  (the people's way of building decides it; a level only raises the circuit). AI lords never build, so works show at
+  your fiefs and in every town's barracks (all towns start with one).
+- Shots: `IRONFIELD_PLACES` also writes `-rich` and `-poor` for each people's town, castle and village.
+- Budget: unchanged when nothing is built (0.96M verts on seed 11); a town or castle with every work adds ~4k verts.
 
 ### SM5: Siege and damage
 - **Battered** (`Settlement.Battered`): breaches in the curtain with rubble at the foot, broken merlons, fallen tower caps.

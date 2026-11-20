@@ -12,14 +12,20 @@ sealed partial class World
     void VillagePlace(Mesh m, PlacePlan p, PlaceStyle st, PlaceState s, Random r)
     {
         if (p.Lots.Length == 0) { Village(m, At(p.Pos, t.Height(p.Pos)), 1.8f, r); return; } // a plan never laid out (no such map today)
-        var kind = WorldMap.VillageKind(st);
-        var look = st.Id.StartsWith("azure") && kind is HouseKind.Timber or HouseKind.Stone ? st with { RoofColour = Thatch3, Pitch = MathF.Max(st.Pitch, 0.85f) } : st;
-        int i = 0;
+        int i = 0, n = 0;
         foreach (var lot in p.Lots)
+        {
+            var lr = new Random(p.Seed + n++ * 7919); // each lot its own dice: a house looks the same whatever its neighbours show
             switch (lot.Use)
             {
+                case LotUse.House when Ruined(s, n, village: true):
+                    if (WorldMap.VillageKind(st) is not (HouseKind.Yurt or HouseKind.Tent)) Ruin(m, st, lot, lr); // a camp just moves on
+                    break;
                 case LotUse.House:
-                    Dwelling(m, kind, look, lot.Pos, lot.W, lot.D, VillageHeight(kind, r), lot.Yaw, r, chimney: i++ % 2 == 0);
+                    Cottage(m, st, lot, lr, chimney: i++ % 2 == 0);
+                    break;
+                case LotUse.Suburb:
+                    if (s.Wealth == 2) Cottage(m, st, lot, lr, chimney: false);
                     break;
                 case LotUse.Landmark:
                 {
@@ -31,6 +37,15 @@ sealed partial class World
                 }
                 case LotUse.Well: Well(m, st, lot, r); break;
             }
+        }
+    }
+
+    /// A people's village house on its lot (also a rich town's suburbs): the hamlet kind, Crownlands cottages thatched.
+    void Cottage(Mesh m, PlaceStyle st, Lot lot, Random r, bool chimney)
+    {
+        var kind = WorldMap.VillageKind(st);
+        var look = st.Id.StartsWith("azure") && kind is HouseKind.Timber or HouseKind.Stone ? st with { RoofColour = Thatch3, Pitch = MathF.Max(st.Pitch, 0.85f) } : st;
+        Dwelling(m, kind, look, lot.Pos, lot.W, lot.D, VillageHeight(kind, r), lot.Yaw, r, chimney: chimney);
     }
 
     /// How tall a village house stands to its eaves.
