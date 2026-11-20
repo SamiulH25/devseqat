@@ -15,126 +15,212 @@ def build_phase2_helms(PartBuilder):
     parts = []
     segs = 8
 
+    def add_mail_coif(p, mat_id=5, shade=(0.96, 0.96, 1.0)):
+        p.add_loft([
+            (0, -0.17, -0.045, 0.175, 0.145, 7),
+            (0, 0.06, -0.045, 0.172, 0.140, 7),
+        ], mat_id=mat_id, shade=shade, cap_bot=False, cap_top=False, ao_y=(-0.17, 0.08, 0.76, 1.02))
+
     def greathelm_base(name):
         p = PartBuilder(name)
         p.add_loft([
-            (0, -0.15, 0.00, 0.175, 0.185, segs),
-            (0, 0.04, 0.01, 0.185, 0.195, segs),
-            (0, 0.22, 0.00, 0.168, 0.178, segs),
-            (0, 0.27, 0.00, 0.090, 0.095, segs),
-        ], mat_id=4, ao_y=(-0.15, 0.27, 0.78, 1.08))
-        p.add_box((0, 0.055, 0.182), (0.24, 0.032, 0.034), mat_id=0, shade=(0.08, 0.08, 0.10))
-        p.add_box((0, 0.04, 0.194), (0.040, 0.29, 0.020), mat_id=6)
-        p.add_box((0, 0.055, 0.194), (0.26, 0.034, 0.020), mat_id=6)
+            (0, -0.155, 0.00, 0.172, 0.178, segs),
+            (0, 0.040, 0.008, 0.182, 0.188, segs),
+            (0, 0.230, 0.000, 0.168, 0.174, segs),
+            (0, 0.275, 0.000, 0.135, 0.140, segs),
+        ], mat_id=4, ao_y=(-0.155, 0.275, 0.76, 1.10))
+        p.add_box((0, 0.062, 0.192), (0.255, 0.042, 0.034), mat_id=0, shade=(0.05, 0.05, 0.07))
+        p.add_box((0, 0.035, 0.205), (0.044, 0.32, 0.026), mat_id=6)
+        p.add_box((0, 0.095, 0.203), (0.275, 0.036, 0.026), mat_id=6)
+        p.add_loft([(0, 0.215, 0, 0.174, 0.180, segs), (0, 0.242, 0, 0.172, 0.178, segs)], mat_id=6, cap_bot=False, cap_top=False)
         return p
 
-    # 1. Winged greathelm (twin swept gilded/faction wings!)
+    # 1. Winged greathelm (swept 3-tiered fanned feathered wings!)
     gw = greathelm_base("helm_greathelm_wings")
     for sx in (-1, 1):
-        gw.add_box((sx * 0.24, 0.26, -0.02), (0.14, 0.30, 0.055), mat_id=6, rot_euler=(0.0, sx * 0.25, -sx * 0.32), ao_y=(0.12, 0.44, 0.80, 1.12))
-        gw.add_box((sx * 0.31, 0.38, -0.05), (0.12, 0.18, 0.042), mat_id=3, rot_euler=(0.0, sx * 0.30, -sx * 0.45))
+        gw.add_box((sx * 0.21, 0.22, -0.01), (0.11, 0.22, 0.050), mat_id=6, rot_euler=(0.0, sx * 0.22, -sx * 0.26))
+        gw.add_box((sx * 0.27, 0.33, -0.04), (0.13, 0.24, 0.044), mat_id=3, rot_euler=(0.0, sx * 0.28, -sx * 0.38), ao_y=(0.18, 0.48, 0.84, 1.12))
+        gw.add_box((sx * 0.34, 0.43, -0.08), (0.10, 0.18, 0.036), mat_id=6, rot_euler=(0.0, sx * 0.34, -sx * 0.52))
     parts.append(gw)
 
-    # 2. Sunburst greathelm (Order of the Ashen Sun radiant crown!)
+    # 2. Sunburst greathelm (Order of the Ashen Sun regal crown + 7 radiant golden rays!)
     gs = greathelm_base("helm_greathelm_sun")
-    gs.add_loft([(0, 0.21, 0, 0.175, 0.182, segs), (0, 0.27, 0, 0.182, 0.190, segs)], mat_id=6)
-    for k in range(5):
-        ang = (k - 2) * 0.55
-        gs.add_cone((math.sin(ang) * 0.14, 0.26, math.cos(ang) * 0.14),
-                    (math.sin(ang) * 0.24, 0.44, math.cos(ang) * 0.24), 0.036, 0.006, segs=4, mat_id=6)
+    gs.add_loft([(0, 0.22, 0, 0.178, 0.184, segs), (0, 0.285, 0, 0.192, 0.198, segs)], mat_id=6)
+    for k in range(7):
+        ang = (k - 3) * 0.42
+        h = 0.47 if k == 3 else (0.43 if abs(k - 3) == 1 else 0.39)
+        gs.add_cone((math.sin(ang) * 0.145, 0.27, math.cos(ang) * 0.145),
+                    (math.sin(ang) * 0.24, h, math.cos(ang) * 0.24), 0.036, 0.006, segs=4, mat_id=6)
     parts.append(gs)
 
-    # 3. Horned greathelm
+    # 3. Horned greathelm (brass sockets + thick double-curved ivory horns!)
     gh = greathelm_base("helm_greathelm_horns")
     for sx in (-1, 1):
-        gh.add_cone((sx * 0.15, 0.18, 0.0), (sx * 0.32, 0.30, 0.02), 0.052, 0.028, segs=5, mat_id=3)
-        gh.add_cone((sx * 0.32, 0.30, 0.02), (sx * 0.26, 0.46, 0.06), 0.028, 0.008, segs=5, mat_id=3)
+        gh.add_cone((sx * 0.14, 0.18, 0.0), (sx * 0.22, 0.23, 0.01), 0.058, 0.048, segs=5, mat_id=6)
+        gh.add_cone((sx * 0.21, 0.22, 0.01), (sx * 0.35, 0.32, 0.03), 0.046, 0.028, segs=5, mat_id=3)
+        gh.add_cone((sx * 0.35, 0.32, 0.03), (sx * 0.27, 0.49, 0.08), 0.028, 0.007, segs=5, mat_id=3)
     parts.append(gh)
 
-    # 4. Horned northern spangenhelm
+    # 4. Horned northern spangenhelm (brass ribs, spectacle guard, mail aventail & sweeping Viking horns!)
     sh = PartBuilder("helm_spangen_horns")
-    sh.add_loft([(0, 0.05, 0, 0.188, 0.192, segs), (0, 0.09, 0, 0.186, 0.190, segs)], mat_id=6)
-    sh.add_loft([(0, 0.08, 0, 0.180, 0.185, segs), (0, 0.18, 0, 0.145, 0.150, segs), (0, 0.29, 0, 0.025, 0.025, segs)], mat_id=4, ao_y=(0.08, 0.29, 0.80, 1.08))
-    sh.add_box((0, 0.01, 0.185), (0.042, 0.10, 0.024), mat_id=5)
+    add_mail_coif(sh, mat_id=5)
+    sh.add_loft([(0, 0.048, 0, 0.192, 0.196, segs), (0, 0.095, 0, 0.190, 0.194, segs)], mat_id=6)
+    sh.add_loft([(0, 0.085, 0, 0.182, 0.188, segs), (0, 0.185, 0, 0.148, 0.154, segs), (0, 0.295, 0, 0.028, 0.028, segs)], mat_id=4, ao_y=(0.08, 0.30, 0.78, 1.10))
+    sh.add_box((0, 0.195, 0.0), (0.030, 0.20, 0.31), mat_id=6)
+    sh.add_box((0, -0.005, 0.192), (0.044, 0.12, 0.028), mat_id=5)
+    sh.add_box((0, 0.048, 0.190), (0.18, 0.030, 0.028), mat_id=6)
     for sx in (-1, 1):
-        sh.add_cone((sx * 0.15, 0.14, 0.0), (sx * 0.33, 0.24, 0.03), 0.048, 0.024, segs=5, mat_id=3)
-        sh.add_cone((sx * 0.33, 0.24, 0.03), (sx * 0.28, 0.42, 0.08), 0.024, 0.007, segs=5, mat_id=3)
+        sh.add_cone((sx * 0.14, 0.14, 0.0), (sx * 0.22, 0.19, 0.02), 0.054, 0.044, segs=5, mat_id=6)
+        sh.add_cone((sx * 0.21, 0.18, 0.02), (sx * 0.35, 0.28, 0.04), 0.042, 0.024, segs=5, mat_id=3)
+        sh.add_cone((sx * 0.35, 0.28, 0.04), (sx * 0.28, 0.45, 0.09), 0.024, 0.007, segs=5, mat_id=3)
     parts.append(sh)
 
-    # 5. Bear-head pelt helm (Northmarch berserkers!)
+    # 5. Bear-head pelt helm (open fanged bear jaw crest framing warrior face + thick pelt cheeks!)
     bh = PartBuilder("helm_bearhead")
-    bh.add_sphere((0, 0.10, -0.02), (0.215, 0.195, 0.215), segs=7, rings=5, mat_id=7, shade=(0.82, 0.72, 0.64), ao_y=(-0.06, 0.30, 0.76, 1.08))
-    bh.add_box((0, 0.13, 0.18), (0.14, 0.10, 0.14), mat_id=7, shade=(1.08, 0.98, 0.88))  # bear muzzle crest
-    bh.add_box((0, 0.14, 0.25), (0.055, 0.045, 0.03), mat_id=0, shade=(0.12, 0.10, 0.10))  # bear nose
+    add_mail_coif(bh, mat_id=7, shade=(0.76, 0.66, 0.58))
+    bh.add_sphere((0, 0.11, -0.02), (0.218, 0.198, 0.218), segs=7, rings=5, mat_id=7, shade=(0.82, 0.72, 0.64), ao_y=(-0.06, 0.30, 0.76, 1.08))
+    bh.add_box((0, 0.14, 0.18), (0.15, 0.105, 0.155), mat_id=7, shade=(1.06, 0.96, 0.86))  # sculpted bear snout
+    bh.add_box((0, 0.15, 0.26), (0.058, 0.048, 0.032), mat_id=0, shade=(0.10, 0.09, 0.09))  # bear nose
     for sx in (-1, 1):
-        bh.add_sphere((sx * 0.16, 0.27, 0.02), (0.058, 0.058, 0.045), segs=5, rings=3, mat_id=7, shade=(0.76, 0.66, 0.58))
+        bh.add_cone((sx * 0.052, 0.10, 0.22), (sx * 0.052, 0.045, 0.225), 0.018, 0.004, segs=4, mat_id=0, shade=(0.96, 0.94, 0.88))  # white bear fangs!
+        bh.add_sphere((sx * 0.165, 0.275, 0.02), (0.062, 0.062, 0.048), segs=5, rings=3, mat_id=7, shade=(0.74, 0.64, 0.56))
     parts.append(bh)
 
-    # 6. Morion (Saltmarsh League swept-brim combed Renaissance helmet!)
+    # 6. Morion (Saltmarsh League swept crescent boat-brim + bold tall fluted comb + brass rivet band!)
     mr = PartBuilder("helm_morion")
     rings = []
-    for y, rx, rz, front_up in [(0.045, 0.24, 0.32, 0.075), (0.085, 0.19, 0.20, 0.0), (0.18, 0.17, 0.18, 0.0), (0.26, 0.05, 0.06, 0.0)]:
+    for y, rx, rz, front_up in [(0.035, 0.245, 0.34, 0.095), (0.088, 0.192, 0.205, 0.0), (0.185, 0.172, 0.185, 0.0), (0.268, 0.048, 0.058, 0.0)]:
         ring = []
         for i in range(segs):
             a = 2.0 * math.pi * i / segs
             x = math.cos(a) * rx
             z = math.sin(a) * rz
-            yy = y + front_up * abs(math.sin(a))  # iconic upturned front & back brim!
+            yy = y + front_up * abs(math.sin(a)) ** 1.4
             ring.append(Vector((x, yy, z)))
         rings.append(ring)
-    mr.add_loft(rings, mat_id=4, ao_y=(0.04, 0.28, 0.78, 1.12))
-    mr.add_box((0, 0.24, 0.0), (0.036, 0.15, 0.28), mat_id=4, shade=(1.10, 1.10, 1.14))  # tall morion comb
+    mr.add_loft(rings, mat_id=4, ao_y=(0.03, 0.29, 0.78, 1.14))
+    mr.add_loft([(0, 0.082, 0, 0.198, 0.210, segs), (0, 0.112, 0, 0.194, 0.206, segs)], mat_id=6)  # brass rivet band
+    mr.add_box((0, 0.255, 0.0), (0.038, 0.175, 0.30), mat_id=4, shade=(1.10, 1.10, 1.14))  # tall dramatic morion comb
     parts.append(mr)
 
-    # 7. Barbute (Italian open-T cheek-guard warhelm with brass crest)
+    # 7. Barbute (TRUE open-T/Y-faced Italian warhelm with sculpted forward cheek-guards + brass crest!)
     bb = PartBuilder("helm_barbute")
+    # Back shell & steel crown (leaves face cleanly open!)
     bb.add_loft([
-        (0, -0.10, -0.02, 0.185, 0.185, segs),
-        (0, 0.06, 0.00, 0.190, 0.195, segs),
-        (0, 0.18, 0.00, 0.175, 0.180, segs),
-        (0, 0.26, 0.00, 0.060, 0.065, segs),
-    ], mat_id=4, ao_y=(-0.10, 0.27, 0.78, 1.10))
-    bb.add_box((0, 0.25, -0.01), (0.034, 0.11, 0.24), mat_id=6)
+        (0, -0.14, -0.055, 0.188, 0.155, segs),
+        (0, 0.06, -0.035, 0.192, 0.175, segs),
+        (0, 0.18, 0.00, 0.178, 0.185, segs),
+        (0, 0.268, 0.00, 0.058, 0.064, segs),
+    ], mat_id=4, ao_y=(-0.14, 0.27, 0.78, 1.12))
+    # Prominent brow arch + twin swept cheek-guards framing the open T-slit!
+    bb.add_box((0, 0.11, 0.172), (0.28, 0.065, 0.055), mat_id=4, shade=(1.02, 1.04, 1.08))
+    for sx in (-1, 1):
+        bb.add_box((sx * 0.128, -0.035, 0.135), (0.088, 0.21, 0.095), mat_id=4, rot_euler=(0.0, sx * 0.35, -sx * 0.08), ao_y=(-0.14, 0.10, 0.80, 1.06))
+    bb.add_box((0, 0.255, -0.01), (0.036, 0.12, 0.25), mat_id=6)  # gilded comb crest
     parts.append(bb)
 
-    # 8. Steppe helm (Khaganate tall conical steel helm + fur brim)
+    # 8. Steppe helm (Khaganate lush fur-trimmed brim + ear-flaps + tall ribbed conical steel helm + spire!)
     st = PartBuilder("helm_steppe")
-    st.add_loft([(0, 0.04, 0, 0.215, 0.220, segs), (0, 0.10, 0, 0.210, 0.215, segs)], mat_id=7, shade=(0.76, 0.68, 0.60))
-    st.add_loft([(0, 0.09, 0, 0.175, 0.180, segs), (0, 0.22, 0, 0.125, 0.130, segs), (0, 0.36, 0, 0.018, 0.018, segs)], mat_id=4, ao_y=(0.09, 0.36, 0.80, 1.12))
+    st.add_loft([(0, 0.02, 0, 0.228, 0.232, segs), (0, 0.08, 0, 0.238, 0.242, segs), (0, 0.12, 0, 0.210, 0.215, segs)], mat_id=7, shade=(0.82, 0.74, 0.64), ao_y=(0.02, 0.12, 0.80, 1.08))
+    for sx in (-1, 1):
+        st.add_box((sx * 0.175, -0.035, 0.01), (0.052, 0.13, 0.11), mat_id=7, shade=(0.78, 0.70, 0.60))  # fur cheek ear-flaps
+    st.add_loft([(0, 0.11, 0, 0.178, 0.184, segs), (0, 0.24, 0, 0.124, 0.130, segs), (0, 0.36, 0, 0.024, 0.024, segs)], mat_id=4, ao_y=(0.11, 0.36, 0.80, 1.14))
+    st.add_cone((0, 0.34, 0), (0, 0.43, 0), 0.032, 0.008, segs=5, mat_id=6)  # brass finial
     parts.append(st)
 
-    # 9. Tug khan helm (tall gilded steppe cone + streaming horsehair tail!)
+    # 9. Tug khan helm (gilded conical steppe helm + fur brim + arched streaming dark horsehair tug!)
     tg = PartBuilder("helm_tug")
-    tg.add_loft([(0, 0.04, 0, 0.220, 0.225, segs), (0, 0.10, 0, 0.215, 0.220, segs)], mat_id=7, shade=(0.74, 0.66, 0.58))
-    tg.add_loft([(0, 0.09, 0, 0.178, 0.182, segs), (0, 0.24, 0, 0.120, 0.125, segs), (0, 0.38, 0, 0.022, 0.022, segs)], mat_id=4, ao_y=(0.09, 0.38, 0.80, 1.12))
-    tg.add_cone((0, 0.36, 0), (0, 0.45, -0.04), 0.032, 0.018, segs=5, mat_id=6)
-    tg.add_cone((0, 0.44, -0.04), (0, 0.18, -0.34), 0.045, 0.018, segs=5, mat_id=12)  # streaming dark horsehair tug
+    tg.add_loft([(0, 0.02, 0, 0.232, 0.236, segs), (0, 0.08, 0, 0.242, 0.246, segs), (0, 0.12, 0, 0.214, 0.218, segs)], mat_id=7, shade=(0.78, 0.70, 0.60))
+    for sx in (-1, 1):
+        tg.add_box((sx * 0.175, -0.035, 0.01), (0.052, 0.13, 0.11), mat_id=6)  # gilded cheek guards
+    tg.add_loft([(0, 0.11, 0, 0.180, 0.186, segs), (0, 0.25, 0, 0.122, 0.128, segs), (0, 0.38, 0, 0.026, 0.026, segs)], mat_id=4, ao_y=(0.11, 0.38, 0.80, 1.14))
+    tg.add_loft([(0, 0.11, 0, 0.186, 0.192, segs), (0, 0.145, 0, 0.182, 0.188, segs)], mat_id=6)
+    tg.add_cone((0, 0.36, 0), (0, 0.46, -0.03), 0.036, 0.018, segs=5, mat_id=6)
+    tg.add_cone((0, 0.45, -0.03), (0, 0.38, -0.22), 0.048, 0.038, segs=5, mat_id=12)
+    tg.add_cone((0, 0.38, -0.22), (0, 0.16, -0.38), 0.038, 0.014, segs=5, mat_id=12)
     parts.append(tg)
 
-    # 10. Spiked desert turban (Sunward Emirates tall spike + thick linen wrap)
+    # 10. Spiked desert turban (Sunward Emirates tall gilded-ribbed kulah khud + folded white turban + neck cloth!)
     su = PartBuilder("helm_spike_turban")
-    su.add_loft([(0, 0.04, 0, 0.225, 0.230, segs), (0, 0.12, 0, 0.242, 0.246, segs), (0, 0.20, 0, 0.175, 0.180, segs)], mat_id=3, ao_y=(0.04, 0.21, 0.82, 1.08))
-    su.add_cone((0, 0.17, 0), (0, 0.41, 0), 0.115, 0.012, segs=6, mat_id=4)
-    su.add_box((0, 0.13, 0.235), (0.055, 0.055, 0.028), mat_id=6)  # front jewel clasp
+    add_mail_coif(su, mat_id=5)  # iron mail aventail under turban
+    su.add_loft([(0, 0.13, 0, 0.182, 0.186, segs), (0, 0.25, 0, 0.138, 0.142, segs), (0, 0.33, 0, 0.042, 0.042, segs)], mat_id=4, ao_y=(0.13, 0.34, 0.82, 1.14))
+    su.add_cone((0, 0.31, 0), (0, 0.45, 0), 0.046, 0.008, segs=5, mat_id=6)  # tall gleaming brass spire
+    su.add_loft([(0, 0.025, 0, 0.220, 0.226, segs), (0, 0.092, 0, 0.238, 0.242, segs), (0, 0.155, 0, 0.196, 0.200, segs)], mat_id=0, shade=(0.96, 0.94, 0.88), ao_y=(0.02, 0.16, 0.80, 1.06))
+    su.add_box((0, 0.098, 0.205), (0.25, 0.055, 0.072), mat_id=0, shade=(0.98, 0.96, 0.92), rot_euler=(0, 0, 0.24))
+    su.add_box((0, 0.098, 0.208), (0.25, 0.055, 0.072), mat_id=0, shade=(0.91, 0.89, 0.84), rot_euler=(0, 0, -0.24))
+    su.add_box((0, 0.110, 0.242), (0.062, 0.062, 0.028), mat_id=6)  # front gilded jewel clasp
     parts.append(su)
 
-    # 11. Wide-brimmed brigand / ranger hat
+    # 11. Wide-brimmed brigand / ranger hat with contrast band & jaunty side feather!
     br = PartBuilder("helm_brigand_hat")
-    br.add_loft([(0, 0.05, 0, 0.31, 0.31, segs), (0, 0.08, 0, 0.18, 0.18, segs), (0, 0.21, 0, 0.15, 0.15, segs), (0, 0.24, 0, 0.08, 0.08, segs)], mat_id=7, ao_y=(0.05, 0.25, 0.78, 1.08))
-    br.add_loft([(0, 0.08, 0, 0.186, 0.186, segs), (0, 0.115, 0, 0.182, 0.182, segs)], mat_id=3)
+    br.add_loft([(0, 0.045, 0, 0.32, 0.32, segs), (0, 0.085, 0, 0.185, 0.185, segs), (0, 0.215, 0, 0.152, 0.152, segs), (0, 0.245, 0, 0.082, 0.082, segs)], mat_id=7, ao_y=(0.04, 0.25, 0.78, 1.08))
+    br.add_loft([(0, 0.082, 0, 0.192, 0.192, segs), (0, 0.120, 0, 0.188, 0.188, segs)], mat_id=1)  # faction hatband
+    br.add_cone((-0.17, 0.10, -0.04), (-0.28, 0.34, -0.18), 0.036, 0.012, segs=4, mat_id=3)  # jaunty feather!
     parts.append(br)
 
-    # 12. Sallet with brass crest
+    # 12. Sallet with brass crest & gothic bevor chin-guard!
     sc = PartBuilder("helm_sallet_crest")
-    sc.add_loft([(0, 0.04, -0.04, 0.19, 0.22, segs), (0, 0.16, -0.01, 0.18, 0.19, segs), (0, 0.26, 0, 0.045, 0.05, segs)], mat_id=4, ao_y=(0.04, 0.27, 0.80, 1.10))
-    sc.add_box((0, 0.26, -0.02), (0.036, 0.13, 0.25), mat_id=6)
+    sc.add_loft([(0, 0.01, -0.06, 0.190, 0.235, segs), (0, 0.08, -0.02, 0.195, 0.212, segs), (0, 0.185, -0.01, 0.180, 0.190, segs), (0, 0.27, 0, 0.045, 0.052, segs)], mat_id=4, ao_y=(0.01, 0.28, 0.78, 1.12))
+    sc.add_box((0, 0.068, 0.212), (0.21, 0.028, 0.026), mat_id=0, shade=(0.06, 0.06, 0.08))
+    sc.add_box((0, -0.065, 0.135), (0.22, 0.125, 0.11), mat_id=4, shade=(0.94, 0.96, 1.0))  # steel bevor chin-guard
+    sc.add_box((0, 0.265, -0.02), (0.038, 0.14, 0.26), mat_id=6)
     parts.append(sc)
 
-    # 13. Dragon-crested warhelm
+    # 13. Dragon-crested warhelm (sculpted gilded wyrm head, jaws, horns & spine ridge!)
     dr = greathelm_base("helm_dragon")
-    dr.add_box((0, 0.31, -0.01), (0.055, 0.14, 0.26), mat_id=6)
-    dr.add_cone((0, 0.34, 0.10), (0, 0.38, 0.28), 0.052, 0.018, segs=4, mat_id=6)
+    dr.add_box((0, 0.315, -0.02), (0.062, 0.145, 0.28), mat_id=6)
+    dr.add_cone((0, 0.35, 0.10), (0, 0.39, 0.31), 0.058, 0.020, segs=4, mat_id=6)  # dragon snout
+    for sx in (-1, 1):
+        dr.add_cone((sx * 0.04, 0.37, 0.02), (sx * 0.13, 0.48, -0.14), 0.026, 0.006, segs=4, mat_id=6)  # swept dragon horns
+    dr.add_cone((0, 0.32, -0.14), (0, 0.24, -0.32), 0.045, 0.010, segs=4, mat_id=6)  # dragon crest tail
     parts.append(dr)
+
+    # 14. Armet (NEW — sleek rounded late-medieval closed knight helm with pointed bellows visor!)
+    am = PartBuilder("helm_armet")
+    am.add_loft([
+        (0, -0.16, -0.01, 0.162, 0.168, segs),
+        (0, -0.04, 0.01, 0.175, 0.192, segs),
+        (0, 0.08, 0.01, 0.182, 0.198, segs),
+        (0, 0.20, 0.00, 0.166, 0.176, segs),
+        (0, 0.275, 0.00, 0.052, 0.058, segs),
+    ], mat_id=4, ao_y=(-0.16, 0.28, 0.78, 1.12))
+    # Angular protruding pointed visor prow + crisp dark eye-slit + high crown comb
+    am.add_cone((0, 0.015, 0.15), (0, 0.035, 0.275), 0.115, 0.024, segs=4, mat_id=4, smooth=False, shade=(1.04, 1.06, 1.10))
+    am.add_box((0, 0.080, 0.206), (0.22, 0.032, 0.030), mat_id=0, shade=(0.05, 0.05, 0.07))
+    am.add_box((0, 0.235, -0.01), (0.034, 0.11, 0.24), mat_id=4, shade=(1.10, 1.10, 1.14))
+    am.add_box((0, 0.080, 0.214), (0.032, 0.15, 0.020), mat_id=6)  # subtle gilt visor trim
+    parts.append(am)
+
+    # 15. Houndskull Bascinet (NEW — tall pointed skull + sharp pig-face visor snout + mail aventail!)
+    bs = PartBuilder("helm_bascinet")
+    add_mail_coif(bs, mat_id=5)
+    bs.add_loft([
+        (0, -0.08, -0.01, 0.176, 0.184, segs),
+        (0, 0.08, 0.00, 0.180, 0.190, segs),
+        (0, 0.21, -0.01, 0.145, 0.155, segs),
+        (0, 0.315, -0.02, 0.032, 0.035, segs),  # iconic pointed bascinet apex
+    ], mat_id=4, ao_y=(-0.08, 0.32, 0.78, 1.12))
+    bs.add_cone((0, 0.01, 0.14), (0, 0.02, 0.305), 0.110, 0.022, segs=4, mat_id=4, smooth=False, shade=(1.05, 1.07, 1.12))
+    bs.add_box((0, 0.076, 0.205), (0.20, 0.030, 0.028), mat_id=0, shade=(0.05, 0.05, 0.07))
+    parts.append(bs)
+
+    # 16. Spiked Iron Skullcap (NEW — 16 spike troops: domed iron helm + brass socket + tall top spike!)
+    sp = PartBuilder("helm_spike")
+    sp.add_loft([
+        (0, 0.035, -0.02, 0.215, 0.225, segs),
+        (0, 0.090, 0.0, 0.186, 0.192, segs),
+        (0, 0.195, 0.0, 0.155, 0.160, segs),
+        (0, 0.265, 0.0, 0.055, 0.055, segs),
+    ], mat_id=5, ao_y=(0.03, 0.27, 0.78, 1.10))
+    sp.add_loft([(0, 0.075, 0, 0.194, 0.198, segs), (0, 0.108, 0, 0.190, 0.195, segs)], mat_id=6)
+    sp.add_cone((0, 0.255, 0), (0, 0.425, 0), 0.044, 0.008, segs=5, mat_id=4, shade=(1.08, 1.10, 1.14))  # bold iron spike!
+    parts.append(sp)
+
+    # 17. Chainmail Coif (NEW — snug riveted iron mail hood framing face!)
+    cf = PartBuilder("helm_coif")
+    add_mail_coif(cf, mat_id=5)
+    cf.add_sphere((0, 0.06, -0.025), (0.180, 0.182, 0.172), segs=7, rings=5, mat_id=5, ao_y=(-0.10, 0.24, 0.78, 1.08))
+    parts.append(cf)
 
     return parts
 
@@ -143,97 +229,166 @@ def build_phase2_bodies_and_limbs(PartBuilder):
     parts = []
     segs = 8
 
-    # 1. Gilded knightly plate (brass shoulder ridges, trim & heraldic surcoat)
+    # 1. Gilded knightly plate (sculpted steel cuirass, gilded gorget, gilded V-trim, pauldrons, tassets & surcoat!)
     pg = PartBuilder("torso_plate_gilded")
     pg.add_loft([
-        (0, 0.64, 0.01, 0.230, 0.170, segs),
-        (0, 0.84, 0.01, 0.195, 0.148, segs),
-        (0, 1.12, 0.02, 0.252, 0.180, segs),
-        (0, 1.29, 0.00, 0.242, 0.155, segs),
-        (0, 1.38, 0.00, 0.120, 0.110, segs),
-    ], mat_id=4, ao_y=(0.64, 1.38, 0.80, 1.08))
-    pg.add_box((0, 0.82, 0.168), (0.20, 0.44, 0.028), mat_id=1)
-    pg.add_box((0, 0.82, -0.158), (0.20, 0.44, 0.028), mat_id=1)
-    pg.add_box((0, 1.12, 0.182), (0.24, 0.06, 0.026), mat_id=6)  # gilded chest bar
-    pg.add_box((0, 0.84, 0.005), (0.43, 0.06, 0.35), mat_id=6)   # gilded belt
+        (0, 0.66, 0.01, 0.228, 0.166, segs),
+        (0, 0.86, 0.01, 0.192, 0.146, segs),
+        (0, 1.12, 0.016, 0.252, 0.176, segs),
+        (0, 1.28, 0.00, 0.242, 0.154, segs),
+        (0, 1.35, 0.00, 0.152, 0.130, segs),
+    ], mat_id=4, ao_y=(0.66, 1.36, 0.80, 1.08))
+    pg.add_loft([(0, 1.33, 0, 0.156, 0.134, segs), (0, 1.41, 0, 0.120, 0.112, segs)], mat_id=6)  # gilded gorget!
+    pg.add_loft([(0, 0.54, 0, 0.232, 0.170, segs), (0, 0.67, 0, 0.218, 0.158, segs)], mat_id=5)  # mail skirt hem
+    for sx in (-1, 1):
+        pg.add_box((sx * 0.230, 1.26, 0.015), (0.115, 0.12, 0.205), mat_id=6, rot_euler=(0.0, 0.0, -sx * 0.24))  # gilded shoulder ridges
+        pg.add_box((sx * 0.170, 0.69, 0.095), (0.14, 0.21, 0.050), mat_id=6, rot_euler=(-0.10, sx * 0.42, sx * 0.10))  # gilded tassets
+    pg.add_box((0, 0.82, 0.170), (0.22, 0.48, 0.026), mat_id=1)
+    pg.add_box((0, 0.82, -0.158), (0.22, 0.48, 0.026), mat_id=1)
+    pg.add_box((0, 1.16, 0.180), (0.26, 0.055, 0.024), mat_id=6)  # gilded chest bar
+    pg.add_box((0, 0.85, 0.006), (0.43, 0.065, 0.35), mat_id=6)   # gilded belt
     parts.append(pg)
 
-    # 2. Lamellar armor (Sunward/Khaganate golden-brass horizontal lames + cloth skirt)
+    # 2. Brigandine / Coat of Plates (NEW — ref-c soldier #2: faction studded doublet + steel spaulders + chest straps + mail skirt!)
+    bg = PartBuilder("torso_brigandine")
+    bg.add_loft([(0, 0.46, 0, 0.238, 0.176, segs), (0, 0.60, 0, 0.226, 0.168, segs)], mat_id=5, ao_y=(0.46, 0.60, 0.72, 0.96))  # mail hem
+    bg.add_loft([
+        (0, 0.58, 0.0, 0.238, 0.176, segs),
+        (0, 0.84, 0.0, 0.194, 0.148, segs),
+        (0, 1.12, 0.012, 0.244, 0.170, segs),
+        (0, 1.28, 0.0, 0.234, 0.152, segs),
+        (0, 1.38, 0.0, 0.128, 0.116, segs),
+    ], mat_id=1, ao_y=(0.58, 1.38, 0.76, 1.06))
+    # Steel gorget + layered steel shoulder spaulders + central chest buckle straps!
+    bg.add_loft([(0, 1.32, 0, 0.155, 0.136, segs), (0, 1.40, 0, 0.122, 0.112, segs)], mat_id=4)
+    for sx in (-1, 1):
+        bg.add_box((sx * 0.225, 1.25, 0.01), (0.115, 0.115, 0.195), mat_id=4, rot_euler=(0, 0, -sx * 0.26), shade=(1.04, 1.06, 1.10))
+    for cy in (1.02, 1.14, 1.24):
+        bg.add_box((0, cy, 0.172), (0.14, 0.032, 0.024), mat_id=4, shade=(0.92, 0.94, 0.98))
+    bg.add_box((0, 0.84, 0.0), (0.42, 0.062, 0.335), mat_id=7)
+    bg.add_box((0, 0.84, 0.174), (0.072, 0.064, 0.024), mat_id=6)
+    parts.append(bg)
+
+    # 3. Breastplate over Gambeson (NEW — gleaming steel cuirass + gorget + spaulders over faction gambeson skirt!)
+    bp = PartBuilder("torso_breastplate")
+    bp.add_loft([(0, 0.52, 0, 0.242, 0.178, segs), (0, 0.84, 0, 0.198, 0.150, segs)], mat_id=1, ao_y=(0.52, 0.84, 0.74, 1.02))
+    bp.add_loft([
+        (0, 0.82, 0.008, 0.200, 0.154, segs),
+        (0, 1.11, 0.018, 0.250, 0.176, segs),
+        (0, 1.28, 0.000, 0.238, 0.152, segs),
+        (0, 1.39, 0.000, 0.120, 0.110, segs),
+    ], mat_id=4, ao_y=(0.82, 1.39, 0.80, 1.10))
+    for sx in (-1, 1):
+        bp.add_box((sx * 0.228, 1.25, 0.01), (0.11, 0.11, 0.19), mat_id=4, rot_euler=(0, 0, -sx * 0.24))
+    bp.add_box((0, 0.84, 0.005), (0.425, 0.062, 0.34), mat_id=7)
+    bp.add_box((0, 0.84, 0.178), (0.072, 0.064, 0.024), mat_id=6)
+    parts.append(bp)
+
+    # 4. Lamellar armor (Ref-c soldier #3: white linen scarf collar + tiered golden-brass cuirass, spaulders & hip tassets over faction skirt!)
     lm = PartBuilder("torso_lamellar")
     lm.add_loft([
-        (0, 0.54, 0, 0.245, 0.185, segs),
-        (0, 0.80, 0, 0.210, 0.160, segs),
-    ], mat_id=1, ao_y=(0.54, 0.82, 0.76, 1.04))
+        (0, 0.46, 0, 0.252, 0.190, segs),
+        (0, 0.76, 0, 0.214, 0.164, segs),
+    ], mat_id=1, ao_y=(0.46, 0.78, 0.74, 1.04))  # rich faction tunic skirt below lamellar
+    # Tiered brass lamellar hip tassets flaring cleanly over waist!
     lm.add_loft([
-        (0, 0.78, 0, 0.215, 0.162, segs),
-        (0, 1.12, 0.01, 0.242, 0.172, segs),
-        (0, 1.28, 0, 0.232, 0.152, segs),
-        (0, 1.37, 0, 0.120, 0.105, segs),
-    ], mat_id=6, ao_y=(0.78, 1.37, 0.78, 1.08))
-    lm.add_box((0, 0.84, 0), (0.43, 0.06, 0.34), mat_id=2)
+        (0, 0.62, 0, 0.246, 0.184, segs),
+        (0, 0.84, 0, 0.212, 0.162, segs),
+    ], mat_id=6, ao_y=(0.62, 0.84, 0.76, 1.04))
+    # Stepped brass lamellar chest cuirass + flared lamellar shoulder guards
+    lm.add_loft([
+        (0, 0.82, 0, 0.215, 0.164, segs),
+        (0, 1.12, 0.012, 0.246, 0.174, segs),
+        (0, 1.28, 0, 0.234, 0.154, segs),
+    ], mat_id=6, ao_y=(0.82, 1.30, 0.80, 1.10))
+    for sx in (-1, 1):
+        lm.add_box((sx * 0.235, 1.22, 0.01), (0.12, 0.15, 0.19), mat_id=6, rot_euler=(0, 0, -sx * 0.28), ao_y=(1.12, 1.32, 0.82, 1.08))
+    # Crisp white desert linen collar scarf!
+    lm.add_loft([(0, 1.28, 0, 0.178, 0.154, segs), (0, 1.39, 0, 0.132, 0.122, segs)], mat_id=0, shade=(0.95, 0.93, 0.88))
+    lm.add_box((0, 0.84, 0), (0.44, 0.068, 0.35), mat_id=2)   # dark sash
+    lm.add_box((0, 0.84, 0.182), (0.075, 0.072, 0.026), mat_id=6)  # brass medallion clasp
     parts.append(lm)
 
-    # 3. Scale hauberk (iron/steel scales + brass hem & sash)
+    # 5. Scale hauberk (iron scales + layered scale shoulder guards + diagonal faction baldric + brass hem!)
     sc = PartBuilder("torso_scale")
     sc.add_loft([
-        (0, 0.56, 0, 0.238, 0.175, segs),
+        (0, 0.54, 0, 0.242, 0.178, segs),
         (0, 0.84, 0, 0.202, 0.154, segs),
-        (0, 1.12, 0.01, 0.242, 0.170, segs),
-        (0, 1.28, 0, 0.230, 0.150, segs),
-        (0, 1.37, 0, 0.118, 0.105, segs),
-    ], mat_id=5, ao_y=(0.56, 1.37, 0.78, 1.08))
-    sc.add_box((0, 0.84, 0), (0.42, 0.06, 0.33), mat_id=1)
-    sc.add_box((0, 0.58, 0), (0.46, 0.05, 0.34), mat_id=6)
+        (0, 1.12, 0.012, 0.244, 0.172, segs),
+        (0, 1.28, 0, 0.234, 0.152, segs),
+        (0, 1.38, 0, 0.122, 0.110, segs),
+    ], mat_id=5, ao_y=(0.54, 1.38, 0.78, 1.10))
+    for sx in (-1, 1):
+        sc.add_box((sx * 0.232, 1.23, 0.01), (0.115, 0.14, 0.19), mat_id=5, rot_euler=(0, 0, -sx * 0.28))
+    sc.add_box((0, 1.08, 0.168), (0.085, 0.44, 0.024), mat_id=1, rot_euler=(0, 0, 0.55))  # diagonal faction baldric
+    sc.add_box((0, 0.84, 0), (0.425, 0.064, 0.335), mat_id=1)
+    sc.add_box((0, 0.55, 0), (0.465, 0.052, 0.345), mat_id=6)
     parts.append(sc)
 
-    # 4. Fur-mantled northern warlord/clansman torso
+    # 6. Fur-mantled northern warlord/clansman torso (shaggy asymmetric pelt shoulders, crossed chest straps & iron bosses!)
     fr = PartBuilder("torso_fur")
     fr.add_loft([
-        (0, 0.58, 0, 0.230, 0.170, segs),
+        (0, 0.56, 0, 0.234, 0.174, segs),
         (0, 0.84, 0, 0.198, 0.150, segs),
-        (0, 1.12, 0.01, 0.238, 0.165, segs),
+        (0, 1.12, 0.01, 0.240, 0.166, segs),
         (0, 1.28, 0, 0.228, 0.148, segs),
-    ], mat_id=1, ao_y=(0.58, 1.28, 0.76, 1.05))
-    # Heavy thick fur pelt mantle over shoulders!
+    ], mat_id=1, ao_y=(0.56, 1.28, 0.76, 1.06))
+    # Heavy sculpted shaggy fur pelt mantle draped over shoulders & collar!
     fr.add_loft([
-        (0, 1.10, -0.02, 0.295, 0.205, segs),
-        (0, 1.26, -0.01, 0.310, 0.215, segs),
-        (0, 1.36, 0.00, 0.195, 0.155, segs),
-    ], mat_id=7, shade=(0.76, 0.68, 0.60), ao_y=(1.10, 1.36, 0.82, 1.10))
-    fr.add_box((0, 0.84, 0), (0.41, 0.06, 0.32), mat_id=7)
+        (0, 1.10, -0.025, 0.295, 0.208, segs),
+        (0, 1.26, -0.015, 0.318, 0.222, segs),
+        (0, 1.38, 0.000, 0.198, 0.162, segs),
+    ], mat_id=7, shade=(0.76, 0.68, 0.58), ao_y=(1.10, 1.38, 0.80, 1.12))
+    for sx in (-1, 1):
+        fr.add_sphere((sx * 0.26, 1.22, -0.02), (0.11, 0.13, 0.14), segs=5, rings=3, mat_id=7, shade=(0.70, 0.62, 0.52))
+    # Crossed leather chest baldric + iron boss & heavy fur war-belt
+    fr.add_box((0, 1.04, 0.168), (0.070, 0.42, 0.024), mat_id=7, shade=(0.68, 0.54, 0.42), rot_euler=(0, 0, 0.52))
+    fr.add_box((0, 1.04, 0.170), (0.070, 0.42, 0.024), mat_id=7, shade=(0.68, 0.54, 0.42), rot_euler=(0, 0, -0.52))
+    fr.add_box((0, 1.04, 0.184), (0.072, 0.072, 0.026), mat_id=4)  # iron chest boss
+    fr.add_box((0, 0.84, 0), (0.42, 0.068, 0.33), mat_id=7)
+    fr.add_box((0, 0.84, 0.172), (0.075, 0.068, 0.024), mat_id=6)
     parts.append(fr)
 
-    # 5. Steppe deel (Khaganate long wrapped coat with fur collar & wide sash)
+    # 7. Steppe deel (Ref-c rider #4: flared riding coat with plush fur collar, diagonal fur V-lapel, fur hem & bright sash!)
     dl = PartBuilder("torso_deel")
     dl.add_loft([
-        (0, 0.42, 0, 0.265, 0.200, segs),
-        (0, 0.82, 0, 0.200, 0.155, segs),
-        (0, 1.12, 0.01, 0.235, 0.162, segs),
-        (0, 1.29, 0, 0.220, 0.145, segs),
+        (0, 0.42, 0, 0.268, 0.204, segs),
+        (0, 0.82, 0, 0.200, 0.156, segs),
+        (0, 1.12, 0.01, 0.238, 0.166, segs),
+        (0, 1.29, 0, 0.224, 0.148, segs),
     ], mat_id=1, ao_y=(0.42, 1.30, 0.74, 1.06))
-    dl.add_loft([(0, 1.26, 0, 0.210, 0.160, segs), (0, 1.38, 0, 0.145, 0.130, segs)], mat_id=7, shade=(0.76, 0.68, 0.58))
-    dl.add_box((0, 0.84, 0), (0.42, 0.075, 0.33), mat_id=3)  # bright steppe sash
+    # Plush fur collar + diagonal overlapping fur lapel trim + fur hem!
+    dl.add_loft([(0, 1.25, 0, 0.222, 0.170, segs), (0, 1.39, 0, 0.152, 0.138, segs)], mat_id=7, shade=(0.86, 0.78, 0.66), ao_y=(1.25, 1.39, 0.82, 1.10))
+    dl.add_box((0.03, 1.08, 0.166), (0.068, 0.40, 0.028), mat_id=7, shade=(0.86, 0.78, 0.66), rot_euler=(0, 0, 0.34))  # diagonal fur lapel!
+    dl.add_loft([(0, 0.40, 0, 0.274, 0.210, segs), (0, 0.46, 0, 0.268, 0.205, segs)], mat_id=7, shade=(0.84, 0.76, 0.64))
+    dl.add_box((0, 0.84, 0), (0.425, 0.080, 0.335), mat_id=3)  # bright steppe sash
+    dl.add_box((0, 0.84, 0.176), (0.070, 0.065, 0.024), mat_id=6)
     parts.append(dl)
 
-    # 6. Desert kaftan / burnous (Sunward light flowing coat + linen trim)
+    # 8. Desert kaftan / burnous (Sunward flowing open-front layered coat over inner tunic + scarf collar + sash!)
     kf = PartBuilder("torso_kaftan")
     kf.add_loft([
-        (0, 0.38, 0, 0.270, 0.210, segs),
-        (0, 0.82, 0, 0.200, 0.155, segs),
-        (0, 1.14, 0.01, 0.235, 0.162, segs),
-        (0, 1.34, 0, 0.155, 0.125, segs),
-    ], mat_id=3, ao_y=(0.38, 1.34, 0.76, 1.08))
-    kf.add_box((0, 0.84, 0), (0.42, 0.07, 0.33), mat_id=1)  # faction sash
-    kf.add_box((0, 0.96, 0.16), (0.14, 0.48, 0.025), mat_id=1)
+        (0, 0.38, 0, 0.272, 0.212, segs),
+        (0, 0.82, 0, 0.200, 0.156, segs),
+        (0, 1.14, 0.01, 0.236, 0.164, segs),
+        (0, 1.34, 0, 0.158, 0.128, segs),
+    ], mat_id=1, ao_y=(0.38, 1.34, 0.76, 1.08))
+    # Crisp white linen inner tunic panel & shoulder shawl!
+    kf.add_box((0, 0.90, 0.164), (0.14, 0.64, 0.026), mat_id=0, shade=(0.95, 0.93, 0.88))
+    kf.add_loft([(0, 1.24, 0, 0.238, 0.175, segs), (0, 1.39, 0, 0.142, 0.128, segs)], mat_id=0, shade=(0.94, 0.92, 0.86))
+    kf.add_box((0, 0.84, 0), (0.425, 0.075, 0.335), mat_id=3)  # golden/trim waist sash
+    kf.add_box((0, 0.84, 0.178), (0.068, 0.066, 0.024), mat_id=6)
     parts.append(kf)
 
-    # 7. Skeleton ribcage + spine + pelvis (bleached bone, mat_id=9 which UnitMatTable sets to bone for skull face!)
+    # 9. Skeleton ribcage + collarbones + spine + pelvis (bleached bone)
     bn = PartBuilder("torso_bones")
-    bn.add_cone((0, 0.70, -0.02), (0, 1.36, -0.02), 0.048, 0.044, segs=5, mat_id=9, shade=(0.82, 0.80, 0.75))  # spine
-    bn.add_box((0, 0.72, 0.0), (0.30, 0.12, 0.18), mat_id=9, shade=(0.86, 0.84, 0.78))  # pelvis
-    for ry in (0.94, 1.06, 1.18, 1.28):
+    bn.add_cone((0, 0.70, -0.02), (0, 1.36, -0.02), 0.048, 0.044, segs=5, mat_id=9, shade=(0.82, 0.80, 0.75))
+    bn.add_box((0, 0.72, 0.0), (0.31, 0.12, 0.18), mat_id=9, shade=(0.86, 0.84, 0.78))
+    bn.add_box((0, 1.12, 0.11), (0.065, 0.28, 0.040), mat_id=9, shade=(1.02, 1.00, 0.96))  # sternum
+    bn.add_box((0, 1.31, 0.05), (0.42, 0.048, 0.065), mat_id=9, shade=(1.02, 1.00, 0.96))  # clavicles
+    for ry in (0.94, 1.06, 1.18, 1.26):
         w = 0.36 if ry > 1.0 else 0.30
-        bn.add_box((0, ry, 0.02), (w, 0.055, 0.20), mat_id=9, shade=(0.98, 0.96, 0.92))  # ribs
+        bn.add_box((0, ry, 0.02), (w, 0.052, 0.20), mat_id=9, shade=(0.98, 0.96, 0.92))
     parts.append(bn)
 
     # Thin skeletal bone limbs!

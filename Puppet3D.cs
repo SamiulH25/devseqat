@@ -416,7 +416,7 @@ sealed partial class Puppet3D
         {
             var emb = EmblemOf(palIdx);
             if (emb.Length > 0)
-                EmitLocal(emb, torsoPos + RotY(new Vector3(0, 1.03f, 0.175f), twist), tR, Vector3.UnitY, tF, 0.56f, 0.56f, 0.7f);
+                EmitLocal(emb, torsoPos + RotY(new Vector3(0, 1.03f, 0.186f), twist), tR, Vector3.UnitY, tF, 0.56f, 0.56f, 0.7f);
         }
         if (lm.HasCape && Detail == 0)
         {

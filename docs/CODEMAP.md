@@ -774,9 +774,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Upgrade.cs (293 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:185, Leads:281
 
-## Mesh3D.cs (366 lines)
-- **MeshKit3D** (class, L8): TryLoad:57, Load:67, Get:139, Resolve:141, MapTorso:213, MapLimb:228, MapHelm:236, MapWeapon:267, MapShield:294
-- **UnitMatTable** (struct, L306): Fill:319, FillBeast:357
+## Mesh3D.cs (373 lines)
+- **MeshKit3D** (class, L8): TryLoad:57, Load:67, Get:139, Resolve:141, MapTorso:213, MapLimb:230, MapHelm:238, MapWeapon:274, MapShield:301
+- **UnitMatTable** (struct, L313): Fill:326, FillBeast:364
 
 ## MusicDirector.cs (128 lines)
 - **MusicDirector** (class, L12): Cue:17, MusicDirector:28, Pool:36, Reset:51, Adopt:59, Update:68, BackToMap:99, Next:109, Start:120

@@ -171,19 +171,19 @@ class PartBuilder:
 # ===================== HUMANOID PARTS (CRISP LOW-POLY) =====================
 
 def build_torso(kind):
-    """Stout heroic medieval torso: ~90-120 tris total (clean 8-sided profile)."""
+    """High-craft stout heroic medieval torsos with real layered armor silhouettes (gorgets, pauldrons, faulds, coifs, belts)."""
     p = PartBuilder(f"torso_{kind}")
     segs = 8
 
     if kind == "plate":
-        # Sculpted steel breastplate + fauld + gorget in one clean continuous loft!
+        # Sculpted steel gothic cuirass with proud keel chest ridge, steel gorget, layered fauld/tassets & faction surcoat!
         rings = []
         profile = [
-            (0.64, 0.225, 0.165, 0.01),  # fauld skirt hem
-            (0.84, 0.190, 0.145, 0.01),  # belted waist
-            (1.10, 0.245, 0.175, 0.02),  # broad heroic chest
-            (1.28, 0.235, 0.150, 0.00),  # shoulders
-            (1.37, 0.115, 0.105, 0.00),  # steel gorget
+            (0.66, 0.222, 0.162, 0.008),  # fauld skirt hem
+            (0.86, 0.188, 0.142, 0.008),  # crisp waist cinch
+            (1.10, 0.246, 0.170, 0.014),  # heroic chest
+            (1.28, 0.236, 0.150, 0.000),  # broad shoulders
+            (1.39, 0.118, 0.108, 0.000),  # steel gorget rim
         ]
         for y, rx, rz, zoff in profile:
             ring = []
@@ -191,50 +191,83 @@ def build_torso(kind):
                 a = 2.0 * math.pi * i / segs
                 x = math.cos(a) * rx
                 z = math.sin(a) * rz + zoff
-                if math.sin(a) > 0.7 and 0.90 < y < 1.25:
-                    z += 0.022
+                if math.sin(a) > 0.72 and 0.92 < y < 1.24:
+                    z += 0.022  # sculpted breastplate keel
                 ring.append(Vector((x, y, z)))
             rings.append(ring)
-        p.add_loft(rings, mat_id=4, ao_y=(0.64, 1.37, 0.78, 1.06))
-        # Faction surcoat tabard panels front & back + trim
-        p.add_box((0, 0.82, 0.162), (0.19, 0.42, 0.028), mat_id=1, ao_y=(0.60, 1.08, 0.80, 1.05))
-        p.add_box((0, 0.82, -0.152), (0.19, 0.42, 0.028), mat_id=1, ao_y=(0.60, 1.08, 0.76, 1.02))
-        p.add_box((0, 0.84, 0.005), (0.42, 0.055, 0.34), mat_id=7)  # belt
-        p.add_box((0, 0.84, 0.180), (0.07, 0.06, 0.022), mat_id=6)  # brass buckle
+        p.add_loft(rings, mat_id=4, ao_y=(0.66, 1.40, 0.78, 1.08))
+        # Dark chainmail skirt peeking under steel faulds
+        p.add_loft([(0, 0.54, 0.0, 0.228, 0.166, segs), (0, 0.67, 0.0, 0.212, 0.154, segs)], mat_id=5, cap_top=False, ao_y=(0.54, 0.67, 0.72, 0.94))
+        # Sculpted layered steel tasset plates over the hips
+        for sx in (-1, 1):
+            p.add_box((sx * 0.165, 0.69, 0.095), (0.135, 0.21, 0.048), mat_id=4, rot_euler=(-0.10, sx * 0.42, sx * 0.10), ao_y=(0.56, 0.82, 0.80, 1.06))
+            # Shoulder gorget flanges / besagew ridges
+            p.add_box((sx * 0.225, 1.25, 0.015), (0.105, 0.11, 0.195), mat_id=4, rot_euler=(0.0, 0.0, -sx * 0.24), shade=(1.04, 1.05, 1.08))
+        # Flowing faction surcoat tabard panels front & back
+        p.add_box((0, 0.82, 0.168), (0.215, 0.48, 0.026), mat_id=1, ao_y=(0.56, 1.08, 0.78, 1.06))
+        p.add_box((0, 0.82, -0.154), (0.215, 0.48, 0.026), mat_id=1, ao_y=(0.56, 1.08, 0.74, 1.02))
+        # Bold sword-belt + gilded buckle
+        p.add_box((0, 0.85, 0.006), (0.42, 0.062, 0.34), mat_id=7)
+        p.add_box((0, 0.85, 0.184), (0.075, 0.068, 0.024), mat_id=6)
 
     elif kind == "mail":
+        # Ref-c style: gleaming chainmail aventail yoke & mail hauberk skirt peeking out under a belted faction surcoat!
         p.add_loft([
-            (0, 0.58, 0.0, 0.230, 0.170, segs),
-            (0, 0.84, 0.0, 0.195, 0.148, segs),
-            (0, 1.12, 0.01, 0.240, 0.165, segs),
-            (0, 1.28, 0.0, 0.225, 0.145, segs),
-            (0, 1.38, 0.0, 0.115, 0.105, segs),
-        ], mat_id=1, ao_y=(0.58, 1.38, 0.76, 1.06))
-        p.add_box((0, 1.05, 0.165), (0.14, 0.18, 0.024), mat_id=3)
-        p.add_box((0, 0.84, 0.0), (0.41, 0.055, 0.32), mat_id=7)
-        p.add_box((0, 0.84, 0.168), (0.065, 0.055, 0.02), mat_id=6)
+            (0, 0.48, 0.0, 0.236, 0.174, segs),  # mail hauberk lower hem
+            (0, 0.62, 0.0, 0.224, 0.166, segs),
+        ], mat_id=5, cap_top=False, ao_y=(0.48, 0.62, 0.74, 0.98))
+        # Faction cloth surcoat over the mail hauberk
+        p.add_loft([
+            (0, 0.58, 0.0, 0.234, 0.172, segs),
+            (0, 0.84, 0.0, 0.194, 0.146, segs),
+            (0, 1.12, 0.01, 0.238, 0.164, segs),
+            (0, 1.26, 0.0, 0.228, 0.148, segs),
+        ], mat_id=1, ao_y=(0.58, 1.26, 0.76, 1.06))
+        # Exposed riveted chainmail aventail collar & shoulder mantle (reads unmistakably as mail!)
+        p.add_loft([
+            (0, 1.21, 0.0, 0.244, 0.168, segs),
+            (0, 1.40, 0.0, 0.125, 0.115, segs),
+        ], mat_id=5, cap_bot=False, ao_y=(1.20, 1.40, 0.80, 1.10))
+        # Leather belt, brass buckle, and side hip pouch
+        p.add_box((0, 0.84, 0.0), (0.415, 0.060, 0.325), mat_id=7)
+        p.add_box((0, 0.84, 0.170), (0.070, 0.064, 0.024), mat_id=6)
+        p.add_box((-0.19, 0.76, 0.06), (0.075, 0.11, 0.095), mat_id=7, shade=(0.86, 0.82, 0.78))
 
     elif kind == "robe":
+        # Flowing caster/monk robe with draped shoulder cowl mantle, ornate stole & cinched sash
         p.add_loft([
-            (0, 0.18, 0.0, 0.29, 0.23, segs),
-            (0, 0.54, 0.0, 0.24, 0.18, segs),
-            (0, 0.85, 0.0, 0.195, 0.150, segs),
+            (0, 0.18, 0.0, 0.295, 0.235, segs),
+            (0, 0.54, 0.0, 0.242, 0.182, segs),
+            (0, 0.85, 0.0, 0.194, 0.148, segs),
             (0, 1.15, 0.01, 0.230, 0.158, segs),
             (0, 1.36, 0.0, 0.130, 0.115, segs),
         ], mat_id=2, ao_y=(0.18, 1.36, 0.74, 1.06))
-        p.add_box((0, 0.96, 0.155), (0.08, 0.52, 0.024), mat_id=3)
-        p.add_box((0, 0.85, 0.0), (0.41, 0.055, 0.32), mat_id=3)
-
-    else:  # tunic / gambeson
+        # Draped shoulder mantle / cowl collar
         p.add_loft([
-            (0, 0.58, 0.0, 0.228, 0.168, segs),
+            (0, 1.12, -0.01, 0.270, 0.190, segs),
+            (0, 1.28, -0.01, 0.258, 0.180, segs),
+            (0, 1.39, 0.00, 0.145, 0.130, segs),
+        ], mat_id=1, ao_y=(1.12, 1.39, 0.80, 1.08))
+        p.add_box((0, 0.88, 0.158), (0.095, 0.68, 0.024), mat_id=3)  # long ornate stole
+        p.add_box((0, 0.85, 0.0), (0.415, 0.062, 0.325), mat_id=3)   # sash
+        p.add_box((0, 1.24, 0.165), (0.075, 0.060, 0.026), mat_id=6) # brass mantle clasp
+
+    else:  # tunic / padded gambeson
+        # Quilted gambeson with padded standing collar, V-laced placket, broad shoulder caps, belt & pouch
+        p.add_loft([
+            (0, 0.54, 0.0, 0.235, 0.174, segs),
             (0, 0.84, 0.0, 0.192, 0.145, segs),
-            (0, 1.12, 0.01, 0.232, 0.160, segs),
-            (0, 1.28, 0.0, 0.220, 0.142, segs),
-            (0, 1.37, 0.0, 0.110, 0.100, segs),
-        ], mat_id=1, ao_y=(0.58, 1.37, 0.76, 1.06))
-        p.add_box((0, 0.84, 0.0), (0.40, 0.055, 0.31), mat_id=7)
-        p.add_box((0, 0.84, 0.160), (0.06, 0.055, 0.02), mat_id=6)
+            (0, 1.12, 0.01, 0.236, 0.162, segs),
+            (0, 1.28, 0.0, 0.228, 0.146, segs),
+            (0, 1.38, 0.0, 0.128, 0.116, segs),
+        ], mat_id=1, ao_y=(0.54, 1.38, 0.76, 1.06))
+        # Padded standing collar roll + laced V-placket + lower trim hem
+        p.add_loft([(0, 1.32, 0, 0.155, 0.138, segs), (0, 1.40, 0, 0.132, 0.120, segs)], mat_id=2, cap_bot=False, ao_y=(1.32, 1.40, 0.84, 1.06))
+        p.add_box((0, 1.20, 0.158), (0.075, 0.20, 0.022), mat_id=3)
+        p.add_loft([(0, 0.53, 0, 0.240, 0.178, segs), (0, 0.58, 0, 0.236, 0.175, segs)], mat_id=2, cap_bot=False, cap_top=False)
+        p.add_box((0, 0.84, 0.0), (0.405, 0.058, 0.315), mat_id=7)
+        p.add_box((0, 0.84, 0.164), (0.065, 0.060, 0.022), mat_id=6)
+        p.add_box((0.18, 0.76, 0.06), (0.072, 0.105, 0.090), mat_id=7, shade=(0.84, 0.80, 0.76))
 
     return p
 
@@ -271,25 +304,37 @@ def build_head(style):
 
 
 def build_helm(kind):
-    """Crisp low-poly medieval helms (~45-85 tris each)."""
+    """High-craft sculpted medieval helmets with crisp 2x silhouettes, coifs, visors, ridges & trim."""
     p = PartBuilder(f"helm_{kind}")
     segs = 8
 
-    if kind == "kettle":
+    def add_mail_coif(mat_id=5, shade=(0.96, 0.96, 1.0)):
+        # Open-faced chainmail/linen aventail wrapping cheeks, jaw & back of neck cleanly down to gorget!
         p.add_loft([
-            (0, 0.045, 0.0, 0.285, 0.295, segs),
-            (0, 0.085, 0.0, 0.195, 0.205, segs),
-            (0, 0.175, 0.0, 0.175, 0.180, segs),
-            (0, 0.262, 0.0, 0.045, 0.045, segs),
-        ], mat_id=4, ao_y=(0.04, 0.27, 0.78, 1.10))
+            (0, -0.17, -0.045, 0.175, 0.145, 7),
+            (0, 0.06, -0.045, 0.172, 0.140, 7),
+        ], mat_id=mat_id, shade=shade, cap_bot=False, cap_top=False, ao_y=(-0.17, 0.08, 0.76, 1.02))
+
+    if kind == "kettle":
+        # Ref-c style: wide angled riveted steel brim, domed ribbed skull + snug chainmail coif framing face!
+        add_mail_coif(mat_id=5)
+        p.add_loft([
+            (0, 0.035, 0.0, 0.295, 0.305, segs),  # bold sloped kettle brim
+            (0, 0.088, 0.0, 0.198, 0.206, segs),  # brim crease
+            (0, 0.185, 0.0, 0.176, 0.182, segs),  # steel dome
+            (0, 0.275, 0.0, 0.042, 0.042, segs),  # peaked crown
+        ], mat_id=4, ao_y=(0.03, 0.28, 0.78, 1.12))
+        p.add_loft([(0, 0.085, 0, 0.203, 0.210, segs), (0, 0.120, 0, 0.198, 0.205, segs)], mat_id=5, cap_bot=False, cap_top=False)  # riveted iron brow band
+        p.add_box((0, 0.215, 0.0), (0.028, 0.125, 0.24), mat_id=4, shade=(1.08, 1.08, 1.12))  # subtle crown ridge
 
     elif kind == "sallet":
+        # Ref-c style: gothic swept lobster-tail neck guard, brow visor with dark eye-slit & crisp crown comb!
         rings = []
         levels = [
-            (0.03, 0.18, 0.18, -0.06),
-            (0.08, 0.19, 0.20, -0.02),
-            (0.18, 0.175, 0.185, -0.01),
-            (0.265, 0.04, 0.05, 0.00),
+            (0.01, 0.185, 0.185, -0.065),
+            (0.075, 0.196, 0.210, -0.015),
+            (0.185, 0.180, 0.190, -0.008),
+            (0.272, 0.042, 0.052, 0.000),
         ]
         for y, rx, rz, zoff in levels:
             ring = []
@@ -297,62 +342,114 @@ def build_helm(kind):
                 a = 2.0 * math.pi * i / segs
                 x = math.cos(a) * rx
                 z = math.sin(a) * rz + zoff
-                if math.sin(a) < -0.3 and y < 0.10:
-                    z -= (0.10 - y) * 1.45 * (-math.sin(a))
+                if math.sin(a) < -0.25 and y < 0.11:
+                    z -= (0.11 - y) * 1.65 * (-math.sin(a))  # iconic gothic lobster tail!
+                if math.sin(a) > 0.55 and 0.04 < y < 0.12:
+                    z += 0.028  # projecting visor brow!
                 ring.append(Vector((x, y, z)))
             rings.append(ring)
-        p.add_loft(rings, mat_id=4, ao_y=(0.02, 0.28, 0.80, 1.10))
-        p.add_box((0, 0.22, -0.01), (0.028, 0.09, 0.21), mat_id=4, shade=(1.08, 1.08, 1.10))
+        p.add_loft(rings, mat_id=4, ao_y=(0.01, 0.28, 0.78, 1.12))
+        # Dark horizontal visor eye-slit + steel lower visor lip
+        p.add_box((0, 0.065, 0.212), (0.21, 0.028, 0.026), mat_id=0, shade=(0.06, 0.06, 0.08))
+        p.add_box((0, 0.036, 0.198), (0.22, 0.034, 0.032), mat_id=4, shade=(0.94, 0.96, 1.0))
+        p.add_box((0, 0.225, -0.01), (0.032, 0.105, 0.23), mat_id=4, shade=(1.10, 1.10, 1.14))  # raised gothic comb
 
     elif kind == "greathelm":
+        # Ref-c style: bold flat-topped crusader greathelm with PROUD brass T-cross & unmistakable dark eye-slit!
         p.add_loft([
-            (0, -0.15, 0.00, 0.175, 0.185, segs),
-            (0, 0.04, 0.01, 0.185, 0.195, segs),
-            (0, 0.22, 0.00, 0.168, 0.178, segs),
-            (0, 0.27, 0.00, 0.090, 0.095, segs),
-        ], mat_id=4, ao_y=(-0.15, 0.27, 0.78, 1.08))
-        p.add_box((0, 0.055, 0.182), (0.24, 0.032, 0.034), mat_id=0, shade=(0.08, 0.08, 0.10))
-        p.add_box((0, 0.04, 0.194), (0.040, 0.29, 0.020), mat_id=6)
-        p.add_box((0, 0.055, 0.194), (0.26, 0.034, 0.020), mat_id=6)
+            (0, -0.155, 0.00, 0.172, 0.178, segs),
+            (0, 0.040, 0.008, 0.182, 0.188, segs),
+            (0, 0.230, 0.000, 0.168, 0.174, segs),
+            (0, 0.275, 0.000, 0.135, 0.140, segs),  # authentic flat-topped crusader crown
+        ], mat_id=4, ao_y=(-0.155, 0.275, 0.76, 1.10))
+        # Proud brass brow-band + dark recessed eye-slit clearly protruding outside the steel cylinder!
+        p.add_box((0, 0.062, 0.192), (0.255, 0.042, 0.034), mat_id=0, shade=(0.05, 0.05, 0.07))  # deep black ocular slit
+        p.add_box((0, 0.035, 0.205), (0.044, 0.32, 0.026), mat_id=6)   # proud vertical gilded cross bar
+        p.add_box((0, 0.095, 0.203), (0.275, 0.036, 0.026), mat_id=6)  # proud upper brow cross bar
+        p.add_box((0, -0.045, 0.184), (0.16, 0.030, 0.026), mat_id=5, shade=(0.55, 0.56, 0.60))  # breath-plate shadow band
+        p.add_loft([(0, 0.215, 0, 0.174, 0.180, segs), (0, 0.242, 0, 0.172, 0.178, segs)], mat_id=6, cap_bot=False, cap_top=False)  # crown rim band
 
     elif kind == "nasal":
+        # Norman conical nasal helm with riveted brow rim, proud nasal bar & snug chainmail coif!
+        add_mail_coif(mat_id=5)
         p.add_loft([
-            (0, 0.05, 0.0, 0.185, 0.190, segs),
-            (0, 0.16, 0.0, 0.155, 0.160, segs),
-            (0, 0.30, 0.0, 0.025, 0.025, segs),
-        ], mat_id=4, ao_y=(0.05, 0.30, 0.80, 1.10))
-        p.add_box((0, 0.00, 0.185), (0.042, 0.13, 0.026), mat_id=5)
+            (0, 0.05, 0.0, 0.186, 0.192, segs),
+            (0, 0.17, 0.0, 0.156, 0.162, segs),
+            (0, 0.31, 0.0, 0.026, 0.026, segs),
+        ], mat_id=4, ao_y=(0.05, 0.31, 0.80, 1.12))
+        p.add_loft([(0, 0.048, 0, 0.194, 0.198, segs), (0, 0.088, 0, 0.190, 0.195, segs)], mat_id=5, cap_bot=False, cap_top=False)
+        p.add_box((0, -0.005, 0.192), (0.046, 0.145, 0.032), mat_id=4, shade=(1.04, 1.06, 1.10))
 
     elif kind == "spangen":
+        # Nordic spangenhelm: brass brow band, crossed over-crown ribs, spectacle eye-arch + cheek plates & mail aventail!
+        add_mail_coif(mat_id=5)
+        p.add_loft([(0, 0.048, 0.0, 0.192, 0.196, segs), (0, 0.095, 0.0, 0.190, 0.194, segs)], mat_id=6, cap_bot=False, cap_top=False)
         p.add_loft([
-            (0, 0.05, 0.0, 0.188, 0.192, segs),
-            (0, 0.09, 0.0, 0.186, 0.190, segs),
-        ], mat_id=6)
-        p.add_loft([
-            (0, 0.08, 0.0, 0.180, 0.185, segs),
-            (0, 0.18, 0.0, 0.145, 0.150, segs),
-            (0, 0.29, 0.0, 0.025, 0.025, segs),
-        ], mat_id=4, ao_y=(0.08, 0.29, 0.80, 1.08))
-        p.add_box((0, 0.01, 0.185), (0.042, 0.10, 0.024), mat_id=5)
+            (0, 0.085, 0.0, 0.182, 0.188, segs),
+            (0, 0.185, 0.0, 0.148, 0.154, segs),
+            (0, 0.295, 0.0, 0.028, 0.028, segs),
+        ], mat_id=4, ao_y=(0.08, 0.30, 0.78, 1.10))
+        # Crossed spangen crown ribs + spectacle nasal guard + hinged cheek plates
+        p.add_box((0, 0.195, 0.0), (0.030, 0.20, 0.31), mat_id=6)
+        p.add_box((0, 0.195, 0.0), (0.31, 0.20, 0.030), mat_id=6)
+        p.add_box((0, -0.005, 0.192), (0.044, 0.12, 0.028), mat_id=5)
+        p.add_box((0, 0.048, 0.190), (0.18, 0.030, 0.028), mat_id=6)  # spectacle brow bar
+        for sx in (-1, 1):
+            p.add_box((sx * 0.165, -0.025, 0.055), (0.042, 0.14, 0.115), mat_id=4, rot_euler=(0, sx * 0.25, -sx * 0.12))
 
     elif kind == "turban":
+        # Ref-c style: authentic low-wrapped folded linen turban around a gleaming domed steel helm + brass finial + neck cloth!
+        add_mail_coif(mat_id=0, shade=(0.90, 0.88, 0.82))  # draped desert neck-cloth framing bearded face
+        # Sculpted steel helmet bowl rising cleanly above the turban!
         p.add_loft([
-            (0, 0.04, 0.0, 0.215, 0.220, segs),
-            (0, 0.12, 0.0, 0.232, 0.236, segs),
-            (0, 0.20, 0.0, 0.150, 0.155, segs),
-        ], mat_id=3, ao_y=(0.04, 0.21, 0.82, 1.08))
-        p.add_cone((0, 0.19, 0), (0, 0.34, 0), 0.095, 0.012, segs=6, mat_id=4)
+            (0, 0.13, 0.0, 0.172, 0.176, segs),
+            (0, 0.22, 0.0, 0.142, 0.146, segs),
+            (0, 0.29, 0.0, 0.042, 0.042, segs),
+        ], mat_id=4, ao_y=(0.13, 0.30, 0.82, 1.14))
+        p.add_cone((0, 0.27, 0), (0, 0.36, 0), 0.044, 0.008, segs=5, mat_id=6)  # brass finial
+        # Thick crisp white folded turban wrap sitting LOW around the brow (not a floating mushroom!)
+        p.add_loft([
+            (0, 0.025, 0.0, 0.212, 0.218, segs),
+            (0, 0.090, 0.0, 0.228, 0.232, segs),
+            (0, 0.152, 0.0, 0.188, 0.192, segs),
+        ], mat_id=0, shade=(0.95, 0.93, 0.88), ao_y=(0.02, 0.16, 0.80, 1.06))
+        # Diagonal criss-cross turban cloth folds + brass front clasp
+        p.add_box((0, 0.095, 0.195), (0.24, 0.052, 0.070), mat_id=0, shade=(0.98, 0.96, 0.92), rot_euler=(0, 0, 0.24))
+        p.add_box((0, 0.095, 0.198), (0.24, 0.052, 0.070), mat_id=0, shade=(0.91, 0.89, 0.84), rot_euler=(0, 0, -0.24))
+        p.add_box((0, 0.105, 0.232), (0.048, 0.048, 0.024), mat_id=6)
 
     elif kind == "hood":
-        p.add_sphere((0, 0.04, -0.045), (0.185, 0.185, 0.165), segs=7, rings=5, mat_id=1, ao_y=(-0.14, 0.24, 0.78, 1.08))
-        p.add_cone((0, 0.10, -0.14), (0, 0.02, -0.30), 0.115, 0.03, segs=5, mat_id=1, shade=(0.90, 0.90, 0.94))
+        # Draped medieval hood framing face with folded shoulder cowl & drooping liripipe tail
+        add_mail_coif(mat_id=1, shade=(0.94, 0.94, 0.96))
+        p.add_sphere((0, 0.05, -0.042), (0.192, 0.192, 0.172), segs=7, rings=5, mat_id=1, ao_y=(-0.14, 0.24, 0.78, 1.08))
+        p.add_cone((0, 0.11, -0.14), (0, 0.01, -0.34), 0.115, 0.028, segs=5, mat_id=1, shade=(0.88, 0.88, 0.92))
+        p.add_loft([(0, -0.17, -0.02, 0.245, 0.195, segs), (0, -0.11, -0.03, 0.190, 0.165, segs)], mat_id=2)
 
-    else:  # cap / furcap
+    elif kind == "furcap":
+        # Ref-c style: plush thick rounded fur brim wrapping low over brow & ears + peaked faction cloth crown!
         p.add_loft([
-            (0, 0.045, 0.0, 0.188, 0.192, segs),
-            (0, 0.145, 0.0, 0.168, 0.172, segs),
-            (0, 0.225, 0.0, 0.055, 0.055, segs),
-        ], mat_id=1 if kind == "cap" else 7, ao_y=(0.04, 0.23, 0.80, 1.08))
+            (0, 0.015, 0.0, 0.228, 0.232, segs),
+            (0, 0.075, 0.0, 0.244, 0.248, segs),
+            (0, 0.135, 0.0, 0.215, 0.220, segs),
+        ], mat_id=7, shade=(0.86, 0.78, 0.68), ao_y=(0.01, 0.14, 0.78, 1.10))
+        p.add_loft([
+            (0, 0.125, 0.0, 0.175, 0.180, segs),
+            (0, 0.220, 0.0, 0.130, 0.135, segs),
+            (0, 0.285, 0.0, 0.035, 0.035, segs),
+        ], mat_id=1, ao_y=(0.12, 0.29, 0.82, 1.08))
+
+    else:  # cap (padded arming cap with rolled brow & ear flaps)
+        p.add_loft([
+            (0, 0.040, 0.0, 0.194, 0.198, segs),
+            (0, 0.082, 0.0, 0.196, 0.200, segs),
+        ], mat_id=2)
+        p.add_loft([
+            (0, 0.075, 0.0, 0.186, 0.190, segs),
+            (0, 0.160, 0.0, 0.164, 0.168, segs),
+            (0, 0.232, 0.0, 0.052, 0.052, segs),
+        ], mat_id=1, ao_y=(0.07, 0.24, 0.80, 1.08))
+        for sx in (-1, 1):
+            p.add_box((sx * 0.155, -0.01, -0.01), (0.040, 0.11, 0.095), mat_id=2)
 
     return p
 
@@ -364,18 +461,23 @@ def build_limbs():
     for mat_tag, mat_id, is_plate in [("cloth", 1, False), ("mail", 5, False), ("plate", 4, True)]:
         ua = PartBuilder(f"uarm_{mat_tag}")
         ua.add_loft([
-            (0, -0.08, 0, 0.095 if is_plate else 0.085, 0.095 if is_plate else 0.085, segs),
-            (0, 0.16, 0, 0.122 if is_plate else 0.096, 0.122 if is_plate else 0.096, segs),
+            (0, -0.08, 0, 0.098 if is_plate else 0.085, 0.098 if is_plate else 0.085, segs),
+            (0, 0.18, 0, 0.132 if is_plate else 0.098, 0.128 if is_plate else 0.098, segs),
+            (0, 0.42, 0, 0.092 if is_plate else 0.084, 0.092 if is_plate else 0.084, segs),
             (0, 1.06, 0, 0.072, 0.072, segs),
-        ], mat_id=mat_id, cap_bot=False, cap_top=False, ao_y=(0.0, 1.0, 1.04, 0.85))
+        ], mat_id=mat_id, cap_bot=False, cap_top=False, ao_y=(0.0, 1.0, 1.06, 0.84))
+        if is_plate:
+            # Sculpted layered steel pauldron bell capping the shoulder!
+            ua.add_sphere((0, 0.10, 0.0), (0.145, 0.185, 0.142), segs=5, rings=3, mat_id=4, shade=(1.04, 1.05, 1.08), ao_y=(-0.08, 0.28, 1.08, 0.84))
         parts.append(ua)
 
         fa = PartBuilder(f"farm_{mat_tag}")
         fa.add_loft([
-            (0, -0.06, 0, 0.074, 0.074, segs),
-            (0, 0.82, 0, 0.064, 0.064, segs),
+            (0, -0.06, 0, 0.078 if is_plate else 0.074, 0.078 if is_plate else 0.074, segs),
+            (0, 0.65, 0, 0.066, 0.066, segs),
+            (0, 0.82, 0, 0.082 if is_plate else 0.074, 0.082 if is_plate else 0.074, segs),  # flared gauntlet / glove cuff
             (0, 1.04, 0, 0.070, 0.070, segs),
-        ], mat_id=mat_id, cap_bot=False, cap_top=True, ao_y=(0.0, 1.0, 0.98, 0.86))
+        ], mat_id=mat_id if is_plate else (7 if mat_tag == "cloth" else mat_id), cap_bot=False, cap_top=True, ao_y=(0.0, 1.0, 1.00, 0.84))
         parts.append(fa)
 
         th = PartBuilder(f"thigh_{mat_tag}")
