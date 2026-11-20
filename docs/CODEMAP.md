@@ -864,8 +864,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteSheet.cs (2217 lines)
 - **SpriteSheet** (class, L14): Part:22, SpriteSheet:35, SpriteSheet:41, Paint:44, Add:57, Pack:62, Side:85, InEl:142, Head:144, Visages:147, Head:161, GoblinHead:212, TrollHead:242, SkullHead:272, GhoulHead:298, Helm:323, Torso:696, PlateTorso:900, PixelMap:903, Ribs:919, Tabard:934, Emblem:951, Cape:991, Sleeve:1007, Leg:1049, Boot:1090, Hand:1112, Shield:1120, Weapon:1223, PaintGrid:1436, ArmingSword:1460, Longsword:1496, Greatsword:1541, Scimitar:1602, Falchion:1637, Polearm:1671, Bow:1686, Arrow:1700, Quiver:1709, Plume:1718, Flag:1726, Blood:1735, Splat:1744, Horse:1757, Wolf:1898, Spider:1937, Bear:1991, Wyvern:2026, HorseNeckTop:2099, HorseNeckBottom:2100, BodyShape:2102, HorseGear:2105, Saddle:2205
 
-## SpriteSheet.Peoples.cs (548 lines)
-- **SpriteSheet** (class, L7): HelmBase:21, PeopleHelm:37, SunCrest:308, PeopleTorso:322, PeopleSleeve:412, PeopleBarding:430, Full:500, Crinet:529, Chanfron:540
+## SpriteSheet.Peoples.cs (581 lines)
+- **SpriteSheet** (class, L7): HelmBase:21, PeopleHelm:37, SunCrest:308, PeopleTorso:322, PeopleSleeve:412, PeopleBarding:430, Full:500, Crinet:552, Chanfron:565
 
 ## Squad.cs (269 lines)
 - **Order** (enum, L5)

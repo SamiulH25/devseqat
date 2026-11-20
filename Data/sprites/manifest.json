@@ -1268,7 +1268,9 @@
           "hbody.gildedcaparison",
           "hchest.gildedcaparison",
           "hbody.halfbarding",
-          "hbody.tasselled"
+          "hhead.crossbarding",
+          "hbody.tasselled",
+          "hhead.tasselled"
         ],
         [
           "helm.galea.f",
@@ -1422,7 +1424,9 @@
           "hbody.gildedcaparison",
           "hchest.gildedcaparison",
           "hbody.halfbarding",
-          "hbody.tasselled"
+          "hhead.crossbarding",
+          "hbody.tasselled",
+          "hhead.tasselled"
         ]
       ]
     },
@@ -1931,7 +1935,9 @@
           "hbody.gildedcaparison",
           "hchest.gildedcaparison",
           "hbody.halfbarding",
-          "hbody.tasselled"
+          "hhead.crossbarding",
+          "hbody.tasselled",
+          "hhead.tasselled"
         ],
         [
           "helm.galea.f",
@@ -2067,7 +2073,9 @@
           "hbody.gildedcaparison",
           "hchest.gildedcaparison",
           "hbody.halfbarding",
-          "hbody.tasselled"
+          "hhead.crossbarding",
+          "hbody.tasselled",
+          "hhead.tasselled"
         ],
         [
           "helm.kulah.f",
@@ -2126,7 +2134,9 @@
           "hbody.gildedcaparison",
           "hchest.gildedcaparison",
           "hbody.halfbarding",
-          "hbody.tasselled"
+          "hhead.crossbarding",
+          "hbody.tasselled",
+          "hhead.tasselled"
         ]
       ]
     }
