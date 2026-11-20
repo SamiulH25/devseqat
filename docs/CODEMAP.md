@@ -811,8 +811,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Program.cs (123 lines)
 
-## Puppet.cs (1039 lines)
-- **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:331, Bow:355, Horse:382, static:473, Beast:481, WolfBody:493, Warg:523, BeastCorpse:541, DrawLooseHorse:556, DrawDeadHorse:566, RotY:597, Shoulder:608, Arm:612, ArmTo:619, Elbow:631, Sink:658, Leg:667, SpanRect:679, Fallen:688, SpiritAscent:756, Corpse:797, Haze:837, Particle:849, Banner:864, Decal:911, Quad:924, PlumeY:938, HelmTop:941, HeadBill:955, BillRect:958, Missile:969, AxialSrc:989, LongRect:1000, PlaneRect:1012, FlatRect:1022, FlatRot:1031
+## Puppet.cs (1054 lines)
+- **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:331, Bow:355, HorseScale:383, Horse:391, static:488, Beast:496, WolfBody:508, Warg:538, BeastCorpse:556, DrawLooseHorse:571, DrawDeadHorse:581, RotY:612, Shoulder:623, Arm:627, ArmTo:634, Elbow:646, Sink:673, Leg:682, SpanRect:694, Fallen:703, SpiritAscent:771, Corpse:812, Haze:852, Particle:864, Banner:879, Decal:926, Quad:939, PlumeY:953, HelmTop:956, HeadBill:970, BillRect:973, Missile:984, AxialSrc:1004, LongRect:1015, PlaneRect:1027, FlatRect:1037, FlatRot:1046
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136

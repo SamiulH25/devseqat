@@ -226,7 +226,7 @@ sealed partial class Puppet
         tint = u.HitFlash > 0 ? new Color(255, 110, 110) : u.Routing ? new Color(165, 165, 165) : Color.White;
         float lift = ground;
         if (u.Mounted && !u.Dead && u.Horse!.Barding == "wolf") lift = ground + Warg(u, ground);
-        else if (u.Mounted && !u.Dead) lift = ground + (Saddle + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true, Ease.Hash(u.Index))) * Scale;
+        else if (u.Mounted && !u.Dead) lift = ground + Horse(u.Pos, ground, u.ViewHeading, u.Anim, u.Speed, u.Coat, u.Horse!.Barding, true, Ease.Hash(u.Index));
         float size = (u.Type.Class == UnitClass.Captain ? 1.12f : 1) * u.Type.Size * Scale * Variety.Stature(u);
         float phase = Ease.Hash(u.Index);
         if (u.Dead) { Fallen(u, lift, size, phase); return; }
@@ -379,11 +379,21 @@ sealed partial class Puppet
 
     /// A horse (with the rider's legs when `riderLegs`): coat parts tinted by `coat`, gear in the side's colours.
     /// Returns the gait bob height. A standing horse with an `idle` phase (0..1) shifts its weight, tosses its head and paws.
+    /// Stature by mount class: steppe ponies are nimble, warhorses are big, barded destriers tower over footmen.
+    static float HorseScale(string barding) => barding switch
+    {
+        "steppetack" or "camel" => 1.08f,
+        "saddle" or "halfbarding" or "furbarding" => 1.18f,
+        "scalebarding" or "gildedcaparison" => 1.32f,
+        _ => 1.26f,
+    };
+
     float Horse(Vector2 pos, float ground, float heading, float anim, float speed, int coat, string barding, bool riderLegs, float idle = -1)
     {
-        Frame(pos, heading, ground, Scale);
+        float hScale = HorseScale(barding);
+        Frame(pos, heading, ground, Scale * hScale);
         // Rearing: the horse pivots back onto its hind legs, lifted so the hind hooves stay on the ground.
-        if (Rear > 0) { Lean(0, -RearDeg * Rear); origin.Y += MathF.Sin(Rad(RearDeg * Rear)) * 0.7f * Scale; }
+        if (Rear > 0) { Lean(0, -RearDeg * Rear); origin.Y += MathF.Sin(Rad(RearDeg * Rear)) * 0.7f * Scale * hScale; }
         var side = pal; var sidePal = curPal;
         var plain = tint;
         bool camel = barding == "camel";
@@ -416,7 +426,7 @@ sealed partial class Puppet
             float a = Rad(amp) * MathF.Sin(anim * MathF.PI + ph * MathF.Tau);
             if (front && Rear > 0) a = MathHelper.Lerp(a, Rad(sd < 0 ? 75 : 55), Rear); // forelegs pawing the air
             if (i == 1 && still == 2 && stillK < 0.5f) a = Rad(35) * MathF.Max(0, MathF.Sin(stillK * MathF.PI * 6)); // pawing the ground
-            var hip = new Vector3(sd * 0.165f, 1.02f + bob + (front ? rock : -rock), front ? 0.58f : -0.60f);
+            var hip = new Vector3(sd * 0.225f, 1.02f + bob + (front ? rock : -rock), front ? 0.62f : -0.64f);
             // Two segments: the knee folds the cannon back as a foreleg swings forward; behind, the gaskin slopes back to the
             // hock and the cannon comes forward under it, and the hock folds as the leg swings through.
             float lift = Rad(amp) * MathF.Max(0, MathF.Cos(anim * MathF.PI + ph * MathF.Tau)) * (front && Rear <= 0 ? 1.3f : 0.8f);
@@ -429,43 +439,48 @@ sealed partial class Puppet
             {
                 // The pieces overlap past the knee (their joined ends carry no outline, only a clear padding row).
                 var up = Vector3.Normalize(knee - hip) * 0.07f;
-                AxialSrc(knee - Vector3.Normalize(foot - knee) * 0.05f, foot, curPal.HLegLow);
-                AxialSrc(hip, knee + up, curPal.HLegUp);
+                AxialSrc(knee - Vector3.Normalize(foot - knee) * 0.05f, foot, curPal.HLegLow, 1.28f);
+                AxialSrc(hip, knee + up, curPal.HLegUp, 1.48f);
             }
-            else AxialSrc(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), curPal.HLeg);
+            else AxialSrc(hip, hip + new Vector3(0, -0.98f * MathF.Cos(a), 0.98f * MathF.Sin(a)), curPal.HLeg, 1.35f);
         }
-        LongRect(new(0, y - rock, -0.82f), new(0, y + rock, 0.82f), curPal.HBody);
-        if (camel) LongRect(new(0, y + 0.4f, -0.5f), new(0, y + 0.4f, 0.2f), curPal.HHump, 0.01f);
-        if (Detail == 0) BillRect(new(0, y + rock, 0.6f), curPal.HChest, false, -0.015f);
-        if (Detail == 0) BillRect(new(0, y - rock, -0.55f), curPal.HRump, false, -0.015f);
+        LongRect(new(0, y - rock, -0.88f), new(0, y + rock, 0.88f), curPal.HBody, 0, 1.24f);
+        if (camel) LongRect(new(0, y + 0.42f, -0.5f), new(0, y + 0.42f, 0.2f), curPal.HHump, 0.01f, 1.15f);
+        if (Detail == 0) BillRect(new(0, y + rock, 0.66f), curPal.HChest, false, -0.015f, 1.30f);
+        if (Detail == 0) BillRect(new(0, y - rock, -0.60f), curPal.HRump, false, -0.015f, 1.30f);
         float neckOut = gallop * 0.13f; // stretched out at the gallop
-        LongRect(new(0, y + rock + 0.20f, 0.60f), new(0, y + rock + 0.76f + nod - neckOut, 1.00f + neckOut), curPal.HNeck);
-        LongRect(new(0, y + rock + 0.76f + nod - neckOut, 0.96f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.44f + neckOut * 1.4f), curPal.HHead);
-        if (Detail == 0) BillRect(new(0, y + rock + 0.58f + nod * 1.2f - neckOut, 1.18f + neckOut), curPal.HFace, false, -0.04f);
+        LongRect(new(0, y + rock + 0.18f, 0.62f), new(0, y + rock + 0.78f + nod - neckOut, 1.04f + neckOut), curPal.HNeck, 0, 1.30f);
+        LongRect(new(0, y + rock + 0.78f + nod - neckOut, 0.99f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.48f + neckOut * 1.4f), curPal.HHead, 0, 1.16f);
+        if (Detail == 0) BillRect(new(0, y + rock + 0.58f + nod * 1.2f - neckOut, 1.22f + neckOut), curPal.HFace, false, -0.04f, 1.16f);
         float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.07f * (1 - gait); // a standing horse flicks its tail
-        if (Detail == 0) AxialSrc(new(0, y + 0.20f, -0.82f), new(swish, 0.84f + bob + gait * 0.44f, -1.06f - gait * 0.44f), curPal.HTail);
+        if (Detail == 0) AxialSrc(new(0, y + 0.20f, -0.88f), new(swish, 0.84f + bob + gait * 0.44f, -1.14f - gait * 0.44f), curPal.HTail, 1.25f);
 
         // Gear over the coat.
         pal = side; curPal = sidePal;
         tint = plain;
         var (hb, hc, hr, hn, hh) = curPal.Barding(barding);
-        LongRect(new(0, y - rock, -0.82f), new(0, y + rock, 0.82f), hb, 0.03f);
+        LongRect(new(0, y - rock, -0.88f), new(0, y + rock, 0.88f), hb, 0.03f, 1.24f);
         if (Detail == 0)
         {
-            if (hc.Width > 0) BillRect(new(0, y + rock, 0.6f), hc, false, -0.01f);
-            if (hr.Width > 0) BillRect(new(0, y - rock, -0.55f), hr, false, -0.01f);
-            if (hn.Width > 0) LongRect(new(0, y + rock + 0.20f, 0.60f), new(0, y + rock + 0.76f + nod - neckOut, 1.00f + neckOut), hn, 0.02f);
-            if (hh.Width > 0) LongRect(new(0, y + rock + 0.76f + nod - neckOut, 0.96f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.44f + neckOut * 1.4f), hh, 0.02f);
+            if (hc.Width > 0) BillRect(new(0, y + rock, 0.66f), hc, false, -0.01f, 1.30f);
+            if (hr.Width > 0) BillRect(new(0, y - rock, -0.60f), hr, false, -0.01f, 1.30f);
+            if (hn.Width > 0) LongRect(new(0, y + rock + 0.18f, 0.62f), new(0, y + rock + 0.78f + nod - neckOut, 1.04f + neckOut), hn, 0.02f, 1.30f);
+            if (hh.Width > 0) LongRect(new(0, y + rock + 0.78f + nod - neckOut, 0.99f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.48f + neckOut * 1.4f), hh, 0.02f, 1.16f);
         }
+        float seatH = (Saddle + bob) * hScale;
         if (riderLegs)
+        {
+            scale = Scale; // rider's legs keep human scale astride the larger barrel
+            float legSpread = 0.24f * hScale;
             for (int sd = -1; sd <= 1; sd += 2)
             {
-                var hip = new Vector3(sd * 0.2f, Saddle + 0.68f + bob, 0);
-                var foot = new Vector3(sd * 0.36f, 1.0f + bob, 0.18f);
+                var hip = new Vector3(sd * legSpread, seatH + 0.68f, 0);
+                var foot = new Vector3(sd * (legSpread + 0.14f), seatH + 0.12f, 0.18f);
                 AxialSrc(hip, foot, curLook.Leg);
                 if (Detail == 0) BillRect(foot, curLook.Boot(viewIdx), true);
             }
-        return bob;
+        }
+        return seatH * Scale;
     }
 
     /// What a standing horse with idle phase `idle` is doing at `now` (A5): 0 nothing, 1 a toss of the head, 2 pawing with a
@@ -955,12 +970,12 @@ sealed partial class Puppet
     void HeadBill() => BillRect(new(0, 1.53f, 0.02f), curLook.Head(viewIdx), true);
 
     // Camera-facing sprite; `bias` moves it toward (+) or away from (-) the camera so layered parts never z-fight.
-    void BillRect(Vector3 local, Rectangle src, bool viewed, float bias = 0)
+    void BillRect(Vector3 local, Rectangle src, bool viewed, float bias = 0, float scaleMul = 1)
     {
         var c = W(local);
         if (bias != 0) c += Vector3.Normalize(camPos - c) * bias;
-        var hw = camRight * src.Width * Art.Px * scale / 2;
-        var hh = camUp * src.Height * Art.Px * scale / 2;
+        var hw = camRight * src.Width * Art.Px * scale * scaleMul / 2;
+        var hh = camUp * src.Height * Art.Px * scale * scaleMul / 2;
         Quad(c - hw - hh, c + hw - hh, c - hw + hh, c + hw + hh, src, viewed && viewIdx == 1 && flip);
     }
 
@@ -997,14 +1012,14 @@ sealed partial class Puppet
 
     // Sprite running from a (left column) to b (right column), turned about that axis to face the camera, top edge kept up.
     // `bias` pulls it toward the camera (gear over the coat).
-    void LongRect(Vector3 aLocal, Vector3 bLocal, Rectangle src, float bias = 0)
+    void LongRect(Vector3 aLocal, Vector3 bLocal, Rectangle src, float bias = 0, float heightScale = 1)
     {
         Vector3 a = W(aLocal), b = W(bLocal), axis = b - a;
         if (bias != 0) { var toward = Vector3.Normalize(camPos - (a + b) / 2) * bias; a += toward; b += toward; }
         var side = Vector3.Cross(axis, camPos - (a + b) / 2);
         side = side.LengthSquared() < 1e-8f ? Vector3.Up : Vector3.Normalize(side);
         if (side.Y < 0) side = -side;
-        side *= src.Height * Art.Px * scale / 2;
+        side *= src.Height * Art.Px * scale * heightScale / 2;
         Quad(a - side, b - side, a + side, b + side, src, false);
     }
 
