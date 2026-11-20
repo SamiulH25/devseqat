@@ -74,7 +74,7 @@ public static partial class SelfTest
         Console.WriteLine($"tiers: {links} upgrade links fought against their parents, every upgrade won");
     }
 
-    /// D0: the gap is felt: a tier VII company beats twice as many tier IV men of its culture and class (heavy horse
+    /// D0: the gap is felt: a tier VI company beats twice as many tier III men of its culture and class (heavy horse
     /// needed T1's Ride down for this: before it, 40 lancers riding round 20 knights was a coin flip).
     static void TierGap()
     {

@@ -241,7 +241,7 @@ public sealed partial class Campaign
     /// The aura news for this report, cleared once read.
     string TakeAuraNews() { var s = auraNews; auraNews = ""; return s; }
 
-    // ---- the captain's path (docs/ARCANA.md AR6) ----
+    // ---- the captain's path (docs/archive/ARCANA.md AR6) ----
 
     /// What each path is, one line (the captain sheet).
     public static string PathLine(string path) => path switch

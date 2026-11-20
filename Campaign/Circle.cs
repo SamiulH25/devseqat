@@ -52,7 +52,7 @@ public sealed partial class Campaign
     /// Spells a circle may learn beyond its line: one more with a doctrine.
     public static int LearnRoom(CompanyRecord c) => MaxLearned + (c.Doctrine != "" ? 1 : 0);
 
-    /// Why the circle cannot take this doctrine, or null (docs/ARCANA.md AR4).
+    /// Why the circle cannot take this doctrine, or null (docs/archive/ARCANA.md AR4).
     public string? CannotChooseDoctrine(string id)
     {
         if (Circle is not CompanyRecord c) return "YOU HAVE NO CIRCLE";
@@ -177,7 +177,7 @@ public sealed partial class Campaign
         return army with { Companies = list };
     }
 
-    /// A great working your circle cast in a won battle (docs/ARCANA.md AR8): the battle is named for it, its master is known
+    /// A great working your circle cast in a won battle (docs/archive/ARCANA.md AR8): the battle is named for it, its master is known
     /// for it, and it is your deed. Returns the battle's name.
     internal string WorkingRemembered(BattleResult r, string field)
     {

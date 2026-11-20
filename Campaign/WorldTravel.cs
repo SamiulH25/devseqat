@@ -16,7 +16,7 @@ public sealed partial class WorldMap
     /// bridges and fords is weighed far above its real pace so a party goes round to them, and a lake is all but barred.
     float TravelCostAt(Vector2 p, float roadBonus)
     {
-        if (InSea(p) || Landness(p) < 0.35f) return float.PositiveInfinity; // the sea is not crossed (docs/WORLDMAP.md WM2)
+        if (InSea(p) || Landness(p) < 0.35f) return float.PositiveInfinity; // the sea is not crossed (docs/archive/WORLDMAP.md WM2)
         if (InLake(p)) return 40;
         if (RoadDist(p) < 2.5f) return 1 / roadBonus;
         foreach (var r in Rivers)

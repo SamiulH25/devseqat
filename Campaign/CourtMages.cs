@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The enemy's arcana (docs/ARCANA.md AR5): a lord's circle is led by a named court mage, a Stormcaller or a Father of the
+/// The enemy's arcana (docs/archive/ARCANA.md AR5): a lord's circle is led by a named court mage, a Stormcaller or a Father of the
 /// Circle, who rides with it and falls with it. The bigger brigand bands of the later campaign bring cunning folk. Names come
 /// from the lord's id, not the campaign's dice, so the world's draws stay as they were.
 public sealed partial class Campaign

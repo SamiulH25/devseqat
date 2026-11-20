@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Engines in the campaign and in field battles (docs/SIEGECRAFT.md A3, A4).
+/// Engines in the campaign and in field battles (docs/archive/SIEGECRAFT.md A3, A4).
 public static partial class SelfTest
 {
     /// Trains on both sides of a field battle: crews come off foot companies and report with them, the engines stand behind

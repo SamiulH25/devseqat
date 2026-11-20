@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The world's look (docs/WORLD_LIFE.md WL0): laid over what `Sky` gives for the hour and weather. `Sun` and `Ambient`
+/// The world's look (docs/archive/WORLD_LIFE.md WL0): laid over what `Sky` gives for the hour and weather. `Sun` and `Ambient`
 /// scale the light, `ShadowTint` colours the ambient (what shadows are lit by); `Palette` repaints the land, trees and
 /// houses (not the men: their pixel palettes stay); `Grade` is the final grade. Battles keep the "muted chronicle";
 /// the campaign map takes the grounded look (natural light, cool shadows, blue haze), chosen by `Grounded`, which

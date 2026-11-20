@@ -275,7 +275,7 @@ public static partial class SelfTest
         Check(k.Captain.Contract == khaganate, $"the stand-in takes service with the realm it started in (contract {k.Captain.Contract}, faction {k.Player.Faction}, over {k.S.GameOver} {k.S.EndReason})");
     }
 
-    /// WM0 (docs/WORLDMAP.md): the designed world reads and is sound, and its province rule is the page's to the last bit
+    /// WM0 (docs/archive/WORLDMAP.md): the designed world reads and is sound, and its province rule is the page's to the last bit
     /// (values from index.html's own `warp`, run in node).
     static void WorldDesignReads()
     {
@@ -302,7 +302,7 @@ public static partial class SelfTest
         Check(w.Subcultures.All(c => Factions.Culture(c.Id) != null), "every subculture is a culture in factions.json");
     }
 
-    /// WM1 (docs/WORLDMAP.md): layout 5 is the drawn world, the same for every seed: its land provinces with invented names,
+    /// WM1 (docs/archive/WORLDMAP.md): layout 5 is the drawn world, the same for every seed: its land provinces with invented names,
     /// its settlements in their own realm's land and none at sea, every town and castle joined by road, and a campaign runs.
     /// WM3: the drawn world's six new kinds of country (Coast, Taiga, Highlands, Tundra, Desert, Oasis) have their names,
     /// woods, weather, monsters and battlefields; a battle by the sea has the sea on its flank.
@@ -401,7 +401,7 @@ public static partial class SelfTest
         Check(t.Foliage.SequenceEqual(m.BuildTerrain().Foliage), "the same cover every time the map is built");
     }
 
-    /// Ports and ship travel (docs/WORLDMAP.md WM7): the drawn lanes join ports over open water, a passage is paid for
+    /// Ports and ship travel (docs/archive/WORLDMAP.md WM7): the drawn lanes join ports over open water, a passage is paid for
     /// and refused for cause, and a ship carries the company to the far port quicker than its men march, untroubled.
     static void ShipTravel()
     {

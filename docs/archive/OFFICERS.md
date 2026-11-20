@@ -8,7 +8,7 @@ This plan replaces the eleven division goals with two plain layers, the same for
   him a stance. He does what the stance says and nothing else. **His skill decides how well**: a poor officer on the
   enemy's line can lose it badly, and that is something to see and use.
 
-Status: OF0-OF7 built (2026-11-17). Supersedes the goal layer of `docs/SERGEANTS.md` (SG0-SG7); the command cap,
+Status: OF0-OF7 built (2026-11-17). Supersedes the goal layer of `docs/archive/SERGEANTS.md` (SG0-SG7); the command cap,
 reserve tray, call-ups and horn plans stay.
 
 ## Decisions

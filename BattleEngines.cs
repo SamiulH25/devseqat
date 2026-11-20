@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// An engine of war on the field (docs/SIEGECRAFT.md A1): it stands where it was set up and its crew company works it.
+/// An engine of war on the field (docs/archive/SIEGECRAFT.md A1): it stands where it was set up and its crew company works it.
 /// Crew within reach of it wind it (a short crew is slower; none and it stands silent); enemies who reach it hack it apart.
 public sealed class Engine
 {
@@ -18,7 +18,7 @@ public sealed class Engine
     public float GateDamage, WallDamage;
     /// Where it last aimed (the screen and the HUD read it).
     public Vector2 Aim;
-    /// A point the player ordered it to keep shooting at (a spot of ground or a place on the wall: docs/SIEGECRAFT.md A5).
+    /// A point the player ordered it to keep shooting at (a spot of ground or a place on the wall: docs/archive/SIEGECRAFT.md A5).
     public Vector2? Mark;
     /// Whether this winding has been heard yet (A6).
     public bool Winched;
@@ -47,7 +47,7 @@ public sealed partial class Battle
     /// How near a crewman must stand to work his engine, and how near a foe must come to hack at it.
     public const float CrewReach = 5, WreckReach = 2.5f;
     readonly List<Unit> nearEngine = new(64);
-    /// The engine you work yourself (docs/SIEGECRAFT.md A5): stand by it, press the use key, and it looses where you aim when you attack.
+    /// The engine you work yourself (docs/archive/SIEGECRAFT.md A5): stand by it, press the use key, and it looses where you aim when you attack.
     public Engine? Manned { get; private set; }
     public const float ManReach = 3.5f;
 
@@ -107,7 +107,7 @@ public sealed partial class Battle
         return e;
     }
 
-/// Set up the engines in BattleOptions (docs/SIEGECRAFT.md A3, A4) after both sides deploy. Each takes its crew from one of
+/// Set up the engines in BattleOptions (docs/archive/SIEGECRAFT.md A3, A4) after both sides deploy. Each takes its crew from one of
     /// its side's foot companies (the smallest-tier one that can spare them; the crew reports with that company). In a field
     /// battle only bolt-throwers come, behind the line; in an assault the attackers bring their works before the wall and the
     /// defenders' are on it already (MountWallEngines). Breached sections start down.
@@ -147,7 +147,7 @@ public sealed partial class Battle
         }
     }
 
-    /// Horse with no company to hunt rides for an enemy engine it can see near it (docs/SIEGECRAFT.md A4): a crew is soft.
+    /// Horse with no company to hunt rides for an enemy engine it can see near it (docs/archive/SIEGECRAFT.md A4): a crew is soft.
     internal Squad? EnginePrey(Squad horse, int foe)
     {
         Squad? best = null;

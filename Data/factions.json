@@ -7,7 +7,7 @@
   // wars and truces a new campaign opens with. A realm's temper (docs/archive/WORLD.md W5) multiplies the shared rules (1 = as before):
   // "aggression" (wars declared, lords marching for the front), "garrison" (how full its seats are kept), "siege" (how readily its
   // lords lay siege), "tribute" (how soon it takes terms); "hunts": "monsters" sends its lords after goblins, beasts and the dead
-  // first; "arcana" (0-3, default 1): how many of four great lords keep a circle of mages (docs/ARCANA.md AR5). Realms not listed in "relations" start at peace. A culture's "kin" are the cultures whose troops its men may also
+  // first; "arcana" (0-3, default 1): how many of four great lords keep a circle of mages (docs/archive/ARCANA.md AR5). Realms not listed in "relations" start at peace. A culture's "kin" are the cultures whose troops its men may also
   // train as (docs/archive/WORLD.md W3); since W4 every realm's four lines are its own culture's troops.
   "cultures": [
     { "id": "azure", "name": "Azure", "root": "levies", "text": "heavy foot, crossbows and lances", "flavour": "Blue roofs and quiet bells" },

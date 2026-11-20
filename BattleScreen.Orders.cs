@@ -12,7 +12,7 @@ partial class BattleScreen
     List<Squad> Targets() =>
         (selected.Count > 0 ? selected : battle.Commanded).Where(s => s.Alive > 0 && s.Works == null).ToList(); // an engine's crew take only its orders (EngineOrder)
 
-    /// Companies selected that work a light or stone engine (docs/SIEGECRAFT.md A5).
+    /// Companies selected that work a light or stone engine (docs/archive/SIEGECRAFT.md A5).
     List<Squad> SelectedCrews() => selected.Where(s => s.Alive > 0 && s.Works is { Wrecked: false, Def.Rolls: false }).ToList();
 
     /// A right-click with engine crews selected: an enemy company becomes their mark, a place on the ground (or the wall) too.
@@ -316,7 +316,7 @@ partial class BattleScreen
         else Tips.Show("stakes", "Stakes stop horse: riders cannot cross them, but your men on foot slip between.\nEach company of longbowmen plants them once, while it holds and no enemy is within 30 m.");
     }
 
-    /// The goal you pick next is the chosen sergeant's horn plan (docs/SERGEANTS.md SG2).
+    /// The goal you pick next is the chosen sergeant's horn plan (docs/archive/SERGEANTS.md SG2).
     bool hornMode;
 
     /// Clicks on the command tray, a card's ADD and the horn; true when one was used.

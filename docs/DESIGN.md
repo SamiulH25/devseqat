@@ -102,11 +102,10 @@ full protection:
 | III (veteran) | nasal helm or kettle | mail | heater | tabard with charge | Men-at-Arms, Pikemen, Longbowmen, Lancers |
 | IV (elite) | sallet, spangenhelm or great helm | mail, plate on the heaviest | heater, or none | tabard, often a cape; caparisoned destrier | Ironguard, Knights |
 | V (champion) | sallet or great helm | plate (mail for some archers) | heater, or none | tabard, cape; plume on the heavy lines | Paladins, Banner Knights, Master Longbowmen |
-| VI (household) | great helm or sallet | plate | heater, or none | tabard, cape and plume | Iron Legionaries, Paladin Knights, Royal Yeomen |
-| VII (legend) | great helm | plate | heater, or none | tabard, cape and plume on every man | Immortals, Grail Knights, Sky Piercers |
+| VI (household, the top) | great helm or sallet | plate | heater, or none | tabard, cape and plume | Iron Legionaries, Paladin Knights, Royal Yeomen |
 
 Silhouettes also separate the lines: a **shield** means a line infantryman, a **long pole** a spearman (a longer one a pikeman),
-a **bow** an archer, a **horse** cavalry, and a **plume** an officer, lancer or knight. Tier numerals (I-VII) appear on unit cards. Tiers V-VII use the same parts as tier IV and add
+a **bow** an archer, a **horse** cavalry, and a **plume** an officer, lancer or knight. Tier numerals (I-VI) appear on unit cards. Tiers V-VI use the same parts as tier IV and add
 heraldry (tabard, then cape, then plume), so a high tier reads from across the field without new sprites. The Northmarch lines
 keep fur, spangenhelms and round shields at every tier.
 

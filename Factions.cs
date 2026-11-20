@@ -37,7 +37,7 @@ public sealed class FactionDef
     public float Aggression = 1, Garrison = 1, Siege = 1, Tribute = 1;
     /// What its lords hunt first: "" (whatever is hostile in reach) or "monsters" (goblins, beasts and the dead before men).
     public string Hunts = "";
-    /// How much it leans on sorcery (docs/ARCANA.md AR5), 0-3: of its great lords, this many in four raise a circle (1 = as
+    /// How much it leans on sorcery (docs/archive/ARCANA.md AR5), 0-3: of its great lords, this many in four raise a circle (1 = as
     /// the other realms of old, roughly).
     public int Arcana = 1;
 }
@@ -90,7 +90,7 @@ public static class Factions
     public static CultureDef? Culture(string id) { Load(); return cultures!.FirstOrDefault(c => c.Id == id); }
     public static string CultureOf(int faction) => faction < 0 ? Common : Get(faction).Culture;
 
-    /// The realm culture a people belongs to (docs/WORLDMAP.md WM5): a culture a realm holds is its own; a subculture (no realm
+    /// The realm culture a people belongs to (docs/archive/WORLDMAP.md WM5): a culture a realm holds is its own; a subculture (no realm
     /// holds it) belongs to the first of its kin a realm holds (the Bayfolk to the Azure). A realm culture's kin are only the
     /// lines it may borrow (the League's include the Azure), never its people.
     public static string PeopleOf(string culture)

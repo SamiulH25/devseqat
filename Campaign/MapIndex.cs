@@ -114,7 +114,7 @@ public sealed class MapIndex
     }
 
     /// Whether a road lies nearer than r: the same answer as RoadDist(p) < r, but a cell far from every road says no at once
-    /// and a near one stops at the first road in reach (the drawn map's parties ask it for every step: docs/WORLDMAP.md WM4).
+    /// and a near one stops at the first road in reach (the drawn map's parties ask it for every step: docs/archive/WORLDMAP.md WM4).
     public bool? NearRoad(Vector2 p, float r)
     {
         int k = CellOf(p);

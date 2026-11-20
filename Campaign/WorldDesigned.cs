@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// WorldMap layout 5 (docs/WORLDMAP.md WM1): the map built from the designed world (`Data/world.json`, `WorldDesign`)
+/// WorldMap layout 5 (docs/archive/WORLDMAP.md WM1): the map built from the designed world (`Data/world.json`, `WorldDesign`)
 /// instead of from a seed. Every campaign on it has the same land; the campaign's seed still deals lords, weather and
 /// battles. Provinces are the design's land provinces (the sea is a look-up, not a province); borders follow the design's
 /// warped nearest-centre rule, sampled once on a grid.
@@ -127,7 +127,7 @@ public sealed partial class WorldMap
             m.Sites.Add(new Site { Id = m.Sites.Count, Province = m.DesignProvinceAt(pos).Id, Kind = s.Kind, Pos = pos, Name = s.Name });
         }
         _ = m.Index; // build the look-up grid now, behind the loading screen: the generated maps' site placing builds it, this map's
-                     // drawn sites do not, and the first campaign tick stalled 0.8 s building it (docs/WORLDMAP.md WM4)
+                     // drawn sites do not, and the first campaign tick stalled 0.8 s building it (docs/archive/WORLDMAP.md WM4)
         return m;
     }
 
@@ -264,7 +264,7 @@ public sealed partial class WorldMap
     int seaStamp;
     readonly object seaLock = new();
 
-    /// A way round the sea for the AI's parties (docs/WORLDMAP.md WM4): A* on a coarse land grid (6 units, land or not, every
+    /// A way round the sea for the AI's parties (docs/archive/WORLDMAP.md WM4): A* on a coarse land grid (6 units, land or not, every
     /// step the same), then pulled into straight legs wherever the line stays on land. The player's full planner prices roads,
     /// rivers and woods on a 4-unit grid and cleared two 170 000-cell arrays a plan; with every chasing lord re-planning it
     /// was most of the drawn map's campaign tick. The last point is `to`; a goal no land way reaches gives just `to`.

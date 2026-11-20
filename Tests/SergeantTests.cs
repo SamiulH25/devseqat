@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Sergeants that matter (docs/SERGEANTS.md SG1-SG7).
+/// Sergeants that matter (docs/archive/SERGEANTS.md SG1-SG7).
 public static partial class SelfTest
 {
     static ArmySpec BigArmy(int seed, int team) => Armies.Divide(Armies.Large(new Random(seed), 2, team, 2000));
@@ -54,7 +54,7 @@ public static partial class SelfTest
     }
 
     /// SG2: a plan set before the battle waits for the horn and then lands at once at any distance; one set during the
-    /// battle is his at once too (no riders, docs/OFFICERS.md OF0); the plan is spent when sounded.
+    /// battle is his at once too (no riders, docs/archive/OFFICERS.md OF0); the plan is spent when sounded.
     static void HornPlans()
     {
         var (b, d, s) = OneDivision(3, new Vector2(60, 0));

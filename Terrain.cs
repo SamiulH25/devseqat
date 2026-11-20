@@ -118,7 +118,7 @@ public sealed record River(Vector2[] Path, float Width, Vector2[] Fords, float D
     }
 }
 
-/// Still water on the campaign map (docs/WORLD_LIFE.md WL2, layout 4): a lake or a village pond. Its shore wanders with
+/// Still water on the campaign map (docs/archive/WORLD_LIFE.md WL2, layout 4): a lake or a village pond. Its shore wanders with
 /// noise round `Radius`; the ground is cut into a basin `Depth` deep inside it.
 public sealed record Lake(Vector2 Center, float Radius, int Seed, float Depth = 1.6f)
 {
@@ -146,14 +146,14 @@ public sealed record Lake(Vector2 Center, float Radius, int Seed, float Depth = 
     }
 }
 
-/// A road on the campaign map, as drawn (docs/WORLD_LIFE.md WL1): its line and half-width (wider between towns than out to a village).
+/// A road on the campaign map, as drawn (docs/archive/WORLD_LIFE.md WL1): its line and half-width (wider between towns than out to a village).
 public readonly record struct RoadLine(Vector2[] Points, float Half, bool Village);
 
 /// A bridge on the campaign map where a road crosses a river: where, the way the road runs, how far it spans, and whether
 /// it is built of stone (between towns) or planks (to a village). Drawing only: the map's crossing is a shallow ford in its heights.
 public readonly record struct MapBridge(Vector2 At, Vector2 Along, float Reach, bool Stone);
 
-/// What a field round a village or town holds (docs/WORLD_LIFE.md WL3). Drawing only.
+/// What a field round a village or town holds (docs/archive/WORLD_LIFE.md WL3). Drawing only.
 public enum FieldKind { Grain, Green, Ploughed, Fallow, Pasture, Orchard }
 
 /// A field plot on the campaign map (layout 4): a rectangle at `Center`, its long side along `Axis` (unit), `Half` its
@@ -194,7 +194,7 @@ public sealed class SiegeWall
     public float GateHp, GateMax;
     public bool GateOpen => GateHp <= 0;
 
-    /// The wall's face in sections an engine can break (docs/SIEGECRAFT.md A2): `SectionCount` of `SectionWidth` metres from
+    /// The wall's face in sections an engine can break (docs/archive/SIEGECRAFT.md A2): `SectionCount` of `SectionWidth` metres from
     /// `SectionsFrom`, all but the two by the gatehouse. A broken section is a breach: a slope of rubble men on foot climb
     /// (the bank behind it stands, so the ground does not change). Siege towers that reach the face are `Ramps`.
     public const float SectionWidth = 10, SectionsFrom = -100, BreachHalf = 4, RampHalf = 1.8f;
@@ -246,7 +246,7 @@ public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, floa
     public float Wet { get; init; }
     public int Season { get; init; } = -1;
     public int Favour { get; init; } = -1;
-    /// The drawn world's grounds (docs/WORLDMAP.md WM3): the colour the open ground takes (green, moss, frost, sand, dry
+    /// The drawn world's grounds (docs/archive/WORLDMAP.md WM3): the colour the open ground takes (green, moss, frost, sand, dry
     /// grass), and woods of pines only.
     public GroundLook Look { get; init; }
     public bool Conifer { get; init; }
@@ -298,13 +298,13 @@ public sealed partial class Terrain
     public readonly int Seed;
     public readonly bool IsFlat;
     public readonly List<Foliage> Foliage = new();
-    /// The campaign map's roads, lakes and bridges as drawn (docs/WORLD_LIFE.md WL1-WL2); empty on a battlefield.
+    /// The campaign map's roads, lakes and bridges as drawn (docs/archive/WORLD_LIFE.md WL1-WL2); empty on a battlefield.
     public readonly List<RoadLine> RoadLines = new();
     public readonly List<Lake> Lakes = new();
     public readonly List<MapBridge> MapBridges = new();
-    /// Ships lying at the ports' piers on the campaign map (docs/WORLDMAP.md WM7; drawing only).
+    /// Ships lying at the ports' piers on the campaign map (docs/archive/WORLDMAP.md WM7; drawing only).
     public readonly List<(Vector2 At, float Yaw)> Moored = new();
-    /// The sea's surface on a designed campaign map (docs/WORLDMAP.md WM2); null where there is no sea.
+    /// The sea's surface on a designed campaign map (docs/archive/WORLDMAP.md WM2); null where there is no sea.
     public float? SeaLevel;
     /// Field plots round the settlements (campaign map, layout 4) and the season they were drawn for (-1: a battlefield).
     public readonly List<FieldPlot> Fields = new();
@@ -324,7 +324,7 @@ public sealed partial class Terrain
     /// Optional ground colour multiplier (the campaign map's fields and forest floors). Visual only.
     public readonly Func<Vector2, Vector3, Vector3>? Tint; // (place, ground colour) -> the colour drawn
     /// The campaign map: how much of the colour `Tint` gives a place keeps through the map's grassland look (0-1: sand,
-    /// frost, heath; docs/WORLDMAP.md WM3). Null or 0 = the grassland look, as every map had before. Visual only.
+    /// frost, heath; docs/archive/WORLDMAP.md WM3). Null or 0 = the grassland look, as every map had before. Visual only.
     public Func<Vector2, float>? Own { get; init; }
     /// Grass tufts and the minimap's reach (the campaign map has no grass and a wider overview).
     public readonly bool Grass = true;

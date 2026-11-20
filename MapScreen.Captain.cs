@@ -167,13 +167,13 @@ partial class MapScreen
         string line = cap.AuraWall ? "A WALL. ONE TRIAL WILL BREAK IT:" : Campaign.AuraGifts[Math.Clamp(cap.AuraTier, 0, Campaign.AuraTop)].ToUpperInvariant();
         if (cap.Wounds.Contains("core")) line = "YOUR CORE IS CRACKED: YOU FIGHT A TIER LOWER. " + line;
         foreach (var l in ui.Wrap(line, c.Width)) { ui.Text(l, c.X, y, cap.AuraWall ? Style.Warn : Style.Dim * 0.8f, 1); y += ui.U(11); }
-        // The trial card (docs/ARCANA.md AR1): every way through the wall, and where to find it now.
+        // The trial card (docs/archive/ARCANA.md AR1): every way through the wall, and where to find it now.
         foreach (var trial in C.NearestTrials())
             foreach (var l in ui.Wrap(trial, c.Width - ui.U(8))) { ui.Text(l, c.X + ui.U(8), y, Style.Text * 0.9f, 1); y += ui.U(11); }
         return FormList(c, OwnFormBlock(c, FlameBlock(c, PathBlock(c, y))));
     }
 
-    /// The path the aura walks (docs/ARCANA.md AR6): three buttons once it wakes, then the path chosen and what it gives.
+    /// The path the aura walks (docs/archive/ARCANA.md AR6): three buttons once it wakes, then the path chosen and what it gives.
     int PathBlock(Rectangle c, int y)
     {
         var cap = C.Captain;

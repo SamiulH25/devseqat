@@ -2,10 +2,10 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A sea lane (docs/WORLDMAP.md WM7): the two ports it joins (settlement ids) and the way a ship sails it, berth to berth.
+/// A sea lane (docs/archive/WORLDMAP.md WM7): the two ports it joins (settlement ids) and the way a ship sails it, berth to berth.
 public sealed record SeaLane(int A, int B, Vector2[] Way, float Length);
 
-/// WorldMap: the drawn map's ports and sea lanes (docs/WORLDMAP.md WM7). A port is a settlement a drawn lane ends at; its
+/// WorldMap: the drawn map's ports and sea lanes (docs/archive/WORLDMAP.md WM7). A port is a settlement a drawn lane ends at; its
 /// quay runs from the beach out to the nearest water deep enough for a ship. Made from the design each time the map is
 /// built (nothing is saved), so a save from before the ships gains them.
 public sealed partial class WorldMap

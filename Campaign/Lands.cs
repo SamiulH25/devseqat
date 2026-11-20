@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// One kind of country on the campaign map (a province's `Kind`): its name in a title, the map's tint, woods, travel,
-/// rain, sites, whether monsters lair there, and the battlefield it gives (docs/WORLDMAP.md WM3).
+/// rain, sites, whether monsters lair there, and the battlefield it gives (docs/archive/WORLDMAP.md WM3).
 /// `Title` is a format with {0} for the province's name. `Tint` multiplies the ground's colour; `Wash` (rgb, amount)
 /// then draws it toward a colour of its own (sand, frost), which a multiply cannot do. `Trees` is a province's woods
 /// at the 392 map's size; `Conifer` makes them pines. `Rain` scales the daily chance of rain (and a battle's). `Wild` = monster

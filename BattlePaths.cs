@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The captain's path in battle (docs/ARCANA.md AR6), from `BattleOptions.Path`. The **Sword** (forms and the blade): every
+/// The captain's path in battle (docs/archive/ARCANA.md AR6), from `BattleOptions.Path`. The **Sword** (forms and the blade): every
 /// form costs less aura. The **Banner** (aura spent on your men): your aura inspires the companies round you from the first
 /// tier and further off, and the banner forms hold and steady them. The **Hearth** (aura that feeds the circle): your circle
 /// near you draws half from the Tide, and the hearth forms lend it your aura, anchor its overreach and kindle the Tide.

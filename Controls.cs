@@ -27,7 +27,7 @@ public enum Act
     Merge, Slower, Faster, Relieve, SplitCompany, StandingOrder,
     // campaign map panels (later additions)
     LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen, InventoryScreen, QuestsScreen,
-    // sergeants (docs/SERGEANTS.md)
+    // sergeants (docs/archive/SERGEANTS.md)
     Horn,
 }
 

@@ -361,7 +361,7 @@ static partial class Synth
         return b;
     }
 
-    /// A windlass: a ratchet clicking up through a creaking rope and beam, slowing as the load comes on (docs/SIEGECRAFT.md A6).
+    /// A windlass: a ratchet clicking up through a creaking rope and beam, slowing as the load comes on (docs/archive/SIEGECRAFT.md A6).
     static float[] EngineWinch(Random r)
     {
         var b = Buf(1.7f);

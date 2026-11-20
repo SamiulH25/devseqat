@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Wells: the arcane map (docs/ARCANA.md AR2). Holy and old places are wells of power with a tradition (faith: a shrine,
+/// Wells: the arcane map (docs/archive/ARCANA.md AR2). Holy and old places are wells of power with a tradition (faith: a shrine,
 /// a spring, a hermit's cell; craft: standing stones, a ruin, an old battlefield) and a strength 1-3. A well can be
 /// consecrated (faith) or bound (craft): it turns to that tradition and grows a step stronger. The strongest well near a
 /// spot is its Tide: it decides where circles are for hire, and (AR3) how much power a battle fought there holds.

@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Ironfield;
 
-/// `--arcana [n]` (docs/ARCANA.md AR0): how much magic and aura a campaign holds. n seeds, each played twice for 240 days by the
+/// `--arcana [n]` (docs/archive/ARCANA.md AR0): how much magic and aura a campaign holds. n seeds, each played twice for 240 days by the
 /// stand-in captain: once seeking the arcane (vigils, its circle's rites) and once not. Writes balance/arcana.csv and prints
 /// each run's line against the targets.
 public static partial class BalanceReport

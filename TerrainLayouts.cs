@@ -6,7 +6,7 @@ namespace Ironfield;
 /// The armies meet along Z = 0; team 0 deploys at negative Z, team 1 at positive Z.
 public enum FieldLayout { Open, Ridge, TwoHills, Broken, Fen, RiverLine, WoodedFlank, ForestClearing, Village, Hedgerows, Pass, Shore }
 
-/// The colour a field's open ground takes (docs/WORLDMAP.md WM3): meadow green, the taiga's dark moss, the highland moor, the
+/// The colour a field's open ground takes (docs/archive/WORLDMAP.md WM3): meadow green, the taiga's dark moss, the highland moor, the
 /// tundra's frost, desert sand, the dry grass of an oasis. Drawing only, but the desert's sand is its ground layer too.
 public enum GroundLook { Green, Moss, Frost, Sand, Dry, Moor }
 

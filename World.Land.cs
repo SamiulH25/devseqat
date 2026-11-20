@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// World: the land with meaning (docs/WORLD_LIFE.md WL3). Field plots round the settlements drawn as their own patches
+/// World: the land with meaning (docs/archive/WORLD_LIFE.md WL3). Field plots round the settlements drawn as their own patches
 /// laid over the ground (crops by season, furrows drawn in the shader from the UV: x = 100 + metres across the furrows,
 /// y = how strongly they show), hedges on most sides, post-and-rail fences round pastures, haystacks in summer and autumn;
 /// and the birch, a third tree shape.

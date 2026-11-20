@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Engines of war (docs/SIEGECRAFT.md A1): data, crews, bolts, stones and gates.
+/// Engines of war (docs/archive/SIEGECRAFT.md A1): data, crews, bolts, stones and gates.
 public static partial class SelfTest
 {
     static void EnginesValidate()
@@ -36,7 +36,7 @@ public static partial class SelfTest
         Check(own.Units.All(u => u.Hp == u.Type.MaxHp) && crew.Units.All(u => u.Hp == u.Type.MaxHp), "bolts never strike their own side");
     }
 
-    /// Orders to an engine (docs/SIEGECRAFT.md A5): a company chosen as its mark, a spot of ground, and a place out of reach refused.
+    /// Orders to an engine (docs/archive/SIEGECRAFT.md A5): a company chosen as its mark, a spot of ground, and a place out of reach refused.
     static void EngineOrders()
     {
         var b = Battle.Empty(21);

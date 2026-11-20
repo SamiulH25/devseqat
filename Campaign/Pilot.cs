@@ -17,7 +17,7 @@ public sealed class Pilot
     float nextThink, nextTalk;
     /// Talk telemetry (LD7): topics raised and how many went its way.
     public int Talks, TalksWon;
-    /// Arcana telemetry (docs/ARCANA.md AR0): battles with casters on either side and on the enemy's, vigils kept, rites worked,
+    /// Arcana telemetry (docs/archive/ARCANA.md AR0): battles with casters on either side and on the enemy's, vigils kept, rites worked,
     /// and the day each aura tier was first reached (index = tier; -1 = not yet).
     public int MagicBattles, EnemyMagic, Vigils, Rites, LordBattles, LordMagic;
     public readonly int[] AuraDay = { 0, -1, -1, -1, -1, -1 };

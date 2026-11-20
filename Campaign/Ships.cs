@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Campaign: ship travel (docs/WORLDMAP.md WM7). From a port you pay a passage to a port its sea lanes reach; the company
+/// Campaign: ship travel (docs/archive/WORLDMAP.md WM7). From a port you pay a passage to a port its sea lanes reach; the company
 /// sails the lane (`Party.Voyage`, quicker than any march and the same in winter), lands at the far quay and walks into the
 /// town. Nothing meets a ship at sea, and only you sail: the realms' lords still go by land.
 public partial class Campaign

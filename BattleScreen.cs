@@ -266,7 +266,7 @@ sealed partial class BattleScreen
         paused = menuOpen = helpOpen = wheelOpen = false;
         SetCommand(false);
         // A quick battle opens deployed, like a campaign one: draw up, hand companies to sergeants, set horn plans
-        // (docs/SERGEANTS.md). Shot runs start straight in, except the sergeants' shots.
+        // (docs/archive/SERGEANTS.md). Shot runs start straight in, except the sergeants' shots.
         if (shotDir == null || Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") == "sergeants") StartDeployment();
     }
 

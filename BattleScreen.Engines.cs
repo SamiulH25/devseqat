@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Engines of war you can see (docs/SIEGECRAFT.md A6). Drawing only: every engine is built in code from a few dozen beams (thick
+/// Engines of war you can see (docs/archive/SIEGECRAFT.md A6). Drawing only: every engine is built in code from a few dozen beams (thick
 /// camera-facing ribbons, so a frame reads as timber from far away and as a frame up close) in its own pose: a stone-thrower's arm
 /// swings through its throw and is wound back as it reloads, a bolt-thrower's string is drawn back and loaded, a ram swings its trunk,
 /// a siege tower lowers its bridge when it docks. Shots in flight are drawn too, and (for your own) the reload, the reach and the mark.

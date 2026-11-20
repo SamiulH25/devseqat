@@ -72,7 +72,7 @@ sealed partial class MapScreen
             ui.Rect(new Rectangle((int)p.X - d / 2 - 1, (int)p.Y - d / 2 - 1, d + 2, d + 2), Color.Black);
             ui.Rect(new Rectangle((int)p.X - d / 2, (int)p.Y - d / 2, d, d), s.Kind == SettlementKind.Town ? Kit.Parchment : SideColor(s.Faction));
         }
-        // Wells (docs/ARCANA.md AR2): a mark in the tradition's colour, larger as it is stronger, edged white when marked.
+        // Wells (docs/archive/ARCANA.md AR2): a mark in the tradition's colour, larger as it is stronger, edged white when marked.
         void Dot(Vector2 at, int d, Color c) => ui.Rect(new Rectangle((int)at.X - d / 2, (int)at.Y - d / 2, d, d), c);
         foreach (var w in C.Sites)
         {

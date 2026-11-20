@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Engines of war on the campaign map (docs/SIEGECRAFT.md A3, A4): siege works a camp builds, the battering they give a wall,
+/// Engines of war on the campaign map (docs/archive/SIEGECRAFT.md A3, A4): siege works a camp builds, the battering they give a wall,
 /// a company's train of light engines, and what all of them bring to a battle or an auto-resolve.
 public sealed partial class Campaign
 {

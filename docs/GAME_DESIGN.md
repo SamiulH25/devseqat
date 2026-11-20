@@ -291,7 +291,7 @@ heraldry, then full protection:
 | III (veteran) | nasal helm / kettle | mail | heater | tabard with charge |
 | IV+ (elite) | great helm | plate | heater | tabard, plume; armoured destrier |
 
-(Tiers V–VII continue the elite range: heavier plate, richer heraldry.)
+(Tiers V–VI continue the elite range: heavier plate, richer heraldry.)
 
 ### 6.4 Heraldry is identity
 
@@ -498,145 +498,9 @@ economy is tuned so war pays for war, barely.
 
 ## 10. What remains to be built
 
-Everything above **exists and plays**. What follows is the planned second
-half of the game — specified in full, not yet started. Build it in this
-order; each step ends playable.
-
-### F1. Troop stacks and per-man promotion (large)
-
-Today a company is one troop type upgraded all at once. Rework: a company
-is a **banner of one role** (line/spear/bow/horse) holding **stacks** of any
-troops of that role, any tree, any tier.
-
-- Each stack has its own men/wounded and a shared XP **pool**. When the pool
-  covers one man's `upgradeXp`, **one man** promotes (pool and gold paid per
-  man; "promote all" repeats while affordable). Refilling veterans no longer
-  dilutes them.
-- Each promotion picks a branch: five levies to shieldmen, two to bowmen —
-  men leaving the company's role transfer to (or found) a company of that
-  role, or the promotion is refused with a reason.
-- Mixed companies deploy as **one squad** of mixed troop types (speed of the
-  slowest man); casualties come off the right stacks; cards show the largest
-  stack plus a tier strip.
-- Company identity deepens: **origin** (culture + home settlement; mixing
-  cultures costs cohesion), generated **banner**, up to three **honours**
-  (veteran perks unlocked by history: unbroken streaks, cavalry kills,
-  sieges stormed…), and a battle **ledger**.
-- Interface: a party screen with expandable stacks (pool bars, "N READY"),
-  drag stacks between same-role companies, and a promotion picker (branch
-  cards, count stepper, plain-spoken block reasons: "NEEDS A TOWN",
-  "NEEDS 3 HORSES").
-
-### F2. Cultures and regional recruitment (medium)
-
-- Every troop gains a **culture** (two southern cultures + northern, plus a
-  shared common core at low tiers). The southern tree splits into two
-  recognisable branches by lineage and look.
-- **Villages raise their own culture's troops** — conquered villages keep
-  theirs, so holding foreign land means foreign recruits. Culture lines are
-  entered from that culture's recruits (no turning southern levies into
-  northern berserkers). **Elite lines (T5+) need a matching-culture barracks**
-  in a held fief — or mercenaries.
-- Settlement owners' opinion of you scales how many recruits you're offered.
-
-### F3. Characters and relations (medium)
-
-- A shared **character** record for lords, companions and the captain:
-  name, faction, culture, rank, age, 2–3 **traits** (honourable, cruel,
-  cautious, reckless, greedy, generous, pious, ambitious, loyal, fickle),
-  **opinion** of others (−100…100), and short **memories** ("you rescued
-  me", "you razed my village").
-- Defeated lords are captured or escape and **come back**; the rare slain
-  lord is succeeded by an heir. Traits drive AI (reckless takes worse odds,
-  cautious flees earlier, greedy raids, loyal never defects).
-- Opinion moves on events with weights and decay, and gates fief requests,
-  council votes, defections and peace terms. A **characters screen** shows
-  lords by realm with traits, opinion bars and the memories behind them.
-- **Companions:** veteran officers (or tavern wanderers) join as characters
-  with a **role** (quartermaster, surgeon, scout, drillmaster, steward),
-  fight as hero units, and can later be raised to vassals with their own
-  parties and fiefs.
-
-### F4. Captain skill tree (medium)
-
-The eight perks become **eight skills that rise by use** (0–100), each with
-a perk choice every 25 points: Leadership (command), Tactics (outnumbered
-wins), Logistics (marching), Training (promotions), Medicine (wounded),
-Stewardship (ruling), Charm (opinion), Arms (your own kills). Two captains
-played differently for 20 battles should end meaningfully different.
-Renown keeps raising the men limit but stops buying perks.
-
-### F5. Career ranks and the council (large) — the endgame
-
-- **Ranks:** Free Company → Sworn Sword (single-realm contract) → Vassal
-  (swear fealty; fief grant, council vote, host summons) → Lord (2 fiefs;
-  raise vassals, propose wars) → **Marshal** (lead the realm's hosts, set
-  objectives, summon lords) → **King** (found a realm).
-- Each rank is a **career beat** (event panel + new guidance); each unlocks
-  capabilities, not just headcount.
-- **Realm councils** (fortnightly): lords vote, weighted by fiefs, on fief
-  grants, war objectives, war/peace and the marshal. Repeatedly overruled
-  lords sour on their liege — which drives defection.
-- **Founding a realm** by rebellion (as a lord holding a town; sympathetic
-  lords may follow with their fiefs) or by claim (hold a town 14 days
-  liegeless, then declare). You name it and choose its heraldry.
-- **Win:** as King, hold ~60% of the provinces (or leave every other realm
-  destroyed or tributary); as Marshal, win the "kingmaker" ending if your
-  realm gets there. Victory shows a campaign summary, then sandbox freely.
-  **Loss:** ironman captain death, or losing your last settlement and party.
-
-### F6. Fiefs (medium)
-
-- Settlements gain **prosperity** (peace/buildings up; raids/sieges/taxes
-  down; scales income and recruits), **unrest** (foreign owner, taxes,
-  sieges, raids up; garrisons and stewardship down — high unrest revolts or
-  defects), **culture**, and **buildings**: training yards, culture
-  barracks, walls, market, granary, stables, chapel, watchtower.
-- AI lords build to a simple priority (border walls → market → barracks).
-  Your vassals take **standing orders** (defend, follow, join the host) but
-  steer themselves. Miserable lords defect with their fiefs (the loyal never
-  do).
-
-### F7. Strategic war and diplomacy (large)
-
-- Realms at war hold an **objective** (a target settlement); the marshal
-  raises a **host** (summoned lords come if able and willing), marches and
-  besieges; others defend and raid. You can be summoned (answer or snub at
-  an opinion cost); as Marshal you pick the objective and summon lords.
-- **War exhaustion** (losses, lost seats, time) pushes toward peace.
-- **Diplomacy** (kings, and AI between realms): declare war, offer peace
-  **with terms** (cede land, pay gold over weeks, release captives, become a
-  **tributary** realm), propose alliances, exchange captive lords.
-  Acceptance weighs war score, exhaustion, strength and rulers' opinion.
-  The truce timer goes away, replaced by terms.
-
-### F8. Events and quests (medium)
-
-- **Data-driven events** with triggers on world state (post-siege famine, a
-  lord who hates his liege, an oversized brigand band, a company earning an
-  honour), narrative text, and 2–3 choices with real effects. At most one
-  every few days, never mid-battle.
-- **Lord quests** (escort, deliver ransom, hunt a rival, take a castle)
-  paying opinion first, gold second. **Named threats:** brigand bands can
-  grow a **brigand king** with a lair; revolts can raise a **pretender** —
-  the mid-game set pieces.
-
-### F9. Pacing retune (small, last)
-
-Retune XP/renown/rank curves against telemetry so career stages land on
-target: vassal in ~3–5 hours, lord in ~4–6 more, king/marshal in ~6–10 more,
-a full win in ~20–30 hours. A company should have a promotion ready about
-every second battle; first T5 men around the vassal rank.
-
-### Smaller gaps (fold in alongside)
-
-- Escort-a-supply-column contracts (needs supply columns on the map).
-- Captured lords taking part in peace terms (arrives with F7).
-- Animated water, torch-lit nights, bridge models on the map.
-- Full-campaign play-testing and economy tuning against telemetry; broader
-  machine/GPU verification.
-
----
+The second half this section once specified (F1 troop stacks, F2 cultures, F3 characters, F4 the skill tree, F5 career
+ranks, F6 fiefs, F7 war and diplomacy, F8 events, F9 pacing) is built; the plan is `docs/archive/CAMPAIGN_OVERHAUL.md`.
+Everything still open is listed in `docs/BACKLOG.md`.
 
 ## 11. Open questions (current proposals in brackets)
 

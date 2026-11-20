@@ -39,7 +39,7 @@ partial class MapScreen
         ui.Rect(bar, Style.Foe);
         ui.Rect(new Rectangle(bar.X, bar.Y, (int)(bar.Width * me / MathF.Max(1, me + them)), bar.Height), Style.Friendly);
         ui.Text(C.GroundNote(e), x, bar.Bottom + ui.U(8), Kit.Gilt, 1); // the ground and who holds it (docs/archive/TERRAIN.md T7)
-        string tide = C.TideNote(e.Pos); // the well that reaches this field (docs/ARCANA.md AR2)
+        string tide = C.TideNote(e.Pos); // the well that reaches this field (docs/archive/ARCANA.md AR2)
         if (tide != "") ui.TextR(ui.Fit(tide, ui.U(300)), r.Right - ui.U(24), bar.Bottom + ui.U(20), TideColour(C.TideAt(e.Pos).Tradition), 1);
         if (C.GrudgeOf(e) is { Length: > 0 } grudge) ui.Text(ui.Fit(grudge.ToUpperInvariant(), bar.Width - (tide != "" ? ui.U(310) : 0)), x, bar.Bottom + ui.U(20), Style.Bad, 1); // he comes for you (C13)
         else if (e.Kind == PartyKind.Lord && C.CharacterOf(e) is Character nch && Nature.Line(nch.Traits) is { Length: > 0 } how)
@@ -152,7 +152,7 @@ partial class MapScreen
     }
 
     /// At the walls of an enemy town or castle: besiege, assault, wait or leave.
-    /// Your siege camp's works (docs/SIEGECRAFT.md A3): how battered the walls are, what is built or building, and a row to
+    /// Your siege camp's works (docs/archive/SIEGECRAFT.md A3): how battered the walls are, what is built or building, and a row to
     /// order each work.
     void SiegeWorksRows(Settlement s, Rectangle r, int x, int y)
     {

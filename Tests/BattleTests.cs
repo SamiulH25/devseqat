@@ -1750,7 +1750,7 @@ public static partial class SelfTest
         Check(rec.Winner == again.Winner && again.Units.Count(u => u.Dead) == rec.Dead, "a big battle replays exactly");
     }
 
-    /// Officers at posts (docs/OFFICERS.md OF1): orders land at once and a newer one replaces the last; Hold stands and never
+    /// Officers at posts (docs/archive/OFFICERS.md OF1): orders land at once and a newer one replaces the last; Hold stands and never
     /// chases; Advance walks the line forward and halts at contact; Guard stands beside the line's end; Swing goes round the
     /// flank; Loose gives way to foot; Plug sends a company where the line breaks; an officer never changes his own stance;
     /// a fallen sergeant is replaced; direct orders land at once; old goal names map to posts; and a battle replays exactly.
@@ -1760,7 +1760,7 @@ public static partial class SelfTest
             && Goal.FromName("Skirmish:Harass") == new Goal(Post.Skirmish, Stance.Harass) && Goal.FromName("Reserve:Charge") == new Goal(Post.Reserve, Stance.Wait),
             "old goal names map to the nearest post, and a stance that does not fit the post falls back to its first");
 
-        // Orders land at once (docs/OFFICERS.md OF0: no riders for now); a newer one replaces the last.
+        // Orders land at once (docs/archive/OFFICERS.md OF0: no riders for now); a newer one replaces the last.
         var b = Battle.Empty(21);
         var a = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, -20), 8, Vector2.UnitY);
         var d = b.AddDivision(0, "Sgt Test", new[] { a }, Temper.Steady, 3);

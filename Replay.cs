@@ -35,20 +35,20 @@ public sealed class Replay
         /// Reliefs (tired, fresh) and splits (company) started this tick (BattleRelief.cs).
         public List<int[]>? Reliefs;
         public List<int>? Splits;
-        /// The horn sounded this tick, and reserve companies called up (team, reserve index, division or -1) (docs/SERGEANTS.md).
+        /// The horn sounded this tick, and reserve companies called up (team, reserve index, division or -1) (docs/archive/SERGEANTS.md).
         public bool Horn;
         public List<int[]>? CallUps;
     }
 
     /// Changes made in deployment before the first tick: [0, company, division or -1] moves a company to a sergeant or the
-    /// captain; [1, team, reserve index, division or -1] calls a reserve company up (docs/SERGEANTS.md SG1).
+    /// captain; [1, team, reserve index, division or -1] calls a reserve company up (docs/archive/SERGEANTS.md SG1).
     public List<int[]>? Setup;
 
     /// A goal you sent one of your divisions (it then rides to him inside the sim, so it replays exactly).
     public sealed class GoalOrder
     {
         public int Division, Target = -1, Side = 1;
-        /// A horn plan, not a goal (docs/SERGEANTS.md SG2).
+        /// A horn plan, not a goal (docs/archive/SERGEANTS.md SG2).
         public bool Plan;
         public Post Post;
         public Stance Stance;
@@ -68,7 +68,7 @@ public sealed class Replay
         public List<OrderStep>? Queue;
         public StandingRule Rule;
         public bool RuleFired;
-        /// The spot an engine this company works was told to shoot at (docs/SIEGECRAFT.md A5).
+        /// The spot an engine this company works was told to shoot at (docs/archive/SIEGECRAFT.md A5).
         public Vector2? Mark;
     }
 

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// People and traffic on the campaign map (docs/WORLD_LIFE.md WL5): villagers at work in the fields who walk home at
+/// People and traffic on the campaign map (docs/archive/WORLD_LIFE.md WL5): villagers at work in the fields who walk home at
 /// dusk, folk about the villages and towns by day, walkers, riders and ox carts on the roads, boats on the wide
 /// rivers, smoke from the chimneys, and the real caravans and pilgrims drawn as wagon trains and files of walkers.
 /// At night the roads and fields empty and the windows light (the shader, `World.Windows`). Drawing only, like the rest
@@ -50,7 +50,7 @@ sealed partial class MapLife
     readonly Dictionary<int, List<Vector2>> trails = new();
     readonly Dictionary<int, float[]> roadLengths = new();
     readonly List<(int Id, Vector2 Pos, float Facing, bool Pilgrims)> caravans = new();
-    /// The ship your company is crossing in, when it is at sea (docs/WORLDMAP.md WM7): where, its heading, its sail.
+    /// The ship your company is crossing in, when it is at sea (docs/archive/WORLDMAP.md WM7): where, its heading, its sail.
     public (Vector2 Pos, float Facing, Color Sail)? Ship;
     readonly List<Vector3> smoking = new();
     float peopleWait;

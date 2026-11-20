@@ -258,7 +258,7 @@ void main()
         albedo *= (0.74 + 0.5 * clump) * mix(0.62, 1.06, smoothstep(-0.7, 0.75, n.y));
     }
 #endif
-    // The look preset (docs/WORLD_LIFE.md WL0): Palette x = saturation, y = lightness, z = warmth of the land's own colours.
+    // The look preset (docs/archive/WORLD_LIFE.md WL0): Palette x = saturation, y = lightness, z = warmth of the land's own colours.
     albedo = mix(vec3(dot(albedo, vec3(0.299, 0.587, 0.114))), albedo, Palette.x) * Palette.y;
     albedo *= vec3(1.0 + Palette.z * 0.07, 1.0 + Palette.z * 0.02, 1.0 - Palette.z * 0.09);
     albedo *= 1.0 - Field.w * 0.22; // wet ground and leaves are darker

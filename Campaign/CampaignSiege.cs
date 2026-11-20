@@ -143,7 +143,7 @@ public sealed partial class Campaign
         setup.Options.Siege = true;
         setup.Options.Ladders = LaddersIn(s) > 0 ? 0 : Player.Men >= Scaled(90) ? 4 : 2;
         setup.Options.GateHp = (s.Kind == SettlementKind.Town ? 600 : 450 * SizeFactor(s)) + 150 * Level(s, "walls");
-        setup.Options.WallHp = (s.Kind == SettlementKind.Town ? 900 : 700 * SizeFactor(s)) + 250 * Level(s, "walls"); // what engines must break (docs/SIEGECRAFT.md A2)
+        setup.Options.WallHp = (s.Kind == SettlementKind.Town ? 900 : 700 * SizeFactor(s)) + 250 * Level(s, "walls"); // what engines must break (docs/archive/SIEGECRAFT.md A2)
         setup.Options.WallEngines = Level(s, "walls"); // springalds on the walkway, one for each level of walls
         setup.Options.WallHp *= 1 - 0.7f * MathF.Min(1, s.Battered); // what the camp's stones have done (SiegeWorks.cs)
         setup.Options.Breaches = BreachesOf(s);
@@ -196,7 +196,7 @@ public sealed partial class Campaign
         s.Supplies = 15;
         s.Offers.Clear();
         s.Mercenaries.Clear();
-        // A drawn province can hold several seats (docs/WORLDMAP.md WM4): the seat takes the villages it is the seat of, and the
+        // A drawn province can hold several seats (docs/archive/WORLDMAP.md WM4): the seat takes the villages it is the seat of, and the
         // province changes hands once no seat in it holds out for the old realm (with one seat a province, as every generated
         // map has, both are the whole province, as before).
         if (!S.Settlements.Any(t => t != s && t.Province == s.Province && t.Kind != SettlementKind.Village && t.Faction == old)) S.Provinces[s.Province].Faction = f;

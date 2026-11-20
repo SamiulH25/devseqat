@@ -542,7 +542,7 @@ sealed partial class World : IDisposable
                 case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/HOLDS.md HD5)
                 case FoliageKind.Castle when f.Dry == 3: GreatCastle(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
-                case FoliageKind.Wall when t.Wall?.AtBreach(f.Pos.X) == true: // a breach (docs/SIEGECRAFT.md A2): the face lies in rubble at its foot
+                case FoliageKind.Wall when t.Wall?.AtBreach(f.Pos.X) == true: // a breach (docs/archive/SIEGECRAFT.md A2): the face lies in rubble at its foot
                     for (int i = 0; i < 4; i++) { var at = new Vector2(f.Pos.X - 1.8f + i * 1.2f, SiegeWall.Outer - 0.6f + (i % 2) * 0.9f); Rock(m, new Vector3(at.X, t.Height(at), at.Y), 1.1f + 0.3f * (i % 3), rng); }
                     break;
                 case FoliageKind.Wall: WallStones(m, b, f.Scale, rng); break;

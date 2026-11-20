@@ -1,8 +1,8 @@
 {
-  // Engines of war (docs/SIEGECRAFT.md A1): crewed by a company, they loose bolts that run through a file of men or
+  // Engines of war (docs/archive/SIEGECRAFT.md A1): crewed by a company, they loose bolts that run through a file of men or
   // stones that fall among them. Range and MinRange in metres, Reload in seconds with a full crew, Speed the shot's speed
   // over the ground (m/s), Spread the scatter per metre of range, Shock the morale a stone takes from men near where it lands,
-  // WallDamage what a hit does to a gate or a section of the wall. Ram and tower roll at Move m/s (docs/SIEGECRAFT.md A2).
+  // WallDamage what a hit does to a gate or a section of the wall. Ram and tower roll at Move m/s (docs/archive/SIEGECRAFT.md A2).
   // Train engines are bought in towns for Cost crowns and march with the company (A4); siege works are built at a siege
   // in Build hours for Cost crowns (A3).
   "engines": [

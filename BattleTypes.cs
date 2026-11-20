@@ -77,12 +77,12 @@ public sealed class BattleOptions
     public bool Siege;
     public int Ladders = 2;
     public float GateHp = 500;
-    /// Each section of the wall's face (docs/SIEGECRAFT.md A2; 0: half again the gate's) and the springalds on its walkway.
+    /// Each section of the wall's face (docs/archive/SIEGECRAFT.md A2; 0: half again the gate's) and the springalds on its walkway.
     public float WallHp;
     public int WallEngines;
-    /// Sections of the wall already down when the assault begins (a battered wall, docs/SIEGECRAFT.md A3).
+    /// Sections of the wall already down when the assault begins (a battered wall, docs/archive/SIEGECRAFT.md A3).
     public int Breaches;
-    /// Engines each side brings (a siege camp's works, a company's train: docs/SIEGECRAFT.md A3, A4); each is crewed by men
+    /// Engines each side brings (a siege camp's works, a company's train: docs/archive/SIEGECRAFT.md A3, A4); each is crewed by men
     /// detached from one of its side's foot companies (Battle.DeployEngines).
     public List<EngineSpec> Engines = new();
     public Weather Weather = Weather.Clear;
@@ -98,11 +98,11 @@ public sealed class BattleOptions
     public UnitType? EnemyLeader;
     /// Added to every enemy man's morale at the start (a duel lost by his lord: -15).
     public float EnemyMorale;
-    /// The Tide of the field (docs/ARCANA.md AR3): the strength (0-3) of the well that reaches it, and its tradition ("" none).
+    /// The Tide of the field (docs/archive/ARCANA.md AR3): the strength (0-3) of the well that reaches it, and its tradition ("" none).
     /// A quick battle stands on a middling field (1); the campaign sets the real one (0 where no well reaches).
     public int Tide = 1;
     public string TideTradition = "";
-    /// The captain's path (docs/ARCANA.md AR6): "sword", "banner", "hearth", or "" (none chosen: as before).
+    /// The captain's path (docs/archive/ARCANA.md AR6): "sword", "banner", "hearth", or "" (none chosen: as before).
     public string Path = "";
 }
 
@@ -110,7 +110,7 @@ public sealed class BattleOptions
 public sealed record Weather(float Hour = 13, float Rain = 0, float Fog = 0, bool Snow = false)
 {
     /// Weather for a campaign battle: the hour, and rain, snow or fog by season (deterministic from the seed). `rain` scales the
-    /// chance of rain by the country (docs/WORLDMAP.md WM3); a cold country snows outside summer, a hot one never.
+    /// chance of rain by the country (docs/archive/WORLDMAP.md WM3); a cold country snows outside summer, a hot one never.
     public static Weather For(float hour, int season, int seed, float rain = 1, string climate = "")
     {
         var r = new Random(seed);

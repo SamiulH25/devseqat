@@ -1,5 +1,8 @@
 # Issues that need fixing
 
+Archived 2026-11-19: the items still open (5, 6, 7 trace helpers, 8, 11, 13, 14) are carried in docs/BACKLOG.md; 9 is
+COMPANY.md C5; 10 was fixed.
+
 Audit of HEAD `c0e186c` (2026-11-17). Every line reference was checked against that tree; every claim was reproduced
 by running the thing, not read off a doc. Ordered by what costs the most if left alone.
 
@@ -261,7 +264,7 @@ returns `Harass`, `Screen` or `Wait`. Of the 11 stances on the enum (`BattleDivi
 | `Harass`, `Screen` | player only |
 | `Wait` | player only, and only as a state that flips to `Plug` |
 
-The doc note in `docs/OFFICERS.md` "As built" OF3 already says this ("skirmishers stay on Loose all battle (no switch
+The doc note in `docs/archive/OFFICERS.md` "As built" OF3 already says this ("skirmishers stay on Loose all battle (no switch
 to Harass or Screen yet)"), so it is a known deferral rather than a bug — but it means a whole post's vocabulary is
 half-inert, and the player's skirmish orders have no AI counterpart to read.
 

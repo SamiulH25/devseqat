@@ -116,7 +116,7 @@ partial class MapScreen
         return string.Join(". ", parts);
     }
 
-    /// A division's post and stance as two buttons side by side (docs/OFFICERS.md OF6): each click steps to the next post, or
+    /// A division's post and stance as two buttons side by side (docs/archive/OFFICERS.md OF6): each click steps to the next post, or
     /// the next of the post's stances. True when one was clicked.
     bool PostButtons(DivisionRecord d, Rectangle area, string? arrow, bool captions = false)
     {

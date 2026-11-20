@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Where an officer stands his division in the army (docs/OFFICERS.md OF1). Where a post lies is worked out from the army
+/// Where an officer stands his division in the army (docs/archive/OFFICERS.md OF1). Where a post lies is worked out from the army
 /// (`Battle.FrontLine`), never set by hand: wings beside the front line's ends, skirmishers ahead of it, the reserve behind.
 public enum Post { Front, LeftWing, RightWing, Skirmish, Reserve }
 
@@ -83,7 +83,7 @@ public sealed record Goal(Post Post, Stance Stance)
     public string Name => $"{Post}:{Stance}";
 }
 
-/// A division: a few companies under an officer at a post, who keeps the stance he was given (docs/OFFICERS.md).
+/// A division: a few companies under an officer at a post, who keeps the stance he was given (docs/archive/OFFICERS.md).
 public sealed class Division
 {
     public readonly int Team, Id;
@@ -125,7 +125,7 @@ public sealed class Division
     public int Start => Squads.Sum(s => s.StartCount);
     public bool Leaderless => LeaderlessSince >= 0;
 
-    /// The horn plan (docs/SERGEANTS.md SG2): a goal held back until you sound the horn. PendingHorn is one still riding out.
+    /// The horn plan (docs/archive/SERGEANTS.md SG2): a goal held back until you sound the horn. PendingHorn is one still riding out.
     public Goal? Horn, PendingHorn;
     public float HornAt;
     /// A question he has put to you (SG3), and when he may ask again.
@@ -137,7 +137,7 @@ public sealed class Division
     public bool Has(string trait) => Array.IndexOf(Traits, trait) >= 0;
 }
 
-/// Battle: divisions (docs/archive/COMBAT_OVERHAUL.md 1.3-1.4, docs/OFFICERS.md). Each officer looks again every half second or
+/// Battle: divisions (docs/archive/COMBAT_OVERHAUL.md 1.3-1.4, docs/archive/OFFICERS.md). Each officer looks again every half second or
 /// so (quicker with skill) and sets his companies' orders from his post and stance (BattlePosts.cs); the unit AI does the
 /// rest. Orders land at once while `Riders` is off.
 public partial class Battle
@@ -185,7 +185,7 @@ public partial class Battle
         }
     }
 
-    /// Riders carry orders (off for now: docs/OFFICERS.md OF0, every order lands at once).
+    /// Riders carry orders (off for now: docs/archive/OFFICERS.md OF0, every order lands at once).
     public const bool Riders = false;
 
     /// Seconds an order takes to reach the sergeant: 0 while `Riders` is off. With riders: a base, the ride from the
@@ -197,7 +197,7 @@ public partial class Battle
         if (!Riders) return 0;
         var from = GeneralPos(d.Team);
         var to = CourierGoal(d);
-        if (InVoice(d)) return 0.6f; // near enough to shout (docs/SERGEANTS.md SG5)
+        if (InVoice(d)) return 0.6f; // near enough to shout (docs/archive/SERGEANTS.md SG5)
         float t = 1.5f + Vector2.Distance(from, to) / CourierSpeed;
         if ((d.Team == 0 ? Player : EnemyCaptain) is { Active: true, EnemyDist: < 4 }) t += 3; // you are fighting: the rider waits for your word
         if (d.Leader is { Active: true, EnemyDist: < 5 }) t += 2;

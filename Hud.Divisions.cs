@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Hud: your divisions (docs/archive/COMBAT_OVERHAUL.md 1.7, docs/OFFICERS.md): a card per division, the stance and post buttons
+/// Hud: your divisions (docs/archive/COMBAT_OVERHAUL.md 1.7, docs/archive/OFFICERS.md): a card per division, the stance and post buttons
 /// that replace the order buttons while one is picked, the officer's wheel, and lines to each post on the field in command view.
 sealed partial class Hud
 {

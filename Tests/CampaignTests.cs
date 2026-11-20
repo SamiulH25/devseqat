@@ -488,7 +488,7 @@ public static partial class SelfTest
         captures = c.S.Settlements.Count(s => s.Faction != owners[s.Id] && s.Kind != SettlementKind.Village);
         foreach (var p in c.S.Parties) foreach (var co in p.Companies) Check(co.Men >= 0 && co.Wounded >= 0, "no negative men");
         foreach (var s in c.S.Settlements) Check(s.Garrison.All(g => g.Men >= 0) && s.Supplies >= 0, "garrisons stay sane");
-        // A drawn province may have several seats, or none (docs/WORLDMAP.md WM4): it belongs to the holder of one of them.
+        // A drawn province may have several seats, or none (docs/archive/WORLDMAP.md WM4): it belongs to the holder of one of them.
         Check(c.S.Provinces.All(p => c.S.Settlements.Where(s => s.Province == p.Id && s.Kind != SettlementKind.Village) is var seats && (!seats.Any() || seats.Any(s => s.Faction == p.Faction))), "a province belongs to whoever holds its seat");
         Console.WriteLine($"war: after 200 days {captures} seats changed hands, wars {string.Join(" ", c.S.Wars.Select(w => $"{w.A}-{w.B}:{(w.Active ? "war" : "truce")}"))}, "
             + $"seats {string.Join("/", Enumerable.Range(0, 3).Select(f => c.S.Settlements.Count(s => s.Faction == f && s.Kind != SettlementKind.Village)))}, contracts {c.S.Contracts.Count}");

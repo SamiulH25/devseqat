@@ -182,7 +182,7 @@ public sealed partial class Campaign
     public bool HasBarracks(Party p, string culture)
     {
         int realm = p == Player ? Captain.Contract : p.Faction;
-        // A town of one of the culture's peoples trains its lines too (docs/WORLDMAP.md WM5): on the drawn map every town is a
+        // A town of one of the culture's peoples trains its lines too (docs/archive/WORLDMAP.md WM5): on the drawn map every town is a
         // subculture's, so a realm's own elite lines would have no barracks at all.
         return S.Settlements.Any(s => Level(s, "barracks") > 0 && (s.Culture == culture || Factions.PeopleOf(s.Culture) == culture)
             && (realm >= 0 && s.Faction == realm || s.Owner == p.Id));

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// World: roads and water (docs/WORLD_LIFE.md WL1-WL2). Roads are ribbons of packed earth laid over the ground with ruts
+/// World: roads and water (docs/archive/WORLD_LIFE.md WL1-WL2). Roads are ribbons of packed earth laid over the ground with ruts
 /// and a paler crown; rivers carry their flow in their UVs (x = across, -1..1; y = -10 - metres along) so the world shader
 /// can run ripples downstream, pale the shallows and foam the edges; still water (lakes, ponds) carries x = 5. Muddy banks,
 /// reeds, stepping stones at the fords, and bridges (stone between towns, planks out to a village) finish them.
@@ -106,7 +106,7 @@ sealed partial class World
 
     // ---------- water ----------
 
-    /// The sea of a designed map (docs/WORLDMAP.md WM2): a still sheet at sea level over every cell whose ground dips under
+    /// The sea of a designed map (docs/archive/WORLDMAP.md WM2): a still sheet at sea level over every cell whose ground dips under
     /// it, deep blue far out and paler over the shelf (the still-water shading of a lake: x = 5 + how near the shore).
     /// Laid in culled blocks, as most of it is out of view.
     void Sea(Mesh m, float level)
@@ -177,7 +177,7 @@ sealed partial class World
 
     static readonly Color Sailcloth = new(214, 204, 178);
 
-    /// A cog (docs/WORLDMAP.md WM7): a round hull with a raised bow and a sterncastle, one mast and a square sail, `at` on
+    /// A cog (docs/archive/WORLDMAP.md WM7): a round hull with a raised bow and a sterncastle, one mast and a square sail, `at` on
     /// the water. Furled it lies at a port's pier; under sail it is the ship your company crosses in (MapLife).
     internal static void Ship(Mesh m, Vector3 at, float yaw, float k, Color sail, bool furled)
     {

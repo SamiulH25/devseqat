@@ -30,7 +30,7 @@ Still open: **world size** (see HD6).
     FORAGE, REST, ELDERS.
 - A village is tied to a castle or town only through `SeatOf`: the nearest seat in its province gets its tax, and the
   seat's buildings reach it. Nothing else flows between them.
-- Lords scale with a realm's towns and castles (docs/WORLDMAP.md WM1). Tripling the holds would triple the lords unless
+- Lords scale with a realm's towns and castles (docs/archive/WORLDMAP.md WM1). Tripling the holds would triple the lords unless
   that is rescaled (HD4).
 
 ## Target
@@ -76,7 +76,7 @@ everything but trade:
   castle's culture, without riding village to village. The price is a little above the village's own, the castellan's
   cut.
 - **Stables:** buy remounts and draught horses (`Settlement.Horses` exists; castles breed more than villages).
-- **Castle yard:** promotion to tier IV and V at any castle of a realm you serve or are at peace with (tier VI-VII stays
+- **Castle yard:** promotion to tier IV and V at any castle of a realm you serve or are at peace with (tier VI stays
   with towns and your own yards). This is the main lever against town dependence.
 - **Granary:** buy food from the castle's stores (`Supplies`), filled by its villages (HD3).
 - A **smith** for mending (`Smith.Mend`, C11) at great castles only; buying gear stays in towns.
@@ -182,7 +182,7 @@ Recommendation: decide after HD4, from `--pacing` and a look at the density on t
 
 ### HD7: Docs and polish
 - README (the player's rules: where you can promote, what castles give, villages and castles), docs/CAMPAIGN.md,
-  docs/WORLDMAP.md, CLAUDE.md file guide (the muster, holders), tips (`Tips.cs`), and the landing page's numbers.
+  docs/archive/WORLDMAP.md, CLAUDE.md file guide (the muster, holders), tips (`Tips.cs`), and the landing page's numbers.
 
 ## Order and size
 

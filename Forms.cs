@@ -8,7 +8,7 @@ namespace Ironfield;
 public sealed class FormDef
 {
     public string Id = "", Name = "", Icon = "", Line = "", Kind = "", Order = "", Effect = "";
-    /// A path's form (docs/ARCANA.md AR6: "banner", "hearth"; "" = none), and a hearth form's act ("lend", "anchor", "kindle").
+    /// A path's form (docs/archive/ARCANA.md AR6: "banner", "hearth"; "" = none), and a hearth form's act ("lend", "anchor", "kindle").
     public string Path = "", Act = "";
     public int Tier = 1, MaxHit = 1, Count;
     public bool Great;

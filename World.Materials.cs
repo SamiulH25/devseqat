@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// World: the campaign map's ground materials (docs/WORLD_LIFE.md, the grounded look). One tileable 256x256 texture,
+/// World: the campaign map's ground materials (docs/archive/WORLD_LIFE.md, the grounded look). One tileable 256x256 texture,
 /// made in code, holds four greyscale patterns the world shader colours and blends by slope and height: R grass (fine
 /// blades and tufts), G earth (pebbles and clods), B rock (strata and cracks), A broad variation (sampled at a few
 /// hundred metres, it breaks the tiling and shifts the hue across the land). Battles keep their plain grey detail.

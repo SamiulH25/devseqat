@@ -477,7 +477,7 @@ sealed class ScreenHost : Game
         void Shot(string name) { pendingShot = name; shotFrames = 0; cStage++; }
         string[] stages = { "farm", "life", "village", "road", "night", "map", "river", "lands-Desert", "lands-Tundra", "lands-Taiga", "lands-Highlands",
             "lands-Steppe", "lands-Coast", "lands-Hills", "lands-Meadow", "lands-Oasis", "lands-Forest", "lands-Badlands", "port", "sail", "harbour", "holds" }; // and its ports and ships (WM7), and a tower house (HD5)
-        if (cStage == 2 && lifeShots < (c.Map.Designed ? stages.Length : 7)) // the land and its life (docs/WORLD_LIFE.md WL3-WL5), in spring before the year turns; on the drawn map each kind of country (WM3, docs/WORLD_DRESS.md)
+        if (cStage == 2 && lifeShots < (c.Map.Designed ? stages.Length : 7)) // the land and its life (docs/archive/WORLD_LIFE.md WL3-WL5), in spring before the year turns; on the drawn map each kind of country (WM3, docs/WORLD_DRESS.md)
         {
             if (lifeShots == 4) { dayHours = c.S.Hours; c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 22.5; } // lamplight
             if (lifeShots == 5) { c.S.Hours = dayHours; lifeShots++; return; } // daylight again ("map" is shot first)
@@ -858,7 +858,7 @@ sealed class ScreenHost : Game
                 Shot("campaign-hall");
                 break;
             case 54:
-                // The captain sheet with a woken aura at a wall (docs/ARCANA.md AR1, AR6): the path to choose and the trial card.
+                // The captain sheet with a woken aura at a wall (docs/archive/ARCANA.md AR1, AR6): the path to choose and the trial card.
                 c.Captain.AuraTier = 1; c.Captain.AuraWall = true; c.Captain.AuraXp = Campaign.AuraNeeds[1]; c.Captain.Path = "";
                 map.Stage("skills");
                 Shot("campaign-aura");

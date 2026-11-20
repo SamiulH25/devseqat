@@ -1,5 +1,8 @@
 # Sprite overhaul: the hero set
 
+Status: done. The hero set and a second pass shipped on the `sprite-improvements` branch (merged 2026-11-19, `02576fc`);
+archived the same day. The 8-direction question is still open (docs/BACKLOG.md).
+
 A brief for the agent doing the first pass of the sprite overhaul. Do this set first, judge it, and use it as the look every
 other part is redrawn to match afterwards.
 

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Ironfield;
 
-/// One engine of war from Data/engines.json (docs/SIEGECRAFT.md A1): what it throws, how far, how hard and how many work it.
+/// One engine of war from Data/engines.json (docs/archive/SIEGECRAFT.md A1): what it throws, how far, how hard and how many work it.
 /// Built and fired by BattleEngines.cs.
 public sealed class EngineDef
 {
@@ -15,7 +15,7 @@ public sealed class EngineDef
     public float Range, MinRange, Damage, Splash, ArmourPierce, Reload, Hp, Speed, Spread, Shock, WallDamage;
     /// Rolling engines (ram, tower): metres a second with a full crew.
     public float Move;
-    /// Crowns it costs; hours a siege camp takes to build it (a siege work, docs/SIEGECRAFT.md A3); whether it is a light engine
+    /// Crowns it costs; hours a siege camp takes to build it (a siege work, docs/archive/SIEGECRAFT.md A3); whether it is a light engine
     /// a company buys in a town and takes to the field (its train, A4).
     public float Cost, Build;
     public bool Train;

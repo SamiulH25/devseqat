@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ironfield;
 
 /// Hud: the command tray (who you lead, the reserve, the horn) and each division's colour and rings on the field
-/// (docs/SERGEANTS.md SG1, SG2, SG6).
+/// (docs/archive/SERGEANTS.md SG1, SG2, SG6).
 sealed partial class Hud
 {
     /// The goal you pick for the chosen sergeant becomes his horn plan (SG2).

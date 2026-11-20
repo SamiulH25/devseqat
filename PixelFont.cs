@@ -19,7 +19,7 @@ public sealed class PixelFont
         "00000000000000", "00000000000C0C", "000000000C0408", "000C0C000C0C00", "0000001F000000", "01010204081010",
         "02040808080402", "08040202020408", "04040404040004", "18190204081303", "0004041F040400", "0E08080808080E",
         "0E02020202020E", "00001F001F0000", "08040201020408", "02040810080402", "0E110102040004", "04040800000000",
-        "0000000C0C0000", // a middle dot, between the parts of a one-line card (docs/OFFICERS.md OF4)
+        "0000000C0C0000", // a middle dot, between the parts of a one-line card (docs/archive/OFFICERS.md OF4)
     };
 
     readonly Texture2D tex;

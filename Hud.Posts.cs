@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Hud: your officers' posts on the field (docs/OFFICERS.md OF4). While you deploy (and for the officer you picked) each post
+/// Hud: your officers' posts on the field (docs/archive/OFFICERS.md OF4). While you deploy (and for the officer you picked) each post
 /// is a marked zone where his post lies, in his colour, named; drop companies on it (drag a card there, or pick companies and
 /// click the zone) to put them under him.
 sealed partial class Hud

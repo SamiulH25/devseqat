@@ -1,6 +1,6 @@
 # ARCANA: magic and aura that shape the campaign
 
-Status: **built** (2026-11-14), AR0-AR9; see "As built" at the end, with what was left out (kept here, not archived, until those are done or dropped). Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
+Status: **built** (2026-11-14), AR0-AR9; see "As built" at the end, with what was left out (archived 2026-11-19; the left-out items are listed in docs/BACKLOG.md). Builds on docs/archive/COMPANIONS_MAGIC.md (effects, mages,
 spells), docs/archive/KNIGHT_ORDERS.md (aura, orders, forms) and docs/archive/MAGIC_AURA.md (the player's hand on both).
 Read docs/archive/LEGACY.md first: your company is your legacy, and every change here must serve that.
 

@@ -1,6 +1,6 @@
 # The men of the company, and their captain: plan
 
-Status: **partly built**: C0-C4 and C9-C14 shipped (see "As built" at the end); C5 (the camp), C6, C7 and C8 are still open. It follows `docs/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
+Status: **partly built**: C0-C4 and C9-C14 shipped (see "As built" at the end); C5 (the camp), C6, C7 and C8 are still open. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 Read `docs/archive/LEGACY.md` first: this plan is its second half.
 
@@ -12,7 +12,7 @@ The one fantasy (`docs/DESIGN.md` section 0):
 > you earned.**
 
 The battle is strong, the world is full, and the last two sprints gave it sound (`docs/archive/AUDIO.md`) and a lived-in
-map (`docs/WORLD_LIFE.md`). Looking at the screens (campaign and battle shots rendered 2026-11-12 from the commit before
+map (`docs/archive/WORLD_LIFE.md`). Looking at the screens (campaign and battle shots rendered 2026-11-12 from the commit before
 those two sprints; neither touched the roll, the report, the household or the legend), the weak place is the middle of the
 fantasy: **the men themselves.**
 

@@ -1,6 +1,6 @@
 namespace Ironfield;
 
-/// The Tide (docs/ARCANA.md AR3): the power in a battle's ground, one pool both sides' circles draw on. Its size comes from
+/// The Tide (docs/archive/ARCANA.md AR3): the power in a battle's ground, one pool both sides' circles draw on. Its size comes from
 /// the well that reaches the field (`BattleOptions.Tide`, 0-3); it fills back over two minutes. A cast spends its Will and
 /// draws the same from the Tide (half for a spell of the well's own tradition). With the Tide too low a circle can still
 /// cast by **overreaching**: twice the Will, the Tide's last drop, and a risk that the working turns on a caster. The

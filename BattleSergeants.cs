@@ -5,7 +5,7 @@ namespace Ironfield;
 /// What a company's sergeant is doing now (shown on its card).
 public enum SgtTask { None, Dressing, Reforming, Rallying, HoldingBack, Down }
 
-/// Battle: every company's sergeant keeps it in good order (docs/OFFICERS.md OF5). He never changes its orders. He dresses
+/// Battle: every company's sergeant keeps it in good order (docs/archive/OFFICERS.md OF5). He never changes its orders. He dresses
 /// the ranks (they re-form a quarter quicker), re-forms them after a charge, rallies wavering men near him and holds back men
 /// straining to break ranks. When he falls the company fights a grade worse until another man steps up.
 public partial class Battle

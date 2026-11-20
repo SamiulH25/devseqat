@@ -27,7 +27,7 @@ public partial class Campaign
             lord.Companies.Add(NewCompany(troop, role, (int)(Rules.CapOf(troop, role) * rng.Range(0.7f, 1f)), 0, home));
         }
         // Mages are super units: only a great lord brings a circle of his realm's mages, as many in four as his realm's arcana
-        // (docs/ARCANA.md AR5; E1); no dice, so the campaign's draws stay as they were.
+        // (docs/archive/ARCANA.md AR5; E1); no dice, so the campaign's draws stay as they were.
         if (tier >= 5 && KeepsCircle(lord))
         {
             string mage = Armies.MageTroop(Factions.CultureOf(faction), tier - 1);
@@ -97,7 +97,7 @@ public partial class Campaign
         }
         // Mages are rare: a town with a chapel, or a shrine or hermit near it, has a circle to hire one week in six (its own
         // week, no dice); Acolytes at first, from day 60 its culture's mages (E1).
-        // Where a well reaches (docs/ARCANA.md AR2), or at a chapel; a strong tide brings a seasoned circle later on.
+        // Where a well reaches (docs/archive/ARCANA.md AR2), or at a chapel; a strong tide brings a seasoned circle later on.
         int tide = TideAt(t.Pos).Strength;
         if ((Level(t, "chapel") > 0 || tide > 0) && (t.Id + Day / 7) % 6 == 0)
         {
@@ -250,7 +250,7 @@ public partial class Campaign
         RaiseCircle(p, home, fs);
     }
 
-    /// Does this lord keep a circle (docs/ARCANA.md AR5)? Of four, as many as his realm's arcana, one more where a steady well
+    /// Does this lord keep a circle (docs/archive/ARCANA.md AR5)? Of four, as many as his realm's arcana, one more where a steady well
     /// or better reaches his home; by his id, not the dice.
     bool KeepsCircle(Party p)
     {

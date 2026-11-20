@@ -1039,7 +1039,7 @@ public static partial class SelfTest
         Check(Cut(false) == 0, "an unlit blade cuts none");
     }
 
-    /// Aura everyone can find (docs/ARCANA.md AR1): won battles wake it at the first wall (a fought one counts two), losses do
+    /// Aura everyone can find (docs/archive/ARCANA.md AR1): won battles wake it at the first wall (a fought one counts two), losses do
     /// not, the lists break the low walls, and the trial card names a way through and where.
     static void AwakeningByDeeds()
     {
@@ -1078,7 +1078,7 @@ public static partial class SelfTest
         Check(c.NearestTrials().Count == 0, "no wall, no card");
     }
 
-    /// The captain's paths (docs/ARCANA.md AR6): chosen once when the aura wakes, each changes the battle through its own
+    /// The captain's paths (docs/archive/ARCANA.md AR6): chosen once when the aura wakes, each changes the battle through its own
     /// system: the Sword's forms cost less, the Banner inspires from the first tier and further off, the Hearth's circle draws
     /// half from the Tide near him, takes his aura and is anchored against backlash.
     static void PathsDiffer()

@@ -2,7 +2,7 @@
 
 The game's world seen from above, drawn by two authors: **you** (the person) and **the model** (whichever model is
 running). One file holds it; one page lets the person see it, change it and talk about it. The game builds the map every
-new campaign plays on (layout 5) from this file (plan and status: `docs/WORLDMAP.md`).
+new campaign plays on (layout 5) from this file (plan and status: `docs/archive/WORLDMAP.md`).
 
 | File | What it is |
 |---|---|

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: an officer's skill decides how well he keeps his stance (docs/OFFICERS.md OF2), for both sides alike. Skill is
+/// Battle: an officer's skill decides how well he keeps his stance (docs/archive/OFFICERS.md OF2), for both sides alike. Skill is
 /// 0-10 (a companion's Command, a sergeant's battles, an enemy lord's army quality). It changes how often he looks again,
 /// how far out he sees a threat, how well he keeps his line, whether his companies go in together, and whether he rests
 /// a spent company. His nature changes how well, not what: Hothead goes in quicker, Stubborn holds longer, Drillmaster keeps

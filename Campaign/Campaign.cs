@@ -35,7 +35,7 @@ public sealed partial class Campaign
     /// fewer lords and the world's total follows the size of the map, not the number of realms (docs/archive/WORLD.md W0).
     public int LordsWanted => (int)MathF.Round(B.LordsPerFaction * ProvinceScale * LegacyRealms / Math.Max(1, S.DataRealms));
     public const int LegacyRealms = 3;
-    /// A realm's share of the lords. On the drawn map (docs/WORLDMAP.md WM4) realms are as unequal as they were drawn (the
+    /// A realm's share of the lords. On the drawn map (docs/archive/WORLDMAP.md WM4) realms are as unequal as they were drawn (the
     /// Order holds six seats, the Khaganate twenty-seven), so the same world total is shared by the towns and castles each
     /// holds now, two at least; elsewhere every realm raises `LordsWanted`.
     public int LordsWantedOf(int f)
@@ -287,7 +287,7 @@ public sealed partial class Campaign
                 if (route.Count > 1) { t = route[0]; waypoint = true; }
             }
             else if (p.Kind == PartyKind.Player) route.Clear();
-            // On a designed map anyone whose straight way crosses the sea goes round by the land (docs/WORLDMAP.md WM2).
+            // On a designed map anyone whose straight way crosses the sea goes round by the land (docs/archive/WORLDMAP.md WM2).
             bool seaTurn = !waypoint && Map.Designed && SeaRoute(p, ref t);
             var d = t - p.Pos;
             float dist = d.Length(), step = Speed(p) * Map.SpeedFactor(p.Pos, B.RoadBonus) * h;

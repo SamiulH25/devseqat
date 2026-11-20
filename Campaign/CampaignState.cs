@@ -46,7 +46,7 @@ public sealed class CompanyRecord
     /// A circle of mages (docs/archive/MAGIC_AURA.md 3.2-3.3): spells learned beyond its line's, those you prepared for battle
     /// (empty = its line's), its master (a Soldier id on the roll, 0 = none) and until when it is leaderless (hours).
     public List<string> Spells = new(), Prepared = new();
-    /// A circle's doctrine (docs/ARCANA.md AR4; "" = none chosen): its spells cost less Will, it may learn one more spell
+    /// A circle's doctrine (docs/archive/ARCANA.md AR4; "" = none chosen): its spells cost less Will, it may learn one more spell
     /// and the doctrine's own spells.
     public string Doctrine = "";
     public int Master;
@@ -237,7 +237,7 @@ public sealed class Contract
 public sealed class DivisionRecord
 {
     public int Id, LeaderChar = -1, LeaderCompany = -1;
-    /// The post and stance it starts a battle with, as "Post:Stance" (docs/OFFICERS.md OF6; `Goal.FromName`). Old saves hold
+    /// The post and stance it starts a battle with, as "Post:Stance" (docs/archive/OFFICERS.md OF6; `Goal.FromName`). Old saves hold
     /// a goal name (Hold, Attack, FlankLeft...): the campaign maps it to the nearest post when it loads.
     public string Goal = "Front:Hold";
 }
@@ -260,11 +260,11 @@ public sealed class Party
     public PartyKind Kind;
     public Vector2 Pos, Goal;
     public bool Moving, Down, Resting;
-    /// A way round the sea (docs/WORLDMAP.md WM2, WM4: Campaign.SeaRoute): the points still to walk and the goal they were
+    /// A way round the sea (docs/archive/WORLDMAP.md WM2, WM4: Campaign.SeaRoute): the points still to walk and the goal they were
     /// planned for. Saved, so a loaded game walks on as one that never saved (a way planned again from here would differ).
     public List<Vector2> SeaWay = new();
     public Vector2 SeaGoal;
-    /// At sea (docs/WORLDMAP.md WM7, Campaign/Ships.cs): the points of the lane still to sail, and the port sailed for.
+    /// At sea (docs/archive/WORLDMAP.md WM7, Campaign/Ships.cs): the points of the lane still to sail, and the port sailed for.
     public List<Vector2> Voyage = new();
     public int VoyageTo = -1;
     /// Travellers you chose to rob (S4): hostile to you whatever their realm.
@@ -278,7 +278,7 @@ public sealed class Party
     public bool Captive;                 // a lord held by you
     public float Food = 10;              // days of food (yours; lords are fed by their faction)
     public int SiegeTarget = -1;         // the settlement this party is besieging
-    /// Engines of war (docs/SIEGECRAFT.md): the light engines that march with it (its train, A4), and the works its camp builds
+    /// Engines of war (docs/archive/SIEGECRAFT.md): the light engines that march with it (its train, A4), and the works its camp builds
     /// at a siege (A3), good only while it still besieges WorksAt.
     public List<string> Train = new();
     public List<SiegeWork> SiegeWorks = new();
@@ -322,7 +322,7 @@ public sealed class Settlement
     public int Owner = -1;                         // party id of the holder of the fief (-1: the faction)
     public bool Besieged;
     public float SiegeSince;                       // when the siege began (ladders take 12 hours)
-    /// How far engines have battered its walls (0-1, docs/SIEGECRAFT.md A3); mended a little each day it is not besieged.
+    /// How far engines have battered its walls (0-1, docs/archive/SIEGECRAFT.md A3); mended a little each day it is not besieged.
     public float Battered;
     /// Fiefs (F6): prosperity scales income and recruits; unrest above 70 raises rebels and at 100 the place defects.
     public float Prosperity = 50, Unrest;
@@ -342,7 +342,7 @@ public sealed class Settlement
     public string KindWord => Kind switch { SettlementKind.Town => "TOWN", SettlementKind.Village => "VILLAGE", _ => Size switch { 1 => "TOWER HOUSE", 3 => "GREAT CASTLE", _ => "CASTLE" } };
 }
 
-/// A siege work (docs/SIEGECRAFT.md A3): which engine, and the hour it is ready.
+/// A siege work (docs/archive/SIEGECRAFT.md A3): which engine, and the hour it is ready.
 public sealed class SiegeWork
 {
     public string Id = "";
@@ -357,7 +357,7 @@ public sealed class Grave
     public double Hours;
 }
 
-/// A well you (or a realm) consecrated or bound (docs/ARCANA.md AR2): the tradition it was turned to, by whom and when.
+/// A well you (or a realm) consecrated or bound (docs/archive/ARCANA.md AR2): the tradition it was turned to, by whom and when.
 public sealed class WellMark
 {
     public string Tradition = "";
@@ -494,9 +494,9 @@ public sealed class CaptainState
     public int AuraTier;
     public float AuraXp;
     public bool AuraWall;
-    /// Battles won while the first wall stands (docs/ARCANA.md AR1): a fought one counts two; at `Campaign.SeasonWins` it wakes.
+    /// Battles won while the first wall stands (docs/archive/ARCANA.md AR1): a fought one counts two; at `Campaign.SeasonWins` it wakes.
     public int WallWins;
-    /// The path the aura walks (docs/ARCANA.md AR6): "sword", "banner", "hearth", or "" (not chosen yet).
+    /// The path the aura walks (docs/archive/ARCANA.md AR6): "sword", "banner", "hearth", or "" (not chosen yet).
     public string Path = "";
     /// When a cracked core (the `core` wound, K5) mends of itself.
     public float CoreUntil;
@@ -667,9 +667,9 @@ public sealed class CampaignState
     public Dictionary<string, int> Tally = new();
     public float FarSightUntil;
     /// Lords, companions, wanderers and you (F3); CaptainChar is your own record.
-    /// Wells consecrated or bound, by site id (docs/ARCANA.md AR2); the rest are as the map made them.
+    /// Wells consecrated or bound, by site id (docs/archive/ARCANA.md AR2); the rest are as the map made them.
     public Dictionary<int, WellMark> WellMarks = new();
-    /// Workings on the map (docs/ARCANA.md AR7): the day each province was last blighted, and until when its dead are calmed.
+    /// Workings on the map (docs/archive/ARCANA.md AR7): the day each province was last blighted, and until when its dead are calmed.
     public Dictionary<int, int> Blights = new();
     public Dictionary<int, double> Calmed = new();
     public List<Character> Characters = new();
@@ -813,7 +813,7 @@ public sealed class Balance
     public float HourSeconds = 0.5f, FootSpeed = 5.5f, HorseSpeed = 9, RoadBonus = 1.3f, Vision = 55, EncounterRadius = 3.5f, JoinRadius = 10;
     /// How much closer two AI parties must be before they fight (the player's own encounters use EncounterRadius).
     public float AiClashRadius = 5.5f;
-    /// Ships (docs/WORLDMAP.md WM7): map units an hour under sail, the master's fee, and the fare a man for each hundred units.
+    /// Ships (docs/archive/WORLDMAP.md WM7): map units an hour under sail, the master's fee, and the fare a man for each hundred units.
     public float ShipSpeed = 14, ShipFare = 10, ShipFareMan = 0.3f;
     public float StartGold = 300, StartRenown = 50;
     public float UpkeepRate = 0.1f, ContractPay = 0.85f, LootRate = 0.25f, LootCoinShare = 0.3f, RansomRate = 1, MercMarkup = 1.5f;
@@ -838,7 +838,7 @@ public sealed class Balance
     /// What an aura tier adds to the side its holder leads in auto-resolve (you, or an order knight leading his army): x(1 +
     /// this x tier). Worth a company, never an army (docs/archive/KNIGHT_ORDERS.md 5.7, K6).
     public float AuraWeight = 0.03f;
-    /// How much the Tide (docs/ARCANA.md AR3) moves a side's circles in auto-resolve: x(1 + mage share x this x (tide - 1)).
+    /// How much the Tide (docs/archive/ARCANA.md AR3) moves a side's circles in auto-resolve: x(1 + mage share x this x (tide - 1)).
     public float TideWeight = 0.5f;
     /// A feast in town, crowns a man (docs/archive/COMPANIONS_MAGIC.md A5).
     public float FeastPerMan = 6;

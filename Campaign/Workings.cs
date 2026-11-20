@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Workings on the map (docs/ARCANA.md AR7): rites that reach past your own company. **Blight** (craft) fails an enemy
+/// Workings on the map (docs/archive/ARCANA.md AR7): rites that reach past your own company. **Blight** (craft) fails an enemy
 /// province's harvest: its towns and villages lose prosperity and grow restless, and the Omen rises. **Calm the dead** (faith)
 /// lays a province's grave fields to rest for a month. Realms that lean on sorcery blight their enemies' fields too, a few
 /// times a year, by their own reckoning (no dice).

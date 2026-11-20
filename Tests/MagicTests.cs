@@ -543,7 +543,7 @@ public static partial class SelfTest
     static void MagesInTheWorld()
     {
         // Both worlds on the seeded map it was tuned on: on the drawn map (layout 5) the two arcana-3 realms (the Compact, the
-        // Order) lose their early wars and field no lord of tier IV in 22 weeks, so no circle can show (docs/WORLDMAP.md WM4).
+        // Order) lose their early wars and field no lord of tier IV in 22 weeks, so no circle can show (docs/archive/WORLDMAP.md WM4).
         var c = Campaign.New(2001, layout: WorldMap.GeneratedLayout);
         var towns = c.S.Settlements.Where(t => t.Kind == SettlementKind.Town).ToList();
         int near = towns.Count(t => c.TideAt(t.Pos).Strength > 0);
@@ -563,7 +563,7 @@ public static partial class SelfTest
         Console.WriteLine($"mages: {near}/{towns.Count} towns where a well reaches; {offers} circle offers seen in 22 weeks; at most {lordCircles} lords with a circle (day {c.Day})");
         Check(offers > 0, "a circle is offered somewhere");
         Check(lordCircles > 0, "a great lord fields a circle");
-        // A realm's arcana (docs/ARCANA.md AR5): the sorcerous realms' great lords keep circles more often.
+        // A realm's arcana (docs/archive/ARCANA.md AR5): the sorcerous realms' great lords keep circles more often.
         // A second world too: in one alone the war can strip a realm's lords of the tier a circle needs (seen with the siege engines, A3).
         var c2 = Campaign.New(2002, layout: WorldMap.GeneratedLayout);
         var pilot2 = new Pilot(c2);
@@ -581,7 +581,7 @@ public static partial class SelfTest
         Check(seen[3] / (float)Math.Max(1, lords[3]) > seen[1] / (float)Math.Max(1, lords[1]), "realms of arcana 3 keep more circles a lord than realms of 1");
     }
 
-    /// The arcana census (docs/ARCANA.md AR0) runs, and a seeking stand-in rides to a vigil once its aura stands at a wall.
+    /// The arcana census (docs/archive/ARCANA.md AR0) runs, and a seeking stand-in rides to a vigil once its aura stands at a wall.
     static void ArcanaCensus()
     {
         var (p, samples) = BalanceReport.ArcanaRun(4002, true, 90);
@@ -591,7 +591,7 @@ public static partial class SelfTest
         Check(last.Vigils > 0 || p.AuraDay[1] > 0, "a seeker breaks its first wall (a vigil at the wall, or twelve wins first)");
     }
 
-    /// Wells (docs/ARCANA.md AR2): the map's holy and old places are wells, the same on every load of a seed; the Tide reaches
+    /// Wells (docs/archive/ARCANA.md AR2): the map's holy and old places are wells, the same on every load of a seed; the Tide reaches
     /// round them; consecrating or binding one turns and strengthens it, only in your realm and only by those who can.
     static void WellsFromSites()
     {
@@ -650,7 +650,7 @@ public static partial class SelfTest
         Check(seen.Count > 0 && seen.All(id => c.TideAt(towns.First(t => t.Id == id).Pos).Strength > 0 || towns.First(t => t.Id == id).Buildings.GetValueOrDefault("chapel") > 0), "only those (or a chapel town) offer circles");
     }
 
-    /// The Tide (docs/ARCANA.md AR3): one pool both sides draw on. A cast takes its Will from it too (half for the well's own
+    /// The Tide (docs/archive/ARCANA.md AR3): one pool both sides draw on. A cast takes its Will from it too (half for the well's own
     /// tradition); with it low the circles wait, but a great working or your order overreaches at twice the Will.
     static void TideShared()
     {
@@ -706,7 +706,7 @@ public static partial class SelfTest
         Check(Campaign.TideEdge(1, new[] { c.Player }, new[] { c.Player }) == 1, "the Tide weighs nothing between equal sides");
     }
 
-    /// Court mages and cunning folk (docs/ARCANA.md AR5): a lord's circle is led by a named mage who falls with it; the bigger
+    /// Court mages and cunning folk (docs/archive/ARCANA.md AR5): a lord's circle is led by a named mage who falls with it; the bigger
     /// brigand bands of the later campaign bring a few hedge witches.
     static void CourtMage()
     {
@@ -738,7 +738,7 @@ public static partial class SelfTest
         Check(small.Companies.Count == 0, "not the rabble");
     }
 
-    /// Doctrines (docs/ARCANA.md AR4): a circle takes one of its tradition's, once; its spells cost it less Will; it may learn
+    /// Doctrines (docs/archive/ARCANA.md AR4): a circle takes one of its tradition's, once; its spells cost it less Will; it may learn
     /// one more spell and its doctrine's own (Unweave for Vigil). Unweave breaks an enemy working still gathering in its glow.
     static void DoctrinesAndUnweave()
     {
@@ -771,7 +771,7 @@ public static partial class SelfTest
         Check(MathF.Abs(spent - (Abilities.Get("unweave").Will - Battle.DoctrineThrift)) < 0.5f, $"Unweave cost the Vigil circle {spent:0.0} Will (its doctrine's discount)");
     }
 
-    /// Workings on the map (docs/ARCANA.md AR7): a blight fails an enemy province's harvest, only one at war with you; calming
+    /// Workings on the map (docs/archive/ARCANA.md AR7): a blight fails an enemy province's harvest, only one at war with you; calming
     /// the dead keeps a province's graves down; sorcerous realms blight their enemies by themselves.
     static void WorkingsBite()
     {
@@ -801,7 +801,7 @@ public static partial class SelfTest
         Check(w.S.Blights.Count > 0, "sorcerous realms blight their enemies' fields");
     }
 
-    /// Magic remembered (docs/ARCANA.md AR8): a great working your circle cast in a won battle names the battle, and the circle's
+    /// Magic remembered (docs/archive/ARCANA.md AR8): a great working your circle cast in a won battle names the battle, and the circle's
     /// master and the chronicle remember it; the foe's working does not.
     static void WorkingsRemembered()
     {

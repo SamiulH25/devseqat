@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// WorldMap: roads that follow the land and still water (docs/WORLD_LIFE.md WL1-WL2). On a layout-4 map each road is
+/// WorldMap: roads that follow the land and still water (docs/archive/WORLD_LIFE.md WL1-WL2). On a layout-4 map each road is
 /// routed over the ground (round hills and lakes, along the valleys) through the bridges and passes its straight line had,
 /// so rivers and ridges keep the crossings they were made with; lakes and village ponds lie in basins. Older layouts keep
 /// their straight roads and have no lakes: their maps never change. `RoadLines` is what the map draws either way.

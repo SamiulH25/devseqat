@@ -1,6 +1,6 @@
 # World life and the diorama look (plan WL0-WL7)
 
-Status: WL0 built (Muted chosen for battles; the map later moved to the grounded look, WL4b). WL1-WL6 built (see each "As built"; some items deferred). WL7 paused until asked for; move this file to `docs/archive/` once WL7 is dropped or built.
+Status: WL0 built (Muted chosen for battles; the map later moved to the grounded look, WL4b). WL1-WL6 built (see each "As built"; some items deferred). WL7 paused until asked for (listed in docs/BACKLOG.md); archived 2026-11-19.
 
 ## The goal
 

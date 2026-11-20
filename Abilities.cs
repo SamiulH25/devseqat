@@ -33,7 +33,7 @@ public sealed class AbilityDef
     public float Omen;
     /// The cast only moves the caster's own company (Hold the line, Wheel).
     public bool Self;
-    /// Its doctrine within its tradition (docs/ARCANA.md AR4): faith mercy, wrath, vigil; craft storm, stars, curse, fire.
+    /// Its doctrine within its tradition (docs/archive/ARCANA.md AR4): faith mercy, wrath, vigil; craft storm, stars, curse, fire.
     public string Doctrine = "";
 }
 
@@ -48,7 +48,7 @@ public static class Abilities
     public static bool Has(string id) { Load(); return all!.ContainsKey(id); }
 
     public static readonly string[] Kinds = { "buff", "debuff", "field", "attack", "bolt", "heal", "rally", "officer", "unweave" };
-    /// The doctrines of each tradition (docs/ARCANA.md AR4): id, tradition, name, what it is.
+    /// The doctrines of each tradition (docs/archive/ARCANA.md AR4): id, tradition, name, what it is.
     public static readonly (string Id, string Tradition, string Name, string Line)[] Doctrines =
     {
         ("mercy", "faith", "Mercy", "Healing, blessing and the miracle"),

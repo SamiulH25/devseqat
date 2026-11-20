@@ -10,7 +10,7 @@ public readonly record struct Line(Vector2 Mid, Vector2 Fwd, Vector2 Right, floa
     public Vector2 RightEndPos => Mid + Right * RightEnd;
 }
 
-/// Battle: officers at posts (docs/OFFICERS.md OF1). Every look (`Brain`) turns a division's post and stance into its
+/// Battle: officers at posts (docs/archive/OFFICERS.md OF1). Every look (`Brain`) turns a division's post and stance into its
 /// companies' orders. An officer does what his stance says and nothing else: he never charges because a foe came close
 /// or commits the reserve on a timer. Men at blows still fight what is in front of them (the companies' own melee).
 public partial class Battle
@@ -271,7 +271,7 @@ public partial class Battle
         }
     }
 
-    /// The general's stances for his divisions (the AI's, and yours when the AI plays you; docs/OFFICERS.md OF3). He reads
+    /// The general's stances for his divisions (the AI's, and yours when the AI plays you; docs/archive/OFFICERS.md OF3). He reads
     /// the fight, not a clock alone: a front line holds, walks forward if the foe will not come (or its arrows are telling),
     /// and charges once the lines are close or blows have begun; wings guard the line's ends until the line is at blows,
     /// then swing round; the reserve waits to plug the line. His officers then keep the stance as well as their skill lets

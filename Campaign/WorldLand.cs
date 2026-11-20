@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The land with meaning (docs/WORLD_LIFE.md WL3), layout 4 and drawing only: field plots round villages and towns, and
+/// The land with meaning (docs/archive/WORLD_LIFE.md WL3), layout 4 and drawing only: field plots round villages and towns, and
 /// woods grown as stands with edges and clearings rather than an even scatter. None of it is read by the campaign; it
 /// lives on the renderable `Terrain` that `BuildTerrain` makes, on its own dice so the rest of the map is untouched.
 public sealed partial class WorldMap

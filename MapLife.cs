@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Ambient life on the campaign map (docs/WORLD_LIFE.md WL4): flocks of small birds wandering over the land, crows
+/// Ambient life on the campaign map (docs/archive/WORLD_LIFE.md WL4): flocks of small birds wandering over the land, crows
 /// circling grave fields and old battlefields, a hawk wheeling alone; sheep and cattle in the pastures, deer at the
 /// edges of the woods, rabbits in the fields. Beasts scatter from any party that comes near. Drawing only: its own
 /// dice, nothing read back by the campaign. Spawned round the camera, thinned by zoom and quality, rebuilt as one vertex

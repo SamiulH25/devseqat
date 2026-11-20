@@ -2,8 +2,8 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Battle: the command tray, horn plans, sergeants' reports, wits, voice and nature (docs/SERGEANTS.md; questions dropped in
-/// docs/OFFICERS.md OF0).
+/// Battle: the command tray, horn plans, sergeants' reports, wits, voice and nature (docs/archive/SERGEANTS.md; questions dropped in
+/// docs/archive/OFFICERS.md OF0).
 public partial class Battle
 {
     // ---------- SG1: who leads whom, and the reserve ----------
@@ -197,7 +197,7 @@ public partial class Battle
         };
     }
 
-    /// What is happening to the division, in a few words after its post and stance on its card (docs/OFFICERS.md OF4):
+    /// What is happening to the division, in a few words after its post and stance on its card (docs/archive/OFFICERS.md OF4):
     /// its state when that is the news, else the nearest enemy company and how far ("HORSE 60 M").
     public string Situation(Division d)
     {

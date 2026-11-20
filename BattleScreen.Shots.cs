@@ -213,7 +213,7 @@ partial class BattleScreen
             case 111 or 113 or 115 when shotFrames > 60:
                 pendingShot = shotIndex switch { 111 => "arrows-volley", 113 => "arrows-field", _ => "arrows-ground" }; shotIndex++; break;
             case 116 when pendingShot == null: Exit(); break;
-            // Sergeants (docs/SERGEANTS.md; IRONFIELD_SHOTS_FROM=sergeants starts deploying): the tray and ADD in deployment,
+            // Sergeants (docs/archive/SERGEANTS.md; IRONFIELD_SHOTS_FROM=sergeants starts deploying): the tray and ADD in deployment,
             // a horn plan in the goal panel, a question and the division rings in battle, the question in field view.
             case 117 when shotFrames > 10:
                 camFocus = b.Centroid(0) + new Vector2(0, 10); camYaw = MathHelper.PiOver2; camPitch = 0.75f; zoom = 70;

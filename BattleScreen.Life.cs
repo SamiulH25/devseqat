@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Life on the battlefield (docs/WORLD_LIFE.md WL6): the map's `MapLife` in its battle mode, fed the men's places and
+/// Life on the battlefield (docs/archive/WORLD_LIFE.md WL6): the map's `MapLife` in its battle mode, fed the men's places and
 /// where the dead lie. Herds at the field's edge run from the men, birds lift from the woods as the armies close, crows
 /// gather once the dead lie thick. Drawing only, stepped with the sim's time so a pause stills it.
 partial class BattleScreen

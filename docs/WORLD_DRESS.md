@@ -1,7 +1,7 @@
 # The dressed map (plan WD1-WD7)
 
-Status: **WD1-WD4 built** (2026-11-19). WD5-WD7 planned. Follows `docs/WORLD_LIFE.md` (roads, water, fields, beasts,
-folk) and `docs/WORLDMAP.md` (the drawn world). Move to `docs/archive/` when the last phase ships.
+Status: **WD1-WD4 built** (2026-11-19). WD5-WD7 planned. Follows `docs/archive/WORLD_LIFE.md` (roads, water, fields, beasts,
+folk) and `docs/archive/WORLDMAP.md` (the drawn world). Move to `docs/archive/` when the last phase ships.
 
 ## The problem (measured, 2026-11-19)
 
@@ -20,7 +20,7 @@ Life (40 herds, 5 flocks near the camera) and weather are thin too, but they sit
 
 ## Rules
 
-- **Drawing only**, as `docs/WORLD_LIFE.md` has it: nothing here is read by `Campaign` or saved; own dice, placed after
+- **Drawing only**, as `docs/archive/WORLD_LIFE.md` has it: nothing here is read by `Campaign` or saved; own dice, placed after
   everything else in `BuildTerrain`, so no other part of the map moves.
 - **The drawn map only** (`WorldMap.Designed`). Layouts 0-4 keep their maps as they were.
 - **Budget.** The map's vertex buffers were 119 MB (3.1 M vertices). The whole plan may add 60 MB; small cover is built

@@ -65,7 +65,7 @@ public static class Sky
         sky = Vector3.Lerp(sky, Grey(sky) * 1.05f, grey * 0.8f);
         hor = Color.Lerp(hor, new Color(Grey(hor.ToVector3()) * 0.95f), grey);
         zen = Color.Lerp(zen, new Color(Grey(zen.ToVector3()) * 1.1f + new Vector3(0.05f)), grey);
-        // The world's look (Looks, docs/WORLD_LIFE.md WL0): a softer sun, shadows lit a little warmer.
+        // The world's look (Looks, docs/archive/WORLD_LIFE.md WL0): a softer sun, shadows lit a little warmer.
         SunColor = sun * Looks.Sun;
         SkyColor = sky * Looks.Ambient * Looks.ShadowTint;
         GroundColor = Vector3.Lerp(new Vector3(0.3f, 0.29f, 0.24f), new Vector3(0.08f, 0.08f, 0.1f), n) * Looks.Ambient * Looks.ShadowTint;

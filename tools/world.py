@@ -12,7 +12,7 @@ Only the standard library. The file's shape and the rules for changing it are in
 import json, os, sys, shutil, subprocess, threading, http.server
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "world")
-# The map is game data (the game builds layout 5 from it, docs/WORLDMAP.md); the page lives beside its README.
+# The map is game data (the game builds layout 5 from it, docs/archive/WORLDMAP.md); the page lives beside its README.
 FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Data", "world.json")
 AUTHORS = ["you", "model"]
 SETTLEMENTS = ["town", "castle", "village"]

@@ -3,7 +3,7 @@
 The player's gripe: sergeants and their divisions felt loosely defined and hard to use, especially in a quick battle.
 This plan makes the sergeant the place you plan a battle, not a way to lose control of companies.
 
-Status: SG0-SG7 built (2026-11-12). Being replaced by `docs/OFFICERS.md`: since OF0 (2026-11-16) orders land at once (no
+Status: SG0-SG7 built (2026-11-12). Being replaced by `docs/archive/OFFICERS.md`: since OF0 (2026-11-16) orders land at once (no
 riders, no voice range) and sergeants no longer ask questions (SG3's questions and SG5 are gone; SG3's reports stay). Code: `BattleCommand.cs` (headless), `Hud.Command.cs` (drawing), hooks in
 `BattleDivision.cs`, `BattleTactics.cs`, `Battle.cs`, `Replay.cs`, `BattleScreen.Orders.cs`, `BattleScreen.Controls.cs`.
 Tests: `Tests/SergeantTests.cs`.

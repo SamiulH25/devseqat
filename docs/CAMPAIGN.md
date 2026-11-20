@@ -51,7 +51,7 @@ Section 12 sequences the work; section 13 lists the decisions still open.
   spacing decides the count and `WorldMap.ProvinceCount` records the expected result.
 - **Factions own provinces.** At the start the Azure Crown and the Crimson Compact each hold about half, and a band of contested
   marches lies between them. Bandit camps spawn in wild provinces.
-- **A drawn world.** New campaigns play the Rift Continent drawn in `Data/world.json` (layout 5, docs/WORLDMAP.md): the
+- **A drawn world.** New campaigns play the Rift Continent drawn in `Data/world.json` (layout 5, docs/archive/WORLDMAP.md): the
   same land for every seed, 81 provinces ringed by an impassable sea. The seeded maps below (layout 4 and older) are kept for
   old saves and `IRONFIELD_MAP_LAYOUT=4`; on them the same seed always gives the same map.
 - **Size.** The provinces span +-`WorldMap.Extent` (620 units, ~930 km across, about 115 provinces; maps from before
@@ -119,7 +119,7 @@ The battle's `Company(Troop, Count, Role)` becomes the battle-time view of a per
 | `Role` | infantry, archers, spears, horse (deployment; defaults from the class) |
 
 - **Company size caps** come from the same table that `Armies.Count` uses today: line base size times a tier factor
-  (tier I x1.25, II x1.0, III x0.85, IV x0.7, V x0.65, VI x0.6, VII x0.55). Elite companies are smaller.
+  (tier I x1.25, II x1.0, III x0.85, IV x0.7, V x0.62, VI x0.55; VI is the top tier). Elite companies are smaller.
 - **Merge and split:** two companies of the same troop may merge (their XP is weighted by men) up to the cap. A company may split in two.
 - **Disband:** dismissed men go home, and a company at 0 fit and 0 wounded men is gone (its history goes to the party ledger).
 
@@ -214,8 +214,8 @@ Per battle, for each company that took the field:
 - New men (replacements) arrive with 0 XP, so they **dilute** the average. This is the cost of refilling a veteran company.
 
 With these numbers, Levies (60 XP) are ready to upgrade after 1-2 battles, tier II companies (150-200 XP) after about 4, tier III
-(250-320 XP) after about 6, tier IV (390-460 XP) after about 8, and tier V-VI (550-800 XP) after 10-14 each. Tier VII is the top of
-every line. That sets a campaign's pace: a tier IV army takes about 25-30 battles to build, a tier VI one most of a long campaign.
+(250-320 XP) after about 6, tier IV (390-460 XP) after about 8, and tier V-VI (550-800 XP) after 10-14 each. Tier VI is the top of
+every line (`Troops.MaxTier`; tier VII was folded into VI on 2026-11-19). That sets a campaign's pace: a tier IV army takes about 25-30 battles to build, a tier VI one most of a long campaign.
 (The overhaul, `CAMPAIGN_OVERHAUL.md` 2.2, replaces the average with a pool per troop stack.)
 
 ### 6.2 Upgrading
@@ -472,6 +472,6 @@ build differs:
 - **Debug:** `IRONFIELD_CAMPAIGN_SHOTS=/dir` walks through the campaign screens and saves a PNG of each; `IRONFIELD_SAVES` moves the save folder.
 - **Each realm's own recruits and branches** (docs/archive/ANIMATION_ROSTER.md R3-R4). A realm's archer and horse lines start
   with its own tier II troop rather than the shared Bowmen and Outriders, and the four younger realms carry two or three branch
-  chains each (tiers III-VII) reached by `upgradesTo` from their line troops, as the Crown and the Northmarch already had. Goblin
+  chains each (tiers III-VI) reached by `upgradesTo` from their line troops, as the Crown and the Northmarch already had. Goblin
   holdouts at full strength may be led by a warlord (tier VI), and a great host of the dead raises wights, with a death knight once
   the Omen stirs.

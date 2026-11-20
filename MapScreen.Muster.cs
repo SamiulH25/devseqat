@@ -6,7 +6,7 @@ namespace Ironfield;
 /// captain's panel. The screen itself (the board of divisions and companies) is in MapScreen.Board.cs.
 partial class MapScreen
 {
-    /// The circle's doctrine (docs/ARCANA.md AR4): a button for each of its tradition's while none is chosen, then which.
+    /// The circle's doctrine (docs/archive/ARCANA.md AR4): a button for each of its tradition's while none is chosen, then which.
     int DoctrineRow(CompanyRecord c, int x, int y, int w)
     {
         if (c.Doctrine != "")

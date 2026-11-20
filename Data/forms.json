@@ -89,7 +89,7 @@
     { "id": "hollow_crown", "name": "Hollow Crown", "icon": "crown", "kind": "burst", "order": "hollow", "tier": 3, "great": true, "aura": 50, "cooldown": 300, "radius": 8, "maxHit": 20, "damage": 70, "shock": 30, "corruption": 4,
       "line": "Once a battle: the black flame bursts from you. Every man near you burns." },
 
-    // The captain's paths (docs/ARCANA.md AR6): learned on your path as your aura rises, by anyone of any order or none.
+    // The captain's paths (docs/archive/ARCANA.md AR6): learned on your path as your aura rises, by anyone of any order or none.
     // The Banner: aura spent on your men.
     { "id": "hold_fast", "name": "Hold Fast", "icon": "shield", "kind": "buff", "path": "banner", "tier": 1, "aura": 25, "cooldown": 40, "radius": 15, "duration": 10, "effect": "held",
       "line": "The companies round you will not break, and men running near you turn back." },

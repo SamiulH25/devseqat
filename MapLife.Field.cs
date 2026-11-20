@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// `MapLife` on a battlefield (docs/WORLD_LIFE.md WL6): a herd or two grazing out at the edge of the field that runs
+/// `MapLife` on a battlefield (docs/archive/WORLD_LIFE.md WL6): a herd or two grazing out at the edge of the field that runs
 /// when the men come near, birds roosting in the woods that lift in a cloud when the armies close, and crows that
 /// gather over the dead. Drawing only: the sim never reads it, so replays are untouched.
 sealed partial class MapLife

@@ -188,7 +188,7 @@ sealed partial class Hud
         Text(state, rx, y + U(19), Paused ? Gold : Speed != 1 ? Warn : Dim, 1);
         if (B.Arcane)
         {
-            // The Tide (docs/ARCANA.md AR3), under the tug bar while any company can cast: the power left in this ground.
+            // The Tide (docs/archive/ARCANA.md AR3), under the tug bar while any company can cast: the power left in this ground.
             var tb = new Rectangle(x + bw / 4, y + U(31), bw / 2, U(3));
             kit.Gauge(tb, B.TideCap <= 0 ? 0 : B.Tide / B.TideCap, new Color(150, 140, 255));
             if (new Rectangle(tb.X, tb.Y - U(4), tb.Width, tb.Height + U(8)).Contains(Mouse))

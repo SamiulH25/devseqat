@@ -68,7 +68,7 @@ partial class MapScreen
             .Concat(fief ? new[] { "FIEF", "GARRISON" } : Array.Empty<string>()).ToArray();
     }
 
-    /// Harbour tab (docs/WORLDMAP.md WM7): the ports ships sail to from here, a card each: whose it is and where it lies,
+    /// Harbour tab (docs/archive/WORLDMAP.md WM7): the ports ships sail to from here, a card each: whose it is and where it lies,
     /// how long at sea, the fare for the whole company.
     void HarbourTab(Settlement s, Rectangle body)
     {
@@ -305,7 +305,7 @@ partial class MapScreen
         }
     }
 
-    /// Workshop tab (docs/SIEGECRAFT.md A4): light engines for your train; each takes a crew from a foot company in battle.
+    /// Workshop tab (docs/archive/SIEGECRAFT.md A4): light engines for your train; each takes a crew from a foot company in battle.
     void WorkshopTab(Settlement s, Rectangle body)
     {
         var train = C.Player.Train;

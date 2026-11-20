@@ -64,7 +64,7 @@ public partial class Battle
     static float WillCap(Squad s) => 100 + 10 * s.MasterRank;
     /// What a spell costs this company: a master of rank 3 works the great working for 15 less.
     static float WillCost(Squad s, AbilityDef a) => a.Will - (a.Great && s.MasterRank >= 3 ? 15 : 0) - (s.Doctrine != "" && a.Doctrine == s.Doctrine ? DoctrineThrift : 0);
-    /// What a circle saves on the spells of its own doctrine (docs/ARCANA.md AR4).
+    /// What a circle saves on the spells of its own doctrine (docs/archive/ARCANA.md AR4).
     public const float DoctrineThrift = 5;
     public static bool CasterCompany(Squad s) => s.Units.Count > 0 && s.Units[0].Type.Class == UnitClass.Caster;
 
@@ -487,7 +487,7 @@ public partial class Battle
         return m;
     }
 
-    /// The counterspell lands (docs/ARCANA.md AR4): every enemy working still gathering by casters within its glow comes apart.
+    /// The counterspell lands (docs/archive/ARCANA.md AR4): every enemy working still gathering by casters within its glow comes apart.
     /// Their Will is spent all the same.
     void Unweave(Cast c, int team)
     {

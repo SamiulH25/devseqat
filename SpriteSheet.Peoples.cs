@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The peoples' own kit (docs/WORLDMAP.md WM5): helms, harness and horse barding that mark one people of a realm from
+/// The peoples' own kit (docs/archive/WORLDMAP.md WM5): helms, harness and horse barding that mark one people of a realm from
 /// another at tiers V-VII, so the Heartland's knights, the March's riders and the Coast's marines are told apart at a glance.
 public sealed partial class SpriteSheet
 {

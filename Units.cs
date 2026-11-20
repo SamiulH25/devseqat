@@ -128,7 +128,7 @@ public sealed class UnitType
     /// A spear that only thrusts (the captain's boar spear): every swing is a thrust.
     public bool ThrustOnly;
     /// How this troop's blows land (docs/archive/COMPANIONS_MAGIC.md D2): tiers V-VII only, from the weapon unless troops.json
-    /// names one (`attack`); StyleRank 1-3 for tiers V-VII (0: no style).
+    /// names one (`attack`); StyleRank 1-3 for tiers IV-VI (0: no style).
     public AttackStyle Style;
     public int StyleRank;
     /// Passive traits (effect ids, docs/archive/COMPANIONS_MAGIC.md D3): from the archetype unless troops.json names them

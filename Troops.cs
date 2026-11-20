@@ -245,7 +245,7 @@ public static class Armies
         return (int)MathF.Round((c.Role == "horse" ? 48 : 66) / w * (0.92f + 0.12f * rng.NextSingle()));
     }
 
-    /// Split a big army into divisions under officers at posts (docs/archive/COMBAT_OVERHAUL.md 1.6, docs/OFFICERS.md OF3): the
+    /// Split a big army into divisions under officers at posts (docs/archive/COMBAT_OVERHAUL.md 1.6, docs/archive/OFFICERS.md OF3): the
     /// horse rides the wings, the foot is cut into a left and a right battle on the front line, and the middle of the foot,
     /// the bows and the allies stay with the captain. Officers' skill comes from the army's quality (`OfficerSkill`).
     /// Armies under 240 men or 6 companies are left whole; an army that already has divisions is not touched.
@@ -288,7 +288,7 @@ public static class Armies
         var own = Enumerable.Range(0, comps.Count).Where(i => !comps[i].Allied).ToList();
         var horse = own.Where(i => RoleOf(comps[i]) == "horse").ToList();
         var foot = own.Where(i => RoleOf(comps[i]) is "infantry" or "spears").ToList();
-        // The horse rides the wings: both when there is enough of it, else the right (docs/OFFICERS.md OF3).
+        // The horse rides the wings: both when there is enough of it, else the right (docs/archive/OFFICERS.md OF3).
         if (horse.Count >= 2 && horse.Sum(i => comps[i].Count) >= 60)
         {
             var take = horse.Take(DivisionFill * 2).ToList();

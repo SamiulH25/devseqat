@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Officers at posts (docs/OFFICERS.md).
+/// Officers at posts (docs/archive/OFFICERS.md).
 public static partial class SelfTest
 {
     /// A line of `n` companies under one officer of this skill, 6 m apart, facing an enemy company far off.

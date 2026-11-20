@@ -155,7 +155,7 @@ with mountain ridges you cross by road at the passes; the minimap and the realm 
   different days, then ASK FOR HER HAND from her father or the head of her house. The match brings a dowry, makes her whole
   house your kin (they think much better of you), raises the house's prestige and pleases her realm's lords. Lords' houses marry
   among themselves each year too.
-- **Towns:** train, hire mercenaries, buy horses and food, kit yourself out at the armourer (MARKET tab: weapons from spear to crossbow, shields, armour, helms and horses; stock changes weekly, heavy pieces need the Arms skill, the best need a rank; worn gear can be swapped, spare gear sold back at 40%), rest to heal, sell prisoners
+- **Towns:** train, hire mercenaries, buy horses and food, kit yourself out at the armourer (MARKET tab: weapons from spear to crossbow, shields, armour, helms and horses; stock changes weekly, heavy pieces need the Arms skill, the best need a rank; worn gear can be swapped, spare gear sold back at 40%; castles sell pieces up to 900 crowns, villages up to 300). You start in a gambeson, a kettle hat and a round shield; your armour is the sum of what you wear, body and helm, each scaled by its quality, rest to heal, sell prisoners
   and ransom lords, sign or end contracts, and take work from the steward's board (hunt a lord, clear brigands, guard a village, scout a town,
   take a castle). **Villages:** each belongs to one castle or town, its holder: its men fill the holder's muster, its harvest the granary and its foals the stables, so stripping or burning villages starves the castle (its stores, its muster and its garrison's refill) before a siege. A castle's garrison rides out at brigands near its villages when it clearly outnumbers them. Villages: recruit (levies, or clansmen in the north), buy or forage food. Towns are rare (about three a realm) and castles common, in three sizes: tower houses, castles and great castles (bigger
   garrisons, walls and income). **Castles:** the **MUSTER** (the recruits of every village the castle holds, in one place, with the castellan's 15% cut; remounts from its stables; cheap food from its granary while its stores last; and its yard, which promotes men up to tier V), rest, prisoners and contracts, and (if you serve the castle's realm or hold it, with renown) **esquires**: noble recruits, on foot or mounted, who are the only way to field knights besides knighting a veteran. No amount of drill turns common troops (levies, sergeants, lancers) into noble ones (knights, paladins, order brothers): the upgrade panel says NOBLE BIRTH ONLY (docs/NOBILITY.md).
@@ -281,7 +281,7 @@ when blows come at him; FIGHT on it (or Tab) steps back into him, a click on his
 C charge, F follow me, G form a line on me, H hold position, T advance 15 m, B fall back 20 m, V loose/tight spacing,
 **J formation** (line, shield wall, square, wedge, loose), X archers fire at will / hold fire. Allied lords' companies follow their own AI general.
 
-**Officers at posts (docs/OFFICERS.md):** each division is a few companies under an officer at a **post**: the **front**
+**Officers at posts (docs/archive/OFFICERS.md):** each division is a few companies under an officer at a **post**: the **front**
 line, the **left** or **right wing**, the **skirmishers** or the **reserve**. He keeps the **stance** you give him and nothing else:
 the front can **hold** the line, **advance** in order or **charge**; a wing can **guard** the flank, **swing** round the enemy's
 end or **charge**; the skirmishers **loose** (and give way to foot), **harass** or **screen** the line; the reserve **waits**,
@@ -300,7 +300,7 @@ quarter quicker, he holds back men straining to break ranks and rallies shaken m
 (DRESSING, RALLYING, RE-FORMING, HOLDING). When he falls (NO SERGEANT) the company fights about a grade worse until another man
 steps up, 8 to 24 s later by its drill.
 
-**Command and sergeants (docs/SERGEANTS.md):** you lead at most 10 companies yourself (**COMMAND n/10** in the tray over your
+**Command and sergeants (docs/archive/SERGEANTS.md):** you lead at most 10 companies yourself (**COMMAND n/10** in the tray over your
 panel). The rest serve under sergeants (up to 8 companies each) or wait in the **reserve** off the field. While you deploy, select
 companies and press a card's **ADD** (or **TO ME** in the tray) to move them between you and your sergeants; click a reserve chip to
 bring it on, for you or for the chosen sergeant. During the battle a call-up sends a rider back and the company marches on 8 s
@@ -311,7 +311,7 @@ sooner, a Stubborn one never falls back, a Drillmaster drills his men harder, a 
 division has its own colour, and a box of that colour marks each of its companies.
 
 **Company size:** a company is about 66 places: 60-70 men of the line, fewer of the better troops (a man of tier IV takes 1.3
-places, tier VII 1.6), and horse about 48 places. Quick battles build their companies the same way.
+places, tier VI 1.6), and horse about 48 places. Quick battles build their companies the same way.
 
 **Captain combat:** a parry needs the guard raised just as the blow comes (within 0.35 s, up to 0.45 s with Arms); attacking into a blow from the mirrored side
 **chambers** it. A parry opens a **riposte** for 0.45 s: a swing started then winds up twice as fast, hits a quarter harder, costs half
@@ -390,21 +390,21 @@ the player rides a courser.
 
 ## Design: troops, tiers and armies (campaign-ready)
 
-- **Troops are data** (`Data/troops.json`, loaded by `Troops.cs`): stats, class, tier (I-VII), the troops each one
+- **Troops are data** (`Data/troops.json`, loaded by `Troops.cs`): stats, class, tier (I-VI; `Troops.MaxTier`), the troops each one
   **upgrades to**, campaign cost and upgrade XP, its horse, and its **look** (head, body, legs, feet, hands, shield, weapon,
   tabard, plume, cape). The self-test checks the tree: links exist, every upgrade raises the tier and is a better soldier,
   and every troop can be reached from Levies or Clansmen.
 - **A higher tier is always better.** An upgrade that keeps its weapon never loses health, damage, armour or block and gains in
-  at least two; every upgrade beats the troop it came from in a fight, and a tier VII company beats twice as many tier IV men.
-- **Attack styles (tiers V-VII):** the best troops land their blows in their own way, on their own (nothing to press). Dane axes
+  at least two; every upgrade beats the troop it came from in a fight, and a tier VI company beats twice as many tier III men.
+- **Attack styles (tiers IV-VI):** the best troops land their blows in their own way, on their own (nothing to press). Dane axes
   **crush** (overhead, past the guard, staggering); greatswords **sweep** into the man beside; longsword-and-shield men
   **riposte** at once after a block; other shield men **bash** every third blow; pikes **thrust through** to the second rank;
   spears **hold off** men rushing in; lances **ride down** a man and trample the next; mounted swords **cut and wheel**;
   longbows' long shots **plunge** past front shields; bows **loose quickly**; crossbows **punch** men back at close range and can
-  bring a horse down. Tier VI and VII do it harder than tier V. The upgrade cards show each troop's style.
-- **Passive traits (tiers V-VII):** each also carries traits from its kind: Unshakeable, Iron skin, Tireless, Locked shields,
-  Set spears, Fearsome, Steady aim, Pavise, Swift, Heavy charge, Sure-footed. Tier V has its first trait in part, tier VI the
-  first in full and the second in part, tier VII both in full. A culture's tier VII troops add its signature where it fits:
+  bring a horse down. Tier V and VI do it harder than tier IV. The upgrade cards show each troop's style.
+- **Passive traits (tiers IV-VI):** each also carries traits from its kind: Unshakeable, Iron skin, Tireless, Locked shields,
+  Set spears, Fearsome, Steady aim, Pavise, Swift, Heavy charge, Sure-footed. Tier IV has its first trait in part, tier V the
+  first in full and the second in part, tier VI both in full. A culture's tier VI troops add its signature where it fits:
   Northern **Battle fury** (the fewer, the fiercer), Azure **Testudo** (halted under arrows, shields all round), Crimson
   **Headsmen** (double against officers), Southern **Whirlwind** (every blow sweeps), Steppe **Ghost riders** (steady shots
   from the gallop), League **Paid in full** (no running while the day is not lost), the Order's **Zeal** (heartens every
@@ -454,7 +454,7 @@ the player rides a courser.
 - **Doctrines:** your circle takes one doctrine of its tradition, once, in its spellbook (faith: Mercy, Wrath, Vigil; craft:
   Storm, Stars, Curse, Fire). Its doctrine's spells cost it 5 less Will, it can learn one more spell, and the doctrine's own:
   Vigil's **Unweave** breaks an enemy working while it gathers, Curse's **Wither** drags at a company's limbs.
-- **The tree:** 287 troops (and the captain, plus 24 creatures outside the trees) across 7 tiers (I–VII) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons; javelin men and slingers throw (few shots, short range, hard hits).
+- **The tree:** 362 troops (and the captain, plus 24 creatures outside the trees) across 6 tiers (I–VI) with multiple branching and cross-linking lines for Crown/Compact/Emirates/League/Order (`levies`) and Northmarch/Khaganate (`clansmen`) across heavy shield infantry, greatswords/executioners, sergeants, northern huscarls/berserkers/hearthguard, pikes/halberdiers/glaives, longbows/rangers/crossbows/arbalests, and shock knights/cataphracts/reaver cavalry/horse archers/dragoons; javelin men and slingers throw (few shots, short range, hard hits).
 - **Armies:** a battle takes two `ArmySpec`s, which are lists of `Company(troop, count, role)`. This is what the campaign map
   will hand over. Companies deploy by role (infantry front, archers behind, spears left, horse right; several companies of a
   role stand side by side), and the enemy general commands any mix.
@@ -598,7 +598,7 @@ The visuals pass (`docs/archive/VISUALS.md`) changed nothing in the simulation: 
 ## Design: divisions and scale
 
 - **Why divisions:** at 1,500 men you cannot steer forty companies one by one. Divisions turn the general's job into placing
-  officers on posts, picking their stances and timing them (the order delay is off for now: docs/OFFICERS.md OF0).
+  officers on posts, picking their stances and timing them (the order delay is off for now: docs/archive/OFFICERS.md OF0).
 - **Sergeants:** each division has a leader on the field (a gold pennant marks him); his aura steadies nearby men (+1.5 morale a
   second, +4 to the routing). Killing the enemy's officers is a real aim: their divisions keep their last stance, leaderless, and a company whose sergeant
   falls fights a grade worse.

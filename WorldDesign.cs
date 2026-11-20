@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// The designed world (`Data/world.json`, docs/world/README.md): the map the owner and the model draw in the world page,
-/// which layout 5 builds the campaign map from (docs/WORLDMAP.md). Headless: plain data and the page's province rule.
+/// which layout 5 builds the campaign map from (docs/archive/WORLDMAP.md). Headless: plain data and the page's province rule.
 public sealed class WorldDesign
 {
     public const string FileName = "Data/world.json";

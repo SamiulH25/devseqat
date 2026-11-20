@@ -34,7 +34,7 @@ public partial class Battle
     /// What the company does next, as well as its grade allows.
     void Wits(Squad s)
     {
-        var g = WitsGrade(s); // a sergeant lifts his companies' wits (docs/SERGEANTS.md SG4)
+        var g = WitsGrade(s); // a sergeant lifts his companies' wits (docs/archive/SERGEANTS.md SG4)
         if (s.Cavalry) { HorseWits(s); return; }
         if (s.Alive > 0 && s.Units[0].Type.Ammo > 0) BowsWits(s);
         if (!Ranked(s) || s.Alive == 0) { s.Plan = Plan.None; s.Bend = 0; s.Threat = null; return; }

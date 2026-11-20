@@ -161,6 +161,10 @@ Data/*.json             troops, factions, campaign balance, events, names
 
 ### 4.1 Data model
 
+Tiers run I-VI (`Troops.MaxTier = 6`, refused above by `Troops.Validate`; tier VII was folded into VI on 2026-11-19).
+Realm lines, drill, passives and weights read `Troops.MaxTier`; a few clamps to 7 remain where the array still has room
+(`Style.Numerals`, `Squad.KillsByTier`) and are harmless.
+
 | Type | File | What it is |
 |---|---|---|
 | `UnitType` | `Units.cs` | A troop from `Data/troops.json`: `Class` (Infantry, Archer, Skirmisher, Captain, Cavalry), `Tier`, `MaxHp`, `Damage`, `Armor`, `Reach`, `Windup`, `Recover`, `Speed`, `BlockChance`, `Range`, `Ammo`, `VsMounted`, `Pierce`, `Mount`, `Look`, `UpgradesTo`. Shared, never mutated in battle. Get one with `Troops.Get("shieldmen")`. |
@@ -289,10 +293,13 @@ once 26 m clear of the enemy (a man who breaks twice keeps running). Constants `
 the player giving up: a loss, your men count as fled. `Result()` builds the `BattleResult`; companies still in reserve
 come back as `Deployed: false` with no losses.
 
+On screen the dead do not stay: a fallen man or horse rises as team-coloured wisps and is no longer drawn about 4 s after
+`DiedAt` (`BattleScreen.Draw.cs`; shadows go sooner). Drawing only: the sim keeps the dead (`Unit.Dead`, `DeadHorses`).
+
 ### 4.9 Divisions (`BattleDivision.cs`, `BattleCourier.cs`)
 
 A `Division` groups squads of one team under an officer (`Unit.Sergeant`), with a `Temper` (Bold, Steady, Cautious), a
-`Skill` (1-10) and a `Goal`: a `Post` and a `Stance` (docs/OFFICERS.md OF1). Division squads are left out of
+`Skill` (1-10) and a `Goal`: a `Post` and a `Stance` (docs/archive/OFFICERS.md OF1). Division squads are left out of
 `Commanded` (your orders) and of the AI general's `Led()`; the officer's `Brain` (BattlePosts.cs) gives their orders instead,
 every 0.5-1 s by skill. He does what the stance says and never changes it himself (the general does: `AiCommand`).
 
@@ -336,7 +343,7 @@ every 0.5-1 s by skill. He does what the stance says and never changes it himsel
   or an old goal name mapped to the nearest post (Hold -> Front Hold, FlankLeft -> LeftWing Swing, Reserve -> Reserve Plug...).
 
 - **Orders (no delay for now):** `IssueGoal(d, goal)` sets `d.Pending` and `d.PendingAt = Time + OrderDelay(d)`; `UpdateDivisions`
-  swaps it in when due. `OrderDelay` is 0 while `Battle.Riders` is false (docs/OFFICERS.md OF0), so goals land next tick. A newer goal replaces a pending one. `Direct(squad, act)` delays a plain order to one company the
+  swaps it in when due. `OrderDelay` is 0 while `Battle.Riders` is false (docs/archive/OFFICERS.md OF0), so goals land next tick. A newer goal replaces a pending one. `Direct(squad, act)` delays a plain order to one company the
   same way; when it lands the squad gets `Override = true` and its sergeant leaves it alone until the next goal.
 - **Couriers (dormant while `Riders` is off):** each goal (and each batch of direct orders) sends a `Courier` that rides the line from the general so that it
   arrives at `PendingAt`. An enemy within 2.5 m cuts it down (after a 1.5 s grace): the order's time moves back by a fresh
@@ -359,10 +366,10 @@ every 0.5-1 s by skill. He does what the stance says and never changes it himsel
   `OpenSlots(team)` > 0, i.e. one of his own companies is spent (no man standing unrouted), folded or split. Budget reserves
   (the field's man `Cap`) keep the old 60%-strength rule, and also need a free slot if the captain would lead them. Applies to
   both teams. Test `CommandCap`.
-- **Sergeants that matter (docs/SERGEANTS.md, `BattleCommand.cs`):** the tray (`ReservesOf`, `CallUp` (immediate at time 0
+- **Sergeants that matter (docs/archive/SERGEANTS.md, `BattleCommand.cs`):** the tray (`ReservesOf`, `CallUp` (immediate at time 0
   and recorded in `Replay.Setup`, else a rider of `CallUpDelay` s, `Frame.CallUps`), `Assign` in deployment); horn plans
   (`SetHornPlan`, `SoundHorn`, `Division.Horn`/`PendingHorn`, `Frame.Horn`, `GoalOrder.Plan`); questions were dropped in
-  docs/OFFICERS.md OF0; `WitsGrade` = the better of a company's grade and its
+  docs/archive/OFFICERS.md OF0; `WitsGrade` = the better of a company's grade and its
   sergeant's (`SergeantGrade`); voice (`InVoice`, `VoiceReach` 25 m; moot while orders land at once); natures (`Division.Traits`, `Has`). UI in
   `Hud.Command.cs` (tray, division colours and boxes) and `Hud.Divisions.cs` (cards, horn route). Tests in
   `Tests/SergeantTests.cs`; shots with `IRONFIELD_SHOTS_FROM=sergeants`.
@@ -683,7 +690,7 @@ tier, unknown look parts, cavalry without a horse) and `TroopTree` checks every 
 ### 8.2 `factions.json`
 
 `cultures` (id, name, root troop, text) and the realms: name, palette, culture, and `lines` (the troop each role fields at
-tiers I-VII; each must be an upgrade of the one before, or the same).
+tiers I-VI, six troops (`Troops.MaxTier`); each must be an upgrade of the one before, or the same).
 
 ### 8.3 `events.json`
 
@@ -867,7 +874,7 @@ stand-in captain and reports career stage days against targets (slow: ~10 min fo
 | company | a unit of men under one name: `CompanyRecord` on the map, `Company` going into battle, `Squad` on the field |
 | stack | the men of one troop type inside a company (`TroopStack`) |
 | troop | a soldier type from `troops.json` (`UnitType`) |
-| tier | a troop's rank, I-VII; upgrades always raise it |
+| tier | a troop's rank, I-VI (`Troops.MaxTier`); upgrades always raise it |
 | line | a culture's sequence of troops for one role across tiers (`factions.json`) |
 | role | infantry, spears, archers or horse: decides where a company deploys |
 | cohesion | a company's campaign-side steadiness (0-30); becomes battle morale |

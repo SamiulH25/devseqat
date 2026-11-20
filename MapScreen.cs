@@ -58,7 +58,7 @@ sealed partial class MapScreen
     readonly AlphaTestEffect spriteFx;
     readonly BasicEffect lineFx;
     readonly Dictionary<int, Unit> bearers = new();
-    /// Birds and beasts round the camera (MapLife.cs, docs/WORLD_LIFE.md WL4); drawing only.
+    /// Birds and beasts round the camera (MapLife.cs, docs/archive/WORLD_LIFE.md WL4); drawing only.
     MapLife? life;
     Quality lifeQuality = Quality.High;
     readonly List<Vector2> partySpots = new();
@@ -169,7 +169,7 @@ sealed partial class MapScreen
         if (C.Captain.Renown >= 80) Tips.Show("renown", "Renown is your standing: each victory adds to it, and it raises your men cap.\nThe bar under the captain panel shows the next rise.");
         if (C.Player.Companies.Count >= Rules.CompanySlots(C.Captain)) Tips.Show("slots", $"You have reached the most companies you can lead ({Rules.CompanySlots(C.Captain)}). Merge or disband a company to form a new one.");
         LaterTips();
-        // The arcane (docs/ARCANA.md AR1-AR6).
+        // The arcane (docs/archive/ARCANA.md AR1-AR6).
         if (C.Captain.AuraWall) Tips.Show("aura_wall", $"Your aura stands at a wall: it grows no more until a trial breaks it.\nThe captain sheet ({ctl.First(Act.SkillsScreen)}) lists each trial and where to find one now.");
         if (C.Captain.AuraTier >= 1 && C.Captain.Path == "") Tips.Show("aura_path", $"Your aura has woken. Choose its path on the captain sheet ({ctl.First(Act.SkillsScreen)}), once:\nthe Sword (forms), the Banner (your men) or the Hearth (your circle of mages).");
         if (C.Circle is CompanyRecord circle && circle.Doctrine == "") Tips.Show("doctrine", $"Your circle can take a doctrine in its spellbook ({ctl.First(Act.PartyScreen)}, click the circle's roll):\nits spells cost less Will, and it may learn its doctrine's own.");
@@ -772,7 +772,7 @@ sealed partial class MapScreen
         if (what != "sail" && C.Sailing) { C.Player.Voyage.Clear(); C.Player.Pos = shotHome; C.Player.Moving = false; } // back ashore after the "sail" shot
         switch (what)
         {
-            case "port": // a port's quay: its pier and the ship lying at it (docs/WORLDMAP.md WM7)
+            case "port": // a port's quay: its pier and the ship lying at it (docs/archive/WORLDMAP.md WM7)
             {
                 var port = C.S.Settlements.Where(C.IsPort).OrderBy(t => Vector2.Distance(t.Pos, C.Map.Quays[t.Id].Berth)).First();
                 panel = PanelKind.None; follow = false; zoom = 60; pitch = 0.7f; focus = C.Map.Quays[port.Id].Shore;
@@ -825,7 +825,7 @@ sealed partial class MapScreen
                 panel = PanelKind.None; follow = false; zoom = 120; pitch = 0.95f;
                 focus = C.S.Settlements.OrderBy(s => C.Map.RiverDist(s.Pos) < 40 ? Vector2.Distance(s.Pos, C.Player.Pos) : float.MaxValue).First().Pos;
                 break;
-            case var land when land.StartsWith("lands-"): // a province of one kind of country, seen whole (docs/WORLDMAP.md WM3)
+            case var land when land.StartsWith("lands-"): // a province of one kind of country, seen whole (docs/archive/WORLDMAP.md WM3)
                 panel = PanelKind.None; follow = false; zoom = 150; pitch = 0.9f;
                 focus = C.S.Provinces.Where(p => p.Kind == land[6..]).Select(p => p.Center).DefaultIfEmpty(C.Player.Pos).First();
                 break;

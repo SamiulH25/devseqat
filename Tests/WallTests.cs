@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Walls that break (docs/SIEGECRAFT.md A2): breaches, rams, siege towers and the defenders' springalds.
+/// Walls that break (docs/archive/SIEGECRAFT.md A2): breaches, rams, siege towers and the defenders' springalds.
 public static partial class SelfTest
 {
     /// An assault with no ladders and a gate too strong to batter in time, plus whatever engine `add` sets up for the attackers.

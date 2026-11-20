@@ -82,7 +82,7 @@ public sealed partial class WorldMap
     /// How the map is laid out: 0 = the original three realms by fixed bands (every save from before docs/archive/WORLD.md W1 keeps it),
     /// 1 = each data realm grows from its home in Data/factions.json, 2 = that plus climates, ridges and more rivers (W2),
     /// 3 = all the data realms (seven, W3) at their homes in the data, 4 = that plus roads routed over the land, lakes and
-    /// village ponds (docs/WORLD_LIFE.md WL1-WL2), 5 = the drawn world (docs/WORLDMAP.md), what new campaigns play on since WM4.
+    /// village ponds (docs/archive/WORLD_LIFE.md WL1-WL2), 5 = the drawn world (docs/archive/WORLDMAP.md), what new campaigns play on since WM4.
     /// Layouts 1-2 keep the three homes they were made with. `GeneratedLayout` is the newest map made from a seed: what
     /// `Generate` makes when no layout is named (the generator's own tests ask for it).
     public const int LegacyLayout = 0, GeneratedLayout = 4, CurrentLayout = 5;
@@ -198,7 +198,7 @@ public sealed partial class WorldMap
                 m.hills.Add((p.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * d, (16 + rng.NextSingle() * 14) * span, 5 + rng.NextSingle() * 5));
             }
         if (layout >= 2) m.RaiseRidges(rng, span);
-        // Layout 4 (docs/WORLD_LIFE.md WL1-WL2): lakes and village ponds, then roads routed over the land (WorldRoads.cs).
+        // Layout 4 (docs/archive/WORLD_LIFE.md WL1-WL2): lakes and village ponds, then roads routed over the land (WorldRoads.cs).
         if (layout >= 4) m.PlaceLakes(new Random(seed * 31 + 7), span); // own dice: lakes leave the rest of the map as layout 3 drew it
         m.LayRoads(layout >= 4);
         m.PlaceSites(namer, span);
