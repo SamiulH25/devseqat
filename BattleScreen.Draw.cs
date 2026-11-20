@@ -442,7 +442,7 @@ partial class BattleScreen
                 if (!wisp)
                 {
                     float d3Sq = Vector3.DistanceSquared(new Vector3(u.Pos.X, h + 1f, u.Pos.Y), eye);
-                    int det = forSun ? (d3Sq < 14f * 14f ? 1 : 2) : (d3Sq < 20f * 20f ? 0 : d3Sq < 48f * 48f ? 1 : 2);
+                    int det = forSun ? (d3Sq < 16f * 16f ? 1 : 2) : (d3Sq < 40f * 40f ? 0 : d3Sq < 125f * 125f ? 1 : 2);
                     drawQueue3D.Add((u, h, det, rear, look));
                     continue;
                 }

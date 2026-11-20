@@ -501,7 +501,7 @@ sealed partial class Puppet3D
         Vector3 hU = RotY(RotX(Vector3.UnitY, headPitch), headYaw);
         Vector3 hF = RotY(RotX(Vector3.UnitZ, headPitch), headYaw);
         Vector3 headPos = torsoPos + new Vector3(0, 1.53f + breath * 0.01f, 0.01f);
-        if (!lm.FullEnclosedHelm && (Detail == 0 || lm.Helm.Length == 0))
+        if (!lm.FullEnclosedHelm)
             EmitLocal(lm.Head, headPos, hR, hU, hF);
         if (lm.Helm.Length > 0)
             EmitLocal(lm.Helm, headPos, hR, hU, hF);
