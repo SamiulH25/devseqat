@@ -1778,23 +1778,33 @@ public sealed partial class SpriteSheet
         neck.Soft = true;
         Add("hneck/n", neck);
 
-        // Sculpted equine head: upright ears, forelock, rounded jowl, tapered nasal bridge, distinct muzzle and nostril.
+        // Sculpted warhorse head: alert ears, thick forelock, muscular jowl, strong bridge, leather bridle & steel bit.
         var head = new Canvas(22, 12);
         head.Columns(1, 22, x =>
         {
-            float top = x < 5 ? 3.2f - (x - 1) * 0.1f : 2.8f + (x - 5) * 0.14f;
-            float bot = x < 6 ? 11.2f - (6 - x) * 0.35f : 11.2f - (x - 6) * 0.19f;
+            float top = x < 5 ? 3.0f - (x - 1) * 0.1f : 2.6f + (x - 5) * 0.15f;
+            float bot = x < 6 ? 11.4f - (6 - x) * 0.32f : 11.4f - (x - 6) * 0.21f;
             return (top, bot);
         }, coat);
-        // Upright pointed ears at the poll.
-        head.Body(0, 3.2f, y => (1.8f + (3.2f - y) * 0.35f, 4.8f - (3.2f - y) * 0.35f), coat);
-        head.Set(3, 1, innerEar); head.Set(3, 2, innerEar);
-        head.Area((x, y) => x >= 3 && x < 7 && y >= 2 && y < 3.6f, mane); // forelock
-        head.Set(7, 4, eye); head.Set(8, 4, eye);
-        head.Shade(7, 3, 0.18f); // brow ridge
-        for (int x = 6; x < 17; x++) head.Shade(x, (int)(10.8f - (x - 6) * 0.19f), -0.22f); // jawline shadow
-        for (int y = 5; y < 9; y++) for (int x = 18; x < 22; x++) if (head.Has(x, y)) head.Shade(x, y, -0.28f); // soft muzzle
+        // Upright twin pointed ears at the poll.
+        head.Body(0, 3.2f, y => (1.3f + (3.2f - y) * 0.32f, 4.3f - (3.2f - y) * 0.32f), coat);
+        head.Body(0.5f, 3.2f, y => (3.8f + (3.2f - y) * 0.3f, 5.8f - (3.2f - y) * 0.3f), coat);
+        head.Set(2, 1, innerEar); head.Set(2, 2, innerEar);
+        head.Area((x, y) => x >= 3 && x < 7.5f && y >= 2 && y < 3.8f, mane); // full forelock
+        head.Shade(5, 7, 0.16f); head.Shade(6, 8, 0.18f); head.Shade(7, 7, 0.12f); // muscular jowl highlight
+        for (int x = 7; x < 18; x++) head.Shade(x, (int)(3.0f + (x - 5) * 0.15f), 0.22f); // nasal bridge highlight
+        head.Set(8, 4, eye); head.Set(9, 4, eye);
+        head.Shade(8, 3, 0.24f); head.Shade(9, 3, 0.18f); // proud brow ridge
+        for (int x = 5; x < 17; x++) head.Shade(x, (int)(10.9f - (x - 6) * 0.20f), -0.26f); // jawline shadow
+        for (int y = 5; y < 9; y++) for (int x = 18; x < 22; x++) if (head.Has(x, y)) head.Shade(x, y, -0.30f); // dark muzzle
         head.Set(19, 6, eye); // nostril
+        // Leather war-bridle (crownpiece, cheek-strap, noseband) and steel bit ring.
+        var bridle = Mat.Flat(new Color(74, 48, 30));
+        var bit = Mat.Flat(new Color(215, 222, 232));
+        for (int y = 3; y <= 9; y++) if (head.Has(5, y)) head.Set(5, y, bridle);
+        for (int x = 6; x <= 17; x++) { int y = (int)(5.5f + (x - 6) * 0.24f); if (head.Has(x, y)) head.Set(x, y, bridle); }
+        for (int y = 4; y <= 9; y++) if (head.Has(16, y)) head.Set(16, y, bridle);
+        head.Set(17, 8, bit); head.Set(16, 8, bit);
         Add("hhead/n", head);
 
         // Front view chest: narrower at the withers, broad muscular shoulders, tapering between the forelegs at the brisket.
@@ -1831,6 +1841,10 @@ public sealed partial class SpriteSheet
         face.Rect(4.5f, 2, 7.5f, 4, mane); // forelock
         face.Set(1, 6, eye); face.Set(10, 6, eye);
         face.Body(4, 13.5f, y => { float w = 0.9f - (y - 4) * 0.04f; return (6 - w, 6 + w); }, Mat.Flat(Style.Linen)); // tapered blaze
+        // Browband and noseband of the war-bridle.
+        for (int x = 2; x <= 9; x++) if (face.Has(x, 4)) face.Set(x, 4, bridle);
+        for (int x = 3; x <= 8; x++) if (face.Has(x, 11)) face.Set(x, 11, bridle);
+        face.Set(3, 12, bit); face.Set(8, 12, bit);
         face.Set(4, 13, eye); face.Set(7, 13, eye); // nostrils
         Add("hface/n", face);
 
@@ -2103,35 +2117,81 @@ public sealed partial class SpriteSheet
 
         void CaparisonSet(string tag, Mat bodyMat, Mat edgeMat, bool scaled)
         {
+            var steelMat = scaled ? brass : plate;
             var cap = new Canvas(55, 23);
             cap.Columns(1.5f, 53.5f, x => { var (t, _) = HorseSpan(x); return (t + 1.5f, 22.4f - ((int)x % 6 < 3 ? 1.6f : 0)); }, bodyMat);
-            if (scaled) for (int y = 4; y < 21; y += 2) for (int x = 3; x < 52; x += 3) if (cap.Has(x, y)) cap.Shade(x, y, -0.35f);
+            if (scaled)
+            {
+                // Staggered riveted lamellar/scale rows catching top light.
+                for (int y = 4; y < 21; y += 2)
+                    for (int x = 3 + (y / 2 % 2); x < 52; x += 3)
+                        if (cap.Has(x, y)) { cap.Shade(x, y, -0.36f); if (cap.Has(x + 1, y - 1)) cap.Shade(x + 1, y - 1, 0.22f); }
+            }
+            else
+            {
+                // Draped vertical cloth pleats + riveted steel peytral & crupper plates on gilded/heavy barding.
+                for (int x = 6; x < 50; x += 5)
+                    for (int y = 6; y < 21; y++)
+                        if (cap.Has(x, y)) { cap.Shade(x, y, -0.24f); if (cap.Has(x + 1, y)) cap.Shade(x + 1, y, 0.14f); }
+                if (tag == "gildedcaparison")
+                {
+                    cap.Columns(43, 53, x => { var (t, _) = HorseSpan(x); return (t + 2.0f, 15.5f); }, plate);
+                    cap.Columns(2, 12, x => { var (t, _) = HorseSpan(x); return (t + 2.0f, 15.0f); }, plate);
+                    for (int x = 44; x < 52; x += 2) if (cap.Has(x, 14)) cap.Set(x, 14, brass);
+                    for (int x = 3; x < 11; x += 2) if (cap.Has(x, 13)) cap.Set(x, 13, brass);
+                }
+            }
             cap.Border(edgeMat);
             if (!scaled) Emblem(cap, 27.5f, 13, 4.5f);
             Saddle(cap, false);
             cap.Soft = true;
             Add($"hbody.{tag}{s}", cap);
 
+            // Articulated crinet: overlapping armored neck lames along the crest over the cloth/scale drape.
             var neck = new Canvas(23, 13);
-            neck.Columns(0, 23, x => (HorseNeckTop(x) + 2.0f, HorseNeckBottom(x)), bodyMat);
-            if (scaled) for (int y = 2; y < 11; y += 2) for (int x = 2; x < 21; x += 3) if (neck.Has(x, y)) neck.Shade(x, y, -0.35f);
+            neck.Columns(0, 23, x => (HorseNeckTop(x) + 1.8f, HorseNeckBottom(x)), bodyMat);
+            neck.Columns(1, 22, x => (HorseNeckTop(x) + 1.6f, HorseNeckTop(x) + 5.0f), steelMat);
+            for (int x = 3; x < 21; x += 3)
+                for (int y = 1; y < 11; y++)
+                    if (neck.Has(x, y)) { neck.Shade(x, y, -0.34f); if (neck.Has(x + 1, y)) neck.Shade(x + 1, y, 0.22f); }
             neck.Border(edgeMat);
             neck.Soft = true;
             Add($"hneck.{tag}{s}", neck);
 
+            // Sculpted medieval steel/brass chanfron: brow plate, central nasal ridge, eye-guards, cheek-flange & trim.
             var head = new Canvas(22, 12);
-            head.Columns(5, 21, x => (2.9f + (x - 5) * 0.14f, 9.6f - (x - 5) * 0.14f), scaled ? brass : plate);
-            head.Clear(7, 4); head.Clear(8, 4);
-            for (int x = 6; x < 20; x++) head.Shade(x, (int)(3.4f + (x - 5) * 0.14f), 0.25f); // nasal ridge
+            head.Columns(4.5f, 20.5f, x => (2.6f + (x - 5) * 0.15f, 9.6f - (x - 5) * 0.16f), steelMat);
+            head.Clear(8, 4); head.Clear(9, 4); // eye opening matching new head
+            head.Set(7, 4, edgeMat); head.Set(10, 4, edgeMat); head.Set(8, 3, edgeMat); head.Set(9, 3, edgeMat); // brow eye-guard
+            for (int x = 6; x < 20; x++)
+            {
+                int ridge = (int)(3.4f + (x - 5) * 0.15f);
+                if (head.Has(x, ridge)) head.Shade(x, ridge, 0.34f); // gleaming nasal ridge
+                if (head.Has(x, ridge + 2)) head.Shade(x, ridge + 2, -0.24f); // cheek bevel
+            }
+            head.Set(6, 5, edgeMat); head.Set(6, 6, edgeMat); // brow rondel / rivet
+            for (int y = 4; y <= 8; y++) if (head.Has(5, y)) head.Set(5, y, edgeMat); // poll trim
             Add($"hhead.{tag}{s}", head);
 
             foreach (var part in new[] { "hchest", "hrump" })
             {
                 var c = new Canvas(24, 21);
                 c.Ellipse(12, 10.8f, 11.4f, 9.6f, bodyMat);
+                if (part == "hchest")
+                {
+                    // Armored peytral breastplate across the upper chest with central keel and rivets.
+                    c.Body(2, 10.5f, y => { float hw = 5.5f + (y - 2) * 0.65f; return (12 - hw, 12 + hw); }, steelMat);
+                    for (int y = 3; y < 10; y++) { c.Shade(12, y, 0.30f); c.Shade(11, y, -0.18f); }
+                    for (int x = 5; x <= 19; x += 3) if (c.Has(x, 10)) c.Set(x, 10, edgeMat);
+                    if (!scaled) Emblem(c, 12, 14.2f, 3.6f);
+                }
+                else
+                {
+                    // Vertical draped folds on crupper + dark tail dock.
+                    for (int x = 5; x <= 19; x += 4) for (int y = 5; y < 19; y++) if (c.Has(x, y)) c.Shade(x, y, -0.22f);
+                    c.Rect(10.8f, 1, 13.2f, 7, Mat.Flat(Style.Mane));
+                }
                 c.Border(edgeMat);
-                if (part == "hchest" && !scaled) Emblem(c, 12, 10.5f, 4.0f);
-                else if (part == "hrump") c.Rect(10.8f, 1, 13.2f, 7, Mat.Flat(Style.Mane));
                 c.Soft = true;
                 Add($"{part}.{tag}{s}", c);
             }

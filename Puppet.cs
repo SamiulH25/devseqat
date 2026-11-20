@@ -399,17 +399,18 @@ sealed partial class Puppet
         bool camel = barding == "camel";
         coatTint = new Color(tint.ToVector3() * (camel ? Style.CamelCoat : Style.Coats[coat % Style.Coats.Length]));
         float gait = Math.Clamp(MathF.Abs(speed) / 11, 0, 1);
-        float amp = MathF.Abs(speed) < 0.3f ? 0 : 15 + 34 * gait;
-        float bob = MathF.Sin(anim * MathF.Tau) * 0.05f * gait;
+        float amp = MathF.Abs(speed) < 0.3f ? 0 : 17 + 42 * gait;
+        float breathe = sp_breathe(Now, idle);
+        float bob = MathF.Sin(anim * MathF.Tau) * 0.075f * gait + breathe;
         float y = 1.25f + bob;
         // The gait by speed (legs: front left, front right, rear left, rear right): a four-beat walk, a trot on diagonal pairs,
-        // then a gallop with the hind legs driving and the body rocking front to back.
-        float sp = MathF.Abs(speed), trot = Math.Clamp((sp - 2.5f) / 2, 0, 1), gallop = Math.Clamp((sp - 6.5f) / 2.5f, 0, 1);
+        // then a thundering gallop with strong hind-leg drive, high foreleg knee snap and body pitch.
+        float sp = MathF.Abs(speed), trot = Math.Clamp((sp - 2.5f) / 2, 0, 1), gallop = Math.Clamp((sp - 6.0f) / 2.5f, 0, 1);
         ReadOnlySpan<float> walkP = stackalloc float[] { 0, 0.5f, 0.75f, 0.25f };
         ReadOnlySpan<float> trotP = stackalloc float[] { 0, 0.5f, 0.5f, 0 };
         ReadOnlySpan<float> gallopP = stackalloc float[] { 0.45f, 0.55f, 0, 0.1f };
-        float rock = MathF.Sin(anim * MathF.PI * 2 + 1.2f) * 0.10f * gallop; // front end rises as the hind legs push
-        float nod = MathF.Sin(anim * MathF.PI * 2 + 0.6f) * (0.05f + 0.07f * gallop) * MathF.Min(1, sp / 2); // the head nods with the stride
+        float rock = MathF.Sin(anim * MathF.Tau + 1.2f) * (0.03f * trot + 0.145f * gallop); // front end rises as the hind legs drive
+        float nod = MathF.Sin(anim * MathF.Tau + 0.5f) * (0.06f + 0.10f * gallop) * MathF.Min(1, sp / 1.8f); // strong neck & head pump
         var (still, stillK) = idle >= 0 && sp < 0.3f && Now > 0 && Rear <= 0 ? HorseIdle(idle, Now) : (0, 0f);
         {
             if (still == 1) nod += 0.14f * MathF.Sin(Math.Clamp(stillK * 5, 0, 1) * MathF.PI);
@@ -429,7 +430,7 @@ sealed partial class Puppet
             var hip = new Vector3(sd * 0.225f, 1.02f + bob + (front ? rock : -rock), front ? 0.62f : -0.64f);
             // Two segments: the knee folds the cannon back as a foreleg swings forward; behind, the gaskin slopes back to the
             // hock and the cannon comes forward under it, and the hock folds as the leg swings through.
-            float lift = Rad(amp) * MathF.Max(0, MathF.Cos(anim * MathF.PI + ph * MathF.Tau)) * (front && Rear <= 0 ? 1.3f : 0.8f);
+            float lift = Rad(amp) * MathF.Max(0, MathF.Cos(anim * MathF.PI + ph * MathF.Tau)) * (front && Rear <= 0 ? 1.45f + 0.25f * gallop : 0.85f + 0.25f * gallop);
             float upA = front ? a : a - Rad(16), lowA = front ? a - lift : a + Rad(12) - lift * 0.6f;
             if (front && Rear > 0) lowA = a - Rad(70) * Rear; // forelegs tucked as he rears
             float upL = front ? 0.47f : 0.48f, lowL = front ? 0.51f : 0.53f;
@@ -448,11 +449,11 @@ sealed partial class Puppet
         if (camel) LongRect(new(0, y + 0.42f, -0.5f), new(0, y + 0.42f, 0.2f), curPal.HHump, 0.01f, 1.15f);
         if (Detail == 0) BillRect(new(0, y + rock, 0.66f), curPal.HChest, false, -0.015f, 1.30f);
         if (Detail == 0) BillRect(new(0, y - rock, -0.60f), curPal.HRump, false, -0.015f, 1.30f);
-        float neckOut = gallop * 0.13f; // stretched out at the gallop
+        float neckOut = gallop * (0.14f + 0.08f * MathF.Sin(anim * MathF.Tau + 0.4f)); // stretches and pumps with each gallop stride
         LongRect(new(0, y + rock + 0.18f, 0.62f), new(0, y + rock + 0.78f + nod - neckOut, 1.04f + neckOut), curPal.HNeck, 0, 1.30f);
         LongRect(new(0, y + rock + 0.78f + nod - neckOut, 0.99f + neckOut), new(0, y + rock + 0.38f + nod * 1.5f - neckOut, 1.48f + neckOut * 1.4f), curPal.HHead, 0, 1.16f);
         if (Detail == 0) BillRect(new(0, y + rock + 0.58f + nod * 1.2f - neckOut, 1.22f + neckOut), curPal.HFace, false, -0.04f, 1.16f);
-        float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.07f * (1 - gait); // a standing horse flicks its tail
+        float swish = MathF.Sin(Now * 2.1f + pos.X * 0.7f) * 0.08f * (1 - gait) + MathF.Sin(anim * MathF.Tau) * 0.10f * gait; // flicks at stand, streams & waves at gallop
         if (Detail == 0) AxialSrc(new(0, y + 0.20f, -0.88f), new(swish, 0.84f + bob + gait * 0.44f, -1.14f - gait * 0.44f), curPal.HTail, 1.25f);
 
         // Gear over the coat.
@@ -485,6 +486,8 @@ sealed partial class Puppet
 
     /// What a standing horse with idle phase `idle` is doing at `now` (A5): 0 nothing, 1 a toss of the head, 2 pawing with a
     /// foreleg, 3 the weight shifted back; and how far into it (0..1). A new choice every 4 s or so.
+    static float sp_breathe(float now, float idle) => idle >= 0 && now > 0 ? MathF.Sin(now * 2.4f + idle * 13f) * 0.012f : 0;
+
     internal static (int Kind, float K) HorseIdle(float idle, float now)
     {
         float cyc = now * 0.23f + idle * 7;
