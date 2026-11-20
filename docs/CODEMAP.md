@@ -8,8 +8,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **AbilityDef** (class, L8)
 - **Abilities** (class, L41): Get:47, Has:48, readonly:52, Load:66, Validate:83
 
-## AnimSheet.cs (395 lines)
-- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:77, WriteArmorShowcase:157, RenderGrid:178, Write:241, Render:252, MakeUnit:299, Cell3D:325, Cell2D:356, Ground:377
+## AnimSheet.cs (426 lines)
+- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:77, WriteArmorShowcase:157, WriteFaceShowcase:178, RenderGrid:209, Write:272, Render:283, MakeUnit:330, Cell3D:356, Cell2D:387, Ground:408
 
 ## Art.cs (58 lines)
 - **Art** (class, L8): Has:14, TryGet:16, Art:18, Mipped:38
@@ -197,11 +197,11 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Arrows.cs (129 lines)
 - **BattleScreen** (class, L10): Landed:13, ResetArrows:25, TrackArrows:29, Steep:51, Puff:61, DrawMissiles:78, MissileLines:103
 
-## BattleScreen.Controls.cs (378 lines)
-- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:81, CommandControls:89, CommandCursor:276, BoxOf:294, OnScreen:296, PickSquad:303, GroundUnderMouse:317, GroundUnder:319, UpdateCamera:341
+## BattleScreen.Controls.cs (383 lines)
+- **BattleScreen** (class, L8): Forward:12, RightOf:13, FieldControls:15, WheelSector:81, CommandControls:89, CommandCursor:277, BoxOf:295, OnScreen:297, PickSquad:304, GroundUnderMouse:318, GroundUnder:320, UpdateCamera:346
 
-## BattleScreen.cs (597 lines)
-- **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:126, Load:138, QuickGround:169, BeginCampaign:179, StartDeployment:210, StageCommandView:225, FinishCampaignBattle:233, NewBattle:248, WithMages:290, SetWorld:298, SetCommand:312, Pressed:324, Update:332, PlaySounds:420, Soundscape:459, SyncHud:552, MenuChoice:583
+## BattleScreen.cs (604 lines)
+- **BattleScreen** (class, L12): Exit:18, GroundTips:54, MagicTips:66, BattleScreen:126, Load:138, QuickGround:169, BeginCampaign:179, StartDeployment:214, StageCommandView:229, FinishCampaignBattle:237, NewBattle:252, WithMages:297, SetWorld:305, SetCommand:319, Pressed:331, Update:339, PlaySounds:427, Soundscape:466, SyncHud:559, MenuChoice:590
 
 ## BattleScreen.Draw.cs (975 lines)
 - **BattleScreen** (class, L8): Draw:12, DrawShaded:56, Total3DVerts:156, DrawBlobs:158, EaseFacings:200, Spray:216, Effects:229, GroundSteps:294, BuildSprites:350, DrawUnits3D:525, LensFill:540, SpriteStates:543, DrawSpritesBasic:551, DrawSpritesShaded:561, DrawSoft:572, Line:586, G:587, OrderArrows:596, OrderArrowLines:598, Ring:614, DashedRing:625, Band:638, BeamQuad:660, TorchRow:682, Precipitation:691, Fall:702, Stakes:721, SpellColor:744, Spells:750, AuraGlow:766, ChampionGlow:776, PlayerGlow:789, PendingFormsDrawn:803, RouteDots:828, PlanHook:841, DrawLines:871
@@ -721,8 +721,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Castle.cs (58 lines)
 - **MapScreen** (class, L6): MusterTab:8
 
-## MapScreen.cs (1016 lines)
-- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:96, Prepared:111, Prepare:116, Open:126, ShowResults:147, Pressed:155, Update:159, readonly:255, LaterTips:269, Pan:293, ScreenKeys:295, OpenScreen:303, Soundscape:311, CameFrom:373, Camera:375, Rename:399, Trails:412, MapPick:425, OnScreen:431, PickAt:446, ClickWorld:477, Ground:486, Draw:509, UpdateBearers:665, FinishLife:722, UpdateLife:729, BuildSprites:760, BuildSpritesInner:767, BuildUnits3D:774, DrawUnits3D:798, DrawSprites:809, Surface:822, G:824, DrawLines:826, Stage:876
+## MapScreen.cs (1020 lines)
+- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:96, Prepared:111, Prepare:116, Open:126, ShowResults:147, Pressed:155, Update:159, readonly:255, LaterTips:269, Pan:293, ScreenKeys:295, OpenScreen:303, Soundscape:311, CameFrom:373, Camera:375, Rename:399, Trails:412, MapPick:425, OnScreen:431, PickAt:446, ClickWorld:477, Ground:486, Draw:513, UpdateBearers:669, FinishLife:726, UpdateLife:733, BuildSprites:764, BuildSpritesInner:771, BuildUnits3D:778, DrawUnits3D:802, DrawSprites:813, Surface:826, G:828, DrawLines:830, Stage:880
 
 ## MapScreen.Dialogs.cs (291 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, EncounterOwnSide:97, MeetingPanel:123, SiegeWorksRows:157, SiegePanel:179, BeatPanel:232, GameOverPanel:249, MenuPanel:263, SavesPanel:279
@@ -840,8 +840,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SaveScreen.cs (286 lines)
 - **SaveScreen** (class, L10): Show:29, Close:39, Draw:47, CampaignRow:155, SaveRow:177, Card:195, TypeName:235, NameBox:245, Thumb:258, Ago:277
 
-## ScreenHost.cs (936 lines)
-- **ScreenHost** (class, L9): readonly:44, ScreenHost:64, ApplyVideo:84, OpenSettings:94, LoadContent:96, StartCampaign:154, Load:181, FinishLoading:197, ContinueCampaign:220, LoadSave:227, OpenLab:236, QuickBattle:238, StartCampaignBattle:245, FinishCampaignBattle:255, CycleQuality:263, Update:267, DrawCursor:324, Draw:344, EndDraw:394, Fade:402, CaptureShot:432, readonly:460, RestoreTavernTown:472, StagingRefused:479, SaveShots:486, CampaignShots:500
+## ScreenHost.cs (941 lines)
+- **ScreenHost** (class, L9): readonly:44, ScreenHost:64, ApplyVideo:84, OpenSettings:94, LoadContent:96, StartCampaign:159, Load:186, FinishLoading:202, ContinueCampaign:225, LoadSave:232, OpenLab:241, QuickBattle:243, StartCampaignBattle:250, FinishCampaignBattle:260, CycleQuality:268, Update:272, DrawCursor:329, Draw:349, EndDraw:399, Fade:407, CaptureShot:437, readonly:465, RestoreTavernTown:477, StagingRefused:484, SaveShots:491, CampaignShots:505
 
 ## SelfTest.cs (103 lines)
 - **SelfTest** (class, L6): Run:14, Slots:20, ResolveBattles:32, RunOne:55, Lancer:63, Run:72, Scaled:74, MakeWanderer:77, Days:85, Ids:97, Check:99

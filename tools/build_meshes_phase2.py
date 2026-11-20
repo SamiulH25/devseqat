@@ -464,45 +464,49 @@ def build_phase2_mounts(PartBuilder):
 
 
 def build_phase2_race_heads(PartBuilder):
-    """4 non-human humanoid heads: goblin, troll, skull (skeleton), ghoul."""
+    """4 non-human humanoid heads: goblin, troll, skull (skeleton), ghoul — sculpted brows & recessed eyes."""
     parts = []
 
-    # 1. Goblin: fierce green head, wide pointed ears, glowing yellow eyes, toothy grin!
+    # 1. Goblin: fierce green head, overhanging brow, wide pointed ears, recessed glowing yellow eyes, hooked snout
     gb = PartBuilder("head_goblin")
-    gb.add_sphere((0, 0.01, 0.0), (0.145, 0.145, 0.150), segs=7, rings=5, mat_id=9, ao_y=(-0.14, 0.16, 0.80, 1.08))
-    gb.add_cone((0, 0.00, 0.12), (0, -0.03, 0.25), 0.055, 0.015, segs=4, mat_id=9, shade=(1.06, 1.08, 0.96))  # hooked snout
+    gb.add_sphere((0, 0.01, 0.0), (0.142, 0.142, 0.146), segs=8, rings=5, mat_id=9, ao_y=(-0.14, 0.16, 0.80, 1.08))
+    gb.add_box((0, 0.056, 0.118), (0.18, 0.028, 0.050), mat_id=9, shade=(0.86, 0.88, 0.82), smooth=True)  # scowling brow
+    gb.add_cone((0, 0.005, 0.115), (0, -0.030, 0.225), 0.044, 0.012, segs=5, mat_id=9, shade=(1.02, 1.04, 0.94))  # hooked snout
     for sx in (-1, 1):
-        gb.add_cone((sx * 0.13, 0.02, 0.0), (sx * 0.34, 0.08, -0.04), 0.058, 0.010, segs=4, mat_id=9)  # long goblin ears!
-        gb.add_box((sx * 0.058, 0.04, 0.138), (0.042, 0.038, 0.026), mat_id=0, shade=(0.98, 0.88, 0.18))  # bright yellow eyes!
-    gb.add_box((0, -0.065, 0.135), (0.14, 0.034, 0.026), mat_id=0, shade=(0.92, 0.90, 0.80))  # jagged teeth
+        gb.add_cone((sx * 0.125, 0.02, -0.005), (sx * 0.32, 0.075, -0.045), 0.052, 0.009, segs=5, mat_id=9)  # long goblin ears
+        gb.add_sphere((sx * 0.050, 0.032, 0.128), (0.022, 0.015, 0.012), segs=6, rings=4, mat_id=0, shade=(0.98, 0.86, 0.18), rot_euler=(0, sx * 0.32, 0))  # bright yellow eyes
+    gb.add_box((0, -0.062, 0.126), (0.115, 0.024, 0.020), mat_id=0, shade=(0.90, 0.88, 0.78), smooth=True)  # jagged teeth
     parts.append(gb)
 
-    # 2. Troll: heavy brutish brow, jutting ivory tusks, small fiery eyes!
+    # 2. Troll: heavy brutish brow, deep-set fiery eyes, jutting ivory tusks
     tr = PartBuilder("head_troll")
-    tr.add_sphere((0, 0.02, 0.0), (0.175, 0.185, 0.175), segs=7, rings=5, mat_id=9, ao_y=(-0.16, 0.20, 0.78, 1.06))
-    tr.add_box((0, 0.08, 0.13), (0.26, 0.065, 0.08), mat_id=9, shade=(0.82, 0.84, 0.80))  # heavy brow ridge
+    tr.add_sphere((0, 0.02, 0.0), (0.172, 0.182, 0.172), segs=8, rings=5, mat_id=9, ao_y=(-0.16, 0.20, 0.78, 1.06))
+    tr.add_sphere((0, 0.074, 0.126), (0.138, 0.036, 0.048), segs=8, rings=4, mat_id=9, shade=(0.82, 0.84, 0.80), smooth=True)  # heavy organic brow ridge
     for sx in (-1, 1):
-        tr.add_box((sx * 0.068, 0.035, 0.155), (0.035, 0.028, 0.026), mat_id=0, shade=(0.95, 0.55, 0.12))  # amber eyes
-        tr.add_cone((sx * 0.085, -0.09, 0.13), (sx * 0.10, 0.02, 0.21), 0.030, 0.008, segs=4, mat_id=0, shade=(0.92, 0.88, 0.76))  # tusks!
+        tr.add_sphere((sx * 0.062, 0.034, 0.150), (0.020, 0.014, 0.012), segs=6, rings=4, mat_id=0, shade=(0.95, 0.55, 0.12), rot_euler=(0, sx * 0.32, 0))  # deep-set amber eyes
+        tr.add_cone((sx * 0.080, -0.088, 0.128), (sx * 0.096, 0.016, 0.202), 0.028, 0.008, segs=5, mat_id=0, shade=(0.92, 0.88, 0.76))  # tusks
     parts.append(tr)
 
-    # 3. Skeleton skull: bleached bone cranium, dark eye sockets with eerie green flame pupils, skeletal jaw!
+    # 3. Skeleton skull: bleached bone cranium, sculpted cheekbones, dark eye sockets with eerie green flame pupils, skeletal jaw
     sk = PartBuilder("head_skull")
-    sk.add_sphere((0, 0.04, -0.01), (0.142, 0.148, 0.148), segs=7, rings=5, mat_id=9, ao_y=(-0.10, 0.18, 0.82, 1.08))
-    sk.add_box((0, -0.085, 0.055), (0.15, 0.095, 0.12), mat_id=9, shade=(0.88, 0.86, 0.80))  # jaw & teeth
+    sk.add_sphere((0, 0.04, -0.01), (0.140, 0.146, 0.146), segs=8, rings=5, mat_id=9, ao_y=(-0.10, 0.18, 0.82, 1.08))
+    sk.add_box((0, -0.082, 0.052), (0.135, 0.086, 0.112), mat_id=9, shade=(0.88, 0.86, 0.80), smooth=True)  # jaw & teeth
     for sx in (-1, 1):
-        sk.add_box((sx * 0.052, 0.03, 0.135), (0.048, 0.048, 0.028), mat_id=0, shade=(0.06, 0.06, 0.08))  # dark socket
-        sk.add_box((sx * 0.052, 0.03, 0.148), (0.022, 0.022, 0.016), mat_id=0, shade=(0.30, 0.98, 0.58))  # glowing green eye!
-    sk.add_box((0, -0.02, 0.142), (0.028, 0.036, 0.020), mat_id=0, shade=(0.08, 0.08, 0.10))  # nasal cavity
+        sk.add_sphere((sx * 0.048, 0.028, 0.126), (0.026, 0.024, 0.014), segs=6, rings=4, mat_id=0, shade=(0.06, 0.06, 0.08), rot_euler=(0, sx * 0.30, 0))  # dark socket
+        sk.add_sphere((sx * 0.048, 0.028, 0.134), (0.011, 0.011, 0.008), segs=5, rings=3, mat_id=0, shade=(0.30, 0.98, 0.58))  # glowing green eye
+    sk.add_box((0, -0.020, 0.135), (0.024, 0.030, 0.016), mat_id=0, shade=(0.08, 0.08, 0.10))  # nasal cavity
     parts.append(sk)
 
-    # 4. Ghoul: gaunt sunken corpse face with hollow dark cheeks & pale sickly eyes
+    # 4. Ghoul: gaunt sunken corpse face with bony brow, hollow dark eye sockets, pale sickly eyes & snarling maw
     gh = PartBuilder("head_ghoul")
-    gh.add_sphere((0, 0.01, 0.0), (0.135, 0.165, 0.145), segs=7, rings=5, mat_id=9, ao_y=(-0.15, 0.17, 0.76, 1.04))
+    gh.add_sphere((0, 0.02, -0.006), (0.132, 0.156, 0.140), segs=8, rings=5, mat_id=9, ao_y=(-0.14, 0.17, 0.74, 1.04))
+    gh.add_sphere((0, -0.085, 0.046), (0.088, 0.062, 0.092), segs=8, rings=4, mat_id=9, shade=(0.86, 0.84, 0.82))  # gaunt narrow jaw
+    gh.add_sphere((0, 0.058, 0.118), (0.096, 0.020, 0.028), segs=6, rings=3, mat_id=9, shade=(0.84, 0.82, 0.80))  # bony brow ridge
     for sx in (-1, 1):
-        gh.add_box((sx * 0.050, 0.032, 0.135), (0.042, 0.040, 0.026), mat_id=0, shade=(0.12, 0.10, 0.12))
-        gh.add_box((sx * 0.050, 0.032, 0.146), (0.020, 0.020, 0.015), mat_id=0, shade=(0.84, 0.94, 0.50))
-    gh.add_box((0, -0.065, 0.132), (0.11, 0.038, 0.024), mat_id=0, shade=(0.16, 0.08, 0.10))  # gaping dark maw
+        gh.add_sphere((sx * 0.046, 0.028, 0.122), (0.024, 0.020, 0.012), segs=6, rings=4, mat_id=0, shade=(0.10, 0.08, 0.10), rot_euler=(0, sx * 0.32, 0))
+        gh.add_sphere((sx * 0.046, 0.028, 0.129), (0.010, 0.010, 0.007), segs=5, rings=3, mat_id=0, shade=(0.84, 0.94, 0.50))
+        gh.add_sphere((sx * 0.082, -0.008, 0.098), (0.030, 0.024, 0.024), segs=5, rings=3, mat_id=9, shade=(1.04, 1.02, 0.98))  # gaunt cheekbones
+    gh.add_box((0, -0.064, 0.122), (0.086, 0.024, 0.018), mat_id=0, shade=(0.16, 0.08, 0.10), smooth=True)  # snarling dark maw
     parts.append(gh)
 
     return parts

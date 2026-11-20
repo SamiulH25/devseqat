@@ -100,6 +100,7 @@ partial class BattleScreen
             if (ms.Y < edge) pan += f; else if (ms.Y > vp.Height - edge) pan -= f;
         }
         camFocus += pan * zoom * 0.9f * dt;
+        if (!float.IsFinite(camFocus.X) || !float.IsFinite(camFocus.Y)) camFocus = battle.Player.Pos;
         if (camFocus.Length() > battle.Terrain.Half - 20) camFocus = Vector2.Normalize(camFocus) * (battle.Terrain.Half - 20);
         camYaw += ctl.Axis(Act.RotateRight, Act.RotateLeft) * 1.6f * dt;
         if (IsActive && ms.MiddleButton == ButtonState.Pressed && pms.MiddleButton == ButtonState.Pressed)
@@ -321,6 +322,10 @@ partial class BattleScreen
         var vp = GraphicsDevice.Viewport;
         var near = vp.Unproject(new Vector3(x, y, 0), proj, view, Matrix.Identity);
         var far = vp.Unproject(new Vector3(x, y, 1), proj, view, Matrix.Identity);
+        if (!float.IsFinite(near.X) || !float.IsFinite(near.Y) || !float.IsFinite(near.Z)
+            || !float.IsFinite(far.X) || !float.IsFinite(far.Y) || !float.IsFinite(far.Z)
+            || (far - near).LengthSquared() < 1e-8f)
+            return camFocus;
         var d = Vector3.Normalize(far - near);
         var t = battle.Terrain;
         float Above(Vector3 p) => p.Y - t.Height(new Vector2(p.X, p.Z));
@@ -333,7 +338,7 @@ partial class BattleScreen
             float lo = MathF.Max(0, s - step), hi = s; // bisect the crossing
             for (int k = 0; k < 10; k++) { float m = (lo + hi) / 2; if (Above(near + d * m) > 0) lo = m; else hi = m; }
             var hit = near + d * hi;
-            return new Vector2(hit.X, hit.Z);
+            return float.IsFinite(hit.X) && float.IsFinite(hit.Z) ? new Vector2(hit.X, hit.Z) : camFocus;
         }
         return camFocus;
     }

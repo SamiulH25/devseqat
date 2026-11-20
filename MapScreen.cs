@@ -488,6 +488,10 @@ sealed partial class MapScreen
         var vp = gd.Viewport;
         var near = vp.Unproject(new Vector3(m.X, m.Y, 0), proj, view, Matrix.Identity);
         var far = vp.Unproject(new Vector3(m.X, m.Y, 1), proj, view, Matrix.Identity);
+        if (!float.IsFinite(near.X) || !float.IsFinite(near.Y) || !float.IsFinite(near.Z)
+            || !float.IsFinite(far.X) || !float.IsFinite(far.Y) || !float.IsFinite(far.Z)
+            || (far - near).LengthSquared() < 1e-8f)
+            return focus;
         var d = Vector3.Normalize(far - near);
         float Above(Vector3 p) => p.Y - terrain.Height(new Vector2(p.X, p.Z));
         float s = 0, step = 1;
@@ -499,7 +503,7 @@ sealed partial class MapScreen
             float lo = MathF.Max(0, s - step), hi = s;
             for (int k = 0; k < 10; k++) { float mid = (lo + hi) / 2; if (Above(near + d * mid) > 0) lo = mid; else hi = mid; }
             var hit = near + d * hi;
-            return new Vector2(hit.X, hit.Z);
+            return float.IsFinite(hit.X) && float.IsFinite(hit.Z) ? new Vector2(hit.X, hit.Z) : focus;
         }
         return focus;
     }

@@ -74,7 +74,7 @@ sealed class AnimSheet
             else if (k >= 0.75f) { u.Action = UnitAction.Recover; u.ActionTimer = u.Type.Recover * (1 - (k - 0.75f) * 4); } }, Span: 1.2f),
     };
 
-    record ShowcaseItem(string Label, string Body, string Legs, string Head, int Palette, bool Tabard = false, string Face = "man", string Shield = "none", string Weapon = "none", bool Plume = false, bool Cape = false);
+    record ShowcaseItem(string Label, string Body, string Legs, string Head, int Palette, bool Tabard = false, string Face = "man", string Shield = "none", string Weapon = "none", bool Plume = false, bool Cape = false, int Visage = 1, float? CamYaw = null);
 
     static readonly ShowcaseItem[] Armors =
     {
@@ -175,6 +175,37 @@ sealed class AnimSheet
         Console.WriteLine($"Armor ({Armors.Length}), Helmet ({Helms.Length}) & Factions ({Style.Sides.Length}x5) showcase -> {dir}");
     }
 
+    public static void WriteFaceShowcase(GraphicsDevice gd, Art art, Shading? sh, string dir)
+    {
+        Directory.CreateDirectory(dir);
+        Sky.Set(new Weather(13, 0, 0));
+        var sheet = new AnimSheet(gd, art, sh);
+        int Vis(int skin, int hair, int style) => skin + Variety.Skins.Length * (hair + Variety.Hairs.Length * style);
+        var items = new List<ShowcaseItem>();
+        // 4 human styles x 6 angles/helms: Front, 3/4 Left, 3/4 Right, Profile, Kettle, Spangen
+        int[] skins = { 0, 1, 2, 1 };
+        int[] hairs = { 1, 2, 0, 5 }; // chestnut, brown, black, grey (veteran bald+beard!)
+        for (int st = 0; st < 4; st++)
+        {
+            int v = Vis(skins[st], hairs[st], st);
+            items.Add(new($"S{st} Front",   "gambeson", "cloth", "none",    0, Visage: v, CamYaw: 0.00f));
+            items.Add(new($"S{st} 3/4 L",   "gambeson", "cloth", "none",    0, Visage: v, CamYaw: 0.55f));
+            items.Add(new($"S{st} 3/4 R",   "gambeson", "cloth", "none",    0, Visage: v, CamYaw: -0.55f));
+            items.Add(new($"S{st} Profile", "gambeson", "cloth", "none",    0, Visage: v, CamYaw: 1.35f));
+            items.Add(new($"S{st} Kettle",  "gambeson", "cloth", "kettle",  0, Visage: v, CamYaw: 0.35f));
+            items.Add(new($"S{st} Spangen", "mail",     "mail",  "spangen", 4, Visage: v, CamYaw: 0.35f));
+        }
+        // Row 5: 4 skin tones + 2 races, Row 6: remaining races (front & 3/4)
+        items.Add(new("Skin 0", "gambeson", "cloth", "none", 0, Visage: Vis(0, 3, 0), CamYaw: 0.32f));
+        items.Add(new("Skin 3", "gambeson", "cloth", "none", 5, Visage: Vis(3, 0, 1), CamYaw: 0.32f));
+        items.Add(new("Goblin", "leather",  "cloth", "none", 3, Face: "goblin", CamYaw: 0.35f));
+        items.Add(new("Troll",  "fur",      "cloth", "none", 3, Face: "troll",  CamYaw: 0.35f));
+        items.Add(new("Skull",  "mail",     "mail",  "none", 3, Face: "skull",  CamYaw: 0.35f));
+        items.Add(new("Ghoul",  "tunic",    "cloth", "none", 3, Face: "ghoul",  CamYaw: 0.35f));
+        sheet.RenderGrid(items.ToArray(), cols: 6, halfW: 96, halfH: 96, camYaw: 0.32f, dist: 1.65f, targetY: 1.54f, eyeLift: 0.14f, Path.Combine(dir, "faces_raw.png"));
+        Console.WriteLine($"Faces showcase ({items.Count} cells) -> {dir}");
+    }
+
     void RenderGrid(ShowcaseItem[] items, int cols, int halfW, int halfH, float camYaw, float dist, float targetY, float eyeLift, string path)
     {
         if (sh == null || puppet3D == null) return;
@@ -195,11 +226,11 @@ sealed class AnimSheet
         {
             int row = i / cols, col = i % cols;
             var it = items[i];
-            var look = new Look(it.Head, it.Body, it.Legs, "boots", "gloves", it.Shield, it.Weapon, it.Plume, it.Cape, it.Tabard, it.Face, 1);
+            var look = new Look(it.Head, it.Body, it.Legs, "boots", "gloves", it.Shield, it.Weapon, it.Plume, it.Cape, it.Tabard, it.Face, it.Visage);
             var ut = new UnitType { Id = "showcase", Class = UnitClass.Infantry, Size = 1f, Look = look };
             var u = new Unit { Index = 11, Palette = it.Palette, Coat = 1, Type = ut, Facing = Facing, ViewFacing = Facing, Heading = Facing, ViewHeading = Facing, EnemyDist = 20 };
 
-            float a = Facing + camYaw;
+            float a = Facing + (it.CamYaw ?? camYaw);
             var target = new Vector3(0, targetY, 0);
             var eye = target + new Vector3(MathF.Cos(a) * dist, eyeLift, MathF.Sin(a) * dist);
             var view = Matrix.CreateLookAt(eye, target, Vector3.Up);

@@ -109,7 +109,7 @@ sealed class CreatorStage
                 shading!.Setup(shading.Unit3D, view * proj, eye, clock, false, 0.45f);
                 var toCam = Vector3.Normalize(eye - new Vector3(0, camY, 0));
                 var camRight = Vector3.Normalize(Vector3.Cross(Vector3.Up, toCam));
-                var keyDir = -Vector3.Normalize(toCam * 0.78f - camRight * 0.42f + Vector3.Up * 0.52f);
+                var keyDir = -Vector3.Normalize(toCam * 0.88f - camRight * 0.26f + Vector3.Up * 0.42f);
                 shading.Unit3D.Parameters["SunDir"].SetValue(keyDir);
                 shading.Unit3D.Parameters["View"].SetValue(view);
                 shading.Unit3D.CurrentTechnique = shading.Unit3D.Techniques["Unit3D"];
@@ -172,7 +172,7 @@ sealed class CreatorStage
         u.Couched = act == Act.Charge && u.Type != foot;
         u.Ammo = 0; u.EnemyDist = float.MaxValue; u.HitFlash = 0;
         float yaw = Facing;
-        if (act == Act.Turn) yaw += MathF.Sin(clock * 0.7f) * 1.1f; // looks left, then right
+        if (act == Act.Turn) yaw += MathF.Sin(clock * 0.7f) * 0.78f; // looks left, then right
         if (act == Act.Leave) yaw += MathHelper.Pi;                 // walks away from you
         u.Facing = u.ViewFacing = u.Heading = u.ViewHeading = yaw;
         float speed = act switch { Act.March or Act.Leave => 1.5f, Act.Ride => 4.5f, Act.Charge => 11f, _ => 0 };

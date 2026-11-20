@@ -194,15 +194,19 @@ sealed partial class BattleScreen
         yaw = MathHelper.PiOver2;
         pitch = 0.3f;
         paused = menuOpen = helpOpen = wheelOpen = false;
+        kb = pkb = Keyboard.GetState();
+        ms = pms = Mouse.GetState();
         if (s.Options.Duel)
         {
             // Single combat (P2): no lines to draw up, straight into your own eyes.
             deploying = false;
             SetCommand(false);
+            UpdateCamera();
             battle.Log($"Single combat with {s.EnemyName}. The armies watch.");
             return;
         }
         StartDeployment();
+        UpdateCamera();
         battle.Log((s.Field != "" ? $"The battle of {s.Field}, against {s.EnemyName}" : $"Battle against {s.EnemyName}") + $": {s.Options.Ground?.Name.ToLowerInvariant() ?? "open"} ground, {s.Options.Weather.Describe}.");
         if (!s.Options.Scouted) battle.Log("No scouts: you cannot see their ranks until the fight starts.");
     }
@@ -281,9 +285,12 @@ sealed partial class BattleScreen
         blend = 0;
         paused = menuOpen = helpOpen = wheelOpen = false;
         SetCommand(false);
+        kb = pkb = Keyboard.GetState();
+        ms = pms = Mouse.GetState();
         // A quick battle opens deployed, like a campaign one: draw up, hand companies to sergeants, set horn plans
         // (docs/archive/SERGEANTS.md). Shot runs start straight in, except the sergeants' shots.
         if (shotDir == null || Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") == "sergeants") StartDeployment();
+        UpdateCamera();
     }
 
     /// IRONFIELD_MAGES=troop:team[:count],... adds companies of mages to the quick battle (e.g. galdr_masters:0,crimson_crones:1).

@@ -56,7 +56,7 @@ class PartBuilder:
         self.name = name
         self.tris = []
 
-    def _emit_bm(self, bm, mat_id, shade=(1.0, 1.0, 1.0), smooth=True, ao_y=None):
+    def _emit_bm(self, bm, mat_id, shade=(1.0, 1.0, 1.0), smooth=True, ao_y=None, ao_fn=None):
         bm.normal_update()
         bmesh.ops.triangulate(bm, faces=bm.faces[:])
         bm.verts.ensure_lookup_table()
@@ -66,14 +66,18 @@ class PartBuilder:
             for v in f.verts:
                 p = v.co
                 n = v.normal.normalized() if smooth else fn
-                ao = 1.0
+                sr, sg, sb = shade
                 if ao_y is not None:
                     y0, y1, lo, hi = ao_y
                     t = max(0.0, min(1.0, (p.y - y0) / max(1e-5, y1 - y0)))
                     ao = lo + (hi - lo) * t
-                r = max(0, min(255, int(round(shade[0] * ao * 255))))
-                g = max(0, min(255, int(round(shade[1] * ao * 255))))
-                b = max(0, min(255, int(round(shade[2] * ao * 255))))
+                    sr *= ao; sg *= ao; sb *= ao
+                if ao_fn is not None:
+                    fr, fg, fb = ao_fn(p, n)
+                    sr *= fr; sg *= fg; sb *= fb
+                r = max(0, min(255, int(round(sr * 255))))
+                g = max(0, min(255, int(round(sg * 255))))
+                b = max(0, min(255, int(round(sb * 255))))
                 self.tris.append((
                     (float(p.x), float(p.y), float(p.z)),
                     (float(n.x), float(n.y), float(n.z)),
@@ -83,7 +87,7 @@ class PartBuilder:
                 ))
         bm.free()
 
-    def add_loft(self, rings, mat_id, shade=(1.0, 1.0, 1.0), cap_bot=True, cap_top=True, smooth=True, ao_y=None):
+    def add_loft(self, rings, mat_id, shade=(1.0, 1.0, 1.0), cap_bot=True, cap_top=True, smooth=True, ao_y=None, ao_fn=None):
         bm = bmesh.new()
         vert_rings = []
         for ring in rings:
@@ -117,7 +121,7 @@ class PartBuilder:
             except ValueError:
                 pass
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-        self._emit_bm(bm, mat_id, shade, smooth, ao_y)
+        self._emit_bm(bm, mat_id, shade, smooth, ao_y, ao_fn)
 
     def add_loft_z(self, rings_z, mat_id, shade=(1.0, 1.0, 1.0), cap_back=True, cap_front=True, smooth=True, ao_y=None):
         pts_rings = []
@@ -129,13 +133,18 @@ class PartBuilder:
             pts_rings.append(ring)
         self.add_loft(pts_rings, mat_id, shade, cap_bot=cap_back, cap_top=cap_front, smooth=smooth, ao_y=ao_y)
 
-    def add_sphere(self, center, radius_xyz, segs=6, rings=4, mat_id=4, shade=(1.0, 1.0, 1.0), smooth=True, ao_y=None):
+    def add_sphere(self, center, radius_xyz, segs=6, rings=4, mat_id=4, shade=(1.0, 1.0, 1.0), smooth=True, ao_y=None, rot_euler=(0, 0, 0)):
         bm = bmesh.new()
         bmesh.ops.create_uvsphere(bm, u_segments=segs, v_segments=rings, radius=1.0)
         cx, cy, cz = center
         rx, ry, rz = radius_xyz if isinstance(radius_xyz, tuple) else (radius_xyz, radius_xyz, radius_xyz)
         for v in bm.verts:
-            v.co = Vector((cx + v.co.x * rx, cy + v.co.z * ry, cz + v.co.y * rz))
+            v.co = Vector((v.co.x * rx, v.co.z * ry, v.co.y * rz))
+        if rot_euler != (0, 0, 0):
+            mat = Matrix.Rotation(rot_euler[1], 4, 'Y') @ Matrix.Rotation(rot_euler[0], 4, 'X') @ Matrix.Rotation(rot_euler[2], 4, 'Z')
+            bmesh.ops.transform(bm, matrix=mat, verts=bm.verts[:])
+        for v in bm.verts:
+            v.co += Vector((cx, cy, cz))
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
         self._emit_bm(bm, mat_id, shade, smooth, ao_y)
 
@@ -263,36 +272,234 @@ def build_torso(kind):
         ], mat_id=1, ao_y=(0.54, 1.38, 0.76, 1.06))
         # Padded standing collar roll + laced V-placket + lower trim hem
         p.add_loft([(0, 1.32, 0, 0.155, 0.138, segs), (0, 1.40, 0, 0.132, 0.120, segs)], mat_id=2, cap_bot=False, ao_y=(1.32, 1.40, 0.84, 1.06))
-        p.add_box((0, 1.20, 0.158), (0.075, 0.20, 0.022), mat_id=3)
-        p.add_loft([(0, 0.53, 0, 0.240, 0.178, segs), (0, 0.58, 0, 0.236, 0.175, segs)], mat_id=2, cap_bot=False, cap_top=False)
-        p.add_box((0, 0.84, 0.0), (0.405, 0.058, 0.315), mat_id=7)
-        p.add_box((0, 0.84, 0.164), (0.065, 0.060, 0.022), mat_id=6)
-        p.add_box((0.18, 0.76, 0.06), (0.072, 0.105, 0.090), mat_id=7, shade=(0.84, 0.80, 0.76))
-
-    return p
-
-
 def build_head(style):
-    """Crisp low-poly 3D medieval head (~65-95 tris) centered at (0,0,0)."""
+    """Sculpted low-poly 3D medieval head (~160-240 tris) centered at (0,0,0).
+    Anatomical jawline, cheekbones, recessed orbital eye sockets, tapered nose bridge,
+    expressive brows, ears, and contoured medieval hair/beards (zero protruding bug-eyes or boxy slabs!).
+    Fits cleanly inside all open-faced helmets (rx <= 0.148)."""
     p = PartBuilder(f"head_{style}")
-    # Neck + skull
-    p.add_cone((0, -0.19, -0.01), (0, -0.08, 0.0), 0.075, 0.080, segs=6, mat_id=9, shade=(0.86, 0.82, 0.80))
-    p.add_sphere((0, 0.01, 0.0), (0.145, 0.165, 0.150), segs=7, rings=5, mat_id=9, ao_y=(-0.15, 0.17, 0.85, 1.06))
-    # Sculpted nose & dark recessed eyes
-    p.add_box((0, -0.005, 0.146), (0.040, 0.060, 0.044), mat_id=9, shade=(1.04, 1.01, 0.98))
+    segs = 12  # i=3 is +Z front centerline; i=2,4 are +/-30 deg (eyes/cheeks); i=0,6 are +/-X (ears); i=9 is -Z back
+
+    # 1. Tapered neck (warm shadow under jaw)
+    p.add_cone((0, -0.195, -0.014), (0, -0.088, -0.004), 0.074, 0.078, segs=8, mat_id=9, shade=(0.86, 0.80, 0.77))
+
+    # 2. Anatomically sculpted cranium + face loft (chin -> jaw -> cheeks -> recessed eye sockets -> brow -> crown)
+    # Each ring: (y, rx, rz_front, rz_back, z_off, eye_recess, brow_push, chin_taper)
+    head_levels = [
+        (-0.142, 0.074, 0.094, 0.070, -0.004, 0.000, 0.000, 0.80),  # under-chin base
+        (-0.104, 0.114, 0.128, 0.098, -0.002, 0.000, 0.000, 0.86),  # chin & defined jawline
+        (-0.056, 0.128, 0.135, 0.120, -0.002, 0.000, 0.000, 0.94),  # mouth & lower cheek
+        (-0.006, 0.135, 0.138, 0.138, -0.003, 0.000, 0.004, 1.00),  # cheekbones & mid-face
+        ( 0.028, 0.133, 0.136, 0.146, -0.004, 0.015, 0.000, 1.00),  # recessed orbital eye-socket plane
+        ( 0.066, 0.137, 0.141, 0.149, -0.004, 0.000, 0.006, 1.00),  # strong overhanging brow ridge
+        ( 0.114, 0.125, 0.126, 0.134, -0.006, 0.000, 0.000, 1.00),  # forehead & upper cranium
+        ( 0.156, 0.056, 0.058, 0.062, -0.010, 0.000, 0.000, 1.00),  # cranium crown apex
+    ]
+    head_rings = []
+    for y, rx, rzf, rzb, zoff, eye_rec, brow_push, chin_t in head_levels:
+        ring = []
+        for i in range(segs):
+            a = 2.0 * math.pi * i / segs
+            ca, sa = math.cos(a), math.sin(a)
+            rz = rzf if sa >= 0.0 else rzb
+            x = ca * rx
+            z = sa * rz + zoff
+            # Taper front jaw/chin cleanly into a heroic warrior chin
+            if sa > 0.25 and chin_t < 1.0:
+                x *= chin_t + (1.0 - chin_t) * (1.0 - sa * 0.45)
+            # Carve real 3D orbital hollows at +/-30 deg (i=2, 4) so eyes sit inside the face!
+            if eye_rec > 0.0 and i in (2, 4):
+                z -= eye_rec
+            # Subtle cheekbone / brow prominence on front columns
+            if brow_push > 0.0 and i in (2, 3, 4):
+                z += brow_push * (1.0 if i == 3 else 0.75)
+            ring.append(Vector((x, y, z)))
+        head_rings.append(ring)
+
+    def face_ao(pt, _n):
+        # Soft anatomical AO: bright forehead/cheeks, warm orbital socket shadow, gentle under-jaw/nose shadow
+        r, g, b = 1.01, 1.00, 0.99
+        # Vertical gradient: slight under-chin warmth, clean lit brow
+        t_y = max(0.0, min(1.0, (pt.y + 0.145) / 0.30))
+        v_ao = 0.87 + 0.15 * t_y
+        r *= v_ao; g *= v_ao; b *= v_ao
+        # Orbital eye-socket shading around (+/-0.052, +0.026, +0.12)
+        if pt.z > 0.08:
+            d_eye = math.sqrt((abs(pt.x) - 0.052) ** 2 + (pt.y - 0.026) ** 2)
+            if d_eye < 0.038:
+                k = (1.0 - d_eye / 0.038) ** 1.4
+                r *= 1.0 - 0.14 * k
+                g *= 1.0 - 0.18 * k
+                b *= 1.0 - 0.18 * k
+            # Subtle under-nose / philtrum shadow
+            d_unose = math.sqrt((pt.x * 1.4) ** 2 + (pt.y + 0.036) ** 2)
+            if d_unose < 0.030:
+                k = 1.0 - d_unose / 0.030
+                r *= 1.0 - 0.09 * k
+                g *= 1.0 - 0.12 * k
+                b *= 1.0 - 0.12 * k
+        return (r, g, b)
+
+    p.add_loft(head_rings, mat_id=9, smooth=True, ao_fn=face_ao)
+
+    # 3. Sculpted nose (smooth tapered bridge -> refined tip -> warm-shaded underside, zero blocky yellow brick!)
+    nose_rings = [
+        [Vector((-0.011,  0.044, 0.126)), Vector(( 0.011,  0.044, 0.126)),
+         Vector(( 0.008,  0.042, 0.138)), Vector((-0.008,  0.042, 0.138))],  # glabella / bridge root
+        [Vector((-0.014,  0.014, 0.128)), Vector(( 0.014,  0.014, 0.128)),
+         Vector(( 0.010,  0.010, 0.148)), Vector((-0.010,  0.010, 0.148))],  # mid bridge
+        [Vector((-0.018, -0.016, 0.128)), Vector(( 0.018, -0.016, 0.128)),
+         Vector(( 0.011, -0.018, 0.155)), Vector((-0.011, -0.018, 0.155))],  # sculpted nose tip
+        [Vector((-0.016, -0.030, 0.128)), Vector(( 0.016, -0.030, 0.128)),
+         Vector(( 0.009, -0.029, 0.137)), Vector((-0.009, -0.029, 0.137))],  # tucked nostril underside
+    ]
+    p.add_loft(nose_rings, mat_id=9, shade=(0.99, 0.96, 0.94), smooth=True, ao_y=(-0.032, 0.038, 0.85, 1.01))
+
+    # 4. Recessed dark eyes + sculpted resolute eyebrows (flush inside the orbital hollow, never bug-eyed!)
     for sx in (-1, 1):
-        p.add_box((sx * 0.052, 0.028, 0.138), (0.028, 0.036, 0.024), mat_id=0, shade=(0.11, 0.09, 0.09))
+        # Compact dark oval eye tucked behind the brow & cheek plane
+        p.add_sphere(
+            (sx * 0.045, 0.024, 0.116),
+            (0.019, 0.012, 0.009),
+            segs=6, rings=4, mat_id=0, shade=(0.13, 0.10, 0.09),
+            rot_euler=(0.0, sx * 0.34, 0.0), smooth=True
+        )
+        # Sculpted eyebrow hugging the brow ridge closely, angled slightly inward for resolute character
+        p.add_box(
+            (sx * 0.047, 0.043, 0.125),
+            (0.042, 0.014, 0.015),
+            mat_id=10, shade=(0.82, 0.78, 0.76),
+            rot_euler=(0.06, sx * 0.32, -sx * 0.11), smooth=True
+        )
+        # Subtle tucked medieval ears (within |x| <= 0.146 so they clear open helmets cleanly)
+        p.add_sphere(
+            (sx * 0.133, 0.004, -0.010),
+            (0.014, 0.032, 0.020),
+            segs=6, rings=4, mat_id=9, shade=(0.93, 0.86, 0.83),
+            rot_euler=(0.0, -sx * 0.25, 0.0), smooth=True
+        )
 
     bald = (style == 3)
     beard = style in (1, 3)
     stache = (style == 2)
 
+    # 5. Contoured medieval hair (tapered smoothly into the nape — ZERO rectangular back-brick!)
     if not bald:
-        p.add_sphere((0, 0.055, -0.022), (0.156, 0.138, 0.156), segs=7, rings=4, mat_id=10, ao_y=(-0.06, 0.20, 0.78, 1.08))
-        p.add_box((0, -0.02, -0.095), (0.23, 0.15, 0.10), mat_id=10, ao_y=(-0.10, 0.10, 0.76, 1.0))
+        hair_rings = []
+        # (y, rx, rz_front, rz_back, zoff, front_y_lift)
+        hair_levels = [
+            (-0.084, 0.116, 0.000, 0.130, -0.014, 0.155),  # tapered nape at back
+            (-0.026, 0.138, 0.030, 0.147, -0.010, 0.115),  # sideburns & lower occiput
+            ( 0.036, 0.146, 0.118, 0.155, -0.008, 0.062),  # temples & mid-skull
+            ( 0.090, 0.143, 0.138, 0.153, -0.008, 0.010),  # natural medieval hairline across forehead
+            ( 0.132, 0.122, 0.122, 0.130, -0.008, 0.000),  # rounded upper crown
+            ( 0.162, 0.082, 0.082, 0.088, -0.009, 0.000),  # domed crown shoulder (no flat-top!)
+            ( 0.178, 0.030, 0.032, 0.034, -0.010, 0.000),  # smooth rounded apex
+        ]
+        for y, rx, rzf, rzb, zoff, flift in hair_levels:
+            ring = []
+            for i in range(segs):
+                a = 2.0 * math.pi * i / segs
+                ca, sa = math.cos(a), math.sin(a)
+                # Keep front hairline cleanly arched above the brow while draping down behind ears to the nape
+                if sa > 0.15:
+                    yy = max(y, 0.088 + (0.012 if i in (2, 4) else 0.0)) if flift > 0.0 else y
+                    rz = max(rzf, 0.134) if yy >= 0.088 else rzf
+                    if yy > 0.12:
+                        rx_eff = rx * 0.96
+                    else:
+                        rx_eff = rx
+                    x = ca * rx_eff
+                    z = sa * rz + zoff
+                else:
+                    yy = y
+                    # Slight natural hair fullness at the back/sides (style 1 slightly fuller)
+                    full = 1.03 if style == 1 else 1.00
+                    x = ca * rx * full
+                    z = sa * rzb * full + zoff
+                ring.append(Vector((x, yy, z)))
+            hair_rings.append(ring)
+        p.add_loft(hair_rings, mat_id=10, smooth=True, cap_bot=False, ao_y=(-0.09, 0.17, 0.76, 1.08))
     else:
-        p.add_box((0, -0.01, -0.095), (0.23, 0.11, 0.095), mat_id=10)
+        # Bald veteran: clean bare dome on top + contoured horseshoe hair fringe around temples & tapered nape!
+        fringe_rings = []
+        for y, rx, rzb, zoff in [
+            (-0.074, 0.116, 0.130, -0.012),
+            (-0.020, 0.138, 0.147, -0.008),
+            ( 0.026, 0.142, 0.152, -0.008),
+            ( 0.052, 0.134, 0.144, -0.008),
+        ]:
+            ring = []
+            # Wrap from right temple (a = +25 deg) around back to left temple (a = +155 deg -> i.e. back half + sides)
+            for k in range(9):
+                # Angles from +0.18*pi (right temple) through -0.5*pi (back) to -1.18*pi (left temple)
+                a = 0.12 * math.pi - (1.24 * math.pi) * (k / 8.0)
+                ca, sa = math.cos(a), math.sin(a)
+                taper = 0.90 if k in (0, 8) else 1.0
+                x = ca * rx * taper
+                z = sa * rzb * taper + zoff
+                ring.append(Vector((x, y, z)))
+            fringe_rings.append(ring)
+        # Close each horseshoe ring gently into the skull interior so there are no open edges
+        closed_fringe = []
+        for idx, ring in enumerate(fringe_rings):
+            y = ring[0].y
+            closed_fringe.append(ring + [Vector((-0.07, y, -0.04)), Vector((0.0, y, -0.05)), Vector((0.07, y, -0.04))])
+        p.add_loft(closed_fringe, mat_id=10, smooth=True, ao_y=(-0.08, 0.055, 0.76, 1.04))
 
+    # 6. Facial hair or sculpted mouth
+    if beard:
+        # Structured, tapered medieval warrior beard (hugging jaw & cheeks, tapering to a strong chin — NOT a marshmallow ball!)
+        beard_len = -0.202 if style == 3 else -0.172
+        beard_rings = []
+        b_levels = [
+            (beard_len, 0.052, 0.098, 0.020, 0.015),  # tapered warrior beard tip
+            (-0.135,    0.096, 0.138, 0.032, 0.008),  # full chin & lower jaw beard
+            (-0.088,    0.126, 0.144, 0.036, 0.004),  # mid-jaw / cheek beard
+            (-0.036,    0.134, 0.134, 0.020, 0.000),  # upper cheek / sideburn blend
+        ]
+        for y, rx, rzf, rzb, zoff in b_levels:
+            ring = []
+            for i in range(segs):
+                a = 2.0 * math.pi * i / segs
+                ca, sa = math.cos(a), math.sin(a)
+                if sa >= -0.15:
+                    x = ca * rx
+                    z = sa * rzf + zoff
+                else:
+                    # Tuck cleanly under the jaw/chin so beard doesn't bulge into the back of the neck
+                    x = ca * rx * 0.78
+                    z = sa * rzb + zoff
+                # Slight dip under lower lip on top ring so moustache & mouth read clearly
+                yy = y - (0.022 if (y > -0.045 and i == 3) else (0.010 if (y > -0.045 and i in (2, 4)) else 0.0))
+                ring.append(Vector((x, yy, z)))
+            beard_rings.append(ring)
+        p.add_loft(beard_rings, mat_id=10, smooth=True, ao_y=(beard_len, -0.03, 0.74, 1.04))
+
+        # Sculpted moustache arching over the mouth (slightly brighter so it separates cleanly from the beard!)
+        for sx in (-1, 1):
+            p.add_cone(
+                (0.0, -0.043, 0.138),
+                (sx * 0.062, -0.062, 0.122),
+                0.018, 0.012, segs=6, mat_id=10, shade=(1.05, 1.03, 1.01), smooth=True
+            )
+        # Warm natural lip peek tucked under the moustache (reads cleanly on both dark and grey beards!)
+        p.add_sphere((0.0, -0.064, 0.131), (0.026, 0.006, 0.009), segs=6, rings=3, mat_id=9, shade=(0.72, 0.56, 0.52), smooth=True)
+    elif stache:
+        # Expressive curved two-wing warrior moustache
+        for sx in (-1, 1):
+            p.add_cone(
+                (0.0, -0.044, 0.138),
+                (sx * 0.064, -0.066, 0.118),
+                0.018, 0.011, segs=6, mat_id=10, shade=(1.02, 1.00, 0.98), smooth=True
+            )
+        # Subtle lower lip shadow
+        p.add_sphere((0.0, -0.068, 0.130), (0.026, 0.006, 0.008), segs=6, rings=3, mat_id=9, shade=(0.74, 0.60, 0.56), smooth=True)
+    else:
+        # Clean-shaven: resolute horizontal lip contour (wide enough not to read as a dot!)
+        p.add_box((0.0, -0.064, 0.131), (0.056, 0.010, 0.012), mat_id=9, shade=(0.74, 0.58, 0.54), smooth=True)
+
+    return p
     if beard:
         p.add_sphere((0, -0.092, 0.058), (0.148, 0.118, 0.128), segs=6, rings=4, mat_id=10, ao_y=(-0.20, 0.02, 0.74, 1.05))
     elif stache:

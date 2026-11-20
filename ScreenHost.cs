@@ -128,6 +128,11 @@ sealed class ScreenHost : Game
             AnimSheet.WriteArmorShowcase(GraphicsDevice, Art, Shading, armorDir);
             Environment.Exit(0);
         }
+        if (Environment.GetEnvironmentVariable("IRONFIELD_FACE_SHEET") is { Length: > 0 } faceDir)
+        {
+            AnimSheet.WriteFaceShowcase(GraphicsDevice, Art, Shading, faceDir);
+            Environment.Exit(0);
+        }
         if (GpuReport.Requested) gpuReport = new GpuReport(this, Shading != null, shaderError);
 
         Audio = new AudioEngine();
