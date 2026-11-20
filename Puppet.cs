@@ -322,6 +322,30 @@ sealed partial class Puppet
         {
             SpanRect(hand, dir, curLook.Weapon, curLook.WeaponLen, SpriteSheet.Grip[look.Weapon]);
             if (Detail < 2) BillRect(hand, curLook.Hand, false, 0.02f); // the fist closed over the grip (docs/PLAYTEST.md PT5)
+            if (Detail == 0 && Soft != null && grip is Grip.One or Grip.Two or Grip.Pole)
+            {
+                float strikeK = -1;
+                if (!u.IsPlayer && u.Action == UnitAction.Recover && u.Type.Recover > 0)
+                {
+                    float rk = 1 - u.ActionTimer / u.Type.Recover;
+                    if (rk < 0.26f) strikeK = rk / 0.26f;
+                }
+                else if (u.IsPlayer && u.Action == UnitAction.Windup)
+                {
+                    float wk = 1 - u.ActionTimer / (u.Swing == AttackDir.Overhead ? 0.2f : 0.15f);
+                    if (wk > 0.55f) strikeK = (wk - 0.55f) / 0.45f;
+                }
+                if (strikeK >= 0)
+                {
+                    float gf = SpriteSheet.Grip[look.Weapon];
+                    var tip = W(hand + dir * curLook.WeaponLen * (1 - gf) * 0.85f);
+                    var mid = W(hand + dir * curLook.WeaponLen * (1 - gf) * 0.52f);
+                    float a = MathF.Sin(strikeK * MathF.PI) * (p.TwoHand ? 0.52f : 0.36f);
+                    var col = new Color(235, 242, 255);
+                    Haze(tip, (p.TwoHand ? 0.55f : 0.36f) * scale, col, a, strikeK * 6 + u.Index);
+                    Haze(mid, (p.TwoHand ? 0.38f : 0.24f) * scale, col, a * 0.65f, strikeK * 4 + u.Index);
+                }
+            }
         }
         ShieldOnArm();
     }

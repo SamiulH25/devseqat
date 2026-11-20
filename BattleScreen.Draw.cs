@@ -178,10 +178,44 @@ partial class BattleScreen
         foreach (var (cue, at) in battle.Sounds)
             switch (cue)
             {
-                case Cue.Clash: Spray(at, 1.3f, 7, new Color(255, 226, 140), 3.5f, 0.3f, 0.07f, true); Spray(at, 1.3f, 1, new Color(255, 236, 190), 0.3f, 0.14f, 0.3f, false, 2.5f); break; // sparks and a flash
-                case Cue.Block: Spray(at, 1.2f, 3, new Color(220, 200, 160), 2f, 0.2f, 0.05f, true); break;
-                case Cue.Hit: case Cue.ArrowHit: Spray(at, 1.1f, 6, new Color(140, 20, 22), 1.9f, 0.55f, 0.075f, true); break;
-                case Cue.Impact: Spray(at, 0.2f, 10, new Color(168, 150, 116), 1.6f, 1.3f, 0.25f, false, 0.6f); break;
+                case Cue.ParrySteel:
+                    Spray(at, 1.35f, 12, new Color(255, 240, 175), 4.4f, 0.34f, 0.08f, true);
+                    Spray(at, 1.35f, 1, new Color(255, 248, 220), 0.2f, 0.16f, 0.42f, false, 3.2f);
+                    break;
+                case Cue.Clash: case Cue.BlockMetal: case Cue.BluntPlate:
+                    Spray(at, 1.3f, 8, new Color(255, 226, 140), 3.6f, 0.30f, 0.075f, true);
+                    Spray(at, 1.3f, 1, new Color(255, 236, 190), 0.3f, 0.14f, 0.32f, false, 2.6f);
+                    break;
+                case Cue.ArrowPlate:
+                    Spray(at, 1.3f, 5, new Color(255, 232, 160), 3.2f, 0.24f, 0.06f, true);
+                    break;
+                case Cue.Block: case Cue.BlockWood: case Cue.ArrowShield:
+                    Spray(at, 1.2f, 5, new Color(205, 172, 124), 2.5f, 0.26f, 0.065f, true); // wood splinters
+                    break;
+                case Cue.ShieldSplinter: case Cue.LanceShatter:
+                    Spray(at, 1.25f, 12, new Color(185, 142, 92), 3.8f, 0.42f, 0.085f, true);
+                    Spray(at, 1.2f, 3, new Color(215, 195, 160), 1.4f, 0.45f, 0.22f, false, 1.1f);
+                    break;
+                case Cue.Hit: case Cue.ArrowHit: case Cue.SlashLight: case Cue.PierceHit: case Cue.ArrowFlesh: case Cue.BluntFlesh:
+                    Spray(at, 1.15f, 6, new Color(155, 18, 22), 2.1f, 0.52f, 0.075f, true);
+                    break;
+                case Cue.SlashHeavy:
+                    Spray(at, 1.2f, 10, new Color(165, 16, 20), 2.7f, 0.58f, 0.085f, true);
+                    Spray(at, 1.2f, 4, new Color(255, 226, 150), 2.9f, 0.22f, 0.06f, true);
+                    break;
+                case Cue.LanceImpact:
+                    Spray(at, 1.2f, 11, new Color(165, 16, 20), 3.1f, 0.6f, 0.09f, true);
+                    Spray(at, 0.35f, 8, new Color(172, 154, 120), 2.2f, 0.9f, 0.28f, false, 0.9f);
+                    break;
+                case Cue.BoneHit: case Cue.BoneCollapse:
+                    Spray(at, 1.1f, cue == Cue.BoneCollapse ? 11 : 6, new Color(224, 214, 188), 2.8f, 0.48f, 0.075f, true);
+                    break;
+                case Cue.BashThud:
+                    Spray(at, 1.1f, 4, new Color(210, 192, 155), 1.8f, 0.38f, 0.20f, false, 0.9f);
+                    break;
+                case Cue.Impact:
+                    Spray(at, 0.2f, 10, new Color(168, 150, 116), 1.6f, 1.3f, 0.25f, false, 0.6f);
+                    break;
             }
         GroundSteps(dt);
         MagicFx(dt);
