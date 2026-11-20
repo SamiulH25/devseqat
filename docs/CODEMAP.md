@@ -207,8 +207,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.cs (579 lines)
 - **BattleScreen** (class, L12): Exit:18, GroundTips:50, MagicTips:62, BattleScreen:122, Load:134, QuickGround:153, BeginCampaign:163, StartDeployment:194, StageCommandView:209, FinishCampaignBattle:217, NewBattle:232, WithMages:274, SetWorld:282, SetCommand:296, Pressed:308, Update:316, PlaySounds:402, Soundscape:441, SyncHud:534, MenuChoice:565
 
-## BattleScreen.Draw.cs (777 lines)
-- **BattleScreen** (class, L8): Draw:12, DrawShaded:54, DrawBlobs:105, EaseFacings:147, Spray:163, Effects:176, GroundSteps:207, BuildSprites:263, LensFill:342, SpriteStates:345, DrawSpritesBasic:353, DrawSpritesShaded:363, DrawSoft:374, Line:388, G:389, OrderArrows:398, OrderArrowLines:400, Ring:416, DashedRing:427, Band:440, BeamQuad:462, TorchRow:484, Precipitation:493, Fall:504, Stakes:523, SpellColor:546, Spells:552, AuraGlow:568, ChampionGlow:578, PlayerGlow:591, PendingFormsDrawn:605, RouteDots:630, PlanHook:643, DrawLines:673
+## BattleScreen.Draw.cs (779 lines)
+- **BattleScreen** (class, L8): Draw:12, DrawShaded:54, DrawBlobs:105, EaseFacings:147, Spray:163, Effects:176, GroundSteps:207, BuildSprites:263, LensFill:344, SpriteStates:347, DrawSpritesBasic:355, DrawSpritesShaded:365, DrawSoft:376, Line:390, G:391, OrderArrows:400, OrderArrowLines:402, Ring:418, DashedRing:429, Band:442, BeamQuad:464, TorchRow:486, Precipitation:495, Fall:506, Stakes:525, SpellColor:548, Spells:554, AuraGlow:570, ChampionGlow:580, PlayerGlow:593, PendingFormsDrawn:607, RouteDots:632, PlanHook:645, DrawLines:675
 
 ## BattleScreen.Effects.cs (208 lines)
 - **BattleScreen** (class, L7): Feel:14, Kick:30, Shake:33, AddMark:50, LeaveMarks:60, DrawMarks:73, Stamp:98, Trample:107, MenMap:125, TrampleTexture:148, RearOf:165, BannerFalls:187, DrawFallingBanners:198
@@ -811,8 +811,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 
 ## Program.cs (123 lines)
 
-## Puppet.cs (1007 lines)
-- **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:331, Bow:355, Horse:382, static:473, Beast:481, WolfBody:493, Warg:523, BeastCorpse:541, DrawLooseHorse:556, DrawDeadHorse:566, RotY:603, Shoulder:614, Arm:618, ArmTo:625, Elbow:637, Sink:664, Leg:673, SpanRect:685, Fallen:694, Corpse:765, Haze:805, Particle:817, Banner:832, Decal:879, Quad:892, PlumeY:906, HelmTop:909, HeadBill:923, BillRect:926, Missile:937, AxialSrc:957, LongRect:968, PlaneRect:980, FlatRect:990, FlatRot:999
+## Puppet.cs (1039 lines)
+- **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:331, Bow:355, Horse:382, static:473, Beast:481, WolfBody:493, Warg:523, BeastCorpse:541, DrawLooseHorse:556, DrawDeadHorse:566, RotY:597, Shoulder:608, Arm:612, ArmTo:619, Elbow:631, Sink:658, Leg:667, SpanRect:679, Fallen:688, SpiritAscent:756, Corpse:797, Haze:837, Particle:849, Banner:864, Decal:911, Quad:924, PlumeY:938, HelmTop:941, HeadBill:955, BillRect:958, Missile:969, AxialSrc:989, LongRect:1000, PlaneRect:1012, FlatRect:1022, FlatRot:1031
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136

@@ -578,26 +578,20 @@ sealed partial class Puppet
             tilt = 0;
             return;
         }
-        Frame(h.Pos, h.Heading, ground, h.Barding == "wolf" ? 1.5f : 1);
-        tint = Color.White;
-        FlatRect(new(0.3f, 0.02f, 0), curPal.Blood, false);
-        var sidePal = curPal;
-        if (h.Barding == "wolf")
+        float after = Now > 0 ? Now - h.At - 0.7f : 0.4f;
+        const float FadeTime = 2.2f;
+        if (after < 0 || after >= FadeTime) return;
+        float t = after / FadeTime;
+        float alpha = MathF.Min(1, t * 6f) * MathF.Pow(1 - t, 1.4f);
+        var col = h.Team == 0 ? new Color(150, 210, 255) : new Color(255, 145, 100);
+        for (int i = 0; i < 3; i++)
         {
-            curPal = neutralPal; tint = new Color(150, 140, 135);
-            FlatRect(new(0, 0.06f, 0), curPal.WBody, true); FlatRect(new(0.05f, 0.07f, 0.65f), curPal.WHead, true); FlatRect(new(-0.25f, 0.05f, 0.25f), curPal.WLeg, false);
-            curPal = sidePal; tint = Color.White;
-            return;
+            float tm = MathF.Max(0, t - i * 0.08f);
+            float ry = 0.5f + Ease.Out(tm) * 4.5f;
+            float ox = MathF.Sin(tm * 5 + h.Heading + i * 2.1f) * 0.45f;
+            float oz = MathF.Cos(tm * 4 + h.Heading + i * 1.7f) * 0.35f;
+            Haze(new Vector3(h.Pos.X + ox, ground + ry, h.Pos.Y + oz), (0.85f - i * 0.15f), col, alpha * (0.55f - i * 0.1f), h.Heading + i * 4);
         }
-        curPal = neutralPal;
-        tint = new Color(h.Barding == "camel" ? Style.CamelCoat : Style.Coats[h.Coat % Style.Coats.Length]);
-        FlatRect(new(0, 0.05f, 0), curPal.HBody, true);
-        FlatRect(new(0.2f, 0.06f, 1.2f), curPal.HHead, true);
-        FlatRect(new(-0.55f, 0.04f, 0.5f), curPal.HLeg, false);
-        FlatRect(new(-0.55f, 0.04f, -0.5f), curPal.HLeg, false);
-        curPal = sidePal;
-        tint = Color.White;
-        FlatRect(new(0, 0.07f, 0), curPal.Barding(h.Barding).Body, true);
     }
 
     static Vector3 RotY(Vector3 v, float deg)
@@ -708,16 +702,10 @@ sealed partial class Puppet
         float k = Now > 0 ? (Now - u.DiedAt) / time : 1;
         if (k >= 1)
         {
-            // Lying down: the corpse's "back" points along the fall.
-            Frame(u.Pos, MathF.Atan2(-dir.Y, -dir.X), ground, size);
-            // Lying still, he darkens and his colours drain over a few seconds, so the dead sink into the field
-            // and the living stand out over them (vertex alpha: how far the sprite shader drains the colour).
-            float settle = Now > 0 ? Math.Clamp((Now - u.DiedAt - time) / 3f, 0, 1) : 1;
-            var keepTint = tint;
-            tint = Color.Lerp(tint, new Color(150, 140, 126), 0.35f + 0.35f * settle); // muted, not blacked out
-            tint.A = (byte)Math.Max(110, (int)(255 - 145 * settle));
-            if (look.Beast) BeastCorpse(u); else Corpse(phase);
-            tint = keepTint;
+            // Spirit ascent: instead of leaving flat bodies on the field, the fallen dissolve into rising team-coloured
+            // wisps so casualties read at a glance across the battlefield.
+            float after = Now > 0 ? Now - u.DiedAt - time : 0.65f;
+            SpiritAscent(u, ground, size, phase, after);
             return;
         }
         bool crumple = fall == Fall.Thrust || fall == Fall.Plain && phase < 0.3f;
@@ -759,7 +747,51 @@ sealed partial class Puppet
         var hand = Arm(1, p.ArmA, 0);
         Arm(-1, p.OffA, 0);
         if (k < 0.4f) SpanRect(hand, RotY(new Vector3(0, 0.5f, 0.87f), 20), curLook.Weapon, curLook.WeaponLen, SpriteSheet.Grip[look.Weapon]); // still in his hand
+        if (k > 0.65f) SpiritAscent(u, ground, size, phase, (k - 0.65f) * 0.28f); // light begins to rise as he hits the ground
         tilt = 0;
+    }
+
+    /// Rising spirit wisps for a fallen soldier: team-coloured light drifting into the sky so the player can read
+    /// casualty spikes across the field without flat corpses cluttering the terrain.
+    void SpiritAscent(Unit u, float ground, float size, float phase, float after)
+    {
+        const float AscentTime = 3.2f;
+        if (after < 0 || after >= AscentTime) return;
+        float t = after / AscentTime;
+        float weight = (u.IsLeader || u.Hero ? 1.5f : u.Sergeant || u.Type.Tier >= 5 ? 1.25f : 1.0f) * MathF.Min(1.6f, size);
+        Color halo, core;
+        if (u.Type.Wild) { halo = new Color(175, 130, 255); core = new Color(235, 220, 255); }
+        else if (u.Team == 0) { halo = new Color(110, 200, 255); core = new Color(235, 248, 255); }
+        else { halo = new Color(255, 105, 72); core = new Color(255, 228, 185); }
+
+        // Brief flash where he fell before the spirit lifts clear.
+        if (t < 0.25f)
+        {
+            float fk = 1 - t / 0.25f;
+            Haze(new Vector3(u.Pos.X, ground + 0.18f, u.Pos.Y), (0.9f + (1 - fk) * 0.6f) * weight, halo, fk * 0.55f, phase * 19);
+        }
+        float alpha = MathF.Min(1, t * 7f) * MathF.Pow(1 - t, 1.35f);
+        float rise = (0.35f * t + 0.65f * Ease.Out(t)) * 6.8f * weight;
+        float swayX = MathF.Sin(t * 5.5f + phase * 6.28f) * 0.34f;
+        float swayZ = MathF.Cos(t * 4.3f + phase * 12.56f) * 0.24f;
+        var pos = new Vector3(u.Pos.X + swayX, ground + 0.45f + rise, u.Pos.Y + swayZ);
+        Haze(pos, (0.85f + 0.3f * (1 - t)) * weight, halo, alpha * 0.68f, phase * 31 + t * 4);
+        Haze(pos, 0.38f * weight, core, alpha * 0.92f, phase * 17 - t * 6);
+
+        // Trailing spirit motes drifting up in his wake.
+        for (int i = 1; i <= 4; i++)
+        {
+            float tm = t - i * 0.065f;
+            if (tm <= 0) continue;
+            float ma = MathF.Min(1, tm * 7f) * MathF.Pow(1 - tm, 1.5f) * (0.72f - i * 0.1f);
+            float mr = (0.35f * tm + 0.65f * Ease.Out(tm)) * 6.4f * weight;
+            float mx = MathF.Sin(tm * 6.2f + phase * 6.28f + i * 1.4f) * (0.28f + i * 0.09f);
+            float mz = MathF.Cos(tm * 4.8f + phase * 12.56f + i * 1.1f) * (0.22f + i * 0.07f);
+            float ms = (0.42f - i * 0.06f) * weight;
+            var mp = new Vector3(u.Pos.X + mx, ground + 0.35f + mr, u.Pos.Y + mz);
+            Haze(mp, ms * 1.35f, halo, ma * 0.58f, phase * 13 + i * 5 + tm * 5);
+            Haze(mp, ms * 0.55f, core, ma * 0.85f, phase * 7 + i * 3 - tm * 4);
+        }
     }
 
     void Corpse(float phase = 0.5f)
