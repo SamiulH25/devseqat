@@ -89,12 +89,14 @@ sealed class AnimSheet
         new("Coat of Plates", "coatofplates", "mail", "kettle", 1),
         new("Brigandine", "brigandine", "mail", "sallet", 1),
         new("Gilded Brigandine", "brigandine_gilded", "plate", "sallet_crest", 1),
-        new("Breastplate", "breastplate", "plate", "morion", 7),
+        new("Half-Plate", "breastplate", "plate", "morion", 7),
         new("Mirror Armor", "mirror", "mail", "turban", 5),
-        new("Knight Plate", "plate", "plate", "greathelm", 8, Tabard: true),
+        new("Gothic Plate", "plate", "plate", "sallet_crest", 0),
         new("Fluted Plate", "plate_fluted", "plate", "armet", 0),
-        new("Plate + Surcoat", "plate_surcoat", "plate", "greathelm", 8, Tabard: true),
+        new("Dark Plate", "plate_dark", "plate", "greathelm_horns", 1),
+        new("Jousting Plate", "plate_lance", "plate", "bascinet", 0),
         new("Gilded Plate", "plate_gilded", "plate", "greathelm_sun", 2, Tabard: true),
+        new("Plate + Surcoat", "plate_surcoat", "plate", "greathelm", 8, Tabard: true),
         new("Plate + Fur", "plate_fur", "plate", "spangen_horns", 4),
         new("Lamellar", "lamellar", "cloth", "turban", 5),
         new("Gilded Lamellar", "lamellar_gilded", "mail", "tug", 6),
@@ -106,6 +108,20 @@ sealed class AnimSheet
         new("Deel + Fur", "deel_fur", "cloth", "furcap", 6),
         new("Desert Kaftan", "kaftan", "cloth", "spike_turban", 5),
         new("Caster Robe", "robe", "cloth", "hood", 0),
+    };
+
+    static readonly ShowcaseItem[] PlateShowcase =
+    {
+        new("Half-Plate", "breastplate", "plate", "morion", 7),
+        new("Gothic Plate", "plate", "plate", "sallet_crest", 0),
+        new("Fluted Maximilian", "plate_fluted", "plate", "armet", 0),
+        new("Jousting Lance-Plate", "plate_lance", "plate", "bascinet", 0),
+        new("Dark Iron Plate", "plate_dark", "plate", "greathelm_horns", 1),
+        new("Gilded Royal Plate", "plate_gilded", "plate", "greathelm_sun", 2),
+        new("Plate + Surcoat", "plate_surcoat", "plate", "greathelm", 8, Tabard: true),
+        new("Nordic Plate + Fur", "plate_fur", "plate", "spangen_horns", 4),
+        new("Gilded Brigandine", "brigandine_gilded", "plate", "barbute", 1),
+        new("Iron Scale Plate", "scale_iron", "plate", "sallet", 7),
     };
 
     static readonly ShowcaseItem[] Helms =
@@ -143,8 +159,10 @@ sealed class AnimSheet
         Directory.CreateDirectory(dir);
         Sky.Set(new Weather(13, 0, 0));
         var sheet = new AnimSheet(gd, art, sh);
-        sheet.RenderGrid(Armors, cols: 7, halfW: 100, halfH: 122, camYaw: 0.18f, dist: 3.85f, targetY: 0.96f, eyeLift: 0.45f, Path.Combine(dir, "body_armor_front_raw.png"));
-        sheet.RenderGrid(Armors, cols: 7, halfW: 100, halfH: 122, camYaw: 0.78f, dist: 3.85f, targetY: 0.96f, eyeLift: 0.45f, Path.Combine(dir, "body_armor_3q_raw.png"));
+        sheet.RenderGrid(PlateShowcase, cols: 5, halfW: 112, halfH: 132, camYaw: 0.24f, dist: 3.55f, targetY: 0.95f, eyeLift: 0.42f, Path.Combine(dir, "plate_front_raw.png"));
+        sheet.RenderGrid(PlateShowcase, cols: 5, halfW: 112, halfH: 132, camYaw: 0.85f, dist: 3.55f, targetY: 0.95f, eyeLift: 0.42f, Path.Combine(dir, "plate_3q_raw.png"));
+        sheet.RenderGrid(Armors, cols: 6, halfW: 100, halfH: 122, camYaw: 0.18f, dist: 3.85f, targetY: 0.96f, eyeLift: 0.45f, Path.Combine(dir, "body_armor_front_raw.png"));
+        sheet.RenderGrid(Armors, cols: 6, halfW: 100, halfH: 122, camYaw: 0.78f, dist: 3.85f, targetY: 0.96f, eyeLift: 0.45f, Path.Combine(dir, "body_armor_3q_raw.png"));
         sheet.RenderGrid(Helms, cols: 7, halfW: 88, halfH: 96, camYaw: 0.32f, dist: 2.35f, targetY: 1.54f, eyeLift: 0.22f, Path.Combine(dir, "helmets_raw.png"));
         Console.WriteLine($"Armor ({Armors.Length}) & Helmet ({Helms.Length}) showcase -> {dir}");
     }

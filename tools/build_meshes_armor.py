@@ -71,26 +71,89 @@ def build_modular_armors(PartBuilder):
         cb.add_box((0, cy, 0.172), (0.145, 0.032, 0.024), mat_id=4, shade=(0.94, 0.96, 1.00))
     parts.append(cb)
 
-    # 6. Sculpted steel gothic breastplate with proud central keel ridge!
+    # 6. Articulated Gothic Steel Cuirass (crisp faceted breastplate keel + overlapping V-plackart plate + dark steel waist seams!)
+    def build_cuirass_base(p, mat_id=4, hi=(1.06, 1.08, 1.12), lo=(0.90, 0.93, 0.98)):
+        # Upper globose/keeled breastplate (faceted steel catches razor-sharp cel glints!)
+        rings_up = []
+        for y, rx, rz, zoff in [
+            (0.96, 0.218, 0.156, 0.012),
+            (1.12, 0.248, 0.172, 0.016),
+            (1.28, 0.236, 0.150, 0.000),
+            (1.37, 0.122, 0.112, 0.000),
+        ]:
+            ring = []
+            for i in range(segs):
+                a = 2.0 * math.pi * i / segs
+                sa = math.sin(a)
+                x = math.cos(a) * rx
+                z = sa * rz + zoff + (0.028 * (sa ** 2) if sa > 0 and 0.95 < y < 1.26 else 0.0)
+                ring.append(Vector((x, y, z)))
+            rings_up.append(ring)
+        p.add_loft(rings_up, mat_id=mat_id, shade=hi, smooth=False, cap_bot=False, ao_y=(0.96, 1.37, 0.86, 1.10))
+        # Dark recessed iron seam where upper breastplate meets lower articulated plackart!
+        p.add_loft([(0, 0.94, 0.010, 0.220, 0.160, segs), (0, 0.975, 0.012, 0.222, 0.162, segs)], mat_id=5, shade=(0.56, 0.60, 0.66), cap_bot=False, cap_top=False)
+        # Lower overlapping articulated plackart plate with proud central V-cusp!
+        rings_lo = []
+        for y, rx, rz, zoff in [
+            (0.80, 0.192, 0.146, 0.008),
+            (0.95, 0.224, 0.162, 0.014),
+        ]:
+            ring = []
+            for i in range(segs):
+                a = 2.0 * math.pi * i / segs
+                sa = math.sin(a)
+                x = math.cos(a) * rx
+                z = sa * rz + zoff + (0.022 * (sa ** 2) if sa > 0 else 0.0)
+                yy = y + (0.055 * (sa ** 2) if sa > 0 and y > 0.90 else 0.0)  # iconic Gothic V-plackart peak!
+                ring.append(Vector((x, yy, z)))
+            rings_lo.append(ring)
+        p.add_loft(rings_lo, mat_id=mat_id, shade=lo, smooth=False, cap_bot=False, ao_y=(0.80, 1.00, 0.82, 1.04))
+
     cp = PartBuilder("chest_plate")
-    rings = []
-    for y, rx, rz, zoff in [
-        (0.80, 0.190, 0.144, 0.008),
-        (1.10, 0.246, 0.170, 0.014),
-        (1.28, 0.236, 0.150, 0.000),
-        (1.37, 0.120, 0.110, 0.000),
-    ]:
-        ring = []
-        for i in range(segs):
-            a = 2.0 * math.pi * i / segs
-            x = math.cos(a) * rx
-            z = math.sin(a) * rz + zoff
-            if math.sin(a) > 0.72 and 0.92 < y < 1.24:
-                z += 0.024  # sculpted keel ridge
-            ring.append(Vector((x, y, z)))
-        rings.append(ring)
-    cp.add_loft(rings, mat_id=4, cap_bot=False, ao_y=(0.80, 1.37, 0.80, 1.10))
+    build_cuirass_base(cp, mat_id=4)
+    # Riveted steel neck collar lip & armpit gusset rims
+    cp.add_loft([(0, 1.33, 0, 0.156, 0.136, segs), (0, 1.375, 0, 0.136, 0.122, segs)], mat_id=5, shade=(0.74, 0.78, 0.84), cap_bot=False, cap_top=False)
+    cp.add_box((0, 1.02, 0.194), (0.045, 0.045, 0.020), mat_id=6)  # plackart central brass rivet/buckle!
     parts.append(cp)
+
+    # 6b. Maximilian Fluted Plate Cuirass (dramatic fanning sculpted vertical steel flutes + faceted keel!)
+    cpf = PartBuilder("chest_plate_fluted")
+    build_cuirass_base(cpf, mat_id=4, hi=(1.08, 1.10, 1.14), lo=(0.92, 0.95, 1.00))
+    for fx, ang in [(-0.115, -0.22), (-0.058, -0.10), (0.0, 0.0), (0.058, 0.10), (0.115, 0.22)]:
+        fz = 0.172 + (0.024 if abs(fx) < 0.02 else (0.016 if abs(fx) < 0.08 else 0.002))
+        cpf.add_box((fx, 1.13, fz), (0.024, 0.25, 0.026), mat_id=4, shade=(1.12, 1.14, 1.18), rot_euler=(-0.06, 0.0, ang))
+    cpf.add_box((0, 0.99, 0.194), (0.22, 0.026, 0.024), mat_id=6)  # brass plackart chevron trim
+    parts.append(cpf)
+
+    # 6c. Blackened / Tempered Dark-Iron Knight Plate (dramatic gunmetal steel cuirass with bright silver bevels & brass rivets!)
+    cpd = PartBuilder("chest_plate_dark")
+    build_cuirass_base(cpd, mat_id=5, hi=(0.86, 0.90, 0.96), lo=(0.74, 0.78, 0.84))
+    cpd.add_box((0, 1.14, 0.198), (0.032, 0.28, 0.022), mat_id=4, shade=(1.08, 1.10, 1.14))  # bright steel keel highlight
+    for sx in (-1, 1):
+        cpd.add_box((sx * 0.11, 1.20, 0.176), (0.036, 0.036, 0.022), mat_id=6)  # gilded chest studs
+    cpd.add_box((0, 1.01, 0.196), (0.052, 0.052, 0.022), mat_id=6)
+    parts.append(cpd)
+
+    # 6d. Royal Gilded Plate Cuirass (sculpted steel cuirass + ornate gilded V-plackart trim, sun-bar & brass gorget!)
+    cpg = PartBuilder("chest_plate_gilded")
+    build_cuirass_base(cpg, mat_id=4, hi=(1.08, 1.10, 1.14), lo=(0.94, 0.96, 1.02))
+    cpg.add_box((0, 1.17, 0.196), (0.26, 0.044, 0.024), mat_id=6)
+    cpg.add_box((-0.075, 1.03, 0.194), (0.14, 0.034, 0.024), mat_id=6, rot_euler=(0, 0, -0.38))
+    cpg.add_box((0.075, 1.03, 0.194), (0.14, 0.034, 0.024), mat_id=6, rot_euler=(0, 0, 0.38))
+    parts.append(cpg)
+
+    # 6e. Half-Plate / Milanese Breastplate (classic smooth globose steel cuirass + dark steel shoulder straps!)
+    cph = PartBuilder("chest_breastplate")
+    cph.add_loft([
+        (0, 0.80, 0.008, 0.194, 0.148, segs),
+        (0, 1.08, 0.016, 0.248, 0.178, segs),
+        (0, 1.28, 0.000, 0.234, 0.150, segs),
+        (0, 1.37, 0.000, 0.120, 0.110, segs),
+    ], mat_id=4, smooth=False, cap_bot=False, ao_y=(0.80, 1.37, 0.80, 1.12))
+    for sx in (-1, 1):
+        cph.add_box((sx * 0.115, 1.26, 0.135), (0.048, 0.14, 0.085), mat_id=7, rot_euler=(0.35, 0, 0))  # leather shoulder straps
+    cph.add_box((0, 1.15, 0.192), (0.052, 0.052, 0.022), mat_id=6)
+    parts.append(cph)
 
     # 7. Mirror armor (Eastern / Persian char-aina: gleaming circular steel mirror disc strapped over faction mail!)
     cmr = PartBuilder("chest_mirror")
@@ -167,30 +230,58 @@ def build_modular_armors(PartBuilder):
         s_gs.add_box((sx * 0.225, 1.25, 0.01), (0.105, 0.105, 0.185), mat_id=4, rot_euler=(0, 0, -sx * 0.26), shade=(1.04, 1.06, 1.10))
     parts.append(s_gs)
 
-    # 4. Bold rounded knightly steel pauldrons + steel gorget!
+    # 4. Layered 3-lame Gothic steel pauldrons + armpit besagew rondels + beveled steel gorget!
     s_ps = PartBuilder("shld_pauldrons_steel")
-    s_ps.add_loft([(0, 1.30, 0, 0.164, 0.144, segs), (0, 1.40, 0, 0.124, 0.114, segs)], mat_id=4, cap_bot=False)
+    s_ps.add_loft([(0, 1.29, 0, 0.172, 0.150, segs), (0, 1.405, 0, 0.124, 0.114, segs)], mat_id=4, smooth=False, cap_bot=False)
     for sx in (-1, 1):
-        s_ps.add_sphere((sx * 0.255, 1.25, 0.005), (0.125, 0.115, 0.135), segs=6, rings=3, mat_id=4, shade=(1.05, 1.07, 1.10), ao_y=(1.14, 1.36, 0.84, 1.12))
-        s_ps.add_box((sx * 0.275, 1.17, 0.005), (0.095, 0.085, 0.185), mat_id=4, rot_euler=(0, 0, -sx * 0.22), shade=(0.94, 0.96, 1.00))
+        # Upper domed pauldron cap + 2 stepped overlapping steel lames + front armpit rondel!
+        s_ps.add_sphere((sx * 0.260, 1.265, 0.005), (0.132, 0.112, 0.145), segs=6, rings=3, mat_id=4, smooth=False, shade=(1.08, 1.10, 1.14))
+        s_ps.add_box((sx * 0.285, 1.185, 0.005), (0.110, 0.068, 0.205), mat_id=4, rot_euler=(0, 0, -sx * 0.24), shade=(0.94, 0.96, 1.00))
+        s_ps.add_box((sx * 0.295, 1.115, 0.005), (0.095, 0.062, 0.185), mat_id=5, rot_euler=(0, 0, -sx * 0.18), shade=(0.88, 0.92, 0.98))
+        s_ps.add_loft_z([(sx * 0.195, 1.21, 0.148, 0.056, 0.056, 6), (sx * 0.195, 1.21, 0.168, 0.044, 0.044, 6)], mat_id=4, shade=(1.10, 1.12, 1.16))  # besagew rondel!
     parts.append(s_ps)
 
-    # 5. Ornate gilded brass pauldrons + gilded gorget!
+    # 5. Ornate gilded brass layered pauldrons + gilded gorget + rondels!
     s_pg = PartBuilder("shld_pauldrons_gilded")
-    s_pg.add_loft([(0, 1.30, 0, 0.166, 0.146, segs), (0, 1.41, 0, 0.124, 0.114, segs)], mat_id=6, cap_bot=False)
+    s_pg.add_loft([(0, 1.29, 0, 0.174, 0.152, segs), (0, 1.41, 0, 0.124, 0.114, segs)], mat_id=6, smooth=False, cap_bot=False)
     for sx in (-1, 1):
-        s_pg.add_sphere((sx * 0.258, 1.255, 0.005), (0.130, 0.120, 0.140), segs=6, rings=3, mat_id=6, ao_y=(1.14, 1.38, 0.86, 1.14))
-        s_pg.add_box((sx * 0.278, 1.17, 0.005), (0.095, 0.085, 0.190), mat_id=4, rot_euler=(0, 0, -sx * 0.22))
+        s_pg.add_sphere((sx * 0.264, 1.27, 0.005), (0.136, 0.116, 0.148), segs=6, rings=3, mat_id=6, smooth=False)
+        s_pg.add_box((sx * 0.288, 1.185, 0.005), (0.112, 0.068, 0.208), mat_id=4, rot_euler=(0, 0, -sx * 0.24))
+        s_pg.add_box((sx * 0.298, 1.115, 0.005), (0.098, 0.062, 0.188), mat_id=6, rot_euler=(0, 0, -sx * 0.18))
+        s_pg.add_loft_z([(sx * 0.198, 1.21, 0.150, 0.058, 0.058, 6), (sx * 0.198, 1.21, 0.172, 0.044, 0.044, 6)], mat_id=6)
     parts.append(s_pg)
 
-    # 6. High-guard fluted gothic tournament pauldrons (raised neck-guard wings!)
+    # 6. High-guard fluted gothic tournament pauldrons (sweeping haute-piece neck wings + layered fluted lames!)
     s_pf = PartBuilder("shld_pauldrons_fluted")
-    s_pf.add_loft([(0, 1.30, 0, 0.166, 0.146, segs), (0, 1.40, 0, 0.124, 0.114, segs)], mat_id=4, cap_bot=False)
+    s_pf.add_loft([(0, 1.29, 0, 0.174, 0.152, segs), (0, 1.405, 0, 0.124, 0.114, segs)], mat_id=4, smooth=False, cap_bot=False)
     for sx in (-1, 1):
-        s_pf.add_sphere((sx * 0.255, 1.25, 0.005), (0.125, 0.115, 0.135), segs=6, rings=3, mat_id=4, shade=(1.08, 1.10, 1.14))
-        s_pf.add_box((sx * 0.200, 1.35, 0.005), (0.042, 0.135, 0.195), mat_id=4, rot_euler=(0, 0, sx * 0.18), shade=(1.10, 1.12, 1.16))  # haute-piece neck guards!
-        s_pf.add_box((sx * 0.260, 1.28, 0.005), (0.115, 0.032, 0.215), mat_id=6)  # brass fluting ridge
+        s_pf.add_sphere((sx * 0.262, 1.265, 0.005), (0.134, 0.114, 0.148), segs=6, rings=3, mat_id=4, smooth=False, shade=(1.10, 1.12, 1.16))
+        s_pf.add_box((sx * 0.288, 1.18, 0.005), (0.112, 0.072, 0.210), mat_id=4, rot_euler=(0, 0, -sx * 0.24), shade=(0.95, 0.98, 1.04))
+        s_pf.add_box((sx * 0.195, 1.36, 0.005), (0.046, 0.155, 0.205), mat_id=4, rot_euler=(0, 0, sx * 0.20), shade=(1.12, 1.14, 1.18))  # tall gothic haute-piece!
+        s_pf.add_box((sx * 0.268, 1.28, 0.005), (0.125, 0.032, 0.220), mat_id=6)
     parts.append(s_pf)
+
+    # 6b. Heavy Blackened/Tempered Iron Warlord Pauldrons (dark gunmetal layered plates + bright steel rim + brass studs!)
+    s_pd = PartBuilder("shld_pauldrons_dark")
+    s_pd.add_loft([(0, 1.29, 0, 0.174, 0.152, segs), (0, 1.41, 0, 0.126, 0.116, segs)], mat_id=5, smooth=False, shade=(0.82, 0.86, 0.92), cap_bot=False)
+    for sx in (-1, 1):
+        s_pd.add_sphere((sx * 0.266, 1.27, 0.005), (0.138, 0.118, 0.150), segs=6, rings=3, mat_id=5, smooth=False, shade=(0.86, 0.90, 0.96))
+        s_pd.add_box((sx * 0.292, 1.185, 0.005), (0.114, 0.070, 0.210), mat_id=5, rot_euler=(0, 0, -sx * 0.24), shade=(0.74, 0.78, 0.84))
+        s_pd.add_box((sx * 0.265, 1.29, 0.005), (0.130, 0.028, 0.215), mat_id=4, shade=(1.08, 1.10, 1.14))  # bright steel ridge
+        s_pd.add_box((sx * 0.210, 1.35, 0.005), (0.042, 0.130, 0.185), mat_id=5, rot_euler=(0, 0, sx * 0.18), shade=(0.80, 0.84, 0.90))
+    parts.append(s_pd)
+
+    # 6c. Asymmetric Cavalry / Jousting Lance-Rest Pauldrons (massive sweeping left shield-pauldron + right chest lance-rest hook!)
+    s_pl = PartBuilder("shld_pauldrons_lance")
+    s_pl.add_loft([(0, 1.29, 0, 0.172, 0.150, segs), (0, 1.405, 0, 0.124, 0.114, segs)], mat_id=4, smooth=False, cap_bot=False)
+    # Huge asymmetric left shield-side grandguard pauldron
+    s_pl.add_sphere((-0.275, 1.27, 0.025), (0.155, 0.135, 0.175), segs=6, rings=3, mat_id=4, smooth=False, shade=(1.08, 1.10, 1.14))
+    s_pl.add_box((-0.295, 1.17, 0.025), (0.125, 0.110, 0.230), mat_id=4, rot_euler=(0, 0, 0.24), shade=(0.95, 0.98, 1.04))
+    s_pl.add_box((-0.205, 1.36, 0.025), (0.050, 0.165, 0.215), mat_id=6, rot_euler=(0, 0, -0.22))  # grandguard neck shield!
+    # Sleek agile right lance-arm pauldron + steel lance-rest bracket on right chest!
+    s_pl.add_sphere((0.245, 1.255, 0.005), (0.112, 0.100, 0.125), segs=6, rings=3, mat_id=4, smooth=False)
+    s_pl.add_box((0.145, 1.08, 0.195), (0.068, 0.044, 0.095), mat_id=6)  # cavalry lance-rest hook!
+    parts.append(s_pl)
 
     # 7. Flared golden-brass lamellar shoulder spaulders + crisp white linen scarf collar!
     s_la = PartBuilder("shld_lamellar")
@@ -292,6 +383,14 @@ def build_modular_armors(PartBuilder):
     b_sl.add_box((0, 0.88, 0.162), (0.095, 0.68, 0.024), mat_id=3)
     parts.append(b_sl)
 
+    # 9. Armored steel waist-lame belt with riveted brass buckle & steel hip rondels!
+    b_pl = PartBuilder("belt_plate")
+    b_pl.add_box((0, 0.845, 0.005), (0.436, 0.068, 0.354), mat_id=5, shade=(0.76, 0.80, 0.86))
+    b_pl.add_box((0, 0.845, 0.186), (0.082, 0.072, 0.028), mat_id=6)
+    for sx in (-1, 1):
+        b_pl.add_box((sx * 0.215, 0.845, 0.085), (0.050, 0.088, 0.088), mat_id=4, shade=(1.08, 1.10, 1.14))
+    parts.append(b_pl)
+
     # ===================== LAYER 4: SKIRTS, FAULDS, TASSETS & TABARDS =====================
 
     # 1. Quilted faction gambeson/tunic skirt with darker hem trim
@@ -305,21 +404,43 @@ def build_modular_armors(PartBuilder):
     k_ma.add_loft([(0, 0.48, 0, 0.238, 0.176, segs), (0, 0.83, 0, 0.196, 0.148, segs)], mat_id=5, cap_top=False, ao_y=(0.48, 0.83, 0.74, 1.00))
     parts.append(k_ma)
 
-    # 3. Layered steel fauld + angled steel hip tassets over dark mail hem!
+    # 3. Stepped 3-lame Gothic steel fauld hoops + faceted angled hip tassets over dark mail hem!
     k_fs = PartBuilder("skirt_fauld_steel")
-    k_fs.add_loft([(0, 0.53, 0, 0.230, 0.168, segs), (0, 0.66, 0, 0.214, 0.156, segs)], mat_id=5, cap_top=False, ao_y=(0.53, 0.66, 0.72, 0.94))
-    k_fs.add_loft([(0, 0.65, 0.008, 0.224, 0.164, segs), (0, 0.83, 0.008, 0.190, 0.144, segs)], mat_id=4, cap_top=False, ao_y=(0.65, 0.83, 0.80, 1.06))
+    k_fs.add_loft([(0, 0.52, 0, 0.232, 0.170, segs), (0, 0.65, 0, 0.216, 0.158, segs)], mat_id=5, cap_top=False, ao_y=(0.52, 0.65, 0.70, 0.92))
+    # Two visibly stepped overlapping steel fauld hoops separated by a dark iron shadow seam!
+    k_fs.add_loft([(0, 0.63, 0.008, 0.232, 0.170, segs), (0, 0.72, 0.008, 0.214, 0.158, segs)], mat_id=4, smooth=False, shade=(0.94, 0.96, 1.02), cap_top=False)
+    k_fs.add_loft([(0, 0.71, 0.008, 0.224, 0.164, segs), (0, 0.83, 0.008, 0.194, 0.146, segs)], mat_id=4, smooth=False, shade=(1.05, 1.07, 1.12), cap_top=False)
     for sx in (-1, 1):
-        k_fs.add_box((sx * 0.165, 0.68, 0.095), (0.135, 0.20, 0.048), mat_id=4, rot_euler=(-0.10, sx * 0.42, sx * 0.10), ao_y=(0.56, 0.80, 0.80, 1.06))
+        k_fs.add_box((sx * 0.168, 0.66, 0.105), (0.142, 0.225, 0.052), mat_id=4, rot_euler=(-0.12, sx * 0.40, sx * 0.10), shade=(1.06, 1.08, 1.12))
+        k_fs.add_box((sx * 0.168, 0.66, 0.128), (0.125, 0.024, 0.022), mat_id=5, rot_euler=(-0.12, sx * 0.40, sx * 0.10), shade=(0.58, 0.62, 0.68))  # lame seam line!
     parts.append(k_fs)
 
-    # 4. Ornate gilded brass tassets + steel fauld over dark mail hem!
+    # 4. Ornate gilded brass tassets + stepped steel fauld over dark mail hem!
     k_fg = PartBuilder("skirt_fauld_gilded")
-    k_fg.add_loft([(0, 0.53, 0, 0.232, 0.170, segs), (0, 0.66, 0, 0.216, 0.158, segs)], mat_id=5, cap_top=False)
-    k_fg.add_loft([(0, 0.65, 0.008, 0.226, 0.166, segs), (0, 0.83, 0.008, 0.192, 0.146, segs)], mat_id=4, cap_top=False)
+    k_fg.add_loft([(0, 0.52, 0, 0.234, 0.172, segs), (0, 0.65, 0, 0.218, 0.160, segs)], mat_id=5, cap_top=False)
+    k_fg.add_loft([(0, 0.63, 0.008, 0.234, 0.172, segs), (0, 0.72, 0.008, 0.216, 0.160, segs)], mat_id=4, smooth=False, cap_top=False)
+    k_fg.add_loft([(0, 0.71, 0.008, 0.226, 0.166, segs), (0, 0.83, 0.008, 0.196, 0.148, segs)], mat_id=6, smooth=False, cap_top=False)
     for sx in (-1, 1):
-        k_fg.add_box((sx * 0.168, 0.68, 0.095), (0.140, 0.205, 0.050), mat_id=6, rot_euler=(-0.10, sx * 0.42, sx * 0.10))
+        k_fg.add_box((sx * 0.170, 0.65, 0.108), (0.148, 0.235, 0.054), mat_id=6, rot_euler=(-0.12, sx * 0.40, sx * 0.10))
     parts.append(k_fg)
+
+    # 4b. Heavy Blackened/Tempered Iron Faulds + Brass-Rimmed Tassets!
+    k_fd = PartBuilder("skirt_fauld_dark")
+    k_fd.add_loft([(0, 0.51, 0, 0.234, 0.172, segs), (0, 0.64, 0, 0.218, 0.160, segs)], mat_id=5, shade=(0.66, 0.70, 0.76), cap_top=False)
+    k_fd.add_loft([(0, 0.63, 0.008, 0.236, 0.172, segs), (0, 0.83, 0.008, 0.196, 0.148, segs)], mat_id=5, smooth=False, shade=(0.82, 0.86, 0.92), cap_top=False)
+    for sx in (-1, 1):
+        k_fd.add_box((sx * 0.170, 0.65, 0.108), (0.146, 0.240, 0.054), mat_id=5, rot_euler=(-0.12, sx * 0.40, sx * 0.10), shade=(0.86, 0.90, 0.96))
+        k_fd.add_box((sx * 0.172, 0.54, 0.118), (0.148, 0.030, 0.044), mat_id=6, rot_euler=(-0.12, sx * 0.40, sx * 0.10))  # brass tasset hem!
+    parts.append(k_fd)
+
+    # 4c. Heavy Long Articulated Gothic Tassets (armored thigh-length steel cuisse skirts!)
+    k_fl = PartBuilder("skirt_fauld_long")
+    k_fl.add_loft([(0, 0.46, 0, 0.240, 0.176, segs), (0, 0.64, 0, 0.220, 0.162, segs)], mat_id=5, cap_top=False)
+    k_fl.add_loft([(0, 0.63, 0.008, 0.234, 0.170, segs), (0, 0.83, 0.008, 0.196, 0.148, segs)], mat_id=4, smooth=False, cap_top=False)
+    for sx in (-1, 1):
+        k_fl.add_box((sx * 0.172, 0.68, 0.105), (0.148, 0.16, 0.052), mat_id=4, rot_euler=(-0.10, sx * 0.36, sx * 0.08), shade=(1.08, 1.10, 1.14))
+        k_fl.add_box((sx * 0.180, 0.52, 0.115), (0.142, 0.17, 0.050), mat_id=4, rot_euler=(-0.06, sx * 0.32, sx * 0.06), shade=(0.96, 0.98, 1.04))
+    parts.append(k_fl)
 
     # 5. Flowing faction surcoat tabard panels (front & back, layers cleanly over ANY skirt/fauld!)
     k_tb = PartBuilder("skirt_tabard")

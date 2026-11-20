@@ -414,28 +414,38 @@ sealed partial class Puppet3D
         Vector3 tR = RotY(Vector3.UnitX, twist);
         Vector3 tF = RotY(Vector3.UnitZ, twist);
         float syB = 1f + breath * 0.012f, szB = 1f + breath * 0.018f;
-        EmitLocal(lm.Chest, torsoPos, tR, Vector3.UnitY, tF, 1f, syB, szB, lm.ChestPat);
-        if (lm.Skirt.Length > 0)
-            EmitLocal(lm.Skirt, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, 1f, lm.SkirtPat);
-        if (Detail == 0)
+        var chestMesh = lm.Chest;
+        var skirtMesh = lm.Skirt;
+        var shldMesh = lm.Shoulders;
+        var beltMesh = lm.Belt;
+        // Subtle deterministic per-soldier modular mix-and-match within companies (zero GC, off for player & showcase!)
+        if (!ExactLook && !u.IsPlayer && !u.IsLeader && !u.Hero)
         {
-            var shldMesh = lm.Shoulders;
-            var beltMesh = lm.Belt;
-            // Subtle deterministic per-soldier modular mix-and-match within companies (zero GC, off for player & showcase!)
-            if (!ExactLook && !u.IsPlayer && !u.IsLeader && !u.Hero)
+            int seed = Variety.Seed(u);
+            if (lm.ShldVarGroup == 1) // Heavy plate knights vary Gothic, Fluted, Dark & Long-Tasset plate harnesses!
             {
-                int seed = Variety.Seed(u);
+                if ((seed % 3) == 1 && kit.ChestPoolPlate.Length > 0) chestMesh = kit.ChestPoolPlate[Math.Abs(seed * 5 + 1) % kit.ChestPoolPlate.Length];
+                if ((seed % 3) == 2 && kit.SkirtPoolPlate.Length > 0) skirtMesh = kit.SkirtPoolPlate[Math.Abs(seed * 13 + 2) % kit.SkirtPoolPlate.Length];
+            }
+            if (Detail == 0)
+            {
                 if (lm.BeltVarGroup > 0 && (seed & 3) != 0)
                 {
                     var pool = lm.BeltVarGroup == 1 ? kit.BeltPoolLight : lm.BeltVarGroup == 2 ? kit.BeltPoolHeavy : kit.BeltPoolNorth;
                     if (pool.Length > 0) beltMesh = pool[Math.Abs(seed * 7 + 3) % pool.Length];
                 }
-                if (lm.ShldVarGroup > 0 && (seed % 5) == 1)
+                if (lm.ShldVarGroup > 0 && (seed % 4) == 1)
                 {
                     var pool = lm.ShldVarGroup == 1 ? kit.ShldPoolKnight : kit.ShldPoolFoot;
                     if (pool.Length > 0) shldMesh = pool[Math.Abs(seed * 11 + 5) % pool.Length];
                 }
             }
+        }
+        EmitLocal(chestMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, syB, szB, lm.ChestPat);
+        if (skirtMesh.Length > 0)
+            EmitLocal(skirtMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, 1f, lm.SkirtPat);
+        if (Detail == 0)
+        {
             if (shldMesh.Length > 0) EmitLocal(shldMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, syB, szB, lm.ShldPat);
             if (lm.TabardPanel.Length > 0) EmitLocal(lm.TabardPanel, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, 1f, MeshKit3D.PatQuilt);
             if (beltMesh.Length > 0) EmitLocal(beltMesh, torsoPos, tR, Vector3.UnitY, tF, 1f, 1f, szB);

@@ -500,28 +500,36 @@ def build_limbs():
 
         fa = PartBuilder(f"farm_{mat_tag}")
         fa.add_loft([
-            (0, -0.06, 0, 0.078 if is_plate else 0.074, 0.078 if is_plate else 0.074, segs),
+            (0, -0.06, 0, 0.080 if is_plate else 0.074, 0.080 if is_plate else 0.074, segs),
             (0, 0.65, 0, 0.066, 0.066, segs),
-            (0, 0.82, 0, 0.082 if is_plate else 0.074, 0.082 if is_plate else 0.074, segs),  # flared gauntlet / glove cuff
+            (0, 0.82, 0, 0.086 if is_plate else 0.074, 0.086 if is_plate else 0.074, segs),
             (0, 1.04, 0, 0.070, 0.070, segs),
-        ], mat_id=mat_id if is_plate else (7 if mat_tag == "cloth" else mat_id), cap_bot=False, cap_top=True, ao_y=(0.0, 1.0, 1.00, 0.84))
+        ], mat_id=mat_id if is_plate else (7 if mat_tag == "cloth" else mat_id), smooth=not is_plate, cap_bot=False, cap_top=True, ao_y=(0.0, 1.0, 1.00, 0.84))
+        if is_plate:
+            # Articulated steel elbow couter fin!
+            fa.add_box((0, 0.02, -0.055), (0.115, 0.14, 0.095), mat_id=4, shade=(1.08, 1.10, 1.14))
         parts.append(fa)
 
         th = PartBuilder(f"thigh_{mat_tag}")
         th.add_loft([
-            (0, -0.08, 0, 0.104, 0.108, segs),
-            (0, 0.45, 0, 0.100, 0.104, segs),
+            (0, -0.08, 0, 0.106 if is_plate else 0.104, 0.110 if is_plate else 0.108, segs),
+            (0, 0.45, 0, 0.102 if is_plate else 0.100, 0.106 if is_plate else 0.104, segs),
             (0, 1.06, 0, 0.086, 0.092, segs),
-        ], mat_id=2 if mat_tag == "cloth" else mat_id, cap_bot=False, cap_top=False, ao_y=(0.0, 1.0, 0.96, 0.84))
+        ], mat_id=2 if mat_tag == "cloth" else mat_id, smooth=not is_plate, cap_bot=False, cap_top=False, ao_y=(0.0, 1.0, 0.96, 0.84))
         parts.append(th)
 
         sh = PartBuilder(f"shin_{mat_tag}")
         sh.add_loft([
-            (0, -0.06, 0, 0.084, 0.088, segs),
-            (0, 0.55, 0, 0.080, 0.084, segs),
+            (0, -0.06, 0, 0.086 if is_plate else 0.084, 0.090 if is_plate else 0.088, segs),
+            (0, 0.55, 0, 0.082 if is_plate else 0.080, 0.086 if is_plate else 0.084, segs),
             (0, 0.98, 0, 0.072, 0.076, segs),
-        ], mat_id=7 if mat_tag == "cloth" else mat_id, cap_bot=False, cap_top=False, ao_y=(0.0, 1.0, 0.95, 0.78))
-        sh.add_box((0, 0.96, 0.055), (0.125, 0.14, 0.21), mat_id=4 if is_plate else 7, shade=(0.90, 0.88, 0.86))
+        ], mat_id=7 if mat_tag == "cloth" else mat_id, smooth=not is_plate, cap_bot=False, cap_top=False, ao_y=(0.0, 1.0, 0.95, 0.78))
+        if is_plate:
+            # Sculpted steel knee poleyn cop + armored pointed steel sabaton boot!
+            sh.add_box((0, 0.04, 0.072), (0.122, 0.145, 0.095), mat_id=4, shade=(1.10, 1.12, 1.16))
+            sh.add_box((0, 0.95, 0.068), (0.128, 0.145, 0.24), mat_id=4, shade=(1.00, 1.02, 1.06))
+        else:
+            sh.add_box((0, 0.96, 0.055), (0.125, 0.14, 0.21), mat_id=7, shade=(0.90, 0.88, 0.86))
         parts.append(sh)
 
     # Plume & Draped Tapered Cape

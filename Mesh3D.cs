@@ -58,6 +58,7 @@ sealed class MeshKit3D
     // Pre-cached modular belt & shoulder pools for zero-alloc per-soldier variety within regiments!
     public Vert[][] BeltPoolLight = Array.Empty<Vert[]>(), BeltPoolHeavy = Array.Empty<Vert[]>(), BeltPoolNorth = Array.Empty<Vert[]>();
     public Vert[][] ShldPoolKnight = Array.Empty<Vert[]>(), ShldPoolFoot = Array.Empty<Vert[]>();
+    public Vert[][] ChestPoolPlate = Array.Empty<Vert[]>(), SkirtPoolPlate = Array.Empty<Vert[]>();
 
     public static MeshKit3D? TryLoad()
     {
@@ -139,10 +140,12 @@ sealed class MeshKit3D
         kit.WyvernWing = kit.Get("wyvern_wing"); kit.WyvernLeg = kit.Get("wyvern_leg"); kit.WyvernTail = kit.Get("wyvern_tail"); kit.WyvernSting = kit.Get("wyvern_sting");
         kit.LodFoot = kit.Get("lod_foot"); kit.LodHorse = kit.Get("lod_horse");
         kit.BeltPoolLight = new[] { kit.Get("belt_leather"), kit.Get("belt_pouch"), kit.Get("belt_baldric") };
-        kit.BeltPoolHeavy = new[] { kit.Get("belt_leather"), kit.Get("belt_pouch"), kit.Get("belt_baldric"), kit.Get("belt_gilded") };
+        kit.BeltPoolHeavy = new[] { kit.Get("belt_plate"), kit.Get("belt_leather"), kit.Get("belt_baldric"), kit.Get("belt_gilded") };
         kit.BeltPoolNorth = new[] { kit.Get("belt_cross_straps"), kit.Get("belt_baldric"), kit.Get("belt_pouch") };
-        kit.ShldPoolKnight = new[] { kit.Get("shld_pauldrons_steel"), kit.Get("shld_pauldrons_fluted"), kit.Get("shld_gorget_steel") };
-        kit.ShldPoolFoot = new[] { kit.Get("shld_mail_aventail"), kit.Get("shld_gorget_steel") };
+        kit.ShldPoolKnight = new[] { kit.Get("shld_pauldrons_steel"), kit.Get("shld_pauldrons_fluted"), kit.Get("shld_pauldrons_lance"), kit.Get("shld_pauldrons_dark") };
+        kit.ShldPoolFoot = new[] { kit.Get("shld_mail_aventail"), kit.Get("shld_gorget_steel"), kit.Get("shld_pauldrons_steel") };
+        kit.ChestPoolPlate = new[] { kit.Get("chest_plate"), kit.Get("chest_plate_fluted"), kit.Get("chest_plate_dark"), kit.Get("chest_breastplate") };
+        kit.SkirtPoolPlate = new[] { kit.Get("skirt_fauld_steel"), kit.Get("skirt_fauld_long"), kit.Get("skirt_fauld_dark") };
         return kit;
     }
 
@@ -171,7 +174,7 @@ sealed class MeshKit3D
             "chest_mail" or "shld_mail_aventail" or "skirt_mail" => PatMail,
             "chest_lamellar" or "chest_scale" or "shld_lamellar" or "shld_scale" or "skirt_lamellar" or "skirt_scale" => PatScale,
             "chest_tunic" or "chest_surcoat" or "chest_brigandine" or "chest_robe" or "shld_collar_cloth" or "shld_cowl_cloth" or "skirt_tunic" or "skirt_deel" or "skirt_kaftan" or "skirt_tabard" => PatQuilt,
-            "chest_plate" or "chest_mirror" or "shld_gorget_steel" or "shld_pauldrons_steel" or "shld_pauldrons_gilded" or "shld_pauldrons_fluted" or "skirt_fauld_steel" or "skirt_fauld_gilded" => PatBrushed,
+            "chest_plate" or "chest_plate_fluted" or "chest_plate_dark" or "chest_plate_gilded" or "chest_breastplate" or "chest_mirror" or "shld_gorget_steel" or "shld_pauldrons_steel" or "shld_pauldrons_gilded" or "shld_pauldrons_fluted" or "shld_pauldrons_dark" or "shld_pauldrons_lance" or "skirt_fauld_steel" or "skirt_fauld_gilded" or "skirt_fauld_dark" or "skirt_fauld_long" => PatBrushed,
             _ => PatSmooth,
         };
         byte LimbPatOf(string tag) => tag switch { "mail" => PatMail, "plate" => PatBrushed, "cloth" => PatQuilt, _ => PatSmooth };
@@ -235,12 +238,14 @@ sealed class MeshKit3D
         "bones"             => ("chest_bones", "", "", "", false, 0, 0),
         "robe"              => ("chest_robe", "shld_cowl_cloth", "belt_stole", "", false, 0, 0),
         "shroud"            => ("chest_robe", "shld_linen_shawl", "belt_sash_dark", "", false, 0, 0),
-        "plate_gilded"      => ("chest_plate", "shld_pauldrons_gilded", "belt_gilded", "skirt_fauld_gilded", true, 0, 0),
-        "plate_fluted"      => ("chest_plate", "shld_pauldrons_fluted", "belt_baldric", "skirt_fauld_steel", false, 2, 0),
-        "plate_surcoat"     => ("chest_surcoat", "shld_pauldrons_steel", "belt_leather", "skirt_fauld_steel", true, 2, 1),
-        "plate_fur"         => ("chest_plate", "shld_fur_mantle", "belt_cross_straps", "skirt_fauld_steel", false, 3, 0),
-        "plate"             => ("chest_plate", "shld_pauldrons_steel", "belt_leather", "skirt_fauld_steel", true, 2, 1),
-        "breastplate"       => ("chest_plate", "shld_gorget_steel", "belt_pouch", "skirt_tunic", false, 1, 2),
+        "plate_gilded"      => ("chest_plate_gilded", "shld_pauldrons_gilded", "belt_gilded", "skirt_fauld_gilded", true, 0, 0),
+        "plate_fluted"      => ("chest_plate_fluted", "shld_pauldrons_fluted", "belt_plate", "skirt_fauld_long", false, 2, 0),
+        "plate_dark"        => ("chest_plate_dark", "shld_pauldrons_dark", "belt_plate", "skirt_fauld_dark", false, 2, 0),
+        "plate_lance"       => ("chest_plate", "shld_pauldrons_lance", "belt_plate", "skirt_fauld_long", false, 2, 0),
+        "plate_surcoat"     => ("chest_surcoat", "shld_pauldrons_steel", "belt_plate", "skirt_fauld_steel", true, 2, 1),
+        "plate_fur"         => ("chest_plate_dark", "shld_fur_mantle", "belt_cross_straps", "skirt_fauld_dark", false, 3, 0),
+        "plate"             => ("chest_plate", "shld_pauldrons_steel", "belt_plate", "skirt_fauld_steel", false, 2, 1),
+        "breastplate"       => ("chest_breastplate", "shld_gorget_steel", "belt_pouch", "skirt_tunic", false, 1, 2),
         "mirror"            => ("chest_mirror", "shld_lamellar", "belt_sash_dark", "skirt_mail", false, 0, 0),
         "brigandine_gilded" => ("chest_brigandine", "shld_pauldrons_gilded", "belt_gilded", "skirt_fauld_gilded", false, 0, 0),
         "brigandine"        => ("chest_brigandine", "shld_pauldrons_steel", "belt_leather", "skirt_mail", false, 1, 2),
@@ -269,7 +274,7 @@ sealed class MeshKit3D
     static string MapLimb(string gear) => gear switch
     {
         "bones" => "bones",
-        "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur" or "breastplate" or "splint" or "mirror" => "plate",
+        "plate" or "plate_fluted" or "plate_surcoat" or "plate_gilded" or "plate_fur" or "plate_dark" or "plate_lance" or "breastplate" or "splint" or "mirror" => "plate",
         "mail" or "mail_hauberk" or "coatofplates" or "brigandine" or "brigandine_gilded" or "mail_fur" or "lamellar" or "scale" or "scale_iron" or "lamellar_gilded" or "lamellar_dark" => "mail",
         _ => "cloth",
     };
