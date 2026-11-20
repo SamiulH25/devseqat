@@ -551,14 +551,20 @@ sealed partial class World : IDisposable
                 case FoliageKind.Castle when f.Dry == 1: TowerHouse(m, b, f.Scale, rng); break; // hold sizes (docs/HOLDS.md HD5)
                 case FoliageKind.Castle when f.Dry == 3: GreatCastle(m, b, f.Scale, rng); break;
                 case FoliageKind.Castle: Castle(m, b, f.Scale, rng); break;
+                case FoliageKind.Wall when t.Wall?.AtBreach(f.Pos.X) == true && FieldStyle is PlaceStyle fs: FieldBreach(m, fs, f.Pos, rng); break; // a people's field (World.SiegeField.cs, SM6)
                 case FoliageKind.Wall when t.Wall?.AtBreach(f.Pos.X) == true: // a breach (docs/archive/SIEGECRAFT.md A2): the face lies in rubble at its foot
                     for (int i = 0; i < 4; i++) { var at = new Vector2(f.Pos.X - 1.8f + i * 1.2f, SiegeWall.Outer - 0.6f + (i % 2) * 0.9f); Rock(m, new Vector3(at.X, t.Height(at), at.Y), 1.1f + 0.3f * (i % 3), rng); }
                     break;
+                case FoliageKind.Wall when FieldStyle is PlaceStyle fs: FieldWall(m, fs, b, f.Scale, rng); break;
                 case FoliageKind.Wall: WallStones(m, b, f.Scale, rng); break;
+                case FoliageKind.Tower when FieldStyle is PlaceStyle fs: FieldTower(m, fs, b, rng, MathF.Abs(f.Pos.X - SiegeWall.GateX) < 6); break;
                 case FoliageKind.Tower: Tower(m, b, rng); break;
-                case FoliageKind.Gate: GateDoor(m, b, t.Wall?.GateOpen == true, rng); break;
+                case FoliageKind.Gate: GateDoor(m, b, t.Wall?.GateOpen == true, rng, FieldStyle); break;
                 case FoliageKind.Ladder: Ladder(m, b); break;
+                case FoliageKind.House when FieldStyle is PlaceStyle fs: FieldHouse(m, fs, f, rng, t.Wall == null); break;
                 case FoliageKind.House: TownHouse(m, b, f.Scale, rng); break;
+                case FoliageKind.Keep: FieldKeep(m, FieldStyle ?? Architecture.Of("azure_heart"), f, rng); break;
+                case FoliageKind.Landmark: FieldLandmark(m, FieldStyle ?? Architecture.Of("azure_heart"), f, rng); break;
                 case FoliageKind.Wagon: Wagon(m, b, rng); break;
                 case FoliageKind.Ruin or FoliageKind.Shrine or FoliageKind.Stones or FoliageKind.Field or FoliageKind.Mine
                     or FoliageKind.Hut or FoliageKind.Watch or FoliageKind.Spring or FoliageKind.Mill: SiteModel(m, f.Kind, b, f.Scale, rng); break;
@@ -945,7 +951,7 @@ sealed partial class World : IDisposable
         m.Tag = Vector2.Zero;
     }
 
-    static void GateDoor(Mesh m, Vector3 b, bool broken, Random r)
+    void GateDoor(Mesh m, Vector3 b, bool broken, Random r, PlaceStyle? st = null)
     {
         m.Tag = Vector2.Zero;
         if (!broken)
@@ -966,8 +972,13 @@ sealed partial class World : IDisposable
         else
             for (int i = 0; i < 5; i++) // splintered planks on the ground
                 m.Box(b + new Vector3(r.NextSingle() * 5 - 2.5f, 0, 1 + r.NextSingle() * 3), 1.6f, 0.3f, 0.12f, r.NextSingle() * MathF.Tau, Timber);
-        m.Tag = MasonryTag;
-        m.Box(b + new Vector3(0, SiegeWall.Height - 0.4f, 0.9f), SiegeWall.GateHalf * 2 + 2, 2.4f, 1.2f, 0, WallStone); // the arch over the way
+        if (st?.Defence == Defence.Palisade) // a timber lintel over the gap
+            m.Box(b + new Vector3(0, SiegeWall.Height - 0.4f, 0.9f), SiegeWall.GateHalf * 2 + 2, 1.2f, 1.1f, 0, Weathered(st, r));
+        else
+        {
+            m.Tag = st == null || Coursed(st) ? MasonryTag : Vector2.Zero;
+            m.Box(b + new Vector3(0, SiegeWall.Height - 0.4f, 0.9f), SiegeWall.GateHalf * 2 + 2, 2.4f, 1.2f, 0, st == null ? WallStone : WallColour(st, r)); // the arch over the way
+        }
         m.Tag = Vector2.Zero;
     }
 

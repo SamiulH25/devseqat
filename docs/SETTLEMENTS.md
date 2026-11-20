@@ -1,6 +1,6 @@
 # Settlements: the town and castle models overhaul (SM1-SM7)
 
-Status: **planned 2026-11-20**, SM1-SM5 built 2026-11-20 (see their "As built"), SM6 next. Owner's brief (2026-11-20): overhaul the town and castle models.
+Status: **planned 2026-11-20**, SM1-SM6 built 2026-11-20 (see their "As built"), SM7 next. Owner's brief (2026-11-20): overhaul the town and castle models.
 Owner's answers:
 1. **Scope:** towns, castles in all three sizes and villages on the campaign map, and the siege battlefield (the wall,
    towers, gate and houses you fight over) made to match.
@@ -247,6 +247,27 @@ small things (market stalls, wells, cranes, carts, stacks, gardens, fences).
   fight from timber. Breaches (A2) keep working.
 - Village fields (`TerrainLayouts.PlaceVillage`) build houses in the province's style.
 - Shots: `campaign-siege*.png` and the battle siege shots per style.
+
+**As built (2026-11-20).**
+- The people ride on the field's ground, not on `BattleOptions`: `TerrainParams.Style` (a place's culture), `Castle` and
+  `Banner` (the defenders' palette), so `Terrain` and `World` see them and replays keep them. `PrepareAssault` sets all
+  three; `WorldMap.BattleGround` sets `Style` to the nearest place's people for every field battle. `Style` null (quick
+  battles, old replays) keeps the old plain wall and houses, and the terrain's foliage exactly as before.
+- `World.SiegeField.cs` draws with the map's kit at battle scale (`FieldU` 2.2, houses `HouseU` 1.9): the wall in its
+  stone, brick or mud brick with the people's merlons, or a log face with sharpened tops before an earth rampart; the
+  people's towers and caps (timber towers for the palisade peoples), the gate's two flying the defenders' colours; the
+  gate's arch in their stone or a timber lintel; breaches heaped with their stone, or fallen logs.
+- A castle: six more towers along the curtain (every 12-20 m), a storey higher, a keep behind the wall to one side of
+  the gate flying the holder's colours (a timber tower and a long hall for the palisade peoples), and at most seven
+  buildings in the bailey. A town: its landmark (`Chapel`) on the other side and its houses. Both are new solid foliage
+  (`FoliageKind.Keep`, `Landmark`; `Terrain.House` counts them). Only styled fields place them.
+- Houses on any field (the town behind a wall, a village field) are the people's (`FieldHouse`: the village kind in a
+  village, the steppe towns' timber core among the yurts). The timber peoples' wood is paled on the field (`FieldWood`),
+  where the battle's light turned it black.
+- Not built: the sim's wall is one straight line whatever the people (no round curtains, no ditch or motte); the field
+  of a tower house or small hold is fought at a full castle curtain.
+- Shots: `IRONFIELD_PLACES=1:field` saves `place-<style>-<town|castle|village>-field.png` (an assault or a village fight
+  handed to the battle screen, clear weather, HUD off). Test `FieldsStyled`.
 
 ### SM7: Check and polish
 - Every style by day, night and winter (snow on roofs), at overview, working and close zoom.

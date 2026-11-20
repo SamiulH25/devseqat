@@ -108,7 +108,7 @@ sealed partial class World
             for (float s = 0; s <= len; s += texel * 0.5f) Dot(Vector2.Lerp(f.A, f.B, len < 0.01f ? 0 : s / len), f.Kind == FeatureKind.Hedge ? hedge : fence);
         }
         foreach (var f in t.Foliage)
-            if (f.Kind == FoliageKind.House)
+            if (f.Kind is FoliageKind.House or FoliageKind.Keep or FoliageKind.Landmark)
                 for (float dz = -f.Radius; dz <= f.Radius; dz += texel)
                     for (float dx = -f.Radius; dx <= f.Radius; dx += texel) Dot(f.Pos + new Vector2(dx, dz), new Color(80, 60, 50));
     }

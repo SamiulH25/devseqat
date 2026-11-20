@@ -430,7 +430,10 @@ public sealed partial class WorldMap
         else if (Settlements.Any(s => s.Kind == SettlementKind.Village && Vector2.Distance(s.Pos, p) < VillageNear) && t != TerrainParams.Marsh && t != TerrainParams.Forest) layouts = new[] { FieldLayout.Village };
         else if (OnRidge(p)) layouts = road ? new[] { FieldLayout.Pass } : new[] { FieldLayout.Ridge, FieldLayout.Ridge, FieldLayout.TwoHills };
         if (shore) layouts = new[] { FieldLayout.Shore }; // by the sea the sea is on the field (WM3)
-        return t with { Road = road, River = river || t == TerrainParams.Marsh, Layouts = layouts, Wet = wet, Season = season };
+        // The houses on the field are built as the nearest place's people build (SM6).
+        string? people = Settlements.Count > 0 ? Settlements.MinBy(s => Vector2.DistanceSquared(s.Pos, p))!.Culture : null;
+        if (people == "") people = null;
+        return t with { Road = road, River = river || t == TerrainParams.Marsh, Layouts = layouts, Wet = wet, Season = season, Style = people };
     }
 
     /// How near a village a fight must be to be fought among its houses.

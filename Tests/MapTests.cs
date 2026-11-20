@@ -617,6 +617,43 @@ public static partial class SelfTest
     /// The place's state on its model (docs/SETTLEMENTS.md SM4): a site for each work round every town and castle, suburbs
     /// by the towns' roads, none of it in water, on a road or on a neighbour's ground; each state builds its own mesh, and
     /// the same state the same mesh.
+    /// The battlefield is built as its people build (docs/SETTLEMENTS.md SM6): an assault's field carries the place's people,
+    /// a castle's a keep and a close-towered curtain, a town's its landmark and houses; an unstyled field is untouched;
+    /// every people's field builds.
+    static void FieldsStyled()
+    {
+        SiegeWall Wall() => new(2, 500);
+        int Count(Terrain t, FoliageKind k) => t.Foliage.Count(f => f.Kind == k);
+        var plain = new Terrain(5, TerrainParams.Meadow, Wall());
+        var town = new Terrain(5, TerrainParams.Meadow with { Style = "azure_heart" }, Wall());
+        var castle = new Terrain(5, TerrainParams.Meadow with { Style = "azure_heart", Castle = true }, Wall());
+        Check(Count(plain, FoliageKind.Keep) + Count(plain, FoliageKind.Landmark) == 0 && Count(plain, FoliageKind.Tower) == 8, "an unstyled field keeps its old wall");
+        Check(Count(town, FoliageKind.Landmark) == 1 && Count(town, FoliageKind.Keep) == 0, "a town has its landmark behind the wall");
+        Check(Count(castle, FoliageKind.Keep) == 1 && Count(castle, FoliageKind.Tower) > Count(town, FoliageKind.Tower)
+            && Count(castle, FoliageKind.House) < Count(town, FoliageKind.House), "a castle has a keep, a close-towered curtain and few houses");
+        Check(castle.House(castle.Foliage.First(f => f.Kind == FoliageKind.Keep).Pos), "the keep is solid");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        int i = 0;
+        foreach (var st in Architecture.All)
+        {
+            var w = new World(new Terrain(5 + i, TerrainParams.Meadow with { Style = st.Id, Castle = i % 2 == 0, Banner = 1 }, Wall()));
+            if (i++ % 3 == 0) _ = new World(new Terrain(9, TerrainParams.Farmland with { Style = st.Id, Layouts = new[] { FieldLayout.Village } }));
+        }
+        Console.WriteLine($"styled fields: {Architecture.All.Count} assaults and some villages built in {sw.ElapsedMilliseconds} ms");
+
+        var c = Campaign.New(7);
+        var hold = c.S.Settlements.First(s => s.Kind == SettlementKind.Castle && s.Culture != "");
+        var g = c.PrepareAssault(hold).Options.Ground!;
+        Check(g.Style == hold.Culture && g.Castle && g.Banner == Style.PaletteOf(hold.Faction), "an assault on a castle is fought at its people's walls, under its colours");
+        var burg = c.S.Settlements.First(s => s.Kind == SettlementKind.Town);
+        Check(c.PrepareAssault(burg).Options.Ground is { Castle: false } tg && tg.Style == burg.Culture, "an assault on a town is fought at a town wall");
+        var near = c.Map.BattleGround(burg.Pos + new Vector2(1, 0));
+        Check(near.Style == burg.Culture, "a field takes the nearest place's people");
+        var json = System.Text.Json.JsonSerializer.Serialize(g, new System.Text.Json.JsonSerializerOptions { IncludeFields = true });
+        var back = System.Text.Json.JsonSerializer.Deserialize<TerrainParams>(json, new System.Text.Json.JsonSerializerOptions { IncludeFields = true })!;
+        Check(back.Style == g.Style && back.Castle && back.Banner == g.Banner, "a replay keeps the field's people");
+    }
+
     static void PlacesShowState()
     {
         var m = Campaign.New(7, layout: WorldMap.DesignLayout).Map;

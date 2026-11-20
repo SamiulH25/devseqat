@@ -113,7 +113,7 @@ public sealed partial class Terrain
             {
                 if (x < 0 || z < 0 || x >= bucketSide || z >= bucketSide) continue;
                 foreach (int i in buckets[z * bucketSide + x])
-                    if (Foliage[i].Kind == FoliageKind.House && Vector2.Distance(Foliage[i].Pos, p) < Foliage[i].Radius + 0.6f) return true;
+                    if (Foliage[i].Kind is FoliageKind.House or FoliageKind.Keep or FoliageKind.Landmark && Vector2.Distance(Foliage[i].Pos, p) < Foliage[i].Radius + 0.6f) return true;
             }
         return false;
     }

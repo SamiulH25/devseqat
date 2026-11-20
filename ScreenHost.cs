@@ -59,6 +59,7 @@ sealed class ScreenHost : Game
     /// settlements close up, one of each style and kind, labels and parties hidden (docs/SETTLEMENTS.md).
     static readonly string? placesOnly = Environment.GetEnvironmentVariable("IRONFIELD_PLACES");
     List<(string Name, Settlement Place, string Variant)>? placeShots;
+    string? fieldShot; // a battlefield of the place's people, staged and waiting for its frames (SM6)
     int placeShot;
     string? pendingShot;
     KeyboardState kb;
@@ -463,7 +464,8 @@ sealed class ScreenHost : Game
     /// The settlements close up (IRONFIELD_PLACES): the first place of each style and kind, by day.
     void PlaceShots(Campaign c)
     {
-        placeShots ??= Architecture.All.Where(a => placesOnly == "1" || a.Id.Contains(placesOnly!))
+        string[] only = placesOnly!.Split(':'); // "steppe:field": a style id's part, then one variant (plain, rich, poor, siege, raided, field)
+        placeShots ??= Architecture.All.Where(a => only[0] is "1" or "" || a.Id.Contains(only[0]))
             .SelectMany(a => new (string Kind, Func<Settlement, bool> Is)[]
             {
                 ("town", t => t.Kind == SettlementKind.Town), ("tower", t => t.Size == 1), ("castle", t => t.Size == 2),
@@ -471,14 +473,32 @@ sealed class ScreenHost : Game
             }.Select(k => ($"place-{a.Id}-{k.Kind}", c.S.Settlements.FirstOrDefault(t => t.Culture == a.Id && k.Is(t)))))
             .Where(x => x.Item2 != null)
             // A town, castle and village also rich (every work built, walls at their highest) and poor (SM4); a town and castle
-            // besieged and breached, a village just raided (SM5).
+            // besieged and breached, a village just raided (SM5); the assault on a town or castle and a fight in a village, on the
+            // battlefield, built as their people build (SM6).
             .SelectMany(x => x.Item1.EndsWith("-town") || x.Item1.EndsWith("-castle")
-                ? new[] { (x.Item1, x.Item2!, ""), (x.Item1 + "-rich", x.Item2!, "rich"), (x.Item1 + "-poor", x.Item2!, "poor"), (x.Item1 + "-siege", x.Item2!, "siege") }
+                ? new[] { (x.Item1, x.Item2!, ""), (x.Item1 + "-rich", x.Item2!, "rich"), (x.Item1 + "-poor", x.Item2!, "poor"), (x.Item1 + "-siege", x.Item2!, "siege"), (x.Item1 + "-field", x.Item2!, "field") }
                 : x.Item1.EndsWith("-village")
-                ? new[] { (x.Item1, x.Item2!, ""), (x.Item1 + "-rich", x.Item2!, "rich"), (x.Item1 + "-poor", x.Item2!, "poor"), (x.Item1 + "-raided", x.Item2!, "raided") }
-                : new[] { (x.Item1, x.Item2!, "") }).ToList();
+                ? new[] { (x.Item1, x.Item2!, ""), (x.Item1 + "-rich", x.Item2!, "rich"), (x.Item1 + "-poor", x.Item2!, "poor"), (x.Item1 + "-raided", x.Item2!, "raided"), (x.Item1 + "-field", x.Item2!, "field") }
+                : new[] { (x.Item1, x.Item2!, "") })
+            .Where(x => only.Length < 2 || x.Item3 == (only[1] == "plain" ? "" : only[1])).ToList();
+        if (fieldShot != null) { pendingShot = fieldShot; fieldShot = null; return; }
+        mode = Mode.Map; // back from a battlefield
         if (placeShot >= placeShots.Count) { Exit(); return; }
         var (name, place, variant) = placeShots[placeShot++];
+        if (variant == "field")
+        {
+            // The assault (or a fight in the village) handed to the battle screen and seen from the attackers' side.
+            c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 11.5;
+            var setup = place.Kind == SettlementKind.Village ? c.PrepareBattle(c.S.Parties.First(p => p.Kind == PartyKind.Lord && !p.Down)) : c.PrepareAssault(place);
+            if (place.Kind == SettlementKind.Village) setup.Options.Ground = c.Map.BattleGround(place.Pos) with { Layouts = new[] { FieldLayout.Village } };
+            setup.Options.Weather = new Weather(11); // clear, to judge the buildings
+            StartCampaignBattle(setup);
+            var at = place.Kind == SettlementKind.Village ? battle.Battle.Terrain.VillageAt : new Vector2(0, 34);
+            battle.StageCommandView(at, place.Kind == SettlementKind.Village ? 0.7f : 0.5f, place.Kind == SettlementKind.Village ? 50 : 70, false, bare: true);
+            fieldShot = name;
+            shotFrames = 0;
+            return;
+        }
         if (variant == "rich")
         {
             place.Prosperity = 95;

@@ -206,8 +206,9 @@ sealed partial class BattleScreen
     bool Ending => ending >= 0 && ending < EndBeat && shotDir == null;
 
     /// Debug staging for the host's campaign screenshots.
-    public void StageCommandView(Vector2 focus, float camPitch2, float zoom2, bool startFight)
+    public void StageCommandView(Vector2 focus, float camPitch2, float zoom2, bool startFight, bool bare = false)
     {
+        if (bare) hudHidden = true;
         if (startFight) deploying = false;
         SetCommand(true);
         blend = 1;

@@ -148,8 +148,9 @@ public sealed partial class Campaign
         setup.Options.WallHp *= 1 - 0.7f * MathF.Min(1, s.Battered); // what the camp's stones have done (SiegeWorks.cs)
         setup.Options.Breaches = BreachesOf(s);
         setup.Options.Engines = EnginesFor(setup, assault: true);
-        setup.Options.Ground = Map.BattleGround(s.Pos) with { Road = false };
         setup.Options.Palette[1] = Style.PaletteOf(s.Faction);
+        // The wall, the towers and the houses behind them as its people build them (docs/SETTLEMENTS.md SM6).
+        setup.Options.Ground = Map.BattleGround(s.Pos) with { Road = false, Style = s.Culture is "" ? null : s.Culture, Castle = s.Kind != SettlementKind.Town, Banner = setup.Options.Palette[1] };
         return setup;
     }
 
