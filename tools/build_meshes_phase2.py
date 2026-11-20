@@ -299,19 +299,19 @@ def build_phase2_weapons_and_shields(PartBuilder):
 
     # Daneaxe (long two-handed northern battleaxe)
     da = PartBuilder("weapon_daneaxe")
-    da.add_cone((0, -0.58, 0), (0, 1.38, 0), 0.026, 0.026, segs=5, mat_id=8)
+    da.add_cone((0, -0.58, 0), (0, 1.38, 0), 0.034, 0.034, segs=5, mat_id=8)
     da.add_box((0, 1.24, 0.14), (0.042, 0.34, 0.24), mat_id=4, shade=(1.06, 1.08, 1.12))
     parts.append(da)
 
     # Glaive
     gl = PartBuilder("weapon_glaive")
-    gl.add_cone((0, -0.68, 0), (0, 1.48, 0), 0.025, 0.025, segs=5, mat_id=8)
+    gl.add_cone((0, -0.68, 0), (0, 1.48, 0), 0.034, 0.032, segs=5, mat_id=8)
     gl.add_loft([(0, 1.46, 0, 0.022, 0.068, 4), (0, 1.88, 0.04, 0.018, 0.082, 4), (0, 2.15, 0.10, 0.005, 0.010, 4)], mat_id=4, smooth=False, shade=(1.08, 1.08, 1.12))
     parts.append(gl)
 
     # Billhook
     bh = PartBuilder("weapon_billhook")
-    bh.add_cone((0, -0.68, 0), (0, 1.56, 0), 0.025, 0.025, segs=5, mat_id=8)
+    bh.add_cone((0, -0.68, 0), (0, 1.56, 0), 0.034, 0.032, segs=5, mat_id=8)
     bh.add_box((0, 1.72, 0.06), (0.032, 0.36, 0.14), mat_id=5)
     bh.add_box((0, 1.88, 0.16), (0.030, 0.10, 0.12), mat_id=4)
     parts.append(bh)
@@ -327,18 +327,17 @@ def build_phase2_weapons_and_shields(PartBuilder):
     sl.add_sphere((0, 0.58, 0.04), (0.055, 0.055, 0.055), segs=5, rings=3, mat_id=5)
     parts.append(sl)
 
-    # Pavise (tall crossbowman wall shield)
+    # Pavise (tall crossbowman wall shield, clean heraldic base with dark iron border)
     pv = PartBuilder("shield_pavise")
-    pv.add_box((0, -0.06, 0.05), (0.56, 1.02, 0.055), mat_id=1, ao_y=(-0.58, 0.46, 0.76, 1.08))
-    pv.add_box((0, -0.06, 0.082), (0.12, 0.92, 0.018), mat_id=3)
-    pv.add_box((0, 0.14, 0.082), (0.48, 0.12, 0.018), mat_id=3)
+    pv.add_box((0, -0.06, 0.026), (0.58, 1.04, 0.034), mat_id=5, shade=(0.86, 0.88, 0.92))
+    pv.add_box((0, -0.06, 0.050), (0.51, 0.96, 0.042), mat_id=1, ao_y=(-0.58, 0.46, 0.78, 1.08))
     parts.append(pv)
 
-    # Tower shield
+    # Tower shield (clean heraldic base with brass boss & rim)
     tw = PartBuilder("shield_tower")
-    tw.add_box((0, -0.02, 0.05), (0.52, 0.92, 0.06), mat_id=1, ao_y=(-0.48, 0.44, 0.78, 1.08))
-    tw.add_box((0, -0.02, 0.085), (0.46, 0.08, 0.02), mat_id=6)
-    tw.add_sphere((0, -0.02, 0.09), (0.09, 0.09, 0.04), segs=6, rings=3, mat_id=6)
+    tw.add_box((0, -0.02, 0.026), (0.54, 0.94, 0.036), mat_id=6, shade=(0.88, 0.86, 0.82))
+    tw.add_box((0, -0.02, 0.052), (0.47, 0.86, 0.044), mat_id=1, ao_y=(-0.48, 0.44, 0.80, 1.08))
+    tw.add_sphere((0, -0.02, 0.082), (0.075, 0.075, 0.035), segs=6, rings=3, mat_id=6)
     parts.append(tw)
 
     # Kalkan (domed conical eastern shield)
@@ -604,6 +603,100 @@ def build_phase2_beasts(PartBuilder):
     return parts
 
 
+def build_phase3_emblems_and_props(PartBuilder):
+    """Phase 3: all 8 heraldic relief emblems (Style.Emblem) + quiver, arrow, javelin, web snare, 3D banner pole."""
+    parts = []
+    t = 0.018  # crisp relief depth along +Z
+
+    # 1. Chevron (^ — Azure)
+    em = PartBuilder("emblem_chevron")
+    em.add_box((-0.090, -0.02, 0), (0.21, 0.075, t), rot_euler=(0, 0, math.radians(34)), mat_id=3)
+    em.add_box(( 0.090, -0.02, 0), (0.21, 0.075, t), rot_euler=(0, 0, math.radians(-34)), mat_id=3)
+    parts.append(em)
+
+    # 2. Saltire (X — Crimson)
+    em = PartBuilder("emblem_saltire")
+    em.add_box((0, 0, 0), (0.40, 0.075, t), rot_euler=(0, 0, math.radians(48)), mat_id=3)
+    em.add_box((0, 0, 0), (0.40, 0.075, t), rot_euler=(0, 0, math.radians(-48)), mat_id=3)
+    parts.append(em)
+
+    # 3. Lozenge (diamond — Gold / Player!)
+    em = PartBuilder("emblem_lozenge")
+    em.add_box((0, 0, 0), (0.22, 0.22, t), rot_euler=(0, 0, math.radians(45)), mat_id=3)
+    parts.append(em)
+
+    # 4. Bend (diagonal sash — Northmarch)
+    em = PartBuilder("emblem_bend")
+    em.add_box((0, 0, 0), (0.42, 0.095, t), rot_euler=(0, 0, math.radians(-48)), mat_id=3)
+    parts.append(em)
+
+    # 5. Cross (+ — Order of the Ashen Sun)
+    em = PartBuilder("emblem_cross")
+    em.add_box((0, 0.00, 0), (0.088, 0.42, t), mat_id=3)
+    em.add_box((0, 0.05, 0), (0.34, 0.088, t), mat_id=3)
+    parts.append(em)
+
+    # 6. Pale (vertical stripe — Saltmarsh)
+    em = PartBuilder("emblem_pale")
+    em.add_box((0, 0, 0), (0.11, 0.44, t), mat_id=3)
+    parts.append(em)
+
+    # 7. Fess (horizontal bar — Khaganate)
+    em = PartBuilder("emblem_fess")
+    em.add_box((0, 0.02, 0), (0.36, 0.11, t), mat_id=3)
+    parts.append(em)
+
+    # 8. Sun (radiant burst — Sunward Sultanate)
+    em = PartBuilder("emblem_sun")
+    em.add_loft_z([(0, 0, -t * 0.5, 0.105, 0.105, 8), (0, 0, t * 0.5, 0.105, 0.105, 8)], mat_id=3)
+    for k in range(4):
+        ang = k * (math.pi / 4.0)
+        em.add_box((0, 0, 0), (0.34, 0.042, t * 0.9), rot_euler=(0, 0, ang), mat_id=3)
+    parts.append(em)
+
+    # Quiver (worn on archer/crossbowman back, leather tube + 3 feathered arrow nocks)
+    qv = PartBuilder("quiver")
+    qv.add_cone((0.02, -0.20, 0.0), (-0.06, 0.22, 0.0), 0.055, 0.072, segs=6, mat_id=7, ao_y=(-0.20, 0.22, 0.78, 1.06))
+    qv.add_box((-0.02, 0.02, 0.0), (0.14, 0.05, 0.14), mat_id=3)
+    for dx, dz in [(-0.03, 0.02), (0.02, -0.02), (0.0, 0.03)]:
+        qv.add_cone((-0.06 + dx, 0.18, dz), (-0.08 + dx * 1.4, 0.34, dz * 1.4), 0.012, 0.010, segs=3, mat_id=8)
+        qv.add_box((-0.08 + dx * 1.4, 0.32, dz * 1.4), (0.042, 0.065, 0.018), mat_id=1)
+    parts.append(qv)
+
+    # 3D Arrow / Bolt (sleek shaft 0.0 -> 0.74m along +Y, narrow faction fletching at base, crisp steel bodkin tip)
+    ar = PartBuilder("weapon_arrow")
+    ar.add_cone((0, 0.0, 0), (0, 0.62, 0), 0.015, 0.013, segs=4, mat_id=8)
+    ar.add_cone((0, 0.60, 0), (0, 0.74, 0), 0.025, 0.004, segs=4, mat_id=4, smooth=False)
+    ar.add_box((0, 0.06, 0), (0.046, 0.10, 0.010), mat_id=1)
+    ar.add_box((0, 0.06, 0), (0.010, 0.10, 0.046), mat_id=3)
+    parts.append(ar)
+
+    # 3D Javelin (length 1.30m along +Y: -0.55..+0.75)
+    jv = PartBuilder("weapon_javelin")
+    jv.add_cone((0, -0.55, 0), (0, 0.54, 0), 0.020, 0.018, segs=4, mat_id=8)
+    jv.add_cone((0, 0.52, 0), (0, 0.76, 0), 0.040, 0.005, segs=4, mat_id=4, smooth=False)
+    jv.add_box((0, -0.02, 0), (0.046, 0.16, 0.046), mat_id=7)
+    parts.append(jv)
+
+    # Spider web snare (criss-cross sticky pale silk cords wrapping caught soldiers)
+    wb = PartBuilder("web_snare")
+    for yy in (0.45, 0.85, 1.20):
+        wb.add_loft([(0, yy - 0.03, 0, 0.36, 0.34, 7), (0, yy + 0.03, 0, 0.36, 0.34, 7)], mat_id=0, shade=(0.94, 0.95, 0.92), cap_bot=False, cap_top=False)
+    for ang in (0.4, 2.2, 4.1):
+        cx, cz = math.cos(ang) * 0.34, math.sin(ang) * 0.34
+        wb.add_cone((cx, 0.35, cz), (-cx, 1.32, -cz), 0.024, 0.024, segs=3, mat_id=0, shade=(0.92, 0.94, 0.90))
+    parts.append(wb)
+
+    # 3D Company Banner Pole (height 3.35m along +Y, brass spearhead finial + crossbar)
+    bp = PartBuilder("banner_pole")
+    bp.add_cone((0, 0.0, 0), (0, 3.25, 0), 0.036, 0.028, segs=5, mat_id=8, ao_y=(0.0, 3.25, 0.80, 1.06))
+    bp.add_cone((0, 3.22, 0), (0, 3.55, 0), 0.068, 0.008, segs=4, mat_id=6, smooth=False)
+    bp.add_box((0.42, 3.16, 0), (0.86, 0.042, 0.042), mat_id=6)
+    parts.append(bp)
+
+    return parts
+
+
 def build_all(PartBuilder):
     parts = []
     parts.extend(build_phase2_helms(PartBuilder))
@@ -612,4 +705,5 @@ def build_all(PartBuilder):
     parts.extend(build_phase2_mounts(PartBuilder))
     parts.extend(build_phase2_race_heads(PartBuilder))
     parts.extend(build_phase2_beasts(PartBuilder))
+    parts.extend(build_phase3_emblems_and_props(PartBuilder))
     return parts

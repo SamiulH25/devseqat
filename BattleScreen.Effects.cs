@@ -195,14 +195,16 @@ partial class BattleScreen
         if (bearer != null) bearers[s] = bearer; else bearers.Remove(s);
     }
 
-    void DrawFallingBanners()
+    void DrawFallingBanners(bool do3D = false)
     {
         for (int i = falling.Count - 1; i >= 0; i--)
         {
             var f = falling[i];
             float k = (realTime - f.Born) / 0.9f;
             if (k > 1.6f) { falling.RemoveAt(i); continue; } // it lies a moment, then the next man has it up again
-            puppet.Banner(f.Pos, f.Ground, f.Palette, 0, f.Charge, 0, MathHelper.ToRadians(84) * Ease.In(MathF.Min(1, k)), f.Dir);
+            float lean = MathHelper.ToRadians(84) * Ease.In(MathF.Min(1, k));
+            if (do3D && puppet3D != null) puppet3D.Banner(f.Pos, f.Ground, f.Palette, 0, f.Charge, 0, lean, f.Dir);
+            else puppet.Banner(f.Pos, f.Ground, f.Palette, 0, f.Charge, 0, lean, f.Dir);
         }
     }
 }

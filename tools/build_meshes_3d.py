@@ -461,19 +461,19 @@ def build_weapons_and_shields():
 
     for sname, slen in [("weapon_spear", 2.15), ("weapon_pike", 2.95)]:
         sp = PartBuilder(sname)
-        sp.add_cone((0, -slen * 0.32, 0), (0, slen * 0.68, 0), 0.024, 0.022, segs=5, mat_id=8)
-        sp.add_cone((0, slen * 0.66, 0), (0, slen * 0.66 + 0.34, 0), 0.045, 0.004, segs=4, mat_id=4, smooth=False, shade=(1.08, 1.08, 1.12))
+        sp.add_cone((0, -slen * 0.32, 0), (0, slen * 0.68, 0), 0.035, 0.032, segs=5, mat_id=8)
+        sp.add_cone((0, slen * 0.66, 0), (0, slen * 0.66 + 0.34, 0), 0.052, 0.006, segs=4, mat_id=4, smooth=False, shade=(1.08, 1.08, 1.12))
         parts.append(sp)
 
     ln = PartBuilder("weapon_lance")
-    ln.add_cone((0, -0.75, 0), (0, 2.35, 0), 0.036, 0.018, segs=6, mat_id=8)
-    ln.add_cone((0, -0.05, 0), (0, 0.24, 0), 0.125, 0.032, segs=6, mat_id=4)
-    ln.add_cone((0, 2.32, 0), (0, 2.68, 0), 0.036, 0.004, segs=4, mat_id=4, smooth=False)
-    ln.add_box((0, 2.02, -0.14), (0.018, 0.36, 0.24), mat_id=1)
+    ln.add_cone((0, -0.75, 0), (0, 2.35, 0), 0.044, 0.030, segs=6, mat_id=8)
+    ln.add_cone((0, -0.05, 0), (0, 0.24, 0), 0.125, 0.040, segs=6, mat_id=4)
+    ln.add_cone((0, 2.32, 0), (0, 2.68, 0), 0.042, 0.006, segs=4, mat_id=4, smooth=False)
+    ln.add_box((0, 2.02, -0.14), (0.026, 0.36, 0.24), mat_id=1)
     parts.append(ln)
 
     hb = PartBuilder("weapon_halberd")
-    hb.add_cone((0, -0.68, 0), (0, 1.68, 0), 0.026, 0.026, segs=5, mat_id=8)
+    hb.add_cone((0, -0.68, 0), (0, 1.68, 0), 0.035, 0.034, segs=5, mat_id=8)
     hb.add_cone((0, 1.65, 0), (0, 2.08, 0), 0.038, 0.004, segs=4, mat_id=4, smooth=False)
     hb.add_box((0, 1.54, 0.12), (0.036, 0.28, 0.22), mat_id=4)
     hb.add_box((0, 1.56, -0.09), (0.030, 0.08, 0.14), mat_id=5)
@@ -498,23 +498,25 @@ def build_weapons_and_shields():
     st.add_sphere((0, 1.36, 0), (0.075, 0.095, 0.075), segs=6, rings=4, mat_id=6)
     parts.append(st)
 
-    # Shields (~36-52 tris each, clean medieval heater/kite/round silhouettes!)
+    # Shields (~36-52 tris each, clean medieval heater/kite/round bases; per-realm heraldic emblems emit dynamically!)
     hs = PartBuilder("shield_heater")
-    hs.add_box((0, 0.04, 0.04), (0.48, 0.58, 0.052), mat_id=1, ao_y=(-0.26, 0.34, 0.78, 1.06))
-    hs.add_box((0, -0.26, 0.035), (0.28, 0.16, 0.048), mat_id=1, shade=(0.86, 0.86, 0.88))
-    hs.add_box((0, 0.02, 0.070), (0.10, 0.48, 0.016), mat_id=3)
-    hs.add_box((0, 0.08, 0.070), (0.42, 0.10, 0.016), mat_id=3)
+    hs.add_box((0, 0.04, 0.022), (0.50, 0.60, 0.030), mat_id=5, shade=(0.88, 0.90, 0.94))  # iron rim backing
+    hs.add_box((0, 0.04, 0.044), (0.44, 0.54, 0.036), mat_id=1, ao_y=(-0.26, 0.34, 0.80, 1.06))
+    hs.add_box((0, -0.26, 0.020), (0.30, 0.17, 0.028), mat_id=5, shade=(0.84, 0.86, 0.90))
+    hs.add_box((0, -0.25, 0.040), (0.25, 0.14, 0.034), mat_id=1, shade=(0.88, 0.88, 0.90))
     parts.append(hs)
 
     ks = PartBuilder("shield_kite")
-    ks.add_box((0, 0.08, 0.04), (0.44, 0.62, 0.052), mat_id=1, ao_y=(-0.36, 0.40, 0.76, 1.06))
-    ks.add_box((0, -0.30, 0.035), (0.24, 0.30, 0.048), mat_id=1, shade=(0.84, 0.84, 0.88))
-    ks.add_box((0, 0.02, 0.070), (0.09, 0.64, 0.016), mat_id=3)
+    ks.add_box((0, 0.08, 0.022), (0.46, 0.64, 0.030), mat_id=5, shade=(0.88, 0.90, 0.94))
+    ks.add_box((0, 0.08, 0.044), (0.40, 0.58, 0.036), mat_id=1, ao_y=(-0.36, 0.40, 0.78, 1.06))
+    ks.add_box((0, -0.30, 0.020), (0.26, 0.31, 0.028), mat_id=5, shade=(0.84, 0.86, 0.90))
+    ks.add_box((0, -0.29, 0.040), (0.21, 0.27, 0.034), mat_id=1, shade=(0.86, 0.86, 0.88))
     parts.append(ks)
 
     rs = PartBuilder("shield_round")
-    rs.add_loft_z([(0, 0, 0.00, 0.30, 0.30, 8), (0, 0, 0.06, 0.30, 0.30, 8)], mat_id=1, ao_y=(-0.31, 0.31, 0.80, 1.08))
-    rs.add_sphere((0, 0, 0.075), (0.095, 0.095, 0.045), segs=6, rings=3, mat_id=4)
+    rs.add_loft_z([(0, 0, 0.00, 0.315, 0.315, 8), (0, 0, 0.032, 0.315, 0.315, 8)], mat_id=5, shade=(0.88, 0.90, 0.94))
+    rs.add_loft_z([(0, 0, 0.026, 0.285, 0.285, 8), (0, 0, 0.060, 0.285, 0.285, 8)], mat_id=1, ao_y=(-0.30, 0.30, 0.82, 1.08))
+    rs.add_sphere((0, 0, 0.078), (0.085, 0.085, 0.042), segs=6, rings=3, mat_id=4)
     parts.append(rs)
 
     return parts

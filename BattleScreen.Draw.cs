@@ -327,9 +327,18 @@ partial class BattleScreen
     {
         var t = battle.Terrain;
         sprites.N = 0;
+        bool do3D = use3DPixel && puppet3D != null && quality != Quality.Low && shading != null;
+        units3D.N = 0;
         puppet.Begin(viewer);
         puppet.Now = battle.Time;
         puppet.Winner = battle.Winner;
+        if (do3D)
+        {
+            puppet3D!.Now = battle.Time;
+            puppet3D.Winner = battle.Winner;
+            puppet3D.FxPuppet = forSun ? null : puppet;
+            puppet3D.BeginCamera(viewer);
+        }
         // A banner over every company, carried by its first man.
         foreach (var s in battle.Squads)
         {
@@ -339,12 +348,18 @@ partial class BattleScreen
             foreach (var u in s.Units) if (u.Active && !u.Routing) { bearer = u; break; }
             if (!forSun) BannerFalls(s, bearer);
             if (bearer == null) continue;
-            if (!battle.Shown(s)) { puppet.Banner(s.LastSeen, t.Height(s.LastSeen), bearer.Palette, 0, s.Company.Banner); continue; } // where you last saw it
+            if (!battle.Shown(s))
+            {
+                if (do3D) puppet3D!.Banner(s.LastSeen, t.Height(s.LastSeen), bearer.Palette, 0, s.Company.Banner);
+                else puppet.Banner(s.LastSeen, t.Height(s.LastSeen), bearer.Palette, 0, s.Company.Banner);
+                continue;
+            }
             var at = bearer.Pos - bearer.Dir * 0.35f + new Vector2(-bearer.Dir.Y, bearer.Dir.X) * 0.25f;
             float stream = Math.Clamp((bearer.Mounted ? MathF.Abs(bearer.Speed) : bearer.Vel.Length()) / 6, 0, 1);
-            puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
+            if (do3D) puppet3D!.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
+            else puppet.Banner(at, t.Height(at) + (bearer.Mounted ? 1.1f : 0), bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
         }
-        DrawFallingBanners();
+        DrawFallingBanners(do3D);
         if (!forSun)
         {
             DrawMarks();
@@ -369,9 +384,7 @@ partial class BattleScreen
         }
         foreach (int idx in corpseTouched) corpseGrid[idx] = 0;
         corpseTouched.Clear();
-        bool do3D = use3DPixel && puppet3D != null && quality != Quality.Low && shading != null;
-        units3D.N = 0;
-        if (do3D) { puppet3D!.Now = battle.Time; puppet3D.Winner = battle.Winner; }
+        // units3D already initialized above for 3D banners
         foreach (var u in battle.Units)
         {
             if (u.Fled) continue;
@@ -406,7 +419,7 @@ partial class BattleScreen
         }
         puppet.SparseCorpse = false;
         puppet.Rear = 0;
-        if (!forSun) DrawMissiles(); // real arrows near the camera (BattleScreen.Arrows.cs)
+        if (!forSun) DrawMissiles(do3D); // real arrows near the camera (BattleScreen.Arrows.cs)
         foreach (var h in battle.LooseHorses) { float hh = t.Height(h.Pos); if (Seen(h.Pos, hh, 2.5f)) { if (do3D && h.Mount.Barding != "wolf") puppet3D!.DrawLooseHorse(h, hh); else puppet.DrawLooseHorse(h, hh); } }
         foreach (var h in battle.DeadHorses) { if (battle.Time > 0 && battle.Time - h.At > (forSun ? 0.75f : 3.2f)) continue; float hh = t.Height(h.Pos); if (Seen(h.Pos, hh + 1.5f, 4f)) puppet.DrawDeadHorse(h, hh); }
         puppet.Detail = 0;

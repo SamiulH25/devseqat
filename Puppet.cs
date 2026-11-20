@@ -161,11 +161,11 @@ sealed partial class Puppet
 
     /// A man near a working leans back from it and lifts his free arm against the light. Men in a swing or a parry keep
     /// fighting; the rest react fully, each a moment apart (his phase).
-    Pose Awed(Unit u, Pose p, float phase)
+    internal static Pose Awed(List<(Vector2 At, float Radius, float Strength, int Team)> awe, Unit u, Pose p, float phase)
     {
         float k = 0;
         if (u.IsPlayer) return p; // the source of it does not flinch
-        foreach (var (at, r, str, team) in Awe)
+        foreach (var (at, r, str, team) in awe)
         {
             if (team >= 0 && u.Team != team) continue;
             float d = Vector2.Distance(at, u.Pos);
@@ -234,7 +234,7 @@ sealed partial class Puppet
         if (u.Poison > 0 && u.HitFlash <= 0) tint = Color.Lerp(tint, new Color(150, 230, 110), 0.4f); // green with poison
         if (look.Beast) { Frame(u.Pos, u.ViewFacing, lift, size); Beast(u, ground); return; }
         var p = PoseOf(u, Now, phase, Winner);
-        if (Awe.Count > 0) p = Awed(u, p, phase);
+        if (Awe.Count > 0) p = Awed(Awe, u, p, phase);
         var at = u.Pos;
         float leanBack = 0;
         if (u.Mounted && Rear > 0)

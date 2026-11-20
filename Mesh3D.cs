@@ -10,27 +10,36 @@ sealed class MeshKit3D
     public readonly struct Vert
     {
         public readonly Vector3 Pos, Norm;
+        public readonly float U, V;
         public readonly byte R, G, B;
         public readonly byte MatId;
 
-        public Vert(Vector3 pos, Vector3 norm, byte r, byte g, byte b, byte matId)
+        public Vert(Vector3 pos, Vector3 norm, float u, float v, byte r, byte g, byte b, byte matId)
         {
-            Pos = pos; Norm = norm; R = r; G = g; B = b; MatId = matId;
+            Pos = pos; Norm = norm; U = u; V = v; R = r; G = g; B = b; MatId = matId;
         }
     }
+
+    /// Surface pattern IDs packed into VertexPNCT Color.A high nibble (read by Shaders/unit3d.glsl).
+    public const byte PatSmooth = 0, PatMail = 1, PatScale = 2, PatQuilt = 3, PatBrushed = 4;
 
     /// Pre-resolved modular mesh references for one `Look` (zero string lookups during rendering!).
     public sealed class LookMeshes
     {
         public required Vert[] Torso, Head, Helm, UArm, FArm, Thigh, Shin, Weapon, Shield;
-        public required bool FullEnclosedHelm, HasCape, HasPlume, HasShield;
+        public required bool FullEnclosedHelm, HasCape, HasPlume, HasShield, HasTabard;
+        public required byte TorsoPat, LimbPat, LegPat;
+        public required string ShieldKind;
     }
 
     public readonly Dictionary<string, Vert[]> Parts = new();
     readonly Dictionary<Look, LookMeshes> lookCache = new(ReferenceEqualityComparer.Instance);
 
-    // Pre-cached common, mount, beast, and LOD parts (zero dictionary lookups in hot loop).
+    // Pre-cached common, mount, beast, prop, emblem, and LOD parts (zero dictionary lookups in hot loop).
     public Vert[] Plume = Array.Empty<Vert>(), Cape = Array.Empty<Vert>(), Bow = Array.Empty<Vert>();
+    public Vert[] Quiver = Array.Empty<Vert>(), Arrow = Array.Empty<Vert>(), Javelin = Array.Empty<Vert>();
+    public Vert[] WebSnare = Array.Empty<Vert>(), BannerPole = Array.Empty<Vert>();
+    public Vert[][] Emblems = Array.Empty<Vert[]>();
     public Vert[] HorseBody = Array.Empty<Vert>(), HorseBodyBarded = Array.Empty<Vert>(), HorseBodyScale = Array.Empty<Vert>(), HorseBodyFur = Array.Empty<Vert>();
     public Vert[] HorseNeck = Array.Empty<Vert>(), HorseNeckBarded = Array.Empty<Vert>(), HorseNeckScale = Array.Empty<Vert>();
     public Vert[] HorseHead = Array.Empty<Vert>(), HorseHeadBarded = Array.Empty<Vert>(), HorseHeadScale = Array.Empty<Vert>();
@@ -77,11 +86,39 @@ sealed class MeshKit3D
                 _ = br.ReadSingle();
                 byte r = br.ReadByte(), g = br.ReadByte(), b = br.ReadByte();
                 _ = br.ReadByte();
-                verts[i] = new Vert(new Vector3(px, py, pz), new Vector3(nx, ny, nz), r, g, b, (byte)Math.Clamp((int)MathF.Round(mat), 0, 15));
+                verts[i] = new Vert(new Vector3(px, py, pz), new Vector3(nx, ny, nz), px, py, r, g, b, (byte)Math.Clamp((int)MathF.Round(mat), 0, 15));
+            }
+            // Compute seamless per-triangle box-projected object-local (U, V) in meters so procedural armor patterns never swim or stretch.
+            for (int i = 0; i + 2 < verts.Length; i += 3)
+            {
+                var p0 = verts[i].Pos; var p1 = verts[i + 1].Pos; var p2 = verts[i + 2].Pos;
+                var fn = Vector3.Cross(p1 - p0, p2 - p0);
+                float ax = MathF.Abs(fn.X), ay = MathF.Abs(fn.Y), az = MathF.Abs(fn.Z);
+                for (int k = 0; k < 3; k++)
+                {
+                    ref readonly var v = ref verts[i + k];
+                    float u, vv;
+                    if (ay >= ax && ay >= az) { u = v.Pos.X; vv = v.Pos.Z; }
+                    else if (ax >= az) { u = v.Pos.Z; vv = v.Pos.Y; }
+                    else { u = v.Pos.X; vv = v.Pos.Y; }
+                    verts[i + k] = new Vert(v.Pos, v.Norm, u, vv, v.R, v.G, v.B, v.MatId);
+                }
             }
             kit.Parts[name] = verts;
         }
         kit.Plume = kit.Get("plume"); kit.Cape = kit.Get("cape"); kit.Bow = kit.Get("weapon_bow");
+        kit.Quiver = kit.Get("quiver"); kit.Arrow = kit.Get("weapon_arrow"); kit.Javelin = kit.Get("weapon_javelin");
+        kit.WebSnare = kit.Get("web_snare"); kit.BannerPole = kit.Get("banner_pole");
+        kit.Emblems = new Vert[9][];
+        kit.Emblems[(int)Emblem.Chevron] = kit.Get("emblem_chevron");
+        kit.Emblems[(int)Emblem.Saltire] = kit.Get("emblem_saltire");
+        kit.Emblems[(int)Emblem.Lozenge] = kit.Get("emblem_lozenge");
+        kit.Emblems[(int)Emblem.None] = Array.Empty<Vert>();
+        kit.Emblems[(int)Emblem.Bend] = kit.Get("emblem_bend");
+        kit.Emblems[(int)Emblem.Cross] = kit.Get("emblem_cross");
+        kit.Emblems[(int)Emblem.Pale] = kit.Get("emblem_pale");
+        kit.Emblems[(int)Emblem.Fess] = kit.Get("emblem_fess");
+        kit.Emblems[(int)Emblem.Sun] = kit.Get("emblem_sun");
         kit.HorseBody = kit.Get("horse_body"); kit.HorseBodyBarded = kit.Get("horse_body_barded");
         kit.HorseBodyScale = kit.Get("horse_body_scale"); kit.HorseBodyFur = kit.Get("horse_body_fur");
         kit.HorseNeck = kit.Get("horse_neck"); kit.HorseNeckBarded = kit.Get("horse_neck_barded"); kit.HorseNeckScale = kit.Get("horse_neck_scale");
@@ -114,9 +151,20 @@ sealed class MeshKit3D
             "ghoul" => "head_ghoul",
             _ => $"head_{(look.Visage >= 0 ? Variety.Parts(look.Visage).Style : 0)}",
         };
+        string torsoKey = MapTorso(look.Body);
+        string shieldKey = look.Shield != "none" ? MapShield(look.Shield) : "";
+        byte torsoPat = torsoKey switch
+        {
+            "torso_mail" => PatMail,
+            "torso_lamellar" or "torso_scale" => PatScale,
+            "torso_tunic" or "torso_deel" or "torso_kaftan" or "torso_robe" => PatQuilt,
+            "torso_plate" or "torso_plate_gilded" => PatBrushed,
+            _ => PatSmooth,
+        };
+        byte LimbPatOf(string tag) => tag switch { "mail" => PatMail, "plate" => PatBrushed, "cloth" => PatQuilt, _ => PatSmooth };
         var resolved = new LookMeshes
         {
-            Torso = Get(MapTorso(look.Body)),
+            Torso = Get(torsoKey),
             Head = Get(headKey),
             Helm = helmKey.Length > 0 ? Get(helmKey) : Array.Empty<Vert>(),
             UArm = Get($"uarm_{limbTag}"),
@@ -124,11 +172,16 @@ sealed class MeshKit3D
             Thigh = Get($"thigh_{legTag}"),
             Shin = Get($"shin_{legTag}"),
             Weapon = look.Weapon != "none" ? Get(MapWeapon(look.Weapon)) : Array.Empty<Vert>(),
-            Shield = look.Shield != "none" ? Get(MapShield(look.Shield)) : Array.Empty<Vert>(),
+            Shield = shieldKey.Length > 0 ? Get(shieldKey) : Array.Empty<Vert>(),
             FullEnclosedHelm = helmKey is "helm_greathelm" or "helm_greathelm_wings" or "helm_greathelm_sun" or "helm_greathelm_horns" or "helm_dragon",
             HasCape = look.Cape,
             HasPlume = look.Plume,
             HasShield = look.Shield != "none",
+            HasTabard = look.Tabard,
+            TorsoPat = torsoPat,
+            LimbPat = LimbPatOf(limbTag),
+            LegPat = LimbPatOf(legTag),
+            ShieldKind = shieldKey,
         };
         return lookCache[look] = resolved;
     }
@@ -204,7 +257,8 @@ sealed class MeshKit3D
         "halberd" => "weapon_halberd",
         "lance" or "pennonlance" => "weapon_lance",
         "pike" => "weapon_pike",
-        "spear" or "spear_winged" or "javelin" => "weapon_spear",
+        "javelin" => "weapon_javelin",
+        "spear" or "spear_winged" => "weapon_spear",
         "crossbow" or "crossbow_heavy" or "arbalest" => "weapon_crossbow",
         "bow" or "bow_horn" or "longbow" or "recurve" => "weapon_bow",
         "sling" => "weapon_sling",
@@ -231,6 +285,11 @@ struct UnitMatTable
     public static readonly float[] Metals =
     {
         0f, 0f, 0f, 0f, 0.95f, 0.55f, 0.90f, 0f, 0f, 0f, 0f, 0f, 0f, 0f
+    };
+    /// Quantized metallic nibbles (0..15) packed into VertexPNCT Color.A low nibble.
+    public static readonly byte[] MetalQ =
+    {
+        0, 0, 0, 0, 14, 9, 14, 0, 0, 0, 0, 0, 0, 0
     };
 
     public static void Fill(int paletteIdx, int visage, int coatIdx, bool camel, Color tint, Span<Vector3> cols, string face = "man")

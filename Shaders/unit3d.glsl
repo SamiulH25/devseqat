@@ -1,12 +1,13 @@
-// Real-time 3D Pixel Art unit shader (spike/3d-pixel-art).
+// Real-time 3D Pixel Art unit shader (spike/3d-pixel-art, Phase 3).
 // Techniques:
-//   Unit3D       - stepped 4-band cel-shaded color to RT0 + view-space normal & linear depth to RT1 (MRT)
+//   Unit3D       - stepped 4-band cel-shaded color + procedural armor/cloth micro-detail to RT0 + view normal & linear depth to RT1 (MRT)
 //   Unit3DShadow - writes depth into the sun's shadow map (real 3D directional shadows!)
 //
 // Vertex layout: VertexPNCT (aPos, aNormal, aColor, aUV).
 //   aColor.rgb = resolved material albedo * baked AO
-//   aUV.x      = metallic/specular weight (0 = matte cloth/skin/coat, 1 = gleaming steel/brass)
-//   aUV.y      = unit ID hash (0..1) to help separate closely-packed soldiers of similar depth if needed
+//   aColor.a   = packed (patternId << 4) | metalQuantized(0..15)
+//                patternId: 0 = smooth, 1 = chainmail rings, 2 = lamellar/scale shingles, 3 = quilted cloth, 4 = brushed steel/wood
+//   aUV        = swim-free object-local meter coordinates (box-projected per triangle at load time)
 varying vec3 vWorld;
 varying vec3 vNormal;
 varying vec4 vColor;
@@ -50,28 +51,79 @@ void main()
     float ndotl = dot(n, l);
     float sh = ShadowAt(vWorld + n * 0.06) * CloudAt(vWorld);
 
+    // Unpack surface pattern ID (0..4) and metallic weight (0..1) from constant-per-triangle aColor.a.
+    float aInt = floor(vColor.a * 255.0 + 0.5);
+    float patId = floor(aInt / 16.0);
+    float metal = mod(aInt, 16.0) / 15.0;
+
     // 4-band stepped cel shading (vibrant, painterly tonal steps — never crushed black in shadow!).
-    // Gentle wrap on ndotl so faces under helms/hoods and round limbs read crisply from every angle.
     float rawLit = clamp((ndotl * 0.72 + 0.28) * mix(0.45, 1.0, sh), 0.0, 1.0);
     float band = 0.18;
     band += smoothstep(0.22, 0.26, rawLit) * 0.26;
     band += smoothstep(0.48, 0.52, rawLit) * 0.30;
     band += smoothstep(0.75, 0.79, rawLit) * 0.28;
 
+    // Distance fade so procedural micro-detail enhances close/mid views and stays 100% shimmer-free far away!
+    float dist = length(CameraPos - vWorld);
+    float detailFade = 1.0 - smoothstep(10.0, 26.0, dist);
+
+    vec3 albedo = vColor.rgb;
+    float specBoost = 1.0;
+
+    if (detailFade > 0.01 && patId > 0.5)
+    {
+        if (patId < 1.5)
+        {
+            // Pattern 1: Chainmail interlocking rings (staggered metallic dimple + ring glint).
+            vec2 p = vUV * 24.0;
+            p.x += step(1.0, mod(floor(p.y), 2.0)) * 0.5;
+            float r = length(fract(p) - 0.5);
+            float ring = smoothstep(0.16, 0.30, r) * (1.0 - smoothstep(0.35, 0.48, r));
+            float hole = 1.0 - smoothstep(0.08, 0.20, r);
+            albedo *= 1.0 + (ring * 0.14 - hole * 0.16) * detailFade;
+            specBoost = 1.0 + ring * 0.35 * detailFade;
+        }
+        else if (patId < 2.5)
+        {
+            // Pattern 2: Lamellar / scale overlapping horizontal shingles with upper catchlight lip.
+            vec2 p = vUV * vec2(11.0, 11.0);
+            p.x += step(1.0, mod(floor(p.y), 2.0)) * 0.5;
+            vec2 f = fract(p);
+            float botSeam = 1.0 - smoothstep(0.0, 0.20, f.y);
+            float sideSeam = 1.0 - smoothstep(0.0, 0.14, min(f.x, 1.0 - f.x));
+            float topLip = smoothstep(0.72, 0.90, f.y) * (1.0 - sideSeam);
+            albedo *= 1.0 + (topLip * 0.14 - botSeam * 0.20 - sideSeam * 0.08) * detailFade;
+            specBoost = 1.0 + topLip * 0.30 * detailFade;
+        }
+        else if (patId < 3.5)
+        {
+            // Pattern 3: Quilted gambeson / padded wool diamond stitching.
+            vec2 p = vUV * 9.5;
+            float d1 = abs(fract(p.x + p.y) - 0.5);
+            float d2 = abs(fract(p.x - p.y) - 0.5);
+            float stitch = 1.0 - smoothstep(0.0, 0.10, min(d1, d2));
+            albedo *= 1.0 + (0.04 - stitch * 0.13) * detailFade;
+        }
+        else
+        {
+            // Pattern 4: Brushed steel fluting / wood grain subtle directional sheen.
+            float grain = sin(vUV.x * 34.0 + vUV.y * 5.0) * 0.5 + 0.5;
+            albedo *= 1.0 + (grain - 0.5) * 0.08 * detailFade;
+        }
+    }
+
     // Warm/cool split-tone ambient: shadow side stays rich cool-sky lit, sunlit side glows warm.
     float hemi = n.y * 0.5 + 0.5;
     vec3 amb = mix(GroundColor * 0.85, SkyColor * 1.05, hemi) * vec3(0.92, 0.96, 1.06);
     vec3 direct = SunColor * (band * 1.15);
 
-    vec3 albedo = vColor.rgb;
     vec3 col = albedo * (amb + direct);
 
     // Crisp quantized metallic specular glint on steel/plate/brass (helm domes, breastplates, blades, chanfrons).
-    float metal = vUV.x;
     if (metal > 0.2)
     {
         vec3 h = normalize(l + v);
-        float spec = pow(max(dot(n, h), 0.0), 16.0) * sh;
+        float spec = pow(max(dot(n, h), 0.0), 16.0) * sh * specBoost;
         float specBand = smoothstep(0.28, 0.34, spec);
         col += SunColor * mix(vec3(0.76, 0.82, 0.92), albedo * 1.35, 0.45) * specBand * metal * 0.78;
     }
@@ -84,7 +136,6 @@ void main()
     col += albedo * (TorchLight(vWorld) + GlowLight(vWorld));
 
     // Distance fog matching world.glsl.
-    float dist = length(CameraPos - vWorld);
     float fog = clamp((dist - FogParams.x) / max(1.0, FogParams.y - FogParams.x), 0.0, 1.0);
     col = mix(col, FogColor, fog * FogParams.z);
 

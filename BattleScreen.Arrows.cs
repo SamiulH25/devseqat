@@ -74,8 +74,8 @@ sealed partial class BattleScreen
         _ => ("arrow", 0.65f, 0.25f),
     };
 
-    /// Missiles near the camera as sprites (in flight and standing), in the sprite pass.
-    void DrawMissiles()
+    /// Missiles near the camera as 3D meshes (3D pixel-art mode) or sprites (classic mode), in flight and standing.
+    void DrawMissiles(bool do3D = false)
     {
         if (quality == Quality.Low) return;
         var eye2 = new Vector2(eye.X, eye.Z);
@@ -85,7 +85,8 @@ sealed partial class BattleScreen
             if (a.Kind == Grip.Sling || a.Stuck >= 0 || Vector2.DistanceSquared(new Vector2(a.Pos.X, a.Pos.Z), eye2) > near2) continue;
             var dir = a.Vel.LengthSquared() > 1e-4f ? Vector3.Normalize(a.Vel) : Vector3.Down;
             var (part, len, thick) = MissileLook(a.Kind);
-            puppet.Missile(a.Pos, a.Pos - dir * len, part, thick, Style.Sides[Math.Clamp(a.Shooter.Palette, 0, Style.Sides.Length - 1)].Cloth);
+            if (do3D && puppet3D != null) puppet3D.DrawMissile(a.Pos, a.Pos - dir * len, a.Kind, a.Shooter.Palette);
+            else puppet.Missile(a.Pos, a.Pos - dir * len, part, thick, Style.Sides[Math.Clamp(a.Shooter.Palette, 0, Style.Sides.Length - 1)].Cloth);
         }
         foreach (var l in landed)
         {
@@ -93,7 +94,8 @@ sealed partial class BattleScreen
             var (part, len, thick) = MissileLook(l.Kind);
             float embed = 0.16f + Ease.Hash((int)(l.At.X * 197 + l.At.Z * 503)) * 0.22f;
             var head = l.At + l.Dir * embed; // the point sunk deep into the turf
-            puppet.Missile(head, head - l.Dir * len, part, thick, Style.Sides[Math.Clamp(l.Palette, 0, Style.Sides.Length - 1)].Cloth);
+            if (do3D && puppet3D != null) puppet3D.DrawMissile(head, head - l.Dir * len, l.Kind, l.Palette);
+            else puppet.Missile(head, head - l.Dir * len, part, thick, Style.Sides[Math.Clamp(l.Palette, 0, Style.Sides.Length - 1)].Cloth);
         }
     }
 
