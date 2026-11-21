@@ -201,7 +201,7 @@ partial class MapScreen
         var lights = l.Build switch
         {
             "white" => WhiteTavern(r, l, c, cloth),
-            "log" => LogTavern(r, l, c, t),
+            "log" => MeadHall(r, l, c, cloth, t),
             "tent" => TentTavern(r, l, c, cloth, t),
             _ => TimberTavern(r, l, c, t),
         };
@@ -444,42 +444,6 @@ partial class MapScreen
         }
         if (!l.Day) { Lantern(new Vector2(ax - ui.U(2), ay + ui.U(12)), c, frame); Lantern(new Vector2(ax + aw + ui.U(2), ay + ui.U(12)), c, frame); }
         TavernSign(r.Right, r.Y + ui.U(10), l, c, frame);
-        return lights;
-    }
-
-    /// The northern tavern: a longhouse of logs under a great steep turf roof, carved horns crossed at the gable, smoke from the ridge.
-    List<(int X, int W)> LogTavern(Rectangle r, TownLook l, TownColours c, float t)
-    {
-        Color logs = HeroWall(l, c, new Color(132, 92, 60)), turf = l.Night ? new Color(58, 62, 52) : Color.Lerp(c.Roof, c.Rim, 0.08f),
-            frame = l.Night ? new Color(30, 21, 24) : new Color(64, 42, 28);
-        var lights = new List<(int X, int W)>();
-        int wall = ui.U(30), roofH = ui.U(40), top = r.Bottom - wall;
-        rimLight = Color.Transparent;
-        Gable(r.X - ui.U(8), top, r.Width + ui.U(16), 0, roofH, turf);
-        Turf(r.X - ui.U(8), top, r.Width + ui.U(16), roofH, turf, l.Snow);
-        rimLight = c.Rim;
-        ui.Line(new Vector2(r.Center.X, top - roofH), new Vector2(r.Right + ui.U(8), top), c.Rim, 1);
-        ui.Rect(new Rectangle(r.X - ui.U(9), top - ui.U(1), r.Width + ui.U(18), ui.U(2)), frame); // the eave board
-        // The horns: two carved boards crossing at the peak.
-        var peak = new Vector2(r.Center.X, top - roofH);
-        ui.Line(peak + new Vector2(-ui.U(10), ui.U(8)), peak + new Vector2(ui.U(8), -ui.U(9)), frame, 2);
-        ui.Line(peak + new Vector2(ui.U(10), ui.U(8)), peak + new Vector2(-ui.U(8), -ui.U(9)), frame, 2);
-        Smoke((int)peak.X + ui.U(14), (int)peak.Y + ui.U(10), t, l.Night);
-        ui.Rect(new Rectangle(r.X, top, r.Width, wall), logs);
-        for (int ly = top + ui.U(3); ly < r.Bottom; ly += ui.U(4)) ui.Rect(new Rectangle(r.X, ly, r.Width, ui.U(1)), Kit.Mul(logs, 0.68f));
-        foreach (int px in new[] { r.X, r.Right - ui.U(3) }) ui.Rect(new Rectangle(px, top, ui.U(3), wall), frame);
-        ui.Rect(new Rectangle(r.Right - ui.U(1), top, ui.U(1), wall), c.Rim);
-        // A gable window up in the roof, two shuttered windows below.
-        TavernWindow(new Rectangle(r.Center.X - ui.U(7), top - ui.U(18), ui.U(14), ui.U(10)), l, c, frame, true);
-        foreach (int wx in new[] { r.X + ui.U(16), r.X + ui.U(120) })
-        {
-            var w = new Rectangle(wx, top + ui.U(8), ui.U(22), ui.U(12));
-            TavernWindow(w, l, c, frame, true, hearth: true);
-            ui.Rect(new Rectangle(w.X - ui.U(6), w.Y - ui.U(1), ui.U(4), w.Height + ui.U(2)), frame); // the shutter
-            if (!l.Day) lights.Add((w.X, w.Width));
-        }
-        TavernDoor(new Rectangle(r.X + ui.U(68), r.Bottom - ui.U(26), ui.U(24), ui.U(26)), r.Bottom, l, c, frame, lights);
-        TavernSign(r.Right + ui.U(6), top - ui.U(6), l, c, frame);
         return lights;
     }
 

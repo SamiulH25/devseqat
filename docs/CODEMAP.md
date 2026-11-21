@@ -784,8 +784,14 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Settlement.cs (749 lines)
 - **MapScreen** (class, L9): TabBody:12, TownTabs:41, HarbourTab:59, TownRow:88, PortraitWell:91, TroopStats:99, TroopOffer:107, RecruitTab:132, NoblesTab:147, TrainTab:165, RestTab:204, FoodTab:259, WorkshopTab:295, ForageTab:334, CaptivesTab:352, GarrisonTab:405, ContractTab:444, EldersTab:482, TavernTab:492, Goblet:555, TavernRow:573, MercenariesTab:580, MarketTab:603, GoodsList:637, Contracts:662, FiefTab:693
 
-## MapScreen.Street.cs (587 lines)
-- **MapScreen** (class, L9): readonly:12, readonly:19, readonly:24, PlaceOfTab:34, SettlementPanel:42, Available:77, Signs:83, Enter:127, PlacePlate:138, StandingPlate:174, Business:186, ErrandBar:216, Street:236, Glow:270, Footing:278, TownStreet:284, CastleStreet:332, VillageStreet:365, Spot:406, Barracks:412, Market:487, Green:543
+## MapScreen.Street.Art.cs (549 lines)
+- **MapScreen** (class, L6): Keep:10, EldersHall:207, CobbleStreet:305, VillageLane:349, Tree:375, Haystack:403, SplitFence:415, HarbourMasts:427, Guard:451, Warhorse:479
+
+## MapScreen.Street.cs (605 lines)
+- **MapScreen** (class, L9): readonly:12, readonly:19, readonly:24, PlaceOfTab:34, SettlementPanel:42, Available:77, Signs:83, Enter:127, PlacePlate:138, StandingPlate:174, Business:186, ErrandBar:216, Street:236, Glow:271, Footing:279, TownStreet:285, CastleStreet:333, VillageStreet:366, Spot:407, Barracks:413, Yard:468, Market:494, Green:561
+
+## MapScreen.Street.Northern.cs (406 lines)
+- **MapScreen** (class, L8): NorthLogs:11, NorthDark:12, NorthShingle:13, LongRoof:17, Dragon:52, RoundShield:66, ShieldPaint:80, FirePost:88, HornSign:185, HallFort:213, NorthBarracks:315, StaveChurch:369, LongRoofFlat:395
 
 ## MapScreen.Talk.cs (184 lines)
 - **MapScreen** (class, L7): OpenTalk:15, LeaveTalk:26, TalkPanel:38, Arguments:108, Speak:136, HallTab:150
@@ -793,12 +799,12 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Town.cs (196 lines)
 - **MapScreen** (class, L8): TabCount:21, PlaceRail:35, Purse:64, Card:88, Heading:98, Stat:108, Outcome:116, Price:128, JobIcon:137, JobCards:149, Watermark:182, BigButton:190
 
-## MapScreen.Townscape.cs (583 lines)
+## MapScreen.Townscape.cs (577 lines)
 - **TownLook** (struct, L8)
 - **TownColours** (struct, L14)
-- **MapScreen** (class, L16): LookOf:19, ColoursOf:32, Orb:77, Country:92, Clouds:144, Pine:163, Palisade:174, Ground:190, Water:214, Boat:240, Snowfall:261, UpperTown:282, TownWall:320, Landmark:340, Gable:435, StepGable:450, Crane:465, Palm:493, Horse:508, Herd:522, Folk:538, Smoke:571
+- **MapScreen** (class, L16): LookOf:19, ColoursOf:32, Orb:77, Country:92, Clouds:144, Pine:163, Palisade:174, Ground:190, Water:214, Boat:240, Snowfall:261, UpperTown:282, TownWall:320, Landmark:340, Gable:429, StepGable:444, Crane:459, Palm:487, Horse:502, Herd:516, Folk:532, Smoke:565
 
-## MapScreen.Townscape.Houses.cs (516 lines)
+## MapScreen.Townscape.Houses.cs (480 lines)
 - **MapScreen** (class, L7): Glass:41, TimberHouse:50, Openings:83, WhiteHouse:109, LogHouse:128, Yurt:141, Turf:157, Edges:173, Dome:181, HeroWall:213, TavernWindow:216, TavernDoor:228, Lantern:244, TavernSign:252
 
 ## MapScreen.Upgrade.cs (293 lines)
@@ -880,8 +886,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SaveScreen.cs (286 lines)
 - **SaveScreen** (class, L10): Show:29, Close:39, Draw:47, CampaignRow:155, SaveRow:177, Card:195, TypeName:235, NameBox:245, Thumb:258, Ago:277
 
-## ScreenHost.cs (1011 lines)
-- **ScreenHost** (class, L9): readonly:44, ScreenHost:71, ApplyVideo:91, OpenSettings:101, LoadContent:103, StartCampaign:166, Load:193, FinishLoading:209, ContinueCampaign:232, LoadSave:239, OpenLab:248, QuickBattle:250, StartCampaignBattle:257, FinishCampaignBattle:267, CycleQuality:275, Update:279, DrawCursor:336, Draw:356, EndDraw:406, Fade:414, CaptureShot:444, readonly:472, RestoreTavernTown:484, StagingRefused:491, PlaceShots:498, SaveShots:560, CampaignShots:574
+## ScreenHost.cs (1042 lines)
+- **ScreenHost** (class, L9): readonly:44, readonly:59, ScreenHost:80, ApplyVideo:100, OpenSettings:110, LoadContent:112, StartCampaign:175, Load:202, FinishLoading:218, ContinueCampaign:241, LoadSave:248, OpenLab:257, QuickBattle:259, StartCampaignBattle:266, FinishCampaignBattle:276, CycleQuality:284, Update:288, DrawCursor:345, Draw:365, EndDraw:415, Fade:423, CaptureShot:453, readonly:481, RestoreTavernTown:494, StagingRefused:501, PlaceShots:508, SaveShots:570, CampaignShots:584
 
 ## SelfTest.cs (103 lines)
 - **SelfTest** (class, L6): Run:14, Slots:20, ResolveBattles:32, RunOne:55, Lancer:63, Run:72, Scaled:74, MakeWanderer:77, Days:85, Ids:97, Check:99

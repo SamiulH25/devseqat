@@ -369,14 +369,8 @@ partial class MapScreen
                     for (int j = 0; j < 4; j++) ui.Line(new Vector2(x + ui.U(k + 1), ground - ui.U(68)), new Vector2(x + ui.U(k - 3 + j * 3), ground - ui.U(54) + j % 2 * ui.U(2)), cloth, 1);
                 }
                 break;
-            case "northern": // a long timber hall, horned gables, smoke
-                Gable(x, ground, ui.U(70), ui.U(38), ui.U(20), c);
-                {
-                    var apex = new Vector2(x + ui.U(35), ground - ui.U(58));
-                    ui.Line(apex, apex + new Vector2(-ui.U(5), -ui.U(7)), c, 2); // the gable horns, a V at the ridge
-                    ui.Line(apex, apex + new Vector2(ui.U(5), -ui.U(7)), c, 2);
-                }
-                Smoke(x + ui.U(48), ground - ui.U(54), t, night);
+            case "northern": // a stave church, roof on roof, dragons on its ridges
+                StaveChurch(x + ui.U(7), ground, c, night, lit, t); // left in the gap, clear of the mead hall's dragons
                 break;
             case "order": // the chapter house: a squat great tower with buttresses, the order's sun on its face, its long hall
                 Gable(x - ui.U(50), ground, ui.U(56), ui.U(34), ui.U(12), c);

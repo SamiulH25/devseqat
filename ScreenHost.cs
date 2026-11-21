@@ -52,6 +52,15 @@ sealed class ScreenHost : Game
     /// Debug: with IRONFIELD_TOWN_ONLY=1 a campaign shots run saves only the settlement screen's tabs (`town-*.png` and the like).
     static readonly bool townOnly = Environment.GetEnvironmentVariable("IRONFIELD_TOWN_ONLY") == "1";
     static readonly string? townCulture = Environment.GetEnvironmentVariable("IRONFIELD_TOWN_CULTURE");
+    /// Debug: with IRONFIELD_STREET_ONLY=1 a campaign shots run saves only the bare streets of a town, castle and village by day,
+    /// dusk and night (and the town in winter), as `street-<culture>-<place>-<when>.png`; IRONFIELD_TOWN_CULTURE paints them as that
+    /// people (or subculture) builds. For the street art (MapScreen.Street*.cs).
+    static readonly bool streetOnly = Environment.GetEnvironmentVariable("IRONFIELD_STREET_ONLY") == "1";
+    static readonly (string Where, int Hour, bool Winter)[] StreetShots =
+    {
+        ("town", 11, false), ("town", 18, false), ("town", 23, false), ("castle", 11, false), ("castle", 18, false), ("castle", 23, false),
+        ("village", 11, false), ("village", 18, false), ("village", 23, false), ("town", 11, true),
+    };
     /// Debug: with IRONFIELD_MAP_ONLY=1 a campaign shots run saves only the map: the overview, the land and its life, each kind of country.
     static readonly bool mapOnly = Environment.GetEnvironmentVariable("IRONFIELD_MAP_ONLY") == "1";
     /// Debug: with IRONFIELD_SAVES_ONLY=1 a campaign shots run writes a few saves (with their map pictures) into IRONFIELD_SAVES,
@@ -476,6 +485,7 @@ sealed class ScreenHost : Game
         ("steppe", 23, false), ("steppe", 11, false), ("azure", 23, true),
     };
     int tavernShots = -1;
+    double streetHours;
     double tavernHours;
     Settlement? tavernTown;
     string tavernCulture = "";
@@ -590,7 +600,7 @@ sealed class ScreenHost : Game
         }
         if (mapOnly && cStage == 2) { Exit(); return; }
         if (savesOnly) { SaveShots(c); return; }
-        if (townOnly && cStage < 56) cStage = 56;
+        if ((townOnly || streetOnly) && cStage < 56) cStage = 56;
         switch (cStage)
         {
             case 0: map.Stage("map"); Shot("campaign-map"); break;
@@ -972,6 +982,27 @@ sealed class ScreenHost : Game
                 c.Captain.Contract = castle.Faction; c.Captain.Renown = 120; c.S.Gold = 1500; castle.Nobles = c.Scaled(3);
                 map.Stage("esquires", castle); Shot("campaign-esquires"); break;
             }
+            case 56 when streetOnly && townShot < StreetShots.Length:
+            {
+                var town = c.S.Settlements.FirstOrDefault(s => s.Kind == SettlementKind.Town && s.Faction >= 0 && (townCulture == null || Factions.PeopleOf(s.Culture) == Factions.PeopleOf(townCulture)))
+                    ?? c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction >= 0);
+                if (townShot == 0) { streetHours = c.S.Hours; c.Captain.Contract = town.Faction; } // a friend: every building's sign shows
+                var (where, hour, winter) = StreetShots[townShot++];
+                var place = where switch
+                {
+                    "castle" => c.S.Settlements.First(s => s.Kind == SettlementKind.Castle && s.Faction == town.Faction),
+                    "village" => c.S.Settlements.First(s => s.Kind == SettlementKind.Village && s.Faction == town.Faction),
+                    _ => town,
+                };
+                if (townCulture != null) place.Culture = townCulture; // the run quits after: the save is never written
+                double day = Math.Floor(Math.Floor(streetHours / 24) / 120) * 120 + (winter ? 95 : 40);
+                c.S.Hours = day * 24 + hour;
+                c.Encounter = null; c.S.Event = null; c.Beat = null;
+                map.Stage("street", place);
+                string people = townCulture ?? Factions.PeopleOf(town.Culture);
+                Shot($"street-{people}-{where}-{(winter ? "winter" : hour >= 20 ? "night" : hour >= 17 ? "dusk" : "day")}"); cStage--; break;
+            }
+            case 56 when streetOnly: Exit(); break;
             case 56 when townShot < TownShots.Length:
             {
                 // Every tab of the settlement screen (docs/PLAYTEST.md PT2), at a town, a castle, a village and a fief of yours,

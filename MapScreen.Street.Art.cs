@@ -9,6 +9,7 @@ partial class MapScreen
     /// `hero` paints the full foreground castle (ashlar stone, motte, stone steps, turret roofs, glowing torches); otherwise an atmospheric hilltop keep.
     void Keep(int cx, int baseY, int scale, TownLook l, TownColours c, Color cloth, float t, bool hero)
     {
+        if (l.Build == "log") { HallFort(cx, baseY, scale, l, c, cloth, t, hero); return; } // the north builds in timber
         int k = ui.U(scale), s1 = Math.Max(1, ui.U(1));
         int wave = (int)MathF.Round(MathF.Sin(t * 3.2f) * s1);
         Color dayStone = l.Build switch { "white" => new(220, 210, 192), "log" => new(138, 126, 114), _ => new(168, 160, 148) };
@@ -229,6 +230,13 @@ partial class MapScreen
                 ui.Rect(new Rectangle(r.X - ui.U(4) + inset, wallTop - ty, r.Width + ui.U(8) - 2 * inset, s1), Kit.Mul(roof, 0.72f));
             }
         ui.Rect(new Rectangle(r.X - ui.U(5), wallTop - s1, r.Width + ui.U(10), ui.U(2)), Color.Lerp(roof, c.Rim, 0.35f));
+        if (l.Build == "log") // the north crosses its barge boards at the peak and carves them into dragons
+        {
+            int apex = r.X - ui.U(4) + (r.Width + ui.U(8)) / 2;
+            var carve = l.Night ? new Color(96, 70, 44) : new Color(176, 128, 70);
+            Dragon(apex - ui.U(1), wallTop - roofH + ui.U(2), -1, 1, NorthDark(l), carve);
+            Dragon(apex + ui.U(1), wallTop - roofH + ui.U(2), 1, 1, NorthDark(l), carve);
+        }
 
         // Pennant pole on the left roof slope (clear of the ELDERS sign over the ridge).
         int poleX = r.X + ui.U(11), poleY = wallTop - roofH + ui.U(1);
@@ -302,7 +310,22 @@ partial class MapScreen
         // Contact shadow & curb line along the building feet.
         ui.Rect(new Rectangle(p.X, ground, p.Width, ui.U(2)), Color.Black * 0.28f);
         ui.Rect(new Rectangle(p.X, ground + ui.U(2), p.Width, s1), Color.Lerp(baseCol, c.Rim, 0.22f));
-        if (l.Snow) return;
+        if (l.Snow) // trodden: grey ruts where the carts go, and the cobbles showing through where feet have worn it away
+        {
+            var trod = Color.Lerp(c.Snow, l.Night ? new Color(70, 74, 104) : new Color(150, 160, 186), 0.45f);
+            var stone = Color.Lerp(c.Ground, l.Night ? new Color(40, 38, 54) : new Color(118, 112, 110), 0.6f);
+            var sr = new Random(seed * 41 + 9);
+            foreach (int ty in new[] { 9, 14 })
+                for (int x = p.X; x < p.Right; x += ui.U(6))
+                    if (sr.Next(5) > 0 && ground + ui.U(ty) < p.Bottom) ui.Rect(new Rectangle(x, ground + ui.U(ty), ui.U(4 + sr.Next(4)), s1 * 2), trod);
+            for (int i = 0; i < 9; i++)
+            {
+                int x = p.X + sr.Next(Math.Max(1, p.Width)), y = ground + ui.U(4 + sr.Next(3) * 4);
+                for (int j = 0; j < 3; j++) ui.Rect(new Rectangle(x + j * ui.U(5), y + (j % 2) * ui.U(2), ui.U(4), ui.U(2)), stone);
+                ui.Rect(new Rectangle(x - ui.U(2), y - s1, ui.U(18), s1), trod);
+            }
+            return;
+        }
         // Staggered cobble courses.
         var rng = new Random(seed * 41 + 9);
         for (int row = 0, y = ground + ui.U(4); y < p.Bottom - ui.U(2); row++, y += ui.U(4))
