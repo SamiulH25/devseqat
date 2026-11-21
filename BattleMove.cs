@@ -39,7 +39,21 @@ public partial class Battle
         {
             if (!u.Active || Airborne(u)) continue; // over the trees
             float r = u.Mounted ? 0.9f : BodyRadius(u) - 0.025f;
-            if (Terrain.PushOut(ref u.Pos, r, u.Mounted) && u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
+            var was = u.Pos;
+            if (Terrain.PushOut(ref u.Pos, r, u.Mounted))
+            {
+                if (u.Mounted && u.Speed > 3) u.Speed *= 0.6f;
+                // A man walking into a trunk edges round it, the way he is already leaning (else he stands against it for ever).
+                else if (!u.Mounted && u.Vel.LengthSquared() > 0.1f && (u.Pos - was).LengthSquared() > 1e-8f)
+                {
+                    var n = Vector2.Normalize(u.Pos - was);
+                    var side = new Vector2(-n.Y, n.X);
+                    float lean = Vector2.Dot(side, u.Vel);
+                    if (MathF.Abs(lean) < 0.05f) lean = u.Place % 2 == 0 ? 1 : -1;
+                    u.Pos += side * MathF.Sign(lean) * u.Vel.Length() * 0.8f * dt;
+                    Terrain.PushOut(ref u.Pos, r, u.Mounted);
+                }
+            }
             // Pressed against a fence or hedge: edge along it toward the nearer end.
             if (Terrain.Features.Count > 0 && u.Vel.LengthSquared() > 0.1f && Terrain.GoRound(u.Pos, r, Vector2.Normalize(u.Vel), u.Mounted) is var round && round != Vector2.Zero)
             {

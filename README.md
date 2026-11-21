@@ -654,8 +654,14 @@ The visuals pass (`docs/archive/VISUALS.md`) changed nothing in the simulation: 
 - **Companies fight from their ranks.** Two companies meet as two lines: the front rank fights, the men behind wait and step into
   a gap when a man falls. A charge closes as a body, and at blows a line holds where it stands.
 - **Drill by tier:** every company has a grade, shown on its card (RAB / TRN / VET / ELT), its tooltip and the muster roll.
-  Tier 1-2 troops are Rabble, 3-4 Trained, 5-6 Veteran, 7 Elite; cohesion (up to +0.1), a Veteran officer and a companion at its
+  Tier I troops are Rabble, II-III Trained, IV-V Veteran, VI Elite; cohesion (up to +0.1), a Veteran officer and a companion at its
   head raise it, a Hothead lowers it.
+- **What each tier can do** (docs/pre-demo/TIERS.md): levies hold, charge, follow, open their ranks and brace their spears against
+  horse, but cannot lock shields; tier II forms the shield wall and rallies once after breaking (levies never come back); tier III
+  can relieve the line and be split; tier IV forms square and wedge; tier V shrugs off monsters' fear and rallies twice; a tier VI
+  man steadies the men around him. A formation a company has not learned is greyed on the order deck with the tier it needs.
+- **Wages by tier:** a man's weekly wage grows slower than his price (`WageCurve` 0.6 in campaign.json): a levy costs a little
+  more to keep than his price says and a knight much less, so at the same wage bill a better company wins from tier III up.
 - **Order:** a long run, a melee (for rabble), losses, a flank attack and bad ground shake a company's ranks; under 40 % they break
   (card: RANKS BROKEN) and its men fight each for himself, blocking worse and striking at 0.7. Drilled men re-form, even at
   blows; a sergeant or your banner near makes it half as quick again.

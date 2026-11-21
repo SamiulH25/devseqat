@@ -175,10 +175,34 @@ public sealed class Squad
     /// Ground speed multiplier for the formation (shield walls shuffle; squares barely move).
     public float Pace => Formation switch { Formation.ShieldWall => 0.6f, Formation.Square => 0.45f, _ => 1 };
 
-    /// The formations this company can take, in the order J cycles them.
-    public Formation[] Choices(bool shields) => Cavalry ? new[] { Formation.Line, Formation.Wedge, Formation.Loose }
+    /// The formations this company's kit allows, whatever its tier (the deck shows the rest greyed).
+    public Formation[] Shapes(bool shields) => Cavalry ? new[] { Formation.Line, Formation.Wedge, Formation.Loose }
         : shields ? new[] { Formation.Line, Formation.ShieldWall, Formation.Square, Formation.Wedge, Formation.Loose }
         : new[] { Formation.Line, Formation.Square, Formation.Wedge, Formation.Loose };
+
+    /// The formations this company can take now, in the order J cycles them: its kit's, as far as its tier has learned
+    /// (docs/pre-demo/TIERS.md TI1).
+    public Formation[] Choices(bool shields) => Shapes(shields).Where(f => CannotForm(f) == null).ToArray();
+
+    /// The company's tier for the ladder (TI1): the tier most of its men stand at (the lower on a tie).
+    public int Tier
+    {
+        get
+        {
+            int best = 0, count = 0;
+            Span<int> n = stackalloc int[8];
+            foreach (var u in Units) if (u.Active || Units.Count == 1) n[Math.Clamp(u.Type.Tier, 0, 7)]++;
+            for (int t = 0; t < 8; t++) if (n[t] > count) { count = n[t]; best = t; }
+            return count == 0 && Units.Count > 0 ? Units[0].Type.Tier : best;
+        }
+    }
+
+    /// The tier a formation is learned at (TI1): the shield wall at II, the square and the wedge at IV; line and open ranks always.
+    public static int FormationTier(Formation f) => f switch { Formation.ShieldWall => 2, Formation.Square or Formation.Wedge => 4, _ => 0 };
+
+    /// Why this company cannot take a formation yet, or null. Creatures (no tier ladder) take what their kit allows.
+    public string? CannotForm(Formation f) =>
+        Swarm || Units.Count == 0 || Units[0].Type.Wild || Tier >= FormationTier(f) ? null : $"NEEDS TIER {Battle.Roman(FormationTier(f))}";
 
     /// Which way a man in slot `slot` faces: out from the centre in a square, else the company's front.
     public Vector2 FaceAt(Vector2 slot)

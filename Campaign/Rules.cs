@@ -113,7 +113,12 @@ public static class Rules
     public static float Might(Party p) => p.Companies.Sum(c => c.Stacks.Sum(s => Might(s.Type, s.Men)) * (Campaign.NatureEffect(c) != null ? 1 + B.NatureWeight : 1));
     public static float Strength(Party p) => p.Companies.Sum(Strength);
 
-    public static int Upkeep(CompanyRecord c) => (int)MathF.Ceiling(c.Stacks.Sum(s => (s.Men + s.Wounded) * PerMan(s.Type.Cost) * B.UpkeepRate));
+    /// What a man's wage is figured from (TI4): his cost bent toward `Balance.WageAnchor` by `WageCurve`, so the wage steps
+    /// between tiers are flatter than the hire prices.
+    public static float WageCost(UnitType t) => t.Cost <= 0 ? 0 : B.WageAnchor * MathF.Pow(t.Cost / B.WageAnchor, B.WageCurve);
+    /// One man's wage a week.
+    public static float Wage(UnitType t) => PerMan(WageCost(t)) * B.UpkeepRate;
+    public static int Upkeep(CompanyRecord c) => (int)MathF.Ceiling(c.Stacks.Sum(s => (s.Men + s.Wounded) * Wage(s.Type)));
 
     /// Has any stack a man ready for promotion?
     public static bool UpgradeReady(CompanyRecord c) => c.Ready > 0;

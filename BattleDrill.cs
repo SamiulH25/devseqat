@@ -10,7 +10,14 @@ public enum Grade { Rabble, Trained, Veteran, Elite }
 public partial class Battle
 {
     /// Drill by troop tier 1-6.
-    static readonly float[] TierDrill = { 0.10f, 0.10f, 0.22f, 0.38f, 0.54f, 0.72f, 0.92f };
+    /// Drill by tier (docs/pre-demo/TIERS.md TI1): the grade follows the ladder: I Rabble, II-III Trained, IV-V Veteran, VI Elite.
+    static readonly float[] TierDrill = { 0.10f, 0.10f, 0.34f, 0.46f, 0.60f, 0.72f, 0.88f };
+
+    /// A tier as the game writes it.
+    public static string Roman(int tier) => tier switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", _ => tier.ToString() };
+
+    /// How many times a man of this tier comes back after breaking (TI1): levies never, II-IV once, V-VI twice.
+    public static int RalliesOf(UnitType t) => t.Wild ? 1 : t.Tier <= 1 ? 0 : t.Tier >= 5 ? 2 : 1;
 
     /// A troop's own drill: its data's, else its tier's. Creatures have none (the raised dead a little: they keep their
     /// places, mindlessly; their order never breaks, see UpdateFormed).

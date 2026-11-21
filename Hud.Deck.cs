@@ -122,7 +122,7 @@ sealed partial class Hud
     {
         var who = Listening();
         var rows = new List<List<Cmd>> { MoveRow.ToList() };
-        var shapes = ShapeRow.Where(c => who.Any(s => s.Units.Count > 0 && s.Choices(s.Units[0].Type.HasShield).Contains(ShapeOf(c)!.Value))).ToList();
+        var shapes = ShapeRow.Where(c => who.Any(s => s.Units.Count > 0 && s.Shapes(s.Units[0].Type.HasShield).Contains(ShapeOf(c)!.Value))).ToList(); // unlearned ones greyed (TI1)
         if (shapes.Count > 0) rows.Add(shapes);
         var more = new List<Cmd>();
         if (who.Any(Shoots)) more.Add(Cmd.FireAtWill);
@@ -272,6 +272,11 @@ sealed partial class Hud
 
     // ---------- the order deck ----------
 
+    /// Why none of the listening companies can take this shape yet (TI1: the tier ladder), or null.
+    static string? Unlearned(Cmd c, List<Squad> who) =>
+        ShapeOf(c) is Formation f && who.Count > 0 && who.All(s => s.Units.Count == 0 || s.CannotForm(f) != null)
+            ? $"{FormationName(f)} {who.Select(s => s.CannotForm(f)).FirstOrDefault(w => w != null)}. PROMOTE THE MEN TO TEACH IT." : null;
+
     bool Lit(Cmd c, List<Squad> who) => who.Count > 0 && c switch
     {
         Cmd.Charge => who.All(s => s.Order == Order.Charge),
@@ -301,21 +306,21 @@ sealed partial class Hud
         Cmd? over = null;
         foreach (var (r, c) in buttons)
         {
-            bool lit = Lit(c, who), hover = r.Contains(Mouse);
+            bool lit = Lit(c, who), hover = r.Contains(Mouse), locked = Unlearned(c, who) != null;
             if (hover) over = c;
             var info = Info[c];
             Rect(new Rectangle(r.X + U(1), r.Y + U(2), r.Width, r.Height), Color.Black * 0.4f);
             kit.VGrad(r, lit ? new Color(104, 84, 36) : hover ? new Color(60, 60, 68) : new Color(38, 40, 46), lit ? new Color(54, 44, 20) : Kit.IronDark, 1);
             Frame(r, lit || hover ? Gold : Color.Black * 0.7f, U(1));
             Rect(new Rectangle(r.X + U(1), r.Y + U(1), r.Width - U(2), U(1)), Color.White * (hover ? 0.3f : 0.1f));
-            var col = lit ? Gold : hover ? Color.White : Style.Text;
+            var col = locked ? Kit.Mul(Dim, 0.7f) : lit ? Gold : hover ? Color.White : Style.Text;
             kit.Icon(info.Icon, r.X + (r.Width - U(21)) / 2, r.Y + U(4), col, 3);
             TextC(kit.Fit(info.Short, r.Width - U(2)), r.Center.X, r.Bottom - U(10), col, 1);
             if (info.Key is Act k && Ctl.Name(k) is { Length: > 0 and <= 2 } key) TextR(key, r.Right - U(3), r.Y + U(3), hover ? Kit.Parchment : Dim, 1);
         }
         if (over is not Cmd oc) { TextR($"{Ctl.Name(Act.Help)} KEYS", deck.Right - U(8), deck.Y - U(10), Color.White * 0.6f, 1); return; }
         var oi = Info[oc];
-        string tip = oc == Cmd.Rule && who.FirstOrDefault(s => s.Rule != StandingRule.None) is { } ruled ? "NOW: " + Battle.RuleText(ruled.Rule).ToUpperInvariant() : oi.Tip;
+        string tip = Unlearned(oc, who) is string why ? why : oc == Cmd.Rule && who.FirstOrDefault(s => s.Rule != StandingRule.None) is { } ruled ? "NOW: " + Battle.RuleText(ruled.Rule).ToUpperInvariant() : oi.Tip;
         var card = new Rectangle(deck.X, deck.Y - U(38), deck.Width, U(34));
         Panel(card, Gold);
         Text(oi.Name, card.X + U(8), card.Y + U(7), Color.White, 1);

@@ -4,7 +4,7 @@ The owner's brief (2026-11-21): "upgrading from levies to swordsmen makes a visu
 gameplay change it makes. Why should I care that it's upgraded, why should the user care? Why would a player want to get high
 tier soldiers?" This plan answers that from three sides: what a tier does, how the player sees it, and why it pays.
 
-Phase prefix: **TI**. TI0 built (see "As built" at the end).
+Phase prefix: **TI**. TI0 and TI1 built (see "As built" at the end).
 
 ## Where things stand (2026-11-21)
 
@@ -198,3 +198,34 @@ Size: large in total. TI0, TI1 and TI3 are medium on their own.
     flattened or a tier's worth raised for its price; with equal-men fights already one-sided, the wage curve is the lever.
   - *Auto-resolve* calls the equal-upkeep fights wrong a third to two thirds of the time from tier IV up: `Rules.Might` rates
     tier V bows and mages above what they do in a fight.
+
+### Wages by tier (TI4's lever, done with TI1, 2026-11-21)
+- `Rules.WageCost(t)` = `WageAnchor` x (cost / `WageAnchor`) ^ `WageCurve`; `Rules.Wage` and `Rules.Upkeep` use it; hire, promotion,
+  ransom and loot keep `cost`. `WageCurve` 0.6, `WageAnchor` 36 (Balance, Data/campaign.json). A levy's wage rises about two
+  thirds, a tier VI man's falls by more than half.
+- Tried 0.7 (equal upkeep: 18 / 33 / 76 / 64 / 80 % by step: crowds still win to III), 0.5 (77 / 54 / 89 / 88 / 93 %: quality wins
+  everywhere), 0.6 (58 / 48 / 81 / 79 / 82 %).
+- `--pacing 4` at 0.6 (with the C8 pilot): 4/4 seeds Marshal (days 106-162), 510 of 538 fights won, more renown than at 1.0.
+  The campaign plays a little easier; the targets (Vassal day 40-67...) were already met early before.
+
+### TI1 (a ladder of things each tier can do), as built (2026-11-21)
+- **Drill** (`BattleDrill.TierDrill`): 0.10, 0.34, 0.46, 0.60, 0.72, 0.88 for tiers I-VI, so the grade follows the ladder: I Rabble,
+  II-III Trained, IV-V Veteran, VI Elite (cohesion can lift a tier III company to Veteran). Tried 0.32/0.50 for II/III: no change
+  in the II -> III step, which is the wage ratio's, not drill's.
+- **Formations by tier** (`Squad.Tier`: the tier most of its men stand at; `FormationTier`, `CannotForm`, `Shapes` = the kit's,
+  `Choices` = the learned ones): the shield wall at II, square and wedge at IV; line and open ranks always. The order deck shows
+  the kit's shapes and greys the unlearned ones ("SHIELD WALL NEEDS TIER II. PROMOTE THE MEN TO TEACH IT."); `SetShape` leaves a
+  company that has not learned it as it is. The AI's shield wall (`BattlePosts`) respects it. Levies keep the brace (owner).
+- **Rallies by tier** (`Battle.RalliesOf`): levies never come back after breaking, II-IV once, V-VI twice (creatures once).
+- **Fear** (`BattleMorale`): a monster's fear does not reach tier V and up. **Steadied:** a tier VI man within 8 m adds +0.4
+  morale a second to lower-tier men of his side.
+- **Relief and splitting** need tier III (`CannotRelieve`, `CannotSplit`).
+- **Found on the way:** a man walking into a tree trunk stood against it for ever (`Terrain.PushOut` only pushed him back); he
+  now edges round it the way he leans (`BattleMove.Move`). It stalled the level-4 battle of `ResolveBattles`.
+- `--tiers 3` after TI1 (equal men / upkeep / places, up wins): I->II 100 / 73 / 100 %, II->III 100 / 40 / 90 %,
+  III->IV 100 / 81 / 99 %, IV->V 100 / 83 / 99 %, V->VI 100 / 82 / 98 %. Auto-resolve now agrees 73-85 % of the time.
+- **Not built:** "orders land a beat sooner" at III (orders already land at once since OF0), IV pursuing and coming back, V
+  fighting from the ranks with the rear rank's spears or bows. **Open:** the II -> III step at equal upkeep (40 %) is still
+  short of the owner's "ahead from III": a TI6 tuning item (tier III stats or its wage).
+- Tests: `TierLadder` (gates, rallies, grades), `RelieveAndSplit` and `ElitePincer` set up for the new drill (tier III companies
+  relieve; the pinned foe in the pincer is rabble).

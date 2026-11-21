@@ -157,7 +157,7 @@ public partial class Battle
         foreach (var s in live.Where(s => !s.Cavalry && !Ranged(s) && !s.Swarm && s.Units[0].Type.HasShield))
         {
             bool lockUp = horseNear && d.Temper != Temper.Bold && s.Order == Order.Hold;
-            if (lockUp && s.Formation == Formation.Line) { s.Formation = Formation.ShieldWall; s.ShieldsLocked = true; }
+            if (lockUp && s.Formation == Formation.Line && s.CannotForm(Formation.ShieldWall) == null) { s.Formation = Formation.ShieldWall; s.ShieldsLocked = true; }
             else if (!lockUp && s.ShieldsLocked) { if (s.Formation == Formation.ShieldWall) s.Formation = Formation.Line; s.ShieldsLocked = false; }
         }
         foreach (var s in live.Where(Ranged))

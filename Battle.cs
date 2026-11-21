@@ -458,7 +458,7 @@ public sealed partial class Battle
     (Unit? unit, float dist) Nearest(Unit u, Squad? only = null) => NearestFast(u, only);
 
     /// Spears set their points whenever they are standing (whatever the order); other foot need to be holding tight.
-    static bool CanBrace(Unit b) =>
+    internal static bool CanBrace(Unit b) =>
         !b.Mounted && !b.Routing && b.Squad is { } s && s.Formation != Formation.Loose
         && (b.Type.Class == UnitClass.Skirmisher || s.Formation is Formation.ShieldWall or Formation.Square
             || (b.Type.Class == UnitClass.Infantry && s.Order == Order.Hold));

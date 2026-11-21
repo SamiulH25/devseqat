@@ -28,6 +28,7 @@ public sealed partial class Battle
         if (tired.Division != fresh.Division) return "THEY SERVE IN DIFFERENT DIVISIONS";
         if (tired.Cavalry || fresh.Cavalry) return "HORSE RALLY ON THEIR OWN: RELIEVE FOOT ONLY";
         if (tired.Swarm || fresh.Swarm) return "CREATURES KEEP NO LINE";
+        if (Math.Min(tired.Tier, fresh.Tier) < 3) return "RELIEVING THE LINE NEEDS TIER III ON BOTH";
         if (tired.RelievedBy != null || fresh.RelievedBy != null || Squads.Any(o => o.RelievedBy == fresh || o.RelievedBy == tired)) return "A RELIEF IS ALREADY UNDER WAY";
         if (fresh.InContact) return $"{fresh.Name.ToUpperInvariant()} IS AT BLOWS ITSELF";
         if (fresh.Alive * 2 < tired.Alive) return $"{fresh.Name.ToUpperInvariant()} IS TOO FEW TO HOLD THAT LINE";
@@ -100,6 +101,7 @@ public sealed partial class Battle
         if (s.Alive == 0 || s.FoldedInto != null) return "THAT COMPANY IS GONE";
         if (s.AiControlled) return "AN ALLY'S COMPANY KEEPS ITS OWN COLOURS";
         if (s.Swarm) return "CREATURES KEEP TO THEIR OWN PACK";
+        if (s.Tier < 3) return "SPLITTING NEEDS TIER III";
         if (CasterCompany(s)) return "MAGES KEEP THEIR OWN CIRCLE";
         if (s.Alive < 10) return "TOO FEW TO SPLIT (TEN MEN AT LEAST)";
         if (s.InContact) return $"{s.Name.ToUpperInvariant()} IS AT BLOWS: PULL IT OUT FIRST";

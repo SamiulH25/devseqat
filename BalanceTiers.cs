@@ -5,9 +5,9 @@ using Microsoft.Xna.Framework;
 namespace Ironfield;
 
 /// `--tiers [seeds] [filter]` (docs/pre-demo/TIERS.md TI0): every upgrade link that keeps its role fought against its parent
-/// three ways: the same men, the same upkeep (wages are per man, from `UnitType.Cost`) and the same company places
+/// three ways: the same men, the same upkeep (wages are per man, `Rules.WageCost`) and the same company places
 /// (`Rules.TierWeight`); wins, men left and time to break, and whether auto-resolve (`Rules.Might`) calls the same winner.
-/// Writes balance/tiers.csv and prints a table by tier step against TI0's targets.
+/// A filter is an id fragment, a culture or a matchup. Writes balance/tiers.csv and prints a table by tier step against TI0's targets.
 public static partial class BalanceReport
 {
     /// The three matchups, by how the parent's head count is set against the upgrade's.
@@ -37,7 +37,7 @@ public static partial class BalanceReport
     /// The parent's head count against `Base` of the upgrade in a matchup.
     public static int ParentMen(UnitType from, UnitType to, string matchup) => matchup switch
     {
-        "upkeep" => Math.Max(1, (int)MathF.Round(Base * (float)to.Cost / Math.Max(1, from.Cost))),
+        "upkeep" => Math.Max(1, (int)MathF.Round(Base * Rules.WageCost(to) / MathF.Max(1, Rules.WageCost(from)))),
         "places" => Math.Max(1, (int)MathF.Round(Base * Rules.TierWeight(to.Tier) / Rules.TierWeight(from.Tier))),
         _ => Base,
     };
@@ -55,8 +55,10 @@ public static partial class BalanceReport
     {
         Directory.CreateDirectory("balance");
         var inv = CultureInfo.InvariantCulture;
-        var links = TierLinks(filter);
-        var jobs = links.SelectMany(l => TierMatchups.Select(m => (l.from, l.to, m))).ToList();
+        // A filter naming a matchup ("upkeep") runs only that one, over every link.
+        var only = TierMatchups.Contains(filter) ? new[] { filter } : TierMatchups;
+        var links = TierLinks(only.Length == 1 ? "" : filter);
+        var jobs = links.SelectMany(l => only.Select(m => (l.from, l.to, m))).ToList();
         var rows = new TierRow[jobs.Count];
         var clock = System.Diagnostics.Stopwatch.StartNew();
         // Each fight is its own Battle with its own dice, so the jobs run side by side and the numbers do not depend on the order.
@@ -92,7 +94,7 @@ public static partial class BalanceReport
         }
         // The flattest steps with equal men: what TI1 must fix first.
         Console.WriteLine("flattest steps (equal men):");
-        foreach (var r in rows.Where(r => r.Matchup == "men").OrderBy(r => r.Wins / (float)r.Fights).ThenBy(r => r.KeptTo - r.KeptFrom).Take(15))
+        foreach (var r in rows.Where(r => r.Matchup == "men" || only.Length == 1).OrderBy(r => r.Wins / (float)r.Fights).ThenBy(r => r.KeptTo - r.KeptFrom).Take(15))
             Console.WriteLine($"  {r.From.Id} ({Roman(r.From.Tier)}) -> {r.To.Id} ({Roman(r.To.Tier)}): won {r.Wins}/{r.Fights}, kept {r.KeptTo:0.00} against {r.KeptFrom:0.00}");
         Console.WriteLine("wrote balance/tiers.csv");
     }

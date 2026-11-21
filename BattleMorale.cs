@@ -42,7 +42,7 @@ public partial class Battle
                 float foe = Vector2.Distance(u.Pos, centroid[1 - u.Team]);
                 // Goblins scatter at the first scare but come back again and again, as long as their boss lives.
                 if (u.Type.Has("craven")) m += BossDown[u.Team] ? -2f : foe > 18 ? 3.5f : -0.5f;
-                else m += u.Routs > 1 ? -2f : foe > 26 ? 2f : -0.8f;
+                else m += u.Routs > RalliesOf(u.Type) ? -2f : foe > 26 ? 2f : -0.8f;
             }
             else
             {
@@ -57,19 +57,20 @@ public partial class Battle
             if (lost[u.Team] > 0.5f) m -= 0.5f;          // the army is losing
             // Neighbours running away, and horsemen thundering at you, are frightening.
             int routing = 0;
-            bool charged = false, feared = false;
+            bool charged = false, feared = false, steadied = false;
             foreach (var o in Near(u.Pos, 8, near))
             {
                 if (!o.Active || o == u) continue;
                 float d2 = Vector2.DistanceSquared(o.Pos, u.Pos);
-                if (o.Team == u.Team) { if (o.Routing && d2 < 49) routing++; }
-                else if (o.Type.Has("fear") && d2 < 64 && u.Type.VsMonster <= 1) feared = true; // hunters know what they face
+                if (o.Team == u.Team) { if (o.Routing && d2 < 49) routing++; else if (!o.Routing && o.Type.Tier >= 6 && !o.Type.Wild && d2 < 64) steadied = true; } // an elite man near steadies (TI1)
+                else if (o.Type.Has("fear") && d2 < 64 && u.Type.VsMonster <= 1 && (u.Type.Tier < 5 || u.Type.Wild)) feared = true; // tier V and up have seen worse (TI1) // hunters know what they face
                 else if (!u.Mounted && o.Mounted && o.Speed > 7 && d2 < 64 && !Braced(u)
                     && Vector2.Dot(o.HeadingDir, Vector2.Normalize(u.Pos - o.Pos)) > 0.85f) charged = true;
             }
             m -= MathF.Min(2, routing * 0.3f) * shock;
             if (charged) m -= 2.5f * shock;
             if (feared) m -= 2.5f * shock; // a troll looming over you
+            if (steadied && u.Type.Tier < 6) m += 0.4f;
             u.Morale = Math.Clamp(u.Morale + m * step, 0, 100);
             // Iron Will: near you, a company that still has a third of its men will not break.
             if (Options.IronWill && u.Team == 0 && inspired && u.Squad.Alive >= u.Squad.StartCount * 0.3f) u.Morale = MathF.Max(u.Morale, 16);
@@ -79,7 +80,7 @@ public partial class Battle
             float routAt = (u.Squad.Company?.Has("Stubborn") == true || (Wall != null && u.Team == 1 && !Wall.GateOpen) ? RoutAt - 4 : RoutAt) - (u.Squad.Company?.RoutBonus ?? 0) // officer trait; walls; honours
                 + (u.Type.Has("craven") ? CravenRout : 0);
             if (!u.Routing && u.Morale < routAt) { u.Routing = true; u.Routs++; u.Action = UnitAction.None; u.Couched = false; }
-            else if (u.Routing && u.Morale > RallyAt && (u.Type.Has("craven") ? !BossDown[u.Team] : u.Routs <= 1 && !(u.Type.Bound && BossDown[u.Team])))
+            else if (u.Routing && u.Morale > RallyAt && (u.Type.Has("craven") ? !BossDown[u.Team] : u.Routs <= RalliesOf(u.Type) && !(u.Type.Bound && BossDown[u.Team])))
             {
                 u.Routing = false;
                 u.Morale = MathF.Max(u.Morale, Battle.RallyAt + 2); // they come back shaken but steady

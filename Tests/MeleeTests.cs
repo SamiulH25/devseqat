@@ -290,6 +290,7 @@ public static partial class SelfTest
         var a2 = b.AddSquad(0, Troops.Get("men_at_arms"), 12, new(-4, -22), 6, Vector2.UnitY);
         var e = b.AddSquad(1, Troops.Get("men_at_arms"), 16, new(0, 10), 8, -Vector2.UnitY);
         a1.Drill = a2.Drill = 0.92f;
+        e.Drill = 0.22f; // a rabble foe that holds its ground (tier III is Trained since TI1 and would refuse the flank)
         e.HoldInPlace();
         a1.Order = a2.Order = Order.Charge;
         bool flanked = false;

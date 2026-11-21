@@ -1682,8 +1682,8 @@ public static partial class SelfTest
     {
         // A tired company at blows is relieved: the fresh one takes the line, the tired one ends behind it.
         var b = Battle.Empty(61);
-        var tired = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, 0), 8, Vector2.UnitY);
-        var fresh = b.AddSquad(0, Troops.Get("shieldmen"), 16, new(0, -18), 8, Vector2.UnitY);
+        var tired = b.AddSquad(0, Troops.Get("men_at_arms"), 16, new(0, 0), 8, Vector2.UnitY); // relieving the line needs tier III (TI1)
+        var fresh = b.AddSquad(0, Troops.Get("men_at_arms"), 16, new(0, -18), 8, Vector2.UnitY);
         var foe = b.AddSquad(1, Troops.Get("levies"), 30, new(0, 8), 10, -Vector2.UnitY);
         var horse = b.AddSquad(0, Troops.Get("outriders"), 8, new(20, -10), 8, Vector2.UnitY);
         tired.Order = Order.Charge;
@@ -1698,9 +1698,10 @@ public static partial class SelfTest
         Check(broke && tired.RelievedBy == null && behind < -4, $"the tired men broke off and stand behind the fresh line ({behind:0.0} m)");
 
         // A split company stands as two halves that report as one, and rejoin whole.
-        var c = new Battle(62, new ArmySpec("mine", 0, new List<Company> { new("shieldmen", 20, "infantry", 5) }), new ArmySpec("theirs", 0, new List<Company> { new("levies", 20, "infantry", 9) }), new BattleOptions());
+        var c = new Battle(62, new ArmySpec("mine", 0, new List<Company> { new("men_at_arms", 20, "infantry", 5), new("shieldmen", 20, "infantry", 6) }), new ArmySpec("theirs", 0, new List<Company> { new("levies", 20, "infantry", 9) }), new BattleOptions());
         c.StartRecording(62);
         var s = c.Squads.First(q => q.Company?.Id == 5);
+        Check(c.CannotSplit(c.Squads.First(q => q.Company?.Id == 6)) == "SPLITTING NEEDS TIER III", "a tier II company cannot split (TI1)");
         var h = c.Split(s)!;
         Check(h != null && s.Alive == 10 && h.Alive == 10 && c.Commanded.Contains(h), "a company splits into two halves of ten");
         var r = c.Result().Companies.Where(x => x.Id == 5).ToList();

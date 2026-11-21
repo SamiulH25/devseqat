@@ -100,6 +100,7 @@ partial class BattleScreen
         if (list.Count == 0) return;
         foreach (var s in list)
         {
+            if (s.CannotForm(shape) != null && s.Shapes(s.Units[0].Type.HasShield).Contains(shape)) continue; // not learned yet (TI1): keeps its shape
             var f = s.Choices(s.Units[0].Type.HasShield).Contains(shape) ? shape : Formation.Line;
             Send(s, q => q.Formation = f);
         }
