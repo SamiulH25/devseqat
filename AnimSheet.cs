@@ -62,6 +62,7 @@ sealed class AnimSheet
             else { u.Action = UnitAction.Recover; u.ActionTimer = 0.25f * (1 - (k - 0.75f) * 4); } }, Span: 2.0f),
         new("fall", "men_at_arms", (u, k) => { u.Dead = true; u.DiedAt = 0; u.DiedFall = Fall.Cut; u.DiedFrom = u.Pos + u.Dir; }, Span: 0.72f),
         new("rider gallop", "paladin_knights", (u, k) => { u.Vel = u.Dir * 8.6f; u.Anim = k; u.Couched = true; }, Horse: "warhorse", Span: 1.0f),
+        new("rider trot", "reaver_horsemen", (u, k) => { u.Vel = u.Dir * 4f; u.Anim = k; }, Horse: "warhorse", Span: 1.0f),
         new("rider look", "reaver_horsemen", (u, k) => { u.Vel = u.Dir * 1.6f; u.Anim = k; u.Facing = u.ViewFacing = u.Heading + (k - 0.5f) * 3.6f; }, Horse: "warhorse", Span: 1.0f), // turning in the saddle, from far left to far right
         new("rider cut", "reaver_horsemen", (u, k) => { u.Vel = u.Dir * 6.2f; u.Anim = k; u.Swing = AttackDir.Right; u.Action = k < 3 / 8f ? UnitAction.Windup : UnitAction.Recover;
             u.ActionTimer = k < 3 / 8f ? u.Type.Windup * (1 - (k + 1 / 8f) / (3 / 8f)) : u.Type.Recover * (1 - (k - 3 / 8f) / (5 / 8f)); }, Horse: "warhorse", Span: 1.0f),

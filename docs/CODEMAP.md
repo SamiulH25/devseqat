@@ -8,8 +8,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **AbilityDef** (class, L8)
 - **Abilities** (class, L41): Get:47, Has:48, readonly:52, Load:66, Validate:83
 
-## AnimSheet.cs (427 lines)
-- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:78, WriteArmorShowcase:158, WriteFaceShowcase:179, RenderGrid:210, Write:273, Render:284, MakeUnit:331, Cell3D:357, Cell2D:388, Ground:409
+## AnimSheet.cs (428 lines)
+- **AnimSheet** (class, L10): AnimSheet:23, Clip:35, Swing:37, ShowcaseItem:79, WriteArmorShowcase:159, WriteFaceShowcase:180, RenderGrid:211, Write:274, Render:285, MakeUnit:332, Cell3D:358, Cell2D:389, Ground:410
 
 ## Architecture.cs (128 lines)
 - **HouseKind** (enum, L6): windows:9, roof:10, roof:12, roof:13, eaves:14, street:15, posts:16, tent:17, tent:18
@@ -861,8 +861,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Puppet3D.Beasts.cs (237 lines)
 - **Puppet3D** (class, L7): BeastRearing:9, DrawBeast3D:13, DrawWolfUnit3D:24, DrawWolfRig:42, DrawWarg3D:86, DrawBear3D:94, DrawSpider3D:139, DrawWyvern3D:175
 
-## Puppet3D.cs (1294 lines)
-- **Puppet3D** (class, L12): Puppet3D:40, BeginCamera:46, Rad:53, Frame:55, WorldFrame:64, Lean:73, W:80, WDir:92, EmitLocal:105, EmitBone:171, EmitDir:187, EmitWeapon:199, RotX:224, RotZ:230, RotY:236, Elbow:242, Sink:264, TryDraw:273, EmblemOf:754, EmitSlashArc:764, EmitShield:837, DrawFallen3D:882, Banner:984, DrawMissile:1087, HorseScale:1105, DrawHorse3D:1113, DrawLooseHorse:1217, Bench:1232
+## Puppet3D.cs (1333 lines)
+- **Puppet3D** (class, L12): Puppet3D:40, BeginCamera:46, Rad:53, Frame:55, WorldFrame:64, Lean:73, W:80, WDir:92, EmitLocal:105, EmitBone:171, EmitDir:187, EmitWeapon:199, RotX:224, RotZ:230, RotY:236, Elbow:242, Sink:264, TryDraw:273, EmblemOf:754, EmitSlashArc:764, EmitShield:837, DrawFallen3D:882, Banner:984, DrawMissile:1087, HorseScale:1105, Joint:1115, DrawHorse3D:1129, DrawLooseHorse:1256, Bench:1271
 
 ## PuppetBeasts.cs (176 lines)
 - **Puppet** (class, L8): OtherBeast:11, Rearing:23, SpiderBody:27, BearBody:58, WyvernBody:86, WebOn:123, SheetRect:133, OtherBeastCorpse:136

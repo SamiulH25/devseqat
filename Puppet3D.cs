@@ -1110,6 +1110,22 @@ sealed partial class Puppet3D
         _ => 1.26f,
     };
 
+    /// Two-bone leg: where the middle joint of a leg from `hip` to `hoof` sits (segment lengths `upper`, `lower`). A
+    /// foreleg's knee bends forward of the line (the cannon folds back under it); a hind leg's hock points back.
+    static Vector3 Joint(Vector3 hip, Vector3 hoof, float upper, float lower, bool front)
+    {
+        var d = hoof - hip;
+        float len = d.Length();
+        if (len < 1e-4f) return hip + new Vector3(0, -upper, 0);
+        len = MathF.Min(len, (upper + lower) * 0.999f);
+        var dir = Vector3.Normalize(d);
+        float cosA = Math.Clamp((upper * upper + len * len - lower * lower) / (2 * upper * len), -1, 1);
+        float sinA = MathF.Sqrt(1 - cosA * cosA);
+        var side = Vector3.Normalize(new Vector3(0, dir.Z, -dir.Y)); // in the leg's plane, square to the line; +Z when the leg hangs down
+        if (!front) side = -side;
+        return hip + dir * (upper * cosA) + side * (upper * sinA);
+    }
+
     float DrawHorse3D(Vector2 pos, float ground, float heading, float anim, float speed, string barding, float idle = -1, float turnDelta = 0f)
     {
         float hScale = HorseScale(barding);
@@ -1148,34 +1164,57 @@ sealed partial class Puppet3D
         float nod = still ? MathF.Max(0, MathF.Sin(Now * 0.55f + idle * 11f) - 0.72f) * 0.30f * MathF.Sin(Now * 4.5f) : 0;
         float paw = still ? MathF.Max(0, MathF.Sin(Now * 0.45f + idle * 17f) - 0.86f) * 7f : 0;
 
-        float amp = speed < 0.3f ? 0 : 12f + 20f * trot + 26f * gait;
-        ReadOnlySpan<float> phase = stackalloc float[] { 0f, 0.5f - 0.28f * gait, 0.25f + 0.32f * gait, 0.75f + 0.04f * gait };
-        const float Upper = 0.42f, Lower = 0.46f;
+        // The gait (front left, front right, hind left, hind right): a four-beat walk, a trot on diagonal pairs, a gallop
+        // led by the hinds. Each hoof is placed, not swung: on the ground it stays put while the body passes over it (it
+        // sweeps back under the horse), then it lifts, the joint folds and it reaches forward for the next step. The knee
+        // and hock are solved from where the hoof is, so a leg bends as a leg does instead of swinging stiff from the hip.
+        float walkK = 1 - Math.Clamp((speed - 1.8f) / 1.6f, 0, 1), gallopK = Math.Clamp((speed - 5.5f) / 2.5f, 0, 1), trotK = 1 - walkK - gallopK;
+        ReadOnlySpan<float> walkP = stackalloc float[] { 0.25f, 0.75f, 0f, 0.5f };
+        ReadOnlySpan<float> trotP = stackalloc float[] { 0f, 0.5f, 0.5f, 0f };
+        ReadOnlySpan<float> gallopP = stackalloc float[] { 0.42f, 0.52f, 0f, 0.1f };
+        float duty = 0.62f * walkK + 0.45f * trotK + 0.36f * gallopK;      // share of the stride a hoof is on the ground
+        float sweep = speed < 0.3f ? 0 : 0.17f * walkK + 0.25f * trotK + 0.31f * gallopK; // half the hoof's travel, horse units
+        sweep *= Math.Clamp(speed / 1.2f, 0, 1);
+        const float Upper = 0.41f, Lower = 0.41f, Sole = 0.02f;
 
         for (int i = 0; i < 4; i++)
         {
             bool front = i < 2;
             float sd = i % 2 == 0 ? -1f : 1f;
-            float ph = anim * MathF.Tau + phase[i] * MathF.Tau;
-            float a = Rad(amp) * MathF.Sin(ph);
-            // The joint folds as the leg swings forward (the knee in front, the hock behind), more the faster he goes.
-            float bend = MathF.Max(0, MathF.Cos(ph)) * (front ? 1.05f : 0.70f) * (0.35f + 0.65f * MathF.Max(trot, gait)) * MathF.Min(1, amp / 20f);
-            // At rest a hind leg is never straight: the gaskin slopes back from the stifle to the hock and the cannon stands under it.
-            float upRest = front ? 0 : Rad(-13), lowRest = front ? 0 : Rad(11);
-            if (front && Rear > 0) { a = Rad(58 * Rear); bend = 0.9f * Rear; }
-            if (i == 0 && paw > 0) { a = Rad(20 * paw); bend = 0.4f * paw; }
-
             // The top of the leg sits up inside the barrel and is drawn thick (forearm, gaskin), so it grows out of the body.
             var hip = new Vector3(sd * 0.19f + shift, y - 0.06f + (front ? rock : -rock), front ? 0.56f : -0.58f);
-            float upA = a + upRest;
-            var knee = hip + new Vector3(0, -(Upper + 0.08f) * MathF.Cos(upA), (Upper + 0.08f) * MathF.Sin(upA));
-            float lowA = a + lowRest + (front ? -bend : bend);
-            var hoof = knee + new Vector3(0, -Lower * MathF.Cos(lowA), Lower * MathF.Sin(lowA));
+            Vector3 hoof;
+            if ((front && Rear > 0) || (i == 0 && paw > 0))
+            {
+                // Rearing forelegs paw the air; a standing horse paws the ground.
+                float a = front && Rear > 0 ? Rad(58 * Rear) : Rad(20 * paw), fold = front && Rear > 0 ? 0.9f * Rear : 0.4f * paw;
+                var k0 = hip + new Vector3(0, -Upper * MathF.Cos(a), Upper * MathF.Sin(a));
+                hoof = k0 + new Vector3(0, -Lower * MathF.Cos(a - fold), Lower * MathF.Sin(a - fold));
+            }
+            else
+            {
+                float ph = anim + walkP[i] * walkK + trotP[i] * trotK + gallopP[i] * gallopK;
+                ph -= MathF.Floor(ph);
+                float stand = (front ? 0.04f : -0.06f); // where the hoof stands under its hip (a hind hoof a little behind it)
+                if (ph < duty || sweep <= 0)
+                {
+                    float k = duty > 0 ? ph / duty : 0;
+                    hoof = new Vector3(hip.X, Sole, hip.Z + stand + MathHelper.Lerp(sweep, -sweep, k)); // planted: the body moves over it
+                }
+                else
+                {
+                    float k = (ph - duty) / (1 - duty);
+                    float e = k * k * (3 - 2 * k); // the swing gathers and slows into the next footfall
+                    float lift = (front ? 0.10f + 0.16f * gallopK + 0.06f * trotK : 0.07f + 0.08f * gallopK + 0.04f * trotK) * MathF.Sin(k * MathF.PI);
+                    hoof = new Vector3(hip.X, Sole + lift, hip.Z + stand + MathHelper.Lerp(-sweep, sweep, e) - (front ? 0.05f : 0.02f) * MathF.Sin(k * MathF.PI));
+                }
+            }
+            var knee = Joint(hip, hoof, Upper, Lower, front);
             if (Detail == 0)
             {
                 var into = Vector3.Normalize(knee - hoof) * 0.05f; // the cannon starts inside the forearm: no gap at the joint
                 EmitBone(kit.HorseLegLow, knee + into, hoof, Vector3.UnitZ);
-                EmitBone(kit.HorseLegUp, hip, knee, Vector3.UnitZ, front ? 1.35f : 1.6f);
+                EmitBone(kit.HorseLegUp, hip, knee, Vector3.UnitZ, front ? 1.25f : 1.4f);
             }
             else
             {
@@ -1184,7 +1223,7 @@ sealed partial class Puppet3D
         }
 
         // Pitch the horse barrel smoothly with its stride rock!
-        float bodyPitchDeg = -rock * 115f;
+        float bodyPitchDeg = -rock * 70f;
         Vector3 bU = RotX(Vector3.UnitY, bodyPitchDeg);
         Vector3 bF = RotX(Vector3.UnitZ, bodyPitchDeg);
         EmitLocal(bodyMesh, new Vector3(shift, y, 0), Vector3.UnitX, bU, bF, 1f, 1f, 1f, bodyPat);
