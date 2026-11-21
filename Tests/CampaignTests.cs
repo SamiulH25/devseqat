@@ -38,6 +38,16 @@ public static partial class SelfTest
         Check(m.Spread > 1.1f && m.ProvinceScale > 1.5f, $"the map is bigger ({m.Spread:0.0}x the spread, {m.ProvinceScale:0.0}x the provinces)");
     }
 
+    /// Brigands come to the player: whatever the cap, his country holds BanditNearMin bands after each day.
+    static void BanditsNearPlayer()
+    {
+        var c = Campaign.New(41);
+        c.S.Parties.RemoveAll(p => p.Kind == PartyKind.Bandit);
+        int want = Balance.Get().BanditNearMin, day = c.Day;
+        for (int i = 0; i < 400 && c.Day < day + 2; i++) { c.Tick(6); c.Encounter = null; c.Arrived = null; }
+        Check(c.BanditsNearPlayer >= want, $"bands near the player: {c.BanditsNearPlayer}, want {want}");
+    }
+
     static void CampaignPersistence()
     {
         string Run() { var c = Campaign.New(21); for (int i = 0; i < 60 * 24 && c.Encounter == null; i += 6) c.Tick(6); c.Encounter = null; return c.S.Serialize(); }

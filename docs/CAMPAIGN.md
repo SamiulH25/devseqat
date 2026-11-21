@@ -451,7 +451,9 @@ build differs:
   the HUD and party screen draw the same bar from the last rung to the next, and `Campaign.Stage` gives the captain a title
   (Mercenary Band → Lord of War) that both panels show. (Since overhaul step F5 the title is the career rank, Free Company → King.)
 - **Brigand pressure.** `BanditsMax` is 80 and `BanditSpawnsPerDay` is 5 (`BanditSpawnChance` 0.95 each) while below that cap, so
-  the roads fill with bands quickly. Both counts scale with `WorldMap.ProvinceScale`: the numbers in `Data/campaign.json` are quoted
+  the roads fill with bands quickly. Half of each day's bands (`BanditNearPlayer`) come up at a village just past the player's
+  sight and within `BanditNearRange` sights of him, and his country is topped up to `BanditNearMin` (3) bands a day even past the cap
+  (`Campaign.BanditVillage`, `BanditsNearPlayer`), so there is always a fight within reach. Both counts scale with `WorldMap.ProvinceScale`: the numbers in `Data/campaign.json` are quoted
   against the original 26-province map, so on the 60-province map the world holds around 190 bands (`Campaign.BanditsWanted`).
   A band's strength still scales with the campaign day (`BanditBandMin/Max`, `BanditGrowPerDays`, `BanditTierPerDays`), so brigandry
   stays a threat instead of free loot. Bands are opportunists: `BanditThink` runs from anything within 1.2× its strength and only

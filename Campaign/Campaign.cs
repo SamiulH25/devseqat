@@ -493,10 +493,13 @@ public sealed partial class Campaign
         FlameDaily();
         CareerDaily();
         EventsDaily();
-        // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous.
+        // Brigandry: several bands are raised a day while the map is under its cap, so a big world stays dangerous;
+        // a share of them come up near the player, and his country is kept to BanditNearMin bands even past the cap,
+        // so he is never short of a fight.
         for (int n = 0; n < BanditSpawnsWanted; n++)
             if (S.Parties.Count(p => p.Kind == PartyKind.Bandit && !p.Down) >= BanditsWanted || !rng.Chance(B.BanditSpawnChance)) break;
-            else SpawnBandits();
+            else SpawnBandits(rng.Chance(B.BanditNearPlayer));
+        for (int n = BanditsNearPlayer; n < B.BanditNearMin; n++) SpawnBandits(near: true);
         MonstersDaily();
         RoadsDaily();
         // A realm that holds too many of the seats (LeaderShare: close to half of three realms', less with more) unites the others

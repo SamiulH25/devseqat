@@ -45,10 +45,25 @@ public partial class Campaign
         return rng.Pick(free.Count > 0 ? free : all);
     }
 
-    void SpawnBandits()
+    /// Bands within this reach of the player count as his (BanditNearRange sights), and a band raised near him comes up
+    /// at a village out of his sight but inside this reach, so it walks in rather than popping up beside him.
+    float BanditReach => PlayerSight * B.BanditNearRange;
+    internal int BanditsNearPlayer => S.Parties.Count(p => p.Kind == PartyKind.Bandit && !p.Down && Vector2.Distance(p.Pos, Player.Pos) < BanditReach);
+
+    /// A village to raise a band at: anywhere, or (near) one just past the player's sight, else the nearest past it.
+    Settlement BanditVillage(bool near)
     {
         var villages = S.Settlements.Where(v => v.Kind == SettlementKind.Village).ToList();
-        var at = rng.Pick(villages);
+        if (!near) return rng.Pick(villages);
+        var out_ = villages.Where(v => Vector2.Distance(v.Pos, Player.Pos) >= PlayerSight).ToList();
+        var ring = out_.Where(v => Vector2.Distance(v.Pos, Player.Pos) < BanditReach).ToList();
+        if (ring.Count > 0) return rng.Pick(ring);
+        return out_.Count > 0 ? out_.MinBy(v => Vector2.Distance(v.Pos, Player.Pos))! : rng.Pick(villages);
+    }
+
+    void SpawnBandits(bool near = false)
+    {
+        var at = BanditVillage(near);
         var n = Names.Get();
         // Bands grow as the campaign does, so brigandry stays a threat instead of becoming free loot for a growing company.
         int tier = Math.Clamp(1 + Day / (int)MathF.Max(1, B.BanditTierPerDays), 1, 5);

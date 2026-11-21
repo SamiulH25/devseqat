@@ -858,6 +858,11 @@ public sealed class Balance
     /// How many bands the world tries to raise each day (while under BanditsMax), so a big map fills up quickly.
     /// It scales with the map's area, so a bigger world stays populated: Campaign.BanditSpawnsWanted.
     public int BanditSpawnsPerDay = 5;
+    /// Brigands near the player: the share of each day's bands raised near him, the bands his country is kept to each
+    /// day (even past BanditsMax), and how far "near" reaches in player sights (Campaign.BanditReach).
+    public float BanditNearPlayer = 0.5f;
+    public int BanditNearMin = 3;
+    public float BanditNearRange = 2.5f;
     /// Lords per faction and bandit bands are quoted per the original 26-province map and multiply by how much world there
     /// is (Campaign.LordsWanted, Campaign.BanditsWanted), so a realm has as many parties as its ground needs.
     /// Bandit bands are rolled 1-3 strong, and gain a man for every this many days of campaign (they grow as you do).
