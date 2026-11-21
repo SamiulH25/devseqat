@@ -784,14 +784,17 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Settlement.cs (749 lines)
 - **MapScreen** (class, L9): TabBody:12, TownTabs:41, HarbourTab:59, TownRow:88, PortraitWell:91, TroopStats:99, TroopOffer:107, RecruitTab:132, NoblesTab:147, TrainTab:165, RestTab:204, FoodTab:259, WorkshopTab:295, ForageTab:334, CaptivesTab:352, GarrisonTab:405, ContractTab:444, EldersTab:482, TavernTab:492, Goblet:555, TavernRow:573, MercenariesTab:580, MarketTab:603, GoodsList:637, Contracts:662, FiefTab:693
 
-## MapScreen.Street.Art.cs (564 lines)
-- **MapScreen** (class, L6): Keep:10, KeepBase:170, EldersHall:218, CobbleStreet:318, VillageLane:362, Tree:389, Haystack:418, SplitFence:430, HarbourMasts:442, Guard:466, Warhorse:494
+## MapScreen.Street.Art.cs (566 lines)
+- **MapScreen** (class, L6): Keep:10, KeepBase:171, EldersHall:219, CobbleStreet:320, VillageLane:364, Tree:391, Haystack:420, SplitFence:432, HarbourMasts:444, Guard:468, Warhorse:496
 
 ## MapScreen.Street.Azure.cs (437 lines)
 - **MapScreen** (class, L9): Ashlar:12, Slate:13, Shutter:14, AzureWood:15, Tip:16, Cone:20, SlateRoof:40, Dormer:57, CrossWindow:74, RoundArch:96, Grapes:208, Chateau:235, Chatelet:301, HotelDeVille:359, Cathedral:403
 
-## MapScreen.Street.cs (677 lines)
-- **MapScreen** (class, L9): readonly:12, readonly:19, readonly:24, PlaceOfTab:34, SettlementPanel:42, Available:77, Signs:83, Enter:127, PlacePlate:138, StandingPlate:174, Business:186, ErrandBar:216, Street:236, Glow:271, Footing:279, TownStreet:285, CastleStreet:339, VillageStreet:373, Spot:407, Barracks:413, Yard:471, Market:497, Green:628
+## MapScreen.Street.cs (698 lines)
+- **MapScreen** (class, L9): readonly:12, readonly:19, readonly:24, PlaceOfTab:34, SettlementPanel:42, Available:77, Signs:83, Enter:127, PlacePlate:138, StandingPlate:174, Business:186, ErrandBar:216, Street:236, Glow:271, Footing:279, TownStreet:285, CastleStreet:340, VillageStreet:374, Spot:408, Barracks:414, Yard:473, Market:499, Green:649
+
+## MapScreen.Street.League.cs (400 lines)
+- **MapScreen** (class, L9): Brick:12, Trim:13, Copper:14, DoorGreen:15, Bricks:18, Stepped:31, Niche:55, LeagueWindow:63, Hoist:77, LeagueHouse:89, CogSign:205, Burg:230, Armoury:287, Rathaus:338, HallChurch:383
 
 ## MapScreen.Street.Northern.cs (406 lines)
 - **MapScreen** (class, L8): NorthLogs:11, NorthDark:12, NorthShingle:13, LongRoof:17, Dragon:52, RoundShield:66, ShieldPaint:80, FirePost:88, HornSign:185, HallFort:213, NorthBarracks:315, StaveChurch:369, LongRoofFlat:395
@@ -808,13 +811,13 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Town.cs (196 lines)
 - **MapScreen** (class, L8): TabCount:21, PlaceRail:35, Purse:64, Card:88, Heading:98, Stat:108, Outcome:116, Price:128, JobIcon:137, JobCards:149, Watermark:182, BigButton:190
 
-## MapScreen.Townscape.cs (568 lines)
+## MapScreen.Townscape.cs (566 lines)
 - **TownLook** (struct, L8)
 - **TownColours** (struct, L14)
-- **MapScreen** (class, L16): LookOf:19, ColoursOf:32, Orb:77, Country:92, Clouds:144, Pine:163, Palisade:174, Ground:190, Water:214, Boat:240, Snowfall:261, UpperTown:282, TownWall:320, Landmark:340, Gable:420, StepGable:435, Crane:450, Palm:478, Horse:493, Herd:507, Folk:523, Smoke:556
+- **MapScreen** (class, L16): LookOf:19, ColoursOf:32, Orb:77, Country:92, Clouds:144, Pine:163, Palisade:174, Ground:190, Quay:216, Water:236, Boat:258, Snowfall:279, UpperTown:300, TownWall:338, Landmark:358, Gable:434, Crane:448, Palm:476, Horse:491, Herd:505, Folk:521, Smoke:554
 
-## MapScreen.Townscape.Houses.cs (397 lines)
-- **MapScreen** (class, L7): Glass:41, TimberHouse:50, Openings:83, WhiteHouse:109, LogHouse:128, Yurt:141, Turf:160, Edges:176, Dome:184, HeroWall:217, TavernWindow:220, TavernDoor:232, Lantern:248, TavernSign:256
+## MapScreen.Townscape.Houses.cs (390 lines)
+- **MapScreen** (class, L7): Glass:41, TimberHouse:50, Openings:82, WhiteHouse:108, LogHouse:127, Yurt:140, Turf:159, Edges:175, Dome:183, HeroWall:217, TavernWindow:220, TavernDoor:232, Lantern:248, TavernSign:256
 
 ## MapScreen.Upgrade.cs (293 lines)
 - **MapScreen** (class, L8): TroopTree:28, LayTree:43, UpgradePanel:70, TreeTile:154, TroopDetail:185, Leads:281

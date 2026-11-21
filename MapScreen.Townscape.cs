@@ -196,8 +196,9 @@ partial class MapScreen
             for (int i = 0; i < 12; i++) ui.Rect(new Rectangle(p.X + (int)(p.Width * ((i * 0.37f) % 1)), ground + ui.U(3 + i % 3 * 2), ui.U(10 + i % 3 * 6), ui.U(1)), Kit.Mul(c.Ground, 0.85f)); // ruts
             return;
         }
-        int bank = l.Water == "river" ? ui.U(4) : 0;
-        if (bank > 0) ui.Rect(new Rectangle(p.X, ground, p.Width, bank), c.Ground);
+        int bank = l.Water == "river" ? ui.U(4) : l.Water == "canal" ? ui.U(7) : 0;
+        if (l.Water == "canal") Quay(p, l, c, ground, bank);
+        else if (bank > 0) ui.Rect(new Rectangle(p.X, ground, p.Width, bank), c.Ground);
         var water = new Rectangle(p.X, ground + bank, p.Width, street.Height - bank);
         Color w1 = l.Night ? new(36, 44, 80) : l.Dusk ? new(120, 92, 110) : l.Snow ? new(120, 140, 160) : new(96, 128, 150);
         ui.VGrad(water, w1, Kit.Mul(w1, 0.45f), 2);
@@ -210,15 +211,32 @@ partial class MapScreen
         }
     }
 
+    /// A canal's quay along the front, `h` deep: dressed stone setts, a kerb of long stones at the water's edge with its shadow on
+    /// the water, iron mooring posts; snow on it in winter.
+    void Quay(Rectangle p, TownLook l, TownColours c, int ground, int h)
+    {
+        int s = Math.Max(1, ui.U(1));
+        var stone = l.Snow ? c.Snow : HeroWall(l, c, new Color(150, 140, 128));
+        ui.Rect(new Rectangle(p.X, ground, p.Width, h), stone);
+        for (int row = 0, y = ground + ui.U(2); y < ground + h - ui.U(3); row++, y += ui.U(2))
+            for (int x = p.X + (row % 2) * ui.U(3); x < p.Right; x += ui.U(6)) ui.Rect(new Rectangle(x, y, s, ui.U(2)), Kit.Mul(stone, 0.86f)); // the setts
+        var kerb = HeroWall(l, c, new Color(176, 168, 156));
+        ui.Rect(new Rectangle(p.X, ground + h - ui.U(3), p.Width, ui.U(3)), kerb);
+        for (int x = p.X + ui.U(5); x < p.Right; x += ui.U(16)) ui.Rect(new Rectangle(x, ground + h - ui.U(3), s, ui.U(3)), Kit.Mul(kerb, 0.8f));
+        ui.Rect(new Rectangle(p.X, ground + h - ui.U(3), p.Width, s), Color.Lerp(kerb, c.Rim, 0.5f));
+        var iron = l.Night ? new Color(30, 28, 36) : new Color(50, 48, 54);
+        for (int x = p.X + ui.U(30); x < p.Right; x += ui.U(90)) // the mooring posts
+        {
+            ui.Rect(new Rectangle(x, ground + h - ui.U(8), ui.U(3), ui.U(5)), iron);
+            ui.Rect(new Rectangle(x - s, ground + h - ui.U(8), ui.U(3) + 2 * s, s), Kit.Mul(iron, 1.4f));
+        }
+    }
+
     /// The water's front: the quay edge or the reeds, every light trembling in it, and a boat.
     void Water(Rectangle p, TownLook l, TownColours c, int ground, List<(int X, int W)> lights, float t)
     {
-        int top = ground + (l.Water == "river" ? ui.U(4) : 0);
-        if (l.Water == "canal")
-        {
-            ui.Rect(new Rectangle(p.X, ground, p.Width, ui.U(1)), c.Rim);
-            ui.Rect(new Rectangle(p.X, ground + ui.U(1), p.Width, ui.U(1)), Color.Black * 0.35f);
-        }
+        int top = ground + (l.Water == "river" ? ui.U(4) : l.Water == "canal" ? ui.U(7) : 0);
+        if (l.Water == "canal") ui.Rect(new Rectangle(p.X, top, p.Width, ui.U(2)), Color.Black * 0.35f); // the kerb's shadow on the water
         else
             for (int x = p.X + ui.U(4); x < p.Right; x += ui.U(9)) // reeds along the bank
                 if ((x / Math.Max(1, ui.U(1))) % 5 < 2)
@@ -233,7 +251,7 @@ partial class MapScreen
                     int dx = ((lx / Math.Max(1, ui.U(1)) * 7 + k * 5) % 3 - 1) * ui.U(1) + (int)MathF.Round(MathF.Sin(t * 1.4f + lx * 0.1f + k) * 0.6f) * ui.U(1);
                     ui.Rect(new Rectangle(lx + (lw - w) / 2 + dx, y, w, ui.U(1)), c.Lit * (0.6f - k * 0.13f));
                 }
-        Boat(p.X + (int)(p.Width * 0.72f), top + ui.U(10), l, c, t);
+        Boat(p.X + (int)(p.Width * 0.72f), top + ui.U(l.Water == "canal" ? 5 : 10), l, c, t); // under the quay the canal is narrower
     }
 
     /// A boat at its mooring: a barge with a cabin on a canal, a rowing boat on a river; a lamp at night.
@@ -275,7 +293,7 @@ partial class MapScreen
     /// Snow on the roofs (set while the town is drawn in winter): `Gable` and `Dome` cap their tops with it.
     Color snowCap = Color.Transparent;
 
-    /// Edge light from the moon or sun for the near shapes (`Gable`, `StepGable`, `Crane` draw it when set).
+    /// Edge light from the moon or sun for the near shapes (`Gable`, `Stepped`, `Crane` draw it when set).
     Color rimLight = Color.Transparent;
 
     /// The old town climbing the hill behind the wall to its keep, faint with distance; a few dim lights at night.
@@ -343,12 +361,8 @@ partial class MapScreen
         void Glow(int gx, int gy) { if (night) ui.Rect(new Rectangle(gx, gy, ui.U(2), ui.U(4)), lit * 0.8f); }
         switch (culture)
         {
-            case "league": // canals, cranes and counting houses
-                StepGable(x, ground, ui.U(34), ui.U(66), c);
-                for (int row = 0; row < 3; row++)
-                    for (int col = 0; col < 3; col++)
-                        if (night ? (row + col) % 2 == 0 : true)
-                            ui.Rect(new Rectangle(x + ui.U(6 + col * 9), ground - ui.U(60 - row * 9), ui.U(3), ui.U(4)), night ? lit * 0.85f : Kit.Mul(c, 0.6f));
+            case "league": // canals, cranes and the brick church's copper spire
+                HallChurch(x - ui.U(4), ground, c, night, lit);
                 Crane(x - ui.U(90), ground, c, night); Crane(x + ui.U(170), ground, c, night);
                 break;
             case "azure": // the cathedral's west front: two spires and the rose
@@ -430,22 +444,6 @@ partial class MapScreen
         if (rimLight.A > 0) ui.Rect(new Rectangle(x + w - s, ground - h, s, h), Color.Lerp(c, rimLight, 0.45f));
         if (rimLight.A > 0) ui.Rect(new Rectangle(x, ground - h, s, h), Color.Lerp(c, rimLight, 0.18f));
     }
-
-    /// A merchant's house with a stepped gable.
-    void StepGable(int x, int ground, int w, int h, Color c)
-    {
-        ui.Rect(new Rectangle(x, ground - h, w, h), c);
-        for (int i = 1; i <= 3; i++)
-        {
-            int inset = i * w / 7;
-            ui.Rect(new Rectangle(x + inset, ground - h - i * ui.U(4), w - 2 * inset, ui.U(4)), c);
-            ui.Rect(new Rectangle(x + inset, ground - h - i * ui.U(4), ui.U(1), ui.U(4)), Kit.Mul(c, 0.7f)); // the notch's shaded riser
-            if (rimLight.A > 0) ui.Rect(new Rectangle(x + w - inset - ui.U(1), ground - h - i * ui.U(4), ui.U(1), ui.U(4)), rimLight);
-            if (rimLight.A > 0) ui.Rect(new Rectangle(x + inset, ground - h - i * ui.U(4), w - 2 * inset, ui.U(1)), Color.Lerp(c, rimLight, 0.6f));
-        }
-        if (rimLight.A > 0) ui.Rect(new Rectangle(x + w - ui.U(1), ground - h, ui.U(1), h), Color.Lerp(c, rimLight, 0.45f));
-    }
-
     /// A harbour crane: an A-frame on the quay, a stout mast, a heavy jib, the rope with its hook and bale; a lantern at the tip by night.
     void Crane(int x, int ground, Color c, bool night)
     {

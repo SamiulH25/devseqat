@@ -50,8 +50,7 @@ partial class MapScreen
     void TimberHouse(int x, int ground, int w, int h, TownLook l, TownColours c, Random rng, List<(int X, int W)> lights, float t)
     {
         int roof = rng.Next(3) switch { 0 => w / 2, 1 => w / 3, _ => w / 5 } + ui.U(rng.Next(3));
-        if (l.Culture == "league" && rng.Next(3) > 0) { StepGable(x, ground, w, h, c.Roof); roof = ui.U(12); }
-        else
+        if (l.Culture == "league" && rng.Next(3) > 0) { LeagueHouse(x, ground, w, h + ui.U(8), l, c, rng, lights, t); return; } // brick under a stepped gable
         {
             int s1 = Math.Max(1, ui.U(1));
             Gable(x - s1, ground - h, w + 2 * s1, 0, roof, c.Roof);
@@ -206,6 +205,7 @@ partial class MapScreen
             "white" => Caravanserai(r, l, c, cloth, t),
             "log" => MeadHall(r, l, c, cloth, t),
             "tent" => FeastTent(r, l, c, cloth, t),
+            _ when l.Culture == "league" => Brewhouse(r, l, c, cloth, t),
             _ when l.Culture == "azure" => Auberge(r, l, c, cloth, t),
             _ => TimberTavern(r, l, c, t),
         };
@@ -280,20 +280,13 @@ partial class MapScreen
             roof = l.Night ? new Color(88, 60, 84) : Color.Lerp(c.Roof, c.Rim, 0.1f);
         int roofH = ui.U(20), upper = ui.U(26);
         rimLight = Color.Transparent;
-        if (l.Culture == "league") // a merchant's tavern: brick, a stepped gable to the street
-        {
-            plaster = l.Night ? new Color(80, 46, 44) : new Color(150, 82, 60);
-            var brick = Kit.Mul(plaster, 0.85f);
-            for (int i = 1; i <= 4; i++) { int inset = i * r.Width / 10; ui.Rect(new Rectangle(r.X + inset, r.Y - i * ui.U(6), r.Width - 2 * inset, ui.U(6)), brick); ui.Rect(new Rectangle(r.X + inset, r.Y - i * ui.U(6), r.Width - 2 * inset, ui.U(1)), c.Rim * 0.6f); }
-            roofH = ui.U(24);
-        }
-        else Gable(r.X - ui.U(4), r.Y, r.Width + ui.U(8), 0, roofH, roof);
-        for (int k = ui.U(4); k < roofH && l.Culture != "league"; k += ui.U(5)) // courses of tiles
+        Gable(r.X - ui.U(4), r.Y, r.Width + ui.U(8), 0, roofH, roof);
+        for (int k = ui.U(4); k < roofH; k += ui.U(5)) // courses of tiles
         {
             int inset = (int)(k / (float)roofH * (r.Width + ui.U(8)) / 2);
             ui.Rect(new Rectangle(r.X - ui.U(4) + inset, r.Y - k, r.Width + ui.U(8) - 2 * inset, ui.U(1)), Kit.Mul(roof, 0.72f));
         }
-        if (l.Culture != "league") ui.Line(new Vector2(r.Center.X, r.Y - roofH), new Vector2(r.Right + ui.U(4), r.Y), c.Rim, 1);
+        ui.Line(new Vector2(r.Center.X, r.Y - roofH), new Vector2(r.Right + ui.U(4), r.Y), c.Rim, 1);
         ui.Rect(new Rectangle(r.X - ui.U(5), r.Y - ui.U(1), r.Width + ui.U(10), ui.U(1)), c.Rim); // the eave
         ui.Rect(new Rectangle(r.X + ui.U(30), r.Y - ui.U(17), ui.U(6), ui.U(10)), roof); // the chimney
         Smoke(r.X + ui.U(33), r.Y - ui.U(20), t, l.Night);
