@@ -342,6 +342,14 @@ Steady, Cautious) with `Hothead` and `Stubborn` traits (`BattleDivision.cs`, `Ba
 - Judged 6/10, then 7/10 (Haiku fallback). Fixes from the first round: words-sized icons (14 px), the renown numbers and
   bar, grey zero balance, one plate for the feed, spacing.
 
+### Street (2026-11-20)
+
+PT2c's group tabs were replaced: a settlement is now a full-screen street (`MapScreen.Street.cs`) whose buildings are the
+menu. A town has four (BARRACKS: train, recruit, for hire; MARKET: market, armourer, workshop; TAVERN: tavern, contract;
+KEEP: hall, chapter, fief, garrison), a castle two (YARD, KEEP), a village two (GREEN, ELDERS). Rest, food, forage, captives
+and ships are errands on the bottom bar. You arrive on the street (no longer in the tab `NextStep` names); a tab set from
+outside (`Stage`, `Act` links) opens its building.
+
 ### PT2c (2026-11-16)
 
 - **Town tabs in groups** (`MapScreen.SettlementPanel`, `TownTabs`, `TabGroups`): a place with more than seven tabs (a town)

@@ -43,7 +43,7 @@ sealed class ScreenHost : Game
     int townShot;
     static readonly (string Name, string Tab, string Where)[] TownShots =
     {
-        ("town-train", "TRAIN", "town"), ("town-recruit", "RECRUIT", "town"), ("town-hire", "MERCENARIES", "town"), ("town-tavern", "TAVERN", "town"),
+        ("town-street", "", "town"), ("castle-street", "", "castle"), ("village-street", "", "village"), ("town-train", "TRAIN", "town"), ("town-recruit", "RECRUIT", "town"), ("town-hire", "MERCENARIES", "town"), ("town-tavern", "TAVERN", "town"),
         ("town-market", "MARKET", "town"), ("town-workshop", "WORKSHOP", "town"), ("town-food", "FOOD", "town"), ("town-rest", "REST", "town"),
         ("town-hall", "HALL", "town"), ("town-armourer", "ARMOURER", "town"), ("castle-muster", "MUSTER", "castle"), ("castle-esquires", "ESQUIRES", "castle"), ("town-captives", "CAPTIVES", "town"), ("town-contract", "CONTRACT", "town"), ("castle-rest", "REST", "castle"), ("castle-contract", "CONTRACT", "castle"),
         ("village-recruit", "RECRUIT", "village"), ("village-forage", "FORAGE", "village"), ("village-elders", "ELDERS", "village"),
@@ -821,7 +821,7 @@ sealed class ScreenHost : Game
             }
             case 35 when tavernShots < TavernLooks.Length:
             {
-                // The tavern's picture of one town of each culture, by night and by day, in winter and at dusk (MapScreen.Townscape).
+                // The street of one town of each culture, by night and by day, in winter and at dusk (MapScreen.Street).
                 if (tavernShots < 0) { tavernHours = c.S.Hours; tavernShots = 0; }
                 RestoreTavernTown();
                 var (cul, hour, winter) = TavernLooks[tavernShots++];
@@ -831,7 +831,7 @@ sealed class ScreenHost : Game
                 double day = Math.Floor(tavernHours / 24);
                 day = Math.Floor(day / 120) * 120 + (winter ? 95 : 40); // a winter day of the same year, or one in summer
                 c.S.Hours = day * 24 + hour;
-                c.Encounter = null; map.Stage("tavern", town);
+                c.Encounter = null; map.Stage("street", town);
                 Shot($"tavern-{cul}-{(winter ? "winter-" : "")}{(hour is >= 20 or < 5 ? "night" : hour >= 17 ? "dusk" : "day")}");
                 cStage--;
                 break;

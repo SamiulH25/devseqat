@@ -4,24 +4,13 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Ironfield;
 
-/// MapScreen: the settlement screen and its tabs (train, recruit, market, food, rest, contracts, fief). Its frame (the
-/// painted place, the rail of tabs, cards and stats) is in MapScreen.Town.cs.
+/// MapScreen: the settlement screen's tabs (train, recruit, market, food, rest, contracts, fief). The street they open from is
+/// MapScreen.Street.cs; the pieces they are built from (cards, stats, the rail of tabs) are in MapScreen.Town.cs.
 partial class MapScreen
 {
-    void SettlementPanel()
+    /// The open tab's body, drawn into `body` (the street's business panel, MapScreen.Street.cs).
+    void TabBody(Settlement s, Rectangle body)
     {
-        var s = at!;
-        var r = Modal(980, 620, s.KindWord, SideColor(s.Faction));
-        bool fief = s.Owner == C.Player.Id && s.Kind != SettlementKind.Village;
-        PlaceHero(s, new Rectangle(r.X + ui.U(14), r.Y + ui.U(16), r.Width - ui.U(28), ui.U(150)));
-        var tabs = TownTabs(s, fief);
-        if (Array.IndexOf(tabs, tab) < 0) tab = tabs[0]; // a tab this place lacks, or one with nothing in it now
-        int top = PlaceRail(new Rectangle(r.X + ui.U(14), r.Y + ui.U(172), r.Width - ui.U(28), ui.U(38)), tabs, s) + ui.U(6);
-        var well = new Rectangle(r.X + ui.U(14), top, r.Width - ui.U(28), r.Bottom - ui.U(66) - top);
-        ui.Rect(well, Color.Black * 0.22f);
-        ui.Frame(well, Color.White * 0.06f, ui.U(1));
-        var body = Kit.Inset(well, ui.U(12));
-        if (tab is "REST" or "FOOD" or "FORAGE" or "RECRUIT" or "ESQUIRES" or "CAPTIVES" or "TRAIN" or "ELDERS" or "WORKSHOP" or "HARBOUR") Watermark(well);
         switch (tab)
         {
             case "RECRUIT": RecruitTab(s, body); break;
@@ -45,9 +34,6 @@ partial class MapScreen
             case "CHAPTER": ChapterTab(s, body); break;
             case "HARBOUR": HarbourTab(s, body); break;
         }
-        Note(r);
-        Purse(r);
-        if (ui.Gilded(new Rectangle(r.Right - ui.U(200), r.Bottom - ui.U(40), ui.U(176), ui.U(28)), "LEAVE", ctl.Name(Act.Menu))) panel = PanelKind.None;
     }
 
     /// The tabs a place shows: what its kind offers, less the ones with nothing in them now (no company for hire, no

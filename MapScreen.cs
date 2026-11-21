@@ -83,7 +83,6 @@ sealed partial class MapScreen
     string tab = "RECRUIT", note = "";
     int speed = 1, lastWeek = -1;
     /// The town tabs a NextStep hint may open on arrival.
-    static readonly HashSet<string> tabFor = new() { "TRAIN", "RECRUIT", "MARKET", "FOOD", "REST", "CONTRACT" };
     bool follow = true, pendingClick;
     /// Staged place shots: the map alone, no parties and no interface.
     bool bare;
@@ -253,11 +252,8 @@ sealed partial class MapScreen
                 }
                 else
                 {
-                    at = s; tab = s.Kind == SettlementKind.Village ? "RECRUIT" : s.Kind == SettlementKind.Castle ? "MUSTER" : "TRAIN"; panel = PanelKind.Settlement; note = "";
-                    // Open the tab the campaign says you need, not always the first one: arrival should feel like an answer.
-                    var (_, where) = C.NextStep();
-                    if (s.Kind == SettlementKind.Town && tabFor.Contains(where)) tab = where;
-                    Tips.Show("settlement", "Villages give recruits (levies). Men rise to tier III anywhere, to tier V at a castle's yard. A castle's MUSTER gathers its villages' men, horses and food.\nTowns train every tier, sell gear, hire out mercenaries and pay contracts. Resting in a town heals the wounded faster.");
+                    at = s; tab = ""; panel = PanelKind.Settlement; note = ""; // you arrive in the street (MapScreen.Street.cs)
+                    Tips.Show("settlement", "Click a building to go in: the barracks trains and hires, the market sells gear, the tavern has news and work, the keep its lord.\nRest, food and captives are on the bar at the bottom. Esc steps back out to the street, then leaves.");
                 }
             }
             int week = (int)(C.S.Hours / 168);
@@ -267,6 +263,7 @@ sealed partial class MapScreen
         }
         else if (panel == PanelKind.Help && (ctl.Pressed(Act.Help) || ctl.Pressed(Act.Menu))) panel = PanelKind.None;
         else if (panel == PanelKind.Saves) { if (Pressed(Keys.Escape) || !saves.Open) { saves.Close(); panel = PanelKind.Menu; } }
+        else if (renaming == null && panel == PanelKind.Settlement && tab != "" && ctl.Pressed(Act.Menu)) { tab = ""; note = ""; } // out of the building, onto the street
         else if (renaming == null && ctl.Pressed(Act.Menu) && panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Upgrade or PanelKind.Siege or PanelKind.Characters or PanelKind.Skills or PanelKind.Realm or PanelKind.Divisions or PanelKind.Atlas or PanelKind.Roll or PanelKind.Quests)
             panel = panel is PanelKind.Upgrade or PanelKind.Roll ? PanelKind.Party : panel is PanelKind.Party or PanelKind.Menu or PanelKind.Settlement or PanelKind.Siege ? PanelKind.None : CameFrom(panel);
         if (renaming != null) Rename();
@@ -1040,6 +1037,9 @@ sealed partial class MapScreen
             case "settlement":
                 at = C.S.Settlements.First(s => s.Kind == SettlementKind.Town && !C.Refuses(s));
                 tab = "MERCENARIES"; panel = PanelKind.Settlement; break;
+            case "street": // the bare street of a town (the per-culture town shots)
+                at = s ?? C.S.Settlements.First(t => t.Kind == SettlementKind.Town && !C.Refuses(t));
+                tab = ""; panel = PanelKind.Settlement; note = ""; break;
             case "tavern" or "elders":
                 at = what == "tavern" ? s ?? C.S.Settlements.First(t => t.Kind == SettlementKind.Town && !C.Refuses(t))
                     : C.S.Settlements.OrderBy(s => Vector2.Distance(s.Pos, C.Player.Pos)).First(s => s.Kind == SettlementKind.Village && !C.Refuses(s));

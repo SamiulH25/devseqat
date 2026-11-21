@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// MapScreen: the town seen from the tavern's door, the tavern tab's picture. Drawing only.
+/// MapScreen: the pieces the street is painted from (sky, country, upper town, walls, landmarks, water, folk; MapScreen.Street.cs). Drawing only.
 /// What the tavern's picture of a town is made of: how its people build (timber, white, log, tent), the country round it
 /// (a province kind), its water (canal, river or none), snow in winter, and the hour.
 readonly record struct TownLook(string Culture, string Build, string Country, string Water, bool Snow, bool Night, bool Dusk)
@@ -71,59 +71,6 @@ partial class MapScreen
         Color snow = l.Night ? new(176, 182, 210) : l.Dusk ? new(238, 208, 198) : new(244, 246, 252);
         Color rim = l.Night ? new(150, 128, 170) : l.Dusk ? new(250, 172, 112) : new(255, 238, 200);
         return new TownColours(top, low, far, mid, near, wall, roof, ground, snow, new Color(255, 184, 92), rim);
-    }
-
-    /// The town at the hour it is (the tavern tab's picture): sky, the country beyond, the upper town, its wall and landmark,
-    /// the houses as its people build them, the tavern in front, water if it has any, snow in winter. Seeded by the town,
-    /// so a town always looks the same.
-    void Townscape(Rectangle p, Settlement s, float hour)
-    {
-        float t = Environment.TickCount64 / 1000f;
-        var l = LookOf(s, hour);
-        var c = ColoursOf(l);
-        var rng = new Random(s.Id * 7919 + 13);
-        var cloth = Kit.Mul(Style.Sides[Style.PaletteOf(s.Faction)].Cloth, l.Night ? 0.5f : 0.9f);
-        int ground = p.Bottom - ui.U(l.Water != "" ? 20 : 10);
-        ui.VGrad(p, c.SkyTop, c.SkyLow, 2);
-        if (l.Night) ui.Stars(new Rectangle(p.X, p.Y, p.Width, p.Height / 2), t, l.Country == "Steppe" ? 110 : 40);
-        if (l.Night && l.Country == "Steppe") // the open steppe sky: the river of stars across it
-        {
-            var band = new Random(s.Id * 11 + 2);
-            for (int i = 0; i < 140; i++)
-            {
-                float f = band.NextSingle();
-                int sx = p.X + (int)(p.Width * f), sy = p.Y + (int)(p.Height * (0.6f - f * 0.5f) + (band.NextSingle() - 0.5f) * ui.U(22));
-                ui.Rect(new Rectangle(sx, sy, Math.Max(1, ui.U(1)), Math.Max(1, ui.U(1))), new Color(190, 186, 220) * (0.25f + band.NextSingle() * 0.35f));
-            }
-        }
-        if (!l.Night) Clouds(p, l, c, t, s.Id);
-        var place = new Random(s.Id * 31 + 7); // where the tavern, the keep and the moon stand, by town
-        bool midTavern = place.Next(2) == 0;
-        int tavernX = midTavern ? p.X + (int)(p.Width * (0.28f + place.NextSingle() * 0.16f)) : p.X + ui.U(12);
-        float keepAt = 0.2f + place.NextSingle() * 0.3f, orbAt = 0.74f + place.NextSingle() * 0.16f; // the moon clear of the tavern's roof
-        Orb(p, l, orbAt);
-        snowCap = l.Snow ? c.Snow : Color.Transparent;
-        Country(p, l, c, ground, rng);
-        if (l.Build != "tent") UpperTown(p, s, ground - ui.U(30), c.Far, l.Night, c.Lit, rng, l.Build == "white", keepAt);
-        if (!l.Day) ui.VGrad(new Rectangle(p.X, ground - ui.U(56), p.Width, ui.U(26)), c.Lit * 0f, c.Lit * (l.Night ? 0.12f : 0.08f), 2);
-        rimLight = c.Rim;
-        if (l.Build == "log") Palisade(p, ground - ui.U(28), c.Mid);
-        else if (l.Build != "tent") TownWall(p, ground - ui.U(30), l.Build == "white" ? Color.Lerp(c.Mid, c.Wall, 0.4f) : c.Mid, l.Night, c.Lit, cloth, rng);
-        Landmark(p, l.Culture, ground, c.Mid, l.Night, c.Lit, cloth, t);
-        // A back row of houses, darker and higher, behind the front row: the town has depth.
-        var back = c with { Wall = Color.Lerp(c.Wall, c.Mid, 0.6f), Roof = Color.Lerp(c.Roof, c.Mid, 0.6f) };
-        HouseRow(p.X, p.Right, ground - ui.U(6), l, back, new Random(s.Id * 13 + 5), t, false);
-        Ground(p, l, c, ground, t);
-        var lights = new List<(int X, int W)>();
-        if (tavernX - p.X > ui.U(40)) lights.AddRange(HouseRow(p.X + ui.U(4), tavernX - ui.U(14), ground, l, c, rng, t, true));
-        lights.AddRange(HouseRow(tavernX + ui.U(196), p.Right - ui.U(6), ground, l, c, rng, t, true));
-        if (l.Build == "tent") Herd(p, ground, c, s.Id, tavernX);
-        if (l.Water == "") Folk(p, l, c, ground, s.Id, tavernX);
-        lights.AddRange(Tavern(new Rectangle(tavernX, ground - ui.U(64), ui.U(160), ui.U(64)), l, c, cloth, t));
-        rimLight = Color.Transparent;
-        if (l.Water != "") Water(p, l, c, ground, lights, t);
-        if (l.Snow) Snowfall(p, t, l.Night);
-        snowCap = Color.Transparent;
     }
 
     /// The moon (a hard pixel disc in stepped halo bands, with its seas) or the sun, low over the town.

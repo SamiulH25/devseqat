@@ -563,9 +563,13 @@ which panel is open; set it to `PanelKind.None` to close. Colours come from `Sty
 
 - `Update` handles keys (P party, K skills, L lords, R realm, ...), the camera, clicks on the world, and advances time.
 - `Draw` renders the 3D map and parties, then `DrawUi()` (in `MapScreen.Hud.cs`) draws the HUD and whichever panel is open.
-- The settlement panel picks its tabs by settlement kind, then calls one method per tab: `RecruitTab(s, body)`,
-  `MercenariesTab`, `MarketTab`, `TrainTab`, `RestTab`, `FoodTab`, `ForageTab`, `CaptivesTab`, `GarrisonTab`, `FiefTab`,
-  `ContractTab`. To add a tab, add its name to the right array in `SettlementPanel` and a `case` calling your method.
+- The settlement screen is a street (`MapScreen.Street.cs`): the place painted across the screen at a scale set by the screen's
+  height (`ui.S` swapped for the painting), its buildings clickable (`spots`, `Signs`). Each building holds a few tabs
+  (`TownPlaces`, `CastlePlaces`, `VillagePlaces`); a click opens its business from below (`Business`) with those tabs on a rail.
+  Tabs no building holds (REST, FOOD, FORAGE, CAPTIVES, HARBOUR) are errands on the bottom bar (`ErrandBar`). `tab == ""` is
+  the bare street; Esc steps out of a building, then leaves. `TownTabs` picks the tabs a place has now; `TabBody` calls one
+  method per tab: `RecruitTab(s, body)`, `MarketTab`, `TrainTab`, `RestTab`, ... To add a tab, add its name to `TownTabs`, to
+  a building's list (or leave it out for an errand), and a `case` in `TabBody`.
 
 ### 6.4 `BattleScreen` and `Hud`
 

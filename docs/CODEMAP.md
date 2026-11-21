@@ -749,7 +749,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **MapScreen** (class, L6): MusterTab:8
 
 ## MapScreen.cs (1062 lines)
-- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:100, Prepared:115, Prepare:120, PlaceStateOf:129, Open:151, ShowResults:173, Pressed:181, Update:185, readonly:288, LaterTips:302, Pan:326, ScreenKeys:328, OpenScreen:336, Soundscape:344, CameFrom:406, Camera:408, Rename:432, Trails:445, MapPick:458, OnScreen:464, PickAt:479, ClickWorld:510, Ground:519, Draw:546, UpdateBearers:703, FinishLife:760, UpdateLife:767, BuildSprites:798, BuildSpritesInner:805, BuildUnits3D:812, DrawUnits3D:836, DrawSprites:847, Surface:860, G:862, DrawLines:864, Stage:914
+- **MapScreen** (class, L9): Save:24, Write:27, ShotSave:30, QuickLoad:33, GrabThumb:41, MapScreen:99, Prepared:114, Prepare:119, PlaceStateOf:128, Open:150, ShowResults:172, Pressed:180, Update:184, readonly:285, LaterTips:299, Pan:323, ScreenKeys:325, OpenScreen:333, Soundscape:341, CameFrom:403, Camera:405, Rename:429, Trails:442, MapPick:455, OnScreen:461, PickAt:476, ClickWorld:507, Ground:516, Draw:543, UpdateBearers:700, FinishLife:757, UpdateLife:764, BuildSprites:795, BuildSpritesInner:802, BuildUnits3D:809, DrawUnits3D:833, DrawSprites:844, Surface:857, G:859, DrawLines:861, Stage:911
 
 ## MapScreen.Dialogs.cs (291 lines)
 - **MapScreen** (class, L8): EncounterPanel:10, EncounterOwnSide:97, MeetingPanel:123, SiegeWorksRows:157, SiegePanel:179, BeatPanel:232, GameOverPanel:249, MenuPanel:263, SavesPanel:279
@@ -781,19 +781,19 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## MapScreen.Report.cs (290 lines)
 - **MapScreen** (class, L7): ResultsPanel:9, MentionRow:32, Well:49, Tally:60, Spoils:115, ReportCompanies:156, Progress:214
 
-## MapScreen.Settlement.cs (763 lines)
-- **MapScreen** (class, L9): SettlementPanel:11, TownTabs:55, HarbourTab:73, TownRow:102, PortraitWell:105, TroopStats:113, TroopOffer:121, RecruitTab:146, NoblesTab:161, TrainTab:179, RestTab:218, FoodTab:273, WorkshopTab:309, ForageTab:348, CaptivesTab:366, GarrisonTab:419, ContractTab:458, EldersTab:496, TavernTab:506, Goblet:569, TavernRow:587, MercenariesTab:594, MarketTab:617, GoodsList:651, Contracts:676, FiefTab:707
+## MapScreen.Settlement.cs (749 lines)
+- **MapScreen** (class, L9): TabBody:12, TownTabs:41, HarbourTab:59, TownRow:88, PortraitWell:91, TroopStats:99, TroopOffer:107, RecruitTab:132, NoblesTab:147, TrainTab:165, RestTab:204, FoodTab:259, WorkshopTab:295, ForageTab:334, CaptivesTab:352, GarrisonTab:405, ContractTab:444, EldersTab:482, TavernTab:492, Goblet:555, TavernRow:573, MercenariesTab:580, MarketTab:603, GoodsList:637, Contracts:662, FiefTab:693
 
 ## MapScreen.Talk.cs (184 lines)
 - **MapScreen** (class, L7): OpenTalk:15, LeaveTalk:26, TalkPanel:38, Arguments:108, Speak:136, HallTab:150
 
-## MapScreen.Town.cs (295 lines)
-- **MapScreen** (class, L8): TabCount:21, PlaceRail:35, PlaceHero:65, PlaceScene:122, Purse:163, Card:187, Heading:197, Stat:207, Outcome:215, Price:227, JobIcon:236, JobCards:248, Watermark:281, BigButton:289
+## MapScreen.Town.cs (196 lines)
+- **MapScreen** (class, L8): TabCount:21, PlaceRail:35, Purse:64, Card:88, Heading:98, Stat:108, Outcome:116, Price:128, JobIcon:137, JobCards:149, Watermark:182, BigButton:190
 
-## MapScreen.Townscape.cs (613 lines)
+## MapScreen.Townscape.cs (560 lines)
 - **TownLook** (struct, L8)
 - **TownColours** (struct, L14)
-- **MapScreen** (class, L16): LookOf:19, ColoursOf:32, Townscape:79, Orb:130, Country:145, Clouds:197, Pine:216, Palisade:227, Ground:243, Water:267, Boat:293, Snowfall:314, UpperTown:335, TownWall:372, Landmark:389, Gable:465, StepGable:480, Crane:495, Palm:523, Horse:538, Herd:552, Folk:568, Smoke:601
+- **MapScreen** (class, L16): LookOf:19, ColoursOf:32, Orb:77, Country:92, Clouds:144, Pine:163, Palisade:174, Ground:190, Water:214, Boat:240, Snowfall:261, UpperTown:282, TownWall:319, Landmark:336, Gable:412, StepGable:427, Crane:442, Palm:470, Horse:485, Herd:499, Folk:515, Smoke:548
 
 ## MapScreen.Townscape.Houses.cs (475 lines)
 - **MapScreen** (class, L7): Glass:41, TimberHouse:50, Openings:71, WhiteHouse:97, LogHouse:116, Yurt:129, Turf:145, Edges:161, Dome:169, HeroWall:201, TavernWindow:204, TavernDoor:216, Lantern:232, TavernSign:240
