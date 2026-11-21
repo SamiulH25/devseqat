@@ -337,6 +337,7 @@ public partial class Battle
             return;
         }
         if (LastStand(t, killer)) return; // P6
+        bool wasMounted = t.Mounted;
         t.Dead = true;
         FellFromRanks(t);
         t.DiedAt = Time;
@@ -365,6 +366,7 @@ public partial class Battle
         // Your named men are heard (L8): a veteran down, a veteran's fifth man.
         if (t.SoldierId != 0 && t.Team == 0) { Log($"{NameOf(t)} is down!"); Downed.Add(t); }
         if (killer.SoldierId != 0 && killer.Team == 0 && killer.Kills == 5) Log($"{NameOf(killer)} has felled five!");
+        NamedKill(t, killer, wasMounted); // their words (C6)
         foreach (var u in t.IsLeader ? Units.ToArray() : Near(t.Pos, 10, nearKill).ToArray()) // a leader's fall is felt across the field
         {
             if (!u.Active) continue;

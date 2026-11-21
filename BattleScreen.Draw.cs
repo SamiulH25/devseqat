@@ -400,8 +400,8 @@ partial class BattleScreen
             float by = t.Height(at) + (bearer.Mounted ? 1.1f : 0);
             if (spriteFrustum.Contains(new BoundingSphere(new Vector3(at.X, by + 2f, at.Y), 3.5f)) == ContainmentType.Disjoint) continue;
             float stream = Math.Clamp((bearer.Mounted ? MathF.Abs(bearer.Speed) : bearer.Vel.Length()) / 6, 0, 1);
-            if (do3D) puppet3D!.Banner(at, by, bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
-            else puppet.Banner(at, by, bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream);
+            if (do3D) puppet3D!.Banner(at, by, bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream, streamers: s.Company.Streamers, fringe: s.Company.Fringe);
+            else puppet.Banner(at, by, bearer.Palette, battle.Time * 3 + s.Units.Count, s.Company.Banner, stream, streamers: s.Company.Streamers, fringe: s.Company.Fringe);
         }
         DrawFallingBanners(do3D);
         if (!forSun)

@@ -244,7 +244,8 @@ sealed partial class Hud
     void NamedMarks()
     {
         var vp = new Viewport(0, 0, W, H);
-        foreach (var u in B.Units)
+        var tags = new List<Rectangle>(); // names already written this frame: a name that would cross one is left off
+        foreach (var u in B.Units.Where(u => u.SoldierId != 0).OrderBy(u => Vector2.DistanceSquared(u.Pos, B.Player.Pos)))
         {
             if (u.SoldierId == 0 || u.Team != 0 || !u.Active) continue;
             float d = Vector2.Distance(u.Pos, B.Player.Pos);
@@ -253,11 +254,18 @@ sealed partial class Hud
             if (v.Z is <= 0 or >= 1) continue;
             int x = (int)v.X, y = (int)v.Y, s = Command ? U(1) : Math.Clamp((int)(U(1) * 20 / MathF.Max(6, d)), 1, U(2));
             Rect(new Rectangle(x - s, y - 3 * s, 2 * s, 2 * s), Color.Black * 0.6f);
-            Rect(new Rectangle(x - s, y - 4 * s, 2 * s, 2 * s), Gold);
+            // Gold; red-orange while he is out for vengeance; green for a lad under his master (C6).
+            var named = Battle.NamedOf(u);
+            var markCol = u.Avenging ? Warn : named?.Lad == true ? Ok : Gold;
+            Rect(new Rectangle(x - s, y - 4 * s, 2 * s, 2 * s), markCol);
             bool hover = Command && Math.Abs(Mouse.X - x) < U(8) && Math.Abs(Mouse.Y - y) < U(12);
-            if ((!Command && d < 10 || hover) && u.Squad?.Company?.Named?.FirstOrDefault(m => m.Id == u.SoldierId) is NamedSpec m)
+            if ((!Command && d < 10 || hover) && named is NamedSpec m)
             {
-                TextC(m.Name.ToUpperInvariant(), x, y - 4 * s - U(10), u.Routing ? Dim : Gold, 1);
+                string tag = m.Name.ToUpperInvariant() + (u.Avenging ? ": AVENGING" : m.Lad ? ": A LAD" : "");
+                var tr = new Rectangle(x - TW(tag, 1) / 2 - U(20), y - 4 * s - U(16), TW(tag, 1) + U(24), U(18));
+                if (!hover && tags.Any(t => t.Intersects(tr))) continue;
+                tags.Add(tr);
+                TextC(m.Name.ToUpperInvariant() + (u.Avenging ? ": AVENGING" : m.Lad ? ": A LAD" : ""), x, y - 4 * s - U(10), u.Routing ? Dim : markCol, 1);
                 // His small face beside his name (C1), the same face the roll shows.
                 var face = PortraitPainter.OfMan(m.Id, u.Type, m.Wounds, m.Age > 0 ? m.Age : 25, false, 0, u.Routing ? 2 : 1);
                 int fw = U(12), fh = U(15), fx = x - TW(m.Name.ToUpperInvariant(), 1) / 2 - fw - U(4), fy = y - 4 * s - U(14);

@@ -108,7 +108,10 @@ with mountain ridges you cross by road at the passes; the minimap and the realm 
 - **The roll:** each of your companies keeps up to six **named men** (ROLL on its card in the party screen). A new company names
   its first man, and men earn names in battle (first over a wall, a horseman brought down, standing when half the company fell).
   A named man is one of the men of his stack: he shares its losses (a little less often killed), is promoted before the others, and goes
-  where his men go. In a fought battle he is a real man in the front rank (a gold mark over him near you) and earns his own deeds.
+  where his men go. In a fought battle he is a real man in the front rank (a gold mark over him near you: red-orange when he is out
+  for vengeance, green for a lad) and earns his own deeds. When one is hard pressed near you an alert says so; they call out when
+  they fell a captain or a rider, when a brother falls, and when you pull one out. A company's banner carries its honours as gold
+  streamers, and a fringe after ten battles.
   Those lost are kept for ever under THE FALLEN, named first in the battle report, and each costs his company cohesion. When a
   company needs a sergeant, its senior named man rises to the post, and a sergeant of 15 battles joins your household.
 - **The camp (C):** where the company is between battles. Each company keeps a fire with its banner, and its named men stand

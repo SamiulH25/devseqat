@@ -317,7 +317,7 @@ public static class Rules
                     Allied: parties.First(p => p.Companies.Contains(c)).Kind == PartyKind.Lord, Mix: mix.Length > 1 ? mix : null,
                     RoutBonus: h.RoutBonus, VsMounted: h.VsMounted, Banner: c.Banner, Hero: c.Hero,
                     Streamers: c.BattleHonours.Count, Fringe: c.Battles >= 10, Cohesion: c.Cohesion,
-                    Named: c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).Select(m => new NamedSpec(m.Id, m.Troop, m.Name, m.Wounds, Soldier.AgeOf(m), m.Avenging)).ToArray() : null,
+                    Named: c.Roll.Count > 0 ? c.Roll.Where(m => !m.Hurt).Select(m => new NamedSpec(m.Id, m.Troop, m.Name, m.Wounds, Soldier.AgeOf(m), m.Avenging, m.Nature, m.Ties.Where(t => t.Kind is "Brothers" or "Kin").Select(t => t.Other).ToArray(), m.Ties.Any(t => t.Kind == "Lad"))).ToArray() : null,
                     Standing: Campaign.NatureEffect(c) is string n ? new[] { n } : null); // the senior man's nature (C2)
             }).ToList());
 }

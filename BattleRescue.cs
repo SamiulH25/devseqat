@@ -33,6 +33,7 @@ partial class Battle
             if (u.Rescue < RescueTime) continue;
             u.Saved = true;
             Log($"You drag {NameOf(u)} out of the press.");
+            Speak(u, "man_saved"); // C6
             PlayerHit = ("YOU GET HIM OUT", Time);
         }
     }

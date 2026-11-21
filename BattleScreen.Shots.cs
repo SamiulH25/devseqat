@@ -212,7 +212,11 @@ partial class BattleScreen
                 ArrowScene((shotIndex - 110) / 2); shotFrames = 0; shotIndex++; break;
             case 111 or 113 or 115 when shotFrames > 60:
                 pendingShot = shotIndex switch { 111 => "arrows-volley", 113 => "arrows-field", _ => "arrows-ground" }; shotIndex++; break;
-            case 116 when pendingShot == null: Exit(); break;
+            case 116 when pendingShot == null: NamedScene(); shotFrames = 0; shotIndex = 200; break;
+            case 200 when shotFrames > 20: pendingShot = "named-fight"; shotIndex++; break;
+            case 201 when pendingShot == null: NamedScene(far: true); shotFrames = 0; shotIndex++; break;
+            case 202 when shotFrames > 20: pendingShot = "named-banner"; shotIndex++; break;
+            case 203 when pendingShot == null: Exit(); break;
             // Sergeants (docs/archive/SERGEANTS.md; IRONFIELD_SHOTS_FROM=sergeants starts deploying): the tray and ADD in deployment,
             // a horn plan in the goal panel, a question and the division rings in battle, the question in field view.
             case 117 when shotFrames > 10:
@@ -564,6 +568,41 @@ partial class BattleScreen
         blend = 0;
         yaw = MathHelper.PiOver2;
         pitch = 0.18f;
+    }
+
+    /// Named men in the fight (docs/pre-demo/COMPANY.md C6), staged for a shot: your company's banner with three honours and the
+    /// fringe, one man out for vengeance and a lad among the marks, a man hard pressed (the alert) and two of them speaking.
+    /// `far`: close behind the banner, to see the streamers and the fringe.
+    void NamedScene(bool far = false)
+    {
+        var named = new[]
+        {
+            new NamedSpec(5, "men_at_arms", "Hob the Red", Nature: "Grim", Brothers: new[] { 6 }, Avenging: true),
+            new NamedSpec(6, "men_at_arms", "Wat Lightfoot", Nature: "Merry", Brothers: new[] { 5 }),
+            new NamedSpec(7, "men_at_arms", "Pip of Peyrolles", Nature: "Bold", Lad: true),
+        };
+        var mine = new Company("men_at_arms", 12, "infantry", 7, "Fallowby Shields", Banner: 2, Named: named, Streamers: 3, Fringe: true);
+        battle = new Battle(16, new ArmySpec("mine", 0, new List<Company> { mine }),
+            new ArmySpec("theirs", 0, new List<Company> { new("levies", 14, "infantry", 9), new("outriders", 4, "cavalry", 10) }), new BattleOptions());
+        SetWorld();
+        var b = battle;
+        var sq = b.SquadsOf(0).First(s => s.Company?.Id == 7);
+        var bearer = sq.Units.First(u => u.Active);
+        b.Player.Pos = (far ? bearer.Pos : sq.Center) + new Vector2(far ? 1.2f : 0, far ? -4.5f : -9); // behind the company, or close behind the banner
+        b.Player.Facing = b.Player.Heading = MathHelper.PiOver2;
+        var hob = b.Units.First(u => u.SoldierId == 5);
+        var foe = b.SquadsOf(1).First().Units[0];
+        foe.Pos = hob.Pos + new Vector2(0, 1.2f);
+        for (int i = 0; i < 40; i++) { hob.Hp = hob.Type.MaxHp * 0.3f; hob.Target = foe; foe.Pos = hob.Pos + new Vector2(0, 1.2f); b.Update(1 / 60f); }
+        b.KillForTest(b.Units.First(u => u.Team == 1 && u.Mounted && !u.IsLeader), b.Units.First(u => u.SoldierId == 7));
+        b.KillForTest(b.Units.First(u => u.SoldierId == 6), foe);
+        foreach (var u in b.Units) { u.ViewFacing = u.Facing; u.ViewHeading = u.Heading; }
+        paused = true;
+        hudHidden = false;
+        SetCommand(false);
+        blend = 0;
+        yaw = MathHelper.PiOver2;
+        pitch = far ? 0.02f : 0.18f;
     }
 
     /// The enemy hunts you (docs/pre-demo/COMPANY.md C13), staged for a shot: elite bows have marked the captain standing in the open

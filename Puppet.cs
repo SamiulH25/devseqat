@@ -903,7 +903,7 @@ sealed partial class Puppet
 
     /// A company banner: a pole rising behind the bearer, the flag at its head turned to the camera. The cloth ripples in
     /// three strips (more as the bearer moves: `stream` 0..1); `lean` tips the pole over (radians, a falling banner) toward `fallDir`.
-    public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1, float stream = 0, float lean = 0, Vector2 fallDir = default)
+    public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1, float stream = 0, float lean = 0, Vector2 fallDir = default, int streamers = 0, bool fringe = false)
     {
         var foot = new Vector3(pos.X, ground, pos.Y);
         var side = Vector3.Normalize(new Vector3(camRight.X, 0, camRight.Z));
@@ -944,7 +944,19 @@ sealed partial class Puppet
             Vector3 atl = a, atr = b, abl = a - up * h, abr = b - up * h;
             verts.Add(new(atl, tint, new(u0, v0))); verts.Add(new(atr, tint, new(u1, v0))); verts.Add(new(abl, tint, new(u0, v1)));
             verts.Add(new(atr, tint, new(u1, v0))); verts.Add(new(abr, tint, new(u1, v1))); verts.Add(new(abl, tint, new(u0, v1)));
+            if (fringe) { tint = new Color(220, 174, 66); Quad(abl - up * 0.07f, abr - up * 0.07f, abl, abr, white, false); tint = Color.White; } // ten battles (C6)
             a = b;
+        }
+        tint = new Color(220, 174, 66); // battle honours (C6): gold streamers hanging from under the finial on the far side
+        for (int j = 0; j < Math.Min(3, streamers); j++)
+        {
+            Vector3 At(int k)
+            {
+                float f = k / 4f;
+                return top - up * 0.18f - side * (0.05f + j * 0.15f + (0.03f + 0.5f * stream) * f) - up * ((0.95f - j * 0.18f) * f * (1 - 0.6f * stream))
+                    + up * MathF.Sin(wave * (1.6f + stream) - f * 3.4f - j * 0.9f) * 0.05f * f;
+            }
+            for (int k = 1; k <= 4; k++) { var q0 = At(k - 1); var q1 = At(k); Quad(q1, q1 - side * 0.06f, q0, q0 - side * 0.06f, white, false); }
         }
         tint = keep;
     }

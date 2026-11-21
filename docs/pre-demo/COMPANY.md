@@ -1,6 +1,6 @@
 # The men of the company, and their captain: plan
 
-Status: **partly built**: C0-C5 and C9-C14 shipped (see "As built" at the end); C6, C7 and C8 are still open. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
+Status: **partly built**: C0-C6 and C9-C14 shipped (see "As built" at the end); C7 and C8 are still open. It follows `docs/archive/WORLD_LIFE.md` (WL0-WL6 built, WL7 paused). Phases C0-C14 (C9-C13, the captain's part, and C14, arrows, added 2026-11-12 at the owner's asking); each ships on its own and `tools/check.sh` must pass after each.
 When a phase ships, add its "As built" note at the end. Numbers marked *(tune)* are starting values.
 Read `docs/archive/LEGACY.md` first: this plan is its second half.
 
@@ -578,3 +578,21 @@ and its range; plunging and flat shots drawn differently; fire pots; the flight'
   Changed from the plan: the company's feast stays in the town (it needs a market); the REST tab does not open the camp; no lab
   page. Tests `CampEvents`, `CampTalk`; shots add `campaign-camp-event.png`.
 
+
+### C6 (named men in the fight), as built
+- `BattleNamed.cs`. *Hard pressed* (`PressedAlerts`, from `UpdateAlerts`): a named man of yours under half health with the foe he
+  fights within 3 m and you within 60 m (`PressedReach`) raises "<NAME> IS HARD PRESSED" (kind `pressed`, red, at his spot); at
+  most one every 20 s (`PressedGap`). A click looks at his company as other alerts do.
+- *Men speak* (`Speak`, `NamedKill` from `Kill`, and `UpdateRescue`): when he fells a captain or a hero (`man_felled_captain`),
+  a horseman (`man_felled_horse`), when his brother or kinsman falls (`man_brother_down`, {other} his name), when you pull
+  him out (`man_saved`). A line by his nature from `Data/talk.json` (one plain line per topic as the fallback; `TalkWhens` in
+  CampTalk.cs knows the topics, so `CampTalk` validates them), no dice (`Spoken`, `Said`). Shown under the alerts with his
+  face, wrapped, the newest two for 6 s (`Hud.SpokenLines`), and logged.
+- `NamedSpec` carries `Nature`, `Brothers` (ids of brothers and kin) and `Lad` (from `Rules.Army`). The HUD mark is gold,
+  red-orange while he is avenging, green for a lad; the name tag says ": AVENGING" or ": A LAD", and tags that would cross
+  a nearer man's are left off (`Hud.NamedMarks`).
+- *Streamers*: a company's battle honours (`Company.Streamers`, up to three) hang as gold ribbons of falling length from under
+  the finial on the far side of the pole, and the fringe (10+ battles) runs under the flag (`Puppet3D.Banner` and `Puppet.Banner`
+  take `streamers`, `fringe`; `HonourGold`). Drawn for the company's banner in battle, not for a last-seen one.
+- Nothing in the fight changes (the avenging blow was already C3); the test runs the same battle with and without named men.
+  Test `NamedInTheFight`; shots `named-fight.png`, `named-banner.png` (`IRONFIELD_SHOTS_FROM=named`, `NamedScene`).

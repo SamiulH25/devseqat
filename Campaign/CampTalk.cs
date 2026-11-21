@@ -20,6 +20,8 @@ public sealed partial class Campaign
         ["man_men"] = new[] { "", "hungry", "unpaid", "won", "lost", "low", "high" },
         ["man_home"] = new[] { "", "far", "near" },
         ["man_tie"] = new[] { "Brothers", "Kin", "Rivals", "Master", "Lad" },
+        // In battle (C6, BattleNamed.cs): by nature only.
+        ["man_felled_captain"] = new[] { "" }, ["man_felled_horse"] = new[] { "" }, ["man_brother_down"] = new[] { "" }, ["man_saved"] = new[] { "" },
     };
 
     /// What is most true of the camp, for "how are the men?": hunger first, then pay, then the last battle, then the spirit.

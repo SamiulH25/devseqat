@@ -118,7 +118,7 @@ sealed partial class BattleScreen
     readonly string? shotDir = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS") is { Length: > 0 } sd ? sd : null;
     // IRONFIELD_SHOTS_FROM=clash starts the script at the melee clashes (docs/archive/MELEE.md), =magic at the magic scenes,
     // =spectacle at the spectacle scenes (docs/archive/SPECTACLE.md), skipping the rest.
-    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, "sergeants" => 117, "hud" => 125, _ => 0 }, shotFrames;
+    int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, "named" => 116, "sergeants" => 117, "hud" => 125, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
     /// The captain's ring (hold its key in the fight view): open, held since, a choice waiting to go into the next input.

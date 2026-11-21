@@ -981,7 +981,10 @@ sealed partial class Puppet3D
     }
 
     /// 3D company banner on the unified pixel grid: wooden pole + brass finial + 3-strip rippling 3D cloth + heraldic emblem!
-    public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1, float stream = 0, float lean = 0, Vector2 fallDir = default)
+    /// The gold of a company's battle honours: streamers and the fringe (C6).
+    static readonly Vector3 HonourGold = new(1f, 0.8f, 0.3f);
+
+    public void Banner(Vector2 pos, float ground, int palette, float wave, int charge = -1, float stream = 0, float lean = 0, Vector2 fallDir = default, int streamers = 0, bool fringe = false)
     {
         int palIdx = Math.Clamp(palette, 0, Style.Sides.Length - 1);
         UnitMatTable.Fill(palIdx, -1, 0, false, Color.White, palCols);
@@ -1023,7 +1026,7 @@ sealed partial class Puppet3D
         byte clothAlpha = (byte)(MeshKit3D.PatQuilt << 4);
         byte trimAlpha = 0;
 
-        verts.Reserve(strips * 24);
+        verts.Reserve(strips * 36 + 3 * 4 * 12);
         var dst = verts.A;
         int n = verts.N;
 
@@ -1064,6 +1067,12 @@ sealed partial class Puppet3D
             AddQuad(mA + segNorm * 0.013f, mB + segNorm * 0.013f, bA + segNorm * 0.013f, bB + segNorm * 0.013f, segNorm, trimCol, shade, trimAlpha, u0, u1, h - trimH, h);
             AddQuad(mB - segNorm * 0.013f, mA - segNorm * 0.013f, bB - segNorm * 0.013f, bA - segNorm * 0.013f, -segNorm, trimCol, shade * 0.94f, trimAlpha, u1, u0, h - trimH, h);
 
+            if (fringe) // ten battles: a gold fringe under the trim (docs/pre-demo/COMPANY.md C6)
+            {
+                var fA = bA - up * 0.07f; var fB = bB - up * 0.07f;
+                AddQuad(bA + segNorm * 0.014f, bB + segNorm * 0.014f, fA + segNorm * 0.014f, fB + segNorm * 0.014f, segNorm, HonourGold, shade, trimAlpha, u0, u1, h - trimH, h);
+                AddQuad(bB - segNorm * 0.014f, bA - segNorm * 0.014f, fB - segNorm * 0.014f, fA - segNorm * 0.014f, -segNorm, HonourGold, shade * 0.94f, trimAlpha, u1, u0, h - trimH, h);
+            }
             if (i == 2)
             {
                 midCenter = (tA + tB + mA + mB) * 0.25f;
@@ -1071,6 +1080,30 @@ sealed partial class Puppet3D
                 midNorm = segNorm;
             }
             prev = next;
+        }
+        // Battle honours (C6): up to three gold streamers from under the finial on the far side of the pole, a little apart,
+        // hanging and lifting with the wind as the cloth does.
+        for (int j = 0; j < Math.Min(3, streamers); j++)
+        {
+            const int segs = 4;
+            const float sw = 0.06f;
+            float len = 0.8f - j * 0.16f;
+            Vector3 At(int k)
+            {
+                float f = k / (float)segs, ph = wave * (1.6f + stream) - f * 3.4f - j * 0.9f;
+                float outward = (0.03f + 0.5f * stream) * f;
+                return up * 3.12f - side * (0.05f + j * 0.15f + outward) - up * (len * f * (1 - 0.6f * stream)) + faceN * MathF.Sin(ph) * 0.06f * f;
+            }
+            var p0 = At(0);
+            for (int k = 1; k <= segs; k++)
+            {
+                var p1 = At(k);
+                float shade = 1f - 0.05f * k;
+                // A ribbon, its width across the pole's side, both faces.
+                AddQuad(p0 + faceN * 0.01f, p0 + faceN * 0.01f - side * sw, p1 + faceN * 0.01f, p1 + faceN * 0.01f - side * sw, faceN, HonourGold, shade * 1.15f, trimAlpha, 0, 1, 0, 1);
+                AddQuad(p0 - side * sw - faceN * 0.01f, p0 - faceN * 0.01f, p1 - side * sw - faceN * 0.01f, p1 - faceN * 0.01f, -faceN, HonourGold, shade * 0.9f, trimAlpha, 0, 1, 0, 1);
+                p0 = p1;
+            }
         }
         verts.N = n;
 

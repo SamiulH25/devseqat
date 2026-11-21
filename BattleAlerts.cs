@@ -37,6 +37,7 @@ public sealed partial class Battle
                 && Vector2.Distance(e.Center, s.Center) < 60 + s.Radius && Vector2.Dot(Vector2.Normalize(e.Center - s.Center + new Vector2(1e-3f, 0)), s.Front) < 0.3f) : null;
             Raise("horse", s, horse != null, $"Enemy horse at {s.Name}'s flank");
         }
+        PressedAlerts(); // a named man hard pressed near you (C6, BattleNamed.cs)
         foreach (var d in Divisions)
             if (d.Team == 0) Raise("leaderless", d, d.Alive > 0 && d.Leader is { Active: false }, $"{d.Name} has lost its sergeant", d.Squads.FirstOrDefault(q => q.Alive > 0));
     }

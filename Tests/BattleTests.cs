@@ -1552,6 +1552,38 @@ public static partial class SelfTest
         Check(!hob2.Saved && b2.GoalState(goal) == -1, "left where he fell, he is lost, and the goal with him");
     }
 
+    /// Named men in the fight (docs/pre-demo/COMPANY.md C6): a man of yours hard pressed near you raises an alert, at most one every
+    /// 20 s; he speaks by his nature when he fells a captain or a horseman and when his brother falls; the battle plays as before.
+    static void NamedInTheFight()
+    {
+        var named = new[] { new NamedSpec(5, "shieldmen", "Hob the Red", Nature: "Grim", Brothers: new[] { 6 }), new NamedSpec(6, "shieldmen", "Wat", Nature: "Merry", Brothers: new[] { 5 }, Lad: true) };
+        Battle Make() => new(5, new ArmySpec("mine", 0, new List<Company> { new("shieldmen", 10, "infantry", 7, "Test Guard", Named: named) }),
+            new ArmySpec("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9), new("outriders", 6, "cavalry", 10) }), new BattleOptions());
+        var b = Make();
+        var hob = b.Units.First(u => u.SoldierId == 5);
+        var foe = b.SquadsOf(1).First().Units[0];
+        Check(Battle.NamedOf(hob)?.Nature == "Grim" && Battle.NamedOf(b.Units.First(u => u.SoldierId == 6))?.Lad == true, "the battle knows his nature and the lad");
+        void Press() { hob.Hp = hob.Type.MaxHp * 0.3f; foe.Pos = hob.Pos + new Vector2(1, 0); hob.Target = foe; b.Player.Pos = hob.Pos + new Vector2(20, 0); }
+        for (int i = 0; i < 40; i++) { Press(); b.Update(1 / 60f); }
+        Check(b.Alerts.Count(a => a.Kind == "pressed") == 1 && b.Alerts.First(a => a.Kind == "pressed").Text == "Hob the Red is hard pressed", "a named man hard pressed raises the alert");
+        for (int i = 0; i < 60 * 5; i++) { Press(); b.Update(1 / 60f); }
+        Check(b.Alerts.Count(a => a.Kind == "pressed") == 1, "and not again within 20 s");
+        // He fells a horseman, then their captain; then his brother falls.
+        var rider = b.Units.First(u => u.Team == 1 && u.Mounted && !u.IsLeader);
+        b.KillForTest(rider, hob);
+        Check(b.Spoken.Count == 1 && b.Spoken[0].Text == "Got the horseman. Next.", "he speaks when he fells a rider (by his nature)");
+        b.KillForTest(b.Units.First(u => u.Team == 1 && u.IsLeader), hob);
+        Check(b.Spoken.Count == 2 && b.Spoken[1].Text.Contains("captain"), "and when he fells their captain");
+        b.KillForTest(b.Units.First(u => u.SoldierId == 6), foe);
+        Check(b.Spoken.Count == 3 && b.Spoken[2].Text == "They killed Wat. They will pay for it.", "and when his brother falls");
+        // Words change nothing: two battles from the same start, one with men who speak, end the same.
+        var quiet = new Battle(5, new ArmySpec("mine", 0, new List<Company> { new("shieldmen", 10, "infantry", 7, "Test Guard") }),
+            new ArmySpec("theirs", 0, new List<Company> { new("levies", 30, "infantry", 9), new("outriders", 6, "cavalry", 10) }), new BattleOptions());
+        var loud = Make();
+        for (int i = 0; i < 60 * 40 && loud.Winner < 0; i++) { loud.Update(1 / 60f); quiet.Update(1 / 60f); }
+        Check(loud.Units.Count(u => u.Active) == quiet.Units.Count(u => u.Active) && loud.Time == quiet.Time, "the fight goes the same with or without them");
+    }
+
     /// A recorded battle with player orders and input, saved to JSON and played back, ends exactly the same.
     static void ReplayExact()
     {
