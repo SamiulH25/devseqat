@@ -258,8 +258,11 @@ partial class BattleScreen
             case 128 when pendingShot == null:
                 shotWheel = wheelOpen = true; wheelVec = new Vector2(60, -60);
                 pendingShot = "fight-ring"; shotIndex++; break;
+            case 129 when pendingShot == null && !shotCapWheel:
+                shotWheel = wheelOpen = false; shotCapWheel = capWheel = true; wheelVec = new Vector2(60, -60); // the captain's ring, leaning to a form
+                pendingShot = "fight-captain-ring"; break;
             case 129 when pendingShot == null:
-                shotWheel = wheelOpen = false; shotHold = true; holdHeld = 1; pitch = 0.32f; ListenArm(0, false);
+                shotCapWheel = capWheel = false; wheelVec = Vector2.Zero; shotHold = true; holdHeld = 1; pitch = 0.32f; ListenArm(0, false);
                 shotFrames = 0; shotIndex++; break;
             case 130 when shotFrames > 3:
                 pendingShot = "fight-hold"; shotIndex++; break;

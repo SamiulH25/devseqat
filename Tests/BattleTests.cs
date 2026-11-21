@@ -122,6 +122,19 @@ public static partial class SelfTest
     /// Balance guards: a horse is not a free win, and a broken company can come back instead of always dissolving.
     /// A formed foot company is a wall to horse: knights sent at the archers behind it are held up at the line, and only
     /// a few get through, so the bows are not ridden down. Loose or broken foot lets them through.
+    /// Every action has a key and a label for the controls screen; the captain's ring holds each of its things once,
+    /// and its key shares the couch key by default (a tap couches, a hold opens the ring).
+    static void KeysLabelled()
+    {
+        foreach (var a in Enum.GetValues<Act>())
+        {
+            Check(Controls.Defaults.ContainsKey(a), $"{a} has a default key");
+            Check(Controls.Labels.ContainsKey(a), $"{a} has a label");
+        }
+        Check(Hud.CaptainRing.Distinct().Count() == Enum.GetValues<Hud.CapCmd>().Length, "the captain's ring holds each thing once");
+        Check(Controls.Defaults[Act.CaptainWheel][0] == Controls.Defaults[Act.Couch][0], "the ring shares the couch key");
+    }
+
     static void LineScreensBows()
     {
         (int through, int bowsLost) Run1(Formation f)

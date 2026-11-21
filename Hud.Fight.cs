@@ -209,4 +209,76 @@ sealed partial class Hud
         else Shadowed("ORDERS", c.X, c.Y - U(24), Color.White, 2, 1);
         Shadowed("TO " + ListenWord(), c.X, c.Y - U(2), Style.Text, 1, 1);
     }
+
+    // ---------- the captain's ring ----------
+
+    /// What the captain's ring holds: the things only he does, kept off the keyboard (each keeps its own key as a shortcut).
+    public enum CapCmd { Swap, Form1, Form2, Form3, Great, Relic, Mount, Couch }
+    /// Round the ring from the top, clockwise.
+    public static readonly CapCmd[] CaptainRing = { CapCmd.Swap, CapCmd.Form1, CapCmd.Form2, CapCmd.Form3, CapCmd.Great, CapCmd.Relic, CapCmd.Mount, CapCmd.Couch };
+
+    /// One slot of the captain's ring as it stands now: its word, picture, a line under it, whether it can be done, and its key.
+    (string Name, string Icon, string Sub, bool Ready, Act Key) CapSlot(CapCmd c)
+    {
+        var p = B.Player;
+        switch (c)
+        {
+            case CapCmd.Swap:
+                return ("SWAP", "sword", B.HasSecondWeapon ? "WEAPON" : "ONLY ONE", B.HasSecondWeapon, Act.SwapWeapon);
+            case CapCmd.Form1 or CapCmd.Form2 or CapCmd.Form3 or CapCmd.Great:
+            {
+                int i = (int)c - (int)CapCmd.Form1;
+                var key = i switch { 0 => Act.Form1, 1 => Act.Form2, 2 => Act.Form3, _ => Act.GreatForm };
+                var f = i < B.FormSlot.Length ? B.FormSlot[i] : null;
+                if (f == null) return (i == 3 ? "GREAT FORM" : $"FORM {i + 1}", i == 3 ? "sun" : "star", "NONE SET", false, key);
+                bool ready = B.CannotForm(i) == null;
+                string sub = i == 3 && B.GreatUsed ? "SPENT" : B.FormWait(i) > 0 ? $"IN {B.FormWait(i):0}" : $"AURA {B.FormCost(f):0}";
+                return (f.Name.ToUpperInvariant(), i == 3 ? "sun" : "star", sub, ready, key);
+            }
+            case CapCmd.Relic:
+                return ("RELIC", "cross", !B.HasRelic ? "NONE" : B.CannotRaise(p) == null ? "RAISE IT" : "RAISED", B.HasRelic && B.CannotRaise(p) == null, Act.Relic);
+            case CapCmd.Mount:
+                return (p.Mounted ? "DISMOUNT" : "MOUNT", "horse", p.Mounted ? "SLOW FIRST" : "HORSE NEAR", p.Mounted ? MathF.Abs(p.Speed) <= 1.5f : true, Act.Interact);
+            default:
+                return (p.Couched ? "LANCE UP" : "COUCH", "spear", p.Mounted ? "AT GALLOP" : "MOUNTED", p.Mounted && (p.Couched || p.Speed > 6), Act.Couch);
+        }
+    }
+
+    /// The captain's ring (hold its key in the fight view; time slows): his weapons, forms, the relic and his horse round the
+    /// reticle, greyed when he cannot do them now. Let go over one to do it.
+    void CaptainWheel()
+    {
+        Rect(new Rectangle(0, 0, W, H), Color.Black * 0.3f);
+        var c = WheelPos();
+        var ring = CaptainRing;
+        for (int i = 0; i < ring.Length; i++)
+        {
+            var (name, icon, sub, ready, _) = CapSlot(ring[i]);
+            float a = -MathHelper.PiOver2 + i * MathHelper.TwoPi / ring.Length;
+            bool on = i == WheelSector;
+            var at = c + new Vector2(MathF.Cos(a) * 1.3f, MathF.Sin(a)) * U(on ? 122 : 114);
+            int tw = U(on ? 80 : 72), ts = U(on ? 54 : 48);
+            var r = new Rectangle((int)at.X - tw / 2, (int)at.Y - ts / 2, tw, ts);
+            var lit = ready ? (on ? Gold : Style.Aura) : Dim;
+            Rect(new Rectangle(r.X + U(2), r.Y + U(3), r.Width, r.Height), Color.Black * 0.45f);
+            kit.VGrad(r, on && ready ? new Color(104, 84, 36) : new Color(38, 40, 46), on && ready ? new Color(54, 44, 20) : Kit.IronDark, 1);
+            Frame(r, on ? (ready ? Gold : Dim) : Color.White * (ready ? 0.22f : 0.1f), U(on ? 2 : 1));
+            kit.Icon(icon, r.Center.X - U(10), r.Y + U(4), lit, 3);
+            TextC(kit.Fit(name, r.Width - U(4)), r.Center.X, r.Bottom - U(20), ready ? (on ? Gold : Color.White) : Dim, 1);
+            TextC(kit.Fit(sub, r.Width - U(4)), r.Center.X, r.Bottom - U(10), Dim, 1);
+        }
+        var mid = new Rectangle((int)c.X - U(74), (int)c.Y - U(30), U(148), U(44));
+        Rect(mid, Color.Black * 0.6f);
+        if (WheelSector >= 0 && WheelSector < ring.Length)
+        {
+            var (name, _, sub, ready, key) = CapSlot(ring[WheelSector]);
+            Shadowed(kit.Fit(name, U(144), 2), c.X, c.Y - U(24), ready ? Gold : Dim, 2, 1);
+            Shadowed(ready ? $"KEY {Ctl.Name(key)}" : sub, c.X, c.Y - U(2), Style.Text, 1, 1);
+        }
+        else
+        {
+            Shadowed("CAPTAIN", c.X, c.Y - U(24), Color.White, 2, 1);
+            Shadowed("LEAN TO ONE, LET GO", c.X, c.Y - U(2), Style.Text, 1, 1);
+        }
+    }
 }

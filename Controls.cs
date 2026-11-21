@@ -29,6 +29,8 @@ public enum Act
     LordsScreen, SkillsScreen, RealmScreen, DivisionsScreen, AtlasScreen, SiegeScreen, InventoryScreen, QuestsScreen,
     // sergeants (docs/archive/SERGEANTS.md)
     Horn,
+    // the captain's own ring (hold; a tap couches the lance when it shares the couch key)
+    CaptainWheel,
 }
 
 public enum MouseButton { Left, Right, Middle, X1, X2 }
@@ -101,7 +103,7 @@ public sealed class Controls
     KeyboardState kb, pkb;
     MouseState ms, pms;
 
-    static readonly Dictionary<Act, string[]> Defaults = new()
+    internal static readonly Dictionary<Act, string[]> Defaults = new()
     {
         [Act.Forward] = new[] { "W", "Up" }, [Act.Back] = new[] { "S", "Down" },
         [Act.Left] = new[] { "A", "Left" }, [Act.Right] = new[] { "D", "Right" },
@@ -121,7 +123,7 @@ public sealed class Controls
         [Act.AuraBlade] = new[] { "ALT" }, [Act.Form1] = new[] { "U" }, [Act.Form2] = new[] { "I" }, [Act.Form3] = new[] { "O" }, [Act.GreatForm] = new[] { "L" }, [Act.Relic] = new[] { "BACKSPACE" },
         [Act.Cast] = new[] { "P" }, [Act.Merge] = new[] { "," }, [Act.Slower] = new[] { "[" }, [Act.Faster] = new[] { "]" },
         [Act.Relieve] = new[] { "." }, [Act.SplitCompany] = new[] { "/" }, [Act.StandingOrder] = new[] { "=" },
-        [Act.Horn] = new[] { "TILDE" },
+        [Act.Horn] = new[] { "TILDE" }, [Act.CaptainWheel] = new[] { "Q" },
         [Act.LordsScreen] = new[] { "L" }, [Act.SkillsScreen] = new[] { "K" }, [Act.RealmScreen] = new[] { "R" },
         [Act.DivisionsScreen] = new[] { "V" }, [Act.AtlasScreen] = new[] { "M" }, [Act.SiegeScreen] = new[] { "B" },
         [Act.InventoryScreen] = new[] { "I" }, [Act.QuestsScreen] = new[] { "J" },
@@ -144,7 +146,7 @@ public sealed class Controls
         [Act.AuraBlade] = "AURA BLADE (HOLD)", [Act.Form1] = "FORM 1", [Act.Form2] = "FORM 2", [Act.Form3] = "FORM 3", [Act.GreatForm] = "GREAT FORM", [Act.Relic] = "RAISE THE RELIC (ONCE A BATTLE)",
         [Act.Cast] = "CAST (CASTERS, COMMAND VIEW)", [Act.Merge] = "FOLD SELECTED INTO THE FULLEST",
         [Act.Slower] = "BATTLE SLOWER", [Act.Faster] = "BATTLE FASTER", [Act.Relieve] = "RELIEVE (FRESH TAKES THE TIRED'S PLACE)", [Act.SplitCompany] = "SPLIT A COMPANY IN TWO", [Act.StandingOrder] = "STANDING ORDER (CYCLE)",
-        [Act.Horn] = "SOUND THE HORN (OFFICERS' PLANS)",
+        [Act.Horn] = "SOUND THE HORN (OFFICERS' PLANS)", [Act.CaptainWheel] = "CAPTAIN'S RING (HOLD; TAP = COUCH)",
         [Act.LordsScreen] = "LORDS AND COMPANIONS (MAP)", [Act.SkillsScreen] = "THE CAPTAIN (MAP)", [Act.RealmScreen] = "THE REALMS (MAP)",
         [Act.DivisionsScreen] = "DIVISIONS (MAP)", [Act.AtlasScreen] = "REALM MAP (MAP)", [Act.SiegeScreen] = "YOUR SIEGE (MAP)", [Act.InventoryScreen] = "KIT AND BAGGAGE (MAP)", [Act.QuestsScreen] = "QUESTS (MAP)",
     };

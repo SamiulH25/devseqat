@@ -49,6 +49,7 @@ sealed partial class Hud
     /// The battle speed chosen with [ and ] (1 = normal).
     public float Speed = 1;
     public int SpeedIdx = 1;
+    public bool CapWheelOpen;
     public bool Command, Paused, MenuOpen, HelpOpen, WheelOpen, ShowResult, InCampaign, Deploying, AttackMoveMode;
     public string? CombatPrompt;
     public float CombatPromptAt = -99;
@@ -111,6 +112,13 @@ sealed partial class Hud
         hiddenCards = 0;
         int ms = U(150);
         minimap = new Rectangle(W - ms - U(10), U(10), ms, ms);
+        mapBtns.Clear();
+        if (Command)
+        {
+            // Under the minimap: turn the view left, the ground map, turn it right.
+            int bw = (ms - U(8)) / 3;
+            for (int i = 0; i < 3; i++) mapBtns.Add(new Rectangle(minimap.X + i * (bw + U(4)), minimap.Bottom + U(8), bw, U(13)));
+        }
         if (Command) LayoutDeck(); else LayoutFight();
         LayoutDivisions();
         if (Command && Div != null) LayoutGoals();
@@ -128,6 +136,11 @@ sealed partial class Hud
     }
 
     public Squad? CardAt(Point p) => cards.FirstOrDefault(c => c.R.Contains(p)).S;
+    readonly List<Rectangle> mapBtns = new();
+    /// The buttons under the minimap: 0 turn left, 1 the ground map, 2 turn right.
+    public int? MapButtonAt(Point p) { for (int i = 0; i < mapBtns.Count; i++) if (mapBtns[i].Contains(p)) return i; return null; }
+    /// The order deck's title, a button back to all companies while some are chosen.
+    public bool DeckTitleAt(Point p) => Command && !deck.IsEmpty && Selected.Count > 0 && new Rectangle(deck.X, deck.Y, deck.Width, U(20)).Contains(p);
     public Cmd? ButtonAt(Point p) => buttons.Where(b => b.R.Contains(p)).Select(b => (Cmd?)b.C).FirstOrDefault();
     public MenuItem? MenuAt(Point p) => menu.Where(m => m.R.Contains(p)).Select(m => (MenuItem?)m.M).FirstOrDefault();
     public bool PauseAt(Point p) => Command && !ShowResult && pauseBtn.Contains(p);
@@ -138,7 +151,7 @@ sealed partial class Hud
     public Vector2? MinimapAt(Point p) => Command && minimap.Contains(p)
         ? World.MinimapToWorld(new Vector2((p.X - minimap.X) / (float)minimap.Width, (p.Y - minimap.Y) / (float)minimap.Height)) : null;
     /// The mouse is on the interface, not the field (command view; the fight view has no cursor).
-    public bool Over(Point p) => Command && (topBar.Contains(p) || deck.Contains(p) || player.Contains(p) || minimap.Contains(p))
+    public bool Over(Point p) => Command && (topBar.Contains(p) || deck.Contains(p) || player.Contains(p) || minimap.Contains(p) || MapButtonAt(p) != null)
         || AlertAt(p) != null || CardAt(p) != null || ButtonAt(p) != null || DivisionAt(p) != null || GoalAt(p) != null || GoalCloseAt(p) || OverCommand(p)
         || start.Contains(p) || deployToggle.Contains(p);
 
@@ -240,6 +253,7 @@ sealed partial class Hud
         DuelBars();
         if (Command) DrawCommand(); else DrawFight();
         if (WheelOpen) { if (Div != null) GoalWheel(); else Wheel(); }
+        else if (CapWheelOpen) CaptainWheel();
         if (B.DownSince >= 0) // the last stand (P6)
         {
             var r = new Rectangle(W / 2 - U(160), H / 2 - U(60), U(320), U(34));
@@ -290,6 +304,7 @@ sealed partial class Hud
         GoalLines();
         AlertStrip();
         MinimapPanel();
+        MapButtons();
         PostZones();
         DivisionRings();
         DivisionMarkers();
@@ -346,6 +361,20 @@ sealed partial class Hud
             string mark = st > 0 ? "DONE: " : st < 0 ? "LOST: " : "GOAL: ";
             TextC(mark + B.GoalText(g), W / 2f, y, st > 0 ? Gold : st < 0 ? Dim * 0.6f : Color.White, 1);
             y += U(11);
+        }
+    }
+
+    /// Under the minimap: turn the view (hold), and the ground map (lit while it is shown).
+    void MapButtons()
+    {
+        for (int i = 0; i < mapBtns.Count; i++)
+        {
+            var r = mapBtns[i];
+            bool hover = r.Contains(Mouse), on = i == 1 && GroundView;
+            Rect(r, on ? Kit.Mul(Gold, 0.35f) : hover ? new Color(60, 60, 68) : Color.Black * 0.6f);
+            Frame(r, on || hover ? Gold : Color.White * 0.2f, U(1));
+            string t = i == 0 ? "< TURN" : i == 1 ? "GROUND" : "TURN >";
+            TextC(t, r.Center.X, r.Y + U(4), on ? Gold : hover ? Color.White : Style.Text, 1);
         }
     }
 

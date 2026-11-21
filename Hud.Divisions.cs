@@ -22,7 +22,7 @@ sealed partial class Hud
         divCards.Clear();
         goals.Clear();
         // Right, under the minimap: the battle log is top left and the score bar in the middle.
-        int w = U(214), h = U(46), x = W - w - U(10), y = minimap.Bottom + U(34);
+        int w = U(214), h = U(46), x = W - w - U(10), y = minimap.Bottom + U(42); // under the minimap and its turn and ground buttons
         if (!Command && !Deploying) return; // in the field you fight: the sergeants' cards wait for the command view (PT2g)
         foreach (var d in B.DivisionsOf(0))
         {

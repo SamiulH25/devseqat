@@ -345,7 +345,15 @@ partial class MapScreen
         Stat("bread", $"{C.Player.Food:0} DAYS", C.Player.Food < 3 ? Style.Bad : Style.Text, "FOOD", "DAYS OF FOOD LEFT. BUY MORE IN A TOWN.");
         Stat("horse", $"{C.Player.Horses}", Style.Text, "SPARE HORSES", "FOR MEN PROMOTED INTO CAVALRY.");
         if (C.PrisonerCount > 0) Stat("chain", $"{C.PrisonerCount}", Style.Text, "PRISONERS", "SELL OR RANSOM THEM IN A TOWN.");
-        if (status != null) ui.TextFit(status, x, y + ui.U(19), inner, wounded ? Style.Bad : Style.Warn, 1);
+        if (status != null)
+        {
+            // Besieging: the line is a button to the siege screen.
+            var sr = new Rectangle(x - ui.U(3), y + ui.U(16), inner + ui.U(6), ui.U(13));
+            bool siege = !wounded && C.Besieging is Settlement && C.Player.SiegeTarget >= 0 && !C.Player.Moving && C.Encounter == null && panel == PanelKind.None;
+            if (siege && ui.Hover(sr)) ui.Rect(sr, Style.Warn * 0.2f);
+            ui.TextFit(siege ? status.Replace($"({ctl.First(Act.SiegeScreen)})", "> OPEN") : status, x, y + ui.U(19), inner, wounded ? Style.Bad : Style.Warn, 1);
+            if (siege && ui.Clicked(sr) && C.Besieging is Settlement bs) { this.at = bs; panel = PanelKind.Siege; }
+        }
     }
 
     /// The one thing to do next (`Campaign.NextStep`), as a single chip under the clock.
@@ -453,14 +461,19 @@ partial class MapScreen
         var row = new (string Label, Act Key, PanelKind Panel)[]
         {
             ("COMPANY", Act.PartyScreen, PanelKind.Party), ("SERGEANTS", Act.DivisionsScreen, PanelKind.Divisions), ("CAPTAIN", Act.SkillsScreen, PanelKind.Skills), ("KIT", Act.InventoryScreen, PanelKind.Inventory),
-            ("QUESTS", Act.QuestsScreen, PanelKind.Quests), ("LORDS", Act.LordsScreen, PanelKind.Characters), ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("KEYS", Act.Help, PanelKind.Help),
+            ("QUESTS", Act.QuestsScreen, PanelKind.Quests), ("LORDS", Act.LordsScreen, PanelKind.Characters), ("REALMS", Act.RealmScreen, PanelKind.Realm), ("MAP", Act.AtlasScreen, PanelKind.Atlas), ("FIND ME", Act.FollowParty, PanelKind.None), ("KEYS", Act.Help, PanelKind.Help),
         };
         int h = ui.U(20), w = row.Max(r => ui.TW(r.Label, 1) + ui.TW(ctl.First(r.Key), 1)) + ui.U(26);
         int x = ui.W - w - ui.U(10), y = ui.U(10 + 170 + 12); // under the minimap, which is 170 high at the top right
         for (int i = 0; i < row.Length; i++)
         {
             var (label, key, kind) = row[i];
-            if (ui.Button(new Rectangle(x, y, w, h), label, true, ctl.First(key))) { if (kind == PanelKind.Help) panel = kind; else OpenScreen(kind); }
+            bool lit = kind == PanelKind.None && follow;
+            if (ui.Button(new Rectangle(x, y, w, h), label, !lit, ctl.First(key)))
+            {
+                if (kind == PanelKind.None) follow = true; // look at your company and keep it in view
+                else if (kind == PanelKind.Help) panel = kind; else OpenScreen(kind);
+            }
             y += h + ui.U(3);
         }
     }

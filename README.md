@@ -87,7 +87,8 @@ Emirates hold the dry south, the Saltmarsh League the fens and canals of the sou
 Ashen Sun the south-east. Brigands, goblins and worse roam between them all. The land is about 1,200 km across, ringed by a sea you cross by ship from port to port (a port's HARBOUR tab: pay the fare and sail to the next port down the lane; nothing troubles you at sea yet),
 with mountain ridges you cross by road at the passes; the minimap and the realm map (M) show the coast.
 - **Map:** click to march, click a town or village to enter it, and click a party to chase it. P opens the party screen, Space pauses,
-  1-3 set the speed (x1, x3, x8), F follows you, F5 saves, F9 loads, and Esc opens the menu. The camera works as in command view (WASD, Q/E, wheel,
+  1-3 set the speed (x1, x3, x8), F follows you, F5 saves, F9 loads, and Esc opens the menu. Every screen also has a button
+  on the rail under the overview (FIND ME follows your company); while you besiege, the BESIEGING line on your card opens the siege. The camera works as in command view (WASD, Q/E, wheel,
   middle-drag), and the overview (top right) jumps the camera. Hover anything for details.
 - **Big armies.** Campaign armies are three times the old size (`ArmyScale` in `Data/campaign.json`): you start with about 120 men
   and can lead several hundred late on; lords field 100-200, and companies hold up to 72 men. Prices per man are a third of
@@ -247,7 +248,9 @@ with mountain ridges you cross by road at the passes; the minimap and the realm 
 
 ## Controls
 
-Press **F1** in game for the full list. Every key below is a default: rebind in `controls.json`
+Press **F1** in game for the list. It shows only what is not already on the screen: orders, formations, speeds, the
+ground map, forms and the relic all sit on buttons or one of the two rings (each button and slot shows its key, and the
+old keys still work as shortcuts). Every key below is a default: rebind in `controls.json`
 (`dotnet run -- --write-controls` writes a template with every action, plus `MouseSensitivity` and `InvertMouseY`).
 Keys are MonoGame `Keys` names (`W`, `LeftShift`, `F1`...) or `LMB`/`RMB`/`MMB`/`MB4`/`MB5`, `SHIFT`, `CTRL`, `ALT`, `ESC`, digits.
 
@@ -262,6 +265,9 @@ Keys are MonoGame `Keys` names (`W`, `LeftShift`, `F1`...) or `LMB`/`RMB`/`MMB`/
 - RMB block (front only). A shield stops any direction at a stamina cost; blocking **in the direction the blow comes from**
   (red chevron) is a **parry**: free, and it staggers the attacker. RMB while winding up cancels the swing (feint).
 - R rally. **Hold MMB (or Z) for the order ring**: eight pictures round the reticle; lean the mouse toward one, release to give it (time slows while it is open).
+- **Hold Q for the captain's ring** (tap Q still couches the lance): swap weapon, your three forms and the great form, the
+  relic, mount or dismount, couch. Each slot says why it is greyed (no form set, cooling down, aura cost, slow first).
+  N, U, I, O, L and Backspace still do them directly.
 - **Who listens:** 1 foot, 2 bows, 3 horse, 4 mages, 0 everyone (Shift adds an arm). The chips at the bottom right show them; a chosen arm's chip glows gold.
 - **Orders go where you look:** C sends them at the enemy company under the reticle (else at the nearest); tap H to hold in
   place, or hold H and let go to draw them up on the ground you look at (a gold marker and each man's place show first).
@@ -279,7 +285,9 @@ when blows come at him; FIGHT on it (or Tab) steps back into him, a click on his
 - LMB select a squad, drag a box to select several (Shift adds). Click a unit card to select it, double-click to jump the camera to it.
 - RMB click moves (keeps the current width), RMB drag draws the formation line (it faces the enemy) with a preview of every man's spot,
   RMB on an enemy squad attacks it (red line; hovered enemies are ringed).
-- WASD or the screen edges pan, Q/E or middle-drag orbit (middle-drag also tilts), wheel zoom, click the minimap to jump there.
+- WASD or the screen edges pan, Q/E, the TURN buttons under the minimap (hold) or middle-drag orbit (middle-drag also tilts),
+  wheel zoom, click the minimap to jump there. GROUND under the minimap shows the ground map (M).
+- With companies chosen, the order deck's title (`< NAME`) is a button back to all companies (0 or ~).
 
 **Orders (both views):** in command view 1-9 toggle a company and 0 or ~ selects all; in fight view the numbers pick arms (above). With nothing selected, orders go to every company.
 C charge, F follow me, G form a line on me, H hold position, T advance 15 m, B fall back 20 m, V loose/tight spacing,
@@ -587,7 +595,7 @@ If a driver rejects the GLSL, the game logs it and **falls back to the fixed-fun
   listen bottom right.
 - Field view: directional crosshair chevrons, damage text (speed bonus, flank, rear, high ground, parry), context prompts.
 - Command view: squad **banners** with morale bars, the order deck, the captain's plate, box select, formation preview, attack lines.
-- Overlays: order ring (fight view), F1 controls, Esc menu, and a result screen with both armies' losses.
+- Overlays: order ring and captain's ring (fight view), F1 controls, Esc menu, and a result screen with both armies' losses.
 - In a big battle flags stack and shrink instead of piling up, the chosen flag comes to the front, and wavering and routed
   companies' flags show it. Division tags keep off the panels.
 - The interface moves, a little: bars slide and leave a pale strip for what was just lost, hovers fade, tabs slide their mark,

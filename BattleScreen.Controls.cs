@@ -17,6 +17,13 @@ partial class BattleScreen
         bool wasWheel = wheelOpen;
         wheelOpen = ctl.Down(Act.OrderWheel) || shotWheel;
         if (wheelOpen && !wasWheel) wheelVec = Vector2.Zero;
+        // The captain's ring: hold its key a moment and it opens; a tap is the couch (when it shares the couch key).
+        bool wasCap = capWheel, wasCapDown = capDown, couchTap = false;
+        capDown = ctl.Down(Act.CaptainWheel) && !wheelOpen;
+        if (capDown && !wasCapDown) capSince = Ironfield.Ui.Now;
+        capWheel = shotCapWheel || capDown && Ironfield.Ui.Now - capSince > 0.18f;
+        if (capWheel && !wasCap) wheelVec = Vector2.Zero;
+        if (wasCapDown && !capDown && !wasCap && ctl.First(Act.CaptainWheel) == ctl.First(Act.Couch)) couchTap = true;
         if (IsActive)
         {
             // shortcut: mouse look by warping to the centre; switch to SDL relative mode if a platform refuses warps.
@@ -24,7 +31,7 @@ partial class BattleScreen
             var d = (ms.Position - c).ToVector2();
             if (!skipMouse)
             {
-                if (wheelOpen)
+                if (wheelOpen || capWheel)
                 {
                     wheelVec += d;
                     if (wheelVec.Length() > 120) wheelVec = Vector2.Normalize(wheelVec) * 120;
@@ -46,6 +53,7 @@ partial class BattleScreen
             Mouse.SetPosition(c.X, c.Y);
         }
         else skipMouse = true;
+        if (wasCap && !capWheel && CapSector(wheelVec) is int cs) capPending = Hud.CaptainRing[cs];
         if (wasWheel && !wheelOpen && WheelSector() is int sector)
         {
             if (selectedDivision is { } dv) GiveGoal(dv, Hud.WheelGoals(dv)[sector]);
@@ -65,32 +73,37 @@ partial class BattleScreen
             Throttle = mounted ? ctl.Axis(Act.Forward, Act.Back) : 0, // on horseback forward/back is the rein, left/right turns the horse
             Steer = mounted ? ctl.Axis(Act.Right, Act.Left) : 0,
             Dir = aimDir,
-            Couch = ctl.Pressed(Act.Couch),
-            Mount = ctl.Pressed(Act.Interact),
+            Couch = couchTap || ctl.Pressed(Act.Couch) && ctl.First(Act.Couch) != ctl.First(Act.CaptainWheel) || capPending == Hud.CapCmd.Couch,
+            Mount = ctl.Pressed(Act.Interact) || capPending == Hud.CapCmd.Mount,
             Facing = yaw, // the player looks (and strikes) where the camera looks
             EngineAim = battle.Manned != null ? GroundUnder(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2) : null, // an engine you work looses where the crosshair is
             Sprint = ctl.Down(Act.Sprint),
-            Attack = IsActive && !wheelOpen && ctl.Down(Act.Attack),
-            Block = IsActive && !wheelOpen && ctl.Down(Act.Block),
+            Attack = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.Attack),
+            Block = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.Block),
             Rally = ctl.Pressed(Act.Rally),
             Bash = ctl.Pressed(Act.Bash),
-            Swap = ctl.Pressed(Act.SwapWeapon),
-            Aura = IsActive && !wheelOpen && ctl.Down(Act.AuraBlade),
-            Form1 = ctl.Pressed(Act.Form1), Form2 = ctl.Pressed(Act.Form2), Form3 = ctl.Pressed(Act.Form3), Great = ctl.Pressed(Act.GreatForm), Relic = ctl.Pressed(Act.Relic),
+            Swap = ctl.Pressed(Act.SwapWeapon) || capPending == Hud.CapCmd.Swap,
+            Aura = IsActive && !wheelOpen && !capWheel && ctl.Down(Act.AuraBlade),
+            Form1 = ctl.Pressed(Act.Form1) || capPending == Hud.CapCmd.Form1, Form2 = ctl.Pressed(Act.Form2) || capPending == Hud.CapCmd.Form2,
+            Form3 = ctl.Pressed(Act.Form3) || capPending == Hud.CapCmd.Form3, Great = ctl.Pressed(Act.GreatForm) || capPending == Hud.CapCmd.Great,
+            Relic = ctl.Pressed(Act.Relic) || capPending == Hud.CapCmd.Relic,
         };
+        capPending = null;
     }
 
-    int? WheelSector()
+    int? WheelSector() => wheelOpen ? Sector(wheelVec, Hud.WheelOrder.Length) : capWheel ? CapSector(wheelVec) : null;
+    static int? CapSector(Vector2 v) => Sector(v, Hud.CaptainRing.Length);
+    static int? Sector(Vector2 v, int n)
     {
-        if (!wheelOpen || wheelVec.Length() < 30) return null;
-        float a = MathF.Atan2(wheelVec.Y, wheelVec.X) + MathHelper.PiOver2; // 0 = up, clockwise
-        int n = Hud.WheelOrder.Length;
+        if (v.Length() < 30) return null;
+        float a = MathF.Atan2(v.Y, v.X) + MathHelper.PiOver2; // 0 = up, clockwise
         return ((int)MathF.Round(a / MathHelper.TwoPi * n) % n + n) % n;
     }
 
     void CommandControls(float dt)
     {
         wheelOpen = shotWheel; // the ring is the fight view's; here the deck and the right button give orders
+        capWheel = capDown = false;
         var vp = GraphicsDevice.Viewport;
         var f = Forward(camYaw);
         var pan = f * ctl.Axis(Act.Forward, Act.Back) + RightOf(f) * ctl.Axis(Act.Right, Act.Left);
@@ -156,8 +169,16 @@ partial class BattleScreen
             OrderArrows(rmw); LineAt(rmw, battle.Centroid(1));
             return;
         }
+        // The turn buttons under the minimap turn the view while held.
+        if (ms.LeftButton == ButtonState.Pressed && hud.MapButtonAt(ms.Position) is 0 or 2 && hud.MapButtonAt(ms.Position) is int turn)
+        {
+            camYaw += (turn == 0 ? -1 : 1) * 1.6f * dt;
+            return;
+        }
         if (LmbPressed)
         {
+            if (hud.MapButtonAt(ms.Position) == 1) { groundView = !(groundView ?? deploying); return; }
+            if (hud.DeckTitleAt(ms.Position)) { selected.Clear(); selectedDivision = null; return; }
             if (hud.PauseAt(ms.Position)) { paused = !paused; return; }
             if (hud.SpeedAt(ms.Position) is int si) { speed = si; paused = false; return; }
             if (hud.ModeAt(ms.Position) && battle.Player.Active && !deploying) { SetCommand(false); return; }

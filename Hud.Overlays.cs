@@ -142,32 +142,40 @@ sealed partial class Hud
         int oh = Math.Min(U(560), H - U(24)), ow = Math.Min(U(840), W - U(24));
         var r = new Rectangle((W - ow) / 2, (H - oh) / 2, ow, oh);
         Overlay(r, "CONTROLS", Gold);
+        // Only what is not on the screen: orders, formations, speeds and the captain's forms are on buttons and rings (each
+        // shows its own shortcut key), so they are not listed here.
+        string move = $"{Ctl.First(Act.Forward)}{Ctl.First(Act.Left)}{Ctl.First(Act.Back)}{Ctl.First(Act.Right)}";
         var cols = new (string Title, (string Label, string Key)[] Rows)[]
         {
-            ("IN THE FIELD", new[] { Act.Forward, Act.Back, Act.Left, Act.Right, Act.Sprint, Act.Attack, Act.Block, Act.Bash, Act.SwapWeapon, Act.AuraBlade, Act.Form1, Act.Form2, Act.Form3, Act.GreatForm, Act.Relic, Act.Couch, Act.Interact, Act.Rally, Act.OrderWheel }
-                .Select(a => (Controls.Labels[a], Ctl.Name(a)))
-                .Append(("WHO LISTENS: FOOT, BOWS, HORSE, MAGES", "1 2 3 4"))
-                .Append(("ALL LISTEN", "0"))
-                .Append(("ATTACK THE COMPANY YOU LOOK AT", Ctl.Name(Act.Charge)))
-                .Append(("HOLD THE GROUND YOU LOOK AT", $"HOLD {Ctl.Name(Act.HoldPosition)}"))
-                .Append(("SWING / BLOCK DIRECTION", "MOVE MOUSE"))
-                .Append(("FEINT", "BLOCK IN WINDUP"))
-                .Append(("RIPOSTE", "SWING JUST AFTER A PARRY")).ToArray()),
+            ("IN THE FIELD", new (string, string)[]
+            {
+                ("MOVE / RIDE", move), (Controls.Labels[Act.Sprint], Ctl.Name(Act.Sprint)), (Controls.Labels[Act.Attack], Ctl.Name(Act.Attack)),
+                (Controls.Labels[Act.Block], Ctl.Name(Act.Block)), ("SWING / BLOCK DIRECTION", "MOVE MOUSE"), ("FEINT", "BLOCK IN WINDUP"), ("RIPOSTE", "SWING JUST AFTER A PARRY"),
+                (Controls.Labels[Act.Bash], Ctl.Name(Act.Bash)), (Controls.Labels[Act.AuraBlade], Ctl.Name(Act.AuraBlade)),
+                (Controls.Labels[Act.Interact], Ctl.Name(Act.Interact)), (Controls.Labels[Act.Rally], Ctl.Name(Act.Rally)),
+                ("ORDER RING (HOLD)", Ctl.Name(Act.OrderWheel)),
+                ("CAPTAIN'S RING: FORMS, HORSE (HOLD)", Ctl.Name(Act.CaptainWheel)), ("COUCH THE LANCE", $"TAP {Ctl.Name(Act.CaptainWheel)}"),
+                ("WHO LISTENS: FOOT, BOWS, HORSE, MAGES", "1 2 3 4"), ("ALL LISTEN", "0"),
+                ("HOLD THE GROUND YOU LOOK AT", $"HOLD {Ctl.Name(Act.HoldPosition)}"),
+            }),
             ("COMMAND VIEW", new (string, string)[]
             {
                 ("SELECT SQUAD / BOX", "LMB / DRAG"), ("ADD TO SELECTION", Ctl.Name(Act.AddToSelection)), ("MOVE (KEEP WIDTH)", "RMB"),
-                ("DRAW FORMATION LINE", "RMB DRAG"), ("ATTACK ENEMY SQUAD", "RMB ON ENEMY"), ("QUEUE AN ORDER AFTER THE LAST", $"{Ctl.Name(Act.AddToSelection)} + RMB"),
-                ("PICK OFFICER / HIS STANCE", $"{Ctl.Name(Act.NextDivision)} OR CARD / 1-3"), ("PUT COMPANIES ON A POST", "DRAG CARD TO POST"), ("OFFICER IN FIELD VIEW", $"{Ctl.Name(Act.OrderWheel)} (WHEEL)"), ("ORDER HIS COMPANIES", "RMB / BACK"),
-                ("PAN", $"{Ctl.First(Act.Forward)}{Ctl.First(Act.Left)}{Ctl.First(Act.Back)}{Ctl.First(Act.Right)} / SCREEN EDGES"),
-                ("ROTATE", $"{Ctl.First(Act.RotateLeft)} {Ctl.First(Act.RotateRight)} / MMB DRAG"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"), ("LOOK AT THE CAPTAIN / BE HIM", "CLICK HIS PICTURE / TWICE"),
-                ("FOCUS SQUAD", "DOUBLE-CLICK CARD"), ("CONTROL GROUP: KEEP / PICK", "CTRL+1-9 / 1-9"), ("JUMP TO AN ALERT", "CLICK IT"), ("WHAT THE GROUND DOES", "HOVER IT"), (Controls.Labels[Act.GroundView], Ctl.Name(Act.GroundView)),
-                (Controls.Labels[Act.Stakes], Ctl.Name(Act.Stakes)),
-                (Controls.Labels[Act.Horn], Ctl.Name(Act.Horn)),
+                ("DRAW FORMATION LINE", "RMB DRAG"), ("ATTACK ENEMY SQUAD", "RMB ON ENEMY"), ("RECKLESS CHARGE", $"{Ctl.Name(Act.AddToSelection)} + CHARGE"),
+                ("QUEUE A MOVE AFTER THE LAST", $"{Ctl.Name(Act.AddToSelection)} + RMB"),
+                ("PICK AN OFFICER / HIS STANCE", "CLICK HIS CARD / 1-3"), ("PUT COMPANIES ON A POST", "DRAG CARD TO POST"), ("ORDER HIS COMPANIES", "RMB / BACK"),
+                ("PAN", $"{move} / SCREEN EDGES"), ("ROTATE", "MMB DRAG / TURN BUTTONS"), ("ZOOM", "WHEEL"), ("JUMP CAMERA", "CLICK MINIMAP"),
+                ("LOOK AT THE CAPTAIN / BE HIM", "CLICK HIS PICTURE / TWICE"), ("FOCUS SQUAD", "DOUBLE-CLICK CARD"), ("JUMP TO AN ALERT", "CLICK IT"), ("WHAT THE GROUND DOES", "HOVER IT"),
             }),
-            ("ORDERS", new[] { Act.Charge, Act.Follow, Act.FormHere, Act.HoldPosition, Act.Advance, Act.FallBack, Act.Spacing, Act.Formation, Act.FireAtWill, Act.Merge, Act.Relieve, Act.SplitCompany, Act.StandingOrder, Act.Cast, Act.SelectAll, Act.NextDivision,
-                    Act.CommandView, Act.Pause, Act.Slower, Act.Faster, Act.Menu, Act.Help, Act.Graphics }
-                .Select(a => (Controls.Labels[a], Ctl.Name(a)))
-                .Prepend(("SELECT COMPANY (COMMAND VIEW)", "1-0")).ToArray()),
+            ("EVERYWHERE", new (string, string)[]
+            {
+                (Controls.Labels[Act.CommandView], Ctl.Name(Act.CommandView)), (Controls.Labels[Act.Pause], Ctl.Name(Act.Pause)),
+                (Controls.Labels[Act.Menu], Ctl.Name(Act.Menu)), (Controls.Labels[Act.Help], Ctl.Name(Act.Help)),
+                ("SELECT COMPANY (COMMAND VIEW)", "1-0"), ("CONTROL GROUP: KEEP / PICK", "CTRL+1-9 / 1-9"),
+                ("ORDERS, FORMATIONS, FIRE, STAKES, CAST", "ORDER BUTTONS"), ("BATTLE SPEED", "SPEED BARS"), ("ALL COMPANIES", "CLICK THE DECK'S TITLE"),
+                ("THE GROUND MAP", "MAP BUTTON"), ("YOUR FORMS AND THE RELIC", "CAPTAIN'S RING"),
+                ("EACH BUTTON AND RING SLOT", "SHOWS ITS KEY"),
+            }),
         };
         int cw = (r.Width - U(40)) / 3, room = cw - U(16), avail = r.Height - U(56) - U(24) - U(32);
         // One row per action, its key at the right; a pair too long for one row puts the key on a second line.

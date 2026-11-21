@@ -293,7 +293,10 @@ sealed partial class Hud
         var who = Listening();
         string head = Selected.Count == 0 ? "ALL COMPANIES" : who.Count == 1 ? (who[0].Company?.Name is { Length: > 0 } cn ? cn : who[0].Name).ToUpperInvariant() : $"{who.Count} COMPANIES";
         string men = $"{who.Sum(s => s.Alive)} MEN";
-        Text(kit.Fit(head, deck.Width - TW(men, 1) - U(24)), deck.X + U(8), deck.Y + U(8), Gold, 1);
+        bool titleHover = DeckTitleAt(Mouse);
+        if (Selected.Count > 0) head = "< " + head; // a click on the title goes back to all companies
+        Text(kit.Fit(head, deck.Width - TW(men, 1) - U(24)), deck.X + U(8), deck.Y + U(8), titleHover ? Color.White : Gold, 1);
+        if (titleHover) Text("ALL COMPANIES", deck.X + U(8), deck.Y - U(12), Color.White, 1);
         TextR(men, deck.Right - U(8), deck.Y + U(8), Dim, 1);
         Cmd? over = null;
         foreach (var (r, c) in buttons)

@@ -121,6 +121,10 @@ sealed partial class BattleScreen
     int shotIndex = Environment.GetEnvironmentVariable("IRONFIELD_SHOTS_FROM") switch { "clash" => 53, "magic" => 57, "spectacle" => 61, "workings" => 67, "poses" => 83, "roster" => 89, "life" => 97, "beasts" => 99, "captain" => 106, "hunted" => 108, "arrows" => 110, "sergeants" => 117, "hud" => 125, _ => 0 }, shotFrames;
     string? pendingShot;
     bool shotWheel, hudHidden;
+    /// The captain's ring (hold its key in the fight view): open, held since, a choice waiting to go into the next input.
+    bool capWheel, capDown, shotCapWheel;
+    float capSince;
+    Hud.CapCmd? capPending;
     Point? shotMouse; // a shot points the mouse at something to show its hover card
 
     public BattleScreen(ScreenHost host) { this.host = host; }
@@ -403,7 +407,7 @@ sealed partial class BattleScreen
         // The opening sweep runs until it ends or you press anything.
         if (intro >= 0) { intro += dt; if (intro > IntroTime || LmbPressed || Keyboard.GetState().GetPressedKeyCount() > 0) intro = -1; }
         if (battle.Winner >= 0) ending = ending < 0 ? 0 : ending + dt;
-        float scale = paused || menuOpen || helpOpen || deploying ? 0 : wheelOpen ? RingTimeScale : 1; // the order ring slows the field while you choose
+        float scale = paused || menuOpen || helpOpen || deploying ? 0 : wheelOpen || capWheel ? RingTimeScale : 1; // the rings slow the field while you choose
         scale *= Speeds[speed];
         if (Ending) scale = 0.5f; // the last moments of the fight, slowed, before the result
         if (hitPause > 0) { hitPause -= dt; scale = 0; } // your blow lands: the moment holds (the sim simply waits; replays are unchanged)
@@ -580,7 +584,7 @@ sealed partial class BattleScreen
         hud.MouseGround = mouseGround; hud.Dragging = dragCard is { } dc && dragMoved ? dc : null;
         if (selectedDivision == null) hornMode = false;
         hud.HornMode = hornMode;
-        hud.WheelOpen = wheelOpen; hud.WheelSector = WheelSector() ?? -1; hud.WheelCenter = command && wheelOpen ? wheelOrigin : null;
+        hud.WheelOpen = wheelOpen; hud.CapWheelOpen = capWheel; hud.WheelSector = WheelSector() ?? -1; hud.WheelCenter = command && wheelOpen ? wheelOrigin : null;
         hud.Aim = aimDir; hud.View = view; hud.Proj = proj; hud.Mouse = shotMouse ?? (shotNoMouse ? new Point(-999, -999) : ms.Position);
         hud.Box = boxStart is Point b && command ? BoxOf(b, ms.Position) : null;
         hud.HoverSquad = command && shotMouse == null && !shotNoMouse && !hud.Over(ms.Position) ? PickSquad(mouseGround, 1) ?? PickSquad(mouseGround, 0) : null;
