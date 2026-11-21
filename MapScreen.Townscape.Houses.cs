@@ -206,6 +206,7 @@ partial class MapScreen
             "white" => Caravanserai(r, l, c, cloth, t),
             "log" => MeadHall(r, l, c, cloth, t),
             "tent" => FeastTent(r, l, c, cloth, t),
+            _ when l.Culture == "azure" => Auberge(r, l, c, cloth, t),
             _ => TimberTavern(r, l, c, t),
         };
         rimLight = saved;

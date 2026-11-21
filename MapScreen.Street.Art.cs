@@ -12,6 +12,7 @@ partial class MapScreen
         if (l.Build == "log") { HallFort(cx, baseY, scale, l, c, cloth, t, hero); return; } // the north builds in timber
         if (l.Build == "white") { Kasbah(cx, baseY, scale, l, c, cloth, t, hero); return; } // the south in rammed earth
         if (l.Build == "tent") { KhanOrdu(cx, baseY, scale, l, c, cloth, t, hero); return; } // the steppe's khan keeps a great tent
+        if (l.Culture == "azure") { Chateau(cx, baseY, scale, l, c, cloth, t, hero); return; } // the Azure build a château under blue slate
         int k = ui.U(scale), s1 = Math.Max(1, ui.U(1));
         int wave = (int)MathF.Round(MathF.Sin(t * 3.2f) * s1);
         Color dayStone = l.Build switch { "white" => new(220, 210, 192), "log" => new(138, 126, 114), _ => new(168, 160, 148) };
@@ -22,47 +23,7 @@ partial class MapScreen
         Color roof = l.Night ? Color.Lerp(c.Near, c.Roof, 0.45f) : c.Roof;
         bool pitchedTurrets = l.Build is not ("white" or "tent");
 
-        if (hero)
-        {
-            // Rocky, grass-topped motte rising from the bailey ground (baseY + 14u) to baseY.
-            int mh = ui.U(14), ground = baseY + mh;
-            var earth = l.Snow ? c.Snow : l.Night ? Color.Lerp(c.Near, new Color(46, 48, 42), 0.45f) : new Color(92, 98, 66);
-            var rock = Kit.Mul(stone, 0.65f);
-            for (int m = 0; m < mh; m += s1)
-            {
-                float f = m / (float)mh;
-                int hw = ui.U(86) + (int)(f * ui.U(42));
-                var rowCol = m < ui.U(3) ? earth : Color.Lerp(rock, c.Ground, f * 0.8f);
-                ui.Rect(new Rectangle(cx - hw, baseY + m, hw * 2, s1), rowCol);
-            }
-            // Retaining stone blocks along the motte face.
-            for (int bx = cx - ui.U(74); bx < cx + ui.U(70); bx += ui.U(16))
-            {
-                int bh = ui.U(4 + Math.Abs(bx / Math.Max(1, ui.U(7))) % 3);
-                ui.Rect(new Rectangle(bx, baseY + ui.U(3), ui.U(10), bh), Kit.Mul(rock, 0.85f));
-                ui.Rect(new Rectangle(bx, baseY + ui.U(3), ui.U(10), s1), Color.Lerp(rock, c.Rim, 0.25f));
-            }
-            // Stepped stone ramp leading up to the gatehouse.
-            for (int st = 0; st < 5; st++)
-            {
-                int sy = baseY + st * ui.U(3), sw = ui.U(24) + st * ui.U(4);
-                ui.Rect(new Rectangle(cx - sw / 2, sy, sw, ui.U(3)), Color.Lerp(stone, shade, 0.25f + st * 0.08f));
-                ui.Rect(new Rectangle(cx - sw / 2, sy, sw, s1), litEdge);
-            }
-        }
-        else
-        {
-            // Battered stone terrace and rocky crag anchoring the hilltop keep into the slope below (no floating towers).
-            Color crag = c.Far;
-            for (int m = 0; m < 10 * k; m += s1)
-            {
-                float f = m / (float)(10 * k);
-                int hw = 15 * k + (int)(f * 10 * k);
-                var rowCol = m < 2 * k ? Color.Lerp(shade, crag, 0.45f) : Color.Lerp(dark, crag, MathF.Min(1f, f * 1.15f));
-                ui.Rect(new Rectangle(cx - hw, baseY + m, hw * 2, s1), rowCol);
-            }
-            ui.Rect(new Rectangle(cx - 15 * k, baseY, 30 * k, s1), dark); // shadow seam under wall base
-        }
+        KeepBase(cx, baseY, k, l, c, hero, stone, shade, dark, litEdge);
 
         // Helper for stone blocks in keep-scale units.
         void Box(int x, int y, int w, int h, Color col) => ui.Rect(new Rectangle(cx + x * k, baseY - y * k, w * k, h * k), col);
@@ -204,11 +165,60 @@ partial class MapScreen
         }
     }
 
+    /// What a keep stands on: by the street (hero) a rocky motte with a stepped ramp up to the gate; on the town's hill a battered
+    /// terrace of rock under the wall, `k` pixels to a keep unit.
+    void KeepBase(int cx, int baseY, int k, TownLook l, TownColours c, bool hero, Color stone, Color shade, Color dark, Color litEdge)
+    {
+        int s1 = Math.Max(1, ui.U(1));
+        if (hero)
+        {
+            // Rocky, grass-topped motte rising from the bailey ground (baseY + 14u) to baseY.
+            int mh = ui.U(14), ground = baseY + mh;
+            var earth = l.Snow ? c.Snow : l.Night ? Color.Lerp(c.Near, new Color(46, 48, 42), 0.45f) : new Color(92, 98, 66);
+            var rock = Kit.Mul(stone, 0.65f);
+            for (int m = 0; m < mh; m += s1)
+            {
+                float f = m / (float)mh;
+                int hw = ui.U(86) + (int)(f * ui.U(42));
+                var rowCol = m < ui.U(3) ? earth : Color.Lerp(rock, c.Ground, f * 0.8f);
+                ui.Rect(new Rectangle(cx - hw, baseY + m, hw * 2, s1), rowCol);
+            }
+            // Retaining stone blocks along the motte face.
+            for (int bx = cx - ui.U(74); bx < cx + ui.U(70); bx += ui.U(16))
+            {
+                int bh = ui.U(4 + Math.Abs(bx / Math.Max(1, ui.U(7))) % 3);
+                ui.Rect(new Rectangle(bx, baseY + ui.U(3), ui.U(10), bh), Kit.Mul(rock, 0.85f));
+                ui.Rect(new Rectangle(bx, baseY + ui.U(3), ui.U(10), s1), Color.Lerp(rock, c.Rim, 0.25f));
+            }
+            // Stepped stone ramp leading up to the gatehouse.
+            for (int st = 0; st < 5; st++)
+            {
+                int sy = baseY + st * ui.U(3), sw = ui.U(24) + st * ui.U(4);
+                ui.Rect(new Rectangle(cx - sw / 2, sy, sw, ui.U(3)), Color.Lerp(stone, shade, 0.25f + st * 0.08f));
+                ui.Rect(new Rectangle(cx - sw / 2, sy, sw, s1), litEdge);
+            }
+        }
+        else
+        {
+            // Battered stone terrace and rocky crag anchoring the hilltop keep into the slope below (no floating towers).
+            Color crag = c.Far;
+            for (int m = 0; m < 10 * k; m += s1)
+            {
+                float f = m / (float)(10 * k);
+                int hw = 15 * k + (int)(f * 10 * k);
+                var rowCol = m < 2 * k ? Color.Lerp(shade, crag, 0.45f) : Color.Lerp(dark, crag, MathF.Min(1f, f * 1.15f));
+                ui.Rect(new Rectangle(cx - hw, baseY + m, hw * 2, s1), rowCol);
+            }
+            ui.Rect(new Rectangle(cx - 15 * k, baseY, 30 * k, s1), dark); // shadow seam under wall base
+        }
+    }
+
     /// The elders' hall in a village: a handsome timbered hall with stone foundation, tiled roof and smoking chimney,
     /// central arched porch, shuttered windows, hanging lantern and the realm's pennant.
     void EldersHall(Rectangle r, TownLook l, TownColours c, Color cloth, float t, List<(int X, int W)> lights)
     {
         if (l.Build == "white") { Majlis(r, l, c, cloth, t, lights); return; }
+        if (l.Culture == "azure" && l.Build == "timber") { HotelDeVille(r, l, c, cloth, t, lights); return; }
         int ground = r.Bottom, s1 = Math.Max(1, ui.U(1));
         int wallH = ui.U(34), roofH = ui.U(22), wallTop = ground - wallH;
         Color wall = HeroWall(l, c, l.Build == "log" ? new Color(138, 98, 66) : l.Build == "white" ? new Color(234, 226, 206) : new Color(212, 194, 164));

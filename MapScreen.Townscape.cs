@@ -351,6 +351,9 @@ partial class MapScreen
                             ui.Rect(new Rectangle(x + ui.U(6 + col * 9), ground - ui.U(60 - row * 9), ui.U(3), ui.U(4)), night ? lit * 0.85f : Kit.Mul(c, 0.6f));
                 Crane(x - ui.U(90), ground, c, night); Crane(x + ui.U(170), ground, c, night);
                 break;
+            case "azure": // the cathedral's west front: two spires and the rose
+                Cathedral(x - ui.U(14), ground, c, night, lit);
+                break;
             case "southern": // the great mosque, its dome and minaret, palms before it
                 GreatMosque(x + ui.U(12), ground, c, night, lit);
                 break;
