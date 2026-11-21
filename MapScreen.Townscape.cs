@@ -53,7 +53,7 @@ partial class MapScreen
         if (l.Country == "Marsh" && !l.Night) far = Color.Lerp(far, new Color(130, 150, 128), 0.4f);
         var (wall, roof) = l.Build switch
         {
-            "white" => (new Color(234, 226, 206), new Color(206, 190, 160)),
+            "white" => (new Color(212, 192, 160), new Color(206, 190, 160)), // the houses a warm sand; the hero buildings keep the whitewash
             "log" => (new Color(128, 90, 60), new Color(96, 108, 64)),
             "tent" => (new Color(210, 198, 170), new Color(180, 152, 112)),
             _ => (new Color(206, 188, 158), l.Culture switch
@@ -351,11 +351,8 @@ partial class MapScreen
                             ui.Rect(new Rectangle(x + ui.U(6 + col * 9), ground - ui.U(60 - row * 9), ui.U(3), ui.U(4)), night ? lit * 0.85f : Kit.Mul(c, 0.6f));
                 Crane(x - ui.U(90), ground, c, night); Crane(x + ui.U(170), ground, c, night);
                 break;
-            case "southern": // white walls, a dome and a minaret, palms
-                ui.Disc(new Vector2(x + ui.U(22), ground - ui.U(40)), ui.U(18), c);
-                ui.Rect(new Rectangle(x, ground - ui.U(40), ui.U(44), ui.U(40)), c);
-                Gable(x + ui.U(56), ground, ui.U(8), ui.U(66), ui.U(8), c); Glow(x + ui.U(59), ground - ui.U(58));
-                Palm(x - ui.U(34), ground, c, 1.2f); Palm(x + ui.U(140), ground, c, 1.1f); Palm(x + ui.U(230), ground, c, 0.9f);
+            case "southern": // the great mosque, its dome and minaret, palms before it
+                GreatMosque(x + ui.U(12), ground, c, night, lit);
                 break;
             case "steppe": // the khan's great tent under its standards, the herd tethered by it
                 Dome(x + ui.U(30), ground - ui.U(20), ui.U(34), ui.U(24), Color.Lerp(c, rimLight, 0.12f));

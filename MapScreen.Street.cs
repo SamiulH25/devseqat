@@ -298,7 +298,8 @@ partial class MapScreen
         if (l.Build != "tent") UpperTown(upper, s, ground - ui.U(30), c.Far, l.Night, c.Lit, rng, l.Build == "white", keepAt, drawKeep: false);
         int crest = (int)(ui.W * keepAt), hill = l.Build == "tent" ? ground - ui.U(58) : upper.Y + (int)(upper.Height * 0.3f) + ui.U(14); // tents have no upper town: the hold stands on a rise behind the camp
         int k = ui.U(2);
-        var rK = new Rectangle(crest - 15 * k, hill - 30 * k, 30 * k, 30 * k);
+        int kh = l.Build == "white" ? 36 : 30; // the kasbah's gate tower and its flag stand taller: its sign goes over them
+        var rK = new Rectangle(crest - 15 * k, hill - kh * k, 30 * k, kh * k);
         Glow(rK, "KEEP", hover, open);
         if (l.Build == "tent") ui.Hills(new Rectangle(crest - ui.U(70), 0, ui.U(140), ui.H), hill + ui.U(2), ui.U(6), 0.3f, c.Far, 2); // the rise
         Keep(crest, hill, 2, l, c, cloth, t, hero: false);
@@ -334,7 +335,8 @@ partial class MapScreen
     {
         var full = new Rectangle(0, 0, ui.W, ui.H);
         int ks = l.Build == "log" ? 4 : 3, keepX = ui.W * 13 / 20, k = ui.U(ks); // the north's hall-fort is low: drawn bigger to hold the screen
-        var rK = new Rectangle(keepX - 15 * k, ground - ui.U(14) - 31 * k, 30 * k, 31 * k + ui.U(14));
+        int kh = l.Build == "white" ? 36 : 31;
+        var rK = new Rectangle(keepX - 15 * k, ground - ui.U(14) - kh * k, 30 * k, kh * k + ui.U(14));
         var rY = new Rectangle(ui.U(16), ground - ui.U(70), ui.U(100), ui.U(70));
         if (C.IsPort(s)) HarbourMasts(full, ground - ui.U(24), l, c, cloth, s.Id);
         var back = c with { Wall = Color.Lerp(c.Wall, c.Mid, 0.6f), Roof = Color.Lerp(c.Roof, c.Mid, 0.6f) };
@@ -413,6 +415,7 @@ partial class MapScreen
     void Barracks(Rectangle r, TownLook l, TownColours c, Color cloth, float t)
     {
         if (l.Build == "log") { NorthBarracks(r, l, c, cloth, t); return; }
+        if (l.Build == "white") { Ribat(r, l, c, cloth, t); return; }
         int ground = r.Bottom, s1 = Math.Max(1, ui.U(1));
         var day = l.Build switch { "white" => new Color(214, 204, 184), "log" => new Color(132, 96, 62), "tent" => new Color(156, 132, 100), _ => new Color(152, 144, 130) };
         var stone = HeroWall(l, c, day);
@@ -497,10 +500,13 @@ partial class MapScreen
         float dim = l.Night ? 0.45f : l.Dusk ? 0.75f : 1;
         Color D(Color k) => Kit.Mul(k, dim);
         bool north = l.Build == "log"; // the north hangs plain wool, ochre, slate and moss, and sells fish, amber and furs
-        Color[] stripes = north ? new Color[] { new(150, 110, 60), new(78, 92, 112), new(84, 104, 70) } : new Color[] { new(176, 58, 48), new(56, 92, 156), new(72, 126, 70) };
+        bool south = l.Build == "white"; // the south's souk: plain cloth in terracotta, saffron and indigo with tassels; heaps of spice
+        Color[] stripes = north ? new Color[] { new(150, 110, 60), new(78, 92, 112), new(84, 104, 70) }
+            : south ? new Color[] { new(178, 88, 56), new(214, 158, 62), new(60, 64, 124) } : new Color[] { new(176, 58, 48), new(56, 92, 156), new(72, 126, 70) };
         var cream = D(new Color(230, 218, 190));
         var wood = D(new Color(124, 86, 52));
-        Color[] goods = north ? new Color[] { new(196, 200, 210), new(214, 150, 60), new(110, 80, 56), new(150, 156, 170), new(176, 140, 96), new(90, 66, 50) }
+        Color[] goods = south ? new Color[] { new(196, 72, 40), new(222, 172, 52), new(130, 92, 58), new(96, 124, 62), new(224, 184, 92), new(170, 60, 50) }
+            : north ? new Color[] { new(196, 200, 210), new(214, 150, 60), new(110, 80, 56), new(150, 156, 170), new(176, 140, 96), new(90, 66, 50) }
             : new Color[] { new(196, 52, 44), new(110, 160, 70), new(214, 176, 100), new(150, 110, 180), new(230, 150, 60), new(200, 200, 210) };
         var rng = new Random(r.X / Math.Max(1, ui.U(1)) + 5);
         for (int i = 0; i < 3; i++)
@@ -515,7 +521,14 @@ partial class MapScreen
             ui.Rect(new Rectangle(px + ui.U(1), ground - ui.U(29), ui.U(4), ui.U(5)), D(new Color(214, 170, 130)));
             // The awning: stripes, with a scalloped edge.
             var st = D(stripes[i]);
-            if (north) // wool panels sewn together, a dark hem, hanging in a shallow sag
+            if (south) // a cloth stretched flat on poles, its edge hung with tassels
+            {
+                ui.Rect(new Rectangle(x - s1, top - ui.U(6), sw + s1, ui.U(6)), st);
+                ui.Rect(new Rectangle(x - s1, top - ui.U(6), sw + s1, s1), Color.Lerp(st, c.Rim, 0.4f));
+                ui.Rect(new Rectangle(x - s1, top - s1, sw + s1, s1), Kit.Mul(st, 0.7f));
+                for (int k = 0; k < sw; k += ui.U(4)) ui.Rect(new Rectangle(x + k, top, s1, ui.U(3)), D(new Color(230, 200, 120))); // tassels
+            }
+            else if (north) // wool panels sewn together, a dark hem, hanging in a shallow sag
             {
                 ui.Rect(new Rectangle(x, top - ui.U(7), sw - ui.U(1), ui.U(8)), st);
                 for (int k = ui.U(8); k < sw - ui.U(2); k += ui.U(8)) ui.Rect(new Rectangle(x + k, top - ui.U(7), s1, ui.U(8)), Kit.Mul(st, 0.8f));
@@ -535,6 +548,15 @@ partial class MapScreen
             ui.Rect(new Rectangle(x + ui.U(1), ground - ui.U(14), sw - ui.U(4), ui.U(3)), Kit.Mul(wood, 1.25f));
             ui.Rect(new Rectangle(x + ui.U(2), ground - ui.U(11), sw - ui.U(6), ui.U(11)), wood);
             ui.Rect(new Rectangle(x + ui.U(2), ground - ui.U(11), sw - ui.U(6), s1), Kit.Mul(wood, 0.7f));
+            if (south) // the spices in cone heaps, each its colour
+            {
+                for (int g = x + ui.U(4); g < x + sw - ui.U(8); g += ui.U(6))
+                {
+                    var gc = D(goods[(i * 2 + g / Math.Max(1, ui.U(6))) % goods.Length]);
+                    for (int hgt = 0; hgt < ui.U(4); hgt += s1) ui.Rect(new Rectangle(g + hgt / 2, ground - ui.U(14) - hgt - s1, ui.U(5) - hgt, s1), gc);
+                }
+                continue;
+            }
             for (int g = x + ui.U(3); g < x + sw - ui.U(7); g += ui.U(4))
             {
                 var gc = D(goods[(i * 2 + g / Math.Max(1, ui.U(4))) % goods.Length]);
@@ -576,7 +598,8 @@ partial class MapScreen
         ui.Rect(new Rectangle(wx + ui.U(2), ground - ui.U(28), ui.U(2), ui.U(18)), wood);
         ui.Rect(new Rectangle(wx + ui.U(18), ground - ui.U(28), ui.U(2), ui.U(18)), wood);
         ui.Rect(new Rectangle(wx + ui.U(2), ground - ui.U(22), ui.U(18), s1), wood);
-        Gable(wx - ui.U(2), ground - ui.U(28), ui.U(26), 0, ui.U(7), c.Roof);
+        if (l.Build == "white") Dome(wx + ui.U(11), ground - ui.U(28), ui.U(13), ui.U(7), Kit.Mul(c.Wall, 1.08f)); // the south's well under a little plastered dome
+        else Gable(wx - ui.U(2), ground - ui.U(28), ui.U(26), 0, ui.U(7), c.Roof);
         ui.Rect(new Rectangle(wx + ui.U(11), ground - ui.U(22), s1, ui.U(7)), Kit.Mul(wood, 0.8f));
         ui.Rect(new Rectangle(wx + ui.U(9), ground - ui.U(15), ui.U(4), ui.U(4)), Kit.Mul(wood, 1.2f));
         if (!l.Day) Lantern(new Vector2(wx + ui.U(20), ground - ui.U(21)), c, wood);

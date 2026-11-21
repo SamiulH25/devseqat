@@ -10,6 +10,7 @@ partial class MapScreen
     void Keep(int cx, int baseY, int scale, TownLook l, TownColours c, Color cloth, float t, bool hero)
     {
         if (l.Build == "log") { HallFort(cx, baseY, scale, l, c, cloth, t, hero); return; } // the north builds in timber
+        if (l.Build == "white") { Kasbah(cx, baseY, scale, l, c, cloth, t, hero); return; } // the south in rammed earth
         int k = ui.U(scale), s1 = Math.Max(1, ui.U(1));
         int wave = (int)MathF.Round(MathF.Sin(t * 3.2f) * s1);
         Color dayStone = l.Build switch { "white" => new(220, 210, 192), "log" => new(138, 126, 114), _ => new(168, 160, 148) };
@@ -206,6 +207,7 @@ partial class MapScreen
     /// central arched porch, shuttered windows, hanging lantern and the realm's pennant.
     void EldersHall(Rectangle r, TownLook l, TownColours c, Color cloth, float t, List<(int X, int W)> lights)
     {
+        if (l.Build == "white") { Majlis(r, l, c, cloth, t, lights); return; }
         int ground = r.Bottom, s1 = Math.Max(1, ui.U(1));
         int wallH = ui.U(34), roofH = ui.U(22), wallTop = ground - wallH;
         Color wall = HeroWall(l, c, l.Build == "log" ? new Color(138, 98, 66) : l.Build == "white" ? new Color(234, 226, 206) : new Color(212, 194, 164));
@@ -351,14 +353,15 @@ partial class MapScreen
         int s1 = Math.Max(1, ui.U(1)), h = p.Bottom - ground;
         ui.Rect(new Rectangle(p.X, ground, p.Width, h), c.Ground);
         // Grassy verge along the top of the lane (snow bank in winter).
-        Color grass = l.Snow ? c.Snow : l.Night ? Color.Lerp(c.Near, new Color(42, 66, 40), 0.55f) : l.Dusk ? new Color(86, 94, 54) : new Color(96, 126, 62);
+        bool dry = l.Build == "white" || Lands.Of(l.Country).Hot; // a sandy verge with few tufts in the hot lands
+        Color grass = l.Snow ? c.Snow : dry ? (l.Night ? Color.Lerp(c.Near, new Color(90, 76, 56), 0.5f) : l.Dusk ? new Color(150, 116, 84) : new Color(206, 178, 126)) : l.Night ? Color.Lerp(c.Near, new Color(42, 66, 40), 0.55f) : l.Dusk ? new Color(86, 94, 54) : new Color(96, 126, 62);
         ui.Rect(new Rectangle(p.X, ground, p.Width, ui.U(4)), grass);
         ui.Rect(new Rectangle(p.X, ground, p.Width, s1), Color.Black * 0.22f);
         var rng = new Random(seed * 31 + 7);
         for (int x = p.X + ui.U(2); x < p.Right; x += ui.U(5 + rng.Next(5)))
         {
             int th = ui.U(2 + rng.Next(2));
-            ui.Rect(new Rectangle(x, ground + ui.U(4), ui.U(2), th), grass);
+            if (!dry || rng.Next(4) == 0) ui.Rect(new Rectangle(x, ground + ui.U(4), ui.U(2), th), dry ? Color.Lerp(grass, new Color(110, 120, 70), l.Day ? 0.6f : 0.3f) : grass);
             if (!l.Snow && rng.Next(6) == 0)
                 ui.Rect(new Rectangle(x + s1, ground + ui.U(1), s1, s1), l.Night ? new Color(140, 130, 80) : new Color(226, 206, 110)); // wildflower dot
         }
@@ -374,6 +377,7 @@ partial class MapScreen
     /// A leafy deciduous tree (oak/elm): gnarled trunk and layered shaded pixel canopy.
     void Tree(int x, int ground, int h, TownLook l, TownColours c, Random rng)
     {
+        if (l.Build == "white") { Palm(x, ground, Color.Lerp(c.Near, new Color(70, 110, 60), l.Night ? 0.25f : 0.8f), h / (float)ui.U(60)); return; } // the south grows date palms
         int s1 = Math.Max(1, ui.U(1));
         Color trunk = l.Night ? new Color(42, 30, 28) : new Color(86, 60, 40);
         Color leaf = l.Snow ? Color.Lerp(c.Snow, new Color(110, 126, 118), 0.45f)

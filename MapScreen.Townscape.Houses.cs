@@ -200,7 +200,7 @@ partial class MapScreen
         var saved = rimLight;
         var lights = l.Build switch
         {
-            "white" => WhiteTavern(r, l, c, cloth),
+            "white" => Caravanserai(r, l, c, cloth, t),
             "log" => MeadHall(r, l, c, cloth, t),
             "tent" => TentTavern(r, l, c, cloth, t),
             _ => TimberTavern(r, l, c, t),
@@ -388,62 +388,6 @@ partial class MapScreen
             }
         }
         TavernSign(r.Right, r.Y + ui.U(4), l, c, timber);
-        return lights;
-    }
-
-    /// The whitewashed tavern of the south: a flat-roofed block with a parapet, arched windows, a striped awning over the door.
-    List<(int X, int W)> WhiteTavern(Rectangle r, TownLook l, TownColours c, Color cloth)
-    {
-        Color wall = HeroWall(l, c, new Color(236, 228, 210)), frame = l.Night ? new Color(46, 34, 40) : new Color(120, 90, 60);
-        var lights = new List<(int X, int W)>();
-        ui.Rect(r, wall);
-        ui.Rect(new Rectangle(r.X - ui.U(3), r.Y - ui.U(4), r.Width + ui.U(6), ui.U(4)), Kit.Mul(wall, 0.88f)); // the parapet
-        for (int x = r.X - ui.U(3); x < r.Right; x += ui.U(12)) ui.Rect(new Rectangle(x, r.Y - ui.U(8), ui.U(6), ui.U(4)), Kit.Mul(wall, 0.88f));
-        if (snowCap.A > 0) ui.Rect(new Rectangle(r.X - ui.U(3), r.Y - ui.U(9), r.Width + ui.U(6), ui.U(1)), snowCap);
-        ui.Rect(new Rectangle(r.Right - ui.U(1), r.Y, ui.U(1), r.Height), c.Rim);
-        // An upper room at the far end, crenellated, a dome over it, as their houses of note have.
-        var room = new Rectangle(r.X + ui.U(10), r.Y - ui.U(26), ui.U(46), ui.U(18));
-        ui.Rect(room, Kit.Mul(wall, 0.94f));
-        for (int x = room.X - ui.U(2); x < room.Right; x += ui.U(8)) ui.Rect(new Rectangle(x, room.Y - ui.U(4), ui.U(4), ui.U(4)), Kit.Mul(wall, 0.94f));
-        ui.Rect(new Rectangle(room.Right - ui.U(6), room.Y, ui.U(6), room.Height), Kit.Mul(wall, 0.78f));
-        TavernWindow(new Rectangle(room.X + ui.U(16), room.Y + ui.U(5), ui.U(8), ui.U(9)), l, c, frame, true);
-        Dome(room.X + ui.U(23), room.Y - ui.U(4), ui.U(14), ui.U(14), Color.Lerp(c.Roof, c.Rim, 0.1f));
-        ui.Rect(new Rectangle(r.Right - ui.U(14), r.Y, ui.U(13), r.Height), Kit.Mul(wall, 0.86f)); // the shaded end
-        // Upstairs: three arched windows; below, two, either side of the door.
-        void Arch(Rectangle w)
-        {
-            TavernWindow(w, l, c, frame, true);
-            ui.Rect(new Rectangle(w.X + ui.U(2), w.Y - ui.U(3), w.Width - ui.U(4), ui.U(2)), l.Day ? new Color(40, 44, 56) : c.Lit);
-            ui.Rect(new Rectangle(w.X + ui.U(1), w.Y - ui.U(4), w.Width - ui.U(2), ui.U(1)), frame);
-        }
-        foreach (int wx in new[] { r.X + ui.U(14), r.X + ui.U(72), r.X + ui.U(130) }) Arch(new Rectangle(wx, r.Y + ui.U(8), ui.U(14), ui.U(12)));
-        foreach (int wx in new[] { r.X + ui.U(12), r.X + ui.U(116) })
-        {
-            var w = new Rectangle(wx, r.Y + ui.U(36), ui.U(30), ui.U(16));
-            Arch(w);
-            if (!l.Day) lights.Add((w.X, w.Width));
-        }
-        var door = new Rectangle(r.X + ui.U(68), r.Bottom - ui.U(28), ui.U(22), ui.U(28));
-        TavernDoor(door, r.Bottom, l, c, frame, lights, lamp: false);
-        ui.Rect(new Rectangle(door.X + ui.U(3), door.Y - ui.U(5), door.Width - ui.U(6), ui.U(3)), l.Day ? Kit.Mul(frame, 1.3f) : new Color(255, 200, 120)); // the arch
-        // The awning: stripes of the holder's cloth and white, sloping out over the door.
-        int ay = door.Y - ui.U(10), aw = ui.U(56), ax = door.Center.X - aw / 2;
-        {
-            int st = Math.Max(1, ui.U(1)), stripe = ui.U(4);
-            var red = l.Night ? Kit.Mul(cloth, 1.3f) : cloth; var white = Kit.Mul(wall, 0.96f);
-            for (int k = 0; k < ui.U(8); k += st) // widening as it slopes out
-            {
-                int left = ax - k / 2, width = aw + k;
-                for (int sx = 0; sx < width; sx += stripe)
-                    ui.Rect(new Rectangle(left + sx, ay + k, Math.Min(stripe, width - sx), st), (sx / stripe) % 2 == 0 ? red : white);
-            }
-            int lb = ax - ui.U(4), wb = aw + ui.U(8);
-            for (int sx = 0; sx < wb; sx += stripe) // the scalloped edge
-                ui.Rect(new Rectangle(lb + sx + ui.U(1), ay + ui.U(8), stripe - ui.U(2), ui.U(2)), (sx / stripe) % 2 == 0 ? red : white);
-            ui.Rect(new Rectangle(lb, ay - ui.U(1), wb, ui.U(1)), frame);
-        }
-        if (!l.Day) { Lantern(new Vector2(ax - ui.U(2), ay + ui.U(12)), c, frame); Lantern(new Vector2(ax + aw + ui.U(2), ay + ui.U(12)), c, frame); }
-        TavernSign(r.Right, r.Y + ui.U(10), l, c, frame);
         return lights;
     }
 
