@@ -509,3 +509,7 @@ the captain's shoulders, and the formation icons are dot patterns that lean on t
   one does not lead at all.
 - Not done: the after-action line ("his reckless charge broke his own line"), reasons on the lord screen, and your own
   sergeants reading the table. PT6d (CK systems) waits on the playtester, as planned.
+
+## Closed
+
+Closed by the owner on 2026-11-21 as finished. Not built: PT5 (re-look at `pose-grips`, `pose-stances` and the clash gallery after the sprite overhaul) and PT6d (CK systems, waiting on the playtester).

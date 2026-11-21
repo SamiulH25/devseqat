@@ -3,7 +3,7 @@ using static Ironfield.FoliageKind;
 
 namespace Ironfield;
 
-/// The water's edge and the roadside (docs/pre-demo/WORLD_DRESS.md WD4), the drawn map and drawing only: stones and driftwood on
+/// The water's edge and the roadside (docs/archive/WORLD_DRESS.md WD4), the drawn map and drawing only: stones and driftwood on
 /// the beach, marram on the bank behind it, rocks standing in the surf, boats drawn up by the ports and the fishing
 /// villages; trees and hedges along the roads near a town, milestones, a wayside shrine or well on the long roads.
 /// Own dice, laid before the small cover (which keeps clear of what stands here); the campaign never reads it.

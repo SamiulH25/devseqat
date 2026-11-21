@@ -1,7 +1,7 @@
 # The Wild: monsters as part of the game (plan)
 
 The owner's brief (2026-11-21): monsters "just sort of exist". Give them a reason to exist, a reason to be fought and dealt with,
-and a better roster. This plan comes from a brainstorm with the owner. Nothing in it is built yet.
+and a better roster. This plan comes from a brainstorm with the owner. Nothing in it is built yet. The owner moved it to after the demo on 2026-11-21.
 
 ## Where things stand
 

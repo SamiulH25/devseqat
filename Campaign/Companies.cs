@@ -194,7 +194,7 @@ public sealed partial class Campaign
     /// A training yard of level II or III in the fief you stand in cuts promotion gold 10% or 20% (F6).
     float YardDiscount => SettlementAt(Player.Pos) is Settlement s && s.Owner == Player.Id ? 1 - 0.1f * Math.Max(0, Level(s, "yard") - 1) : 1;
 
-    /// Where promotions may happen (docs/pre-demo/HOLDS.md HD1-HD2): into a troop of tier `Balance.CampTier` (III) or below anywhere; up to
+    /// Where promotions may happen (docs/archive/HOLDS.md HD1-HD2): into a troop of tier `Balance.CampTier` (III) or below anywhere; up to
     /// `CastleYardTier` (V) at a castle of a realm you serve or are at peace with; any tier at a town's training yard, your own
     /// fief's yard, or anywhere with the Drillmaster perk. With no troop: may any tier rise here?
     public bool CanTrainHere(Party p, string? to = null) => p != Player || to != null && Troops.Get(to).Tier <= B.CampTier

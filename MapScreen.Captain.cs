@@ -84,7 +84,7 @@ partial class MapScreen
     /// Each skill as a ring with its perks beneath as nodes: gold when taken, lit when one may be taken now, dark when locked.
     void SkillTree(Rectangle c)
     {
-        // Two levels (docs/pre-demo/PLAYTEST.md PT2d): the ten skills as rings at the top (click one), and the picked skill's perks
+        // Two levels (docs/archive/PLAYTEST.md PT2d): the ten skills as rings at the top (click one), and the picked skill's perks
         // below as rows that say what each does and whether you can take it, so nothing needs a hover to be read.
         var cap = C.Captain;
         int n = Skills.All.Count, cols = 5, rows = (n + cols - 1) / cols;

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// How a people builds a house (docs/pre-demo/SETTLEMENTS.md).
+/// How a people builds a house (docs/archive/SETTLEMENTS.md).
 public enum HouseKind
 {
     Timber, // timber frame on a plinth, plastered panels between the beams
@@ -33,7 +33,7 @@ public enum Landmark { Cathedral, Beacon, Harbour, Campanile, Basilica, Spire, S
 /// What the smallest hold (a tower house, HD5) is among a people.
 public enum Hold { Tower, Ringfort, Kasbah, Camp }
 
-/// One people's way of building (docs/pre-demo/SETTLEMENTS.md): the houses, the walls and towers, the landmark. Colours stay in the
+/// One people's way of building (docs/archive/SETTLEMENTS.md): the houses, the walls and towers, the landmark. Colours stay in the
 /// world's muted palette; heraldry brings the strong colour (flags in the owner's colours).
 public sealed record PlaceStyle(
     string Id,

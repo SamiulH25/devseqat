@@ -136,7 +136,7 @@ public static partial class SelfTest
     }
 
     /// More quests (S3): elders' jobs, escorts, ransoms, rescues, the relic chain; each can be done, and chains move on.
-    /// The quests screen (docs/pre-demo/PLAYTEST.md PT3): offers on a board you have seen are listed, a held quest shows its place, and
+    /// The quests screen (docs/archive/PLAYTEST.md PT3): offers on a board you have seen are listed, a held quest shows its place, and
     /// a quest done or failed moves to the history.
     static void QuestsListed()
     {

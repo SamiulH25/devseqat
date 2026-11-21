@@ -664,7 +664,7 @@ public sealed partial class WorldMap
         }
         placeFields = fieldCells;
         placeTrees = TreeCells(foliage);
-        var plans = PlanPlaces(); // the places' footprints (docs/pre-demo/SETTLEMENTS.md): nothing else grows inside them
+        var plans = PlanPlaces(); // the places' footprints (docs/archive/SETTLEMENTS.md): nothing else grows inside them
         var outer = plans.SelectMany(pl => pl.Lots.Where(l => l.W > 0 && l.Use is not (LotUse.Camp or LotUse.Fire or LotUse.Engine) && Vector2.Distance(l.Pos, pl.Pos) > pl.Radius - 1)).ToList(); // sheds, yurts, mills, suburbs and works out past the footprint (a siege camp pitches round the trees)
         foliage.RemoveAll(f => f.Kind is not (FoliageKind.Town or FoliageKind.Castle or FoliageKind.Village)
             && (plans.Any(pl => Vector2.DistanceSquared(pl.Pos, f.Pos) < (pl.Radius + 0.8f) * (pl.Radius + 0.8f)) || outer.Any(l => Vector2.Distance(l.Pos, f.Pos) < (l.W + l.D) / 2 + 0.8f)));

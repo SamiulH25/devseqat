@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The campaign map's villages (docs/pre-demo/SETTLEMENTS.md SM3), raised from their laid-out plans (`WorldMap.LayVillage`): the
+/// The campaign map's villages (docs/archive/SETTLEMENTS.md SM3), raised from their laid-out plans (`WorldMap.LayVillage`): the
 /// people's cottages, longhalls, chalets, cubes, stilt houses, yurts or black tents, a chapel or shrine and a well. The
 /// Crownlands thatch their cottages where their towns wear slate. Drawing only.
 sealed partial class World

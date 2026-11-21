@@ -112,3 +112,7 @@ thin the cover by `Quality` if Medium needs it.
   - Judged with the Haiku fallback (the T3 judge was not reachable): round 1 scored 6 (driftwood read as a stick,
     milestones as stakes, round marram, no sand under the shore pieces); fixed and re-judged.
   - Test: `MapDressed` grew the shore, marram, boats, avenue, milestone and wayside checks.
+
+## Closed
+
+Closed by the owner on 2026-11-21 as finished. Not built: WD5 (wild herds by land, gulls, waterfowl, storks, campfires), WD6 (cloud shadows, wind on grass, dawn mist, dust, blown snow), WD7 (every land per season, frame time at widest zoom).

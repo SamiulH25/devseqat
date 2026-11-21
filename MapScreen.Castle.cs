@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// MapScreen: the castle's MUSTER tab (docs/pre-demo/HOLDS.md HD2): the demesne's recruits pooled, the stables, the granary and the yard.
+/// MapScreen: the castle's MUSTER tab (docs/archive/HOLDS.md HD2): the demesne's recruits pooled, the stables, the granary and the yard.
 partial class MapScreen
 {
     void MusterTab(Settlement s, Rectangle body)

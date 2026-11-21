@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// Ground a place's state may build on (docs/pre-demo/SETTLEMENTS.md SM4): a rich town's suburbs along the roads past its gates, a
+/// Ground a place's state may build on (docs/archive/SETTLEMENTS.md SM4): a rich town's suburbs along the roads past its gates, a
 /// village's extra houses, and a site for each work a town or castle may raise (barracks, granary, training yard, stables,
 /// chapel, kennel, watchtower; a town's market hall on its square). Planned once with the map, shown by the state.
 public sealed partial class WorldMap

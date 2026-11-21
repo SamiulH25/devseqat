@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The field's buildings as their people build them (docs/pre-demo/SETTLEMENTS.md SM6): an assault's wall, towers, gate, a castle's
+/// The field's buildings as their people build them (docs/archive/SETTLEMENTS.md SM6): an assault's wall, towers, gate, a castle's
 /// keep or a town's landmark and the houses behind, and a village field's houses, all from the map's kit at battle scale.
 /// `TerrainParams.Style` null keeps the old plain look (quick battles, old replays). Drawing only: the sim's wall is the
 /// same for every people.

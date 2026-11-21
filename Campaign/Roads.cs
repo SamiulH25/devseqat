@@ -8,7 +8,7 @@ namespace Ironfield;
 /// from it, ask it for news, or rob it.
 public sealed partial class Campaign
 {
-    /// About one caravan for every two towns, and a few pilgrim bands. With few towns (docs/pre-demo/HOLDS.md HD3) the sea lanes keep the
+    /// About one caravan for every two towns, and a few pilgrim bands. With few towns (docs/archive/HOLDS.md HD3) the sea lanes keep the
     /// count up, so the roads do not empty when towns are rare.
     public int CaravansWanted { get { int towns = S.Settlements.Count(t => t.Kind == SettlementKind.Town); return Math.Max(2, Math.Max(towns / 2, (towns + Map.SeaLanes.Count) / 3)); } }
     public int PilgrimsWanted => Math.Max(1, (int)MathF.Round(3 * ProvinceScale / 2.3f));

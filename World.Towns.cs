@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The campaign map's towns (docs/pre-demo/SETTLEMENTS.md SM2), raised from their laid-out plans (`WorldMap.LayTown`): the wall round
+/// The campaign map's towns (docs/archive/SETTLEMENTS.md SM2), raised from their laid-out plans (`WorldMap.LayTown`): the wall round
 /// them with its towers and gatehouses, the houses lot by lot in their people's way, the landmark on the square, the market
 /// stalls, the port's warehouses and crane, the fens' windmill. Drawing only.
 sealed partial class World

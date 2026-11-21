@@ -43,7 +43,7 @@ partial class MapScreen
         if (tide != "") ui.TextR(ui.Fit(tide, ui.U(300)), r.Right - ui.U(24), bar.Bottom + ui.U(20), TideColour(C.TideAt(e.Pos).Tradition), 1);
         if (C.GrudgeOf(e) is { Length: > 0 } grudge) ui.Text(ui.Fit(grudge.ToUpperInvariant(), bar.Width - (tide != "" ? ui.U(310) : 0)), x, bar.Bottom + ui.U(20), Style.Bad, 1); // he comes for you (C13)
         else if (e.Kind == PartyKind.Lord && C.CharacterOf(e) is Character nch && Nature.Line(nch.Traits) is { Length: > 0 } how)
-            ui.Text(ui.Fit(how, bar.Width - (tide != "" ? ui.U(310) : 0)), x, bar.Bottom + ui.U(20), Kit.Parchment, 1); // how he fights (docs/pre-demo/PLAYTEST.md PT6c): his nature, not a hazard
+            ui.Text(ui.Fit(how, bar.Width - (tide != "" ? ui.U(310) : 0)), x, bar.Bottom + ui.U(20), Kit.Parchment, 1); // how he fights (docs/archive/PLAYTEST.md PT6c): his nature, not a hazard
         if (C.SpellNote(e) is { Length: > 0 } sn) ui.TextR(ui.Fit(sn.ToUpperInvariant(), ui.U(300)), r.Right - ui.U(24), bar.Bottom + ui.U(8), Style.Dim, 1);
         y += ui.U(84); // room under the notes before the troops
         foreach (var c in e.Companies.Where(c => c.Men > 0).Take(6))

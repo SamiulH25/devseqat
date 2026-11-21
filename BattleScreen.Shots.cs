@@ -32,7 +32,7 @@ partial class BattleScreen
             case 4 when b.Time > 20f:
                 camFocus = b.Centroid(0); camYaw = 1.9f; camPitch = 0.9f; zoom = 60;
                 pendingShot = "command-overview"; shotIndex++; break;
-            case 5 when b.Time > 20.5f && !shotOrders: // orders as pictures (docs/pre-demo/PLAYTEST.md PT4): two companies sent at a foe, bows holding, the deck lit
+            case 5 when b.Time > 20.5f && !shotOrders: // orders as pictures (docs/archive/PLAYTEST.md PT4): two companies sent at a foe, bows holding, the deck lit
             {
                 shotOrders = true;
                 var mine = b.Commanded.Where(q => q.Alive > 0).ToList();
@@ -245,7 +245,7 @@ partial class BattleScreen
             case 123 when shotFrames > 20:
                 pendingShot = "sergeants-field"; shotIndex++; break;
             case 124 when pendingShot == null: Exit(); break;
-            // The two views (docs/pre-demo/PLAYTEST.md PT4, "As rebuilt"; IRONFIELD_SHOTS_FROM=hud): the fight view bare, an arm told to
+            // The two views (docs/archive/PLAYTEST.md PT4, "As rebuilt"; IRONFIELD_SHOTS_FROM=hud): the fight view bare, an arm told to
             // attack, the order ring, the hold-there marker; then the command view, companies sent at a foe, one company's deck.
             case 125 when b.Time > 2f:
                 b.Player.Pos = new(0, -34 - Battle.Stand); yaw = MathHelper.PiOver2; pitch = 0.2f; aimDir = AttackDir.Right;

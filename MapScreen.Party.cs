@@ -35,7 +35,7 @@ partial class MapScreen
             if (ui.Button(new Rectangle(tx + i * (tw + ui.U(4)), r.Y + ui.U(46), tw, ui.U(24)), label, true, "", charTab == i)) { charTab = i; note = ""; }
         }
         int x = r.X + ui.U(24), y = r.Y + ui.U(100), colW = (r.Width - ui.U(60)) / 2, rowH = ui.U(38);
-        // Sort the realm's lords by what you came to find: who likes you, or whose host is strongest (docs/pre-demo/PLAYTEST.md PT2e).
+        // Sort the realm's lords by what you came to find: who likes you, or whose host is strongest (docs/archive/PLAYTEST.md PT2e).
         if (charTab < realms && ui.WordTabs(x + ui.U(4), r.Y + ui.U(76), new[] { "FRIENDLIEST FIRST", "STRONGEST FIRST" }, lordSort) is int ls and >= 0) lordSort = ls;
         var lords = C.S.Characters.Where(ch => ch.Kind == "lord" && !ch.Dead && ch.Faction == charTab);
         var list = charTab < realms
@@ -166,7 +166,7 @@ partial class MapScreen
     /// The company picked on the divisions screen (its id), to move with the next click on a division card; -1 for none.
     int divPick = -1;
 
-    /// The divisions screen (docs/pre-demo/PLAYTEST.md PT2f): a card per sergeant (your retinue first) with his temper, command and
+    /// The divisions screen (docs/archive/PLAYTEST.md PT2f): a card per sergeant (your retinue first) with his temper, command and
     /// starting goal, and his companies as chips. Click a chip, then a card, to move that company there. The last card
     /// makes a new division.
     void DivisionsPanel()

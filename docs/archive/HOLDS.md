@@ -188,3 +188,7 @@ Recommendation: decide after HD4, from `--pacing` and a look at the density on t
 
 HD1 is small and stands alone. HD2 and HD3 come before HD4, so that when the towns go, castles already do their new
 work. HD4 waits on the owner's answers in the notes. HD5 follows the data. HD6 is a decision, not a build.
+
+## Closed
+
+Closed by the owner on 2026-11-21 as finished. Not built: HD6 world size (keep, slow travel, or scale `DesignScale`; run `--pacing` first) and HD7 (README, CAMPAIGN.md, tips and landing page numbers for castles, muster and holders).

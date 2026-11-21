@@ -3,7 +3,7 @@ using static Ironfield.FoliageKind;
 
 namespace Ironfield;
 
-/// The dressed map (docs/pre-demo/WORLD_DRESS.md WD1-WD3), the drawn map and drawing only: the ground between the stands gets
+/// The dressed map (docs/archive/WORLD_DRESS.md WD1-WD3), the drawn map and drawing only: the ground between the stands gets
 /// woods where a noise field runs high, and small cover (shrubs, tussocks, stones, heather, reeds, flowers, lone trees)
 /// in drifts, each kind of country with its own plants. On its own dice, after everything else, so nothing else moves;
 /// the campaign never reads it.

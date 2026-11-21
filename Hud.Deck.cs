@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Ironfield;
 
-/// Hud, the command view (docs/pre-demo/PLAYTEST.md PT4, "As rebuilt"): you are the general, with a cursor. The company cards along
+/// Hud, the command view (docs/archive/PLAYTEST.md PT4, "As rebuilt"): you are the general, with a cursor. The company cards along
 /// the top (left of the minimap), and one row along the bottom: the captain's plate (how he fares, FIGHT to step into him),
 /// the plate with time, the balance and the clock, and the order deck, a grid of picture buttons that shows only what the
 /// chosen companies can do and lights what they are doing. (The fight view has it the other way: balance and speed at the

@@ -321,7 +321,7 @@ sealed partial class Puppet
         if (!p.Empty)
         {
             SpanRect(hand, dir, curLook.Weapon, curLook.WeaponLen, SpriteSheet.Grip[look.Weapon]);
-            if (Detail < 2) BillRect(hand, curLook.Hand, false, 0.02f); // the fist closed over the grip (docs/pre-demo/PLAYTEST.md PT5)
+            if (Detail < 2) BillRect(hand, curLook.Hand, false, 0.02f); // the fist closed over the grip (docs/archive/PLAYTEST.md PT5)
             if (Detail == 0 && Soft != null && grip is Grip.One or Grip.Two or Grip.Pole)
             {
                 float strikeK = -1;

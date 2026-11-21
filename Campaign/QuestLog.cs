@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// One line of the quests screen (docs/pre-demo/PLAYTEST.md PT3), built from whatever gave the work: a steward's contract, an elders'
+/// One line of the quests screen (docs/archive/PLAYTEST.md PT3), built from whatever gave the work: a steward's contract, an elders'
 /// job, a lord's quest, an order's charge, a step of a chain. State is ACTIVE, AVAILABLE, DONE or FAILED.
 public sealed record QuestView(int Id, string Title, string Giver, Vector2? Place, string Where, float Reward, float Deadline, string State, bool MoreSteps);
 

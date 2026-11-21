@@ -324,7 +324,7 @@ public sealed class Settlement
     public float SiegeSince;                       // when the siege began (ladders take 12 hours)
     /// How far engines have battered its walls (0-1, docs/archive/SIEGECRAFT.md A3); mended a little each day it is not besieged.
     public float Battered;
-    /// When it was last raided (game hours; villages): its model shows burnt houses and smoke for some days (docs/pre-demo/SETTLEMENTS.md SM5).
+    /// When it was last raided (game hours; villages): its model shows burnt houses and smoke for some days (docs/archive/SETTLEMENTS.md SM5).
     public float RaidedAt = -1e6f;
     /// Fiefs (F6): prosperity scales income and recruits; unrest above 70 raises rebels and at 100 the place defects.
     public float Prosperity = 50, Unrest;
@@ -334,9 +334,9 @@ public sealed class Settlement
     public float BuildUntil;
     /// Tax level: 0 low, 1 normal, 2 high (set by the holder; a seat's villages pay at its rate).
     public int Tax = 1;
-    /// A village's holder (docs/pre-demo/HOLDS.md HD3): the id of the castle or town whose demesne it is (-1 until bound; not villages).
+    /// A village's holder (docs/archive/HOLDS.md HD3): the id of the castle or town whose demesne it is (-1 until bound; not villages).
     public int Holder = -1;
-    /// A castle's size (docs/pre-demo/HOLDS.md HD5): 1 tower house, 2 castle, 3 great castle; 0 for towns, villages and castles of old
+    /// A castle's size (docs/archive/HOLDS.md HD5): 1 tower house, 2 castle, 3 great castle; 0 for towns, villages and castles of old
     /// saves and generated maps (read as a castle: `Size`).
     public int Rank;
     public int Size => Kind == SettlementKind.Castle ? (Rank == 0 ? 2 : Rank) : 0;
@@ -636,7 +636,7 @@ public sealed class CampaignState
     public List<FactionState> Factions = new();
     public List<LogEntry> Log = new();
     public List<Contract> Contracts = new();   // the contracts you have accepted
-    /// The quests screen (docs/pre-demo/PLAYTEST.md PT3): finished and failed quests, oldest first; and the one pinned to the HUD (-1: none).
+    /// The quests screen (docs/archive/PLAYTEST.md PT3): finished and failed quests, oldest first; and the one pinned to the HUD (-1: none).
     public List<QuestRecord> QuestHistory = new();
     public int PinnedQuest = -1;
     /// Diplomacy (F7): alliances, gold owed under terms, the record of treaties (newest last), and the marshal's summons to you.
@@ -873,9 +873,9 @@ public sealed class Balance
     /// how often the AI picks a fight on its own.
     public float LordAggression = 0.35f;
     public float HealField = 0.08f, HealTown = 0.25f, DrillCamp = 0.6f, DrillTown = 1.2f;
-    /// The highest tier men may be promoted into away from a town or yard (docs/pre-demo/HOLDS.md HD1).
+    /// The highest tier men may be promoted into away from a town or yard (docs/archive/HOLDS.md HD1).
     public int CampTier = 3;
-    /// The castle's MUSTER (docs/pre-demo/HOLDS.md HD2): the highest tier its yard trains, the castellan's cut on pooled recruits, the
+    /// The castle's MUSTER (docs/archive/HOLDS.md HD2): the highest tier its yard trains, the castellan's cut on pooled recruits, the
     /// granary's reserve (garrison days kept back) and how many mouths a day of its stores feeds, the stables' stock and breeding.
     public int CastleYardTier = 5;
     public float MusterMarkup = 1.15f, GranaryReserve = 10, GranaryMouths = 60, CastleHorsesMax = 15, CastleHorsesWeek = 4;

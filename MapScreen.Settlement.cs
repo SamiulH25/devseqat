@@ -662,7 +662,7 @@ partial class MapScreen
     void Contracts()
     {
         if (C.S.Contracts.Count == 0) return;
-        // One quest only (docs/pre-demo/PLAYTEST.md PT3): the pinned one, else the one due soonest; the rest are on the quests screen.
+        // One quest only (docs/archive/PLAYTEST.md PT3): the pinned one, else the one due soonest; the rest are on the quests screen.
         var show = C.S.Contracts.FirstOrDefault(c => c.Id == C.S.PinnedQuest) ?? C.S.Contracts.OrderBy(c => c.Deadline).First();
         int more = C.S.Contracts.Count - 1;
         int w = ui.U(230), x = ui.W - w - ui.U(10), y = ui.U(194 + 9 * 23 + 8); // under the minimap and the menu rail (Hints)

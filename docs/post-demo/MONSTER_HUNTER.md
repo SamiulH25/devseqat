@@ -1,7 +1,7 @@
 # The monster hunter: a career (draft)
 
-Drafted 2026-11-21 with the owner, as the follow-up to `docs/pre-demo/THE_WILD.md`. **Not for the demo:** build it only once the
-demo is finished. It leans on the Wild plan (wildness, contracts, the hunt, spoils), so that comes first.
+Drafted 2026-11-21 with the owner, as the follow-up to `docs/post-demo/THE_WILD.md`. **Not for the demo:** build it only once the
+demo is finished. It leans on the Wild plan (`THE_WILD.md`, also after the demo: wildness, contracts, the hunt, spoils), so that comes first.
 
 
 - A road in the character creator (a hunter's past) and a career on the map beside the mercenary's, not one bolted onto it.

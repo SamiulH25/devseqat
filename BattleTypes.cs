@@ -66,7 +66,7 @@ public sealed class BattleOptions
     public TerrainParams? Ground;
     /// The enemy realm's temper (Factions.Aggression, 0.3-3): how soon an AI holding good ground loses patience and attacks.
     public float EnemyAggression = 1;
-    /// The enemy lord's traits (docs/pre-demo/PLAYTEST.md PT6b): Reckless, Cautious, Ambitious, Honourable... read by the general
+    /// The enemy lord's traits (docs/archive/PLAYTEST.md PT6b): Reckless, Cautious, Ambitious, Honourable... read by the general
     /// (`Battle.Nature`, BattleNature.cs). Empty for brigands, monsters and quick battles.
     public string[] LeaderTraits = Array.Empty<string>();
     /// Heraldry palette per team (Style.Sides index): your colours and theirs (3 = bandits).

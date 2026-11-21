@@ -34,7 +34,7 @@ static class Tips
     }
 
     /// Draw the current tip docked at the right edge, its bottom `bottom` above the screen's: a narrow card out of the middle of
-    /// the view (docs/pre-demo/PLAYTEST.md PT2a), so it never covers the men or the map you are reading.
+    /// the view (docs/archive/PLAYTEST.md PT2a), so it never covers the men or the map you are reading.
     public static void Draw(Ui ui, int bottom)
     {
         if (!Active) return;

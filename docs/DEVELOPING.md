@@ -575,7 +575,7 @@ which panel is open; set it to `PanelKind.None` to close. Colours come from `Sty
 
 `BattleScreen` wraps a `Battle`: two views blended by an eased camera, **field** (third person, you fight) and **command**
 (orbit camera and a cursor, you direct companies). They are two games with two HUDs that never show together
-(docs/pre-demo/PLAYTEST.md PT4, "As rebuilt"). Input in `BattleScreen.Controls.cs` (`FieldControls`, `CommandControls`), orders in
+(docs/archive/PLAYTEST.md PT4, "As rebuilt"). Input in `BattleScreen.Controls.cs` (`FieldControls`, `CommandControls`), orders in
 `BattleScreen.Orders.cs` (`Command(Cmd)`, drawn lines), the fight view's own orders in `BattleScreen.Fight.cs` (`ListenArm`:
 number keys pick the arm that listens; `LookFoe`, `HoldKey`: orders go where you look), rendering in `BattleScreen.Draw.cs`.
 `Hud.cs` holds what both views share (layout, hit tests, flags, hover cards); `Hud.Deck.cs` draws the command view (`TopBar`,

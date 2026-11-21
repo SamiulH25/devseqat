@@ -17,7 +17,7 @@ public partial class Campaign
 
     public string? RecruitLevies(Settlement s, int n) => RecruitLevies(s, n, 1);
 
-    /// Recruit from a village at its price times `markup` (the castle muster adds the castellan's cut, docs/pre-demo/HOLDS.md HD2).
+    /// Recruit from a village at its price times `markup` (the castle muster adds the castellan's cut, docs/archive/HOLDS.md HD2).
     string? RecruitLevies(Settlement s, int n, float markup)
     {
         // Only some of them will follow you: how many depends on what their lord thinks of you (4.2).

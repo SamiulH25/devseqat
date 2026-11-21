@@ -68,7 +68,7 @@ sealed class ScreenHost : Game
     static readonly bool savesOnly = Environment.GetEnvironmentVariable("IRONFIELD_SAVES_ONLY") == "1";
     int saveShot;
     /// Debug: IRONFIELD_PLACES=1 (or a filter: a style id's part, e.g. "steppe") with IRONFIELD_CAMPAIGN_SHOTS saves only the
-    /// settlements close up, one of each style and kind, labels and parties hidden (docs/pre-demo/SETTLEMENTS.md).
+    /// settlements close up, one of each style and kind, labels and parties hidden (docs/archive/SETTLEMENTS.md).
     static readonly string? placesOnly = Environment.GetEnvironmentVariable("IRONFIELD_PLACES");
     List<(string Name, Settlement Place, string Variant)>? placeShots;
     string? fieldShot; // a battlefield of the place's people, staged and waiting for its frames (SM6)
@@ -589,7 +589,7 @@ sealed class ScreenHost : Game
         if (placesOnly != null) { PlaceShots(c); return; }
         string[] stages = { "farm", "life", "village", "road", "night", "map", "river", "lands-Desert", "lands-Tundra", "lands-Taiga", "lands-Highlands",
             "lands-Steppe", "lands-Coast", "lands-Hills", "lands-Meadow", "lands-Oasis", "lands-Forest", "lands-Badlands", "port", "sail", "harbour", "holds" }; // and its ports and ships (WM7), and a tower house (HD5)
-        if (cStage == 2 && lifeShots < (c.Map.Designed ? stages.Length : 7)) // the land and its life (docs/archive/WORLD_LIFE.md WL3-WL5), in spring before the year turns; on the drawn map each kind of country (WM3, docs/pre-demo/WORLD_DRESS.md)
+        if (cStage == 2 && lifeShots < (c.Map.Designed ? stages.Length : 7)) // the land and its life (docs/archive/WORLD_LIFE.md WL3-WL5), in spring before the year turns; on the drawn map each kind of country (WM3, docs/archive/WORLD_DRESS.md)
         {
             if (lifeShots == 4) { dayHours = c.S.Hours; c.S.Hours = Math.Floor(c.S.Hours / 24) * 24 + 22.5; } // lamplight
             if (lifeShots == 5) { c.S.Hours = dayHours; lifeShots++; return; } // daylight again ("map" is shot first)
@@ -1005,7 +1005,7 @@ sealed class ScreenHost : Game
             case 56 when streetOnly: Exit(); break;
             case 56 when townShot < TownShots.Length:
             {
-                // Every tab of the settlement screen (docs/pre-demo/PLAYTEST.md PT2), at a town, a castle, a village and a fief of yours,
+                // Every tab of the settlement screen (docs/archive/PLAYTEST.md PT2), at a town, a castle, a village and a fief of yours,
                 // with something in each: wounded, prisoners, a captive lord, an engine or two.
                 var town = (townCulture != null ? c.S.Settlements.FirstOrDefault(s => s.Kind == SettlementKind.Town && s.Faction >= 0 && Factions.PeopleOf(s.Culture) == townCulture) : null) ?? c.S.Settlements.First(s => s.Kind == SettlementKind.Town && s.Faction >= 0 && s.Mercenaries.Count > 0);
                 var castle = c.S.Settlements.First(s => s.Kind == SettlementKind.Castle && s.Faction == town.Faction);

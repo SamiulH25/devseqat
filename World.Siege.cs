@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// A place under siege and after (docs/pre-demo/SETTLEMENTS.md SM5): the besiegers' camp on the ground its plan keeps for one
+/// A place under siege and after (docs/archive/SETTLEMENTS.md SM5): the besiegers' camp on the ground its plan keeps for one
 /// (`WorldMap.LayCamp`) with their tents in their colours, fires smoking and the engines they have ready; battered walls
 /// with fallen tower caps, rubble at their foot and at worst a breach; a raided village's burnt houses. Drawing only.
 sealed partial class World

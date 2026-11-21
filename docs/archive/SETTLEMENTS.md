@@ -279,3 +279,7 @@ small things (market stalls, wells, cranes, carts, stacks, gardens, fences).
 SM1 is the biggest: the kit, the plumbing and the castles (most of the 422 places are castles and villages). SM2 and SM3
 reuse the kit. SM4 and SM5 need the state plumbing from SM1. SM6 reuses the kit in battle. Each phase ends with its shots
 looked at and `tools/check.sh` green.
+
+## Closed
+
+Closed by the owner on 2026-11-21 as finished, with SM1-SM6 built. Not built: SM7 (check and polish).

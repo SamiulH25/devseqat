@@ -127,7 +127,7 @@ public static partial class SelfTest
         Check(c.NextStep().Where == "TRAIN", "a ready man points at the training yard");
     }
 
-    /// HD1 (docs/pre-demo/HOLDS.md): men rise to tier III in camp; tier IV and up wait for a town's yard.
+    /// HD1 (docs/archive/HOLDS.md): men rise to tier III in camp; tier IV and up wait for a town's yard.
     static void CampPromotion()
     {
         var c = Campaign.New(92);
@@ -148,7 +148,7 @@ public static partial class SelfTest
         Check(c.Promotable(c.Player, ma, st, up, 1, 5000, out _, out why) == 1, "and rises in the town: " + why);
     }
 
-    /// HD2 (docs/pre-demo/HOLDS.md): a castle musters its villages' men in one place, trains to tier V, sells horses and its stores.
+    /// HD2 (docs/archive/HOLDS.md): a castle musters its villages' men in one place, trains to tier V, sells horses and its stores.
     static void CastleMuster()
     {
         var c = Campaign.New(93);
@@ -181,7 +181,7 @@ public static partial class SelfTest
         Check(c.GranaryDays(castle) == 0 && c.BuyFromGranary(castle, 3) != null, "a bare granary sells nothing");
     }
 
-    /// HD3 (docs/pre-demo/HOLDS.md): every village has a holder; a castle's stores, muster and foals follow its villages, raiding them
+    /// HD3 (docs/archive/HOLDS.md): every village has a holder; a castle's stores, muster and foals follow its villages, raiding them
     /// cuts all three, and its garrison rides out at a weak band near them.
     static void VillagesFeedCastle()
     {
@@ -293,7 +293,7 @@ public static partial class SelfTest
         Check(agree >= n * 0.75f, $"auto-resolve calibration ({agree}/{n})");
     }
 
-    /// A lord fights as he is (docs/pre-demo/PLAYTEST.md PT6b): the same two armies, a Reckless then a Cautious enemy lord. The
+    /// A lord fights as he is (docs/archive/PLAYTEST.md PT6b): the same two armies, a Reckless then a Cautious enemy lord. The
     /// reckless one goes in sooner and leads it himself; the cautious one sounds the retreat sooner.
     static void LordsFightAsTheyAre()
     {

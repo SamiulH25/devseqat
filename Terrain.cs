@@ -6,11 +6,11 @@ public enum FoliageKind { Broadleaf, Pine, Bush, Rock, Town, Castle, Village, Wa
     // Sites on the campaign map (docs/archive/SIDE_CONTENT.md S2).
     Ruin, Shrine, Stones, Field, Mine, Hut, Watch, Spring, Mill,
     Birch, // a slim pale-barked tree (campaign map, WL3)
-    // The campaign map's small cover (docs/pre-demo/WORLD_DRESS.md): cheap pieces that stand between the woods.
+    // The campaign map's small cover (docs/archive/WORLD_DRESS.md): cheap pieces that stand between the woods.
     Shrub, Tussock, Heather, Reed, DeadTree, Palm, Flowers,
-    // The water's edge and the roadside (docs/pre-demo/WORLD_DRESS.md WD4).
+    // The water's edge and the roadside (docs/archive/WORLD_DRESS.md WD4).
     Driftwood, Milestone, Wayside, Well, Rowboat, Marram,
-    // An assault field's keep (a castle's) or landmark (a town's), behind the wall (docs/pre-demo/SETTLEMENTS.md SM6).
+    // An assault field's keep (a castle's) or landmark (a town's), behind the wall (docs/archive/SETTLEMENTS.md SM6).
     Keep, Landmark }
 
 /// A river (roadmap C5): a centre line, its width, and the fords where it runs shallow.
@@ -233,7 +233,7 @@ public sealed class SiegeWall
 }
 
 /// One piece of foliage (or, on the campaign map, a settlement). Radius > 0 = a solid obstacle (tree trunk, boulder).
-/// `Dry` (0-1) draws the map's small cover from green toward straw and thorn (docs/pre-demo/WORLD_DRESS.md).
+/// `Dry` (0-1) draws the map's small cover from green toward straw and thorn (docs/archive/WORLD_DRESS.md).
 public readonly record struct Foliage(FoliageKind Kind, Vector2 Pos, float Scale, float Radius, int Seed, float Dry = 0);
 
 /// How a battlefield is generated: set from the campaign map cell where the fight happens (docs/CAMPAIGN.md 3.2).
@@ -252,7 +252,7 @@ public sealed record TerrainParams(string Name, int HillsMin, int HillsMax, floa
     /// grass), and woods of pines only.
     public GroundLook Look { get; init; }
     public bool Conifer { get; init; }
-    /// Who built what stands on the field (docs/pre-demo/SETTLEMENTS.md SM6): an `Architecture` style id (a place's culture) for the
+    /// Who built what stands on the field (docs/archive/SETTLEMENTS.md SM6): an `Architecture` style id (a place's culture) for the
     /// houses and an assault's wall, null = the old plain look. `Castle`: the assault is on a castle (a curtain and a keep,
     /// not a town wall and its houses). `Banner`: the defenders' colours over the gate (a `Style.Sides` palette, -1 none).
     public string? Style { get; init; }
@@ -312,7 +312,7 @@ public sealed partial class Terrain
     public readonly List<MapBridge> MapBridges = new();
     /// Ships lying at the ports' piers on the campaign map (docs/archive/WORLDMAP.md WM7; drawing only).
     public readonly List<(Vector2 At, float Yaw)> Moored = new();
-    /// The campaign map's settlements as laid out for their models (docs/pre-demo/SETTLEMENTS.md); empty on a battlefield.
+    /// The campaign map's settlements as laid out for their models (docs/archive/SETTLEMENTS.md); empty on a battlefield.
     public readonly List<PlacePlan> Places = new();
     /// The sea's surface on a designed campaign map (docs/archive/WORLDMAP.md WM2); null where there is no sea.
     public float? SeaLevel;

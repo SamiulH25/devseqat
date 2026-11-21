@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 
 namespace Ironfield;
 
-/// The castle's own work (docs/pre-demo/HOLDS.md HD2): the MUSTER. A castle gathers the men, horses and food of its villages, so a
+/// The castle's own work (docs/archive/HOLDS.md HD2): the MUSTER. A castle gathers the men, horses and food of its villages, so a
 /// captain can keep a company going from castles and needs a town only to trade, hire and train past the yard's tier.
 public sealed partial class Campaign
 {
