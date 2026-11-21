@@ -9,7 +9,7 @@ public sealed partial class Battle
     const float CellSize = 4;
     const int GridN = 128;
     readonly List<Unit>[] cells = Enumerable.Range(0, GridN * GridN).Select(_ => new List<Unit>(8)).ToArray();
-    readonly List<Unit> near = new(64), nearBrace = new(64);
+    readonly List<Unit> near = new(64), nearBrace = new(64), nearMass = new(32);
 
     static int CellOf(float v) => Math.Clamp((int)MathF.Floor(v / CellSize) + GridN / 2, 0, GridN - 1);
 
@@ -100,32 +100,53 @@ public sealed partial class Battle
         return (best, MathF.Sqrt(bd));
     }
 
-    /// Last word on horse against formed foot: a horse overlapping a man who holds his place in a formed company is put back
-    /// out of him (the man does not give), whatever shoved it in (its own riders pressing from behind as often as not).
-    /// A company's files are closer than a horse is wide, so formed foot is a wall horse cannot filter through.
+    /// The speed a footman's weight is good for against a horse: a charge is stopped when the weight braced against it, times
+    /// this, is more than the horse's weight times the speed it comes on at (Impact).
+    const float BraceSpeed = 8;
+
+    /// The weight a footman puts against a horse coming at him along `dir` (from the horse to him), in BodyMass: his own,
+    /// and, if he stands in his place in a formed company whose front the horse comes at, his footing (drill and order) on
+    /// it and the men at his back in his file leaning in (up to three). From a flank or behind he has only himself.
+    float BraceMass(Unit m, Vector2 dir)
+    {
+        float mass = BodyMass(m);
+        if (m.Routing || m.Squad is not { Loose: false, Broken: false } s || !Ranked(s) || Vector2.Dot(-dir, s.Front) < 0.3f) return mass;
+        float foot = Footing(m);
+        if (foot <= 1) return mass; // out of his place: nobody at his back
+        int behind = 0;
+        foreach (var o in Near(m.Pos, 4, nearMass))
+        {
+            if (o == m || o.Squad != s || !o.Active || o.Routing || Vector2.DistanceSquared(o.Pos, o.Slot) > 1) continue;
+            var d = o.Pos - m.Pos;
+            float along = Vector2.Dot(d, dir), aside = MathF.Abs(d.X * dir.Y - d.Y * dir.X);
+            if (along > 0.3f && along < 4 && aside < 0.9f && ++behind == 3) break;
+        }
+        return (mass + behind) * foot;
+    }
+
+    /// Last word on horse against formed foot: a horse overlapping a man whose braced weight (BraceMass) is more than the
+    /// horse's way can carry is put back out of him (the man does not give), whatever shoved it in (its own riders pressing
+    /// from behind as often as not). A heavy horse still coming on hard is left to Impact, which may carry it through.
     void HoldHorseOff()
     {
         foreach (var h in Units)
         {
             if (!h.Active || !h.Mounted || Airborne(h)) continue;
-            float rh = BodyRadius(h);
+            float rh = BodyRadius(h), way = BodyMass(h) * MathF.Max(MathF.Abs(h.Speed), 1);
             foreach (var m in Near(h.Pos, 2.1f, near))
             {
-                if (!m.Active || m.Mounted || m.Team == h.Team || !InFormedRank(m)) continue;
+                if (!m.Active || m.Mounted || m.Team == h.Team) continue;
                 float r = rh + BodyRadius(m);
                 var d = h.Pos - m.Pos;
                 float l2 = d.LengthSquared();
                 if (l2 >= r * r) continue;
                 float l = MathF.Sqrt(MathF.Max(l2, 1e-6f));
                 var n = l2 > 1e-6f ? d / l : -h.HeadingDir;
+                if (BraceMass(m, -n) * BraceSpeed < way) continue; // he cannot hold it
                 h.Pos = m.Pos + n * r;
             }
         }
     }
-
-    /// A man a horse cannot shove aside: not routing, in a formed, close-ordered company, within a stride of his place
-    /// (a front-rank man stepping out to strike still has his file at his back).
-    bool InFormedRank(Unit m) => !m.Routing && m.Squad is { Loose: false, Broken: false } s && Ranked(s) && Vector2.DistanceSquared(m.Pos, m.Slot) < 2.5f * 2.5f;
 
     /// Push overlapping bodies apart (horses shove harder), and let riders at speed crash into footmen: only near pairs.
     void Separate(float dt)
@@ -146,11 +167,14 @@ public sealed partial class Battle
                 float l = MathF.Sqrt(l2), mb = BodyMass(b);
                 if (a.Team != b.Team)
                 {
-                    // A man holding his place in the ranks is hard to shove; against a horse the ranks behind him lean in too,
-                    // so a formed company is a wall a horse cannot simply walk through.
-                    float fa = Footing(a), fb = Footing(b);
-                    ma = BodyMass(a) * fa * (b.Mounted && !a.Mounted && fa > 1 ? 20 : 1);
-                    mb *= fb * (a.Mounted && !b.Mounted && fb > 1 ? 20 : 1);
+                    // A man holding his place in the ranks is hard to shove. Against a horse he weighs what he can brace
+                    // (BraceMass: the men at his back too, if the horse comes at their front), told against the horse's way:
+                    // a slow horse is shoved back by a formed file, a galloping one shoves through all but the deepest.
+                    var n0 = d / MathF.Sqrt(l2);
+                    if (b.Mounted && !a.Mounted) ma = BraceMass(a, -n0) * BraceSpeed / MathF.Max(MathF.Abs(b.Speed), 2);
+                    else ma = BodyMass(a) * Footing(a);
+                    if (a.Mounted && !b.Mounted) mb = BraceMass(b, n0) * BraceSpeed / MathF.Max(MathF.Abs(a.Speed), 2);
+                    else mb *= Footing(b);
                 }
                 else ma = BodyMass(a);
                 var n = d / l;

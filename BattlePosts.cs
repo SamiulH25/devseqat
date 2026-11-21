@@ -116,11 +116,16 @@ public partial class Battle
         {
             d.Spot = Mid(live);
             d.Offsets.Clear();
+            d.Fronts.Clear();
         }
         var spot = d.Spot.Value;
         foreach (var s in live)
             if (!d.Offsets.ContainsKey(s))
-                d.Offsets[s] = (s.Order == Order.Hold && Vector2.DistanceSquared(s.Anchor, s.Center) < 144 ? s.Anchor : s.Center) - spot;
+            {
+                bool standing = s.Order == Order.Hold && Vector2.DistanceSquared(s.Anchor, s.Center) < 144;
+                d.Offsets[s] = (standing ? s.Anchor : s.Center) - spot;
+                d.Fronts[s] = standing ? s.Front : line.Fwd; // a company standing where you put it keeps the way you turned it
+            }
         if (advance)
         {
             float gap = float.MaxValue;
@@ -139,17 +144,22 @@ public partial class Battle
         }
         Dress(d, live, line);
         RestSpent(d, live, line);
-        foreach (var s in live) Place(s, spot + d.Offsets[s] + Drifted(d, s) - (d.Resting.Contains(s) ? line.Fwd * RestBack : Vector2.Zero), line.Fwd);
+        foreach (var s in live) Place(s, spot + d.Offsets[s] + Drifted(d, s) - (d.Resting.Contains(s) ? line.Fwd * RestBack : Vector2.Zero), d.Fronts[s]);
         Steady(d, live, spot, foe);
     }
 
-    /// Lock shields when horse comes near a standing company; bows on Hold pick the softest target in reach.
+    /// Lock shields when horse comes near a standing company in Line, and unlock them (back to Line) when it has gone; any
+    /// other formation is the one you chose and is left alone. Bows on Hold pick the softest target in reach.
     void Steady(Division d, List<Squad> live, Vector2 at, int foe)
     {
         float notice = Notice(d);
         bool horseNear = Squads.Any(s => s.Team == foe && s.Cavalry && s.Alive > 0 && Vector2.Distance(s.Center, at) - s.Radius < notice);
         foreach (var s in live.Where(s => !s.Cavalry && !Ranged(s) && !s.Swarm && s.Units[0].Type.HasShield))
-            s.Formation = horseNear && d.Temper != Temper.Bold && s.Order == Order.Hold ? Formation.ShieldWall : Formation.Line;
+        {
+            bool lockUp = horseNear && d.Temper != Temper.Bold && s.Order == Order.Hold;
+            if (lockUp && s.Formation == Formation.Line) { s.Formation = Formation.ShieldWall; s.ShieldsLocked = true; }
+            else if (!lockUp && s.ShieldsLocked) { if (s.Formation == Formation.ShieldWall) s.Formation = Formation.Line; s.ShieldsLocked = false; }
+        }
         foreach (var s in live.Where(Ranged))
             if (s.Order == Order.Hold) { s.Target = SoftTarget(s, foe); s.FireAtWill = true; }
     }

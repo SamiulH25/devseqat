@@ -82,14 +82,18 @@ public partial class Battle
     /// A horse at speed running into an enemy footman: knockdown and damage, unless the man is braced.
     void Impact(Unit r, Unit f, Vector2 n, float dt)
     {
-        // Pushing through bodies bogs a charge down; into a formed company the horse is caught in the press and stopped.
-        bool formed = !f.Routing && f.Squad is { Loose: false, Broken: false } fs && Ranked(fs);
-        r.Speed *= 1 - (formed ? 4f : 1.2f) * dt;
-        if (formed) r.BoggedUntil = MathF.Max(r.BoggedUntil, Time + 0.6f);
+        // Weight against weight: the horse's (its mass times the speed it comes on at, a wedge driving it harder) against what
+        // the man can brace (BraceMass: a formed file facing it leans in behind him). The heavier side wins: a galloping horse
+        // rides over a lone man, a flank, or green levies; a deep, drilled line met head-on catches it in the press.
         float closing = Vector2.Dot(r.Vel - f.Vel, n);
+        float charge = BodyMass(r) * MathF.Max(closing, 0) * (r.Squad?.Formation == Formation.Wedge ? 1.3f : 1);
+        float hold = BraceMass(f, n) * BraceSpeed;
+        bool stopped = hold >= charge;
+        r.Speed *= 1 - (stopped ? 4f : 1.2f) * dt; // pushing through bodies bogs a charge down
+        if (stopped && hold > BodyMass(f) * BraceSpeed) r.BoggedUntil = MathF.Max(r.BoggedUntil, Time + 0.6f); // caught in a company's press
         if (f.ImpactCd > 0 || closing < 4)
         {
-            if (formed) r.Speed = MathF.Min(r.Speed, 1.2f); // pressed against the ranks it can only shove at a walk
+            if (stopped && hold > BodyMass(f) * BraceSpeed) r.Speed = MathF.Min(r.Speed, 1.2f); // pressed against the ranks it can only shove at a walk
             return;
         }
         f.ImpactCd = 0.8f;
@@ -101,8 +105,9 @@ public partial class Battle
             HitHorse(r, closing * 2.6f, f);
             return;
         }
-        r.Speed *= formed ? 0.35f : f.Type.Class == UnitClass.Infantry && f.Squad is { Loose: false } ? 0.55f : 0.75f;
-        if (formed) r.BoggedUntil = Time + 1.5f; // the charge is spent on the front rank
+        // Stopped, the charge is spent on the front rank; carried through, it loses the more way the more the man could brace.
+        r.Speed *= stopped ? 0.35f : 0.75f - 0.35f * hold / MathF.Max(charge, 1e-3f);
+        if (stopped) r.BoggedUntil = Time + 1.5f;
         // A spearman shoved by a horse still gets his point into it.
         if (f.Type.Class == UnitClass.Skirmisher && f.Type.VsMounted > 1) HitHorse(r, closing * 1.6f * f.Type.VsMounted, f);
         float real = Damage(r, f, closing * 2.6f * (r.Squad?.Formation == Formation.Wedge ? 1.3f : 1) * Terrain.GroundDefAt(f.Pos).Charge, 5); // no charge over bad ground

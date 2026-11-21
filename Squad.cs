@@ -121,6 +121,8 @@ public sealed class Squad
     public bool Broken, InContact;
     /// Charged without orders (rabble or a hothead, docs/archive/MELEE.md D4): a sergeant leaves it be until it has re-formed.
     public bool BrokeRanks;
+    /// The officer locked its shields against horse (BattlePosts.Steady): it goes back to Line when the horse is gone.
+    public bool ShieldsLocked;
     /// A reckless charge (Shift with a charge or attack order): while it charges every man runs at the foe on his own,
     /// no line kept, no re-forming on the way (BattleAI.Think, BattleRanks.Close, BattleTactics.Tactics).
     public bool Reckless;

@@ -164,6 +164,48 @@ public static partial class SelfTest
         Check(loose > formed, $"loose foot lets more through ({loose} vs {formed})");
     }
 
+    /// Horse against foot goes by weight (Battle.BraceMass): the same knights that a drilled line stops head-on ride
+    /// A company keeps the formation and facing it was deployed in once its officer takes it over.
+    static void KeepsDeployedFormation()
+    {
+        var b = Battle.Empty(73);
+        var s = b.AddSquad(0, Troops.Get("shieldmen"), 30, new(0, -20), 10, Vector2.UnitX);
+        s.Formation = Formation.Square; s.Order = Order.Hold; s.Anchor = s.Center; s.Front = Vector2.UnitX;
+        b.AddDivision(0, "Front", new[] { s }, Temper.Steady, 5, new Goal(Post.Front, Stance.Hold));
+        for (int i = 0; i < 300; i++) b.Update(1 / 60f);
+        Console.WriteLine($"keeps deployed: {s.Formation}, front {s.Front}");
+        Check(s.Formation == Formation.Square, "a deployed square stays a square");
+        Check(Vector2.Dot(s.Front, Vector2.UnitX) > 0.9f, "and keeps the facing it was given");
+    }
+
+    /// through green levies, and through that drilled line when they take it from behind.
+    static void HorseByWeight()
+    {
+        int Through(string foot, bool rear)
+        {
+            var b = Battle.Empty(45);
+            float side = rear ? -1 : 1; // the horse comes from +Y (at the line's front) or from -Y (at its back)
+            var line = b.AddSquad(0, Troops.Get(foot), 40, new(0, 0), 20, Vector2.UnitY);
+            line.Formation = Formation.Line;
+            var bows = b.AddSquad(0, Troops.Get("yeoman_archers"), 30, new(0, -12 * side), 10, Vector2.UnitY);
+            bows.FireAtWill = false;
+            var horse = b.AddSquad(1, Troops.Get("knights"), 20, new(0, 40 * side), 10, -Vector2.UnitY * side);
+            horse.Order = Order.Charge;
+            horse.Target = bows; // the line is in their way
+            var past = new HashSet<Unit>();
+            for (int i = 0; i < 60 * 12; i++)
+            {
+                b.Update(1 / 60f);
+                foreach (var u in horse.Units) if (u.Active && u.Pos.Y * side < -4) past.Add(u);
+            }
+            return past.Count;
+        }
+        int drilled = Through("men_at_arms", false), green = Through("levies", false), behind = Through("men_at_arms", true);
+        Console.WriteLine($"horse by weight: through men-at-arms head-on {drilled} of 20, levies head-on {green}, men-at-arms from behind {behind}");
+        Check(green >= drilled + 5, $"knights ride through levies ({green}) far more than a drilled line ({drilled})");
+        Check(behind >= drilled + 5, $"a drilled line taken from behind does not hold them ({behind} vs {drilled} head-on)");
+    }
+
     static void CavalryBalance()
     {
         // A rider's reach in a standing fight is a man's reach, not its lance's: foot can hit back.

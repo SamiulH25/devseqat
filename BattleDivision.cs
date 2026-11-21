@@ -106,6 +106,8 @@ public sealed class Division
     /// from it, so Hold and Advance keep the line as you drew it up.
     public Vector2? Spot;
     public readonly Dictionary<Squad, Vector2> Offsets = new();
+    /// Which way each company faced when the stance began: Hold and Advance keep it, so a company turned in deployment stays turned.
+    public readonly Dictionary<Squad, Vector2> Fronts = new();
     /// Plug: reserve companies sent in, and the line company each went to help.
     public readonly Dictionary<Squad, Squad> Plugs = new();
     /// OF2: how each company has wandered from its place under a poor officer; the order a poor officer sends his companies
@@ -235,6 +237,7 @@ public partial class Battle
                 d.Axis = Vector2.Zero;
                 d.Spot = null;
                 d.Offsets.Clear();
+                d.Fronts.Clear();
                 d.Plugs.Clear();
                 d.Sequence.Clear();
                 d.Resting.Clear();

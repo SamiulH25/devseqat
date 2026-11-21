@@ -304,7 +304,8 @@ orders his companies yourself: they follow your order until he gets a new stance
 looks again sooner and sees threats further out, sends his companies in together, keeps his line still, closes gaps and rests a
 spent company; a poor one sends them in one by one and lets the line wander. While you deploy, each post is a marked zone on the
 field: drag a company card onto it (or pick companies and click it) to put them under that officer, or press **AUTO-FILL** in the
-tray to send horse to the wings, bows to the skirmishers and foot to the front. If an officer falls, the best man left takes
+tray to send horse to the wings, bows to the skirmishers and foot to the front. When the fight starts each company keeps the formation and facing you deployed it in; shieldmen lock
+into a shield wall only while horse is near and go back to line after. If an officer falls, the best man left takes
 charge after 10 s.
 
 **Company sergeants:** every company has a sergeant who keeps it in order (he never changes its orders): its ranks re-form a
@@ -392,10 +393,11 @@ the player rides a courser.
   A rider's ordinary blow in the melee reaches only as far as a footman's blade (1.9 m), so a stalled charge is not a free win.
 - **Trample:** a horse running into an enemy footman at over 4 m/s knocks him down (stagger) and hurts him; every body slows the horse,
   and tight shield walls slow it more. The shock costs nearby friends morale.
-- **Formed foot is a wall to horse:** a company in close order with its ranks unbroken stops a charge at its front rank: the
-  horse loses most of its speed, is held to a walk for a moment, and cannot shove or filter between the files (they are
-  closer than a horse is wide), and no man runs out of the ranks at a horseman beside him. Horse gets past formed foot only
-  round its flanks or once its ranks break; loose order (OPEN) lets it ride through.
+- **Horse against foot is weight against weight:** a charge carries the horse's mass times its closing speed (a wedge 1.3x).
+  A footman holds with his own body, but a man in his place in a formed company facing the horse also has the files behind him
+  (up to three) at his back, times his footing (drill and order). If what he can brace outweighs the charge, the horse is stopped
+  at the front rank and held to a walk for a moment; if not, it ploughs on, slowed by what it hit. Drilled men-at-arms in line stop
+  knights head-on; levies, a company taken from behind or the flank, broken ranks or loose order (OPEN) let them through.
 - **Bracing (Total War):** spearmen, and shieldmen holding a tight formation, stand still and set their points when horses come.
   A braced spear reaches further than a couched lance and hits the horse hard (`8 x` closing speed for spears), stopping the charge.
   Spearrunners also deal x1.8 damage to anything mounted. Arrows and spears often hit the horse instead of the rider.
