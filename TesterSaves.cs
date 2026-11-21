@@ -33,13 +33,7 @@ public static class TesterSaves
         foreach (var sc in All.Where(s => filter == null || s.Id.Contains(filter)).Reverse())
         {
             foreach (var old in Directory.GetDirectories(Saves.Root, $"test-{sc.Id}*")) Directory.Delete(old, true);
-            var c = Campaign.New(sc.Seed, sc.Realm);
-            if (sc.Days > 0) new Pilot(c).Run(sc.Days * 24);
-            Settle(c);
-            sc.Setup(c);
-            c.S.CampaignId = $"test-{sc.Id}";
-            c.Player.Name = sc.Label.Replace(":", "");
-            c.Log($"Tester save: {sc.What}");
+            var c = Build(sc);
             string path = Saves.Save(c.S, SaveKind.Named, sc.Label);
             var back = Saves.Load(path) ?? throw new Exception($"{sc.Id}: the save did not load back");
             var bc = new Campaign(back);
@@ -57,6 +51,24 @@ public static class TesterSaves
         }
         Saves.Changed();
         Console.WriteLine($"saved in {Saves.Root}");
+    }
+
+    /// The scenarios' ids ("01-fresh-start"...), for the playtest harness (`--play --scenario`).
+    public static IEnumerable<(string Id, string What)> Ids => All.Select(s => (s.Id, s.What));
+
+    /// The campaign of the first scenario whose id contains `filter` (null: none matches), played and set up as its save is.
+    public static Campaign? Build(string filter) => All.FirstOrDefault(s => s.Id.Contains(filter)) is Scenario sc ? Build(sc) : null;
+
+    static Campaign Build(Scenario sc)
+    {
+        var c = Campaign.New(sc.Seed, sc.Realm);
+        if (sc.Days > 0) new Pilot(c).Run(sc.Days * 24);
+        Settle(c);
+        sc.Setup(c);
+        c.S.CampaignId = $"test-{sc.Id}";
+        c.Player.Name = sc.Label.Replace(":", "");
+        c.Log($"Tester save: {sc.What}");
+        return c;
     }
 
     /// Clear what the stand-in left half done: a fight in the road, a report, a wound, an empty larder.

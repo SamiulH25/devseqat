@@ -2011,4 +2011,34 @@ public static partial class SelfTest
         Console.WriteLine($"nobles: {rooted.Count} from the castle roots, {knighted.Count} by knighting, {reach.Count} in all, unreachable: {string.Join(", ", lost)}");
         Check(lost.Count == 0, "every noble troop has a way in: " + string.Join(", ", lost));
     }
+    /// The agent playtest harness (docs/PLAYTEST_HARNESS.md): commands read, act and fight; nonsense is refused, never thrown;
+    /// a broken number is filed; a fought battle goes back to the campaign.
+    static void PlaytestHarness()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), $"ironfield-play-{Environment.ProcessId}");
+        if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        var s = new PlaySession(dir);
+        s.Begin(7, 0, null, null, 0);
+        Check(s.Exec("look").Contains("THE ROAD YOU CAME BY"), "a new game asks for the road first");
+        Check(s.Exec("choose 0").StartsWith("chosen"), "the road is chosen");
+        foreach (var junk in new[] { "frobnicate", "goto 99999", "call NoSuchMethod", "get S.Nope", "promote 999", "choose", "wait -3", "order all charge", "get S.Settlements[99999]" })
+            Check(s.Exec(junk) is var r && (r.StartsWith("ERROR") || r.StartsWith("REFUSED")), $"`{junk}` is refused, not thrown");
+        Check(s.Exec("get S.Gold") == s.C.S.Gold.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture), "get reads the state");
+        Check(s.Exec("call LevyPrice 14") is var lp && int.TryParse(lp.Split('\n')[0], out _), "call reaches a campaign method by reflection");
+        Check(s.Exec("wait 6").Contains("passed"), "time passes");
+        var foe = s.C.S.Parties.Where(p => p.Kind == PartyKind.Bandit && !p.Down).OrderBy(p => Vector2.Distance(p.Pos, s.C.Player.Pos)).First();
+        s.C.Encounter = foe;
+        Check(s.Exec("look").Contains("ENCOUNTER"), "an encounter is shown with its answers");
+        Check(s.Exec("battle").Contains("DEPLOYING") && s.B != null, "a battle starts in deployment");
+        Check(s.Exec("step 5").StartsWith("ERROR"), "no stepping before the start");
+        Check(s.Exec("start").Contains("begins"), "the battle begins");
+        string end = s.Exec("auto 900");
+        Check(s.B == null && (end.Contains("BATTLE WON") || end.Contains("BATTLE LOST")), "the battle is fought out and goes back to the campaign: " + end[..Math.Min(200, end.Length)]);
+        Check(s.C.Encounter == null, "the encounter is over");
+        Check(s.Exec("set S.Gold NaN").Contains("INVARIANT BROKEN"), "a broken number is caught");
+        var rows = File.ReadAllLines(Path.Combine(dir, "findings.jsonl"));
+        Check(rows.Any(r => r.Contains("\"invariant\"") && r.Contains("\"tampered\":true")), "and filed, marked as tampered");
+        Check(File.ReadAllLines(Path.Combine(dir, "commands.log")).Contains("battle"), "commands are logged for replay");
+        Directory.Delete(dir, true);
+    }
 }

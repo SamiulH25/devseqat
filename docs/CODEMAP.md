@@ -829,6 +829,16 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## PixelFont.cs (98 lines)
 - **PixelFont** (class, L7): BuildCharIdx:28, PixelFont:36, Width:69, Lit:72, Draw:78, DrawPlain:84, DrawRun:86
 
+## Playtest.cs (531 lines)
+- **PlaySession** (class, L12): PlaySession:24, Begin:27, Exec:52, UsageException:81, Usage:82, Dispatch:87, P:144, Dist:145, Realm:146, Look:148, Pending:170, Kind:196, PartyView:198, Near:224, Places:236, PlaceView:244, SafeOffers:260, Realms:262, LogTail:275, EventView:277, Contracts:289, TroopView:293, Do:298, Here:310, Choose:312, Go:319, MoveTo:320, ChaseParty:321, Halt:322, Wait:325, LogSince:342, Fight:353, Retreat:363, Parley:372, Leave:379, Hire:386, Accept:393, Promote:401, Sell:414, Besiege:421, Assault:428, Talk:437, SaveGame:448, ReportText:455, File_:476, Record:487, Split:500, Need:515, I:516, F:517, SettlementArg:520, PartyArg:530
+
+## PlaytestBattle.cs (182 lines)
+- **PlaySession** (class, L9): StartBattle:20, BeginBattle:27, BattleCommand:39, Order:82, Send:111, Step:113, FinishBattle:129, BattleState:140, SquadArg:163, EnemySquad:175, Names:181
+
+## PlaytestServer.cs (326 lines)
+- **PlaySession** (class, L12): Call:20, Methods:46, Sig:50, Short:52, Convert:55, Companies:82, Get:87, Set:95, Dump:143, Crash:183, Audit:203, Help:236
+- **Playtest** (class, L265): Run:267, ReadAll:294, Serve:297
+
 ## Png.cs (138 lines)
 - **Png** (class, L10): Encode:14, static:42, Unfilter:100, Paeth:117, Chunk:123, Crc:132
 
@@ -843,7 +853,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **PortraitPainter** (class, L13): MoodOf:17, Of:21, SoldierSeed:53, Of:58, OfMan:62, CohesionMood:77, Captain:80, Of:84, Paint:87, Resample:94
 - **Portraits** (class, L117): Of:122, Sized:125
 
-## Program.cs (134 lines)
+## Program.cs (139 lines)
 
 ## Puppet.cs (1081 lines)
 - **Puppet** (class, L13): PalOf:31, SetPal:114, GetLook:120, Puppet:126, Begin:128, Rad:137, W:138, Awed:164, Lean:181, Frame:188, View:198, Draw:218, Crossbow:355, Bow:379, HorseScale:407, Horse:415, sp_breathe:513, static:515, Beast:523, WolfBody:535, Warg:565, BeastCorpse:583, DrawLooseHorse:598, DrawDeadHorse:608, RotY:639, Shoulder:650, Arm:654, ArmTo:661, Elbow:673, Sink:700, Leg:709, SpanRect:721, Fallen:730, SpiritAscent:798, Corpse:839, Haze:879, Particle:891, Banner:906, Decal:953, Quad:966, PlumeY:980, HelmTop:983, HeadBill:997, BillRect:1000, Missile:1011, AxialSrc:1031, LongRect:1042, PlaneRect:1054, FlatRect:1064, FlatRot:1073
@@ -949,8 +959,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **GroundLook** (enum, L11)
 - **Terrain** (class, L15): RidgeCrest:24, ShapeLayout:34, PastShore:101, AtSea:103, ShoreHeight:106, LayoutHeight:115, GroundOf:136, ShapeGround:151, LookGround:189, Sq:208, PlaceVillage:211, PlaceHedges:240, HedgeLine:256
 
-## TesterSaves.cs (183 lines)
-- **TesterSaves** (class, L9): Scenario:11, Run:29, Settle:63, Rested:72, Nearest:74, Place:77, Army:84, Rich:94, readonly:102, Sandbox:108, AtWarWith:115, BigBattle:117, Siege:126, CircleAndAura:136, KnightOrder:149, Monsters:159, Port:168, CastleMuster:175
+## TesterSaves.cs (195 lines)
+- **TesterSaves** (class, L9): Scenario:11, Run:29, Build:60, Build:62, Settle:75, Rested:84, Nearest:86, Place:89, Army:96, Rich:106, readonly:114, Sandbox:120, AtWarWith:127, BigBattle:129, Siege:138, CircleAndAura:148, KnightOrder:161, Monsters:171, Port:180, CastleMuster:187
 
 ## Tests/AudioTests.cs (207 lines)
 - **SelfTest** (class, L5): MapMusicSteady:17, SoundsMade:79, CombatCuesEmitted:164, CreatureAndMagicCues:188
@@ -958,8 +968,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/BattleTests.cs (1908 lines)
 - **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, CavalryBalance:123, Flanks:164, Parry:180, BlowsShown:208, FightsRead:230, Formations:246, CaptainCombat:276, CaptainKit:302, SkillBouts:360, Bout:410, Fight:424, BattleGoals:458, BannerAndLastStand:480, DuelFight:517, RangedRoles:538, FatigueAndSupply:558, GroundLayer:576, GroundMoves:601, GroundFights:632, Layouts:669, HedgesAndBridges:700, EveryLayoutResolves:748, SightAndCover:769, Rivers:811, HoldsTheCrest:839, HorseAvoidsBadGround:865, TakesTheFord:882, GroundForThePlayer:904, Stakes:923, Pathfinder:961, GoesToFord:981, FilesThroughGap:1010, RoundTheNearFence:1035, OutOfTheYard:1049, ChargeFindsCaptain:1067, FlowCacheBound:1082, Generals:1097, HorseDown:1114, Ground:1123, HoldFire:1147, TroopTree:1161, SpritesBaked:1188, Sprites:1209, TroopVariety:1246, BigBattle:1282, StackBattle:1312, NamedMenFight:1347, AutoResolveNamedMen:1389, PullBack:1415, ReplayExact:1446, FoldCompanies:1480, AdvanceSteps:1524, RelieveAndSplit:1539, QueuedAndStanding:1575, AlertsRaise:1634, DeploymentMemory:1659, SpearsStopHorse:1690, CommandCap:1701, ScaleBattle:1720, DivisionGoals:1757
 
-## Tests/CampaignTests.cs (2014 lines)
-- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:41, CampaignRun:52, Progression:94, CampPromotion:121, CastleMuster:142, VillagesFeedCastle:176, CaravansTownToTown:210, Economy:227, Bridge:241, Calibration:263, LordsFightAsTheyAre:288, RiverRoadGivesBridge:317, RainMakesMud:343, DefenderChoosesGround:370, AutoResolveGroundEdge:386, SiegeBattle:397, CampaignWar:435, RefuseOldSave:499, SaveFolders:525, RollEarnsNames:594, FallenRemembered:664, RisesFromRanks:709, BannerHonours:748, FameDraws:787, RetireAndSucceed:813, BuryNamed:843, Stacks:871, UpgradeTreeVisibility:916, Cultures:930, Characters:1011, CampaignDivisions:1116, Armoury:1171, Duels:1242, RidingAndBowcraft:1275, PerkTiers:1324, SkillRises:1351, LastingWounds:1404, CaptainTraits:1427, HouseholdGuard:1466, RankRewards:1494, StartingRoad:1522, SkillTree:1542, BalanceMatchesData:1625, HousesAndKin:1639, PortraitsVary:1674, TalkBondsWants:1695, LordArmies:1754, HorsesCostGold:1800, GoodsSell:1810, SaveMidRun:1828, Drive:1851, CheckSound:1864, ReportMatchesRecord:1879, StableMix:1922, LogLevels:1930, NobleBirth:1947, NobleRecruits:1972
+## Tests/CampaignTests.cs (2044 lines)
+- **SelfTest** (class, L6): CampaignMap:8, CampaignPersistence:41, CampaignRun:52, Progression:94, CampPromotion:121, CastleMuster:142, VillagesFeedCastle:176, CaravansTownToTown:210, Economy:227, Bridge:241, Calibration:263, LordsFightAsTheyAre:288, RiverRoadGivesBridge:317, RainMakesMud:343, DefenderChoosesGround:370, AutoResolveGroundEdge:386, SiegeBattle:397, CampaignWar:435, RefuseOldSave:499, SaveFolders:525, RollEarnsNames:594, FallenRemembered:664, RisesFromRanks:709, BannerHonours:748, FameDraws:787, RetireAndSucceed:813, BuryNamed:843, Stacks:871, UpgradeTreeVisibility:916, Cultures:930, Characters:1011, CampaignDivisions:1116, Armoury:1171, Duels:1242, RidingAndBowcraft:1275, PerkTiers:1324, SkillRises:1351, LastingWounds:1404, CaptainTraits:1427, HouseholdGuard:1466, RankRewards:1494, StartingRoad:1522, SkillTree:1542, BalanceMatchesData:1625, HousesAndKin:1639, PortraitsVary:1674, TalkBondsWants:1695, LordArmies:1754, HorsesCostGold:1800, GoodsSell:1810, SaveMidRun:1828, Drive:1851, CheckSound:1864, ReportMatchesRecord:1879, StableMix:1922, LogLevels:1930, NobleBirth:1947, NobleRecruits:1972, PlaytestHarness:2016
 
 ## Tests/CaptainTests.cs (179 lines)
 - **SelfTest** (class, L6): CaptainKeepsGuard:10, EnemySeesCaptain:36, EnemyHuntsCaptain:111

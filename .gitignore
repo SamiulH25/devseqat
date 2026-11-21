@@ -19,3 +19,4 @@ Data/world.json.bak
 .midas/
 BlenderMCP/customer_uuid.txt
 __pycache__/
+playtest/

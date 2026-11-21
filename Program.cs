@@ -32,6 +32,11 @@ if (args.Contains("--sounds"))
     Ironfield.SoundDump.Run(rest.FirstOrDefault() ?? "sounds", rest.ElementAtOrDefault(1));
     return;
 }
+if (args.Contains("--play"))
+{
+    Ironfield.Playtest.Run(args.SkipWhile(a => a != "--play").Skip(1).ToArray()); // the agent playtest harness (docs/PLAYTEST_HARNESS.md)
+    return;
+}
 if (args.Contains("--tester-saves"))
 {
     Ironfield.TesterSaves.Run(args.SkipWhile(a => a != "--tester-saves").Skip(1).FirstOrDefault());
