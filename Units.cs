@@ -219,6 +219,8 @@ public sealed class Unit
     public int Coat;                       // horse coat colour (index into Style.Coats)
     public int Palette;                    // heraldry to paint (Style.Sides index); the battle sets it per team
     public float HorseHp, Heading, ViewHeading, Speed;
+    /// Till when a horse is caught in a formed company's press (Battle.Impact): it cannot get back above a walk.
+    public float BoggedUntil;
     public bool Couched, Contact;          // lance lowered; this charge has reached the enemy
     public CavState Cav;
     public float CavTimer, Bogged, ImpactCd, BraceCd;

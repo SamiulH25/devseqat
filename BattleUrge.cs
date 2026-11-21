@@ -46,7 +46,10 @@ public sealed partial class Battle
             float d = u.EnemyDist, temper = TemperOf(u, s);
             bool steady = Steadied(s);
             float gain = 0;
-            if (!steady)
+            // Horse on top of him: no man runs out of the ranks at a horseman; he closes up with his file instead.
+            bool horse = false;
+            if (d < 8) foreach (var o in Near(u.Pos, 8, nearUrge)) if (o.Mounted && o.Active && o.Team != u.Team) { horse = true; break; }
+            if (!steady && !horse)
             {
                 if (d < 18) gain += 0.9f * (18 - d) / 18 * temper;
                 if (d < 20 && Time - u.HurtAt < 3) gain += 0.25f * temper; // a blow taken, a foe close by: he wants to hit back

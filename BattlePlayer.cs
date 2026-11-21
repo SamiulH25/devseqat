@@ -91,6 +91,7 @@ public partial class Battle
             if (MathF.Abs(look) > MountReach) p.Facing = p.Heading + MathF.Sign(look) * MountReach;
             float target = inp.Throttle > 0 ? (inp.Sprint ? h.Gallop : h.Trot) : inp.Throttle < 0 ? -1.8f : 0;
             if (p.Action == UnitAction.Stagger) target = 0;
+            if (Time < p.BoggedUntil) target = Math.Clamp(target, -1.8f, h.Trot * 0.4f); // caught in a company's press
             bool speedingUp = MathF.Abs(target) > MathF.Abs(p.Speed) && target * p.Speed >= 0;
             p.Speed = Approach(p.Speed, target, (speedingUp ? h.Accel : h.Accel * 1.8f) * dt);
             p.Wish = p.HeadingDir * p.Speed;

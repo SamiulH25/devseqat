@@ -384,6 +384,10 @@ the player rides a courser.
   A rider's ordinary blow in the melee reaches only as far as a footman's blade (1.9 m), so a stalled charge is not a free win.
 - **Trample:** a horse running into an enemy footman at over 4 m/s knocks him down (stagger) and hurts him; every body slows the horse,
   and tight shield walls slow it more. The shock costs nearby friends morale.
+- **Formed foot is a wall to horse:** a company in close order with its ranks unbroken stops a charge at its front rank: the
+  horse loses most of its speed, is held to a walk for a moment, and cannot shove or filter between the files (they are
+  closer than a horse is wide), and no man runs out of the ranks at a horseman beside him. Horse gets past formed foot only
+  round its flanks or once its ranks break; loose order (OPEN) lets it ride through.
 - **Bracing (Total War):** spearmen, and shieldmen holding a tight formation, stand still and set their points when horses come.
   A braced spear reaches further than a couched lance and hits the horse hard (`8 x` closing speed for spears), stopping the charge.
   Spearrunners also deal x1.8 damage to anything mounted. Arrows and spears often hit the horse instead of the rider.
@@ -723,6 +727,8 @@ For hand-made art later, put PNGs into the atlas under the same keys (`part.vari
 - Scaling a MonoGame `Color` by a float also scales its alpha: `Mat` forces opaque colours, so use `Color.Lerp` for tints.
 - `AttackDir` is named from the attacker's side; the defender must block `Dirs.Mirror(swing)`. The HUD shows incoming blows already mirrored.
 - Separation is mass-weighted (horse 6, man 1) with radii 1.0 / 0.375 m; horse-vs-footman overlaps are where trample `Impact` happens.
+  A man in a formed rank weighs 20 times more against a horse, and `HoldHorseOff` (BattleGrid.cs) then puts any horse back out of
+  such men, since riders pressing from behind would otherwise shove the front ones through; `Unit.BoggedUntil` caps a caught horse's pace.
 - `Battle.Empty(seed)` builds a scenario field (two leaders far apart) for the self-test; `AddSquad`, `Hit` and `HitHorse` are reachable from it.
 - With an idle player, the AI enemy (slightly larger than yours at the same level) can still win the self-test battles, because the balance
   assumes you fight and command. With both sides on the AI (`--balance`), armies of the same level should come out near even.

@@ -100,6 +100,33 @@ public sealed partial class Battle
         return (best, MathF.Sqrt(bd));
     }
 
+    /// Last word on horse against formed foot: a horse overlapping a man who holds his place in a formed company is put back
+    /// out of him (the man does not give), whatever shoved it in (its own riders pressing from behind as often as not).
+    /// A company's files are closer than a horse is wide, so formed foot is a wall horse cannot filter through.
+    void HoldHorseOff()
+    {
+        foreach (var h in Units)
+        {
+            if (!h.Active || !h.Mounted || Airborne(h)) continue;
+            float rh = BodyRadius(h);
+            foreach (var m in Near(h.Pos, 2.1f, near))
+            {
+                if (!m.Active || m.Mounted || m.Team == h.Team || !InFormedRank(m)) continue;
+                float r = rh + BodyRadius(m);
+                var d = h.Pos - m.Pos;
+                float l2 = d.LengthSquared();
+                if (l2 >= r * r) continue;
+                float l = MathF.Sqrt(MathF.Max(l2, 1e-6f));
+                var n = l2 > 1e-6f ? d / l : -h.HeadingDir;
+                h.Pos = m.Pos + n * r;
+            }
+        }
+    }
+
+    /// A man a horse cannot shove aside: not routing, in a formed, close-ordered company, within a stride of his place
+    /// (a front-rank man stepping out to strike still has his file at his back).
+    bool InFormedRank(Unit m) => !m.Routing && m.Squad is { Loose: false, Broken: false } s && Ranked(s) && Vector2.DistanceSquared(m.Pos, m.Slot) < 2.5f * 2.5f;
+
     /// Push overlapping bodies apart (horses shove harder), and let riders at speed crash into footmen: only near pairs.
     void Separate(float dt)
     {
@@ -117,7 +144,14 @@ public sealed partial class Battle
                 if (l2 >= r * r) continue;
                 if (l2 < 1e-6f) { d = new Vector2(0.01f, 0); l2 = 1e-4f; }
                 float l = MathF.Sqrt(l2), mb = BodyMass(b);
-                if (a.Team != b.Team) { ma = BodyMass(a) * Footing(a); mb *= Footing(b); } // a man holding his place in the ranks is hard to shove
+                if (a.Team != b.Team)
+                {
+                    // A man holding his place in the ranks is hard to shove; against a horse the ranks behind him lean in too,
+                    // so a formed company is a wall a horse cannot simply walk through.
+                    float fa = Footing(a), fb = Footing(b);
+                    ma = BodyMass(a) * fa * (b.Mounted && !a.Mounted && fa > 1 ? 20 : 1);
+                    mb *= fb * (a.Mounted && !b.Mounted && fb > 1 ? 20 : 1);
+                }
                 else ma = BodyMass(a);
                 var n = d / l;
                 var push = n * (r - l);

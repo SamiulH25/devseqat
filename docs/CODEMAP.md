@@ -70,8 +70,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Field** (class, L18)
 - **Battle** (class, L31): LearnSpells:41, IsCaster:61, WillCap:64, WillCost:66, CasterCompany:69, SpellPower:73, Speaker:82, AddCast:85, MarkCast:88, UpdateAbilities:94, ThinkSpells:109, WouldOverreach:149, CannotCast:152, OrderedCast:167, DropCast:208, Target:216, Own:291, Foe:305, FoeGap:318, Engaged:326, Carries:327, Covered:328, OwnNear:329, Losing:332, Ready:344, Dry:351, Raining:353, Fire:357, Blast:425, AddTimed:432, AddField:442, UpdateFields:450, FieldsOn:470, TimedOn:482, Unweave:492
 
-## BattleAI.cs (368 lines)
-- **Battle** (class, L6): PackApproach:11, HeightRange:25, Think:27, ThinkCav:117, Ride:218, Approach:226, TurnRate:228, Steer:231, Led:252, General:256, Opposite:352
+## BattleAI.cs (369 lines)
+- **Battle** (class, L6): PackApproach:11, HeightRange:25, Think:27, ThinkCav:117, Ride:218, Approach:226, TurnRate:228, Steer:231, Led:253, General:257, Opposite:353
 
 ## BattleAlerts.cs (57 lines)
 - **Alert** (record, L6)
@@ -140,8 +140,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **PendingForm** (record, L6)
 - **Battle** (class, L10): FormWait:26, SetupForms:33, FormPower:47, CannotForm:50, UpdateForms:66, TryForm:77, Use:95, AsAbility:124, FoesNear:127, FormBlow:132, Land:140, InCone:161, InLine:171, Shout:178, Leap:191, AuraShot:221, Drain:232, CounterStrike:244
 
-## BattleGrid.cs (147 lines)
-- **Battle** (class, L7): CellOf:14, BuildGrid:16, Near:28, Separate:104
+## BattleGrid.cs (181 lines)
+- **Battle** (class, L7): CellOf:14, BuildGrid:16, Near:28, HoldHorseOff:106, InFormedRank:128, Separate:131
 
 ## BattleGround.cs (234 lines)
 - **PlaceKind** (enum, L6)
@@ -163,8 +163,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleMorale.cs (89 lines)
 - **Battle** (class, L6): UpdateMorale:11
 
-## BattleMove.cs (109 lines)
-- **Battle** (class, L6): StrideRate:11, Move:13, GroundSpeed:55, Stumble:65, Slope:75, SlopeFactor:78, SlopeFactor:79, Impact:82
+## BattleMove.cs (118 lines)
+- **Battle** (class, L6): StrideRate:11, Move:13, GroundSpeed:56, Stumble:66, Slope:76, SlopeFactor:79, SlopeFactor:80, Impact:83
 
 ## BattleNature.cs (48 lines)
 - **Nature** (struct, L5): Of:12, Line:29
@@ -183,8 +183,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattlePaths.cs (52 lines)
 - **Battle** (class, L10): FormCost:15, Hearthside:21, Anchored:25, HearthForm:28
 
-## BattlePlayer.cs (190 lines)
-- **Battle** (class, L6): Guard:17, UpdatePlayer:34, ToggleMount:126, Rally:161, KingsCharge:179
+## BattlePlayer.cs (191 lines)
+- **Battle** (class, L6): Guard:17, UpdatePlayer:34, ToggleMount:127, Rally:162, KingsCharge:180
 
 ## BattlePosts.cs (325 lines)
 - **Line** (struct, L7)
@@ -285,8 +285,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **BattleResult** (record, L150)
 - **Blow** (struct, L175)
 
-## BattleUrge.cs (97 lines)
-- **Battle** (class, L11): TemperOf:17, ImpulsiveCompany:26, UpdateUrge:34, TipCompany:70
+## BattleUrge.cs (100 lines)
+- **Battle** (class, L11): TemperOf:17, ImpulsiveCompany:26, UpdateUrge:34, TipCompany:73
 
 ## BattleWings.cs (127 lines)
 - **Battle** (class, L9): MeleeTime:12, Rallies:15, RallyPoint:18, RideToRally:30, HorseWits:43, HorsePrey:63, ChargeLane:80, HoldsFire:93, BowsWits:97, Focus:126
@@ -965,8 +965,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/AudioTests.cs (207 lines)
 - **SelfTest** (class, L5): MapMusicSteady:17, SoundsMade:79, CombatCuesEmitted:164, CreatureAndMagicCues:188
 
-## Tests/BattleTests.cs (1932 lines)
-- **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, CavalryBalance:123, Flanks:164, Parry:180, BlowsShown:208, FightsRead:230, Formations:246, HorseFollowsRider:278, CaptainCombat:300, CaptainKit:326, SkillBouts:384, Bout:434, Fight:448, BattleGoals:482, BannerAndLastStand:504, DuelFight:541, RangedRoles:562, FatigueAndSupply:582, GroundLayer:600, GroundMoves:625, GroundFights:656, Layouts:693, HedgesAndBridges:724, EveryLayoutResolves:772, SightAndCover:793, Rivers:835, HoldsTheCrest:863, HorseAvoidsBadGround:889, TakesTheFord:906, GroundForThePlayer:928, Stakes:947, Pathfinder:985, GoesToFord:1005, FilesThroughGap:1034, RoundTheNearFence:1059, OutOfTheYard:1073, ChargeFindsCaptain:1091, FlowCacheBound:1106, Generals:1121, HorseDown:1138, Ground:1147, HoldFire:1171, TroopTree:1185, SpritesBaked:1212, Sprites:1233, TroopVariety:1270, BigBattle:1306, StackBattle:1336, NamedMenFight:1371, AutoResolveNamedMen:1413, PullBack:1439, ReplayExact:1470, FoldCompanies:1504, AdvanceSteps:1548, RelieveAndSplit:1563, QueuedAndStanding:1599, AlertsRaise:1658, DeploymentMemory:1683, SpearsStopHorse:1714, CommandCap:1725, ScaleBattle:1744, DivisionGoals:1781
+## Tests/BattleTests.cs (1963 lines)
+- **SelfTest** (class, L6): Animation:10, Javelins:88, Charge:103, LineScreensBows:125, CavalryBalance:154, Flanks:195, Parry:211, BlowsShown:239, FightsRead:261, Formations:277, HorseFollowsRider:309, CaptainCombat:331, CaptainKit:357, SkillBouts:415, Bout:465, Fight:479, BattleGoals:513, BannerAndLastStand:535, DuelFight:572, RangedRoles:593, FatigueAndSupply:613, GroundLayer:631, GroundMoves:656, GroundFights:687, Layouts:724, HedgesAndBridges:755, EveryLayoutResolves:803, SightAndCover:824, Rivers:866, HoldsTheCrest:894, HorseAvoidsBadGround:920, TakesTheFord:937, GroundForThePlayer:959, Stakes:978, Pathfinder:1016, GoesToFord:1036, FilesThroughGap:1065, RoundTheNearFence:1090, OutOfTheYard:1104, ChargeFindsCaptain:1122, FlowCacheBound:1137, Generals:1152, HorseDown:1169, Ground:1178, HoldFire:1202, TroopTree:1216, SpritesBaked:1243, Sprites:1264, TroopVariety:1301, BigBattle:1337, StackBattle:1367, NamedMenFight:1402, AutoResolveNamedMen:1444, PullBack:1470, ReplayExact:1501, FoldCompanies:1535, AdvanceSteps:1579, RelieveAndSplit:1594, QueuedAndStanding:1630, AlertsRaise:1689, DeploymentMemory:1714, SpearsStopHorse:1745, CommandCap:1756, ScaleBattle:1775, DivisionGoals:1812
 
 ## Tests/CampaignTests.cs (2054 lines)
 - **SelfTest** (class, L6): CampaignMap:8, BanditsNearPlayer:42, CampaignPersistence:51, CampaignRun:62, Progression:104, CampPromotion:131, CastleMuster:152, VillagesFeedCastle:186, CaravansTownToTown:220, Economy:237, Bridge:251, Calibration:273, LordsFightAsTheyAre:298, RiverRoadGivesBridge:327, RainMakesMud:353, DefenderChoosesGround:380, AutoResolveGroundEdge:396, SiegeBattle:407, CampaignWar:445, RefuseOldSave:509, SaveFolders:535, RollEarnsNames:604, FallenRemembered:674, RisesFromRanks:719, BannerHonours:758, FameDraws:797, RetireAndSucceed:823, BuryNamed:853, Stacks:881, UpgradeTreeVisibility:926, Cultures:940, Characters:1021, CampaignDivisions:1126, Armoury:1181, Duels:1252, RidingAndBowcraft:1285, PerkTiers:1334, SkillRises:1361, LastingWounds:1414, CaptainTraits:1437, HouseholdGuard:1476, RankRewards:1504, StartingRoad:1532, SkillTree:1552, BalanceMatchesData:1635, HousesAndKin:1649, PortraitsVary:1684, TalkBondsWants:1705, LordArmies:1764, HorsesCostGold:1810, GoodsSell:1820, SaveMidRun:1838, Drive:1861, CheckSound:1874, ReportMatchesRecord:1889, StableMix:1932, LogLevels:1940, NobleBirth:1957, NobleRecruits:1982, PlaytestHarness:2026
@@ -1077,7 +1077,7 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## UiScroll.cs (199 lines)
 - **Kit** (class, L9): Paper:19, Tile:79, Torn:95, Scroll:104, Sheet:120, Roller:162
 
-## Units.cs (269 lines)
+## Units.cs (271 lines)
 - **UnitClass** (enum, L6)
 - **UnitAction** (enum, L7)
 - **AttackDir** (enum, L11)
@@ -1088,9 +1088,9 @@ Members are methods, constructors and local helpers declared at class level; fie
 - **Mount** (record, L32)
 - **Look** (record, L41): Ranged:64, Missile:66, GripOf:67
 - **UnitType** (class, L82): Has:123, Clone:147, ToString:148
-- **Unit** (class, L159): Face:257
-- **LooseHorse** (class, L261)
-- **DeadHorse** (struct, L270)
+- **Unit** (class, L159): Face:259
+- **LooseHorse** (class, L263)
+- **DeadHorse** (struct, L272)
 
 ## Variety.cs (148 lines)
 - **Variety** (class, L9): static:16, Seed:72, Of:75, Of:83, Stature:111, Kin:113, Pick:116, Visage:125, Weighted:142

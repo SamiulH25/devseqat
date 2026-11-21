@@ -32,6 +32,7 @@ public partial class Battle
             u.Anim += dt * StrideRate(u.Vel.Length(), u.Mounted); // stride-locked walk / gallop cycle
         }
         Separate(dt); // near pairs only, through the spatial grid (BattleGrid.cs)
+        HoldHorseOff(); // formed foot does not give way to horse
         KeepRing(); // the men give two clashing champions room (MA7)
         // Trees and boulders are solid; a horse that rides into one pulls up hard.
         foreach (var u in Units)
@@ -81,9 +82,16 @@ public partial class Battle
     /// A horse at speed running into an enemy footman: knockdown and damage, unless the man is braced.
     void Impact(Unit r, Unit f, Vector2 n, float dt)
     {
-        r.Speed *= 1 - 1.2f * dt; // pushing through bodies bogs a charge down
+        // Pushing through bodies bogs a charge down; into a formed company the horse is caught in the press and stopped.
+        bool formed = !f.Routing && f.Squad is { Loose: false, Broken: false } fs && Ranked(fs);
+        r.Speed *= 1 - (formed ? 4f : 1.2f) * dt;
+        if (formed) r.BoggedUntil = MathF.Max(r.BoggedUntil, Time + 0.6f);
         float closing = Vector2.Dot(r.Vel - f.Vel, n);
-        if (f.ImpactCd > 0 || closing < 4) return;
+        if (f.ImpactCd > 0 || closing < 4)
+        {
+            if (formed) r.Speed = MathF.Min(r.Speed, 1.2f); // pressed against the ranks it can only shove at a walk
+            return;
+        }
         f.ImpactCd = 0.8f;
         Sound(Cue.Impact, f.Pos);
         r.Contact = true;
@@ -93,7 +101,8 @@ public partial class Battle
             HitHorse(r, closing * 2.6f, f);
             return;
         }
-        r.Speed *= f.Type.Class == UnitClass.Infantry && f.Squad is { Loose: false } ? 0.55f : 0.75f;
+        r.Speed *= formed ? 0.35f : f.Type.Class == UnitClass.Infantry && f.Squad is { Loose: false } ? 0.55f : 0.75f;
+        if (formed) r.BoggedUntil = Time + 1.5f; // the charge is spent on the front rank
         // A spearman shoved by a horse still gets his point into it.
         if (f.Type.Class == UnitClass.Skirmisher && f.Type.VsMounted > 1) HitHorse(r, closing * 1.6f * f.Type.VsMounted, f);
         float real = Damage(r, f, closing * 2.6f * (r.Squad?.Formation == Formation.Wedge ? 1.3f : 1) * Terrain.GroundDefAt(f.Pos).Charge, 5); // no charge over bad ground

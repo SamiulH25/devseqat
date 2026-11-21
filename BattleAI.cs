@@ -242,6 +242,7 @@ public partial class Battle
         }
         else if (MathF.Abs(u.Speed) < 1.5f)
             u.Heading += Math.Clamp(MathHelper.WrapAngle(u.Facing - u.Heading), -rate * 0.6f * dt, rate * 0.6f * dt); // turn on the spot
+        if (Time < u.BoggedUntil) ws = MathF.Min(ws, h.Trot * 0.4f); // caught in a company's press
         u.Speed = Approach(u.Speed, ws * Mud, (ws > u.Speed ? h.Accel : h.Accel * 1.8f) * dt);
         if (u.Action == UnitAction.None && (ws > 0.05f || u.Speed > 1.5f)) u.Facing = u.Heading;
     }

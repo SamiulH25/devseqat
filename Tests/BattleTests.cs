@@ -120,6 +120,37 @@ public static partial class SelfTest
     }
 
     /// Balance guards: a horse is not a free win, and a broken company can come back instead of always dissolving.
+    /// A formed foot company is a wall to horse: knights sent at the archers behind it are held up at the line, and only
+    /// a few get through, so the bows are not ridden down. Loose or broken foot lets them through.
+    static void LineScreensBows()
+    {
+        (int through, int bowsLost) Run1(Formation f)
+        {
+            var b = Battle.Empty(44);
+            var foot = b.AddSquad(0, Troops.Get("men_at_arms"), 40, new(0, 0), 20, Vector2.UnitY);
+            foot.Formation = f;
+            var bows = b.AddSquad(0, Troops.Get("yeoman_archers"), 30, new(0, -12), 10, Vector2.UnitY);
+            bows.FireAtWill = false;
+            var horse = b.AddSquad(1, Troops.Get("knights"), 20, new(0, 40), 10, -Vector2.UnitY);
+            horse.Order = Order.Charge;
+            horse.Target = bows;
+            int through = 0;
+            var past = new HashSet<Unit>();
+            for (int i = 0; i < 60 * 15; i++)
+            {
+                b.Update(1 / 60f);
+                foreach (var u in horse.Units) if (u.Active && u.Pos.Y < -5 && past.Add(u)) through++;
+            }
+            return (through, bows.StartCount - bows.Alive);
+        }
+        var (formed, formedLost) = Run1(Formation.Line);
+        var (loose, looseLost) = Run1(Formation.Loose);
+        Console.WriteLine($"horse at bows behind a line: {formed} of 20 riders through, {formedLost} bows lost; behind loose foot {loose} through, {looseLost} lost");
+        Check(formed <= 6, $"a formed line holds most of the horse ({formed} of 20 got through)");
+        Check(formedLost <= 8, $"so the bows behind it are not ridden down ({formedLost} of 30 lost)");
+        Check(loose > formed, $"loose foot lets more through ({loose} vs {formed})");
+    }
+
     static void CavalryBalance()
     {
         // A rider's reach in a standing fight is a man's reach, not its lance's: foot can hit back.
