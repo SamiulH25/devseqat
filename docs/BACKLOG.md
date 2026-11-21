@@ -15,6 +15,7 @@ them yourself (CLAUDE.md step 4); the scores in old notes are history only.
 | Plan | Open | Size | Notes |
 |---|---|---|---|
 | [`pre-demo/SIEGES.md`](pre-demo/SIEGES.md) | SE1-SE10: the siege overhaul: the field built from the place's plan, a fortress to move through, capture points and the heart, layered defence, equipment and assault plans, sieges on the map (sallies, relief, terms, sack), every kind of place | large | Owner's brief 2026-11-21. Nothing built. Four open questions for the owner at the end of the plan |
+| [`pre-demo/KIT.md`](pre-demo/KIT.md) | KT0-KT7: troop numbers built from the base man + skills (Arms, Riding, Bowcraft) + the kit they wear; kit table for all 109 worn parts; price from kit; re-equipping companies last | large | Owner's brief 2026-11-21; decisions recorded in the plan. Nothing built |
 | [`pre-demo/TIERS.md`](pre-demo/TIERS.md) | TI2-TI6 (TI0, TI1 built): tiers that matter: measure each step, a ladder of things each tier can do, drill you can see, promotion that says what changes, reasons in the campaign to want good troops, lines with jobs | large | Owner's brief 2026-11-21. TI0 built; the owner answered the four questions 2026-11-21 |
 | [`pre-demo/NOBILITY.md`](pre-demo/NOBILITY.md) | N3 knighting a named man; N4 AI lords' noble retinues and UI badge; N5 balance | medium | Gap: northern, southern, steppe and league have no non-order noble T4 |
 
