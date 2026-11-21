@@ -135,7 +135,7 @@ partial class BattleScreen
                 {
                     attackMoveMode = false;
                     if (selectedDivision is { } dv && !deploying) OrderDivisionCompanies(dv);
-                    if (PickSquad(pt, 1) is Squad foe) { OrderArrows(foe.Centroid()); Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }, move: true); }
+                    if (PickSquad(pt, 1) is Squad foe) { OrderArrows(foe.Centroid()); Charge(foe, Cue.Order); }
                     else
                     {
                         // March there, and charge whoever comes near on the way: the move plus the standing rule for it.
@@ -262,7 +262,7 @@ partial class BattleScreen
             if (click && PickSquad(mouseGround, 1) is Squad foe)
             {
                 OrderArrows(foe.Centroid());
-                Issue("attack " + foe.Name + "!", s => { s.Order = Order.Charge; s.Target = foe; }, move: true); // click an enemy: attack it
+                Charge(foe, Cue.Order); // click an enemy: attack it (Shift: a reckless charge)
                 return;
             }
             OrderArrows(click ? mouseGround : (a + mouseGround) / 2);

@@ -36,6 +36,34 @@ public static partial class SelfTest
         Check(a.Alive < a.StartCount && e.Alive < e.StartCount, "and they fight");
     }
 
+    /// A reckless charge (Shift): every man runs at the foe on his own, no line kept, so it lands sooner and ragged;
+    /// a plain charge closes as a body. The flag ends with the charge.
+    static void RecklessCharge()
+    {
+        (float contact, float err) Run(bool reckless)
+        {
+            var (b, a, e) = Clash(43, "ironguard", "ironguard", gap: 40);
+            e.Order = Order.Hold;
+            a.Reckless = reckless;
+            float at = -1, err = 0;
+            for (int i = 0; i < 60 * 20 && at < 0; i++)
+            {
+                b.Update(1 / 60f);
+                if (i == 60 * 3) err = Battle.RankError(a);
+                if (a.Units.Any(u => u.Active && e.Units.Any(o => o.Active && Vector2.Distance(u.Pos, o.Pos) < 2))) at = b.Time;
+            }
+            a.Order = Order.Hold;
+            b.Update(1 / 60f);
+            Check(!a.Reckless, "a reckless charge ends with the charge");
+            return (at, err);
+        }
+        var (plainAt, plainErr) = Run(false);
+        var (wildAt, wildErr) = Run(true);
+        Console.WriteLine($"melee: charge contact {plainAt:0.0} s (rank error {plainErr:0.00} m), reckless {wildAt:0.0} s ({wildErr:0.00} m)");
+        Check(wildAt > 0 && (plainAt < 0 || wildAt < plainAt), $"the reckless charge lands first ({wildAt:0.0} s vs {plainAt:0.0} s)");
+        Check(wildErr > plainErr, $"and keeps no line ({wildErr:0.00} m off places vs {plainErr:0.00} m)");
+    }
+
     /// M1: in the first seconds of contact the back ranks of a company hold their places: only the front fights.
     static void RearRanksWait()
     {

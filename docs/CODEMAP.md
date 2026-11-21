@@ -60,10 +60,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BalanceReport.Troops.cs (118 lines)
 - **BalanceReport** (class, L8): TroopBalance:12, RoleOf:111
 
-## Battle.cs (589 lines)
+## Battle.cs (590 lines)
 - **PlayerInput** (struct, L5)
 - **Projectile** (class, L19)
-- **Battle** (class, L29): Sound:39, Flash:48, Battle:89, Battle:92, SetupDuel:116, Role:126, Deploy:130, Leads:182, OpenSlots:185, Ranks:202, ColumnsFor:203, Empty:223, Empty:224, FieldScale:227, Battle:233, SquadsOf:253, Centroid:254, Log:255, AddSquad:259, Spawn:302, Mark:318, Advance:322, Update:329, Bounds:400, ThinkNow:415, UpdateCentroids:418, UpdateSquad:430, CanBrace:460, Braced:465, InOrder:469, ReachOf:472, RandomSwing:478, StartSwing:482, Reinforce:494, Result:515, GapTo:554, Withdraw:569, CheckEnd:578
+- **Battle** (class, L29): Sound:39, Flash:48, Battle:89, Battle:92, SetupDuel:116, Role:126, Deploy:130, Leads:182, OpenSlots:185, Ranks:202, ColumnsFor:203, Empty:223, Empty:224, FieldScale:227, Battle:233, SquadsOf:253, Centroid:254, Log:255, AddSquad:259, Spawn:302, Mark:318, Advance:322, Update:329, Bounds:400, ThinkNow:415, UpdateCentroids:418, UpdateSquad:430, CanBrace:461, Braced:466, InOrder:470, ReachOf:473, RandomSwing:479, StartSwing:483, Reinforce:495, Result:516, GapTo:555, Withdraw:570, CheckEnd:579
 
 ## BattleAbilities.cs (501 lines)
 - **Cast** (class, L7)
@@ -237,8 +237,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## BattleScreen.Magic.cs (364 lines)
 - **BattleScreen** (class, L8): OrderColour:31, FlashColour:40, ResetMagicFx:54, AddRipple:56, Rise:60, MagicFx:70, FlashFx:83, FieldFx:179, BuffFx:221, AuraFx:236, MagicLines:271
 
-## BattleScreen.Orders.cs (417 lines)
-- **BattleScreen** (class, L8): Targets:12, SelectedCrews:16, EngineOrder:19, Issue:29, Send:42, Move:52, NextRule:64, GiveGoal:83, OrderDivisionCompanies:98, Command:105, MergeSelected:174, RelieveSelected:194, SplitSelected:208, GroupKey:222, Group:225, OrderKeys:246, NextSpell:278, CastAt:291, PlantStakes:305, CommandClick:320, MoveTo:345, SoundHorn:355, NextDivision:362, LineAt:372, Distribute:389, PreviewSlots:408
+## BattleScreen.Orders.cs (428 lines)
+- **BattleScreen** (class, L8): Targets:12, SelectedCrews:16, EngineOrder:19, Issue:29, Send:42, Move:52, Charge:65, NextRule:75, GiveGoal:94, OrderDivisionCompanies:109, Command:116, MergeSelected:185, RelieveSelected:205, SplitSelected:219, GroupKey:233, Group:236, OrderKeys:257, NextSpell:289, CastAt:302, PlantStakes:316, CommandClick:331, MoveTo:356, SoundHorn:366, NextDivision:373, LineAt:383, Distribute:400, PreviewSlots:419
 
 ## BattleScreen.Press.cs (194 lines)
 - **BattleScreen** (class, L8): PressShot:16, PressList:21, PressScript:49, MagicShot:78, Aim:102, Blocked:116, Behind:137, Over:145, Captain:152, Horse:163, Volley:174, Hot:184
@@ -920,10 +920,10 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## SpriteSheet.Peoples.cs (581 lines)
 - **SpriteSheet** (class, L7): HelmBase:21, PeopleHelm:37, SunCrest:308, PeopleTorso:322, PeopleSleeve:412, PeopleBarding:430, Full:500, Crinet:552, Chanfron:565
 
-## Squad.cs (269 lines)
+## Squad.cs (272 lines)
 - **Order** (enum, L5)
 - **Formation** (enum, L10)
-- **Squad** (class, L13): Squad:103, Choices:174, FaceAt:179, Slot:186, Centroid:224, SetLine:233, Shift:253, HoldInPlace:261
+- **Squad** (class, L13): Squad:103, Choices:177, FaceAt:182, Slot:189, Centroid:227, SetLine:236, Shift:256, HoldInPlace:264
 
 ## Style.cs (88 lines)
 - **Emblem** (enum, L5)
@@ -1008,8 +1008,8 @@ Members are methods, constructors and local helpers declared at class level; fie
 ## Tests/MapTests.cs (712 lines)
 - **SelfTest** (class, L6): RiverWithinExact:11, MarchRoutes:38, MapIndexMatches:81, RealmsFromData:103, ClimatesAndRidges:148, SevenRealms:176, RealmTempers:203, WorldDesignReads:280, NewLands:309, FieldsApart:348, MapDressed:368, ShipTravel:406, DesignedMap:454, PlacesPlanned:520, TownsLaidOut:550, PlanSvg:573, VillagesLaidOut:598, FieldsStyled:623, PlacesShowState:657
 
-## Tests/MeleeTests.cs (425 lines)
-- **SelfTest** (class, L7): HoldsRanks:22, RearRanksWait:40, StepsUp:61, FightsItsTarget:77, LeviesLoseRanks:115, TierWins:129, PartsByCompany:152, UrgeLunges:173, RefusesFlank:203, VeteransWrap:242, ElitePincer:258, Reforms:289, HorseRegroup:319, BowsFallBack:363, MusterGrade:401, MightWeighsDrill:416
+## Tests/MeleeTests.cs (453 lines)
+- **SelfTest** (class, L7): HoldsRanks:22, RecklessCharge:41, RearRanksWait:68, StepsUp:89, FightsItsTarget:105, LeviesLoseRanks:143, TierWins:157, PartsByCompany:180, UrgeLunges:201, RefusesFlank:231, VeteransWrap:270, ElitePincer:286, Reforms:317, HorseRegroup:347, BowsFallBack:391, MusterGrade:429, MightWeighsDrill:444
 
 ## Tests/MonsterTests.cs (249 lines)
 - **SelfTest** (class, L7): MonsterLeaders:11, SpiderVenom:43, BearRage:108, WyvernFlight:123, MonstersAbroad:175, BeastTrace:237

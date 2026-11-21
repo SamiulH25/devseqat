@@ -63,7 +63,7 @@ public partial class Battle
             if (toSlot > 0.4f) { var back = Via(u, u.Slot) - u.Pos; u.Wish = back / MathF.Max(0.01f, back.Length()) * u.Type.Speed; u.Face(back); }
             return;
         }
-        bool free = s.HuntCaptain || u.Lunging; // sent for the captain, or lunging on his own: a run, not a line
+        bool free = s.HuntCaptain || u.Lunging || s.Reckless && s.Order == Order.Charge; // sent for the captain, lunging on his own, or a reckless charge: a run, not a line
         bool charge = s.Order == Order.Charge || free;
         if (charge && s.Target != null && d > 3 && !free) (enemy, d) = Nearest(u, s.Target); // go for the ordered target
 

@@ -133,7 +133,7 @@ public sealed class Controls
         [Act.Sprint] = "SPRINT / GALLOP", [Act.Attack] = "ATTACK (HOLD = POWER)", [Act.Block] = "BLOCK (MATCH = PARRY)",
         [Act.Couch] = "COUCH LANCE", [Act.Interact] = "MOUNT / DISMOUNT", [Act.Rally] = "RALLY / FIGHT ON WHEN DOWN", [Act.OrderWheel] = "ORDER WHEEL (HOLD)",
         [Act.RotateLeft] = "ROTATE CAMERA LEFT", [Act.RotateRight] = "ROTATE CAMERA RIGHT", [Act.AddToSelection] = "ADD TO SELECTION",
-        [Act.Charge] = "CHARGE", [Act.Follow] = "FOLLOW ME", [Act.FormHere] = "FORM LINE ON ME", [Act.HoldPosition] = "HOLD POSITION",
+        [Act.Charge] = "CHARGE (SHIFT = RECKLESS)", [Act.Follow] = "FOLLOW ME", [Act.FormHere] = "FORM LINE ON ME", [Act.HoldPosition] = "HOLD POSITION",
         [Act.Advance] = "ADVANCE", [Act.FallBack] = "FALL BACK", [Act.Spacing] = "LOOSE / TIGHT", [Act.FireAtWill] = "FIRE AT WILL / HOLD",
         [Act.SelectAll] = "SELECT ALL",
         [Act.CommandView] = "COMMAND VIEW", [Act.Pause] = "PAUSE", [Act.Menu] = "MENU", [Act.Help] = "CONTROLS", [Act.Graphics] = "GRAPHICS QUALITY",

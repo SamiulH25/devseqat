@@ -51,13 +51,24 @@ partial class BattleScreen
     /// A movement order: queued behind the company's orders while Shift is held, else it replaces them.
     void Move(Squad s, Action<Squad> act)
     {
-        if (!queueing || deploying) { Send(s, q => { q.Queue.Clear(); q.StepTarget = null; act(q); }); return; }
+        if (!queueing || deploying) { Send(s, q => { q.Queue.Clear(); q.StepTarget = null; q.Reckless = false; act(q); }); return; }
         // Work the order out on a stand-in, then queue the result as a step.
         var last = s.Queue.Count > 0 ? s.Queue[^1] : battle.StepOf(s);
         var ghost = new Squad(s.Name, s.Team) { Cavalry = s.Cavalry, Formation = s.Formation, Columns = last.Columns, Front = last.Front, Anchor = last.Anchor, Order = last.Order };
         act(ghost);
         var step = new OrderStep(ghost.Order, ghost.Anchor, ghost.Front, ghost.Columns, ghost.Target != null ? battle.Squads.IndexOf(ghost.Target) : -1);
         Send(s, q => q.Queue.Add(step));
+    }
+
+    /// A charge, or an attack on one company: with Shift held it is a reckless charge (every man runs in, no line kept)
+    /// instead of a queued step.
+    void Charge(Squad? foe, Cue horn = Cue.HornCharge)
+    {
+        bool reckless = queueing;
+        queueing = false; // read again from the keys next frame
+        string what = reckless ? (foe != null ? "reckless charge at " + foe.Name + "!" : "reckless charge!") : foe != null ? "attack " + foe.Name + "!" : "charge!";
+        Issue(what, s => { s.Order = Order.Charge; s.Target = foe; s.Reckless = reckless; }, move: true, horn);
+        queueing = reckless;
     }
 
     /// Cycle the standing rule of the selected companies (docs/archive/COMBAT_QOL.md Q3); each takes the next rule it can keep.
@@ -109,8 +120,8 @@ partial class BattleScreen
         {
             case Cmd.Charge:
                 // In the fight view the charge goes at the company you look at (BattleScreen.Fight.cs); else at the nearest.
-                if (!command && LookFoe() is Squad lf) { OrderArrows(lf.Centroid()); Issue("attack " + lf.Name + "!", s => { s.Order = Order.Charge; s.Target = lf; }, move: true, Cue.HornCharge); }
-                else Issue("charge!", s => { s.Order = Order.Charge; s.Target = null; }, move: true, Cue.HornCharge);
+                if (!command && LookFoe() is Squad lf) { OrderArrows(lf.Centroid()); Charge(lf); }
+                else Charge(null);
                 break;
             case Cmd.Stakes: PlantStakes(); break;
             case Cmd.Cast: NextSpell(); break;

@@ -430,6 +430,7 @@ public sealed partial class Battle
     void UpdateSquad(Squad s, float dt)
     {
         s.Pressure *= MathF.Exp(-0.6f * dt);
+        if (s.Order != Order.Charge) s.Reckless = false; // a reckless charge ends with the charge
         s.Loosen = 1 + (1 - Terrain.GroundDefAt(s.Anchor).Order) * 0.5f; // bad ground opens the ranks (docs/archive/TERRAIN.md T2)
         UpdatePath(s, dt);
         if (s.Target is { Alive: 0 }) s.Target = null; // target broken: fall back to the nearest enemy
